@@ -30,3 +30,7 @@ npx expo start
 ```
 
 No Supabase project is required for the current prototype.
+
+## Canonical design sources
+
+The repository includes the current master Excel design database under `docs/sources/`. Treat the latest `VELDRYN_Master_Design_Database_*.xlsx` there as the canonical game-design/content/balance reference, while backend migrations remain authoritative for runtime security and transactional behavior.

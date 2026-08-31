@@ -9,7 +9,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck:core": "tsc -p tsconfig.core.json --noEmit",
-    "test:core": "rm -rf .core-build && tsc -p tsconfig.core.json --outDir .core-build && node .core-build/tests/offline-smoke.js"
+    "test:core": "rm -rf .core-build && tsc -p tsconfig.core.json --outDir .core-build && node .core-build/tests/offline-smoke.js",
+    "test:pre-codex": "rm -rf .core-build && tsc -p tsconfig.core.json --outDir .core-build && node .core-build/tests/offline-smoke.js && node .core-build/tests/pre-codex-smoke.js"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^2.1.2",

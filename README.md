@@ -1,36 +1,26 @@
-# Veldryn
+# VELDRYN
 
-VELDRYN — An Idle Multiplayer RPG.
+VELDRYN is an idle multiplayer RPG currently being validated as an **offline-first Asterfall vertical slice** before production server costs are introduced.
 
-This repository currently uses a **local-first playable prototype** so the core loop can be tested without Supabase/server hosting costs.
+## Start here
+Codex/developers should read [`START_HERE_CODEX.md`](START_HERE_CODEX.md) first.
 
-## Structure
+## Repository
+- `apps/mobile/` — active Expo/React Native offline prototype.
+- `backend/` — preserved server-authoritative backend foundation for the future online migration; not deployed for Milestone 1.
+- `docs/sources/` — canonical design workbook(s).
+- `docs/implementation/` — implementation/test/debug/UI contracts.
 
-- `apps/mobile` — Expo / React Native offline prototype v0.4.
-- `backend` — accumulated server-authoritative backend foundation v2.1, preserved for later online migration.
+## Canonical design source
+`docs/sources/VELDRYN_Master_Design_Database_v4.5.xlsx`
 
-## Current prototype loop
+When design/content/balance differs from code, follow `CODEX_IMPLEMENTATION_GUIDE.md` and document intentional prototype overrides.
 
-Create character → idle combat → collect deterministic rewards → loot/equip/sell/salvage → gather resources → craft → complete onboarding quests → reach level 25 → challenge the Fallen Knight.
+## Current milestone
+**Milestone 1 — The Fallen Knight:** create a character, progress through Asterfall levels 1–25, improve through combat/loot/skilling/crafting/quests, defeat the Fallen Knight, and expose the Sunscar unlock teaser.
 
-## Architecture
+## Cost policy for current prototype
+No Supabase deployment, paid hosting or other required online infrastructure is needed. The mobile prototype uses local persistence and repository abstractions so server ownership can replace local authority later.
 
-The mobile UI depends on a `GameRepository` abstraction. Today it is backed by AsyncStorage. A future `SupabaseGameRepository` can implement the same interface and progressively move authoritative actions online without rebuilding the UI.
-
-## Android
-
-Canonical package/application id: `com.elroybenjamins.veldryn`
-
-## Run the offline prototype
-
-```bash
-cd apps/mobile
-npm install
-npx expo start
-```
-
-No Supabase project is required for the current prototype.
-
-## Canonical design sources
-
-The repository includes the current master Excel design database under `docs/sources/`. Treat the latest `VELDRYN_Master_Design_Database_*.xlsx` there as the canonical game-design/content/balance reference, while backend migrations remain authoritative for runtime security and transactional behavior.
+## Android package
+`com.elroybenjamins.veldryn`

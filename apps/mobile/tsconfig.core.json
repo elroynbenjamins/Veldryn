@@ -7,5 +7,10 @@
     "esModuleInterop": true,
     "skipLibCheck": true
   },
-  "include": ["src/core/**/*.ts", "src/content/**/*.ts", "tests/**/*.ts"]
+  "include": [
+    "src/core/**/*.ts",
+    "src/content/**/*.ts",
+    "src/dev/**/*.ts",
+    "tests/**/*.ts"
+  ]
 }

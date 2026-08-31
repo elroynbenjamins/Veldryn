@@ -1,0 +1,3 @@
+import React from 'react'; import {Pressable,StyleSheet,Text} from 'react-native'; import {C} from '../theme/theme';
+export function GameButton({title,onPress,disabled=false}:{title:string;onPress:()=>void;disabled?:boolean}){return <Pressable accessibilityRole="button" disabled={disabled} onPress={onPress} style={[s.b,disabled&&s.d]}><Text style={s.t}>{title}</Text></Pressable>};
+const s=StyleSheet.create({b:{minHeight:48,paddingHorizontal:14,justifyContent:'center',alignItems:'center',backgroundColor:C.panel2,borderWidth:1,borderColor:C.accent,borderRadius:10},d:{opacity:.4},t:{color:C.text,fontWeight:'800'}});

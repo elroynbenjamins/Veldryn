@@ -1,0 +1,14 @@
+node_modules/
+.expo/
+dist/
+build/
+coverage/
+.env
+.env.*
+!.env.example
+.DS_Store
+*.log
+
+.core-build/
+apps/mobile/src/**/*.js
+apps/mobile/tests/*.js

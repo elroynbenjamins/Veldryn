@@ -1,0 +1,20 @@
+{
+  "name": "veldryn-backend-foundation",
+  "private": true,
+  "version": "2.1",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc",
+    "smoke": "node dist/server/expeditions/__tests__/smoke.js",
+    "combat-smoke": "node dist/server/combat/__tests__/combat-smoke.js",
+    "combat-matrix": "node dist/server/combat/__tests__/party-matrix.js",
+    "combat-service-smoke": "node dist/server/combat/__tests__/service-smoke.js",
+    "backend-pass-smoke": "node dist/server/__tests__/backend-pass-smoke.js",
+    "production-smoke": "node dist/server/__tests__/production-smoke.js",
+    "squad-smoke": "node dist/server/squads/__tests__/squad-smoke.js"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.8.0"
+  }
+}

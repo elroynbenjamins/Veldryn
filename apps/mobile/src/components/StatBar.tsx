@@ -1,0 +1,3 @@
+import React from 'react'; import {StyleSheet,Text,View} from 'react-native'; import {C} from '../theme/theme';
+export function StatBar({label,current,max}:{label:string;current:number;max:number}){const p=Math.max(0,Math.min(1,current/max));return <View><View style={s.r}><Text style={s.l}>{label}</Text><Text style={s.v}>{Math.floor(current)} / {Math.floor(max)}</Text></View><View style={s.track}><View style={[s.fill,{width:`${p*100}%`}]} /></View></View>}
+const s=StyleSheet.create({r:{flexDirection:'row',justifyContent:'space-between'},l:{color:C.muted,fontSize:12},v:{color:C.text,fontSize:12},track:{height:9,backgroundColor:'#080c12',borderRadius:8,overflow:'hidden',marginTop:4},fill:{height:'100%',backgroundColor:C.accent}});

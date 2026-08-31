@@ -1,0 +1,2 @@
+export const LISTING_FEE_RATE=.02; export const SALE_FEE_RATE=.03;
+export function marketFees(unitPrice:number,qty:number){if(!Number.isInteger(unitPrice)||unitPrice<1||!Number.isInteger(qty)||qty<1)throw new Error('invalid_market_values');const gross=unitPrice*qty;return{gross,listingFee:Math.max(1,Math.floor(gross*LISTING_FEE_RATE)),saleFee:Math.max(1,Math.floor(gross*SALE_FEE_RATE)),sellerNet:gross-Math.max(1,Math.floor(gross*SALE_FEE_RATE))};}

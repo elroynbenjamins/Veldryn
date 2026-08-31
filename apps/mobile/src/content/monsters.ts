@@ -1,0 +1,10 @@
+export interface MonsterDef {id:string;name:string;level:number;hp:number;attack:number;defense:number;xp:number;gold:number;secondsPerKill:number;unlockLevel:number;boss?:boolean;drops:{itemId:string;chance:number;min:number;max:number}[];}
+export const MONSTERS:MonsterDef[]=[
+{id:'MOSS_RAT',name:'Moss Rat',level:1,hp:28,attack:5,defense:2,xp:14,gold:5,secondsPerKill:7,unlockLevel:1,drops:[{itemId:'MOSS_FIBER',chance:.55,min:1,max:2},{itemId:'MOSSWRAP_GLOVES',chance:.025,min:1,max:1}]},
+{id:'FIELD_WISP',name:'Field Wisp',level:3,hp:44,attack:7,defense:3,xp:22,gold:8,secondsPerKill:9,unlockLevel:3,drops:[{itemId:'WISP_DUST',chance:.35,min:1,max:1},{itemId:'WISP_CHARM',chance:.022,min:1,max:1}]},
+{id:'ROADSIDE_BOAR',name:'Roadside Boar',level:5,hp:72,attack:10,defense:5,xp:35,gold:12,secondsPerKill:11,unlockLevel:5,drops:[{itemId:'BOAR_HIDE',chance:.5,min:1,max:2},{itemId:'BOARHIDE_BOOTS',chance:.018,min:1,max:1},{itemId:'HIDE_VEST',chance:.014,min:1,max:1}]},
+{id:'IRONWOOD_WOLF',name:'Ironwood Wolf',level:8,hp:112,attack:14,defense:8,xp:58,gold:18,secondsPerKill:14,unlockLevel:8,drops:[{itemId:'WOLF_PELT',chance:.48,min:1,max:1},{itemId:'IRONWOOD_FANG',chance:.14,min:1,max:1},{itemId:'IRONWOOD_BLADE',chance:.012,min:1,max:1}]},
+{id:'THORNLING',name:'Thornling',level:12,hp:165,attack:19,defense:10,xp:91,gold:27,secondsPerKill:17,unlockLevel:12,drops:[{itemId:'THORN_SAP',chance:.42,min:1,max:2},{itemId:'THORN_RING',chance:.012,min:1,max:1}]},
+{id:'FOREST_TROLL',name:'Forest Troll',level:17,hp:265,attack:27,defense:15,xp:150,gold:44,secondsPerKill:21,unlockLevel:17,drops:[{itemId:'TROLL_HIDE',chance:.32,min:1,max:1},{itemId:'TROLLGUARD_HELM',chance:.01,min:1,max:1}]},
+{id:'FALLEN_SENTINEL',name:'Fallen Sentinel',level:22,hp:410,attack:36,defense:22,xp:235,gold:70,secondsPerKill:27,unlockLevel:22,drops:[{itemId:'OATHGLASS_SHARD',chance:.28,min:1,max:1},{itemId:'OATHGLASS_CAPE',chance:.008,min:1,max:1}]},
+{id:'FALLEN_KNIGHT',name:'Fallen Knight',level:25,hp:180000,attack:68,defense:36,xp:3000,gold:900,secondsPerKill:75,unlockLevel:25,boss:true,drops:[{itemId:'FALLEN_KNIGHT_SIGIL',chance:1,min:1,max:1}]},];

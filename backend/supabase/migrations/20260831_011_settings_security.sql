@@ -1,0 +1,9 @@
+create table if not exists public.account_settings(account_id uuid primary key, settings_version integer not null default 1, settings jsonb not null default '{}', updated_at timestamptz not null default now());
+create table if not exists public.device_settings(account_id uuid not null, device_install_id text not null, performance jsonb not null default '{}', updated_at timestamptz not null default now(), primary key(account_id,device_install_id));
+create table if not exists public.request_idempotency(account_id uuid not null, action text not null, idempotency_key text not null, request_hash text not null, response_json jsonb, created_at timestamptz not null default now(), primary key(account_id,action,idempotency_key));
+create table if not exists public.security_events(id uuid primary key default gen_random_uuid(), account_id uuid, event_type text not null, risk_score numeric not null default 0, metadata jsonb not null default '{}', created_at timestamptz not null default now());
+alter table public.account_settings enable row level security;alter table public.device_settings enable row level security;alter table public.request_idempotency enable row level security;alter table public.security_events enable row level security;
+create policy "owner read settings" on public.account_settings for select using(account_id=auth.uid());create policy "owner update settings" on public.account_settings for update using(account_id=auth.uid()) with check(account_id=auth.uid());
+create policy "owner read device settings" on public.device_settings for select using(account_id=auth.uid());
+comment on table public.request_idempotency is 'Server-side replay/idempotency store. No direct client access.';
+comment on table public.security_events is 'Append-only server security/anti-cheat observations. No direct client access.';

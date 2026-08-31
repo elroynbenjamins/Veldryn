@@ -1,0 +1,3 @@
+import { createHash } from 'node:crypto';
+export function requestFingerprint(accountId:string,action:string,key:string,payload:unknown){if(!accountId||!action||key.length<8)throw new Error('invalid_idempotency_input');return createHash('sha256').update(`${accountId}|${action}|${key}|${JSON.stringify(payload)}`).digest().toString('hex');}
+export class ReplayGuard{private seen=new Map<string,number>();constructor(private ttlMs=300000){}accept(fp:string,now=Date.now()){for(const [k,t] of this.seen)if(t<=now)this.seen.delete(k);if(this.seen.has(fp))return false;this.seen.set(fp,now+this.ttlMs);return true;}}

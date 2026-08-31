@@ -1,0 +1,3 @@
+export interface IdleActivity { activityId:string; startedAtMs:number; lastClaimAtMs:number; ratePerHour:number; xpPerHour:number; maxOfflineHours:number; }
+export interface IdleClaim { elapsedSec:number; resourceAmount:number; xp:number; newLastClaimAtMs:number; }
+export function calculateIdleClaim(a:IdleActivity,nowMs:number):IdleClaim {if(nowMs<=a.lastClaimAtMs)throw new Error('invalid_claim_time');const maxSec=a.maxOfflineHours*3600;const elapsedSec=Math.min(maxSec,Math.floor((nowMs-a.lastClaimAtMs)/1000));return{elapsedSec,resourceAmount:Math.floor(a.ratePerHour*elapsedSec/3600),xp:Math.floor(a.xpPerHour*elapsedSec/3600),newLastClaimAtMs:a.lastClaimAtMs+elapsedSec*1000};}

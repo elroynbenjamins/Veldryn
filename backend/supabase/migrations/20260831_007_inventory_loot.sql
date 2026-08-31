@@ -1,0 +1,6 @@
+create table if not exists public.item_instances(id uuid primary key default gen_random_uuid(), character_id uuid not null references public.characters(id) on delete cascade, item_id text not null, quantity integer not null check(quantity>0), bound boolean not null default false, upgrade_rank smallint not null default 0 check(upgrade_rank between 0 and 10), enchant_rank smallint not null default 0 check(enchant_rank between 0 and 5), created_at timestamptz not null default now());
+create index if not exists item_instances_character_idx on public.item_instances(character_id);
+create table if not exists public.loot_pity(character_id uuid not null references public.characters(id) on delete cascade, pity_key text not null, misses integer not null default 0 check(misses>=0), primary key(character_id,pity_key));
+alter table public.item_instances enable row level security; alter table public.loot_pity enable row level security;
+create policy "owner read items" on public.item_instances for select using(character_id in(select id from public.characters where account_id=auth.uid()));
+create policy "owner read pity" on public.loot_pity for select using(character_id in(select id from public.characters where account_id=auth.uid()));

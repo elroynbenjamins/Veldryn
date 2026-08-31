@@ -1,0 +1,16 @@
+import {validateThreeCharacterSquad} from '../roster';
+import {resolveArena3v3,rankedBonusEligible} from '../arena';
+import {generateTrialFloor,trialCheckpointFloor} from '../trials';
+import {evaluateSquadSynergies,totalSynergyMultiplier} from '../synergy';
+import {chooseArenaOpponent} from '../seasons';
+function ok(x:boolean,m:string){if(!x)throw new Error(m)}
+const owned=[1,2,3].map(i=>({characterId:`c${i}`,accountId:'a',level:25,classId:['Ironwarden','Wayfinder','Dawnkeeper'][i-1],power:1000+i*10}));
+const valid=validateThreeCharacterSquad({accountId:'a',mode:'arena',version:1,members:[{characterId:'c1',slot:1,position:'front'},{characterId:'c2',slot:2,position:'middle'},{characterId:'c3',slot:3,position:'back'}]},owned);ok(valid.ok,'valid squad');
+const A={accountId:'a',squadVersion:1,rating:1000,fighters:[{characterId:'c1',classId:'Ironwarden',position:'front' as const,normalizedPower:1000,role:'tank' as const},{characterId:'c2',classId:'Wayfinder',position:'middle' as const,normalizedPower:1000,role:'damage' as const},{characterId:'c3',classId:'Dawnkeeper',position:'back' as const,normalizedPower:1000,role:'support' as const}]};
+const B={...A,accountId:'b',fighters:A.fighters.map((x,i)=>({...x,characterId:`d${i+1}`,normalizedPower:990}))};
+const r1=resolveArena3v3(A,B,'seed'),r2=resolveArena3v3(A,B,'seed');ok(r1.digest===r2.digest,'arena deterministic');
+ok(rankedBonusEligible(4,24)&&!rankedBonusEligible(5,24),'rank cap');
+ok(generateTrialFloor(5).boss&&generateTrialFloor(21).modifiers.length===3,'trial scaling');ok(trialCheckpointFloor(13)===11,'checkpoint');
+const syn=evaluateSquadSynergies([{classId:'i',role:'tank',position:'front'},{classId:'w',role:'damage',position:'middle'},{classId:'d',role:'support',position:'back'}]);ok(totalSynergyMultiplier(syn)<=1.08&&syn.length>=3,'synergy');
+const opp=chooseArenaOpponent({accountId:'a',rating:1200,recentOpponents:['b'],powerBand:3},[{accountId:'b',rating:1201,recentOpponents:[],powerBand:3},{accountId:'c',rating:1220,recentOpponents:[],powerBand:3}]);ok(opp?.accountId==='c','repeat avoidance');
+console.log('squad-smoke OK',r1.winnerAccountId,r1.digest.slice(0,12),syn.map(x=>x.key).join(','));

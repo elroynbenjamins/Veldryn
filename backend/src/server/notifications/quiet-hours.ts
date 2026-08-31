@@ -1,0 +1,1 @@
+function mins(v:string){const [h,m]=v.split(':').map(Number);return h*60+m;} export function isQuiet(localHHMM:string,start:string,end:string){const n=mins(localHHMM),s=mins(start),e=mins(end);return s===e?false:s<e?n>=s&&n<e:n>=s||n<e;}

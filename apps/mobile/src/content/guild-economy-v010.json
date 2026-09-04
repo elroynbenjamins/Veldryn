@@ -1,0 +1,33 @@
+{
+  "version": "v0.10",
+  "project_cost_scaling": {
+    "basis": "unlocked guild member-cap tier at project start",
+    "anti_exploit": "cost snapshot does not change if members join/leave after project start",
+    "member_cap_multipliers": {
+      "5": 0.42,
+      "10": 0.58,
+      "20": 0.88,
+      "30": 1.05
+    }
+  },
+  "contribution_efficiency": {
+    "members_1_5": 1.0,
+    "members_6_10": 0.75,
+    "members_11_20": 0.5,
+    "members_21_30": 0.35,
+    "daily_safe_contribution_hours_per_member": 0.8
+  },
+  "base_collective_hours": {
+    "small": 42,
+    "medium": 108,
+    "large": 264,
+    "capstone": 600
+  },
+  "rules": [
+    "Project cost is snapshotted from member-cap tier, not current active members.",
+    "Member count affects speed through diminishing effective contribution, not linear scaling.",
+    "Minimum-cost guilds cannot later add members to reduce an already-started project's cost.",
+    "Personal progression resources should be protected by weekly contribution recommendations, not hard donation requirements."
+  ],
+  "design_target": "5-cap and 30-cap guilds should usually finish the same upgrade band within roughly 1.5x calendar time of each other; larger guilds retain an advantage but cannot trivialize progression."
+}

@@ -1,0 +1,43 @@
+{
+  "version": "v0.11",
+  "listing_fee": {
+    "percent_of_ask": 0.01,
+    "minimum_gold": 1,
+    "refundable": false,
+    "fee_basis": "max(ask price, 50% of trusted reference price when reference exists)"
+  },
+  "sale_tax": {
+    "percent": 0.05
+  },
+  "rapid_resale_surcharge": [
+    {
+      "holding_time": "<24h",
+      "additional_percent": 0.08
+    },
+    {
+      "holding_time": "24-72h",
+      "additional_percent": 0.04
+    },
+    {
+      "holding_time": ">=72h",
+      "additional_percent": 0.0
+    }
+  ],
+  "repricing": {
+    "free_change_percent": 0.1,
+    "rule": "Price changes beyond \u00b110% charge a fresh listing fee."
+  },
+  "reference_price": {
+    "method": "7-day weighted median of completed arm's-length sales",
+    "minimum_completed_sales": 20,
+    "fallback": "vendor/reference value until enough real sales exist",
+    "soft_warning_low_multiplier": 0.35,
+    "soft_warning_high_multiplier": 3.0,
+    "hard_price_cap": false,
+    "anti_manipulation": "Ignore self-trades, linked-account trades, wash-trade clusters and extreme low-volume outliers."
+  },
+  "normal_trade_friction_percent": 0.06,
+  "instant_flip_friction_percent": 0.14,
+  "instant_flip_break_even_markup_percent": 16.3,
+  "principle": "Taxes discourage spam/flipping and provide a modest Gold sink; they are not the primary inflation control."
+}

@@ -1,0 +1,12 @@
+{
+  "version": "v0.11",
+  "per_member_project_credit": {
+    "first_0_8_effort_hours_per_day": 1.0,
+    "next_0_8_effort_hours_per_day": 0.5,
+    "above_1_6_effort_hours_per_day": 0.2
+  },
+  "resources_are_never_deleted_for_low_efficiency": "Excess donation still enters the guild vault; only same-day project credit has diminishing efficiency.",
+  "recommended_personal_surplus_share": 0.08,
+  "warning_threshold_personal_surplus_share": 0.15,
+  "purpose": "Prevent a few stockpiled accounts from instantly rushing projects while keeping donations useful."
+}

@@ -1,22 +1,295 @@
-import {CLASSES} from '../content/classes'; import {MONSTERS} from '../content/monsters'; import {itemDef} from '../content/items'; import {GATHERING,RECIPES} from '../content/skills'; import {QUESTS} from '../content/quests'; import {GameState,ClassId,RewardBundle,ItemStack,GearSlot} from './types'; import {levelFromXp} from './progression'; import {random01} from './rng';
+import {CLASSES} from '../content/classes';
+import {MONSTERS} from '../content/monsters';
+import {itemDef} from '../content/items';
+import {GATHERING,RECIPES} from '../content/skills';
+import {QUESTS} from '../content/quests';
+import {GameState,ClassId,RewardBundle,ItemStack,GearSlot,BodyPresentation} from './types';
+import {characterLevelFromXp,levelFromXp} from './progression';
+import {random01} from './rng';
+import {characterNameError} from './character-creation';
+import {CharacterCustomization,normalizeCustomization} from './customization';
+import {noviceItemId,noviceSetFor} from '../content/novice-sets';
+
 export const OFFLINE_CAP_SECONDS=8*60*60;
-export function newGame(nowMs:number):GameState{return {version:4,createdAtMs:nowMs,character:null,inventory:{stacks:[],capacity:60},activity:null,quests:QUESTS.map((q,i)=>({questId:q.id,status:i===0?'active':'locked',progress:0 as number})) as any,unlockedMonsterIds:['MOSS_RAT'],defeatedBossIds:[],skills:['mining','woodcutting','fishing','smithing','cooking'].map(skillId=>({skillId:skillId as any,xp:0,level:1})),settings:{numberMode:'abbreviated',reduceMotion:false,textScale:1}}}
-export function createCharacter(state:GameState,classId:ClassId,name='Adventurer'):GameState{const c=CLASSES.find(x=>x.id===classId);if(!c)throw new Error('Unknown class');return {...state,character:{id:'LOCAL_CHAR_1',name,classId,level:1,xp:0,gold:100,hp:c.hp,attack:c.attack,defense:c.defense,equipment:{weapon:'WORN_BLADE'}},inventory:{...state.inventory,stacks:[]}}}
-export function effectiveStats(state:GameState){const c=state.character;if(!c)return {hp:0,attack:0,defense:0,power:0};let hp=c.hp,attack=c.attack,defense=c.defense;for(const id of Object.values(c.equipment)){if(!id)continue;const d=itemDef(id);hp+=d.hp||0;attack+=d.attack||0;defense+=d.defense||0;}return {hp,attack,defense,power:Math.round(attack*1.5+defense*.8+hp*.08+c.level*2.5)}}
-export function startCombat(state:GameState,monsterId:string,nowMs:number):GameState{if(!state.character)throw new Error('Create a character first');if(!state.unlockedMonsterIds.includes(monsterId))throw new Error('Monster not unlocked');return {...state,activity:{kind:'combat',targetId:monsterId,startedAtMs:nowMs,lastClaimAtMs:nowMs}}}
+
+export function newGame(nowMs:number):GameState{return {
+  version:5,createdAtMs:nowMs,character:null,inventory:{stacks:[],capacity:30},bank:{stacks:[],capacity:120},overflow:{stacks:[],expiresAtMs:null},activity:null,
+  quests:QUESTS.map((q,i)=>({questId:q.id,status:i===0?'active':'locked',progress:0 as number})) as any,
+  unlockedMonsterIds:['MOSS_RAT'],defeatedBossIds:[],
+  skills:['mining','woodcutting','fishing','smithing','cooking'].map(skillId=>({skillId:skillId as any,xp:0,level:1})),
+  settings:{numberMode:'abbreviated',reduceMotion:false,textScale:1,autoEatThresholdPct:40,stopCombatWhenOutOfFood:true}
+}}
+
+export function createCharacter(state:GameState,classId:ClassId,name='Adventurer',bodyPresentation:BodyPresentation='male',customization?:CharacterCustomization):GameState{
+  const c=CLASSES.find(x=>x.id===classId);if(!c)throw new Error('Unknown class');
+  if(state.character)throw new Error('A character already exists in this save');
+  if(bodyPresentation!=='male'&&bodyPresentation!=='female')throw new Error('Invalid body presentation');
+  const nameError=characterNameError(name.trim()||'Adventurer');
+  if(nameError)throw new Error(nameError);
+  const equipment={weapon:c.starterEquipment.weapon};
+  let maxHp=c.hp;
+  for(const id of Object.values(equipment) as string[]){const d=itemDef(id);maxHp+=d.hp||0;}
+  return {...state,character:{id:'LOCAL_CHAR_1',name:name.trim()||'Adventurer',classId,bodyPresentation,customization:normalizeCustomization(customization),level:1,xp:0,gold:100,hp:c.hp,currentHp:maxHp,attack:c.attack,defense:c.defense,equipment,equippedFoodId:'TRAVEL_RATION'},
+    inventory:{...state.inventory,stacks:[{itemId:'TRAVEL_RATION',quantity:20}]}}
+}
+
+/** Cosmetic-only update. Equipment, stats and activity remain untouched. */
+export function updateCharacterCustomization(state:GameState,customization:CharacterCustomization):GameState{
+  if(!state.character)throw new Error('Create a character first');
+  return {...state,character:{...state.character,customization:normalizeCustomization(customization)}};
+}
+
+export function effectiveStats(state:GameState){
+  const c=state.character;if(!c)return {hp:0,attack:0,defense:0,power:0};
+  let hp=c.hp,attack=c.attack,defense=c.defense;
+  for(const id of Object.values(c.equipment)){if(!id)continue;const d=itemDef(id);hp+=d.hp||0;attack+=d.attack||0;defense+=d.defense||0;}
+  return {hp,attack,defense,power:Math.round(attack*1.5+defense*.8+hp*.08+c.level*2.5)}
+}
+
+export function startCombat(state:GameState,monsterId:string,nowMs:number):GameState{
+  if(!state.character)throw new Error('Create a character first');
+  if(!state.unlockedMonsterIds.includes(monsterId))throw new Error('Monster not unlocked');
+  const m=MONSTERS.find(x=>x.id===monsterId);if(!m)throw new Error('Unknown monster');
+  if(m.boss)throw new Error('Bosses use challengeFallenKnight');
+  return {...state,activity:{kind:'combat',targetId:monsterId,startedAtMs:nowMs,lastClaimAtMs:nowMs}}
+}
+
 export function stackItems(existing:ItemStack[],incoming:ItemStack[]):ItemStack[]{const m=new Map<string,number>();for(const s of existing)m.set(s.itemId,(m.get(s.itemId)||0)+s.quantity);for(const s of incoming)m.set(s.itemId,(m.get(s.itemId)||0)+s.quantity);return [...m.entries()].filter(([,q])=>q>0).map(([itemId,quantity])=>({itemId,quantity}));}
+
+export function usedSlots(stacks:ItemStack[]){return stacks.filter(s=>s.quantity>0).length;}
+function itemStackCap(itemId:string){const d=itemDef(itemId);return d.type==='gear'?1:9999;}
+function addBounded(stacks:ItemStack[],capacity:number,incoming:ItemStack[]){
+  let next=stacks.map(s=>({...s}));const overflow:ItemStack[]=[];
+  for(const inc of incoming){
+    let remaining=inc.quantity;
+    const cap=itemStackCap(inc.itemId);
+    let existing=next.find(s=>s.itemId===inc.itemId);
+    if(existing){
+      const room=Math.max(0,cap-existing.quantity);const add=Math.min(room,remaining);existing.quantity+=add;remaining-=add;
+    }
+    while(remaining>0 && usedSlots(next)<capacity){
+      const add=Math.min(cap,remaining);next.push({itemId:inc.itemId,quantity:add});remaining-=add;
+      // Current prototype identifies stacks by itemId, so equipment duplicates are routed to overflow rather than pretending they are one stack.
+      if(cap===1)break;
+    }
+    if(remaining>0)overflow.push({itemId:inc.itemId,quantity:remaining});
+  }
+  return {stacks:next,overflow};
+}
+function routeRewards(state:GameState,incoming:ItemStack[],nowMs:number){
+  const inv=addBounded(state.inventory.stacks,state.inventory.capacity,incoming);
+  const bank=addBounded(state.bank.stacks,state.bank.capacity,inv.overflow);
+  const overflow=stackItems(state.overflow.stacks,bank.overflow);
+  return {
+    inventory:{...state.inventory,stacks:inv.stacks},
+    bank:{...state.bank,stacks:bank.stacks},
+    overflow:{stacks:overflow,expiresAtMs:overflow.length?Math.max(state.overflow.expiresAtMs||0,nowMs+72*60*60*1000):null}
+  };
+}
+
 function consume(stacks:ItemStack[],itemId:string,quantity:number){const f=stacks.find(s=>s.itemId===itemId);if(!f||f.quantity<quantity)throw new Error('Not enough items');return stacks.map(s=>s.itemId===itemId?{...s,quantity:s.quantity-quantity}:s).filter(s=>s.quantity>0)}
-export function previewActivityReward(state:GameState,nowMs:number):RewardBundle{if(!state.activity||!state.character)return {xp:0,gold:0,items:[],kills:0,elapsedSeconds:0};const elapsed=Math.min(OFFLINE_CAP_SECONDS,Math.max(0,Math.floor((nowMs-state.activity.lastClaimAtMs)/1000)));if(state.activity.kind!=='combat'){const g=GATHERING.find(x=>x.id===state.activity!.targetId);if(!g)return {xp:0,gold:0,items:[],kills:0,elapsedSeconds:elapsed};const actions=Math.floor(elapsed/g.seconds);return {xp:actions*g.xp,gold:0,items:actions?[{itemId:g.itemId,quantity:actions*g.min}]:[],kills:actions,elapsedSeconds:elapsed};}const m=MONSTERS.find(x=>x.id===state.activity!.targetId);if(!m)throw new Error('Unknown monster');if(m.boss)return {xp:0,gold:0,items:[],kills:0,elapsedSeconds:elapsed};const stats=effectiveStats(state);const expected=m.attack*1.2+m.defense*.8+m.level*2.2;const speed=Math.max(.72,Math.min(1.5,stats.power/Math.max(1,expected)));const kills=Math.floor(elapsed/(m.secondsPerKill/speed));const items:ItemStack[]=[];for(const drop of m.drops){let qty=0;const seed=`${state.character.id}:${state.activity.lastClaimAtMs}:${m.id}:${drop.itemId}`;for(let i=0;i<kills;i++)if(random01(seed,i)<drop.chance)qty+=drop.min+Math.floor(random01(seed,i+50000)*(drop.max-drop.min+1));if(qty>0)items.push({itemId:drop.itemId,quantity:qty});}return {xp:kills*m.xp,gold:kills*m.gold,items,kills,elapsedSeconds:elapsed}}
-export function refreshQuests(state:GameState,lastCombatTarget?:string,lastKills=0):GameState{let quests=state.quests.map(q=>({...q}));if(lastCombatTarget&&lastKills>0){quests=quests.map(q=>{const d=QUESTS.find(x=>x.id===q.questId);return q.status==='active'&&d?.kind==='kills'&&d.targetId===lastCombatTarget?{...q,progress:Math.min(d.required,q.progress+lastKills)}:q})}quests=quests.map(q=>{const d=QUESTS.find(x=>x.id===q.questId);if(!d||q.status!=='active')return q;let progress=q.progress;if(d.kind==='item')progress=state.inventory.stacks.find(x=>x.itemId===d.targetId)?.quantity||0;if(d.kind==='equip')progress=Object.values(state.character?.equipment||{}).filter(Boolean).length;if(d.kind==='level')progress=state.character?.level||0;return {...q,progress:Math.min(d.required,progress),status:progress>=d.required?'complete':'active'}});return {...state,quests}}
-export function claimQuest(state:GameState,questId:string):GameState{const q=state.quests.find(x=>x.questId===questId),d=QUESTS.find(x=>x.id===questId);if(!q||!d||q.status!=='complete'||!state.character)throw new Error('Quest not claimable');let next={...state,character:{...state.character,gold:state.character.gold+d.rewardGold},inventory:{...state.inventory,stacks:d.rewardItemId?stackItems(state.inventory.stacks,[{itemId:d.rewardItemId,quantity:d.rewardItemQty||1}]):state.inventory.stacks},quests:state.quests.map(x=>x.questId===questId?{...x,status:'claimed' as const}:x)} as GameState;const idx=QUESTS.findIndex(x=>x.id===questId),nextDef=QUESTS[idx+1];if(nextDef)next={...next,quests:next.quests.map(x=>x.questId===nextDef.id&&x.status==='locked'?{...x,status:'active' as const}:x)};return refreshQuests(next)}
-export function claimActivity(state:GameState,nowMs:number){const reward=previewActivityReward(state,nowMs);if(!state.character||!state.activity)return {state,reward};let skills=state.skills;if(state.activity.kind!=='combat'){skills=skills.map(x=>x.skillId===state.activity!.kind?{...x,xp:x.xp+reward.xp,level:levelFromXp(x.xp+reward.xp)}:x);return {state:{...state,skills,inventory:{...state.inventory,stacks:stackItems(state.inventory.stacks,reward.items)},activity:{...state.activity,lastClaimAtMs:nowMs}} as GameState,reward};}const xp=state.character.xp+reward.xp,level=levelFromXp(xp),unlocked=MONSTERS.filter(m=>m.unlockLevel<=level).map(m=>m.id);const next={...state,character:{...state.character,xp,level,gold:state.character.gold+reward.gold},inventory:{...state.inventory,stacks:stackItems(state.inventory.stacks,reward.items)},activity:{...state.activity,lastClaimAtMs:nowMs},unlockedMonsterIds:[...new Set([...state.unlockedMonsterIds,...unlocked])]} as GameState;return {state:refreshQuests(next,state.activity.targetId,reward.kills),reward}}
+function stackQty(stacks:ItemStack[],itemId?:string){if(!itemId)return 0;return stacks.find(s=>s.itemId===itemId)?.quantity||0;}
+
+function simulateCombat(state:GameState,monsterId:string,elapsed:number){
+  const c=state.character!;const m=MONSTERS.find(x=>x.id===monsterId)!;const stats=effectiveStats(state);
+  const expected=m.attack*1.2+m.defense*.8+m.level*2.2;
+  const speed=Math.max(.72,Math.min(1.5,stats.power/Math.max(1,expected)));
+  const theoreticalKills=Math.floor(elapsed/(m.secondsPerKill/speed));
+  const foodId=c.equippedFoodId;const food=foodId?itemDef(foodId):undefined;
+  let foodLeft=stackQty(state.inventory.stacks,foodId),foodConsumed=0;
+  let hp=Math.min(c.currentHp||stats.hp,stats.hp),kills=0,stoppedReason='';
+  const threshold=Math.max(10,Math.min(90,state.settings.autoEatThresholdPct))/100;
+  for(let i=0;i<theoreticalKills;i++){
+    const raw=Math.max(1,m.attack-Math.floor(stats.defense*.58));
+    const damage=Math.max(1,Math.round(raw*.48 + m.level*.16));
+    hp-=damage;
+    while(food && food.heal && foodLeft>0 && hp>0 && hp/stats.hp<=threshold){
+      hp=Math.min(stats.hp,hp+food.heal);foodLeft--;foodConsumed++;
+    }
+    if(hp<=0){
+      hp=1;
+      stoppedReason=food && state.settings.stopCombatWhenOutOfFood?'Out of food / too injured':'Too injured';
+      break;
+    }
+    kills++;
+    hp=Math.min(stats.hp,hp+Math.max(1,Math.floor(stats.hp*.012))); // small between-kill recovery
+  }
+  return {kills,foodConsumed,endHp:hp,stoppedReason};
+}
+
+export function previewActivityReward(state:GameState,nowMs:number):RewardBundle{
+  if(!state.activity||!state.character)return {xp:0,gold:0,items:[],kills:0,elapsedSeconds:0};
+  const elapsed=Math.min(OFFLINE_CAP_SECONDS,Math.max(0,Math.floor((nowMs-state.activity.lastClaimAtMs)/1000)));
+  if(state.activity.kind!=='combat'){
+    const g=GATHERING.find(x=>x.id===state.activity!.targetId);if(!g)return {xp:0,gold:0,items:[],kills:0,elapsedSeconds:elapsed};
+    const actions=Math.floor(elapsed/g.seconds);
+    return {xp:actions*g.xp,gold:0,items:actions?[{itemId:g.itemId,quantity:actions*g.min}]:[],kills:actions,elapsedSeconds:elapsed};
+  }
+  const m=MONSTERS.find(x=>x.id===state.activity!.targetId);if(!m)throw new Error('Unknown monster');
+  if(m.boss)return {xp:0,gold:0,items:[],kills:0,elapsedSeconds:elapsed};
+  const sim=simulateCombat(state,m.id,elapsed);const items:ItemStack[]=[];
+  for(const drop of m.drops){let qty=0;const seed=`${state.character.id}:${state.activity.lastClaimAtMs}:${m.id}:${drop.itemId}`;for(let i=0;i<sim.kills;i++)if(random01(seed,i)<drop.chance)qty+=drop.min+Math.floor(random01(seed,i+50000)*(drop.max-drop.min+1));if(qty>0)items.push({itemId:drop.itemId,quantity:qty});}
+  return {xp:sim.kills*m.xp,gold:sim.kills*m.gold,items,kills:sim.kills,elapsedSeconds:elapsed,foodConsumed:sim.foodConsumed,endHp:sim.endHp,stoppedReason:sim.stoppedReason}
+}
+
+export function refreshQuests(state:GameState,lastCombatTarget?:string,lastKills=0):GameState{
+  let quests=state.quests.map(q=>({...q}));
+  if(lastCombatTarget&&lastKills>0){quests=quests.map(q=>{const d=QUESTS.find(x=>x.id===q.questId);return q.status==='active'&&d?.kind==='kills'&&d.targetId===lastCombatTarget?{...q,progress:Math.min(d.required,q.progress+lastKills)}:q})}
+  quests=quests.map(q=>{
+    const d=QUESTS.find(x=>x.id===q.questId);if(!d||q.status!=='active')return q;let progress=q.progress;
+    if(d.kind==='item')progress=state.inventory.stacks.find(x=>x.itemId===d.targetId)?.quantity||0;
+    if(d.kind==='equip')progress=Object.values(state.character?.equipment||{}).filter(Boolean).length;
+    if(d.kind==='level')progress=state.character?.level||0;
+    if(d.kind==='skillLevel')progress=Math.max(...state.skills.map(x=>x.level));
+    if(d.kind==='boss')progress=state.defeatedBossIds.includes(d.targetId||'')?1:0;
+    return {...q,progress:Math.min(d.required,progress),status:progress>=d.required?'complete':'active'};
+  });
+  return {...state,quests}
+}
+export function claimQuest(state:GameState,questId:string):GameState{
+  const q=state.quests.find(x=>x.questId===questId),d=QUESTS.find(x=>x.id===questId);
+  if(!q||!d||q.status!=='complete'||!state.character)throw new Error('Quest not claimable');
+  let next={...state,character:{...state.character,gold:state.character.gold+d.rewardGold},inventory:{...state.inventory,stacks:d.rewardItemId?stackItems(state.inventory.stacks,[{itemId:d.rewardItemId,quantity:d.rewardItemQty||1}]):state.inventory.stacks},quests:state.quests.map(x=>x.questId===questId?{...x,status:'claimed' as const}:x)} as GameState;
+  const idx=QUESTS.findIndex(x=>x.id===questId),nextDef=QUESTS[idx+1];if(nextDef)next={...next,quests:next.quests.map(x=>x.questId===nextDef.id&&x.status==='locked'?{...x,status:'active' as const}:x)};
+  return refreshQuests(next)
+}
+
+export function claimActivity(state:GameState,nowMs:number){
+  const reward=previewActivityReward(state,nowMs);if(!state.character||!state.activity)return {state,reward};
+  if(state.activity.kind!=='combat'){
+    const skills=state.skills.map(x=>x.skillId===state.activity!.kind?{...x,xp:x.xp+reward.xp,level:levelFromXp(x.xp+reward.xp)}:x);
+    const routed=routeRewards(state,reward.items,nowMs);
+    const next={...state,skills,...routed,activity:{...state.activity,lastClaimAtMs:nowMs}} as GameState;
+    return {state:refreshQuests(next),reward};
+  }
+  const xp=state.character.xp+reward.xp,level=characterLevelFromXp(xp);
+  const unlocked=MONSTERS.filter(m=>!m.boss&&m.unlockLevel<=level).map(m=>m.id);
+  let baseInventory=state.inventory.stacks;
+  if(reward.foodConsumed && state.character.equippedFoodId)baseInventory=consume(baseInventory,state.character.equippedFoodId,reward.foodConsumed);
+  const routed=routeRewards({...state,inventory:{...state.inventory,stacks:baseInventory}} as GameState,reward.items,nowMs);
+  const shouldStop=!!reward.stoppedReason;
+  const next={...state,...routed,character:{...state.character,xp,level,gold:state.character.gold+reward.gold,currentHp:reward.endHp??state.character.currentHp},activity:shouldStop?null:{...state.activity,lastClaimAtMs:nowMs},unlockedMonsterIds:[...new Set([...state.unlockedMonsterIds,...unlocked])]} as GameState;
+  return {state:refreshQuests(next,state.activity.targetId,reward.kills),reward}
+}
+
 export function stopActivity(state:GameState):GameState{return {...state,activity:null}}
-export function equipItem(state:GameState,itemId:string):GameState{if(!state.character)throw new Error('No character');const d=itemDef(itemId);if(d.type!=='gear'||!d.slot)throw new Error('Not gear');let stacks=consume(state.inventory.stacks,itemId,1);const old=state.character.equipment[d.slot];if(old)stacks=stackItems(stacks,[{itemId:old,quantity:1}]);return refreshQuests({...state,inventory:{...state.inventory,stacks},character:{...state.character,equipment:{...state.character.equipment,[d.slot]:itemId}}})}
-export function unequipItem(state:GameState,slot:GearSlot):GameState{if(!state.character)return state;const old=state.character.equipment[slot];if(!old)return state;const eq={...state.character.equipment};delete eq[slot];return {...state,inventory:{...state.inventory,stacks:stackItems(state.inventory.stacks,[{itemId:old,quantity:1}])},character:{...state.character,equipment:eq}}}
+export function equipItem(state:GameState,itemId:string):GameState{
+  if(!state.character)throw new Error('No character');const d=itemDef(itemId);if(d.type!=='gear'||!d.slot)throw new Error('Not gear');
+  if(d.classRestriction&&d.classRestriction!==state.character.classId)throw new Error('This gear belongs to another class');
+  let stacks=consume(state.inventory.stacks,itemId,1);const old=state.character.equipment[d.slot];if(old)stacks=stackItems(stacks,[{itemId:old,quantity:1}]);
+  const temp={...state,inventory:{...state.inventory,stacks},character:{...state.character,equipment:{...state.character.equipment,[d.slot]:itemId}}} as GameState;
+  const maxHp=effectiveStats(temp).hp;temp.character!.currentHp=Math.min(maxHp,temp.character!.currentHp+(d.hp||0));
+  return refreshQuests(temp)
+}
+export function equipFood(state:GameState,itemId:string):GameState{if(!state.character)throw new Error('No character');const d=itemDef(itemId);if(d.type!=='food')throw new Error('Not food');if(stackQty(state.inventory.stacks,itemId)<=0)throw new Error('No food available');return {...state,character:{...state.character,equippedFoodId:itemId}}}
+export function eatFood(state:GameState,itemId?:string):GameState{if(!state.character)return state;const id=itemId||state.character.equippedFoodId;if(!id)return state;const d=itemDef(id);if(d.type!=='food'||!d.heal)throw new Error('Not food');const maxHp=effectiveStats(state).hp;return {...state,inventory:{...state.inventory,stacks:consume(state.inventory.stacks,id,1)},character:{...state.character,currentHp:Math.min(maxHp,state.character.currentHp+d.heal)}}}
+export function unequipItem(state:GameState,slot:GearSlot):GameState{if(!state.character)return state;const old=state.character.equipment[slot];if(!old)return state;const eq={...state.character.equipment};delete eq[slot];const next={...state,inventory:{...state.inventory,stacks:stackItems(state.inventory.stacks,[{itemId:old,quantity:1}])},character:{...state.character,equipment:eq}} as GameState;next.character!.currentHp=Math.min(effectiveStats(next).hp,next.character!.currentHp);return next}
 export function sellItem(state:GameState,itemId:string,quantity=1):GameState{if(!state.character||quantity<=0)return state;const d=itemDef(itemId);return {...state,inventory:{...state.inventory,stacks:consume(state.inventory.stacks,itemId,quantity)},character:{...state.character,gold:state.character.gold+d.value*quantity}}}
 export function salvageItem(state:GameState,itemId:string):GameState{const d=itemDef(itemId);if(d.type!=='gear'||!d.salvage)throw new Error('Cannot salvage');return {...state,inventory:{...state.inventory,stacks:stackItems(consume(state.inventory.stacks,itemId,1),[d.salvage])}}}
 
-export function startGathering(state:GameState,targetId:string,nowMs:number):GameState{const g=GATHERING.find(x=>x.id===targetId);if(!g)throw new Error('Unknown gathering target');const skill=state.skills.find(x=>x.skillId===g.skillId);if(!skill||skill.level<g.unlockLevel)throw new Error('Skill level too low');return {...state,activity:{kind:g.skillId,targetId,startedAtMs:nowMs,lastClaimAtMs:nowMs}}}
-export function craftRecipe(state:GameState,recipeId:string):GameState{if(!state.character)throw new Error('No character');const r=RECIPES.find(x=>x.id===recipeId);if(!r)throw new Error('Unknown recipe');const sk=state.skills.find(x=>x.skillId===r.skillId);if(!sk||sk.level<r.level)throw new Error('Skill level too low');if(state.character.gold<r.gold)throw new Error('Not enough gold');let stacks=state.inventory.stacks;for(const i of r.inputs)stacks=consume(stacks,i.itemId,i.quantity);stacks=stackItems(stacks,[r.output]);const xp=sk.xp+r.xp;return {...state,character:{...state.character,gold:state.character.gold-r.gold},inventory:{...state.inventory,stacks},skills:state.skills.map(x=>x.skillId===r.skillId?{...x,xp,level:levelFromXp(xp)}:x)}}
+export function depositToBank(state:GameState,itemId:string,quantity:number):GameState{
+  if(quantity<=0)return state;
+  const invQty=stackQty(state.inventory.stacks,itemId);if(invQty<quantity)throw new Error('Not enough items in inventory');
+  const removed=consume(state.inventory.stacks,itemId,quantity);
+  const added=addBounded(state.bank.stacks,state.bank.capacity,[{itemId,quantity}]);
+  if(added.overflow.length)throw new Error('Bank is full');
+  return {...state,inventory:{...state.inventory,stacks:removed},bank:{...state.bank,stacks:added.stacks}};
+}
+export function withdrawFromBank(state:GameState,itemId:string,quantity:number):GameState{
+  if(quantity<=0)return state;
+  const bankQty=stackQty(state.bank.stacks,itemId);if(bankQty<quantity)throw new Error('Not enough items in Bank');
+  const removed=consume(state.bank.stacks,itemId,quantity);
+  const added=addBounded(state.inventory.stacks,state.inventory.capacity,[{itemId,quantity}]);
+  if(added.overflow.length)throw new Error('Inventory is full');
+  return {...state,bank:{...state.bank,stacks:removed},inventory:{...state.inventory,stacks:added.stacks}};
+}
+function combinedQty(state:GameState,itemId:string){return stackQty(state.inventory.stacks,itemId)+stackQty(state.bank.stacks,itemId);}
+function consumeInventoryThenBank(state:GameState,itemId:string,quantity:number){
+  if(combinedQty(state,itemId)<quantity)throw new Error('Not enough items');
+  const fromInv=Math.min(stackQty(state.inventory.stacks,itemId),quantity);
+  const inv=fromInv?consume(state.inventory.stacks,itemId,fromInv):state.inventory.stacks;
+  const left=quantity-fromInv;
+  const bank=left?consume(state.bank.stacks,itemId,left):state.bank.stacks;
+  return {inventory:inv,bank};
+}
+export function claimOverflowToBank(state:GameState):GameState{
+  if(!state.overflow.stacks.length)return state;
+  const added=addBounded(state.bank.stacks,state.bank.capacity,state.overflow.stacks);
+  return {...state,bank:{...state.bank,stacks:added.stacks},overflow:{stacks:added.overflow,expiresAtMs:added.overflow.length?state.overflow.expiresAtMs:null}};
+}
 
-export function challengeFallenKnight(state:GameState):{state:GameState;won:boolean;message:string}{if(!state.character)throw new Error('No character');if(state.character.level<25)return {state,won:false,message:'Reach level 25 first.'};if(state.defeatedBossIds.includes('FALLEN_KNIGHT'))return {state,won:true,message:'The Fallen Knight is already defeated.'};const st=effectiveStats(state);const score=st.power+state.character.level*3;const won=score>=120;if(!won)return {state,won:false,message:`Your squad power ${score} is not ready. Improve gear and return.`};const next={...state,defeatedBossIds:[...state.defeatedBossIds,'FALLEN_KNIGHT'],character:{...state.character,gold:state.character.gold+900,xp:state.character.xp+3000},inventory:{...state.inventory,stacks:stackItems(state.inventory.stacks,[{itemId:'FALLEN_KNIGHT_SIGIL',quantity:1}])},activity:null} as GameState;return {state:next,won:true,message:'Fallen Knight defeated. The road toward Sunscar is open.'}}
+export function startGathering(state:GameState,targetId:string,nowMs:number):GameState{const g=GATHERING.find(x=>x.id===targetId);if(!g)throw new Error('Unknown gathering target');const skill=state.skills.find(x=>x.skillId===g.skillId);if(!skill||skill.level<g.unlockLevel)throw new Error('Skill level too low');return {...state,activity:{kind:g.skillId,targetId,startedAtMs:nowMs,lastClaimAtMs:nowMs}}}
+export function craftRecipe(state:GameState,recipeId:string):GameState{
+  if(!state.character)throw new Error('No character');
+  const r=RECIPES.find(x=>x.id===recipeId);if(!r)throw new Error('Unknown recipe');
+  if(r.classId&&r.classId!==state.character.classId)throw new Error('This recipe belongs to another class');
+  if(state.character.level<(r.characterLevel??1))throw new Error(`Requires character level ${r.characterLevel}`);
+  if(r.requiresCraftedItemId&&!state.character.craftedNoviceItemIds?.includes(r.requiresCraftedItemId))throw new Error(`Craft ${itemDef(r.requiresCraftedItemId).name} first`);
+  const sk=state.skills.find(x=>x.skillId===r.skillId);if(!sk||sk.level<r.level)throw new Error('Skill level too low');
+  if(state.character.gold<r.gold)throw new Error('Not enough gold');
+  let inv=state.inventory.stacks,bank=state.bank.stacks;
+  let temp={...state,inventory:{...state.inventory,stacks:inv},bank:{...state.bank,stacks:bank}} as GameState;
+  for(const i of r.inputs){
+    const consumed=consumeInventoryThenBank(temp,i.itemId,i.quantity);
+    inv=consumed.inventory;bank=consumed.bank;
+    temp={...temp,inventory:{...temp.inventory,stacks:inv},bank:{...temp.bank,stacks:bank}};
+  }
+  const output=addBounded(inv,state.inventory.capacity,[r.output]);
+  inv=output.stacks;
+  if(output.overflow.length){
+    const b=addBounded(bank,state.bank.capacity,output.overflow);bank=b.stacks;
+    if(b.overflow.length)throw new Error('Inventory and Bank are full');
+  }
+  const xp=sk.xp+r.xp;
+  const next={...state,character:{...state.character,gold:state.character.gold-r.gold,...(r.noviceSetId?{craftedNoviceItemIds:[...new Set([...(state.character.craftedNoviceItemIds??[]),r.output.itemId])]}:{})},inventory:{...state.inventory,stacks:inv},bank:{...state.bank,stacks:bank},skills:state.skills.map(x=>x.skillId===r.skillId?{...x,xp,level:levelFromXp(xp)}:x)} as GameState;
+  return refreshQuests(next)
+}
+
+/** Equip owned novice pieces atomically. No gear is granted, discarded or taken from overflow. */
+export function equipNoviceSet(state:GameState):GameState{
+  if(!state.character)throw new Error('No character');
+  const set=noviceSetFor(state.character.classId),equipment={...state.character.equipment};
+  let next=state;const replaced:ItemStack[]=[];
+  for(const slot of set.slots){
+    const id=noviceItemId(set.classId,slot);
+    if(equipment[slot]===id)continue;
+    if(combinedQty(next,id)<1)throw new Error(`Missing ${itemDef(id).name} in Inventory or Bank`);
+    const consumed=consumeInventoryThenBank(next,id,1);
+    next={...next,inventory:{...next.inventory,stacks:consumed.inventory},bank:{...next.bank,stacks:consumed.bank}};
+    if(equipment[slot])replaced.push({itemId:equipment[slot]!,quantity:1});
+    equipment[slot]=id;
+  }
+  // Full-state artwork has no independent cape or unrelated offhand overlay.
+  for(const slot of ['cape','offhand'] as GearSlot[]){if(!set.slots.includes(slot)&&equipment[slot]){replaced.push({itemId:equipment[slot]!,quantity:1});delete equipment[slot]}}
+  const inv=addBounded(next.inventory.stacks,next.inventory.capacity,replaced);
+  const bank=addBounded(next.bank.stacks,next.bank.capacity,inv.overflow);
+  if(bank.overflow.length)throw new Error('Free Inventory or Bank space for replaced equipment');
+  next={...next,inventory:{...next.inventory,stacks:inv.stacks},bank:{...next.bank,stacks:bank.stacks},character:{...state.character,equipment}};
+  next.character!.currentHp=Math.min(state.character.currentHp,effectiveStats(next).hp);
+  return refreshQuests(next);
+}
+
+export function regionalReadiness(state:GameState){
+  if(!state.character)return {total:0,level:0,quest:0,equipment:0,food:0,mastery:0,recommended:false};
+  const level=Math.min(30,Math.floor(state.character.level/25*30));
+  const q14=state.quests.find(q=>q.questId==='QST_014');const quest=q14&&q14.status!=='locked'?15:0;
+  let equipment=0;for(const id of Object.values(state.character.equipment)){if(id)equipment+=itemDef(id).readiness||0;}equipment=Math.min(35,equipment);
+  const foodDef=state.character.equippedFoodId?itemDef(state.character.equippedFoodId):undefined;const foodQty=stackQty(state.inventory.stacks,state.character.equippedFoodId);
+  const food=Math.min(10,(foodDef?.readiness||0)+(foodQty>=10?3:foodQty>=5?2:foodQty>0?1:0));
+  const get=(id:string)=>state.skills.find(s=>s.skillId===id as any)?.level||1;
+  let mastery=0;if(get('mining')>=15)mastery+=2;if(get('smithing')>=18)mastery+=3;if(get('fishing')>=14)mastery+=2;if(get('cooking')>=16)mastery+=3;
+  mastery=Math.min(10,mastery);const total=level+quest+equipment+food+mastery;
+  return {total,level,quest,equipment,food,mastery,recommended:total>=80};
+}
+export function fallenKnightWinChance(state:GameState){const r=regionalReadiness(state).total;if(r<50)return .10;if(r<60)return .18;if(r<70)return .34;if(r<80)return .48;if(r<90)return .64;if(r<100)return .82;return .90;}
+export function challengeFallenKnight(state:GameState,nowMs=Date.now()):{state:GameState;won:boolean;message:string}{
+  if(!state.character)throw new Error('No character');
+  if(state.character.level<25)return {state,won:false,message:'Reach level 25 first.'};
+  if(state.defeatedBossIds.includes('FALLEN_KNIGHT'))return {state,won:true,message:'The Fallen Knight is already defeated.'};
+  const q14=state.quests.find(q=>q.questId==='QST_014');if(q14 && q14.status==='locked')return {state,won:false,message:'Advance the Asterfall questline before challenging the Fallen Knight.'};
+  const ready=regionalReadiness(state);const chance=fallenKnightWinChance(state);
+  const roll=random01(`${state.character.id}:FALLEN_KNIGHT:${nowMs}`,0);const won=roll<chance;
+  if(!won)return {state,won:false,message:`Fallen Knight repelled you. Readiness ${ready.total}/100 (gear ${ready.equipment}/35, food ${ready.food}/10, mastery ${ready.mastery}/10). Recommended: 80+.`};
+  const xp=state.character.xp+3000;let next={...state,defeatedBossIds:[...state.defeatedBossIds,'FALLEN_KNIGHT'],character:{...state.character,gold:state.character.gold+900,xp,level:characterLevelFromXp(xp),currentHp:effectiveStats(state).hp},inventory:{...state.inventory,stacks:stackItems(state.inventory.stacks,[{itemId:'FALLEN_KNIGHT_SIGIL',quantity:1}])},activity:null} as GameState;
+  next=refreshQuests(next);return {state:next,won:true,message:`Fallen Knight defeated at readiness ${ready.total}/100. The road toward Sunscar is open.`}
+}

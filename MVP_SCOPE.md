@@ -14,7 +14,7 @@ Create a character -> learn the Home/activity loop -> fight Asterfall monsters -
 - Sell/salvage loop.
 - Mining, Woodcutting, Fishing, Smithing, Cooking baseline loops.
 - First onboarding quest chain and Fallen Knight gate.
-- Settings/accessibility basics from workbook v4.5.
+- Settings/accessibility basics from workbook v5.6.
 - Development-only debug tools.
 - Local telemetry suitable for balance testing.
 

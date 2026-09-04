@@ -1,0 +1,62 @@
+[
+  {
+    "body": "male",
+    "view": "front",
+    "slot": "boots",
+    "path": "art-review/ironwarden/candidates/male/boots/front.png",
+    "approved": false,
+    "sourcePixelPreservation": true,
+    "sourceReconstructionExact": true,
+    "productionReady": false
+  },
+  {
+    "body": "male",
+    "view": "back",
+    "slot": "boots",
+    "path": "art-review/ironwarden/candidates/male/boots/back.png",
+    "approved": false,
+    "sourcePixelPreservation": true,
+    "sourceReconstructionExact": true,
+    "productionReady": false
+  },
+  {
+    "body": "female",
+    "view": "front",
+    "slot": "boots",
+    "path": "art-review/ironwarden/candidates/female/boots/front.png",
+    "approved": false,
+    "sourcePixelPreservation": true,
+    "sourceReconstructionExact": true,
+    "productionReady": false
+  },
+  {
+    "body": "female",
+    "view": "back",
+    "slot": "boots",
+    "path": "art-review/ironwarden/candidates/female/boots/back.png",
+    "approved": false,
+    "sourcePixelPreservation": true,
+    "sourceReconstructionExact": true,
+    "productionReady": false
+  },
+  {
+    "body": "male",
+    "view": "back",
+    "slot": "helmet",
+    "path": "art-review/ironwarden/candidates/male/helmet/back.png",
+    "approved": false,
+    "sourcePixelPreservation": true,
+    "sourceReconstructionExact": true,
+    "productionReady": false
+  },
+  {
+    "body": "female",
+    "view": "back",
+    "slot": "helmet",
+    "path": "art-review/ironwarden/candidates/female/helmet/back.png",
+    "approved": false,
+    "sourcePixelPreservation": true,
+    "sourceReconstructionExact": true,
+    "productionReady": false
+  }
+]

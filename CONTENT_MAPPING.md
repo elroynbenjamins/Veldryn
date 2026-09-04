@@ -13,7 +13,7 @@ The workbook is the design source. Runtime files are implementation representati
 | Boss definitions | `src/content/monsters.ts` initially | `content/bosses.json` | Boss gates are progression authority. |
 | Pets / Combat Units | out of offline MVP | dedicated JSON exports | Do not stub power into current solo balance. |
 | Expeditions | backend/reference only | expedition JSON exports | Not part of Milestone 1. |
-| Settings / Accessibility | local settings types/UI | `settings_schema.json` | Workbook v4.5 defaults are canonical. |
+| Settings / Accessibility | local settings types/UI | `settings_schema.json` | Workbook v5.6 defaults are canonical. |
 
 ## Import discipline
 Codex may manually encode the small MVP subset. Once content volume grows, add a deterministic workbook/export pipeline instead of maintaining large duplicate tables by hand.

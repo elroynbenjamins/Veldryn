@@ -5,7 +5,7 @@ Build the offline-first Asterfall vertical slice before expanding online systems
 
 ## Source-of-truth order
 When sources disagree, use this order and do not silently invent a fourth answer:
-1. `docs/sources/VELDRYN_Master_Design_Database_v4.5.xlsx` — canonical design/content/balance.
+1. `docs/sources/VELDRYN_Master_Design_Database_v5.6.xlsx` — canonical design/content/balance.
 2. `MVP_SCOPE.md` — canonical prototype scope and exclusions.
 3. `CONTENT_MAPPING.md` — runtime mapping for workbook data.
 4. `apps/mobile/src/core/*` — current offline gameplay contracts.

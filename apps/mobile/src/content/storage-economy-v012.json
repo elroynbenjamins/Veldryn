@@ -1,0 +1,65 @@
+{
+  "version": "v0.12",
+  "inventory": {
+    "starting_slots": 30,
+    "slot_model": "unique stacks/items; quantity does not consume extra slots until stack cap",
+    "resource_stack_cap": 9999,
+    "food_stack_cap": 9999,
+    "equipment_stack_cap": 1,
+    "equipped_items_consume_inventory_slots": false,
+    "quest_items_consume_inventory_slots": false,
+    "overflow_rule": "If an idle/offline reward cannot enter inventory, send eligible items to Bank when home-access rules allow; otherwise hold in a temporary Overflow Chest for 72h. Never silently delete earned loot.",
+    "upgrade_path": [
+      40,
+      50,
+      60,
+      75,
+      100
+    ]
+  },
+  "bank": {
+    "account_wide": true,
+    "starting_slots": 120,
+    "slot_model": "unique stacks/items",
+    "upgrade_path": [
+      160,
+      220,
+      300,
+      400,
+      500
+    ],
+    "shared_across_characters": true,
+    "craft_from_bank_at_homebase": true,
+    "market_sell_from_bank_at_homebase": true,
+    "market_buy_destination_options": [
+      "Bank",
+      "Inventory"
+    ],
+    "default_bulk_market_destination": "Bank",
+    "tabs": [
+      "All",
+      "Equipment",
+      "Materials",
+      "Food",
+      "Gems",
+      "Pets & Units",
+      "Special"
+    ],
+    "search": true,
+    "sort_options": [
+      "Name",
+      "Rarity",
+      "Value",
+      "Newest",
+      "Quantity",
+      "Equipment Slot",
+      "Item Type"
+    ]
+  },
+  "guild_storage": {
+    "separate_from_personal_bank": true,
+    "direct_personal_withdrawal": false,
+    "permissions_required": true,
+    "purpose": "shared guild projects/resources; not a bypass for personal Bank limits"
+  }
+}

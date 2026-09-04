@@ -6,7 +6,7 @@ Read these files in order before changing code:
 3. `CONTENT_MAPPING.md`
 4. `docs/implementation/TEST_CONTRACT.md`
 5. `docs/implementation/UI_DESIGN_TOKENS.md`
-6. `docs/sources/VELDRYN_Master_Design_Database_v4.5.xlsx`
+6. `docs/sources/VELDRYN_Master_Design_Database_v5.6.xlsx`
 
 ## Current task
 Polish and complete the offline Asterfall Milestone 1 without adding production online systems.

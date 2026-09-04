@@ -1,0 +1,24 @@
+import {createCharacter,newGame,claimQuest,refreshQuests} from '../src/core/game';
+import {journalEntries,questDestination} from '../src/core/quest-journal';
+import {QUESTS} from '../src/content/quests';
+function ok(value:boolean,message:string){if(!value)throw new Error(message)}
+const state=createCharacter(newGame(1000),'IRONWARDEN');
+ok(journalEntries(state,'current','').length===1,'One current chapter initially');
+ok(journalEntries(state,'locked','').length===14,'Remaining chapters locked');
+ok(journalEntries(state,'all',' MOSS ').length===1,'Search descriptions, trim and ignore case');
+ok(journalEntries(state,'claimed','').length===0,'Empty completed filter');
+ok(questDestination(QUESTS[0]).zoneId==='GREENFIELDS','Rat quest navigates to region');
+ok(questDestination(QUESTS[3]).tab==='Inventory','Equip quest destination');
+ok(questDestination(QUESTS[6]).tab==='Skills','Gatherable item destination');
+ok(questDestination(QUESTS[13]).zoneId==='KINGS_ROAD','Boss destination');
+for(const def of QUESTS)ok(!!questDestination(def).label&&!!questDestination(def).hint,'Every quest has guidance');
+const completed=refreshQuests(state,'MOSS_RAT',5);
+ok(journalEntries(completed,'current','')[0].remaining===0,'Ready quest has no remainder');
+const claimed=claimQuest(completed,'QST_001');
+ok(journalEntries(claimed,'claimed','').length===1,'Claimed chapter archived');
+ok(journalEntries(claimed,'current','')[0].def.id==='QST_002','Claim advances journal');
+ok(journalEntries(claimed,'locked','')[0].previous===QUESTS[1].name,'Locked prerequisite uses source order');
+const finished={...state,quests:state.quests.map(q=>({...q,status:'claimed' as const}))};
+ok(journalEntries(finished,'current','').length===0,'Completed campaign has no current quests');
+ok(journalEntries(finished,'claimed','').length===15,'All chapters remain browsable');
+console.log('PASS: quest filters, search, destinations, claim advancement and finished campaign');

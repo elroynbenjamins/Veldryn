@@ -1,0 +1,41 @@
+{
+  "grind_multiplier_v09": 1.2,
+  "ore_processing_rule": "All metal ores used for forged equipment/guild metal components must be smelted into bars/ingots first. Raw ore remains usable only for selling, quests, alchemy/future special recipes where explicitly defined.",
+  "ore_chains": [
+    {
+      "ore": "Copper Ore",
+      "bar": "Copper Ingot",
+      "batch": "10 ore -> 5 bars",
+      "smelt_seconds": 36
+    },
+    {
+      "ore": "Aster-Iron Ore",
+      "bar": "Aster-Iron Ingot",
+      "batch": "8 ore -> 4 bars",
+      "smelt_seconds": 42
+    },
+    {
+      "ore": "Oathstone Ore",
+      "bar": "Oathstone Ingot",
+      "batch": "6 ore -> 3 bars",
+      "smelt_seconds": 54
+    }
+  ],
+  "guild_member_models": [
+    5,
+    10,
+    20,
+    30
+  ],
+  "safe_surplus_contribution_pct": {
+    "low": 0.05,
+    "target": 0.08,
+    "high": 0.1
+  },
+  "guild_cost_bands_collective_hours": {
+    "small": 42,
+    "medium": 108,
+    "large": 264,
+    "capstone": 600
+  }
+}

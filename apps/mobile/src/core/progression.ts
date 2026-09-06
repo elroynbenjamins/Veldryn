@@ -1,5 +1,5 @@
-const SKILL_XP_SCALE = 2.15;
-const CHARACTER_XP_SCALE = 21.6;
+const SKILL_XP_SCALE = 4.3;
+const CHARACTER_XP_SCALE = 43.2;
 
 export function baseXpForNextLevel(level:number):number {
   return Math.floor(90 * Math.pow(level, 1.42) + level * 35);

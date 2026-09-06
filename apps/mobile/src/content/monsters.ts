@@ -24,4 +24,4 @@ export const MONSTERS:MonsterDef[]=[
 {id:'FALLEN_SENTINEL',name:'Fallen Sentinel',level:24,hp:475,attack:42,defense:25,xp:282,gold:17,secondsPerKill:28,unlockLevel:24,zone:"King's Road",drops:[{itemId:'OATHGLASS_SHARD',chance:.28,min:1,max:1},{itemId:'OATHGLASS_CAPE',chance:.008,min:1,max:1}]},
 {id:'OATHGLASS_REVENANT',name:'Oathglass Revenant',level:25,hp:540,attack:45,defense:28,xp:315,gold:18,secondsPerKill:30,unlockLevel:25,zone:"King's Road",drops:[{itemId:'OATHGLASS_SHARD',chance:.34,min:1,max:2},{itemId:'OATHGLASS_CAPE',chance:.006,min:1,max:1}]},
 {id:'FALLEN_KNIGHT',name:'Fallen Knight',level:25,hp:180000,attack:68,defense:36,xp:3000,gold:180,secondsPerKill:75,unlockLevel:25,zone:"King's Road",boss:true,drops:[{itemId:'FALLEN_KNIGHT_SIGIL',chance:1,min:1,max:1}]},
-];
+].map(monster=>({...monster,secondsPerKill:Math.ceil(monster.secondsPerKill*1.5)}));

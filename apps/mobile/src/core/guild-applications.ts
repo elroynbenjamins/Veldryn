@@ -1,0 +1,5 @@
+import {GameState} from './types';
+export function submitGuildApplication(state:GameState):GameState{if(!state.character)throw new Error('Create a character first');if(state.account.guildMember)throw new Error('Already in a guild');if((state.account.guildMinimumLevel??10)>state.character.level)throw new Error(`Requires character level ${state.account.guildMinimumLevel??10}`);if(state.account.guildJoinPolicy!=='apply')throw new Error('This guild does not accept applications');return {...state,account:{...state.account,guildApplicationStatus:'pending'}}}
+export function withdrawGuildApplication(state:GameState):GameState{return {...state,account:{...state.account,guildApplicationStatus:'none'}}}
+export function acceptGuildApplication(state:GameState):GameState{return {...state,account:{...state.account,guildApplicationStatus:'accepted',guildMember:true}}}
+export function declineGuildApplication(state:GameState):GameState{return {...state,account:{...state.account,guildApplicationStatus:'declined'}}}

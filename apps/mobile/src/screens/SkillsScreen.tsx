@@ -16,7 +16,7 @@ export function SkillsScreen({state,onGather,onCraft,onCharacter,initialMode='ga
     <Text style={s.h}>Skills & Crafting</Text>
     <View style={s.row}>{(['gathering','crafting','novice'] as const).map(value=><View style={s.flex} key={value}><GameButton title={value==='gathering'?'Gathering':value==='novice'?'Novice set':'Crafting'} tone={mode===value?'primary':'secondary'} onPress={()=>setMode(value)}/></View>)}</View>
     {mode==='novice'&&<NoviceWorkshop state={state} onCraft={onCraft} onCharacter={onCharacter}/>}
-    {mode==='crafting'&&<><Text style={s.sub}>Materials are taken from Inventory first, then Bank. Crafting is instant in this prototype.</Text><GameButton title={readyOnly?'Showing craftable · Show all':'Show only craftable'} tone="secondary" onPress={()=>setReadyOnly(!readyOnly)}/></>}
+    {mode==='crafting'&&<><Text style={s.sub}>Materials are taken from Inventory first, then Bank. Gear costs and XP requirements follow the slower Asterfall progression curve.</Text><GameButton title={readyOnly?'Showing craftable · Show all':'Show only craftable'} tone="secondary" onPress={()=>setReadyOnly(!readyOnly)}/></>}
     {mode!=='novice'&&state.skills.filter(sk=>mode==='gathering'?GATHERING.some(g=>g.skillId===sk.skillId):RECIPES.some(r=>r.skillId===sk.skillId&&!r.noviceSetId)).map(sk=>{
       const recipes=RECIPES.filter(r=>r.skillId===sk.skillId&&!r.noviceSetId).map(recipe=>({recipe,status:recipeAvailability(state,recipe.id)})).filter(({status})=>!readyOnly||status.ready);
       return <View key={sk.skillId} style={s.group}><Text style={s.name}>{sk.skillId.toUpperCase()} · Level {sk.level}</Text><Text style={s.sub}>{sk.xp.toLocaleString()} XP</Text>

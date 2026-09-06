@@ -35,18 +35,15 @@ export function resolveEquipmentLayers(state:GameState,registry:LayerRegistry,vi
   // Shared anatomy/hair is reused by every class; equipment stays class-bound.
   const candidates=registry.layers.filter(layer=>(layer.classId===character.classId||layer.classId==='shared')&&layer.body===(character.bodyPresentation??'male'));
   const selected:LayerAsset[]=[],missing=[...errors];
-  const base=candidates.find(layer=>layer.slot==='body'&&layer.classId===character.classId)??candidates.find(layer=>layer.slot==='body'&&layer.classId==='shared');
-  if(base)selected.push(base);else missing.push('Neutral body layer');
   for(const slot of VISUAL_SLOTS){
+    if(slot==='helmet'&&character.customization?.showHelmet===false)continue;
     const id=character.equipment[slot];if(!id)continue;
     const layer=candidates.find(layer=>layer.slot===slot&&layer.itemId===id);
     if(layer)selected.push(layer);else missing.push(`${slot}: ${itemDef(id).name}`);
   }
-  const hair=candidates.find(layer=>layer.slot==='hair'&&layer.classId===character.classId)??candidates.find(layer=>layer.slot==='hair'&&layer.classId==='shared');
-  if(!selected.some(layer=>layer.hidesHair)){if(hair)selected.push(hair);else missing.push('Default hair layer')}
   const order=view==='front'?frontOrder:backOrder;
   selected.sort((a,b)=>order[a.slot]-order[b.slot]||a.id.localeCompare(b.id));
-  return {ready:missing.length===0,missing,layers:missing.length?[]:selected.map(layer=>({id:layer.id,source:layer[view],slot:layer.slot}))};
+  return {ready:missing.length===0,missing,hidesHair:selected.some(layer=>layer.hidesHair),layers:selected.map(layer=>({id:layer.id,source:layer[view],slot:layer.slot}))};
 }
 /** Preview only: does not consume, grant or equip an item in the original save. */
 export function previewEquipment(state:GameState,id:string):GameState{

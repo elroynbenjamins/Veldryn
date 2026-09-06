@@ -6,7 +6,7 @@ import {CharacterCustomization,DEFAULT_CUSTOMIZATION,HAIR_STYLES,SKIN_TONES} fro
 import {GameButton} from '../components/GameButton';
 import {CLASSES,ClassDef} from '../content/classes';
 import {itemDef} from '../content/items';
-import {BodyPresentation,ClassId} from '../core/types';
+import {BodyPresentation,ClassId,GameState} from '../core/types';
 import {carouselIndex,characterNameError} from '../core/character-creation';
 import {noviceSetFor} from '../content/novice-sets';
 import {C,radii,spacing,touchTargetPreferred,typography} from '../theme/theme';
@@ -22,7 +22,7 @@ const art:Record<ClassId,ImageSourcePropType>={
 };
 const roleColor={Tank:C.info,Support:C.good,Damage:C.warning};
 
-export function ClassSelectScreen({onSelect}:{onSelect:(id:ClassId,name:string,body:BodyPresentation,customization:CharacterCustomization)=>Promise<void>|void}){
+export function ClassSelectScreen({language='en',onLanguage,onSelect}:{language?:GameState['settings']['language'];onLanguage?:(language:GameState['settings']['language'])=>void;onSelect:(id:ClassId,name:string,body:BodyPresentation,customization:CharacterCustomization)=>Promise<void>|void}){
   const [customization,setCustomization]=useState<CharacterCustomization>({...DEFAULT_CUSTOMIZATION});
   const submitting=useRef(false);
   const [saving,setSaving]=useState(false),[saveError,setSaveError]=useState('');
@@ -51,7 +51,8 @@ export function ClassSelectScreen({onSelect}:{onSelect:(id:ClassId,name:string,b
     finally{submitting.current=false;setSaving(false)}
   }
   return <><ScrollView ref={scroll} contentContainerStyle={s.root} keyboardShouldPersistTaps="handled">
-    <Text style={s.logo}>VELDRYN</Text><Text style={s.kicker}>CREATE YOUR FIRST CHARACTER</Text>
+    <Text style={s.logo}>VELDRYN</Text><Text style={s.kicker}>{language==='nl'?'MAAK JE EERSTE PERSONAGE':language==='de'?'ERSTELLE DEINEN ERSTEN CHARAKTER':'CREATE YOUR FIRST CHARACTER'}</Text>
+    <View style={s.choiceRow}>{([['en','English'],['nl','Nederlands'],['de','Deutsch']] as const).map(([id,label])=><View key={id} style={s.flex}><GameButton title={label} tone={language===id?'primary':'secondary'} onPress={()=>onLanguage?.(id)}/></View>)}</View>
     <View accessibilityRole="progressbar" accessibilityValue={{min:1,max:STEPS.length,now:STEPS.indexOf(step)+1}} style={s.stepRow}>{STEPS.map((item,i)=><View key={item} style={s.stepWrap}><View style={[s.stepDot,STEPS.indexOf(step)>=i&&s.stepDotActive]}><Text style={[s.stepNumber,STEPS.indexOf(step)>=i&&s.stepNumberActive]}>{i+1}</Text></View><Text style={[s.stepLabel,item===step&&s.stepLabelActive]}>{item.toUpperCase()}</Text></View>)}</View>
     {step==='identity'&&<View style={s.section}>
       <Text style={s.heading}>Who enters Asterfall?</Text><Text style={s.description}>Choose the identity shown in your local save. Appearance can be reviewed from both sides before creation.</Text>

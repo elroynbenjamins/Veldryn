@@ -8,11 +8,13 @@ import {Panel} from '../components/Panel';
 import {GameButton} from '../components/GameButton';
 import {StatBar} from '../components/StatBar';
 import {C,spacing,typography} from '../theme/theme';
+import {seasonalQuestBoard} from '../core/seasonal-quests';
 
 export function QuestScreen({state,onClaim,onNavigate}:{state:GameState;onClaim:(id:string)=>void;onNavigate:(destination:QuestDestination)=>void}){
   const [filter,setFilter]=useState<JournalFilter>('current'),[query,setQuery]=useState('');
   const [notice,setNotice]=useState(''),[error,setError]=useState('');
   const entries=journalEntries(state,filter,query);
+  const weekly=seasonalQuestBoard(state,'weekly'),monthly=seasonalQuestBoard(state,'monthly');
   const claimed=QUESTS.filter(def=>state.quests.some(q=>q.questId===def.id&&q.status==='claimed')).length;
   const ready=state.quests.filter(q=>q.status==='complete').length;
   function claim(id:string){
@@ -24,6 +26,7 @@ export function QuestScreen({state,onClaim,onNavigate}:{state:GameState;onClaim:
     <Panel><Text style={s.title}>{claimed===QUESTS.length?'Asterfall campaign complete':'Your Asterfall journey'}</Text><StatBar label="Chapters claimed" current={claimed} max={QUESTS.length}/><Text style={s.sub}>{claimed===QUESTS.length?'Every chapter reward has been claimed. You can revisit hunts, crafting, and equipment upgrades.':`${ready} reward${ready===1?'':'s'} ready to claim. Claim each chapter to unlock the next.`}</Text></Panel>
     <ScrollView horizontal contentContainerStyle={s.row}>{(['current','all','claimed','locked'] as const).map(value=><GameButton key={value} title={value==='current'?'Current':value==='all'?'All':value==='claimed'?'Completed':'Locked'} tone={filter===value?'primary':'secondary'} onPress={()=>setFilter(value)}/>)}</ScrollView>
     <TextInput accessibilityLabel="Search quests" style={s.input} placeholder="Search quest names or objectives…" placeholderTextColor={C.muted} value={query} onChangeText={setQuery}/>
+    <Panel><Text style={s.title}>Seasonal contracts</Text><Text style={s.sub}>Class-aligned layouts rotate each Monday and at the start of each month. Progress is based on your existing adventure save.</Text><Text style={s.seasonLabel}>WEEKLY · {weekly[0]?.className}</Text>{weekly.map(quest=><View key={quest.id} style={s.seasonQuest}><Text style={s.seasonName}>{quest.name}</Text><Text style={s.sub}>{quest.description}</Text><StatBar label={`${quest.progress}/${quest.required} progress`} current={quest.progress} max={quest.required}/><Text style={s.reward}>+{quest.rewardGold} gold · +{quest.rewardXp} XP</Text></View>)}<Text style={s.seasonLabel}>MONTHLY · {monthly[0]?.className}</Text>{monthly.map(quest=><View key={quest.id} style={s.seasonQuest}><Text style={s.seasonName}>{quest.name}</Text><Text style={s.sub}>{quest.description}</Text><StatBar label={`${quest.progress}/${quest.required} progress`} current={quest.progress} max={quest.required}/><Text style={s.reward}>+{quest.rewardGold} gold · +{quest.rewardXp} XP</Text></View>)}</Panel>
     {!!notice&&<Text accessibilityLiveRegion="polite" style={s.notice}>{notice}</Text>}{!!error&&<Text accessibilityRole="alert" style={s.error}>{error}</Text>}
     {entries.length===0&&<Panel><Text style={s.title}>No matching chapters</Text><Text style={s.sub}>{filter==='current'&&claimed===QUESTS.length?'You have completed this journal. View Completed to revisit it.':'Try another search or view all chapters.'}</Text><GameButton title="Show all chapters" onPress={()=>{setQuery('');setFilter('all')}}/></Panel>}
     {entries.map(({def,quest,chapter,remaining,previous})=>{
@@ -39,4 +42,4 @@ export function QuestScreen({state,onClaim,onNavigate}:{state:GameState;onClaim:
     })}
   </ScrollView>;
 }
-const s=StyleSheet.create({root:{padding:spacing.lg,gap:spacing.md},h:{...typography.hero,color:C.text},title:{...typography.title,color:C.text},sub:{...typography.body,color:C.muted},chapter:{...typography.caption,color:C.accent,fontWeight:'900'},hint:{...typography.body,color:C.info},reward:{...typography.bodyStrong,color:C.accent},notice:{...typography.bodyStrong,color:C.good},error:{...typography.body,color:C.bad},row:{flexDirection:'row',gap:spacing.sm},input:{minHeight:48,borderWidth:1,borderColor:C.line,borderRadius:10,paddingHorizontal:spacing.md,color:C.text,backgroundColor:C.panel,fontSize:16}});
+const s=StyleSheet.create({root:{padding:spacing.lg,gap:spacing.md},h:{...typography.hero,color:C.text},title:{...typography.title,color:C.text},sub:{...typography.body,color:C.muted},chapter:{...typography.caption,color:C.accent,fontWeight:'900'},hint:{...typography.body,color:C.info},reward:{...typography.bodyStrong,color:C.accent},notice:{...typography.bodyStrong,color:C.good},error:{...typography.body,color:C.bad},seasonLabel:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:1,marginTop:spacing.sm},seasonQuest:{gap:spacing.xs,borderTopWidth:1,borderColor:C.line,paddingTop:spacing.sm},seasonName:{...typography.bodyStrong,color:C.text},row:{flexDirection:'row',gap:spacing.sm},input:{minHeight:48,borderWidth:1,borderColor:C.line,borderRadius:10,paddingHorizontal:spacing.md,color:C.text,backgroundColor:C.panel,fontSize:16}});

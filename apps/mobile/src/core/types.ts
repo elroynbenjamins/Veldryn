@@ -11,7 +11,7 @@ export interface CharacterState {
   equippedFoodId?:string;
   bodyPresentation?:BodyPresentation;
   customization?:import('./customization').CharacterCustomization;
-  craftedNoviceItemIds?:string[];
+  craftedNoviceItemIds?:string[]; profileTitle?:string; profileBackgroundId?:string; profileAppearanceMode?:'live'|'showcase'; profileEquipmentSnapshot?:Partial<Record<GearSlot,string>>;
 }
 export interface ItemStack { itemId:string; quantity:number; }
 export interface InventoryState { stacks:ItemStack[]; capacity:number; }
@@ -20,9 +20,10 @@ export interface OverflowState { stacks:ItemStack[]; expiresAtMs:number|null; }
 export interface ActiveActivity { kind:ActivityKind; targetId:string; startedAtMs:number; lastClaimAtMs:number; }
 export interface QuestState { questId:string; status:'locked'|'active'|'complete'|'claimed'; progress:number; }
 export interface GameState {
-  version:5; createdAtMs:number; character:CharacterState|null; inventory:InventoryState; bank:BankState; overflow:OverflowState; activity:ActiveActivity|null;
+  version:6; createdAtMs:number; character:CharacterState|null; inventory:InventoryState; bank:BankState; overflow:OverflowState; activity:ActiveActivity|null;
   quests:QuestState[]; unlockedMonsterIds:string[]; defeatedBossIds:string[]; skills:SkillState[];
-  settings:{numberMode:'abbreviated'|'exact';reduceMotion:boolean;textScale:1|1.15|1.3|1.5;autoEatThresholdPct:number;stopCombatWhenOutOfFood:boolean;};
+  account:{createdCharacterCount:number;guildMember:boolean;patronTier:'none'|'bloom'|'crown';guildContribution?:number;guildProjectProgress?:number;guildBossHp?:number;guildProjectClaimed?:boolean;guildJoinPolicy?:'open'|'apply'|'invite';guildMinimumLevel?:number;guildApplicationStatus?:'none'|'pending'|'accepted'|'declined'};
+  settings:{language:'en'|'nl'|'de';numberMode:'abbreviated'|'exact';reduceMotion:boolean;textScale:1|1.15|1.3|1.5;autoEatThresholdPct:number;stopCombatWhenOutOfFood:boolean;autoJoinWorldChat?:boolean;defaultWorldChat?:1|2|3|4;};
 }
 export interface RewardBundle {
   xp:number; gold:number; items:ItemStack[]; kills:number; elapsedSeconds:number;

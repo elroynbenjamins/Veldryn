@@ -1,8 +1,10 @@
 import { ClassId,GearSlot } from '../core/types';
+import {ItemRarity} from '../core/item-rarity';
 import {NOVICE_ITEMS} from './novice-sets';
 export interface ItemDef {
   id:string; name:string; type:'material'|'gear'|'quest'|'food'; slot?:GearSlot;
   attack?:number; defense?:number; hp?:number; heal?:number; readiness?:number;
+  rarity?:ItemRarity; passive?:string;
   value:number; salvage?:{itemId:string;quantity:number};
   classRestriction?:ClassId; noviceSetId?:string;
 }
@@ -50,7 +52,7 @@ export const ITEMS:ItemDef[]=[
 {id:'OATHSTONE_INGOT',name:'Oathstone Ingot',type:'material',value:145},
 {id:'REINFORCED_FITTING',name:'Reinforced Fitting',type:'material',value:155},
 {id:'ROASTED_OATHSCALE',name:'Roasted Oathscale Pike',type:'food',heal:175,readiness:8,value:90},
-{id:'OATHSTONE_WARDPLATE',name:'Oathstone Wardplate',type:'gear',slot:'chest',defense:15,hp:105,readiness:12,value:680},
+{id:'OATHSTONE_WARDPLATE',name:'Oathstone Wardplate',type:'gear',slot:'chest',defense:15,hp:105,readiness:12,value:680,rarity:'epic',passive:'Stonewall: +4% damage mitigation.'},
 
 {id:'ASTER_IRON_ORE',name:'Aster-Iron Ore',type:'material',value:14},
 {id:'GREENWOOD_LOG',name:'Greenwood Log',type:'material',value:4},
@@ -59,10 +61,12 @@ export const ITEMS:ItemDef[]=[
 {id:'RIVER_EEL',name:'River Eel',type:'material',value:15},
 
 {id:'COPPER_BLADE',name:'Copper Blade',type:'gear',slot:'weapon',attack:7,readiness:4,value:75},
-{id:'ASTER_IRON_BLADE',name:'Aster-Iron Blade',type:'gear',slot:'weapon',attack:13,readiness:8,value:220},
-{id:'ASTER_IRON_HELM',name:'Aster-Iron Helm',type:'gear',slot:'helmet',defense:7,hp:38,readiness:6,value:195},
-{id:'ASTER_IRON_CHEST',name:'Aster-Iron Cuirass',type:'gear',slot:'chest',defense:11,hp:72,readiness:9,value:310},
+{id:'ASTER_IRON_BLADE',name:'Aster-Iron Blade',type:'gear',slot:'weapon',attack:13,readiness:8,value:220,rarity:'rare'},
+{id:'ASTER_IRON_HELM',name:'Aster-Iron Helm',type:'gear',slot:'helmet',defense:7,hp:38,readiness:6,value:195,rarity:'rare'},
+{id:'ASTER_IRON_CHEST',name:'Aster-Iron Cuirass',type:'gear',slot:'chest',defense:11,hp:72,readiness:9,value:310,rarity:'rare'},
 {id:'ASTER_IRON_LEGS',name:'Aster-Iron Legguards',type:'gear',slot:'legs',defense:8,hp:48,readiness:7,value:245},
+{id:'ASTER_IRON_BOOTS',name:'Aster-Iron Greaves',type:'gear',slot:'boots',defense:5,hp:30,readiness:6,value:205,salvage:{itemId:'ASTER_IRON_INGOT',quantity:3}},
+{id:'ASTER_IRON_GLOVES',name:'Aster-Iron Gauntlets',type:'gear',slot:'gloves',defense:5,hp:24,readiness:6,value:195,salvage:{itemId:'ASTER_IRON_INGOT',quantity:3}},
 {id:'IRONWOOD_GUARD',name:'Ironwood Guard',type:'gear',slot:'offhand',defense:7,hp:34,readiness:6,value:185},
 {id:'IRONWOOD_LONGBOW',name:'Ironwood Longbow',type:'gear',slot:'weapon',attack:12,readiness:8,value:220},
 {id:'IRONWOOD_STAFF',name:'Ironwood Runestaff',type:'gear',slot:'weapon',attack:10,hp:28,readiness:8,value:220},

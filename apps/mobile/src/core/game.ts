@@ -9,15 +9,38 @@ import {random01} from './rng';
 import {characterNameError} from './character-creation';
 import {CharacterCustomization,normalizeCustomization} from './customization';
 import {noviceItemId,noviceSetFor} from '../content/novice-sets';
+import {classCombatStyle} from './class-combat';
 
-export const OFFLINE_CAP_SECONDS=8*60*60;
+export const BASE_OFFLINE_CAP_HOURS=24;
+export const MAX_OFFLINE_CAP_HOURS=36;
+/** Base cap retained for content/tests; actual saves use offlineCapSeconds(state). */
+export const OFFLINE_CAP_SECONDS=BASE_OFFLINE_CAP_HOURS*60*60;
+
+export function offlineCapBreakdown(state:GameState){
+  const setComplete=!!state.character&&noviceSetFor(state.character.classId).slots.every(slot=>state.character!.craftedNoviceItemIds?.includes(noviceItemId(state.character!.classId,slot)));
+  const questMilestone=state.quests.some(q=>q.questId==='QST_005'&&q.status==='claimed');
+  const sources=[
+    {id:'class_set',name:'Complete class set',hours:setComplete?2:0,earned:setComplete},
+    {id:'quest_milestone',name:'Claim chapter 5',hours:questMilestone?2:0,earned:questMilestone},
+    {id:'second_character',name:'Create second character',hours:state.account.createdCharacterCount>=2?2:0,earned:state.account.createdCharacterCount>=2},
+    {id:'third_character',name:'Create third character',hours:state.account.createdCharacterCount>=3?2:0,earned:state.account.createdCharacterCount>=3},
+    {id:'guild',name:'Join a guild',hours:state.account.guildMember?2:0,earned:state.account.guildMember},
+    {id:'first_boss',name:'Defeat first boss',hours:state.defeatedBossIds.length?2:0,earned:state.defeatedBossIds.length>0},
+    {id:'bloom_patron',name:'Bloom Patron',hours:state.account.patronTier==='bloom'||state.account.patronTier==='crown'?2:0,earned:state.account.patronTier==='bloom'||state.account.patronTier==='crown'},
+    {id:'crown_patron',name:'Crown Patron',hours:state.account.patronTier==='crown'?2:0,earned:state.account.patronTier==='crown'},
+  ];
+  const earnedHours=sources.reduce((sum,source)=>sum+source.hours,0),hours=Math.min(MAX_OFFLINE_CAP_HOURS,BASE_OFFLINE_CAP_HOURS+earnedHours);
+  return {baseHours:BASE_OFFLINE_CAP_HOURS,maxHours:MAX_OFFLINE_CAP_HOURS,hours,sources};
+}
+export function offlineCapSeconds(state:GameState){return offlineCapBreakdown(state).hours*60*60}
 
 export function newGame(nowMs:number):GameState{return {
-  version:5,createdAtMs:nowMs,character:null,inventory:{stacks:[],capacity:30},bank:{stacks:[],capacity:120},overflow:{stacks:[],expiresAtMs:null},activity:null,
+  version:6,createdAtMs:nowMs,character:null,inventory:{stacks:[],capacity:30},bank:{stacks:[],capacity:120},overflow:{stacks:[],expiresAtMs:null},activity:null,
   quests:QUESTS.map((q,i)=>({questId:q.id,status:i===0?'active':'locked',progress:0 as number})) as any,
   unlockedMonsterIds:['MOSS_RAT'],defeatedBossIds:[],
   skills:['mining','woodcutting','fishing','smithing','cooking'].map(skillId=>({skillId:skillId as any,xp:0,level:1})),
-  settings:{numberMode:'abbreviated',reduceMotion:false,textScale:1,autoEatThresholdPct:40,stopCombatWhenOutOfFood:true}
+  account:{createdCharacterCount:1,guildMember:false,patronTier:'none',guildContribution:0,guildProjectProgress:0,guildBossHp:100000,guildProjectClaimed:false,guildJoinPolicy:'open',guildMinimumLevel:10,guildApplicationStatus:'none'},
+  settings:{language:'en',numberMode:'abbreviated',reduceMotion:false,textScale:1,autoEatThresholdPct:40,stopCombatWhenOutOfFood:true,autoJoinWorldChat:true,defaultWorldChat:1}
 }}
 
 export function createCharacter(state:GameState,classId:ClassId,name='Adventurer',bodyPresentation:BodyPresentation='male',customization?:CharacterCustomization):GameState{
@@ -29,7 +52,7 @@ export function createCharacter(state:GameState,classId:ClassId,name='Adventurer
   const equipment={weapon:c.starterEquipment.weapon};
   let maxHp=c.hp;
   for(const id of Object.values(equipment) as string[]){const d=itemDef(id);maxHp+=d.hp||0;}
-  return {...state,character:{id:'LOCAL_CHAR_1',name:name.trim()||'Adventurer',classId,bodyPresentation,customization:normalizeCustomization(customization),level:1,xp:0,gold:100,hp:c.hp,currentHp:maxHp,attack:c.attack,defense:c.defense,equipment,equippedFoodId:'TRAVEL_RATION'},
+  return {...state,character:{id:'LOCAL_CHAR_1',name:name.trim()||'Adventurer',classId,bodyPresentation,customization:normalizeCustomization(customization),profileTitle:'New Adventurer',profileBackgroundId:'asterfall-night',profileAppearanceMode:'live',profileEquipmentSnapshot:{},level:1,xp:0,gold:100,hp:c.hp,currentHp:maxHp,attack:c.attack,defense:c.defense,equipment,equippedFoodId:'TRAVEL_RATION'},
     inventory:{...state.inventory,stacks:[{itemId:'TRAVEL_RATION',quantity:20}]}}
 }
 
@@ -43,6 +66,8 @@ export function effectiveStats(state:GameState){
   const c=state.character;if(!c)return {hp:0,attack:0,defense:0,power:0};
   let hp=c.hp,attack=c.attack,defense=c.defense;
   for(const id of Object.values(c.equipment)){if(!id)continue;const d=itemDef(id);hp+=d.hp||0;attack+=d.attack||0;defense+=d.defense||0;}
+  const set=noviceSetFor(c.classId),complete=set.slots.every(slot=>c.equipment[slot]===noviceItemId(c.classId,slot));
+  if(complete){hp+=set.setBonus.hp;attack+=set.setBonus.attack;defense+=set.setBonus.defense;}
   return {hp,attack,defense,power:Math.round(attack*1.5+defense*.8+hp*.08+c.level*2.5)}
 }
 
@@ -92,8 +117,9 @@ function stackQty(stacks:ItemStack[],itemId?:string){if(!itemId)return 0;return 
 
 function simulateCombat(state:GameState,monsterId:string,elapsed:number){
   const c=state.character!;const m=MONSTERS.find(x=>x.id===monsterId)!;const stats=effectiveStats(state);
+  const style=classCombatStyle(c.classId);
   const expected=m.attack*1.2+m.defense*.8+m.level*2.2;
-  const speed=Math.max(.72,Math.min(1.5,stats.power/Math.max(1,expected)));
+  const speed=Math.max(.72,Math.min(1.5,stats.power/Math.max(1,expected)))*style.speedMultiplier;
   const theoreticalKills=Math.floor(elapsed/(m.secondsPerKill/speed));
   const foodId=c.equippedFoodId;const food=foodId?itemDef(foodId):undefined;
   let foodLeft=stackQty(state.inventory.stacks,foodId),foodConsumed=0;
@@ -101,7 +127,7 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number){
   const threshold=Math.max(10,Math.min(90,state.settings.autoEatThresholdPct))/100;
   for(let i=0;i<theoreticalKills;i++){
     const raw=Math.max(1,m.attack-Math.floor(stats.defense*.58));
-    const damage=Math.max(1,Math.round(raw*.48 + m.level*.16));
+    const damage=Math.max(1,Math.round((raw*.48 + m.level*.16)*style.damageTakenMultiplier));
     hp-=damage;
     while(food && food.heal && foodLeft>0 && hp>0 && hp/stats.hp<=threshold){
       hp=Math.min(stats.hp,hp+food.heal);foodLeft--;foodConsumed++;
@@ -112,14 +138,14 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number){
       break;
     }
     kills++;
-    hp=Math.min(stats.hp,hp+Math.max(1,Math.floor(stats.hp*.012))); // small between-kill recovery
+    hp=Math.min(stats.hp,hp+Math.max(1,Math.floor(stats.hp*style.recoveryPct)));
   }
   return {kills,foodConsumed,endHp:hp,stoppedReason};
 }
 
 export function previewActivityReward(state:GameState,nowMs:number):RewardBundle{
   if(!state.activity||!state.character)return {xp:0,gold:0,items:[],kills:0,elapsedSeconds:0};
-  const elapsed=Math.min(OFFLINE_CAP_SECONDS,Math.max(0,Math.floor((nowMs-state.activity.lastClaimAtMs)/1000)));
+  const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,Math.floor((nowMs-state.activity.lastClaimAtMs)/1000)));
   if(state.activity.kind!=='combat'){
     const g=GATHERING.find(x=>x.id===state.activity!.targetId);if(!g)return {xp:0,gold:0,items:[],kills:0,elapsedSeconds:elapsed};
     const actions=Math.floor(elapsed/g.seconds);

@@ -1,7 +1,7 @@
 import { itemDef } from '../content/items';
 import { MONSTERS } from '../content/monsters';
 import { GameState, ItemStack } from '../core/types';
-import { levelFromXp, totalXpAtLevel } from '../core/progression';
+import { characterLevelFromXp, characterTotalXpAtLevel } from '../core/progression';
 import { stackItems } from '../core/game';
 
 function requireCharacter(state: GameState) {
@@ -12,7 +12,7 @@ function requireCharacter(state: GameState) {
 export function debugSetLevel(state: GameState, level: number): GameState {
   const c = requireCharacter(state);
   const clamped = Math.max(1, Math.min(100, Math.floor(level)));
-  const xp = totalXpAtLevel(clamped);
+  const xp = characterTotalXpAtLevel(clamped);
   const unlocked = MONSTERS.filter(m => m.unlockLevel <= clamped).map(m => m.id);
   return { ...state, character: { ...c, level: clamped, xp }, unlockedMonsterIds: [...new Set([...state.unlockedMonsterIds, ...unlocked])] };
 }
@@ -20,7 +20,7 @@ export function debugSetLevel(state: GameState, level: number): GameState {
 export function debugAddXp(state: GameState, amount: number): GameState {
   const c = requireCharacter(state);
   const xp = Math.max(0, c.xp + Math.floor(amount));
-  return { ...state, character: { ...c, xp, level: levelFromXp(xp) } };
+  return { ...state, character: { ...c, xp, level: characterLevelFromXp(xp) } };
 }
 
 export function debugAddGold(state: GameState, amount: number): GameState {

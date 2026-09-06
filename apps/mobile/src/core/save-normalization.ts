@@ -4,7 +4,7 @@ import {CLASSES} from '../content/classes';
 import {normalizeCustomization} from './customization';
 
 export function normalizeSave(input:any):GameState{
-  if(!input || ![4,5].includes(input.version)) throw new Error('Unsupported VELDRYN save version');
+  if(!input || ![4,5,6].includes(input.version)) throw new Error('Unsupported VELDRYN save version');
   const existing=new Map<string,any>((input.quests||[]).map((q:any)=>[q.questId,q]));
   let priorClaimed=true;
   const quests=QUESTS.map((def,index)=>{
@@ -22,10 +22,14 @@ export function normalizeSave(input:any):GameState{
     craftedNoviceItemIds:Array.isArray(input.character.craftedNoviceItemIds)?[...new Set(input.character.craftedNoviceItemIds.filter((id:unknown)=>typeof id==='string'))]:[],
     currentHp:Math.max(1,Number(input.character.currentHp ?? input.character.hp ?? classDef?.hp ?? 100)),
     equippedFoodId:input.character.equippedFoodId
+    ,profileTitle:typeof input.character.profileTitle==='string'&&input.character.profileTitle.trim()?input.character.profileTitle.trim():'New Adventurer'
+    ,profileBackgroundId:typeof input.character.profileBackgroundId==='string'&&input.character.profileBackgroundId.trim()?input.character.profileBackgroundId:'asterfall-night'
+    ,profileAppearanceMode:input.character.profileAppearanceMode==='showcase'?'showcase':'live'
+    ,profileEquipmentSnapshot:input.character.profileEquipmentSnapshot&&typeof input.character.profileEquipmentSnapshot==='object'?input.character.profileEquipmentSnapshot:{}
   }:null;
   return {
     ...input,
-    version:5,
+    version:6,
     character,
     inventory:{stacks:Array.isArray(input.inventory?.stacks)?input.inventory.stacks:[],capacity:Number(input.inventory?.capacity ?? 30)},
     bank:{stacks:Array.isArray(input.bank?.stacks)?input.bank.stacks:[],capacity:Number(input.bank?.capacity ?? 120)},
@@ -33,12 +37,16 @@ export function normalizeSave(input:any):GameState{
     quests,
     unlockedMonsterIds:Array.isArray(input.unlockedMonsterIds)?input.unlockedMonsterIds:['MOSS_RAT'],
     defeatedBossIds:Array.isArray(input.defeatedBossIds)?input.defeatedBossIds:[],
+    account:{createdCharacterCount:Math.max(1,Number(input.account?.createdCharacterCount??1)),guildMember:!!input.account?.guildMember,patronTier:['bloom','crown'].includes(input.account?.patronTier)?input.account.patronTier:'none',guildContribution:Math.max(0,Number(input.account?.guildContribution??0)),guildProjectProgress:Math.max(0,Number(input.account?.guildProjectProgress??0)),guildBossHp:Math.max(0,Number(input.account?.guildBossHp??100000)),guildProjectClaimed:!!input.account?.guildProjectClaimed,guildJoinPolicy:['open','apply','invite'].includes(input.account?.guildJoinPolicy)?input.account.guildJoinPolicy:'open',guildMinimumLevel:Math.max(1,Number(input.account?.guildMinimumLevel??10)),guildApplicationStatus:['pending','accepted','declined'].includes(input.account?.guildApplicationStatus)?input.account.guildApplicationStatus:'none'},
     settings:{
+      language:['nl','de'].includes(input.settings?.language)?input.settings.language:'en',
       numberMode:input.settings?.numberMode||'abbreviated',
       reduceMotion:!!input.settings?.reduceMotion,
       textScale:input.settings?.textScale||1,
       autoEatThresholdPct:Number(input.settings?.autoEatThresholdPct ?? 40),
       stopCombatWhenOutOfFood:input.settings?.stopCombatWhenOutOfFood!==false,
+      autoJoinWorldChat:input.settings?.autoJoinWorldChat!==false,
+      defaultWorldChat:([1,2,3,4] as number[]).includes(Number(input.settings?.defaultWorldChat))?Number(input.settings.defaultWorldChat):1,
     }
   } as GameState;
 }

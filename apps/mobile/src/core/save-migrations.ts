@@ -1,7 +1,7 @@
 import {GameState} from './types';
 import {normalizeSave} from './save-normalization';
 
-export const SAVE_SCHEMA_VERSION:GameState['version']=5;
+export const SAVE_SCHEMA_VERSION:GameState['version']=6;
 type AnySave=Record<string,unknown>&{version?:number};
 
 export function migrateSave(input:unknown):GameState{

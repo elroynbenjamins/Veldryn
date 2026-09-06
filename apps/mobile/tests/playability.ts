@@ -16,8 +16,8 @@ ok(switched.state.character!.xp===expected.xp,'Switch preserves combat XP');
 ok(switched.state.activity?.targetId==='COPPER_VEIN','Switch changes activity');
 ok(previewActivityReward(switched.state,61000).kills===0,'New activity clock resets');
 const gathered=transitionActivity(startGathering(initial,'COPPER_VEIN',1000),61000,{kind:'combat',id:'MOSS_RAT'});
-ok(gathered.state.skills.find(sk=>sk.skillId==='mining')!.xp===36,'Gathering XP preserved');
-ok(gathered.state.inventory.stacks.some(s=>s.itemId==='COPPER_ORE'&&s.quantity===4),'Gathered items preserved');
+ok(gathered.state.skills.find(sk=>sk.skillId==='mining')!.xp===18,'Gathering XP preserved at rebalanced action time');
+ok(gathered.state.inventory.stacks.some(s=>s.itemId==='COPPER_ORE'&&s.quantity===2),'Gathered items preserved');
 const snapshot=JSON.stringify(combat);
 let rejected=false;
 try{transitionActivity(combat,61000,{kind:'gathering',id:'invalid'})}catch{rejected=true}
@@ -28,8 +28,8 @@ for(const item of expected.items){
   const after=stopped.state.inventory.stacks.find(s=>s.itemId===item.itemId)?.quantity??0;
   ok(after===before+item.quantity,'Stop preserves loot');
 }
-const capped=transitionActivity(combat,24*3600*1000);
-ok(capped.reward.elapsedSeconds===8*3600,'Transition respects offline cap');
+const capped=transitionActivity(combat,30*3600*1000);
+ok(capped.reward.elapsedSeconds===24*3600,'Transition respects offline cap');
 ok(!recipeAvailability(initial,'SMELT_COPPER_INGOT').ready,'Missing materials disables recipe');
 const supplied={...initial,bank:{...initial.bank,stacks:[{itemId:'COPPER_ORE',quantity:10}]}};
 ok(recipeAvailability(supplied,'SMELT_COPPER_INGOT').ready,'Bank-only materials work');

@@ -1,8 +1,8 @@
 import React,{useEffect,useMemo,useRef,useState} from 'react';
 import {Image,ImageSourcePropType,PanResponder,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import {ConfirmModal} from '../components/ConfirmModal';
-import {CharacterAvatar,CustomizationControls,CustomizationSummary} from '../components/CustomizationControls';
-import {CharacterCustomization,DEFAULT_CUSTOMIZATION,HAIR_STYLES,SKIN_TONES} from '../core/customization';
+import {CharacterAvatar} from '../components/CustomizationControls';
+import {DEFAULT_CUSTOMIZATION} from '../core/customization';
 import {GameButton} from '../components/GameButton';
 import {CLASSES,ClassDef} from '../content/classes';
 import {itemDef} from '../content/items';
@@ -11,9 +11,9 @@ import {carouselIndex,characterNameError} from '../core/character-creation';
 import {noviceSetFor} from '../content/novice-sets';
 import {C,radii,spacing,touchTargetPreferred,typography} from '../theme/theme';
 
-type Step='identity'|'class'|'appearance'|'review';
+type Step='identity'|'class'|'review';
 type RoleFilter='All'|ClassDef['role'];
-const STEPS:Step[]=['class','identity','appearance','review'];
+const STEPS:Step[]=['class','identity','review'];
 const nameIdeas=['Aelric','Branna','Caelan','Eira','Fenric','Isolde','Orin','Sable'];
 const art:Record<ClassId,ImageSourcePropType>={
   IRONWARDEN:require('../../assets/classes/ironwarden.png'),BASTION:require('../../assets/classes/bastion.png'),DREADGUARD:require('../../assets/classes/dreadguard.png'),
@@ -22,8 +22,7 @@ const art:Record<ClassId,ImageSourcePropType>={
 };
 const roleColor={Tank:C.info,Support:C.good,Damage:C.warning};
 
-export function ClassSelectScreen({language='en',onLanguage,onSelect}:{language?:GameState['settings']['language'];onLanguage?:(language:GameState['settings']['language'])=>void;onSelect:(id:ClassId,name:string,body:BodyPresentation,customization:CharacterCustomization)=>Promise<void>|void}){
-  const [customization,setCustomization]=useState<CharacterCustomization>({...DEFAULT_CUSTOMIZATION});
+export function ClassSelectScreen({language='en',onLanguage,onSelect}:{language?:GameState['settings']['language'];onLanguage?:(language:GameState['settings']['language'])=>void;onSelect:(id:ClassId,name:string,body:BodyPresentation)=>Promise<void>|void}){
   const submitting=useRef(false);
   const [saving,setSaving]=useState(false),[saveError,setSaveError]=useState('');
   const [step,setStep]=useState<Step>('class');
@@ -42,11 +41,11 @@ export function ClassSelectScreen({language='en',onLanguage,onSelect}:{language?
     onPanResponderRelease:(_,gesture)=>{if(Math.abs(gesture.dx)>40)setIndex(current=>carouselIndex(current,gesture.dx<0?1:-1,filtered.length))},
   }),[filtered.length]);
   const chooseRole=(next:RoleFilter)=>{setRole(next);setIndex(0)};
-  const next=()=>{if(step==='identity'&&!nameError)setStep('appearance');else if(step==='appearance')setStep('review');else if(step==='class')setStep('identity')};
+  const next=()=>{if(step==='identity'&&!nameError)setStep('review');else if(step==='class')setStep('identity')};
   async function finish(){
     if(submitting.current)return;
     submitting.current=true;setSaving(true);setSaveError('');setConfirming(false);
-    try{await onSelect(selected.id,safeName,body,customization)}
+    try{await onSelect(selected.id,safeName,body)}
     catch{setSaveError('Your character could not be saved. Your choices are still here; please try again.')}
     finally{submitting.current=false;setSaving(false)}
   }
@@ -55,15 +54,10 @@ export function ClassSelectScreen({language='en',onLanguage,onSelect}:{language?
     <View style={s.choiceRow}>{([['en','English'],['nl','Nederlands'],['de','Deutsch']] as const).map(([id,label])=><View key={id} style={s.flex}><GameButton title={label} tone={language===id?'primary':'secondary'} onPress={()=>onLanguage?.(id)}/></View>)}</View>
     <View accessibilityRole="progressbar" accessibilityValue={{min:1,max:STEPS.length,now:STEPS.indexOf(step)+1}} style={s.stepRow}>{STEPS.map((item,i)=><View key={item} style={s.stepWrap}><View style={[s.stepDot,STEPS.indexOf(step)>=i&&s.stepDotActive]}><Text style={[s.stepNumber,STEPS.indexOf(step)>=i&&s.stepNumberActive]}>{i+1}</Text></View><Text style={[s.stepLabel,item===step&&s.stepLabelActive]}>{item.toUpperCase()}</Text></View>)}</View>
     {step==='identity'&&<View style={s.section}>
-      <Text style={s.heading}>Who enters Asterfall?</Text><Text style={s.description}>Choose the identity shown in your local save. Appearance can be reviewed from both sides before creation.</Text>
+      <Text style={s.heading}>Who enters Asterfall?</Text><Text style={s.description}>Choose the identity shown in your local save. Male and female character skins are authored as complete matching sets.</Text>
       <View style={s.nameBlock}><Text style={s.label}>CHARACTER NAME</Text><TextInput accessibilityLabel="Character name" accessibilityHint="Two to twenty letters" value={name} onChangeText={setName} maxLength={20} autoCapitalize="words" style={[s.input,!!nameError&&s.inputError]} placeholder="Adventurer" placeholderTextColor={C.disabled}/><View style={s.inputMeta}><Text style={s.error}>{nameError}</Text><Text style={s.counter}>{name.length}/20</Text></View></View>
       <Text style={s.label}>NAME IDEAS</Text><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chips}>{nameIdeas.map(idea=><Pressable accessibilityRole="button" key={idea} onPress={()=>setName(idea)} style={s.chip}><Text style={s.chipText}>{idea}</Text></Pressable>)}</ScrollView>
       <Text style={s.label}>BODY PRESENTATION</Text><View style={s.choiceRow}>{(['male','female'] as const).map(value=><View key={value} style={s.flex}><GameButton title={value==='male'?'Male':'Female'} tone={body===value?'primary':'secondary'} onPress={()=>setBody(value)}/></View>)}</View>
-    </View>}
-    {step==='appearance'&&<View style={s.section}>
-      <Text style={s.heading}>Shape your appearance</Text><Text style={s.description}>Your appearance is shared across every class outfit. Preview both sides before continuing.</Text>
-      <View style={s.choiceRow}><View style={s.flex}><GameButton title="Front" tone={view==='front'?'primary':'secondary'} onPress={()=>setView('front')}/></View><View style={s.flex}><GameButton title="Back" tone={view==='back'?'primary':'secondary'} onPress={()=>setView('back')}/></View></View>
-      <CustomizationControls body={body} view={view} value={customization} onChange={setCustomization}/>
     </View>}
     {step==='class'&&<View style={s.section}>
       <Text style={s.heading}>Choose your calling</Text><Text style={s.description}>Swipe the emblem or use the arrows. Emblems represent classes, not starting equipment.</Text>
@@ -75,14 +69,14 @@ export function ClassSelectScreen({language='en',onLanguage,onSelect}:{language?
     </View>}
     {step==='review'&&<View style={s.section}>
       <Text style={s.heading}>Ready to begin?</Text><Text style={s.description}>Review the permanent choices saved for this character.</Text><Text style={s.note}>Your first crafting goal: {noviceSetFor(selected.id).name}. Start with the chest piece in Skills → Novice set. The set is earned, not granted at creation.</Text>
-      <View style={s.reviewCard}><CharacterAvatar body={body} view={view} value={customization} compact/><View style={s.reviewCopy}><Text style={s.reviewName}>{safeName}</Text><Text style={[s.reviewRole,{color:roleColor[selected.role]}]}>{selected.name} · {selected.role}</Text><Text style={s.reviewLine}>{body==='male'?'Male':'Female'} presentation · {view} view</Text><Text style={s.reviewLine}>Starting weapon: {starter.name}</Text><Text style={s.reviewLine}>Armor and offhand: Unequipped</Text></View></View>
+      <View style={s.reviewCard}><CharacterAvatar body={body} view={view} value={DEFAULT_CUSTOMIZATION} compact/><View style={s.reviewCopy}><Text style={s.reviewName}>{safeName}</Text><Text style={[s.reviewRole,{color:roleColor[selected.role]}]}>{selected.name} · {selected.role}</Text><Text style={s.reviewLine}>{body==='male'?'Male':'Female'} presentation · {view} view</Text><Text style={s.reviewLine}>Starting weapon: {starter.name}</Text><Text style={s.reviewLine}>Armor and offhand: Unequipped</Text></View></View>
       <View style={s.choiceRow}><View style={s.flex}><GameButton title="Front" tone={view==='front'?'primary':'secondary'} onPress={()=>setView('front')}/></View><View style={s.flex}><GameButton title="Back" tone={view==='back'?'primary':'secondary'} onPress={()=>setView('back')}/></View></View>
-      <CustomizationSummary value={customization}/><Text style={s.note}>This appearance is saved independently from your class equipment.</Text>
+      <Text style={s.note}>Your chosen presentation is saved with this character. Hairstyles and skin-tone customization will return once every equipment skin supports it correctly.</Text>
       {!!saveError&&<Text accessibilityRole="alert" style={s.error}>{saveError}</Text>}
       <GameButton title={saving?'Saving character…':`Create ${safeName}`} disabled={saving} onPress={()=>setConfirming(true)}/>
     </View>}
-    <View style={s.navigation}>{step!=='class'&&<View style={s.flex}><GameButton title="Back" disabled={saving} tone="secondary" onPress={()=>setStep(step==='review'?'appearance':step==='appearance'?'identity':'class')}/></View>}{step!=='review'&&<View style={s.flex}><GameButton title={step==='class'?'Choose identity':step==='identity'?'Customize appearance':'Review character'} disabled={step==='identity'&&!!nameError} onPress={next}/></View>}</View>
-  </ScrollView><ConfirmModal visible={confirming} title={`Create ${safeName}?`} message={`${safeName} will enter Asterfall as a ${selected.name} with ${SKIN_TONES.find(x=>x.id===customization.skinTone)?.name.toLowerCase()} skin and ${HAIR_STYLES.find(x=>x.id===customization.hairStyle)?.name.toLowerCase()} hair, carrying only the ${starter.name}. The class cannot be changed.`} confirmLabel="Enter Asterfall" onConfirm={finish} onCancel={()=>setConfirming(false)}/></>;
+    <View style={s.navigation}>{step!=='class'&&<View style={s.flex}><GameButton title="Back" disabled={saving} tone="secondary" onPress={()=>setStep(step==='review'?'identity':'class')}/></View>}{step!=='review'&&<View style={s.flex}><GameButton title={step==='class'?'Choose identity':'Review character'} disabled={step==='identity'&&!!nameError} onPress={next}/></View>}</View>
+  </ScrollView><ConfirmModal visible={confirming} title={`Create ${safeName}?`} message={`${safeName} will enter Asterfall as a ${body==='male'?'male':'female'} ${selected.name}, carrying only the ${starter.name}. The class and presentation cannot be changed.`} confirmLabel="Enter Asterfall" onConfirm={finish} onCancel={()=>setConfirming(false)}/></>;
 }
 
 const s=StyleSheet.create({root:{padding:spacing.lg,paddingTop:spacing.xl,gap:spacing.lg,backgroundColor:C.bg},logo:{fontSize:32,fontWeight:'900',letterSpacing:4,color:C.accent,textAlign:'center'},kicker:{...typography.caption,color:C.muted,fontWeight:'900',letterSpacing:1,textAlign:'center'},stepRow:{flexDirection:'row',justifyContent:'space-around'},stepWrap:{alignItems:'center',gap:spacing.xs,flex:1},stepDot:{width:30,height:30,borderRadius:15,borderWidth:1,borderColor:C.line,alignItems:'center',justifyContent:'center',backgroundColor:C.panel},stepDotActive:{backgroundColor:C.accent,borderColor:C.accent},stepNumber:{...typography.caption,color:C.muted,fontWeight:'900'},stepNumberActive:{color:C.bg},stepLabel:{fontSize:10,color:C.disabled,fontWeight:'800'},stepLabelActive:{color:C.accent},section:{gap:spacing.md},heading:{...typography.title,color:C.text,textAlign:'center'},nameBlock:{gap:spacing.xs},label:{...typography.caption,color:C.muted,fontWeight:'900',letterSpacing:1},input:{minHeight:touchTargetPreferred,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel,color:C.text,paddingHorizontal:spacing.md,fontSize:17,fontWeight:'800'},inputError:{borderColor:C.bad},inputMeta:{flexDirection:'row',justifyContent:'space-between'},error:{...typography.caption,color:C.bad,flex:1},counter:{...typography.caption,color:C.disabled},chips:{gap:spacing.sm},chip:{minHeight:44,paddingHorizontal:spacing.md,borderWidth:1,borderColor:C.line,borderRadius:99,justifyContent:'center',backgroundColor:C.panel},chipText:{...typography.bodyStrong,color:C.text},choiceRow:{flexDirection:'row',gap:spacing.sm},flex:{flex:1},previewFrame:{height:230,backgroundColor:C.panel,borderWidth:1,borderColor:C.line,borderRadius:radii.lg,alignItems:'center',justifyContent:'center'},preview:{width:'95%',height:'95%'},note:{...typography.caption,color:C.muted,textAlign:'center'},description:{...typography.body,color:C.muted,textAlign:'center'},filterRow:{flexDirection:'row',flexWrap:'wrap',gap:spacing.sm,justifyContent:'center'},filter:{minHeight:44,paddingHorizontal:spacing.md,borderRadius:99,borderWidth:1,borderColor:C.line,justifyContent:'center'},filterActive:{borderColor:C.accent,backgroundColor:C.panel2},filterText:{...typography.bodyStrong,color:C.muted},filterTextActive:{color:C.accent},carousel:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},arrow:{width:touchTargetPreferred,height:touchTargetPreferred,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel},arrowText:{fontSize:38,lineHeight:40,color:C.accent},portraitFrame:{flex:1,maxWidth:280,aspectRatio:1,marginHorizontal:spacing.sm,backgroundColor:C.panel,borderWidth:1,borderColor:C.line,borderRadius:radii.lg,overflow:'hidden',alignItems:'center',justifyContent:'center'},portrait:{width:'94%',height:'94%'},roleBadge:{position:'absolute',right:spacing.sm,bottom:spacing.sm,backgroundColor:'rgba(11,16,24,.9)',borderWidth:1,borderRadius:99,paddingHorizontal:spacing.sm,paddingVertical:spacing.xs},roleText:{...typography.caption,fontWeight:'900'},identity:{flexDirection:'row',justifyContent:'center',alignItems:'baseline',gap:spacing.sm},className:{...typography.hero,color:C.text,textAlign:'center'},count:{...typography.caption,color:C.muted},loadout:{backgroundColor:C.panel,borderWidth:1,borderColor:C.line,borderRadius:radii.md,padding:spacing.md,flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:spacing.md},gearName:{...typography.bodyStrong,color:C.text},weaponBadge:{borderRadius:99,backgroundColor:C.panel2,paddingHorizontal:spacing.sm,paddingVertical:spacing.xs},weaponBadgeText:{...typography.caption,color:C.accent,fontWeight:'900'},thumbs:{gap:spacing.sm,paddingVertical:spacing.xs},thumb:{width:56,height:56,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel,alignItems:'center',justifyContent:'center'},thumbActive:{borderColor:C.accent,borderWidth:2},thumbImage:{width:50,height:50},reviewCard:{backgroundColor:C.panel,borderWidth:1,borderColor:C.accent,borderRadius:radii.lg,padding:spacing.md,flexDirection:'row',alignItems:'center',gap:spacing.md},reviewImage:{width:120,height:160},reviewCopy:{flex:1,gap:spacing.xs},reviewName:{...typography.title,color:C.text},reviewRole:{...typography.bodyStrong},reviewLine:{...typography.body,color:C.muted},navigation:{flexDirection:'row',gap:spacing.sm}});

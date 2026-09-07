@@ -15,6 +15,11 @@ import {SettingsScreen} from './src/screens/SettingsScreen';
 import {GuildScreen} from './src/screens/GuildScreen';
 import {GuildChat} from './src/components/GuildChat';
 import {WorldChat} from './src/components/WorldChat';
+import {OnlineWorldChat} from './src/components/OnlineWorldChat';
+import {OnlineGuildBrowser} from './src/components/OnlineGuildBrowser';
+import {OnlineGuildManagement} from './src/components/OnlineGuildManagement';
+import {OnlineGuildPve} from './src/components/OnlineGuildPve';
+import {onlineConfigured} from './src/online/supabase';
 import {ProfileEditor} from './src/components/ProfileEditor';
 import {RewardPopup} from './src/components/RewardPopup';
 import {C} from './src/theme/theme';
@@ -44,16 +49,16 @@ export default function App(){
     catch(error){Alert.alert('Cannot change activity',error instanceof Error?error.message:'Please try again.')}
   }
   if(!ready||!state)return <SafeAreaView style={s.center}><ActivityIndicator/><Text style={s.txt}>Loading local save…</Text></SafeAreaView>;
-  if(!state.character)return <SafeAreaView style={s.safe}><StatusBar style="light"/><ClassSelectScreen language={state.settings.language} onLanguage={language=>commit({...state,settings:{...state.settings,language}})} onSelect={async(id,name,body,customization)=>{const next=createCharacter(state,id,name,body,customization);await repo.save(next);setState(next)}}/></SafeAreaView>;
+  if(!state.character)return <SafeAreaView style={s.safe}><StatusBar style="light"/><ClassSelectScreen language={state.settings.language} onLanguage={language=>commit({...state,settings:{...state.settings,language}})} onSelect={async(id,name,body)=>{const next=createCharacter(state,id,name,body);await repo.save(next);setState(next)}}/></SafeAreaView>;
   const preview=previewActivityReward(state,now);
   return <SafeAreaView style={s.safe}><StatusBar style="light"/><View style={s.body}>
     {tab==='Home'&&<HomeScreen state={state} preview={preview} onNavigate={(destination,zoneId)=>{if(destination==='World'&&zoneId)setSelectedZone(zoneId);setTab(destination)}} onClaim={()=>{const result=claimActivity(state,Date.now());commit(result.state);setCollected(result.reward)}} onStop={()=>changeActivity()}/>}
-    {tab==='World'&&<><WorldScreen state={state} selectedId={selectedZone} onSelectZone={setSelectedZone} onStart={id=>changeActivity({kind:'combat',id})} onBoss={()=>{const settled=claimActivity(state,Date.now());const result=challengeFallenKnight(settled.state);commit(result.state);Alert.alert(result.won?'Victory':'Not ready',`${result.message}${settled.reward.kills>0?' Your pending activity rewards were collected.':''}`)}}/><WorldChat/></>}
+    {tab==='World'&&<><WorldScreen state={state} selectedId={selectedZone} onSelectZone={setSelectedZone} onStart={id=>changeActivity({kind:'combat',id})} onBoss={()=>{const settled=claimActivity(state,Date.now());const result=challengeFallenKnight(settled.state);commit(result.state);Alert.alert(result.won?'Victory':'Not ready',`${result.message}${settled.reward.kills>0?' Your pending activity rewards were collected.':''}`)}}/>{onlineConfigured?<OnlineWorldChat playerName={state.character.name}/>:<WorldChat/>}</>}
     {tab==='Quests'&&<QuestScreen state={state} onClaim={id=>commit(claimQuest(state,id))} onNavigate={destination=>{if(destination.tab==='World')setSelectedZone(destination.zoneId??null);setTab(destination.tab)}}/>}
     {tab==='Skills'&&<SkillsScreen state={state} initialMode={skillsMode} onCharacter={()=>setTab('Character')} onGather={id=>changeActivity({kind:'gathering',id})} onCraft={id=>{try{const next=craftRecipe(state,id);const completed=!noviceSetProgress(state).unlocked&&noviceSetProgress(next).unlocked;commit(next);Alert.alert(completed?'Novice set complete!':'Craft complete',completed?`${noviceSetProgress(next).set.name} is fully crafted. Open Character and equip the set to see your new outfit.`:'Your crafted items were added to Inventory, or Bank if Inventory was full. Equip them from Inventory or use Equip owned novice set on Character.',[{text:'Continue'},{text:'View character',onPress:()=>setTab('Character')}])}catch(error){Alert.alert('Cannot craft',error instanceof Error?error.message:'Please try again.')}}}/>}
     {tab==='Inventory'&&<InventoryScreen state={state} onEquip={id=>commit(equipItem(state,id))} onFood={id=>commit(equipFood(state,id))} onEat={id=>commit(eatFood(state,id))} onSell={id=>commit(sellItem(state,id))} onSalvage={id=>commit(salvageItem(state,id))} onDeposit={(id,quantity)=>commit(depositToBank(state,id,quantity))} onWithdraw={(id,quantity)=>commit(withdrawFromBank(state,id,quantity))} onOverflow={()=>commit(claimOverflowToBank(state))}/>}
     {tab==='Character'&&<><CharacterScreen state={state} onCustomize={value=>commit(updateCharacterCustomization(state,value))} onUnequip={slot=>commit(unequipItem(state,slot))} onCrafting={()=>{setSkillsMode('novice');setTab('Skills')}} onEquipSet={()=>{const settled=claimActivity(state,Date.now());const next=equipNoviceSet(settled.state);commit(next);if(settled.reward.kills>0)setCollected(settled.reward)}}/><ProfileEditor state={state} onChange={commit}/></>}
-    {tab==='Guild'&&<><GuildScreen state={state} onChange={commit}/><GuildChat/></>} 
+    {tab==='Guild'&&<><OnlineGuildBrowser/><OnlineGuildManagement/><OnlineGuildPve/><GuildScreen state={state} onChange={commit}/><GuildChat/></>} 
     {tab==='Settings'&&<SettingsScreen state={state} onChange={commit} onLanguage={language=>commit({...state,settings:{...state.settings,language}})} onReset={()=>Alert.alert('Reset local save?','This deletes prototype progress only.',[{text:'Cancel'},{text:'Reset',style:'destructive',onPress:async()=>{await repo.reset();setState(newGame(Date.now()));setTab('Home')}}])}/>} 
   </View><View style={s.nav}>{tabs.map(item=><Pressable accessibilityRole="tab" accessibilityState={{selected:tab===item}} key={item} onPress={()=>setTab(item)} style={[s.navItem,tab===item&&s.active]}><Image source={navIcons[item]} resizeMode="contain" style={[s.navIcon,tab!==item&&s.inactiveIcon]}/><Text style={[s.navText,tab===item&&s.activeText]}>{item}</Text></Pressable>)}</View><RewardPopup reward={collected} onClose={()=>setCollected(null)}/></SafeAreaView>;
 }

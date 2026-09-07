@@ -17,7 +17,9 @@ export function CharacterVisual({state,preview=false,compact=false,simulation=fa
   const character=state.character!,body=character.bodyPresentation??'male';
   const appearance=resolveCharacterAppearance(state),set=noviceSetProgress(state).set;
   const composition=resolveEquipmentLayers(state,equipmentLayerRegistry,view);
-  const customization=character.customization??DEFAULT_CUSTOMIZATION;
+  // Full-set skins currently include authored heads and exposed skin. Keep the base
+  // presentation neutral until every skin can safely compose player hair/skin choices.
+  const customization=DEFAULT_CUSTOMIZATION;
   const visibleCustomization=composition.hidesHair?{...customization,hairStyle:'bald' as const}:customization;
   const layered=!preview&&composition.layers.length>0;
   const source=preview||appearance==='first-crafted'?firstCraftedAppearance[character.classId][body][view]:appearance==='starting'?startingAppearance[character.classId][body][view]:classEmblems[character.classId];

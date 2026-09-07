@@ -10,7 +10,7 @@ import {GameButton} from '../components/GameButton';
 import {StatBar} from '../components/StatBar';
 import {CharacterVisual} from '../components/CharacterVisual';
 import {ConfirmModal} from '../components/ConfirmModal';
-import {CharacterAvatar,CustomizationControls,CustomizationSummary} from '../components/CustomizationControls';
+import {CharacterAvatar} from '../components/CustomizationControls';
 import {CharacterCustomization,DEFAULT_CUSTOMIZATION} from '../core/customization';
 import {C,spacing,typography} from '../theme/theme';
 
@@ -19,17 +19,16 @@ export function CharacterScreen({state,onUnequip,onEquipSet,onCrafting,onCustomi
   const [confirming,setConfirming]=useState(false),[error,setError]=useState('');
   const character=state.character!,classDef=CLASSES.find(item=>item.id===character.classId)!;
   const saved=character.customization??DEFAULT_CUSTOMIZATION;
-  const [editing,setEditing]=useState(false),[draft,setDraft]=useState<CharacterCustomization>({...saved}),[appearanceView,setAppearanceView]=useState<'front'|'back'>('front');
+  const [appearanceView,setAppearanceView]=useState<'front'|'back'>('front');
   const stats=effectiveStats(state),readiness=regionalReadiness(state),progress=noviceSetProgress(state);
   let equipError='';try{equipNoviceSet(state)}catch(e){equipError=e instanceof Error?e.message:'Cannot equip set'}
   const fullSet=resolveCharacterAppearance(state)==='first-crafted';
   return <><ScrollView contentContainerStyle={s.root}>
     <Text style={s.h}>{character.name}</Text><Text style={s.role}>{classDef.name} · {classDef.role} · {character.bodyPresentation??'male'}</Text>
-    <Panel><View style={s.appearanceHeader}><CharacterAvatar body={character.bodyPresentation??'male'} view={appearanceView} value={editing?draft:saved} compact/><View style={s.appearanceCopy}><Text style={s.title}>Identity appearance</Text><CustomizationSummary value={editing?draft:saved}/><Text style={s.sub}>Cosmetic only · shared across class outfits</Text></View></View>
-      <View style={s.actions}><View style={s.flex}><GameButton title={appearanceView==='front'?'View back':'View front'} tone="secondary" onPress={()=>setAppearanceView(appearanceView==='front'?'back':'front')}/></View><View style={s.flex}><GameButton title={editing?'Cancel editing':'Edit appearance'} tone="secondary" onPress={()=>{if(editing)setDraft({...saved});setEditing(!editing)}}/></View></View>
-      {editing&&<><CustomizationControls body={character.bodyPresentation??'male'} view={appearanceView} value={draft} onChange={setDraft}/><GameButton title="Save appearance" onPress={()=>{onCustomize(draft);setEditing(false)}}/></>}
+    <Panel><View style={s.appearanceHeader}><CharacterAvatar body={character.bodyPresentation??'male'} view={appearanceView} value={DEFAULT_CUSTOMIZATION} compact/><View style={s.appearanceCopy}><Text style={s.title}>Character presentation</Text><Text style={s.sub}>{character.bodyPresentation==='female'?'Female':'Male'} presentation · complete equipment skins are matched to this choice.</Text><Text style={s.sub}>Hairstyle and skin-tone options are unavailable until every equipment skin can support them cleanly.</Text></View></View>
+      <View style={s.actions}><View style={s.flex}><GameButton title={appearanceView==='front'?'View back':'View front'} tone="secondary" onPress={()=>setAppearanceView(appearanceView==='front'?'back':'front')}/></View></View>
     </Panel>
-    <Panel><View style={s.appearanceHeader}><View style={s.appearanceCopy}><Text style={s.title}>Show helmet</Text><Text style={s.sub}>Display your equipped helmet when its artwork is available. Your equipment stats stay the same.</Text></View><Switch accessibilityLabel="Show helmet" value={saved.showHelmet!==false} onValueChange={showHelmet=>{onCustomize({...saved,showHelmet});setDraft(current=>({...current,showHelmet}))}} trackColor={{true:C.accent,false:C.line}}/></View></Panel>
+    <Panel><View style={s.appearanceHeader}><View style={s.appearanceCopy}><Text style={s.title}>Show helmet</Text><Text style={s.sub}>Display your equipped helmet when its artwork is available. Your equipment stats stay the same.</Text></View><Switch accessibilityLabel="Show helmet" value={saved.showHelmet!==false} onValueChange={showHelmet=>onCustomize({...saved,showHelmet})} trackColor={{true:C.accent,false:C.line}}/></View></Panel>
     <CharacterVisual state={state}/>
     <Panel><Text style={s.title}>{progress.set.name}</Text><StatBar label="Novice pieces equipped" current={progress.equipped} max={progress.pieces.length}/><Text style={s.sub}>Crafted {progress.crafted}/{progress.pieces.length} · {progress.unlocked?'Full-set crafting milestone complete':'Craft your first set in Skills → Novice set'}</Text><Text style={s.setBonus}>◆ {progress.set.setBonus.name} · {progress.set.setBonus.description}</Text>
       <GameButton title={fullSet?'Full novice set equipped':'Equip owned novice set'} disabled={!!equipError||fullSet} onPress={()=>setConfirming(true)}/>

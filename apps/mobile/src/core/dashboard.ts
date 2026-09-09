@@ -3,7 +3,14 @@ import {QUESTS} from '../content/quests';
 import {GATHERING} from '../content/skills';
 import {GameState} from './types';
 import {effectiveStats} from './game';
+import {characterPermanentMultipliers} from './permanent-boosts';
 import {classCombatStyle} from './class-combat';
+import {environmentEffectForActivity} from './world-weather';
+const COMBAT_SPEED_MIN=.68;
+const COMBAT_SPEED_MAX=1.3;
+const COMBAT_TIME_SCALE=1.16;
+const COMBAT_EXPECTED_SCALE=1.3;
+const GATHER_TIME_SCALE=1.45;
 
 export type DashboardDestination='World'|'Skills'|'Inventory'|'Quests'|'Character';
 export interface DashboardRecommendation{title:string;detail:string;button:string;destination:DashboardDestination;zoneId?:string;priority:'urgent'|'progress'|'upgrade'}
@@ -29,15 +36,25 @@ export function dashboardRecommendation(state:GameState):DashboardRecommendation
 export function activityCycleSeconds(state:GameState){
   const target=state.activity?.targetId;
   const monster=MONSTERS.find(m=>m.id===target),gathering=GATHERING.find(g=>g.id===target);
-  if(!monster)return gathering?.seconds??1;
+  const modifiers=characterPermanentMultipliers(state);
+  const environmentMultiplier=state.activity?environmentEffectForActivity(state.activity).effect.actionTimeMultiplier:1;
+  if(!monster)return ((gathering?.seconds??1)*GATHER_TIME_SCALE*environmentMultiplier)/modifiers.gatheringSpeedMultiplier;
   const stats=effectiveStats(state),expected=monster.attack*1.2+monster.defense*.8+monster.level*2.2;
-  const speed=Math.max(.72,Math.min(1.5,stats.power/Math.max(1,expected)))*classCombatStyle(state.character!.classId).speedMultiplier;
-  return monster.secondsPerKill/speed;
+  const boostedPower=Math.max(1,Math.round(stats.power*modifiers.combatPowerMultiplier));
+  const adjustedExpected=(expected*COMBAT_EXPECTED_SCALE);
+  const speed=Math.max(COMBAT_SPEED_MIN,Math.min(COMBAT_SPEED_MAX,boostedPower/Math.max(1,adjustedExpected)))*classCombatStyle(state.character!.classId).speedMultiplier*modifiers.combatSpeedMultiplier;
+  return monster.secondsPerKill*COMBAT_TIME_SCALE*environmentMultiplier/speed;
 }
 export function activityRate(state:GameState){
   const target=state.activity?.targetId;
   const monster=MONSTERS.find(m=>m.id===target),gathering=GATHERING.find(g=>g.id===target);
+  const multipliers=characterPermanentMultipliers(state);
+  const effect=state.activity?environmentEffectForActivity(state.activity).effect:undefined;
   const seconds=activityCycleSeconds(state);
   const actions=Math.floor(3600/seconds);
-  return {actionsPerHour:actions,xpPerHour:actions*(monster?.xp??gathering?.xp??0),goldPerHour:monster?actions*monster.gold:0};
+  const baseXp = monster?.xp ?? gathering?.xp ?? 0;
+  const baseGold = monster?monster.gold:0;
+  const xpMultiplier = (effect?.xpMultiplier??1)*(monster?multipliers.characterXpMultiplier:multipliers.skillXpMultiplier);
+  const goldMultiplier = (effect?.goldMultiplier??1)*(monster?multipliers.goldMultiplier:1);
+  return {actionsPerHour:actions,xpPerHour:Math.floor(actions*baseXp*xpMultiplier),goldPerHour:monster?Math.floor(actions*baseGold*goldMultiplier):0};
 }

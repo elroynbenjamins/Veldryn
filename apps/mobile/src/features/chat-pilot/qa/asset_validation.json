@@ -1,0 +1,12 @@
+{
+  "passed": true,
+  "preparedPNGs": 133,
+  "emoteIDs": 64,
+  "frameOpeningsChecked": 2,
+  "errors": [],
+  "notValidated": [
+    "native device layout",
+    "all legacy master art",
+    "production transport/authorization"
+  ]
+}

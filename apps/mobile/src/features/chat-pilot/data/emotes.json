@@ -1,0 +1,834 @@
+[
+  {
+    "id": "male_01",
+    "label": "Adventurer \u2014 Smile",
+    "category": "male",
+    "file": "assets/emotes/male_01.png",
+    "defaultAvailable": true,
+    "sourceCrop": [
+      0,
+      0,
+      254,
+      350
+    ]
+  },
+  {
+    "id": "male_02",
+    "label": "Adventurer \u2014 Grin",
+    "category": "male",
+    "file": "assets/emotes/male_02.png",
+    "defaultAvailable": true,
+    "sourceCrop": [
+      254,
+      0,
+      507,
+      350
+    ]
+  },
+  {
+    "id": "male_03",
+    "label": "Adventurer \u2014 Laugh",
+    "category": "male",
+    "file": "assets/emotes/male_03.png",
+    "defaultAvailable": true,
+    "sourceCrop": [
+      507,
+      0,
+      750,
+      350
+    ]
+  },
+  {
+    "id": "male_04",
+    "label": "Adventurer \u2014 Wink",
+    "category": "male",
+    "file": "assets/emotes/male_04.png",
+    "defaultAvailable": true,
+    "sourceCrop": [
+      750,
+      0,
+      998,
+      350
+    ]
+  },
+  {
+    "id": "male_05",
+    "label": "Adventurer \u2014 Blush",
+    "category": "male",
+    "file": "assets/emotes/male_05.png",
+    "defaultAvailable": true,
+    "sourceCrop": [
+      998,
+      0,
+      1254,
+      350
+    ]
+  },
+  {
+    "id": "male_06",
+    "label": "Adventurer \u2014 Heart eyes",
+    "category": "male",
+    "file": "assets/emotes/male_06.png",
+    "defaultAvailable": true,
+    "sourceCrop": [
+      0,
+      350,
+      255,
+      637
+    ]
+  },
+  {
+    "id": "male_07",
+    "label": "Adventurer \u2014 Cool",
+    "category": "male",
+    "file": "assets/emotes/male_07.png",
+    "defaultAvailable": true,
+    "sourceCrop": [
+      255,
+      350,
+      510,
+      637
+    ]
+  },
+  {
+    "id": "male_08",
+    "label": "Adventurer \u2014 Surprised",
+    "category": "male",
+    "file": "assets/emotes/male_08.png",
+    "defaultAvailable": true,
+    "sourceCrop": [
+      510,
+      350,
+      758,
+      637
+    ]
+  },
+  {
+    "id": "male_09",
+    "label": "Adventurer \u2014 Shocked",
+    "category": "male",
+    "file": "assets/emotes/male_09.png",
+    "defaultAvailable": true,
+    "sourceCrop": [
+      758,
+      350,
+      994,
+      637
+    ]
+  },
+  {
+    "id": "male_10",
+    "label": "Adventurer \u2014 Sad",
+    "category": "male",
+    "file": "assets/emotes/male_10.png",
+    "defaultAvailable": true,
+    "sourceCrop": [
+      994,
+      350,
+      1254,
+      637
+    ]
+  },
+  {
+    "id": "male_11",
+    "label": "Adventurer \u2014 Cry",
+    "category": "male",
+    "file": "assets/emotes/male_11.png",
+    "defaultAvailable": true,
+    "sourceCrop": [
+      0,
+      637,
+      255,
+      917
+    ]
+  },
+  {
+    "id": "male_12",
+    "label": "Adventurer \u2014 Angry",
+    "category": "male",
+    "file": "assets/emotes/male_12.png",
+    "defaultAvailable": true,
+    "sourceCrop": [
+      255,
+      637,
+      509,
+      917
+    ]
+  },
+  {
+    "id": "male_13",
+    "label": "Adventurer \u2014 Mischievous",
+    "category": "male",
+    "file": "assets/emotes/male_13.png",
+    "defaultAvailable": true,
+    "sourceCrop": [
+      509,
+      637,
+      749,
+      917
+    ]
+  },
+  {
+    "id": "male_14",
+    "label": "Adventurer \u2014 Confused",
+    "category": "male",
+    "file": "assets/emotes/male_14.png",
+    "defaultAvailable": true,
+    "sourceCrop": [
+      749,
+      637,
+      994,
+      917
+    ]
+  },
+  {
+    "id": "male_15",
+    "label": "Adventurer \u2014 Sleepy",
+    "category": "male",
+    "file": "assets/emotes/male_15.png",
+    "defaultAvailable": true,
+    "sourceCrop": [
+      994,
+      637,
+      1254,
+      917
+    ]
+  },
+  {
+    "id": "male_16",
+    "label": "Adventurer \u2014 Thinking",
+    "category": "male",
+    "file": "assets/emotes/male_16.png",
+    "defaultAvailable": true,
+    "sourceCrop": [
+      0,
+      917,
+      257,
+      1254
+    ]
+  },
+  {
+    "id": "male_17",
+    "label": "Adventurer \u2014 Love",
+    "category": "male",
+    "file": "assets/emotes/male_17.png",
+    "defaultAvailable": true,
+    "sourceCrop": [
+      257,
+      917,
+      497,
+      1254
+    ]
+  },
+  {
+    "id": "male_18",
+    "label": "Adventurer \u2014 Thumbs up",
+    "category": "male",
+    "file": "assets/emotes/male_18.png",
+    "defaultAvailable": true,
+    "sourceCrop": [
+      497,
+      917,
+      743,
+      1254
+    ]
+  },
+  {
+    "id": "male_19",
+    "label": "Adventurer \u2014 Celebrate",
+    "category": "male",
+    "file": "assets/emotes/male_19.png",
+    "defaultAvailable": true,
+    "sourceCrop": [
+      743,
+      917,
+      1012,
+      1254
+    ]
+  },
+  {
+    "id": "male_20",
+    "label": "Adventurer \u2014 Happy tears",
+    "category": "male",
+    "file": "assets/emotes/male_20.png",
+    "defaultAvailable": true,
+    "sourceCrop": [
+      1012,
+      917,
+      1254,
+      1254
+    ]
+  },
+  {
+    "id": "female_01",
+    "label": "Adventurer (female) \u2014 Smile",
+    "category": "female",
+    "file": "assets/emotes/female_01.png",
+    "defaultAvailable": true,
+    "sourceCrop": [
+      0,
+      0,
+      256,
+      335
+    ]
+  },
+  {
+    "id": "female_02",
+    "label": "Adventurer (female) \u2014 Grin",
+    "category": "female",
+    "file": "assets/emotes/female_02.png",
+    "defaultAvailable": true,
+    "sourceCrop": [
+      256,
+      0,
+      511,
+      335
+    ]
+  },
+  {
+    "id": "female_03",
+    "label": "Adventurer (female) \u2014 Laugh",
+    "category": "female",
+    "file": "assets/emotes/female_03.png",
+    "defaultAvailable": true,
+    "sourceCrop": [
+      511,
+      0,
+      760,
+      335
+    ]
+  },
+  {
+    "id": "female_04",
+    "label": "Adventurer (female) \u2014 Wink",
+    "category": "female",
+    "file": "assets/emotes/female_04.png",
+    "defaultAvailable": true,
+    "sourceCrop": [
+      760,
+      0,
+      1002,
+      335
+    ]
+  },
+  {
+    "id": "female_05",
+    "label": "Adventurer (female) \u2014 Blush",
+    "category": "female",
+    "file": "assets/emotes/female_05.png",
+    "defaultAvailable": true,
+    "sourceCrop": [
+      1002,
+      0,
+      1254,
+      335
+    ]
+  },
+  {
+    "id": "female_06",
+    "label": "Adventurer (female) \u2014 Heart eyes",
+    "category": "female",
+    "file": "assets/emotes/female_06.png",
+    "defaultAvailable": true,
+    "sourceCrop": [
+      0,
+      335,
+      260,
+      630
+    ]
+  },
+  {
+    "id": "female_07",
+    "label": "Adventurer (female) \u2014 Cool",
+    "category": "female",
+    "file": "assets/emotes/female_07.png",
+    "defaultAvailable": true,
+    "sourceCrop": [
+      260,
+      335,
+      511,
+      630
+    ]
+  },
+  {
+    "id": "female_08",
+    "label": "Adventurer (female) \u2014 Surprised",
+    "category": "female",
+    "file": "assets/emotes/female_08.png",
+    "defaultAvailable": true,
+    "sourceCrop": [
+      511,
+      335,
+      758,
+      630
+    ]
+  },
+  {
+    "id": "female_09",
+    "label": "Adventurer (female) \u2014 Shocked",
+    "category": "female",
+    "file": "assets/emotes/female_09.png",
+    "defaultAvailable": true,
+    "sourceCrop": [
+      758,
+      335,
+      1011,
+      630
+    ]
+  },
+  {
+    "id": "female_10",
+    "label": "Adventurer (female) \u2014 Sad",
+    "category": "female",
+    "file": "assets/emotes/female_10.png",
+    "defaultAvailable": true,
+    "sourceCrop": [
+      1011,
+      335,
+      1254,
+      630
+    ]
+  },
+  {
+    "id": "female_11",
+    "label": "Adventurer (female) \u2014 Cry",
+    "category": "female",
+    "file": "assets/emotes/female_11.png",
+    "defaultAvailable": true,
+    "sourceCrop": [
+      0,
+      630,
+      257,
+      924
+    ]
+  },
+  {
+    "id": "female_12",
+    "label": "Adventurer (female) \u2014 Angry",
+    "category": "female",
+    "file": "assets/emotes/female_12.png",
+    "defaultAvailable": true,
+    "sourceCrop": [
+      257,
+      630,
+      510,
+      924
+    ]
+  },
+  {
+    "id": "female_13",
+    "label": "Adventurer (female) \u2014 Mischievous",
+    "category": "female",
+    "file": "assets/emotes/female_13.png",
+    "defaultAvailable": true,
+    "sourceCrop": [
+      510,
+      630,
+      760,
+      924
+    ]
+  },
+  {
+    "id": "female_14",
+    "label": "Adventurer (female) \u2014 Confused",
+    "category": "female",
+    "file": "assets/emotes/female_14.png",
+    "defaultAvailable": true,
+    "sourceCrop": [
+      760,
+      630,
+      1005,
+      924
+    ]
+  },
+  {
+    "id": "female_15",
+    "label": "Adventurer (female) \u2014 Sleepy",
+    "category": "female",
+    "file": "assets/emotes/female_15.png",
+    "defaultAvailable": true,
+    "sourceCrop": [
+      1005,
+      630,
+      1254,
+      924
+    ]
+  },
+  {
+    "id": "female_16",
+    "label": "Adventurer (female) \u2014 Thinking",
+    "category": "female",
+    "file": "assets/emotes/female_16.png",
+    "defaultAvailable": true,
+    "sourceCrop": [
+      0,
+      924,
+      259,
+      1254
+    ]
+  },
+  {
+    "id": "female_17",
+    "label": "Adventurer (female) \u2014 Love",
+    "category": "female",
+    "file": "assets/emotes/female_17.png",
+    "defaultAvailable": true,
+    "sourceCrop": [
+      259,
+      924,
+      501,
+      1254
+    ]
+  },
+  {
+    "id": "female_18",
+    "label": "Adventurer (female) \u2014 Thumbs up",
+    "category": "female",
+    "file": "assets/emotes/female_18.png",
+    "defaultAvailable": true,
+    "sourceCrop": [
+      501,
+      924,
+      744,
+      1254
+    ]
+  },
+  {
+    "id": "female_19",
+    "label": "Adventurer (female) \u2014 Celebrate",
+    "category": "female",
+    "file": "assets/emotes/female_19.png",
+    "defaultAvailable": true,
+    "sourceCrop": [
+      744,
+      924,
+      1008,
+      1254
+    ]
+  },
+  {
+    "id": "female_20",
+    "label": "Adventurer (female) \u2014 Happy tears",
+    "category": "female",
+    "file": "assets/emotes/female_20.png",
+    "defaultAvailable": true,
+    "sourceCrop": [
+      1008,
+      924,
+      1254,
+      1254
+    ]
+  },
+  {
+    "id": "pet_set_a_01",
+    "label": "Moonhare \u2014 Wave",
+    "category": "pets",
+    "file": "assets/emotes/pet_set_a_01.png",
+    "defaultAvailable": false,
+    "sourceCrop": [
+      0,
+      0,
+      305,
+      500
+    ]
+  },
+  {
+    "id": "pet_set_a_02",
+    "label": "Budling \u2014 Joy",
+    "category": "pets",
+    "file": "assets/emotes/pet_set_a_02.png",
+    "defaultAvailable": false,
+    "sourceCrop": [
+      305,
+      0,
+      618,
+      500
+    ]
+  },
+  {
+    "id": "pet_set_a_03",
+    "label": "Mossback Tortoise \u2014 Joy",
+    "category": "pets",
+    "file": "assets/emotes/pet_set_a_03.png",
+    "defaultAvailable": false,
+    "sourceCrop": [
+      618,
+      0,
+      931,
+      500
+    ]
+  },
+  {
+    "id": "pet_set_a_04",
+    "label": "Petal Fox \u2014 Wave",
+    "category": "pets",
+    "file": "assets/emotes/pet_set_a_04.png",
+    "defaultAvailable": false,
+    "sourceCrop": [
+      931,
+      0,
+      1254,
+      500
+    ]
+  },
+  {
+    "id": "pet_set_a_05",
+    "label": "Glasswing Moth \u2014 Sparkle",
+    "category": "pets",
+    "file": "assets/emotes/pet_set_a_05.png",
+    "defaultAvailable": false,
+    "sourceCrop": [
+      0,
+      500,
+      320,
+      829
+    ]
+  },
+  {
+    "id": "pet_set_a_06",
+    "label": "Comet Pup \u2014 Wave",
+    "category": "pets",
+    "file": "assets/emotes/pet_set_a_06.png",
+    "defaultAvailable": false,
+    "sourceCrop": [
+      320,
+      500,
+      634,
+      829
+    ]
+  },
+  {
+    "id": "pet_set_a_07",
+    "label": "Meteor Mite \u2014 Cheer",
+    "category": "pets",
+    "file": "assets/emotes/pet_set_a_07.png",
+    "defaultAvailable": false,
+    "sourceCrop": [
+      634,
+      500,
+      931,
+      829
+    ]
+  },
+  {
+    "id": "pet_set_a_08",
+    "label": "Nebula Fox \u2014 Wink",
+    "category": "pets",
+    "file": "assets/emotes/pet_set_a_08.png",
+    "defaultAvailable": false,
+    "sourceCrop": [
+      931,
+      500,
+      1254,
+      829
+    ]
+  },
+  {
+    "id": "pet_set_a_09",
+    "label": "Harvest Fox \u2014 Joy",
+    "category": "pets",
+    "file": "assets/emotes/pet_set_a_09.png",
+    "defaultAvailable": false,
+    "sourceCrop": [
+      0,
+      829,
+      322,
+      1254
+    ]
+  },
+  {
+    "id": "pet_set_a_10",
+    "label": "Amber Owl \u2014 Wink",
+    "category": "pets",
+    "file": "assets/emotes/pet_set_a_10.png",
+    "defaultAvailable": false,
+    "sourceCrop": [
+      322,
+      829,
+      634,
+      1254
+    ]
+  },
+  {
+    "id": "pet_set_a_11",
+    "label": "Emberbud \u2014 Joy",
+    "category": "pets",
+    "file": "assets/emotes/pet_set_a_11.png",
+    "defaultAvailable": false,
+    "sourceCrop": [
+      634,
+      829,
+      931,
+      1254
+    ]
+  },
+  {
+    "id": "pet_set_a_12",
+    "label": "Rift Beetle \u2014 Joy",
+    "category": "pets",
+    "file": "assets/emotes/pet_set_a_12.png",
+    "defaultAvailable": false,
+    "sourceCrop": [
+      931,
+      829,
+      1254,
+      1254
+    ]
+  },
+  {
+    "id": "pet_set_b_01",
+    "label": "Moonhare \u2014 Surprised",
+    "category": "pets",
+    "file": "assets/emotes/pet_set_b_01.png",
+    "defaultAvailable": false,
+    "sourceCrop": [
+      0,
+      0,
+      305,
+      497
+    ]
+  },
+  {
+    "id": "pet_set_b_02",
+    "label": "Budling \u2014 Love",
+    "category": "pets",
+    "file": "assets/emotes/pet_set_b_02.png",
+    "defaultAvailable": false,
+    "sourceCrop": [
+      305,
+      0,
+      618,
+      497
+    ]
+  },
+  {
+    "id": "pet_set_b_03",
+    "label": "Mossback Tortoise \u2014 Sleepy",
+    "category": "pets",
+    "file": "assets/emotes/pet_set_b_03.png",
+    "defaultAvailable": false,
+    "sourceCrop": [
+      618,
+      0,
+      931,
+      497
+    ]
+  },
+  {
+    "id": "pet_set_b_04",
+    "label": "Petal Fox \u2014 Playful",
+    "category": "pets",
+    "file": "assets/emotes/pet_set_b_04.png",
+    "defaultAvailable": false,
+    "sourceCrop": [
+      931,
+      0,
+      1254,
+      497
+    ]
+  },
+  {
+    "id": "pet_set_b_05",
+    "label": "Glasswing Moth \u2014 Radiant",
+    "category": "pets",
+    "file": "assets/emotes/pet_set_b_05.png",
+    "defaultAvailable": false,
+    "sourceCrop": [
+      0,
+      497,
+      305,
+      838
+    ]
+  },
+  {
+    "id": "pet_set_b_06",
+    "label": "Comet Pup \u2014 Proud",
+    "category": "pets",
+    "file": "assets/emotes/pet_set_b_06.png",
+    "defaultAvailable": false,
+    "sourceCrop": [
+      305,
+      497,
+      627,
+      838
+    ]
+  },
+  {
+    "id": "pet_set_b_07",
+    "label": "Meteor Mite \u2014 Grumpy",
+    "category": "pets",
+    "file": "assets/emotes/pet_set_b_07.png",
+    "defaultAvailable": false,
+    "sourceCrop": [
+      627,
+      497,
+      931,
+      838
+    ]
+  },
+  {
+    "id": "pet_set_b_08",
+    "label": "Nebula Fox \u2014 Happy tears",
+    "category": "pets",
+    "file": "assets/emotes/pet_set_b_08.png",
+    "defaultAvailable": false,
+    "sourceCrop": [
+      931,
+      497,
+      1254,
+      838
+    ]
+  },
+  {
+    "id": "pet_set_b_09",
+    "label": "Harvest Fox \u2014 Sleepy",
+    "category": "pets",
+    "file": "assets/emotes/pet_set_b_09.png",
+    "defaultAvailable": false,
+    "sourceCrop": [
+      0,
+      838,
+      323,
+      1254
+    ]
+  },
+  {
+    "id": "pet_set_b_10",
+    "label": "Amber Owl \u2014 Cheer",
+    "category": "pets",
+    "file": "assets/emotes/pet_set_b_10.png",
+    "defaultAvailable": false,
+    "sourceCrop": [
+      323,
+      838,
+      630,
+      1254
+    ]
+  },
+  {
+    "id": "pet_set_b_11",
+    "label": "Emberbud \u2014 Grumpy",
+    "category": "pets",
+    "file": "assets/emotes/pet_set_b_11.png",
+    "defaultAvailable": false,
+    "sourceCrop": [
+      630,
+      838,
+      942,
+      1254
+    ]
+  },
+  {
+    "id": "pet_set_b_12",
+    "label": "Rift Beetle \u2014 Confused",
+    "category": "pets",
+    "file": "assets/emotes/pet_set_b_12.png",
+    "defaultAvailable": false,
+    "sourceCrop": [
+      942,
+      838,
+      1254,
+      1254
+    ]
+  }
+]

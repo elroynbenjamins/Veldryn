@@ -1,0 +1,205 @@
+{
+  "browser": "Chromium",
+  "testMode": "set_content; injected in-memory preference store; all art embedded",
+  "checks": 49,
+  "passed": 49,
+  "nativeDeviceTested": false,
+  "results": [
+    {
+      "check": "World messages gated before opt-in",
+      "passed": true
+    },
+    {
+      "check": "Composer disabled before opt-in",
+      "passed": true
+    },
+    {
+      "check": "World opt-in reveals six sample messages",
+      "passed": true
+    },
+    {
+      "check": "System read-only composer",
+      "passed": true
+    },
+    {
+      "check": "System read-only send",
+      "passed": true
+    },
+    {
+      "check": "Guild denied without membership",
+      "passed": true
+    },
+    {
+      "check": "Party denied without membership",
+      "passed": true
+    },
+    {
+      "check": "Draft survives channel switching",
+      "passed": true
+    },
+    {
+      "check": "Picker shows exactly 20 slots",
+      "passed": true
+    },
+    {
+      "check": "Emote insertion does not auto-send",
+      "passed": true
+    },
+    {
+      "check": "Composer contains stable shortcode",
+      "passed": true
+    },
+    {
+      "check": "Draft preview renders image",
+      "passed": true
+    },
+    {
+      "check": "Local send produces one delivered message",
+      "passed": true
+    },
+    {
+      "check": "Message contains emote image",
+      "passed": true
+    },
+    {
+      "check": "Simulated failure shown",
+      "passed": true
+    },
+    {
+      "check": "Retry does not duplicate the message",
+      "passed": true
+    },
+    {
+      "check": "Retry clears failed state",
+      "passed": true
+    },
+    {
+      "check": "Offline disables sending",
+      "passed": true
+    },
+    {
+      "check": "Reconnect keeps draft",
+      "passed": true
+    },
+    {
+      "check": "Demo membership enables guild messages",
+      "passed": true
+    },
+    {
+      "check": "Avatar/name opens mini-profile",
+      "passed": true
+    },
+    {
+      "check": "Friend button does not pretend to send a real request",
+      "passed": true
+    },
+    {
+      "check": "Whisper opens a separate conversation",
+      "passed": true
+    },
+    {
+      "check": "Settings starts with saved 20",
+      "passed": true
+    },
+    {
+      "check": "Save disabled for 19 selections",
+      "passed": true
+    },
+    {
+      "check": "Mixed female choice saved",
+      "passed": true
+    },
+    {
+      "check": "Mixed pet choice saved",
+      "passed": true
+    },
+    {
+      "check": "Cancel keeps previous saved tray",
+      "passed": true
+    },
+    {
+      "check": "Unknown sender not relabeled System",
+      "passed": true
+    },
+    {
+      "check": "Untrusted text cannot add HTML images",
+      "passed": true
+    },
+    {
+      "check": "New-message indicator while reading above bottom",
+      "passed": true
+    },
+    {
+      "check": "Incoming preserves scroll position",
+      "passed": true
+    },
+    {
+      "check": "Jump-to-latest clears unread",
+      "passed": true
+    },
+    {
+      "check": "Too-long message disabled",
+      "passed": true
+    },
+    {
+      "check": "No page overflow at 320px",
+      "passed": true
+    },
+    {
+      "check": "Composer visible at 320px",
+      "passed": true
+    },
+    {
+      "check": "Tab height at least 44px at 320px",
+      "passed": true
+    },
+    {
+      "check": "No page overflow at 360px",
+      "passed": true
+    },
+    {
+      "check": "Composer visible at 360px",
+      "passed": true
+    },
+    {
+      "check": "Tab height at least 44px at 360px",
+      "passed": true
+    },
+    {
+      "check": "No page overflow at 430px",
+      "passed": true
+    },
+    {
+      "check": "Composer visible at 430px",
+      "passed": true
+    },
+    {
+      "check": "Tab height at least 44px at 430px",
+      "passed": true
+    },
+    {
+      "check": "No page overflow at 768px",
+      "passed": true
+    },
+    {
+      "check": "Composer visible at 768px",
+      "passed": true
+    },
+    {
+      "check": "Tab height at least 44px at 768px",
+      "passed": true
+    },
+    {
+      "check": "Escape closes modal",
+      "passed": true
+    },
+    {
+      "check": "Loaded images decode successfully",
+      "passed": true
+    },
+    {
+      "check": "No runtime JavaScript errors",
+      "passed": true
+    }
+  ]
+}

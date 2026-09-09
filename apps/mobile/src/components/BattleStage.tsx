@@ -7,16 +7,17 @@ import {GameState} from '../core/types';
 import {monsterPortraits} from '../theme/monster-assets';
 import {C,radii,spacing,typography} from '../theme/theme';
 import {CharacterVisual} from './CharacterVisual';
+import {ot} from '../i18n';
 
 export function BattleStage({state,monster,elapsedSeconds,cycleSeconds}:{state:GameState;monster:MonsterDef;elapsedSeconds:number;cycleSeconds:number}){
   const strike=useRef(new Animated.Value(0)).current;
-  useEffect(()=>{const loop=Animated.loop(Animated.sequence([Animated.delay(550),Animated.timing(strike,{toValue:1,duration:140,easing:Easing.out(Easing.quad),useNativeDriver:true}),Animated.timing(strike,{toValue:0,duration:260,useNativeDriver:true}),Animated.delay(550)]));loop.start();return()=>loop.stop()},[strike]);
+  useEffect(()=>{strike.setValue(0);if(state.settings.reduceMotion)return;const loop=Animated.loop(Animated.sequence([Animated.delay(550),Animated.timing(strike,{toValue:1,duration:140,easing:Easing.out(Easing.quad),useNativeDriver:true}),Animated.timing(strike,{toValue:0,duration:260,useNativeDriver:true}),Animated.delay(550)]));loop.start();return()=>loop.stop()},[state.settings.reduceMotion,strike]);
   const view=combatPresentation(state,monster,elapsedSeconds,cycleSeconds),stats=effectiveStats(state);
   const enemyPct=view.enemyHp/view.enemyMaxHp,playerPct=Math.max(0,Math.min(1,state.character!.currentHp/stats.hp));
   return <View style={s.stage} accessibilityLabel={`Battle against ${monster.name}. ${view.safety} difficulty.`}>
-    <View style={s.header}><Text style={s.kicker}>LIVE ENCOUNTER</Text><Text style={[s.safety,view.safety==='safe'?s.safe:view.safety==='dangerous'?s.danger:s.steady]}>{view.safety.toUpperCase()}</Text></View>
+    <View style={s.header}><Text style={s.kicker}>{ot(state.settings.language,'combat.live')}</Text><Text style={[s.safety,view.safety==='safe'?s.safe:view.safety==='dangerous'?s.danger:s.steady]}>{view.safety.toUpperCase()}</Text></View>
     <View style={s.ability}><Text style={s.abilityName}>◆ {view.style.name}</Text><Text style={s.abilityText}>{view.style.description}</Text></View>
-    <View style={s.combatants}><View style={s.side}><CharacterVisual state={state} compact/><Text style={s.name}>{state.character!.name}</Text><Text style={s.hit}>≈ {view.playerHit} damage</Text></View><View style={s.versus}><Text style={s.vs}>VS</Text><Animated.Text style={[s.damage,{opacity:strike,transform:[{translateY:strike.interpolate({inputRange:[0,1],outputRange:[8,-8]})}]}]}>−{view.playerHit}</Animated.Text></View><View style={s.side}><Image source={monsterPortraits[monster.id]} resizeMode="contain" style={s.monster}/><Text style={s.name}>{monster.name}</Text><Text style={s.hit}>≈ {view.enemyHit} damage</Text></View></View>
+    <View style={s.combatants}><View style={s.side}><CharacterVisual state={state} compact/><Text style={s.name}>{state.character!.name}</Text><Text style={s.hit}>≈ {view.playerHit} {ot(state.settings.language,'combat.damage')}</Text></View><View style={s.versus}><Text style={s.vs}>VS</Text>{!state.settings.reduceMotion&&<Animated.Text style={[s.damage,{opacity:strike,transform:[{translateY:strike.interpolate({inputRange:[0,1],outputRange:[8,-8]})}]}]}>−{view.playerHit}</Animated.Text>}</View><View style={s.side}><Image source={monsterPortraits[monster.id]} resizeMode="contain" style={s.monster}/><Text style={s.name}>{monster.name}</Text><Text style={s.hit}>≈ {view.enemyHit} {ot(state.settings.language,'combat.damage')}</Text></View></View>
     <Bar label="YOUR HEALTH" value={state.character!.currentHp} max={stats.hp} pct={playerPct} color={playerPct<.35?C.bad:C.good}/><Bar label="ENEMY CYCLE" value={view.enemyHp} max={view.enemyMaxHp} pct={enemyPct} color={C.bad}/>
   </View>;
 }

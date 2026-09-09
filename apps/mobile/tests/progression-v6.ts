@@ -6,7 +6,7 @@ import {newGame} from '../src/core/game';
 if(characterXpForNextLevel(1)!==Math.floor((90*Math.pow(1,1.42)+35)*43.2))throw new Error('Character XP scaling missing');
 if(skillXpForNextLevel(1)!==Math.floor((90*Math.pow(1,1.42)+35)*4.3))throw new Error('Skill XP scaling missing');
 if(MONSTERS.find(m=>m.id==='MOSS_RAT')!.secondsPerKill!==11)throw new Error('Combat action pacing missing');
-if(GATHERING.find(g=>g.id==='COPPER_VEIN')!.seconds!==23)throw new Error('Gathering pacing missing');
+if(GATHERING.find(g=>g.id==='COPPER_VEIN')!.seconds!==30)throw new Error('Gathering pacing missing');
 if(RECIPES.find(r=>r.id==='SMITH_COPPER_BLADE')!.inputs.find(i=>i.itemId==='COPPER_INGOT')!.quantity!==44)throw new Error('Gear materials were not doubled');
 const old={...newGame(0),version:5,account:undefined,settings:{numberMode:'abbreviated',reduceMotion:false,textScale:1,autoEatThresholdPct:40,stopCombatWhenOutOfFood:true}};
 const migrated=migrateSave(old);

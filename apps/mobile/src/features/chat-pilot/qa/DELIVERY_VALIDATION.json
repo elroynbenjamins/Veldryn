@@ -1,0 +1,20 @@
+{
+  "deliveryDate": "2026-09-08",
+  "preparedPNGs": 133,
+  "recroppedEmotes": 64,
+  "coreTestsPassed": 44,
+  "browserChecksPassed": 49,
+  "nativeSyntaxTranspilePassed": true,
+  "nativeFullTypecheckPassed": null,
+  "androidBuildTested": false,
+  "iosBuildTested": false,
+  "nativeDeviceTested": false,
+  "realServerConnected": false,
+  "githubModified": false,
+  "storageTestMode": "injected_memory_adapter_in_browser; memory_adapter_in_core_tests",
+  "unchangedScope": [
+    "equipment appearance swapping remains removed",
+    "no new stat bonuses",
+    "no live backend deployment"
+  ]
+}

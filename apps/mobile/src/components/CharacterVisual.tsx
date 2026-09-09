@@ -1,37 +1,41 @@
-import React,{useState} from 'react';
+import React from 'react';
 import {Image,StyleSheet,Text,View} from 'react-native';
-import {GameState} from '../core/types';
-import {resolveCharacterAppearance,noviceSetProgress} from '../core/character-appearance';
-import {startingAppearance} from '../theme/character-assets';
-import {classEmblems,firstCraftedAppearance} from '../theme/novice-assets';
+import type {StyleProp,ViewStyle} from 'react-native';
+import {BodyPresentation,ClassId,GameState} from '../core/types';
+import {CHARACTER_SKIN_SETS} from '../content/character-skin-sets';
+import {equipmentSetSkinId} from '../core/character-skins';
+import {approvedCharacterSkinArtwork,startingCharacterArtwork} from '../theme/character-assets';
 import {C,spacing,typography} from '../theme/theme';
-import {GameButton} from './GameButton';
-import {resolveEquipmentLayers} from '../core/equipment-layers';
-import {equipmentLayerRegistry,equipmentLayerSources} from '../theme/equipment-layer-assets';
-import {CharacterAvatar} from './CustomizationControls';
-import {DEFAULT_CUSTOMIZATION} from '../core/customization';
 
-export function CharacterVisual({state,preview=false,compact=false,simulation=false}:{state:GameState;preview?:boolean;compact?:boolean;simulation?:boolean}){
-  const [view,setView]=useState<'front'|'back'>('front');
-  const [showCoverage,setShowCoverage]=useState(false);
-  const character=state.character!,body=character.bodyPresentation??'male';
-  const appearance=resolveCharacterAppearance(state),set=noviceSetProgress(state).set;
-  const composition=resolveEquipmentLayers(state,equipmentLayerRegistry,view);
-  // Full-set skins currently include authored heads and exposed skin. Keep the base
-  // presentation neutral until every skin can safely compose player hair/skin choices.
-  const customization=DEFAULT_CUSTOMIZATION;
-  const visibleCustomization=composition.hidesHair?{...customization,hairStyle:'bald' as const}:customization;
-  const layered=!preview&&composition.layers.length>0;
-  const source=preview||appearance==='first-crafted'?firstCraftedAppearance[character.classId][body][view]:appearance==='starting'?startingAppearance[character.classId][body][view]:classEmblems[character.classId];
-  const baseLabel=preview?`${set.name} · target preview`:layered?'Equipment appearance · layered':appearance==='first-crafted'?`${set.name} · equipped`:appearance==='starting'?'Starting outfit · equipped':'Mixed equipment · class emblem';
-  const label=simulation?`Try-on only · ${baseLabel.replace('equipped','preview')}`:baseLabel;
-  return <View style={s.frame}>
-    <Text style={s.label}>{label}</Text>
-    {layered?<View accessible accessibilityLabel={`${label}, ${body}, ${view} view`} style={compact?s.compact:s.portrait}><View style={StyleSheet.absoluteFillObject}><CharacterAvatar body={body} view={view} value={visibleCustomization} compact/></View>{composition.layers.map(layer=><Image key={layer.id} source={equipmentLayerSources[layer.source]} resizeMode="contain" style={StyleSheet.absoluteFillObject}/>)}</View>:<Image accessibilityLabel={`${label}, ${body}${appearance==='mixed'&&!preview?'':`, ${view} view`}`} source={source} resizeMode="contain" style={compact?s.compact:s.portrait}/>}
-    {appearance==='mixed'&&!preview&&<Text style={s.note}>{layered?'Approved pieces are shown. Still missing: ':'Individual armor layers are missing: '}{composition.missing.join(' · ')}</Text>}
-    {preview&&<Text style={s.note}>Craft and equip all required pieces to use this complete outfit. Crafting alone does not equip gear.</Text>}
-    {!compact&&(preview||layered||appearance!=='mixed')&&<GameButton title={view==='front'?'View back':'View front'} tone="secondary" onPress={()=>setView(view==='front'?'back':'front')}/>}
-    {!compact&&!preview&&<><GameButton title={showCoverage?'Hide layer coverage':'Show layer coverage'} tone="secondary" onPress={()=>setShowCoverage(!showCoverage)}/>{showCoverage&&<Text style={s.note}>{composition.layers.length} approved layer(s) shown · Missing: {composition.missing.join(' · ')||'none'}</Text>}</>}
+export function FixedCharacterPortrait({classId,body='male',view='front',compact=false,style}:{classId:ClassId;body?:BodyPresentation;view?:'front'|'back';compact?:boolean;style?:StyleProp<ViewStyle>}){
+  return <View accessibilityLabel={`${body} ${classId.replace('_',' ')} starting character, ${view} view`} style={[compact?s.compact:s.portrait,style]}>
+    <Image source={startingCharacterArtwork[body][view]} resizeMode="contain" style={s.layer}/>
   </View>;
 }
-const s=StyleSheet.create({frame:{backgroundColor:C.panel2,borderWidth:1,borderColor:C.line,borderRadius:12,padding:spacing.md,gap:spacing.sm,alignItems:'center'},label:{...typography.bodyStrong,color:C.accent,textAlign:'center'},portrait:{width:240,height:300,maxWidth:'100%'},compact:{width:96,height:120},note:{...typography.caption,color:C.muted,textAlign:'center'}});
+
+function selectedSkin(state:GameState){
+  const selectedId=state.character?.selectedSkinId??'starting';
+  const set=CHARACTER_SKIN_SETS.find(candidate=>equipmentSetSkinId(candidate.id)===selectedId);
+  const artwork=set?.appearanceId?approvedCharacterSkinArtwork[set.appearanceId]:undefined;
+  return {name:artwork&&set?set.name:'Starting skin',artwork};
+}
+
+export function CharacterPortrait({state,view='front',compact=false,style}:{state:GameState;view?:'front'|'back';compact?:boolean;style?:StyleProp<ViewStyle>}){
+  const character=state.character!,body=character.bodyPresentation??'male',skin=selectedSkin(state);
+  if(!skin.artwork)return <FixedCharacterPortrait classId={character.classId} body={body} view={view} compact={compact} style={style}/>;
+  const source=skin.artwork[body][view]??skin.artwork[body].front;
+  return <View accessibilityLabel={`${body} ${character.classId.replace('_',' ')} character wearing ${skin.name}, ${view} view`} style={[compact?s.compact:s.portrait,style]}>
+    <Image source={source} resizeMode="contain" style={s.layer}/>
+  </View>;
+}
+
+export function CharacterVisual({state,compact=false}:{state:GameState;compact?:boolean}){
+  const character=state.character!,skin=selectedSkin(state);
+  return <View style={s.frame}>
+    <Text style={s.label}>{character.classId.replace('_',' ')} · {skin.name}</Text>
+    <CharacterPortrait state={state} compact={compact}/>
+    <Text style={s.note}>Skin choice is cosmetic. Equipping or removing individual items never changes this appearance.</Text>
+  </View>;
+}
+
+const s=StyleSheet.create({frame:{backgroundColor:C.panel2,borderWidth:1,borderColor:C.line,borderRadius:12,padding:spacing.md,gap:spacing.sm,alignItems:'center'},label:{...typography.bodyStrong,color:C.accent,textAlign:'center'},portrait:{width:240,height:300,maxWidth:'100%'},compact:{width:96,height:120},layer:{...StyleSheet.absoluteFillObject,width:'100%',height:'100%'},note:{...typography.caption,color:C.muted,textAlign:'center'}});

@@ -6,7 +6,7 @@ const t0=1_000_000;
 let s=createCharacter(newGame(t0),'WAYFINDER','Tester');
 s=startCombat(s,'MOSS_RAT',t0);
 let p=previewActivityReward(s,t0+60_000);
-ok(p.kills>=5,'Should kill several Moss Rats in 60 sec');
+ok(p.kills>=3,'Should kill multiple Moss Rats in 60 sec');
 let c=claimActivity(s,t0+60_000); s=c.state;
 ok(s.character!.xp>0 && s.character!.gold>100,'Claim should award XP and gold');
 const capped=previewActivityReward(s,t0+60_000+(OFFLINE_CAP_SECONDS+3600)*1000);

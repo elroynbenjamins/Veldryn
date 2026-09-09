@@ -1,0 +1,274 @@
+TAP version 13
+# Subtest: default tray has 20 free stable IDs
+ok 1 - default tray has 20 free stable IDs
+  ---
+  duration_ms: 2.632665
+  type: 'test'
+  ...
+# Subtest: 20 mixed-gender and pet emotes are accepted
+ok 2 - 20 mixed-gender and pet emotes are accepted
+  ---
+  duration_ms: 0.349009
+  type: 'test'
+  ...
+# Subtest: incomplete draft cannot be saved
+ok 3 - incomplete draft cannot be saved
+  ---
+  duration_ms: 0.216127
+  type: 'test'
+  ...
+# Subtest: 21 entries cannot be saved
+ok 4 - 21 entries cannot be saved
+  ---
+  duration_ms: 0.16923
+  type: 'test'
+  ...
+# Subtest: duplicates rejected
+ok 5 - duplicates rejected
+  ---
+  duration_ms: 0.272789
+  type: 'test'
+  ...
+# Subtest: unknown ID rejected
+ok 6 - unknown ID rejected
+  ---
+  duration_ms: 0.13163
+  type: 'test'
+  ...
+# Subtest: locked ID rejected
+ok 7 - locked ID rejected
+  ---
+  duration_ms: 0.297368
+  type: 'test'
+  ...
+# Subtest: reconciliation keeps valid mixed choices and fills missing entries with defaults
+ok 8 - reconciliation keeps valid mixed choices and fills missing entries with defaults
+  ---
+  duration_ms: 1.264282
+  type: 'test'
+  ...
+# Subtest: reorder is immutable and preserves membership
+ok 9 - reorder is immutable and preserves membership
+  ---
+  duration_ms: 0.631078
+  type: 'test'
+  ...
+# Subtest: invalid reorder is a harmless copy
+ok 10 - invalid reorder is a harmless copy
+  ---
+  duration_ms: 1.500249
+  type: 'test'
+  ...
+# Subtest: emote inserts at caret not always at end
+ok 11 - emote inserts at caret not always at end
+  ---
+  duration_ms: 0.225873
+  type: 'test'
+  ...
+# Subtest: parser creates stable segments for known emotes
+ok 12 - parser creates stable segments for known emotes
+  ---
+  duration_ms: 0.719451
+  type: 'test'
+  ...
+# Subtest: unknown shortcode remains ordinary text
+ok 13 - unknown shortcode remains ordinary text
+  ---
+  duration_ms: 0.16656
+  type: 'test'
+  ...
+# Subtest: ordinary Unicode remains text and counts code points
+ok 14 - ordinary Unicode remains text and counts code points
+  ---
+  duration_ms: 0.157502
+  type: 'test'
+  ...
+# Subtest: 500 characters accepted, 501 rejected
+ok 15 - 500 characters accepted, 501 rejected
+  ---
+  duration_ms: 0.171243
+  type: 'test'
+  ...
+# Subtest: emote-only messages allowed
+ok 16 - emote-only messages allowed
+  ---
+  duration_ms: 0.072833
+  type: 'test'
+  ...
+# Subtest: blank messages rejected
+ok 17 - blank messages rejected
+  ---
+  duration_ms: 0.047902
+  type: 'test'
+  ...
+# Subtest: at most 8 emotes per message
+ok 18 - at most 8 emotes per message
+  ---
+  duration_ms: 0.08254
+  type: 'test'
+  ...
+# Subtest: locked emote cannot be sent
+ok 19 - locked emote cannot be sent
+  ---
+  duration_ms: 0.055827
+  type: 'test'
+  ...
+# Subtest: World is opt-in for reading and sending
+ok 20 - World is opt-in for reading and sending
+  ---
+  duration_ms: 0.570954
+  type: 'test'
+  ...
+# Subtest: Guild and Party both require membership
+ok 21 - Guild and Party both require membership
+  ---
+  duration_ms: 0.121594
+  type: 'test'
+  ...
+# Subtest: System can be read but never written
+ok 22 - System can be read but never written
+  ---
+  duration_ms: 0.211247
+  type: 'test'
+  ...
+# Subtest: offline preserves draft and prevents a send
+ok 23 - offline preserves draft and prevents a send
+  ---
+  duration_ms: 0.14235
+  type: 'test'
+  ...
+# Subtest: self and blocked whispers denied
+ok 24 - self and blocked whispers denied
+  ---
+  duration_ms: 0.095061
+  type: 'test'
+  ...
+# Subtest: server echo replaces optimistic row with same request ID
+ok 25 - server echo replaces optimistic row with same request ID
+  ---
+  duration_ms: 0.179488
+  type: 'test'
+  ...
+# Subtest: sent acknowledgement is not downgraded by stale pending echo
+ok 26 - sent acknowledgement is not downgraded by stale pending echo
+  ---
+  duration_ms: 0.062405
+  type: 'test'
+  ...
+# Subtest: matching request IDs from another sender are not merged
+ok 27 - matching request IDs from another sender are not merged
+  ---
+  duration_ms: 11.500449
+  type: 'test'
+  ...
+# Subtest: sort order is deterministic
+ok 28 - sort order is deterministic
+  ---
+  duration_ms: 0.167463
+  type: 'test'
+  ...
+# Subtest: send success creates one delivered row
+ok 29 - send success creates one delivered row
+  ---
+  duration_ms: 13.331478
+  type: 'test'
+  ...
+# Subtest: failed send retries with the same request ID and no duplicate
+ok 30 - failed send retries with the same request ID and no duplicate
+  ---
+  duration_ms: 6.769381
+  type: 'test'
+  ...
+# Subtest: changing channel during an in-flight send preserves the original channel
+ok 31 - changing channel during an in-flight send preserves the original channel
+  ---
+  duration_ms: 8.502112
+  type: 'test'
+  ...
+# Subtest: double-send while pending is blocked
+ok 32 - double-send while pending is blocked
+  ---
+  duration_ms: 8.846075
+  type: 'test'
+  ...
+# Subtest: failure does not erase a newly typed draft
+ok 33 - failure does not erase a newly typed draft
+  ---
+  duration_ms: 8.862054
+  type: 'test'
+  ...
+# Subtest: mismatched server receipt fails safely
+ok 34 - mismatched server receipt fails safely
+  ---
+  duration_ms: 0.561521
+  type: 'test'
+  ...
+# Subtest: incoming unread increments once despite duplicate delivery
+ok 35 - incoming unread increments once despite duplicate delivery
+  ---
+  duration_ms: 0.170733
+  type: 'test'
+  ...
+# Subtest: reading the bottom clears active unread
+ok 36 - reading the bottom clears active unread
+  ---
+  duration_ms: 0.083756
+  type: 'test'
+  ...
+# Subtest: blocking hides rows and suppresses unread, without altering message evidence
+ok 37 - blocking hides rows and suppresses unread, without altering message evidence
+  ---
+  duration_ms: 0.141243
+  type: 'test'
+  ...
+# Subtest: history merge does not create new unread notifications
+ok 38 - history merge does not create new unread notifications
+  ---
+  duration_ms: 0.080646
+  type: 'test'
+  ...
+# Subtest: account-scoped settings retain mixed order across controller instances
+ok 39 - account-scoped settings retain mixed order across controller instances
+  ---
+  duration_ms: 0.582177
+  type: 'test'
+  ...
+# Subtest: failed settings save preserves old saved tray
+ok 40 - failed settings save preserves old saved tray
+  ---
+  duration_ms: 0.22765
+  type: 'test'
+  ...
+# Subtest: invalid settings never reach persistence adapter
+ok 41 - invalid settings never reach persistence adapter
+  ---
+  duration_ms: 0.091978
+  type: 'test'
+  ...
+# Subtest: settings load error uses free defaults and exposes error
+ok 42 - settings load error uses free defaults and exposes error
+  ---
+  duration_ms: 0.224113
+  type: 'test'
+  ...
+# Subtest: failed World consent save reports session-only success
+ok 43 - failed World consent save reports session-only success
+  ---
+  duration_ms: 0.186729
+  type: 'test'
+  ...
+# Subtest: custom token does not permit arbitrary image or HTML source
+ok 44 - custom token does not permit arbitrary image or HTML source
+  ---
+  duration_ms: 0.082156
+  type: 'test'
+  ...
+1..44
+# tests 44
+# suites 0
+# pass 44
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 143.142596

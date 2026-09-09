@@ -7,14 +7,24 @@ import {GameState,ClassId,RewardBundle,ItemStack,GearSlot,BodyPresentation} from
 import {characterLevelFromXp,levelFromXp} from './progression';
 import {random01} from './rng';
 import {characterNameError} from './character-creation';
-import {CharacterCustomization,normalizeCustomization} from './customization';
 import {noviceItemId,noviceSetFor} from '../content/novice-sets';
 import {classCombatStyle} from './class-combat';
+import {captureActivityEnvironment,environmentEffectForActivity} from './world-weather';
+import {SeasonalPeriod,seasonalQuestBoard} from './seasonal-quests';
+import {discoverCharacterSkins} from './character-skins';
+import {characterPermanentMultipliers} from './permanent-boosts';
+import {activityEventDiscoveries,activityEventDrops,applyEventDiscoveries,applyEventDrops,grantEventActivity} from './live-events';
 
 export const BASE_OFFLINE_CAP_HOURS=24;
 export const MAX_OFFLINE_CAP_HOURS=36;
 /** Base cap retained for content/tests; actual saves use offlineCapSeconds(state). */
 export const OFFLINE_CAP_SECONDS=BASE_OFFLINE_CAP_HOURS*60*60;
+const COMBAT_SPEED_MIN=.68;
+const COMBAT_SPEED_MAX=1.3;
+const COMBAT_TIME_SCALE=1.16;
+const COMBAT_EXPECTED_SCALE=1.3;
+const COMBAT_MONSTER_DAMAGE_SCALE=1.13;
+const GATHER_TIME_SCALE=1.45;
 
 export function offlineCapBreakdown(state:GameState){
   const setComplete=!!state.character&&noviceSetFor(state.character.classId).slots.every(slot=>state.character!.craftedNoviceItemIds?.includes(noviceItemId(state.character!.classId,slot)));
@@ -39,11 +49,11 @@ export function newGame(nowMs:number):GameState{return {
   quests:QUESTS.map((q,i)=>({questId:q.id,status:i===0?'active':'locked',progress:0 as number})) as any,
   unlockedMonsterIds:['MOSS_RAT'],defeatedBossIds:[],
   skills:['mining','woodcutting','fishing','smithing','cooking'].map(skillId=>({skillId:skillId as any,xp:0,level:1})),
-  account:{createdCharacterCount:1,guildMember:false,patronTier:'none',guildContribution:0,guildProjectProgress:0,guildBossHp:100000,guildProjectClaimed:false,guildJoinPolicy:'open',guildMinimumLevel:10,guildApplicationStatus:'none'},
+  account:{createdCharacterCount:1,guildMember:false,patronTier:'none',guildContribution:0,guildProjectProgress:0,guildBossHp:100000,guildProjectClaimed:false,guildJoinPolicy:'open',guildMinimumLevel:10,guildApplicationStatus:'none',seasonalContractClaimIds:[]},
   settings:{language:'en',numberMode:'abbreviated',reduceMotion:false,textScale:1,autoEatThresholdPct:40,stopCombatWhenOutOfFood:true,autoJoinWorldChat:true,defaultWorldChat:1}
 }}
 
-export function createCharacter(state:GameState,classId:ClassId,name='Adventurer',bodyPresentation:BodyPresentation='male',customization?:CharacterCustomization):GameState{
+export function createCharacter(state:GameState,classId:ClassId,name='Adventurer',bodyPresentation:BodyPresentation='male'):GameState{
   const c=CLASSES.find(x=>x.id===classId);if(!c)throw new Error('Unknown class');
   if(state.character)throw new Error('A character already exists in this save');
   if(bodyPresentation!=='male'&&bodyPresentation!=='female')throw new Error('Invalid body presentation');
@@ -52,14 +62,8 @@ export function createCharacter(state:GameState,classId:ClassId,name='Adventurer
   const equipment={weapon:c.starterEquipment.weapon};
   let maxHp=c.hp;
   for(const id of Object.values(equipment) as string[]){const d=itemDef(id);maxHp+=d.hp||0;}
-  return {...state,character:{id:'LOCAL_CHAR_1',name:name.trim()||'Adventurer',classId,bodyPresentation,customization:normalizeCustomization(customization),profileTitle:'New Adventurer',profileBackgroundId:'asterfall-night',profileAppearanceMode:'live',profileEquipmentSnapshot:{},level:1,xp:0,gold:100,hp:c.hp,currentHp:maxHp,attack:c.attack,defense:c.defense,equipment,equippedFoodId:'TRAVEL_RATION'},
+  return {...state,character:{id:'LOCAL_CHAR_1',name:name.trim()||'Adventurer',classId,bodyPresentation,profileTitle:'New Adventurer',profileBackgroundId:'asterfall-night',unlockedSkinIds:['starting'],ownedPetIds:[],ownedBoostIds:[],selectedSkinId:'starting',level:1,xp:0,gold:100,hp:c.hp,currentHp:maxHp,attack:c.attack,defense:c.defense,equipment,equippedFoodId:'TRAVEL_RATION'},
     inventory:{...state.inventory,stacks:[{itemId:'TRAVEL_RATION',quantity:20}]}}
-}
-
-/** Cosmetic-only update. Equipment, stats and activity remain untouched. */
-export function updateCharacterCustomization(state:GameState,customization:CharacterCustomization):GameState{
-  if(!state.character)throw new Error('Create a character first');
-  return {...state,character:{...state.character,customization:normalizeCustomization(customization)}};
 }
 
 export function effectiveStats(state:GameState){
@@ -76,7 +80,7 @@ export function startCombat(state:GameState,monsterId:string,nowMs:number):GameS
   if(!state.unlockedMonsterIds.includes(monsterId))throw new Error('Monster not unlocked');
   const m=MONSTERS.find(x=>x.id===monsterId);if(!m)throw new Error('Unknown monster');
   if(m.boss)throw new Error('Bosses use challengeFallenKnight');
-  return {...state,activity:{kind:'combat',targetId:monsterId,startedAtMs:nowMs,lastClaimAtMs:nowMs}}
+  return {...state,activity:{kind:'combat',targetId:monsterId,startedAtMs:nowMs,lastClaimAtMs:nowMs,environment:captureActivityEnvironment(monsterId,nowMs)}}
 }
 
 export function stackItems(existing:ItemStack[],incoming:ItemStack[]):ItemStack[]{const m=new Map<string,number>();for(const s of existing)m.set(s.itemId,(m.get(s.itemId)||0)+s.quantity);for(const s of incoming)m.set(s.itemId,(m.get(s.itemId)||0)+s.quantity);return [...m.entries()].filter(([,q])=>q>0).map(([itemId,quantity])=>({itemId,quantity}));}
@@ -117,17 +121,22 @@ function stackQty(stacks:ItemStack[],itemId?:string){if(!itemId)return 0;return 
 
 function simulateCombat(state:GameState,monsterId:string,elapsed:number){
   const c=state.character!;const m=MONSTERS.find(x=>x.id===monsterId)!;const stats=effectiveStats(state);
+  const modifiers=characterPermanentMultipliers(state);
   const style=classCombatStyle(c.classId);
-  const expected=m.attack*1.2+m.defense*.8+m.level*2.2;
-  const speed=Math.max(.72,Math.min(1.5,stats.power/Math.max(1,expected)))*style.speedMultiplier;
-  const theoreticalKills=Math.floor(elapsed/(m.secondsPerKill/speed));
+  const environment=state.activity?environmentEffectForActivity(state.activity).effect:undefined;
+  const boostedAttack=Math.max(1,Math.round(stats.attack*modifiers.combatPowerMultiplier));
+  const boostedDefense=Math.max(1,Math.round(stats.defense*modifiers.combatPowerMultiplier));
+  const boostedPower=Math.max(1,Math.round(stats.power*modifiers.combatPowerMultiplier));
+  const expected=(m.attack*1.2+m.defense*.8+m.level*2.2)*COMBAT_EXPECTED_SCALE;
+  const speed=Math.max(COMBAT_SPEED_MIN,Math.min(COMBAT_SPEED_MAX,boostedPower/Math.max(1,expected)))*style.speedMultiplier*modifiers.combatSpeedMultiplier;
+  const theoreticalKills=Math.floor(elapsed/(m.secondsPerKill*COMBAT_TIME_SCALE*(environment?.actionTimeMultiplier??1)/speed));
   const foodId=c.equippedFoodId;const food=foodId?itemDef(foodId):undefined;
   let foodLeft=stackQty(state.inventory.stacks,foodId),foodConsumed=0;
   let hp=Math.min(c.currentHp||stats.hp,stats.hp),kills=0,stoppedReason='';
   const threshold=Math.max(10,Math.min(90,state.settings.autoEatThresholdPct))/100;
   for(let i=0;i<theoreticalKills;i++){
-    const raw=Math.max(1,m.attack-Math.floor(stats.defense*.58));
-    const damage=Math.max(1,Math.round((raw*.48 + m.level*.16)*style.damageTakenMultiplier));
+    const raw=Math.max(1,Math.round((m.attack*COMBAT_MONSTER_DAMAGE_SCALE)-Math.floor(boostedDefense*.58)));
+    const damage=Math.max(1,Math.round((raw*.48 + m.level*.16)*style.damageTakenMultiplier*modifiers.incomingDamageMultiplier));
     hp-=damage;
     while(food && food.heal && foodLeft>0 && hp>0 && hp/stats.hp<=threshold){
       hp=Math.min(stats.hp,hp+food.heal);foodLeft--;foodConsumed++;
@@ -146,16 +155,23 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number){
 export function previewActivityReward(state:GameState,nowMs:number):RewardBundle{
   if(!state.activity||!state.character)return {xp:0,gold:0,items:[],kills:0,elapsedSeconds:0};
   const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,Math.floor((nowMs-state.activity.lastClaimAtMs)/1000)));
+  const multipliers=characterPermanentMultipliers(state);
   if(state.activity.kind!=='combat'){
     const g=GATHERING.find(x=>x.id===state.activity!.targetId);if(!g)return {xp:0,gold:0,items:[],kills:0,elapsedSeconds:elapsed};
-    const actions=Math.floor(elapsed/g.seconds);
-    return {xp:actions*g.xp,gold:0,items:actions?[{itemId:g.itemId,quantity:actions*g.min}]:[],kills:actions,elapsedSeconds:elapsed};
+    const effect=environmentEffectForActivity(state.activity).effect;
+    const effectiveActionSeconds=g.seconds*GATHER_TIME_SCALE*effect.actionTimeMultiplier/multipliers.gatheringSpeedMultiplier;
+    const actions=Math.floor(elapsed/effectiveActionSeconds);
+    const quantity=Math.floor(actions*g.min*effect.itemMultiplier);
+    const reward:RewardBundle={xp:Math.floor(actions*g.xp*effect.xpMultiplier*multipliers.skillXpMultiplier),gold:0,items:quantity?[{itemId:g.itemId,quantity}]:[],kills:actions,elapsedSeconds:elapsed};
+    return {...reward,eventDrops:activityEventDrops(state,reward,nowMs),eventDiscoveries:activityEventDiscoveries(state,'gathering',Math.floor(reward.elapsedSeconds/60),nowMs)};
   }
   const m=MONSTERS.find(x=>x.id===state.activity!.targetId);if(!m)throw new Error('Unknown monster');
   if(m.boss)return {xp:0,gold:0,items:[],kills:0,elapsedSeconds:elapsed};
   const sim=simulateCombat(state,m.id,elapsed);const items:ItemStack[]=[];
-  for(const drop of m.drops){let qty=0;const seed=`${state.character.id}:${state.activity.lastClaimAtMs}:${m.id}:${drop.itemId}`;for(let i=0;i<sim.kills;i++)if(random01(seed,i)<drop.chance)qty+=drop.min+Math.floor(random01(seed,i+50000)*(drop.max-drop.min+1));if(qty>0)items.push({itemId:drop.itemId,quantity:qty});}
-  return {xp:sim.kills*m.xp,gold:sim.kills*m.gold,items,kills:sim.kills,elapsedSeconds:elapsed,foodConsumed:sim.foodConsumed,endHp:sim.endHp,stoppedReason:sim.stoppedReason}
+  const effect=environmentEffectForActivity(state.activity).effect;
+  for(const drop of m.drops){let qty=0;const chance=Math.min(1,drop.chance*effect.dropChanceMultiplier*multipliers.dropChanceMultiplier);const seed=`${state.character.id}:${state.activity.lastClaimAtMs}:${m.id}:${drop.itemId}`;for(let i=0;i<sim.kills;i++)if(random01(seed,i)<chance)qty+=drop.min+Math.floor(random01(seed,i+50000)*(drop.max-drop.min+1));if(qty>0)items.push({itemId:drop.itemId,quantity:qty});}
+  const reward:RewardBundle={xp:Math.floor(sim.kills*m.xp*effect.xpMultiplier*multipliers.characterXpMultiplier),gold:Math.floor(sim.kills*m.gold*effect.goldMultiplier*multipliers.goldMultiplier),items,kills:sim.kills,elapsedSeconds:elapsed,foodConsumed:sim.foodConsumed,endHp:sim.endHp,stoppedReason:sim.stoppedReason};
+  return {...reward,eventDrops:activityEventDrops(state,reward,nowMs),eventDiscoveries:activityEventDiscoveries(state,'combat',reward.kills,nowMs)};
 }
 
 export function refreshQuests(state:GameState,lastCombatTarget?:string,lastKills=0):GameState{
@@ -179,6 +195,18 @@ export function claimQuest(state:GameState,questId:string):GameState{
   const idx=QUESTS.findIndex(x=>x.id===questId),nextDef=QUESTS[idx+1];if(nextDef)next={...next,quests:next.quests.map(x=>x.questId===nextDef.id&&x.status==='locked'?{...x,status:'active' as const}:x)};
   return refreshQuests(next)
 }
+/** Offline contract claims are deterministic; online mode can replace this with the same server-authoritative contract ID. */
+export function claimSeasonalContract(state:GameState,period:SeasonalPeriod,contractId:string,nowMs=Date.now()):GameState{
+  if(!state.character)throw new Error('Create a character first');
+  const contract=seasonalQuestBoard(state,period,new Date(nowMs)).find(entry=>entry.id===contractId);
+  if(!contract)throw new Error('This contract has expired.');
+  if((state.account.seasonalContractClaimIds??[]).includes(contract.id))throw new Error('This contract reward was already claimed.');
+  if(contract.progress<contract.required)throw new Error('Complete the contract before claiming its cache.');
+  const xp=state.character.xp+contract.rewardXp,level=characterLevelFromXp(xp);
+  const routed=routeRewards(state,[{itemId:contract.rewardItemId,quantity:contract.rewardItemQty}],nowMs);
+  const claimed=[...(state.account.seasonalContractClaimIds??[]),contract.id].slice(-120);
+  return refreshQuests({...state,...routed,character:{...state.character,xp,level,gold:state.character.gold+contract.rewardGold},account:{...state.account,seasonalContractClaimIds:claimed}} as GameState);
+}
 
 export function claimActivity(state:GameState,nowMs:number){
   const reward=previewActivityReward(state,nowMs);if(!state.character||!state.activity)return {state,reward};
@@ -186,7 +214,7 @@ export function claimActivity(state:GameState,nowMs:number){
     const skills=state.skills.map(x=>x.skillId===state.activity!.kind?{...x,xp:x.xp+reward.xp,level:levelFromXp(x.xp+reward.xp)}:x);
     const routed=routeRewards(state,reward.items,nowMs);
     const next={...state,skills,...routed,activity:{...state.activity,lastClaimAtMs:nowMs}} as GameState;
-    return {state:refreshQuests(next),reward};
+    return {state:refreshQuests(applyEventDiscoveries(applyEventDrops(next,reward.eventDrops??[]),reward.eventDiscoveries??[])),reward};
   }
   const xp=state.character.xp+reward.xp,level=characterLevelFromXp(xp);
   const unlocked=MONSTERS.filter(m=>!m.boss&&m.unlockLevel<=level).map(m=>m.id);
@@ -195,7 +223,7 @@ export function claimActivity(state:GameState,nowMs:number){
   const routed=routeRewards({...state,inventory:{...state.inventory,stacks:baseInventory}} as GameState,reward.items,nowMs);
   const shouldStop=!!reward.stoppedReason;
   const next={...state,...routed,character:{...state.character,xp,level,gold:state.character.gold+reward.gold,currentHp:reward.endHp??state.character.currentHp},activity:shouldStop?null:{...state.activity,lastClaimAtMs:nowMs},unlockedMonsterIds:[...new Set([...state.unlockedMonsterIds,...unlocked])]} as GameState;
-  return {state:refreshQuests(next,state.activity.targetId,reward.kills),reward}
+  return {state:refreshQuests(applyEventDiscoveries(applyEventDrops(next,reward.eventDrops??[]),reward.eventDiscoveries??[]),state.activity.targetId,reward.kills),reward}
 }
 
 export function stopActivity(state:GameState):GameState{return {...state,activity:null}}
@@ -210,8 +238,8 @@ export function equipItem(state:GameState,itemId:string):GameState{
 export function equipFood(state:GameState,itemId:string):GameState{if(!state.character)throw new Error('No character');const d=itemDef(itemId);if(d.type!=='food')throw new Error('Not food');if(stackQty(state.inventory.stacks,itemId)<=0)throw new Error('No food available');return {...state,character:{...state.character,equippedFoodId:itemId}}}
 export function eatFood(state:GameState,itemId?:string):GameState{if(!state.character)return state;const id=itemId||state.character.equippedFoodId;if(!id)return state;const d=itemDef(id);if(d.type!=='food'||!d.heal)throw new Error('Not food');const maxHp=effectiveStats(state).hp;return {...state,inventory:{...state.inventory,stacks:consume(state.inventory.stacks,id,1)},character:{...state.character,currentHp:Math.min(maxHp,state.character.currentHp+d.heal)}}}
 export function unequipItem(state:GameState,slot:GearSlot):GameState{if(!state.character)return state;const old=state.character.equipment[slot];if(!old)return state;const eq={...state.character.equipment};delete eq[slot];const next={...state,inventory:{...state.inventory,stacks:stackItems(state.inventory.stacks,[{itemId:old,quantity:1}])},character:{...state.character,equipment:eq}} as GameState;next.character!.currentHp=Math.min(effectiveStats(next).hp,next.character!.currentHp);return next}
-export function sellItem(state:GameState,itemId:string,quantity=1):GameState{if(!state.character||quantity<=0)return state;const d=itemDef(itemId);return {...state,inventory:{...state.inventory,stacks:consume(state.inventory.stacks,itemId,quantity)},character:{...state.character,gold:state.character.gold+d.value*quantity}}}
-export function salvageItem(state:GameState,itemId:string):GameState{const d=itemDef(itemId);if(d.type!=='gear'||!d.salvage)throw new Error('Cannot salvage');return {...state,inventory:{...state.inventory,stacks:stackItems(consume(state.inventory.stacks,itemId,1),[d.salvage])}}}
+export function sellItem(state:GameState,itemId:string,quantity=1):GameState{if(!state.character||quantity<=0)return state;const discovered=discoverCharacterSkins(state),d=itemDef(itemId);return {...discovered,inventory:{...discovered.inventory,stacks:consume(discovered.inventory.stacks,itemId,quantity)},character:{...discovered.character!,gold:discovered.character!.gold+d.value*quantity}}}
+export function salvageItem(state:GameState,itemId:string):GameState{const discovered=discoverCharacterSkins(state),d=itemDef(itemId);if(d.type!=='gear'||!d.salvage)throw new Error('Cannot salvage');return {...discovered,inventory:{...discovered.inventory,stacks:stackItems(consume(discovered.inventory.stacks,itemId,1),[d.salvage])}}}
 
 export function depositToBank(state:GameState,itemId:string,quantity:number):GameState{
   if(quantity<=0)return state;
@@ -229,6 +257,27 @@ export function withdrawFromBank(state:GameState,itemId:string,quantity:number):
   if(added.overflow.length)throw new Error('Inventory is full');
   return {...state,bank:{...state.bank,stacks:removed},inventory:{...state.inventory,stacks:added.stacks}};
 }
+export type StorageLocation='inventory'|'bank';
+const STORAGE_UPGRADES:Record<StorageLocation,{capacity:number;cost:number}[]>={
+  inventory:[{capacity:40,cost:500},{capacity:50,cost:1500},{capacity:60,cost:4000},{capacity:75,cost:10000},{capacity:100,cost:25000}],
+  bank:[{capacity:160,cost:1000},{capacity:220,cost:3000},{capacity:300,cost:8000},{capacity:400,cost:20000},{capacity:500,cost:50000}],
+};
+export function storageUpgradePreview(state:GameState,location:StorageLocation){const current=state[location].capacity;return STORAGE_UPGRADES[location].find(tier=>tier.capacity>current)??null}
+export function upgradeStorage(state:GameState,location:StorageLocation):GameState{
+  if(!state.character)throw new Error('Create a character first');
+  const next=storageUpgradePreview(state,location);if(!next)throw new Error(`${location==='bank'?'Bank':'Inventory'} capacity is already maxed`);
+  if(state.character.gold<next.cost)throw new Error(`Requires ${next.cost.toLocaleString()} gold`);
+  return {...state,[location]:{...state[location],capacity:next.capacity},character:{...state.character,gold:state.character.gold-next.cost}};
+}
+/** Moves every material stack that fits. Food, gear and quest items remain carried. */
+export function depositAllMaterials(state:GameState):GameState{
+  let next=state,moved=0;
+  for(const stack of state.inventory.stacks.filter(entry=>itemDef(entry.itemId).type==='material')){
+    try{next=depositToBank(next,stack.itemId,stack.quantity);moved+=stack.quantity}catch(error){if(!(error instanceof Error)||error.message!=='Bank is full')throw error}
+  }
+  if(!moved)throw new Error(state.inventory.stacks.some(entry=>itemDef(entry.itemId).type==='material')?'Bank has no room for these materials':'No carried materials to deposit');
+  return next;
+}
 function combinedQty(state:GameState,itemId:string){return stackQty(state.inventory.stacks,itemId)+stackQty(state.bank.stacks,itemId);}
 function consumeInventoryThenBank(state:GameState,itemId:string,quantity:number){
   if(combinedQty(state,itemId)<quantity)throw new Error('Not enough items');
@@ -244,8 +293,8 @@ export function claimOverflowToBank(state:GameState):GameState{
   return {...state,bank:{...state.bank,stacks:added.stacks},overflow:{stacks:added.overflow,expiresAtMs:added.overflow.length?state.overflow.expiresAtMs:null}};
 }
 
-export function startGathering(state:GameState,targetId:string,nowMs:number):GameState{const g=GATHERING.find(x=>x.id===targetId);if(!g)throw new Error('Unknown gathering target');const skill=state.skills.find(x=>x.skillId===g.skillId);if(!skill||skill.level<g.unlockLevel)throw new Error('Skill level too low');return {...state,activity:{kind:g.skillId,targetId,startedAtMs:nowMs,lastClaimAtMs:nowMs}}}
-export function craftRecipe(state:GameState,recipeId:string):GameState{
+export function startGathering(state:GameState,targetId:string,nowMs:number):GameState{const g=GATHERING.find(x=>x.id===targetId);if(!g)throw new Error('Unknown gathering target');const skill=state.skills.find(x=>x.skillId===g.skillId);if(!skill||skill.level<g.unlockLevel)throw new Error('Skill level too low');return {...state,activity:{kind:g.skillId,targetId,startedAtMs:nowMs,lastClaimAtMs:nowMs,environment:captureActivityEnvironment(targetId,nowMs)}}}
+export function craftRecipe(state:GameState,recipeId:string,nowMs=Date.now()):GameState{
   if(!state.character)throw new Error('No character');
   const r=RECIPES.find(x=>x.id===recipeId);if(!r)throw new Error('Unknown recipe');
   if(r.classId&&r.classId!==state.character.classId)throw new Error('This recipe belongs to another class');
@@ -266,9 +315,10 @@ export function craftRecipe(state:GameState,recipeId:string):GameState{
     const b=addBounded(bank,state.bank.capacity,output.overflow);bank=b.stacks;
     if(b.overflow.length)throw new Error('Inventory and Bank are full');
   }
-  const xp=sk.xp+r.xp;
+  const multipliers=characterPermanentMultipliers(state);
+  const xp=sk.xp+Math.floor(r.xp*multipliers.skillXpMultiplier);
   const next={...state,character:{...state.character,gold:state.character.gold-r.gold,...(r.noviceSetId?{craftedNoviceItemIds:[...new Set([...(state.character.craftedNoviceItemIds??[]),r.output.itemId])]}:{})},inventory:{...state.inventory,stacks:inv},bank:{...state.bank,stacks:bank},skills:state.skills.map(x=>x.skillId===r.skillId?{...x,xp,level:levelFromXp(xp)}:x)} as GameState;
-  return refreshQuests(next)
+  return refreshQuests(grantEventActivity(next,'crafting',nowMs))
 }
 
 /** Equip owned novice pieces atomically. No gear is granted, discarded or taken from overflow. */
@@ -317,5 +367,5 @@ export function challengeFallenKnight(state:GameState,nowMs=Date.now()):{state:G
   const roll=random01(`${state.character.id}:FALLEN_KNIGHT:${nowMs}`,0);const won=roll<chance;
   if(!won)return {state,won:false,message:`Fallen Knight repelled you. Readiness ${ready.total}/100 (gear ${ready.equipment}/35, food ${ready.food}/10, mastery ${ready.mastery}/10). Recommended: 80+.`};
   const xp=state.character.xp+3000;let next={...state,defeatedBossIds:[...state.defeatedBossIds,'FALLEN_KNIGHT'],character:{...state.character,gold:state.character.gold+900,xp,level:characterLevelFromXp(xp),currentHp:effectiveStats(state).hp},inventory:{...state.inventory,stacks:stackItems(state.inventory.stacks,[{itemId:'FALLEN_KNIGHT_SIGIL',quantity:1}])},activity:null} as GameState;
-  next=refreshQuests(next);return {state:next,won:true,message:`Fallen Knight defeated at readiness ${ready.total}/100. The road toward Sunscar is open.`}
+  next=refreshQuests(grantEventActivity(next,'boss',nowMs));return {state:next,won:true,message:`Fallen Knight defeated at readiness ${ready.total}/100. The road toward Sunscar is open.`}
 }

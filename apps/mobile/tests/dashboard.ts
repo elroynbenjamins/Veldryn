@@ -1,12 +1,14 @@
-import {createCharacter,newGame} from '../src/core/game';
+import {createCharacter,newGame,startCombat} from '../src/core/game';
 import {activityRate,dashboardRecommendation} from '../src/core/dashboard';
+import {environmentEffectForActivity} from '../src/core/world-weather';
 
 const state=createCharacter(newGame(0),'BASTION','Tester');
 const first=dashboardRecommendation(state);
 if(first.destination!=='World'||first.zoneId!=='Greenfields')throw new Error(`Expected first quest guidance to Greenfields, got ${JSON.stringify(first)}`);
-state.activity={kind:'combat',targetId:'MOSS_RAT',startedAtMs:0,lastClaimAtMs:0};
+const hunting=startCombat(state,'MOSS_RAT',0);state.activity=hunting.activity;
 const rate=activityRate(state);
-if(rate.actionsPerHour<400||rate.xpPerHour!==rate.actionsPerHour*14||rate.goldPerHour!==rate.actionsPerHour)throw new Error(`Unexpected activity rate ${JSON.stringify(rate)}`);
+const effect=environmentEffectForActivity(state.activity!).effect;
+if(rate.actionsPerHour<300||rate.xpPerHour!==Math.floor(rate.actionsPerHour*14*effect.xpMultiplier)||rate.goldPerHour!==Math.floor(rate.actionsPerHour*effect.goldMultiplier))throw new Error(`Unexpected weather-adjusted activity rate ${JSON.stringify(rate)}`);
 state.quests[0].status='complete';
 if(dashboardRecommendation(state).destination!=='Quests')throw new Error('Completed quest should take priority');
 state.overflow={stacks:[{itemId:'MOSS_FIBER',quantity:1}],expiresAtMs:1};

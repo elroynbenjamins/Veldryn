@@ -2,7 +2,22 @@ import { itemDef } from '../content/items';
 import { MONSTERS } from '../content/monsters';
 import { GameState, ItemStack } from '../core/types';
 import { characterLevelFromXp, characterTotalXpAtLevel } from '../core/progression';
-import { stackItems } from '../core/game';
+import { stackItems, previewActivityReward } from '../core/game';
+import { captureActivityEnvironment } from '../core/world-weather';
+
+export interface BalanceSimulationSample {
+  monsterId: string;
+  monster: string;
+  level: number;
+  unlockLevel: number;
+  kills: number;
+  xp: number;
+  gold: number;
+  elapsedSeconds: number;
+  stopped: boolean;
+  stopReason: string;
+  endHp: number;
+}
 
 function requireCharacter(state: GameState) {
   if (!state.character) throw new Error('Debug action requires a character');
@@ -51,6 +66,43 @@ export function debugCompleteQuest(state: GameState, questId: string): GameState
 
 export function debugDefeatFallenKnight(state: GameState): GameState {
   return state.defeatedBossIds.includes('FALLEN_KNIGHT') ? state : { ...state, defeatedBossIds: [...state.defeatedBossIds, 'FALLEN_KNIGHT'] };
+}
+
+export function debugCombatBalanceProbe(state: GameState, elapsedSeconds = 3600): BalanceSimulationSample[] {
+  const c = requireCharacter(state);
+  const nowMs = Math.max(1, Math.floor(elapsedSeconds)) * 1000;
+  const samples: BalanceSimulationSample[] = [];
+
+  for (const monster of MONSTERS) {
+    if (monster.boss) continue;
+    const testState = {
+      ...state,
+      activity: {
+        kind: 'combat',
+        targetId: monster.id,
+        startedAtMs: 0,
+        lastClaimAtMs: 0,
+        environment: captureActivityEnvironment(monster.id, 0),
+      },
+    } as GameState;
+
+    const reward = previewActivityReward(testState, nowMs);
+    samples.push({
+      monsterId: monster.id,
+      monster: monster.name,
+      level: monster.level,
+      unlockLevel: monster.unlockLevel,
+      kills: reward.kills,
+      xp: reward.xp,
+      gold: reward.gold,
+      elapsedSeconds: reward.elapsedSeconds,
+      stopped: !!reward.stoppedReason,
+      stopReason: reward.stoppedReason ?? '',
+      endHp: reward.endHp ?? c.hp,
+    });
+  }
+
+  return samples;
 }
 
 export function debugSerializeSave(state: GameState): string {

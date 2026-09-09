@@ -2,6 +2,8 @@ export type ClassId = 'IRONWARDEN' | 'BASTION' | 'DREADGUARD' | 'DAWNKEEPER' | '
 export type BodyPresentation = 'male' | 'female';
 export type GearSlot = 'weapon' | 'offhand' | 'helmet' | 'chest' | 'legs' | 'boots' | 'gloves' | 'cape' | 'amulet' | 'ring';
 export type ActivityKind = 'combat' | 'mining' | 'woodcutting' | 'fishing';
+export type SeasonId='spring'|'summer'|'autumn'|'winter';
+export type WeatherId='clear'|'rain'|'mist'|'storm'|'bloomwind'|'heatwave'|'harvest_wind'|'snow'|'frost';
 export type SkillId='mining'|'woodcutting'|'fishing'|'smithing'|'cooking';
 export interface SkillState{skillId:SkillId;xp:number;level:number;}
 export interface CharacterState {
@@ -10,22 +12,34 @@ export interface CharacterState {
   equipment:Partial<Record<GearSlot,string>>;
   equippedFoodId?:string;
   bodyPresentation?:BodyPresentation;
-  customization?:import('./customization').CharacterCustomization;
-  craftedNoviceItemIds?:string[]; profileTitle?:string; profileBackgroundId?:string; profileAppearanceMode?:'live'|'showcase'; profileEquipmentSnapshot?:Partial<Record<GearSlot,string>>;
+  craftedNoviceItemIds?:string[]; profileTitle?:string; profileBackgroundId?:string; profileBorderId?:string; selectedCosmeticPetId?:string;
+  /** Character-bound collection rewards. Once added, a skin ID is never removed by item loss. */
+  unlockedSkinIds?:string[];
+  /** Permanently collected pets that provide permanent boosts. */
+  ownedPetIds?: string[];
+  /** Permanently bought boosts that provide permanent boosts. */
+  ownedBoostIds?: string[];
+  /** Cosmetic choice only. Equipment changes stats and never changes this value. */
+  selectedSkinId?:string;
 }
 export interface ItemStack { itemId:string; quantity:number; }
 export interface InventoryState { stacks:ItemStack[]; capacity:number; }
 export interface BankState { stacks:ItemStack[]; capacity:number; }
 export interface OverflowState { stacks:ItemStack[]; expiresAtMs:number|null; }
-export interface ActiveActivity { kind:ActivityKind; targetId:string; startedAtMs:number; lastClaimAtMs:number; }
+export interface ActivityEnvironmentSnapshot{seasonId:SeasonId;weatherId:WeatherId;zoneId:string;capturedAtMs:number;}
+export interface ActiveActivity { kind:ActivityKind; targetId:string; startedAtMs:number; lastClaimAtMs:number; environment?:ActivityEnvironmentSnapshot; }
 export interface QuestState { questId:string; status:'locked'|'active'|'complete'|'claimed'; progress:number; }
+export interface LiveEventRuntime{eventId:string;enabled:boolean;startsAtMs:number;endsAtMs:number;}
 export interface GameState {
   version:6; createdAtMs:number; character:CharacterState|null; inventory:InventoryState; bank:BankState; overflow:OverflowState; activity:ActiveActivity|null;
   quests:QuestState[]; unlockedMonsterIds:string[]; defeatedBossIds:string[]; skills:SkillState[];
-  account:{createdCharacterCount:number;guildMember:boolean;patronTier:'none'|'bloom'|'crown';guildContribution?:number;guildProjectProgress?:number;guildBossHp?:number;guildProjectClaimed?:boolean;guildJoinPolicy?:'open'|'apply'|'invite';guildMinimumLevel?:number;guildApplicationStatus?:'none'|'pending'|'accepted'|'declined'};
-  settings:{language:'en'|'nl'|'de';numberMode:'abbreviated'|'exact';reduceMotion:boolean;textScale:1|1.15|1.3|1.5;autoEatThresholdPct:number;stopCombatWhenOutOfFood:boolean;autoJoinWorldChat?:boolean;defaultWorldChat?:1|2|3|4;};
+  account:{createdCharacterCount:number;guildMember:boolean;patronTier:'none'|'bloom'|'crown';guildContribution?:number;guildProjectProgress?:number;guildBossHp?:number;guildProjectClaimed?:boolean;guildJoinPolicy?:'open'|'apply'|'invite';guildMinimumLevel?:number;guildApplicationStatus?:'none'|'pending'|'accepted'|'declined';seasonalContractClaimIds?:string[];liveEvent?:LiveEventRuntime;eventProgressById?:Record<string,number>;eventCurrencyBalanceById?:Record<string,number>;eventPrestigeBalanceById?:Record<string,number>;eventRepeatCacheClaimsById?:Record<string,number>;eventActivityById?:Record<string,Partial<Record<'combat'|'gathering'|'crafting'|'boss',number>>>;eventPeriodActivityById?:Record<string,Partial<Record<'combat'|'gathering'|'crafting'|'boss',number>>>;eventAcceptedContractIds?:string[];eventContractBaselines?:Record<string,number>;eventObjectiveClaimIds?:string[];eventWeeklyClaimIds?:string[];eventDailyGiftClaimIds?:string[];eventCommunityClaimIds?:string[];eventDiscoveryCounts?:Record<string,number>;eventDiscoveryClaimIds?:string[];eventShopPurchaseCounts?:Record<string,number>;eventChoiceById?:Record<string,string>;eventContributionById?:Record<string,number>;eventRewardClaimIds?:string[];unlockedEventSkinIds?:string[];unlockedCosmeticPetIds?:string[];unlockedProfileBackgroundIds?:string[];unlockedProfileBorderIds?:string[];unlockedEmoteIds?:string[];unlockedTitleIds?:string[]};
+  settings:{language:Language;numberMode:'abbreviated'|'exact';reduceMotion:boolean;textScale:1|1.15|1.3|1.5;autoEatThresholdPct:number;stopCombatWhenOutOfFood:boolean;autoJoinWorldChat?:boolean;defaultWorldChat?:1|2|3|4;};
 }
 export interface RewardBundle {
   xp:number; gold:number; items:ItemStack[]; kills:number; elapsedSeconds:number;
   foodConsumed?:number; endHp?:number; stoppedReason?:string;
+  eventDrops?:{eventId:string;currencyId:string;name:string;quantity:number;source?:'combat'|'gathering'|'crafting'|'boss';units?:number;recordedAtMs?:number}[];
+  eventDiscoveries?:{eventId:string;discoveryId:string;name:string;quantity:number}[];
 }
+import type {Language} from '../i18n/languages';

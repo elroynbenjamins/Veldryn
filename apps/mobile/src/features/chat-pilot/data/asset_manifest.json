@@ -1,0 +1,1943 @@
+{
+  "version": 1,
+  "project": "VELDRYN",
+  "pathBase": "chat_pilot_root",
+  "scope": "chat_pilot_assets",
+  "status": "prepared_and_pilot_checked_device_QA_pending",
+  "sourceCropPolicy": "existing_approved_art_only",
+  "nineSlice": {
+    "sourcePixels": [
+      480,
+      168
+    ],
+    "sourceInsetsPx": {
+      "left": 48,
+      "right": 48,
+      "top": 48,
+      "bottom": 48
+    },
+    "cornerDisplayDp": 12,
+    "minSizeDp": [
+      48,
+      44
+    ],
+    "parts": [
+      "tl",
+      "t",
+      "tr",
+      "l",
+      "c",
+      "r",
+      "bl",
+      "b",
+      "br"
+    ],
+    "recommendedCornerDpByUse": {
+      "button": 12,
+      "tab": 12,
+      "modal": 16
+    }
+  },
+  "assets": [
+    {
+      "id": "male_01",
+      "file": "assets/emotes/male_01.png",
+      "source": "08_Concept_Mockups/Emotes/pixelart_emotes_van_een_fantasyheld.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "7f3b10dd13560bbdf56f32806c6b9d97967e0f6a725d39821ebf389f9f6f35aa",
+      "cropRect": [
+        0,
+        0,
+        254,
+        350
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "male_02",
+      "file": "assets/emotes/male_02.png",
+      "source": "08_Concept_Mockups/Emotes/pixelart_emotes_van_een_fantasyheld.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "8138b39c56b3ba1648bb969a0dd4d034bf87c9572a56d802c0e35d86dd4f3a05",
+      "cropRect": [
+        254,
+        0,
+        507,
+        350
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "male_03",
+      "file": "assets/emotes/male_03.png",
+      "source": "08_Concept_Mockups/Emotes/pixelart_emotes_van_een_fantasyheld.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "a2318b17a408c781dbb3d4a448df167c4ef90ff6e6ff050489ab586c7b356924",
+      "cropRect": [
+        507,
+        0,
+        750,
+        350
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "male_04",
+      "file": "assets/emotes/male_04.png",
+      "source": "08_Concept_Mockups/Emotes/pixelart_emotes_van_een_fantasyheld.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "afd2ca9ef267dde4caada8ee2e74fddd357a061ee01a1300d3c73a9029ebe606",
+      "cropRect": [
+        750,
+        0,
+        998,
+        350
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "male_05",
+      "file": "assets/emotes/male_05.png",
+      "source": "08_Concept_Mockups/Emotes/pixelart_emotes_van_een_fantasyheld.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "fcdfc608b88263fe83f2f42d0fa0a117be81b43a23f98bb542182fa91af40a58",
+      "cropRect": [
+        998,
+        0,
+        1254,
+        350
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "male_06",
+      "file": "assets/emotes/male_06.png",
+      "source": "08_Concept_Mockups/Emotes/pixelart_emotes_van_een_fantasyheld.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "38e43486e2a538fe4613de714fe4bbd82c02f9a90f3128bce29b809bcc57864d",
+      "cropRect": [
+        0,
+        350,
+        255,
+        637
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "male_07",
+      "file": "assets/emotes/male_07.png",
+      "source": "08_Concept_Mockups/Emotes/pixelart_emotes_van_een_fantasyheld.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "494cf535ba66e5365ea5b949024df299043275a70462fe982a56e692b7d1f8c5",
+      "cropRect": [
+        255,
+        350,
+        510,
+        637
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "male_08",
+      "file": "assets/emotes/male_08.png",
+      "source": "08_Concept_Mockups/Emotes/pixelart_emotes_van_een_fantasyheld.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "06b21fd9c972349d39308939a5c6411782971a90e46b616919ba1c3e9ea64b3d",
+      "cropRect": [
+        510,
+        350,
+        758,
+        637
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "male_09",
+      "file": "assets/emotes/male_09.png",
+      "source": "08_Concept_Mockups/Emotes/pixelart_emotes_van_een_fantasyheld.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "cfd16c8da88d17eb829db7c7a31a5fe208294e49667037a77e16c1b15e10fdd2",
+      "cropRect": [
+        758,
+        350,
+        994,
+        637
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "male_10",
+      "file": "assets/emotes/male_10.png",
+      "source": "08_Concept_Mockups/Emotes/pixelart_emotes_van_een_fantasyheld.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "0c37698fcfce995924f2871a90134937d5cbf2f7e1c42ad4de4eb413469d9b49",
+      "cropRect": [
+        994,
+        350,
+        1254,
+        637
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "male_11",
+      "file": "assets/emotes/male_11.png",
+      "source": "08_Concept_Mockups/Emotes/pixelart_emotes_van_een_fantasyheld.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "2171d4e96f45d46c54534f82770ed0aabe3c8a997b22df2bcaf587731cef78c9",
+      "cropRect": [
+        0,
+        637,
+        255,
+        917
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "male_12",
+      "file": "assets/emotes/male_12.png",
+      "source": "08_Concept_Mockups/Emotes/pixelart_emotes_van_een_fantasyheld.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "808acb6c3f657a23bf07356596d7b927f1759f766dff0628f145d3390be81f59",
+      "cropRect": [
+        255,
+        637,
+        509,
+        917
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "male_13",
+      "file": "assets/emotes/male_13.png",
+      "source": "08_Concept_Mockups/Emotes/pixelart_emotes_van_een_fantasyheld.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "6885336b811fc55ee71da6986d8f376a96c168b995c287bdde0eac993ee0474e",
+      "cropRect": [
+        509,
+        637,
+        749,
+        917
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "male_14",
+      "file": "assets/emotes/male_14.png",
+      "source": "08_Concept_Mockups/Emotes/pixelart_emotes_van_een_fantasyheld.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "76f1983b7aebb09b10e08eb9da1e6e9af47562911c019c80283f220c51eda5b4",
+      "cropRect": [
+        749,
+        637,
+        994,
+        917
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "male_15",
+      "file": "assets/emotes/male_15.png",
+      "source": "08_Concept_Mockups/Emotes/pixelart_emotes_van_een_fantasyheld.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "78c791a73a389fdb983b12dd914258caa024a8fdf5abfee6b3cf1a8181d65f36",
+      "cropRect": [
+        994,
+        637,
+        1254,
+        917
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "male_16",
+      "file": "assets/emotes/male_16.png",
+      "source": "08_Concept_Mockups/Emotes/pixelart_emotes_van_een_fantasyheld.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "2612c2c63ac45e437faaaf5ae718cf18ab81f81770224ccf118f1fa552fc96b5",
+      "cropRect": [
+        0,
+        917,
+        257,
+        1254
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "male_17",
+      "file": "assets/emotes/male_17.png",
+      "source": "08_Concept_Mockups/Emotes/pixelart_emotes_van_een_fantasyheld.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "14f164958ede741a2462dff9de194ea2a59467b12832fb5d5f93003048783d60",
+      "cropRect": [
+        257,
+        917,
+        497,
+        1254
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "male_18",
+      "file": "assets/emotes/male_18.png",
+      "source": "08_Concept_Mockups/Emotes/pixelart_emotes_van_een_fantasyheld.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "8958fee839ad2ed7e39c090c1df15d78f90d3ac91dfbc7d41c5470da56c0dd5f",
+      "cropRect": [
+        497,
+        917,
+        743,
+        1254
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "male_19",
+      "file": "assets/emotes/male_19.png",
+      "source": "08_Concept_Mockups/Emotes/pixelart_emotes_van_een_fantasyheld.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "137db2615886fc1a30aebf8b7e20873e82a8c37644ccf6c67b3b4aa7b81c7300",
+      "cropRect": [
+        743,
+        917,
+        1012,
+        1254
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "male_20",
+      "file": "assets/emotes/male_20.png",
+      "source": "08_Concept_Mockups/Emotes/pixelart_emotes_van_een_fantasyheld.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "e6826a3c6f9206a92dcf7e48cda2774eb9e90453e15f473a2d8ededb9bb1942f",
+      "cropRect": [
+        1012,
+        917,
+        1254,
+        1254
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "female_01",
+      "file": "assets/emotes/female_01.png",
+      "source": "08_Concept_Mockups/Emotes/pixelart_emotesheet_van_een_heldin.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "4b8a8a1d56afb78b35132629800aa2aff572d91c8029600a2b0283930ac90148",
+      "cropRect": [
+        0,
+        0,
+        256,
+        335
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "female_02",
+      "file": "assets/emotes/female_02.png",
+      "source": "08_Concept_Mockups/Emotes/pixelart_emotesheet_van_een_heldin.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "7d3e51dab9068ed5f3728296712caaf6f6273c32914da3446c89bf1b0322fa2f",
+      "cropRect": [
+        256,
+        0,
+        511,
+        335
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "female_03",
+      "file": "assets/emotes/female_03.png",
+      "source": "08_Concept_Mockups/Emotes/pixelart_emotesheet_van_een_heldin.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "8efde0e8d28465613131b967a313819e95313be29f0e8a539968ce1ff4ff8903",
+      "cropRect": [
+        511,
+        0,
+        760,
+        335
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "female_04",
+      "file": "assets/emotes/female_04.png",
+      "source": "08_Concept_Mockups/Emotes/pixelart_emotesheet_van_een_heldin.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "80424945f342c258780fc09965c045e289cdd8071124119004903ad5e08bb1a4",
+      "cropRect": [
+        760,
+        0,
+        1002,
+        335
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "female_05",
+      "file": "assets/emotes/female_05.png",
+      "source": "08_Concept_Mockups/Emotes/pixelart_emotesheet_van_een_heldin.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "da39ba1a453b6ee5796f3624c959838fe8ecb3b43d089e5170d2cd8c72c2ea49",
+      "cropRect": [
+        1002,
+        0,
+        1254,
+        335
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "female_06",
+      "file": "assets/emotes/female_06.png",
+      "source": "08_Concept_Mockups/Emotes/pixelart_emotesheet_van_een_heldin.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "13fa36b7c0f2fbc4a9d398a0782181b4af4a0172d78943f188ceac7ce400b6c0",
+      "cropRect": [
+        0,
+        335,
+        260,
+        630
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "female_07",
+      "file": "assets/emotes/female_07.png",
+      "source": "08_Concept_Mockups/Emotes/pixelart_emotesheet_van_een_heldin.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "8cd4ec1e01652860eb46f49249996826e9427361f2c8b04bc63b3804ede19121",
+      "cropRect": [
+        260,
+        335,
+        511,
+        630
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "female_08",
+      "file": "assets/emotes/female_08.png",
+      "source": "08_Concept_Mockups/Emotes/pixelart_emotesheet_van_een_heldin.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "1dc9f2de0b921fa241d646e5977c50e097aee9a2dc7e4cf070645ba2991c6c45",
+      "cropRect": [
+        511,
+        335,
+        758,
+        630
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "female_09",
+      "file": "assets/emotes/female_09.png",
+      "source": "08_Concept_Mockups/Emotes/pixelart_emotesheet_van_een_heldin.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "5ee46a923e89e55c5baf22cf1a5dba9c77fc22ee7a5386858d08c0b3471ca221",
+      "cropRect": [
+        758,
+        335,
+        1011,
+        630
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "female_10",
+      "file": "assets/emotes/female_10.png",
+      "source": "08_Concept_Mockups/Emotes/pixelart_emotesheet_van_een_heldin.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "d4cd6f25842fe1df31b79eee1adaebe51605774487dc9de3ca4f93b446ed50b0",
+      "cropRect": [
+        1011,
+        335,
+        1254,
+        630
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "female_11",
+      "file": "assets/emotes/female_11.png",
+      "source": "08_Concept_Mockups/Emotes/pixelart_emotesheet_van_een_heldin.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "d001d18a629ca447e8e996779cebac6ce667c459a5f6c0273b7e94091d93c848",
+      "cropRect": [
+        0,
+        630,
+        257,
+        924
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "female_12",
+      "file": "assets/emotes/female_12.png",
+      "source": "08_Concept_Mockups/Emotes/pixelart_emotesheet_van_een_heldin.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "f000566cfabf4cbe9a6486dfff46edb9c72383b3e3be7974f1070222796b32b7",
+      "cropRect": [
+        257,
+        630,
+        510,
+        924
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "female_13",
+      "file": "assets/emotes/female_13.png",
+      "source": "08_Concept_Mockups/Emotes/pixelart_emotesheet_van_een_heldin.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "7db63407e0e6abdd1b88087d41fd5441fffffdb21f007a3e9f03825c094731f9",
+      "cropRect": [
+        510,
+        630,
+        760,
+        924
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "female_14",
+      "file": "assets/emotes/female_14.png",
+      "source": "08_Concept_Mockups/Emotes/pixelart_emotesheet_van_een_heldin.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "87b1f64a4505966913deab12bdcb2c0f6b5f9c8992c5b64f88dcae3c112e3736",
+      "cropRect": [
+        760,
+        630,
+        1005,
+        924
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "female_15",
+      "file": "assets/emotes/female_15.png",
+      "source": "08_Concept_Mockups/Emotes/pixelart_emotesheet_van_een_heldin.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "89ff79b187c35054a5b9e1e4eb863c6fa787a11d64cc3e55f17c7ede2b4c094b",
+      "cropRect": [
+        1005,
+        630,
+        1254,
+        924
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "female_16",
+      "file": "assets/emotes/female_16.png",
+      "source": "08_Concept_Mockups/Emotes/pixelart_emotesheet_van_een_heldin.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "9895e58418fad5b0b92a25affacaa268a5e22bcf3a51eea58e142f8b7e91e596",
+      "cropRect": [
+        0,
+        924,
+        259,
+        1254
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "female_17",
+      "file": "assets/emotes/female_17.png",
+      "source": "08_Concept_Mockups/Emotes/pixelart_emotesheet_van_een_heldin.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "11d5f4337b9aade8e84976dc23d4c315e3f3962a1ea53924ac1edd1650abf2b8",
+      "cropRect": [
+        259,
+        924,
+        501,
+        1254
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "female_18",
+      "file": "assets/emotes/female_18.png",
+      "source": "08_Concept_Mockups/Emotes/pixelart_emotesheet_van_een_heldin.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "eea75cd9f26f7891ef5b8f77063a0c47af8df5f8e6c16f98672a95ad3703cedd",
+      "cropRect": [
+        501,
+        924,
+        744,
+        1254
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "female_19",
+      "file": "assets/emotes/female_19.png",
+      "source": "08_Concept_Mockups/Emotes/pixelart_emotesheet_van_een_heldin.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "001f514e545adb7f4a8d5c3748f91798b4338119e2be1c2f51285c71636c4bea",
+      "cropRect": [
+        744,
+        924,
+        1008,
+        1254
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "female_20",
+      "file": "assets/emotes/female_20.png",
+      "source": "08_Concept_Mockups/Emotes/pixelart_emotesheet_van_een_heldin.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "2e60261405d2fd7a3a96bfad4317430cd4da1d1ce610f0cf5ba6173079723b10",
+      "cropRect": [
+        1008,
+        924,
+        1254,
+        1254
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "pet_set_a_01",
+      "file": "assets/emotes/pet_set_a_01.png",
+      "source": "08_Concept_Mockups/Emotes/schattige_pixeldieren_emote_sheet.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "4719e78ec695f2a117ff97d35a43233701153503ac390f3725d75cd9af2bf1ba",
+      "cropRect": [
+        0,
+        0,
+        305,
+        500
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "pet_set_a_02",
+      "file": "assets/emotes/pet_set_a_02.png",
+      "source": "08_Concept_Mockups/Emotes/schattige_pixeldieren_emote_sheet.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "5314d57cfbdcb7cabfce9cead02f34e0f4fd1dba0507f23b31f3712034db8f40",
+      "cropRect": [
+        305,
+        0,
+        618,
+        500
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "pet_set_a_03",
+      "file": "assets/emotes/pet_set_a_03.png",
+      "source": "08_Concept_Mockups/Emotes/schattige_pixeldieren_emote_sheet.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "31e748c935e371656d690e7de88f8d66431debad65e9856649f77069dc61399a",
+      "cropRect": [
+        618,
+        0,
+        931,
+        500
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "pet_set_a_04",
+      "file": "assets/emotes/pet_set_a_04.png",
+      "source": "08_Concept_Mockups/Emotes/schattige_pixeldieren_emote_sheet.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "0b39934269b66636784990c611b350522824ef71f8c486a7d88d453869e4c755",
+      "cropRect": [
+        931,
+        0,
+        1254,
+        500
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "pet_set_a_05",
+      "file": "assets/emotes/pet_set_a_05.png",
+      "source": "08_Concept_Mockups/Emotes/schattige_pixeldieren_emote_sheet.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "e74477bcbfd206e25620d654fe575c1f1f0f72442b0ac9a75fe99c5a566b7d87",
+      "cropRect": [
+        0,
+        500,
+        320,
+        829
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "pet_set_a_06",
+      "file": "assets/emotes/pet_set_a_06.png",
+      "source": "08_Concept_Mockups/Emotes/schattige_pixeldieren_emote_sheet.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "2e4e2f57f24adb3f24ae5841ab2eebacbe9a741ba710b0e9678d6e72d1352050",
+      "cropRect": [
+        320,
+        500,
+        634,
+        829
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "pet_set_a_07",
+      "file": "assets/emotes/pet_set_a_07.png",
+      "source": "08_Concept_Mockups/Emotes/schattige_pixeldieren_emote_sheet.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "a7cc6f1ff5e07012f96918bb36dd3f5697af82f9809f55efc3de53a53c3ea21c",
+      "cropRect": [
+        634,
+        500,
+        931,
+        829
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "pet_set_a_08",
+      "file": "assets/emotes/pet_set_a_08.png",
+      "source": "08_Concept_Mockups/Emotes/schattige_pixeldieren_emote_sheet.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "610d8317aba395ec554401d1b347b42d9de877da2b0fedc73887a558d22e1516",
+      "cropRect": [
+        931,
+        500,
+        1254,
+        829
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "pet_set_a_09",
+      "file": "assets/emotes/pet_set_a_09.png",
+      "source": "08_Concept_Mockups/Emotes/schattige_pixeldieren_emote_sheet.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "47c129d4973aa43acd961a3b4ce5888f98fc2cd4db1617dcd1e0abe7f5c83cc5",
+      "cropRect": [
+        0,
+        829,
+        322,
+        1254
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "pet_set_a_10",
+      "file": "assets/emotes/pet_set_a_10.png",
+      "source": "08_Concept_Mockups/Emotes/schattige_pixeldieren_emote_sheet.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "a3ca331d015da11935ac7ea528eac1d6039559a0999c07aba96bf6419ff3d7ba",
+      "cropRect": [
+        322,
+        829,
+        634,
+        1254
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "pet_set_a_11",
+      "file": "assets/emotes/pet_set_a_11.png",
+      "source": "08_Concept_Mockups/Emotes/schattige_pixeldieren_emote_sheet.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "569039d6caf1d961238fa448c18120c932f46cc3b4c80b904f6103e650fbe1ae",
+      "cropRect": [
+        634,
+        829,
+        931,
+        1254
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "pet_set_a_12",
+      "file": "assets/emotes/pet_set_a_12.png",
+      "source": "08_Concept_Mockups/Emotes/schattige_pixeldieren_emote_sheet.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "12bd13765ecb111a218d8bd9eba1c126cc9e13d77bab00493330d608de5a99bb",
+      "cropRect": [
+        931,
+        829,
+        1254,
+        1254
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "pet_set_b_01",
+      "file": "assets/emotes/pet_set_b_01.png",
+      "source": "08_Concept_Mockups/Emotes/betoverende_pixel_dierenemotes.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "0f82c140a4edf66454ba83691e727a475017237babc20b33334c0c39a4a852a4",
+      "cropRect": [
+        0,
+        0,
+        305,
+        497
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "pet_set_b_02",
+      "file": "assets/emotes/pet_set_b_02.png",
+      "source": "08_Concept_Mockups/Emotes/betoverende_pixel_dierenemotes.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "924da94ec3901060258f5454cf1892b79e7f1a280a3a42088f48aa2d1bb41951",
+      "cropRect": [
+        305,
+        0,
+        618,
+        497
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "pet_set_b_03",
+      "file": "assets/emotes/pet_set_b_03.png",
+      "source": "08_Concept_Mockups/Emotes/betoverende_pixel_dierenemotes.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "e0964930b45c849a96d318a212577bec0ecbd8e80424b1090a89ad2e493745d8",
+      "cropRect": [
+        618,
+        0,
+        931,
+        497
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "pet_set_b_04",
+      "file": "assets/emotes/pet_set_b_04.png",
+      "source": "08_Concept_Mockups/Emotes/betoverende_pixel_dierenemotes.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "b1b6824f94059fe51277c8cd6f8cb54be1c332e6e4ab582c5fa7ecee71dc5310",
+      "cropRect": [
+        931,
+        0,
+        1254,
+        497
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "pet_set_b_05",
+      "file": "assets/emotes/pet_set_b_05.png",
+      "source": "08_Concept_Mockups/Emotes/betoverende_pixel_dierenemotes.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "dafd932fa350b6b9812ed8842b64fdb68b8cdce39dac6f6aca302d93e0ffda34",
+      "cropRect": [
+        0,
+        497,
+        305,
+        838
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "pet_set_b_06",
+      "file": "assets/emotes/pet_set_b_06.png",
+      "source": "08_Concept_Mockups/Emotes/betoverende_pixel_dierenemotes.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "fbf6d387044f7adb429eab6499a8cb4204851d3d716e97bc56e5acc0e8a272c4",
+      "cropRect": [
+        305,
+        497,
+        627,
+        838
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "pet_set_b_07",
+      "file": "assets/emotes/pet_set_b_07.png",
+      "source": "08_Concept_Mockups/Emotes/betoverende_pixel_dierenemotes.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "e611d7f1a42911b7cb7e32a464c696a4df5f6e3f98e4f9299e8a3550177cb40b",
+      "cropRect": [
+        627,
+        497,
+        931,
+        838
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "pet_set_b_08",
+      "file": "assets/emotes/pet_set_b_08.png",
+      "source": "08_Concept_Mockups/Emotes/betoverende_pixel_dierenemotes.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "9354d527f4251d387ff76c950bdf3de181b2c746d95633bf5a9fd56f0140e8ff",
+      "cropRect": [
+        931,
+        497,
+        1254,
+        838
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "pet_set_b_09",
+      "file": "assets/emotes/pet_set_b_09.png",
+      "source": "08_Concept_Mockups/Emotes/betoverende_pixel_dierenemotes.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "349e744a6169ac04257edac018d4cb11d73fb809b4e2083a9c7cb50f0a91033a",
+      "cropRect": [
+        0,
+        838,
+        323,
+        1254
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "pet_set_b_10",
+      "file": "assets/emotes/pet_set_b_10.png",
+      "source": "08_Concept_Mockups/Emotes/betoverende_pixel_dierenemotes.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "36eb732d8c27077eeca13c67c91740067cb43627793e7b71adfed040043dd39e",
+      "cropRect": [
+        323,
+        838,
+        630,
+        1254
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "pet_set_b_11",
+      "file": "assets/emotes/pet_set_b_11.png",
+      "source": "08_Concept_Mockups/Emotes/betoverende_pixel_dierenemotes.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "b635ecae31bbbcc8a70358dc70d2a42914ad57e28a8773d2898bd6539731a8c9",
+      "cropRect": [
+        630,
+        838,
+        942,
+        1254
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "pet_set_b_12",
+      "file": "assets/emotes/pet_set_b_12.png",
+      "source": "08_Concept_Mockups/Emotes/betoverende_pixel_dierenemotes.png",
+      "usage": "chat_emote",
+      "width": 128,
+      "height": 128,
+      "sha256": "4e19a4a41012133a9e99fbbde795d5e09b874f968a2cc9e05e4e91222970eabb",
+      "cropRect": [
+        942,
+        838,
+        1254,
+        1254
+      ],
+      "quality": "recropped_pilot_visual_check"
+    },
+    {
+      "id": "adventurer_male",
+      "file": "assets/portraits/adventurer_male.png",
+      "source": "emote:male_01",
+      "usage": "demo_fixed_portrait",
+      "width": 128,
+      "height": 128,
+      "sha256": "7f3b10dd13560bbdf56f32806c6b9d97967e0f6a725d39821ebf389f9f6f35aa",
+      "note": "Sample identities. Host supplies the actual owned outfit portrait."
+    },
+    {
+      "id": "adventurer_female",
+      "file": "assets/portraits/adventurer_female.png",
+      "source": "emote:female_01",
+      "usage": "demo_fixed_portrait",
+      "width": 128,
+      "height": 128,
+      "sha256": "4b8a8a1d56afb78b35132629800aa2aff572d91c8029600a2b0283930ac90148",
+      "note": "Sample identities. Host supplies the actual owned outfit portrait."
+    },
+    {
+      "id": "brand_banner",
+      "file": "assets/chrome/brand_banner.png",
+      "source": "08_Concept_Mockups/UI/UI_Atlas_Concept.png",
+      "usage": "brand_header",
+      "width": 720,
+      "height": 158,
+      "sha256": "c6060a23a9294fd1626e35b123d5c94047f8e98c78cd15547124c8806914109a",
+      "cropRect": [
+        19,
+        32,
+        677,
+        176
+      ],
+      "displaySize": [
+        360,
+        79
+      ]
+    },
+    {
+      "id": "button_normal",
+      "file": "assets/chrome/button_normal.png",
+      "source": "02_UI_Runtime_Assets/assets/buttons/button_normal.png",
+      "usage": "button_skin",
+      "width": 480,
+      "height": 168,
+      "sha256": "9d4c3dbdee682628ddf028db12e709f4006ca18a77929669f7c32e1fce757a45",
+      "displaySize": [
+        160,
+        56
+      ]
+    },
+    {
+      "id": "normal_tl",
+      "file": "assets/chrome/normal_tl.png",
+      "source": "02_UI_Runtime_Assets/assets/buttons/button_normal.png",
+      "usage": "nine_slice_piece",
+      "width": 48,
+      "height": 48,
+      "sha256": "6d1070540278b106c3cddc8b5472b8afc5eb03d2a78cc1edb36f76d83d7f54ec",
+      "displayCornerDp": 12
+    },
+    {
+      "id": "normal_t",
+      "file": "assets/chrome/normal_t.png",
+      "source": "02_UI_Runtime_Assets/assets/buttons/button_normal.png",
+      "usage": "nine_slice_piece",
+      "width": 384,
+      "height": 48,
+      "sha256": "0a1e3ac5248cbb146acff90dc846356b754bf6639e1151bb4dbf659a9e2ce0e7",
+      "displayCornerDp": 12
+    },
+    {
+      "id": "normal_tr",
+      "file": "assets/chrome/normal_tr.png",
+      "source": "02_UI_Runtime_Assets/assets/buttons/button_normal.png",
+      "usage": "nine_slice_piece",
+      "width": 48,
+      "height": 48,
+      "sha256": "6a910bea8a811563ef8838b811bb59d86ed6f293ca2d76e50c99ed472a98da29",
+      "displayCornerDp": 12
+    },
+    {
+      "id": "normal_l",
+      "file": "assets/chrome/normal_l.png",
+      "source": "02_UI_Runtime_Assets/assets/buttons/button_normal.png",
+      "usage": "nine_slice_piece",
+      "width": 48,
+      "height": 72,
+      "sha256": "466772e6c17fb72e8b65fe2b998c0515c205dec1aa5af0ae6334daf1d8158b72",
+      "displayCornerDp": 12
+    },
+    {
+      "id": "normal_c",
+      "file": "assets/chrome/normal_c.png",
+      "source": "02_UI_Runtime_Assets/assets/buttons/button_normal.png",
+      "usage": "nine_slice_piece",
+      "width": 384,
+      "height": 72,
+      "sha256": "e1cdcd4a59986d76e11c4a8e21c6b7e5ae087d67a7d97dc62da9f929cfc3c563",
+      "displayCornerDp": 12
+    },
+    {
+      "id": "normal_r",
+      "file": "assets/chrome/normal_r.png",
+      "source": "02_UI_Runtime_Assets/assets/buttons/button_normal.png",
+      "usage": "nine_slice_piece",
+      "width": 48,
+      "height": 72,
+      "sha256": "857829e43e795ef80c62e8571a188bd086b59a78737dcdfb4b13a4a3b1d4d813",
+      "displayCornerDp": 12
+    },
+    {
+      "id": "normal_bl",
+      "file": "assets/chrome/normal_bl.png",
+      "source": "02_UI_Runtime_Assets/assets/buttons/button_normal.png",
+      "usage": "nine_slice_piece",
+      "width": 48,
+      "height": 48,
+      "sha256": "ff92f488496c6d3cf35597503bbf4d1e7420dd92844872e5eddcc4c16992abcc",
+      "displayCornerDp": 12
+    },
+    {
+      "id": "normal_b",
+      "file": "assets/chrome/normal_b.png",
+      "source": "02_UI_Runtime_Assets/assets/buttons/button_normal.png",
+      "usage": "nine_slice_piece",
+      "width": 384,
+      "height": 48,
+      "sha256": "52f10fcd9a534a4efa84ac8841624c2060f074b2c561b847687cb6c93296ac31",
+      "displayCornerDp": 12
+    },
+    {
+      "id": "normal_br",
+      "file": "assets/chrome/normal_br.png",
+      "source": "02_UI_Runtime_Assets/assets/buttons/button_normal.png",
+      "usage": "nine_slice_piece",
+      "width": 48,
+      "height": 48,
+      "sha256": "f7f33885dc2372243254faeea5a0a46cee2f03af808e2608ee1677dc3503f949",
+      "displayCornerDp": 12
+    },
+    {
+      "id": "button_selected",
+      "file": "assets/chrome/button_selected.png",
+      "source": "02_UI_Runtime_Assets/assets/buttons/button_normal.png",
+      "usage": "button_skin",
+      "width": 480,
+      "height": 168,
+      "sha256": "07bfc25dc8d4d8432edf2401cc4082206087893d3ed858fed9ee75c875640fc0",
+      "displaySize": [
+        160,
+        56
+      ]
+    },
+    {
+      "id": "selected_tl",
+      "file": "assets/chrome/selected_tl.png",
+      "source": "02_UI_Runtime_Assets/assets/buttons/button_normal.png",
+      "usage": "nine_slice_piece",
+      "width": 48,
+      "height": 48,
+      "sha256": "5d1b407864c447760bf111041db0bbb76775b15f0e4b7063663e67ab7b7c88d3",
+      "displayCornerDp": 12
+    },
+    {
+      "id": "selected_t",
+      "file": "assets/chrome/selected_t.png",
+      "source": "02_UI_Runtime_Assets/assets/buttons/button_normal.png",
+      "usage": "nine_slice_piece",
+      "width": 384,
+      "height": 48,
+      "sha256": "07cbe2762e306340bd7d11b9eb4e4c412e06b861adff94351eddc65351ee95d0",
+      "displayCornerDp": 12
+    },
+    {
+      "id": "selected_tr",
+      "file": "assets/chrome/selected_tr.png",
+      "source": "02_UI_Runtime_Assets/assets/buttons/button_normal.png",
+      "usage": "nine_slice_piece",
+      "width": 48,
+      "height": 48,
+      "sha256": "02e23ec7694234d9f1e364c70f5cc7847a6a972500159f3c7a8ce2087a1ac17e",
+      "displayCornerDp": 12
+    },
+    {
+      "id": "selected_l",
+      "file": "assets/chrome/selected_l.png",
+      "source": "02_UI_Runtime_Assets/assets/buttons/button_normal.png",
+      "usage": "nine_slice_piece",
+      "width": 48,
+      "height": 72,
+      "sha256": "613ad2d687274ece43f31d341a567f0e83e92ec949d2b7173193db1f8fb57a92",
+      "displayCornerDp": 12
+    },
+    {
+      "id": "selected_c",
+      "file": "assets/chrome/selected_c.png",
+      "source": "02_UI_Runtime_Assets/assets/buttons/button_normal.png",
+      "usage": "nine_slice_piece",
+      "width": 384,
+      "height": 72,
+      "sha256": "cc9de2656443e9c68f76af2cc922f909090a27691cb6b33285b9900af2a5f3a2",
+      "displayCornerDp": 12
+    },
+    {
+      "id": "selected_r",
+      "file": "assets/chrome/selected_r.png",
+      "source": "02_UI_Runtime_Assets/assets/buttons/button_normal.png",
+      "usage": "nine_slice_piece",
+      "width": 48,
+      "height": 72,
+      "sha256": "7f7338ce8d5b3cfd5e158d23b7799c49a263290d6725d4800c78b9e804d04a82",
+      "displayCornerDp": 12
+    },
+    {
+      "id": "selected_bl",
+      "file": "assets/chrome/selected_bl.png",
+      "source": "02_UI_Runtime_Assets/assets/buttons/button_normal.png",
+      "usage": "nine_slice_piece",
+      "width": 48,
+      "height": 48,
+      "sha256": "207e60b41ab5c52f4427f241d42c75373e92395ea1ca126bda822d523886a13b",
+      "displayCornerDp": 12
+    },
+    {
+      "id": "selected_b",
+      "file": "assets/chrome/selected_b.png",
+      "source": "02_UI_Runtime_Assets/assets/buttons/button_normal.png",
+      "usage": "nine_slice_piece",
+      "width": 384,
+      "height": 48,
+      "sha256": "dcc491ab78fec353ec2b3abafe8e0d270ad7d1379de057f2478610dc01b91ce9",
+      "displayCornerDp": 12
+    },
+    {
+      "id": "selected_br",
+      "file": "assets/chrome/selected_br.png",
+      "source": "02_UI_Runtime_Assets/assets/buttons/button_normal.png",
+      "usage": "nine_slice_piece",
+      "width": 48,
+      "height": 48,
+      "sha256": "d1e4a1927ae3d5498b389c4ab3df68b2203bf399c908ddd04e94188798683a82",
+      "displayCornerDp": 12
+    },
+    {
+      "id": "button_pressed",
+      "file": "assets/chrome/button_pressed.png",
+      "source": "02_UI_Runtime_Assets/assets/buttons/button_normal.png",
+      "usage": "button_skin",
+      "width": 480,
+      "height": 168,
+      "sha256": "e3d69f262d1aa2451633b4dcd22ed7d099ee118512215e253f15d4ce2402ac39",
+      "displaySize": [
+        160,
+        56
+      ]
+    },
+    {
+      "id": "pressed_tl",
+      "file": "assets/chrome/pressed_tl.png",
+      "source": "02_UI_Runtime_Assets/assets/buttons/button_normal.png",
+      "usage": "nine_slice_piece",
+      "width": 48,
+      "height": 48,
+      "sha256": "c20a2ae982b1c1be61624cc3b1c100dc62c33f8741453a68e100f5289939835c",
+      "displayCornerDp": 12
+    },
+    {
+      "id": "pressed_t",
+      "file": "assets/chrome/pressed_t.png",
+      "source": "02_UI_Runtime_Assets/assets/buttons/button_normal.png",
+      "usage": "nine_slice_piece",
+      "width": 384,
+      "height": 48,
+      "sha256": "4f33e70656750d27f950da0b02464d13951a623269383950a4e85b149449f024",
+      "displayCornerDp": 12
+    },
+    {
+      "id": "pressed_tr",
+      "file": "assets/chrome/pressed_tr.png",
+      "source": "02_UI_Runtime_Assets/assets/buttons/button_normal.png",
+      "usage": "nine_slice_piece",
+      "width": 48,
+      "height": 48,
+      "sha256": "a78c065379ac2f0c82128235845ac13de18c7d49988ed31885da4bc49ac416bf",
+      "displayCornerDp": 12
+    },
+    {
+      "id": "pressed_l",
+      "file": "assets/chrome/pressed_l.png",
+      "source": "02_UI_Runtime_Assets/assets/buttons/button_normal.png",
+      "usage": "nine_slice_piece",
+      "width": 48,
+      "height": 72,
+      "sha256": "59b750a2dfcb2986539cc2973c00c9eff896a2b04526ea767d9d4ccc91448987",
+      "displayCornerDp": 12
+    },
+    {
+      "id": "pressed_c",
+      "file": "assets/chrome/pressed_c.png",
+      "source": "02_UI_Runtime_Assets/assets/buttons/button_normal.png",
+      "usage": "nine_slice_piece",
+      "width": 384,
+      "height": 72,
+      "sha256": "9e59fbabe8ce531b9fa084fc8c5b746868d5843d6f5f58dfe177032eada44fd3",
+      "displayCornerDp": 12
+    },
+    {
+      "id": "pressed_r",
+      "file": "assets/chrome/pressed_r.png",
+      "source": "02_UI_Runtime_Assets/assets/buttons/button_normal.png",
+      "usage": "nine_slice_piece",
+      "width": 48,
+      "height": 72,
+      "sha256": "9768e8dc6742df5f6c6f998f5f96458e5817a62a79103abd387531ec21b9503e",
+      "displayCornerDp": 12
+    },
+    {
+      "id": "pressed_bl",
+      "file": "assets/chrome/pressed_bl.png",
+      "source": "02_UI_Runtime_Assets/assets/buttons/button_normal.png",
+      "usage": "nine_slice_piece",
+      "width": 48,
+      "height": 48,
+      "sha256": "aafe73275f811c0732962b743b12a5035d728ab240e5707f89887c8563fd6a9a",
+      "displayCornerDp": 12
+    },
+    {
+      "id": "pressed_b",
+      "file": "assets/chrome/pressed_b.png",
+      "source": "02_UI_Runtime_Assets/assets/buttons/button_normal.png",
+      "usage": "nine_slice_piece",
+      "width": 384,
+      "height": 48,
+      "sha256": "b7f52e4244fb04e9740effc98b70c083e067ee6c61b8d1721cb029478b336bf6",
+      "displayCornerDp": 12
+    },
+    {
+      "id": "pressed_br",
+      "file": "assets/chrome/pressed_br.png",
+      "source": "02_UI_Runtime_Assets/assets/buttons/button_normal.png",
+      "usage": "nine_slice_piece",
+      "width": 48,
+      "height": 48,
+      "sha256": "122c8ca64a5ea7912aaa991e3d2f75e34901bf460621eff97539a678536bcd16",
+      "displayCornerDp": 12
+    },
+    {
+      "id": "button_disabled",
+      "file": "assets/chrome/button_disabled.png",
+      "source": "02_UI_Runtime_Assets/assets/buttons/button_normal.png",
+      "usage": "button_skin",
+      "width": 480,
+      "height": 168,
+      "sha256": "4ee8a2f9bdf673414b94df39d46ca59f75b649e6a04e1406692dfe48f581f912",
+      "displaySize": [
+        160,
+        56
+      ]
+    },
+    {
+      "id": "disabled_tl",
+      "file": "assets/chrome/disabled_tl.png",
+      "source": "02_UI_Runtime_Assets/assets/buttons/button_normal.png",
+      "usage": "nine_slice_piece",
+      "width": 48,
+      "height": 48,
+      "sha256": "a1b5f7dc6c70b18c930155c4b223e3bc66c96ed01970d11c4e3d2f12c2a71231",
+      "displayCornerDp": 12
+    },
+    {
+      "id": "disabled_t",
+      "file": "assets/chrome/disabled_t.png",
+      "source": "02_UI_Runtime_Assets/assets/buttons/button_normal.png",
+      "usage": "nine_slice_piece",
+      "width": 384,
+      "height": 48,
+      "sha256": "98873838bf42b8b91f187f3bb422c32e6b370d5e1ce5ddbc67c54bf40954df90",
+      "displayCornerDp": 12
+    },
+    {
+      "id": "disabled_tr",
+      "file": "assets/chrome/disabled_tr.png",
+      "source": "02_UI_Runtime_Assets/assets/buttons/button_normal.png",
+      "usage": "nine_slice_piece",
+      "width": 48,
+      "height": 48,
+      "sha256": "80fe69b7756637fae7b07befae32241d408f59f334fa0a367cc9f979515d4e10",
+      "displayCornerDp": 12
+    },
+    {
+      "id": "disabled_l",
+      "file": "assets/chrome/disabled_l.png",
+      "source": "02_UI_Runtime_Assets/assets/buttons/button_normal.png",
+      "usage": "nine_slice_piece",
+      "width": 48,
+      "height": 72,
+      "sha256": "fa02fffa0c1f545e4c059cebaefcceeeda734c8e9a5176f00cf0b73dc3c13647",
+      "displayCornerDp": 12
+    },
+    {
+      "id": "disabled_c",
+      "file": "assets/chrome/disabled_c.png",
+      "source": "02_UI_Runtime_Assets/assets/buttons/button_normal.png",
+      "usage": "nine_slice_piece",
+      "width": 384,
+      "height": 72,
+      "sha256": "3fd2b28b4080166ad603ae1cba2a73383e6e76a2a92edc80cfd572a3ba18ddfc",
+      "displayCornerDp": 12
+    },
+    {
+      "id": "disabled_r",
+      "file": "assets/chrome/disabled_r.png",
+      "source": "02_UI_Runtime_Assets/assets/buttons/button_normal.png",
+      "usage": "nine_slice_piece",
+      "width": 48,
+      "height": 72,
+      "sha256": "56089c30c29335ad72e2797de3773a786d3fb4fdb7165a80155a37c3f897d715",
+      "displayCornerDp": 12
+    },
+    {
+      "id": "disabled_bl",
+      "file": "assets/chrome/disabled_bl.png",
+      "source": "02_UI_Runtime_Assets/assets/buttons/button_normal.png",
+      "usage": "nine_slice_piece",
+      "width": 48,
+      "height": 48,
+      "sha256": "56c6950bfb8cae3507786cb1925f6b39440bd9ad1e0e319cfbd89ca27fa563f1",
+      "displayCornerDp": 12
+    },
+    {
+      "id": "disabled_b",
+      "file": "assets/chrome/disabled_b.png",
+      "source": "02_UI_Runtime_Assets/assets/buttons/button_normal.png",
+      "usage": "nine_slice_piece",
+      "width": 384,
+      "height": 48,
+      "sha256": "682129078c445b517c0dbf8a5f23492fc0aead303ba6aba3f969842afdadaf64",
+      "displayCornerDp": 12
+    },
+    {
+      "id": "disabled_br",
+      "file": "assets/chrome/disabled_br.png",
+      "source": "02_UI_Runtime_Assets/assets/buttons/button_normal.png",
+      "usage": "nine_slice_piece",
+      "width": 48,
+      "height": 48,
+      "sha256": "581c2c0b86bcfcc2b4edcfbf402bc136cf2c7ccd2ecdbadfbee1a950ed7acb93",
+      "displayCornerDp": 12
+    },
+    {
+      "id": "bust_frame",
+      "file": "assets/chrome/bust_frame.png",
+      "source": "02_UI_Runtime_Assets/assets/frames/bust_frame.png",
+      "usage": "transparent_portrait_frame",
+      "width": 264,
+      "height": 264,
+      "sha256": "79818ef89f1acfdb97820419e2e6d946802060439da076818a62464c1b28b962",
+      "displaySize": [
+        88,
+        88
+      ],
+      "contentInsetFraction": 0.22
+    },
+    {
+      "id": "profile_frame",
+      "file": "assets/chrome/profile_frame.png",
+      "source": "02_UI_Runtime_Assets/assets/frames/profile_frame.png",
+      "usage": "transparent_portrait_frame",
+      "width": 384,
+      "height": 480,
+      "sha256": "2115242950296044fc07980beffa48192cae77fbe8e0385ba8a07e3da1fb0960",
+      "displaySize": [
+        128,
+        160
+      ],
+      "contentInsetFraction": 0.22
+    },
+    {
+      "id": "emoji",
+      "file": "assets/icons/emoji.png",
+      "source": "02_UI_Runtime_Assets/assets/icons/icon_emoji.png",
+      "usage": "action_icon",
+      "width": 72,
+      "height": 72,
+      "sha256": "2ca8650bbf42c3caf3524b6cbe20a74e4ba75949196946de32f00250a6d41e98",
+      "displaySize": [
+        24,
+        24
+      ],
+      "minTouchDp": 48
+    },
+    {
+      "id": "send",
+      "file": "assets/icons/send.png",
+      "source": "02_UI_Runtime_Assets/assets/icons/icon_send.png",
+      "usage": "action_icon",
+      "width": 72,
+      "height": 72,
+      "sha256": "b8c2fdfde7c06253c892f75bd99155ba2ed0f1120801c8b22aa265f568619ab7",
+      "displaySize": [
+        24,
+        24
+      ],
+      "minTouchDp": 48
+    },
+    {
+      "id": "back",
+      "file": "assets/icons/back.png",
+      "source": "02_UI_Runtime_Assets/assets/icons/icon_back.png",
+      "usage": "action_icon",
+      "width": 72,
+      "height": 72,
+      "sha256": "73309287fbb20e47940c60907804d83340573042e41d102217d5866fd941fd02",
+      "displaySize": [
+        24,
+        24
+      ],
+      "minTouchDp": 48
+    },
+    {
+      "id": "close",
+      "file": "assets/icons/close.png",
+      "source": "02_UI_Runtime_Assets/assets/icons/icon_close.png",
+      "usage": "action_icon",
+      "width": 72,
+      "height": 72,
+      "sha256": "ca53b3aa85c98d3c5fd320b0f0262987b306b21fb4a8f59793c37def4c945c5d",
+      "displaySize": [
+        24,
+        24
+      ],
+      "minTouchDp": 48
+    },
+    {
+      "id": "chevron_right",
+      "file": "assets/icons/chevron_right.png",
+      "source": "02_UI_Runtime_Assets/assets/icons/icon_chevron_right.png",
+      "usage": "action_icon",
+      "width": 72,
+      "height": 72,
+      "sha256": "efea24f811c3521cf5069d5b024c2a715f59f52600a4eb13d26c0a1821d421fd",
+      "displaySize": [
+        24,
+        24
+      ],
+      "minTouchDp": 48
+    },
+    {
+      "id": "online",
+      "file": "assets/icons/online.png",
+      "source": "02_UI_Runtime_Assets/assets/status/status_online.png",
+      "usage": "status_icon",
+      "width": 36,
+      "height": 36,
+      "sha256": "0abbb2ee6b7dbdbc36561a064d07311eee656ec659f4ce1e05780916954a76b1",
+      "displaySize": [
+        12,
+        12
+      ]
+    },
+    {
+      "id": "offline",
+      "file": "assets/icons/offline.png",
+      "source": "02_UI_Runtime_Assets/assets/status/status_offline.png",
+      "usage": "status_icon",
+      "width": 36,
+      "height": 36,
+      "sha256": "46a71425a73eecd7edcc30c3c4dcad74e901616fa25a052525b78e3e96747415",
+      "displaySize": [
+        12,
+        12
+      ]
+    },
+    {
+      "id": "away",
+      "file": "assets/icons/away.png",
+      "source": "02_UI_Runtime_Assets/assets/status/status_away.png",
+      "usage": "status_icon",
+      "width": 36,
+      "height": 36,
+      "sha256": "fe14b6b0338ace02d5e232500c56842106eccc1c14678681fe233dadc193ed1c",
+      "displaySize": [
+        12,
+        12
+      ]
+    },
+    {
+      "id": "busy",
+      "file": "assets/icons/busy.png",
+      "source": "02_UI_Runtime_Assets/assets/status/status_busy.png",
+      "usage": "status_icon",
+      "width": 36,
+      "height": 36,
+      "sha256": "b31446384304a3852ad04b9a7c56417de0175ce317ab76ec0c78d8fbf905ab98",
+      "displaySize": [
+        12,
+        12
+      ]
+    },
+    {
+      "id": "chat",
+      "file": "assets/icons/chat.png",
+      "source": "08_Concept_Mockups/UI/UI_Atlas_Concept.png",
+      "usage": "cropped_icon_glyph",
+      "width": 96,
+      "height": 96,
+      "sha256": "6f4236666c93fa5501ed8f48a77ab0b2a6ae8cb574868daabda2879eb0433572",
+      "sourceCrop": [
+        726,
+        44,
+        767,
+        80
+      ],
+      "displaySize": [
+        32,
+        32
+      ]
+    },
+    {
+      "id": "guild",
+      "file": "assets/icons/guild.png",
+      "source": "08_Concept_Mockups/UI/UI_Atlas_Concept.png",
+      "usage": "cropped_icon_glyph",
+      "width": 96,
+      "height": 96,
+      "sha256": "2dce1f60e4d8bee152edc5897778811782389280cd3758d73b7cd1e8e06ea9c9",
+      "sourceCrop": [
+        910,
+        42,
+        946,
+        81
+      ],
+      "displaySize": [
+        32,
+        32
+      ]
+    },
+    {
+      "id": "party",
+      "file": "assets/icons/party.png",
+      "source": "08_Concept_Mockups/UI/UI_Atlas_Concept.png",
+      "usage": "cropped_icon_glyph",
+      "width": 96,
+      "height": 96,
+      "sha256": "3c8a00d06a55dced3a49202aec9d30659f34b8b184aea95559200410a2e4c4bb",
+      "sourceCrop": [
+        1088,
+        42,
+        1132,
+        81
+      ],
+      "displaySize": [
+        32,
+        32
+      ]
+    },
+    {
+      "id": "system",
+      "file": "assets/icons/system.png",
+      "source": "08_Concept_Mockups/UI/UI_Atlas_Concept.png",
+      "usage": "cropped_icon_glyph",
+      "width": 96,
+      "height": 96,
+      "sha256": "81fea5be1dfd6ee5ef7692ee8fb6f7b3973c2345601847712f1a8d783221d2ca",
+      "sourceCrop": [
+        1269,
+        42,
+        1306,
+        80
+      ],
+      "displaySize": [
+        32,
+        32
+      ]
+    },
+    {
+      "id": "whisper",
+      "file": "assets/icons/whisper.png",
+      "source": "08_Concept_Mockups/UI/UI_Atlas_Concept.png",
+      "usage": "cropped_icon_glyph",
+      "width": 96,
+      "height": 96,
+      "sha256": "d6ffd04ebc73955ccc05a2b6e9a8cef3849d4f4d35ce749fb4b783c0976c477b",
+      "sourceCrop": [
+        50,
+        601,
+        98,
+        644
+      ],
+      "displaySize": [
+        32,
+        32
+      ]
+    },
+    {
+      "id": "add_friend",
+      "file": "assets/icons/add_friend.png",
+      "source": "08_Concept_Mockups/UI/UI_Atlas_Concept.png",
+      "usage": "cropped_icon_glyph",
+      "width": 96,
+      "height": 96,
+      "sha256": "c3a92eb86bd0bdae01158991a0546f2449ab40f496f2c9c83a4ee8751d5ef4e6",
+      "sourceCrop": [
+        251,
+        601,
+        299,
+        644
+      ],
+      "displaySize": [
+        32,
+        32
+      ]
+    },
+    {
+      "id": "invite",
+      "file": "assets/icons/invite.png",
+      "source": "08_Concept_Mockups/UI/UI_Atlas_Concept.png",
+      "usage": "cropped_icon_glyph",
+      "width": 96,
+      "height": 96,
+      "sha256": "90ab104d2ae5d7976af064e27cf876391c69991636cf7cdb49bf2c9efec3c110",
+      "sourceCrop": [
+        472,
+        601,
+        521,
+        645
+      ],
+      "displaySize": [
+        32,
+        32
+      ]
+    },
+    {
+      "id": "trade",
+      "file": "assets/icons/trade.png",
+      "source": "08_Concept_Mockups/UI/UI_Atlas_Concept.png",
+      "usage": "cropped_icon_glyph",
+      "width": 96,
+      "height": 96,
+      "sha256": "a0da44a0121cb56b5ad70ca7cded82f149d5fe27462fda54cbb5fd200be3a0f6",
+      "sourceCrop": [
+        689,
+        600,
+        738,
+        645
+      ],
+      "displaySize": [
+        32,
+        32
+      ]
+    },
+    {
+      "id": "view_profile",
+      "file": "assets/icons/view_profile.png",
+      "source": "08_Concept_Mockups/UI/UI_Atlas_Concept.png",
+      "usage": "cropped_icon_glyph",
+      "width": 96,
+      "height": 96,
+      "sha256": "d49077cfd6a2e4337ee888c12dcebdbc9bf8a4d3b42a1acdc7481fe5863c323c",
+      "sourceCrop": [
+        871,
+        598,
+        922,
+        646
+      ],
+      "displaySize": [
+        32,
+        32
+      ]
+    },
+    {
+      "id": "home",
+      "file": "assets/icons/home.png",
+      "source": "08_Concept_Mockups/UI/UI_Atlas_Concept.png",
+      "usage": "cropped_icon_glyph",
+      "width": 96,
+      "height": 96,
+      "sha256": "0753b7fe62f25e87da0a922cfbdbf4ab0fa1fdf00bcbacc184c96087e33b5e31",
+      "sourceCrop": [
+        775,
+        972,
+        832,
+        1023
+      ],
+      "displaySize": [
+        32,
+        32
+      ]
+    },
+    {
+      "id": "character",
+      "file": "assets/icons/character.png",
+      "source": "08_Concept_Mockups/UI/UI_Atlas_Concept.png",
+      "usage": "cropped_icon_glyph",
+      "width": 96,
+      "height": 96,
+      "sha256": "f1e7a0f0566bbeb122afaa4a7590b07a46926d05b4638009be2d81c86789b835",
+      "sourceCrop": [
+        889,
+        970,
+        931,
+        1023
+      ],
+      "displaySize": [
+        32,
+        32
+      ]
+    },
+    {
+      "id": "world",
+      "file": "assets/icons/world.png",
+      "source": "08_Concept_Mockups/UI/UI_Atlas_Concept.png",
+      "usage": "cropped_icon_glyph",
+      "width": 96,
+      "height": 96,
+      "sha256": "12986506236d0b1e0e1e3f5f71c2f774a35b93b2d70bb66573f89a17057717d0",
+      "sourceCrop": [
+        990,
+        968,
+        1048,
+        1025
+      ],
+      "displaySize": [
+        32,
+        32
+      ]
+    },
+    {
+      "id": "inventory",
+      "file": "assets/icons/inventory.png",
+      "source": "08_Concept_Mockups/UI/UI_Atlas_Concept.png",
+      "usage": "cropped_icon_glyph",
+      "width": 96,
+      "height": 96,
+      "sha256": "899ca077885bad72dab9ad95a0fab390781a0277e3a7d1a2dc49546f92699ef6",
+      "sourceCrop": [
+        491,
+        823,
+        536,
+        875
+      ],
+      "displaySize": [
+        32,
+        32
+      ]
+    },
+    {
+      "id": "settings",
+      "file": "assets/icons/settings.png",
+      "source": "08_Concept_Mockups/UI/UI_Atlas_Concept.png",
+      "usage": "cropped_icon_glyph",
+      "width": 96,
+      "height": 96,
+      "sha256": "42d2351ecfc2b1bf21a6d18256869bba109198ee65061d019cb910a835bf57b1",
+      "sourceCrop": [
+        1218,
+        974,
+        1277,
+        1015
+      ],
+      "displaySize": [
+        32,
+        32
+      ]
+    },
+    {
+      "id": "pet",
+      "file": "assets/icons/pet.png",
+      "source": "emote:pet_set_a_04",
+      "usage": "demo_pet_icon",
+      "width": 96,
+      "height": 96,
+      "sha256": "b03c42ee77b9f42d3811b98b1fcdfa853df13c8477fde4ddf922158a5ee5615f"
+    }
+  ]
+}

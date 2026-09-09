@@ -5,6 +5,7 @@ import {itemDef} from '../content/items';
 import {GameButton} from './GameButton';
 import {Panel} from './Panel';
 import {C,spacing,typography} from '../theme/theme';
+import {formatGameNumber} from '../core/number-format';
 
 function duration(seconds:number){
   if(seconds<60)return `${seconds}s`;
@@ -12,11 +13,11 @@ function duration(seconds:number){
   return hours?`${hours}h ${minutes}m`:`${minutes}m`;
 }
 
-export function ActivityCard({title,kind,cycleSeconds,capHours,preview,rates,onClaim,onStop}:{title:string;kind:'combat'|'gathering';cycleSeconds:number;capHours:number;preview:RewardBundle;rates:{actionsPerHour:number;xpPerHour:number;goldPerHour:number};onClaim:()=>void;onStop:()=>void}){
+export function ActivityCard({title,kind,cycleSeconds,capHours,preview,rates,reduceMotion=false,numberMode='abbreviated',onClaim,onStop}:{title:string;kind:'combat'|'gathering';cycleSeconds:number;capHours:number;preview:RewardBundle;rates:{actionsPerHour:number;xpPerHour:number;goldPerHour:number};reduceMotion?:boolean;numberMode?:'abbreviated'|'exact';onClaim:()=>void;onStop:()=>void}){
   const pulse=useRef(new Animated.Value(0)).current;
-  useEffect(()=>{const loop=Animated.loop(Animated.timing(pulse,{toValue:1,duration:1100,easing:Easing.linear,useNativeDriver:true}));loop.start();return()=>loop.stop()},[pulse]);
+  useEffect(()=>{pulse.setValue(0);if(reduceMotion)return;const loop=Animated.loop(Animated.timing(pulse,{toValue:1,duration:1100,easing:Easing.linear,useNativeDriver:true}));loop.start();return()=>loop.stop()},[pulse,reduceMotion]);
   const hasRewards=preview.kills>0||!!preview.stoppedReason;
-  const loot=preview.items.map(stack=>`${stack.quantity}× ${itemDef(stack.itemId).name}`).join(' · ');
+  const loot=preview.items.map(stack=>`${formatGameNumber(stack.quantity,numberMode)}× ${itemDef(stack.itemId).name}`).join(' · ');
   const capped=preview.elapsedSeconds>=capHours*60*60;
   const cycleProgress=preview.stoppedReason||capped?1:(preview.elapsedSeconds%cycleSeconds)/cycleSeconds;
   const remaining=Math.max(1,Math.ceil(cycleSeconds-(preview.elapsedSeconds%cycleSeconds)));
@@ -26,16 +27,16 @@ export function ActivityCard({title,kind,cycleSeconds,capHours,preview,rates,onC
         <Text style={s.eyebrow}>{kind==='combat'?'HUNTING':'GATHERING'}</Text>
         <Text style={s.title}>{title}</Text>
       </View>
-      <View style={[s.status,(capped||!!preview.stoppedReason)&&s.statusCapped]}><Text style={s.statusText}>{preview.stoppedReason?'STOPPED':capped?'8H CAP':'ACTIVE'}</Text></View>
+      <View style={[s.status,(capped||!!preview.stoppedReason)&&s.statusCapped]}><Text style={s.statusText}>{preview.stoppedReason?'STOPPED':capped?`${capHours}H CAP`:'ACTIVE'}</Text></View>
     </View>
     <Text style={s.detail}>{duration(preview.elapsedSeconds)} since last claim · {preview.stoppedReason?'combat has stopped':`up to ${capHours} hours of offline progress`}</Text>
-    <View style={s.rateRow}><Text style={s.rate}>≈ {rates.actionsPerHour}/hr</Text><Text style={s.rate}>+{rates.xpPerHour.toLocaleString()} XP/hr</Text>{rates.goldPerHour>0&&<Text style={s.rate}>+{rates.goldPerHour.toLocaleString()} gold/hr</Text>}</View>
-    <View accessible accessibilityRole="progressbar" accessibilityLabel={`${title} action progress`} accessibilityValue={{min:0,max:100,now:Math.round(cycleProgress*100)}} style={s.progressBlock}><View style={s.progressMeta}><Text style={s.progressLabel}>{preview.stoppedReason?'ACTIVITY STOPPED':capped?'OFFLINE STORAGE FULL':kind==='combat'?'NEXT ENCOUNTER':'NEXT GATHER'}</Text><Text style={s.progressTime}>{preview.stoppedReason||capped?'—':`${remaining}s`}</Text></View><View style={s.track}><View style={[s.fill,{width:`${cycleProgress*100}%`}]}><Animated.View style={[s.shine,{transform:[{translateX:pulse.interpolate({inputRange:[0,1],outputRange:[-90,260]})}]}]}/></View></View></View>
+    <View style={s.rateRow}><Text style={s.rate}>≈ {formatGameNumber(rates.actionsPerHour,numberMode)}/hr</Text><Text style={s.rate}>+{formatGameNumber(rates.xpPerHour,numberMode)} XP/hr</Text>{rates.goldPerHour>0&&<Text style={s.rate}>+{formatGameNumber(rates.goldPerHour,numberMode)} gold/hr</Text>}</View>
+    <View accessible accessibilityRole="progressbar" accessibilityLabel={`${title} action progress`} accessibilityValue={{min:0,max:100,now:Math.round(cycleProgress*100)}} style={s.progressBlock}><View style={s.progressMeta}><Text style={s.progressLabel}>{preview.stoppedReason?'ACTIVITY STOPPED':capped?'OFFLINE STORAGE FULL':kind==='combat'?'NEXT ENCOUNTER':'NEXT GATHER'}</Text><Text style={s.progressTime}>{preview.stoppedReason||capped?'—':`${remaining}s`}</Text></View><View style={s.track}><View style={[s.fill,{width:`${cycleProgress*100}%`}]}>{!reduceMotion&&<Animated.View style={[s.shine,{transform:[{translateX:pulse.interpolate({inputRange:[0,1],outputRange:[-90,260]})}]}]}/>}</View></View></View>
     {kind==='combat'&&<Text style={s.detail}>Projected health: {preview.endHp??'—'} HP · Food used: {preview.foodConsumed??0}</Text>}
     {!!preview.stoppedReason&&<Text accessibilityRole="alert" style={s.capNotice}>{preview.stoppedReason}. Collect to settle combat, then heal or equip food in Inventory.</Text>}
     <View style={s.rewardRow}>
-      <View><Text style={s.rewardNumber}>{preview.kills}</Text><Text style={s.rewardLabel}>{kind==='combat'?'kills ready':'actions ready'}</Text></View>
-      <View style={s.totals}><Text style={s.xp}>+{preview.xp} XP</Text>{preview.gold>0&&<Text style={s.gold}>+{preview.gold} gold</Text>}</View>
+      <View><Text style={s.rewardNumber}>{formatGameNumber(preview.kills,numberMode)}</Text><Text style={s.rewardLabel}>{kind==='combat'?'kills ready':'actions ready'}</Text></View>
+      <View style={s.totals}><Text style={s.xp}>+{formatGameNumber(preview.xp,numberMode)} XP</Text>{preview.gold>0&&<Text style={s.gold}>+{formatGameNumber(preview.gold,numberMode)} gold</Text>}</View>
     </View>
     <Text style={loot?s.loot:s.emptyLoot}>{loot||'Keep this activity running to earn your first reward.'}</Text>
     {capped&&!preview.stoppedReason&&<Text style={s.capNotice}>Offline storage is full. Collect now to resume earning.</Text>}

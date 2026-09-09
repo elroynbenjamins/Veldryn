@@ -12,11 +12,11 @@
 ## Implemented flow
 
 1. Create a character; review names its first crafting goal.
-2. Open Skills → Novice set. Inspect the supplied male/female front/back target outfit and piece list.
+2. Open Skills → Novice set. Inspect the gameplay equipment path and piece list.
 3. Gather Copper Ore/Greenwood Logs and hunt Moss Rats for Moss Fiber; collect activity rewards.
 4. Craft pieces with Inventory-first/Bank-second materials. A successful craft records the piece in optional `character.craftedNoviceItemIds`.
 5. Equip individual items from Inventory, or choose Character → Equip owned novice set. Bulk equip consumes owned Inventory/Bank pieces, returns replaced gear to storage, and fails atomically if anything is missing or replacement storage is full.
-6. Home and Character display the completed outfit only when all set pieces are equipped. Removing/replacing a piece selects the mixed-equipment emblem fallback. A separate cape or unsupported offhand also selects the fallback; rings/amulets do not change the supplied full-body art.
+6. Home and Character display the class emblem. Novice equipment changes stats only and does not unlock character artwork.
 
 ## Provisional prototype balance
 
@@ -32,10 +32,12 @@ The source pack does not define recipe costs/stats. These are explicit implement
 
 ## Appearance limits
 
-36 original first-crafted PNGs were extracted without modification. No art was generated. Full outfits are complete appearance states, not slot overlays. Partial armor does not appear piece-by-piece. Mixed gear deliberately displays a labeled class emblem instead of claiming to render the outfit accurately. Hair/skin remain baked into the source art.
+The earlier starting and first-crafted character PNGs were retired because their identities were incorrect. Novice sets remain gameplay equipment and have no character-skin registration. The class emblem is shown until a future full skin has correct, user-confirmed male and female references.
+
+This full-set-only rule is authoritative for every equipment set. Equipping or previewing individual pieces never changes the character appearance. A future approved skin may unlock only after the user owns every required item in that set.
 
 ## Save and test contract
 
 Save schema stays v5; old saves default to empty crafting history and receive no free equipment. Crafted history, gear, presentation and full-set recognition survive load. Crafting is pure and failed crafts do not record progress. Bulk equip preserves item counts and clamps HP without free healing.
 
-Tests: all nine classes × both presentations, 60 recipes/items, class/level/prerequisite checks, bank material consumption, storage failure atomicity, item conservation, mixed/full/starting appearance, repeat equip, legacy migration and save reload. Asset audit checks all 36 PNGs and static Metro registrations. Full TypeScript, regression suites and Android export are required. Phone layout/interaction QA remains outstanding.
+Tests: all nine classes × both presentations, 60 recipes/items, class/level/prerequisite checks, bank material consumption, storage failure atomicity, item conservation, repeat equip, legacy migration and save reload. Appearance tests require the emblem fallback until a correct full male/female skin is approved. Full TypeScript, regression suites and Android export are required. Phone layout/interaction QA remains outstanding.

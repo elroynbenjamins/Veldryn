@@ -1,9 +1,0 @@
-export const SKIN_TONES=[{id:'fair',name:'Fair',color:'#edc4a4'},{id:'light',name:'Light',color:'#dca879'},{id:'warm',name:'Warm',color:'#bd8956'},{id:'tan',name:'Tan',color:'#98633f'},{id:'brown',name:'Brown',color:'#70462f'},{id:'deep',name:'Deep',color:'#432c24'}] as const;
-export const HAIR_COLORS=[{id:'black',name:'Black',color:'#242221'},{id:'dark-brown',name:'Dark brown',color:'#493322'},{id:'chestnut',name:'Chestnut',color:'#82502e'},{id:'blonde',name:'Blonde',color:'#d5af62'},{id:'auburn',name:'Auburn',color:'#9a4427'},{id:'white',name:'White',color:'#e6ddca'},{id:'silver',name:'Silver',color:'#aeb5bd'},{id:'dark-blue',name:'Dark blue',color:'#293e59'}] as const;
-export const HAIR_STYLES=[{id:'bald',name:'Bald'},{id:'cropped',name:'Cropped cut'},{id:'swept-back',name:'Swept back'},{id:'side-part',name:'Side part'},{id:'ponytail',name:'Tied ponytail'},{id:'messy',name:'Rugged messy'},{id:'short',name:'Hood-compatible short'},{id:'bob',name:'Layered bob'},{id:'wavy',name:'Long wavy'},{id:'braid',name:'Braid'},{id:'bun',name:'Bun'},{id:'twin-braids',name:'Twin braids'},{id:'side-ponytail',name:'Side ponytail'}] as const;
-export interface CharacterCustomization {skinTone:typeof SKIN_TONES[number]['id'];hairStyle:typeof HAIR_STYLES[number]['id'];hairColor:typeof HAIR_COLORS[number]['id'];showHelmet?:boolean;}
-export const DEFAULT_CUSTOMIZATION:CharacterCustomization={skinTone:'warm',hairStyle:'bald',hairColor:'dark-brown'};
-export function normalizeCustomization(value:unknown):CharacterCustomization{
-  const input=(value&&typeof value==='object'?value:{}) as Record<string,unknown>;
-  return {skinTone:SKIN_TONES.find(x=>x.id===input.skinTone)?.id??DEFAULT_CUSTOMIZATION.skinTone,hairStyle:HAIR_STYLES.find(x=>x.id===input.hairStyle)?.id??DEFAULT_CUSTOMIZATION.hairStyle,hairColor:HAIR_COLORS.find(x=>x.id===input.hairColor)?.id??DEFAULT_CUSTOMIZATION.hairColor,showHelmet:typeof input.showHelmet==='boolean'?input.showHelmet:true};
-}

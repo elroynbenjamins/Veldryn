@@ -9,7 +9,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck:core": "tsc -p tsconfig.core.json --noEmit",
-    "test:core": "node -e \"require('fs').rmSync('.core-build',{recursive:true,force:true})\" && tsc -p tsconfig.core.json --outDir .core-build && node .core-build/tests/offline-smoke.js",
+    "test:core": "node -e \"require('fs').rmSync('.core-build',{recursive:true,force:true})\" && tsc -p tsconfig.core.json --outDir .core-build && node .core-build/tests/offline-smoke.js && node .core-build/tests/character-skins.js && node .core-build/tests/save-transfer.js && node .core-build/tests/localization.js && node .core-build/tests/live-events.js",
     "test:pre-codex": "node -e \"require('fs').rmSync('.core-build',{recursive:true,force:true})\" && tsc -p tsconfig.core.json --outDir .core-build && node .core-build/tests/offline-smoke.js && node .core-build/tests/pre-codex-smoke.js"
   },
   "dependencies": {

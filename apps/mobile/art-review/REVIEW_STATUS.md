@@ -17,7 +17,7 @@ The Ironwarden pilot mannequin is the immutable character reference. Active full
 - `beginner-sets-v1/equipment-ui/` contains the refreshed starter atlases for all nine classes in the same accepted rough-pixel style. Every starter atlas is active in the app.
 - The accepted batches now contain all 27 progression sets, Aster Iron, and the repaired Runespark Adept novice set. Mirage Hunter and Runespark Adept are active again with clean replacement atlases.
 
-The older smooth/checkerboard attempts were moved to the dated archive. Other remaining set folders are design references only.
+The older smooth/checkerboard attempts and superseded set-reference folders were removed on 2026-09-09. Only accepted production art, current visual standards, the canonical mannequin source, and active event concepts remain.
 
 ## Accepted equipment character skins
 
@@ -37,4 +37,4 @@ The older smooth/checkerboard attempts were moved to the dated archive. Other re
 
 - `source-pack/VELDRYN_Character_Runtime_Assets_v1/source_references/ironwarden_pilot_reference.png`
 
-Rejected material is recoverable from `../art-archive/pilot-mismatch-2026-09-08/`.
+The retired local art archive was removed on 2026-09-09 after the accepted runtime assets were verified.

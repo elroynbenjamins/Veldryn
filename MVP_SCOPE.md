@@ -8,7 +8,7 @@ Create a character -> learn the Home/activity loop -> fight Asterfall monsters -
 - 7 class choices.
 - One playable character required; extra character/squad systems may remain inaccessible in this milestone.
 - Local save/load + migrations.
-- Timestamp-based offline progression, launch cap 8 hours.
+- Timestamp-based offline progression with a 24-hour base AFK Reserve, expandable through progression milestones to a 36-hour maximum.
 - Asterfall combat targets and meaningful unlock progression.
 - XP, level, gold, loot, inventory, equipment, basic item comparison.
 - Sell/salvage loop.

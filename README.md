@@ -25,7 +25,7 @@ The canonical design workbook is [`docs/sources/VELDRYN_Master_Design_Database_v
 
 - Character creation and class selection, character profiles, equipment previews, stat presentation, and save migration/recovery tools.
 - Asterfall level 1–25 progression culminating in the Fallen Knight milestone and the Sunscar progression handoff.
-- Idle combat with timestamp-based offline progress, capped at eight hours, plus XP, gold, loot, auto-eat, recovery, boss gates, and activity settlement.
+- Idle combat with timestamp-based offline progress and an **AFK Reserve** that starts at 24 hours and grows to a maximum of 36 hours through two-hour milestone upgrades. Upgrade sources are a complete class set, claimed chapter 5, second and third characters, guild membership, first-boss completion, Bloom Patron, and Crown Patron. Combat also includes XP, gold, loot, auto-eat, recovery, boss gates, and activity settlement.
 - Inventory and bank management with search, categories, sorting, capacity-aware transfers, equipment comparison, enhancement, selling, salvaging, and overflow visibility.
 - Mining, Woodcutting, Fishing, Smithing, and Cooking with requirements, material checks, gathering-tool loadouts, craft previews, and activity feedback.
 - Guided quest journal with chapter filters, search, prerequisites, objective progress, reward previews, and navigation to the relevant activity.

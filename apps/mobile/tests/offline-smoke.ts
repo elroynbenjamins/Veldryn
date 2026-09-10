@@ -10,7 +10,7 @@ ok(p.kills>=3,'Should kill multiple Moss Rats in 60 sec');
 let c=claimActivity(s,t0+60_000); s=c.state;
 ok(s.character!.xp>0 && s.character!.gold>100,'Claim should award XP and gold');
 const capped=previewActivityReward(s,t0+60_000+(OFFLINE_CAP_SECONDS+3600)*1000);
-ok(capped.elapsedSeconds===OFFLINE_CAP_SECONDS,'Offline progress must cap at 8 hours');
+ok(capped.elapsedSeconds===OFFLINE_CAP_SECONDS,'Offline progress must cap at the 24-hour base reserve');
 let level25Xp=totalXpAtLevel(25); ok(level25Xp>0,'Level curve should support level 25');
 const a=previewActivityReward(s,t0+120_000); const b=previewActivityReward(s,t0+120_000);
 ok(JSON.stringify(a)===JSON.stringify(b),'Offline rewards must be deterministic for same state/time');

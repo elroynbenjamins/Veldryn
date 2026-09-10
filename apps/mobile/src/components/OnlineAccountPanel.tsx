@@ -1,4 +1,4 @@
-import React,{useEffect,useState} from 'react';
+import {useEffect,useState} from 'react';
 import {Alert,StyleSheet,Text,TextInput} from 'react-native';
 import type {Session} from '@supabase/supabase-js';
 import * as Linking from 'expo-linking';

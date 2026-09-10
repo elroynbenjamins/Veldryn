@@ -6,6 +6,7 @@ import {effectiveStats} from './game';
 import {characterPermanentMultipliers} from './permanent-boosts';
 import {classCombatStyle} from './class-combat';
 import {environmentEffectForActivity} from './world-weather';
+import {gatheringPacing} from './gathering-tools';
 const COMBAT_SPEED_MIN=.68;
 const COMBAT_SPEED_MAX=1.3;
 const COMBAT_TIME_SCALE=1.16;
@@ -38,7 +39,7 @@ export function activityCycleSeconds(state:GameState){
   const monster=MONSTERS.find(m=>m.id===target),gathering=GATHERING.find(g=>g.id===target);
   const modifiers=characterPermanentMultipliers(state);
   const environmentMultiplier=state.activity?environmentEffectForActivity(state.activity).effect.actionTimeMultiplier:1;
-  if(!monster)return ((gathering?.seconds??1)*GATHER_TIME_SCALE*environmentMultiplier)/modifiers.gatheringSpeedMultiplier;
+  if(!monster)return ((gathering?.seconds??1)*GATHER_TIME_SCALE*(gathering?gatheringPacing(state,gathering).timeMultiplier:1)*environmentMultiplier)/modifiers.gatheringSpeedMultiplier;
   const stats=effectiveStats(state),expected=monster.attack*1.2+monster.defense*.8+monster.level*2.2;
   const boostedPower=Math.max(1,Math.round(stats.power*modifiers.combatPowerMultiplier));
   const adjustedExpected=(expected*COMBAT_EXPECTED_SCALE);

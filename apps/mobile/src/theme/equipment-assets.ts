@@ -42,6 +42,23 @@ export const equipmentSheetBySet:Record<string,ImageSourcePropType>={
   snowveil_regalia:require('../../assets/equipment-ui/snowveil-regalia-icon-sheet.png'),
   choirfrost_resonance:require('../../assets/equipment-ui/choirfrost-resonance-icon-sheet.png'),
   rimewall_oath:require('../../assets/equipment-ui/rimewall-oath-icon-sheet.png'),
+  'harvestwake-harvest-defender':require('../../assets/equipment-ui/event-harvestwake-harvest-defender-icon-sheet.png'),
+  'harvestwake-granary-bastion':require('../../assets/equipment-ui/event-harvestwake-granary-bastion-icon-sheet.png'),
+  'harvestwake-autumn-warden':require('../../assets/equipment-ui/event-harvestwake-autumn-warden-icon-sheet.png'),
+  'harvestwake-hearthkeeper':require('../../assets/equipment-ui/event-harvestwake-hearthkeeper-icon-sheet.png'),
+  'harvestwake-field-ranger':require('../../assets/equipment-ui/event-harvestwake-field-ranger-icon-sheet.png'),
+  'harvestwake-reapers-guard':require('../../assets/equipment-ui/event-harvestwake-reapers-guard-icon-sheet.png'),
+  'harvestwake-amber-brewer':require('../../assets/equipment-ui/event-harvestwake-amber-brewer-icon-sheet.png'),
+  'harvestwake-harvest-blade':require('../../assets/equipment-ui/event-harvestwake-harvest-blade-icon-sheet.png'),
+  'harvestwake-granary-keeper':require('../../assets/equipment-ui/event-harvestwake-granary-keeper-icon-sheet.png'),
+  'echo-surge':require('../../assets/equipment-ui/event-echo-surge-icon-sheet.png'),
+  'gatherers-week':require('../../assets/equipment-ui/event-gatherers-week-icon-sheet.png'),
+  'guild-rally':require('../../assets/equipment-ui/event-guild-rally-icon-sheet.png'),
+  'monster-hunt':require('../../assets/equipment-ui/event-monster-hunt-icon-sheet.png'),
+  'coop-festival':require('../../assets/equipment-ui/event-coop-festival-icon-sheet.png'),
+  'market-fair':require('../../assets/equipment-ui/event-market-fair-icon-sheet.png'),
+  'anniversary-of-veldryn':require('../../assets/equipment-ui/event-anniversary-of-veldryn-icon-sheet.png'),
+  'winters-bell':require('../../assets/equipment-ui/event-winters-bell-icon-sheet.png'),
 };
 
 const completeProgressionArtwork=Object.fromEntries([

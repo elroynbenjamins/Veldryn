@@ -11,10 +11,35 @@
     "combat-service-smoke": "node dist/server/combat/__tests__/service-smoke.js",
     "backend-pass-smoke": "node dist/server/__tests__/backend-pass-smoke.js",
     "production-smoke": "node dist/server/__tests__/production-smoke.js",
-    "squad-smoke": "node dist/server/squads/__tests__/squad-smoke.js"
+    "supabase:start": "supabase start",
+    "supabase:stop": "supabase stop",
+    "supabase:status": "supabase status",
+    "supabase:env": "supabase status -o env",
+    "supabase:reset": "supabase db reset",
+    "supabase:test-db": "supabase test db",
+    "squad-smoke": "node dist/server/squads/__tests__/squad-smoke.js",
+    "coop-phase1": "node dist/server/coop/__tests__/phase1-invariants.js",
+    "coop-phase2": "node dist/server/coop/__tests__/phase2-lifecycle.js",
+    "coop-phase2-runtime": "node dist/server/coop/__tests__/phase2-runtime-adapter.js",
+    "coop-phase2-contracts": "node dist/server/coop/__tests__/phase2-api-contracts.js",
+    "coop-phase3": "node dist/server/coop/__tests__/phase3-normalization.js",
+    "coop-phase3-commit": "node dist/server/coop/__tests__/phase3-roster-commit.js",
+    "coop-phase4": "node dist/server/coop/__tests__/phase4-routes.js",
+    "coop-phase5": "node dist/server/coop/__tests__/phase5-stateful-run.js",
+    "coop-phase6": "node dist/server/coop/__tests__/phase6-qmode.js",
+    "coop-phase6-projection": "node dist/server/coop/__tests__/phase6-public-projection.js",
+    "coop-phase7": "node dist/server/coop/__tests__/phase7-matchmaking.js",
+    "coop-phase7-runtime": "node dist/server/coop/__tests__/phase7-runtime-adapter.js",
+    "coop-phase8": "node dist/server/coop/__tests__/phase8-ready-recovery.js",
+    "coop-phase9": "node dist/server/coop/__tests__/phase9-voting.js",
+    "coop-phase10": "node dist/server/coop/__tests__/phase10-chat.js",
+    "coop-phase11": "node dist/server/coop/__tests__/phase11-rewards.js",
+    "coop-phase12": "node dist/server/coop/__tests__/phase12-balance.js",
+    "coop-phase13": "node dist/server/coop/__tests__/phase13-regional-content.js"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "supabase": "2.117.0",
     "typescript": "^5.8.0"
   }
 }

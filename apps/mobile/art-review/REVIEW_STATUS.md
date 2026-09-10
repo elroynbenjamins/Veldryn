@@ -26,12 +26,13 @@ The older smooth/checkerboard attempts and superseded set-reference folders were
 - Front view is the production standard for all new character skins. New back views are no longer required.
 - `accepted-set-skins-front-v1/review-contact-sheet.png` is the collection-wide visual audit.
 
-## Event concepts awaiting review
+## Accepted event equipment and skins
 
 - `event-sets-v1/harvestwake/` contains nine class-specific Harvestwake concept overviews matching the reward names already used by the live-event runtime.
 - `event-sets-v1/liveops-catalog/` contains one event-wide visual direction for each of the eight events in the master LiveOps calendar.
 - Every board shows male and female front skins, the helmet, weapon and offhand, and a complete ten-piece equipment set.
-- These remain review concepts until explicitly accepted. They are not connected to gameplay or copied into the runtime asset registries.
+- `event-sets-v1/production/` contains the production manifest and two final contact sheets. The accepted 17 atlases and 34 individual portraits live only in their runtime asset folders to avoid duplicate art copies.
+- All production atlases and portraits are registered in the runtime asset maps. Harvestwake's nine class skins are connected to its existing event reward IDs; the eight future LiveOps sets remain staged until their gameplay definitions exist.
 
 ## Canonical reference
 

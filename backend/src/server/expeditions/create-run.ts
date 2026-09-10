@@ -25,6 +25,7 @@ export interface CreateRunInput {
 export function prepareExpeditionRun(input: CreateRunInput) {
   const def = EXPEDITIONS[input.expeditionId];
   if (!def) throw new Error('unknown_expedition');
+  if (!def.coopImplemented) throw new Error('expedition_not_implemented');
   if (input.members.length < 1 || input.members.length > 4) throw new Error('invalid_party_size');
   const duplicate = new Set(input.members.map(m=>m.characterId));
   if (duplicate.size !== input.members.length) throw new Error('duplicate_character');

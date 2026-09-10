@@ -1,5 +1,5 @@
 import {RECIPES} from '../content/skills';
-import {GameState} from './types';
+import {ActiveActivity,GameState,RewardBundle} from './types';
 import {claimActivity,craftRecipe,startCombat,startGathering,stopActivity} from './game';
 
 /** Settle earned rewards before replacing or stopping an activity. Pure and atomic. */
@@ -9,6 +9,17 @@ export function transitionActivity(state:GameState,nowMs:number,next?:{kind:'com
     ?next.kind==='combat'?startCombat(claimed.state,next.id,nowMs):startGathering(claimed.state,next.id,nowMs)
     :stopActivity(claimed.state);
   return {state:updated,reward:claimed.reward};
+}
+
+export function rewardHasProgress(reward:RewardBundle){
+  return reward.kills>0||reward.xp>0||reward.gold>0||reward.items.some(item=>item.quantity>0)||!!reward.stoppedReason||!!reward.eventDrops?.some(drop=>drop.quantity>0)||!!reward.eventDiscoveries?.some(entry=>entry.quantity>0);
+}
+
+/** Settle a persisted idle activity once on cold startup without consuming a partial zero-action cycle. */
+export function settleStartupActivity(state:GameState,nowMs:number):{state:GameState;reward:RewardBundle|null;activity:ActiveActivity|null}{
+  if(!state.character||!state.activity)return {state,reward:null,activity:null};
+  const activity=state.activity,claimed=claimActivity(state,nowMs);
+  return rewardHasProgress(claimed.reward)?{state:claimed.state,reward:claimed.reward,activity}:{state,reward:null,activity:null};
 }
 
 /** Reuse the pure craft operation so UI checks include bank use and output capacity. */

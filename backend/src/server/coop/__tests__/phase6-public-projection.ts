@@ -1,0 +1,14 @@
+import {strict as assert} from 'node:assert';
+import {launchPlayer} from '../../combat/content/launch-combat';
+import {initialPersistentRunState} from '../../expeditions/node-resolution';
+import {generateCoopRouteGraph} from '../../expeditions/route-generation';
+import type {QModeRun} from '../qmode';
+import {projectQModeRun} from '../qmode-public-projection';
+const players=['Ironwarden','Wayfinder','Ravager','Stonecaller'].map((classId,index)=>({...launchPlayer(classId,25),id:`character-${index}`}));
+const graph=generateCoopRouteGraph('projection-secret','EXP_001','projection-run','content-v1','balance-v1');
+const run:QModeRun={id:'projection-run',requestId:'projection-request',controllerAccountId:'private-controller',expeditionId:'EXP_001',tier:1,graph,currentNodeId:'entry',phase:'awaiting_choice',players,persistentState:initialPersistentRunState(players),echoSourceAccountIds:['private-a','private-b','private-c']};
+const projection=projectQModeRun(run),json=JSON.stringify(projection);
+assert.equal(projection.team.length,4);assert.equal(projection.team.filter(member=>member.kind==='echo').length,3);assert.equal(projection.options.length,3);
+assert.equal(projection.graph.nodes.length,4,'only entry and first decision may be revealed');assert.equal(json.includes('private-controller'),false);assert.equal(json.includes('private-a'),false);assert.equal('rewardMarks' in projection,false);
+run.phase='completed';run.rewardMarks=74;const completed=projectQModeRun(run);assert.equal(completed.settlement.status,'pending_entitlement');assert.equal(JSON.stringify(completed).includes('74'),false,'calculated reward is not a released entitlement');
+console.log('coop phase6 public projection OK');

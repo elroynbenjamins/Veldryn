@@ -1,27 +1,30 @@
-import React from 'react';
-import {Modal,ScrollView,StyleSheet,Text,View} from 'react-native';
-import {GameState} from '../core/types';
-import {previewEquipment} from '../core/equipment-preview';
-import {effectiveStats} from '../core/game';
+import {Modal,SafeAreaView,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {itemDef} from '../content/items';
-import {GameButton} from './GameButton';
-import {C,spacing,typography} from '../theme/theme';
+import {effectiveStats} from '../core/game';
+import {gearEnhancement,gemSocketCapacity} from '../core/equipment-enhancement';
+import {previewEquipment} from '../core/equipment-preview';
+import {GameState} from '../core/types';
 import {itemRarity,rarityMeta} from '../core/item-rarity';
+import {C,equipmentColors,radii,spacing,typography} from '../theme/theme';
+import {EquipmentArtwork,hasEquipmentArtwork} from './EquipmentArtwork';
+import {GameButton} from './GameButton';
+
+function CompareRow({label,before,after}:{label:string;before:number;after:number}){const change=after-before;return <View style={s.statRow}><Text style={s.statLabel}>{label}</Text><Text style={s.old}>{before}</Text><Text style={s.arrow}>→</Text><Text style={s.next}>{after}</Text><Text style={[s.delta,change>0?s.better:change<0?s.worse:s.same]}>{change===0?'—':`${change>0?'+':''}${change}`}</Text></View>}
 
 export function EquipmentPreview({state,itemId,onClose}:{state:GameState;itemId:string|null;onClose:()=>void}){
   if(!itemId)return null;
   let projected:GameState;try{projected=previewEquipment(state,itemId)}catch{return null}
-  const item=itemDef(itemId),before=effectiveStats(state),after=effectiveStats(projected);
-  const rarity=rarityMeta(itemRarity(item));
-  const oldId=item.slot?state.character!.equipment[item.slot]:undefined;
-  return <Modal visible animationType="none" onRequestClose={onClose}>
-    <ScrollView contentContainerStyle={s.root}><GameButton title="Close preview" tone="secondary" onPress={onClose}/>
-      <View style={[s.itemFrame,{borderColor:rarity.color,backgroundColor:rarity.surface,shadowColor:rarity.color,shadowOpacity:rarity.glowOpacity}]}><Text style={[s.rarity,{color:rarity.color}]}>{rarity.symbol} {rarity.label.toUpperCase()} {item.slot?.toUpperCase()}</Text><Text style={s.title}>Compare {item.name}</Text></View><Text style={s.note}>Comparison only. No items, equipment or progress are changed.</Text>
-      <Text style={s.note}>Would replace: {oldId?itemDef(oldId).name:'Empty slot'}</Text>
-      <Text style={s.stats}>Attack {before.attack} → {after.attack} · Defense {before.defense} → {after.defense} · Max HP {before.hp} → {after.hp}</Text>
-      <Text style={s.note}>Individual pieces do not change appearance. Equip every required piece from one set to unlock its full skin.</Text>
-      <GameButton title="Back to inventory" onPress={onClose}/>
-    </ScrollView>
-  </Modal>;
+  const item=itemDef(itemId),before=effectiveStats(state),after=effectiveStats(projected),rarity=rarityMeta(itemRarity(item)),enhancement=gearEnhancement(state,itemId),capacity=gemSocketCapacity(itemId);
+  const oldId=item.slot?state.character!.equipment[item.slot]:undefined,old=oldId?itemDef(oldId):undefined,oldEnhancement=oldId?gearEnhancement(state,oldId):undefined;
+  return <Modal visible animationType={state.settings.reduceMotion?'none':'slide'} onRequestClose={onClose}><SafeAreaView style={s.safe}><ScrollView contentContainerStyle={s.root}>
+    <View style={s.top}><Text style={s.eyebrow}>ITEM COMPARISON</Text><GameButton title="Close" tone="secondary" onPress={onClose}/></View>
+    <View style={[s.hero,{borderColor:rarity.color,backgroundColor:rarity.surface}]}>{hasEquipmentArtwork(item)&&<EquipmentArtwork item={item}/>}<View style={s.flex}><Text style={[s.rarity,{color:rarity.color}]}>{rarity.symbol} {rarity.label.toUpperCase()} · {item.slot?.toUpperCase()}</Text><Text style={s.title}>{item.name}{enhancement.rank?` +${enhancement.rank}`:''}</Text><Text style={s.meta}>{capacity?`◆ ${enhancement.gemIds.length}/${capacity} gems`:'No gem sockets'}</Text></View></View>
+    <View style={s.replacement}><Text style={s.section}>REPLACES</Text><Text style={s.replacementName}>{old?`${old.name}${oldEnhancement?.rank?` +${oldEnhancement.rank}`:''}`:'Empty slot'}</Text></View>
+    <View style={s.compare}><View style={s.compareHead}><Text style={s.section}>TOTAL LOADOUT</Text><Text style={s.legend}>Current → Preview · Change</Text></View><CompareRow label="Attack" before={before.attack} after={after.attack}/><CompareRow label="Defense" before={before.defense} after={after.defense}/><CompareRow label="Max health" before={before.hp} after={after.hp}/><CompareRow label="Power" before={before.power} after={after.power}/></View>
+    <Text style={s.note}>Preview includes this item’s upgrade rank, socketed gems, replaced equipment, and active novice-set bonus. Nothing is changed.</Text>
+    <Text style={s.appearance}>Appearance remains your selected whole-character skin.</Text>
+    <GameButton title="Back to Inventory" onPress={onClose}/>
+  </ScrollView></SafeAreaView></Modal>;
 }
-const s=StyleSheet.create({root:{flexGrow:1,backgroundColor:C.bg,padding:spacing.xl,paddingTop:48,gap:spacing.md},itemFrame:{borderWidth:2,borderRadius:12,padding:spacing.md,shadowRadius:8,shadowOffset:{width:0,height:0}},rarity:{...typography.caption,fontWeight:'900',letterSpacing:1},title:{...typography.title,color:C.text},note:{...typography.body,color:C.muted},stats:{...typography.bodyStrong,color:C.accent}});
+
+const s=StyleSheet.create({safe:{flex:1,backgroundColor:equipmentColors.background},root:{flexGrow:1,padding:spacing.lg,gap:spacing.md,paddingBottom:spacing.xl},top:{minHeight:48,flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:spacing.md},eyebrow:{...typography.caption,color:equipmentColors.goldSoft,fontWeight:'900',letterSpacing:1.2},hero:{flexDirection:'row',alignItems:'center',gap:spacing.md,borderWidth:2,borderRadius:radii.md,padding:spacing.md},flex:{flex:1,minWidth:0},rarity:{...typography.caption,fontWeight:'900',letterSpacing:.8},title:{...typography.title,color:C.text},meta:{...typography.caption,color:C.muted},replacement:{padding:spacing.md,borderWidth:1,borderColor:equipmentColors.line,backgroundColor:equipmentColors.panel},section:{...typography.caption,color:equipmentColors.goldSoft,fontWeight:'900',letterSpacing:1},replacementName:{...typography.bodyStrong,color:C.text,marginTop:spacing.xs},compare:{borderWidth:1,borderColor:C.line,backgroundColor:equipmentColors.panel},compareHead:{padding:spacing.md,borderBottomWidth:1,borderBottomColor:C.line},legend:{...typography.caption,color:C.muted},statRow:{minHeight:44,flexDirection:'row',alignItems:'center',paddingHorizontal:spacing.md,borderBottomWidth:1,borderBottomColor:C.line},statLabel:{...typography.body,color:C.muted,flex:1},old:{...typography.bodyStrong,color:C.text,minWidth:48,textAlign:'right'},arrow:{...typography.body,color:C.muted,paddingHorizontal:spacing.sm},next:{...typography.bodyStrong,color:C.text,minWidth:48},delta:{...typography.bodyStrong,minWidth:48,textAlign:'right'},better:{color:C.good},worse:{color:C.bad},same:{color:C.muted},note:{...typography.body,color:C.muted},appearance:{...typography.caption,color:C.info,textAlign:'center'}});

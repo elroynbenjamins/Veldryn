@@ -1,5 +1,20 @@
 # VELDRYN Backend v2.1
 
+## Local Supabase database
+
+Prerequisites on Windows: Docker Desktop with its WSL 2 backend running. The CLI is pinned as a backend development dependency and the local project is configured in `supabase/config.toml`.
+
+```powershell
+pnpm run supabase:start
+pnpm run supabase:reset
+pnpm run supabase:status
+pnpm run supabase:env
+```
+
+`supabase:reset` recreates the local database and applies every file in `supabase/migrations` in timestamp order. Local endpoints use the standard project ports: API `54321`, PostgreSQL `54322`, Studio `54323`, and local mail `54324`. Obtain the generated local URL and public key with `pnpm exec supabase status -o env`; never place the service-role key in the mobile application.
+
+To stop the local stack while retaining its Docker volumes, run `pnpm run supabase:stop`.
+
 ## Production-facing squad API contracts
 - Adds idempotent Squad API receipts and a database assertion requiring exactly three distinct characters/positions.
 - Adds client-facing contracts for saving squads, Arena defense publication/opponent discovery/match resolution and Triad Trials.

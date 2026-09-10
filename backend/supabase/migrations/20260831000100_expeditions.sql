@@ -148,6 +148,7 @@ alter table public.expedition_currency_ledger enable row level security;
 alter table public.expedition_telemetry enable row level security;
 
 -- Read-only client access to runs they belong to. Writes should go through server/service-role functions.
+drop policy if exists expedition_runs_read_member on public.expedition_runs;
 create policy expedition_runs_read_member on public.expedition_runs
 for select using (
   created_by = auth.uid() or exists (
@@ -155,6 +156,7 @@ for select using (
   )
 );
 
+drop policy if exists expedition_run_members_read_self_run on public.expedition_run_members;
 create policy expedition_run_members_read_self_run on public.expedition_run_members
 for select using (
   account_id = auth.uid() or exists (
@@ -163,17 +165,22 @@ for select using (
   )
 );
 
+drop policy if exists expedition_reward_claims_read_self on public.expedition_reward_claims;
 create policy expedition_reward_claims_read_self on public.expedition_reward_claims
 for select using (account_id = auth.uid());
 
+drop policy if exists expedition_daily_counters_read_self on public.expedition_daily_counters;
 create policy expedition_daily_counters_read_self on public.expedition_daily_counters
 for select using (account_id = auth.uid());
 
+drop policy if exists expedition_weekly_counters_read_self on public.expedition_weekly_counters;
 create policy expedition_weekly_counters_read_self on public.expedition_weekly_counters
 for select using (account_id = auth.uid());
 
+drop policy if exists expedition_shop_purchases_read_self on public.expedition_shop_purchases;
 create policy expedition_shop_purchases_read_self on public.expedition_shop_purchases
 for select using (account_id = auth.uid());
 
+drop policy if exists expedition_currency_ledger_read_self on public.expedition_currency_ledger;
 create policy expedition_currency_ledger_read_self on public.expedition_currency_ledger
 for select using (account_id = auth.uid());

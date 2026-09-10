@@ -10,18 +10,19 @@ export interface ExpeditionDefinition {
   minNodes: number;
   maxNodes: number;
   bossId: string;
+  coopImplemented: boolean;
   nodeWeights: Partial<Record<ExpeditionNodeType, number>>;
 }
 
 export const EXPEDITIONS: Record<string, ExpeditionDefinition> = {
-  EXP_001: { id:'EXP_001', name:'Rootbound Vault', region:'Asterfall', minLevel:15, recommendedLevel:25, baseMarks:74, minNodes:8, maxNodes:10, bossId:'BOSS_EXP_ROOT', nodeWeights:{battle:30,elite:10,event:18,camp:9,treasure:8,echo:8,forge:5,merchant:4,risk:5,secret:3}},
-  EXP_002: { id:'EXP_002', name:'Lanternwatch Descent', region:'Asterfall', minLevel:18, recommendedLevel:25, baseMarks:76, minNodes:8, maxNodes:10, bossId:'BOSS_EXP_BELL', nodeWeights:{battle:28,elite:11,event:17,camp:8,treasure:8,echo:12,forge:5,merchant:4,risk:5,secret:2}},
-  EXP_003: { id:'EXP_003', name:'Buried Observatory', region:'Sunscar', minLevel:36, recommendedLevel:45, baseMarks:80, minNodes:9, maxNodes:11, bossId:'BOSS_EXP_SOLAR', nodeWeights:{battle:29,elite:12,event:16,camp:9,treasure:7,echo:6,forge:5,merchant:5,risk:8,secret:3}},
-  EXP_004: { id:'EXP_004', name:'Mirage Well', region:'Sunscar', minLevel:32, recommendedLevel:45, baseMarks:80, minNodes:9, maxNodes:11, bossId:'BOSS_EXP_SPHINX', nodeWeights:{battle:27,elite:11,event:19,camp:7,treasure:8,echo:7,forge:4,merchant:5,risk:9,secret:3}},
-  EXP_005: { id:'EXP_005', name:'Shiverlake Descent', region:'Frostmarch', minLevel:52, recommendedLevel:70, baseMarks:84, minNodes:9, maxNodes:12, bossId:'BOSS_EXP_BELLBEAST', nodeWeights:{battle:30,elite:12,event:15,camp:12,treasure:6,echo:5,forge:5,merchant:4,risk:8,secret:3}},
-  EXP_006: { id:'EXP_006', name:'Choir Caverns', region:'Frostmarch', minLevel:57, recommendedLevel:70, baseMarks:85, minNodes:9, maxNodes:12, bossId:'BOSS_EXP_CANTOR', nodeWeights:{battle:28,elite:13,event:18,camp:9,treasure:6,echo:8,forge:5,merchant:3,risk:7,secret:3}},
-  EXP_007: { id:'EXP_007', name:'Blackglass Fen', region:'Ashlands', minLevel:77, recommendedLevel:94, baseMarks:88, minNodes:10, maxNodes:12, bossId:'BOSS_EXP_FEN', nodeWeights:{battle:29,elite:14,event:15,camp:8,treasure:6,echo:5,forge:7,merchant:4,risk:9,secret:3}},
-  EXP_008: { id:'EXP_008', name:'Crucible Depths', region:'Ashlands', minLevel:82, recommendedLevel:100, baseMarks:90, minNodes:10, maxNodes:13, bossId:'BOSS_EXP_PRIME', nodeWeights:{battle:28,elite:15,event:14,camp:7,treasure:5,echo:5,forge:10,merchant:3,risk:10,secret:3}},
+  EXP_001: { id:'EXP_001', name:'Rootbound Vault', region:'Asterfall', minLevel:15, recommendedLevel:25, baseMarks:74, minNodes:8, maxNodes:10, bossId:'BOSS_EXP_ROOT', coopImplemented:true, nodeWeights:{battle:30,elite:10,event:18,camp:9,treasure:8,echo:8,forge:5,merchant:4,risk:5,secret:3}},
+  EXP_002: { id:'EXP_002', name:'Lanternwatch Descent', region:'Asterfall', minLevel:18, recommendedLevel:25, baseMarks:76, minNodes:8, maxNodes:10, bossId:'BOSS_EXP_BELL', coopImplemented:true, nodeWeights:{battle:28,elite:11,event:17,camp:8,treasure:8,echo:12,forge:5,merchant:4,risk:5,secret:2}},
+  EXP_003: { id:'EXP_003', name:'Buried Observatory', region:'Sunscar', minLevel:36, recommendedLevel:45, baseMarks:80, minNodes:9, maxNodes:11, bossId:'BOSS_EXP_SOLAR', coopImplemented:true, nodeWeights:{battle:29,elite:12,event:16,camp:9,treasure:7,echo:6,forge:5,merchant:5,risk:8,secret:3}},
+  EXP_004: { id:'EXP_004', name:'Mirage Well', region:'Sunscar', minLevel:32, recommendedLevel:45, baseMarks:80, minNodes:9, maxNodes:11, bossId:'BOSS_EXP_SPHINX', coopImplemented:true, nodeWeights:{battle:27,elite:11,event:19,camp:7,treasure:8,echo:7,forge:4,merchant:5,risk:9,secret:3}},
+  EXP_005: { id:'EXP_005', name:'Shiverlake Descent', region:'Frostmarch', minLevel:52, recommendedLevel:70, baseMarks:84, minNodes:9, maxNodes:12, bossId:'BOSS_EXP_BELLBEAST', coopImplemented:false, nodeWeights:{battle:30,elite:12,event:15,camp:12,treasure:6,echo:5,forge:5,merchant:4,risk:8,secret:3}},
+  EXP_006: { id:'EXP_006', name:'Choir Caverns', region:'Frostmarch', minLevel:57, recommendedLevel:70, baseMarks:85, minNodes:9, maxNodes:12, bossId:'BOSS_EXP_CANTOR', coopImplemented:false, nodeWeights:{battle:28,elite:13,event:18,camp:9,treasure:6,echo:8,forge:5,merchant:3,risk:7,secret:3}},
+  EXP_007: { id:'EXP_007', name:'Blackglass Fen', region:'Ashlands', minLevel:77, recommendedLevel:94, baseMarks:88, minNodes:10, maxNodes:12, bossId:'BOSS_EXP_FEN', coopImplemented:false, nodeWeights:{battle:29,elite:14,event:15,camp:8,treasure:6,echo:5,forge:7,merchant:4,risk:9,secret:3}},
+  EXP_008: { id:'EXP_008', name:'Crucible Depths', region:'Ashlands', minLevel:82, recommendedLevel:100, baseMarks:90, minNodes:10, maxNodes:13, bossId:'BOSS_EXP_PRIME', coopImplemented:false, nodeWeights:{battle:28,elite:15,event:14,camp:7,treasure:5,echo:5,forge:10,merchant:3,risk:10,secret:3}},
 };
 
 export const LAUNCH_BOON_IDS = Array.from({ length: 126 }, (_, i) => `BOON_${String(i + 1).padStart(3, '0')}`);

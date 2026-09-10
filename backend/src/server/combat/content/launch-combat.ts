@@ -6,7 +6,7 @@ const dmg=(id:string,name:string,coeff:number,cooldownMs:number,priority:number,
 export function launchPlayer(classId:string, level=25):CombatantDefinition {
   const scale=level/25;
   const common={team:'players' as const,level,basicAttackMs:2400,basicAttackCoeff:.70};
-  const make=(name:string,role:CombatRole,s:ReturnType<typeof stats>,abilities:AbilityDefinition[]):CombatantDefinition=>({id:`P_${classId}`,name,...common,role,stats:s,abilities});
+  const make=(name:string,role:CombatRole,s:ReturnType<typeof stats>,abilities:AbilityDefinition[]):CombatantDefinition=>({id:`P_${classId}`,classId,name,...common,role,stats:s,abilities});
   switch(classId){
     case 'Ironwarden': return make('Ironwarden','tank',stats(5200*scale,420*scale,180*scale,1500*scale,680,180,.05,.03),[
       {id:'IW_TAUNT',name:'Rune Challenge',cooldownMs:9000,castTimeMs:0,target:'current_target',priority:95,effects:[{kind:'taunt',value:500},{kind:'damage',coeff:.55,threatMultiplier:4}]},

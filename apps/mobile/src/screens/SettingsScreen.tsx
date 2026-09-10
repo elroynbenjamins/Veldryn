@@ -1,4 +1,4 @@
-import React from 'react';
+import {useState} from 'react';
 import {ScrollView,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from '../components/GameButton';
 import {Panel} from '../components/Panel';
@@ -18,21 +18,25 @@ type Props={
   onImport:(raw:string)=>Promise<void>;
   onOpenChatPilot?:()=>void;
   onOpenChatEmotes?:()=>void;
+  onOpenCoopUiGallery?:()=>void;
 };
+type SettingsSection='gameplay'|'accessibility'|'account'|'data'|'developer';
 
-export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImport,onOpenChatPilot,onOpenChatEmotes}:Props){
+export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImport,onOpenChatPilot,onOpenChatEmotes,onOpenCoopUiGallery}:Props){
+  const [section,setSection]=useState<SettingsSection>('gameplay');
   const update=(partial:Partial<GameState['settings']>)=>onChange({...state,settings:{...state.settings,...partial}});
   const restoreDefaults=()=>update({numberMode:'abbreviated',reduceMotion:false,textScale:1,autoEatThresholdPct:40,stopCombatWhenOutOfFood:true});
   return <ScrollView contentContainerStyle={s.root}>
     <Text style={s.h}>{t(state.settings.language,'settings.title')}</Text>
     <Text style={s.sub}>{t(state.settings.language,'settings.intro')}</Text>
-    <Panel>
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.tabs}>{(['gameplay','accessibility','account','data',...(__DEV__?['developer' as const]:[])] as SettingsSection[]).map(value=><GameButton key={value} title={value.charAt(0).toUpperCase()+value.slice(1)} tone={section===value?'primary':'secondary'} onPress={()=>setSection(value)}/>)}</ScrollView>
+    {section==='account'&&<><Panel>
       <Text style={s.title}>{t(state.settings.language,'settings.account')}</Text>
       <Text style={s.sub}>Character: {state.character?.name??'Not created yet'} · Local save · schema v{state.version}</Text>
       <Text style={s.muted}>Cloud sync is optional while the online game systems are introduced.</Text>
     </Panel>
-    <OnlineAccountPanel state={state}/>
-    <Panel>
+    <OnlineAccountPanel state={state}/></>}
+    {section==='gameplay'&&<><Panel>
       <Text style={s.title}>{t(state.settings.language,'settings.gameplay')}</Text>
       <Text style={s.sub}>Activities continue while closed up to your current AFK reserve.</Text>
       <GameButton title={`Numbers: ${state.settings.numberMode==='abbreviated'?'Abbreviated':'Exact'}`} tone="secondary" onPress={()=>update({numberMode:state.settings.numberMode==='abbreviated'?'exact':'abbreviated'})}/>
@@ -44,8 +48,8 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImp
       <Text style={s.title}>Chat</Text>
       <Text style={s.sub}>Development review only. Emote choices use the same account-scoped preference store as the Chat Pilot.</Text>
       <GameButton title="Emote Tray · 20 slots" tone="secondary" onPress={onOpenChatEmotes}/>
-    </Panel>:null}
-    <Panel>
+    </Panel>:null}</>}
+    {section==='accessibility'&&<><Panel>
       <Text style={s.title}>{t(state.settings.language,'settings.notifications')}</Text>
       <Text style={s.sub}>Completion, inventory-full and quest-reset reminders.</Text>
       <Text style={s.muted}>Push notifications are not connected in this offline build.</Text>
@@ -61,8 +65,8 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImp
       <Text style={s.title}>{t(state.settings.language,'settings.language')}</Text>
       <Text style={s.sub}>{t(state.settings.language,'settings.languageStatus')}</Text>
       <View style={s.languageGrid}>{SUPPORTED_LANGUAGES.map(id=><View key={id} style={s.languageChoice}><GameButton title={LANGUAGE_NAMES[id]} tone={state.settings.language===id?'primary':'secondary'} onPress={()=>onLanguage(id)}/></View>)}</View>
-    </Panel>
-    <Panel>
+    </Panel></>}
+    {section==='data'&&<><Panel>
       <Text style={s.title}>{t(state.settings.language,'settings.session')}</Text>
       <Text style={s.sub}>{state.activity?`Active: ${state.activity.targetId} (${state.activity.kind})`:'No activity running'}</Text>
       <GameButton title="Stop current activity" tone="danger" disabled={!state.activity} onPress={()=>onChange({...state,activity:null})}/>
@@ -72,9 +76,9 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImp
       <Text style={s.title}>{t(state.settings.language,'settings.privacy')}</Text>
       <Text style={s.sub}>Offline progress remains on this device until you explicitly sign in and sync a profile. No service-role or private key is ever stored in the app.</Text>
       <GameButton title="Delete local save" tone="danger" onPress={onReset}/>
-    </Panel>
-    <DeveloperTools state={state} onChange={onChange} onOpenChatPilot={onOpenChatPilot}/>
+    </Panel></>}
+    {section==='developer'&&__DEV__&&<DeveloperTools state={state} onChange={onChange} onOpenChatPilot={onOpenChatPilot} onOpenCoopUiGallery={onOpenCoopUiGallery}/>}
   </ScrollView>;
 }
 
-const s=StyleSheet.create({root:{padding:16,gap:12},h:{color:C.text,fontSize:25,fontWeight:'900'},title:{color:C.text,fontSize:18,fontWeight:'900',marginBottom:5},sub:{color:C.muted,lineHeight:20,marginBottom:8},muted:{color:C.muted,lineHeight:19,opacity:.8},row:{flexDirection:'row',gap:8},languageGrid:{flexDirection:'row',flexWrap:'wrap',gap:8},languageChoice:{minWidth:96,flexGrow:1},flex:{flex:1}});
+const s=StyleSheet.create({root:{padding:16,gap:12},h:{color:C.text,fontSize:25,fontWeight:'900'},title:{color:C.text,fontSize:18,fontWeight:'900',marginBottom:5},sub:{color:C.muted,lineHeight:20,marginBottom:8},muted:{color:C.muted,lineHeight:19,opacity:.8},tabs:{gap:8,paddingRight:16},row:{flexDirection:'row',gap:8},languageGrid:{flexDirection:'row',flexWrap:'wrap',gap:8},languageChoice:{minWidth:96,flexGrow:1},flex:{flex:1}});

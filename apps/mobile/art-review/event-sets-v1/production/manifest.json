@@ -1,0 +1,130 @@
+[
+  {
+    "id": "harvestwake-harvest-defender",
+    "name": "Harvest Defender",
+    "event": "Harvestwake",
+    "classId": "IRONWARDEN",
+    "equipmentFile": "event-harvestwake-harvest-defender-icon-sheet.png",
+    "appearanceId": "event-front-harvestwake-harvest-defender"
+  },
+  {
+    "id": "harvestwake-granary-bastion",
+    "name": "Granary Bastion",
+    "event": "Harvestwake",
+    "classId": "BASTION",
+    "equipmentFile": "event-harvestwake-granary-bastion-icon-sheet.png",
+    "appearanceId": "event-front-harvestwake-granary-bastion"
+  },
+  {
+    "id": "harvestwake-autumn-warden",
+    "name": "Autumn Warden",
+    "event": "Harvestwake",
+    "classId": "DREADGUARD",
+    "equipmentFile": "event-harvestwake-autumn-warden-icon-sheet.png",
+    "appearanceId": "event-front-harvestwake-autumn-warden"
+  },
+  {
+    "id": "harvestwake-hearthkeeper",
+    "name": "Hearthkeeper",
+    "event": "Harvestwake",
+    "classId": "DAWNKEEPER",
+    "equipmentFile": "event-harvestwake-hearthkeeper-icon-sheet.png",
+    "appearanceId": "event-front-harvestwake-hearthkeeper"
+  },
+  {
+    "id": "harvestwake-field-ranger",
+    "name": "Field Ranger",
+    "event": "Harvestwake",
+    "classId": "WAYFINDER",
+    "equipmentFile": "event-harvestwake-field-ranger-icon-sheet.png",
+    "appearanceId": "event-front-harvestwake-field-ranger"
+  },
+  {
+    "id": "harvestwake-reapers-guard",
+    "name": "Reaper's Guard",
+    "event": "Harvestwake",
+    "classId": "RAVAGER",
+    "equipmentFile": "event-harvestwake-reapers-guard-icon-sheet.png",
+    "appearanceId": "event-front-harvestwake-reapers-guard"
+  },
+  {
+    "id": "harvestwake-amber-brewer",
+    "name": "Amber Brewer",
+    "event": "Harvestwake",
+    "classId": "HEXWEAVER",
+    "equipmentFile": "event-harvestwake-amber-brewer-icon-sheet.png",
+    "appearanceId": "event-front-harvestwake-amber-brewer"
+  },
+  {
+    "id": "harvestwake-harvest-blade",
+    "name": "Harvest Blade",
+    "event": "Harvestwake",
+    "classId": "KNIFE_DANCER",
+    "equipmentFile": "event-harvestwake-harvest-blade-icon-sheet.png",
+    "appearanceId": "event-front-harvestwake-harvest-blade"
+  },
+  {
+    "id": "harvestwake-granary-keeper",
+    "name": "Granary Keeper",
+    "event": "Harvestwake",
+    "classId": "STONECALLER",
+    "equipmentFile": "event-harvestwake-granary-keeper-icon-sheet.png",
+    "appearanceId": "event-front-harvestwake-granary-keeper"
+  },
+  {
+    "id": "echo-surge",
+    "name": "Veilglass Echo",
+    "event": "Echo Surge",
+    "equipmentFile": "event-echo-surge-icon-sheet.png",
+    "appearanceId": "event-front-echo-surge"
+  },
+  {
+    "id": "gatherers-week",
+    "name": "Greenhand Jubilee",
+    "event": "Gatherer's Week",
+    "equipmentFile": "event-gatherers-week-icon-sheet.png",
+    "appearanceId": "event-front-gatherers-week"
+  },
+  {
+    "id": "guild-rally",
+    "name": "Bannerbound Oath",
+    "event": "Guild Rally",
+    "equipmentFile": "event-guild-rally-icon-sheet.png",
+    "appearanceId": "event-front-guild-rally"
+  },
+  {
+    "id": "monster-hunt",
+    "name": "Trophyfang Pursuit",
+    "event": "Monster Hunt",
+    "equipmentFile": "event-monster-hunt-icon-sheet.png",
+    "appearanceId": "event-front-monster-hunt"
+  },
+  {
+    "id": "coop-festival",
+    "name": "Concord Lantern",
+    "event": "Co-op Festival",
+    "equipmentFile": "event-coop-festival-icon-sheet.png",
+    "appearanceId": "event-front-coop-festival"
+  },
+  {
+    "id": "market-fair",
+    "name": "Giltroad Finery",
+    "event": "Market Fair",
+    "equipmentFile": "event-market-fair-icon-sheet.png",
+    "appearanceId": "event-front-market-fair"
+  },
+  {
+    "id": "anniversary-of-veldryn",
+    "name": "Firstlight Legacy",
+    "event": "Anniversary of Veldryn",
+    "equipmentFile": "event-anniversary-of-veldryn-icon-sheet.png",
+    "appearanceId": "event-front-anniversary-of-veldryn"
+  },
+  {
+    "id": "winters-bell",
+    "name": "Bellfrost Vigil",
+    "event": "Winter's Bell",
+    "equipmentFile": "event-winters-bell-icon-sheet.png",
+    "appearanceId": "event-front-winters-bell"
+  }
+]

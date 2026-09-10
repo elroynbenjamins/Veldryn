@@ -1,4 +1,3 @@
-import React from 'react';
 import {Image,StyleSheet,View} from 'react-native';
 import {ItemDef} from '../content/items';
 import {GearSlot} from '../core/types';
@@ -14,7 +13,7 @@ const crop:Partial<Record<GearSlot,{x:number;y:number;width:number;height:number
 };
 const WIDE_SHEET_WIDTH=2000,WIDE_SHEET_HEIGHT=800;
 const beginnerSetSheets=new Set(['ironwarden_recruit','wallkeeper_initiate','chainwatch_novice','sunlamp_acolyte','trailbow_scout','breaksteel_marauder','runespark_adept','twinstep_initiate','earthseal_disciple']);
-const wideFullSetSheets=new Set(['aster_iron','rootbound_covenant','lastwall_panoply','mournchain_harness','thread_of_dawn','regretwalker','lanternsteel_array','glassbound_script','gloamstep_regalia','resonant_tempest','glassward_covenant','sunvault_panoply','cinderchain_harness','dawn_of_saffron','mirage_hunter','scorchblood_array','astral_script','dunestep_regalia','oasis_resonance','rimewall_oath','frostbell_panoply','winterchain_harness','aurora_vespers','whiteout_stalker','glacierblood_array','rimeglass_script','snowveil_regalia','choirfrost_resonance']);
+const wideFullSetSheets=new Set(['aster_iron','rootbound_covenant','lastwall_panoply','mournchain_harness','thread_of_dawn','regretwalker','lanternsteel_array','glassbound_script','gloamstep_regalia','resonant_tempest','glassward_covenant','sunvault_panoply','cinderchain_harness','dawn_of_saffron','mirage_hunter','scorchblood_array','astral_script','dunestep_regalia','oasis_resonance','rimewall_oath','frostbell_panoply','winterchain_harness','aurora_vespers','whiteout_stalker','glacierblood_array','rimeglass_script','snowveil_regalia','choirfrost_resonance','harvestwake-harvest-defender','harvestwake-granary-bastion','harvestwake-autumn-warden','harvestwake-hearthkeeper','harvestwake-field-ranger','harvestwake-reapers-guard','harvestwake-amber-brewer','harvestwake-harvest-blade','harvestwake-granary-keeper','echo-surge','gatherers-week','guild-rally','monster-hunt','coop-festival','market-fair','anniversary-of-veldryn','winters-bell']);
 const wideCell=(column:number,row:number)=>({x:column*WIDE_SHEET_WIDTH/5,y:row*WIDE_SHEET_HEIGHT/2,width:WIDE_SHEET_WIDTH/5,height:WIDE_SHEET_HEIGHT/2});
 const wideCrop:Partial<Record<GearSlot,{x:number;y:number;width:number;height:number}>>={
   helmet:wideCell(0,0),chest:wideCell(1,0),gloves:wideCell(2,0),legs:wideCell(3,0),boots:wideCell(4,0),

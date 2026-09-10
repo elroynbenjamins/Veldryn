@@ -13,7 +13,7 @@ const concepts = [
   ['field-ranger', 'Field Ranger', 'WAYFINDER', 'C:/Users/elroy/.codex/generated_images/01a081fc-9992-7b13-8fd8-684ef81b7f44/exec-27b7ef6d-5640-49db-a169-4b5a96d1fb85.png'],
   ['reapers-guard', "Reaper's Guard", 'RAVAGER', 'C:/Users/elroy/.codex/generated_images/01a081fc-9992-7b13-8fd8-684ef81b7f44/exec-41509bd4-86f6-4525-8ec6-c99f9fe61c5b.png'],
   ['amber-brewer', 'Amber Brewer', 'HEXWEAVER', 'C:/Users/elroy/.codex/generated_images/01a081fc-9992-7b13-8fd8-684ef81b7f44/exec-df238809-b41c-40c2-8fe6-6799516c7200.png'],
-  ['harvest-blade', 'Harvest Blade', 'KNIFE_DANCER', 'C:/Users/elroy/.codex/generated_images/01a081fc-9992-7b13-8fd8-684ef81b7f44/exec-9ae15089-9147-43eb-991b-35f55c08f205.png'],
+  ['harvest-blade', 'Harvest Blade', 'KNIFE_DANCER', 'C:/Users/elroy/.codex/generated_images/01a081fc-9992-7b13-8fd8-684ef81b7f44/exec-cd99c318-04e3-4952-8780-bb49d0584831.png'],
   ['granary-keeper', 'Granary Keeper', 'STONECALLER', 'C:/Users/elroy/.codex/generated_images/01a081fc-9992-7b13-8fd8-684ef81b7f44/exec-8a07d08c-40c9-40e2-b506-de63dfb74f51.png'],
 ];
 

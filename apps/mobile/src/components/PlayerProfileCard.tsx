@@ -1,4 +1,3 @@
-import React from 'react';
 import {Image,Modal,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from './GameButton'; import {CharacterVisual} from './CharacterVisual'; import {GameState} from '../core/types'; import {C} from '../theme/theme'; import {LIVE_EVENT_CATALOG} from '../content/live-events';
 import {eventPetSourceById} from '../theme/event-pet-assets';

@@ -3,10 +3,18 @@ export {LANGUAGE_NAMES,SUPPORTED_LANGUAGES,isSupportedLanguage} from './language
 export type {Language} from './languages';
 export {OPERATIONAL_MESSAGE_COUNT,ot} from './operational';
 export type {OperationalKey} from './operational';
+export {COOP_MESSAGE_COUNT,coopPolicyText,ct,translatedCoopMessageCount} from './coop';
+export type {CoopMessageKey,CoopPolicyCopyKey} from './coop';
+export {COOP_LOADOUT_MESSAGE_COUNT,clt,translatedCoopLoadoutMessageCount} from './coop-loadout';
+export type {CoopLoadoutMessageKey} from './coop-loadout';
 
 const en={
   'nav.home':'Home','nav.world':'World','nav.character':'Character','nav.inventory':'Inventory','nav.more':'More',
   'common.back':'Back',
+  'coopUi.galleryKicker':'DEVELOPMENT COMPONENT LAB','coopUi.galleryTitle':'Co-op visual kit','coopUi.galleryIntro':'Presentation fixtures only. No matchmaking, rewards, or server success is simulated here.',
+  'coopUi.actions':'Actions','coopUi.normal':'Normal','coopUi.pressed':'Pressed','coopUi.selected':'Selected','coopUi.disabled':'Disabled','coopUi.loading':'Loading…','coopUi.error':'Error',
+  'coopUi.panels':'Panel states','coopUi.panelBody':'Live text reflows inside code-rendered borders.','coopUi.ready':'Ready','coopUi.roles':'Roles and states','coopUi.tank':'Tank','coopUi.damage':'Damage','coopUi.support':'Support','coopUi.searching':'Searching',
+  'coopUi.images':'Approved image slots','coopUi.heroArt':'Rootbound expedition artwork','coopUi.nodeArt':'Elite node artwork','coopUi.boonArt':'Rooted boon artwork','coopUi.skillArt':'Guard skill artwork','coopUi.missing':'Missing','coopUi.missingArt':'Missing artwork fallback','coopUi.navigation':'Five-tab integration',
   'onboarding.createFirst':'CREATE YOUR FIRST CHARACTER','onboarding.stepClass':'CLASS','onboarding.stepIdentity':'IDENTITY','onboarding.stepReview':'REVIEW',
   'onboarding.chooseCalling':'Choose your calling','onboarding.callingHelp':'Swipe the emblem or use the arrows. Emblems represent classes, not starting equipment.',
   'onboarding.whoEnters':'Who enters Asterfall?','onboarding.identityHelp':'Choose the male or female version of the shared starting skin used by every class.',
@@ -30,6 +38,10 @@ const catalogs:Record<Language,Catalog>={
   en,
   de:{
     'nav.home':'Startseite','nav.world':'Welt','nav.character':'Charakter','nav.inventory':'Inventar','nav.more':'Mehr','common.back':'Zurück',
+    'coopUi.galleryKicker':'ENTWICKLUNGS-KOMPONENTENLABOR','coopUi.galleryTitle':'Koop-Designsystem','coopUi.galleryIntro':'Nur Darstellungsbeispiele. Matchmaking, Belohnungen und Servererfolg werden hier nicht simuliert.',
+    'coopUi.actions':'Aktionen','coopUi.normal':'Normal','coopUi.pressed':'Gedrückt','coopUi.selected':'Ausgewählt','coopUi.disabled':'Deaktiviert','coopUi.loading':'Wird geladen…','coopUi.error':'Fehler',
+    'coopUi.panels':'Panelzustände','coopUi.panelBody':'Live-Text passt sich innerhalb codebasierter Rahmen an.','coopUi.ready':'Bereit','coopUi.roles':'Rollen und Zustände','coopUi.tank':'Tank','coopUi.damage':'Schaden','coopUi.support':'Unterstützung','coopUi.searching':'Suche läuft',
+    'coopUi.images':'Freigegebene Bildfelder','coopUi.heroArt':'Rootbound-Expeditionsgrafik','coopUi.nodeArt':'Elite-Knotengrafik','coopUi.boonArt':'Rooted-Segensgrafik','coopUi.skillArt':'Guard-Fertigkeitsgrafik','coopUi.missing':'Fehlt','coopUi.missingArt':'Ersatz für fehlende Grafik','coopUi.navigation':'Fünf-Tab-Integration',
     'onboarding.createFirst':'ERSTELLE DEINEN ERSTEN CHARAKTER','onboarding.stepClass':'KLASSE','onboarding.stepIdentity':'IDENTITÄT','onboarding.stepReview':'PRÜFEN',
     'onboarding.chooseCalling':'Wähle deine Berufung','onboarding.callingHelp':'Wische über das Emblem oder nutze die Pfeile. Embleme stehen für Klassen, nicht für Startausrüstung.',
     'onboarding.whoEnters':'Wer betritt Asterfall?','onboarding.identityHelp':'Wähle die männliche oder weibliche Variante der gemeinsamen Start-Skin aller Klassen.',
@@ -44,6 +56,10 @@ const catalogs:Record<Language,Catalog>={
   },
   es:{
     'nav.home':'Inicio','nav.world':'Mundo','nav.character':'Personaje','nav.inventory':'Inventario','nav.more':'Más','common.back':'Atrás',
+    'coopUi.galleryKicker':'LABORATORIO DE COMPONENTES','coopUi.galleryTitle':'Kit visual cooperativo','coopUi.galleryIntro':'Solo ejemplos de presentación. Aquí no se simulan emparejamiento, recompensas ni éxitos del servidor.',
+    'coopUi.actions':'Acciones','coopUi.normal':'Normal','coopUi.pressed':'Pulsado','coopUi.selected':'Seleccionado','coopUi.disabled':'Desactivado','coopUi.loading':'Cargando…','coopUi.error':'Error',
+    'coopUi.panels':'Estados de panel','coopUi.panelBody':'El texto dinámico se adapta dentro de bordes dibujados con código.','coopUi.ready':'Listo','coopUi.roles':'Roles y estados','coopUi.tank':'Tanque','coopUi.damage':'Daño','coopUi.support':'Apoyo','coopUi.searching':'Buscando',
+    'coopUi.images':'Espacios de imagen aprobados','coopUi.heroArt':'Arte de expedición Rootbound','coopUi.nodeArt':'Arte de nodo de élite','coopUi.boonArt':'Arte de bendición Rooted','coopUi.skillArt':'Arte de habilidad Guard','coopUi.missing':'Falta','coopUi.missingArt':'Alternativa para arte ausente','coopUi.navigation':'Integración de cinco pestañas',
     'onboarding.createFirst':'CREA TU PRIMER PERSONAJE','onboarding.stepClass':'CLASE','onboarding.stepIdentity':'IDENTIDAD','onboarding.stepReview':'REVISIÓN',
     'onboarding.chooseCalling':'Elige tu vocación','onboarding.callingHelp':'Desliza el emblema o usa las flechas. Los emblemas representan clases, no equipo inicial.',
     'onboarding.whoEnters':'¿Quién entra en Asterfall?','onboarding.identityHelp':'Elige la versión masculina o femenina de la apariencia inicial compartida por todas las clases.',
@@ -58,6 +74,10 @@ const catalogs:Record<Language,Catalog>={
   },
   nl:{
     'nav.home':'Home','nav.world':'Wereld','nav.character':'Personage','nav.inventory':'Inventaris','nav.more':'Meer','common.back':'Terug',
+    'coopUi.galleryKicker':'ONTWIKKELCOMPONENTENLAB','coopUi.galleryTitle':'Coöp-visuele set','coopUi.galleryIntro':'Alleen presentatiefixtures. Matchmaking, beloningen en serversucces worden hier niet gesimuleerd.',
+    'coopUi.actions':'Acties','coopUi.normal':'Normaal','coopUi.pressed':'Ingedrukt','coopUi.selected':'Geselecteerd','coopUi.disabled':'Uitgeschakeld','coopUi.loading':'Laden…','coopUi.error':'Fout',
+    'coopUi.panels':'Paneelstatussen','coopUi.panelBody':'Live tekst loopt door binnen kaders die met code zijn getekend.','coopUi.ready':'Klaar','coopUi.roles':'Rollen en statussen','coopUi.tank':'Tank','coopUi.damage':'Schade','coopUi.support':'Ondersteuning','coopUi.searching':'Zoeken',
+    'coopUi.images':'Goedgekeurde afbeeldingsvakken','coopUi.heroArt':'Rootbound-expeditieafbeelding','coopUi.nodeArt':'Elite-knooppuntafbeelding','coopUi.boonArt':'Rooted-zegenafbeelding','coopUi.skillArt':'Guard-vaardigheidsafbeelding','coopUi.missing':'Ontbreekt','coopUi.missingArt':'Vervanging voor ontbrekende afbeelding','coopUi.navigation':'Integratie met vijf tabbladen',
     'onboarding.createFirst':'MAAK JE EERSTE PERSONAGE','onboarding.stepClass':'KLASSE','onboarding.stepIdentity':'IDENTITEIT','onboarding.stepReview':'CONTROLEREN',
     'onboarding.chooseCalling':'Kies je roeping','onboarding.callingHelp':'Veeg over het embleem of gebruik de pijlen. Emblemen staan voor klassen, niet voor startuitrusting.',
     'onboarding.whoEnters':'Wie betreedt Asterfall?','onboarding.identityHelp':'Kies de mannelijke of vrouwelijke versie van de gedeelde startskin voor alle klassen.',
@@ -72,6 +92,10 @@ const catalogs:Record<Language,Catalog>={
   },
   it:{
     'nav.home':'Home','nav.world':'Mondo','nav.character':'Personaggio','nav.inventory':'Inventario','nav.more':'Altro','common.back':'Indietro',
+    'coopUi.galleryKicker':'LABORATORIO COMPONENTI','coopUi.galleryTitle':'Kit visivo cooperativo','coopUi.galleryIntro':'Solo esempi di presentazione. Matchmaking, ricompense e successi del server non vengono simulati.',
+    'coopUi.actions':'Azioni','coopUi.normal':'Normale','coopUi.pressed':'Premuto','coopUi.selected':'Selezionato','coopUi.disabled':'Disattivato','coopUi.loading':'Caricamento…','coopUi.error':'Errore',
+    'coopUi.panels':'Stati dei pannelli','coopUi.panelBody':'Il testo dinamico si adatta nei bordi disegnati tramite codice.','coopUi.ready':'Pronto','coopUi.roles':'Ruoli e stati','coopUi.tank':'Tank','coopUi.damage':'Danno','coopUi.support':'Supporto','coopUi.searching':'Ricerca',
+    'coopUi.images':'Spazi immagine approvati','coopUi.heroArt':'Grafica spedizione Rootbound','coopUi.nodeArt':'Grafica nodo élite','coopUi.boonArt':'Grafica beneficio Rooted','coopUi.skillArt':'Grafica abilità Guard','coopUi.missing':'Mancante','coopUi.missingArt':'Alternativa per grafica mancante','coopUi.navigation':'Integrazione a cinque schede',
     'onboarding.createFirst':'CREA IL TUO PRIMO PERSONAGGIO','onboarding.stepClass':'CLASSE','onboarding.stepIdentity':'IDENTITÀ','onboarding.stepReview':'RIEPILOGO',
     'onboarding.chooseCalling':'Scegli la tua vocazione','onboarding.callingHelp':'Scorri sull’emblema o usa le frecce. Gli emblemi rappresentano le classi, non l’equipaggiamento iniziale.',
     'onboarding.whoEnters':'Chi entra ad Asterfall?','onboarding.identityHelp':'Scegli la versione maschile o femminile dell’aspetto iniziale condiviso da tutte le classi.',
@@ -86,6 +110,10 @@ const catalogs:Record<Language,Catalog>={
   },
   fr:{
     'nav.home':'Accueil','nav.world':'Monde','nav.character':'Personnage','nav.inventory':'Inventaire','nav.more':'Plus','common.back':'Retour',
+    'coopUi.galleryKicker':'LABORATOIRE DE COMPOSANTS','coopUi.galleryTitle':'Kit visuel coopératif','coopUi.galleryIntro':'Exemples de présentation uniquement. Aucun matchmaking, gain ou succès serveur n’est simulé ici.',
+    'coopUi.actions':'Actions','coopUi.normal':'Normal','coopUi.pressed':'Appuyé','coopUi.selected':'Sélectionné','coopUi.disabled':'Désactivé','coopUi.loading':'Chargement…','coopUi.error':'Erreur',
+    'coopUi.panels':'États des panneaux','coopUi.panelBody':'Le texte dynamique se réorganise dans des cadres dessinés en code.','coopUi.ready':'Prêt','coopUi.roles':'Rôles et états','coopUi.tank':'Tank','coopUi.damage':'Dégâts','coopUi.support':'Soutien','coopUi.searching':'Recherche',
+    'coopUi.images':'Emplacements d’images approuvés','coopUi.heroArt':'Illustration d’expédition Rootbound','coopUi.nodeArt':'Illustration de nœud élite','coopUi.boonArt':'Illustration de faveur Rooted','coopUi.skillArt':'Illustration de compétence Guard','coopUi.missing':'Manquant','coopUi.missingArt':'Remplacement d’illustration manquante','coopUi.navigation':'Intégration à cinq onglets',
     'onboarding.createFirst':'CRÉEZ VOTRE PREMIER PERSONNAGE','onboarding.stepClass':'CLASSE','onboarding.stepIdentity':'IDENTITÉ','onboarding.stepReview':'VÉRIFIER',
     'onboarding.chooseCalling':'Choisissez votre vocation','onboarding.callingHelp':'Faites glisser l’emblème ou utilisez les flèches. Les emblèmes représentent les classes, pas l’équipement de départ.',
     'onboarding.whoEnters':'Qui entre dans Asterfall ?','onboarding.identityHelp':'Choisissez la version masculine ou féminine de l’apparence de départ commune à toutes les classes.',

@@ -38,19 +38,26 @@ create index if not exists characters_level_idx on public.characters(level desc)
 alter table public.player_profiles enable row level security;
 alter table public.characters enable row level security;
 
+drop policy if exists "public profile previews" on public.player_profiles;
 create policy "public profile previews" on public.player_profiles
   for select using (true);
+drop policy if exists "account reads own profile" on public.player_profiles;
 create policy "account reads own profile" on public.player_profiles
   for select using (account_id = auth.uid());
+drop policy if exists "account writes own profile" on public.player_profiles;
 create policy "account writes own profile" on public.player_profiles
   for all using (account_id = auth.uid()) with check (account_id = auth.uid());
 
+drop policy if exists "public character previews" on public.characters;
 create policy "public character previews" on public.characters
   for select using (true);
+drop policy if exists "account creates characters" on public.characters;
 create policy "account creates characters" on public.characters
   for insert with check (account_id = auth.uid());
+drop policy if exists "account updates own characters" on public.characters;
 create policy "account updates own characters" on public.characters
   for update using (account_id = auth.uid()) with check (account_id = auth.uid());
+drop policy if exists "account deletes own characters" on public.characters;
 create policy "account deletes own characters" on public.characters
   for delete using (account_id = auth.uid());
 

@@ -47,6 +47,7 @@ export interface BossPhaseDefinition { id:string; hpPct:number; target:TargetRul
 
 export interface CombatantDefinition {
   id: string;
+  classId?: string;
   name: string;
   team: CombatTeam;
   role: CombatRole;
@@ -116,6 +117,14 @@ export interface CombatInput {
   tickMs?: number;
   mitigationConstant?: number;
   accuracyScale?: number;
+  initialPlayerState?: Record<string, PersistentActorState>;
+}
+
+export interface PersistentActorState {
+  hp: number;
+  downed: boolean;
+  cooldownRemainingMs: Record<string, number>;
+  basicAttackRemainingMs: number;
 }
 
 export interface CombatResult {

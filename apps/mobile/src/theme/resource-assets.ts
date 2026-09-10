@@ -1,0 +1,18 @@
+import type {ImageSourcePropType} from 'react-native';
+
+/** Canonical gathering yields with production-ready transparent pixel artwork. */
+export const resourceIconSourceById:Readonly<Partial<Record<string,ImageSourcePropType>>>={
+  COPPER_ORE:require('../../assets/items/resources/copper_ore.png'),
+  ASTER_IRON_ORE:require('../../assets/items/resources/aster_iron_ore.png'),
+  OATHSTONE_ORE:require('../../assets/items/resources/oathstone_ore.png'),
+  ECHO_QUARTZ:require('../../assets/items/resources/echo_quartz.png'),
+  GREENWOOD_LOG:require('../../assets/items/resources/greenwood_log.png'),
+  IRONWOOD_LOG:require('../../assets/items/resources/ironwood_log.png'),
+  CROWNWOOD_LOG:require('../../assets/items/resources/crownwood_log.png'),
+  SILVERFIN:require('../../assets/items/resources/silverfin.png'),
+  RIVER_EEL:require('../../assets/items/resources/river_eel.png'),
+  OATHSCALE_PIKE:require('../../assets/items/resources/oathscale_pike.png'),
+};
+
+export function resourceIconSource(itemId:string){return resourceIconSourceById[itemId];}
+export function hasResourceArtwork(itemId:string){return !!resourceIconSource(itemId);}

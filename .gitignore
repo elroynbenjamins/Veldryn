@@ -10,6 +10,10 @@ coverage/
 *.log
 
 .core-build/
+.android/
+.pnpm-store/
+**/.codex-tmp/
+.expo-export-*/
 apps/mobile/.expo-helmet-check/
 apps/mobile/art-archive/
 apps/mobile/src/**/*.js

@@ -46,4 +46,16 @@ ok(selectCharacterSkin(noviceState,noviceSkinId).character!.selectedSkinId===nov
 ok(EQUIPMENT_SETS.length===27&&EQUIPMENT_SETS.every(candidate=>!!candidate.appearanceId),'Every accepted regional set must expose its front skin');
 ok(CHARACTER_SKIN_SETS.some(candidate=>candidate.id==='aster_iron'&&candidate.itemIds.length===10),'The accepted Aster Iron set must participate in skin discovery');
 
-console.log('PASS: accepted front skins, progression sets, Aster Iron and beginner set ownership unlock class-bound appearances');
+const harvestSet=CHARACTER_SKIN_SETS.find(candidate=>candidate.id==='harvestwake-harvest-defender')!;
+ok(harvestSet.appearanceId==='event-front-harvestwake-harvest-defender'&&harvestSet.unlockEventSkinId==='skin_harvestwake_ironwarden','Harvestwake must map its class reward to the approved production appearance');
+let eventState=createCharacter(newGame(5_000),'IRONWARDEN','EventSkinTester');
+eventState={...eventState,account:{...eventState.account,unlockedEventSkinIds:['skin_harvestwake_ironwarden']}};
+const eventSkinId=equipmentSetSkinId(harvestSet.id);
+ok(characterSkinCollection(eventState).find(skin=>skin.id===eventSkinId)?.unlocked===true,'An earned event reward must immediately appear in the class skin collection');
+eventState=selectCharacterSkin(eventState,eventSkinId);
+ok(eventState.character!.selectedSkinId===eventSkinId,'An earned Harvestwake appearance must be selectable without equipment ownership');
+eventState=discoverCharacterSkins(eventState);
+ok(eventState.character!.unlockedSkinIds!.includes(eventSkinId),'Event appearance discovery must persist the selectable skin ID');
+ok(migrateSave(JSON.parse(JSON.stringify(eventState))).character!.selectedSkinId===eventSkinId,'Save migration must preserve a selected earned event appearance');
+
+console.log('PASS: accepted front skins, progression sets, Aster Iron, beginner sets, and Harvestwake rewards unlock class-bound appearances');

@@ -1,9 +1,11 @@
 import { clamp, defenseMitigation, damageAfterMitigation, hitChance } from './calculations';
 import { CombatRng } from './deterministic-rng';
-import type { AbilityDefinition, AbilityEffect, CombatEvent, CombatInput, CombatResult, CombatantDefinition, CombatantState, TargetRule } from './types';
+import type { AbilityDefinition, AbilityEffect, CombatEvent, CombatInput, CombatResult, CombatantDefinition, CombatantState, PersistentActorState, TargetRule } from './types';
 
-function init(def: CombatantDefinition): CombatantState {
-  return { definition:def, hp:def.stats.maxHp, shield:0, alive:true, downed:false, threat:{}, cooldownReadyAt:{}, nextBasicAt:0, periodic:[], modifiers:[], damageDone:0, healingDone:0, damageTaken:0, interrupts:0, triggeredPhases:[] };
+function init(def: CombatantDefinition, carried?:PersistentActorState): CombatantState {
+  const hp=Math.max(0,Math.min(def.stats.maxHp,carried?.hp??def.stats.maxHp));
+  const downed=carried?.downed??false;
+  return { definition:def, hp, shield:0, alive:!downed&&hp>0, downed, threat:{}, cooldownReadyAt:{...(carried?.cooldownRemainingMs??{})}, nextBasicAt:carried?.basicAttackRemainingMs??0, periodic:[], modifiers:[], damageDone:0, healingDone:0, damageTaken:0, interrupts:0, triggeredPhases:[] };
 }
 
 function living(xs: CombatantState[]) { return xs.filter(x=>x.alive); }
@@ -47,7 +49,7 @@ function conditionOk(a: AbilityDefinition, actor: CombatantState, allies: Combat
 export function simulateCombat(input: CombatInput): CombatResult {
   if (!input.players.length || !input.enemies.length) throw new Error('combat_requires_both_teams');
   const maxMs=input.maxDurationMs ?? 180_000; const tick=input.tickMs ?? 100; const mitigationConstant=input.mitigationConstant ?? 1200; const accuracyScale=input.accuracyScale ?? 1400;
-  const players=input.players.map(init), enemies=input.enemies.map(init), all=[...players,...enemies];
+  const players=input.players.map(def=>init(def,input.initialPlayerState?.[def.id])), enemies=input.enemies.map(def=>init(def)), all=[...players,...enemies];
   const rng=new CombatRng(input.seed); const events:CombatEvent[]=[{atMs:0,type:'combat_start'}];
 
   const addThreat=(target:CombatantState, source:CombatantState, amount:number)=>{ if(target.definition.team==='enemies') target.threat[source.definition.id]=(target.threat[source.definition.id]||0)+amount; };
@@ -75,7 +77,6 @@ export function simulateCombat(input: CombatInput): CombatResult {
 
   for(let now=0; now<=maxMs; now+=tick){
     for(const state of all){ if(!state.alive)continue; state.modifiers=state.modifiers.filter(m=>m.expiresAt>now);
-      const source=all.find(x=>x.definition.id===state.definition.id)!;
       for(const p of [...state.periodic]){ if(p.nextTickAt<=now&&p.expiresAt>=now){ const src=all.find(x=>x.definition.id===p.sourceId); if(src?.alive){ const fx:AbilityEffect={kind:p.kind,coeff:p.coeff,flat:p.flat,damageType:p.damageType}; p.kind==='dot'?applyDamage(now,src,state,fx,p.effectId,'dot_tick'):applyHeal(now,src,state,fx,p.effectId,'hot_tick'); } p.nextTickAt+=p.tickMs; } }
       state.periodic=state.periodic.filter(p=>p.expiresAt>now);
     }
@@ -102,4 +103,13 @@ export function simulateCombat(input: CombatInput): CombatResult {
     }
   }
   events.push({atMs:maxMs,type:'combat_end',detail:'timeout'}); return {victory:false,durationMs:maxMs,reason:'timeout',events,players,enemies};
+}
+
+export function persistentPlayerState(result:CombatResult):Record<string,PersistentActorState>{
+  return Object.fromEntries(result.players.map(player=>[player.definition.id,{
+    hp:player.hp,
+    downed:player.downed,
+    cooldownRemainingMs:Object.fromEntries(Object.entries(player.cooldownReadyAt).map(([abilityId,readyAt])=>[abilityId,Math.max(0,readyAt-result.durationMs)])),
+    basicAttackRemainingMs:Math.max(0,player.nextBasicAt-result.durationMs),
+  }]));
 }

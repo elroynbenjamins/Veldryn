@@ -8,6 +8,7 @@ export interface CharacterSkinSetDef {
   name:string;
   appearanceId:string;
   itemIds:string[];
+  unlockEventSkinId?:string;
 }
 
 const noviceSkinSets:CharacterSkinSetDef[]=NOVICE_SETS.map(set=>({
@@ -45,7 +46,19 @@ const acceptedStandaloneSkinSets:CharacterSkinSetDef[]=[{
   ],
 }];
 
-export const CHARACTER_SKIN_SETS:CharacterSkinSetDef[]=[...noviceSkinSets,...acceptedStandaloneSkinSets,...progressionSkinSets];
+const harvestwakeSkinSets:CharacterSkinSetDef[]=[
+  ['harvestwake-harvest-defender','IRONWARDEN','Harvest Defender'],
+  ['harvestwake-granary-bastion','BASTION','Granary Bastion'],
+  ['harvestwake-autumn-warden','DREADGUARD','Autumn Warden'],
+  ['harvestwake-hearthkeeper','DAWNKEEPER','Hearthkeeper'],
+  ['harvestwake-field-ranger','WAYFINDER','Field Ranger'],
+  ['harvestwake-reapers-guard','RAVAGER',"Reaper's Guard"],
+  ['harvestwake-amber-brewer','HEXWEAVER','Amber Brewer'],
+  ['harvestwake-harvest-blade','KNIFE_DANCER','Harvest Blade'],
+  ['harvestwake-granary-keeper','STONECALLER','Granary Keeper'],
+].map(([id,classId,name])=>({id,classId:classId as ClassId,name,appearanceId:`event-front-${id}`,itemIds:[],unlockEventSkinId:`skin_harvestwake_${classId.toLowerCase()}`}));
+
+export const CHARACTER_SKIN_SETS:CharacterSkinSetDef[]=[...noviceSkinSets,...acceptedStandaloneSkinSets,...progressionSkinSets,...harvestwakeSkinSets];
 
 export function characterSkinSetsFor(classId:ClassId){
   return CHARACTER_SKIN_SETS.filter(set=>set.classId===classId);

@@ -1,6 +1,7 @@
 import type {ImageSourcePropType} from 'react-native';
 import type {BodyPresentation,ClassId} from '../core/types';
 import {acceptedFrontCharacterSkinArtwork} from './accepted-front-character-assets';
+import {eventCharacterSkinArtwork} from './event-character-assets';
 
 /** Class artwork used when no approved full-set character skin is selected. */
 export const classArtwork:Record<ClassId,ImageSourcePropType>={
@@ -31,6 +32,7 @@ export type CharacterSkinArtwork=Record<BodyPresentation,{front:ImageSourcePropT
 
 export const approvedCharacterSkinArtwork:Record<string,CharacterSkinArtwork>={
   ...acceptedFrontCharacterSkinArtwork,
+  ...eventCharacterSkinArtwork,
   'beginner-ironwarden-recruit':{
     male:{front:require('../../assets/character-runtime/beginner/ironwarden-recruit/male-front.png'),back:require('../../assets/character-runtime/beginner/ironwarden-recruit/male-back.png')},
     female:{front:require('../../assets/character-runtime/beginner/ironwarden-recruit/female-front.png'),back:require('../../assets/character-runtime/beginner/ironwarden-recruit/female-back.png')},

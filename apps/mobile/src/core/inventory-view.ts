@@ -2,7 +2,7 @@ import {GameState,ItemStack} from './types';
 import {itemDef} from '../content/items';
 import {depositToBank,withdrawFromBank,effectiveStats} from './game';
 
-export type InventoryFilter='all'|'gear'|'food'|'material';
+export type InventoryFilter='all'|'gear'|'tool'|'food'|'material';
 export type InventorySort='name'|'quantity'|'value';
 export function visibleStacks(stacks:ItemStack[],query:string,filter:InventoryFilter,sort:InventorySort){
   const term=query.trim().toLowerCase();

@@ -38,7 +38,9 @@ export function discoverCharacterSkins(state:GameState):GameState{
   const unlocked=new Set((state.character.unlockedSkinIds??[]).filter(id=>validIds.has(id)));
   const owned=ownedItemIds(state);
   for(const set of eligibleSets(state)){
-    if(set.itemIds.every(id=>owned.has(id)))unlocked.add(equipmentSetSkinId(set.id));
+    const eventUnlocked=set.unlockEventSkinId&&state.account.unlockedEventSkinIds?.includes(set.unlockEventSkinId);
+    const equipmentUnlocked=set.itemIds.length>0&&set.itemIds.every(id=>owned.has(id));
+    if(eventUnlocked||equipmentUnlocked)unlocked.add(equipmentSetSkinId(set.id));
   }
   const next=['starting',...unlocked];
   const selectableIds=new Set(['starting',...eligibleSets(state).filter(set=>set.appearanceId).map(set=>equipmentSetSkinId(set.id))]);
@@ -53,7 +55,8 @@ export function selectCharacterSkin(state:GameState,skinId:string):GameState{
   if(skinId==='starting')return {...state,character:{...state.character,selectedSkinId:'starting'}};
   const set=eligibleSets(state).find(candidate=>equipmentSetSkinId(candidate.id)===skinId);
   if(!set)throw new Error('This skin is not available for your class.');
-  if(!(state.character.unlockedSkinIds??[]).includes(skinId))throw new Error('Own the complete equipment set to unlock this skin.');
+  const eventUnlocked=set.unlockEventSkinId&&state.account.unlockedEventSkinIds?.includes(set.unlockEventSkinId);
+  if(!(state.character.unlockedSkinIds??[]).includes(skinId)&&!eventUnlocked)throw new Error(set.unlockEventSkinId?'Earn this appearance from its event to unlock it.':'Own the complete equipment set to unlock this skin.');
   if(!set.appearanceId)throw new Error('This supplied skin is still awaiting visual approval.');
   return {...state,character:{...state.character,selectedSkinId:skinId}};
 }
@@ -69,7 +72,7 @@ export function characterSkinCollection(state:GameState):CharacterSkinCollection
       id,
       setId:set.id,
       name:set.name,
-      unlocked:unlocked.has(id)||ownedPieces===set.itemIds.length,
+      unlocked:unlocked.has(id)||Boolean(set.unlockEventSkinId&&state.account.unlockedEventSkinIds?.includes(set.unlockEventSkinId))||(set.itemIds.length>0&&ownedPieces===set.itemIds.length),
       ownedPieces,
       requiredItemIds:set.itemIds,
       artworkReady:!!set.appearanceId,

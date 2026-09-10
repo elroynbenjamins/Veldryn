@@ -1,7 +1,8 @@
 import type {ClassId} from '../core/types';
 import {NOVICE_RECIPES} from './novice-sets';
 import {ITEMS} from './items';
-export interface GatherDef{id:string;skillId:'mining'|'woodcutting'|'fishing';name:string;unlockLevel:number;seconds:number;xp:number;itemId:string;min:number;max:number;zoneId:string;}
+import {TOOL_RECIPES} from './gathering-tools';
+export interface GatherDef{id:string;skillId:'mining'|'woodcutting'|'fishing';name:string;unlockLevel:number;seconds:number;xp:number;itemId:string;min:number;max:number;zoneId:string;difficultyMultiplier:number;recommendedToolTier:number;}
 export const GATHERING:GatherDef[]=([
 {id:'COPPER_VEIN',skillId:'mining',name:'Copper Vein',unlockLevel:1,seconds:15,xp:9,itemId:'COPPER_ORE',min:1,max:2,zoneId:'OLD_MINES'},
 {id:'ASTER_IRON_VEIN',skillId:'mining',name:'Aster-Iron Vein',unlockLevel:8,seconds:24,xp:18,itemId:'ASTER_IRON_ORE',min:1,max:2,zoneId:'OLD_MINES'},
@@ -17,7 +18,11 @@ export const GATHERING:GatherDef[]=([
 {id:'OATHSCALE_POOL',skillId:'fishing',name:'Oathscale Pool',unlockLevel:16,seconds:41,xp:28,itemId:'OATHSCALE_PIKE',min:1,max:1,zoneId:'SILVERBROOK'},
 // The 24-hour AFK window is generous; each gathering cycle is therefore
 // stretched by a noticeable amount to avoid rapid early skill acceleration.
-] satisfies GatherDef[]).map(activity=>({...activity,seconds:Math.ceil(activity.seconds*2)}));
+] as Omit<GatherDef,'difficultyMultiplier'|'recommendedToolTier'>[]).map(activity=>{
+  const difficultyMultiplier=activity.unlockLevel>=16?2:activity.unlockLevel>=7?1.35:1;
+  const recommendedToolTier=activity.unlockLevel>=16?3:activity.unlockLevel>=7?2:1;
+  return {...activity,seconds:Math.ceil(activity.seconds*2),difficultyMultiplier,recommendedToolTier};
+});
 
 export interface Recipe{id:string;name:string;skillId:'smithing'|'cooking';level:number;xp:number;gold:number;seconds:number;repeatableTraining?:boolean;inputs:{itemId:string;quantity:number}[];output:{itemId:string;quantity:number};classId?:ClassId;noviceSetId?:string;characterLevel?:number;requiresCraftedItemId?:string;}
 const frostCompleteSetIds=new Set(['frostbell_panoply','winterchain_harness','aurora_vespers','whiteout_stalker','glacierblood_array','rimeglass_script','snowveil_regalia','choirfrost_resonance']);
@@ -30,6 +35,7 @@ const GENERATED_COMPLETE_SET_RECIPES:Recipe[]=ITEMS.filter(item=>item.type==='ge
 export const RECIPES:Recipe[]=([
 ...NOVICE_RECIPES,
 ...GENERATED_COMPLETE_SET_RECIPES,
+...(TOOL_RECIPES as Recipe[]),
 {id:'SMELT_COPPER_INGOT',name:'Smelt Copper Batch',skillId:'smithing',level:1,xp:80,gold:30,seconds:36,repeatableTraining:true,inputs:[{itemId:'COPPER_ORE',quantity:10}],output:{itemId:'COPPER_INGOT',quantity:5}},
 {id:'SMELT_ASTER_IRON_INGOT',name:'Smelt Aster-Iron Batch',skillId:'smithing',level:8,xp:140,gold:50,seconds:42,repeatableTraining:true,inputs:[{itemId:'ASTER_IRON_ORE',quantity:8}],output:{itemId:'ASTER_IRON_INGOT',quantity:4}},
 {id:'FORGE_REINFORCED_FITTING',name:'Forge Reinforced Fitting',skillId:'smithing',level:12,xp:180,gold:50,seconds:48,repeatableTraining:true,inputs:[{itemId:'ASTER_IRON_INGOT',quantity:2},{itemId:'IRONWOOD_LOG',quantity:2}],output:{itemId:'REINFORCED_FITTING',quantity:1}},
@@ -138,4 +144,4 @@ export const RECIPES:Recipe[]=([
 {id:'COOK_RIVER_EEL',name:'Sear River Eel Batch',skillId:'cooking',level:8,xp:180,gold:80,seconds:44,repeatableTraining:true,inputs:[{itemId:'RIVER_EEL',quantity:4}],output:{itemId:'SEARED_RIVER_EEL',quantity:4}},
 {id:'COOK_OATHSCALE',name:'Roast Oathscale Batch',skillId:'cooking',level:16,xp:260,gold:130,seconds:54,repeatableTraining:true,inputs:[{itemId:'OATHSCALE_PIKE',quantity:3}],output:{itemId:'ROASTED_OATHSCALE',quantity:3}},
 {id:'COOK_IRONWOOD_STEW',name:'Ironwood Hunter Stew',skillId:'cooking',level:15,xp:105,gold:140,seconds:66,inputs:[{itemId:'RIVER_EEL',quantity:2},{itemId:'THORN_SAP',quantity:1}],output:{itemId:'IRONWOOD_STEW',quantity:1}},
-] satisfies Recipe[]).map(recipe=>recipe.skillId==='smithing'&&!recipe.repeatableTraining&&!recipe.noviceSetId?{...recipe,inputs:recipe.inputs.map(input=>({...input,quantity:input.quantity*2}))}:recipe);
+] as Recipe[]).map(recipe=>recipe.skillId==='smithing'&&!recipe.repeatableTraining&&!recipe.noviceSetId?{...recipe,inputs:recipe.inputs.map(input=>({...input,quantity:input.quantity*2}))}:recipe);

@@ -1,4 +1,3 @@
-import React from 'react';
 import {StyleSheet,Text,View} from 'react-native';
 import {GameButton} from './GameButton';
 import {C,spacing,typography} from '../theme/theme';

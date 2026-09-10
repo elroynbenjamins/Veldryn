@@ -1,0 +1,31 @@
+{
+  "generatedAt": "2026-09-09",
+  "engine": "full_combat",
+  "balanceVersion": "rootbound-coop-balance-v2",
+  "map": "EXP_001",
+  "tier": 1,
+  "samplesPerScenario": 1000,
+  "totalSamples": 8000,
+  "preBossNodeCount": 5,
+  "targetEndToEndMinutes": [6, 8],
+  "scenarios": [
+    {"id":"restoration_baseline","clearRate":0.953,"clearRate95":[0.9381,0.9645],"deathsPerRun":0.414,"avgCombatSeconds":84.81,"avgMarks":71.74},
+    {"id":"utility_baseline","clearRate":0.966,"clearRate95":[0.9529,0.9756],"deathsPerRun":0.25,"avgCombatSeconds":95.9,"avgMarks":72.37},
+    {"id":"overgear_tank","clearRate":0.956,"clearRate95":[0.9414,0.9671],"deathsPerRun":0.366,"avgCombatSeconds":84.63,"avgMarks":71.89},
+    {"id":"overgear_damage","clearRate":0.947,"clearRate95":[0.9313,0.9593],"deathsPerRun":0.405,"avgCombatSeconds":85.04,"avgMarks":71.46},
+    {"id":"overgear_support","clearRate":0.944,"clearRate95":[0.928,0.9566],"deathsPerRun":0.418,"avgCombatSeconds":84.43,"avgMarks":71.31},
+    {"id":"solo_tank","clearRate":0,"clearRate95":[0,0.0038],"deathsPerRun":1,"avgCombatSeconds":15.02,"avgMarks":4},
+    {"id":"solo_damage","clearRate":0,"clearRate95":[0,0.0038],"deathsPerRun":1,"avgCombatSeconds":6.01,"avgMarks":4},
+    {"id":"solo_support","clearRate":0,"clearRate95":[0,0.0038],"deathsPerRun":1,"avgCombatSeconds":16.59,"avgMarks":4}
+  ],
+  "maxObservedDamageShare": 0.4152,
+  "releaseGate": {
+    "fixedFiveRoomRoute": "pass",
+    "antiCarrySoloClear": "pass",
+    "observedDamageShareUncapped": "pass",
+    "tier1ReferenceClearRate": "pass: restoration 95.3%, utility 96.6%",
+    "status": "feature flag remains disabled"
+  },
+  "notes": "Combat time excludes matchmaking, ready checks, route decisions, results, and network/UI transitions; the product target is 6–8 minutes end-to-end.",
+  "reproduce": "Run npm run build and npm run coop-phase12 from backend."
+}

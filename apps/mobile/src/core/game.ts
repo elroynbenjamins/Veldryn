@@ -3,17 +3,23 @@ import {MONSTERS} from '../content/monsters';
 import {itemDef} from '../content/items';
 import {GATHERING,RECIPES} from '../content/skills';
 import {QUESTS} from '../content/quests';
-import {GameState,ClassId,RewardBundle,ItemStack,GearSlot,BodyPresentation} from './types';
+import {GameState,ClassId,RewardBundle,ItemStack,GearSlot,BodyPresentation,GatheringSkillId} from './types';
 import {characterLevelFromXp,levelFromXp} from './progression';
 import {random01} from './rng';
 import {characterNameError} from './character-creation';
 import {noviceItemId,noviceSetFor} from '../content/novice-sets';
 import {classCombatStyle} from './class-combat';
-import {captureActivityEnvironment,environmentEffectForActivity} from './world-weather';
+import {captureActivityEnvironment,environmentEffectForActivity,zoneIdForTarget} from './world-weather';
 import {SeasonalPeriod,seasonalQuestBoard} from './seasonal-quests';
 import {discoverCharacterSkins} from './character-skins';
 import {characterPermanentMultipliers} from './permanent-boosts';
 import {activityEventDiscoveries,activityEventDrops,applyEventDiscoveries,applyEventDrops,grantEventActivity} from './live-events';
+import {DEFAULT_QUICK_NAV_DESTINATIONS} from './quick-navigation';
+import {gatheringPacing} from './gathering-tools';
+import {gatheringToolDef} from '../content/gathering-tools';
+import {currentRegionId} from './combat-region';
+import {WORLD_ZONES} from '../content/world-map';
+import {enhancedGearStats,equippedGemBonuses,hasEnhancement} from './equipment-enhancement';
 
 export const BASE_OFFLINE_CAP_HOURS=24;
 export const MAX_OFFLINE_CAP_HOURS=36;
@@ -24,7 +30,7 @@ const COMBAT_SPEED_MAX=1.3;
 const COMBAT_TIME_SCALE=1.16;
 const COMBAT_EXPECTED_SCALE=1.3;
 const COMBAT_MONSTER_DAMAGE_SCALE=1.13;
-const GATHER_TIME_SCALE=1.45;
+export const GATHER_TIME_SCALE=1.45;
 
 export function offlineCapBreakdown(state:GameState){
   const setComplete=!!state.character&&noviceSetFor(state.character.classId).slots.every(slot=>state.character!.craftedNoviceItemIds?.includes(noviceItemId(state.character!.classId,slot)));
@@ -45,12 +51,12 @@ export function offlineCapBreakdown(state:GameState){
 export function offlineCapSeconds(state:GameState){return offlineCapBreakdown(state).hours*60*60}
 
 export function newGame(nowMs:number):GameState{return {
-  version:6,createdAtMs:nowMs,character:null,inventory:{stacks:[],capacity:30},bank:{stacks:[],capacity:120},overflow:{stacks:[],expiresAtMs:null},activity:null,
+  version:6,createdAtMs:nowMs,character:null,inventory:{stacks:[],capacity:30},bank:{stacks:[],capacity:120},overflow:{stacks:[],expiresAtMs:null},activity:null,currentRegionId:'GREENFIELDS',
   quests:QUESTS.map((q,i)=>({questId:q.id,status:i===0?'active':'locked',progress:0 as number})) as any,
   unlockedMonsterIds:['MOSS_RAT'],defeatedBossIds:[],
   skills:['mining','woodcutting','fishing','smithing','cooking'].map(skillId=>({skillId:skillId as any,xp:0,level:1})),
   account:{createdCharacterCount:1,guildMember:false,patronTier:'none',guildContribution:0,guildProjectProgress:0,guildBossHp:100000,guildProjectClaimed:false,guildJoinPolicy:'open',guildMinimumLevel:10,guildApplicationStatus:'none',seasonalContractClaimIds:[]},
-  settings:{language:'en',numberMode:'abbreviated',reduceMotion:false,textScale:1,autoEatThresholdPct:40,stopCombatWhenOutOfFood:true,autoJoinWorldChat:true,defaultWorldChat:1}
+  settings:{language:'en',numberMode:'abbreviated',reduceMotion:false,textScale:1,autoEatThresholdPct:40,stopCombatWhenOutOfFood:true,autoJoinWorldChat:true,defaultWorldChat:1,quickNavDestinations:[...DEFAULT_QUICK_NAV_DESTINATIONS]}
 }}
 
 export function createCharacter(state:GameState,classId:ClassId,name='Adventurer',bodyPresentation:BodyPresentation='male'):GameState{
@@ -69,24 +75,36 @@ export function createCharacter(state:GameState,classId:ClassId,name='Adventurer
 export function effectiveStats(state:GameState){
   const c=state.character;if(!c)return {hp:0,attack:0,defense:0,power:0};
   let hp=c.hp,attack=c.attack,defense=c.defense;
-  for(const id of Object.values(c.equipment)){if(!id)continue;const d=itemDef(id);hp+=d.hp||0;attack+=d.attack||0;defense+=d.defense||0;}
+  for(const id of Object.values(c.equipment)){if(!id)continue;const stats=enhancedGearStats(state,id);hp+=stats.hp;attack+=stats.attack;defense+=stats.defense;}
   const set=noviceSetFor(c.classId),complete=set.slots.every(slot=>c.equipment[slot]===noviceItemId(c.classId,slot));
   if(complete){hp+=set.setBonus.hp;attack+=set.setBonus.attack;defense+=set.setBonus.defense;}
+  const gems=equippedGemBonuses(state);hp=Math.ceil(hp*(1+gems.hp));attack=Math.ceil(attack*(1+gems.attack));defense=Math.ceil(defense*(1+gems.defense));
   return {hp,attack,defense,power:Math.round(attack*1.5+defense*.8+hp*.08+c.level*2.5)}
 }
 
 export function startCombat(state:GameState,monsterId:string,nowMs:number):GameState{
   if(!state.character)throw new Error('Create a character first');
-  if(!state.unlockedMonsterIds.includes(monsterId))throw new Error('Monster not unlocked');
   const m=MONSTERS.find(x=>x.id===monsterId);if(!m)throw new Error('Unknown monster');
+  if(!state.unlockedMonsterIds.includes(monsterId))throw new Error('Monster not unlocked');
   if(m.boss)throw new Error('Bosses use challengeFallenKnight');
+  if(zoneIdForTarget(monsterId)!==currentRegionId(state))throw new Error(`Travel to ${m.zone} before fighting ${m.name}`);
   return {...state,activity:{kind:'combat',targetId:monsterId,startedAtMs:nowMs,lastClaimAtMs:nowMs,environment:captureActivityEnvironment(monsterId,nowMs)}}
+}
+
+/** Travel is instantaneous for now, but always settles and stops the prior activity. */
+export function travelToRegion(state:GameState,regionId:string,nowMs:number){
+  const zone=WORLD_ZONES.find(entry=>entry.id===regionId);
+  if(!zone)throw new Error('Unknown region');
+  if(!state.character||state.character.level<zone.minLevel)throw new Error(`Reach character level ${zone.minLevel} to travel to ${zone.name}`);
+  if(currentRegionId(state)===zone.id)return {state,reward:{xp:0,gold:0,items:[],kills:0,elapsedSeconds:0} as RewardBundle};
+  const settled=claimActivity(state,nowMs);
+  return {state:{...settled.state,currentRegionId:zone.id,activity:null},reward:settled.reward};
 }
 
 export function stackItems(existing:ItemStack[],incoming:ItemStack[]):ItemStack[]{const m=new Map<string,number>();for(const s of existing)m.set(s.itemId,(m.get(s.itemId)||0)+s.quantity);for(const s of incoming)m.set(s.itemId,(m.get(s.itemId)||0)+s.quantity);return [...m.entries()].filter(([,q])=>q>0).map(([itemId,quantity])=>({itemId,quantity}));}
 
 export function usedSlots(stacks:ItemStack[]){return stacks.filter(s=>s.quantity>0).length;}
-function itemStackCap(itemId:string){const d=itemDef(itemId);return d.type==='gear'?1:9999;}
+function itemStackCap(itemId:string){const d=itemDef(itemId);return d.type==='gear'||d.type==='tool'?1:9999;}
 function addBounded(stacks:ItemStack[],capacity:number,incoming:ItemStack[]){
   let next=stacks.map(s=>({...s}));const overflow:ItemStack[]=[];
   for(const inc of incoming){
@@ -124,7 +142,6 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number){
   const modifiers=characterPermanentMultipliers(state);
   const style=classCombatStyle(c.classId);
   const environment=state.activity?environmentEffectForActivity(state.activity).effect:undefined;
-  const boostedAttack=Math.max(1,Math.round(stats.attack*modifiers.combatPowerMultiplier));
   const boostedDefense=Math.max(1,Math.round(stats.defense*modifiers.combatPowerMultiplier));
   const boostedPower=Math.max(1,Math.round(stats.power*modifiers.combatPowerMultiplier));
   const expected=(m.attack*1.2+m.defense*.8+m.level*2.2)*COMBAT_EXPECTED_SCALE;
@@ -159,7 +176,8 @@ export function previewActivityReward(state:GameState,nowMs:number):RewardBundle
   if(state.activity.kind!=='combat'){
     const g=GATHERING.find(x=>x.id===state.activity!.targetId);if(!g)return {xp:0,gold:0,items:[],kills:0,elapsedSeconds:elapsed};
     const effect=environmentEffectForActivity(state.activity).effect;
-    const effectiveActionSeconds=g.seconds*GATHER_TIME_SCALE*effect.actionTimeMultiplier/multipliers.gatheringSpeedMultiplier;
+    const pacing=gatheringPacing(state,g);
+    const effectiveActionSeconds=g.seconds*GATHER_TIME_SCALE*pacing.timeMultiplier*effect.actionTimeMultiplier/multipliers.gatheringSpeedMultiplier;
     const actions=Math.floor(elapsed/effectiveActionSeconds);
     const quantity=Math.floor(actions*g.min*effect.itemMultiplier);
     const reward:RewardBundle={xp:Math.floor(actions*g.xp*effect.xpMultiplier*multipliers.skillXpMultiplier),gold:0,items:quantity?[{itemId:g.itemId,quantity}]:[],kills:actions,elapsedSeconds:elapsed};
@@ -238,8 +256,8 @@ export function equipItem(state:GameState,itemId:string):GameState{
 export function equipFood(state:GameState,itemId:string):GameState{if(!state.character)throw new Error('No character');const d=itemDef(itemId);if(d.type!=='food')throw new Error('Not food');if(stackQty(state.inventory.stacks,itemId)<=0)throw new Error('No food available');return {...state,character:{...state.character,equippedFoodId:itemId}}}
 export function eatFood(state:GameState,itemId?:string):GameState{if(!state.character)return state;const id=itemId||state.character.equippedFoodId;if(!id)return state;const d=itemDef(id);if(d.type!=='food'||!d.heal)throw new Error('Not food');const maxHp=effectiveStats(state).hp;return {...state,inventory:{...state.inventory,stacks:consume(state.inventory.stacks,id,1)},character:{...state.character,currentHp:Math.min(maxHp,state.character.currentHp+d.heal)}}}
 export function unequipItem(state:GameState,slot:GearSlot):GameState{if(!state.character)return state;const old=state.character.equipment[slot];if(!old)return state;const eq={...state.character.equipment};delete eq[slot];const next={...state,inventory:{...state.inventory,stacks:stackItems(state.inventory.stacks,[{itemId:old,quantity:1}])},character:{...state.character,equipment:eq}} as GameState;next.character!.currentHp=Math.min(effectiveStats(next).hp,next.character!.currentHp);return next}
-export function sellItem(state:GameState,itemId:string,quantity=1):GameState{if(!state.character||quantity<=0)return state;const discovered=discoverCharacterSkins(state),d=itemDef(itemId);return {...discovered,inventory:{...discovered.inventory,stacks:consume(discovered.inventory.stacks,itemId,quantity)},character:{...discovered.character!,gold:discovered.character!.gold+d.value*quantity}}}
-export function salvageItem(state:GameState,itemId:string):GameState{const discovered=discoverCharacterSkins(state),d=itemDef(itemId);if(d.type!=='gear'||!d.salvage)throw new Error('Cannot salvage');return {...discovered,inventory:{...discovered.inventory,stacks:stackItems(consume(discovered.inventory.stacks,itemId,1),[d.salvage])}}}
+export function sellItem(state:GameState,itemId:string,quantity=1):GameState{if(!state.character||quantity<=0)return state;const discovered=discoverCharacterSkins(state),d=itemDef(itemId);if(d.type==='gear'&&hasEnhancement(discovered,itemId))throw new Error('Enhanced equipment is protected. Extract its gems before disposal; upgraded ranks cannot be recovered.');return {...discovered,inventory:{...discovered.inventory,stacks:consume(discovered.inventory.stacks,itemId,quantity)},character:{...discovered.character!,gold:discovered.character!.gold+d.value*quantity}}}
+export function salvageItem(state:GameState,itemId:string):GameState{const discovered=discoverCharacterSkins(state),d=itemDef(itemId);if(d.type!=='gear'||!d.salvage)throw new Error('Cannot salvage');if(hasEnhancement(discovered,itemId))throw new Error('Enhanced equipment is protected. Extract its gems before disposal; upgraded ranks cannot be recovered.');return {...discovered,inventory:{...discovered.inventory,stacks:stackItems(consume(discovered.inventory.stacks,itemId,1),[d.salvage])}}}
 
 export function depositToBank(state:GameState,itemId:string,quantity:number):GameState{
   if(quantity<=0)return state;
@@ -293,7 +311,23 @@ export function claimOverflowToBank(state:GameState):GameState{
   return {...state,bank:{...state.bank,stacks:added.stacks},overflow:{stacks:added.overflow,expiresAtMs:added.overflow.length?state.overflow.expiresAtMs:null}};
 }
 
-export function startGathering(state:GameState,targetId:string,nowMs:number):GameState{const g=GATHERING.find(x=>x.id===targetId);if(!g)throw new Error('Unknown gathering target');const skill=state.skills.find(x=>x.skillId===g.skillId);if(!skill||skill.level<g.unlockLevel)throw new Error('Skill level too low');return {...state,activity:{kind:g.skillId,targetId,startedAtMs:nowMs,lastClaimAtMs:nowMs,environment:captureActivityEnvironment(targetId,nowMs)}}}
+export function startGathering(state:GameState,targetId:string,nowMs:number):GameState{const g=GATHERING.find(x=>x.id===targetId);if(!g)throw new Error('Unknown gathering target');const skill=state.skills.find(x=>x.skillId===g.skillId);if(!skill||skill.level<g.unlockLevel)throw new Error('Skill level too low');if(g.zoneId!==currentRegionId(state)){const zone=WORLD_ZONES.find(entry=>entry.id===g.zoneId);throw new Error(`Travel to ${zone?.name??g.zoneId} before gathering ${g.name}`)}return {...state,activity:{kind:g.skillId,targetId,startedAtMs:nowMs,lastClaimAtMs:nowMs,environment:captureActivityEnvironment(targetId,nowMs)}}}
+export function equipGatheringTool(state:GameState,itemId:string):GameState{
+  if(!state.character)throw new Error('Create a character first');
+  const tool=gatheringToolDef(itemId);if(!tool)throw new Error('Not a gathering tool');
+  const skill=state.skills.find(entry=>entry.skillId===tool.skillId);if(!skill||skill.level<tool.unlockLevel)throw new Error(`Requires ${tool.skillId} level ${tool.unlockLevel}`);
+  const currentId=state.character.equippedToolIds?.[tool.skillId];if(currentId===itemId)return state;
+  let stacks=consume(state.inventory.stacks,itemId,1);
+  if(currentId)stacks=stackItems(stacks,[{itemId:currentId,quantity:1}]);
+  return {...state,inventory:{...state.inventory,stacks},character:{...state.character,equippedToolIds:{...(state.character.equippedToolIds??{}),[tool.skillId]:itemId}}};
+}
+export function unequipGatheringTool(state:GameState,skillId:GatheringSkillId):GameState{
+  if(!state.character)return state;const currentId=state.character.equippedToolIds?.[skillId];if(!currentId)return state;
+  const equippedToolIds={...(state.character.equippedToolIds??{})};delete equippedToolIds[skillId];
+  const added=addBounded(state.inventory.stacks,state.inventory.capacity,[{itemId:currentId,quantity:1}]);
+  if(added.overflow.length)throw new Error('Free one Inventory slot before unequipping this tool');
+  return {...state,inventory:{...state.inventory,stacks:added.stacks},character:{...state.character,equippedToolIds}};
+}
 export function craftRecipe(state:GameState,recipeId:string,nowMs=Date.now()):GameState{
   if(!state.character)throw new Error('No character');
   const r=RECIPES.find(x=>x.id===recipeId);if(!r)throw new Error('Unknown recipe');

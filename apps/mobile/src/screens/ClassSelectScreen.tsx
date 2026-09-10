@@ -1,4 +1,4 @@
-import React,{useEffect,useMemo,useRef,useState} from 'react';
+import {useEffect,useMemo,useRef,useState} from 'react';
 import {Image,PanResponder,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
 import {ConfirmModal} from '../components/ConfirmModal';
 import {FixedCharacterPortrait} from '../components/CharacterVisual';
@@ -17,10 +17,11 @@ type RoleFilter='All'|ClassDef['role'];
 const STEPS:Step[]=['class','identity','review'];
 const nameIdeas=['Aelric','Branna','Caelan','Eira','Fenric','Isolde','Orin','Sable'];
 const roleColor={Tank:C.info,Support:C.good,Damage:C.warning};
+const languageS=StyleSheet.create({toggle:{alignSelf:'center',minWidth:150,minHeight:44,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:spacing.md,borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.panel,paddingHorizontal:spacing.md},current:{...typography.bodyStrong,color:C.text},mark:{fontSize:22,color:C.accent}});
 
 export function ClassSelectScreen({language='en',onLanguage,onSelect}:{language?:GameState['settings']['language'];onLanguage?:(language:GameState['settings']['language'])=>void;onSelect:(id:ClassId,name:string,body:BodyPresentation)=>Promise<void>|void}){
   const submitting=useRef(false);
-  const [saving,setSaving]=useState(false),[saveError,setSaveError]=useState('');
+  const [saving,setSaving]=useState(false),[saveError,setSaveError]=useState(''),[showLanguages,setShowLanguages]=useState(false);
   const [step,setStep]=useState<Step>('class');
   const scroll=useRef<ScrollView>(null);
   useEffect(()=>{scroll.current?.scrollTo({y:0,animated:false})},[step]);
@@ -48,7 +49,7 @@ export function ClassSelectScreen({language='en',onLanguage,onSelect}:{language?
   }
   return <><ScrollView ref={scroll} contentContainerStyle={s.root} keyboardShouldPersistTaps="handled">
     <Text style={s.logo}>VELDRYN</Text><Text style={s.kicker}>{t(language,'onboarding.createFirst')}</Text>
-    <View style={s.languageGrid}>{SUPPORTED_LANGUAGES.map(id=><View key={id} style={s.languageChoice}><GameButton title={LANGUAGE_NAMES[id]} tone={language===id?'primary':'secondary'} onPress={()=>onLanguage?.(id)}/></View>)}</View>
+    <Pressable accessibilityRole="button" accessibilityState={{expanded:showLanguages}} onPress={()=>setShowLanguages(value=>!value)} style={languageS.toggle}><Text style={languageS.current}>{LANGUAGE_NAMES[language]}</Text><Text style={languageS.mark}>{showLanguages?'−':'+'}</Text></Pressable>{showLanguages&&<View style={s.languageGrid}>{SUPPORTED_LANGUAGES.map(id=><View key={id} style={s.languageChoice}><GameButton title={LANGUAGE_NAMES[id]} tone={language===id?'primary':'secondary'} onPress={()=>{onLanguage?.(id);setShowLanguages(false)}}/></View>)}</View>}
     <View accessibilityRole="progressbar" accessibilityValue={{min:1,max:STEPS.length,now:STEPS.indexOf(step)+1}} style={s.stepRow}>{STEPS.map((item,i)=><View key={item} style={s.stepWrap}><View style={[s.stepDot,STEPS.indexOf(step)>=i&&s.stepDotActive]}><Text style={[s.stepNumber,STEPS.indexOf(step)>=i&&s.stepNumberActive]}>{i+1}</Text></View><Text style={[s.stepLabel,item===step&&s.stepLabelActive]}>{stepLabel(item)}</Text></View>)}</View>
     {step==='identity'&&<View style={s.section}>
       <Text style={s.heading}>{t(language,'onboarding.whoEnters')}</Text><Text style={s.description}>{t(language,'onboarding.identityHelp')}</Text>
@@ -63,7 +64,6 @@ export function ClassSelectScreen({language='en',onLanguage,onSelect}:{language?
       <View style={s.carousel}><Pressable accessibilityRole="button" accessibilityLabel="Previous class" onPress={()=>change(-1)} style={s.arrow}><Text style={s.arrowText}>‹</Text></Pressable><View {...swipe.panHandlers} style={s.portraitFrame}><Image accessibilityLabel={`${selected.name} class emblem`} source={classArtwork[selected.id]} resizeMode="contain" style={s.portrait}/><View style={[s.roleBadge,{borderColor:roleColor[selected.role]}]}><Text style={[s.roleText,{color:roleColor[selected.role]}]}>{selected.role.toUpperCase()}</Text></View></View><Pressable accessibilityRole="button" accessibilityLabel="Next class" onPress={()=>change(1)} style={s.arrow}><Text style={s.arrowText}>›</Text></Pressable></View>
       <View style={s.identity}><Text style={s.className}>{selected.name}</Text><Text style={s.count}>{index+1} / {filtered.length}</Text></View><Text style={s.description}>{selected.description}</Text>
       <View style={s.loadout}><View><Text style={s.label}>STARTING WEAPON</Text><Text style={s.gearName}>{starter.name}</Text></View><View style={s.weaponBadge}><Text style={s.weaponBadgeText}>PRIMARY</Text></View></View><Text style={s.note}>You begin with this weapon. The class emblem remains visible until a correct full-set skin is unlocked.</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.thumbs}>{filtered.map((classDef,classIndex)=><Pressable accessibilityRole="button" accessibilityLabel={`Select ${classDef.name}`} accessibilityState={{selected:classIndex===index}} key={classDef.id} onPress={()=>setIndex(classIndex)} style={[s.thumb,classIndex===index&&s.thumbActive]}><Image source={classArtwork[classDef.id]} resizeMode="contain" style={s.thumbImage}/></Pressable>)}</ScrollView>
     </View>}
     {step==='review'&&<View style={s.section}>
       <Text style={s.heading}>{t(language,'onboarding.ready')}</Text><Text style={s.description}>{t(language,'onboarding.reviewPermanent')}</Text><Text style={s.note}>Your first crafting goal: {noviceSetFor(selected.id).name}. Start with the chest piece in Skills → Novice set. The set is earned, not granted at creation.</Text>

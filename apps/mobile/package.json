@@ -9,8 +9,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck:core": "tsc -p tsconfig.core.json --noEmit",
-    "test:core": "node -e \"require('fs').rmSync('.core-build',{recursive:true,force:true})\" && tsc -p tsconfig.core.json --outDir .core-build && node .core-build/tests/offline-smoke.js && node .core-build/tests/character-skins.js && node .core-build/tests/save-transfer.js && node .core-build/tests/localization.js && node .core-build/tests/live-events.js",
-    "test:pre-codex": "node -e \"require('fs').rmSync('.core-build',{recursive:true,force:true})\" && tsc -p tsconfig.core.json --outDir .core-build && node .core-build/tests/offline-smoke.js && node .core-build/tests/pre-codex-smoke.js"
+    "test:core": "node -e \"require('fs').rmSync('.core-build',{recursive:true,force:true})\" && tsc -p tsconfig.core.json --outDir .core-build && node .core-build/tests/equipment-enhancement.js && node .core-build/tests/offline-smoke.js && node .core-build/tests/character-skins.js && node .core-build/tests/equipment-screen.js && node .core-build/tests/quick-navigation.js && node .core-build/tests/combat-region.js && node .core-build/tests/world-weather.js && node .core-build/tests/coop-presentation.js && node .core-build/tests/coop-ui-contract.js && node .core-build/tests/coop-dungeon-browsing.js && node .core-build/tests/coop-loadout-presentation.js && node .core-build/tests/coop-shared-run.js && node .core-build/tests/coop-qmode.js && node .core-build/tests/save-transfer.js && node .core-build/tests/localization.js && node .core-build/tests/live-events.js && node .core-build/tests/gathering-tools.js && node .core-build/tests/startup-summary.js",
+    "test:pre-codex": "node -e \"require('fs').rmSync('.core-build',{recursive:true,force:true})\" && tsc -p tsconfig.core.json --outDir .core-build && node .core-build/tests/offline-smoke.js && node .core-build/tests/equipment-screen.js && node .core-build/tests/quick-navigation.js && node .core-build/tests/pre-codex-smoke.js"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^2.1.2",

@@ -1,7 +1,6 @@
 export type Role='tank'|'damage'|'support';
 export interface Ticket{id:string;characterId:string;role:Role;powerIndex:number;createdAtMs:number;echoAllowed:boolean}
 export interface Match{ticketIds:string[];score:number;rolePattern:string}
-const target:Role[]=['tank','damage','damage','support'];
 export function compositionPenalty(roles:Role[]):number{
  const counts={tank:0,damage:0,support:0}; roles.forEach(r=>counts[r]++);
  return Math.abs(counts.tank-1)*25+Math.abs(counts.damage-2)*12+Math.abs(counts.support-1)*25;

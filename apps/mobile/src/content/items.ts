@@ -1,12 +1,15 @@
-import { ClassId,GearSlot } from '../core/types';
+import { ClassId,GatheringSkillId,GearSlot,GemStat } from '../core/types';
 import {ItemRarity} from '../core/item-rarity';
 import {NOVICE_ITEMS} from './novice-sets';
+import {TOOL_ITEMS} from './gathering-tools';
 export interface ItemDef {
-  id:string; name:string; type:'material'|'gear'|'quest'|'food'; slot?:GearSlot;
+  id:string; name:string; type:'material'|'gear'|'quest'|'food'|'tool'|'gem'; slot?:GearSlot;
   attack?:number; defense?:number; hp?:number; heal?:number; readiness?:number;
+  toolSkillId?:GatheringSkillId;toolTier?:number;actionTimeMultiplier?:number;
   rarity?:ItemRarity; passive?:string;
   value:number; salvage?:{itemId:string;quantity:number};
   classRestriction?:ClassId; noviceSetId?:string; equipmentSetId?:string;
+  gemStat?:GemStat; gemPercent?:number; gemTier?:1|2;
 }
 
 const COMPLETE_SET_SLOTS:GearSlot[]=['helmet','legs','boots','weapon','offhand','amulet'];
@@ -59,6 +62,16 @@ export const ITEMS:ItemDef[]=[
 ...NOVICE_ITEMS,
 ...COMPLETE_SET_ADDITIONAL_ITEMS,
 ...FROSTMARCH_SET_ITEMS,
+...TOOL_ITEMS,
+// Enhancement economy. Gems are intentionally scarce drops; tempering materials are universal.
+{id:'TEMPERING_DUST',name:'Tempering Dust',type:'material',value:22,rarity:'uncommon'},
+{id:'TEMPERING_CORE',name:'Tempering Core',type:'material',value:180,rarity:'rare'},
+{id:'EMBER_SHARD',name:'Ember Shard',type:'gem',gemStat:'attack',gemPercent:.02,gemTier:1,value:320,rarity:'rare'},
+{id:'EMBERHEART_GEM',name:'Emberheart Gem',type:'gem',gemStat:'attack',gemPercent:.05,gemTier:2,value:1900,rarity:'legendary'},
+{id:'WARD_SHARD',name:'Ward Shard',type:'gem',gemStat:'defense',gemPercent:.02,gemTier:1,value:320,rarity:'rare'},
+{id:'WARDHEART_GEM',name:'Wardheart Gem',type:'gem',gemStat:'defense',gemPercent:.05,gemTier:2,value:1900,rarity:'legendary'},
+{id:'VITALITY_SHARD',name:'Vitality Shard',type:'gem',gemStat:'hp',gemPercent:.02,gemTier:1,value:320,rarity:'rare'},
+{id:'VITALITY_HEART_GEM',name:'Vitality Heart Gem',type:'gem',gemStat:'hp',gemPercent:.05,gemTier:2,value:1900,rarity:'legendary'},
 // Runtime pack weapon identities; numeric budgets retained from the prior primary weapons.
 {id:'basic_sword',name:'Basic Sword',type:'gear',slot:'weapon',attack:4,readiness:1,value:10},
 {id:'basic_tower_shield',name:'Basic Tower Shield',type:'gear',slot:'weapon',attack:3,defense:1,readiness:1,value:10},

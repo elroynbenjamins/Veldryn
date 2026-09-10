@@ -4,6 +4,9 @@ import {CLASSES} from '../content/classes';
 import {characterSkinSetsFor} from '../content/character-skin-sets';
 import {discoverCharacterSkins,equipmentSetSkinId} from './character-skins';
 import {isSupportedLanguage} from '../i18n/languages';
+import {normalizeQuickNavDestinations} from './quick-navigation';
+import {WORLD_ZONES} from '../content/world-map';
+import {ITEMS} from '../content/items';
 
 export function normalizeSave(input:any):GameState{
   if(!input || ![4,5,6].includes(input.version)) throw new Error('Unsupported VELDRYN save version');
@@ -22,14 +25,19 @@ export function normalizeSave(input:any):GameState{
     const {customization:_legacyCustomization,profileAppearanceMode:_legacyProfileMode,profileEquipmentSnapshot:_legacyEquipmentSnapshot,...savedCharacter}=input.character;
     const classSkinSets=characterSkinSetsFor(input.character.classId);
     const validSkinIds=new Set(['starting',...classSkinSets.map(set=>equipmentSetSkinId(set.id))]);
-    const unlockedSkinIds=['starting',...(Array.isArray(input.character.unlockedSkinIds)?input.character.unlockedSkinIds.filter((id:unknown)=>typeof id==='string'&&validSkinIds.has(id)):[])];
+    const eventSkinIds=new Set(Array.isArray(input.account?.unlockedEventSkinIds)?input.account.unlockedEventSkinIds.filter((id:unknown)=>typeof id==='string'):[]);
+    const earnedEventSetIds=classSkinSets.filter(set=>set.unlockEventSkinId&&eventSkinIds.has(set.unlockEventSkinId)).map(set=>equipmentSetSkinId(set.id));
+    const unlockedSkinIds=['starting',...(Array.isArray(input.character.unlockedSkinIds)?input.character.unlockedSkinIds.filter((id:unknown)=>typeof id==='string'&&validSkinIds.has(id)):[]),...earnedEventSetIds];
     const ownedPetIds=Array.isArray(input.character.ownedPetIds)?[...new Set([...input.character.ownedPetIds.filter((id:unknown)=>typeof id==='string'),...legacyCosmeticPets])]:[...new Set(legacyCosmeticPets)];
+    const gearIds=new Set(ITEMS.filter(item=>item.type==='gear').map(item=>item.id)),gemIds=new Set(ITEMS.filter(item=>item.type==='gem').map(item=>item.id));
+    const gearEnhancements=Object.fromEntries(Object.entries(input.character.gearEnhancements??{}).filter(([id,value])=>gearIds.has(id)&&value&&typeof value==='object').map(([id,value]:[string,any])=>[id,{rank:Math.max(0,Math.min(10,Math.floor(Number(value.rank)||0))),failures:Math.max(0,Math.floor(Number(value.failures)||0)),gemIds:Array.isArray(value.gemIds)?value.gemIds.filter((gemId:unknown)=>typeof gemId==='string'&&gemIds.has(gemId)).slice(0,3):[]}])) as any;
     return {
     ...savedCharacter,
     bodyPresentation:input.character.bodyPresentation==='female'?'female':'male',
     craftedNoviceItemIds:Array.isArray(input.character.craftedNoviceItemIds)?[...new Set(input.character.craftedNoviceItemIds.filter((id:unknown)=>typeof id==='string'))]:[],
     ownedPetIds,
     ownedBoostIds:Array.isArray(input.character.ownedBoostIds)?[...new Set(input.character.ownedBoostIds.filter((id:unknown)=>typeof id==='string'))]:[],
+    gearEnhancements,
     currentHp:Math.max(1,Number(input.character.currentHp ?? input.character.hp ?? classDef?.hp ?? 100)),
     equippedFoodId:input.character.equippedFoodId
     ,profileTitle:typeof input.character.profileTitle==='string'&&input.character.profileTitle.trim()?input.character.profileTitle.trim():'New Adventurer'
@@ -43,6 +51,8 @@ export function normalizeSave(input:any):GameState{
   const rawEnvironment=input.activity?.environment;
   const environment=rawEnvironment&&seasonIds.includes(rawEnvironment.seasonId)&&weatherIds.includes(rawEnvironment.weatherId)&&typeof rawEnvironment.zoneId==='string'&&Number.isFinite(rawEnvironment.capturedAtMs)?{seasonId:rawEnvironment.seasonId,weatherId:rawEnvironment.weatherId,zoneId:rawEnvironment.zoneId,capturedAtMs:rawEnvironment.capturedAtMs}:undefined;
   const activity=input.activity?{...input.activity,environment}:null;
+  const savedRegionId=typeof input.currentRegionId==='string'?input.currentRegionId:environment?.zoneId;
+  const currentRegionId=WORLD_ZONES.some(zone=>zone.id===savedRegionId&&(character?.level??1)>=zone.minLevel)?savedRegionId:'GREENFIELDS';
   const rawLiveEvent=input.account?.liveEvent;
   const liveEvent=rawLiveEvent&&typeof rawLiveEvent.eventId==='string'&&typeof rawLiveEvent.enabled==='boolean'&&Number.isFinite(rawLiveEvent.startsAtMs)&&Number.isFinite(rawLiveEvent.endsAtMs)&&rawLiveEvent.endsAtMs>rawLiveEvent.startsAtMs?{eventId:rawLiveEvent.eventId,enabled:rawLiveEvent.enabled,startsAtMs:Number(rawLiveEvent.startsAtMs),endsAtMs:Number(rawLiveEvent.endsAtMs)}:undefined;
   const stringList=(value:unknown,limit=160)=>Array.isArray(value)?[...new Set(value.filter((id:unknown)=>typeof id==='string'))].slice(-limit):[];
@@ -57,6 +67,7 @@ export function normalizeSave(input:any):GameState{
     version:6,
     character,
     activity,
+    currentRegionId,
     inventory:{stacks:Array.isArray(input.inventory?.stacks)?input.inventory.stacks:[],capacity:Number(input.inventory?.capacity ?? 30)},
     bank:{stacks:Array.isArray(input.bank?.stacks)?input.bank.stacks:[],capacity:Number(input.bank?.capacity ?? 120)},
     overflow:{stacks:Array.isArray(input.overflow?.stacks)?input.overflow.stacks:[],expiresAtMs:input.overflow?.expiresAtMs ?? null},
@@ -73,6 +84,7 @@ export function normalizeSave(input:any):GameState{
       stopCombatWhenOutOfFood:input.settings?.stopCombatWhenOutOfFood!==false,
       autoJoinWorldChat:input.settings?.autoJoinWorldChat!==false,
       defaultWorldChat:([1,2,3,4] as number[]).includes(Number(input.settings?.defaultWorldChat))?Number(input.settings.defaultWorldChat):1,
+      quickNavDestinations:normalizeQuickNavDestinations(input.settings?.quickNavDestinations),
     }
   } as GameState;
   return discoverCharacterSkins(normalized);

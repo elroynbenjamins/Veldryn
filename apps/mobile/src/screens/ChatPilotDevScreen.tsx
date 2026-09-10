@@ -1,4 +1,4 @@
-import React,{useEffect,useMemo,useState} from 'react';
+import {useEffect,useMemo,useState} from 'react';
 import {Pressable,SafeAreaView,StyleSheet,Text,View} from 'react-native';
 import {ChatController,createDemoTransport,demoMessages,demoProfiles} from '../features/chat-pilot/src/core/chat';
 import type {Emote,Profile} from '../features/chat-pilot/src/core/chat';

@@ -3,10 +3,12 @@
 -- four announced channels.
 alter table public.chat_messages add column if not exists sender_name text not null default 'Adventurer';
 
+drop policy if exists "world chat readable" on public.chat_messages;
 create policy "world chat readable" on public.chat_messages
   for select to authenticated
   using (channel_type = 'world' and channel_id in ('world-1','world-2','world-3','world-4'));
 
+drop policy if exists "world chat sender can post" on public.chat_messages;
 create policy "world chat sender can post" on public.chat_messages
   for insert to authenticated
   with check (
@@ -16,6 +18,7 @@ create policy "world chat sender can post" on public.chat_messages
     and char_length(body) between 1 and 300
   );
 
+drop policy if exists "guild application owner can create" on public.guild_applications;
 create policy "guild application owner can create" on public.guild_applications
   for insert to authenticated with check (account_id = auth.uid());
 
@@ -45,6 +48,7 @@ end $$;
 revoke all on function public.request_guild_membership(uuid) from public;
 grant execute on function public.request_guild_membership(uuid) to authenticated;
 
+drop policy if exists "guild leaders read applications" on public.guild_applications;
 create policy "guild leaders read applications" on public.guild_applications
   for select to authenticated using (exists(
     select 1 from public.guild_members gm

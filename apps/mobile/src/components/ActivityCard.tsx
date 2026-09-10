@@ -1,5 +1,5 @@
-import React,{useEffect,useRef} from 'react';
-import {Animated,Easing,StyleSheet,Text,View} from 'react-native';
+import {useEffect,useRef,useState} from 'react';
+import {Animated,Easing,Pressable,StyleSheet,Text,View} from 'react-native';
 import {RewardBundle} from '../core/types';
 import {itemDef} from '../content/items';
 import {GameButton} from './GameButton';
@@ -14,6 +14,7 @@ function duration(seconds:number){
 }
 
 export function ActivityCard({title,kind,cycleSeconds,capHours,preview,rates,reduceMotion=false,numberMode='abbreviated',onClaim,onStop}:{title:string;kind:'combat'|'gathering';cycleSeconds:number;capHours:number;preview:RewardBundle;rates:{actionsPerHour:number;xpPerHour:number;goldPerHour:number};reduceMotion?:boolean;numberMode?:'abbreviated'|'exact';onClaim:()=>void;onStop:()=>void}){
+  const [showDetails,setShowDetails]=useState(false);
   const pulse=useRef(new Animated.Value(0)).current;
   useEffect(()=>{pulse.setValue(0);if(reduceMotion)return;const loop=Animated.loop(Animated.timing(pulse,{toValue:1,duration:1100,easing:Easing.linear,useNativeDriver:true}));loop.start();return()=>loop.stop()},[pulse,reduceMotion]);
   const hasRewards=preview.kills>0||!!preview.stoppedReason;
@@ -29,16 +30,15 @@ export function ActivityCard({title,kind,cycleSeconds,capHours,preview,rates,red
       </View>
       <View style={[s.status,(capped||!!preview.stoppedReason)&&s.statusCapped]}><Text style={s.statusText}>{preview.stoppedReason?'STOPPED':capped?`${capHours}H CAP`:'ACTIVE'}</Text></View>
     </View>
-    <Text style={s.detail}>{duration(preview.elapsedSeconds)} since last claim · {preview.stoppedReason?'combat has stopped':`up to ${capHours} hours of offline progress`}</Text>
-    <View style={s.rateRow}><Text style={s.rate}>≈ {formatGameNumber(rates.actionsPerHour,numberMode)}/hr</Text><Text style={s.rate}>+{formatGameNumber(rates.xpPerHour,numberMode)} XP/hr</Text>{rates.goldPerHour>0&&<Text style={s.rate}>+{formatGameNumber(rates.goldPerHour,numberMode)} gold/hr</Text>}</View>
     <View accessible accessibilityRole="progressbar" accessibilityLabel={`${title} action progress`} accessibilityValue={{min:0,max:100,now:Math.round(cycleProgress*100)}} style={s.progressBlock}><View style={s.progressMeta}><Text style={s.progressLabel}>{preview.stoppedReason?'ACTIVITY STOPPED':capped?'OFFLINE STORAGE FULL':kind==='combat'?'NEXT ENCOUNTER':'NEXT GATHER'}</Text><Text style={s.progressTime}>{preview.stoppedReason||capped?'—':`${remaining}s`}</Text></View><View style={s.track}><View style={[s.fill,{width:`${cycleProgress*100}%`}]}>{!reduceMotion&&<Animated.View style={[s.shine,{transform:[{translateX:pulse.interpolate({inputRange:[0,1],outputRange:[-90,260]})}]}]}/>}</View></View></View>
-    {kind==='combat'&&<Text style={s.detail}>Projected health: {preview.endHp??'—'} HP · Food used: {preview.foodConsumed??0}</Text>}
+    <Pressable accessibilityRole="button" accessibilityState={{expanded:showDetails}} onPress={()=>setShowDetails(value=>!value)} style={s.detailsToggle}><Text style={s.detailsLabel}>{showDetails?'HIDE DETAILS':'RATES & DETAILS'}</Text><Text style={s.detailsMark}>{showDetails?'−':'+'}</Text></Pressable>
+    {showDetails&&<View style={s.details}><Text style={s.detail}>{duration(preview.elapsedSeconds)} since last claim · up to {capHours} hours offline</Text><View style={s.rateRow}><Text style={s.rate}>≈ {formatGameNumber(rates.actionsPerHour,numberMode)}/hr</Text><Text style={s.rate}>+{formatGameNumber(rates.xpPerHour,numberMode)} XP/hr</Text>{rates.goldPerHour>0&&<Text style={s.rate}>+{formatGameNumber(rates.goldPerHour,numberMode)} gold/hr</Text>}</View>{kind==='combat'&&<Text style={s.detail}>Projected health: {preview.endHp??'—'} HP · Food used: {preview.foodConsumed??0}</Text>}{loot?<Text style={s.loot}>{loot}</Text>:null}</View>}
     {!!preview.stoppedReason&&<Text accessibilityRole="alert" style={s.capNotice}>{preview.stoppedReason}. Collect to settle combat, then heal or equip food in Inventory.</Text>}
     <View style={s.rewardRow}>
       <View><Text style={s.rewardNumber}>{formatGameNumber(preview.kills,numberMode)}</Text><Text style={s.rewardLabel}>{kind==='combat'?'kills ready':'actions ready'}</Text></View>
       <View style={s.totals}><Text style={s.xp}>+{formatGameNumber(preview.xp,numberMode)} XP</Text>{preview.gold>0&&<Text style={s.gold}>+{formatGameNumber(preview.gold,numberMode)} gold</Text>}</View>
     </View>
-    <Text style={loot?s.loot:s.emptyLoot}>{loot||'Keep this activity running to earn your first reward.'}</Text>
+    {!loot&&!hasRewards&&<Text style={s.emptyLoot}>Keep this activity running to earn your first reward.</Text>}
     {capped&&!preview.stoppedReason&&<Text style={s.capNotice}>Offline storage is full. Collect now to resume earning.</Text>}
     <GameButton title={hasRewards?'Collect Rewards':'Rewards building…'} onPress={onClaim} disabled={!hasRewards}/>
     <GameButton title="Collect & stop" onPress={onStop}/>
@@ -55,6 +55,7 @@ const s=StyleSheet.create({
   rewardNumber:{fontSize:42,lineHeight:46,color:C.text,fontWeight:'900'},rewardLabel:{...typography.caption,color:C.muted},
   totals:{alignItems:'flex-end'},xp:{...typography.bodyStrong,color:C.good},gold:{...typography.bodyStrong,color:C.accent},
   loot:{...typography.body,color:C.text},emptyLoot:{...typography.body,color:C.muted},
+  detailsToggle:{minHeight:42,flexDirection:'row',alignItems:'center',justifyContent:'space-between',borderTopWidth:1,borderTopColor:C.line},detailsLabel:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.8},detailsMark:{fontSize:22,color:C.accent},details:{gap:spacing.xs},
   capNotice:{...typography.bodyStrong,color:C.warning},
   progressBlock:{gap:spacing.xs,paddingVertical:spacing.xs},progressMeta:{flexDirection:'row',justifyContent:'space-between'},progressLabel:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:1},progressTime:{...typography.bodyStrong,color:C.text},track:{height:16,borderRadius:8,overflow:'hidden',backgroundColor:C.bg,borderWidth:1,borderColor:C.line},fill:{height:'100%',overflow:'hidden',backgroundColor:C.good,borderRadius:8},shine:{position:'absolute',width:54,height:'100%',backgroundColor:'rgba(255,255,255,.28)'},
   rateRow:{flexDirection:'row',flexWrap:'wrap',gap:spacing.sm},rate:{...typography.caption,color:C.info,fontWeight:'800'},

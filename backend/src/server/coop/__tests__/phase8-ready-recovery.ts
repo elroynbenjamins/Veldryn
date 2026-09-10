@@ -1,0 +1,13 @@
+import { strict as assert } from 'node:assert';
+import { MemoryReadyCheckRepository, ReadyCheckService, type ReadyRosterMember } from '../ready-checks';
+import { disconnectMember, enterSafeBoundary, reconnectMember, resolveContinueOrEnd, type LiveRecoveryState } from '../recovery';
+const roster:ReadyRosterMember[]=[['a','tank'],['b','damage'],['c','damage'],['d','support']].map(([accountId,role],index)=>({accountId,characterId:`c${index}`,ticketId:`t${index}`,role:role as ReadyRosterMember['role'],originalEnqueuedAtMs:index,loadoutId:`load-${index}`,loadoutRevision:1,loadoutSnapshotHash:`hash-${index}`}));
+const repository=new MemoryReadyCheckRepository();const service=new ReadyCheckService(repository);let check=service.open('check-1','party-1',1,roster,0);
+for(const accountId of ['a','b','c'])check=service.respond(check.id,1,accountId,true,1);assert.equal(check.status,'open');
+check=service.timeout(check.id,20_000);assert.equal(check.status,'refilling');assert.equal(check.roster.length,3);
+const restarted=new ReadyCheckService(repository);const fresh=restarted.refill(check.id,'check-2',{...roster[3],accountId:'replacement',characterId:'replacement-char',ticketId:'replacement-ticket',loadoutId:'replacement-loadout',loadoutSnapshotHash:'replacement-hash'},20_001);assert.equal(fresh.rosterRevision,2);assert.equal(Object.keys(fresh.accepts).length,0);
+let stale='';try{restarted.respond(fresh.id,1,'a',true,20_002);}catch(error){stale=error instanceof Error?error.message:String(error);}assert.equal(stale,'stale_ready_roster');
+let committed=fresh;for(const accountId of committed.roster.map(member=>member.accountId))committed=restarted.respond(committed.id,2,accountId,true,20_003);assert.equal(committed.status,'committed');
+let cancelRace='';try{restarted.cancel(committed.id,'a',20_004);}catch(error){cancelRace=error instanceof Error?error.message:String(error);}assert.equal(cancelRace,'run_already_committed');
+let recovery:LiveRecoveryState={phase:'combat',members:roster.map(member=>({accountId:member.accountId,characterId:member.characterId,connected:true,absent:false,voluntaryLeaver:false}))};recovery=disconnectMember(recovery,'b',100);recovery=enterSafeBoundary(recovery,30_000);assert.equal(recovery.phase,'paused_for_reconnect');recovery=reconnectMember(recovery,'b',40_000);assert.equal(recovery.phase,'active');recovery=disconnectMember(recovery,'b',50_000);recovery=enterSafeBoundary(recovery,110_001);assert.equal(recovery.phase,'continue_or_end');recovery=resolveContinueOrEnd(recovery,{a:'continue',c:'end'});assert.equal(recovery.phase,'abandoned');
+console.log('coop phase8 ready/recovery OK');

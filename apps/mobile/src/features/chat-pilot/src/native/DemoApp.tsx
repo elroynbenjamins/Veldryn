@@ -1,4 +1,4 @@
-import React,{useEffect,useMemo} from 'react';
+import {useEffect,useMemo} from 'react';
 import {Alert, SafeAreaView, StyleSheet} from 'react-native';
 import {ChatController,createDemoTransport,createMemorySettingsStore,demoMessages,demoProfiles} from '../core/chat';
 import type {Emote,SettingsStore} from '../core/chat';

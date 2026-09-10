@@ -1,4 +1,4 @@
-import React,{useEffect,useState} from 'react';
+import {useEffect,useState} from 'react';
 import {Alert,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from './GameButton'; import {Panel} from './Panel'; import {C} from '../theme/theme';
 import {onlineConfigured} from '../online/supabase'; import {guildApplications,guildRoster,myGuild,reviewGuildApplication,type GuildApplication,type GuildMember} from '../online/social';

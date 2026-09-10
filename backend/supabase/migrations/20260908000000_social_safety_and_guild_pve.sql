@@ -9,8 +9,8 @@ create table if not exists public.chat_account_sanctions (
   muted_until timestamptz,
   updated_at timestamptz not null default now()
 );
-insert into public.chat_filter_terms(normalized_term,action) values
- ('fuck','mask'),('shit','mask'),('bitch','mask'),('cunt','block') on conflict do nothing;
+insert into public.chat_filter_terms(term,normalized_term,action) values
+ ('fuck','fuck','mask'),('shit','shit','mask'),('bitch','bitch','mask'),('cunt','cunt','block') on conflict do nothing;
 
 create or replace function public.send_world_chat(p_channel_id text,p_body text,p_sender_name text)
 returns uuid language plpgsql security definer set search_path=public as $$
@@ -53,7 +53,9 @@ create table if not exists public.guild_pve_receipts (
 alter table public.guild_weekly_projects enable row level security;
 alter table public.guild_weekly_bosses enable row level security;
 alter table public.guild_pve_receipts enable row level security;
+drop policy if exists "guild weekly state readable by members" on public.guild_weekly_projects;
 create policy "guild weekly state readable by members" on public.guild_weekly_projects for select to authenticated using(exists(select 1 from public.guild_members gm where gm.guild_id=guild_weekly_projects.guild_id and gm.account_id=auth.uid()));
+drop policy if exists "guild boss readable by members" on public.guild_weekly_bosses;
 create policy "guild boss readable by members" on public.guild_weekly_bosses for select to authenticated using(exists(select 1 from public.guild_members gm where gm.guild_id=guild_weekly_bosses.guild_id and gm.account_id=auth.uid()));
 
 create or replace function public.guild_weekly_state()

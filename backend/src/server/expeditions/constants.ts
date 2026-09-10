@@ -5,6 +5,8 @@ export const EXPEDITION = {
   postCapMarksCoefficient: 0.20,
   enhancedDaily: 3,
   enhancedWeekly: 12,
+  enhancedChargeCapacity: 3,
+  enhancedChargeRechargeMs: 8 * 60 * 60 * 1_000,
   regionBossBonusWeekly: 3,
   echoOwnerDaily: 5,
   echoOwnerWeekly: 25,

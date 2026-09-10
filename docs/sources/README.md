@@ -4,10 +4,11 @@ This folder contains canonical project source documents used to guide implementa
 
 ## Canonical design workbook
 
-- `VELDRYN_Master_Design_Database_v4.5.xlsx`
+- `VELDRYN_Master_Design_Database_v5.6.xlsx`
   - Master game design/content/balance database.
   - Includes classes, progression, world content, equipment, Expeditions, server calculation contracts, UI/settings/accessibility, chat configuration, implementation exports, and other implementation-facing design data.
-  - Treat the newest master workbook in this folder as design authority when code/content differs, unless a newer explicit implementation decision supersedes it.
+  - This folder keeps only the current master workbook. Older revisions remain recoverable through Git history.
+  - Treat this workbook as design authority when code/content differs, unless a newer explicit implementation decision supersedes it.
 
 ## Source-of-truth convention
 

@@ -169,7 +169,7 @@ The reproducible balance gates currently include:
 - Zero solo-role clears in the tested scenarios.
 - Uncapped observed Damage share reaching 41.52% in the recorded Asterfall study.
 
-See [`backend/artifacts/coop-balance-summary.json`](backend/artifacts/coop-balance-summary.json) and [`docs/implementation/COOP_REFINEMENT_PASS_03.md`](docs/implementation/COOP_REFINEMENT_PASS_03.md) for the latest recorded results.
+See [`backend/artifacts/coop-balance-summary.json`](backend/artifacts/coop-balance-summary.json) and [`docs/implementation/COOP_CURRENT_STATUS.md`](docs/implementation/COOP_CURRENT_STATUS.md) for the latest recorded results.
 
 ## Current release boundaries
 
@@ -196,7 +196,7 @@ The next passes should preserve server authority and complete one release gate a
 9. **Economy and telemetry pass:** measure real run duration, queue health, completion/failure rates, role availability, reward-charge behavior, and progression impact before tuning rewards or enabling the feature flag.
 10. **Release-hardening pass:** load test workers, audit RLS and service boundaries, exercise upgrade/save compatibility, produce release builds, and enable co-op gradually behind monitored configuration.
 
-Detailed implementation history is indexed in [`docs/implementation/`](docs/implementation/), including the [co-op phase report](docs/implementation/COOP_ROGUELITE_V1_PHASE_REPORT.md), [entry/reward cadence](docs/implementation/COOP_CADENCE_AND_ENTRY_REPORT.md), and [latest regional refinement](docs/implementation/COOP_REFINEMENT_PASS_03.md).
+Current implementation documents are indexed in [`docs/implementation/README.md`](docs/implementation/README.md), including the consolidated [co-op status, acceptance coverage, and remaining release gates](docs/implementation/COOP_CURRENT_STATUS.md).
 
 ## Project rules
 

@@ -1,8 +1,29 @@
-# VELDRYN Offline Prototype v0.4 — Fallen Knight Slice
+# VELDRYN mobile app
 
-This is the first broader **fun-test** build. It includes combat idling, gear drops/equip/sell/salvage, Mining/Woodcutting/Fishing, Smithing/Cooking, five onboarding quests, and the first local Fallen Knight challenge.
+Expo/React Native client for the offline-first solo game and the feature-gated online/co-op presentation.
 
-Everything remains offline/local. No Supabase project or paid hosting is needed. The UI depends on the GameRepository interface so a future Supabase implementation can replace AsyncStorage without rewriting the screens.
+## Included
 
-## Test goal
-Create a character → fight → loot/equip → gather/craft → complete onboarding quests → reach level 25 → defeat Fallen Knight.
+- Asterfall/Fallen Knight solo progression, idle combat, loot, equipment, enhancement, inventory/bank, gathering, crafting, quests, seasons/weather, saves, and accessibility/settings foundations.
+- Public Supabase account/profile and social presentation using client-safe credentials.
+- Co-op dungeon browsing, loadout selection, Q-Mode/Live projections, route and reward presentation, and authenticated API adapters.
+- Co-op remains off by default until the server integration gates in `../../docs/implementation/COOP_CURRENT_STATUS.md` pass.
+
+## Run
+
+```powershell
+pnpm install --frozen-lockfile
+pnpm start
+```
+
+Use `pnpm android`, `pnpm ios`, or `pnpm web` for a target platform. Copy `.env.example` to an ignored local environment file for public Supabase and co-op API configuration. Never add a Supabase service-role key here.
+
+## Verify
+
+```powershell
+pnpm run typecheck:core
+pnpm run test:core
+pnpm run test:pre-codex
+```
+
+Release candidates also require a full TypeScript check, Android Expo/Hermes export, and physical-device layout/accessibility validation.

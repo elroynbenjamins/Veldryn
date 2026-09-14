@@ -2,14 +2,15 @@ import {GameState,ItemStack} from './types';
 import {itemDef} from '../content/items';
 import {depositToBank,withdrawFromBank,effectiveStats} from './game';
 
-export type InventoryFilter='all'|'gear'|'tool'|'food'|'material';
-export type InventorySort='name'|'quantity'|'value';
-export function visibleStacks(stacks:ItemStack[],query:string,filter:InventoryFilter,sort:InventorySort){
-  const term=query.trim().toLowerCase();
-  return stacks.filter(stack=>{const item=itemDef(stack.itemId);return stack.quantity>0&&item.name.toLowerCase().includes(term)&&(filter==='all'||item.type===filter)}).sort((a,b)=>{
+export type InventoryFilter='all'|'favorites'|'gear'|'tool'|'food'|'material'|'potion';
+export type InventorySort='favorite'|'name'|'quantity'|'value';
+export function visibleStacks(stacks:ItemStack[],query:string,filter:InventoryFilter,sort:InventorySort,favoriteItemIds:readonly string[]=[]){
+  const term=query.trim().toLowerCase(),favorites=new Set(favoriteItemIds);
+  return stacks.filter(stack=>{const item=itemDef(stack.itemId);return stack.quantity>0&&item.name.toLowerCase().includes(term)&&(filter==='all'||filter==='favorites'?filter!=='favorites'||favorites.has(item.id):item.type===filter)}).sort((a,b)=>{
     const first=itemDef(a.itemId),second=itemDef(b.itemId);
+    const favoriteDifference=sort==='favorite'?Number(favorites.has(second.id))-Number(favorites.has(first.id)):0;
     const difference=sort==='quantity'?b.quantity-a.quantity:sort==='value'?second.value-first.value:0;
-    return difference||first.name.localeCompare(second.name);
+    return favoriteDifference||difference||first.name.localeCompare(second.name);
   });
 }
 export function transferAmount(quantity:number,choice:1|10|'all'){return Math.min(quantity,choice==='all'?quantity:choice)}

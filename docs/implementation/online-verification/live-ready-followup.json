@@ -1,0 +1,322 @@
+{
+  "checkedAt": "2026-09-13T08:06:45.150Z",
+  "reason": "Retest after companion compatibility and integration regression fixes; unchanged long balance suites passed in the preceding full run.",
+  "status": "FAIL",
+  "results": [
+    {
+      "check": "backend typecheck",
+      "status": "PASS",
+      "output": ""
+    },
+    {
+      "check": "backend build",
+      "status": "PASS",
+      "output": ""
+    },
+    {
+      "check": "backend coop-phase3",
+      "status": "PASS",
+      "output": "coop phase3 normalization OK {\"before\":{\"level\":100,\"maxHp\":20000,\"attackPower\":9000,\"healingPower\":500,\"defense\":4000},\"after\":{\"characterId\":\"c\",\"classId\":\"WAYFINDER\",\"level\":25,\"maxHp\":4564,\"attackPower\":781.25,\"healingPower\":125,\"defense\":931.25,\"accuracy\":500,\"evasion\":250,\"critChance\":0.9,\"haste\":2,\"role\":\"damage\"}}\n"
+    },
+    {
+      "check": "backend coop-phase3-commit",
+      "status": "PASS",
+      "output": "coop phase3 roster commit OK {\"roles\":[\"tank\",\"damage\",\"damage\",\"support\"],\"hashes\":[\"ec83af07\",\"dda32414\",\"db313bbb\",\"29324843\"]}\n"
+    },
+    {
+      "check": "backend coop-phase5",
+      "status": "PASS",
+      "output": "coop phase5 stateful run OK {\"preBoss\":5,\"visited\":6}\n"
+    },
+    {
+      "check": "backend coop-phase6",
+      "status": "PASS",
+      "output": "coop phase6 qmode OK {\"echoes\":3,\"preBoss\":5,\"rewardMarks\":74}\n"
+    },
+    {
+      "check": "backend coop-phase6-projection",
+      "status": "PASS",
+      "output": "coop phase6 public projection OK\n"
+    },
+    {
+      "check": "backend coop-phase7",
+      "status": "PASS",
+      "output": "coop phase7 matchmaking OK\n"
+    },
+    {
+      "check": "backend coop-phase8",
+      "status": "PASS",
+      "output": "coop phase8 ready/recovery OK\n"
+    },
+    {
+      "check": "backend combat-rng-portable",
+      "status": "PASS",
+      "output": "PASS portable combat RNG: 1,280 exact Node HMAC comparisons, long keys, Unicode and malformed surrogates\n"
+    },
+    {
+      "check": "online backend build/typecheck",
+      "status": "PASS",
+      "output": ""
+    },
+    {
+      "check": "online authenticated HTTP and idempotency",
+      "status": "PASS",
+      "output": "PASS authenticated gameplay HTTP, input authority, canonical replay, stale version and lost-response recovery\n"
+    },
+    {
+      "check": "online co-op owned-loadout derivation",
+      "status": "PASS",
+      "output": "online co-op loadout derivation PASS: nine distinct kits, owned equipment, no grants, revision hashes, slot validation\n"
+    },
+    {
+      "check": "online co-op authenticated entry and consent",
+      "status": "PASS",
+      "output": "PASS co-op entry authentication, authoritative projection, consent validation and transactional replay boundary\n"
+    },
+    {
+      "check": "online QMode concurrent receipt recovery",
+      "status": "PASS",
+      "output": "PASS QMode concurrent receipt visibility and changed-intent conflict\n"
+    },
+    {
+      "check": "online Live queue authenticated admission and retries",
+      "status": "PASS",
+      "output": "PASS Live queue authentication, server-derived role/equipment, ownership, content gates, replay/race/conflict, status, heartbeat and cancellation boundary\n"
+    },
+    {
+      "check": "online Live ready matching and roster freeze",
+      "status": "PASS",
+      "output": "PASS Live ready bounded retained-roster matching, authoritative four-player freeze, stale gear, concurrent receipt recovery and authenticated strict HTTP\n"
+    },
+    {
+      "check": "mobile full typecheck",
+      "status": "FAIL",
+      "output": "src/dev/NativeVisualReview.tsx(62,14): error TS2322: Type 'GameState | { activity: { kind: string; targetId: string; startedAtMs: number; lastClaimAtMs: number; }; version: 6; createdAtMs: number; character: CharacterState | null; ... 9 more ...; settings: { ...; }; }' is not assignable to type 'GameState'.\r\n  Type '{ activity: { kind: string; targetId: string; startedAtMs: number; lastClaimAtMs: number; }; version: 6; createdAtMs: number; character: CharacterState | null; ... 9 more ...; settings: { language: Language; numberMode: \"abbreviated\" | \"exact\"; reduceMotion: boolean; textScale: 1 | 1.15 | 1.3 | 1.5; autoEatThreshold...' is not assignable to type 'GameState'.\r\n    The types of 'activity.kind' are incompatible between these types.\r\n      Type 'string' is not assignable to type 'ActivityKind'.\r\nsrc/dev/NativeVisualReview.tsx(63,33): error TS2322: Type 'GameState | { activity: { kind: string; targetId: string; startedAtMs: number; lastClaimAtMs: number; }; version: 6; createdAtMs: number; character: CharacterState | null; ... 9 more ...; settings: { ...; }; }' is not assignable to type 'GameState'.\r\n  Type '{ activity: { kind: string; targetId: string; startedAtMs: number; lastClaimAtMs: number; }; version: 6; createdAtMs: number; character: CharacterState | null; ... 9 more ...; settings: { language: Language; numberMode: \"abbreviated\" | \"exact\"; reduceMotion: boolean; textScale: 1 | 1.15 | 1.3 | 1.5; autoEatThreshold...' is not assignable to type 'GameState'.\r\n    The types of 'activity.kind' are incompatible between these types.\r\n      Type 'string' is not assignable to type 'ActivityKind'.\r\nsrc/dev/NativeVisualReview.tsx(63,78): error TS2345: Argument of type 'GameState | { activity: { kind: string; targetId: string; startedAtMs: number; lastClaimAtMs: number; }; version: 6; createdAtMs: number; character: CharacterState | null; ... 9 more ...; settings: { ...; }; }' is not assignable to parameter of type 'GameState'.\r\n  Type '{ activity: { kind: string; targetId: string; startedAtMs: number; lastClaimAtMs: number; }; version: 6; createdAtMs: number; character: CharacterState | null; ... 9 more ...; settings: { language: Language; numberMode: \"abbreviated\" | \"exact\"; reduceMotion: boolean; textScale: 1 | 1.15 | 1.3 | 1.5; autoEatThreshold...' is not assignable to type 'GameState'.\r\n    The types of 'activity.kind' are incompatible between these types.\r\n      Type 'string' is not assignable to type 'ActivityKind'.\r\nsrc/dev/NativeVisualReview.tsx(63,129): error TS2345: Argument of type 'GameState | { activity: { kind: string; targetId: string; startedAtMs: number; lastClaimAtMs: number; }; version: 6; createdAtMs: number; character: CharacterState | null; ... 9 more ...; settings: { ...; }; }' is not assignable to parameter of type 'GameState'.\r\n  Type '{ activity: { kind: string; targetId: string; startedAtMs: number; lastClaimAtMs: number; }; version: 6; createdAtMs: number; character: CharacterState | null; ... 9 more ...; settings: { language: Language; numberMode: \"abbreviated\" | \"exact\"; reduceMotion: boolean; textScale: 1 | 1.15 | 1.3 | 1.5; autoEatThreshold...' is not assignable to type 'GameState'.\r\n    The types of 'activity.kind' are incompatible between these types.\r\n      Type 'string' is not assignable to type 'ActivityKind'.\r\nsrc/dev/NativeVisualReview.tsx(63,165): error TS2345: Argument of type '(state: GameState) => GameState' is not assignable to parameter of type 'SetStateAction<GameState | { activity: { kind: string; targetId: string; startedAtMs: number; lastClaimAtMs: number; }; version: 6; createdAtMs: number; character: CharacterState | null; ... 9 more ...; settings: { ...; }; }>'.\r\n  Type '(state: GameState) => GameState' is not assignable to type '(prevState: GameState | { activity: { kind: string; targetId: string; startedAtMs: number; lastClaimAtMs: number; }; version: 6; createdAtMs: number; character: CharacterState | null; ... 9 more ...; settings: { ...; }; }) => GameState | { ...; }'.\r\n    Types of parameters 'state' and 'prevState' are incompatible.\r\n      Type 'GameState | { activity: { kind: string; targetId: string; startedAtMs: number; lastClaimAtMs: number; }; version: 6; createdAtMs: number; character: CharacterState | null; ... 9 more ...; settings: { ...; }; }' is not assignable to type 'GameState'.\r\n        Type '{ activity: { kind: string; targetId: string; startedAtMs: number; lastClaimAtMs: number; }; version: 6; createdAtMs: number; character: CharacterState | null; ... 9 more ...; settings: { language: Language; numberMode: \"abbreviated\" | \"exact\"; reduceMotion: boolean; textScale: 1 | 1.15 | 1.3 | 1.5; autoEatThreshold...' is not assignable to type 'GameState'.\r\n          The types of 'activity.kind' are incompatible between these types.\r\n            Type 'string' is not assignable to type 'ActivityKind'.\r\nsrc/dev/NativeVisualReview.tsx(64,37): error TS2322: Type 'GameState | { activity: { kind: string; targetId: string; startedAtMs: number; lastClaimAtMs: number; }; version: 6; createdAtMs: number; character: CharacterState | null; ... 9 more ...; settings: { ...; }; }' is not assignable to type 'GameState'.\r\n  Type '{ activity: { kind: string; targetId: string; startedAtMs: number; lastClaimAtMs: number; }; version: 6; createdAtMs: number; character: CharacterState | null; ... 9 more ...; settings: { language: Language; numberMode: \"abbreviated\" | \"exact\"; reduceMotion: boolean; textScale: 1 | 1.15 | 1.3 | 1.5; autoEatThreshold...' is not assignable to type 'GameState'.\r\n    The types of 'activity.kind' are incompatible between these types.\r\n      Type 'string' is not assignable to type 'ActivityKind'.\r\nsrc/dev/NativeVisualReview.tsx(65,36): error TS2322: Type 'GameState | { activity: { kind: string; targetId: string; startedAtMs: number; lastClaimAtMs: number; }; version: 6; createdAtMs: number; character: CharacterState | null; ... 9 more ...; settings: { ...; }; }' is not assignable to type 'GameState'.\r\n  Type '{ activity: { kind: string; targetId: string; startedAtMs: number; lastClaimAtMs: number; }; version: 6; createdAtMs: number; character: CharacterState | null; ... 9 more ...; settings: { language: Language; numberMode: \"abbreviated\" | \"exact\"; reduceMotion: boolean; textScale: 1 | 1.15 | 1.3 | 1.5; autoEatThreshold...' is not assignable to type 'GameState'.\r\n    The types of 'activity.kind' are incompatible between these types.\r\n      Type 'string' is not assignable to type 'ActivityKind'.\r\nsrc/dev/NativeVisualReview.tsx(66,85): error TS2322: Type 'GameState | { activity: { kind: string; targetId: string; startedAtMs: number; lastClaimAtMs: number; }; version: 6; createdAtMs: number; character: CharacterState | null; ... 9 more ...; settings: { ...; }; }' is not assignable to type 'GameState'.\r\n  Type '{ activity: { kind: string; targetId: string; startedAtMs: number; lastClaimAtMs: number; }; version: 6; createdAtMs: number; character: CharacterState | null; ... 9 more ...; settings: { language: Language; numberMode: \"abbreviated\" | \"exact\"; reduceMotion: boolean; textScale: 1 | 1.15 | 1.3 | 1.5; autoEatThreshold...' is not assignable to type 'GameState'.\r\n    The types of 'activity.kind' are incompatible between these types.\r\n      Type 'string' is not assignable to type 'ActivityKind'.\r\nsrc/dev/NativeVisualReview.tsx(67,41): error TS2322: Type 'GameState | { activity: { kind: string; targetId: string; startedAtMs: number; lastClaimAtMs: number; }; version: 6; createdAtMs: number; character: CharacterState | null; ... 9 more ...; settings: { ...; }; }' is not assignable to type 'GameState'.\r\n  Type '{ activity: { kind: string; targetId: string; startedAtMs: number; lastClaimAtMs: number; }; version: 6; createdAtMs: number; character: CharacterState | null; ... 9 more ...; settings: { language: Language; numberMode: \"abbreviated\" | \"exact\"; reduceMotion: boolean; textScale: 1 | 1.15 | 1.3 | 1.5; autoEatThreshold...' is not assignable to type 'GameState'.\r\n    The types of 'activity.kind' are incompatible between these types.\r\n      Type 'string' is not assignable to type 'ActivityKind'.\r\nsrc/dev/NativeVisualReview.tsx(69,85): error TS2322: Type 'GameState | { activity: { kind: string; targetId: string; startedAtMs: number; lastClaimAtMs: number; }; version: 6; createdAtMs: number; character: CharacterState | null; ... 9 more ...; settings: { ...; }; }' is not assignable to type 'GameState'.\r\n  Type '{ activity: { kind: string; targetId: string; startedAtMs: number; lastClaimAtMs: number; }; version: 6; createdAtMs: number; character: CharacterState | null; ... 9 more ...; settings: { language: Language; numberMode: \"abbreviated\" | \"exact\"; reduceMotion: boolean; textScale: 1 | 1.15 | 1.3 | 1.5; autoEatThreshold...' is not assignable to type 'GameState'.\r\n    The types of 'activity.kind' are incompatible between these types.\r\n      Type 'string' is not assignable to type 'ActivityKind'.\r\nsrc/dev/NativeVisualReview.tsx(70,39): error TS2322: Type 'GameState | { activity: { kind: string; targetId: string; startedAtMs: number; lastClaimAtMs: number; }; version: 6; createdAtMs: number; character: CharacterState | null; ... 9 more ...; settings: { ...; }; }' is not assignable to type 'GameState'.\r\n  Type '{ activity: { kind: string; targetId: string; startedAtMs: number; lastClaimAtMs: number; }; version: 6; createdAtMs: number; character: CharacterState | null; ... 9 more ...; settings: { language: Language; numberMode: \"abbreviated\" | \"exact\"; reduceMotion: boolean; textScale: 1 | 1.15 | 1.3 | 1.5; autoEatThreshold...' is not assignable to type 'GameState'.\r\n    The types of 'activity.kind' are incompatible between these types.\r\n      Type 'string' is not assignable to type 'ActivityKind'.\r\nsrc/dev/NativeVisualReview.tsx(70,113): error TS2345: Argument of type 'GameState | { activity: { kind: string; targetId: string; startedAtMs: number; lastClaimAtMs: number; }; version: 6; createdAtMs: number; character: CharacterState | null; ... 9 more ...; settings: { ...; }; }' is not assignable to parameter of type 'GameState'.\r\n  Type '{ activity: { kind: string; targetId: string; startedAtMs: number; lastClaimAtMs: number; }; version: 6; createdAtMs: number; character: CharacterState | null; ... 9 more ...; settings: { language: Language; numberMode: \"abbreviated\" | \"exact\"; reduceMotion: boolean; textScale: 1 | 1.15 | 1.3 | 1.5; autoEatThreshold...' is not assignable to type 'GameState'.\r\n    The types of 'activity.kind' are incompatible between these types.\r\n      Type 'string' is not assignable to type 'ActivityKind'.\r\nsrc/dev/NativeVisualReview.tsx(71,82): error TS2322: Type 'GameState | { activity: { kind: string; targetId: string; startedAtMs: number; lastClaimAtMs: number; }; version: 6; createdAtMs: number; character: CharacterState | null; ... 9 more ...; settings: { ...; }; }' is not assignable to type 'GameState'.\r\n  Type '{ activity: { kind: string; targetId: string; startedAtMs: number; lastClaimAtMs: number; }; version: 6; createdAtMs: number; character: CharacterState | null; ... 9 more ...; settings: { language: Language; numberMode: \"abbreviated\" | \"exact\"; reduceMotion: boolean; textScale: 1 | 1.15 | 1.3 | 1.5; autoEatThreshold...' is not assignable to type 'GameState'.\r\n    The types of 'activity.kind' are incompatible between these types.\r\n      Type 'string' is not assignable to type 'ActivityKind'.\r\n"
+    },
+    {
+      "check": "mobile core typecheck",
+      "status": "PASS",
+      "output": ""
+    },
+    {
+      "check": "mobile core build",
+      "status": "PASS",
+      "output": "TSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/auth-callback.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/quick-navigation.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/combat-companion-types.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/content/combat-companions.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/combat-companions.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/content/monsters.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/content/world-map.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/item-rarity.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/content/gathering-tools.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/content/items.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/content/skills.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/backend/src/server/expeditions/constants.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/backend/src/server/combat/calculations.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/backend/src/server/combat/deterministic-rng.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/backend/src/server/combat/types.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/backend/src/server/combat/engine.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/backend/src/server/companions/policy.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/backend/src/server/companions/domain.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/backend/src/server/companions/content.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/backend/src/server/companions/combat-adapter.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/backend/src/server/companions/team.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/backend/src/server/companions/trial-season.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/backend/src/server/companions/trials.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/backend/src/server/companions/assignments.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/backend/src/server/companions/progression-v2.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/backend/src/server/companions/codex.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/backend/src/server/companions/proving-grounds.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/backend/src/server/companions/projection.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/backend/src/server/companions/special-challenges.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/companion-runtime.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/i18n/languages.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/types.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/content/novice-sets.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/character-appearance.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/character-creation.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/content/equipment-sets.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/content/character-skin-sets.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/character-skins.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/class-combat.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/content/classes.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/content/quests.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/progression.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/rng.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/world-weather.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/seasonal-quests.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/content/permanent-boosts.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/permanent-boosts.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/content/live-events.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/live-events.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/gathering-tools.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/combat-region.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/equipment-enhancement.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/game.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/combat-presentation.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/companion-phase2-presentation.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/companion-save.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/coop-command-journal.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/coop-ui-contract.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/coop-dungeon-browsing.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/coop-event-expeditions.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/coop-live-lobby.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/coop-presentation.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/coop-loadout-presentation.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/coop-qmode.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/coop-shared-run.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/dashboard.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/equipment-preview.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/content/loadouts.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/equipment-screen.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/playability.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/game-commands.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/guild-access.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/guild-applications.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/guild-profile.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/guild-pve.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/inventory-view.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/market.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/number-format.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/repository.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/online-game-repository.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/party-social.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/profile-cosmetics.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/profile-unlocks.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/quest-journal.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/save-normalization.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/save-migrations.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/save-transfer.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/social-identity.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/visual-feedback.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/world-navigation.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/content/asterfall.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/i18n/operational.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/i18n/coop.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/i18n/coop-loadout.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/i18n/index.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/online/supabase.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/online/coop-client.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/online/coop-entry-source.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/dev/coop-dungeon-fixtures.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/dev/coop-qmode-fixtures.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/dev/coop-shared-run-fixtures.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/dev/debug-tools.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/character-foundation.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/character-skins.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/class-combat.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/combat-presentation.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/combat-region.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/companion-integration.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/coop-dungeon-browsing.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/coop-live-lobby.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/coop-loadout-presentation.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/coop-online-runtime.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/coop-presentation.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/coop-qmode.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/coop-shared-run.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/coop-ui-contract.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/dashboard.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/equipment-enhancement.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/equipment-progression-v2.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/equipment-screen.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/gathering-tools.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/inventory-view.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/item-rarity-v2.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/live-events.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/localization.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/market-bulk-buy.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/novice-sets.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/offline-cap.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/offline-smoke.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/online-gameplay.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/party-social-v16.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/playability.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/pre-codex-smoke.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/progression-balance.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/progression-v6.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/quest-journal.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/quick-navigation.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/save-transfer.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/seasonal-quests.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/set-bonuses.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/social-identity.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/startup-summary.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/storage-bank.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/visual-polish.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/world-weather.js\r\n"
+    },
+    {
+      "check": "mobile character-foundation.js",
+      "status": "PASS",
+      "output": "PASS: 18 character variants, primary weapon contract, persistence and legacy equipment preservation\n"
+    },
+    {
+      "check": "mobile character-skins.js",
+      "status": "PASS",
+      "output": "PASS: accepted front skins, progression sets, Aster Iron, beginner sets, and Harvestwake rewards unlock class-bound appearances\n"
+    },
+    {
+      "check": "mobile class-combat.js",
+      "status": "PASS",
+      "output": "PASS: 9 class combat identities\n"
+    },
+    {
+      "check": "mobile combat-presentation.js",
+      "status": "PASS",
+      "output": "{\"status\":\"PASS\",\"start\":{\"enemyHp\":30,\"enemyMaxHp\":30,\"playerHit\":22,\"enemyHit\":1,\"safety\":\"safe\",\"style\":{\"name\":\"Hold the Line\",\"description\":\"Reduces incoming damage by 16%, but attacks more slowly.\",\"speedMultiplier\":0.94,\"damageTakenMultiplier\":0.84,\"recoveryPct\":0.014}},\"late\":{\"enemyHp\":17,\"enemyMaxHp\":30,\"playerHit\":22,\"enemyHit\":1,\"safety\":\"safe\",\"style\":{\"name\":\"Hold the Line\",\"description\":\"Reduces incoming damage by 16%, but attacks more slowly.\",\"speedMultiplier\":0.94,\"damageTakenMultiplier\":0.84,\"recoveryPct\":0.014}}}\n"
+    },
+    {
+      "check": "mobile combat-region.js",
+      "status": "PASS",
+      "output": "PASS: travel persists location and region gates combat and gathering\n"
+    },
+    {
+      "check": "mobile companion-integration.js",
+      "status": "PASS",
+      "output": "PASS companion integration: 87 checks\n"
+    },
+    {
+      "check": "mobile coop-dungeon-browsing.js",
+      "status": "PASS",
+      "output": "co-op dungeon browsing OK (6 languages, 75 messages each)\n"
+    },
+    {
+      "check": "mobile coop-live-lobby.js",
+      "status": "PASS",
+      "output": "PASS Live lobby uses database time for ready/refill deadlines and stops terminal countdowns\n"
+    },
+    {
+      "check": "mobile coop-loadout-presentation.js",
+      "status": "PASS",
+      "output": "coop loadout presentation OK\n"
+    },
+    {
+      "check": "mobile coop-online-runtime.js",
+      "status": "PASS",
+      "output": "PASS co-op durable retries, restart recovery, definitive errors, actual route choices and projection privacy\n"
+    },
+    {
+      "check": "mobile coop-presentation.js",
+      "status": "PASS",
+      "output": "coop presentation OK\n"
+    },
+    {
+      "check": "mobile coop-qmode.js",
+      "status": "PASS",
+      "output": "coop qmode presentation OK\n"
+    },
+    {
+      "check": "mobile coop-shared-run.js",
+      "status": "PASS",
+      "output": "coop shared run presentation OK\n"
+    },
+    {
+      "check": "mobile coop-ui-contract.js",
+      "status": "PASS",
+      "output": "co-op UI contract OK\n"
+    },
+    {
+      "check": "mobile dashboard.js",
+      "status": "PASS",
+      "output": "{\"status\":\"PASS\",\"recommendation\":{\"title\":\"Continue: A Name in the Ledger\",\"detail\":\"Hunt Moss Rat in Greenfields · 5 remaining.\",\"button\":\"Open hunting ground\",\"destination\":\"World\",\"zoneId\":\"Greenfields\",\"priority\":\"progress\"},\"rate\":{\"actionsPerHour\":234,\"xpPerHour\":3962,\"goldPerHour\":234}}\n"
+    },
+    {
+      "check": "mobile equipment-enhancement.js",
+      "status": "PASS",
+      "output": "equipment enhancement tests passed\n"
+    },
+    {
+      "check": "mobile equipment-progression-v2.js",
+      "status": "PASS",
+      "output": "PASS: Aster-Iron, Oathstone Bulwark, all Asterfall, Sunscar and Frostmarch class sets are complete, gated and salvageable\n"
+    },
+    {
+      "check": "mobile equipment-screen.js",
+      "status": "PASS",
+      "output": "PASS: equipment screen uses ten live slots, canonical stats, loadout guides and saved presentation\n"
+    },
+    {
+      "check": "mobile gathering-tools.js",
+      "status": "PASS",
+      "output": "Gathering tool progression tests passed.\n"
+    },
+    {
+      "check": "mobile inventory-view.js",
+      "status": "PASS",
+      "output": "PASS: inventory search, filters, sorting, transfer preflight and healing previews\n"
+    },
+    {
+      "check": "mobile item-rarity-v2.js",
+      "status": "PASS",
+      "output": "PASS: rarity odds, colors, stat multipliers and deterministic roll API\n"
+    },
+    {
+      "check": "mobile live-events.js",
+      "status": "PASS",
+      "output": "{\n  \"status\": \"PASS\",\n  \"afterCombat\": 144,\n  \"finalProgress\": 13000\n}\n"
+    },
+    {
+      "check": "mobile localization.js",
+      "status": "PASS",
+      "output": "Localization tests passed (6 languages, 73 shared and 43 operational messages each).\n"
+    },
+    {
+      "check": "mobile market-bulk-buy.js",
+      "status": "PASS",
+      "output": "{\n  \"status\": \"PASS\",\n  \"buyX\": {\n    \"requestedQuantity\": 200,\n    \"filledQuantity\": 200,\n    \"unfilledQuantity\": 0,\n    \"totalCost\": 18700,\n    \"averageUnitPrice\": 93.5,\n    \"highestUnitPrice\": 105,\n    \"listingsUsed\": 3,\n    \"fills\": [\n      {\n        \"listingId\": \"L1\",\n        \"sellerId\": \"S1\",\n        \"quantity\": 100,\n        \"unitPrice\": 90,\n        \"subtotal\": 9000\n      },\n      {\n        \"listingId\": \"L2\",\n        \"sellerId\": \"S2\",\n        \"quantity\": 80,\n        \"unitPrice\": 95,\n        \"subtotal\": 7600\n      },\n      {\n        \"listingId\": \"L3\",\n        \"sellerId\": \"S3\",\n        \"quantity\": 20,\n        \"unitPrice\": 105,\n        \"subtotal\": 2100\n      }\n    ]\n  }\n}\n"
+    },
+    {
+      "check": "mobile novice-sets.js",
+      "status": "PASS",
+      "output": "PASS: 18 novice variants, 402 recipes including capes, amulets and rings, class/stage gates, bank crafting, atomic equip and save migration\n"
+    },
+    {
+      "check": "mobile offline-cap.js",
+      "status": "PASS",
+      "output": "PASS: AFK reserve scales 24h to 36h and clamps at 36h\n"
+    },
+    {
+      "check": "mobile offline-smoke.js",
+      "status": "PASS",
+      "output": "{\n  \"status\": \"PASS\",\n  \"firstMinute\": {\n    \"xp\": 67,\n    \"gold\": 4,\n    \"items\": [\n      {\n        \"itemId\": \"MOSS_FIBER\",\n        \"quantity\": 2\n      }\n    ],\n    \"kills\": 4,\n    \"elapsedSeconds\": 60,\n    \"foodConsumed\": 0,\n    \"endHp\": 110,\n    \"stoppedReason\": \"\",\n    \"eventDrops\": [],\n    \"eventDiscoveries\": []\n  },\n  \"offlineCapHours\": 24,\n  \"level25Xp\": 412849\n}\n"
+    },
+    {
+      "check": "mobile online-gameplay.js",
+      "status": "PASS",
+      "output": "PASS online commands, server clock, activity settlement, authority, PKCE, secure storage, persistent retry and stale state\n"
+    },
+    {
+      "check": "mobile party-social-v16.js",
+      "status": "PASS",
+      "output": "mobile party social v16 tests passed\n"
+    },
+    {
+      "check": "mobile playability.js",
+      "status": "PASS",
+      "output": "PASS: activity settlement, no duplicate claim, bank-aware recipes and world navigation\n"
+    },
+    {
+      "check": "mobile pre-codex-smoke.js",
+      "status": "PASS",
+      "output": "{\n  \"status\": \"PASS\",\n  \"saveSchema\": 6,\n  \"debugLevel\": 25,\n  \"debugGold\": 600\n}\n"
+    },
+    {
+      "check": "mobile progression-balance.js",
+      "status": "PASS",
+      "output": "{\n  \"status\": \"PASS\",\n  \"classCount\": 9,\n  \"asterfallMonsterCount\": 22,\n  \"questCount\": 15,\n  \"starterKillSpreadPct\": 25,\n  \"firstMinute\": [\n    {\n      \"classId\": \"IRONWARDEN\",\n      \"kills\": 4,\n      \"power\": 59\n    },\n    {\n      \"classId\": \"BASTION\",\n      \"kills\": 3,\n      \"power\": 58\n    },\n    {\n      \"classId\": \"DREADGUARD\",\n      \"kills\": 4,\n      \"power\": 61\n    },\n    {\n      \"classId\": \"DAWNKEEPER\",\n      \"kills\": 4,\n      \"power\": 49\n    },\n    {\n      \"classId\": \"WAYFINDER\",\n      \"kills\": 4,\n      \"power\": 59\n    },\n    {\n      \"classId\": \"RAVAGER\",\n      \"kills\": 4,\n      \"power\": 62\n    },\n    {\n      \"classId\": \"HEXWEAVER\",\n      \"kills\": 4,\n      \"power\": 51\n    },\n    {\n      \"classId\": \"KNIFE_DANCER\",\n      \"kills\": 4,\n      \"power\": 58\n    },\n    {\n      \"classId\": \"STONECALLER\",\n      \"kills\": 4,\n      \"power\": 58\n    }\n  ],\n  \"level25Simulation\": [\n    {\n      \"classId\": \"IRONWARDEN\",\n      \"hours\": 297.5,\n      \"level\": 25,\n      \"power\": 193,\n      \"regionalPrepared\": true\n    },\n    {\n      \"classId\": \"BASTION\",\n      \"hours\": 310,\n      \"level\": 25,\n      \"power\": 193,\n      \"regionalPrepared\": true\n    },\n    {\n      \"classId\": \"DREADGUARD\",\n      \"hours\": 271.5,\n      \"level\": 25,\n      \"power\": 194,\n      \"regionalPrepared\": true\n    },\n    {\n      \"classId\": \"DAWNKEEPER\",\n      \"hours\": 297,\n      \"level\": 25,\n      \"power\": 179,\n      \"regionalPrepared\": true\n    },\n    {\n      \"classId\": \"WAYFINDER\",\n      \"hours\": 262.5,\n      \"level\": 25,\n      \"power\": 190,\n      \"regionalPrepared\": true\n    },\n    {\n      \"classId\": \"RAVAGER\",\n      \"hours\": 252,\n      \"level\": 25,\n      \"power\": 244,\n      \"regionalPrepared\": true\n    },\n    {\n      \"classId\": \"HEXWEAVER\",\n      \"hours\": 272.5,\n      \"level\": 25,\n      \"power\": 181,\n      \"regionalPrepared\": true\n    },\n    {\n      \"classId\": \"KNIFE_DANCER\",\n      \"hours\": 259,\n      \"level\": 25,\n      \"power\": 191,\n      \"regionalPrepared\": true\n    },\n    {\n      \"classId\": \"STONECALLER\",\n      \"hours\": 301,\n      \"level\": 25,\n      \"power\": 189,\n      \"regionalPrepared\": true\n    }\n  ],\n  \"level25ProductiveCombatTarget\": {\n    \"min\": 175,\n    \"max\": 288\n  },\n  \"playerProfiles\": [\n    {\n      \"name\": \"New / Inefficient\",\n      \"offline\": 7.5,\n      \"active\": 0.35,\n      \"eff\": 0.68,\n      \"medianModelDays\": 99.59\n    },\n    {\n      \"name\": \"Casual\",\n      \"offline\": 10,\n      \"active\": 0.55,\n      \"eff\": 0.78,\n      \"medianModelDays\": 64.6\n    },\n    {\n      \"name\": \"Normal\",\n      \"offline\": 12,\n      \"active\": 0.8,\n      \"eff\": 0.88,\n      \"medianModelDays\": 47.19\n    },\n    {\n      \"name\": \"Active\",\n      \"offline\": 16,\n      \"active\": 1.4,\n      \"eff\": 0.94,\n      \"medianModelDays\": 32.5\n    },\n    {\n      \"name\": \"Optimizer\",\n      \"offline\": 20,\n      \"active\": 1.8,\n      \"eff\": 0.985,\n      \"medianModelDays\": 24.76\n    }\n  ],\n  \"preparedBossReadiness\": {\n    \"total\": 100,\n    \"level\": 30,\n    \"quest\": 15,\n    \"equipment\": 35,\n    \"food\": 10,\n    \"mastery\": 10,\n    \"recommended\": true\n  },\n  \"preparedBossWinChance\": 0.9\n}\n"
+    },
+    {
+      "check": "mobile progression-v6.js",
+      "status": "PASS",
+      "output": "PASS: v6 pacing, requirements, language and account migration\n"
+    },
+    {
+      "check": "mobile quest-journal.js",
+      "status": "PASS",
+      "output": "PASS: quest filters, search, destinations, claim advancement and finished campaign\n"
+    },
+    {
+      "check": "mobile quick-navigation.js",
+      "status": "PASS",
+      "output": "PASS: quick navigation defaults, customization order and legacy-save normalization are stable\n"
+    },
+    {
+      "check": "mobile save-transfer.js",
+      "status": "PASS",
+      "output": "PASS: versioned save export/import validation and display number formatting\n"
+    },
+    {
+      "check": "mobile seasonal-quests.js",
+      "status": "PASS",
+      "output": "PASS: deterministic class-aligned weekly and monthly quest boards\n"
+    },
+    {
+      "check": "mobile set-bonuses.js",
+      "status": "PASS",
+      "output": "PASS: Bastion full-set bonus adds 23 DEF and 62 HP\n"
+    },
+    {
+      "check": "mobile social-identity.js",
+      "status": "PASS",
+      "output": "PASS: all canonical/display class identities and unknown fallbacks\n"
+    },
+    {
+      "check": "mobile startup-summary.js",
+      "status": "PASS",
+      "output": "Startup activity summary tests passed.\n"
+    },
+    {
+      "check": "mobile storage-bank.js",
+      "status": "PASS",
+      "output": "{\n  \"status\": \"PASS\",\n  \"inventoryCapacity\": 40,\n  \"bankCapacity\": 120,\n  \"inventoryRations\": 17,\n  \"bankRations\": 3\n}\n"
+    },
+    {
+      "check": "mobile visual-polish.js",
+      "status": "PASS",
+      "output": "PASS: cosmetic ownership, confirmed upgrade/failure/socket feedback and replay-safe claim announcements\n"
+    },
+    {
+      "check": "mobile world-weather.js",
+      "status": "PASS",
+      "output": "PASS: Bloomtide, Steady Rain, 72 actions/hour\n"
+    }
+  ]
+}

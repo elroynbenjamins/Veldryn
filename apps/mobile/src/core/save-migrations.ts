@@ -1,7 +1,7 @@
 import {GameState} from './types';
 import {normalizeSave} from './save-normalization';
 
-export const SAVE_SCHEMA_VERSION:GameState['version']=6;
+export const SAVE_SCHEMA_VERSION:GameState['version']=11;
 type AnySave=Record<string,unknown>&{version?:number};
 
 export function migrateSave(input:unknown):GameState{
@@ -26,5 +26,19 @@ export function migrateSave(input:unknown):GameState{
     skills:Array.isArray(raw.skills)?raw.skills:[],
     settings:raw.settings??{},
   }:raw;
-  return normalizeSave(v4Compatible);
+  const normalized=normalizeSave(v4Compatible);
+  // The additive companion pass has its own wire boundary. Legacy v6 saves
+  // remain v6 unless they actually carry roster or timed Faith/Alchemy state.
+  // This keeps old transfer backups stable while making new data explicit.
+  const activity=raw.activity as any;
+  const character=raw.character as any;
+  const hasV11State=Array.isArray(raw.otherCharacters)
+    || activity?.kind==='faith'
+    || activity?.kind==='alchemy'
+    || !!character?.faith?.selectedBlessingId
+    || Number((raw.skills as any[])?.find((skill:any)=>skill?.skillId==='alchemy')?.xp)>0
+    || Number((raw.rewardRemainders as any)?.['xp:alchemy'])>0
+    || !!raw.account && (!!(raw.account as any).collectionPreferences || !!(raw.account as any).guideState)
+    || Array.isArray((raw.character as any)?.savedLoadouts);
+  return hasV11State?{...normalized,version:11}:normalized;
 }

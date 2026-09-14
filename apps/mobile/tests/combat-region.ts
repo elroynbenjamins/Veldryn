@@ -1,5 +1,6 @@
-import {createCharacter,newGame,startCombat,startGathering,travelToRegion} from '../src/core/game';
+import {claimActivity,createCharacter,newGame,startCombat,startExploration,startGathering,travelToRegion} from '../src/core/game';
 import {currentRegionId} from '../src/core/combat-region';
+import {encounterUnlocked,nextRegionUnlock,regionEncounters} from '../src/core/world-navigation';
 
 const ok=(condition:unknown,message:string)=>{if(!condition)throw new Error(message)};
 const beginner=createCharacter(newGame(0),'IRONWARDEN','Region Test');
@@ -26,5 +27,34 @@ ok(returned.reward.elapsedSeconds>0,'Travel must preserve rewards earned before 
 rejected=false;
 try{travelToRegion(beginner,'KINGS_ROAD',6)}catch{rejected=true}
 ok(rejected,'Locked regions must reject travel');
+
+const later={...beginner,character:{...beginner.character!,level:30}};
+const sunscar=travelToRegion(later,'SUNSCAR',7).state;
+ok(currentRegionId(sunscar)==='SUNSCAR','Later-region travel must persist Sunscar');
+const sunscarScout=startExploration(sunscar,'SCOUT_SUNSCAR',8);
+const sunscarMapped=claimActivity(sunscarScout,218008).state;
+ok(sunscarMapped.unlockedMonsterIds.includes('SUNSCAR_SCORPION'),'Sunscar scouting must unlock its first authored encounter');
+const sunscarCombat=startCombat(sunscarMapped,'SUNSCAR_SCORPION',218009);
+ok(sunscarCombat.activity?.targetId==='SUNSCAR_SCORPION','Sunscar encounters must use the normal combat activity lane');
+ok(!claimActivity(sunscarCombat,338009).state.unlockedMonsterIds.includes('BLACKGLASS_MIRELING'),'Sunscar combat must not bypass Ashlands scouting');
+
+const frost={...beginner,character:{...beginner.character!,level:50}};
+const frostmarch=travelToRegion(frost,'FROSTMARCH',9).state;
+const frostScout=startExploration(frostmarch,'SCOUT_FROSTMARCH',10);
+const frostMapped=claimActivity(frostScout,310010).state;
+ok(startCombat(frostMapped,'FROSTWOLF',310011).activity?.targetId==='FROSTWOLF','Frostmarch encounters must be startable after scouting and its level gate');
+rejected=false;
+try{travelToRegion(later,'FROSTMARCH',11)}catch{rejected=true}
+ok(rejected,'Frostmarch must remain locked below its level gate');
+
+const ash={...beginner,character:{...beginner.character!,level:75}};
+const ashlands=travelToRegion(ash,'ASHLANDS',12).state;
+const ashScout=startExploration(ashlands,'SCOUT_ASHLANDS',13);
+const ashMapped=claimActivity(ashScout,373013).state;
+ok(ashMapped.unlockedMonsterIds.includes('BLACKGLASS_MIRELING'),'Ashlands scouting must unlock its first authored encounter');
+ok(startCombat(ashMapped,'BLACKGLASS_MIRELING',373014).activity?.targetId==='BLACKGLASS_MIRELING','Ashlands encounters must use the normal combat activity lane');
+ok(encounterUnlocked(ashMapped,{id:'BLACKGLASS_MIRELING',name:'Blackglass Mireling',level:72,hp:1,attack:1,defense:1,xp:1,gold:1,secondsPerKill:1,unlockLevel:71,zone:'Ashlands',drops:[]}),'Unlocked Ashlands encounter must appear in the world browser');
+ok(regionEncounters(ashMapped,'Ashlands','glass',true).some(monster=>monster.id==='BLACKGLASS_MIRELING'),'Later-region encounter search must include discovered content');
+ok(nextRegionUnlock(30)?.id==='FROSTMARCH'&&nextRegionUnlock(50)?.id==='ASHLANDS','Next-region navigation must include later regions');
 
 console.log('PASS: travel persists location and region gates combat and gathering');

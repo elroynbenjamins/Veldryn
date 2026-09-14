@@ -1,5 +1,8 @@
 import * as SecureStore from 'expo-secure-store';
 import {createClient, type SupabaseClient} from '@supabase/supabase-js';
+import {Platform} from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {chunkedAuthStorage} from '../core/auth-callback';
 
 declare const process:{env:Record<string,string|undefined>};
 
@@ -14,7 +17,7 @@ const secureStorage={
 
 /** Undefined until the public Expo environment variables have been supplied. */
 export const supabase:SupabaseClient|undefined=url&&key?createClient(url,key,{
-  auth:{storage:secureStorage,autoRefreshToken:true,persistSession:true,detectSessionInUrl:false},
+  auth:{storage:Platform.OS==='web'?AsyncStorage:chunkedAuthStorage(secureStorage),flowType:'pkce',autoRefreshToken:true,persistSession:true,detectSessionInUrl:false},
 }):undefined;
 
 export const onlineConfigured=Boolean(supabase);

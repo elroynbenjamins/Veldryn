@@ -2,7 +2,7 @@ import type { CoopRouteGraph } from '../../shared/coop-types';
 import { combatantFromVerifiedSnapshot } from '../combat/snapshot-adapter';
 import type { CombatantDefinition } from '../combat/types';
 import { EXPEDITIONS } from '../expeditions/content/launch-content';
-import { initialPersistentRunState, resolveCoopNode, type PersistentRunState } from '../expeditions/node-resolution';
+import { initialPersistentRunState, purchaseMerchantOffer, resolveCoopNode, type PersistentRunState, type NodeResolutionResult } from '../expeditions/node-resolution';
 import { generateCoopRouteGraph } from '../expeditions/route-generation';
 import { marksForRun } from '../expeditions/rewards';
 import type { FrozenLoadoutSnapshot } from './loadout-snapshots';
@@ -14,6 +14,7 @@ export interface QModeRun {
  id:string; requestId:string; controllerAccountId:string; expeditionId:string; tier:1|2|3|4|5;
  graph:CoopRouteGraph; currentNodeId:string; phase:'awaiting_choice'|'completed'|'failed';
  players:CombatantDefinition[]; persistentState:PersistentRunState; echoSourceAccountIds:string[]; rewardMarks?:number;
+ lastResolution?:{nodeId:string;result:NodeResolutionResult};
 }
 export interface QModeRunRepository {get(runId:string):QModeRun|undefined; getByRequest(accountId:string,requestId:string):QModeRun|undefined; save(run:QModeRun):void;}
 export class MemoryQModeRunRepository implements QModeRunRepository{
@@ -44,11 +45,18 @@ export class QModeService{
   const current=run.graph.nodes.find(node=>node.nodeId===run.currentNodeId);if(!current||!current.nextNodeIds.includes(input.optionNodeId))throw new Error('invalid_option');
   const selected=run.graph.nodes.find(node=>node.nodeId===input.optionNodeId);if(!selected)throw new Error('invalid_option');
   const result=resolveCoopNode({runId:run.id,serverSecret:this.serverSecret,node:selected,players:run.players,state:run.persistentState});
+  run.lastResolution={nodeId:selected.nodeId,result:structuredClone(result)};
   run.persistentState=result.state;run.currentNodeId=selected.nodeId;
   if(!result.success)run.phase='failed';
   else if(selected.kind==='boss'){
    run.phase='completed';const def=EXPEDITIONS[run.expeditionId];run.rewardMarks=marksForRun(def.baseMarks,run.tier,{cleared:true,routeProgress:1,reachedFinalBoss:true});
   }
   this.repository.save(run);return structuredClone(run);
+ }
+ purchaseMerchant(input:{runId:string;controllerAccountId:string;actorId:string;offerId:string}):QModeRun{
+  const run=this.getAuthorized(input.runId,input.controllerAccountId);if(run.phase!=='awaiting_choice')throw new Error('run_not_awaiting_choice');
+  const node=run.graph.nodes.find(item=>item.nodeId===run.currentNodeId);if(!node)throw new Error('run_node_not_found');
+  const result=purchaseMerchantOffer({runId:run.id,node,actorId:input.actorId,offerId:input.offerId,state:run.persistentState,players:run.players});
+  run.lastResolution={nodeId:node.nodeId,result:structuredClone(result)};run.persistentState=result.state;this.repository.save(run);return structuredClone(run);
  }
 }

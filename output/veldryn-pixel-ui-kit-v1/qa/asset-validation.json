@@ -1,0 +1,653 @@
+{
+  "status": "PASS",
+  "assetCount": 63,
+  "pngCount": 756,
+  "slicedAssetCount": 33,
+  "checks": [
+    "requested asset coverage",
+    "PNG decoding/dimensions",
+    "binary alpha/transparent perimeter",
+    "hollow character frames",
+    "256-color budget",
+    "SHA-256 values",
+    "exact nearest-neighbor 2x/3x pixels",
+    "slice bounds and exact reconstruction",
+    "literal Metro require paths"
+  ],
+  "limitations": [
+    "No physical Android or iOS runtime was available for rendering verification.",
+    "Native text scaling, hit targets and app behavior require integration checks."
+  ],
+  "assets": [
+    {
+      "id": "panel_large_9slice",
+      "status": "PASS",
+      "width": 192,
+      "height": 128,
+      "colors": 255,
+      "transparentPixels": 3265,
+      "opaquePixels": 21311,
+      "slices": 9
+    },
+    {
+      "id": "panel_compact_9slice",
+      "status": "PASS",
+      "width": 96,
+      "height": 64,
+      "colors": 254,
+      "transparentPixels": 1179,
+      "opaquePixels": 4965,
+      "slices": 9
+    },
+    {
+      "id": "panel_parchment_9slice",
+      "status": "PASS",
+      "width": 128,
+      "height": 80,
+      "colors": 255,
+      "transparentPixels": 2025,
+      "opaquePixels": 8215,
+      "slices": 9
+    },
+    {
+      "id": "modal_frame_9slice",
+      "status": "PASS",
+      "width": 160,
+      "height": 128,
+      "colors": 254,
+      "transparentPixels": 3177,
+      "opaquePixels": 17303,
+      "slices": 9
+    },
+    {
+      "id": "button_primary_3slice",
+      "status": "PASS",
+      "width": 144,
+      "height": 40,
+      "colors": 252,
+      "transparentPixels": 1588,
+      "opaquePixels": 4172,
+      "slices": 3
+    },
+    {
+      "id": "button_secondary_3slice",
+      "status": "PASS",
+      "width": 144,
+      "height": 40,
+      "colors": 255,
+      "transparentPixels": 1737,
+      "opaquePixels": 4023,
+      "slices": 3
+    },
+    {
+      "id": "button_destructive_3slice",
+      "status": "PASS",
+      "width": 144,
+      "height": 40,
+      "colors": 255,
+      "transparentPixels": 1586,
+      "opaquePixels": 4174,
+      "slices": 3
+    },
+    {
+      "id": "button_disabled_3slice",
+      "status": "PASS",
+      "width": 144,
+      "height": 40,
+      "colors": 253,
+      "transparentPixels": 1450,
+      "opaquePixels": 4310,
+      "slices": 3
+    },
+    {
+      "id": "button_primary_pressed_3slice",
+      "status": "PASS",
+      "width": 144,
+      "height": 40,
+      "colors": 251,
+      "transparentPixels": 1675,
+      "opaquePixels": 4085,
+      "slices": 3
+    },
+    {
+      "id": "button_icon_default",
+      "status": "PASS",
+      "width": 48,
+      "height": 48,
+      "colors": 255,
+      "transparentPixels": 632,
+      "opaquePixels": 1672,
+      "slices": 0
+    },
+    {
+      "id": "button_icon_selected",
+      "status": "PASS",
+      "width": 48,
+      "height": 48,
+      "colors": 255,
+      "transparentPixels": 669,
+      "opaquePixels": 1635,
+      "slices": 0
+    },
+    {
+      "id": "button_icon_disabled",
+      "status": "PASS",
+      "width": 48,
+      "height": 48,
+      "colors": 253,
+      "transparentPixels": 650,
+      "opaquePixels": 1654,
+      "slices": 0
+    },
+    {
+      "id": "tab_unselected_3slice",
+      "status": "PASS",
+      "width": 96,
+      "height": 32,
+      "colors": 255,
+      "transparentPixels": 979,
+      "opaquePixels": 2093,
+      "slices": 3
+    },
+    {
+      "id": "tab_selected_3slice",
+      "status": "PASS",
+      "width": 96,
+      "height": 32,
+      "colors": 255,
+      "transparentPixels": 992,
+      "opaquePixels": 2080,
+      "slices": 3
+    },
+    {
+      "id": "chip_unselected_3slice",
+      "status": "PASS",
+      "width": 72,
+      "height": 32,
+      "colors": 256,
+      "transparentPixels": 772,
+      "opaquePixels": 1532,
+      "slices": 3
+    },
+    {
+      "id": "chip_selected_3slice",
+      "status": "PASS",
+      "width": 72,
+      "height": 32,
+      "colors": 253,
+      "transparentPixels": 780,
+      "opaquePixels": 1524,
+      "slices": 3
+    },
+    {
+      "id": "input_default_9slice",
+      "status": "PASS",
+      "width": 160,
+      "height": 40,
+      "colors": 255,
+      "transparentPixels": 1762,
+      "opaquePixels": 4638,
+      "slices": 9
+    },
+    {
+      "id": "input_focused_9slice",
+      "status": "PASS",
+      "width": 160,
+      "height": 40,
+      "colors": 253,
+      "transparentPixels": 1786,
+      "opaquePixels": 4614,
+      "slices": 9
+    },
+    {
+      "id": "input_error_9slice",
+      "status": "PASS",
+      "width": 160,
+      "height": 40,
+      "colors": 254,
+      "transparentPixels": 1679,
+      "opaquePixels": 4721,
+      "slices": 9
+    },
+    {
+      "id": "input_disabled_9slice",
+      "status": "PASS",
+      "width": 160,
+      "height": 40,
+      "colors": 252,
+      "transparentPixels": 1773,
+      "opaquePixels": 4627,
+      "slices": 9
+    },
+    {
+      "id": "search_field_9slice",
+      "status": "PASS",
+      "width": 160,
+      "height": 40,
+      "colors": 254,
+      "transparentPixels": 1749,
+      "opaquePixels": 4651,
+      "slices": 9
+    },
+    {
+      "id": "dropdown_field_9slice",
+      "status": "PASS",
+      "width": 160,
+      "height": 40,
+      "colors": 254,
+      "transparentPixels": 1888,
+      "opaquePixels": 4512,
+      "slices": 9
+    },
+    {
+      "id": "toggle_off",
+      "status": "PASS",
+      "width": 48,
+      "height": 24,
+      "colors": 255,
+      "transparentPixels": 529,
+      "opaquePixels": 623,
+      "slices": 0
+    },
+    {
+      "id": "toggle_on",
+      "status": "PASS",
+      "width": 48,
+      "height": 24,
+      "colors": 256,
+      "transparentPixels": 537,
+      "opaquePixels": 615,
+      "slices": 0
+    },
+    {
+      "id": "checkbox_unchecked",
+      "status": "PASS",
+      "width": 24,
+      "height": 24,
+      "colors": 195,
+      "transparentPixels": 188,
+      "opaquePixels": 388,
+      "slices": 0
+    },
+    {
+      "id": "checkbox_checked",
+      "status": "PASS",
+      "width": 24,
+      "height": 24,
+      "colors": 241,
+      "transparentPixels": 168,
+      "opaquePixels": 408,
+      "slices": 0
+    },
+    {
+      "id": "slider_track_3slice",
+      "status": "PASS",
+      "width": 128,
+      "height": 8,
+      "colors": 248,
+      "transparentPixels": 501,
+      "opaquePixels": 523,
+      "slices": 3
+    },
+    {
+      "id": "slider_thumb",
+      "status": "PASS",
+      "width": 24,
+      "height": 24,
+      "colors": 219,
+      "transparentPixels": 335,
+      "opaquePixels": 241,
+      "slices": 0
+    },
+    {
+      "id": "progress_track_3slice",
+      "status": "PASS",
+      "width": 160,
+      "height": 16,
+      "colors": 250,
+      "transparentPixels": 1259,
+      "opaquePixels": 1301,
+      "slices": 3
+    },
+    {
+      "id": "progress_fill_xp_3slice",
+      "status": "PASS",
+      "width": 144,
+      "height": 8,
+      "colors": 240,
+      "transparentPixels": 675,
+      "opaquePixels": 477,
+      "slices": 3
+    },
+    {
+      "id": "progress_fill_hp_3slice",
+      "status": "PASS",
+      "width": 144,
+      "height": 8,
+      "colors": 256,
+      "transparentPixels": 562,
+      "opaquePixels": 590,
+      "slices": 3
+    },
+    {
+      "id": "progress_fill_activity_3slice",
+      "status": "PASS",
+      "width": 144,
+      "height": 8,
+      "colors": 255,
+      "transparentPixels": 553,
+      "opaquePixels": 599,
+      "slices": 3
+    },
+    {
+      "id": "progress_fill_loading_3slice",
+      "status": "PASS",
+      "width": 144,
+      "height": 8,
+      "colors": 254,
+      "transparentPixels": 556,
+      "opaquePixels": 596,
+      "slices": 3
+    },
+    {
+      "id": "login_frame_9slice",
+      "status": "PASS",
+      "width": 192,
+      "height": 192,
+      "colors": 256,
+      "transparentPixels": 5378,
+      "opaquePixels": 31486,
+      "slices": 9
+    },
+    {
+      "id": "create_account_frame_9slice",
+      "status": "PASS",
+      "width": 192,
+      "height": 224,
+      "colors": 255,
+      "transparentPixels": 5622,
+      "opaquePixels": 37386,
+      "slices": 9
+    },
+    {
+      "id": "character_card_default_9slice",
+      "status": "PASS",
+      "width": 144,
+      "height": 192,
+      "colors": 254,
+      "transparentPixels": 20025,
+      "opaquePixels": 7623,
+      "slices": 9
+    },
+    {
+      "id": "character_card_selected_9slice",
+      "status": "PASS",
+      "width": 144,
+      "height": 192,
+      "colors": 256,
+      "transparentPixels": 20423,
+      "opaquePixels": 7225,
+      "slices": 9
+    },
+    {
+      "id": "class_selection_frame_9slice",
+      "status": "PASS",
+      "width": 192,
+      "height": 224,
+      "colors": 256,
+      "transparentPixels": 6519,
+      "opaquePixels": 36489,
+      "slices": 9
+    },
+    {
+      "id": "gender_frame_unselected_3slice",
+      "status": "PASS",
+      "width": 96,
+      "height": 40,
+      "colors": 255,
+      "transparentPixels": 1086,
+      "opaquePixels": 2754,
+      "slices": 3
+    },
+    {
+      "id": "gender_frame_selected_3slice",
+      "status": "PASS",
+      "width": 96,
+      "height": 40,
+      "colors": 255,
+      "transparentPixels": 1176,
+      "opaquePixels": 2664,
+      "slices": 3
+    },
+    {
+      "id": "carousel_back",
+      "status": "PASS",
+      "width": 40,
+      "height": 40,
+      "colors": 254,
+      "transparentPixels": 515,
+      "opaquePixels": 1085,
+      "slices": 0
+    },
+    {
+      "id": "carousel_next",
+      "status": "PASS",
+      "width": 40,
+      "height": 40,
+      "colors": 255,
+      "transparentPixels": 526,
+      "opaquePixels": 1074,
+      "slices": 0
+    },
+    {
+      "id": "carousel_dot_active",
+      "status": "PASS",
+      "width": 12,
+      "height": 12,
+      "colors": 44,
+      "transparentPixels": 98,
+      "opaquePixels": 46,
+      "slices": 0
+    },
+    {
+      "id": "carousel_dot_inactive",
+      "status": "PASS",
+      "width": 12,
+      "height": 12,
+      "colors": 43,
+      "transparentPixels": 101,
+      "opaquePixels": 43,
+      "slices": 0
+    },
+    {
+      "id": "veldryn_logo",
+      "status": "PASS",
+      "width": 288,
+      "height": 96,
+      "colors": 254,
+      "transparentPixels": 12148,
+      "opaquePixels": 15500,
+      "slices": 0
+    },
+    {
+      "id": "veldryn_crystal_crest",
+      "status": "PASS",
+      "width": 64,
+      "height": 64,
+      "colors": 255,
+      "transparentPixels": 2422,
+      "opaquePixels": 1674,
+      "slices": 0
+    },
+    {
+      "id": "corner_gold_tl",
+      "status": "PASS",
+      "width": 32,
+      "height": 32,
+      "colors": 162,
+      "transparentPixels": 820,
+      "opaquePixels": 204,
+      "slices": 0
+    },
+    {
+      "id": "divider_gold_3slice",
+      "status": "PASS",
+      "width": 128,
+      "height": 8,
+      "colors": 224,
+      "transparentPixels": 629,
+      "opaquePixels": 395,
+      "slices": 3
+    },
+    {
+      "id": "divider_crystal",
+      "status": "PASS",
+      "width": 128,
+      "height": 24,
+      "colors": 255,
+      "transparentPixels": 2422,
+      "opaquePixels": 650,
+      "slices": 0
+    },
+    {
+      "id": "icon_character_32",
+      "status": "PASS",
+      "width": 32,
+      "height": 32,
+      "colors": 255,
+      "transparentPixels": 646,
+      "opaquePixels": 378,
+      "slices": 0
+    },
+    {
+      "id": "icon_skills_32",
+      "status": "PASS",
+      "width": 32,
+      "height": 32,
+      "colors": 256,
+      "transparentPixels": 649,
+      "opaquePixels": 375,
+      "slices": 0
+    },
+    {
+      "id": "icon_world_32",
+      "status": "PASS",
+      "width": 32,
+      "height": 32,
+      "colors": 256,
+      "transparentPixels": 589,
+      "opaquePixels": 435,
+      "slices": 0
+    },
+    {
+      "id": "icon_inventory_32",
+      "status": "PASS",
+      "width": 32,
+      "height": 32,
+      "colors": 255,
+      "transparentPixels": 477,
+      "opaquePixels": 547,
+      "slices": 0
+    },
+    {
+      "id": "icon_account_32",
+      "status": "PASS",
+      "width": 32,
+      "height": 32,
+      "colors": 256,
+      "transparentPixels": 564,
+      "opaquePixels": 460,
+      "slices": 0
+    },
+    {
+      "id": "icon_settings_32",
+      "status": "PASS",
+      "width": 32,
+      "height": 32,
+      "colors": 254,
+      "transparentPixels": 509,
+      "opaquePixels": 515,
+      "slices": 0
+    },
+    {
+      "id": "icon_search_32",
+      "status": "PASS",
+      "width": 32,
+      "height": 32,
+      "colors": 255,
+      "transparentPixels": 658,
+      "opaquePixels": 366,
+      "slices": 0
+    },
+    {
+      "id": "icon_filter_32",
+      "status": "PASS",
+      "width": 32,
+      "height": 32,
+      "colors": 248,
+      "transparentPixels": 692,
+      "opaquePixels": 332,
+      "slices": 0
+    },
+    {
+      "id": "icon_back_32",
+      "status": "PASS",
+      "width": 32,
+      "height": 32,
+      "colors": 208,
+      "transparentPixels": 778,
+      "opaquePixels": 246,
+      "slices": 0
+    },
+    {
+      "id": "icon_next_32",
+      "status": "PASS",
+      "width": 32,
+      "height": 32,
+      "colors": 205,
+      "transparentPixels": 775,
+      "opaquePixels": 249,
+      "slices": 0
+    },
+    {
+      "id": "icon_dropdown_32",
+      "status": "PASS",
+      "width": 32,
+      "height": 32,
+      "colors": 231,
+      "transparentPixels": 734,
+      "opaquePixels": 290,
+      "slices": 0
+    },
+    {
+      "id": "corner_gold_tr",
+      "status": "PASS",
+      "width": 32,
+      "height": 32,
+      "colors": 246,
+      "transparentPixels": 767,
+      "opaquePixels": 257,
+      "slices": 0
+    },
+    {
+      "id": "corner_gold_bl",
+      "status": "PASS",
+      "width": 32,
+      "height": 32,
+      "colors": 227,
+      "transparentPixels": 793,
+      "opaquePixels": 231,
+      "slices": 0
+    },
+    {
+      "id": "corner_gold_br",
+      "status": "PASS",
+      "width": 32,
+      "height": 32,
+      "colors": 214,
+      "transparentPixels": 804,
+      "opaquePixels": 220,
+      "slices": 0
+    }
+  ]
+}

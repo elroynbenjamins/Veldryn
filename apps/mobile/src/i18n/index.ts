@@ -11,6 +11,7 @@ export type {CoopLoadoutMessageKey} from './coop-loadout';
 const en={
   'nav.home':'Home','nav.world':'World','nav.character':'Character','nav.inventory':'Inventory','nav.more':'More',
   'common.back':'Back',
+  'roster.title':'Account roster','roster.skillsSlots':'Account skills','roster.active':'active','roster.switch':'Switch','roster.create':'Create character','roster.cancel':'Cancel',
   'coopUi.galleryKicker':'DEVELOPMENT COMPONENT LAB','coopUi.galleryTitle':'Co-op visual kit','coopUi.galleryIntro':'Presentation fixtures only. No matchmaking, rewards, or server success is simulated here.',
   'coopUi.actions':'Actions','coopUi.normal':'Normal','coopUi.pressed':'Pressed','coopUi.selected':'Selected','coopUi.disabled':'Disabled','coopUi.loading':'Loading…','coopUi.error':'Error',
   'coopUi.panels':'Panel states','coopUi.panelBody':'Live text reflows inside code-rendered borders.','coopUi.ready':'Ready','coopUi.roles':'Roles and states','coopUi.tank':'Tank','coopUi.damage':'Damage','coopUi.support':'Support','coopUi.searching':'Searching',
@@ -37,7 +38,7 @@ type Catalog=Record<MessageKey,string>;
 const catalogs:Record<Language,Catalog>={
   en,
   de:{
-    'nav.home':'Startseite','nav.world':'Welt','nav.character':'Charakter','nav.inventory':'Inventar','nav.more':'Mehr','common.back':'Zurück',
+    'nav.home':'Startseite','nav.world':'Welt','nav.character':'Charakter','nav.inventory':'Inventar','nav.more':'Mehr','common.back':'Zurück','roster.title':'Charaktere des Kontos','roster.skillsSlots':'Kontofertigkeiten','roster.active':'aktiv','roster.switch':'Wechseln','roster.create':'Charakter erstellen','roster.cancel':'Abbrechen',
     'coopUi.galleryKicker':'ENTWICKLUNGS-KOMPONENTENLABOR','coopUi.galleryTitle':'Koop-Designsystem','coopUi.galleryIntro':'Nur Darstellungsbeispiele. Matchmaking, Belohnungen und Servererfolg werden hier nicht simuliert.',
     'coopUi.actions':'Aktionen','coopUi.normal':'Normal','coopUi.pressed':'Gedrückt','coopUi.selected':'Ausgewählt','coopUi.disabled':'Deaktiviert','coopUi.loading':'Wird geladen…','coopUi.error':'Fehler',
     'coopUi.panels':'Panelzustände','coopUi.panelBody':'Live-Text passt sich innerhalb codebasierter Rahmen an.','coopUi.ready':'Bereit','coopUi.roles':'Rollen und Zustände','coopUi.tank':'Tank','coopUi.damage':'Schaden','coopUi.support':'Unterstützung','coopUi.searching':'Suche läuft',
@@ -55,7 +56,7 @@ const catalogs:Record<Language,Catalog>={
     'more.questsDescription':'Ziele, Aufträge und abholbare Belohnungen','more.skillsDescription':'Sammeln, Herstellen und Anfängerausrüstung','more.eventsDescription':'Zeitlich begrenzte Aktivitäten, Meilensteine und Sammlungen','more.friendsDescription':'Spielersuche, Anfragen, Freunde und blockierte Spieler','more.guildDescription':'Gildenprofil, Projekte und Gildenchat','more.settingsDescription':'Konto, Barrierefreiheit, Chat und Testwerkzeuge',
   },
   es:{
-    'nav.home':'Inicio','nav.world':'Mundo','nav.character':'Personaje','nav.inventory':'Inventario','nav.more':'Más','common.back':'Atrás',
+    'nav.home':'Inicio','nav.world':'Mundo','nav.character':'Personaje','nav.inventory':'Inventario','nav.more':'Más','common.back':'Atrás','roster.title':'Personajes de la cuenta','roster.skillsSlots':'Habilidades de cuenta','roster.active':'activo','roster.switch':'Cambiar','roster.create':'Crear personaje','roster.cancel':'Cancelar',
     'coopUi.galleryKicker':'LABORATORIO DE COMPONENTES','coopUi.galleryTitle':'Kit visual cooperativo','coopUi.galleryIntro':'Solo ejemplos de presentación. Aquí no se simulan emparejamiento, recompensas ni éxitos del servidor.',
     'coopUi.actions':'Acciones','coopUi.normal':'Normal','coopUi.pressed':'Pulsado','coopUi.selected':'Seleccionado','coopUi.disabled':'Desactivado','coopUi.loading':'Cargando…','coopUi.error':'Error',
     'coopUi.panels':'Estados de panel','coopUi.panelBody':'El texto dinámico se adapta dentro de bordes dibujados con código.','coopUi.ready':'Listo','coopUi.roles':'Roles y estados','coopUi.tank':'Tanque','coopUi.damage':'Daño','coopUi.support':'Apoyo','coopUi.searching':'Buscando',
@@ -73,7 +74,7 @@ const catalogs:Record<Language,Catalog>={
     'more.questsDescription':'Objetivos, contratos y recompensas disponibles','more.skillsDescription':'Recolección, fabricación y equipo de principiante','more.eventsDescription':'Actividades temporales, hitos y colecciones','more.friendsDescription':'Búsqueda, solicitudes, amigos y jugadores bloqueados','more.guildDescription':'Perfil, proyectos y chat del gremio','more.settingsDescription':'Cuenta, accesibilidad, chat y herramientas de prueba',
   },
   nl:{
-    'nav.home':'Home','nav.world':'Wereld','nav.character':'Personage','nav.inventory':'Inventaris','nav.more':'Meer','common.back':'Terug',
+    'nav.home':'Home','nav.world':'Wereld','nav.character':'Personage','nav.inventory':'Inventaris','nav.more':'Meer','common.back':'Terug','roster.title':'Accountpersonages','roster.skillsSlots':'Accountvaardigheden','roster.active':'actief','roster.switch':'Wisselen','roster.create':'Personage maken','roster.cancel':'Annuleren',
     'coopUi.galleryKicker':'ONTWIKKELCOMPONENTENLAB','coopUi.galleryTitle':'Coöp-visuele set','coopUi.galleryIntro':'Alleen presentatiefixtures. Matchmaking, beloningen en serversucces worden hier niet gesimuleerd.',
     'coopUi.actions':'Acties','coopUi.normal':'Normaal','coopUi.pressed':'Ingedrukt','coopUi.selected':'Geselecteerd','coopUi.disabled':'Uitgeschakeld','coopUi.loading':'Laden…','coopUi.error':'Fout',
     'coopUi.panels':'Paneelstatussen','coopUi.panelBody':'Live tekst loopt door binnen kaders die met code zijn getekend.','coopUi.ready':'Klaar','coopUi.roles':'Rollen en statussen','coopUi.tank':'Tank','coopUi.damage':'Schade','coopUi.support':'Ondersteuning','coopUi.searching':'Zoeken',
@@ -91,7 +92,7 @@ const catalogs:Record<Language,Catalog>={
     'more.questsDescription':'Doelen, contracten en beschikbare beloningen','more.skillsDescription':'Verzamelen, maken en beginnersuitrusting','more.eventsDescription':'Tijdelijke activiteiten, mijlpalen en verzamelingen','more.friendsDescription':'Spelers zoeken, verzoeken, vrienden en geblokkeerde spelers','more.guildDescription':'Gildeprofiel, projecten en gildechat','more.settingsDescription':'Account, toegankelijkheid, chat en testhulpmiddelen',
   },
   it:{
-    'nav.home':'Home','nav.world':'Mondo','nav.character':'Personaggio','nav.inventory':'Inventario','nav.more':'Altro','common.back':'Indietro',
+    'nav.home':'Home','nav.world':'Mondo','nav.character':'Personaggio','nav.inventory':'Inventario','nav.more':'Altro','common.back':'Indietro','roster.title':'Personaggi dell’account','roster.skillsSlots':'Abilità dell’account','roster.active':'attivo','roster.switch':'Cambia','roster.create':'Crea personaggio','roster.cancel':'Annulla',
     'coopUi.galleryKicker':'LABORATORIO COMPONENTI','coopUi.galleryTitle':'Kit visivo cooperativo','coopUi.galleryIntro':'Solo esempi di presentazione. Matchmaking, ricompense e successi del server non vengono simulati.',
     'coopUi.actions':'Azioni','coopUi.normal':'Normale','coopUi.pressed':'Premuto','coopUi.selected':'Selezionato','coopUi.disabled':'Disattivato','coopUi.loading':'Caricamento…','coopUi.error':'Errore',
     'coopUi.panels':'Stati dei pannelli','coopUi.panelBody':'Il testo dinamico si adatta nei bordi disegnati tramite codice.','coopUi.ready':'Pronto','coopUi.roles':'Ruoli e stati','coopUi.tank':'Tank','coopUi.damage':'Danno','coopUi.support':'Supporto','coopUi.searching':'Ricerca',
@@ -109,7 +110,7 @@ const catalogs:Record<Language,Catalog>={
     'more.questsDescription':'Obiettivi, contratti e ricompense disponibili','more.skillsDescription':'Raccolta, creazione ed equipaggiamento da principiante','more.eventsDescription':'Attività a tempo, traguardi e collezioni','more.friendsDescription':'Ricerca giocatori, richieste, amici e giocatori bloccati','more.guildDescription':'Profilo, progetti e chat della gilda','more.settingsDescription':'Account, accessibilità, chat e strumenti di test',
   },
   fr:{
-    'nav.home':'Accueil','nav.world':'Monde','nav.character':'Personnage','nav.inventory':'Inventaire','nav.more':'Plus','common.back':'Retour',
+    'nav.home':'Accueil','nav.world':'Monde','nav.character':'Personnage','nav.inventory':'Inventaire','nav.more':'Plus','common.back':'Retour','roster.title':'Personnages du compte','roster.skillsSlots':'Compétences du compte','roster.active':'actif','roster.switch':'Changer','roster.create':'Créer un personnage','roster.cancel':'Annuler',
     'coopUi.galleryKicker':'LABORATOIRE DE COMPOSANTS','coopUi.galleryTitle':'Kit visuel coopératif','coopUi.galleryIntro':'Exemples de présentation uniquement. Aucun matchmaking, gain ou succès serveur n’est simulé ici.',
     'coopUi.actions':'Actions','coopUi.normal':'Normal','coopUi.pressed':'Appuyé','coopUi.selected':'Sélectionné','coopUi.disabled':'Désactivé','coopUi.loading':'Chargement…','coopUi.error':'Erreur',
     'coopUi.panels':'États des panneaux','coopUi.panelBody':'Le texte dynamique se réorganise dans des cadres dessinés en code.','coopUi.ready':'Prêt','coopUi.roles':'Rôles et états','coopUi.tank':'Tank','coopUi.damage':'Dégâts','coopUi.support':'Soutien','coopUi.searching':'Recherche',

@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "sizeCases": 99,
+  "checks": [
+    "minimum-size rendering",
+    "larger width/height rendering",
+    "protected cap pixels unchanged",
+    "exact pixel repetition at doubled stretch-zone dimensions"
+  ],
+  "sampling": "nearest-neighbor offline bake"
+}

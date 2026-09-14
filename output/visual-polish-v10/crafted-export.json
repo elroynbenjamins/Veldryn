@@ -1,0 +1,114 @@
+[
+  {
+    "name": "copper_ingot",
+    "source": [
+      1254,
+      1254
+    ],
+    "alpha": true,
+    "base": 48,
+    "densities": [
+      1,
+      2,
+      3
+    ]
+  },
+  {
+    "name": "aster_iron_ingot",
+    "source": [
+      1254,
+      1254
+    ],
+    "alpha": true,
+    "base": 48,
+    "densities": [
+      1,
+      2,
+      3
+    ]
+  },
+  {
+    "name": "oathstone_ingot",
+    "source": [
+      1254,
+      1254
+    ],
+    "alpha": true,
+    "base": 48,
+    "densities": [
+      1,
+      2,
+      3
+    ]
+  },
+  {
+    "name": "reinforced_fitting",
+    "source": [
+      1254,
+      1254
+    ],
+    "alpha": true,
+    "base": 48,
+    "densities": [
+      1,
+      2,
+      3
+    ]
+  },
+  {
+    "name": "cooked_silverfin",
+    "source": [
+      1254,
+      1254
+    ],
+    "alpha": true,
+    "base": 48,
+    "densities": [
+      1,
+      2,
+      3
+    ]
+  },
+  {
+    "name": "seared_river_eel",
+    "source": [
+      1254,
+      1254
+    ],
+    "alpha": true,
+    "base": 48,
+    "densities": [
+      1,
+      2,
+      3
+    ]
+  },
+  {
+    "name": "roasted_oathscale",
+    "source": [
+      1254,
+      1254
+    ],
+    "alpha": true,
+    "base": 48,
+    "densities": [
+      1,
+      2,
+      3
+    ]
+  },
+  {
+    "name": "ironwood_stew",
+    "source": [
+      1254,
+      1254
+    ],
+    "alpha": true,
+    "base": 48,
+    "densities": [
+      1,
+      2,
+      3
+    ]
+  }
+]

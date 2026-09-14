@@ -1,0 +1,5 @@
+{
+  "tool": "built-in ImageGen",
+  "prompt": "Use case: stylized-concept. Create ONE production UI icon for Events in VELDRYN, a mobile medieval fantasy pixel RPG. A compact warm bronze-and-gold calendar plaque with two binding rings at top and one large blue crystal star in its center, communicating scheduled festivals and game events. No numbers, letters or text. Strong simple silhouette readable at 32 x 32 logical pixels; intentionally chunky square pixel clusters, limited 3-tone ramps, dark navy outline, restrained gold highlights. Keep tiny details out. Center it in a square PNG canvas with 10 percent clear margin on every side. Real RGBA TRANSPARENT BACKGROUND outside the entire silhouette. Do not draw any checkerboard, drop shadow, UI panel or surrounding scene. Native-looking premium pixel game icon, crisp edges, not a full screen mockup.",
+  "source": "C:\\Users\\elroy\\.codex\\generated_images\\01a0967d-fcae-73e3-b18a-86a5188d6a08\\exec-d497c3de-e242-4e10-ad44-d2970cc2f511.png"
+}

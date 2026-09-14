@@ -1,0 +1,54 @@
+begin;
+do $$
+declare accounts uuid[]:='{}';tickets uuid[]:='{}';a uuid;c uuid;t uuid;s jsonb;first_result jsonb;again jsonb;result jsonb;i integer;role_name text;
+begin
+ for i in 1..4 loop
+  a:=gen_random_uuid();c:=gen_random_uuid();t:=gen_random_uuid();accounts:=array_append(accounts,a);tickets:=array_append(tickets,t);
+  role_name:=case i when 1 then 'tank' when 4 then 'support' else 'damage' end;
+  insert into auth.users(id,email) values(a,'live-queue-'||a||'@example.invalid');
+  insert into public.characters(id,account_id,name,class_id,level) values(c,a,'Queue Test','IRONWARDEN',25);
+  insert into public.online_game_states(account_id,character_id,state,revision) values(a,c,jsonb_build_object('character',jsonb_build_object('id',c)),1);
+  s:=jsonb_build_object('accountId',a,'characterId',c,'loadoutId','current','revision',1,'snapshotHash',repeat('a',64),'readiness',jsonb_build_object('role',role_name,'ready',true,'normalizedScore',1));
+  first_result:=public.join_online_live_queue_server_v1(a,1,'queue-start-01',repeat('b',64),t,'EXP_001',1::smallint,'online-coop-loadout-v1',s);
+  again:=public.join_online_live_queue_server_v1(a,99,'queue-start-01',repeat('b',64),gen_random_uuid(),'EXP_001',1::smallint,'online-coop-loadout-v1',s);
+  if first_result<>again then raise exception 'join replay changed';end if;
+  if first_result#>>'{ticket,role}'<>role_name then raise exception 'role changed';end if;
+  begin perform public.join_online_live_queue_server_v1(a,1,'queue-start-01',repeat('c',64),t,'EXP_001',1::smallint,'online-coop-loadout-v1',s);raise exception 'conflicting join accepted';exception when raise_exception then if sqlerrm<>'idempotency_key_conflict' then raise;end if;end;
+  begin perform public.join_online_live_queue_server_v1(a,1,'queue-start-02',repeat('b',64),gen_random_uuid(),'EXP_001',1::smallint,'online-coop-loadout-v1',s);raise exception 'duplicate admission accepted';exception when raise_exception then if sqlerrm<>'account_already_participating' then raise;end if;end;
+  first_result:=public.command_online_live_queue_server_v1(a,t,'heartbeat','heartbeat-01');
+  again:=public.command_online_live_queue_server_v1(a,t,'heartbeat','heartbeat-01');
+  if first_result<>again then raise exception 'heartbeat replay extended deadline';end if;
+  begin perform public.command_online_live_queue_server_v1(a,t,'cancel','heartbeat-01');raise exception 'conflicting command accepted';exception when raise_exception then if sqlerrm<>'idempotency_key_conflict' then raise;end if;end;
+ end loop;
+ begin perform public.command_online_live_queue_server_v1(accounts[1],tickets[2],'cancel','foreign-cancel');raise exception 'foreign cancellation accepted';exception when raise_exception then if sqlerrm<>'ticket_not_owned' then raise;end if;end;
+ update public.matchmaking_tickets set role='tank' where id=tickets[2];
+ begin perform public.reserve_online_live_match_server_v1(tickets,gen_random_uuid());raise exception 'wrong roles accepted';exception when raise_exception then if lower(sqlerrm)<>'reservation_conflict' then raise;end if;end;
+ if (select count(*) from public.coop_account_reservations where ticket_id=any(tickets) and reservation_kind='queue')<>4 then raise exception 'failed match lost reservations';end if;
+ update public.matchmaking_tickets set role='damage' where id=tickets[2];
+ update public.online_game_states set revision=2 where account_id=accounts[2];
+ begin perform public.reserve_online_live_match_server_v1(tickets,gen_random_uuid());raise exception 'stale gear matched';exception when raise_exception then if lower(sqlerrm)<>'reservation_conflict' then raise;end if;end;
+ update public.online_game_states set revision=1 where account_id=accounts[2];
+ insert into public.player_blocks(blocker_id,blocked_id) values(accounts[2],accounts[1]);
+ begin perform public.reserve_online_live_match_server_v1(tickets,gen_random_uuid());raise exception 'blocked pair matched';exception when raise_exception then if lower(sqlerrm)<>'reservation_conflict' then raise;end if;end;
+ delete from public.player_blocks where blocker_id=accounts[2] and blocked_id=accounts[1];
+ result:=public.reserve_online_live_match_server_v1(tickets,gen_random_uuid());
+ if jsonb_array_length(result)<>4 or (select count(*) from public.coop_account_reservations where ticket_id=any(tickets) and reservation_kind='ready')<>4 then raise exception 'match did not hand off atomically';end if;
+ begin perform public.command_online_live_queue_server_v1(accounts[1],tickets[1],'cancel','reserved-cancel');raise exception 'reserved ticket cancelled outside ready protocol';exception when raise_exception then if sqlerrm<>'ticket_not_queued' then raise;end if;end;
+ -- Return fixtures to queue to check cancellation and a late heartbeat.
+ update public.matchmaking_tickets set status='queued',reservation_id=null,reservation_expires_at=null where id=any(tickets);
+ update public.coop_account_reservations set reservation_kind='queue' where ticket_id=any(tickets);
+ result:=public.command_online_live_queue_server_v1(accounts[1],tickets[1],'cancel','cancel-01');
+ if result->>'status'<>'cancelled' or exists(select 1 from public.coop_account_reservations where account_id=accounts[1]) then raise exception 'cancel did not release admission';end if;
+ update public.matchmaking_tickets set heartbeat_expires_at=clock_timestamp()-interval '1 second' where id=tickets[2];
+ result:=public.command_online_live_queue_server_v1(accounts[2],tickets[2],'heartbeat','late-heartbeat');
+ if result->>'status'<>'expired' or exists(select 1 from public.coop_account_reservations where account_id=accounts[2]) then raise exception 'late heartbeat revived expired queue';end if;
+ perform set_config('request.jwt.claim.sub',accounts[1]::text,true);set local role authenticated;
+ begin perform 1 from public.matchmaking_tickets;raise exception 'client can read raw queue';exception when insufficient_privilege then null;end;
+ begin update public.matchmaking_tickets set role='tank' where id=tickets[2];raise exception 'client can change queued roles';exception when insufficient_privilege then null;end;
+ begin perform public.online_live_queue_state_server_v1(accounts[2]);raise exception 'client can inspect foreign queue';exception when insufficient_privilege then null;end;
+ begin perform public.command_online_live_queue_server_v1(accounts[1],tickets[1],'heartbeat','client-heartbeat');raise exception 'client can bypass edge';exception when insufficient_privilege then null;end;
+ begin perform public.reserve_online_live_match_server_v1(tickets,gen_random_uuid());raise exception 'client can match';exception when insufficient_privilege then null;end;
+ reset role;
+end $$;
+select 'PASS: Live admission, duplicate exclusion, receipt replay/conflict, ownership, exact roles, revision/blocks, atomic handoff, cancellation, expiry and RPC privileges' as result;
+rollback;

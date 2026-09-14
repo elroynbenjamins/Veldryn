@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "strict": true,
+    "skipLibCheck": true,
+    "outDir": ".companions-build",
+    "lib": [
+      "ES2022",
+      "DOM"
+    ]
+  },
+  "include": [
+    "src/core/combat-companion-types.ts",
+    "src/content/combat-companions.ts",
+    "src/core/combat-companions.ts",
+    "src/core/companion-phase2-presentation.ts",
+    "tests/combat-companions.ts"
+  ]
+}

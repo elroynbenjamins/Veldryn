@@ -1,0 +1,20 @@
+{
+  "checkedAt": "2026-09-13T07:53:16.055Z",
+  "project": "qoaqrqpxtrhjyzsrifsq",
+  "checks": [
+    {
+      "check": "concurrent authenticated queue polling opens one persisted exact-role ready roster; foreign/private reads denied",
+      "status": "PASS"
+    },
+    {
+      "check": "decline/refill preserves three players, resets consent, freezes four server loadouts and survives concurrent acceptance retries",
+      "status": "PASS"
+    },
+    {
+      "check": "pg_cron expires an unattended real 20-second ready deadline; only the accepting player remains reserved",
+      "status": "PASS"
+    }
+  ],
+  "status": "PASS",
+  "fixturesRemoved": true
+}

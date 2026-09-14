@@ -1,0 +1,89 @@
+{
+  "kind": "browser companion, not native device QA",
+  "checks": [
+    {
+      "screen": "character",
+      "width": 390,
+      "large": false,
+      "documentOverflow": false,
+      "brokenImages": []
+    },
+    {
+      "screen": "inventory",
+      "width": 390,
+      "large": false,
+      "documentOverflow": false,
+      "brokenImages": []
+    },
+    {
+      "screen": "world",
+      "width": 390,
+      "large": false,
+      "documentOverflow": false,
+      "brokenImages": []
+    },
+    {
+      "screen": "profile",
+      "width": 390,
+      "large": false,
+      "documentOverflow": false,
+      "brokenImages": []
+    },
+    {
+      "screen": "login",
+      "width": 390,
+      "large": false,
+      "documentOverflow": false,
+      "brokenImages": []
+    },
+    {
+      "screen": "rewards",
+      "width": 390,
+      "large": false,
+      "documentOverflow": false,
+      "brokenImages": []
+    },
+    {
+      "screen": "character",
+      "width": 320,
+      "large": true,
+      "documentOverflow": false,
+      "brokenImages": []
+    },
+    {
+      "screen": "inventory",
+      "width": 320,
+      "large": true,
+      "documentOverflow": false,
+      "brokenImages": []
+    },
+    {
+      "screen": "world",
+      "width": 320,
+      "large": true,
+      "documentOverflow": false,
+      "brokenImages": []
+    },
+    {
+      "screen": "profile",
+      "width": 320,
+      "large": true,
+      "documentOverflow": false,
+      "brokenImages": []
+    },
+    {
+      "screen": "login",
+      "width": 320,
+      "large": true,
+      "documentOverflow": false,
+      "brokenImages": []
+    },
+    {
+      "screen": "rewards",
+      "width": 320,
+      "large": true,
+      "documentOverflow": false,
+      "brokenImages": []
+    }
+  ]
+}

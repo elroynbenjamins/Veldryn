@@ -11,4 +11,6 @@ const projection=projectQModeRun(run),json=JSON.stringify(projection);
 assert.equal(projection.team.length,4);assert.equal(projection.team.filter(member=>member.kind==='echo').length,3);assert.equal(projection.options.length,3);
 assert.equal(projection.graph.nodes.length,4,'only entry and first decision may be revealed');assert.equal(json.includes('private-controller'),false);assert.equal(json.includes('private-a'),false);assert.equal('rewardMarks' in projection,false);
 run.phase='completed';run.rewardMarks=74;const completed=projectQModeRun(run);assert.equal(completed.settlement.status,'pending_entitlement');assert.equal(JSON.stringify(completed).includes('74'),false,'calculated reward is not a released entitlement');
+assert.equal(completed.options.length,0,'a completed run offers no further commands');
+run.phase='failed';const failed=projectQModeRun(run);assert.equal(failed.options.length,0);assert.equal(failed.settlement.status,'pending_entitlement');
 console.log('coop phase6 public projection OK');

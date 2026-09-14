@@ -15,15 +15,18 @@ export interface CoopMatchCandidate {ticketIds:string[];score:number;partition:s
 export function queuePartition(ticket:CoopQueueTicket):string{return `${ticket.expeditionId}|${ticket.tier}|${ticket.contentVersion}|${ticket.balanceVersion}`;}
 function ticketScore(ticket:CoopQueueTicket,nowMs:number):number{return Math.min(120,(nowMs-ticket.enqueuedAtMs)/1_000)-Math.abs(1-ticket.normalizedReadiness)*20;}
 
-export function chooseBoundedCoopMatch(tickets:readonly CoopQueueTicket[],nowMs:number,maxPerRole=8):CoopMatchCandidate|null{
+export function chooseBoundedCoopMatch(tickets:readonly CoopQueueTicket[],nowMs:number,maxPerRole=8,requiredTicketIds:readonly string[]=[],canMatch:(roster:readonly CoopQueueTicket[])=>boolean=()=>true):CoopMatchCandidate|null{
+ if(!Number.isInteger(maxPerRole)||maxPerRole<1||maxPerRole>32||new Set(requiredTicketIds).size!==requiredTicketIds.length||requiredTicketIds.length>4)throw new Error('invalid_match_bounds');
  const eligible=tickets.filter(ticket=>ticket.status==='queued'&&ticket.heartbeatExpiresAtMs>nowMs&&ticket.normalizedReadiness>=COOP_ROGUELITE_CONFIG.normalizedReadinessFloor);
  const partitions=new Map<string,CoopQueueTicket[]>();for(const ticket of eligible){const key=queuePartition(ticket);partitions.set(key,[...(partitions.get(key)??[]),ticket]);}
  let best:CoopMatchCandidate|null=null;
  for(const [partition,rows] of partitions){
-  const top=(role:CoopRole)=>rows.filter(ticket=>ticket.role===role).sort((a,b)=>ticketScore(b,nowMs)-ticketScore(a,nowMs)).slice(0,maxPerRole);
+  const top=(role:CoopRole)=>rows.filter(ticket=>ticket.role===role).sort((a,b)=>Number(requiredTicketIds.includes(b.id))-Number(requiredTicketIds.includes(a.id))||ticketScore(b,nowMs)-ticketScore(a,nowMs)).slice(0,maxPerRole);
   const tanks=top('tank'),damage=top('damage'),supports=top('support');
   for(const tank of tanks)for(const support of supports)for(let first=0;first<damage.length-1;first++)for(let second=first+1;second<damage.length;second++){
    const set=[tank,damage[first],damage[second],support];
+   if(requiredTicketIds.some(id=>!set.some(ticket=>ticket.id===id)))continue;
+   if(!canMatch(set))continue;
    if(new Set(set.map(ticket=>ticket.accountId)).size!==4||new Set(set.map(ticket=>ticket.characterId)).size!==4)continue;
    if(!hasExactCoopRoles(set.map(ticket=>ticket.role)))continue;
    const regionBonus=Math.max(...Object.values(Object.fromEntries(set.map(ticket=>[ticket.serviceRegion,set.filter(other=>other.serviceRegion===ticket.serviceRegion).length]))))*2;

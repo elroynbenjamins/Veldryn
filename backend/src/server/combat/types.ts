@@ -17,6 +17,9 @@ export interface CombatStats {
 }
 
 export interface AbilityEffect {
+  executeBelowHpPct?:number;
+  executeBonus?:number;
+  shieldReflectPct?:number;
   kind: EffectKind;
   coeff?: number;
   flat?: number;
@@ -56,6 +59,7 @@ export interface CombatantDefinition {
   basicAttackMs: number;
   basicAttackCoeff: number;
   abilities: AbilityDefinition[];
+  tags?: string[];
   boss?: boolean;
   phases?: BossPhaseDefinition[];
 }
@@ -80,6 +84,7 @@ export interface ActiveTimedModifier {
 }
 
 export interface CombatantState {
+  reflectiveShields?:Array<{remaining:number;rate:number;sourceId:string}>;
   definition: CombatantDefinition;
   hp: number;
   shield: number;

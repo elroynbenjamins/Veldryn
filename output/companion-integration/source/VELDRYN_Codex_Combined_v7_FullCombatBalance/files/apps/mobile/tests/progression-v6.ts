@@ -1,0 +1,15 @@
+import {GATHERING,RECIPES} from '../src/content/skills';
+import {MONSTERS} from '../src/content/monsters';
+import {characterXpForNextLevel,skillXpForNextLevel} from '../src/core/progression';
+import {migrateSave} from '../src/core/save-migrations';
+import {newGame} from '../src/core/game';
+if(characterXpForNextLevel(1)!==Math.floor((90*Math.pow(1,1.42)+35)*38.8))throw new Error('Character XP scaling missing');
+if(skillXpForNextLevel(1)!==Math.floor((90*Math.pow(1,1.42)+35)*4.3))throw new Error('Skill XP scaling missing');
+if(MONSTERS.find(m=>m.id==='MOSS_RAT')!.secondsPerKill!==14)throw new Error('Combat action pacing missing');
+if(GATHERING.find(g=>g.id==='COPPER_VEIN')!.seconds!==30)throw new Error('Greenfields mining start pacing missing');
+const copperBlade=RECIPES.find(r=>r.id==='SMITH_COPPER_BLADE')!;
+if(copperBlade.inputs.find(i=>i.itemId==='COPPER_INGOT')?.quantity!==8||copperBlade.inputs.find(i=>i.itemId==='GREENWOOD_LOG')?.quantity!==10)throw new Error('Authored Copper Blade economy missing');
+const old={...newGame(0),version:5,account:undefined,settings:{numberMode:'abbreviated',reduceMotion:false,textScale:1,autoEatThresholdPct:40,stopCombatWhenOutOfFood:true}};
+const migrated=migrateSave(old);
+if(migrated.version!==13||migrated.settings.language!=='en'||migrated.account.createdCharacterCount!==1)throw new Error('v5 migration failed');
+console.log('PASS: progression pacing, authored equipment economy, language and v10 account migration');

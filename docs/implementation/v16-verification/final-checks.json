@@ -1,0 +1,103 @@
+{
+  "verifiedAt": "2026-09-12T17:12:22.434Z",
+  "linkedProject": "nyjwigipamnvpdvpauuv",
+  "finalChecks": [
+    {
+      "check": "Final mobile TypeScript and test:v16",
+      "status": "PASS",
+      "command": "node node_modules/typescript/bin/tsc --noEmit; npm run test:v16"
+    },
+    {
+      "check": "Expo Android and iOS Hermes export",
+      "status": "PASS",
+      "command": "node node_modules/expo/bin/cli export --platform android --platform ios --output-dir .expo-export-v16"
+    },
+    {
+      "check": "Expo SDK dependency compatibility",
+      "status": "PASS",
+      "command": "node node_modules/expo/bin/cli install --check",
+      "output": "Dependencies are up to date",
+      "note": "Network-restricted attempt failed to fetch; network-enabled retry passed."
+    },
+    {
+      "check": "Applied-schema integration",
+      "status": "PASS",
+      "command": "supabase db query --linked --file supabase/tests/party_v16.sql",
+      "output": "PASS: v16 membership, RLS/RPC, chat, contribution, reward, crafting, recruitment, Guild seeker and ranking integration"
+    },
+    {
+      "check": "Applied-schema v15 compatibility",
+      "status": "PASS",
+      "command": "supabase db query --linked --file supabase/tests/party_v16_safety.sql",
+      "output": "PASS: v15 block integration, shared combat credit, duplicate combat receipt formats, Live chat epoch preservation"
+    },
+    {
+      "check": "Final migration dry run",
+      "status": "PASS",
+      "command": "supabase db push --linked --dry-run",
+      "output": {
+        "upToDate": true,
+        "migrations": []
+      }
+    },
+    {
+      "check": "Supabase schema lint",
+      "status": "PASS",
+      "command": "supabase db lint --linked",
+      "output": "No schema errors found"
+    },
+    {
+      "check": "Original HEAD progression-balance test baseline",
+      "status": "FAIL",
+      "output": "Travel to Silverbrook before fighting Silverfin Swarm",
+      "note": "Original tracked test transpiled temporarily and run against unchanged game/content modules; temporary test removed."
+    },
+    {
+      "check": "Configured source lint",
+      "status": "NOT_CONFIGURED",
+      "note": "No lint script configured in backend or mobile package.json."
+    },
+    {
+      "check": "Fresh local Supabase reset",
+      "status": "NOT_RUN",
+      "note": "Docker engine unavailable; linked rollback transactions and real two-session tests used instead."
+    },
+    {
+      "check": "Signed APK/IPA and device QA",
+      "status": "NOT_RUN",
+      "note": "Expo/Hermes exports validate bundling, not native installation or interactive device behavior."
+    }
+  ],
+  "finalToolOutputs": [
+    {
+      "status": "fulfilled",
+      "value": {
+        "chunk_id": "d09f68",
+        "wall_time_seconds": 0.000003,
+        "exit_code": 0,
+        "original_token_count": 45,
+        "output": "\n> veldryn-offline-prototype@0.1.0 test:v16\n> tsc -p tsconfig.core.json --outDir .core-build && node .core-build/tests/party-social-v16.js\n\nmobile party social v16 tests passed\n"
+      }
+    },
+    {
+      "status": "fulfilled",
+      "value": {
+        "chunk_id": "6d7d22",
+        "wall_time_seconds": 0.000001,
+        "exit_code": 0,
+        "original_token_count": 84,
+        "output": "src\\features\\chat-pilot\\assets\\icons\\world.png (5.48 kB)\r\n\r\n› android bundles (1):\r\n_expo/static/js/android/index-43eb46bba478b9fb684c8734dcfbb000.hbc (3.62 MB)\r\n\r\n› ios bundles (1):\r\n_expo/static/js/ios/index-e4acbcdde85e59e1d886bfcdeaa5c299.hbc (3.6 MB)\r\n\r\n› Files (1):\r\nmetadata.json (56.2 kB)\r\n\r\nExported: .expo-export-v16\r\n"
+      }
+    },
+    {
+      "status": "fulfilled",
+      "value": {
+        "chunk_id": "a654a1",
+        "wall_time_seconds": 0.0000019,
+        "exit_code": 0,
+        "original_token_count": 100,
+        "output": "Initialising login role...\nDRY RUN: migrations will *not* be pushed to the database.\nConnecting to remote database...\n{\"upToDate\":true,\"dryRun\":true,\"migrations\":[],\"seeds\":[],\"roles\":[],\"message\":\"Remote database is up to date.\"}\nInitialising login role...\nConnecting to remote database...\nLinting schema: extensions\nLinting schema: public\n\nNo schema errors found\n{\"results\":[],\"message\":\"db lint\"}\n"
+      }
+    }
+  ]
+}

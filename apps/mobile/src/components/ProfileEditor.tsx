@@ -1,70 +1,58 @@
-import {useState} from 'react';
-import {Image,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
+import {useState,type ReactNode} from 'react';
+import {Image,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {GameTextInput} from './GameTextInput';
 import {GameButton} from './GameButton';
 import {Panel} from './Panel';
 import {ProfileScenePreview} from './ProfileScenePreview';
-import {GameState} from '../core/types';
+import {RegionArtwork} from './RegionArtwork';
+import type {GameState} from '../core/types';
+import {BASE_PROFILE_BACKGROUNDS,canUseProfileCosmetic} from '../core/profile-cosmetics';
 import {PROFILE_BACKGROUND_PREVIEWS} from '../theme/profile-background-assets';
-import {C} from '../theme/theme';
+import {profileBorderSourceById} from '../theme/profile-border-assets';
+import {eventPetSourceById} from '../theme/event-pet-assets';
 import {LIVE_EVENT_CATALOG} from '../content/live-events';
+import {C,radii,typography} from '../theme/theme';
+import {SavedLoadoutsPanel} from './SavedLoadoutsPanel';
 
-const LIVE_BACKGROUND_BINDINGS=[['asterfall-night','Asterfall Night'],['ironwood-dawn','Ironwood Dawn'],['silverbrook-mist','Silverbrook Mist'],['oathglass-hall','Oathglass Hall']] as const;
-
-export function ProfileEditor({state,onChange}:{state:GameState;onChange:(next:GameState)=>void}){
-  const character=state.character!;
-  const [title,setTitle]=useState(character.profileTitle??'New Adventurer');
-  const [showCosmetics,setShowCosmetics]=useState(false);
-  const [previewBackgroundId,setPreviewBackgroundId]=useState(PROFILE_BACKGROUND_PREVIEWS[0].id);
-  const selectedPreview=PROFILE_BACKGROUND_PREVIEWS.find(background=>background.id===previewBackgroundId)!;
-  const eventRewards=LIVE_EVENT_CATALOG.flatMap(event=>event.milestones(character.classId).map(milestone=>milestone.reward));
-  const eventTitles=eventRewards.filter(reward=>reward.kind==='title'&&state.account.unlockedTitleIds?.includes(reward.id));
-  const eventBackgrounds=eventRewards.filter(reward=>reward.kind==='background'&&state.account.unlockedProfileBackgroundIds?.includes(reward.id));
-  const eventBorders=eventRewards.filter(reward=>reward.kind==='border'&&state.account.unlockedProfileBorderIds?.includes(reward.id));
-  const eventPets=eventRewards.filter(reward=>reward.kind==='pet'&&state.account.unlockedCosmeticPetIds?.includes(reward.id));
-  const save=()=>onChange({...state,character:{...character,profileTitle:title.trim()||'New Adventurer'}});
-  return <Panel>
-    <Text style={s.title}>My profile</Text>
-    <Text style={s.sub}>Shown to players who open {character.name}’s profile.</Text>
-    <Text style={s.label}>Displayed title</Text>
-    <TextInput value={title} onChangeText={setTitle} maxLength={32} placeholder="New Adventurer" placeholderTextColor={C.muted} style={s.input}/>
-    <GameButton title="Save profile title" onPress={save}/>
-    {eventTitles.length?<><Text style={s.label}>Unlocked event titles</Text><View style={s.row}>{eventTitles.map(reward=><View style={s.flex} key={reward.id}><GameButton title={reward.name} tone={character.profileTitle===reward.name?'primary':'secondary'} onPress={()=>{setTitle(reward.name);onChange({...state,character:{...character,profileTitle:reward.name}})}}/></View>)}</View></>:null}
-
-    <Pressable accessibilityRole="button" accessibilityState={{expanded:showCosmetics}} onPress={()=>setShowCosmetics(value=>!value)} style={s.disclosure}><View style={s.flex}><Text style={s.label}>PROFILE COSMETICS</Text><Text style={s.sub}>Background, border and companion</Text></View><Text style={s.disclosureMark}>{showCosmetics?'−':'+'}</Text></Pressable>
-    {showCosmetics&&<><Text style={s.label}>Approved scene review</Text>
-    <ProfileScenePreview state={state} backgroundId={previewBackgroundId}/>
-    <Text style={s.previewName}>{selectedPreview.name}</Text>
-    <Text style={s.warning}>Preview only · export prepared · device QA and unlock binding pending. Choosing a preview does not grant or save this cosmetic.</Text>
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.gallery}>
-      {PROFILE_BACKGROUND_PREVIEWS.map(background=><Pressable key={background.id} accessibilityRole="button" accessibilityLabel={`Preview ${background.name}`} accessibilityState={{selected:background.id===previewBackgroundId}} onPress={()=>setPreviewBackgroundId(background.id)} style={[s.thumbButton,background.id===previewBackgroundId&&s.thumbSelected]}>
-        <Image source={background.source} resizeMode="cover" style={s.thumb}/>
-        <Text numberOfLines={2} style={s.thumbLabel}>{background.name}</Text>
-      </Pressable>)}
-    </ScrollView>
-
-    <Text style={s.label}>Existing profile background binding</Text>
-    <Text style={s.sub}>These live save IDs are preserved until the approved scenes receive canonical unlock mappings.</Text>
-    <View style={s.row}>{LIVE_BACKGROUND_BINDINGS.map(([id,name])=><View style={s.flex} key={id}><GameButton title={name} tone={character.profileBackgroundId===id?'primary':'secondary'} onPress={()=>onChange({...state,character:{...character,profileBackgroundId:id}})}/></View>)}</View>
-    {eventBackgrounds.length?<><Text style={s.label}>Unlocked event backgrounds</Text><View style={s.row}>{eventBackgrounds.map(reward=><View style={s.flex} key={reward.id}><GameButton title={reward.name} tone={character.profileBackgroundId===reward.id?'primary':'secondary'} onPress={()=>{setPreviewBackgroundId(reward.id);onChange({...state,character:{...character,profileBackgroundId:reward.id}})}}/></View>)}</View></>:null}
-    {eventBorders.length?<><Text style={s.label}>Profile border</Text><View style={s.row}><View style={s.flex}><GameButton title="No event border" tone={!character.profileBorderId?'primary':'secondary'} onPress={()=>onChange({...state,character:{...character,profileBorderId:undefined}})}/></View>{eventBorders.map(reward=><View style={s.flex} key={reward.id}><GameButton title={reward.name} tone={character.profileBorderId===reward.id?'primary':'secondary'} onPress={()=>onChange({...state,character:{...character,profileBorderId:reward.id}})}/></View>)}</View></>:null}
-    {eventPets.length?<><Text style={s.label}>Profile companion</Text><View style={s.row}><View style={s.flex}><GameButton title="No companion" tone={!character.selectedCosmeticPetId?'primary':'secondary'} onPress={()=>onChange({...state,character:{...character,selectedCosmeticPetId:undefined}})}/></View>{eventPets.map(reward=><View style={s.flex} key={reward.id}><GameButton title={reward.name} tone={character.selectedCosmeticPetId===reward.id?'primary':'secondary'} onPress={()=>onChange({...state,character:{...character,selectedCosmeticPetId:reward.id}})}/></View>)}</View></>:null}</>}
-  </Panel>;
+type Tab='Backgrounds'|'Borders'|'Titles'|'Companions';
+function CosmeticTile({name,status,selected,onPress,children}:{name:string;status:string;selected:boolean;onPress:()=>void;children:ReactNode}){
+ return <Pressable accessibilityRole="button" accessibilityLabel={`${name}, ${status}`} accessibilityState={{selected}} onPress={onPress} style={({pressed})=>[s.choice,selected&&s.choiceOn,pressed&&s.choicePressed]}>
+  <View style={s.artwork}>{children}<View style={[s.statusBadge,selected&&s.statusBadgeOn]}><Text numberOfLines={1} style={[s.badgeText,selected&&s.badgeTextOn]}>{selected?'Previewing':status}</Text></View></View>
+  <Text numberOfLines={2} style={s.name}>{name}</Text>
+ </Pressable>;
 }
-
-const s=StyleSheet.create({
-  title:{color:C.text,fontSize:18,fontWeight:'900'},
-  sub:{color:C.muted,lineHeight:20,marginVertical:6},
-  label:{color:C.accent,fontWeight:'800',marginTop:10,marginBottom:4},
-  input:{minHeight:44,borderWidth:1,borderColor:C.line,borderRadius:6,color:C.text,paddingHorizontal:10,marginVertical:6},
-  previewName:{color:C.text,fontWeight:'800',textAlign:'center',marginTop:6},
-  warning:{color:C.muted,fontSize:12,lineHeight:17,textAlign:'center',marginTop:2},
-  disclosure:{minHeight:58,flexDirection:'row',alignItems:'center',gap:8,marginTop:10,paddingHorizontal:10,borderWidth:1,borderColor:C.line,borderRadius:8,backgroundColor:C.bg},
-  disclosureMark:{width:28,color:C.accent,fontSize:25,textAlign:'center'},
-  gallery:{gap:8,paddingVertical:10},
-  thumbButton:{width:112,minHeight:96,borderWidth:1,borderColor:C.line,borderRadius:8,padding:4,backgroundColor:C.bg},
-  thumbSelected:{borderColor:C.accent,backgroundColor:C.panel2},
-  thumb:{width:'100%',height:58,borderRadius:5},
-  thumbLabel:{color:C.muted,fontSize:11,lineHeight:14,textAlign:'center',marginTop:4},
-  row:{flexDirection:'row',gap:6,flexWrap:'wrap'},
-  flex:{flex:1,minWidth:130},
-});
+export function ProfileEditor({state,onChange}:{state:GameState;onChange:(next:GameState)=>void}){
+ const character=state.character!;
+ const [tab,setTab]=useState<Tab>('Backgrounds'),[title,setTitle]=useState(character.profileTitle??'New Adventurer');
+ const [background,setBackground]=useState(character.profileBackgroundId??'asterfall-night'),[border,setBorder]=useState(character.profileBorderId??''),[pet,setPet]=useState(character.selectedCosmeticPetId??'');
+ const rewards=[...new Map(LIVE_EVENT_CATALOG.flatMap(event=>[...event.milestones(character.classId).map(m=>m.reward),...event.shop.map(o=>o.reward)]).map(r=>[r.id,r])).values()];
+ const rewardName=(id:string)=>rewards.find(r=>r.id===id)?.name??id.replace(/^frame_|^pet_/,'').replaceAll('_',' ');
+ const preview={...state,character:{...character,profileTitle:title,profileBackgroundId:background,profileBorderId:border||undefined,selectedCosmeticPetId:pet||undefined}};
+ const kind=tab==='Backgrounds'?'background':tab==='Borders'?'border':'pet',id=tab==='Backgrounds'?background:tab==='Borders'?border:pet;
+ const usable=canUseProfileCosmetic(state,kind,id);
+ const applied=tab==='Backgrounds'?background===(character.profileBackgroundId??'asterfall-night'):tab==='Borders'?border===(character.profileBorderId??''):pet===(character.selectedCosmeticPetId??'');
+ const apply=()=>{if(!canUseProfileCosmetic(state,kind,id))return;const patch=kind==='background'?{profileBackgroundId:id}:kind==='border'?{profileBorderId:id||undefined}:{selectedCosmeticPetId:id||undefined};onChange({...state,character:{...character,...patch}});};
+ return <Panel>
+  <Text style={s.heading}>Your profile</Text><Text style={s.sub}>Preview your look, then apply an unlocked cosmetic.</Text>
+  <ProfileScenePreview state={preview} backgroundId={background}/>
+  {tab==='Companions'&&<Text style={s.sub}>Passive pets: each owned pet grants 25% of its perk. Your selected pet grants 100%. Combat Companions have their own collection above.</Text>}
+  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.tabs}>{(['Backgrounds','Borders','Titles','Companions'] as Tab[]).map(value=><Pressable key={value} accessibilityRole="tab" accessibilityState={{selected:tab===value}} onPress={()=>setTab(value)} style={[s.tab,tab===value&&s.tabOn]}><Text style={[s.tabText,tab===value&&s.selectedText]}>{value}</Text>{tab===value?<View style={s.tabIndicator}/>:null}</Pressable>)}</ScrollView>
+  {tab==='Backgrounds'&&<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.gallery}>
+   {BASE_PROFILE_BACKGROUNDS.map(item=><CosmeticTile key={item.id} name={item.name} status="Available" selected={background===item.id} onPress={()=>setBackground(item.id)}><View style={s.sceneThumb}><RegionArtwork regionId={item.region}/></View></CosmeticTile>)}
+   {PROFILE_BACKGROUND_PREVIEWS.map(item=>{const unlocked=canUseProfileCosmetic(state,'background',item.id),reward=rewards.some(r=>r.id===item.id);return <CosmeticTile key={item.id} name={item.name} status={unlocked?'Unlocked':reward?'Event reward':'Preview only'} selected={background===item.id} onPress={()=>setBackground(item.id)}><Image source={item.source} style={s.sceneThumb} resizeMode="cover"/></CosmeticTile>})}
+  </ScrollView>}
+  {tab==='Borders'&&<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.gallery}>
+   <CosmeticTile name="No event border" status="Available" selected={!border} onPress={()=>setBorder('')}><View style={[s.sceneThumb,s.blank]}><Text style={s.blankMark}>◇</Text></View></CosmeticTile>
+   {[...profileBorderSourceById].map(([key,source])=>{const unlocked=canUseProfileCosmetic(state,'border',key);return <CosmeticTile key={key} name={rewardName(key)} status={unlocked?'Unlocked':rewards.some(r=>r.id===key)?'Event reward':'Preview only'} selected={border===key} onPress={()=>setBorder(key)}><View style={s.sceneThumb}><RegionArtwork regionId="KINGS_ROAD" muted/><Image source={source} style={s.borderThumb} resizeMode="contain"/></View></CosmeticTile>})}
+  </ScrollView>}
+  {tab==='Companions'&&<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.gallery}>
+   <CosmeticTile name="No companion" status="Available" selected={!pet} onPress={()=>setPet('')}><View style={[s.sceneThumb,s.blank]}><Text style={s.blankMark}>Solo</Text></View></CosmeticTile>
+   {[...eventPetSourceById].map(([key,source])=>{const unlocked=canUseProfileCosmetic(state,'pet',key);return <CosmeticTile key={key} name={rewardName(key)} status={unlocked?'Unlocked':'Event reward'} selected={pet===key} onPress={()=>setPet(key)}><View style={[s.sceneThumb,s.petThumb]}><Image source={source} style={StyleSheet.absoluteFill} resizeMode="contain"/></View></CosmeticTile>})}
+  </ScrollView>}
+  {tab==='Titles'?<><Text style={s.sub}>Displayed title</Text><GameTextInput accessibilityLabel="Profile title" value={title} onChangeText={setTitle} maxLength={32} placeholder="New Adventurer"/><GameButton title="Save title" disabled={title.trim()===(character.profileTitle??'New Adventurer')} onPress={()=>onChange({...state,character:{...character,profileTitle:title.trim()||'New Adventurer'}})}/>
+   {rewards.filter(r=>r.kind==='title').map(reward=>{const owned=state.account.unlockedTitleIds?.includes(reward.id);return <Pressable key={reward.id} accessibilityRole="button" disabled={!owned} accessibilityState={{disabled:!owned,selected:title===reward.name}} onPress={()=>setTitle(reward.name)} style={[s.titleChoice,!owned&&s.locked]}><Text style={s.name}>{reward.name}</Text><Text style={s.status}>{owned?'Unlocked':'Locked · event reward'}</Text></Pressable>})}
+  </>:<><GameButton title={applied?'Currently equipped':usable?'Apply '+(tab==='Companions'?'companion':tab==='Borders'?'border':'background'):'Preview only · not unlocked'} disabled={!usable||applied} onPress={apply}/>{!usable&&<Text style={s.sub}>You can inspect this cosmetic here. Applying it requires an available unlock.</Text>}</>}
+  <SavedLoadoutsPanel state={state} onChange={onChange}/>
+ </Panel>;
+}
+const s=StyleSheet.create({heading:{...typography.title,color:C.text},sub:{...typography.body,color:C.muted},tabs:{gap:4,padding:4,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.bg},tab:{minHeight:44,justifyContent:'center',paddingHorizontal:12,borderRadius:radii.sm,position:'relative'},tabOn:{backgroundColor:'#20384A'},tabText:{...typography.bodyStrong,color:C.muted},selectedText:{color:'#F2D08D'},tabIndicator:{position:'absolute',left:10,right:10,bottom:0,height:3,borderTopLeftRadius:3,borderTopRightRadius:3,backgroundColor:C.accent},gallery:{gap:12,paddingVertical:8,paddingRight:8},choice:{width:160,minHeight:132,padding:7,gap:8,borderWidth:StyleSheet.hairlineWidth,borderColor:C.line,borderRadius:radii.lg,backgroundColor:'#101B27'},choiceOn:{borderWidth:1,borderColor:C.info,backgroundColor:'#172c3c'},choicePressed:{opacity:.76},artwork:{width:'100%',height:88,borderRadius:radii.md,overflow:'hidden',backgroundColor:C.bg},sceneThumb:{width:'100%',height:'100%',overflow:'hidden'},borderThumb:{...StyleSheet.absoluteFillObject,width:'100%',height:'100%'},petThumb:{padding:8},statusBadge:{position:'absolute',left:6,bottom:6,maxWidth:'90%',paddingHorizontal:7,paddingVertical:3,borderRadius:99,backgroundColor:'rgba(7,17,28,.88)',borderWidth:StyleSheet.hairlineWidth,borderColor:C.line},statusBadgeOn:{borderColor:C.info,backgroundColor:'rgba(18,57,78,.94)'},badgeText:{fontSize:10,lineHeight:13,color:C.muted,fontWeight:'800'},badgeTextOn:{color:'#B8E5F5'},name:{...typography.bodyStrong,color:C.text},status:{...typography.caption,color:C.muted},blank:{justifyContent:'center',alignItems:'center',backgroundColor:C.panel},blankMark:{...typography.bodyStrong,color:C.muted},titleChoice:{minHeight:56,gap:4,paddingVertical:8,borderBottomWidth:1,borderColor:C.line},locked:{opacity:.55}});

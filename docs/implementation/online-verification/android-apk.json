@@ -1,0 +1,21 @@
+{
+  "builtAt": "2026-09-12T21:59:14.1409698Z",
+  "artifact": "output/android/VELDRYN-internal-20260912.apk",
+  "bytes": 206890619,
+  "sha256": "3a19c0433d6b8c42ab00432ef8b98fb2ccc0e383dac283e3269ebc2c0a66069b",
+  "package": "com.elroybenjamins.veldryn",
+  "version": "0.1.0",
+  "versionCode": 1,
+  "minimumAndroidApi": 24,
+  "targetAndroidApi": 35,
+  "abis": [
+    "arm64-v8a",
+    "x86_64"
+  ],
+  "signatureVerification": "PASS APK Signature Scheme v2",
+  "signing": "Internal debug keystore, not store-release signing",
+  "gradle": "PASS :app:assembleRelease, 242 tasks",
+  "emulatorInstall": "PASS",
+  "nativeRuntime": "PASS: native password sign-in, saved character/Gold/XP restoration after cold restart, installed upgrade preserves session, native auth error routing and visible feedback",
+  "productionCoopEnabled": false
+}

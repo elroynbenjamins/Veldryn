@@ -11,6 +11,9 @@ export function equippedGatheringTool(state:GameState,skillId:GatheringSkillId){
 }
 
 export function gatheringToolTimeMultiplier(state:GameState,skillId:GatheringSkillId){
+  // Herbalism is hand-pickable. It has no tool progression and therefore no
+  // missing-tool slowdown.
+  if(skillId==='herbalism')return 1;
   return equippedGatheringTool(state,skillId)?.actionTimeMultiplier??NO_TOOL_TIME_MULTIPLIER;
 }
 

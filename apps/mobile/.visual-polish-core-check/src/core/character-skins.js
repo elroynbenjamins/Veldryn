@@ -1,0 +1,88 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.equipmentSetSkinId = equipmentSetSkinId;
+exports.discoverCharacterSkins = discoverCharacterSkins;
+exports.selectCharacterSkin = selectCharacterSkin;
+exports.characterSkinCollection = characterSkinCollection;
+exports.newlyUnlockedCharacterSkins = newlyUnlockedCharacterSkins;
+const character_skin_sets_1 = require("../content/character-skin-sets");
+/** Stable collection ID. It deliberately does not depend on an artwork filename. */
+function equipmentSetSkinId(setId) { return `equipment-set:${setId}`; }
+function ownedItemIds(state) {
+    const ids = new Set();
+    for (const stack of [...state.inventory.stacks, ...state.bank.stacks, ...state.overflow.stacks]) {
+        if (stack.quantity > 0)
+            ids.add(stack.itemId);
+    }
+    if (state.character) {
+        for (const id of Object.values(state.character.equipment))
+            if (id)
+                ids.add(id);
+    }
+    return ids;
+}
+function eligibleSets(state) {
+    if (!state.character)
+        return [];
+    return (0, character_skin_sets_1.characterSkinSetsFor)(state.character.classId);
+}
+/** Records complete-set ownership permanently without activating unapproved artwork. */
+function discoverCharacterSkins(state) {
+    if (!state.character)
+        return state;
+    const validIds = new Set(eligibleSets(state).map(set => equipmentSetSkinId(set.id)));
+    const unlocked = new Set((state.character.unlockedSkinIds ?? []).filter(id => validIds.has(id)));
+    const owned = ownedItemIds(state);
+    for (const set of eligibleSets(state)) {
+        const eventUnlocked = set.unlockEventSkinId && state.account.unlockedEventSkinIds?.includes(set.unlockEventSkinId);
+        const equipmentUnlocked = set.itemIds.length > 0 && set.itemIds.every(id => owned.has(id));
+        if (eventUnlocked || equipmentUnlocked)
+            unlocked.add(equipmentSetSkinId(set.id));
+    }
+    const next = ['starting', ...unlocked];
+    const selectableIds = new Set(['starting', ...eligibleSets(state).filter(set => set.appearanceId).map(set => equipmentSetSkinId(set.id))]);
+    const selectedSkinId = next.includes(state.character.selectedSkinId ?? 'starting') && selectableIds.has(state.character.selectedSkinId ?? 'starting') ? state.character.selectedSkinId ?? 'starting' : 'starting';
+    const previous = state.character.unlockedSkinIds ?? [];
+    if (next.length === previous.length && next.every(id => previous.includes(id)) && state.character.selectedSkinId === selectedSkinId)
+        return state;
+    return { ...state, character: { ...state.character, unlockedSkinIds: next, selectedSkinId } };
+}
+function selectCharacterSkin(state, skinId) {
+    if (!state.character)
+        throw new Error('Create a character before choosing a skin.');
+    if (skinId === 'starting')
+        return { ...state, character: { ...state.character, selectedSkinId: 'starting' } };
+    const set = eligibleSets(state).find(candidate => equipmentSetSkinId(candidate.id) === skinId);
+    if (!set)
+        throw new Error('This skin is not available for your class.');
+    const eventUnlocked = set.unlockEventSkinId && state.account.unlockedEventSkinIds?.includes(set.unlockEventSkinId);
+    if (!(state.character.unlockedSkinIds ?? []).includes(skinId) && !eventUnlocked)
+        throw new Error(set.unlockEventSkinId ? 'Earn this appearance from its event to unlock it.' : 'Own the complete equipment set to unlock this skin.');
+    if (!set.appearanceId)
+        throw new Error('This supplied skin is still awaiting visual approval.');
+    return { ...state, character: { ...state.character, selectedSkinId: skinId } };
+}
+function characterSkinCollection(state) {
+    if (!state.character)
+        return [];
+    const owned = ownedItemIds(state);
+    const unlocked = new Set(state.character.unlockedSkinIds ?? []);
+    return eligibleSets(state).map(set => {
+        const id = equipmentSetSkinId(set.id);
+        const ownedPieces = set.itemIds.filter(itemId => owned.has(itemId)).length;
+        return {
+            id,
+            setId: set.id,
+            name: set.name,
+            unlocked: unlocked.has(id) || Boolean(set.unlockEventSkinId && state.account.unlockedEventSkinIds?.includes(set.unlockEventSkinId)) || (set.itemIds.length > 0 && ownedPieces === set.itemIds.length),
+            ownedPieces,
+            requiredItemIds: set.itemIds,
+            artworkReady: !!set.appearanceId,
+            selected: state.character.selectedSkinId === id,
+        };
+    });
+}
+function newlyUnlockedCharacterSkins(before, after) {
+    const previous = new Set(before?.character?.unlockedSkinIds ?? []);
+    return characterSkinCollection(after).filter(skin => skin.unlocked && !previous.has(skin.id));
+}

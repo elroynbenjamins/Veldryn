@@ -1,0 +1,27 @@
+{
+  "statBarEdgeCases": 9,
+  "registeredIcons": 18,
+  "exportedPngs": 33,
+  "browserCompanion": [
+    {
+      "width": 390,
+      "horizontalOverflow": false,
+      "largeTextHorizontalOverflow": false,
+      "clearSearch": true,
+      "longModalScrolls": true,
+      "actionsInViewport": true
+    },
+    {
+      "width": 320,
+      "horizontalOverflow": false,
+      "largeTextHorizontalOverflow": false,
+      "clearSearch": true,
+      "longModalScrolls": true,
+      "actionsInViewport": true
+    }
+  ],
+  "nativeDeviceTested": false,
+  "typeScript": "passed",
+  "androidJavaScriptExport": "passed",
+  "hermesBytecodeBuilt": false
+}

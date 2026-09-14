@@ -1,0 +1,1 @@
+{"extends":"./tsconfig.json","compilerOptions":{"module":"Node16","moduleResolution":"Node16","jsx":"react-jsx","outDir":".search-loadouts-build","noEmit":false},"include":["src/core/**/*.ts","src/content/**/*.ts","tests/search-loadouts-v1.ts","tests/assertions.ts","tests/node-shim.d.ts"]}

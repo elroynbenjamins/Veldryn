@@ -1,19 +1,24 @@
 import {MONSTERS} from '../content/monsters';
 import {QUESTS} from '../content/quests';
 import {GATHERING} from '../content/skills';
+import {HERB_NODES} from '../content/herbalism';
+import {alchemyRecipeDef} from '../content/alchemy';
+import {explorationRoute} from '../content/exploration';
 import {GameState} from './types';
 import {effectiveStats} from './game';
 import {characterPermanentMultipliers} from './permanent-boosts';
 import {classCombatStyle} from './class-combat';
 import {environmentEffectForActivity} from './world-weather';
 import {gatheringPacing} from './gathering-tools';
+import {companionCombatContribution} from './combat-companions';
+import {monsterMastery} from './monster-mastery';
 const COMBAT_SPEED_MIN=.68;
 const COMBAT_SPEED_MAX=1.3;
 const COMBAT_TIME_SCALE=1.16;
 const COMBAT_EXPECTED_SCALE=1.3;
 const GATHER_TIME_SCALE=1.45;
 
-export type DashboardDestination='World'|'Skills'|'Inventory'|'Quests'|'Character';
+export type DashboardDestination='World'|'Skills'|'Inventory'|'Quests'|'Character'|'Settings';
 export interface DashboardRecommendation{title:string;detail:string;button:string;destination:DashboardDestination;zoneId?:string;priority:'urgent'|'progress'|'upgrade'}
 
 /** A single, deterministic next-step recommendation for the home screen. */
@@ -36,7 +41,11 @@ export function dashboardRecommendation(state:GameState):DashboardRecommendation
 
 export function activityCycleSeconds(state:GameState){
   const target=state.activity?.targetId;
-  const monster=MONSTERS.find(m=>m.id===target),gathering=GATHERING.find(g=>g.id===target);
+  const monster=MONSTERS.find(m=>m.id===target),gathering=[...GATHERING,...HERB_NODES].find(g=>g.id===target);
+  const brew=state.activity?.kind==='alchemy'?alchemyRecipeDef(target??''):undefined;
+  const route=state.activity?.kind==='exploration'?explorationRoute(target??''):undefined;
+  if(brew)return brew.seconds;
+  if(route)return route.seconds;
   const modifiers=characterPermanentMultipliers(state);
   const environmentMultiplier=state.activity?environmentEffectForActivity(state.activity).effect.actionTimeMultiplier:1;
   if(!monster)return ((gathering?.seconds??1)*GATHER_TIME_SCALE*(gathering?gatheringPacing(state,gathering).timeMultiplier:1)*environmentMultiplier)/modifiers.gatheringSpeedMultiplier;
@@ -44,16 +53,17 @@ export function activityCycleSeconds(state:GameState){
   const boostedPower=Math.max(1,Math.round(stats.power*modifiers.combatPowerMultiplier));
   const adjustedExpected=(expected*COMBAT_EXPECTED_SCALE);
   const speed=Math.max(COMBAT_SPEED_MIN,Math.min(COMBAT_SPEED_MAX,boostedPower/Math.max(1,adjustedExpected)))*classCombatStyle(state.character!.classId).speedMultiplier*modifiers.combatSpeedMultiplier;
-  return monster.secondsPerKill*COMBAT_TIME_SCALE*environmentMultiplier/speed;
+  return monster.secondsPerKill*COMBAT_TIME_SCALE*environmentMultiplier/(speed*companionCombatContribution(state).outputMultiplier*(1+monsterMastery(state,monster.id).damageBonus));
 }
 export function activityRate(state:GameState){
   const target=state.activity?.targetId;
-  const monster=MONSTERS.find(m=>m.id===target),gathering=GATHERING.find(g=>g.id===target);
+  const monster=MONSTERS.find(m=>m.id===target),gathering=[...GATHERING,...HERB_NODES].find(g=>g.id===target);
+  const brew=state.activity?.kind==='alchemy'?alchemyRecipeDef(target??''):undefined;
   const multipliers=characterPermanentMultipliers(state);
   const effect=state.activity?environmentEffectForActivity(state.activity).effect:undefined;
   const seconds=activityCycleSeconds(state);
   const actions=Math.floor(3600/seconds);
-  const baseXp = monster?.xp ?? gathering?.xp ?? 0;
+  const baseXp = monster?.xp ?? gathering?.xp ?? brew?.xp ?? 0;
   const baseGold = monster?monster.gold:0;
   const xpMultiplier = (effect?.xpMultiplier??1)*(monster?multipliers.characterXpMultiplier:multipliers.skillXpMultiplier);
   const goldMultiplier = (effect?.goldMultiplier??1)*(monster?multipliers.goldMultiplier:1);

@@ -1,0 +1,332 @@
+{
+  "checkedAt": "2026-09-13T07:33:53.026Z",
+  "testProject": "qoaqrqpxtrhjyzsrifsq",
+  "productionProjectUnchanged": "nyjwigipamnvpdvpauuv",
+  "migrations": [
+    {
+      "file": "20260830000000_character_foundation.sql",
+      "sha256": "318c125b727deea0a1a73b08b8fb9d3ffbd1c0b580738220081c1dd75b245a56",
+      "status": "PASS"
+    },
+    {
+      "file": "20260831000100_expeditions.sql",
+      "sha256": "aeb7a674039452b0f4a6b7e1cdf8431d58ecda4def2e05ffbcdb9a5afaa46110",
+      "status": "PASS"
+    },
+    {
+      "file": "20260831000200_expedition_reward_rpc.sql",
+      "sha256": "0846b167cb1d93776fc567df39934804764cce48e67065ddda9ec41fc9c99a0a",
+      "status": "PASS"
+    },
+    {
+      "file": "20260831000300_chat_moderation.sql",
+      "sha256": "da6513ac640857a6242ebc0f9d50b9e6f48c1ff041d347308cc6483446c892db",
+      "status": "PASS"
+    },
+    {
+      "file": "20260831000400_expedition_run_flow.sql",
+      "sha256": "5a5a070a1b260f78f827a717d8240629deafb267e09848b6e2c95b17b72c82fe",
+      "status": "PASS"
+    },
+    {
+      "file": "20260831000500_combat_engine.sql",
+      "sha256": "87a1dfcab9eff6227abc0ec7cdb20810781313e69886df6310b78eda36e46210",
+      "status": "PASS"
+    },
+    {
+      "file": "20260831000600_expedition_builds.sql",
+      "sha256": "6c834ee07dcc78b0e7039df205f4ee8157f0831fcb736f4a835de85db8d04fb9",
+      "status": "PASS"
+    },
+    {
+      "file": "20260831000700_inventory_loot.sql",
+      "sha256": "15b5ec91752fa27cf06689b2ef9e57fdd9b5c9dbe8600f9a9f5ae580196e4930",
+      "status": "PASS"
+    },
+    {
+      "file": "20260831000800_idle_crafting.sql",
+      "sha256": "cd32fc46133376181a3821e9d2f5c48b7c8a5ba6c59c2b306d013d7838921cbc",
+      "status": "PASS"
+    },
+    {
+      "file": "20260831000900_market.sql",
+      "sha256": "977ae635750c2c30c53eec1dca3998eaab57724b9903cdc55d1a4a422ced2882",
+      "status": "PASS"
+    },
+    {
+      "file": "20260831001000_social_guild_echo.sql",
+      "sha256": "ffa544fcb23d3b39254537272022fd4b599e88f3ddda1e31cad95fc38d55dc00",
+      "status": "PASS"
+    },
+    {
+      "file": "20260831001100_settings_security.sql",
+      "sha256": "d4432a75cc6e96c7e6507a1ef02d3c6f0bdab78e1e5b3b67c9f51f51cbe2c9c3",
+      "status": "PASS"
+    },
+    {
+      "file": "20260831001200_transactional_economy.sql",
+      "sha256": "16479e54e90d8bb42149ad0421f83b7edee00e8cc57def599533d8ba52a8ad20",
+      "status": "PASS"
+    },
+    {
+      "file": "20260831001300_matchmaking_echo.sql",
+      "sha256": "4e2eb9717380500dfbb3716915aa2d7d3bda9f152c042bf3ae0c61291da64fe1",
+      "status": "PASS"
+    },
+    {
+      "file": "20260831001400_guild_progression.sql",
+      "sha256": "8874c66b32eacc802bd2cc1ffe3476dc51e1ed8a14b050a5584fce80f8abfc6e",
+      "status": "PASS"
+    },
+    {
+      "file": "20260831001500_pvp_raids.sql",
+      "sha256": "cb31b88ce884fe1f4b9a7200b97e2ddd9f5a6c78e75eedb610b387cf2f16097f",
+      "status": "PASS"
+    },
+    {
+      "file": "20260831001600_telemetry_abuse.sql",
+      "sha256": "41317b7b69151bc1e97e827850d353039a8615ee931226de113cb50fa63023f8",
+      "status": "PASS"
+    },
+    {
+      "file": "20260831001700_api_content_contracts.sql",
+      "sha256": "cb7b73f6e1eeba2ca30028b58ba654efb7429a29bdd5de22b0cad467b115d43f",
+      "status": "PASS"
+    },
+    {
+      "file": "20260831001800_account_squads.sql",
+      "sha256": "b4942d40dfd8cbb99436d2da59466325d62b52f43fb9218a94df91dfd3167a8a",
+      "status": "PASS"
+    },
+    {
+      "file": "20260831001900_squad_arena.sql",
+      "sha256": "02dee7e340cf8cf0e9e2d5297c4cc2230d38c0bfe305174d68c50e2e92e64894",
+      "status": "PASS"
+    },
+    {
+      "file": "20260831002000_squad_trials.sql",
+      "sha256": "a4f21d9790454c01d4e1c3dc0a7a236dbe4d63100b249e7cdd270df483f7cbc5",
+      "status": "PASS"
+    },
+    {
+      "file": "20260831002100_squad_loadouts_synergy.sql",
+      "sha256": "a1e4c5df93cd01cd70dbf33f5bb9e89bca3af43ca677c6f75d83c3c17ea31187",
+      "status": "PASS"
+    },
+    {
+      "file": "20260831002200_squad_seasons.sql",
+      "sha256": "96ae26dba704dcabcfccb470de1c682bdc0322748b1bd380ed6e1eda98daa54e",
+      "status": "PASS"
+    },
+    {
+      "file": "20260831002300_squad_rpc_contracts.sql",
+      "sha256": "f6141bc6a6d2e7fa319d18680daf0d10b666e4086fcf2021fe1be027fac63e20",
+      "status": "PASS"
+    },
+    {
+      "file": "20260906000000_hosted_social_baseline.sql",
+      "sha256": "7bf64433aa0b2058d10cc8ff098046eae3d1628b8338356f26f0e8ca9af015df",
+      "status": "PASS"
+    },
+    {
+      "file": "20260907000000_online_social.sql",
+      "sha256": "888e08d4a5fb38239ceade47b4ca009a70aee43805fd31111b42fbc8e1500a31",
+      "status": "PASS"
+    },
+    {
+      "file": "20260908000000_social_safety_and_guild_pve.sql",
+      "sha256": "ed749ffec91960378e7a1bcb12c2745caae4387361edfb0bcd372f3dabe7c7e1",
+      "status": "PASS"
+    },
+    {
+      "file": "20260909000000_authoritative_gathering.sql",
+      "sha256": "8d6cf9a6a23c4d685ded863e368fceffca38b6fa5ba26fcb7e44dd6df0d5b901",
+      "status": "PASS"
+    },
+    {
+      "file": "20260910000000_online_equipment_loadouts.sql",
+      "sha256": "3d916631b0d80479b7a3837e4b4239644fce60a0bc82df46adac6d4ce6573dfb",
+      "status": "PASS"
+    },
+    {
+      "file": "20260911000000_account_bank_and_storage.sql",
+      "sha256": "7bdc94ddf100f061a5379bb8232566814b7508ca30fc62e9c4553c17ca5756f3",
+      "status": "PASS"
+    },
+    {
+      "file": "20260912000000_character_skin_collection.sql",
+      "sha256": "f04e0a7ad467be78bdf9977c0422aec6def96dd43c1ce2739cfe779d5ead686f",
+      "status": "PASS"
+    },
+    {
+      "file": "20260913000000_friends_and_blocks.sql",
+      "sha256": "eb67492b438d9d483b62a4676ba3d9815a338a1e4f25e58a2bd6df89ac4f4fd4",
+      "status": "PASS"
+    },
+    {
+      "file": "20260914000000_live_events.sql",
+      "sha256": "70e5d82d67e7d8a6027345bb7aacc7bd3ccbe75553e3a5c512ee4ae3409a6f4a",
+      "status": "PASS"
+    },
+    {
+      "file": "20260915000000_event_framework_expansion.sql",
+      "sha256": "dc5c2eb1b5161abb431aa793fa6b0a1d1699c55d1315767704a85e3eb8253b3e",
+      "status": "PASS"
+    },
+    {
+      "file": "20260916000000_event_calendar_and_community_rewards.sql",
+      "sha256": "4cd7fb3c987e7f9ea8ddc3c980f512ab7ac4ae24b628e580bf2bfe6f4d51b4b2",
+      "status": "PASS"
+    },
+    {
+      "file": "20260917000000_event_lifecycle.sql",
+      "sha256": "ca092e86691d75e3b1b4389281e56dac8236ec5aa4105771f3475adc3a69309f",
+      "status": "PASS"
+    },
+    {
+      "file": "20260917000001_coop_roguelite_v1.sql",
+      "sha256": "28f1455adf017bb06d10568176d6092d68e24690ea6448d7ad9b5e01575b0fe7",
+      "status": "PASS"
+    },
+    {
+      "file": "20260917000002_coop_node_results.sql",
+      "sha256": "a01a27dd548bc4f3a1b9cffa935f1847ff348004cacb322bd7ee9077293e5e97",
+      "status": "PASS"
+    },
+    {
+      "file": "20260917000003_echo_privacy.sql",
+      "sha256": "b0277da85fd8049b3e51ed82aa5a96eeb8f2c7c55f5debbca11c3d985d98fe72",
+      "status": "PASS"
+    },
+    {
+      "file": "20260917000004_coop_live_tickets.sql",
+      "sha256": "3093e57c65cb39d60b4c1765459c2317c64368abf137ac903b9a0e42ffd7a3c4",
+      "status": "PASS"
+    },
+    {
+      "file": "20260917000005_coop_party_chat.sql",
+      "sha256": "3f4dc66888356fdaf2ba4d9d68bad9f32168a5be6e7fdfc5f2fe7ea66243ed9d",
+      "status": "PASS"
+    },
+    {
+      "file": "20260917000006_coop_reward_integrity.sql",
+      "sha256": "ff2dd91c0046278026f6d06af83cb0d8c6e53d1f3ea63ec2130668b7259eb5ad",
+      "status": "PASS"
+    },
+    {
+      "file": "20260917000007_coop_runtime_hardening.sql",
+      "sha256": "db82e157b16040e36bf743530a2eb981df49f0a0c3f88bd8589474c11ca08edd",
+      "status": "PASS"
+    },
+    {
+      "file": "20260918000000_event_project_bonuses.sql",
+      "sha256": "df360c5daad589b383c710de362b5520a475ea88404cf4e20c184688121069ac",
+      "status": "PASS"
+    },
+    {
+      "file": "20260919000000_event_discoveries.sql",
+      "sha256": "f539dd8f32c46f4ec4ba52095300bebba605262db33bf3c8ab606d6ceea48482",
+      "status": "PASS"
+    },
+    {
+      "file": "20260920000000_gathering_tool_loadouts.sql",
+      "sha256": "edbf979f674ddf40918438eb45fd99db4d85e994671b61d6abcd0c0f14df3ad4",
+      "status": "PASS"
+    },
+    {
+      "file": "20260921000000_coop_saved_loadouts.sql",
+      "sha256": "4d5e1795d0909448abc77f715b907266a22011535c8f1bfc2fc4a19877def8aa",
+      "status": "PASS"
+    },
+    {
+      "file": "20260922000000_coop_reward_charge_cadence.sql",
+      "sha256": "2078dd0ee749b57afc2f5198884af151dd8e926ab3aff0f3a74c8acbc2864fa3",
+      "status": "PASS"
+    },
+    {
+      "file": "20260923000000_coop_reward_week_clock.sql",
+      "sha256": "5cf6fd3def45ee8630001d39bf3e3a1042df527120effa8d4cb8452e5c70d880",
+      "status": "PASS"
+    },
+    {
+      "file": "20260924000000_equipment_enhancement_foundation.sql",
+      "sha256": "05323d45462aeb92d88bca95a1bfa5af04d344c5bc373c7a2544e3c4f24b03c8",
+      "status": "PASS"
+    },
+    {
+      "file": "20261010000000_parties_contracts_guild_seekers_v1.sql",
+      "sha256": "0c6436e17404a6aab5a89dc2a36672c751d18e102d1ffebfab4f37c5eeb28b0b",
+      "status": "PASS"
+    },
+    {
+      "file": "20261010000001_party_social_v15_safety.sql",
+      "sha256": "de74f012e18e3e30a1e7a9f9f551e05c895d9deb6f984a3382d67cdae19e1360",
+      "status": "PASS"
+    },
+    {
+      "file": "20261011000000_authoritative_gameplay.sql",
+      "sha256": "6845b4116bb223c150b00b59b70756fc48d066d095c80f5ac3b975bd69bd2e65",
+      "status": "PASS"
+    },
+    {
+      "file": "20261012000000_online_coop_loadout_publication.sql",
+      "sha256": "c1e8de4aaae716eb1a612ac08d7e45ef43c0990800b6fa53e8dfc716f82998ac",
+      "status": "PASS"
+    },
+    {
+      "file": "20261013000000_online_qmode_runtime.sql",
+      "sha256": "da60b34bb741f427a990ef8aa71390931f59e5f675be10f0336d4cbf3a44f7e8",
+      "status": "PASS"
+    },
+    {
+      "file": "20261014000000_online_qmode_worker.sql",
+      "sha256": "ebe63bb97bbe609beef13d5c237b382dcc54c22ddaa335624bc4bfc7251adbf5",
+      "status": "PASS"
+    },
+    {
+      "file": "20261015000000_online_live_queue.sql",
+      "sha256": "91d5e6497e3c82b83db3cea979862831c84279c3e3c4094cdcb3f61246d7d82b",
+      "status": "PASS"
+    },
+    {
+      "file": "20261016000000_online_live_ready.sql",
+      "sha256": "c9736010ec3ff97644357bc4946ea58e35fb2003794b1f4149982f617703b33c",
+      "status": "PASS"
+    }
+  ],
+  "checks": [
+    {
+      "check": "empty application schema before first migration",
+      "status": "PASS"
+    },
+    {
+      "check": "party_v16.sql",
+      "status": "PASS"
+    },
+    {
+      "check": "party_v16_safety.sql",
+      "status": "PASS"
+    },
+    {
+      "check": "online_gameplay.sql",
+      "status": "PASS"
+    },
+    {
+      "check": "online_coop_loadouts.sql",
+      "status": "PASS"
+    },
+    {
+      "check": "online_qmode_runtime.sql",
+      "status": "PASS"
+    },
+    {
+      "check": "online_live_queue.sql",
+      "status": "PASS"
+    },
+    {
+      "check": "online_live_ready.sql",
+      "status": "PASS"
+    }
+  ],
+  "status": "PASS"
+}

@@ -1,0 +1,24 @@
+import {createCharacter,newGame} from '../src/core/game';
+import {canUseProfileCosmetic} from '../src/core/profile-cosmetics';
+import {enhancementFeedback,newlyConfirmedIds} from '../src/core/visual-feedback';
+function assert(value:unknown,message:string){if(!value)throw new Error(message);}
+const state=createCharacter(newGame(0),'IRONWARDEN','Preview Tester','female');
+assert(canUseProfileCosmetic(state,'background','asterfall-night'),'Base profile stays available');
+assert(!canUseProfileCosmetic(state,'background','unreleased-scene'),'Unmapped preview cannot be equipped');
+assert(!canUseProfileCosmetic(state,'border','frame_harvestwake_festival'),'Locked event border cannot be equipped');
+assert(canUseProfileCosmetic(state,'border','')&&canUseProfileCosmetic(state,'pet',''),'Cosmetics can be removed');
+assert(!canUseProfileCosmetic(state,'background',''),'Empty background not accepted');
+const owned={...state,account:{...state.account,unlockedProfileBorderIds:['frame_harvestwake_festival'],unlockedCosmeticPetIds:['pet_test'],unlockedProfileBackgroundIds:['bg_test']}};
+assert(canUseProfileCosmetic(owned,'border','frame_harvestwake_festival'),'Owned border usable');
+assert(canUseProfileCosmetic(owned,'pet','pet_test')&&canUseProfileCosmetic(owned,'background','bg_test'),'Owned pet and scene usable');
+assert(!canUseProfileCosmetic(owned,'border','pet_test'),'Ownership kinds stay separate');
+const before={itemId:'basic_sword',rank:6,failures:0,gemIds:[] as string[]};
+assert(enhancementFeedback(before,before)===null,'No success on unchanged state');
+assert(enhancementFeedback(before,{...before,itemId:'another',rank:7})===null,'Selection changes are not upgrades');
+assert(enhancementFeedback(before,{...before,rank:7})?.tone==='success','Confirmed upgrade announces success');
+assert(enhancementFeedback(before,{...before,failures:1})?.tone==='info','Failed tempering never claims success');
+assert(enhancementFeedback(before,{...before,gemIds:['gem']})?.message==='Gem sockets updated.','Confirmed socket updates announced');
+assert(newlyConfirmedIds(['q1'],['q1']).length===0,'Pending/replayed claim produces no success');
+assert(newlyConfirmedIds(['q1'],['q1','q2','q2']).join(',')==='q2','Only newly confirmed claims announced');
+assert(newlyConfirmedIds(['q1'],[]).length===0,'Reset/removed claims do not celebrate');
+console.log('PASS: cosmetic ownership, confirmed upgrade/failure/socket feedback and replay-safe claim announcements');

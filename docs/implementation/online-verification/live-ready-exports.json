@@ -1,0 +1,31 @@
+{
+  "checkedAt": "2026-09-13T08:09:33.106Z",
+  "results": [
+    {
+      "platform": "android",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": ".expo-export-live-ready-android",
+      "bundles": [
+        {
+          "file": "index-16be5af7d4ae7bc6115b2fe2655f3e96.hbc",
+          "bytes": 4075734,
+          "sha256": "ea81144590e429999cb249fd436cd2efd3b4cea4b377923e7d0cb4ea03086115"
+        }
+      ]
+    },
+    {
+      "platform": "ios",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": ".expo-export-live-ready-ios",
+      "bundles": [
+        {
+          "file": "index-ab49feb768105718e49c3701bdfed091.hbc",
+          "bytes": 4061148,
+          "sha256": "c5ebef5421decbfae1a673e5c302c4c4fc8225d59e85c093574f2bb99d427c3f"
+        }
+      ]
+    }
+  ]
+}

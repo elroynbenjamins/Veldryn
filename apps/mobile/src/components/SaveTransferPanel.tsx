@@ -1,5 +1,6 @@
+import {GameTextInput as TextInput} from './GameTextInput';
 import {useState} from 'react';
-import {Modal,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
+import {Modal,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from './GameButton';
 import {Panel} from './Panel';
 import {C,spacing,typography} from '../theme/theme';

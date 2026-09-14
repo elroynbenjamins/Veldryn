@@ -11,13 +11,15 @@ ok(stopped.state.activity===null,'Stop clears activity');
 ok(stopped.state.character!.xp===expected.xp,'Stop preserves XP');
 ok(stopped.state.character!.gold===initial.character!.gold+expected.gold,'Stop preserves gold');
 ok(transitionActivity(stopped.state,61000).reward.kills===0,'Stop cannot duplicate rewards');
-const switched=transitionActivity(combat,61000,{kind:'gathering',id:'COPPER_VEIN'});
+// Use a gathering activity in the current zone; v15 now requires travel before changing regions.
+const switched=transitionActivity(combat,61000,{kind:'gathering',id:'GREENWOOD_TREE'});
 ok(switched.state.character!.xp===expected.xp,'Switch preserves combat XP');
-ok(switched.state.activity?.targetId==='COPPER_VEIN','Switch changes activity');
+ok(switched.state.activity?.targetId==='GREENWOOD_TREE','Switch changes activity');
 ok(previewActivityReward(switched.state,61000).kills===0,'New activity clock resets');
-const gathered=transitionActivity(startGathering(initial,'COPPER_VEIN',1000),61000,{kind:'combat',id:'MOSS_RAT'});
-ok(gathered.state.skills.find(sk=>sk.skillId==='mining')!.xp===18,'Gathering XP preserved at rebalanced action time');
-ok(gathered.state.inventory.stacks.some(s=>s.itemId==='COPPER_ORE'&&s.quantity===2),'Gathered items preserved');
+const gathering=startGathering(initial,'GREENWOOD_TREE',1000),gatherPreview=previewActivityReward(gathering,61000);
+const gathered=transitionActivity(gathering,61000,{kind:'combat',id:'MOSS_RAT'});
+ok(gathered.state.skills.find(sk=>sk.skillId==='woodcutting')!.xp===gatherPreview.xp&&gatherPreview.xp>0,'Gathering XP preserved at current action time');
+ok(gathered.state.inventory.stacks.some(s=>s.itemId==='GREENWOOD_LOG'&&s.quantity===gatherPreview.items[0].quantity),'Gathered items preserved');
 const snapshot=JSON.stringify(combat);
 let rejected=false;
 try{transitionActivity(combat,61000,{kind:'gathering',id:'invalid'})}catch{rejected=true}

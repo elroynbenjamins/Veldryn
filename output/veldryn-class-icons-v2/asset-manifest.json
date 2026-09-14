@@ -1,0 +1,734 @@
+{
+  "version": "2.0.0",
+  "assets": [
+    {
+      "id": "ironwarden",
+      "classId": "IRONWARDEN",
+      "name": "Ironwarden",
+      "motif": "blue enamel pointed shield, broad silver upright sword/cross rune and strong steel corner braces. Cobalt blue and clean silver; disciplined runic defender.",
+      "source": "source/originals/ironwarden-d0e547cf.png",
+      "crop": {
+        "left": 113,
+        "top": 12,
+        "width": 1029,
+        "height": 1239
+      },
+      "variants": [
+        {
+          "kind": "hero",
+          "size": 256,
+          "gutter": 8,
+          "reductionKernel": "nearest",
+          "paletteLimit": 256,
+          "files": [
+            {
+              "file": "assets/hero/ironwarden.png",
+              "scale": 1,
+              "width": 256,
+              "height": 256,
+              "bytes": 42305,
+              "sha256": "d1182ce0eac893510fafacd9f6168a9c1ce91d7183d13b7baf883638a03c2785"
+            },
+            {
+              "file": "assets/hero/ironwarden@2x.png",
+              "scale": 2,
+              "width": 512,
+              "height": 512,
+              "bytes": 54984,
+              "sha256": "91bc39e86067669dc113027e9cb1fe700267fb2e151217c81b8ceeb526a18aec"
+            },
+            {
+              "file": "assets/hero/ironwarden@3x.png",
+              "scale": 3,
+              "width": 768,
+              "height": 768,
+              "bytes": 67648,
+              "sha256": "a0ebad16b7ddf6d5699f0db1b9bdbf9066df4ad7540e5a9db0770d236f6d5df8"
+            }
+          ]
+        },
+        {
+          "kind": "icon",
+          "size": 62,
+          "gutter": 2,
+          "reductionKernel": "lanczos3",
+          "paletteLimit": 128,
+          "files": [
+            {
+              "file": "assets/icon/ironwarden.png",
+              "scale": 1,
+              "width": 62,
+              "height": 62,
+              "bytes": 4191,
+              "sha256": "78c34ee6520f41513c6d15de750ad235eef2ea3c6e450941410047ad727cc62a"
+            },
+            {
+              "file": "assets/icon/ironwarden@2x.png",
+              "scale": 2,
+              "width": 124,
+              "height": 124,
+              "bytes": 4983,
+              "sha256": "aac7068d98307fd907c8a8a23aa4346d3eae8afb4296dc8ea62d4d9837ab06a9"
+            },
+            {
+              "file": "assets/icon/ironwarden@3x.png",
+              "scale": 3,
+              "width": 186,
+              "height": 186,
+              "bytes": 5778,
+              "sha256": "ab913487f08de306511e0d4d59069ddad4bc4bf26fa9b34e9eb5d736d10d4da1"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bastion",
+      "classId": "BASTION",
+      "name": "Bastion",
+      "motif": "broad heavy gold tower shield, central upright gold defensive cross/rune, symmetrical gold laurel shoulders. Warm antique gold and deep ochre; thick layered fortress armor silhouette. Clearly broader and squarer than an ordinary pointed shield.",
+      "source": "source/originals/bastion-19d25fb3.png",
+      "crop": {
+        "left": 71,
+        "top": 24,
+        "width": 1112,
+        "height": 1213
+      },
+      "variants": [
+        {
+          "kind": "hero",
+          "size": 256,
+          "gutter": 8,
+          "reductionKernel": "nearest",
+          "paletteLimit": 256,
+          "files": [
+            {
+              "file": "assets/hero/bastion.png",
+              "scale": 1,
+              "width": 256,
+              "height": 256,
+              "bytes": 48334,
+              "sha256": "a848711483e893e68274875407c49856dfc8b297c309bba6a75d9ba5d2691135"
+            },
+            {
+              "file": "assets/hero/bastion@2x.png",
+              "scale": 2,
+              "width": 512,
+              "height": 512,
+              "bytes": 61823,
+              "sha256": "82558a9ec158256cd2cfd03c5909d1445e9ec08554534e4c0288f01664a2be6b"
+            },
+            {
+              "file": "assets/hero/bastion@3x.png",
+              "scale": 3,
+              "width": 768,
+              "height": 768,
+              "bytes": 75437,
+              "sha256": "0901b12cf837f30487771570f21beadbb784e7837f4ea4417498e2790cac7c95"
+            }
+          ]
+        },
+        {
+          "kind": "icon",
+          "size": 62,
+          "gutter": 2,
+          "reductionKernel": "lanczos3",
+          "paletteLimit": 128,
+          "files": [
+            {
+              "file": "assets/icon/bastion.png",
+              "scale": 1,
+              "width": 62,
+              "height": 62,
+              "bytes": 4338,
+              "sha256": "c7f41273da97dc8468511838e34e24008823aa99744d72dc9a5d5a90f5f34150"
+            },
+            {
+              "file": "assets/icon/bastion@2x.png",
+              "scale": 2,
+              "width": 124,
+              "height": 124,
+              "bytes": 5154,
+              "sha256": "8a62a6960a4223c2c2c69711d81e36b7909e509d822d9be8c81d407caff49edc"
+            },
+            {
+              "file": "assets/icon/bastion@3x.png",
+              "scale": 3,
+              "width": 186,
+              "height": 186,
+              "bytes": 6049,
+              "sha256": "6ca07682f387d7e57310a2a8150abeba762988cd8487607711b5309faa148b73"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "dreadguard",
+      "classId": "DREADGUARD",
+      "name": "Dreadguard",
+      "motif": "dark violet shield with a bold pale-violet upright sword/cross sigil, gunmetal spiked shoulder braces and short heavy chains on the two sides. Purple, charcoal iron and cold silver; controlled intimidating silhouette.",
+      "source": "source/originals/dreadguard-18ee65e1.png",
+      "crop": {
+        "left": 110,
+        "top": 12,
+        "width": 1033,
+        "height": 1215
+      },
+      "variants": [
+        {
+          "kind": "hero",
+          "size": 256,
+          "gutter": 8,
+          "reductionKernel": "nearest",
+          "paletteLimit": 256,
+          "files": [
+            {
+              "file": "assets/hero/dreadguard.png",
+              "scale": 1,
+              "width": 256,
+              "height": 256,
+              "bytes": 42609,
+              "sha256": "e91ff8644b4afec4b48b65f2237ec2798bb9894a2014d8d49de2418cc18d381f"
+            },
+            {
+              "file": "assets/hero/dreadguard@2x.png",
+              "scale": 2,
+              "width": 512,
+              "height": 512,
+              "bytes": 56097,
+              "sha256": "4bef79a20d1ed8ffb919f7612af52c70c79ea5aa431bf2a0869ce9012b8f333b"
+            },
+            {
+              "file": "assets/hero/dreadguard@3x.png",
+              "scale": 3,
+              "width": 768,
+              "height": 768,
+              "bytes": 69006,
+              "sha256": "e91bac0e6c5f1d2fca5ae4312b9e63a210d9f80c11f6c9e450ccebe302a056b4"
+            }
+          ]
+        },
+        {
+          "kind": "icon",
+          "size": 62,
+          "gutter": 2,
+          "reductionKernel": "lanczos3",
+          "paletteLimit": 128,
+          "files": [
+            {
+              "file": "assets/icon/dreadguard.png",
+              "scale": 1,
+              "width": 62,
+              "height": 62,
+              "bytes": 4106,
+              "sha256": "b318099f5e0ed851f110a035ab61201517c1a4036949a3b630454cffb5231de5"
+            },
+            {
+              "file": "assets/icon/dreadguard@2x.png",
+              "scale": 2,
+              "width": 124,
+              "height": 124,
+              "bytes": 4919,
+              "sha256": "e22ec2eb31afc70e6c8de3ef1e9285605b7783740a70230adf9ef5db403ee0ee"
+            },
+            {
+              "file": "assets/icon/dreadguard@3x.png",
+              "scale": 3,
+              "width": 186,
+              "height": 186,
+              "bytes": 5865,
+              "sha256": "fcf73838e42fe6d70c86017eb6d36364bc4c807d1e35c2e6504d39be8ad505e6"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "dawnkeeper",
+      "classId": "DAWNKEEPER",
+      "name": "Dawnkeeper",
+      "motif": "radiant round golden sun medallion with eight broad tapered rays, central warm gold orb, small symmetric wing-like golden side ornaments. Warm gold, amber light and ivory with dark bronze outlines; protective solar support.",
+      "source": "source/originals/dawnkeeper-14b18e44.png",
+      "crop": {
+        "left": 29,
+        "top": 28,
+        "width": 1196,
+        "height": 1192
+      },
+      "variants": [
+        {
+          "kind": "hero",
+          "size": 256,
+          "gutter": 8,
+          "reductionKernel": "nearest",
+          "paletteLimit": 256,
+          "files": [
+            {
+              "file": "assets/hero/dawnkeeper.png",
+              "scale": 1,
+              "width": 256,
+              "height": 256,
+              "bytes": 42000,
+              "sha256": "c9aeb2a06077efd73fdd1e0be2a5313300a3a55c47e3d7d5f24257e844b69289"
+            },
+            {
+              "file": "assets/hero/dawnkeeper@2x.png",
+              "scale": 2,
+              "width": 512,
+              "height": 512,
+              "bytes": 54252,
+              "sha256": "a57d32fde7ae3dd746995b726654e19bc486feb860ee57b10bc814f094d3356b"
+            },
+            {
+              "file": "assets/hero/dawnkeeper@3x.png",
+              "scale": 3,
+              "width": 768,
+              "height": 768,
+              "bytes": 66222,
+              "sha256": "2654b2cc948125d8f29eb17d773cdbd62f7f6a2f4580209cab68ce7f447491a7"
+            }
+          ]
+        },
+        {
+          "kind": "icon",
+          "size": 62,
+          "gutter": 2,
+          "reductionKernel": "lanczos3",
+          "paletteLimit": 128,
+          "files": [
+            {
+              "file": "assets/icon/dawnkeeper.png",
+              "scale": 1,
+              "width": 62,
+              "height": 62,
+              "bytes": 4004,
+              "sha256": "8dacef9bbba6716f21b1b9054f7471ff2b9730274b099971a895c35d5d63c4d1"
+            },
+            {
+              "file": "assets/icon/dawnkeeper@2x.png",
+              "scale": 2,
+              "width": 124,
+              "height": 124,
+              "bytes": 4814,
+              "sha256": "bdab062fb89a6b3f88db7bfbf49ba6b900f9822b67a05846c3aa87aaab180b1c"
+            },
+            {
+              "file": "assets/icon/dawnkeeper@3x.png",
+              "scale": 3,
+              "width": 186,
+              "height": 186,
+              "bytes": 5671,
+              "sha256": "0f8fa995fc2417610f0313bc1da2385b4a8b7467e6901718955fdebe6ac1f07d"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "wayfinder",
+      "classId": "WAYFINDER",
+      "name": "Wayfinder",
+      "motif": "two clean crossed golden arrows over an emerald green leaf-shaped medallion, restrained bronze circular rim with four small green stones. Forest green and warm gold; precise ranged hunter.",
+      "source": "source/originals/wayfinder-85fb1d2c.png",
+      "crop": {
+        "left": 43,
+        "top": 12,
+        "width": 1169,
+        "height": 1221
+      },
+      "variants": [
+        {
+          "kind": "hero",
+          "size": 256,
+          "gutter": 8,
+          "reductionKernel": "nearest",
+          "paletteLimit": 256,
+          "files": [
+            {
+              "file": "assets/hero/wayfinder.png",
+              "scale": 1,
+              "width": 256,
+              "height": 256,
+              "bytes": 41481,
+              "sha256": "7630be3116c4283fd65142651c4971599393604cbde7900b41285e3e7b005c0a"
+            },
+            {
+              "file": "assets/hero/wayfinder@2x.png",
+              "scale": 2,
+              "width": 512,
+              "height": 512,
+              "bytes": 53956,
+              "sha256": "b9c601f3bd0eae4839a205a6f57f084e1a02c354938527cad75f68c932ced073"
+            },
+            {
+              "file": "assets/hero/wayfinder@3x.png",
+              "scale": 3,
+              "width": 768,
+              "height": 768,
+              "bytes": 65944,
+              "sha256": "04ea8ab05ef00c58e397e68f2b6f5849707b3cacbc025a5df41bffc9071e0d84"
+            }
+          ]
+        },
+        {
+          "kind": "icon",
+          "size": 62,
+          "gutter": 2,
+          "reductionKernel": "lanczos3",
+          "paletteLimit": 128,
+          "files": [
+            {
+              "file": "assets/icon/wayfinder.png",
+              "scale": 1,
+              "width": 62,
+              "height": 62,
+              "bytes": 4045,
+              "sha256": "35aa038a74b4bda3a233f05bd6636e06f57fa4da37ecff1f5dff7a048b09c075"
+            },
+            {
+              "file": "assets/icon/wayfinder@2x.png",
+              "scale": 2,
+              "width": 124,
+              "height": 124,
+              "bytes": 4839,
+              "sha256": "cf2de3ef31820dfd9d80260dd30c8f02994598d408c9551e7c0077d2d2d6f903"
+            },
+            {
+              "file": "assets/icon/wayfinder@3x.png",
+              "scale": 3,
+              "width": 186,
+              "height": 186,
+              "bytes": 5698,
+              "sha256": "e987d094a03fca4e30346b298f9135c774d846d6fb96b3c9d7ca3ab983b1385c"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ravager",
+      "classId": "RAVAGER",
+      "name": "Ravager",
+      "motif": "two heavy crossed steel battle axes with broad crescent blades and short wrapped handles, blood-red enamel behind them, rugged iron rim with restrained angular points. Crimson, iron silver, deep dark red; powerful heavy melee silhouette.",
+      "source": "source/originals/ravager-c2351a9b.png",
+      "crop": {
+        "left": 65,
+        "top": 16,
+        "width": 1120,
+        "height": 1214
+      },
+      "variants": [
+        {
+          "kind": "hero",
+          "size": 256,
+          "gutter": 8,
+          "reductionKernel": "nearest",
+          "paletteLimit": 256,
+          "files": [
+            {
+              "file": "assets/hero/ravager.png",
+              "scale": 1,
+              "width": 256,
+              "height": 256,
+              "bytes": 44754,
+              "sha256": "ccb1164885811b3798fd7ab136c54f299662d3ae3548889f04aa1d7a60c6e231"
+            },
+            {
+              "file": "assets/hero/ravager@2x.png",
+              "scale": 2,
+              "width": 512,
+              "height": 512,
+              "bytes": 57225,
+              "sha256": "58e3f6fc3f696157107b66e6f6cc1789b14bc7f58a1b5829131b9d62cb4fe6b5"
+            },
+            {
+              "file": "assets/hero/ravager@3x.png",
+              "scale": 3,
+              "width": 768,
+              "height": 768,
+              "bytes": 70119,
+              "sha256": "22d2102ccf6bd7f85f6ddf8c8dad3ff4b2c8b32843bbcecd949fd17846e0921e"
+            }
+          ]
+        },
+        {
+          "kind": "icon",
+          "size": 62,
+          "gutter": 2,
+          "reductionKernel": "lanczos3",
+          "paletteLimit": 128,
+          "files": [
+            {
+              "file": "assets/icon/ravager.png",
+              "scale": 1,
+              "width": 62,
+              "height": 62,
+              "bytes": 4328,
+              "sha256": "7386bf94a96b6acaa283e025129f5dcbbad8f26b9b0fbdd2d5835cc72abf21c0"
+            },
+            {
+              "file": "assets/icon/ravager@2x.png",
+              "scale": 2,
+              "width": 124,
+              "height": 124,
+              "bytes": 5119,
+              "sha256": "1ec0dcaa64076d6b23378ade39f8c6d31c8d4cfe5a5f5fb36380415dba3b83dc"
+            },
+            {
+              "file": "assets/icon/ravager@3x.png",
+              "scale": 3,
+              "width": 186,
+              "height": 186,
+              "bytes": 6095,
+              "sha256": "b81053eed16eaef18beedc2b834b8d3bf7ee1beb007a05dbba20ca85e36b3b16"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hexweaver",
+      "classId": "HEXWEAVER",
+      "name": "Hexweaver",
+      "motif": "central luminous violet orb inside concentric silver-violet arcane circles with four large pointed amethyst rune crystals, visible negative-space gaps between rings. Purple, amethyst, pale lavender and navy. Clear arcane geometry, no tiny writing.",
+      "source": "source/originals/hexweaver-1d57892f.png",
+      "crop": {
+        "left": 11,
+        "top": 11,
+        "width": 1232,
+        "height": 1225
+      },
+      "variants": [
+        {
+          "kind": "hero",
+          "size": 256,
+          "gutter": 8,
+          "reductionKernel": "nearest",
+          "paletteLimit": 256,
+          "files": [
+            {
+              "file": "assets/hero/hexweaver.png",
+              "scale": 1,
+              "width": 256,
+              "height": 256,
+              "bytes": 34786,
+              "sha256": "946e16d124d26498513ada2d5acd6b44b801cc840a73f409eae1425ff3496648"
+            },
+            {
+              "file": "assets/hero/hexweaver@2x.png",
+              "scale": 2,
+              "width": 512,
+              "height": 512,
+              "bytes": 46802,
+              "sha256": "62fa4701e7d384b71dee42bc37ec9e4afef6316c55786321a6c6fff96726c361"
+            },
+            {
+              "file": "assets/hero/hexweaver@3x.png",
+              "scale": 3,
+              "width": 768,
+              "height": 768,
+              "bytes": 57361,
+              "sha256": "6d8856b23ee5124dfcd5994af6b7bfd2aec1841eb5aa08ff42f2ddcfffb9c6f0"
+            }
+          ]
+        },
+        {
+          "kind": "icon",
+          "size": 62,
+          "gutter": 2,
+          "reductionKernel": "lanczos3",
+          "paletteLimit": 128,
+          "files": [
+            {
+              "file": "assets/icon/hexweaver.png",
+              "scale": 1,
+              "width": 62,
+              "height": 62,
+              "bytes": 3485,
+              "sha256": "47d4f01165d8145abc670b20160f51d3d3adc2fe5ed14770be7e90607d8300ea"
+            },
+            {
+              "file": "assets/icon/hexweaver@2x.png",
+              "scale": 2,
+              "width": 124,
+              "height": 124,
+              "bytes": 4211,
+              "sha256": "2916849ecf5fc6ccdf9752367b4c3a0dfe0ca9f0691e01c92d451fd3158cb8f7"
+            },
+            {
+              "file": "assets/icon/hexweaver@3x.png",
+              "scale": 3,
+              "width": 186,
+              "height": 186,
+              "bytes": 4987,
+              "sha256": "afb703dc48f3b5d0338422564697b298d8ac4cafdf08ba09756d433ccaa99b7e"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "knife_dancer",
+      "classId": "KNIFE_DANCER",
+      "name": "Knife Dancer",
+      "motif": "a long central upright silver dagger with rose-red gem on the hilt, restrained curved crimson blade-like arcs within a dark burgundy circular emblem. Silver and deep rose-red, elegant sharp precision silhouette; keep the dagger dominant.",
+      "source": "source/originals/knife_dancer-8eb87177.png",
+      "crop": {
+        "left": 34,
+        "top": 10,
+        "width": 1183,
+        "height": 1213
+      },
+      "variants": [
+        {
+          "kind": "hero",
+          "size": 256,
+          "gutter": 8,
+          "reductionKernel": "nearest",
+          "paletteLimit": 256,
+          "files": [
+            {
+              "file": "assets/hero/knife_dancer.png",
+              "scale": 1,
+              "width": 256,
+              "height": 256,
+              "bytes": 36995,
+              "sha256": "ba2477669e3f0f9067dcc6f147fb8ac7e32e22e4d6886797597f4223e3ea61ae"
+            },
+            {
+              "file": "assets/hero/knife_dancer@2x.png",
+              "scale": 2,
+              "width": 512,
+              "height": 512,
+              "bytes": 48766,
+              "sha256": "ca1739ed35232a8eb6cfa9258835b10037bd9644a65ed3ec8c98808ffa254cd8"
+            },
+            {
+              "file": "assets/hero/knife_dancer@3x.png",
+              "scale": 3,
+              "width": 768,
+              "height": 768,
+              "bytes": 59870,
+              "sha256": "a0cd18439ffdd32c587d83e4e8b6bdeabdd4b76afc54f0f815314d8d1ebd8a9b"
+            }
+          ]
+        },
+        {
+          "kind": "icon",
+          "size": 62,
+          "gutter": 2,
+          "reductionKernel": "lanczos3",
+          "paletteLimit": 128,
+          "files": [
+            {
+              "file": "assets/icon/knife_dancer.png",
+              "scale": 1,
+              "width": 62,
+              "height": 62,
+              "bytes": 3578,
+              "sha256": "65a8dbe2a90825d3761b96911fc859298aa7134410027ee7bf64fd783b59ea0d"
+            },
+            {
+              "file": "assets/icon/knife_dancer@2x.png",
+              "scale": 2,
+              "width": 124,
+              "height": 124,
+              "bytes": 4311,
+              "sha256": "6ef4005a6144f03b94816b86080677f22664981a11757b2b61f26d32e48696f6"
+            },
+            {
+              "file": "assets/icon/knife_dancer@3x.png",
+              "scale": 3,
+              "width": 186,
+              "height": 186,
+              "bytes": 5135,
+              "sha256": "3e60932cf61b450679768d89bead9d6f76d41f2641be04826241c49eea3f9029"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stonecaller",
+      "classId": "STONECALLER",
+      "name": "Stonecaller",
+      "motif": "a forked wooden earth-totem staff with branching antler-like arms, a large floating lime-green crystal between the branches, restrained leafy vines and small angular stone fittings. Earthy brown, moss green, amber bronze and luminous green; resonance and geomancy.",
+      "source": "source/originals/stonecaller-e42446ba.png",
+      "crop": {
+        "left": 102,
+        "top": 31,
+        "width": 1051,
+        "height": 1187
+      },
+      "variants": [
+        {
+          "kind": "hero",
+          "size": 256,
+          "gutter": 8,
+          "reductionKernel": "nearest",
+          "paletteLimit": 256,
+          "files": [
+            {
+              "file": "assets/hero/stonecaller.png",
+              "scale": 1,
+              "width": 256,
+              "height": 256,
+              "bytes": 41666,
+              "sha256": "6b2d8c4772ef21b2f0a3e9b9866d9bb84e220ec62c8dee60cde73c22e2259a57"
+            },
+            {
+              "file": "assets/hero/stonecaller@2x.png",
+              "scale": 2,
+              "width": 512,
+              "height": 512,
+              "bytes": 54423,
+              "sha256": "8b2f75f9d9d4d1ece855c9adefcbd259bfc11080e3db859d170db41ed9b5feac"
+            },
+            {
+              "file": "assets/hero/stonecaller@3x.png",
+              "scale": 3,
+              "width": 768,
+              "height": 768,
+              "bytes": 66381,
+              "sha256": "812408b068eccec6464592ff1b2da7a2ea43ac1724f3bd2f985d6d460c2e1c1b"
+            }
+          ]
+        },
+        {
+          "kind": "icon",
+          "size": 62,
+          "gutter": 2,
+          "reductionKernel": "lanczos3",
+          "paletteLimit": 128,
+          "files": [
+            {
+              "file": "assets/icon/stonecaller.png",
+              "scale": 1,
+              "width": 62,
+              "height": 62,
+              "bytes": 3946,
+              "sha256": "2fb0ad0f30f8527a31c484909a050fedc1a2a2c9411e55df48a94f312fa27adc"
+            },
+            {
+              "file": "assets/icon/stonecaller@2x.png",
+              "scale": 2,
+              "width": 124,
+              "height": 124,
+              "bytes": 4754,
+              "sha256": "95b2c029b12bafe5732326755298d82de5b4fa85e1e079d23ce503f375e9f82e"
+            },
+            {
+              "file": "assets/icon/stonecaller@3x.png",
+              "scale": 3,
+              "width": 186,
+              "height": 186,
+              "bytes": 5567,
+              "sha256": "19591a0d579a8962fabf4b35946d245a15fad4e0dbed5cc2027a2bbf4a953a8c"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

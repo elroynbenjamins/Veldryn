@@ -13,10 +13,11 @@ const definitions:Array<{id:string;name:string;region:string;min:number;recommen
   {id:'EXP_002',name:'Lanternwatch Descent',region:'Asterfall',min:18,recommended:25,implemented:true,description:'fixture.lantern'},
   {id:'EXP_003',name:'Buried Observatory',region:'Sunscar',min:36,recommended:45,implemented:true,description:'fixture.observatory'},
   {id:'EXP_004',name:'Mirage Well',region:'Sunscar',min:32,recommended:45,implemented:true,description:'fixture.mirage'},
-  {id:'EXP_005',name:'Shiverlake Descent',region:'Frostmarch',min:52,recommended:70,implemented:false,description:'fixture.shiverlake'},
-  {id:'EXP_006',name:'Choir Caverns',region:'Frostmarch',min:57,recommended:70,implemented:false,description:'fixture.choir'},
-  {id:'EXP_007',name:'Blackglass Fen',region:'Ashlands',min:77,recommended:94,implemented:false,description:'fixture.blackglass'},
-  {id:'EXP_008',name:'Crucible Depths',region:'Ashlands',min:82,recommended:100,implemented:false,description:'fixture.crucible'},
+  {id:'COP_007',name:'Whitepine Hunt',region:'Frostmarch',min:52,recommended:70,implemented:true,description:'fixture.shiverlake'},
+  {id:'COP_008',name:'Shiverlake Descent',region:'Frostmarch',min:58,recommended:70,implemented:true,description:'fixture.shiverlake'},
+  {id:'COP_009',name:'Choir Caverns',region:'Frostmarch',min:64,recommended:70,implemented:true,description:'fixture.choir'},
+  {id:'EXP_007',name:'Blackglass Fen',region:'Ashlands',min:77,recommended:94,implemented:true,description:'fixture.blackglass'},
+  {id:'EXP_008',name:'Crucible Depths',region:'Ashlands',min:82,recommended:100,implemented:true,description:'fixture.crucible'},
 ];
 
 /** Development-only projection; values mirror the canonical backend launch registry. */

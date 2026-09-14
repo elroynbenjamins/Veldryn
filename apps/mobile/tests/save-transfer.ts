@@ -4,10 +4,12 @@ import {createSaveBackup,parseSaveBackup} from '../src/core/save-transfer';
 
 function ok(value:boolean,message:string){if(!value)throw new Error(message)}
 
-const state=createCharacter(newGame(1_000),'IRONWARDEN','Backup Tester');
+const base=createCharacter(newGame(1_000),'IRONWARDEN','Backup Tester');
+const state={...base,currentRegionId:'ASHLANDS',character:{...base.character!,level:75},unlockedMonsterIds:[...base.unlockedMonsterIds,'BLACKGLASS_MIRELING']};
 const backup=createSaveBackup(state,new Date('2026-09-08T00:00:00.000Z'));
 const restored=parseSaveBackup(backup);
 ok(restored.character?.name==='Backup Tester','A versioned backup must restore the character');
+ok(restored.currentRegionId==='ASHLANDS'&&restored.unlockedMonsterIds.includes('BLACKGLASS_MIRELING'),'A backup must preserve later-region location and discoveries');
 ok(parseSaveBackup(JSON.stringify(state)).version===6,'A raw legacy-style save export must remain importable');
 let invalidRejected=false;
 try{parseSaveBackup('{broken')}catch(error){invalidRejected=error instanceof Error&&error.message.includes('valid JSON')}

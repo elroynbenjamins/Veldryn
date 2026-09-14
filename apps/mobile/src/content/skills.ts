@@ -2,7 +2,8 @@ import type {ClassId} from '../core/types';
 import {NOVICE_RECIPES} from './novice-sets';
 import {ITEMS} from './items';
 import {TOOL_RECIPES} from './gathering-tools';
-export interface GatherDef{id:string;skillId:'mining'|'woodcutting'|'fishing';name:string;unlockLevel:number;seconds:number;xp:number;itemId:string;min:number;max:number;zoneId:string;difficultyMultiplier:number;recommendedToolTier:number;}
+import {ALCHEMY_RECIPES} from './alchemy';
+export interface GatherDef{id:string;skillId:'mining'|'woodcutting'|'fishing'|'herbalism';name:string;unlockLevel:number;seconds:number;xp:number;itemId:string;min:number;max:number;zoneId:string;difficultyMultiplier:number;recommendedToolTier:number;}
 export const GATHERING:GatherDef[]=([
 {id:'COPPER_VEIN',skillId:'mining',name:'Copper Vein',unlockLevel:1,seconds:15,xp:9,itemId:'COPPER_ORE',min:1,max:2,zoneId:'OLD_MINES'},
 {id:'ASTER_IRON_VEIN',skillId:'mining',name:'Aster-Iron Vein',unlockLevel:8,seconds:24,xp:18,itemId:'ASTER_IRON_ORE',min:1,max:2,zoneId:'OLD_MINES'},
@@ -33,6 +34,7 @@ const GENERATED_COMPLETE_SET_RECIPES:Recipe[]=ITEMS.filter(item=>item.type==='ge
   return {id:`CRAFT_${item.id}`,name:item.name,skillId:'smithing',level:frost?59:sunscar?35:22,xp:frost?2050:sunscar?1450:850,gold:frost?7900:sunscar?5000:2300,seconds:frost?840:sunscar?570:330,inputs,output:{itemId:item.id,quantity:1},classId:item.classRestriction,characterLevel:frost?62:sunscar?38:21};
 });
 export const RECIPES:Recipe[]=([
+...ALCHEMY_RECIPES as Recipe[],
 ...NOVICE_RECIPES,
 ...GENERATED_COMPLETE_SET_RECIPES,
 ...(TOOL_RECIPES as Recipe[]),

@@ -1,0 +1,1536 @@
+{
+  "package": "VELDRYN Visual Polish v10",
+  "generatedAt": "2026-09-13",
+  "files": [
+    {
+      "path": "activity-export.json",
+      "bytes": 539,
+      "sha256": "1bb8304fea08b6b6e8b4e66f35d59ccbb3091f4c6a9e917655004aee695f541a"
+    },
+    {
+      "path": "activity-prompts.json",
+      "bytes": 6594,
+      "sha256": "92422812c75c5bead2aaf538147e3d461f6f5637a90412cc0b663016cdecc924"
+    },
+    {
+      "path": "asset-audit.json",
+      "bytes": 4288,
+      "sha256": "eedb754c5563d6e5ad50dda584c774ef91cd8e7a0f41b7443b1b205405c8189b"
+    },
+    {
+      "path": "build-verification_v10.json",
+      "bytes": 369,
+      "sha256": "7c22202fd5e4679d75511262aaf8e932cb63603b599096beee732ede65ebb24b"
+    },
+    {
+      "path": "build-verification_v5.json",
+      "bytes": 223,
+      "sha256": "ad521969f4c03364fd4dd55afe6d007a96f8bb443122a2f593f47699329930a0"
+    },
+    {
+      "path": "build-verification_v6.json",
+      "bytes": 208,
+      "sha256": "ebc3373d4aeb02d777c919c7f2aaca8037795962c7fcc696fc26afe8bdcfe62a"
+    },
+    {
+      "path": "build-verification_v7.json",
+      "bytes": 166,
+      "sha256": "fcd4f7940123040d55011ab03b3a074c08b9135bcfe88243e4d6c40f3406ee7b"
+    },
+    {
+      "path": "build-verification_v8.json",
+      "bytes": 297,
+      "sha256": "5207d2789b3e204edb5c5671e2acadc1637a0953eb9bb893bacec4211c6bc69a"
+    },
+    {
+      "path": "build-verification.json",
+      "bytes": 392,
+      "sha256": "bb0a9c83687ee78f5980983ff03737d684273dfd26f1ffbd818b179fae8d075f"
+    },
+    {
+      "path": "crafted-export.json",
+      "bytes": 1381,
+      "sha256": "51e2c432956f0a83177ebd53f818f378d4e26e66d7c722e85bc84d80ee3274ae"
+    },
+    {
+      "path": "crafted-prompts.json",
+      "bytes": 8300,
+      "sha256": "565a1d72bbc1e3ef2288f9fe1d573337f55c1d2a7a0b4a682fe55393d3732b2f"
+    },
+    {
+      "path": "implementation/APP_INTEGRATION.md",
+      "bytes": 705,
+      "sha256": "769dfbbb4b1a09c561e147c472862469729fdb34076f0ca9948fc5e9c0d509da"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/activity-icons-v1/combat.png",
+      "bytes": 2966,
+      "sha256": "2f705f089e4feee09dfeb12d30ac57044881a83c22a88a6c37b1d5922639ecdb"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/activity-icons-v1/combat@2x.png",
+      "bytes": 9110,
+      "sha256": "bf597c1245d67982502524f128a5fd4f94f27a65434f83db01968b3edb305cbb"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/activity-icons-v1/combat@3x.png",
+      "bytes": 18498,
+      "sha256": "2befeee1dd5eec2f54b6370b896677fdaa9f621f3870faf8626e46e2544a1485"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/activity-icons-v1/cooking.png",
+      "bytes": 3038,
+      "sha256": "1c3846465b249d11499f57366ba531d38e968f053e949c98ec04a5203ad71ada"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/activity-icons-v1/cooking@2x.png",
+      "bytes": 9778,
+      "sha256": "cfde9ce35cfc56980887f0831cd833e0025d2bcb67eb813f772b256515453f76"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/activity-icons-v1/cooking@3x.png",
+      "bytes": 20283,
+      "sha256": "55fcc3369c9a0742e51ad3aa2850e241100fe82f20b4bc033812ffc91489b487"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/activity-icons-v1/fishing.png",
+      "bytes": 2398,
+      "sha256": "ab42482d625fd26c76881187282b7478c4b288cb163572b6ea1eefa914c49190"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/activity-icons-v1/fishing@2x.png",
+      "bytes": 6800,
+      "sha256": "85dfe77bc4eeb9621444c124d7a0b5c34b1026ba7a39c6fe0ce173ddb7899f5d"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/activity-icons-v1/fishing@3x.png",
+      "bytes": 13357,
+      "sha256": "45185c68cf91f58b7e3d5df148db64b1fe271bfb541fca2b1720028b5572464a"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/activity-icons-v1/mining.png",
+      "bytes": 1852,
+      "sha256": "0e3ddd853299395b098a920411e523f18d176fc5805e2d03881916bef4a8d203"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/activity-icons-v1/mining@2x.png",
+      "bytes": 5474,
+      "sha256": "2c843d648aa37d3de99171f741e06c2a465180be576757b2f7b077850a7ed43d"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/activity-icons-v1/mining@3x.png",
+      "bytes": 10952,
+      "sha256": "87d4111ca058091307c9c55404d1b354b3b4f343347171be467d12254e7054ee"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/activity-icons-v1/small/combat.png",
+      "bytes": 1374,
+      "sha256": "def3eec51627259db334c1faea6ab52e2b59ae4ddb4cac14c98eff42b83b8afd"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/activity-icons-v1/small/combat@2x.png",
+      "bytes": 3834,
+      "sha256": "899d6bd0bb081fc1fe2b0561d796ac08c330e8ec4eba5227f1b4216a4bca0fc9"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/activity-icons-v1/small/combat@3x.png",
+      "bytes": 7594,
+      "sha256": "015626389983b998c37abdbcbdf367faa94cc4b3ce44a016ecb414d4c620ca53"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/activity-icons-v1/small/cooking.png",
+      "bytes": 1391,
+      "sha256": "e6df1d01444037436cf0037f84748043706c53b78982ea456613ef50d6fb82f0"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/activity-icons-v1/small/cooking@2x.png",
+      "bytes": 4065,
+      "sha256": "852af440ded4db73707ee2f86abbb488a0a718bad5bc4afc1586ed8c6141eaca"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/activity-icons-v1/small/cooking@3x.png",
+      "bytes": 8129,
+      "sha256": "6447bd9da387e881d1efff5e3fa29061c96473d17eefa0fe5a162c66fc93a716"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/activity-icons-v1/small/fishing.png",
+      "bytes": 1182,
+      "sha256": "8aab0aec154c22e904748d2918ef6d1b8af9732449f45d04cd8641cbde0cd9a5"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/activity-icons-v1/small/fishing@2x.png",
+      "bytes": 3153,
+      "sha256": "94534260ec3ac57b0217f2e7218f3af104ef189f3d5ab63300ac46e287d0631f"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/activity-icons-v1/small/fishing@3x.png",
+      "bytes": 5831,
+      "sha256": "9006f37f4f4bc53870ea96380877c95c051ff5f296b2ee6de18e309ee5dce893"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/activity-icons-v1/small/mining.png",
+      "bytes": 938,
+      "sha256": "cbe00c74a75e779f05c60558383a1ee46fc7bdb612df725a5fac10e62145e2e4"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/activity-icons-v1/small/mining@2x.png",
+      "bytes": 2455,
+      "sha256": "fd3bcef3e8c9db4fc9c2ac3eab7654bf944e4e32433f69d272db4b8c94dbbbfe"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/activity-icons-v1/small/mining@3x.png",
+      "bytes": 4574,
+      "sha256": "5fc19723f6d128513bb9e99e88321fd946496f5d502a816a95ce5e77bc58c797"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/activity-icons-v1/small/smithing.png",
+      "bytes": 1328,
+      "sha256": "2ca4be0fdbfe331e475e8cf6793339b8bf7b4d509dfa177cf368eb06e504cbb2"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/activity-icons-v1/small/smithing@2x.png",
+      "bytes": 3893,
+      "sha256": "2766d48da3cf9ccb69c448f70f47ddad566000514d2114e4dc5d6150383c0aa3"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/activity-icons-v1/small/smithing@3x.png",
+      "bytes": 7727,
+      "sha256": "1beeed012e0efa34f61b61d2ef9bd1e5e5dfc24f0ff67d2a0602ac91d60d60f1"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/activity-icons-v1/small/woodcutting.png",
+      "bytes": 1097,
+      "sha256": "b5627db8d8286245dcdd228dcb2bd1d9fc7345eead4d0df4d73e70108464cba8"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/activity-icons-v1/small/woodcutting@2x.png",
+      "bytes": 3088,
+      "sha256": "cf9d1ddfb30a4af5ca28a334ece265ee639fc53e57c89cb4fd0ca27f58c80d2c"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/activity-icons-v1/small/woodcutting@3x.png",
+      "bytes": 6025,
+      "sha256": "9fb0b1ee4a3276cd7ceae35452d4e87cd32b43f4d66972d071422bab75556b08"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/activity-icons-v1/smithing.png",
+      "bytes": 2893,
+      "sha256": "40ccf941eab3f8eff0c1222174766ea88af6ed260cdcd3760779059f50d14e16"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/activity-icons-v1/smithing@2x.png",
+      "bytes": 9222,
+      "sha256": "5d022d7b0cb37c3c51954b8bf3c275829230a5b59f379d1ad9a5fc84eb9d6237"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/activity-icons-v1/smithing@3x.png",
+      "bytes": 18984,
+      "sha256": "116edac67de6be8b2ab04f0680d396ac98959aad32ecf2f3a64dc0879c2d5487"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/activity-icons-v1/woodcutting.png",
+      "bytes": 2312,
+      "sha256": "ebc142b4235140635f0a2ed575ac12b532e4fa5fa7813f66210bf02db54e991f"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/activity-icons-v1/woodcutting@2x.png",
+      "bytes": 7213,
+      "sha256": "e1293c9d1aa1d8ab95c29ae75fd9ef6e28607444ba82489394a1608d1c4b65f3"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/activity-icons-v1/woodcutting@3x.png",
+      "bytes": 14657,
+      "sha256": "3d6842305afee2223461843e5e10d977689a722cbe38e429d76b5962dc239392"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/crafted-items-v1/aster_iron_ingot.png",
+      "bytes": 3809,
+      "sha256": "cde345ef975c306685d6a089c0748dda31568b76c362816da39e55768cf890ec"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/crafted-items-v1/aster_iron_ingot@2x.png",
+      "bytes": 12449,
+      "sha256": "fa625b34a590ca9f5d64ae0915a51a1c3bb1927a00cfa8e9344841725418b9b9"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/crafted-items-v1/aster_iron_ingot@3x.png",
+      "bytes": 25327,
+      "sha256": "2fdbb3358d7e801a3aede4ca9f6c52b1b7dd48bc5c799e620428eb79889965c6"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/crafted-items-v1/cooked_silverfin.png",
+      "bytes": 3997,
+      "sha256": "c863d24844d96220c40ab84ab65401f93787a8a33db9d54f060d24ef3c8e3d29"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/crafted-items-v1/cooked_silverfin@2x.png",
+      "bytes": 13750,
+      "sha256": "750ab8e2c12bfa4201e2bd390e4034e0781e5620472c1a721701e0441141fb46"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/crafted-items-v1/cooked_silverfin@3x.png",
+      "bytes": 28915,
+      "sha256": "45a788ed0b45208b586b82d216cbc34304467984a841b595d630998b5f3cd9f3"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/crafted-items-v1/copper_ingot.png",
+      "bytes": 4144,
+      "sha256": "be0b94f43d907b0ffb9c7f44fec2dac7f9cf4d94f7aa596c0fb2e7d561f6310b"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/crafted-items-v1/copper_ingot@2x.png",
+      "bytes": 13686,
+      "sha256": "bdd6d6c82ab12ed44bd1e33b3cfce10888ee7d639c6802e30c19edaefdebebf0"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/crafted-items-v1/copper_ingot@3x.png",
+      "bytes": 28382,
+      "sha256": "530381f3fc604d2025f880967d77c027d1bfa2880be4f0300b5b9716e650e2a9"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/crafted-items-v1/ironwood_stew.png",
+      "bytes": 4717,
+      "sha256": "6c9259be0b14b955f68196ddc163e1dba68110b4e3346d75e5bbe17ff3dd382d"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/crafted-items-v1/ironwood_stew@2x.png",
+      "bytes": 16499,
+      "sha256": "c479debca97fa8381120ceeb35c7eb181f7872613c0121ad578738a7f088690f"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/crafted-items-v1/ironwood_stew@3x.png",
+      "bytes": 34526,
+      "sha256": "8721bf9bca6fce3a7c2b254f4a98b9227713e39355744e9e469b4f294cf03017"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/crafted-items-v1/oathstone_ingot.png",
+      "bytes": 4216,
+      "sha256": "1655d8bd48fb5538ee7e27714cc2c3f6da68daa19cc1078450f0b54dcfec5e95"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/crafted-items-v1/oathstone_ingot@2x.png",
+      "bytes": 14173,
+      "sha256": "8ccb75e7ed6b9f4c3983811e8aafc93a4eb49bae786e37824e847cd52e14117d"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/crafted-items-v1/oathstone_ingot@3x.png",
+      "bytes": 29122,
+      "sha256": "82c4543d9caa20d96c3edfe0e2c575d072cb3ba85484bcd75f60cf0b9cfdaac4"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/crafted-items-v1/reinforced_fitting.png",
+      "bytes": 3210,
+      "sha256": "4090718b662fc67ac11eed547966f213e27a909ae34d7c983dc49f59e4615fcc"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/crafted-items-v1/reinforced_fitting@2x.png",
+      "bytes": 10533,
+      "sha256": "4922fa851582da8a77a3a09002b3073bef2b393bd640bd09bf53b7003c185c63"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/crafted-items-v1/reinforced_fitting@3x.png",
+      "bytes": 21370,
+      "sha256": "e17af198f2f3f435192e61bcd08cfc246722af75a48c7a9d6acda786862c88c0"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/crafted-items-v1/roasted_oathscale.png",
+      "bytes": 4170,
+      "sha256": "38d50d82790ce0f4e733fe4b49f876983f6208e5f24d05313d3aaf7981bb78c2"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/crafted-items-v1/roasted_oathscale@2x.png",
+      "bytes": 14530,
+      "sha256": "411321f90867d1e0c05a8274955728c790b7e826322049132e85b5aee99aa19f"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/crafted-items-v1/roasted_oathscale@3x.png",
+      "bytes": 30883,
+      "sha256": "2bb9df4a534d1741d4ae398781aaf2bf75267c573ab9cd5e57b50b7216e93bc0"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/crafted-items-v1/seared_river_eel.png",
+      "bytes": 4776,
+      "sha256": "c6ef2ce0e17013639a96b6cf4af09b58442f8895c299bde0fd11b62e1aeb87ae"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/crafted-items-v1/seared_river_eel@2x.png",
+      "bytes": 16912,
+      "sha256": "c3ce11e208c3077eb08442c6b46b054b6fe5238e426b7426ce6b26880630b22a"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/crafted-items-v1/seared_river_eel@3x.png",
+      "bytes": 35869,
+      "sha256": "e7a3d78c3087a7fb4ca9239d1e114685c3ca9ca4fa4e5333647e1643b1d9fe53"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/amberglass.png",
+      "bytes": 5185,
+      "sha256": "b90addc0e524a686333f46e0d81131000e04639a8fda96aca324cbdd69c094b8"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/amberglass@2x.png",
+      "bytes": 18008,
+      "sha256": "627f60882fc9838f36d7c95feff6112ba2f81c95bae10ac4c743d09b6efd7712"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/amberglass@3x.png",
+      "bytes": 38023,
+      "sha256": "9947aa5f33a99a9a12b16fa5174cb54535378c3f2b8b5e7eae5a4cfe8d10c5c4"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/astral_script.png",
+      "bytes": 4582,
+      "sha256": "b84aa5788f4d839b05bb6438e70cf4bd1a27b881303c3e68c2d484643de13712"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/astral_script@2x.png",
+      "bytes": 15710,
+      "sha256": "ff45bcb4d7733ab25b76c8861907738bdb162a1ce15dc9312c7427e871da9e60"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/astral_script@3x.png",
+      "bytes": 33069,
+      "sha256": "bfe1aebe36247487fdc7f2c9ff60796bd77dff68b94a92299e3e0b7692d7b62b"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/banner_ash.png",
+      "bytes": 4427,
+      "sha256": "abaf637e7b4f5ced2cb1e2844e127463fe4a1cf3aaead8f48e8ea89be0431843"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/banner_ash@2x.png",
+      "bytes": 15233,
+      "sha256": "9925ba7dbbfca5b402d7fddb9ceaff18a1af69606138bec4c795c9fb7275945c"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/banner_ash@3x.png",
+      "bytes": 32172,
+      "sha256": "ba33e2e703e6d38bf6d04f81b9bd3093dae4f9129cb8d71c5d2a769d3eced891"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/choir_bloom.png",
+      "bytes": 4790,
+      "sha256": "f5cc62f9863f0d763599779faa0318519ff054a20f7636d0394bd4b479533496"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/choir_bloom@2x.png",
+      "bytes": 15917,
+      "sha256": "b2405688c69e3f57404114aeac77997af8fa4193f9ccaee06b55071de90777b2"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/choir_bloom@3x.png",
+      "bytes": 32588,
+      "sha256": "7d802a0fc1606e9c1518af20a2d4b99b9a87b50ab7b334089dce7464ca6a887c"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/echo_bat_wing.png",
+      "bytes": 4075,
+      "sha256": "2aba83c1fdbf99a1f526a21d0e2ed959f075095ef30a58b9376d20bf112c7567"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/echo_bat_wing@2x.png",
+      "bytes": 13488,
+      "sha256": "c79b24549169d34ff70a9cc77ca221c0e868a6c8a7c8457250a448c7c3aa45df"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/echo_bat_wing@3x.png",
+      "bytes": 28106,
+      "sha256": "6127614e2962d288c1452bd969c1209dca3584b7a675f91ef35df27ed4018622"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/echo_touched_pelt.png",
+      "bytes": 5264,
+      "sha256": "d785b9a75897fd5201fa70a3c4ebfe1e81e4418a23ac2a1833299a09b52cfb1c"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/echo_touched_pelt@2x.png",
+      "bytes": 18133,
+      "sha256": "888b6a8a1cb3c18020614047dc799fe2f483daaee50791f292cb71491658e1eb"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/echo_touched_pelt@3x.png",
+      "bytes": 37516,
+      "sha256": "5a96ba131d22a6b5db114bd63a586780d5d75dde18ac9319befcd2adcb4c1bd4"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/fallen_rivet.png",
+      "bytes": 4545,
+      "sha256": "83a46b4f014e68dc8c5b89b5bcfe17c90c38fb5b1eccc705a3258eddb8107c83"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/fallen_rivet@2x.png",
+      "bytes": 15807,
+      "sha256": "65a5bbb05daacb185dd02e7723acb09b6d413ddc50b378628ce26aee1af674dc"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/fallen_rivet@3x.png",
+      "bytes": 33098,
+      "sha256": "921b31e5510e563d3de7fd2c7d4660bfb1b761a70b8759f535902bbb437ee64a"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/frostiron.png",
+      "bytes": 4983,
+      "sha256": "f42642c3939f0962b8b0883bb2a14ffd28a6a6a6d9bff0c7214d5e9a30e08a75"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/frostiron@2x.png",
+      "bytes": 17426,
+      "sha256": "2f6284900888bdb6438efacf57934bea283152318df0c65db78f589a180ede7c"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/frostiron@3x.png",
+      "bytes": 36518,
+      "sha256": "b08a94d76b17839c6b14514ce32cfb24bbea42c1e027058f9235336adbad294c"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/gloam_dust.png",
+      "bytes": 3633,
+      "sha256": "8329ab9589f898341d8f96830461f5d3e98ae8938a14afff6e4a5fddcf93a70c"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/gloam_dust@2x.png",
+      "bytes": 12241,
+      "sha256": "979748f4f1bc2aee97f7c2ecc04264f5b03aaa55fb5e3f2f1beef87ccfedfdba"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/gloam_dust@3x.png",
+      "bytes": 25578,
+      "sha256": "b38fda7cedac4e1a95f97f11ed293069a13c6b82d3d220c550e4a4455b9a99e7"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/lanternsteel_shard.png",
+      "bytes": 3877,
+      "sha256": "1163add0e22ff19867294e69de3daa6dc9c9b60d24dc4df10c27490acfede9aa"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/lanternsteel_shard@2x.png",
+      "bytes": 13026,
+      "sha256": "117adb3798a3d98b19be0bb71ea01feccf462aa0451116cd2777e218eecb73a1"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/lanternsteel_shard@3x.png",
+      "bytes": 27313,
+      "sha256": "26094c1401adb87dcb4064141720b13e948d50d2100801fcab132f62866d678c"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/moss_fiber.png",
+      "bytes": 4592,
+      "sha256": "e170d8d4973cc62193c8b3bb632720212d5b68f1f324f75786e0ac3ac5ba39cb"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/moss_fiber@2x.png",
+      "bytes": 15895,
+      "sha256": "9ace24a19b9e4dfc0444cdb8a68d7c794c7422700aa81667e51e63723cc77889"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/moss_fiber@3x.png",
+      "bytes": 33537,
+      "sha256": "5df89aa086cb25f9f407d86669658591f6ff8a64bd74e802f0c9c35482e27124"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/oathglass_fragment.png",
+      "bytes": 3678,
+      "sha256": "0b33b4ae4225eeda688b7cfe3d1b06f2ecba67adf2f8637fa6d7beea3a164fdf"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/oathglass_fragment@2x.png",
+      "bytes": 12114,
+      "sha256": "7295302511b43f352034ccc0f972c4e9653df806eece82dfa6e0595937860ae3"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/oathglass_fragment@3x.png",
+      "bytes": 25864,
+      "sha256": "1464847907f5092fac15c5bd26a1614ca5e50a9da55d2c69334daa74228fb4d6"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/oathglass_shard.png",
+      "bytes": 3135,
+      "sha256": "4df82442b31a40fb2890f15f63cb17074595543a2702d33ba3bfe875c81d7bf5"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/oathglass_shard@2x.png",
+      "bytes": 10365,
+      "sha256": "ee147e3a54e2d100412ad824bdbc602218132a2008e13ab1e9dbdeacbd1f9bfc"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/oathglass_shard@3x.png",
+      "bytes": 21942,
+      "sha256": "eb446fc2a3e810b9fc47c507df0ea9f7ab76f284cb983abe5b75988caf5208c0"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/rimeglass.png",
+      "bytes": 4561,
+      "sha256": "2d0d9ed12667a6a2714f1dbfd27b77a8a527a3c9a6267544d4d7021e7b92bfff"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/rimeglass@2x.png",
+      "bytes": 15954,
+      "sha256": "30f298dcf88b199198380f043a37f300f01ddd2e4d1097c94da38c749664841c"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/rimeglass@3x.png",
+      "bytes": 33400,
+      "sha256": "87c6a09ccedbc9f1aeec2f79586bc5904b2842e15d062bafdcd7da341e4d22a1"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/runebound_core.png",
+      "bytes": 5321,
+      "sha256": "7f18dbf4fbf7feeb12de1631136e8534f4705b3df9db708b9cf745c2409034aa"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/runebound_core@2x.png",
+      "bytes": 18859,
+      "sha256": "14ae07ec50f5210f3ec8c09dceb61e7fb9ecb4e0866d2ec6bed22a598442fd72"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/runebound_core@3x.png",
+      "bytes": 40042,
+      "sha256": "0e0910899e001397236ffb7adc30488832fd797c36a5ad1586b87a72c1993df3"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/sunstone_ore.png",
+      "bytes": 5084,
+      "sha256": "cf8d31c55c92968403ecd0e7bae52a7cad29e1de8d7b7f0d44d9d5c45c334959"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/sunstone_ore@2x.png",
+      "bytes": 17591,
+      "sha256": "37eecc24015d87a3c643a40ad090c420469363a0c1d26ba7ec56f7892f983d82"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/sunstone_ore@3x.png",
+      "bytes": 37203,
+      "sha256": "07d3a7aa39423d69560f07976fc2d839a9d500085557bf75cb5f64ac66cf63cd"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/thorn_sap.png",
+      "bytes": 3833,
+      "sha256": "c4fa12b00fd25da0d5b727fee8a70261b25434c42df6ea9d9358cab9b95c8d0f"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/thorn_sap@2x.png",
+      "bytes": 13256,
+      "sha256": "a3496e2c501cb8d41448a79b54e71e88247de11a6da1ce448395803c266d0aae"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/thorn_sap@3x.png",
+      "bytes": 28378,
+      "sha256": "5af0b20aed3ae6a222a62f6564d8cefcd28ec39458c8db02ada7199694389ba2"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/torn_oathcloth.png",
+      "bytes": 4571,
+      "sha256": "f14b27b8ce93a7bb189020b1bdefc4e288d97cfae652af8040a66f2fb405d075"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/torn_oathcloth@2x.png",
+      "bytes": 15374,
+      "sha256": "635ca2a0d9a32ba69d809f7a7ce3c5c11c09f722a14a274b54aed0595c09bb1e"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/torn_oathcloth@3x.png",
+      "bytes": 31827,
+      "sha256": "ee284d4bdd047ee95a8ca3f5a36e022a5f2da985786bc7a976212af0d13d13ac"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/troll_hide.png",
+      "bytes": 4197,
+      "sha256": "05f4bbaac14268b43aa59b153fe8b8b13073f7999993968e57dfc0311231cb00"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/troll_hide@2x.png",
+      "bytes": 13878,
+      "sha256": "2a594842099ab6c0cc8aa8bf68ffc68dc947627eb295c8cb6e421150b0799acc"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/troll_hide@3x.png",
+      "bytes": 28894,
+      "sha256": "febefdca2995615daa807d94617ecfe8a968bd34e0f711f45df1645a6888a601"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/wisp_dust.png",
+      "bytes": 3509,
+      "sha256": "f37b8335dd2ed81c34e549ecad5cc48591c333e050b9585a9b3a4af76c8995d6"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/wisp_dust@2x.png",
+      "bytes": 11521,
+      "sha256": "b52c7c02f848ccc39dfb5ab8822daba49759de79989c350bc658a7c7ce7ede61"
+    },
+    {
+      "path": "implementation/apps/mobile/assets/ingredient-icons-v1/wisp_dust@3x.png",
+      "bytes": 23412,
+      "sha256": "383075baafd5a1098d374aaa954893f7257490b278dbd2b32f3a59edb67b7a9d"
+    },
+    {
+      "path": "implementation/apps/mobile/index.js",
+      "bytes": 288,
+      "sha256": "ef6df38d8115fbb80c3db7c8a080562ea608bcb37dcbab2756550ad176ad479d"
+    },
+    {
+      "path": "implementation/apps/mobile/src/components/AccountWelcomeScreen.tsx",
+      "bytes": 1620,
+      "sha256": "6ef9474ae44c009f6f99abd31ebe862e24374706cd49cb07d05036422ed5ae29"
+    },
+    {
+      "path": "implementation/apps/mobile/src/components/ActiveActivityBar.tsx",
+      "bytes": 3550,
+      "sha256": "a33f787a24af3d55bb43fdd7775a028fbae0eedfd00d65912477d526bf175089"
+    },
+    {
+      "path": "implementation/apps/mobile/src/components/ActivityArtwork.tsx",
+      "bytes": 463,
+      "sha256": "5767479353180a482570f26064d2e2460f5e106c37d53faf61c697d189347888"
+    },
+    {
+      "path": "implementation/apps/mobile/src/components/ActivityCard.tsx",
+      "bytes": 6984,
+      "sha256": "8622dfe50b2c9de60a2d04831040612affabdb624f960840de79c808aa863339"
+    },
+    {
+      "path": "implementation/apps/mobile/src/components/BattleStage.tsx",
+      "bytes": 3532,
+      "sha256": "4fbd2bfb6f2cbccc535b121e8e786889a224744335eb9ce9d778a6a4495c88c9"
+    },
+    {
+      "path": "implementation/apps/mobile/src/components/BossEncounterIntro.tsx",
+      "bytes": 1369,
+      "sha256": "c5d4b7eab3533f8fdb5ebd737b129f1b0dce27f301c47c017a7498dfef3b0e71"
+    },
+    {
+      "path": "implementation/apps/mobile/src/components/CharacterVisual.tsx",
+      "bytes": 4353,
+      "sha256": "80800e51df44dae0f6dce268e18c1ae0088ca89ea9c79e050dabe590f6842589"
+    },
+    {
+      "path": "implementation/apps/mobile/src/components/EventIdentityBadge.tsx",
+      "bytes": 880,
+      "sha256": "7470c20021163ad54a6693ad4115a9c0bac0568ae15ceb2fc12f8abd2de3b1a0"
+    },
+    {
+      "path": "implementation/apps/mobile/src/components/GameTopBar.tsx",
+      "bytes": 12431,
+      "sha256": "8f60d38ba800aacb16a916a7584d55748534c47d6e52abafbf200ad24595ac0d"
+    },
+    {
+      "path": "implementation/apps/mobile/src/components/GuildSeekerPanel.tsx",
+      "bytes": 1473,
+      "sha256": "f8a68e6c1b6f57702ff58f2e6d500be47732de7591c65482dff283f3aac65c55"
+    },
+    {
+      "path": "implementation/apps/mobile/src/components/IngredientList.tsx",
+      "bytes": 1422,
+      "sha256": "888dfcd6cbdfcd1ec3431407ea38645f70a1b19252eb836ef1a410b8b10c4329"
+    },
+    {
+      "path": "implementation/apps/mobile/src/components/ItemArtwork.tsx",
+      "bytes": 1184,
+      "sha256": "fe0dc79866d8b9e5d94765bc5028740afddccd6861cd7c284caebac98c69bbdc"
+    },
+    {
+      "path": "implementation/apps/mobile/src/components/ItemCard.tsx",
+      "bytes": 7356,
+      "sha256": "24fb33d2613f20364b2502146cb49737750e675141cff5024a37b4ee72756974"
+    },
+    {
+      "path": "implementation/apps/mobile/src/components/MonsterPortraitFrame.tsx",
+      "bytes": 1889,
+      "sha256": "a9657645084201d065845d65cfcfa1dac31211442f62228d383879c8c55a22aa"
+    },
+    {
+      "path": "implementation/apps/mobile/src/components/NoviceWorkshop.tsx",
+      "bytes": 8156,
+      "sha256": "ef9927a44b7111d73664c470bfa6c832b3a5ebc16c0118d79d17a2c4d8818dac"
+    },
+    {
+      "path": "implementation/apps/mobile/src/components/OnlineGuildBrowser.tsx",
+      "bytes": 4059,
+      "sha256": "443b3d1472490e3c20b9869c289e526ad19d54bb731d402f9f4dfcdf3461bd1a"
+    },
+    {
+      "path": "implementation/apps/mobile/src/components/OnlineGuildManagement.tsx",
+      "bytes": 3216,
+      "sha256": "297edaf248ce08dfbca4e9939901b3935326cf3a99e999ef85c83ead1471c545"
+    },
+    {
+      "path": "implementation/apps/mobile/src/components/PartyHubPanel.tsx",
+      "bytes": 9727,
+      "sha256": "c05d8efc4c19511261e22cd96dd2a062916002569fc09eb72df23e29a5f97f4b"
+    },
+    {
+      "path": "implementation/apps/mobile/src/components/PrimaryNavigation.tsx",
+      "bytes": 1825,
+      "sha256": "499e50139f6b51aed9db16628148643102064c119bda166e503c24b0e9f61d6a"
+    },
+    {
+      "path": "implementation/apps/mobile/src/components/PrimaryNavigationIcon.tsx",
+      "bytes": 552,
+      "sha256": "ef2bb216f0c9039cc8f8dc7a00d69e806121e3fb37449e331a5cd865beac2f3a"
+    },
+    {
+      "path": "implementation/apps/mobile/src/components/ProfileEditor.tsx",
+      "bytes": 9371,
+      "sha256": "e2ef572d1e9a94be9034c71d325e943fb325df74bb02643c6a06258a14d3f5d2"
+    },
+    {
+      "path": "implementation/apps/mobile/src/components/ProfileScenePreview.tsx",
+      "bytes": 3008,
+      "sha256": "cae130ec8ea9809081b5f0565bd7bd2d8e97a37245c6dd424a07545ae1f0294d"
+    },
+    {
+      "path": "implementation/apps/mobile/src/components/QuestReward.tsx",
+      "bytes": 1322,
+      "sha256": "d976a7c21897106f2c61a6325b6fd44f7abe0cbba5a223d495786d822375321b"
+    },
+    {
+      "path": "implementation/apps/mobile/src/components/RecipeCard.tsx",
+      "bytes": 2913,
+      "sha256": "5fbd396a3e0113bc1209cf035e43963372f81e4c23079087a552ec81c0cc2745"
+    },
+    {
+      "path": "implementation/apps/mobile/src/components/RecruitmentFiltersPanel.tsx",
+      "bytes": 4309,
+      "sha256": "8706d769040d803468eacb16b08732cc354a639c19938d51c2e184beda7fc6d6"
+    },
+    {
+      "path": "implementation/apps/mobile/src/components/RecruitmentListing.tsx",
+      "bytes": 2428,
+      "sha256": "305a9c77d853082e8d6d9590988cf4cb1abfc790f94f5a6b2fe4da1be72760bd"
+    },
+    {
+      "path": "implementation/apps/mobile/src/components/SettingToggle.tsx",
+      "bytes": 2112,
+      "sha256": "f53b93cece40d9ae4fa3fee8f0f0836b60dcd22b60e40306dc059f6a8d566672"
+    },
+    {
+      "path": "implementation/apps/mobile/src/components/SkillDashboard.tsx",
+      "bytes": 3039,
+      "sha256": "0b87773b9b74726a15616e233ea1db061631fd4170d52a6f4edf5a607273f438"
+    },
+    {
+      "path": "implementation/apps/mobile/src/components/SocialHubPanel.tsx",
+      "bytes": 1308,
+      "sha256": "9db47ac3072688c76c6ebf724dcd57a25754b8b35e789c234a658225b04be405"
+    },
+    {
+      "path": "implementation/apps/mobile/src/components/SocialIdentity.tsx",
+      "bytes": 1767,
+      "sha256": "eb024a89f4752786a2b14975dc934f69cbb3e329edbe3a38a6af4a615afcee83"
+    },
+    {
+      "path": "implementation/apps/mobile/src/core/social-identity.ts",
+      "bytes": 498,
+      "sha256": "1e6d36522e279fa69b9230ebafb528c86796df042dfd328b263dbcf60fd07ccd"
+    },
+    {
+      "path": "implementation/apps/mobile/src/dev/NativeVisualReview.tsx",
+      "bytes": 8545,
+      "sha256": "fefae74728be63445156157f30f90b15335edcc0f3923fdf1d595f742c656abb"
+    },
+    {
+      "path": "implementation/apps/mobile/src/dev/ProfileNativeReview.tsx",
+      "bytes": 1843,
+      "sha256": "9df7a2fc6b0926540ff6fab3a6f042a4f9b4bfb8e8dad2234c26e843c8ca47d6"
+    },
+    {
+      "path": "implementation/apps/mobile/src/screens/CombatScreen.tsx",
+      "bytes": 2922,
+      "sha256": "7f40630f6b763ab71c637f5dfc0083435564b60d445a5bd561d968f60d3fc8e0"
+    },
+    {
+      "path": "implementation/apps/mobile/src/screens/EventScreen.tsx",
+      "bytes": 35567,
+      "sha256": "7ce0e5fe50a843c5954e4405e207b2dbc5cb088afed04afab713af3e9463583d"
+    },
+    {
+      "path": "implementation/apps/mobile/src/screens/FriendsScreen.tsx",
+      "bytes": 10378,
+      "sha256": "310dcce7a37862d9fb4a1d1b78d8f556bd04ae08254828d4d6e810e72e832c4e"
+    },
+    {
+      "path": "implementation/apps/mobile/src/screens/GuildScreen.tsx",
+      "bytes": 4719,
+      "sha256": "fdbe84227fc77997ef28cd56d4f6b84a897818a92b3748c1ae250c3655efc294"
+    },
+    {
+      "path": "implementation/apps/mobile/src/screens/HomeScreen.tsx",
+      "bytes": 8094,
+      "sha256": "2b14e475079eec90b33f2342e917b0a00f8e1c60a54920e9112f7ea8c82cb9c6"
+    },
+    {
+      "path": "implementation/apps/mobile/src/screens/QuestScreen.tsx",
+      "bytes": 9908,
+      "sha256": "30d0168bf0de904e00bba6fce2b7b81f93dabd404c41f5286a229e68d9f60133"
+    },
+    {
+      "path": "implementation/apps/mobile/src/screens/SettingsScreen.tsx",
+      "bytes": 8044,
+      "sha256": "b28c681aa883e59a98d93ce910d5f0f8afddd072c1e69d858894a124f8fe15df"
+    },
+    {
+      "path": "implementation/apps/mobile/src/screens/SkillsScreen.tsx",
+      "bytes": 11638,
+      "sha256": "90750d565eded349c0d545cfff2a82604c06c67b802bc507e0acad73342b8203"
+    },
+    {
+      "path": "implementation/apps/mobile/src/theme/crafted-item-assets.ts",
+      "bytes": 773,
+      "sha256": "875db0468995726013c8fd4e56e9b5d987ac8222c0137ef91c04780a89ae7843"
+    },
+    {
+      "path": "implementation/apps/mobile/src/theme/ingredient-assets.ts",
+      "bytes": 1725,
+      "sha256": "541daed6e5078de3c6797931adf73a92c236eb7489caa368cb9b8eeedea9153e"
+    },
+    {
+      "path": "implementation/apps/mobile/src/theme/resource-assets.ts",
+      "bytes": 1293,
+      "sha256": "48f7e3909f0ad3fcfe81ba7fbf519dee4d120bb5c0ce4ef2c4af78c71342dd61"
+    },
+    {
+      "path": "implementation/apps/mobile/src/theme/skill-assets.ts",
+      "bytes": 1129,
+      "sha256": "de4657ff2d4264cd8f9621e4031a0beca196fe46a2e5f00bc2183b6e47df5ebc"
+    },
+    {
+      "path": "implementation/apps/mobile/tests/social-identity.ts",
+      "bytes": 778,
+      "sha256": "a2c4d59ec511faf387afa9732975320ab65e25fe2b3208d162ec60f833f41ee5"
+    },
+    {
+      "path": "ingredient-prompts.json",
+      "bytes": 18557,
+      "sha256": "227158e70de605039b56e5d14f8e633508439686d25e371b33b73b4052d773ea"
+    },
+    {
+      "path": "ingredient-review.png",
+      "bytes": 294227,
+      "sha256": "7ce484506fb274cf286c79adbd99f60e7ef878fb1572c776e3800b816198a23e"
+    },
+    {
+      "path": "ingredient-runtime/amberglass@3x.png",
+      "bytes": 38023,
+      "sha256": "9947aa5f33a99a9a12b16fa5174cb54535378c3f2b8b5e7eae5a4cfe8d10c5c4"
+    },
+    {
+      "path": "ingredient-runtime/astral_script@3x.png",
+      "bytes": 33069,
+      "sha256": "bfe1aebe36247487fdc7f2c9ff60796bd77dff68b94a92299e3e0b7692d7b62b"
+    },
+    {
+      "path": "ingredient-runtime/banner_ash@3x.png",
+      "bytes": 32172,
+      "sha256": "ba33e2e703e6d38bf6d04f81b9bd3093dae4f9129cb8d71c5d2a769d3eced891"
+    },
+    {
+      "path": "ingredient-runtime/choir_bloom@3x.png",
+      "bytes": 32588,
+      "sha256": "7d802a0fc1606e9c1518af20a2d4b99b9a87b50ab7b334089dce7464ca6a887c"
+    },
+    {
+      "path": "ingredient-runtime/echo_bat_wing@3x.png",
+      "bytes": 28106,
+      "sha256": "6127614e2962d288c1452bd969c1209dca3584b7a675f91ef35df27ed4018622"
+    },
+    {
+      "path": "ingredient-runtime/echo_touched_pelt@3x.png",
+      "bytes": 37516,
+      "sha256": "5a96ba131d22a6b5db114bd63a586780d5d75dde18ac9319befcd2adcb4c1bd4"
+    },
+    {
+      "path": "ingredient-runtime/fallen_rivet@3x.png",
+      "bytes": 33098,
+      "sha256": "921b31e5510e563d3de7fd2c7d4660bfb1b761a70b8759f535902bbb437ee64a"
+    },
+    {
+      "path": "ingredient-runtime/frostiron@3x.png",
+      "bytes": 36518,
+      "sha256": "b08a94d76b17839c6b14514ce32cfb24bbea42c1e027058f9235336adbad294c"
+    },
+    {
+      "path": "ingredient-runtime/gloam_dust@3x.png",
+      "bytes": 25578,
+      "sha256": "b38fda7cedac4e1a95f97f11ed293069a13c6b82d3d220c550e4a4455b9a99e7"
+    },
+    {
+      "path": "ingredient-runtime/lanternsteel_shard@3x.png",
+      "bytes": 27313,
+      "sha256": "26094c1401adb87dcb4064141720b13e948d50d2100801fcab132f62866d678c"
+    },
+    {
+      "path": "ingredient-runtime/moss_fiber@3x.png",
+      "bytes": 33537,
+      "sha256": "5df89aa086cb25f9f407d86669658591f6ff8a64bd74e802f0c9c35482e27124"
+    },
+    {
+      "path": "ingredient-runtime/oathglass_fragment@3x.png",
+      "bytes": 25864,
+      "sha256": "1464847907f5092fac15c5bd26a1614ca5e50a9da55d2c69334daa74228fb4d6"
+    },
+    {
+      "path": "ingredient-runtime/oathglass_shard@3x.png",
+      "bytes": 21942,
+      "sha256": "eb446fc2a3e810b9fc47c507df0ea9f7ab76f284cb983abe5b75988caf5208c0"
+    },
+    {
+      "path": "ingredient-runtime/rimeglass@3x.png",
+      "bytes": 33400,
+      "sha256": "87c6a09ccedbc9f1aeec2f79586bc5904b2842e15d062bafdcd7da341e4d22a1"
+    },
+    {
+      "path": "ingredient-runtime/runebound_core@3x.png",
+      "bytes": 40042,
+      "sha256": "0e0910899e001397236ffb7adc30488832fd797c36a5ad1586b87a72c1993df3"
+    },
+    {
+      "path": "ingredient-runtime/sunstone_ore@3x.png",
+      "bytes": 37203,
+      "sha256": "07d3a7aa39423d69560f07976fc2d839a9d500085557bf75cb5f64ac66cf63cd"
+    },
+    {
+      "path": "ingredient-runtime/thorn_sap@3x.png",
+      "bytes": 28378,
+      "sha256": "5af0b20aed3ae6a222a62f6564d8cefcd28ec39458c8db02ada7199694389ba2"
+    },
+    {
+      "path": "ingredient-runtime/torn_oathcloth@3x.png",
+      "bytes": 31827,
+      "sha256": "ee284d4bdd047ee95a8ca3f5a36e022a5f2da985786bc7a976212af0d13d13ac"
+    },
+    {
+      "path": "ingredient-runtime/troll_hide@3x.png",
+      "bytes": 28894,
+      "sha256": "febefdca2995615daa807d94617ecfe8a968bd34e0f711f45df1645a6888a601"
+    },
+    {
+      "path": "ingredient-runtime/wisp_dust@3x.png",
+      "bytes": 23412,
+      "sha256": "383075baafd5a1098d374aaa954893f7257490b278dbd2b32f3a59edb67b7a9d"
+    },
+    {
+      "path": "ingredient-sources/amberglass.png",
+      "bytes": 1087651,
+      "sha256": "f7e11fc3d198fe4593924cec551165f765c6a4e694c1763b89c103722b7b8dbd"
+    },
+    {
+      "path": "ingredient-sources/astral_script.png",
+      "bytes": 1072611,
+      "sha256": "becf7b28a90896b34c5b5363e8ed1b2f9e8ac0a5325e229529790ae65bb2ea95"
+    },
+    {
+      "path": "ingredient-sources/banner_ash.png",
+      "bytes": 1167669,
+      "sha256": "d9dc9f4d76df07e08a1326d3fe8f9865fbf12e4c939e07232e1e7638dfcedc88"
+    },
+    {
+      "path": "ingredient-sources/choir_bloom.png",
+      "bytes": 944796,
+      "sha256": "cf2e3325bc9cdf777f8357865ef78190beb1483911b807c92e9502041ae7ebc0"
+    },
+    {
+      "path": "ingredient-sources/echo_bat_wing.png",
+      "bytes": 855317,
+      "sha256": "8ece6626c2479078f2648dab42752b77e6a222596b503038f12dcbae52c0f1fd"
+    },
+    {
+      "path": "ingredient-sources/echo_touched_pelt.png",
+      "bytes": 1243081,
+      "sha256": "395df6784e8d3c0d62016ec9372af0648d41ac122a1c09980dfee6a2aea8bc52"
+    },
+    {
+      "path": "ingredient-sources/fallen_rivet.png",
+      "bytes": 1112980,
+      "sha256": "db703c562947171d15884108859878b0afa10bf59de9eef15f260cfeecea603b"
+    },
+    {
+      "path": "ingredient-sources/frostiron.png",
+      "bytes": 1133553,
+      "sha256": "5a7c029735678f8064098d8d2e5733d87ba8a59848638d9c103c49d4fb9fe4ab"
+    },
+    {
+      "path": "ingredient-sources/gloam_dust.png",
+      "bytes": 745086,
+      "sha256": "0beb6c1864be4fcc3dc80993b1e72d8cf62bae9797759841bfe0e9b40d5cc1c8"
+    },
+    {
+      "path": "ingredient-sources/lanternsteel_shard.png",
+      "bytes": 875113,
+      "sha256": "6cc1e0d29bb0b30a7ad92acb63b1fe40cd76e4f0deec4b23713a511aeea2302f"
+    },
+    {
+      "path": "ingredient-sources/moss_fiber.png",
+      "bytes": 1036065,
+      "sha256": "71d5aca35d69f5ddcd39a1f12452d7db80569f7b8c7f29f02da222d1c1bc8198"
+    },
+    {
+      "path": "ingredient-sources/oathglass_fragment.png",
+      "bytes": 795777,
+      "sha256": "6e58e2466a158df4d3e1a46e81ea0b06ed5541912d66fab727ed5088855f886b"
+    },
+    {
+      "path": "ingredient-sources/oathglass_shard.png",
+      "bytes": 719653,
+      "sha256": "44a5909a621a51c54ec183b9224189e08af2a2655585e138998a1e7f2cf484a9"
+    },
+    {
+      "path": "ingredient-sources/rimeglass.png",
+      "bytes": 1055479,
+      "sha256": "565dc175269ad2585baa6885d65db51d4e0d4f04a3657184c8dd1e532ee12a3f"
+    },
+    {
+      "path": "ingredient-sources/runebound_core.png",
+      "bytes": 1386208,
+      "sha256": "dbe9baaee26f484a812a259884c158a9f01bd7d642570f6f76ba30df164045f8"
+    },
+    {
+      "path": "ingredient-sources/sunstone_ore.png",
+      "bytes": 1063106,
+      "sha256": "a9e21d5f5c29fd37c21ae494d75c50365dbd1986862f650e3decb3d89a7630e7"
+    },
+    {
+      "path": "ingredient-sources/thorn_sap.png",
+      "bytes": 903997,
+      "sha256": "0266f0dcb2f07f07261331f5da8ac42febae06f33c81f99ded7fa2c9f78272a6"
+    },
+    {
+      "path": "ingredient-sources/torn_oathcloth.png",
+      "bytes": 1195796,
+      "sha256": "6314ce0e6b3e6ed5d4088f0c58cc9b54e8b6ca09d453b6ac9f2988253cfad882"
+    },
+    {
+      "path": "ingredient-sources/troll_hide.png",
+      "bytes": 988094,
+      "sha256": "da5dcb35c30f936551bc5254d8a3838b0ff9d596b226f3c385e864143b88da52"
+    },
+    {
+      "path": "ingredient-sources/wisp_dust.png",
+      "bytes": 660486,
+      "sha256": "c58499333fb71a5a5cb7bff17754c7510792a2ef7683a376e438f09117338365"
+    },
+    {
+      "path": "NATIVE_QA_v4.md",
+      "bytes": 3211,
+      "sha256": "ea73209289f9d75b74105813dd5974f975230e862318747586bd9252871b4094"
+    },
+    {
+      "path": "NATIVE_QA_v5.md",
+      "bytes": 1559,
+      "sha256": "60c4c171502447381a2bbe24ec49ba18b1a0eff78ef64c3afcfd89331cb5c175"
+    },
+    {
+      "path": "NATIVE_QA_v6.md",
+      "bytes": 1962,
+      "sha256": "5a7828ea4087f8e889857bfd9ec99065ace8cfc37b17f31312b42b28ff40fd86"
+    },
+    {
+      "path": "NATIVE_QA_v7.md",
+      "bytes": 1725,
+      "sha256": "3e1f1da1540885fc6c0b57d056a493579a67671bac21911b2632794b6597e8e1"
+    },
+    {
+      "path": "NATIVE_QA_v8.md",
+      "bytes": 770,
+      "sha256": "252ec449d7f4a5affb631ed36a5667ebc93f3eaba4b57d6b256e0a9317e2a328"
+    },
+    {
+      "path": "NATIVE_QA_v9.md",
+      "bytes": 873,
+      "sha256": "e7b670bae6a9531d5a402a95a0da93a523f12ccf1c952dd56efa29d001e4ef4e"
+    },
+    {
+      "path": "NATIVE_QA.md",
+      "bytes": 1054,
+      "sha256": "40b300febbbbf32f44d7ce49db1aa7864bee4009a623028ef80667364a2c7eec"
+    },
+    {
+      "path": "native-v5/ingredients-1.png",
+      "bytes": 153435,
+      "sha256": "e8b532176fb2f8aa8c5016bf0485b28276128f4bb523f23faeaaa156a56c7c99"
+    },
+    {
+      "path": "native-v5/ingredients-2.png",
+      "bytes": 163934,
+      "sha256": "21c99a43db73cd95de48ffd190313deeabbea6f782734e2a820b6cf1f373a738"
+    },
+    {
+      "path": "native-v5/ingredients-3.png",
+      "bytes": 156221,
+      "sha256": "412a005e4d5bbfcf42cddd5f5e52af15524feb70b7da6ae81102ee10d5e1cbea"
+    },
+    {
+      "path": "native-v5/ingredients-4.png",
+      "bytes": 158069,
+      "sha256": "c217324060a012a1a4f665326a7cd5098ee5e9c355bfd66971d69e3c0e3d263f"
+    },
+    {
+      "path": "native-v5/ingredients-5.png",
+      "bytes": 161762,
+      "sha256": "fdb3b8a9e76e48e4aeb29690bfce1df6defc6bc3d61dd31f5dae7ea4b1abce0d"
+    },
+    {
+      "path": "native-v5/ingredients-6.png",
+      "bytes": 165039,
+      "sha256": "14e0e98a0211f90faded446248d6d303e0a7a18796cc63e1059102b89af3feaf"
+    },
+    {
+      "path": "native-v5/ingredients-7.png",
+      "bytes": 147704,
+      "sha256": "766acdd4a7e6cf8964b7abd579ec6c5ac9c6c2b237d3b310d8cef603c2a615bc"
+    },
+    {
+      "path": "native-v6/settings-1.png",
+      "bytes": 134131,
+      "sha256": "91c61ed47a4f83b6b8e6610c5c8ddee05cc81a74bef5bfb8f5118ebbb5fb3ac2"
+    },
+    {
+      "path": "native-v6/settings-2.png",
+      "bytes": 136672,
+      "sha256": "23375a4f3bffdf7c04fb0ea1d57526766ea71f5befc1d5258b965dab203b6904"
+    },
+    {
+      "path": "native-v6/settings-3.png",
+      "bytes": 132046,
+      "sha256": "c69b115bf61e86b1440ef8652bf586927303b7adbe98cb77bb437513c606390b"
+    },
+    {
+      "path": "native-v6/settings-4.png",
+      "bytes": 131827,
+      "sha256": "f150274e7fa663c904860b4c0d66f3542de85ab63db425985b924c0c9415181a"
+    },
+    {
+      "path": "native-v6/settings-5.png",
+      "bytes": 143917,
+      "sha256": "b84edb7e59a2f06b119b11e23a8efd51a5714616ab58df383c64a4a5c8930413"
+    },
+    {
+      "path": "native-v6/settings-6.png",
+      "bytes": 144044,
+      "sha256": "d407302753a9fbc19f9544b975535b72fa55bbae3262efd2ed48ca188f3f935a"
+    },
+    {
+      "path": "native-v6/settings-7.png",
+      "bytes": 161283,
+      "sha256": "7d7e48fae928cedbd7e8912530e56078d207942459cbdc6dca103d5e16e89f6d"
+    },
+    {
+      "path": "native-v6/settings-8.png",
+      "bytes": 135862,
+      "sha256": "b28fbb28b3d88927900133329d46d1863d66316bd25eb4b6832879e1890bd2a5"
+    },
+    {
+      "path": "native-v6/settings-9.png",
+      "bytes": 125063,
+      "sha256": "9d0bc3237e8a909b3c6bd46452d1dcec70a32de7ad9a29ff2088ad99d0567bd2"
+    },
+    {
+      "path": "native-v7/journal-1.png",
+      "bytes": 149223,
+      "sha256": "ed1dbdc51843e699653b5628fcdca5975122a3ab1d7a0b8849b91281334d60e1"
+    },
+    {
+      "path": "native-v7/journal-2.png",
+      "bytes": 141921,
+      "sha256": "623a45e3de6accee0ee948a481403be377d46245bcf8cdad2cd72d2c937b7eaa"
+    },
+    {
+      "path": "native-v7/journal-3.png",
+      "bytes": 139486,
+      "sha256": "4e8403156c6c84eb1a6f03d515a36eb6cd2a1eced4db045355ba11ddad44ed69"
+    },
+    {
+      "path": "native-v7/journal-4.png",
+      "bytes": 146635,
+      "sha256": "7032c9c998824d1be5daf894cb9defcdcd533230446a75f1570f0306160c0cc3"
+    },
+    {
+      "path": "native-v8/events-1.png",
+      "bytes": 611927,
+      "sha256": "90230ddc23e2b231d8b709877a9189ce0ddd6be547d4cea107b3e13694d7895c"
+    },
+    {
+      "path": "native-v8/events-2.png",
+      "bytes": 280139,
+      "sha256": "7ff0e11afafcd200777d2774fc7170a3308531338ad53aa9da2d8e16959447fa"
+    },
+    {
+      "path": "native-v8/events-3.png",
+      "bytes": 146453,
+      "sha256": "41a6370cf1190fbee5549177d7e8729151823fa9e69794b531eb0d6834fcf161"
+    },
+    {
+      "path": "native-v9/profile-1.png",
+      "bytes": 674804,
+      "sha256": "cd128f37e8ba560f834d109b3ce963d6598557887b1114c13f00c5a20cea2833"
+    },
+    {
+      "path": "native-v9/profile-2.png",
+      "bytes": 533854,
+      "sha256": "eb1c3e9e2cdf927d1d3a5c0ba7709d83b6d4a00f8a952cd6c699c1cb2ec5e65d"
+    },
+    {
+      "path": "native-v9/profile-3.png",
+      "bytes": 505322,
+      "sha256": "6636e59fe97f41a0ca1d456a194df934fb93bda580ca8a730f0366af58ef1aa4"
+    },
+    {
+      "path": "native/account-keyboard-scrolled-390.png",
+      "bytes": 292792,
+      "sha256": "d33e3ec369f8a2b575dd5c7d94a3afddccc9c847049bf399fe4cece5a3337c0e"
+    },
+    {
+      "path": "native/boss-360.png",
+      "bytes": 516945,
+      "sha256": "60e0a8134a57b40782541a2c6f235cb415341c7c73ed42ead2007a208ae89f1b"
+    },
+    {
+      "path": "native/combat-390.png",
+      "bytes": 518022,
+      "sha256": "be1667a09bedd15a74d9426358b96c22090a53c311ebbebac1f151922778316c"
+    },
+    {
+      "path": "native/crafting-320-large.png",
+      "bytes": 166676,
+      "sha256": "bfb67979a5e95bfc0f3618bf34d80ddb04148e1c90f224b690ea598d275a23ce"
+    },
+    {
+      "path": "native/create-account-390.png",
+      "bytes": 352468,
+      "sha256": "5722aa31c1c33cc580cd4a7a2532d222246ba6351d937f1039109d49ec70cdd6"
+    },
+    {
+      "path": "native/guild-390.png",
+      "bytes": 148815,
+      "sha256": "ab233c90a2b753d9519bcd691a09db0d8163ce428c745095edd9f5133b1a9b85"
+    },
+    {
+      "path": "native/home-390.png",
+      "bytes": 163483,
+      "sha256": "c567cded7464a7aedec0e5b077cbd276592a9a9b38cf65fa5a39bae3826c3975"
+    },
+    {
+      "path": "native/login-keyboard-390.png",
+      "bytes": 300891,
+      "sha256": "43b16ad920e7d51a8bb9cc66eb159306f0032f12871f8e82560a35c98cf8b6ed"
+    },
+    {
+      "path": "native/recipe-expanded-320-large.png",
+      "bytes": 163891,
+      "sha256": "23273ef1eb190e78eb8189e73c0d5751a7aa32295590af8f3fe8c5a24316ad4f"
+    },
+    {
+      "path": "native/skills-320-large.png",
+      "bytes": 138054,
+      "sha256": "fab69ef05db0335032a8953788221405af71a965cf3a2f8b0b628893f37d16b6"
+    },
+    {
+      "path": "native/skills-360.png",
+      "bytes": 149794,
+      "sha256": "edfa2e4c81e01af444e8403b106e2ff58ffb2aa52164588e2f6ec98e2c19011d"
+    },
+    {
+      "path": "native/social-390.png",
+      "bytes": 189468,
+      "sha256": "5df155e5248dfc2d118c0d5b2708493644099a1825f9d3bc49646937a01f5d2a"
+    },
+    {
+      "path": "new-art-review.png",
+      "bytes": 260698,
+      "sha256": "7e547c33776db74a3c6d1492cb9a194395ee91d7824c1ceb670bab36427c6228"
+    },
+    {
+      "path": "profile-review-metro.log",
+      "bytes": 3195,
+      "sha256": "0c17cc3c76a9124994e09d11b54c777457ab3fb82a6be993c23d8ad84c40ba93"
+    },
+    {
+      "path": "PROGRESS_v4.md",
+      "bytes": 2744,
+      "sha256": "d62ea211409501d7d8776f1e0bb3f31230901e2ada3036eec2dc3c4579887b41"
+    },
+    {
+      "path": "PROGRESS_v5.md",
+      "bytes": 1605,
+      "sha256": "9d709a771ac77cab323f15f1ed6ed45ac9d4f8fa9c3a61301a2c6e31ffc3b8f1"
+    },
+    {
+      "path": "PROGRESS_v6.md",
+      "bytes": 1847,
+      "sha256": "91684a9469b22d0a6da4f715d210ddafbfaaf70989d999d1bcfc29b7d98d421c"
+    },
+    {
+      "path": "PROGRESS_v7.md",
+      "bytes": 1725,
+      "sha256": "3e1f1da1540885fc6c0b57d056a493579a67671bac21911b2632794b6597e8e1"
+    },
+    {
+      "path": "PROGRESS_v8.md",
+      "bytes": 1715,
+      "sha256": "9ace024c198ae00c761b652729d2e197775c446028e8d95a8cc476dd23d9cb29"
+    },
+    {
+      "path": "PROGRESS_v9.md",
+      "bytes": 1750,
+      "sha256": "d762bad97a6d06ef7dd9ceae1f127310bfe888cde5595727ed4d86696cbe7560"
+    },
+    {
+      "path": "PROGRESS.md",
+      "bytes": 1579,
+      "sha256": "8f849b4f3ecb3f678174979816a0371a69772b948290cb1909c023e90f65b39b"
+    },
+    {
+      "path": "recipe-art-audit.json",
+      "bytes": 33290,
+      "sha256": "7568e28e6459a5814588f5ca76a1d3e29d983ee07cd99181892abc81f81bee99"
+    },
+    {
+      "path": "review-v4.html",
+      "bytes": 3794,
+      "sha256": "8a2b833f74ab25d6f6d9a5306d19d82e4adf432a80a3f1d7a2ae45d73a4c65da"
+    },
+    {
+      "path": "review-v5.html",
+      "bytes": 10727,
+      "sha256": "8d503916284cd363d5d32d50fc538334410b629222738e8f7cadcf192c1fd036"
+    },
+    {
+      "path": "review-v6.html",
+      "bytes": 2006,
+      "sha256": "6faf7c72cad3d6af055d30818e571928f08513ac816528dba3353eb7be2be6bc"
+    },
+    {
+      "path": "review-v7.html",
+      "bytes": 1451,
+      "sha256": "c04614842c2d38131784bddda69705d37fc4ba0094d26716dd28d6fa4ecf83ad"
+    },
+    {
+      "path": "review-v8.html",
+      "bytes": 1363,
+      "sha256": "6165deb94adf4d564ff2bd454ac8854144f9e4f13086534cb6722cd74dafe90c"
+    },
+    {
+      "path": "review-v9.html",
+      "bytes": 1375,
+      "sha256": "4c42271fdfcca9f8e831656d81bdd868b1ac82142ff7d1366a83744ac5d65713"
+    },
+    {
+      "path": "review.html",
+      "bytes": 3883,
+      "sha256": "3e86f89d468e4fab1f64c5a50a122ec3c30a06bd87f5b1104eb5782a6da7eef6"
+    },
+    {
+      "path": "settings-toggle-off.xml",
+      "bytes": 30148,
+      "sha256": "b476e544a522ada52283d82cae9b2a5fd6fe7b979176b91134d8fea77cff8efe"
+    },
+    {
+      "path": "sources/activity/combat.png",
+      "bytes": 763467,
+      "sha256": "888ddf3b9076484874abda650afea3932e76fd7d58be1e4af706cc61258aa6f1"
+    },
+    {
+      "path": "sources/activity/cooking.png",
+      "bytes": 875239,
+      "sha256": "c2bef3ed9e884c601b89828625b4b0294686fa2049d9bce6939b54708cbe1c42"
+    },
+    {
+      "path": "sources/activity/fishing.png",
+      "bytes": 648846,
+      "sha256": "c97e2adeec5acd3ec35e422f9821e8b8439fa51032c02dca775f3c1d52db6cae"
+    },
+    {
+      "path": "sources/activity/mining.png",
+      "bytes": 489939,
+      "sha256": "105bccac3729d4746d1576c05118f89c6d7c9541d5205344202296da5a39e093"
+    },
+    {
+      "path": "sources/activity/smithing.png",
+      "bytes": 837047,
+      "sha256": "88e4978c33baa4f78f8945a1d95074c4c838d8ec36c3ae58fc97eb1ad60a4b0d"
+    },
+    {
+      "path": "sources/activity/woodcutting.png",
+      "bytes": 561736,
+      "sha256": "192b0cb5325fe93fb0994ca6a6ad34d97df87329559522e1fb1d71b7aa518e02"
+    },
+    {
+      "path": "sources/crafted/aster_iron_ingot.png",
+      "bytes": 802357,
+      "sha256": "d8b6eaa10d6de4f2f8c8454082d10941273d14a4fec34750f4cba8f562255daa"
+    },
+    {
+      "path": "sources/crafted/cooked_silverfin.png",
+      "bytes": 971534,
+      "sha256": "27e6940bf7ac5c1e03fde0946841d05b5bd7117227745eb34a4cfe6f30c72885"
+    },
+    {
+      "path": "sources/crafted/copper_ingot.png",
+      "bytes": 768066,
+      "sha256": "a6b985af590aaba4c4d528725481e3c5a6f2979c4f9b7c82b5306002e1fd1df9"
+    },
+    {
+      "path": "sources/crafted/ironwood_stew.png",
+      "bytes": 917214,
+      "sha256": "ceeabafa87798579e5206925d2ea92b15e3a45855c3e5df874784a8d14c25337"
+    },
+    {
+      "path": "sources/crafted/oathstone_ingot.png",
+      "bytes": 841399,
+      "sha256": "e5d03890a83de70b6e9827dcb56c49c5f19f47cf9e60df0b3cba4ca6f5c64824"
+    },
+    {
+      "path": "sources/crafted/reinforced_fitting.png",
+      "bytes": 682870,
+      "sha256": "f0760a1a0c5e4116f2809d174e53e27a149bf3c9b703e3799158d2d0b70295fc"
+    },
+    {
+      "path": "sources/crafted/roasted_oathscale.png",
+      "bytes": 1123193,
+      "sha256": "470720852ba83bbbde720d700e6fbb8e7dd888737844c319faec84f3938f1033"
+    },
+    {
+      "path": "sources/crafted/seared_river_eel.png",
+      "bytes": 1269653,
+      "sha256": "5e2397538f011bf6b41251e58aa189b4ec48a242c414cef05394bd74d3f6d7c5"
+    },
+    {
+      "path": "tests.json",
+      "bytes": 2658,
+      "sha256": "9ecaad48f2910aa5678e5129bdf521ca802734059cf3848e939240ec511573e4"
+    },
+    {
+      "path": "VELDRYN_UI_ASSET_SPEC_v4.md",
+      "bytes": 5433,
+      "sha256": "cec888848d0c8637478d0d3c3ac35d7595bced57b3df8a88038e65ab503212d2"
+    },
+    {
+      "path": "VELDRYN_UI_ASSET_SPEC_v5.md",
+      "bytes": 3590,
+      "sha256": "2d31c1f7755e0f2a7d4d3fb35dac230aef11c1fcd1080c7b6a72978f543d82f4"
+    },
+    {
+      "path": "VELDRYN_UI_ASSET_SPEC_v6.md",
+      "bytes": 1250,
+      "sha256": "5b7a42c8734178b2be32cc62e31039fe9ba2de43aa65d690dc351ac4f7b2dde7"
+    },
+    {
+      "path": "VELDRYN_UI_ASSET_SPEC_v7.md",
+      "bytes": 1061,
+      "sha256": "ecd1d2f9f41899216ab31be8cae0e0277679572f3e41d88bdc41f83b96ab3660"
+    },
+    {
+      "path": "VELDRYN_UI_ASSET_SPEC_v8.md",
+      "bytes": 1031,
+      "sha256": "caa0c6142eac4ae1715b18e57d6a7a9cddf166db8cc7aeb214723dafae2c08e0"
+    },
+    {
+      "path": "VELDRYN_UI_ASSET_SPEC_v9.md",
+      "bytes": 1225,
+      "sha256": "a0eb33365f5a9bad1bb70400c1432815113e7d6702091805f0a040ca00885c96"
+    },
+    {
+      "path": "VELDRYN_UI_ASSET_SPEC.md",
+      "bytes": 1934,
+      "sha256": "9baf70d147a6a3e90257c365f378305a28afcdb3e62a0392e1abe3ef50e512c5"
+    }
+  ]
+}

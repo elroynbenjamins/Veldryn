@@ -1,6 +1,8 @@
 import type {Session} from '@supabase/supabase-js';
 import * as Linking from 'expo-linking';
 import {supabase} from './supabase';
+import {accountEmail,accountPassword,authCallbackCode} from '../core/auth-callback';
+export const accountRedirect=()=>Linking.createURL('auth');
 
 export async function currentSession():Promise<Session|null>{
   if(!supabase)return null;
@@ -23,7 +25,8 @@ export async function sendMagicLink(email:string){
 /** Completes the PKCE callback when the sign-in email opens Veldryn. */
 export async function completeMagicLink(url:string){
   if(!supabase)return null;
-  const {error}=await supabase.auth.exchangeCodeForSession(url);
+  const code=authCallbackCode(url,accountRedirect());if(!code)return currentSession();
+  const {error}=await supabase.auth.exchangeCodeForSession(code);
   if(error)throw error;
   return currentSession();
 }
@@ -43,8 +46,27 @@ export async function signInAsGuest(){
 
 export async function signInWithPassword(email:string,password:string){
   if(!supabase)throw new Error('Online services are not configured in this build.');
-  const {error}=await supabase.auth.signInWithPassword({email:email.trim().toLowerCase(),password});
+  const {error}=await supabase.auth.signInWithPassword({email:accountEmail(email),password});
   if(error)throw error;
+}
+
+export async function createOnlineAccount(email:string,password:string,displayName:string){
+ if(!supabase)throw new Error('Online services are not configured in this build.');
+ const name=displayName.trim();if(name.length<3||name.length>20)throw new Error('Username must be 3–20 characters.');
+ const {data,error}=await supabase.auth.signUp({email:accountEmail(email),password:accountPassword(password),options:{emailRedirectTo:accountRedirect(),data:{display_name:name}}});
+ if(error)throw error;return {confirmed:Boolean(data.session)};
+}
+export async function requestPasswordRecovery(email:string){
+ if(!supabase)throw new Error('Online services are not configured in this build.');
+ const {error}=await supabase.auth.resetPasswordForEmail(accountEmail(email),{redirectTo:accountRedirect()});if(error)throw error;
+}
+export async function updateAccountPassword(password:string){
+ if(!supabase)throw new Error('Online services are not configured in this build.');
+ const {error}=await supabase.auth.updateUser({password:accountPassword(password)});if(error)throw error;
+}
+export async function resendAccountConfirmation(email:string){
+ if(!supabase)throw new Error('Online services are not configured in this build.');
+ const {error}=await supabase.auth.resend({type:'signup',email:accountEmail(email),options:{emailRedirectTo:accountRedirect()}});if(error)throw error;
 }
 
 /** Links a guest identity to a recoverable official email/password account. */

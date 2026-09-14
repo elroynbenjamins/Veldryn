@@ -39,7 +39,7 @@ export interface CoopDungeonView extends CoopDungeonProjection{
 const artById:Record<string,{card:CoopUiAssetId;hero?:CoopUiAssetId}>={
   EXP_001:{card:'forest_thumbnail',hero:'rootbound_hero'},EXP_002:{card:'forest_thumbnail'},
   EXP_003:{card:'lava_thumbnail'},EXP_004:{card:'lava_thumbnail'},
-  EXP_005:{card:'ice_thumbnail'},EXP_006:{card:'ice_thumbnail'},
+  COP_007:{card:'ice_thumbnail'},COP_008:{card:'ice_thumbnail'},COP_009:{card:'ice_thumbnail'},
   EXP_007:{card:'sunken_thumbnail'},EXP_008:{card:'sunken_thumbnail'},
 };
 const supportedRooms=new Set<CoopRoomType>(['battle','elite','event','shrine','camp','treasure','merchant','echo','risk','boss']);

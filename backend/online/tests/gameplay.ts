@@ -1,0 +1,72 @@
+import assert from 'node:assert/strict';
+import {gameplayHandler,GameplayError,type GameplayServices} from '../gameplay';
+import type {GameState} from '../../../apps/mobile/src/core/types';
+async function main(){
+ let state:GameState|null=null,version=0,commits=0,clock=1700000000000,transportFailure=false,generatedIds=0;
+ const receipts=new Map<string,{response:unknown;requestHash:string}>();
+ const services:GameplayServices={authenticate:async token=>token==='alice-token'?'alice':null,randomId:()=>['11111111-1111-4111-8111-111111111111','33333333-3333-4333-8333-333333333333'][generatedIds++]??'44444444-4444-4444-8444-444444444444',randomRoll:()=>.25,
+  rpc:async<T>(name:string,args:Record<string,unknown>):Promise<T>=>{
+   if(name==='read_online_game_receipt_server_v1')return (receipts.get(args.p_request_id as string)??null) as T;
+   if(name==='load_online_game_server_v1')return {state:structuredClone(state),version,serverNow:clock,characterId:state?.character?.id??null,walletGold:state?.character?.gold??null,guildMember:false,communityProgress:{}} as T;
+   if(name==='commit_online_game_server_v1'){
+    if(args.p_expected_version!==version)throw new GameplayError('stale_state');
+    const response=args.p_response as {state:GameState;version:number};state=response.state;version=response.version;commits++;
+    receipts.set(args.p_request_id as string,{response,requestHash:args.p_request_hash as string});
+    if(transportFailure){transportFailure=false;throw new Error('lost response after commit');}return response as T;
+   }throw new Error('unexpected RPC');
+  }};
+ const handle=gameplayHandler(services);
+ const request=(command:unknown,requestId:string,expectedVersion:number,token='alice-token')=>handle(new Request('https://example.invalid/gameplay',{method:'POST',headers:{Authorization:`Bearer ${token}`},body:JSON.stringify({command,requestId,expectedVersion})}));
+ assert.equal((await handle(new Request('https://example.invalid/gameplay'))).status,401);
+ assert.equal((await request({type:'claim'},'bad-auth-000',0,'forged')).status,401);
+ assert.equal((await request({type:'claim',args:{xp:100000}},'inject-xp-01',0)).status,400);
+ assert.equal((await request({type:'create',args:{classId:'IRONWARDEN',name:'Alice Hero'}},'create-00001',0)).status,200);
+ assert.equal((await request({args:{name:'Alice Hero',classId:'IRONWARDEN'},type:'create'},'create-00001',0)).status,200);assert.equal(commits,1,'canonical replay');
+ state={...state!,inventory:{...state!.inventory,stacks:[...state!.inventory.stacks,{itemId:'HOLY_WATER',quantity:1}]},character:{...state!.character!,gold:100},skills:state!.skills.map(skill=>skill.skillId==='alchemy'||skill.skillId==='herbalism'?{...skill,xp:0,level:1}:skill)};
+ assert.equal((await request({type:'faith_practice',args:{tierId:'FAITH_QUIET',count:1}},'faith-00001',1)).status,200,'Faith reservation persists through online command');
+ assert.equal((await request({type:'stop'},'faith-stop-01',2)).status,200,'Faith refund persists through online command');
+ assert.equal((await request({type:'start',args:{kind:'gathering',id:'DEWLEAF_PATCH'}},'herb-start-01',3)).status,200,'Herbalism activity starts online');
+ clock+=60000;
+ const herbClaim=await request({type:'claim'},'herb-claim-01',4);assert.equal(herbClaim.status,200,'Herbalism settlement persists online');
+ state={...state!,inventory:{...state!.inventory,stacks:state!.inventory.stacks.map(stack=>stack.itemId==='DEWLEAF'?{...stack,quantity:2}:stack)}};
+ assert.equal((await request({type:'stop'},'herb-stop-01',5)).status,200,'Herbalism activity stops online');
+ assert.equal((await request({type:'alchemy_start',args:{id:'BREW_DEWLEAF_DRAUGHT',batches:1}},'brew-start-01',6)).status,200,'Alchemy reservation persists online');
+ clock+=60000;
+ const brewClaim=await request({type:'claim'},'brew-claim-01',7);assert.equal(brewClaim.status,200,'Alchemy settlement persists online');
+ const persisted=await brewClaim.json();assert.equal(persisted.state.activity,null,'Completed alchemy batch is cleared');
+ state={...state!,character:{...state!.character!,level:30},skills:state!.skills.map(skill=>skill.skillId==='herbalism'?{...skill,xp:999999,level:26}:skill.skillId==='alchemy'?{...skill,xp:999999,level:35}:skill),inventory:{...state!.inventory,stacks:[...state!.inventory.stacks,{itemId:'SUNSCALE',quantity:2},{itemId:'RIVER_MINT',quantity:2}]}};
+ assert.equal((await request({type:'travel',args:{id:'SUNSCAR'}},'sunscar-travel-01',8)).status,200,'Later-region travel persists online');
+ assert.equal((await request({type:'explore',args:{id:'SCOUT_SUNSCAR'}},'sunscar-scout-01',9)).status,200,'Later-region scouting starts online');
+ clock+=210000;
+ const sunscarScout=await request({type:'claim'},'sunscar-scout-claim-01',10);assert.equal(sunscarScout.status,200,'Later-region scouting settles online');
+ const sunscarState=await sunscarScout.json();assert.ok(sunscarState.state.unlockedMonsterIds.includes('SUNSCAR_SCORPION'),'Scouting unlock persists online');
+ assert.equal((await request({type:'stop'},'sunscar-scout-stop-01',11)).status,200,'Later-region scouting lane stops online');
+ assert.equal((await request({type:'start',args:{kind:'gathering',id:'SUNSCALE_BLOOM'}},'sunscale-start-01',12)).status,200,'Later-region Herbalism starts online');
+ assert.equal((await request({type:'stop'},'sunscale-stop-01',13)).status,200,'Later-region Herbalism stops online');
+ assert.equal((await request({type:'alchemy_start',args:{id:'BREW_GREATER_VIGOR_TONIC_SUNSCAR',batches:1}},'sunscar-brew-start-01',14)).status,200,'Regional Alchemy reservation persists online');
+ clock+=132000;
+ const regionalBrew=await request({type:'claim'},'sunscar-brew-claim-01',15);assert.equal(regionalBrew.status,200,'Regional Alchemy settlement persists online');
+ assert.equal((await request({type:'claim'},'create-00001',1)).status,409,'same key different command');
+ assert.equal((await request({type:'claim'},'stale-00001',0)).status,409);
+ assert.equal((await request({type:'start',args:{kind:'combat',id:'SUNSCAR_SCORPION'}},'start-00001',16)).status,200);
+ clock+=120000;transportFailure=true;
+ assert.equal((await request({type:'claim'},'claim-00001',17)).status,503,'uncertain commit is retryable');
+ const count=commits;const retried=await request({type:'claim'},'claim-00001',17);assert.equal(retried.status,200);assert.equal(commits,count,'no second commit on retry');
+ const result=await retried.json();assert.ok(result.reward.kills>0);assert.ok(result.state.character.xp>0);assert.ok(!result.state.unlockedMonsterIds.includes('BLACKGLASS_MIRELING'),'Sunscar combat cannot bypass Ashlands scouting online');
+ let receiptReads=0;
+ const raced=gameplayHandler({...services,rpc:async<T>(name:string,args:Record<string,unknown>):Promise<T>=>{
+  if(name==='read_online_game_receipt_server_v1'&&receiptReads++===0)return null as T;
+  return services.rpc<T>(name,args);
+ }});
+ const late=await raced(new Request('https://example.invalid/gameplay',{method:'POST',headers:{Authorization:'Bearer alice-token'},body:JSON.stringify({command:{type:'claim'},requestId:'claim-00001',expectedVersion:17})}));
+ assert.equal(late.status,200,'a commit between receipt and state reads replays successfully');assert.equal(commits,count);
+ const rosterId='22222222-2222-4222-8222-222222222222';
+ state={...state!,account:{...state!.account,unlockedCharacterSlots:2},otherCharacters:[{character:{...state!.character!,id:rosterId,name:'Second Hero',classId:'BASTION'},inventory:state!.inventory,overflow:state!.overflow,activity:null,skills:state!.skills,quests:state!.quests,currentRegionId:state!.currentRegionId}]};
+ const switched=await request({type:'roster_switch',args:{id:rosterId}},'roster-switch-01',18);assert.equal(switched.status,200,'roster switch routes through authenticated gameplay');
+ const switchedPayload=await switched.json();assert.equal(switchedPayload.state.character.id,rosterId,'roster switch persists active identity');
+ state={...state!,account:{...state!.account,unlockedCharacterSlots:3}};
+ const created=await request({type:'roster_create',args:{classId:'WAYFINDER',name:'Third Hero',body:'male'}},'roster-create-01',19);assert.equal(created.status,200,'roster creation routes through authenticated gameplay');
+ const createdPayload=await created.json();assert.equal(createdPayload.state.character.id,'33333333-3333-4333-8333-333333333333','roster creation persists server identity');
+ console.log('PASS authenticated gameplay HTTP, input authority, canonical replay, stale version and lost-response recovery');
+}
+void main().catch(error=>{console.error(error);process.exitCode=1;});

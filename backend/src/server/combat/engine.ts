@@ -60,15 +60,27 @@ export function simulateCombat(input: CombatInput): CombatResult {
     const crit=rng.next(`${now}:${source.definition.id}:${abilityId}:crit`)<clamp(source.definition.stats.critChance+modifier(source,'crit',now),0,.75);
     let raw=damageAfterMitigation(source.definition.stats.attackPower,effect.coeff??0,mit,.95+rng.next(`${now}:${abilityId}:var`)*.10,crit,source.definition.stats.critMultiplier)+(effect.flat??0);
     raw*=Math.max(.1,1+modifier(source,'damage_done',now)); raw*=Math.max(.1,1+modifier(target,'damage_taken',now));
+    if(hpPct(target)<clamp(effect.executeBelowHpPct??0,0,1))raw*=1+clamp(effect.executeBonus??0,0,1);
     const absorbed=Math.min(target.shield,raw); target.shield-=absorbed; const dealt=Math.max(0,raw-absorbed); target.hp=Math.max(0,target.hp-dealt); source.damageDone+=dealt; target.damageTaken+=dealt;
     addThreat(target,source,dealt*(effect.threatMultiplier??1)); events.push({atMs:now,type:eventType,actorId:source.definition.id,targetId:target.definition.id,abilityId,amount:Number(dealt.toFixed(2))});
+    // Reflect only damage absorbed by the shield that granted this effect. Direct
+    // reflection cannot trigger another shield reflection or recurse indefinitely.
+    let reflectable=absorbed;
+    for(const shield of target.reflectiveShields??[]){
+      const used=Math.min(reflectable,shield.remaining);shield.remaining-=used;reflectable-=used;
+      const owner=all.find(a=>a.definition.id===shield.sourceId);if(!used||!owner||!source.alive||source===target)continue;
+      const reflected=Math.min(source.hp,used*shield.rate);source.hp-=reflected;source.damageTaken+=reflected;owner.damageDone+=reflected;
+      events.push({atMs:now,type:'damage',actorId:owner.definition.id,targetId:source.definition.id,abilityId:'COMPANION_REFLECT',amount:Number(reflected.toFixed(2))});
+      if(source.hp<=0){source.alive=false;source.downed=source.definition.team==='players';events.push({atMs:now,type:source.downed?'down':'death',targetId:source.definition.id,actorId:owner.definition.id});}
+    }
+    if(target.reflectiveShields)target.reflectiveShields=target.reflectiveShields.filter(s=>s.remaining>0);
     if(target.hp<=0&&target.alive){target.alive=false;target.downed=target.definition.team==='players';events.push({atMs:now,type:target.downed?'down':'death',targetId:target.definition.id,actorId:source.definition.id});}
   };
   const applyHeal=(now:number, source:CombatantState,target:CombatantState,effect:AbilityEffect,abilityId:string,eventType:'heal'|'hot_tick'='heal')=>{ if(!target.alive)return; const amount=Math.max(0,source.definition.stats.healingPower*(effect.coeff??0)+(effect.flat??0)); const actual=Math.min(amount,target.definition.stats.maxHp-target.hp); target.hp+=actual; source.healingDone+=actual; events.push({atMs:now,type:eventType,actorId:source.definition.id,targetId:target.definition.id,abilityId,amount:Number(actual.toFixed(2))}); enemies.forEach(e=>{if(e.alive)addThreat(e,source,actual*.5*(effect.threatMultiplier??1));}); };
   const applyEffect=(now:number, source:CombatantState,target:CombatantState,effect:AbilityEffect,abilityId:string)=>{
     if(effect.kind==='damage')return applyDamage(now,source,target,effect,abilityId);
     if(effect.kind==='heal')return applyHeal(now,source,target,effect,abilityId);
-    if(effect.kind==='shield'){const amt=Math.max(0,source.definition.stats.healingPower*(effect.coeff??0)+(effect.flat??0));target.shield+=amt;events.push({atMs:now,type:'shield',actorId:source.definition.id,targetId:target.definition.id,abilityId,amount:Number(amt.toFixed(2))});return;}
+    if(effect.kind==='shield'){const amt=Math.max(0,source.definition.stats.healingPower*(effect.coeff??0)+(effect.flat??0));target.shield+=amt;if(effect.shieldReflectPct&&amt>0)(target.reflectiveShields??=[]).push({remaining:amt,rate:clamp(effect.shieldReflectPct,0,.5),sourceId:source.definition.id});events.push({atMs:now,type:'shield',actorId:source.definition.id,targetId:target.definition.id,abilityId,amount:Number(amt.toFixed(2))});return;}
     if(effect.kind==='dot'||effect.kind==='hot'){target.periodic.push({sourceId:source.definition.id,effectId:abilityId,kind:effect.kind,coeff:effect.coeff??0,flat:effect.flat??0,damageType:effect.damageType,nextTickAt:now+(effect.tickMs??1000),expiresAt:now+(effect.durationMs??3000),tickMs:effect.tickMs??1000});return;}
     if(effect.kind==='interrupt'){ if(target.casting){ const def=target.definition.abilities.find(a=>a.id===target.casting!.abilityId); if(def?.interruptible){target.casting=undefined;source.interrupts++;events.push({atMs:now,type:'interrupt',actorId:source.definition.id,targetId:target.definition.id,abilityId});}} return; }
     if(effect.kind==='taunt'){ if(target.definition.team==='enemies'){const top=Math.max(1,...Object.values(target.threat));target.threat[source.definition.id]=top+Math.max(100,effect.value??100);}return;}

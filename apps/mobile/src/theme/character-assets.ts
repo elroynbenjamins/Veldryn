@@ -3,18 +3,10 @@ import type {BodyPresentation,ClassId} from '../core/types';
 import {acceptedFrontCharacterSkinArtwork} from './accepted-front-character-assets';
 import {eventCharacterSkinArtwork} from './event-character-assets';
 
-/** Class artwork used when no approved full-set character skin is selected. */
-export const classArtwork:Record<ClassId,ImageSourcePropType>={
-  IRONWARDEN:require('../../assets/classes/ironwarden.png'),
-  BASTION:require('../../assets/classes/bastion.png'),
-  DREADGUARD:require('../../assets/classes/dreadguard.png'),
-  DAWNKEEPER:require('../../assets/classes/dawnkeeper.png'),
-  WAYFINDER:require('../../assets/classes/wayfinder.png'),
-  RAVAGER:require('../../assets/classes/ravager.png'),
-  HEXWEAVER:require('../../assets/classes/hexweaver.png'),
-  KNIFE_DANCER:require('../../assets/classes/knife_dancer.png'),
-  STONECALLER:require('../../assets/classes/stonecaller.png'),
-};
+export {
+  classEmblemArtwork as classArtwork,
+  classEmblemIconArtwork as classIconArtwork,
+} from './class-emblem-assets';
 
 /** Shared neutral creation skin used by every class until a set skin is chosen. */
 export const startingCharacterArtwork:Record<BodyPresentation,Record<'front'|'back',ImageSourcePropType>>={

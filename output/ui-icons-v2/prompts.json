@@ -1,0 +1,128 @@
+[
+  {
+    "name": "character",
+    "prompt": "Create ONE standalone transparent PNG game icon for VELDRYN. Background: TRANSPARENT, real alpha channel. High-quality fantasy pixel-art sprite: deliberate crisp clusters, strong broad silhouette readable at 32 px, restrained beveled volume, consistent upper-left lighting. The icon uses warm aged bronze/gold metal, very dark navy surfaces and one restrained cyan-blue crystal accent. Dark navy shading at the outer edge. No white outline, no pale halo, no drop shadow, no external glow, no surrounding frame. Gold highlights are warm amber, never ivory; no silver. Front-facing centered composition, whole object visible, generous transparent margin. No text or numbers. Premium cohesive medieval RPG equipment-icon rendering, not emoji, not vector line art. Deliver genuine transparency.\nSubject: A frontal dark-navy adventurer's helmet and shoulder bust. Bronze brow and cheek guards, blue crystal forehead accent, open shadowed visor. No face, skin or plumes. Clear armored-person silhouette.",
+    "source": "C:\\Users\\elroy\\.codex\\generated_images\\01a0967d-fcae-73e3-b18a-86a5188d6a08\\exec-81401aae-2c14-43c1-b2bf-821417ebae66.png",
+    "localMaster": "sources/character.png",
+    "generator": "built-in image_gen"
+  },
+  {
+    "name": "skills",
+    "prompt": "Create ONE standalone transparent PNG game icon for VELDRYN. Background: TRANSPARENT, real alpha channel. High-quality fantasy pixel-art sprite: deliberate crisp clusters, strong broad silhouette readable at 32 px, restrained beveled volume, consistent upper-left lighting. The icon uses warm aged bronze/gold metal, very dark navy surfaces and one restrained cyan-blue crystal accent. Dark navy shading at the outer edge. No white outline, no pale halo, no drop shadow, no external glow, no surrounding frame. Gold highlights are warm amber, never ivory; no silver. Front-facing centered composition, whole object visible, generous transparent margin. No text or numbers. Premium cohesive medieval RPG equipment-icon rendering, not emoji, not vector line art. Deliver genuine transparency.\nSubject: A bronze-headed mining pick crossed with a bronze crafting hammer, dark navy wrapped handles and small blue crystal inset at intersection. Broad readable tool heads. No silver.",
+    "source": "C:\\Users\\elroy\\.codex\\generated_images\\01a0967d-fcae-73e3-b18a-86a5188d6a08\\exec-4a7acfd4-9f21-4481-b22a-ae7530f0b056.png",
+    "localMaster": "sources/skills.png",
+    "generator": "built-in image_gen"
+  },
+  {
+    "name": "world",
+    "prompt": "Use case: stylized-concept. Create ONE production VELDRYN mobile fantasy RPG UI icon, isolated on a genuinely transparent RGBA background. Premium hand-crafted pixel-art illustration with clean deliberate pixel clusters, strong readable silhouette at 32 px, moderate detail, consistent upper-left lighting, restrained bevel depth. Material palette strictly warm aged bronze (#76512d, #b18445, #d2aa63), very dark navy/charcoal (#101a27, #203347) and restrained blue crystal (#397995, #70b8cb). Dark navy edge shading, no external stroke. No white, off-white, silver, ivory highlights, no pale fringe, no sticker outline, no glow, no drop shadow outside the silhouette, no background rectangle, no surrounding badge/frame unless the object itself requires one. Centered object fills about 80% of a square image, fully visible with clear transparent gutters. Flat frontal icon composition, consistent material rendering; not emoji, not photorealistic, no text, numbers, letters, watermark, extra symbols or ornament confetti. Final exported icon must look polished on both dark and light backgrounds. Render as a carefully shaded high-quality game sprite, not thin outline art. The transparent pixels must be genuine alpha, not a painted checkerboard.\nSubject: WORLD icon. A bold four-point bronze explorer's compass with an inset deep navy face and a single faceted blue crystal needle pointing northeast. Compact, readable, symmetrical main body, warm bronze highlights only. No letter labels. This is the master style reference for the whole navigation family.",
+    "source": "C:\\Users\\elroy\\.codex\\generated_images\\01a0967d-fcae-73e3-b18a-86a5188d6a08\\exec-b27be1e3-1cc8-4fed-bcf8-47ed36af4e0c.png",
+    "localMaster": "sources/world.png",
+    "generator": "built-in image_gen"
+  },
+  {
+    "name": "inventory",
+    "prompt": "Create ONE standalone transparent PNG game icon for VELDRYN. Background: TRANSPARENT, real alpha channel. High-quality fantasy pixel-art sprite: deliberate crisp clusters, strong broad silhouette readable at 32 px, restrained beveled volume, consistent upper-left lighting. The icon uses warm aged bronze/gold metal, very dark navy surfaces and one restrained cyan-blue crystal accent. Dark navy shading at the outer edge. No white outline, no pale halo, no drop shadow, no external glow, no surrounding frame. Gold highlights are warm amber, never ivory; no silver. Front-facing centered composition, whole object visible, generous transparent margin. No text or numbers. Premium cohesive medieval RPG equipment-icon rendering, not emoji, not vector line art. Deliver genuine transparency.\nSubject: A stout navy leather adventurer's backpack, warm bronze buckles and edging, small blue crystal clasp, one rolled bronze-brown bedroll at the top. Compact broad silhouette, few compartments.",
+    "source": "C:\\Users\\elroy\\.codex\\generated_images\\01a0967d-fcae-73e3-b18a-86a5188d6a08\\exec-24f625fd-eb46-412b-a7bc-99fb778f6e2d.png",
+    "localMaster": "sources/inventory.png",
+    "generator": "built-in image_gen"
+  },
+  {
+    "name": "account",
+    "prompt": "Create ONE standalone transparent PNG game icon for VELDRYN. Background: TRANSPARENT, real alpha channel. High-quality fantasy pixel-art sprite: deliberate crisp clusters, strong broad silhouette readable at 32 px, restrained beveled volume, consistent upper-left lighting. The icon uses warm aged bronze/gold metal, very dark navy surfaces and one restrained cyan-blue crystal accent. Dark navy shading at the outer edge. No white outline, no pale halo, no drop shadow, no external glow, no surrounding frame. Gold highlights are warm amber, never ivory; no silver. Front-facing centered composition, whole object visible, generous transparent margin. No text or numbers. Premium cohesive medieval RPG equipment-icon rendering, not emoji, not vector line art. Deliver genuine transparency.\nSubject: ACCOUNT: a round bronze personal signet medallion with a dark navy inset, a simple bronze head-and-shoulders relief and one small blue crystal at the bottom. The medallion is the object itself, no extra outer frame. Readable personal profile symbol.",
+    "source": "C:\\Users\\elroy\\.codex\\generated_images\\01a0967d-fcae-73e3-b18a-86a5188d6a08\\exec-84a11dde-a792-4132-af2e-1809437b6721.png",
+    "localMaster": "sources/account.png",
+    "generator": "built-in image_gen"
+  },
+  {
+    "name": "settings",
+    "prompt": "Create ONE standalone transparent PNG game icon for VELDRYN. Background: TRANSPARENT, real alpha channel. High-quality fantasy pixel-art sprite: deliberate crisp clusters, strong broad silhouette readable at 32 px, restrained beveled volume, consistent upper-left lighting. The icon uses warm aged bronze/gold metal, very dark navy surfaces and one restrained cyan-blue crystal accent. Dark navy shading at the outer edge. No white outline, no pale halo, no drop shadow, no external glow, no surrounding frame. Gold highlights are warm amber, never ivory; no silver. Front-facing centered composition, whole object visible, generous transparent margin. No text or numbers. Premium cohesive medieval RPG equipment-icon rendering, not emoji, not vector line art. Deliver genuine transparency.\nSubject: SETTINGS: one substantial eight-tooth warm bronze gear with a dark navy central inset and a single faceted blue crystal hub. Strong clean gear silhouette, restrained wear, no extra mechanical parts.",
+    "source": "C:\\Users\\elroy\\.codex\\generated_images\\01a0967d-fcae-73e3-b18a-86a5188d6a08\\exec-3529a63a-c737-458c-8cbf-37534b3befcf.png",
+    "localMaster": "sources/settings.png",
+    "generator": "built-in image_gen"
+  },
+  {
+    "name": "search",
+    "prompt": "Create ONE standalone transparent PNG game icon for VELDRYN. Background: TRANSPARENT, real alpha channel. High-quality fantasy pixel-art sprite: deliberate crisp clusters, strong broad silhouette readable at 32 px, restrained beveled volume, consistent upper-left lighting. The icon uses warm aged bronze/gold metal, very dark navy surfaces and one restrained cyan-blue crystal accent. Dark navy shading at the outer edge. No white outline, no pale halo, no drop shadow, no external glow, no surrounding frame. Gold highlights are warm amber, never ivory; no silver. Front-facing centered composition, whole object visible, generous transparent margin. No text or numbers. Premium cohesive medieval RPG equipment-icon rendering, not emoji, not vector line art. Deliver genuine transparency.\nSubject: SEARCH: a bronze magnifying glass tilted diagonally, deep navy-blue glass lens with subdued blue reflection, dark navy handle with bronze endcap. No bright white lens reflection. One bold lens and handle, clean silhouette.",
+    "source": "C:\\Users\\elroy\\.codex\\generated_images\\01a0967d-fcae-73e3-b18a-86a5188d6a08\\exec-0b9c6da6-cc09-488d-8355-291dc02110c7.png",
+    "localMaster": "sources/search.png",
+    "generator": "built-in image_gen"
+  },
+  {
+    "name": "filter",
+    "prompt": "Create ONE standalone transparent PNG game icon for VELDRYN. Background: TRANSPARENT, real alpha channel. High-quality fantasy pixel-art sprite: deliberate crisp clusters, strong broad silhouette readable at 32 px, restrained beveled volume, consistent upper-left lighting. The icon uses warm aged bronze/gold metal, very dark navy surfaces and one restrained cyan-blue crystal accent. Dark navy shading at the outer edge. No white outline, no pale halo, no drop shadow, no external glow, no surrounding frame. Gold highlights are warm amber, never ivory; no silver. Front-facing centered composition, whole object visible, generous transparent margin. No text or numbers. Premium cohesive medieval RPG equipment-icon rendering, not emoji, not vector line art. Deliver genuine transparency.\nSubject: FILTER utility icon: compact SQUARE arrangement of three short horizontal bronze rails stacked vertically, each with one small dark navy square slider knob with a blue crystal center at a different horizontal position. All three rails and knobs together form ONE compact square icon. Absolutely NO glow, haze, background plane or shadow; fully empty transparent pixels between the rails and surrounding them.",
+    "source": "C:\\Users\\elroy\\.codex\\generated_images\\01a0967d-fcae-73e3-b18a-86a5188d6a08\\exec-470aff31-51d5-41b7-9759-dd347f2a40b6.png",
+    "localMaster": "sources/filter.png",
+    "generator": "built-in image_gen"
+  },
+  {
+    "name": "back",
+    "prompt": "Create ONE standalone transparent PNG game icon for VELDRYN. Background: TRANSPARENT, real alpha channel. High-quality fantasy pixel-art sprite: deliberate crisp clusters, strong broad silhouette readable at 32 px, restrained beveled volume, consistent upper-left lighting. The icon uses warm aged bronze/gold metal, very dark navy surfaces and one restrained cyan-blue crystal accent. Dark navy shading at the outer edge. No white outline, no pale halo, no drop shadow, no external glow, no surrounding frame. Gold highlights are warm amber, never ivory; no silver. Front-facing centered composition, whole object visible, generous transparent margin. No text or numbers. Premium cohesive medieval RPG equipment-icon rendering, not emoji, not vector line art. Deliver genuine transparency.\nSubject: BACK: a single broad left-pointing bronze chevron shaped like < with a dark navy beveled underside and a tiny muted blue inset on the upper arm. Simple directional control, no circle, box or compass, no lettering.",
+    "source": "C:\\Users\\elroy\\.codex\\generated_images\\01a0967d-fcae-73e3-b18a-86a5188d6a08\\exec-4919624c-83a3-4651-bef7-45a3efff5044.png",
+    "localMaster": "sources/back.png",
+    "generator": "built-in image_gen"
+  },
+  {
+    "name": "next",
+    "prompt": "Create ONE standalone transparent PNG game icon for VELDRYN. Background: TRANSPARENT, real alpha channel. High-quality fantasy pixel-art sprite: deliberate crisp clusters, strong broad silhouette readable at 32 px, restrained beveled volume, consistent upper-left lighting. The icon uses warm aged bronze/gold metal, very dark navy surfaces and one restrained cyan-blue crystal accent. Dark navy shading at the outer edge. No white outline, no pale halo, no drop shadow, no external glow, no surrounding frame. Gold highlights are warm amber, never ivory; no silver. Front-facing centered composition, whole object visible, generous transparent margin. No text or numbers. Premium cohesive medieval RPG equipment-icon rendering, not emoji, not vector line art. Deliver genuine transparency.\nSubject: NEXT: a single broad right-pointing bronze chevron shaped like > with a dark navy beveled underside and a tiny muted blue inset on the upper arm. Simple directional control, no circle, box or compass, no lettering.",
+    "source": "C:\\Users\\elroy\\.codex\\generated_images\\01a0967d-fcae-73e3-b18a-86a5188d6a08\\exec-54714ac8-503d-4a31-8638-411464fca585.png",
+    "localMaster": "sources/next.png",
+    "generator": "built-in image_gen"
+  },
+  {
+    "name": "events",
+    "prompt": "Create ONE standalone transparent PNG game icon for VELDRYN. Background: TRANSPARENT, real alpha channel. High-quality fantasy pixel-art sprite: deliberate crisp clusters, strong broad silhouette readable at 32 px, restrained beveled volume, consistent upper-left lighting. The icon uses warm aged bronze/gold metal, very dark navy surfaces and one restrained cyan-blue crystal accent. Dark navy shading at the outer edge. No white outline, no pale halo, no drop shadow, no external glow, no surrounding frame. Gold highlights are warm amber, never ivory; no silver. Front-facing centered composition, whole object visible, generous transparent margin. No text or numbers. Premium cohesive medieval RPG equipment-icon rendering, not emoji, not vector line art. Deliver genuine transparency.\nSubject: EVENTS: a compact square medieval calendar token with two bronze binding tabs, deep navy face, bronze trim and one large faceted blue four-point crystal star in the middle. No grid, lettering or numbers. The calendar shape itself is the icon.",
+    "source": "C:\\Users\\elroy\\.codex\\generated_images\\01a0967d-fcae-73e3-b18a-86a5188d6a08\\exec-5f867184-dc3b-46cb-80f7-f2be4df10de9.png",
+    "localMaster": "sources/events.png",
+    "generator": "built-in image_gen"
+  },
+  {
+    "name": "home",
+    "prompt": "Create ONE standalone transparent PNG game icon for VELDRYN. Background: TRANSPARENT, real alpha channel. High-quality fantasy pixel-art sprite: deliberate crisp clusters, strong broad silhouette readable at 32 px, restrained beveled volume, consistent upper-left lighting. The icon uses warm aged bronze/gold metal, very dark navy surfaces and one restrained cyan-blue crystal accent. Dark navy shading at the outer edge. No white outline, no pale halo, no drop shadow, no external glow, no surrounding frame. Gold highlights are warm amber, never ivory; no silver. Front-facing centered composition, whole object visible, generous transparent margin. No text or numbers. Premium cohesive medieval RPG equipment-icon rendering, not emoji, not vector line art. Deliver genuine transparency.\nSubject: HOME: a compact medieval keep gateway, one pointed roof over a dark navy arched doorway, warm bronze stone trim and a small blue crystal window. Simple recognizable home/building silhouette. No landscape, ground or red roof.",
+    "source": "C:\\Users\\elroy\\.codex\\generated_images\\01a0967d-fcae-73e3-b18a-86a5188d6a08\\exec-339808ec-2f26-4c0b-a1b3-79fdf2bb7bd2.png",
+    "localMaster": "sources/home.png",
+    "generator": "built-in image_gen"
+  },
+  {
+    "name": "quests",
+    "prompt": "Create ONE standalone transparent PNG game icon for VELDRYN. Background: TRANSPARENT, real alpha channel. High-quality fantasy pixel-art sprite: deliberate crisp clusters, strong broad silhouette readable at 32 px, restrained beveled volume, consistent upper-left lighting. The icon uses warm aged bronze/gold metal, very dark navy surfaces and one restrained cyan-blue crystal accent. Dark navy shading at the outer edge. No white outline, no pale halo, no drop shadow, no external glow, no surrounding frame. Gold highlights are warm amber, never ivory; no silver. Front-facing centered composition, whole object visible, generous transparent margin. No text or numbers. Premium cohesive medieval RPG equipment-icon rendering, not emoji, not vector line art. Deliver genuine transparency.\nSubject: QUESTS: one compact rolled amber parchment quest scroll with dark bronze rolled ends, a small navy ribbon and blue crystal seal. Blank parchment, no writing or diagram. Medium tan parchment, not white or cream.",
+    "source": "C:\\Users\\elroy\\.codex\\generated_images\\01a0967d-fcae-73e3-b18a-86a5188d6a08\\exec-c3da4ee4-cbf4-46b0-815b-cab6b034c44f.png",
+    "localMaster": "sources/quests.png",
+    "generator": "built-in image_gen"
+  },
+  {
+    "name": "friends",
+    "prompt": "Create ONE standalone transparent PNG game icon for VELDRYN. Background: TRANSPARENT, real alpha channel. High-quality fantasy pixel-art sprite: deliberate crisp clusters, strong broad silhouette readable at 32 px, restrained beveled volume, consistent upper-left lighting. The icon uses warm aged bronze/gold metal, very dark navy surfaces and one restrained cyan-blue crystal accent. Dark navy shading at the outer edge. No white outline, no pale halo, no drop shadow, no external glow, no surrounding frame. Gold highlights are warm amber, never ivory; no silver. Front-facing centered composition, whole object visible, generous transparent margin. No text or numbers. Premium cohesive medieval RPG equipment-icon rendering, not emoji, not vector line art. Deliver genuine transparency.\nSubject: FRIENDS: two small hooded adventurer head-and-shoulder silhouettes side by side, navy hoods with bronze trim, a small blue crystal joining clasp. One small bronze plus sign at lower right. No skin, faces or emoji people; polished fantasy materials.",
+    "source": "C:\\Users\\elroy\\.codex\\generated_images\\01a0967d-fcae-73e3-b18a-86a5188d6a08\\exec-0393bf94-d4b8-4b99-9284-2d23b68e34ee.png",
+    "localMaster": "sources/friends.png",
+    "generator": "built-in image_gen"
+  },
+  {
+    "name": "guild",
+    "prompt": "Create ONE standalone transparent PNG game icon for VELDRYN. Background: TRANSPARENT, real alpha channel. High-quality fantasy pixel-art sprite: deliberate crisp clusters, strong broad silhouette readable at 32 px, restrained beveled volume, consistent upper-left lighting. The icon uses warm aged bronze/gold metal, very dark navy surfaces and one restrained cyan-blue crystal accent. Dark navy shading at the outer edge. No white outline, no pale halo, no drop shadow, no external glow, no surrounding frame. Gold highlights are warm amber, never ivory; no silver. Front-facing centered composition, whole object visible, generous transparent margin. No text or numbers. Premium cohesive medieval RPG equipment-icon rendering, not emoji, not vector line art. Deliver genuine transparency.\nSubject: GUILD icon. ONE short, compact shield-shaped navy fabric pennant hanging from a simple bronze crossbar. Small bronze sword emblem in the center and one blue crystal fastening stud. The entire pennant fits a square icon. NO glow, haze, light pool, atmosphere, vignette, cast shadow or gradient outside the object. Background is fully transparent alpha zero, including all space beside the pennant. Keep the silhouette broad and simple, not a long decorative banner.",
+    "source": "C:\\Users\\elroy\\.codex\\generated_images\\01a0967d-fcae-73e3-b18a-86a5188d6a08\\exec-6b4dddb9-1e08-4c85-b686-51e6f2ae0aba.png",
+    "localMaster": "sources/guild.png",
+    "generator": "built-in image_gen"
+  },
+  {
+    "name": "party",
+    "prompt": "Create ONE standalone transparent PNG game icon for VELDRYN. Background: TRANSPARENT, real alpha channel. High-quality fantasy pixel-art sprite: deliberate crisp clusters, strong broad silhouette readable at 32 px, restrained beveled volume, consistent upper-left lighting. The icon uses warm aged bronze/gold metal, very dark navy surfaces and one restrained cyan-blue crystal accent. Dark navy shading at the outer edge. No white outline, no pale halo, no drop shadow, no external glow, no surrounding frame. Gold highlights are warm amber, never ivory; no silver. Front-facing centered composition, whole object visible, generous transparent margin. No text or numbers. Premium cohesive medieval RPG equipment-icon rendering, not emoji, not vector line art. Deliver genuine transparency.\nSubject: PARTY: three small overlapping adventurer shields in a compact group, central navy shield slightly taller than the two behind, warm bronze rims and a blue crystal on the central shield. Clearly a grouped team symbol, no crest animals or lettering.",
+    "source": "C:\\Users\\elroy\\.codex\\generated_images\\01a0967d-fcae-73e3-b18a-86a5188d6a08\\exec-1c61b88f-faa8-49d4-8bf3-8cb2c80fdc3d.png",
+    "localMaster": "sources/party.png",
+    "generator": "built-in image_gen"
+  },
+  {
+    "name": "chat",
+    "prompt": "Create ONE standalone transparent PNG game icon for VELDRYN. Background: TRANSPARENT, real alpha channel. High-quality fantasy pixel-art sprite: deliberate crisp clusters, strong broad silhouette readable at 32 px, restrained beveled volume, consistent upper-left lighting. The icon uses warm aged bronze/gold metal, very dark navy surfaces and one restrained cyan-blue crystal accent. Dark navy shading at the outer edge. No white outline, no pale halo, no drop shadow, no external glow, no surrounding frame. Gold highlights are warm amber, never ivory; no silver. Front-facing centered composition, whole object visible, generous transparent margin. No text or numbers. Premium cohesive medieval RPG equipment-icon rendering, not emoji, not vector line art. Deliver genuine transparency.\nSubject: CHAT: one rounded deep navy speech bubble with short lower-left tail, warm bronze dimensional rim, three small bronze dots across the center and one subtle blue crystal at the tail. Fantasy material rendering, not yellow emoji, no extra frame or text.",
+    "source": "C:\\Users\\elroy\\.codex\\generated_images\\01a0967d-fcae-73e3-b18a-86a5188d6a08\\exec-1f265893-a451-43f1-a127-d669692436a9.png",
+    "localMaster": "sources/chat.png",
+    "generator": "built-in image_gen"
+  },
+  {
+    "name": "close",
+    "prompt": "Create ONE standalone transparent PNG game icon for VELDRYN. Background: TRANSPARENT, real alpha channel. High-quality fantasy pixel-art sprite: deliberate crisp clusters, strong broad silhouette readable at 32 px, restrained beveled volume, consistent upper-left lighting. The icon uses warm aged bronze/gold metal, very dark navy surfaces and one restrained cyan-blue crystal accent. Dark navy shading at the outer edge. No white outline, no pale halo, no drop shadow, no external glow, no surrounding frame. Gold highlights are warm amber, never ivory; no silver. Front-facing centered composition, whole object visible, generous transparent margin. No text or numbers. Premium cohesive medieval RPG equipment-icon rendering, not emoji, not vector line art. Deliver genuine transparency.\nSubject: CLOSE: two broad warm bronze bars crossing into one clear X, dark navy beveled underside and a small muted blue crystal at the center. Simple close control, no circle, box, weapons or extra ornament.",
+    "source": "C:\\Users\\elroy\\.codex\\generated_images\\01a0967d-fcae-73e3-b18a-86a5188d6a08\\exec-9924150d-73c4-46ca-837e-7c06d1b3eb5f.png",
+    "localMaster": "sources/close.png",
+    "generator": "built-in image_gen"
+  }
+]

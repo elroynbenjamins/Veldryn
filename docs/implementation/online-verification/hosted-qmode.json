@@ -1,0 +1,42 @@
+{
+  "checkedAt": "2026-09-12T21:35:04.059Z",
+  "project": "byxmmiobxaphcozutotq",
+  "checks": [
+    {
+      "check": "deployed handler authentication and client-authority rejection",
+      "status": "PASS"
+    },
+    {
+      "check": "concurrent starts return one persisted run",
+      "status": "PASS"
+    },
+    {
+      "check": "start conflicts, active reservation and Echo-owner access denial",
+      "status": "PASS"
+    },
+    {
+      "check": "raw route/loadout privacy with authorized sanitized snapshot",
+      "status": "PASS"
+    },
+    {
+      "check": "real-time pg_cron completion while controller makes no gameplay requests",
+      "status": "PASS"
+    },
+    {
+      "check": "persisted choices, database-clock pacing, offline worker and concurrent node finalization",
+      "status": "PASS"
+    },
+    {
+      "check": "one entitlement and ledger credit under concurrent reward claims",
+      "status": "PASS"
+    },
+    {
+      "check": "terminal run releases the controller reservation",
+      "status": "PASS"
+    }
+  ],
+  "status": "PASS",
+  "controllerCharacter": "57299b5e-889e-4200-887e-1c863bc33367",
+  "transport": "deployed authenticated HTTP",
+  "terminalPhase": "completed"
+}

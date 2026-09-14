@@ -11,5 +11,5 @@ export function equipmentScreenModel(state:GameState){
   if(!state.character)throw new Error('Equipment requires a character');
   const stats=effectiveStats(state),readiness=regionalReadiness(state);
   const slots=EQUIPMENT_SLOT_ORDER.map(slot=>{const itemId=state.character!.equipment[slot],enhancement=itemId?gearEnhancement(state,itemId):undefined;return {slot,label:EQUIPMENT_SLOT_LABELS[slot],itemId,item:itemId?itemDef(itemId):undefined,enhancement,enhancedStats:itemId?enhancedGearStats(state,itemId):undefined,socketCapacity:itemId?gemSocketCapacity(itemId):0};});
-  return {slots,equippedCount:slots.filter(slot=>slot.item).length,stats:{maxHp:stats.hp,currentHp:state.character.currentHp,attack:stats.attack,defense:stats.defense,power:stats.power,readiness:readiness.total},loadouts:equipmentLoadoutGuidesFor(state.character.classId)};
+  return {slots,equippedCount:slots.filter(slot=>slot.item).length,stats:{...stats,maxHp:stats.hp,currentHp:state.character.currentHp,readiness:readiness.total},loadouts:equipmentLoadoutGuidesFor(state.character.classId)};
 }

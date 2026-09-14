@@ -13,6 +13,18 @@ export function launchPlayer(classId:string, level=25):CombatantDefinition {
       {id:'IW_WARD',name:'Oathwall',cooldownMs:12000,castTimeMs:0,target:'self',priority:90,aiCondition:'self_below_50',effects:[{kind:'shield',coeff:2.4}]},
       dmg('IW_BASH','Rune Bash',1.05,6500,70,{effects:[{kind:'damage',coeff:1.05,threatMultiplier:2.2},{kind:'interrupt'}],aiCondition:'target_casting'})
     ]);
+    // Newer solo tanks retain their relative base HP/ATK/DEF budgets against
+    // Ironwarden (164/155,14/15,20/19 and 150/155,17/15,17/19).
+    case 'Bastion': return make('Bastion','tank',stats(5200*164/155*scale,420*14/15*scale,180*scale,1500*20/19*scale,680,180,.05,.03),[
+      {id:'BT_CHALLENGE',name:'Bastion Challenge',cooldownMs:9000,castTimeMs:0,target:'current_target',priority:95,effects:[{kind:'taunt',value:500},{kind:'damage',coeff:.45,threatMultiplier:4}]},
+      {id:'BT_FORTRESS',name:'Layered Fortress',cooldownMs:12000,castTimeMs:0,target:'self',priority:90,aiCondition:'self_below_50',effects:[{kind:'shield',coeff:2.7}]},
+      dmg('BT_REBUFF','Fortress Rebuff',.8,7500,70,{effects:[{kind:'damage',coeff:.8,threatMultiplier:2.2},{kind:'interrupt'}],aiCondition:'target_casting'})
+    ]);
+    case 'Dreadguard': return make('Dreadguard','tank',stats(5200*150/155*scale,420*17/15*scale,180*scale,1500*17/19*scale,680,180,.05,.03),[
+      {id:'DG_CHALLENGE',name:'Dread Challenge',cooldownMs:9000,castTimeMs:0,target:'current_target',priority:95,effects:[{kind:'taunt',value:500},{kind:'damage',coeff:.75,threatMultiplier:4}]},
+      {id:'DG_SUSTAIN',name:'Grim Resolve',cooldownMs:6500,castTimeMs:0,target:'self',priority:90,aiCondition:'self_below_50',effects:[{kind:'heal',coeff:3}]},
+      dmg('DG_BIND','Binding Chain',.95,6500,70,{effects:[{kind:'damage',coeff:.95,threatMultiplier:2.2},{kind:'interrupt'}],aiCondition:'target_casting'})
+    ]);
     case 'Dawnkeeper': return make('Dawnkeeper','support',stats(3600*scale,300*scale,720*scale,820*scale,720,230,.07,.08),[
       {id:'DK_HEAL',name:'Dawn Mend',cooldownMs:4200,castTimeMs:500,target:'lowest_hp_ally',priority:100,aiCondition:'ally_below_50',effects:[{kind:'heal',coeff:1.25}]},
       {id:'DK_HOT',name:'Sunthread',cooldownMs:8000,castTimeMs:0,target:'lowest_hp_ally',priority:80,effects:[{kind:'hot',coeff:.34,durationMs:6000,tickMs:2000}]},

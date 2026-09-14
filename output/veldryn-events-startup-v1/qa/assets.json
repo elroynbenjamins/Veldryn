@@ -1,0 +1,69 @@
+{
+  "status": "PASS",
+  "newAssets": 9,
+  "runtimePngs": 30,
+  "checks": [
+    "dimensions and decoding",
+    "SHA-256",
+    "exact nearest-neighbor density expansion including reused logo",
+    "opaque backgrounds",
+    "binary alpha and transparent perimeter",
+    "clear profile-center rectangle"
+  ],
+  "results": [
+    {
+      "id": "startup_harvestwake",
+      "status": "PASS",
+      "visible": 230400,
+      "transparent": 0
+    },
+    {
+      "id": "frame_harvestwake_festival",
+      "status": "PASS",
+      "visible": 8724,
+      "transparent": 48876
+    },
+    {
+      "id": "badge_harvestwake",
+      "status": "PASS",
+      "visible": 967,
+      "transparent": 1337
+    },
+    {
+      "id": "startup_winters_bell",
+      "status": "PASS",
+      "visible": 230400,
+      "transparent": 0
+    },
+    {
+      "id": "frame_winters_bell_festival",
+      "status": "PASS",
+      "visible": 8490,
+      "transparent": 49110
+    },
+    {
+      "id": "badge_winters_bell",
+      "status": "PASS",
+      "visible": 623,
+      "transparent": 1681
+    },
+    {
+      "id": "startup_firstlight",
+      "status": "PASS",
+      "visible": 230400,
+      "transparent": 0
+    },
+    {
+      "id": "frame_firstlight_festival",
+      "status": "PASS",
+      "visible": 9015,
+      "transparent": 48585
+    },
+    {
+      "id": "badge_firstlight",
+      "status": "PASS",
+      "visible": 1057,
+      "transparent": 1247
+    }
+  ]
+}

@@ -1,5 +1,8 @@
+import {BossEncounterIntro} from './BossEncounterIntro';
+import {ItemArtwork} from './ItemArtwork';
+import {SearchField} from './SearchField';
 import {useState} from 'react';
-import {Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
+import {Pressable,StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
 import type {WorldZoneDef} from '../content/world-map';
 import {encounterUnlocked,regionEncounters} from '../core/world-navigation';
@@ -17,7 +20,7 @@ export function RegionEncounterList({state,zone,onStart,onBoss,showFilters=false
   const [query,setQuery]=useState(''),[availableOnly,setAvailableOnly]=useState(false),[expandedId,setExpandedId]=useState<string|null>(null);
   const monsters=regionEncounters(state,zone.name,query,availableOnly);
   return <View style={s.list}>
-    {showFilters&&<><TextInput accessibilityLabel="Search encounters" value={query} onChangeText={setQuery} placeholder="Search encounters…" placeholderTextColor={C.muted} style={s.search}/><GameButton title={availableOnly?'Available only · Show all':'Show available encounters only'} tone="secondary" onPress={()=>setAvailableOnly(!availableOnly)}/></>}
+    {showFilters&&<><SearchField accessibilityLabel="Search encounters" value={query} onChangeText={setQuery} placeholder="Search encounters…" placeholderTextColor={C.muted}/><GameButton title={availableOnly?'Available only · Show all':'Show available encounters only'} tone="secondary" onPress={()=>setAvailableOnly(!availableOnly)}/></>}
     <Text style={s.kicker}>{monsters.length} ENEM{monsters.length===1?'Y':'IES'} · TAP TO EXPAND</Text>
     {monsters.length===0&&<Panel><Text style={s.title}>No matching enemies</Text><Text style={s.sub}>Try another name or show all encounters.</Text><GameButton title="Clear filters" onPress={()=>{setQuery('');setAvailableOnly(false)}}/></Panel>}
     {monsters.map(monster=>{
@@ -30,11 +33,11 @@ export function RegionEncounterList({state,zone,onStart,onBoss,showFilters=false
           <View style={s.flex}><Text style={s.title}>{monster.boss?'♛ ':''}{monster.name}</Text><Text style={s.stats}>LV {monster.level} · HP {monster.hp} · ATK {monster.attack} · DEF {monster.defense}</Text><View style={s.statusRow}><Text style={active?s.active:unlocked?s.ready:s.locked}>{active?'HUNTING':unlocked?'AVAILABLE':`LOCKED · LV ${monster.unlockLevel}`}</Text><Text style={[s.readiness,{color:readinessColor}]}>{readiness.safety.toUpperCase()} · {readiness.percent}%</Text></View></View>
           <Text aria-hidden style={s.chevron}>{expanded?'⌃':'⌄'}</Text>
         </Pressable>
-        {expanded&&<View style={s.detail}>
+        {expanded&&<View style={s.detail}>{monster.boss&&<BossEncounterIntro monster={monster}/>}
           {!monster.boss&&<Text style={s.sub}>Base rate: {formatGameNumber(baseXp,state.settings.numberMode)} XP/hour before combat speed and survival.</Text>}
           <View style={[s.readinessBox,{borderColor:readinessColor}]}><Text style={[s.readinessTitle,{color:readinessColor}]}>{readiness.safety==='safe'?'Well prepared':readiness.safety==='steady'?'Close match':'Upgrade recommended'}</Text><Text style={s.sub}>Your effective power: {formatGameNumber(readiness.power,state.settings.numberMode)} · recommended: {formatGameNumber(readiness.recommendedPower,state.settings.numberMode)}</Text></View>
           <Text style={s.dropLabel}>DROP TABLE</Text>
-          {monster.drops.map(drop=>{const item=itemDef(drop.itemId),rarity=itemRarity(item);return <View key={drop.itemId} style={s.dropRow}><ResourceArtwork itemId={drop.itemId} size={30} framed={false}/><Text style={[s.dropRarity,{color:rarityMeta(rarity).color}]}>{rarityLabel(item)}</Text><Text style={s.dropName}>{item.name}</Text><Text style={s.dropChance}>{Math.max(.1,drop.chance*100).toFixed(drop.chance<.01?1:0)}%</Text></View>})}
+          {monster.drops.map(drop=>{const item=itemDef(drop.itemId),rarity=itemRarity(item);return <View key={drop.itemId} style={s.dropRow}><ItemArtwork itemId={drop.itemId} size={30}/><Text style={[s.dropRarity,{color:rarityMeta(rarity).color}]}>{rarityLabel(item)}</Text><Text style={s.dropName}>{item.name}</Text><Text style={s.dropChance}>{Math.max(.1,drop.chance*100).toFixed(drop.chance<.01?1:0)}%</Text></View>})}
           {monster.boss&&!unlocked&&state.character!.level>=monster.unlockLevel&&<Text style={s.locked}>Advance the Asterfall questline to challenge this boss.</Text>}
           <GameButton disabled={!unlocked||active||defeated} title={defeated?'Defeated':active?'Currently hunting':monster.boss?'Challenge Fallen Knight':state.activity?'Collect current rewards & hunt':'Start idle hunt'} onPress={()=>monster.boss?onBoss():onStart(monster.id)}/>
         </View>}

@@ -1,0 +1,7 @@
+{
+  "typescriptAfterInitialImplementation": "passed",
+  "finalWorkspaceTypeScriptRetry": "blocked by concurrent backend deterministic-rng.ts node:crypto type-resolution error",
+  "productionAndroidExport": "passed",
+  "bytecode": false,
+  "native": "Android 35 / 360dp, memory-only active event"
+}

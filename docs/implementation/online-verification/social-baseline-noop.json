@@ -1,0 +1,7 @@
+{
+  "checkedAt": "2026-09-12T19:40:36.889Z",
+  "project": "nyjwigipamnvpdvpauuv",
+  "check": "Recovered baseline leaves hosted columns, defaults, constraints, RLS and grants unchanged",
+  "status": "PASS",
+  "transaction": "ROLLED BACK"
+}

@@ -17,7 +17,7 @@ export interface RoleReadinessResult {
 }
 
 export function deriveRole(classId: string): CoopRole {
-  const role = CLASS_ROLES[classId.toUpperCase() as ClassId];
+  const role = CLASS_ROLES[classId.trim().replace(/\s+/g,'_').toUpperCase() as ClassId];
   if (!role) throw new Error(`unknown_class:${classId}`);
   return role;
 }
@@ -31,7 +31,7 @@ export function evaluateRoleReadiness(
   const role = deriveRole(classId);
   const available = new Set(capabilities);
   const failures: string[] = [];
-  if (normalizedScore < floor) failures.push('below_role_readiness_floor');
+  if (!Number.isFinite(normalizedScore) || normalizedScore < 0 || !Number.isFinite(floor) || floor <= 0 || normalizedScore < floor) failures.push('below_role_readiness_floor');
   if (role === 'tank' && (!available.has('threat') || !available.has('defense'))) failures.push('missing_tank_capability');
   if (role === 'support' && !(available.has('restore') || (available.has('mitigate') && available.has('utility')))) failures.push('missing_support_capability');
   if (role === 'damage' && !available.has('damage')) failures.push('missing_damage_capability');

@@ -1,7 +1,7 @@
 import type {CoopLoadoutIntent} from '../core/coop-loadout-presentation';
 import type {CoopRunView} from '../core/coop-presentation';
 import type {CoopQModeMemberView,CoopQModeServerProjection,CoopQModeTeamView} from '../core/coop-qmode';
-import {validateCoopQModeTeam} from '../core/coop-qmode';
+import {validateCoopQModeTeam,presentQModeRun} from '../core/coop-qmode';
 import {coopClient} from './coop-client';
 import {supabase} from './supabase';
 export interface CoopQModeSource {start:(intent:CoopLoadoutIntent,requestId:string)=>Promise<{run:CoopRunView;team:CoopQModeTeamView}>;resume:(runId:string,requestId:string)=>Promise<{run:CoopRunView;team:CoopQModeTeamView}>;}
@@ -24,9 +24,9 @@ export async function readAuthorizedQModeSnapshot(runId:string):Promise<{project
 }
 function fromPublicProjection(projection:CoopQModeServerProjection,requestId:string){
   const team:CoopQModeTeamView={runId:projection.runId,requestId,status:projection.phase==='completed'?'reward_pending':'ready',members:projection.team.map(member=>({memberId:member.memberId,displayName:member.displayName,role:member.role,kind:member.kind,effectiveLevel:member.effectiveLevel,status:member.downed?'unavailable':'ready'}))};validateCoopQModeTeam(team);
-  const run:CoopRunView={runId:projection.runId,mode:'qmode',phase:projection.phase,syncedLevel:Math.min(...projection.team.map(member=>member.effectiveLevel)),roleSlots:projection.team.map(member=>({role:member.role,name:member.displayName,echo:member.kind==='echo',ready:!member.downed})),options:[]};return{run,team};
+  return{run:presentQModeRun(projection),team};
 }
 export const realCoopQModeSource:CoopQModeSource={
   start:async(intent,requestId)=>{if(intent.mode!=='qmode')throw new Error('not_qmode_intent');const result=await coopClient.start('qmode',{requestId,dungeonId:intent.dungeonId,tier:intent.tier,characterId:intent.characterId,loadoutId:intent.loadoutId,loadoutRevision:intent.loadoutRevision});if(isPublicProjection(result))return fromPublicProjection(result,requestId);if(!('runId' in result))throw new Error('qmode_run_projection_missing');return {run:result,team:teamFromRun(result,requestId)}},
-  resume:async(runId,requestId)=>{const snapshot=await readAuthorizedQModeSnapshot(runId);return fromPublicProjection(snapshot.projection,requestId)}
+  resume:async(runId,requestId)=>{const result=await coopClient.run(runId);if(!isPublicProjection(result))throw new Error('qmode_run_projection_missing');return fromPublicProjection(result,requestId)}
 };

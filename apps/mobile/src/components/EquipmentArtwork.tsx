@@ -1,3 +1,4 @@
+import {equipmentFallbackSetByItemId} from '../theme/equipment-fallback-art';
 import {Image,StyleSheet,View} from 'react-native';
 import {ItemDef} from '../content/items';
 import {GearSlot} from '../core/types';
@@ -26,20 +27,20 @@ const beginnerCrop:Partial<Record<GearSlot,{x:number;y:number;width:number;heigh
 };
 const SCALE=.16,FRAME=64;
 
-function artworkSetId(item:ItemDef){return item.noviceSetId??equipmentArtworkSetByItemId[item.id]}
+function artworkSetId(item:ItemDef){return item.noviceSetId??equipmentArtworkSetByItemId[item.id]??equipmentFallbackSetByItemId[item.id]}
 function artworkCrop(setId:string|undefined,slot:GearSlot|undefined){return slot?(beginnerSetSheets.has(setId??'')?beginnerCrop[slot]:wideFullSetSheets.has(setId??'')?wideCrop[slot]:crop[slot]):undefined}
-export function hasEquipmentArtwork(item:ItemDef){const setId=artworkSetId(item);return Boolean(setId&&item.slot&&equipmentSheetBySet[setId]&&artworkCrop(setId,item.slot))}
+export function hasEquipmentArtwork(item:ItemDef){const setId=artworkSetId(item);return Boolean(setId&&item.slot&&equipmentSheetBySet[setId]&&artworkCrop(setId,item.id==='basic_tower_shield'?'offhand':item.slot))}
 
-export function EquipmentArtwork({item,compact=false}:{item:ItemDef;compact?:boolean}){
+export function EquipmentArtwork({item,compact=false,framed=true}:{item:ItemDef;compact?:boolean;framed?:boolean}){
   const setId=artworkSetId(item),source=setId?equipmentSheetBySet[setId]:undefined;
-  const area=artworkCrop(setId,item.slot);
+  const area=artworkCrop(setId,item.id==='basic_tower_shield'?'offhand':item.slot);
   if(!source||!area)return null;
   const meta=rarityMeta(itemRarity(item));
   const size=compact?48:FRAME,ratio=size/FRAME,beginner=beginnerSetSheets.has(setId??''),scale=beginner ? .128 : SCALE;
   const wide=wideFullSetSheets.has(setId??''),sheetWidth=(wide||beginner?WIDE_SHEET_WIDTH:SHEET_WIDTH)*scale*ratio,sheetHeight=(beginner?1000:wide?WIDE_SHEET_HEIGHT:SHEET_HEIGHT)*scale*ratio;
   const visualWidth=area.width*scale*ratio,visualHeight=area.height*scale*ratio;
-  return <View accessibilityLabel={`${item.name} artwork`} style={[s.frame,{width:size,height:size,borderColor:meta.color,backgroundColor:meta.surface}]}>
-    <Image source={source} resizeMode="stretch" style={{position:'absolute',width:sheetWidth,height:sheetHeight,left:(size-visualWidth)/2-area.x*scale*ratio,top:(size-visualHeight)/2-area.y*scale*ratio}}/>
+  return <View accessibilityLabel={`${item.name} artwork`} style={[s.frame,!framed&&{borderWidth:0,backgroundColor:'transparent'},{width:size,height:size,borderColor:meta.color,backgroundColor:framed?meta.surface:'transparent'}]}>
+    <View style={{width:visualWidth,height:visualHeight,overflow:'hidden'}}><Image source={source} resizeMode="stretch" style={{position:'absolute',width:sheetWidth,height:sheetHeight,left:-area.x*scale*ratio,top:-area.y*scale*ratio}}/></View>
   </View>;
 }
 

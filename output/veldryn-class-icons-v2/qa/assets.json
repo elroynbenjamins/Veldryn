@@ -1,0 +1,141 @@
+{
+  "status": "PASS",
+  "classes": 9,
+  "pngCount": 54,
+  "checks": [
+    "coverage of canonical classes",
+    "PNG dimensions and SHA-256",
+    "true binary transparency",
+    "unclipped safe gutters",
+    "256-color budget",
+    "exact density expansion"
+  ],
+  "assets": [
+    {
+      "id": "ironwarden",
+      "variant": "hero",
+      "status": "PASS",
+      "colors": 256,
+      "visiblePixels": 34669
+    },
+    {
+      "id": "ironwarden",
+      "variant": "icon",
+      "status": "PASS",
+      "colors": 256,
+      "visiblePixels": 2030
+    },
+    {
+      "id": "bastion",
+      "variant": "hero",
+      "status": "PASS",
+      "colors": 256,
+      "visiblePixels": 37717
+    },
+    {
+      "id": "bastion",
+      "variant": "icon",
+      "status": "PASS",
+      "colors": 256,
+      "visiblePixels": 2199
+    },
+    {
+      "id": "dreadguard",
+      "variant": "hero",
+      "status": "PASS",
+      "colors": 256,
+      "visiblePixels": 33761
+    },
+    {
+      "id": "dreadguard",
+      "variant": "icon",
+      "status": "PASS",
+      "colors": 253,
+      "visiblePixels": 1985
+    },
+    {
+      "id": "dawnkeeper",
+      "variant": "hero",
+      "status": "PASS",
+      "colors": 256,
+      "visiblePixels": 30450
+    },
+    {
+      "id": "dawnkeeper",
+      "variant": "icon",
+      "status": "PASS",
+      "colors": 256,
+      "visiblePixels": 1784
+    },
+    {
+      "id": "wayfinder",
+      "variant": "hero",
+      "status": "PASS",
+      "colors": 256,
+      "visiblePixels": 34396
+    },
+    {
+      "id": "wayfinder",
+      "variant": "icon",
+      "status": "PASS",
+      "colors": 255,
+      "visiblePixels": 2023
+    },
+    {
+      "id": "ravager",
+      "variant": "hero",
+      "status": "PASS",
+      "colors": 256,
+      "visiblePixels": 37601
+    },
+    {
+      "id": "ravager",
+      "variant": "icon",
+      "status": "PASS",
+      "colors": 255,
+      "visiblePixels": 2202
+    },
+    {
+      "id": "hexweaver",
+      "variant": "hero",
+      "status": "PASS",
+      "colors": 256,
+      "visiblePixels": 25370
+    },
+    {
+      "id": "hexweaver",
+      "variant": "icon",
+      "status": "PASS",
+      "colors": 256,
+      "visiblePixels": 1486
+    },
+    {
+      "id": "knife_dancer",
+      "variant": "hero",
+      "status": "PASS",
+      "colors": 256,
+      "visiblePixels": 26860
+    },
+    {
+      "id": "knife_dancer",
+      "variant": "icon",
+      "status": "PASS",
+      "colors": 254,
+      "visiblePixels": 1576
+    },
+    {
+      "id": "stonecaller",
+      "variant": "hero",
+      "status": "PASS",
+      "colors": 256,
+      "visiblePixels": 31038
+    },
+    {
+      "id": "stonecaller",
+      "variant": "icon",
+      "status": "PASS",
+      "colors": 254,
+      "visiblePixels": 1817
+    }
+  ]
+}

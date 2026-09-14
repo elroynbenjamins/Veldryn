@@ -1,0 +1,20 @@
+import {createCharacter,newGame,startCombat,claimActivity,previewActivityReward} from '../src/core/game';
+import {monsterMastery,recordMonsterMastery,normalizeMonsterMastery} from '../src/core/monster-mastery';
+import {activityCycleSeconds} from '../src/core/dashboard';
+import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
+import {createSaveBackup,parseSaveBackup} from '../src/core/save-transfer';
+let checks=0;const ok=(v:unknown,m:string)=>{checks++;if(!v)throw new Error(m);};const now=Date.UTC(2026,8,13);
+let s=createCharacter(newGame(now),'WAYFINDER','Mastery Test');s=startCombat(s,'MOSS_RAT',now);
+const claimed=claimActivity(s,now+60000);ok(monsterMastery(claimed.state,'MOSS_RAT').points===claimed.reward.kills,'one point per verified kill');ok(monsterMastery(claimActivity(claimed.state,now+60000).state,'MOSS_RAT').points===claimed.reward.kills,'no repeat points');
+for(const [points,rank,damage,yieldBonus] of [[124,4,0,0],[125,5,.01,0],[250,10,.01,0],[375,15,.01,.03],[750,30,.02,.05]]){const x=structuredClone(s);x.character!.monsterMasteryPoints={MOSS_RAT:points};const m=monsterMastery(x,'MOSS_RAT');ok(m.rank===rank&&m.damageBonus===damage&&m.materialBonus===yieldBonus,'rank bonuses '+rank);}
+const master=recordMonsterMastery(s,'MOSS_RAT',10000);ok(monsterMastery(master,'MOSS_RAT').points===750,'points cap');ok(monsterMastery(master,'FIELD_WISP').damageBonus===0&&monsterMastery(master,'FALLEN_KNIGHT').damageBonus===0,'species only, excludes boss');
+ok(activityCycleSeconds(master)<activityCycleSeconds(s),'dashboard reflects mastery speed');
+const before=previewActivityReward(s,now+activityCycleSeconds(s)*1000*100+1),after=previewActivityReward(master,now+activityCycleSeconds(master)*1000*100+1);
+ok(before.kills===after.kills,'equal encounter sample');const material=before.items.find(i=>i.itemId==='MOSS_FIBER')!;ok(after.items.find(i=>i.itemId==='MOSS_FIBER')!.quantity===material.quantity+Math.floor(material.quantity*.05),'5% actual normal material yield');
+const gear=before.items.find(i=>i.itemId==='MOSSWRAP_GLOVES');ok(after.items.find(i=>i.itemId==='MOSSWRAP_GLOVES')?.quantity===gear?.quantity,'no mastery bonus to gear');
+let forest=createCharacter(newGame(now),'WAYFINDER','Forest Test');forest.character!.level=25;forest.character!.hp=10000;forest.character!.currentHp=10000;forest.character!.monsterMasteryPoints={FOREST_TROLL:499};forest.currentRegionId='IRONWOOD';forest.unlockedMonsterIds.push('FOREST_TROLL');forest=startCombat(forest,'FOREST_TROLL',now);forest=claimActivity(forest,now+600000).state;
+ok(forest.account.unlockedCombatCompanionIds?.includes('UNIT_004'),'real Forest Troll combat unlocks Briarhorn Cub');
+const saved=parseSaveBackup(createSaveBackup(forest));ok(monsterMastery(saved,'FOREST_TROLL').points===monsterMastery(forest,'FOREST_TROLL').points,'save keeps mastery');
+ok(Object.keys(normalizeMonsterMastery({FALLEN_KNIGHT:750,MOSS_RAT:NaN,fake:99})).length===0,'invalid and boss points rejected');
+let rejected=false;try{validateGameCommand({type:'mastery',args:{rank:30}});}catch{rejected=true;}ok(rejected,'no client rank grants');
+console.log(`PASS monster mastery: ${checks} checks`);

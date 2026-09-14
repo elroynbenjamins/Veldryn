@@ -1,4 +1,5 @@
 import {GATHERING} from '../content/skills';
+import {HERB_NODES} from '../content/herbalism';
 import {MONSTERS} from '../content/monsters';
 import {WORLD_ZONES} from '../content/world-map';
 import {ActiveActivity,ActivityEnvironmentSnapshot,ActivityKind,SeasonId,WeatherId} from './types';
@@ -54,7 +55,7 @@ export function environmentForZone(zoneId:string,atMs=Date.now()):WorldEnvironme
   return {seasonId,seasonName:season.name,seasonSymbol:season.symbol,seasonColor:season.color,weatherId,weatherName:weather.name,weatherSymbol:weather.symbol,weatherColor:weather.color,zoneId,zoneName:zone?.name??zoneId,changesAtMs:nextUtcDay(atMs),seasonChangesAtMs:nextSeasonAt(atMs)};
 }
 export function zoneIdForTarget(targetId:string){
-  const gathering=GATHERING.find(entry=>entry.id===targetId);if(gathering)return gathering.zoneId;
+  const gathering=[...GATHERING,...HERB_NODES].find(entry=>entry.id===targetId);if(gathering)return gathering.zoneId;
   const monster=MONSTERS.find(entry=>entry.id===targetId);return WORLD_ZONES.find(zone=>zone.name===monster?.zone)?.id??'GREENFIELDS';
 }
 export function captureActivityEnvironment(targetId:string,atMs:number):ActivityEnvironmentSnapshot{
@@ -91,6 +92,7 @@ export function weatherEffect(kind:ActivityKind,weatherId:WeatherId):Environment
   return {...effect,notes};
 }
 export function environmentEffect(kind:ActivityKind,env:Pick<WorldEnvironment,'seasonId'|'weatherId'>):EnvironmentEffect{
+  if(kind==='alchemy'||kind==='faith')return neutralEffect();
   const season=seasonEffect(kind,env.seasonId),weather=weatherEffect(kind,env.weatherId);
   const notes=[...season.notes,...weather.notes];
   return {actionTimeMultiplier:season.actionTimeMultiplier*weather.actionTimeMultiplier,xpMultiplier:season.xpMultiplier*weather.xpMultiplier,goldMultiplier:season.goldMultiplier*weather.goldMultiplier,itemMultiplier:season.itemMultiplier*weather.itemMultiplier,dropChanceMultiplier:season.dropChanceMultiplier*weather.dropChanceMultiplier,notes:notes.length?notes:['No activity modifier']};

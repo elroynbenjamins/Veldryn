@@ -1,0 +1,5 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {"rootDir":"..","outDir":"dist/online","lib":["ES2022","DOM"]},
+  "include":["online/**/*.ts"]
+}

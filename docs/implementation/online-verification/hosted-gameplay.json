@@ -1,0 +1,107 @@
+{
+  "project": "nyjwigipamnvpdvpauuv",
+  "runAt": "2026-09-12T18:19:53.932Z",
+  "status": "PASS",
+  "checks": [
+    {
+      "check": "reject forged session",
+      "status": "PASS"
+    },
+    {
+      "check": "create isolated confirmed account 1",
+      "status": "PASS"
+    },
+    {
+      "check": "real password session 1",
+      "status": "PASS"
+    },
+    {
+      "check": "create isolated confirmed account 2",
+      "status": "PASS"
+    },
+    {
+      "check": "real password session 2",
+      "status": "PASS"
+    },
+    {
+      "check": "load empty server account",
+      "status": "PASS"
+    },
+    {
+      "check": "persist real character",
+      "status": "PASS"
+    },
+    {
+      "check": "creation replay returns same character",
+      "status": "PASS"
+    },
+    {
+      "check": "reject changed intent under same key",
+      "status": "PASS"
+    },
+    {
+      "check": "reject client time and reward injection",
+      "status": "PASS"
+    },
+    {
+      "check": "another account cannot see progress",
+      "status": "PASS"
+    },
+    {
+      "check": "create persistent Party from server character",
+      "status": "PASS"
+    },
+    {
+      "check": "start server activity",
+      "status": "PASS"
+    },
+    {
+      "check": "direct client progression denied",
+      "status": "PASS"
+    },
+    {
+      "check": "privileged state RPC denied",
+      "status": "PASS"
+    },
+    {
+      "check": "concurrent identical claims replay once",
+      "status": "PASS"
+    },
+    {
+      "check": "elapsed combat earns server XP",
+      "status": "PASS"
+    },
+    {
+      "check": "real gameplay advances Party Contracts",
+      "status": "PASS"
+    },
+    {
+      "check": "exactly one receipt per successful intent",
+      "status": "PASS"
+    },
+    {
+      "check": "different concurrent intents use compare-and-swap",
+      "status": "PASS"
+    },
+    {
+      "check": "progress survives a new login",
+      "status": "PASS"
+    },
+    {
+      "check": "isolated fixture external reward credited",
+      "status": "PASS"
+    },
+    {
+      "check": "external Contract wallet reward visible",
+      "status": "PASS"
+    },
+    {
+      "check": "next save preserves external reward",
+      "status": "PASS"
+    },
+    {
+      "check": "isolated fixture cleanup",
+      "status": "PASS"
+    }
+  ]
+}

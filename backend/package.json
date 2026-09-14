@@ -4,7 +4,14 @@
   "version": "2.1",
   "scripts": {
     "typecheck": "tsc --noEmit",
+    "content-v21": "tsc --noEmit && tsc --outDir dist-v21 && node dist-v21/server/content/region-v21.test.js",
+    "test:merged-content": "tsc --outDir dist-merged && node dist-merged/server/content/sunscar-v20.test.js && node dist-merged/server/content/region-v21.test.js && node dist-merged/server/live-dungeon/live-dungeon-v20.test.js && node dist-merged/server/guild/guild-projects-v18.test.js && node dist-merged/server/shared-world/shared-world-v19.test.js",
+    "typecheck:companions": "tsc -p tsconfig.companions.json --noEmit",
+    "test:companions": "node ../tools/test-companions.mjs",
     "build": "tsc",
+    "typecheck:online": "tsc -p tsconfig.online.json --noEmit",
+    "build:online": "tsc -p tsconfig.online.json && node ../tools/build-online.mjs",
+    "test:online": "tsc -p tsconfig.online.json && node dist/online/backend/online/tests/gameplay.js && node dist/online/backend/online/tests/coop-loadout.js && node dist/online/backend/online/tests/coop-entry.js && node dist/online/backend/online/tests/qmode-runtime.js && node dist/online/backend/online/tests/live-queue.js && node dist/online/backend/online/tests/live-ready.js && node dist/online/backend/online/tests/coop-published-balance.js",
     "smoke": "node dist/server/expeditions/__tests__/smoke.js",
     "combat-smoke": "node dist/server/combat/__tests__/combat-smoke.js",
     "combat-matrix": "node dist/server/combat/__tests__/party-matrix.js",
@@ -17,7 +24,7 @@
     "supabase:env": "supabase status -o env",
     "supabase:reset": "supabase db reset",
     "supabase:test-db": "supabase test db",
-    "squad-smoke": "node dist/server/squads/__tests__/squad-smoke.js",
+    "squad-smoke": "node dist/server/squads/__tests__/squad-smoke.js && node dist/server/squads/__tests__/arena-snapshots.js",
     "coop-phase1": "node dist/server/coop/__tests__/phase1-invariants.js",
     "coop-phase2": "node dist/server/coop/__tests__/phase2-lifecycle.js",
     "coop-phase2-runtime": "node dist/server/coop/__tests__/phase2-runtime-adapter.js",
@@ -35,11 +42,30 @@
     "coop-phase10": "node dist/server/coop/__tests__/phase10-chat.js",
     "coop-phase11": "node dist/server/coop/__tests__/phase11-rewards.js",
     "coop-phase12": "node dist/server/coop/__tests__/phase12-balance.js",
-    "coop-phase13": "node dist/server/coop/__tests__/phase13-regional-content.js"
+    "coop-phase13": "node dist/server/coop/__tests__/phase13-regional-content.js",
+    "event-expeditions": "node dist/server/expeditions/content/__tests__/event-expeditions.js && node dist/server/expeditions/content/__tests__/event-expeditions-entry-contract.js && node dist/server/expeditions/__tests__/event-service.js",
+    "arena-migration": "node ../tools/verify-arena-migration.mjs",
+    "rankings-smoke": "node dist/server/rankings/__tests__/ranking-application.js",
+    "rankings-migration": "node ..\\tools\\verify-rankings-migration.mjs",
+    "profile-smoke": "node dist/server/profiles/__tests__/profile-application.js",
+    "profile-migration-static": "node ..\\tools\\verify-profile-migration.mjs",
+    "achievement-smoke": "node dist/server/achievements/__tests__/achievement-application.js",
+    "achievement-migration-static": "node ..\\tools\\verify-achievement-migration.mjs",
+    "guild-progression-smoke": "node dist/server/guild/__tests__/progression-smoke.js",
+    "guild-completion-smoke": "node dist/server/guild/__tests__/guild-completion.js",
+    "party-v16": "node dist/server/party/__tests__/party-v16.js",
+    "recruitment-test": "node dist/server/social/recruitment.test.js",
+    "guild-recruitment-v17": "node dist/server/social/guild-recruitment-v17.test.js",
+    "liveops-v17": "node dist/server/liveops/__tests__/party-events-v17.js && node dist/server/liveops/__tests__/party-event-service-v17.js && node dist/server/liveops/__tests__/finalization-rewards-v17.js && node dist/server/liveops/__tests__/outbox-v17.js",
+    "combat-rng-portable": "node dist/server/combat/__tests__/portable-rng.js"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "esbuild": "^0.28.2",
     "supabase": "2.117.0",
     "typescript": "^5.8.0"
+  },
+  "dependencies": {
+    "@noble/hashes": "1.8.0"
   }
 }

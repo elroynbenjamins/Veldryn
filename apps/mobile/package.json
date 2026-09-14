@@ -9,18 +9,29 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck:core": "tsc -p tsconfig.core.json --noEmit",
-    "test:core": "node -e \"require('fs').rmSync('.core-build',{recursive:true,force:true})\" && tsc -p tsconfig.core.json --outDir .core-build && node .core-build/tests/equipment-enhancement.js && node .core-build/tests/offline-smoke.js && node .core-build/tests/character-skins.js && node .core-build/tests/equipment-screen.js && node .core-build/tests/quick-navigation.js && node .core-build/tests/combat-region.js && node .core-build/tests/world-weather.js && node .core-build/tests/coop-presentation.js && node .core-build/tests/coop-ui-contract.js && node .core-build/tests/coop-dungeon-browsing.js && node .core-build/tests/coop-loadout-presentation.js && node .core-build/tests/coop-shared-run.js && node .core-build/tests/coop-qmode.js && node .core-build/tests/save-transfer.js && node .core-build/tests/localization.js && node .core-build/tests/live-events.js && node .core-build/tests/gathering-tools.js && node .core-build/tests/startup-summary.js",
-    "test:pre-codex": "node -e \"require('fs').rmSync('.core-build',{recursive:true,force:true})\" && tsc -p tsconfig.core.json --outDir .core-build && node .core-build/tests/offline-smoke.js && node .core-build/tests/equipment-screen.js && node .core-build/tests/quick-navigation.js && node .core-build/tests/pre-codex-smoke.js"
+    "test:core": "node -e \"require('fs').rmSync('.core-build',{recursive:true,force:true})\" && tsc -p tsconfig.core.json --outDir .core-build && node .core-build/apps/mobile/tests/equipment-enhancement.js && node .core-build/apps/mobile/tests/offline-smoke.js && node .core-build/apps/mobile/tests/character-skins.js && node .core-build/apps/mobile/tests/equipment-screen.js && node .core-build/apps/mobile/tests/quick-navigation.js && node .core-build/apps/mobile/tests/combat-region.js && node .core-build/apps/mobile/tests/coop-presentation.js && node .core-build/apps/mobile/tests/coop-ui-contract.js && node .core-build/apps/mobile/tests/coop-dungeon-browsing.js && node .core-build/apps/mobile/tests/coop-loadout-presentation.js && node .core-build/apps/mobile/tests/coop-shared-run.js && node .core-build/apps/mobile/tests/coop-qmode.js && node .core-build/apps/mobile/tests/save-transfer.js && node .core-build/apps/mobile/tests/localization.js && node .core-build/apps/mobile/tests/live-events.js && node .core-build/apps/mobile/tests/gathering-tools.js && node .core-build/apps/mobile/tests/startup-summary.js && node .core-build/apps/mobile/tests/online-roster.js && node .core-build/apps/mobile/tests/arena-squad.js && node .core-build/apps/mobile/tests/rankings.js",
+    "test:pre-codex": "node -e \"require('fs').rmSync('.core-build',{recursive:true,force:true})\" && tsc -p tsconfig.core.json --outDir .core-build && node .core-build/apps/mobile/tests/offline-smoke.js && node .core-build/apps/mobile/tests/equipment-screen.js && node .core-build/apps/mobile/tests/quick-navigation.js && node .core-build/apps/mobile/tests/pre-codex-smoke.js",
+    "typecheck": "tsc --noEmit",
+    "test:companions": "node ../../tools/test-companions.mjs",
+    "test:online": "tsc -p tsconfig.core.json --outDir .core-build && node .core-build/apps/mobile/tests/online-gameplay.js",
+    "test:v16": "tsc -p tsconfig.core.json --outDir .core-build && node .core-build/apps/mobile/tests/party-social-v16.js",
+    "typecheck:search-loadouts": "tsc -p tsconfig.search-loadouts.json --noEmit",
+    "test:search-loadouts": "node -e \"require('fs').rmSync('.search-loadouts-build',{recursive:true,force:true})\" && tsc -p tsconfig.search-loadouts.json && node .search-loadouts-build/apps/mobile/tests/search-loadouts-v1.js",
+    "typecheck:onboarding": "tsc -p tsconfig.onboarding.json --noEmit",
+    "test:rankings": "node -e \"require('fs').rmSync('.core-build',{recursive:true,force:true})\" && tsc -p tsconfig.core.json --outDir .core-build && node .core-build/apps/mobile/tests/rankings.js",
+    "test:collectibles": "node -e \"require('fs').rmSync('.core-build',{recursive:true,force:true})\" && tsc -p tsconfig.core.json --outDir .core-build && node .core-build/apps/mobile/tests/account-collectibles.js",
+    "test:onboarding": "node -e \"require('fs').rmSync('.onboarding-build',{recursive:true,force:true})\" && tsc -p tsconfig.onboarding.json && node .onboarding-build/apps/mobile/tests/onboarding-guide-v1.js"
   },
   "dependencies": {
-    "@react-native-async-storage/async-storage": "^2.1.2",
+    "@noble/hashes": "1.8.0",
+    "@react-native-async-storage/async-storage": "2.1.2",
     "@supabase/supabase-js": "^2.115.0",
     "expo": "~53.0.0",
-    "expo-linking": "^57.0.9",
-    "expo-secure-store": "^57.0.3",
+    "expo-linking": "~7.1.7",
+    "expo-secure-store": "~14.2.4",
     "expo-status-bar": "~2.2.3",
     "react": "19.0.0",
-    "react-native": "0.79.5"
+    "react-native": "0.79.6"
   },
   "devDependencies": {
     "@types/react": "~19.0.10",

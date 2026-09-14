@@ -1,17 +1,30 @@
 import type {QuickNavDestination} from './quick-navigation';
+import type {CompanionAccountState} from './companion-runtime';
+import type {ClassSkillState,ClassDrills,TrainingFocus} from './class-skills';
 
 export type ClassId = 'IRONWARDEN' | 'BASTION' | 'DREADGUARD' | 'DAWNKEEPER' | 'WAYFINDER' | 'RAVAGER' | 'HEXWEAVER' | 'KNIFE_DANCER' | 'STONECALLER';
 export type BodyPresentation = 'male' | 'female';
 export type GearSlot = 'weapon' | 'offhand' | 'helmet' | 'chest' | 'legs' | 'boots' | 'gloves' | 'cape' | 'amulet' | 'ring';
+export interface CharacterLoadoutPreset{id:string;slotIndex:number;name:string;classId:ClassId;equipment:Partial<Record<GearSlot,string>>;foodId?:string;companionId?:string;createdAtMs:number;updatedAtMs:number;}
 export type GemStat = 'attack'|'defense'|'hp';
 export interface GearEnhancementState { rank:number; failures:number; gemIds:string[]; }
-export type ActivityKind = 'combat' | 'mining' | 'woodcutting' | 'fishing';
-export type GatheringSkillId='mining'|'woodcutting'|'fishing';
+export type ActivityKind = 'combat' | 'mining' | 'woodcutting' | 'fishing' | 'herbalism' | 'alchemy' | 'faith' | 'training' | 'hunting' | 'exploration';
+export type GatheringSkillId='mining'|'woodcutting'|'fishing'|'herbalism';
 export type SeasonId='spring'|'summer'|'autumn'|'winter';
 export type WeatherId='clear'|'rain'|'mist'|'storm'|'bloomwind'|'heatwave'|'harvest_wind'|'snow'|'frost';
-export type SkillId=GatheringSkillId|'smithing'|'cooking';
+export type SkillId=GatheringSkillId|'smithing'|'cooking'|'alchemy'|'hunting'|'exploration'|'tailoring'|'enchanting'|'faith';
 export interface SkillState{skillId:SkillId;xp:number;level:number;}
 export interface CharacterState {
+  classSkillRemainders?:Record<string,number>;
+  classTraining?:ClassDrills;
+  monsterMasteryPoints?:Record<string,number>;
+  masteryMaterialRemainders?:Record<string,number>;
+  classSkills?:ClassSkillState[];
+  trainingFocus?:TrainingFocus;
+  faith?: import('./faith-types').CharacterFaithState;
+  preparation?:import('./alchemy-types').ActivePreparation;
+  unlockedEventSkinIds?:string[];
+  equippedCombatCompanionId?:string;
   id:string; name:string; classId:ClassId; level:number; xp:number; gold:number;
   hp:number; currentHp:number; attack:number; defense:number;
   equipment:Partial<Record<GearSlot,string>>;
@@ -30,24 +43,35 @@ export interface CharacterState {
   ownedBoostIds?: string[];
   /** Cosmetic choice only. Equipment changes stats and never changes this value. */
   selectedSkinId?:string;
+  savedLoadouts?:CharacterLoadoutPreset[];
 }
 export interface ItemStack { itemId:string; quantity:number; }
 export interface InventoryState { stacks:ItemStack[]; capacity:number; }
 export interface BankState { stacks:ItemStack[]; capacity:number; }
 export interface OverflowState { stacks:ItemStack[]; expiresAtMs:number|null; }
 export interface ActivityEnvironmentSnapshot{seasonId:SeasonId;weatherId:WeatherId;zoneId:string;capturedAtMs:number;}
-export interface ActiveActivity { kind:ActivityKind; targetId:string; startedAtMs:number; lastClaimAtMs:number; environment?:ActivityEnvironmentSnapshot; }
+export interface ActiveActivity { kind:ActivityKind; targetId:string; startedAtMs:number; lastClaimAtMs:number; environment?:ActivityEnvironmentSnapshot; classFocus?:TrainingFocus; classTrainingSnapshot?:{faithBlessingId?:string}; bonusSnapshot?:import('./permanent-boosts').PermanentMultipliers; progressFraction?:number; brew?:import('./alchemy-types').AlchemyBatchState; faithPractice?:import('./faith-types').FaithPracticeReservation; }
 export interface QuestState { questId:string; status:'locked'|'active'|'complete'|'claimed'; progress:number; }
+export interface RegionalProgressState { storyCompleted?:number; sideQuestsCompleted?:number; echoesCompleted?:number; dungeonsCompleted?:number; collectionEntries?:number; bossMasteryTier?:number; }
 export interface LiveEventRuntime{eventId:string;enabled:boolean;startsAtMs:number;endsAtMs:number;}
 export interface GameState {
-  version:6; createdAtMs:number; character:CharacterState|null; inventory:InventoryState; bank:BankState; overflow:OverflowState; activity:ActiveActivity|null;
+  version:6|11; createdAtMs:number; character:CharacterState|null; inventory:InventoryState; bank:BankState; overflow:OverflowState; activity:ActiveActivity|null;
+  otherCharacters?:Array<{character:CharacterState;inventory:InventoryState;overflow:OverflowState;activity:ActiveActivity|null;skills:SkillState[];quests:QuestState[];currentRegionId:string}>;
+  rewardRemainders?:Record<string,number>;
   /** Persisted player location. Region-scoped activities may only start here. */
   currentRegionId:string;
+  /** Optional server/read-model projection for versioned regional journals. */
+  regionalProgressById?:Record<string,RegionalProgressState>;
   quests:QuestState[]; unlockedMonsterIds:string[]; defeatedBossIds:string[]; skills:SkillState[];
-  account:{createdCharacterCount:number;guildMember:boolean;patronTier:'none'|'bloom'|'crown';guildContribution?:number;guildProjectProgress?:number;guildBossHp?:number;guildProjectClaimed?:boolean;guildJoinPolicy?:'open'|'apply'|'invite';guildMinimumLevel?:number;guildApplicationStatus?:'none'|'pending'|'accepted'|'declined';seasonalContractClaimIds?:string[];liveEvent?:LiveEventRuntime;eventProgressById?:Record<string,number>;eventCurrencyBalanceById?:Record<string,number>;eventPrestigeBalanceById?:Record<string,number>;eventRepeatCacheClaimsById?:Record<string,number>;eventActivityById?:Record<string,Partial<Record<'combat'|'gathering'|'crafting'|'boss',number>>>;eventPeriodActivityById?:Record<string,Partial<Record<'combat'|'gathering'|'crafting'|'boss',number>>>;eventAcceptedContractIds?:string[];eventContractBaselines?:Record<string,number>;eventObjectiveClaimIds?:string[];eventWeeklyClaimIds?:string[];eventDailyGiftClaimIds?:string[];eventCommunityClaimIds?:string[];eventDiscoveryCounts?:Record<string,number>;eventDiscoveryClaimIds?:string[];eventShopPurchaseCounts?:Record<string,number>;eventChoiceById?:Record<string,string>;eventContributionById?:Record<string,number>;eventRewardClaimIds?:string[];unlockedEventSkinIds?:string[];unlockedCosmeticPetIds?:string[];unlockedProfileBackgroundIds?:string[];unlockedProfileBorderIds?:string[];unlockedEmoteIds?:string[];unlockedTitleIds?:string[]};
+  account:CompanionAccountState & {entitlements?:Record<string,boolean>;unlockedCharacterSlots?:number;premiumCurrencyBalance?:number;ownedBoostIds?:string[];eventCommunityProgressById?:Record<string,number>;createdCharacterCount:number;guildMember:boolean;patronTier:'none'|'bloom'|'crown';guildContribution?:number;guildProjectProgress?:number;guildBossHp?:number;guildProjectClaimed?:boolean;guildJoinPolicy?:'open'|'apply'|'invite';guildMinimumLevel?:number;guildApplicationStatus?:'none'|'pending'|'accepted'|'declined';seasonalContractClaimIds?:string[];liveEvent?:LiveEventRuntime;eventProgressById?:Record<string,number>;eventCurrencyBalanceById?:Record<string,number>;eventPrestigeBalanceById?:Record<string,number>;eventRepeatCacheClaimsById?:Record<string,number>;eventActivityById?:Record<string,Partial<Record<'combat'|'gathering'|'crafting'|'boss',number>>>;eventPeriodActivityById?:Record<string,Partial<Record<'combat'|'gathering'|'crafting'|'boss',number>>>;eventAcceptedContractIds?:string[];eventContractBaselines?:Record<string,number>;eventObjectiveClaimIds?:string[];eventWeeklyClaimIds?:string[];eventDailyGiftClaimIds?:string[];eventCommunityClaimIds?:string[];eventDiscoveryCounts?:Record<string,number>;eventDiscoveryClaimIds?:string[];eventShopPurchaseCounts?:Record<string,number>;eventChoiceById?:Record<string,string>;eventContributionById?:Record<string,number>;eventRewardClaimIds?:string[];unlockedEventSkinIds?:string[];unlockedCosmeticPetIds?:string[];unlockedProfileBackgroundIds?:string[];unlockedProfileBorderIds?:string[];unlockedEmoteIds?:string[];unlockedTitleIds?:string[]};
   settings:{language:Language;numberMode:'abbreviated'|'exact';reduceMotion:boolean;textScale:1|1.15|1.3|1.5;autoEatThresholdPct:number;stopCombatWhenOutOfFood:boolean;autoJoinWorldChat?:boolean;defaultWorldChat?:1|2|3|4;quickNavDestinations?:QuickNavDestination[];};
 }
 export interface RewardBundle {
+  explorationDiscoveries?:string[];
+  craftingActions?:number; nextBrewRemaining?:number; craftingCompletedAtMs?:number[]; faithActions?:number; faithXp?:number; holyWaterConsumed?:number; faithWaterRefund?:number; nextFaithRemaining?:number; nextProgressFraction?:number; nextRewardRemainders?:Record<string,number>;
+  masteryMaterialRemainders?:Record<string,number>;
+  classSkillXp?:Array<{skillId:string;xp:number}>;
+  trainingActions?:number;
   xp:number; gold:number; items:ItemStack[]; kills:number; elapsedSeconds:number;
   foodConsumed?:number; endHp?:number; stoppedReason?:string;
   eventDrops?:{eventId:string;currencyId:string;name:string;quantity:number;source?:'combat'|'gathering'|'crafting'|'boss';units?:number;recordedAtMs?:number}[];

@@ -59,6 +59,9 @@ export function normalizeCombatInput(
   reference: NormalizationReference,
   config: NormalizationConfig = COOP_NORMALIZATION_V1,
 ): NormalizedCombatInput {
+  if (!Number.isInteger(source.level) || source.level < 1 || source.level > 100 || !Number.isInteger(syncLevel) || syncLevel < 1 || syncLevel > 100) throw new Error('invalid_snapshot_level');
+  const sourceStats=[source.maxHp,source.attackPower,source.healingPower,source.defense,source.accuracy,source.evasion,source.critChance,source.haste];
+  if(sourceStats.some(value=>!Number.isFinite(value)) || source.maxHp<=0 || [source.attackPower,source.healingPower,source.defense,source.accuracy,source.evasion].some(value=>value<0)) throw new Error('invalid_snapshot_stats');
   const effectiveLevel = Math.min(source.level, syncLevel);
   const levelRatio = source.level > effectiveLevel ? effectiveLevel / source.level : 1;
   const refScale = effectiveLevel / reference.level;
@@ -89,7 +92,7 @@ export function normalizeCombatInput(
       ...effect,
       ...(effect.flat === undefined ? {} : { flat: Math.min(Math.max(0, effect.flat * levelRatio), flatCap) }),
       ...(effect.coeff === undefined ? {} : { coeff: Math.min(Math.max(0, effect.coeff), config.coefficientHardCap) }),
-      ...(effect.value === undefined ? {} : { value: Math.min(Math.max(-1, effect.value), 1) }),
+      ...(effect.value === undefined ? {} : { value: effect.kind==='taunt' ? Math.min(Math.max(0,effect.value*levelRatio),flatCap) : Math.min(Math.max(-1, effect.value), 1) }),
     })),
   }));
   return {

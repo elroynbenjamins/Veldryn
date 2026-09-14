@@ -10,15 +10,47 @@ export interface PersistentRunState {
   boons:string[];
   artifacts:string[];
   curses:string[];
+  personalEffects:Record<string,{boons:string[];artifacts:string[];purchases:string[]}>;
   visitedNodeIds:string[];
 }
 export interface NodeResolutionResult {success:boolean;state:PersistentRunState;summary:Record<string,unknown>}
+export interface MerchantOffer {id:string;label:string;cost:number;kind:'boon'|'artifact'|'salve'}
 
 const COMBAT_KINDS=new Set(['battle','elite','boss']);
 const IMPLEMENTED_NONCOMBAT=new Set(['event','camp','shrine','treasure','forge','merchant','echo','risk','secret']);
 
 export function initialPersistentRunState(players:readonly CombatantDefinition[]):PersistentRunState{
- return {actors:Object.fromEntries(players.map(player=>[player.id,{hp:player.stats.maxHp,downed:false,cooldownRemainingMs:{},basicAttackRemainingMs:0}])),resources:0,boons:[],artifacts:[],curses:[],visitedNodeIds:[]};
+ return {actors:Object.fromEntries(players.map(player=>[player.id,{hp:player.stats.maxHp,downed:false,cooldownRemainingMs:{},basicAttackRemainingMs:0}])),resources:0,boons:[],artifacts:[],curses:[],personalEffects:{},visitedNodeIds:[]};
+}
+
+export function merchantOffers(contentId:string):readonly MerchantOffer[]{
+ const prefix=contentId.replace(/[^A-Z0-9_]/gi,'').toUpperCase();
+ return [
+  {id:`${prefix}:boon`,label:'Sealed boon',cost:2,kind:'boon'},
+  {id:`${prefix}:artifact`,label:'Run artifact',cost:3,kind:'artifact'},
+  {id:`${prefix}:salve`,label:'Restorative salve',cost:1,kind:'salve'},
+ ];
+}
+
+export function purchaseMerchantOffer(input:{runId:string;node:CoopRouteNode;actorId:string;offerId:string;state:PersistentRunState;players:readonly CombatantDefinition[]}):NodeResolutionResult{
+ if(input.node.kind!=='merchant')throw new Error('not_a_merchant_node');
+ if(!input.state.visitedNodeIds.includes(input.node.nodeId))throw new Error('merchant_not_resolved');
+ const actor=input.state.actors[input.actorId];if(!actor)throw new Error('unknown_merchant_actor');
+ const offer=merchantOffers(input.node.contentId).find(item=>item.id===input.offerId);if(!offer)throw new Error('invalid_merchant_offer');
+ const current=input.state.personalEffects[input.actorId]??{boons:[],artifacts:[],purchases:[]};
+ if(current.purchases.includes(offer.id))throw new Error('merchant_offer_already_purchased');
+ if(input.state.resources<offer.cost)throw new Error('insufficient_run_resources');
+ const purchases=[...current.purchases,offer.id];
+ const nextPersonal={...current,purchases};
+ let actors=input.state.actors;
+ let boons=current.boons,artifacts=current.artifacts;
+ if(offer.kind==='boon')boons=[...boons,`${input.node.contentId}:merchant_boon`];
+ if(offer.kind==='artifact')artifacts=[...artifacts,`${input.node.contentId}:merchant_artifact`];
+ if(offer.kind==='salve'){
+  const player=input.players.find(item=>item.id===input.actorId);if(!player)throw new Error('unknown_merchant_actor');
+  actors={...actors,[input.actorId]:{...actor,downed:false,hp:Math.min(player.stats.maxHp,actor.hp+player.stats.maxHp*.35)}};
+ }
+ return {success:true,state:{...input.state,actors,resources:input.state.resources-offer.cost,personalEffects:{...input.state.personalEffects,[input.actorId]:{...nextPersonal,boons,artifacts}}},summary:{kind:'merchant_purchase',actorId:input.actorId,offerId:offer.id,cost:offer.cost}};
 }
 
 function healAtCamp(state:PersistentRunState,players:readonly CombatantDefinition[]):PersistentRunState{
@@ -47,7 +79,7 @@ export function resolveCoopNode(input:{runId:string;serverSecret:string;node:Coo
   case 'treasure': case 'secret': state={...state,artifacts:[...state.artifacts,`${input.node.contentId}:${roll}`]}; break;
   case 'risk': state={...state,curses:[...state.curses,`${input.node.contentId}:${roll}`],resources:state.resources+2}; break;
   case 'event': state={...state,resources:state.resources+1}; break;
-  case 'merchant': state={...state}; break; // Spending requires a separate personal command.
+  case 'merchant': state={...state}; break;
  }
- return {success:true,state,summary:{kind:input.node.kind,roll}};
+ return {success:true,state,summary:{kind:input.node.kind,roll,...(input.node.kind==='merchant'?{offers:merchantOffers(input.node.contentId)}:{})}};
 }

@@ -1,0 +1,38 @@
+[
+  {
+    "name": "mining",
+    "width": 1254,
+    "height": 1254,
+    "alpha": true
+  },
+  {
+    "name": "woodcutting",
+    "width": 1254,
+    "height": 1254,
+    "alpha": true
+  },
+  {
+    "name": "fishing",
+    "width": 1254,
+    "height": 1254,
+    "alpha": true
+  },
+  {
+    "name": "smithing",
+    "width": 1254,
+    "height": 1254,
+    "alpha": true
+  },
+  {
+    "name": "cooking",
+    "width": 1254,
+    "height": 1254,
+    "alpha": true
+  },
+  {
+    "name": "combat",
+    "width": 1254,
+    "height": 1254,
+    "alpha": true
+  }
+]

@@ -1,0 +1,1753 @@
+{
+  "recipeCount": 402,
+  "outputs": [
+    {
+      "id": "NOVICE_IRONWARDEN_CHEST",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_IRONWARDEN_WEAPON",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_IRONWARDEN_OFFHAND",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_IRONWARDEN_GLOVES",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_IRONWARDEN_BOOTS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_IRONWARDEN_HELMET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_IRONWARDEN_LEGS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_IRONWARDEN_CAPE",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_IRONWARDEN_AMULET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_IRONWARDEN_RING",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_BASTION_CHEST",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_BASTION_WEAPON",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_BASTION_OFFHAND",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_BASTION_GLOVES",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_BASTION_BOOTS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_BASTION_HELMET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_BASTION_LEGS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_BASTION_CAPE",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_BASTION_AMULET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_BASTION_RING",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_DREADGUARD_CHEST",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_DREADGUARD_WEAPON",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_DREADGUARD_OFFHAND",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_DREADGUARD_GLOVES",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_DREADGUARD_BOOTS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_DREADGUARD_HELMET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_DREADGUARD_LEGS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_DREADGUARD_CAPE",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_DREADGUARD_AMULET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_DREADGUARD_RING",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_DAWNKEEPER_CHEST",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_DAWNKEEPER_WEAPON",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_DAWNKEEPER_OFFHAND",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_DAWNKEEPER_GLOVES",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_DAWNKEEPER_BOOTS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_DAWNKEEPER_HELMET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_DAWNKEEPER_LEGS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_DAWNKEEPER_CAPE",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_DAWNKEEPER_AMULET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_DAWNKEEPER_RING",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_WAYFINDER_CHEST",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_WAYFINDER_WEAPON",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_WAYFINDER_OFFHAND",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_WAYFINDER_GLOVES",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_WAYFINDER_BOOTS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_WAYFINDER_HELMET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_WAYFINDER_LEGS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_WAYFINDER_CAPE",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_WAYFINDER_AMULET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_WAYFINDER_RING",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_RAVAGER_CHEST",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_RAVAGER_WEAPON",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_RAVAGER_OFFHAND",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_RAVAGER_GLOVES",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_RAVAGER_BOOTS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_RAVAGER_HELMET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_RAVAGER_LEGS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_RAVAGER_CAPE",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_RAVAGER_AMULET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_RAVAGER_RING",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_HEXWEAVER_CHEST",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_HEXWEAVER_WEAPON",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_HEXWEAVER_OFFHAND",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_HEXWEAVER_GLOVES",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_HEXWEAVER_BOOTS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_HEXWEAVER_HELMET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_HEXWEAVER_LEGS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_HEXWEAVER_CAPE",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_HEXWEAVER_AMULET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_HEXWEAVER_RING",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_KNIFE_DANCER_CHEST",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_KNIFE_DANCER_WEAPON",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_KNIFE_DANCER_OFFHAND",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_KNIFE_DANCER_GLOVES",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_KNIFE_DANCER_BOOTS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_KNIFE_DANCER_HELMET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_KNIFE_DANCER_LEGS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_KNIFE_DANCER_CAPE",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_KNIFE_DANCER_AMULET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_KNIFE_DANCER_RING",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_STONECALLER_CHEST",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_STONECALLER_WEAPON",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_STONECALLER_OFFHAND",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_STONECALLER_GLOVES",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_STONECALLER_BOOTS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_STONECALLER_HELMET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_STONECALLER_LEGS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_STONECALLER_CAPE",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_STONECALLER_AMULET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NOVICE_STONECALLER_RING",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "STONEHEART_HELMET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "STONEHEART_LEGS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "STONEHEART_BOOTS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "STONEHEART_WEAPON",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "STONEHEART_OFFHAND",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "STONEHEART_AMULET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "LASTWALL_HELMET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "LASTWALL_LEGS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "LASTWALL_BOOTS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "LASTWALL_WEAPON",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "LASTWALL_OFFHAND",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "LASTWALL_AMULET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "MOURNCHAIN_HELMET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "MOURNCHAIN_LEGS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "MOURNCHAIN_BOOTS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "MOURNCHAIN_WEAPON",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "MOURNCHAIN_OFFHAND",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "MOURNCHAIN_AMULET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "QUICKPRAYER_HELMET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "QUICKPRAYER_LEGS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "QUICKPRAYER_BOOTS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "QUICKPRAYER_WEAPON",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "QUICKPRAYER_OFFHAND",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "QUICKPRAYER_AMULET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "TRACKER_HELMET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "TRACKER_LEGS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "TRACKER_BOOTS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "TRACKER_WEAPON",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "TRACKER_OFFHAND",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "TRACKER_AMULET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "BLOODRUSH_HELMET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "BLOODRUSH_LEGS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "BLOODRUSH_BOOTS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "BLOODRUSH_WEAPON",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "BLOODRUSH_OFFHAND",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "BLOODRUSH_AMULET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SPELLGLASS_HELMET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SPELLGLASS_LEGS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SPELLGLASS_BOOTS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SPELLGLASS_WEAPON",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SPELLGLASS_OFFHAND",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SPELLGLASS_AMULET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NIGHTFANG_HELMET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NIGHTFANG_LEGS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NIGHTFANG_BOOTS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NIGHTFANG_WEAPON",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NIGHTFANG_OFFHAND",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NIGHTFANG_AMULET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "STORMCARVED_HELMET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "STORMCARVED_LEGS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "STORMCARVED_BOOTS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "STORMCARVED_WEAPON",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "STORMCARVED_OFFHAND",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "STORMCARVED_AMULET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_STONEHEART_HELMET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_STONEHEART_LEGS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_STONEHEART_BOOTS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_STONEHEART_WEAPON",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_STONEHEART_OFFHAND",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_STONEHEART_AMULET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_LASTWALL_HELMET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_LASTWALL_LEGS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_LASTWALL_BOOTS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_LASTWALL_WEAPON",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_LASTWALL_OFFHAND",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_LASTWALL_AMULET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_MOURNCHAIN_HELMET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_MOURNCHAIN_LEGS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_MOURNCHAIN_BOOTS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_MOURNCHAIN_WEAPON",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_MOURNCHAIN_OFFHAND",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_MOURNCHAIN_AMULET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_QUICKPRAYER_HELMET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_QUICKPRAYER_LEGS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_QUICKPRAYER_BOOTS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_QUICKPRAYER_WEAPON",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_QUICKPRAYER_OFFHAND",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_QUICKPRAYER_AMULET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_TRACKER_HELMET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_TRACKER_LEGS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_TRACKER_BOOTS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_TRACKER_WEAPON",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_TRACKER_OFFHAND",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_TRACKER_AMULET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_BLOODRUSH_HELMET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_BLOODRUSH_LEGS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_BLOODRUSH_BOOTS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_BLOODRUSH_WEAPON",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_BLOODRUSH_OFFHAND",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_BLOODRUSH_AMULET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_SPELLGLASS_HELMET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_SPELLGLASS_LEGS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_SPELLGLASS_BOOTS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_SPELLGLASS_WEAPON",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_SPELLGLASS_OFFHAND",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_SPELLGLASS_AMULET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_NIGHTFANG_HELMET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_NIGHTFANG_LEGS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_NIGHTFANG_BOOTS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_NIGHTFANG_WEAPON",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_NIGHTFANG_OFFHAND",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_NIGHTFANG_AMULET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_STORMCARVED_HELMET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_STORMCARVED_LEGS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_STORMCARVED_BOOTS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_STORMCARVED_WEAPON",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_STORMCARVED_OFFHAND",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_STORMCARVED_AMULET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_STONEHEART_HELMET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_STONEHEART_LEGS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_STONEHEART_BOOTS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_STONEHEART_WEAPON",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_STONEHEART_OFFHAND",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_STONEHEART_AMULET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_LASTWALL_HELMET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_LASTWALL_CHEST",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_LASTWALL_GLOVES",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_LASTWALL_LEGS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_LASTWALL_BOOTS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_LASTWALL_WEAPON",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_LASTWALL_OFFHAND",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_LASTWALL_CAPE",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_LASTWALL_AMULET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_LASTWALL_RING",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_MOURNCHAIN_HELMET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_MOURNCHAIN_CHEST",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_MOURNCHAIN_GLOVES",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_MOURNCHAIN_LEGS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_MOURNCHAIN_BOOTS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_MOURNCHAIN_WEAPON",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_MOURNCHAIN_OFFHAND",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_MOURNCHAIN_CAPE",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_MOURNCHAIN_AMULET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_MOURNCHAIN_RING",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_QUICKPRAYER_HELMET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_QUICKPRAYER_CHEST",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_QUICKPRAYER_GLOVES",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_QUICKPRAYER_LEGS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_QUICKPRAYER_BOOTS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_QUICKPRAYER_WEAPON",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_QUICKPRAYER_OFFHAND",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_QUICKPRAYER_CAPE",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_QUICKPRAYER_AMULET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_QUICKPRAYER_RING",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_TRACKER_HELMET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_TRACKER_CHEST",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_TRACKER_GLOVES",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_TRACKER_LEGS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_TRACKER_BOOTS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_TRACKER_WEAPON",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_TRACKER_OFFHAND",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_TRACKER_CAPE",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_TRACKER_AMULET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_TRACKER_RING",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_BLOODRUSH_HELMET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_BLOODRUSH_CHEST",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_BLOODRUSH_GLOVES",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_BLOODRUSH_LEGS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_BLOODRUSH_BOOTS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_BLOODRUSH_WEAPON",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_BLOODRUSH_OFFHAND",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_BLOODRUSH_CAPE",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_BLOODRUSH_AMULET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_BLOODRUSH_RING",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_SPELLGLASS_HELMET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_SPELLGLASS_CHEST",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_SPELLGLASS_GLOVES",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_SPELLGLASS_LEGS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_SPELLGLASS_BOOTS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_SPELLGLASS_WEAPON",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_SPELLGLASS_OFFHAND",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_SPELLGLASS_CAPE",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_SPELLGLASS_AMULET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_SPELLGLASS_RING",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_NIGHTFANG_HELMET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_NIGHTFANG_CHEST",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_NIGHTFANG_GLOVES",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_NIGHTFANG_LEGS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_NIGHTFANG_BOOTS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_NIGHTFANG_WEAPON",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_NIGHTFANG_OFFHAND",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_NIGHTFANG_CAPE",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_NIGHTFANG_AMULET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_NIGHTFANG_RING",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_STORMCARVED_HELMET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_STORMCARVED_CHEST",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_STORMCARVED_GLOVES",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_STORMCARVED_LEGS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_STORMCARVED_BOOTS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_STORMCARVED_WEAPON",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_STORMCARVED_OFFHAND",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_STORMCARVED_CAPE",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_STORMCARVED_AMULET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_STORMCARVED_RING",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "COPPER_PICKAXE",
+      "art": "tool-atlas"
+    },
+    {
+      "id": "ASTER_IRON_PICKAXE",
+      "art": "tool-atlas"
+    },
+    {
+      "id": "OATHSTONE_PICKAXE",
+      "art": "tool-atlas"
+    },
+    {
+      "id": "FROSTIRON_PICKAXE",
+      "art": "tool-atlas"
+    },
+    {
+      "id": "GREENWOOD_HATCHET",
+      "art": "tool-atlas"
+    },
+    {
+      "id": "ASTER_IRON_HATCHET",
+      "art": "tool-atlas"
+    },
+    {
+      "id": "OATHSTONE_HATCHET",
+      "art": "tool-atlas"
+    },
+    {
+      "id": "FROSTIRON_HATCHET",
+      "art": "tool-atlas"
+    },
+    {
+      "id": "REEDLINE_ROD",
+      "art": "tool-atlas"
+    },
+    {
+      "id": "IRONWOOD_ROD",
+      "art": "tool-atlas"
+    },
+    {
+      "id": "OATHSCALE_ROD",
+      "art": "tool-atlas"
+    },
+    {
+      "id": "RIMEGLASS_ROD",
+      "art": "tool-atlas"
+    },
+    {
+      "id": "COPPER_INGOT",
+      "art": "dedicated"
+    },
+    {
+      "id": "ASTER_IRON_INGOT",
+      "art": "dedicated"
+    },
+    {
+      "id": "REINFORCED_FITTING",
+      "art": "dedicated"
+    },
+    {
+      "id": "OATHSTONE_INGOT",
+      "art": "dedicated"
+    },
+    {
+      "id": "COPPER_BLADE",
+      "art": "representative-gear"
+    },
+    {
+      "id": "ASTER_IRON_BLADE",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "ASTER_IRON_HELM",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "IRONWOOD_GUARD",
+      "art": "representative-gear"
+    },
+    {
+      "id": "IRONWOOD_LONGBOW",
+      "art": "representative-gear"
+    },
+    {
+      "id": "IRONWOOD_STAFF",
+      "art": "representative-gear"
+    },
+    {
+      "id": "IRONWOOD_DAGGERS",
+      "art": "representative-gear"
+    },
+    {
+      "id": "IRONWOOD_GREATAXE",
+      "art": "representative-gear"
+    },
+    {
+      "id": "ASTER_IRON_LEGS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "ASTER_IRON_BOOTS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "ASTER_IRON_GLOVES",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "ASTER_IRON_CHEST",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "OATHSTONE_HELM",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "OATHSTONE_WARDPLATE",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "OATHSTONE_GAUNTLETS",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "OATHSTONE_GREAVES",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "OATHSTONE_LEGPLATES",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "OATHSTONE_BLADE",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "OATHSTONE_TOWER_SHIELD",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "OATHSTONE_MANTLE",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "OATHSTONE_AMULET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "OATHSTONE_SIGNET",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "STONEHEART_CHEST",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "STONEHEART_GLOVES",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "STONEHEART_CAPE",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "STONEHEART_RING",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "LASTWALL_CHEST",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "LASTWALL_GLOVES",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "LASTWALL_CAPE",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "LASTWALL_RING",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "MOURNCHAIN_CHEST",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "MOURNCHAIN_GLOVES",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "MOURNCHAIN_CAPE",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "MOURNCHAIN_RING",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "QUICKPRAYER_CHEST",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "QUICKPRAYER_GLOVES",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "QUICKPRAYER_CAPE",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "QUICKPRAYER_RING",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "TRACKER_CHEST",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "TRACKER_GLOVES",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "TRACKER_CAPE",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "TRACKER_RING",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "BLOODRUSH_CHEST",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "BLOODRUSH_GLOVES",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "BLOODRUSH_CAPE",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "BLOODRUSH_RING",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SPELLGLASS_CHEST",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SPELLGLASS_GLOVES",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SPELLGLASS_CAPE",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SPELLGLASS_RING",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NIGHTFANG_CHEST",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NIGHTFANG_GLOVES",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NIGHTFANG_CAPE",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "NIGHTFANG_RING",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "STORMCARVED_CHEST",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "STORMCARVED_GLOVES",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "STORMCARVED_CAPE",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "STORMCARVED_RING",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_STONEHEART_CHEST",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_STONEHEART_GLOVES",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_STONEHEART_CAPE",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_STONEHEART_RING",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_LASTWALL_CHEST",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_LASTWALL_GLOVES",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_LASTWALL_CAPE",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_LASTWALL_RING",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_MOURNCHAIN_CHEST",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_MOURNCHAIN_GLOVES",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_MOURNCHAIN_CAPE",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_MOURNCHAIN_RING",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_QUICKPRAYER_CHEST",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_QUICKPRAYER_GLOVES",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_QUICKPRAYER_CAPE",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_QUICKPRAYER_RING",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_TRACKER_CHEST",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_TRACKER_GLOVES",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_TRACKER_CAPE",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_TRACKER_RING",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_BLOODRUSH_CHEST",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_BLOODRUSH_GLOVES",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_BLOODRUSH_CAPE",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_BLOODRUSH_RING",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_SPELLGLASS_CHEST",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_SPELLGLASS_GLOVES",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_SPELLGLASS_CAPE",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_SPELLGLASS_RING",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_NIGHTFANG_CHEST",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_NIGHTFANG_GLOVES",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_NIGHTFANG_CAPE",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_NIGHTFANG_RING",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_STORMCARVED_CHEST",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_STORMCARVED_GLOVES",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_STORMCARVED_CAPE",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "SUNSCORED_STORMCARVED_RING",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_STONEHEART_CHEST",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_STONEHEART_GLOVES",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_STONEHEART_CAPE",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "RIMEBOUND_STONEHEART_RING",
+      "art": "gear-atlas"
+    },
+    {
+      "id": "COOKED_SILVERFIN",
+      "art": "dedicated"
+    },
+    {
+      "id": "SEARED_RIVER_EEL",
+      "art": "dedicated"
+    },
+    {
+      "id": "ROASTED_OATHSCALE",
+      "art": "dedicated"
+    },
+    {
+      "id": "IRONWOOD_STEW",
+      "art": "dedicated"
+    }
+  ],
+  "inputs": [
+    {
+      "id": "COPPER_ORE",
+      "art": "dedicated"
+    },
+    {
+      "id": "GREENWOOD_LOG",
+      "art": "dedicated"
+    },
+    {
+      "id": "MOSS_FIBER",
+      "art": "dedicated"
+    },
+    {
+      "id": "OATHSTONE_INGOT",
+      "art": "dedicated"
+    },
+    {
+      "id": "OATHGLASS_SHARD",
+      "art": "dedicated"
+    },
+    {
+      "id": "TORN_OATHCLOTH",
+      "art": "dedicated"
+    },
+    {
+      "id": "SUNSTONE_ORE",
+      "art": "dedicated"
+    },
+    {
+      "id": "AMBERGLASS",
+      "art": "dedicated"
+    },
+    {
+      "id": "ASTRAL_SCRIPT",
+      "art": "dedicated"
+    },
+    {
+      "id": "FROSTIRON",
+      "art": "dedicated"
+    },
+    {
+      "id": "RIMEGLASS",
+      "art": "dedicated"
+    },
+    {
+      "id": "CHOIR_BLOOM",
+      "art": "dedicated"
+    },
+    {
+      "id": "COPPER_INGOT",
+      "art": "dedicated"
+    },
+    {
+      "id": "ASTER_IRON_INGOT",
+      "art": "dedicated"
+    },
+    {
+      "id": "IRONWOOD_LOG",
+      "art": "dedicated"
+    },
+    {
+      "id": "REINFORCED_FITTING",
+      "art": "dedicated"
+    },
+    {
+      "id": "CROWNWOOD_LOG",
+      "art": "dedicated"
+    },
+    {
+      "id": "WISP_DUST",
+      "art": "dedicated"
+    },
+    {
+      "id": "OATHSCALE_PIKE",
+      "art": "dedicated"
+    },
+    {
+      "id": "ASTER_IRON_ORE",
+      "art": "dedicated"
+    },
+    {
+      "id": "OATHSTONE_ORE",
+      "art": "dedicated"
+    },
+    {
+      "id": "THORN_SAP",
+      "art": "dedicated"
+    },
+    {
+      "id": "TROLL_HIDE",
+      "art": "dedicated"
+    },
+    {
+      "id": "LANTERNSTEEL_SHARD",
+      "art": "dedicated"
+    },
+    {
+      "id": "FALLEN_RIVET",
+      "art": "dedicated"
+    },
+    {
+      "id": "ECHO_TOUCHED_PELT",
+      "art": "dedicated"
+    },
+    {
+      "id": "BANNER_ASH",
+      "art": "dedicated"
+    },
+    {
+      "id": "ECHO_QUARTZ",
+      "art": "dedicated"
+    },
+    {
+      "id": "OATHGLASS_FRAGMENT",
+      "art": "dedicated"
+    },
+    {
+      "id": "GLOAM_DUST",
+      "art": "dedicated"
+    },
+    {
+      "id": "RUNEBOUND_CORE",
+      "art": "dedicated"
+    },
+    {
+      "id": "ECHO_BAT_WING",
+      "art": "dedicated"
+    },
+    {
+      "id": "SILVERFIN",
+      "art": "dedicated"
+    },
+    {
+      "id": "RIVER_EEL",
+      "art": "dedicated"
+    }
+  ],
+  "missingOutputs": [],
+  "genericIngredients": []
+}

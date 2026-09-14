@@ -1,6 +1,6 @@
 import {RECIPES} from '../content/skills';
 import {ActiveActivity,GameState,RewardBundle} from './types';
-import {claimActivity,craftRecipe,startCombat,startGathering,stopActivity} from './game';
+import {claimActivity,craftRecipe,startCombat,startGathering,startHerbalism,stopActivity} from './game';
 
 /** Settle earned rewards before replacing or stopping an activity. Pure and atomic. */
 export function transitionActivity(state:GameState,nowMs:number,next?:{kind:'combat'|'gathering';id:string}){
@@ -12,13 +12,14 @@ export function transitionActivity(state:GameState,nowMs:number,next?:{kind:'com
 }
 
 export function rewardHasProgress(reward:RewardBundle){
-  return reward.kills>0||reward.xp>0||reward.gold>0||reward.items.some(item=>item.quantity>0)||!!reward.stoppedReason||!!reward.eventDrops?.some(drop=>drop.quantity>0)||!!reward.eventDiscoveries?.some(entry=>entry.quantity>0);
+  return !!reward.classSkillXp?.some(s=>s.xp>0)||reward.kills>0||reward.xp>0||reward.gold>0||reward.items.some(item=>item.quantity>0)||!!reward.stoppedReason||!!reward.eventDrops?.some(drop=>drop.quantity>0)||!!reward.eventDiscoveries?.some(entry=>entry.quantity>0);
 }
 
 /** Settle a persisted idle activity once on cold startup without consuming a partial zero-action cycle. */
 export function settleStartupActivity(state:GameState,nowMs:number):{state:GameState;reward:RewardBundle|null;activity:ActiveActivity|null}{
-  if(!state.character||!state.activity)return {state,reward:null,activity:null};
+  if(!state.character||!state.activity&&!state.character.classTraining)return {state,reward:null,activity:null};
   const activity=state.activity,claimed=claimActivity(state,nowMs);
+  if(state.character.classTraining)return {state:claimed.state,reward:rewardHasProgress(claimed.reward)?claimed.reward:null,activity:null};
   return rewardHasProgress(claimed.reward)?{state:claimed.state,reward:claimed.reward,activity}:{state,reward:null,activity:null};
 }
 

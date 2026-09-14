@@ -1,0 +1,509 @@
+{
+  "checkedAt": "2026-09-13T08:12:08.919Z",
+  "status": "PASS",
+  "fullRun": {
+    "passed": 85,
+    "total": 86,
+    "source": "v16-verification/repository-checks.json"
+  },
+  "followup": {
+    "source": "online-verification/live-ready-followup.json",
+    "note": "Transient NativeVisualReview type inference error was resolved in the concurrently edited fixture; final full mobile typecheck is recorded separately."
+  },
+  "finalMobileTypecheck": {
+    "check": "mobile full typecheck",
+    "status": "PASS",
+    "checkedAt": "2026-09-13T08:12:08.911Z",
+    "output": ""
+  },
+  "combinedChecks": {
+    "passed": 86,
+    "total": 86,
+    "results": [
+      {
+        "check": "backend typecheck",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "online backend build/typecheck",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "online authenticated HTTP and idempotency",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "online co-op owned-loadout derivation",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "online co-op authenticated entry and consent",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "online QMode concurrent receipt recovery",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "online Live queue authenticated admission and retries",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "online Live ready matching and roster freeze",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "online published-loadout full-run balance",
+        "status": "PASS",
+        "evidence": "v16-verification/repository-checks.json"
+      },
+      {
+        "check": "backend build",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "backend smoke",
+        "status": "PASS",
+        "evidence": "v16-verification/repository-checks.json"
+      },
+      {
+        "check": "backend combat-smoke",
+        "status": "PASS",
+        "evidence": "v16-verification/repository-checks.json"
+      },
+      {
+        "check": "backend combat-matrix",
+        "status": "PASS",
+        "evidence": "v16-verification/repository-checks.json"
+      },
+      {
+        "check": "backend combat-service-smoke",
+        "status": "PASS",
+        "evidence": "v16-verification/repository-checks.json"
+      },
+      {
+        "check": "backend backend-pass-smoke",
+        "status": "PASS",
+        "evidence": "v16-verification/repository-checks.json"
+      },
+      {
+        "check": "backend production-smoke",
+        "status": "PASS",
+        "evidence": "v16-verification/repository-checks.json"
+      },
+      {
+        "check": "backend squad-smoke",
+        "status": "PASS",
+        "evidence": "v16-verification/repository-checks.json"
+      },
+      {
+        "check": "backend coop-phase1",
+        "status": "PASS",
+        "evidence": "v16-verification/repository-checks.json"
+      },
+      {
+        "check": "backend coop-phase2",
+        "status": "PASS",
+        "evidence": "v16-verification/repository-checks.json"
+      },
+      {
+        "check": "backend coop-phase2-runtime",
+        "status": "PASS",
+        "evidence": "v16-verification/repository-checks.json"
+      },
+      {
+        "check": "backend coop-phase2-contracts",
+        "status": "PASS",
+        "evidence": "v16-verification/repository-checks.json"
+      },
+      {
+        "check": "backend coop-phase3",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "backend coop-phase3-commit",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "backend coop-phase4",
+        "status": "PASS",
+        "evidence": "v16-verification/repository-checks.json"
+      },
+      {
+        "check": "backend coop-phase5",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "backend coop-phase6",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "backend coop-phase6-projection",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "backend coop-phase7",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "backend coop-phase7-runtime",
+        "status": "PASS",
+        "evidence": "v16-verification/repository-checks.json"
+      },
+      {
+        "check": "backend coop-phase8",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "backend coop-phase9",
+        "status": "PASS",
+        "evidence": "v16-verification/repository-checks.json"
+      },
+      {
+        "check": "backend coop-phase10",
+        "status": "PASS",
+        "evidence": "v16-verification/repository-checks.json"
+      },
+      {
+        "check": "backend coop-phase11",
+        "status": "PASS",
+        "evidence": "v16-verification/repository-checks.json"
+      },
+      {
+        "check": "backend coop-phase12",
+        "status": "PASS",
+        "evidence": "v16-verification/repository-checks.json"
+      },
+      {
+        "check": "backend coop-phase13",
+        "status": "PASS",
+        "evidence": "v16-verification/repository-checks.json"
+      },
+      {
+        "check": "backend party-v16",
+        "status": "PASS",
+        "evidence": "v16-verification/repository-checks.json"
+      },
+      {
+        "check": "backend recruitment-test",
+        "status": "PASS",
+        "evidence": "v16-verification/repository-checks.json"
+      },
+      {
+        "check": "backend combat-rng-portable",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "mobile full typecheck",
+        "status": "PASS",
+        "evidence": "final typecheck recorded below"
+      },
+      {
+        "check": "mobile core typecheck",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "mobile core build",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "mobile character-foundation.js",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "mobile character-skins.js",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "mobile class-combat.js",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "mobile combat-presentation.js",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "mobile combat-region.js",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "mobile companion-integration.js",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "mobile coop-dungeon-browsing.js",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "mobile coop-live-lobby.js",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "mobile coop-loadout-presentation.js",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "mobile coop-online-runtime.js",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "mobile coop-presentation.js",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "mobile coop-qmode.js",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "mobile coop-shared-run.js",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "mobile coop-ui-contract.js",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "mobile dashboard.js",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "mobile equipment-enhancement.js",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "mobile equipment-progression-v2.js",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "mobile equipment-screen.js",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "mobile gathering-tools.js",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "mobile inventory-view.js",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "mobile item-rarity-v2.js",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "mobile live-events.js",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "mobile localization.js",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "mobile market-bulk-buy.js",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "mobile novice-sets.js",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "mobile offline-cap.js",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "mobile offline-smoke.js",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "mobile online-gameplay.js",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "mobile party-social-v16.js",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "mobile playability.js",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "mobile pre-codex-smoke.js",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "mobile progression-balance.js",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "mobile progression-v6.js",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "mobile quest-journal.js",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "mobile quick-navigation.js",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "mobile save-transfer.js",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "mobile seasonal-quests.js",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "mobile set-bonuses.js",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "mobile social-identity.js",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "mobile startup-summary.js",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "mobile storage-bank.js",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "mobile visual-polish.js",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "mobile world-weather.js",
+        "status": "PASS",
+        "evidence": "online-verification/live-ready-followup.json"
+      },
+      {
+        "check": "v16 migration static audit",
+        "status": "PASS",
+        "evidence": "v16-verification/repository-checks.json"
+      },
+      {
+        "check": "chat pilot core",
+        "status": "PASS",
+        "evidence": "v16-verification/repository-checks.json"
+      }
+    ]
+  },
+  "migrations": {
+    "count": 58,
+    "sqlSuites": 7,
+    "status": "PASS",
+    "readyMigrationSha256": "c9736010ec3ff97644357bc4946ea58e35fb2003794b1f4149982f617703b33c"
+  },
+  "hosted": {
+    "status": "PASS",
+    "fixturesRemoved": true,
+    "source": "online-verification/hosted-live-ready.json"
+  },
+  "exports": [
+    {
+      "platform": "android",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": ".expo-export-live-ready-android",
+      "bundles": [
+        {
+          "file": "index-16be5af7d4ae7bc6115b2fe2655f3e96.hbc",
+          "bytes": 4075734,
+          "sha256": "ea81144590e429999cb249fd436cd2efd3b4cea4b377923e7d0cb4ea03086115"
+        }
+      ]
+    },
+    {
+      "platform": "ios",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": ".expo-export-live-ready-ios",
+      "bundles": [
+        {
+          "file": "index-ab49feb768105718e49c3701bdfed091.hbc",
+          "bytes": 4061148,
+          "sha256": "c5ebef5421decbfae1a673e5c302c4c4fc8225d59e85c093574f2bb99d427c3f"
+        }
+      ]
+    }
+  ],
+  "expoDependencyCheck": "PASS",
+  "lint": "NOT_CONFIGURED",
+  "testProjectCleanup": {
+    "checkedAt": "2026-09-13T07:57:46.563Z",
+    "deletedProject": "qoaqrqpxtrhjyzsrifsq",
+    "deletedName": "Veldryn Migration Validation 20260913",
+    "productionPreserved": "nyjwigipamnvpdvpauuv",
+    "status": "PASS"
+  },
+  "productionChanged": false,
+  "productionCoopEnabled": false,
+  "internalLiveLobbyEnabled": false,
+  "physicalSamsungValidation": "NOT_RUN",
+  "newApk": "NOT_BUILT",
+  "release": "NOT_READY"
+}

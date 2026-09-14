@@ -1,0 +1,545 @@
+{
+  "prefix": "Create ONE standalone production asset for VELDRYN mobile fantasy pixel RPG, NOT a screenshot or asset sheet. True alpha transparent background around the asset. Match reference palette/design language: dark charcoal navy surfaces, warm gold bronze edging, blue crystal interactions, premium medieval pixel art. Crisp square pixel clusters, chunky readable stepped borders, minimal detail, phone-readable. Front orthographic perfectly axis-aligned. No background scenery, shadows, glows, texture noise, blur, antialiasing, watermark or extra objects. Keep consistent border thickness and lighting from top left. Leave narrow transparent safe margin. ",
+  "jobs": [
+    {
+      "id": "panel_large_9slice",
+      "group": "ui/core",
+      "width": 192,
+      "height": 128,
+      "mode": "9slice",
+      "caps": 24,
+      "description": "Blank large horizontal navy panel with bronze gold border and small blue crystal medieval corner ornaments only; flat center and constant straight rails; same as supplied style reference"
+    },
+    {
+      "id": "panel_compact_9slice",
+      "group": "ui/core",
+      "width": 96,
+      "height": 64,
+      "mode": "9slice",
+      "caps": 12,
+      "description": "Blank compact simple dark navy panel, bronze double pixel border, tiny stepped metal corners WITHOUT gems, plain flat center and constant straight rails"
+    },
+    {
+      "id": "panel_parchment_9slice",
+      "group": "ui/core",
+      "width": 128,
+      "height": 80,
+      "mode": "9slice",
+      "caps": 16,
+      "description": "Blank warm parchment tan opaque center panel, bronze edging, rolled stepped corner tips, empty untextured center suitable for dark text, straight rails"
+    },
+    {
+      "id": "modal_frame_9slice",
+      "group": "ui/core",
+      "width": 160,
+      "height": 128,
+      "mode": "9slice",
+      "caps": 24,
+      "description": "Blank imposing modal dialog panel navy opaque center, thick bronze gold square rim, compact blue crystal corner guards, straight constant rails, NO centered ornaments"
+    },
+    {
+      "id": "button_primary_3slice",
+      "group": "ui/buttons",
+      "width": 144,
+      "height": 40,
+      "mode": "3slice",
+      "caps": 24,
+      "description": "ONE blank wide rectangular button. deep blue enamel face, bright gold bevel rim, small blue gem at each end. Straight horizontal rails, empty UNIFORM flat center for live text. Decoration only in left/right end caps. Thick stepped pixel corners. Match button silhouette proportions exactly 3.6:1"
+    },
+    {
+      "id": "button_secondary_3slice",
+      "group": "ui/buttons",
+      "width": 144,
+      "height": 40,
+      "mode": "3slice",
+      "caps": 24,
+      "description": "ONE blank wide rectangular button. charcoal navy face, subdued warm bronze bevel rim, small bronze rivet at each end. Straight horizontal rails, empty UNIFORM flat center for live text. Decoration only in left/right end caps. Thick stepped pixel corners. Match button silhouette proportions exactly 3.6:1"
+    },
+    {
+      "id": "button_destructive_3slice",
+      "group": "ui/buttons",
+      "width": 144,
+      "height": 40,
+      "mode": "3slice",
+      "caps": 24,
+      "description": "ONE blank wide rectangular button. dark oxblood red face, copper bronze bevel rim, restrained crimson end rivets. Straight horizontal rails, empty UNIFORM flat center for live text. Decoration only in left/right end caps. Thick stepped pixel corners. Match button silhouette proportions exactly 3.6:1"
+    },
+    {
+      "id": "button_disabled_3slice",
+      "group": "ui/buttons",
+      "width": 144,
+      "height": 40,
+      "mode": "3slice",
+      "caps": 24,
+      "description": "ONE blank wide rectangular button. slate charcoal face, desaturated dull pewter bronze rim, dark muted end rivets. Straight horizontal rails, empty UNIFORM flat center for live text. Decoration only in left/right end caps. Thick stepped pixel corners. Match button silhouette proportions exactly 3.6:1"
+    },
+    {
+      "id": "button_primary_pressed_3slice",
+      "group": "ui/buttons",
+      "width": 144,
+      "height": 40,
+      "mode": "3slice",
+      "caps": 24,
+      "description": "ONE blank pressed blue primary button, darker blue enamel recessed face and gold bronze rim, same 3.6:1 silhouette, small blue end gems, no text"
+    },
+    {
+      "id": "button_icon_default",
+      "group": "ui/buttons",
+      "width": 40,
+      "height": 40,
+      "mode": "fixed",
+      "caps": 0,
+      "description": "ONE blank SQUARE icon button housing, navy face and bronze rim, thick stepped pixel corners; no glyph or text"
+    },
+    {
+      "id": "button_icon_selected",
+      "group": "ui/buttons",
+      "width": 40,
+      "height": 40,
+      "mode": "fixed",
+      "caps": 0,
+      "description": "ONE blank SQUARE icon button housing, blue face, gold rim, blue crystal small corner studs, thick stepped pixel corners; no glyph or text"
+    },
+    {
+      "id": "button_icon_disabled",
+      "group": "ui/buttons",
+      "width": 40,
+      "height": 40,
+      "mode": "fixed",
+      "caps": 0,
+      "description": "ONE blank SQUARE icon button housing, muted slate face, dull grey bronze rim, thick stepped pixel corners; no glyph or text"
+    },
+    {
+      "id": "tab_unselected_3slice",
+      "group": "ui/navigation",
+      "width": 96,
+      "height": 32,
+      "mode": "3slice",
+      "caps": 12,
+      "description": "ONE blank tab dark navy inset face and muted bronze rim, small stepped ends; straight horizontal edges, empty uniform center; ratio 3:1"
+    },
+    {
+      "id": "tab_selected_3slice",
+      "group": "ui/navigation",
+      "width": 96,
+      "height": 32,
+      "mode": "3slice",
+      "caps": 12,
+      "description": "ONE blank tab blue inset face and bright gold rim with crisp cyan bottom line, small stepped ends; straight horizontal edges, empty uniform center; ratio 3:1"
+    },
+    {
+      "id": "chip_unselected_3slice",
+      "group": "ui/navigation",
+      "width": 72,
+      "height": 32,
+      "mode": "3slice",
+      "caps": 12,
+      "description": "ONE blank chip dark navy inset face and muted bronze rim, small stepped ends; straight horizontal edges, empty uniform center; ratio 2.25:1"
+    },
+    {
+      "id": "chip_selected_3slice",
+      "group": "ui/navigation",
+      "width": 72,
+      "height": 32,
+      "mode": "3slice",
+      "caps": 12,
+      "description": "ONE blank chip blue inset face and bright gold rim with crisp cyan bottom line, small stepped ends; straight horizontal edges, empty uniform center; ratio 2.25:1"
+    },
+    {
+      "id": "input_default_9slice",
+      "group": "ui/inputs",
+      "width": 160,
+      "height": 40,
+      "mode": "9slice",
+      "caps": 12,
+      "description": "ONE blank text entry field, charcoal navy inset face and restrained bronze rim, clean stepped rectangle, straight border rails; no text/glyph; plain flat center"
+    },
+    {
+      "id": "input_focused_9slice",
+      "group": "ui/inputs",
+      "width": 160,
+      "height": 40,
+      "mode": "9slice",
+      "caps": 12,
+      "description": "ONE blank text entry field, navy inset face and clearly bright cyan inner rim within bronze border, clean stepped rectangle, straight border rails; no text/glyph; plain flat center"
+    },
+    {
+      "id": "input_error_9slice",
+      "group": "ui/inputs",
+      "width": 160,
+      "height": 40,
+      "mode": "9slice",
+      "caps": 12,
+      "description": "ONE blank text entry field, navy inset face and crimson inner rim within bronze border, clean stepped rectangle, straight border rails; no text/glyph; plain flat center"
+    },
+    {
+      "id": "input_disabled_9slice",
+      "group": "ui/inputs",
+      "width": 160,
+      "height": 40,
+      "mode": "9slice",
+      "caps": 12,
+      "description": "ONE blank text entry field, slate inset face and dull grey bronze rim, clean stepped rectangle, straight border rails; no text/glyph; plain flat center"
+    },
+    {
+      "id": "search_field_9slice",
+      "group": "ui/inputs",
+      "width": 160,
+      "height": 40,
+      "mode": "9slice",
+      "caps": 12,
+      "description": "ONE empty search field housing with dark navy inset and bronze rim, no glyph or text (search glyph supplied separately), clean stepped rectangle straight constant rails"
+    },
+    {
+      "id": "dropdown_field_9slice",
+      "group": "ui/inputs",
+      "width": 160,
+      "height": 40,
+      "mode": "9slice",
+      "caps": 12,
+      "description": "ONE empty dropdown field housing with dark navy inset and bronze rim, no glyph or text (chevron supplied separately), clean stepped rectangle straight constant rails"
+    },
+    {
+      "id": "toggle_off",
+      "group": "ui/inputs",
+      "width": 48,
+      "height": 24,
+      "mode": "fixed",
+      "caps": 0,
+      "description": "ONE horizontal toggle switch, stepped pixel capsule bronze outline; dark slate track, dull gold edged square grey knob on LEFT; no text, 2:1 shape"
+    },
+    {
+      "id": "toggle_on",
+      "group": "ui/inputs",
+      "width": 48,
+      "height": 24,
+      "mode": "fixed",
+      "caps": 0,
+      "description": "ONE horizontal toggle switch, stepped pixel capsule bronze outline; blue track, gold edged square crystal knob on RIGHT; no text, 2:1 shape"
+    },
+    {
+      "id": "checkbox_unchecked",
+      "group": "ui/inputs",
+      "width": 24,
+      "height": 24,
+      "mode": "fixed",
+      "caps": 0,
+      "description": "ONE square checkbox bronze stepped border dark navy face empty unmarked; no other elements"
+    },
+    {
+      "id": "checkbox_checked",
+      "group": "ui/inputs",
+      "width": 24,
+      "height": 24,
+      "mode": "fixed",
+      "caps": 0,
+      "description": "ONE square checkbox bronze stepped border dark navy face with bold pale cyan CHECK MARK centered; no other elements"
+    },
+    {
+      "id": "slider_track_3slice",
+      "group": "ui/inputs",
+      "width": 128,
+      "height": 8,
+      "mode": "3slice",
+      "caps": 4,
+      "description": "ONE very thin horizontal slider rail, bronze pixel edging with dark navy inset, empty uniform center; 16:1 intended shape, no thumb"
+    },
+    {
+      "id": "slider_thumb",
+      "group": "ui/inputs",
+      "width": 24,
+      "height": 24,
+      "mode": "fixed",
+      "caps": 0,
+      "description": "ONE compact blue faceted diamond crystal slider thumb, bronze metal setting, strong dark stepped silhouette, square proportions"
+    },
+    {
+      "id": "progress_track_3slice",
+      "group": "ui/progress",
+      "width": 160,
+      "height": 16,
+      "mode": "3slice",
+      "caps": 8,
+      "description": "ONE empty slim horizontal progress bar housing, bronze gold edging, dark navy interior, plain uniform center with no fill; 10:1 shape, square stepped ends"
+    },
+    {
+      "id": "progress_fill_xp_3slice",
+      "group": "ui/progress",
+      "width": 144,
+      "height": 8,
+      "mode": "3slice",
+      "caps": 4,
+      "description": "ONE slim horizontal progress bar FILL ONLY, warm gold amber, faceted pixel top highlight, uniform constant cross section straight central band, square end caps, NO housing and no text; intended shape 18:1"
+    },
+    {
+      "id": "progress_fill_hp_3slice",
+      "group": "ui/progress",
+      "width": 144,
+      "height": 8,
+      "mode": "3slice",
+      "caps": 4,
+      "description": "ONE slim horizontal progress bar FILL ONLY, deep ruby red, faceted pixel top highlight, uniform constant cross section straight central band, square end caps, NO housing and no text; intended shape 18:1"
+    },
+    {
+      "id": "progress_fill_activity_3slice",
+      "group": "ui/progress",
+      "width": 144,
+      "height": 8,
+      "mode": "3slice",
+      "caps": 4,
+      "description": "ONE slim horizontal progress bar FILL ONLY, blue cyan crystal, faceted pixel top highlight, uniform constant cross section straight central band, square end caps, NO housing and no text; intended shape 18:1"
+    },
+    {
+      "id": "progress_fill_loading_3slice",
+      "group": "ui/progress",
+      "width": 144,
+      "height": 8,
+      "mode": "3slice",
+      "caps": 4,
+      "description": "ONE slim horizontal progress bar FILL ONLY, pale silver blue, faceted pixel top highlight, uniform constant cross section straight central band, square end caps, NO housing and no text; intended shape 18:1"
+    },
+    {
+      "id": "login_frame_9slice",
+      "group": "ui/account",
+      "width": 192,
+      "height": 192,
+      "mode": "9slice",
+      "caps": 24,
+      "description": "ONE blank square login form frame, dark navy opaque center, gold bronze chunky edge, small restrained medieval blue crystal corner guards; no central crest, no text/fields/buttons, constant straight rails"
+    },
+    {
+      "id": "create_account_frame_9slice",
+      "group": "ui/account",
+      "width": 192,
+      "height": 224,
+      "mode": "9slice",
+      "caps": 24,
+      "description": "ONE blank portrait registration form frame, dark navy opaque center, gold bronze chunky edge, restrained tiny engraved bronze corner guards and blue corners; no central crest, no text/fields/buttons, constant straight rails"
+    },
+    {
+      "id": "character_card_default_9slice",
+      "group": "ui/character",
+      "width": 144,
+      "height": 192,
+      "mode": "9slice",
+      "caps": 24,
+      "description": "ONE empty portrait character card frame, transparent hollow center for a character image, bronze border with dark metal corner guards, no portrait/text, constant straight rails, decorations confined to corners"
+    },
+    {
+      "id": "character_card_selected_9slice",
+      "group": "ui/character",
+      "width": 144,
+      "height": 192,
+      "mode": "9slice",
+      "caps": 24,
+      "description": "ONE empty portrait character card frame, transparent hollow center for a character image, bright gold border and small blue crystal corner guards, no portrait/text, constant straight rails, decorations confined to corners"
+    },
+    {
+      "id": "class_selection_frame_9slice",
+      "group": "ui/character",
+      "width": 192,
+      "height": 224,
+      "mode": "9slice",
+      "caps": 24,
+      "description": "ONE empty portrait class selection frame, dark navy opaque center, thick bronze gold edging and blue crystal corner guards, no center ornament no portrait no text, constant straight rails"
+    },
+    {
+      "id": "gender_frame_unselected_3slice",
+      "group": "ui/character",
+      "width": 96,
+      "height": 40,
+      "mode": "3slice",
+      "caps": 16,
+      "description": "ONE blank gender selection button frame, navy inset bronze rim, empty center for LIVE text label, no symbols or portraits, short stepped rectangular silhouette ratio 2.4:1, straight rails"
+    },
+    {
+      "id": "gender_frame_selected_3slice",
+      "group": "ui/character",
+      "width": 96,
+      "height": 40,
+      "mode": "3slice",
+      "caps": 16,
+      "description": "ONE blank gender selection button frame, blue inset gold rim with bright cyan inner line, empty center for LIVE text label, no symbols or portraits, short stepped rectangular silhouette ratio 2.4:1, straight rails"
+    },
+    {
+      "id": "carousel_back",
+      "group": "ui/character",
+      "width": 40,
+      "height": 40,
+      "mode": "fixed",
+      "caps": 0,
+      "description": "ONE square carousel back control, dark blue enamel bronze gold stepped rim, bold pale gold LEFT chevron centered, no other decoration or text"
+    },
+    {
+      "id": "carousel_next",
+      "group": "ui/character",
+      "width": 40,
+      "height": 40,
+      "mode": "fixed",
+      "caps": 0,
+      "description": "ONE square carousel next control, dark blue enamel bronze gold stepped rim, bold pale gold RIGHT chevron centered, no other decoration or text"
+    },
+    {
+      "id": "carousel_dot_active",
+      "group": "ui/character",
+      "width": 12,
+      "height": 12,
+      "mode": "fixed",
+      "caps": 0,
+      "description": "ONE tiny bright blue diamond crystal pagination indicator, 12x12 logical pixels, extremely simple bold stepped silhouette"
+    },
+    {
+      "id": "carousel_dot_inactive",
+      "group": "ui/character",
+      "width": 12,
+      "height": 12,
+      "mode": "fixed",
+      "caps": 0,
+      "description": "ONE tiny dim bronze diamond pagination indicator, 12x12 logical pixels, extremely simple bold stepped silhouette"
+    },
+    {
+      "id": "veldryn_logo",
+      "group": "branding",
+      "width": 288,
+      "height": 96,
+      "mode": "fixed",
+      "caps": 0,
+      "description": "ONE premium pixel-art game wordmark: exact text \"VELDRYN\" (V E L D R Y N), all capitals, strong readable medieval slab serifs, warm gold metallic block letters dark navy outline, small blue crystal crest above center and restrained bronze flourish beneath. Isolated on transparent background. Wide compact 3:1 shape. No slogan"
+    },
+    {
+      "id": "veldryn_crystal_crest",
+      "group": "branding",
+      "width": 64,
+      "height": 64,
+      "mode": "fixed",
+      "caps": 0,
+      "description": "ONE standalone heraldic emblem: bright blue faceted crystal in a bronze gold medieval shield-like metal setting, symmetrical stepped pixel silhouette, bold readable at 64x64; no text"
+    },
+    {
+      "id": "corner_gold_tl",
+      "group": "ui/decorations",
+      "width": 32,
+      "height": 32,
+      "mode": "fixed",
+      "caps": 0,
+      "description": "ONE top-left L-shaped bronze gold ornate corner fitting, small blue crystal near outside corner and compact engraved stepped scrollwork on inward right/down legs; lower right region empty transparent; no panel"
+    },
+    {
+      "id": "divider_gold_3slice",
+      "group": "ui/decorations",
+      "width": 128,
+      "height": 8,
+      "mode": "3slice",
+      "caps": 8,
+      "description": "ONE slim horizontal bronze gold separator line with tiny diamond end caps only, straight uniform central rail, 16:1 intended shape, no center ornament"
+    },
+    {
+      "id": "divider_crystal",
+      "group": "ui/decorations",
+      "width": 128,
+      "height": 24,
+      "mode": "fixed",
+      "caps": 0,
+      "description": "ONE horizontal ornamental divider, small blue crystal at exact center with symmetrical thin gold bronze pixel filigree wings extending left and right, wide 5.3:1 shape"
+    },
+    {
+      "id": "icon_character_32",
+      "group": "icons",
+      "width": 32,
+      "height": 32,
+      "mode": "fixed",
+      "caps": 0,
+      "description": "ONE UI glyph of a helmeted knight bust silhouette. Bold simple chunky hand-pixelled silhouette READABLE at just 32x32 logical pixels. Bronze gold and blue accents, dark navy outline. No outer box, no text, no labels, no other object"
+    },
+    {
+      "id": "icon_skills_32",
+      "group": "icons",
+      "width": 32,
+      "height": 32,
+      "mode": "fixed",
+      "caps": 0,
+      "description": "ONE UI glyph of a crossed pickaxe and sword. Bold simple chunky hand-pixelled silhouette READABLE at just 32x32 logical pixels. Bronze gold and blue accents, dark navy outline. No outer box, no text, no labels, no other object"
+    },
+    {
+      "id": "icon_world_32",
+      "group": "icons",
+      "width": 32,
+      "height": 32,
+      "mode": "fixed",
+      "caps": 0,
+      "description": "ONE UI glyph of a compass rose with blue north needle. Bold simple chunky hand-pixelled silhouette READABLE at just 32x32 logical pixels. Bronze gold and blue accents, dark navy outline. No outer box, no text, no labels, no other object"
+    },
+    {
+      "id": "icon_inventory_32",
+      "group": "icons",
+      "width": 32,
+      "height": 32,
+      "mode": "fixed",
+      "caps": 0,
+      "description": "ONE UI glyph of a leather backpack with gold buckle. Bold simple chunky hand-pixelled silhouette READABLE at just 32x32 logical pixels. Bronze gold and blue accents, dark navy outline. No outer box, no text, no labels, no other object"
+    },
+    {
+      "id": "icon_account_32",
+      "group": "icons",
+      "width": 32,
+      "height": 32,
+      "mode": "fixed",
+      "caps": 0,
+      "description": "ONE UI glyph of a round profile medallion containing a person bust. Bold simple chunky hand-pixelled silhouette READABLE at just 32x32 logical pixels. Bronze gold and blue accents, dark navy outline. No outer box, no text, no labels, no other object"
+    },
+    {
+      "id": "icon_settings_32",
+      "group": "icons",
+      "width": 32,
+      "height": 32,
+      "mode": "fixed",
+      "caps": 0,
+      "description": "ONE UI glyph of a bronze gear with cyan center. Bold simple chunky hand-pixelled silhouette READABLE at just 32x32 logical pixels. Bronze gold and blue accents, dark navy outline. No outer box, no text, no labels, no other object"
+    },
+    {
+      "id": "icon_search_32",
+      "group": "icons",
+      "width": 32,
+      "height": 32,
+      "mode": "fixed",
+      "caps": 0,
+      "description": "ONE UI glyph of a magnifying glass with cyan glass and bronze handle. Bold simple chunky hand-pixelled silhouette READABLE at just 32x32 logical pixels. Bronze gold and blue accents, dark navy outline. No outer box, no text, no labels, no other object"
+    },
+    {
+      "id": "icon_filter_32",
+      "group": "icons",
+      "width": 32,
+      "height": 32,
+      "mode": "fixed",
+      "caps": 0,
+      "description": "ONE UI glyph of three horizontal bronze slider lines with alternating cyan square knobs. Bold simple chunky hand-pixelled silhouette READABLE at just 32x32 logical pixels. Bronze gold and blue accents, dark navy outline. No outer box, no text, no labels, no other object"
+    },
+    {
+      "id": "icon_back_32",
+      "group": "icons",
+      "width": 32,
+      "height": 32,
+      "mode": "fixed",
+      "caps": 0,
+      "description": "ONE UI glyph of a single thick LEFT pointing gold chevron. Bold simple chunky hand-pixelled silhouette READABLE at just 32x32 logical pixels. Bronze gold and blue accents, dark navy outline. No outer box, no text, no labels, no other object"
+    },
+    {
+      "id": "icon_next_32",
+      "group": "icons",
+      "width": 32,
+      "height": 32,
+      "mode": "fixed",
+      "caps": 0,
+      "description": "ONE UI glyph of a single thick RIGHT pointing gold chevron. Bold simple chunky hand-pixelled silhouette READABLE at just 32x32 logical pixels. Bronze gold and blue accents, dark navy outline. No outer box, no text, no labels, no other object"
+    },
+    {
+      "id": "icon_dropdown_32",
+      "group": "icons",
+      "width": 32,
+      "height": 32,
+      "mode": "fixed",
+      "caps": 0,
+      "description": "ONE UI glyph of a single thick DOWN pointing gold chevron. Bold simple chunky hand-pixelled silhouette READABLE at just 32x32 logical pixels. Bronze gold and blue accents, dark navy outline. No outer box, no text, no labels, no other object"
+    }
+  ]
+}

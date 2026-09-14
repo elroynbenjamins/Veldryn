@@ -1,0 +1,340 @@
+{
+  "version": "1.0.0",
+  "themes": [
+    {
+      "id": "harvestwake",
+      "name": "Harvestwake",
+      "motif": "warm bronze entwined with amber leaves and golden wheat; a small amber lantern at the upper central crest",
+      "scene": "Autumn medieval valley at golden sunset, foreground cobblestone terrace framed by amber trees and small glowing lanterns, harvested fields winding down toward a river and a distant fortified fantasy city. Warm windows, subtle magical blue crystals, late golden sunlight and deep navy shadows. Expansive quiet upper sky."
+    },
+    {
+      "id": "winters_bell",
+      "name": "Winter's Bell",
+      "motif": "aged gold with silver frost filigree, tiny angular ice crystals and a small winter bell at the upper central crest",
+      "scene": "Snowy medieval mountain citadel at twilight, distant spires above a frozen lake and a stone bridge, soft aurora in a deep indigo sky, snow laden pines along the lower edges, welcoming warm amber windows and lanterns. A serene winter wonderland, crisp cyan ice against navy snow shadows. Large quiet upper sky."
+    },
+    {
+      "id": "firstlight",
+      "name": "VELDRYN Anniversary · Firstlight",
+      "motif": "gold and bronze ceremonial laurel, saturated blue crystal inlays, small radiant blue diamond star at the upper central crest",
+      "scene": "Ancient forest kingdom at first light, a grand gold-and-stone arched bridge crossing a turquoise river toward a distant castle and luminous blue crystal obelisk, mossy ruins and deep evergreen trees at the edges, blue-and-gold unmarked ceremonial banners, tiny golden motes in morning light. Wonder and adventure with generous peaceful upper sky."
+    }
+  ],
+  "assets": [
+    {
+      "id": "startup_harvestwake",
+      "theme": "harvestwake",
+      "kind": "background",
+      "width": 360,
+      "height": 640,
+      "mode": "cover",
+      "source": "source/originals/startup_harvestwake-397b24b0.png",
+      "files": [
+        {
+          "file": "assets/backgrounds/startup_harvestwake.png",
+          "scale": 1,
+          "width": 360,
+          "height": 640,
+          "bytes": 526178,
+          "sha256": "43b889513f13346b13762f0694023fc97b5c800237aaf6ef6203021506f0d6e3"
+        },
+        {
+          "file": "assets/backgrounds/startup_harvestwake@2x.png",
+          "scale": 2,
+          "width": 720,
+          "height": 1280,
+          "bytes": 668710,
+          "sha256": "08047eda281071570c8d044028addacc0302b74a3837fc4bedac6ceab0474639"
+        },
+        {
+          "file": "assets/backgrounds/startup_harvestwake@3x.png",
+          "scale": 3,
+          "width": 1080,
+          "height": 1920,
+          "bytes": 688228,
+          "sha256": "fa6910db5b925016b4596510a20a77a26a77be0ca292ce7a40d445c14e355e3a"
+        }
+      ]
+    },
+    {
+      "id": "frame_harvestwake_festival",
+      "theme": "harvestwake",
+      "kind": "border",
+      "width": 320,
+      "height": 180,
+      "mode": "fixed-aspect-16:9",
+      "source": "source/originals/frame_harvestwake_festival-3be94412.png",
+      "files": [
+        {
+          "file": "assets/borders/frame_harvestwake_festival.png",
+          "scale": 1,
+          "width": 320,
+          "height": 180,
+          "bytes": 16416,
+          "sha256": "6bdd89f05cc854498e4d3e3e5ca08cf1097b0c5148fc0a435e6ce09fd7c6d627"
+        },
+        {
+          "file": "assets/borders/frame_harvestwake_festival@2x.png",
+          "scale": 2,
+          "width": 640,
+          "height": 360,
+          "bytes": 22310,
+          "sha256": "cbc0c9f0e7e64053725b343bbcc53a579e0413197bf12d169fda9c34cb2709b3"
+        },
+        {
+          "file": "assets/borders/frame_harvestwake_festival@3x.png",
+          "scale": 3,
+          "width": 960,
+          "height": 540,
+          "bytes": 27554,
+          "sha256": "c00f4c3c8074251c43949af62c069868123bf48a34327ab877c52e11d6f9eba0"
+        }
+      ]
+    },
+    {
+      "id": "badge_harvestwake",
+      "theme": "harvestwake",
+      "kind": "badge",
+      "width": 48,
+      "height": 48,
+      "mode": "fixed",
+      "source": "source/originals/badge_harvestwake-8dcc16bc.png",
+      "files": [
+        {
+          "file": "assets/badges/badge_harvestwake.png",
+          "scale": 1,
+          "width": 48,
+          "height": 48,
+          "bytes": 2428,
+          "sha256": "18691ffa6e758e09ae6791480c35a82e6ea8598a090eb67277ca91b06dfc4362"
+        },
+        {
+          "file": "assets/badges/badge_harvestwake@2x.png",
+          "scale": 2,
+          "width": 96,
+          "height": 96,
+          "bytes": 2927,
+          "sha256": "ca810914e8b1af84c297d90ab0ace7b2d905ccec85caef134e41f9c70b3bff3e"
+        },
+        {
+          "file": "assets/badges/badge_harvestwake@3x.png",
+          "scale": 3,
+          "width": 144,
+          "height": 144,
+          "bytes": 3333,
+          "sha256": "d2a315d6f3b95d2296bdb4d1add344ae771f95b3b0658cbce9f94bfd81e6c55d"
+        }
+      ]
+    },
+    {
+      "id": "startup_winters_bell",
+      "theme": "winters_bell",
+      "kind": "background",
+      "width": 360,
+      "height": 640,
+      "mode": "cover",
+      "source": "source/originals/startup_winters_bell-176e0f74.png",
+      "files": [
+        {
+          "file": "assets/backgrounds/startup_winters_bell.png",
+          "scale": 1,
+          "width": 360,
+          "height": 640,
+          "bytes": 544277,
+          "sha256": "51a816c2b78c3a1aa6468abbb70c9b0cc52fb31aa02248bf31088d5ead7b6c34"
+        },
+        {
+          "file": "assets/backgrounds/startup_winters_bell@2x.png",
+          "scale": 2,
+          "width": 720,
+          "height": 1280,
+          "bytes": 699516,
+          "sha256": "e90ef41b82c6fb697a50ee650e9ca88db468f9e26fa1b857e906a0713308b308"
+        },
+        {
+          "file": "assets/backgrounds/startup_winters_bell@3x.png",
+          "scale": 3,
+          "width": 1080,
+          "height": 1920,
+          "bytes": 721565,
+          "sha256": "04ea220668d07cadb59261759c7297fc909251203bdbcef4df32d5bd4510b184"
+        }
+      ]
+    },
+    {
+      "id": "frame_winters_bell_festival",
+      "theme": "winters_bell",
+      "kind": "border",
+      "width": 320,
+      "height": 180,
+      "mode": "fixed-aspect-16:9",
+      "source": "source/originals/frame_winters_bell_festival-9ddb9514.png",
+      "files": [
+        {
+          "file": "assets/borders/frame_winters_bell_festival.png",
+          "scale": 1,
+          "width": 320,
+          "height": 180,
+          "bytes": 15158,
+          "sha256": "5eebcd24c561dc187a6ab507a8f025e1f7f43a6edf681b9593db93bd56dac4d1"
+        },
+        {
+          "file": "assets/borders/frame_winters_bell_festival@2x.png",
+          "scale": 2,
+          "width": 640,
+          "height": 360,
+          "bytes": 20375,
+          "sha256": "e0a9af0b79bd8213381e859dc31f071dd0f7be0d00fc0119cc8d12233208656e"
+        },
+        {
+          "file": "assets/borders/frame_winters_bell_festival@3x.png",
+          "scale": 3,
+          "width": 960,
+          "height": 540,
+          "bytes": 25573,
+          "sha256": "41c49be8d0f26ed1dc9d9b2b7fd05fd0790e083e2adae435971aff3fa204b11a"
+        }
+      ]
+    },
+    {
+      "id": "badge_winters_bell",
+      "theme": "winters_bell",
+      "kind": "badge",
+      "width": 48,
+      "height": 48,
+      "mode": "fixed",
+      "source": "source/originals/badge_winters_bell-e1348415.png",
+      "files": [
+        {
+          "file": "assets/badges/badge_winters_bell.png",
+          "scale": 1,
+          "width": 48,
+          "height": 48,
+          "bytes": 1917,
+          "sha256": "7c217dd3c80d3fa91bc5ae8b370a7bc01346c870e6a683d90931320bfecd4f18"
+        },
+        {
+          "file": "assets/badges/badge_winters_bell@2x.png",
+          "scale": 2,
+          "width": 96,
+          "height": 96,
+          "bytes": 2325,
+          "sha256": "31ad336e332d9a0f92033711669a32d017ba2573660cf5266379226b690ed6ee"
+        },
+        {
+          "file": "assets/badges/badge_winters_bell@3x.png",
+          "scale": 3,
+          "width": 144,
+          "height": 144,
+          "bytes": 2659,
+          "sha256": "2ee3076fbe803ee9cf6c6d9781eda6baf0000cd4c08556b82a48cbd2d7b307a9"
+        }
+      ]
+    },
+    {
+      "id": "startup_firstlight",
+      "theme": "firstlight",
+      "kind": "background",
+      "width": 360,
+      "height": 640,
+      "mode": "cover",
+      "source": "source/originals/startup_firstlight-68f3dc81.png",
+      "files": [
+        {
+          "file": "assets/backgrounds/startup_firstlight.png",
+          "scale": 1,
+          "width": 360,
+          "height": 640,
+          "bytes": 565166,
+          "sha256": "118a59c89fe4ea5a7da9e8846951808b6f0c73cf3aa6c892ae1a1f057c6e2d6c"
+        },
+        {
+          "file": "assets/backgrounds/startup_firstlight@2x.png",
+          "scale": 2,
+          "width": 720,
+          "height": 1280,
+          "bytes": 717277,
+          "sha256": "65b7b64f1a2e7f45e3db012b6dbc13d5a5b490eb058ec8059196907907fb05de"
+        },
+        {
+          "file": "assets/backgrounds/startup_firstlight@3x.png",
+          "scale": 3,
+          "width": 1080,
+          "height": 1920,
+          "bytes": 737126,
+          "sha256": "360e4c39e7c8286c7ce0caaba6cb72e7c3307307838b99b7920f5aff027d44d3"
+        }
+      ]
+    },
+    {
+      "id": "frame_firstlight_festival",
+      "theme": "firstlight",
+      "kind": "border",
+      "width": 320,
+      "height": 180,
+      "mode": "fixed-aspect-16:9",
+      "source": "source/originals/frame_firstlight_festival-5c3c411a.png",
+      "files": [
+        {
+          "file": "assets/borders/frame_firstlight_festival.png",
+          "scale": 1,
+          "width": 320,
+          "height": 180,
+          "bytes": 16304,
+          "sha256": "b505a83847f76650ed05c60d301955f99090e1add1fedcf53bfad60266d5f85b"
+        },
+        {
+          "file": "assets/borders/frame_firstlight_festival@2x.png",
+          "scale": 2,
+          "width": 640,
+          "height": 360,
+          "bytes": 21647,
+          "sha256": "f3f38328a2fb41c9f5216f0038141180e4388876f2581b5e67dc6048234be283"
+        },
+        {
+          "file": "assets/borders/frame_firstlight_festival@3x.png",
+          "scale": 3,
+          "width": 960,
+          "height": 540,
+          "bytes": 26792,
+          "sha256": "519d5285bc37a7a2aa6655bb6c5b6dea4d561010fc69ab61c69fda3c38f7fdd2"
+        }
+      ]
+    },
+    {
+      "id": "badge_firstlight",
+      "theme": "firstlight",
+      "kind": "badge",
+      "width": 48,
+      "height": 48,
+      "mode": "fixed",
+      "source": "source/originals/badge_firstlight-e3ca9c36.png",
+      "files": [
+        {
+          "file": "assets/badges/badge_firstlight.png",
+          "scale": 1,
+          "width": 48,
+          "height": 48,
+          "bytes": 2608,
+          "sha256": "ab3cc40e18d268e334a07d278789b2b32d5d66ac3acbfc60b52c2e46857a6e01"
+        },
+        {
+          "file": "assets/badges/badge_firstlight@2x.png",
+          "scale": 2,
+          "width": 96,
+          "height": 96,
+          "bytes": 3124,
+          "sha256": "c410801d28b10e41ca5acbaac4c4c98d1c48e5079b3d4f5b342c89d7839a3f90"
+        },
+        {
+          "file": "assets/badges/badge_firstlight@3x.png",
+          "scale": 3,
+          "width": 144,
+          "height": 144,
+          "bytes": 3549,
+          "sha256": "d99acecd1d5720de2c17c0994e137ddd0026544d1070f451135e5e19c66bf681"
+        }
+      ]
+    }
+  ]
+}

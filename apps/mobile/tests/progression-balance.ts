@@ -2,7 +2,12 @@ import {CLASSES} from '../src/content/classes';
 import {MONSTERS} from '../src/content/monsters';
 import {QUESTS} from '../src/content/quests';
 import {V1_BALANCE_TARGETS,ASTERFALL_PRODUCTIVE_HOUR_BUDGET} from '../src/content/asterfall';
-import {claimActivity, createCharacter, effectiveStats, newGame, previewActivityReward, startCombat, stopActivity, regionalReadiness, fallenKnightWinChance} from '../src/core/game';
+import {claimActivity, createCharacter, craftRecipe, depositAllMaterials, equipItem, equipNoviceSet, effectiveStats, newGame, previewActivityReward, startCombat, stopActivity, travelToRegion, regionalReadiness, fallenKnightWinChance, withdrawFromBank} from '../src/core/game';
+import {WORLD_ZONES} from '../src/content/world-map';
+import {noviceSetFor,noviceRecipeId,noviceItemId} from '../src/content/novice-sets';
+import {itemDef} from '../src/content/items';
+import {RECIPES} from '../src/content/skills';
+import {totalXpAtLevel} from '../src/core/progression';
 
 function ok(condition:boolean,message:string){if(!condition)throw new Error(message);}
 
@@ -11,14 +16,43 @@ function addFood(state:any,itemId='IRONWOOD_STEW',qty=99999){
   return state;
 }
 function simulateTo25(classId:any){
-  let now=1_000_000;let state=addFood(createCharacter(newGame(now),classId,'BalanceBot'));let elapsed=0;const step=30*60;
+  let now=1_000_000;let state=addFood(createCharacter(newGame(now),classId,'BalanceBot'));let elapsed=0;const step=30*60;let regionalPrepared=false;
+  // The productive-combat budget excludes the separately budgeted skilling preparation.
+  // Model the current full novice set and equip earned upgrades instead of fighting naked to 25.
+  state.bank.stacks=[{itemId:'COPPER_ORE',quantity:500},{itemId:'GREENWOOD_LOG',quantity:500},{itemId:'MOSS_FIBER',quantity:500}];
   while(state.character.level<25 && elapsed<360*3600){
+    if(state.inventory.stacks.some((stack:any)=>itemDef(stack.itemId).type==='material'))state=depositAllMaterials(state);
+    for(const slot of noviceSetFor(classId).slots){if(!state.character.craftedNoviceItemIds?.includes(noviceItemId(classId,slot))){try{state=craftRecipe(state,noviceRecipeId(classId,slot));}catch{ /* Wait for the next level/gold milestone. */ }}}
+    if(noviceSetFor(classId).slots.every(slot=>state.character.craftedNoviceItemIds?.includes(noviceItemId(classId,slot)))){const withSet=equipNoviceSet(state);if(effectiveStats(withSet).power>effectiveStats(state).power)state=withSet;}
+    // Loot sent to the Bank when bags fill remains available for actual equipment upgrades.
+    for(const stack of [...state.inventory.stacks,...state.bank.stacks]){if(itemDef(stack.itemId).type==='gear'){try{const carried=state.inventory.stacks.some((s:any)=>s.itemId===stack.itemId)?state:withdrawFromBank(state,stack.itemId,1);const equipped=equipItem(carried,stack.itemId);if(effectiveStats(equipped).power>effectiveStats(state).power)state=equipped;}catch{ /* Ownership and class restrictions remain enforced. */ }}}
+    if(!regionalPrepared&&state.character.level>=15){
+      // The budget separately includes 57.6h smithing and 43.2h gear preparation.
+      // Compare the prepared regional outfit as a whole: greedy single-item swaps
+      // can reject every upgrade because the first swap removes the novice set bonus.
+      const weapon=['WAYFINDER'].includes(classId)?'IRONWOOD_LONGBOW':['DAWNKEEPER','HEXWEAVER','STONECALLER'].includes(classId)?'IRONWOOD_STAFF':classId==='RAVAGER'?'IRONWOOD_GREATAXE':classId==='KNIFE_DANCER'?'IRONWOOD_DAGGERS':'ASTER_IRON_BLADE';
+      const equipment=[weapon,'ASTER_IRON_HELM','ASTER_IRON_CHEST','ASTER_IRON_LEGS','ASTER_IRON_BOOTS','ASTER_IRON_GLOVES'];
+      const recipes=equipment.map(id=>RECIPES.find(recipe=>recipe.output.itemId===id)!);
+      if(state.character.gold>=recipes.reduce((sum,recipe)=>sum+recipe.gold,0)){
+        let prepared=structuredClone(state);prepared.skills=prepared.skills.map((skill:any)=>skill.skillId==='smithing'?{...skill,level:15,xp:Math.max(skill.xp,totalXpAtLevel(15))}:skill);
+        for(const recipe of recipes){
+          // Materials represent the separate skilling budget; combat XP, Gold,
+          // character levels and recipe costs still come from the actual engine.
+          for(const input of recipe.inputs){const existing=prepared.bank.stacks.find((s:any)=>s.itemId===input.itemId);if(existing)existing.quantity+=input.quantity;else prepared.bank.stacks.push({...input});}
+          prepared=craftRecipe(prepared,recipe.id,now);
+          if(!prepared.inventory.stacks.some((s:any)=>s.itemId===recipe.output.itemId))prepared=withdrawFromBank(prepared,recipe.output.itemId,1);
+          prepared=equipItem(prepared,recipe.output.itemId);
+        }
+        if(effectiveStats(prepared).power>effectiveStats(state).power){state=prepared;regionalPrepared=true;}
+      }
+    }
     const available=MONSTERS.filter(m=>!m.boss && m.unlockLevel<=state.character.level);
-    const target=available.sort((a,b)=>b.level-a.level)[0];
-    if(!state.activity || state.activity.targetId!==target.id){state=stopActivity(state);state=startCombat(state,target.id,now);}
+    // Productive combat chooses sustainable XP yield; the highest-level enemy may be inefficient.
+    const target=available.map(monster=>{const located=travelToRegion(stopActivity(state),WORLD_ZONES.find(zone=>zone.name===monster.zone)!.id,now).state;return {monster,xp:previewActivityReward(startCombat(located,monster.id,now),now+step*1000).xp};}).sort((a,b)=>b.xp-a.xp)[0].monster;
+    if(!state.activity || state.activity.targetId!==target.id){state=stopActivity(state);state=travelToRegion(state,WORLD_ZONES.find(zone=>zone.name===target.zone)!.id,now).state;state=startCombat(state,target.id,now);}
     now+=step*1000;elapsed+=step;state=claimActivity(state,now).state;
   }
-  return {hours:elapsed/3600,level:state.character.level,power:effectiveStats(state).power};
+  return {hours:elapsed/3600,level:state.character.level,power:effectiveStats(state).power,regionalPrepared};
 }
 
 ok(CLASSES.length===9,'V1 must expose 9 classes');

@@ -1,0 +1,7 @@
+import {strict as assert} from 'node:assert';
+import {parseAchievementClaimBody,parseAchievementShowcaseBody} from '../achievement-api-contracts';
+import {AchievementApplicationService} from '../achievement-application';
+import type {AchievementRepository} from '../achievement-persistence';
+import type {AchievementSnapshotProjection} from '../achievement-types';
+const snapshot:AchievementSnapshotProjection={entries:[],score:0,claimedCount:0,showcaseIds:[]};class Memory implements AchievementRepository{async snapshot(){return snapshot}async claim(){return{achievementId:'first',payout:{gold:10},creditedCharacterId:'char',claimedAtMs:1,idempotentReplay:false,snapshot}}async setShowcase(_a:string,ids:string[]){return{showcaseIds:ids,snapshot}}}
+const expectThrow=(fn:()=>unknown)=>{let threw=false;try{fn()}catch{threw=true}assert.equal(threw,true)};const service=new AchievementApplicationService(new Memory());assert.equal(parseAchievementClaimBody({requestId:'request-1'}).requestId,'request-1');assert.equal(parseAchievementShowcaseBody({requestId:'request-1',achievementIds:['a','b']}).achievementIds.length,2);expectThrow(()=>parseAchievementShowcaseBody({requestId:'request-1',achievementIds:['a','a']}));expectThrow(()=>service.claim('', 'a','request-1',1));expectThrow(()=>service.setShowcase('a',['a','b','c','d'],'request-1',1));void service.snapshot(' account-a ').then(value=>{assert.equal(value.score,0);console.log('achievement application PASS')});

@@ -1,0 +1,191 @@
+{
+  "status": "PASS",
+  "assetFamilies": 18,
+  "densityScales": [
+    1,
+    2,
+    3
+  ],
+  "assets": [
+    {
+      "name": "ironwarden",
+      "width": 256,
+      "height": 256,
+      "scales": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "name": "bastion",
+      "width": 256,
+      "height": 256,
+      "scales": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "name": "dreadguard",
+      "width": 256,
+      "height": 256,
+      "scales": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "name": "dawnkeeper",
+      "width": 256,
+      "height": 256,
+      "scales": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "name": "wayfinder",
+      "width": 256,
+      "height": 256,
+      "scales": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "name": "ravager",
+      "width": 256,
+      "height": 256,
+      "scales": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "name": "hexweaver",
+      "width": 256,
+      "height": 256,
+      "scales": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "name": "knife_dancer",
+      "width": 256,
+      "height": 256,
+      "scales": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "name": "stonecaller",
+      "width": 256,
+      "height": 256,
+      "scales": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "name": "ironwarden",
+      "width": 62,
+      "height": 62,
+      "scales": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "name": "bastion",
+      "width": 62,
+      "height": 62,
+      "scales": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "name": "dreadguard",
+      "width": 62,
+      "height": 62,
+      "scales": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "name": "dawnkeeper",
+      "width": 62,
+      "height": 62,
+      "scales": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "name": "wayfinder",
+      "width": 62,
+      "height": 62,
+      "scales": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "name": "ravager",
+      "width": 62,
+      "height": 62,
+      "scales": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "name": "hexweaver",
+      "width": 62,
+      "height": 62,
+      "scales": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "name": "knife_dancer",
+      "width": 62,
+      "height": 62,
+      "scales": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "name": "stonecaller",
+      "width": 62,
+      "height": 62,
+      "scales": [
+        1,
+        2,
+        3
+      ]
+    }
+  ]
+}

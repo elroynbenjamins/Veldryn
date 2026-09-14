@@ -1,0 +1,12 @@
+[
+  {
+    "id": "login_frame_9slice",
+    "prompt": "Edit this ONE production VELDRYN pixel UI panel asset. Preserve its outer silhouette, gold bronze straight rails, chunky medieval scrollwork corners and four small blue crystals exactly. Replace the entire inner dark surface with one perfectly flat SOLID OPAQUE navy color #151D2B. No gradients, no black patches, no texture, no shadows, no transparent holes anywhere inside the gold frame. The ENTIRE interior from inner edge to inner edge must be a single flat uniform navy rectangle behind the existing ornaments. Only the area OUTSIDE the outer frame must have true alpha transparency. No other changes, no text or extra assets. Sharp pixel art.",
+    "source": "C:\\Users\\elroy\\.codex\\generated_images\\01a0967d-fcae-73e3-b18a-86a5188d6a08\\exec-1b9c5286-961e-47e4-84bf-8009e19189f4.png"
+  },
+  {
+    "id": "create_account_frame_9slice",
+    "prompt": "Create ONE isolated VELDRYN create-account panel sprite, taller portrait rectangle, width:height 6:7. Match the supplied clean navy panel with ornate gold bronze corners and four blue gems. Outer shape square-cut pixel medieval rails. Entire interior solid opaque dark navy. CRITICAL: PNG with actual alpha channel. All exterior pixels must be transparent alpha=0. Do not draw a checkerboard, white background, black background, ground, shadow, sheet, text, or multiple objects. Transparent exterior ONLY; navy interior is fully opaque. High quality crisp pixel art, minimalist surface, all decoration at corners, straight constant-thickness rails for nine-slicing.",
+    "source": "C:\\Users\\elroy\\.codex\\generated_images\\01a0967d-fcae-73e3-b18a-86a5188d6a08\\exec-075d92c6-72cd-4d05-bba6-ddadfd4d40cf.png"
+  }
+]

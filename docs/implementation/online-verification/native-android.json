@@ -1,0 +1,66 @@
+{
+  "device": "Isolated Android 15 API 35 emulator, 720x1280 at density 320",
+  "runtime": "Expo Go 2.33.22 and standalone internal APK 0.1.0",
+  "physicalDeviceTarget": "Samsung S24+ (user confirmed; Android version not yet provided)",
+  "checks": [
+    {
+      "check": "Password sign-in through native UI using a disposable account",
+      "status": "PASS"
+    },
+    {
+      "check": "Secure session restored after cold restart",
+      "status": "PASS"
+    },
+    {
+      "check": "Create Adventurer / Ironwarden through native UI and persist on server",
+      "status": "PASS"
+    },
+    {
+      "check": "Start native idle hunt, collect and stop after 130 encounters",
+      "status": "PASS",
+      "xp": 1820,
+      "goldEarned": 140
+    },
+    {
+      "check": "Server state after collection",
+      "status": "PASS",
+      "revision": 3,
+      "xp": 1820,
+      "walletGold": 240,
+      "activity": null
+    },
+    {
+      "check": "Restarted app restores Gold 240 and 3580 XP remaining to next level",
+      "status": "PASS"
+    },
+    {
+      "check": "Standalone APK",
+      "status": "PASS"
+    },
+    {
+      "check": "Native PKCE confirmation/recovery callback",
+      "status": "UNVERIFIED"
+    },
+    {
+      "check": "Samsung S24+ physical interaction",
+      "status": "UNVERIFIED"
+    },
+    {
+      "check": "Large text and TalkBack",
+      "status": "UNVERIFIED"
+    },
+    {
+      "check": "Standalone APK sign-in, cold restart and installed upgrade restore server XP 1820 and Gold 240",
+      "status": "PASS"
+    },
+    {
+      "check": "Native veldryn://auth error routing visibly reports expired links while signed in",
+      "status": "PASS"
+    },
+    {
+      "check": "Native fixture cleanup and validation emulator shutdown",
+      "status": "PASS"
+    }
+  ],
+  "limitations": "Accessibility dumps became stale during continuous battle animation; fresh adb screenshots were used to locate and verify reward controls. An Android launcher exception interrupted one relaunch; a subsequent launch restored the saved game. This does not constitute physical-device or iOS validation."
+}

@@ -1,0 +1,1285 @@
+diff --git a/START_HERE_CODEX.md b/START_HERE_CODEX.md
+index 9283757..68b71ed 100644
+--- a/START_HERE_CODEX.md
++++ b/START_HERE_CODEX.md
+@@ -1,3 +1,21 @@
++# LATEST — FULL COMBAT BALANCE PASS V1
++
++The current handoff now includes a whole-game combat balance authority in `backend/src/server/balance/combat-balance.ts` plus `docs/implementation/FULL_COMBAT_BALANCE_V1.md`. It extends the Combat Companion balance pass across classes, ordinary combat, elites, regional bosses, co-op/Expeditions, character Trials, PvP, guild bosses, raids, gear pressure and combat reward pacing.
++
++Important: do not use the old `18–30 active-equivalent hours to Level 25` vertical-slice row as the live character-XP authority. The implemented idle-combat model uses a separate productive-combat/calendar pacing target. Do not overwrite newer real-repository class/raid/combat code with the older `veldryn_backend_v2.1` reference; use the new balance contracts as targets and run the current repository's real combat simulations.
++
++---
++
++# LATEST — COMBAT COMPANION BALANCE PASS V1 (schema 13 unchanged)
++
++Read `docs/implementation/COMBAT_COMPANION_BALANCE_V1.md` first, then `docs/implementation/COMBAT_COMPANIONS_ECOSYSTEM_V3.md` for the underlying ecosystem implementation. This pass rebalances companion-only combat, rarity endpoints, monthly Trial progression, repeat rewards, Sanctuary Assignment economy, Bond XP consistency and the first special Prestige unlock boss. Passive Pets remain separate.
++
++Critical balance rule: `Recommended Companion Power` is UI guidance only. Trial enemy combat stats use the separate configured enemy-growth curve and companion-only mitigation constant. Do not reconnect Team Power directly to enemy stat scaling. Changing the Trial enemy-growth constant requires a new seeded combat balance study.
++
++Run backend `npm run typecheck:companions` and `npm run test:companions`, plus mobile `npx tsc -p tsconfig.companions.json --noEmit` and `npm run test:companions`. The recovered source still does not replace full Expo/Android, real Supabase chain, or production telemetry validation.
++
++---
++
+ # LATEST — COMBAT COMPANIONS PHASE 2/3 + MONTHLY TRIALS (schema 12)
+ 
+ Read `docs/implementation/COMBAT_COMPANIONS_PHASE2_3.md` first, then `docs/implementation/COMBAT_COMPANIONS_V2.md` only for the underlying Phase 1 progression rules. This pass adds companion-only combat, monthly UTC Companion Trials, Sanctuary Companion Expeditions/assignments, Techniques, Team Power, special boss unlock infrastructure, duplicate/XP-overflow economy, Codex/showcase hooks, and future roguelite/Arena compatibility. Passive collectible Pets and Pet Essence remain separate.
+diff --git a/apps/mobile/src/content/combat-companions.ts b/apps/mobile/src/content/combat-companions.ts
+index d959057..c35dcd3 100644
+--- a/apps/mobile/src/content/combat-companions.ts
++++ b/apps/mobile/src/content/combat-companions.ts
+@@ -24,6 +24,7 @@ export const COMPANION_STAGE_CAPS:Record<CombatCompanionRarity,readonly [number,
+ export const COMPANION_LEVEL_CURVE={baseXp:65,xpGrowth:1.16,goldBase:38,goldGrowth:1.24,essenceBase:4,essenceGrowth:1.19} as const;
+ export const COMPANION_BOND_CONFIG={
+   maxLevel:10,
++  // cumulative XP required for Bond Levels 1-10
+   xpThresholds:[0,90,210,370,580,840,1160,1540,1990,2520] as const,
+   rewards:{2:'Small progression reward',4:'Companion profile icon',6:'Passive improvement',8:'Companion title/profile reward',10:'Bond Trait'} as Record<number,string>,
+   sourceXp:{battle:4,boss:60,dungeon:32,companion_objective:45,future_activity:12} as const,
+diff --git a/apps/mobile/src/core/combat-companions.ts b/apps/mobile/src/core/combat-companions.ts
+index e065e69..713a866 100644
+--- a/apps/mobile/src/core/combat-companions.ts
++++ b/apps/mobile/src/core/combat-companions.ts
+@@ -73,7 +73,14 @@ export function nextCompanionAscension(def:CompanionDefinition,progress:OwnedCom
+ function normalizeProgress(def:CompanionDefinition,value:any,fallback:OwnedCompanionProgress):OwnedCompanionProgress{
+   const max=companionMaxLevel(def),level=int(value?.level??fallback.level,1,max);
+   const inferred=requiredAscensionTierForLevel(def,level),ascensionTier=Math.max(inferred,int(value?.ascensionTier??fallback.ascensionTier,0,3)) as 0|1|2|3;
+-  const bondLevel=int(value?.bondLevel??fallback.bondLevel,1,COMPANION_BOND_CONFIG.maxLevel);
++  let bondLevel=int(value?.bondLevel??fallback.bondLevel,1,COMPANION_BOND_CONFIG.maxLevel);
++  const rawBondXp=int(value?.bondXp??fallback.bondXp),minimumBondXp=COMPANION_BOND_CONFIG.xpThresholds[Math.max(0,bondLevel-1)]??0;
++  // v13 and earlier local saves stored Bond XP as progress within the current
++  // level, while the authoritative server uses cumulative Bond XP. Detect the
++  // residual form and promote it without losing earned progress.
++  let normalizedBondXp=bondLevel>=10?(COMPANION_BOND_CONFIG.xpThresholds[9]??0):(rawBondXp<minimumBondXp?minimumBondXp+rawBondXp:rawBondXp);
++  while(bondLevel<10&&normalizedBondXp>=(COMPANION_BOND_CONFIG.xpThresholds[bondLevel]??Number.MAX_SAFE_INTEGER))bondLevel++;
++  if(bondLevel>=10)normalizedBondXp=COMPANION_BOND_CONFIG.xpThresholds[9]??normalizedBondXp;
+   const cap=COMPANION_STAGE_CAPS[def.rarity][ascensionTier];
+   const safeLevel=Math.min(level,cap,max),nextXp=companionXpToNextLevel(def.rarity,safeLevel);
+   return {
+@@ -81,7 +88,7 @@ function normalizeProgress(def:CompanionDefinition,value:any,fallback:OwnedCompa
+     xp:safeLevel>=Math.min(cap,max)?0:Math.min(int(value?.xp??fallback.xp),Math.max(0,nextXp-1)),
+     ascensionTier,
+     bondLevel,
+-    bondXp:bondLevel>=10?0:int(value?.bondXp??fallback.bondXp),
++    bondXp:normalizedBondXp,
+     bondTraitUnlocked:bondLevel>=10||value?.bondTraitUnlocked===true,
+     mastered:def.rarity==='prestige'&&safeLevel===35&&value?.mastered===true,
+     obtainedAtMs:Number.isFinite(value?.obtainedAtMs)?value.obtainedAtMs:fallback.obtainedAtMs,
+@@ -239,9 +246,10 @@ export function applyCompanionXp(progress:OwnedCompanionProgress,def:CompanionDe
+ }
+ function bondThreshold(level:number){return COMPANION_BOND_CONFIG.xpThresholds[Math.max(0,Math.min(9,level-1))]??Number.MAX_SAFE_INTEGER;}
+ export function applyCompanionBondXp(progress:OwnedCompanionProgress,amount:number):OwnedCompanionProgress{
+-  let level=progress.bondLevel,xp=progress.bondXp+Math.max(0,Math.floor(amount));
+-  while(level<10){const need=bondThreshold(level+1);if(xp<need)break;xp-=need;level++;}
+-  if(level>=10)xp=0;return {...progress,bondLevel:level,bondXp:xp,bondTraitUnlocked:level>=10||progress.bondTraitUnlocked};
++  let level=progress.bondLevel,xp=Math.max(bondThreshold(level),progress.bondXp)+Math.max(0,Math.floor(amount));
++  while(level<10&&xp>=bondThreshold(level+1))level++;
++  if(level>=10)xp=bondThreshold(10);
++  return {...progress,bondLevel:level,bondXp:xp,bondTraitUnlocked:level>=10||progress.bondTraitUnlocked};
+ }
+ export function companionBondXpMultiplier(state:CombatCompanionStateHost){const level=int(state.account.companionSanctuary?.bondHallLevel,0,3);return 1+COMPANION_SANCTUARY_BOND_BONUS[level];}
+ function bondSourceXp(source:CompanionBondSource){const value=(COMPANION_BOND_CONFIG.sourceXp as Record<string,number>)[source];if(!Number.isFinite(value))throw new Error('Invalid Companion Bond source.');return value;}
+diff --git a/apps/mobile/src/core/save-migrations.ts b/apps/mobile/src/core/save-migrations.ts
+index 68a5467..443dacc 100644
+--- a/apps/mobile/src/core/save-migrations.ts
++++ b/apps/mobile/src/core/save-migrations.ts
+@@ -1,7 +1,7 @@
+ import {GameState} from './types';
+ import {normalizeSave} from './save-normalization';
+ 
+-export const SAVE_SCHEMA_VERSION:GameState['version']=12;
++export const SAVE_SCHEMA_VERSION:GameState['version']=13;
+ type AnySave=Record<string,unknown>&{version?:number};
+ 
+ export function migrateSave(input:unknown):GameState{
+diff --git a/apps/mobile/tests/combat-companions.ts b/apps/mobile/tests/combat-companions.ts
+index f736465..1b22a5a 100644
+--- a/apps/mobile/tests/combat-companions.ts
++++ b/apps/mobile/tests/combat-companions.ts
+@@ -55,6 +55,7 @@ for(const [id,max,tier] of [['UNIT_001',20,1],['UNIT_004',25,2],['UNIT_007',30,3
+ 
+ // 12–13. Bond only accepts real-use sources and Bond 10 unlocks the trait.
+ let bond=own(state('IRONWARDEN'),'UNIT_004',progress(1,0,1));const bondBefore=JSON.stringify(bond.account.combatCompanionProgress.UNIT_004);throws(()=>grantCompanionBondFromUse(bond,'UNIT_004','essence' as any,1),'Invalid Bond source accepted');eq(JSON.stringify(bond.account.combatCompanionProgress.UNIT_004),bondBefore,'Invalid Bond source mutated progress');const bonded=applyCompanionBondXp(progress(1,0,1),999999);eq(bonded.bondLevel,10,'Bond did not reach level 10');eq(bonded.bondTraitUnlocked,true,'Bond Trait did not unlock at Bond 10');
++let cumulativeBond=applyCompanionBondXp(progress(1,0,1),89);eq(cumulativeBond.bondLevel,1,'Bond advanced before cumulative threshold');eq(cumulativeBond.bondXp,89,'Bond XP should be cumulative');cumulativeBond=applyCompanionBondXp(cumulativeBond,1);eq(cumulativeBond.bondLevel,2,'Bond 2 threshold mismatch');eq(cumulativeBond.bondXp,90,'Bond 2 cumulative XP mismatch');cumulativeBond=applyCompanionBondXp(cumulativeBond,120);eq(cumulativeBond.bondLevel,3,'Bond 3 threshold mismatch');eq(cumulativeBond.bondXp,210,'Bond 3 cumulative XP mismatch');
+ 
+ // Combat use grants both level XP and Bond XP to the equipped companion.
+ bond=equipCombatCompanion(bond,'UNIT_004');const used=grantEquippedCompanionUse(bond,'battle',5);ok(used.account.combatCompanionProgress.UNIT_004.xp>0,'Combat use did not grant Companion XP');ok(used.account.combatCompanionProgress.UNIT_004.bondXp>0,'Combat use did not grant Bond XP');
+@@ -64,6 +65,7 @@ const shared=used.account.combatCompanionProgress.UNIT_004;eq(shared.level,used.
+ 
+ // 16. Legacy same-role equipped loadouts are safely unequipped.
+ const legacy:any=state('WAYFINDER');legacy.character.selectedCombatUnitId='UNIT_001';legacy.account.ownedCombatUnitIds=['UNIT_001'];const cleaned=sanitizeCombatCompanionState(legacy);eq(cleaned.character!.equippedCombatCompanionId,undefined,'Invalid legacy same-role loadout survived normalization');ok(cleaned.account.unlockedCombatCompanionIds.includes('UNIT_001'),'Legacy ownership was not preserved');eq(cleaned.account.combatCompanionProgress.UNIT_001.level,10,'Legacy owned unit did not receive migration level');
++const residualLegacy:any=own(state('IRONWARDEN'),'UNIT_004',{...progress(10,1,3),bondXp:50});const residualClean=sanitizeCombatCompanionState(residualLegacy);eq(residualClean.account.combatCompanionProgress.UNIT_004.bondXp,260,'Legacy residual Bond XP was not promoted to cumulative semantics');
+ 
+ // Passive cosmetic pets must not be migrated into active combat units.
+ const petLegacy:any=state();petLegacy.account.unlockedCosmeticPetIds=['PET_001'];petLegacy.character.ownedPetIds=['PET_002'];const petClean=sanitizeCombatCompanionState(petLegacy);eq(petClean.account.unlockedCombatCompanionIds.length,0,'Passive Pet ownership leaked into Combat Companion ownership');
+diff --git a/backend/package.json b/backend/package.json
+index b529f87..71f015e 100644
+--- a/backend/package.json
++++ b/backend/package.json
+@@ -50,7 +50,9 @@
+     "coop-phase24": "node dist/server/coop/__tests__/phase24-live-application-boundary.js",
+     "companion-smoke": "node dist/server/companions/__tests__/policy-smoke.js && node dist/server/companions/__tests__/application-smoke.js",
+     "typecheck:companions": "tsc -p tsconfig.companions.json --noEmit",
+-    "test:companions": "node -e \"require('fs').rmSync('.companions-build',{recursive:true,force:true})\" && tsc -p tsconfig.companions.json && node -e \"const fs=require('fs'),cp=require('child_process');for(const f of fs.readdirSync('.companions-build/__tests__').filter(x=>x.endsWith('.js')).sort())cp.execFileSync(process.execPath,['.companions-build/__tests__/'+f],{stdio:'inherit'})\""
++    "test:companions": "node -e \"require('fs').rmSync('.companions-build',{recursive:true,force:true})\" && tsc -p tsconfig.companions.json && node -e \"const fs=require('fs'),cp=require('child_process');for(const f of fs.readdirSync('.companions-build/__tests__').filter(x=>x.endsWith('.js')).sort())cp.execFileSync(process.execPath,['.companions-build/__tests__/'+f],{stdio:'inherit'})\"",
++    "typecheck:combat-balance": "tsc -p tsconfig.combat-balance.json --noEmit",
++    "test:combat-balance": "node -e \"require('fs').rmSync('.combat-balance-build',{recursive:true,force:true})\" && tsc -p tsconfig.combat-balance.json && node .combat-balance-build/__tests__/combat-balance-contracts.js"
+   },
+   "devDependencies": {
+     "@types/node": "^22.0.0",
+diff --git a/backend/src/server/balance/__tests__/combat-balance-contracts.ts b/backend/src/server/balance/__tests__/combat-balance-contracts.ts
+new file mode 100644
+index 0000000..43f2798
+--- /dev/null
++++ b/backend/src/server/balance/__tests__/combat-balance-contracts.ts
+@@ -0,0 +1,37 @@
++import {strict as assert} from 'node:assert';
++import {CHARACTER_PROGRESSION_BALANCE,CLASS_OUTPUT_BUDGETS,COMBAT_BALANCE_SURFACES,COMPANION_COMBAT_BALANCE,COMBAT_ECONOMY_GUARDRAILS,COOP_ROLE_TARGET,COOP_SYNC_TARGETS,ELITE_REGION_SCALING,EXPEDITION_TIER_BALANCE,FULL_COMBAT_BALANCE_VERSION,GUILD_BOSS_BALANCE,PVP_BALANCE,RAID_BALANCE,REGIONAL_BOSS_BASELINES,REGIONAL_BOSS_OUTCOME_TARGETS,REGION_POWER_CURVE} from '../combat-balance';
++const ok=(v:unknown,m:string)=>assert.ok(v,m);
++
++ok(/^2026-09-12\./.test(FULL_COMBAT_BALANCE_VERSION),'balance version must be explicit');
++assert.equal(CLASS_OUTPUT_BUDGETS.length,9,'all nine launch classes must have a role/output budget');
++assert.equal(new Set(CLASS_OUTPUT_BUDGETS.map(x=>x.name)).size,9,'class budget names must be unique');
++for(const c of CLASS_OUTPUT_BUDGETS){ok(c.minPureDpsReference>0&&c.maxPureDpsReference>=c.minPureDpsReference,`${c.name} invalid output band`);if(c.role==='damage'){ok(c.minPureDpsReference>=.97&&c.maxPureDpsReference<=1.04,`${c.name} damage class drift`);}else ok(c.maxPureDpsReference<.75,`${c.name} non-DPS output too high`);}
++
++ok(CHARACTER_PROGRESSION_BALANCE.supersededVerticalSliceActiveEquivalentHours.superseded,'stale 18–30h target must not regain authority');
++ok(CHARACTER_PROGRESSION_BALANCE.asterfallLevel25ProductiveCombatHours.min>=150,'Asterfall idle progression unexpectedly collapsed');
++ok(CHARACTER_PROGRESSION_BALANCE.asterfallCalendarDays.optimizer.max<CHARACTER_PROGRESSION_BALANCE.asterfallCalendarDays.normal.max,'active optimization should reduce calendar time');
++
++for(let i=1;i<REGION_POWER_CURVE.length;i++){ok(REGION_POWER_CURVE[i].bossLevel>REGION_POWER_CURVE[i-1].bossLevel,'regional boss levels must rise');ok(REGION_POWER_CURVE[i].bossAttackIndex>REGION_POWER_CURVE[i-1].bossAttackIndex,'boss index must rise');}
++for(const r of REGION_POWER_CURVE)ok(r.ratio>=.95&&r.ratio<=1.06,`${r.region} stat curve became a gear wall or overgear trivialization`);
++for(let i=1;i<REGIONAL_BOSS_BASELINES.length;i++){const a=REGIONAL_BOSS_BASELINES[i-1],b=REGIONAL_BOSS_BASELINES[i];ok(b.hp>a.hp&&b.attack>a.attack&&b.accuracy>a.accuracy,'regional boss stats must rise');ok(b.attackInterval<=a.attackInterval,'later boss basic cadence must not become slower without explicit design');}
++ok(REGIONAL_BOSS_OUTCOME_TARGETS.tankUnmitigatedBasicSurvivalMinimum>=6,'tank survival learning window regressed');
++ok(!REGIONAL_BOSS_OUTCOME_TARGETS.hardSingleGearProfileRequired,'bosses must not hard-lock one gear profile');
++
++for(let i=1;i<ELITE_REGION_SCALING.length;i++){ok(ELITE_REGION_SCALING[i].hpMultiplier>=ELITE_REGION_SCALING[i-1].hpMultiplier,'elite HP multiplier regressed');ok(ELITE_REGION_SCALING[i].damageMultiplier>=ELITE_REGION_SCALING[i-1].damageMultiplier,'elite damage multiplier regressed');}
++for(const e of ELITE_REGION_SCALING){ok(e.damageMultiplier<e.hpMultiplier,'elites should gain more durability than burst lethality');assert.equal(e.pity,25);}
++
++assert.deepEqual(COOP_ROLE_TARGET,{tank:1,damage:2,support:1});
++for(let i=1;i<COOP_SYNC_TARGETS.length;i++){ok(COOP_SYNC_TARGETS[i].targetPower>COOP_SYNC_TARGETS[i-1].targetPower,'co-op target power must rise');ok(COOP_SYNC_TARGETS[i].softCapPower>COOP_SYNC_TARGETS[i].targetPower,'soft cap must sit above target');}
++for(let i=0;i<EXPEDITION_TIER_BALANCE.length;i++){const t=EXPEDITION_TIER_BALANCE[i];ok(t.clearMin<=t.clearMid&&t.clearMid<=t.clearMax,`Tier ${t.tier} invalid clear band`);if(i){const p=EXPEDITION_TIER_BALANCE[i-1];ok(t.difficultyIndex>p.difficultyIndex,'difficulty must rise');ok(t.clearMid<p.clearMid,'target clear rate must fall');ok(t.rewardMultiplier>p.rewardMultiplier,'risk must increase reward efficiency');}}
++
++assert.equal(COMPANION_COMBAT_BALANCE.rarityTotalPower.standard,1);ok(COMPANION_COMBAT_BALANCE.rarityTotalPower.prestige<=1.17,'Prestige power budget inflated');ok(COMPANION_COMBAT_BALANCE.characterAssistTypicalContribution.hardCap<=.12,'Companion assist dominance');ok(COMPANION_COMBAT_BALANCE.trialEnemyGrowth<1.03,'Companion Trial floor exponential too steep');
++
++assert.equal(PVP_BALANCE.ranked.rarityBonus,0,'ranked PvP cannot preserve PvE rarity stat bonus');assert.equal(PVP_BALANCE.ranked.achievementBonus,0,'achievement power must not bias ranked PvP');ok(PVP_BALANCE.ranked.targetWinRate.min===.48&&PVP_BALANCE.ranked.targetWinRate.max===.52,'ranked fair-match band drift');ok(PVP_BALANCE.ranked.targetDurationSeconds.min>=90&&PVP_BALANCE.ranked.targetDurationSeconds.max<=150,'ranked duration drift');
++
++for(let i=1;i<GUILD_BOSS_BALANCE.length;i++){ok(GUILD_BOSS_BALANCE[i].targetPowerSync>GUILD_BOSS_BALANCE[i-1].targetPowerSync,'guild boss sync must rise');ok(GUILD_BOSS_BALANCE[i].memberContributionCap<=GUILD_BOSS_BALANCE[i-1].memberContributionCap,'higher guild boss must not be easier to solo-carry');}
++assert.equal(RAID_BALANCE.partySize,8);assert.equal(RAID_BALANCE.requiredLevel,100);ok(RAID_BALANCE.companionContributionPerPlayer.max<=.05,'raid companion contribution cap drift');ok(!RAID_BALANCE.challengeModeExclusivePower,'challenge raids cannot gate exclusive mandatory power');
++
++const caps=Object.values(COMBAT_ECONOMY_GUARDRAILS.directGearDropCaps);for(let i=1;i<caps.length;i++)ok(caps[i]<caps[i-1],'rarer direct gear must have a lower cap');assert.equal(COMBAT_ECONOMY_GUARDRAILS.companionTrialFullRepeat.companionEssence,0);assert.equal(COMBAT_ECONOMY_GUARDRAILS.companionTrialFullRepeat.bondstones,0);
++ok(COMBAT_BALANCE_SURFACES.some(x=>x.status==='real_repo_validation'),'handoff must preserve explicit real-repo validation boundary');
++
++console.log('full-combat-balance-contracts: PASS');
+diff --git a/backend/src/server/balance/combat-balance.ts b/backend/src/server/balance/combat-balance.ts
+new file mode 100644
+index 0000000..843231c
+--- /dev/null
++++ b/backend/src/server/balance/combat-balance.ts
+@@ -0,0 +1,166 @@
++/**
++ * VELDRYN full-combat balance authority.
++ *
++ * This module intentionally separates three things that had become conflated in
++ * older content tables:
++ *  - UI / recommendation power,
++ *  - real combat-stat scaling,
++ *  - progression time/economy pacing.
++ *
++ * Keep runtime-specific combat simulators authoritative for outcomes. These
++ * values are guardrails and cross-system contracts, not a replacement for the
++ * combat engine.
++ */
++export type BalanceEvidence='runtime_verified'|'seeded_verified'|'data_calibrated'|'real_repo_required';
++export type CombatRole='tank'|'damage'|'support';
++
++export const FULL_COMBAT_BALANCE_VERSION='2026-09-12.v1';
++
++export const CHARACTER_PROGRESSION_BALANCE={
++  /** Current implemented idle/combat-only Asterfall test band. */
++  asterfallLevel25ProductiveCombatHours:{min:175,max:288,evidence:'runtime_verified' as BalanceEvidence},
++  /** Observed/accepted player-profile calendar pacing around the current idle loop. */
++  asterfallCalendarDays:{
++    normal:{min:35,max:55},
++    active:{min:24,max:38},
++    optimizer:{min:18,max:30},
++  },
++  /** Historical vertical-slice target must not be used as the character-XP authority. */
++  supersededVerticalSliceActiveEquivalentHours:{min:18,max:30,superseded:true},
++  openingLevel5Minutes:{min:20,max:60},
++  bossFirstClearSeriousAttempts:{min:2,max:6},
++} as const;
++
++export interface ClassOutputBudget{
++  id:string;name:string;role:CombatRole;minPureDpsReference:number;maxPureDpsReference:number;identity:string;evidence:BalanceEvidence;
++}
++export const CLASS_OUTPUT_BUDGETS:readonly ClassOutputBudget[]=[
++  {id:'CLS_001',name:'Ironwarden',role:'tank',minPureDpsReference:.55,maxPureDpsReference:.65,identity:'balanced mitigation / threat',evidence:'data_calibrated'},
++  {id:'TANK_02',name:'Bastion',role:'tank',minPureDpsReference:.50,maxPureDpsReference:.60,identity:'highest shielding / lowest personal damage',evidence:'real_repo_required'},
++  {id:'TANK_03',name:'Dreadguard',role:'tank',minPureDpsReference:.60,maxPureDpsReference:.70,identity:'control + self-sustain / higher tank damage',evidence:'real_repo_required'},
++  {id:'CLS_002',name:'Dawnkeeper',role:'support',minPureDpsReference:.35,maxPureDpsReference:.45,identity:'primary restoration / cleanse',evidence:'data_calibrated'},
++  {id:'CLS_003',name:'Wayfinder',role:'damage',minPureDpsReference:.99,maxPureDpsReference:1.01,identity:'reliable ranged reference',evidence:'data_calibrated'},
++  {id:'CLS_004',name:'Ravager',role:'damage',minPureDpsReference:.98,maxPureDpsReference:1.03,identity:'burst + armor break',evidence:'data_calibrated'},
++  {id:'CLS_005',name:'Hexweaver',role:'damage',minPureDpsReference:.97,maxPureDpsReference:1.02,identity:'setup / DoT / debuff utility',evidence:'data_calibrated'},
++  {id:'CLS_006',name:'Knife Dancer',role:'damage',minPureDpsReference:.99,maxPureDpsReference:1.04,identity:'execution difficulty / mobility',evidence:'data_calibrated'},
++  {id:'CLS_007',name:'Stonecaller',role:'support',minPureDpsReference:.45,maxPureDpsReference:.55,identity:'mitigation / resource utility',evidence:'data_calibrated'},
++] as const;
++
++export const REGION_POWER_CURVE=[
++  {region:'Asterfall',entryLevel:1,bossLevel:25,playerIndex:1,bossAttackIndex:1,ratio:1,evidence:'runtime_verified' as BalanceEvidence},
++  {region:'Sunscar',entryLevel:25,bossLevel:45,playerIndex:1.888,bossAttackIndex:1.912,ratio:.987,evidence:'data_calibrated' as BalanceEvidence},
++  {region:'Frostmarch',entryLevel:45,bossLevel:70,playerIndex:3.355,bossAttackIndex:3.309,ratio:1.014,evidence:'data_calibrated' as BalanceEvidence},
++  {region:'Ashlands',entryLevel:70,bossLevel:100,playerIndex:5.94,bossAttackIndex:5.735,ratio:1.036,evidence:'data_calibrated' as BalanceEvidence},
++] as const;
++
++export const REGIONAL_BOSS_BASELINES=[
++  {id:'BOSS_001',name:'Fallen Knight',level:25,hp:180_000,attack:68,attackInterval:2.5,accuracy:420,enrageSeconds:360},
++  {id:'BOSS_002',name:'Sand Tyrant',level:45,hp:520_000,attack:130,attackInterval:2.4,accuracy:760,enrageSeconds:360},
++  {id:'BOSS_003',name:'Frost Wyrm',level:70,hp:1_450_000,attack:225,attackInterval:2.3,accuracy:1350,enrageSeconds:390},
++  {id:'BOSS_004',name:'Cinder Regent',level:100,hp:4_100_000,attack:390,attackInterval:2.2,accuracy:2400,enrageSeconds:420},
++] as const;
++
++export const REGIONAL_BOSS_OUTCOME_TARGETS={
++  preparedFirstClearWinRate:{min:.60,max:.80},
++  intendedClearLeadBeforeEnrageSeconds:{min:45,max:75},
++  tankUnmitigatedBasicSurvivalMinimum:6,
++  hardSingleGearProfileRequired:false,
++} as const;
++
++export const ELITE_REGION_SCALING=[
++  {region:'Asterfall',hpMultiplier:1.8,damageMultiplier:1.45,rareDropChance:.025,pity:25},
++  {region:'Sunscar',hpMultiplier:2.0,damageMultiplier:1.50,rareDropChance:.025,pity:25},
++  {region:'Frostmarch',hpMultiplier:2.1,damageMultiplier:1.55,rareDropChance:.025,pity:25},
++  {region:'Ashlands',hpMultiplier:2.2,damageMultiplier:1.60,rareDropChance:.025,pity:25},
++] as const;
++
++export const COOP_ROLE_TARGET={tank:1,damage:2,support:1} as const;
++export const COOP_SYNC_TARGETS=[
++  {tier:'Asterfall T1',level:12,targetPower:500,softCapPower:575,overcapRetention:.35},
++  {tier:'Asterfall T2',level:18,targetPower:760,softCapPower:875,overcapRetention:.35},
++  {tier:'Asterfall T3',level:23,targetPower:1040,softCapPower:1195,overcapRetention:.35},
++  {tier:'Sunscar T1',level:30,targetPower:1450,softCapPower:1665,overcapRetention:.35},
++] as const;
++
++export const EXPEDITION_TIER_BALANCE=[
++  {tier:1,difficultyIndex:1.00,clearMin:.90,clearMid:.95,clearMax:.97,rewardMultiplier:1.00},
++  {tier:2,difficultyIndex:1.06,clearMin:.82,clearMid:.87,clearMax:.92,rewardMultiplier:1.10},
++  {tier:3,difficultyIndex:1.11,clearMin:.70,clearMid:.775,clearMax:.85,rewardMultiplier:1.25},
++  {tier:4,difficultyIndex:1.19,clearMin:.55,clearMid:.625,clearMax:.70,rewardMultiplier:1.45},
++  {tier:5,difficultyIndex:1.29,clearMin:.35,clearMid:.45,clearMax:.55,rewardMultiplier:1.70},
++] as const;
++
++export const CHARACTER_TRIAL_BALANCE={
++  floorCount:30,
++  bossEvery:5,
++  synergyCombatCap:1.08,
++  recommendationBase:900,
++  recommendationGrowth:1.075,
++  evidence:'data_calibrated' as BalanceEvidence,
++} as const;
++
++export const COMPANION_COMBAT_BALANCE={
++  characterAssistTypicalContribution:{min:.06,max:.10,hardCap:.12},
++  raidContributionPerPlayer:{min:.02,max:.05},
++  rarityTotalPower:{standard:1,rare:1.09,elite:1.12,prestige:1.155},
++  trialRecommendedPower:{floor1:2750,floor30:4300},
++  trialEnemyGrowth:1.020,
++  trialFloor30EndgameClearTarget:{min:.75,max:.95},
++  evidence:'seeded_verified' as BalanceEvidence,
++} as const;
++
++export const PVP_BALANCE={
++  ranked:{gearNormalized:true,combatCompanionNormalized:true,rarityBonus:0,achievementBonus:0,targetWinRate:{min:.48,max:.52},targetDurationSeconds:{min:90,max:150}},
++  casual:{gearNormalized:false,combatCompanionNormalized:true,targetDurationSeconds:{min:60,max:180}},
++  synergyCombatCap:1.08,
++} as const;
++
++export const GUILD_BOSS_BALANCE=[
++  {id:'GBOSS_001',region:'Asterfall',targetPowerSync:650,memberContributionCap:.08,attemptsPerMember:3,windowDays:3},
++  {id:'GBOSS_002',region:'Asterfall',targetPowerSync:950,memberContributionCap:.07,attemptsPerMember:3,windowDays:3},
++  {id:'GBOSS_003',region:'Sunscar',targetPowerSync:1550,memberContributionCap:.06,attemptsPerMember:3,windowDays:3},
++  {id:'GBOSS_004',region:'Frostmarch',targetPowerSync:2400,memberContributionCap:.05,attemptsPerMember:3,windowDays:3},
++] as const;
++
++export const RAID_BALANCE={
++  partySize:8,
++  requiredLevel:100,
++  bossEnrageSeconds:{min:420,max:600},
++  companionContributionPerPlayer:{min:.02,max:.05},
++  personalLootRollsPerBossPerWeek:1,
++  pityEligibleBossKills:40,
++  targetedCraftFallbackWeeks:{min:6,max:10},
++  challengeModeExclusivePower:false,
++  evidence:'data_calibrated' as BalanceEvidence,
++} as const;
++
++export const COMBAT_ECONOMY_GUARDRAILS={
++  /** Direct equipment is a jackpot shortcut; crafting is the reliable path. */
++  directGearDropCaps:{common:.025,uncommon:.0125,rare:.0025,epic:.0005,legendary:.0001,mythic:.00002},
++  bossDirectGearCapMultiplier:2,
++  lateAsterfallPlus10GoldFarmHours:{min:6,max:14,absoluteMax:20},
++  regionalRareGearFallbackPity:75,
++  companionTrialMonthlyFirstClear:{companionEssence:3570,gold:73050,bondstones:12},
++  companionTrialFullRepeat:{companionEssence:0,gold:1995,bondstones:0},
++  coopEnhancedRewardCaps:{daily:3,weekly:12},
++  coopBossBonusWeeklyPerRegion:3,
++  rankedPvpEnhancedRewardCaps:{daily:5,weekly:25},
++} as const;
++
++export interface CombatBalanceSurface{
++  area:string;evidence:BalanceEvidence;status:'balanced'|'retuned'|'monitor'|'real_repo_validation';note:string;
++}
++export const COMBAT_BALANCE_SURFACES:readonly CombatBalanceSurface[]=[
++  {area:'Combat Companions / assist',evidence:'runtime_verified',status:'retuned',note:'6–10% typical owner contribution; lower-DPS classes gain more from Damage companions because same-role equip remains forbidden.'},
++  {area:'Companion Trials',evidence:'seeded_verified',status:'retuned',note:'Recommendation and enemy-stat curves separated; Floor 30 calibrated by real combat seeds.'},
++  {area:'Asterfall ordinary combat',evidence:'runtime_verified',status:'balanced',note:'Existing progression difficulty already offsets collection/Faith/Companion power; no blind global enemy buff.'},
++  {area:'Asterfall character progression',evidence:'runtime_verified',status:'monitor',note:'Use productive idle-combat hours/calendar days, not the superseded 18–30h vertical-slice row.'},
++  {area:'Class PvE role budgets',evidence:'data_calibrated',status:'monitor',note:'7 legacy class budgets are defined; Bastion/Dreadguard require full current-repository combat simulation.'},
++  {area:'Regional elites',evidence:'data_calibrated',status:'balanced',note:'HP/damage multipliers rise modestly by region; pity remains bounded.'},
++  {area:'Regional bosses',evidence:'data_calibrated',status:'balanced',note:'Player/boss indexed power remains within ~4% of parity; mechanics carry difficulty.'},
++  {area:'Co-op / Expedition tiers',evidence:'seeded_verified',status:'balanced',note:'Existing simulated clear bands broadly match Tier I–V targets; preserve current tier indices.'},
++  {area:'Character Triad Trials',evidence:'data_calibrated',status:'real_repo_validation',note:'Keep 30-floor/boss-every-5/synergy<=8%; run full current-repo squad combat before numeric retune.'},
++  {area:'Arena PvP',evidence:'data_calibrated',status:'real_repo_validation',note:'Ranked must normalize gear and Combat Companion rarity power; aim 48–52% balanced matchup win rate.'},
++  {area:'Guild bosses',evidence:'data_calibrated',status:'real_repo_validation',note:'Contribution caps decrease as tier rises; validate live snapshot damage in complete repository.'},
++  {area:'Raids',evidence:'data_calibrated',status:'real_repo_validation',note:'7–10m enrages and 2–5% companion contribution are contracts; full raid stat blocks/runtime are not in recovered source.'},
++] as const;
+diff --git a/backend/src/server/companions/__tests__/phase4-balance.ts b/backend/src/server/companions/__tests__/phase4-balance.ts
+new file mode 100644
+index 0000000..6db4e95
+--- /dev/null
++++ b/backend/src/server/companions/__tests__/phase4-balance.ts
+@@ -0,0 +1,45 @@
++import {COMPANION_MISSIONS,COMPANION_RARITY_MAX_LEVEL,COMPANION_SERVER_DEFINITIONS,COMPANION_TRIAL_ENEMY_GROWTH,COMPANION_TRIAL_MITIGATION_CONSTANT,companionServerDefinition,companionTechnique,companionTechniques,companionTrialEnemyScale,companionTrialRecommendedPower,companionTrialReward} from '../content';
++import {buildOwnedCompanionCombatant} from '../combat-adapter';
++import {individualCompanionPower} from '../team';
++import {awardCompanionBondXpServer} from '../progression-v2';
++import type {CompanionRarity,CompanionRole} from '../policy';
++import type {OwnedCompanionSnapshot} from '../domain';
++
++const ok=(v:unknown,m:string)=>{if(!v)throw new Error(m);};
++const near=(v:number,min:number,max:number,m:string)=>{if(v<min||v>max)throw new Error(`${m}: ${v} not in ${min}-${max}`);};
++const maxed=(id:string):OwnedCompanionSnapshot=>{const d=companionServerDefinition(id)!;return {companionId:id,level:COMPANION_RARITY_MAX_LEVEL[d.rarity],xp:0,ascensionTier:(d.rarity==='standard'||d.rarity==='rare')?2:3,bondLevel:10,bondXp:2520,bondTraitUnlocked:true,selectedTechniqueId:companionTechniques(id)[0]?.id,mastered:d.rarity==='prestige'};};
++
++// Trial guidance and enemy combat difficulty are deliberately separate units.
++ok(companionTrialRecommendedPower(1)===2750,'Floor 1 recommendation drifted');
++ok(companionTrialRecommendedPower(30)===4300,'Floor 30 recommendation drifted');
++ok(companionTrialEnemyScale(30)<2,'Enemy curve became too steep');
++ok(COMPANION_TRIAL_ENEMY_GROWTH===1.020,'Enemy growth requires a seeded balance rerun when changed');
++ok(COMPANION_TRIAL_MITIGATION_CONSTANT===100,'Companion-only mitigation calibration drifted');
++for(let f=2;f<=30;f++)ok(companionTrialRecommendedPower(f)>companionTrialRecommendedPower(f-1),'Recommended power must increase monotonically');
++
++// Rarity targets are TOTAL intended power bands, not another multiplier on old raw rarity stats.
++for(const role of ['damage','tank','support'] as CompanionRole[]){
++ const groups=new Map<CompanionRarity,number[]>();
++ for(const d of COMPANION_SERVER_DEFINITIONS.filter(x=>x.role===role)){const arr=groups.get(d.rarity)??[];arr.push(individualCompanionPower(maxed(d.id)));groups.set(d.rarity,arr);}
++ const standard=groups.get('standard')?.[0];if(!standard)continue;
++ const avg=(r:CompanionRarity)=>{const a=groups.get(r);return a?.length?a.reduce((x,y)=>x+y,0)/a.length:undefined;};
++ const rare=avg('rare'),elite=avg('elite'),prestige=avg('prestige');
++ if(rare)near(rare/standard,1.08,1.11,`${role} Rare total power`);
++ if(elite)near(elite/standard,1.11,1.14,`${role} Elite total power`);
++ if(prestige)near(prestige/standard,1.14,1.18,`${role} Prestige total power`);
++}
++
++// Tank/support actives must be meaningful in standalone combat, unlike the legacy assist coefficients.
++for(const id of ['UNIT_002','UNIT_003','UNIT_006','UNIT_008']){const p=maxed(id),c=buildOwnedCompanionCombatant(p,{mode:'companion_trial'}),fx=c.abilities[0].effects[0],amount=c.stats.healingPower*(fx.coeff??0)+(fx.flat??0);if(fx.kind==='shield'||fx.kind==='heal')ok(amount>=c.stats.maxHp*.04,`${id} standalone ${fx.kind} is still negligible`);}
++
++// Repeat Trials remain useful for combat XP/Bond but are not an infinite Essence faucet.
++for(const f of [1,10,20,30]){const r=companionTrialReward(f,false,f%5===0);ok(r.companionEssence===0,'Repeat Trial Essence faucet returned');ok(r.bondstones===0,'Repeat Trial Bondstones returned');ok(r.gold<=120,'Repeat Trial Gold too high');}
++
++// Sanctuary missions are a slow passive supplement. At C grade with three Pens,
++// nonstop use of any one mission stays near ~100-135 Essence/day rather than 500+.
++for(const mission of COMPANION_MISSIONS){const perDay=3*(86_400_000/mission.durationMs)*mission.baseRewards.companionEssence;ok(perDay<=140,`${mission.id} passive Essence/day too high: ${perDay}`);ok(mission.baseRewards.gold<=mission.costs.gold,`${mission.id} is a base-grade net Gold faucet`);}
++
++// Bond thresholds are cumulative and shared with the mobile model.
++let bond:OwnedCompanionSnapshot={companionId:'UNIT_001',level:1,xp:0,ascensionTier:0,bondLevel:1,bondXp:0,bondTraitUnlocked:false};bond=awardCompanionBondXpServer(bond,89);ok(bond.bondLevel===1&&bond.bondXp===89,'Bond advanced early');bond=awardCompanionBondXpServer(bond,1);ok(bond.bondLevel===2&&bond.bondXp===90,'Bond 2 cumulative threshold wrong');bond=awardCompanionBondXpServer(bond,120);ok(bond.bondLevel===3&&bond.bondXp===210,'Bond 3 cumulative threshold wrong');
++
++console.log('companion-phase4-balance: PASS');
+diff --git a/backend/src/server/companions/combat-adapter.ts b/backend/src/server/companions/combat-adapter.ts
+index 28d5bd6..34e7dc6 100644
+--- a/backend/src/server/companions/combat-adapter.ts
++++ b/backend/src/server/companions/combat-adapter.ts
+@@ -3,15 +3,34 @@ import type {CompanionCombatContext,CompanionCombatantDefinition,CompanionServer
+ 
+ export interface CompanionCombatBuildContext{mode:CompanionCombatContext;ownerId?:string;teamSynergyMultiplier?:number;teamHasteBonus?:number;}
+ const COMMON_MAX_INVESTMENT_MULTIPLIER=1.50;
++const clamp=(value:number,min:number,max:number)=>Math.max(min,Math.min(max,value));
++const ROLE_ANCHORS={
++ damage:{hp:180,power:22,defense:12,attackSpeed:2.0},
++ tank:{hp:260,power:14,defense:24,attackSpeed:2.6},
++ support:{hp:150,power:12,defense:10,attackSpeed:2.2},
++} as const;
+ 
+ /**
+- * Level scaling is rarity-aware so max-level endpoints land near the agreed total
+- * power budgets. There is no second raw rarity multiplier later in Team Power.
++ * Legacy Combat Unit content already encoded rarity through raw stats. The expanded
++ * Companion system also encodes rarity through level ceiling/scaling, so raw stat
++ * variance is compressed around a role anchor before progression is applied.
++ * This preserves identity (fast/slow, sturdy/frail) without double-dipping rarity.
+  */
++export function companionBalancedBaseStats(def:CompanionServerDefinition){
++ const a=ROLE_ANCHORS[def.role],b=def.baseStats;
++ return {
++  hp:a.hp*clamp(b.hp/a.hp,.95,1.05),
++  power:a.power*clamp(b.power/a.power,.95,1.05),
++  defense:a.defense*clamp(b.defense/a.defense,.95,1.05),
++  attackSpeed:a.attackSpeed*clamp(b.attackSpeed/a.attackSpeed,.90,1.10),
++ };
++}
++
++/** Level scaling carries the systematic rarity advantage. */
+ export function companionInvestmentMultiplier(def:CompanionServerDefinition,progress:OwnedCompanionSnapshot){
+  const max=COMPANION_RARITY_MAX_LEVEL[def.rarity];
+  const endpoint=COMMON_MAX_INVESTMENT_MULTIPLIER*COMPANION_RARITY_TARGET[def.rarity];
+- const fraction=max<=1?1:Math.max(0,Math.min(1,(progress.level-1)/(max-1)));
++ const fraction=max<=1?1:clamp((progress.level-1)/(max-1),0,1);
+  return 1+(endpoint-1)*fraction;
+ }
+ function techniqueEffects(progress:OwnedCompanionSnapshot){const t=progress.selectedTechniqueId?companionTechnique(progress.selectedTechniqueId):undefined;return t?.companionId===progress.companionId?t.effects:[];}
+@@ -21,31 +40,37 @@ function resolvedTarget(def:CompanionServerDefinition,ctx:CompanionCombatBuildCo
+  if(wanted==='owner')return {target:'lowest_hp_ally',exactTargetId:ctx.ownerId};
+  return {target:wanted as EngineTargetRule};
+ }
+-function engineEffect(def:CompanionServerDefinition,progress:OwnedCompanionSnapshot):EngineAbilityEffect{
+- const levelCoeff=def.active.baseCoeff+def.active.perLevelCoeff*Math.max(0,progress.level-1);
+- const tDamage=effectValue(progress,'damage'),tHeal=effectValue(progress,'heal_strength'),tShield=effectValue(progress,'shield_strength');
++function balancedActiveCoeff(def:CompanionServerDefinition,progress:OwnedCompanionSnapshot){
++ const raw=def.active.baseCoeff+def.active.perLevelCoeff*Math.max(0,progress.level-1);
++ // Large legacy damage-coefficient jumps used to be part of rarity. Compress them
++ // so abilities keep identity while the new rarity budget remains the main tier edge.
++ return def.active.effectKind==='damage'?1+(raw-1)*.25:raw;
++}
++function engineEffects(def:CompanionServerDefinition,progress:OwnedCompanionSnapshot,context:CompanionCombatBuildContext):EngineAbilityEffect[]{
++ const levelCoeff=balancedActiveCoeff(def,progress),tDamage=effectValue(progress,'damage'),tHeal=effectValue(progress,'heal_strength'),tShield=effectValue(progress,'shield_strength');
+  switch(def.active.effectKind){
+-  case 'damage':return {kind:'damage',coeff:Math.max(.05,levelCoeff*(1+tDamage)),tag:'companion_active'};
+-  case 'shield':return {kind:'shield',value:Math.max(.01,levelCoeff*(1+tShield)),tag:'companion_active'};
+-  case 'heal':return {kind:'heal',coeff:Math.max(.02,levelCoeff*(1+tHeal)),tag:'companion_active'};
+-  case 'interrupt':return {kind:'interrupt',coeff:Math.max(.05,levelCoeff),tag:'companion_active'};
+-  case 'mitigation':return {kind:'buff',value:Math.max(.01,levelCoeff),durationMs:5000,tag:'damage_reduction'};
+-  case 'utility':default:return def.role==='support'?{kind:'buff',value:Math.max(.01,levelCoeff),durationMs:5000,tag:'companion_utility'}:{kind:'damage',coeff:Math.max(.05,levelCoeff),tag:'companion_active'};
++  case 'damage':return [{kind:'damage',coeff:Math.max(.05,levelCoeff*(1+tDamage)),tag:'companion_active'}];
++  case 'shield':return [{kind:'shield',coeff:Math.max(.01,levelCoeff*(1+tShield)),tag:'companion_active'}];
++  case 'heal':return [{kind:'heal',coeff:Math.max(.02,levelCoeff*(1+tHeal)),tag:'companion_active'}];
++  case 'interrupt':return context.mode==='character_assist'?[{kind:'interrupt',coeff:Math.max(.05,levelCoeff),tag:'companion_active'}]:[{kind:'damage',coeff:Math.max(.50,levelCoeff*.9),tag:'companion_active'},{kind:'interrupt',coeff:1,tag:'companion_interrupt'}];
++  case 'mitigation':return [{kind:'buff',value:-Math.max(.01,levelCoeff),durationMs:5000,tag:'damage_taken'}];
++  case 'utility':default:
++   if(def.role==='support'&&context.mode!=='character_assist')return [{kind:'heal',coeff:clamp(levelCoeff*.18,.035,.08)*(1+tHeal),tag:'companion_utility'}];
++   return def.role==='support'?[{kind:'buff',value:Math.max(.01,levelCoeff),durationMs:5000,tag:'companion_utility'}]:[{kind:'damage',coeff:Math.max(.05,levelCoeff),tag:'companion_active'}];
+  }
+ }
+ export function buildCompanionCombatant(def:CompanionServerDefinition,progress:OwnedCompanionSnapshot,context:CompanionCombatBuildContext):CompanionCombatantDefinition{
+  if(progress.companionId!==def.id)throw new Error('companion_progress_definition_mismatch');
+- const scale=companionInvestmentMultiplier(def,progress),synergy=Math.max(1,Math.min(1.06,context.teamSynergyMultiplier??1));
+- const hasteBonus=Math.max(0,Math.min(.06,context.teamHasteBonus??0));
+- const cooldownChange=effectValue(progress,'cooldown');
+- const target=resolvedTarget(def,context);
+- const ability:EngineAbilityDefinition={id:def.active.id,name:def.active.name,cooldownMs:Math.max(3000,Math.round(def.active.cooldownMs*(1+cooldownChange))),castTimeMs:0,target:target.target,exactTargetId:target.exactTargetId,effects:[engineEffect(def,progress)],priority:def.role==='support'?85:def.role==='tank'?80:70,aiCondition:def.role==='support'?'ally_below_50':'always',tags:['combat_companion',def.role,context.mode,...techniqueEffects(progress).map(x=>`technique:${x.kind}:${x.value}`)]};
+- const bond=progress.bondTraitUnlocked?1.03:1,ascension=1+progress.ascensionTier*.006;
+- // Bond/Ascension are intentionally small identity/progression nudges. Rarity's full budget is already in scale.
+- const derived=scale*synergy*bond*ascension;
+- return {id:def.id,name:def.name,team:'players',role:def.role,level:progress.level,stats:{maxHp:Math.round(def.baseStats.hp*derived),attackPower:Number((def.baseStats.power*derived).toFixed(2)),healingPower:Number((def.baseStats.power*(def.role==='support'?.9:.35)*derived).toFixed(2)),defense:Number((def.baseStats.defense*derived).toFixed(2)),accuracy:Math.min(.98,.84+progress.level*.002),evasion:Math.min(.22,.04+(def.role==='damage'?.03:0)),critChance:def.role==='damage'?.10:.05,critMultiplier:1.5,haste:Math.min(.45,.04+hasteBonus+Math.max(0,2.5-def.baseStats.attackSpeed)*.03)},basicAttackMs:Math.max(850,Math.round(def.baseStats.attackSpeed*1000)),basicAttackCoeff:def.role==='damage'?.72:def.role==='tank'?.46:.40,abilities:[ability],tags:['combat_companion',def.rarity,def.originId,context.mode]};
++ const base=companionBalancedBaseStats(def),scale=companionInvestmentMultiplier(def,progress),synergy=clamp(context.teamSynergyMultiplier??1,1,1.06),hasteBonus=clamp(context.teamHasteBonus??0,0,.06),cooldownChange=effectValue(progress,'cooldown'),target=resolvedTarget(def,context);
++ const bond=progress.bondTraitUnlocked?1.03:1,ascension=1+progress.ascensionTier*.006,derived=scale*synergy*bond*ascension;
++ const maxHp=Math.round(base.hp*derived),attackPower=Number((base.power*derived).toFixed(2));
++ // Standalone Tank/Support coefficients represent percentages/utility in source
++ // content. Calibrate healingPower to companion-scale HP so shields/heals matter in
++ // companion-only combat without inflating character-assist output.
++ const standalone=context.mode!=='character_assist';
++ const healingPower=standalone?(def.role==='support'?maxHp*2.5:def.role==='tank'?maxHp*2:attackPower*.35):base.power*(def.role==='support'?.9:.35)*derived;
++ const ability:EngineAbilityDefinition={id:def.active.id,name:def.active.name,cooldownMs:Math.max(3000,Math.round(def.active.cooldownMs*(1+cooldownChange))),castTimeMs:0,target:target.target,exactTargetId:target.exactTargetId,effects:engineEffects(def,progress,context),priority:def.role==='support'?85:def.role==='tank'?80:70,aiCondition:def.role==='support'?'ally_below_50':'always',tags:['combat_companion',def.role,context.mode,...techniqueEffects(progress).map(x=>`technique:${x.kind}:${x.value}`)]};
++ return {id:def.id,name:def.name,team:'players',role:def.role,level:progress.level,stats:{maxHp,attackPower,healingPower:Number(healingPower.toFixed(2)),defense:Number((base.defense*derived).toFixed(2)),accuracy:Math.min(.98,.84+progress.level*.002),evasion:Math.min(.22,.04+(def.role==='damage'?.03:0)),critChance:def.role==='damage'?.10:.05,critMultiplier:1.5,haste:Math.min(.45,.04+hasteBonus+Math.max(0,2.5-base.attackSpeed)*.03)},basicAttackMs:Math.max(850,Math.round(base.attackSpeed*1000)),basicAttackCoeff:def.role==='damage'?.72:def.role==='tank'?.46:.40,abilities:[ability],tags:['combat_companion',def.rarity,def.originId,context.mode]};
+ }
+ export function buildOwnedCompanionCombatant(progress:OwnedCompanionSnapshot,context:CompanionCombatBuildContext){const def=companionServerDefinition(progress.companionId);if(!def)throw new Error('unknown_companion');return buildCompanionCombatant(def,progress,context);}
+-
+-/** Current combat-engine adapters can honor exactTargetId when present. Standalone modes never require it. */
+ export function companionAbilityTargetHint(combatant:CompanionCombatantDefinition){return combatant.abilities[0]?.exactTargetId;}
+diff --git a/backend/src/server/companions/content.ts b/backend/src/server/companions/content.ts
+index 6e58e2f..a359978 100644
+--- a/backend/src/server/companions/content.ts
++++ b/backend/src/server/companions/content.ts
+@@ -70,14 +70,19 @@ export const COMPANION_TRIAL_MODIFIERS:Record<string,CompanionTrialModifierConfi
+ };
+ export const COMPANION_TRIAL_FLOOR_COUNT=30;
+ export const COMPANION_TRIAL_BOSS_INTERVAL=5;
+-export const companionTrialRecommendedPower=(floor:number)=>Math.round(850*Math.pow(1.085,Math.max(0,floor-1)));
++export const COMPANION_TRIAL_RECOMMENDED_POWER_START=2750;
++export const COMPANION_TRIAL_RECOMMENDED_POWER_END=4300;
++export const COMPANION_TRIAL_ENEMY_GROWTH=1.020;
++export const COMPANION_TRIAL_MITIGATION_CONSTANT=100;
++export const companionTrialRecommendedPower=(floor:number)=>{const f=Math.max(1,Math.min(COMPANION_TRIAL_FLOOR_COUNT,Math.floor(floor)));const t=(f-1)/Math.max(1,COMPANION_TRIAL_FLOOR_COUNT-1);return Math.round(COMPANION_TRIAL_RECOMMENDED_POWER_START*Math.pow(COMPANION_TRIAL_RECOMMENDED_POWER_END/COMPANION_TRIAL_RECOMMENDED_POWER_START,t));};
++export const companionTrialEnemyScale=(floor:number)=>Math.pow(COMPANION_TRIAL_ENEMY_GROWTH,Math.max(0,Math.floor(floor)-1));
+ export const companionTrialFloorModifiers=(floor:number)=>{
+  const pool=['armored','rushing','anti_heal','shattering','arcane_storm','execution','predator','unstable_magic','thick_hide','frailty','relentless'];
+  const count=floor>=21?3:floor>=11?2:1;return Array.from({length:count},(_,i)=>pool[(floor*3+i*4)%pool.length]);
+ };
+ export const companionTrialReward=(floor:number,firstClear:boolean,boss:boolean)=>({
+- companionEssence:firstClear?Math.round(25+floor*4+(boss?60:0)):Math.round(6+floor*.8),
+- gold:firstClear?Math.round(300+floor*90+(boss?1200:0)):Math.round(100+floor*20),
++ companionEssence:firstClear?Math.round(25+floor*4+(boss?60:0)):0,
++ gold:firstClear?Math.round(300+floor*90+(boss?1200:0)):Math.round(20+floor*3),
+  bondstones:firstClear&&boss?(floor>=30?3:floor>=20?2:floor>=10?1:0):0,
+  materials:firstClear&&boss?{TRIAL_SANCTUARY_MATERIAL:Math.max(1,Math.floor(floor/10))}:{},
+ });
+@@ -91,11 +96,11 @@ export const COMPANION_WEEKLY_CHALLENGES:CompanionWeeklyChallengeDefinition[]=[
+ ];
+ 
+ export const COMPANION_MISSIONS:CompanionMissionDefinition[]=[
+- {id:'MISSION_SCOUT_2H',name:'Asterfall Perimeter Patrol',originId:'REG_001',durationMs:2*3600_000,missionVersion:2,minCompanions:1,maxCompanions:2,minimumPenLevel:1,minimumLevel:5,recommendedPower:900,requirements:[{type:'min_level',value:5}],bonusRequirements:[{type:'origin_count',originId:'REG_001',count:1}],costs:{gold:300},baseRewards:{companionEssence:18,gold:500,companionXp:100,bondXp:12,materials:{IRONWOOD_FANG:1}},bonusRewards:{companionEssence:6,materials:{SUPPLIES:1}},bonusRewardChanceByGrade:{B:.05,A:.10,S:.15}},
+- {id:'MISSION_SUNSCAR_4H',name:'Sunscar Caravan Guard',originId:'REG_SUNSCAR',durationMs:4*3600_000,missionVersion:2,minCompanions:2,maxCompanions:3,minimumPenLevel:1,minimumLevel:15,recommendedPower:4500,requirements:[{type:'role_count',role:'tank',count:1},{type:'role_count',role:'support',count:1},{type:'min_level',value:15},{type:'origin_count',originId:'REG_SUNSCAR',count:1}],bonusRequirements:[{type:'origin_count',originId:'REG_SUNSCAR',count:2}],bonusOriginId:'REG_SUNSCAR',costs:{gold:650,materials:{SUPPLIES:2}},baseRewards:{companionEssence:35,gold:950,companionXp:180,bondXp:20,materials:{AMBERGLASS:1}},bonusRewards:{companionEssence:12,materials:{AMBERGLASS:1}},bonusRewardChanceByGrade:{B:.04,A:.08,S:.14}},
+- {id:'MISSION_ASTERFALL_SHRINE_8H',name:'Forgotten Asterfall Shrine',originId:'REG_001',durationMs:8*3600_000,missionVersion:1,minCompanions:3,maxCompanions:3,minimumPenLevel:2,minimumBondLevel:4,recommendedPower:3600,requirements:[{type:'min_bond',value:4},{type:'min_rarity',rarity:'rare',count:1}],bonusRequirements:[{type:'origin_count',originId:'REG_001',count:3}],costs:{gold:1050,materials:{SUPPLIES:3}},baseRewards:{companionEssence:62,gold:1500,companionXp:285,bondXp:30,materials:{IRONWOOD_FANG:3}},bonusRewards:{companionEssence:20,materials:{TRIAL_SANCTUARY_MATERIAL:1}},bonusRewardChanceByGrade:{A:.06,S:.14}},
+- {id:'MISSION_FROST_8H',name:'Frostmarch Bell Route',originId:'REG_FROSTMARCH',durationMs:8*3600_000,missionVersion:2,minCompanions:2,maxCompanions:3,minimumPenLevel:2,minimumLevel:15,recommendedPower:3300,requirements:[{type:'role_count',role:'support',count:1},{type:'min_level',value:15}],bonusRequirements:[{type:'origin_count',originId:'REG_FROSTMARCH',count:2}],bonusOriginId:'REG_FROSTMARCH',costs:{gold:1100,materials:{SUPPLIES:3}},baseRewards:{companionEssence:65,gold:1600,companionXp:300,bondXp:32,materials:{RIMEGLASS:1}},bonusRewards:{companionEssence:18,materials:{RIMEGLASS:1}},bonusRewardChanceByGrade:{A:.05,S:.12},bondstoneEligible:true},
+- {id:'MISSION_ASH_12H',name:'Ashlands Crucible Watch',originId:'REG_ASHLANDS',durationMs:12*3600_000,missionVersion:2,minCompanions:3,maxCompanions:3,minimumPenLevel:3,minimumLevel:20,recommendedPower:5200,requirements:[{type:'role_count',role:'tank',count:1},{type:'role_count',role:'damage',count:1},{type:'min_level',value:20},{type:'min_ascension',tier:2,count:2}],bonusRequirements:[{type:'origin_count',originId:'REG_ASHLANDS',count:2}],bonusOriginId:'REG_ASHLANDS',costs:{gold:1600,materials:{SUPPLIES:4}},baseRewards:{companionEssence:95,gold:2300,companionXp:450,bondXp:44,materials:{BANNER_ASH:1}},bonusRewards:{companionEssence:30,materials:{TRIAL_SANCTUARY_MATERIAL:1}},bonusRewardChanceByGrade:{A:.04,S:.10},bondstoneEligible:true},
++ {id:'MISSION_SCOUT_2H',name:'Asterfall Perimeter Patrol',originId:'REG_001',durationMs:2*3600_000,missionVersion:2,minCompanions:1,maxCompanions:2,minimumPenLevel:1,minimumLevel:5,recommendedPower:1050,requirements:[{type:'min_level',value:5}],bonusRequirements:[{type:'origin_count',originId:'REG_001',count:1}],costs:{gold:300},baseRewards:{companionEssence:3,gold:280,companionXp:85,bondXp:12,materials:{IRONWOOD_FANG:1}},bonusRewards:{companionEssence:2,materials:{SUPPLIES:1}},bonusRewardChanceByGrade:{B:.05,A:.10,S:.15}},
++ {id:'MISSION_SUNSCAR_4H',name:'Sunscar Caravan Guard',originId:'REG_SUNSCAR',durationMs:4*3600_000,missionVersion:2,minCompanions:2,maxCompanions:3,minimumPenLevel:1,minimumLevel:15,recommendedPower:2800,requirements:[{type:'role_count',role:'tank',count:1},{type:'role_count',role:'support',count:1},{type:'min_level',value:15},{type:'origin_count',originId:'REG_SUNSCAR',count:1}],bonusRequirements:[{type:'origin_count',originId:'REG_SUNSCAR',count:2}],bonusOriginId:'REG_SUNSCAR',costs:{gold:650,materials:{SUPPLIES:2}},baseRewards:{companionEssence:7,gold:600,companionXp:160,bondXp:20,materials:{AMBERGLASS:1}},bonusRewards:{companionEssence:4,materials:{AMBERGLASS:1}},bonusRewardChanceByGrade:{B:.04,A:.08,S:.14}},
++ {id:'MISSION_ASTERFALL_SHRINE_8H',name:'Forgotten Asterfall Shrine',originId:'REG_001',durationMs:8*3600_000,missionVersion:1,minCompanions:3,maxCompanions:3,minimumPenLevel:2,minimumBondLevel:4,recommendedPower:3000,requirements:[{type:'min_bond',value:4},{type:'min_rarity',rarity:'rare',count:1}],bonusRequirements:[{type:'origin_count',originId:'REG_001',count:3}],costs:{gold:1050,materials:{SUPPLIES:3}},baseRewards:{companionEssence:14,gold:900,companionXp:250,bondXp:30,materials:{IRONWOOD_FANG:3}},bonusRewards:{companionEssence:7,materials:{TRIAL_SANCTUARY_MATERIAL:1}},bonusRewardChanceByGrade:{A:.06,S:.14}},
++ {id:'MISSION_FROST_8H',name:'Frostmarch Bell Route',originId:'REG_FROSTMARCH',durationMs:8*3600_000,missionVersion:2,minCompanions:2,maxCompanions:3,minimumPenLevel:2,minimumLevel:15,recommendedPower:3000,requirements:[{type:'role_count',role:'support',count:1},{type:'min_level',value:15}],bonusRequirements:[{type:'origin_count',originId:'REG_FROSTMARCH',count:2}],bonusOriginId:'REG_FROSTMARCH',costs:{gold:1100,materials:{SUPPLIES:3}},baseRewards:{companionEssence:15,gold:950,companionXp:270,bondXp:32,materials:{RIMEGLASS:1}},bonusRewards:{companionEssence:7,materials:{RIMEGLASS:1}},bonusRewardChanceByGrade:{A:.05,S:.12},bondstoneEligible:true},
++ {id:'MISSION_ASH_12H',name:'Ashlands Crucible Watch',originId:'REG_ASHLANDS',durationMs:12*3600_000,missionVersion:2,minCompanions:3,maxCompanions:3,minimumPenLevel:3,minimumLevel:20,recommendedPower:4000,requirements:[{type:'role_count',role:'tank',count:1},{type:'role_count',role:'damage',count:1},{type:'min_level',value:20},{type:'min_ascension',tier:2,count:2}],bonusRequirements:[{type:'origin_count',originId:'REG_ASHLANDS',count:2}],bonusOriginId:'REG_ASHLANDS',costs:{gold:1600,materials:{SUPPLIES:4}},baseRewards:{companionEssence:22,gold:1350,companionXp:400,bondXp:44,materials:{BANNER_ASH:1}},bonusRewards:{companionEssence:10,materials:{TRIAL_SANCTUARY_MATERIAL:1}},bonusRewardChanceByGrade:{A:.04,S:.10},bondstoneEligible:true},
+ ];
+ export const companionMission=(id:string)=>COMPANION_MISSIONS.find(x=>x.id===id);
+ 
+@@ -118,10 +123,10 @@ export const COMPANION_CODEX_MILESTONES:CompanionCodexMilestoneDefinition[]=[
+ ];
+ 
+ export const COMPANION_SPECIAL_CHALLENGES:CompanionSpecialChallengeDefinition[]=[
+- {id:'CHALLENGE_OATHGLASS_KNIGHTLING',name:'Oathglass Reflection Trial',bossId:'BOSS_COMPANION_OATHGLASS',rewardCompanionId:'UNIT_012',recommendedTeamPower:5200,requirements:[
++ {id:'CHALLENGE_OATHGLASS_KNIGHTLING',name:'Oathglass Reflection Trial',bossId:'BOSS_COMPANION_OATHGLASS',rewardCompanionId:'UNIT_012',recommendedTeamPower:3800,requirements:[
+   {type:'trial_floor',amount:20,description:'Reach Companion Trial Floor 20.'},{type:'boss_clear_count',target:'FALLEN_KNIGHT',amount:10,description:'Defeat the Fallen Knight 10 times.'},{type:'companion_owned',target:'UNIT_007',amount:1,description:'Own Gloamknife Shade.'},{type:'companion_bond_total',amount:18,originId:'REG_001',description:'Reach 18 total Bond across Asterfall companions.'},
+  ]},
+- {id:'CHALLENGE_ASHEN_SUNWYRM_FUTURE',name:'Ashen Sunwyrm Challenge',bossId:'BOSS_COMPANION_ASHEN_SUNWYRM',rewardCompanionId:'FUTURE_ASHEN_SUNWYRM',recommendedTeamPower:7600,requirements:[
++ {id:'CHALLENGE_ASHEN_SUNWYRM_FUTURE',name:'Ashen Sunwyrm Challenge',bossId:'BOSS_COMPANION_ASHEN_SUNWYRM',rewardCompanionId:'FUTURE_ASHEN_SUNWYRM',recommendedTeamPower:4350,requirements:[
+   {type:'region_completion',target:'REG_SUNSCAR',description:'Complete Sunscar story progression.'},{type:'trial_floor',amount:25,description:'Reach Companion Trial Floor 25.'},{type:'boss_clear_count',target:'SUNSCAR_REGIONAL_BOSS',amount:15,description:'Defeat the Sunscar regional boss 15 times.'},{type:'companion_bond_total',amount:18,originId:'REG_SUNSCAR',description:'Reach 18 total Bond across Sunscar companions.'},
+  ]},
+ ];
+diff --git a/backend/src/server/companions/domain.ts b/backend/src/server/companions/domain.ts
+index 7639a3f..e7450b0 100644
+--- a/backend/src/server/companions/domain.ts
++++ b/backend/src/server/companions/domain.ts
+@@ -47,7 +47,7 @@ export interface CompanionCombatantDefinition{
+   basicAttackMs:number;basicAttackCoeff:number;abilities:EngineAbilityDefinition[];boss?:boolean;tags?:string[];
+ }
+ export interface CompanionCombatResult{victory:boolean;durationMs:number;reason:'victory'|'wipe'|'timeout';players?:Array<{definition:{id:string};alive:boolean}>;}
+-export interface CompanionCombatExecutor{simulate(input:{seed:string;players:CompanionCombatantDefinition[];enemies:CompanionCombatantDefinition[]}):CompanionCombatResult;}
++export interface CompanionCombatExecutor{simulate(input:{seed:string;players:CompanionCombatantDefinition[];enemies:CompanionCombatantDefinition[];mitigationConstant?:number}):CompanionCombatResult;}
+ 
+ export interface CompanionTeamSelection{companionIds:[string,string,string];}
+ export interface CompanionTeamMemberView{companionId:string;role:CompanionRole;rarity:CompanionRarity;originId:string;power:number;}
+diff --git a/backend/src/server/companions/special-challenges.ts b/backend/src/server/companions/special-challenges.ts
+index 5a90fa7..12846da 100644
+--- a/backend/src/server/companions/special-challenges.ts
++++ b/backend/src/server/companions/special-challenges.ts
+@@ -1,10 +1,10 @@
+-import {COMPANION_SPECIAL_CHALLENGES,companionServerDefinition} from './content';
++import {COMPANION_SPECIAL_CHALLENGES,COMPANION_TRIAL_MITIGATION_CONSTANT,companionServerDefinition} from './content';
+ import {buildOwnedCompanionCombatant} from './combat-adapter';
+ import {companionUnlockRequirementsSatisfied} from './progression-v2';
+ import {totalCompanionHasteBonus,totalCompanionSynergyMultiplier,validateCompanionTrialTeam} from './team';
+ import type {CompanionCombatExecutor,CompanionCombatantDefinition,CompanionUnlockFacts,OwnedCompanionSnapshot} from './domain';
+ 
+ export const companionSpecialChallenge=(id:string)=>COMPANION_SPECIAL_CHALLENGES.find(x=>x.id===id);
+-function boss(id:string,power:number):CompanionCombatantDefinition{const scale=Math.max(1,power/5000);return {id,name:id.replaceAll('_',' '),team:'enemies',role:'enemy',level:35,stats:{maxHp:Math.round(1200*scale),attackPower:Math.round(90*scale),healingPower:0,defense:Math.round(65*scale),accuracy:.92,evasion:.06,critChance:.08,critMultiplier:1.6,haste:.14},basicAttackMs:2100,basicAttackCoeff:.78,abilities:[{id:`${id}_SIGNATURE`,name:'Companion Challenge Signature',cooldownMs:12000,castTimeMs:0,target:'current_target',effects:[{kind:'damage',coeff:1.15,tag:'companion_special_boss'}],priority:90,aiCondition:'always'}],boss:true,tags:['companion_special_boss']};}
++function boss(id:string,power:number):CompanionCombatantDefinition{const scale=Math.max(.85,Math.min(1.15,power/4300));return {id,name:id.replaceAll('_',' '),team:'enemies',role:'enemy',level:35,stats:{maxHp:Math.round(1100*scale),attackPower:Number((65*scale).toFixed(2)),healingPower:0,defense:Number((50*scale).toFixed(2)),accuracy:.91,evasion:.05,critChance:.07,critMultiplier:1.55,haste:.12},basicAttackMs:2200,basicAttackCoeff:.76,abilities:[{id:`${id}_SIGNATURE`,name:'Companion Challenge Signature',cooldownMs:13000,castTimeMs:0,target:'current_target',effects:[{kind:'damage',coeff:1.20,tag:'companion_special_boss'}],priority:90,aiCondition:'always'}],boss:true,tags:['companion_special_boss']};}
+ export function validateSpecialCompanionChallenge(input:{challengeId:string;facts:CompanionUnlockFacts;teamIds:string[];owned:Record<string,OwnedCompanionSnapshot>;busyCompanionIds:ReadonlySet<string>}){const c=companionSpecialChallenge(input.challengeId);if(!c)return {ok:false as const,reason:'unknown_companion_special_challenge'};if(!companionUnlockRequirementsSatisfied(c.requirements,input.facts))return {ok:false as const,reason:'companion_special_requirements_not_met'};const team=validateCompanionTrialTeam({companionIds:input.teamIds,owned:input.owned,busyCompanionIds:input.busyCompanionIds});if(!team.ok)return team;if(team.power<c.recommendedTeamPower*.7)return {ok:false as const,reason:'companion_special_team_power_too_low'};return {ok:true as const,challenge:c,team};}
+-export function resolveSpecialCompanionChallenge(input:{challengeId:string;facts:CompanionUnlockFacts;teamIds:string[];owned:Record<string,OwnedCompanionSnapshot>;busyCompanionIds:ReadonlySet<string>;seed:string},executor:CompanionCombatExecutor){const checked=validateSpecialCompanionChallenge(input);if(!checked.ok)throw new Error(checked.reason);const synergy=checked.team.synergies,mult=totalCompanionSynergyMultiplier(synergy),haste=totalCompanionHasteBonus(synergy);const players=input.teamIds.map(id=>buildOwnedCompanionCombatant(input.owned[id],{mode:'companion_trial',teamSynergyMultiplier:mult,teamHasteBonus:haste}));const result=executor.simulate({seed:input.seed,players,enemies:[boss(checked.challenge.bossId,checked.challenge.recommendedTeamPower)]});if(!result.victory)return {result,unlockedCompanionId:undefined};const target=companionServerDefinition(checked.challenge.rewardCompanionId);return {result,unlockedCompanionId:target?.id,completionKey:checked.challenge.id};}
++export function resolveSpecialCompanionChallenge(input:{challengeId:string;facts:CompanionUnlockFacts;teamIds:string[];owned:Record<string,OwnedCompanionSnapshot>;busyCompanionIds:ReadonlySet<string>;seed:string},executor:CompanionCombatExecutor){const checked=validateSpecialCompanionChallenge(input);if(!checked.ok)throw new Error(checked.reason);const synergy=checked.team.synergies,mult=totalCompanionSynergyMultiplier(synergy),haste=totalCompanionHasteBonus(synergy);const players=input.teamIds.map(id=>buildOwnedCompanionCombatant(input.owned[id],{mode:'companion_trial',teamSynergyMultiplier:mult,teamHasteBonus:haste}));const result=executor.simulate({seed:input.seed,players,enemies:[boss(checked.challenge.bossId,checked.challenge.recommendedTeamPower)],mitigationConstant:COMPANION_TRIAL_MITIGATION_CONSTANT});if(!result.victory)return {result,unlockedCompanionId:undefined};const target=companionServerDefinition(checked.challenge.rewardCompanionId);return {result,unlockedCompanionId:target?.id,completionKey:checked.challenge.id};}
+diff --git a/backend/src/server/companions/team.ts b/backend/src/server/companions/team.ts
+index 3fa515b..f31b817 100644
+--- a/backend/src/server/companions/team.ts
++++ b/backend/src/server/companions/team.ts
+@@ -1,5 +1,5 @@
+-import {COMPANION_SYNERGY_COMBAT_CAP,companionServerDefinition} from './content';
+-import {buildOwnedCompanionCombatant} from './combat-adapter';
++import {COMPANION_RARITY_MAX_LEVEL,COMPANION_RARITY_TARGET,COMPANION_SYNERGY_COMBAT_CAP,companionServerDefinition} from './content';
++import {companionBalancedBaseStats} from './combat-adapter';
+ import type {CompanionSynergy,CompanionTeamMemberView,CompanionTrialRestriction,OwnedCompanionSnapshot} from './domain';
+ 
+ export interface CompanionTeamValidationInput{
+@@ -7,11 +7,16 @@ export interface CompanionTeamValidationInput{
+  restrictions?:CompanionTrialRestriction[];
+ }
+ export function individualCompanionPower(progress:OwnedCompanionSnapshot){
+- const c=buildOwnedCompanionCombatant(progress,{mode:'companion_trial'});
+- const stats=c.stats;
+- // Guidance only. Uses already-derived stats and ability budget; there is no separate rarity multiplier.
+- const ability=c.abilities.reduce((sum,a)=>sum+(a.effects[0]?.coeff??a.effects[0]?.value??0)*180+Math.max(0,24000-a.cooldownMs)/180,0);
+- return Math.max(1,Math.round(stats.maxHp*.85+stats.attackPower*22+stats.healingPower*12+stats.defense*18+stats.haste*900+ability));
++ const def=companionServerDefinition(progress.companionId);if(!def)throw new Error('unknown_companion');
++ const max=COMPANION_RARITY_MAX_LEVEL[def.rarity],fraction=max<=1?1:Math.max(0,Math.min(1,(progress.level-1)/(max-1))),base=companionBalancedBaseStats(def);
++ const roleAnchor=def.role==='damage'?{hp:180,power:22,defense:12}:def.role==='tank'?{hp:260,power:14,defense:24}:{hp:150,power:12,defense:10};
++ const rawStatIdentity=((base.hp/roleAnchor.hp)+(base.power/roleAnchor.power)+(base.defense/roleAnchor.defense))/3,statIdentity=Math.max(.995,Math.min(1.005,rawStatIdentity));
++ const activeIdentity=def.active.effectKind==='damage'?1+Math.max(-.005,Math.min(.005,(def.active.baseCoeff-1)*.01)):1+Math.max(-.005,Math.min(.005,(22000-def.active.cooldownMs)/400000));
++ const levelMultiplier=1+.30*fraction,rarityMultiplier=1+(COMPANION_RARITY_TARGET[def.rarity]-1)*fraction,ascensionMultiplier=1+progress.ascensionTier*.006,bondMultiplier=1+.025*Math.max(0,Math.min(9,progress.bondLevel-1))/9;
++ const traitMultiplier=progress.bondTraitUnlocked?1.01:1,techniqueMultiplier=progress.selectedTechniqueId?1.015:1;
++ // Team Power is guidance, not combat simulation. It mirrors the already-balanced
++ // progression budget and keeps role/ability identity to a narrow ±few-percent band.
++ return Math.max(1,Math.round(950*levelMultiplier*rarityMultiplier*ascensionMultiplier*bondMultiplier*traitMultiplier*techniqueMultiplier*statIdentity*activeIdentity));
+ }
+ export function companionTeamViews(ids:readonly string[],owned:Record<string,OwnedCompanionSnapshot>):CompanionTeamMemberView[]{return ids.map(id=>{const def=companionServerDefinition(id),p=owned[id];if(!def||!p)throw new Error('companion_not_owned');return {companionId:id,role:def.role,rarity:def.rarity,originId:def.originId,power:individualCompanionPower(p)};});}
+ export function companionTeamPower(ids:readonly string[],owned:Record<string,OwnedCompanionSnapshot>){const views=companionTeamViews(ids,owned);return Math.round(views.reduce((sum,x)=>sum+x.power,0));}
+diff --git a/backend/src/server/companions/trials.ts b/backend/src/server/companions/trials.ts
+index 2328e5f..137e323 100644
+--- a/backend/src/server/companions/trials.ts
++++ b/backend/src/server/companions/trials.ts
+@@ -1,4 +1,4 @@
+-import {COMPANION_MONTHLY_COMPLETION_REWARD,COMPANION_TRIAL_BOSS_INTERVAL,COMPANION_TRIAL_FLOOR_COUNT,COMPANION_TRIAL_MODIFIERS,COMPANION_WEEKLY_CHALLENGES,companionTrialFloorModifiers,companionTrialRecommendedPower,companionTrialReward,companionTrialSeasonDefinition} from './content';
++import {COMPANION_MONTHLY_COMPLETION_REWARD,COMPANION_TRIAL_BOSS_INTERVAL,COMPANION_TRIAL_FLOOR_COUNT,COMPANION_TRIAL_MITIGATION_CONSTANT,COMPANION_TRIAL_MODIFIERS,COMPANION_WEEKLY_CHALLENGES,companionTrialEnemyScale,companionTrialFloorModifiers,companionTrialRecommendedPower,companionTrialReward,companionTrialSeasonDefinition} from './content';
+ import {buildOwnedCompanionCombatant} from './combat-adapter';
+ import {companionEssenceRewardMultiplier,companionTeamPower,totalCompanionHasteBonus,totalCompanionSynergyMultiplier,validateCompanionTrialTeam,restrictionSatisfied} from './team';
+ import {companionTrialResetInfo,rolloverCompanionTrialSeason} from './trial-season';
+@@ -13,7 +13,7 @@ export function companionTrialFloorDefinition(floor:number,seasonKey:string):Com
+  const season=companionTrialSeasonDefinition(seasonKey);return {floor,recommendedPower:companionTrialRecommendedPower(floor),modifiers:[...new Set([...season.modifiers,...companionTrialFloorModifiers(floor)])],boss:floor%COMPANION_TRIAL_BOSS_INTERVAL===0};
+ }
+ function enemy(id:string,name:string,floor:number,boss=false,role:'enemy'='enemy'):CompanionCombatantDefinition{
+- const p=companionTrialRecommendedPower(floor),scale=Math.max(1,p/900);return {id,name,team:'enemies',role,level:floor,stats:{maxHp:Math.round((boss?520:180)*scale),attackPower:Number(((boss?28:15)*scale).toFixed(2)),healingPower:0,defense:Number(((boss?24:12)*scale).toFixed(2)),accuracy:.88,evasion:.04,critChance:.05,critMultiplier:1.5,haste:Math.min(.35,.03+floor*.004)},basicAttackMs:boss?2200:2500,basicAttackCoeff:boss?.82:.55,abilities:boss?[{id:`TRIAL_BOSS_${floor}_ACTIVE`,name:'Trial Boss Signature',cooldownMs:14000,castTimeMs:0,target:'current_target',effects:[{kind:'damage',coeff:1.05,tag:'trial_boss'}],priority:80,aiCondition:'always'}]:[],boss,tags:['companion_trial_enemy',boss?'boss':'normal']};
++ const scale=companionTrialEnemyScale(floor);return {id,name,team:'enemies',role,level:floor,stats:{maxHp:Math.round((boss?520:180)*scale),attackPower:Number(((boss?28:15)*scale).toFixed(2)),healingPower:0,defense:Number(((boss?24:12)*scale).toFixed(2)),accuracy:.88,evasion:.04,critChance:.05,critMultiplier:1.5,haste:Math.min(.35,.03+floor*.004)},basicAttackMs:boss?2200:2500,basicAttackCoeff:boss?.82:.55,abilities:boss?[{id:`TRIAL_BOSS_${floor}_ACTIVE`,name:'Trial Boss Signature',cooldownMs:14000,castTimeMs:0,target:'current_target',effects:[{kind:'damage',coeff:1.05,tag:'trial_boss'}],priority:80,aiCondition:'always'}]:[],boss,tags:['companion_trial_enemy',boss?'boss':'normal']};
+ }
+ export function applyCompanionTrialModifiers(players:CompanionCombatantDefinition[],enemies:CompanionCombatantDefinition[],modifierIds:readonly string[]){
+  let playerHealing=1,playerHaste=0,playerShield=1,enemyDefense=1,enemyAttack=1,enemyHp=1,enemyHaste=0,enemyAccuracy=0;
+@@ -49,7 +49,7 @@ export function resolveCompanionTrialFloor(input:CompanionTrialRuntimeInput,runI
+  const floorDef=companionTrialFloorDefinition(run.currentFloor,progress.season.seasonKey),synergies=teamCheck.synergies,synergyMultiplier=totalCompanionSynergyMultiplier(synergies),hasteBonus=totalCompanionHasteBonus(synergies);
+  const basePlayers=run.teamCompanionIds.map(id=>buildOwnedCompanionCombatant(input.owned[id],{mode:'companion_trial',teamSynergyMultiplier:synergyMultiplier,teamHasteBonus:hasteBonus}));
+  const modified=applyCompanionTrialModifiers(basePlayers,rawCompanionTrialEncounter(run.currentFloor),floorDef.modifiers);
+- const result=executor.simulate({seed:`${run.seed}:${progress.season.seasonKey}:${run.currentFloor}`,players:modified.players,enemies:modified.enemies});
++ const result=executor.simulate({seed:`${run.seed}:${progress.season.seasonKey}:${run.currentFloor}`,players:modified.players,enemies:modified.enemies,mitigationConstant:COMPANION_TRIAL_MITIGATION_CONSTANT});
+  if(!result.victory){return {progress:{...progress,season:{...progress.season,activeRun:undefined,currentFloor:progress.season.checkpointFloor}},result,reward:{companionEssence:0,gold:0,bondstones:0,materials:{}},firstClear:false,monthlyCompleted:false,weeklyCompleted:false};}
+  const floor=run.currentFloor,boss=floorDef.boss,firstClear=!progress.season.firstClearFloors.includes(floor),base=companionTrialReward(floor,firstClear,boss),seasonDef=companionTrialSeasonDefinition(progress.season.seasonKey);
+  const featured=!!seasonDef.featuredOrigin&&teamCheck.members.some(x=>x.originId===seasonDef.featuredOrigin),essenceMult=companionEssenceRewardMultiplier(synergies)*(featured?1.05:1);
+diff --git a/backend/tsconfig.combat-balance.json b/backend/tsconfig.combat-balance.json
+new file mode 100644
+index 0000000..520e1b1
+--- /dev/null
++++ b/backend/tsconfig.combat-balance.json
+@@ -0,0 +1,18 @@
++{
++  "compilerOptions": {
++    "target": "ES2022",
++    "module": "commonjs",
++    "moduleResolution": "node",
++    "strict": true,
++    "skipLibCheck": true,
++    "outDir": ".combat-balance-build",
++    "lib": [
++      "ES2022",
++      "DOM"
++    ]
++  },
++  "include": [
++    "src/types/node-shims.d.ts",
++    "src/server/balance/**/*.ts"
++  ]
++}
+diff --git a/docs/implementation/COMBAT_COMPANION_BALANCE_V1.md b/docs/implementation/COMBAT_COMPANION_BALANCE_V1.md
+new file mode 100644
+index 0000000..6d47aa5
+--- /dev/null
++++ b/docs/implementation/COMBAT_COMPANION_BALANCE_V1.md
+@@ -0,0 +1,236 @@
++# VELDRYN Combat Companions — Balance Pass v1
++
++## Scope
++
++This pass balances the expanded active Combat Companion ecosystem after the Level/Ascension/Bond, monthly Trial, Sanctuary Assignment, Technique, Proving Grounds, Codex and Prestige systems were added.
++
++Passive collectible Pets, Pet Essence and Pet Bond remain separate and are not changed by this pass.
++
++The goals are:
++
++- keep player-character power dominant in character-assist combat;
++- preserve the intended full-investment rarity bands without stacking rarity twice;
++- give Standard/Rare Companions lasting PvE relevance without making Prestige mandatory;
++- make the 30-floor monthly Trial a real progression curve rather than a hard wall;
++- keep Bondstones and Companion Essence meaningful long-term resources;
++- make Sanctuary Assignments useful but slower than active play;
++- make special guaranteed Prestige unlock bosses difficult but realistically beatable;
++- keep all key values data/config driven so live telemetry can tune them later.
++
++## 1. Rarity budget
++
++Agreed approximate TOTAL full-investment power targets remain:
++
++| Rarity | Target vs Standard |
++|---|---:|
++| Standard | 100% |
++| Rare | 108–110% |
++| Elite | 111–113% |
++| Prestige | 114–117% |
++
++The old Combat Unit content already correlated raw stats with rarity. Applying the new rarity progression multiplier directly on top of those stats produced a second rarity bonus and inflated some role comparisons far beyond the target.
++
++### New rule
++
++Raw definition stats are compressed around role anchors while preserving a narrow identity range. The systematic rarity advantage is then delivered mainly through:
++
++- higher level ceilings;
++- level/investment scaling;
++- active ability budget;
++- Technique/Bond Trait access;
++- Ascension/progression endpoint.
++
++Team Power does **not** apply another full rarity multiplier after those effects.
++
++### Resulting max-investment individual Team Power guidance
++
++| Role | Standard | Rare | Elite | Prestige |
++|---|---:|---:|---:|---:|
++| Damage | 1,313 | 1,441 avg | 1,486 avg | 1,536 |
++| Tank | 1,307 | 1,431 | 1,480 avg | 1,533 |
++| Support | 1,307 | 1,431 | 1,481 avg | 1,533 |
++
++Approximate endpoint ratios remain inside the intended bands rather than escalating into 30–90% rarity gaps.
++
++## 2. Standalone Companion combat calibration
++
++The inherited Combat Unit coefficients were originally owner-assist oriented. In companion-only combat, Tank/Support heals and shields could resolve to less than one hit point and defense was nearly irrelevant under the normal player-character mitigation constant.
++
++For Companion-only contexts:
++
++- role-based balanced base-stat anchors are used;
++- Tank/Support `healingPower` is derived from Companion max HP so old percentage-like heal/shield coefficients remain meaningful;
++- Interrupt abilities gain a modest standalone damage component so they remain useful against enemies without a cast bar;
++- mitigation effects map to the combat engine's functional `damage_taken` modifier;
++- Support utility actives can resolve as modest standalone healing;
++- Companion-only combat uses mitigation constant **100** rather than the player-character default **1200**.
++
++Character-assist mode keeps the lower assist-oriented support scale.
++
++## 3. Monthly Trial curve
++
++### Recommended Team Power is guidance, not enemy stat scale
++
++The v6 implementation used the UI `Recommended Companion Power` number directly to derive enemy stats. This mixed two unrelated units and produced misleading recommendations plus an excessively steep enemy curve.
++
++The two curves are now separate.
++
++### Recommended Team Power
++
++- Floor 1: **2,750**
++- Floor 5: **2,925**
++- Floor 10: **3,159**
++- Floor 15: **3,412**
++- Floor 20: **3,686**
++- Floor 25: **3,981**
++- Floor 30: **4,300**
++
++The recommendation curve uses logarithmic interpolation from Floor 1 to Floor 30.
++
++### Enemy growth
++
++Enemy combat stats use a separate configurable curve:
++
++`enemyScale = 1.020 ^ (floor - 1)`
++
++Boss structure and monthly modifiers remain separate layers.
++
++Changing the 1.020 growth value should require another seeded balance study.
++
++## 4. Seeded Trial combat study
++
++The supplied VELDRYN backend combat engine was used for actual combat resolution, not a success-probability shortcut. Each listed floor/team combination used **300 deterministic seeds**.
++
++| Team | Team Power | F5 | F10 | F15 | F20 | F25 | F30 |
++|---|---:|---:|---:|---:|---:|---:|---:|
++| Starter investment | 3,263 | 100% | 100% | 0% | 0% | 0% | 0% |
++| Max Standard trio | 3,927 | 100% | 100% | 100% | 100% | 61.0% | 0% |
++| Max Asterfall Rare trio | 4,304 | 100% | 100% | 100% | 100% | 100% | 0% |
++| Max Sunscar team | 4,453 | 100% | 100% | 100% | 100% | 100% | 79.7% |
++| Max Frostmarch team | 4,496 | 100% | 100% | 100% | 100% | 100% | 84.7% |
++| Max Ashlands team | 4,502 | 100% | 100% | 100% | 100% | 100% | 84.7% |
++| Optimized top mix | 4,602 | 100% | 100% | 100% | 100% | 100% | 99.7% |
++
++Representative Floor 30 successful-run durations were roughly 48–56 seconds in the seeded study.
++
++### Intended interpretation
++
++- early Companion investment handles the opening monthly Tower;
++- maxed Standard Companions remain relevant well into late floors;
++- Asterfall Rare investment can reach the late checkpoints but does not automatically clear the finale;
++- later-region optimized teams are realistic Floor 30 clear candidates;
++- a highly optimized endgame trio becomes reliable rather than merely lottery-based;
++- Team Power remains guidance: composition, Techniques, roles and modifiers still matter.
++
++## 5. Trial reward economy
++
++Monthly first-clear rewards remain the meaningful progression payout.
++
++Full monthly Floor 1–30 first-clear + completion total:
++
++- **3,570 Companion Essence**
++- **73,050 Gold**
++- **12 Bondstones**
++
++Repeat clears now intentionally avoid becoming an infinite companion-resource farm.
++
++Full Floor 1–30 repeat total:
++
++- **0 Companion Essence**
++- **1,995 Gold**
++- **0 Bondstones**
++
++Repeat combat can still provide legitimate use/Bond/combat progression through the normal systems, but the repeat chest itself is no longer a major economic faucet.
++
++## 6. Sanctuary Assignment economy
++
++Sanctuary Assignments are a passive supplement and collection-value system, not the fastest way to level or fund Companions.
++
++At base C grade with three Expedition Pens running continuously, launch-config Essence throughput is approximately:
++
++| Mission | Essence/day | Net base Gold/day |
++|---|---:|---:|
++| 2h Asterfall patrol | 108 | -720 |
++| 4h Sunscar guard | 126 | -900 |
++| 8h Asterfall shrine | 126 | -1,350 |
++| 8h Frostmarch route | 135 | -1,350 |
++| 12h Ashlands watch | 132 | -1,500 |
++
++Higher grades and bonus conditions improve rewards, but base use is intentionally a recurring Gold/material sink.
++
++Expedition Bond progression remains at **25%** of the configured active-equivalent Bond reward, inside the intended 20–30% passive target.
++
++## 7. Bond XP consistency
++
++Server Bond thresholds are cumulative:
++
++- Bond 2: 90 total XP
++- Bond 3: 210 total XP
++- ...
++- Bond 10: 2,520 total XP
++
++The mobile model previously interpreted the same table as per-level costs, which could make Bond 10 require roughly 9,300 accumulated XP. Mobile and server now both use the cumulative interpretation.
++
++Backward compatibility detects older residual-within-level local values and promotes them to the corresponding cumulative total rather than deleting earned Bond progress.
++
++## 8. Special Prestige boss calibration
++
++The first functional Prestige unlock fight, **Oathglass Reflection Trial**, was initially on a player-character stat scale and produced **0/300** clears for a fully invested eligible Asterfall trio.
++
++The boss has been rebased to the Companion-only combat scale while remaining harder than ordinary prerequisite progression.
++
++Final seeded result with a max eligible Asterfall trio:
++
++- samples: **300**
++- victories: **254**
++- clear rate: **84.7%**
++- average duration: **~49 seconds**
++
++The unlock remains guaranteed after satisfying the requirements and winning; no rare RNG companion drop was introduced.
++
++## 9. Long-term resource pacing
++
++The existing full-roster progression costs remain intentionally large. The balance pass reduces repeat/passive faucets rather than making all progression cheaper.
++
++Bondstones remain primarily gated by:
++
++- monthly Companion Trials;
++- weekly Proving Grounds;
++- difficult bosses/content;
++- limited high-tier Assignment/event sources.
++
++This preserves predictable long-term acquisition without allowing passive Assignments to become the dominant Bondstone source.
++
++## 10. Configuration / monitoring guardrails
++
++The following should be treated as live-balance knobs rather than scattered constants:
++
++- Trial recommended power start/end;
++- Trial enemy growth;
++- Companion-only mitigation constant;
++- per-floor first/repeat rewards;
++- monthly completion package;
++- Assignment costs/rewards/recommended power;
++- rarity endpoint targets;
++- Bond thresholds and source XP;
++- special boss stat profiles.
++
++Recommended post-integration telemetry:
++
++- clear/fail rate per Trial floor and Companion trio;
++- first-attempt vs repeat clear rates;
++- median Team Power at each checkpoint;
++- Floor 30 clear rate by account progression region;
++- Trial reward claims/account/month;
++- Companion Essence earned/spent by source/sink;
++- Bondstones earned/spent by source/sink;
++- Assignment starts, grade distribution and claim cadence;
++- Technique selection split per Companion;
++- special boss attempt/clear rates;
++- lower-rarity Companion usage in unrestricted and restricted content.
++
++Do not automatically buff/nerf solely from Team Power. Real combat outcomes and economy throughput remain the authoritative balance signals.
++
++## Verification boundary
++
++Focused Companion typechecks/tests and seeded backend combat simulations pass in the recovered source. Full Expo/Android, complete server integration, real Supabase migration-chain validation and production telemetry remain real-repository checks.
+diff --git a/docs/implementation/FULL_COMBAT_BALANCE_V1.md b/docs/implementation/FULL_COMBAT_BALANCE_V1.md
+new file mode 100644
+index 0000000..cdd434a
+--- /dev/null
++++ b/docs/implementation/FULL_COMBAT_BALANCE_V1.md
+@@ -0,0 +1,368 @@
++# VELDRYN Full Combat Balance Pass v1
++
++**Balance authority version:** `2026-09-12.v1`
++
++This pass expands the Combat Companion rebalance into a whole-game combat balance layer. It covers character progression, class-role budgets, ordinary enemies, elites, regional bosses, character squads/Trials, co-op Expeditions, Q-Mode/Live balance targets, Combat Companions, Companion Trials, PvP, guild bosses, raids, gear/stat pressure and combat-linked reward pacing.
++
++The central rule is: **do not change healthy systems just because a new system was added.** A number of existing curves already sit inside their intended target bands. This pass retunes proven problems, locks healthy guardrails, and explicitly marks content that needs the complete current repository before numeric changes are safe.
++
++## 1. What changed now
++
++### Fully retuned / executable in the recovered source
++
++- Combat Companion rarity budgeting and role anchors.
++- Character-assist Companion contribution.
++- Companion-only mitigation/heal/shield scaling.
++- Companion Trial recommended power and enemy-stat scaling are now separate curves.
++- Companion Trial 30-floor seeded outcome curve.
++- Companion Trial repeat-reward economy.
++- Sanctuary Assignment passive Essence/Gold economy.
++- Bond XP cumulative threshold consistency.
++- Oathglass Prestige special-boss calibration.
++- Cross-system balance contracts/tests for every major combat family.
++
++### Guardrails added, but existing values intentionally preserved
++
++- Regional elite HP/damage multipliers.
++- Regional boss exact stat progression and enrage windows.
++- Region-to-region player/boss power ratio.
++- Co-op sync/anti-carry targets.
++- Expedition Tier I–V difficulty/clear-rate bands.
++- Ranked PvP normalization.
++- Guild-boss per-member contribution caps.
++- Raid companion contribution and loot cadence.
++- Direct gear-drop jackpot caps.
++
++These systems were not changed because the available design simulation/evidence does not show a balance failure.
++
++## 2. Character progression: resolve the stale target conflict
++
++Two different pacing concepts were previously presented as if they were equivalent:
++
++1. Old `Vertical_Slice_Balance` target: **18–30 active-equivalent hours to Level 25**.
++2. Implemented/tested idle-combat progression: approximately **175–288 productive combat hours**, with player-profile models around **25–47 calendar days** depending play cadence and optimization.
++
++These are not compatible definitions. The old 18–30h row must **not** be used to reduce character XP requirements by roughly an order of magnitude.
++
++### Current authority
++
++- Productive idle/combat-only Level 1→25 target: **175–288 hours**.
++- Normal player calendar target: **35–55 days**.
++- Active player calendar target: **24–38 days**.
++- Optimizer target: **18–30 days**.
++- Opening Level 1→5 onboarding should still feel quick: **20–60 minutes**.
++
++The old 18–30 active-equivalent-hour value is retained in the database for historical context but is explicitly marked **SUPERSEDED**.
++
++### Why no global XP reduction was applied
++
++The new Companion system does not increase every class equally. Same-role restriction means:
++
++- Tank/Support characters may use Damage Companions and gain a meaningful offensive catch-up.
++- Damage characters cannot use a Damage Companion and instead gain Tank/Support value.
++
++This naturally compresses solo combat-speed gaps instead of simply adding the same +X% DPS to everyone. A global XP or enemy-stat reaction would risk undoing that useful class balancing effect.
++
++## 3. Class PvE output budgets — all nine classes
++
++Pure DPS reference is 1.00 for Wayfinder-like sustained output. Utility/survival power sits outside these numbers.
++
++| Class | Role | Pure-DPS target | Combat identity | Runtime status |
++|---|---|---:|---|---|
++| Ironwarden | Tank | 55–65% | balanced mitigation / threat | design-calibrated |
++| Bastion | Tank | 50–60% | maximum barrier/party protection | full-repo sim required |
++| Dreadguard | Tank | 60–70% | control + self-sustain / aggressive tank | full-repo sim required |
++| Dawnkeeper | Support | 35–45% | primary restoration / cleanse | design-calibrated |
++| Wayfinder | Damage | 99–101% | reliable ranged reference | design-calibrated |
++| Ravager | Damage | 98–103% | burst + armor break | design-calibrated |
++| Hexweaver | Damage | 97–102% | setup / DoT / debuff utility | design-calibrated |
++| Knife Dancer | Damage | 99–104% | high execution / mobility | design-calibrated |
++| Stonecaller | Support | 45–55% | mitigation / resource utility | design-calibrated |
++
++### Important reference-code warning
++
++The supplied `veldryn_backend_v2.1` `launch-combat.ts` is an older combat reference and its training-dummy outputs do **not** match the newer class-budget database. It must not be used to overwrite the current nine-class repository. The recovered cumulative source does not contain the unchanged current class-combat definitions, so final nine-class DPS/HPS/mitigation simulations belong in the real repository.
++
++## 4. Ordinary enemy balance
++
++No blind global enemy buff was applied for Companions.
++
++Asterfall already contains fixed progression compensation for additional collection/Faith power:
++
++- base monster stat scale: 1.07;
++- Level 10+ HP/defense/attack increase;
++- Level 20+ additional HP/time/attack/defense increase;
++- ordinary combat cycle pacing is then modified by character power, class style, preparation and Companion contribution.
++
++The new Damage Companion contribution is capped and role-restricted. Adding another global monster multiplier now would risk making Damage classes slower while Tank/Support classes merely return to the old baseline.
++
++### Runtime telemetry gate
++
++After real integration, tune ordinary enemies only if equal-level telemetry shows one of these consistently:
++
++- prepared win/uptime becomes trivial across all classes;
++- kill-time spread between classes remains too wide after Companion choice;
++- incoming damage becomes irrelevant for non-tanks;
++- players stop needing expected region gear before bosses.
++
++## 5. Regional power curve
++
++Keep the existing player/boss indexed curve:
++
++| Region | Player index | Boss attack index | Ratio |
++|---|---:|---:|---:|
++| Asterfall | 1.000 | 1.000 | 1.000 |
++| Sunscar | 1.888 | 1.912 | 0.987 |
++| Frostmarch | 3.355 | 3.309 | 1.014 |
++| Ashlands | 5.940 | 5.735 | 1.036 |
++
++All regions stay within roughly **±4% of stat parity**. Difficulty should therefore come from mechanics, gearing decisions, preparation and execution rather than arbitrary stat walls.
++
++## 6. Regional bosses
++
++Exact baselines remain:
++
++| Boss | Level | HP | Attack | Interval | Accuracy | Enrage |
++|---|---:|---:|---:|---:|---:|---:|
++| Fallen Knight | 25 | 180,000 | 68 | 2.5s | 420 | 360s |
++| Sand Tyrant | 45 | 520,000 | 130 | 2.4s | 760 | 360s |
++| Frost Wyrm | 70 | 1,450,000 | 225 | 2.3s | 1,350 | 390s |
++| Cinder Regent | 100 | 4,100,000 | 390 | 2.2s | 2,400 | 420s |
++
++Outcome targets:
++
++- prepared first-clear win rate: **60–80%**;
++- serious first-clear attempts: **2–6**;
++- intended clear: **45–75 seconds before enrage**;
++- tank survives at least **6 unmitigated basic attacks** at the intended gearing point;
++- no single gear profile becomes a hard requirement.
++
++Companions should assist these fights but should not solve interrupt/cleanse/positioning mechanics automatically.
++
++## 7. Elites
++
++Current regional elite multipliers remain healthy:
++
++| Region | HP mult | Damage mult |
++|---|---:|---:|
++| Asterfall | 1.80× | 1.45× |
++| Sunscar | 2.00× | 1.50× |
++| Frostmarch | 2.10× | 1.55× |
++| Ashlands | 2.20× | 1.60× |
++
++The design intentionally grows elite durability faster than burst lethality. This creates longer mechanic checks instead of unavoidable spike damage.
++
++Rare-drop chance/pity remains **2.5% / 25** for the authored elite reward table.
++
++## 8. Co-op composition and anti-carry
++
++Normal 4-player co-op remains exactly:
++
++- 1 Tank
++- 2 Damage
++- 1 Support
++
++Existing sync targets remain:
++
++| Content | Target power | Soft cap | Overcap stat retention |
++|---|---:|---:|---:|
++| Asterfall T1 | 500 | 575 | 35% |
++| Asterfall T2 | 760 | 875 | 35% |
++| Asterfall T3 | 1,040 | 1,195 | 35% |
++| Sunscar T1 | 1,450 | 1,665 | 35% |
++
++This is important after Companions: a highly progressed Companion must not reintroduce solo-carry behavior around a character-sync system.
++
++## 9. Roguelite Expedition / Q-Mode / Live tier balance
++
++The existing simulation summary broadly matches the intended clear bands, so tier indices should **not** be changed in this pass.
++
++| Tier | Difficulty index | Target clear band | Midpoint |
++|---|---:|---:|---:|
++| I | 1.00 | 90–97% | 95% |
++| II | 1.06 | 82–92% | 87% |
++| III | 1.11 | 70–85% | 77.5% |
++| IV | 1.19 | 55–70% | 62.5% |
++| V | 1.29 | 35–55% | 45% |
++
++The design simulation already shows expected composition pressure: all-DPS and weak compositions fall away faster as tiers rise while balanced profiles stay close to the target bands.
++
++### Full-repository validation required
++
++The recovered source contains the newer Phase-12/16 tests but not every unchanged dependency (`normalization`, route-generation helpers, snapshot modules, etc.). Reconstructing those modules from the older backend would create false compile conflicts. Therefore the existing tier numbers are protected as data-backed values; the final 1,000-seed Phase-12 run must happen in the current repository.
++
++## 10. Character Triad Trials
++
++Keep:
++
++- 30 floors;
++- boss every 5;
++- 3-character roster rules;
++- combat synergy hard cap **1.08×**;
++- current recommendation base/growth as a UI guide until full current-repo combat simulation is available.
++
++Do not reuse Companion Trial enemy scaling or Companion Team Power here. Character and Companion Trials are separate combat ecosystems.
++
++## 11. Combat Companions and Companion Trials
++
++See `COMBAT_COMPANION_BALANCE_V1.md` for the seeded details. Core locked targets:
++
++- character-assist typical contribution: **6–10%**, hard cap **12%**;
++- raid contribution: **2–5% per player**;
++- total rarity endpoint budgets: Standard 100%, Rare 109%, Elite 112%, Prestige 115.5%;
++- Companion Trial recommendation: **2,750 → 4,300**;
++- separate enemy growth: **1.020^(floor-1)**;
++- endgame-appropriate Floor 30 clear target: roughly **75–95%** for a well-built region-appropriate trio, while optimized top teams can become more reliable.
++
++## 12. Ranked PvP
++
++Ranked PvP remains a normalization mode, not a PvE-progression check.
++
++- gear normalized: yes;
++- Combat Companion raw rarity power normalized: yes;
++- achievement power bonus: **0**;
++- target balanced-match win rate: **48–52%**;
++- target match duration: **90–150 seconds**;
++- squad synergy cap: **1.08×**.
++
++Prestige Companion identity may remain through ability/Technique/Bond-Trait behavior where the PvP rules explicitly permit it, but raw PvE rarity advantage must not decide ranked matches by itself.
++
++## 13. Guild bosses
++
++Keep the current target-power progression and decreasing member carry cap:
++
++| Boss tier | Sync power | Per-member cap |
++|---|---:|---:|
++| Asterfall T1 | 650 | 8% |
++| Asterfall T2 | 950 | 7% |
++| Sunscar T3 | 1,550 | 6% |
++| Frostmarch T4 | 2,400 | 5% |
++
++This prevents one overgeared account plus a strong Companion from solving asynchronous guild content for everyone.
++
++## 14. Raids
++
++Current raid balance contracts remain:
++
++- 8 players;
++- Level 100;
++- boss enrages generally **7–10 minutes**;
++- Combat Companion contribution **2–5% per player**;
++- one normal personal loot roll per boss/week;
++- 40 eligible-kill pity;
++- targeted craft fallback in **6–10 weeks**;
++- Challenge modes offer prestige/cosmetic improvement, not exclusive mandatory combat power.
++
++Exact raid stat blocks and a full raid simulator are not present in the recovered source, so this pass does **not** invent them. Those encounters remain a real-repository/content-completion validation item.
++
++## 15. Gear and boss stat pressure
++
++Existing gear philosophy remains correct:
++
++- bosses can strongly prefer certain profiles;
++- alternate profiles remain viable with better play/team support;
++- no boss requires one exact set;
++- accuracy/haste/mitigation checks should be party-solvable where appropriate;
++- +10 late-Asterfall gear Gold farm should stay around **6–14h**, with **20h absolute fail ceiling**.
++
++The Companion system should complement, not replace, these gearing decisions.
++
++## 16. Combat reward/drop guardrails
++
++Direct equipment remains a jackpot path; crafting remains deterministic progression.
++
++Normal-enemy direct gear caps:
++
++- Common: 2.5%
++- Uncommon: 1.25%
++- Rare: 0.25%
++- Epic: 0.05%
++- Legendary: 0.01%
++- Mythic: 0.002%
++
++Boss direct-drop caps may be at most **2×** those normal caps for the same rarity.
++
++Co-op enhanced rewards remain bounded at:
++
++- 3/day;
++- 12/week;
++- 3 boss bonuses/week/region.
++
++Ranked PvP enhanced reward caps remain:
++
++- 5/day;
++- 25/week.
++
++## 17. New source-of-truth file
++
++`backend/src/server/balance/combat-balance.ts` now carries the cross-system numeric contracts and verification status. The accompanying test prevents accidental drift in:
++
++- nine-class role budgets;
++- progression-time authority;
++- regional power ratios;
++- boss progression;
++- elite scaling;
++- co-op role/sync rules;
++- Expedition clear bands;
++- Companion contribution/rarity targets;
++- ranked PvP normalization;
++- guild carry caps;
++- raid guardrails;
++- direct gear-drop ordering and recurring reward caps.
++
++## 18. What still needs the complete current repository
++
++These are **not** claimed as runtime-verified by this reduced handoff:
++
++1. full nine-class DPS/HPS/mitigation simulation, especially Bastion/Dreadguard;
++2. later-region ordinary monster combat simulation (Sunscar/Frostmarch/Ashlands);
++3. character Triad Trial Floor 1–30 clear-rate simulation;
++4. full current Q-Mode/Live 1,000-seed balance study with all unchanged dependencies restored;
++5. Arena 48–52% matrix across all nine classes and valid Companion sidegrades;
++6. guild-boss snapshot/contribution simulation;
++7. exact raid boss stat blocks and raid-party simulation.
++
++Codex should run these against the current repository and adjust the **specific failing surface only**. Do not globally multiply player or enemy power to compensate for one bad mode.
++
++## 19. Telemetry to collect after integration
++
++### Solo / regions
++- kill time by class, level, region and equipped Companion role;
++- damage taken per ordinary/Elite kill;
++- potion/preparation consumption;
++- first regional boss attempts and clear rate;
++- time spent at boss progression gates.
++
++### Classes
++- sustained DPS/HPS/mitigation by content band;
++- class clear-time spread;
++- Companion-role selection by character class;
++- wipe contribution by role/mechanic.
++
++### Co-op / Expeditions
++- clear rate by tier and party profile;
++- deaths/run;
++- duration/run;
++- highest DPS share;
++- failed mechanics vs raw-stat failures;
++- Q-Mode vs Live differences.
++
++### Companions
++- assist contribution%;
++- Trial floor/team clear rate;
++- rarity/origin usage;
++- Technique split;
++- lower-rarity use in unrestricted content;
++- Essence/Bondstone sources and sinks.
++
++### PvP / raids / guild
++- balanced-match class win matrix;
++- match duration;
++- Companion pick rate after normalization;
++- guild contribution concentration;
++- raid mechanic failure vs enrage failure;
++- raid Companion contribution share.
++
++## Final principle
++
++A new combat system should be balanced **inside its own budget first**. Do not compensate for a strong Companion, class, gear profile or dungeon modifier by globally increasing enemy stats. Global changes are justified only when broad telemetry shows the whole combat ecosystem has moved.

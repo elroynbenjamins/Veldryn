@@ -1,0 +1,521 @@
+{
+  "runAt": "2026-09-13T07:59:58.172Z",
+  "results": [
+    {
+      "check": "backend typecheck",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": ""
+    },
+    {
+      "check": "online backend build/typecheck",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": ""
+    },
+    {
+      "check": "online authenticated HTTP and idempotency",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "PASS authenticated gameplay HTTP, input authority, canonical replay, stale version and lost-response recovery\n"
+    },
+    {
+      "check": "online co-op owned-loadout derivation",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "online co-op loadout derivation PASS: nine distinct kits, owned equipment, no grants, revision hashes, slot validation\n"
+    },
+    {
+      "check": "online co-op authenticated entry and consent",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "PASS co-op entry authentication, authoritative projection, consent validation and transactional replay boundary\n"
+    },
+    {
+      "check": "online QMode concurrent receipt recovery",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "PASS QMode concurrent receipt visibility and changed-intent conflict\n"
+    },
+    {
+      "check": "online Live queue authenticated admission and retries",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "PASS Live queue authentication, server-derived role/equipment, ownership, content gates, replay/race/conflict, status, heartbeat and cancellation boundary\n"
+    },
+    {
+      "check": "online Live ready matching and roster freeze",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "PASS Live ready bounded retained-roster matching, authoritative four-player freeze, stale gear, concurrent receipt recovery and authenticated strict HTTP\n"
+    },
+    {
+      "check": "online published-loadout full-run balance",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "{\"dungeon\":\"EXP_001\",\"tank\":\"IRONWARDEN\",\"support\":\"DAWNKEEPER\",\"damage\":[\"WAYFINDER\",\"RAVAGER\"],\"clears\":97,\"samples\":100}\n{\"dungeon\":\"EXP_004\",\"tank\":\"IRONWARDEN\",\"support\":\"DAWNKEEPER\",\"damage\":[\"WAYFINDER\",\"RAVAGER\"],\"clears\":97,\"samples\":100}\n{\"dungeon\":\"EXP_001\",\"tank\":\"IRONWARDEN\",\"support\":\"DAWNKEEPER\",\"damage\":[\"HEXWEAVER\",\"KNIFE_DANCER\"],\"clears\":91,\"samples\":100}\n{\"dungeon\":\"EXP_004\",\"tank\":\"IRONWARDEN\",\"support\":\"DAWNKEEPER\",\"damage\":[\"HEXWEAVER\",\"KNIFE_DANCER\"],\"clears\":98,\"samples\":100}\n{\"dungeon\":\"EXP_001\",\"tank\":\"IRONWARDEN\",\"support\":\"STONECALLER\",\"damage\":[\"WAYFINDER\",\"RAVAGER\"],\"clears\":100,\"samples\":100}\n{\"dungeon\":\"EXP_004\",\"tank\":\"IRONWARDEN\",\"support\":\"STONECALLER\",\"damage\":[\"WAYFINDER\",\"RAVAGER\"],\"clears\":100,\"samples\":100}\n{\"dungeon\":\"EXP_001\",\"tank\":\"IRONWARDEN\",\"support\":\"STONECALLER\",\"damage\":[\"HEXWEAVER\",\"KNIFE_DANCER\"],\"clears\":97,\"samples\":100}\n{\"dungeon\":\"EXP_004\",\"tank\":\"IRONWARDEN\",\"support\":\"STONECALLER\",\"damage\":[\"HEXWEAVER\",\"KNIFE_DANCER\"],\"clears\":100,\"samples\":100}\n{\"dungeon\":\"EXP_001\",\"tank\":\"BASTION\",\"support\":\"DAWNKEEPER\",\"damage\":[\"WAYFINDER\",\"RAVAGER\"],\"clears\":99,\"samples\":100}\n{\"dungeon\":\"EXP_004\",\"tank\":\"BASTION\",\"support\":\"DAWNKEEPER\",\"damage\":[\"WAYFINDER\",\"RAVAGER\"],\"clears\":100,\"samples\":100}\n{\"dungeon\":\"EXP_001\",\"tank\":\"BASTION\",\"support\":\"DAWNKEEPER\",\"damage\":[\"HEXWEAVER\",\"KNIFE_DANCER\"],\"clears\":98,\"samples\":100}\n{\"dungeon\":\"EXP_004\",\"tank\":\"BASTION\",\"support\":\"DAWNKEEPER\",\"damage\":[\"HEXWEAVER\",\"KNIFE_DANCER\"],\"clears\":98,\"samples\":100}\n{\"dungeon\":\"EXP_001\",\"tank\":\"BASTION\",\"support\":\"STONECALLER\",\"damage\":[\"WAYFINDER\",\"RAVAGER\"],\"clears\":100,\"samples\":100}\n{\"dungeon\":\"EXP_004\",\"tank\":\"BASTION\",\"support\":\"STONECALLER\",\"damage\":[\"WAYFINDER\",\"RAVAGER\"],\"clears\":100,\"samples\":100}\n{\"dungeon\":\"EXP_001\",\"tank\":\"BASTION\",\"support\":\"STONECALLER\",\"damage\":[\"HEXWEAVER\",\"KNIFE_DANCER\"],\"clears\":99,\"samples\":100}\n{\"dungeon\":\"EXP_004\",\"tank\":\"BASTION\",\"support\":\"STONECALLER\",\"damage\":[\"HEXWEAVER\",\"KNIFE_DANCER\"],\"clears\":100,\"samples\":100}\n{\"dungeon\":\"EXP_001\",\"tank\":\"DREADGUARD\",\"support\":\"DAWNKEEPER\",\"damage\":[\"WAYFINDER\",\"RAVAGER\"],\"clears\":96,\"samples\":100}\n{\"dungeon\":\"EXP_004\",\"tank\":\"DREADGUARD\",\"support\":\"DAWNKEEPER\",\"damage\":[\"WAYFINDER\",\"RAVAGER\"],\"clears\":97,\"samples\":100}\n{\"dungeon\":\"EXP_001\",\"tank\":\"DREADGUARD\",\"support\":\"DAWNKEEPER\",\"damage\":[\"HEXWEAVER\",\"KNIFE_DANCER\"],\"clears\":99,\"samples\":100}\n{\"dungeon\":\"EXP_004\",\"tank\":\"DREADGUARD\",\"support\":\"DAWNKEEPER\",\"damage\":[\"HEXWEAVER\",\"KNIFE_DANCER\"],\"clears\":98,\"samples\":100}\n{\"dungeon\":\"EXP_001\",\"tank\":\"DREADGUARD\",\"support\":\"STONECALLER\",\"damage\":[\"WAYFINDER\",\"RAVAGER\"],\"clears\":99,\"samples\":100}\n{\"dungeon\":\"EXP_004\",\"tank\":\"DREADGUARD\",\"support\":\"STONECALLER\",\"damage\":[\"WAYFINDER\",\"RAVAGER\"],\"clears\":100,\"samples\":100}\n{\"dungeon\":\"EXP_001\",\"tank\":\"DREADGUARD\",\"support\":\"STONECALLER\",\"damage\":[\"HEXWEAVER\",\"KNIFE_DANCER\"],\"clears\":98,\"samples\":100}\n{\"dungeon\":\"EXP_004\",\"tank\":\"DREADGUARD\",\"support\":\"STONECALLER\",\"damage\":[\"HEXWEAVER\",\"KNIFE_DANCER\"],\"clears\":100,\"samples\":100}\nPASS 2400 full Q-Mode runs through actual online loadout derivation; all nine classes covered\n"
+    },
+    {
+      "check": "backend build",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": ""
+    },
+    {
+      "check": "backend smoke",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "{\n  \"routeNodes\": 8,\n  \"offer\": [\n    \"BOON_009\",\n    \"BOON_032\",\n    \"BOON_104\"\n  ],\n  \"encounter\": {\n    \"success\": true,\n    \"partyPower\": 1,\n    \"difficulty\": 1,\n    \"successProbability\": 0.8721384336809187,\n    \"roll\": 0.1483119826298207,\n    \"downs\": [],\n    \"hpAfter\": {\n      \"t\": 0.7064,\n      \"d1\": 0.6786,\n      \"d2\": 0.7464,\n      \"s\": 0.6507\n    }\n  }\n}\n"
+    },
+    {
+      "check": "backend combat-smoke",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "{\n  \"victory\": true,\n  \"reason\": \"victory\",\n  \"durationMs\": 44400,\n  \"eventCount\": 221,\n  \"interrupts\": 5,\n  \"remainingEnemyHp\": [\n    0\n  ]\n}\n"
+    },
+    {
+      "check": "backend combat-matrix",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "Rootbound Heart\tIronwarden/Wayfinder/Ravager/Dawnkeeper\t30/30\tavg=45.7s\tdowns=0\nRootbound Heart\tIronwarden/Hexweaver/Knife Dancer/Stonecaller\t30/30\tavg=51.7s\tdowns=0\nRootbound Heart\tIronwarden/Wayfinder/Ravager/Knife Dancer\t30/30\tavg=33.4s\tdowns=0\nRootbound Heart\tWayfinder/Ravager/Hexweaver/Knife Dancer\t30/30\tavg=32.4s\tdowns=30\nRootbound Heart\tIronwarden/Wayfinder/Dawnkeeper/Stonecaller\t30/30\tavg=66.8s\tdowns=0\nBell-Warden\tIronwarden/Wayfinder/Ravager/Dawnkeeper\t30/30\tavg=41.7s\tdowns=0\nBell-Warden\tIronwarden/Hexweaver/Knife Dancer/Stonecaller\t30/30\tavg=46.9s\tdowns=0\nBell-Warden\tIronwarden/Wayfinder/Ravager/Knife Dancer\t30/30\tavg=30.6s\tdowns=0\nBell-Warden\tWayfinder/Ravager/Hexweaver/Knife Dancer\t30/30\tavg=29s\tdowns=27\nBell-Warden\tIronwarden/Wayfinder/Dawnkeeper/Stonecaller\t30/30\tavg=61s\tdowns=0\n"
+    },
+    {
+      "check": "backend combat-service-smoke",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "{\n  \"success\": true,\n  \"durationMs\": 46400,\n  \"eventCount\": 228,\n  \"eventDigest\": \"5232ef3016ea5454\",\n  \"downs\": []\n}\n"
+    },
+    {
+      "check": "backend backend-pass-smoke",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "{\"ok\":true,\"fee\":{\"gross\":10000,\"listingFee\":200,\"saleFee\":300,\"sellerNet\":9700},\"fills\":[{\"buyId\":\"b\",\"sellId\":\"s\",\"unitPrice\":100,\"quantity\":3}],\"idle\":{\"elapsedSec\":28800,\"resourceAmount\":800,\"xp\":1600,\"newLastClaimAtMs\":28800000},\"inventory\":[{\"itemId\":\"ore\",\"quantity\":99,\"bound\":false},{\"itemId\":\"ore\",\"quantity\":21,\"bound\":false}],\"package\":\"com.elroybenjamins.veldryn\"}\n"
+    },
+    {
+      "check": "backend production-smoke",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "production-smoke ok\n"
+    },
+    {
+      "check": "backend squad-smoke",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "squad-smoke OK a 1d80726fe61b diverse_training,balanced_triad,anchored_front,protected_support\n"
+    },
+    {
+      "check": "backend coop-phase1",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "coop phase1 invariants OK\n"
+    },
+    {
+      "check": "backend coop-phase2",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "coop phase2 lifecycle OK\n"
+    },
+    {
+      "check": "backend coop-phase2-runtime",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "coop phase2 runtime adapter OK\n"
+    },
+    {
+      "check": "backend coop-phase2-contracts",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "coop phase2 API contracts OK\n"
+    },
+    {
+      "check": "backend coop-phase3",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "coop phase3 normalization OK {\"before\":{\"level\":100,\"maxHp\":20000,\"attackPower\":9000,\"healingPower\":500,\"defense\":4000},\"after\":{\"characterId\":\"c\",\"classId\":\"WAYFINDER\",\"level\":25,\"maxHp\":4564,\"attackPower\":781.25,\"healingPower\":125,\"defense\":931.25,\"accuracy\":500,\"evasion\":250,\"critChance\":0.9,\"haste\":2,\"role\":\"damage\"}}\n"
+    },
+    {
+      "check": "backend coop-phase3-commit",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "coop phase3 roster commit OK {\"roles\":[\"tank\",\"damage\",\"damage\",\"support\"],\"hashes\":[\"ec83af07\",\"dda32414\",\"db313bbb\",\"29324843\"]}\n"
+    },
+    {
+      "check": "backend coop-phase4",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "coop phase4 routes OK {\"seeds\":10000,\"distinctFirstLayers\":90}\n"
+    },
+    {
+      "check": "backend coop-phase5",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "coop phase5 stateful run OK {\"preBoss\":5,\"visited\":6}\n"
+    },
+    {
+      "check": "backend coop-phase6",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "coop phase6 qmode OK {\"echoes\":3,\"preBoss\":5,\"rewardMarks\":74}\n"
+    },
+    {
+      "check": "backend coop-phase6-projection",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "coop phase6 public projection OK\n"
+    },
+    {
+      "check": "backend coop-phase7",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "coop phase7 matchmaking OK\n"
+    },
+    {
+      "check": "backend coop-phase7-runtime",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "coop phase7 runtime adapter OK\n"
+    },
+    {
+      "check": "backend coop-phase8",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "coop phase8 ready/recovery OK\n"
+    },
+    {
+      "check": "backend coop-phase9",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "coop phase9 voting OK\n"
+    },
+    {
+      "check": "backend coop-phase10",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "coop phase10 chat OK\n"
+    },
+    {
+      "check": "backend coop-phase11",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "coop phase11 rewards OK\n"
+    },
+    {
+      "check": "backend coop-phase12",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "{\"engine\":\"full_combat\",\"samplesPerScenario\":1000,\"scenarios\":[{\"id\":\"restoration_baseline\",\"samples\":1000,\"clearRate\":0.953,\"clearRate95\":[0.9381,0.9645],\"deathsPerRun\":0.414,\"avgDurationSeconds\":84.81,\"avgMarks\":71.74,\"preBossNodeCount\":5,\"byLength\":{\"5\":{\"samples\":1000,\"clearRate\":0.953,\"clearRate95\":[0.9381,0.9645],\"avgDurationSeconds\":84.81,\"avgMarks\":71.74}}},{\"id\":\"utility_baseline\",\"samples\":1000,\"clearRate\":0.966,\"clearRate95\":[0.9529,0.9756],\"deathsPerRun\":0.25,\"avgDurationSeconds\":95.9,\"avgMarks\":72.37,\"preBossNodeCount\":5,\"byLength\":{\"5\":{\"samples\":1000,\"clearRate\":0.966,\"clearRate95\":[0.9529,0.9756],\"avgDurationSeconds\":95.9,\"avgMarks\":72.37}}},{\"id\":\"overgear_tank\",\"samples\":1000,\"clearRate\":0.956,\"clearRate95\":[0.9414,0.9671],\"deathsPerRun\":0.366,\"avgDurationSeconds\":84.63,\"avgMarks\":71.89,\"preBossNodeCount\":5,\"byLength\":{\"5\":{\"samples\":1000,\"clearRate\":0.956,\"clearRate95\":[0.9414,0.9671],\"avgDurationSeconds\":84.63,\"avgMarks\":71.89}}},{\"id\":\"overgear_damage\",\"samples\":1000,\"clearRate\":0.947,\"clearRate95\":[0.9313,0.9593],\"deathsPerRun\":0.405,\"avgDurationSeconds\":85.04,\"avgMarks\":71.46,\"preBossNodeCount\":5,\"byLength\":{\"5\":{\"samples\":1000,\"clearRate\":0.947,\"clearRate95\":[0.9313,0.9593],\"avgDurationSeconds\":85.04,\"avgMarks\":71.46}}},{\"id\":\"overgear_support\",\"samples\":1000,\"clearRate\":0.944,\"clearRate95\":[0.928,0.9566],\"deathsPerRun\":0.418,\"avgDurationSeconds\":84.43,\"avgMarks\":71.31,\"preBossNodeCount\":5,\"byLength\":{\"5\":{\"samples\":1000,\"clearRate\":0.944,\"clearRate95\":[0.928,0.9566],\"avgDurationSeconds\":84.43,\"avgMarks\":71.31}}},{\"id\":\"solo_tank\",\"samples\":1000,\"clearRate\":0,\"clearRate95\":[0,0.0038],\"deathsPerRun\":1,\"avgDurationSeconds\":15.02,\"avgMarks\":4,\"preBossNodeCount\":5,\"byLength\":{\"5\":{\"samples\":1000,\"clearRate\":0,\"clearRate95\":[0,0.0038],\"avgDurationSeconds\":15.02,\"avgMarks\":4}}},{\"id\":\"solo_damage\",\"samples\":1000,\"clearRate\":0,\"clearRate95\":[0,0.0038],\"deathsPerRun\":1,\"avgDurationSeconds\":6.01,\"avgMarks\":4,\"preBossNodeCount\":5,\"byLength\":{\"5\":{\"samples\":1000,\"clearRate\":0,\"clearRate95\":[0,0.0038],\"avgDurationSeconds\":6.01,\"avgMarks\":4}}},{\"id\":\"solo_support\",\"samples\":1000,\"clearRate\":0,\"clearRate95\":[0,0.0038],\"deathsPerRun\":1,\"avgDurationSeconds\":16.59,\"avgMarks\":4,\"preBossNodeCount\":5,\"byLength\":{\"5\":{\"samples\":1000,\"clearRate\":0,\"clearRate95\":[0,0.0038],\"avgDurationSeconds\":16.59,\"avgMarks\":4}}}],\"maxObservedDamageShare\":0.4152}\n"
+    },
+    {
+      "check": "backend coop-phase13",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "coop phase13 regional content OK {\"EXP_003_restoration\":{\"clears\":474,\"samples\":500,\"averageCombatSeconds\":94.52},\"EXP_003_utility\":{\"clears\":493,\"samples\":500,\"averageCombatSeconds\":107.11},\"EXP_004_restoration\":{\"clears\":487,\"samples\":500,\"averageCombatSeconds\":95.38},\"EXP_004_utility\":{\"clears\":494,\"samples\":500,\"averageCombatSeconds\":107.32}}\n"
+    },
+    {
+      "check": "backend party-v16",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "party v16 tests passed\n"
+    },
+    {
+      "check": "backend recruitment-test",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "recruitment tests passed\n"
+    },
+    {
+      "check": "backend combat-rng-portable",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "PASS portable combat RNG: 1,280 exact Node HMAC comparisons, long keys, Unicode and malformed surrogates\n"
+    },
+    {
+      "check": "mobile full typecheck",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": ""
+    },
+    {
+      "check": "mobile core typecheck",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": ""
+    },
+    {
+      "check": "mobile core build",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "TSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/auth-callback.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/quick-navigation.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/combat-companion-types.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/content/combat-companions.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/combat-companions.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/content/monsters.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/item-rarity.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/content/gathering-tools.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/content/items.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/content/skills.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/backend/src/server/expeditions/constants.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/backend/src/server/combat/calculations.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/backend/src/server/combat/deterministic-rng.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/backend/src/server/combat/types.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/backend/src/server/combat/engine.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/backend/src/server/companions/policy.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/backend/src/server/companions/domain.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/backend/src/server/companions/content.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/backend/src/server/companions/combat-adapter.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/backend/src/server/companions/team.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/backend/src/server/companions/trial-season.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/backend/src/server/companions/trials.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/backend/src/server/companions/assignments.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/backend/src/server/companions/progression-v2.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/backend/src/server/companions/codex.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/backend/src/server/companions/proving-grounds.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/backend/src/server/companions/projection.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/backend/src/server/companions/special-challenges.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/companion-runtime.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/i18n/languages.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/types.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/content/novice-sets.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/character-appearance.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/character-creation.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/content/equipment-sets.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/content/character-skin-sets.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/character-skins.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/class-combat.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/content/classes.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/content/quests.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/progression.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/rng.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/content/world-map.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/world-weather.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/seasonal-quests.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/content/permanent-boosts.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/permanent-boosts.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/content/live-events.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/live-events.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/gathering-tools.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/combat-region.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/equipment-enhancement.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/game.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/combat-presentation.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/companion-phase2-presentation.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/companion-save.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/coop-command-journal.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/coop-ui-contract.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/coop-dungeon-browsing.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/coop-event-expeditions.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/coop-live-lobby.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/coop-presentation.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/coop-loadout-presentation.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/coop-qmode.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/coop-shared-run.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/dashboard.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/equipment-preview.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/content/loadouts.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/equipment-screen.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/playability.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/game-commands.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/guild-access.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/guild-applications.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/guild-profile.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/guild-pve.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/inventory-view.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/market.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/number-format.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/repository.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/online-game-repository.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/party-social.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/profile-cosmetics.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/profile-unlocks.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/quest-journal.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/save-normalization.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/save-migrations.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/save-transfer.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/social-identity.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/visual-feedback.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/core/world-navigation.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/content/asterfall.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/i18n/operational.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/i18n/coop.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/i18n/coop-loadout.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/i18n/index.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/online/supabase.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/online/coop-client.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/online/coop-entry-source.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/dev/coop-dungeon-fixtures.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/dev/coop-qmode-fixtures.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/dev/coop-shared-run-fixtures.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/src/dev/debug-tools.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/character-foundation.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/character-skins.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/class-combat.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/combat-presentation.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/combat-region.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/companion-integration.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/coop-dungeon-browsing.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/coop-live-lobby.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/coop-loadout-presentation.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/coop-online-runtime.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/coop-presentation.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/coop-qmode.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/coop-shared-run.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/coop-ui-contract.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/dashboard.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/equipment-enhancement.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/equipment-progression-v2.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/equipment-screen.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/gathering-tools.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/inventory-view.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/item-rarity-v2.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/live-events.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/localization.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/market-bulk-buy.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/novice-sets.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/offline-cap.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/offline-smoke.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/online-gameplay.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/party-social-v16.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/playability.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/pre-codex-smoke.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/progression-balance.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/progression-v6.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/quest-journal.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/quick-navigation.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/save-transfer.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/seasonal-quests.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/set-bonuses.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/social-identity.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/startup-summary.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/storage-bank.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/visual-polish.js\r\nTSFILE: C:/Users/elroy/OneDrive/Documents/ChatGPT/Veldryn/apps/mobile/.core-build/apps/mobile/tests/world-weather.js\r\n"
+    },
+    {
+      "check": "mobile character-foundation.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "PASS: 18 character variants, primary weapon contract, persistence and legacy equipment preservation\n"
+    },
+    {
+      "check": "mobile character-skins.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "PASS: accepted front skins, progression sets, Aster Iron, beginner sets, and Harvestwake rewards unlock class-bound appearances\n"
+    },
+    {
+      "check": "mobile class-combat.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "PASS: 9 class combat identities\n"
+    },
+    {
+      "check": "mobile combat-presentation.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "{\"status\":\"PASS\",\"start\":{\"enemyHp\":30,\"enemyMaxHp\":30,\"playerHit\":22,\"enemyHit\":1,\"safety\":\"safe\",\"style\":{\"name\":\"Hold the Line\",\"description\":\"Reduces incoming damage by 16%, but attacks more slowly.\",\"speedMultiplier\":0.94,\"damageTakenMultiplier\":0.84,\"recoveryPct\":0.014}},\"late\":{\"enemyHp\":17,\"enemyMaxHp\":30,\"playerHit\":22,\"enemyHit\":1,\"safety\":\"safe\",\"style\":{\"name\":\"Hold the Line\",\"description\":\"Reduces incoming damage by 16%, but attacks more slowly.\",\"speedMultiplier\":0.94,\"damageTakenMultiplier\":0.84,\"recoveryPct\":0.014}}}\n"
+    },
+    {
+      "check": "mobile combat-region.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "PASS: travel persists location and region gates combat and gathering\n"
+    },
+    {
+      "check": "mobile companion-integration.js",
+      "status": "FAIL",
+      "exitCode": 1,
+      "output": "C:\\Users\\elroy\\OneDrive\\Documents\\ChatGPT\\Veldryn\\apps\\mobile\\.core-build\\backend\\src\\server\\companions\\progression-v2.js:27\r\n        throw new Error('invalid_companion_technique');\r\n        ^\r\n\r\nError: invalid_companion_technique\r\n    at selectCompanionTechnique (C:\\Users\\elroy\\OneDrive\\Documents\\ChatGPT\\Veldryn\\apps\\mobile\\.core-build\\backend\\src\\server\\companions\\progression-v2.js:27:15)\r\n    at executeCompanionActivity (C:\\Users\\elroy\\OneDrive\\Documents\\ChatGPT\\Veldryn\\apps\\mobile\\.core-build\\apps\\mobile\\src\\core\\companion-runtime.js:170:69)\r\n    at executeGameCommand (C:\\Users\\elroy\\OneDrive\\Documents\\ChatGPT\\Veldryn\\apps\\mobile\\.core-build\\apps\\mobile\\src\\core\\game-commands.js:151:70)\r\n    at command (C:\\Users\\elroy\\OneDrive\\Documents\\ChatGPT\\Veldryn\\apps\\mobile\\.core-build\\apps\\mobile\\tests\\companion-integration.js:25:87)\r\n    at Object.<anonymous> (C:\\Users\\elroy\\OneDrive\\Documents\\ChatGPT\\Veldryn\\apps\\mobile\\.core-build\\apps\\mobile\\tests\\companion-integration.js:54:5)\r\n    at Module._compile (node:internal/modules/cjs/loader:1872:14)\r\n    at Object..js (node:internal/modules/cjs/loader:2003:10)\r\n    at Module.load (node:internal/modules/cjs/loader:1594:32)\r\n    at Module._load (node:internal/modules/cjs/loader:1396:12)\r\n    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)\r\n\r\nNode.js v24.19.0\r\n"
+    },
+    {
+      "check": "mobile coop-dungeon-browsing.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "co-op dungeon browsing OK (6 languages, 75 messages each)\n"
+    },
+    {
+      "check": "mobile coop-live-lobby.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "PASS Live lobby uses database time for ready/refill deadlines and stops terminal countdowns\n"
+    },
+    {
+      "check": "mobile coop-loadout-presentation.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "coop loadout presentation OK\n"
+    },
+    {
+      "check": "mobile coop-online-runtime.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "PASS co-op durable retries, restart recovery, definitive errors, actual route choices and projection privacy\n"
+    },
+    {
+      "check": "mobile coop-presentation.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "coop presentation OK\n"
+    },
+    {
+      "check": "mobile coop-qmode.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "coop qmode presentation OK\n"
+    },
+    {
+      "check": "mobile coop-shared-run.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "coop shared run presentation OK\n"
+    },
+    {
+      "check": "mobile coop-ui-contract.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "co-op UI contract OK\n"
+    },
+    {
+      "check": "mobile dashboard.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "{\"status\":\"PASS\",\"recommendation\":{\"title\":\"Continue: A Name in the Ledger\",\"detail\":\"Hunt Moss Rat in Greenfields · 5 remaining.\",\"button\":\"Open hunting ground\",\"destination\":\"World\",\"zoneId\":\"Greenfields\",\"priority\":\"progress\"},\"rate\":{\"actionsPerHour\":234,\"xpPerHour\":3962,\"goldPerHour\":234}}\n"
+    },
+    {
+      "check": "mobile equipment-enhancement.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "equipment enhancement tests passed\n"
+    },
+    {
+      "check": "mobile equipment-progression-v2.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "PASS: Aster-Iron, Oathstone Bulwark, all Asterfall, Sunscar and Frostmarch class sets are complete, gated and salvageable\n"
+    },
+    {
+      "check": "mobile equipment-screen.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "PASS: equipment screen uses ten live slots, canonical stats, loadout guides and saved presentation\n"
+    },
+    {
+      "check": "mobile gathering-tools.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "Gathering tool progression tests passed.\n"
+    },
+    {
+      "check": "mobile inventory-view.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "PASS: inventory search, filters, sorting, transfer preflight and healing previews\n"
+    },
+    {
+      "check": "mobile item-rarity-v2.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "PASS: rarity odds, colors, stat multipliers and deterministic roll API\n"
+    },
+    {
+      "check": "mobile live-events.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "{\n  \"status\": \"PASS\",\n  \"afterCombat\": 144,\n  \"finalProgress\": 13000\n}\n"
+    },
+    {
+      "check": "mobile localization.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "Localization tests passed (6 languages, 73 shared and 43 operational messages each).\n"
+    },
+    {
+      "check": "mobile market-bulk-buy.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "{\n  \"status\": \"PASS\",\n  \"buyX\": {\n    \"requestedQuantity\": 200,\n    \"filledQuantity\": 200,\n    \"unfilledQuantity\": 0,\n    \"totalCost\": 18700,\n    \"averageUnitPrice\": 93.5,\n    \"highestUnitPrice\": 105,\n    \"listingsUsed\": 3,\n    \"fills\": [\n      {\n        \"listingId\": \"L1\",\n        \"sellerId\": \"S1\",\n        \"quantity\": 100,\n        \"unitPrice\": 90,\n        \"subtotal\": 9000\n      },\n      {\n        \"listingId\": \"L2\",\n        \"sellerId\": \"S2\",\n        \"quantity\": 80,\n        \"unitPrice\": 95,\n        \"subtotal\": 7600\n      },\n      {\n        \"listingId\": \"L3\",\n        \"sellerId\": \"S3\",\n        \"quantity\": 20,\n        \"unitPrice\": 105,\n        \"subtotal\": 2100\n      }\n    ]\n  }\n}\n"
+    },
+    {
+      "check": "mobile novice-sets.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "PASS: 18 novice variants, 402 recipes including capes, amulets and rings, class/stage gates, bank crafting, atomic equip and save migration\n"
+    },
+    {
+      "check": "mobile offline-cap.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "PASS: AFK reserve scales 24h to 36h and clamps at 36h\n"
+    },
+    {
+      "check": "mobile offline-smoke.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "{\n  \"status\": \"PASS\",\n  \"firstMinute\": {\n    \"xp\": 67,\n    \"gold\": 4,\n    \"items\": [\n      {\n        \"itemId\": \"MOSS_FIBER\",\n        \"quantity\": 2\n      }\n    ],\n    \"kills\": 4,\n    \"elapsedSeconds\": 60,\n    \"foodConsumed\": 0,\n    \"endHp\": 110,\n    \"stoppedReason\": \"\",\n    \"eventDrops\": [],\n    \"eventDiscoveries\": []\n  },\n  \"offlineCapHours\": 24,\n  \"level25Xp\": 412849\n}\n"
+    },
+    {
+      "check": "mobile online-gameplay.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "PASS online commands, server clock, activity settlement, authority, PKCE, secure storage, persistent retry and stale state\n"
+    },
+    {
+      "check": "mobile party-social-v16.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "mobile party social v16 tests passed\n"
+    },
+    {
+      "check": "mobile playability.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "PASS: activity settlement, no duplicate claim, bank-aware recipes and world navigation\n"
+    },
+    {
+      "check": "mobile pre-codex-smoke.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "{\n  \"status\": \"PASS\",\n  \"saveSchema\": 6,\n  \"debugLevel\": 25,\n  \"debugGold\": 600\n}\n"
+    },
+    {
+      "check": "mobile progression-balance.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "{\n  \"status\": \"PASS\",\n  \"classCount\": 9,\n  \"asterfallMonsterCount\": 22,\n  \"questCount\": 15,\n  \"starterKillSpreadPct\": 25,\n  \"firstMinute\": [\n    {\n      \"classId\": \"IRONWARDEN\",\n      \"kills\": 4,\n      \"power\": 59\n    },\n    {\n      \"classId\": \"BASTION\",\n      \"kills\": 3,\n      \"power\": 58\n    },\n    {\n      \"classId\": \"DREADGUARD\",\n      \"kills\": 4,\n      \"power\": 61\n    },\n    {\n      \"classId\": \"DAWNKEEPER\",\n      \"kills\": 4,\n      \"power\": 49\n    },\n    {\n      \"classId\": \"WAYFINDER\",\n      \"kills\": 4,\n      \"power\": 59\n    },\n    {\n      \"classId\": \"RAVAGER\",\n      \"kills\": 4,\n      \"power\": 62\n    },\n    {\n      \"classId\": \"HEXWEAVER\",\n      \"kills\": 4,\n      \"power\": 51\n    },\n    {\n      \"classId\": \"KNIFE_DANCER\",\n      \"kills\": 4,\n      \"power\": 58\n    },\n    {\n      \"classId\": \"STONECALLER\",\n      \"kills\": 4,\n      \"power\": 58\n    }\n  ],\n  \"level25Simulation\": [\n    {\n      \"classId\": \"IRONWARDEN\",\n      \"hours\": 297.5,\n      \"level\": 25,\n      \"power\": 193,\n      \"regionalPrepared\": true\n    },\n    {\n      \"classId\": \"BASTION\",\n      \"hours\": 310,\n      \"level\": 25,\n      \"power\": 193,\n      \"regionalPrepared\": true\n    },\n    {\n      \"classId\": \"DREADGUARD\",\n      \"hours\": 271.5,\n      \"level\": 25,\n      \"power\": 194,\n      \"regionalPrepared\": true\n    },\n    {\n      \"classId\": \"DAWNKEEPER\",\n      \"hours\": 297,\n      \"level\": 25,\n      \"power\": 179,\n      \"regionalPrepared\": true\n    },\n    {\n      \"classId\": \"WAYFINDER\",\n      \"hours\": 262.5,\n      \"level\": 25,\n      \"power\": 190,\n      \"regionalPrepared\": true\n    },\n    {\n      \"classId\": \"RAVAGER\",\n      \"hours\": 252,\n      \"level\": 25,\n      \"power\": 244,\n      \"regionalPrepared\": true\n    },\n    {\n      \"classId\": \"HEXWEAVER\",\n      \"hours\": 272.5,\n      \"level\": 25,\n      \"power\": 181,\n      \"regionalPrepared\": true\n    },\n    {\n      \"classId\": \"KNIFE_DANCER\",\n      \"hours\": 259,\n      \"level\": 25,\n      \"power\": 191,\n      \"regionalPrepared\": true\n    },\n    {\n      \"classId\": \"STONECALLER\",\n      \"hours\": 301,\n      \"level\": 25,\n      \"power\": 189,\n      \"regionalPrepared\": true\n    }\n  ],\n  \"level25ProductiveCombatTarget\": {\n    \"min\": 175,\n    \"max\": 288\n  },\n  \"playerProfiles\": [\n    {\n      \"name\": \"New / Inefficient\",\n      \"offline\": 7.5,\n      \"active\": 0.35,\n      \"eff\": 0.68,\n      \"medianModelDays\": 99.59\n    },\n    {\n      \"name\": \"Casual\",\n      \"offline\": 10,\n      \"active\": 0.55,\n      \"eff\": 0.78,\n      \"medianModelDays\": 64.6\n    },\n    {\n      \"name\": \"Normal\",\n      \"offline\": 12,\n      \"active\": 0.8,\n      \"eff\": 0.88,\n      \"medianModelDays\": 47.19\n    },\n    {\n      \"name\": \"Active\",\n      \"offline\": 16,\n      \"active\": 1.4,\n      \"eff\": 0.94,\n      \"medianModelDays\": 32.5\n    },\n    {\n      \"name\": \"Optimizer\",\n      \"offline\": 20,\n      \"active\": 1.8,\n      \"eff\": 0.985,\n      \"medianModelDays\": 24.76\n    }\n  ],\n  \"preparedBossReadiness\": {\n    \"total\": 100,\n    \"level\": 30,\n    \"quest\": 15,\n    \"equipment\": 35,\n    \"food\": 10,\n    \"mastery\": 10,\n    \"recommended\": true\n  },\n  \"preparedBossWinChance\": 0.9\n}\n"
+    },
+    {
+      "check": "mobile progression-v6.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "PASS: v6 pacing, requirements, language and account migration\n"
+    },
+    {
+      "check": "mobile quest-journal.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "PASS: quest filters, search, destinations, claim advancement and finished campaign\n"
+    },
+    {
+      "check": "mobile quick-navigation.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "PASS: quick navigation defaults, customization order and legacy-save normalization are stable\n"
+    },
+    {
+      "check": "mobile save-transfer.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "PASS: versioned save export/import validation and display number formatting\n"
+    },
+    {
+      "check": "mobile seasonal-quests.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "PASS: deterministic class-aligned weekly and monthly quest boards\n"
+    },
+    {
+      "check": "mobile set-bonuses.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "PASS: Bastion full-set bonus adds 23 DEF and 62 HP\n"
+    },
+    {
+      "check": "mobile social-identity.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "PASS: all canonical/display class identities and unknown fallbacks\n"
+    },
+    {
+      "check": "mobile startup-summary.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "Startup activity summary tests passed.\n"
+    },
+    {
+      "check": "mobile storage-bank.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "{\n  \"status\": \"PASS\",\n  \"inventoryCapacity\": 40,\n  \"bankCapacity\": 120,\n  \"inventoryRations\": 17,\n  \"bankRations\": 3\n}\n"
+    },
+    {
+      "check": "mobile visual-polish.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "PASS: cosmetic ownership, confirmed upgrade/failure/socket feedback and replay-safe claim announcements\n"
+    },
+    {
+      "check": "mobile world-weather.js",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "PASS: Bloomtide, Steady Rain, 72 actions/hour\n"
+    },
+    {
+      "check": "v16 migration static audit",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "v16 migration static audit passed (22 invariants)\n"
+    },
+    {
+      "check": "chat pilot core",
+      "status": "PASS",
+      "exitCode": 0,
+      "output": "✔ default tray has 20 free stable IDs (6.8506ms)\n✔ 20 mixed-gender and pet emotes are accepted (1.2581ms)\n✔ incomplete draft cannot be saved (0.6311ms)\n✔ 21 entries cannot be saved (0.6998ms)\n✔ duplicates rejected (0.4313ms)\n✔ unknown ID rejected (1.5967ms)\n✔ locked ID rejected (0.5899ms)\n✔ reconciliation keeps valid mixed choices and fills missing entries with defaults (2.1685ms)\n✔ reorder is immutable and preserves membership (1.2096ms)\n✔ invalid reorder is a harmless copy (0.6679ms)\n✔ emote inserts at caret not always at end (0.5123ms)\n✔ parser creates stable segments for known emotes (0.7237ms)\n✔ unknown shortcode remains ordinary text (0.2615ms)\n✔ ordinary Unicode remains text and counts code points (0.3962ms)\n✔ 500 characters accepted, 501 rejected (0.5875ms)\n✔ emote-only messages allowed (0.3773ms)\n✔ blank messages rejected (0.2016ms)\n✔ at most 8 emotes per message (0.2841ms)\n✔ locked emote cannot be sent (0.291ms)\n✔ World is opt-in for reading and sending (1.1402ms)\n✔ Guild and Party both require membership (0.5449ms)\n✔ System can be read but never written (0.6585ms)\n✔ offline preserves draft and prevents a send (0.3401ms)\n✔ self and blocked whispers denied (0.3392ms)\n✔ server echo replaces optimistic row with same request ID (0.5055ms)\n✔ sent acknowledgement is not downgraded by stale pending echo (0.2714ms)\n✔ matching request IDs from another sender are not merged (27.6122ms)\n✔ sort order is deterministic (0.3682ms)\n✔ send success creates one delivered row (12.4907ms)\n✔ failed send retries with the same request ID and no duplicate (17.6395ms)\n✔ changing channel during an in-flight send preserves the original channel (12.2233ms)\n✔ double-send while pending is blocked (15.9141ms)\n✔ failure does not erase a newly typed draft (14.7216ms)\n✔ mismatched server receipt fails safely (0.7821ms)\n✔ incoming unread increments once despite duplicate delivery (1.3375ms)\n✔ reading the bottom clears active unread (0.4654ms)\n✔ blocking hides rows and suppresses unread, without altering message evidence (0.579ms)\n✔ history merge does not create new unread notifications (0.2945ms)\n✔ account-scoped settings retain mixed order across controller instances (1.6014ms)\n✔ failed settings save preserves old saved tray (0.6323ms)\n✔ invalid settings never reach persistence adapter (0.3035ms)\n✔ settings load error uses free defaults and exposes error (0.538ms)\n✔ failed World consent save reports session-only success (0.6194ms)\n✔ custom token does not permit arbitrary image or HTML source (0.3267ms)\nℹ tests 44\nℹ suites 0\nℹ pass 44\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 157.2774\n"
+    }
+  ]
+}

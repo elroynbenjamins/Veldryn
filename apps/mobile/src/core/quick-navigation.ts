@@ -1,10 +1,10 @@
 export const QUICK_NAV_DESTINATIONS=[
-  'Home','Character','World','Inventory','More','Quests','Skills','Events','Friends','Guild','Settings',
+  'Home','Character','World','Inventory','More','Quests','Companions','Skills','Events','Friends','Guild','Settings','Social','Party',
 ] as const;
 
 export type QuickNavDestination=typeof QUICK_NAV_DESTINATIONS[number];
 
-export const DEFAULT_QUICK_NAV_DESTINATIONS:QuickNavDestination[]=['Quests','Skills','Events','Guild','Settings'];
+export const DEFAULT_QUICK_NAV_DESTINATIONS:QuickNavDestination[]=['Quests','Companions','Guild','Skills','Events'];
 
 const allowed=new Set<string>(QUICK_NAV_DESTINATIONS);
 

@@ -1,0 +1,2 @@
+import type {AchievementClaimResult,AchievementShowcaseResult,AchievementSnapshotProjection} from './achievement-types';
+export interface AchievementRepository{snapshot(accountId:string):Promise<AchievementSnapshotProjection>;claim(accountId:string,achievementId:string,requestId:string,nowMs:number):Promise<AchievementClaimResult>;setShowcase(accountId:string,achievementIds:string[],requestId:string,nowMs:number):Promise<AchievementShowcaseResult>}

@@ -63,9 +63,12 @@ export function resolveAndFreezeLoadout(input: {
   const source: VerifiedCombatSnapshot = { ...record.stats, role, classId: record.classId, characterId: record.characterId, level: record.characterLevel };
   const normalized = normalizeCombatInput(source, record.abilities, input.syncLevel, ROOTBOUND_ROLE_REFERENCES[role]);
   const reference = ROOTBOUND_ROLE_REFERENCES[role];
-  const primary = role === 'tank' ? normalized.snapshot.defense / reference.defense
+  // Compare against the same effective-level reference used by normalization.
+  // Otherwise an undergeared level-45 character passes against level-25 budgets.
+  const referenceScale = normalized.effectiveLevel / reference.level;
+  const primary = (role === 'tank' ? normalized.snapshot.defense / reference.defense
     : role === 'support' ? Math.max(normalized.snapshot.healingPower / reference.healingPower, normalized.snapshot.defense / reference.defense)
-    : normalized.snapshot.attackPower / reference.attackPower;
+    : normalized.snapshot.attackPower / reference.attackPower) / referenceScale;
   const readiness = evaluateRoleReadiness(record.classId, primary, record.capabilities);
   if (!readiness.ready) throw new Error(`role_not_ready:${readiness.failures.join(',')}`);
   const frozen = { accountId: record.accountId, characterId: record.characterId, classId: record.classId, loadoutId: record.loadoutId, revision: record.revision, normalized, readiness };

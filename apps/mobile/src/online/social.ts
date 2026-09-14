@@ -1,10 +1,10 @@
 import {supabase} from './supabase';
 
 export const WORLD_CHANNELS=[
-  {id:'world-1',name:'World 1',language:'English'},
-  {id:'world-2',name:'World 2',language:'Español'},
-  {id:'world-3',name:'World 3',language:'Global'},
-  {id:'world-4',name:'World 4',language:'Global'},
+  {id:'world-1',name:'English',language:'English'},
+  {id:'world-2',name:'Spanish',language:'Spanish'},
+  {id:'world-3',name:'Global 1',language:'Global'},
+  {id:'world-4',name:'Global 2',language:'Global'},
 ] as const;
 export type WorldMessage={id:string;sender_name:string;body:string;created_at:string;account_id:string};
 export type OnlineGuild={id:string;name:string;level:number;member_cap:number;minimum_level:number;join_policy:'open'|'apply'|'invite'};

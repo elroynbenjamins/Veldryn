@@ -18,7 +18,10 @@ state={...state,
 };
 
 const complete=characterSkinCollection(state).find(skin=>skin.setId===set.id)!;
-ok(complete.ownedPieces===set.itemIds.length&&complete.unlocked,'Every ownership location must count toward a complete set');
+ok(complete.ownedPieces===set.itemIds.length-1&&!complete.unlocked,'Shared Bank equipment must not unlock a character skin');
+state={...state,inventory:{...state.inventory,stacks:[...state.inventory.stacks,{itemId:set.itemIds[1],quantity:1}]}};
+const afterCarrying=characterSkinCollection(state).find(skin=>skin.setId===set.id)!;
+ok(afterCarrying.ownedPieces===set.itemIds.length&&afterCarrying.unlocked,'Character-carried equipment unlocks a complete set');
 state=discoverCharacterSkins(state);
 const skinId=equipmentSetSkinId(set.id);
 ok(state.character!.unlockedSkinIds!.includes(skinId),'Complete-set ownership must be recorded');
@@ -49,7 +52,7 @@ ok(CHARACTER_SKIN_SETS.some(candidate=>candidate.id==='aster_iron'&&candidate.it
 const harvestSet=CHARACTER_SKIN_SETS.find(candidate=>candidate.id==='harvestwake-harvest-defender')!;
 ok(harvestSet.appearanceId==='event-front-harvestwake-harvest-defender'&&harvestSet.unlockEventSkinId==='skin_harvestwake_ironwarden','Harvestwake must map its class reward to the approved production appearance');
 let eventState=createCharacter(newGame(5_000),'IRONWARDEN','EventSkinTester');
-eventState={...eventState,account:{...eventState.account,unlockedEventSkinIds:['skin_harvestwake_ironwarden']}};
+eventState={...eventState,character:{...eventState.character!,unlockedEventSkinIds:['skin_harvestwake_ironwarden']}};
 const eventSkinId=equipmentSetSkinId(harvestSet.id);
 ok(characterSkinCollection(eventState).find(skin=>skin.id===eventSkinId)?.unlocked===true,'An earned event reward must immediately appear in the class skin collection');
 eventState=selectCharacterSkin(eventState,eventSkinId);

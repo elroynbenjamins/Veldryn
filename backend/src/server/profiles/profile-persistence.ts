@@ -1,0 +1,2 @@
+import type {ProfileSelectionInput,ProfileSelfProjection,ProfileUpdateResult,PublicProfileProjection} from './profile-types';
+export interface ProfileRepository{self(accountId:string):Promise<ProfileSelfProjection>;publicProfile(viewerAccountId:string,targetAccountId:string):Promise<PublicProfileProjection>;update(accountId:string,input:ProfileSelectionInput,nowMs:number):Promise<ProfileUpdateResult>}

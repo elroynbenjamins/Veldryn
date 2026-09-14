@@ -2,8 +2,10 @@ import { ClassId,GatheringSkillId,GearSlot,GemStat } from '../core/types';
 import {ItemRarity} from '../core/item-rarity';
 import {NOVICE_ITEMS} from './novice-sets';
 import {TOOL_ITEMS} from './gathering-tools';
+import {HERB_ITEMS} from './herbalism';
+import {POTION_ITEMS} from './alchemy';
 export interface ItemDef {
-  id:string; name:string; type:'material'|'gear'|'quest'|'food'|'tool'|'gem'; slot?:GearSlot;
+  id:string; name:string; type:'material'|'gear'|'quest'|'food'|'tool'|'gem'|'potion'; slot?:GearSlot;
   attack?:number; defense?:number; hp?:number; heal?:number; readiness?:number;
   toolSkillId?:GatheringSkillId;toolTier?:number;actionTimeMultiplier?:number;
   rarity?:ItemRarity; passive?:string;
@@ -60,9 +62,12 @@ const FROSTMARCH_SET_ITEMS:ItemDef[]=FROSTMARCH_SET_CONFIG.flatMap(set=>(Object.
 }));
 export const ITEMS:ItemDef[]=[
 ...NOVICE_ITEMS,
+{id:'HOLY_WATER',name:'Holy Water',type:'material',value:0,rarity:'uncommon'},
 ...COMPLETE_SET_ADDITIONAL_ITEMS,
 ...FROSTMARCH_SET_ITEMS,
 ...TOOL_ITEMS,
+...HERB_ITEMS,
+...POTION_ITEMS,
 // Enhancement economy. Gems are intentionally scarce drops; tempering materials are universal.
 {id:'TEMPERING_DUST',name:'Tempering Dust',type:'material',value:22,rarity:'uncommon'},
 {id:'TEMPERING_CORE',name:'Tempering Core',type:'material',value:180,rarity:'rare'},

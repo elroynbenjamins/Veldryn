@@ -1,0 +1,222 @@
+VELDRYN v17.3 — FULL CONTROL CENTER
+==================================
+
+GOAL
+----
+Merge this pack into the CURRENT LOCAL VELDRYN repository and finish VELDRYN Control as the long-term private administration surface.
+
+SOURCE OF TRUTH
+---------------
+The current local repository visible to Codex is authoritative. The user had not pushed their newest work when this pack was produced and described the local implementation as broadly based on v16-era VELDRYN.
+
+Do NOT overwrite newer local code just because a reference file in this ZIP has the same name.
+
+CURRENT PRODUCT CORRECTION
+--------------------------
+VELDRYN has NO player Market.
+
+Do not restore historical trading/listing/order UI, APIs, telemetry, remote-config keys, support tools, settings or database wiring from older reference backend files. The bundled fresh v17.2 migration no longer seeds that obsolete control; migration 029 only contains an idempotent cleanup for someone who previously applied the older v17.2 pack.
+
+READ FIRST
+----------
+1. START_HERE.md
+2. FULL_CONTROL_CENTER_V17_3.md
+3. SECURITY.md
+4. backend_integration/ADMIN_CONTROL_WIRING_V17_3.md
+5. backend_integration/REDEEM_CODE_WIRING_V17_3.md
+6. DEPLOY_FREE_CLOUDFLARE_PAGES.md
+
+IMPLEMENTATION ORDER
+--------------------
+1. Inspect the current local repo before changing anything:
+   - migrations already present/applied,
+   - account/character identity model,
+   - Gold/economy ledger,
+   - premium + non-premium/event currencies,
+   - inventory/material services,
+   - skill XP/level/Combat/Total/account progression,
+   - reward bundles/claim receipts,
+   - purchase entitlements and manual overrides if any,
+   - pets/backgrounds/borders/skins/achievements/titles,
+   - companions and Companion Trials,
+   - Party/Guild systems,
+   - Live/Q-Mode Dungeon queue/run state,
+   - chat moderation/message model,
+   - auth session invalidation/account deletion,
+   - notification/inbox/push systems,
+   - workers/cron scheduler,
+   - v16 Party/recruitment implementation,
+   - any v17+ modules already integrated locally.
+
+2. Merge the Control web app additively.
+   SUPABASE_SERVICE_ROLE_KEY stays server-side only.
+
+3. Inspect database migration state.
+   Reference forward order when absent: 027 -> 028 -> 029.
+   NEVER rewrite already-applied migration history. If a deployed migration differs, create a NEW forward migration.
+
+4. Wire backend_integration/admin-command-worker-v17_3.ts into the current trusted job/worker system.
+
+5. Implement VeldrynAdminDomain from admin-command-handlers-v16-reference.ts using CURRENT domain services.
+   Do not replace that port with direct player-table patches.
+
+6. Preserve idempotency.
+   Every Admin Command handler receives `admin-command:<uuid>` and must use the authoritative receipt/transaction system so crash/retry cannot double-grant Gold/items/currency/rewards/XP.
+
+7. Wire admin-content-catalog-v17_3.ts to current authoritative registries.
+   Sync on content activation/deploy and via the manual `system.sync_content_catalog` command.
+   Gameplay must NEVER use ops_admin_content_catalog as source of truth.
+
+8. Wire announcement-worker-v17_3.ts to current in-game notification/inbox and optional push system.
+   Resolve audiences server-side and make delivery idempotent.
+
+9. Wire redeem-code-service-v17_3.ts to the authenticated Account -> Code Redemption endpoint.
+   - resolve account from authenticated server session,
+   - normalize/hash code server-side,
+   - reserve through `reserve_ops_redeem_code_claim`,
+   - grant reward through normal idempotent reward service,
+   - mark claim granted/failed with the same reservation,
+   - never expose service-role DB access to mobile.
+
+10. Update Player Support read models to current schema/services. The reference uses optional reads intentionally; replace them with real current read models where available.
+
+ADMIN COMMAND HANDLERS TO WIRE
+------------------------------
+Account / moderation:
+- account.force_logout
+- account.schedule_deletion
+- account.cancel_deletion
+- moderation.chat_mute
+- moderation.chat_unmute
+- moderation.chat_message_hide
+- moderation.chat_message_restore
+- moderation.suspend
+- moderation.unsuspend
+- character.rename
+
+Economy / inventory:
+- economy.gold_adjust
+- economy.gold_set
+- economy.currency_adjust
+- economy.currency_set
+- economy.premium_currency_adjust
+- inventory.item_adjust
+- inventory.item_set
+
+Rewards / progression:
+- rewards.grant_bundle
+- rewards.reissue_claim
+- progression.skill_xp_adjust
+- progression.skill_xp_set
+- progression.recalculate_totals
+- progression.cancel_stuck_activity
+
+Entitlements / collections / companions:
+- entitlement.grant_override
+- entitlement.revoke_override
+- collectible.grant
+- collectible.revoke
+- companion.grant
+- companion.revoke
+- companion.xp_adjust
+- companion.xp_set
+
+Social / Dungeons:
+- social.party_remove_member
+- social.party_disband
+- social.party_rename
+- social.guild_remove_member
+- social.guild_transfer_leader
+- social.guild_disband
+- social.guild_rename
+- dungeon.cancel_stuck_run
+- dungeon.release_queue
+
+System:
+- system.sync_content_catalog
+
+If a command's current game-domain subsystem truly does not exist, DISABLE that registry command and report it rather than implementing a fake/direct-table approximation.
+
+DOMAIN INVARIANTS
+-----------------
+- Gold/currency/item quantities cannot become invalid/negative.
+- Prefer delta adjustments; exact-set commands are corruption-repair controls and require stronger safeguards.
+- Premium-currency support adjustments preserve explicit support/store reference and do not forge receipt ownership.
+- Reward grants/recovery go through current reward receipt/idempotency path.
+- Skill XP edits recalculate levels, Combat Level, Total Level and account-wide derived totals.
+- Never independently patch derived progression totals.
+- Character/Party/Guild rename uses the same profanity/uniqueness/reservation rules as normal gameplay.
+- Chat-message moderation preserves evidence; hide/restore rather than destructive deletion.
+- External purchase ownership remains receipt-authoritative; manual entitlement is an override layer.
+- Pets/backgrounds/borders/achievements/titles respect current account-wide ownership/bonus rules.
+- Character skins remain character-specific where the current game requires it.
+- Companion duplicate protection, XP, levels/evolution/progression invariants stay enforced.
+- Persistent Party remains distinct from Live Dungeon 1 Tank / 2 Damage / 1 Support composition.
+- Guild leadership/member constraints remain valid during repair/disband.
+- Dungeon cancellation releases queue/run reservations and refunds only verified consumed entry costs.
+
+REDEEM CODE INVARIANTS
+----------------------
+- Store only SHA-256 code hashes and hints; never persist plaintext codes.
+- Do not log plaintext/custom codes in request-body logging.
+- Reward bundle must be validated and exist in the real reward registry.
+- Enforce starts/ends/global max/per-account max atomically.
+- Reward grant uses the reservation idempotency key.
+- A crash after reward grant but before status update must not double-grant on retry.
+
+SECURITY
+--------
+- No SUPABASE_SERVICE_ROLE_KEY in browser/mobile.
+- No generic SQL/table editor.
+- Every state-changing Control request has explicit admin role authorization.
+- High/critical commands require exact typed confirmation.
+- Critical registry commands can require approval.
+- Optional second-Owner approval: CONTROL_REQUIRE_DUAL_APPROVAL_CRITICAL=true.
+- Audit request/approval/cancel/retry/reversal.
+- Keep ops_admin_command_events and remote-config revisions append-only.
+- Reversal is a new command, not database rewind.
+- Protect last enabled Owner.
+
+TESTS REQUIRED BEFORE CLAIMING COMPLETE
+---------------------------------------
+Run all current repository tests plus pack tests.
+
+At minimum validate against the REAL current schema/services:
+- clean migration apply/reset,
+- forward migration from the actual local DB state,
+- RLS: normal authenticated players cannot read/write control-plane tables,
+- Viewer cannot mutate,
+- Editor cannot execute Owner-only controls,
+- high/critical exact confirmation,
+- pending approval -> approval -> execution,
+- optional second Owner cannot be same requesting Owner,
+- concurrent Admin Command claiming is atomic,
+- retry after crash does not duplicate Gold/items/currency/rewards/XP,
+- catalog rejects unknown item/skill/currency/companion/reward IDs,
+- Gold/currency/item exact repair returns correct before/after and recalculates where needed,
+- premium-currency correction preserves external reference,
+- skill/Companion XP repair recalculates derived level/state,
+- reward reissue refuses already-successful receipt unless current recovery rules prove missing settlement,
+- entitlement override does not alter valid store-receipt ownership,
+- social repair preserves membership/leadership/name invariants,
+- Dungeon recovery releases reservations safely,
+- chat-message hide/restore preserves moderation history,
+- announcement audience resolution is trusted backend-side,
+- push/critical announcement requires Owner,
+- redeem code plaintext is never stored,
+- redeem global/per-account/time limits are atomic under concurrency,
+- redeem crash/retry is idempotent,
+- command events cannot be update/deleted,
+- browser build contains no service-role secret,
+- no removed player-Market functionality is reintroduced.
+
+REPORT BACK
+-----------
+Return:
+- every changed/created file,
+- migrations applied/created,
+- how each VeldrynAdminDomain method maps to the current services,
+- any registry command intentionally disabled because its current domain system does not exist,
+- redeem-code endpoint/reward wiring,
+- all test/typecheck/build commands and exact results,
+- remaining deployment-only validation.

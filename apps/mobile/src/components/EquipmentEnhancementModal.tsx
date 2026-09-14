@@ -1,4 +1,4 @@
-import React,{useEffect,useMemo,useState} from 'react';
+import React,{useEffect,useMemo,useRef,useState} from 'react';
 import {Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {ITEMS,itemDef} from '../content/items';
 import {combinedQuantity,gearEnhancement,gearStatsAtRank,gemSocketCapacity,upgradeQuote} from '../core/equipment-enhancement';
@@ -8,6 +8,9 @@ import {C,equipmentColors,radii,spacing,touchTargetPreferred,typography} from '.
 import {EquipmentArtwork,hasEquipmentArtwork} from './EquipmentArtwork';
 import {GameButton} from './GameButton';
 
+import {ActionFeedback,type FeedbackTone} from './ActionFeedback';
+import {enhancementFeedback} from '../core/visual-feedback';
+
 type Action=()=>Promise<void>|void;
 const GEM_COLOR:Record<GemStat,string>={attack:'#ef785f',defense:'#78a9ef',hp:'#76c990'};
 function CostRow({label,owned,needed}:{label:string;owned:number;needed:number}){const enough=owned>=needed;return <View style={s.costRow}><Text style={s.costLabel}>{label}</Text><Text style={[s.costValue,!enough&&s.missing]}>{owned.toLocaleString()} / {needed.toLocaleString()}</Text><Text accessibilityLabel={enough?'Available':'Missing'} style={[s.costMark,enough?s.ready:s.missing]}>{enough?'✓':'!'}</Text></View>}
@@ -16,18 +19,26 @@ function StatPreview({label,current,next}:{label:string;current:number;next:numb
 export function EquipmentEnhancementModal({visible,state,itemId,onClose,onUpgrade,onSocket,onUnsocket}:{visible:boolean;state:GameState;itemId:string;onClose:()=>void;onUpgrade:Action;onSocket:(gemId:string)=>Promise<void>|void;onUnsocket:(index:number)=>Promise<void>|void}){
   const [tab,setTab]=useState<'upgrade'|'gems'>('upgrade'),[busy,setBusy]=useState(false),[confirmRisk,setConfirmRisk]=useState(false);
   const item=itemDef(itemId),enhancement=gearEnhancement(state,itemId),quote=upgradeQuote(state,itemId),capacity=gemSocketCapacity(itemId),rarity=rarityMeta(itemRarity(item));
+  const [feedback,setFeedback]=useState<{message:string;tone:FeedbackTone}|null>(null);
+  const previous=useRef({itemId,rank:enhancement.rank,failures:enhancement.failures,gemIds:enhancement.gemIds});
+  useEffect(()=>{
+    const next={itemId,rank:enhancement.rank,failures:enhancement.failures,gemIds:enhancement.gemIds};
+    const result=enhancementFeedback(previous.current,next);previous.current=next;
+    if(visible&&result)setFeedback(result);
+  },[itemId,enhancement.rank,enhancement.failures,enhancement.gemIds,visible]);
+  useEffect(()=>{setFeedback(null)},[itemId,visible]);
   const currentStats=gearStatsAtRank(itemId,enhancement.rank),nextStats=gearStatsAtRank(itemId,Math.min(10,enhancement.rank+1));
   const dust=combinedQuantity(state,'TEMPERING_DUST'),cores=combinedQuantity(state,'TEMPERING_CORE'),gold=state.character!.gold;
   const canUpgrade=!quote.maxed&&gold>=quote.gold&&dust>=quote.dust&&cores>=quote.cores;
   const unavailable=quote.maxed?'Maximum rank reached':gold<quote.gold?`Missing ${(quote.gold-gold).toLocaleString()} gold`:dust<quote.dust?`Missing ${quote.dust-dust} Tempering Dust`:cores<quote.cores?`Missing ${quote.cores-cores} Tempering Cores`:'';
   const gems=useMemo(()=>ITEMS.filter(entry=>entry.type==='gem'&&combinedQuantity(state,entry.id)>0).sort((a,b)=>(b.gemTier??0)-(a.gemTier??0)||a.name.localeCompare(b.name)),[state]);
   useEffect(()=>{setConfirmRisk(false)},[itemId,enhancement.rank,tab,visible]);
-  const run=async(action:Action)=>{if(busy)return;setBusy(true);try{await action()}finally{setBusy(false)}};
+  const run=async(action:Action)=>{if(busy)return;setBusy(true);setFeedback(null);try{await action()}catch(error){setFeedback({message:error instanceof Error?error.message:'The action could not be completed.',tone:'error'})}finally{setBusy(false)}};
   const attempt=()=>{if(quote.targetRank>=7&&!confirmRisk){setConfirmRisk(true);return;}setConfirmRisk(false);void run(onUpgrade)};
   return <Modal visible={visible} transparent animationType={state.settings.reduceMotion?'none':'slide'} onRequestClose={()=>{if(!busy)onClose()}}><View style={s.scrim}><View style={[s.card,{borderColor:rarity.color}]}>
     <View style={s.head}>{hasEquipmentArtwork(item)?<EquipmentArtwork item={item} compact/>:<View style={[s.artFallback,{borderColor:rarity.color}]}><Text style={s.artMark}>◆</Text></View>}<View style={s.flex}><Text numberOfLines={2} style={[s.title,{color:rarity.color}]}>{item.name}</Text><Text style={s.meta}>{rarity.label} · {item.slot} · +{enhancement.rank}</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Close enhancement" disabled={busy} onPress={onClose} style={s.close}><Text style={s.closeText}>×</Text></Pressable></View>
     <View accessibilityRole="tablist" style={s.tabs}><Pressable accessibilityRole="tab" accessibilityState={{selected:tab==='upgrade'}} onPress={()=>setTab('upgrade')} style={[s.tab,tab==='upgrade'&&s.tabOn]}><Text style={[s.tabText,tab==='upgrade'&&s.tabTextOn]}>UPGRADE</Text></Pressable><Pressable accessibilityRole="tab" accessibilityState={{selected:tab==='gems'}} onPress={()=>setTab('gems')} style={[s.tab,tab==='gems'&&s.tabOn]}><Text style={[s.tabText,tab==='gems'&&s.tabTextOn]}>GEMS · {enhancement.gemIds.length}/{capacity}</Text></Pressable></View>
-    <ScrollView contentContainerStyle={s.body} showsVerticalScrollIndicator={false}>{tab==='upgrade'?<>
+    <ScrollView contentContainerStyle={s.body} showsVerticalScrollIndicator={false}>{feedback&&<ActionFeedback {...feedback} reduceMotion={state.settings.reduceMotion}/>}{tab==='upgrade'?<>
       <View style={s.rankPanel}><Text style={s.rankNow}>+{enhancement.rank}</Text><View style={s.rankMiddle}><Text style={s.rankLabel}>{quote.maxed?'MASTERWORK':'NEXT RANK'}</Text><Text style={s.rankArrow}>{quote.maxed?'◆':'→'}</Text></View><Text style={s.rankNext}>{quote.maxed?'MAX':`+${quote.targetRank}`}</Text></View>
       <View style={s.stats}><StatPreview label="Attack" current={currentStats.attack} next={nextStats.attack}/><StatPreview label="Defense" current={currentStats.defense} next={nextStats.defense}/><StatPreview label="Health" current={currentStats.hp} next={nextStats.hp}/></View>
       {!quote.maxed&&<><View style={s.chanceHead}><Text style={s.section}>SUCCESS</Text><Text style={s.chanceValue}>{Math.round(quote.successChance*100)}%</Text></View><View accessibilityLabel={`${Math.round(quote.successChance*100)} percent upgrade chance`} style={s.track}><View style={[s.trackFill,{width:`${quote.successChance*100}%`}]}/></View>{enhancement.failures>0&&<Text style={s.pity}>Pity active · {enhancement.failures} failure{enhancement.failures===1?'':'s'} · +{Math.min(10,enhancement.failures*2)}%</Text>}

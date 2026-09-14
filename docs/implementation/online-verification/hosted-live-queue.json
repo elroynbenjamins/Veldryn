@@ -1,0 +1,28 @@
+{
+  "checkedAt": "2026-09-12T22:26:10.644Z",
+  "project": "xsztafgbtexxsfqkfgge",
+  "checks": [
+    {
+      "check": "real Auth bearer required; client role override rejected",
+      "status": "PASS"
+    },
+    {
+      "check": "four real accounts: concurrent join retries produce one ticket each and exact derived roles",
+      "status": "PASS"
+    },
+    {
+      "check": "conflicting/duplicate admission, foreign cancellation and raw queue reads rejected",
+      "status": "PASS"
+    },
+    {
+      "check": "concurrent heartbeat replay preserves one database deadline",
+      "status": "PASS"
+    },
+    {
+      "check": "concurrent match attempts: exactly one atomic handoff; all four reservations retained",
+      "status": "PASS"
+    }
+  ],
+  "status": "PASS",
+  "fixturesRemoved": true
+}

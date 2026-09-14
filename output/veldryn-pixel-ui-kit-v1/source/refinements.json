@@ -1,0 +1,57 @@
+[
+  {
+    "id": "button_disabled_3slice",
+    "group": "ui/buttons",
+    "width": 144,
+    "height": 40,
+    "mode": "3slice",
+    "caps": 24,
+    "description": "ONE blank horizontal DISABLED medieval pixel UI button, dull dark GREY pewter edging, dark desaturated slate-grey face, charcoal rivets. Absolutely NO blue, cyan, shiny gold, luminous gem, glow or bright saturation. Restrained square stepped metal end-caps, straight horizontal borders, empty center for live text. Width-to-height ratio 3.6:1. Same VELDRYN palette family but unmistakably inactive.",
+    "source": "C:\\Users\\elroy\\.codex\\generated_images\\01a0967d-fcae-73e3-b18a-86a5188d6a08\\exec-6f26b260-c1ad-41e3-97b2-54691685e627.png",
+    "prompt": "ONE blank horizontal DISABLED medieval pixel UI button, dull dark GREY pewter edging, dark desaturated slate-grey face, charcoal rivets. Absolutely NO blue, cyan, shiny gold, luminous gem, glow or bright saturation. Restrained square stepped metal end-caps, straight horizontal borders, empty center for live text. Width-to-height ratio 3.6:1. Same VELDRYN palette family but unmistakably inactive. True alpha transparent background, one isolated production sprite only, no scenery no floor no cast shadow no text no sheet. Crisp hand-pixelled fantasy RPG art with hard square pixel edges, high quality and phone-readable. Preserve the requested object and silhouette. Use limited gold/bronze, charcoal/navy and blue palette unless the disabled state says grey."
+  },
+  {
+    "id": "button_icon_selected",
+    "group": "ui/buttons",
+    "width": 40,
+    "height": 40,
+    "mode": "fixed",
+    "caps": 0,
+    "description": "ONE EMPTY SQUARE small icon-button housing, bright BLUE enamel inset face, warm gold thick stepped pixel border, thin luminous CYAN inner selection rim. Central blank reading area at least 70% of width. Very restrained bronze corner accents. No actual icon or text. 1:1 square silhouette, intended for 40px mobile UI. Must visibly look selected.",
+    "source": "C:\\Users\\elroy\\.codex\\generated_images\\01a0967d-fcae-73e3-b18a-86a5188d6a08\\exec-cb16e1c8-bb75-4c6f-b5e9-d420f7d235a5.png",
+    "prompt": "ONE EMPTY SQUARE small icon-button housing, bright BLUE enamel inset face, warm gold thick stepped pixel border, thin luminous CYAN inner selection rim. Central blank reading area at least 70% of width. Very restrained bronze corner accents. No actual icon or text. 1:1 square silhouette, intended for 40px mobile UI. Must visibly look selected. True alpha transparent background, one isolated production sprite only, no scenery no floor no cast shadow no text no sheet. Crisp hand-pixelled fantasy RPG art with hard square pixel edges, high quality and phone-readable. Preserve the requested object and silhouette. Use limited gold/bronze, charcoal/navy and blue palette unless the disabled state says grey."
+  },
+  {
+    "id": "corner_gold_tr",
+    "group": "ui/decorations",
+    "width": 32,
+    "height": 32,
+    "mode": "fixed",
+    "caps": 0,
+    "description": "ONE individual TOP-RIGHT L-shaped medieval bronze-gold pixel corner fitting for a VELDRYN fantasy UI frame. A compact blue crystal at its elbow, stepped golden engraved curl on each of its two legs. True L-shaped silhouette; empty transparent area inside and outside. It is a single corner ornament, NOT a whole frame or whole panel. Intended at32x32px, crisp chunky pixel clusters and minimal detail.",
+    "source": "C:\\Users\\elroy\\.codex\\generated_images\\01a0967d-fcae-73e3-b18a-86a5188d6a08\\exec-6958712e-b4bf-4faf-a7ab-5b902ce5161a.png",
+    "prompt": "ONE individual TOP-RIGHT L-shaped medieval bronze-gold pixel corner fitting for a VELDRYN fantasy UI frame. A compact blue crystal at its elbow, stepped golden engraved curl on each of its two legs. True L-shaped silhouette; empty transparent area inside and outside. It is a single corner ornament, NOT a whole frame or whole panel. Intended at32x32px, crisp chunky pixel clusters and minimal detail. True alpha transparent background, one isolated production sprite only, no scenery no floor no cast shadow no text no sheet. Crisp hand-pixelled fantasy RPG art with hard square pixel edges, high quality and phone-readable. Preserve the requested object and silhouette. Use limited gold/bronze, charcoal/navy and blue palette unless the disabled state says grey."
+  },
+  {
+    "id": "corner_gold_bl",
+    "group": "ui/decorations",
+    "width": 32,
+    "height": 32,
+    "mode": "fixed",
+    "caps": 0,
+    "description": "ONE individual BOTTOM-LEFT L-shaped medieval bronze-gold pixel corner fitting for a VELDRYN fantasy UI frame. A compact blue crystal at its elbow, stepped golden engraved curl on each of its two legs. True L-shaped silhouette; empty transparent area inside and outside. It is a single corner ornament, NOT a whole frame or whole panel. Intended at32x32px, crisp chunky pixel clusters and minimal detail.",
+    "source": "C:\\Users\\elroy\\.codex\\generated_images\\01a0967d-fcae-73e3-b18a-86a5188d6a08\\exec-ef15ade5-5092-4f9e-bc03-26e92bbff354.png",
+    "prompt": "ONE individual BOTTOM-LEFT L-shaped medieval bronze-gold pixel corner fitting for a VELDRYN fantasy UI frame. A compact blue crystal at its elbow, stepped golden engraved curl on each of its two legs. True L-shaped silhouette; empty transparent area inside and outside. It is a single corner ornament, NOT a whole frame or whole panel. Intended at32x32px, crisp chunky pixel clusters and minimal detail. True alpha transparent background, one isolated production sprite only, no scenery no floor no cast shadow no text no sheet. Crisp hand-pixelled fantasy RPG art with hard square pixel edges, high quality and phone-readable. Preserve the requested object and silhouette. Use limited gold/bronze, charcoal/navy and blue palette unless the disabled state says grey."
+  },
+  {
+    "id": "corner_gold_br",
+    "group": "ui/decorations",
+    "width": 32,
+    "height": 32,
+    "mode": "fixed",
+    "caps": 0,
+    "description": "ONE individual BOTTOM-RIGHT L-shaped medieval bronze-gold pixel corner fitting for a VELDRYN fantasy UI frame. A compact blue crystal at its elbow, stepped golden engraved curl on each of its two legs. True L-shaped silhouette; empty transparent area inside and outside. It is a single corner ornament, NOT a whole frame or whole panel. Intended at32x32px, crisp chunky pixel clusters and minimal detail.",
+    "source": "C:\\Users\\elroy\\.codex\\generated_images\\01a0967d-fcae-73e3-b18a-86a5188d6a08\\exec-4069bbae-b8ae-473e-9d06-c18b26656dcd.png",
+    "prompt": "ONE individual BOTTOM-RIGHT L-shaped medieval bronze-gold pixel corner fitting for a VELDRYN fantasy UI frame. A compact blue crystal at its elbow, stepped golden engraved curl on each of its two legs. True L-shaped silhouette; empty transparent area inside and outside. It is a single corner ornament, NOT a whole frame or whole panel. Intended at32x32px, crisp chunky pixel clusters and minimal detail. True alpha transparent background, one isolated production sprite only, no scenery no floor no cast shadow no text no sheet. Crisp hand-pixelled fantasy RPG art with hard square pixel edges, high quality and phone-readable. Preserve the requested object and silhouette. Use limited gold/bronze, charcoal/navy and blue palette unless the disabled state says grey."
+  }
+]

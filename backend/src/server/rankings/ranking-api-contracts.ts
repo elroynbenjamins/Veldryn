@@ -1,0 +1,5 @@
+import {RANKING_PROFESSION_BOARDS,type RankingBoardId} from './ranking-types';
+const BOARDS=new Set<string>(['profession_total',...RANKING_PROFESSION_BOARDS,'arena_rating','arena_wins','dungeon_tier','dungeon_clears','achievement_score','guild']);
+export function parseRankingBoard(value:unknown):RankingBoardId{if(typeof value!=='string'||!BOARDS.has(value))throw new Error('invalid_ranking_board');return value as RankingBoardId}
+export function parseRankingLimit(value:unknown,defaultValue=50){if(value===undefined||value===null||value==='')return defaultValue;const n=typeof value==='string'?Number(value):value;if(typeof n!=='number'||!Number.isSafeInteger(n)||n<1||n>100)throw new Error('invalid_ranking_limit');return n}
+export function parseRankingOffset(value:unknown){if(value===undefined||value===null||value==='')return 0;const n=typeof value==='string'?Number(value):value;if(typeof n!=='number'||!Number.isSafeInteger(n)||n<0||n>10000)throw new Error('invalid_ranking_offset');return n}

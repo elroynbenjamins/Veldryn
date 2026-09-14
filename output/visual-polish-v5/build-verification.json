@@ -1,0 +1,8 @@
+{
+  "fullTypeScript": "passed",
+  "productionAndroidExport": "passed",
+  "bytecode": false,
+  "qaFlag": "0",
+  "newAssetFamilies": 20,
+  "recipeArtworkAudit": "402 outputs; 34 ingredients; zero neutral ingredient markers"
+}

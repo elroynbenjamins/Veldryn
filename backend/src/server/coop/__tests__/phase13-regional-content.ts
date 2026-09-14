@@ -5,7 +5,7 @@ import {EXPEDITIONS} from '../../expeditions/content/launch-content';
 import {initialPersistentRunState,resolveCoopNode} from '../../expeditions/node-resolution';
 import {generateCoopRouteGraph} from '../../expeditions/route-generation';
 
-const prefixes:Record<string,readonly string[]>={EXP_001:['ROOT_'],EXP_002:['LANTERN_'],EXP_003:['SUN_OBS_'],EXP_004:['SUN_MIRAGE_']};
+const prefixes:Record<string,readonly string[]>={EXP_001:['ROOT_'],EXP_002:['LANTERN_'],EXP_003:['SUN_OBS_'],EXP_004:['SUN_MIRAGE_'],EXP_005:['FROST_LAKE_'],EXP_006:['FROST_CHOIR_'],EXP_007:['ASH_FEN_'],EXP_008:['ASH_CRUCIBLE_']};
 for(const [expeditionId,allowed] of Object.entries(prefixes)){
   assert.equal(EXPEDITIONS[expeditionId].coopImplemented,true);
   for(let seed=0;seed<100;seed++){
@@ -16,10 +16,7 @@ for(const [expeditionId,allowed] of Object.entries(prefixes)){
   }
 }
 
-for(const expeditionId of ['EXP_005','EXP_006','EXP_007','EXP_008']){
-  assert.equal(EXPEDITIONS[expeditionId].coopImplemented,false);
-  let failure='';try{generateCoopRouteGraph('regional-route',expeditionId,'future-run','content-v2','regional-v1')}catch(error){failure=error instanceof Error?error.message:String(error)}assert.equal(failure,'expedition_not_implemented');
-}
+for(const expeditionId of ['EXP_005','EXP_006','EXP_007','EXP_008'])assert.equal(EXPEDITIONS[expeditionId].coopImplemented,true);
 
 const results:Record<string,{clears:number;samples:number;averageCombatSeconds:number}>={};
 for(const expeditionId of ['EXP_003','EXP_004']){

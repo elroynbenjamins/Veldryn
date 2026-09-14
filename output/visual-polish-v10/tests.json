@@ -1,0 +1,52 @@
+[
+  {
+    "name": "social-identity",
+    "result": "passed",
+    "output": "PASS: all canonical/display class identities and unknown fallbacks\n"
+  },
+  {
+    "name": "visual-polish",
+    "result": "passed",
+    "output": "PASS: cosmetic ownership, confirmed upgrade/failure/socket feedback and replay-safe claim announcements\n"
+  },
+  {
+    "name": "equipment-screen",
+    "result": "passed",
+    "output": "PASS: equipment screen uses ten live slots, canonical stats, loadout guides and saved presentation\n"
+  },
+  {
+    "name": "equipment-enhancement",
+    "result": "passed",
+    "output": "equipment enhancement tests passed\n"
+  },
+  {
+    "name": "startup-summary",
+    "result": "passed",
+    "output": "Startup activity summary tests passed.\n"
+  },
+  {
+    "name": "offline-smoke",
+    "result": "passed",
+    "output": "{\n  \"status\": \"PASS\",\n  \"firstMinute\": {\n    \"xp\": 67,\n    \"gold\": 4,\n    \"items\": [\n      {\n        \"itemId\": \"MOSS_FIBER\",\n        \"quantity\": 2\n      }\n    ],\n    \"kills\": 4,\n    \"elapsedSeconds\": 60,\n    \"foodConsumed\": 0,\n    \"endHp\": 110,\n    \"stoppedReason\": \"\",\n    \"eventDrops\": [],\n    \"eventDiscoveries\": []\n  },\n  \"offlineCapHours\": 24,\n  \"level25Xp\": 412849\n}\n"
+  },
+  {
+    "name": "party-social-v16",
+    "result": "passed",
+    "output": "mobile party social v16 tests passed\n"
+  },
+  {
+    "name": "dashboard",
+    "result": "passed",
+    "output": "{\"status\":\"PASS\",\"recommendation\":{\"title\":\"Continue: A Name in the Ledger\",\"detail\":\"Hunt Moss Rat in Greenfields · 5 remaining.\",\"button\":\"Open hunting ground\",\"destination\":\"World\",\"zoneId\":\"Greenfields\",\"priority\":\"progress\"},\"rate\":{\"actionsPerHour\":234,\"xpPerHour\":3962,\"goldPerHour\":234}}\n"
+  },
+  {
+    "name": "combat-presentation",
+    "result": "passed",
+    "output": "{\"status\":\"PASS\",\"start\":{\"enemyHp\":30,\"enemyMaxHp\":30,\"playerHit\":22,\"enemyHit\":1,\"safety\":\"safe\",\"style\":{\"name\":\"Hold the Line\",\"description\":\"Reduces incoming damage by 16%, but attacks more slowly.\",\"speedMultiplier\":0.94,\"damageTakenMultiplier\":0.84,\"recoveryPct\":0.014}},\"late\":{\"enemyHp\":17,\"enemyMaxHp\":30,\"playerHit\":22,\"enemyHit\":1,\"safety\":\"safe\",\"style\":{\"name\":\"Hold the Line\",\"description\":\"Reduces incoming damage by 16%, but attacks more slowly.\",\"speedMultiplier\":0.94,\"damageTakenMultiplier\":0.84,\"recoveryPct\":0.014}}}\n"
+  },
+  {
+    "name": "playability",
+    "result": "passed",
+    "output": "PASS: activity settlement, no duplicate claim, bank-aware recipes and world navigation\n"
+  }
+]

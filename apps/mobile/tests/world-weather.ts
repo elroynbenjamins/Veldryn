@@ -7,6 +7,7 @@ const spring=Date.parse('2026-04-08T12:00:00Z'),winter=Date.parse('2026-12-08T12
 ok(seasonAt(spring)==='spring'&&seasonAt(winter)==='winter','Calendar seasons must rotate predictably');
 const first=environmentForZone('SILVERBROOK',spring),again=environmentForZone('SILVERBROOK',spring);
 ok(JSON.stringify(first)===JSON.stringify(again),'Regional daily weather must be deterministic');
+ok(environmentForZone('SUNSCAR',spring).zoneId==='SUNSCAR'&&environmentForZone('ASHLANDS',winter).zoneId==='ASHLANDS','Later regions must receive deterministic weather snapshots');
 ok(environmentForZone('SILVERBROOK',spring).changesAtMs===Date.parse('2026-04-09T00:00:00Z'),'Weather must roll at the next UTC day');
 ok(nextSeasonAt(spring)===Date.parse('2026-06-01T00:00:00Z')&&nextSeasonAt(winter)===Date.parse('2027-03-01T00:00:00Z'),'Season countdown boundaries must be exact');
 ok(Object.keys(SEASON_DEFINITIONS).length===4&&Object.keys(WEATHER_DEFINITIONS).length===9,'Every season and weather type needs a player-facing definition');

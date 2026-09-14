@@ -1,0 +1,446 @@
+[
+  {
+    "screen": "CharacterScreen.tsx",
+    "lines": 70,
+    "components": [
+      "ScrollView",
+      "View",
+      "Text",
+      "Panel",
+      "Image",
+      "EquipmentSectionHeader",
+      "EquipmentCharacterPortrait",
+      "EquipmentSlot",
+      "GameButton",
+      "StatRow",
+      "Pressable",
+      "FixedCharacterPortrait",
+      "EquipmentEnhancementModal",
+      "ConfirmModal"
+    ],
+    "labels": [
+      "EQUIPMENT",
+      "Gear your path. A stronger Veldryn awaits.",
+      "·",
+      "LEVEL",
+      "presentation ·",
+      "Lv.",
+      "%",
+      "SELECTED ·",
+      "ATK",
+      "· DEF",
+      "· HP",
+      "ADDITIONAL",
+      "BUILD GUIDES ·",
+      "Choose a recommended equipment direction. These guides do not replace your currently equipped items."
+    ]
+  },
+  {
+    "screen": "ChatPilotDevScreen.tsx",
+    "lines": 71,
+    "components": [
+      "SafeAreaView",
+      "View",
+      "Text",
+      "Pressable",
+      "ChatScreen",
+      "PlayerProfileCard"
+    ],
+    "labels": [
+      "DEVELOPMENT PREVIEW",
+      "Chat Pilot",
+      "Close"
+    ]
+  },
+  {
+    "screen": "ClassSelectScreen.tsx",
+    "lines": 87,
+    "components": [
+      "KeyboardAvoidingView",
+      "ScrollView",
+      "View",
+      "Image",
+      "Pressable",
+      "Text",
+      "GameButton",
+      "FixedCharacterPortrait",
+      "TextInput",
+      "CreationAction",
+      "ClassHeroCarousel",
+      "ConfirmModal"
+    ],
+    "labels": [
+      "/20",
+      "STARTING WEAPON",
+      "LV. 1",
+      "Class equipment illustration. You begin with a neutral outfit and earn your armor through play.",
+      "Your first crafting goal:",
+      ". Start with the chest piece in Skills → Novice set. The set is earned, not granted at creation.",
+      "·",
+      "presentation",
+      "Starting weapon:",
+      "Armor and offhand: Unequipped",
+      "Every class starts in the same neutral underlayer. Full equipment-set appearances become permanent skin unlocks later."
+    ]
+  },
+  {
+    "screen": "CombatScreen.tsx",
+    "lines": 26,
+    "components": [
+      "ScrollView",
+      "Text",
+      "StatBar",
+      "View",
+      "GameButton",
+      "EnvironmentBanner",
+      "RegionEncounterList"
+    ],
+    "labels": [
+      "COMBAT",
+      "Combat Level",
+      "CURRENT REGION",
+      "ENEMIES IN",
+      "Choose an enemy to inspect. Drop tables stay hidden until you expand a row."
+    ]
+  },
+  {
+    "screen": "CoopExpeditionScreen.tsx",
+    "lines": 38,
+    "components": [
+      "CoopRunOverview",
+      "CoopLoadoutSelection",
+      "CoopDungeonDetails",
+      "CoopDungeonList"
+    ],
+    "labels": []
+  },
+  {
+    "screen": "CoopUiGalleryScreen.tsx",
+    "lines": 50,
+    "components": [
+      "ExpeditionScreenShell",
+      "Text",
+      "View",
+      "PrimaryAction",
+      "FantasyPanel",
+      "StateChip",
+      "RoleBadge",
+      "CoopImageSlot",
+      "CoopSharedRunGallery",
+      "CoopQModeTeamGallery"
+    ],
+    "labels": []
+  },
+  {
+    "screen": "EventScreen.tsx",
+    "lines": 72,
+    "components": [
+      "ScrollView",
+      "Text",
+      "Panel",
+      "View",
+      "ImageBackground",
+      "Image",
+      "Pressable",
+      "GameButton"
+    ],
+    "labels": [
+      "Live events",
+      "◇",
+      "Asterfall is quiet",
+      "No limited-time event is active. Normal activities and permanent rewards remain available.",
+      "Event drops and claims are disabled outside their configured dates.",
+      "EVENT ARCHIVE",
+      "lifetime reputation ·",
+      "unspent currency",
+      "Complete an event to begin your annual history.",
+      "Permanent event collection",
+      "Collected cosmetics remain available while their event is inactive.",
+      "Live events",
+      "UPCOMING EVENT",
+      "Begins in"
+    ]
+  },
+  {
+    "screen": "FriendsScreen.tsx",
+    "lines": 45,
+    "components": [
+      "ScrollView",
+      "Text",
+      "Panel",
+      "View",
+      "GameButton",
+      "TextInput",
+      "Avatar",
+      "Pressable"
+    ],
+    "labels": [
+      "Friends",
+      "Online services are off",
+      "Configure Supabase to use account-bound friends.",
+      "Friends",
+      "Sign in first",
+      "Open Settings → Account and use a guest or official account. Friends stay attached when a guest account is upgraded.",
+      "Friends",
+      "friends ·",
+      "incoming",
+      "Find players",
+      "Search by the beginning of a player’s display name.",
+      "No matching players loaded.",
+      "Requests",
+      "Wants to be friends"
+    ]
+  },
+  {
+    "screen": "GuildScreen.tsx",
+    "lines": 28,
+    "components": [
+      "ScrollView",
+      "Text",
+      "View",
+      "GameButton",
+      "Panel"
+    ],
+    "labels": [
+      "Guild",
+      "Guild",
+      "Weekly PvE project",
+      "/1,000 restored · You contributed",
+      "Rootbound Colossus",
+      "HP remaining",
+      "Guild membership required",
+      "Join a guild from Overview to participate in weekly projects and bosses.",
+      "Roster ·",
+      "· Level",
+      "Join a guild to view its members."
+    ]
+  },
+  {
+    "screen": "HomeScreen.tsx",
+    "lines": 50,
+    "components": [
+      "ScrollView",
+      "Text",
+      "SkillDashboard",
+      "View",
+      "StatBar",
+      "GameButton",
+      "CharacterVisual",
+      "EnvironmentBanner",
+      "BattleStage",
+      "ActivityCard",
+      "Panel",
+      "Pressable"
+    ],
+    "labels": [
+      "SKILLS & ACTIVITIES",
+      "REALM OVERVIEW",
+      "· Level",
+      "◈",
+      "LIVE EVENT",
+      "reputation ·",
+      "marks",
+      "Choose your next activity",
+      "Explore an unlocked region or gather materials for your next upgrade.",
+      "AFK RESERVE ·",
+      "/",
+      "HOURS",
+      "Base",
+      "h ·"
+    ]
+  },
+  {
+    "screen": "InventoryScreen.tsx",
+    "lines": 62,
+    "components": [
+      "ItemCard",
+      "EquipmentPreview",
+      "ScrollView",
+      "Text",
+      "Panel",
+      "View",
+      "GameButton",
+      "Pressable",
+      "TextInput",
+      "EmptyState",
+      "ConfirmModal"
+    ],
+    "labels": [
+      "Equipment & Storage",
+      "Recovery",
+      "Health",
+      "/",
+      "· Auto-eat:",
+      "Carried auto-eat portions:",
+      "STORAGE MANAGEMENT",
+      "Bulk deposit and capacity upgrades",
+      "Inventory travels with this character. Bank storage is shared by every character on the account.",
+      "INVENTORY ·",
+      "SLOTS",
+      "BANK ·",
+      "SLOTS",
+      "FILTERS & DISPLAY"
+    ]
+  },
+  {
+    "screen": "MoreScreen.tsx",
+    "lines": 32,
+    "components": [
+      "ScrollView",
+      "Text",
+      "Pressable",
+      "View",
+      "Image"
+    ],
+    "labels": [
+      "Account",
+      "Social · Party / Contracts / Recruitment",
+      "Home · Activity overview",
+      "›",
+      "Chat Pilot",
+      "Development-only interactive chat review",
+      "›"
+    ]
+  },
+  {
+    "screen": "QuestScreen.tsx",
+    "lines": 49,
+    "components": [
+      "ScrollView",
+      "Text",
+      "Panel",
+      "StatBar",
+      "GameButton",
+      "TextInput",
+      "Pressable",
+      "View",
+      "ContractRows"
+    ],
+    "labels": [
+      "Asterfall Journal",
+      "ROTATING CONTRACTS",
+      "daily, weekly & monthly objectives",
+      "Class-aligned contracts award progressively stronger rarity caches.",
+      "No matching chapters",
+      "CHAPTER",
+      "·",
+      "Claim “",
+      "” to unlock this objective. Progress is not tracked while locked.",
+      "Reward:",
+      "gold",
+      "+",
+      "gold · +",
+      "XP"
+    ]
+  },
+  {
+    "screen": "SettingsScreen.tsx",
+    "lines": 86,
+    "components": [
+      "ScrollView",
+      "Text",
+      "GameButton",
+      "Panel",
+      "OnlineAccountPanel",
+      "View",
+      "SaveTransferPanel",
+      "DeveloperTools"
+    ],
+    "labels": [
+      "Character:",
+      "·",
+      "Activities continue while closed up to your current AFK reserve.",
+      "Chat",
+      "Development review only. Emote choices use the same account-scoped preference store as the Chat Pilot.",
+      "Completion, inventory-full and quest-reset reminders.",
+      "Push notifications are not connected in this offline build.",
+      "Text scaling follows your device setting up to the selected maximum. Reduced motion disables repeating combat and progress effects."
+    ]
+  },
+  {
+    "screen": "SkillsScreen.tsx",
+    "lines": 49,
+    "components": [
+      "ScrollView",
+      "Text",
+      "View",
+      "GameButton",
+      "NoviceWorkshop",
+      "Panel",
+      "Pressable",
+      "GatheringToolArtwork",
+      "ResourceArtwork"
+    ],
+    "labels": [
+      "CURRENT REGION",
+      "Only gathering nodes in this region are shown.",
+      "Materials are taken from Inventory first, then Bank. Gear costs and XP requirements follow the slower Asterfall progression curve.",
+      "· Level",
+      "XP",
+      "◇",
+      "Tap to",
+      "tool tiers",
+      "T",
+      "·",
+      "% faster · skill level",
+      "· every",
+      "s ·",
+      "base skill XP/action"
+    ]
+  },
+  {
+    "screen": "SocialScreen.tsx",
+    "lines": 61,
+    "components": [
+      "SocialHubPanel",
+      "ScrollView",
+      "View",
+      "GameButton",
+      "Panel",
+      "Text",
+      "RecruitmentComposer",
+      "PartyHubPanel",
+      "RecruitmentFiltersPanel",
+      "GuildSeekerPanel",
+      "OnlinePartyChat"
+    ],
+    "labels": [
+      "Join a Party to use Party Chat. World and Guild chat remain available in the chat overlay.",
+      "Ranked Party events",
+      "Normalized points, then completion time. Ties use a stable Party ID order.",
+      "#",
+      "·",
+      "·",
+      "·",
+      "pts",
+      "No ranked contributions yet.",
+      "Your adverts",
+      "·",
+      "No adverts published yet."
+    ]
+  },
+  {
+    "screen": "WorldScreen.tsx",
+    "lines": 88,
+    "components": [
+      "ScrollView",
+      "Text",
+      "View",
+      "EnvironmentBanner",
+      "Panel",
+      "GameButton"
+    ],
+    "labels": [
+      "TRAVEL",
+      "Asterfall Regions",
+      "Your location controls which enemies and gathering activities are available.",
+      "CURRENT REGION",
+      "Activities in",
+      "combat encounter",
+      "·",
+      "CHOOSE A DESTINATION",
+      "Co-op Expeditions",
+      "Group expeditions are entered separately from regional solo activities."
+    ]
+  }
+]

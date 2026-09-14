@@ -1,0 +1,105 @@
+{
+  "verifiedAt": "2026-09-12T18:43:04.491Z",
+  "project": "nyjwigipamnvpdvpauuv",
+  "checks": [
+    {
+      "check": "Full repository verification",
+      "status": "PASS",
+      "passed": 74,
+      "total": 74
+    },
+    {
+      "check": "Final full mobile TypeScript validation",
+      "status": "PASS"
+    },
+    {
+      "check": "Approved authoritative gameplay migration applied",
+      "status": "PASS",
+      "migration": "20261011000000_authoritative_gameplay.sql"
+    },
+    {
+      "check": "Authenticated gameplay function deployed including retry race fix",
+      "status": "PASS"
+    },
+    {
+      "check": "Scoped Auth settings applied",
+      "status": "PASS",
+      "redirects": [
+        "veldryn://auth"
+      ],
+      "minimumPasswordLength": 8,
+      "otherPropertiesPreserved": 12
+    },
+    {
+      "check": "Auth configuration verification",
+      "status": "PASS",
+      "declaredUpdates": 0
+    },
+    {
+      "check": "Hosted session/gameplay/concurrency/cleanup",
+      "status": "PASS",
+      "evidence": "hosted-gameplay.json"
+    },
+    {
+      "check": "Applied online state/RPC/RLS SQL suite",
+      "status": "PASS"
+    },
+    {
+      "check": "Applied Party v16 SQL suite",
+      "status": "PASS"
+    },
+    {
+      "check": "Applied Party v15 safety SQL suite",
+      "status": "PASS"
+    },
+    {
+      "check": "Supabase linked lint",
+      "status": "PASS",
+      "errors": 0
+    },
+    {
+      "check": "Migration chain dry run",
+      "status": "PASS",
+      "pending": []
+    },
+    {
+      "check": "Android production Hermes export",
+      "status": "PASS",
+      "output": "apps/mobile/.expo-export-online-android"
+    },
+    {
+      "check": "iOS production Hermes export",
+      "status": "PASS",
+      "output": "apps/mobile/.expo-export-online-ios"
+    },
+    {
+      "check": "Expo dependency compatibility",
+      "status": "PASS"
+    },
+    {
+      "check": "Git diff whitespace",
+      "status": "PASS"
+    },
+    {
+      "check": "Source lint",
+      "status": "NOT_CONFIGURED"
+    },
+    {
+      "check": "Native interaction testing",
+      "status": "BLOCKED",
+      "reason": "Isolated Android emulator remained offline during boot; stopped afterward."
+    },
+    {
+      "check": "Fresh Docker Supabase reset",
+      "status": "UNAVAILABLE",
+      "reason": "Docker not installed; linked database was never reset."
+    },
+    {
+      "check": "Confirmation and recovery email delivery",
+      "status": "PENDING",
+      "reason": "Awaiting authorized test email address."
+    }
+  ],
+  "repositoryChecks": "../v16-verification/repository-checks.json",
+  "releaseReady": false
+}

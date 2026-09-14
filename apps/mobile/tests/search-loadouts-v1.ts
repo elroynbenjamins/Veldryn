@@ -1,0 +1,17 @@
+import {equal,deepEqual} from './assertions';
+import {createCharacter,newGame} from '../src/core/game';
+import {toggleFavorite,isFavorite} from '../src/core/collection-preferences';
+import {planLoadoutStorage} from '../src/core/loadout-storage';
+import {saveCharacterLoadout,normalizeCharacterLoadouts} from '../src/core/character-loadouts';
+import {migrateSave} from '../src/core/save-migrations';
+import {visibleStacks} from '../src/core/inventory-view';
+import {visibleRecipes} from '../src/core/crafting-catalog';
+import {RECIPES} from '../src/content/skills';
+let state=createCharacter(newGame(1),'IRONWARDEN','Loadout Tester');
+state=toggleFavorite(state,'item','TRAVEL_RATION');equal(isFavorite(state,'item','TRAVEL_RATION'),true,'favorite toggles on');
+state=saveCharacterLoadout(state,0,'Starter build',10);equal(normalizeCharacterLoadouts(state.character!.savedLoadouts,'IRONWARDEN')[0].name,'Starter build','loadout saves');
+const planned=planLoadoutStorage({inventory:[{itemId:'GEAR_B',quantity:1}],bank:[{itemId:'GEAR_A',quantity:1}],inventoryCapacity:4,bankCapacity:4,currentEquipment:{weapon:'GEAR_A'},desiredEquipment:{weapon:'GEAR_B'}});deepEqual(planned.inventory,[{itemId:'GEAR_A',quantity:1}],'displaced gear returns to inventory');
+let missing='';try{planLoadoutStorage({inventory:[],bank:[],inventoryCapacity:4,bankCapacity:4,currentEquipment:{},desiredEquipment:{weapon:'MISSING'}});}catch(error){missing=error instanceof Error?error.message:''}equal(missing,'MISSING:MISSING','missing gear is rejected');
+const roundTrip=migrateSave(JSON.parse(JSON.stringify(state)));equal(roundTrip.version,11,'new persistence state uses current save boundary');equal(isFavorite(roundTrip,'item','TRAVEL_RATION'),true,'favorites survive migration');equal(roundTrip.character!.savedLoadouts?.[0]?.name,'Starter build','loadouts survive migration');
+const favoriteRecipe=RECIPES.find(recipe=>!recipe.noviceSetId);if(!favoriteRecipe)throw new Error('Expected a catalog recipe');const recipeState=toggleFavorite(state,'recipe',favoriteRecipe.id);equal(visibleStacks([{itemId:'TRAVEL_RATION',quantity:1}], '', 'favorites','favorite',['TRAVEL_RATION']).length,1,'favorite inventory filter');equal(visibleRecipes(recipeState,favoriteRecipe.skillId,'','favorites','favorite').some(row=>row.recipe.id===favoriteRecipe.id),true,'favorite recipe filter');
+console.log('search-loadouts-v1 passed');

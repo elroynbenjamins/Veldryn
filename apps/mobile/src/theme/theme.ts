@@ -1,11 +1,14 @@
+import {Platform} from 'react-native';
+
+export const displayFont=Platform.select({ios:'Georgia',android:'serif',default:'Georgia'});
 export const spacing={xs:4,sm:8,md:12,lg:16,xl:24};
-export const radii={sm:6,md:10,lg:12};
+export const radii={sm:8,md:14,lg:18};
 export const typography={
   caption:{fontSize:12,lineHeight:16},
   body:{fontSize:14,lineHeight:20},
-  bodyStrong:{fontSize:14,lineHeight:20,fontWeight:'800' as const},
-  title:{fontSize:18,lineHeight:24,fontWeight:'900' as const},
-  hero:{fontSize:28,lineHeight:34,fontWeight:'900' as const},
+  bodyStrong:{fontSize:14,lineHeight:21,fontWeight:'600' as const},
+  title:{fontFamily:displayFont,fontSize:19,lineHeight:25,fontWeight:'700' as const},
+  hero:{fontFamily:displayFont,fontSize:28,lineHeight:36,fontWeight:'700' as const},
 };
 export const touchTargetMin=44;
 export const touchTargetPreferred=48;

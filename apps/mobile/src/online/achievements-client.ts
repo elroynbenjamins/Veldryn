@@ -1,0 +1,7 @@
+import {supabase} from './supabase';
+declare const process:{env:Record<string,string|undefined>};
+import type {AchievementClaimResult,AchievementShowcaseResult,AchievementSnapshotProjection} from '../core/achievement-types';
+const base=(process.env.EXPO_PUBLIC_ACHIEVEMENTS_API_URL??process.env.EXPO_PUBLIC_PROFILE_API_URL??process.env.EXPO_PUBLIC_ARENA_API_URL??process.env.EXPO_PUBLIC_COOP_API_URL)?.replace(/\/$/,'');
+export const achievementsOnlineConfigured=Boolean(process.env.EXPO_PUBLIC_ACHIEVEMENTS_V1==='true'&&base&&supabase);
+async function request<T>(path:string,init?:RequestInit){if(!base||!supabase)throw new Error('Achievements server is not configured.');const session=(await supabase.auth.getSession()).data.session;if(!session)throw new Error('Sign in to view Achievements.');const response=await fetch(`${base}${path}`,{...init,headers:{Authorization:`Bearer ${session.access_token}`,'Content-Type':'application/json',...(init?.headers??{})}});const payload=await response.json();if(!response.ok)throw new Error(payload?.message??payload?.code??'Achievement request failed.');return payload as T}
+export const achievementsClient={snapshot:()=>request<AchievementSnapshotProjection>('/achievements'),claim:(id:string,requestId:string)=>request<AchievementClaimResult>(`/achievements/${encodeURIComponent(id)}/claim`,{method:'POST',body:JSON.stringify({requestId})}),showcase:(ids:string[],requestId:string)=>request<AchievementShowcaseResult>('/achievements/showcase',{method:'POST',body:JSON.stringify({achievementIds:ids,requestId})})};

@@ -1,0 +1,302 @@
+[
+  {
+    "id": "MOSS_FIBER",
+    "name": "moss_fiber",
+    "master": [
+      1254,
+      1254
+    ],
+    "alpha": true,
+    "cornerAlphaTolerance": 1,
+    "densities": [
+      48,
+      96,
+      144
+    ]
+  },
+  {
+    "id": "OATHGLASS_SHARD",
+    "name": "oathglass_shard",
+    "master": [
+      1254,
+      1254
+    ],
+    "alpha": true,
+    "cornerAlphaTolerance": 1,
+    "densities": [
+      48,
+      96,
+      144
+    ]
+  },
+  {
+    "id": "TORN_OATHCLOTH",
+    "name": "torn_oathcloth",
+    "master": [
+      1254,
+      1254
+    ],
+    "alpha": true,
+    "cornerAlphaTolerance": 1,
+    "densities": [
+      48,
+      96,
+      144
+    ]
+  },
+  {
+    "id": "SUNSTONE_ORE",
+    "name": "sunstone_ore",
+    "master": [
+      1254,
+      1254
+    ],
+    "alpha": true,
+    "cornerAlphaTolerance": 1,
+    "densities": [
+      48,
+      96,
+      144
+    ]
+  },
+  {
+    "id": "AMBERGLASS",
+    "name": "amberglass",
+    "master": [
+      1254,
+      1254
+    ],
+    "alpha": true,
+    "cornerAlphaTolerance": 1,
+    "densities": [
+      48,
+      96,
+      144
+    ]
+  },
+  {
+    "id": "ASTRAL_SCRIPT",
+    "name": "astral_script",
+    "master": [
+      1254,
+      1254
+    ],
+    "alpha": true,
+    "cornerAlphaTolerance": 1,
+    "densities": [
+      48,
+      96,
+      144
+    ]
+  },
+  {
+    "id": "FROSTIRON",
+    "name": "frostiron",
+    "master": [
+      1254,
+      1254
+    ],
+    "alpha": true,
+    "cornerAlphaTolerance": 1,
+    "densities": [
+      48,
+      96,
+      144
+    ]
+  },
+  {
+    "id": "RIMEGLASS",
+    "name": "rimeglass",
+    "master": [
+      1254,
+      1254
+    ],
+    "alpha": true,
+    "cornerAlphaTolerance": 1,
+    "densities": [
+      48,
+      96,
+      144
+    ]
+  },
+  {
+    "id": "CHOIR_BLOOM",
+    "name": "choir_bloom",
+    "master": [
+      1254,
+      1254
+    ],
+    "alpha": true,
+    "cornerAlphaTolerance": 1,
+    "densities": [
+      48,
+      96,
+      144
+    ]
+  },
+  {
+    "id": "WISP_DUST",
+    "name": "wisp_dust",
+    "master": [
+      1254,
+      1254
+    ],
+    "alpha": true,
+    "cornerAlphaTolerance": 1,
+    "densities": [
+      48,
+      96,
+      144
+    ]
+  },
+  {
+    "id": "THORN_SAP",
+    "name": "thorn_sap",
+    "master": [
+      1254,
+      1254
+    ],
+    "alpha": true,
+    "cornerAlphaTolerance": 1,
+    "densities": [
+      48,
+      96,
+      144
+    ]
+  },
+  {
+    "id": "TROLL_HIDE",
+    "name": "troll_hide",
+    "master": [
+      1254,
+      1254
+    ],
+    "alpha": true,
+    "cornerAlphaTolerance": 1,
+    "densities": [
+      48,
+      96,
+      144
+    ]
+  },
+  {
+    "id": "LANTERNSTEEL_SHARD",
+    "name": "lanternsteel_shard",
+    "master": [
+      1254,
+      1254
+    ],
+    "alpha": true,
+    "cornerAlphaTolerance": 1,
+    "densities": [
+      48,
+      96,
+      144
+    ]
+  },
+  {
+    "id": "FALLEN_RIVET",
+    "name": "fallen_rivet",
+    "master": [
+      1254,
+      1254
+    ],
+    "alpha": true,
+    "cornerAlphaTolerance": 1,
+    "densities": [
+      48,
+      96,
+      144
+    ]
+  },
+  {
+    "id": "ECHO_TOUCHED_PELT",
+    "name": "echo_touched_pelt",
+    "master": [
+      1254,
+      1254
+    ],
+    "alpha": true,
+    "cornerAlphaTolerance": 1,
+    "densities": [
+      48,
+      96,
+      144
+    ]
+  },
+  {
+    "id": "BANNER_ASH",
+    "name": "banner_ash",
+    "master": [
+      1254,
+      1254
+    ],
+    "alpha": true,
+    "cornerAlphaTolerance": 1,
+    "densities": [
+      48,
+      96,
+      144
+    ]
+  },
+  {
+    "id": "OATHGLASS_FRAGMENT",
+    "name": "oathglass_fragment",
+    "master": [
+      1254,
+      1254
+    ],
+    "alpha": true,
+    "cornerAlphaTolerance": 1,
+    "densities": [
+      48,
+      96,
+      144
+    ]
+  },
+  {
+    "id": "GLOAM_DUST",
+    "name": "gloam_dust",
+    "master": [
+      1254,
+      1254
+    ],
+    "alpha": true,
+    "cornerAlphaTolerance": 1,
+    "densities": [
+      48,
+      96,
+      144
+    ]
+  },
+  {
+    "id": "RUNEBOUND_CORE",
+    "name": "runebound_core",
+    "master": [
+      1254,
+      1254
+    ],
+    "alpha": true,
+    "cornerAlphaTolerance": 1,
+    "densities": [
+      48,
+      96,
+      144
+    ]
+  },
+  {
+    "id": "ECHO_BAT_WING",
+    "name": "echo_bat_wing",
+    "master": [
+      1254,
+      1254
+    ],
+    "alpha": true,
+    "cornerAlphaTolerance": 1,
+    "densities": [
+      48,
+      96,
+      144
+    ]
+  }
+]

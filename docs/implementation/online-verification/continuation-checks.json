@@ -1,0 +1,82 @@
+{
+  "checkedAt": "2026-09-12T21:40:53.6719903Z",
+  "checks": [
+    {
+      "status": "PASS",
+      "check": "node tools/check-v16.mjs",
+      "count": 81
+    },
+    {
+      "sqlSuites": 5,
+      "migrations": 56,
+      "status": "PASS",
+      "check": "Fresh migration chain on disposable project"
+    },
+    {
+      "check": "Deployed QMode HTTP, real-deadline cron, races, rewards and fixture cleanup",
+      "status": "PASS"
+    },
+    {
+      "check": "Final online TypeScript build and QMode receipt regression",
+      "status": "PASS"
+    },
+    {
+      "check": "Final backend build and terminal public-projection regression",
+      "status": "PASS"
+    },
+    {
+      "result": "Dependencies are up to date",
+      "status": "PASS",
+      "check": "Expo install --check"
+    },
+    {
+      "check": "Generated gameplay and co-op Edge bundles",
+      "status": "PASS"
+    },
+    {
+      "check": "git diff --check on this continuation source scope",
+      "status": "PASS"
+    },
+    {
+      "check": "Repository source lint",
+      "status": "NOT_CONFIGURED"
+    },
+    {
+      "detail": "Whitespace removed from one blank line in WorldScreen.tsx without changing its functionality",
+      "status": "PASS",
+      "check": "Whole-worktree diff whitespace"
+    },
+    {
+      "status": "PASS",
+      "check": "iOS Hermes export before concurrent ingredient-art edit",
+      "assets": 818
+    },
+    {
+      "status": "PASS",
+      "check": "Disposable Supabase project cleanup"
+    },
+    {
+      "check": "Final current-source iOS Hermes export",
+      "detail": "Intermediate failure resolved after all 20 concurrent ingredient images arrived; final current-source export passed",
+      "status": "PASS"
+    },
+    {
+      "check": "Final auth-provider TypeScript check",
+      "status": "PASS"
+    },
+    {
+      "check": "Final standalone Android assembleRelease, signature, ABI, install and native runtime",
+      "status": "PASS"
+    },
+    {
+      "check": "Native fixture cleanup",
+      "status": "PASS"
+    }
+  ],
+  "releaseStatus": "NOT_READY",
+  "limitations": [
+    "Samsung S24+ physical test, successful native PKCE callback and accessibility unverified",
+    "Production Live co-op integration and remaining co-op content remain unfinished",
+    "Internal debug-signed Android APK uses an isolated artwork snapshot; store release not performed"
+  ]
+}

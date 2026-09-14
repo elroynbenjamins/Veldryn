@@ -1,0 +1,8 @@
+{
+  "touchedFilesSyntaxTranspile": "passed (5 files)",
+  "isolatedNativeMetroBundle": "passed (868 modules)",
+  "native": "Android 35 / 360dp / memory-only profile",
+  "workspaceTypeScript": "blocked by unrelated concurrent missing companion-save module",
+  "normalProductionExport": "blocked by unrelated concurrent companion-runtime external backend import",
+  "normalIndexRestored": true
+}

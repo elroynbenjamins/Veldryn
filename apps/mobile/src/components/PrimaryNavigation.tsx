@@ -10,7 +10,7 @@ export function PrimaryNavigation<T extends PrimaryNavigationDestination>({desti
  const measuredBottom=Platform.OS==='android'?screenHeight-windowHeight-(StatusBar.currentHeight??0):0;
  const bottomInset=Platform.OS==='android'?Math.max(24,Math.min(52,measuredBottom>0?measuredBottom:30)):4;
  return <View accessibilityRole="tablist" style={[s.nav,{paddingBottom:bottomInset}]}>{destinations.map(item=>{const selected=active===item,label=labelFor(item),badge=badges?.[item];return <Pressable key={item} accessibilityRole="tab" accessibilityState={{selected}} accessibilityLabel={label} onPress={()=>onNavigate(item)} style={({pressed})=>[s.item,pressed&&s.pressed]}>
-  {selected&&<View pointerEvents="none" style={s.mark}/>}<View style={[s.iconShell,selected&&s.iconActive]}><PrimaryNavigationIcon destination={item} active={selected}/>{badge!==undefined&&badge!==0?<View style={[s.badge,badge==='dot'&&s.dotBadge]}><Text style={s.badgeText}>{badge==='dot'?'':badge>99?'99+':badge}</Text></View>:null}</View>
+  {selected&&<View pointerEvents="none" style={s.mark}/>}<View style={[s.iconShell,selected&&s.iconActive]}><PrimaryNavigationIcon destination={item} active={selected}/>{badge!==undefined&&badge!==0?<View style={[s.badge,badge==='dot'&&s.dotBadge]}><Text style={s.badgeText}>{badge==='dot'?'':typeof badge==='number'?(badge>99?'99+':badge):''}</Text></View>:null}</View>
   <Text numberOfLines={2} textBreakStrategy="balanced" android_hyphenationFrequency="normal" style={[s.label,selected&&s.active]}>{label}</Text>
  </Pressable>})}</View>;
 }

@@ -6,6 +6,7 @@ import {bestiaryProjection} from '../core/bestiary-v40';
 import {Panel} from '../components/Panel';
 import {GameButton} from '../components/GameButton';
 import {C,spacing,typography} from '../theme/theme';
+import {PersonalRecordsPanel} from '../components/PersonalRecordsPanel';
 
 export type JournalDestination='Achievements'|'Collections'|'Profile'|'Bestiary';
 export function AdventurersJournalScreen({state,onNavigate}:{state:GameState;onNavigate:(destination:JournalDestination)=>void}){
@@ -19,7 +20,7 @@ export function AdventurersJournalScreen({state,onNavigate}:{state:GameState;onN
   <View style={s.stats}><View style={s.stat}><Text style={s.statValue}>40</Text><Text style={s.statLabel}>ACHIEVEMENTS</Text></View><View style={s.stat}><Text style={s.statValue}>8</Text><Text style={s.statLabel}>TITLES</Text></View><View style={s.stat}><Text style={s.statValue}>33</Text><Text style={s.statLabel}>RECORDS</Text></View></View>
   <Panel><Text style={s.title}>Long-term Achievements</Text><Text style={s.sub}>{categories.length} categories · Novice → Adventurer → Veteran → Master → Grandmaster. Rewards are cosmetic titles rather than power.</Text><GameButton title="Open Achievements" onPress={()=>onNavigate('Achievements')}/></Panel>
   <Panel><Text style={s.title}>Titles</Text><Text style={s.sub}>{JOURNAL_TITLES_V42.map(row=>row.name).join(' · ')}</Text><GameButton title="Open Profile & Titles" tone="secondary" onPress={()=>onNavigate('Profile')}/></Panel>
-  <Panel><Text style={s.title}>Personal Records</Text><Text style={s.sub}>{PERSONAL_RECORDS_V43.length} trusted best-performance records across {recordCategories.length} categories: combat, dungeons, raids, professions, activities, companions, parties and guild projects.</Text><Text style={s.note}>Record updates are server-authoritative; ordinary lifetime counters remain achievements/statistics.</Text></Panel>
+  <PersonalRecordsPanel state={state}/>
   <Panel><Text style={s.title}>Bestiary</Text><Text style={s.sub}>{bestiary.discovered}/{bestiary.total} creatures discovered · {bestiary.completionPercent}% current discovery completion.</Text><GameButton title="Open Bestiary" tone="secondary" onPress={()=>onNavigate('Bestiary')}/></Panel>
   <Panel><Text style={s.title}>Collections</Text><Text style={s.sub}>Items, pets, companions, skins, profile cosmetics and V45 Collection Sets all link back to canonical ownership.</Text><GameButton title="Open Collections" tone="secondary" onPress={()=>onNavigate('Collections')}/></Panel>
   <Panel><Text style={s.title}>Account Progress</Text><Text style={s.big}>{(currentLevels+reserveLevels).toLocaleString()}</Text><Text style={s.sub}>Combined account skill levels across your character roster.</Text></Panel>

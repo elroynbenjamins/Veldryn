@@ -23,6 +23,8 @@ jobs:
           cache: pnpm
           cache-dependency-path: apps/mobile/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
+      - name: Install backend dependencies used by cross-package reconciliation tests
+        run: pnpm --dir ../../backend install --frozen-lockfile
       - run: pnpm typecheck:core
       - run: pnpm test:core
       - run: pnpm typecheck

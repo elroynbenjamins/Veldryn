@@ -12,6 +12,7 @@ import {reserveFaithPractice,updateFaithPreference} from './faith';
 import {executeCompanionActivity,refreshCompanions,assertCompanionIdle,claimCompanionTraining} from './companion-runtime';
 import {createAccountCharacter,switchAccountCharacter} from './account-actions';
 import {CLASSES} from '../content/classes';
+import {applyTrustedLongTermProgression} from './long-term-progression-runtime';
 
 /** Commands express intent. Neither a client save nor a client reward is accepted. */
 export interface GameCommand {type:string;args?:Record<string,unknown>}
@@ -59,7 +60,7 @@ export function validateGameSettings(value:unknown):GameState['settings']{
 }
 
 /** The caller provides a trusted clock, character ID and random roll on the server. */
-export function executeGameCommand(previous:GameState,value:unknown,now:number,options:{characterId?:string;randomRoll?:number}={}):GameCommandResult{
+export function executeGameCommand(previous:GameState,value:unknown,now:number,options:{characterId?:string;randomRoll?:number;accountId?:string;eventId?:string}={}):GameCommandResult{
  const command=validateGameCommand(value),a=command.args??{},activity=previous.activity,contributions:VerifiedActivity[]=[];
  let state=structuredClone(previous),reward:RewardBundle|undefined,message:string|undefined,won:boolean|undefined,upgrade:GameCommandResult['upgrade'];
  if(!Number.isSafeInteger(now)||now<previous.createdAtMs)throw new Error('invalid_server_clock');
@@ -163,5 +164,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   default:throw new Error('invalid_command');
  }
  if(state.character&&(!Number.isSafeInteger(state.character.gold)||state.character.gold<0))throw new Error('invalid_wallet');
+ const progression=applyTrustedLongTermProgression(state,contributions,reward,now,{accountId:options.accountId??`local:${state.createdAtMs}`,eventId:options.eventId??`local:${now}:${command.type}`});
+ state=progression.state;
  return {state:discoverCharacterSkins(state),reward,activity,message,won,upgrade,contributions};
 }

@@ -45,3 +45,6 @@ Status legend:
 6. Commit generated guild PNG assets into the runtime asset tree through a binary-capable Git workflow.
 7. Execute mobile TypeScript/core tests, backend tests/build, Supabase migrations/RLS tests and native Expo Android/iOS QA.
 8. Validate current-repository boss/dungeon seeded outcome bands before changing encounter stats.
+
+## Automated validation
+A branch/PR workflow now lives at `.github/workflows/v52-reconciliation.yml`. It runs mobile core/full TypeScript, the expanded core regression suite, backend typecheck/build, production/combat matrix smokes, the live-dungeon v20 tests, the V48 reward contract, and squad smoke tests. Supabase DB/RLS tests and native device QA remain separate manual gates.

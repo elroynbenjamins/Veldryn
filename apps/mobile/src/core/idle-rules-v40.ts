@@ -14,3 +14,18 @@ export function evaluateIdleRuleSet(rules:IdleRuleSet,ctx:IdleEvaluationContext)
 /** V40/V41 idle rules are stop-only. They never start, chain or travel to another activity. */
 export const IDLE_RULES_CAN_AUTO_TRAVEL=false;
 export const IDLE_RULES_CAN_CHAIN_ACTIVITIES=false;
+
+const IDLE_KINDS:IdleStopKind[]=['item_quantity','skill_level','monster_kills','weekly_order_progress','food_below','free_slots_below','duration_seconds'];
+export function normalizeIdleRuleSets(value:unknown,characterId:string):IdleRuleSet[]{
+ if(!Array.isArray(value)||!characterId)return [];
+ return value.slice(0,5).flatMap((raw,index)=>{
+  if(!raw||typeof raw!=='object')return [];const row=raw as Record<string,unknown>;
+  const conditions=Array.isArray(row.conditions)?row.conditions.slice(0,6).flatMap((input,i)=>{
+   if(!input||typeof input!=='object')return [];const c=input as Record<string,unknown>,kind=c.kind as IdleStopKind,value=Number(c.value);
+   if(!IDLE_KINDS.includes(kind)||!Number.isFinite(value)||value<0)return [];
+   return [{id:typeof c.id==='string'&&c.id?c.id.slice(0,80):`condition-${i+1}`,kind,targetId:typeof c.targetId==='string'?c.targetId.slice(0,100):undefined,value:Math.max(0,Math.floor(value)),enabled:c.enabled!==false} as IdleStopCondition];
+  }):[];
+  return [{id:typeof row.id==='string'&&row.id?row.id.slice(0,80):`rule-${index+1}`,characterId,name:typeof row.name==='string'&&row.name.trim()?row.name.trim().slice(0,40):`Idle Rule ${index+1}`,conditions,stopIfOutOfFood:row.stopIfOutOfFood!==false,stopIfRewardsWouldOverflow:row.stopIfRewardsWouldOverflow!==false,finishCurrentCycle:row.finishCurrentCycle!==false} as IdleRuleSet];
+ });
+}
+export function validateActiveIdleRuleId(rules:IdleRuleSet[],value:unknown){return typeof value==='string'&&rules.some(rule=>rule.id===value)?value:undefined}

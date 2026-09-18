@@ -20,7 +20,7 @@ export const FAILURE_REWARD = {
   quarter: 0.15,
   half: 0.25,
   finalBoss: 0.35,
-  bossLow: 0.45,
+  bossLow: 0.50,
   clear: 1.0,
 } as const;
 

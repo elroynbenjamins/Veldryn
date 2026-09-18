@@ -54,7 +54,7 @@ function itemOwnershipKeys(state:GameState){
  for(const row of state.otherCharacters??[]){for(const stack of [...row.inventory.stacks,...row.overflow.stacks])if(stack.quantity>0)addItem(stack.itemId);for(const id of Object.values(row.character.equipment??{}))addItem(id)}
  return keys;
 }
-function collectionOwnershipSnapshot(state:GameState):CollectionOwnershipSnapshot{
+export function collectionOwnershipSnapshotFromGameState(state:GameState):CollectionOwnershipSnapshot{
  const keys=itemOwnershipKeys(state);
  const add=(kind:'pet'|'companion'|'skin'|'background'|'border'|'bestiary',ids:readonly string[]|undefined)=>{for(const id of ids??[])keys.add(collectionMemberKey({kind,id}))};
  add('pet',unique([...(state.account.unlockedCosmeticPetIds??[]),...(state.character?.ownedPetIds??[]),...(state.otherCharacters??[]).flatMap(row=>row.character.ownedPetIds??[])]));
@@ -112,7 +112,7 @@ export function applyTrustedLongTermProgression(input:GameState,events:TrustedPr
 
  const cross=ensureCrossSkill(state,options.accountId),crossResult=state.character?applyCrossSkillSnapshot(cross,state.character.id,{skillLevels:Object.fromEntries(state.skills.map(row=>[row.skillId,row.level]))},nowMs):{newlyUnlockedDiscoveryIds:[],grants:[]};
  const knowledge=unique([...(state.account.unlockedKnowledgeIds??[]),...crossResult.grants.map(row=>row.reward.ref)]);
- const collections=ensureCollectionSets(state,options.accountId),collectionResult=applyCollectionSetSnapshot(collections,collectionOwnershipSnapshot(state),nowMs);
+ const collections=ensureCollectionSets(state,options.accountId),collectionResult=applyCollectionSetSnapshot(collections,collectionOwnershipSnapshotFromGameState(state),nowMs);
  const collectionRewards=unique([...(state.account.unlockedCollectionRewardIds??[]),...collectionResult.grants.map(row=>row.reward.ref)]);
  let rare=state.account.rareDiscoveryState;
  const rareGrantRefs:string[]=[];

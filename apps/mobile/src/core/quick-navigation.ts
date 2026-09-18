@@ -1,5 +1,5 @@
 export const QUICK_NAV_DESTINATIONS=[
-  'Home','Character','World','Inventory','More','Quests','Companions','Skills','Events','Friends','Guild','Settings','Social','Party',
+  'Home','Character','Skills','World','Inventory','Account','More','Quests','Companions','Skills','Events','Friends','Guild','Settings','Social','Party',
 ] as const;
 
 export type QuickNavDestination=typeof QUICK_NAV_DESTINATIONS[number];

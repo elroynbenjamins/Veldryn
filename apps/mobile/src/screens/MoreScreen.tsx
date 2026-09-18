@@ -4,7 +4,7 @@ import {Image,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {C,radii,spacing,typography} from '../theme/theme';
 import type {GameState} from '../core/types';
 
-export type MoreDestination='Social'|'Quests'|'Companions'|'Events'|'Friends'|'Guild'|'Settings'|'Arena'|'Rankings'|'Collections'|'Profile'|'Achievements'|'Journal'|'Bestiary'|'Pets';
+export type MoreDestination='Social'|'Quests'|'Companions'|'Events'|'Friends'|'Guild'|'WorldFeed'|'Settings'|'Arena'|'Rankings'|'Collections'|'Profile'|'Achievements'|'Journal'|'Bestiary'|'Pets';
 type IconRoute=keyof typeof navigationIcons;
 type Row={id:MoreDestination;title:string;description:string;icon:IconRoute;badge?:'friends'|'events'};
 const SECTIONS:Array<{title:string;rows:Row[]}>= [
@@ -15,6 +15,7 @@ const SECTIONS:Array<{title:string;rows:Row[]}>= [
   {id:'Social',title:'Social',description:'Party, chat, recruitment and social overview.',icon:'Social'},
   {id:'Friends',title:'Friends',description:'Friends, incoming requests and player search.',icon:'Friends',badge:'friends'},
   {id:'Guild',title:'Guild',description:'Guild Hall, projects, recruitment and member activity.',icon:'Guild'},
+  {id:'WorldFeed',title:'World Milestones',description:'Recent public accomplishments from real players.',icon:'World'},
   {id:'Rankings',title:'Rankings',description:'Server-calculated progression and challenge rankings.',icon:'Social'},
   {id:'Arena',title:'Arena',description:'Three-character ranked squad competition.',icon:'Social'},
  ]},

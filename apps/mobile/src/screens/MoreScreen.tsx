@@ -4,12 +4,13 @@ import {Image,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {C,radii,spacing,typography} from '../theme/theme';
 import type {GameState} from '../core/types';
 
-export type MoreDestination='Social'|'Quests'|'Companions'|'Events'|'Friends'|'Guild'|'WorldFeed'|'Settings'|'Arena'|'Rankings'|'Collections'|'Profile'|'Achievements'|'Journal'|'Bestiary'|'Pets';
+export type MoreDestination='Planner'|'Social'|'Quests'|'Companions'|'Events'|'Friends'|'Guild'|'WorldFeed'|'Settings'|'Arena'|'Rankings'|'Collections'|'Profile'|'Achievements'|'Journal'|'Bestiary'|'Pets';
 type IconRoute=keyof typeof navigationIcons;
 type Row={id:MoreDestination;title:string;description:string;icon:IconRoute;badge?:'friends'|'events'};
 const SECTIONS:Array<{title:string;rows:Row[]}>= [
  {title:'Progression & Tasks',rows:[
   {id:'Quests',title:'Quests',description:'Story, contracts and objectives that need your attention.',icon:'Quests'},
+  {id:'Planner',title:'Working Toward',description:'Pinned goals, safe stopping rules and progression planning.',icon:'Skills'},
  ]},
  {title:'Social',rows:[
   {id:'Social',title:'Social',description:'Party, chat, recruitment and social overview.',icon:'Social'},

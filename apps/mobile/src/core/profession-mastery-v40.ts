@@ -1,4 +1,3 @@
-import type {GameState} from './types';
 export const PROFESSION_MASTERY_MAX_RANK=50;
 export interface ProfessionMasteryRecord{actionId:string;points:number;updatedAtMs:number}
 export interface ProfessionMasteryView{actionId:string;points:number;rank:number;maxRank:number;nextRankPoints:number;xpBonusBps:number;yieldBonusBps:number;speedBonusBps:number;mastered:boolean}
@@ -27,17 +26,3 @@ export function grantProfessionMastery(previous:ProfessionMasteryRecord|undefine
   return {actionId,points:Math.min(masteryPointsForRank(PROFESSION_MASTERY_MAX_RANK),(previous?.points??0)+actions),updatedAtMs:nowMs};
 }
 
-export function normalizeProfessionMastery(raw:unknown){
- const input=raw&&typeof raw==='object'?raw as Record<string,unknown>:{},cap=masteryPointsForRank(PROFESSION_MASTERY_MAX_RANK);
- return Object.fromEntries(Object.entries(input).filter(([id,value])=>!!id&&typeof value==='number'&&Number.isFinite(value)&&value>0).map(([id,value])=>[id,Math.min(cap,Math.floor(value as number))]));
-}
-export function professionMasteryStateView(state:GameState,actionId:string){
- const points=normalizeProfessionMastery(state.character?.professionMasteryPoints)[actionId]??0;
- return professionMasteryView(actionId,{actionId,points,updatedAtMs:0});
-}
-export function grantProfessionMasteryToState(state:GameState,actionId:string,actions:number,nowMs:number){
- if(!state.character||!Number.isSafeInteger(actions)||actions<=0)return state;
- const points=normalizeProfessionMastery(state.character.professionMasteryPoints),prior:ProfessionMasteryRecord|undefined=points[actionId]===undefined?undefined:{actionId,points:points[actionId],updatedAtMs:nowMs};
- const record=grantProfessionMastery(prior,actionId,actions,nowMs);points[actionId]=record.points;
- return {...state,character:{...state.character,professionMasteryPoints:points}};
-}

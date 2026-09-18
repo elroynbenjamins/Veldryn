@@ -14,19 +14,22 @@ import {C,spacing,typography} from '../theme/theme';
 import {EquipmentPreview} from '../components/EquipmentPreview';
 import {previewEquipment} from '../core/equipment-preview';
 import {InventoryFilterSheet,inventoryFilterLabel,inventorySortLabel} from '../components/InventoryFilterSheet';
+import {InventoryCraftingPanel} from '../components/InventoryCraftingPanel';
 import {formatGameNumber} from '../core/number-format';
 import {ot} from '../i18n';
 import {enhancedGearStats,gearEnhancement,gemSocketCapacity,hasEnhancement} from '../core/equipment-enhancement';
 
 type Pending={kind:'sell'|'salvage'|'deposit';item:ItemDef;quantity:number}|null;
-export function InventoryScreen({state,onEquip,onFood,onEat,onSell,onSalvage,onDeposit,onDepositMaterials,onUpgradeStorage,onWithdraw,onOverflow}:{state:GameState;onEquip:(id:string)=>void;onFood:(id:string)=>void;onEat:(id:string)=>void;onSell:(id:string)=>void;onSalvage:(id:string)=>void;onDeposit:(id:string,quantity:number)=>void;onDepositMaterials:()=>void;onUpgradeStorage:(location:StorageLocation)=>void;onWithdraw:(id:string,quantity:number)=>void;onOverflow:()=>void}){
+export function InventoryScreen({state,onEquip,onFood,onEat,onSell,onSalvage,onDeposit,onDepositMaterials,onUpgradeStorage,onWithdraw,onOverflow,onCraft}:{state:GameState;onEquip:(id:string)=>void;onFood:(id:string)=>void;onEat:(id:string)=>void;onSell:(id:string)=>void;onSalvage:(id:string)=>void;onDeposit:(id:string,quantity:number)=>void;onDepositMaterials:()=>void;onUpgradeStorage:(location:StorageLocation)=>void;onWithdraw:(id:string,quantity:number)=>void;onOverflow:()=>void;onCraft:(recipeId:string)=>void}){
   const [pending,setPending]=useState<Pending>(null),[location,setLocation]=useState<'inventory'|'bank'>('inventory');
+  const [inventoryTab,setInventoryTab]=useState<'bag'|'crafting'>('bag');
   const [query,setQuery]=useState(''),[filter,setFilter]=useState<InventoryFilter>('all'),[sort,setSort]=useState<InventorySort>('name');
   const [quantity,setQuantity]=useState<1|10|'all'>(1);
   const [error,setError]=useState('');
   const [expandedItem,setExpandedItem]=useState<string|null>(null);
   const [previewId,setPreviewId]=useState<string|null>(null);
   const [showStorage,setShowStorage]=useState(false),[showFilters,setShowFilters]=useState(false);
+  if(inventoryTab==='crafting')return <ScrollView contentContainerStyle={s.root} keyboardShouldPersistTaps="handled"><Text style={s.h}>Inventory</Text><View style={s.row}><View style={s.flex}><GameButton title="Bag" tone="secondary" onPress={()=>setInventoryTab('bag')}/></View><View style={s.flex}><GameButton title="Crafting" selected tone="primary" onPress={()=>setInventoryTab('crafting')}/></View></View><InventoryCraftingPanel state={state} onCraft={onCraft}/></ScrollView>;
   const run=(action:()=>void)=>{try{action();setError('')}catch(e){setError(e instanceof Error?e.message:'Action failed. Please try again.')}};
   const confirm=()=>{if(!pending)return;run(()=>pending.kind==='deposit'?onDeposit(pending.item.id,pending.quantity):pending.kind==='sell'?onSell(pending.item.id):onSalvage(pending.item.id));setPending(null)};
   const stacks=visibleStacks(state[location].stacks,query,filter,sort),totalStacks=state[location].stacks.filter(stack=>stack.quantity>0).length;
@@ -46,6 +49,7 @@ export function InventoryScreen({state,onEquip,onFood,onEat,onSell,onSalvage,onD
   const inventoryUpgrade=storageUpgradePreview(state,'inventory'),bankUpgrade=storageUpgradePreview(state,'bank');
   return <><InventoryFilterSheet visible={showFilters} onClose={()=>setShowFilters(false)} filter={filter} onFilter={setFilter} sort={sort} onSort={setSort} quantity={quantity} onQuantity={setQuantity} resultCount={stacks.length} totalCount={totalStacks}/><EquipmentPreview state={state} itemId={previewId} onClose={()=>setPreviewId(null)}/><ScrollView contentContainerStyle={s.root} keyboardShouldPersistTaps="handled">
     <Text style={s.h}>Inventory</Text>
+    <View style={s.row}><View style={s.flex}><GameButton title="Bag" selected tone="primary" onPress={()=>setInventoryTab('bag')}/></View><View style={s.flex}><GameButton title="Crafting" tone="secondary" onPress={()=>setInventoryTab('crafting')}/></View></View>
     <View style={s.recovery}><Text style={s.label}>RECOVERY</Text><Text style={s.sub}>Health {state.character!.currentHp}/{effectiveStats(state).hp} · Auto-eat: {state.character?.equippedFoodId?itemDef(state.character.equippedFoodId).name:'None'}</Text><Text style={s.sub}>Carried auto-eat portions: {state.inventory.stacks.find(item=>item.itemId===state.character?.equippedFoodId)?.quantity??0}</Text></View>
     <View style={s.row}>{(['inventory','bank'] as const).map(value=><View style={s.flex} key={value}><GameButton title={`${value==='inventory'?'Inventory':'Bank'} ${usedSlots(state[value].stacks)}/${state[value].capacity}`} selected={location===value} tone={location===value?'primary':'secondary'} onPress={()=>setLocation(value)}/></View>)}</View>
     <Pressable accessibilityRole="button" accessibilityState={{expanded:showStorage}} onPress={()=>setShowStorage(value=>!value)} style={s.disclosure}><View style={s.flex}><Text style={s.disclosureTitle}>STORAGE MANAGEMENT</Text><Text style={s.sub}>Bulk deposit and capacity upgrades</Text></View><Text style={s.disclosureMark}>{showStorage?'−':'+'}</Text></Pressable>

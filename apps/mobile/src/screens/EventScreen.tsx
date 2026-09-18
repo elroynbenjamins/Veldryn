@@ -22,7 +22,7 @@ const discoveryArt:Record<string,number>={
   guardian_lantern:require('../../assets/events/harvestwake/discovery_guardian_lantern.png'),
 };
 const eventHeroArt:Record<string,number>={EVT_ANNUAL_009_2026:require('../../assets/profile-backgrounds/bg_harvestwake.png')};
-function EventHero({eventId,style,imageStyle,children}:{eventId:string;style:any;imageStyle:any;children:ReactNode}){const source=eventHeroArt[eventId];return source?<ImageBackground source={source} resizeMode="cover" imageStyle={imageStyle} style={style}>{children}</EventHero>:<View style={style}>{children}</View>}
+function EventHero({eventId,style,imageStyle,children}:{eventId:string;style:any;imageStyle:any;children:ReactNode}){const source=eventHeroArt[eventId];return source?<ImageBackground source={source} resizeMode="cover" imageStyle={imageStyle} style={style}>{children}</ImageBackground>:<View style={style}>{children}</View>}
 const rewardArt:Record<string,number>={
   pet_harvest_fox:require('../../assets/events/harvestwake/pet_harvest_fox.png'),
   pet_field_mouse:require('../../assets/events/harvestwake/pet_field_mouse.png'),

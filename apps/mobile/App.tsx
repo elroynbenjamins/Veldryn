@@ -65,11 +65,11 @@ import type {GameCommand} from './src/core/game-commands';
 import {useSocialNotificationCounts} from './src/online/useSocialNotificationCounts';
 
 type Tab=QuickNavDestination|'Arena'|'Rankings'|'Collections'|'Profile'|'Achievements'|'Combat'|'Coop';
-type PrimaryTab='Skills'|'World'|'Character'|'Inventory'|'More';
-const primaryTabs:PrimaryTab[]=['Character','Skills','World','Inventory','More'];
+type PrimaryTab='Skills'|'World'|'Character'|'Inventory'|'Account';
+const primaryTabs:PrimaryTab[]=['Character','Skills','World','Inventory','Account'];
 function tabLabel(language:Language,tab:Tab):string{
   switch(tab){
-    case 'Home':return t(language,'nav.home');case 'World':return t(language,'nav.world');case 'Character':return t(language,'nav.character');case 'Inventory':return t(language,'nav.inventory');case 'More':return 'Account';
+    case 'Home':return t(language,'nav.home');case 'World':return t(language,'nav.world');case 'Character':return t(language,'nav.character');case 'Inventory':return t(language,'nav.inventory');case 'Account':case 'More':return 'Account';
     case 'Quests':return t(language,'more.quests');case 'Companions':return 'Companions';case 'Skills':return t(language,'more.skills');case 'Events':return t(language,'more.events');case 'Friends':return t(language,'more.friends');case 'Guild':return t(language,'more.guild');case 'Settings':return t(language,'more.settings');
     case 'Combat':return 'Combat';case 'Coop':return ct(language,'browse.title');
     case 'Social':return 'Social';case 'Party':return 'Party';
@@ -91,7 +91,7 @@ function VeldrynApp(){
   const [startupScene]=useState(pickStartupScene);
   const [loadError,setLoadError]=useState('');
   const [recoveryLanguage,setRecoveryLanguage]=useState<Language>('en');
-  const [tab,setCurrentTab]=useState<Tab>('Home');
+  const [tab,setCurrentTab]=useState<Tab>('Character');
   const [tabHistory,setTabHistory]=useState<Tab[]>([]);
   const [skillsMode,setSkillsMode]=useState<'gathering'|'crafting'|'novice'|'faith'>('gathering');
   const [selectedSkill,setSelectedSkill]=useState<SkillId|undefined>();
@@ -106,9 +106,10 @@ function VeldrynApp(){
   const [showCoopUiGallery,setShowCoopUiGallery]=useState(false);
   const [chatPilotInitialPanel,setChatPilotInitialPanel]=useState<'chat'|'emotes'>('chat');
   const setTab=useCallback((destination:Tab)=>{
-    if(destination===tab)return;
+    const normalized:Tab=destination==='More'?'Account':destination;
+    if(normalized===tab)return;
     setTabHistory(history=>[...history,tab].slice(-24));
-    setCurrentTab(destination);
+    setCurrentTab(normalized);
   },[tab]);
   const goBack=useCallback(()=>{
     if(showChatOverlay){setShowChatOverlay(false);return true;}
@@ -119,7 +120,7 @@ function VeldrynApp(){
       setTabHistory(tabHistory.slice(0,-1));
       return true;
     }
-    if(tab!=='Home')setCurrentTab('Home');
+    if(tab!=='Character')setCurrentTab('Character');
     return true;
   },[showChatOverlay,showChatPilot,showCoopUiGallery,tab,tabHistory]);
   const backSwipe=useMemo(()=>PanResponder.create({
@@ -163,7 +164,7 @@ function VeldrynApp(){
     }
 const next=discoverCharacterSkins(candidate),newSkins=newlyUnlockedCharacterSkins(state,next);stateRef.current=next;setState(next);try{await repo.save(next)}catch{Alert.alert('Local save failed','Progress is still in memory. Keep the app open and try another action to save again.')}if(newSkins.length)Alert.alert(ot(next.settings.language,'skin.unlockTitle'),ot(next.settings.language,'skin.unlockBody',{names:newSkins.map(skin=>skin.name).join(', ')}))}
   async function exportSave(){if(!state){Alert.alert('Export unavailable','No save is loaded.');return;}try{await Share.share({title:'VELDRYN save backup',message:createSaveBackup(state)})}catch(error){Alert.alert('Export failed',error instanceof Error?error.message:'The share sheet could not be opened.')}}
-  async function importSave(raw:string){if(serverGameplayEnabled)throw new Error("Local backups cannot replace server-owned progress.");const next=discoverCharacterSkins(parseSaveBackup(raw));await repo.save(next);setState(next);setCurrentTab('Home');setTabHistory([]);Alert.alert('Save imported','The validated backup is now stored on this device.');}
+  async function importSave(raw:string){if(serverGameplayEnabled)throw new Error("Local backups cannot replace server-owned progress.");const next=discoverCharacterSkins(parseSaveBackup(raw));await repo.save(next);setState(next);setCurrentTab('Character');setTabHistory([]);Alert.alert('Save imported','The validated backup is now stored on this device.');}
   function presentCollected(reward:RewardBundle,activity:ActiveActivity|null){if(rewardHasProgress(reward))setCollected({reward,activity})}
   function changeActivity(next?:{kind:'combat'|'gathering';id:string}){
     if(!state)return;
@@ -183,13 +184,13 @@ const next=discoverCharacterSkins(candidate),newSkins=newlyUnlockedCharacterSkin
   if(serverGameplayEnabled&&(!auth.session||auth.recovering))return <AccountWelcomeScreen scene={startupScene}><OnlineAccountPanel state={state??newGame(Date.now())}/></AccountWelcomeScreen>;
   if(serverGameplayEnabled&&!online.snapshot)return <SafeAreaView style={s.center}><Text style={s.txt}>{online.error||'Connecting…'}</Text><GameButton title="Retry connection" onPress={()=>void online.refresh()}/><OnlineAccountPanel state={newGame(Date.now())}/></SafeAreaView>;
   if(!ready)return <StartupScreen scene={startupScene} language={recoveryLanguage}/>;
-  if(loadError||!state)return <SafeAreaView style={s.safe}><StatusBar style="light"/><SaveRecoveryScreen language={recoveryLanguage} message={loadError||'No readable save state was returned.'} onRetry={()=>void loadGame()} onStartFresh={()=>Alert.alert('Delete unreadable local save?','This permanently removes the existing local data and starts a new game.',[{text:'Cancel'},{text:'Start fresh',style:'destructive',onPress:async()=>{await repo.reset();setState(newGame(Date.now()));setLoadError('');setCurrentTab('Home');setTabHistory([])}}])}/></SafeAreaView>;
+  if(loadError||!state)return <SafeAreaView style={s.safe}><StatusBar style="light"/><SaveRecoveryScreen language={recoveryLanguage} message={loadError||'No readable save state was returned.'} onRetry={()=>void loadGame()} onStartFresh={()=>Alert.alert('Delete unreadable local save?','This permanently removes the existing local data and starts a new game.',[{text:'Cancel'},{text:'Start fresh',style:'destructive',onPress:async()=>{await repo.reset();setState(newGame(Date.now()));setLoadError('');setCurrentTab('Character');setTabHistory([])}}])}/></SafeAreaView>;
   if(!state.character)return <SafeAreaView style={s.safe}><StatusBar style="light"/><ClassSelectScreen language={state.settings.language} onLanguage={language=>commit({...state,settings:{...state.settings,language}})} onSelect={async(id,name,body)=>{if(serverGameplayEnabled){await perform({type:'create',args:{classId:id,name,body}});return;}const next=createCharacter(state,id,name,body);await repo.save(next);setState(next)}}/></SafeAreaView>;
   if(creatingRoster)return <SafeAreaView style={s.safe}><StatusBar style="light"/><ClassSelectScreen language={state.settings.language} cancelLabel={t(state.settings.language,'roster.cancel')} onCancel={()=>setCreatingRoster(false)} onSelect={async(id,name,body)=>{if(serverGameplayEnabled){const result=await perform({type:'roster_create',args:{classId:id,name,body}});if(result)setCreatingRoster(false);return;}const result=executeGameCommand(state,{type:'roster_create',args:{classId:id,name,body}},Date.now());await commit(result.state);setCreatingRoster(false)}}/></SafeAreaView>;
   if(__DEV__&&showChatPilot)return <View style={s.safe} {...backSwipe.panHandlers}><ChatPilotDevScreen state={state} initialPanel={chatPilotInitialPanel} onClose={()=>setShowChatPilot(false)}/></View>;
   if(__DEV__&&showCoopUiGallery)return <SafeAreaView style={s.safe} {...backSwipe.panHandlers}><StatusBar style="light"/><CoopUiGalleryScreen language={state.settings.language} onClose={()=>setShowCoopUiGallery(false)}/></SafeAreaView>;
   const preview=previewActivityReward(state,now);
-  const activePrimary:PrimaryTab=tab==='Coop'||tab==='Combat'?'World':primaryTabs.includes(tab as PrimaryTab)?tab as PrimaryTab:'More';
+  const activePrimary:PrimaryTab=tab==='Coop'||tab==='Combat'?'World':primaryTabs.includes(tab as PrimaryTab)?tab as PrimaryTab:'Account';
   const secondary=!primaryTabs.includes(tab as PrimaryTab);
   return <SafeAreaView style={s.safe}><StatusBar style="light"/><GameTopBar state={state} nowMs={now} labelForDestination={destination=>tabLabel(state.settings.language,destination)} onNavigate={setTab} onChangeDestinations={destinations=>commit({...state,settings:{...state.settings,quickNavDestinations:destinations}})} onOpenActivity={openActiveActivity}/>{secondary&&tab!=='Coop'&&<View style={s.backBar}><Pressable accessibilityRole="button" accessibilityLabel={t(state.settings.language,'common.back')} onPress={goBack} hitSlop={8} style={({pressed})=>[s.backButton,pressed&&s.backPressed]}><Image source={require('./assets/ui-icons-v2/small/back.png')} resizeMode="contain" style={s.backIcon}/><Text style={s.backText}>{t(state.settings.language,'common.back')}</Text></Pressable><Text numberOfLines={1} style={s.backTitle}>{tabLabel(state.settings.language,tab)}</Text><View style={s.backSpacer}/></View>}{serverGameplayEnabled&&<View style={{paddingHorizontal:12}}>{!!online.error&&<Text accessibilityRole="alert" style={s.txt}>{online.error}</Text>}{online.pending?<GameButton title="Retry pending action" disabled={online.busy} onPress={()=>void perform()}/>:<Text style={s.txt}>{online.busy?'Saving online…':'Online · progress saved on server'}</Text>}</View>}<View pointerEvents={serverGameplayEnabled&&online.busy?'none':'auto'} style={s.body} {...backSwipe.panHandlers}>
     {tab==='Home'&&<HomeScreen state={state} preview={preview} onOpenCombat={()=>setTab('Combat')} onOpenSkill={skillId=>{setSelectedSkill(skillId);setSkillsMode(['mining','woodcutting','fishing'].includes(skillId)?'gathering':'crafting');setTab('Skills')}} onNavigate={destination=>{if(destination==='Skills')setSelectedSkill(undefined);setTab(destination)}} onClaim={()=>{if(serverGameplayEnabled){void perform({type:'claim'});return;}const result=claimActivity(state,Date.now());commit(result.state);presentCollected(result.reward,state.activity)}} onStop={()=>changeActivity()}/>}
@@ -205,8 +206,8 @@ const next=discoverCharacterSkins(candidate),newSkins=newlyUnlockedCharacterSkin
     {(tab==='Social'||tab==='Party')&&<SocialScreen onGuild={()=>setTab('Guild')} onFriends={()=>setTab('Friends')} onAccount={()=>setTab('Settings')}/>}
     {tab==='Events'&&<EventScreen state={state} onChange={commit} onCommand={serverGameplayEnabled?command=>perform(command).then(Boolean):undefined}/>}
     {tab==='Guild'&&<GuildScreen online={serverGameplayEnabled} state={state} onChange={commit} onlineDirectory={<OnlineGuildBrowser/>} onlineManagement={<OnlineGuildManagement/>} onlinePve={<OnlineGuildPve authoritative={serverGameplayEnabled} numberMode={state.settings.numberMode}/>}/>}
-    {tab==='Settings'&&<SettingsScreen online={serverGameplayEnabled} state={state} onChange={commit} onExport={exportSave} onImport={importSave} onOpenChatPilot={__DEV__?()=>{setChatPilotInitialPanel('chat');setShowChatPilot(true)}:undefined} onOpenChatEmotes={__DEV__?()=>{setChatPilotInitialPanel('emotes');setShowChatPilot(true)}:undefined} onOpenCoopUiGallery={__DEV__?()=>setShowCoopUiGallery(true):undefined} onLanguage={language=>commit({...state,settings:{...state.settings,language}})} onReset={()=>serverGameplayEnabled?Alert.alert('Online save','Your online character is saved on the server.'):Alert.alert('Reset local save?','This deletes prototype progress only.',[{text:'Cancel'},{text:'Reset',style:'destructive',onPress:async()=>{await repo.reset();setState(newGame(Date.now()));setCurrentTab('Home');setTabHistory([])}}])}/>}
-    {tab==='More'&&<MoreScreen language={state.settings.language} onNavigate={setTab} friendRequestCount={notificationCounts.friendRequests} onOpenChatPilot={__DEV__?()=>{setChatPilotInitialPanel('chat');setShowChatPilot(true)}:undefined}/>}
+    {tab==='Settings'&&<SettingsScreen online={serverGameplayEnabled} state={state} onChange={commit} onExport={exportSave} onImport={importSave} onOpenChatPilot={__DEV__?()=>{setChatPilotInitialPanel('chat');setShowChatPilot(true)}:undefined} onOpenChatEmotes={__DEV__?()=>{setChatPilotInitialPanel('emotes');setShowChatPilot(true)}:undefined} onOpenCoopUiGallery={__DEV__?()=>setShowCoopUiGallery(true):undefined} onLanguage={language=>commit({...state,settings:{...state.settings,language}})} onReset={()=>serverGameplayEnabled?Alert.alert('Online save','Your online character is saved on the server.'):Alert.alert('Reset local save?','This deletes prototype progress only.',[{text:'Cancel'},{text:'Reset',style:'destructive',onPress:async()=>{await repo.reset();setState(newGame(Date.now()));setCurrentTab('Character');setTabHistory([])}}])}/>}
+    {(tab==='Account'||tab==='More')&&<MoreScreen language={state.settings.language} onNavigate={setTab} friendRequestCount={notificationCounts.friendRequests} onOpenChatPilot={__DEV__?()=>{setChatPilotInitialPanel('chat');setShowChatPilot(true)}:undefined}/>}
     {tab==='Arena'&&<ArenaScreen state={state} onChange={candidate=>void commit(candidate)}/>}
     {tab==='Rankings'&&<RankingsScreen/>}
     {tab==='Collections'&&<CollectionsScreen state={state} onChange={candidate=>void commit(candidate)}/>}
@@ -214,7 +215,7 @@ const next=discoverCharacterSkins(candidate),newSkins=newlyUnlockedCharacterSkin
     {tab==='Achievements'&&<AchievementsScreen/>}
   </View>
   <ChatOverlay state={state} visible={showChatOverlay} onOpen={()=>setShowChatOverlay(true)} onClose={()=>setShowChatOverlay(false)}/>
-  <PrimaryNavigation destinations={primaryTabs} active={activePrimary} labelFor={item=>tabLabel(state.settings.language,item)} onNavigate={setTab} badges={notificationCounts.account?{More:notificationCounts.account}:undefined}/>
+  <PrimaryNavigation destinations={primaryTabs} active={activePrimary} labelFor={item=>tabLabel(state.settings.language,item)} onNavigate={setTab} badges={notificationCounts.account?{Account:notificationCounts.account}:undefined}/>
   <RewardPopup reward={collected?.reward??null} activity={collected?.activity??null} welcomeBack={!!collected?.welcomeBack} reduceMotion={state.settings.reduceMotion} numberMode={state.settings.numberMode} onClose={()=>setCollected(null)}/>
   </SafeAreaView>;
 }

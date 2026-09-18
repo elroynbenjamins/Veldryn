@@ -67,7 +67,7 @@ export function newGame(nowMs:number):GameState{return {
   quests:QUESTS.map((q,i)=>({questId:q.id,status:i===0?'active':'locked',progress:0 as number})) as any,
   unlockedMonsterIds:['MOSS_RAT'],defeatedBossIds:[],
   skills:['mining','woodcutting','fishing','smithing','cooking','herbalism','alchemy','hunting','exploration','tailoring','enchanting','faith'].map(skillId=>({skillId:skillId as any,xp:0,level:1})),
-  account:{createdCharacterCount:1,unlockedCharacterSlots:1,guildMember:false,patronTier:'none',guildContribution:0,guildProjectProgress:0,guildBossHp:100000,guildProjectClaimed:false,guildJoinPolicy:'open',guildMinimumLevel:10,guildApplicationStatus:'none',seasonalContractClaimIds:[]},
+  account:{createdCharacterCount:1,unlockedCharacterSlots:1,guildMember:false,patronTier:'none',guildBannerId:'world_tree_green',guildProfileFrameId:'classic',guildNameplateId:'classic',guildMotto:'Stronger together.',guildContribution:0,guildProjectProgress:0,guildBossHp:100000,guildProjectClaimed:false,guildJoinPolicy:'open',guildMinimumLevel:10,guildApplicationStatus:'none',seasonalContractClaimIds:[]},
   settings:{language:'en',numberMode:'abbreviated',reduceMotion:false,textScale:1,autoEatThresholdPct:40,stopCombatWhenOutOfFood:true,autoJoinWorldChat:true,defaultWorldChat:1,quickNavDestinations:[...DEFAULT_QUICK_NAV_DESTINATIONS]}
 }}
 

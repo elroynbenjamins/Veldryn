@@ -1,8 +1,3 @@
-import type {GameState} from './types';
-import {MONSTERS} from '../content/monsters';
-import {GATHERING,RECIPES} from '../content/skills';
-import {HERB_NODES} from '../content/herbalism';
-
 export type WeeklyOrderKind='hunt'|'profession';
 export type WeeklyOrderProfessionKind='gathering'|'processing'|'crafting'|'cooking'|'smelting';
 export interface WeeklyOrderReward{rewardRef:string;label:string}
@@ -14,7 +9,6 @@ export type WeeklyOrderCandidate=HuntOrderCandidate|ProfessionOrderCandidate;
 export interface WeeklyOrder{id:string;weekKey:string;slot:number;kind:WeeklyOrderKind;title:string;targetId:string;regionId?:string;activityId:string;source:WeeklyOrderSource;target:number;progress:number;reward:WeeklyOrderReward;claimed:boolean;completedAtMs?:number;professionKind?:WeeklyOrderProfessionKind}
 export interface WeeklyOrderPolicy{enabled:boolean;huntSlots:number;professionSlots:number;huntTargetMinutes:number;professionTargetMinutes:number;minimumHuntTarget:number;minimumProfessionTarget:number;defaultHuntReward:WeeklyOrderReward;defaultProfessionReward:WeeklyOrderReward;completionReward:WeeklyOrderReward}
 export interface WeeklyOrdersState{schemaVersion:41;accountId:string;revision:number;weekKey:string;startsAtMs:number;endsAtMs:number;generatedAtMs:number;orders:WeeklyOrder[];completionClaimed:boolean}
-export type WeeklyOrdersV41=WeeklyOrdersState;
 export interface WeeklyOrderProgressEvent{eventId:string;characterId:string;kind:WeeklyOrderKind;targetId:string;amount:number;completedAtMs:number}
 export interface WeeklyOrderClaim{claimKey:string;reward:WeeklyOrderReward;orderId?:string;weekKey:string}
 export interface WeeklyOrderProgressResult{eventId:string;updated:Array<{orderId:string;before:number;after:number;completed:boolean}>;grants?:WeeklyOrderClaim[]}
@@ -62,40 +56,3 @@ export function claimWeeklyOrder(state:WeeklyOrdersState,orderId:string):WeeklyO
 export function claimWeeklyCompletion(state:WeeklyOrdersState,policy:WeeklyOrderPolicy=DEFAULT_WEEKLY_ORDER_POLICY):WeeklyOrderClaim{if(!state.orders.length||state.orders.some(o=>o.progress<o.target))throw new Error('weekly_orders_incomplete');if(state.completionClaimed)throw new Error('weekly_completion_already_claimed');state.completionClaimed=true;return {claimKey:`${state.weekKey}:completion`,reward:{...policy.completionReward},weekKey:state.weekKey}}
 
 
-function v41CandidatesFromGame(state:GameState):WeeklyOrderCandidate[]{
-  const character=state.character,level=character?.level??1;
-  const hunts=MONSTERS.filter(monster=>!monster.boss&&monster.unlockLevel<=level&&state.unlockedMonsterIds.includes(monster.id)).map(monster=>({
-    id:monster.id,kind:'hunt' as const,title:`Hunt ${monster.name}`,regionId:monster.zone,activityId:monster.id,monsterId:monster.id,
-    source:{kind:'monster' as const,id:monster.id,label:monster.name,available:true},estimatedPerHour:3600/Math.max(1,monster.secondsPerKill)
-  }));
-  const gathering=[...GATHERING,...HERB_NODES].filter(action=>(state.skills.find(skill=>skill.skillId===action.skillId)?.level??1)>=action.unlockLevel).map(action=>({
-    id:action.id,kind:'profession' as const,title:`Gather ${action.name}`,regionId:action.zoneId,activityId:action.id,actionId:action.id,professionKind:'gathering' as const,
-    source:{kind:'skill' as const,id:action.skillId,label:action.skillId,available:true},estimatedPerHour:3600/Math.max(1,action.seconds*1.45)
-  }));
-  const recipes=RECIPES.filter(recipe=>!recipe.noviceSetId&&!recipe.id.startsWith('BREW_')&&(state.skills.find(skill=>skill.skillId===recipe.skillId)?.level??1)>=recipe.level).map(recipe=>({
-    id:recipe.id,kind:'profession' as const,title:`Craft ${recipe.name}`,activityId:recipe.id,actionId:recipe.id,professionKind:(recipe.skillId==='cooking'?'cooking':recipe.skillId==='smithing'?'smelting':'crafting') as WeeklyOrderProfessionKind,
-    source:{kind:'recipe' as const,id:recipe.id,label:recipe.name,available:true},estimatedPerHour:24
-  }));
-  return [...hunts,...gathering,...recipes];
-}
-export function ensureWeeklyOrdersV41(state:GameState,nowMs=Date.now()):WeeklyOrdersState{
-  const accountId=state.character?.id??'local-account',window=weeklyOrderWindow(nowMs),current=state.account.weeklyOrdersV41;
-  return current?.weekKey===window.weekKey?current:generateWeeklyOrders(accountId,nowMs,v41CandidatesFromGame(state));
-}
-export function recordWeeklyOrderProgressV41(state:GameState,event:WeeklyOrderProgressEvent){
-  const receipts=new Set(state.account.weeklyOrderReceiptIdsV41??[]);
-  if(receipts.has(event.eventId))return state;
-  const weekly=ensureWeeklyOrdersV41(state,event.completedAtMs),copy:WeeklyOrdersState={...weekly,orders:weekly.orders.map(order=>({...order,source:{...order.source},reward:{...order.reward}}))};
-  applyWeeklyOrderProgress(copy,event);receipts.add(event.eventId);
-  return {...state,account:{...state.account,weeklyOrdersV41:copy,weeklyOrderReceiptIdsV41:[...receipts].slice(-256)}};
-}
-function rewardGold(ref:string){return ref.includes('completion')?750:ref.includes('profession')?350:300}
-export function claimCompletedWeeklyOrdersV41(state:GameState,nowMs=Date.now()){
-  if(!state.character)return state;
-  const weekly=ensureWeeklyOrdersV41(state,nowMs),copy:WeeklyOrdersState={...weekly,orders:weekly.orders.map(order=>({...order,source:{...order.source},reward:{...order.reward}}))};
-  let gold=0;
-  for(const order of copy.orders){if(order.progress>=order.target&&!order.claimed){const claim=claimWeeklyOrder(copy,order.id);gold+=rewardGold(claim.reward.rewardRef);}}
-  if(copy.orders.length&&copy.orders.every(order=>order.progress>=order.target)&&!copy.completionClaimed){const claim=claimWeeklyCompletion(copy);gold+=rewardGold(claim.reward.rewardRef);}
-  const account={...state.account,weeklyOrdersV41:copy};
-  return gold?{...state,character:{...state.character,gold:state.character.gold+gold},account}:{...state,account};
-}

@@ -16,6 +16,8 @@ import {normalizeAlchemyBatch} from './alchemy';
 import {normalizeCollectionPreferences} from './collection-preferences';
 import {normalizeCharacterLoadouts} from './character-loadouts';
 import {normalizeOnboardingGuideState} from './onboarding';
+import {normalizeProgressionGoals} from './progression-goals-v40';
+import {normalizeIdleRuleSets,validateActiveIdleRuleId} from './idle-rules-v40';
 import {normalizeGuildBannerId,normalizeGuildFrameId,normalizeGuildMotto,normalizeGuildNameplateId} from './guild-customization';
 
 export function normalizeSave(input:any):GameState{
@@ -77,6 +79,9 @@ export function normalizeSave(input:any):GameState{
     ,unlockedSkinIds:[...new Set(unlockedSkinIds)]
     ,selectedSkinId:classSkinSets.some(set=>set.appearanceId&&equipmentSetSkinId(set.id)===input.character.selectedSkinId)&&unlockedSkinIds.includes(input.character.selectedSkinId)?input.character.selectedSkinId:'starting'
     ,savedLoadouts:normalizeCharacterLoadouts(input.character.savedLoadouts,input.character.classId)
+    ,progressionGoals:normalizeProgressionGoals(input.character.progressionGoals,String(input.character.id))
+    ,idleRulesV40:normalizeIdleRuleSets(input.character.idleRulesV40,String(input.character.id))
+    ,activeIdleRuleIdV40:validateActiveIdleRuleId(normalizeIdleRuleSets(input.character.idleRulesV40,String(input.character.id)),input.character.activeIdleRuleIdV40)
   };})():null;
   const seasonIds=['spring','summer','autumn','winter'],weatherIds=['clear','rain','mist','storm','bloomwind','heatwave','harvest_wind','snow','frost'];
   const rawEnvironment=input.activity?.environment;

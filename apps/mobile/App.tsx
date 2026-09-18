@@ -55,6 +55,7 @@ import {RankingsScreen} from './src/screens/RankingsScreen';
 import {CollectionsScreen} from './src/screens/CollectionsScreen';
 import {ProfileScreen} from './src/screens/ProfileScreen';
 import {AchievementsScreen} from './src/screens/AchievementsScreen';
+import {WorldMilestoneFeedScreen} from './src/screens/WorldMilestoneFeedScreen';
 import {AdventurersJournalScreen} from './src/screens/AdventurersJournalScreen';
 import {BestiaryScreen} from './src/screens/BestiaryScreen';
 import {PetBonusOverviewScreen} from './src/screens/PetBonusOverviewScreen';
@@ -69,7 +70,7 @@ import {buildWelcomeBackFromStates,type WelcomeBackProgressReport} from './src/c
 import {eventReadyClaimCount} from './src/core/live-events';
 import {useSocialNotificationCounts} from './src/online/useSocialNotificationCounts';
 
-type Tab=QuickNavDestination|'Arena'|'Rankings'|'Collections'|'Profile'|'Achievements'|'Journal'|'Bestiary'|'Pets'|'Combat'|'Coop';
+type Tab=QuickNavDestination|'Arena'|'Rankings'|'Collections'|'Profile'|'Achievements'|'Journal'|'Bestiary'|'Pets'|'WorldFeed'|'Combat'|'Coop';
 type PrimaryTab='Skills'|'World'|'Character'|'Inventory'|'Account';
 const primaryTabs:PrimaryTab[]=['Character','Skills','World','Inventory','Account'];
 function tabLabel(language:Language,tab:Tab):string{
@@ -83,7 +84,7 @@ function tabLabel(language:Language,tab:Tab):string{
     case 'Collections':return 'Collections';
     case 'Profile':return 'Profile';
     case 'Achievements':return 'Achievements';
-    case 'Journal':return "Adventurer's Journal";case 'Bestiary':return 'Bestiary';case 'Pets':return 'Pets';
+    case 'Journal':return "Adventurer's Journal";case 'Bestiary':return 'Bestiary';case 'Pets':return 'Pets';case 'WorldFeed':return 'World Milestones';
   }
 }
 const repo=new AsyncStorageGameRepository();
@@ -232,6 +233,7 @@ const next=discoverCharacterSkins(candidate),newSkins=newlyUnlockedCharacterSkin
     {tab==='Journal'&&<AdventurersJournalScreen state={state} onNavigate={setTab}/>} 
     {tab==='Bestiary'&&<BestiaryScreen state={state}/>} 
     {tab==='Pets'&&<PetBonusOverviewScreen state={state} onChange={commit}/>} 
+    {tab==='WorldFeed'&&<WorldMilestoneFeedScreen/>} 
   </View>
   <ChatOverlay state={state} visible={showChatOverlay} onOpen={()=>setShowChatOverlay(true)} onClose={()=>setShowChatOverlay(false)}/>
   <PrimaryNavigation destinations={primaryTabs} active={activePrimary} labelFor={item=>tabLabel(state.settings.language,item)} onNavigate={setTab} badges={accountBadgeCount?{Account:accountBadgeCount}:undefined}/>

@@ -1,4 +1,4 @@
-import type {RegionProgressState} from '../core/types';
+import type {RegionalProgressState} from '../core/types';
 import type {RegionProgressV21} from '../core/region-content-v21';
 import {supabase} from './supabase';
 

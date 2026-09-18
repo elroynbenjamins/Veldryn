@@ -44,6 +44,9 @@ export interface CharacterState {
   /** Cosmetic choice only. Equipment changes stats and never changes this value. */
   selectedSkinId?:string;
   savedLoadouts?:CharacterLoadoutPreset[];
+  progressionGoals?:import('./progression-goals-v40').ProgressionGoal[];
+  idleRulesV40?:import('./idle-rules-v40').IdleRuleSet[];
+  activeIdleRuleIdV40?:string;
 }
 export interface ItemStack { itemId:string; quantity:number; }
 export interface InventoryState { stacks:ItemStack[]; capacity:number; }

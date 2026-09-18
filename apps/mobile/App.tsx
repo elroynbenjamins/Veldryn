@@ -57,6 +57,7 @@ import {CollectionsScreen} from './src/screens/CollectionsScreen';
 import {ProfileScreen} from './src/screens/ProfileScreen';
 import {AchievementsScreen} from './src/screens/AchievementsScreen';
 import {WorldMilestoneFeedScreen} from './src/screens/WorldMilestoneFeedScreen';
+import {ProgressionPlannerScreen} from './src/screens/ProgressionPlannerScreen';
 import {AdventurersJournalScreen} from './src/screens/AdventurersJournalScreen';
 import {BestiaryScreen} from './src/screens/BestiaryScreen';
 import {PetBonusOverviewScreen} from './src/screens/PetBonusOverviewScreen';
@@ -71,7 +72,7 @@ import {buildWelcomeBackFromStates,type WelcomeBackProgressReport} from './src/c
 import {eventReadyClaimCount} from './src/core/live-events';
 import {useSocialNotificationCounts} from './src/online/useSocialNotificationCounts';
 
-type Tab=QuickNavDestination|'Arena'|'Rankings'|'Collections'|'Profile'|'Achievements'|'Journal'|'Bestiary'|'Pets'|'WorldFeed'|'Combat'|'Coop';
+type Tab=QuickNavDestination|'Planner'|'Arena'|'Rankings'|'Collections'|'Profile'|'Achievements'|'Journal'|'Bestiary'|'Pets'|'WorldFeed'|'Combat'|'Coop';
 type PrimaryTab='Skills'|'World'|'Character'|'Inventory'|'Account';
 const primaryTabs:PrimaryTab[]=['Character','Skills','World','Inventory','Account'];
 function tabLabel(language:Language,tab:Tab):string{
@@ -80,7 +81,7 @@ function tabLabel(language:Language,tab:Tab):string{
     case 'Quests':return t(language,'more.quests');case 'Companions':return 'Companions';case 'Skills':return t(language,'more.skills');case 'Events':return t(language,'more.events');case 'Friends':return t(language,'more.friends');case 'Guild':return t(language,'more.guild');case 'Settings':return t(language,'more.settings');
     case 'Combat':return 'Combat';case 'Coop':return ct(language,'browse.title');
     case 'Social':return 'Social';case 'Party':return 'Party';
-    case 'Arena':return 'Arena';
+    case 'Planner':return 'Working Toward';case 'Arena':return 'Arena';
     case 'Rankings':return 'Rankings';
     case 'Collections':return 'Collections';
     case 'Profile':return 'Profile';
@@ -235,6 +236,7 @@ const next=discoverCharacterSkins(candidate),newSkins=newlyUnlockedCharacterSkin
     {tab==='Bestiary'&&<BestiaryScreen state={state}/>} 
     {tab==='Pets'&&<PetBonusOverviewScreen state={state} onChange={commit}/>} 
     {tab==='WorldFeed'&&<WorldMilestoneFeedScreen/>} 
+    {tab==='Planner'&&<ProgressionPlannerScreen state={state} onChange={commit} onCommand={serverGameplayEnabled?async command=>{if(!await perform(command))throw new Error('Progression preference was not confirmed.');}:undefined}/>} 
   </View>
   <ChatOverlay state={state} visible={showChatOverlay} onOpen={()=>setShowChatOverlay(true)} onClose={()=>setShowChatOverlay(false)}/>
   <PrimaryNavigation destinations={primaryTabs} active={activePrimary} labelFor={item=>tabLabel(state.settings.language,item)} onNavigate={setTab} badges={accountBadgeCount?{Account:accountBadgeCount}:undefined}/>

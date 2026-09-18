@@ -2,7 +2,10 @@ import type {RegionalProgressState} from '../core/types';
 import type {RegionProgressV21} from '../core/region-content-v21';
 import {supabase} from './supabase';
 
-type RegionProgressRow=RegionalProgressState & {region_id:string;content_version:string;updated_at:string};
+type RegionProgressRow=RegionalProgressState & {
+  region_id:string;content_version:string;updated_at:string;
+  story_completed?:number;side_quests_completed?:number;echoes_completed?:number;dungeons_completed?:number;collection_entries?:number;boss_mastery_tier?:number;
+};
 
 export async function loadFrostmarchProgressV21():Promise<RegionProgressV21|null>{
   if(!supabase)return null;

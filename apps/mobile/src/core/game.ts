@@ -31,8 +31,7 @@ import {settleFaithPractice,cancelFaithPractice,normalizeFaith,selectedFaithBles
 import {HOLY_WATER_ID} from '../content/faith';
 import {previewAlchemyReward,alchemyRefund,startAlchemyBatch,preparationEffects,spendPreparationEncounter} from './alchemy';
 import {potionDef} from '../content/alchemy';
-import {grantProfessionMasteryToState} from './profession-mastery-v40';
-import {claimCompletedWeeklyOrdersV41,recordWeeklyOrderProgressV41} from './weekly-orders-v41';
+import {applyTrustedLongTermProgression} from './long-term-progression-runtime';
 export const beginAlchemyBatch=startAlchemyBatch;
 
 export const BASE_OFFLINE_CAP_HOURS=24;
@@ -297,10 +296,8 @@ export function claimActivity(state:GameState,nowMs:number){
     const skills=state.skills.map(x=>x.skillId===state.activity!.kind?{...x,xp:x.xp+reward.xp,level:levelFromXp(x.xp+reward.xp)}:x);
     const routed=routeRewards(state,reward.items,nowMs);
     const next={...state,skills,...routed,rewardRemainders:reward.nextRewardRemainders,unlockedMonsterIds:[...new Set([...state.unlockedMonsterIds,...(reward.explorationDiscoveries??[])])],activity:{...state.activity,lastClaimAtMs:nowMs,progressFraction:reward.nextProgressFraction}} as GameState;
-    let progressed=grantProfessionMasteryToState(next,state.activity.targetId,reward.kills,nowMs);
-    progressed=recordWeeklyOrderProgressV41(progressed,{eventId:`activity:${state.character.id}:${state.activity.targetId}:${state.activity.lastClaimAtMs}:${nowMs}`,kind:'profession',targetId:state.activity.targetId,amount:reward.kills,completedAtMs:nowMs});
-    progressed=claimCompletedWeeklyOrdersV41(progressed,nowMs);
-    return {state:recordCompanionActivity(refreshQuests(applyEventDiscoveries(applyEventDrops(progressed,reward.eventDrops??[]),reward.eventDiscoveries??[])),'gathering',state.activity.targetId,reward.kills,nowMs),reward};
+    const progression=applyTrustedLongTermProgression(next,[{kind:'gathering',contentId:state.activity.targetId,units:reward.kills,startedAtMs:state.activity.lastClaimAtMs}],reward,nowMs,{accountId:state.character.id,eventId:`activity:${state.character.id}:${state.activity.targetId}:${state.activity.lastClaimAtMs}:${nowMs}`}).state;
+    return {state:recordCompanionActivity(refreshQuests(applyEventDiscoveries(applyEventDrops(progression,reward.eventDrops??[]),reward.eventDiscoveries??[])),'gathering',state.activity.targetId,reward.kills,nowMs),reward};
   }
   const xp=state.character.xp+reward.xp,level=characterLevelFromXp(xp);
   const activeRegion=currentRegionId(state);
@@ -316,8 +313,7 @@ export function claimActivity(state:GameState,nowMs:number){
   if(next.character.preparation&&reward.kills>0){let prep=next.character.preparation;for(let i=0;i<reward.kills;i++)prep=spendPreparationEncounter(prep,prep?.itemId) as typeof prep;next.character={...next.character,preparation:prep};}
   if(next.activity&&reward.kills>0)next.activity.classFocus=normalizeTrainingFocus(next.character.trainingFocus);
   let progressed=recordMonsterMastery(refreshQuests(applyEventDiscoveries(applyEventDrops(next,reward.eventDrops??[]),reward.eventDiscoveries??[]),state.activity.targetId,reward.kills),state.activity.targetId,reward.kills);
-  progressed=recordWeeklyOrderProgressV41(progressed,{eventId:`combat:${state.character.id}:${state.activity.targetId}:${state.activity.lastClaimAtMs}:${nowMs}`,kind:'hunt',targetId:state.activity.targetId,amount:reward.kills,completedAtMs:nowMs});
-  progressed=claimCompletedWeeklyOrdersV41(progressed,nowMs);
+  progressed=applyTrustedLongTermProgression(progressed,[{kind:'combat',contentId:state.activity.targetId,units:reward.kills,startedAtMs:state.activity.lastClaimAtMs}],reward,nowMs,{accountId:state.character.id,eventId:`combat:${state.character.id}:${state.activity.targetId}:${state.activity.lastClaimAtMs}:${nowMs}`}).state;
   return {state:recordCompanionActivity(progressed,'combat',state.activity.targetId,reward.kills,nowMs),reward}
 }
 
@@ -458,9 +454,7 @@ export function craftRecipe(state:GameState,recipeId:string,nowMs=Date.now()):Ga
   const multipliers=characterPermanentMultipliers(state);
   const xp=sk.xp+Math.floor(r.xp*multipliers.skillXpMultiplier);
   const next={...state,character:{...state.character,gold:state.character.gold-r.gold,...(r.noviceSetId?{craftedNoviceItemIds:[...new Set([...(state.character.craftedNoviceItemIds??[]),r.output.itemId])]}:{})},inventory:{...state.inventory,stacks:inv},bank:{...state.bank,stacks:bank},skills:state.skills.map(x=>x.skillId===r.skillId?{...x,xp,level:levelFromXp(xp)}:x)} as GameState;
-  let progressed=grantProfessionMasteryToState(next,r.id,1,nowMs);
-  progressed=recordWeeklyOrderProgressV41(progressed,{eventId:`craft:${state.character.id}:${r.id}:${nowMs}`,kind:'profession',targetId:r.id,amount:1,completedAtMs:nowMs});
-  progressed=claimCompletedWeeklyOrdersV41(progressed,nowMs);
+  const progressed=applyTrustedLongTermProgression(next,[{kind:'crafting',contentId:r.id,units:1}],undefined,nowMs,{accountId:state.character.id,eventId:`craft:${state.character.id}:${r.id}:${nowMs}`}).state;
   return itemDef(r.output.itemId).type==='gear'?recordCompanionActivity(refreshQuests(grantEventActivity(progressed,'crafting',nowMs)),'crafting',r.output.itemId,r.output.quantity,nowMs):refreshQuests(grantEventActivity(progressed,'crafting',nowMs))
 }
 

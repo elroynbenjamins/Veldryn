@@ -62,6 +62,7 @@ import {serverGameplayEnabled} from './src/online/gameplay';
 import {OnlineAccountPanel} from './src/components/OnlineAccountPanel';
 import {GameButton} from './src/components/GameButton';
 import type {GameCommand} from './src/core/game-commands';
+import {useSocialNotificationCounts} from './src/online/useSocialNotificationCounts';
 
 type Tab=QuickNavDestination|'Arena'|'Rankings'|'Collections'|'Profile'|'Achievements'|'Combat'|'Coop';
 type PrimaryTab='Skills'|'World'|'Character'|'Inventory'|'More';
@@ -84,6 +85,7 @@ const repo=new AsyncStorageGameRepository();
 export default function App(){return <AuthSessionProvider><PartySocialProvider><VeldrynApp/></PartySocialProvider></AuthSessionProvider>;}
 function VeldrynApp(){
   const auth=useAuthSession(),online=useOnlineGame();
+  const {counts:notificationCounts}=useSocialNotificationCounts();
   const [state,setState]=useState<GameState|null>(null);
   const [ready,setReady]=useState(false);
   const [startupScene]=useState(pickStartupScene);
@@ -204,7 +206,7 @@ const next=discoverCharacterSkins(candidate),newSkins=newlyUnlockedCharacterSkin
     {tab==='Events'&&<EventScreen state={state} onChange={commit} onCommand={serverGameplayEnabled?command=>perform(command).then(Boolean):undefined}/>}
     {tab==='Guild'&&<GuildScreen online={serverGameplayEnabled} state={state} onChange={commit} onlineDirectory={<OnlineGuildBrowser/>} onlineManagement={<OnlineGuildManagement/>} onlinePve={<OnlineGuildPve authoritative={serverGameplayEnabled} numberMode={state.settings.numberMode}/>}/>}
     {tab==='Settings'&&<SettingsScreen online={serverGameplayEnabled} state={state} onChange={commit} onExport={exportSave} onImport={importSave} onOpenChatPilot={__DEV__?()=>{setChatPilotInitialPanel('chat');setShowChatPilot(true)}:undefined} onOpenChatEmotes={__DEV__?()=>{setChatPilotInitialPanel('emotes');setShowChatPilot(true)}:undefined} onOpenCoopUiGallery={__DEV__?()=>setShowCoopUiGallery(true):undefined} onLanguage={language=>commit({...state,settings:{...state.settings,language}})} onReset={()=>serverGameplayEnabled?Alert.alert('Online save','Your online character is saved on the server.'):Alert.alert('Reset local save?','This deletes prototype progress only.',[{text:'Cancel'},{text:'Reset',style:'destructive',onPress:async()=>{await repo.reset();setState(newGame(Date.now()));setCurrentTab('Home');setTabHistory([])}}])}/>}
-    {tab==='More'&&<MoreScreen language={state.settings.language} onNavigate={setTab} onOpenChatPilot={__DEV__?()=>{setChatPilotInitialPanel('chat');setShowChatPilot(true)}:undefined}/>}
+    {tab==='More'&&<MoreScreen language={state.settings.language} onNavigate={setTab} friendRequestCount={notificationCounts.friendRequests} onOpenChatPilot={__DEV__?()=>{setChatPilotInitialPanel('chat');setShowChatPilot(true)}:undefined}/>}
     {tab==='Arena'&&<ArenaScreen state={state} onChange={candidate=>void commit(candidate)}/>}
     {tab==='Rankings'&&<RankingsScreen/>}
     {tab==='Collections'&&<CollectionsScreen state={state} onChange={candidate=>void commit(candidate)}/>}
@@ -212,7 +214,7 @@ const next=discoverCharacterSkins(candidate),newSkins=newlyUnlockedCharacterSkin
     {tab==='Achievements'&&<AchievementsScreen/>}
   </View>
   <ChatOverlay state={state} visible={showChatOverlay} onOpen={()=>setShowChatOverlay(true)} onClose={()=>setShowChatOverlay(false)}/>
-  <PrimaryNavigation destinations={primaryTabs} active={activePrimary} labelFor={item=>tabLabel(state.settings.language,item)} onNavigate={setTab}/>
+  <PrimaryNavigation destinations={primaryTabs} active={activePrimary} labelFor={item=>tabLabel(state.settings.language,item)} onNavigate={setTab} badges={notificationCounts.account?{More:notificationCounts.account}:undefined}/>
   <RewardPopup reward={collected?.reward??null} activity={collected?.activity??null} welcomeBack={!!collected?.welcomeBack} reduceMotion={state.settings.reduceMotion} numberMode={state.settings.numberMode} onClose={()=>setCollected(null)}/>
   </SafeAreaView>;
 }

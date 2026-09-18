@@ -3,6 +3,7 @@ import {useState,type ReactNode} from 'react';
 import {ScrollView,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from '../components/GameButton';
 import {GuildCustomizationPanel} from '../components/GuildCustomizationPanel';
+import {OnlineGuildCustomizationPanel} from '../components/OnlineGuildCustomizationPanel';
 import {Panel} from '../components/Panel';
 import {GameState} from '../core/types';
 import {C,spacing,typography} from '../theme/theme';
@@ -13,7 +14,7 @@ type GuildSection='Overview'|'PvE'|'Roster'|'Customize';
 
 export function GuildScreen({state,onChange,onlineDirectory,onlineManagement,onlinePve,online=false}:{online?:boolean;state:GameState;onChange:(next:GameState)=>void;onlineDirectory?:ReactNode;onlineManagement?:ReactNode;onlinePve?:ReactNode}){
   const [section,setSection]=useState<GuildSection>('Overview');
-  if(online)return <ScrollView contentContainerStyle={s.root}><Text style={s.h}>Guild</Text>{onlineDirectory}{onlineManagement}{onlinePve}<GuildCustomizationPanel state={state} onChange={onChange} readOnly/></ScrollView>;
+  if(online)return <ScrollView contentContainerStyle={s.root}><Text style={s.h}>Guild</Text>{onlineDirectory}{onlineManagement}{onlinePve}<OnlineGuildCustomizationPanel/></ScrollView>;
   const joined=state.account.guildMember,contribution=state.account.guildContribution??0,project=state.account.guildProjectProgress??0,bossHp=state.account.guildBossHp??100000;
   const contribute=()=>onChange({...state,account:{...state.account,guildContribution:contribution+100,guildProjectProgress:Math.min(1000,project+100)}});
   const attack=()=>onChange({...state,account:{...state.account,guildContribution:contribution+50,guildBossHp:Math.max(0,bossHp-5000)}});

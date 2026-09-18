@@ -1,0 +1,12 @@
+import {strict as assert} from 'node:assert';
+import {DEFAULT_GUILD_BANNER_ID,normalizeGuildBannerId,normalizeGuildFrameId,normalizeGuildMotto,normalizeGuildNameplateId} from '../src/core/guild-customization';
+assert.equal(normalizeGuildBannerId('phoenix_crimson'),'phoenix_crimson');
+assert.equal(normalizeGuildBannerId('unknown'),DEFAULT_GUILD_BANNER_ID);
+assert.equal(normalizeGuildFrameId('emerald_vine'),'emerald_vine');
+assert.equal(normalizeGuildFrameId('bad'),'classic');
+assert.equal(normalizeGuildNameplateId('sapphire_royal'),'sapphire_royal');
+assert.equal(normalizeGuildNameplateId(null),'classic');
+assert.equal(normalizeGuildMotto('  Stronger   together.  '),'Stronger together.');
+assert.equal(normalizeGuildMotto(''), 'Stronger together.');
+assert.equal(normalizeGuildMotto('x'.repeat(100)).length,80);
+console.log('guild customization tests passed');

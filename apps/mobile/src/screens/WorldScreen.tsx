@@ -16,6 +16,7 @@ import {GameButton} from '../components/GameButton';
 import {C,equipmentColors,radii,spacing,typography} from '../theme/theme';
 import {FrostmarchRegionPanel} from '../components/FrostmarchRegionPanel';
 import {RegionalJournalPanel} from '../components/RegionalJournalPanel';
+import {RegionCompletionPanel} from '../components/RegionCompletionPanel';
 import {frostmarchProgressFromState,type RegionProgressV21} from '../core/region-content-v21';
 import {loadFrostmarchProgressV21} from '../online/regional-content-v21';
 
@@ -69,6 +70,7 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop}:Pr
       <View style={s.flex}><Text style={s.overline}>CURRENT REGION</Text><Text style={s.currentName}>{current.name}</Text><Text style={s.sub}>{current.subtitle}</Text></View>
     </View>
     <EnvironmentBanner environment={environmentForZone(current.id)}/>
+    <RegionCompletionPanel state={state} regionId={current.id}/>
 
     <Panel accentColor={current.accent}>
       <Text style={s.title}>Activities in {current.name}</Text>

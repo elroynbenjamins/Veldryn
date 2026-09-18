@@ -2,7 +2,7 @@ import type {RegionalProgressState} from '../core/types';
 import type {RegionProgressV21} from '../core/region-content-v21';
 import {supabase} from './supabase';
 
-type RegionProgressRow=RegionProgressState & {region_id:string;content_version:string;updated_at:string};
+type RegionProgressRow=RegionalProgressState & {region_id:string;content_version:string;updated_at:string};
 
 export async function loadFrostmarchProgressV21():Promise<RegionProgressV21|null>{
   if(!supabase)return null;

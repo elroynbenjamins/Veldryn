@@ -1,0 +1,14 @@
+import {strict as assert} from 'node:assert';
+import {FAILURE_REWARD} from '../../expeditions/constants';
+import {clearRewardMultiplier,marksForRun,V48_DUNGEON_REWARD_TUNING} from '../../expeditions/rewards';
+import {V48_COMBAT_TARGETS} from '../launch-dungeon-v48';
+assert.equal(V48_COMBAT_TARGETS.recommendedParty.composition,'1 tank / 2 damage / 1 support');
+assert.ok(V48_COMBAT_TARGETS.recommendedParty.bossWinRateMin>=.85);
+assert.ok(V48_COMBAT_TARGETS.recommendedParty.bossWinRateMax<=.98);
+assert.equal(FAILURE_REWARD.bossLow,.50);
+assert.equal(V48_DUNGEON_REWARD_TUNING.maxCombinedClearMultiplier,1.35);
+assert.equal(clearRewardMultiplier({firstClear:true,cleanClear:true}),1.35);
+assert.equal(marksForRun(100,1,{cleared:true,routeProgress:1,reachedFinalBoss:true},1,true),100);
+assert.equal(marksForRun(100,1,{cleared:true,routeProgress:1,reachedFinalBoss:true},1,true,{firstClear:true,cleanClear:true}),135);
+assert.equal(marksForRun(100,1,{cleared:false,routeProgress:1,reachedFinalBoss:true,finalBossHpFraction:.20},1,true),50);
+console.log('PASS: V48 reward tuning and hard-but-beatable dungeon target contracts');

@@ -25,7 +25,7 @@ export const GATHERING:GatherDef[]=([
   return {...activity,seconds:Math.ceil(activity.seconds*2),difficultyMultiplier,recommendedToolTier};
 });
 
-export interface Recipe{id:string;name:string;skillId:'smithing'|'cooking';level:number;xp:number;gold:number;seconds:number;repeatableTraining?:boolean;inputs:{itemId:string;quantity:number}[];output:{itemId:string;quantity:number};classId?:ClassId;noviceSetId?:string;characterLevel?:number;requiresCraftedItemId?:string;}
+export interface Recipe{id:string;name:string;skillId:'smithing'|'cooking'|'alchemy';level:number;xp:number;gold:number;seconds:number;repeatableTraining?:boolean;inputs:{itemId:string;quantity:number}[];output:{itemId:string;quantity:number};classId?:ClassId;noviceSetId?:string;characterLevel?:number;requiresCraftedItemId?:string;}
 const frostCompleteSetIds=new Set(['frostbell_panoply','winterchain_harness','aurora_vespers','whiteout_stalker','glacierblood_array','rimeglass_script','snowveil_regalia','choirfrost_resonance']);
 const generatedSetSlots=new Set(['helmet','legs','boots','weapon','offhand','amulet']);
 const GENERATED_COMPLETE_SET_RECIPES:Recipe[]=ITEMS.filter(item=>item.type==='gear'&&item.slot&&item.equipmentSetId&&(frostCompleteSetIds.has(item.equipmentSetId)||generatedSetSlots.has(item.slot))).map(item=>{

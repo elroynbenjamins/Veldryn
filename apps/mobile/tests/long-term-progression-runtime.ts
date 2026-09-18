@@ -5,6 +5,9 @@ function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 function equal(actual:unknown,expected:unknown,message:string){if(actual!==expected)throw new Error(`${message}: expected ${String(expected)}, got ${String(actual)}`)}
 
 let state=createCharacter(newGame(Date.UTC(2026,8,14)),'IRONWARDEN','ProgressionTester','male');
+// Weekly Orders unlock into a full 2 Hunt + 2 Profession board once the account has enough genuinely available content.
+// Do not fabricate locked targets for a fresh level-1 character just to fill four slots.
+state={...state,character:{...state.character!,level:10}};
 let first=applyTrustedLongTermProgression(state,[],undefined,Date.UTC(2026,8,14,0,1),{accountId:'acct-runtime',eventId:'setup'});
 state=first.state;
 ok(state.account.weeklyOrders?.orders.length===4,'Trusted runtime creates 2 Hunt + 2 Profession Weekly Orders');

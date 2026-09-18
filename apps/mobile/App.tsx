@@ -55,6 +55,8 @@ import {RankingsScreen} from './src/screens/RankingsScreen';
 import {CollectionsScreen} from './src/screens/CollectionsScreen';
 import {ProfileScreen} from './src/screens/ProfileScreen';
 import {AchievementsScreen} from './src/screens/AchievementsScreen';
+import {AdventurersJournalScreen} from './src/screens/AdventurersJournalScreen';
+import {BestiaryScreen} from './src/screens/BestiaryScreen';
 import {PartySocialProvider} from './src/online/PartySocialProvider';
 import {AuthSessionProvider,useAuthSession} from './src/online/AuthSessionProvider';
 import {useOnlineGame} from './src/online/useOnlineGame';
@@ -64,7 +66,7 @@ import {GameButton} from './src/components/GameButton';
 import type {GameCommand} from './src/core/game-commands';
 import {useSocialNotificationCounts} from './src/online/useSocialNotificationCounts';
 
-type Tab=QuickNavDestination|'Arena'|'Rankings'|'Collections'|'Profile'|'Achievements'|'Combat'|'Coop';
+type Tab=QuickNavDestination|'Arena'|'Rankings'|'Collections'|'Profile'|'Achievements'|'Journal'|'Bestiary'|'Combat'|'Coop';
 type PrimaryTab='Skills'|'World'|'Character'|'Inventory'|'Account';
 const primaryTabs:PrimaryTab[]=['Character','Skills','World','Inventory','Account'];
 function tabLabel(language:Language,tab:Tab):string{
@@ -78,6 +80,7 @@ function tabLabel(language:Language,tab:Tab):string{
     case 'Collections':return 'Collections';
     case 'Profile':return 'Profile';
     case 'Achievements':return 'Achievements';
+    case 'Journal':return "Adventurer's Journal";case 'Bestiary':return 'Bestiary';
   }
 }
 const repo=new AsyncStorageGameRepository();
@@ -213,6 +216,8 @@ const next=discoverCharacterSkins(candidate),newSkins=newlyUnlockedCharacterSkin
     {tab==='Collections'&&<CollectionsScreen state={state} onChange={candidate=>void commit(candidate)}/>}
     {tab==='Profile'&&<ProfileScreen state={state}/>} 
     {tab==='Achievements'&&<AchievementsScreen/>}
+    {tab==='Journal'&&<AdventurersJournalScreen state={state} onNavigate={setTab}/>} 
+    {tab==='Bestiary'&&<BestiaryScreen state={state}/>} 
   </View>
   <ChatOverlay state={state} visible={showChatOverlay} onOpen={()=>setShowChatOverlay(true)} onClose={()=>setShowChatOverlay(false)}/>
   <PrimaryNavigation destinations={primaryTabs} active={activePrimary} labelFor={item=>tabLabel(state.settings.language,item)} onNavigate={setTab} badges={notificationCounts.account?{Account:notificationCounts.account}:undefined}/>

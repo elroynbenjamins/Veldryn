@@ -34,6 +34,8 @@ import {potionDef} from '../content/alchemy';
 import {applyTrustedLongTermProgression} from './long-term-progression-runtime';
 export const beginAlchemyBatch=startAlchemyBatch;
 
+function longTermAccountScope(state:GameState){return `account:${state.createdAtMs}`;}
+
 export const BASE_OFFLINE_CAP_HOURS=24;
 export const MAX_OFFLINE_CAP_HOURS=36;
 /** Base cap retained for content/tests; actual saves use offlineCapSeconds(state). */
@@ -296,7 +298,7 @@ export function claimActivity(state:GameState,nowMs:number){
     const skills=state.skills.map(x=>x.skillId===state.activity!.kind?{...x,xp:x.xp+reward.xp,level:levelFromXp(x.xp+reward.xp)}:x);
     const routed=routeRewards(state,reward.items,nowMs);
     const next={...state,skills,...routed,rewardRemainders:reward.nextRewardRemainders,unlockedMonsterIds:[...new Set([...state.unlockedMonsterIds,...(reward.explorationDiscoveries??[])])],activity:{...state.activity,lastClaimAtMs:nowMs,progressFraction:reward.nextProgressFraction}} as GameState;
-    const progression=applyTrustedLongTermProgression(next,[{kind:'gathering',contentId:state.activity.targetId,units:reward.kills,startedAtMs:state.activity.lastClaimAtMs}],reward,nowMs,{accountId:state.character.id,eventId:`activity:${state.character.id}:${state.activity.targetId}:${state.activity.lastClaimAtMs}:${nowMs}`}).state;
+    const progression=applyTrustedLongTermProgression(next,[{kind:'gathering',contentId:state.activity.targetId,units:reward.kills,startedAtMs:state.activity.lastClaimAtMs}],reward,nowMs,{accountId:longTermAccountScope(state),eventId:`activity:${state.character.id}:${state.activity.targetId}:${state.activity.lastClaimAtMs}:${nowMs}`}).state;
     return {state:recordCompanionActivity(refreshQuests(applyEventDiscoveries(applyEventDrops(progression,reward.eventDrops??[]),reward.eventDiscoveries??[])),'gathering',state.activity.targetId,reward.kills,nowMs),reward};
   }
   const xp=state.character.xp+reward.xp,level=characterLevelFromXp(xp);
@@ -313,7 +315,7 @@ export function claimActivity(state:GameState,nowMs:number){
   if(next.character.preparation&&reward.kills>0){let prep=next.character.preparation;for(let i=0;i<reward.kills;i++)prep=spendPreparationEncounter(prep,prep?.itemId) as typeof prep;next.character={...next.character,preparation:prep};}
   if(next.activity&&reward.kills>0)next.activity.classFocus=normalizeTrainingFocus(next.character.trainingFocus);
   let progressed=recordMonsterMastery(refreshQuests(applyEventDiscoveries(applyEventDrops(next,reward.eventDrops??[]),reward.eventDiscoveries??[]),state.activity.targetId,reward.kills),state.activity.targetId,reward.kills);
-  progressed=applyTrustedLongTermProgression(progressed,[{kind:'combat',contentId:state.activity.targetId,units:reward.kills,startedAtMs:state.activity.lastClaimAtMs}],reward,nowMs,{accountId:state.character.id,eventId:`combat:${state.character.id}:${state.activity.targetId}:${state.activity.lastClaimAtMs}:${nowMs}`}).state;
+  progressed=applyTrustedLongTermProgression(progressed,[{kind:'combat',contentId:state.activity.targetId,units:reward.kills,startedAtMs:state.activity.lastClaimAtMs}],reward,nowMs,{accountId:longTermAccountScope(state),eventId:`combat:${state.character.id}:${state.activity.targetId}:${state.activity.lastClaimAtMs}:${nowMs}`}).state;
   return {state:recordCompanionActivity(progressed,'combat',state.activity.targetId,reward.kills,nowMs),reward}
 }
 
@@ -454,7 +456,7 @@ export function craftRecipe(state:GameState,recipeId:string,nowMs=Date.now()):Ga
   const multipliers=characterPermanentMultipliers(state);
   const xp=sk.xp+Math.floor(r.xp*multipliers.skillXpMultiplier);
   const next={...state,character:{...state.character,gold:state.character.gold-r.gold,...(r.noviceSetId?{craftedNoviceItemIds:[...new Set([...(state.character.craftedNoviceItemIds??[]),r.output.itemId])]}:{})},inventory:{...state.inventory,stacks:inv},bank:{...state.bank,stacks:bank},skills:state.skills.map(x=>x.skillId===r.skillId?{...x,xp,level:levelFromXp(xp)}:x)} as GameState;
-  const progressed=applyTrustedLongTermProgression(next,[{kind:'crafting',contentId:r.id,units:1}],undefined,nowMs,{accountId:state.character.id,eventId:`craft:${state.character.id}:${r.id}:${nowMs}`}).state;
+  const progressed=applyTrustedLongTermProgression(next,[{kind:'crafting',contentId:r.id,units:1}],undefined,nowMs,{accountId:longTermAccountScope(state),eventId:`craft:${state.character.id}:${r.id}:${nowMs}`}).state;
   return itemDef(r.output.itemId).type==='gear'?recordCompanionActivity(refreshQuests(grantEventActivity(progressed,'crafting',nowMs)),'crafting',r.output.itemId,r.output.quantity,nowMs):refreshQuests(grantEventActivity(progressed,'crafting',nowMs))
 }
 

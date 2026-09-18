@@ -43,3 +43,31 @@ export function progressionGoalView(goal:ProgressionGoal,context:GoalContext):Go
  const complete=current>=target;
  return {goal,status:complete?'complete':blocker?'blocked':'active',current,target,progress:Math.max(0,Math.min(1,target<=0?1:current/target)),etaSeconds:complete?0:seconds,etaLabel:etaLabel(complete?0:seconds),source,blocker};
 }
+
+const GOAL_KINDS:GoalKind[]=['skill_level','item_quantity','recipe','monster_kills','pet_hunt','equipment_set','dungeon_clears','mastery_rank','weekly_order'];
+export function normalizeProgressionGoals(value:unknown,characterId:string):ProgressionGoal[]{
+ if(!Array.isArray(value)||!characterId)return [];
+ const out:ProgressionGoal[]=[];
+ for(const raw of value.slice(0,MAX_PINNED_GOALS)){
+  if(!raw||typeof raw!=='object')continue;const row=raw as Record<string,unknown>,kind=row.kind as GoalKind;
+  if(!GOAL_KINDS.includes(kind))continue;
+  const id=typeof row.id==='string'&&row.id.trim()?row.id.trim().slice(0,80):`goal-${out.length+1}`;
+  const title=typeof row.title==='string'&&row.title.trim()?row.title.trim().slice(0,80):'Working Toward';
+  const createdAtMs=Number.isFinite(Number(row.createdAtMs))?Math.max(0,Math.floor(Number(row.createdAtMs))):0;
+  const pinnedAtMs=Number.isFinite(Number(row.pinnedAtMs))?Math.max(0,Math.floor(Number(row.pinnedAtMs))):createdAtMs;
+  const base={id,characterId,kind,title,createdAtMs,pinnedAtMs} as any;
+  const positive=(key:string,min=1)=>Number.isFinite(Number(row[key]))?Math.max(min,Math.floor(Number(row[key]))):undefined;
+  let goal:ProgressionGoal|undefined;
+  if(kind==='skill_level'&&typeof row.skillId==='string'&&positive('targetLevel'))goal={...base,kind,skillId:row.skillId,targetLevel:positive('targetLevel')!};
+  else if(kind==='item_quantity'&&typeof row.itemId==='string'&&positive('targetQuantity'))goal={...base,kind,itemId:row.itemId,targetQuantity:positive('targetQuantity')!};
+  else if(kind==='recipe'&&typeof row.recipeId==='string'&&positive('targetQuantity'))goal={...base,kind,recipeId:row.recipeId,targetQuantity:positive('targetQuantity')!};
+  else if(kind==='monster_kills'&&typeof row.monsterId==='string'&&positive('targetKills'))goal={...base,kind,monsterId:row.monsterId,targetKills:positive('targetKills')!};
+  else if(kind==='pet_hunt'&&typeof row.petId==='string'&&(row.sourceKind==='monster'||row.sourceKind==='dungeon')&&typeof row.sourceId==='string')goal={...base,kind,petId:row.petId,sourceKind:row.sourceKind,sourceId:row.sourceId};
+  else if(kind==='equipment_set'&&typeof row.setId==='string'&&positive('targetPieces'))goal={...base,kind,setId:row.setId,targetPieces:positive('targetPieces')!};
+  else if(kind==='dungeon_clears'&&typeof row.dungeonId==='string'&&positive('targetClears'))goal={...base,kind,dungeonId:row.dungeonId,targetClears:positive('targetClears')!};
+  else if(kind==='mastery_rank'&&typeof row.actionId==='string'&&positive('targetRank'))goal={...base,kind,actionId:row.actionId,targetRank:Math.min(50,positive('targetRank')!)};
+  else if(kind==='weekly_order'&&typeof row.orderId==='string'&&positive('targetProgress'))goal={...base,kind,orderId:row.orderId,targetProgress:positive('targetProgress')!};
+  if(goal)out.push(goal);
+ }
+ return validateProgressionGoals(out,characterId);
+}

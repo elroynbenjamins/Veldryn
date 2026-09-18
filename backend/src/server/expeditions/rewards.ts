@@ -20,16 +20,33 @@ export function baseMarks(mapBaseMarks: number, tier: ExpeditionTier, objectiveM
   return Math.round(mapBaseMarks * EXPEDITION.marksMultiplier[tier] * objectiveMultiplier);
 }
 
+export const V48_DUNGEON_REWARD_TUNING={
+  firstClearMultiplier:1.25,
+  cleanClearMultiplier:1.10,
+  maxCombinedClearMultiplier:1.35,
+  nearBossFailureFraction:0.50,
+} as const;
+
+export interface ClearBonusOptions{firstClear?:boolean;cleanClear?:boolean}
+export function clearRewardMultiplier(input:ClearBonusOptions={}){
+  let multiplier=1;
+  if(input.firstClear)multiplier*=V48_DUNGEON_REWARD_TUNING.firstClearMultiplier;
+  if(input.cleanClear)multiplier*=V48_DUNGEON_REWARD_TUNING.cleanClearMultiplier;
+  return Math.min(V48_DUNGEON_REWARD_TUNING.maxCombinedClearMultiplier,multiplier);
+}
+
 export function marksForRun(
   mapBaseMarks: number,
   tier: ExpeditionTier,
   state: RewardState,
   objectiveMultiplier = 1,
   enhancedEligible = true,
+  clearBonus:ClearBonusOptions={},
 ): number {
   const full = baseMarks(mapBaseMarks, tier, objectiveMultiplier);
   const frac = failureRewardFraction(state);
-  const preCap = Math.round(full * frac);
+  const mastery=state.cleared?clearRewardMultiplier(clearBonus):1;
+  const preCap = Math.round(full * frac * mastery);
   return enhancedEligible ? preCap : Math.round(preCap * EXPEDITION.postCapMarksCoefficient);
 }
 

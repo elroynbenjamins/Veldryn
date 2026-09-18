@@ -28,6 +28,7 @@ import {classSkillsFor} from '../content/class-skills';
 import {characterClassSkills} from '../core/class-skills';
 import {classEmblemIconArtwork} from '../theme/class-emblem-assets';
 import {uiIcons} from '../theme/ui-icons';
+import {CrossSkillDiscoveriesPanel} from '../components/CrossSkillDiscoveriesPanel';
 
 export function SkillsScreen({state,onGather,onCraft,onEquipTool,onCharacter,onInventory,onViewToolRecipes,onSelectSkill,onCommand=async()=>{},initialMode='gathering',initialSkill}:{state:GameState;onGather:(id:string)=>void;onCraft:(id:string)=>void;onEquipTool:(id:string)=>void;onCharacter:()=>void;onInventory:()=>void;onViewToolRecipes:()=>void;onSelectSkill?:(id:string)=>void;onCommand?:(command:import('../core/game-commands').GameCommand)=>Promise<void>;initialMode?:'gathering'|'crafting'|'novice'|'faith';initialSkill?:SkillId}){
   const gatheringDefs=[...GATHERING,...HERB_NODES];
@@ -67,5 +68,5 @@ function SkillHub({state,onSelect}:{state:GameState;onSelect:(id:string)=>void})
  const combat=[...classRows.map((row,i)=>({id:`class:${row.skillId}`,name:classSkillsFor(state.character!.classId)[i]?.name??row.skillId,level:row.level,kind:'Class skill'})),{id:'companion',name:'Companions',level:state.account.companionSanctuary?.trainingGroundLevel??1,kind:'Companion skill'}];
  const skilling=state.skills.filter(sk=>['mining','woodcutting','fishing','herbalism','hunting','exploration'].includes(sk.skillId)).map(sk=>({id:sk.skillId,name:sk.skillId.charAt(0).toUpperCase()+sk.skillId.slice(1),level:sk.level,kind:'Skilling'}));
  const crafting=state.skills.filter(sk=>['smithing','cooking','alchemy','tailoring','enchanting','faith'].includes(sk.skillId)).map(sk=>({id:sk.skillId,name:sk.skillId.charAt(0).toUpperCase()+sk.skillId.slice(1),level:sk.level,kind:'Crafting'}));
- return <ScrollView contentContainerStyle={hubStyles.hub}><Text style={hubStyles.hubTitle}>Skills</Text><Text style={hubStyles.hubSub}>Choose a skill to train or inspect.</Text><Text style={hubStyles.sectionLabel}>COMBAT SKILLS</Text>{cards(combat)}<Text style={hubStyles.sectionLabel}>SKILLING</Text>{cards(skilling)}<Text style={hubStyles.sectionLabel}>CRAFTING &amp; OTHER SKILLS</Text>{cards(crafting)}</ScrollView>;
+ return <ScrollView contentContainerStyle={hubStyles.hub}><Text style={hubStyles.hubTitle}>Skills</Text><Text style={hubStyles.hubSub}>Choose a skill to train or inspect.</Text><Text style={hubStyles.sectionLabel}>COMBAT SKILLS</Text>{cards(combat)}<Text style={hubStyles.sectionLabel}>SKILLING</Text>{cards(skilling)}<Text style={hubStyles.sectionLabel}>CRAFTING &amp; OTHER SKILLS</Text>{cards(crafting)}<CrossSkillDiscoveriesPanel state={state}/></ScrollView>;
 }

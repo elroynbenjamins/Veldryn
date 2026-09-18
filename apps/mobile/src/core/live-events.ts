@@ -100,3 +100,14 @@ export function claimEventCommunityMilestone(state:GameState,percent:number,nowM
 
 /** Development-only local runtime switch. Production uses the Supabase event row. */
 export function setLocalEventEnabled(state:GameState,enabled:boolean,nowMs=Date.now()):GameState{const runtime:LiveEventRuntime|undefined=enabled?{eventId:'EVT_ANNUAL_009_2026',enabled:true,startsAtMs:nowMs-60_000,endsAtMs:nowMs+21*86400_000}:undefined;return {...state,account:{...state.account,liveEvent:runtime}};}
+
+export function eventReadyClaimCount(state:GameState,nowMs=Date.now()){
+ const event=claimableLiveEvent(state,nowMs);if(!event)return 0;const id=event.definition.id;
+ const daily=eventDailyGift(state,nowMs),readyDaily=daily&&!daily.claimed?1:0;
+ const readyContracts=eventContractBoard(state,nowMs).filter(row=>row.accepted&&!row.claimed&&row.progress>=row.objective.required).length;
+ const readyWeeklies=eventWeeklyBoard(state,nowMs).filter(row=>!row.claimed&&row.progress>=row.objective.required).length;
+ const readyDiscoveries=eventDiscoveryBoard(state,nowMs).filter(row=>row.ready&&!row.claimed).length;
+ const readyMilestones=eventMilestones(state,nowMs).filter(row=>row.points<=eventProgress(state,id)&&!eventRewardClaimed(state,id,row.reward.id)).length;
+ const readyCommunity=event.definition.communityEnabled===true?eventCommunityMilestones(state,nowMs).filter(row=>row.ready&&!row.claimed).length:0;
+ return readyDaily+readyContracts+readyWeeklies+readyDiscoveries+readyMilestones+readyCommunity+availableEventRepeatCaches(state,id);
+}

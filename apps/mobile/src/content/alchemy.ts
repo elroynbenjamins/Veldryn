@@ -5,7 +5,7 @@ export type PotionEffect = {kind:'healing';maxHpFraction:number} |
   {kind:'preparation';attackFraction:number;damageReductionFraction:number;encounters:number};
 export interface PotionDefinition {id:string;name:string;effect:PotionEffect;description:string;}
 export interface AlchemyRecipe {
-  id:string;name:string;level:number;seconds:number;xp:number;gold:number;
+  id:string;name:string;skillId:'alchemy';level:number;seconds:number;xp:number;gold:number;
   inputs:ItemStack[];output:ItemStack;
 }
 export const MAX_ALCHEMY_BATCHES=100;
@@ -21,7 +21,7 @@ export const POTIONS:readonly PotionDefinition[]=[
   {id:'OATH_WARD_TONIC',name:'Oath Ward Tonic',effect:{kind:'preparation',attackFraction:0,damageReductionFraction:.08,encounters:60},description:'8% less incoming damage for 60 resolved ordinary encounters.'},
 ];
 const recipe=(potionId:string,level:number,seconds:number,xp:number,gold:number,inputs:ItemStack[],suffix=''):AlchemyRecipe=>({
-  id:`BREW_${potionId}${suffix}`,name:POTIONS.find(p=>p.id===potionId)!.name,level,seconds,xp,gold,inputs,output:{itemId:potionId,quantity:1},
+  id:`BREW_${potionId}${suffix}`,name:POTIONS.find(p=>p.id===potionId)!.name,skillId:'alchemy',level,seconds,xp,gold,inputs,output:{itemId:potionId,quantity:1},
 });
 export const ALCHEMY_RECIPES:readonly AlchemyRecipe[]=[
   recipe('DEWLEAF_DRAUGHT',1,60,24,4,[{itemId:'DEWLEAF',quantity:2}]),

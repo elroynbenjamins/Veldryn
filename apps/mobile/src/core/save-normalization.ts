@@ -17,6 +17,8 @@ import {normalizeCollectionPreferences} from './collection-preferences';
 import {normalizeCharacterLoadouts} from './character-loadouts';
 import {normalizeOnboardingGuideState} from './onboarding';
 import {normalizeGuildBannerId,normalizeGuildFrameId,normalizeGuildMotto,normalizeGuildNameplateId} from './guild-customization';
+import {normalizeProfessionMastery} from './profession-mastery-v40';
+import {normalizeIdleRulesV40} from './idle-rules-v40';
 
 export function normalizeSave(input:any):GameState{
   if(!input || ![4,5,6,7,8,9,10,11].includes(input.version)) throw new Error('Unsupported VELDRYN save version');
@@ -53,6 +55,7 @@ export function normalizeSave(input:any):GameState{
     return {
     ...savedCharacter,
     monsterMasteryPoints:normalizeMonsterMastery(savedCharacter.monsterMasteryPoints),
+    professionMasteryPoints:normalizeProfessionMastery(savedCharacter.professionMasteryPoints),
     masteryMaterialRemainders:Object.fromEntries(Object.entries(savedCharacter.masteryMaterialRemainders??{}).filter(([id,v])=>ITEMS.some(i=>i.id===id&&i.type==='material')&&typeof v==='number'&&Number.isFinite(v)&&v>=0&&v<1)),
     classSkills:normalizeClassSkills(savedCharacter.classId,savedCharacter.classSkills),
     faith:normalizeFaith(savedCharacter.faith),

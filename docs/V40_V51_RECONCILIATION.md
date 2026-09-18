@@ -1,30 +1,30 @@
 # V40–V51 reconciliation audit
 
-Reference source: `VELDRYN_v51_Primary_Navigation_UI_Modernization_Cumulative.zip`
+Reference source: `VELDRYN_v51_Primary_Navigation_UI_Modernization_Cumulative.zip`  
 Target: `development/v52-ui-integration`
 
 Status legend:
-- **Present** — equivalent production code already exists in GitHub.
-- **Partial** — related code exists, but the cumulative pass added meaningful missing behavior.
-- **Missing** — no equivalent production subsystem is present.
+- **Reconciled** — production-oriented equivalent is now committed to the GitHub branch.
+- **Partial** — useful real-repo integration exists, but some UI/server binding or QA remains.
+- **Pending QA** — code is reconciled but has not yet been executed through the full Expo/backend/Supabase suite.
 
-| Pass | Scope | GitHub status | Reconciliation action |
+| Pass | Scope | Current branch status | Notes |
 |---|---|---|---|
-| V40 | Goals, profession mastery, Bestiary projection, region completion, advanced idle rules, activity-loadout extension, richer Welcome Back | **Partial / Missing** | Preserve existing character loadouts + monster mastery, add missing goal/profession-mastery/region/idle/welcome-back projections without replacing canonical owners. |
-| V41 | 2 Hunt + 2 Profession Weekly Orders, Monday UTC rollover, account-wide progress, idempotent rewards | **Missing** | Import pure generation/progress domain + server-owned persistence migration/service hooks. |
-| V42 | Adventurer's Journal, expanded achievements, titles, personal records | **Partial** | Existing Achievements are present. Add missing Journal shell, title selection and expanded record catalogue without duplicating achievement authority. |
-| V43 | Public profiles, showcases, world milestone feed, 33 records | **Partial** | Profiles exist; showcases/feed/expanded records need reconciliation with current profile server. |
-| V44 | Guild Hall 1–20 + six facilities | **Missing** | Build on current Guild Projects. No new spendable guild currency. |
-| V45 | Cross-skill discoveries + collection sets | **Missing** | Add per-character discovery engine and account-wide collection-set completion over canonical ownership. |
-| V46 | Rare idle discoveries + expanded Welcome Back | **Missing** | Add server-side settlement discovery rolls/pity; do not create a second normal-loot engine. |
-| V47 | Content binding / launch config / telemetry | **Partial** | Current repository has richer content than the old snapshot. Port only validation/binding concepts that still apply; do not overwrite canonical content. |
-| V48 | Safe-area UI, badges, chat keyboard/drag, guest auth, dungeon balance | **Partial -> actively reconciled** | Guest button, chat, safe bottom navigation and badge primitives are now on V52 branch; balance still needs current-content validation. |
-| V49 | Inventory/Crafting/Recruitment concept layouts | **Partial** | Inventory/recruitment filter pattern already being merged; remaining concept-layout structure still needs host reconciliation. |
-| V50 | Generic event framework, event reward UI, pet/companion layouts, global filter standard | **Partial** | Current repo has Harvestwake event runtime. General rotation framework and remaining UI must be reconciled without reintroducing community-event assumptions pre-launch. |
-| V51 | Character/Skills/World/Account modernization + notification hierarchy | **Partial** | Account is now canonical fifth tab on V52 branch; primary screen modernization remains to merge screen-by-screen. |
+| V40 | Goals, profession mastery, Bestiary 2.0 projection, region completion, stop-only idle rules, existing loadouts, Welcome Back foundations | **Reconciled / Pending QA** | Added current-repo projections/engines. Bestiary owns no duplicate progress. Idle rules cannot auto-travel or chain. Existing loadouts remain canonical. |
+| V41 | 2 Hunt + 2 Profession Weekly Orders, Monday UTC rollover, account-wide progress, idempotent rewards | **Reconciled / Pending QA** | Added deterministic current-content candidates, private Supabase state/receipts and goal/idle/region projections. Weekly Orders never affect permanent Region Completion. |
+| V42 | Adventurer's Journal, 40 long-term achievements, 8 Grandmaster titles, records | **Reconciled / Partial UI** | Exact 40/8 catalogue imported; real Journal route added. Existing claimable Achievement server remains intact rather than being overwritten. |
+| V43 | Public profiles, showcases, world milestone feed, 33 records | **Reconciled / Partial host binding** | Exact 33 record catalogue added; Guild-only privacy/feed opt-out/showcase validation and feed persistence added. Existing profile server remains canonical for its current surface. |
+| V44 | Guild Hall 1–20 + six facilities | **Reconciled / Pending UI/server service binding** | Domain + persistence added on top of existing Guild Projects. Hall Progress is non-spendable; Training/Workshop cap +0.50%; Expedition Board cap +2 choices. |
+| V45 | Cross-skill discoveries + collection sets | **Reconciled / Pending grant-pipeline binding** | Seven discoveries safely map to current skill IDs. Current item IDs used for initial Collection Sets; no second ownership DB. |
+| V46 | Rare idle discoveries + expanded Welcome Back | **Reconciled engine / Content binding intentionally deferred** | Persistent time buckets/pity added. No pool enabled until a real current reward ID is authored. Welcome Back report supports skills/mastery/goals/orders/finds. |
+| V47 | Content binding / launch config / validation | **Reconciled / Pending execution** | Validator uses current 9 classes, 8 regions and current item/monster/recipe IDs; does not import stale spreadsheet IDs. |
+| V48 | Safe-area UI, badges, chat keyboard/drag, guest auth, dungeon balance | **Partial / substantially reconciled** | Guest button, draggable keyboard-safe chat, nav safe-area/badges and V48 reward tuning are in. Current-repo boss/dungeon simulation still needs execution against full runtime. |
+| V49 | Inventory/Crafting/Recruitment concept layouts | **Partial / host-integrated** | Inventory now has Bag + Crafting using the same canonical craft action; Inventory and Recruitment filters are dropdown/sheet based. Full compare/detail visual pass remains. |
+| V50 | Generic event framework, event rewards, pet/companion layouts, global filter standard | **Partial / framework reconciled** | Generic rotating-event engine + metadata migration added; Frostfall/Veilbreak/Starfall templates remain disabled until canonical IDs exist. Community module explicitly deferred. Event “Market” UI renamed Event Shop. Pet/Companion concept layout reconciliation remains. |
+| V51 | Character/Skills/World/Account modernization + notification hierarchy | **Partial / host-integrated** | Account is canonical fifth tab, grouped Account screen added, Journal/Bestiary routed, Inventory/Skills/World use dropdown filters, friend-request badge routes Account → Friends. Character and deeper sub-screen visual polish remains. |
 
-## Hard constraints during reconciliation
-- Player Market remains removed. Historical migrations may remain for lineage only, followed by forward cleanup.
+## Reconciled hard constraints
+- Player Market runtime removed; historical create migration remains only for lineage and is followed by a forward cleanup migration.
 - Offline Reserve remains 24h base / 36h absolute maximum.
 - Persistent Parties remain 1–4.
 - Contracts remain asynchronous Combat/Skilling/Mixed with shared progress + minimum personal contribution.
@@ -32,14 +32,16 @@ Status legend:
 - Weekly Orders do not count toward permanent Region Completion.
 - Advanced idle rules are stop-only and cannot auto-travel or chain activities.
 - No fake world-feed/player activity at launch.
+- Server-wide community event/campaign module is deferred pre-launch.
+- Primary navigation is Character / Skills / World / Inventory / Account.
+- Player-facing filters use compact dropdown/sheet patterns rather than permanent chip walls.
 
-## Import order
-1. V40 foundations.
-2. V41 Weekly Orders.
-3. V42/V43 Journal/Profile/Records reconciliation.
-4. V44 Guild Hall.
-5. V45 Discoveries/Collection Sets.
-6. V46 Rare Idle Discoveries.
-7. V47 binding/validation.
-8. V48 balance verification.
-9. V49–V51 host-screen/UI reconciliation.
+## Remaining reconciliation / QA
+1. Wire V40–V47 server services into the current authoritative gameplay settlement pipeline and grant pipeline.
+2. Add current backend read/update APIs for Journal/Profile extensions/Guild Hall where still only persistence/domain exists.
+3. Reconcile V50 Pet Bonus / Companion Training / Companion Expeditions presentation onto the current companion runtime.
+4. Finish V49 item compare/detail visual hierarchy and V51 Character/sub-screen polish.
+5. Expand notification aggregation beyond friend requests to DMs, guild invites/applications, party invites and event reward counts.
+6. Commit generated guild PNG assets into the runtime asset tree through a binary-capable Git workflow.
+7. Execute mobile TypeScript/core tests, backend tests/build, Supabase migrations/RLS tests and native Expo Android/iOS QA.
+8. Validate current-repository boss/dungeon seeded outcome bands before changing encounter stats.

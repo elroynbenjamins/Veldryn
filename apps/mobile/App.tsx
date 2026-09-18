@@ -66,6 +66,7 @@ import {OnlineAccountPanel} from './src/components/OnlineAccountPanel';
 import {GameButton} from './src/components/GameButton';
 import type {GameCommand} from './src/core/game-commands';
 import {buildWelcomeBackFromStates,type WelcomeBackProgressReport} from './src/core/welcome-back-v46';
+import {eventReadyClaimCount} from './src/core/live-events';
 import {useSocialNotificationCounts} from './src/online/useSocialNotificationCounts';
 
 type Tab=QuickNavDestination|'Arena'|'Rankings'|'Collections'|'Profile'|'Achievements'|'Journal'|'Bestiary'|'Pets'|'Combat'|'Coop';
@@ -204,6 +205,7 @@ const next=discoverCharacterSkins(candidate),newSkins=newlyUnlockedCharacterSkin
   if(__DEV__&&showChatPilot)return <View style={s.safe} {...backSwipe.panHandlers}><ChatPilotDevScreen state={state} initialPanel={chatPilotInitialPanel} onClose={()=>setShowChatPilot(false)}/></View>;
   if(__DEV__&&showCoopUiGallery)return <SafeAreaView style={s.safe} {...backSwipe.panHandlers}><StatusBar style="light"/><CoopUiGalleryScreen language={state.settings.language} onClose={()=>setShowCoopUiGallery(false)}/></SafeAreaView>;
   const preview=previewActivityReward(state,now);
+  const eventRewardCount=eventReadyClaimCount(state,now),accountBadgeCount=notificationCounts.account+eventRewardCount;
   const activePrimary:PrimaryTab=tab==='Coop'||tab==='Combat'?'World':primaryTabs.includes(tab as PrimaryTab)?tab as PrimaryTab:'Account';
   const secondary=!primaryTabs.includes(tab as PrimaryTab);
   return <SafeAreaView style={s.safe}><StatusBar style="light"/><GameTopBar state={state} nowMs={now} labelForDestination={destination=>tabLabel(state.settings.language,destination)} onNavigate={setTab} onChangeDestinations={destinations=>commit({...state,settings:{...state.settings,quickNavDestinations:destinations}})} onOpenActivity={openActiveActivity}/>{secondary&&tab!=='Coop'&&<View style={s.backBar}><Pressable accessibilityRole="button" accessibilityLabel={t(state.settings.language,'common.back')} onPress={goBack} hitSlop={8} style={({pressed})=>[s.backButton,pressed&&s.backPressed]}><Image source={require('./assets/ui-icons-v2/small/back.png')} resizeMode="contain" style={s.backIcon}/><Text style={s.backText}>{t(state.settings.language,'common.back')}</Text></Pressable><Text numberOfLines={1} style={s.backTitle}>{tabLabel(state.settings.language,tab)}</Text><View style={s.backSpacer}/></View>}{serverGameplayEnabled&&<View style={{paddingHorizontal:12}}>{!!online.error&&<Text accessibilityRole="alert" style={s.txt}>{online.error}</Text>}{online.pending?<GameButton title="Retry pending action" disabled={online.busy} onPress={()=>void perform()}/>:<Text style={s.txt}>{online.busy?'Saving online…':'Online · progress saved on server'}</Text>}</View>}<View pointerEvents={serverGameplayEnabled&&online.busy?'none':'auto'} style={s.body} {...backSwipe.panHandlers}>
@@ -221,7 +223,7 @@ const next=discoverCharacterSkins(candidate),newSkins=newlyUnlockedCharacterSkin
     {tab==='Events'&&<EventScreen state={state} onChange={commit} onCommand={serverGameplayEnabled?command=>perform(command).then(Boolean):undefined}/>}
     {tab==='Guild'&&<GuildScreen online={serverGameplayEnabled} state={state} onChange={commit} onlineDirectory={<OnlineGuildBrowser/>} onlineManagement={<OnlineGuildManagement/>} onlinePve={<OnlineGuildPve authoritative={serverGameplayEnabled} numberMode={state.settings.numberMode}/>}/>}
     {tab==='Settings'&&<SettingsScreen online={serverGameplayEnabled} state={state} onChange={commit} onExport={exportSave} onImport={importSave} onOpenChatPilot={__DEV__?()=>{setChatPilotInitialPanel('chat');setShowChatPilot(true)}:undefined} onOpenChatEmotes={__DEV__?()=>{setChatPilotInitialPanel('emotes');setShowChatPilot(true)}:undefined} onOpenCoopUiGallery={__DEV__?()=>setShowCoopUiGallery(true):undefined} onLanguage={language=>commit({...state,settings:{...state.settings,language}})} onReset={()=>serverGameplayEnabled?Alert.alert('Online save','Your online character is saved on the server.'):Alert.alert('Reset local save?','This deletes prototype progress only.',[{text:'Cancel'},{text:'Reset',style:'destructive',onPress:async()=>{await repo.reset();setState(newGame(Date.now()));setCurrentTab('Character');setTabHistory([])}}])}/>}
-    {(tab==='Account'||tab==='More')&&<MoreScreen language={state.settings.language} onNavigate={setTab} friendRequestCount={notificationCounts.friendRequests} onOpenChatPilot={__DEV__?()=>{setChatPilotInitialPanel('chat');setShowChatPilot(true)}:undefined}/>}
+    {(tab==='Account'||tab==='More')&&<MoreScreen language={state.settings.language} onNavigate={setTab} friendRequestCount={notificationCounts.friendRequests} eventRewardCount={eventRewardCount} onOpenChatPilot={__DEV__?()=>{setChatPilotInitialPanel('chat');setShowChatPilot(true)}:undefined}/>}
     {tab==='Arena'&&<ArenaScreen state={state} onChange={candidate=>void commit(candidate)}/>}
     {tab==='Rankings'&&<RankingsScreen/>}
     {tab==='Collections'&&<CollectionsScreen state={state} onChange={candidate=>void commit(candidate)}/>}
@@ -232,7 +234,7 @@ const next=discoverCharacterSkins(candidate),newSkins=newlyUnlockedCharacterSkin
     {tab==='Pets'&&<PetBonusOverviewScreen state={state} onChange={commit}/>} 
   </View>
   <ChatOverlay state={state} visible={showChatOverlay} onOpen={()=>setShowChatOverlay(true)} onClose={()=>setShowChatOverlay(false)}/>
-  <PrimaryNavigation destinations={primaryTabs} active={activePrimary} labelFor={item=>tabLabel(state.settings.language,item)} onNavigate={setTab} badges={notificationCounts.account?{Account:notificationCounts.account}:undefined}/>
+  <PrimaryNavigation destinations={primaryTabs} active={activePrimary} labelFor={item=>tabLabel(state.settings.language,item)} onNavigate={setTab} badges={accountBadgeCount?{Account:accountBadgeCount}:undefined}/>
   <RewardPopup reward={collected?.reward??null} activity={collected?.activity??null} welcomeBack={!!collected?.welcomeBack} welcomeReport={collected?.welcomeReport} reduceMotion={state.settings.reduceMotion} numberMode={state.settings.numberMode} onClose={()=>setCollected(null)}/>
   </SafeAreaView>;
 }

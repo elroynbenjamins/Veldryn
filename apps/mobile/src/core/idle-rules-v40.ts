@@ -29,3 +29,12 @@ export function normalizeIdleRuleSets(value:unknown,characterId:string):IdleRule
  });
 }
 export function validateActiveIdleRuleId(rules:IdleRuleSet[],value:unknown){return typeof value==='string'&&rules.some(rule=>rule.id===value)?value:undefined}
+
+export function idleRuleDurationWindow(rules:IdleRuleSet[]|undefined,activeRuleId:string|undefined,activityStartedAtMs:number,lastClaimAtMs:number,nowMs:number){
+ const rule=rules?.find(row=>row.id===activeRuleId);if(!rule)return {settleAtMs:nowMs,shouldStop:false as const};
+ const seconds=rule.conditions.filter(row=>row.enabled&&row.kind==='duration_seconds'&&row.value>0).map(row=>row.value);
+ if(!seconds.length)return {settleAtMs:nowMs,shouldStop:false as const};
+ const stopAtMs=activityStartedAtMs+Math.min(...seconds)*1000;
+ const shouldStop=nowMs>=stopAtMs;
+ return {settleAtMs:shouldStop?Math.max(lastClaimAtMs,Math.min(nowMs,stopAtMs)):nowMs,shouldStop,reason:shouldStop?'Idle Rule duration target reached.':undefined};
+}

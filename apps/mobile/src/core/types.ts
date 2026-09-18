@@ -16,7 +16,6 @@ export type SkillId=GatheringSkillId|'smithing'|'cooking'|'alchemy'|'hunting'|'e
 export interface SkillState{skillId:SkillId;xp:number;level:number;}
 export interface CharacterState {
   classSkillRemainders?:Record<string,number>;
-  professionMasteryPoints?:Record<string,number>;
   classTraining?:ClassDrills;
   monsterMasteryPoints?:Record<string,number>;
   masteryMaterialRemainders?:Record<string,number>;

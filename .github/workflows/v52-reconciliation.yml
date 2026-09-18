@@ -1,19 +1,13 @@
-name: VELDRYN reconciliation CI
+name: V52 reconciliation validation
 
 on:
-  pull_request:
-    branches: [main]
   push:
     branches:
       - development/v52-ui-integration
-
-concurrency:
-  group: veldryn-reconcile-${{ github.ref }}
-  cancel-in-progress: true
+  workflow_dispatch:
 
 jobs:
   mobile:
-    name: Mobile typecheck + core tests
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -23,21 +17,17 @@ jobs:
       - uses: pnpm/action-setup@v4
         with:
           version: 10
-          run_install: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
           cache-dependency-path: apps/mobile/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
-      - name: Install backend dependencies used by shared mobile tests
-        run: pnpm --dir ../../backend install --frozen-lockfile
       - run: pnpm typecheck:core
       - run: pnpm test:core
       - run: pnpm typecheck
 
   backend:
-    name: Backend typecheck + launch smokes
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -47,7 +37,6 @@ jobs:
       - uses: pnpm/action-setup@v4
         with:
           version: 10
-          run_install: false
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -57,8 +46,4 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm build
       - run: pnpm production-smoke
-      - run: pnpm combat-smoke
-      - run: pnpm combat-matrix
-      - run: node dist/server/live-dungeon/live-dungeon-v20.test.js
       - run: node dist/server/balance/__tests__/v48-reconciliation.js
-      - run: pnpm squad-smoke

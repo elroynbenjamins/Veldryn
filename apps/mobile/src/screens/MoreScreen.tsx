@@ -6,7 +6,7 @@ import type {GameState} from '../core/types';
 
 export type MoreDestination='Social'|'Quests'|'Companions'|'Events'|'Friends'|'Guild'|'Settings'|'Arena'|'Rankings'|'Collections'|'Profile'|'Achievements'|'Journal'|'Bestiary'|'Pets';
 type IconRoute=keyof typeof navigationIcons;
-type Row={id:MoreDestination;title:string;description:string;icon:IconRoute;badge?:'friends'};
+type Row={id:MoreDestination;title:string;description:string;icon:IconRoute;badge?:'friends'|'events'};
 const SECTIONS:Array<{title:string;rows:Row[]}>= [
  {title:'Progression & Tasks',rows:[
   {id:'Quests',title:'Quests',description:'Story, contracts and objectives that need your attention.',icon:'Quests'},
@@ -26,20 +26,20 @@ const SECTIONS:Array<{title:string;rows:Row[]}>= [
   {id:'Profile',title:'Public Profile',description:'Your character identity, cosmetics and showcases.',icon:'Social'},
   {id:'Pets',title:'Pets & Bonuses',description:'Account-wide passive pet bonuses and your active pet.',icon:'Companions'},
   {id:'Companions',title:'Companions',description:'Train, equip and manage your companion roster.',icon:'Companions'},
-  {id:'Events',title:'Events',description:'Current rotating event, tasks, rewards and collection.',icon:'Events'},
+  {id:'Events',title:'Events',description:'Current rotating event, tasks, rewards and collection.',icon:'Events',badge:'events'},
  ]},
  {title:'Account & Help',rows:[
   {id:'Settings',title:'Settings & Account',description:'Account, shortcuts, gameplay, chat and accessibility.',icon:'Settings'},
  ]},
 ];
 
-export function MoreScreen({language:_,onNavigate,onOpenChatPilot,friendRequestCount=0}:{language:GameState['settings']['language'];onNavigate:(destination:MoreDestination)=>void;onOpenChatPilot?:()=>void;friendRequestCount?:number}){
+export function MoreScreen({language:_,onNavigate,onOpenChatPilot,friendRequestCount=0,eventRewardCount=0}:{language:GameState['settings']['language'];onNavigate:(destination:MoreDestination)=>void;onOpenChatPilot?:()=>void;friendRequestCount?:number;eventRewardCount?:number}){
  return <ScrollView contentContainerStyle={s.root}>
   <Text style={s.kicker}>ACCOUNT</Text><Text accessibilityRole="header" style={s.heading}>Account</Text><Text style={s.sub}>Account progression, social features, collections, benefits and settings.</Text>
   {SECTIONS.map(section=><View key={section.title} style={s.section}><Text style={s.sectionTitle}>{section.title}</Text><View style={s.list}>{section.rows.map(item=><Pressable key={item.id} accessibilityRole="button" accessibilityLabel={item.title} onPress={()=>onNavigate(item.id)} style={({pressed})=>[s.card,pressed&&s.pressed]}>
     <View style={s.iconFrame}><Image accessible={false} source={navigationIcons[item.icon]} resizeMode="contain" style={s.icon}/></View>
     <View style={s.copy}><Text style={s.title}>{item.title}</Text><Text style={s.description}>{item.description}</Text></View>
-    {item.badge==='friends'&&friendRequestCount>0?<View style={s.badge}><Text style={s.badgeText}>{friendRequestCount>99?'99+':friendRequestCount}</Text></View>:null}
+    {item.badge==='friends'&&friendRequestCount>0?<View style={s.badge}><Text style={s.badgeText}>{friendRequestCount>99?'99+':friendRequestCount}</Text></View>:null}{item.badge==='events'&&eventRewardCount>0?<View style={s.badge}><Text style={s.badgeText}>{eventRewardCount>99?'99+':eventRewardCount}</Text></View>:null}
     <UiIcon name="next" size={24}/>
   </Pressable>)}</View></View>)}
   {onOpenChatPilot?<Pressable accessibilityRole="button" accessibilityLabel="Open Chat Pilot development screen" onPress={onOpenChatPilot} style={({pressed})=>[s.card,s.devCard,pressed&&s.pressed]}><View style={s.iconFrame}><Image source={navigationIcons.Social} resizeMode="contain" style={s.icon}/></View><View style={s.copy}><Text style={s.title}>Chat Pilot</Text><Text style={s.description}>Development-only interactive chat review</Text></View><UiIcon name="next" size={24}/></Pressable>:null}

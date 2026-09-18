@@ -4,7 +4,7 @@ import {Image,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {C,radii,spacing,typography} from '../theme/theme';
 import type {GameState} from '../core/types';
 
-export type MoreDestination='Social'|'Quests'|'Companions'|'Events'|'Friends'|'Guild'|'Settings'|'Arena'|'Rankings'|'Collections'|'Profile'|'Achievements'|'Journal'|'Bestiary';
+export type MoreDestination='Social'|'Quests'|'Companions'|'Events'|'Friends'|'Guild'|'Settings'|'Arena'|'Rankings'|'Collections'|'Profile'|'Achievements'|'Journal'|'Bestiary'|'Pets';
 type IconRoute=keyof typeof navigationIcons;
 type Row={id:MoreDestination;title:string;description:string;icon:IconRoute;badge?:'friends'};
 const SECTIONS:Array<{title:string;rows:Row[]}>= [
@@ -24,6 +24,7 @@ const SECTIONS:Array<{title:string;rows:Row[]}>= [
   {id:'Collections',title:'Collections',description:'Account-bound collectibles and completion sets.',icon:'Social'},
   {id:'Bestiary',title:'Bestiary',description:'Creature discovery, mastery and known drops.',icon:'World'},
   {id:'Profile',title:'Public Profile',description:'Your character identity, cosmetics and showcases.',icon:'Social'},
+  {id:'Pets',title:'Pets & Bonuses',description:'Account-wide passive pet bonuses and your active pet.',icon:'Companions'},
   {id:'Companions',title:'Companions',description:'Train, equip and manage your companion roster.',icon:'Companions'},
   {id:'Events',title:'Events',description:'Current rotating event, tasks, rewards and collection.',icon:'Events'},
  ]},

@@ -29,4 +29,14 @@ result=executeGameCommand(state,{type:'loadout_delete',args:{id:first!.id}},6000
 state=result.state;
 eq(state.character?.savedLoadouts?.some(row=>row.id===first!.id),false,'server loadout delete command removes preset');
 
-console.log('PASS: V40 Working Toward, Idle Rules and Saved Loadouts use validated command paths');
+
+result=executeGameCommand(state,{type:'idle_rules_set',args:{rules:[{id:'one-hour',characterId:state.character!.id,name:'Safe 1h',conditions:[{id:'duration',kind:'duration_seconds',value:3600,enabled:true}],stopIfOutOfFood:true,stopIfRewardsWouldOverflow:true,finishCurrentCycle:true}],activeId:'one-hour'}},7000,{accountId:'acct',eventId:'idle-duration'});
+state=result.state;
+result=executeGameCommand(state,{type:'start',args:{kind:'gathering',id:'GREENWOOD_TREE'}},8000,{accountId:'acct',eventId:'idle-start'});
+state=result.state;
+result=executeGameCommand(state,{type:'claim'},8000+7200*1000,{accountId:'acct',eventId:'idle-claim'});
+eq(result.state.activity,null,'duration Idle Rule stops activity at its exact boundary');
+ok((result.reward?.elapsedSeconds??0)<=3600,'duration Idle Rule does not settle beyond one hour');
+eq(result.state.account.weeklyOrders?.schemaVersion,41,'idle settlement still advances unified long-term progression');
+
+console.log('PASS: V40 Working Toward, exact duration Idle Rules and Saved Loadouts use validated command paths');

@@ -11,5 +11,5 @@ const targetById:Record<string,CollectibleTarget>={
 };
 const activeBps=(buff:string)=>Math.round(Number(buff.match(/\+(\d+(?:\.\d+)?)%/)?.[1]??2)*100);
 export const EVENT_PET_COLLECTIBLES:readonly CollectibleDefinition[]=metadata.filter(row=>row.type==='pet').map(row=>({
-  id:row.id,kind:'pet',name:row.name,bonusFamilyId:row.id,target:targetById[row.id]??'skillXp',ownedBps:50,activeBps:activeBps(row.buff),source:`${row.event_name} · ${row.event_window}`,event:row.event,rarity:row.rarity,buff:row.buff,description:row.description,
+  id:row.id,kind:'pet',name:row.name,bonusFamilyId:row.id,target:targetById[row.id]??'skillXp',ownedBps:50,activeBps:activeBps(row.buff),collectionGroup:'event',source:`${row.event_name} · ${row.event_window}`,event:row.event,rarity:row.rarity,buff:row.buff,description:row.description,
 }));

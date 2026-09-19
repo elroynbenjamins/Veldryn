@@ -44,7 +44,7 @@ s=command(s,'companion_technique',{id:'UNIT_001',technique});
 ok(s.account.combatCompanionProgress!.UNIT_001.selectedTechniqueId===technique,'technique saved');
 const backup=parseSaveBackup(createSaveBackup(s));ok(backup.character!.equippedCombatCompanionId==='UNIT_001'&&backup.account.companionEssence===s.account.companionEssence,'save retains equip and currency');
 const legacy=createCharacter(newGame(now),'IRONWARDEN','Legacy');legacy.character!.ownedPetIds=['pet_harvest_fox'];legacy.account.unlockedCosmeticPetIds=['pet_harvest_fox'];
-const upgraded=migrateSave(legacy);ok(!upgraded.account.unlockedCombatCompanionIds?.length&&upgraded.character!.ownedPetIds!.includes('pet_harvest_fox'),'passive pets never become Combat Companions');
+const upgraded=migrateSave(legacy);ok(!upgraded.account.unlockedCombatCompanionIds?.length&&upgraded.account.unlockedCosmeticPetIds?.includes('pet_harvest_fox'),'passive pets migrate to account ownership and never become Combat Companions');
 legacy.account.unlockedCosmeticPetIds=['pet_harvest_fox','pet_field_mouse'];legacy.character!.ownedPetIds=['pet_harvest_fox','pet_harvest_fox','pet_field_mouse'];
 let mult=characterPermanentMultipliers(legacy);const fox=PET_PERMANENT_BOOSTS.pet_harvest_fox,mouse=PET_PERMANENT_BOOSTS.pet_field_mouse;
 ok(Math.abs(mult.gatheringSpeedMultiplier-(1+(fox.gatheringSpeedMultiplier!-1)*.25)*(1+(mouse.gatheringSpeedMultiplier!-1)*.25))<1e-10,'inactive collections use 25%, no duplicates');

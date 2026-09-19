@@ -1,0 +1,40 @@
+{
+  "project": "VELDRYN",
+  "version": "v20",
+  "title": "Live Dungeon Production Polish + Sunscar Region II + Partial Equipment Set Framework",
+  "authoritative_merge_source": "current local VELDRYN repository",
+  "dependency": "dependencies/VELDRYN_v19_RegionalCrisesWorldBosses.zip",
+  "migrations": [
+    "20260914_032_live_dungeon_production_v20.sql",
+    "20260914_033_region_content_registry_v20.sql"
+  ],
+  "product_invariants": {
+    "bottom_navigation": ["Character", "Skills", "World", "Inventory", "Account"],
+    "live_dungeon_roles": "1 Tank / 2 Damage / 1 Support",
+    "persistent_party_roles_required": false,
+    "q_mode_separate": true,
+    "live_hybrid_or_echo_autofill": false,
+    "player_market_present": false,
+    "guild_procurement_present": false,
+    "sunscar_equipment_finalized": false
+  },
+  "sunscar": {
+    "region_id": "REG_002",
+    "level_range": [25, 45],
+    "zones": 5,
+    "normal_enemies": 16,
+    "bosses": 4,
+    "live_dungeons": 3,
+    "resources": 12,
+    "story_quests": 10,
+    "echo_conditions": 4,
+    "relic_hooks": 4,
+    "pet_and_companion_unlock_hooks": 9,
+    "content_version": "sunscar-v20.0.0"
+  },
+  "equipment_set_framework": {
+    "data_driven_thresholds": true,
+    "mixed_sets_supported": true,
+    "sunscar_sets_authored": false
+  }
+}

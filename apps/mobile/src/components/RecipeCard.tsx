@@ -5,7 +5,7 @@ import {itemDef} from '../content/items';
 import {GameState} from '../core/types';
 import {recipeAvailability} from '../core/playability';
 import {formatGameNumber} from '../core/number-format';
-import {C,radii,typography} from '../theme/theme';
+import {C,radii,spacing,typography} from '../theme/theme';
 import {ItemArtwork} from './ItemArtwork';
 import {IngredientList} from './IngredientList';
 import {GameButton} from './GameButton';
@@ -20,8 +20,8 @@ export function RecipeCard({state,recipe,status,onCraft}:{state:GameState;recipe
   </Pressable>
   {expanded&&<View style={s.details}><Text style={s.sub}>{f(recipe.gold)} gold · +{f(recipe.xp)} skill XP</Text>{output.type==='food'&&<Text style={s.ready}>Restores {f(output.heal??0)} HP</Text>}{output.type==='gear'&&<Text style={s.sub}>ATK {output.attack??0} · DEF {output.defense??0} · HP {output.hp??0}</Text>}{output.type==='tool'&&<Text style={s.sub}>Tier {output.toolTier} · {Math.round((1-(output.actionTimeMultiplier??1))*100)}% shorter action time</Text>}
    <IngredientList inputs={status.inputs} numberMode={state.settings.numberMode} showStorage/>
-   <Text style={status.ready?s.ready:s.reason}>{status.reason}</Text><GameButton title={`Craft ${f(recipe.output.quantity)}× ${output.name}`} disabled={!status.ready} onPress={()=>onCraft(recipe.id)}/>
+   <View style={[s.statusCallout,status.ready?s.readySurface:s.missingSurface]}><Text style={status.ready?s.ready:s.reason}>{status.reason}</Text></View><GameButton title={`Craft ${f(recipe.output.quantity)}× ${output.name}`} disabled={!status.ready} onPress={()=>onCraft(recipe.id)}/>
   </View>}
  </View>;
 }
-const s=StyleSheet.create({card:{backgroundColor:C.panel,borderWidth:1,borderColor:C.line,borderRadius:radii.md,overflow:'hidden'},head:{minHeight:100,flexDirection:'row',alignItems:'center',gap:12,padding:12},copy:{flex:1,minWidth:0,gap:3},title:{...typography.bodyStrong,fontSize:16,lineHeight:23,color:C.text},sub:{...typography.caption,color:C.muted},ready:{...typography.caption,color:C.good},reason:{...typography.body,color:C.warning},details:{padding:16,gap:10,borderTopWidth:1,borderColor:C.line}});
+const s=StyleSheet.create({card:{backgroundColor:C.panel,borderWidth:1,borderColor:C.line,borderRadius:radii.md,overflow:'hidden'},head:{minHeight:100,flexDirection:'row',alignItems:'center',gap:12,padding:12},copy:{flex:1,minWidth:0,gap:3},title:{...typography.bodyStrong,fontSize:16,lineHeight:23,color:C.text},sub:{...typography.caption,color:C.muted},statusCallout:{padding:spacing.sm,borderWidth:1,borderRadius:8},readySurface:{borderColor:C.good,backgroundColor:'#172b24'},missingSurface:{borderColor:C.warning,backgroundColor:'#332515'},ready:{...typography.caption,color:C.good},reason:{...typography.body,color:C.warning},details:{padding:16,gap:10,borderTopWidth:1,borderColor:C.line}});

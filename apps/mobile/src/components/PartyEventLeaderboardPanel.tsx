@@ -34,7 +34,7 @@ export function PartyEventLeaderboardPanel({ boards, onAudienceChange }: PartyEv
 }
 const styles=StyleSheet.create({
   panel:{backgroundColor:'#101923',borderWidth:1,borderColor:'#34475b',borderRadius:12,padding:12,gap:8},eyebrow:{color:'#8ca8bb',fontSize:10,fontWeight:'900',letterSpacing:1},
-  tabs:{flexDirection:'row',gap:5},tab:{flex:1,alignItems:'center',paddingVertical:7,borderRadius:7,borderWidth:1,borderColor:'#324555',backgroundColor:'#17232d'},active:{borderColor:'#b99349',backgroundColor:'#29251d'},tabText:{color:'#c5d1d9',fontWeight:'900',fontSize:10,textTransform:'capitalize'},
+  tabs:{flexDirection:'row',gap:6},tab:{flex:1,alignItems:'center',paddingVertical:8,borderRadius:99,borderWidth:1,borderColor:'#324555',backgroundColor:'#0b1018'},active:{borderColor:'#43bdf2',backgroundColor:'#123e61'},tabText:{color:'#aebdca',fontWeight:'900',fontSize:10,textTransform:'capitalize'},
   own:{flexDirection:'row',justifyContent:'space-between',backgroundColor:'#212a22',borderWidth:1,borderColor:'#587557',borderRadius:7,padding:8},ownText:{color:'#c8dfbc',fontWeight:'900'},ownScore:{color:'#f0dda4',fontWeight:'900'},
   list:{maxHeight:340},row:{flexDirection:'row',alignItems:'center',gap:8,paddingVertical:8,borderBottomWidth:1,borderBottomColor:'#233440'},ownRow:{backgroundColor:'#18291f'},rank:{color:'#d6bd72',width:36,fontWeight:'900'},flex:{flex:1},name:{color:'#e7edf1',fontWeight:'900'},meta:{color:'#899ba8',fontSize:10},score:{color:'#d6e1e7',fontWeight:'900'},hint:{color:'#8194a2',fontSize:10,lineHeight:14},
 });

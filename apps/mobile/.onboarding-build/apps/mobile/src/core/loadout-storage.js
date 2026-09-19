@@ -1,0 +1,36 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.planLoadoutStorage = planLoadoutStorage;
+const qty = (stacks, id) => stacks.find(entry => entry.itemId === id)?.quantity ?? 0;
+const take = (stacks, id) => { if (qty(stacks, id) < 1)
+    throw new Error(`MISSING:${id}`); return stacks.map(entry => entry.itemId === id ? { ...entry, quantity: entry.quantity - 1 } : { ...entry }).filter(entry => entry.quantity > 0); };
+const put = (stacks, capacity, id) => { const index = stacks.findIndex(entry => entry.itemId === id); if (index >= 0) {
+    const next = stacks.map(entry => ({ ...entry }));
+    next[index].quantity += 1;
+    return next;
+} if (stacks.length >= capacity)
+    throw new Error('STORAGE_FULL'); return [...stacks.map(entry => ({ ...entry })), { itemId: id, quantity: 1 }]; };
+function planLoadoutStorage(input) { let inventory = input.inventory.map(entry => ({ ...entry })), bank = input.bank.map(entry => ({ ...entry })); const slots = [...new Set([...Object.keys(input.currentEquipment), ...Object.keys(input.desiredEquipment)])]; for (const slot of slots) {
+    const wanted = input.desiredEquipment[slot], equipped = input.currentEquipment[slot];
+    if (!wanted || wanted === equipped)
+        continue;
+    if (qty(inventory, wanted) > 0)
+        inventory = take(inventory, wanted);
+    else if (qty(bank, wanted) > 0)
+        bank = take(bank, wanted);
+    else
+        throw new Error(`MISSING:${wanted}`);
+} for (const slot of slots) {
+    const old = input.currentEquipment[slot], wanted = input.desiredEquipment[slot];
+    if (!old || old === wanted)
+        continue;
+    try {
+        inventory = put(inventory, input.inventoryCapacity, old);
+    }
+    catch (error) {
+        if (error instanceof Error && error.message === 'STORAGE_FULL')
+            bank = put(bank, input.bankCapacity, old);
+        else
+            throw error;
+    }
+} return { inventory, bank }; }

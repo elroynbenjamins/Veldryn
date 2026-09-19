@@ -1,0 +1,23 @@
+{
+  "name": "VELDRYN v18 Guild Projects + Deeper Guild Social Systems",
+  "version": "18.0",
+  "date": "2026-09-14",
+  "dependency": "dependencies/VELDRYN_v17_3_FullControlCenter_CloudflareFree.zip",
+  "source_of_truth": "current local VELDRYN repository",
+  "market_removed": true,
+  "features": [
+    "weekly guild project board",
+    "dynamic effort-scaled guild projects",
+    "development donation projects",
+    "guild project anti-carry and guild-hop protection",
+    "guild decrees",
+    "guild roles and permissions",
+    "guild bulletin",
+    "bounded guild activity feed",
+    "guild project seasonal ranking hook",
+    "mobile guild hub",
+    "control center integration"
+  ],
+  "migration": "files/backend/supabase/migrations/20260914_030_guild_projects_social_v18.sql",
+  "operator_guide": "GITHUB_AND_CONTROL_ACCESS.md"
+}

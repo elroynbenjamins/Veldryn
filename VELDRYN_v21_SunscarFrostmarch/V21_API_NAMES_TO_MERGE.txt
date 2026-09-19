@@ -1,0 +1,22 @@
+Backend/content:
+- validateRegionalGameplayV21
+- buildSunscarRegionContentBundleV21
+- buildFrostmarchRegionContentBundleV21
+- stagePublishActivateRegionV21
+- validateFrostmarchDungeonsV21
+- activateRegionContentVersionV21
+
+Supabase RPC/view:
+- activate_region_content_v21_server(region_id, content_version)
+- active_region_content_records_v21
+
+Mobile:
+- completionPercentV21
+- formatRegionTimerV21
+- nextRegionalGoalV21
+- FrostmarchRegionPanel
+- RegionalJournalPanel
+
+Control Center commands:
+- region_content.activate_version
+- region_content.rollback_active_version

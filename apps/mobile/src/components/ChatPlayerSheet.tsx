@@ -14,8 +14,9 @@ import {personalRecordDefinition} from '../core/personal-records-v43';
 import {COMBAT_COMPANIONS} from '../content/combat-companions';
 import {CLASSES} from '../content/classes';
 import type {ClassId} from '../core/types';
+import {GuildTaggedPlayerName} from './GuildTaggedPlayerName';
 
-export type ChatPlayerIdentity={id?:string;account_id:string;sender_name:string};
+export type ChatPlayerIdentity={id?:string;account_id:string;sender_name:string;guild_tag?:string|null;guild_tag_color_id?:string|null};
 
 function recordValue(profile:PublicPlayerProfileV43,id:string){
  const def=personalRecordDefinition(id),record=profile.recordEntries?.[id];if(!def||!record)return '—';const value=record.value;
@@ -43,7 +44,7 @@ export function ChatPlayerSheet({message,onClose,onBlocked}:{message:ChatPlayerI
       {pet?<Image source={pet} resizeMode="contain" style={s.pet}/>:null}
       {border?<Image accessible={false} source={border} resizeMode="stretch" style={StyleSheet.absoluteFill}/>:null}
     </View>
-    <View style={s.identity}><Text accessibilityRole="header" style={s.name}>{profile.character.name||profile.displayName}</Text><Text style={s.title}>“{profile.title}”</Text><Text style={s.meta}>Level {profile.character.level} · {profile.character.classId.replace(/_/g,' ')}</Text>{profile.bio?<Text style={s.bio}>{profile.bio}</Text>:null}</View>
+    <View style={s.identity}><GuildTaggedPlayerName name={profile.character.name||profile.displayName} guildTag={profile.guildTag??message.guild_tag} tagColorId={profile.guildTagColorId??message.guild_tag_color_id} style={s.name}/><Text style={s.title}>“{profile.title}”</Text><Text style={s.meta}>Level {profile.character.level} · {profile.character.classId.replace(/_/g,' ')}</Text>{profile.bio?<Text style={s.bio}>{profile.bio}</Text>:null}</View>
     {(profile.favoriteSkillId||favoriteCompanion)?<View style={s.quickFacts}>{profile.favoriteSkillId?<View style={s.fact}><Text style={s.factLabel}>FAVORITE SKILL</Text><Text style={s.factValue}>{profile.favoriteSkillId.replace(/_/g,' ')}</Text></View>:null}{favoriteCompanion?<View style={s.fact}><Text style={s.factLabel}>FAVORITE COMPANION</Text><Text style={s.factValue}>{favoriteCompanion.name}</Text></View>:null}</View>:null}
     {profile.achievementShowcaseIds.length?<View style={s.block}><Text style={s.blockTitle}>ACHIEVEMENT SHOWCASE</Text>{profile.achievementShowcaseIds.map(id=>{const def=JOURNAL_ACHIEVEMENTS_V42.find(row=>row.id===id);return <Text key={id} style={s.showcase}>✦ {def?.title??id.replace(/_/g,' ')}</Text>})}</View>:null}
     {profile.recordShowcaseIds.length?<View style={s.block}><Text style={s.blockTitle}>PERSONAL RECORDS</Text>{profile.recordShowcaseIds.map(id=>{const def=personalRecordDefinition(id);return <View key={id} style={s.record}><Text style={s.recordName}>{def?.label??id.replace(/_/g,' ')}</Text><Text style={s.recordValue}>{recordValue(profile,id)}</Text></View>})}</View>:null}

@@ -1,6 +1,6 @@
 import {newGame} from '../src/core/game';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
-import {authCallbackCode,chunkedAuthStorage} from '../src/core/auth-callback';
+import {accountPassword,authCallbackCode,chunkedAuthStorage,passwordRequirements} from '../src/core/auth-callback';
 import {OnlineGameRepository,OnlineCommandError,type OnlineSnapshot,type PendingGameCommand} from '../src/core/online-game-repository';
 function ok(value:unknown,message:string):asserts value{if(!value)throw new Error(message);}
 function throws(fn:()=>unknown,message:string){let threw=false;try{fn()}catch{threw=true;}ok(threw,message);}
@@ -20,6 +20,10 @@ async function main(){
  ok(authCallbackCode('https://evil.invalid/auth?code=abc','veldryn://auth')===null,'unrelated links ignored');
  throws(()=>authCallbackCode('veldryn://auth#error=access_denied&error_description=Link%20expired','veldryn://auth'),'expired email errors in fragments reach the account UI');
  ok(authCallbackCode('https://evil.invalid/auth#error=access_denied','veldryn://auth')===null,'unrelated error links are ignored');
+ throws(()=>accountPassword('onlyletters'),'password needs a number and symbol');
+ throws(()=>accountPassword('lowercase1!'),'password needs an uppercase letter');
+ const strongPassword='Asterfall9!';ok(accountPassword(strongPassword)===strongPassword,'strong password accepted');
+ ok(Object.values(passwordRequirements(strongPassword)).every(Boolean),'password checklist matches validator');
  const memory=new Map<string,string>(),storage=chunkedAuthStorage({getItem:async key=>memory.get(key)??null,setItem:async(key,value)=>{ok(value.length<=1700,'secure chunk size');memory.set(key,value);},removeItem:async key=>{memory.delete(key);}});
  await storage.setItem('session','x'.repeat(6500));ok((await storage.getItem('session'))?.length===6500,'large secure session');await storage.setItem('session','short');ok(await storage.getItem('session')==='short','replace secure session');await storage.removeItem('session');ok(memory.size===0,'remove session chunks');
  let pending:PendingGameCommand|null=null,attempts=0,keys=0;

@@ -1,0 +1,75 @@
+VELDRYN v19 — CODEX MERGE INSTRUCTIONS
+
+AUTHORITATIVE SOURCE
+The user's CURRENT LOCAL VELDRYN repository is authoritative and may contain unpushed work. Do not reset it to the dependency ZIP, do not overwrite newer local files wholesale, and do not assume GitHub is current.
+
+1) Read START_HERE.md and REGIONAL_CRISES_WORLD_BOSSES_V19.md first.
+2) Inspect the current local repository for v16/v16.1/v17/v17.3/v18 systems already merged.
+3) Use dependencies/VELDRYN_v18_GuildProjectsSocial.zip only as reference/recovery material for missing foundations.
+4) Merge v19 files into the current architecture/naming rather than blindly copying paths if the project has moved.
+5) If dependency migrations are missing, merge/apply them in forward order first. The required chain is v17 shared Live-Ops (026), v17.1 Control (027), v17.2 Operations (028), v17.3 Full Control (029), v18 Guild Projects (030), then v19 (031). Skip any that the real database has already applied; never replay/renumber/edit applied history.
+6) Apply 20260914_031_regional_crises_world_bosses_v19.sql as a NEW migration only after the required control/social tables exist.
+7) Do not restore or introduce a player Market.
+
+REQUIRED IMPLEMENTATION
+- Regional Crisis versioned definitions/immutable instance snapshots.
+- Population-scaled crisis target snapshot frozen at activation.
+- Crisis stages, personal progress, rewards, notifications, optional recovery modifier and crisis→World Boss unlock.
+- Extend the authoritative social outbox target snapshot/routing to Regional Crises.
+- Contributions must be idempotent and database-capped.
+- Secured crises remain personal-contribution eligible until scheduled end.
+- World Boss versioned definitions/immutable scale snapshots.
+- Atomic boss attempt reservation with one-open-attempt + daily limit enforcement.
+- Existing authoritative combat engine adapter; DO NOT build a second client-authoritative combat system.
+- Server-resolved Damage/Tank/Support/Hybrid Raid Impact.
+- Atomic/idempotent shared HP application.
+- World Boss phases snapshotted at encounter start.
+- Prestige ranking from score-bearing attempts only.
+- One participation-only Echo attempt after early defeat only for accounts with zero scored attempts, within configured Echo window.
+- Reward claims through the existing idempotent economy/reward pipeline.
+- Shared-world minute worker and worker health.
+- Mobile Shared World cards/panels and deep links.
+- Control Center command handlers/metrics/remote-config integration.
+
+WORLD BOSS SECURITY
+The mobile client must never authoritatively submit Raid Impact, role profile, shared HP damage, remaining HP, eligibility, attempt count, rewards or ranks. Server combat state/receipts are source of truth.
+
+ROLE FAIRNESS
+Map current VELDRYN classes to server-owned world-boss role profiles. Tune weights with combat simulations so comparable builds across Damage/Tank/Support are useful. Effective healing means actual useful healing; mitigation and utility must come from allowlisted authoritative mechanics.
+
+WORLD BOSS ATTEMPTS
+Default = 4 score-bearing attempts per UTC date, 90 seconds each. No premium purchases for extra attempts. Remote config may LOWER the effective hard cap in an incident; it must not silently raise a live immutable event definition beyond its published cap.
+
+TIME-ZONE FAIRNESS
+After early defeat, only accounts with zero scored attempts may use one Echo attempt for baseline participation. Echo does not damage shared HP, grant impact milestones or alter prestige ranks. Do not hold the boss artificially at 1 HP.
+
+FINALIZATION
+Allow already-started scored attempts a maximum ~10-minute settlement grace after defeat/end. Freeze prestige ranks deterministically after that. Echo does not delay final ranks.
+
+REPAIRS
+Admin crisis recalculation = recompute from canonical crisis contribution receipts.
+Admin boss HP repair = max_hp - SUM(canonical applied_global_damage receipts).
+Never implement arbitrary "set boss HP" or "set crisis points" controls.
+
+MOBILE
+Integrate Shared World into the current World screen/region cards; do not add a sixth bottom-nav tab. Preserve current top bar/activity bar/navigation. The World Boss fight itself should reuse the existing combat presentation and selected character/loadout where possible.
+
+TESTING
+Run all current repo tests plus v19 tests. Add integration tests for:
+- duplicate crisis source event retry
+- concurrent crisis daily-cap settlements
+- concurrent 4th/5th World Boss attempt reservation
+- duplicate encounter settlement
+- two simultaneous final hits
+- role-profile tampering attempts
+- Echo eligibility rules
+- crisis secured-early late contribution
+- boss attempt started just before scheduled end
+- phase snapshot consistency
+- reward claim idempotency
+- rank tie-breaking
+- kill switches
+- RLS/service-role boundaries
+- crisis→boss one-time spawn
+
+Do not weaken existing tests merely to make v19 pass. Report every changed file, migration result, test command/result and any remaining deployment-only validation.

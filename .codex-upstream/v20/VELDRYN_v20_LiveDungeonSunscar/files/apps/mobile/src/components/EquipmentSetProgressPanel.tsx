@@ -1,0 +1,8 @@
+import React from 'react';
+import {StyleSheet,Text,View} from 'react-native';
+import type {SetBonusProgressV20} from '../core/live-dungeon-sunscar-v20';
+import {setBonusSummary} from '../core/live-dungeon-sunscar-v20';
+export function EquipmentSetProgressPanel({progress}:{progress:SetBonusProgressV20}){
+ return <View style={s.card}><Text style={s.eyebrow}>SET BONUSES</Text><Text style={s.title}>{progress.setName}</Text><Text style={s.count}>{progress.equippedPieces} pieces · {setBonusSummary(progress)}</Text>{progress.thresholds.map(t=><View key={t.pieces} style={[s.row,t.active&&s.active]}><Text style={s.pieces}>{t.pieces}pc</Text><Text style={s.label}>{t.label}</Text><Text style={s.state}>{t.active?'ACTIVE':'LOCKED'}</Text></View>)}<Text style={s.note}>Thresholds are data-driven. 3+2 mixed-set builds are supported; a full set is not automatically best in every encounter.</Text></View>
+}
+const s=StyleSheet.create({card:{margin:12,padding:13,borderRadius:10,borderWidth:1,borderColor:'#4a5660',backgroundColor:'#151c21',gap:6},eyebrow:{fontSize:8,fontWeight:'900',color:'#9bacb6',letterSpacing:.8},title:{fontSize:17,fontWeight:'900',color:'#eef0ec'},count:{fontSize:10,color:'#acb6bc'},row:{flexDirection:'row',alignItems:'center',gap:8,padding:8,borderRadius:7,backgroundColor:'#1e262b',opacity:.6},active:{opacity:1,borderWidth:1,borderColor:'#66794f'},pieces:{fontSize:10,fontWeight:'900',color:'#d5b675'},label:{flex:1,fontSize:10,fontWeight:'800',color:'#e1e5e7'},state:{fontSize:8,fontWeight:'900',color:'#8a969c'},note:{fontSize:9.5,lineHeight:14,color:'#8f9da5',marginTop:4}});

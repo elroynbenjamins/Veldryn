@@ -118,3 +118,25 @@ Profile is now also a mobile destination in the More hub. The local projection s
 Achievements now has an authenticated mobile client and More-hub screen. It loads server-derived progress/score, exposes claim actions only for completed unclaimed entries, limits the public showcase to the server contract, and shows an explicit offline-disabled state. Shared projection types live in the mobile core rather than importing backend source. Full achievement catalog persistence and hosted RPC deployment remain gated.
 
 The Achievements screen now also supports selecting/deselecting up to three claimed achievements and saving the showcase through the authenticated server endpoint. The server response replaces the pending client selection, preserving server authority and idempotent request behavior.
+
+## Chat expansion
+
+The legacy Chat Pilot emote catalog is now surfaced in the live World, Party, and Guild compose controls. The picker inserts validated-looking `:emote_id:` shortcodes without granting unlocks or bypassing moderation; the server remains responsible for final message validation. Online World and Party sender names are tappable and open the existing small profile sheet with profile lookup, Add Friend, and Block actions. The offline World preview retains its legacy profile alert, while Guild preview names remain presentation-only until authoritative account IDs are exposed by the Guild chat repository.
+
+Chat refinement adds a shared legacy-catalog emote counter and blocks live World messages containing more than eight recognized emotes before network dispatch. Shortcode insertion remains capped by each composer’s existing message-length limit, and server moderation/ownership validation remains the final authority.
+
+Live World and Party messages now render recognized legacy emote shortcodes as compact inline badges; unknown or legacy text tokens remain readable plain text. This keeps old messages forward-compatible while making newly sent emotes visually distinct from ordinary chat text.
+
+## Five-refinement continuation
+
+Rankings client pagination is now clamped to the server contract before request construction. Achievement request IDs use a monotonic in-session sequence to avoid same-millisecond collisions. Guild descriptions now enforce the ZIP’s 160-character/control-character boundary. Profile cosmetic and class IDs render as readable labels. Collections/Achievements/Profile remain server-gated where authoritative ownership is unavailable. Mobile core typecheck passes; the broader app typecheck still reports two unrelated existing `ActivityOverviewScreen` errors.
+
+## V51–V53 cumulative integration
+
+The V51 notification hierarchy is now present in the host app. It deduplicates notification keys, preserves count-versus-dot semantics, caps visible counts at `99+`, supports primary and subroute aggregation, and drives the bottom navigation from live activity rewards, event claims, and the existing online social-notification poller. The full mobile typecheck now passes, including the previously reported Activity Overview errors.
+
+V52 guild appearance now uses the supplied banner, border, and nameplate artwork and the complete compatible catalog: eight banners, nine borders, nine guild-name colors, and two nameplate choices. A dedicated RLS-protected `guild_appearance` record, entitlement projection, officer-authorized update RPC, legacy compatibility wrapper, and automatic initialization trigger for newly created guilds keep the normalized appearance state synchronized with the established guild columns. Cosmetic choices remain power-neutral.
+
+V53 guild tags now include atomic normalized creation, permanent retirement after rename/delete, profanity and reserved-tag checks, guild-level/PvE color entitlements, and identity projection across chat, profiles, recruitment, rosters, and rankings. Static migration audits pass with 13 V52 and 11 V53 invariants. Mobile typecheck/core tests and backend typecheck/build pass.
+
+The linked Supabase project is now synchronized through `20261018000020_post_deploy_lint_repairs.sql`. The deployment reconciled 36 duplicate migration versions and eight invalid timestamp versions, applied the 48 pending feature migrations plus one forward lint/security repair, and finished with an empty linked dry run. Remote `public`/`private` lint and Supabase security advisors report no errors. Live metadata verification confirms RLS on the V52/V53 guild tables, the new-guild appearance trigger, authenticated-only appearance mutation, the security-invoker region-content view, and removal of the obsolete Market reservation RPC. Physical-device visual QA remains outstanding.

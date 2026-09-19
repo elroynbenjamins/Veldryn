@@ -1,0 +1,19 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.EVENT_ENCOUNTERS = void 0;
+const stats = (maxHp, attackPower, defense, level) => ({ maxHp, attackPower, healingPower: 0, defense, accuracy: 930, evasion: 190, critChance: .06, critMultiplier: 1.5, haste: .03 });
+const encounter = (id, name, level, scale, damageType) => [
+    { id: `${id}_A`, name, team: 'enemies', role: 'enemy', level, stats: stats(12_000 * scale, 5_000 * scale, 1_450 * scale, level), basicAttackMs: 2750, basicAttackCoeff: .74, abilities: [{ id: `${id}_A_HIT`, name: 'Event Strike', cooldownMs: 6800, castTimeMs: 700, target: 'current_target', priority: 70, effects: [{ kind: 'damage', coeff: 1.02, damageType }] }] },
+    { id: `${id}_B`, name: `${name} Echo`, team: 'enemies', role: 'enemy', level, stats: stats(10_500 * scale, 4_700 * scale, 1_350 * scale, level), basicAttackMs: 2900, basicAttackCoeff: .72, abilities: [{ id: `${id}_B_WAVE`, name: 'Event Wave', cooldownMs: 9600, castTimeMs: 1100, target: 'all_enemies', priority: 90, interruptible: true, effects: [{ kind: 'damage', coeff: .72, damageType }] }] },
+];
+const boss = (id, name, level, scale, damageType) => [{ id, name, team: 'enemies', role: 'enemy', level, boss: true, stats: stats(118_000 * scale, 6_900 * scale, 2_500 * scale, level), basicAttackMs: 2650, basicAttackCoeff: .8, abilities: [{ id: `${id}_LANCE`, name: 'Event Lance', cooldownMs: 6800, castTimeMs: 700, target: 'current_target', priority: 70, effects: [{ kind: 'damage', coeff: 1.4, damageType }] }, { id: `${id}_NOVA`, name: 'Event Nova', cooldownMs: 10800, castTimeMs: 1450, target: 'all_enemies', priority: 90, interruptible: true, effects: [{ kind: 'damage', coeff: 1.05, damageType }] }], phases: [{ id: `${id}_PHASE_50`, hpPct: .5, target: 'all_enemies', effects: [{ kind: 'damage', coeff: .65, damageType }, { kind: 'debuff', tag: 'damage_taken', value: .06, durationMs: 7500 }] }] }];
+exports.EVENT_ENCOUNTERS = {
+    EVENT_SUNCREST_BATTLE_01: () => encounter('EVENT_SUNCREST_BATTLE_01', 'Suncrest Corsair', 45, 1, 'fire'),
+    EVENT_SUNCREST_BATTLE_02: () => encounter('EVENT_SUNCREST_BATTLE_02', 'Shoreline Colossus', 45, 1.04, 'fire'),
+    EVENT_SUNCREST_BATTLE_03: () => encounter('EVENT_SUNCREST_BATTLE_03', 'Solar Reef Warden', 45, 1.08, 'fire'),
+    EVENT_STARFALL_BATTLE_01: () => encounter('EVENT_STARFALL_BATTLE_01', 'Astral Marauder', 70, 1.18, 'arcane'),
+    EVENT_STARFALL_BATTLE_02: () => encounter('EVENT_STARFALL_BATTLE_02', 'Meteoric Sentinel', 70, 1.23, 'arcane'),
+    EVENT_STARFALL_BATTLE_03: () => encounter('EVENT_STARFALL_BATTLE_03', 'Riftbound Herald', 70, 1.28, 'arcane'),
+    EVENT_SUNCREST_BOSS: () => boss('EVENT_SUNCREST_BOSS', 'Aureon, First Champion', 45, 1, 'fire'),
+    EVENT_STARFALL_BOSS: () => boss('EVENT_STARFALL_BOSS', 'The Constellation Eater', 70, 1.18, 'arcane'),
+};

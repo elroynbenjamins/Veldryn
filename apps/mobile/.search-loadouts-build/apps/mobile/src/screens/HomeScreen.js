@@ -1,0 +1,50 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.HomeScreen = HomeScreen;
+const react_native_1 = require("react-native");
+const react_1 = require("react");
+const classes_1 = require("../content/classes");
+const monsters_1 = require("../content/monsters");
+const skills_1 = require("../content/skills");
+const Panel_1 = require("../components/Panel");
+const GameButton_1 = require("../components/GameButton");
+const ActivityCard_1 = require("../components/ActivityCard");
+const StatBar_1 = require("../components/StatBar");
+const progression_1 = require("../core/progression");
+const dashboard_1 = require("../core/dashboard");
+const theme_1 = require("../theme/theme");
+const CharacterVisual_1 = require("../components/CharacterVisual");
+const BattleStage_1 = require("../components/BattleStage");
+const game_1 = require("../core/game");
+const world_weather_1 = require("../core/world-weather");
+const EnvironmentBanner_1 = require("../components/EnvironmentBanner");
+const number_format_1 = require("../core/number-format");
+const live_events_1 = require("../core/live-events");
+const SkillDashboard_1 = require("../components/SkillDashboard");
+const UiIcon_1 = require("../components/UiIcon");
+function HomeScreen({ state, preview, onClaim, onStop, onNavigate, onOpenCombat, onOpenSkill }) {
+    const [showAfkSources, setShowAfkSources] = (0, react_1.useState)(false), [showEncounter, setShowEncounter] = (0, react_1.useState)(false), [showLedger, setShowLedger] = (0, react_1.useState)(false);
+    const c = state.character, p = (0, progression_1.characterProgressWithinLevel)(c.xp, c.level), className = classes_1.CLASSES.find(x => x.id === c.classId)?.name ?? c.classId;
+    const activityName = monsters_1.MONSTERS.find(x => x.id === state.activity?.targetId)?.name || skills_1.GATHERING.find(x => x.id === state.activity?.targetId)?.name;
+    const cycle = (0, dashboard_1.activityCycleSeconds)(state), guide = (0, dashboard_1.dashboardRecommendation)(state), rate = (0, dashboard_1.activityRate)(state), afk = (0, game_1.offlineCapBreakdown)(state);
+    const completed = state.quests.filter(q => q.status === 'complete').length, monster = state.activity?.kind === 'combat' ? monsters_1.MONSTERS.find(x => x.id === state.activity?.targetId) : undefined;
+    const environment = state.activity ? (0, world_weather_1.environmentForActivity)(state.activity) : undefined;
+    const event = (0, live_events_1.activeLiveEvent)(state), pendingMarks = preview.eventDrops?.reduce((sum, drop) => sum + drop.quantity, 0) ?? 0;
+    return <react_native_1.ScrollView contentContainerStyle={s.root}>
+  <react_native_1.View style={s.identity}><CharacterVisual_1.CharacterPortrait state={state} style={s.portrait}/><react_native_1.View style={s.flex}><react_native_1.Text accessibilityRole="header" style={s.name}>{c.name}</react_native_1.Text><react_native_1.Text style={s.small}>{className} · Level {c.level}</react_native_1.Text><react_native_1.Text style={s.gold}>{(0, number_format_1.formatGameNumber)(c.gold, state.settings.numberMode)} gold</react_native_1.Text></react_native_1.View></react_native_1.View>
+  <StatBar_1.StatBar reduceMotion={state.settings.reduceMotion} label="Experience" current={p.current} max={p.need}/>
+  {state.activity && activityName ? <ActivityCard_1.ActivityCard title={activityName} kind={state.activity.kind === 'combat' ? 'combat' : 'gathering'} cycleSeconds={cycle} capHours={afk.hours} preview={preview} rates={rate} reduceMotion={state.settings.reduceMotion} numberMode={state.settings.numberMode} onClaim={onClaim} onStop={onStop}/> : <Panel_1.Panel><react_native_1.Text style={s.title}>Your next adventure</react_native_1.Text><react_native_1.Text style={s.small}>Choose a hunt or gathering activity to start earning.</react_native_1.Text><GameButton_1.GameButton title="Explore activities" onPress={onOpenCombat}/></Panel_1.Panel>}
+  {completed > 0 && <GameButton_1.GameButton title={`Claim ${completed} completed quest${completed === 1 ? '' : 's'}`} onPress={() => onNavigate('Quests')}/>}
+  <react_native_1.View style={[s.guide, guide.priority === 'urgent' && s.urgent]}><react_native_1.Text style={s.kicker}>{guide.priority === 'urgent' ? 'ATTENTION' : 'NEXT STEP'}</react_native_1.Text><react_native_1.Text style={s.title}>{guide.title}</react_native_1.Text><react_native_1.Text style={s.small}>{guide.detail}</react_native_1.Text><GameButton_1.GameButton title={guide.button} tone={guide.priority === 'urgent' ? 'primary' : 'secondary'} onPress={() => onNavigate(guide.destination, guide.zoneId)}/></react_native_1.View>
+  {state.activity && environment && <react_native_1.View><react_native_1.Pressable accessibilityRole="button" accessibilityState={{ expanded: showEncounter }} onPress={() => setShowEncounter(v => !v)} style={s.disclosure}><react_native_1.Text style={s.link}>{monster ? 'Encounter preview' : 'Activity conditions'}</react_native_1.Text><UiIcon_1.UiIcon name={showEncounter ? 'close' : 'next'} size={24}/></react_native_1.Pressable>{showEncounter && <react_native_1.View style={s.expanded}><EnvironmentBanner_1.EnvironmentBanner environment={environment} kind={state.activity.kind} nowMs={Date.now()} locked/>{monster && <BattleStage_1.BattleStage state={state} monster={monster} elapsedSeconds={preview.elapsedSeconds} cycleSeconds={cycle}/>}</react_native_1.View>}</react_native_1.View>}
+  <SkillDashboard_1.SkillDashboard state={state} onCombat={onOpenCombat} onSkill={onOpenSkill}/>
+  {event && <react_native_1.View style={[s.event, { borderLeftColor: event.definition.accent }]}><react_native_1.View style={s.row}><UiIcon_1.UiIcon name="events" size={32}/><react_native_1.View style={s.flex}><react_native_1.Text style={s.kicker}>LIVE EVENT</react_native_1.Text><react_native_1.Text style={s.title}>{event.definition.name}</react_native_1.Text></react_native_1.View></react_native_1.View><react_native_1.Text style={s.small}>{(0, live_events_1.eventProgress)(state, event.definition.id).toLocaleString()} reputation · {(0, live_events_1.eventCurrencyBalance)(state, event.definition.id).toLocaleString()} marks{pendingMarks ? ` · +${pendingMarks} ready` : ''}</react_native_1.Text><GameButton_1.GameButton title="Open event" tone="secondary" onPress={() => onNavigate('Events')}/></react_native_1.View>}
+  <react_native_1.View style={s.row}><react_native_1.View style={s.flex}><GameButton_1.GameButton title="Explore world" tone="secondary" onPress={() => onNavigate('World')}/></react_native_1.View><react_native_1.View style={s.flex}><GameButton_1.GameButton title="Equipment & food" tone="secondary" onPress={() => onNavigate('Inventory')}/></react_native_1.View></react_native_1.View>
+  <react_native_1.Pressable accessibilityRole="button" accessibilityState={{ expanded: showLedger }} onPress={() => setShowLedger(v => !v)} style={s.disclosure}><react_native_1.Text style={s.link}>Storage, AFK reserve & milestones</react_native_1.Text><UiIcon_1.UiIcon name={showLedger ? 'close' : 'next'} size={24}/></react_native_1.Pressable>
+  {showLedger && <react_native_1.View style={s.expanded}><react_native_1.View style={s.row}><react_native_1.Text style={s.small}>Bag {state.inventory.stacks.length}/{state.inventory.capacity}</react_native_1.Text><react_native_1.Text style={s.small}>Bank {state.bank.stacks.length}/{state.bank.capacity}</react_native_1.Text><react_native_1.Text style={s.small}>Bestiary {state.unlockedMonsterIds.length}/{monsters_1.MONSTERS.filter(m => !m.boss).length}</react_native_1.Text></react_native_1.View>
+   <Panel_1.Panel><react_native_1.Pressable accessibilityRole="button" accessibilityState={{ expanded: showAfkSources }} onPress={() => setShowAfkSources(v => !v)} style={s.disclosure}><react_native_1.View style={s.flex}><react_native_1.Text style={s.title}>AFK reserve · {afk.hours}/{afk.maxHours} hours</react_native_1.Text><react_native_1.Text style={s.small}>Base {afk.baseHours}h · {afk.sources.filter(x => x.earned).length}/{afk.sources.length} upgrades earned</react_native_1.Text></react_native_1.View><UiIcon_1.UiIcon name="next" size={24}/></react_native_1.Pressable>{showAfkSources && afk.sources.map(source => <react_native_1.Text key={source.id} style={source.earned ? s.earned : s.small}>{source.earned ? '✓' : '○'} {source.name} · +2h</react_native_1.Text>)}</Panel_1.Panel>
+   <Panel_1.Panel><react_native_1.Text style={s.title}>The Fallen Knight</react_native_1.Text><react_native_1.Text style={s.small}>{state.defeatedBossIds.includes('FALLEN_KNIGHT') ? 'Asterfall milestone complete.' : 'Reach level 25, prepare your gear, then challenge the Fallen Knight.'}</react_native_1.Text><react_native_1.Text style={s.small}>Level {c.level} / 25</react_native_1.Text></Panel_1.Panel>
+  </react_native_1.View>}
+ </react_native_1.ScrollView>;
+}
+const s = react_native_1.StyleSheet.create({ root: { padding: theme_1.spacing.lg, gap: theme_1.spacing.md }, identity: { flexDirection: 'row', alignItems: 'center', gap: 12 }, portrait: { width: 64, height: 80 }, flex: { flex: 1, minWidth: 0 }, name: { ...theme_1.typography.hero, color: theme_1.C.text, fontSize: 25, lineHeight: 32 }, small: { ...theme_1.typography.body, color: theme_1.C.muted }, gold: { ...theme_1.typography.bodyStrong, color: theme_1.C.accent }, title: { ...theme_1.typography.title, color: theme_1.C.text }, kicker: { ...theme_1.typography.caption, color: theme_1.C.accent, letterSpacing: .8, fontWeight: '600' }, guide: { gap: 8, paddingVertical: 12, borderTopWidth: 1, borderBottomWidth: 1, borderColor: theme_1.C.line }, urgent: { borderLeftWidth: 3, borderLeftColor: theme_1.C.warning, paddingLeft: 12 }, row: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12 }, disclosure: { minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingVertical: 8 }, link: { ...theme_1.typography.bodyStrong, color: theme_1.C.info, flex: 1 }, expanded: { gap: 12 }, event: { padding: 16, gap: 8, backgroundColor: theme_1.C.panel, borderRadius: theme_1.radii.md, borderLeftWidth: 3 }, earned: { ...theme_1.typography.body, color: theme_1.C.good } });

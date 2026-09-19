@@ -1,0 +1,93 @@
+VELDRYN v20 — CODEX MERGE INSTRUCTIONS
+
+AUTHORITATIVE SOURCE
+The user's CURRENT LOCAL VELDRYN repository is authoritative and may contain unpushed work based on v16 or later. Do not reset it to this pack, do not assume GitHub is current, and do not overwrite newer local work wholesale.
+
+1) Read START_HERE.md and all four v20 design/wiring docs.
+2) Inspect the current local repository first. Determine which v16.1/v17/v17.3/v18/v19 foundations are already present.
+3) Use dependencies/VELDRYN_v19_RegionalCrisesWorldBosses.zip only as reference/recovery material for missing foundations.
+4) Merge v20 concepts/files into the CURRENT architecture and naming. If paths/domains changed, adapt instead of blindly copying.
+5) If dependency migrations are missing, apply/merge them in their existing forward order before v20. Skip anything already applied. Never edit/renumber/replay applied database history.
+6) Add v20 migrations 032 then 033 as NEW migrations only after their referenced expedition/social/control foundations exist.
+7) Do not restore or introduce a player Market, Guild Procurement, Hybrid Queue or Live-Dungeon Echo-profile autofill.
+
+LIVE DUNGEON PRODUCT RULES
+- Live mode: exactly 4 real players, strict 1 Tank / 2 Damage / 1 Support.
+- Persistent social Parties remain role-flexible and are NOT the same thing as the Live Dungeon run party.
+- Q-Mode remains asynchronous and separate; preserve its saved-loadout/Echo Profile behavior.
+- Do not silently convert Live mode into Q/Hybrid when matchmaking is slow.
+- One account can occupy only one Live queue/ready/run slot even with multiple characters.
+- Selected loadout/role is frozen for a ready-check/run generation.
+- Tank and Support qualification uses server-owned role scoring, not class name supplied by the client.
+- Matchmaking prefers similar power/level and expands its window with wait time.
+- Ready check default = 20s. Individual Ready responses are idempotent and MUST NOT increment the shared match generation/version; only server state transitions/replacement generations do.
+- If a member declines/times out before launch, replace that member's role while retaining accepted players where practical. Replacement matching must use the real party/reference combat level, not a synthetic Lv1 reference.
+- Route vote default = 8s, valid range 5–10 for the immutable content policy. All four agreeing resolves instantly; otherwise most votes wins at deadline; ties use deterministic server tie-break. No leader override or role-weighted votes.
+- Reconnect: grace to 30s, then conservative Safety AI to 150s, then dropped. Safety AI cannot consume player items, vote routes or use ultimates and is intentionally weaker than active play.
+- No automatic deserter penalty for network loss. Intentional active-run leaves receive escalating mild queue cooldowns.
+- Checkpoint only at authoritative committed boundaries. Never trust a client save/snapshot.
+- Reward claims must require server-calculated participation eligibility and use current idempotent reward receipts.
+- Live run chat remains separate from persistent social Party Chat.
+
+DATABASE / CONCURRENCY
+- Preserve one-account slot uniqueness across queue/ready/run.
+- Atomically reserve match candidates before ready check.
+- Preserve the v20 non-recursive RLS membership helpers. Do not replace them with a self-referential policy on live_dungeon_match_members.
+- Ready response retry with the same response should be idempotent.
+- Match state_version identifies a server state/replacement generation; member Ready clicks do not advance it.
+- Renew/maintain account-slot leases from the authoritative queue/run worker so active players cannot acquire a second slot due to an expired local lease.
+- Run recovery/checkpoint append must be atomic and monotonic.
+- Reward eligibility must be recomputed from canonical server telemetry when repaired.
+
+SUNSCAR REGION II
+- Region ID REG_002; recommended combat Lv25–45.
+- Zones: Saffron Gate, Scorchwind Flats, Mirage Basin, Buried Observatory, Tyrant's Crown.
+- Preserve the 16-monster roster, expanded v20 stat contract and four boss definitions.
+- Telegraph/pass-fail boss mechanics do not randomly crit by default; basic/appropriate attacks may crit.
+- Co-op line: COP_004 Caravan of Glass (Lv30), COP_005 Mirage Well (Lv36), COP_006 Buried Observatory (Lv40).
+- 'Glasswind Crossing' is an encounter/boss identity inside Caravan of Glass, not a competing complete dungeon name.
+- Preserve 3+ route choices and 4–7-node branching runs.
+- Preserve the 10-quest Sunscar story with SUNQ_002 unlocking regional contracts, never a Market.
+- Preserve 12 Sunscar resources with non-Market sinks.
+- Include four regional Echo conditions, four relic source/mechanic hooks and nine Pet/Companion unlock-source hooks from the v20 bundle.
+- Pet/Companion hook role/power/passive/active tuning remains owned by the CURRENT collectible/companion systems. Do not freeze old spreadsheet power numbers into Sunscar.
+- Publish Sunscar through the versioned region-content registry. Published/retired content is immutable; changes require a new content_version.
+
+EQUIPMENT / STATS
+- Expanded combat content contract supports max HP, Power, Accuracy, Armor, Ward, Evasion, Crit Chance, Crit Damage, Haste, Tenacity, Healing Power and Shielding Power.
+- Do NOT import old Sunscar weapon/armor/set definitions from spreadsheets as final gear.
+- Generic set-bonus support is required now: data-driven piece thresholds, multiple simultaneous active sets, unique-slot counting and triggered effects.
+- Typical future thresholds: 2/3/5 or 2/3/4/5. A 3-piece threshold may grant e.g. +2% Crit Chance or HP/Accuracy/Haste/etc.
+- Mixed 3+2 builds must remain valid; full sets are not automatically best.
+- Set-bonus power belongs inside total item power budget; it is not free power stacked on equal-stat pieces.
+- Actual Sunscar gear names, pieces, stat budgets and exact set bonuses wait for the later equipment rework.
+
+CONTROL CENTER
+- Register v20 commands/remote-config through the v17.3 schema-driven command/config system; do not create another admin website/page.
+- Recovery commands must reconstruct/recalculate from canonical state; never allow arbitrary client JSON to become a run checkpoint or arbitrary reward eligibility.
+- Sunscar/live-dungeon content stats are versioned content, not casually editable live config.
+
+REAL TESTS REQUIRED AFTER MERGE
+Run the current repository's complete test/typecheck/build suite plus v20 tests and add/confirm integration coverage for:
+- same account trying to queue with two characters
+- concurrent queue ticket acquisition
+- four clients pressing Ready from the same ready-check generation
+- duplicate Ready retry
+- decline/timeout replacement at Sunscar combat levels
+- replacement cycle state-version advancement
+- stale account-slot lease / renewal
+- route vote unanimous, majority, tie and zero-vote cases
+- disconnect/reconnect before 30s, during Safety AI, after 150s
+- false-positive deserter protection for network loss
+- AFK reward ineligibility
+- checkpoint append race and worker restart recovery
+- duplicate reward claim/retry
+- RLS: non-member cannot read match/run state
+- region content cannot be mutated, moved, deleted or retimestamped after publish
+- Sunscar content hash/version publication
+- no old Sunscar equipment import
+- 3pc + 2pc mixed set activation and duplicate-slot protection
+- Q-Mode remains functional and separate
+- Market/Procurement/Hybrid Queue remain absent
+
+Do not weaken existing tests merely to make v20 pass. Report every changed file, migrations actually applied, commands/test results and remaining deployment-only validation.

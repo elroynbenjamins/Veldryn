@@ -1,0 +1,15 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.faithBlessingDef = exports.setFaithHideWeaker = exports.setFaithFavorite = exports.selectFaithBlessing = exports.selectedFaithBlessing = exports.faithLevel = exports.blessingRows = void 0;
+var faith_1 = require("./faith");
+Object.defineProperty(exports, "blessingRows", { enumerable: true, get: function () { return faith_1.blessingRows; } });
+Object.defineProperty(exports, "faithLevel", { enumerable: true, get: function () { return faith_1.faithLevel; } });
+Object.defineProperty(exports, "selectedFaithBlessing", { enumerable: true, get: function () { return faith_1.selectedFaithBlessing; } });
+const faith_2 = require("./faith");
+const selectFaithBlessing = (state, id) => (0, faith_2.updateFaithPreference)(state, 'blessing', id);
+exports.selectFaithBlessing = selectFaithBlessing;
+const setFaithFavorite = (state, id, enabled) => (0, faith_2.updateFaithPreference)(state, 'favorite', id, enabled);
+exports.setFaithFavorite = setFaithFavorite;
+const setFaithHideWeaker = (state, enabled) => (0, faith_2.updateFaithPreference)(state, 'hide', undefined, enabled);
+exports.setFaithHideWeaker = setFaithHideWeaker;
+exports.faithBlessingDef = undefined;

@@ -1,11 +1,10 @@
-import {requiredMarketReserve,validateIdleCommit} from '../transactions/economy';
+import {validateIdleCommit} from '../transactions/economy';
 import {chooseBestMatch} from '../matchmaking/matchmaker';
 import {bossAttemptAllowed} from '../guild/progression';
 import {raidPityChance,ratingDelta} from '../endgame/pvp-raids';
 import {riskScore,restrictionLevel} from '../telemetry/risk';
 import {ANDROID_PACKAGE,decideBootstrap} from '../api/contracts';
 function assert(x:boolean,m:string){if(!x)throw new Error(m)}
-assert(requiredMarketReserve({side:'buy',unitPrice:100,quantity:10,listingFeeRate:.02}).gold===1020,'market reserve');
 assert(validateIdleCommit({characterId:'c',idempotencyKey:'k',activityId:'a',elapsedSec:28800,resourceItemId:'ore',resourceAmount:80,xp:100}).elapsedSec===28800,'idle validation');
 const q:any[]=[{id:'1',characterId:'1',role:'tank',powerIndex:100,createdAtMs:0,echoAllowed:true},{id:'2',characterId:'2',role:'damage',powerIndex:101,createdAtMs:0,echoAllowed:true},{id:'3',characterId:'3',role:'damage',powerIndex:99,createdAtMs:0,echoAllowed:true},{id:'4',characterId:'4',role:'support',powerIndex:100,createdAtMs:0,echoAllowed:true}];
 assert(chooseBestMatch(q,60000)?.ticketIds.length===4,'matchmaker');

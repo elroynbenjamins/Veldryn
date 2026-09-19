@@ -1,0 +1,48 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const node_assert_1 = require("node:assert");
+const live_dungeon_policy_1 = require("./live-dungeon-policy");
+const ready_check_1 = require("./ready-check");
+const matchmaking_1 = require("./matchmaking");
+const reconnect_afk_1 = require("./reconnect-afk");
+const route_voting_1 = require("./route-voting");
+const run_recovery_1 = require("./run-recovery");
+node_assert_1.strict.equal((0, live_dungeon_policy_1.validateStrictComposition)(['tank', 'damage', 'damage', 'support']).valid, true);
+node_assert_1.strict.equal((0, live_dungeon_policy_1.validateStrictComposition)(['damage', 'damage', 'damage', 'support']).valid, false);
+const base = { accountId: 'a', characterId: 'ca', classId: 'ironwarden', role: 'tank', combatLevel: 30, powerIndex: 1500, tankScore: .80, supportScore: .1, loadoutVersion: 1, contentId: 'COP_004' };
+node_assert_1.strict.equal((0, live_dungeon_policy_1.validateLoadoutRole)(base).valid, true);
+node_assert_1.strict.equal((0, live_dungeon_policy_1.validateLoadoutRole)({ ...base, tankScore: .5 }).valid, false);
+const b = { ...base, accountId: 'b', characterId: 'cb', classId: 'ravager', role: 'damage', powerIndex: 1650, tankScore: 0, supportScore: 0 };
+node_assert_1.strict.equal((0, live_dungeon_policy_1.areTicketsCompatible)(base, b, 120, 120), true);
+const replacement = (0, matchmaking_1.selectReplacement)({
+    role: 'damage', contentId: 'COP_004', existingAccountIds: ['a', 'b', 'c'], nowMs: 180_000, referencePower: 1600, referenceCombatLevel: 31,
+    candidates: [{ ...b, accountId: 'replacement', characterId: 'cr', combatLevel: 32, powerIndex: 1580, ticketId: 't1', queuedAtMs: 0 }],
+});
+node_assert_1.strict.equal(replacement?.accountId, 'replacement');
+node_assert_1.strict.ok((0, live_dungeon_policy_1.matchmakingWindow)(1000, 0, 'tank').minPower >= 900);
+node_assert_1.strict.equal(live_dungeon_policy_1.LIVE_DUNGEON_POLICY.liveEchoAutofill, false);
+const rd = (0, ready_check_1.readyDeadline)(1000);
+node_assert_1.strict.equal(rd, 21000);
+node_assert_1.strict.equal((0, ready_check_1.resolveReadyCheck)({ members: [{ accountId: 'a', response: 'ready' }, { accountId: 'b', response: 'pending' }], nowMs: rd, deadlineMs: rd, replacementCycle: 0 }).state, 'replace');
+node_assert_1.strict.equal((0, ready_check_1.resolveReadyCheck)({ members: [{ accountId: 'a', response: 'ready' }, { accountId: 'b', response: 'ready' }], nowMs: 2000, deadlineMs: rd, replacementCycle: 0 }).state, 'launch');
+node_assert_1.strict.equal((0, reconnect_afk_1.classifyPresence)({ nowMs: 100_000, lastHeartbeatMs: 95_000 }), 'connected');
+node_assert_1.strict.equal((0, reconnect_afk_1.classifyPresence)({ nowMs: 100_000, lastHeartbeatMs: 70_000 }), 'safety_ai');
+node_assert_1.strict.equal((0, reconnect_afk_1.classifyPresence)({ nowMs: 300_000, lastHeartbeatMs: 0 }), 'dropped');
+node_assert_1.strict.equal((0, reconnect_afk_1.classifyAfk)({ secondsSinceMeaningfulInput: 70, inCombat: true }), 'warning');
+node_assert_1.strict.equal((0, reconnect_afk_1.classifyAfk)({ secondsSinceMeaningfulInput: 130, inCombat: true }), 'safety_ai');
+node_assert_1.strict.equal((0, reconnect_afk_1.safetyAiRules)().canSpendConsumables, false);
+const dl = (0, route_voting_1.routeVoteDeadline)(0);
+node_assert_1.strict.equal(dl, 8000);
+let vote = (0, route_voting_1.resolveRouteVote)({ optionIds: ['left', 'right'], votes: [{ accountId: 'a', optionId: 'left', eligible: true, submittedAtMs: 1 }, { accountId: 'b', optionId: 'left', eligible: true, submittedAtMs: 1 }], eligibleAccountIds: ['a', 'b'], nowMs: 2, deadlineMs: dl, seed: 'x' });
+node_assert_1.strict.equal(vote.reason, 'unanimous');
+vote = (0, route_voting_1.resolveRouteVote)({ optionIds: ['left', 'right'], votes: [{ accountId: 'a', optionId: 'left', eligible: true, submittedAtMs: 1 }, { accountId: 'b', optionId: 'right', eligible: true, submittedAtMs: 1 }], eligibleAccountIds: ['a', 'b'], nowMs: dl, deadlineMs: dl, seed: 'stable' });
+node_assert_1.strict.equal(vote.resolved, true);
+node_assert_1.strict.ok(vote.optionId);
+node_assert_1.strict.equal((0, live_dungeon_policy_1.rewardEligibility)({ wasReady: true, combatParticipation: .8, mechanicParticipation: .7, routeVotesCast: 3, safetyAiSeconds: 0, runDurationSeconds: 1000, leftRun: false, completedRun: true }).eligible, true);
+node_assert_1.strict.equal((0, live_dungeon_policy_1.rewardEligibility)({ wasReady: true, combatParticipation: .05, mechanicParticipation: .02, routeVotesCast: 0, safetyAiSeconds: 800, runDurationSeconds: 1000, leftRun: false, completedRun: true }).eligible, false);
+node_assert_1.strict.equal((0, live_dungeon_policy_1.deserterCooldownMinutes)({ intentionalLeaves30d: 2, leftDuringActiveRun: true, disconnectClassifiedUnintentional: false }), 20);
+node_assert_1.strict.equal((0, run_recovery_1.canTransitionLiveRun)('active', 'recovering'), true);
+node_assert_1.strict.equal((0, run_recovery_1.canTransitionLiveRun)('completed', 'active'), false);
+node_assert_1.strict.equal((0, run_recovery_1.requiresRecovery)({ state: 'active', nowMs: 1000, leaseExpiresAtMs: 999 }), true);
+node_assert_1.strict.equal((0, run_recovery_1.recoveryDisposition)({ state: 'recovering', encounterCommitted: true, runSnapshotAvailable: true }), 'resume_from_snapshot');
+console.log('v20 live dungeon production tests passed');

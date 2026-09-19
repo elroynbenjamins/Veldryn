@@ -1,64 +1,11 @@
-import {EQUIPMENT_SETS} from '../src/content/equipment-sets';
-import {NOVICE_SETS,noviceItemId} from '../src/content/novice-sets';
-import {CHARACTER_SKIN_SETS} from '../src/content/character-skin-sets';
-import {characterSkinCollection,discoverCharacterSkins,equipmentSetSkinId,selectCharacterSkin} from '../src/core/character-skins';
-import {createCharacter,newGame,sellItem} from '../src/core/game';
-import {migrateSave} from '../src/core/save-migrations';
-import type {GameState} from '../src/core/types';
+import { CHARACTER_SKIN_SETS, characterSkinSetsFor } from '../src/content/character-skin-sets';
+import { characterSkinCollection, discoverCharacterSkins } from '../src/core/character-skins';
+import { createCharacter, newGame } from '../src/core/game';
 
-function ok(value:boolean,message:string){if(!value)throw new Error(message)}
+const state = createCharacter(newGame(1_000), 'IRONWARDEN', 'SkinTester');
+if (CHARACTER_SKIN_SETS.length !== 0) throw new Error('V33 starts with a fresh skin registry');
+if (characterSkinSetsFor('IRONWARDEN').length !== 0) throw new Error('Legacy class skin entries must not survive the v33 cutover');
+if (characterSkinCollection(state).length !== 0) throw new Error('Fresh v33 characters must not inherit legacy equipment skins');
+if (discoverCharacterSkins(state).character?.unlockedSkinIds?.join(',') !== 'starting') throw new Error('Fresh v33 discovery must not unlock legacy skins');
 
-const set=EQUIPMENT_SETS.find(candidate=>candidate.id==='rimewall_oath')!;
-let state=createCharacter(newGame(1_000),'IRONWARDEN','SkinTester');
-state={...state,
-  inventory:{...state.inventory,stacks:[set.itemIds[0],...set.itemIds.slice(4)].map(itemId=>({itemId,quantity:1}))},
-  bank:{...state.bank,stacks:[{itemId:set.itemIds[1],quantity:1}]},
-  overflow:{stacks:[{itemId:set.itemIds[2],quantity:1}],expiresAtMs:10_000},
-  character:{...state.character!,equipment:{...state.character!.equipment,ring:set.itemIds[3]}},
-};
-
-const complete=characterSkinCollection(state).find(skin=>skin.setId===set.id)!;
-ok(complete.ownedPieces===set.itemIds.length-1&&!complete.unlocked,'Shared Bank equipment must not unlock a character skin');
-state={...state,inventory:{...state.inventory,stacks:[...state.inventory.stacks,{itemId:set.itemIds[1],quantity:1}]}};
-const afterCarrying=characterSkinCollection(state).find(skin=>skin.setId===set.id)!;
-ok(afterCarrying.ownedPieces===set.itemIds.length&&afterCarrying.unlocked,'Character-carried equipment unlocks a complete set');
-state=discoverCharacterSkins(state);
-const skinId=equipmentSetSkinId(set.id);
-ok(state.character!.unlockedSkinIds!.includes(skinId),'Complete-set ownership must be recorded');
-ok(state.character!.selectedSkinId==='starting','Discovering a skin must not equip or select it');
-ok(selectCharacterSkin(state,skinId).character!.selectedSkinId===skinId,'Approved progression artwork must be selectable');
-ok(selectCharacterSkin(state,'starting').character!.selectedSkinId==='starting','The starting skin must remain selectable');
-
-const emptied={...state,inventory:{...state.inventory,stacks:[]},bank:{...state.bank,stacks:[]},overflow:{stacks:[],expiresAtMs:null},character:{...state.character!,equipment:{}}} as GameState;
-ok(characterSkinCollection(emptied).find(skin=>skin.id===skinId)!.unlocked,'The skin must survive losing every set piece');
-ok(migrateSave(JSON.parse(JSON.stringify(emptied))).character!.unlockedSkinIds!.includes(skinId),'The skin must survive save migration');
-
-const allCarried={...createCharacter(newGame(2_000),'IRONWARDEN','Seller'),inventory:{stacks:set.itemIds.map(itemId=>({itemId,quantity:1})),capacity:30}};
-const sold=sellItem(allCarried,set.itemIds[0]);
-ok(sold.character!.unlockedSkinIds!.includes(skinId),'Selling a piece must first capture simultaneous full-set ownership');
-ok(!characterSkinCollection(createCharacter(newGame(3_000),'BASTION','OtherClass')).some(skin=>skin.id===skinId),'Collections must remain character-class scoped');
-
-ok(NOVICE_SETS.length===9&&NOVICE_SETS.every(candidate=>candidate.slots.length===10&&!!candidate.appearanceId),'Every class must have an artwork-ready ten-piece beginner set');
-const novice=NOVICE_SETS.find(candidate=>candidate.classId==='IRONWARDEN')!;
-let noviceState=createCharacter(newGame(4_000),'IRONWARDEN','BeginnerSkinTester');
-noviceState={...noviceState,inventory:{...noviceState.inventory,stacks:novice.slots.map(slot=>({itemId:noviceItemId(novice.classId,slot),quantity:1}))}};
-noviceState=discoverCharacterSkins(noviceState);
-const noviceSkinId=equipmentSetSkinId(novice.id);
-ok(noviceState.character!.unlockedSkinIds!.includes(noviceSkinId),'A complete beginner set must unlock its matching skin');
-ok(selectCharacterSkin(noviceState,noviceSkinId).character!.selectedSkinId===noviceSkinId,'An approved beginner skin must be selectable');
-ok(EQUIPMENT_SETS.length===27&&EQUIPMENT_SETS.every(candidate=>!!candidate.appearanceId),'Every accepted regional set must expose its front skin');
-ok(CHARACTER_SKIN_SETS.some(candidate=>candidate.id==='aster_iron'&&candidate.itemIds.length===10),'The accepted Aster Iron set must participate in skin discovery');
-
-const harvestSet=CHARACTER_SKIN_SETS.find(candidate=>candidate.id==='harvestwake-harvest-defender')!;
-ok(harvestSet.appearanceId==='event-front-harvestwake-harvest-defender'&&harvestSet.unlockEventSkinId==='skin_harvestwake_ironwarden','Harvestwake must map its class reward to the approved production appearance');
-let eventState=createCharacter(newGame(5_000),'IRONWARDEN','EventSkinTester');
-eventState={...eventState,character:{...eventState.character!,unlockedEventSkinIds:['skin_harvestwake_ironwarden']}};
-const eventSkinId=equipmentSetSkinId(harvestSet.id);
-ok(characterSkinCollection(eventState).find(skin=>skin.id===eventSkinId)?.unlocked===true,'An earned event reward must immediately appear in the class skin collection');
-eventState=selectCharacterSkin(eventState,eventSkinId);
-ok(eventState.character!.selectedSkinId===eventSkinId,'An earned Harvestwake appearance must be selectable without equipment ownership');
-eventState=discoverCharacterSkins(eventState);
-ok(eventState.character!.unlockedSkinIds!.includes(eventSkinId),'Event appearance discovery must persist the selectable skin ID');
-ok(migrateSave(JSON.parse(JSON.stringify(eventState))).character!.selectedSkinId===eventSkinId,'Save migration must preserve a selected earned event appearance');
-
-console.log('PASS: accepted front skins, progression sets, Aster Iron, beginner sets, and Harvestwake rewards unlock class-bound appearances');
+console.log('PASS: v33 starts with a fresh fixed-mannequin skin registry');

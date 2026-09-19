@@ -13,7 +13,6 @@ export class OpsMetrics {
   goldCreated(amount:number,source:string){ return this.record('economy.gold.created',amount,{dimensionKey:`source:${source}`,dimensions:{source}}); }
   goldDestroyed(amount:number,sink:string){ return this.record('economy.gold.destroyed',amount,{dimensionKey:`sink:${sink}`,dimensions:{sink}}); }
   itemCreated(quantity:number,itemId:string,source:string){ return this.record('economy.items.created',quantity,{dimensionKey:`source:${source}`,dimensions:{source,itemId}}); }
-  marketTrade(goldVolume:number){ return Promise.all([this.record('economy.market.trade_count',1),this.record('economy.market.gold_volume',goldVolume)]).then(()=>undefined); }
   activitySeconds(skillId:string,seconds:number){ return this.record('activity.seconds',seconds,{dimensionKey:`skill:${skillId}`,dimensions:{skillId}}); }
   dungeonCompleted(mode:string){ return this.record('dungeon.completions',1,{dimensionKey:`mode:${mode}`,dimensions:{mode}}); }
   socialPoints(system:'party_contract'|'party_event'|'guild_project',points:number){ return this.record('social.contribution_points',points,{dimensionKey:`system:${system}`,dimensions:{system}}); }

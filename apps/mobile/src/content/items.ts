@@ -4,6 +4,7 @@ import {NOVICE_ITEMS} from './novice-sets';
 import {TOOL_ITEMS} from './gathering-tools';
 import {HERB_ITEMS} from './herbalism';
 import {POTION_ITEMS} from './alchemy';
+import {EQUIPMENT_ITEMS_V33} from './equipment-items-v33';
 export interface ItemDef {
   id:string; name:string; type:'material'|'gear'|'quest'|'food'|'tool'|'gem'|'potion'; slot?:GearSlot;
   attack?:number; defense?:number; hp?:number; heal?:number; readiness?:number;
@@ -60,7 +61,7 @@ const FROSTMARCH_SET_ITEMS:ItemDef[]=FROSTMARCH_SET_CONFIG.flatMap(set=>(Object.
   const salvage={itemId:slot==='cape'?'CHOIR_BLOOM':'RIMEGLASS',quantity:slot==='chest'?4:slot==='legs'||slot==='weapon'||slot==='offhand'?3:2};
   return {id:`${set.prefix}_${slot.toUpperCase()}`,name,type:'gear' as const,slot,...stats,readiness:34,value:slot==='chest'?2420:slot==='weapon'||slot==='offhand'?2280:2100,rarity:'epic',classRestriction:set.classId,equipmentSetId:set.id,salvage};
 }));
-export const ITEMS:ItemDef[]=[
+const BASE_ITEMS:ItemDef[]=[
 ...NOVICE_ITEMS,
 {id:'HOLY_WATER',name:'Holy Water',type:'material',value:0,rarity:'uncommon'},
 ...COMPLETE_SET_ADDITIONAL_ITEMS,
@@ -214,6 +215,23 @@ export const ITEMS:ItemDef[]=[
 {id:'FROSTIRON',name:'Frostiron',type:'material',value:150},
 {id:'RIMEGLASS',name:'Rimeglass',type:'material',value:430,rarity:'rare'},
 {id:'CHOIR_BLOOM',name:'Choir Bloom',type:'material',value:480,rarity:'rare'},
+// V33 regional resource identities. Source/drop wiring is authoritative on the backend.
+{id:'SAFFRON_REED',name:'Saffron Reed',type:'material',value:95,rarity:'uncommon'},
+{id:'MIRAGE_BLOOM',name:'Mirage Bloom',type:'material',value:160,rarity:'uncommon'},
+{id:'DUNEWOOD',name:'Dunewood',type:'material',value:85,rarity:'uncommon'},
+{id:'CHARBARK',name:'Charbark',type:'material',value:140,rarity:'uncommon'},
+{id:'OASIS_CARP',name:'Oasis Carp',type:'material',value:100,rarity:'uncommon'},
+{id:'GLASSFIN',name:'Glassfin',type:'material',value:170,rarity:'rare'},
+{id:'SCORPION_VENOM',name:'Scorpion Venom',type:'material',value:130,rarity:'uncommon'},
+{id:'ROYAL_CHITIN',name:'Royal Chitin',type:'material',value:300,rarity:'rare'},
+{id:'TYRANT_SEAL',name:'Tyrant Seal',type:'material',value:620,rarity:'rare'},
+{id:'WHITEPINE_LOG',name:'Whitepine Log',type:'material',value:120,rarity:'uncommon'},
+{id:'RIME_RESIN',name:'Rime Resin',type:'material',value:190,rarity:'uncommon'},
+{id:'WINTERMINT',name:'Wintermint',type:'material',value:170,rarity:'uncommon'},
+{id:'ICEFIN',name:'Icefin',type:'material',value:180,rarity:'rare'},
+{id:'BELLFIN_SCALE',name:'Bellfin Scale',type:'material',value:260,rarity:'rare'},
+{id:'WYRMSCALE',name:'Wyrm Scale',type:'material',value:520,rarity:'rare'},
+{id:'FROZEN_HEART',name:'Frozen Heart',type:'material',value:900,rarity:'legendary'},
 {id:'GREENWOOD_LOG',name:'Greenwood Log',type:'material',value:4},
 {id:'IRONWOOD_LOG',name:'Ironwood Log',type:'material',value:13},
 {id:'SILVERFIN',name:'Silverfin',type:'material',value:6},
@@ -266,4 +284,5 @@ export const ITEMS:ItemDef[]=[
 {id:'TROLLGUARD_HELM',name:'Trollguard Helm',type:'gear',slot:'helmet',defense:8,hp:55,readiness:7,value:260,salvage:{itemId:'TROLL_HIDE',quantity:2}},
 {id:'OATHGLASS_CAPE',name:'Oathglass Cape',type:'gear',slot:'cape',attack:5,defense:5,hp:35,readiness:8,value:420,salvage:{itemId:'OATHGLASS_SHARD',quantity:2}},
 ];
+export const ITEMS:ItemDef[]=[...BASE_ITEMS,...EQUIPMENT_ITEMS_V33];
 export function itemDef(id:string){const x=ITEMS.find(i=>i.id===id); if(!x) throw new Error(`Unknown item ${id}`); return x;}

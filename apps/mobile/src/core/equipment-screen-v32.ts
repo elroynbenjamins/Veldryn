@@ -1,0 +1,5 @@
+export type EquipmentScreenTabV32='Equipped'|'Sets'|'Skins';
+export interface EquippedItemRowV32{slot:string;instanceId:string;pieceId:string;name:string;rarity:string;upgradeRank:number;setId:string;statGemId?:string;effectGemId?:string;}
+export interface EquipmentScreenModelV32{tabs:readonly EquipmentScreenTabV32[];activeTab:EquipmentScreenTabV32;combatLevel:number;items:readonly EquippedItemRowV32[];activeSetSummary:readonly string[];primaryActions:readonly ('Compare'|'Upgrade'|'Gems'|'Craft missing')[];}
+export const EQUIPMENT_SCREEN_RULES_V32={tabs:['Equipped','Sets','Skins'] as const,slotOrder:['Helmet','Chest','Gloves','Legs','Boots','Weapon','Off-hand'] as const,showRarityBorder:true,showUpgradeBadge:true,showTwoGemPips:true,showSetPipsOnArmorOnly:true,craftMissingFromEmptySlot:true,neverShowGenderToggle:true,neverShowPlayerMarketAction:true} as const;
+export function equipmentBadgeV32(v:{rarity:string;upgradeRank:number;statGemId?:string;effectGemId?:string}){return {rarity:v.rarity,upgrade:v.upgradeRank?`+${v.upgradeRank}`:'',statGemFilled:Boolean(v.statGemId),effectGemFilled:Boolean(v.effectGemId)};}

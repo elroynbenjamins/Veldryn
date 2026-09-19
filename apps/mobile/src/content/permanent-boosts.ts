@@ -13,73 +13,15 @@ export interface PermanentBoostDefinition {
 
 type SourceBoostId = string;
 
-import {EQUIPMENT_SETS} from './equipment-sets';
-import {equipmentSetSkinId} from '../core/character-skins';
-
-function buildTieredSkinBoosts() {
-  const boosts: Record<SourceBoostId, PermanentBoostDefinition> = {
-    starting: {
-      id: 'starting',
-      name: 'Campaign skin',
-      combatSpeedMultiplier: 1,
-      combatPowerMultiplier: 1,
-      gatheringSpeedMultiplier: 1,
-      characterXpMultiplier: 1,
-      skillXpMultiplier: 1,
-      goldMultiplier: 1,
-      dropChanceMultiplier: 1,
-      incomingDamageMultiplier: 1,
-    },
-  };
-
-  for (const set of EQUIPMENT_SETS) {
-    const skinId = equipmentSetSkinId(set.id);
-    const isLegendary = set.id.startsWith('SUNSCORED_');
-    const isPrimal = set.id === 'rimewall_oath';
-    boosts[skinId] = isPrimal
-      ? {
-          id: skinId,
-          name: `${set.name} skin`,
-          combatSpeedMultiplier: 1.06,
-          combatPowerMultiplier: 1.05,
-          gatheringSpeedMultiplier: 1.025,
-          incomingDamageMultiplier: 0.97,
-          skillXpMultiplier: 1.045,
-          characterXpMultiplier: 1.035,
-          goldMultiplier: 1.025,
-          dropChanceMultiplier: 1.05,
-        }
-      : isLegendary
-        ? {
-            id: skinId,
-            name: `${set.name} skin`,
-            combatSpeedMultiplier: 1.045,
-            combatPowerMultiplier: 1.035,
-            gatheringSpeedMultiplier: 1.02,
-            skillXpMultiplier: 1.03,
-            characterXpMultiplier: 1.03,
-            goldMultiplier: 1.025,
-            dropChanceMultiplier: 1.03,
-            incomingDamageMultiplier: 0.985,
-          }
-        : {
-            id: skinId,
-            name: `${set.name} skin`,
-            combatSpeedMultiplier: 1.025,
-            combatPowerMultiplier: 1.02,
-            gatheringSpeedMultiplier: 1.01,
-            skillXpMultiplier: 1.015,
-            characterXpMultiplier: 1.012,
-            goldMultiplier: 1.012,
-            dropChanceMultiplier: 1.012,
-            incomingDamageMultiplier: 0.995,
-          };
-  }
-
-  return boosts;
-}
-
-export const SKIN_PERMANENT_BOOSTS = buildTieredSkinBoosts();
+// V33 skins start as fresh full-character renders. No equipment skin is
+// gameplay-active until its male and female mannequin variants are approved.
+export const SKIN_PERMANENT_BOOSTS: Record<SourceBoostId, PermanentBoostDefinition> = {
+  starting: {
+    id: 'starting', name: 'Campaign skin', combatSpeedMultiplier: 1,
+    combatPowerMultiplier: 1, gatheringSpeedMultiplier: 1, characterXpMultiplier: 1,
+    skillXpMultiplier: 1, goldMultiplier: 1, dropChanceMultiplier: 1, incomingDamageMultiplier: 1,
+  },
+};
 
 export const PET_PERMANENT_BOOSTS: Record<SourceBoostId, PermanentBoostDefinition> = {
   'pet_harvest_fox': {

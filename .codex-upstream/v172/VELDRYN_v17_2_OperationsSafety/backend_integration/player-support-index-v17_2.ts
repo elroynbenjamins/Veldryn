@@ -1,0 +1,6 @@
+/** Minimal support index writer. Call on account/profile/character lifecycle changes; never include passwords, tokens, payment data or private chat text. */
+export type SupportAccountIndex={accountId:string;publicPlayerId?:string|null;displayName?:string|null;primaryCharacterId?:string|null;accountCreatedAt?:string|null;lastSeenAt?:string|null;tags?:string[];metadata?:Record<string,unknown>};
+export interface SupportIndexRepository{ upsertSupportAccount(row:{account_id:string;public_player_id?:string|null;display_name?:string|null;primary_character_id?:string|null;account_created_at?:string|null;last_seen_at?:string|null;tags:string[];metadata_json:Record<string,unknown>;updated_at:string}):Promise<void>; }
+export async function syncSupportAccount(repo:SupportIndexRepository,input:SupportAccountIndex){
+  await repo.upsertSupportAccount({account_id:input.accountId,public_player_id:input.publicPlayerId??null,display_name:input.displayName??null,primary_character_id:input.primaryCharacterId??null,account_created_at:input.accountCreatedAt??null,last_seen_at:input.lastSeenAt??new Date().toISOString(),tags:input.tags??[],metadata_json:input.metadata??{},updated_at:new Date().toISOString()});
+}

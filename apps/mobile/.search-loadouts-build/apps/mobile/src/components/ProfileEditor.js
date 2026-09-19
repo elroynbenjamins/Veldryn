@@ -1,0 +1,57 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ProfileEditor = ProfileEditor;
+const react_1 = require("react");
+const react_native_1 = require("react-native");
+const GameTextInput_1 = require("./GameTextInput");
+const GameButton_1 = require("./GameButton");
+const Panel_1 = require("./Panel");
+const ProfileScenePreview_1 = require("./ProfileScenePreview");
+const RegionArtwork_1 = require("./RegionArtwork");
+const profile_cosmetics_1 = require("../core/profile-cosmetics");
+const profile_background_assets_1 = require("../theme/profile-background-assets");
+const profile_border_assets_1 = require("../theme/profile-border-assets");
+const event_pet_assets_1 = require("../theme/event-pet-assets");
+const live_events_1 = require("../content/live-events");
+const theme_1 = require("../theme/theme");
+function CosmeticTile({ name, status, selected, onPress, children }) {
+    return <react_native_1.Pressable accessibilityRole="button" accessibilityLabel={`${name}, ${status}`} accessibilityState={{ selected }} onPress={onPress} style={({ pressed }) => [s.choice, selected && s.choiceOn, pressed && s.choicePressed]}>
+  <react_native_1.View style={s.artwork}>{children}<react_native_1.View style={[s.statusBadge, selected && s.statusBadgeOn]}><react_native_1.Text numberOfLines={1} style={[s.badgeText, selected && s.badgeTextOn]}>{selected ? 'Previewing' : status}</react_native_1.Text></react_native_1.View></react_native_1.View>
+  <react_native_1.Text numberOfLines={2} style={s.name}>{name}</react_native_1.Text>
+ </react_native_1.Pressable>;
+}
+function ProfileEditor({ state, onChange }) {
+    const character = state.character;
+    const [tab, setTab] = (0, react_1.useState)('Backgrounds'), [title, setTitle] = (0, react_1.useState)(character.profileTitle ?? 'New Adventurer');
+    const [background, setBackground] = (0, react_1.useState)(character.profileBackgroundId ?? 'asterfall-night'), [border, setBorder] = (0, react_1.useState)(character.profileBorderId ?? ''), [pet, setPet] = (0, react_1.useState)(character.selectedCosmeticPetId ?? '');
+    const rewards = [...new Map(live_events_1.LIVE_EVENT_CATALOG.flatMap(event => [...event.milestones(character.classId).map(m => m.reward), ...event.shop.map(o => o.reward)]).map(r => [r.id, r])).values()];
+    const rewardName = (id) => rewards.find(r => r.id === id)?.name ?? id.replace(/^frame_|^pet_/, '').replaceAll('_', ' ');
+    const preview = { ...state, character: { ...character, profileTitle: title, profileBackgroundId: background, profileBorderId: border || undefined, selectedCosmeticPetId: pet || undefined } };
+    const kind = tab === 'Backgrounds' ? 'background' : tab === 'Borders' ? 'border' : 'pet', id = tab === 'Backgrounds' ? background : tab === 'Borders' ? border : pet;
+    const usable = (0, profile_cosmetics_1.canUseProfileCosmetic)(state, kind, id);
+    const applied = tab === 'Backgrounds' ? background === (character.profileBackgroundId ?? 'asterfall-night') : tab === 'Borders' ? border === (character.profileBorderId ?? '') : pet === (character.selectedCosmeticPetId ?? '');
+    const apply = () => { if (!(0, profile_cosmetics_1.canUseProfileCosmetic)(state, kind, id))
+        return; const patch = kind === 'background' ? { profileBackgroundId: id } : kind === 'border' ? { profileBorderId: id || undefined } : { selectedCosmeticPetId: id || undefined }; onChange({ ...state, character: { ...character, ...patch } }); };
+    return <Panel_1.Panel>
+  <react_native_1.Text style={s.heading}>Your profile</react_native_1.Text><react_native_1.Text style={s.sub}>Preview your look, then apply an unlocked cosmetic.</react_native_1.Text>
+  <ProfileScenePreview_1.ProfileScenePreview state={preview} backgroundId={background}/>
+  {tab === 'Companions' && <react_native_1.Text style={s.sub}>Passive pets: each owned pet grants 25% of its perk. Your selected pet grants 100%. Combat Companions have their own collection above.</react_native_1.Text>}
+  <react_native_1.ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.tabs}>{['Backgrounds', 'Borders', 'Titles', 'Companions'].map(value => <react_native_1.Pressable key={value} accessibilityRole="tab" accessibilityState={{ selected: tab === value }} onPress={() => setTab(value)} style={[s.tab, tab === value && s.tabOn]}><react_native_1.Text style={[s.tabText, tab === value && s.selectedText]}>{value}</react_native_1.Text>{tab === value ? <react_native_1.View style={s.tabIndicator}/> : null}</react_native_1.Pressable>)}</react_native_1.ScrollView>
+  {tab === 'Backgrounds' && <react_native_1.ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.gallery}>
+   {profile_cosmetics_1.BASE_PROFILE_BACKGROUNDS.map(item => <CosmeticTile key={item.id} name={item.name} status="Available" selected={background === item.id} onPress={() => setBackground(item.id)}><react_native_1.View style={s.sceneThumb}><RegionArtwork_1.RegionArtwork regionId={item.region}/></react_native_1.View></CosmeticTile>)}
+   {profile_background_assets_1.PROFILE_BACKGROUND_PREVIEWS.map(item => { const unlocked = (0, profile_cosmetics_1.canUseProfileCosmetic)(state, 'background', item.id), reward = rewards.some(r => r.id === item.id); return <CosmeticTile key={item.id} name={item.name} status={unlocked ? 'Unlocked' : reward ? 'Event reward' : 'Preview only'} selected={background === item.id} onPress={() => setBackground(item.id)}><react_native_1.Image source={item.source} style={s.sceneThumb} resizeMode="cover"/></CosmeticTile>; })}
+  </react_native_1.ScrollView>}
+  {tab === 'Borders' && <react_native_1.ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.gallery}>
+   <CosmeticTile name="No event border" status="Available" selected={!border} onPress={() => setBorder('')}><react_native_1.View style={[s.sceneThumb, s.blank]}><react_native_1.Text style={s.blankMark}>◇</react_native_1.Text></react_native_1.View></CosmeticTile>
+   {[...profile_border_assets_1.profileBorderSourceById].map(([key, source]) => { const unlocked = (0, profile_cosmetics_1.canUseProfileCosmetic)(state, 'border', key); return <CosmeticTile key={key} name={rewardName(key)} status={unlocked ? 'Unlocked' : rewards.some(r => r.id === key) ? 'Event reward' : 'Preview only'} selected={border === key} onPress={() => setBorder(key)}><react_native_1.View style={s.sceneThumb}><RegionArtwork_1.RegionArtwork regionId="KINGS_ROAD" muted/><react_native_1.Image source={source} style={s.borderThumb} resizeMode="contain"/></react_native_1.View></CosmeticTile>; })}
+  </react_native_1.ScrollView>}
+  {tab === 'Companions' && <react_native_1.ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.gallery}>
+   <CosmeticTile name="No companion" status="Available" selected={!pet} onPress={() => setPet('')}><react_native_1.View style={[s.sceneThumb, s.blank]}><react_native_1.Text style={s.blankMark}>Solo</react_native_1.Text></react_native_1.View></CosmeticTile>
+   {[...event_pet_assets_1.eventPetSourceById].map(([key, source]) => { const unlocked = (0, profile_cosmetics_1.canUseProfileCosmetic)(state, 'pet', key); return <CosmeticTile key={key} name={rewardName(key)} status={unlocked ? 'Unlocked' : 'Event reward'} selected={pet === key} onPress={() => setPet(key)}><react_native_1.View style={[s.sceneThumb, s.petThumb]}><react_native_1.Image source={source} style={react_native_1.StyleSheet.absoluteFill} resizeMode="contain"/></react_native_1.View></CosmeticTile>; })}
+  </react_native_1.ScrollView>}
+  {tab === 'Titles' ? <><react_native_1.Text style={s.sub}>Displayed title</react_native_1.Text><GameTextInput_1.GameTextInput accessibilityLabel="Profile title" value={title} onChangeText={setTitle} maxLength={32} placeholder="New Adventurer"/><GameButton_1.GameButton title="Save title" disabled={title.trim() === (character.profileTitle ?? 'New Adventurer')} onPress={() => onChange({ ...state, character: { ...character, profileTitle: title.trim() || 'New Adventurer' } })}/>
+   {rewards.filter(r => r.kind === 'title').map(reward => { const owned = state.account.unlockedTitleIds?.includes(reward.id); return <react_native_1.Pressable key={reward.id} accessibilityRole="button" disabled={!owned} accessibilityState={{ disabled: !owned, selected: title === reward.name }} onPress={() => setTitle(reward.name)} style={[s.titleChoice, !owned && s.locked]}><react_native_1.Text style={s.name}>{reward.name}</react_native_1.Text><react_native_1.Text style={s.status}>{owned ? 'Unlocked' : 'Locked · event reward'}</react_native_1.Text></react_native_1.Pressable>; })}
+  </> : <><GameButton_1.GameButton title={applied ? 'Currently equipped' : usable ? 'Apply ' + (tab === 'Companions' ? 'companion' : tab === 'Borders' ? 'border' : 'background') : 'Preview only · not unlocked'} disabled={!usable || applied} onPress={apply}/>{!usable && <react_native_1.Text style={s.sub}>You can inspect this cosmetic here. Applying it requires an available unlock.</react_native_1.Text>}</>}
+ </Panel_1.Panel>;
+}
+const s = react_native_1.StyleSheet.create({ heading: { ...theme_1.typography.title, color: theme_1.C.text }, sub: { ...theme_1.typography.body, color: theme_1.C.muted }, tabs: { gap: 4, padding: 4, borderWidth: 1, borderColor: theme_1.C.line, borderRadius: theme_1.radii.md, backgroundColor: theme_1.C.bg }, tab: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 12, borderRadius: theme_1.radii.sm, position: 'relative' }, tabOn: { backgroundColor: '#20384A' }, tabText: { ...theme_1.typography.bodyStrong, color: theme_1.C.muted }, selectedText: { color: '#F2D08D' }, tabIndicator: { position: 'absolute', left: 10, right: 10, bottom: 0, height: 3, borderTopLeftRadius: 3, borderTopRightRadius: 3, backgroundColor: theme_1.C.accent }, gallery: { gap: 12, paddingVertical: 8, paddingRight: 8 }, choice: { width: 160, minHeight: 132, padding: 7, gap: 8, borderWidth: react_native_1.StyleSheet.hairlineWidth, borderColor: theme_1.C.line, borderRadius: theme_1.radii.lg, backgroundColor: '#101B27' }, choiceOn: { borderWidth: 1, borderColor: theme_1.C.info, backgroundColor: '#172c3c' }, choicePressed: { opacity: .76 }, artwork: { width: '100%', height: 88, borderRadius: theme_1.radii.md, overflow: 'hidden', backgroundColor: theme_1.C.bg }, sceneThumb: { width: '100%', height: '100%', overflow: 'hidden' }, borderThumb: { ...react_native_1.StyleSheet.absoluteFillObject, width: '100%', height: '100%' }, petThumb: { padding: 8 }, statusBadge: { position: 'absolute', left: 6, bottom: 6, maxWidth: '90%', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 99, backgroundColor: 'rgba(7,17,28,.88)', borderWidth: react_native_1.StyleSheet.hairlineWidth, borderColor: theme_1.C.line }, statusBadgeOn: { borderColor: theme_1.C.info, backgroundColor: 'rgba(18,57,78,.94)' }, badgeText: { fontSize: 10, lineHeight: 13, color: theme_1.C.muted, fontWeight: '800' }, badgeTextOn: { color: '#B8E5F5' }, name: { ...theme_1.typography.bodyStrong, color: theme_1.C.text }, status: { ...theme_1.typography.caption, color: theme_1.C.muted }, blank: { justifyContent: 'center', alignItems: 'center', backgroundColor: theme_1.C.panel }, blankMark: { ...theme_1.typography.bodyStrong, color: theme_1.C.muted }, titleChoice: { minHeight: 56, gap: 4, paddingVertical: 8, borderBottomWidth: 1, borderColor: theme_1.C.line }, locked: { opacity: .55 } });

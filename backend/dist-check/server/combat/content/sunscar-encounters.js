@@ -1,0 +1,31 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.SUNSCAR_ENCOUNTERS = void 0;
+const stats = (maxHp, attackPower, defense, accuracy = 910, evasion = 220) => ({ maxHp, attackPower, healingPower: 0, defense, accuracy, evasion, critChance: .06, critMultiplier: 1.5, haste: .03 });
+const strike = (id, name, coeff, damageType, target = 'current_target', castTimeMs = 650) => ({ id, name, cooldownMs: target === 'all_enemies' ? 9500 : 6800, castTimeMs, target, priority: target === 'all_enemies' ? 90 : 70, interruptible: castTimeMs > 900, effects: [{ kind: 'damage', coeff, damageType }] });
+const enemy = (id, name, hp, ap, def, ability) => ({ id, name, team: 'enemies', role: 'enemy', level: 45, stats: stats(hp, ap, def), basicAttackMs: 2800, basicAttackCoeff: .72, abilities: [ability] });
+const pairs = [
+    ['SUN_OBS_BATTLE_01', 'Sunstone Custodian', 'Amberglass Scribe', 'fire', 0], ['SUN_OBS_BATTLE_02', 'Orrery Scarab', 'Solar Watcher', 'arcane', 1], ['SUN_OBS_BATTLE_03', 'Dustbound Scholar', 'Heliolith Drone', 'fire', 2],
+    ['SUN_MIRAGE_BATTLE_01', 'Mirage Jackal', 'Glassscale Stalker', 'physical', 0], ['SUN_MIRAGE_BATTLE_02', 'Dune Phantom', 'Well Guardian', 'arcane', 1], ['SUN_MIRAGE_BATTLE_03', 'Sunscored Prowler', 'Amberglass Asp', 'fire', 2],
+];
+exports.SUNSCAR_ENCOUNTERS = {};
+for (const [id, first, second, type, index] of pairs)
+    exports.SUNSCAR_ENCOUNTERS[id] = () => [
+        enemy(`${id}_A`, first, 8_300 + index * 450, 3_100 + index * 50, 980 + index * 45, strike(`${id}_A_SWEEP`, 'Scouring Wave', .92 + index * .025, type, 'all_enemies', 1050)),
+        enemy(`${id}_B`, second, 7_500 + index * 400, 2_900 + index * 45, 920 + index * 40, strike(`${id}_B_STRIKE`, 'Scouring Hit', .96 + index * .03, type)),
+    ];
+function elite(id, name, type, index) { return [enemy(id, name, 22_000 + index * 1_200, 3_400 + index * 75, 1_420 + index * 70, strike(`${id}_BURST`, 'Focused Burst', 1.22 + index * .04, type, 'all_enemies', 1150))]; }
+for (const [prefix, names, type] of [
+    ['SUN_OBS', ['Orrery Warden', 'Solar Archivist', 'Amberglass Sentinel'], 'arcane'],
+    ['SUN_MIRAGE', ['Dune Sphinx', 'Veiled Huntmaster', 'Wellbound Colossus'], 'fire'],
+])
+    names.forEach((name, index) => { exports.SUNSCAR_ENCOUNTERS[`${prefix}_ELITE_0${index + 1}`] = () => elite(`${prefix}_ELITE_${index + 1}`, name, type, index); });
+function boss(id, name, type, attackPower = 3_900) {
+    return [{ id, name, team: 'enemies', role: 'enemy', level: 45, boss: true, stats: stats(68_000, attackPower, 1_650, 940, 180), basicAttackMs: 2600, basicAttackCoeff: .78, abilities: [
+                strike(`${id}_LANCE`, 'Solar Lance', 1.38, type),
+                { ...strike(`${id}_NOVA`, 'Radiant Collapse', 1.0, type, 'all_enemies', 1450), cooldownMs: 10500, interruptible: true },
+                { id: `${id}_WARD`, name: 'Amberglass Ward', cooldownMs: 16000, castTimeMs: 0, target: 'self', priority: 65, effects: [{ kind: 'shield', coeff: 1.25 }] },
+            ], phases: [{ id: `${id}_PHASE_50`, hpPct: .5, target: 'all_enemies', effects: [{ kind: 'damage', coeff: .62, damageType: type }, { kind: 'debuff', tag: 'damage_taken', value: .06, durationMs: 7000 }] }] }];
+}
+exports.SUNSCAR_ENCOUNTERS.BOSS_EXP_SOLAR = () => boss('BOSS_EXP_SOLAR', 'The Buried Heliarch', 'fire', 4_000);
+exports.SUNSCAR_ENCOUNTERS.BOSS_EXP_SPHINX = () => boss('BOSS_EXP_SPHINX', 'The Veiled Sphinx', 'arcane');

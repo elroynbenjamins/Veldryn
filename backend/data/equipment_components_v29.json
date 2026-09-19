@@ -1,0 +1,963 @@
+{
+  "schemaVersion": "equipment-2.0-v29-components",
+  "components": [
+    {
+      "componentId": "COMP_T1_FRAME",
+      "tier": "T1",
+      "name": "Fieldborn Frame",
+      "craftSkill": "Smithing",
+      "craftSkillId": "SKL_012",
+      "skillLevel": 3,
+      "inputs": [
+        {
+          "canonicalResource": "asterfall.copper_ore",
+          "processedOutput": "Copper Fittings",
+          "qty": 2,
+          "rawQtyExpanded": 4,
+          "processingSkillId": "SKL_012",
+          "processingSkillLevel": 1
+        },
+        {
+          "canonicalResource": "asterfall.ironwood_log",
+          "processedOutput": "Ironwood Plank",
+          "qty": 1,
+          "rawQtyExpanded": 2,
+          "processingSkillId": "SKL_008",
+          "processingSkillLevel": 1
+        }
+      ],
+      "outputQty": 1,
+      "baseTimeSec": 18,
+      "purpose": "Basic armor/weapon structural frame",
+      "effectiveMinutes": 1.3
+    },
+    {
+      "componentId": "COMP_T1_LINING",
+      "tier": "T1",
+      "name": "Fieldborn Lining",
+      "craftSkill": "Tailoring",
+      "craftSkillId": "SKL_015",
+      "skillLevel": 5,
+      "inputs": [
+        {
+          "canonicalResource": "asterfall.wolf_pelt",
+          "processedOutput": "Cured Wolf Leather",
+          "qty": 1,
+          "rawQtyExpanded": 2,
+          "processingSkillId": "SKL_015",
+          "processingSkillLevel": 5
+        },
+        {
+          "canonicalResource": "asterfall.wisp_thread",
+          "processedOutput": "Wispweave Thread",
+          "qty": 2,
+          "rawQtyExpanded": 6,
+          "processingSkillId": "SKL_015",
+          "processingSkillLevel": 5
+        }
+      ],
+      "outputQty": 1,
+      "baseTimeSec": 18,
+      "purpose": "Early flexible lining",
+      "effectiveMinutes": 5.47
+    },
+    {
+      "componentId": "COMP_T2_FRAME",
+      "tier": "T2",
+      "name": "Ironwood Reinforced Frame",
+      "craftSkill": "Smithing",
+      "craftSkillId": "SKL_012",
+      "skillLevel": 8,
+      "inputs": [
+        {
+          "canonicalResource": "asterfall.iron_ore",
+          "processedOutput": "Iron Bar",
+          "qty": 4,
+          "rawQtyExpanded": 12,
+          "processingSkillId": "SKL_012",
+          "processingSkillLevel": 5
+        },
+        {
+          "canonicalResource": "asterfall.ironwood_log",
+          "processedOutput": "Ironwood Plank",
+          "qty": 3,
+          "rawQtyExpanded": 6,
+          "processingSkillId": "SKL_008",
+          "processingSkillLevel": 1
+        }
+      ],
+      "outputQty": 1,
+      "baseTimeSec": 24,
+      "purpose": "T2 structural frame",
+      "effectiveMinutes": 3.87
+    },
+    {
+      "componentId": "COMP_T2_LINING",
+      "tier": "T2",
+      "name": "Ironwood Padded Lining",
+      "craftSkill": "Tailoring",
+      "craftSkillId": "SKL_015",
+      "skillLevel": 8,
+      "inputs": [
+        {
+          "canonicalResource": "asterfall.wolf_pelt",
+          "processedOutput": "Cured Wolf Leather",
+          "qty": 3,
+          "rawQtyExpanded": 6,
+          "processingSkillId": "SKL_015",
+          "processingSkillLevel": 5
+        },
+        {
+          "canonicalResource": "asterfall.wisp_thread",
+          "processedOutput": "Wispweave Thread",
+          "qty": 3,
+          "rawQtyExpanded": 9,
+          "processingSkillId": "SKL_015",
+          "processingSkillLevel": 5
+        }
+      ],
+      "outputQty": 1,
+      "baseTimeSec": 22,
+      "purpose": "T2 flexible lining",
+      "effectiveMinutes": 11.12
+    },
+    {
+      "componentId": "COMP_T2_BINDER",
+      "tier": "T2",
+      "name": "Briar Binding Compound",
+      "craftSkill": "Alchemy",
+      "craftSkillId": "SKL_014",
+      "skillLevel": 8,
+      "inputs": [
+        {
+          "canonicalResource": "asterfall.briarleaf",
+          "processedOutput": "Briar Tanning Agent",
+          "qty": 4,
+          "rawQtyExpanded": 12,
+          "processingSkillId": "SKL_014",
+          "processingSkillLevel": 5
+        }
+      ],
+      "outputQty": 1,
+      "baseTimeSec": 16,
+      "purpose": "T2 treatment/binder",
+      "effectiveMinutes": 2.47
+    },
+    {
+      "componentId": "COMP_T3_FRAME",
+      "tier": "T3",
+      "name": "Oathforged Frame",
+      "craftSkill": "Smithing",
+      "craftSkillId": "SKL_012",
+      "skillLevel": 15,
+      "inputs": [
+        {
+          "canonicalResource": "asterfall.dense_iron",
+          "processedOutput": "Dense Iron Plate",
+          "qty": 5,
+          "rawQtyExpanded": 10,
+          "processingSkillId": "SKL_012",
+          "processingSkillLevel": 15
+        },
+        {
+          "canonicalResource": "asterfall.heartwood_log",
+          "processedOutput": "Heartwood Brace",
+          "qty": 2,
+          "rawQtyExpanded": 4,
+          "processingSkillId": "SKL_008",
+          "processingSkillLevel": 15
+        }
+      ],
+      "outputQty": 1,
+      "baseTimeSec": 30,
+      "purpose": "T3 structure",
+      "effectiveMinutes": 4.43
+    },
+    {
+      "componentId": "COMP_T3_LINING",
+      "tier": "T3",
+      "name": "Rootbound Lining",
+      "craftSkill": "Tailoring",
+      "craftSkillId": "SKL_015",
+      "skillLevel": 15,
+      "inputs": [
+        {
+          "canonicalResource": "asterfall.fine_wolf_hide",
+          "processedOutput": "Fine Wolf Leather",
+          "qty": 5,
+          "rawQtyExpanded": 10,
+          "processingSkillId": "SKL_015",
+          "processingSkillLevel": 15
+        },
+        {
+          "canonicalResource": "asterfall.rootbound_fibers",
+          "processedOutput": "Rootbound Weave",
+          "qty": 2,
+          "rawQtyExpanded": 4,
+          "processingSkillId": "SKL_015",
+          "processingSkillLevel": 12
+        }
+      ],
+      "outputQty": 1,
+      "baseTimeSec": 28,
+      "purpose": "T3 lining",
+      "effectiveMinutes": 9.83
+    },
+    {
+      "componentId": "COMP_T3_BINDER",
+      "tier": "T3",
+      "name": "Gloam Binding Compound",
+      "craftSkill": "Alchemy",
+      "craftSkillId": "SKL_014",
+      "skillLevel": 15,
+      "inputs": [
+        {
+          "canonicalResource": "asterfall.gloamcap",
+          "processedOutput": "Gloam Ink",
+          "qty": 5,
+          "rawQtyExpanded": 10,
+          "processingSkillId": "SKL_014",
+          "processingSkillLevel": 15
+        }
+      ],
+      "outputQty": 1,
+      "baseTimeSec": 20,
+      "purpose": "T3 treatment",
+      "effectiveMinutes": 3.0
+    },
+    {
+      "componentId": "COMP_T3_RUNE",
+      "tier": "T3",
+      "name": "Drowned Rune Seal",
+      "craftSkill": "Enchanting",
+      "craftSkillId": "SKL_016",
+      "skillLevel": 15,
+      "inputs": [
+        {
+          "canonicalResource": "asterfall.drowned_token",
+          "processedOutput": "Drowned Sigil",
+          "qty": 5,
+          "rawQtyExpanded": 10,
+          "processingSkillId": "SKL_016",
+          "processingSkillLevel": 15
+        }
+      ],
+      "outputQty": 1,
+      "baseTimeSec": 24,
+      "purpose": "T3 magical seal",
+      "effectiveMinutes": 16.48
+    },
+    {
+      "componentId": "COMP_T4_FRAME",
+      "tier": "T4",
+      "name": "Fallen Reinforcement",
+      "craftSkill": "Smithing",
+      "craftSkillId": "SKL_012",
+      "skillLevel": 20,
+      "inputs": [
+        {
+          "canonicalResource": "asterfall.lanternsteel_shard",
+          "processedOutput": "Lanternsteel Ingot",
+          "qty": 7,
+          "rawQtyExpanded": 14,
+          "processingSkillId": "SKL_012",
+          "processingSkillLevel": 18
+        },
+        {
+          "canonicalResource": "asterfall.heartwood_log",
+          "processedOutput": "Heartwood Brace",
+          "qty": 4,
+          "rawQtyExpanded": 8,
+          "processingSkillId": "SKL_008",
+          "processingSkillLevel": 15
+        }
+      ],
+      "outputQty": 1,
+      "baseTimeSec": 34,
+      "purpose": "T4 structure",
+      "effectiveMinutes": 33.4
+    },
+    {
+      "componentId": "COMP_T4_LINING",
+      "tier": "T4",
+      "name": "Procession Lining",
+      "craftSkill": "Tailoring",
+      "craftSkillId": "SKL_015",
+      "skillLevel": 20,
+      "inputs": [
+        {
+          "canonicalResource": "asterfall.torn_oathcloth",
+          "processedOutput": "Reinforced Oathcloth",
+          "qty": 7,
+          "rawQtyExpanded": 14,
+          "processingSkillId": "SKL_015",
+          "processingSkillLevel": 16
+        },
+        {
+          "canonicalResource": "asterfall.fine_wolf_hide",
+          "processedOutput": "Fine Wolf Leather",
+          "qty": 4,
+          "rawQtyExpanded": 8,
+          "processingSkillId": "SKL_015",
+          "processingSkillLevel": 15
+        }
+      ],
+      "outputQty": 1,
+      "baseTimeSec": 32,
+      "purpose": "T4 lining",
+      "effectiveMinutes": 32.85
+    },
+    {
+      "componentId": "COMP_T4_BINDER",
+      "tier": "T4",
+      "name": "Radiant Resin Temper",
+      "craftSkill": "Alchemy",
+      "craftSkillId": "SKL_014",
+      "skillLevel": 20,
+      "inputs": [
+        {
+          "canonicalResource": "asterfall.ironwood_resin",
+          "processedOutput": "Refined Resin Binder",
+          "qty": 4,
+          "rawQtyExpanded": 8,
+          "processingSkillId": "SKL_014",
+          "processingSkillLevel": 20
+        },
+        {
+          "canonicalResource": "asterfall.sunpetal",
+          "processedOutput": "Radiant Oil",
+          "qty": 4,
+          "rawQtyExpanded": 8,
+          "processingSkillId": "SKL_014",
+          "processingSkillLevel": 20
+        }
+      ],
+      "outputQty": 1,
+      "baseTimeSec": 26,
+      "purpose": "T4 binder",
+      "effectiveMinutes": 6.1
+    },
+    {
+      "componentId": "COMP_T4_RUNE",
+      "tier": "T4",
+      "name": "Runebound Matrix",
+      "craftSkill": "Enchanting",
+      "craftSkillId": "SKL_016",
+      "skillLevel": 20,
+      "inputs": [
+        {
+          "canonicalResource": "asterfall.runebound_core",
+          "processedOutput": "Calibrated Rune Core",
+          "qty": 4,
+          "rawQtyExpanded": 4,
+          "processingSkillId": "SKL_016",
+          "processingSkillLevel": 20
+        },
+        {
+          "canonicalResource": "asterfall.echo_quartz",
+          "processedOutput": "Cut Echo Quartz",
+          "qty": 4,
+          "rawQtyExpanded": 8,
+          "processingSkillId": "SKL_016",
+          "processingSkillLevel": 20
+        }
+      ],
+      "outputQty": 1,
+      "baseTimeSec": 30,
+      "purpose": "T4 magical matrix",
+      "effectiveMinutes": 12.63
+    },
+    {
+      "componentId": "COMP_T5_FRAME",
+      "tier": "T5",
+      "name": "Glasswind Frame",
+      "craftSkill": "Smithing",
+      "craftSkillId": "SKL_012",
+      "skillLevel": 28,
+      "inputs": [
+        {
+          "canonicalResource": "sunscar.sunstone_ore",
+          "processedOutput": "Sunstone Alloy",
+          "qty": 10,
+          "rawQtyExpanded": 20,
+          "processingSkillId": "SKL_012",
+          "processingSkillLevel": 28
+        },
+        {
+          "canonicalResource": "sunscar.dunewood",
+          "processedOutput": "Dunewood Plank",
+          "qty": 5,
+          "rawQtyExpanded": 10,
+          "processingSkillId": "SKL_008",
+          "processingSkillLevel": 26
+        }
+      ],
+      "outputQty": 1,
+      "baseTimeSec": 36,
+      "purpose": "T5 structure",
+      "effectiveMinutes": 10.43
+    },
+    {
+      "componentId": "COMP_T5_LINING",
+      "tier": "T5",
+      "name": "Saffron Scale Lining",
+      "craftSkill": "Tailoring",
+      "craftSkillId": "SKL_015",
+      "skillLevel": 32,
+      "inputs": [
+        {
+          "canonicalResource": "sunscar.saffron_reed",
+          "processedOutput": "Saffron Weave",
+          "qty": 10,
+          "rawQtyExpanded": 30,
+          "processingSkillId": "SKL_015",
+          "processingSkillLevel": 32
+        },
+        {
+          "canonicalResource": "sunscar.oasis_carp",
+          "processedOutput": "Oasis Scale Lining",
+          "qty": 5,
+          "rawQtyExpanded": 10,
+          "processingSkillId": "SKL_015",
+          "processingSkillLevel": 32
+        }
+      ],
+      "outputQty": 1,
+      "baseTimeSec": 30,
+      "purpose": "T5 lining",
+      "effectiveMinutes": 12.0
+    },
+    {
+      "componentId": "COMP_T5_BINDER",
+      "tier": "T5",
+      "name": "Scorchwind Temper",
+      "craftSkill": "Alchemy",
+      "craftSkillId": "SKL_014",
+      "skillLevel": 32,
+      "inputs": [
+        {
+          "canonicalResource": "sunscar.scorpion_venom",
+          "processedOutput": "Stabilized Venom",
+          "qty": 10,
+          "rawQtyExpanded": 20,
+          "processingSkillId": "SKL_014",
+          "processingSkillLevel": 32
+        }
+      ],
+      "outputQty": 1,
+      "baseTimeSec": 26,
+      "purpose": "T5 binder",
+      "effectiveMinutes": 7.1
+    },
+    {
+      "componentId": "COMP_T6_FRAME",
+      "tier": "T6",
+      "name": "Ascendant Chitin Frame",
+      "craftSkill": "Smithing",
+      "craftSkillId": "SKL_012",
+      "skillLevel": 43,
+      "inputs": [
+        {
+          "canonicalResource": "sunscar.sunstone_ore",
+          "processedOutput": "Sunstone Alloy",
+          "qty": 13,
+          "rawQtyExpanded": 26,
+          "processingSkillId": "SKL_012",
+          "processingSkillLevel": 28
+        },
+        {
+          "canonicalResource": "sunscar.royal_chitin",
+          "processedOutput": "Royal Chitin Plate",
+          "qty": 6,
+          "rawQtyExpanded": 12,
+          "processingSkillId": "SKL_012",
+          "processingSkillLevel": 43
+        }
+      ],
+      "outputQty": 1,
+      "baseTimeSec": 42,
+      "purpose": "T6 high-end structure",
+      "effectiveMinutes": 49.73
+    },
+    {
+      "componentId": "COMP_T6_LINING",
+      "tier": "T6",
+      "name": "Glassfin Ascendant Lining",
+      "craftSkill": "Tailoring",
+      "craftSkillId": "SKL_015",
+      "skillLevel": 37,
+      "inputs": [
+        {
+          "canonicalResource": "sunscar.glassfin",
+          "processedOutput": "Glassfin Scale Leather",
+          "qty": 13,
+          "rawQtyExpanded": 26,
+          "processingSkillId": "SKL_015",
+          "processingSkillLevel": 37
+        },
+        {
+          "canonicalResource": "sunscar.saffron_reed",
+          "processedOutput": "Saffron Weave",
+          "qty": 6,
+          "rawQtyExpanded": 18,
+          "processingSkillId": "SKL_015",
+          "processingSkillLevel": 32
+        }
+      ],
+      "outputQty": 1,
+      "baseTimeSec": 36,
+      "purpose": "T6 precision lining",
+      "effectiveMinutes": 18.58
+    },
+    {
+      "componentId": "COMP_T6_BINDER",
+      "tier": "T6",
+      "name": "Mirage Stabilizer",
+      "craftSkill": "Alchemy",
+      "craftSkillId": "SKL_014",
+      "skillLevel": 36,
+      "inputs": [
+        {
+          "canonicalResource": "sunscar.mirage_bloom",
+          "processedOutput": "Mirage Extract",
+          "qty": 6,
+          "rawQtyExpanded": 12,
+          "processingSkillId": "SKL_014",
+          "processingSkillLevel": 36
+        },
+        {
+          "canonicalResource": "sunscar.scorpion_venom",
+          "processedOutput": "Stabilized Venom",
+          "qty": 6,
+          "rawQtyExpanded": 12,
+          "processingSkillId": "SKL_014",
+          "processingSkillLevel": 32
+        }
+      ],
+      "outputQty": 1,
+      "baseTimeSec": 32,
+      "purpose": "T6 treatment",
+      "effectiveMinutes": 10.73
+    },
+    {
+      "componentId": "COMP_T6_RUNE",
+      "tier": "T6",
+      "name": "Astral Amber Matrix",
+      "craftSkill": "Enchanting",
+      "craftSkillId": "SKL_016",
+      "skillLevel": 39,
+      "inputs": [
+        {
+          "canonicalResource": "sunscar.amberglass",
+          "processedOutput": "Cut Amberglass",
+          "qty": 6,
+          "rawQtyExpanded": 12,
+          "processingSkillId": "SKL_016",
+          "processingSkillLevel": 36
+        },
+        {
+          "canonicalResource": "sunscar.astral_script",
+          "processedOutput": "Bound Astral Script",
+          "qty": 6,
+          "rawQtyExpanded": 6,
+          "processingSkillId": "SKL_016",
+          "processingSkillLevel": 39
+        }
+      ],
+      "outputQty": 1,
+      "baseTimeSec": 40,
+      "purpose": "T6 astral matrix",
+      "effectiveMinutes": 26.27
+    },
+    {
+      "componentId": "COMP_T7_FRAME",
+      "tier": "T7",
+      "name": "Frostbound Frame",
+      "craftSkill": "Smithing",
+      "craftSkillId": "SKL_012",
+      "skillLevel": 48,
+      "inputs": [
+        {
+          "canonicalResource": "frostmarch.frostiron",
+          "processedOutput": "Frostiron Ingot",
+          "qty": 16,
+          "rawQtyExpanded": 32,
+          "processingSkillId": "SKL_012",
+          "processingSkillLevel": 46
+        },
+        {
+          "canonicalResource": "frostmarch.whitepine_log",
+          "processedOutput": "Whitepine Plank",
+          "qty": 8,
+          "rawQtyExpanded": 16,
+          "processingSkillId": "SKL_008",
+          "processingSkillLevel": 48
+        }
+      ],
+      "outputQty": 1,
+      "baseTimeSec": 42,
+      "purpose": "T7 structure",
+      "effectiveMinutes": 18.57
+    },
+    {
+      "componentId": "COMP_T7_LINING",
+      "tier": "T7",
+      "name": "Icefin Winter Lining",
+      "craftSkill": "Tailoring",
+      "craftSkillId": "SKL_015",
+      "skillLevel": 52,
+      "inputs": [
+        {
+          "canonicalResource": "frostmarch.icefin",
+          "processedOutput": "Icefin Scale Lining",
+          "qty": 16,
+          "rawQtyExpanded": 32,
+          "processingSkillId": "SKL_015",
+          "processingSkillLevel": 52
+        },
+        {
+          "canonicalResource": "frostmarch.whitepine_log",
+          "processedOutput": "Whitepine Plank",
+          "qty": 8,
+          "rawQtyExpanded": 16,
+          "processingSkillId": "SKL_008",
+          "processingSkillLevel": 48
+        }
+      ],
+      "outputQty": 1,
+      "baseTimeSec": 36,
+      "purpose": "T7 lining",
+      "effectiveMinutes": 18.47
+    },
+    {
+      "componentId": "COMP_T7_BINDER",
+      "tier": "T7",
+      "name": "Rime Tempering Compound",
+      "craftSkill": "Alchemy",
+      "craftSkillId": "SKL_014",
+      "skillLevel": 53,
+      "inputs": [
+        {
+          "canonicalResource": "frostmarch.rime_resin",
+          "processedOutput": "Rime Binder",
+          "qty": 8,
+          "rawQtyExpanded": 16,
+          "processingSkillId": "SKL_014",
+          "processingSkillLevel": 53
+        },
+        {
+          "canonicalResource": "frostmarch.wintermint",
+          "processedOutput": "Wintermint Treatment",
+          "qty": 8,
+          "rawQtyExpanded": 24,
+          "processingSkillId": "SKL_014",
+          "processingSkillLevel": 49
+        }
+      ],
+      "outputQty": 1,
+      "baseTimeSec": 32,
+      "purpose": "T7 cold-proof binder",
+      "effectiveMinutes": 14.27
+    },
+    {
+      "componentId": "COMP_T7_RUNE",
+      "tier": "T7",
+      "name": "Frostbound Sigil",
+      "craftSkill": "Enchanting",
+      "craftSkillId": "SKL_016",
+      "skillLevel": 49,
+      "inputs": [
+        {
+          "canonicalResource": "frostmarch.frostiron",
+          "processedOutput": "Frostiron Ingot",
+          "qty": 8,
+          "rawQtyExpanded": 16,
+          "processingSkillId": "SKL_012",
+          "processingSkillLevel": 46
+        },
+        {
+          "canonicalResource": "frostmarch.wintermint",
+          "processedOutput": "Wintermint Treatment",
+          "qty": 8,
+          "rawQtyExpanded": 24,
+          "processingSkillId": "SKL_014",
+          "processingSkillLevel": 49
+        }
+      ],
+      "outputQty": 1,
+      "baseTimeSec": 34,
+      "purpose": "T7 magical seal",
+      "effectiveMinutes": 14.17
+    },
+    {
+      "componentId": "COMP_T8_FRAME",
+      "tier": "T8",
+      "name": "Choirforged Frame",
+      "craftSkill": "Smithing",
+      "craftSkillId": "SKL_012",
+      "skillLevel": 60,
+      "inputs": [
+        {
+          "canonicalResource": "frostmarch.frostiron",
+          "processedOutput": "Frostiron Ingot",
+          "qty": 20,
+          "rawQtyExpanded": 40,
+          "processingSkillId": "SKL_012",
+          "processingSkillLevel": 46
+        },
+        {
+          "canonicalResource": "frostmarch.rimeglass",
+          "processedOutput": "Cut Rimeglass",
+          "qty": 10,
+          "rawQtyExpanded": 20,
+          "processingSkillId": "SKL_016",
+          "processingSkillLevel": 60
+        }
+      ],
+      "outputQty": 1,
+      "baseTimeSec": 48,
+      "purpose": "T8 crystalline structure",
+      "effectiveMinutes": 30.3
+    },
+    {
+      "componentId": "COMP_T8_LINING",
+      "tier": "T8",
+      "name": "Bellfin Resonant Lining",
+      "craftSkill": "Tailoring",
+      "craftSkillId": "SKL_015",
+      "skillLevel": 58,
+      "inputs": [
+        {
+          "canonicalResource": "frostmarch.bellfin_scale",
+          "processedOutput": "Bellfin Laminate",
+          "qty": 10,
+          "rawQtyExpanded": 20,
+          "processingSkillId": "SKL_015",
+          "processingSkillLevel": 57
+        },
+        {
+          "canonicalResource": "frostmarch.whitepine_log",
+          "processedOutput": "Whitepine Plank",
+          "qty": 10,
+          "rawQtyExpanded": 20,
+          "processingSkillId": "SKL_008",
+          "processingSkillLevel": 48
+        }
+      ],
+      "outputQty": 1,
+      "baseTimeSec": 40,
+      "purpose": "T8 resonant lining",
+      "effectiveMinutes": 20.17
+    },
+    {
+      "componentId": "COMP_T8_BINDER",
+      "tier": "T8",
+      "name": "Choir Resonance Compound",
+      "craftSkill": "Alchemy",
+      "craftSkillId": "SKL_014",
+      "skillLevel": 58,
+      "inputs": [
+        {
+          "canonicalResource": "frostmarch.rime_resin",
+          "processedOutput": "Rime Binder",
+          "qty": 10,
+          "rawQtyExpanded": 20,
+          "processingSkillId": "SKL_014",
+          "processingSkillLevel": 53
+        },
+        {
+          "canonicalResource": "frostmarch.wintermint",
+          "processedOutput": "Wintermint Treatment",
+          "qty": 10,
+          "rawQtyExpanded": 30,
+          "processingSkillId": "SKL_014",
+          "processingSkillLevel": 49
+        }
+      ],
+      "outputQty": 1,
+      "baseTimeSec": 36,
+      "purpose": "T8 binder",
+      "effectiveMinutes": 22.77
+    },
+    {
+      "componentId": "COMP_T8_RUNE",
+      "tier": "T8",
+      "name": "Cantor Resonance Matrix",
+      "craftSkill": "Enchanting",
+      "craftSkillId": "SKL_016",
+      "skillLevel": 61,
+      "inputs": [
+        {
+          "canonicalResource": "frostmarch.rimeglass",
+          "processedOutput": "Cut Rimeglass",
+          "qty": 10,
+          "rawQtyExpanded": 20,
+          "processingSkillId": "SKL_016",
+          "processingSkillLevel": 60
+        },
+        {
+          "canonicalResource": "frostmarch.choir_bloom",
+          "processedOutput": "Choir Extract",
+          "qty": 10,
+          "rawQtyExpanded": 20,
+          "processingSkillId": "SKL_016",
+          "processingSkillLevel": 61
+        }
+      ],
+      "outputQty": 1,
+      "baseTimeSec": 46,
+      "purpose": "T8 magical matrix",
+      "effectiveMinutes": 21.6
+    },
+    {
+      "componentId": "COMP_T9_FRAME",
+      "tier": "T9",
+      "name": "Wyrmspine Frame",
+      "craftSkill": "Smithing",
+      "craftSkillId": "SKL_012",
+      "skillLevel": 67,
+      "inputs": [
+        {
+          "canonicalResource": "frostmarch.wyrm_scale",
+          "processedOutput": "Tempered Wyrm Scale",
+          "qty": 12,
+          "rawQtyExpanded": 24,
+          "processingSkillId": "SKL_012",
+          "processingSkillLevel": 67
+        },
+        {
+          "canonicalResource": "frostmarch.frostiron",
+          "processedOutput": "Frostiron Ingot",
+          "qty": 24,
+          "rawQtyExpanded": 48,
+          "processingSkillId": "SKL_012",
+          "processingSkillLevel": 46
+        }
+      ],
+      "outputQty": 1,
+      "baseTimeSec": 54,
+      "purpose": "T9 capstone structure",
+      "effectiveMinutes": 137.3
+    },
+    {
+      "componentId": "COMP_T9_LINING",
+      "tier": "T9",
+      "name": "Summit Scale Lining",
+      "craftSkill": "Tailoring",
+      "craftSkillId": "SKL_015",
+      "skillLevel": 65,
+      "inputs": [
+        {
+          "canonicalResource": "frostmarch.bellfin_scale",
+          "processedOutput": "Bellfin Laminate",
+          "qty": 12,
+          "rawQtyExpanded": 24,
+          "processingSkillId": "SKL_015",
+          "processingSkillLevel": 57
+        },
+        {
+          "canonicalResource": "frostmarch.whitepine_log",
+          "processedOutput": "Whitepine Plank",
+          "qty": 12,
+          "rawQtyExpanded": 24,
+          "processingSkillId": "SKL_008",
+          "processingSkillLevel": 48
+        }
+      ],
+      "outputQty": 1,
+      "baseTimeSec": 44,
+      "purpose": "T9 flexible capstone lining",
+      "effectiveMinutes": 24.13
+    },
+    {
+      "componentId": "COMP_T9_BINDER",
+      "tier": "T9",
+      "name": "Avalanche Tempering Compound",
+      "craftSkill": "Alchemy",
+      "craftSkillId": "SKL_014",
+      "skillLevel": 65,
+      "inputs": [
+        {
+          "canonicalResource": "frostmarch.rime_resin",
+          "processedOutput": "Rime Binder",
+          "qty": 12,
+          "rawQtyExpanded": 24,
+          "processingSkillId": "SKL_014",
+          "processingSkillLevel": 53
+        },
+        {
+          "canonicalResource": "frostmarch.choir_bloom",
+          "processedOutput": "Choir Extract",
+          "qty": 12,
+          "rawQtyExpanded": 24,
+          "processingSkillId": "SKL_016",
+          "processingSkillLevel": 61
+        }
+      ],
+      "outputQty": 1,
+      "baseTimeSec": 40,
+      "purpose": "T9 capstone treatment",
+      "effectiveMinutes": 24.67
+    },
+    {
+      "componentId": "COMP_T9_RUNE",
+      "tier": "T9",
+      "name": "Wyrm Resonance Matrix",
+      "craftSkill": "Enchanting",
+      "craftSkillId": "SKL_016",
+      "skillLevel": 67,
+      "inputs": [
+        {
+          "canonicalResource": "frostmarch.rimeglass",
+          "processedOutput": "Cut Rimeglass",
+          "qty": 12,
+          "rawQtyExpanded": 24,
+          "processingSkillId": "SKL_016",
+          "processingSkillLevel": 60
+        },
+        {
+          "canonicalResource": "frostmarch.wyrm_scale",
+          "processedOutput": "Tempered Wyrm Scale",
+          "qty": 12,
+          "rawQtyExpanded": 24,
+          "processingSkillId": "SKL_012",
+          "processingSkillLevel": 67
+        }
+      ],
+      "outputQty": 1,
+      "baseTimeSec": 52,
+      "purpose": "T9 boss matrix",
+      "effectiveMinutes": 127.07
+    },
+    {
+      "componentId": "COMP_T9_HEART",
+      "tier": "T9",
+      "name": "Frozen Heart Matrix",
+      "craftSkill": "Enchanting",
+      "craftSkillId": "SKL_016",
+      "skillLevel": 70,
+      "inputs": [
+        {
+          "canonicalResource": "frostmarch.frozen_heart",
+          "processedOutput": "Frozen Heart Core",
+          "qty": 12,
+          "rawQtyExpanded": 12,
+          "processingSkillId": "SKL_016",
+          "processingSkillLevel": 70
+        },
+        {
+          "canonicalResource": "frostmarch.rimeglass",
+          "processedOutput": "Cut Rimeglass",
+          "qty": 24,
+          "rawQtyExpanded": 48,
+          "processingSkillId": "SKL_016",
+          "processingSkillLevel": 60
+        }
+      ],
+      "outputQty": 1,
+      "baseTimeSec": 68,
+      "purpose": "Lv70 specialist/capstone matrix",
+      "effectiveMinutes": 86.73
+    }
+  ]
+}

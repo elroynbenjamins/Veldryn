@@ -1,0 +1,19 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.GUILD_SKILLS = exports.GUILD_SKILL_POINT_BUDGET = void 0;
+exports.validateGuildRanks = validateGuildRanks;
+exports.spentPoints = spentPoints;
+exports.canAllocate = canAllocate;
+exports.guildUpgradeEffects = guildUpgradeEffects;
+exports.bossAttemptAllowed = bossAttemptAllowed;
+const COSTS = [3, 5, 7];
+exports.GUILD_SKILL_POINT_BUDGET = 100;
+exports.GUILD_SKILLS = [{ id: 'member_capacity', branch: 'community', name: 'Open Halls', maxRank: 5, costPerRank: [2, 3, 4, 5, 6], effectKey: 'memberCap', effectPerRank: 2 }, { id: 'project_coordination', branch: 'community', name: 'Project Coordination', maxRank: 3, costPerRank: COSTS, effectKey: 'projectContributionEfficiencyBps', effectPerRank: 100 }, { id: 'shared_logistics', branch: 'community', name: 'Shared Logistics', maxRank: 3, costPerRank: COSTS, effectKey: 'projectMaterialEfficiencyBps', effectPerRank: 100 }, { id: 'combat_mentorship', branch: 'adventuring', name: 'Combat Mentorship', maxRank: 3, costPerRank: COSTS, effectKey: 'combatXpBps', effectPerRank: 100 }, { id: 'spoils_insight', branch: 'adventuring', name: 'Spoils Insight', maxRank: 3, costPerRank: COSTS, effectKey: 'dropChanceBps', effectPerRank: 100 }, { id: 'boss_drills', branch: 'adventuring', name: 'Boss Drills', maxRank: 3, costPerRank: COSTS, effectKey: 'bossContributionEfficiencyBps', effectPerRank: 100 }, { id: 'artisan_mentorship', branch: 'crafting', name: 'Artisan Mentorship', maxRank: 3, costPerRank: COSTS, effectKey: 'skillXpBps', effectPerRank: 100 }, { id: 'gatherer_network', branch: 'crafting', name: 'Gatherer Network', maxRank: 3, costPerRank: COSTS, effectKey: 'gatheringYieldBps', effectPerRank: 100 }, { id: 'workshop_discipline', branch: 'crafting', name: 'Workshop Discipline', maxRank: 3, costPerRank: COSTS, effectKey: 'craftingXpBps', effectPerRank: 100 }, { id: 'expedition_supply', branch: 'expedition', name: 'Expedition Supply', maxRank: 3, costPerRank: COSTS, effectKey: 'expeditionRewardBps', effectPerRank: 100 }, { id: 'route_scouting', branch: 'expedition', name: 'Route Scouting', maxRank: 3, costPerRank: COSTS, effectKey: 'routeUtilityBps', effectPerRank: 100 }, { id: 'echo_preparation', branch: 'expedition', name: 'Echo Preparation', maxRank: 3, costPerRank: COSTS, effectKey: 'echoPreparationBps', effectPerRank: 100 }];
+function validateGuildRanks(ranks, skills = exports.GUILD_SKILLS) { const known = new Set(skills.map(s => s.id)); return Object.keys(ranks).every(id => known.has(id)) && skills.every(s => Number.isInteger(ranks[s.id] ?? 0) && (ranks[s.id] ?? 0) >= 0 && (ranks[s.id] ?? 0) <= s.maxRank); }
+function spentPoints(ranks, skills = exports.GUILD_SKILLS) { if (!validateGuildRanks(ranks, skills))
+    return Infinity; return skills.reduce((sum, s) => sum + s.costPerRank.slice(0, ranks[s.id] ?? 0).reduce((a, b) => a + b, 0), 0); }
+function canAllocate(ranks, skill, newRank, budget = exports.GUILD_SKILL_POINT_BUDGET) { const current = ranks[skill.id] ?? 0; return newRank === current + 1 && newRank <= skill.maxRank && spentPoints({ ...ranks, [skill.id]: newRank }) <= budget; }
+function guildUpgradeEffects(ranks, skills = exports.GUILD_SKILLS) { if (!validateGuildRanks(ranks, skills))
+    throw new Error('invalid_guild_skill_ranks'); const out = Object.fromEntries(['memberCap', 'projectContributionEfficiencyBps', 'projectMaterialEfficiencyBps', 'combatXpBps', 'dropChanceBps', 'bossContributionEfficiencyBps', 'skillXpBps', 'gatheringYieldBps', 'craftingXpBps', 'expeditionRewardBps', 'routeUtilityBps', 'echoPreparationBps'].map(key => [key, 0])); for (const s of skills)
+    out[s.effectKey] += (ranks[s.id] ?? 0) * s.effectPerRank; return out; }
+function bossAttemptAllowed(existing, max = 3) { return Number.isInteger(existing) && existing >= 0 && existing < max; }

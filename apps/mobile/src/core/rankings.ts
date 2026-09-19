@@ -3,7 +3,7 @@ export type RankingProfessionBoard=typeof RANKING_PROFESSIONS[number];
 export type RankingBoardId='profession_total'|RankingProfessionBoard|'dungeon_tier'|'dungeon_clears'|'achievement_score'|'guild'|'arena_rating'|'arena_wins';
 export type RankingGroup='Account'|'Professions'|'Competitive'|'Dungeons'|'Guilds';
 export interface RankingBoardDefinition{id:RankingBoardId;name:string;group:RankingGroup;description:string;unit:string;}
-export interface RankingEntry{rank:number;entityType:'account'|'guild';displayName:string;subtitle?:string;value:number;secondaryValue?:number;detail?:string;isSelf:boolean;}
+export interface RankingEntry{rank:number;entityType:'account'|'guild';displayName:string;guildTag?:string|null;guildTagColorId?:string|null;subtitle?:string;value:number;secondaryValue?:number;detail?:string;isSelf:boolean;}
 export interface RankingSelf{listed:boolean;rank?:number;value:number;secondaryValue?:number;detail?:string;reason?:string;}
 export interface RankingBoardSnapshot{board:RankingBoardId;title:string;description:string;unit:string;prestigeOnly:true;seasonId?:string;generatedAtMs:number;entries:RankingEntry[];self?:RankingSelf;}
 const skillName=(id:string)=>id==='faith'?'Faith':id.charAt(0).toUpperCase()+id.slice(1);

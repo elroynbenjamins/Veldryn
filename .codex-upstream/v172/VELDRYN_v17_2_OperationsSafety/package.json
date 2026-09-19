@@ -1,0 +1,14 @@
+{
+  "name": "veldryn-liveops-control",
+  "version": "17.2.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "verify": "npm run test && npm run build && node scripts/sql-static-audit.mjs && node scripts/verify-pack.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

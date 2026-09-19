@@ -6,7 +6,18 @@ export function authCallbackCode(raw:string,redirectTo:string):string|null{
  const code=url.searchParams.get('code');return code&&code.length<=2048?code:null;
 }
 export function accountEmail(value:string){const clean=value.trim().toLowerCase();if(clean.length>254||!/^\S+@\S+\.\S+$/.test(clean))throw new Error('Enter a valid email address.');return clean;}
-export function accountPassword(value:string){if(value.length<8||value.length>128)throw new Error('Choose a password with 8–128 characters.');return value;}
+export function passwordRequirements(value:string){return {
+ length:value.length>=8&&value.length<=128,
+ lowercase:/[a-z]/.test(value),
+ uppercase:/[A-Z]/.test(value),
+ number:/\d/.test(value),
+ symbol:/[^A-Za-z0-9\s]/.test(value),
+};}
+export function accountPassword(value:string){
+ const requirements=passwordRequirements(value);
+ if(!Object.values(requirements).every(Boolean))throw new Error('Use 8–128 characters with uppercase, lowercase, a number, and a special character.');
+ return value;
+}
 
 interface Storage {getItem(key:string):Promise<string|null>;setItem(key:string,value:string):Promise<void>;removeItem(key:string):Promise<void>}
 /** SecureStore values can exceed platform limits for JWT sessions; store encrypted chunks behind a manifest. */

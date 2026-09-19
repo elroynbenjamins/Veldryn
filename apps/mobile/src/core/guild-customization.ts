@@ -1,63 +1,29 @@
-export type GuildBannerId=
-  |'swordwing_blue'
-  |'world_tree_green'
-  |'phoenix_crimson'
-  |'moon_star_indigo'
-  |'wolf_peak_charcoal'
-  |'arcane_eye_purple'
-  |'sun_lion_ivory'
-  |'forge_anvil_teal';
-
-export type GuildFrameId='classic'|'emerald_vine';
+export type GuildCosmeticUnlock={type:'default'}|{type:'guild_level';level:number}|{type:'banner_gallery_tier';tier:number}|{type:'guild_pve';achievementId:string;label:string};
+export interface GuildAppearanceEntitlements{guildLevel:number;bannerGalleryTier:number;pveAchievementIds:readonly string[]}
+export type GuildBannerId='swordwing_blue'|'world_tree_green'|'phoenix_crimson'|'moon_star_indigo'|'wolf_peak_charcoal'|'arcane_eye_purple'|'sun_lion_ivory'|'forge_anvil_teal';
+export type GuildFrameId='classic'|'bronze_fellowship'|'silver_fellowship'|'grand_gold'|'emerald_vine'|'sapphire_dungeon'|'crimson_bossbreaker'|'amethyst_raidforged'|'mythic_conqueror';
 export type GuildNameplateId='classic'|'sapphire_royal';
-
-export interface GuildBannerDefinition{
-  id:GuildBannerId;
-  name:string;
-  emblem:string;
-  primary:string;
-  secondary:string;
-  assetKey:string;
-}
-export interface GuildFrameDefinition{id:GuildFrameId;name:string;accent:string;assetKey?:string}
-export interface GuildNameplateDefinition{id:GuildNameplateId;name:string;accent:string;assetKey?:string}
-
+export type GuildNameColorId='name_ivory'|'name_steel'|'name_gold'|'name_emerald'|'name_sapphire'|'name_crimson'|'name_amethyst'|'name_frost'|'name_mythic';
+export interface GuildBannerDefinition{id:GuildBannerId;name:string;emblem:string;primary:string;secondary:string;assetKey:string;unlock:GuildCosmeticUnlock}
+export interface GuildFrameDefinition{id:GuildFrameId;name:string;accent:string;assetKey:string;unlock:GuildCosmeticUnlock}
+export interface GuildNameplateDefinition{id:GuildNameplateId;name:string;accent:string;assetKey?:string;unlock:GuildCosmeticUnlock}
+export interface GuildNameColorDefinition{id:GuildNameColorId;name:string;color:string;unlock:GuildCosmeticUnlock}
+const DEFAULT={type:'default'} as const;
 export const GUILD_BANNERS:GuildBannerDefinition[]=[
-  {id:'swordwing_blue',name:'Swordwing',emblem:'⚔',primary:'#174f9f',secondary:'#d8e5f3',assetKey:'guild/banner_swordwing_blue'},
-  {id:'world_tree_green',name:'World Tree',emblem:'♧',primary:'#155438',secondary:'#caa55d',assetKey:'guild/banner_world_tree_green'},
-  {id:'phoenix_crimson',name:'Phoenix',emblem:'✦',primary:'#8f1f2b',secondary:'#e9bb4f',assetKey:'guild/banner_phoenix_crimson'},
-  {id:'moon_star_indigo',name:'Moonstar',emblem:'☾',primary:'#253f91',secondary:'#e4cf91',assetKey:'guild/banner_moon_star_indigo'},
-  {id:'wolf_peak_charcoal',name:'Wolfpeak',emblem:'▲',primary:'#252b33',secondary:'#b8d7ed',assetKey:'guild/banner_wolf_peak_charcoal'},
-  {id:'arcane_eye_purple',name:'Arcane Eye',emblem:'◉',primary:'#54278b',secondary:'#dab35d',assetKey:'guild/banner_arcane_eye_purple'},
-  {id:'sun_lion_ivory',name:'Sun Lion',emblem:'☀',primary:'#f0e6cf',secondary:'#bc842d',assetKey:'guild/banner_sun_lion_ivory'},
-  {id:'forge_anvil_teal',name:'Forge',emblem:'◆',primary:'#155c59',secondary:'#a9804d',assetKey:'guild/banner_forge_anvil_teal'},
+ {id:'swordwing_blue',name:'Swordwing',emblem:'⚔',primary:'#174f9f',secondary:'#d8e5f3',assetKey:'banner_swordwing_blue',unlock:DEFAULT},{id:'world_tree_green',name:'Worldtree',emblem:'♧',primary:'#155438',secondary:'#caa55d',assetKey:'banner_worldtree_green',unlock:DEFAULT},{id:'phoenix_crimson',name:'Crimson Phoenix',emblem:'✦',primary:'#8f1f2b',secondary:'#e9bb4f',assetKey:'banner_phoenix_crimson',unlock:DEFAULT},{id:'moon_star_indigo',name:'Moonstar',emblem:'☾',primary:'#253f91',secondary:'#e4cf91',assetKey:'banner_moonstar_indigo',unlock:DEFAULT},{id:'wolf_peak_charcoal',name:'Wolf of the Peaks',emblem:'▲',primary:'#252b33',secondary:'#b8d7ed',assetKey:'banner_wolf_mountain',unlock:DEFAULT},{id:'arcane_eye_purple',name:'Arcane Eye',emblem:'◉',primary:'#54278b',secondary:'#dab35d',assetKey:'banner_arcane_eye',unlock:DEFAULT},{id:'sun_lion_ivory',name:'Sun-Crowned Lion',emblem:'☀',primary:'#f0e6cf',secondary:'#bc842d',assetKey:'banner_lion_sun',unlock:DEFAULT},{id:'forge_anvil_teal',name:'Emerald Forge',emblem:'◆',primary:'#155c59',secondary:'#a9804d',assetKey:'banner_forge_emerald',unlock:DEFAULT},
 ];
-
 export const GUILD_FRAMES:GuildFrameDefinition[]=[
-  {id:'classic',name:'Classic',accent:'#c19b4d'},
-  {id:'emerald_vine',name:'Emerald Vine',accent:'#38b77a',assetKey:'guild/frame_emerald_vine'},
+ {id:'classic',name:'Founder Iron',accent:'#8f9aaa',assetKey:'border_founder_iron',unlock:DEFAULT},{id:'bronze_fellowship',name:'Bronze Fellowship',accent:'#b77844',assetKey:'border_bronze_fellowship',unlock:{type:'guild_level',level:5}},{id:'silver_fellowship',name:'Silver Fellowship',accent:'#c4d0dc',assetKey:'border_silver_fellowship',unlock:{type:'guild_level',level:10}},{id:'grand_gold',name:'Grand Guild',accent:'#e6c36a',assetKey:'border_grand_gold',unlock:{type:'guild_level',level:20}},{id:'emerald_vine',name:'Banner Gallery Vanguard',accent:'#38b77a',assetKey:'border_emerald_vanguard',unlock:{type:'banner_gallery_tier',tier:3}},{id:'sapphire_dungeon',name:'Dungeon Vanguard',accent:'#72b9ff',assetKey:'border_sapphire_dungeon',unlock:{type:'guild_pve',achievementId:'guild_pve_dungeon_25',label:'Complete 25 qualifying guild dungeon runs'}},{id:'crimson_bossbreaker',name:'Bossbreaker',accent:'#ff7b76',assetKey:'border_crimson_bossbreaker',unlock:{type:'guild_pve',achievementId:'guild_pve_bossbreaker',label:'Earn Guild Bossbreaker'}},{id:'amethyst_raidforged',name:'Raidforged',accent:'#c996ff',assetKey:'border_amethyst_raidforged',unlock:{type:'guild_pve',achievementId:'guild_pve_raid_first_clear',label:'Complete a qualifying Guild Raid'}},{id:'mythic_conqueror',name:'Mythic Conqueror',accent:'#fff1a0',assetKey:'border_mythic_conqueror',unlock:{type:'guild_pve',achievementId:'guild_pve_raid_hard_clear',label:'Complete a qualifying hard-mode Guild Raid'}},
 ];
-
-export const GUILD_NAMEPLATES:GuildNameplateDefinition[]=[
-  {id:'classic',name:'Classic',accent:'#c19b4d'},
-  {id:'sapphire_royal',name:'Sapphire Royal',accent:'#4979d5',assetKey:'guild/nameplate_sapphire_royal'},
+export const GUILD_NAME_COLORS:GuildNameColorDefinition[]=[
+ {id:'name_ivory',name:'Ivory',color:'#F1E7D0',unlock:DEFAULT},{id:'name_steel',name:'Steel',color:'#B9C7D8',unlock:DEFAULT},{id:'name_gold',name:'Guild Gold',color:'#E6C36A',unlock:{type:'guild_level',level:5}},{id:'name_emerald',name:'Emerald',color:'#71D79D',unlock:{type:'guild_level',level:10}},{id:'name_sapphire',name:'Sapphire',color:'#72B9FF',unlock:{type:'guild_level',level:15}},{id:'name_crimson',name:'Bossbreaker Crimson',color:'#FF7B76',unlock:{type:'guild_pve',achievementId:'guild_pve_bossbreaker',label:'Earn Guild Bossbreaker'}},{id:'name_amethyst',name:'Raid Amethyst',color:'#C996FF',unlock:{type:'guild_pve',achievementId:'guild_pve_raid_first_clear',label:'Complete a qualifying Guild Raid'}},{id:'name_frost',name:'Dungeon Frost',color:'#8DE6FF',unlock:{type:'guild_pve',achievementId:'guild_pve_dungeon_25',label:'Complete 25 qualifying guild dungeon runs'}},{id:'name_mythic',name:'Mythic Gold',color:'#FFF1A0',unlock:{type:'guild_pve',achievementId:'guild_pve_raid_hard_clear',label:'Complete a qualifying hard-mode Guild Raid'}},
 ];
-
-export const DEFAULT_GUILD_BANNER_ID:GuildBannerId='world_tree_green';
-export const DEFAULT_GUILD_FRAME_ID:GuildFrameId='classic';
-export const DEFAULT_GUILD_NAMEPLATE_ID:GuildNameplateId='classic';
-
-export function normalizeGuildBannerId(value:unknown):GuildBannerId{
-  return GUILD_BANNERS.some(entry=>entry.id===value)?value as GuildBannerId:DEFAULT_GUILD_BANNER_ID;
-}
-export function normalizeGuildFrameId(value:unknown):GuildFrameId{
-  return GUILD_FRAMES.some(entry=>entry.id===value)?value as GuildFrameId:DEFAULT_GUILD_FRAME_ID;
-}
-export function normalizeGuildNameplateId(value:unknown):GuildNameplateId{
-  return GUILD_NAMEPLATES.some(entry=>entry.id===value)?value as GuildNameplateId:DEFAULT_GUILD_NAMEPLATE_ID;
-}
-export function normalizeGuildMotto(value:unknown){
-  if(typeof value!=='string')return 'Stronger together.';
-  const trimmed=value.trim().replace(/\s+/g,' ');
-  return trimmed.slice(0,80)||'Stronger together.';
-}
+export const GUILD_NAMEPLATES:GuildNameplateDefinition[]=[{id:'classic',name:'No Nameplate',accent:'#c19b4d',unlock:DEFAULT},{id:'sapphire_royal',name:'Royal Sapphire',accent:'#4979d5',assetKey:'nameplate_royal_sapphire',unlock:{type:'banner_gallery_tier',tier:4}}];
+export const DEFAULT_GUILD_BANNER_ID:GuildBannerId='world_tree_green',DEFAULT_GUILD_FRAME_ID:GuildFrameId='classic',DEFAULT_GUILD_NAMEPLATE_ID:GuildNameplateId='classic',DEFAULT_GUILD_NAME_COLOR_ID:GuildNameColorId='name_ivory';
+export function isGuildCosmeticUnlocked(unlock:GuildCosmeticUnlock,s:GuildAppearanceEntitlements){switch(unlock.type){case'default':return true;case'guild_level':return s.guildLevel>=unlock.level;case'banner_gallery_tier':return s.bannerGalleryTier>=unlock.tier;case'guild_pve':return s.pveAchievementIds.includes(unlock.achievementId)}}
+export function guildCosmeticUnlockLabel(unlock:GuildCosmeticUnlock){switch(unlock.type){case'default':return'Available';case'guild_level':return`Guild Level ${unlock.level}`;case'banner_gallery_tier':return`Banner Gallery Tier ${unlock.tier}`;case'guild_pve':return unlock.label}}
+export function normalizeGuildBannerId(value:unknown):GuildBannerId{return GUILD_BANNERS.some(x=>x.id===value)?value as GuildBannerId:DEFAULT_GUILD_BANNER_ID}
+export function normalizeGuildFrameId(value:unknown):GuildFrameId{return GUILD_FRAMES.some(x=>x.id===value)?value as GuildFrameId:DEFAULT_GUILD_FRAME_ID}
+export function normalizeGuildNameplateId(value:unknown):GuildNameplateId{return GUILD_NAMEPLATES.some(x=>x.id===value)?value as GuildNameplateId:DEFAULT_GUILD_NAMEPLATE_ID}
+export function normalizeGuildNameColorId(value:unknown):GuildNameColorId{return GUILD_NAME_COLORS.some(x=>x.id===value)?value as GuildNameColorId:DEFAULT_GUILD_NAME_COLOR_ID}
+export function normalizeGuildMotto(value:unknown){if(typeof value!=='string')return'Stronger together.';const clean=value.trim().replace(/\s+/g,' ');return clean.slice(0,80)||'Stronger together.'}

@@ -1,0 +1,22 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const strict_1 = __importDefault(require("node:assert/strict"));
+const equipment_api_contract_v33_1 = require("./equipment-api-contract-v33");
+const equipment_catalog_v33_1 = require("./equipment-catalog-v33");
+const equipment_recipe_materials_v33_1 = require("./equipment-recipe-materials-v33");
+const equipment_skin_progress_v33_1 = require("./equipment-skin-progress-v33");
+strict_1.default.deepEqual(equipment_api_contract_v33_1.EQUIPMENT_API_NAMES_V33, ['get_equipment_set_detail_v33', 'get_equipment_crafting_detail_v33', 'get_equipment_loadout_summary_v33']);
+const set = equipment_catalog_v33_1.EQUIPMENT_SETS_V33[0], pieces = equipment_catalog_v33_1.EQUIPMENT_PIECES_V33.filter(piece => piece.setId === set.id);
+strict_1.default.equal((0, equipment_api_contract_v33_1.dispatchEquipmentApiV33)({ name: 'get_equipment_set_detail_v33', setId: set.id, craftedPieceIds: [] }).pieces.length, 10);
+strict_1.default.throws(() => (0, equipment_api_contract_v33_1.dispatchEquipmentApiV33)({ name: 'get_equipment_set_detail_v33', setId: set.id, craftedPieceIds: [equipment_catalog_v33_1.EQUIPMENT_PIECES_V33.find(piece => piece.setId !== set.id).id] }), 'cross-set crafted piece rejected');
+strict_1.default.throws(() => (0, equipment_api_contract_v33_1.dispatchEquipmentApiV33)({ name: 'get_equipment_set_detail_v33', setId: set.id, craftedPieceIds: [pieces[0].id, pieces[0].id] }), 'duplicate crafted piece rejected');
+strict_1.default.equal((0, equipment_api_contract_v33_1.dispatchEquipmentApiV33)({ name: 'get_equipment_crafting_detail_v33', pieceId: pieces[0].id }).recipe.pieceId, pieces[0].id);
+strict_1.default.equal((0, equipment_api_contract_v33_1.dispatchEquipmentApiV33)({ name: 'get_equipment_loadout_summary_v33', equipped: pieces.map(piece => ({ pieceId: piece.id, setId: piece.setId, slot: piece.slot })) }).activeSets[0].pieceCount, 10);
+strict_1.default.throws(() => (0, equipment_api_contract_v33_1.dispatchEquipmentApiV33)({ name: 'get_equipment_loadout_summary_v33', equipped: [{ pieceId: pieces[0].id, setId: set.id, slot: pieces[0].slot }, { pieceId: pieces[1].id, setId: set.id, slot: pieces[0].slot }] }), 'duplicate slots rejected');
+strict_1.default.deepEqual((0, equipment_recipe_materials_v33_1.validateV33RecipeMaterialBindings)(), [], 'all recipe resources are bound');
+strict_1.default.equal((0, equipment_skin_progress_v33_1.skinProgressV33)(set.id, pieces.map(piece => piece.id), [set.id]).complete, true, 'ten-piece skin completion');
+strict_1.default.equal((0, equipment_skin_progress_v33_1.skinProgressV33)(set.id, pieces.slice(0, 9).map(piece => piece.id)).missingSlots.length, 1, 'incomplete skin progress');
+console.log('v33 equipment API contract passed');

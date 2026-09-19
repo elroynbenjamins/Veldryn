@@ -1,0 +1,6 @@
+name = "veldryn-liveops-control"
+compatibility_date = "2026-09-13"
+
+[vars]
+# Configure real values in Cloudflare Pages Settings instead of committing them here.
+CONTROL_ALLOWED_ORIGIN = "http://localhost:8788"

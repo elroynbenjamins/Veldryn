@@ -1,0 +1,31 @@
+Suggested current-repo API/domain names to expose or map:
+
+guild.projects.getHub
+guild.projects.getBoard
+guild.projects.voteCandidate
+guild.projects.startCandidate
+guild.projects.getProject
+guild.projects.getContributionBreakdown
+guild.projects.donate
+guild.projects.claimReward
+guild.projects.getSeasonLeaderboard
+guild.decrees.vote
+guild.decrees.confirm
+guild.bulletin.update
+guild.members.updateRole
+guild.activity.list
+
+Worker/reset handlers:
+guild_projects.generate_weekly_boards
+guild_projects.maintenance
+guild_projects.process_contribution
+guild_projects.finalize
+guild_decrees.resolve_windows
+guild_decrees.expire
+
+Control Center handlers:
+guild.project.regenerate_board
+guild.project.cancel_stuck
+guild.project.repair_progress
+guild.project.force_finalize
+guild.decree.cancel

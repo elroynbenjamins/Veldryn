@@ -1,0 +1,60 @@
+{
+  "name": "VELDRYN v17 \u2014 Social Live-Ops + Party Events",
+  "version": "17.0-reference-merge-pack",
+  "depends_on": "v16.1 Parties + Party Contracts + Recruitment",
+  "product_rules": {
+    "persistent_party_size": "1\u20134",
+    "live_dungeon_composition": "1 Tank + 2 Damage + 1 Support (unchanged)",
+    "event_duration_hours": "24\u201372; launch templates 48",
+    "normalized_points_per_routine_hour": 1000,
+    "event_daily_account_credit_cap": 2400,
+    "personal_milestones": [
+      250,
+      750,
+      1500,
+      2500
+    ],
+    "party_milestones": [
+      2000,
+      4000,
+      6000,
+      9000
+    ],
+    "rank_min_party_points": 4000,
+    "rank_min_meaningful_contributors": 2,
+    "meaningful_contributor_points": 250,
+    "party_binding_lock_points": 250,
+    "new_currency": false,
+    "bottom_nav_change": false,
+    "event_tags_are_hard_match_requirements": false
+  },
+  "event_templates": [
+    "Rift Surge",
+    "Sunscar Invasion",
+    "Rebuild Asterfall",
+    "Frostmarch Supply Crisis",
+    "Blackened Wells"
+  ],
+  "backend_capabilities": [
+    "immutable versioned definitions",
+    "UTC scheduler",
+    "transactional contribution outbox",
+    "time-normalized scoring",
+    "party binding",
+    "personal/party milestones",
+    "global leaderboard",
+    "friends/guild filtered leaderboard",
+    "settlement/finalization",
+    "rank snapshots",
+    "idempotent reward claims",
+    "contribution breakdown",
+    "notification intents",
+    "worker tick",
+    "full guild recruitment apply/invite"
+  ],
+  "database_migrations": [
+    "20260913_025_parties_contracts_recruitment_v16_1.sql",
+    "20260913_026_social_liveops_party_events_v17.sql"
+  ],
+  "validation_note": "Reference backend and mobile core tests run locally; real Supabase migration/RLS tests require repository deployment environment."
+}

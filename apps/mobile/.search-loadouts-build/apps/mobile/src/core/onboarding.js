@@ -1,0 +1,36 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.DEFAULT_ONBOARDING_GUIDE_STATE = exports.GAME_GUIDE = void 0;
+exports.normalizeOnboardingGuideState = normalizeOnboardingGuideState;
+exports.guideDefinition = guideDefinition;
+exports.unlockedGameGuide = unlockedGameGuide;
+exports.newlyUnlockedGameGuide = newlyUnlockedGameGuide;
+exports.acknowledgeGameGuide = acknowledgeGameGuide;
+exports.markGameGuideSeen = markGameGuideSeen;
+exports.acknowledgeAllUnlockedGameGuide = acknowledgeAllUnlockedGameGuide;
+const level = (state) => Math.max(0, Math.floor(Number(state.character?.level) || 0));
+exports.GAME_GUIDE = [
+    { id: 'getting_started', title: 'Your first steps', summary: 'Choose activities, collect progress, improve gear and follow your current goal.', unlockHint: 'Create your first character.', destination: 'Home', unlock: s => !!s.character },
+    { id: 'seasons_weather', title: 'Seasons & Weather', summary: 'World conditions shape activity bonuses without changing reward authority.', unlockHint: 'Reach character level 2.', destination: 'World', unlock: s => !!s.character && level(s) >= 2 },
+    { id: 'chat_social', title: 'Chat & player profiles', summary: 'Use English, Spanish, Global 1 and Global 2 conversations plus social tools.', unlockHint: 'Reach character level 2.', destination: 'Home', unlock: s => !!s.character && level(s) >= 2 },
+    { id: 'working_toward', title: 'Working Toward', summary: 'Pick a personal target and get concrete next steps.', unlockHint: 'Reach character level 3.', destination: 'Home', unlock: s => !!s.character && level(s) >= 3 },
+    { id: 'gathering_crafting', title: 'Gathering & Crafting', summary: 'Gather regional resources, process them and craft upgrades over time.', unlockHint: 'Reach character level 4.', destination: 'Skills', unlock: s => !!s.character && level(s) >= 4 },
+    { id: 'faith_blessings', title: 'Faith & Blessings', summary: 'Recover Holy Water, train Faith and choose one active blessing.', unlockHint: 'Reach character level 5.', destination: 'Faith', unlock: s => !!s.character && level(s) >= 5 },
+    { id: 'guilds', title: 'Guilds', summary: 'Join a persistent social group for chat, projects and asynchronous PvE.', unlockHint: 'Reach level 10 or join a Guild.', destination: 'Guild', unlock: s => !!s.account.guildMember || level(s) >= 10 },
+    { id: 'combat_companions', title: 'Combat Companions', summary: 'Equip an account-owned Companion that complements your character role.', unlockHint: 'Unlock your first Combat Companion.', destination: 'Character', unlock: s => (s.account.unlockedCombatCompanionIds?.length ?? 0) > 0 },
+    { id: 'coop_dungeons', title: 'Co-op Dungeons', summary: 'Build a 1 Tank / 2 Damage / 1 Support party and make route choices.', unlockHint: 'Defeat your first major boss.', destination: 'Coop', unlock: s => (s.defeatedBossIds?.length ?? 0) > 0 },
+    { id: 'companion_trials', title: 'Companion Trials', summary: 'Build a Companion-only Tank / Damage / Support trio for the monthly Tower.', unlockHint: 'Unlock the Companion Trial system.', destination: 'Character', unlock: s => !!s.account.companionTrialProgress },
+    { id: 'live_events', title: 'Live Events', summary: 'Time-limited events add activities, rewards and cosmetics.', unlockHint: 'Wait for an active Live Event.', destination: 'Events', unlock: s => s.account.liveEvent?.enabled === true },
+    { id: 'additional_characters', title: 'Additional Characters', summary: 'Unlock up to five characters while sharing account-wide systems.', unlockHint: 'Unlock your second character slot.', destination: 'Character', unlock: s => Math.max(1, Math.floor(Number(s.account.unlockedCharacterSlots) || 1)) >= 2 },
+];
+const ids = new Set(exports.GAME_GUIDE.map(item => item.id));
+exports.DEFAULT_ONBOARDING_GUIDE_STATE = { seenGuideIds: [], acknowledgedGuideIds: [] };
+function normalizeOnboardingGuideState(value) { const raw = value && typeof value === 'object' ? value : {}; const clean = (input) => Array.isArray(input) ? [...new Set(input.filter((id) => typeof id === 'string' && ids.has(id)))] : []; return { seenGuideIds: clean(raw.seenGuideIds), acknowledgedGuideIds: clean(raw.acknowledgedGuideIds) }; }
+function guideDefinition(id) { const definition = exports.GAME_GUIDE.find(item => item.id === id); if (!definition)
+    throw new Error('Unknown Game Guide topic.'); return definition; }
+function unlockedGameGuide(state) { return exports.GAME_GUIDE.filter(item => item.unlock(state)); }
+function newlyUnlockedGameGuide(state) { const saved = normalizeOnboardingGuideState(state.account.guideState); return unlockedGameGuide(state).filter(item => !saved.acknowledgedGuideIds.includes(item.id)); }
+function acknowledgeGameGuide(state, id, markSeen = false) { const definition = guideDefinition(id); if (!definition.unlock(state))
+    throw new Error('This Game Guide topic is not unlocked yet.'); const saved = normalizeOnboardingGuideState(state.account.guideState); return { ...state, account: { ...state.account, guideState: { seenGuideIds: markSeen ? [...new Set([...saved.seenGuideIds, id])] : saved.seenGuideIds, acknowledgedGuideIds: [...new Set([...saved.acknowledgedGuideIds, id])] } } }; }
+function markGameGuideSeen(state, id) { return acknowledgeGameGuide(state, id, true); }
+function acknowledgeAllUnlockedGameGuide(state) { const saved = normalizeOnboardingGuideState(state.account.guideState); return { ...state, account: { ...state.account, guideState: { seenGuideIds: saved.seenGuideIds, acknowledgedGuideIds: [...new Set([...saved.acknowledgedGuideIds, ...unlockedGameGuide(state).map(item => item.id)])] } } }; }

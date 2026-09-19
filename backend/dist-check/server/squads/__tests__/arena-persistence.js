@@ -1,0 +1,36 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const arena_persistence_1 = require("../arena-persistence");
+const ok = (value, message) => { if (!value)
+    throw new Error(message); };
+const run = async () => {
+    const repo = new arena_persistence_1.MemoryArenaRuntimeRepository(), now = Date.UTC(2026, 8, 13), season = await repo.season(now), a = await repo.accountState(season.id, 'a', now), d = await repo.accountState(season.id, 'b', now);
+    const base = { id: 'match-1', seasonId: season.id, requestId: 'request-1234', attackerAccountId: 'a', defenderAccountId: 'b', attackerLabel: 'A', defenderLabel: 'B', attackerSnapshotHash: 'a'.repeat(64), defenderSnapshotHash: 'b'.repeat(64), result: { winnerAccountId: 'a', rounds: [], scoreA: 2, scoreB: 1, digest: 'digest' }, attackerRatingBefore: a.rating, defenderRatingBefore: d.rating, attackerRatingDelta: 12, defenderRatingDelta: -12, createdAtMs: now };
+    const committed = await repo.commitMatch({ record: base, attackerBonusEligible: true, defenderBonusEligible: true });
+    ok(committed.attackerState.rating === 1012 && committed.defenderState.rating === 988, 'rating settlement');
+    ok(committed.match.attackerRewardEntitlementId, 'winner entitlement');
+    const replay = await repo.commitMatch({ record: base, attackerBonusEligible: true, defenderBonusEligible: true });
+    ok(replay.match.id === committed.match.id && replay.attackerState.rating === 1012, 'idempotent replay');
+    let conflict = false;
+    try {
+        await repo.commitMatch({ record: { ...base, result: { ...base.result, digest: 'different' } }, attackerBonusEligible: true, defenderBonusEligible: true });
+    }
+    catch {
+        conflict = true;
+    }
+    ok(conflict, 'request-id payload conflict was accepted');
+    const rewards = await repo.pendingRewards('a');
+    ok(rewards.length === 1 && rewards[0].catalogVersion === 'arena-rewards-v1', 'pending reward projection');
+    const claimed = await repo.claimReward('a', rewards[0].id, 'claim-1234', now + 1);
+    ok(claimed.claimedAtMs === now + 1, 'claim settlement');
+    let rejected = false;
+    try {
+        await repo.claimReward('b', rewards[0].id, 'claim-1234', now + 2);
+    }
+    catch {
+        rejected = true;
+    }
+    ok(rejected, 'recipient check');
+    console.log('arena persistence tests passed');
+};
+void run();

@@ -123,8 +123,8 @@ end $$;
 
 -- Retire prototype client-controlled progress writers. Existing schema/data and trusted workers remain available.
 revoke execute on function public.guild_contribute(text,integer) from authenticated,anon,public;
-revoke execute on function public.claim_idle_progress_atomic(uuid,text,text,integer,text,bigint,bigint),public.reserve_market_buy_gold(uuid,uuid,bigint) from public,anon,authenticated;
-grant execute on function public.claim_idle_progress_atomic(uuid,text,text,integer,text,bigint,bigint),public.reserve_market_buy_gold(uuid,uuid,bigint) to service_role;
+revoke execute on function public.claim_idle_progress_atomic(uuid,text,text,integer,text,bigint,bigint) from public,anon,authenticated;
+grant execute on function public.claim_idle_progress_atomic(uuid,text,text,integer,text,bigint,bigint) to service_role;
 create or replace function public.protect_online_character_v1()
 returns trigger language plpgsql security definer set search_path=public as $$
 declare v_id uuid;

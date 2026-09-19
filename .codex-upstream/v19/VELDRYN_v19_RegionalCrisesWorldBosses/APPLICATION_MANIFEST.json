@@ -1,0 +1,14 @@
+{
+  "project": "VELDRYN",
+  "version": "19.0",
+  "pass": "Regional Crises + Asynchronous World Bosses",
+  "dependency": "dependencies/VELDRYN_v18_GuildProjectsSocial.zip",
+  "market_removed": true,
+  "new_currency": false,
+  "synchronous_open_world_raids": false,
+  "world_boss_default_daily_scored_attempts": 4,
+  "world_boss_default_attempt_seconds": 90,
+  "world_boss_echo_window_hours": 12,
+  "regional_crisis_default_daily_credit_cap": 2200,
+  "control_center_schema_driven": true
+}

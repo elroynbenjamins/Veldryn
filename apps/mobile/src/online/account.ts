@@ -74,12 +74,12 @@ export async function upgradeGuestAccount(email:string,password:string,displayNa
   if(!supabase)throw new Error('Online services are not configured in this build.');
   const cleanEmail=email.trim().toLowerCase(),cleanName=displayName.trim();
   if(!/^\S+@\S+\.\S+$/.test(cleanEmail))throw new Error('Enter a valid email address.');
-  if(password.length<8)throw new Error('Choose a password with at least 8 characters.');
+  const cleanPassword=accountPassword(password);
   if(cleanName.length<3||cleanName.length>20)throw new Error('Username must be 3–20 characters.');
   const {data:{user},error:userError}=await supabase.auth.getUser();
   if(userError)throw userError;
   if(!user)throw new Error('Sign in first.');
-  const {error}=await supabase.auth.updateUser({email:cleanEmail,password});
+  const {error}=await supabase.auth.updateUser({email:cleanEmail,password:cleanPassword,data:{display_name:cleanName}});
   if(error)throw error;
   const {error:profileError}=await supabase.from('player_profiles').upsert({account_id:user.id,display_name:cleanName,updated_at:new Date().toISOString()});
   if(profileError)throw profileError;

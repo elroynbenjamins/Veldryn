@@ -1,5 +1,5 @@
 import {useState} from 'react';
-import {ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
+import {Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {GameButton} from '../components/GameButton';
 import {SettingToggle} from '../components/SettingToggle';
 import {Panel} from '../components/Panel';
@@ -7,7 +7,7 @@ import {DeveloperTools} from '../components/DeveloperTools';
 import {OnlineAccountPanel} from '../components/OnlineAccountPanel';
 import {SaveTransferPanel} from '../components/SaveTransferPanel';
 import {GameState} from '../core/types';
-import {C,typography} from '../theme/theme';
+import {C,equipmentColors,typography} from '../theme/theme';
 import {LANGUAGE_NAMES,SUPPORTED_LANGUAGES,t} from '../i18n';
 import {GameGuidePanel} from '../components/GameGuidePanel';
 import {GuideTopicModal} from '../components/GuideTopicModal';
@@ -27,18 +27,18 @@ type Props={
   onOpenCoopUiGallery?:()=>void;
 };
 type SettingsSection='gameplay'|'accessibility'|'account'|'data'|'guide'|'developer';
+function SettingChip({label,selected,onPress}:{label:string;selected:boolean;onPress:()=>void}){return <Pressable accessibilityRole="button" accessibilityState={{selected}} onPress={onPress} style={({pressed})=>[s.chip,selected&&s.chipSelected,pressed&&s.pressed]}><Text style={[s.chipText,selected&&s.chipTextSelected]}>{selected?'✓ ':''}{label}</Text></Pressable>}
 
 export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImport,onOpenChatPilot,onOpenChatEmotes,onOpenCoopUiGallery,online=false}:Props){
   const [section,setSection]=useState<SettingsSection>('gameplay');
   const [guideId,setGuideId]=useState<GameGuideId>();
   const {fontScale}=useWindowDimensions();
-  const choiceStyle=[s.choice,fontScale>1.2&&s.largeChoice];
   const update=(partial:Partial<GameState['settings']>)=>onChange({...state,settings:{...state.settings,...partial}});
   const restoreDefaults=()=>update({numberMode:'abbreviated',autoEatThresholdPct:40,stopCombatWhenOutOfFood:true});
   return <><ScrollView contentContainerStyle={s.root}>
-    <Text style={s.h}>{t(state.settings.language,'settings.title')}</Text>
+    <Text accessibilityRole="header" style={s.h}>{t(state.settings.language,'settings.title')}</Text>
     <Text style={s.sub}>{t(state.settings.language,'settings.intro')}</Text>
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.tabs}>{(['gameplay','accessibility','account','data','guide',...(__DEV__&&!online?['developer' as const]:[])] as SettingsSection[]).map(value=><GameButton compact key={value} title={value==='guide'?'Help & Guide':value.charAt(0).toUpperCase()+value.slice(1)} selected={section===value} tone={section===value?'primary':'secondary'} onPress={()=>setSection(value)}/>)}</ScrollView>
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.tabs}>{(['gameplay','accessibility','account','data','guide',...(__DEV__&&!online?['developer' as const]:[])] as SettingsSection[]).map(value=><SettingChip key={value} label={value==='guide'?'Help & Guide':value.charAt(0).toUpperCase()+value.slice(1)} selected={section===value} onPress={()=>setSection(value)}/>)}</ScrollView><Text style={s.sectionHint}>{section==='gameplay'?'Tune combat, number display, and auto-eat behavior.':section==='accessibility'?'Make text, motion, and language fit your play style.':section==='account'?'Manage your connected account and profile preferences.':section==='data'?'Export, import, or recover your local progress.':section==='guide'?'Browse the interactive VELDRYN help guide.':'Development tools and visual QA controls.'}</Text>
     {section==='guide'&&<GameGuidePanel state={state} onOpen={id=>{onChange(acknowledgeGameGuide(state,id,true));setGuideId(id)}}/>}
     {section==='account'&&<><Panel>
       <Text style={s.title}>{t(state.settings.language,'settings.account')}</Text>
@@ -49,8 +49,8 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImp
     {section==='gameplay'&&<><Panel>
       <Text style={s.title}>{t(state.settings.language,'settings.gameplay')}</Text>
       <Text style={s.sub}>Activities continue while closed up to your current AFK reserve.</Text>
-      <Text style={s.settingLabel}>Number display</Text><View style={s.choices}>{(['abbreviated','exact'] as const).map(mode=><View style={choiceStyle} key={mode}><GameButton title={mode==='abbreviated'?'Abbreviated · 1.2K':'Exact · 1,200'} selected={state.settings.numberMode===mode} tone={state.settings.numberMode===mode?'primary':'secondary'} onPress={()=>update({numberMode:mode})}/></View>)}</View>
-      <Text style={s.settingLabel}>Auto-eat threshold</Text><Text style={s.sub}>Eat equipped food when HP falls below the selected level.</Text><View style={s.choices}>{([20,40,60,80] as const).map(threshold=><View style={choiceStyle} key={threshold}><GameButton title={`${threshold}% HP`} selected={state.settings.autoEatThresholdPct===threshold} tone={state.settings.autoEatThresholdPct===threshold?'primary':'secondary'} onPress={()=>update({autoEatThresholdPct:threshold})}/></View>)}</View>
+      <Text style={s.settingLabel}>Number display</Text><View style={s.choices}>{(['abbreviated','exact'] as const).map(mode=><SettingChip key={mode} label={mode==='abbreviated'?'Abbreviated · 1.2K':'Exact · 1,200'} selected={state.settings.numberMode===mode} onPress={()=>update({numberMode:mode})}/>)}</View>
+      <Text style={s.settingLabel}>Auto-eat threshold</Text><Text style={s.sub}>Eat equipped food when HP falls below the selected level.</Text><View style={s.choices}>{([20,40,60,80] as const).map(threshold=><SettingChip key={threshold} label={`${threshold}% HP`} selected={state.settings.autoEatThresholdPct===threshold} onPress={()=>update({autoEatThresholdPct:threshold})}/>)}</View>
       <SettingToggle label="Stop combat when out of food" value={state.settings.stopCombatWhenOutOfFood} onValueChange={value=>update({stopCombatWhenOutOfFood:value})}/>
       <GameButton title="Restore gameplay defaults" tone="secondary" onPress={restoreDefaults}/>
     </Panel>
@@ -69,12 +69,12 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImp
       <Text style={s.title}>{t(state.settings.language,'settings.accessibility')}</Text>
       <Text style={s.sub}>Text scaling follows your device setting up to the selected maximum. Reduced motion disables repeating combat and progress effects.</Text>
       <SettingToggle label="Reduced motion" description="Turn off repeating combat and progress effects." value={state.settings.reduceMotion} onValueChange={value=>update({reduceMotion:value})}/><Text style={s.settingLabel}>Maximum text scale</Text>
-      <View style={s.choices}>{([1,1.15,1.3,1.5] as const).map(scale=><View style={choiceStyle} key={scale}><GameButton title={`${scale}× max`} selected={state.settings.textScale===scale} tone={state.settings.textScale===scale?'primary':'secondary'} onPress={()=>update({textScale:scale})}/></View>)}</View>
+      <View style={s.choices}>{([1,1.15,1.3,1.5] as const).map(scale=><SettingChip key={scale} label={`${scale}× max`} selected={state.settings.textScale===scale} onPress={()=>update({textScale:scale})}/>)}</View>
     </Panel>
     <Panel>
       <Text style={s.title}>{t(state.settings.language,'settings.language')}</Text>
       <Text style={s.sub}>{t(state.settings.language,'settings.languageStatus')}</Text>
-      <View style={s.languageGrid}>{SUPPORTED_LANGUAGES.map(id=><View key={id} style={s.languageChoice}><GameButton title={LANGUAGE_NAMES[id]} selected={state.settings.language===id} tone={state.settings.language===id?'primary':'secondary'} onPress={()=>onLanguage(id)}/></View>)}</View>
+      <View style={s.languageGrid}>{SUPPORTED_LANGUAGES.map(id=><SettingChip key={id} label={LANGUAGE_NAMES[id]} selected={state.settings.language===id} onPress={()=>onLanguage(id)}/>)}</View>
     </Panel></>}
     {section==='data'&&<><Panel>
       <Text style={s.title}>{t(state.settings.language,'settings.session')}</Text>
@@ -91,4 +91,4 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImp
   </ScrollView><GuideTopicModal definition={guideId?guideDefinition(guideId):undefined} visible={!!guideId} onClose={()=>setGuideId(undefined)}/></>;
 }
 
-const s=StyleSheet.create({root:{padding:16,gap:12},h:{...typography.hero,color:C.text},title:{...typography.title,color:C.text,marginBottom:5},sub:{color:C.muted,lineHeight:20,marginBottom:8},muted:{color:C.muted,lineHeight:19,opacity:.8},tabs:{gap:8,paddingRight:16},settingLabel:{...typography.bodyStrong,color:C.text,marginTop:8},choices:{flexDirection:'row',flexWrap:'wrap',gap:8},choice:{flexGrow:1,flexBasis:120,minWidth:120},largeChoice:{flexBasis:'100%' as const},languageGrid:{flexDirection:'row',flexWrap:'wrap',gap:8},languageChoice:{minWidth:96,flexGrow:1},flex:{flex:1}});
+const s=StyleSheet.create({root:{padding:16,gap:12},h:{...typography.hero,color:C.text},title:{...typography.title,color:C.text,marginBottom:5},sub:{color:C.muted,lineHeight:20,marginBottom:8},muted:{color:C.muted,lineHeight:19,opacity:.8},tabs:{gap:6,paddingRight:16},sectionHint:{...typography.caption,color:C.info,lineHeight:18},chip:{minHeight:40,paddingHorizontal:13,justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.bg},chipSelected:{borderColor:equipmentColors.selectedLine,backgroundColor:equipmentColors.selected},chipText:{fontSize:12,color:C.muted,fontWeight:'700'},chipTextSelected:{color:'#d9f3ff'},pressed:{opacity:.76},settingLabel:{...typography.bodyStrong,color:C.text,marginTop:8},choices:{flexDirection:'row',flexWrap:'wrap',gap:8},choice:{flexGrow:1,flexBasis:120,minWidth:120},largeChoice:{flexBasis:'100%' as const},languageGrid:{flexDirection:'row',flexWrap:'wrap',gap:8},languageChoice:{minWidth:96,flexGrow:1},flex:{flex:1}});

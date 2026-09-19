@@ -3,10 +3,11 @@ import {recruitmentTimeLabel,type RecruitmentCardView} from '../core/party-socia
 import {IdentityArtwork,RoleBadge} from './SocialIdentity';
 import {UiIcon} from './UiIcon';
 import {C,radii,typography} from '../theme/theme';
+import {GuildTaggedPlayerName} from './GuildTaggedPlayerName';
 export function RecruitmentListing({card,nowMs,onPress}:{card:RecruitmentCardView;nowMs:number;onPress?:()=>void}){
  const time=recruitmentTimeLabel(card.expiresAtMs,nowMs),guild=card.postType==='guild_recruiting';
  return <Pressable accessibilityRole="button" accessibilityLabel={`${card.title}, posted by ${card.ownerName}, ${time.text}`} onPress={onPress} style={({pressed})=>[s.card,pressed&&s.pressed]}>
-  <View style={s.head}><IdentityArtwork name={card.ownerName} guild={guild}/><View style={s.copy}><Text style={s.title}>{card.title}</Text><Text style={s.owner}>{card.guildName??card.ownerName}</Text></View><UiIcon name="next" size={24}/></View>
+  <View style={s.head}><IdentityArtwork name={card.ownerName} guild={guild}/><View style={s.copy}><Text style={s.title}>{card.title}</Text>{card.guildName?<Text style={s.owner}>{card.guildName}</Text>:<GuildTaggedPlayerName name={card.ownerName} guildTag={card.guildTag} tagColorId={card.guildTagColorId} style={s.owner}/>}</View><UiIcon name="next" size={24}/></View>
   <View style={s.meta}><Text style={s.focus}>{card.focus}{card.openSpots!==undefined?` · ${card.openSpots} open spots`:''}</Text><Text style={[s.time,time.urgency==='soon'&&s.soon]}>{time.text}</Text></View>
   {!!card.currentObjective&&<Text style={s.objective}>Current: {card.currentObjective}</Text>}
   <Text numberOfLines={2} style={s.body}>{card.body}</Text>

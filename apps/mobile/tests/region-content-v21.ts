@@ -1,6 +1,11 @@
-import {completionPercentV21,formatRegionTimerV21,nextRegionalGoalV21,frostmarchProgressFromState} from '../src/core/region-content-v21';
+import {completionPercentV21,formatRegionTimerV21,nextRegionalGoalV21,frostmarchProgressFromState,validateFrostmarchCardsV21,frostmarchCardsV21,isValidRegionProgressV21} from '../src/core/region-content-v21';
 const assert={equal(actual:unknown,expected:unknown,message?:string){if(actual!==expected)throw new Error(message??`Expected ${String(expected)}, got ${String(actual)}`);}};
 const p={storyCompleted:10,storyTotal:10,sideQuestsCompleted:4,sideQuestsTotal:8,echoesCompleted:2,echoesTotal:4,dungeonsCompleted:1,dungeonsTotal:3,collectionEntries:8,collectionTotal:16,bossMasteryTier:1,bossMasteryMax:4};
 assert.equal(completionPercentV21(p),51);assert.equal(formatRegionTimerV21(3900),'1h 5m');assert.equal(nextRegionalGoalV21(p),'Complete regional side quests');console.log('v21 mobile helpers passed');
 const projected=frostmarchProgressFromState({regionalProgressById:{REG_003:{storyCompleted:2,sideQuestsCompleted:3}},unlockedMonsterIds:['FRMON_001','FRMON_002'],defeatedBossIds:['BOSS_003']});
 assert.equal(projected.storyCompleted,2);assert.equal(projected.collectionEntries,2);assert.equal(projected.bossMasteryTier,1);
+const bounded=frostmarchProgressFromState({regionalProgressById:{REG_003:{storyCompleted:-10,sideQuestsCompleted:Number.NaN}},unlockedMonsterIds:[],defeatedBossIds:[]});assert.equal(bounded.storyCompleted,0);assert.equal(bounded.sideQuestsCompleted,0);assert.equal(completionPercentV21({...p,storyTotal:0}),0);
+assert.equal(['COP_007','COP_008','COP_009'].join(','),'COP_007,COP_008,COP_009');
+assert.equal(validateFrostmarchCardsV21().length,0);assert.equal(frostmarchCardsV21(52).zones.filter(v=>v.locked).length,2);assert.equal(frostmarchCardsV21(52).dungeons.filter(v=>v.locked).length,2);
+assert.equal(isValidRegionProgressV21(p),true);assert.equal(isValidRegionProgressV21({...p,collectionEntries:99}),false);
+assert.equal(isValidRegionProgressV21({...p,storyCompleted:1.5}),false);assert.equal(isValidRegionProgressV21({...p,storyTotal:0}),false);assert.equal(nextRegionalGoalV21({...p,storyTotal:0}),'Regional progress unavailable');assert.equal(frostmarchCardsV21(Number.NaN).zones.every(v=>v.locked),true);assert.equal(formatRegionTimerV21(Number.NaN),'0m');

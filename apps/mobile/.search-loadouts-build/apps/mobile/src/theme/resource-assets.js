@@ -1,0 +1,24 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.resourceIconSourceById = void 0;
+exports.resourceIconSource = resourceIconSource;
+exports.hasResourceArtwork = hasResourceArtwork;
+const ingredient_assets_1 = require("./ingredient-assets");
+const crafted_item_assets_1 = require("./crafted-item-assets");
+/** Canonical gathering yields with production-ready transparent pixel artwork. */
+exports.resourceIconSourceById = {
+    ...crafted_item_assets_1.craftedItemIcons,
+    ...ingredient_assets_1.ingredientIcons,
+    COPPER_ORE: require('../../assets/items/resources/copper_ore.png'),
+    ASTER_IRON_ORE: require('../../assets/items/resources/aster_iron_ore.png'),
+    OATHSTONE_ORE: require('../../assets/items/resources/oathstone_ore.png'),
+    ECHO_QUARTZ: require('../../assets/items/resources/echo_quartz.png'),
+    GREENWOOD_LOG: require('../../assets/items/resources/greenwood_log.png'),
+    IRONWOOD_LOG: require('../../assets/items/resources/ironwood_log.png'),
+    CROWNWOOD_LOG: require('../../assets/items/resources/crownwood_log.png'),
+    SILVERFIN: require('../../assets/items/resources/silverfin.png'),
+    RIVER_EEL: require('../../assets/items/resources/river_eel.png'),
+    OATHSCALE_PIKE: require('../../assets/items/resources/oathscale_pike.png'),
+};
+function resourceIconSource(itemId) { return exports.resourceIconSourceById[itemId]; }
+function hasResourceArtwork(itemId) { return !!resourceIconSource(itemId); }

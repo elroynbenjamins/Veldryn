@@ -1,0 +1,12 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const node_assert_1 = require("node:assert");
+const progression_1 = require("../progression");
+const ranks = {};
+node_assert_1.strict.equal((0, progression_1.spentPoints)(ranks), 0);
+const skill = { id: 'project_coordination', branch: 'community', name: 'Project Coordination', maxRank: 3, costPerRank: [3, 5, 7], effectKey: 'projectContributionEfficiencyBps', effectPerRank: 100 };
+node_assert_1.strict.equal((0, progression_1.canAllocate)(ranks, skill, 1), true);
+const next = { ...ranks, [skill.id]: 1 };
+node_assert_1.strict.equal((0, progression_1.guildUpgradeEffects)(next).projectContributionEfficiencyBps, 100);
+node_assert_1.strict.equal((0, progression_1.canAllocate)(next, skill, 3), false);
+console.log('guild progression PASS');

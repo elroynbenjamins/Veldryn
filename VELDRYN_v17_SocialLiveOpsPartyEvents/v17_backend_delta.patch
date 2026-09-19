@@ -1,0 +1,2032 @@
+diff -ruN '--exclude=dist' '--exclude=node_modules' /mnt/data/work_v17/v16_reference_backend/src/server/api/contracts.ts /mnt/data/work_v17/integrated_backend/src/server/api/contracts.ts
+--- /mnt/data/work_v17/v16_reference_backend/src/server/api/contracts.ts	2026-09-13 21:21:09.702906664 +0000
++++ /mnt/data/work_v17/integrated_backend/src/server/api/contracts.ts	2026-09-13 21:11:53.439154553 +0000
+@@ -13,5 +13,7 @@
+  'find_arena_opponents','start_squad_arena_match','claim_squad_arena_reward','start_triad_trial','resolve_triad_trial_floor','resume_triad_trial',
+  'get_persistent_party','create_persistent_party','leave_persistent_party','invite_to_persistent_party','respond_party_invite','request_join_persistent_party','respond_party_join_request',
+  'publish_party_recruitment','publish_party_seeker','browse_party_recruitment','get_party_contract_rotation','accept_party_contract','claim_party_contract_reward',
+- 'publish_guild_recruitment','publish_guild_seeker','browse_guild_recruitment','close_recruitment_post'
++ 'publish_guild_recruitment','publish_guild_seeker','browse_guild_recruitment','close_recruitment_post',
++ 'apply_to_guild','respond_guild_application','invite_to_guild','respond_guild_invite',
++ 'get_active_liveops_events','get_party_event','get_party_event_leaderboard','get_event_contribution_breakdown','claim_liveops_event_reward','list_liveops_event_history'
+ ] as const;
+diff -ruN '--exclude=dist' '--exclude=node_modules' /mnt/data/work_v17/v16_reference_backend/src/server/liveops/__tests__/finalization-rewards-v17.ts /mnt/data/work_v17/integrated_backend/src/server/liveops/__tests__/finalization-rewards-v17.ts
+--- /mnt/data/work_v17/v16_reference_backend/src/server/liveops/__tests__/finalization-rewards-v17.ts	1970-01-01 00:00:00.000000000 +0000
++++ /mnt/data/work_v17/integrated_backend/src/server/liveops/__tests__/finalization-rewards-v17.ts	2026-09-13 21:14:40.002262935 +0000
+@@ -0,0 +1,62 @@
++import { PARTY_EVENT_TEMPLATE_POOL } from '../event-definitions';
++import { createScheduledPartyEvent } from '../scheduler';
++import { finalizePartyEvent, type FinalizedRankSnapshot, type PartyEventFinalizationRepository } from '../party-event-finalization';
++import { claimLiveOpsEventReward, type LiveOpsRankSnapshotForClaim, type LiveOpsRewardRepository } from '../reward-service';
++import type { PartyEventBinding } from '../party-event-service';
++import type { PartyEventMemberProgress, PartyEventPartyProgress } from '../party-events';
++
++function assert(value: unknown, message: string): asserts value { if (!value) throw new Error(message); }
++const definition = PARTY_EVENT_TEMPLATE_POOL[0];
++const start = Date.parse('2026-09-10T00:00:00Z');
++const scheduled = createScheduledPartyEvent({ instanceId:'e', definition, startsAtMs:start });
++const finalNow = scheduled.endsAtMs + scheduled.settlementGraceMinutes*60_000 + 1;
++
++class FinalRepo implements PartyEventFinalizationRepository {
++  finalized=false; snapshots:FinalizedRankSnapshot[]=[];
++  progress:PartyEventPartyProgress[]=[
++    {partyId:'p1',score:7000,combatPoints:3500,skillingPoints:3500,lastScoreAtMs:100,members:[{accountId:'a1',partyId:'p1',points:4000,combatPoints:2000,skillingPoints:2000},{accountId:'a2',partyId:'p1',points:3000,combatPoints:1500,skillingPoints:1500}]},
++    {partyId:'p2',score:6500,combatPoints:3400,skillingPoints:3100,lastScoreAtMs:90,members:[{accountId:'b1',partyId:'p2',points:4000,combatPoints:2100,skillingPoints:1900},{accountId:'b2',partyId:'p2',points:2500,combatPoints:1300,skillingPoints:1200}]},
++  ];
++  async withFinalizationLock<T>(_id:string,work:()=>Promise<T>){return work();}
++  async getScheduledEvent(id:string){return id==='e'?scheduled:null;}
++  async isFinalized(){return this.finalized;}
++  async listPartyProgress(){return this.progress;}
++  async replaceRankSnapshots(_id:string,s:readonly FinalizedRankSnapshot[]){this.snapshots=[...s];}
++  async markFinalized(){this.finalized=true;}
++}
++
++class RewardRepo implements LiveOpsRewardRepository {
++  claims=new Set<string>();
++  binding:PartyEventBinding={accountId:'a1',partyId:'p1',lockedAtMs:1,pointsAtLock:250};
++  member:PartyEventMemberProgress={accountId:'a1',partyId:'p1',points:4000,combatPoints:2000,skillingPoints:2000};
++  rank:LiveOpsRankSnapshotForClaim={partyId:'p1',rewardBand:'top10'};
++  finalized=true;
++  async withRewardClaimLock<T>(_k:string,work:()=>Promise<T>){return work();}
++  async getScheduledEvent(id:string){return id==='e'?scheduled:null;}
++  async getPersonalPoints(){return 2600;}
++  async getBinding(){return this.binding;}
++  async getMemberProgress(){return this.member;}
++  async getPartyScore(){return 7000;}
++  async getFinalRank(){return this.rank;}
++  async isFinalized(){return this.finalized;}
++  async claimExists(k:string){return this.claims.has(k);}
++  async grantRewardBundle(_a:string,b:string,k:string){return `tx:${b}:${k}`;}
++  async recordClaim(input:{claimKey:string}){this.claims.add(input.claimKey);}
++}
++
++(async()=>{
++  const finalRepo=new FinalRepo();
++  const result=await finalizePartyEvent(finalRepo,'e',finalNow);
++  assert(result.finalized && result.snapshots.length===2,'finalization should snapshot eligible parties');
++  assert(result.snapshots[0].partyId==='p1' && result.snapshots[0].rank===1,'higher score should rank first');
++  const rewardRepo=new RewardRepo();
++  const personal=await claimLiveOpsEventReward(rewardRepo,{kind:'personal_milestone',eventInstanceId:'e',accountId:'a1',milestonePoints:2500});
++  assert(personal.claimed,'reached personal milestone should claim');
++  const party=await claimLiveOpsEventReward(rewardRepo,{kind:'party_milestone',eventInstanceId:'e',accountId:'a1',milestonePoints:6000});
++  assert(party.claimed,'eligible bound member should claim reached party milestone');
++  const ranking=await claimLiveOpsEventReward(rewardRepo,{kind:'ranking',eventInstanceId:'e',accountId:'a1'});
++  assert(ranking.claimed && ranking.rewardBundleId==='party_event_rank_top10_v1','finalized top10 reward should claim');
++  const duplicate=await claimLiveOpsEventReward(rewardRepo,{kind:'ranking',eventInstanceId:'e',accountId:'a1'});
++  assert(!duplicate.claimed,'same rank reward claim should be idempotent');
++  console.log('finalization-rewards-v17 ok');
++})().catch((e)=>{throw e;});
+diff -ruN '--exclude=dist' '--exclude=node_modules' /mnt/data/work_v17/v16_reference_backend/src/server/liveops/__tests__/outbox-v17.ts /mnt/data/work_v17/integrated_backend/src/server/liveops/__tests__/outbox-v17.ts
+--- /mnt/data/work_v17/v16_reference_backend/src/server/liveops/__tests__/outbox-v17.ts	1970-01-01 00:00:00.000000000 +0000
++++ /mnt/data/work_v17/integrated_backend/src/server/liveops/__tests__/outbox-v17.ts	2026-09-13 21:20:36.821210224 +0000
+@@ -0,0 +1,24 @@
++import { processSocialContributionOutboxBatch, type ContributionOutboxRecord, type ContributionOutboxRepository } from '../contribution-outbox';
++import type { SocialContributionRoutingResult } from '../social-contribution-router';
++
++function assert(value:unknown,message:string):asserts value{if(!value)throw new Error(message);}
++class Repo implements ContributionOutboxRepository{
++  records:ContributionOutboxRecord[]=[]; processed=0; retried=0; dead=0;
++  async enqueue(){return 'inserted' as const;}
++  async claimBatch(){return this.records;}
++  async markProcessed(_id:string,_r:SocialContributionRoutingResult){this.processed++;}
++  async markRetry(){this.retried++;}
++  async markDeadLetter(){this.dead++;}
++}
++const baseEvent={sourceEventId:'s',accountId:'a',occurredAtMs:1,dateKey:'2026-09-13',profile:{id:'x',category:'combat' as const,expectedSecondsPerUnit:60,challenge:'routine' as const},units:1,activityKind:'combat' as const,contentId:'x',partyIdAtSettlement:'p'};
++(async()=>{
++  const repo=new Repo();
++  repo.records=[{id:'1',sourceEventId:'s',envelope:{event:baseEvent,targets:{partyEventInstanceIds:['e']}},attempts:0,status:'pending'}];
++  const ok=await processSocialContributionOutboxBatch(repo,{recordPartyEvent:async()=>({ok:true,duplicate:false,rawPoints:1,creditedPoints:1,partyCreditedPoints:1,partyEvaluation:{partyScore:1,combatPoints:1,skillingPoints:0,meaningfulContributors:[],rankedEligible:false,rankedEligibilityMissing:['party_points'],reachedPartyMilestones:[]}})});
++  assert(ok.processed===1&&repo.processed===1,'successful outbox row should process');
++  const retryRepo=new Repo();
++  retryRepo.records=[{id:'2',sourceEventId:'s2',envelope:{event:{...baseEvent,sourceEventId:'s2'},targets:{partyEventInstanceIds:['e']}},attempts:0,status:'pending'}];
++  const retried=await processSocialContributionOutboxBatch(retryRepo,{recordPartyEvent:async()=>{throw new Error('transient');}});
++  assert(retried.retried===1&&retryRepo.retried===1,'transient failure should retry');
++  console.log('outbox-v17 ok');
++})().catch(e=>{throw e;});
+diff -ruN '--exclude=dist' '--exclude=node_modules' /mnt/data/work_v17/v16_reference_backend/src/server/liveops/__tests__/party-event-service-v17.ts /mnt/data/work_v17/integrated_backend/src/server/liveops/__tests__/party-event-service-v17.ts
+--- /mnt/data/work_v17/v16_reference_backend/src/server/liveops/__tests__/party-event-service-v17.ts	1970-01-01 00:00:00.000000000 +0000
++++ /mnt/data/work_v17/integrated_backend/src/server/liveops/__tests__/party-event-service-v17.ts	2026-09-13 21:18:21.736128315 +0000
+@@ -0,0 +1,62 @@
++import { PARTY_EVENT_TEMPLATE_POOL } from '../event-definitions';
++import { createScheduledPartyEvent } from '../scheduler';
++import { recordPartyEventContribution, type LockedPartyEventRepository, type PartyEventBinding, type PartyEventRepository } from '../party-event-service';
++import type { PartyEventPartyProgress, PartyEventMemberProgress } from '../party-events';
++import type { SocialContributionEvent } from '../contribution';
++
++function assert(value: unknown, message: string): asserts value { if (!value) throw new Error(message); }
++const definition = PARTY_EVENT_TEMPLATE_POOL[0];
++const now = Date.parse('2026-09-13T12:00:00Z');
++const scheduled = createScheduledPartyEvent({ instanceId: 'event1', definition, startsAtMs: now - 1000 });
++
++class MemoryRepo implements PartyEventRepository, LockedPartyEventRepository {
++  receipts = new Set<string>();
++  daily = new Map<string, number>();
++  binding = new Map<string, PartyEventBinding>();
++  members = new Map<string, PartyEventMemberProgress>();
++  async withEventAccountLock<T>(_event: string, _account: string, work: (repo: LockedPartyEventRepository) => Promise<T>): Promise<T> { return work(this); }
++  async getScheduledEvent(id: string) { return id === 'event1' ? scheduled : null; }
++  async contributionReceiptExists(instanceId: string, accountId: string, sourceEventId: string) { return this.receipts.has(`${instanceId}:${accountId}:${sourceEventId}`); }
++  async pointsCreditedToday(instanceId: string, accountId: string, dateKey: string) { return this.daily.get(`${instanceId}:${accountId}:${dateKey}`) ?? 0; }
++  async getBinding(instanceId: string, accountId: string) { return this.binding.get(`${instanceId}:${accountId}`) ?? null; }
++  async getMemberPartyPoints(instanceId: string, partyId: string, accountId: string) { return this.members.get(`${instanceId}:${partyId}:${accountId}`)?.points ?? 0; }
++  async getPartyProgress(instanceId: string, partyId: string): Promise<PartyEventPartyProgress> {
++    const members = [...this.members.entries()].filter(([key]) => key.startsWith(`${instanceId}:${partyId}:`)).map(([,value]) => value);
++    return { partyId, score: members.reduce((s,m)=>s+m.points,0), combatPoints: members.reduce((s,m)=>s+m.combatPoints,0), skillingPoints: members.reduce((s,m)=>s+m.skillingPoints,0), lastScoreAtMs: now, members };
++  }
++  async commitContribution(input: { instanceId: string; accountId: string; partyId: string; partyNameAtSettlement?: string; sourceEventId: string; dateKey: string; category: 'combat' | 'skilling'; activityKind: string; contentId: string; rawPoints: number; creditedPoints: number; partyCreditedPoints: number; occurredAtMs: number; }): Promise<'inserted'|'duplicate'> {
++    const receiptKey = `${input.instanceId}:${input.accountId}:${input.sourceEventId}`;
++    if (this.receipts.has(receiptKey)) return 'duplicate';
++    this.receipts.add(receiptKey);
++    const dayKey = `${input.instanceId}:${input.accountId}:${input.dateKey}`;
++    this.daily.set(dayKey, (this.daily.get(dayKey) ?? 0) + input.creditedPoints);
++    const key = `${input.instanceId}:${input.partyId}:${input.accountId}`;
++    const current = this.members.get(key) ?? { accountId: input.accountId, partyId: input.partyId, points: 0, combatPoints: 0, skillingPoints: 0 };
++    const next = { ...current, points: current.points + input.partyCreditedPoints, combatPoints: current.combatPoints + (input.category === 'combat' ? input.partyCreditedPoints : 0), skillingPoints: current.skillingPoints + (input.category === 'skilling' ? input.partyCreditedPoints : 0), lastContributionAtMs: input.occurredAtMs };
++    this.members.set(key, next);
++    return 'inserted';
++  }
++  async lockBinding(input: PartyEventBinding) { this.binding.set(`event1:${input.accountId}`, input); }
++}
++
++const contribution = (id: string, category: 'combat'|'skilling', seconds: number): SocialContributionEvent => ({
++  sourceEventId: id, accountId: 'a1', occurredAtMs: now, dateKey: '2026-09-13',
++  profile: { id, category, expectedSecondsPerUnit: seconds, challenge: 'routine' }, units: 1,
++  activityKind: category === 'combat' ? 'combat' : 'crafting', contentId: id, tags: ['rift'], partyIdAtSettlement: 'p1',
++});
++
++(async () => {
++  const repo = new MemoryRepo();
++  const first = await recordPartyEventContribution(repo, 'event1', contribution('c1', 'combat', 1000));
++  assert(first.ok && !first.duplicate, 'first contribution should insert');
++  if (first.ok && !first.duplicate) assert(first.partyCreditedPoints > 250, 'first contribution should be enough to lock binding');
++  assert((await repo.getBinding('event1', 'a1'))?.partyId === 'p1', 'binding should lock to first meaningful party');
++
++  const dup = await recordPartyEventContribution(repo, 'event1', contribution('c1', 'combat', 1000));
++  assert(dup.ok && dup.duplicate, 'duplicate settlement should be idempotent');
++
++  const switchedEvent = { ...contribution('c2', 'skilling', 1000), partyIdAtSettlement: 'p2' };
++  const switched = await recordPartyEventContribution(repo, 'event1', switchedEvent);
++  assert(switched.ok && !switched.duplicate && switched.partyCreditedPoints === 0, 'party hopping after binding must not feed second party ranking');
++  console.log('party-event-service-v17 ok');
++})().catch((error) => { throw error; });
+diff -ruN '--exclude=dist' '--exclude=node_modules' /mnt/data/work_v17/v16_reference_backend/src/server/liveops/__tests__/party-events-v17.ts /mnt/data/work_v17/integrated_backend/src/server/liveops/__tests__/party-events-v17.ts
+--- /mnt/data/work_v17/v16_reference_backend/src/server/liveops/__tests__/party-events-v17.ts	1970-01-01 00:00:00.000000000 +0000
++++ /mnt/data/work_v17/integrated_backend/src/server/liveops/__tests__/party-events-v17.ts	2026-09-13 21:12:29.096151384 +0000
+@@ -0,0 +1,72 @@
++import { PARTY_EVENT_TEMPLATE_POOL, validatePartyEventDefinition } from '../event-definitions';
++import { cappedEventCredit, scoreLiveOpsContribution, type SocialContributionEvent } from '../contribution';
++import { aggregateContributionBreakdown } from '../breakdown';
++import { buildLeaderboardPage } from '../leaderboard';
++import { evaluatePartyEvent, rankingRewardBand, reachedPersonalMilestones, type LeaderboardEntry, type PartyEventPartyProgress } from '../party-events';
++import { assertNoOverlappingPartyEvents, createScheduledPartyEvent, eventPhase } from '../scheduler';
++
++function assert(value: unknown, message: string): asserts value {
++  if (!value) throw new Error(message);
++}
++
++const rift = PARTY_EVENT_TEMPLATE_POOL.find((x) => x.id === 'party_event_rift_surge');
++assert(rift, 'rift event must exist');
++assert(validatePartyEventDefinition(rift).length === 0, 'rift event definition should be valid');
++
++const event: SocialContributionEvent = {
++  sourceEventId: 'settlement-1', accountId: 'a1', occurredAtMs: Date.parse('2026-09-13T12:00:00Z'), dateKey: '2026-09-13',
++  profile: { id: 'sunscar_elite', category: 'combat', expectedSecondsPerUnit: 300, challenge: 'elite' },
++  units: 2, activityKind: 'combat', contentId: 'sunscar_elite', regionId: 'sunscar', tags: ['rift'],
++};
++const score = scoreLiveOpsContribution(event, rift);
++assert(score.eligible && score.eventPoints > 0, 'eligible server event should score');
++assert(cappedEventCredit(5000, 0, rift.contributionRules.dailyAccountCreditCap) === rift.contributionRules.dailyAccountCreditCap, 'event daily cap should apply');
++
++const progress: PartyEventPartyProgress = {
++  partyId: 'p1', score: 6200, combatPoints: 3600, skillingPoints: 2600, lastScoreAtMs: 100,
++  members: [
++    { accountId: 'a1', partyId: 'p1', points: 3500, combatPoints: 2200, skillingPoints: 1300 },
++    { accountId: 'a2', partyId: 'p1', points: 2700, combatPoints: 1400, skillingPoints: 1300 },
++  ],
++};
++const evaluation = evaluatePartyEvent(rift, progress);
++assert(evaluation.rankedEligible, 'balanced party should qualify for ranking');
++assert(evaluation.reachedPartyMilestones.includes(6000), 'party milestone should be detected');
++assert(reachedPersonalMilestones(rift, 1600).join(',') === '250,750,1500', 'personal milestones should be progressive');
++
++const combatOnly: PartyEventPartyProgress = {
++  ...progress, combatPoints: 6200, skillingPoints: 0,
++  members: progress.members.map((m) => ({ ...m, combatPoints: m.points, skillingPoints: 0 })),
++};
++assert(!evaluatePartyEvent(rift, combatOnly).rankedEligible, 'mixed rift event should reject one-category ranking qualification');
++
++const entries: LeaderboardEntry[] = [
++  { partyId: 'p1', score: 8000, lastScoreAtMs: 200, meaningfulContributors: 2, rankedEligible: true },
++  { partyId: 'p2', score: 8000, lastScoreAtMs: 100, meaningfulContributors: 2, rankedEligible: true },
++  { partyId: 'p3', score: 9999, lastScoreAtMs: 50, meaningfulContributors: 1, rankedEligible: false },
++];
++const board = buildLeaderboardPage(entries, 'global');
++assert(board.entries[0].partyId === 'p2', 'earlier score timestamp should break equal-score tie');
++assert(board.totalRankedParties === 2, 'ineligible party should not count in ranked party total');
++assert(rankingRewardBand(1, 500, true) === 'top10', 'rank one should get top10 band');
++assert(rankingRewardBand(75, 500, true) === 'top100', 'top100 should outrank percentile bands');
++assert(rankingRewardBand(120, 1000, true) === 'top25_percent', 'rank 120/1000 should be top25 but not top10 percent');
++
++const breakdown = aggregateContributionBreakdown([
++  { accountId: 'a', dateKey: '2026-09-13', activityKind: 'combat', contentId: 'wyrm', creditedPoints: 125, occurredAtMs: 1 },
++  { accountId: 'a', dateKey: '2026-09-13', activityKind: 'combat', contentId: 'wyrm', creditedPoints: 125, occurredAtMs: 2 },
++  { accountId: 'a', dateKey: '2026-09-13', activityKind: 'crafting', contentId: 'rift_core', creditedPoints: 260, occurredAtMs: 3 },
++]);
++assert(breakdown.totalPoints === 510, 'breakdown total should add credited points');
++assert(breakdown.topDetails[0].points === 260, 'largest detail should sort first');
++
++const scheduled = createScheduledPartyEvent({ instanceId: 'e1', definition: rift, startsAtMs: Date.parse('2026-09-13T00:00:00Z') });
++assert(eventPhase(scheduled, Date.parse('2026-09-13T12:00:00Z')) === 'active', 'scheduled event should be active during window');
++assert(eventPhase(scheduled, scheduled.endsAtMs + 11 * 60_000) === 'finalizable', 'event should become finalizable after grace');
++let overlapRejected = false;
++try {
++  assertNoOverlappingPartyEvents(createScheduledPartyEvent({ instanceId: 'e2', definition: rift, startsAtMs: scheduled.startsAtMs + 3600_000 }), [scheduled]);
++} catch { overlapRejected = true; }
++assert(overlapRejected, 'overlapping party events should be rejected by default scheduler policy');
++
++console.log('party-events-v17 ok');
+diff -ruN '--exclude=dist' '--exclude=node_modules' /mnt/data/work_v17/v16_reference_backend/src/server/liveops/breakdown.ts /mnt/data/work_v17/integrated_backend/src/server/liveops/breakdown.ts
+--- /mnt/data/work_v17/v16_reference_backend/src/server/liveops/breakdown.ts	1970-01-01 00:00:00.000000000 +0000
++++ /mnt/data/work_v17/integrated_backend/src/server/liveops/breakdown.ts	2026-09-13 21:11:15.545178992 +0000
+@@ -0,0 +1,46 @@
++import type { LiveOpsActivityKind } from './event-definitions';
++
++export interface EventContributionReceiptView {
++  accountId: string;
++  dateKey: string;
++  activityKind: LiveOpsActivityKind;
++  contentId: string;
++  creditedPoints: number;
++  occurredAtMs: number;
++}
++
++export interface EventContributionBreakdownRow {
++  activityKind: LiveOpsActivityKind;
++  points: number;
++}
++
++export interface EventContributionDetailRow {
++  contentId: string;
++  activityKind: LiveOpsActivityKind;
++  points: number;
++}
++
++export interface EventContributionBreakdown {
++  totalPoints: number;
++  byActivity: EventContributionBreakdownRow[];
++  topDetails: EventContributionDetailRow[];
++}
++
++export function aggregateContributionBreakdown(receipts: readonly EventContributionReceiptView[], maxDetails = 20): EventContributionBreakdown {
++  const byActivity = new Map<LiveOpsActivityKind, number>();
++  const byDetail = new Map<string, EventContributionDetailRow>();
++  let totalPoints = 0;
++  for (const receipt of receipts) {
++    const points = Math.max(0, Math.floor(receipt.creditedPoints));
++    totalPoints += points;
++    byActivity.set(receipt.activityKind, (byActivity.get(receipt.activityKind) ?? 0) + points);
++    const key = `${receipt.activityKind}:${receipt.contentId}`;
++    const current = byDetail.get(key);
++    byDetail.set(key, current ? { ...current, points: current.points + points } : { contentId: receipt.contentId, activityKind: receipt.activityKind, points });
++  }
++  return {
++    totalPoints,
++    byActivity: [...byActivity.entries()].map(([activityKind, points]) => ({ activityKind, points })).sort((a, b) => b.points - a.points),
++    topDetails: [...byDetail.values()].sort((a, b) => b.points - a.points || a.contentId.localeCompare(b.contentId)).slice(0, Math.max(1, Math.min(50, maxDetails))),
++  };
++}
+diff -ruN '--exclude=dist' '--exclude=node_modules' /mnt/data/work_v17/v16_reference_backend/src/server/liveops/contribution-outbox.ts /mnt/data/work_v17/integrated_backend/src/server/liveops/contribution-outbox.ts
+--- /mnt/data/work_v17/v16_reference_backend/src/server/liveops/contribution-outbox.ts	1970-01-01 00:00:00.000000000 +0000
++++ /mnt/data/work_v17/integrated_backend/src/server/liveops/contribution-outbox.ts	2026-09-13 21:17:26.576022654 +0000
+@@ -0,0 +1,57 @@
++import type { SocialContributionEnvelope, SocialContributionRoutingResult, SocialContributionRouterDependencies } from './social-contribution-router';
++import { routeSocialContribution } from './social-contribution-router';
++
++export type ContributionOutboxStatus = 'pending' | 'processing' | 'processed' | 'dead_letter';
++export interface ContributionOutboxRecord {
++  id: string;
++  sourceEventId: string;
++  envelope: SocialContributionEnvelope;
++  attempts: number;
++  status: ContributionOutboxStatus;
++}
++
++export interface ContributionOutboxRepository {
++  /** Must be inserted in the same DB transaction as the authoritative gameplay/economy settlement. */
++  enqueue(envelope: SocialContributionEnvelope): Promise<'inserted' | 'duplicate'>;
++  claimBatch(limit: number): Promise<ContributionOutboxRecord[]>;
++  markProcessed(id: string, result: SocialContributionRoutingResult): Promise<void>;
++  markRetry(id: string, attempts: number, error: string): Promise<void>;
++  markDeadLetter(id: string, attempts: number, error: string): Promise<void>;
++}
++
++export const SOCIAL_CONTRIBUTION_OUTBOX_MAX_ATTEMPTS = 12;
++
++export async function enqueueSocialContribution(
++  repo: ContributionOutboxRepository,
++  envelope: SocialContributionEnvelope,
++): Promise<'inserted' | 'duplicate'> {
++  if (envelope.event.sourceEventId.trim().length === 0) throw new Error('source_event_id_required');
++  return repo.enqueue(envelope);
++}
++
++export async function processSocialContributionOutboxBatch(
++  repo: ContributionOutboxRepository,
++  router: SocialContributionRouterDependencies,
++  limit = 100,
++): Promise<{ processed: number; retried: number; deadLettered: number }> {
++  const records = await repo.claimBatch(Math.max(1, Math.min(500, Math.floor(limit))));
++  let processed = 0, retried = 0, deadLettered = 0;
++  for (const record of records) {
++    try {
++      const result = await routeSocialContribution(router, record.envelope);
++      await repo.markProcessed(record.id, result);
++      processed++;
++    } catch (error) {
++      const attempts = record.attempts + 1;
++      const message = error instanceof Error ? error.message.slice(0, 500) : 'unknown_outbox_error';
++      if (attempts >= SOCIAL_CONTRIBUTION_OUTBOX_MAX_ATTEMPTS) {
++        await repo.markDeadLetter(record.id, attempts, message);
++        deadLettered++;
++      } else {
++        await repo.markRetry(record.id, attempts, message);
++        retried++;
++      }
++    }
++  }
++  return { processed, retried, deadLettered };
++}
+diff -ruN '--exclude=dist' '--exclude=node_modules' /mnt/data/work_v17/v16_reference_backend/src/server/liveops/contribution.ts /mnt/data/work_v17/integrated_backend/src/server/liveops/contribution.ts
+--- /mnt/data/work_v17/v16_reference_backend/src/server/liveops/contribution.ts	1970-01-01 00:00:00.000000000 +0000
++++ /mnt/data/work_v17/integrated_backend/src/server/liveops/contribution.ts	2026-09-13 21:18:21.735933291 +0000
+@@ -0,0 +1,61 @@
++import { scoreContribution, type AuthoritativeContributionProfile, type ContributionCategory } from '../party/party-contracts';
++import type { EventContributionRules, LiveOpsActivityKind, PartyLiveOpsEventDefinition } from './event-definitions';
++
++export interface SocialContributionEvent {
++  /** Globally idempotent settlement/event ID generated by trusted server code. */
++  sourceEventId: string;
++  accountId: string;
++  occurredAtMs: number;
++  dateKey: string;
++  profile: AuthoritativeContributionProfile;
++  units: number;
++  activityKind: LiveOpsActivityKind;
++  contentId: string;
++  regionId?: string;
++  tags?: readonly string[];
++  /** Trusted server snapshot taken when the underlying activity settlement commits. */
++  partyIdAtSettlement?: string;
++  partyNameAtSettlement?: string;
++}
++
++export interface EventContributionScore {
++  eligible: boolean;
++  reason?: string;
++  basePoints: number;
++  eventPoints: number;
++  category: ContributionCategory;
++  activityKind: LiveOpsActivityKind;
++}
++
++function hasIntersection(a: readonly string[] | undefined, b: readonly string[] | undefined): boolean {
++  if (!a || a.length === 0) return true;
++  if (!b || b.length === 0) return false;
++  const set = new Set(b);
++  return a.some((value) => set.has(value));
++}
++
++export function contributionEligibleForRules(event: SocialContributionEvent, rules: EventContributionRules): { eligible: boolean; reason?: string } {
++  if (!rules.allowedCategories.includes(event.profile.category)) return { eligible: false, reason: 'category_not_eligible' };
++  if (rules.allowedActivityKinds && !rules.allowedActivityKinds.includes(event.activityKind)) return { eligible: false, reason: 'activity_not_eligible' };
++  if (rules.allowedRegionIds && (!event.regionId || !rules.allowedRegionIds.includes(event.regionId))) return { eligible: false, reason: 'region_not_eligible' };
++  if (rules.requiredAnyTags && !hasIntersection(rules.requiredAnyTags, event.tags)) return { eligible: false, reason: 'event_tag_not_eligible' };
++  return { eligible: true };
++}
++
++export function scoreLiveOpsContribution(event: SocialContributionEvent, definition: PartyLiveOpsEventDefinition): EventContributionScore {
++  const eligibility = contributionEligibleForRules(event, definition.contributionRules);
++  const basePoints = scoreContribution({ profile: event.profile, units: event.units });
++  if (!eligibility.eligible || basePoints <= 0) {
++    return { eligible: false, reason: eligibility.reason ?? 'no_points', basePoints, eventPoints: 0, category: event.profile.category, activityKind: event.activityKind };
++  }
++  const activityMultiplier = definition.contributionRules.activityMultipliers?.[event.activityKind] ?? 1;
++  const challengeMultiplier = definition.contributionRules.challengeMultipliers?.[event.profile.challenge] ?? 1;
++  const eventPoints = Math.max(1, Math.round(basePoints * activityMultiplier * challengeMultiplier));
++  return { eligible: true, basePoints, eventPoints, category: event.profile.category, activityKind: event.activityKind };
++}
++
++export function cappedEventCredit(rawEventPoints: number, pointsCreditedToday: number, dailyCap: number): number {
++  if (!Number.isFinite(rawEventPoints) || rawEventPoints <= 0) return 0;
++  const remaining = Math.max(0, Math.floor(dailyCap) - Math.max(0, Math.floor(pointsCreditedToday)));
++  return Math.min(Math.floor(rawEventPoints), remaining);
++}
+diff -ruN '--exclude=dist' '--exclude=node_modules' /mnt/data/work_v17/v16_reference_backend/src/server/liveops/event-admin-service.ts /mnt/data/work_v17/integrated_backend/src/server/liveops/event-admin-service.ts
+--- /mnt/data/work_v17/v16_reference_backend/src/server/liveops/event-admin-service.ts	1970-01-01 00:00:00.000000000 +0000
++++ /mnt/data/work_v17/integrated_backend/src/server/liveops/event-admin-service.ts	2026-09-13 21:14:25.430341907 +0000
+@@ -0,0 +1,42 @@
++import { createHash } from 'node:crypto';
++import { createScheduledPartyEvent, assertNoOverlappingPartyEvents, type EventScheduleInput } from './scheduler';
++import type { PartyLiveOpsEventDefinition, ScheduledPartyEvent } from './event-definitions';
++
++function canonicalize(value: unknown): unknown {
++  if (Array.isArray(value)) return value.map(canonicalize);
++  if (value && typeof value === 'object') {
++    return Object.fromEntries(Object.entries(value as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b)).map(([key, item]) => [key, canonicalize(item)]));
++  }
++  return value;
++}
++
++export function liveOpsDefinitionHash(definition: PartyLiveOpsEventDefinition): string {
++  return createHash('sha256').update(JSON.stringify(canonicalize(definition))).digest().toString('hex');
++}
++
++export interface StoredEventDefinitionIdentity { eventId: string; version: number; configHash: string; }
++export interface LiveOpsAdminRepository {
++  findDefinition(eventId: string, version: number): Promise<StoredEventDefinitionIdentity | null>;
++  insertImmutableDefinition(definition: PartyLiveOpsEventDefinition, configHash: string): Promise<void>;
++  listScheduledPartyEvents(): Promise<ScheduledPartyEvent[]>;
++  insertScheduledPartyEvent(event: ScheduledPartyEvent, configHash: string): Promise<void>;
++}
++
++export async function publishPartyEventDefinition(repo: LiveOpsAdminRepository, definition: PartyLiveOpsEventDefinition): Promise<{ configHash: string; inserted: boolean }> {
++  const configHash = liveOpsDefinitionHash(definition);
++  const existing = await repo.findDefinition(definition.id, definition.version);
++  if (existing) {
++    if (existing.configHash !== configHash) throw new Error('event_definition_version_conflict');
++    return { configHash, inserted: false };
++  }
++  await repo.insertImmutableDefinition(definition, configHash);
++  return { configHash, inserted: true };
++}
++
++export async function schedulePartyEvent(repo: LiveOpsAdminRepository, input: EventScheduleInput): Promise<ScheduledPartyEvent> {
++  const published = await publishPartyEventDefinition(repo, input.definition);
++  const scheduled = createScheduledPartyEvent(input);
++  assertNoOverlappingPartyEvents(scheduled, await repo.listScheduledPartyEvents());
++  await repo.insertScheduledPartyEvent(scheduled, published.configHash);
++  return scheduled;
++}
+diff -ruN '--exclude=dist' '--exclude=node_modules' /mnt/data/work_v17/v16_reference_backend/src/server/liveops/event-definitions.ts /mnt/data/work_v17/integrated_backend/src/server/liveops/event-definitions.ts
+--- /mnt/data/work_v17/v16_reference_backend/src/server/liveops/event-definitions.ts	1970-01-01 00:00:00.000000000 +0000
++++ /mnt/data/work_v17/integrated_backend/src/server/liveops/event-definitions.ts	2026-09-13 21:11:15.541209895 +0000
+@@ -0,0 +1,219 @@
++import type { ContributionCategory, ContributionChallenge } from '../party/party-contracts';
++
++export type LiveOpsEventScope = 'party';
++export type LiveOpsActivityKind =
++  | 'combat'
++  | 'gathering'
++  | 'processing'
++  | 'crafting'
++  | 'fishing'
++  | 'hunting'
++  | 'alchemy'
++  | 'delivery';
++
++export type LiveOpsRewardTier = 'participation' | 'milestone' | 'prestige';
++
++export interface RewardBundleRef {
++  /** Existing economy/content reward bundle. v17 intentionally creates no new currency. */
++  bundleId: string;
++  tier: LiveOpsRewardTier;
++}
++
++export interface LiveOpsMilestoneDefinition {
++  points: number;
++  reward: RewardBundleRef;
++}
++
++export interface PartyEventRankingRewards {
++  qualified: RewardBundleRef;
++  top25Percent?: RewardBundleRef;
++  top10Percent?: RewardBundleRef;
++  top100?: RewardBundleRef;
++  top10?: RewardBundleRef;
++}
++
++export interface EventContributionRules {
++  allowedCategories: readonly ContributionCategory[];
++  allowedActivityKinds?: readonly LiveOpsActivityKind[];
++  allowedRegionIds?: readonly string[];
++  requiredAnyTags?: readonly string[];
++  /** Fine tuning on top of time-normalized v16 scoring. Keep close to 1.0. */
++  activityMultipliers?: Partial<Record<LiveOpsActivityKind, number>>;
++  challengeMultipliers?: Partial<Record<ContributionChallenge, number>>;
++  minimumCategoryFraction?: Partial<Record<ContributionCategory, number>>;
++  dailyAccountCreditCap: number;
++}
++
++export interface PartyLiveOpsEventDefinition {
++  id: string;
++  version: number;
++  scope: LiveOpsEventScope;
++  name: string;
++  shortDescription: string;
++  durationHours: number;
++  contributionRules: EventContributionRules;
++  personalMilestones: readonly LiveOpsMilestoneDefinition[];
++  partyMilestones: readonly LiveOpsMilestoneDefinition[];
++  personalPartyRewardEligibilityPoints: number;
++  rankedMinimumPartyPoints: number;
++  rankedMinimumMeaningfulContributors: number;
++  meaningfulContributorPoints: number;
++  /** Once an account has this many points for one party, party reward/rank binding is locked for the event. */
++  partyBindingLockPoints: number;
++  rankingRewards: PartyEventRankingRewards;
++  eventTags: readonly string[];
++}
++
++export interface ScheduledPartyEvent {
++  instanceId: string;
++  definition: PartyLiveOpsEventDefinition;
++  startsAtMs: number;
++  endsAtMs: number;
++  settlementGraceMinutes: number;
++}
++
++export const PARTY_EVENT_MIN_DURATION_HOURS = 24;
++export const PARTY_EVENT_MAX_DURATION_HOURS = 72;
++export const PARTY_EVENT_DEFAULT_SETTLEMENT_GRACE_MINUTES = 10;
++
++export function validatePartyEventDefinition(definition: PartyLiveOpsEventDefinition): string[] {
++  const errors: string[] = [];
++  if (!definition.id.trim()) errors.push('id_required');
++  if (!Number.isInteger(definition.version) || definition.version < 1) errors.push('version_invalid');
++  if (definition.durationHours < PARTY_EVENT_MIN_DURATION_HOURS || definition.durationHours > PARTY_EVENT_MAX_DURATION_HOURS) errors.push('duration_out_of_range');
++  if (definition.contributionRules.allowedCategories.length === 0) errors.push('allowed_categories_required');
++  if (definition.contributionRules.dailyAccountCreditCap <= 0) errors.push('daily_cap_invalid');
++  if (definition.personalPartyRewardEligibilityPoints <= 0) errors.push('personal_party_eligibility_invalid');
++  if (definition.rankedMinimumMeaningfulContributors < 2) errors.push('ranked_contributors_too_low');
++  if (definition.meaningfulContributorPoints <= 0) errors.push('meaningful_contributor_points_invalid');
++  if (definition.partyBindingLockPoints < definition.meaningfulContributorPoints) errors.push('binding_lock_below_meaningful_threshold');
++  if (definition.rankedMinimumPartyPoints <= 0) errors.push('ranked_minimum_party_points_invalid');
++
++  const validateMilestones = (name: string, milestones: readonly LiveOpsMilestoneDefinition[]) => {
++    let previous = 0;
++    for (const milestone of milestones) {
++      if (milestone.points <= previous) errors.push(`${name}_milestones_not_strictly_increasing`);
++      if (!milestone.reward.bundleId) errors.push(`${name}_reward_bundle_required`);
++      previous = milestone.points;
++    }
++  };
++  validateMilestones('personal', definition.personalMilestones);
++  validateMilestones('party', definition.partyMilestones);
++
++  for (const [kind, multiplier] of Object.entries(definition.contributionRules.activityMultipliers ?? {})) {
++    if (typeof multiplier !== 'number' || multiplier < 0.5 || multiplier > 1.5) errors.push(`activity_multiplier_out_of_range:${kind}`);
++  }
++  for (const [challenge, multiplier] of Object.entries(definition.contributionRules.challengeMultipliers ?? {})) {
++    if (typeof multiplier !== 'number' || multiplier < 0.75 || multiplier > 1.5) errors.push(`challenge_multiplier_out_of_range:${challenge}`);
++  }
++  for (const [category, fraction] of Object.entries(definition.contributionRules.minimumCategoryFraction ?? {})) {
++    if (typeof fraction !== 'number' || fraction < 0 || fraction > 0.8) errors.push(`category_fraction_out_of_range:${category}`);
++  }
++  return [...new Set(errors)];
++}
++
++const participation: RewardBundleRef = { bundleId: 'party_event_participation_v1', tier: 'participation' };
++const personal1: RewardBundleRef = { bundleId: 'party_event_personal_250_v1', tier: 'milestone' };
++const personal2: RewardBundleRef = { bundleId: 'party_event_personal_750_v1', tier: 'milestone' };
++const personal3: RewardBundleRef = { bundleId: 'party_event_personal_1500_v1', tier: 'milestone' };
++const personal4: RewardBundleRef = { bundleId: 'party_event_personal_2500_v1', tier: 'milestone' };
++const party1: RewardBundleRef = { bundleId: 'party_event_party_2000_v1', tier: 'milestone' };
++const party2: RewardBundleRef = { bundleId: 'party_event_party_4000_v1', tier: 'milestone' };
++const party3: RewardBundleRef = { bundleId: 'party_event_party_6000_v1', tier: 'milestone' };
++const party4: RewardBundleRef = { bundleId: 'party_event_party_9000_v1', tier: 'milestone' };
++
++const commonPersonalMilestones = [
++  { points: 250, reward: personal1 },
++  { points: 750, reward: personal2 },
++  { points: 1500, reward: personal3 },
++  { points: 2500, reward: personal4 },
++] as const;
++const commonPartyMilestones = [
++  { points: 2000, reward: party1 },
++  { points: 4000, reward: party2 },
++  { points: 6000, reward: party3 },
++  { points: 9000, reward: party4 },
++] as const;
++const commonRankingRewards: PartyEventRankingRewards = {
++  qualified: participation,
++  top25Percent: { bundleId: 'party_event_rank_top25_v1', tier: 'milestone' },
++  top10Percent: { bundleId: 'party_event_rank_top10pct_v1', tier: 'prestige' },
++  top100: { bundleId: 'party_event_rank_top100_v1', tier: 'prestige' },
++  top10: { bundleId: 'party_event_rank_top10_v1', tier: 'prestige' },
++};
++
++/**
++ * v17 launch template pool. These are templates, not a hard-coded calendar. Live-ops scheduling creates immutable instances.
++ * 1,000 points is approximately one standardized active hour before the small event-specific multipliers below.
++ */
++export const PARTY_EVENT_TEMPLATE_POOL: readonly PartyLiveOpsEventDefinition[] = [
++  {
++    id: 'party_event_rift_surge', version: 1, scope: 'party', name: 'Rift Surge',
++    shortDescription: 'Stabilize a spreading Rift through combat and realm-support activities.', durationHours: 48,
++    contributionRules: {
++      allowedCategories: ['combat', 'skilling'], dailyAccountCreditCap: 2400,
++      minimumCategoryFraction: { combat: 0.30, skilling: 0.30 },
++      challengeMultipliers: { elite: 1.05, boss: 1.10 },
++    },
++    personalMilestones: commonPersonalMilestones, partyMilestones: commonPartyMilestones,
++    personalPartyRewardEligibilityPoints: 250, rankedMinimumPartyPoints: 4000,
++    rankedMinimumMeaningfulContributors: 2, meaningfulContributorPoints: 250, partyBindingLockPoints: 250,
++    rankingRewards: commonRankingRewards, eventTags: ['rift', 'mixed', 'party_event'],
++  },
++  {
++    id: 'party_event_sunscar_invasion', version: 1, scope: 'party', name: 'Sunscar Invasion',
++    shortDescription: 'Drive back an invasion with efficient combat, elite hunts and regional boss clears.', durationHours: 48,
++    contributionRules: {
++      allowedCategories: ['combat'], allowedActivityKinds: ['combat'], allowedRegionIds: ['sunscar'], dailyAccountCreditCap: 2400,
++      challengeMultipliers: { elite: 1.08, boss: 1.12 },
++    },
++    personalMilestones: commonPersonalMilestones, partyMilestones: commonPartyMilestones,
++    personalPartyRewardEligibilityPoints: 250, rankedMinimumPartyPoints: 4000,
++    rankedMinimumMeaningfulContributors: 2, meaningfulContributorPoints: 250, partyBindingLockPoints: 250,
++    rankingRewards: commonRankingRewards, eventTags: ['sunscar', 'combat', 'party_event'],
++  },
++  {
++    id: 'party_event_asterfall_reconstruction', version: 1, scope: 'party', name: 'Rebuild Asterfall',
++    shortDescription: 'Gather, process and craft supplies to restore damaged frontier infrastructure.', durationHours: 48,
++    contributionRules: {
++      allowedCategories: ['skilling'], allowedActivityKinds: ['gathering', 'processing', 'crafting', 'delivery'],
++      allowedRegionIds: ['asterfall'], dailyAccountCreditCap: 2400,
++      activityMultipliers: { processing: 1.03, crafting: 1.05, delivery: 1.05 },
++    },
++    personalMilestones: commonPersonalMilestones, partyMilestones: commonPartyMilestones,
++    personalPartyRewardEligibilityPoints: 250, rankedMinimumPartyPoints: 4000,
++    rankedMinimumMeaningfulContributors: 2, meaningfulContributorPoints: 250, partyBindingLockPoints: 250,
++    rankingRewards: commonRankingRewards, eventTags: ['asterfall', 'skilling', 'party_event'],
++  },
++  {
++    id: 'party_event_frostmarch_supply_crisis', version: 1, scope: 'party', name: 'Frostmarch Supply Crisis',
++    shortDescription: 'Keep remote settlements supplied through fishing, hunting, gathering and crafting.', durationHours: 48,
++    contributionRules: {
++      allowedCategories: ['skilling'], allowedActivityKinds: ['fishing', 'hunting', 'gathering', 'processing', 'crafting', 'delivery'],
++      allowedRegionIds: ['frostmarch'], dailyAccountCreditCap: 2400,
++      activityMultipliers: { fishing: 1.03, hunting: 1.03, delivery: 1.08 },
++    },
++    personalMilestones: commonPersonalMilestones, partyMilestones: commonPartyMilestones,
++    personalPartyRewardEligibilityPoints: 250, rankedMinimumPartyPoints: 4000,
++    rankedMinimumMeaningfulContributors: 2, meaningfulContributorPoints: 250, partyBindingLockPoints: 250,
++    rankingRewards: commonRankingRewards, eventTags: ['frostmarch', 'skilling', 'party_event'],
++  },
++  {
++    id: 'party_event_blackened_wells', version: 1, scope: 'party', name: 'Blackened Wells',
++    shortDescription: 'Contain poisoned threats while gathering reagents and producing emergency remedies.', durationHours: 48,
++    contributionRules: {
++      allowedCategories: ['combat', 'skilling'], allowedActivityKinds: ['combat', 'gathering', 'alchemy', 'crafting'],
++      requiredAnyTags: ['poison', 'antidote', 'tainted'], dailyAccountCreditCap: 2400,
++      minimumCategoryFraction: { combat: 0.25, skilling: 0.25 }, activityMultipliers: { alchemy: 1.08 },
++    },
++    personalMilestones: commonPersonalMilestones, partyMilestones: commonPartyMilestones,
++    personalPartyRewardEligibilityPoints: 250, rankedMinimumPartyPoints: 4000,
++    rankedMinimumMeaningfulContributors: 2, meaningfulContributorPoints: 250, partyBindingLockPoints: 250,
++    rankingRewards: commonRankingRewards, eventTags: ['mixed', 'poison', 'party_event'],
++  },
++] as const;
++
++for (const definition of PARTY_EVENT_TEMPLATE_POOL) {
++  const errors = validatePartyEventDefinition(definition);
++  if (errors.length > 0) throw new Error(`invalid_party_event_definition:${definition.id}:${errors.join(',')}`);
++}
+diff -ruN '--exclude=dist' '--exclude=node_modules' /mnt/data/work_v17/v16_reference_backend/src/server/liveops/leaderboard.ts /mnt/data/work_v17/integrated_backend/src/server/liveops/leaderboard.ts
+--- /mnt/data/work_v17/v16_reference_backend/src/server/liveops/leaderboard.ts	1970-01-01 00:00:00.000000000 +0000
++++ /mnt/data/work_v17/integrated_backend/src/server/liveops/leaderboard.ts	2026-09-13 21:11:15.544099857 +0000
+@@ -0,0 +1,34 @@
++import { rankPartyEntries, type LeaderboardEntry } from './party-events';
++
++export type LeaderboardAudience = 'global' | 'friends' | 'guild';
++
++export interface LeaderboardPage {
++  audience: LeaderboardAudience;
++  entries: LeaderboardEntry[];
++  totalRankedParties: number;
++  nextCursor?: string;
++}
++
++/**
++ * Global ranking is computed first. Friends/Guild views are filters over those global entries, preserving global rank.
++ * This prevents a separate reward ladder from being accidentally created for small private cohorts.
++ */
++export function buildLeaderboardPage(
++  allEntries: readonly LeaderboardEntry[],
++  audience: LeaderboardAudience,
++  visiblePartyIds?: ReadonlySet<string>,
++  limit = 100,
++  offset = 0,
++): LeaderboardPage {
++  const ranked = rankPartyEntries(allEntries);
++  const filtered = audience === 'global' ? ranked : ranked.filter((entry) => visiblePartyIds?.has(entry.partyId));
++  const safeLimit = Math.max(1, Math.min(100, Math.floor(limit)));
++  const safeOffset = Math.max(0, Math.floor(offset));
++  const slice = filtered.slice(safeOffset, safeOffset + safeLimit);
++  return {
++    audience,
++    entries: slice,
++    totalRankedParties: ranked.length,
++    ...(safeOffset + safeLimit < filtered.length ? { nextCursor: String(safeOffset + safeLimit) } : {}),
++  };
++}
+diff -ruN '--exclude=dist' '--exclude=node_modules' /mnt/data/work_v17/v16_reference_backend/src/server/liveops/liveops-worker.ts /mnt/data/work_v17/integrated_backend/src/server/liveops/liveops-worker.ts
+--- /mnt/data/work_v17/v16_reference_backend/src/server/liveops/liveops-worker.ts	1970-01-01 00:00:00.000000000 +0000
++++ /mnt/data/work_v17/integrated_backend/src/server/liveops/liveops-worker.ts	2026-09-13 21:20:36.820298562 +0000
+@@ -0,0 +1,41 @@
++import { eventPhase } from './scheduler';
++import type { ScheduledPartyEvent } from './event-definitions';
++import { finalizePartyEvent, type PartyEventFinalizationRepository } from './party-event-finalization';
++import { processSocialContributionOutboxBatch, type ContributionOutboxRepository } from './contribution-outbox';
++import type { SocialContributionRouterDependencies } from './social-contribution-router';
++
++export type StoredLifecycleStatus = 'scheduled' | 'active' | 'settling';
++export interface StoredLifecycleEvent extends ScheduledPartyEvent { storedStatus: StoredLifecycleStatus; }
++export interface LiveOpsLifecycleRepository {
++  listNonFinalizedPartyEvents(): Promise<StoredLifecycleEvent[]>;
++  setEventStatus(eventInstanceId: string, status: StoredLifecycleStatus): Promise<void>;
++}
++export interface LiveOpsWorkerDependencies {
++  lifecycle: LiveOpsLifecycleRepository;
++  finalization: PartyEventFinalizationRepository;
++  outbox: ContributionOutboxRepository;
++  router: SocialContributionRouterDependencies;
++}
++
++/** Intended for the existing server cron/worker runner (recommended about once per minute). */
++export async function runLiveOpsWorkerTick(
++  deps: LiveOpsWorkerDependencies,
++  nowMs = Date.now(),
++): Promise<{ activated: number; settling: number; finalized: number; outboxProcessed: number; outboxRetried: number; outboxDeadLettered: number }> {
++  const outbox = await processSocialContributionOutboxBatch(deps.outbox, deps.router, 200);
++  let activated = 0, settling = 0, finalized = 0;
++  for (const event of await deps.lifecycle.listNonFinalizedPartyEvents()) {
++    const phase = eventPhase(event, nowMs);
++    if (phase === 'active' && event.storedStatus !== 'active') {
++      await deps.lifecycle.setEventStatus(event.instanceId, 'active');
++      activated++;
++    } else if (phase === 'settling' && event.storedStatus !== 'settling') {
++      await deps.lifecycle.setEventStatus(event.instanceId, 'settling');
++      settling++;
++    } else if (phase === 'finalizable') {
++      const result = await finalizePartyEvent(deps.finalization, event.instanceId, nowMs);
++      if (result.finalized) finalized++;
++    }
++  }
++  return { activated, settling, finalized, outboxProcessed: outbox.processed, outboxRetried: outbox.retried, outboxDeadLettered: outbox.deadLettered };
++}
+diff -ruN '--exclude=dist' '--exclude=node_modules' /mnt/data/work_v17/v16_reference_backend/src/server/liveops/notifications.ts /mnt/data/work_v17/integrated_backend/src/server/liveops/notifications.ts
+--- /mnt/data/work_v17/v16_reference_backend/src/server/liveops/notifications.ts	1970-01-01 00:00:00.000000000 +0000
++++ /mnt/data/work_v17/integrated_backend/src/server/liveops/notifications.ts	2026-09-13 21:11:15.549017623 +0000
+@@ -0,0 +1,14 @@
++import type { ScheduledPartyEvent } from './event-definitions';
++
++export type LiveOpsNotificationKind = 'event_started' | 'event_ending_soon' | 'event_rewards_ready';
++export interface LiveOpsNotificationIntent { kind: LiveOpsNotificationKind; eventInstanceId: string; deliverAtMs: number; dedupeKey: string; }
++
++export function notificationIntentsForPartyEvent(event: ScheduledPartyEvent): LiveOpsNotificationIntent[] {
++  const endingSoonAt = Math.max(event.startsAtMs, event.endsAtMs - 6 * 60 * 60 * 1000);
++  const rewardsReadyAt = event.endsAtMs + event.settlementGraceMinutes * 60_000;
++  return [
++    { kind: 'event_started', eventInstanceId: event.instanceId, deliverAtMs: event.startsAtMs, dedupeKey: `${event.instanceId}:started` },
++    { kind: 'event_ending_soon', eventInstanceId: event.instanceId, deliverAtMs: endingSoonAt, dedupeKey: `${event.instanceId}:ending_soon` },
++    { kind: 'event_rewards_ready', eventInstanceId: event.instanceId, deliverAtMs: rewardsReadyAt, dedupeKey: `${event.instanceId}:rewards_ready` },
++  ];
++}
+diff -ruN '--exclude=dist' '--exclude=node_modules' /mnt/data/work_v17/v16_reference_backend/src/server/liveops/party-event-finalization.ts /mnt/data/work_v17/integrated_backend/src/server/liveops/party-event-finalization.ts
+--- /mnt/data/work_v17/v16_reference_backend/src/server/liveops/party-event-finalization.ts	1970-01-01 00:00:00.000000000 +0000
++++ /mnt/data/work_v17/integrated_backend/src/server/liveops/party-event-finalization.ts	2026-09-13 21:14:25.431165174 +0000
+@@ -0,0 +1,72 @@
++import { createHash } from 'node:crypto';
++import { rankPartyEntries, rankingRewardBand, type LeaderboardEntry, type PartyEventPartyProgress } from './party-events';
++import { eventPhase } from './scheduler';
++import type { ScheduledPartyEvent } from './event-definitions';
++
++export interface FinalizedRankSnapshot {
++  partyId: string;
++  rank: number;
++  eligiblePartyCount: number;
++  score: number;
++  percentile: number;
++  rewardBand: Exclude<ReturnType<typeof rankingRewardBand>, 'none'>;
++  meaningfulContributors: number;
++  snapshottedAtMs: number;
++}
++
++export interface PartyEventFinalizationRepository {
++  withFinalizationLock<T>(eventInstanceId: string, work: () => Promise<T>): Promise<T>;
++  getScheduledEvent(eventInstanceId: string): Promise<ScheduledPartyEvent | null>;
++  isFinalized(eventInstanceId: string): Promise<boolean>;
++  listPartyProgress(eventInstanceId: string): Promise<PartyEventPartyProgress[]>;
++  replaceRankSnapshots(eventInstanceId: string, snapshots: readonly FinalizedRankSnapshot[]): Promise<void>;
++  markFinalized(eventInstanceId: string, finalizedAtMs: number, checksum: string): Promise<void>;
++}
++
++function finalizationChecksum(eventInstanceId: string, snapshots: readonly FinalizedRankSnapshot[]): string {
++  return createHash('sha256').update(JSON.stringify({ eventInstanceId, snapshots })).digest().toString('hex');
++}
++
++export async function finalizePartyEvent(
++  repo: PartyEventFinalizationRepository,
++  eventInstanceId: string,
++  nowMs = Date.now(),
++): Promise<{ finalized: boolean; checksum?: string; snapshots: FinalizedRankSnapshot[] }> {
++  return repo.withFinalizationLock(eventInstanceId, async () => {
++    const event = await repo.getScheduledEvent(eventInstanceId);
++    if (!event) throw new Error('event_not_found');
++    if (await repo.isFinalized(eventInstanceId)) return { finalized: false, snapshots: [] };
++    if (eventPhase(event, nowMs) !== 'finalizable') throw new Error('event_not_finalizable');
++
++    const progress = await repo.listPartyProgress(eventInstanceId);
++    const entries: LeaderboardEntry[] = progress.map((party) => {
++      const meaningful = party.members.filter((member) => member.points >= event.definition.meaningfulContributorPoints).length;
++      const categoryMinimum = event.definition.contributionRules.minimumCategoryFraction ?? {};
++      const categoryEligible = (categoryMinimum.combat === undefined || party.combatPoints >= Math.ceil(event.definition.rankedMinimumPartyPoints * categoryMinimum.combat))
++        && (categoryMinimum.skilling === undefined || party.skillingPoints >= Math.ceil(event.definition.rankedMinimumPartyPoints * categoryMinimum.skilling));
++      return {
++        partyId: party.partyId,
++        score: party.score,
++        lastScoreAtMs: party.lastScoreAtMs,
++        meaningfulContributors: meaningful,
++        rankedEligible: party.score >= event.definition.rankedMinimumPartyPoints
++          && meaningful >= event.definition.rankedMinimumMeaningfulContributors
++          && categoryEligible,
++      };
++    });
++    const ranked = rankPartyEntries(entries);
++    const eligiblePartyCount = ranked.length;
++    const snapshots: FinalizedRankSnapshot[] = ranked.map((entry) => {
++      const band = rankingRewardBand(entry.rank, eligiblePartyCount, true);
++      if (band === 'none' || !entry.rank || entry.percentile === undefined) throw new Error('invalid_final_rank');
++      return {
++        partyId: entry.partyId, rank: entry.rank, eligiblePartyCount, score: entry.score,
++        percentile: entry.percentile, rewardBand: band, meaningfulContributors: entry.meaningfulContributors, snapshottedAtMs: nowMs,
++      };
++    });
++    const checksum = finalizationChecksum(eventInstanceId, snapshots);
++    await repo.replaceRankSnapshots(eventInstanceId, snapshots);
++    await repo.markFinalized(eventInstanceId, nowMs, checksum);
++    return { finalized: true, checksum, snapshots };
++  });
++}
+diff -ruN '--exclude=dist' '--exclude=node_modules' /mnt/data/work_v17/v16_reference_backend/src/server/liveops/party-event-service.ts /mnt/data/work_v17/integrated_backend/src/server/liveops/party-event-service.ts
+--- /mnt/data/work_v17/v16_reference_backend/src/server/liveops/party-event-service.ts	1970-01-01 00:00:00.000000000 +0000
++++ /mnt/data/work_v17/integrated_backend/src/server/liveops/party-event-service.ts	2026-09-13 21:18:21.736067343 +0000
+@@ -0,0 +1,116 @@
++import { cappedEventCredit, scoreLiveOpsContribution, type SocialContributionEvent } from './contribution';
++import { evaluatePartyEvent, type PartyEventPartyProgress } from './party-events';
++import type { PartyLiveOpsEventDefinition, ScheduledPartyEvent } from './event-definitions';
++import { eventPhase } from './scheduler';
++
++export interface PartyEventBinding {
++  accountId: string;
++  partyId: string;
++  lockedAtMs: number;
++  pointsAtLock: number;
++}
++
++export interface LockedPartyEventRepository {
++  getScheduledEvent(instanceId: string): Promise<ScheduledPartyEvent | null>;
++  contributionReceiptExists(instanceId: string, accountId: string, sourceEventId: string): Promise<boolean>;
++  pointsCreditedToday(instanceId: string, accountId: string, dateKey: string): Promise<number>;
++  getBinding(instanceId: string, accountId: string): Promise<PartyEventBinding | null>;
++  getMemberPartyPoints(instanceId: string, partyId: string, accountId: string): Promise<number>;
++  getPartyProgress(instanceId: string, partyId: string): Promise<PartyEventPartyProgress>;
++  commitContribution(input: {
++    instanceId: string;
++    accountId: string;
++    partyId: string;
++    partyNameAtSettlement?: string;
++    sourceEventId: string;
++    dateKey: string;
++    category: 'combat' | 'skilling';
++    activityKind: string;
++    contentId: string;
++    rawPoints: number;
++    creditedPoints: number;
++    partyCreditedPoints: number;
++    occurredAtMs: number;
++  }): Promise<'inserted' | 'duplicate'>;
++  lockBinding(input: PartyEventBinding): Promise<void>;
++}
++
++export interface PartyEventRepository {
++  withEventAccountLock<T>(instanceId: string, accountId: string, work: (repo: LockedPartyEventRepository) => Promise<T>): Promise<T>;
++}
++
++export type PartyEventContributionResult =
++  | { ok: false; code: 'event_not_found' | 'event_not_active' | 'no_party' | 'activity_not_eligible' }
++  | { ok: true; duplicate: true }
++  | { ok: true; duplicate: false; rawPoints: number; creditedPoints: number; partyCreditedPoints: number; bindingPartyId?: string; partyEvaluation: ReturnType<typeof evaluatePartyEvent> };
++
++/**
++ * Trusted contribution entrypoint for Party Events. It is intentionally account-serialized to protect daily caps and party binding.
++ * Personal event points remain creditable after switching parties, but once binding locks, only the bound party receives party/ranking points.
++ */
++export async function recordPartyEventContribution(
++  repo: PartyEventRepository,
++  instanceId: string,
++  contribution: SocialContributionEvent,
++  nowMs = contribution.occurredAtMs,
++): Promise<PartyEventContributionResult> {
++  return repo.withEventAccountLock(instanceId, contribution.accountId, async (locked) => {
++    const scheduled = await locked.getScheduledEvent(instanceId);
++    if (!scheduled) return { ok: false, code: 'event_not_found' } as const;
++    if (eventPhase(scheduled, nowMs) !== 'active') return { ok: false, code: 'event_not_active' } as const;
++    const score = scoreLiveOpsContribution(contribution, scheduled.definition);
++    if (!score.eligible) return { ok: false, code: 'activity_not_eligible' } as const;
++    const currentPartyId = contribution.partyIdAtSettlement;
++    if (!currentPartyId) return { ok: false, code: 'no_party' } as const;
++    if (await locked.contributionReceiptExists(instanceId, contribution.accountId, contribution.sourceEventId)) return { ok: true, duplicate: true } as const;
++
++    const creditedToday = await locked.pointsCreditedToday(instanceId, contribution.accountId, contribution.dateKey);
++    const creditedPoints = cappedEventCredit(score.eventPoints, creditedToday, scheduled.definition.contributionRules.dailyAccountCreditCap);
++    const binding = await locked.getBinding(instanceId, contribution.accountId);
++    const partyCreditedPoints = !binding || binding.partyId === currentPartyId ? creditedPoints : 0;
++
++    const committed = await locked.commitContribution({
++      instanceId, accountId: contribution.accountId, partyId: currentPartyId, partyNameAtSettlement: contribution.partyNameAtSettlement, sourceEventId: contribution.sourceEventId,
++      dateKey: contribution.dateKey, category: contribution.profile.category, activityKind: contribution.activityKind,
++      contentId: contribution.contentId, rawPoints: score.eventPoints, creditedPoints, partyCreditedPoints, occurredAtMs: contribution.occurredAtMs,
++    });
++    if (committed === 'duplicate') return { ok: true, duplicate: true } as const;
++
++    let bindingPartyId = binding?.partyId;
++    if (!binding && partyCreditedPoints > 0) {
++      const newPartyPoints = await locked.getMemberPartyPoints(instanceId, currentPartyId, contribution.accountId);
++      if (newPartyPoints >= scheduled.definition.partyBindingLockPoints) {
++        await locked.lockBinding({ accountId: contribution.accountId, partyId: currentPartyId, lockedAtMs: nowMs, pointsAtLock: newPartyPoints });
++        bindingPartyId = currentPartyId;
++      }
++    }
++    const partyProgress = await locked.getPartyProgress(instanceId, currentPartyId);
++    return {
++      ok: true, duplicate: false, rawPoints: score.eventPoints, creditedPoints, partyCreditedPoints,
++      ...(bindingPartyId ? { bindingPartyId } : {}), partyEvaluation: evaluatePartyEvent(scheduled.definition, partyProgress),
++    } as const;
++  });
++}
++
++export interface PartyEventFinalizationSnapshot {
++  instanceId: string;
++  definitionId: string;
++  definitionVersion: number;
++  finalizedAtMs: number;
++  rankedParties: number;
++  checksum: string;
++}
++
++export function personalClaimKey(instanceId: string, accountId: string, milestonePoints: number): string {
++  return `${instanceId}:personal:${accountId}:${milestonePoints}`;
++}
++export function partyClaimKey(instanceId: string, partyId: string, accountId: string, milestonePoints: number): string {
++  return `${instanceId}:party:${partyId}:${accountId}:${milestonePoints}`;
++}
++export function rankingClaimKey(instanceId: string, partyId: string, accountId: string): string {
++  return `${instanceId}:ranking:${partyId}:${accountId}`;
++}
++
++export function immutableDefinitionIdentity(definition: PartyLiveOpsEventDefinition): string {
++  return `${definition.id}@${definition.version}`;
++}
+diff -ruN '--exclude=dist' '--exclude=node_modules' /mnt/data/work_v17/v16_reference_backend/src/server/liveops/party-events.ts /mnt/data/work_v17/integrated_backend/src/server/liveops/party-events.ts
+--- /mnt/data/work_v17/v16_reference_backend/src/server/liveops/party-events.ts	1970-01-01 00:00:00.000000000 +0000
++++ /mnt/data/work_v17/integrated_backend/src/server/liveops/party-events.ts	2026-09-13 21:11:15.543142806 +0000
+@@ -0,0 +1,108 @@
++import type { ContributionCategory } from '../party/party-contracts';
++import type { PartyLiveOpsEventDefinition, RewardBundleRef } from './event-definitions';
++
++export interface PartyEventAccountProgress {
++  accountId: string;
++  personalPoints: number;
++  combatPoints: number;
++  skillingPoints: number;
++}
++
++export interface PartyEventMemberProgress {
++  accountId: string;
++  partyId: string;
++  points: number;
++  combatPoints: number;
++  skillingPoints: number;
++  firstContributionAtMs?: number;
++  lastContributionAtMs?: number;
++}
++
++export interface PartyEventPartyProgress {
++  partyId: string;
++  score: number;
++  combatPoints: number;
++  skillingPoints: number;
++  lastScoreAtMs: number;
++  members: readonly PartyEventMemberProgress[];
++}
++
++export interface PartyEventEvaluation {
++  partyScore: number;
++  combatPoints: number;
++  skillingPoints: number;
++  meaningfulContributors: string[];
++  rankedEligible: boolean;
++  rankedEligibilityMissing: string[];
++  reachedPartyMilestones: number[];
++}
++
++export interface LeaderboardEntry {
++  partyId: string;
++  partyName?: string;
++  score: number;
++  lastScoreAtMs: number;
++  meaningfulContributors: number;
++  rankedEligible: boolean;
++  rank?: number;
++  percentile?: number;
++}
++
++export type RankingRewardBand = 'top10' | 'top100' | 'top10_percent' | 'top25_percent' | 'qualified' | 'none';
++
++export function evaluatePartyEvent(definition: PartyLiveOpsEventDefinition, progress: PartyEventPartyProgress): PartyEventEvaluation {
++  const meaningfulContributors = progress.members
++    .filter((member) => member.points >= definition.meaningfulContributorPoints)
++    .map((member) => member.accountId);
++  const missing: string[] = [];
++  if (progress.score < definition.rankedMinimumPartyPoints) missing.push('party_points');
++  if (meaningfulContributors.length < definition.rankedMinimumMeaningfulContributors) missing.push('meaningful_contributors');
++  const categoryTotals: Record<ContributionCategory, number> = { combat: progress.combatPoints, skilling: progress.skillingPoints };
++  for (const [category, fraction] of Object.entries(definition.contributionRules.minimumCategoryFraction ?? {}) as [ContributionCategory, number][]) {
++    if (categoryTotals[category] < Math.ceil(definition.rankedMinimumPartyPoints * fraction)) missing.push(`minimum_${category}_share`);
++  }
++  return {
++    partyScore: progress.score,
++    combatPoints: progress.combatPoints,
++    skillingPoints: progress.skillingPoints,
++    meaningfulContributors,
++    rankedEligible: missing.length === 0,
++    rankedEligibilityMissing: missing,
++    reachedPartyMilestones: definition.partyMilestones.filter((m) => progress.score >= m.points).map((m) => m.points),
++  };
++}
++
++export function reachedPersonalMilestones(definition: PartyLiveOpsEventDefinition, personalPoints: number): number[] {
++  return definition.personalMilestones.filter((m) => personalPoints >= m.points).map((m) => m.points);
++}
++
++export function rankPartyEntries(entries: readonly LeaderboardEntry[]): LeaderboardEntry[] {
++  const eligible = entries.filter((entry) => entry.rankedEligible)
++    .sort((a, b) => b.score - a.score || a.lastScoreAtMs - b.lastScoreAtMs || a.partyId.localeCompare(b.partyId));
++  const total = eligible.length;
++  return eligible.map((entry, index) => ({ ...entry, rank: index + 1, percentile: total === 0 ? 100 : ((index + 1) / total) * 100 }));
++}
++
++export function rankingRewardBand(rank: number | undefined, eligiblePartyCount: number, rankedEligible: boolean): RankingRewardBand {
++  if (!rankedEligible || !rank || eligiblePartyCount <= 0) return 'none';
++  if (rank <= 10) return 'top10';
++  if (rank <= 100) return 'top100';
++  if (rank <= Math.max(1, Math.ceil(eligiblePartyCount * 0.10))) return 'top10_percent';
++  if (rank <= Math.max(1, Math.ceil(eligiblePartyCount * 0.25))) return 'top25_percent';
++  return 'qualified';
++}
++
++export function rankingRewardForBand(definition: PartyLiveOpsEventDefinition, band: RankingRewardBand): RewardBundleRef | undefined {
++  switch (band) {
++    case 'top10': return definition.rankingRewards.top10 ?? definition.rankingRewards.top100 ?? definition.rankingRewards.qualified;
++    case 'top100': return definition.rankingRewards.top100 ?? definition.rankingRewards.top10Percent ?? definition.rankingRewards.qualified;
++    case 'top10_percent': return definition.rankingRewards.top10Percent ?? definition.rankingRewards.top25Percent ?? definition.rankingRewards.qualified;
++    case 'top25_percent': return definition.rankingRewards.top25Percent ?? definition.rankingRewards.qualified;
++    case 'qualified': return definition.rankingRewards.qualified;
++    default: return undefined;
++  }
++}
++
++export function memberEligibleForPartyEventReward(definition: PartyLiveOpsEventDefinition, member: PartyEventMemberProgress | undefined): boolean {
++  return Boolean(member && member.points >= definition.personalPartyRewardEligibilityPoints);
++}
+diff -ruN '--exclude=dist' '--exclude=node_modules' /mnt/data/work_v17/v16_reference_backend/src/server/liveops/reward-service.ts /mnt/data/work_v17/integrated_backend/src/server/liveops/reward-service.ts
+--- /mnt/data/work_v17/v16_reference_backend/src/server/liveops/reward-service.ts	1970-01-01 00:00:00.000000000 +0000
++++ /mnt/data/work_v17/integrated_backend/src/server/liveops/reward-service.ts	2026-09-13 21:14:25.431963205 +0000
+@@ -0,0 +1,73 @@
++import { memberEligibleForPartyEventReward, rankingRewardForBand, reachedPersonalMilestones, type PartyEventMemberProgress, type RankingRewardBand } from './party-events';
++import { partyClaimKey, personalClaimKey, rankingClaimKey, type PartyEventBinding } from './party-event-service';
++import type { PartyLiveOpsEventDefinition, ScheduledPartyEvent } from './event-definitions';
++
++export type LiveOpsRewardClaimInput =
++  | { kind: 'personal_milestone'; eventInstanceId: string; accountId: string; milestonePoints: number }
++  | { kind: 'party_milestone'; eventInstanceId: string; accountId: string; milestonePoints: number }
++  | { kind: 'ranking'; eventInstanceId: string; accountId: string };
++
++export interface LiveOpsRankSnapshotForClaim { partyId: string; rewardBand: Exclude<RankingRewardBand, 'none'>; }
++export interface LiveOpsRewardRepository {
++  withRewardClaimLock<T>(claimKey: string, work: () => Promise<T>): Promise<T>;
++  getScheduledEvent(eventInstanceId: string): Promise<ScheduledPartyEvent | null>;
++  getPersonalPoints(eventInstanceId: string, accountId: string): Promise<number>;
++  getBinding(eventInstanceId: string, accountId: string): Promise<PartyEventBinding | null>;
++  getMemberProgress(eventInstanceId: string, partyId: string, accountId: string): Promise<PartyEventMemberProgress | null>;
++  getPartyScore(eventInstanceId: string, partyId: string): Promise<number>;
++  getFinalRank(eventInstanceId: string, partyId: string): Promise<LiveOpsRankSnapshotForClaim | null>;
++  isFinalized(eventInstanceId: string): Promise<boolean>;
++  claimExists(claimKey: string): Promise<boolean>;
++  /** Existing economy transaction path; must itself be idempotent by claimKey. */
++  grantRewardBundle(accountId: string, rewardBundleId: string, claimKey: string): Promise<string>;
++  recordClaim(input: { claimKey: string; eventInstanceId: string; accountId: string; partyId?: string; rewardKind: LiveOpsRewardClaimInput['kind']; milestonePoints?: number; rewardBundleId: string; grantedTransactionId: string }): Promise<void>;
++}
++
++function milestoneBundle(definition: PartyLiveOpsEventDefinition, kind: 'personal' | 'party', points: number): string | undefined {
++  const milestones = kind === 'personal' ? definition.personalMilestones : definition.partyMilestones;
++  return milestones.find((milestone) => milestone.points === points)?.reward.bundleId;
++}
++
++export async function claimLiveOpsEventReward(repo: LiveOpsRewardRepository, input: LiveOpsRewardClaimInput): Promise<{ claimed: boolean; rewardBundleId?: string; transactionId?: string }> {
++  const event = await repo.getScheduledEvent(input.eventInstanceId);
++  if (!event) throw new Error('event_not_found');
++  const binding = await repo.getBinding(input.eventInstanceId, input.accountId);
++  const claimKey = input.kind === 'personal_milestone'
++    ? personalClaimKey(input.eventInstanceId, input.accountId, input.milestonePoints)
++    : input.kind === 'party_milestone'
++      ? partyClaimKey(input.eventInstanceId, binding?.partyId ?? 'unbound', input.accountId, input.milestonePoints)
++      : rankingClaimKey(input.eventInstanceId, binding?.partyId ?? 'unbound', input.accountId);
++
++  return repo.withRewardClaimLock(claimKey, async () => {
++    if (await repo.claimExists(claimKey)) return { claimed: false };
++    let rewardBundleId: string | undefined;
++    let partyId: string | undefined;
++
++    if (input.kind === 'personal_milestone') {
++      const personalPoints = await repo.getPersonalPoints(input.eventInstanceId, input.accountId);
++      if (!reachedPersonalMilestones(event.definition, personalPoints).includes(input.milestonePoints)) throw new Error('personal_milestone_not_reached');
++      rewardBundleId = milestoneBundle(event.definition, 'personal', input.milestonePoints);
++    } else if (input.kind === 'party_milestone') {
++      if (!binding) throw new Error('party_event_binding_required');
++      partyId = binding.partyId;
++      const member = await repo.getMemberProgress(input.eventInstanceId, partyId, input.accountId);
++      if (!memberEligibleForPartyEventReward(event.definition, member ?? undefined)) throw new Error('personal_party_reward_eligibility_not_met');
++      const partyScore = await repo.getPartyScore(input.eventInstanceId, partyId);
++      if (partyScore < input.milestonePoints) throw new Error('party_milestone_not_reached');
++      rewardBundleId = milestoneBundle(event.definition, 'party', input.milestonePoints);
++    } else {
++      if (!await repo.isFinalized(input.eventInstanceId)) throw new Error('ranking_not_finalized');
++      if (!binding) throw new Error('party_event_binding_required');
++      partyId = binding.partyId;
++      const member = await repo.getMemberProgress(input.eventInstanceId, partyId, input.accountId);
++      if (!memberEligibleForPartyEventReward(event.definition, member ?? undefined)) throw new Error('personal_party_reward_eligibility_not_met');
++      const rank = await repo.getFinalRank(input.eventInstanceId, partyId);
++      if (!rank) throw new Error('party_not_ranked');
++      rewardBundleId = rankingRewardForBand(event.definition, rank.rewardBand)?.bundleId;
++    }
++    if (!rewardBundleId) throw new Error('reward_bundle_not_configured');
++    const transactionId = await repo.grantRewardBundle(input.accountId, rewardBundleId, claimKey);
++    await repo.recordClaim({ claimKey, eventInstanceId: input.eventInstanceId, accountId: input.accountId, ...(partyId ? { partyId } : {}), rewardKind: input.kind, ...('milestonePoints' in input ? { milestonePoints: input.milestonePoints } : {}), rewardBundleId, grantedTransactionId: transactionId });
++    return { claimed: true, rewardBundleId, transactionId };
++  });
++}
+diff -ruN '--exclude=dist' '--exclude=node_modules' /mnt/data/work_v17/v16_reference_backend/src/server/liveops/scheduler.ts /mnt/data/work_v17/integrated_backend/src/server/liveops/scheduler.ts
+--- /mnt/data/work_v17/v16_reference_backend/src/server/liveops/scheduler.ts	1970-01-01 00:00:00.000000000 +0000
++++ /mnt/data/work_v17/integrated_backend/src/server/liveops/scheduler.ts	2026-09-13 21:11:15.546038587 +0000
+@@ -0,0 +1,39 @@
++import {
++  PARTY_EVENT_DEFAULT_SETTLEMENT_GRACE_MINUTES,
++  PARTY_EVENT_MAX_DURATION_HOURS,
++  PARTY_EVENT_MIN_DURATION_HOURS,
++  validatePartyEventDefinition,
++  type PartyLiveOpsEventDefinition,
++  type ScheduledPartyEvent,
++} from './event-definitions';
++
++export interface EventScheduleInput {
++  instanceId: string;
++  definition: PartyLiveOpsEventDefinition;
++  startsAtMs: number;
++  endsAtMs?: number;
++  settlementGraceMinutes?: number;
++}
++
++export function createScheduledPartyEvent(input: EventScheduleInput): ScheduledPartyEvent {
++  const errors = validatePartyEventDefinition(input.definition);
++  if (errors.length > 0) throw new Error(`invalid_event_definition:${errors.join(',')}`);
++  const endsAtMs = input.endsAtMs ?? input.startsAtMs + input.definition.durationHours * 60 * 60 * 1000;
++  const durationHours = (endsAtMs - input.startsAtMs) / 3_600_000;
++  if (durationHours < PARTY_EVENT_MIN_DURATION_HOURS || durationHours > PARTY_EVENT_MAX_DURATION_HOURS) throw new Error('event_schedule_duration_out_of_range');
++  const grace = input.settlementGraceMinutes ?? PARTY_EVENT_DEFAULT_SETTLEMENT_GRACE_MINUTES;
++  if (grace < 5 || grace > 30) throw new Error('settlement_grace_out_of_range');
++  return { instanceId: input.instanceId, definition: input.definition, startsAtMs: input.startsAtMs, endsAtMs, settlementGraceMinutes: grace };
++}
++
++export function eventPhase(event: ScheduledPartyEvent, nowMs: number): 'scheduled' | 'active' | 'settling' | 'finalizable' {
++  if (nowMs < event.startsAtMs) return 'scheduled';
++  if (nowMs < event.endsAtMs) return 'active';
++  const graceEnds = event.endsAtMs + event.settlementGraceMinutes * 60_000;
++  return nowMs < graceEnds ? 'settling' : 'finalizable';
++}
++
++export function assertNoOverlappingPartyEvents(candidate: ScheduledPartyEvent, existing: readonly ScheduledPartyEvent[]): void {
++  const overlaps = existing.some((event) => candidate.startsAtMs < event.endsAtMs && event.startsAtMs < candidate.endsAtMs);
++  if (overlaps) throw new Error('party_event_schedule_overlap');
++}
+diff -ruN '--exclude=dist' '--exclude=node_modules' /mnt/data/work_v17/v16_reference_backend/src/server/liveops/social-contribution-router.ts /mnt/data/work_v17/integrated_backend/src/server/liveops/social-contribution-router.ts
+--- /mnt/data/work_v17/v16_reference_backend/src/server/liveops/social-contribution-router.ts	1970-01-01 00:00:00.000000000 +0000
++++ /mnt/data/work_v17/integrated_backend/src/server/liveops/social-contribution-router.ts	2026-09-13 21:17:26.430389225 +0000
+@@ -0,0 +1,44 @@
++import type { RecordContributionResult } from '../party/party-contract-service';
++import type { PartyEventContributionResult } from './party-event-service';
++import type { SocialContributionEvent } from './contribution';
++
++export interface ActiveSocialTargets {
++  /** Snapshotted at authoritative settlement time, never discovered later by a delayed worker. */
++  partyContractInstanceId?: string;
++  partyEventInstanceIds: string[];
++}
++
++export interface SocialContributionEnvelope {
++  event: SocialContributionEvent;
++  targets: ActiveSocialTargets;
++}
++
++export interface SocialContributionRouterDependencies {
++  recordContract?: (contractInstanceId: string, event: SocialContributionEvent) => Promise<RecordContributionResult>;
++  recordPartyEvent: (eventInstanceId: string, event: SocialContributionEvent) => Promise<PartyEventContributionResult>;
++}
++
++export interface SocialContributionRoutingResult {
++  contract?: RecordContributionResult;
++  partyEvents: { eventInstanceId: string; result: PartyEventContributionResult }[];
++}
++
++/**
++ * One trusted settlement event can feed the active Party Contract and active Party Event in parallel.
++ * Targets and partyIdAtSettlement are snapshotted when the gameplay/economy transaction commits, so delayed
++ * outbox processing cannot reassign credit after a Party change.
++ */
++export async function routeSocialContribution(
++  deps: SocialContributionRouterDependencies,
++  envelope: SocialContributionEnvelope,
++): Promise<SocialContributionRoutingResult> {
++  const { event, targets } = envelope;
++  const contract = targets.partyContractInstanceId && deps.recordContract
++    ? await deps.recordContract(targets.partyContractInstanceId, event)
++    : undefined;
++  const partyEvents = [] as SocialContributionRoutingResult['partyEvents'];
++  for (const eventInstanceId of targets.partyEventInstanceIds) {
++    partyEvents.push({ eventInstanceId, result: await deps.recordPartyEvent(eventInstanceId, event) });
++  }
++  return { ...(contract ? { contract } : {}), partyEvents };
++}
+diff -ruN '--exclude=dist' '--exclude=node_modules' /mnt/data/work_v17/v16_reference_backend/src/server/party/party-contract-service.ts /mnt/data/work_v17/integrated_backend/src/server/party/party-contract-service.ts
+--- /mnt/data/work_v17/v16_reference_backend/src/server/party/party-contract-service.ts	2026-09-13 21:21:09.699749860 +0000
++++ /mnt/data/work_v17/integrated_backend/src/server/party/party-contract-service.ts	2026-09-13 21:17:45.114128360 +0000
+@@ -16,12 +16,16 @@
+   dateKey: string;
+   profile: AuthoritativeContributionProfile;
+   units: number;
++  /** Trusted server snapshot for delayed outbox processing. */
++  partyIdAtSettlement?: string;
+ }
+ 
+ /** Operations used while holding one (contract_instance_id, account_id) contribution lock. */
+ export interface LockedPartyContractRepository {
+   getDefinitionForInstance(contractInstanceId: string): Promise<PartyContractDefinition | null>;
+   accountIsCurrentPartyMember(contractInstanceId: string, accountId: string): Promise<boolean>;
++  /** Optional v17 adapter: lets delayed settlement validate the snapshotted Party instead of current membership. */
++  contractPartyId?(contractInstanceId: string): Promise<string | null>;
+   contributionReceiptExists(contractInstanceId: string, accountId: string, sourceEventId: string): Promise<boolean>;
+   pointsCreditedToday(contractInstanceId: string, accountId: string, dateKey: string): Promise<number>;
+   progressForAccount(contractInstanceId: string, accountId: string): Promise<PartyContractMemberProgress | null>;
+@@ -69,7 +73,10 @@
+   return repo.withContributionLock(input.contractInstanceId, input.accountId, async (locked) => {
+     const definition = await locked.getDefinitionForInstance(input.contractInstanceId);
+     if (!definition) return { ok: false, code: 'contract_not_found' } as const;
+-    if (!await locked.accountIsCurrentPartyMember(input.contractInstanceId, input.accountId)) {
++    if (input.partyIdAtSettlement && locked.contractPartyId) {
++      const contractPartyId = await locked.contractPartyId(input.contractInstanceId);
++      if (!contractPartyId || contractPartyId !== input.partyIdAtSettlement) return { ok: false, code: 'not_party_member' } as const;
++    } else if (!await locked.accountIsCurrentPartyMember(input.contractInstanceId, input.accountId)) {
+       return { ok: false, code: 'not_party_member' } as const;
+     }
+     if (await locked.contributionReceiptExists(input.contractInstanceId, input.accountId, input.sourceEventId)) {
+diff -ruN '--exclude=dist' '--exclude=node_modules' /mnt/data/work_v17/v16_reference_backend/src/server/social/guild-recruitment-service.ts /mnt/data/work_v17/integrated_backend/src/server/social/guild-recruitment-service.ts
+--- /mnt/data/work_v17/v16_reference_backend/src/server/social/guild-recruitment-service.ts	1970-01-01 00:00:00.000000000 +0000
++++ /mnt/data/work_v17/integrated_backend/src/server/social/guild-recruitment-service.ts	2026-09-13 21:11:52.984219248 +0000
+@@ -0,0 +1,117 @@
++export type GuildRecruitmentRequestStatus = 'pending' | 'accepted' | 'declined' | 'expired' | 'cancelled';
++
++export interface GuildRecruitmentActor {
++  accountId: string;
++  guildId?: string;
++  canManageRecruitment: boolean;
++}
++
++export interface GuildApplicationRecord {
++  id: string;
++  guildId: string;
++  accountId: string;
++  characterId: string;
++  note: string;
++  status: GuildRecruitmentRequestStatus;
++  expiresAtMs: number;
++}
++
++export interface GuildInviteRecord {
++  id: string;
++  guildId: string;
++  accountId: string;
++  invitedByAccountId: string;
++  status: GuildRecruitmentRequestStatus;
++  expiresAtMs: number;
++}
++
++export interface GuildRecruitmentRepository {
++  accountGuildId(accountId: string): Promise<string | null>;
++  guildHasSpace(guildId: string): Promise<boolean>;
++  canManageRecruitment(accountId: string, guildId: string): Promise<boolean>;
++  createApplication(input: Omit<GuildApplicationRecord, 'id' | 'status'>): Promise<GuildApplicationRecord>;
++  getApplication(id: string): Promise<GuildApplicationRecord | null>;
++  setApplicationStatus(id: string, status: GuildRecruitmentRequestStatus): Promise<void>;
++  createInvite(input: Omit<GuildInviteRecord, 'id' | 'status'>): Promise<GuildInviteRecord>;
++  getInvite(id: string): Promise<GuildInviteRecord | null>;
++  setInviteStatus(id: string, status: GuildRecruitmentRequestStatus): Promise<void>;
++  addGuildMember(guildId: string, accountId: string, characterId: string): Promise<void>;
++}
++
++export class GuildRecruitmentError extends Error {
++  constructor(public readonly code: string) { super(code); }
++}
++
++export async function applyToGuild(
++  repo: GuildRecruitmentRepository,
++  accountId: string,
++  characterId: string,
++  guildId: string,
++  note: string,
++  nowMs = Date.now(),
++): Promise<GuildApplicationRecord> {
++  if (await repo.accountGuildId(accountId)) throw new GuildRecruitmentError('already_in_guild');
++  if (!await repo.guildHasSpace(guildId)) throw new GuildRecruitmentError('guild_full');
++  return repo.createApplication({ guildId, accountId, characterId, note: note.replace(/\s+/g, ' ').trim().slice(0, 180), expiresAtMs: nowMs + 72 * 60 * 60 * 1000 });
++}
++
++export async function respondGuildApplication(
++  repo: GuildRecruitmentRepository,
++  managerAccountId: string,
++  applicationId: string,
++  accept: boolean,
++  nowMs = Date.now(),
++): Promise<void> {
++  const application = await repo.getApplication(applicationId);
++  if (!application || application.status !== 'pending') throw new GuildRecruitmentError('application_not_available');
++  if (!await repo.canManageRecruitment(managerAccountId, application.guildId)) throw new GuildRecruitmentError('recruitment_permission_required');
++  if (application.expiresAtMs <= nowMs) {
++    await repo.setApplicationStatus(applicationId, 'expired');
++    throw new GuildRecruitmentError('application_expired');
++  }
++  if (!accept) {
++    await repo.setApplicationStatus(applicationId, 'declined');
++    return;
++  }
++  if (await repo.accountGuildId(application.accountId)) throw new GuildRecruitmentError('applicant_already_in_guild');
++  if (!await repo.guildHasSpace(application.guildId)) throw new GuildRecruitmentError('guild_full');
++  await repo.addGuildMember(application.guildId, application.accountId, application.characterId);
++  await repo.setApplicationStatus(applicationId, 'accepted');
++}
++
++export async function invitePlayerToGuild(
++  repo: GuildRecruitmentRepository,
++  managerAccountId: string,
++  guildId: string,
++  targetAccountId: string,
++  nowMs = Date.now(),
++): Promise<GuildInviteRecord> {
++  if (!await repo.canManageRecruitment(managerAccountId, guildId)) throw new GuildRecruitmentError('recruitment_permission_required');
++  if (!await repo.guildHasSpace(guildId)) throw new GuildRecruitmentError('guild_full');
++  if (await repo.accountGuildId(targetAccountId)) throw new GuildRecruitmentError('target_already_in_guild');
++  return repo.createInvite({ guildId, accountId: targetAccountId, invitedByAccountId: managerAccountId, expiresAtMs: nowMs + 72 * 60 * 60 * 1000 });
++}
++
++export async function respondGuildInvite(
++  repo: GuildRecruitmentRepository,
++  accountId: string,
++  characterId: string,
++  inviteId: string,
++  accept: boolean,
++  nowMs = Date.now(),
++): Promise<void> {
++  const invite = await repo.getInvite(inviteId);
++  if (!invite || invite.accountId !== accountId || invite.status !== 'pending') throw new GuildRecruitmentError('invite_not_available');
++  if (invite.expiresAtMs <= nowMs) {
++    await repo.setInviteStatus(inviteId, 'expired');
++    throw new GuildRecruitmentError('invite_expired');
++  }
++  if (!accept) {
++    await repo.setInviteStatus(inviteId, 'declined');
++    return;
++  }
++  if (await repo.accountGuildId(accountId)) throw new GuildRecruitmentError('already_in_guild');
++  if (!await repo.guildHasSpace(invite.guildId)) throw new GuildRecruitmentError('guild_full');
++  await repo.addGuildMember(invite.guildId, accountId, characterId);
++  await repo.setInviteStatus(inviteId, 'accepted');
++}
+diff -ruN '--exclude=dist' '--exclude=node_modules' /mnt/data/work_v17/v16_reference_backend/src/server/social/guild-recruitment-v17.test.ts /mnt/data/work_v17/integrated_backend/src/server/social/guild-recruitment-v17.test.ts
+--- /mnt/data/work_v17/v16_reference_backend/src/server/social/guild-recruitment-v17.test.ts	1970-01-01 00:00:00.000000000 +0000
++++ /mnt/data/work_v17/integrated_backend/src/server/social/guild-recruitment-v17.test.ts	2026-09-13 21:13:51.539376331 +0000
+@@ -0,0 +1,17 @@
++import { guildRequirementsMet, scoreGuildCompatibility, scorePartyCompatibility, type GuildRecruitmentProfile, type PartyRecruitmentPost, type PlayerGuildSeekerPost, type PlayerPartySeekerPost } from './recruitment';
++
++function assert(value: unknown, message: string): asserts value { if (!value) throw new Error(message); }
++
++const seeker: PlayerPartySeekerPost = { kind:'player_lfg', accountId:'a', characterId:'c', activityPreference:'mixed', playStyle:'balanced', goalTags:['party_events'], activeEventTags:['rift'], description:'event party' };
++const baseParty: PartyRecruitmentPost = { kind:'party_lfm', partyId:'p', ownerAccountId:'o', activityPreference:'mixed', playStyle:'balanced', goalTags:['party_events'], description:'party', memberCount:2, maxMembers:4 };
++const eventParty = { ...baseParty, activeEventTags:['rift'] };
++assert(scorePartyCompatibility(seeker, eventParty).score > scorePartyCompatibility(seeker, baseParty).score, 'shared event is a soft bonus');
++assert(scorePartyCompatibility(seeker, baseParty).score >= 70, 'exact event tag must not be required for a strong general match');
++
++const guildSeeker: PlayerGuildSeekerPost = { kind:'player_guild_lfg', accountId:'a', characterId:'c', desiredFocusTags:['pve','events'], playStyle:'balanced', description:'guild', combatLevel:80, totalLevel:700, activeEventTags:['rift'] };
++const guild: GuildRecruitmentProfile = { kind:'guild_lfm', guildId:'g', ownerAccountId:'o', focusTags:['pve','events'], playStyle:'balanced', description:'guild', memberCount:20, memberCap:30, activeEventTags:['rift'], requirements:{minCombatLevel:70,minTotalLevel:600,applicationRequired:true} };
++assert(guildRequirementsMet(guildSeeker, guild), 'qualified seeker should meet requirements');
++assert(scoreGuildCompatibility(guildSeeker, guild).score >= 75, 'strong guild match should score highly');
++assert(!guildRequirementsMet({ ...guildSeeker, totalLevel:500 }, guild), 'minimum total level should be enforced');
++
++console.log('guild-recruitment-v17 ok');
+diff -ruN '--exclude=dist' '--exclude=node_modules' /mnt/data/work_v17/v16_reference_backend/src/server/social/recruitment-ui.ts /mnt/data/work_v17/integrated_backend/src/server/social/recruitment-ui.ts
+--- /mnt/data/work_v17/v16_reference_backend/src/server/social/recruitment-ui.ts	2026-09-13 21:21:09.701895872 +0000
++++ /mnt/data/work_v17/integrated_backend/src/server/social/recruitment-ui.ts	2026-09-13 21:11:52.985128772 +0000
+@@ -6,55 +6,46 @@
+ } from './recruitment';
+ 
+ export type RecruitmentBoardItem =
+-  | { type: 'party'; id: string; title: string; subtitle: string; description: string; tags: string[]; action: 'request_join' }
+-  | { type: 'party_seeker'; id: string; title: string; subtitle: string; description: string; tags: string[]; action: 'invite_to_party' }
+-  | { type: 'guild'; id: string; title: string; subtitle: string; description: string; tags: string[]; action: 'apply_to_guild' }
+-  | { type: 'guild_seeker'; id: string; title: string; subtitle: string; description: string; tags: string[]; action: 'invite_to_guild' };
++  | { type: 'party'; id: string; title: string; subtitle: string; description: string; tags: string[]; eventTags: string[]; action: 'request_join' }
++  | { type: 'party_seeker'; id: string; title: string; subtitle: string; description: string; tags: string[]; eventTags: string[]; action: 'invite_to_party' }
++  | { type: 'guild'; id: string; title: string; subtitle: string; description: string; tags: string[]; eventTags: string[]; action: 'apply_to_guild' }
++  | { type: 'guild_seeker'; id: string; title: string; subtitle: string; description: string; tags: string[]; eventTags: string[]; action: 'invite_to_guild' };
+ 
+ export function partyPostToBoardItem(post: PartyRecruitmentPost): RecruitmentBoardItem {
+   return {
+-    type: 'party',
+-    id: post.partyId,
+-    title: `${post.memberCount}/${post.maxMembers} Party`,
+-    subtitle: `${post.activityPreference} · ${post.playStyle}`,
+-    description: post.description,
+-    tags: [...post.goalTags],
+-    action: 'request_join',
++    type: 'party', id: post.partyId, title: `${post.memberCount}/${post.maxMembers} Party`,
++    subtitle: `${post.activityPreference} · ${post.playStyle}`, description: post.description,
++    tags: [...post.goalTags], eventTags: [...(post.activeEventTags ?? [])], action: 'request_join',
+   };
+ }
+ 
+ export function partySeekerToBoardItem(post: PlayerPartySeekerPost): RecruitmentBoardItem {
+   return {
+-    type: 'party_seeker',
+-    id: post.accountId,
++    type: 'party_seeker', id: post.accountId,
+     title: post.classId ? `${post.classId}${post.combatLevel ? ` · Lv ${post.combatLevel}` : ''}` : 'Player looking for Party',
+-    subtitle: `${post.activityPreference} · ${post.playStyle}`,
+-    description: post.description,
+-    tags: [...post.goalTags],
+-    action: 'invite_to_party',
++    subtitle: `${post.activityPreference} · ${post.playStyle}`, description: post.description,
++    tags: [...post.goalTags], eventTags: [...(post.activeEventTags ?? [])], action: 'invite_to_party',
+   };
+ }
+ 
+ export function guildPostToBoardItem(post: GuildRecruitmentProfile): RecruitmentBoardItem {
++  const requirements = post.requirements;
++  const requirementParts = [
++    requirements?.minTotalLevel ? `Total ${requirements.minTotalLevel}+` : '',
++    requirements?.minCombatLevel ? `Combat ${requirements.minCombatLevel}+` : '',
++  ].filter(Boolean);
+   return {
+-    type: 'guild',
+-    id: post.guildId,
+-    title: `${post.memberCount}/${post.memberCap} Guild`,
+-    subtitle: post.playStyle,
+-    description: post.description,
+-    tags: [...post.focusTags],
+-    action: 'apply_to_guild',
++    type: 'guild', id: post.guildId, title: `${post.memberCount}/${post.memberCap} Guild`,
++    subtitle: [post.playStyle, ...requirementParts].join(' · '), description: post.description,
++    tags: [...post.focusTags], eventTags: [...(post.activeEventTags ?? [])], action: 'apply_to_guild',
+   };
+ }
+ 
+ export function guildSeekerToBoardItem(post: PlayerGuildSeekerPost): RecruitmentBoardItem {
+   return {
+-    type: 'guild_seeker',
+-    id: post.accountId,
++    type: 'guild_seeker', id: post.accountId,
+     title: post.classId ? `${post.classId}${post.combatLevel ? ` · Lv ${post.combatLevel}` : ''}` : 'Player looking for Guild',
+-    subtitle: post.playStyle,
+-    description: post.description,
+-    tags: [...post.desiredFocusTags],
+-    action: 'invite_to_guild',
++    subtitle: `${post.playStyle}${post.totalLevel ? ` · Total ${post.totalLevel}` : ''}`, description: post.description,
++    tags: [...post.desiredFocusTags], eventTags: [...(post.activeEventTags ?? [])], action: 'invite_to_guild',
+   };
+ }
+diff -ruN '--exclude=dist' '--exclude=node_modules' /mnt/data/work_v17/v16_reference_backend/src/server/social/recruitment.ts /mnt/data/work_v17/integrated_backend/src/server/social/recruitment.ts
+--- /mnt/data/work_v17/v16_reference_backend/src/server/social/recruitment.ts	2026-09-13 21:21:09.701971456 +0000
++++ /mnt/data/work_v17/integrated_backend/src/server/social/recruitment.ts	2026-09-13 21:12:47.491990107 +0000
+@@ -2,6 +2,7 @@
+ 
+ export const RECRUITMENT_POST_TTL_HOURS = 24;
+ export const GUILD_SEEKER_DESCRIPTION_MAX = 220;
++export const MAX_RECRUITMENT_EVENT_TAGS = 3;
+ 
+ export type PartyGoalTag =
+   | 'weekly_contracts'
+@@ -31,6 +32,8 @@
+   activityPreference: PartyActivityPreference;
+   playStyle: PartyPlayStyle;
+   goalTags: readonly PartyGoalTag[];
++  /** Optional current live-ops interests. Never use these as hard matchmaking requirements. */
++  activeEventTags?: readonly string[];
+   description: string;
+   memberCount: number;
+   maxMembers: 4;
+@@ -43,20 +46,29 @@
+   activityPreference: PartyActivityPreference;
+   playStyle: PartyPlayStyle;
+   goalTags: readonly PartyGoalTag[];
++  activeEventTags?: readonly string[];
+   description: string;
+   classId?: string;
+   combatLevel?: number;
+ }
+ 
++export interface GuildRecruitmentRequirements {
++  minTotalLevel?: number;
++  minCombatLevel?: number;
++  applicationRequired: boolean;
++}
++
+ export interface GuildRecruitmentProfile {
+   kind: 'guild_lfm';
+   guildId: string;
+   ownerAccountId: string;
+   focusTags: readonly GuildFocusTag[];
+   playStyle: PartyPlayStyle;
++  activeEventTags?: readonly string[];
+   description: string;
+   memberCount: number;
+   memberCap: number;
++  requirements?: GuildRecruitmentRequirements;
+ }
+ 
+ export interface PlayerGuildSeekerPost {
+@@ -65,9 +77,11 @@
+   characterId: string;
+   desiredFocusTags: readonly GuildFocusTag[];
+   playStyle: PartyPlayStyle;
++  activeEventTags?: readonly string[];
+   description: string;
+   classId?: string;
+   combatLevel?: number;
++  totalLevel?: number;
+ }
+ 
+ export interface RecruitmentCompatibility {
+@@ -80,6 +94,12 @@
+   return a.filter((value) => bSet.has(value));
+ }
+ 
++function eventTagOverlap(a: readonly string[] | undefined, b: readonly string[] | undefined): string[] {
++  if (!a || !b) return [];
++  const bSet = new Set(b);
++  return a.filter((value) => bSet.has(value));
++}
++
+ function playStyleScore(a: PartyPlayStyle, b: PartyPlayStyle): number {
+   if (a === b) return 20;
+   const order: PartyPlayStyle[] = ['casual', 'balanced', 'active', 'competitive'];
+@@ -93,10 +113,16 @@
+   return 5;
+ }
+ 
++function normalizeEventTags(tags: readonly string[] | undefined): string[] | undefined {
++  if (!tags) return undefined;
++  return [...new Set(tags.map((tag) => tag.trim().toLowerCase()).filter(Boolean))].slice(0, MAX_RECRUITMENT_EVENT_TAGS);
++}
++
+ export function normalizePartyRecruitmentPost(post: PartyRecruitmentPost): PartyRecruitmentPost {
+   return {
+     ...post,
+     goalTags: [...new Set(post.goalTags)].slice(0, 6),
++    activeEventTags: normalizeEventTags(post.activeEventTags),
+     description: normalizeRecruitmentDescription(post.description),
+   };
+ }
+@@ -105,6 +131,7 @@
+   return {
+     ...post,
+     goalTags: [...new Set(post.goalTags)].slice(0, 6),
++    activeEventTags: normalizeEventTags(post.activeEventTags),
+     description: normalizeRecruitmentDescription(post.description),
+   };
+ }
+@@ -113,6 +140,37 @@
+   return description.replace(/\s+/g, ' ').trim().slice(0, GUILD_SEEKER_DESCRIPTION_MAX);
+ }
+ 
++export function normalizeGuildRecruitmentProfile(profile: GuildRecruitmentProfile): GuildRecruitmentProfile {
++  return {
++    ...profile,
++    focusTags: [...new Set(profile.focusTags)].slice(0, 8),
++    activeEventTags: normalizeEventTags(profile.activeEventTags),
++    description: normalizeGuildSeekerDescription(profile.description),
++    requirements: profile.requirements ? {
++      minTotalLevel: profile.requirements.minTotalLevel === undefined ? undefined : Math.max(0, Math.floor(profile.requirements.minTotalLevel)),
++      minCombatLevel: profile.requirements.minCombatLevel === undefined ? undefined : Math.max(0, Math.floor(profile.requirements.minCombatLevel)),
++      applicationRequired: Boolean(profile.requirements.applicationRequired),
++    } : undefined,
++  };
++}
++
++export function normalizePlayerGuildSeekerPost(post: PlayerGuildSeekerPost): PlayerGuildSeekerPost {
++  return {
++    ...post,
++    desiredFocusTags: [...new Set(post.desiredFocusTags)].slice(0, 8),
++    activeEventTags: normalizeEventTags(post.activeEventTags),
++    description: normalizeGuildSeekerDescription(post.description),
++  };
++}
++
++export function guildRequirementsMet(seeker: PlayerGuildSeekerPost, guild: GuildRecruitmentProfile): boolean {
++  const requirements = guild.requirements;
++  if (!requirements) return true;
++  if (requirements.minCombatLevel !== undefined && (seeker.combatLevel ?? 0) < requirements.minCombatLevel) return false;
++  if (requirements.minTotalLevel !== undefined && (seeker.totalLevel ?? 0) < requirements.minTotalLevel) return false;
++  return true;
++}
++
+ export function scorePartyCompatibility(
+   seeker: PlayerPartySeekerPost,
+   party: PartyRecruitmentPost,
+@@ -128,10 +186,17 @@
+   if (style >= 12) reasons.push('play_style_match');
+ 
+   const sharedGoals = overlap(seeker.goalTags, party.goalTags);
+-  const goalScore = Math.min(30, sharedGoals.length * 10);
++  const goalScore = Math.min(25, sharedGoals.length * 8);
+   score += goalScore;
+   if (sharedGoals.length > 0) reasons.push('shared_goals');
+ 
++  // Current event interest is deliberately a small bonus, never a hard requirement.
++  const sharedEvents = eventTagOverlap(seeker.activeEventTags, party.activeEventTags);
++  if (sharedEvents.length > 0) {
++    score += Math.min(10, sharedEvents.length * 5);
++    reasons.push('shared_live_event');
++  }
++
+   if (party.memberCount < party.maxMembers) {
+     score += 5;
+     reasons.push('space_available');
+@@ -145,11 +210,17 @@
+   guild: GuildRecruitmentProfile,
+ ): RecruitmentCompatibility {
+   const reasons: string[] = [];
++  if (!guildRequirementsMet(seeker, guild)) return { score: 0, reasons: ['requirements_not_met'] };
+   let score = playStyleScore(seeker.playStyle, guild.playStyle);
+   if (score >= 12) reasons.push('play_style_match');
+   const sharedFocus = overlap(seeker.desiredFocusTags, guild.focusTags);
+-  score += Math.min(65, sharedFocus.length * 18);
++  score += Math.min(55, sharedFocus.length * 18);
+   if (sharedFocus.length > 0) reasons.push('shared_focus');
++  const sharedEvents = eventTagOverlap(seeker.activeEventTags, guild.activeEventTags);
++  if (sharedEvents.length > 0) {
++    score += Math.min(10, sharedEvents.length * 5);
++    reasons.push('shared_live_event');
++  }
+   if (guild.memberCount < guild.memberCap) {
+     score += 15;
+     reasons.push('space_available');
+@@ -171,6 +242,6 @@
+   guilds: readonly GuildRecruitmentProfile[],
+ ): GuildRecruitmentProfile[] {
+   return [...guilds]
+-    .filter((guild) => guild.memberCount < guild.memberCap)
++    .filter((guild) => guild.memberCount < guild.memberCap && guildRequirementsMet(seeker, guild))
+     .sort((a, b) => scoreGuildCompatibility(seeker, b).score - scoreGuildCompatibility(seeker, a).score);
+ }
+diff -ruN /mnt/data/work_v17/v16_reference_backend/supabase/migrations/20260913_026_social_liveops_party_events_v17.sql /mnt/data/work_v17/integrated_backend/supabase/migrations/20260913_026_social_liveops_party_events_v17.sql
+--- /mnt/data/work_v17/v16_reference_backend/supabase/migrations/20260913_026_social_liveops_party_events_v17.sql	1970-01-01 00:00:00.000000000 +0000
++++ /mnt/data/work_v17/integrated_backend/supabase/migrations/20260913_026_social_liveops_party_events_v17.sql	2026-09-13 21:20:36.693668183 +0000
+@@ -0,0 +1,320 @@
++-- VELDRYN v17 — Social Live-Ops + Party Events + full Guild recruitment.
++-- Depends on v16.1 migration 20260913_025_parties_contracts_recruitment_v16_1.sql.
++-- All contribution writes, score finalization and reward grants are server-authoritative.
++
++-- Recruitment remains broad (Combat / Skilling / Mixed, play style, goal/focus) while live event tags are only soft discovery hints.
++alter table if exists public.party_recruitment_posts add column if not exists active_event_tags text[] not null default '{}';
++alter table if exists public.party_seeker_posts add column if not exists active_event_tags text[] not null default '{}';
++alter table if exists public.guild_recruitment_profiles add column if not exists active_event_tags text[] not null default '{}';
++alter table if exists public.guild_recruitment_profiles add column if not exists min_total_level integer;
++alter table if exists public.guild_recruitment_profiles add column if not exists min_combat_level integer;
++alter table if exists public.guild_recruitment_profiles add column if not exists application_required boolean not null default true;
++alter table if exists public.guild_seeker_posts add column if not exists active_event_tags text[] not null default '{}';
++alter table if exists public.guild_seeker_posts add column if not exists total_level integer;
++
++create table if not exists public.guild_applications(
++  id uuid primary key default gen_random_uuid(),
++  guild_id uuid not null references public.guilds(id) on delete cascade,
++  account_id uuid not null references auth.users(id) on delete cascade,
++  character_id uuid not null references public.characters(id) on delete cascade,
++  note text not null default '',
++  status text not null default 'pending' check(status in('pending','accepted','declined','expired','cancelled')),
++  expires_at timestamptz not null,
++  created_at timestamptz not null default now(),
++  responded_at timestamptz
++);
++create unique index if not exists uq_guild_application_pending on public.guild_applications(guild_id, account_id) where status='pending';
++create index if not exists idx_guild_applications_account on public.guild_applications(account_id, status, created_at desc);
++
++create table if not exists public.guild_invites(
++  id uuid primary key default gen_random_uuid(),
++  guild_id uuid not null references public.guilds(id) on delete cascade,
++  account_id uuid not null references auth.users(id) on delete cascade,
++  invited_by_account_id uuid not null references auth.users(id) on delete cascade,
++  status text not null default 'pending' check(status in('pending','accepted','declined','expired','cancelled')),
++  expires_at timestamptz not null,
++  created_at timestamptz not null default now(),
++  responded_at timestamptz
++);
++create unique index if not exists uq_guild_invite_pending on public.guild_invites(guild_id, account_id) where status='pending';
++create index if not exists idx_guild_invites_account on public.guild_invites(account_id, status, created_at desc);
++
++-- Immutable versioned event content. definition_json is the complete server-owned definition.
++create table if not exists public.liveops_event_definitions(
++  event_id text not null,
++  version integer not null check(version > 0),
++  scope text not null check(scope in('party')),
++  definition_json jsonb not null,
++  config_hash text not null,
++  created_at timestamptz not null default now(),
++  created_by text,
++  primary key(event_id, version)
++);
++
++create or replace function public.prevent_liveops_definition_mutation() returns trigger language plpgsql as $$
++begin
++  raise exception 'liveops event definitions are immutable; create a new version';
++end $$;
++drop trigger if exists trg_liveops_definition_immutable on public.liveops_event_definitions;
++create trigger trg_liveops_definition_immutable
++before update or delete on public.liveops_event_definitions
++for each row execute function public.prevent_liveops_definition_mutation();
++
++create table if not exists public.liveops_event_instances(
++  id uuid primary key default gen_random_uuid(),
++  event_id text not null,
++  definition_version integer not null,
++  definition_snapshot jsonb not null,
++  config_hash text not null,
++  starts_at timestamptz not null,
++  ends_at timestamptz not null,
++  settlement_grace_minutes integer not null default 10 check(settlement_grace_minutes between 5 and 30),
++  status text not null default 'scheduled' check(status in('scheduled','active','settling','finalized','archived','cancelled')),
++  finalized_at timestamptz,
++  finalization_checksum text,
++  created_at timestamptz not null default now(),
++  foreign key(event_id, definition_version) references public.liveops_event_definitions(event_id, version),
++  check(ends_at > starts_at),
++  check(ends_at <= starts_at + interval '72 hours'),
++  check(ends_at >= starts_at + interval '24 hours')
++);
++create index if not exists idx_liveops_instances_window on public.liveops_event_instances(status, starts_at, ends_at);
++create unique index if not exists uq_liveops_one_active_party_event
++  on public.liveops_event_instances((definition_snapshot->>'scope'))
++  where status in('active','settling') and definition_snapshot->>'scope'='party';
++
++
++create or replace function public.prevent_liveops_instance_definition_mutation() returns trigger language plpgsql as $$
++begin
++  if old.event_id is distinct from new.event_id
++     or old.definition_version is distinct from new.definition_version
++     or old.definition_snapshot is distinct from new.definition_snapshot
++     or old.config_hash is distinct from new.config_hash then
++    raise exception 'liveops event instance definition snapshot is immutable';
++  end if;
++  return new;
++end $$;
++drop trigger if exists trg_liveops_instance_definition_immutable on public.liveops_event_instances;
++create trigger trg_liveops_instance_definition_immutable
++before update on public.liveops_event_instances
++for each row execute function public.prevent_liveops_instance_definition_mutation();
++
++create or replace function public.prevent_overlapping_party_event_windows() returns trigger language plpgsql as $$
++begin
++  if new.status in ('scheduled','active','settling') and new.definition_snapshot->>'scope'='party' then
++    if exists(
++      select 1 from public.liveops_event_instances e
++      where e.id <> new.id
++        and e.status in ('scheduled','active','settling')
++        and e.definition_snapshot->>'scope'='party'
++        and tstzrange(e.starts_at, e.ends_at, '[)') && tstzrange(new.starts_at, new.ends_at, '[)')
++    ) then
++      raise exception 'party event schedule overlaps an existing party event';
++    end if;
++  end if;
++  return new;
++end $$;
++drop trigger if exists trg_liveops_no_party_overlap on public.liveops_event_instances;
++create trigger trg_liveops_no_party_overlap
++before insert or update of starts_at, ends_at, status on public.liveops_event_instances
++for each row execute function public.prevent_overlapping_party_event_windows();
++
++-- Account-level personal progress follows the account even if it later leaves its party.
++create table if not exists public.liveops_event_account_progress(
++  event_instance_id uuid not null references public.liveops_event_instances(id) on delete cascade,
++  account_id uuid not null references auth.users(id) on delete cascade,
++  personal_points bigint not null default 0 check(personal_points >= 0),
++  combat_points bigint not null default 0 check(combat_points >= 0),
++  skilling_points bigint not null default 0 check(skilling_points >= 0),
++  last_contribution_at timestamptz,
++  primary key(event_instance_id, account_id)
++);
++
++-- Party score is the canonical live leaderboard aggregate.
++create table if not exists public.liveops_event_party_progress(
++  event_instance_id uuid not null references public.liveops_event_instances(id) on delete cascade,
++  party_id uuid not null,
++  party_name_snapshot text,
++  score bigint not null default 0 check(score >= 0),
++  combat_points bigint not null default 0 check(combat_points >= 0),
++  skilling_points bigint not null default 0 check(skilling_points >= 0),
++  meaningful_contributors integer not null default 0 check(meaningful_contributors >= 0),
++  ranked_eligible boolean not null default false,
++  last_score_at timestamptz not null default now(),
++  primary key(event_instance_id, party_id)
++);
++create index if not exists idx_liveops_party_leaderboard
++  on public.liveops_event_party_progress(event_instance_id, ranked_eligible, score desc, last_score_at asc, party_id asc);
++
++create table if not exists public.liveops_event_party_member_progress(
++  event_instance_id uuid not null references public.liveops_event_instances(id) on delete cascade,
++  party_id uuid not null,
++  account_id uuid not null references auth.users(id) on delete cascade,
++  points bigint not null default 0 check(points >= 0),
++  combat_points bigint not null default 0 check(combat_points >= 0),
++  skilling_points bigint not null default 0 check(skilling_points >= 0),
++  first_contribution_at timestamptz,
++  last_contribution_at timestamptz,
++  primary key(event_instance_id, party_id, account_id)
++);
++create index if not exists idx_liveops_member_event_account on public.liveops_event_party_member_progress(event_instance_id, account_id);
++
++-- After meaningful contribution, an account is bound to one party for party/ranking rewards for that event.
++-- Changing party remains allowed, but the new party does not receive that account's party score.
++create table if not exists public.liveops_event_party_bindings(
++  event_instance_id uuid not null references public.liveops_event_instances(id) on delete cascade,
++  account_id uuid not null references auth.users(id) on delete cascade,
++  party_id uuid not null,
++  locked_at timestamptz not null,
++  points_at_lock integer not null check(points_at_lock > 0),
++  primary key(event_instance_id, account_id)
++);
++
++-- Transactional outbox. Trusted settlement code inserts this in the same transaction as gameplay/economy rewards.
++-- Worker retries are safe because every downstream target also has source_event_id idempotency.
++create table if not exists public.social_contribution_outbox(
++  id uuid primary key default gen_random_uuid(),
++  source_event_id text not null unique,
++  account_id uuid not null references auth.users(id) on delete cascade,
++  party_id_at_settlement uuid,
++  party_name_at_settlement text,
++  event_json jsonb not null,
++  targets_json jsonb not null,
++  status text not null default 'pending' check(status in('pending','processing','processed','dead_letter')),
++  attempts integer not null default 0 check(attempts >= 0),
++  last_error text,
++  available_at timestamptz not null default now(),
++  locked_at timestamptz,
++  processed_at timestamptz,
++  result_json jsonb,
++  created_at timestamptz not null default now()
++);
++create index if not exists idx_social_contribution_outbox_pending on public.social_contribution_outbox(status, available_at, created_at) where status in('pending','processing');
++
++-- Raw idempotency receipts. source_event_id must originate from trusted settlement code.
++create table if not exists public.liveops_event_contribution_receipts(
++  event_instance_id uuid not null references public.liveops_event_instances(id) on delete cascade,
++  account_id uuid not null references auth.users(id) on delete cascade,
++  party_id uuid not null,
++  party_name_at_settlement text,
++  source_event_id text not null,
++  date_key date not null,
++  category text not null check(category in('combat','skilling')),
++  activity_kind text not null check(activity_kind in('combat','gathering','processing','crafting','fishing','hunting','alchemy','delivery')),
++  content_id text not null,
++  raw_points integer not null check(raw_points >= 0),
++  credited_points integer not null check(credited_points >= 0),
++  party_credited_points integer not null check(party_credited_points >= 0),
++  occurred_at timestamptz not null,
++  created_at timestamptz not null default now(),
++  primary key(event_instance_id, account_id, source_event_id)
++);
++create index if not exists idx_liveops_receipts_daily on public.liveops_event_contribution_receipts(event_instance_id, account_id, date_key);
++create index if not exists idx_liveops_receipts_breakdown on public.liveops_event_contribution_receipts(event_instance_id, account_id, date_key, activity_kind, content_id);
++
++-- Bounded daily aggregates for the client contribution breakdown. This avoids shipping/querying an unbounded receipt history.
++create table if not exists public.liveops_event_contribution_daily_breakdown(
++  event_instance_id uuid not null references public.liveops_event_instances(id) on delete cascade,
++  account_id uuid not null references auth.users(id) on delete cascade,
++  date_key date not null,
++  activity_kind text not null check(activity_kind in('combat','gathering','processing','crafting','fishing','hunting','alchemy','delivery')),
++  content_id text not null,
++  points bigint not null default 0 check(points >= 0),
++  units bigint not null default 0 check(units >= 0),
++  updated_at timestamptz not null default now(),
++  primary key(event_instance_id, account_id, date_key, activity_kind, content_id)
++);
++
++-- Final ranks are snapshots. Claims never depend on a live leaderboard query after event settlement.
++create table if not exists public.liveops_event_rank_snapshots(
++  event_instance_id uuid not null references public.liveops_event_instances(id) on delete cascade,
++  party_id uuid not null,
++  party_name_snapshot text,
++  rank integer not null check(rank > 0),
++  eligible_party_count integer not null check(eligible_party_count > 0),
++  score bigint not null check(score >= 0),
++  percentile numeric(8,4) not null,
++  reward_band text not null check(reward_band in('top10','top100','top10_percent','top25_percent','qualified')),
++  meaningful_contributors integer not null,
++  snapshotted_at timestamptz not null,
++  primary key(event_instance_id, party_id),
++  unique(event_instance_id, rank)
++);
++
++create table if not exists public.liveops_event_reward_claims(
++  claim_key text primary key,
++  event_instance_id uuid not null references public.liveops_event_instances(id) on delete cascade,
++  account_id uuid not null references auth.users(id) on delete cascade,
++  party_id uuid,
++  reward_kind text not null check(reward_kind in('personal_milestone','party_milestone','ranking')),
++  milestone_points integer,
++  reward_bundle_id text not null,
++  granted_transaction_id text,
++  claimed_at timestamptz not null default now()
++);
++create index if not exists idx_liveops_claims_account on public.liveops_event_reward_claims(account_id, event_instance_id);
++
++-- Legacy v16 event score hook tables are retained for migration safety but are no longer canonical for v17 Party Events.
++comment on table public.party_event_scores is 'Legacy v16 hook only; v17 canonical Party Event score is liveops_event_party_progress.';
++comment on table public.party_event_member_scores is 'Legacy v16 hook only; v17 canonical member score is liveops_event_party_member_progress.';
++
++alter table public.guild_applications enable row level security;
++alter table public.guild_invites enable row level security;
++alter table public.liveops_event_definitions enable row level security;
++alter table public.liveops_event_instances enable row level security;
++alter table public.liveops_event_account_progress enable row level security;
++alter table public.liveops_event_party_progress enable row level security;
++alter table public.liveops_event_party_member_progress enable row level security;
++alter table public.liveops_event_party_bindings enable row level security;
++alter table public.social_contribution_outbox enable row level security;
++alter table public.liveops_event_contribution_receipts enable row level security;
++alter table public.liveops_event_contribution_daily_breakdown enable row level security;
++alter table public.liveops_event_rank_snapshots enable row level security;
++alter table public.liveops_event_reward_claims enable row level security;
++
++-- Browsing event schedule/aggregate leaderboard is authenticated-public. Mutations remain trusted-server only.
++do $$ begin
++  if not exists (select 1 from pg_policies where schemaname='public' and tablename='liveops_event_definitions' and policyname='authenticated read liveops definitions') then
++    create policy "authenticated read liveops definitions" on public.liveops_event_definitions for select to authenticated using(true);
++  end if;
++  if not exists (select 1 from pg_policies where schemaname='public' and tablename='liveops_event_instances' and policyname='authenticated read liveops instances') then
++    create policy "authenticated read liveops instances" on public.liveops_event_instances for select to authenticated using(status <> 'archived');
++  end if;
++  if not exists (select 1 from pg_policies where schemaname='public' and tablename='liveops_event_party_progress' and policyname='authenticated read event leaderboard') then
++    create policy "authenticated read event leaderboard" on public.liveops_event_party_progress for select to authenticated using(true);
++  end if;
++  if not exists (select 1 from pg_policies where schemaname='public' and tablename='liveops_event_rank_snapshots' and policyname='authenticated read finalized event ranks') then
++    create policy "authenticated read finalized event ranks" on public.liveops_event_rank_snapshots for select to authenticated using(true);
++  end if;
++end $$;
++
++-- Private progress/breakdown/claim surfaces are self-readable. Party member detail is limited to members of that party.
++do $$ begin
++  if not exists (select 1 from pg_policies where schemaname='public' and tablename='liveops_event_account_progress' and policyname='read own event progress') then
++    create policy "read own event progress" on public.liveops_event_account_progress for select using(account_id=auth.uid());
++  end if;
++  if not exists (select 1 from pg_policies where schemaname='public' and tablename='liveops_event_party_member_progress' and policyname='party reads event member progress') then
++    create policy "party reads event member progress" on public.liveops_event_party_member_progress for select using(
++      exists(select 1 from public.party_members pm where pm.party_id=liveops_event_party_member_progress.party_id and pm.account_id=auth.uid())
++      or account_id=auth.uid()
++    );
++  end if;
++  if not exists (select 1 from pg_policies where schemaname='public' and tablename='liveops_event_party_bindings' and policyname='read own event binding') then
++    create policy "read own event binding" on public.liveops_event_party_bindings for select using(account_id=auth.uid());
++  end if;
++  if not exists (select 1 from pg_policies where schemaname='public' and tablename='liveops_event_contribution_receipts' and policyname='read own event receipts') then
++    create policy "read own event receipts" on public.liveops_event_contribution_receipts for select using(account_id=auth.uid());
++  end if;
++  if not exists (select 1 from pg_policies where schemaname='public' and tablename='liveops_event_contribution_daily_breakdown' and policyname='read own event breakdown') then
++    create policy "read own event breakdown" on public.liveops_event_contribution_daily_breakdown for select using(account_id=auth.uid());
++  end if;
++  if not exists (select 1 from pg_policies where schemaname='public' and tablename='liveops_event_reward_claims' and policyname='read own event claims') then
++    create policy "read own event claims" on public.liveops_event_reward_claims for select using(account_id=auth.uid());
++  end if;
++  if not exists (select 1 from pg_policies where schemaname='public' and tablename='guild_applications' and policyname='read own guild applications') then
++    create policy "read own guild applications" on public.guild_applications for select using(account_id=auth.uid());
++  end if;
++  if not exists (select 1 from pg_policies where schemaname='public' and tablename='guild_invites' and policyname='read own guild invites') then
++    create policy "read own guild invites" on public.guild_invites for select using(account_id=auth.uid());
++  end if;
++end $$;

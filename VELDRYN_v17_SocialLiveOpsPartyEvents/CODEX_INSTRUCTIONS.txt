@@ -1,0 +1,95 @@
+Implement the attached VELDRYN v17 Social Live-Ops + Party Events pack into the CURRENT VELDRYN repository.
+
+READ FIRST:
+- START_HERE.md
+- SOCIAL_LIVEOPS_PARTY_EVENTS_V17.md
+- SETTLEMENT_WIRING_V17.md
+
+The current repository is authoritative. Do not replace newer repository files wholesale with the reference backend tree.
+
+DEPENDENCY:
+- v17 requires v16.1 persistent Parties/Party Contracts/recruitment.
+- If v16.1 is not present, merge it first. A dependency ZIP is included under dependencies/.
+
+IMPLEMENT THE COMPLETE v17 SCOPE:
+1. Immutable/versioned Party Event definitions and immutable instance snapshots.
+2. 24–72h UTC Party Event scheduling and lifecycle.
+3. Initial event templates in PARTY_EVENT_TEMPLATE_POOL.
+4. Reuse v16.1 effort normalization; never use raw client point amounts.
+5. 2,400 credited Party-event points/account/UTC-day cap.
+6. Personal milestones 250/750/1500/2500.
+7. Party milestones 2000/4000/6000/9000.
+8. Ranking qualification: 4000 points + 2 meaningful contributors (250 each) + event category mix rules.
+9. Party binding at 250 points to prevent event Party hopping.
+10. Historical Party ID/name snapshots must survive Party deletion/dissolution.
+11. Global Party leaderboard and deterministic tie rules.
+12. Friends/Guild leaderboard views must preserve global ranks; they are filters, not separate reward ladders.
+13. Settlement grace + frozen rank snapshots + finalization checksum.
+14. Idempotent personal/Party/ranking reward claims using existing economy reward bundles.
+15. Contribution breakdown aggregation.
+16. Transactional social contribution outbox.
+17. Live-ops worker tick for outbox + lifecycle + finalization.
+18. Start/ending/reward-ready notification intents wired through existing notification/quiet-hours behavior.
+19. Event-aware LFG/LFM tags only as a SOFT compatibility bonus. Exact event/quest must not become a matchmaking requirement.
+20. Complete two-way Guild recruitment: requirements, applications, invitations, expiry, server capacity/membership recheck.
+21. Mobile Event Hub/leaderboard/contribution UI under existing Account > Social. Do not add a new bottom nav tab.
+
+CRITICAL CONTRIBUTION SECURITY:
+- Server settlement owns expected duration, challenge, units, activity/category, region/tags, Party snapshot and active target snapshot.
+- The client must never submit or override point totals, expected duration, challenge multiplier, Party-at-settlement, active event target, rank state, completion state or reward eligibility.
+- Insert the contribution outbox record in the SAME transaction as authoritative gameplay/economy settlement.
+- Process targets at least once; downstream source_event_id receipts make credit exactly-once.
+- Use occurred_at/event-target snapshots, not worker processing time, for eligibility.
+- For combat, use expected encounter effort, not actual wall-clock fight duration.
+
+DATABASE:
+- Add 20260913_026_social_liveops_party_events_v17.sql as a NEW migration.
+- Do not edit already-applied migrations.
+- Run the project's real migration reset/apply/lint tests.
+- Verify RLS: clients can read permitted event/recruitment surfaces but cannot write authoritative scores/outbox/ranks/reward claims directly.
+- Verify liveops historical Party data is not cascaded away when a Party dissolves.
+
+WORKER:
+- Integrate runLiveOpsWorkerTick or an equivalent into the existing server cron/job runner, ideally about once per minute.
+- Implement operational logging/alerting for dead-letter outbox records.
+
+REWARDS:
+- Map supplied reward bundle IDs to current existing Gold/material/Companion Essence/cosmetic/title/profile rewards.
+- Keep rank reward differences prestige-heavy and permanent-power differences modest.
+- DO NOT introduce Party Tokens or Event Tokens.
+
+GUILD RECRUITMENT:
+- Respect current guild leader/officer permission model; do not invent a parallel authority system if one already exists.
+- Recheck guild membership and guild capacity on acceptance.
+- A player already in a guild cannot accept/apply into another without following current leave rules.
+
+UI:
+- Preserve the current mobile-first pixel-game design language and current design tokens.
+- Final bottom nav remains Character / Skills / World / Inventory / Account.
+- Social local sections may expose Party / Events / LFG / Guilds.
+- Keep Live Dungeon run chat separate from persistent Party Chat.
+
+TESTS AFTER MERGE:
+- current repository full typecheck/build/tests,
+- port/run v16 Party/recruitment tests,
+- run all files under server/liveops/__tests__,
+- run v17 Guild recruitment test,
+- duplicate source_event_id retries,
+- concurrent daily-cap settlements,
+- outbox retry/dead-letter behavior,
+- activity settled just before event end but processed after end,
+- Party switch between settlement and worker processing,
+- Party switch before/after the 250 binding threshold,
+- Party dissolution after earning event score,
+- two meaningful contributor ranking rule,
+- Mixed category minimums,
+- deterministic leaderboard ties,
+- finalization only after grace,
+- final rank snapshot immutability,
+- duplicate reward claims,
+- reward claim after leaving/dissolving Party,
+- Friends/Guild filtered leaderboard preserving global rank,
+- Guild apply/invite expiry and capacity races,
+- RLS/authorization tests against a real Supabase instance.
+
+Do not weaken existing tests just to make the merge pass. Report all changed files, exact commands/results, database validation performed, and any remaining deployment-only issues.

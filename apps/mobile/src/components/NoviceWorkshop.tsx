@@ -1,6 +1,6 @@
 import {IngredientList} from './IngredientList';
 import {useState} from 'react';
-import {Image,StyleSheet,Text,View} from 'react-native';
+import {Image,Pressable,StyleSheet,Text,View} from 'react-native';
 import {GameState} from '../core/types';
 import {NOVICE_RECIPES,NOVICE_STAGE} from '../content/novice-sets';
 import {itemDef} from '../content/items';
@@ -11,11 +11,13 @@ import {EquipmentArtwork} from './EquipmentArtwork';
 import {Panel} from './Panel';
 import {GameButton} from './GameButton';
 import {StatBar} from './StatBar';
-import {C,radii,spacing,typography} from '../theme/theme';
+import {C,equipmentColors,radii,spacing,typography} from '../theme/theme';
 import {formatGameNumber} from '../core/number-format';
 import {equipmentSheetBySet} from '../theme/equipment-assets';
 import {ot} from '../i18n';
 import {ResourceArtwork} from './ResourceArtwork';
+
+function PreviewChip({label,selected,onPress}:{label:string;selected:boolean;onPress:()=>void}){return <Pressable accessibilityRole="tab" accessibilityState={{selected}} onPress={onPress} style={({pressed})=>[{minHeight:36,paddingHorizontal:11,justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.bg},selected&&{borderColor:equipmentColors.selectedLine,backgroundColor:equipmentColors.selected},pressed&&{opacity:.76}]}><Text style={[{fontSize:11,color:C.muted,fontWeight:'800'},selected&&{color:'#d9f3ff'}]}>{selected?'✓ ':''}{label}</Text></Pressable>}
 
 export function NoviceWorkshop({state,onCraft,onCharacter}:{state:GameState;onCraft:(id:string)=>void;onCharacter:()=>void}){
   const progress=noviceSetProgress(state),character=state.character!,body=character.bodyPresentation??'male';
@@ -26,7 +28,7 @@ export function NoviceWorkshop({state,onCraft,onCharacter}:{state:GameState;onCr
   const nextStage=next?NOVICE_STAGE[itemDef(next.output.itemId).slot!]:undefined;
   const totals=new Map<string,number>();for(const recipe of recipes)for(const input of recipe.inputs)totals.set(input.itemId,(totals.get(input.itemId)??0)+input.quantity);
   return <View style={s.root}>
-    <View style={[s.hero,{borderColor:progress.set.theme.accent}]}><View style={s.heroCopy}><Text style={s.eyebrow}>FIRST CRAFTED UPGRADE</Text><Text style={s.heroName}>{progress.set.name}</Text><Text style={[s.identity,{color:progress.set.theme.accent}]}>{progress.set.theme.identity}</Text><Text style={s.sub}>{progress.set.theme.material}</Text><Text style={s.previewLabel}>STARTING SKIN</Text><Text style={s.sub}>Progression-set skins unlock permanently after you own every required piece, then are chosen on Character.</Text><View style={s.previewChoices}><GameButton title="Front" tone={previewView==='front'?'primary':'secondary'} onPress={()=>setPreviewView('front')}/><GameButton title="Back" tone={previewView==='back'?'primary':'secondary'} onPress={()=>setPreviewView('back')}/></View></View><View style={s.heroArt}><FixedCharacterPortrait classId={character.classId} body={body} view={previewView} compact/><Text style={s.previewCaption}>{body==='male'?'MALE':'FEMALE'} · {previewView.toUpperCase()}</Text></View></View>
+    <View style={[s.hero,{borderColor:progress.set.theme.accent}]}><View style={s.heroCopy}><Text style={s.eyebrow}>FIRST CRAFTED UPGRADE</Text><Text style={s.heroName}>{progress.set.name}</Text><Text style={[s.identity,{color:progress.set.theme.accent}]}>{progress.set.theme.identity}</Text><Text style={s.sub}>{progress.set.theme.material}</Text><Text style={s.previewLabel}>STARTING SKIN</Text><Text style={s.sub}>Progression-set skins unlock permanently after you own every required piece, then are chosen on Character.</Text><View style={s.previewChoices}><PreviewChip label="Front" selected={previewView==='front'} onPress={()=>setPreviewView('front')}/><PreviewChip label="Back" selected={previewView==='back'} onPress={()=>setPreviewView('back')}/></View></View><View style={s.heroArt}><FixedCharacterPortrait classId={character.classId} body={body} view={previewView} compact/><Text style={s.previewCaption}>{body==='male'?'MALE':'FEMALE'} · {previewView.toUpperCase()}</Text></View></View>
     {equipmentSheet&&<Panel><Text style={s.title}>Equipment collection</Text><Text style={s.sub}>Crafted pieces use this matching inventory icon family. Equipping them changes stats, not your selected skin.</Text><Image accessibilityLabel={`${progress.set.name} equipment icons`} source={equipmentSheet} resizeMode="contain" style={s.equipmentSheet}/></Panel>}
     <Panel><View style={s.between}><Text style={s.title}>{ot(state.settings.language,'craft.path')}</Text><Text style={s.counter}>{progress.crafted}/{progress.pieces.length}</Text></View><StatBar reduceMotion={state.settings.reduceMotion} label="Pieces crafted" current={progress.crafted} max={progress.pieces.length}/><Text style={s.sub}>{progress.unlocked?'Set complete — its gameplay equipment is ready to equip. No cosmetic skin is granted automatically.':next?`Recommended next: ${itemDef(next.output.itemId).name}`:'All pieces acquired.'}</Text><View style={s.stageRow}>{[1,2,3,4,5].map(stage=><View key={stage} style={[s.stage,nextStage===stage&&s.stageNext]}><Text style={s.stageNumber}>{stage}</Text><Text style={s.stageText}>{stage===1?'CORE':stage===2?'ARM':stage===3?'GUARD':stage===4?'FINISH':'RELIC'}</Text></View>)}</View><GameButton title="Open character equipment" tone="secondary" onPress={onCharacter}/></Panel>
     <Panel><Text style={s.title}>Full-set materials</Text><Text style={s.sub}>Plan the entire set. Crafting spends from Inventory first, then Bank.</Text>{[...totals].map(([id,total])=><View key={id} style={s.material}><ResourceArtwork itemId={id} size={36} framed={false}/><Text style={s.pieceName}>{itemDef(id).name}</Text><Text style={s.materialCount}>{total} total</Text></View>)}</Panel>

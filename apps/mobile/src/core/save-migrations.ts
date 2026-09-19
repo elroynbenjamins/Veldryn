@@ -1,5 +1,6 @@
 import {GameState} from './types';
 import {normalizeSave} from './save-normalization';
+import {applyFreshStartV33,invalidV33EquipmentIds} from './fresh-start-v33';
 
 export const SAVE_SCHEMA_VERSION:GameState['version']=11;
 type AnySave=Record<string,unknown>&{version?:number};
@@ -27,6 +28,9 @@ export function migrateSave(input:unknown):GameState{
     settings:raw.settings??{},
   }:raw;
   const normalized=normalizeSave(v4Compatible);
+  const invalidV33Ids=invalidV33EquipmentIds(normalized);
+  if(invalidV33Ids.length)throw new Error(`Invalid v33 equipment ID: ${invalidV33Ids[0]}`);
+  const freshStart=applyFreshStartV33(normalized);
   // The additive companion pass has its own wire boundary. Legacy v6 saves
   // remain v6 unless they actually carry roster or timed Faith/Alchemy state.
   // This keeps old transfer backups stable while making new data explicit.
@@ -40,5 +44,5 @@ export function migrateSave(input:unknown):GameState{
     || Number((raw.rewardRemainders as any)?.['xp:alchemy'])>0
     || !!raw.account && (!!(raw.account as any).collectionPreferences || !!(raw.account as any).guideState)
     || Array.isArray((raw.character as any)?.savedLoadouts);
-  return hasV11State?{...normalized,version:11}:normalized;
+  return hasV11State?{...freshStart,version:11}:freshStart;
 }

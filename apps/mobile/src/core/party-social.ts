@@ -142,6 +142,8 @@ export interface RecruitmentCardView {
   status?: 'active' | 'closed' | 'expired';
   postType: RecruitmentPostType;
   ownerName: string;
+  guildTag?: string | null;
+  guildTagColorId?: string | null;
   guildName?: string;
   partyName?: string;
   title: string;

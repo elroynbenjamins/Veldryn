@@ -28,16 +28,16 @@ export function ActivityCard({title,kind,cycleSeconds,capHours,preview,rates,red
         <Text style={s.eyebrow}>{kind==='combat'?'HUNTING':'GATHERING'}</Text>
         <Text style={s.title}>{title}</Text>
       </View>
-      <View style={[s.status,(capped||!!preview.stoppedReason)&&s.statusCapped]}><Text style={s.statusText}>{preview.stoppedReason?'STOPPED':capped?`${capHours}H CAP`:'ACTIVE'}</Text></View>
+      <View style={[s.status,(capped||!!preview.stoppedReason)&&s.statusCapped]}><Text style={[s.statusText,preview.stoppedReason?s.statusStopped:capped?s.statusCappedText:s.statusActive]}>{preview.stoppedReason?'STOPPED':capped?`${capHours}H CAP`:'ACTIVE'}</Text></View>
     </View>
     <View accessible accessibilityRole="progressbar" accessibilityLabel={`${title} action progress`} accessibilityValue={{min:0,max:100,now:Math.round(cycleProgress*100)}} style={s.progressBlock}><View style={s.progressMeta}><Text style={s.progressLabel}>{preview.stoppedReason?'ACTIVITY STOPPED':capped?'OFFLINE STORAGE FULL':kind==='combat'?'NEXT ENCOUNTER':'NEXT GATHER'}</Text><Text style={s.progressTime}>{preview.stoppedReason||capped?'—':`${remaining}s`}</Text></View><View style={s.track}><View style={[s.fill,{width:`${cycleProgress*100}%`}]}>{!reduceMotion&&<Animated.View style={[s.shine,{transform:[{translateX:pulse.interpolate({inputRange:[0,1],outputRange:[-90,260]})}]}]}/>}</View></View></View>
-    {!!preview.stoppedReason&&<Text accessibilityRole="alert" style={s.capNotice}>{preview.stoppedReason}. Collect to settle combat, then heal or equip food in Inventory.</Text>}
+    {!!preview.stoppedReason&&<View accessibilityRole="alert" style={s.stopNotice}><Text style={s.noticeLabel}>ACTIVITY STOPPED</Text><Text style={s.capNotice}>{preview.stoppedReason}. Collect to settle combat, then heal or equip food in Inventory.</Text></View>}
     <View style={s.rewardRow}>
       <View><Text style={s.rewardNumber}>{formatGameNumber(preview.kills,numberMode)}</Text><Text style={s.rewardLabel}>{kind==='combat'?'kills ready':'actions ready'}</Text></View>
       <View style={s.totals}><Text style={s.xp}>+{formatGameNumber(preview.xp,numberMode)} XP</Text>{preview.gold>0&&<Text style={s.gold}>+{formatGameNumber(preview.gold,numberMode)} gold</Text>}</View>
     </View>
     {!loot&&!hasRewards&&<Text style={s.emptyLoot}>Keep this activity running to earn your first reward.</Text>}
-    {capped&&!preview.stoppedReason&&<Text style={s.capNotice}>Offline storage is full. Collect now to resume earning.</Text>}
+    {capped&&!preview.stoppedReason&&<View style={s.stopNotice}><Text style={s.noticeLabel}>STORAGE FULL</Text><Text style={s.capNotice}>Offline storage is full. Collect now to resume earning.</Text></View>}
     <GameButton title={hasRewards?'Collect Rewards':'Rewards building…'} onPress={onClaim} disabled={!hasRewards}/>
     <GameButton title="Collect & stop" tone="secondary" onPress={onStop}/>
     <Pressable accessibilityRole="button" accessibilityState={{expanded:showDetails}} onPress={()=>setShowDetails(value=>!value)} style={s.detailsToggle}><Text style={s.detailsLabel}>{showDetails?'HIDE DETAILS':'RATES & DETAILS'}</Text><Text style={s.detailsMark}>{showDetails?'−':'+'}</Text></Pressable>
@@ -51,13 +51,13 @@ const s=StyleSheet.create({
   headingCopy:{flex:1},eyebrow:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:1},
   title:{...typography.title,color:C.text},detail:{...typography.body,color:C.muted},
   status:{borderWidth:1,borderColor:C.good,borderRadius:99,paddingHorizontal:spacing.sm,paddingVertical:spacing.xs},
-  statusCapped:{borderColor:C.warning},statusText:{...typography.caption,color:C.text,fontWeight:'900'},
+  statusCapped:{borderColor:C.warning},statusText:{...typography.caption,fontWeight:'900'},statusActive:{color:C.good},statusCappedText:{color:C.warning},statusStopped:{color:C.bad},
   rewardRow:{flexDirection:'row',flexWrap:'wrap',gap:8,justifyContent:'space-between',alignItems:'center',paddingVertical:spacing.sm},
   rewardNumber:{fontSize:42,lineHeight:46,color:C.text,fontWeight:'900'},rewardLabel:{...typography.caption,color:C.muted},
   totals:{alignItems:'flex-end'},xp:{...typography.bodyStrong,color:C.good},gold:{...typography.bodyStrong,color:C.accent},
   loot:{...typography.body,color:C.text},emptyLoot:{...typography.body,color:C.muted},
   detailsToggle:{minHeight:42,flexDirection:'row',alignItems:'center',justifyContent:'space-between',borderTopWidth:1,borderTopColor:C.line},detailsLabel:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.8},detailsMark:{fontSize:22,color:C.accent},details:{gap:spacing.xs},
-  capNotice:{...typography.bodyStrong,color:C.warning},
+  capNotice:{...typography.body,color:C.text},noticeLabel:{...typography.caption,color:C.warning,fontWeight:'900',letterSpacing:1},stopNotice:{gap:4,padding:spacing.sm,borderWidth:1,borderColor:C.warning,borderRadius:8,backgroundColor:'#332515'},
   progressBlock:{gap:spacing.xs,paddingVertical:spacing.xs},progressMeta:{flexDirection:'row',flexWrap:'wrap',gap:6,justifyContent:'space-between'},progressLabel:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:1},progressTime:{...typography.bodyStrong,color:C.text},track:{height:16,borderRadius:8,overflow:'hidden',backgroundColor:C.bg,borderWidth:1,borderColor:C.line},fill:{height:'100%',overflow:'hidden',backgroundColor:C.good,borderRadius:8},shine:{position:'absolute',width:54,height:'100%',backgroundColor:'rgba(255,255,255,.28)'},
   rateRow:{flexDirection:'row',flexWrap:'wrap',gap:spacing.sm},rate:{...typography.caption,color:C.info,fontWeight:'800'},
 });

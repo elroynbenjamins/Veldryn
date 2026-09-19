@@ -1,0 +1,80 @@
+VELDRYN v17.1 — LIVE-OPS ADMIN CONTROL
+
+GOAL
+Implement/deploy the attached private VELDRYN Control web project against the CURRENT VELDRYN v17 backend.
+
+READ FIRST
+- START_HERE.md
+- DEPLOY_FREE_CLOUDFLARE_PAGES.md
+- SECURITY.md
+- docs/COSTS_AND_MAINTENANCE.md
+- the included v17 dependency documentation if v17 is not already merged
+
+IMPORTANT
+The current VELDRYN repository/database is authoritative. Do not overwrite newer migrations or backend work. If migration numbers have advanced, rename 20260913_027_liveops_admin_control.sql to the next valid migration filename while preserving its contents/dependency order.
+
+IMPLEMENTATION
+1. Confirm the v16.1 + v17 Party/Live-Ops migrations and v17 backend code are present.
+2. Apply/merge the v17.1 admin migration.
+3. Verify the real reward/economy registry can grant the bundle IDs seeded by v17. The admin catalog starts unvalidated on purpose.
+4. Wire the current v17 once-per-minute Live-Ops worker through the supplied worker-health adapter (adapt its imports/repository to the current repo) so `liveops_runtime_health` is updated on success/failure.
+5. Keep the admin site as a SEPARATE project from apps/mobile. Do not bundle it into the Android/iOS application.
+6. Deploy the static UI + Cloudflare Pages Function architecture as supplied unless the current deployment stack has an objectively safer equivalent.
+7. NEVER place SUPABASE_SERVICE_ROLE_KEY in client/browser/mobile code.
+8. Preserve Owner / Editor / Viewer authorization and service-side role checks.
+9. Preserve RLS-with-no-player-policies on the admin tables.
+10. Preserve immutable published event definitions and definition snapshot/hash semantics.
+11. Preserve reward validation gate before publish.
+12. Preserve database overlap protection from v17.
+13. Preserve audit logging for all mutations.
+
+CLOUDFLARE PAGES
+Build command: npm run build
+Output: dist
+Root functions folder: functions/
+
+Runtime secret:
+SUPABASE_SERVICE_ROLE_KEY
+
+Runtime/public values:
+SUPABASE_URL
+SUPABASE_ANON_KEY
+PUBLIC_SUPABASE_URL (build)
+PUBLIC_SUPABASE_ANON_KEY (build)
+
+VALIDATION
+Run:
+- npm test
+- npm run build
+- npm run verify
+- node --check src/app.js
+- node --check functions/api/admin.js
+
+Then test against a disposable/staging Supabase database with v16.1 + v17 + v17.1 applied:
+- non-admin Auth user receives admin_access_required,
+- Viewer cannot mutate,
+- Editor can create/save drafts/templates,
+- Owner can validate rewards,
+- publication is blocked by missing/unvalidated/disabled rewards,
+- publishing the same event_id/version with different JSON is rejected,
+- scheduling overlapping Party Events is rejected by the database,
+- scheduled event can be rescheduled before it starts,
+- Editor can cancel scheduled event,
+- active/settling emergency cancellation requires Owner + reason,
+- finalized/cancelled event can be archived,
+- audit log records mutations,
+- worker heartbeat turns healthy after a successful cron tick and becomes stale if ticks stop,
+- dead-letter outbox rows are visible to admins,
+- only Owner can reset a dead-letter row to pending, and the normal worker performs the retry,
+- live leaderboard reads liveops_event_party_progress,
+- finalized leaderboard reads liveops_event_rank_snapshots,
+- service-role key cannot be found in generated dist/.
+
+REPORT
+Return:
+- changed files,
+- migration result,
+- Cloudflare deployment URL if deployment access is available,
+- all test commands/results,
+- any existing repository differences that required adaptation,
+- explicit confirmation that no service-role credential was shipped client-side.

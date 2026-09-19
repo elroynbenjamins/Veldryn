@@ -1,0 +1,89 @@
+VELDRYN v17.2 — CODEX IMPLEMENTATION INSTRUCTIONS
+
+Implement this pack into the CURRENT VELDRYN repository. The current repository is authoritative and may be newer than the reference packages used here. Merge/adapt; do not overwrite newer implementations wholesale.
+
+READ FIRST:
+- START_HERE.md
+- OPERATIONS_SAFETY_V17_2.md
+- SECURITY.md
+- backend_integration/OPERATIONS_WIRING_V17_2.md
+
+DATABASE
+1. Confirm v17/v17.1 migrations are already present.
+2. Add `20260914_028_operations_safety_foundation_v17_2.sql` as a NEW migration. Do not edit migrations already applied in production.
+3. Run a real local Supabase reset/apply or equivalent migration validation.
+4. Verify RLS/service-only access to every `ops_*` control table.
+5. Verify authenticated/anon players cannot call `record_ops_metric` or `claim_ops_reset_runs`.
+
+REMOTE CONFIG
+1. Implement a repository adapter for `VeldrynRemoteConfig`.
+2. Enforce `maintenance.write_actions_disabled` before gameplay mutations.
+3. Enforce the feature gates listed in OPERATIONS_WIRING_V17_2.md in authoritative backend handlers.
+4. UI hiding is NOT sufficient.
+5. Return only resolved `client_safe` values from the normal authenticated bootstrap/session payload.
+6. Preserve stable account rollout behavior.
+7. Party Event/social safety caps may only reduce frozen caps: `min(frozen cap, remote ceiling)`.
+8. Existing jobs/escrow/runs must have safe settlement/recovery paths if new entry is disabled.
+
+HEALTH / ECONOMY
+1. Implement the OpsMetricRepository using the supplied `record_ops_metric` RPC or equivalent atomic upsert.
+2. Record metrics only after successful authoritative transactions.
+3. Never use account IDs or other PII as metric dimensions.
+4. Start with Gold created/destroyed, market trades/volume, bounded item creation, activity time, dungeon completions, and social contribution.
+5. Wire backend worker heartbeats into `liveops_runtime_health` for at least `party_liveops_worker` and `central_reset_worker`.
+6. Add first automated ops alerts for stale workers/dead letters; economy anomaly alerting may start conservative to avoid noise.
+
+CENTRAL RESET SERVICE
+1. Run `runCentralResetTick` from the existing server scheduler/cron at least once per minute.
+2. Implement repository calls against `ops_reset_definitions`, `ops_reset_runs`, and `claim_ops_reset_runs`.
+3. Implement idempotent handlers:
+   - `daily_world_reset`
+   - `weekly_party_contracts_reset`
+   - `monthly_companion_trials_reset`
+4. Monthly Companion Trials reset monthly/checkpoint/first-clear/challenge state only. Preserve permanent companion state and lifetime stats.
+5. Remove/disable duplicate old reset clocks only when the replacement is active in the SAME deployment.
+6. Test two concurrent workers claiming the same due reset.
+7. Test worker retry/dead-letter and manual retry.
+
+PLAYER SUPPORT
+1. Wire `syncSupportAccount` to existing account/profile lifecycle updates using the EXISTING public player ID; do not create a duplicate ID system.
+2. Adapt Control API support-detail queries to the current character/guild/party schema where needed.
+3. Keep v17.2 support state read-mostly. Do NOT add currency/item/progression/reward mutation shortcuts while merging.
+4. Never store passwords, tokens, payment data, private chat text or sensitive profile details in `ops_support_accounts`.
+
+CONTROL WEBSITE
+1. Preserve the current secure Cloudflare Pages Function architecture.
+2. Keep `SUPABASE_SERVICE_ROLE_KEY` server-side only.
+3. Verify Owner / Editor / Viewer authorization.
+4. Verify critical remote config is Owner-only.
+5. Verify critical alert resolution and reset schedule/retry actions are Owner-only.
+6. Verify every mutation requires same-origin protection and writes the admin audit log.
+
+TESTS TO ADD/RUN
+- complete current repository tests/typecheck/build
+- v17/v17.1 regression tests
+- this pack's `npm test`, `npm run build`, `npm run verify`
+- real migration reset/apply
+- RLS negative tests as anon/authenticated
+- stable rollout deterministic tests
+- remote-config bounds tests
+- feature gate integration tests for every registered feature
+- immutable Party Event cap cannot be increased by remote config
+- concurrent reset-claim test
+- duplicate reset `(reset_key, period_key)` replay test
+- monthly Companion Trial permanent-state preservation test
+- metric upsert concurrency test
+- support lookup authorization test
+- support cases/notes audit test
+- browser bundle secret scan
+
+REPORT BACK:
+- every changed file
+- migration results
+- all test commands/results
+- every backend endpoint where feature gates were wired
+- all reset handlers migrated
+- all metrics initially wired
+- anything that remains deployment-only or needs current-schema adaptation
+
+Do not weaken tests or security to make the merge pass.

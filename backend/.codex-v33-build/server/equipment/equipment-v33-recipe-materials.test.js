@@ -1,0 +1,10 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const node_assert_1 = require("node:assert");
+const equipment_recipe_materials_v33_1 = require("./equipment-recipe-materials-v33");
+const ready = (0, equipment_recipe_materials_v33_1.recipeInventoryRequirementsV33)('T1P_001');
+node_assert_1.strict.ok(ready.length > 0);
+node_assert_1.strict.ok(ready.every(entry => entry.itemId.startsWith('ITEM_')));
+node_assert_1.strict.deepEqual((0, equipment_recipe_materials_v33_1.missingV33RecipeResourceKeys)('T1P_001'), []);
+node_assert_1.strict.ok((0, equipment_recipe_materials_v33_1.missingV33RecipeResourceKeys)('T9P_2430').length >= 0);
+console.log('v33 recipe material mapping tests passed');

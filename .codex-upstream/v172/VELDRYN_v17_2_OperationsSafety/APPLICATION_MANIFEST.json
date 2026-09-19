@@ -1,0 +1,19 @@
+{
+  "pack": "VELDRYN_v17_2_OperationsSafety",
+  "version": "17.2.0",
+  "date": "2026-09-14",
+  "depends_on": ["VELDRYN v17 Social Live-Ops + Party Events", "VELDRYN Control v17.1"],
+  "database_migration": "supabase/migrations/20260914_028_operations_safety_foundation_v17_2.sql",
+  "admin_pages_added": ["Remote Config", "Health & Economy", "Central Resets", "Player Support"],
+  "backend_adapters": [
+    "remote-config-v17_2.ts",
+    "ops-metrics-v17_2.ts",
+    "central-reset-service-v17_2.ts",
+    "player-support-index-v17_2.ts",
+    "runtime-health-v17_2.ts",
+    "operations-monitor-v17_2.ts"
+  ],
+  "hosting": "Cloudflare Pages + Pages Functions",
+  "runtime_frontend_dependencies": 0,
+  "support_mutations": "read-mostly; cases and notes only"
+}

@@ -1,0 +1,20 @@
+{
+  "project": "VELDRYN",
+  "version": "v21",
+  "title": "Sunscar Gameplay Completion + Frostmarch Region III Foundation",
+  "authoritative_merge_source": "current local VELDRYN repository",
+  "dependency": "dependencies/VELDRYN_v20_LiveDungeonSunscar.zip",
+  "migrations": ["20260914_034_region_depth_frostmarch_v21.sql"],
+  "product_invariants": {
+    "bottom_navigation": ["Character", "Skills", "World", "Inventory", "Account"],
+    "player_market_present": false,
+    "guild_procurement_present": false,
+    "persistent_party_roles_required": false,
+    "live_dungeon_roles": "1 Tank / 2 Damage / 1 Support",
+    "q_mode_separate": true,
+    "sunscar_equipment_finalized": false,
+    "frostmarch_equipment_finalized": false
+  },
+  "sunscar_v21": {"side_quests":8,"regional_activities":5,"achievements":6,"collection_books":1,"weather_rules":3,"contract_templates":3,"boss_mastery_tiers":4,"content_version":"sunscar-v21.0.0"},
+  "frostmarch": {"region_id":"REG_003","level_range":[45,70],"zones":5,"normal_enemies":16,"bosses":4,"resources":10,"story_quests":10,"live_dungeons":3,"side_quests":8,"regional_activities":5,"echo_conditions":4,"relic_hooks":4,"pet_and_companion_unlock_hooks":9,"achievements":6,"collection_books":1,"weather_rules":3,"contract_templates":3,"boss_mastery_tiers":4,"content_version":"frostmarch-v21.0.0"}
+}

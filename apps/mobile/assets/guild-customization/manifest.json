@@ -1,0 +1,28 @@
+{
+  "version": 52,
+  "composition": "banner + border + optional nameplate + name color",
+  "banners": [
+    {"id":"banner_swordwing_blue","name":"Swordwing","file":"banners/banner_swordwing_blue.png","unlock":"default"},
+    {"id":"banner_worldtree_green","name":"Worldtree","file":"banners/banner_worldtree_green.png","unlock":"default"},
+    {"id":"banner_phoenix_crimson","name":"Crimson Phoenix","file":"banners/banner_phoenix_crimson.png","unlock":"default"},
+    {"id":"banner_moonstar_indigo","name":"Moonstar","file":"banners/banner_moonstar_indigo.png","unlock":"default"},
+    {"id":"banner_wolf_mountain","name":"Wolf of the Peaks","file":"banners/banner_wolf_mountain.png","unlock":"default"},
+    {"id":"banner_arcane_eye","name":"Arcane Eye","file":"banners/banner_arcane_eye.png","unlock":"default"},
+    {"id":"banner_lion_sun","name":"Sun-Crowned Lion","file":"banners/banner_lion_sun.png","unlock":"default"},
+    {"id":"banner_forge_emerald","name":"Emerald Forge","file":"banners/banner_forge_emerald.png","unlock":"default"}
+  ],
+  "borders": [
+    {"id":"border_founder_iron","file":"borders/border_founder_iron.png","unlock":"default"},
+    {"id":"border_bronze_fellowship","file":"borders/border_bronze_fellowship.png","unlock":"guild_level:5"},
+    {"id":"border_silver_fellowship","file":"borders/border_silver_fellowship.png","unlock":"guild_level:10"},
+    {"id":"border_grand_gold","file":"borders/border_grand_gold.png","unlock":"guild_level:20"},
+    {"id":"border_emerald_vanguard","file":"borders/border_emerald_vanguard.png","unlock":"banner_gallery_tier:3"},
+    {"id":"border_sapphire_dungeon","file":"borders/border_sapphire_dungeon.png","unlock":"guild_pve_dungeon_25"},
+    {"id":"border_crimson_bossbreaker","file":"borders/border_crimson_bossbreaker.png","unlock":"guild_pve_bossbreaker"},
+    {"id":"border_amethyst_raidforged","file":"borders/border_amethyst_raidforged.png","unlock":"guild_pve_raid_first_clear"},
+    {"id":"border_mythic_conqueror","file":"borders/border_mythic_conqueror.png","unlock":"guild_pve_raid_hard_clear"}
+  ],
+  "nameplates": [
+    {"id":"nameplate_royal_sapphire","file":"nameplates/nameplate_royal_sapphire.png","unlock":"banner_gallery_tier:4"}
+  ]
+}

@@ -1,0 +1,97 @@
+VELDRYN v21 — CODEX IMPLEMENTATION INSTRUCTIONS
+
+GOAL
+Merge this v21 pack into the CURRENT LOCAL VELDRYN repository. The local repository is authoritative even if GitHub is behind. Preserve unpushed/newer local work.
+
+DO NOT wholesale copy an old backend snapshot over the project.
+DO NOT restore the player Market or Guild Procurement.
+DO NOT implement draft Sunscar/Frostmarch regional equipment from the design database.
+DO NOT change the final bottom navigation: Character / Skills / World / Inventory / Account.
+
+DEPENDENCY HANDLING
+This pack embeds VELDRYN_v20_LiveDungeonSunscar.zip. That dependency embeds the earlier chain. Inspect the local repository and merge only missing foundations. Do not replay already-applied migrations or create duplicate domains.
+
+V21 CONTENT TO IMPLEMENT
+A. SUNSCAR DEPTH
+- Merge `sunscar-depth-v21.ts` into the current regional content/domain definitions.
+- Add the eight side quests, five activities, six achievements, one 16-monster collection book, three weather rules, three broad regional Contract templates and four Sand Tyrant mastery tiers.
+- These extend Sunscar; they do not replace v20 main story/enemies/resources/Echoes/dungeons.
+- Reuse existing Gold/material/cosmetic/relic/collection systems. Do not add a new Sunscar currency/reputation system.
+
+B. FROSTMARCH REGION III
+- Promote `frostmarch-region-v21.ts`, `frostmarch-gameplay-v21.ts` and `frostmarch-dungeons-v21.ts` into the project's current content architecture.
+- Preserve the five zones: Thawgate, Whitepine Reach, Shiverlake, Choir Caverns, Wyrmspine.
+- Preserve the 16 named monsters and 10 regional resources.
+- Preserve the ten-beat main story ending with Frost Wyrm -> Ashlands.
+- Implement the richer combat-stat definitions using the current authoritative combat stat service. If current field names differ, map semantically rather than introducing duplicate stats.
+- Major telegraphed pass/fail mechanics should not randomly crit by default.
+
+C. FROSTMARCH CO-OP
+- COP_007 Whitepine Hunt, Lv52+
+- COP_008 Shiverlake Descent, Lv58+
+- COP_009 Choir Caverns, Lv64+
+- Live mode remains strict 1 Tank / 2 Damage / 1 Support.
+- Q-Mode remains the separate asynchronous alternative.
+- Reuse v20 matchmaking/ready/reconnect/route-vote/run-settlement infrastructure. Do not create another dungeon stack.
+- Whitepine Hunt tracks the real beast through false trails.
+- Shiverlake Descent uses under-ice route/oxygen pressure and Bellbeast.
+- Choir Caverns uses ordered interrupts and Hollow Cantor.
+- Equipment reward hooks stay generic/material/cosmetic/relic based until the later gear pass.
+
+D. VERSIONED REGION CONTENT
+- Apply/migrate the v21 record types into the existing v20 region registry.
+- Keep published content immutable.
+- Add the active content pointer and activation RPC.
+- A running dungeon/activity/quest that could resolve later should snapshot its starting content version when appropriate. An admin activation must not reinterpret an in-progress run.
+- Initial versions: sunscar-v21.0.0 and frostmarch-v21.0.0.
+- Validate/hash/stage/publish before activation.
+
+E. CONTROL CENTER
+- Register/wire `region_content.activate_version` and `region_content.rollback_active_version` through the existing schema-driven admin command bus.
+- Owner + critical confirmation/approval.
+- Activation must verify that the target version exists, is published and belongs to the requested region.
+- Rollback means changing the active pointer to an older published version. Never edit published rows.
+- Add/keep remote gates for Frostmarch and Sunscar v21 side content.
+
+F. MOBILE
+- Integrate Frostmarch into the current World screen, not a new bottom tab.
+- Use the supplied FrostmarchRegionPanel/RegionalJournalPanel as reference/merge code. Match the current project's pixel UI style and existing navigation/state architecture.
+- Surface story/side quest/Echo/co-op/collection/boss-mastery progression in one regional journal.
+- Show current weather and readable remaining duration through the existing Season/Weather system.
+
+G. SETTLEMENT / SOCIAL CONTRIBUTION
+- Regional activities settle server-authoritatively.
+- Eligible activities emit the already-existing normalized social contribution receipt/outbox. Party Contracts, Guild Projects, Party Events and Crises can consume that receipt independently under their own rules.
+- Client-supplied durations, multipliers, reward quantities, mastery booleans or weather bonuses are never authoritative.
+
+EQUIPMENT — EXPLICITLY DEFERRED
+- Do not import FROWPN_*, FROGEAR_* or old Frostmarch set definitions as live gear.
+- Do not author Sunscar gear either.
+- Preserve the v20 generic partial set-bonus engine because the future equipment rework will use it.
+- Frostmarch/Sunscar reward hooks may return materials, relic chances, cosmetics, recipes, collectible progress and a generic future-equipment hook only.
+
+MIGRATIONS
+- Never edit an already-applied migration.
+- If v20/v17.3 foundation migrations are missing, apply/merge them first using forward migrations appropriate to the current repository.
+- Then merge `20260914_034_region_depth_frostmarch_v21.sql` as a NEW forward migration (rename timestamp only if required by repository convention).
+- Run a real Supabase reset/apply in a disposable/local project if tooling is available.
+- Test RLS: anonymous/authenticated players cannot mutate draft/published registry or active pointers; service/admin path can publish/activate only through trusted functions.
+
+REQUIRED TESTS
+1. Full current repository typecheck/build/tests.
+2. Existing v20 Live Dungeon/Sunscar regression suite.
+3. v21 region gameplay validation.
+4. Frostmarch exact roster counts and ID/reference validation.
+5. Frostmarch dungeon route/composition validation.
+6. Deterministic content hash.
+7. Published version immutability regression.
+8. Activate only published/matching-region versions.
+9. Rollback active pointer without data mutation.
+10. In-flight dungeon/content-version snapshot behavior.
+11. Server weather/settlement authority.
+12. Mobile helper/screens compile in the real app.
+13. Removed-system scan: no player Market/Guild Procurement/Hybrid Queue restoration.
+14. Explicit scan proving old regional gear rows are not imported as authoritative content.
+
+REPORT BACK
+List changed files, migrations applied, test commands/results, content versions published/staged, unresolved deployment issues and any places where the local repository was newer than this reference pack.

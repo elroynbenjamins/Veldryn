@@ -1,0 +1,8 @@
+import React from 'react';
+import {Pressable,StyleSheet,Text,View} from 'react-native';
+import type {DungeonQueueStatusV20} from '../core/live-dungeon-sunscar-v20';
+import {formatWait} from '../core/live-dungeon-sunscar-v20';
+export function LiveDungeonQueuePanel({queue,onCancel}:{queue:DungeonQueueStatusV20;onCancel?:()=>void}){
+ return <View style={s.card}><Text style={s.eyebrow}>LIVE DUNGEON</Text><Text style={s.title}>{queue.contentName}</Text><View style={s.row}><View><Text style={s.label}>ROLE</Text><Text style={s.value}>{queue.role.toUpperCase()}</Text></View><View><Text style={s.label}>WAITING</Text><Text style={s.value}>{formatWait(queue.waitSeconds)}</Text></View><View><Text style={s.label}>FOUND</Text><Text style={s.value}>{queue.playersFound}/4</Text></View></View><Text style={s.note}>Requires exactly 1 Tank · 2 Damage · 1 Support. Your loadout is frozen when the ready check begins.</Text><Pressable onPress={onCancel} style={s.button}><Text style={s.buttonText}>Leave Queue</Text></Pressable></View>
+}
+const s=StyleSheet.create({card:{margin:12,padding:14,borderRadius:10,borderWidth:1,borderColor:'#66533b',backgroundColor:'#151b20',gap:9},eyebrow:{fontSize:9,fontWeight:'900',color:'#c79e62',letterSpacing:1},title:{fontSize:20,fontWeight:'900',color:'#f1dfbd'},row:{flexDirection:'row',justifyContent:'space-between',gap:8},label:{fontSize:8,fontWeight:'900',color:'#82919a'},value:{fontSize:13,fontWeight:'900',color:'#eef1f2'},note:{fontSize:10,lineHeight:14,color:'#9aa8af'},button:{alignSelf:'flex-start',paddingHorizontal:12,paddingVertical:9,borderRadius:7,borderWidth:1,borderColor:'#485762',backgroundColor:'#202b32'},buttonText:{fontSize:10,fontWeight:'900',color:'#d8e0e4'}});

@@ -4,7 +4,9 @@ import {effectiveStats,regionalReadiness} from './game';
 import type {GameState,GearSlot} from './types';
 import {enhancedGearStats,gearEnhancement,gemSocketCapacity} from './equipment-enhancement';
 
-export const EQUIPMENT_SLOT_ORDER:GearSlot[]=['helmet','amulet','chest','ring','gloves','weapon','legs','offhand','boots','cape'];
+// V33 display order is authoritative. The local state keeps the historical
+// `offhand` key, so only the presentation order changes here.
+export const EQUIPMENT_SLOT_ORDER:GearSlot[]=['helmet','chest','gloves','legs','boots','weapon','offhand','cape','amulet','ring'];
 export const EQUIPMENT_SLOT_LABELS:Record<GearSlot,string>={helmet:'Helmet',amulet:'Amulet',chest:'Chest',ring:'Ring',gloves:'Gloves',weapon:'Weapon',legs:'Legs',offhand:'Off-hand',boots:'Boots',cape:'Cape'};
 
 export function equipmentScreenModel(state:GameState){

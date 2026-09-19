@@ -1,0 +1,3 @@
+export interface SkinProgressDtoV32{setId:string;setName:string;tier:string;crafted:number;required:number;missingSlots:readonly string[];unlocked:boolean;collectibleBonus:string;}
+export function collectionRowsV32(skins:readonly SkinProgressDtoV32[],filter:'All'|'Unlocked'|'In progress'='All'){return skins.filter(s=>filter==='All'||filter==='Unlocked'?s.unlocked:!s.unlocked&&s.crafted>0).map(s=>({id:s.setId,title:s.setName,tier:s.tier,progress:s.unlocked?'Unlocked':`${s.crafted}/${s.required}`,subtitle:s.unlocked?s.collectibleBonus:`Missing: ${s.missingSlots.join(', ')}`,unlocked:s.unlocked}));}
+export const COLLECTION_FILTERS_V32=['All','Unlocked','In progress'] as const;

@@ -1,4 +1,5 @@
 import {supabase} from './supabase';
+import {guildIdentities} from './social';
 
 export type ProfileVisibilityV43='public'|'guild'|'private';
 export type ProfileCollectionKindV43='item'|'pet'|'companion'|'skin'|'background'|'border';
@@ -9,6 +10,7 @@ export interface ProfileExtensionSelfV43{
 }
 export interface PublicPlayerProfileV43{
  accountId:string;displayName:string;visibility:ProfileVisibilityV43;
+ guildTag?:string|null;guildTagColorId?:string|null;
  character:{id:string;name:string;classId:string;level:number;bodyPresentation:'male'|'female';selectedSkinId:string};
  title:string;backgroundId:string;borderId?:string|null;petId?:string|null;bio:string;favoriteSkillId?:string|null;favoriteCompanionId?:string|null;
  achievementShowcaseIds:string[];collectionShowcase:ProfileCollectionRefV43[];recordShowcaseIds:string[];recordEntries?:Record<string,{recordId:string;value:number;achievedAtMs:number;characterId?:string;contextLabel?:string}>;revision:number;
@@ -28,5 +30,8 @@ export async function updateProfileExtensionV43(input:{
  });if(error)throw error;return data as ProfileExtensionSelfV43;
 }
 export async function publicPlayerProfileV43(accountId:string){
- const {data,error}=await client().rpc('profile_public_v43',{p_target_account_id:accountId});if(error)throw error;return (data??null) as PublicPlayerProfileV43|null;
+ const {data,error}=await client().rpc('profile_public_v43',{p_target_account_id:accountId});if(error)throw error;
+ const profile=(data??null) as PublicPlayerProfileV43|null;if(!profile)return null;
+ const identity=(await guildIdentities([accountId])).get(accountId);
+ return {...profile,guildTag:identity?.guild_tag??null,guildTagColorId:identity?.guild_tag_color_id??null};
 }

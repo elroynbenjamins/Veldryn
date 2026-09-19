@@ -1,0 +1,11 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const node_assert_1 = require("node:assert");
+const event_expeditions_1 = require("../event-expeditions");
+const summer = (0, event_expeditions_1.eventExpeditionPreviews)(Date.UTC(2026, 6, 15));
+node_assert_1.strict.equal(summer.find(item => item.id === 'EVENT_SUNCREST_SHATTERED_ISLES')?.scheduled, true);
+node_assert_1.strict.equal(summer.find(item => item.id === 'EVENT_STARFALL_ASTRAL_RIFT')?.scheduled, false);
+const starfall = (0, event_expeditions_1.eventExpeditionPreviews)(Date.UTC(2026, 8, 15));
+node_assert_1.strict.equal(starfall.find(item => item.id === 'EVENT_STARFALL_ASTRAL_RIFT')?.scheduled, true);
+node_assert_1.strict.ok(starfall.every(item => item.status === 'preview'), 'event routes remain non-startable until transport exists');
+console.log('event expedition schedule tests passed');

@@ -1,0 +1,79 @@
+VELDRYN v18 — GUILD PROJECTS + DEEPER GUILD SOCIAL SYSTEMS
+
+IMPORTANT SOURCE-OF-TRUTH RULE
+Your CURRENT LOCAL VELDRYN repository is authoritative. The user has local work based on v16 that may not yet be pushed to GitHub. Inspect the current local repository first. Do not replace current files wholesale with this reference pack.
+
+DEPENDENCY
+This pack includes dependencies/VELDRYN_v17_3_FullControlCenter_CloudflareFree.zip. That archive contains the prior v17.3 control work and its dependency chain back through v17 and v16.1. Merge only missing prior systems before v18. Do not apply duplicate migrations.
+
+PRODUCT CORRECTION
+THE PLAYER MARKET HAS BEEN REMOVED FROM VELDRYN.
+Do not restore src/server/market, Market UI, Guild Procurement, Market rankings, procurement orders or Market admin controls from historical reference files. See GUILD_MARKET_REMOVAL_COMPATIBILITY.md.
+
+IMPLEMENT v18 COMPLETELY
+
+1. Inspect current Guild schema/services/UI and existing v16 Party/Guild recruitment work.
+2. Merge the v18 Guild domain files under files/backend/src/server/guild into the current architecture rather than creating parallel duplicate services.
+3. Publish immutable Guild Project definitions using the current game content registry as source of truth.
+4. Validate every reference item/building/unlock ID before enabling Development Project definitions. If an ID differs in the current repo, map it; do not invent an item.
+5. Apply 20260914_030_guild_projects_social_v18.sql as a NEW forward migration after all missing prerequisites.
+6. Wire Weekly Project candidate generation into the central reset worker: Monday 00:00 UTC.
+7. Implement weekly Project board candidates: one Combat, one Skilling, one Mixed option. Members can recommend/vote. Authorized Guild roles can start. Auto-start top vote only after 36h and only when the vote threshold is met.
+8. Weekly Project ends at the weekly cycle boundary, not “7 days after whenever somebody pressed Start”.
+9. Calculate active_member_snapshot from current Guild members with authoritative activity in the previous 14 days. Freeze the snapshot for the Project.
+10. Preserve Project slot caps: Lv5=1, Lv10=2, Lv25=3. Only one Weekly Campaign may be active at once.
+11. Wire trusted combat/gathering/processing/crafting/fishing/hunting/alchemy/delivery settlement into the existing v17 social contribution outbox with a guildTargets snapshot. Do not query current Guild later in the delayed worker.
+12. Never accept client-submitted points, expected duration, challenge multiplier, active-member count, target or completion state.
+13. Preserve the v18 effort/carry caps and Mixed category rules unless the current balancing source contains an explicitly newer approved value.
+14. Create the weekly cycle binding once meaningful contribution is reached. The account cannot feed a second Guild Weekly Project in the same cycle after binding.
+15. Implement Development Project donations atomically using current Gold/inventory services. Donation debit + project progress + idempotency receipt must be one transaction/domain settlement.
+16. Require multiple meaningful donors for Development completion using the v18 normalized-share rule.
+17. Do not convert Project points 1:1 into Guild XP. Grant the configured fixed Guild XP on Project completion through the existing Guild progression service.
+18. Implement idempotent personal/completion reward claims through the existing reward-bundle/economy service. Do not introduce Guild Project Tokens.
+19. On Weekly Project completion, open a Guild Decree selection window. Preserve one-active-decree limit and guild/global bonus hard caps.
+20. Keep Expedition/War decrees disabled until their corresponding systems genuinely exist.
+21. Normalize Guild roles/permissions against the existing richer role model. Quartermaster manages Projects/vault logistics; remove Market/Procurement permission.
+22. Implement Guild Bulletin + append-only revision history and the bounded Guild Activity Feed. Do not spam normal contribution actions into the feed.
+23. Implement/merge the mobile components into Account > Social > Guild. Do not add a bottom navigation tab.
+24. Keep exact active Project as a soft recruitment detail only; broad Guild focus/play style remain primary matching fields.
+25. Integrate the v18 commands into the v17.3 schema-driven Control Center. A new custom admin webpage is not required.
+26. Integrate Project telemetry into the existing Operations dashboard: starts, completions, expirations, completion %, distinct contributors, donation failures, worker failures and Decree activations.
+27. Implement Project Architects seasonal scoring with diminishing repeat-template value. Rewards are cosmetic/prestige-heavy.
+28. Add notification hooks through the current notification/quiet-hours system.
+
+TESTS REQUIRED AFTER MERGE
+
+- Full current repository typecheck/build/test suite.
+- v16 Party/recruitment regression.
+- v17 Live-Ops/outbox regression.
+- v17.2/v17.3 control/operations regression if those systems are present.
+- v18 project scaling at small/large active roster sizes.
+- Mixed 30/30 rule.
+- single-account share caps.
+- minimum meaningful contributors.
+- daily cap under concurrent settlement.
+- duplicate sourceEventId retry.
+- Guild switch after settlement but before outbox processing.
+- Guild switch after weekly cycle binding.
+- late join before/after 70% Project progress.
+- leave/rejoin reward eligibility.
+- project slot concurrency under two simultaneous start requests.
+- deterministic weekly candidate generation.
+- vote change / one vote per cycle.
+- auto-start threshold + deterministic tie handling.
+- Development donation duplicate retry.
+- concurrent final resource donation.
+- insufficient inventory/Gold rollback.
+- multiple meaningful donor requirement.
+- completion reward duplicate claim.
+- Decree one-active limit / expiry / cap enforcement.
+- Guild role permissions.
+- Bulletin 280-char limit and revision audit.
+- RLS: non-members cannot read private Guild Project/member/feed state.
+- Control Center repair commands require proper role/approval.
+- Active-code scan confirms no Market/Guild Procurement was reintroduced.
+
+DO NOT WEAKEN TESTS TO MAKE IMPLEMENTATION PASS.
+
+REPORT BACK
+List all changed files, migrations applied, commands/tests run, pass/fail results, any reference IDs remapped to current content, and any deployment-only validation still required.

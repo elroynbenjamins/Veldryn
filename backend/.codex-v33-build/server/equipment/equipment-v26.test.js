@@ -1,0 +1,31 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const equipment_catalog_v23_1 = require("./equipment-catalog-v23");
+const equipment_processing_v26_1 = require("./equipment-processing-v26");
+const equipment_recipe_unlocks_v26_1 = require("./equipment-recipe-unlocks-v26");
+const equipment_craft_rarity_v26_1 = require("./equipment-craft-rarity-v26");
+const equipment_item_instance_v26_1 = require("./equipment-item-instance-v26");
+const ok = (v, m = 'assert') => { if (!v)
+    throw new Error(m); };
+const eq = (a, b, m = 'assert') => { if (a !== b)
+    throw new Error(`${m}:${String(a)}!=${String(b)}`); };
+eq((0, equipment_processing_v26_1.processingDefinitionV26)('frostmarch.wyrm_scale')?.processedName, 'Tempered Wyrm Scale');
+eq((0, equipment_processing_v26_1.canProcessV26)('sunscar.amberglass', 35), false);
+eq((0, equipment_processing_v26_1.canProcessV26)('sunscar.amberglass', 36), true);
+const altWeapon = equipment_catalog_v23_1.EQUIPMENT_PIECES_V23.find(p => p.tier === 'T9' && p.path === 'Alternate' && p.slot === 'Weapon');
+eq((0, equipment_recipe_unlocks_v26_1.recipeUnlockRuleV26)(altWeapon).kind, 'recipe_fragments');
+ok((0, equipment_recipe_unlocks_v26_1.recipeUnlockRuleV26)(altWeapon).deterministic);
+eq(equipment_recipe_unlocks_v26_1.CHASE_RECIPE_POLICY_V26.requiredForProgression, false);
+eq(equipment_recipe_unlocks_v26_1.CHASE_RECIPE_POLICY_V26.requiredForSevenPieceSkin, false);
+const t9 = (0, equipment_craft_rarity_v26_1.rarityChancesV26)('T9', 70, 65, 0);
+ok(Math.abs(t9.reduce((a, b) => a + b.chance, 0) - 1) < 1e-9, 'rarity_sum');
+eq((0, equipment_craft_rarity_v26_1.rollCraftedRarityV26)({ tier: 'T9', professionLevel: 65, recipeMinProfessionLevel: 65, artisanInsight: 0, randomUnit: .99975 }), 'Mythic');
+eq((0, equipment_craft_rarity_v26_1.nextArtisanInsightV26)(19, 'Rare'), 20);
+eq((0, equipment_craft_rarity_v26_1.nextArtisanInsightV26)(20, 'Epic'), 0);
+eq(equipment_craft_rarity_v26_1.RARITY_STAT_MULT_V26.Mythic, 1.07);
+const piece = equipment_catalog_v23_1.EQUIPMENT_PIECES_V23.find(p => p.tier === 'T9' && p.slot === 'Weapon');
+const rare = (0, equipment_item_instance_v26_1.deriveInstanceV26)({ id: 'i1', characterId: 'c', pieceId: piece.id, rarity: 'Rare', upgradeRank: 0, acquireSource: 'craft', createdAt: new Date(0).toISOString() });
+const myth = (0, equipment_item_instance_v26_1.deriveInstanceV26)({ id: 'i2', characterId: 'c', pieceId: piece.id, rarity: 'Mythic', upgradeRank: 0, acquireSource: 'craft', createdAt: new Date(0).toISOString() });
+const key = Object.keys(rare.stats)[0];
+ok(myth.stats[key] > rare.stats[key], 'mythic_stat_better');
+console.log('equipment-v26 processing, unlock and crafted-rarity tests passed');

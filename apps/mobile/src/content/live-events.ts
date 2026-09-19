@@ -1,7 +1,7 @@
 import type {ClassId} from '../core/types';
 import type {LiveEventUiCopy} from './live-event-ui';
 
-export type EventRewardKind='skin'|'pet'|'companion'|'background'|'border'|'emote'|'title';
+export type EventRewardKind='skin'|'pet'|'background'|'border'|'emote'|'title';
 export type EventActivitySource='combat'|'gathering'|'crafting'|'boss';
 export interface EventReward{kind:EventRewardKind;id:string;name:string;rarity:'rare'|'epic'|'legendary';}
 export interface EventMilestone{points:number;reward:EventReward;}
@@ -51,7 +51,6 @@ export const LIVE_EVENT_CATALOG:LiveEventDef[]=[{
     {id:'market_wheat_crown',reward:{kind:'border',id:'frame_wheat_crown',name:'Wheat Crown',rarity:'epic'},currency:'common',cost:1800,limit:1},
     {id:'market_field_mouse',reward:{kind:'pet',id:'pet_field_mouse',name:'Field Mouse',rarity:'epic'},currency:'common',cost:2400,limit:1},
     {id:'pantry_amber_owl',reward:{kind:'pet',id:'pet_amber_owl',name:'Amber Owl',rarity:'legendary'},currency:'prestige',cost:4,limit:1},
-    {id:'pantry_harvest_guardian',reward:{kind:'companion',id:'EVT_UNIT_006',name:'Harvest Guardian',rarity:'epic'},currency:'prestige',cost:8,limit:1},
   ],
   choices:[
     {id:'preserved_supplies',name:'Preserved Supplies',description:'Prioritize food, cooking, and the communal feast.',bonusLabel:'+20% marks from gathering',dropMultipliers:{gathering:1.2}},

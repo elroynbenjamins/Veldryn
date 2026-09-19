@@ -35,7 +35,7 @@ import {applyTrustedLongTermProgression} from './long-term-progression-runtime';
 import {evaluateIdleRuleSet,type IdleEvaluationContext,type IdleRuleSet} from './idle-rules-v40';
 export const beginAlchemyBatch=startAlchemyBatch;
 
-function longTermAccountScope(state:GameState){return `account:${state.createdAtMs}`;}
+function longTermAccountScope(state:GameState){return state.account.longTermAccountScopeId??`local-account:${state.createdAtMs}`;}
 
 export const BASE_OFFLINE_CAP_HOURS=24;
 export const MAX_OFFLINE_CAP_HOURS=36;
@@ -570,6 +570,7 @@ export function challengeFallenKnightRematch(state:GameState,nowMs:number):{stat
   // Count an existing story clear even when upgrading a save predating companion counters.
   next.account.companionBossClears={...next.account.companionBossClears,FALLEN_KNIGHT:Math.max(1,next.account.companionBossClears?.FALLEN_KNIGHT??0)};
   next=recordCompanionActivity(grantBondstones(grantCompanionEssence(next,40),1),'boss','FALLEN_KNIGHT',1,nowMs);
+  next=applyTrustedLongTermProgression(next,[{kind:'boss',contentId:'FALLEN_KNIGHT',units:1}],undefined,nowMs,{accountId:longTermAccountScope(next),eventId:`boss-rematch:${state.character.id}:FALLEN_KNIGHT:${Math.floor(nowMs/86400000)}`}).state;
   return {state:next,won:true,message:'Fallen Knight rematch won: +40 Companion Essence, +1 Bondstone. Companion boss progression recorded.'};
 }
 export function challengeFallenKnight(state:GameState,nowMs=Date.now()):{state:GameState;won:boolean;message:string}{
@@ -582,5 +583,7 @@ export function challengeFallenKnight(state:GameState,nowMs=Date.now()):{state:G
   if(!won)return {state,won:false,message:`Fallen Knight repelled you. Readiness ${ready.total}/100 (gear ${ready.equipment}/35, food ${ready.food}/10, mastery ${ready.mastery}/10). Recommended: 80+.`};
   const xp=state.character.xp+3000;let next={...state,defeatedBossIds:[...state.defeatedBossIds,'FALLEN_KNIGHT'],character:{...state.character,gold:state.character.gold+900,xp,level:characterLevelFromXp(xp),currentHp:effectiveStats(state).hp},inventory:{...state.inventory,stacks:stackItems(state.inventory.stacks,[{itemId:'FALLEN_KNIGHT_SIGIL',quantity:1}])},activity:null} as GameState;
   next.character=awardClassSkillXp(next.character!,3000*characterPermanentMultipliers(state).skillXpMultiplier).character;
-  next=recordCompanionActivity(grantBondstones(grantCompanionEssence(refreshQuests(grantEventActivity(next,'boss',nowMs)),40),1),'boss','FALLEN_KNIGHT',1,nowMs);return {state:next,won:true,message:`Fallen Knight defeated at readiness ${ready.total}/100. +40 Companion Essence, +1 Bondstone. The road toward Sunscar is open.`}
+  next=recordCompanionActivity(grantBondstones(grantCompanionEssence(refreshQuests(grantEventActivity(next,'boss',nowMs)),40),1),'boss','FALLEN_KNIGHT',1,nowMs);
+  next=applyTrustedLongTermProgression(next,[{kind:'boss',contentId:'FALLEN_KNIGHT',units:1}],undefined,nowMs,{accountId:longTermAccountScope(next),eventId:`boss-story:${state.character.id}:FALLEN_KNIGHT`}).state;
+  return {state:next,won:true,message:`Fallen Knight defeated at readiness ${ready.total}/100. +40 Companion Essence, +1 Bondstone. The road toward Sunscar is open.`}
 }

@@ -38,8 +38,33 @@ const VISUALS:Record<string,LiveEventVisualBundle>={
       frame_wheat_crown:require('../../assets/profile-borders/frame_wheat_crown.png'),
     },
   },
-  heartbond:{heroBackground:require('../../assets/profile-backgrounds/bg_heartbond.png'),discoveryArt:EMPTY_ART,rewardArt:EMPTY_ART},
-  bloomwake:{heroBackground:require('../../assets/profile-backgrounds/bg_bloomwake.png'),discoveryArt:EMPTY_ART,rewardArt:EMPTY_ART},
+  turning_of_the_age:{
+    heroBackground:require('../../assets/profile-backgrounds/bg_cosmic_gate.png'),
+    discoveryArt:EMPTY_ART,
+    rewardArt:{
+      EVT_PET_001:require('../../assets/event_collectibles/turning_of_the_age/pets/EVT_PET_001_Chronicle_Wisp.png'),
+      EVT_PET_002:require('../../assets/event_collectibles/turning_of_the_age/pets/EVT_PET_002_Gilded_Hourling.png'),
+      EVT_UNIT_001:require('../../assets/event_collectibles/turning_of_the_age/companions/EVT_UNIT_001_Keeper_of_First_Dawn.png'),
+    },
+  },
+  heartbond:{
+    heroBackground:require('../../assets/profile-backgrounds/bg_heartbond.png'),
+    discoveryArt:EMPTY_ART,
+    rewardArt:{
+      EVT_PET_003:require('../../assets/event_collectibles/heartbond_festival/pets/EVT_PET_003_Rosebud_Bun.png'),
+      EVT_PET_004:require('../../assets/event_collectibles/heartbond_festival/pets/EVT_PET_004_Heartwing.png'),
+      EVT_UNIT_002:require('../../assets/event_collectibles/heartbond_festival/companions/EVT_UNIT_002_Vowbound_Cherub.png'),
+    },
+  },
+  bloomwake:{
+    heroBackground:require('../../assets/profile-backgrounds/bg_bloomwake.png'),
+    discoveryArt:EMPTY_ART,
+    rewardArt:{
+      EVT_PET_005:require('../../assets/event_collectibles/bloomwake/pets/EVT_PET_005_Pollenpuff.png'),
+      EVT_PET_006:require('../../assets/event_collectibles/bloomwake/pets/EVT_PET_006_Verdant_Fawn.png'),
+      EVT_UNIT_003:require('../../assets/event_collectibles/bloomwake/companions/EVT_UNIT_003_Bloomwarden.png'),
+    },
+  },
   starfall:{heroBackground:require('../../assets/profile-backgrounds/bg_starfall.png'),discoveryArt:EMPTY_ART,rewardArt:EMPTY_ART},
   veilbreak:{
     heroBackground:require('../../assets/profile-backgrounds/bg_veilbreak.png'),

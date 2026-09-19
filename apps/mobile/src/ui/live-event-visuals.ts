@@ -34,6 +34,7 @@ const VISUALS:Record<string,LiveEventVisualBundle>={
       emote_scarecrow_salute:require('../../assets/events/harvestwake/emote_scarecrow_salute.png'),
       frame_amber_vine:require('../../assets/profile-borders/frame_amber_vine.png'),
       frame_wheat_crown:require('../../assets/profile-borders/frame_wheat_crown.png'),
+      EVT_UNIT_006:require('../../assets/event_collectibles/harvestwake/companions/EVT_UNIT_006_Harvest_Guardian.png'),
     },
   },
   heartbond:{heroBackground:require('../../assets/profile-backgrounds/bg_heartbond.png'),discoveryArt:EMPTY_ART,rewardArt:EMPTY_ART},

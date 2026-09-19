@@ -1,0 +1,44 @@
+name: Mobile core validation
+
+on:
+  pull_request:
+    paths:
+      - 'apps/mobile/**'
+      - 'backend/**'
+      - 'tools/**'
+      - '.github/workflows/mobile-core-validation.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps/mobile/**'
+      - 'backend/**'
+      - 'tools/**'
+      - '.github/workflows/mobile-core-validation.yml'
+  workflow_dispatch:
+
+jobs:
+  mobile-core:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Install backend dependencies used by reconciliation tests
+        run: pnpm --dir ../../backend install --frozen-lockfile
+      - name: Typecheck core
+        run: pnpm typecheck:core
+      - name: Run core tests
+        run: pnpm test:core
+      - name: Run collectible tests
+        run: pnpm test:collectibles

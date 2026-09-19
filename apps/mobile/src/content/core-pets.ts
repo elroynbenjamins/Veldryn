@@ -2,7 +2,7 @@ import type {CollectibleDefinition,CollectibleTarget} from './collectibles';
 
 export type CorePetRegion='Asterfall'|'Sunscar'|'Frostmarch'|'Ashlands';
 
-const pet=(id:string,name:string,region:CorePetRegion,target:CollectibleTarget,nativeSize:48|64,activeBps=200):CollectibleDefinition=>({
+const pet=(id:string,name:string,region:CorePetRegion,target:CollectibleTarget,nativeSize:48|64,activeBps=200,source?:string):CollectibleDefinition=>({
   id,
   kind:'pet',
   name,
@@ -10,7 +10,7 @@ const pet=(id:string,name:string,region:CorePetRegion,target:CollectibleTarget,n
   target,
   ownedBps:50,
   activeBps,
-  source:`${region} pet collection`,
+  source:source??`${region} pet collection`,
   collectionGroup:'core',
   region,
   nativeSize,
@@ -43,25 +43,25 @@ export const CORE_PET_COLLECTIBLES:readonly CollectibleDefinition[]=[
   pet('PET_015','Coinmouse','Asterfall','gold',48),
   pet('PET_016','Echo Wisp','Asterfall','actionSpeed',48),
   pet('PET_017','Campfox','Asterfall','skillXp',48),
-  pet('PET_018','Oathling','Asterfall','defense',64,300),
+  pet('PET_018','Oathling','Asterfall','defense',64,300,'0.05% drop from Oathglass Revenant'),
 
   pet('PET_019','Duneling','Sunscar','gatheringYield',48),
   pet('PET_020','Mirage Minnow','Sunscar','fishingSpeed',48),
   pet('PET_021','Sunscarab','Sunscar','craftingSpeed',48),
   pet('PET_022','Tiny Sphinx','Sunscar','skillXp',64,300),
-  pet('PET_023','Tyrant Larva','Sunscar','characterXp',64,300),
+  pet('PET_023','Tyrant Larva','Sunscar','characterXp',64,300,'0.05% drop from Glassbound Sentinel'),
 
   pet('PET_024','Snowpuff Hare','Frostmarch','actionSpeed',48),
   pet('PET_025','Rimecap','Frostmarch','herbalismSpeed',48),
   pet('PET_026','Bellfin Fry','Frostmarch','fishingSpeed',48),
   pet('PET_027','Choir Pebble','Frostmarch','defense',64,300),
-  pet('PET_028','Wyrmling Flake','Frostmarch','skillXp',64,300),
+  pet('PET_028','Wyrmling Flake','Frostmarch','skillXp',64,300,'0.05% drop from Choir Hunter'),
 
   pet('PET_029','Coalbug','Ashlands','craftingSpeed',48),
   pet('PET_030','Sootling','Ashlands','materialPreservation',48),
   pet('PET_031','Ember Eel Fry','Ashlands','fishingSpeed',48),
   pet('PET_032','Forge Imp','Ashlands','craftingSpeed',64,300),
-  pet('PET_033','Cinder Crownling','Ashlands','dropChance',64,300),
+  pet('PET_033','Cinder Crownling','Ashlands','dropChance',64,300,'0.05% drop from Ashen Revenant'),
 ];
 
 export const CORE_PET_IDS=new Set(CORE_PET_COLLECTIBLES.map(row=>row.id));

@@ -32,6 +32,7 @@ import {HOLY_WATER_ID} from '../content/faith';
 import {previewAlchemyReward,alchemyRefund,startAlchemyBatch,preparationEffects,spendPreparationEncounter} from './alchemy';
 import {potionDef} from '../content/alchemy';
 import {applyTrustedLongTermProgression} from './long-term-progression-runtime';
+import {applyCorePetCombatDrops} from './core-pet-drops';
 import {evaluateIdleRuleSet,type IdleEvaluationContext,type IdleRuleSet} from './idle-rules-v40';
 export const beginAlchemyBatch=startAlchemyBatch;
 
@@ -376,7 +377,10 @@ export function claimActivity(state:GameState,nowMs:number){
   if(next.activity&&reward.kills>0)next.activity.classFocus=normalizeTrainingFocus(next.character.trainingFocus);
   let progressed=recordMonsterMastery(refreshQuests(applyEventDiscoveries(applyEventDrops(next,reward.eventDrops??[]),reward.eventDiscoveries??[]),state.activity.targetId,reward.kills),state.activity.targetId,reward.kills);
   progressed=applyTrustedLongTermProgression(progressed,[{kind:'combat',contentId:state.activity.targetId,units:reward.kills,startedAtMs:state.activity.lastClaimAtMs}],reward,settledAtMs,{accountId:longTermAccountScope(state),eventId:`combat:${state.character.id}:${state.activity.targetId}:${state.activity.lastClaimAtMs}:${settledAtMs}`}).state;
-  return {state:recordCompanionActivity(progressed,'combat',state.activity.targetId,reward.kills,settledAtMs),reward}
+  const petResult=applyCorePetCombatDrops(progressed,state.activity.targetId,reward.kills,`${state.character.id}:${state.activity.lastClaimAtMs}:${settledAtMs}`);
+  progressed=petResult.state;
+  const settledReward=petResult.drops.length?{...reward,petDrops:petResult.drops}:reward;
+  return {state:recordCompanionActivity(progressed,'combat',state.activity.targetId,reward.kills,settledAtMs),reward:settledReward}
 }
 
 export function finishClassDrills(state:GameState,now:number):GameState{

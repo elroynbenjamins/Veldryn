@@ -41,8 +41,26 @@ const VISUALS:Record<string,LiveEventVisualBundle>={
   heartbond:{heroBackground:require('../../assets/profile-backgrounds/bg_heartbond.png'),discoveryArt:EMPTY_ART,rewardArt:EMPTY_ART},
   bloomwake:{heroBackground:require('../../assets/profile-backgrounds/bg_bloomwake.png'),discoveryArt:EMPTY_ART,rewardArt:EMPTY_ART},
   starfall:{heroBackground:require('../../assets/profile-backgrounds/bg_starfall.png'),discoveryArt:EMPTY_ART,rewardArt:EMPTY_ART},
-  veilbreak:{heroBackground:require('../../assets/profile-backgrounds/bg_veilbreak.png'),discoveryArt:EMPTY_ART,rewardArt:EMPTY_ART},
-  frostfall:{heroBackground:require('../../assets/profile-backgrounds/bg_frostfall.png'),discoveryArt:EMPTY_ART,rewardArt:EMPTY_ART},
+  veilbreak:{
+    heroBackground:require('../../assets/profile-backgrounds/bg_veilbreak.png'),
+    discoveryArt:EMPTY_ART,
+    rewardArt:{
+      EVT_PET_013:require('../../assets/event_collectibles/veilbreak/pets/EVT_PET_013_Gloomkin.png'),
+      EVT_PET_014:require('../../assets/event_collectibles_v1/EVT_PET_014.png'),
+      EVT_UNIT_007:require('../../assets/event_collectibles/veilbreak/companions/EVT_UNIT_007_Veil_Hound.png'),
+      EVT_UNIT_008:require('../../assets/event_collectibles_v1/EVT_UNIT_008.png'),
+    },
+  },
+  frostfall:{
+    heroBackground:require('../../assets/profile-backgrounds/bg_frostfall.png'),
+    discoveryArt:EMPTY_ART,
+    rewardArt:{
+      EVT_PET_015:require('../../assets/event_collectibles_v1/EVT_PET_015.png'),
+      EVT_PET_016:require('../../assets/event_collectibles_v1/EVT_PET_016.png'),
+      EVT_PET_017:require('../../assets/event_collectibles_v1/EVT_PET_017.png'),
+      EVT_UNIT_009:require('../../assets/event_collectibles_v1/EVT_UNIT_009.png'),
+    },
+  },
 };
 
 export function liveEventVisuals(visualKey?:string):LiveEventVisualBundle{

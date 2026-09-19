@@ -54,6 +54,7 @@ export const LIVE_EVENT_CATALOG:LiveEventDef[]=[{
     {id:'market_harvest_fox_legacy',reward:{kind:'pet',id:'pet_harvest_fox',name:'Harvest Fox',rarity:'epic'},currency:'common',cost:2600,limit:1,legacy:true},
     {id:'market_straw_sparrow_legacy',reward:{kind:'pet',id:'pet_straw_sparrow',name:'Straw Sparrow',rarity:'epic'},currency:'common',cost:2800,limit:1,legacy:true},
     {id:'pantry_amber_owl',reward:{kind:'pet',id:'pet_amber_owl',name:'Amber Owl',rarity:'legendary'},currency:'prestige',cost:4,limit:1,legacy:true},
+    {id:'pantry_harvest_guardian',reward:{kind:'companion',id:'EVT_UNIT_006',name:'Harvest Guardian',rarity:'epic'},currency:'prestige',cost:8,limit:1},
   ],
   choices:[
     {id:'preserved_supplies',name:'Preserved Supplies',description:'Prioritize food, cooking, and the communal feast.',bonusLabel:'+20% marks from gathering',dropMultipliers:{gathering:1.2}},

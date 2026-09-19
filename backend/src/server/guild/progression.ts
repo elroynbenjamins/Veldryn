@@ -1,11 +1,41 @@
 export type GuildSkillBranch='community'|'adventuring'|'crafting'|'expedition';
 export type GuildEffectKey='memberCap'|'projectContributionEfficiencyBps'|'projectMaterialEfficiencyBps'|'combatXpBps'|'dropChanceBps'|'bossContributionEfficiencyBps'|'skillXpBps'|'gatheringYieldBps'|'craftingXpBps'|'expeditionRewardBps'|'routeUtilityBps'|'echoPreparationBps';
-export interface GuildSkill{id:string;branch:GuildSkillBranch;name:string;maxRank:number;costPerRank:number[];effectKey:GuildEffectKey;effectPerRank:number}
+export interface GuildSkill{id:string;branch:GuildSkillBranch;name:string;maxRank:number;costPerRank:number[];effectKey:GuildEffectKey;effectPerRank:number;requiredGuildLevelByRank?:number[]}
 export interface GuildUpgradeEffects{memberCap:number;projectContributionEfficiencyBps:number;projectMaterialEfficiencyBps:number;combatXpBps:number;dropChanceBps:number;bossContributionEfficiencyBps:number;skillXpBps:number;gatheringYieldBps:number;craftingXpBps:number;expeditionRewardBps:number;routeUtilityBps:number;echoPreparationBps:number}
-const COSTS=[3,5,7];export const GUILD_SKILL_POINT_BUDGET=100;
-export const GUILD_SKILLS:readonly GuildSkill[]=[{id:'member_capacity',branch:'community',name:'Open Halls',maxRank:5,costPerRank:[2,3,4,5,6],effectKey:'memberCap',effectPerRank:2},{id:'project_coordination',branch:'community',name:'Project Coordination',maxRank:3,costPerRank:COSTS,effectKey:'projectContributionEfficiencyBps',effectPerRank:100},{id:'shared_logistics',branch:'community',name:'Shared Logistics',maxRank:3,costPerRank:COSTS,effectKey:'projectMaterialEfficiencyBps',effectPerRank:100},{id:'combat_mentorship',branch:'adventuring',name:'Combat Mentorship',maxRank:3,costPerRank:COSTS,effectKey:'combatXpBps',effectPerRank:100},{id:'spoils_insight',branch:'adventuring',name:'Spoils Insight',maxRank:3,costPerRank:COSTS,effectKey:'dropChanceBps',effectPerRank:100},{id:'boss_drills',branch:'adventuring',name:'Boss Drills',maxRank:3,costPerRank:COSTS,effectKey:'bossContributionEfficiencyBps',effectPerRank:100},{id:'artisan_mentorship',branch:'crafting',name:'Artisan Mentorship',maxRank:3,costPerRank:COSTS,effectKey:'skillXpBps',effectPerRank:100},{id:'gatherer_network',branch:'crafting',name:'Gatherer Network',maxRank:3,costPerRank:COSTS,effectKey:'gatheringYieldBps',effectPerRank:100},{id:'workshop_discipline',branch:'crafting',name:'Workshop Discipline',maxRank:3,costPerRank:COSTS,effectKey:'craftingXpBps',effectPerRank:100},{id:'expedition_supply',branch:'expedition',name:'Expedition Supply',maxRank:3,costPerRank:COSTS,effectKey:'expeditionRewardBps',effectPerRank:100},{id:'route_scouting',branch:'expedition',name:'Route Scouting',maxRank:3,costPerRank:COSTS,effectKey:'routeUtilityBps',effectPerRank:100},{id:'echo_preparation',branch:'expedition',name:'Echo Preparation',maxRank:3,costPerRank:COSTS,effectKey:'echoPreparationBps',effectPerRank:100}];
+
+const COSTS=[3,5,7];
+export const GUILD_SKILL_POINT_BUDGET=100;
+
+/**
+ * Launch population tuning.
+ *
+ * Guilds deliberately start small while the player population is building.
+ * The level ceiling and member ceiling are launch-era limits; later content
+ * can raise them without changing existing guild identities/progression.
+ */
+export const GUILD_LAUNCH_LEVEL_CAP=10;
+export const GUILD_BASE_MEMBER_CAP=12;
+export const GUILD_LAUNCH_MEMBER_CAP=20;
+export const GUILD_MEMBER_CAP_LEVEL_GATES=Object.freeze([2,4,7,10] as const);
+
+export const GUILD_SKILLS:readonly GuildSkill[]=[
+  {id:'member_capacity',branch:'community',name:'Open Halls',maxRank:4,costPerRank:[2,3,4,5],effectKey:'memberCap',effectPerRank:2,requiredGuildLevelByRank:[...GUILD_MEMBER_CAP_LEVEL_GATES]},
+  {id:'project_coordination',branch:'community',name:'Project Coordination',maxRank:3,costPerRank:COSTS,effectKey:'projectContributionEfficiencyBps',effectPerRank:100},
+  {id:'shared_logistics',branch:'community',name:'Shared Logistics',maxRank:3,costPerRank:COSTS,effectKey:'projectMaterialEfficiencyBps',effectPerRank:100},
+  {id:'combat_mentorship',branch:'adventuring',name:'Combat Mentorship',maxRank:3,costPerRank:COSTS,effectKey:'combatXpBps',effectPerRank:100},
+  {id:'spoils_insight',branch:'adventuring',name:'Spoils Insight',maxRank:3,costPerRank:COSTS,effectKey:'dropChanceBps',effectPerRank:100},
+  {id:'boss_drills',branch:'adventuring',name:'Boss Drills',maxRank:3,costPerRank:COSTS,effectKey:'bossContributionEfficiencyBps',effectPerRank:100},
+  {id:'artisan_mentorship',branch:'crafting',name:'Artisan Mentorship',maxRank:3,costPerRank:COSTS,effectKey:'skillXpBps',effectPerRank:100},
+  {id:'gatherer_network',branch:'crafting',name:'Gatherer Network',maxRank:3,costPerRank:COSTS,effectKey:'gatheringYieldBps',effectPerRank:100},
+  {id:'workshop_discipline',branch:'crafting',name:'Workshop Discipline',maxRank:3,costPerRank:COSTS,effectKey:'craftingXpBps',effectPerRank:100},
+  {id:'expedition_supply',branch:'expedition',name:'Expedition Supply',maxRank:3,costPerRank:COSTS,effectKey:'expeditionRewardBps',effectPerRank:100},
+  {id:'route_scouting',branch:'expedition',name:'Route Scouting',maxRank:3,costPerRank:COSTS,effectKey:'routeUtilityBps',effectPerRank:100},
+  {id:'echo_preparation',branch:'expedition',name:'Echo Preparation',maxRank:3,costPerRank:COSTS,effectKey:'echoPreparationBps',effectPerRank:100}
+];
+
 export function validateGuildRanks(ranks:Record<string,number>,skills=GUILD_SKILLS){const known=new Set(skills.map(s=>s.id));return Object.keys(ranks).every(id=>known.has(id))&&skills.every(s=>Number.isInteger(ranks[s.id]??0)&&(ranks[s.id]??0)>=0&&(ranks[s.id]??0)<=s.maxRank)}
 export function spentPoints(ranks:Record<string,number>,skills=GUILD_SKILLS){if(!validateGuildRanks(ranks,skills))return Infinity;return skills.reduce((sum,s)=>sum+s.costPerRank.slice(0,ranks[s.id]??0).reduce((a,b)=>a+b,0),0)}
-export function canAllocate(ranks:Record<string,number>,skill:GuildSkill,newRank:number,budget=GUILD_SKILL_POINT_BUDGET){const current=ranks[skill.id]??0;return newRank===current+1&&newRank<=skill.maxRank&&spentPoints({...ranks,[skill.id]:newRank})<=budget}
+export function canAllocate(ranks:Record<string,number>,skill:GuildSkill,newRank:number,budget=GUILD_SKILL_POINT_BUDGET,guildLevel=GUILD_LAUNCH_LEVEL_CAP){const current=ranks[skill.id]??0;const requiredLevel=skill.requiredGuildLevelByRank?.[newRank-1]??1;return newRank===current+1&&newRank<=skill.maxRank&&Number.isInteger(guildLevel)&&guildLevel>=requiredLevel&&guildLevel<=GUILD_LAUNCH_LEVEL_CAP&&spentPoints({...ranks,[skill.id]:newRank})<=budget}
 export function guildUpgradeEffects(ranks:Record<string,number>,skills=GUILD_SKILLS){if(!validateGuildRanks(ranks,skills))throw new Error('invalid_guild_skill_ranks');const out=Object.fromEntries(['memberCap','projectContributionEfficiencyBps','projectMaterialEfficiencyBps','combatXpBps','dropChanceBps','bossContributionEfficiencyBps','skillXpBps','gatheringYieldBps','craftingXpBps','expeditionRewardBps','routeUtilityBps','echoPreparationBps'].map(key=>[key,0])) as unknown as GuildUpgradeEffects;for(const s of skills)out[s.effectKey]+=(ranks[s.id]??0)*s.effectPerRank;return out}
+export function guildMemberCapForRanks(ranks:Record<string,number>){return Math.min(GUILD_LAUNCH_MEMBER_CAP,GUILD_BASE_MEMBER_CAP+guildUpgradeEffects(ranks).memberCap)}
 export function bossAttemptAllowed(existing:number,max=3){return Number.isInteger(existing)&&existing>=0&&existing<max}

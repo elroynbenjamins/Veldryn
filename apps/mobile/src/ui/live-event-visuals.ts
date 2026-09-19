@@ -26,6 +26,8 @@ const VISUALS:Record<string,LiveEventVisualBundle>={
       guardian_lantern:require('../../assets/events/harvestwake/discovery_guardian_lantern.png'),
     },
     rewardArt:{
+      EVT_PET_011:require('../../assets/event_collectibles/harvestwake/pets/EVT_PET_011_Pumpkin_Piglet.png'),
+      EVT_PET_012:require('../../assets/event_collectibles/harvestwake/pets/EVT_PET_012_Golden_Sheafling.png'),
       pet_harvest_fox:require('../../assets/events/harvestwake/pet_harvest_fox.png'),
       pet_field_mouse:require('../../assets/events/harvestwake/pet_field_mouse.png'),
       pet_straw_sparrow:require('../../assets/events/harvestwake/pet_straw_sparrow.png'),

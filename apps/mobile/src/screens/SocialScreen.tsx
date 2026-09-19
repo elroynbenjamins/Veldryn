@@ -6,6 +6,7 @@ import {SocialHubPanel,type SocialHubTab} from '../components/SocialHubPanel';
 import {GuildSeekerPanel} from '../components/GuildSeekerPanel';
 import {RecruitmentComposer} from '../components/RecruitmentComposer';
 import {RecruitmentFiltersPanel} from '../components/RecruitmentFiltersPanel';
+import {RecruitmentListing} from '../components/RecruitmentListing';
 import {OnlinePartyChat} from '../components/OnlinePartyChat';
 import {GameButton} from '../components/GameButton';
 import {Panel} from '../components/Panel';
@@ -19,12 +20,18 @@ export function SocialScreen({onGuild,onFriends,onAccount}:{onGuild:()=>void;onF
  const [cards,setCards]=useState<RecruitmentCardView[]>([]),[own,setOwn]=useState<RecruitmentCardView[]>([]),[rankings,setRankings]=useState<PartyRanking[]>([]),[liveEvent,setLiveEvent]=useState<import('../core/party-social').PartyEventView|null>(null);
  const [draft,setDraft]=useState<PublishRecruitmentInput|null>(null),[selected,setSelected]=useState<RecruitmentCardView|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const [focus,setFocus]=useState<PartyFocus>('mixed'),[role,setRole]=useState<PartyRole>('damage'),[help,setHelp]=useState(false),[now,setNow]=useState(Date.now());
+ const [partyRecruitmentMode,setPartyRecruitmentMode]=useState<'looking_for_party'|'party_recruiting'>('party_recruiting');
+ const [guildRecruitmentMode,setGuildRecruitmentMode]=useState<'looking_for_guild'|'guild_recruiting'>('guild_recruiting');
  const requestGeneration=useRef(0);const command=useRef<{signature:string;key:string}|null>(null);
  const key=(signature:string)=>{if(command.current?.signature!==signature)command.current={signature,key:partyCommandKey()};return command.current.key;};
  const load=useCallback(async()=>{const generation=++requestGeneration.current;if(!social.accountId){setCards([]);setOwn([]);setRankings([]);return;}
-  try{const browse=tab==='guild'?{...filters,postTypes:['looking_for_guild'] as RecruitmentPostType[]}:filters;const [next,mine,board]=await Promise.all([repository.browseRecruitment(browse),ownRecruitmentPosts(),partyRankings()]);if(generation===requestGeneration.current){setCards(next);setOwn(mine);setRankings(board);setError('');}}
-  catch(e){if(generation===requestGeneration.current){setCards([]);setError(e instanceof Error?e.message:'Social service unavailable.');}}
- },[filters,tab,social.accountId]);
+  try{
+   const mode:RecruitmentPostType|undefined=tab==='party'?partyRecruitmentMode:tab==='guild'?guildRecruitmentMode:undefined;
+   const browse={...filters,postTypes:mode?[mode]:[]};
+   const [next,mine,board]=await Promise.all([repository.browseRecruitment(browse),ownRecruitmentPosts(),partyRankings()]);
+   if(generation===requestGeneration.current){setCards(next);setOwn(mine);setRankings(board);setError('');}
+  }catch(e){if(generation===requestGeneration.current){setCards([]);setError(e instanceof Error?e.message:'Social service unavailable.');}}
+ },[filters,tab,partyRecruitmentMode,guildRecruitmentMode,social.accountId]);
  useEffect(()=>{const timer=setTimeout(()=>void load(),250);return()=>{clearTimeout(timer);requestGeneration.current++;};},[load,social.party?.id]);
  useEffect(()=>{const timer=setInterval(()=>{setNow(Date.now());void load();},30000);return()=>clearInterval(timer);},[load]);
  useEffect(()=>{if(tab!=='events'||!social.accountId)return;void activePartyEvent().then(setLiveEvent).catch(e=>setError(e instanceof Error?e.message:'Live event unavailable.'));},[tab,social.accountId,social.party?.id]);
@@ -47,17 +54,17 @@ export function SocialScreen({onGuild,onFriends,onAccount}:{onGuild:()=>void;onF
     {selected.guildId&&<GameButton title="Join / apply to Guild" disabled={busy} onPress={()=>void run(async()=>{const result=await requestGuildMembership(selected.guildId!);Alert.alert('Guild',result);})}/>}
     {selected.ownerAccountId&&selected.ownerAccountId!==social.accountId&&<GameButton title="Send friend request" disabled={busy} onPress={()=>void run(()=>sendFriendRequest(selected.ownerAccountId!))}/>}
     <GameButton title="Close details" tone="secondary" onPress={()=>setSelected(null)}/></Panel>}
-   {tab==='party'&&<PartyHubPanel accountId={social.accountId} party={social.party} contracts={social.contracts} recruitment={cards} nowMs={at} filters={filters} onFiltersChange={setFilters}
+   {tab==='party'&&<><View style={s.boardTabs}><View style={s.boardTab}><GameButton title="LF Party" tone={partyRecruitmentMode==='looking_for_party'?'primary':'secondary'} onPress={()=>{setPartyRecruitmentMode('looking_for_party');setSelected(null)}}/></View><View style={s.boardTab}><GameButton title="Party LF Members" tone={partyRecruitmentMode==='party_recruiting'?'primary':'secondary'} onPress={()=>{setPartyRecruitmentMode('party_recruiting');setSelected(null)}}/></View></View><PartyHubPanel accountId={social.accountId} party={social.party} contracts={social.contracts} recruitment={cards} nowMs={at} filters={filters} onFiltersChange={setFilters} recruitmentMode={partyRecruitmentMode}
     onCreateParty={busy?undefined:()=>void run(()=>repository.createParty({characterId:character(),role,focus,idempotencyKey:key(`create:${focus}:${role}`)}))}
     onLeaveParty={busy?undefined:()=>void run(async()=>{await repository.leaveParty({partyId:social.party!.id,idempotencyKey:key(`leave:${social.party!.id}`)});await social.refresh();})}
     onOpenPartyChat={()=>setTab('chat')} onOpenRecruitmentPost={id=>setSelected(cards.find(card=>card.id===id)??null)} onCreateRecruitmentPost={post}
-    onClaimReward={busy?undefined:id=>void run(()=>claimPartyContractReward(id,character()))}/>}
+    onClaimReward={busy?undefined:id=>void run(()=>claimPartyContractReward(id,character()))}/></>}
    {tab==='events'&&<PartyEventHubPanel event={liveEvent} onFindParty={()=>setTab('party')} />}
-   {tab==='guild'&&<><GameButton title="Open Guild directory and management" onPress={onGuild}/><GameButton title="Post Guild recruiting advert" tone="secondary" disabled={busy} onPress={()=>post('guild_recruiting')}/><RecruitmentFiltersPanel value={filters} onChange={setFilters}/><GuildSeekerPanel seekers={cards} nowMs={at} onOpen={id=>setSelected(cards.find(card=>card.id===id)??null)} onPostMyAd={()=>post('looking_for_guild')}/></>}
+   {tab==='guild'&&<><View style={s.boardTabs}><View style={s.boardTab}><GameButton title="Guilds LF Members" tone={guildRecruitmentMode==='guild_recruiting'?'primary':'secondary'} onPress={()=>{setGuildRecruitmentMode('guild_recruiting');setSelected(null)}}/></View><View style={s.boardTab}><GameButton title="LF Guild" tone={guildRecruitmentMode==='looking_for_guild'?'primary':'secondary'} onPress={()=>{setGuildRecruitmentMode('looking_for_guild');setSelected(null)}}/></View></View><GameButton title="Open Guild directory and management" onPress={onGuild}/><RecruitmentFiltersPanel value={filters} onChange={setFilters} hidePostType/>{guildRecruitmentMode==='looking_for_guild'?<GuildSeekerPanel seekers={cards} nowMs={at} onOpen={id=>setSelected(cards.find(card=>card.id===id)??null)} onPostMyAd={()=>post('looking_for_guild')}/>:<Panel><View style={s.boardHeading}><View style={s.flex}><Text style={s.title}>Guilds looking for members</Text><Text style={s.muted}>Browse active guild recruitment posts and apply from the post details.</Text></View><GameButton title="Post Guild advert" tone="secondary" disabled={busy} onPress={()=>post('guild_recruiting')}/></View>{cards.map(card=><RecruitmentListing key={card.id} card={card} nowMs={at} onPress={()=>setSelected(card)}/>)}{!cards.length&&<Text style={s.empty}>No fresh guild recruitment posts match these filters.</Text>}</Panel>}</>}
    {tab==='chat'&&(social.party?<OnlinePartyChat/>:<Text style={s.text}>Join a Party to use Party Chat. World and Guild chat remain available in the chat overlay.</Text>)}
    {tab==='rankings'&&<Panel><Text style={s.title}>Ranked Party events</Text><Text style={s.text}>Normalized points, then completion time. Ties use a stable Party ID order.</Text>{rankings.map(row=><Text style={s.text} key={`${row.event_key}:${row.party_id}`}>#{row.rank} · {row.name} · {row.party_id.slice(0,8)} · {row.normalized_points} pts</Text>)}{!rankings.length&&<Text style={s.text}>No ranked contributions yet.</Text>}</Panel>}
    {(tab==='party'||tab==='guild')&&<Panel><Text style={s.title}>Your adverts</Text>{own.map(item=><View style={s.ad} key={item.id}><Text style={s.text}>{item.title} · {item.status==='closed'?'Closed':recruitmentTimeLabel(item.expiresAtMs,at).text}</Text>{item.status!=='closed'&&<View style={s.row}><GameButton title="Refresh" tone="secondary" disabled={busy} onPress={()=>void run(()=>repository.refreshRecruitment(item.id))}/><GameButton title="Close advert" tone="secondary" disabled={busy} onPress={()=>void run(()=>repository.closeRecruitment(item.id))}/></View>}</View>)}{!own.length&&<Text style={s.text}>No adverts published yet.</Text>}</Panel>}
   </>}
  </ScrollView></SocialHubPanel>;
 }
-const s=StyleSheet.create({content:{padding:spacing.md,gap:spacing.md,paddingBottom:32},row:{flexDirection:'row',flexWrap:'wrap',gap:spacing.sm},title:{color:C.accent,fontSize:18,fontWeight:'800'},text:{color:C.text,lineHeight:21},error:{color:C.bad},ad:{gap:spacing.sm,paddingVertical:spacing.sm}});
+const s=StyleSheet.create({content:{padding:spacing.md,gap:spacing.md,paddingBottom:32},row:{flexDirection:'row',flexWrap:'wrap',gap:spacing.sm},boardTabs:{flexDirection:'row',gap:spacing.sm},boardTab:{flex:1,minWidth:0},boardHeading:{flexDirection:'row',alignItems:'center',gap:spacing.sm},flex:{flex:1,minWidth:0},title:{color:C.accent,fontSize:18,fontWeight:'800'},muted:{color:C.muted,lineHeight:19},empty:{color:C.muted,textAlign:'center',paddingVertical:16},text:{color:C.text,lineHeight:21},error:{color:C.bad},ad:{gap:spacing.sm,paddingVertical:spacing.sm}});

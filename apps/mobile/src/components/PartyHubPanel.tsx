@@ -33,6 +33,7 @@ export interface PartyHubPanelProps {
   filters?: RecruitmentClientFilters;
   onFiltersChange?: (filters:RecruitmentClientFilters)=>void;
   onClaimReward?: (id:string)=>void;
+  recruitmentMode?: 'looking_for_party'|'party_recruiting';
 }
 
 export function PartyHubPanel(props: PartyHubPanelProps) {
@@ -70,11 +71,11 @@ export function PartyHubPanel(props: PartyHubPanelProps) {
     </View>}
 
     <View style={styles.panel}>
-      <Text style={styles.sectionTitle}>FIND PLAYERS</Text>
-      <RecruitmentFiltersPanel value={filters} onChange={setFilters}/>
+      <Text style={styles.sectionTitle}>{props.recruitmentMode==='looking_for_party'?'PLAYERS LOOKING FOR PARTY':'PARTIES LOOKING FOR MEMBERS'}</Text>
+      <Text style={styles.muted}>{props.recruitmentMode==='looking_for_party'?'Browse players advertising themselves for a Party.':'Browse persistent Parties that still have open member slots.'}</Text>
+      <RecruitmentFiltersPanel value={filters} onChange={setFilters} hidePostType/>
       <View style={styles.quickActions}>
-        <PixelButton label="Post LFG" secondary onPress={() => props.onCreateRecruitmentPost?.('looking_for_party')} />
-        {props.party && <PixelButton label="Post LFM" secondary onPress={() => props.onCreateRecruitmentPost?.('party_recruiting')} />}
+        {props.recruitmentMode==='looking_for_party'?<PixelButton label="Post my LFG" secondary onPress={() => props.onCreateRecruitmentPost?.('looking_for_party')} />:props.party?<PixelButton label="Post Party LFM" secondary onPress={() => props.onCreateRecruitmentPost?.('party_recruiting')} />:null}
       </View>
       {cards.map(card => <RecruitmentListing key={card.id} card={card} nowMs={props.nowMs} onPress={() => props.onOpenRecruitmentPost?.(card.id)} />)}
       {!cards.length && <Text style={styles.empty}>No fresh posts match these filters.</Text>}

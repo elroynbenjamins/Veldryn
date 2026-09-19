@@ -156,6 +156,11 @@ declare
   v_guild_id uuid := coalesce(new.guild_id, old.guild_id);
   v_rank integer := 0;
 begin
+  if (tg_op = 'DELETE' and old.skill_id <> 'member_capacity')
+     or (tg_op <> 'DELETE' and new.skill_id <> 'member_capacity') then
+    return coalesce(new, old);
+  end if;
+
   select coalesce(rank, 0)
     into v_rank
     from public.guild_skill_allocations
@@ -174,11 +179,7 @@ $$;
 drop trigger if exists guild_open_halls_sync_v54 on public.guild_skill_allocations;
 create trigger guild_open_halls_sync_v54
 after insert or update or delete on public.guild_skill_allocations
-for each row
-when (
-  coalesce(new.skill_id, old.skill_id) = 'member_capacity'
-)
-execute function public.guild_open_halls_sync_v54();
+for each row execute function public.guild_open_halls_sync_v54();
 
 comment on function public.guild_open_halls_required_level_v54(integer)
   is 'Launch v54 Open Halls gates: rank 1/2/3/4 require Guild Level 2/4/7/10.';

@@ -197,6 +197,44 @@ create trigger guild_open_halls_sync_v54
 after insert or update or delete on public.guild_skill_allocations
 for each row execute function public.guild_open_halls_sync_v54();
 
+create or replace function public.enforce_guild_member_cap_v54()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $
+declare
+  v_cap integer;
+  v_count integer;
+begin
+  select member_cap
+    into v_cap
+    from public.guilds
+   where id = new.guild_id
+   for update;
+
+  if v_cap is null then
+    raise exception 'GUILD_NOT_FOUND';
+  end if;
+
+  select count(*)
+    into v_count
+    from public.guild_members
+   where guild_id = new.guild_id;
+
+  if v_count >= v_cap then
+    raise exception 'GUILD_FULL';
+  end if;
+
+  return new;
+end
+$;
+
+drop trigger if exists enforce_guild_member_cap_v54 on public.guild_members;
+create trigger enforce_guild_member_cap_v54
+before insert on public.guild_members
+for each row execute function public.enforce_guild_member_cap_v54();
+
 comment on function public.guild_open_halls_required_level_v54(integer)
   is 'Launch v54 Open Halls gates: rank 1/2/3/4 require Guild Level 2/4/7/10.';
 comment on function public.guild_launch_caps_guard_v54()

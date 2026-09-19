@@ -42,7 +42,7 @@ export function OnlineProfileExtensionPanel({state}:{state:GameState}){
   return refs.slice(0,80);
  },[state]);
  const labelRef=(ref:ProfileCollectionRefV43)=>ref.kind==='companion'?(COMBAT_COMPANIONS.find(row=>row.id===ref.id)?.name??ref.id):ref.kind==='item'?(ITEMS.find(row=>row.id===ref.id)?.name??ref.id):ref.id.replace(/^pet_|^bg_|^frame_/,'').replace(/_/g,' ');
- const patch=(next:Partial<ProfileExtensionSelfV43>)=>value&&setValue({...value,...next});
+ const patch=(next:Partial<ProfileExtensionSelfV43>)=>{if(value)setValue({...value,...next});};
  const toggle=(list:string[],id:string)=>list.includes(id)?list.filter(value=>value!==id):list.length<3?[...list,id]:list;
  const toggleCollection=(list:ProfileCollectionRefV43[],ref:ProfileCollectionRefV43)=>{const key=refKey(ref);return list.some(row=>refKey(row)===key)?list.filter(row=>refKey(row)!==key):list.length<3?[...list,ref]:list};
  const save=async()=>{if(!value||busy||guest)return;setBusy(true);setError('');setNotice('');try{const row=await updateProfileExtensionV43({visibility:value.visibility,worldFeedOptOut:value.worldFeedOptOut,selectedCharacterId:state.character?.id??value.selectedCharacterId,bio, favoriteSkillId:value.favoriteSkillId,favoriteCompanionId:value.favoriteCompanionId,achievementShowcaseIds:value.achievementShowcaseIds,collectionShowcase:value.collectionShowcase,recordShowcaseIds:value.recordShowcaseIds});setValue(row);setBio(row.bio);setNotice('Public profile settings saved.');}catch(reason){setError(reason instanceof Error?reason.message:'Unable to save profile settings.')}finally{setBusy(false)}};

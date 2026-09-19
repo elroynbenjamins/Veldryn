@@ -9,6 +9,7 @@ equal(errors.length,0,`Live event catalog validation failed: ${errors.join(' | '
 
 const ids=LIVE_EVENT_CATALOG.map(event=>event.id);
 equal(new Set(ids).size,ids.length,'Live event ids must be unique');
+equal(LIVE_EVENT_CATALOG.length,3,'Harvestwake, Veilbreak, and Frostfall are production catalog events');
 
 const harvest=LIVE_EVENT_CATALOG.find(event=>event.id==='EVT_ANNUAL_009_2026');
 ok(harvest,'Harvestwake definition should exist');
@@ -17,6 +18,22 @@ ok(harvest!.shop.some(offer=>offer.reward.kind==='companion'&&offer.reward.id===
 ok(harvest!.milestones('IRONWARDEN').some(row=>row.reward.id==='EVT_PET_011'),'Pumpkin Piglet should be a Harvestwake milestone reward');
 ok(harvest!.discoveries.some(row=>row.reward.id==='EVT_PET_012'),'Golden Sheafling should be a Harvestwake discovery reward');
 ok(harvest!.shop.filter(offer=>offer.legacy).some(offer=>offer.reward.id==='pet_harvest_fox'),'Prototype Harvest Fox remains explicitly available as legacy stock');
+
+const veil=LIVE_EVENT_CATALOG.find(event=>event.id==='EVT_ANNUAL_010_2026');
+ok(veil,'Veilbreak definition should exist');
+equal(veil!.visualKey,'veilbreak','Veilbreak uses its dedicated visual theme');
+ok(veil!.milestones('IRONWARDEN').some(row=>row.reward.id==='EVT_PET_013'),'Veilbreak grants Gloomkin');
+ok(veil!.discoveries.some(row=>row.reward.id==='EVT_PET_014'),'Veilbreak discovery grants Lantern Mimic');
+ok(veil!.milestones('IRONWARDEN').some(row=>row.reward.id==='EVT_UNIT_007'),'Veilbreak grants Veil Hound');
+ok(veil!.shop.some(row=>row.reward.id==='EVT_UNIT_008'),'Veilbreak prestige stock grants Hollow Knightling');
+
+const frost=LIVE_EVENT_CATALOG.find(event=>event.id==='EVT_ANNUAL_012_2026');
+ok(frost,'Frostfall definition should exist');
+equal(frost!.visualKey,'frostfall','Frostfall uses its dedicated visual theme');
+ok(frost!.milestones('IRONWARDEN').some(row=>row.reward.id==='EVT_PET_015'),'Frostfall grants Snowbell Pup');
+ok(frost!.discoveries.some(row=>row.reward.id==='EVT_PET_016'),'Frostfall discovery grants Gift Mimic');
+ok(frost!.shop.some(row=>row.reward.id==='EVT_PET_017'),'Frostfall prestige stock grants Aurora Fox');
+ok(frost!.milestones('IRONWARDEN').some(row=>row.reward.id==='EVT_UNIT_009'),'Frostfall grants Frostbell Herald');
 
 const harvestCopy=eventUiCopy(harvest!);
 equal(harvestCopy.shopTitle,'HARVEST SHOP','Harvestwake uses event-shop wording');

@@ -9,10 +9,20 @@ const raw:Array<[string,string,CompanionRole,CompanionRarity,string,number,numbe
  ['UNIT_013','Dune Stalker','damage','rare','REG_SUNSCAR',190,27,15,2.2,'damage',1.10],['UNIT_014','Oasis Djinnling','support','elite','REG_SUNSCAR',205,18,15,2.2,'heal',.05],['UNIT_015','Solar Scarab','tank','elite','REG_SUNSCAR',205,18,25,2.2,'shield',.05],['UNIT_016',"Tyrant's Heir",'tank','prestige','REG_SUNSCAR',225,18,25,2.2,'shield',.06],
  ['UNIT_017','Rime Wolf Pup','damage','rare','REG_FROSTMARCH',190,27,15,2.2,'damage',1.10],['UNIT_018','Bell Sprite','support','elite','REG_FROSTMARCH',205,18,15,2.2,'heal',.05],['UNIT_019','Choir Golem','tank','elite','REG_FROSTMARCH',205,18,25,2.2,'shield',.05],['UNIT_020','Wyrm Echo','damage','prestige','REG_FROSTMARCH',225,27,15,2.2,'damage',1.18],
  ['UNIT_021','Obsidian Drakelet','damage','rare','REG_ASHLANDS',190,27,15,2.2,'damage',1.10],['UNIT_022','Forge Custodian','tank','elite','REG_ASHLANDS',205,18,25,2.2,'shield',.05],['UNIT_023','Primal Spark','damage','elite','REG_ASHLANDS',205,27,15,2.2,'damage',1.14],['UNIT_024','Regent Shade','support','prestige','REG_ASHLANDS',225,18,15,2.2,'heal',.06],
+ ['EVT_UNIT_001','Keeper of First Dawn','support','elite','EVENT_TURNING_OF_THE_AGE',205,18,15,2.2,'utility',.05],
+ ['EVT_UNIT_002','Vowbound Cherub','support','prestige','EVENT_HEARTBOND_FESTIVAL',225,18,15,2.2,'utility',.05],
+ ['EVT_UNIT_003','Bloomwarden','tank','elite','EVENT_BLOOMWAKE',205,18,24,2.2,'mitigation',.06],
+ ['EVT_UNIT_004','Suncrest Champion','damage','prestige','EVENT_SUNCREST_GAMES',225,28,15,2.2,'damage',1.08],
+ ['EVT_UNIT_005','Astral Wayfarer','damage','elite','EVENT_STARFALL_NIGHTS',205,25,15,2.2,'damage',1.08],
+ ['EVT_UNIT_006','Harvest Guardian','tank','elite','EVENT_HARVESTWAKE',205,18,24,2.2,'mitigation',.06],
+ ['EVT_UNIT_007','Veil Hound','damage','elite','EVENT_VEILBREAK',205,25,15,2.2,'damage',1.08],
+ ['EVT_UNIT_008','Hollow Knightling','tank','prestige','EVENT_VEILBREAK',225,18,27,2.2,'mitigation',.06],
+ ['EVT_UNIT_009','Frostbell Herald','support','elite','EVENT_FROSTFALL_FESTIVAL',205,18,15,2.2,'utility',.05],
+ ['EVT_UNIT_010','Caravan Sentinel','support','elite','EVENT_MERCHANT_GUILD_FESTIVAL',205,18,15,2.2,'utility',.05],
 ];
 const cooldown=(rarity:CompanionRarity,role:CompanionRole)=>1000*(role==='damage'?(rarity==='prestige'?18:20):rarity==='prestige'?22:24);
 const target=(role:CompanionRole)=>role==='damage'?{assistTarget:'current_target' as const,standaloneTarget:'current_target' as const}:role==='tank'?{assistTarget:'owner' as const,standaloneTarget:'self' as const}:{assistTarget:'owner' as const,standaloneTarget:'lowest_hp_ally' as const};
-const effect=(kind:string):CompanionServerDefinition['active']['effectKind']=>kind==='damage'?'damage':kind==='shield'?'shield':kind==='interrupt'?'interrupt':kind==='heal'?'heal':'utility';
+const effect=(kind:string):CompanionServerDefinition['active']['effectKind']=>kind==='damage'?'damage':kind==='shield'?'shield':kind==='interrupt'?'interrupt':kind==='heal'?'heal':kind==='mitigation'?'mitigation':'utility';
 export const COMPANION_SERVER_DEFINITIONS:CompanionServerDefinition[]=raw.map(([id,name,role,rarity,originId,hp,power,defense,attackSpeed,kind,coeff])=>({
  id,name,role,rarity,originId,baseStats:{hp,power,defense,attackSpeed},tags:[role,rarity,originId],
  active:{id:`${id}_ACTIVE`,name:`${name} Signature`,cooldownMs:cooldown(rarity,role),baseCoeff:coeff,perLevelCoeff:kind==='damage'?.004:.0006,effectKind:effect(kind),targeting:target(role)},

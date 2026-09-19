@@ -9,7 +9,7 @@ equal(errors.length,0,`Live event catalog validation failed: ${errors.join(' | '
 
 const ids=LIVE_EVENT_CATALOG.map(event=>event.id);
 equal(new Set(ids).size,ids.length,'Live event ids must be unique');
-equal(LIVE_EVENT_CATALOG.length,6,'Six annual events are now production catalog events');
+equal(LIVE_EVENT_CATALOG.length,9,'Nine annual events are now production catalog events');
 
 
 const turning=LIVE_EVENT_CATALOG.find(event=>event.id==='EVT_ANNUAL_001_2026');
@@ -40,6 +40,28 @@ ok(harvest!.shop.some(offer=>offer.reward.kind==='companion'&&offer.reward.id===
 ok(harvest!.milestones('IRONWARDEN').some(row=>row.reward.id==='EVT_PET_011'),'Pumpkin Piglet should be a Harvestwake milestone reward');
 ok(harvest!.discoveries.some(row=>row.reward.id==='EVT_PET_012'),'Golden Sheafling should be a Harvestwake discovery reward');
 ok(harvest!.shop.filter(offer=>offer.legacy).some(offer=>offer.reward.id==='pet_harvest_fox'),'Prototype Harvest Fox remains explicitly available as legacy stock');
+
+
+const suncrest=LIVE_EVENT_CATALOG.find(event=>event.id==='EVT_ANNUAL_006_2026');
+ok(suncrest,'Suncrest Games definition should exist');
+equal(suncrest!.visualKey,'suncrest','Suncrest uses its visual theme');
+ok(suncrest!.milestones('IRONWARDEN').some(row=>row.reward.id==='EVT_PET_007'),'Suncrest grants Laurel Lynx');
+ok(suncrest!.shop.some(row=>row.reward.id==='EVT_PET_008'),'Suncrest prestige stock grants Golden Gryphlet');
+ok(suncrest!.milestones('IRONWARDEN').some(row=>row.reward.id==='EVT_UNIT_004'),'Suncrest grants Suncrest Champion');
+
+const starfall=LIVE_EVENT_CATALOG.find(event=>event.id==='EVT_ANNUAL_008_2026');
+ok(starfall,'Starfall Nights definition should exist');
+equal(starfall!.visualKey,'starfall','Starfall uses its dedicated visual theme');
+ok(starfall!.milestones('IRONWARDEN').some(row=>row.reward.id==='EVT_PET_009'),'Starfall grants Starwhisker');
+ok(starfall!.shop.some(row=>row.reward.id==='EVT_PET_010'),'Starfall prestige stock grants Comet Moth');
+ok(starfall!.milestones('IRONWARDEN').some(row=>row.reward.id==='EVT_UNIT_005'),'Starfall grants Astral Wayfarer');
+
+const merchantGuild=LIVE_EVENT_CATALOG.find(event=>event.id==='EVT_ANNUAL_011_2026');
+ok(merchantGuild,'Merchant & Guild Festival definition should exist');
+equal(merchantGuild!.visualKey,'merchant_guild','Merchant & Guild Festival uses its visual theme');
+ok(merchantGuild!.milestones('IRONWARDEN').some(row=>row.reward.id==='EVT_PET_018'),'Merchant & Guild Festival grants Ledger Ferret');
+ok(merchantGuild!.shop.some(row=>row.reward.id==='EVT_PET_019'),'Merchant & Guild prestige stock grants Guildcrest Drakelet');
+ok(merchantGuild!.milestones('IRONWARDEN').some(row=>row.reward.id==='EVT_UNIT_010'),'Merchant & Guild Festival grants Caravan Sentinel');
 
 const veil=LIVE_EVENT_CATALOG.find(event=>event.id==='EVT_ANNUAL_010_2026');
 ok(veil,'Veilbreak definition should exist');

@@ -12,7 +12,6 @@ import {reserveFaithPractice,updateFaithPreference} from './faith';
 import {executeCompanionActivity,refreshCompanions,assertCompanionIdle,claimCompanionTraining} from './companion-runtime';
 import {createAccountCharacter,switchAccountCharacter} from './account-actions';
 import {CLASSES} from '../content/classes';
-import {applyTrustedLongTermProgression} from './long-term-progression-runtime';
 import {applyCharacterLoadout,deleteCharacterLoadout,saveCharacterLoadout} from './character-loadouts';
 import {normalizeProgressionGoals} from './progression-goals-v40';
 import {normalizeIdleRuleSets,validateActiveIdleRuleId} from './idle-rules-v40';
@@ -180,7 +179,5 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   default:throw new Error('invalid_command');
  }
  if(state.character&&(!Number.isSafeInteger(state.character.gold)||state.character.gold<0))throw new Error('invalid_wallet');
- const progression=applyTrustedLongTermProgression(state,contributions,reward,now,{accountId:options.accountId??`local:${state.createdAtMs}`,eventId:options.eventId??`local:${now}:${command.type}`});
- state=progression.state;
  return {state:discoverCharacterSkins(state),reward,activity,message,won,upgrade,contributions};
 }

@@ -11,7 +11,7 @@ export interface PublicPlayerProfileV43{
  accountId:string;displayName:string;visibility:ProfileVisibilityV43;
  character:{id:string;name:string;classId:string;level:number;bodyPresentation:'male'|'female';selectedSkinId:string};
  title:string;backgroundId:string;borderId?:string|null;petId?:string|null;bio:string;favoriteSkillId?:string|null;favoriteCompanionId?:string|null;
- achievementShowcaseIds:string[];collectionShowcase:ProfileCollectionRefV43[];recordShowcaseIds:string[];revision:number;
+ achievementShowcaseIds:string[];collectionShowcase:ProfileCollectionRefV43[];recordShowcaseIds:string[];recordEntries?:Record<string,{recordId:string;value:number;achievedAtMs:number;characterId?:string;contextLabel?:string}>;revision:number;
 }
 function client(){if(!supabase)throw new Error('Online services are not configured in this build.');return supabase;}
 export async function selfProfileExtensionV43(){

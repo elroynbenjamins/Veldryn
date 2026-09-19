@@ -1,6 +1,6 @@
 import type {LiveEventDef} from './live-events';
 
-const gifts=[
+const gifts:LiveEventDef['dailyGifts']=[
   {day:1,rewardCurrency:100,rewardPrestige:0},
   {day:2,rewardCurrency:150,rewardPrestige:0},
   {day:3,rewardCurrency:200,rewardPrestige:0},
@@ -8,7 +8,7 @@ const gifts=[
   {day:5,rewardCurrency:300,rewardPrestige:0},
   {day:6,rewardCurrency:400,rewardPrestige:0},
   {day:7,rewardCurrency:500,rewardPrestige:1},
-] as const;
+];
 
 export const VEILBREAK_EVENT:LiveEventDef={
   id:'EVT_ANNUAL_010_2026',

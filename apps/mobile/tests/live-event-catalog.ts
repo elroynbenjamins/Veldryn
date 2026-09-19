@@ -9,7 +9,29 @@ equal(errors.length,0,`Live event catalog validation failed: ${errors.join(' | '
 
 const ids=LIVE_EVENT_CATALOG.map(event=>event.id);
 equal(new Set(ids).size,ids.length,'Live event ids must be unique');
-equal(LIVE_EVENT_CATALOG.length,3,'Harvestwake, Veilbreak, and Frostfall are production catalog events');
+equal(LIVE_EVENT_CATALOG.length,6,'Six annual events are now production catalog events');
+
+
+const turning=LIVE_EVENT_CATALOG.find(event=>event.id==='EVT_ANNUAL_001_2026');
+ok(turning,'Turning of the Age definition should exist');
+equal(turning!.visualKey,'turning_of_the_age','Turning of the Age uses its visual theme');
+ok(turning!.milestones('IRONWARDEN').some(row=>row.reward.id==='EVT_PET_001'),'Turning grants Chronicle Wisp');
+ok(turning!.shop.some(row=>row.reward.id==='EVT_PET_002'),'Turning prestige stock grants Gilded Hourling');
+ok(turning!.milestones('IRONWARDEN').some(row=>row.reward.id==='EVT_UNIT_001'),'Turning grants Keeper of First Dawn');
+
+const heartbond=LIVE_EVENT_CATALOG.find(event=>event.id==='EVT_ANNUAL_002_2026');
+ok(heartbond,'Heartbond definition should exist');
+equal(heartbond!.visualKey,'heartbond','Heartbond uses its dedicated visual theme');
+ok(heartbond!.milestones('IRONWARDEN').some(row=>row.reward.id==='EVT_PET_003'),'Heartbond grants Rosebud Bun');
+ok(heartbond!.shop.some(row=>row.reward.id==='EVT_PET_004'),'Heartbond prestige stock grants Heartwing');
+ok(heartbond!.milestones('IRONWARDEN').some(row=>row.reward.id==='EVT_UNIT_002'),'Heartbond grants Vowbound Cherub');
+
+const bloomwake=LIVE_EVENT_CATALOG.find(event=>event.id==='EVT_ANNUAL_003_2026');
+ok(bloomwake,'Bloomwake definition should exist');
+equal(bloomwake!.visualKey,'bloomwake','Bloomwake uses its dedicated visual theme');
+ok(bloomwake!.milestones('IRONWARDEN').some(row=>row.reward.id==='EVT_PET_005'),'Bloomwake grants Pollenpuff');
+ok(bloomwake!.shop.some(row=>row.reward.id==='EVT_PET_006'),'Bloomwake prestige stock grants Verdant Fawn');
+ok(bloomwake!.milestones('IRONWARDEN').some(row=>row.reward.id==='EVT_UNIT_003'),'Bloomwake grants Bloomwarden');
 
 const harvest=LIVE_EVENT_CATALOG.find(event=>event.id==='EVT_ANNUAL_009_2026');
 ok(harvest,'Harvestwake definition should exist');

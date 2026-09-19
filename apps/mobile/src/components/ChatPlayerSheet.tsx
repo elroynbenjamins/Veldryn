@@ -36,7 +36,7 @@ export function ChatPlayerSheet({message,onClose,onBlocked}:{message:ChatPlayerI
  return <Modal visible transparent animationType="fade" onRequestClose={onClose}><View style={s.scrim}><Pressable accessibilityLabel="Close player profile" onPress={onClose} style={StyleSheet.absoluteFill}/><View accessibilityViewIsModal style={s.sheet}>
   <View style={s.handle}/><View style={s.top}><Text style={s.kicker}>PLAYER PROFILE</Text><Pressable accessibilityRole="button" accessibilityLabel="Close player profile" onPress={onClose} style={s.close}><Text style={s.closeText}>×</Text></Pressable></View>
   <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
-   {loading?<View style={s.loading}><ActivityIndicator color={C.accent}/><Text style={s.meta}>Loading public profile…</Text></View>:profile?<><View style={[s.scene,border&&s.sceneBorder]}>
+   {loading?<View style={s.loading}><ActivityIndicator color={C.accent}/><Text style={s.meta}>Loading public profile…</Text></View>:profile?<><View style={[s.scene,!!border&&s.sceneBorder]}>
       {background?<Image source={background.source} resizeMode="cover" style={StyleSheet.absoluteFill}/>:base?<RegionArtwork regionId={base.region}/>:<View style={[StyleSheet.absoluteFill,{backgroundColor:'#101d2b'}]}/>}
       <View style={s.sceneShade}/>
       <CharacterPortraitSelection classId={classId} body={profile.character.bodyPresentation} skinId={profile.character.selectedSkinId} compact style={s.character}/>

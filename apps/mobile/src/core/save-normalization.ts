@@ -19,6 +19,7 @@ import {normalizeOnboardingGuideState} from './onboarding';
 import {normalizeProgressionGoals} from './progression-goals-v40';
 import {normalizeIdleRuleSets,validateActiveIdleRuleId} from './idle-rules-v40';
 import {normalizeGuildBannerId,normalizeGuildFrameId,normalizeGuildMotto,normalizeGuildNameplateId} from './guild-customization';
+import {normalizeOwnedPetIds,normalizeSelectedPetId} from './pet-collection';
 
 export function normalizeSave(input:any):GameState{
   if(!input || ![4,5,6,7,8,9,10,11].includes(input.version)) throw new Error('Unsupported VELDRYN save version');
@@ -32,10 +33,10 @@ export function normalizeSave(input:any):GameState{
     return {questId:def.id,status,progress:0};
   });
   const classDef=input.character?CLASSES.find(c=>c.id===input.character.classId):undefined;
-  const legacyCosmeticPets=[...new Set([
-    ...(Array.isArray(input.account?.unlockedCosmeticPetIds)?input.account.unlockedCosmeticPetIds:[]),
-    ...(Array.isArray(input.character?.ownedPetIds)?input.character.ownedPetIds:[]),
-  ].filter((id:unknown)=>typeof id==='string'))];
+  const legacyCosmeticPets=normalizeOwnedPetIds(
+    input.account?.unlockedCosmeticPetIds,
+    input.character?.ownedPetIds,
+  );
   const legacyOwnedBoostIds=[...new Set([
     ...(Array.isArray(input.account?.ownedBoostIds)?input.account.ownedBoostIds:[]),
     ...(Array.isArray(input.character?.ownedBoostIds)?input.character.ownedBoostIds:[]),
@@ -49,7 +50,7 @@ export function normalizeSave(input:any):GameState{
     const eventSkinIds=new Set(Array.isArray(input.account?.unlockedEventSkinIds)?input.account.unlockedEventSkinIds.filter((id:unknown)=>typeof id==='string'):[]);
     const earnedEventSetIds=classSkinSets.filter(set=>set.unlockEventSkinId&&eventSkinIds.has(set.unlockEventSkinId)).map(set=>equipmentSetSkinId(set.id));
     const unlockedSkinIds=['starting',...(Array.isArray(input.character.unlockedSkinIds)?input.character.unlockedSkinIds.filter((id:unknown)=>typeof id==='string'&&validSkinIds.has(id)):[]),...earnedEventSetIds];
-    const ownedPetIds=Array.isArray(input.character.ownedPetIds)?[...new Set([...input.character.ownedPetIds.filter((id:unknown)=>typeof id==='string'),...legacyCosmeticPets])]:[...new Set(legacyCosmeticPets)];
+    const ownedPetIds=normalizeOwnedPetIds(input.character.ownedPetIds,legacyCosmeticPets);
     const gearIds=new Set(ITEMS.filter(item=>item.type==='gear').map(item=>item.id)),gemIds=new Set(ITEMS.filter(item=>item.type==='gem').map(item=>item.id));
     const gearEnhancements=Object.fromEntries(Object.entries(input.character.gearEnhancements??{}).filter(([id,value])=>gearIds.has(id)&&value&&typeof value==='object').map(([id,value]:[string,any])=>[id,{rank:Math.max(0,Math.min(10,Math.floor(Number(value.rank)||0))),failures:Math.max(0,Math.floor(Number(value.failures)||0)),gemIds:Array.isArray(value.gemIds)?value.gemIds.filter((gemId:unknown)=>typeof gemId==='string'&&gemIds.has(gemId)).slice(0,3):[]}])) as any;
     return {
@@ -75,7 +76,7 @@ export function normalizeSave(input:any):GameState{
     ,profileTitle:typeof input.character.profileTitle==='string'&&input.character.profileTitle.trim()?input.character.profileTitle.trim():'New Adventurer'
     ,profileBackgroundId:typeof input.character.profileBackgroundId==='string'&&input.character.profileBackgroundId.trim()?input.character.profileBackgroundId:'asterfall-night'
     ,profileBorderId:typeof input.character.profileBorderId==='string'&&input.character.profileBorderId.trim()?input.character.profileBorderId:undefined
-    ,selectedCosmeticPetId:typeof input.character.selectedCosmeticPetId==='string'&&input.character.selectedCosmeticPetId.trim()?input.character.selectedCosmeticPetId:undefined
+    ,selectedCosmeticPetId:normalizeSelectedPetId(input.character.selectedCosmeticPetId,legacyCosmeticPets)
     ,unlockedSkinIds:[...new Set(unlockedSkinIds)]
     ,selectedSkinId:classSkinSets.some(set=>set.appearanceId&&equipmentSetSkinId(set.id)===input.character.selectedSkinId)&&unlockedSkinIds.includes(input.character.selectedSkinId)?input.character.selectedSkinId:'starting'
     ,savedLoadouts:normalizeCharacterLoadouts(input.character.savedLoadouts,input.character.classId)

@@ -35,6 +35,7 @@ export function gameplayHandler(services:GameplayServices){return async(request:
   }
   const loaded=await services.rpc<LoadedGame>('load_online_game_server_v1',{p_account_id:accountId});
   const state=loaded.state??newGame(loaded.serverNow);
+  state.account.longTermAccountScopeId=accountId;
   state.account.guildMember=loaded.guildMember;state.account.liveEvent=loaded.liveEvent;
   state.account.eventCommunityProgressById=loaded.communityProgress;
   if(state.character&&loaded.walletGold!==null)state.character.gold=loaded.walletGold;

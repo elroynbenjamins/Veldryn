@@ -32,7 +32,7 @@ import {HOLY_WATER_ID} from '../content/faith';
 import {previewAlchemyReward,alchemyRefund,startAlchemyBatch,preparationEffects,spendPreparationEncounter} from './alchemy';
 import {potionDef} from '../content/alchemy';
 import {applyTrustedLongTermProgression} from './long-term-progression-runtime';
-import {idleRuleDurationWindow} from './idle-rules-v40';
+import {evaluateIdleRuleSet,type IdleEvaluationContext,type IdleRuleSet} from './idle-rules-v40';
 export const beginAlchemyBatch=startAlchemyBatch;
 
 function longTermAccountScope(state:GameState){return `account:${state.createdAtMs}`;}
@@ -191,24 +191,14 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number){
   return {kills,foodConsumed,endHp:hp,stoppedReason};
 }
 
-export function previewActivityReward(state:GameState,nowMs:number):RewardBundle{
-  if(state.character?.classTraining)return settleClassDrills(state,nowMs,offlineCapSeconds(state)).reward;
-  if(state.activity?.kind==='faith'){
-    const settled=settleFaithPractice(state,nowMs,offlineCapSeconds(state));
-    return settled.reward;
-  }
-  if(state.activity?.kind==='alchemy'){
-    const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,Math.floor((nowMs-state.activity.lastClaimAtMs)/1000)));
-    return previewAlchemyReward(state,elapsed);
-  }
+function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number):RewardBundle{
   if(!state.activity||!state.character)return {xp:0,gold:0,items:[],kills:0,elapsedSeconds:0};
-  const idleWindow=idleRuleDurationWindow(state.character.idleRulesV40,state.character.activeIdleRuleIdV40,state.activity.startedAtMs,state.activity.lastClaimAtMs,nowMs),effectiveNowMs=idleWindow.settleAtMs;
   const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,Math.floor((effectiveNowMs-state.activity.lastClaimAtMs)/1000)));
   const multipliers=characterPermanentMultipliers(state);
   if(state.activity.kind!=='combat'){
     if(state.activity.kind==='exploration'){
       const route=explorationRoute(state.activity.targetId);if(!route)return {xp:0,gold:0,items:[],kills:0,elapsedSeconds:elapsed};
-      const actions=Math.floor(elapsed/route.seconds);return {xp:Math.floor(actions*route.xp*characterPermanentMultipliers(state).skillXpMultiplier),gold:0,items:[],kills:0,elapsedSeconds:elapsed,explorationDiscoveries:actions&&route.unlockMonsterId?[route.unlockMonsterId]:[]};
+      const actions=Math.floor(elapsed/route.seconds);return {xp:Math.floor(actions*route.xp*characterPermanentMultipliers(state).skillXpMultiplier),gold:0,items:[],kills:actions,elapsedSeconds:elapsed,explorationDiscoveries:actions&&route.unlockMonsterId?[route.unlockMonsterId]:[]};
     }
     const g=[...GATHERING,...HERB_NODES].find(x=>x.id===state.activity!.targetId);if(!g)return {xp:0,gold:0,items:[],kills:0,elapsedSeconds:elapsed};
     const effect=environmentEffectForActivity(state.activity).effect;
@@ -236,6 +226,72 @@ export function previewActivityReward(state:GameState,nowMs:number):RewardBundle
   if(mastery.materialBonus)for(const item of items){if(itemDef(item.itemId).type!=='material')continue;const extra=item.quantity*mastery.materialBonus+(materialRemainders[item.itemId]??0),whole=Math.floor(extra+1e-9);item.quantity+=whole;materialRemainders[item.itemId]=Math.max(0,extra-whole);}
   const reward:RewardBundle={classSkillXp:classGain.awards,xp:Math.floor(sim.kills*m.xp*effect.xpMultiplier*multipliers.characterXpMultiplier),gold:Math.floor(sim.kills*m.gold*effect.goldMultiplier*multipliers.goldMultiplier),items,kills:sim.kills,elapsedSeconds:elapsed,foodConsumed:sim.foodConsumed,endHp:sim.endHp,stoppedReason:sim.stoppedReason};
   return {...reward,masteryMaterialRemainders:materialRemainders,eventDrops:activityEventDrops(state,reward,effectiveNowMs),eventDiscoveries:activityEventDiscoveries(state,'combat',reward.kills,effectiveNowMs)};
+}
+
+function activeIdleRuleForState(state:GameState):IdleRuleSet|undefined{
+  const character=state.character;if(!character?.activeIdleRuleIdV40)return undefined;
+  return character.idleRulesV40?.find(rule=>rule.id===character.activeIdleRuleIdV40);
+}
+function projectedStoredQuantities(state:GameState,reward:RewardBundle){
+  const quantities:Record<string,number>={};
+  for(const stack of [...state.inventory.stacks,...state.bank.stacks,...state.overflow.stacks])quantities[stack.itemId]=(quantities[stack.itemId]??0)+stack.quantity;
+  for(const stack of reward.items)quantities[stack.itemId]=(quantities[stack.itemId]??0)+stack.quantity;
+  return quantities;
+}
+function projectedIdleContext(state:GameState,reward:RewardBundle,settleAtMs:number):IdleEvaluationContext{
+  const activity=state.activity!;
+  const skillLevels=Object.fromEntries(state.skills.map(row=>[row.skillId,row.level])) as Record<string,number>;
+  if(activity.kind!=='combat'&&activity.kind!=='exploration'){
+    const gathering=[...GATHERING,...HERB_NODES].find(row=>row.id===activity.targetId);
+    const skillId=gathering?.skillId??activity.kind;
+    const skill=state.skills.find(row=>row.skillId===skillId);
+    if(skill)skillLevels[skillId]=levelFromXp(skill.xp+reward.xp);
+  }else if(activity.kind==='exploration'){
+    const skill=state.skills.find(row=>row.skillId==='exploration');if(skill)skillLevels.exploration=levelFromXp(skill.xp+reward.xp);
+  }
+  const monsterKills={...(state.character?.monsterMasteryPoints??{})};
+  if(activity.kind==='combat')monsterKills[activity.targetId]=(monsterKills[activity.targetId]??0)+reward.kills;
+  const weeklyOrderProgress:Record<string,number>={};
+  for(const order of state.account.weeklyOrders?.orders??[]){
+    let progress=order.progress;
+    const expectedKind=activity.kind==='combat'?'hunt':'profession';
+    if(order.kind===expectedKind&&order.targetId===activity.targetId)progress=Math.min(order.target,progress+reward.kills);
+    weeklyOrderProgress[order.id]=progress;
+  }
+  const foodRemaining=Math.max(0,stackQty(state.inventory.stacks,state.character?.equippedFoodId)-(reward.foodConsumed??0));
+  const routed=routeRewards(state,reward.items,settleAtMs);
+  const beforeOverflow=state.overflow.stacks.reduce((sum,row)=>sum+row.quantity,0),afterOverflow=routed.overflow.stacks.reduce((sum,row)=>sum+row.quantity,0);
+  return {
+    itemQuantities:projectedStoredQuantities(state,reward),skillLevels,monsterKills,weeklyOrderProgress,foodRemaining,
+    freeStorageSlots:Math.max(0,state.inventory.capacity-usedSlots(routed.inventory.stacks))+Math.max(0,state.bank.capacity-usedSlots(routed.bank.stacks)),
+    elapsedSeconds:Math.max(0,Math.floor((settleAtMs-activity.startedAtMs)/1000)),projectedRewardFits:afterOverflow<=beforeOverflow
+  };
+}
+function idleRuleSettlementWindow(state:GameState,nowMs:number){
+  const rule=activeIdleRuleForState(state),activity=state.activity;
+  if(!rule||!activity||!state.character)return {settleAtMs:nowMs,shouldStop:false as const};
+  const capAtMs=activity.lastClaimAtMs+offlineCapSeconds(state)*1000,upper=Math.max(activity.lastClaimAtMs,Math.min(nowMs,capAtMs));
+  const evaluateAt=(time:number)=>{const reward=previewStandardActivityRewardRaw(state,time),evaluation=evaluateIdleRuleSet(rule,projectedIdleContext(state,reward,time));return {reward,evaluation}};
+  const upperResult=evaluateAt(upper);
+  if(!upperResult.evaluation.shouldStop)return {settleAtMs:upper,shouldStop:false as const};
+  const atStart=evaluateAt(activity.lastClaimAtMs);
+  if(atStart.evaluation.shouldStop)return {settleAtMs:activity.lastClaimAtMs,shouldStop:true as const,reason:atStart.evaluation.reason??'Idle Rule target already reached.'};
+  let low=activity.lastClaimAtMs,high=upper;
+  while(high-low>1){const mid=low+Math.floor((high-low)/2);if(evaluateAt(mid).evaluation.shouldStop)high=mid;else low=mid;}
+  let settleAtMs=high;let final=evaluateAt(settleAtMs);
+  if(final.evaluation.safety&&final.evaluation.reason==='Storage cannot safely accept the next reward.'&&settleAtMs>activity.lastClaimAtMs){
+    settleAtMs=Math.max(activity.lastClaimAtMs,settleAtMs-1);final=evaluateAt(settleAtMs);
+  }
+  return {settleAtMs,shouldStop:true as const,reason:upperResult.evaluation.reason??final.evaluation.reason??'Configured Idle Rule target reached.'};
+}
+
+export function previewActivityReward(state:GameState,nowMs:number):RewardBundle{
+  if(state.character?.classTraining)return settleClassDrills(state,nowMs,offlineCapSeconds(state)).reward;
+  if(state.activity?.kind==='faith'){const settled=settleFaithPractice(state,nowMs,offlineCapSeconds(state));return settled.reward;}
+  if(state.activity?.kind==='alchemy'){const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,Math.floor((nowMs-state.activity.lastClaimAtMs)/1000)));return previewAlchemyReward(state,elapsed);}
+  if(!state.activity||!state.character)return {xp:0,gold:0,items:[],kills:0,elapsedSeconds:0};
+  const idleWindow=idleRuleSettlementWindow(state,nowMs),reward=previewStandardActivityRewardRaw(state,idleWindow.settleAtMs);
+  return idleWindow.shouldStop&&!reward.stoppedReason?{...reward,stoppedReason:idleWindow.reason}:reward;
 }
 
 export function refreshQuests(state:GameState,lastCombatTarget?:string,lastKills=0):GameState{
@@ -296,7 +352,7 @@ export function claimActivity(state:GameState,nowMs:number){
     return {state:next,reward};
   }
   const preview=previewActivityReward(state,nowMs);if(!state.character||!state.activity)return {state,reward:preview};
-  const idleWindow=idleRuleDurationWindow(state.character.idleRulesV40,state.character.activeIdleRuleIdV40,state.activity.startedAtMs,state.activity.lastClaimAtMs,nowMs),settledAtMs=idleWindow.settleAtMs;
+  const idleWindow=idleRuleSettlementWindow(state,nowMs),settledAtMs=idleWindow.settleAtMs;
   const reward:RewardBundle=idleWindow.shouldStop&&!preview.stoppedReason?{...preview,stoppedReason:idleWindow.reason}:preview;
   if(state.activity.kind!=='combat'){
     const skills=state.skills.map(x=>x.skillId===state.activity!.kind?{...x,xp:x.xp+reward.xp,level:levelFromXp(x.xp+reward.xp)}:x);

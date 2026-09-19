@@ -1,5 +1,6 @@
 import type {ClassId} from '../core/types';
 import type {LiveEventUiCopy} from './live-event-ui';
+import {FROSTFALL_EVENT,VEILBREAK_EVENT} from './annual-events-v2';
 
 export type EventRewardKind='skin'|'pet'|'companion'|'background'|'border'|'emote'|'title';
 export type EventActivitySource='combat'|'gathering'|'crafting'|'boss';
@@ -79,6 +80,6 @@ export const LIVE_EVENT_CATALOG:LiveEventDef[]=[{
     {id:'amber_artisan_seal',name:'Amber Artisan Seal',description:'A maker’s mark that occasionally appears after crafting.',source:'crafting',chance:.06,required:3,reward:{kind:'title',id:'title_amber_artisan',name:'Amber Artisan',rarity:'rare'}},
     {id:'guardian_lantern',name:'Guardian Lantern',description:'A lantern fragment carried by eligible event bosses.',source:'boss',chance:.25,required:1,reward:{kind:'background',id:'bg_spirit_storehouse',name:'Spirit Storehouse',rarity:'legendary'}},
   ],
-}];
+},VEILBREAK_EVENT,FROSTFALL_EVENT];
 
 export function liveEventDef(id:string){return LIVE_EVENT_CATALOG.find(event=>event.id===id);}

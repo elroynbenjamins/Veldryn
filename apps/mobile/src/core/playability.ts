@@ -12,7 +12,7 @@ export function transitionActivity(state:GameState,nowMs:number,next?:{kind:'com
 }
 
 export function rewardHasProgress(reward:RewardBundle){
-  return !!reward.classSkillXp?.some(s=>s.xp>0)||reward.kills>0||reward.xp>0||reward.gold>0||reward.items.some(item=>item.quantity>0)||!!reward.stoppedReason||!!reward.eventDrops?.some(drop=>drop.quantity>0)||!!reward.eventDiscoveries?.some(entry=>entry.quantity>0);
+  return !!reward.classSkillXp?.some(s=>s.xp>0)||reward.kills>0||reward.xp>0||reward.gold>0||reward.items.some(item=>item.quantity>0)||!!reward.stoppedReason||!!reward.eventDrops?.some(drop=>drop.quantity>0)||!!reward.eventDiscoveries?.some(entry=>entry.quantity>0)||!!reward.petDrops?.length;
 }
 
 /** Settle a persisted idle activity once on cold startup without consuming a partial zero-action cycle. */

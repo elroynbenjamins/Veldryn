@@ -1,5 +1,6 @@
 import {createCharacter,newGame} from '../src/core/game';
 import {applyCorePetCombatDrops,CORE_PET_SIGNATURE_DROPS,corePetSignatureDropForMonster,resolveCorePetCombatDrops} from '../src/core/core-pet-drops';
+import {rewardHasProgress} from '../src/core/playability';
 
 function fail(message:string):never{throw new Error(message)}
 function equal(actual:unknown,expected:unknown,message:string){if(actual!==expected)fail(`${message}: expected ${String(expected)}, got ${String(actual)}`)}
@@ -26,5 +27,7 @@ equal(state.account.unlockedCosmeticPetIds?.filter(id=>id==='PET_018').length,1,
 
 equal(resolveCorePetCombatDrops(state,'MOSS_RAT',100000,'wrong-source',()=>0).length,0,'unconfigured monsters cannot award regional signature pets');
 equal(resolveCorePetCombatDrops(createCharacter(newGame(2),'IRONWARDEN','NoLuck'),'OATHGLASS_REVENANT',100,'no-luck',()=>1).length,0,'failed rolls award no pet');
+
+ok(rewardHasProgress({xp:0,gold:0,items:[],kills:0,elapsedSeconds:0,petDrops:[{petId:'PET_018',name:'Oathling',sourceId:'OATHGLASS_REVENANT'}]}),'pet-only rewards count as meaningful progress');
 
 console.log('PASS: regional signature pet drops and duplicate protection validate');

@@ -38,7 +38,11 @@ jobs:
         run: pnpm --dir ../../backend install --frozen-lockfile
       - name: Typecheck core
         run: pnpm typecheck:core
+      - name: Typecheck mobile app
+        run: pnpm typecheck
       - name: Run core tests
         run: pnpm test:core
       - name: Run collectible tests
         run: pnpm test:collectibles
+      - name: Run companion validation
+        run: pnpm test:companions

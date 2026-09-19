@@ -16,7 +16,7 @@ import {eventUiCopy} from '../content/live-event-ui';
 import {liveEventVisuals} from '../ui/live-event-visuals';
 
 type Section='Commons'|'Contracts'|'Shop'|'Journal';
-const rarityColor={rare:'#4d9de0',epic:'#a86bea',legendary:'#e5a737'} as const;
+const rarityColor={common:'#8d99a6',uncommon:'#65b96e',rare:'#4d9de0',epic:'#a86bea',mythic:'#ef6f6c',legendary:'#e5a737'} as const;
 function remaining(ms:number){const total=Math.max(0,Math.ceil(ms/1000)),days=Math.floor(total/86400),hours=Math.floor(total%86400/3600),minutes=Math.floor(total%3600/60);return days?`${days}d ${hours}h remaining`:hours?`${hours}h ${minutes}m remaining`:`${minutes}m remaining`;}
 
 export function EventScreen({state,onChange,onCommand}:{state:GameState;onChange:(next:GameState)=>void;onCommand?:(command:GameCommand)=>Promise<boolean>}){

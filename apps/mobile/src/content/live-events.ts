@@ -1,7 +1,7 @@
 import type {ClassId} from '../core/types';
 import type {LiveEventUiCopy} from './live-event-ui';
 
-export type EventRewardKind='skin'|'pet'|'background'|'border'|'emote'|'title';
+export type EventRewardKind='skin'|'pet'|'companion'|'background'|'border'|'emote'|'title';
 export type EventActivitySource='combat'|'gathering'|'crafting'|'boss';
 export type EventRewardRarity='common'|'uncommon'|'rare'|'epic'|'mythic'|'legendary';
 export interface EventReward{kind:EventRewardKind;id:string;name:string;rarity:EventRewardRarity;}

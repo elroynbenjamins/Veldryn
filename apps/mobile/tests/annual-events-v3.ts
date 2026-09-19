@@ -11,7 +11,7 @@ const cases=[
 ] as const;
 
 for(const row of cases){
-  let state=createCharacter(newGame(now),'IRONWARDEN',row.eventId);
+  let state=createCharacter(newGame(now),'IRONWARDEN','Event Tester');
   state={...state,account:{...state.account,liveEvent:{eventId:row.eventId,enabled:true,startsAtMs:now-1000,endsAtMs:now+7*86400_000}}};
   state=applyEventDrops(state,[{eventId:row.eventId,currencyId:row.currencyId,name:row.currencyName,quantity:10000}]);
   state=claimAllEventMilestones(state,now);

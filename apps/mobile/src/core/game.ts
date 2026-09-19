@@ -32,7 +32,7 @@ import {HOLY_WATER_ID} from '../content/faith';
 import {previewAlchemyReward,alchemyRefund,startAlchemyBatch,preparationEffects,spendPreparationEncounter} from './alchemy';
 import {potionDef} from '../content/alchemy';
 import {applyTrustedLongTermProgression} from './long-term-progression-runtime';
-import {applyCorePetCombatDrops} from './core-pet-drops';
+import {applyCorePetActivityDrops,applyCorePetCombatDrops} from './core-pet-drops';
 import {evaluateIdleRuleSet,type IdleEvaluationContext,type IdleRuleSet} from './idle-rules-v40';
 export const beginAlchemyBatch=startAlchemyBatch;
 
@@ -360,7 +360,11 @@ export function claimActivity(state:GameState,nowMs:number){
     const routed=routeRewards(state,reward.items,settledAtMs);
     const next={...state,skills,...routed,rewardRemainders:reward.nextRewardRemainders,unlockedMonsterIds:[...new Set([...state.unlockedMonsterIds,...(reward.explorationDiscoveries??[])])],activity:idleWindow.shouldStop?null:{...state.activity,lastClaimAtMs:settledAtMs,progressFraction:reward.nextProgressFraction}} as GameState;
     const progression=applyTrustedLongTermProgression(next,[{kind:'gathering',contentId:state.activity.targetId,units:reward.kills,startedAtMs:state.activity.lastClaimAtMs}],reward,settledAtMs,{accountId:longTermAccountScope(state),eventId:`activity:${state.character.id}:${state.activity.targetId}:${state.activity.lastClaimAtMs}:${settledAtMs}`}).state;
-    return {state:recordCompanionActivity(refreshQuests(applyEventDiscoveries(applyEventDrops(progression,reward.eventDrops??[]),reward.eventDiscoveries??[])),'gathering',state.activity.targetId,reward.kills,settledAtMs),reward};
+    const eventApplied=refreshQuests(applyEventDiscoveries(applyEventDrops(progression,reward.eventDrops??[]),reward.eventDiscoveries??[]));
+    const petSourceType=state.activity.kind==='exploration'?'exploration':'gathering';
+    const petResult=applyCorePetActivityDrops(eventApplied,petSourceType,state.activity.targetId,reward.kills,`${state.character.id}:${state.activity.lastClaimAtMs}:${settledAtMs}`);
+    const settledReward=petResult.drops.length?{...reward,petDrops:[...(reward.petDrops??[]),...petResult.drops]}:reward;
+    return {state:recordCompanionActivity(petResult.state,'gathering',state.activity.targetId,reward.kills,settledAtMs),reward:settledReward};
   }
   const xp=state.character.xp+reward.xp,level=characterLevelFromXp(xp);
   const activeRegion=currentRegionId(state);

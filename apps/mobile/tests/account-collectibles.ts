@@ -4,6 +4,7 @@ import {EVENT_PET_COLLECTIBLES} from '../src/content/event-collectible-content';
 import {collectionBonusBreakdown,selectCollectible,unlockCollectible} from '../src/core/collectibles';
 import {normalizeOwnedPetIds,normalizeSelectedPetId} from '../src/core/pet-collection';
 import {createCharacter,newGame} from '../src/core/game';
+import {migrateSave} from '../src/core/save-migrations';
 
 const fail=(message:string)=>{throw new Error(message)};
 const equal=(actual:unknown,expected:unknown,message:string)=>{if(actual!==expected)fail(`${message}: expected ${String(expected)}, got ${String(actual)}`)};
@@ -33,5 +34,10 @@ const normalized=normalizeOwnedPetIds([' PET_001 ','legacy_unknown_pet'],['PET_0
 equal(normalized.join(','),'PET_001,legacy_unknown_pet,EVT_PET_001','ownership normalizer preserves unknown legacy ids and deduplicates');
 equal(normalizeSelectedPetId('legacy_unknown_pet',normalized),'legacy_unknown_pet','owned legacy selection is preserved');
 equal(normalizeSelectedPetId('not_owned',normalized),undefined,'unowned selection is cleared');
+
+const saveWithPets={...state,account:{...state.account,unlockedCosmeticPetIds:['PET_001','PET_018','EVT_PET_001','legacy_unknown_pet']},character:state.character?{...state.character,selectedCosmeticPetId:'PET_018',ownedPetIds:['PET_001','PET_018']}:null};
+const migrated=migrateSave(JSON.parse(JSON.stringify(saveWithPets)));
+equal(migrated.account.unlockedCosmeticPetIds?.join(','),'PET_001,PET_018,EVT_PET_001,legacy_unknown_pet','save migration preserves core, event and unknown legacy pet ownership');
+equal(migrated.character?.selectedCosmeticPetId,'PET_018','save migration preserves an owned selected canonical pet');
 
 console.log('account collectibles PASS');

@@ -54,7 +54,7 @@ const remainingContracts=eventContractBoard(state,t0+2).slice(1);state=acceptEve
 let thirdRejected=false;try{acceptEventContract(state,remainingContracts[1].objective.id,t0+2)}catch{thirdRejected=true}ok(thirdRejected,'Daily board must enforce its two-contract acceptance limit');
 ok(eventContractBoard(state,t0+86400_000+2).every(contract=>!contract.accepted),'A new UTC day should provide fresh contract acceptance slots');
 const progressBeforePurchase=eventProgress(state,'EVT_ANNUAL_009_2026');
-const market=eventShopOffers(state,t0+2);ok(market.length===4,'Event Shop should show two rotating common offers plus both prestige offers');const purchaseOffer=market.find(offer=>offer.currency==='common')!;
+const market=eventShopOffers(state,t0+2),prestigeOfferCount=market.filter(offer=>offer.currency==='prestige').length;ok(market.filter(offer=>offer.currency==='common').length===2,'Event Shop should show exactly two rotating common offers');ok(prestigeOfferCount===2,'Harvestwake should expose both prestige offers');const purchaseOffer=market.find(offer=>offer.currency==='common')!;
 state=purchaseEventOffer(state,purchaseOffer.id,t0+2);
 ok(eventOfferPurchaseCount(state,'EVT_ANNUAL_009_2026',purchaseOffer.id)===1,'Event Shop purchase limit should persist');
 const cosmeticIds=[...(state.account.unlockedProfileBackgroundIds??[]),...(state.account.unlockedProfileBorderIds??[]),...(state.account.unlockedCosmeticPetIds??[])];ok(cosmeticIds.includes(purchaseOffer.reward.id),'Event Shop reward should enter the matching cosmetic collection');

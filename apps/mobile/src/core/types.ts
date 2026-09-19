@@ -90,5 +90,6 @@ export interface RewardBundle {
   foodConsumed?:number; endHp?:number; stoppedReason?:string;
   eventDrops?:{eventId:string;currencyId:string;name:string;quantity:number;source?:'combat'|'gathering'|'crafting'|'boss';units?:number;recordedAtMs?:number}[];
   eventDiscoveries?:{eventId:string;discoveryId:string;name:string;quantity:number}[];
+  petDrops?:{petId:string;name:string;sourceId:string}[];
 }
 import type {Language} from '../i18n/languages';

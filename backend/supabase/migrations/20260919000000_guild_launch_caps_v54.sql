@@ -151,14 +151,23 @@ returns trigger
 language plpgsql
 security definer
 set search_path = public
-as $$
+as $
 declare
-  v_guild_id uuid := coalesce(new.guild_id, old.guild_id);
+  v_guild_id uuid;
+  v_skill_id text;
   v_rank integer := 0;
 begin
-  if (tg_op = 'DELETE' and old.skill_id <> 'member_capacity')
-     or (tg_op <> 'DELETE' and new.skill_id <> 'member_capacity') then
-    return coalesce(new, old);
+  if tg_op = 'DELETE' then
+    v_guild_id := old.guild_id;
+    v_skill_id := old.skill_id;
+  else
+    v_guild_id := new.guild_id;
+    v_skill_id := new.skill_id;
+  end if;
+
+  if v_skill_id <> 'member_capacity' then
+    if tg_op = 'DELETE' then return old; end if;
+    return new;
   end if;
 
   select coalesce(rank, 0)
@@ -172,9 +181,10 @@ begin
      set member_cap = 12 + 2 * least(coalesce(v_rank, 0), 4)
    where id = v_guild_id;
 
-  return coalesce(new, old);
+  if tg_op = 'DELETE' then return old; end if;
+  return new;
 end
-$$;
+$;
 
 drop trigger if exists guild_open_halls_sync_v54 on public.guild_skill_allocations;
 create trigger guild_open_halls_sync_v54

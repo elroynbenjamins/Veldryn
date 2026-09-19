@@ -202,7 +202,7 @@ returns trigger
 language plpgsql
 security definer
 set search_path = public
-as $
+as $$
 declare
   v_cap integer;
   v_count integer;
@@ -228,7 +228,7 @@ begin
 
   return new;
 end
-$;
+$$;
 
 drop trigger if exists enforce_guild_member_cap_v54 on public.guild_members;
 create trigger enforce_guild_member_cap_v54

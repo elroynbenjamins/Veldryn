@@ -1,4 +1,5 @@
 import type {ClassId} from '../core/types';
+import type {LiveEventUiCopy} from './live-event-ui';
 
 export type EventRewardKind='skin'|'pet'|'background'|'border'|'emote'|'title';
 export type EventActivitySource='combat'|'gathering'|'crafting'|'boss';
@@ -11,7 +12,7 @@ export interface EventDailyGift{day:number;rewardCurrency:number;rewardPrestige:
 export interface EventCommunityMilestone{percent:number;rewardCurrency:number;rewardPrestige:number;reward?:EventReward;}
 export interface EventDiscovery{id:string;name:string;description:string;source:EventActivitySource;chance:number;required:number;reward:EventReward;}
 export interface LiveEventDef{
-  id:string;name:string;summary:string;currencyId:string;currencyName:string;prestigeCurrencyId:string;prestigeCurrencyName:string;accent:string;progressionName:string;maxProgress:number;claimGraceDays:number;
+  id:string;name:string;summary:string;currencyId:string;currencyName:string;prestigeCurrencyId:string;prestigeCurrencyName:string;accent:string;progressionName:string;maxProgress:number;claimGraceDays:number;visualKey?:string;ui?:Partial<LiveEventUiCopy>;
   dropRates:Record<EventActivitySource,number>;milestones:(classId:ClassId)=>EventMilestone[];objectives:EventObjectiveDef[];weeklyObjectives:EventObjectiveDef[];shop:EventShopOffer[];choices:EventChoice[];dailyGifts:EventDailyGift[];communityEnabled?:boolean;communityGoal:number;communityMilestones:EventCommunityMilestone[];discoveries:EventDiscovery[];
 }
 
@@ -22,6 +23,8 @@ const harvestSkins:Record<ClassId,string>={
 /** First production-shaped event sourced from the annual event design workbook. */
 export const LIVE_EVENT_CATALOG:LiveEventDef[]=[{
   id:'EVT_ANNUAL_009_2026',name:'Harvestwake',summary:"The year's harvest awakens old field spirits. Gather, craft, and prepare Asterfall for winter.",currencyId:'HARVEST_MARK',currencyName:'Harvest Marks',prestigeCurrencyId:'AMBER_SEED',prestigeCurrencyName:'Amber Seeds',accent:'#d9953f',progressionName:'Harvest Reputation',maxProgress:10000,claimGraceDays:7,
+  visualKey:'harvestwake',
+  ui:{prepareTitle:'Prepare for the festival',dailyGiftTitle:'Today’s Harvest Gift',cacheName:'Harvest Cache',communityName:'Grand Storehouse',projectTitle:'Winter preparation',projectNoun:'winter project',contractsTitle:'DAILY HARVEST CONTRACTS',shopTitle:'HARVEST SHOP',collectionTitle:'Harvestwake collection',closedTitle:'Harvest activities are closed',closedBody:'No new reputation, daily gifts, contracts, or contributions can be earned. Completed contracts, milestones, Storehouse stages, caches, and shop purchases remain claimable.'},
   // Average currency per unit. Combat uses kills; gathering uses active minutes.
   dropRates:{combat:.18,gathering:1.1,crafting:30,boss:250},
   milestones:classId=>[

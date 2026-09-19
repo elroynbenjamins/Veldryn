@@ -151,7 +151,7 @@ returns trigger
 language plpgsql
 security definer
 set search_path = public
-as $
+as $$
 declare
   v_guild_id uuid;
   v_skill_id text;
@@ -184,7 +184,7 @@ begin
   if tg_op = 'DELETE' then return old; end if;
   return new;
 end
-$;
+$$;
 
 drop trigger if exists guild_open_halls_sync_v54 on public.guild_skill_allocations;
 create trigger guild_open_halls_sync_v54

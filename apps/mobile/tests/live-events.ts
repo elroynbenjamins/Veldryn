@@ -19,7 +19,7 @@ ok(eventDailyGift(state,t0+86400_000)?.claimed===false,'The next UTC day should 
 state=applyEventDiscoveries(state,[{eventId:'EVT_ANNUAL_009_2026',discoveryId:'golden_field_feather',name:'Golden Field Feather',quantity:5}]);
 ok(eventDiscoveryBoard(state,t0).find(entry=>entry.discovery.id==='golden_field_feather')?.ready===true,'Discovery fragments should accumulate to their collection target');
 state=claimEventDiscovery(state,'golden_field_feather',t0);
-ok(state.account.unlockedCosmeticPetIds?.includes('pet_straw_sparrow')===true,'Completed folklore discovery should grant its permanent cosmetic');
+ok(state.account.unlockedCosmeticPetIds?.includes('EVT_PET_012')===true,'Golden Field Feather discovery should grant Golden Sheafling');
 let duplicateDiscoveryRejected=false;try{claimEventDiscovery(state,'golden_field_feather',t0)}catch{duplicateDiscoveryRejected=true}ok(duplicateDiscoveryRejected,'Discovery rewards cannot be claimed twice');
 state=applyEventDrops(state,[{eventId:'EVT_ANNUAL_009_2026',currencyId:'HARVEST_MARK',name:'Harvest Marks',quantity:0,source:'combat',units:3,recordedAtMs:t0}]);
 ok(state.account.eventActivityById?.EVT_ANNUAL_009_2026?.combat===3,'Activity must count even when its currency roll awards zero');
@@ -39,7 +39,7 @@ let duplicateRejected=false;try{claimEventReward(state,'emote_harvest_cheer',t0+
 state=claimEventReward(state,'skin_harvestwake_ironwarden',t0+2);
 ok(state.account.unlockedEventSkinIds?.includes('skin_harvestwake_ironwarden')===true,'Class event skin should unlock permanently');
 state=claimAllEventMilestones(state,t0+2);
-ok(state.account.unlockedCosmeticPetIds?.includes('pet_harvest_fox')===true,'Claim all should collect every available milestone');
+ok(state.account.unlockedCosmeticPetIds?.includes('EVT_PET_011')===true,'Claim all should collect Pumpkin Piglet from the Harvestwake milestone');
 const weekly=eventWeeklyBoard(state,t0+2)[0];state=applyEventDrops(state,[{eventId:'EVT_ANNUAL_009_2026',currencyId:'HARVEST_MARK',name:'Harvest Marks',quantity:0,source:weekly.objective.source,units:weekly.objective.required,recordedAtMs:t0+2}]);
 state=claimEventWeeklyObjective(state,weekly.objective.id,t0+2);ok(eventWeeklyBoard(state,t0+2)[0].claimed,'Weekly challenge claim should be scoped to its UTC week');
 const offered=eventContractBoard(state,t0+2)[0];state=acceptEventContract(state,offered.objective.id,t0+2);

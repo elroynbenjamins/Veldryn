@@ -65,7 +65,33 @@ const VISUALS:Record<string,LiveEventVisualBundle>={
       EVT_UNIT_003:require('../../assets/event_collectibles/bloomwake/companions/EVT_UNIT_003_Bloomwarden.png'),
     },
   },
-  starfall:{heroBackground:require('../../assets/profile-backgrounds/bg_starfall.png'),discoveryArt:EMPTY_ART,rewardArt:EMPTY_ART},
+  suncrest:{
+    heroBackground:require('../../assets/profile-backgrounds/bg_kingdom_approach.png'),
+    discoveryArt:EMPTY_ART,
+    rewardArt:{
+      EVT_PET_007:require('../../assets/event_collectibles/suncrest_games/pets/EVT_PET_007_Laurel_Lynx.png'),
+      EVT_PET_008:require('../../assets/event_collectibles/suncrest_games/pets/EVT_PET_008_Golden_Gryphlet.png'),
+      EVT_UNIT_004:require('../../assets/event_collectibles/suncrest_games/companions/EVT_UNIT_004_Suncrest_Champion.png'),
+    },
+  },
+  starfall:{
+    heroBackground:require('../../assets/profile-backgrounds/bg_starfall.png'),
+    discoveryArt:EMPTY_ART,
+    rewardArt:{
+      EVT_PET_009:require('../../assets/event_collectibles/starfall_nights/pets/EVT_PET_009_Starwhisker.png'),
+      EVT_PET_010:require('../../assets/event_collectibles/starfall_nights/pets/EVT_PET_010_Comet_Moth.png'),
+      EVT_UNIT_005:require('../../assets/event_collectibles/starfall_nights/companions/EVT_UNIT_005_Astral_Wayfarer.png'),
+    },
+  },
+  merchant_guild:{
+    heroBackground:require('../../assets/profile-backgrounds/bg_kingdom_approach.png'),
+    discoveryArt:EMPTY_ART,
+    rewardArt:{
+      EVT_PET_018:require('../../assets/event_collectibles/merchant_guild_festival/pets/EVT_PET_018_Ledger_Ferret.png'),
+      EVT_PET_019:require('../../assets/event_collectibles/merchant_guild_festival/pets/EVT_PET_019_Guildcrest_Drakelet.png'),
+      EVT_UNIT_010:require('../../assets/event_collectibles/merchant_guild_festival/companions/EVT_UNIT_010_Caravan_Sentinel.png'),
+    },
+  },
   veilbreak:{
     heroBackground:require('../../assets/profile-backgrounds/bg_veilbreak.png'),
     discoveryArt:EMPTY_ART,

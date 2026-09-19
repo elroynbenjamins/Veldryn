@@ -142,7 +142,7 @@ set search_path=public,private
 as $$
 declare
   v_uid uuid:=auth.uid();v_ext public.player_profile_extensions%rowtype;v_profile public.player_profiles%rowtype;
-  v_game jsonb;v_character jsonb;v_selected uuid;v_allowed boolean:=false;v_other jsonb;
+  v_game jsonb;v_journal jsonb;v_character jsonb;v_selected uuid;v_allowed boolean:=false;v_other jsonb;
 begin
   if v_uid is null then raise exception 'AUTH_REQUIRED';end if;
   if p_target_account_id is null then raise exception 'PROFILE_TARGET_REQUIRED';end if;
@@ -163,6 +163,7 @@ begin
 
   select * into v_profile from public.player_profiles where account_id=p_target_account_id;
   select state into v_game from public.online_game_states where account_id=p_target_account_id;
+  select state into v_journal from private.adventurers_journal_state where account_id=p_target_account_id;
   v_selected:=coalesce(v_ext.selected_character_id,v_profile.active_character_id,(v_game#>>'{character,id}')::uuid);
   if v_selected is not null and v_game#>>'{character,id}'=v_selected::text then
     v_character:=v_game->'character';
@@ -185,7 +186,8 @@ begin
     'borderId',v_character->>'profileBorderId','petId',v_character->>'selectedCosmeticPetId',
     'bio',coalesce(v_ext.bio,''),'favoriteSkillId',v_ext.favorite_skill_id,'favoriteCompanionId',v_ext.favorite_companion_id,
     'achievementShowcaseIds',coalesce(v_ext.achievement_showcase_ids,'{}'::text[]),'collectionShowcase',coalesce(v_ext.collection_showcase,'[]'::jsonb),
-    'recordShowcaseIds',coalesce(v_ext.record_showcase_ids,'{}'::text[]),'revision',coalesce(v_ext.revision,0)
+    'recordShowcaseIds',coalesce(v_ext.record_showcase_ids,'{}'::text[]),'recordEntries',coalesce(v_journal->'records','{}'::jsonb),
+    'revision',coalesce(v_ext.revision,0)
   );
 end $$;
 

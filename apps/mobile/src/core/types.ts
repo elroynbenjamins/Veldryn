@@ -66,7 +66,7 @@ export interface GameState {
   /** Optional server/read-model projection for versioned regional journals. */
   regionalProgressById?:Record<string,RegionalProgressState>;
   quests:QuestState[]; unlockedMonsterIds:string[]; defeatedBossIds:string[]; skills:SkillState[];
-  account:CompanionAccountState & {entitlements?:Record<string,boolean>;unlockedCharacterSlots?:number;premiumCurrencyBalance?:number;ownedBoostIds?:string[];eventCommunityProgressById?:Record<string,number>;createdCharacterCount:number;guildMember:boolean;patronTier:'none'|'bloom'|'crown';guildBannerId?:import('./guild-customization').GuildBannerId;guildProfileFrameId?:import('./guild-customization').GuildFrameId;guildNameplateId?:import('./guild-customization').GuildNameplateId;guildMotto?:string;
+  account:CompanionAccountState & {longTermAccountScopeId?:string;entitlements?:Record<string,boolean>;unlockedCharacterSlots?:number;premiumCurrencyBalance?:number;ownedBoostIds?:string[];eventCommunityProgressById?:Record<string,number>;createdCharacterCount:number;guildMember:boolean;patronTier:'none'|'bloom'|'crown';guildBannerId?:import('./guild-customization').GuildBannerId;guildProfileFrameId?:import('./guild-customization').GuildFrameId;guildNameplateId?:import('./guild-customization').GuildNameplateId;guildMotto?:string;
   professionMasteryByAction?:Record<string,import('./profession-mastery-v40').ProfessionMasteryRecord>;
   weeklyOrders?:import('./weekly-orders-v41').WeeklyOrdersState;
   weeklyOrderPendingRewards?:Array<{claimKey:string;rewardRef:string;label:string;weekKey:string;orderId?:string}>;

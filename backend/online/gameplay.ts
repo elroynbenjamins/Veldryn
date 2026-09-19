@@ -35,6 +35,7 @@ export function gameplayHandler(services:GameplayServices){return async(request:
   }
   const loaded=await services.rpc<LoadedGame>('load_online_game_server_v1',{p_account_id:accountId});
   const state=loaded.state??newGame(loaded.serverNow);
+  state.account.longTermAccountScopeId=accountId;
   state.account.guildMember=loaded.guildMember;state.account.liveEvent=loaded.liveEvent;
   state.account.eventCommunityProgressById=loaded.communityProgress;
   if(state.character&&loaded.walletGold!==null)state.character.gold=loaded.walletGold;
@@ -45,7 +46,7 @@ export function gameplayHandler(services:GameplayServices){return async(request:
    if(committed)return committed.requestHash===requestHash?json(committed.response):json({error:'idempotency_key_conflict'},409);
    return json({error:'stale_state',state,version:loaded.version,serverNow:loaded.serverNow,accountId},409);
   }
-  let result;try{result=executeGameCommand(state,command,loaded.serverNow,{characterId:command.type==='create'||command.type==='roster_create'?services.randomId():loaded.characterId??services.randomId(),randomRoll:services.randomRoll()});}catch(e){throw new GameplayError(e instanceof Error?e.message:'invalid_command');}
+  let result;try{result=executeGameCommand(state,command,loaded.serverNow,{characterId:command.type==='create'||command.type==='roster_create'?services.randomId():loaded.characterId??services.randomId(),randomRoll:services.randomRoll(),accountId,eventId:String(body.requestId)});}catch(e){throw new GameplayError(e instanceof Error?e.message:'invalid_command');}
   // Translate verified actions using the same current content as the simulation, never client weights.
   const contributions=result.contributions.map(event=>{
    let metric='',units=event.units;

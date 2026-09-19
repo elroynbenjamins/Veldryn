@@ -12,7 +12,7 @@ export interface EventCommunityMilestone{percent:number;rewardCurrency:number;re
 export interface EventDiscovery{id:string;name:string;description:string;source:EventActivitySource;chance:number;required:number;reward:EventReward;}
 export interface LiveEventDef{
   id:string;name:string;summary:string;currencyId:string;currencyName:string;prestigeCurrencyId:string;prestigeCurrencyName:string;accent:string;progressionName:string;maxProgress:number;claimGraceDays:number;
-  dropRates:Record<EventActivitySource,number>;milestones:(classId:ClassId)=>EventMilestone[];objectives:EventObjectiveDef[];weeklyObjectives:EventObjectiveDef[];shop:EventShopOffer[];choices:EventChoice[];dailyGifts:EventDailyGift[];communityGoal:number;communityMilestones:EventCommunityMilestone[];discoveries:EventDiscovery[];
+  dropRates:Record<EventActivitySource,number>;milestones:(classId:ClassId)=>EventMilestone[];objectives:EventObjectiveDef[];weeklyObjectives:EventObjectiveDef[];shop:EventShopOffer[];choices:EventChoice[];dailyGifts:EventDailyGift[];communityEnabled?:boolean;communityGoal:number;communityMilestones:EventCommunityMilestone[];discoveries:EventDiscovery[];
 }
 
 const harvestSkins:Record<ClassId,string>={
@@ -58,6 +58,7 @@ export const LIVE_EVENT_CATALOG:LiveEventDef[]=[{
   dailyGifts:[
     {day:1,rewardCurrency:100,rewardPrestige:0},{day:2,rewardCurrency:150,rewardPrestige:0},{day:3,rewardCurrency:200,rewardPrestige:0},{day:4,rewardCurrency:250,rewardPrestige:0},{day:5,rewardCurrency:300,rewardPrestige:0},{day:6,rewardCurrency:400,rewardPrestige:0},{day:7,rewardCurrency:500,rewardPrestige:1},
   ],
+  communityEnabled:false,
   communityGoal:100000,
   communityMilestones:[
     {percent:25,rewardCurrency:200,rewardPrestige:0},

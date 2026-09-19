@@ -12,6 +12,9 @@ import {reserveFaithPractice,updateFaithPreference} from './faith';
 import {executeCompanionActivity,refreshCompanions,assertCompanionIdle,claimCompanionTraining} from './companion-runtime';
 import {createAccountCharacter,switchAccountCharacter} from './account-actions';
 import {CLASSES} from '../content/classes';
+import {applyCharacterLoadout,deleteCharacterLoadout,saveCharacterLoadout} from './character-loadouts';
+import {normalizeProgressionGoals} from './progression-goals-v40';
+import {normalizeIdleRuleSets,validateActiveIdleRuleId} from './idle-rules-v40';
 
 /** Commands express intent. Neither a client save nor a client reward is accepted. */
 export interface GameCommand {type:string;args?:Record<string,unknown>}
@@ -27,6 +30,7 @@ const fields:Record<string,readonly string[]>={
  equip:['id'],unequip:['slot'],food:['id'],eat:['id'],sell:['id','quantity'],salvage:['id'],
  deposit:['id','quantity'],withdraw:['id','quantity'],deposit_materials:[],storage:['location'],overflow:[],
  equip_tool:['id'],equip_set:[],upgrade:['id'],socket:['id','gemId'],unsocket:['id','index'],skin:['id'],
+ loadout_save:['index','name'],loadout_apply:['id'],loadout_delete:['id'],goals_set:['goals'],idle_rules_set:['rules','activeId'],
  quest:['id'],seasonal:['period','id'],settings:['settings'],profile:['profileTitle','profileBackgroundId','profileBorderId','selectedCosmeticPetId'],
  event_daily:[],event_cache:[],event_milestones:[],event_discovery:['id'],event_reward:['id'],event_accept:['id'],
  event_objective:['id'],event_weekly:['id'],event_project:['id'],event_contribute:['quantity'],event_community:['percent'],event_purchase:['id'],
@@ -59,7 +63,7 @@ export function validateGameSettings(value:unknown):GameState['settings']{
 }
 
 /** The caller provides a trusted clock, character ID and random roll on the server. */
-export function executeGameCommand(previous:GameState,value:unknown,now:number,options:{characterId?:string;randomRoll?:number}={}):GameCommandResult{
+export function executeGameCommand(previous:GameState,value:unknown,now:number,options:{characterId?:string;randomRoll?:number;accountId?:string;eventId?:string}={}):GameCommandResult{
  const command=validateGameCommand(value),a=command.args??{},activity=previous.activity,contributions:VerifiedActivity[]=[];
  let state=structuredClone(previous),reward:RewardBundle|undefined,message:string|undefined,won:boolean|undefined,upgrade:GameCommandResult['upgrade'];
  if(!Number.isSafeInteger(now)||now<previous.createdAtMs)throw new Error('invalid_server_clock');
@@ -135,6 +139,18 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'socket':state=socketGem(state,text(a,'id'),text(a,'gemId'));break;
   case 'unsocket':state=unsocketGem(state,text(a,'id'),integer(a,'index',0,9));break;
   case 'skin':state=selectCharacterSkin(state,text(a,'id'));break;
+  case 'loadout_save':state=saveCharacterLoadout(state,integer(a,'index',0,2),typeof a.name==='string'?a.name:undefined,now);break;
+  case 'loadout_apply':state=applyCharacterLoadout(state,text(a,'id'));break;
+  case 'loadout_delete':state=deleteCharacterLoadout(state,text(a,'id'));break;
+  case 'goals_set':{
+   if(!state.character)throw new Error('character_required');
+   state={...state,character:{...state.character,progressionGoals:normalizeProgressionGoals(a.goals,state.character.id)}};break;
+  }
+  case 'idle_rules_set':{
+   if(!state.character)throw new Error('character_required');
+   const rules=normalizeIdleRuleSets(a.rules,state.character.id),activeIdleRuleIdV40=validateActiveIdleRuleId(rules,a.activeId);
+   state={...state,character:{...state.character,idleRulesV40:rules,activeIdleRuleIdV40}};break;
+  }
   case 'quest':state=game.claimQuest(state,text(a,'id'));break;
   case 'seasonal':state=game.claimSeasonalContract(state,oneOf(a.period,['daily','weekly']),text(a,'id'),now);break;
   case 'settings':state={...state,settings:validateGameSettings(a.settings)};break;

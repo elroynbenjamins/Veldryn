@@ -18,20 +18,23 @@ export function FixedCharacterPortrait({classId,body='male',view='front',compact
   </View>;
 }
 
-function selectedSkin(state:GameState){
-  const selectedId=state.character?.selectedSkinId??'starting';
+function skinSelection(selectedId:string){
   const set=CHARACTER_SKIN_SETS.find(candidate=>equipmentSetSkinId(candidate.id)===selectedId);
   const artwork=set?.appearanceId?approvedCharacterSkinArtwork[set.appearanceId]:undefined;
   return {name:artwork&&set?set.name:'Starting skin',artwork};
 }
+function selectedSkin(state:GameState){return skinSelection(state.character?.selectedSkinId??'starting');}
+
+export function CharacterPortraitSelection({classId,body='male',skinId='starting',view='front',compact=false,style}:{classId:ClassId;body?:BodyPresentation;skinId?:string;view?:'front'|'back';compact?:boolean;style?:StyleProp<ViewStyle>}){
+  const skin=skinSelection(skinId);
+  if(!skin.artwork)return <FixedCharacterPortrait classId={classId} body={body} view={view} compact={compact} style={style}/>;
+  const source=skin.artwork[body][view]??skin.artwork[body].front;
+  return <View accessibilityLabel={`${body} ${classId.replace('_',' ')} character wearing ${skin.name}, ${view} view`} style={[compact?s.compact:s.portrait,style]}><Image source={source} resizeMode="contain" style={s.layer}/></View>;
+}
 
 export function CharacterPortrait({state,view='front',compact=false,style}:{state:GameState;view?:'front'|'back';compact?:boolean;style?:StyleProp<ViewStyle>}){
-  const character=state.character!,body=character.bodyPresentation??'male',skin=selectedSkin(state);
-  if(!skin.artwork)return <FixedCharacterPortrait classId={character.classId} body={body} view={view} compact={compact} style={style}/>;
-  const source=skin.artwork[body][view]??skin.artwork[body].front;
-  return <View accessibilityLabel={`${body} ${character.classId.replace('_',' ')} character wearing ${skin.name}, ${view} view`} style={[compact?s.compact:s.portrait,style]}>
-    <Image source={source} resizeMode="contain" style={s.layer}/>
-  </View>;
+  const character=state.character!;
+  return <CharacterPortraitSelection classId={character.classId} body={character.bodyPresentation??'male'} skinId={character.selectedSkinId??'starting'} view={view} compact={compact} style={style}/>;
 }
 
 /** Equipment uses a complete class figure. A starting cosmetic falls back to approved class showcase art. */

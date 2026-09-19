@@ -44,6 +44,9 @@ export interface CharacterState {
   /** Cosmetic choice only. Equipment changes stats and never changes this value. */
   selectedSkinId?:string;
   savedLoadouts?:CharacterLoadoutPreset[];
+  progressionGoals?:import('./progression-goals-v40').ProgressionGoal[];
+  idleRulesV40?:import('./idle-rules-v40').IdleRuleSet[];
+  activeIdleRuleIdV40?:string;
 }
 export interface ItemStack { itemId:string; quantity:number; }
 export interface InventoryState { stacks:ItemStack[]; capacity:number; }
@@ -53,7 +56,7 @@ export interface ActivityEnvironmentSnapshot{seasonId:SeasonId;weatherId:Weather
 export interface ActiveActivity { kind:ActivityKind; targetId:string; startedAtMs:number; lastClaimAtMs:number; environment?:ActivityEnvironmentSnapshot; classFocus?:TrainingFocus; classTrainingSnapshot?:{faithBlessingId?:string}; bonusSnapshot?:import('./permanent-boosts').PermanentMultipliers; progressFraction?:number; brew?:import('./alchemy-types').AlchemyBatchState; faithPractice?:import('./faith-types').FaithPracticeReservation; }
 export interface QuestState { questId:string; status:'locked'|'active'|'complete'|'claimed'; progress:number; }
 export interface RegionalProgressState { storyCompleted?:number; sideQuestsCompleted?:number; echoesCompleted?:number; dungeonsCompleted?:number; collectionEntries?:number; bossMasteryTier?:number; }
-export interface LiveEventRuntime{eventId:string;enabled:boolean;startsAtMs:number;endsAtMs:number;}
+export interface LiveEventRuntime{eventId:string;enabled:boolean;startsAtMs:number;endsAtMs:number;graceEndsAtMs?:number;priority?:number;modules?:string[];}
 export interface GameState {
   version:6|11; createdAtMs:number; character:CharacterState|null; inventory:InventoryState; bank:BankState; overflow:OverflowState; activity:ActiveActivity|null;
   otherCharacters?:Array<{character:CharacterState;inventory:InventoryState;overflow:OverflowState;activity:ActiveActivity|null;skills:SkillState[];quests:QuestState[];currentRegionId:string}>;
@@ -63,7 +66,18 @@ export interface GameState {
   /** Optional server/read-model projection for versioned regional journals. */
   regionalProgressById?:Record<string,RegionalProgressState>;
   quests:QuestState[]; unlockedMonsterIds:string[]; defeatedBossIds:string[]; skills:SkillState[];
-  account:CompanionAccountState & {entitlements?:Record<string,boolean>;unlockedCharacterSlots?:number;premiumCurrencyBalance?:number;ownedBoostIds?:string[];eventCommunityProgressById?:Record<string,number>;createdCharacterCount:number;guildMember:boolean;patronTier:'none'|'bloom'|'crown';guildContribution?:number;guildProjectProgress?:number;guildBossHp?:number;guildProjectClaimed?:boolean;guildJoinPolicy?:'open'|'apply'|'invite';guildMinimumLevel?:number;guildApplicationStatus?:'none'|'pending'|'accepted'|'declined';seasonalContractClaimIds?:string[];liveEvent?:LiveEventRuntime;eventProgressById?:Record<string,number>;eventCurrencyBalanceById?:Record<string,number>;eventPrestigeBalanceById?:Record<string,number>;eventRepeatCacheClaimsById?:Record<string,number>;eventActivityById?:Record<string,Partial<Record<'combat'|'gathering'|'crafting'|'boss',number>>>;eventPeriodActivityById?:Record<string,Partial<Record<'combat'|'gathering'|'crafting'|'boss',number>>>;eventAcceptedContractIds?:string[];eventContractBaselines?:Record<string,number>;eventObjectiveClaimIds?:string[];eventWeeklyClaimIds?:string[];eventDailyGiftClaimIds?:string[];eventCommunityClaimIds?:string[];eventDiscoveryCounts?:Record<string,number>;eventDiscoveryClaimIds?:string[];eventShopPurchaseCounts?:Record<string,number>;eventChoiceById?:Record<string,string>;eventContributionById?:Record<string,number>;eventRewardClaimIds?:string[];unlockedEventSkinIds?:string[];unlockedCosmeticPetIds?:string[];unlockedProfileBackgroundIds?:string[];unlockedProfileBorderIds?:string[];unlockedEmoteIds?:string[];unlockedTitleIds?:string[]};
+  account:CompanionAccountState & {longTermAccountScopeId?:string;entitlements?:Record<string,boolean>;unlockedCharacterSlots?:number;premiumCurrencyBalance?:number;ownedBoostIds?:string[];eventCommunityProgressById?:Record<string,number>;createdCharacterCount:number;guildMember:boolean;patronTier:'none'|'bloom'|'crown';guildBannerId?:import('./guild-customization').GuildBannerId;guildProfileFrameId?:import('./guild-customization').GuildFrameId;guildNameplateId?:import('./guild-customization').GuildNameplateId;guildMotto?:string;
+  professionMasteryByAction?:Record<string,import('./profession-mastery-v40').ProfessionMasteryRecord>;
+  weeklyOrders?:import('./weekly-orders-v41').WeeklyOrdersState;
+  weeklyOrderPendingRewards?:Array<{claimKey:string;rewardRef:string;label:string;weekKey:string;orderId?:string}>;
+  crossSkillState?:import('./cross-skill-discoveries-v45').CrossSkillState;
+  collectionSetState?:import('./collection-sets-v45').CollectionSetState;
+  rareDiscoveryState?:import('./rare-idle-discoveries-v46').RareDiscoveryState;
+  journalState?:import('./adventurers-journal-v42').JournalState;
+  longTermMetrics?:Record<string,number>;
+  unlockedKnowledgeIds?:string[];
+  unlockedCollectionRewardIds?:string[];
+  guildContribution?:number;guildProjectProgress?:number;guildBossHp?:number;guildProjectClaimed?:boolean;guildJoinPolicy?:'open'|'apply'|'invite';guildMinimumLevel?:number;guildApplicationStatus?:'none'|'pending'|'accepted'|'declined';seasonalContractClaimIds?:string[];liveEvent?:LiveEventRuntime;eventProgressById?:Record<string,number>;eventCurrencyBalanceById?:Record<string,number>;eventPrestigeBalanceById?:Record<string,number>;eventRepeatCacheClaimsById?:Record<string,number>;eventActivityById?:Record<string,Partial<Record<'combat'|'gathering'|'crafting'|'boss',number>>>;eventPeriodActivityById?:Record<string,Partial<Record<'combat'|'gathering'|'crafting'|'boss',number>>>;eventAcceptedContractIds?:string[];eventContractBaselines?:Record<string,number>;eventObjectiveClaimIds?:string[];eventWeeklyClaimIds?:string[];eventDailyGiftClaimIds?:string[];eventCommunityClaimIds?:string[];eventDiscoveryCounts?:Record<string,number>;eventDiscoveryClaimIds?:string[];eventShopPurchaseCounts?:Record<string,number>;eventChoiceById?:Record<string,string>;eventContributionById?:Record<string,number>;eventRewardClaimIds?:string[];unlockedEventSkinIds?:string[];unlockedCosmeticPetIds?:string[];unlockedProfileBackgroundIds?:string[];unlockedProfileBorderIds?:string[];unlockedEmoteIds?:string[];unlockedTitleIds?:string[]};
   settings:{language:Language;numberMode:'abbreviated'|'exact';reduceMotion:boolean;textScale:1|1.15|1.3|1.5;autoEatThresholdPct:number;stopCombatWhenOutOfFood:boolean;autoJoinWorldChat?:boolean;defaultWorldChat?:1|2|3|4;quickNavDestinations?:QuickNavDestination[];};
 }
 export interface RewardBundle {

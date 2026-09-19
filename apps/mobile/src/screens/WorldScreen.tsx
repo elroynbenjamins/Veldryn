@@ -1,6 +1,6 @@
-import {useEffect,useState} from 'react';
+import {useEffect,useMemo,useState} from 'react';
 import {RegionArtwork} from '../components/RegionArtwork';
-import {ScrollView,StyleSheet,Text,View} from 'react-native';
+import {Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
 import {WORLD_ZONES} from '../content/world-map';
 import {GATHERING} from '../content/skills';
@@ -11,10 +11,12 @@ import {nextRegionUnlock} from '../core/world-navigation';
 import {environmentForZone} from '../core/world-weather';
 import {EnvironmentBanner} from '../components/EnvironmentBanner';
 import {Panel} from '../components/Panel';
+import {SearchField} from '../components/SearchField';
 import {GameButton} from '../components/GameButton';
 import {C,equipmentColors,radii,spacing,typography} from '../theme/theme';
 import {FrostmarchRegionPanel} from '../components/FrostmarchRegionPanel';
 import {RegionalJournalPanel} from '../components/RegionalJournalPanel';
+import {RegionCompletionPanel} from '../components/RegionCompletionPanel';
 import {frostmarchProgressFromState,type RegionProgressV21} from '../core/region-content-v21';
 import {loadFrostmarchProgressV21} from '../online/regional-content-v21';
 
@@ -28,11 +30,14 @@ type Props={
 
 export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop}:Props){
   const level=state.character!.level,currentId=currentRegionId(state);
+  const [regionQuery,setRegionQuery]=useState(''),[regionFilterOpen,setRegionFilterOpen]=useState(false),[regionStatus,setRegionStatus]=useState<'all'|'open'|'locked'>('all'),[regionSort,setRegionSort]=useState<'level'|'name'>('level');
   const current=WORLD_ZONES.find(zone=>zone.id===currentId)??WORLD_ZONES[0];
   const environment=environmentForZone(current.id);
   const next=nextRegionUnlock(level);
   const combatCount=MONSTERS.filter(monster=>monster.zone===current.name&&!monster.boss).length;
   const gathering=[...GATHERING,...HERB_NODES].filter(activity=>activity.zoneId===current.id);
+  const destinationRows=useMemo(()=>WORLD_ZONES.filter(zone=>zone.id!==current.id).filter(zone=>{const unlocked=level>=zone.minLevel;if(regionStatus==='open'&&!unlocked)return false;if(regionStatus==='locked'&&unlocked)return false;const term=regionQuery.trim().toLowerCase();return !term||(zone.name+' '+zone.subtitle).toLowerCase().includes(term)}).sort((a,b)=>regionSort==='name'?a.name.localeCompare(b.name):a.minLevel-b.minLevel||a.name.localeCompare(b.name)),[current.id,level,regionQuery,regionStatus,regionSort]);
+  const activeRegionFilters=regionStatus==='all'?0:1;
 
   const frostmarch=current.id==='FROSTMARCH';
   const [serverFrostmarchProgress,setServerFrostmarchProgress]=useState<RegionProgressV21|null>(null);
@@ -55,7 +60,7 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop}:Pr
     {id:'COP_008',name:'Shiverlake Descent',minLevel:58,locked:level<58,modeAvailability:'live_and_q' as const},
     {id:'COP_009',name:'Choir Caverns',minLevel:64,locked:level<64,modeAvailability:'live_and_q' as const},
   ] as const;
-  return <ScrollView contentContainerStyle={s.root}>
+  return <><ScrollView contentContainerStyle={s.root}>
     <Text style={s.kicker}>TRAVEL</Text>
     <Text accessibilityRole="header" style={s.h}>Asterfall Regions</Text>
     <Text style={s.sub}>Your location controls which enemies and gathering activities are available.</Text>
@@ -65,6 +70,7 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop}:Pr
       <View style={s.flex}><Text style={s.overline}>CURRENT REGION</Text><Text style={s.currentName}>{current.name}</Text><Text style={s.sub}>{current.subtitle}</Text></View>
     </View>
     <EnvironmentBanner environment={environmentForZone(current.id)}/>
+    <RegionCompletionPanel state={state} regionId={current.id}/>
 
     <Panel accentColor={current.accent}>
       <Text style={s.title}>Activities in {current.name}</Text>
@@ -73,7 +79,9 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop}:Pr
     </Panel>
 
     <Text style={s.section}>CHOOSE A DESTINATION</Text>
-    {WORLD_ZONES.filter(zone=>zone.id!==current.id).map(zone=>{
+    <SearchField value={regionQuery} onChangeText={setRegionQuery} placeholder="Search regions…" placeholderTextColor={C.muted}/>
+    <View style={s.filterToolbar}><View style={s.flex}><GameButton title={`Filters${activeRegionFilters?` · ${activeRegionFilters}`:''} ▾`} tone={activeRegionFilters?'primary':'secondary'} onPress={()=>setRegionFilterOpen(true)}/></View><View style={s.flex}><GameButton title={`Sort: ${regionSort==='level'?'Recommended level':'Name'} ▾`} tone="secondary" onPress={()=>setRegionFilterOpen(true)}/></View></View>
+    {destinationRows.map(zone=>{
       const unlocked=level>=zone.minLevel,active=zone.id===current.id,environment=environmentForZone(zone.id);
       return <View key={zone.id} style={[s.destination,active&&{borderColor:zone.accent}]}>
         <View style={s.thumbnail}><RegionArtwork regionId={zone.id} muted={!unlocked}/>{!unlocked&&<View style={s.lockedTag}><Text style={s.lockedText}>Lv. {zone.minLevel}</Text></View>}</View>
@@ -91,7 +99,7 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop}:Pr
       <FrostmarchRegionPanel zones={frostmarchZones} progress={frostmarchProgress} weather={{name:environment.weatherName,endsInSeconds:Math.max(0,Math.floor((environment.changesAtMs-Date.now())/1000)),summary:environment.weatherName+' remains readable through the server-backed Season/Weather system.'}} dungeons={frostmarchDungeons} onZone={zoneId=>onOpenCombat(zoneId)} onDungeon={onCoop}/>
       <RegionalJournalPanel name="Frostmarch" progress={frostmarchProgress}/>
     </>}
-  </ScrollView>;
+  </ScrollView><Modal visible={regionFilterOpen} transparent animationType="slide" onRequestClose={()=>setRegionFilterOpen(false)}><View style={s.filterBackdrop}><Pressable style={StyleSheet.absoluteFill} onPress={()=>setRegionFilterOpen(false)}/><View style={s.filterSheet}><Text style={s.title}>World Filters</Text><Text style={s.filterLabel}>Region state</Text>{(['all','open','locked'] as const).map(value=><Pressable key={value} onPress={()=>setRegionStatus(value)} style={[s.filterOption,regionStatus===value&&s.filterOptionActive]}><Text style={s.filterOptionText}>{regionStatus===value?'✓ ':''}{value==='all'?'Any region':value==='open'?'Unlocked':'Locked'}</Text></Pressable>)}<Text style={s.filterLabel}>Sort by</Text>{(['level','name'] as const).map(value=><Pressable key={value} onPress={()=>setRegionSort(value)} style={[s.filterOption,regionSort===value&&s.filterOptionActive]}><Text style={s.filterOptionText}>{regionSort===value?'✓ ':''}{value==='level'?'Recommended level':'Name'}</Text></Pressable>)}<View style={s.filterToolbar}><View style={s.flex}><GameButton title="Reset" tone="secondary" onPress={()=>{setRegionStatus('all');setRegionSort('level')}}/></View><View style={s.flex}><GameButton title="Apply Filters" onPress={()=>setRegionFilterOpen(false)}/></View></View></View></View></Modal></>;
 }
 
 const s=StyleSheet.create({
@@ -106,7 +114,7 @@ const s=StyleSheet.create({
   symbol:{fontSize:31,fontWeight:'700'},
   overline:{...typography.caption,color:equipmentColors.goldSoft,fontWeight:'700',letterSpacing:1},
   currentName:{...typography.title,color:C.text,fontSize:22},
-  actions:{flexDirection:'row',gap:spacing.sm,marginTop:spacing.sm},
+  actions:{flexDirection:'row',gap:spacing.sm,marginTop:spacing.sm},filterToolbar:{flexDirection:'row',gap:spacing.sm,alignItems:'center'},filterBackdrop:{flex:1,justifyContent:'flex-end',backgroundColor:'#0008'},filterSheet:{backgroundColor:C.bg,borderTopWidth:1,borderColor:C.line,borderTopLeftRadius:20,borderTopRightRadius:20,padding:spacing.lg,gap:8},filterLabel:{...typography.caption,color:C.muted,fontWeight:'900',letterSpacing:.8,marginTop:8},filterOption:{minHeight:48,justifyContent:'center',paddingHorizontal:12,borderWidth:1,borderColor:C.line,borderRadius:8,backgroundColor:C.panel},filterOptionActive:{borderColor:C.accent,backgroundColor:C.panel2},filterOptionText:{color:C.text,fontWeight:'800'},
   section:{...typography.caption,color:equipmentColors.goldSoft,fontWeight:'700',letterSpacing:1},
   destination:{minHeight:104,flexDirection:'row',alignItems:'center',gap:spacing.sm,padding:spacing.sm,backgroundColor:equipmentColors.panel,borderWidth:1,borderColor:C.line,borderRadius:radii.lg},
   smallSymbol:{width:44,height:44,alignItems:'center',justifyContent:'center',borderWidth:1,borderRadius:22,backgroundColor:equipmentColors.stage},

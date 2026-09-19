@@ -1,5 +1,5 @@
 import {createCharacter,newGame,previewActivityReward,startCombat} from '../src/core/game';
-import {acceptEventContract,activeLiveEvent,applyEventDiscoveries,applyEventDrops,availableEventRepeatCaches,chooseEventProject,claimAllEventMilestones,claimEventCommunityMilestone,claimEventDailyGift,claimEventDiscovery,claimEventObjective,claimEventRepeatCache,claimEventReward,claimEventWeeklyObjective,contributeEventCurrency,eventCollectionJournal,eventCommunityMilestones,eventContractBoard,eventCurrencyBalance,eventDailyGift,eventDiscoveryBoard,eventLifecycle,eventMarketOffers,eventObjectiveClaimed,eventOfferPurchaseCount,eventPrestigeBalance,eventProgress,eventRewardClaimed,eventWeeklyBoard,grantEventActivity,purchaseEventOffer,setLocalEventEnabled} from '../src/core/live-events';
+import {acceptEventContract,activeLiveEvent,applyEventDiscoveries,applyEventDrops,availableEventRepeatCaches,chooseEventProject,claimAllEventMilestones,claimEventCommunityMilestone,claimEventDailyGift,claimEventDiscovery,claimEventObjective,claimEventRepeatCache,claimEventReward,claimEventWeeklyObjective,contributeEventCurrency,eventCollectionJournal,eventCommunityMilestones,eventContractBoard,eventCurrencyBalance,eventDailyGift,eventDiscoveryBoard,eventLifecycle,eventShopOffers,eventObjectiveClaimed,eventOfferPurchaseCount,eventPrestigeBalance,eventProgress,eventRewardClaimed,eventWeeklyBoard,grantEventActivity,purchaseEventOffer,setLocalEventEnabled} from '../src/core/live-events';
 
 function ok(condition:boolean,message:string){if(!condition)throw new Error(message);}
 const t0=2_000_000;
@@ -54,26 +54,24 @@ const remainingContracts=eventContractBoard(state,t0+2).slice(1);state=acceptEve
 let thirdRejected=false;try{acceptEventContract(state,remainingContracts[1].objective.id,t0+2)}catch{thirdRejected=true}ok(thirdRejected,'Daily board must enforce its two-contract acceptance limit');
 ok(eventContractBoard(state,t0+86400_000+2).every(contract=>!contract.accepted),'A new UTC day should provide fresh contract acceptance slots');
 const progressBeforePurchase=eventProgress(state,'EVT_ANNUAL_009_2026');
-const market=eventMarketOffers(state,t0+2);ok(market.length===3,'Market should show two rotating common offers plus prestige stock');const purchaseOffer=market.find(offer=>offer.currency==='common')!;
+const market=eventShopOffers(state,t0+2);ok(market.length===3,'Event Shop should show two rotating common offers plus prestige stock');const purchaseOffer=market.find(offer=>offer.currency==='common')!;
 state=purchaseEventOffer(state,purchaseOffer.id,t0+2);
-ok(eventOfferPurchaseCount(state,'EVT_ANNUAL_009_2026',purchaseOffer.id)===1,'Market purchase limit should persist');
-const cosmeticIds=[...(state.account.unlockedProfileBackgroundIds??[]),...(state.account.unlockedProfileBorderIds??[]),...(state.account.unlockedCosmeticPetIds??[])];ok(cosmeticIds.includes(purchaseOffer.reward.id),'Market reward should enter the matching cosmetic collection');
+ok(eventOfferPurchaseCount(state,'EVT_ANNUAL_009_2026',purchaseOffer.id)===1,'Event Shop purchase limit should persist');
+const cosmeticIds=[...(state.account.unlockedProfileBackgroundIds??[]),...(state.account.unlockedProfileBorderIds??[]),...(state.account.unlockedCosmeticPetIds??[])];ok(cosmeticIds.includes(purchaseOffer.reward.id),'Event Shop reward should enter the matching cosmetic collection');
 ok(eventProgress(state,'EVT_ANNUAL_009_2026')===progressBeforePurchase,'Spending currency must not reduce reputation');
 let bonusState=chooseEventProject(state,'guild_pantry',t0+2);const bonusProgressBefore=eventProgress(bonusState,'EVT_ANNUAL_009_2026');bonusState=grantEventActivity(bonusState,'boss',t0+3);
 ok(eventProgress(bonusState,'EVT_ANNUAL_009_2026')===bonusProgressBefore+300,'Guild Pantry should apply its 20% boss-currency bonus');
-bonusState=applyEventDrops(bonusState,[{eventId:'EVT_ANNUAL_009_2026',currencyId:'HARVEST_MARK',name:'Harvest Marks',quantity:100}]);const creditedBefore=bonusState.account.eventContributionById?.EVT_ANNUAL_009_2026??0;bonusState=contributeEventCurrency(bonusState,100,t0+3);
-ok((bonusState.account.eventContributionById?.EVT_ANNUAL_009_2026??0)===creditedBefore+125,'Guild Pantry should convert 100 spent marks into 125 Storehouse contribution value');
+bonusState=applyEventDrops(bonusState,[{eventId:'EVT_ANNUAL_009_2026',currencyId:'HARVEST_MARK',name:'Harvest Marks',quantity:100}]);
+const deferredBalance=eventCurrencyBalance(bonusState,'EVT_ANNUAL_009_2026');
+let deferredContributionRejected=false;try{contributeEventCurrency(bonusState,100,t0+3)}catch{deferredContributionRejected=true}
+ok(deferredContributionRejected,'Pre-launch community contributions must stay disabled');
+ok(eventCurrencyBalance(bonusState,'EVT_ANNUAL_009_2026')===deferredBalance,'Disabled community contributions must not spend currency');
 state=chooseEventProject(state,'preserved_supplies',t0+2);
-const balanceBeforeContribution=eventCurrencyBalance(state,'EVT_ANNUAL_009_2026');
-state=contributeEventCurrency(state,100,t0+2);
-ok(eventCurrencyBalance(state,'EVT_ANNUAL_009_2026')===balanceBeforeContribution-100,'Storehouse contribution should spend marks');
 let choiceLocked=false;try{chooseEventProject(state,'guild_pantry',t0+2)}catch{choiceLocked=true}ok(choiceLocked,'Winter project choice should lock for the event');
-state={...state,account:{...state.account,liveEvent:{eventId:'EVT_ANNUAL_009_2026',enabled:true,startsAtMs:t0-10*86400_000,endsAtMs:t0+3600_000},eventContributionById:{...(state.account.eventContributionById??{}),EVT_ANNUAL_009_2026:500}}};
-ok(eventCommunityMilestones(state,t0+2).every(entry=>entry.ready),'A near-complete Storehouse plus personal contribution should reach every community tier');
-state=claimEventCommunityMilestone(state,100,t0+2);
-ok(state.account.unlockedTitleIds?.includes('title_storehouse_builder')===true,'Final Storehouse tier should unlock its permanent title');
-ok(eventCollectionJournal(state,t0+2).some(entry=>entry.reward.id==='title_storehouse_builder'&&entry.owned),'Collection journal should reflect owned community cosmetics');
-let duplicateCommunityRejected=false;try{claimEventCommunityMilestone(state,100,t0+2)}catch{duplicateCommunityRejected=true}ok(duplicateCommunityRejected,'Storehouse milestone rewards cannot be claimed twice');
+state={...state,account:{...state.account,liveEvent:{eventId:'EVT_ANNUAL_009_2026',enabled:true,startsAtMs:t0-10*86400_000,endsAtMs:t0+3600_000}}};
+ok(eventCommunityMilestones(state,t0+2).length===0,'Community milestones remain dormant before launch population exists');
+let communityClaimRejected=false;try{claimEventCommunityMilestone(state,100,t0+2)}catch{communityClaimRejected=true}ok(communityClaimRejected,'Dormant community rewards cannot be claimed');
+ok(!eventCollectionJournal(state,t0+2).some(entry=>entry.reward.id==='title_storehouse_builder'),'Deferred community cosmetics stay out of the active collection journal');
 const cachesBeforeThreshold=availableEventRepeatCaches(state,'EVT_ANNUAL_009_2026');
 const reputationBeforeThreshold=eventProgress(state,'EVT_ANNUAL_009_2026');
 const nextCacheThreshold=10000+(Math.floor(Math.max(0,reputationBeforeThreshold-10000)/1000)+1)*1000;
@@ -84,8 +82,8 @@ ok(eventPrestigeBalance(state,'EVT_ANNUAL_009_2026')===prestigeBeforeCache+1,'Re
 const eventEnd=state.account.liveEvent!.endsAtMs,graceTime=eventEnd+60_000;
 ok(eventLifecycle(state,graceTime)?.phase==='claiming','Ended events should enter their reward-claim grace period');
 ok(!activeLiveEvent(state,graceTime),'Claim-period events must not generate new activity drops');
-ok(eventMarketOffers(state,graceTime).map(offer=>offer.id).join(',')===eventMarketOffers(state,eventEnd-1).map(offer=>offer.id).join(','),'Market stock should freeze to the final event-day rotation during grace');
-let graceContributionRejected=false;try{contributeEventCurrency(state,100,graceTime)}catch{graceContributionRejected=true}ok(graceContributionRejected,'Storehouse contributions must close when event earning ends');
+ok(eventShopOffers(state,graceTime).map(offer=>offer.id).join(',')===eventShopOffers(state,eventEnd-1).map(offer=>offer.id).join(','),'Event Shop stock should freeze to the final event-day rotation during grace');
+let graceContributionRejected=false;try{contributeEventCurrency(state,100,graceTime)}catch{graceContributionRejected=true}ok(graceContributionRejected,'Community contributions remain unavailable during the claim period');
 ok(eventLifecycle(state,eventEnd+8*86400_000)===null,'Event should archive after the seven-day claim period');
 state=setLocalEventEnabled(state,false,t0+3);
 ok(!activeLiveEvent(state,t0+3),'Developer switch should fully disable event drops and claims');

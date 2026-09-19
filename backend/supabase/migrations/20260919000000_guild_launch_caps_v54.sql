@@ -160,6 +160,12 @@ begin
   if tg_op = 'DELETE' then
     v_guild_id := old.guild_id;
     v_skill_id := old.skill_id;
+  elsif tg_op = 'UPDATE'
+     and old.skill_id = 'member_capacity'
+     and new.skill_id <> 'member_capacity' then
+    -- Defensive reset if a row is ever re-keyed away from Open Halls.
+    v_guild_id := old.guild_id;
+    v_skill_id := old.skill_id;
   else
     v_guild_id := new.guild_id;
     v_skill_id := new.skill_id;

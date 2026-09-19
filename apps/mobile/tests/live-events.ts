@@ -54,11 +54,17 @@ const remainingContracts=eventContractBoard(state,t0+2).slice(1);state=acceptEve
 let thirdRejected=false;try{acceptEventContract(state,remainingContracts[1].objective.id,t0+2)}catch{thirdRejected=true}ok(thirdRejected,'Daily board must enforce its two-contract acceptance limit');
 ok(eventContractBoard(state,t0+86400_000+2).every(contract=>!contract.accepted),'A new UTC day should provide fresh contract acceptance slots');
 const progressBeforePurchase=eventProgress(state,'EVT_ANNUAL_009_2026');
-const market=eventShopOffers(state,t0+2);ok(market.length===3,'Event Shop should show two rotating common offers plus prestige stock');const purchaseOffer=market.find(offer=>offer.currency==='common')!;
+const market=eventShopOffers(state,t0+2);ok(market.length===4,'Event Shop should show two rotating common offers plus both prestige offers');const purchaseOffer=market.find(offer=>offer.currency==='common')!;
 state=purchaseEventOffer(state,purchaseOffer.id,t0+2);
 ok(eventOfferPurchaseCount(state,'EVT_ANNUAL_009_2026',purchaseOffer.id)===1,'Event Shop purchase limit should persist');
 const cosmeticIds=[...(state.account.unlockedProfileBackgroundIds??[]),...(state.account.unlockedProfileBorderIds??[]),...(state.account.unlockedCosmeticPetIds??[])];ok(cosmeticIds.includes(purchaseOffer.reward.id),'Event Shop reward should enter the matching cosmetic collection');
 ok(eventProgress(state,'EVT_ANNUAL_009_2026')===progressBeforePurchase,'Spending currency must not reduce reputation');
+state={...state,account:{...state.account,eventPrestigeBalanceById:{...(state.account.eventPrestigeBalanceById??{}),EVT_ANNUAL_009_2026:8}}};
+const guardianOffer=eventShopOffers(state,t0+2).find(offer=>offer.id==='pantry_harvest_guardian');ok(!!guardianOffer,'Harvest Guardian should be available from Harvestwake prestige stock');
+state=purchaseEventOffer(state,'pantry_harvest_guardian',t0+2);
+ok(state.account.unlockedCombatCompanionIds?.includes('EVT_UNIT_006')===true,'Event companion purchase should unlock the combat companion');
+ok(!!state.account.combatCompanionProgress?.EVT_UNIT_006,'Event companion purchase should initialize companion progression');
+
 let bonusState=chooseEventProject(state,'guild_pantry',t0+2);const bonusProgressBefore=eventProgress(bonusState,'EVT_ANNUAL_009_2026');bonusState=grantEventActivity(bonusState,'boss',t0+3);
 ok(eventProgress(bonusState,'EVT_ANNUAL_009_2026')===bonusProgressBefore+300,'Guild Pantry should apply its 20% boss-currency bonus');
 bonusState=applyEventDrops(bonusState,[{eventId:'EVT_ANNUAL_009_2026',currencyId:'HARVEST_MARK',name:'Harvest Marks',quantity:100}]);

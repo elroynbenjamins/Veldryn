@@ -1,4 +1,5 @@
 import {createCharacter,newGame} from '../src/core/game';
+import type {GameState} from '../src/core/types';
 import {applyEventDiscoveries,applyEventDrops,claimEventDiscovery,claimEventReward,eventLifecycle,eventShopOffers,purchaseEventOffer} from '../src/core/live-events';
 
 function fail(message:string):never{throw new Error(message)}
@@ -6,7 +7,7 @@ function ok(value:unknown,message:string){if(!value)fail(message)}
 function equal(actual:unknown,expected:unknown,message:string){if(actual!==expected)fail(`${message}: expected ${String(expected)}, got ${String(actual)}`)}
 
 const now=5_000_000;
-const withEvent=(eventId:string)=>{
+const withEvent=(eventId:string):GameState=>{
   const state=createCharacter(newGame(now),'IRONWARDEN','SeasonTester');
   return {...state,account:{...state.account,liveEvent:{eventId,enabled:true,startsAtMs:now-60_000,endsAtMs:now+14*86400_000}}};
 };

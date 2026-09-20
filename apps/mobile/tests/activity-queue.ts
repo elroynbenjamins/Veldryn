@@ -1,5 +1,5 @@
 import {claimActivity,createCharacter,newGame,startCombat,stopActivity} from '../src/core/game';
-import {activityQueueHandoffStatus,enqueueActivity,MAX_ACTIVITY_QUEUE,moveQueuedActivity} from '../src/core/activity-queue';
+import {activityQueueHandoffStatus,enqueueActivity,MAX_ACTIVITY_QUEUE,moveQueuedActivity,queuedActivityReadiness} from '../src/core/activity-queue';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
 import {normalizeSave} from '../src/core/save-normalization';
 import {weeklyOrderBoardForState} from '../src/core/long-term-progression-runtime';
@@ -81,6 +81,8 @@ let wrongRegion=createCharacter(newGame(now),'WAYFINDER','Region Queue');
 wrongRegion={...wrongRegion,unlockedMonsterIds:['MOSS_RAT','SILVERFIN_SWARM']};
 wrongRegion=startCombat(wrongRegion,'MOSS_RAT',now,undefined,'balanced','kills_50');
 wrongRegion=enqueueActivity(wrongRegion,{kind:'combat',targetId:'SILVERFIN_SWARM'});
+const queuedRowReadiness=queuedActivityReadiness(wrongRegion,wrongRegion.character!.activityQueue![0]);
+ok(!queuedRowReadiness.ready&&(queuedRowReadiness.blocker??'').includes('Travel to Silverbrook'),'Each queued row should expose its own travel blocker before becoming next');
 const blockedPreview=activityQueueHandoffStatus(wrongRegion);
 ok(blockedPreview.armed&&!blockedPreview.nextReady,'Cross-region queued hunt should predict that an armed stop will pause rather than advance');
 ok((blockedPreview.nextBlocker??'').includes('Travel to Silverbrook'),'Cross-region handoff preview should explain the required travel before settlement');

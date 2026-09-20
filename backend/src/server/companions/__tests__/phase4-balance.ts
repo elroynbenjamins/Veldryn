@@ -1,4 +1,6 @@
 import {COMPANION_MISSIONS,COMPANION_RARITY_MAX_LEVEL,COMPANION_SERVER_DEFINITIONS,COMPANION_TRIAL_ENEMY_GROWTH,COMPANION_TRIAL_MITIGATION_CONSTANT,companionServerDefinition,companionTechnique,companionTechniques,companionTrialEnemyScale,companionTrialRecommendedPower,companionTrialReward} from '../content';
+import {COMBAT_COMPANIONS} from '../../../../apps/mobile/src/content/combat-companions';
+import {companionFullInvestmentSummary,companionPaidLevelingTotals} from '../../../../apps/mobile/src/core/combat-companions';
 import {buildOwnedCompanionCombatant} from '../combat-adapter';
 import {individualCompanionPower} from '../team';
 import {buildCompanionTrialEncounter,companionTrialBossPreview} from '../trials';
@@ -47,6 +49,23 @@ ok(companionServerDefinition('EVT_UNIT_001')?.active.name==='First Dawn','Event 
 // Every checkpoint boss has authored HP-threshold mechanics and readable preview metadata.
 for(const floor of [5,10,15,20,25,30]){const boss=buildCompanionTrialEncounter(floor)[0],preview=companionTrialBossPreview(floor);ok(!!boss.boss&&!!boss.phases?.length,`Trial boss ${floor} has no HP phase`);ok(!!preview?.phases.length,`Trial boss ${floor} phase preview missing`);for(const phase of boss.phases??[])ok(phase.hpPct>0&&phase.hpPct<1,`Trial boss ${floor} invalid phase threshold`);}
 ok((buildCompanionTrialEncounter(30)[0].phases?.length??0)>=2,'Floor 30 should have multiple phase transitions');
+
+// Paid training is an accelerator. Late-level costs must not become a multi-month Essence wall by themselves.
+const economyTargets=[
+ ['UNIT_001',300,450,4],
+ ['UNIT_004',850,1200,4],
+ ['UNIT_007',2100,2900,13],
+ ['UNIT_012',5000,7000,29],
+] as const;
+for(const [id,minEss,maxEss,bondstones] of economyTargets){
+ const def=COMBAT_COMPANIONS.find(row=>row.id===id)!;
+ const paid=companionPaidLevelingTotals(def),full=companionFullInvestmentSummary(def);
+ near(paid.companionEssence,minEss,maxEss,`${id} paid-level Essence target`);
+ ok(full.ascensionEssence>0&&full.ascensionGold>0,`${id} ascension totals missing`);
+ ok(full.bondstones===bondstones,`${id} Bondstone target drifted: ${full.bondstones}`);
+}
+const standardPaid=companionPaidLevelingTotals(COMBAT_COMPANIONS.find(row=>row.id==='UNIT_001')!),prestigePaid=companionPaidLevelingTotals(COMBAT_COMPANIONS.find(row=>row.id==='UNIT_012')!);
+ok(prestigePaid.companionEssence/standardPaid.companionEssence<20,'Prestige paid-level Essence spread became excessive');
 
 // Repeat Trials remain useful for combat XP/Bond but are not an infinite Essence faucet.
 for(const f of [1,10,20,30]){const r=companionTrialReward(f,false,f%5===0);ok(r.companionEssence===0,'Repeat Trial Essence faucet returned');ok(r.bondstones===0,'Repeat Trial Bondstones returned');ok(r.gold<=120,'Repeat Trial Gold too high');}

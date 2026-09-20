@@ -40,6 +40,6 @@ Do not alter the core curves solely from theoretical totals. Review the write-on
 - first Bond 6 / Bond 10
 - first Prestige Mastery
 
-These let real player pacing tell us whether the guardrails are too fast or too slow.
+These let real player pacing tell us whether the guardrails are too fast or too slow. Review the telemetry before changing live costs, XP curves, or Bondstone faucets.
 
 Validation note: these guardrails are executed by the mobile core test suite on every companion economy change.

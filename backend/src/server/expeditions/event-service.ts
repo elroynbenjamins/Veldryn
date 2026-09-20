@@ -12,7 +12,8 @@ export interface EventRunRepository {get(id:string):EventRun|undefined;getByRequ
 export class MemoryEventRunRepository implements EventRunRepository{private runs=new Map<string,EventRun>();private requests=new Map<string,string>();get(id:string){const run=this.runs.get(id);return run?structuredClone(run):undefined;}getByRequest(accountId:string,requestId:string){const id=this.requests.get(`${accountId}:${requestId}`);return id?this.get(id):undefined;}save(run:EventRun){this.runs.set(run.id,structuredClone(run));this.requests.set(`${run.accountIds[0]}:${run.requestId}`,run.id);}}
 
 function graph(eventId:string,runId:string,serverSecret:string):CoopRouteGraph{
- const sun=eventId==='EVENT_SUNCREST_SHATTERED_ISLES',prefix=sun?'EVENT_SUNCREST':'EVENT_STARFALL',boss=sun?'EVENT_SUNCREST_BOSS':'EVENT_STARFALL_BOSS';
+ const definition=EVENT_EXPEDITIONS.find(item=>item.id===eventId);if(!definition)throw new Error('unknown_event_expedition');
+ const prefix=definition.encounterPrefix,boss=definition.bossEncounterId;
  const nodes:CoopRouteNode[]=[{nodeId:'entry',depth:0,kind:'entry',contentId:'COOP_ENTRY',modifierId:'none',risk:1,rewardTag:'none',nextNodeIds:['d1-c0','d1-c1','d1-c2']}];
  for(let depth=1;depth<=5;depth++){const ids=[0,1,2].map(choice=>`d${depth}-c${choice}`);for(const choice of [0,1,2]){const base=deterministicInt(serverSecret,1,3,'event-route-v1',eventId,runId,depth);const contentIndex=((base+choice-2)%3)+1;nodes.push({nodeId:`d${depth}-c${choice}`,depth,kind:depth===3&&choice===1?'camp':'battle',contentId:depth===3&&choice===1?`${prefix}_CAMP`:`${prefix}_BATTLE_0${contentIndex}`,modifierId:`event-${choice}`,risk:1,rewardTag:depth===3&&choice===1?'camp':'battle',nextNodeIds:depth===5?['boss']:ids.map((_,index)=>`d${depth+1}-c${index}`)});}}
  nodes.push({nodeId:'boss',depth:6,kind:'boss',contentId:boss,modifierId:'final',risk:1.25,rewardTag:'boss',nextNodeIds:[]});

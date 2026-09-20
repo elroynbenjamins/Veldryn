@@ -32,7 +32,8 @@ function DungeonCard({language,dungeon,onPress}:{language:Language;dungeon:CoopD
 }
 
 function EventExpeditionCard({language,event}:{language:Language;event:CoopEventExpeditionPreview}){
-  return <FantasyPanel variant="selected"><View style={s.eventTitleRow}><View style={s.flex}><Text style={s.eventName}>{event.eventName}</Text><Text style={s.cardTitle}>{event.name}</Text></View><StateChip label={ct(language,'event.preview')} tone="warning"/></View><Text style={s.copy}>{event.description}</Text><View style={s.eventFacts}><Text style={s.eventFact}><Text style={s.eventFactLabel}>{ct(language,'event.route')} </Text>{event.routeHighlights.join(' · ')}</Text><Text style={s.eventFact}><Text style={s.eventFactLabel}>{ct(language,'event.finalBoss')} </Text>{event.finalBoss}</Text></View></FantasyPanel>;
+  const available=event.status==='available';
+  return <FantasyPanel variant="selected"><View style={s.eventTitleRow}><View style={s.flex}><Text style={s.eventName}>{event.eventName}</Text><Text style={s.cardTitle}>{event.name}</Text></View><StateChip label={available?ct(language,'browse.available'):ct(language,'event.preview')} tone={available?'success':'warning'}/></View><Text style={s.copy}>{event.description}</Text><View style={s.eventFacts}><Text style={s.eventFact}><Text style={s.eventFactLabel}>{ct(language,'event.route')} </Text>{event.routeHighlights.join(' · ')}</Text><Text style={s.eventFact}><Text style={s.eventFactLabel}>Enemies </Text>{event.enemyNames.join(' · ')}</Text><Text style={s.eventFact}><Text style={s.eventFactLabel}>{ct(language,'event.finalBoss')} </Text>{event.finalBoss}</Text></View></FantasyPanel>;
 }
 
 type DetailsProps={language:Language;dungeon:CoopDungeonView;currentLevel:number;mode:CoopMode;tier?:CoopTier;notice?:string;onBack:()=>void;onMode:(mode:CoopMode)=>void;onTier:(tier:CoopTier)=>void;onContinue:()=>void};

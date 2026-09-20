@@ -629,6 +629,17 @@ async function playerLifecycleAnalytics(env,payload={}){
   });
   return Array.isArray(raw)?(raw[0]??{}):(raw??{});
 }
+async function playerSegmentationAnalytics(env,payload={}){
+  const days=Number(payload.days??90),minSample=Number(payload.minSample??5);
+  const raw=await supabaseFetch(env,'/rest/v1/rpc/player_segmentation_analytics_server_v1',{
+    method:'POST',
+    body:{
+      p_days:Number.isInteger(days)?Math.max(30,Math.min(180,days)):90,
+      p_min_sample:Number.isInteger(minSample)?Math.max(3,Math.min(50,minSample)):5,
+    },
+  });
+  return Array.isArray(raw)?(raw[0]??{}):(raw??{});
+}
 
 async function playerEventAnalytics(env, payload) {
   const eventId = String(payload.eventId ?? '');
@@ -1008,7 +1019,7 @@ async function saveRemoteConfig(env, actor, payload) {
 
 async function healthEconomy(env) {
   const since7 = new Date(Date.now()-7*86400000).toISOString();
-  const [metrics,alerts,health,deadResets,deadSocial,playerActivity,playerLifecycle] = await Promise.all([
+  const [metrics,alerts,health,deadResets,deadSocial,playerActivity,playerLifecycle,playerSegments] = await Promise.all([
     list(env,'ops_metric_buckets',`select=metric_key,bucket_start,bucket_minutes,dimension_key,dimensions_json,metric_type,sum_value,sample_count,min_value,max_value,last_value&bucket_start=gte.${encodeEq(since7)}&order=bucket_start.desc&limit=5000`),
     list(env,'ops_alerts','select=*&status=neq.resolved&order=severity.desc,last_seen_at.desc&limit=200'),
     list(env,'liveops_runtime_health','select=*&order=component.asc&limit=100'),
@@ -1016,13 +1027,14 @@ async function healthEconomy(env) {
     countRows(env,'social_contribution_outbox','status=eq.dead_letter'),
     playerActivityAnalytics(env,{days:30}).catch(()=>null),
     playerLifecycleAnalytics(env,{days:30}).catch(()=>null),
+    playerSegmentationAnalytics(env,{days:90,minSample:5}).catch(()=>null),
   ]);
   const now=Date.now();
   const m24=metricSummaries(metrics,now-24*3600000), m7=metricSummaries(metrics,now-7*86400000);
   const by24=new Map(m24.map(x=>[x.metricKey,x]));
   const goldCreated=by24.get('economy.gold.created')?.total ?? 0;
   const goldDestroyed=by24.get('economy.gold.destroyed')?.total ?? 0;
-  return { metrics24:m24, metrics7:m7, gold:{created24:goldCreated,destroyed24:goldDestroyed,net24:goldCreated-goldDestroyed}, playerActivity,playerLifecycle, alerts:alerts ?? [], health:health ?? [], deadLetters:{resets:deadResets,social:deadSocial} };
+  return { metrics24:m24, metrics7:m7, gold:{created24:goldCreated,destroyed24:goldDestroyed,net24:goldCreated-goldDestroyed}, playerActivity,playerLifecycle,playerSegments, alerts:alerts ?? [], health:health ?? [], deadLetters:{resets:deadResets,social:deadSocial} };
 }
 
 async function updateAlert(env,actor,payload){
@@ -1320,6 +1332,7 @@ async function routeAction(env, actor, action, payload) {
     case 'playerEventAnalytics': return await playerEventAnalytics(env, payload);
     case 'playerActivityAnalytics': return await playerActivityAnalytics(env, payload);
     case 'playerLifecycleAnalytics': return await playerLifecycleAnalytics(env, payload);
+    case 'playerSegmentationAnalytics': return await playerSegmentationAnalytics(env, payload);
     case 'playerEventSeriesComparison': return await playerEventSeriesComparison(env, payload);
     case 'clonePlayerEventSeason': return await clonePlayerEventSeason(env, actor, payload);
     case 'applySeasonalCalendarPreset': return await applySeasonalCalendarPreset(env, actor, payload);

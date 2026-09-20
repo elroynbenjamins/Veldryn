@@ -14,11 +14,11 @@ equal(partyMember.canTransfer,false,'Ordinary Party member cannot transfer leade
 equal(partyMember.canRemove,false,'Ordinary Party member cannot kick others');
 
 const leaderMember=guildMemberManagement('leader','member',false);
-ok(leaderMember.canPromote&&leaderMember.canRemove&&!leaderMember.canDemote,'Guild leader can promote/remove ordinary members');
+ok(leaderMember.canPromote&&leaderMember.canRemove&&leaderMember.canTransferLeadership&&!leaderMember.canDemote,'Guild leader can promote/remove or transfer leadership to ordinary members');
 const leaderOfficer=guildMemberManagement('leader','officer',false);
-ok(leaderOfficer.canDemote&&leaderOfficer.canRemove&&!leaderOfficer.canPromote,'Guild leader can demote/remove officers');
+ok(leaderOfficer.canDemote&&leaderOfficer.canRemove&&leaderOfficer.canTransferLeadership&&!leaderOfficer.canPromote,'Guild leader can demote/remove or transfer leadership to officers');
 const officerMember=guildMemberManagement('officer','member',false);
-ok(officerMember.canRemove&&!officerMember.canPromote&&!officerMember.canDemote,'Guild officer can remove ordinary members only');
+ok(officerMember.canRemove&&!officerMember.canPromote&&!officerMember.canDemote&&!officerMember.canTransferLeadership,'Guild officer can remove ordinary members only');
 const officerOfficer=guildMemberManagement('officer','officer',false);
 equal(Object.values(officerOfficer).some(Boolean),false,'Guild officer cannot manage another officer');
 const leaderTarget=guildMemberManagement('leader','leader',false);

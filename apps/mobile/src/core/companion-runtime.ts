@@ -1,5 +1,5 @@
 import type {GameState} from './types';
-import type {OwnedCompanionProgress,CompanionSanctuaryState,CompanionPhase2ProfileState} from './combat-companion-types';
+import type {OwnedCompanionProgress,CompanionSanctuaryState,CompanionPhase2ProfileState,CompanionAvailabilityStatus,CombatCompanionRole} from './combat-companion-types';
 import {defaultCompanionSanctuary,reconcileCombatCompanionUnlocks,classCompanionRole} from './combat-companions';
 import {COMBAT_COMPANIONS,COMPANION_SANCTUARY_TRAINING_XP_PER_DAY} from '../content/combat-companions';
 import {MONSTERS} from '../content/monsters';
@@ -106,6 +106,28 @@ export function refreshCompanions(state:GameState,now:number):GameState {
 export function companionView(state:GameState,now:number){
   const owned=companionOwned(state),profile=state.account.companionPhase2Profile??{showcaseCompanionIds:[],showcaseSlotsUnlocked:1};
   return {owned,trial:projectCompanionTrial(state.account.companionTrialProgress,now),codex:projectCompanionCodex(owned,profile),weekly:activeCompanionProvingGroundChallenges(now),proving:projectCompanionProvingGrounds(state.account.companionProvingGround,now),assignments:rolloverCompanionAssignmentStatuses(state.account.companionAssignments??[],now)};
+}
+export function companionAvailability(state:GameState,id:string):{status:CompanionAvailabilityStatus;label:string}{
+  if(!(state.account.unlockedCombatCompanionIds??[]).includes(id))return {status:'locked',label:'Locked'};
+  const run=state.account.companionTrialProgress?.season.activeRun;
+  if(run?.teamCompanionIds.includes(id))return {status:'active_trial',label:'In Trial'};
+  const assignment=(state.account.companionAssignments??[]).find(row=>row.status!=='claimed'&&row.status!=='cancelled'&&row.companionIds.includes(id));
+  if(assignment)return {status:'expedition',label:assignment.status==='completed'?'Expedition complete':'On Expedition'};
+  if(state.character?.equippedCombatCompanionId===id)return {status:'equipped',label:'Equipped'};
+  return {status:'available',label:'Available'};
+}
+export function recommendedCompanionTrialTeam(state:GameState){
+  const owned=companionOwned(state),roles:CombatCompanionRole[]=['tank','damage','support'];
+  const candidates=Object.keys(owned).filter(id=>{const status=companionAvailability(state,id).status;return status==='available'||status==='equipped';});
+  const byRole=Object.fromEntries(roles.map(role=>[role,candidates.filter(id=>companionServerDefinition(id)?.role===role)])) as Record<CombatCompanionRole,string[]>;
+  const missingRoles=roles.filter(role=>byRole[role].length===0);
+  if(missingRoles.length)return {ids:[] as string[],power:0,ready:false,missingRoles};
+  let best:string[]=[];let bestPower=-1;
+  for(const tank of byRole.tank)for(const damage of byRole.damage)for(const support of byRole.support){
+    const ids=[tank,damage,support],power=companionTeamPower(ids,owned);
+    if(power>bestPower){best=ids;bestPower=power;}
+  }
+  return {ids:best,power:Math.max(0,bestPower),ready:best.length===3,missingRoles:[] as CombatCompanionRole[]};
 }
 /** Training shares the capped max-level XP conversion used by real combat. */
 export function claimCompanionTraining(input:GameState,now:number):GameState{

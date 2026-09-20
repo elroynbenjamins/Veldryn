@@ -81,6 +81,8 @@ import {useSocialNotificationCounts} from './src/online/useSocialNotificationCou
 import {fetchActiveEventRuntime} from './src/online/live-events';
 import {onlineConfigured} from './src/online/supabase';
 import {newlyUnlockedProfileRewards} from './src/core/profile-customization';
+import {mergeProfileAttentionKeys} from './src/core/profile-attention';
+import {addProfileAttentionKeys,clearProfileAttentionKeys,loadProfileAttentionKeys} from './src/storage/profile-attention';
 
 type Tab=QuickNavDestination|'Activity'|'Progression'|'DailySupplies'|'Arena'|'Rankings'|'Collections'|'Profile'|'ProfileCustomize'|'Achievements'|'Combat'|'Coop';
 type PrimaryTab='Skills'|'World'|'Character'|'Inventory'|'More';
@@ -104,7 +106,7 @@ const repo=new AsyncStorageGameRepository();
 export default function App(){return <AuthSessionProvider><PartySocialProvider><VeldrynApp/></PartySocialProvider></AuthSessionProvider>;}
 function VeldrynApp(){
   const auth=useAuthSession(),online=useOnlineGame();
-  const {counts:notificationCounts}=useSocialNotificationCounts();
+  const {counts:notificationCounts,refresh:refreshSocialNotifications}=useSocialNotificationCounts();
   const [state,setState]=useState<GameState|null>(null);
   const [ready,setReady]=useState(false);
   const [startupScene]=useState(pickStartupScene);
@@ -122,6 +124,7 @@ function VeldrynApp(){
   const [now,setNow]=useState(Date.now());
   const [collected,setCollected]=useState<{reward:RewardBundle;activity:ActiveActivity|null;welcomeBack?:boolean}|null>(null);
   const [customizationUnlocks,setCustomizationUnlocks]=useState<CustomizationUnlockEntry[]>([]);
+  const [profileAttentionKeys,setProfileAttentionKeys]=useState<string[]>([]);
   const stateRef=useRef<GameState|null>(null);
   const appStateRef=useRef(AppState.currentState);
   const settlingRef=useRef(false);
@@ -131,6 +134,7 @@ function VeldrynApp(){
   const [showCoopUiGallery,setShowCoopUiGallery]=useState(false);
   const [pendingEventLiveId,setPendingEventLiveId]=useState<string|undefined>();
   const [chatPilotInitialPanel,setChatPilotInitialPanel]=useState<'chat'|'emotes'>('chat');
+  const profileAttentionScope=auth.session?.user.id?`account:${auth.session.user.id}`:state?`local:${state.createdAtMs}`:'local:pending';
   const setTab=useCallback((destination:Tab)=>{
     if(destination===tab)return;
     setTabHistory(history=>[...history,tab].slice(-24));
@@ -157,6 +161,8 @@ function VeldrynApp(){
   useEffect(()=>{if(!serverGameplayEnabled)void loadGame()},[loadGame]);
   useEffect(()=>{if(!serverGameplayEnabled)return;const next=online.snapshot?.state??null;stateRef.current=next;setState(next);setReady(!online.loading);setLoadError('');},[online.snapshot,online.loading]);
   useEffect(()=>{stateRef.current=state},[state]);
+  useEffect(()=>{if(!state)return;let active=true;void loadProfileAttentionKeys(profileAttentionScope).then(keys=>{if(active)setProfileAttentionKeys(keys)});return()=>{active=false};},[profileAttentionScope,!!state]);
+  useEffect(()=>{if(tab!=='ProfileCustomize'||!profileAttentionKeys.length)return;setProfileAttentionKeys([]);void clearProfileAttentionKeys(profileAttentionScope);},[tab,profileAttentionScope,profileAttentionKeys.length]);
   const syncLiveEventRuntime=useCallback(async()=>{if(!onlineConfigured)return;try{const runtime=await fetchActiveEventRuntime();const current=stateRef.current;if(!current)return;const before=current.account.liveEvent??null,nextRuntime=runtime??null;if(JSON.stringify(before)===JSON.stringify(nextRuntime))return;const next={...current,account:{...current.account,liveEvent:runtime}};stateRef.current=next;setState(next);}catch{/* Event registry sync is best-effort; gameplay refresh remains authoritative. */}},[]);
   useEffect(()=>{if(!onlineConfigured)return;void syncLiveEventRuntime();const id=setInterval(()=>void syncLiveEventRuntime(),30000);const sub=AppState.addEventListener('change',status=>{if(status==='active')void syncLiveEventRuntime();});return()=>{clearInterval(id);sub.remove();}},[syncLiveEventRuntime]);
   useEffect(()=>{const id=setInterval(()=>setNow(Date.now()),1000);return()=>clearInterval(id)},[]);
@@ -176,6 +182,11 @@ function VeldrynApp(){
       for(const row of [...profile,...skins])map.set(row.key,row);
       return [...map.values()];
     });
+    if(profile.length){
+      const keys=profile.map(row=>row.key),scope=auth.session?.user.id?`account:${auth.session.user.id}`:`local:${next.createdAtMs}`;
+      setProfileAttentionKeys(current=>mergeProfileAttentionKeys(current,keys));
+      void addProfileAttentionKeys(scope,keys);
+    }
   }
   async function perform(command?:GameCommand){try{const before=stateRef.current,result=await online.execute(command);stateRef.current=result.state;setState(result.state);queueCustomizationUnlocks(before,result.state);if(result.reward)presentCollected(result.reward,result.activity??null);return result;}catch(error){Alert.alert('Online action',error instanceof Error?error.message:'Please retry.');return null;}}
   async function runCompanionCommand(command:GameCommand){
@@ -304,6 +315,7 @@ const next=discoverCharacterSkins(candidate);stateRef.current=next;setState(next
     {key:'weekly-order-rewards',kind:'weekly_order_complete',unread:contractBoard.pendingRewards>0},
     {key:'event-rewards-ready',kind:'event_reward_ready',count:eventClaims,unread:eventClaims>0},
     {key:'incoming-friend-requests',kind:'friend_request',count:notificationCounts.friendRequests,unread:notificationCounts.friendRequests>0},
+    {key:'profile-customization-review',kind:'profile_customization',unread:profileAttentionKeys.length>0},
     {key:'unread-direct-messages',kind:'unread_dm',count:notificationCounts.chatUnread,unread:notificationCounts.chatUnread>0},
     {key:'pending-guild-attention',kind:'guild_application',count:notificationCounts.guild,unread:notificationCounts.guild>0},
     {key:'pending-party-invites',kind:'party_invite',count:notificationCounts.party,unread:notificationCounts.party>0},
@@ -336,12 +348,12 @@ const next=discoverCharacterSkins(candidate);stateRef.current=next;setState(next
     }}/>} 
     {tab==='Activity'&&<ActivityOverviewScreen state={state} now={now} onSwitch={id=>{if(serverGameplayEnabled){void perform({type:'roster_switch',args:{id}});return;}void runCompanionCommand({type:'roster_switch',args:{id}})}} onCreate={()=>setCreatingRoster(true)}/>}
     {tab==='Character'&&<CharacterScreen state={state} onUpgrade={async itemId=>{if(serverGameplayEnabled){await perform({type:'upgrade',args:{id:itemId}});return;}try{const attempt=attemptEquipmentUpgrade(state,itemId);await commit(attempt.state);}catch(error){Alert.alert('Cannot upgrade',error instanceof Error?error.message:'Please try again.')}}} onSocket={async (itemId,gemId)=>{if(serverGameplayEnabled){await perform({type:'socket',args:{id:itemId,gemId}});return;}try{await commit(socketGem(state,itemId,gemId))}catch(error){Alert.alert('Cannot socket gem',error instanceof Error?error.message:'Please try again.')}}} onUnsocket={async (itemId,index)=>{if(serverGameplayEnabled){await perform({type:'unsocket',args:{id:itemId,index}});return;}try{await commit(unsocketGem(state,itemId,index))}catch(error){Alert.alert('Cannot extract gem',error instanceof Error?error.message:'Please try again.')}}} onInventory={()=>setTab('Inventory')} onSave={()=>serverGameplayEnabled?online.refresh():repo.save(state)} onUnequip={async slot=>{if(serverGameplayEnabled){if(!await perform({type:'unequip',args:{slot}}))throw new Error('Equipment change was not confirmed.');}else await commit(unequipItem(state,slot));}} onCrafting={()=>{setSkillsMode('novice');setTab('Skills')}} onSelectSkin={skinId=>{if(serverGameplayEnabled){void perform({type:'skin',args:{id:skinId}});return;}try{commit(selectCharacterSkin(state,skinId))}catch(error){Alert.alert('Cannot use skin',error instanceof Error?error.message:'Please try again.')}}} onEquipSet={async()=>{if(serverGameplayEnabled){if(!await perform({type:'equip_set'}))throw new Error('Set equip was not confirmed.');return;}const settled=claimActivity(state,Date.now());const next=equipNoviceSet(settled.state);await commit(next);presentCollected(settled.reward,state.activity)}}><ProfileEditor state={state} onChange={commit}/></CharacterScreen>}
-    {tab==='Friends'&&<FriendsScreen/>}
+    {tab==='Friends'&&<FriendsScreen onNotificationsChanged={()=>void refreshSocialNotifications()}/>} 
     {(tab==='Social'||tab==='Party')&&<SocialScreen onGuild={()=>setTab('Guild')} onFriends={()=>setTab('Friends')} onAccount={()=>setTab('Settings')}/>}
     {tab==='Events'&&<EventScreen state={state} onChange={commit} onCommand={serverGameplayEnabled?command=>perform(command).then(Boolean):undefined} onOpenSeasonalExpedition={coopOnlineConfigured?liveEventId=>{setPendingEventLiveId(liveEventId);setTab('Coop')}:undefined}/>}
-    {tab==='Guild'&&<GuildScreen online={serverGameplayEnabled} state={state} onChange={commit} onlineDirectory={<OnlineGuildBrowser/>} onlineManagement={<OnlineGuildManagement/>} onlinePve={<OnlineGuildPve authoritative={serverGameplayEnabled} numberMode={state.settings.numberMode}/>}/>}
+    {tab==='Guild'&&<GuildScreen online={serverGameplayEnabled} state={state} onChange={commit} onlineDirectory={<OnlineGuildBrowser/>} onlineManagement={<OnlineGuildManagement onApplicationsChanged={()=>void refreshSocialNotifications()}/>}  onlinePve={<OnlineGuildPve authoritative={serverGameplayEnabled} numberMode={state.settings.numberMode}/>}/>}
     {tab==='Settings'&&<SettingsScreen online={serverGameplayEnabled} state={state} onChange={commit} onExport={exportSave} onImport={importSave} onOpenChatPilot={__DEV__?()=>{setChatPilotInitialPanel('chat');setShowChatPilot(true)}:undefined} onOpenChatEmotes={__DEV__?()=>{setChatPilotInitialPanel('emotes');setShowChatPilot(true)}:undefined} onOpenCoopUiGallery={__DEV__?()=>setShowCoopUiGallery(true):undefined} onLanguage={language=>commit({...state,settings:{...state.settings,language}})} onReset={()=>serverGameplayEnabled?Alert.alert('Online save','Your online character is saved on the server.'):Alert.alert('Reset local save?','This deletes prototype progress only.',[{text:'Cancel'},{text:'Reset',style:'destructive',onPress:async()=>{await repo.reset();setState(newGame(Date.now()));setCurrentTab('Home');setTabHistory([])}}])}/>}
-    {tab==='More'&&<MoreScreen language={state.settings.language} onNavigate={setTab} companionAttention={companionAttention.hasAttention} workingTowardAttention={workingTowardReady>0} dailySuppliesAttention={dailySuppliesReady} eventAttention={eventClaims>0||notificationCounts.events>0} onOpenChatPilot={__DEV__?()=>{setChatPilotInitialPanel('chat');setShowChatPilot(true)}:undefined}/>}
+    {tab==='More'&&<MoreScreen language={state.settings.language} onNavigate={setTab} companionAttention={companionAttention.hasAttention} workingTowardAttention={workingTowardReady>0} dailySuppliesAttention={dailySuppliesReady} eventAttention={eventClaims>0||notificationCounts.events>0} friendRequestCount={notificationCounts.friendRequests} guildAttentionCount={notificationCounts.guild} profileAttention={profileAttentionKeys.length>0} onOpenChatPilot={__DEV__?()=>{setChatPilotInitialPanel('chat');setShowChatPilot(true)}:undefined}/>}
     {tab==='Arena'&&<ArenaScreen state={state} onChange={candidate=>void commit(candidate)}/>}
     {tab==='Rankings'&&<RankingsScreen/>}
     {tab==='Collections'&&<CollectionsScreen state={state} onChange={candidate=>void commit(candidate)}/>}

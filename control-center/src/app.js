@@ -208,11 +208,16 @@ function renderDashboard() {
   if (!d) return shell(loading(), 'Dashboard');
   const active = d.active;
   const next = d.next;
+  const nowMs=Date.now(),playerRows=d.playerEvents||[];
+  const visiblePlayerEvent=playerRows.find(row=>['live','claiming'].includes(playerEventPhase(row,nowMs)))||null;
+  const visiblePlayerPhase=visiblePlayerEvent?playerEventPhase(visiblePlayerEvent,nowMs):null;
+  const nextPlayerEvent=playerRows.filter(row=>playerEventPhase(row,nowMs)==='scheduled').sort((a,b)=>Date.parse(a.starts_at)-Date.parse(b.starts_at))[0]||null;
+  const needsPlayerSchedule=playerRows.filter(row=>row.enabled&&playerEventPhase(row,nowMs)==='needs_schedule');
   return shell(`
     <div class="page-head"><div><div class="eyebrow">Operations overview</div><h2>Live-Ops Dashboard</h2><p>Current event state, upcoming schedule and recent control-plane changes.</p></div></div>
     <div class="grid grid-4">
-      <div class="card metric"><div class="label">Active events</div><div class="value">${d.counts.active}</div><div class="foot">Party Event scope</div></div>
-      <div class="card metric"><div class="label">Scheduled</div><div class="value">${d.counts.scheduled}</div><div class="foot">Future event instances</div></div>
+      <div class="card metric"><div class="label">Party active</div><div class="value">${d.counts.active}</div><div class="foot">Competitive Party Events</div></div>
+      <div class="card metric"><div class="label">Party scheduled</div><div class="value">${d.counts.scheduled}</div><div class="foot">Future Party instances</div></div>
       <div class="card metric"><div class="label">Settling</div><div class="value">${d.counts.settling}</div><div class="foot">Awaiting finalization worker</div></div>
       <div class="card metric"><div class="label">Drafts</div><div class="value">${d.counts.drafts}</div><div class="foot">Mutable authoring state</div></div>
     </div>

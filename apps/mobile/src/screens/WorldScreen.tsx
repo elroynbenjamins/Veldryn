@@ -28,8 +28,8 @@ type Props={
   onCoop?:(dungeonId?:string)=>void;
 };
 
-export function WorldScreen({
-  const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);state,onTravel,onOpenCombat,onOpenSkills,onCoop}:Props){
+export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop}:Props){
+  const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
   const level=state.character!.level,currentId=currentRegionId(state);
   const current=WORLD_ZONES.find(zone=>zone.id===currentId)??WORLD_ZONES[0];
   const environment=environmentForZone(current.id);

@@ -60,6 +60,16 @@ export function companionLevelCost(rarity:CompanionDefinition['rarity'],level:nu
     companionEssence:Math.max(1,Math.round(COMPANION_LEVEL_CURVE.essenceBase*Math.pow(COMPANION_LEVEL_CURVE.essenceGrowth,l-1)*cfg.levelCostMultiplier)),
   };
 }
+export function companionPaidLevelingTotals(def:CompanionDefinition,targetLevel=companionMaxLevel(def)){
+  const max=Math.max(1,Math.min(companionMaxLevel(def),Math.floor(targetLevel)));let gold=0,companionEssence=0;
+  for(let level=1;level<max;level++){const cost=companionLevelCost(def.rarity,level);gold+=cost.gold;companionEssence+=cost.companionEssence;}
+  return {targetLevel:max,gold,companionEssence};
+}
+export function companionFullInvestmentSummary(def:CompanionDefinition){
+  const leveling=companionPaidLevelingTotals(def),tiers:Array<1|2|3|'mastery'>=def.rarity==='standard'||def.rarity==='rare'?[1,2]:def.rarity==='elite'?[1,2,3]:[1,2,3,'mastery'];
+  const ascension=tiers.map(tier=>companionAscensionCost(def,tier));
+  return {leveling,ascensionGold:ascension.reduce((sum,cost)=>sum+cost.gold,0),ascensionEssence:ascension.reduce((sum,cost)=>sum+cost.companionEssence,0),bondstones:ascension.reduce((sum,cost)=>sum+cost.bondstones,0)};
+}
 /** Accelerated training only buys the XP still missing from the current level. */
 export function companionRemainingLevelCost(def:CompanionDefinition,progress:OwnedCompanionProgress):CompanionLevelCost{
   const full=companionLevelCost(def.rarity,progress.level),needed=companionXpToNextLevel(def.rarity,progress.level);

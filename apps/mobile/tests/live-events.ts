@@ -91,6 +91,10 @@ ok(!activeLiveEvent(state,graceTime),'Claim-period events must not generate new 
 ok(eventShopOffers(state,graceTime).map(offer=>offer.id).join(',')===eventShopOffers(state,eventEnd-1).map(offer=>offer.id).join(','),'Event Shop stock should freeze to the final event-day rotation during grace');
 let graceContributionRejected=false;try{contributeEventCurrency(state,100,graceTime)}catch{graceContributionRejected=true}ok(graceContributionRejected,'Community contributions remain unavailable during the claim period');
 ok(eventLifecycle(state,eventEnd+8*86400_000)===null,'Event should archive after the seven-day claim period');
+const explicitGraceEnd=eventEnd+2*86400_000;
+state={...state,account:{...state.account,liveEvent:{...state.account.liveEvent!,graceEndsAtMs:explicitGraceEnd}}};
+ok(eventLifecycle(state,explicitGraceEnd-1)?.phase==='claiming','Explicit server grace should keep claims open until its exact boundary');
+ok(eventLifecycle(state,explicitGraceEnd)===null,'Explicit server grace should override the definition fallback boundary');
 state=setLocalEventEnabled(state,false,t0+3);
 ok(!activeLiveEvent(state,t0+3),'Developer switch should fully disable event drops and claims');
 console.log(JSON.stringify({status:'PASS',afterCombat,finalProgress:eventProgress(state,'EVT_ANNUAL_009_2026')},null,2));

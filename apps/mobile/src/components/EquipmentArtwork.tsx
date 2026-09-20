@@ -39,7 +39,7 @@ export function EquipmentArtwork({item,compact=false,framed=true}:{item:ItemDef;
   const size=compact?48:FRAME,ratio=size/FRAME,beginner=beginnerSetSheets.has(setId??''),scale=beginner ? .128 : SCALE;
   const wide=wideFullSetSheets.has(setId??''),sheetWidth=(wide||beginner?WIDE_SHEET_WIDTH:SHEET_WIDTH)*scale*ratio,sheetHeight=(beginner?1000:wide?WIDE_SHEET_HEIGHT:SHEET_HEIGHT)*scale*ratio;
   const visualWidth=area.width*scale*ratio,visualHeight=area.height*scale*ratio;
-  return <View accessibilityLabel={`${item.name} artwork`} style={[s.frame,!framed&&{borderWidth:0,backgroundColor:'transparent'},{width:size,height:size,borderColor:meta.color,backgroundColor:framed?meta.surface:'transparent'}]}>
+  return <View accessibilityLabel={`${item.name} artwork`} style={[s.frame,!framed&&{borderWidth:0,backgroundColor:'transparent'},{width:size,height:size,borderColor:meta.color,borderWidth:framed?meta.borderWidth:0,backgroundColor:framed?meta.surface:'transparent',shadowColor:meta.color,shadowOpacity:framed?meta.glowOpacity:0,shadowRadius:framed?6:0,shadowOffset:{width:0,height:0},elevation:framed&&meta.glowOpacity>0?2:0}]}>
     <View style={{width:visualWidth,height:visualHeight,overflow:'hidden'}}><Image source={source} resizeMode="stretch" style={{position:'absolute',width:sheetWidth,height:sheetHeight,left:-area.x*scale*ratio,top:-area.y*scale*ratio}}/></View>
   </View>;
 }

@@ -87,9 +87,9 @@ const ASTERFALL_COMPANIONS:CompanionDefinition[]=[
 ];
 
 /** Regional content definitions. Ability/effect numbers are conservative foundations and remain data-only for later balance passes. */
-const regional=(id:string,name:string,rarity:CombatCompanionRarity,role:CompanionDefinition['role'],source:string,identity:string,region:CompanionDefinition['origin'],materialId:string,effect:CompanionEffectDefinition['kind']):CompanionDefinition=>({
+const regional=(id:string,name:string,rarity:CombatCompanionRarity,role:CompanionDefinition['role'],unlockRequirements:CompanionDefinition['unlockRequirements'],identity:string,region:CompanionDefinition['origin'],materialId:string,effect:CompanionEffectDefinition['kind']):CompanionDefinition=>({
   id,name,description:identity,archetype:identity.split('/')[0].trim(),role,rarity,origin:region,
-  unlockRequirements:[req(source.toLowerCase().includes('mastery')?'monster_mastery':source.toLowerCase().includes('clear')?'dungeon_clears':source.toLowerCase().includes('meta')?'meta':'achievement',source,id)],
+  unlockRequirements,
   baseStats:{hp:rarity==='prestige'?225:rarity==='elite'?205:190,power:role==='damage'?27:18,defense:role==='tank'?25:15,attackSpeed:2.2},
   activeAbility:ability(`${id}_ACTIVE`,`${name} Signature`,identity,rarity==='prestige'?24:20,'Priority target',effect,effect==='damage'?1.1:.04,effect==='damage'?.005:.001),
   passiveAbility:passive(effect,effect==='damage'?.035:.025,`${name} passive reinforces its ${identity.toLowerCase()} identity.`),
@@ -97,18 +97,18 @@ const regional=(id:string,name:string,rarity:CombatCompanionRarity,role:Companio
   ascensionMaterialId:materialId,visual:{pixelSize:'96x96'}
 });
 const REGIONAL_COMPANIONS:CompanionDefinition[]=[
-  regional('UNIT_013','Dune Stalker','rare','damage','Sunspine Scorpion mastery 20','Assassin / poison pressure',SUNSCAR,'AMBERGLASS','damage'),
-  regional('UNIT_014','Oasis Djinnling','elite','support','Mirage Basin Echo achievement','Support / resource utility',SUNSCAR,'ASTRAL_SCRIPT','resource_restore'),
-  regional('UNIT_015','Solar Scarab','elite','tank','Buried Observatory 20 clears','Guardian / reflect timing',SUNSCAR,'SUNSTONE_ORE','damage_reduction'),
-  regional('UNIT_016',"Tyrant's Heir",'prestige','tank','Sunscar meta achievement','Champion / defensive sidegrade',SUNSCAR,'ASTRAL_SCRIPT','shield'),
-  regional('UNIT_017','Rime Wolf Pup','rare','damage','Rime Wolf mastery 20','Striker / chill setup',FROST,'RIMEGLASS','damage'),
-  regional('UNIT_018','Bell Sprite','elite','support','Shiverlake achievements','Support / cooldown rhythm',FROST,'CHOIR_BLOOM','cooldown_reduction'),
-  regional('UNIT_019','Choir Golem','elite','tank','Choir Caverns 20 clears','Guardian / armour break',FROST,'FROSTIRON','damage_reduction'),
-  regional('UNIT_020','Wyrm Echo','prestige','damage','Frostmarch meta','Champion / telegraph reward',FROST,'RIMEGLASS','damage'),
-  regional('UNIT_021','Obsidian Drakelet','rare','damage','Obsidian Drake mastery 20','Hunter / armour pierce',ASH,'BANNER_ASH','armor_pierce'),
-  regional('UNIT_022','Forge Custodian','elite','tank','Crucible clears','Guardian / barrier',ASH,'BANNER_ASH','shield'),
-  regional('UNIT_023','Primal Spark','elite','damage','Ashlands Echo achievement','Artillery / chain hits',ASH,'BANNER_ASH','chain_damage'),
-  regional('UNIT_024','Regent Shade','prestige','support','Ashlands meta','Champion / tactical utility',ASH,'BANNER_ASH','utility'),
+  regional('UNIT_013','Dune Stalker','rare','damage',[req('monster_mastery','Reach Sunscar Scorpion Mastery 20','SUNSCAR_SCORPION',20)],'Assassin / poison pressure',SUNSCAR,'AMBERGLASS','damage'),
+  regional('UNIT_014','Oasis Djinnling','elite','support',[req('monster_mastery','Reach Dune Oracle Mastery 20','DUNE_ORACLE',20)],'Support / resource utility',SUNSCAR,'ASTRAL_SCRIPT','resource_restore'),
+  regional('UNIT_015','Solar Scarab','elite','tank',[req('monster_mastery','Reach Glassbound Sentinel Mastery 20','GLASSBOUND_SENTINEL',20)],'Guardian / reflect timing',SUNSCAR,'SUNSTONE_ORE','damage_reduction'),
+  regional('UNIT_016',"Tyrant's Heir",'prestige','tank',[req('meta','Own Dune Stalker, Oasis Djinnling, and Solar Scarab','REG_SUNSCAR',3)],'Champion / defensive sidegrade',SUNSCAR,'ASTRAL_SCRIPT','shield'),
+  regional('UNIT_017','Rime Wolf Pup','rare','damage',[req('monster_mastery','Reach Frostwolf Mastery 20','FROSTWOLF',20)],'Striker / chill setup',FROST,'RIMEGLASS','damage'),
+  regional('UNIT_018','Bell Sprite','elite','support',[req('monster_mastery','Reach Bellwraith Mastery 20','BELLWRAITH',20)],'Support / cooldown rhythm',FROST,'CHOIR_BLOOM','cooldown_reduction'),
+  regional('UNIT_019','Choir Golem','elite','tank',[req('monster_mastery','Reach Choir Hunter Mastery 20','CHOIR_HUNTER',20)],'Guardian / armour break',FROST,'FROSTIRON','damage_reduction'),
+  regional('UNIT_020','Wyrm Echo','prestige','damage',[req('meta','Own Rime Wolf Pup, Bell Sprite, and Choir Golem','REG_FROSTMARCH',3)],'Champion / telegraph reward',FROST,'RIMEGLASS','damage'),
+  regional('UNIT_021','Obsidian Drakelet','rare','damage',[req('monster_mastery','Reach Blackglass Mireling Mastery 20','BLACKGLASS_MIRELING',20)],'Hunter / armour pierce',ASH,'BANNER_ASH','armor_pierce'),
+  regional('UNIT_022','Forge Custodian','elite','tank',[req('monster_mastery','Reach Cinder Titan Mastery 20','CINDER_TITAN',20)],'Guardian / barrier',ASH,'BANNER_ASH','shield'),
+  regional('UNIT_023','Primal Spark','elite','damage',[req('monster_mastery','Reach Ashen Revenant Mastery 20','ASHEN_REVENANT',20)],'Artillery / chain hits',ASH,'BANNER_ASH','chain_damage'),
+  regional('UNIT_024','Regent Shade','prestige','support',[req('meta','Own Obsidian Drakelet, Forge Custodian, and Primal Spark','REG_ASHLANDS',3)],'Champion / tactical utility',ASH,'BANNER_ASH','utility'),
 ];
 
 export const COMBAT_COMPANIONS:CompanionDefinition[]=[...ASTERFALL_COMPANIONS,...REGIONAL_COMPANIONS,...EVENT_COMPANIONS];

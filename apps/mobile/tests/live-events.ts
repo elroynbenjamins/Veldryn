@@ -13,7 +13,7 @@ ok(eventLifecycle(scheduled,t0)?.phase==='upcoming','Scheduled events should be 
 
 ok(liveEventDef('EVT_ANNUAL_009_2027')?.id==='EVT_ANNUAL_009_2027','A future annual season should reuse the matching content template under its own runtime ID');
 ok(liveEventDef('EVT_ANNUAL_009_2027')?.name==='Harvestwake','Seasonal runtime IDs should preserve the event template identity');
-let seasonalState={...state,account:{...state.account,eventProgressById:{...(state.account.eventProgressById??{}),EVT_ANNUAL_009_2026:777},liveEvent:{eventId:'EVT_ANNUAL_009_2027',enabled:true,startsAtMs:t0-1000,endsAtMs:t0+86400_000}}};
+let seasonalState:typeof state={...state,account:{...state.account,eventProgressById:{...(state.account.eventProgressById??{}),EVT_ANNUAL_009_2026:777},liveEvent:{eventId:'EVT_ANNUAL_009_2027',enabled:true,startsAtMs:t0-1000,endsAtMs:t0+86400_000}}};
 ok(activeLiveEvent(seasonalState,t0)?.definition.id==='EVT_ANNUAL_009_2027','The active seasonal definition must keep the new year-specific ID');
 ok(eventProgress(seasonalState,'EVT_ANNUAL_009_2027')===0,'A new annual season must start with separate progress');
 seasonalState=grantEventActivity(seasonalState,'crafting',t0+1);

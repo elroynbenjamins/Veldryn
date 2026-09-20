@@ -1,9 +1,9 @@
-export type IdleStopKind='item_quantity'|'skill_level'|'monster_kills'|'weekly_order_progress'|'food_below'|'free_slots_below'|'duration_seconds';
+export type IdleStopKind='item_quantity'|'skill_level'|'monster_kills'|'session_kills'|'champion_defeats'|'weekly_order_progress'|'food_below'|'free_slots_below'|'duration_seconds';
 export interface IdleStopCondition{id:string;kind:IdleStopKind;targetId?:string;value:number;enabled:boolean}
 export interface IdleRuleSet{id:string;characterId:string;name:string;conditions:IdleStopCondition[];stopIfOutOfFood:boolean;stopIfRewardsWouldOverflow:boolean;finishCurrentCycle:boolean}
-export interface IdleEvaluationContext{itemQuantities:Record<string,number>;skillLevels:Record<string,number>;monsterKills:Record<string,number>;weeklyOrderProgress?:Record<string,number>;foodRemaining:number;freeStorageSlots:number;elapsedSeconds:number;projectedRewardFits:boolean}
+export interface IdleEvaluationContext{itemQuantities:Record<string,number>;skillLevels:Record<string,number>;monsterKills:Record<string,number>;sessionKills?:number;championDefeats?:number;weeklyOrderProgress?:Record<string,number>;foodRemaining:number;freeStorageSlots:number;elapsedSeconds:number;projectedRewardFits:boolean}
 export interface IdleEvaluation{shouldStop:boolean;reason?:string;conditionId?:string;safety:boolean}
-function reached(c:IdleStopCondition,ctx:IdleEvaluationContext){if(!c.enabled)return false;switch(c.kind){case'item_quantity':return(ctx.itemQuantities[c.targetId??'']??0)>=c.value;case'skill_level':return(ctx.skillLevels[c.targetId??'']??0)>=c.value;case'monster_kills':return(ctx.monsterKills[c.targetId??'']??0)>=c.value;case'weekly_order_progress':return(ctx.weeklyOrderProgress?.[c.targetId??'']??0)>=c.value;case'food_below':return ctx.foodRemaining<=c.value;case'free_slots_below':return ctx.freeStorageSlots<=c.value;case'duration_seconds':return ctx.elapsedSeconds>=c.value}}
+function reached(c:IdleStopCondition,ctx:IdleEvaluationContext){if(!c.enabled)return false;switch(c.kind){case'item_quantity':return(ctx.itemQuantities[c.targetId??'']??0)>=c.value;case'skill_level':return(ctx.skillLevels[c.targetId??'']??0)>=c.value;case'monster_kills':return(ctx.monsterKills[c.targetId??'']??0)>=c.value;case'session_kills':return(ctx.sessionKills??0)>=c.value;case'champion_defeats':return(ctx.championDefeats??0)>=c.value;case'weekly_order_progress':return(ctx.weeklyOrderProgress?.[c.targetId??'']??0)>=c.value;case'food_below':return ctx.foodRemaining<=c.value;case'free_slots_below':return ctx.freeStorageSlots<=c.value;case'duration_seconds':return ctx.elapsedSeconds>=c.value}}
 export function evaluateIdleRuleSet(rules:IdleRuleSet,ctx:IdleEvaluationContext):IdleEvaluation{
  if(rules.conditions.length>6)throw new Error('too_many_idle_conditions');
  if(rules.stopIfOutOfFood&&ctx.foodRemaining<=0)return {shouldStop:true,reason:'Food reserve is empty.',safety:true};
@@ -15,7 +15,7 @@ export function evaluateIdleRuleSet(rules:IdleRuleSet,ctx:IdleEvaluationContext)
 export const IDLE_RULES_CAN_AUTO_TRAVEL=false;
 export const IDLE_RULES_CAN_CHAIN_ACTIVITIES=false;
 
-const IDLE_KINDS:IdleStopKind[]=['item_quantity','skill_level','monster_kills','weekly_order_progress','food_below','free_slots_below','duration_seconds'];
+const IDLE_KINDS:IdleStopKind[]=['item_quantity','skill_level','monster_kills','session_kills','champion_defeats','weekly_order_progress','food_below','free_slots_below','duration_seconds'];
 export function normalizeIdleRuleSets(value:unknown,characterId:string):IdleRuleSet[]{
  if(!Array.isArray(value)||!characterId)return [];
  return value.slice(0,5).flatMap((raw,index)=>{

@@ -1,5 +1,5 @@
 import {COMPANION_TRIAL_FLOOR_COUNT,companionTrialReward} from '../content';
-import {applyCompanionTrialModifiers,buildCompanionTrialEncounter,companionTrialEncounterTheme,companionTrialFloorDefinition,resolveCompanionTrialFloor,startCompanionTrial} from '../trials';
+import {applyCompanionTrialModifiers,buildCompanionTrialEncounter,companionTrialBossPreview,companionTrialEncounterTheme,companionTrialFloorDefinition,resolveCompanionTrialFloor,startCompanionTrial} from '../trials';
 import {companionTrialResetInfo,companionTrialSeasonKey,createCompanionTrialProgress,rolloverCompanionTrialSeason} from '../trial-season';
 import {projectCompanionTrial} from '../projection';
 import {buildOwnedCompanionCombatant} from '../combat-adapter';
@@ -41,6 +41,12 @@ ok(bosses[2].abilities.some(a=>a.interruptible&&a.castTimeMs>0),'Floor 15 boss s
 ok(bosses[3].abilities.some(a=>a.effects.some(e=>e.kind==='debuff'&&e.tag==='damage_taken')),'Floor 20 boss should apply vulnerability pressure');
 ok(bosses[4].abilities.length>=2&&bosses[4].abilities.some(a=>a.target==='all_enemies'),'Floor 25 boss should mix focused and team pressure');
 ok(bosses[5].abilities.some(a=>a.interruptible&&a.castTimeMs>0)&&bosses[5].abilities.some(a=>a.target==='all_enemies'),'Floor 30 boss should combine AoE pressure with an interruptible judgment');
+const preview15=companionTrialBossPreview(15)!,preview20=companionTrialBossPreview(20)!,preview30=companionTrialBossPreview(30)!;
+eq(preview15.name,bosses[2].name,'Boss preview identity must match combat encounter');
+ok(preview15.abilities.some(a=>a.interruptible&&a.castTimeMs===1800&&a.effects.includes('team damage')),'Floor 15 preview should expose interruptible team cast');
+ok(preview20.abilities.some(a=>a.effects.includes('vulnerability')),'Floor 20 preview should expose vulnerability mechanic');
+ok(preview30.abilities.some(a=>a.interruptible)&&preview30.abilities.some(a=>a.effects.includes('team damage')),'Floor 30 preview should expose both interrupt and team pressure');
+eq(companionTrialBossPreview(14),undefined,'Non-boss floor should not expose boss preview');
 
 // Modifiers alter the authoritative combat snapshot, not only labels.
 const unseasoned=buildCompanionTrialEncounter(1,'2000-01')[0],september=buildCompanionTrialEncounter(1,'2026-09')[0];ok(september.stats.defense>unseasoned.stats.defense,'Armored monthly modifier did not affect enemy defense');ok(september.stats.attackPower>unseasoned.stats.attackPower,'Unstable Magic monthly modifier did not add enemy pressure');const playerBefore=buildOwnedCompanionCombatant(owned.UNIT_001,{mode:'companion_trial'}),playerAfter=applyCompanionTrialModifiers([playerBefore],[],['unstable_magic']).players[0];ok(playerAfter.stats.haste>playerBefore.stats.haste,'Unstable Magic did not improve companion Haste');

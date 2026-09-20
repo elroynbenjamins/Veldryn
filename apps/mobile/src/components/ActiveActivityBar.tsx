@@ -5,6 +5,7 @@ import type {GameState} from '../core/types';
 import {C,equipmentColors,typography} from '../theme/theme';
 import {ActivityArtwork} from './ActivityArtwork';
 import {MonsterPortraitFrame} from './MonsterPortraitFrame';
+import {challengeHuntLabel} from '../core/challenge-hunts';
 
 const labels:Record<string,string>={combat:'HUNTING',mining:'MINING',woodcutting:'WOODCUTTING',fishing:'FISHING',herbalism:'HERBALISM',alchemy:'ALCHEMY',faith:'FAITH',training:'TRAINING',hunting:'HUNTING',exploration:'EXPLORATION'};
 function elapsed(startedAtMs:number,nowMs:number){const total=Math.max(0,Math.floor((nowMs-startedAtMs)/1000)),hours=Math.floor(total/3600),minutes=Math.floor(total%3600/60),seconds=total%60;return hours?`${hours}h ${minutes}m`:minutes?`${minutes}m ${seconds}s`:`${seconds}s`;}
@@ -14,7 +15,7 @@ export function ActiveActivityBar({state,nowMs,onOpen}:{state:GameState;nowMs:nu
  if(!activity)return null;
  const monster=activity.kind==='combat'?MONSTERS.find(entry=>entry.id===activity.targetId):undefined;
  const gathering=activity.kind!=='combat'?GATHERING.find(entry=>entry.id===activity.targetId):undefined;
- const name=monster?.name??gathering?.name??activity.targetId;
+ const name=monster?challengeHuntLabel(activity.combatChallengeId,monster.name):gathering?.name??activity.targetId;
  const cycleSeconds=Math.max(1,monster?.secondsPerKill??gathering?.seconds??1);
  const cycleElapsedSeconds=Math.max(0,(nowMs-activity.lastClaimAtMs)/1000);
  const progressPct=Math.round((cycleElapsedSeconds%cycleSeconds)/cycleSeconds*100),progress=`${progressPct}%` as `${number}%`;

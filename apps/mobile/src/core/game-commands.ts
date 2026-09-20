@@ -15,6 +15,7 @@ import {CLASSES} from '../content/classes';
 import {applyCharacterLoadout,deleteCharacterLoadout,saveCharacterLoadout} from './character-loadouts';
 import {normalizeProgressionGoals} from './progression-goals-v40';
 import {normalizeIdleRuleSets,validateActiveIdleRuleId} from './idle-rules-v40';
+import {COMBAT_CHALLENGE_IDS} from './challenge-hunts';
 
 /** Commands express intent. Neither a client save nor a client reward is accepted. */
 export interface GameCommand {type:string;args?:Record<string,unknown>}
@@ -25,7 +26,7 @@ const fields:Record<string,readonly string[]>={
  companion_monthly:['id'],companion_supplies:[],companion_bond_reward:['id','level'],companion_boss_rematch:[],
  companion_equip:['id'],companion_unequip:[],companion_level:['id'],companion_ascend:['id'],companion_master:['id'],companion_upgrade:['id'],companion_training:[],companion_essence:[],
  companion_trial_start:['ids','floor'],companion_trial_floor:['id','floor'],companion_trial_abandon:['id'],companion_assignment_start:['id','ids'],companion_assignment_claim:['id'],companion_technique:['id','technique'],companion_codex:['id'],companion_showcase:['id','ids'],companion_weekly:['id'],companion_special:['id','ids'],
- create:['classId','name','body'],claim:[],start:['kind','id'],explore:['id'],stop:[],travel:['id'],boss:[],craft:['id'],use_potion:['id'],discard_preparation:[],
+ create:['classId','name','body'],claim:[],start:['kind','id','challengeId'],explore:['id'],stop:[],travel:['id'],boss:[],craft:['id'],use_potion:['id'],discard_preparation:[],
  roster_create:['classId','name','body'],roster_switch:['id'],
  equip:['id'],unequip:['slot'],food:['id'],eat:['id'],sell:['id','quantity'],salvage:['id'],
  deposit:['id','quantity'],withdraw:['id','quantity'],deposit_materials:[],storage:['location'],overflow:[],
@@ -123,7 +124,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   }
   case 'roster_switch':state=switchAccountCharacter(state,text(a,'id'),now);break;
   case 'claim':break;
-  case 'start':state=transitionActivity(state,now,{kind:oneOf(a.kind,['combat','gathering']),id:text(a,'id')}).state;break;
+  case 'start':{const kind=oneOf(a.kind,['combat','gathering']),challengeId=a.challengeId===undefined?undefined:oneOf(a.challengeId,COMBAT_CHALLENGE_IDS);if(kind!=='combat'&&challengeId)throw new Error('invalid_challenge_activity');state=transitionActivity(state,now,{kind,id:text(a,'id'),...(challengeId?{challengeId}: {})}).state;break;}
   case 'explore':state=game.startExploration(state,text(a,'id'),now);break;
   case 'stop':state=game.stopActivity(state);break;
   case 'travel':state=game.travelToRegion(state,text(a,'id'),now).state;break;

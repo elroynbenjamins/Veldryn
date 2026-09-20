@@ -6,6 +6,67 @@ begin;
 create index if not exists live_events_admin_window_idx
   on public.live_events(enabled, starts_at, ends_at, priority desc);
 
+
+-- Keep the single-player-event presentation invariant inside Postgres as well
+-- as in the Control Center API. The advisory transaction lock serializes event
+-- window mutations so two operators cannot race past the preflight check.
+create or replace function public.enforce_single_visible_live_event()
+returns trigger
+language plpgsql
+set search_path=public
+as $
+declare
+  v_visible_end timestamptz;
+  v_conflict text;
+begin
+  if not coalesce(new.enabled,false) or new.starts_at is null or new.ends_at is null then
+    return new;
+  end if;
+
+  if new.ends_at<=new.starts_at then
+    raise exception 'player_event_end_before_start';
+  end if;
+
+  v_visible_end:=coalesce(
+    new.grace_ends_at,
+    new.ends_at+make_interval(days=>coalesce((new.config->>'claimGraceDays')::integer,7))
+  );
+
+  if v_visible_end<new.ends_at then
+    raise exception 'player_event_grace_before_end';
+  end if;
+
+  perform pg_advisory_xact_lock(hashtext('veldryn:single-visible-live-event'));
+
+  select e.event_id
+    into v_conflict
+  from public.live_events e
+  where e.enabled
+    and e.event_id<>new.event_id
+    and e.starts_at is not null
+    and e.ends_at is not null
+    and new.starts_at < coalesce(
+      e.grace_ends_at,
+      e.ends_at+make_interval(days=>coalesce((e.config->>'claimGraceDays')::integer,7))
+    )
+    and e.starts_at < v_visible_end
+  order by e.priority desc,e.event_id
+  limit 1;
+
+  if v_conflict is not null then
+    raise exception 'player_event_visibility_overlap:%',v_conflict;
+  end if;
+
+  return new;
+end $;
+
+drop trigger if exists live_events_single_visible_guard on public.live_events;
+create trigger live_events_single_visible_guard
+before insert or update of enabled,starts_at,ends_at,grace_ends_at,config
+on public.live_events
+for each row
+execute function public.enforce_single_visible_live_event();
+
 create or replace function public.event_claim_open(p_event_id text)
 returns boolean
 language sql

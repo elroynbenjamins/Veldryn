@@ -169,6 +169,11 @@ export function companionUnlockRequirementMet(state:CombatCompanionStateHost,req
   if(target==='KNIFE_DANCER_SKILL_TOTAL'&&state.character?.classId==='KNIFE_DANCER')return normalizeClassSkills('KNIFE_DANCER',state.character.classSkills).reduce((sum,s)=>sum+s.level,0)>=amount;
   if(requirement.type==='monster_mastery'&&state.character?.monsterMasteryPoints?.[target]!==undefined)return Math.floor((normalizeMonsterMastery(state.character.monsterMasteryPoints)[target]??0)/25)>=amount;
   if(target==='ASTERFALL_MASTERY_20_ALL'&&state.character?.monsterMasteryPoints)return Object.values(normalizeMonsterMastery(state.character.monsterMasteryPoints)).filter(n=>n>=500).length>=amount;
+  if(requirement.type==='meta'&&['REG_SUNSCAR','REG_FROSTMARCH','REG_ASHLANDS'].includes(target)){
+    const owned=new Set(state.account.unlockedCombatCompanionIds??[]);
+    const regionalNonPrestige=COMBAT_COMPANIONS.filter(def=>def.origin.id===target&&def.rarity!=='prestige');
+    return regionalNonPrestige.filter(def=>owned.has(def.id)).length>=amount;
+  }
   if(requirement.type==='quest')return (state.quests??[]).some(entry=>entry.questId===target&&entry.status==='claimed');
   if(requirement.type==='boss_kills')return Math.max((state.defeatedBossIds??[]).includes(target)?1:0,state.account.companionBossClears?.[target]??0)>=amount;
   if(requirement.type==='skill_level')return (state.skills??[]).some(skill=>skill.skillId===target&&skill.level>=amount);

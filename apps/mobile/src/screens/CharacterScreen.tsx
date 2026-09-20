@@ -1,4 +1,4 @@
-import React,{useState} from 'react';
+import React,{useMemo,useState} from 'react';
 import {Image,Pressable,ScrollView,StyleSheet,Text,useWindowDimensions,View} from 'react-native';
 import type {GameState,GearSlot} from '../core/types';
 import {CLASSES} from '../content/classes';
@@ -22,8 +22,8 @@ import {ot} from '../i18n';
 
 type Busy='save'|GearSlot|null;
 
-export function CharacterScreen({
-  const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);state,onUnequip,onEquipSet,onCrafting,onSelectSkin,onInventory,onSave,onUpgrade,onSocket,onUnsocket,children,companions,loadouts}:{state:GameState;onUnequip:(slot:GearSlot)=>Promise<void>|void;onEquipSet:()=>Promise<void>|void;onCrafting:()=>void;onSelectSkin:(skinId:string)=>void;onInventory:()=>void;onSave:()=>Promise<void>|void;onUpgrade:(itemId:string)=>Promise<void>|void;onSocket:(itemId:string,gemId:string)=>Promise<void>|void;onUnsocket:(itemId:string,index:number)=>Promise<void>|void;children?:React.ReactNode;companions?:React.ReactNode;loadouts?:React.ReactNode}){
+export function CharacterScreen({state,onUnequip,onEquipSet,onCrafting,onSelectSkin,onInventory,onSave,onUpgrade,onSocket,onUnsocket,children,companions,loadouts}:{state:GameState;onUnequip:(slot:GearSlot)=>Promise<void>|void;onEquipSet:()=>Promise<void>|void;onCrafting:()=>void;onSelectSkin:(skinId:string)=>void;onInventory:()=>void;onSave:()=>Promise<void>|void;onUpgrade:(itemId:string)=>Promise<void>|void;onSocket:(itemId:string,gemId:string)=>Promise<void>|void;onUnsocket:(itemId:string,index:number)=>Promise<void>|void;children?:React.ReactNode;companions?:React.ReactNode;loadouts?:React.ReactNode}){
+  const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
   const {width}=useWindowDimensions();
   const [selectedSlot,setSelectedSlot]=useState<GearSlot>('weapon');
   const [selectedLoadout,setSelectedLoadout]=useState<string|null>(null);

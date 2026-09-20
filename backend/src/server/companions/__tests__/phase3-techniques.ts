@@ -1,5 +1,5 @@
 import {buildOwnedCompanionCombatant} from '../combat-adapter';
-import {COMPANION_TECHNIQUE_SWITCH_COST} from '../content';
+import {COMPANION_TECHNIQUE_SWITCH_COST,companionTechnique} from '../content';
 import {selectCompanionTechnique,techniqueUnlocked} from '../progression-v2';
 import type {CompanionEconomyState,OwnedCompanionSnapshot} from '../domain';
 const ok=(v:unknown,m:string)=>{if(!v)throw new Error(m)};const eq=(a:unknown,b:unknown,m:string)=>{if(a!==b)throw new Error(`${m}: expected ${String(b)}, got ${String(a)}`)};const throws=(f:()=>unknown,m:string)=>{let did=false;try{f()}catch{did=true}if(!did)throw new Error(m)};
@@ -9,7 +9,11 @@ ok(!techniqueUnlocked(p(2,6),'UNIT_015_FORTIFIED'),'Technique unlocked without B
 // 20 valid unlock works; 21 first selection free.
 const ready=p(2,7),first=selectCompanionTechnique(ready,'UNIT_015_FORTIFIED',economy);eq(first.progress.selectedTechniqueId,'UNIT_015_FORTIFIED','Valid Technique did not select');eq(first.cost.gold,0,'First Technique cost Gold');eq(first.cost.companionEssence,0,'First Technique cost Essence');
 // 22 only one active; 23 switching costs; 24 old removed; 25 new applied.
-const before=buildOwnedCompanionCombatant(first.progress,{mode:'companion_trial'}),switched=selectCompanionTechnique(first.progress,'UNIT_015_REFLECTIVE',first.economy),after=buildOwnedCompanionCombatant(switched.progress,{mode:'companion_trial'});eq(switched.progress.selectedTechniqueId,'UNIT_015_REFLECTIVE','Technique switch did not replace selection');eq(switched.cost.gold,COMPANION_TECHNIQUE_SWITCH_COST.gold,'Switch Gold cost wrong');eq(switched.cost.companionEssence,COMPANION_TECHNIQUE_SWITCH_COST.companionEssence,'Switch Essence cost wrong');ok(before.abilities[0].tags?.some(x=>x.includes('shield_strength:0.15')),'Old Technique missing before switch');ok(!after.abilities[0].tags?.some(x=>x.includes('shield_strength:0.15')),'Old Technique effect survived switch');ok(after.abilities[0].tags?.some(x=>x.includes('reflect:0.12')),'New Technique effect missing');
+const before=buildOwnedCompanionCombatant(first.progress,{mode:'companion_trial'}),switched=selectCompanionTechnique(first.progress,'UNIT_015_REFLECTIVE',first.economy),after=buildOwnedCompanionCombatant(switched.progress,{mode:'companion_trial'});eq(switched.progress.selectedTechniqueId,'UNIT_015_REFLECTIVE','Technique switch did not replace selection');eq(switched.cost.gold,COMPANION_TECHNIQUE_SWITCH_COST.gold,'Switch Gold cost wrong');eq(switched.cost.companionEssence,COMPANION_TECHNIQUE_SWITCH_COST.companionEssence,'Switch Essence cost wrong');
+const oldTechnique=companionTechnique('UNIT_015_FORTIFIED')!,newTechnique=companionTechnique('UNIT_015_REFLECTIVE')!;
+for(const effect of oldTechnique.effects)ok(before.abilities[0].tags?.some(x=>x.includes(`${effect.kind}:${effect.value}`)),`Old authored Technique effect missing before switch: ${effect.kind}`);
+for(const effect of oldTechnique.effects)ok(!after.abilities[0].tags?.some(x=>x.includes(`${effect.kind}:${effect.value}`)),`Old authored Technique effect survived switch: ${effect.kind}`);
+for(const effect of newTechnique.effects)ok(after.abilities[0].tags?.some(x=>x.includes(`${effect.kind}:${effect.value}`)),`New authored Technique effect missing: ${effect.kind}`);
 // 26 failed switch deducts nothing.
 const poor={...economy,gold:0,companionEssence:0},snap=JSON.stringify(poor);throws(()=>selectCompanionTechnique(first.progress,'UNIT_015_REFLECTIVE',poor),'Technique switch succeeded without resources');eq(JSON.stringify(poor),snap,'Failed Technique switch mutated resources');
 // 27 selection persists through save/load snapshot.

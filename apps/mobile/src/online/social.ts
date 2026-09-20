@@ -20,6 +20,8 @@ export type FriendRequest={request_id:string;account_id:string;display_name:stri
 export type BlockedPlayer={account_id:string;display_name:string;blocked_at:string};
 export type GuildChatMessage={id:string;account_id:string;sender_name:string;body:string;created_at:string;guild_tag?:string|null;guild_tag_color_id?:string|null;guild_role?:'leader'|'officer'|'member'|null};
 export interface GuildChatState{guild:{id:string;name:string;tag?:string|null;tagColorId?:string|null}|null;messages:GuildChatMessage[];serverTime:string;}
+export interface SocialChatChannelAttention{channelId?:string|null;unread:number;mentions:number;}
+export interface SocialChatAttentionState{guild:SocialChatChannelAttention;party:SocialChatChannelAttention;totalUnread:number;totalMentions:number;serverTime:string;}
 
 
 export interface PartyInvitationView{ id:string;partyId:string;inviterAccountId:string;inviterName:string;focus:'combat'|'skilling'|'mixed';memberCount:number;openSpots:number;expiresAt:string; }
@@ -94,6 +96,8 @@ export async function removeGuildMember(accountId:string){const client=requireCl
 export function guildChatCommandKey(){return `guild-chat-${Date.now()}-${Math.random().toString(36).slice(2,14)}`;}
 export async function guildChatState(limit=50){const client=requireClient();const {data,error}=await client.rpc('guild_chat_state_v1',{p_limit:limit});if(error)throw error;return data as GuildChatState;}
 export async function sendGuildChat(body:string,idempotencyKey:string){const client=requireClient();const {data,error}=await client.rpc('send_guild_chat_v1',{p_body:body,p_idempotency_key:idempotencyKey});if(error)throw error;return data as string;}
+export async function socialChatAttention(){const client=requireClient();const {data,error}=await client.rpc('social_chat_attention_state_v1');if(error)throw error;return data as SocialChatAttentionState;}
+export async function markSocialChatRead(channelType:'guild'|'party'){const client=requireClient();const {data,error}=await client.rpc('mark_social_chat_read_v1',{p_channel_type:channelType});if(error)throw error;return data as {channelType:'guild'|'party';channelId:string;readAt:string};}
 
 export async function guildLeadershipStatus(){const client=requireClient();const {data,error}=await client.rpc('guild_leadership_status_v1');if(error)throw error;return data as GuildLeadershipStatus|null;}
 export async function transferGuildLeadership(accountId:string){const client=requireClient();const {data,error}=await client.rpc('transfer_guild_leadership_v1',{p_target_account_id:accountId});if(error)throw error;return data as 'transferred';}

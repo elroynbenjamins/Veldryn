@@ -1,5 +1,6 @@
 import {MONSTERS} from '../src/content/monsters';
 import {combatPresentation} from '../src/core/combat-presentation';
+import {combatMotionProfile} from '../src/core/combat-motion';
 import {createCharacter,newGame} from '../src/core/game';
 import {itemRarity} from '../src/core/item-rarity';
 import {itemDef} from '../src/content/items';
@@ -7,5 +8,9 @@ const state=createCharacter(newGame(0),'BASTION','Tester');
 const monster=MONSTERS[0],start=combatPresentation(state,monster,0,monster.secondsPerKill),late=combatPresentation(state,monster,6,monster.secondsPerKill);
 if(start.enemyHp!==monster.hp||late.enemyHp>=start.enemyHp)throw new Error('Enemy health cycle must visibly fall');
 if(start.playerHit<1||start.enemyHit<1)throw new Error('Presented damage must remain positive');
+const motion=combatMotionProfile(monster.secondsPerKill,false),reduced=combatMotionProfile(monster.secondsPerKill,true),fast=combatMotionProfile(.2,false),slow=combatMotionProfile(99,false);
+if(!motion.enabled||motion.playerAttackAtMs>=motion.enemyAttackAtMs||motion.enemyAttackAtMs>=motion.cycleMs)throw new Error('Combat motion timing order invalid');
+if(reduced.enabled||reduced.playerLungePx!==0||reduced.shakePx!==0)throw new Error('Reduced motion must disable combat transforms');
+if(fast.cycleMs!==1800||slow.cycleMs!==5200)throw new Error('Combat motion cadence must stay within UI-safe bounds');
 if(itemRarity(itemDef('MOSS_FIBER'))!=='common'||itemRarity(itemDef('OATHGLASS_CAPE'))!=='epic')throw new Error('Rarity classification failed');
 console.log(JSON.stringify({status:'PASS',start,late}));

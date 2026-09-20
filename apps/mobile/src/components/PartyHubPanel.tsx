@@ -28,6 +28,7 @@ export interface PartyHubPanelProps {
   onCreateParty?: () => void;
   onLeaveParty?: () => void;
   onOpenPartyChat?: () => void;
+  onOpenMemberProfile?: (member:PersistentPartySummary['members'][number]) => void;
   onOpenRecruitmentPost?: (postId: string) => void;
   onCreateRecruitmentPost?: (postType: RecruitmentPostType) => void;
   filters?: RecruitmentClientFilters;
@@ -57,10 +58,10 @@ export function PartyHubPanel(props: PartyHubPanelProps) {
 
     {props.party && <View style={styles.panel}>
       <Text style={styles.sectionTitle}>PARTY MEMBERS</Text>
-      {props.party.members.map(member => <View key={member.accountId} style={styles.memberRow}>
+      {props.party.members.map(member => <Pressable key={member.accountId} accessibilityRole="button" accessibilityLabel={`Open ${member.characterName}'s profile`} disabled={!props.onOpenMemberProfile} onPress={()=>props.onOpenMemberProfile?.(member)} style={({pressed})=>[styles.memberRow,pressed&&styles.memberPressed]}>
         <IdentityArtwork name={member.characterName} className={member.className}/>
-        <View style={styles.grow}><Text style={styles.bodyStrong}>{member.characterName}</Text><Text style={styles.muted}>{member.className}{member.isLeader?' · Leader':''}</Text><RoleBadge role={member.role}/></View>
-      </View>)}
+        <View style={styles.grow}><Text style={styles.bodyStrong}>{member.characterName}</Text><Text style={styles.muted}>{member.className}{member.isLeader?' · Leader':''}</Text><RoleBadge role={member.role}/>{props.onOpenMemberProfile?<Text style={styles.profileHint}>View profile ›</Text>:null}</View>
+      </Pressable>)}
     </View>}
 
     {props.party && <View style={styles.panel}>
@@ -113,7 +114,7 @@ const styles = StyleSheet.create({
   button: { minHeight: 46, justifyContent: 'center', paddingHorizontal: 14, borderWidth: 2, borderColor: equipmentColors.lineStrong, backgroundColor: equipmentColors.selected },
   buttonSecondary: { backgroundColor: C.panel2, borderColor: C.line }, buttonText: { color: C.text, fontWeight: '900', fontSize: 12, textTransform: 'uppercase' },
   pressed: { opacity: 0.76 }, disabled: { opacity: 0.4 },
-  memberRow: { paddingVertical:10,minHeight: 68, flexDirection: 'row', alignItems: 'center', gap: 9, borderBottomWidth: 1, borderBottomColor: C.line },
+  memberRow: { paddingVertical:10,minHeight: 68, flexDirection: 'row', alignItems: 'center', gap: 9, borderBottomWidth: 1, borderBottomColor: C.line }, memberPressed:{opacity:.72},profileHint:{color:C.info,fontSize:9,fontWeight:'800',marginTop:2},
   avatar: { width: 38, height: 38, borderWidth: 2, borderColor: C.line, backgroundColor: C.panel2, alignItems: 'center', justifyContent: 'center' }, avatarText: { color: equipmentColors.goldSoft, fontWeight: '900' },
   contractCard: { borderRadius:radii.md,borderWidth: 1, borderColor: C.line, backgroundColor: equipmentColors.panel, padding: 10, gap: 6 }, badge: { color: equipmentColors.selectedLine, fontWeight: '900', fontSize: 10 },
   progressTrack: { height: 10, borderWidth: 1, borderColor: C.line, backgroundColor: C.bg }, progressFill: { height: '100%', backgroundColor: equipmentColors.selectedLine },

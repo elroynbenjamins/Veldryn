@@ -208,13 +208,29 @@ function renderDashboard() {
   if (!d) return shell(loading(), 'Dashboard');
   const active = d.active;
   const next = d.next;
+  const nowMs=Date.now(),playerRows=d.playerEvents||[];
+  const visiblePlayerEvent=playerRows.find(row=>['live','claiming'].includes(playerEventPhase(row,nowMs)))||null;
+  const visiblePlayerPhase=visiblePlayerEvent?playerEventPhase(visiblePlayerEvent,nowMs):null;
+  const visiblePlayerClaimEnd=visiblePlayerEvent?.grace_ends_at||(visiblePlayerEvent?.ends_at?new Date(Date.parse(visiblePlayerEvent.ends_at)+Math.max(0,Number(visiblePlayerEvent.config?.claimGraceDays??7)||0)*86400000).toISOString():null);
+  const nextPlayerEvent=playerRows.filter(row=>playerEventPhase(row,nowMs)==='scheduled').sort((a,b)=>Date.parse(a.starts_at)-Date.parse(b.starts_at))[0]||null;
+  const needsPlayerSchedule=playerRows.filter(row=>row.enabled&&playerEventPhase(row,nowMs)==='needs_schedule');
   return shell(`
     <div class="page-head"><div><div class="eyebrow">Operations overview</div><h2>Live-Ops Dashboard</h2><p>Current event state, upcoming schedule and recent control-plane changes.</p></div></div>
     <div class="grid grid-4">
-      <div class="card metric"><div class="label">Active events</div><div class="value">${d.counts.active}</div><div class="foot">Party Event scope</div></div>
-      <div class="card metric"><div class="label">Scheduled</div><div class="value">${d.counts.scheduled}</div><div class="foot">Future event instances</div></div>
+      <div class="card metric"><div class="label">Party active</div><div class="value">${d.counts.active}</div><div class="foot">Competitive Party Events</div></div>
+      <div class="card metric"><div class="label">Party scheduled</div><div class="value">${d.counts.scheduled}</div><div class="foot">Future Party instances</div></div>
       <div class="card metric"><div class="label">Settling</div><div class="value">${d.counts.settling}</div><div class="foot">Awaiting finalization worker</div></div>
       <div class="card metric"><div class="label">Drafts</div><div class="value">${d.counts.drafts}</div><div class="foot">Mutable authoring state</div></div>
+    </div>
+    <div class="grid grid-2" style="margin-top:14px">
+      <div class="card"><div class="card-head"><div><h3>Player Event screen</h3><div class="tiny muted">What the mobile Event screen is showing now.</div></div>${visiblePlayerEvent?playerEventStatusPill(visiblePlayerPhase):'<span class="pill">Idle</span>'}</div><div class="card-body">${visiblePlayerEvent?`
+        <div class="eyebrow">${h(visiblePlayerEvent.event_id)}</div><h3 style="margin:6px 0 8px">${h(visiblePlayerEvent.name||visiblePlayerEvent.event_id)}</h3>
+        <div class="muted small">${visiblePlayerPhase==='live'?`Earning through ${fmtDate(visiblePlayerEvent.ends_at)}`:`Claims through ${fmtDate(visiblePlayerClaimEnd)}`}</div>`:`<div class="muted small">No annual/general Event is visible to players right now.</div>`}
+        <div class="actions" style="margin-top:12px"><button class="btn btn-sm" data-nav="events">Open Events</button></div></div></div>
+      <div class="card"><div class="card-head"><div><h3>Next Player Event</h3><div class="tiny muted">Enabled schedule only.</div></div>${needsPlayerSchedule.length?'<span class="pill bad">Needs attention</span>':nextPlayerEvent?playerEventStatusPill('scheduled'):'<span class="pill">None</span>'}</div><div class="card-body">${needsPlayerSchedule.length?`
+        <strong>${fmtNumber(needsPlayerSchedule.length)} enabled event${needsPlayerSchedule.length===1?'':'s'} missing a valid schedule</strong><div class="muted small" style="margin-top:6px">Fix these before relying on automatic activation.</div>`:nextPlayerEvent?`
+        <div class="eyebrow">${h(nextPlayerEvent.event_id)}</div><h3 style="margin:6px 0 8px">${h(nextPlayerEvent.name||nextPlayerEvent.event_id)}</h3><div class="muted small">Starts ${fmtDate(nextPlayerEvent.starts_at)}</div><div class="mono tiny faint" style="margin-top:5px">${utc(nextPlayerEvent.starts_at)}</div>`:`<div class="muted small">No enabled Player Event is scheduled yet.</div>`}
+        <div class="actions" style="margin-top:12px"><button class="btn btn-sm btn-ghost" data-nav="events">Manage schedule</button></div></div></div>
     </div>
     ${(() => { const w=workerHealthView(d.workerHealth); return `<div class="grid grid-2" style="margin-top:14px"><div class="card"><div class="card-head"><h3>Live-Ops worker</h3><span class="pill ${w.cls}">${h(w.label)}</span></div><div class="card-body"><div class="small">${h(w.detail)}</div>${d.workerHealth?.last_result_json ? `<div class="mono tiny faint" style="margin-top:8px">${h(JSON.stringify(d.workerHealth.last_result_json))}</div>`:''}<div class="actions" style="margin-top:12px"><button class="btn btn-sm" data-nav="operations">Operations</button></div></div></div><div class="card"><div class="card-head"><h3>Contribution outbox</h3><span class="pill ${d.counts.deadLetters ? 'bad':'good'}">${fmtNumber(d.counts.deadLetters)} dead letter${d.counts.deadLetters===1?'':'s'}</span></div><div class="card-body"><div class="muted small">Dead-letter rows require operator review. Retrying is Owner-only and returns the row to the normal idempotent worker pipeline.</div><div class="actions" style="margin-top:12px"><button class="btn btn-sm" data-nav="operations">Inspect</button></div></div></div></div>`; })()}
     <div class="grid grid-4" style="margin-top:14px"><button class="card quick-link" data-nav="controls"><strong>Full Controls</strong><span>Audited player/system commands</span></button><button class="card quick-link" data-nav="codes"><strong>Redeem Codes</strong><span>Secure one-time code creation</span></button><button class="card quick-link" data-nav="config"><strong>Remote Config</strong><span>Kill switches & staged rollout</span></button><button class="card quick-link" data-nav="health"><strong>Health & Economy</strong><span>Gold, resources, metrics, alerts</span></button></div>

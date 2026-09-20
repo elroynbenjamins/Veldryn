@@ -13,12 +13,14 @@ import {realCoopQModeSource} from '../online/coop-qmode-source';
 import {supabase} from '../online/supabase';
 import {GameButton} from '../components/GameButton';
 import {C} from '../theme/theme';
+import {useTheme} from '../theme/ThemeProvider';
 import {realCoopEntrySource,type CoopEntrySource} from '../online/coop-entry-source';
 import type {GameState} from '../core/types';
 import {clt} from '../i18n';
 import {validateCoopEventExpeditionPreview} from '../core/coop-event-expeditions';
 
 export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoopEntrySource}:{onClose:()=>void;language:Language;state:GameState;entrySource?:CoopEntrySource}){
+  const {colors:C}=useTheme();
   const [entry,setEntry]=useState<CoopEntryData>();
   const [selected,setSelected]=useState<CoopDungeonView>();
   const [mode,setMode]=useState<CoopMode>('qmode');

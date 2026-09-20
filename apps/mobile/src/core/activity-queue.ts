@@ -2,6 +2,7 @@ import type {GameState,QueuedActivity} from './types';
 import {GATHERING} from '../content/skills';
 import {HERB_NODES} from '../content/herbalism';
 import {MONSTERS} from '../content/monsters';
+import {WORLD_ZONES} from '../content/world-map';
 import {COMBAT_CHALLENGE_IDS,COMBAT_CHALLENGES} from './challenge-hunts';
 import {COMBAT_TACTIC_IDS,COMBAT_TACTICS} from './combat-tactics';
 import {HUNT_GOAL_IDS,HUNT_GOALS} from './hunt-goals';
@@ -54,12 +55,44 @@ export interface ActivityQueueHandoffStatus{
  nextLabel?:string;
  safetyEnabled:boolean;
 }
+function activeRegionId(state:GameState){
+ const activity=state.activity;if(!activity)return undefined;
+ if(activity.kind==='combat'){const monster=MONSTERS.find(row=>row.id===activity.targetId);return monster?WORLD_ZONES.find(zone=>zone.name===monster.zone)?.id:undefined;}
+ return [...GATHERING,...HERB_NODES].find(row=>row.id===activity.targetId)?.zoneId;
+}
+function activityCanAdvanceWeeklyOrder(state:GameState,orderId:string){
+ const activity=state.activity,order=state.account.weeklyOrders?.orders.find(row=>row.id===orderId);if(!activity||!order)return false;
+ if(order.progress>=order.target)return true;
+ if(order.kind==='hunt')return activity.kind==='combat'&&order.targetId===activity.targetId;
+ if(order.kind==='threat')return activity.kind==='combat'&&!!activity.combatChallengeId&&order.targetId===activity.targetId+':'+activity.combatChallengeId;
+ if(order.kind==='profession')return activity.kind!=='combat'&&activity.kind!=='exploration'&&order.targetId===activity.targetId;
+ if(order.kind==='regional')return order.targetId===activeRegionId(state)&&(activity.kind==='combat'||['mining','woodcutting','fishing','herbalism'].includes(activity.kind));
+ return false;
+}
+function activityCanAdvanceCondition(state:GameState,condition:NonNullable<GameState['character']>['idleRulesV40'][number]['conditions'][number]){
+ if(!condition.enabled)return false;
+ const activity=state.activity;if(!activity)return false;
+ if(condition.kind==='duration_seconds')return true;
+ if(condition.kind==='session_kills'||condition.kind==='champion_defeats')return activity.kind==='combat';
+ if(condition.kind==='monster_kills')return activity.kind==='combat'&&condition.targetId===activity.targetId;
+ if(condition.kind==='weekly_order_progress')return !!condition.targetId&&activityCanAdvanceWeeklyOrder(state,condition.targetId);
+ if(condition.kind==='skill_level'){
+  if(activity.kind==='combat'||activity.kind==='exploration')return false;
+  return [...GATHERING,...HERB_NODES].find(row=>row.id===activity.targetId)?.skillId===condition.targetId;
+ }
+ if(condition.kind==='item_quantity'){
+  if(activity.kind==='combat')return MONSTERS.find(row=>row.id===activity.targetId)?.drops.some(drop=>drop.itemId===condition.targetId)??false;
+  if(activity.kind==='exploration')return false;
+  return [...GATHERING,...HERB_NODES].find(row=>row.id===activity.targetId)?.itemId===condition.targetId;
+ }
+ return false;
+}
 export function activityQueueHandoffStatus(state:GameState):ActivityQueueHandoffStatus{
  const queue=normalizeActivityQueue(state.character?.activityQueue),next=queue[0],character=state.character,activity=state.activity;
  const rule=character?.activeIdleRuleIdV40?character.idleRulesV40?.find(row=>row.id===character.activeIdleRuleIdV40):undefined;
- const nonSafety=rule?.conditions.some(condition=>condition.enabled&&condition.kind!=='food_below'&&condition.kind!=='free_slots_below')??false;
+ const nonSafetyApplicable=rule?.conditions.some(condition=>condition.kind!=='food_below'&&condition.kind!=='free_slots_below'&&activityCanAdvanceCondition(state,condition))??false;
  const huntGoal=activity?.kind==='combat'?activity.huntGoal:undefined;
- const sources=[huntGoal?.label,nonSafety?rule?.name:undefined].filter(Boolean) as string[];
+ const sources=[huntGoal?.label,nonSafetyApplicable?rule?.name:undefined].filter(Boolean) as string[];
  const safetyEnabled=!!rule&&(rule.stopIfOutOfFood||rule.stopIfRewardsWouldOverflow||rule.conditions.some(condition=>condition.enabled&&(condition.kind==='food_below'||condition.kind==='free_slots_below')));
- return {armed:!!activity&&!!next&&(!!huntGoal||nonSafety),sourceLabel:sources.join(' + ')||undefined,nextLabel:next?activityQueueLabel(next):undefined,safetyEnabled};
+ return {armed:!!activity&&!!next&&(!!huntGoal||nonSafetyApplicable),sourceLabel:sources.join(' + ')||undefined,nextLabel:next?activityQueueLabel(next):undefined,safetyEnabled};
 }

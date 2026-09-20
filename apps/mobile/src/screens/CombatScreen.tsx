@@ -1,6 +1,6 @@
 import {RegionArtwork} from '../components/RegionArtwork';
 import {ScrollView,StyleSheet,Text,View} from 'react-native';
-import type {GameState} from '../core/types';
+import type {CombatChallengeId,GameState} from '../core/types';
 import {WORLD_ZONES} from '../content/world-map';
 import {currentCombatRegionId} from '../core/combat-region';
 import {environmentForZone} from '../core/world-weather';
@@ -11,7 +11,7 @@ import {GameButton} from '../components/GameButton';
 import {RegionEncounterList} from '../components/RegionEncounterList';
 import {StatBar} from '../components/StatBar';
 
-export function CombatScreen({state,onChangeRegion,onStart,onBoss}:{state:GameState;onChangeRegion:()=>void;onStart:(id:string)=>void;onBoss:()=>void}){
+export function CombatScreen({state,onChangeRegion,onStart,onBoss}:{state:GameState;onChangeRegion:()=>void;onStart:(id:string,challengeId?:CombatChallengeId)=>void;onBoss:()=>void}){
   const character=state.character!,progress=characterProgressWithinLevel(character.xp,character.level);
   const zone=WORLD_ZONES.find(entry=>entry.id===currentCombatRegionId(state))??WORLD_ZONES[0];
   return <ScrollView contentContainerStyle={s.root}>

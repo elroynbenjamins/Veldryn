@@ -59,7 +59,7 @@ export function OnlineProfileExtensionPanel({state,onSaved}:{state:GameState;onS
  const pickerTitle=picker==='visibility'?'Profile visibility':picker==='character'?'Showcase character':picker==='skill'?'Favorite skill':picker==='companion'?'Favorite companion':picker==='achievements'?'Achievement showcase':picker==='records'?'Personal Record showcase':picker==='collections'?'Collection showcase':'Profile settings';
  return <><Panel>
   <View style={s.heading}><View style={s.flex}><Text style={s.eyebrow}>ONLINE PROFILE</Text><Text style={s.title}>Privacy & Showcase</Text></View><Text style={s.revision}>r{value.revision}</Text></View>
-  <Text style={s.copy}>These settings control the profile opened from chat, guilds, rankings and other social surfaces.</Text>
+  <Text style={s.copy}>These settings control the profile opened from chat, Friends, guild rosters and other supported social surfaces.</Text>
   {guest?<View style={s.warning}><Text style={s.warningTitle}>Secure this guest account first</Text><Text style={s.copy}>Guest progress can continue normally, but public social-profile publishing is held until the account is linked.</Text></View>:null}
   <Text style={s.label}>Biography</Text><GameTextInput editable={!guest&&!busy} multiline value={bio} onChangeText={text=>setBio(text.slice(0,160))} maxLength={160} placeholder="Tell other players a little about your character or play style." placeholderTextColor={C.muted} style={s.bio}/><Text style={s.counter}>{bio.length}/160</Text>
   <View style={s.settings}>

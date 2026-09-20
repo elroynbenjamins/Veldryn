@@ -2,6 +2,15 @@ import type {CollectibleDefinition,CollectibleTarget} from './collectibles';
 
 export type CorePetRegion='Asterfall'|'Sunscar'|'Frostmarch'|'Ashlands';
 
+export const CORE_PET_RARITY_BY_ID:Readonly<Record<string,'Common'|'Uncommon'|'Rare'|'Epic'|'Mythic'>>={
+  PET_001:'Common',PET_002:'Uncommon',PET_003:'Common',PET_004:'Rare',PET_005:'Common',PET_006:'Rare',
+  PET_007:'Common',PET_008:'Uncommon',PET_009:'Common',PET_010:'Rare',PET_011:'Uncommon',PET_012:'Rare',
+  PET_013:'Uncommon',PET_014:'Epic',PET_015:'Uncommon',PET_016:'Epic',PET_017:'Rare',PET_018:'Mythic',
+  PET_019:'Common',PET_020:'Rare',PET_021:'Rare',PET_022:'Epic',PET_023:'Mythic',
+  PET_024:'Common',PET_025:'Rare',PET_026:'Rare',PET_027:'Epic',PET_028:'Mythic',
+  PET_029:'Common',PET_030:'Rare',PET_031:'Rare',PET_032:'Epic',PET_033:'Mythic',
+};
+
 const pet=(id:string,name:string,region:CorePetRegion,target:CollectibleTarget,nativeSize:48|64,activeBps=200,source?:string):CollectibleDefinition=>({
   id,
   kind:'pet',
@@ -14,7 +23,7 @@ const pet=(id:string,name:string,region:CorePetRegion,target:CollectibleTarget,n
   collectionGroup:'core',
   region,
   nativeSize,
-  rarity:nativeSize===64?'Epic':undefined,
+  rarity:CORE_PET_RARITY_BY_ID[id],
   description:`A permanent ${region} pet collectible.`,
 });
 

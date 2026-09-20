@@ -16,8 +16,9 @@ const inactive=COMPANION_MISSIONS.find(x=>!rotation.definitions.some(active=>act
 ok(!!inactive,'Rotation fixture needs at least one inactive authored mission');
 if(inactive){const ids=inactive.minCompanions===1?['UNIT_001']:inactive.originId==='REG_SUNSCAR'?['UNIT_013','UNIT_014','UNIT_015'].slice(0,inactive.minCompanions):inactive.originId==='REG_FROSTMARCH'?['UNIT_017','UNIT_018','UNIT_002'].slice(0,inactive.minCompanions):inactive.originId==='REG_ASHLANDS'?['UNIT_021','UNIT_022','UNIT_024'].slice(0,inactive.minCompanions):['UNIT_001','UNIT_002','UNIT_003'].slice(0,inactive.minCompanions);ok(!validateCompanionMissionTeam({missionId:inactive.id,companionIds:ids,owned,assignments:[],equippedCompanionIds:new Set(),expeditionPensLevel:3,serverNowMs:now}).ok,'Rotated-out mission should be rejected by authoritative validation');}
 
-// Mission-pool variety: ten authored assignments spanning regions, durations and roster constraints.
-eq(COMPANION_MISSIONS.length,10,'Sanctuary mission pool should contain ten authored assignments');
+// Mission-pool variety: preserve the existing ten and add seven specialist assignments.
+eq(COMPANION_MISSIONS.length,17,'Sanctuary mission pool should contain seventeen authored assignments');
+for(const id of ['MISSION_GREENFIELDS_FORAGE_2H','MISSION_IRONWOOD_TRACK_4H','MISSION_SUNSCAR_RELIC_6H','MISSION_FROST_RESONANCE_6H','MISSION_ASHLANDS_SALVAGE_8H','MISSION_OLD_FRIENDS_8H','MISSION_PRESTIGE_VIGIL_12H'])ok(!!companionMission(id),`Missing specialist Sanctuary mission ${id}`);
 for(const id of ['MISSION_APPRENTICE_3H','MISSION_SILVERBROOK_4H','MISSION_FROST_SCOUT_4H','MISSION_SUNSCAR_RUINS_8H','MISSION_ASH_RESCUE_8H'])ok(!!companionMission(id),`Missing expanded Sanctuary mission ${id}`);
 ok(validateCompanionMissionTeam({missionId:'MISSION_APPRENTICE_3H',companionIds:['UNIT_001','UNIT_003'],owned,assignments:[],equippedCompanionIds:new Set(),expeditionPensLevel:1}).ok,'Lower-rarity Apprentice Survey should accept Standard companions');
 ok(!validateCompanionMissionTeam({missionId:'MISSION_APPRENTICE_3H',companionIds:['UNIT_007','UNIT_004'],owned,assignments:[],equippedCompanionIds:new Set(),expeditionPensLevel:1}).ok,'Apprentice Survey should reject Elite companions');

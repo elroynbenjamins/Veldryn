@@ -1,11 +1,12 @@
-import {claimCompanionAssignment,companionExpeditionPenCapacity,predictedCompanionMissionGrade,startCompanionAssignment,validateCompanionMissionTeam} from '../assignments';
+import {activeCompanionMissions,claimCompanionAssignment,companionExpeditionPenCapacity,predictedCompanionMissionGrade,startCompanionAssignment,validateCompanionMissionTeam} from '../assignments';
 import {COMPANION_EXPEDITION_BOND_RATE,companionMission} from '../content';
 import type {CompanionAssignment,CompanionEconomyState,OwnedCompanionSnapshot} from '../domain';
 const ok=(v:unknown,m:string)=>{if(!v)throw new Error(m)};const eq=(a:unknown,b:unknown,m:string)=>{if(a!==b)throw new Error(`${m}: expected ${String(b)}, got ${String(a)}`)};const throws=(f:()=>unknown,m:string)=>{let did=false;try{f()}catch{did=true}if(!did)throw new Error(m)};
 const p=(id:string,level=30):OwnedCompanionSnapshot=>({companionId:id,level,xp:0,ascensionTier:3,bondLevel:8,bondXp:0,bondTraitUnlocked:false});
 const owned={UNIT_001:p('UNIT_001',20),UNIT_002:p('UNIT_002',20),UNIT_003:p('UNIT_003',20),UNIT_013:p('UNIT_013',25),UNIT_014:p('UNIT_014',30),UNIT_015:p('UNIT_015',30),UNIT_023:p('UNIT_023',30),UNIT_024:p('UNIT_024',35)};
 const economy:CompanionEconomyState={gold:100000,companionEssence:0,bondstones:0,materials:{SUPPLIES:99}};
-const now=Date.UTC(2026,8,11,12);
+const now=Date.UTC(2026,7,27,12);
+ok(activeCompanionMissions(now).definitions.some(row=>row.id==='MISSION_SUNSCAR_4H'),'Fixture week must expose Sunscar Caravan Guard');
 // Use 4h Sunscar mission with a strong Tank + Support pair.
 const ids=['UNIT_015','UNIT_014'];const valid=validateCompanionMissionTeam({missionId:'MISSION_SUNSCAR_4H',companionIds:ids,owned,assignments:[],equippedCompanionIds:new Set()});ok(valid.ok,'Valid mission team rejected');
 const expectedA=predictedCompanionMissionGrade('MISSION_SUNSCAR_4H',ids,owned),expectedB=predictedCompanionMissionGrade('MISSION_SUNSCAR_4H',ids,owned);eq(expectedA,expectedB,'Grade calculation not deterministic');

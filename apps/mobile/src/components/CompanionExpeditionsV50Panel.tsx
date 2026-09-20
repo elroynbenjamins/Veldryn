@@ -5,7 +5,7 @@ import type {GameState} from '../core/types';
 import {COMBAT_COMPANIONS} from '../content/combat-companions';
 import {assertCompanionIdle,companionView} from '../core/companion-runtime';
 import {COMPANION_MISSIONS} from '../../../../backend/src/server/companions/content';
-import {validateCompanionMissionTeam} from '../../../../backend/src/server/companions/assignments';
+import {activeCompanionMissions,validateCompanionMissionTeam} from '../../../../backend/src/server/companions/assignments';
 import {companionTeamPower} from '../../../../backend/src/server/companions/team';
 import {GameButton} from './GameButton';
 import {C,radii,spacing,typography} from '../theme/theme';
@@ -16,9 +16,9 @@ function remaining(end:string,now:number){const sec=Math.max(0,Math.ceil((Date.p
 function requirementLabel(req:any){if(req.type==='role_count')return (req.count??1)+'× '+String(req.role).replace(/^./,(c:string)=>c.toUpperCase());if(req.type==='min_level')return 'Level '+req.value+'+';if(req.type==='min_bond')return 'Bond '+req.value+'+';if(req.type==='min_ascension')return (req.count??1)+' at Ascension '+req.tier+'+';if(req.type==='min_rarity')return (req.count??1)+' '+String(req.rarity)+'+';if(req.type==='origin_count')return (req.count??1)+' from '+req.originId;return String(req.type).replace(/_/g,' ');}
 
 export function CompanionExpeditionsV50Panel({state,now,onCommand}:{state:GameState;now:number;onCommand:(command:GameCommand)=>Promise<void>}){
- const view=companionView(state,now),ownedIds=Object.keys(view.owned);
- const [missionId,setMissionId]=useState(COMPANION_MISSIONS[0]?.id??''),[picker,setPicker]=useState(false),[team,setTeam]=useState<string[]>([]),[busy,setBusy]=useState(false),[message,setMessage]=useState('');
- const mission=COMPANION_MISSIONS.find(row=>row.id===missionId)??COMPANION_MISSIONS[0];
+ const view=companionView(state,now),ownedIds=Object.keys(view.owned),missionRotation=activeCompanionMissions(now),missions=missionRotation.definitions;
+ const [missionId,setMissionId]=useState(missions[0]?.id??COMPANION_MISSIONS[0]?.id??''),[picker,setPicker]=useState(false),[team,setTeam]=useState<string[]>([]),[busy,setBusy]=useState(false),[message,setMessage]=useState('');
+ const mission=missions.find(row=>row.id===missionId)??missions[0]??COMPANION_MISSIONS[0];
  const equipped=state.character?.equippedCombatCompanionId,run=view.trial.progress.season.activeRun;
  const isIdle=(id:string)=>{try{assertCompanionIdle(state,id);return true}catch{return false}};
  const safeTeam=team.filter(id=>!!view.owned[id]);
@@ -28,8 +28,8 @@ export function CompanionExpeditionsV50Panel({state,now,onCommand}:{state:GameSt
  const toggle=(id:string)=>{if(!isIdle(id))return;setTeam(current=>current.includes(id)?current.filter(value=>value!==id):mission&&current.length>=mission.maxCompanions?[...current.slice(1),id]:[...current,id])};
  const roleNeeds=useMemo(()=>mission?.requirements?.filter((row:any)=>row.type==='role_count')??[],[mission?.id]);
  return <View style={s.root}>
-  <View><Text style={s.eyebrow}>COMPANION EXPEDITIONS</Text><Text style={s.heading}>Sanctuary Missions</Text><Text style={s.copy}>Send unused companions on asynchronous missions. They cannot simultaneously assist your character, run Trials, or join another assignment.</Text></View>
-  {mission?<><Pressable accessibilityRole="button" accessibilityState={{expanded:picker}} onPress={()=>setPicker(value=>!value)} style={s.dropdown}><View style={s.flex}><Text style={s.label}>SELECT MISSION</Text><Text style={s.missionName}>{mission.name}</Text><Text style={s.meta}>{duration(mission.durationMs)} · {mission.minCompanions}–{mission.maxCompanions} companions</Text></View><Text style={s.chevron}>{picker?'⌃':'⌄'}</Text></Pressable>{picker?<View style={s.menu}>{COMPANION_MISSIONS.map(row=><Pressable key={row.id} onPress={()=>{setMissionId(row.id);setTeam([]);setPicker(false)}} style={[s.menuRow,row.id===mission.id&&s.menuRowActive]}><View style={s.flex}><Text style={s.menuName}>{row.id===mission.id?'✓ ':''}{row.name}</Text><Text style={s.meta}>{duration(row.durationMs)} · Recommended Power {row.recommendedPower.toLocaleString()}</Text></View></Pressable>)}</View>:null}
+  <View><Text style={s.eyebrow}>COMPANION EXPEDITIONS</Text><Text style={s.heading}>Sanctuary Missions</Text><Text style={s.copy}>Send unused companions on asynchronous missions. The mission board rotates every Monday at 00:00 UTC; active assignments remain claimable after rotation.</Text></View>
+  {mission?<><Pressable accessibilityRole="button" accessibilityState={{expanded:picker}} onPress={()=>setPicker(value=>!value)} style={s.dropdown}><View style={s.flex}><Text style={s.label}>SELECT MISSION</Text><Text style={s.missionName}>{mission.name}</Text><Text style={s.meta}>{duration(mission.durationMs)} · {mission.minCompanions}–{mission.maxCompanions} companions</Text></View><Text style={s.chevron}>{picker?'⌃':'⌄'}</Text></Pressable>{picker?<View style={s.menu}>{missions.map(row=><Pressable key={row.id} onPress={()=>{setMissionId(row.id);setTeam([]);setPicker(false)}} style={[s.menuRow,row.id===mission.id&&s.menuRowActive]}><View style={s.flex}><Text style={s.menuName}>{row.id===mission.id?'✓ ':''}{row.name}</Text><Text style={s.meta}>{duration(row.durationMs)} · Recommended Power {row.recommendedPower.toLocaleString()}</Text></View></Pressable>)}</View>:null}
    <View style={s.missionCard}><View style={s.between}><View style={s.flex}><Text style={s.sectionTitle}>Mission Details</Text><Text style={s.meta}>Recommended Power {mission.recommendedPower.toLocaleString()}</Text></View><Text style={[s.power,power>=mission.recommendedPower?s.powerGood:s.powerLow]}>{power.toLocaleString()}</Text></View><View style={s.track}><View style={[s.fill,{width:(Math.min(100,powerPct)+'%') as any}]}/></View>
     <Text style={s.label}>REQUIREMENTS</Text><View style={s.chips}>{(mission.requirements??[]).map((req:any,index)=><View key={index} style={s.chip}><Text style={s.chipText}>{requirementLabel(req)}</Text></View>)}</View>
     {roleNeeds.length?<><Text style={s.label}>NEEDED ROLES</Text><View style={s.chips}>{roleNeeds.map((req:any,index)=><View key={index} style={s.roleChip}><Text style={s.roleText}>{roleGlyph[req.role as keyof typeof roleGlyph]} {req.count}× {req.role}</Text></View>)}</View></>:null}

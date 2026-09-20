@@ -11,10 +11,10 @@ export function activeCompanionMissions(serverNowMs:number){
  const fixed=companionMission('MISSION_SCOUT_2H');
  if(!fixed)throw new Error('starter_companion_mission_missing');
  const buckets=[
-  ['MISSION_APPRENTICE_3H','MISSION_SILVERBROOK_4H','MISSION_ASTERFALL_SHRINE_8H'],
-  ['MISSION_SUNSCAR_4H','MISSION_SUNSCAR_RUINS_8H'],
-  ['MISSION_FROST_SCOUT_4H','MISSION_FROST_8H'],
-  ['MISSION_ASH_RESCUE_8H','MISSION_ASH_12H'],
+  ['MISSION_APPRENTICE_3H','MISSION_SILVERBROOK_4H','MISSION_ASTERFALL_SHRINE_8H','MISSION_GREENFIELDS_FORAGE_2H','MISSION_IRONWOOD_TRACK_4H','MISSION_OLD_FRIENDS_8H'],
+  ['MISSION_SUNSCAR_4H','MISSION_SUNSCAR_RUINS_8H','MISSION_SUNSCAR_RELIC_6H'],
+  ['MISSION_FROST_SCOUT_4H','MISSION_FROST_8H','MISSION_FROST_RESONANCE_6H'],
+  ['MISSION_ASH_RESCUE_8H','MISSION_ASH_12H','MISSION_ASHLANDS_SALVAGE_8H'],
  ] as const;
  const definitions=[fixed],selected=new Set([fixed.id]);
  buckets.forEach((ids,index)=>{const id=ids[(seed+index*7)%ids.length],mission=companionMission(id);if(mission&&!selected.has(mission.id)){definitions.push(mission);selected.add(mission.id);}});

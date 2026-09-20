@@ -21,7 +21,7 @@ export function useSocialNotificationCounts(){
   const {session}=useAuthSession();
   const [counts,setCounts]=useState<SocialNotificationCounts>(ZERO);
   const refresh=useCallback(async()=>{
-    if(!session||session.user.is_anonymous){setCounts(ZERO);return;}
+    if(!session){setCounts(ZERO);return;}
     try{
       const requests=await friendRequests();
       const incoming=requests.filter(request=>request.direction==='incoming').length;
@@ -42,7 +42,7 @@ export function useSocialNotificationCounts(){
     }catch{
       // Notification polling must never interrupt gameplay or sign-in.
     }
-  },[session?.user.id,session?.user.is_anonymous]);
+  },[session?.user.id]);
   useEffect(()=>{void refresh();const id=setInterval(()=>void refresh(),30000);const sub=AppState.addEventListener('change',status=>{if(status==='active')void refresh();});return()=>{clearInterval(id);sub.remove();}},[refresh]);
   return {counts,refresh};
 }

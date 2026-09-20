@@ -16,6 +16,7 @@ export function normalizeCompanionRuntimeSave(raw:any):CompanionAccountState {
   out.companionBondRewardClaims=list(a.companionBondRewardClaims,100);
   out.companionBattleReadyAtMs=int(a.companionBattleReadyAtMs);
   out.companionBossRematchReadyAtMs=int(a.companionBossRematchReadyAtMs);
+  out.companionBossRematchBondstoneWeek=typeof a.companionBossRematchBondstoneWeek==='string'?a.companionBossRematchBondstoneWeek:undefined;
   if(a.companionTrialProgress){
     const p=a.companionTrialProgress,s=p.season;if(!s||!month(s.seasonKey))throw new Error('Invalid companion Trial save.');
     const season={...newCompanionTrialSeasonState(s.seasonKey),...s};

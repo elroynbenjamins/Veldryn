@@ -8,14 +8,14 @@ import {GATHERING} from '../content/skills';
 import {HERB_NODES} from '../content/herbalism';
 import {simulateCombat} from '../../../../backend/src/server/combat/engine';
 import {startCompanionTrial,resolveCompanionTrialFloor,abandonCompanionTrial,claimMonthlyCompanionChallenge} from '../../../../backend/src/server/companions/trials';
-import {startCompanionAssignment,claimCompanionAssignment,rolloverCompanionAssignmentStatuses} from '../../../../backend/src/server/companions/assignments';
+import {startCompanionAssignment,claimCompanionAssignment,rolloverCompanionAssignmentStatuses,validateCompanionMissionTeam} from '../../../../backend/src/server/companions/assignments';
 import {awardCompanionXpServer,awardCompanionBondXpServer,companionUnlockRequirementsSatisfied,selectCompanionTechnique,setCompanionShowcase,grantCombatCompanionOrConvertDuplicate} from '../../../../backend/src/server/companions/progression-v2';
 import {claimCompanionCodexMilestone} from '../../../../backend/src/server/companions/codex';
 import {projectCompanionCodex,projectCompanionTrial,projectCompanionProvingGrounds} from '../../../../backend/src/server/companions/projection';
 import {claimCompanionProvingGroundChallenge,recordCompanionProvingGroundEvent,activeCompanionProvingGroundChallenges,provingGroundEventMatches} from '../../../../backend/src/server/companions/proving-grounds';
 import {companionTrialWeekKey} from '../../../../backend/src/server/companions/trial-season';
 import {companionTeamPower} from '../../../../backend/src/server/companions/team';
-import {COMPANION_SPECIAL_CHALLENGES,companionTrialRecommendedPower,companionServerDefinition} from '../../../../backend/src/server/companions/content';
+import {COMPANION_SPECIAL_CHALLENGES,companionMission,companionTrialRecommendedPower,companionServerDefinition} from '../../../../backend/src/server/companions/content';
 import {resolveSpecialCompanionChallenge} from '../../../../backend/src/server/companions/special-challenges';
 import type {CompanionAssignment,CompanionTrialProgress,CompanionProvingGroundState,CompanionOverflowState,OwnedCompanionSnapshot,CompanionEconomyState,CompanionCombatExecutor,CompanionUnlockFacts,CompanionProvingGroundEvent} from '../../../../backend/src/server/companions/domain';
 
@@ -146,6 +146,17 @@ export function recommendedCompanionTrialTeam(state:GameState){
     if(power>bestPower){best=ids;bestPower=power;}
   }
   return {ids:best,power:Math.max(0,bestPower),ready:best.length===3,missingRoles:[] as CombatCompanionRole[]};
+}
+export function recommendedCompanionMissionTeam(state:GameState,missionId:string,now:number){
+  const mission=companionMission(missionId),owned=companionOwned(state);
+  if(!mission)return {ids:[] as string[],power:0,grade:undefined as 'C'|'B'|'A'|'S'|undefined,bonusRequirementMet:false,ready:false,reason:'Assignment unavailable.'};
+  const candidates=Object.keys(owned).filter(id=>companionAvailability(state,id).status==='available');
+  const equipped=new Set(state.character?.equippedCombatCompanionId?[state.character.equippedCombatCompanionId]:[]),lockedTrial=new Set(state.account.companionTrialProgress?.season.activeRun?.teamCompanionIds??[]);
+  const gradeRank={C:0,B:1,A:2,S:3} as const;let best:{ids:string[];power:number;grade:'C'|'B'|'A'|'S';bonusRequirementMet:boolean}|undefined;
+  const evaluate=(ids:string[])=>{const check=validateCompanionMissionTeam({missionId,companionIds:ids,owned,assignments:state.account.companionAssignments??[],equippedCompanionIds:equipped,lockedTrialCompanionIds:lockedTrial,expeditionPensLevel:state.account.companionSanctuary?.expeditionPensLevel??0,serverNowMs:now});if(!check.ok)return;const candidate={ids:[...ids],power:check.power,grade:check.grade,bonusRequirementMet:check.bonusRequirementMet};if(!best||gradeRank[candidate.grade]>gradeRank[best.grade]||gradeRank[candidate.grade]===gradeRank[best.grade]&&Number(candidate.bonusRequirementMet)>Number(best.bonusRequirementMet)||gradeRank[candidate.grade]===gradeRank[best.grade]&&candidate.bonusRequirementMet===best.bonusRequirementMet&&candidate.power>best.power)best=candidate;};
+  const build=(size:number,start:number,picked:string[])=>{if(picked.length===size){evaluate(picked);return;}for(let i=start;i<candidates.length;i++)build(size,i+1,[...picked,candidates[i]]);};
+  for(let size=mission.minCompanions;size<=mission.maxCompanions;size++)build(size,0,[]);
+  return best?{...best,ready:true,reason:undefined}:{ids:[] as string[],power:0,grade:undefined as 'C'|'B'|'A'|'S'|undefined,bonusRequirementMet:false,ready:false,reason:'No currently available team meets every assignment requirement.'};
 }
 /** Training shares the capped max-level XP conversion used by real combat. */
 export function claimCompanionTraining(input:GameState,now:number):GameState{

@@ -1,6 +1,6 @@
 import {createCharacter,newGame,claimActivity,claimQuest,startCombat,previewActivityReward} from '../src/core/game';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
-import {unlockCombatCompanion,equipCombatCompanion,companionCombatContribution,companionLevelCost,applyCompanionBondXp,claimSanctuaryTraining,claimSanctuaryEssence} from '../src/core/combat-companions';
+import {unlockCombatCompanion,equipCombatCompanion,companionCombatContribution,companionLevelCost,companionRemainingLevelCost,applyCompanionBondXp,claimSanctuaryTraining,claimSanctuaryEssence} from '../src/core/combat-companions';
 import {refreshCompanions,companionOwned,companionCombatExecutor,recordCompanionActivity} from '../src/core/companion-runtime';
 import {migrateSave} from '../src/core/save-migrations';
 import {createSaveBackup,parseSaveBackup} from '../src/core/save-transfer';
@@ -29,6 +29,7 @@ rejects(()=>command(s,'companion_equip',{id:'UNIT_024'}),'unowned rejected');
 s=command(s,'companion_equip',{id:'UNIT_001'});ok(s.character!.equippedCombatCompanionId==='UNIT_001','equip persists');
 ok(companionCombatContribution(s).outputMultiplier>1,'assist output applied');
 const beforeGold=s.character!.gold,cost=companionLevelCost('standard',1);s=command(s,'companion_level',{id:'UNIT_001'});ok(s.account.combatCompanionProgress!.UNIT_001.level===2&&s.character!.gold===beforeGold-cost.gold,'level and cost atomic');
+let partial=fixture();partial.account.combatCompanionProgress!.UNIT_001.xp=32;const partialDef=COMBAT_COMPANIONS.find(d=>d.id==='UNIT_001')!,partialCost=companionRemainingLevelCost(partialDef,partial.account.combatCompanionProgress!.UNIT_001),fullCost=companionLevelCost('standard',1),partialGold=partial.character!.gold;partial=command(partial,'companion_level',{id:'UNIT_001'});ok(partialCost.gold<fullCost.gold&&partial.character!.gold===partialGold-partialCost.gold&&partial.account.combatCompanionProgress!.UNIT_001.level===2,'paid training only buys missing XP');
 for(let i=2;i<10;i++)s=command(s,'companion_level',{id:'UNIT_001'});
 rejects(()=>command(s,'companion_level',{id:'UNIT_001'}),'ascension gate');
 let poor=structuredClone(s);poor.account.bondstones=0;const poorBefore=JSON.stringify(poor);rejects(()=>command(poor,'companion_ascend',{id:'UNIT_001'}),'missing resources rejected');ok(JSON.stringify(poor)===poorBefore,'failure leaves original intact');
@@ -97,6 +98,9 @@ let trained=fixture();for(const id of ids)trained.account.combatCompanionProgres
 trained.account.companionSanctuary={...trained.account.companionSanctuary!,trainingGroundLevel:1,lastTrainingClaimAtMs:now-7*86400000};
 trained=command(trained,'companion_training');ok(trained.account.companionEssence===10048,'max-level Sanctuary training converts XP using shared weekly cap');
 ok(command(trained,'companion_training').account.companionEssence===10048,'training conversion cannot be repeatedly claimed');
+let bondLadder=fixture();bondLadder.account.combatCompanionProgress!.UNIT_001=applyCompanionBondXp(bondLadder.account.combatCompanionProgress!.UNIT_001,2520);const beforeBondRewards=bondLadder.account.companionEssence!;for(const level of [2,4,6,8])bondLadder=command(bondLadder,'companion_bond_reward',{id:'UNIT_001',level});ok(bondLadder.account.companionEssence===beforeBondRewards+190,'Bond 2/4/6/8 milestone rewards pay once');rejects(()=>command(bondLadder,'companion_bond_reward',{id:'UNIT_001',level:8}),'Bond milestone cannot replay');
+ok(companionTechniques('UNIT_013').some(t=>t.name==='Venom Ambush')&&companionTechniques('UNIT_017').some(t=>t.name==='Shatterfang'),'regional companions have authored techniques');
+ok(companionTechniques('EVT_UNIT_003').some(t=>t.name==='Root Bastion')&&companionTechniques('EVT_UNIT_009').some(t=>t.name==='Grand Bell'),'event companions have authored techniques');
 const bondBase=command(fixture(),'companion_equip',{id:'UNIT_001'}),bondBoost=structuredClone(bondBase);bondBoost.account.companionSanctuary!.bondHallLevel=3;
 ok(recordCompanionActivity(bondBoost,'combat','MOSS_RAT',100,now).account.combatCompanionProgress!.UNIT_001.bondXp===460,'Bond Hall applies exactly once to hunting');
 console.log(`PASS companion integration: ${checks} checks`);

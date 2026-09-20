@@ -1,4 +1,4 @@
-import {useEffect,useState} from 'react';
+import {useEffect,useMemo,useState} from 'react';
 import {RegionArtwork} from '../components/RegionArtwork';
 import {ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
@@ -12,7 +12,8 @@ import {environmentForZone} from '../core/world-weather';
 import {EnvironmentBanner} from '../components/EnvironmentBanner';
 import {Panel} from '../components/Panel';
 import {GameButton} from '../components/GameButton';
-import {C,equipmentColors,radii,spacing,typography} from '../theme/theme';
+import {radii,spacing,typography} from '../theme/theme';
+import {useGameTheme,type ThemePalette} from '../theme/app-theme';
 import {FrostmarchRegionPanel} from '../components/FrostmarchRegionPanel';
 import {RegionalJournalPanel} from '../components/RegionalJournalPanel';
 import {RegionalStoryLeadsPanel} from '../components/RegionalStoryLeadsPanel';
@@ -28,6 +29,7 @@ type Props={
 };
 
 export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop}:Props){
+  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
   const level=state.character!.level,currentId=currentRegionId(state);
   const current=WORLD_ZONES.find(zone=>zone.id===currentId)??WORLD_ZONES[0];
   const environment=environmentForZone(current.id);
@@ -88,22 +90,22 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop}:Pr
   </ScrollView>;
 }
 
-const s=StyleSheet.create({
+const styles=(C:ThemePalette)=>StyleSheet.create({
   root:{padding:spacing.lg,gap:spacing.md,paddingBottom:spacing.xl},
-  kicker:{...typography.caption,color:equipmentColors.gold,fontWeight:'700',letterSpacing:1.2},
+  kicker:{...typography.caption,color:C.accent,fontWeight:'700',letterSpacing:1.2},
   h:{...typography.hero,color:C.text},
   title:{...typography.title,color:C.text},
   sub:{...typography.body,color:C.muted},
   flex:{flex:1,minWidth:0},
-  heroShade:{...StyleSheet.absoluteFillObject,backgroundColor:'rgba(5,12,20,.6)'},thumbnail:{width:76,height:84,borderRadius:12,overflow:'hidden'},lockedTag:{position:'absolute',bottom:0,left:0,right:0,padding:4,backgroundColor:'#08111dcc'},lockedText:{color:C.muted,textAlign:'center',fontSize:11},currentCard:{minHeight:172,overflow:'hidden',flexDirection:'row',alignItems:'center',gap:spacing.md,padding:spacing.md,backgroundColor:equipmentColors.panel,borderWidth:1,borderRadius:radii.lg},
-  regionSymbol:{width:64,height:64,alignItems:'center',justifyContent:'center',borderWidth:1,borderRadius:32,backgroundColor:equipmentColors.stage},
+  heroShade:{...StyleSheet.absoluteFillObject,backgroundColor:'rgba(5,12,20,.6)'},thumbnail:{width:76,height:84,borderRadius:12,overflow:'hidden'},lockedTag:{position:'absolute',bottom:0,left:0,right:0,padding:4,backgroundColor:'#08111dcc'},lockedText:{color:C.muted,textAlign:'center',fontSize:11},currentCard:{minHeight:172,overflow:'hidden',flexDirection:'row',alignItems:'center',gap:spacing.md,padding:spacing.md,backgroundColor:C.panel,borderWidth:1,borderRadius:radii.lg},
+  regionSymbol:{width:64,height:64,alignItems:'center',justifyContent:'center',borderWidth:1,borderRadius:32,backgroundColor:C.stage},
   symbol:{fontSize:31,fontWeight:'700'},
-  overline:{...typography.caption,color:equipmentColors.goldSoft,fontWeight:'700',letterSpacing:1},
+  overline:{...typography.caption,color:C.accentSoft,fontWeight:'700',letterSpacing:1},
   currentName:{...typography.title,color:C.text,fontSize:22},
   actions:{flexDirection:'row',gap:spacing.sm,marginTop:spacing.sm},
-  section:{...typography.caption,color:equipmentColors.goldSoft,fontWeight:'700',letterSpacing:1},
-  destination:{minHeight:104,flexDirection:'row',alignItems:'center',gap:spacing.sm,padding:spacing.sm,backgroundColor:equipmentColors.panel,borderWidth:1,borderColor:C.line,borderRadius:radii.lg},
-  smallSymbol:{width:44,height:44,alignItems:'center',justifyContent:'center',borderWidth:1,borderRadius:22,backgroundColor:equipmentColors.stage},
+  section:{...typography.caption,color:C.accentSoft,fontWeight:'700',letterSpacing:1},
+  destination:{minHeight:104,flexDirection:'row',alignItems:'center',gap:spacing.sm,padding:spacing.sm,backgroundColor:C.panel,borderWidth:1,borderColor:C.line,borderRadius:radii.lg},
+  smallSymbol:{width:44,height:44,alignItems:'center',justifyContent:'center',borderWidth:1,borderRadius:22,backgroundColor:C.stage},
   smallSymbolText:{fontSize:21,fontWeight:'700'},
   destinationName:{...typography.bodyStrong,color:C.text},
   destinationMeta:{...typography.caption,color:C.info,fontWeight:'600'},

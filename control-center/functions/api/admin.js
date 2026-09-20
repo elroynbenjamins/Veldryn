@@ -376,6 +376,12 @@ async function schedulePlayerEvent(env, actor, payload) {
   const eventId = String(payload.eventId ?? '');
   const row = await single(env, 'live_events', `event_id=eq.${encodeEq(eventId)}`);
   if (!row) throw new Error('player_event_not_found');
+  let reason = '';
+  if (row.enabled) {
+    requireRole(actor, 'owner');
+    reason = String(payload.reason ?? '').trim();
+    if (reason.length < 10) throw new Error('player_event_change_reason_too_short');
+  }
   const start = parsePlayerEventDate(payload.startsAt, 'player_event_start_invalid');
   const end = parsePlayerEventDate(payload.endsAt, 'player_event_end_invalid');
   if (end.ms <= start.ms) throw new Error('player_event_end_before_start');
@@ -391,12 +397,12 @@ async function schedulePlayerEvent(env, actor, payload) {
     prefer: 'return=representation',
   });
   await audit(env, actor, 'player_event.schedule', 'player_event', eventId, {
+    reason: row.enabled ? reason : null,
     before: { startsAt: row.starts_at, endsAt: row.ends_at, graceEndsAt: row.grace_ends_at, enabled: row.enabled },
     after: { startsAt: start.iso, endsAt: end.iso, graceEndsAt },
   });
   return rows?.[0];
 }
-
 async function setPlayerEventEnabled(env, actor, payload) {
   requireRole(actor, 'owner');
   const eventId = String(payload.eventId ?? '');

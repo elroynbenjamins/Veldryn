@@ -1,3 +1,4 @@
+import {useMemo} from 'react';
 import {useEffect,useRef,useState} from 'react';
 import {Animated,Easing,Pressable,StyleSheet,Text,View} from 'react-native';
 import {ActiveActivity,RewardBundle} from '../core/types';
@@ -6,6 +7,7 @@ import {itemDef} from '../content/items';
 import {GameButton} from './GameButton';
 import {Panel} from './Panel';
 import {C,spacing,typography} from '../theme/theme';
+import {useGameTheme,type ThemePalette} from '../theme/app-theme';
 import {formatGameNumber} from '../core/number-format';
 
 function duration(seconds:number){
@@ -15,6 +17,7 @@ function duration(seconds:number){
 }
 
 export function ActivityCard({title,kind,activity,cycleSeconds,capHours,preview,rates,reduceMotion=false,numberMode='abbreviated',onClaim,onStop}:{title:string;kind:'combat'|'gathering';activity?:ActiveActivity;cycleSeconds:number;capHours:number;preview:RewardBundle;rates:{actionsPerHour:number;xpPerHour:number;goldPerHour:number};reduceMotion?:boolean;numberMode?:'abbreviated'|'exact';onClaim:()=>void;onStop:()=>void}){
+ const T=useGameTheme(),s=useMemo(()=>makeStyles(T),[T]);
   const [showDetails,setShowDetails]=useState(false);
   const pulse=useRef(new Animated.Value(0)).current;
   useEffect(()=>{pulse.setValue(0);if(reduceMotion)return;const loop=Animated.loop(Animated.timing(pulse,{toValue:1,duration:1100,easing:Easing.linear,useNativeDriver:true}));loop.start();return()=>loop.stop()},[pulse,reduceMotion]);
@@ -50,21 +53,21 @@ export function ActivityCard({title,kind,activity,cycleSeconds,capHours,preview,
   </Panel>;
 }
 
-const s=StyleSheet.create({
+const makeStyles=(T:ThemePalette)=>StyleSheet.create({
   heading:{flexDirection:'row',justifyContent:'space-between',alignItems:'flex-start',gap:spacing.md},
-  headingCopy:{flex:1},eyebrow:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:1},
-  title:{...typography.title,color:C.text},detail:{...typography.body,color:C.muted},
-  status:{borderWidth:1,borderColor:C.good,borderRadius:99,paddingHorizontal:spacing.sm,paddingVertical:spacing.xs},
-  statusCapped:{borderColor:C.warning},statusText:{...typography.caption,fontWeight:'900'},statusActive:{color:C.good},statusCappedText:{color:C.warning},statusStopped:{color:C.bad},
-  goal:{gap:4,padding:spacing.sm,borderWidth:1,borderColor:C.info,borderRadius:8,backgroundColor:'#132333'},goalLabel:{...typography.caption,color:C.info,fontWeight:'900',letterSpacing:.7},goalValue:{...typography.caption,color:C.text,fontWeight:'900'},goalTrack:{height:7,borderRadius:4,overflow:'hidden',backgroundColor:C.bg},goalFill:{height:'100%',backgroundColor:C.info},
-  momentum:{gap:4,padding:spacing.sm,borderWidth:1,borderColor:C.good,borderRadius:8,backgroundColor:C.panel2},momentumLabel:{...typography.caption,color:C.good,fontWeight:'900',letterSpacing:.7},momentumValue:{...typography.caption,color:C.text,fontWeight:'900'},momentumHint:{...typography.caption,color:C.muted},momentumTrack:{height:7,borderRadius:4,overflow:'hidden',backgroundColor:C.bg},momentumFill:{height:'100%',backgroundColor:C.good},
-  champion:{gap:2,padding:spacing.sm,borderWidth:1,borderColor:'#d7a94f',borderRadius:8,backgroundColor:'#2b2417'},championLabel:{...typography.caption,color:'#f2c96f',fontWeight:'900',letterSpacing:.8},championText:{...typography.bodyStrong,color:C.text},
+  headingCopy:{flex:1},eyebrow:{...typography.caption,color:T.accent,fontWeight:'900',letterSpacing:1},
+  title:{...typography.title,color:T.text},detail:{...typography.body,color:T.muted},
+  status:{borderWidth:1,borderColor:T.good,borderRadius:99,paddingHorizontal:spacing.sm,paddingVertical:spacing.xs},
+  statusCapped:{borderColor:T.warning},statusText:{...typography.caption,fontWeight:'900'},statusActive:{color:T.good},statusCappedText:{color:T.warning},statusStopped:{color:T.bad},
+  goal:{gap:4,padding:spacing.sm,borderWidth:1,borderColor:T.info,borderRadius:8,backgroundColor:'#132333'},goalLabel:{...typography.caption,color:T.info,fontWeight:'900',letterSpacing:.7},goalValue:{...typography.caption,color:T.text,fontWeight:'900'},goalTrack:{height:7,borderRadius:4,overflow:'hidden',backgroundColor:T.bg},goalFill:{height:'100%',backgroundColor:T.info},
+  momentum:{gap:4,padding:spacing.sm,borderWidth:1,borderColor:T.good,borderRadius:8,backgroundColor:T.panel2},momentumLabel:{...typography.caption,color:T.good,fontWeight:'900',letterSpacing:.7},momentumValue:{...typography.caption,color:T.text,fontWeight:'900'},momentumHint:{...typography.caption,color:T.muted},momentumTrack:{height:7,borderRadius:4,overflow:'hidden',backgroundColor:T.bg},momentumFill:{height:'100%',backgroundColor:T.good},
+  champion:{gap:2,padding:spacing.sm,borderWidth:1,borderColor:'#d7a94f',borderRadius:8,backgroundColor:'#2b2417'},championLabel:{...typography.caption,color:'#f2c96f',fontWeight:'900',letterSpacing:.8},championText:{...typography.bodyStrong,color:T.text},
   rewardRow:{flexDirection:'row',flexWrap:'wrap',gap:8,justifyContent:'space-between',alignItems:'center',paddingVertical:spacing.sm},
-  rewardNumber:{fontSize:42,lineHeight:46,color:C.text,fontWeight:'900'},rewardLabel:{...typography.caption,color:C.muted},
-  totals:{alignItems:'flex-end'},xp:{...typography.bodyStrong,color:C.good},gold:{...typography.bodyStrong,color:C.accent},
-  loot:{...typography.body,color:C.text},emptyLoot:{...typography.body,color:C.muted},
-  detailsToggle:{minHeight:42,flexDirection:'row',alignItems:'center',justifyContent:'space-between',borderTopWidth:1,borderTopColor:C.line},detailsLabel:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.8},detailsMark:{fontSize:22,color:C.accent},details:{gap:spacing.xs},
-  capNotice:{...typography.body,color:C.text},noticeLabel:{...typography.caption,color:C.warning,fontWeight:'900',letterSpacing:1},stopNotice:{gap:4,padding:spacing.sm,borderWidth:1,borderColor:C.warning,borderRadius:8,backgroundColor:'#332515'},
-  progressBlock:{gap:spacing.xs,paddingVertical:spacing.xs},progressMeta:{flexDirection:'row',flexWrap:'wrap',gap:6,justifyContent:'space-between'},progressLabel:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:1},progressTime:{...typography.bodyStrong,color:C.text},track:{height:16,borderRadius:8,overflow:'hidden',backgroundColor:C.bg,borderWidth:1,borderColor:C.line},fill:{height:'100%',overflow:'hidden',backgroundColor:C.good,borderRadius:8},shine:{position:'absolute',width:54,height:'100%',backgroundColor:'rgba(255,255,255,.28)'},
-  rateRow:{flexDirection:'row',flexWrap:'wrap',gap:spacing.sm},rate:{...typography.caption,color:C.info,fontWeight:'800'},
+  rewardNumber:{fontSize:42,lineHeight:46,color:T.text,fontWeight:'900'},rewardLabel:{...typography.caption,color:T.muted},
+  totals:{alignItems:'flex-end'},xp:{...typography.bodyStrong,color:T.good},gold:{...typography.bodyStrong,color:T.accent},
+  loot:{...typography.body,color:T.text},emptyLoot:{...typography.body,color:T.muted},
+  detailsToggle:{minHeight:42,flexDirection:'row',alignItems:'center',justifyContent:'space-between',borderTopWidth:1,borderTopColor:T.line},detailsLabel:{...typography.caption,color:T.accent,fontWeight:'900',letterSpacing:.8},detailsMark:{fontSize:22,color:T.accent},details:{gap:spacing.xs},
+  capNotice:{...typography.body,color:T.text},noticeLabel:{...typography.caption,color:T.warning,fontWeight:'900',letterSpacing:1},stopNotice:{gap:4,padding:spacing.sm,borderWidth:1,borderColor:T.warning,borderRadius:8,backgroundColor:'#332515'},
+  progressBlock:{gap:spacing.xs,paddingVertical:spacing.xs},progressMeta:{flexDirection:'row',flexWrap:'wrap',gap:6,justifyContent:'space-between'},progressLabel:{...typography.caption,color:T.accent,fontWeight:'900',letterSpacing:1},progressTime:{...typography.bodyStrong,color:T.text},track:{height:16,borderRadius:8,overflow:'hidden',backgroundColor:T.bg,borderWidth:1,borderColor:T.line},fill:{height:'100%',overflow:'hidden',backgroundColor:T.good,borderRadius:8},shine:{position:'absolute',width:54,height:'100%',backgroundColor:'rgba(255,255,255,.28)'},
+  rateRow:{flexDirection:'row',flexWrap:'wrap',gap:spacing.sm},rate:{...typography.caption,color:T.info,fontWeight:'800'},
 });

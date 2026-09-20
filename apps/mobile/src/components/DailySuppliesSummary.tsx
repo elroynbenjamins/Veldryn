@@ -1,8 +1,10 @@
+import {useMemo} from 'react';
 import {StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
 import {dailySuppliesHomeSummary} from '../core/daily-supplies-home';
 import {GameButton} from './GameButton';
-import {C,radii,spacing,typography} from '../theme/theme';
+import {radii,spacing,typography,equipmentTheme,type ThemeColors} from '../theme/theme';
+import {useGameTheme} from '../theme/ThemeContext';
 
 function duration(seconds:number){
  const hours=Math.floor(seconds/3600),minutes=Math.floor((seconds%3600)/60);
@@ -10,6 +12,7 @@ function duration(seconds:number){
 }
 
 export function DailySuppliesSummary({state,nowMs,onOpen}:{state:GameState;nowMs:number;onOpen:()=>void}){
+ const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
  const summary=dailySuppliesHomeSummary(state,nowMs);
  if(!summary.visible)return null;
  return <View style={[s.card,summary.canClaim&&s.ready]}>
@@ -20,4 +23,4 @@ export function DailySuppliesSummary({state,nowMs,onOpen}:{state:GameState;nowMs
   <GameButton title={summary.canClaim?'Open & claim':'Manage Daily Supplies'} tone={summary.canClaim?'primary':'secondary'} onPress={onOpen}/>
  </View>;
 }
-const s=StyleSheet.create({card:{gap:7,padding:spacing.md,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel},ready:{borderLeftWidth:4,borderLeftColor:C.good},head:{flexDirection:'row',alignItems:'center',gap:8},flex:{flex:1,minWidth:0},kicker:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.8},title:{...typography.bodyStrong,color:C.text},readyText:{...typography.caption,color:C.good,fontWeight:'900'},activeText:{...typography.caption,color:C.info,fontWeight:'900'},detail:{...typography.body,color:C.text},meta:{...typography.caption,color:C.muted}});
+function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);return StyleSheet.create({card:{gap:7,padding:spacing.md,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel},ready:{borderLeftWidth:4,borderLeftColor:C.good},head:{flexDirection:'row',alignItems:'center',gap:8},flex:{flex:1,minWidth:0},kicker:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.8},title:{...typography.bodyStrong,color:C.text},readyText:{...typography.caption,color:C.good,fontWeight:'900'},activeText:{...typography.caption,color:C.info,fontWeight:'900'},detail:{...typography.body,color:C.text},meta:{...typography.caption,color:C.muted}});}

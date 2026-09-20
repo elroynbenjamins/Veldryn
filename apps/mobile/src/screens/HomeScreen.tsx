@@ -30,7 +30,7 @@ import {ContractBoardSummary} from '../components/ContractBoardSummary';
 import {weeklyOrderDestination} from '../core/weekly-order-integrations-v41';
 import {DailySuppliesSummary} from '../components/DailySuppliesSummary';
 
-export function HomeScreen({state,preview,nowMs,onClaim,onStop,onQueueRemove,onQueueClear,onQueueStart,onNavigate,onOpenCombat,onOpenSkill,onOpenPlanner,onNavigateGoal}:{state:GameState;preview:RewardBundle;nowMs:number;onClaim:()=>void;onStop:()=>void;onQueueRemove:(index:number)=>void;onQueueClear:()=>void;onQueueStart:()=>void;onNavigate:(tab:DashboardDestination|'Events'|'DailySupplies',zoneId?:string)=>void;onOpenCombat:()=>void;onOpenSkill:(skillId:SkillId)=>void;onOpenPlanner:()=>void;onNavigateGoal:(destination:WorkingTowardDestination)=>void}){
+export function HomeScreen({state,preview,nowMs,onClaim,onStop,onQueueRemove,onQueueMove,onQueueClear,onQueueStart,onNavigate,onOpenCombat,onOpenSkill,onOpenPlanner,onNavigateGoal}:{state:GameState;preview:RewardBundle;nowMs:number;onClaim:()=>void;onStop:()=>void;onQueueRemove:(index:number)=>void;onQueueMove:(index:number,direction:'up'|'down')=>void;onQueueClear:()=>void;onQueueStart:()=>void;onNavigate:(tab:DashboardDestination|'Events'|'DailySupplies',zoneId?:string)=>void;onOpenCombat:()=>void;onOpenSkill:(skillId:SkillId)=>void;onOpenPlanner:()=>void;onNavigateGoal:(destination:WorkingTowardDestination)=>void}){
   const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
  const [showAfkSources,setShowAfkSources]=useState(false),[showEncounter,setShowEncounter]=useState(false),[showLedger,setShowLedger]=useState(false);
  const c=state.character!,p=characterProgressWithinLevel(c.xp,c.level),className=CLASSES.find(x=>x.id===c.classId)?.name??c.classId;
@@ -43,7 +43,7 @@ export function HomeScreen({state,preview,nowMs,onClaim,onStop,onQueueRemove,onQ
   <View style={s.identity}><CharacterPortrait state={state} style={s.portrait}/><View style={s.flex}><Text accessibilityRole="header" style={s.name}>{c.name}</Text><Text style={s.small}>{className} · Level {c.level}</Text><Text style={s.gold}>{formatGameNumber(c.gold,state.settings.numberMode)} gold</Text></View></View>
   <StatBar reduceMotion={state.settings.reduceMotion} label="Experience" current={p.current} max={p.need}/>
   {state.activity&&activityName?<ActivityCard title={activityName} kind={state.activity.kind==='combat'?'combat':'gathering'} activity={state.activity} cycleSeconds={cycle} capHours={afk.hours} preview={preview} rates={rate} reduceMotion={state.settings.reduceMotion} numberMode={state.settings.numberMode} onClaim={onClaim} onStop={onStop}/>:<Panel><Text style={s.title}>Your next adventure</Text><Text style={s.small}>Choose a hunt or gathering activity to start earning.</Text><GameButton title="Explore activities" onPress={onOpenCombat}/></Panel>}
-  <ActionQueuePanel state={state} onRemove={onQueueRemove} onClear={onQueueClear} onStartNext={onQueueStart}/>
+  <ActionQueuePanel state={state} onRemove={onQueueRemove} onMove={onQueueMove} onClear={onQueueClear} onStartNext={onQueueStart}/>
   <WorkingTowardSummary state={state} onOpen={onOpenPlanner} onNavigate={onNavigateGoal}/>
   <ContractBoardSummary state={state} nowMs={Date.now()} onOpen={()=>onNavigate('Quests')} onContinue={order=>onNavigateGoal(weeklyOrderDestination(order))}/>
   <DailySuppliesSummary state={state} nowMs={nowMs} onOpen={()=>onNavigate('DailySupplies')}/>

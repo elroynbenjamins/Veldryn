@@ -24,7 +24,7 @@ function makeLanguageStyles(C:ThemeColors){const equipmentColors=equipmentTheme(
 function LanguageChip({label,selected,onPress}:{label:string;selected:boolean;onPress:()=>void}){const C=useGameTheme(),languageS=useMemo(()=>makeLanguageStyles(C),[C]);return <Pressable accessibilityRole="button" accessibilityState={{selected}} onPress={onPress} style={({pressed})=>[languageS.chip,selected&&languageS.chipSelected,pressed&&languageS.pressed]}><Text style={[languageS.chipText,selected&&languageS.chipTextSelected]}>{selected?'✓ ':''}{label}</Text></Pressable>}
 
 export function ClassSelectScreen({language='en',onLanguage,onSelect,onCancel,cancelLabel}:{language?:GameState['settings']['language'];onLanguage?:(language:GameState['settings']['language'])=>void;onSelect:(id:ClassId,name:string,body:BodyPresentation)=>Promise<void>|void;onCancel?:()=>void;cancelLabel?:string}){
-  const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
+  const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]),languageS=useMemo(()=>makeLanguageStyles(C),[C]);
   const roleColor={Tank:C.info,Support:C.good,Damage:C.warning};
   const submitting=useRef(false);
   const [saving,setSaving]=useState(false),[saveError,setSaveError]=useState(''),[showLanguages,setShowLanguages]=useState(false);

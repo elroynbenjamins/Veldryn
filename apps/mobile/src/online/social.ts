@@ -18,6 +18,9 @@ export type FriendSearchResult=FriendProfile&{relationship:FriendRelationship};
 export type FriendEntry=FriendProfile&{friends_since:string};
 export type FriendRequest={request_id:string;account_id:string;display_name:string;direction:'incoming'|'outgoing';created_at:string};
 export type BlockedPlayer={account_id:string;display_name:string;blocked_at:string};
+export type GuildChatMessage={id:string;account_id:string;sender_name:string;body:string;created_at:string;guild_tag?:string|null;guild_tag_color_id?:string|null;guild_role?:'leader'|'officer'|'member'|null};
+export interface GuildChatState{guild:{id:string;name:string;tag?:string|null;tagColorId?:string|null}|null;messages:GuildChatMessage[];serverTime:string;}
+
 
 export interface PartyInvitationView{ id:string;partyId:string;inviterAccountId:string;inviterName:string;focus:'combat'|'skilling'|'mixed';memberCount:number;openSpots:number;expiresAt:string; }
 export interface GuildInvitationView{ id:string;guildId:string;inviterAccountId:string;inviterName:string;guildName:string;guildTag?:string|null;memberCount:number;memberCap:number;minimumLevel:number;expiresAt:string; }
@@ -88,6 +91,10 @@ export async function socialOutgoingInvitations(){const client=requireClient();c
 export async function cancelGuildInvitation(invitationId:string){const client=requireClient();const {data,error}=await client.rpc('cancel_guild_invitation_v1',{p_invitation_id:invitationId});if(error)throw error;return data as 'cancelled';}
 export async function updateGuildMemberRole(accountId:string,role:'officer'|'member'){const client=requireClient();const {data,error}=await client.rpc('update_guild_member_role_v1',{p_target_account_id:accountId,p_role:role});if(error)throw error;return data as 'officer'|'member';}
 export async function removeGuildMember(accountId:string){const client=requireClient();const {data,error}=await client.rpc('remove_guild_member_v1',{p_target_account_id:accountId});if(error)throw error;return data as 'removed';}
+export function guildChatCommandKey(){return `guild-chat-${Date.now()}-${Math.random().toString(36).slice(2,14)}`;}
+export async function guildChatState(limit=50){const client=requireClient();const {data,error}=await client.rpc('guild_chat_state_v1',{p_limit:limit});if(error)throw error;return data as GuildChatState;}
+export async function sendGuildChat(body:string,idempotencyKey:string){const client=requireClient();const {data,error}=await client.rpc('send_guild_chat_v1',{p_body:body,p_idempotency_key:idempotencyKey});if(error)throw error;return data as string;}
+
 export async function guildLeadershipStatus(){const client=requireClient();const {data,error}=await client.rpc('guild_leadership_status_v1');if(error)throw error;return data as GuildLeadershipStatus|null;}
 export async function transferGuildLeadership(accountId:string){const client=requireClient();const {data,error}=await client.rpc('transfer_guild_leadership_v1',{p_target_account_id:accountId});if(error)throw error;return data as 'transferred';}
 export async function leaveGuild(){const client=requireClient();const {data,error}=await client.rpc('leave_guild_v1');if(error)throw error;return data as 'left';}

@@ -13,6 +13,7 @@ export const typography={
 export const touchTargetMin=44;
 export const touchTargetPreferred=48;
 
+/** Theme IDs are persisted in player settings; keep them stable for save compatibility. */
 export type UiThemeId='veldryn'|'obsidian'|'ivory';
 export type ThemeColors={
   id:UiThemeId; name:string; dark:boolean;

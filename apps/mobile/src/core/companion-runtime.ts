@@ -15,7 +15,7 @@ import {projectCompanionCodex,projectCompanionTrial,projectCompanionProvingGroun
 import {claimCompanionProvingGroundChallenge,recordCompanionProvingGroundEvent,activeCompanionProvingGroundChallenges,provingGroundEventMatches} from '../../../../backend/src/server/companions/proving-grounds';
 import {companionTrialWeekKey} from '../../../../backend/src/server/companions/trial-season';
 import {companionTeamPower} from '../../../../backend/src/server/companions/team';
-import {companionTrialRecommendedPower,companionServerDefinition} from '../../../../backend/src/server/companions/content';
+import {companionMission,companionTrialRecommendedPower,companionServerDefinition} from '../../../../backend/src/server/companions/content';
 import {resolveSpecialCompanionChallenge} from '../../../../backend/src/server/companions/special-challenges';
 import type {CompanionAssignment,CompanionTrialProgress,CompanionProvingGroundState,CompanionOverflowState,OwnedCompanionSnapshot,CompanionEconomyState,CompanionCombatExecutor,CompanionUnlockFacts,CompanionProvingGroundEvent} from '../../../../backend/src/server/companions/domain';
 
@@ -176,6 +176,9 @@ export function executeCompanionActivity(input:GameState,type:string,a:Record<st
       const week=companionTrialWeekKey(now),used=state.account.companionAssignmentBondstoneWeek===week?state.account.companionAssignmentBondstones??0:0;
       const r=claimCompanionAssignment({assignment,owned,serverNowMs:now,bondstonesClaimedThisWeek:used});state=reward(state,r.reward);
       for(const id of assignment.companionIds)state=awardUse(state,[id],r.reward.companionXpById?.[id]??0,r.reward.bondXpById?.[id]??0,now);
+      const mission=companionMission(assignment.missionId),unlockProgress={...(state.account.companionUnlockProgress??{})};
+      if(mission?.originId){const missionKey=`COMPANION_MISSIONS:${mission.originId}`;unlockProgress[missionKey]=(unlockProgress[missionKey]??0)+1;if(r.assignment.performanceGrade==='S'){const gradeKey=`COMPANION_S_GRADE:${mission.originId}`;unlockProgress[gradeKey]=(unlockProgress[gradeKey]??0)+1;}}
+      state.account.companionUnlockProgress=unlockProgress;
       state.account.companionAssignments=assignments.map(x=>x.assignmentId===assignment.assignmentId?r.assignment:x);state.account.companionAssignmentBondstoneWeek=week;state.account.companionAssignmentBondstones=used+r.reward.bondstones;break;
     }
     case 'companion_technique':{

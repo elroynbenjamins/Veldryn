@@ -2,6 +2,7 @@ import {claimActivity,createCharacter,craftRecipe,newGame,offlineCapBreakdown,pr
 import {executeGameCommand} from '../src/core/game-commands';
 import {activateDailySupplyBoost,applyDailySupplyCraft,claimDailySupplies,DAILY_SUPPLY_CHARGE_SECONDS,dailySuppliesStatus,dailySupplyBank} from '../src/core/daily-supplies';
 import {normalizeSave} from '../src/core/save-normalization';
+import {dailySuppliesHomeSummary} from '../src/core/daily-supplies-home';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 function equal(actual:unknown,expected:unknown,message:string){if(actual!==expected)throw new Error(message+': expected '+String(expected)+', got '+String(actual))}
@@ -10,6 +11,8 @@ function qty(state:any,itemId:string){return [...state.inventory.stacks,...state
 const DAY=86_400_000,t0=Date.UTC(2026,8,20,12,0,0);
 
 let state=createCharacter(newGame(t0),'WAYFINDER','Supply Tester');
+let home=dailySuppliesHomeSummary(state,t0);
+ok(home.visible&&home.canClaim&&!!home.claimLabel,'Home should surface a ready Daily Supplies claim');
 const first=claimDailySupplies(state,state.character!.id,t0);
 state=first.state;
 ok(first.status.reward.kind==='boost'&&first.status.reward.type==='gathering_yield','Claim 1 should bank Gathering Yield');
@@ -42,6 +45,8 @@ ok(!altClaim.state.character?.dailySupplyBoostBank?.gathering_yield,'Assigning a
 let activation=createCharacter(newGame(t0),'WAYFINDER','Activation');
 activation={...activation,character:{...activation.character!,dailySupplyBoostBank:{gathering_yield:1}}};
 activation=activateDailySupplyBoost(activation,'gathering_yield');
+home=dailySuppliesHomeSummary(activation,t0);
+ok(home.visible&&!home.canClaim&&home.activeLabel?.includes('Gathering Yield')&&home.activeRemainingSeconds===DAILY_SUPPLY_CHARGE_SECONDS,'Home should surface the active Daily Supplies boost and remaining qualifying time');
 equal(activation.character?.activeDailySupplyBoost?.remainingSeconds,DAILY_SUPPLY_CHARGE_SECONDS,'Activated charge should contain exactly two hours of qualifying time');
 equal(activation.character?.dailySupplyBoostBank?.gathering_yield,undefined,'Activation should consume one banked charge');
 rejects(()=>activateDailySupplyBoost({...activation,character:{...activation.character!,dailySupplyBoostBank:{combat_xp:1}}},'combat_xp'),'Daily Supplies boosts must not stack percentage-wise');
@@ -110,5 +115,11 @@ const baselineCap=offlineCapBreakdown(createCharacter(newGame(t0),'WAYFINDER','C
 const boostedCap=offlineCapBreakdown({...activation,account:{...activation.account,dailySupplies:{schemaVersion:1,totalClaims:27,lastClaimDayKey:'2026-09-19'},premiumCurrencyBalance:999}}).hours;
 equal(baselineCap,24,'Fresh account Offline Reserve baseline should remain 24 hours');
 equal(boostedCap,baselineCap,'Daily Supplies ownership, banked boosts and premium milestones must not extend Offline Reserve');
+
+const quiet=createCharacter(newGame(t0),'WAYFINDER','Quiet');
+const quietClaim=claimDailySupplies(quiet,quiet.character!.id,t0).state;
+const quietNoBank={...quietClaim,character:{...quietClaim.character!,dailySupplyBoostBank:undefined,activeDailySupplyBoost:undefined}};
+home=dailySuppliesHomeSummary(quietNoBank,t0+1000);
+ok(!home.visible&&!home.canClaim,'Home should hide Daily Supplies after today is claimed when no boost or banked charge needs attention');
 
 console.log(JSON.stringify({status:'PASS',premium,normalBoostCharges:dailySupplyBank(cycle.character),gatherBonus:boostedGatherPreview.items[0].quantity-baseGatherPreview.items[0].quantity,combatRemaining}));

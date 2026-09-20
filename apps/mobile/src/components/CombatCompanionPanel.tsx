@@ -16,9 +16,7 @@ import {Panel} from './Panel';
 import {MonsterPortraitFrame} from './MonsterPortraitFrame';
 import {MONSTERS} from '../content/monsters';
 import {GameButton} from './GameButton';
-import {eventCompanionSourceById} from '../theme/event-collectible-assets';
-import {eventCompanionV1SourceById} from '../theme/event-collectible-v1-assets';
-import {masterCompanionSourceById} from '../theme/master-roster-assets';
+import {companionArtSource} from '../theme/companion-art';
 import {C,equipmentColors,radii,spacing,typography} from '../theme/theme';
 
 const sections=['Collection','Sanctuary','Trials','Expeditions','Codex'] as const;
@@ -39,7 +37,7 @@ export function CombatCompanionPanel({state,now,onCommand}:{state:GameState;now:
   const btn=(title:string,type:string,args?:Record<string,unknown>,disabled=false)=> <GameButton title={title} disabled={busy||disabled} onPress={()=>void act(type,args)}/>;
   const idle=(id:string)=>{try{assertCompanionIdle(state,id);return true;}catch{return false;}};
   const ownedIds=Object.keys(view.owned),visibleCompanions=COMBAT_COMPANIONS.filter(def=>collectionFilter==='All'||collectionFilter==='Owned'&&!!view.owned[def.id]||collectionFilter==='Event'&&def.origin.type==='event'||collectionFilter==='Damage'&&def.role==='damage'||collectionFilter==='Tank'&&def.role==='tank'||collectionFilter==='Support'&&def.role==='support'),teamRoles=new Set(safeTeam.map(id=>COMBAT_COMPANIONS.find(c=>c.id===id)?.role)),trialTeamValid=safeTeam.length===3&&teamRoles.size===3&&safeTeam.every(idle);
-const selectedIndex=Math.max(0,COMBAT_COMPANIONS.findIndex(def=>def.id===selection)),selectedMonster=MONSTERS.find(monster=>monster.id===portraitIds[selectedIndex%portraitIds.length]),selectedEventPortrait=masterCompanionSourceById.get(selection)??eventCompanionSourceById.get(selection)??eventCompanionV1SourceById.get(selection);
+const selectedIndex=Math.max(0,COMBAT_COMPANIONS.findIndex(def=>def.id===selection)),selectedMonster=MONSTERS.find(monster=>monster.id===portraitIds[selectedIndex%portraitIds.length]),selectedEventPortrait=companionArtSource(selection);
   const assistPct=Math.round(contribution.contributionPct*1000)/10;
   const teamSelector=<View style={s.group}><Text style={s.body}>Choose up to three companions. Trials require one Tank, one Damage and one Support.</Text>{ownedIds.length?ownedIds.map(id=>{const def=COMBAT_COMPANIONS.find(c=>c.id===id)!;const selected=safeTeam.includes(id),available=idle(id);return <Pressable key={id} accessibilityRole="checkbox" accessibilityState={{checked:selected,disabled:busy||!available}} disabled={busy||!available} style={[s.choice,selected&&s.selected]} onPress={()=>setTeam(selected?safeTeam.filter(x=>x!==id):[...safeTeam.slice(-2),id])}><Text style={s.name}>{selected?'✓ ':''}{roleGlyph[def.role]} {def.name}</Text><Text style={s.body}>{def.role} · Lv. {view.owned[id].level} · {available?'Available':'Busy'}</Text></Pressable>}):<Text style={s.body}>Unlock companions through the Collection requirements.</Text>}<Text style={s.name}>Team Power {amount(companionTeamPower(safeTeam,view.owned))}</Text></View>;
   const affordability=(cost:{gold:number;companionEssence:number;bondstones?:number;materialId?:string;materialQuantity?:number}|undefined)=>!!cost&&e.gold>=cost.gold&&e.companionEssence>=cost.companionEssence&&e.bondstones>=(cost.bondstones??0)&&(!cost.materialId||(e.materials[cost.materialId]??0)>=(cost.materialQuantity??0));

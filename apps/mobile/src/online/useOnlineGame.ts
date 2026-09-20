@@ -14,9 +14,10 @@ export function useOnlineGame(){
  useEffect(()=>{setSnapshot(null);setError('');setPending(false);setBusy(false);setLoading(Boolean(repo));if(!repo)return;void refresh().finally(()=>{if(active.current===repo)setLoading(false);});},[repo,refresh]);
  useEffect(()=>{const sub=AppState.addEventListener('change',next=>{if(next==='active')void refresh();});return()=>sub.remove();},[refresh]);
  useEffect(()=>{
-  if(!serverGameplayEnabled||!accountId||!supabase)return;
+  const client=supabase;
+  if(!serverGameplayEnabled||!accountId||!client)return;
   let foreground=AppState.currentState==='active';
-  const heartbeat=()=>{if(!foreground)return;void supabase.rpc('record_player_presence_v1').then(()=>{}).catch(()=>{});};
+  const heartbeat=()=>{if(!foreground)return;void client.rpc('record_player_presence_v1').then(()=>{},()=>{});};
   const timer=setInterval(heartbeat,5*60_000);
   const sub=AppState.addEventListener('change',next=>{foreground=next==='active';if(foreground)heartbeat();});
   return()=>{clearInterval(timer);sub.remove();};

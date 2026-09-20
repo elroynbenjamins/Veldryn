@@ -1,5 +1,5 @@
 import {MONSTERS} from '../src/content/monsters';
-import {COMBAT_AFFIX_IDS,COMBAT_AFFIXES,COMBAT_CHALLENGE_IDS,COMBAT_CHALLENGES,challengeHuntClearKey,challengeHuntCleared,challengeHuntFirstClearReward,challengeHuntStats,challengeHuntUnlocked,challengeRewardMultipliers,rotatingChallengeAffix} from '../src/core/challenge-hunts';
+import {COMBAT_AFFIX_IDS,COMBAT_AFFIXES,COMBAT_CHALLENGE_IDS,COMBAT_CHALLENGES,challengeConquestSummary,challengeHuntClearKey,challengeHuntClearSummary,challengeHuntCleared,challengeHuntFirstClearReward,challengeHuntStats,challengeHuntUnlocked,challengeRewardMultipliers,rotatingChallengeAffix} from '../src/core/challenge-hunts';
 import {combatReadiness} from '../src/core/combat-presentation';
 import {claimActivity,createCharacter,newGame,previewActivityReward,startCombat} from '../src/core/game';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
@@ -24,6 +24,7 @@ for(const affixId of COMBAT_AFFIX_IDS){const tuned=challengeHuntStats(monster,'n
 ok(combatReadiness(state,monster,'ferocious').recommendedPower>combatReadiness(state,monster).recommendedPower,'Challenge Hunt readiness must increase');
 state={...state,character:{...state.character!,monsterMasteryPoints:{MOSS_RAT:750}}};ok(challengeHuntUnlocked(state,monster.id,'apex'),'Mastery 30 should unlock Apex Hunts');const apex=challengeHuntStats(monster,'apex');ok(apex.hp>nemesis.hp&&apex.attack>nemesis.attack&&apex.defense>nemesis.defense,'Apex must be the strongest Challenge Hunt tier');
 const clearRewards=COMBAT_CHALLENGE_IDS.map(id=>challengeHuntFirstClearReward(monster,id));ok(clearRewards[3].gold>clearRewards[2].gold&&clearRewards[2].gold>clearRewards[1].gold&&clearRewards[1].gold>clearRewards[0].gold,'Challenge first-clear Gold should scale by tier');ok(clearRewards[3].items.find(row=>row.itemId==='TEMPERING_DUST')!.quantity>clearRewards[0].items.find(row=>row.itemId==='TEMPERING_DUST')!.quantity,'Apex first clear should grant more Tempering Dust than Ferocious');
+const emptyConquest=challengeHuntClearSummary(state,monster.id);ok(emptyConquest.cleared===0&&!emptyConquest.conquered,'Uncleared species should start at 0/4 Challenge Conquest');const conqueredState={...state,character:{...state.character!,challengeHuntClearIds:COMBAT_CHALLENGE_IDS.map(id=>challengeHuntClearKey(monster.id,id))}};const conquered=challengeHuntClearSummary(conqueredState,monster.id),conquestAccount=challengeConquestSummary(conqueredState,[monster.id]);ok(conquered.cleared===4&&conquered.conquered,'All four tier clears should mark the species conquered');ok(conquestAccount.clears===4&&conquestAccount.possible===4&&conquestAccount.conqueredSpecies===1,'Challenge Conquest summary should aggregate cleared species correctly');
 
 
 const started=startCombat(state,monster.id,now,'nemesis');

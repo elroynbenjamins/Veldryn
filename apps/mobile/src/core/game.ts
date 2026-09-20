@@ -180,7 +180,7 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number){
     const damage=Math.max(1,Math.round((raw*.48 + m.level*.16)*style.damageTakenMultiplier*modifiers.incomingDamageMultiplier*companion.incomingDamageMultiplier*(c.preparation?preparationEffects(c.preparation).damage:1)));
     hp-=damage;
     while(food && food.heal && foodLeft>0 && hp>0 && hp/stats.hp<=threshold){
-      hp=Math.min(stats.hp,hp+Math.max(1,Math.ceil(food.heal*multipliers.healingEffectivenessMultiplier)));foodLeft--;foodConsumed++;
+      hp=Math.min(stats.hp,hp+Math.max(1,Math.ceil(food.heal*modifiers.healingEffectivenessMultiplier)));foodLeft--;foodConsumed++;
     }
     if(hp<=0){
       hp=1;

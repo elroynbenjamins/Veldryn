@@ -15,6 +15,7 @@ state=first.state;
 ok(first.status.reward.kind==='boost'&&first.status.reward.type==='gathering_yield','Claim 1 should bank Gathering Yield');
 equal(dailySupplyBank(state.character).gathering_yield,1,'Claim 1 should bank one character-bound charge');
 rejects(()=>claimDailySupplies(state,state.character!.id,t0+1000),'A UTC day can only be claimed once');
+rejects(()=>claimDailySupplies({...state,account:{...state.account,dailySupplies:{schemaVersion:1,totalClaims:6,lastClaimDayKey:'2026-09-19'}}},'FAKE_CHARACTER',t0+DAY),'Daily Supplies claims must reject a fabricated receiver even on a premium milestone');
 const paused=claimDailySupplies(state,state.character!.id,t0+4*DAY);
 equal(paused.state.account.dailySupplies?.totalClaims,2,'Missing days must pause rather than reset the claim track');
 ok(paused.status.reward.kind==='boost'&&paused.status.reward.type==='crafting_output','Claim 2 should continue the rotating normal reward sequence');

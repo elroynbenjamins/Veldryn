@@ -84,7 +84,7 @@ export const LIVE_EVENT_CATALOG:LiveEventDef[]=[{
   ],
 },TURNING_OF_THE_AGE_EVENT,HEARTBOND_EVENT,BLOOMWAKE_EVENT,SUNCREST_GAMES_EVENT,STARFALL_NIGHTS_EVENT,VEILBREAK_EVENT,MERCHANT_GUILD_FESTIVAL_EVENT,FROSTFALL_EVENT];
 
-function annualEventSeriesId(id:string){const match=id.match(/^(EVT_ANNUAL_\d{3})_(\d{4})$/);return match?.[1];}
+export function annualEventSeriesId(id:string){const match=id.match(/^(EVT_ANNUAL_\d{3})_(\d{4})$/);return match?.[1];}
 
 /**
  * Resolve a seasonal runtime ID against the production event template catalog.

@@ -25,7 +25,7 @@ export function ChatOverlay({state,visible,onOpen,onClose,guildUnread=0,guildMen
   const guildAvailable=onlineConfigured?onlineGuildAvailable:state.account.guildMember;
   useEffect(()=>{if(!guildAvailable&&channel==='guild')setChannel('world');},[guildAvailable,channel]);
   return <>
-    {!visible&&<ChatDock enabled={onlineConfigured} onOpen={onOpen}/>}
+    {!visible&&<ChatDock enabled={onlineConfigured} onOpen={onOpen} unreadCount={guildUnread+partyUnread} mentionCount={guildMentions+partyMentions}/>}
     <Modal visible={visible} transparent statusBarTranslucent animationType={state.settings.reduceMotion?'none':'fade'} onRequestClose={onClose}>
       <View style={s.modalRoot}>
         <Pressable accessibilityLabel="Close chat overlay" onPress={onClose} style={StyleSheet.absoluteFill}/>

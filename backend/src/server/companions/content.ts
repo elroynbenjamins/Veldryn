@@ -22,7 +22,7 @@ const raw:Array<[string,string,CompanionRole,CompanionRarity,string,number,numbe
 ];
 const COMPANION_IDENTITY_PROFILES:Record<string,CompanionIdentityProfile>={
  UNIT_013:{activeName:'Venom Pounce',basicDamageMultiplier:1.02,activeDamageMultiplier:1.04,activeExecuteBonus:.05,hasteBonus:.015,bond:{activeExecuteBonus:.03,hasteBonus:.01}},
- UNIT_014:{activeName:'Mirage Spring',activeHealMultiplier:1.12,activeCooldownMultiplier:.95,bond:{activeHealMultiplier:1.08,hasteBonus:.02}},
+ UNIT_014:{activeName:'Mirage Spring',activeHealMultiplier:1.12,activeCooldownMultiplier:.95,hasteBonus:.02,bond:{activeHealMultiplier:1.08,hasteBonus:.02}},
  UNIT_015:{activeName:'Solar Carapace',activeShieldMultiplier:1.15,activeReflectPct:.08,defenseMultiplier:1.02,bond:{activeReflectPct:.04,defenseMultiplier:1.02}},
  UNIT_016:{activeName:'Crownward',activeShieldMultiplier:1.12,defenseMultiplier:1.04,basicDamageMultiplier:1.03,bond:{activeShieldMultiplier:1.06,defenseMultiplier:1.02}},
  UNIT_017:{activeName:'Rimefang Rush',activeDamageMultiplier:1.04,activeExecuteBonus:.06,hasteBonus:.02,bond:{activeExecuteBonus:.03,activeCooldownMultiplier:.96}},
@@ -33,7 +33,7 @@ const COMPANION_IDENTITY_PROFILES:Record<string,CompanionIdentityProfile>={
  UNIT_022:{activeName:'Forge Barrier',activeShieldMultiplier:1.13,defenseMultiplier:1.04,activeReflectPct:.05,bond:{activeReflectPct:.04}},
  UNIT_023:{activeName:'Primal Arc',activeDamageMultiplier:1.06,hasteBonus:.03,activeCooldownMultiplier:.96,bond:{activeDamageMultiplier:1.03}},
  UNIT_024:{activeName:"Regent's Decree",activeHealMultiplier:1.08,activeCooldownMultiplier:.94,hasteBonus:.02,defenseMultiplier:1.02,bond:{activeHealMultiplier:1.05,defenseMultiplier:1.02}},
- EVT_UNIT_001:{activeName:'First Dawn',utilityMultiplier:1.08,activeHealMultiplier:1.05,activeCooldownMultiplier:.95,hasteBonus:.02,bond:{activeShieldMultiplier:1.05,hasteBonus:.01}},
+ EVT_UNIT_001:{activeName:'First Dawn',utilityMultiplier:1.08,activeHealMultiplier:1.05,activeCooldownMultiplier:.95,hasteBonus:.02,bond:{utilityMultiplier:1.04,hasteBonus:.01}},
  EVT_UNIT_002:{activeName:'Vow Link',utilityMultiplier:1.06,activeHealMultiplier:1.12,defenseMultiplier:1.02,bond:{activeHealMultiplier:1.05,defenseMultiplier:1.02}},
  EVT_UNIT_003:{activeName:'Living Bastion',mitigationMultiplier:1.12,defenseMultiplier:1.04,bond:{mitigationMultiplier:1.06,defenseMultiplier:1.02}},
  EVT_UNIT_004:{activeName:'Solar Momentum',activeDamageMultiplier:1.08,activeExecuteBonus:.05,hasteBonus:.01,bond:{activeDamageMultiplier:1.04}},

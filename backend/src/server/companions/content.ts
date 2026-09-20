@@ -113,7 +113,8 @@ const CUSTOM_TECHNIQUES:Record<string,[TechniqueSeed,TechniqueSeed]>={
 const techniquePair=(def:CompanionServerDefinition):CompanionTechniqueDefinition[]=>{
  const group=`${def.id}:technique`,unlock=COMPANION_TECHNIQUE_UNLOCK,seeds=CUSTOM_TECHNIQUES[def.id];
  if(!seeds)throw new Error(`Missing companion-specific Techniques for ${def.id}`);
- return seeds.map((seed,index)=>({id:`${def.id}_TECH_${index+1}`,companionId:def.id,name:seed.name,description:seed.description,mutuallyExclusiveGroup:group,unlock,effects:seed.effects}));
+ const legacySuffixes=def.role==='tank'?['FORTIFIED','REFLECTIVE']:def.role==='damage'?['EXECUTIONER','RELENTLESS']:['DEEP_RESTORATION','RAPID_AID'];
+ return seeds.map((seed,index)=>({id:`${def.id}_${legacySuffixes[index]}`,companionId:def.id,name:seed.name,description:seed.description,mutuallyExclusiveGroup:group,unlock,effects:seed.effects}));
 };
 export const COMPANION_TECHNIQUES=COMPANION_SERVER_DEFINITIONS.flatMap(techniquePair);
 export const companionTechniques=(companionId:string)=>COMPANION_TECHNIQUES.filter(x=>x.companionId===companionId);

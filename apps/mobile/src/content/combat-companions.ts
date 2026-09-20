@@ -86,6 +86,20 @@ const ASTERFALL_COMPANIONS:CompanionDefinition[]=[
   {id:'UNIT_012',name:'Oathglass Knightling',description:'Prestige tactical companion with balanced utility.',archetype:'Champion',role:'support',rarity:'prestige',origin:ASTER,unlockRequirements:[req('event_challenge','Complete the Oathglass Reflection Trial','CHALLENGE_OATHGLASS_KNIGHTLING',1)],baseStats:{hp:220,power:23,defense:21,attackSpeed:2.2},activeAbility:ability('UABL_012','Oathglass Reflection','Damage + copy one eligible self-buff duration at 25%',26,'Priority target','utility',.25,.002,{secondaryValue:.95,durationSeconds:4}),passiveAbility:passive('utility',.25,"Reflected Oath: copies 25% of owner's current non-ultimate self-buff duration onto itself.",'eligible_owner_buff'),bondTrait:trait('BOND_012','True Reflection','cooldown_reduction',.1,'A successful copied buff shortens the next Reflection cooldown without copying stat magnitude.','eligible_buff_copied'),ascensionMaterialId:'OATHGLASS_FRAGMENT'},
 ];
 
+const REGIONAL_ASCENSION_MATERIALS:Record<string,NonNullable<CompanionDefinition['ascensionMaterialCosts']>>={
+ UNIT_013:[{tier:1,itemId:'AMBERGLASS',quantity:4},{tier:2,itemId:'SUNSTONE_ORE',quantity:9}],
+ UNIT_014:[{tier:1,itemId:'AMBERGLASS',quantity:4},{tier:2,itemId:'ASTRAL_SCRIPT',quantity:9},{tier:3,itemId:'SUNSTONE_ORE',quantity:16}],
+ UNIT_015:[{tier:1,itemId:'SUNSTONE_ORE',quantity:4},{tier:2,itemId:'AMBERGLASS',quantity:9},{tier:3,itemId:'ASTRAL_SCRIPT',quantity:16}],
+ UNIT_016:[{tier:1,itemId:'AMBERGLASS',quantity:4},{tier:2,itemId:'SUNSTONE_ORE',quantity:9},{tier:3,itemId:'ASTRAL_SCRIPT',quantity:16},{tier:'mastery',itemId:'TRIAL_SANCTUARY_MATERIAL',quantity:8}],
+ UNIT_017:[{tier:1,itemId:'RIMEGLASS',quantity:4},{tier:2,itemId:'FROSTIRON',quantity:9}],
+ UNIT_018:[{tier:1,itemId:'CHOIR_BLOOM',quantity:4},{tier:2,itemId:'RIMEGLASS',quantity:9},{tier:3,itemId:'FROSTIRON',quantity:16}],
+ UNIT_019:[{tier:1,itemId:'FROSTIRON',quantity:4},{tier:2,itemId:'RIMEGLASS',quantity:9},{tier:3,itemId:'CHOIR_BLOOM',quantity:16}],
+ UNIT_020:[{tier:1,itemId:'RIMEGLASS',quantity:4},{tier:2,itemId:'FROSTIRON',quantity:9},{tier:3,itemId:'CHOIR_BLOOM',quantity:16},{tier:'mastery',itemId:'TRIAL_SANCTUARY_MATERIAL',quantity:8}],
+ UNIT_021:[{tier:1,itemId:'BANNER_ASH',quantity:4},{tier:2,itemId:'BLACKGLASS_CORE',quantity:9}],
+ UNIT_022:[{tier:1,itemId:'BLACKGLASS_CORE',quantity:4},{tier:2,itemId:'CINDER_HEART',quantity:9},{tier:3,itemId:'BANNER_ASH',quantity:16}],
+ UNIT_023:[{tier:1,itemId:'BANNER_ASH',quantity:4},{tier:2,itemId:'CINDER_HEART',quantity:9},{tier:3,itemId:'BLACKGLASS_CORE',quantity:16}],
+ UNIT_024:[{tier:1,itemId:'BANNER_ASH',quantity:4},{tier:2,itemId:'BLACKGLASS_CORE',quantity:9},{tier:3,itemId:'CINDER_HEART',quantity:12},{tier:'mastery',itemId:'REGENT_SIGIL',quantity:6}],
+};
 type RegionalIdentityCopy={activeName:string;activeDescription:string;activeKind:CompanionEffectDefinition['kind'];activeValue:number;passiveKind:CompanionEffectDefinition['kind'];passiveValue:number;passiveDescription:string;bondName:string;bondKind:CompanionEffectDefinition['kind'];bondValue:number;bondDescription:string};
 const REGIONAL_IDENTITY_COPY:Record<string,RegionalIdentityCopy>={
  UNIT_013:{activeName:'Venom Pounce',activeDescription:'A fast strike that gains extra finishing pressure against enemies below 30% HP.',activeKind:'damage',activeValue:1.10,passiveKind:'execute',passiveValue:.05,passiveDescription:'Sand Predator: basic attacks are more dangerous against weakened prey.',bondName:'Perfect Ambush',bondKind:'execute',bondValue:.03,bondDescription:'Bond 10 further strengthens Dune Stalker finishers.'},
@@ -110,7 +124,7 @@ const regional=(id:string,name:string,rarity:CombatCompanionRarity,role:Companio
   activeAbility:ability(`${id}_ACTIVE`,copy?.activeName??`${name} Signature`,copy?.activeDescription??identity,rarity==='prestige'?24:20,role==='support'?'Lowest-HP ally':role==='tank'?'Owner':'Priority target',copy?.activeKind??effect,copy?.activeValue??(effect==='damage'?1.1:.04),effect==='damage'?.005:.001),
   passiveAbility:passive(copy?.passiveKind??effect,copy?.passiveValue??(effect==='damage'?.035:.025),copy?.passiveDescription??`${name} passive reinforces its ${identity.toLowerCase()} identity.`),
   bondTrait:trait(`${id}_BOND`,copy?.bondName??`${name} Bond Trait`,copy?.bondKind??effect,copy?.bondValue??(effect==='damage'?.05:.03),copy?.bondDescription??`Bond 10 strengthens ${name}'s defining combat interaction.`),
-  ascensionMaterialId:materialId,visual:{pixelSize:'96x96'}};
+  ascensionMaterialId:materialId,ascensionMaterialCosts:REGIONAL_ASCENSION_MATERIALS[id],visual:{pixelSize:'96x96'}};
 };
 const REGIONAL_COMPANIONS:CompanionDefinition[]=[
   regional('UNIT_013','Dune Stalker','rare','damage',[req('monster_mastery','Reach Sunscar Scorpion Mastery 20','SUNSCAR_SCORPION',20)],'Assassin / poison pressure',SUNSCAR,'AMBERGLASS','damage'),

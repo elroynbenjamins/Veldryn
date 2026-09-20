@@ -8,6 +8,7 @@ import {HERB_NODES} from '../content/herbalism';
 import {explorationRoute} from '../content/exploration';
 import {QUESTS} from '../content/quests';
 import {GameState,ClassId,RewardBundle,ItemStack,GearSlot,BodyPresentation,GatheringSkillId,CombatChallengeId,CombatTacticId} from './types';
+import {normalizeActivityQueue} from './activity-queue';
 import {characterLevelFromXp,levelFromXp,totalXpAtLevel} from './progression';
 import {random01} from './rng';
 import {characterNameError} from './character-creation';
@@ -130,7 +131,33 @@ export function startCombat(state:GameState,monsterId:string,nowMs:number,combat
   if(zoneIdForTarget(monsterId)!==currentRegionId(state))throw new Error(`Travel to ${m.zone} before fighting ${m.name}`);
   if(combatChallengeId&&!challengeHuntUnlocked(state,monsterId,combatChallengeId))throw new Error('Raise this monster\'s Mastery to unlock that Challenge Hunt.');
   const combatAffixId=combatChallengeId?rotatingChallengeAffix(monsterId,combatChallengeId,nowMs):undefined;
-  return {...state,activity:{kind:'combat',targetId:monsterId,...(combatChallengeId?{combatChallengeId,combatAffixId}:{}),combatTacticId:normalizeCombatTactic(combatTacticId),...(huntGoalSnapshot(normalizeHuntGoalId(huntGoalId))?{huntGoal:huntGoalSnapshot(normalizeHuntGoalId(huntGoalId))}:{}),sessionKills:0,sessionChampions:0,startedAtMs:nowMs,lastClaimAtMs:nowMs,classFocus:normalizeTrainingFocus(state.character.trainingFocus),classTrainingSnapshot:{faithBlessingId:selectedFaithBlessing(state)?.id},environment:captureActivityEnvironment(monsterId,nowMs)}}
+  return {...state,character:{...state.character,activityQueuePausedReason:undefined},activity:{kind:'combat',targetId:monsterId,...(combatChallengeId?{combatChallengeId,combatAffixId}:{}),combatTacticId:normalizeCombatTactic(combatTacticId),...(huntGoalSnapshot(normalizeHuntGoalId(huntGoalId))?{huntGoal:huntGoalSnapshot(normalizeHuntGoalId(huntGoalId))}:{}),sessionKills:0,sessionChampions:0,startedAtMs:nowMs,lastClaimAtMs:nowMs,classFocus:normalizeTrainingFocus(state.character.trainingFocus),classTrainingSnapshot:{faithBlessingId:selectedFaithBlessing(state)?.id},environment:captureActivityEnvironment(monsterId,nowMs)}}
+}
+
+function tryStartNextQueuedActivity(state:GameState,nowMs:number,throwOnFailure=false):GameState{
+ if(!state.character)throw new Error('Create a character first.');
+ if(state.activity)throw new Error('Stop the current activity before starting the queue.');
+ const queue=normalizeActivityQueue(state.character.activityQueue),next=queue[0];
+ if(!next)throw new Error('Action queue is empty.');
+ try{
+  const started=next.kind==='combat'
+   ?startCombat(state,next.targetId,nowMs,next.combatChallengeId,next.combatTacticId??'balanced',next.huntGoalId??'open')
+   :startGathering(state,next.targetId,nowMs);
+  return {...started,character:{...started.character!,activityQueue:queue.slice(1),activityQueuePausedReason:undefined}};
+ }catch(error){
+  const reason=error instanceof Error?error.message:'Queued action could not start.';
+  if(throwOnFailure)throw new Error(reason);
+  return {...state,character:{...state.character,activityQueue:queue,activityQueuePausedReason:reason}};
+ }
+}
+export function startNextQueuedActivity(state:GameState,nowMs:number){return tryStartNextQueuedActivity(state,nowMs,true)}
+function autoAdvanceActivityQueue(state:GameState,nowMs:number){
+ if(!state.character||!normalizeActivityQueue(state.character.activityQueue).length)return state;
+ return tryStartNextQueuedActivity(state,nowMs,false);
+}
+function pauseActivityQueue(state:GameState,reason:string){
+ if(!state.character||!normalizeActivityQueue(state.character.activityQueue).length)return state;
+ return {...state,character:{...state.character,activityQueuePausedReason:reason}};
 }
 
 /** Travel is instantaneous for now, but always settles and stops the prior activity. */
@@ -299,22 +326,22 @@ function projectedIdleContext(state:GameState,reward:RewardBundle,settleAtMs:num
 }
 function idleRuleSettlementWindow(state:GameState,nowMs:number){
   const rule=activeIdleRuleForState(state),activity=state.activity;
-  if(!activity||!state.character)return {settleAtMs:nowMs,shouldStop:false as const};
+  if(!activity||!state.character)return {settleAtMs:nowMs,shouldStop:false as const,safety:false};
   const goalRule=activity.kind==='combat'&&activity.huntGoal?{id:'hunt-goal',characterId:state.character.id,name:'Hunt Goal',conditions:[{id:'hunt-goal-condition',kind:activity.huntGoal.kind,targetId:activity.targetId,value:activity.huntGoal.value,enabled:true}],stopIfOutOfFood:false,stopIfRewardsWouldOverflow:false,finishCurrentCycle:true} as IdleRuleSet:undefined;
-  if(!rule&&!goalRule)return {settleAtMs:nowMs,shouldStop:false as const};
+  if(!rule&&!goalRule)return {settleAtMs:nowMs,shouldStop:false as const,safety:false};
   const capAtMs=activity.lastClaimAtMs+offlineCapSeconds(state)*1000,upper=Math.max(activity.lastClaimAtMs,Math.min(nowMs,capAtMs));
   const evaluateAt=(time:number)=>{const reward=previewStandardActivityRewardRaw(state,time),ctx=projectedIdleContext(state,reward,time),saved=rule?evaluateIdleRuleSet(rule,ctx):{shouldStop:false,safety:false},goal=goalRule?evaluateIdleRuleSet(goalRule,ctx):{shouldStop:false,safety:false},evaluation=goal.shouldStop?{...goal,reason:`Hunt goal reached: ${activity.huntGoal?.label??'target'}.`}:saved;return {reward,evaluation}};
   const upperResult=evaluateAt(upper);
-  if(!upperResult.evaluation.shouldStop)return {settleAtMs:upper,shouldStop:false as const};
+  if(!upperResult.evaluation.shouldStop)return {settleAtMs:upper,shouldStop:false as const,safety:false};
   const atStart=evaluateAt(activity.lastClaimAtMs);
-  if(atStart.evaluation.shouldStop)return {settleAtMs:activity.lastClaimAtMs,shouldStop:true as const,reason:atStart.evaluation.reason??'Idle Rule target already reached.'};
+  if(atStart.evaluation.shouldStop)return {settleAtMs:activity.lastClaimAtMs,shouldStop:true as const,safety:atStart.evaluation.safety,reason:atStart.evaluation.reason??'Idle Rule target already reached.'};
   let low=activity.lastClaimAtMs,high=upper;
   while(high-low>1){const mid=low+Math.floor((high-low)/2);if(evaluateAt(mid).evaluation.shouldStop)high=mid;else low=mid;}
   let settleAtMs=high;let final=evaluateAt(settleAtMs);
   if(final.evaluation.safety&&final.evaluation.reason==='Storage cannot safely accept the next reward.'&&settleAtMs>activity.lastClaimAtMs){
     settleAtMs=Math.max(activity.lastClaimAtMs,settleAtMs-1);final=evaluateAt(settleAtMs);
   }
-  return {settleAtMs,shouldStop:true as const,reason:upperResult.evaluation.reason??final.evaluation.reason??'Configured Idle Rule target reached.'};
+  return {settleAtMs,shouldStop:true as const,safety:upperResult.evaluation.safety,reason:upperResult.evaluation.reason??final.evaluation.reason??'Configured Idle Rule target reached.'};
 }
 
 export function previewActivityReward(state:GameState,nowMs:number):RewardBundle{
@@ -385,8 +412,8 @@ export function claimActivity(state:GameState,nowMs:number){
     return {state:next,reward};
   }
   const preview=previewActivityReward(state,nowMs);if(!state.character||!state.activity)return {state,reward:preview};
-  const idleWindow=idleRuleSettlementWindow(state,nowMs),settledAtMs=idleWindow.settleAtMs;
-  const reward:RewardBundle=idleWindow.shouldStop&&!preview.stoppedReason?{...preview,stoppedReason:idleWindow.reason}:preview;
+  const idleWindow=idleRuleSettlementWindow(state,nowMs),settledAtMs=idleWindow.settleAtMs,idleStopReason=idleWindow.shouldStop?idleWindow.reason:undefined;
+  const reward:RewardBundle=idleWindow.shouldStop&&!preview.stoppedReason?{...preview,stoppedReason:idleStopReason}:preview;
   if(state.activity.kind!=='combat'){
     const skills=state.skills.map(x=>x.skillId===state.activity!.kind?{...x,xp:x.xp+reward.xp,level:levelFromXp(x.xp+reward.xp)}:x);
     const routed=routeRewards(state,reward.items,settledAtMs);
@@ -397,7 +424,8 @@ export function claimActivity(state:GameState,nowMs:number){
     const petResult=applyCorePetActivityDrops(eventApplied,petSourceType,state.activity.targetId,reward.kills,`${state.character.id}:${state.activity.lastClaimAtMs}:${settledAtMs}`);
     const petReward:RewardBundle=petResult.drops.length?{...reward,petDrops:[...(reward.petDrops??[]),...petResult.drops]}:reward;
     const finalState=recordCompanionActivity(petResult.state,'gathering',state.activity.targetId,reward.kills,settledAtMs);
-    return {state:finalState,reward:withCompanionUnlocks(petReward,state,finalState)};
+    const queuedState=idleWindow.shouldStop&&!idleWindow.safety?autoAdvanceActivityQueue(finalState,settledAtMs):idleWindow.shouldStop?pauseActivityQueue(finalState,reward.stoppedReason??idleStopReason??'Safety stop reached.'):finalState;
+    return {state:queuedState,reward:withCompanionUnlocks(petReward,state,queuedState)};
   }
   const xp=state.character.xp+reward.xp,level=characterLevelFromXp(xp);
   const activeRegion=currentRegionId(state);
@@ -419,7 +447,9 @@ export function claimActivity(state:GameState,nowMs:number){
   progressed=petResult.state;
   const petReward:RewardBundle=petResult.drops.length?{...reward,petDrops:petResult.drops}:reward;
   const finalState=recordCompanionActivity(progressed,'combat',state.activity.targetId,reward.kills,settledAtMs);
-  return {state:finalState,reward:withCompanionUnlocks(petReward,state,finalState)}
+  const plannedQueueAdvance=idleWindow.shouldStop&&!idleWindow.safety&&!reward.stoppedReason?.includes('injured')&&!reward.stoppedReason?.includes('Out of food');
+  const queuedState=plannedQueueAdvance?autoAdvanceActivityQueue(finalState,settledAtMs):shouldStop?pauseActivityQueue(finalState,reward.stoppedReason??idleStopReason??'Safety stop reached.'):finalState;
+  return {state:queuedState,reward:withCompanionUnlocks(petReward,state,queuedState)}
 }
 
 export function finishClassDrills(state:GameState,now:number):GameState{
@@ -515,8 +545,8 @@ export function claimOverflowToBank(state:GameState):GameState{
   return {...state,bank:{...state.bank,stacks:added.stacks},overflow:{stacks:added.overflow,expiresAtMs:added.overflow.length?state.overflow.expiresAtMs:null}};
 }
 
-export function startGathering(state:GameState,targetId:string,nowMs:number):GameState{if(HERB_NODES.some(x=>x.id===targetId))return startHerbalism(state,targetId,nowMs);state=finishClassDrills(state,nowMs);const g=GATHERING.find(x=>x.id===targetId);if(!g)throw new Error('Unknown gathering target');const skill=state.skills.find(x=>x.skillId===g.skillId);if(!skill||skill.level<g.unlockLevel)throw new Error('Skill level too low');if(g.zoneId!==currentRegionId(state)){const zone=WORLD_ZONES.find(entry=>entry.id===g.zoneId);throw new Error(`Travel to ${zone?.name??g.zoneId} before gathering ${g.name}`)}return {...state,activity:{kind:g.skillId,targetId,startedAtMs:nowMs,lastClaimAtMs:nowMs,environment:captureActivityEnvironment(targetId,nowMs)}}}
-export function startHerbalism(state:GameState,targetId:string,nowMs:number):GameState{state=finishClassDrills(state,nowMs);const g=HERB_NODES.find(x=>x.id===targetId);if(!g)throw new Error('Unknown herbalism node');const skill=state.skills.find(x=>x.skillId==='herbalism');if(!skill||skill.level<g.unlockLevel)throw new Error('Herbalism level too low');if(g.zoneId!==currentRegionId(state))throw new Error(`Travel to ${g.zoneId} before gathering ${g.name}`);if(state.activity)throw new Error('Settle and stop the current activity first');return {...state,activity:{kind:'herbalism',targetId,startedAtMs:nowMs,lastClaimAtMs:nowMs,environment:captureActivityEnvironment(targetId,nowMs)}}}
+export function startGathering(state:GameState,targetId:string,nowMs:number):GameState{if(HERB_NODES.some(x=>x.id===targetId))return startHerbalism(state,targetId,nowMs);state=finishClassDrills(state,nowMs);const g=GATHERING.find(x=>x.id===targetId);if(!g)throw new Error('Unknown gathering target');const skill=state.skills.find(x=>x.skillId===g.skillId);if(!skill||skill.level<g.unlockLevel)throw new Error('Skill level too low');if(g.zoneId!==currentRegionId(state)){const zone=WORLD_ZONES.find(entry=>entry.id===g.zoneId);throw new Error(`Travel to ${zone?.name??g.zoneId} before gathering ${g.name}`)}return {...state,character:state.character?{...state.character,activityQueuePausedReason:undefined}:null,activity:{kind:g.skillId,targetId,startedAtMs:nowMs,lastClaimAtMs:nowMs,environment:captureActivityEnvironment(targetId,nowMs)}}}
+export function startHerbalism(state:GameState,targetId:string,nowMs:number):GameState{state=finishClassDrills(state,nowMs);const g=HERB_NODES.find(x=>x.id===targetId);if(!g)throw new Error('Unknown herbalism node');const skill=state.skills.find(x=>x.skillId==='herbalism');if(!skill||skill.level<g.unlockLevel)throw new Error('Herbalism level too low');if(g.zoneId!==currentRegionId(state))throw new Error(`Travel to ${g.zoneId} before gathering ${g.name}`);if(state.activity)throw new Error('Settle and stop the current activity first');return {...state,character:state.character?{...state.character,activityQueuePausedReason:undefined}:null,activity:{kind:'herbalism',targetId,startedAtMs:nowMs,lastClaimAtMs:nowMs,environment:captureActivityEnvironment(targetId,nowMs)}}}
 export function startExploration(state:GameState,routeId:string,nowMs:number):GameState{state=finishClassDrills(state,nowMs);const route=explorationRoute(routeId);if(!route)throw new Error('Unknown exploration route');if(!state.character||state.character.level<route.requiredLevel)throw new Error(`Reach character level ${route.requiredLevel} to explore this route`);if(route.zoneId!==currentRegionId(state))throw new Error(`Travel to ${route.zoneId} before exploring`);if(state.activity)throw new Error('Settle and stop the current activity first');return {...state,activity:{kind:'exploration',targetId:routeId,startedAtMs:nowMs,lastClaimAtMs:nowMs,environment:captureActivityEnvironment(routeId,nowMs)}}}
 export function equipGatheringTool(state:GameState,itemId:string):GameState{
   if(!state.character)throw new Error('Create a character first');

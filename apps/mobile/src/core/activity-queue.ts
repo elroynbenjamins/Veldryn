@@ -4,7 +4,7 @@ import {GATHERING} from '../content/skills';
 import {HERB_NODES} from '../content/herbalism';
 import {MONSTERS} from '../content/monsters';
 import {WORLD_ZONES} from '../content/world-map';
-import {COMBAT_CHALLENGE_IDS,COMBAT_CHALLENGES} from './challenge-hunts';
+import {COMBAT_CHALLENGE_IDS,COMBAT_CHALLENGES,challengeHuntUnlocked} from './challenge-hunts';
 import {COMBAT_TACTIC_IDS,COMBAT_TACTICS} from './combat-tactics';
 import {HUNT_GOAL_IDS,HUNT_GOALS} from './hunt-goals';
 
@@ -64,6 +64,31 @@ export interface ActivityQueueHandoffStatus{
  sourceLabel?:string;
  nextLabel?:string;
  safetyEnabled:boolean;
+ nextReady:boolean;
+ nextBlocker?:string;
+}
+function queuedActivityReadiness(state:GameState,activity:QueuedActivity|undefined){
+ if(!activity)return {ready:false,blocker:undefined as string|undefined};
+ if(!state.character)return {ready:false,blocker:'Create a character first.'};
+ if(activity.kind==='combat'){
+  const monster=MONSTERS.find(row=>row.id===activity.targetId);
+  if(!monster)return {ready:false,blocker:'Queued monster is no longer available.'};
+  if(!state.unlockedMonsterIds.includes(monster.id))return {ready:false,blocker:`${monster.name} is not unlocked yet.`};
+  const region=WORLD_ZONES.find(zone=>zone.name===monster.zone);
+  if(region?.id&&region.id!==state.currentRegionId)return {ready:false,blocker:`Travel to ${monster.zone} before ${monster.name}.`};
+  if(activity.combatChallengeId&&!challengeHuntUnlocked(state,monster.id,activity.combatChallengeId)){
+   const label=COMBAT_CHALLENGES[activity.combatChallengeId]?.name??'Challenge Hunt';
+   return {ready:false,blocker:`${label} is not unlocked for ${monster.name}.`};
+  }
+  return {ready:true,blocker:undefined};
+ }
+ const gather=[...GATHERING,...HERB_NODES].find(row=>row.id===activity.targetId);
+ if(!gather)return {ready:false,blocker:'Queued gathering activity is no longer available.'};
+ const region=WORLD_ZONES.find(zone=>zone.id===gather.zoneId);
+ if(gather.zoneId!==state.currentRegionId)return {ready:false,blocker:`Travel to ${region?.name??gather.zoneId} before ${gather.name}.`};
+ const level=state.skills.find(skill=>skill.skillId===gather.skillId)?.level??1;
+ if(level<gather.unlockLevel)return {ready:false,blocker:`Requires ${gather.skillId} level ${gather.unlockLevel} for ${gather.name}.`};
+ return {ready:true,blocker:undefined};
 }
 function activeRegionId(state:GameState){
  const activity=state.activity;if(!activity)return undefined;
@@ -104,5 +129,6 @@ export function activityQueueHandoffStatus(state:GameState):ActivityQueueHandoff
  const huntGoal=activity?.kind==='combat'?activity.huntGoal:undefined;
  const sources=[huntGoal?.label,nonSafetyApplicable?rule?.name:undefined].filter(Boolean) as string[];
  const safetyEnabled=!!rule&&(rule.stopIfOutOfFood||rule.stopIfRewardsWouldOverflow||rule.conditions.some(condition=>condition.enabled&&(condition.kind==='food_below'||condition.kind==='free_slots_below')));
- return {armed:!!activity&&!!next&&(!!huntGoal||nonSafetyApplicable),sourceLabel:sources.join(' + ')||undefined,nextLabel:next?activityQueueLabel(next):undefined,safetyEnabled};
+ const readiness=queuedActivityReadiness(state,next);
+ return {armed:!!activity&&!!next&&(!!huntGoal||nonSafetyApplicable),sourceLabel:sources.join(' + ')||undefined,nextLabel:next?activityQueueLabel(next):undefined,safetyEnabled,nextReady:readiness.ready,nextBlocker:readiness.blocker};
 }

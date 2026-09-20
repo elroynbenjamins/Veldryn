@@ -39,11 +39,11 @@ s=command(s,'companion_level',{id:'UNIT_001'});ok(s.account.combatCompanionProgr
 const bond=applyCompanionBondXp(s.account.combatCompanionProgress!.UNIT_001,2520);ok(bond.bondLevel===10&&bond.bondXp===2520&&bond.bondTraitUnlocked,'cumulative Bond 10');
 s.account.combatCompanionProgress!.UNIT_001=bond;
 const technique=companionTechniques('UNIT_001')[0].id;
-rejects(()=>command(s,'companion_technique',{id:'UNIT_001',technique}),'technique requires second ascension');
+s=command(s,'companion_technique',{id:'UNIT_001',technique});
+ok(s.account.combatCompanionProgress!.UNIT_001.selectedTechniqueId===technique,'Bond 7+ unlocks technique before Ascension II');
 for(let i=11;i<20;i++)s=command(s,'companion_level',{id:'UNIT_001'});
 s=command(s,'companion_ascend',{id:'UNIT_001'});
-s=command(s,'companion_technique',{id:'UNIT_001',technique});
-ok(s.account.combatCompanionProgress!.UNIT_001.selectedTechniqueId===technique,'technique saved');
+ok(s.account.combatCompanionProgress!.UNIT_001.selectedTechniqueId===technique,'technique persists through later ascension');
 const backup=parseSaveBackup(createSaveBackup(s));ok(backup.character!.equippedCombatCompanionId==='UNIT_001'&&backup.account.companionEssence===s.account.companionEssence,'save retains equip and currency');
 const legacy=createCharacter(newGame(now),'IRONWARDEN','Legacy');legacy.character!.ownedPetIds=['PET_001'];legacy.account.unlockedCosmeticPetIds=['PET_001'];
 const upgraded=migrateSave(legacy);ok(!upgraded.account.unlockedCombatCompanionIds?.length&&upgraded.account.unlockedCosmeticPetIds?.includes('PET_001'),'passive pets migrate to account ownership and never become Combat Companions');

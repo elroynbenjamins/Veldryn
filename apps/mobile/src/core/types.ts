@@ -99,7 +99,7 @@ export interface RewardBundle {
   masteryMaterialRemainders?:Record<string,number>;
   classSkillXp?:Array<{skillId:string;xp:number}>;
   trainingActions?:number;
-  xp:number; gold:number; items:ItemStack[]; kills:number; elapsedSeconds:number;
+  xp:number; gold:number; items:ItemStack[]; kills:number; elapsedSeconds:number; qualifyingActivitySeconds?:number;
   foodConsumed?:number; endHp?:number; stoppedReason?:string;
   eventDrops?:{eventId:string;currencyId:string;name:string;quantity:number;source?:'combat'|'gathering'|'crafting'|'boss';units?:number;recordedAtMs?:number}[];
   eventDiscoveries?:{eventId:string;discoveryId:string;name:string;quantity:number}[];

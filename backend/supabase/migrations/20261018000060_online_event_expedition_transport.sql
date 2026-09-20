@@ -148,7 +148,7 @@ create or replace function public.claim_online_event_expedition_server_v1(
  p_account_id uuid,p_run_id uuid,p_expected_version bigint,p_request_id text,p_request_hash text,p_marks integer,
  p_private_state jsonb,p_client_projection jsonb
 ) returns jsonb language plpgsql security definer set search_path=public as $$
-declare v_prior jsonb;v_version bigint;v_old jsonb;r jsonb;g public.online_game_states;v_live_event_id text;v_progress integer;v_currency integer;v_state jsonb;v_count integer;v_game_version bigint;
+declare v_prior jsonb;v_version bigint;v_old jsonb;r jsonb;g public.online_game_states;v_live_event_id text;v_progress integer;v_currency integer;v_state jsonb;v_count integer;
 begin
  perform pg_advisory_xact_lock(hashtextextended('party-account:'||p_account_id::text,0));
  select state_version into v_version from public.expedition_runs where id=p_run_id and coop_mode='event' and controller_account_id=p_account_id for update;
@@ -171,7 +171,7 @@ begin
  v_currency:=greatest(0,coalesce((g.state#>>array['account','eventCurrencyBalanceById',v_live_event_id])::integer,0))+p_marks;
  v_state:=jsonb_set(g.state,'{account,eventProgressById}',coalesce(g.state#>'{account,eventProgressById}','{}'::jsonb)||jsonb_build_object(v_live_event_id,v_progress),true);
  v_state:=jsonb_set(v_state,'{account,eventCurrencyBalanceById}',coalesce(v_state#>'{account,eventCurrencyBalanceById}','{}'::jsonb)||jsonb_build_object(v_live_event_id,v_currency),true);
- update public.online_game_states set state=v_state,revision=revision+1,updated_at=clock_timestamp() where account_id=p_account_id returning revision into v_game_version;
+ update public.online_game_states set state=v_state,revision=revision+1,updated_at=clock_timestamp() where account_id=p_account_id;
  insert into public.event_progress(account_id,event_id,progress,currency_balance,prestige_balance)
  values(p_account_id,v_live_event_id,p_marks,p_marks,0)
  on conflict(account_id,event_id) do update set progress=public.event_progress.progress+excluded.progress,currency_balance=public.event_progress.currency_balance+excluded.currency_balance,updated_at=clock_timestamp();

@@ -3,11 +3,12 @@ import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {ProfileEditor} from '../components/ProfileEditor';
 import {OnlineProfileExtensionPanel} from '../components/OnlineProfileExtensionPanel';
 import type {GameState} from '../core/types';
+import type {ProfileCustomizationDestination} from '../core/profile-customization';
 import {C,equipmentColors,radii,spacing,typography} from '../theme/theme';
 
 type Section='Appearance'|'Identity';
 
-export function ProfileCustomizeScreen({state,onChange}:{state:GameState;onChange:(next:GameState)=>void}){
+export function ProfileCustomizeScreen({state,onChange,onNavigateSource}:{state:GameState;onChange:(next:GameState)=>void;onNavigateSource?:(destination:ProfileCustomizationDestination)=>void}){
  const [section,setSection]=useState<Section>('Appearance');
  return <ScrollView contentContainerStyle={s.root}>
   <View style={s.headingRow}>
@@ -28,7 +29,7 @@ export function ProfileCustomizeScreen({state,onChange}:{state:GameState;onChang
   </View>
 
   {section==='Appearance'
-   ?<ProfileEditor state={state} onChange={onChange} showLoadouts={false}/>
+   ?<ProfileEditor state={state} onChange={onChange} showLoadouts={false} onNavigateSource={onNavigateSource}/>
    :<OnlineProfileExtensionPanel state={state}/>}
  </ScrollView>;
 }

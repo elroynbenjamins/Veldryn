@@ -1,4 +1,4 @@
-import type {GameState,RewardBundle} from './types';
+import type {CombatChallengeId,GameState,RewardBundle} from './types';
 import {grantProfessionMastery,type ProfessionMasteryRecord} from './profession-mastery-v40';
 import {applyWeeklyOrderProgress,claimWeeklyCompletion,claimWeeklyOrder,generateWeeklyOrders,weeklyOrderWindow,type WeeklyOrdersState} from './weekly-orders-v41';
 import {weeklyOrderCandidatesFromCurrentContent} from './launch-readiness-v47';
@@ -16,7 +16,7 @@ import {WORLD_ZONES} from '../content/world-map';
 import {random01} from './rng';
 import {applyLocalBalanceSnapshot} from './balance-telemetry';
 
-export interface TrustedProgressionActivity{kind:'combat'|'gathering'|'crafting'|'boss';contentId:string;units:number;startedAtMs?:number}
+export interface TrustedProgressionActivity{kind:'combat'|'gathering'|'crafting'|'boss';contentId:string;units:number;startedAtMs?:number;challengeId?:CombatChallengeId}
 export interface TrustedProgressionOptions{accountId:string;eventId:string}
 export interface TrustedProgressionResult{
  state:GameState;
@@ -118,6 +118,7 @@ export function applyTrustedLongTermProgression(input:GameState,events:TrustedPr
   if(event.kind==='combat'||event.kind==='boss')metrics['combat.total_kills']=(metrics['combat.total_kills']??0)+units;
   if(event.kind==='gathering'||event.kind==='crafting'){metrics['profession.actions_completed']=(metrics['profession.actions_completed']??0)+units;mastery[event.contentId]=grantProfessionMastery(mastery[event.contentId] as ProfessionMasteryRecord|undefined,event.contentId,units,nowMs)}
   if(event.kind==='combat')applyWeeklyOrderProgress(weekly,{eventId:`${options.eventId}:${event.kind}:${event.contentId}`,characterId:state.character?.id??'unknown',kind:'hunt',targetId:event.contentId,amount:units,completedAtMs:nowMs});
+  if(event.kind==='combat'&&event.challengeId)applyWeeklyOrderProgress(weekly,{eventId:`${options.eventId}:threat:${event.contentId}:${event.challengeId}`,characterId:state.character?.id??'unknown',kind:'threat',targetId:`${event.contentId}:${event.challengeId}`,amount:units,completedAtMs:nowMs});
   if(event.kind==='gathering'||event.kind==='crafting')applyWeeklyOrderProgress(weekly,{eventId:`${options.eventId}:${event.kind}:${event.contentId}`,characterId:state.character?.id??'unknown',kind:'profession',targetId:event.contentId,amount:units,completedAtMs:nowMs});
   const regionId=trustedEventRegionId(event);if(regionId)applyWeeklyOrderProgress(weekly,{eventId:`${options.eventId}:regional:${regionId}:${event.kind}:${event.contentId}`,characterId:state.character?.id??'unknown',kind:'regional',targetId:regionId,amount:units,completedAtMs:nowMs});
  }

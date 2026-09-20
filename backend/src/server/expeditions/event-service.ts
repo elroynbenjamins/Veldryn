@@ -1,6 +1,6 @@
 import type { CoopRouteGraph, CoopRouteNode } from '../../shared/coop-types';
 import type { CombatantDefinition } from '../combat/types';
-import { eventExpeditionPreviews, EVENT_EXPEDITIONS } from './content/event-expeditions';
+import { EVENT_EXPEDITIONS } from './content/event-expeditions';
 import { initialPersistentRunState, resolveCoopNode, type NodeResolutionResult, type PersistentRunState } from './node-resolution';
 import { validateCoopRoster } from '../coop/invariants';
 import type { CoopRole } from '../../shared/coop-types';
@@ -23,10 +23,13 @@ function graph(eventId:string,runId:string,serverSecret:string):CoopRouteGraph{
 export class EventExpeditionService{
  private commandReceipts=new Map<string,{hash:string;run:EventRun}>();private claims=new Map<string,{marks:number}>();
  constructor(private repository:EventRunRepository,private serverSecret:string){}
- start(input:{requestId:string;runId:string;accountId:string;eventId:string;members:Array<{accountId:string;characterId:string;role:CoopRole}>;players:CombatantDefinition[];nowMs:number}):EventRun{
+ start(input:{requestId:string;runId:string;accountId:string;eventId:string;activeLiveEventId?:string;members:Array<{accountId:string;characterId:string;role:CoopRole}>;players:CombatantDefinition[];nowMs:number}):EventRun{
   const prior=this.repository.getByRequest(input.accountId,input.requestId);if(prior)return prior;
   const definition=EVENT_EXPEDITIONS.find(item=>item.id===input.eventId);if(!definition)throw new Error('unknown_event_expedition');
-  const scheduled=eventExpeditionPreviews(input.nowMs).find(item=>item.id===input.eventId)?.scheduled;if(!scheduled)throw new Error('event_not_active');
+  // Player-event LiveOps is authoritative for entry. Calendar dates are preview metadata only.
+  // This means an Owner Hard off immediately blocks new expedition runs, while manual
+  // Go live outside the normal seasonal window can intentionally open the matching route.
+  if(!input.activeLiveEventId||!input.activeLiveEventId.startsWith(`${definition.liveEventSeriesId}_`))throw new Error('event_not_live');
   validateCoopRoster(input.members);if(input.players.length!==4||input.players.some(player=>player.level<definition.minLevel))throw new Error('event_level_requirement');
   if(!/^[-a-zA-Z0-9_]{8,128}$/.test(input.requestId)||!/^[-a-zA-Z0-9_]{8,128}$/.test(input.runId))throw new Error('invalid_event_identity');
   const run:EventRun={id:input.runId,requestId:input.requestId,accountIds:input.members.map(member=>member.accountId),eventId:input.eventId,graph:graph(input.eventId,input.runId,this.serverSecret),players:input.players,persistentState:initialPersistentRunState(input.players),currentNodeId:'entry',phase:'awaiting_choice',settlement:'pending'};this.repository.save(run);return structuredClone(run);

@@ -18,3 +18,34 @@ export function huntGoalProgress(activity:{startedAtMs:number;huntGoal?:HuntGoal
  const current=goal.kind==='session_kills'?(activity.sessionKills??0)+pendingKills:goal.kind==='champion_defeats'?(activity.sessionChampions??0)+pendingChampions:Math.max(0,Math.floor((nowMs-activity.startedAtMs)/1000));
  return {current:Math.min(goal.value,current),target:goal.value,label:goal.label,complete:current>=goal.value,kind:goal.kind};
 }
+
+export type HuntMomentumTierId='tracking'|'focused'|'dominant'|'relentless';
+export interface HuntMomentumTier{id:HuntMomentumTierId;name:string;minKills:number;bonus:number}
+export const HUNT_MOMENTUM_TIERS:readonly HuntMomentumTier[]=[
+ {id:'tracking',name:'Tracking',minKills:0,bonus:0},
+ {id:'focused',name:'Focused',minKills:25,bonus:.02},
+ {id:'dominant',name:'Dominant',minKills:75,bonus:.04},
+ {id:'relentless',name:'Relentless',minKills:150,bonus:.06},
+];
+
+/** Momentum is session-bound: it resets whenever a combat activity ends or a new target starts. */
+export function huntMomentumTier(kills:number){
+ const total=Math.max(0,Math.floor(kills));
+ let tier=HUNT_MOMENTUM_TIERS[0];
+ for(const row of HUNT_MOMENTUM_TIERS)if(total>=row.minKills)tier=row;
+ return tier;
+}
+export function huntMomentumStatus(kills:number){
+ const total=Math.max(0,Math.floor(kills)),tier=huntMomentumTier(total),index=HUNT_MOMENTUM_TIERS.findIndex(row=>row.id===tier.id),next=HUNT_MOMENTUM_TIERS[index+1];
+ return {kills:total,tier,next,killsToNext:next?Math.max(0,next.minKills-total):0,progressPct:next?Math.max(0,Math.min(1,(total-tier.minKills)/(next.minKills-tier.minKills))):1,bonusPct:Math.round(tier.bonus*100)};
+}
+/** Returns only the extra reward earned from momentum so base rounding stays unchanged. */
+export function huntMomentumBonus(basePerKill:number,existingKills:number,newKills:number){
+ const start=Math.max(0,Math.floor(existingKills)),count=Math.max(0,Math.floor(newKills));if(!count||!Number.isFinite(basePerKill)||basePerKill<=0)return 0;
+ const end=start+count;let bonus=0;
+ for(let i=1;i<HUNT_MOMENTUM_TIERS.length;i++){
+  const tier=HUNT_MOMENTUM_TIERS[i],next=HUNT_MOMENTUM_TIERS[i+1],from=Math.max(start,tier.minKills),to=Math.min(end,next?.minKills??end);
+  if(to>from)bonus+=(to-from)*basePerKill*tier.bonus;
+ }
+ return Math.max(0,Math.floor(bonus+1e-9));
+}

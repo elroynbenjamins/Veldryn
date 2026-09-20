@@ -1,5 +1,5 @@
 import type {GameState} from './types';
-import type {CompanionDefinition} from './combat-companion-types';
+import type {CombatCompanionRole,CompanionDefinition} from './combat-companion-types';
 import {companionCurrentLevelCap,companionMaxLevel,companionUnlockRequirementMet,isCombatCompanionMastered} from './combat-companions';
 import {MONSTERS} from '../content/monsters';
 import {GATHERING,RECIPES} from '../content/skills';
@@ -57,11 +57,45 @@ export function companionUnlockCompletion(state:GameState,def:CompanionDefinitio
  const ratio=requirements.length?requirements.reduce((sum,p)=>sum+(p.total?Math.min(1,p.current/p.total):0),0)/requirements.length:0;
  return {requirements,ratio,completeCount:requirements.filter(p=>p.complete).length,totalCount:requirements.length};
 }
+const rarityPriority:Record<CompanionDefinition['rarity'],number>={standard:0,rare:1,elite:2,prestige:3};
+export function companionUnlockRequirementGuidance(req:CompanionDefinition['unlockRequirements'][number]){
+ const target=req.target??'',amount=Math.max(1,req.amount??1);
+ if(req.type==='quest')return {label:'Continue the campaign',detail:req.description};
+ if(req.type==='monster_mastery')return {label:`Hunt ${MONSTERS.find(m=>m.id===target)?.name??target.replace(/_/g,' ')}`,detail:`Raise Monster Mastery to ${amount}.`};
+ if(req.type==='skill_level')return {label:`Train ${target.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}`,detail:`Reach skill level ${amount}.`};
+ if(req.type==='collection'&&target==='SILVERBROOK_NODES')return {label:'Explore Silverbrook fishing spots',detail:'Fish each Silverbrook node at least once; the final pool unlocks at Fishing 16.'};
+ if(req.type==='boss_kills')return {label:`Challenge ${MONSTERS.find(m=>m.id===target)?.name??target.replace(/_/g,' ')}`,detail:`Defeat it ${amount} time${amount===1?'':'s'}.`};
+ if(req.type==='achievement'&&target.startsWith('COMPANION_MISSIONS:'))return {label:'Run Sanctuary Expeditions',detail:`Complete ${amount} assignments in ${target.split(':')[1].replace('REG_','').replace(/_/g,' ').toLowerCase()}.`};
+ if(req.type==='achievement'&&target.startsWith('COMPANION_S_GRADE:'))return {label:'Improve Expedition teams',detail:`Earn S grade on ${amount} regional Sanctuary assignments.`};
+ if(req.type==='meta'&&target.startsWith('COMPANION_BOND:')){const id=target.slice('COMPANION_BOND:'.length),name=COMBAT_COMPANIONS.find(def=>def.id===id)?.name??id;return {label:`Raise ${name} Bond`,detail:`Reach Bond ${amount} with ${name}.`};}
+ if(req.type==='event_challenge'&&target.startsWith('CHALLENGE_'))return {label:'Complete its Special Companion Challenge',detail:req.description};
+ return {label:req.description,detail:`Progress ${amount} required.`};
+}
+export function companionUnlockGuidance(state:GameState,def:CompanionDefinition){
+ const progress=companionUnlockCompletion(state,def),incomplete=def.unlockRequirements.map((req,index)=>({req,index,p:progress.requirements[index]})).filter(row=>!row.p.complete);
+ if(!incomplete.length)return {ready:true,label:'Ready to recruit',detail:'All unlock requirements are complete.',requirement:undefined as CompanionDefinition['unlockRequirements'][number]|undefined,progress};
+ incomplete.sort((a,b)=>{
+   const ar=a.p.total?Math.min(1,a.p.current/a.p.total):0,br=b.p.total?Math.min(1,b.p.current/b.p.total):0;
+   return br-ar||a.index-b.index;
+ });
+ const requirement=incomplete[0].req,copy=companionUnlockRequirementGuidance(requirement);
+ return {ready:false,...copy,requirement,progress};
+}
+export function companionStarterTeamProgress(state:GameState){
+ const owned=new Set(state.account.unlockedCombatCompanionIds??[]),roles=(['tank','damage','support'] as CombatCompanionRole[]).map(role=>({role,owned:COMBAT_COMPANIONS.some(def=>def.role===role&&owned.has(def.id))}));
+ const missingRoles=roles.filter(row=>!row.owned).map(row=>row.role);
+ const candidates=COMBAT_COMPANIONS.filter(def=>def.origin.type!=='event'&&!owned.has(def.id)&&missingRoles.includes(def.role)).map(def=>({def,guidance:companionUnlockGuidance(state,def)})).sort((a,b)=>rarityPriority[a.def.rarity]-rarityPriority[b.def.rarity]||b.guidance.progress.ratio-a.guidance.progress.ratio||a.def.name.localeCompare(b.def.name));
+ return {ready:missingRoles.length===0,roles,missingRoles,next:candidates[0]};
+}
 export function companionNextUnlockTargets(state:GameState,limit=3){
  const owned=new Set(state.account.unlockedCombatCompanionIds??[]);
  return COMBAT_COMPANIONS.filter(def=>!owned.has(def.id)&&def.origin.type!=='event'&&def.unlockRequirements.length>0)
   .map(def=>({def,progress:companionUnlockCompletion(state,def)}))
-  .sort((a,b)=>b.progress.ratio-a.progress.ratio||b.progress.completeCount-a.progress.completeCount||a.def.name.localeCompare(b.def.name))
+  .sort((a,b)=>{
+    const ownedRoles=new Set((state.account.unlockedCombatCompanionIds??[]).map(id=>COMBAT_COMPANIONS.find(def=>def.id===id)?.role).filter(Boolean));
+    const aRoleNeed=ownedRoles.has(a.def.role)?1:0,bRoleNeed=ownedRoles.has(b.def.role)?1:0;
+    return aRoleNeed-bRoleNeed||rarityPriority[a.def.rarity]-rarityPriority[b.def.rarity]||b.progress.ratio-a.progress.ratio||b.progress.completeCount-a.progress.completeCount||a.def.name.localeCompare(b.def.name);
+  })
   .slice(0,Math.max(0,limit));
 }
 export function companionMasteryGuidance(state:GameState,id:string){

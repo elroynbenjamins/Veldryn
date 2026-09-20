@@ -24,12 +24,14 @@ export function gameplayHandler(services:GameplayServices){return async(request:
   const bearer=request.headers.get('authorization')?.match(/^Bearer (\S+)$/i)?.[1];
   if(!bearer)return json({error:'auth_required'},401);
   const accountId=await services.authenticate(bearer);if(!accountId)return json({error:'invalid_session'},401);
+  if(request.method==='GET'){try{await services.rpc('record_player_activity_server_v1',{p_account_id:accountId,p_kind:'foreground'});}catch{/* Activity analytics are best-effort and must never block gameplay. */}}
   let body:Record<string,unknown>|undefined,command:ReturnType<typeof validateGameCommand>|undefined,requestHash:string|undefined;
   if(request.method==='POST'){
    const raw=await request.text();if(raw.length>16384)return json({error:'request_too_large'},413);
    try{body=JSON.parse(raw);}catch{throw new GameplayError('invalid_json');}if(!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).some(key=>!['requestId','expectedVersion','command'].includes(key)))throw new GameplayError('invalid_request');
    if(typeof body.requestId!=='string'||!/^[a-zA-Z0-9_-]{8,128}$/.test(body.requestId)||!Number.isSafeInteger(body.expectedVersion)||(body.expectedVersion as number)<0)throw new GameplayError('invalid_request');
    try{command=validateGameCommand(body.command);}catch(e){throw new GameplayError(e instanceof Error?e.message:'invalid_command');}requestHash=await hash(canonical(command));
+   try{await services.rpc('record_player_activity_server_v1',{p_account_id:accountId,p_kind:command.type.startsWith('event_')?'event_action':'gameplay_action'});}catch{/* Activity analytics are best-effort and must never block gameplay. */}
    const prior=await services.rpc<{response:unknown;requestHash:string}|null>('read_online_game_receipt_server_v1',{p_account_id:accountId,p_request_id:body.requestId});
    if(prior){if(prior.requestHash!==requestHash)return json({error:'idempotency_key_conflict'},409);return json(prior.response);}
   }

@@ -1,7 +1,7 @@
 import {CompactPlayerIdentity} from '../components/CompactPlayerIdentity';
 import {ChatPlayerSheet,type ChatPlayerIdentity} from '../components/ChatPlayerSheet';
 import {SearchField} from '../components/SearchField';
-import {useEffect,useRef,useState,useMemo} from 'react';
+import {useEffect,useMemo,useRef,useState} from 'react';
 import {ActivityIndicator,Alert,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from '../components/GameButton';
 import {Panel} from '../components/Panel';
@@ -10,14 +10,14 @@ import {blockedPlayers,cancelFriendRequest,friendRequests,friends,removeFriend,r
 import {radii,spacing,typography,equipmentTheme,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 
-export function FriendsScreen(){
+export function FriendsScreen({onNotificationsChanged}:{onNotificationsChanged?:()=>void}={}){
   const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
   const [section,setSection]=useState<'Friends'|'Requests'|'Find'>('Friends');
   const [signedIn,setSignedIn]=useState<boolean|null>(null);
   const [friendRows,setFriendRows]=useState<FriendEntry[]>([]),[requestRows,setRequestRows]=useState<FriendRequest[]>([]),[blockedRows,setBlockedRows]=useState<BlockedPlayer[]>([]);
   const [query,setQuery]=useState(''),[results,setResults]=useState<FriendSearchResult[]>([]),[selectedProfile,setSelectedProfile]=useState<ChatPlayerIdentity|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState('');
   const [initialLoading,setInitialLoading]=useState(true),[searchedQuery,setSearchedQuery]=useState<string|null>(null);
-  const searchRevision=useRef(0);
+  const searchRevision=useRef(0),firstLoad=useRef(true);
   function changeQuery(value:string){searchRevision.current+=1;setQuery(value);setResults([]);setSearchedQuery(null);}
   async function refresh(){
     if(!onlineConfigured){setSignedIn(false);return;}
@@ -26,9 +26,10 @@ export function FriendsScreen(){
     setSignedIn(true);
     const [nextFriends,nextRequests,nextBlocked]=await Promise.all([friends(),friendRequests(),blockedPlayers()]);
     setFriendRows(nextFriends);setRequestRows(nextRequests);setBlockedRows(nextBlocked);
+    if(firstLoad.current){if(nextRequests.some(request=>request.direction==='incoming'))setSection('Requests');firstLoad.current=false;}
   }
   useEffect(()=>{refresh().catch(reason=>setError(reason instanceof Error?reason.message:'Friends could not be loaded.')).finally(()=>setInitialLoading(false))},[]);
-  async function run(action:()=>Promise<void>){setBusy(true);setError('');try{await action();await refresh()}catch(reason){setError(reason instanceof Error?reason.message:'Please try again.')}finally{setBusy(false)}}
+  async function run(action:()=>Promise<void>){setBusy(true);setError('');try{await action();await refresh();onNotificationsChanged?.()}catch(reason){setError(reason instanceof Error?reason.message:'Please try again.')}finally{setBusy(false)}}
   async function search(){
     const term=query.trim();
     if(busy||term.length<2)return;

@@ -29,7 +29,7 @@ export const COMBAT_AFFIXES:Record<CombatAffixId,CombatAffixDef>={
  colossal:{id:'colossal',name:'Colossal',description:'More health turns each kill into a longer endurance check.',hpMultiplier:1.24,attackMultiplier:1.06,defenseMultiplier:1,xpMultiplier:1.12,goldMultiplier:1.06,dropChanceMultiplier:1.05,accent:'#7bb6d8'},
  cursed:{id:'cursed',name:'Cursed',description:'A broad difficulty increase with balanced bonus rewards.',hpMultiplier:1.10,attackMultiplier:1.10,defenseMultiplier:1.10,xpMultiplier:1.08,goldMultiplier:1.08,dropChanceMultiplier:1.08,accent:'#a67be0'},
 };
-export const COMBAT_CHALLENGE_IDS:readonly CombatChallengeId[]=['ferocious','hardened','nemesis'];
+export const COMBAT_CHALLENGE_IDS:readonly CombatChallengeId[]=['ferocious','hardened','nemesis','apex'];
 export const COMBAT_CHALLENGES:Record<CombatChallengeId,CombatChallengeDef>={
  ferocious:{
   id:'ferocious',name:'Ferocious Hunt',shortName:'Ferocious',masteryRank:3,
@@ -48,6 +48,12 @@ export const COMBAT_CHALLENGES:Record<CombatChallengeId,CombatChallengeDef>={
   description:'A mastery challenge combining dangerous damage, high durability and the strongest hunt rewards.',
   hpMultiplier:1.82,attackMultiplier:1.38,defenseMultiplier:1.22,cycleMultiplier:1.24,
   xpMultiplier:1.88,goldMultiplier:1.80,dropChanceMultiplier:1.32,accent:'#b88ae3',
+ },
+ apex:{
+  id:'apex',name:'Apex Hunt',shortName:'Apex',masteryRank:30,
+  description:'The species capstone: extreme durability and pressure for players who have fully mastered this monster.',
+  hpMultiplier:2.35,attackMultiplier:1.55,defenseMultiplier:1.40,cycleMultiplier:1.35,
+  xpMultiplier:2.35,goldMultiplier:2.20,dropChanceMultiplier:1.55,accent:'#f0b35a',
  },
 };
 

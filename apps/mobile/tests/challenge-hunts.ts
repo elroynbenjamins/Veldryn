@@ -9,7 +9,7 @@ function rejects(fn:()=>unknown,message:string){let threw=false;try{fn()}catch{t
 const now=Date.UTC(2026,8,21),monster=MONSTERS.find(row=>row.id==='MOSS_RAT')!;
 let state=createCharacter(newGame(now),'RAVAGER','Challenge Tester');
 
-ok(COMBAT_CHALLENGE_IDS.join(',')==='ferocious,hardened,nemesis','Challenge Hunt tier order drifted');
+ok(COMBAT_CHALLENGE_IDS.join(',')==='ferocious,hardened,nemesis,apex','Challenge Hunt tier order drifted');
 ok(COMBAT_CHALLENGE_IDS.every(id=>COMBAT_CHALLENGES[id].xpMultiplier>1&&COMBAT_CHALLENGES[id].goldMultiplier>1&&COMBAT_CHALLENGES[id].dropChanceMultiplier>1),'Every Challenge Hunt needs stronger rewards');
 ok(COMBAT_AFFIX_IDS.length===4&&COMBAT_AFFIX_IDS.every(id=>!!COMBAT_AFFIXES[id]),'Challenge Hunt affix catalog must remain complete');
 const weeklyAffix=rotatingChallengeAffix(monster.id,'nemesis',now),weeklyAffixRepeat=rotatingChallengeAffix(monster.id,'nemesis',now+3*86400_000);ok(weeklyAffix===weeklyAffixRepeat,'Challenge Hunt affix must remain stable within the UTC week');
@@ -17,11 +17,12 @@ ok(!challengeHuntUnlocked(state,monster.id,'ferocious'),'Challenge Hunt should r
 rejects(()=>startCombat(state,monster.id,now,'ferocious'),'Locked Challenge Hunt must reject');
 
 state={...state,character:{...state.character!,monsterMasteryPoints:{MOSS_RAT:500}}};
-ok(challengeHuntUnlocked(state,monster.id,'ferocious')&&challengeHuntUnlocked(state,monster.id,'hardened')&&challengeHuntUnlocked(state,monster.id,'nemesis'),'Mastery 20 should unlock all current Challenge Hunt tiers');
+ok(challengeHuntUnlocked(state,monster.id,'ferocious')&&challengeHuntUnlocked(state,monster.id,'hardened')&&challengeHuntUnlocked(state,monster.id,'nemesis')&&!challengeHuntUnlocked(state,monster.id,'apex'),'Mastery 20 should unlock Ferocious, Hardened and Nemesis but keep Apex locked');
 const normal=challengeHuntStats(monster,undefined),ferocious=challengeHuntStats(monster,'ferocious'),hardened=challengeHuntStats(monster,'hardened'),nemesis=challengeHuntStats(monster,'nemesis');
 ok(ferocious.attack>normal.attack&&hardened.defense>normal.defense&&nemesis.hp>hardened.hp,'Challenge Hunt stat identities should be meaningfully harder');
 for(const affixId of COMBAT_AFFIX_IDS){const tuned=challengeHuntStats(monster,'nemesis',affixId),reward=challengeRewardMultipliers('nemesis',affixId);ok(tuned.hp>=nemesis.hp&&tuned.attack>=nemesis.attack&&tuned.defense>=nemesis.defense,'Affixes must never make a Nemesis easier than its base tier');ok(reward.xp>=COMBAT_CHALLENGES.nemesis.xpMultiplier&&reward.gold>=COMBAT_CHALLENGES.nemesis.goldMultiplier&&reward.dropChance>=COMBAT_CHALLENGES.nemesis.dropChanceMultiplier,'Affixes must not reduce base Challenge Hunt rewards');}
 ok(combatReadiness(state,monster,'ferocious').recommendedPower>combatReadiness(state,monster).recommendedPower,'Challenge Hunt readiness must increase');
+state={...state,character:{...state.character!,monsterMasteryPoints:{MOSS_RAT:750}}};ok(challengeHuntUnlocked(state,monster.id,'apex'),'Mastery 30 should unlock Apex Hunts');const apex=challengeHuntStats(monster,'apex');ok(apex.hp>nemesis.hp&&apex.attack>nemesis.attack&&apex.defense>nemesis.defense,'Apex must be the strongest Challenge Hunt tier');
 
 const started=startCombat(state,monster.id,now,'nemesis');
 ok(started.activity?.combatChallengeId==='nemesis'&&started.activity.combatAffixId===weeklyAffix,'Challenge Hunt tier and weekly affix must snapshot on activity');

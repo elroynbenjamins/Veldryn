@@ -49,14 +49,14 @@ export function OnlineProfileExtensionPanel({state,onSaved}:{state:GameState;onS
   return refs.slice(0,100);
  },[state]);
  const labelRef=(ref:ProfileCollectionRefV43)=>profileCollectionLabel(ref);
- const patch=(next:Partial<ProfileExtensionSelfV43>)=>{setNotice('');if(value)setValue({...value,...next});};
+ const patch=(next:Partial<ProfileExtensionSelfV43>)=>{setNotice('');setError('');if(value)setValue({...value,...next});};
  const toggle=(list:string[],id:string)=>list.includes(id)?list.filter(value=>value!==id):list.length<3?[...list,id]:list;
  const toggleCollection=(list:ProfileCollectionRefV43[],ref:ProfileCollectionRefV43)=>{const key=refKey(ref);return list.some(row=>refKey(row)===key)?list.filter(row=>refKey(row)!==key):list.length<3?[...list,ref]:list};
  const editableSnapshot=(row:ProfileExtensionSelfV43,bioText:string)=>({visibility:row.visibility,worldFeedOptOut:row.worldFeedOptOut,selectedCharacterId:row.selectedCharacterId??null,bio:bioText,favoriteSkillId:row.favoriteSkillId??null,favoriteCompanionId:row.favoriteCompanionId??null,achievementShowcaseIds:row.achievementShowcaseIds,collectionShowcase:row.collectionShowcase,recordShowcaseIds:row.recordShowcaseIds});
  const dirty=!!value&&!!savedValue&&JSON.stringify(editableSnapshot(value,bio))!==JSON.stringify(editableSnapshot(savedValue,savedValue.bio));
  const save=async()=>{if(!value||busy||guest)return;setBusy(true);setError('');setNotice('');try{const row=await updateProfileExtensionV43({visibility:value.visibility,worldFeedOptOut:value.worldFeedOptOut,selectedCharacterId:value.selectedCharacterId??state.character?.id??null,bio, favoriteSkillId:value.favoriteSkillId,favoriteCompanionId:value.favoriteCompanionId,achievementShowcaseIds:value.achievementShowcaseIds,collectionShowcase:value.collectionShowcase,recordShowcaseIds:value.recordShowcaseIds});setValue(row);setSavedValue(row);setBio(row.bio);setNotice('Profile saved.');await onSaved?.();}catch(reason){setError(reason instanceof Error?reason.message:'Unable to save profile settings.')}finally{setBusy(false)}};
  if(!onlineConfigured||!session)return <Panel><Text style={s.eyebrow}>SOCIAL PROFILE</Text><Text style={s.title}>Identity & Showcases</Text><Text style={s.copy}>Sign in when online profile services are available to publish a biography, privacy setting, showcase character, favorites and featured achievements, records and collectibles.</Text></Panel>;
- if(!value)return <Panel><Text style={s.title}>Online Profile Settings</Text>{busy?<ActivityIndicator color={C.accent}/>:<GameButton title="Load profile settings" tone="secondary" onPress={()=>void load()}/>} {error?<Text style={s.error}>{error}</Text>:null}</Panel>;
+ if(!value)return <Panel><Text style={s.title}>Identity & Showcases</Text>{busy?<ActivityIndicator color={C.accent}/>:<GameButton title="Load profile settings" tone="secondary" onPress={()=>void load()}/>} {error?<Text style={s.error}>{error}</Text>:null}</Panel>;
  const selectedCharacter=characters.find(row=>row.id===(value.selectedCharacterId??state.character?.id)),selectedSkill=skills.find(row=>row.id===value.favoriteSkillId),selectedCompanion=companions.find(row=>row.id===value.favoriteCompanionId);
  const pickerTitle=picker==='visibility'?'Profile visibility':picker==='character'?'Showcase character':picker==='skill'?'Favorite skill':picker==='companion'?'Favorite companion':picker==='achievements'?'Achievement showcase':picker==='records'?'Personal Record showcase':picker==='collections'?'Collection showcase':'Profile settings';
  const multiPicker=picker==='achievements'||picker==='records'||picker==='collections';
@@ -66,21 +66,21 @@ export function OnlineProfileExtensionPanel({state,onSaved}:{state:GameState;onS
   <View style={s.heading}><View style={s.flex}><Text style={s.eyebrow}>SOCIAL PROFILE</Text><Text style={s.title}>Identity & Showcases</Text></View><View style={[s.saveState,dirty&&s.saveStateDirty]}><Text style={[s.saveStateText,dirty&&s.saveStateTextDirty]}>{dirty?'UNSAVED':'SAVED'}</Text></View></View>
   <Text style={s.copy}>These settings control the profile opened from chat, Friends, guild rosters and other supported social surfaces.</Text>
   {guest?<View style={s.warning}><Text style={s.warningTitle}>Secure this guest account first</Text><Text style={s.copy}>Guest progress can continue normally, but public social-profile publishing is held until the account is linked.</Text></View>:null}
-  <Text style={s.label}>Biography</Text><GameTextInput editable={!guest&&!busy} multiline value={bio} onChangeText={text=>{setNotice('');setBio(text.slice(0,160))}} maxLength={160} placeholder="Tell other players a little about your character or play style." placeholderTextColor={C.muted} style={s.bio}/><Text style={s.counter}>{bio.length}/160</Text>
+  <Text style={s.label}>Biography</Text><GameTextInput editable={!guest&&!busy} multiline value={bio} onChangeText={text=>{setNotice('');setError('');setBio(text.slice(0,160))}} maxLength={160} placeholder="Tell other players a little about your character or play style." placeholderTextColor={C.muted} style={s.bio}/><Text style={s.counter}>{bio.length}/160</Text>
   <View style={s.sectionHead}><Text style={s.sectionLabel}>PRESENTATION</Text><Text style={s.sectionHint}>What players see first</Text></View>
   <View style={s.settings}>
-   <GameButton title={'Showcase character: '+(selectedCharacter?.name??'Current character')+' ▾'} tone="secondary" disabled={busy||characters.length<2} onPress={()=>setPicker('character')}/>
-   <GameButton title={'Favorite skill: '+(selectedSkill?.label??'None')+' ▾'} tone="secondary" disabled={busy} onPress={()=>setPicker('skill')}/>
-   <GameButton title={'Favorite companion: '+(selectedCompanion?.label??'None')+' ▾'} tone="secondary" disabled={busy} onPress={()=>setPicker('companion')}/>
+   <GameButton title={'Showcase character: '+(selectedCharacter?.name??'Current character')+' ▾'} tone="secondary" disabled={guest||busy||characters.length<2} onPress={()=>setPicker('character')}/>
+   <GameButton title={'Favorite skill: '+(selectedSkill?.label??'None')+' ▾'} tone="secondary" disabled={guest||busy} onPress={()=>setPicker('skill')}/>
+   <GameButton title={'Favorite companion: '+(selectedCompanion?.label??'None')+' ▾'} tone="secondary" disabled={guest||busy} onPress={()=>setPicker('companion')}/>
   </View>
   <View style={s.sectionHead}><Text style={s.sectionLabel}>FEATURED SHOWCASES</Text><Text style={s.sectionHint}>Up to 3 per row</Text></View>
   <View style={s.settings}>
-   <GameButton title={'Achievements '+value.achievementShowcaseIds.length+'/3 ▾'} tone="secondary" disabled={busy} onPress={()=>setPicker('achievements')}/>
-   <GameButton title={'Personal records '+value.recordShowcaseIds.length+'/3 ▾'} tone="secondary" disabled={busy} onPress={()=>setPicker('records')}/>
-   <GameButton title={'Collection '+value.collectionShowcase.length+'/3 ▾'} tone="secondary" disabled={busy} onPress={()=>setPicker('collections')}/>
+   <GameButton title={'Achievements '+value.achievementShowcaseIds.length+'/3 ▾'} tone="secondary" disabled={guest||busy} onPress={()=>setPicker('achievements')}/>
+   <GameButton title={'Personal records '+value.recordShowcaseIds.length+'/3 ▾'} tone="secondary" disabled={guest||busy} onPress={()=>setPicker('records')}/>
+   <GameButton title={'Collection '+value.collectionShowcase.length+'/3 ▾'} tone="secondary" disabled={guest||busy} onPress={()=>setPicker('collections')}/>
   </View>
   <View style={s.sectionHead}><Text style={s.sectionLabel}>PRIVACY</Text><Text style={s.sectionHint}>{visibilityLabel[value.visibility]}</Text></View>
-  <View style={s.settings}><GameButton title={'Visibility: '+visibilityLabel[value.visibility]+' ▾'} tone="secondary" disabled={busy} onPress={()=>setPicker('visibility')}/></View>
+  <View style={s.settings}><GameButton title={'Visibility: '+visibilityLabel[value.visibility]+' ▾'} tone="secondary" disabled={guest||busy} onPress={()=>setPicker('visibility')}/></View>
   <View style={s.switchRow}><View style={s.flex}><Text style={s.name}>Hide me from World Milestones</Text><Text style={s.copy}>Your underlying achievement or record remains saved; recent feed cards are removed while this is enabled.</Text></View><Switch value={value.worldFeedOptOut} disabled={guest||busy} onValueChange={worldFeedOptOut=>patch({worldFeedOptOut})}/></View>
   <GameButton title={busy?'Saving…':dirty?'Save Profile':'Profile Saved'} disabled={guest||busy||!dirty} onPress={()=>void save()}/>{notice?<Text accessibilityLiveRegion="polite" style={s.notice}>{notice}</Text>:null}{error?<Text accessibilityRole="alert" style={s.error}>{error}</Text>:null}
  </Panel>

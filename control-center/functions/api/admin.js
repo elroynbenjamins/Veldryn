@@ -142,7 +142,7 @@ async function loadRewardValidation(env, definition) {
 }
 
 async function dashboard(env) {
-  const [instances, playerEvents, drafts, audits, draftCount, healthRows, deadLetterCount] = await Promise.all([
+  const [instances, playerEvents, drafts, audits, draftCount, healthRows, deadLetterCount, playerActivity] = await Promise.all([
     list(env, 'liveops_event_instances', 'select=id,event_id,definition_version,starts_at,ends_at,status,definition_snapshot&status=in.(scheduled,active,settling)&order=starts_at.asc&limit=40'),
     list(env, 'live_events', 'select=event_id,name,currency_id,enabled,starts_at,ends_at,grace_ends_at,priority,modules,config,updated_at&order=priority.desc,name.asc&limit=100'),
     list(env, 'liveops_event_drafts', 'select=id,name,status,updated_at,definition_json&status=eq.draft&order=updated_at.desc&limit=10'),
@@ -150,6 +150,7 @@ async function dashboard(env) {
     countRows(env, 'liveops_event_drafts', 'status=eq.draft'),
     list(env, 'liveops_runtime_health', 'select=*&component=eq.party_liveops_worker&limit=1'),
     countRows(env, 'social_contribution_outbox', 'status=eq.dead_letter'),
+    playerActivityAnalytics(env,{days:30}).catch(()=>null),
   ]);
   const nowMs = Date.now();
   const active = (instances ?? []).filter((row) => row.status === 'active' || (row.status === 'scheduled' && Date.parse(row.starts_at) <= nowMs && Date.parse(row.ends_at) > nowMs));
@@ -168,6 +169,7 @@ async function dashboard(env) {
     workerHealth: healthRows?.[0] ?? null,
     playerEvents: playerEvents ?? [],
     playerEventHealth,
+    playerActivity,
     drafts: drafts ?? [],
     audits: audits ?? [],
   };
@@ -611,16 +613,27 @@ async function assertNoPlayerEventOverlap(env, eventId, startsAtMs, endsAtMs, gr
   if (conflicts.length) throw new Error(`player_event_visibility_overlap:${conflicts[0].eventId}`);
 }
 
+async function playerActivityAnalytics(env, payload = {}) {
+  const days=Number(payload.days??30);
+  const raw=await supabaseFetch(env,'/rest/v1/rpc/player_activity_analytics_server_v1',{
+    method:'POST',body:{p_days:Number.isInteger(days)?Math.max(7,Math.min(90,days)):30},
+  });
+  return Array.isArray(raw)?(raw[0]??{}):(raw??{});
+}
+
 async function playerEventAnalytics(env, payload) {
   const eventId = String(payload.eventId ?? '');
   const row = await single(env, 'live_events', `event_id=eq.${encodeEq(eventId)}`);
   if (!row) throw new Error('player_event_not_found');
 
-  const raw = await supabaseFetch(env, '/rest/v1/rpc/player_event_analytics_server_v1', {
-    method: 'POST',
-    body: { p_event_id: eventId },
-  });
+  const [raw,funnelRaw,activity] = await Promise.all([
+    supabaseFetch(env,'/rest/v1/rpc/player_event_analytics_server_v1',{method:'POST',body:{p_event_id:eventId}}),
+    supabaseFetch(env,'/rest/v1/rpc/player_event_funnel_server_v1',{method:'POST',body:{p_event_id:eventId}}).catch(()=>null),
+    playerActivityAnalytics(env,{days:30}).catch(()=>null),
+  ]);
   const analytics = Array.isArray(raw) ? (raw[0] ?? {}) : (raw ?? {});
+  const funnelPayload = Array.isArray(funnelRaw) ? (funnelRaw[0] ?? {}) : (funnelRaw ?? {});
+  const funnel = funnelPayload.funnel ?? {};
   const phase = playerEventRuntimePhase(row);
   const progress = analytics.progress ?? {};
   const dungeons = analytics.dungeons ?? {};
@@ -662,7 +675,17 @@ async function playerEventAnalytics(env, payload) {
       dungeonClearRate: resolved > 0 ? completed / resolved : null,
       dungeonFailureRate: resolved > 0 ? failureRate : null,
       currencyRetentionRate: Number(progress.progressTotal ?? 0) > 0 ? Number(progress.currencyBalance ?? 0) / Number(progress.progressTotal ?? 0) : null,
+      dailyGiftReach: participants > 0 ? Number(funnel.dailyGiftClaimers ?? 0) / participants : null,
+      projectChoiceReach: participants > 0 ? Number(funnel.projectChoosers ?? 0) / participants : null,
+      contractAcceptReach: participants > 0 ? Number(funnel.contractAcceptors ?? 0) / participants : null,
+      contractCompletionRate: Number(funnel.contractAcceptors ?? 0) > 0 ? Number(funnel.contractClaimers ?? 0) / Number(funnel.contractAcceptors ?? 0) : null,
+      shopBuyerReach: participants > 0 ? Number(funnel.shopBuyers ?? 0) / participants : null,
+      milestoneClaimReach: participants > 0 ? Number(funnel.milestoneClaimers ?? 0) / participants : null,
+      dungeonStartReach: participants > 0 ? starts / participants : null,
+      eventParticipantVsMau: activity&&Number(activity.mau??0)>0 ? participants / Number(activity.mau) : null,
     },
+    funnel:funnelPayload,
+    playerActivity:activity,
   };
 }
 
@@ -949,19 +972,20 @@ async function saveRemoteConfig(env, actor, payload) {
 
 async function healthEconomy(env) {
   const since7 = new Date(Date.now()-7*86400000).toISOString();
-  const [metrics,alerts,health,deadResets,deadSocial] = await Promise.all([
+  const [metrics,alerts,health,deadResets,deadSocial,playerActivity] = await Promise.all([
     list(env,'ops_metric_buckets',`select=metric_key,bucket_start,bucket_minutes,dimension_key,dimensions_json,metric_type,sum_value,sample_count,min_value,max_value,last_value&bucket_start=gte.${encodeEq(since7)}&order=bucket_start.desc&limit=5000`),
     list(env,'ops_alerts','select=*&status=neq.resolved&order=severity.desc,last_seen_at.desc&limit=200'),
     list(env,'liveops_runtime_health','select=*&order=component.asc&limit=100'),
     countRows(env,'ops_reset_runs','status=eq.dead_letter'),
     countRows(env,'social_contribution_outbox','status=eq.dead_letter'),
+    playerActivityAnalytics(env,{days:30}).catch(()=>null),
   ]);
   const now=Date.now();
   const m24=metricSummaries(metrics,now-24*3600000), m7=metricSummaries(metrics,now-7*86400000);
   const by24=new Map(m24.map(x=>[x.metricKey,x]));
   const goldCreated=by24.get('economy.gold.created')?.total ?? 0;
   const goldDestroyed=by24.get('economy.gold.destroyed')?.total ?? 0;
-  return { metrics24:m24, metrics7:m7, gold:{created24:goldCreated,destroyed24:goldDestroyed,net24:goldCreated-goldDestroyed}, alerts:alerts ?? [], health:health ?? [], deadLetters:{resets:deadResets,social:deadSocial} };
+  return { metrics24:m24, metrics7:m7, gold:{created24:goldCreated,destroyed24:goldDestroyed,net24:goldCreated-goldDestroyed}, playerActivity, alerts:alerts ?? [], health:health ?? [], deadLetters:{resets:deadResets,social:deadSocial} };
 }
 
 async function updateAlert(env,actor,payload){
@@ -1257,6 +1281,7 @@ async function routeAction(env, actor, action, payload) {
     case 'listPlayerEvents': return await listPlayerEvents(env);
     case 'playerEventPreflight': return await playerEventPreflight(env, payload);
     case 'playerEventAnalytics': return await playerEventAnalytics(env, payload);
+    case 'playerActivityAnalytics': return await playerActivityAnalytics(env, payload);
     case 'clonePlayerEventSeason': return await clonePlayerEventSeason(env, actor, payload);
     case 'applySeasonalCalendarPreset': return await applySeasonalCalendarPreset(env, actor, payload);
     case 'schedulePlayerEvent': return await schedulePlayerEvent(env, actor, payload);

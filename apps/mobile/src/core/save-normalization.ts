@@ -20,6 +20,7 @@ import {normalizeProgressionGoals} from './progression-goals-v40';
 import {normalizeIdleRuleSets,validateActiveIdleRuleId} from './idle-rules-v40';
 import {normalizeGuildBannerId,normalizeGuildFrameId,normalizeGuildMotto,normalizeGuildNameplateId} from './guild-customization';
 import {normalizeOwnedPetIds,normalizeSelectedPetId} from './pet-collection';
+import {normalizeActivityQueue} from './activity-queue';
 
 export function normalizeSave(input:any):GameState{
   if(!input || ![4,5,6,7,8,9,10,11].includes(input.version)) throw new Error('Unsupported VELDRYN save version');
@@ -83,6 +84,8 @@ export function normalizeSave(input:any):GameState{
     ,progressionGoals:normalizeProgressionGoals(input.character.progressionGoals,String(input.character.id))
     ,idleRulesV40:normalizeIdleRuleSets(input.character.idleRulesV40,String(input.character.id))
     ,activeIdleRuleIdV40:validateActiveIdleRuleId(normalizeIdleRuleSets(input.character.idleRulesV40,String(input.character.id)),input.character.activeIdleRuleIdV40)
+    ,activityQueue:normalizeActivityQueue(input.character.activityQueue)
+    ,activityQueuePausedReason:normalizeActivityQueue(input.character.activityQueue).length&&typeof input.character.activityQueuePausedReason==='string'?input.character.activityQueuePausedReason.slice(0,180):undefined
   };})():null;
   const seasonIds=['spring','summer','autumn','winter'],weatherIds=['clear','rain','mist','storm','bloomwind','heatwave','harvest_wind','snow','frost'];
   const rawEnvironment=input.activity?.environment;

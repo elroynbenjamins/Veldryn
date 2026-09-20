@@ -1,4 +1,4 @@
-import {useState} from 'react';
+import {useMemo,useState} from 'react';
 import {Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {GameButton} from '../components/GameButton';
 import {SettingToggle} from '../components/SettingToggle';
@@ -7,7 +7,8 @@ import {DeveloperTools} from '../components/DeveloperTools';
 import {OnlineAccountPanel} from '../components/OnlineAccountPanel';
 import {SaveTransferPanel} from '../components/SaveTransferPanel';
 import {GameState} from '../core/types';
-import {C,equipmentColors,typography} from '../theme/theme';
+import {typography} from '../theme/theme';
+import {THEMES,useGameTheme,type ThemeId,type ThemePalette} from '../theme/app-theme';
 import {LANGUAGE_NAMES,SUPPORTED_LANGUAGES,t} from '../i18n';
 import {GameGuidePanel} from '../components/GameGuidePanel';
 import {GuideTopicModal} from '../components/GuideTopicModal';
@@ -27,10 +28,11 @@ type Props={
   onOpenCoopUiGallery?:()=>void;
 };
 type SettingsSection='gameplay'|'accessibility'|'account'|'data'|'guide'|'developer';
-function SettingChip({label,selected,onPress}:{label:string;selected:boolean;onPress:()=>void}){return <Pressable accessibilityRole="button" accessibilityState={{selected}} onPress={onPress} style={({pressed})=>[s.chip,selected&&s.chipSelected,pressed&&s.pressed]}><Text style={[s.chipText,selected&&s.chipTextSelected]}>{selected?'✓ ':''}{label}</Text></Pressable>}
+function SettingChip({label,selected,onPress}:{label:string;selected:boolean;onPress:()=>void}){const theme=useGameTheme(),s=useMemo(()=>makeStyles(theme),[theme]);return <Pressable accessibilityRole="button" accessibilityState={{selected}} onPress={onPress} style={({pressed})=>[s.chip,selected&&s.chipSelected,pressed&&s.pressed]}><Text style={[s.chipText,selected&&s.chipTextSelected]}>{selected?'✓ ':''}{label}</Text></Pressable>}
 
 export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImport,onOpenChatPilot,onOpenChatEmotes,onOpenCoopUiGallery,online=false}:Props){
   const [section,setSection]=useState<SettingsSection>('gameplay');
+  const theme=useGameTheme(),s=useMemo(()=>makeStyles(theme),[theme]);
   const [guideId,setGuideId]=useState<GameGuideId>();
   const {fontScale}=useWindowDimensions();
   const update=(partial:Partial<GameState['settings']>)=>onChange({...state,settings:{...state.settings,...partial}});
@@ -68,7 +70,10 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImp
     <Panel>
       <Text style={s.title}>{t(state.settings.language,'settings.accessibility')}</Text>
       <Text style={s.sub}>Text scaling follows your device setting up to the selected maximum. Reduced motion disables repeating combat and progress effects.</Text>
-      <SettingToggle label="Reduced motion" description="Turn off repeating combat and progress effects." value={state.settings.reduceMotion} onValueChange={value=>update({reduceMotion:value})}/><Text style={s.settingLabel}>Maximum text scale</Text>
+      <Text style={s.settingLabel}>Interface theme</Text>
+      <Text style={s.sub}>Choose the visual palette. Gameplay meaning stays consistent: blue is interaction, gold is progression, green is success, red is danger.</Text>
+      <View style={s.themeGrid}>{(Object.keys(THEMES) as ThemeId[]).map(id=>{const option=THEMES[id],selected=(state.settings.themeId??'veldryn')===id;return <Pressable key={id} accessibilityRole="button" accessibilityState={{selected}} onPress={()=>update({themeId:id})} style={({pressed})=>[s.themeCard,selected&&s.themeCardSelected,pressed&&s.pressed]}><View style={s.swatches}><View style={[s.swatch,{backgroundColor:option.bg}]}/><View style={[s.swatch,{backgroundColor:option.panel2}]}/><View style={[s.swatch,{backgroundColor:option.accent}]}/><View style={[s.swatch,{backgroundColor:option.action}]}/></View><Text style={s.themeName}>{selected?'✓ ':''}{option.label}</Text><Text style={s.themeMeta}>{id==='veldryn'?'Recommended · fantasy navy & gold':id==='obsidian'?'Maximum dark readability':'Daylight-friendly high contrast'}</Text></Pressable>})}</View>
+            <SettingToggle label="Reduced motion" description="Turn off repeating combat and progress effects." value={state.settings.reduceMotion} onValueChange={value=>update({reduceMotion:value})}/><Text style={s.settingLabel}>Maximum text scale</Text>
       <View style={s.choices}>{([1,1.15,1.3,1.5] as const).map(scale=><SettingChip key={scale} label={`${scale}× max`} selected={state.settings.textScale===scale} onPress={()=>update({textScale:scale})}/>)}</View>
     </Panel>
     <Panel>
@@ -91,4 +96,4 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImp
   </ScrollView><GuideTopicModal definition={guideId?guideDefinition(guideId):undefined} visible={!!guideId} onClose={()=>setGuideId(undefined)}/></>;
 }
 
-const s=StyleSheet.create({root:{padding:16,gap:12},h:{...typography.hero,color:C.text},title:{...typography.title,color:C.text,marginBottom:5},sub:{color:C.muted,lineHeight:20,marginBottom:8},muted:{color:C.muted,lineHeight:19,opacity:.8},tabs:{gap:6,paddingRight:16},sectionHint:{...typography.caption,color:C.info,lineHeight:18},chip:{minHeight:40,paddingHorizontal:13,justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.bg},chipSelected:{borderColor:equipmentColors.selectedLine,backgroundColor:equipmentColors.selected},chipText:{fontSize:12,color:C.muted,fontWeight:'700'},chipTextSelected:{color:'#d9f3ff'},pressed:{opacity:.76},settingLabel:{...typography.bodyStrong,color:C.text,marginTop:8},choices:{flexDirection:'row',flexWrap:'wrap',gap:8},choice:{flexGrow:1,flexBasis:120,minWidth:120},largeChoice:{flexBasis:'100%' as const},languageGrid:{flexDirection:'row',flexWrap:'wrap',gap:8},languageChoice:{minWidth:96,flexGrow:1},flex:{flex:1}});
+const makeStyles=(t:ThemePalette)=>StyleSheet.create({root:{padding:16,gap:12},h:{...typography.hero,color:t.text},title:{...typography.title,color:t.text,marginBottom:5},sub:{color:t.muted,lineHeight:20,marginBottom:8},muted:{color:t.muted,lineHeight:19,opacity:.8},tabs:{gap:6,paddingRight:16},sectionHint:{...typography.caption,color:t.info,lineHeight:18},chip:{minHeight:40,paddingHorizontal:13,justifyContent:'center',borderWidth:1,borderColor:t.line,borderRadius:99,backgroundColor:t.bg},chipSelected:{borderColor:t.action,backgroundColor:t.actionSurface},chipText:{fontSize:12,color:t.muted,fontWeight:'700'},chipTextSelected:{color:t.actionText},pressed:{opacity:.76},settingLabel:{...typography.bodyStrong,color:t.text,marginTop:8},choices:{flexDirection:'row',flexWrap:'wrap',gap:8},choice:{flexGrow:1,flexBasis:120,minWidth:120},largeChoice:{flexBasis:'100%' as const},languageGrid:{flexDirection:'row',flexWrap:'wrap',gap:8},languageChoice:{minWidth:96,flexGrow:1},themeGrid:{gap:8},themeCard:{minHeight:76,padding:10,gap:5,borderWidth:1,borderColor:t.line,borderRadius:12,backgroundColor:t.panel2},themeCardSelected:{borderWidth:2,borderColor:t.action,backgroundColor:t.actionSurface},swatches:{height:18,flexDirection:'row',overflow:'hidden',borderRadius:6,borderWidth:1,borderColor:t.line},swatch:{flex:1},themeName:{...typography.bodyStrong,color:t.text},themeMeta:{...typography.caption,color:t.muted},flex:{flex:1}});

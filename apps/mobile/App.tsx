@@ -68,6 +68,8 @@ import type {GameCommand} from './src/core/game-commands';
 import {buildNavigationBadges,type NavigationNotification} from './src/core/navigation-notifications';
 import {eventReadyClaimCount} from './src/core/live-events';
 import {useSocialNotificationCounts} from './src/online/useSocialNotificationCounts';
+import {fetchActiveEventRuntime} from './src/online/live-events';
+import {onlineConfigured} from './src/online/supabase';
 
 type Tab=QuickNavDestination|'Activity'|'Arena'|'Rankings'|'Collections'|'Profile'|'Achievements'|'Combat'|'Coop';
 type PrimaryTab='Skills'|'World'|'Character'|'Inventory'|'More';
@@ -136,6 +138,8 @@ function VeldrynApp(){
   useEffect(()=>{if(!serverGameplayEnabled)void loadGame()},[loadGame]);
   useEffect(()=>{if(!serverGameplayEnabled)return;const next=online.snapshot?.state??null;stateRef.current=next;setState(next);setReady(!online.loading);setLoadError('');},[online.snapshot,online.loading]);
   useEffect(()=>{stateRef.current=state},[state]);
+  const syncLiveEventRuntime=useCallback(async()=>{if(!onlineConfigured)return;try{const runtime=await fetchActiveEventRuntime();const current=stateRef.current;if(!current)return;const before=current.account.liveEvent??null,nextRuntime=runtime??null;if(JSON.stringify(before)===JSON.stringify(nextRuntime))return;const next={...current,account:{...current.account,liveEvent:runtime}};stateRef.current=next;setState(next);}catch{/* Event registry sync is best-effort; gameplay refresh remains authoritative. */}},[]);
+  useEffect(()=>{if(!onlineConfigured)return;void syncLiveEventRuntime();const id=setInterval(()=>void syncLiveEventRuntime(),30000);const sub=AppState.addEventListener('change',status=>{if(status==='active')void syncLiveEventRuntime();});return()=>{clearInterval(id);sub.remove();}},[syncLiveEventRuntime]);
   useEffect(()=>{const id=setInterval(()=>setNow(Date.now()),1000);return()=>clearInterval(id)},[]);
   useEffect(()=>{if(tab!=='Skills')setSelectedSkill(undefined)},[tab]);
   useEffect(()=>{const subscription=BackHandler.addEventListener('hardwareBackPress',goBack);return()=>subscription.remove()},[goBack]);

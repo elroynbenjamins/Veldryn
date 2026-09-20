@@ -91,5 +91,6 @@ export interface RewardBundle {
   eventDrops?:{eventId:string;currencyId:string;name:string;quantity:number;source?:'combat'|'gathering'|'crafting'|'boss';units?:number;recordedAtMs?:number}[];
   eventDiscoveries?:{eventId:string;discoveryId:string;name:string;quantity:number}[];
   petDrops?:{petId:string;name:string;sourceId:string}[];
+  companionUnlocks?:{companionId:string;name:string;role:string;rarity:string}[];
 }
 import type {Language} from '../i18n/languages';

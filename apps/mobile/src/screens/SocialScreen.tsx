@@ -9,15 +9,16 @@ import {RecruitmentFiltersPanel} from '../components/RecruitmentFiltersPanel';
 import {OnlinePartyChat} from '../components/OnlinePartyChat';
 import {GameButton} from '../components/GameButton';
 import {Panel} from '../components/Panel';
+import {ChatPlayerSheet,type ChatPlayerIdentity} from '../components/ChatPlayerSheet';
 import {usePartySocial} from '../online/PartySocialProvider';
 import {partySocialRepository as repository,ownRecruitmentPosts,partyRankings,partyCommandKey,claimPartyContractReward,activePartyEvent,type PublishRecruitmentInput,type PartyRanking} from '../online/party-social';
-import {myGuild,requestGuildMembership,sendFriendRequest} from '../online/social';
+import {myGuild,requestGuildMembership} from '../online/social';
 import {EMPTY_RECRUITMENT_FILTERS,PARTY_SOCIAL_TUTORIAL_STEPS,recruitmentTimeLabel,type PartyFocus,type PartyRole,type RecruitmentCardView,type RecruitmentPostType} from '../core/party-social';
 import {C,spacing,typography} from '../theme/theme';
 export function SocialScreen({onGuild,onFriends,onAccount}:{onGuild:()=>void;onFriends:()=>void;onAccount:()=>void}){
  const social=usePartySocial();const [tab,setTab]=useState<SocialHubTab>('party');const [filters,setFilters]=useState({...EMPTY_RECRUITMENT_FILTERS});
  const [cards,setCards]=useState<RecruitmentCardView[]>([]),[own,setOwn]=useState<RecruitmentCardView[]>([]),[rankings,setRankings]=useState<PartyRanking[]>([]),[liveEvent,setLiveEvent]=useState<import('../core/party-social').PartyEventView|null>(null);
- const [draft,setDraft]=useState<PublishRecruitmentInput|null>(null),[selected,setSelected]=useState<RecruitmentCardView|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState('');
+ const [draft,setDraft]=useState<PublishRecruitmentInput|null>(null),[selected,setSelected]=useState<RecruitmentCardView|null>(null),[selectedProfile,setSelectedProfile]=useState<ChatPlayerIdentity|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const [focus,setFocus]=useState<PartyFocus>('mixed'),[role,setRole]=useState<PartyRole>('damage'),[help,setHelp]=useState(false),[now,setNow]=useState(Date.now());
  const requestGeneration=useRef(0);const command=useRef<{signature:string;key:string}|null>(null);
  const key=(signature:string)=>{if(command.current?.signature!==signature)command.current={signature,key:partyCommandKey()};return command.current.key;};
@@ -45,7 +46,7 @@ export function SocialScreen({onGuild,onFriends,onAccount}:{onGuild:()=>void;onF
    {selected&&<Panel accentColor={C.info} accentSurface="#102536"><Text style={s.selectedLabel}>SELECTED RECRUITMENT</Text><Text style={s.title}>{selected.title}</Text><Text style={s.text}>{selected.body}</Text><Text style={s.text}>{recruitmentTimeLabel(selected.expiresAtMs,at).text}</Text>
     {selected.partyId&&!social.party&&<GameButton title="Join Party" disabled={busy||selected.expiresAtMs<=at} onPress={()=>void run(async()=>{await repository.joinParty({partyId:selected.partyId!,characterId:character(),role,idempotencyKey:key(`join:${selected.partyId}`)});setSelected(null);})}/>}
     {selected.guildId&&<GameButton title="Join / apply to Guild" disabled={busy} onPress={()=>void run(async()=>{const result=await requestGuildMembership(selected.guildId!);Alert.alert('Guild',result);})}/>}
-    {selected.ownerAccountId&&selected.ownerAccountId!==social.accountId&&<GameButton title="Send friend request" disabled={busy} onPress={()=>void run(()=>sendFriendRequest(selected.ownerAccountId!))}/>}
+    {selected.ownerAccountId&&selected.ownerAccountId!==social.accountId&&<GameButton title="View Player Profile" tone="secondary" disabled={busy} onPress={()=>setSelectedProfile({account_id:selected.ownerAccountId!,sender_name:selected.ownerName,guild_tag:selected.guildTag,guild_tag_color_id:selected.guildTagColorId})}/>}
     <GameButton title="Close details" tone="secondary" onPress={()=>setSelected(null)}/></Panel>}
    {tab==='party'&&<PartyHubPanel accountId={social.accountId} party={social.party} contracts={social.contracts} recruitment={cards} nowMs={at} filters={filters} onFiltersChange={setFilters}
     onCreateParty={busy?undefined:()=>void run(()=>repository.createParty({characterId:character(),role,focus,idempotencyKey:key(`create:${focus}:${role}`)}))}
@@ -58,6 +59,7 @@ export function SocialScreen({onGuild,onFriends,onAccount}:{onGuild:()=>void;onF
    {tab==='rankings'&&<Panel><Text style={s.title}>Ranked Party events</Text><Text style={s.text}>Normalized points, then completion time. Ties use a stable Party ID order.</Text>{rankings.map(row=><Text style={s.text} key={`${row.event_key}:${row.party_id}`}>#{row.rank} · {row.name} · {row.party_id.slice(0,8)} · {row.normalized_points} pts</Text>)}{!rankings.length&&<Text style={s.text}>No ranked contributions yet.</Text>}</Panel>}
    {(tab==='party'||tab==='guild')&&<Panel><Text style={s.title}>Your adverts</Text>{own.map(item=><View style={s.ad} key={item.id}><Text style={s.text}>{item.title} · {item.status==='closed'?'Closed':recruitmentTimeLabel(item.expiresAtMs,at).text}</Text>{item.status!=='closed'&&<View style={s.row}><GameButton title="Refresh" tone="secondary" disabled={busy} onPress={()=>void run(()=>repository.refreshRecruitment(item.id))}/><GameButton title="Close advert" tone="secondary" disabled={busy} onPress={()=>void run(()=>repository.closeRecruitment(item.id))}/></View>}</View>)}{!own.length&&<Text style={s.text}>No adverts published yet.</Text>}</Panel>}
   </>}
+  <ChatPlayerSheet message={selectedProfile} onClose={()=>setSelectedProfile(null)} onBlocked={()=>setSelectedProfile(null)}/>
  </ScrollView></SocialHubPanel>;
 }
 function QuickChip({label,selected,onPress}:{label:string;selected:boolean;onPress:()=>void}){return <Pressable accessibilityRole="button" accessibilityState={{selected}} onPress={onPress} style={({pressed})=>[s.chip,selected&&s.chipSelected,pressed&&s.pressed]}><Text style={[s.chipText,selected&&s.chipTextSelected]}>{selected?'✓ ':''}{label}</Text></Pressable>}

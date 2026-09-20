@@ -46,12 +46,18 @@ equal(first[BALANCE_METRIC_KEYS.firstQuestClaimAt],120_000,'first quest mileston
 equal(first[BALANCE_METRIC_KEYS.level10At],120_000,'level 10 milestone timestamp');
 equal(first[BALANCE_METRIC_KEYS.firstPetAt],120_000,'first pet milestone timestamp');
 equal(first[BALANCE_METRIC_KEYS.firstCompanionAt],120_000,'first companion milestone timestamp');
+equal(first[BALANCE_METRIC_KEYS.firstCompanionAscensionIAt],120_000,'first Ascension I milestone timestamp');
+equal(first[BALANCE_METRIC_KEYS.firstCompanionAscensionIIAt],120_000,'first Ascension II milestone timestamp');
+equal(first[BALANCE_METRIC_KEYS.firstCompanionBond6At],120_000,'first Bond 6 milestone timestamp');
+equal(first[BALANCE_METRIC_KEYS.firstCompanionBond10At],120_000,'first Bond 10 milestone timestamp');
 equal(first[BALANCE_METRIC_KEYS.fullEquipmentAt],120_000,'full equipment milestone timestamp');
 
-state={...state,account:{...state.account,unlockedCombatCompanionIds:[...state.account.unlockedCombatCompanionIds!,'UNIT_002']}};
+state={...state,account:{...state.account,unlockedCombatCompanionIds:[...state.account.unlockedCombatCompanionIds!,'UNIT_002'],combatCompanionProgress:{...state.account.combatCompanionProgress,UNIT_012:{level:35,xp:0,ascensionTier:3,bondLevel:10,bondXp:2520,bondTraitUnlocked:true,mastered:true,obtainedAtMs:1}}}};
 state=applyLocalBalanceSnapshot(state,240_000);
 equal(state.account.longTermMetrics![BALANCE_METRIC_KEYS.companionTrialRolesReady],1,'Trial role readiness records Tank/Damage/Support coverage');
 equal(state.account.longTermMetrics![BALANCE_METRIC_KEYS.firstTrialTeamReadyAt],240_000,'first Trial team milestone timestamp');
+equal(state.account.longTermMetrics![BALANCE_METRIC_KEYS.firstCompanionAscensionIIIAt],240_000,'first Ascension III milestone timestamp');
+equal(state.account.longTermMetrics![BALANCE_METRIC_KEYS.firstPrestigeMasteryAt],240_000,'first Prestige Mastery milestone timestamp');
 
 state={...state,character:{...state.character!,level:20}};
 state=applyLocalBalanceSnapshot(state,300_000);
@@ -60,6 +66,8 @@ const second=state.account.longTermMetrics!;
 equal(second[BALANCE_METRIC_KEYS.characterLevel],20,'current level updates');
 equal(second[BALANCE_METRIC_KEYS.level10At],120_000,'level 10 milestone is write-once');
 equal(second[BALANCE_METRIC_KEYS.firstTrialTeamReadyAt],240_000,'first Trial team milestone is write-once');
+equal(second[BALANCE_METRIC_KEYS.firstCompanionAscensionIIIAt],240_000,'first Ascension III milestone is write-once');
+equal(second[BALANCE_METRIC_KEYS.firstPrestigeMasteryAt],240_000,'first Prestige Mastery milestone is write-once');
 equal(second[BALANCE_METRIC_KEYS.level20At],300_000,'level 20 milestone is recorded when first observed');
 
 state={...state,defeatedBossIds:[...state.defeatedBossIds,'FALLEN_KNIGHT'],character:{...state.character!,level:25}};

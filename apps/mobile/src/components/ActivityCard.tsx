@@ -1,4 +1,4 @@
-import {useEffect,useRef,useState} from 'react';
+import {useMemo,useEffect,useRef,useState} from 'react';
 import {Animated,Easing,Pressable,StyleSheet,Text,View} from 'react-native';
 import {ActiveActivity,RewardBundle} from '../core/types';
 import {huntGoalProgress,huntMomentumStatus} from '../core/hunt-goals';
@@ -6,6 +6,7 @@ import {itemDef} from '../content/items';
 import {GameButton} from './GameButton';
 import {Panel} from './Panel';
 import {C,spacing,typography} from '../theme/theme';
+import {useTheme} from '../theme/ThemeProvider';
 import {formatGameNumber} from '../core/number-format';
 
 function duration(seconds:number){
@@ -15,6 +16,7 @@ function duration(seconds:number){
 }
 
 export function ActivityCard({title,kind,activity,cycleSeconds,capHours,preview,rates,reduceMotion=false,numberMode='abbreviated',onClaim,onStop}:{title:string;kind:'combat'|'gathering';activity?:ActiveActivity;cycleSeconds:number;capHours:number;preview:RewardBundle;rates:{actionsPerHour:number;xpPerHour:number;goldPerHour:number};reduceMotion?:boolean;numberMode?:'abbreviated'|'exact';onClaim:()=>void;onStop:()=>void}){
+ const {colors:C,equipmentColors}=useTheme();const s=useMemo(()=>createStyles(C,equipmentColors),[C,equipmentColors]);
   const [showDetails,setShowDetails]=useState(false);
   const pulse=useRef(new Animated.Value(0)).current;
   useEffect(()=>{pulse.setValue(0);if(reduceMotion)return;const loop=Animated.loop(Animated.timing(pulse,{toValue:1,duration:1100,easing:Easing.linear,useNativeDriver:true}));loop.start();return()=>loop.stop()},[pulse,reduceMotion]);
@@ -50,7 +52,7 @@ export function ActivityCard({title,kind,activity,cycleSeconds,capHours,preview,
   </Panel>;
 }
 
-const s=StyleSheet.create({
+const createStyles=(C:any,equipmentColors:any)=>StyleSheet.create({
   heading:{flexDirection:'row',justifyContent:'space-between',alignItems:'flex-start',gap:spacing.md},
   headingCopy:{flex:1},eyebrow:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:1},
   title:{...typography.title,color:C.text},detail:{...typography.body,color:C.muted},

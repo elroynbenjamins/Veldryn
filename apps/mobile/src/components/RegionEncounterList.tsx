@@ -16,7 +16,7 @@ import {Panel} from './Panel';
 import {ResourceArtwork} from './ResourceArtwork';
 import {combatReadiness} from '../core/combat-presentation';
 import {encounterIdentity} from '../core/encounter-identity';
-import {COMBAT_AFFIXES,COMBAT_CHALLENGE_IDS,COMBAT_CHALLENGES,challengeHuntStats,challengeHuntUnlocked,rotatingChallengeAffix} from '../core/challenge-hunts';
+import {COMBAT_AFFIXES,COMBAT_CHALLENGE_IDS,COMBAT_CHALLENGES,combatAffix,challengeHuntStats,challengeHuntUnlocked,rotatingChallengeAffix} from '../core/challenge-hunts';
 import {monsterMastery} from '../core/monster-mastery';
 
 export function RegionEncounterList({state,zone,onStart,onBoss,showFilters=false}:{state:GameState;zone:WorldZoneDef;onStart:(id:string,challengeId?:CombatChallengeId)=>void;onBoss:()=>void;showFilters?:boolean}){
@@ -28,12 +28,12 @@ export function RegionEncounterList({state,zone,onStart,onBoss,showFilters=false
     {monsters.length===0&&<Panel><Text style={s.title}>No matching enemies</Text><Text style={s.sub}>Try another name or show all encounters.</Text><GameButton title="Clear filters" onPress={()=>{setQuery('');setAvailableOnly(false)}}/></Panel>}
     {monsters.map(monster=>{
       const unlocked=encounterUnlocked(state,monster),active=state.activity?.kind==='combat'&&state.activity.targetId===monster.id,defeated=state.defeatedBossIds.includes(monster.id),expanded=expandedId===monster.id;
-      const baseXp=Math.floor(monster.xp*3600/monster.secondsPerKill),identity=encounterIdentity(monster),mastery=monsterMastery(state,monster.id),activeChallenge=active?state.activity?.combatChallengeId:undefined;
+      const baseXp=Math.floor(monster.xp*3600/monster.secondsPerKill),identity=encounterIdentity(monster),mastery=monsterMastery(state,monster.id),activeChallenge=active?state.activity?.combatChallengeId:undefined,activeAffix=active?combatAffix(state.activity?.combatAffixId):undefined;
       const readiness=combatReadiness(state,monster),readinessColor=readiness.safety==='safe'?C.good:readiness.safety==='steady'?C.info:C.warning;
       return <View key={monster.id} style={[s.card,expanded&&s.cardExpanded]}>
         <Pressable accessibilityRole="button" accessibilityState={{expanded}} accessibilityLabel={`${monster.name}, level ${monster.level}, ${monster.hp} health, ${monster.attack} attack, ${expanded?'collapse':'expand'}`} onPress={()=>setExpandedId(expanded?null:monster.id)} style={({pressed})=>[s.head,pressed&&s.pressed]}>
           <MonsterPortraitFrame monster={monster} size={72} active={active} reduceMotion={state.settings.reduceMotion}/>
-          <View style={s.flex}><Text style={s.title}>{monster.boss?'♛ ':''}{monster.name}</Text>{activeChallenge&&<Text style={s.challengeActive}>{COMBAT_CHALLENGES[activeChallenge].name.toUpperCase()}</Text>}<Text style={s.stats}>LV {monster.level} · HP {monster.hp} · ATK {monster.attack} · DEF {monster.defense}</Text><Text style={s.encounterTag}>{identity.archetype} · {identity.pressure} pressure</Text><View style={s.statusRow}><Text style={active?s.active:unlocked?s.ready:s.locked}>{active?'HUNTING':unlocked?'AVAILABLE':`LOCKED · LV ${monster.unlockLevel}`}</Text><Text style={[s.readiness,{color:readinessColor}]}>{readiness.safety.toUpperCase()} · {readiness.percent}%</Text></View></View>
+          <View style={s.flex}><Text style={s.title}>{monster.boss?'♛ ':''}{monster.name}</Text>{activeChallenge&&<Text style={s.challengeActive}>{COMBAT_CHALLENGES[activeChallenge].name.toUpperCase()}{activeAffix?` · ${activeAffix.name.toUpperCase()}`:''}</Text>}<Text style={s.stats}>LV {monster.level} · HP {monster.hp} · ATK {monster.attack} · DEF {monster.defense}</Text><Text style={s.encounterTag}>{identity.archetype} · {identity.pressure} pressure</Text><View style={s.statusRow}><Text style={active?s.active:unlocked?s.ready:s.locked}>{active?'HUNTING':unlocked?'AVAILABLE':`LOCKED · LV ${monster.unlockLevel}`}</Text><Text style={[s.readiness,{color:readinessColor}]}>{readiness.safety.toUpperCase()} · {readiness.percent}%</Text></View></View>
           <Text aria-hidden style={s.chevron}>{expanded?'⌃':'⌄'}</Text>
         </Pressable>
         {expanded&&<View style={s.detail}>{monster.boss&&<BossEncounterIntro monster={monster} reduceMotion={state.settings.reduceMotion}/>}

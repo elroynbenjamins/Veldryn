@@ -1,5 +1,6 @@
 import type {MonsterDef} from '../content/monsters';
-import type {CombatChallengeId,GameState} from './types';
+import type {CombatAffixId,CombatChallengeId,GameState} from './types';
+import {hash32} from './rng';
 import {monsterMastery} from './monster-mastery';
 
 export interface CombatChallengeDef{
@@ -18,6 +19,16 @@ export interface CombatChallengeDef{
  accent:string;
 }
 
+export interface CombatAffixDef{
+ id:CombatAffixId;name:string;description:string;hpMultiplier:number;attackMultiplier:number;defenseMultiplier:number;xpMultiplier:number;goldMultiplier:number;dropChanceMultiplier:number;accent:string;
+}
+export const COMBAT_AFFIX_IDS:readonly CombatAffixId[]=['bloodthirsty','ironhide','colossal','cursed'];
+export const COMBAT_AFFIXES:Record<CombatAffixId,CombatAffixDef>={
+ bloodthirsty:{id:'bloodthirsty',name:'Bloodthirsty',description:'Hits harder than the standard challenge profile.',hpMultiplier:1,attackMultiplier:1.18,defenseMultiplier:1,xpMultiplier:1.06,goldMultiplier:1.12,dropChanceMultiplier:1,accent:'#d95763'},
+ ironhide:{id:'ironhide',name:'Ironhide',description:'Extra armour slows kills but improves material odds.',hpMultiplier:1,attackMultiplier:1,defenseMultiplier:1.20,xpMultiplier:1.05,goldMultiplier:1.04,dropChanceMultiplier:1.12,accent:'#c6a35a'},
+ colossal:{id:'colossal',name:'Colossal',description:'More health turns each kill into a longer endurance check.',hpMultiplier:1.24,attackMultiplier:1.06,defenseMultiplier:1,xpMultiplier:1.12,goldMultiplier:1.06,dropChanceMultiplier:1.05,accent:'#7bb6d8'},
+ cursed:{id:'cursed',name:'Cursed',description:'A broad difficulty increase with balanced bonus rewards.',hpMultiplier:1.10,attackMultiplier:1.10,defenseMultiplier:1.10,xpMultiplier:1.08,goldMultiplier:1.08,dropChanceMultiplier:1.08,accent:'#a67be0'},
+};
 export const COMBAT_CHALLENGE_IDS:readonly CombatChallengeId[]=['ferocious','hardened','nemesis'];
 export const COMBAT_CHALLENGES:Record<CombatChallengeId,CombatChallengeDef>={
  ferocious:{
@@ -44,19 +55,24 @@ export function combatChallenge(id:CombatChallengeId|undefined){return id?COMBAT
 export function challengeHuntUnlocked(state:GameState,monsterId:string,id:CombatChallengeId){
  return monsterMastery(state,monsterId).rank>=COMBAT_CHALLENGES[id].masteryRank;
 }
-export function challengeHuntStats(monster:MonsterDef,id:CombatChallengeId|undefined){
- const challenge=combatChallenge(id);if(!challenge)return monster;
+export function combatAffix(id:CombatAffixId|undefined){return id?COMBAT_AFFIXES[id]:undefined;}
+export function challengeAffixWeekKey(nowMs:number){const d=new Date(nowMs),day=(d.getUTCDay()+6)%7;return Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate()-day).toString();}
+export function rotatingChallengeAffix(monsterId:string,challengeId:CombatChallengeId,nowMs:number):CombatAffixId{
+ const key=challengeAffixWeekKey(nowMs),index=hash32(`${key}:${monsterId}:${challengeId}`)%COMBAT_AFFIX_IDS.length;return COMBAT_AFFIX_IDS[index];
+}
+export function challengeHuntStats(monster:MonsterDef,id:CombatChallengeId|undefined,affixId?:CombatAffixId){
+ const challenge=combatChallenge(id);if(!challenge)return monster;const affix=combatAffix(affixId);
  return {...monster,
-  hp:Math.ceil(monster.hp*challenge.hpMultiplier),
-  attack:Math.ceil(monster.attack*challenge.attackMultiplier),
-  defense:Math.ceil(monster.defense*challenge.defenseMultiplier),
+  hp:Math.ceil(monster.hp*challenge.hpMultiplier*(affix?.hpMultiplier??1)),
+  attack:Math.ceil(monster.attack*challenge.attackMultiplier*(affix?.attackMultiplier??1)),
+  defense:Math.ceil(monster.defense*challenge.defenseMultiplier*(affix?.defenseMultiplier??1)),
   secondsPerKill:Math.ceil(monster.secondsPerKill*challenge.cycleMultiplier),
  };
 }
-export function challengeRewardMultipliers(id:CombatChallengeId|undefined){
- const challenge=combatChallenge(id);
- return challenge?{xp:challenge.xpMultiplier,gold:challenge.goldMultiplier,dropChance:challenge.dropChanceMultiplier}:{xp:1,gold:1,dropChance:1};
+export function challengeRewardMultipliers(id:CombatChallengeId|undefined,affixId?:CombatAffixId){
+ const challenge=combatChallenge(id),affix=combatAffix(affixId);
+ return challenge?{xp:challenge.xpMultiplier*(affix?.xpMultiplier??1),gold:challenge.goldMultiplier*(affix?.goldMultiplier??1),dropChance:challenge.dropChanceMultiplier*(affix?.dropChanceMultiplier??1)}:{xp:1,gold:1,dropChance:1};
 }
-export function challengeHuntLabel(id:CombatChallengeId|undefined,monsterName:string){
- const challenge=combatChallenge(id);return challenge?`${challenge.shortName} · ${monsterName}`:monsterName;
+export function challengeHuntLabel(id:CombatChallengeId|undefined,monsterName:string,affixId?:CombatAffixId){
+ const challenge=combatChallenge(id),affix=combatAffix(affixId);return challenge?`${challenge.shortName}${affix?` [${affix.name}]`:''} · ${monsterName}`:monsterName;
 }

@@ -16,6 +16,7 @@ const state = {
   definitions: [],
   instances: [],
   playerEvents: [],
+  playerEventPreflights: {},
   rewards: [],
   audits: [],
   operations: null,
@@ -268,17 +269,43 @@ function playerEventStatusPill(phase) {
   const [cls,label]=map[phase]||['',phase];
   return `<span class="pill ${cls}">${h(label)}</span>`;
 }
+function playerEventHasSeasonalExpedition(eventId) {
+  const series=String(eventId||'').match(/^(EVT_ANNUAL_\d{3})(?:_|$)/)?.[1];
+  return new Set(['EVT_ANNUAL_001','EVT_ANNUAL_002','EVT_ANNUAL_003','EVT_ANNUAL_006','EVT_ANNUAL_008','EVT_ANNUAL_010','EVT_ANNUAL_011','EVT_ANNUAL_012']).has(series);
+}
+function renderPlayerEventPreflight(result) {
+  if(!result)return '';
+  const checkClass=status=>status==='pass'?'ok':status==='error'?'error':status==='warning'?'warning':'';
+  const canEnable=Boolean(result.actions?.canEnableSchedule),canGoLive=Boolean(result.actions?.canGoLiveNow);
+  const readinessLabel=canEnable&&canGoLive?'Ready':canGoLive?'Go-live ready':canEnable?'Schedule ready':'Blocked';
+  const readinessClass=canEnable||canGoLive?'good':'bad';
+  return `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line)">
+    <div class="actions" style="margin-bottom:8px"><strong>Activation preflight</strong><span class="pill ${readinessClass}">${readinessLabel}</span>${result.seasonalExpedition?'<span class="pill info">Seasonal dungeon wired</span>':''}</div>
+    <div class="grid grid-2">${(result.checks||[]).map(check=>`<div class="validation-item ${checkClass(check.status)}"><strong>${h(check.label)}</strong><div class="tiny" style="margin-top:4px">${h(check.detail)}</div></div>`).join('')}</div>
+    <div class="tiny muted" style="margin-top:8px">Saved schedule: <strong>${canEnable?'ready to enable':'not ready'}</strong> · Go live now (preview ${h(result.goLivePreview?.durationDays||14)}d): <strong>${canGoLive?'ready':'blocked'}</strong></div>
+  </div>`;
+}
 function renderEvents() {
   const rows = state.instances || [];
   const playerRows = state.playerEvents || [];
   const nowMs = Date.now();
   const visiblePlayerEvent = playerRows.find(row => ['live','claiming'].includes(playerEventPhase(row, nowMs))) || null;
   const visiblePlayerPhase = visiblePlayerEvent ? playerEventPhase(visiblePlayerEvent, nowMs) : null;
+  const scheduledPlayerEvents = playerRows.filter(row=>playerEventPhase(row,nowMs)==='scheduled');
+  const attentionPlayerEvents = playerRows.filter(row=>playerEventPhase(row,nowMs)==='needs_schedule'||(row.enabled&&playerEventPhase(row,nowMs)==='expired'));
+  const liveSeasonalDungeon = visiblePlayerPhase==='live'&&playerEventHasSeasonalExpedition(visiblePlayerEvent?.event_id);
+  const nextPlayerEvent = scheduledPlayerEvents.sort((a,b)=>Date.parse(a.starts_at)-Date.parse(b.starts_at))[0]||null;
   return shell(`
     <div class="page-head"><div><div class="eyebrow">Player events + Party Live-Ops</div><h2>Events</h2><p>Control the Event screen players see, then manage competitive Party Event instances separately.</p></div><div class="actions">${roleAtLeast('owner')?`<button class="btn" data-action="apply-seasonal-calendar-preset">Schedule seasonal preset</button>`:''}<button class="btn btn-primary" data-nav="builder">Create Party Event</button></div></div>
     <div class="card" style="margin-bottom:14px"><div class="card-head"><div><h3>Player Event screen</h3><div class="tiny muted">Annual/general events from <span class="mono">live_events</span>. This is the authority used by the mobile Event screen.</div></div><span class="pill">Server controlled</span></div><div class="card-body">
-      ${visiblePlayerEvent ? `<div class="validation-item ${visiblePlayerPhase==='live'?'ok':'warn'}" style="margin-bottom:12px">Player Event screen currently shows <strong>${h(visiblePlayerEvent.name||visiblePlayerEvent.event_id)}</strong> (${visiblePlayerPhase==='live'?'earning active':'claim grace'}). Other events cannot go live until this visibility window closes or the current event is Hard off.</div>` : `<div class="validation-item ok" style="margin-bottom:12px">Player Event screen currently has <strong>no visible event</strong>. Enabled scheduled events will appear automatically at their start time.</div>`}
-      <div class="validation-item ok" style="margin-bottom:12px">Normal shutdown: use <strong>End now</strong>. Earning stops immediately while the claim window stays open. <strong>Hard off</strong> is an emergency master switch and also closes claims.</div>
+      <div class="grid grid-4" style="margin-bottom:12px">
+        <div class="validation-item ${visiblePlayerPhase==='live'?'ok':visiblePlayerPhase==='claiming'?'warning':''}"><strong>${visiblePlayerEvent?h(visiblePlayerEvent.name||visiblePlayerEvent.event_id):'No visible event'}</strong><div class="tiny" style="margin-top:4px">${visiblePlayerPhase==='live'?'Earning is live':visiblePlayerPhase==='claiming'?'Claim grace is live':'Player Event screen is idle'}</div></div>
+        <div class="validation-item ${nextPlayerEvent?'ok':''}"><strong>${nextPlayerEvent?h(nextPlayerEvent.name||nextPlayerEvent.event_id):'No next event'}</strong><div class="tiny" style="margin-top:4px">${nextPlayerEvent?`Starts ${fmtDate(nextPlayerEvent.starts_at)}`:'Nothing enabled and scheduled'}</div></div>
+        <div class="validation-item ${attentionPlayerEvents.length?'error':'ok'}"><strong>${fmtNumber(attentionPlayerEvents.length)} need attention</strong><div class="tiny" style="margin-top:4px">${attentionPlayerEvents.length?'Missing schedule or expired with master ON':'Schedules look operational'}</div></div>
+        <div class="validation-item ${liveSeasonalDungeon?'ok':''}"><strong>Seasonal dungeon: ${liveSeasonalDungeon?'LIVE':'not live'}</strong><div class="tiny" style="margin-top:4px">${visiblePlayerEvent&&playerEventHasSeasonalExpedition(visiblePlayerEvent.event_id)?'Persistent event transport follows earning state':'No launchable event dungeon right now'}</div></div>
+      </div>
+      ${visiblePlayerEvent ? `<div class="validation-item ${visiblePlayerPhase==='live'?'ok':'warning'}" style="margin-bottom:12px">Player Event screen currently shows <strong>${h(visiblePlayerEvent.name||visiblePlayerEvent.event_id)}</strong> (${visiblePlayerPhase==='live'?'earning active':'claim grace'}). Other events cannot go live until this visibility window closes or the current event is Hard off.</div>` : `<div class="validation-item ok" style="margin-bottom:12px">Player Event screen currently has <strong>no visible event</strong>. Enabled scheduled events will appear automatically at their start time.</div>`}
+      <div class="validation-item ok" style="margin-bottom:12px">Normal shutdown: use <strong>End now</strong>. Earning stops immediately while the claim window stays open. <strong>Hard off</strong> is an emergency master switch and also closes claims. Claim-grace events cannot be restarted with Go live now.</div>
       <div class="list">${playerRows.length ? playerRows.map(row => {
         const phase=playerEventPhase(row,nowMs);
         const claimEnd=row.grace_ends_at || (row.ends_at ? new Date(Date.parse(row.ends_at)+Math.max(0,Number(row.config?.claimGraceDays??7)||0)*86400000).toISOString() : null);
@@ -288,16 +315,20 @@ function renderEvents() {
         const annualSeason=row.event_id.match(/^(EVT_ANNUAL_\d{3})_(\d{4})$/);
         const canCloneSeason=roleAtLeast('owner')&&!!annualSeason;
         const canSchedule=roleAtLeast(row.enabled?'owner':'editor');
-        const canGoLive=roleAtLeast('owner')&&phase!=='live'&&!visibleConflict;
+        const canGoLive=roleAtLeast('owner')&&!['live','claiming'].includes(phase)&&!visibleConflict;
+        const preflight=state.playerEventPreflights[row.event_id];
         return `<div class="list-row event-row ${h(phase)}">
-          <div style="min-width:0;flex:1"><div class="actions"><strong>${h(row.name||row.event_id)}</strong>${playerEventStatusPill(phase)}<span class="pill ${row.enabled?'good':'bad'}">Master ${row.enabled?'ON':'OFF'}</span></div>
+          <div style="min-width:0;flex:1"><div class="actions"><strong>${h(row.name||row.event_id)}</strong>${playerEventStatusPill(phase)}<span class="pill ${row.enabled?'good':'bad'}">Master ${row.enabled?'ON':'OFF'}</span>${playerEventHasSeasonalExpedition(row.event_id)?'<span class="pill info">Dungeon wired</span>':''}</div>
             <p><span class="mono">${h(row.event_id)}</span> · ${h(row.currency_id||'No currency')} · priority ${h(row.priority??0)}</p>
             <p class="small muted">${row.starts_at&&row.ends_at?`${fmtDate(row.starts_at)} → ${fmtDate(row.ends_at)}`:'No runtime window configured yet.'}</p>
             ${claimEnd? `<p class="tiny faint">Claims through ${fmtDate(claimEnd)} · ${utc(claimEnd)}</p>`:''}
             <p class="tiny faint">Modules: ${h((row.modules||[]).join(', ')||'default')} · updated ${fmtDate(row.updated_at)}</p>
             ${visibleConflict?`<p class="tiny" style="margin-top:5px">Go live is blocked while <strong>${h(visibleConflict.name||visibleConflict.event_id)}</strong> is visible.</p>`:''}
+            ${phase==='claiming'?'<p class="tiny" style="margin-top:5px">Earning restart is locked while this event is in claim grace. End the claim window with Hard off only for an emergency.</p>':''}
+            ${renderPlayerEventPreflight(preflight)}
           </div>
           <div class="list-meta"><div class="actions" style="justify-content:flex-end">
+            <button class="btn btn-sm btn-ghost" data-action="preflight-player-event" data-id="${attr(row.event_id)}">Preflight</button>
             ${canCloneSeason?`<button class="btn btn-sm btn-ghost" data-action="clone-player-event-season" data-id="${attr(row.event_id)}">Clone season</button>`:''}
             ${canSchedule?`<button class="btn btn-sm btn-ghost" data-action="schedule-player-event" data-id="${attr(row.event_id)}">${row.enabled?'Adjust schedule':'Schedule'}</button>`:''}
             ${canEnable?`<button class="btn btn-sm" data-action="toggle-player-event" data-id="${attr(row.event_id)}" data-enabled="true">Enable schedule</button>`:''}
@@ -975,6 +1006,14 @@ app.addEventListener('click', async (event) => {
       const result=await api('applySeasonalCalendarPreset',{startYear,reason});
       toast(`Scheduled ${result.events?.length||6} seasonal events for ${startYear}–${startYear+1}.`,'success'); return navigate('events');
     }
+    if (action === 'preflight-player-event') {
+      const row=state.playerEvents.find(x=>x.event_id===el.dataset.id); if(!row)return;
+      const result=await api('playerEventPreflight',{eventId:row.event_id,durationDays:14});
+      state.playerEventPreflights={...state.playerEventPreflights,[row.event_id]:result};
+      const activationReady=Boolean(result.actions?.canEnableSchedule||result.actions?.canGoLiveNow);
+      toast(activationReady?'Preflight is ready for at least one activation path. Review the details below.':'Preflight found blocking issues for both activation paths.',activationReady?'success':'error');
+      return render();
+    }
     if (action === 'clone-player-event-season') {
       const row=state.playerEvents.find(x=>x.event_id===el.dataset.id); if(!row)return;
       const match=row.event_id.match(/^(EVT_ANNUAL_\d{3})_(\d{4})$/); if(!match)throw new Error('Only annual events can be cloned into a new season.');
@@ -999,16 +1038,24 @@ app.addEventListener('click', async (event) => {
     }
     if (action === 'toggle-player-event') {
       const row=state.playerEvents.find(x=>x.event_id===el.dataset.id); if(!row)return; const enable=el.dataset.enabled==='true';
+      if(enable){
+        const preflight=await api('playerEventPreflight',{eventId:row.event_id,durationDays:14});
+        state.playerEventPreflights={...state.playerEventPreflights,[row.event_id]:preflight};
+        if(!preflight.actions?.canEnableSchedule){render();throw new Error('Saved schedule preflight is blocked. Review the event checks before enabling.');}
+      }
       const reason=prompt(`${enable?'Enable':'HARD DISABLE'} ${row.name||row.event_id}. Reason (10+ characters):`,''); if(reason===null)return;
-      const warning=enable?'Enable this event using its saved schedule?':'HARD OFF immediately removes this event from players and closes its claim window. Use End now for a normal shutdown. Continue?';
+      const warning=enable?'Preflight passed. Enable this event using its saved schedule?':'HARD OFF immediately removes this event from players and closes its claim window. Use End now for a normal shutdown. Continue?';
       if(!confirm(warning))return;
       await api('setPlayerEventEnabled',{eventId:row.event_id,enabled:enable,reason}); toast(`Player event master switch ${enable?'enabled':'disabled'}.`,'success'); return navigate('events');
     }
     if (action === 'go-live-player-event') {
       const row=state.playerEvents.find(x=>x.event_id===el.dataset.id); if(!row)return;
       const days=Number(prompt('Run this event for how many days? (0.25–60)','14')); if(!Number.isFinite(days)||days<0.25||days>60)throw new Error('Duration must be between 0.25 and 60 days.');
+      const preflight=await api('playerEventPreflight',{eventId:row.event_id,durationDays:days});
+      state.playerEventPreflights={...state.playerEventPreflights,[row.event_id]:preflight};
+      if(!preflight.actions?.canGoLiveNow){render();throw new Error('Go-live preflight is blocked. Review season, overlap, or claim-window checks before activation.');}
       const reason=prompt(`Reason for taking ${row.name||row.event_id} live now (10+ characters):`,'Manual Live-Ops activation'); if(reason===null)return;
-      if(!confirm(`Take ${row.name||row.event_id} live immediately for ${days} day(s)?`))return;
+      if(!confirm(`Preflight passed. Take ${row.name||row.event_id} live immediately for ${days} day(s)?${preflight.seasonalExpedition?' The seasonal dungeon will become launchable at the same time.':''}`))return;
       await api('goLivePlayerEvent',{eventId:row.event_id,durationDays:days,reason}); toast('Player event is live.','success'); return navigate('events');
     }
     if (action === 'end-player-event') {

@@ -1,5 +1,5 @@
 import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
-import {useState} from 'react';
+import {useMemo,useState} from 'react';
 import {GameState,RewardBundle,SkillId} from '../core/types';
 import {CLASSES} from '../content/classes';
 import {MONSTERS} from '../content/monsters';
@@ -10,7 +10,8 @@ import {ActivityCard} from '../components/ActivityCard';
 import {StatBar} from '../components/StatBar';
 import {characterProgressWithinLevel} from '../core/progression';
 import {activityCycleSeconds,activityRate,campaignProgressSummary,dashboardRecommendation,DashboardDestination} from '../core/dashboard';
-import {C,radii,spacing,typography} from '../theme/theme';
+import {radii,spacing,typography} from '../theme/theme';
+import {useGameTheme,type ThemePalette} from '../theme/app-theme';
 import {CharacterPortrait} from '../components/CharacterVisual';
 import {BattleStage} from '../components/BattleStage';
 import {offlineCapBreakdown} from '../core/game';
@@ -52,4 +53,4 @@ export function HomeScreen({state,preview,onClaim,onStop,onQueueRemove,onQueueCl
   </View>}
  </ScrollView>;
 }
-const s=StyleSheet.create({root:{padding:spacing.lg,gap:spacing.md},identity:{flexDirection:'row',alignItems:'center',gap:12,padding:spacing.md,borderWidth:1,borderColor:C.line,borderRadius:radii.lg,backgroundColor:C.panel},portrait:{width:64,height:80},flex:{flex:1,minWidth:0},name:{...typography.hero,color:C.text,fontSize:25,lineHeight:32},small:{...typography.body,color:C.muted},gold:{...typography.bodyStrong,color:C.accent},title:{...typography.title,color:C.text},kicker:{...typography.caption,color:C.accent,letterSpacing:.8,fontWeight:'600'},guide:{gap:8,padding:spacing.md,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel},urgent:{borderLeftWidth:4,borderLeftColor:C.warning,paddingLeft:spacing.md},row:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',gap:12},disclosure:{minHeight:48,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:12,paddingVertical:8},link:{...typography.bodyStrong,color:C.info,flex:1},expanded:{gap:12},event:{padding:16,gap:8,backgroundColor:C.panel,borderRadius:radii.md,borderLeftWidth:3},campaignStrip:{flexDirection:'row',alignItems:'center',gap:10,padding:spacing.sm,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel},campaignTitle:{...typography.bodyStrong,color:C.text},campaignTrack:{height:7,marginVertical:5,borderRadius:4,overflow:'hidden',backgroundColor:C.bg},campaignFill:{height:'100%',backgroundColor:C.accent},campaignMeta:{fontSize:10,lineHeight:14,color:C.muted},earned:{...typography.body,color:C.good}});
+const styles=(C:ThemePalette)=>StyleSheet.create({root:{padding:spacing.lg,gap:spacing.md},identity:{flexDirection:'row',alignItems:'center',gap:12,padding:spacing.md,borderWidth:1,borderColor:C.line,borderRadius:radii.lg,backgroundColor:C.panel},portrait:{width:64,height:80},flex:{flex:1,minWidth:0},name:{...typography.hero,color:C.text,fontSize:25,lineHeight:32},small:{...typography.body,color:C.muted},gold:{...typography.bodyStrong,color:C.accent},title:{...typography.title,color:C.text},kicker:{...typography.caption,color:C.accent,letterSpacing:.8,fontWeight:'600'},guide:{gap:8,padding:spacing.md,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel},urgent:{borderLeftWidth:4,borderLeftColor:C.warning,paddingLeft:spacing.md},row:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',gap:12},disclosure:{minHeight:48,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:12,paddingVertical:8},link:{...typography.bodyStrong,color:C.info,flex:1},expanded:{gap:12},event:{padding:16,gap:8,backgroundColor:C.panel,borderRadius:radii.md,borderLeftWidth:3},campaignStrip:{flexDirection:'row',alignItems:'center',gap:10,padding:spacing.sm,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel},campaignTitle:{...typography.bodyStrong,color:C.text},campaignTrack:{height:7,marginVertical:5,borderRadius:4,overflow:'hidden',backgroundColor:C.bg},campaignFill:{height:'100%',backgroundColor:C.accent},campaignMeta:{fontSize:10,lineHeight:14,color:C.muted},earned:{...typography.body,color:C.good}});

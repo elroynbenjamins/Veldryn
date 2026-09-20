@@ -16,6 +16,12 @@ function rejects(f:()=>unknown,label:string){let caught=false;try{f();}catch{cau
 const now=Date.UTC(2026,8,13),ids=['UNIT_001','UNIT_002','UNIT_003'];
 function fixture(){let s=createCharacter(newGame(now),'IRONWARDEN','Companion Test');for(const id of ids)s=unlockCombatCompanion(s,id,now);s.character!.gold=100000;s.account.companionEssence=10000;s.account.bondstones=100;s.account.companionMaterials={IRONWOOD_FANG:100,RUNEBOUND_CORE:100,WISP_DUST:100,ASTER_IRON_INGOT:100,ECHO_QUARTZ:100,OATHGLASS_SHARD:100,OATHGLASS_FRAGMENT:100};return refreshCompanions(s,now);}
 const command=(s:GameState,type:string,args?:Record<string,unknown>,time=now)=>executeGameCommand(s,{type,args},time).state;
+const permanentCompanions=COMBAT_COMPANIONS.filter(def=>def.origin.type!=='event'),eventCompanions=COMBAT_COMPANIONS.filter(def=>def.origin.type==='event');
+ok(COMBAT_COMPANIONS.length===34,'roster contains 24 permanent and 10 event companions');
+ok(permanentCompanions.length===24,'permanent companion count remains 24');
+ok(eventCompanions.length===10,'event companion count is 10');
+ok(new Set(COMBAT_COMPANIONS.map(def=>def.id)).size===COMBAT_COMPANIONS.length,'companion ids are unique');
+ok(eventCompanions.map(def=>def.id).join(',')===Array.from({length:10},(_,index)=>`EVT_UNIT_${String(index+1).padStart(3,'0')}`).join(','),'event companion ids remain EVT_UNIT_001 through EVT_UNIT_010');
 let s=fixture();
 for(const d of COMBAT_COMPANIONS){ok(companionServerDefinition(d.id)?.role===d.role,`${d.id} role agrees`);ok(companionServerDefinition(d.id)?.rarity===d.rarity,`${d.id} rarity agrees`);}
 rejects(()=>command(s,'companion_equip',{id:'UNIT_002'}),'same role rejected');
@@ -38,7 +44,7 @@ s=command(s,'companion_technique',{id:'UNIT_001',technique});
 ok(s.account.combatCompanionProgress!.UNIT_001.selectedTechniqueId===technique,'technique saved');
 const backup=parseSaveBackup(createSaveBackup(s));ok(backup.character!.equippedCombatCompanionId==='UNIT_001'&&backup.account.companionEssence===s.account.companionEssence,'save retains equip and currency');
 const legacy=createCharacter(newGame(now),'IRONWARDEN','Legacy');legacy.character!.ownedPetIds=['pet_harvest_fox'];legacy.account.unlockedCosmeticPetIds=['pet_harvest_fox'];
-const upgraded=migrateSave(legacy);ok(!upgraded.account.unlockedCombatCompanionIds?.length&&upgraded.character!.ownedPetIds!.includes('pet_harvest_fox'),'passive pets never become Combat Companions');
+const upgraded=migrateSave(legacy);ok(!upgraded.account.unlockedCombatCompanionIds?.length&&upgraded.account.unlockedCosmeticPetIds?.includes('pet_harvest_fox'),'passive pets migrate to account ownership and never become Combat Companions');
 legacy.account.unlockedCosmeticPetIds=['pet_harvest_fox','pet_field_mouse'];legacy.character!.ownedPetIds=['pet_harvest_fox','pet_harvest_fox','pet_field_mouse'];
 let mult=characterPermanentMultipliers(legacy);const fox=PET_PERMANENT_BOOSTS.pet_harvest_fox,mouse=PET_PERMANENT_BOOSTS.pet_field_mouse;
 ok(Math.abs(mult.gatheringSpeedMultiplier-(1+(fox.gatheringSpeedMultiplier!-1)*.25)*(1+(mouse.gatheringSpeedMultiplier!-1)*.25))<1e-10,'inactive collections use 25%, no duplicates');

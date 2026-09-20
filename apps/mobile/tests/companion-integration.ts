@@ -45,12 +45,12 @@ ok(s.account.combatCompanionProgress!.UNIT_001.selectedTechniqueId===technique,'
 const backup=parseSaveBackup(createSaveBackup(s));ok(backup.character!.equippedCombatCompanionId==='UNIT_001'&&backup.account.companionEssence===s.account.companionEssence,'save retains equip and currency');
 const legacy=createCharacter(newGame(now),'IRONWARDEN','Legacy');legacy.character!.ownedPetIds=['PET_001'];legacy.account.unlockedCosmeticPetIds=['PET_001'];
 const upgraded=migrateSave(legacy);ok(!upgraded.account.unlockedCombatCompanionIds?.length&&upgraded.account.unlockedCosmeticPetIds?.includes('PET_001'),'passive pets migrate to account ownership and never become Combat Companions');
-legacy.account.unlockedCosmeticPetIds=['PET_001','PET_007'];legacy.character!.ownedPetIds=['PET_001','PET_001','PET_007'];
-let mult=characterPermanentMultipliers(legacy);const pebble=PET_PERMANENT_BOOSTS.PET_001,briar=PET_PERMANENT_BOOSTS.PET_007;
-ok(!!pebble&&!!briar,'canonical pet boost definitions exist');
-ok(Math.abs(mult.gatheringSpeedMultiplier-(1+(pebble.gatheringSpeedMultiplier!-1)*.25)*(1+(briar.gatheringSpeedMultiplier!-1)*.25))<1e-10,'inactive collections use 25%, no duplicates');
-legacy.character!.selectedCosmeticPetId='PET_001';mult=characterPermanentMultipliers(legacy);ok(Math.abs(mult.gatheringSpeedMultiplier-pebble.gatheringSpeedMultiplier!*(1+(briar.gatheringSpeedMultiplier!-1)*.25))<1e-10,'selected pet 100%, others 25%');
-legacy.character!.selectedCosmeticPetId='PET_004';mult=characterPermanentMultipliers(legacy);ok(Math.abs(mult.gatheringSpeedMultiplier-(1+(pebble.gatheringSpeedMultiplier!-1)*.25)*(1+(briar.gatheringSpeedMultiplier!-1)*.25))<1e-10&&mult.incomingDamageMultiplier===1,'unowned selected pet cannot grant perk');
+legacy.account.unlockedCosmeticPetIds=['PET_001','PET_003'];legacy.character!.ownedPetIds=['PET_001','PET_001','PET_003'];
+let mult=characterPermanentMultipliers(legacy);const pebble=PET_PERMANENT_BOOSTS.PET_001,twig=PET_PERMANENT_BOOSTS.PET_003;
+ok(!!pebble?.gatheringYieldMultiplier&&!!twig?.gatheringYieldMultiplier,'canonical pet boost definitions exist');
+ok(Math.abs(mult.gatheringYieldMultiplier-1.01)<1e-10,'two inactive owned pets contribute exactly +0.50% each without duplicate stacking');
+legacy.character!.selectedCosmeticPetId='PET_001';mult=characterPermanentMultipliers(legacy);ok(Math.abs(mult.gatheringYieldMultiplier-1.03)<1e-10,'selected pet adds full +2.00% active bonus on top of owned passives');
+legacy.character!.selectedCosmeticPetId='PET_004';mult=characterPermanentMultipliers(legacy);ok(Math.abs(mult.gatheringYieldMultiplier-1.01)<1e-10&&mult.incomingDamageMultiplier===1,'unowned selected pet cannot grant perk');
 let quest=createCharacter(newGame(now),'IRONWARDEN','Quest Hero');quest.quests=quest.quests.map(q=>q.questId==='QST_005'?{...q,status:'complete'}:q);quest=claimQuest(quest,'QST_005');ok(quest.account.unlockedCombatCompanionIds?.includes('UNIT_001'),'existing quest unlock hook');
 const killState=recordCompanionActivity(createCharacter(newGame(now),'WAYFINDER','Mine Hero'),'combat','CAVE_SKITTER',250,now);ok(killState.account.unlockedCombatCompanionIds?.includes('UNIT_002'),'mine kills unlock sentry');
 let hunt=command(fixture(),'companion_equip',{id:'UNIT_001'});hunt=startCombat(hunt,'MOSS_RAT',now);const oldXp=hunt.account.combatCompanionProgress!.UNIT_001.xp;const claimed=claimActivity(hunt,now+60000);ok(claimed.reward.kills>0&&claimed.state.account.combatCompanionProgress!.UNIT_001.bondXp>0,'real hunting awards progression');

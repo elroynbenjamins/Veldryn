@@ -84,8 +84,8 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
  const credit=(source:GameState['activity'],earned:RewardBundle)=>{if(source&&earned.kills>0)contributions.push({kind:source.kind==='combat'?'combat':'gathering',contentId:source.targetId,units:earned.kills,startedAtMs:Math.max(source.lastClaimAtMs,now-earned.elapsedSeconds*1000),...(source.kind==='combat'&&source.combatChallengeId?{challengeId:source.combatChallengeId}: {})});};
  const settle=()=>{const source=state.activity,result=game.claimActivity(state,now);state=result.state;reward=result.reward;credit(source,result.reward);};
  // Settle before any mutation that can alter past activity rates, food, gear or inventory.
- const queueOnlyCommand=command.type==='queue_add'||command.type==='queue_remove'||command.type==='queue_clear'||command.type==='queue_start';
- if(state.character&&command.type!=='create'&&!queueOnlyCommand)settle();
+ const settlementFreeCommand=command.type==='queue_add'||command.type==='queue_remove'||command.type==='queue_clear'||command.type==='queue_start'||command.type==='daily_supplies_claim';
+ if(state.character&&command.type!=='create'&&!settlementFreeCommand)settle();
  state=refreshCompanions(state,now);
  const companionMetricBefore=command.type.startsWith('companion_')?companionCommandEconomySnapshot(state):undefined;
  if(['companion_equip','companion_level','companion_ascend','companion_master'].includes(command.type))assertCompanionIdle(state,text(a,'id'));

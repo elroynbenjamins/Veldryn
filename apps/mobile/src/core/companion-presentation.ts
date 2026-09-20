@@ -4,19 +4,40 @@ import {companionCurrentLevelCap,companionMaxLevel,companionUnlockRequirementMet
 import {MONSTERS} from '../content/monsters';
 import {GATHERING,RECIPES} from '../content/skills';
 import {ITEMS} from '../content/items';
-import {COMBAT_COMPANIONS} from '../content/combat-companions';
+import {COMBAT_COMPANIONS,COMPANION_STAGE_CAPS} from '../content/combat-companions';
 import {characterClassSkills} from './class-skills';
 import {monsterMastery} from './monster-mastery';
 
 export function companionMaterialName(id:string){return ITEMS.find(item=>item.id===id)?.name??id.toLowerCase().replace(/_/g,' ').replace(/^./,s=>s.toUpperCase());}
-export function companionMaterialSources(id:string):string[]{
- const sources=[...MONSTERS.filter(m=>m.drops.some(d=>d.itemId===id)).map(m=>`Hunt ${m.name}`),...RECIPES.filter(r=>r.output.itemId===id).map(r=>`Craft ${r.name}`)];
- if(id==='SUPPLIES')sources.push('Buy at the Sanctuary: 5 for 250 Gold');
- sources.push(...GATHERING.filter(g=>g.itemId===id).map(g=>`Gather at ${g.name}`));
- if(id==='TRIAL_SANCTUARY_MATERIAL')sources.push('First-clear Trial boss rewards');
- if(id==='EVENT_BONDBLOOM')sources.push('Earn an event companion for a starter bundle','Weekly Proving Grounds while you own an event companion','Future event prestige shops');
- return sources.length?sources:['Companion assignment rewards or later-region content'];
+export type CompanionMaterialSourceTarget=
+ |{kind:'combat';id:string;label:string;detail:string;monsterId:string;zoneName:string}
+ |{kind:'crafting';id:string;label:string;detail:string;skillId:string}
+ |{kind:'gathering';id:string;label:string;detail:string;skillId:string;nodeId:string;zoneId:string}
+ |{kind:'companion';id:string;label:string;detail:string;section:'Sanctuary'|'Trials'|'Expeditions'}
+ |{kind:'events';id:string;label:string;detail:string}
+ |{kind:'info';id:string;label:string;detail:string};
+
+function chanceLabel(chance:number){const pct=chance*100;return pct>=10?`${Math.round(pct)}%`:pct>=1?`${pct.toFixed(1)}%`:`${pct.toFixed(2)}%`;}
+export function companionMaterialSourceTargets(id:string):CompanionMaterialSourceTarget[]{
+ const sources:CompanionMaterialSourceTarget[]=[];
+ for(const monster of MONSTERS){
+  const drop=monster.drops.find(row=>row.itemId===id);if(!drop)continue;
+  sources.push({kind:'combat',id:`combat:${monster.id}`,label:`Hunt ${monster.name}`,detail:`${monster.zone} · ${chanceLabel(drop.chance)} drop chance`,monsterId:monster.id,zoneName:monster.zone});
+ }
+ for(const recipe of RECIPES.filter(row=>row.output.itemId===id))sources.push({kind:'crafting',id:`craft:${recipe.id}`,label:`Craft ${recipe.name}`,detail:`${recipe.skillId.replace(/_/g,' ')} · level ${recipe.level}`,skillId:recipe.skillId});
+ for(const node of GATHERING.filter(row=>row.itemId===id))sources.push({kind:'gathering',id:`gather:${node.id}`,label:`Gather at ${node.name}`,detail:`${node.skillId.replace(/_/g,' ')} · level ${node.unlockLevel}`,skillId:node.skillId,nodeId:node.id,zoneId:node.zoneId});
+ if(id==='SUPPLIES')sources.push({kind:'companion',id:'sanctuary:supplies',label:'Buy Sanctuary supplies',detail:'5 Supplies for 250 Gold · Expedition Pens required',section:'Sanctuary'});
+ if(id==='TRIAL_SANCTUARY_MATERIAL')sources.push({kind:'companion',id:'trials:first-clear',label:'Clear Companion Trial bosses',detail:'First-clear Trial boss rewards',section:'Trials'});
+ if(id==='EVENT_BONDBLOOM'){
+  sources.push({kind:'events',id:'events:bondbloom',label:'Open the active event',detail:'Event companion acquisition grants a starter Bondbloom bundle'});
+  sources.push({kind:'companion',id:'trials:proving-grounds',label:'Weekly Proving Grounds',detail:'Available while you own an event companion',section:'Trials'});
+  sources.push({kind:'events',id:'events:prestige-shop',label:'Event prestige rewards',detail:'Returning events can offer additional Bondbloom'});
+ }
+ if(!sources.length)sources.push({kind:'companion',id:'expeditions:materials',label:'Check Sanctuary Expeditions',detail:'Assignment rewards or later-region companion content can provide this material',section:'Expeditions'});
+ return sources;
 }
+
+export function companionMaterialSources(id:string):string[]{return companionMaterialSourceTargets(id).map(source=>source.label);}
 export function companionRequirementProgress(state:GameState,req:CompanionDefinition['unlockRequirements'][number]){
  const target=req.target??req.description,total=Math.max(1,req.amount??1);
  let current=state.account.companionUnlockProgress?.[target]??0;
@@ -113,6 +134,47 @@ export function companionMasteryGuidance(state:GameState,id:string){
  const score=.45*(progress.level/maxLevel)+.30*(progress.bondLevel/10)+.20*Math.min(1,progress.ascensionTier/requiredAscension)+.05*(def.rarity!=='prestige'||progress.mastered?1:0);
  return {def,progress,maxLevel,requiredAscension,mastered,nextStep,score};
 }
+export type CompanionRoadmapStatus='complete'|'ready'|'current'|'future';
+export interface CompanionRoadmapStep{id:string;label:string;detail:string;reward:string;status:CompanionRoadmapStatus}
+export function companionProgressionRoadmap(state:GameState,id:string){
+ const def=COMBAT_COMPANIONS.find(row=>row.id===id);if(!def)return undefined;
+ const progress=state.account.combatCompanionProgress?.[id];
+ if(!progress){
+  const unlock=companionUnlockCompletion(state,def),guidance=companionUnlockGuidance(state,def);
+  return {owned:false,nextStep:guidance.label,power:[{id:'recruit',label:'Recruit companion',detail:`${unlock.completeCount}/${unlock.totalCount} requirements complete`,reward:`${Math.round(unlock.ratio*100)}% recruitment progress`,status:(guidance.ready?'ready':'current') as CompanionRoadmapStatus}],bond:[] as CompanionRoadmapStep[]};
+ }
+ const requiredAscension=def.rarity==='standard'||def.rarity==='rare'?2:3;
+ const gates:{tier:1|2|3;level:number}[]=[{tier:1,level:10},{tier:2,level:20},...(requiredAscension===3?[{tier:3 as const,level:25}]:[])];
+ const power:CompanionRoadmapStep[]=[{id:'recruit',label:'Recruited',detail:def.origin.name,reward:'Permanent account unlock',status:'complete'}];
+ for(const gate of gates){
+  const complete=progress.ascensionTier>=gate.tier,ready=!complete&&progress.ascensionTier===gate.tier-1&&progress.level>=gate.level,current=!complete&&progress.ascensionTier===gate.tier-1;
+  const cap=COMPANION_STAGE_CAPS[def.rarity][gate.tier],previousCap=COMPANION_STAGE_CAPS[def.rarity][gate.tier-1];
+  const capReward=cap>previousCap?`Level cap ${cap}`:'Final rarity ascension';
+  const technique=gate.tier===2?' · Technique choice unlock':'';
+  power.push({id:`ascension-${gate.tier}`,label:`Ascension ${['','I','II','III'][gate.tier]}`,detail:`Reach Level ${gate.level}, then Ascend`,reward:`${capReward}${technique}`,status:complete?'complete':ready?'ready':current?'current':'future'});
+ }
+ if(def.rarity==='prestige'){
+  const complete=progress.mastered===true,ready=!complete&&progress.ascensionTier>=3&&progress.level>=35,current=!complete&&progress.ascensionTier>=3;
+  power.push({id:'prestige-mastery',label:'Prestige Mastery',detail:'Reach Level 35 after Ascension III',reward:'Final Prestige mastery marker',status:complete?'complete':ready?'ready':current?'current':'future'});
+ }
+ const bondRewards:Record<number,{reward:string;detail:string}>={
+  2:{reward:'20 Essence',detail:'First Bond reward'},
+  4:{reward:'35 Essence + portrait',detail:'Profile identity reward'},
+  6:{reward:'55 Essence + Bond Resonance',detail:'Passive improvement milestone'},
+  8:{reward:'80 Essence + title',detail:'Profile title milestone'},
+  10:{reward:`Bond Trait · ${def.bondTrait.name}`,detail:def.bondTrait.description},
+ };
+ const bondLevels=[2,4,6,8,10] as const,nextBond=bondLevels.find(level=>progress.bondLevel<level);
+ const claims=new Set(state.account.companionBondRewardClaims??[]);
+ const bond:CompanionRoadmapStep[]=bondLevels.map(level=>{
+  const reached=progress.bondLevel>=level,claimable=level<10,rewardClaimed=!claimable||claims.has(`${id}:${level}`);
+  const status:CompanionRoadmapStatus=reached&&!rewardClaimed?'ready':reached?'complete':level===nextBond?'current':'future';
+  return {id:`bond-${level}`,label:`Bond ${level}`,detail:bondRewards[level].detail,reward:bondRewards[level].reward,status};
+ });
+ const readyBond=bond.find(step=>step.status==='ready'),mastery=companionMasteryGuidance(state,id);
+ return {owned:true,nextStep:readyBond?`Claim ${readyBond.label} reward`:mastery?.nextStep??'Continue companion progression',power,bond};
+}
+
 export function companionNextMasteryTargets(state:GameState,limit=3){
  return Object.keys(state.account.combatCompanionProgress??{})
   .map(id=>companionMasteryGuidance(state,id))

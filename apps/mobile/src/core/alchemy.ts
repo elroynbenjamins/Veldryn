@@ -57,8 +57,9 @@ export function previewAlchemyReward(state:GameState,elapsed:number):RewardBundl
   // Times are from the start of the processed interval, never retroactively shifted to claim time.
   const first=Math.max(0,(1-(activity.progressFraction??0))*brew.cycleSeconds);
   const times=Array.from({length:actions},(_,index)=>Math.round(activity.lastClaimAtMs+(first+index*brew.cycleSeconds)*1000));
+  const qualifyingActivitySeconds=remaining?elapsed:actions?Math.max(0,Math.min(elapsed,(times[times.length-1]-activity.lastClaimAtMs)/1000)):0;
   return {xp,gold:0,items:actions?[{itemId:brew.outputPerBatch.itemId,quantity:brew.outputPerBatch.quantity*actions}]:[],
-    kills:0,craftingActions:actions,elapsedSeconds:elapsed,nextBrewRemaining:remaining,
+    kills:0,craftingActions:actions,elapsedSeconds:elapsed,qualifyingActivitySeconds,nextBrewRemaining:remaining,
     nextProgressFraction:remaining?Math.max(0,Math.min(1-Number.EPSILON,progress-actions)):0,
     nextRewardRemainders:remainders,craftingCompletedAtMs:times,
     stoppedReason:remaining?undefined:'Reserved brewing batch complete'};

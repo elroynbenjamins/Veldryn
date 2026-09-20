@@ -19,6 +19,7 @@ import {COMBAT_CHALLENGE_IDS} from './challenge-hunts';
 import {COMBAT_TACTIC_IDS} from './combat-tactics';
 import {HUNT_GOAL_IDS} from './hunt-goals';
 import {clearActivityQueue,enqueueActivity,removeQueuedActivity} from './activity-queue';
+import {activateDailySupplyBoost,claimDailySupplies,DAILY_SUPPLY_BOOST_TYPES,dailySupplyBoostLabel} from './daily-supplies';
 
 /** Commands express intent. Neither a client save nor a client reward is accepted. */
 export interface GameCommand {type:string;args?:Record<string,unknown>}
@@ -34,7 +35,7 @@ const fields:Record<string,readonly string[]>={
  equip:['id'],unequip:['slot'],food:['id'],eat:['id'],sell:['id','quantity'],salvage:['id'],
  deposit:['id','quantity'],withdraw:['id','quantity'],deposit_materials:[],storage:['location'],overflow:[],
  equip_tool:['id'],equip_set:[],upgrade:['id'],socket:['id','gemId'],unsocket:['id','index'],skin:['id'],
- loadout_save:['index','name'],loadout_apply:['id'],loadout_delete:['id'],goals_set:['goals'],idle_rules_set:['rules','activeId'],
+ loadout_save:['index','name'],loadout_apply:['id'],loadout_delete:['id'],goals_set:['goals'],idle_rules_set:['rules','activeId'],daily_supplies_claim:['characterId'],daily_supplies_activate:['type'],
  quest:['id'],seasonal:['period','id'],settings:['settings'],profile:['profileTitle','profileBackgroundId','profileBorderId','selectedCosmeticPetId'],
  event_daily:[],event_cache:[],event_milestones:[],event_discovery:['id'],event_reward:['id'],event_accept:['id'],
  event_objective:['id'],event_weekly:['id'],event_project:['id'],event_contribute:['quantity'],event_community:['percent'],event_purchase:['id'],
@@ -83,8 +84,8 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
  const credit=(source:GameState['activity'],earned:RewardBundle)=>{if(source&&earned.kills>0)contributions.push({kind:source.kind==='combat'?'combat':'gathering',contentId:source.targetId,units:earned.kills,startedAtMs:Math.max(source.lastClaimAtMs,now-earned.elapsedSeconds*1000),...(source.kind==='combat'&&source.combatChallengeId?{challengeId:source.combatChallengeId}: {})});};
  const settle=()=>{const source=state.activity,result=game.claimActivity(state,now);state=result.state;reward=result.reward;credit(source,result.reward);};
  // Settle before any mutation that can alter past activity rates, food, gear or inventory.
- const queueOnlyCommand=command.type==='queue_add'||command.type==='queue_remove'||command.type==='queue_clear'||command.type==='queue_start';
- if(state.character&&command.type!=='create'&&!queueOnlyCommand)settle();
+ const settlementFreeCommand=command.type==='queue_add'||command.type==='queue_remove'||command.type==='queue_clear'||command.type==='queue_start'||command.type==='daily_supplies_claim';
+ if(state.character&&command.type!=='create'&&!settlementFreeCommand)settle();
  state=refreshCompanions(state,now);
  const companionMetricBefore=command.type.startsWith('companion_')?companionCommandEconomySnapshot(state):undefined;
  if(['companion_equip','companion_level','companion_ascend','companion_master'].includes(command.type))assertCompanionIdle(state,text(a,'id'));
@@ -169,6 +170,16 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
    if(!state.character)throw new Error('character_required');
    const rules=normalizeIdleRuleSets(a.rules,state.character.id),activeIdleRuleIdV40=validateActiveIdleRuleId(rules,a.activeId);
    state={...state,character:{...state.character,idleRulesV40:rules,activeIdleRuleIdV40}};break;
+  }
+  case 'daily_supplies_claim':{
+   const result=claimDailySupplies(state,text(a,'characterId'),now);state=result.state;
+   message=result.status.reward.kind==='premium'
+    ?`Daily Supplies milestone: +${result.status.reward.amount} premium currency.`
+    :`Daily Supplies: +2h ${dailySupplyBoostLabel(result.status.reward.type)} boost banked.`;
+   break;
+  }
+  case 'daily_supplies_activate':{
+   const type=oneOf(a.type,DAILY_SUPPLY_BOOST_TYPES);state=activateDailySupplyBoost(state,type);message=`+10% ${dailySupplyBoostLabel(type)} active for 2 hours of qualifying activity.`;break;
   }
   case 'quest':state=game.claimQuest(state,text(a,'id'));break;
   case 'seasonal':state=game.claimSeasonalContract(state,oneOf(a.period,['daily','weekly']),text(a,'id'),now);break;

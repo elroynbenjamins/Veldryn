@@ -56,6 +56,9 @@ export interface CharacterState {
   /** Character-bound action queue. It never auto-travels and pauses on safety failures. */
   activityQueue?:QueuedActivity[];
   activityQueuePausedReason?:string;
+  /** Character-bound banked Daily Supplies charges and one active +10% boost. */
+  dailySupplyBoostBank?:Partial<Record<import('./daily-supplies').DailySupplyBoostType,number>>;
+  activeDailySupplyBoost?:import('./daily-supplies').ActiveDailySupplyBoost;
 }
 export interface ItemStack { itemId:string; quantity:number; }
 export interface InventoryState { stacks:ItemStack[]; capacity:number; }
@@ -84,6 +87,7 @@ export interface GameState {
   rareDiscoveryState?:import('./rare-idle-discoveries-v46').RareDiscoveryState;
   journalState?:import('./adventurers-journal-v42').JournalState;
   longTermMetrics?:Record<string,number>;
+  dailySupplies?:import('./daily-supplies').DailySuppliesTrack;
   unlockedKnowledgeIds?:string[];
   unlockedCollectionRewardIds?:string[];
   guildContribution?:number;guildProjectProgress?:number;guildBossHp?:number;guildProjectClaimed?:boolean;guildJoinPolicy?:'open'|'apply'|'invite';guildMinimumLevel?:number;guildApplicationStatus?:'none'|'pending'|'accepted'|'declined';seasonalContractClaimIds?:string[];liveEvent?:LiveEventRuntime;eventProgressById?:Record<string,number>;eventCurrencyBalanceById?:Record<string,number>;eventPrestigeBalanceById?:Record<string,number>;eventRepeatCacheClaimsById?:Record<string,number>;eventActivityById?:Record<string,Partial<Record<'combat'|'gathering'|'crafting'|'boss',number>>>;eventPeriodActivityById?:Record<string,Partial<Record<'combat'|'gathering'|'crafting'|'boss',number>>>;eventAcceptedContractIds?:string[];eventContractBaselines?:Record<string,number>;eventObjectiveClaimIds?:string[];eventWeeklyClaimIds?:string[];eventDailyGiftClaimIds?:string[];eventCommunityClaimIds?:string[];eventDiscoveryCounts?:Record<string,number>;eventDiscoveryClaimIds?:string[];eventShopPurchaseCounts?:Record<string,number>;eventChoiceById?:Record<string,string>;eventContributionById?:Record<string,number>;eventRewardClaimIds?:string[];unlockedEventSkinIds?:string[];unlockedCosmeticPetIds?:string[];unlockedProfileBackgroundIds?:string[];unlockedProfileBorderIds?:string[];unlockedEmoteIds?:string[];unlockedTitleIds?:string[]};
@@ -95,7 +99,7 @@ export interface RewardBundle {
   masteryMaterialRemainders?:Record<string,number>;
   classSkillXp?:Array<{skillId:string;xp:number}>;
   trainingActions?:number;
-  xp:number; gold:number; items:ItemStack[]; kills:number; elapsedSeconds:number;
+  xp:number; gold:number; items:ItemStack[]; kills:number; elapsedSeconds:number; qualifyingActivitySeconds?:number;
   foodConsumed?:number; endHp?:number; stoppedReason?:string;
   eventDrops?:{eventId:string;currencyId:string;name:string;quantity:number;source?:'combat'|'gathering'|'crafting'|'boss';units?:number;recordedAtMs?:number}[];
   eventDiscoveries?:{eventId:string;discoveryId:string;name:string;quantity:number}[];

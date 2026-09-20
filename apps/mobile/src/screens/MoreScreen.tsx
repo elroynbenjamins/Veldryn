@@ -1,7 +1,9 @@
+import {useMemo} from 'react';
 import {UiIcon} from '../components/UiIcon';
 import {navigationIcons} from '../theme/ui-icons';
 import {Image,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
-import {C,radii,spacing,typography} from '../theme/theme';
+import {radii,spacing,typography,equipmentTheme,type ThemeColors} from '../theme/theme';
+import {useGameTheme} from '../theme/ThemeContext';
 import {MessageKey,t} from '../i18n';
 import {GameState} from '../core/types';
 
@@ -27,6 +29,7 @@ function iconForDestination(id:MoreDestination):keyof typeof navigationIcons{
 }
 
 export function MoreScreen({language,onNavigate,onOpenChatPilot,companionAttention=false,workingTowardAttention=false}:{language:GameState['settings']['language'];onNavigate:(destination:MoreDestination)=>void;onOpenChatPilot?:()=>void;companionAttention?:boolean;workingTowardAttention?:boolean}){
+  const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
   return <ScrollView contentContainerStyle={s.root}>
     <Text accessibilityRole="header" style={s.heading}>Account</Text>
     <Text style={s.sub}>{t(language,'more.intro')}</Text>
@@ -38,4 +41,4 @@ export function MoreScreen({language,onNavigate,onOpenChatPilot,companionAttenti
   </ScrollView>;
 }
 
-const s=StyleSheet.create({root:{padding:spacing.lg,gap:spacing.sm},heading:{...typography.hero,color:C.text},sub:{...typography.body,color:C.muted,marginBottom:spacing.sm},list:{gap:spacing.sm},card:{width:'100%',minHeight:80,flexDirection:'row',alignItems:'center',gap:spacing.md,padding:spacing.md,borderWidth:StyleSheet.hairlineWidth,borderColor:C.line,borderRadius:radii.lg,backgroundColor:C.panel},devCard:{borderStyle:'dashed'},pressed:{opacity:.76},iconFrame:{width:40,height:40,alignItems:'center',justifyContent:'center'},icon:{width:32,height:32},copy:{flex:1,minWidth:0,gap:4},title:{...typography.bodyStrong,color:C.text},description:{...typography.caption,color:C.muted},chevron:{color:C.muted,fontSize:26},attentionDot:{width:10,height:10,borderRadius:5,backgroundColor:'#d93646',borderWidth:1,borderColor:'#09131f'}});
+function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);return StyleSheet.create({root:{padding:spacing.lg,gap:spacing.sm},heading:{...typography.hero,color:C.text},sub:{...typography.body,color:C.muted,marginBottom:spacing.sm},list:{gap:spacing.sm},card:{width:'100%',minHeight:80,flexDirection:'row',alignItems:'center',gap:spacing.md,padding:spacing.md,borderWidth:StyleSheet.hairlineWidth,borderColor:C.line,borderRadius:radii.lg,backgroundColor:C.panel},devCard:{borderStyle:'dashed'},pressed:{opacity:.76},iconFrame:{width:40,height:40,alignItems:'center',justifyContent:'center'},icon:{width:32,height:32},copy:{flex:1,minWidth:0,gap:4},title:{...typography.bodyStrong,color:C.text},description:{...typography.caption,color:C.muted},chevron:{color:C.muted,fontSize:26},attentionDot:{width:10,height:10,borderRadius:5,backgroundColor:'#d93646',borderWidth:1,borderColor:'#09131f'}});}

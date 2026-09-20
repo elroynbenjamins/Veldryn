@@ -16,11 +16,16 @@ export interface CompanionVisualMetadata{
   rarityFrame?:string;summonEffect?:string;idleEffect?:string;profileFrame?:string;masteryMarker?:string;nameplateTreatment?:string;animationRef?:string;
   rarityIcon:string;rarityLabel:string;accessibilityLabel:string;reducedMotionFallback?:string;
 }
+export interface CompanionIdentityModifiers{
+  basicDamageMultiplier?:number;defenseMultiplier?:number;hasteBonus?:number;activeDamageMultiplier?:number;activeHealMultiplier?:number;activeShieldMultiplier?:number;activeCooldownMultiplier?:number;activeReflectPct?:number;activeExecuteBonus?:number;mitigationMultiplier?:number;utilityMultiplier?:number;
+}
+export interface CompanionIdentityProfile extends CompanionIdentityModifiers{activeName?:string;bond?:CompanionIdentityModifiers;}
 export interface CompanionServerDefinition{
   id:string;name:string;role:CompanionRole;rarity:CompanionRarity;originId:CompanionOriginId;
   baseStats:{hp:number;power:number;defense:number;attackSpeed:number};
   active:CompanionCombatAbilityDefinition;
   tags:string[];
+  identity?:CompanionIdentityProfile;
   visual?:CompanionVisualMetadata;
 }
 export interface CompanionTechniqueDefinition{

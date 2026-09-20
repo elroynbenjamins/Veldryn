@@ -61,7 +61,7 @@ export default function NativeVisualReview(){
  <View style={s.flex}>
  {section==='Login'?<AccountWelcomeScreen scene={STARTUP_SCENES[0]}><OnlineAccountPanel state={newGame(now)}/></AccountWelcomeScreen>:<>
  <GameTopBar state={state} nowMs={now} labelForDestination={x=>x} onNavigate={noop} onChangeDestinations={noop} onOpenActivity={()=>setSection(state.activity?.kind==='combat'?'Combat':'Skills')}/>
- {section==='Home'&&<HomeScreen state={state} preview={previewActivityReward(state,now)} onClaim={()=>setState(s=>claimActivity(s,now).state)} onStop={()=>setState(stopActivity)} onQueueRemove={noop} onQueueClear={noop} onQueueStart={noop} onNavigate={noop} onOpenPlanner={noop} onNavigateGoal={noop} onOpenCombat={()=>setSection('Combat')} onOpenSkill={()=>setSection('Skills')}/>} 
+ {section==='Home'&&<HomeScreen state={state} preview={previewActivityReward(state,now)} nowMs={now} onClaim={()=>setState(s=>claimActivity(s,now).state)} onStop={()=>setState(stopActivity)} onQueueRemove={noop} onQueueClear={noop} onQueueStart={noop} onNavigate={noop} onOpenPlanner={noop} onNavigateGoal={noop} onOpenCombat={()=>setSection('Combat')} onOpenSkill={()=>setSection('Skills')}/>} 
  {section==='Journal'&&<QuestScreen state={state} onClaim={noop} onClaimContract={noop} onNavigate={noop} onOpenWeeklyOrder={noop} onPinWeeklyOrder={noop} onQueueWeeklyOrder={noop} onStopWeeklyOrder={noop}/>} 
  {section==='Events'&&<EventScreen state={state} onChange={setState}/>} 
  {section==='Profile'&&<ScrollView contentContainerStyle={s.content}><ProfileEditor state={state} onChange={setState}/></ScrollView>} 

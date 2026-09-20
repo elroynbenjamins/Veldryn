@@ -131,6 +131,7 @@ const legacyTokenMap:Record<string,ThemeColorToken>={
   '#101724':'colors.panel','#09111c':'equipmentColors.stage','#273142':'colors.panel2','#f2d08d':'equipmentColors.goldSoft',
   '#172c3c':'equipmentColors.selected','rgba(7,17,28,.88)':'colors.panel2','rgba(18,57,78,.94)':'equipmentColors.selected',
   'rgba(5,12,20,.6)':'chrome.imageShade','rgba(7,12,20,.8)':'chrome.imageShadeStrong','#08111dcc':'chrome.imageLabelSurface',
+  '#06121d':'colors.bg','#1a1205':'colors.bg',
   'rgba(3,9,17,.58)':'chrome.imageShade',
 };
 

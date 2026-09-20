@@ -70,7 +70,7 @@ for(const rpc of [
 for(const [needle,label] of [
  ["interval '21 days'",'21-day inactivity threshold'],
  ["case candidate.role when 'officer' then 0 else 1 end",'Guild Officer-first succession'],
- ["order by candidate.joined_at,candidate.account_id",'oldest active Party successor'],
+ ['player_presence_5m','presence-heartbeat activity source'],
  ['player_activity_daily','server activity source'],
  ['last_sign_in_at','auth sign-in activity fallback'],
  ['social_activity_leadership_reconcile_v1','activity-triggered succession'],
@@ -83,6 +83,7 @@ for(const [needle,label] of [
  ['disband_party_v1','Party disband RPC'],
  ['party_leader_invitation_reconcile_v1','Party invite cleanup after leader change'],
 ])need(successionMigration,needle,label);
+if(successionMigration.includes('reconcile_party_leadership_v1'))throw new Error('21-day inactivity succession must remain Guild-specific');
 
 for(const rpc of [
  'guild_leadership_status_v1',

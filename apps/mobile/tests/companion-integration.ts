@@ -1,7 +1,7 @@
 import {createCharacter,newGame,claimActivity,claimQuest,startCombat,previewActivityReward} from '../src/core/game';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
 import {unlockCombatCompanion,equipCombatCompanion,companionCombatContribution,companionLevelCost,companionRemainingLevelCost,companionAscensionCost,applyCompanionBondXp,claimSanctuaryTraining,claimSanctuaryEssence} from '../src/core/combat-companions';
-import {refreshCompanions,companionOwned,companionCombatExecutor,recordCompanionActivity,companionView,companionUnlockFacts} from '../src/core/companion-runtime';
+import {companionAvailability,refreshCompanions,companionOwned,companionCombatExecutor,recordCompanionActivity,companionView,companionUnlockFacts,recommendedCompanionTrialTeam} from '../src/core/companion-runtime';
 import {migrateSave} from '../src/core/save-migrations';
 import {createSaveBackup,parseSaveBackup} from '../src/core/save-transfer';
 import {characterPermanentMultipliers} from '../src/core/permanent-boosts';
@@ -19,6 +19,7 @@ const now=Date.UTC(2026,8,13),ids=['UNIT_001','UNIT_002','UNIT_003'];
 function fixture(){let s=createCharacter(newGame(now),'IRONWARDEN','Companion Test');for(const id of ids)s=unlockCombatCompanion(s,id,now);s.character!.gold=100000;s.account.companionEssence=10000;s.account.bondstones=100;s.account.companionMaterials={IRONWOOD_FANG:100,RUNEBOUND_CORE:100,WISP_DUST:100,ASTER_IRON_INGOT:100,ECHO_QUARTZ:100,OATHGLASS_SHARD:100,OATHGLASS_FRAGMENT:100};return refreshCompanions(s,now);}
 const command=(s:GameState,type:string,args?:Record<string,unknown>,time=now)=>executeGameCommand(s,{type,args},time).state;
 const specialRequirement=COMPANION_SPECIAL_CHALLENGES.find(row=>row.id==='CHALLENGE_OATHGLASS_KNIGHTLING')!.requirements[0],specialRequirementProgress=companionUnlockRequirementProgress(specialRequirement,companionUnlockFacts(fixture()));ok(specialRequirementProgress.current===0&&specialRequirementProgress.total===20&&!specialRequirementProgress.complete,'special challenge requirement progress exposes current and target values');
+const suggestedTrialTeam=recommendedCompanionTrialTeam(fixture());ok(suggestedTrialTeam.ready&&suggestedTrialTeam.ids.length===3&&suggestedTrialTeam.power>0,'Trial guidance builds a complete available role team');ok(new Set(suggestedTrialTeam.ids.map(id=>companionServerDefinition(id)?.role)).size===3,'Trial guidance always covers Tank Damage Support');ok(companionAvailability(fixture(),'UNIT_001').status==='available','idle owned companion reports available');
 const permanentCompanions=COMBAT_COMPANIONS.filter(def=>def.origin.type!=='event'),eventCompanions=COMBAT_COMPANIONS.filter(def=>def.origin.type==='event');
 ok(COMBAT_COMPANIONS.length===34,'roster contains 24 permanent and 10 event companions');
 ok(permanentCompanions.length===24,'permanent companion count remains 24');
@@ -70,7 +71,7 @@ trial=command(trial,'companion_trial_floor',{id:run.runId,floor:1});ok(trial.acc
 rejects(()=>command(trial,'companion_trial_floor',{id:run.runId,floor:1}),'same floor cannot settle twice');
 const rolled=command(trial,'claim',undefined,Date.UTC(2026,9,1));ok(rolled.account.companionTrialProgress!.season.currentSeasonHighestFloor===0&&!rolled.account.companionTrialProgress!.season.activeRun,'UTC month resets Trial');ok(rolled.account.combatCompanionProgress!.UNIT_001.level===20,'month retains permanent progress');
 let missionState=fixture();missionState.account.combatCompanionProgress!.UNIT_001.level=5;missionState.account.companionSanctuary!.expeditionPensLevel=1;
-missionState=command(missionState,'companion_assignment_start',{id:'MISSION_SCOUT_2H',ids:['UNIT_001']});let assignment=missionState.account.companionAssignments![0];
+missionState=command(missionState,'companion_assignment_start',{id:'MISSION_SCOUT_2H',ids:['UNIT_001']});let assignment=missionState.account.companionAssignments![0];ok(companionAvailability(missionState,'UNIT_001').status==='expedition','assigned companion reports expedition status');const unavailableSuggestion=recommendedCompanionTrialTeam(missionState);ok(!unavailableSuggestion.ready&&unavailableSuggestion.missingRoles.includes('damage'),'Trial guidance reports a busy missing role');
 rejects(()=>command(missionState,'companion_equip',{id:'UNIT_001'}),'assigned companion cannot equip');rejects(()=>command(missionState,'companion_assignment_claim',{id:assignment.assignmentId}),'early claim rejected');
 missionState=parseSaveBackup(createSaveBackup(missionState));ok(missionState.account.companionAssignments![0].seed===assignment.seed,'mission seed retained');
 const finish=Date.parse(assignment.endsAt);missionState=command(missionState,'companion_assignment_claim',{id:assignment.assignmentId},finish);ok(missionState.account.companionAssignments![0].status==='claimed','completed assignment paid');

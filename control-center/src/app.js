@@ -15,6 +15,7 @@ const state = {
   templates: [],
   definitions: [],
   instances: [],
+  playerEvents: [],
   rewards: [],
   audits: [],
   operations: null,
@@ -231,11 +232,56 @@ function renderDashboard() {
     </div>`, 'Dashboard');
 }
 
+function playerEventPhase(row, nowMs = Date.now()) {
+  if (!row?.enabled) return 'disabled';
+  const startsAt = row.starts_at ? Date.parse(row.starts_at) : NaN;
+  const endsAt = row.ends_at ? Date.parse(row.ends_at) : NaN;
+  if (!Number.isFinite(startsAt) || !Number.isFinite(endsAt)) return 'needs_schedule';
+  if (nowMs < startsAt) return 'scheduled';
+  if (nowMs < endsAt) return 'live';
+  const configuredGraceDays = Math.max(0, Number(row.config?.claimGraceDays ?? 7) || 0);
+  const claimEnd = row.grace_ends_at ? Date.parse(row.grace_ends_at) : endsAt + configuredGraceDays * 86400000;
+  if (Number.isFinite(claimEnd) && nowMs < claimEnd) return 'claiming';
+  return 'expired';
+}
+function playerEventStatusPill(phase) {
+  const map = {
+    disabled:['bad','Off'], needs_schedule:['warn','Needs schedule'], scheduled:['info','Scheduled'],
+    live:['good','Live'], claiming:['warn','Claims open'], expired:['','Expired']
+  };
+  const [cls,label]=map[phase]||['',phase];
+  return `<span class="pill ${cls}">${h(label)}</span>`;
+}
 function renderEvents() {
   const rows = state.instances || [];
+  const playerRows = state.playerEvents || [];
   return shell(`
-    <div class="page-head"><div><div class="eyebrow">Schedule & lifecycle</div><h2>Events</h2><p>Scheduled, active, settling and historical Party Event instances. Definition snapshots remain immutable.</p></div><div class="actions"><button class="btn btn-primary" data-nav="builder">Create / schedule event</button></div></div>
-    <div class="card"><div class="card-head"><h3>Event calendar</h3><span class="pill">UTC authoritative</span></div><div class="card-body calendar">
+    <div class="page-head"><div><div class="eyebrow">Player events + Party Live-Ops</div><h2>Events</h2><p>Control the Event screen players see, then manage competitive Party Event instances separately.</p></div><div class="actions"><button class="btn btn-primary" data-nav="builder">Create Party Event</button></div></div>
+    <div class="card" style="margin-bottom:14px"><div class="card-head"><div><h3>Player Event screen</h3><div class="tiny muted">Annual/general events from <span class="mono">live_events</span>. This is the authority used by the mobile Event screen.</div></div><span class="pill">Server controlled</span></div><div class="card-body">
+      <div class="validation-item ok" style="margin-bottom:12px">Normal shutdown: use <strong>End now</strong>. Earning stops immediately while the claim window stays open. <strong>Hard off</strong> is an emergency master switch and also closes claims.</div>
+      <div class="list">${playerRows.length ? playerRows.map(row => {
+        const phase=playerEventPhase(row);
+        const claimEnd=row.grace_ends_at || (row.ends_at ? new Date(Date.parse(row.ends_at)+Math.max(0,Number(row.config?.claimGraceDays??7)||0)*86400000).toISOString() : null);
+        const canEnable=roleAtLeast('owner')&&phase==='disabled'&&row.starts_at&&row.ends_at;
+        const canGoLive=roleAtLeast('owner')&&phase!=='live';
+        return `<div class="list-row event-row ${h(phase)}">
+          <div style="min-width:0;flex:1"><div class="actions"><strong>${h(row.name||row.event_id)}</strong>${playerEventStatusPill(phase)}<span class="pill ${row.enabled?'good':'bad'}">Master ${row.enabled?'ON':'OFF'}</span></div>
+            <p><span class="mono">${h(row.event_id)}</span> · ${h(row.currency_id||'No currency')} · priority ${h(row.priority??0)}</p>
+            <p class="small muted">${row.starts_at&&row.ends_at?`${fmtDate(row.starts_at)} → ${fmtDate(row.ends_at)}`:'No runtime window configured yet.'}</p>
+            ${claimEnd? `<p class="tiny faint">Claims through ${fmtDate(claimEnd)} · ${utc(claimEnd)}</p>`:''}
+            <p class="tiny faint">Modules: ${h((row.modules||[]).join(', ')||'default')} · updated ${fmtDate(row.updated_at)}</p>
+          </div>
+          <div class="list-meta"><div class="actions" style="justify-content:flex-end">
+            ${roleAtLeast('editor')?`<button class="btn btn-sm btn-ghost" data-action="schedule-player-event" data-id="${attr(row.event_id)}">Schedule</button>`:''}
+            ${canEnable?`<button class="btn btn-sm" data-action="toggle-player-event" data-id="${attr(row.event_id)}" data-enabled="true">Enable schedule</button>`:''}
+            ${canGoLive?`<button class="btn btn-sm btn-primary" data-action="go-live-player-event" data-id="${attr(row.event_id)}">Go live now</button>`:''}
+            ${phase==='live'&&roleAtLeast('owner')?`<button class="btn btn-sm" data-action="end-player-event" data-id="${attr(row.event_id)}">End now</button>`:''}
+            ${row.enabled&&roleAtLeast('owner')?`<button class="btn btn-sm btn-danger" data-action="toggle-player-event" data-id="${attr(row.event_id)}" data-enabled="false">Hard off</button>`:''}
+          </div></div>
+        </div>`;
+      }).join('') : empty('No player events are registered. Apply the annual event catalog migration first.')}</div>
+    </div></div>
+    <div class="card"><div class="card-head"><div><h3>Party Event calendar</h3><div class="tiny muted">Competitive Party Live-Ops instances. These do not toggle the general mobile Event screen.</div></div><span class="pill">UTC authoritative</span></div><div class="card-body calendar">
       ${rows.length ? rows.map(row => `<div class="list-row event-row ${h(row.status)}">
         <div><div class="actions"><strong>${h(eventName(row))}</strong>${statusPill(row.status)}</div><p>${h(row.event_id)} · definition v${h(row.definition_version)} · ${fmtDate(row.starts_at)} → ${fmtDate(row.ends_at)}</p><p class="mono faint">${utc(row.starts_at)} → ${utc(row.ends_at)}</p></div>
         <div class="list-meta"><div class="actions" style="justify-content:flex-end">
@@ -245,7 +291,7 @@ function renderEvents() {
           ${['active','settling'].includes(row.status) && roleAtLeast('owner') ? `<button class="btn btn-sm btn-danger" data-action="cancel-event" data-id="${attr(row.id)}">Emergency cancel</button>` : ''}
           ${['finalized','cancelled'].includes(row.status) && roleAtLeast('editor') ? `<button class="btn btn-sm btn-ghost" data-action="archive-event" data-id="${attr(row.id)}">Archive</button>` : ''}
         </div></div>
-      </div>`).join('') : empty('No event instances found.')}
+      </div>`).join('') : empty('No Party Event instances found.') }
     </div></div>`, 'Events');
 }
 
@@ -699,7 +745,7 @@ async function loadCore() {
 }
 async function loadPageData(page = state.page) {
   if (page === 'dashboard') state.dashboard = await api('dashboard');
-  if (page === 'events') state.instances = await api('listInstances');
+  if (page === 'events') { const [instances,playerEvents]=await Promise.all([api('listInstances'),api('listPlayerEvents')]); state.instances=instances||[]; state.playerEvents=playerEvents||[]; }
   if (page === 'builder') {
     const [drafts,rewards] = await Promise.all([api('listDrafts'),api('listRewards')]);
     state.drafts = drafts || []; state.rewards = rewards || [];
@@ -885,6 +931,34 @@ app.addEventListener('click', async (event) => {
       const row=await api('cloneDefinitionToDraft',{eventId:el.dataset.id,version:Number(el.dataset.version)}); toast('Published definition cloned as next version.','success'); await loadPageData('builder'); state.currentDraftId=row.id; state.page='builder'; return render();
     }
     if (action === 'open-leaderboard' || action === 'open-event-stats') { state.page='leaderboards'; state.loading=true; render(); await loadPageData('leaderboards'); await loadLeaderboard(el.dataset.id); state.loading=false; return render(); }
+    if (action === 'schedule-player-event') {
+      const row=state.playerEvents.find(x=>x.event_id===el.dataset.id); if(!row)return;
+      const now=Date.now(), defaultStart=row.starts_at||new Date(now+3600000).toISOString(), defaultEnd=row.ends_at||new Date(now+14*86400000).toISOString();
+      const start=prompt('Event start (ISO 8601; UTC recommended):',new Date(defaultStart).toISOString()); if(!start)return;
+      const end=prompt('Event end (ISO 8601; UTC recommended):',new Date(defaultEnd).toISOString()); if(!end)return;
+      const grace=Number(prompt('Claim grace days after the event ends (0–30):',String(row.config?.claimGraceDays??7))); if(!Number.isInteger(grace)||grace<0||grace>30)throw new Error('Claim grace must be a whole number from 0 to 30.');
+      await api('schedulePlayerEvent',{eventId:row.event_id,startsAt:start,endsAt:end,claimGraceDays:grace}); toast('Player event schedule updated. Enable it when ready.','success'); return navigate('events');
+    }
+    if (action === 'toggle-player-event') {
+      const row=state.playerEvents.find(x=>x.event_id===el.dataset.id); if(!row)return; const enable=el.dataset.enabled==='true';
+      const reason=prompt(`${enable?'Enable':'HARD DISABLE'} ${row.name||row.event_id}. Reason (10+ characters):`,''); if(reason===null)return;
+      const warning=enable?'Enable this event using its saved schedule?':'HARD OFF immediately removes this event from players and closes its claim window. Use End now for a normal shutdown. Continue?';
+      if(!confirm(warning))return;
+      await api('setPlayerEventEnabled',{eventId:row.event_id,enabled:enable,reason}); toast(`Player event master switch ${enable?'enabled':'disabled'}.`,'success'); return navigate('events');
+    }
+    if (action === 'go-live-player-event') {
+      const row=state.playerEvents.find(x=>x.event_id===el.dataset.id); if(!row)return;
+      const days=Number(prompt('Run this event for how many days? (0.25–60)','14')); if(!Number.isFinite(days)||days<0.25||days>60)throw new Error('Duration must be between 0.25 and 60 days.');
+      const reason=prompt(`Reason for taking ${row.name||row.event_id} live now (10+ characters):`,'Manual Live-Ops activation'); if(reason===null)return;
+      if(!confirm(`Take ${row.name||row.event_id} live immediately for ${days} day(s)?`))return;
+      await api('goLivePlayerEvent',{eventId:row.event_id,durationDays:days,reason}); toast('Player event is live.','success'); return navigate('events');
+    }
+    if (action === 'end-player-event') {
+      const row=state.playerEvents.find(x=>x.event_id===el.dataset.id); if(!row)return;
+      const reason=prompt(`Reason for ending ${row.name||row.event_id} now (10+ characters):`,'Live-Ops event ended manually'); if(reason===null)return;
+      if(!confirm('End earning now? Players will keep the configured claim grace window.'))return;
+      await api('endPlayerEventNow',{eventId:row.event_id,reason}); toast('Event earning ended; claim window remains open.','success'); return navigate('events');
+    }
     if (action === 'cancel-event') {
       const row=state.instances.find(x=>x.id===el.dataset.id); const reason=row?.status==='scheduled' ? (prompt('Optional cancellation reason:','')||'') : prompt('Emergency cancellation reason (required, 10+ characters):','');
       if (reason===null) return; if (!confirm(`Cancel ${eventName(row)}? This is an operational action.`)) return;

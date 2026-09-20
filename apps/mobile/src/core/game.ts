@@ -586,24 +586,25 @@ export function craftRecipe(state:GameState,recipeId:string,nowMs=Date.now()):Ga
   if(r.requiresCraftedItemId&&!state.character.craftedNoviceItemIds?.includes(r.requiresCraftedItemId))throw new Error(`Craft ${itemDef(r.requiresCraftedItemId).name} first`);
   const sk=state.skills.find(x=>x.skillId===r.skillId);if(!sk||sk.level<r.level)throw new Error('Skill level too low');
   if(state.character.gold<r.gold)throw new Error('Not enough gold');
-  let inv=state.inventory.stacks,bank=state.bank.stacks;
-  let temp={...state,inventory:{...state.inventory,stacks:inv},bank:{...state.bank,stacks:bank}} as GameState;
+  const outputDef=itemDef(r.output.itemId),multipliers=characterPermanentMultipliers(state),baseXp=Math.floor(r.xp*multipliers.skillXpMultiplier);
+  const boosted=applyDailySupplyCraft(state,{seconds:r.seconds,outputQuantity:r.output.quantity,xp:baseXp,outputEligible:outputDef.type!=='gear'&&outputDef.type!=='tool'}),boostedState=boosted.state;
+  let inv=boostedState.inventory.stacks,bank=boostedState.bank.stacks;
+  let temp={...boostedState,inventory:{...boostedState.inventory,stacks:inv},bank:{...boostedState.bank,stacks:bank}} as GameState;
   for(const i of r.inputs){
     const consumed=consumeInventoryThenBank(temp,i.itemId,i.quantity);
     inv=consumed.inventory;bank=consumed.bank;
     temp={...temp,inventory:{...temp.inventory,stacks:inv},bank:{...temp.bank,stacks:bank}};
   }
-  const output=addBounded(inv,state.inventory.capacity,[r.output]);
+  const output=addBounded(inv,boostedState.inventory.capacity,[{...r.output,quantity:boosted.outputQuantity}]);
   inv=output.stacks;
   if(output.overflow.length){
-    const b=addBounded(bank,state.bank.capacity,output.overflow);bank=b.stacks;
+    const b=addBounded(bank,boostedState.bank.capacity,output.overflow);bank=b.stacks;
     if(b.overflow.length)throw new Error('Inventory and Bank are full');
   }
-  const multipliers=characterPermanentMultipliers(state);
-  const xp=sk.xp+Math.floor(r.xp*multipliers.skillXpMultiplier);
-  const next={...state,character:{...state.character,gold:state.character.gold-r.gold,...(r.noviceSetId?{craftedNoviceItemIds:[...new Set([...(state.character.craftedNoviceItemIds??[]),r.output.itemId])]}:{})},inventory:{...state.inventory,stacks:inv},bank:{...state.bank,stacks:bank},skills:state.skills.map(x=>x.skillId===r.skillId?{...x,xp,level:levelFromXp(xp)}:x)} as GameState;
-  const progressed=applyTrustedLongTermProgression(next,[{kind:'crafting',contentId:r.id,units:1}],undefined,nowMs,{accountId:longTermAccountScope(state),eventId:`craft:${state.character.id}:${r.id}:${nowMs}`}).state;
-  return itemDef(r.output.itemId).type==='gear'?recordCompanionActivity(refreshQuests(grantEventActivity(progressed,'crafting',nowMs)),'crafting',r.output.itemId,r.output.quantity,nowMs):refreshQuests(grantEventActivity(progressed,'crafting',nowMs))
+  const xp=sk.xp+boosted.xp;
+  const next={...boostedState,character:{...boostedState.character!,gold:boostedState.character!.gold-r.gold,...(r.noviceSetId?{craftedNoviceItemIds:[...new Set([...(boostedState.character!.craftedNoviceItemIds??[]),r.output.itemId])]}:{})},inventory:{...boostedState.inventory,stacks:inv},bank:{...boostedState.bank,stacks:bank},skills:boostedState.skills.map(x=>x.skillId===r.skillId?{...x,xp,level:levelFromXp(xp)}:x)} as GameState;
+  const progressed=applyTrustedLongTermProgression(next,[{kind:'crafting',contentId:r.id,units:1}],undefined,nowMs,{accountId:longTermAccountScope(boostedState),eventId:`craft:${state.character.id}:${r.id}:${nowMs}`}).state;
+  return outputDef.type==='gear'?recordCompanionActivity(refreshQuests(grantEventActivity(progressed,'crafting',nowMs)),'crafting',r.output.itemId,r.output.quantity,nowMs):refreshQuests(grantEventActivity(progressed,'crafting',nowMs))
 }
 
 /** Equip owned novice pieces atomically. No gear is granted, discarded or taken from overflow. */

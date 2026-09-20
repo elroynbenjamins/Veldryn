@@ -32,6 +32,15 @@ for(const role of ['damage','tank','support'] as CompanionRole[]){
 // Tank/support actives must be meaningful in standalone combat, unlike the legacy assist coefficients.
 for(const id of ['UNIT_002','UNIT_003','UNIT_006','UNIT_008']){const p=maxed(id),c=buildOwnedCompanionCombatant(p,{mode:'companion_trial'}),fx=c.abilities[0].effects[0],amount=c.stats.healingPower*(fx.coeff??0)+(fx.flat??0);if(fx.kind==='shield'||fx.kind==='heal')ok(amount>=c.stats.maxHp*.04,`${id} standalone ${fx.kind} is still negligible`);}
 
+// Authored regional/event identities must reach the actual combat snapshot rather than existing as UI-only flavor.
+const identityProgress=(id:string,bond=true):OwnedCompanionSnapshot=>({...maxed(id),selectedTechniqueId:undefined,bondLevel:bond?10:9,bondXp:bond?2520:1990,bondTraitUnlocked:bond});
+const dune=buildOwnedCompanionCombatant(identityProgress('UNIT_013'),{mode:'companion_trial'}),duneFx=dune.abilities[0].effects[0];ok(dune.abilities[0].name==='Venom Pounce','Dune Stalker active identity missing');ok((duneFx.executeBonus??0)>=.08,'Dune Stalker execute identity missing');
+const solar=buildOwnedCompanionCombatant(identityProgress('UNIT_015'),{mode:'companion_trial'}),solarFx=solar.abilities[0].effects[0];ok(solar.abilities[0].name==='Solar Carapace','Solar Scarab active identity missing');ok((solarFx.shieldReflectPct??0)>=.12,'Solar Scarab reflection identity missing');
+const bell=buildOwnedCompanionCombatant(identityProgress('UNIT_018'),{mode:'companion_trial'});ok(bell.abilities[0].name==='Resonant Chime'&&bell.abilities[0].cooldownMs<=21600,'Bell Sprite cadence identity missing');
+const bloom=buildOwnedCompanionCombatant(identityProgress('EVT_UNIT_003'),{mode:'companion_trial'}),bloomFx=bloom.abilities[0].effects[0];ok(bloom.abilities[0].name==='Living Bastion'&&(bloomFx.value??0)<=-.085,'Bloomwarden mitigation identity missing');
+const wyrmNoBond=buildOwnedCompanionCombatant(identityProgress('UNIT_020',false),{mode:'companion_trial'}),wyrmBond=buildOwnedCompanionCombatant(identityProgress('UNIT_020',true),{mode:'companion_trial'});ok((wyrmBond.abilities[0].effects[0].coeff??0)>(wyrmNoBond.abilities[0].effects[0].coeff??0),'Wyrm Echo Bond identity does not improve active damage');
+ok(companionServerDefinition('EVT_UNIT_001')?.active.name==='First Dawn','Event companion authored active name missing');
+
 // Repeat Trials remain useful for combat XP/Bond but are not an infinite Essence faucet.
 for(const f of [1,10,20,30]){const r=companionTrialReward(f,false,f%5===0);ok(r.companionEssence===0,'Repeat Trial Essence faucet returned');ok(r.bondstones===0,'Repeat Trial Bondstones returned');ok(r.gold<=120,'Repeat Trial Gold too high');}
 

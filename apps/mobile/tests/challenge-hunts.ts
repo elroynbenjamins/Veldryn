@@ -38,6 +38,6 @@ const nemesisKey=challengeHuntClearKey(monster.id,'nemesis');ok(reward.challenge
 const command=executeGameCommand(state,{type:'start',args:{kind:'combat',id:monster.id,challengeId:'hardened'}},now);
 ok(command.state.activity?.combatChallengeId==='hardened','Server command path must preserve Challenge Hunt tier');
 ok(!!command.state.activity?.combatAffixId,'Server command path must authoritatively snapshot a Challenge Hunt affix');
-rejects(()=>validateGameCommand({type:'start',args:{kind:'combat',id:monster.id,challengeId:'invalid'}}),'Unknown Challenge Hunt tier must reject');
+rejects(()=>executeGameCommand(state,{type:'start',args:{kind:'combat',id:monster.id,challengeId:'invalid'}},now),'Unknown Challenge Hunt tier must reject at authoritative execution');
 rejects(()=>executeGameCommand(state,{type:'start',args:{kind:'gathering',id:'GREENWOOD_TREE',challengeId:'ferocious'}},now),'Challenge tier cannot be attached to gathering');
 console.log('PASS: Challenge Hunts are mastery-gated, harder, rewarding, first-clear safe and server-authoritative');

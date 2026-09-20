@@ -22,7 +22,7 @@ export const COMPANION_STAGE_CAPS:Record<CombatCompanionRarity,readonly [number,
   prestige:[10,20,25,35],
 };
 
-export const COMPANION_LEVEL_CURVE={baseXp:65,xpGrowth:1.16,goldBase:38,goldGrowth:1.24,essenceBase:4,essenceGrowth:1.19} as const;
+export const COMPANION_LEVEL_CURVE={baseXp:65,xpGrowth:1.16,goldBase:38,goldGrowth:1.21,essenceBase:4,essenceGrowth:1.16} as const;
 export const COMPANION_BOND_CONFIG={
   maxLevel:10,
   // cumulative XP required for Bond Levels 1-10

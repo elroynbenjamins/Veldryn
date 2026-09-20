@@ -1,16 +1,20 @@
 import {useState} from 'react';
 import {ActivityIndicator,Pressable,StyleSheet,Text} from 'react-native';
-import {C,radii,spacing,touchTargetPreferred,typography} from '../theme/theme';
+import {radii,spacing,touchTargetPreferred,typography} from '../theme/theme';
+import {useGameTheme} from '../theme/ThemeContext';
 
 type Tone='primary'|'secondary'|'danger';
 type Props={title:string;onPress:()=>void;disabled?:boolean;loading?:boolean;selected?:boolean;tone?:Tone;compact?:boolean};
 export function GameButton({title,onPress,disabled=false,loading=false,selected,tone='primary',compact=false}:Props){
+  const C=useGameTheme();
   const [focused,setFocused]=useState(false),inactive=disabled||loading;
+  const toneStyle=tone==='primary'?{borderColor:C.primaryButtonBorder,backgroundColor:C.primaryButton}:tone==='danger'?{borderColor:C.dangerButtonBorder,backgroundColor:C.dangerButton}:{borderColor:C.secondaryButtonBorder,backgroundColor:C.secondaryButton};
+  const labelColor=tone==='primary'?C.primaryButtonText:tone==='danger'?C.dangerButtonText:C.secondaryButtonText;
   return <Pressable accessibilityRole="button" accessibilityLabel={title} accessibilityState={{disabled:inactive,busy:loading,selected}}
     disabled={inactive} onPress={onPress} onFocus={()=>setFocused(true)} onBlur={()=>setFocused(false)}
-    style={({pressed})=>[s.button,compact&&s.compact,s[tone],focused&&s.focused,pressed&&!inactive&&s.pressed,inactive&&s.disabled]}>
-    {loading&&<ActivityIndicator color={C.text} size="small"/>}
-    <Text textBreakStrategy="balanced" android_hyphenationFrequency="normal" style={[s.label,tone==='danger'&&s.dangerText]}>{title}</Text>
+    style={({pressed})=>[s.button,compact&&s.compact,toneStyle,focused&&{borderColor:C.selectionLine},pressed&&!inactive&&s.pressed,inactive&&s.disabled]}>
+    {loading&&<ActivityIndicator color={labelColor} size="small"/>}
+    <Text textBreakStrategy="balanced" android_hyphenationFrequency="normal" style={[s.label,{color:labelColor}]}>{title}</Text>
   </Pressable>;
 }
 const s=StyleSheet.create({

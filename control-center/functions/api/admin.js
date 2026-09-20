@@ -359,13 +359,15 @@ async function listPlayerEvents(env) {
   return await list(env, 'live_events', 'select=event_id,name,currency_id,enabled,starts_at,ends_at,grace_ends_at,priority,modules,config,updated_at&order=priority.desc,name.asc&limit=100') ?? [];
 }
 
-async function assertNoPlayerEventOverlap(env, eventId, startsAtMs, endsAtMs) {
-  const rows = await list(env, 'live_events', 'select=event_id,name,enabled,starts_at,ends_at&enabled=eq.true&limit=100');
+async function assertNoPlayerEventOverlap(env, eventId, startsAtMs, endsAtMs, graceEndsAtMs = endsAtMs) {
+  const rows = await list(env, 'live_events', 'select=event_id,name,enabled,starts_at,ends_at,grace_ends_at,config&enabled=eq.true&limit=100');
   for (const row of rows ?? []) {
     if (row.event_id === eventId || !row.starts_at || !row.ends_at) continue;
     const rowStart = Date.parse(row.starts_at), rowEnd = Date.parse(row.ends_at);
+    const rowGraceEnd = row.grace_ends_at ? Date.parse(row.grace_ends_at) : rowEnd + playerEventGraceDays(row) * 86400000;
     if (!Number.isFinite(rowStart) || !Number.isFinite(rowEnd)) continue;
-    if (startsAtMs < rowEnd && rowStart < endsAtMs) throw new Error(`player_event_overlap:${row.event_id}`);
+    const rowVisibleEnd = Number.isFinite(rowGraceEnd) ? rowGraceEnd : rowEnd;
+    if (startsAtMs < rowVisibleEnd && rowStart < graceEndsAtMs) throw new Error(`player_event_visibility_overlap:${row.event_id}`);
   }
 }
 
@@ -379,12 +381,13 @@ async function schedulePlayerEvent(env, actor, payload) {
   if (end.ms <= start.ms) throw new Error('player_event_end_before_start');
   const graceDays = payload.claimGraceDays === undefined ? playerEventGraceDays(row) : Number(payload.claimGraceDays);
   if (!Number.isInteger(graceDays) || graceDays < 0 || graceDays > 30) throw new Error('player_event_claim_grace_invalid');
-  if (row.enabled) await assertNoPlayerEventOverlap(env, eventId, start.ms, end.ms);
-  const graceEndsAt = new Date(end.ms + graceDays * 86400000).toISOString();
+  const graceEndsAtMs = end.ms + graceDays * 86400000;
+  if (row.enabled) await assertNoPlayerEventOverlap(env, eventId, start.ms, end.ms, graceEndsAtMs);
+  const graceEndsAt = new Date(graceEndsAtMs).toISOString();
   const rows = await supabaseFetch(env, '/rest/v1/live_events', {
     method: 'PATCH',
     query: `event_id=eq.${encodeEq(eventId)}`,
-    body: { starts_at: start.iso, ends_at: end.iso, grace_ends_at: graceEndsAt, updated_at: new Date().toISOString() },
+    body: { starts_at: start.iso, ends_at: end.iso, grace_ends_at: graceEndsAt, config: { ...(row.config ?? {}), claimGraceDays: graceDays }, updated_at: new Date().toISOString() },
     prefer: 'return=representation',
   });
   await audit(env, actor, 'player_event.schedule', 'player_event', eventId, {
@@ -408,7 +411,7 @@ async function setPlayerEventEnabled(env, actor, payload) {
     if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) throw new Error('player_event_schedule_invalid');
     const graceEndMs = row.grace_ends_at ? Date.parse(row.grace_ends_at) : endMs + playerEventGraceDays(row) * 86400000;
     if (Number.isFinite(graceEndMs) && graceEndMs <= Date.now()) throw new Error('player_event_window_expired_use_go_live');
-    await assertNoPlayerEventOverlap(env, eventId, startMs, endMs);
+    await assertNoPlayerEventOverlap(env, eventId, startMs, endMs, Number.isFinite(graceEndMs) ? graceEndMs : endMs);
   }
   const rows = await supabaseFetch(env, '/rest/v1/live_events', {
     method: 'PATCH',
@@ -442,10 +445,11 @@ async function goLivePlayerEvent(env, actor, payload) {
     endMs = startMs + Math.round(durationDays * 86400000);
   }
   if (endMs <= startMs) throw new Error('player_event_end_before_start');
-  await assertNoPlayerEventOverlap(env, eventId, startMs, endMs);
   const graceDays = playerEventGraceDays(row);
+  const graceEndsAtMs = endMs + graceDays * 86400000;
+  await assertNoPlayerEventOverlap(env, eventId, startMs, endMs, graceEndsAtMs);
   const startsAt = new Date(startMs).toISOString(), endsAt = new Date(endMs).toISOString();
-  const graceEndsAt = new Date(endMs + graceDays * 86400000).toISOString();
+  const graceEndsAt = new Date(graceEndsAtMs).toISOString();
   const rows = await supabaseFetch(env, '/rest/v1/live_events', {
     method: 'PATCH',
     query: `event_id=eq.${encodeEq(eventId)}`,

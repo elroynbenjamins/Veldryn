@@ -9,7 +9,7 @@ export interface CharacterLoadoutPreset{id:string;slotIndex:number;name:string;c
 export type GemStat = 'attack'|'defense'|'hp';
 export interface GearEnhancementState { rank:number; failures:number; gemIds:string[]; }
 export type ActivityKind = 'combat' | 'mining' | 'woodcutting' | 'fishing' | 'herbalism' | 'alchemy' | 'faith' | 'training' | 'hunting' | 'exploration';
-export type CombatChallengeId='ferocious'|'hardened'|'nemesis';
+export type CombatChallengeId='ferocious'|'hardened'|'nemesis'|'apex';
 export type CombatAffixId='bloodthirsty'|'ironhide'|'colossal'|'cursed';
 export type GatheringSkillId='mining'|'woodcutting'|'fishing'|'herbalism';
 export type SeasonId='spring'|'summer'|'autumn'|'winter';

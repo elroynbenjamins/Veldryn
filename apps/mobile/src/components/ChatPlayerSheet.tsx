@@ -2,7 +2,8 @@ import {useEffect,useState} from 'react';
 import {ActivityIndicator,Alert,Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {
  cancelFriendRequest,friendRelationshipState,removeFriend,respondFriendRequest,sendFriendRequest,setPlayerBlocked,
- type FriendRelationship,
+ sendPartyInvitation,sendGuildInvitation,socialInviteCapabilities,
+ type FriendRelationship,type SocialInviteCapabilities,
 } from '../online/social';
 import {publicPlayerProfileV43,type PublicPlayerProfileV43} from '../online/profile-extension-v43';
 import {C,radii,spacing,typography} from '../theme/theme';
@@ -28,6 +29,7 @@ export function ChatPlayerSheet({
  const {session}=useAuthSession();
  const [profile,setProfile]=useState<PublicPlayerProfileV43|null>(null),[loading,setLoading]=useState(false),[busy,setBusy]=useState(false),[unavailable,setUnavailable]=useState(false),[loadError,setLoadError]=useState('');
  const [relationship,setRelationship]=useState<{relationship:FriendRelationship;requestId?:string}>({relationship:'none'}),[relationshipLoading,setRelationshipLoading]=useState(false),[relationshipError,setRelationshipError]=useState('');
+ const [inviteCapabilities,setInviteCapabilities]=useState<SocialInviteCapabilities|null>(null),[inviteLoading,setInviteLoading]=useState(false),[inviteError,setInviteError]=useState('');
 
  const isSelf=!!session?.user.id&&!!message&&message.account_id===session.user.id;
  const setRelationshipAndNotify=(next:{relationship:FriendRelationship;requestId?:string})=>{setRelationship(next);if(message)onRelationshipChanged?.(message.account_id,next.relationship);};
@@ -39,15 +41,24 @@ export function ChatPlayerSheet({
   catch(error){setRelationship({relationship:message.relationship??'none'});setRelationshipError(error instanceof Error?error.message:'Friend status could not refresh.')}
   finally{setRelationshipLoading(false)}
  }
+ async function loadInviteCapabilities(){
+  if(!message||isSelf){setInviteCapabilities(null);setInviteError('');return;}
+  setInviteLoading(true);setInviteError('');
+  try{setInviteCapabilities(await socialInviteCapabilities(message.account_id))}
+  catch(error){setInviteCapabilities(null);setInviteError(error instanceof Error?error.message:'Invitation actions are unavailable.')}
+  finally{setInviteLoading(false)}
+ }
  useEffect(()=>{
   let active=true;
-  if(!message){setProfile(null);setUnavailable(false);setLoadError('');setRelationship({relationship:'none'});setRelationshipError('');return;}
+  if(!message){setProfile(null);setUnavailable(false);setLoadError('');setRelationship({relationship:'none'});setRelationshipError('');setInviteCapabilities(null);setInviteError('');return;}
   setLoading(true);setUnavailable(false);setLoadError('');
   void publicPlayerProfileV43(message.account_id).then(row=>{if(!active)return;setProfile(row);setUnavailable(!row)}).catch(error=>{if(active){setProfile(null);setLoadError(error instanceof Error?error.message:'Unable to load this player profile.')}}).finally(()=>{if(active)setLoading(false)});
-  if(message.account_id===session?.user.id){setRelationship({relationship:'none'});setRelationshipError('');}
+  if(message.account_id===session?.user.id){setRelationship({relationship:'none'});setRelationshipError('');setInviteCapabilities(null);setInviteError('');}
   else{
    setRelationshipLoading(true);setRelationshipError('');
    void friendRelationshipState(message.account_id).then(next=>{if(active){setRelationship(next);onRelationshipChanged?.(message.account_id,next.relationship)}}).catch(error=>{if(active){setRelationship({relationship:message.relationship??'none'});setRelationshipError(error instanceof Error?error.message:'Friend status could not refresh.')}}).finally(()=>{if(active)setRelationshipLoading(false)});
+   setInviteLoading(true);setInviteError('');
+   void socialInviteCapabilities(message.account_id).then(next=>{if(active)setInviteCapabilities(next)}).catch(error=>{if(active){setInviteCapabilities(null);setInviteError(error instanceof Error?error.message:'Invitation actions are unavailable.')}}).finally(()=>{if(active)setInviteLoading(false)});
   }
   return()=>{active=false};
  },[message?.id,message?.account_id,session?.user.id]);
@@ -62,12 +73,15 @@ export function ChatPlayerSheet({
  async function acceptRequest(){if(!relationship.requestId){await loadRelationship();return;}await runRelationship(async()=>{await respondFriendRequest(relationship.requestId!,true);setRelationshipAndNotify({relationship:'friend'});});}
  async function declineRequest(){if(!relationship.requestId){await loadRelationship();return;}await runRelationship(async()=>{await respondFriendRequest(relationship.requestId!,false);setRelationshipAndNotify({relationship:'none'});});}
  function confirmBlock(){Alert.alert('Block '+target.sender_name+'?','Their messages will be hidden and they will be removed from your social lists.',[{text:'Cancel',style:'cancel'},{text:'Block',style:'destructive',onPress:async()=>{setBusy(true);try{await setPlayerBlocked(target.account_id,true);setRelationshipAndNotify({relationship:'none'});onBlocked(target.account_id);onClose();}catch(error){Alert.alert('Block player',error instanceof Error?error.message:'Unable to block player.');}finally{setBusy(false)}}}]);}
+ async function inviteToParty(){if(busy)return;setBusy(true);try{const result=await sendPartyInvitation(target.account_id);Alert.alert('Party invitation',result.status==='already_pending'?'A Party invitation is already pending.':'Party invitation sent for 24 hours.');await loadInviteCapabilities()}catch(error){Alert.alert('Party invitation',error instanceof Error?error.message:'Unable to send Party invitation.')}finally{setBusy(false)}}
+ async function inviteToGuild(){if(busy)return;setBusy(true);try{const result=await sendGuildInvitation(target.account_id);Alert.alert('Guild invitation',result.status==='already_pending'?'A Guild invitation is already pending.':'Guild invitation sent for 24 hours.');await loadInviteCapabilities()}catch(error){Alert.alert('Guild invitation',error instanceof Error?error.message:'Unable to send Guild invitation.')}finally{setBusy(false)}}
 
  const achievementEntries=profile?.achievementShowcaseIds.map(id=>{const prestige=profileAchievementPrestige(id);return {key:id,label:profileAchievementLabel(id),prestige:prestige.tone,badge:prestige.badge}})??[];
  const recordPrestige=profileRecordPrestige();
  const recordEntries=profile?.recordShowcaseIds.map(id=>{const record=profile.recordEntries?.[id];return {key:id,label:profileRecordLabel(id),value:record?formatProfileRecordValue(id,record.value):'—',meta:record?.contextLabel,prestige:recordPrestige.tone,badge:recordPrestige.badge}})??[];
  const collectionEntries=profile?.collectionShowcase.map(ref=>{const prestige=profileCollectionPrestige(ref);return {key:ref.kind+':'+ref.id,label:profileCollectionLabel(ref),meta:ref.kind.replace(/_/g,' '),art:profileShowcaseArt(ref),artMode:ref.kind==='background'?'cover' as const:'contain' as const,prestige:prestige.tone,badge:prestige.badge}})??[];
  const relationshipPresentation=friendRelationshipActionPresentation(relationship.relationship);
+ const showInviteActions=!!inviteCapabilities&&(inviteCapabilities.party.available||inviteCapabilities.party.pending||inviteCapabilities.guild.available||inviteCapabilities.guild.pending);
 
  return <Modal visible transparent animationType="fade" onRequestClose={onClose}><View style={s.scrim}><Pressable accessibilityLabel="Close player profile" onPress={onClose} style={StyleSheet.absoluteFill}/><View accessibilityViewIsModal style={s.sheet}>
   <View style={s.handle}/><View style={s.top}><Text style={s.kicker}>PLAYER PROFILE</Text><Pressable accessibilityRole="button" accessibilityLabel="Close player profile" onPress={onClose} style={s.close}><Text style={s.closeText}>×</Text></Pressable></View>
@@ -90,6 +104,10 @@ export function ChatPlayerSheet({
     {relationship.relationship==='incoming_pending'?<><View style={s.primaryAction}><GameButton title={relationship.requestId?'Accept request':'Refresh request'} disabled={busy||relationshipLoading} onPress={()=>void acceptRequest()}/></View><View style={s.secondaryAction}><GameButton title="Decline" tone="secondary" disabled={busy||relationshipLoading||!relationship.requestId} onPress={()=>void declineRequest()}/></View></>:null}
     <Pressable accessibilityRole="button" disabled={busy} onPress={confirmBlock} style={({pressed})=>[s.blockButton,(pressed||busy)&&s.pressed]}><Text style={s.blockText}>Block</Text></Pressable>
    </View>
+   {showInviteActions?<><View style={s.inviteHead}><Text style={s.hint}>DIRECT INVITATIONS</Text>{inviteLoading?<ActivityIndicator size="small" color={C.info}/>:null}</View><View style={s.actions}>
+    {inviteCapabilities?.party.available?<View style={s.primaryAction}><GameButton title="Invite to Party" tone="secondary" disabled={busy||inviteLoading} onPress={()=>void inviteToParty()}/></View>:inviteCapabilities?.party.pending?<View style={s.primaryAction}><GameButton title="Party invite sent" tone="secondary" disabled onPress={()=>{}}/></View>:null}
+    {inviteCapabilities?.guild.available?<View style={s.primaryAction}><GameButton title="Invite to Guild" tone="secondary" disabled={busy||inviteLoading} onPress={()=>void inviteToGuild()}/></View>:inviteCapabilities?.guild.pending?<View style={s.primaryAction}><GameButton title="Guild invite sent" tone="secondary" disabled onPress={()=>{}}/></View>:null}
+   </View></>:inviteError?<Text style={s.inviteError}>Direct invitations are temporarily unavailable.</Text>:null}
   </View>}
  </View></View></Modal>;
 }
@@ -99,6 +117,6 @@ const s=StyleSheet.create({
  limitedCard:{gap:10,padding:spacing.md,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2},limitedCopy:{gap:3},limitedText:{...typography.body,color:C.muted,lineHeight:20},privateTitle:{...typography.title,color:C.text},
  bioCard:{gap:3,padding:10,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2},bioLabel:{fontSize:8,color:C.accent,fontWeight:'900',letterSpacing:.75},bio:{...typography.body,color:C.text,lineHeight:20},
  selfNotice:{gap:2,marginTop:spacing.sm,padding:spacing.sm,borderWidth:1,borderColor:C.info,borderRadius:radii.md,backgroundColor:'#102536'},selfNoticeLabel:{...typography.caption,color:C.info,fontWeight:'900',letterSpacing:.8},selfNoticeText:{...typography.caption,color:C.muted},
- actionArea:{gap:6,marginTop:spacing.sm},actionHead:{minHeight:28,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},hint:{...typography.caption,color:C.muted,textTransform:'uppercase',letterSpacing:.8},relationshipPill:{minHeight:24,minWidth:82,alignItems:'center',justifyContent:'center',paddingHorizontal:7,paddingVertical:3,borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.panel2},relationshipFriend:{borderColor:C.good,backgroundColor:'#152b20'},relationshipText:{fontSize:7.5,color:C.muted,fontWeight:'900',letterSpacing:.45},relationshipFriendText:{color:C.good},relationshipError:{fontSize:9,lineHeight:12,color:C.warning},
+ actionArea:{gap:6,marginTop:spacing.sm},actionHead:{minHeight:28,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},inviteHead:{minHeight:24,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,marginTop:2},inviteError:{fontSize:9,lineHeight:12,color:C.muted},hint:{...typography.caption,color:C.muted,textTransform:'uppercase',letterSpacing:.8},relationshipPill:{minHeight:24,minWidth:82,alignItems:'center',justifyContent:'center',paddingHorizontal:7,paddingVertical:3,borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.panel2},relationshipFriend:{borderColor:C.good,backgroundColor:'#152b20'},relationshipText:{fontSize:7.5,color:C.muted,fontWeight:'900',letterSpacing:.45},relationshipFriendText:{color:C.good},relationshipError:{fontSize:9,lineHeight:12,color:C.warning},
  actions:{flexDirection:'row',flexWrap:'wrap',gap:6},primaryAction:{flex:1,minWidth:124},secondaryAction:{minWidth:92},blockButton:{minWidth:76,minHeight:44,alignItems:'center',justifyContent:'center',paddingHorizontal:10,borderRadius:radii.md,backgroundColor:'#1a2430',borderWidth:StyleSheet.hairlineWidth,borderColor:C.line},blockText:{...typography.bodyStrong,color:C.bad},pressed:{opacity:.62},
 });

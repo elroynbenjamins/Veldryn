@@ -6,7 +6,7 @@ import {GameButton} from './GameButton';
 import {radii,spacing,typography,equipmentTheme,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 
-export function ActionQueuePanel({state,onRemove,onClear,onStartNext}:{state:GameState;onRemove:(index:number)=>void;onClear:()=>void;onStartNext:()=>void}){
+export function ActionQueuePanel({state,onRemove,onMove,onClear,onStartNext}:{state:GameState;onRemove:(index:number)=>void;onMove:(index:number,direction:'up'|'down')=>void;onClear:()=>void;onStartNext:()=>void}){
   const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
  const queue=normalizeActivityQueue(state.character?.activityQueue),paused=state.character?.activityQueuePausedReason,handoff=activityQueueHandoffStatus(state);
  if(!queue.length)return null;
@@ -14,14 +14,14 @@ export function ActionQueuePanel({state,onRemove,onClear,onStartNext}:{state:Gam
   <View style={s.header}><View style={s.flex}><Text style={s.kicker}>ACTION QUEUE · {queue.length}/{MAX_ACTIVITY_QUEUE}</Text><Text style={s.sub}>Planned stops advance automatically. Safety stops pause the queue.</Text></View>{queue.length>1&&<View style={s.clear}><GameButton compact title="Clear" tone="secondary" onPress={onClear}/></View>}</View>
   {paused&&<View style={s.pause}><Text style={s.pauseTitle}>QUEUE PAUSED</Text><Text style={s.pauseText}>{paused}</Text></View>}
   {!paused&&state.activity&&<View style={handoff.armed?s.handoff:s.waiting}><Text style={handoff.armed?s.handoffTitle:s.waitingTitle}>{handoff.armed?'HANDOFF ARMED':'QUEUE WAITING'}</Text><Text style={s.pauseText}>{handoff.armed?`${handoff.sourceLabel} → ${handoff.nextLabel}`:'The current activity keeps running until a Hunt Goal or non-safety Idle Rule stops it.'}</Text>{handoff.armed&&handoff.safetyEnabled?<Text style={s.safety}>Food/storage safety still pauses instead of advancing.</Text>:null}</View>}
-  {queue.map((entry,index)=><View key={`${index}:${entry.kind}:${entry.targetId}`} style={s.row}><View style={s.index}><Text style={s.indexText}>{index+1}</Text></View><View style={s.flex}><Text numberOfLines={1} style={s.name}>{activityQueueLabel(entry)}</Text><Text style={s.meta}>{entry.kind==='combat'?'Hunt':'Gathering'}{index===0?' · next':''}</Text></View><View style={s.remove}><GameButton compact title="Remove" tone="secondary" onPress={()=>onRemove(index)}/></View></View>)}
+  {queue.map((entry,index)=><View key={`${index}:${entry.kind}:${entry.targetId}`} style={s.row}><View style={s.index}><Text style={s.indexText}>{index+1}</Text></View><View style={s.flex}><Text numberOfLines={1} style={s.name}>{activityQueueLabel(entry)}</Text><Text style={s.meta}>{entry.kind==='combat'?'Hunt':'Gathering'}{index===0?' · next':''}</Text></View><View style={s.controls}><View style={s.move}><GameButton compact title="Up" disabled={index===0} tone="secondary" onPress={()=>onMove(index,'up')}/></View><View style={s.move}><GameButton compact title="Down" disabled={index===queue.length-1} tone="secondary" onPress={()=>onMove(index,'down')}/></View><View style={s.remove}><GameButton compact title="Remove" tone="secondary" onPress={()=>onRemove(index)}/></View></View></View>)}
   {!state.activity&&<GameButton title="Start next queued action" onPress={onStartNext}/>}
  </View>;
 }
 
 function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);return StyleSheet.create({
  panel:{gap:spacing.sm,padding:spacing.sm,borderWidth:1,borderColor:equipmentColors.selectedLine,borderRadius:radii.md,backgroundColor:C.panel},
- header:{flexDirection:'row',alignItems:'center',gap:spacing.sm},flex:{flex:1,minWidth:0},clear:{width:78},remove:{width:88},
+ header:{flexDirection:'row',alignItems:'center',gap:spacing.sm},flex:{flex:1,minWidth:0},clear:{width:78},controls:{flexDirection:'row',alignItems:'center',gap:4},move:{width:54},remove:{width:78},
  kicker:{...typography.caption,color:equipmentColors.goldSoft,fontWeight:'900',letterSpacing:.8},sub:{...typography.caption,color:C.muted},
  row:{minHeight:52,flexDirection:'row',alignItems:'center',gap:spacing.sm,padding:spacing.sm,borderRadius:radii.sm,backgroundColor:C.panel2},
  index:{width:28,height:28,alignItems:'center',justifyContent:'center',borderRadius:14,borderWidth:1,borderColor:C.info},indexText:{...typography.caption,color:C.info,fontWeight:'900'},

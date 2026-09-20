@@ -89,6 +89,13 @@ function reward(state:GameState,r:{gold?:number;companionEssence?:number;bondsto
   for(const [id,n] of Object.entries(r.materials??{}))e.materials[id]=(e.materials[id]??0)+n;
   return applyEconomy(state,e);
 }
+function companionMetric(state:GameState,key:string,amount=1):GameState{
+  const metrics={...(state.account.longTermMetrics??{})};metrics[key]=(metrics[key]??0)+amount;
+  return {...state,account:{...state.account,longTermMetrics:metrics}};
+}
+function companionMetricMany(state:GameState,entries:Record<string,number>):GameState{
+  let next=state;for(const [key,value] of Object.entries(entries))if(value)next=companionMetric(next,key,value);return next;
+}
 function setOwned(state:GameState,owned:Record<string,OwnedCompanionSnapshot>):GameState {
   return {...state,account:{...state.account,unlockedCombatCompanionIds:Object.keys(owned),combatCompanionProgress:Object.fromEntries(Object.entries(owned).map(([id,p])=>[id,{...state.account.combatCompanionProgress?.[id],...p}]))}};
 }
@@ -184,7 +191,10 @@ export function executeCompanionActivity(input:GameState,type:string,a:Record<st
       state.account.companionBondRewardClaims=[...claims,key];break;
     }
     case 'companion_trial_start':{
-      const r=startCompanionTrial(trialInput,idsArg(a),seed,[],a.floor===undefined?undefined:Number(a.floor));state.account.companionTrialProgress=r.progress;break;
+      const ids=idsArg(a),r=startCompanionTrial(trialInput,ids,seed,[],a.floor===undefined?undefined:Number(a.floor));state.account.companionTrialProgress=r.progress;
+      state=companionMetricMany(state,{'companions.trial.runs_started':1,'companions.trial.start_team_power_total':r.teamPower});
+      for(const id of ids)state=companionMetric(state,`companions.trial.team_usage.${id}`);
+      break;
     }
     case 'companion_trial_abandon':{
       if(state.account.companionTrialProgress?.season.activeRun?.runId!==stringArg(a,'id'))throw new Error('Trial run is no longer active.');
@@ -194,26 +204,33 @@ export function executeCompanionActivity(input:GameState,type:string,a:Record<st
       if(now<(state.account.companionBattleReadyAtMs??0))throw new Error('Companions are recovering from battle.');
       const run=state.account.companionTrialProgress?.season.activeRun;
       if(!run||a.floor!==run.currentFloor)throw new Error('Trial floor changed. Refresh before continuing.');
-      const r=resolveCompanionTrialFloor(trialInput,stringArg(a,'id'),companionCombatExecutor);
+      const floor=run.currentFloor,r=resolveCompanionTrialFloor(trialInput,stringArg(a,'id'),companionCombatExecutor),power=companionTeamPower(run.teamCompanionIds,owned);
       state.account.companionTrialProgress=r.progress;state=reward(state,r.reward);
+      state=companionMetricMany(state,{[`companions.trial.floor.${floor}.attempts`]:1,[`companions.trial.floor.${floor}.${r.result.victory?'wins':'losses'}`]:1,[`companions.trial.floor.${floor}.duration_ms_total`]:r.result.durationMs,[`companions.trial.floor.${floor}.team_power_total`]:power,'companions.trial.attempts':1,[r.result.victory?'companions.trial.wins':'companions.trial.losses']:1});
+      if(floor%5===0)state=companionMetric(state,`companions.trial.boss.${floor}.${r.result.victory?'wins':'losses'}`);
       if(r.result.victory){state=awardUse(state,run.teamCompanionIds,12+run.currentFloor*2,8+(run.currentFloor%5===0?18:0),now);state.account.companionProvingGround=recordCompanionProvingGroundEvent({state:state.account.companionProvingGround,serverNowMs:now,owned,event:{eventId:`${run.runId}:${run.currentFloor}`,type:run.currentFloor%5===0?'trial_boss_clear':'trial_floor_clear',companionIds:run.teamCompanionIds,trialFloor:run.currentFloor,teamPower:companionTeamPower(run.teamCompanionIds,owned),recommendedPower:companionTrialRecommendedPower(run.currentFloor),noDefeats:r.result.players?.every(p=>p.alive)}}).state;}
       state.account.companionBattleReadyAtMs=now+Math.max(1000,r.result.durationMs);
       state.account.companionLastBattle={title:`Trial Floor ${run.currentFloor}`,won:r.result.victory,durationMs:r.result.durationMs,gold:r.reward.gold,essence:r.reward.companionEssence,bondstones:r.reward.bondstones,atMs:now};break;
     }
     case 'companion_assignment_start':{
       const r=startCompanionAssignment({accountId:state.character.id,missionId:stringArg(a,'id'),companionIds:idsArg(a),owned,assignments:assignments.filter(x=>x.status!=='claimed'&&x.status!=='cancelled'),equippedCompanionIds:new Set(state.character.equippedCombatCompanionId?[state.character.equippedCombatCompanionId]:[]),lockedTrialCompanionIds:new Set(state.account.companionTrialProgress?.season.activeRun?.teamCompanionIds??[]),expeditionPensLevel:state.account.companionSanctuary?.expeditionPensLevel??0,economy:companionEconomy(state),serverNowMs:now,requestId:seed});
-      state=applyEconomy(state,r.economy);state.account.companionAssignments=[...assignments.filter(x=>x.status==='claimed'||x.status==='cancelled').slice(-8),...assignments.filter(x=>x.status!=='claimed'&&x.status!=='cancelled'),r.assignment];break;
+      state=applyEconomy(state,r.economy);state.account.companionAssignments=[...assignments.filter(x=>x.status==='claimed'||x.status==='cancelled').slice(-8),...assignments.filter(x=>x.status!=='claimed'&&x.status!=='cancelled'),r.assignment];
+      state=companionMetric(state,`companions.expedition.${r.assignment.missionId}.starts`);for(const id of r.assignment.companionIds)state=companionMetric(state,`companions.expedition.usage.${id}`);
+      break;
     }
     case 'companion_assignment_claim':{
       const assignment=assignments.find(x=>x.assignmentId===stringArg(a,'id'));if(!assignment)throw new Error('Assignment not found.');
       const week=companionTrialWeekKey(now),used=state.account.companionAssignmentBondstoneWeek===week?state.account.companionAssignmentBondstones??0:0;
       const r=claimCompanionAssignment({assignment,owned,serverNowMs:now,bondstonesClaimedThisWeek:used});state=reward(state,r.reward);
       for(const id of assignment.companionIds)state=awardUse(state,[id],r.reward.companionXpById?.[id]??0,r.reward.bondXpById?.[id]??0,now);
-      state.account.companionAssignments=assignments.map(x=>x.assignmentId===assignment.assignmentId?r.assignment:x);state.account.companionAssignmentBondstoneWeek=week;state.account.companionAssignmentBondstones=used+r.reward.bondstones;break;
+      state.account.companionAssignments=assignments.map(x=>x.assignmentId===assignment.assignmentId?r.assignment:x);state.account.companionAssignmentBondstoneWeek=week;state.account.companionAssignmentBondstones=used+r.reward.bondstones;
+      state=companionMetricMany(state,{[`companions.expedition.${assignment.missionId}.claims`]:1,[`companions.expedition.${assignment.missionId}.grade.${r.assignment.performanceGrade??'C'}`]:1,[`companions.expedition.${assignment.missionId}.essence_earned`]:r.reward.companionEssence,[`companions.expedition.${assignment.missionId}.bondstones_earned`]:r.reward.bondstones,[`companions.expedition.${assignment.missionId}.bonus_rewards`]:r.reward.bonusRewardGranted?1:0});
+      break;
     }
     case 'companion_technique':{
       const id=stringArg(a,'id');assertCompanionIdle(state,id);if(!owned[id])throw new Error('Companion is locked.');
-      const r=selectCompanionTechnique(owned[id],stringArg(a,'technique'),companionEconomy(state));state=applyEconomy(setOwned(state,{...owned,[id]:r.progress}),r.economy);break;
+      const technique=stringArg(a,'technique'),r=selectCompanionTechnique(owned[id],technique,companionEconomy(state));state=applyEconomy(setOwned(state,{...owned,[id]:r.progress}),r.economy);
+      state=companionMetric(state,`companions.technique.${id}.${technique}.selections`);break;
     }
     case 'companion_codex':{const r=claimCompanionCodexMilestone({milestoneId:stringArg(a,'id'),owned,profile,economy:companionEconomy(state)});state=applyEconomy(state,r.economy);state.account.companionPhase2Profile=r.profile;break;}
     case 'companion_showcase':{state.account.companionPhase2Profile=setCompanionShowcase(profile,new Set(Object.keys(owned)),a.id===undefined?undefined:stringArg(a,'id'),idsArg(a));break;}
@@ -222,7 +239,8 @@ export function executeCompanionActivity(input:GameState,type:string,a:Record<st
       if(now<(state.account.companionBattleReadyAtMs??0))throw new Error('Companions are recovering from battle.');
       const id=stringArg(a,'id');if(state.account.companionSpecialClears?.includes(id))throw new Error('Special challenge reward already claimed.');
       for(const locked of state.account.companionTrialProgress?.season.activeRun?.teamCompanionIds??[])busy.add(locked);
-      const r=resolveSpecialCompanionChallenge({challengeId:id,facts:companionUnlockFacts(state),teamIds:idsArg(a),owned,busyCompanionIds:busy,seed},companionCombatExecutor);
+      const teamIds=idsArg(a),r=resolveSpecialCompanionChallenge({challengeId:id,facts:companionUnlockFacts(state),teamIds,owned,busyCompanionIds:busy,seed},companionCombatExecutor);
+      state=companionMetricMany(state,{[`companions.special.${id}.attempts`]:1,[`companions.special.${id}.${r.result.victory?'wins':'losses'}`]:1,[`companions.special.${id}.duration_ms_total`]:r.result.durationMs});
       if(r.unlockedCompanionId){const granted=grantCombatCompanionOrConvertDuplicate({companionId:r.unlockedCompanionId,owned,companionEssence:state.account.companionEssence??0});state=setOwned(state,granted.owned);state.account.companionEssence=granted.companionEssence;state.account.companionSpecialClears=[...(state.account.companionSpecialClears??[]),id];}
       state.account.companionBattleReadyAtMs=now+Math.max(1000,r.result.durationMs);
       state.account.companionLastBattle={title:'Special Companion Challenge',won:r.result.victory,durationMs:r.result.durationMs,gold:0,essence:0,bondstones:0,atMs:now};break;
@@ -255,6 +273,7 @@ export function recordCompanionActivity(state:GameState,source:'combat'|'gatheri
   const id=next.character?.equippedCombatCompanionId;
   const available=id&&!next.account.companionTrialProgress?.season.activeRun?.teamCompanionIds.includes(id)&&!(next.account.companionAssignments??[]).some(a=>a.status!=='claimed'&&a.status!=='cancelled'&&a.companionIds.includes(id));
   if(id&&available&&(source==='combat'||source==='boss')){
+    next=companionMetricMany(next,{[`companions.usage.${id}.${source}_units`]:units,[`companions.usage.${id}.settlements`]:1});
     next=awardUse(next,[id],(source==='boss'?120:9)*units,(source==='boss'?60:4)*units,now);
     const event:CompanionProvingGroundEvent={eventId:`${target}:${now}`,type:source==='boss'?'boss_defeat':'battle_complete',companionIds:[id],characterRole:classCompanionRole(next.character!.classId)};
     const view=projectCompanionProvingGrounds(next.account.companionProvingGround,now),owned=companionOwned(next),progress={...view.state.progress},completed=new Set(view.state.completedIds);

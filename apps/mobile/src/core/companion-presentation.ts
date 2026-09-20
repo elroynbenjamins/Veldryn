@@ -14,6 +14,7 @@ export function companionMaterialSources(id:string):string[]{
  if(id==='SUPPLIES')sources.push('Buy at the Sanctuary: 5 for 250 Gold');
  sources.push(...GATHERING.filter(g=>g.itemId===id).map(g=>`Gather at ${g.name}`));
  if(id==='TRIAL_SANCTUARY_MATERIAL')sources.push('First-clear Trial boss rewards');
+ if(id==='EVENT_BONDBLOOM')sources.push('Earn an event companion for a starter cache','Weekly Companion Proving Grounds');
  return sources.length?sources:['Companion assignment rewards or later-region content'];
 }
 export function companionRequirementProgress(state:GameState,req:CompanionDefinition['unlockRequirements'][number]){
@@ -24,11 +25,18 @@ export function companionRequirementProgress(state:GameState,req:CompanionDefini
  if(req.type==='quest')current=state.quests.some(q=>q.questId===target&&q.status==='claimed')?1:0;
  if(req.type==='skill_level')current=state.skills.find(s=>s.skillId===target)?.level??0;
  if(req.type==='boss_kills')current=Math.max(state.defeatedBossIds.includes(target)?1:0,state.account.companionBossClears?.[target]??0);
+ const regionalTarget:Record<string,{region:string;field:'echoesCompleted'|'dungeonsCompleted'}>={
+   SUNSCAR_ECHOES:{region:'SUNSCAR',field:'echoesCompleted'},SUNSCAR_DUNGEONS:{region:'SUNSCAR',field:'dungeonsCompleted'},
+   FROSTMARCH_ECHOES:{region:'FROSTMARCH',field:'echoesCompleted'},FROSTMARCH_DUNGEONS:{region:'FROSTMARCH',field:'dungeonsCompleted'},
+   ASHLANDS_ECHOES:{region:'ASHLANDS',field:'echoesCompleted'},ASHLANDS_DUNGEONS:{region:'ASHLANDS',field:'dungeonsCompleted'},
+ };
+ const regional=regionalTarget[target];if(regional)current=state.regionalProgressById?.[regional.region]?.[regional.field]??0;
  if(req.type==='meta'&&['REG_SUNSCAR','REG_FROSTMARCH','REG_ASHLANDS'].includes(target)){
    const owned=new Set(state.account.unlockedCombatCompanionIds??[]);
    const regionalNonPrestige=COMBAT_COMPANIONS.filter(def=>def.origin.id===target&&def.rarity!=='prestige');
    current=regionalNonPrestige.filter(def=>owned.has(def.id)).length;
  }
+ if(req.type==='meta'&&target.startsWith('CHALLENGE_'))current=state.account.companionSpecialClears?.includes(target)?1:0;
  if(req.type==='event_challenge'&&target.startsWith('CHALLENGE_'))current=state.account.companionSpecialClears?.includes(target)?1:0;
  if(target==='SILVERBROOK_NODES'){
    const nodes=GATHERING.filter(g=>g.zoneId==='SILVERBROOK');

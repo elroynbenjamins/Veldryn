@@ -1,7 +1,7 @@
 import {createCharacter,newGame} from '../src/core/game';
 import {weeklyOrderCandidatesFromCurrentContent} from '../src/core/launch-readiness-v47';
 import {applyTrustedLongTermProgression,weeklyOrderBoardForState} from '../src/core/long-term-progression-runtime';
-import {applyWeeklyOrderProgress,generateWeeklyOrders} from '../src/core/weekly-orders-v41';
+import {applyWeeklyOrderProgress,DEFAULT_WEEKLY_ORDER_POLICY,generateWeeklyOrders} from '../src/core/weekly-orders-v41';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 const now=Date.UTC(2026,8,21,12,0,0),accountId='contract-board-test';
@@ -15,9 +15,10 @@ ok(regionalCandidates.length>=2&&regionalCandidates.every(row=>row.brief&&row.br
 ok(new Set(regionalCandidates.map(row=>row.title)).size===regionalCandidates.length,'Regional Problem scenario titles must remain distinct');
 
 const generated=generateWeeklyOrders(accountId,now,candidates);
-ok(generated.orders.filter(row=>row.kind==='hunt').length===2,'default board should have two Hunt Orders');
-ok(generated.orders.filter(row=>row.kind==='profession').length===2,'default board should have two Work Orders');
-ok(generated.orders.filter(row=>row.kind==='regional').length===1,'default board should have one Regional Problem');
+const availableHunts=candidates.filter(row=>row.kind==='hunt'&&row.available&&row.source.available).length,availableProfessions=candidates.filter(row=>row.kind==='profession'&&row.available&&row.source.available).length,availableRegional=candidates.filter(row=>row.kind==='regional'&&row.available&&row.source.available).length;
+ok(generated.orders.filter(row=>row.kind==='hunt').length===Math.min(DEFAULT_WEEKLY_ORDER_POLICY.huntSlots,availableHunts),'default board fills available Hunt Order slots');
+ok(generated.orders.filter(row=>row.kind==='profession').length===Math.min(DEFAULT_WEEKLY_ORDER_POLICY.professionSlots,availableProfessions),'default board fills available Work Order slots');
+ok(generated.orders.filter(row=>row.kind==='regional').length===Math.min(DEFAULT_WEEKLY_ORDER_POLICY.regionalSlots,availableRegional),'default board fills available Regional Problem slots');
 const generatedRegional=generated.orders.find(row=>row.kind==='regional');ok(!!generatedRegional?.brief&&generatedRegional.reward.label.includes('Relief Cache'),'Generated Regional Problem should preserve authored brief and regional reward identity');
 
 const regional=generated.orders.find(row=>row.kind==='regional')!;

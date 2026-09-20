@@ -49,7 +49,7 @@ export function OnlineProfileExtensionPanel({state,onSaved}:{state:GameState;onS
   return refs.slice(0,100);
  },[state]);
  const labelRef=(ref:ProfileCollectionRefV43)=>profileCollectionLabel(ref);
- const patch=(next:Partial<ProfileExtensionSelfV43>)=>{if(value)setValue({...value,...next});};
+ const patch=(next:Partial<ProfileExtensionSelfV43>)=>{setNotice('');if(value)setValue({...value,...next});};
  const toggle=(list:string[],id:string)=>list.includes(id)?list.filter(value=>value!==id):list.length<3?[...list,id]:list;
  const toggleCollection=(list:ProfileCollectionRefV43[],ref:ProfileCollectionRefV43)=>{const key=refKey(ref);return list.some(row=>refKey(row)===key)?list.filter(row=>refKey(row)!==key):list.length<3?[...list,ref]:list};
  const editableSnapshot=(row:ProfileExtensionSelfV43,bioText:string)=>({visibility:row.visibility,worldFeedOptOut:row.worldFeedOptOut,selectedCharacterId:row.selectedCharacterId??null,bio:bioText,favoriteSkillId:row.favoriteSkillId??null,favoriteCompanionId:row.favoriteCompanionId??null,achievementShowcaseIds:row.achievementShowcaseIds,collectionShowcase:row.collectionShowcase,recordShowcaseIds:row.recordShowcaseIds});
@@ -66,7 +66,7 @@ export function OnlineProfileExtensionPanel({state,onSaved}:{state:GameState;onS
   <View style={s.heading}><View style={s.flex}><Text style={s.eyebrow}>SOCIAL PROFILE</Text><Text style={s.title}>Identity & Showcases</Text></View><View style={[s.saveState,dirty&&s.saveStateDirty]}><Text style={[s.saveStateText,dirty&&s.saveStateTextDirty]}>{dirty?'UNSAVED':'SAVED'}</Text></View></View>
   <Text style={s.copy}>These settings control the profile opened from chat, Friends, guild rosters and other supported social surfaces.</Text>
   {guest?<View style={s.warning}><Text style={s.warningTitle}>Secure this guest account first</Text><Text style={s.copy}>Guest progress can continue normally, but public social-profile publishing is held until the account is linked.</Text></View>:null}
-  <Text style={s.label}>Biography</Text><GameTextInput editable={!guest&&!busy} multiline value={bio} onChangeText={text=>setBio(text.slice(0,160))} maxLength={160} placeholder="Tell other players a little about your character or play style." placeholderTextColor={C.muted} style={s.bio}/><Text style={s.counter}>{bio.length}/160</Text>
+  <Text style={s.label}>Biography</Text><GameTextInput editable={!guest&&!busy} multiline value={bio} onChangeText={text=>{setNotice('');setBio(text.slice(0,160))}} maxLength={160} placeholder="Tell other players a little about your character or play style." placeholderTextColor={C.muted} style={s.bio}/><Text style={s.counter}>{bio.length}/160</Text>
   <View style={s.sectionHead}><Text style={s.sectionLabel}>PRESENTATION</Text><Text style={s.sectionHint}>What players see first</Text></View>
   <View style={s.settings}>
    <GameButton title={'Showcase character: '+(selectedCharacter?.name??'Current character')+' ▾'} tone="secondary" disabled={busy||characters.length<2} onPress={()=>setPicker('character')}/>

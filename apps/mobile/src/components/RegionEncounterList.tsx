@@ -29,11 +29,11 @@ export function RegionEncounterList({state,zone,onStart,onBoss,showFilters=false
       const readiness=combatReadiness(state,monster),readinessColor=readiness.safety==='safe'?C.good:readiness.safety==='steady'?C.info:C.warning;
       return <View key={monster.id} style={[s.card,expanded&&s.cardExpanded]}>
         <Pressable accessibilityRole="button" accessibilityState={{expanded}} accessibilityLabel={`${monster.name}, level ${monster.level}, ${monster.hp} health, ${monster.attack} attack, ${expanded?'collapse':'expand'}`} onPress={()=>setExpandedId(expanded?null:monster.id)} style={({pressed})=>[s.head,pressed&&s.pressed]}>
-          <MonsterPortraitFrame monster={monster} size={72} active={active}/>
+          <MonsterPortraitFrame monster={monster} size={72} active={active} reduceMotion={state.settings.reduceMotion}/>
           <View style={s.flex}><Text style={s.title}>{monster.boss?'♛ ':''}{monster.name}</Text><Text style={s.stats}>LV {monster.level} · HP {monster.hp} · ATK {monster.attack} · DEF {monster.defense}</Text><View style={s.statusRow}><Text style={active?s.active:unlocked?s.ready:s.locked}>{active?'HUNTING':unlocked?'AVAILABLE':`LOCKED · LV ${monster.unlockLevel}`}</Text><Text style={[s.readiness,{color:readinessColor}]}>{readiness.safety.toUpperCase()} · {readiness.percent}%</Text></View></View>
           <Text aria-hidden style={s.chevron}>{expanded?'⌃':'⌄'}</Text>
         </Pressable>
-        {expanded&&<View style={s.detail}>{monster.boss&&<BossEncounterIntro monster={monster}/>}
+        {expanded&&<View style={s.detail}>{monster.boss&&<BossEncounterIntro monster={monster} reduceMotion={state.settings.reduceMotion}/>}
           {!monster.boss&&<Text style={s.sub}>Base rate: {formatGameNumber(baseXp,state.settings.numberMode)} XP/hour before combat speed and survival.</Text>}
           <View style={[s.readinessBox,{borderColor:readinessColor}]}><Text style={[s.readinessTitle,{color:readinessColor}]}>{readiness.safety==='safe'?'Well prepared':readiness.safety==='steady'?'Close match':'Upgrade recommended'}</Text><Text style={s.sub}>Your effective power: {formatGameNumber(readiness.power,state.settings.numberMode)} · recommended: {formatGameNumber(readiness.recommendedPower,state.settings.numberMode)}</Text></View>
           <Text style={s.dropLabel}>DROP TABLE</Text>

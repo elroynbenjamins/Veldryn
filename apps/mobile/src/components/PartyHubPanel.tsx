@@ -28,6 +28,7 @@ export interface PartyHubPanelProps {
   nowMs: number;
   onCreateParty?: () => void;
   onLeaveParty?: () => void;
+  onDisbandParty?: () => void;
   onOpenPartyChat?: () => void;
   onOpenMemberProfile?: (member:PersistentPartySummary['members'][number]) => void;
   onTransferLeadership?: (member:PersistentPartySummary['members'][number]) => void;
@@ -56,6 +57,7 @@ export function PartyHubPanel(props: PartyHubPanelProps) {
         {!props.party && <PixelButton label="Create Party" onPress={props.onCreateParty} />}
         {props.party && <PixelButton label="Party Chat" onPress={props.onOpenPartyChat} />}
         {props.party && <PixelButton label="Leave" secondary onPress={props.onLeaveParty} />}
+        {props.party&&canManageParty&&props.party.members.length>1?<PixelButton label="Disband" secondary onPress={props.onDisbandParty}/>:null}
         <PixelButton label={props.party ? 'Find Members' : 'Find Party'} secondary onPress={() => props.onCreateRecruitmentPost?.(props.party ? 'party_recruiting' : 'looking_for_party')} />
       </View>
     </View>

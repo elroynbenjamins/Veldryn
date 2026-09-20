@@ -1,5 +1,5 @@
 export type PrimaryNavigationId='character'|'skills'|'world'|'inventory'|'account';
-export type NotificationKind='friend_request'|'party_invite'|'guild_invite'|'guild_application'|'unread_dm'|'weekly_order_complete'|'reward_ready'|'collection_unlock'|'profile_customization'|'event_reward_ready'|'account_action'|'companion_attention';
+export type NotificationKind='friend_request'|'party_invite'|'guild_invite'|'guild_application'|'chat_unread'|'weekly_order_complete'|'reward_ready'|'collection_unlock'|'profile_customization'|'event_reward_ready'|'account_action'|'companion_attention';
 export interface NavigationNotification{key:string;kind:NotificationKind;count?:number;unread?:boolean}
 export interface NavigationBadge{count:number;dot:boolean;display?:string}
 export type NavigationBadgeMap=Record<PrimaryNavigationId,NavigationBadge>;
@@ -10,7 +10,7 @@ export const NOTIFICATION_DESTINATIONS:Record<NotificationKind,NotificationDesti
  party_invite:{primary:'account',subroute:'social.party.invites',mode:'count'},
  guild_invite:{primary:'account',subroute:'social.guild.invites',mode:'count'},
  guild_application:{primary:'account',subroute:'social.guild.applications',mode:'count'},
- unread_dm:{primary:'account',subroute:'social.chat.direct',mode:'count'},
+ chat_unread:{primary:'account',subroute:'social.chat',mode:'count'},
  weekly_order_complete:{primary:'world',subroute:'world.weekly-orders',mode:'dot'},
  reward_ready:{primary:'character',subroute:'character.rewards',mode:'dot'},
  collection_unlock:{primary:'account',subroute:'collections',mode:'dot'},

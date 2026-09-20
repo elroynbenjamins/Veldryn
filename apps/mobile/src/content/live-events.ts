@@ -27,7 +27,7 @@ export const LIVE_EVENT_CATALOG:LiveEventDef[]=[{
   milestones:classId=>[
     {points:400,reward:{kind:'emote',id:'emote_harvest_cheer',name:'Harvest Cheer',rarity:'rare'}},
     {points:1000,reward:{kind:'title',id:'title_feast_friend',name:'Friend of the Feast',rarity:'rare'}},
-    {points:2250,reward:{kind:'pet',id:'pet_harvest_fox',name:'Harvest Fox',rarity:'epic'}},
+    {points:2250,reward:{kind:'pet',id:'EVT_PET_011',name:'Pumpkin Piglet',rarity:'epic'}},
     {points:4000,reward:{kind:'background',id:'bg_grand_storehouse',name:'Grand Storehouse',rarity:'legendary'}},
     {points:6500,reward:{kind:'border',id:'frame_amber_vine',name:'Amber Vine',rarity:'epic'}},
     {points:10000,reward:{kind:'skin',id:`skin_harvestwake_${classId.toLowerCase()}`,name:harvestSkins[classId],rarity:classId==='IRONWARDEN'||classId==='HEXWEAVER'?'legendary':'epic'}},
@@ -46,8 +46,8 @@ export const LIVE_EVENT_CATALOG:LiveEventDef[]=[{
   shop:[
     {id:'market_golden_fields',reward:{kind:'background',id:'bg_harvestwake',name:'Golden Fields',rarity:'rare'},currency:'common',cost:900,limit:1},
     {id:'market_wheat_crown',reward:{kind:'border',id:'frame_wheat_crown',name:'Wheat Crown',rarity:'epic'},currency:'common',cost:1800,limit:1},
-    {id:'market_field_mouse',reward:{kind:'pet',id:'pet_field_mouse',name:'Field Mouse',rarity:'epic'},currency:'common',cost:2400,limit:1},
-    {id:'pantry_amber_owl',reward:{kind:'pet',id:'pet_amber_owl',name:'Amber Owl',rarity:'legendary'},currency:'prestige',cost:4,limit:1},
+    {id:'market_golden_sheafling',reward:{kind:'pet',id:'EVT_PET_012',name:'Golden Sheafling',rarity:'epic'},currency:'common',cost:2400,limit:1},
+    {id:'pantry_pumpkin_piglet',reward:{kind:'pet',id:'EVT_PET_011',name:'Pumpkin Piglet',rarity:'legendary'},currency:'prestige',cost:4,limit:1},
   ],
   choices:[
     {id:'preserved_supplies',name:'Preserved Supplies',description:'Prioritize food, cooking, and the communal feast.',bonusLabel:'+20% marks from gathering',dropMultipliers:{gathering:1.2}},
@@ -68,7 +68,7 @@ export const LIVE_EVENT_CATALOG:LiveEventDef[]=[{
   ],
   discoveries:[
     {id:'whispering_husk',name:'Whispering Husk',description:'A field-spirit shell found after ordinary battles.',source:'combat',chance:.003,required:5,reward:{kind:'emote',id:'emote_scarecrow_salute',name:'Scarecrow Salute',rarity:'rare'}},
-    {id:'golden_field_feather',name:'Golden Field Feather',description:'A warm feather hidden among gathered harvests.',source:'gathering',chance:.015,required:5,reward:{kind:'pet',id:'pet_straw_sparrow',name:'Straw Sparrow',rarity:'epic'}},
+    {id:'golden_field_feather',name:'Golden Field Feather',description:'A warm feather hidden among gathered harvests.',source:'gathering',chance:.015,required:5,reward:{kind:'pet',id:'EVT_PET_012',name:'Golden Sheafling',rarity:'epic'}},
     {id:'amber_artisan_seal',name:'Amber Artisan Seal',description:'A maker’s mark that occasionally appears after crafting.',source:'crafting',chance:.06,required:3,reward:{kind:'title',id:'title_amber_artisan',name:'Amber Artisan',rarity:'rare'}},
     {id:'guardian_lantern',name:'Guardian Lantern',description:'A lantern fragment carried by eligible event bosses.',source:'boss',chance:.25,required:1,reward:{kind:'background',id:'bg_spirit_storehouse',name:'Spirit Storehouse',rarity:'legendary'}},
   ],

@@ -8,11 +8,11 @@ import {Panel} from '../components/Panel';
 import {C,radii,spacing,typography} from '../theme/theme';
 import {eventPetSourceById} from '../theme/event-collectible-assets';
 import {eventPetV1SourceById} from '../theme/event-collectible-v1-assets';
-import {eventPetSourceById as harvestPetSourceById} from '../theme/event-pet-assets';
+import {masterPetSourceById} from '../theme/master-roster-assets';
 
-const PETS=COLLECTIBLES.filter(row=>row.kind==='pet');
+const PETS=COLLECTIBLES.filter(row=>row.kind==='pet'&&(row.id.startsWith('PET_')||row.id.startsWith('EVT_PET_')));
 const pct=(bps:number)=>(bps/100).toFixed(2)+'%';
-const petSource=(id:string)=>eventPetV1SourceById.get(id)??eventPetSourceById.get(id)??harvestPetSourceById.get(id);
+ const petSource=(id:string)=>masterPetSourceById.get(id)??eventPetSourceById.get(id)??eventPetV1SourceById.get(id);
 
 export function PetBonusOverviewScreen({state,onChange}:{state:GameState;onChange:(next:GameState)=>void}){
  const [pickerOpen,setPickerOpen]=useState(false);

@@ -4,7 +4,7 @@ import type {GameState} from '../core/types';
 import {CharacterPortrait} from './CharacterVisual';
 import {profileBackgroundPreviewById} from '../theme/profile-background-assets';
 import {profileBorderSourceById} from '../theme/profile-border-assets';
-import {eventPetSourceById} from '../theme/event-pet-assets';
+import {eventPetSourceById} from '../theme/event-collectible-assets';
 import {BASE_PROFILE_BACKGROUNDS} from '../core/profile-cosmetics';
 import {RegionArtwork} from './RegionArtwork';
 import {C,typography} from '../theme/theme';

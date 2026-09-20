@@ -7,7 +7,7 @@ import {CharacterPortraitSelection} from './CharacterVisual';
 import {RegionArtwork} from './RegionArtwork';
 import {profileBackgroundPreviewById} from '../theme/profile-background-assets';
 import {profileBorderSourceById} from '../theme/profile-border-assets';
-import {eventPetSourceById} from '../theme/event-pet-assets';
+import {eventPetSourceById} from '../theme/event-collectible-assets';
 import {BASE_PROFILE_BACKGROUNDS} from '../core/profile-cosmetics';
 import {JOURNAL_ACHIEVEMENTS_V42} from '../core/adventurers-journal-v42';
 import {personalRecordDefinition} from '../core/personal-records-v43';

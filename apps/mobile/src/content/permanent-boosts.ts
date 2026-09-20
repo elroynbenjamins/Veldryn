@@ -23,79 +23,21 @@ export const SKIN_PERMANENT_BOOSTS: Record<SourceBoostId, PermanentBoostDefiniti
   },
 };
 
-export const PET_PERMANENT_BOOSTS: Record<SourceBoostId, PermanentBoostDefinition> = {
-  'pet_harvest_fox': {
-    id: 'pet_harvest_fox',
-    name: 'Harvest Fox',
-    combatSpeedMultiplier: 1.025,
-    combatPowerMultiplier: 1.02,
-    gatheringSpeedMultiplier: 1.045,
-    incomingDamageMultiplier: 0.985,
-    skillXpMultiplier: 1.02,
-    characterXpMultiplier: 1.015,
-    goldMultiplier: 1.02,
-    dropChanceMultiplier: 1.025,
-  },
-  'pet_field_mouse': {
-    id: 'pet_field_mouse',
-    name: 'Field Mouse',
-    combatSpeedMultiplier: 1.02,
-    combatPowerMultiplier: 1.01,
-    gatheringSpeedMultiplier: 1.05,
-    incomingDamageMultiplier: 1,
-    skillXpMultiplier: 1.025,
-    characterXpMultiplier: 1.02,
-    goldMultiplier: 1,
-    dropChanceMultiplier: 1.02,
-  },
-  'pet_amber_owl': {
-    id: 'pet_amber_owl',
-    name: 'Amber Owl',
-    combatSpeedMultiplier: 1.035,
-    combatPowerMultiplier: 1.03,
-    incomingDamageMultiplier: 0.98,
-    skillXpMultiplier: 1.02,
-    characterXpMultiplier: 1.015,
-    gatheringSpeedMultiplier: 1.02,
-    goldMultiplier: 1.035,
-    dropChanceMultiplier: 1.04,
-  },
-  'pet:feral_rat': {
-    id: 'pet:feral_rat',
-    name: 'Feral Rat',
-    combatSpeedMultiplier: 1.03,
-    combatPowerMultiplier: 1.02,
-    gatheringSpeedMultiplier: 1.06,
-    incomingDamageMultiplier: 0.985,
-    skillXpMultiplier: 1.02,
-    characterXpMultiplier: 1.02,
-    goldMultiplier: 1,
-    dropChanceMultiplier: 1.015,
-  },
-  'pet:emberhound': {
-    id: 'pet:emberhound',
-    name: 'Emberhound',
-    combatSpeedMultiplier: 1.04,
-    combatPowerMultiplier: 1.03,
-    incomingDamageMultiplier: 0.98,
-    skillXpMultiplier: 1,
-    characterXpMultiplier: 1,
-    gatheringSpeedMultiplier: 1.01,
-    goldMultiplier: 1,
-    dropChanceMultiplier: 1.03,
-  },
-  'pet:forgebound_mooncat': {
-    id: 'pet:forgebound_mooncat',
-    name: 'Forgebound Mooncat',
-    combatPowerMultiplier: 1.05,
-    incomingDamageMultiplier: 0.98,
-    skillXpMultiplier: 1.015,
-    gatheringSpeedMultiplier: 1.02,
-    characterXpMultiplier: 1.015,
-    goldMultiplier: 1.02,
-    dropChanceMultiplier: 1.02,
-  },
+import {MASTER_PET_COLLECTIBLES} from './master-pet-content';
+
+const petBoostFor=(pet:{id:string;name:string;target:string;activeBps:number}):PermanentBoostDefinition=>{
+  const amount=1+pet.activeBps/10000;
+  const base={id:pet.id,name:pet.name};
+  if(pet.target==='attack')return {...base,combatPowerMultiplier:amount};
+  if(pet.target==='defense'||pet.target==='hp')return {...base,incomingDamageMultiplier:2-amount};
+  if(pet.target==='skillXp')return {...base,skillXpMultiplier:amount};
+  if(pet.target==='characterXp')return {...base,characterXpMultiplier:amount};
+  if(pet.target==='gold')return {...base,goldMultiplier:amount};
+  if(pet.target==='dropChance'||pet.target==='dungeonReward')return {...base,dropChanceMultiplier:amount};
+  if(pet.target==='actionSpeed')return {...base,combatSpeedMultiplier:amount};
+  return {...base,gatheringSpeedMultiplier:amount};
 };
+export const PET_PERMANENT_BOOSTS:Record<SourceBoostId,PermanentBoostDefinition>=Object.fromEntries(MASTER_PET_COLLECTIBLES.map(pet=>[pet.id,petBoostFor(pet)]));
 
 export const BUYABLE_PERMANENT_BOOSTS: Record<SourceBoostId, PermanentBoostDefinition> = {
   'boost:combat_focus': {

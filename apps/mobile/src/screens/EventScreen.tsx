@@ -22,10 +22,8 @@ const discoveryArt:Record<string,number>={
   guardian_lantern:require('../../assets/events/harvestwake/discovery_guardian_lantern.png'),
 };
 const rewardArt:Record<string,number>={
-  pet_harvest_fox:require('../../assets/events/harvestwake/pet_harvest_fox.png'),
-  pet_field_mouse:require('../../assets/events/harvestwake/pet_field_mouse.png'),
-  pet_straw_sparrow:require('../../assets/events/harvestwake/pet_straw_sparrow.png'),
-  pet_amber_owl:require('../../assets/events/harvestwake/pet_amber_owl.png'),
+  EVT_PET_011:require('../../assets/event_collectibles/harvestwake/pets/EVT_PET_011_Pumpkin_Piglet.png'),
+  EVT_PET_012:require('../../assets/event_collectibles/harvestwake/pets/EVT_PET_012_Golden_Sheafling.png'),
   emote_harvest_cheer:require('../../assets/events/harvestwake/emote_harvest_cheer.png'),
   emote_scarecrow_salute:require('../../assets/events/harvestwake/emote_scarecrow_salute.png'),
   frame_amber_vine:require('../../assets/profile-borders/frame_amber_vine.png'),

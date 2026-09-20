@@ -9,7 +9,7 @@ import type {GameState} from '../core/types';
 import {BASE_PROFILE_BACKGROUNDS,canUseProfileCosmetic} from '../core/profile-cosmetics';
 import {PROFILE_BACKGROUND_PREVIEWS} from '../theme/profile-background-assets';
 import {profileBorderSourceById} from '../theme/profile-border-assets';
-import {eventPetSourceById} from '../theme/event-pet-assets';
+import {eventPetSourceById} from '../theme/event-collectible-assets';
 import {LIVE_EVENT_CATALOG} from '../content/live-events';
 import {C,radii,typography} from '../theme/theme';
 import {SavedLoadoutsPanel} from './SavedLoadoutsPanel';

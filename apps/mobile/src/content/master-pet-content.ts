@@ -1,0 +1,10 @@
+import type {CollectibleDefinition,CollectibleTarget} from './collectibles';
+
+type Seed=[string,string,string,CollectibleTarget];
+const seeds:Seed[]=[
+  ['PET_001','Pebblemole','Asterfall','gatheringYield'],['PET_002','Cinderchip','Asterfall','attack'],['PET_003','Twiglet','Asterfall','herbalismSpeed'],['PET_004','Mossback Pup','Asterfall','defense'],['PET_005','Silverfin','Asterfall','fishingSpeed'],['PET_006','Lantern Carp Fry','Asterfall','fishingSpeed'],['PET_007','Briarbud','Asterfall','gatheringYield'],['PET_008','Gloamcap','Asterfall','dropChance'],['PET_009','Tusklet','Asterfall','attack'],['PET_010','Redfeather Chick','Asterfall','characterXp'],['PET_011','Forge Spark','Asterfall','craftingSpeed'],['PET_012','Mini Wretch','Asterfall','dungeonReward'],['PET_013','Mapwing','Asterfall','actionSpeed'],['PET_014','Pack Mimic','Asterfall','dropChance'],['PET_015','Coinmouse','Asterfall','gold'],['PET_016','Echo Wisp','Asterfall','skillXp'],['PET_017','Campfox','Asterfall','hp'],['PET_018','Oathling','Asterfall','healingEffectiveness'],
+  ['PET_019','Duneling','Sunscar','gatheringYield'],['PET_020','Mirage Minnow','Sunscar','fishingSpeed'],['PET_021','Sunscarab','Sunscar','characterXp'],['PET_022','Tiny Sphinx','Sunscar','skillXp'],['PET_023','Tyrant Larva','Sunscar','attack'],
+  ['PET_024','Snowpuff Hare','Frostmarch','hp'],['PET_025','Rimecap','Frostmarch','herbalismSpeed'],['PET_026','Bellfin Fry','Frostmarch','fishingSpeed'],['PET_027','Choir Pebble','Frostmarch','healingEffectiveness'],['PET_028','Wyrmling Flake','Frostmarch','skillXp'],
+  ['PET_029','Coalbug','Ashlands','defense'],['PET_030','Sootling','Ashlands','attack'],['PET_031','Ember Eel Fry','Ashlands','fishingSpeed'],['PET_032','Forge Imp','Ashlands','craftingSpeed'],['PET_033','Cinder Crownling','Ashlands','dropChance'],
+];
+export const MASTER_PET_COLLECTIBLES:readonly CollectibleDefinition[]=seeds.map(([id,name,region,target])=>({id,kind:'pet',name,bonusFamilyId:id,target,ownedBps:50,activeBps:200,source:`${region} canonical master roster`,description:`Canonical ${region} companion pet.`}));

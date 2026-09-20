@@ -1,12 +1,13 @@
 import {RECIPES} from '../content/skills';
 import {ActiveActivity,CombatChallengeId,CombatTacticId,GameState,RewardBundle} from './types';
+import type {HuntGoalId} from './hunt-goals';
 import {claimActivity,craftRecipe,startCombat,startGathering,startHerbalism,stopActivity} from './game';
 
 /** Settle earned rewards before replacing or stopping an activity. Pure and atomic. */
-export function transitionActivity(state:GameState,nowMs:number,next?:{kind:'combat'|'gathering';id:string;challengeId?:CombatChallengeId;tacticId?:CombatTacticId}){
+export function transitionActivity(state:GameState,nowMs:number,next?:{kind:'combat'|'gathering';id:string;challengeId?:CombatChallengeId;tacticId?:CombatTacticId;goalId?:HuntGoalId}){
   const claimed=claimActivity(state,nowMs);
   const updated=next
-    ?next.kind==='combat'?startCombat(claimed.state,next.id,nowMs,next.challengeId,next.tacticId??'balanced'):startGathering(claimed.state,next.id,nowMs)
+    ?next.kind==='combat'?startCombat(claimed.state,next.id,nowMs,next.challengeId,next.tacticId??'balanced',next.goalId??'open'):startGathering(claimed.state,next.id,nowMs)
     :stopActivity(claimed.state);
   return {state:updated,reward:claimed.reward};
 }

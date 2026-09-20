@@ -16,7 +16,7 @@ import {COMBAT_TACTIC_IDS,COMBAT_TACTICS} from '../core/combat-tactics';
 import {HUNT_GOAL_IDS,HUNT_GOALS} from '../core/hunt-goals';
 import {ActionQueuePanel} from '../components/ActionQueuePanel';
 
-export function CombatScreen({state,onChangeRegion,onStart,onQueue,onQueueRemove,onQueueClear,onQueueStart,onBoss}:{state:GameState;onChangeRegion:()=>void;onStart:(id:string,challengeId?:CombatChallengeId,tacticId?:CombatTacticId,goalId?:HuntGoalId)=>void;onQueue:(id:string,challengeId?:CombatChallengeId,tacticId?:CombatTacticId,goalId?:HuntGoalId)=>void;onQueueRemove:(index:number)=>void;onQueueClear:()=>void;onQueueStart:()=>void;onBoss:()=>void}){
+export function CombatScreen({state,onChangeRegion,onStart,onQueue,onQueueRemove,onQueueClear,onQueueStart,onBoss,initialMonsterId}:{state:GameState;onChangeRegion:()=>void;onStart:(id:string,challengeId?:CombatChallengeId,tacticId?:CombatTacticId,goalId?:HuntGoalId)=>void;onQueue:(id:string,challengeId?:CombatChallengeId,tacticId?:CombatTacticId,goalId?:HuntGoalId)=>void;onQueueRemove:(index:number)=>void;onQueueClear:()=>void;onQueueStart:()=>void;onBoss:()=>void;initialMonsterId?:string}){
   const [tacticId,setTacticId]=useState<CombatTacticId>(state.activity?.kind==='combat'?state.activity.combatTacticId??'balanced':'balanced'),[goalId,setGoalId]=useState<HuntGoalId>('open');
   const character=state.character!,progress=characterProgressWithinLevel(character.xp,character.level),tactic=COMBAT_TACTICS[tacticId];
   const zone=WORLD_ZONES.find(entry=>entry.id===currentCombatRegionId(state))??WORLD_ZONES[0];
@@ -30,7 +30,7 @@ export function CombatScreen({state,onChangeRegion,onStart,onQueue,onQueueRemove
     <ActionQueuePanel state={state} onRemove={onQueueRemove} onClear={onQueueClear} onStartNext={onQueueStart}/>
     {state.activity?.kind==='combat'&&<Text style={s.activeTactic}>ACTIVE HUNT · {COMBAT_TACTICS[state.activity.combatTacticId??'balanced'].name.toUpperCase()} TACTIC</Text>}
     <Text style={s.section}>ENEMIES IN {zone.name.toUpperCase()}</Text><Text style={s.sub}>Choose an enemy to inspect. Drop tables stay hidden until you expand a row.</Text>
-    <RegionEncounterList state={state} zone={zone} tacticId={tacticId} goalId={goalId} onStart={onStart} onQueue={onQueue} onBoss={onBoss}/>
+    <RegionEncounterList state={state} zone={zone} tacticId={tacticId} goalId={goalId} initialExpandedId={initialMonsterId} onStart={onStart} onQueue={onQueue} onBoss={onBoss}/>
   </ScrollView>;
 }
 

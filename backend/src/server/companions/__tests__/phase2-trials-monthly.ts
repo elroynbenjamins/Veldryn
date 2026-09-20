@@ -1,5 +1,5 @@
 import {COMPANION_TRIAL_FLOOR_COUNT,companionTrialReward} from '../content';
-import {applyCompanionTrialModifiers,buildCompanionTrialEncounter,companionTrialFloorDefinition,resolveCompanionTrialFloor,startCompanionTrial} from '../trials';
+import {applyCompanionTrialModifiers,buildCompanionTrialEncounter,companionTrialEncounterTheme,companionTrialFloorDefinition,resolveCompanionTrialFloor,startCompanionTrial} from '../trials';
 import {companionTrialResetInfo,companionTrialSeasonKey,createCompanionTrialProgress,rolloverCompanionTrialSeason} from '../trial-season';
 import {projectCompanionTrial} from '../projection';
 import {buildOwnedCompanionCombatant} from '../combat-adapter';
@@ -13,6 +13,29 @@ const lose:CompanionCombatExecutor={simulate(input){return {victory:false,durati
 const sep=Date.UTC(2026,8,11,12),oct=Date.UTC(2026,9,1,0,0,1);
 // Required Trial tests 11-21.
 ok(companionTrialFloorDefinition(20,'2026-09').recommendedPower>companionTrialFloorDefinition(1,'2026-09').recommendedPower,'Floor scaling did not increase');for(let f=1;f<=30;f++)eq(companionTrialFloorDefinition(f,'2026-09').boss,f%5===0,`Boss cadence wrong on ${f}`);
+// Encounter identity changes every five-floor band without changing boss cadence.
+eq(companionTrialEncounterTheme(1).id,'asterfall','Floors 1-5 should use Asterfall theme');
+eq(companionTrialEncounterTheme(6).id,'sunscar','Floors 6-10 should use Sunscar theme');
+eq(companionTrialEncounterTheme(11).id,'frostmarch','Floors 11-15 should use Frostmarch theme');
+eq(companionTrialEncounterTheme(16).id,'ashlands','Floors 16-20 should use Ashlands theme');
+eq(companionTrialEncounterTheme(21).id,'rift','Floors 21-25 should use Rift theme');
+eq(companionTrialEncounterTheme(26).id,'apex','Floors 26-30 should use Apex theme');
+const floor1=buildCompanionTrialEncounter(1,'2000-01');
+eq(floor1.length,3,'Normal Trial floor must have three enemies');
+ok(floor1.some(x=>x.tags?.includes('trial_archetype:guard')),'Normal floor missing guard archetype');
+ok(floor1.some(x=>x.tags?.includes('trial_archetype:striker')),'Normal floor missing striker archetype');
+ok(floor1.some(x=>x.tags?.includes('trial_archetype:adept')),'Normal floor missing adept archetype');
+const guard=floor1.find(x=>x.tags?.includes('trial_archetype:guard'))!,striker=floor1.find(x=>x.tags?.includes('trial_archetype:striker'))!,adept=floor1.find(x=>x.tags?.includes('trial_archetype:adept'))!;
+ok(guard.stats.maxHp>striker.stats.maxHp&&guard.stats.defense>striker.stats.defense,'Guard should be the durable Trial archetype');
+ok(striker.stats.attackPower>guard.stats.attackPower&&striker.basicAttackMs<guard.basicAttackMs,'Striker should be the aggressive Trial archetype');
+ok(adept.abilities.some(a=>a.target==='all_enemies'),'Adept should pressure the full companion team');
+const bosses=[5,10,15,20,25,30].map(f=>buildCompanionTrialEncounter(f,'2000-01')[0]);
+eq(new Set(bosses.map(x=>x.name)).size,6,'All six Trial bosses need distinct identities');
+eq(new Set(bosses.map(x=>x.abilities[0]?.name)).size,6,'All six Trial bosses need distinct signatures');
+ok(bosses.every(x=>x.boss===true&&x.tags?.some(tag=>tag.startsWith('trial_boss_theme:'))),'Boss encounters need themed boss metadata');
+eq(bosses[0].name,'Runebound Colossus','Floor 5 boss identity');
+eq(bosses[5].name,'Regent of Echoes','Floor 30 final boss identity');
+
 // Modifiers alter the authoritative combat snapshot, not only labels.
 const unseasoned=buildCompanionTrialEncounter(1,'2000-01')[0],september=buildCompanionTrialEncounter(1,'2026-09')[0];ok(september.stats.defense>unseasoned.stats.defense,'Armored monthly modifier did not affect enemy defense');ok(september.stats.attackPower>unseasoned.stats.attackPower,'Unstable Magic monthly modifier did not add enemy pressure');const playerBefore=buildOwnedCompanionCombatant(owned.UNIT_001,{mode:'companion_trial'}),playerAfter=applyCompanionTrialModifiers([playerBefore],[],['unstable_magic']).players[0];ok(playerAfter.stats.haste>playerBefore.stats.haste,'Unstable Magic did not improve companion Haste');
 // Optional rarity restrictions preserve lower-rarity relevance and reject an invalid Prestige lineup.

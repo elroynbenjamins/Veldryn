@@ -7,13 +7,29 @@ import type {CompanionCombatExecutor,CompanionCombatantDefinition,CompanionTrial
 export interface CompanionTrialRuntimeInput{
  progress?:CompanionTrialProgress;owned:Record<string,OwnedCompanionSnapshot>;busyCompanionIds:ReadonlySet<string>;trialsUnlocked:boolean;serverNowMs:number;
 }
-export interface CompanionTrialFloorDefinition{floor:number;recommendedPower:number;modifiers:string[];boss:boolean;}
+export type CompanionTrialEncounterThemeId='asterfall'|'sunscar'|'frostmarch'|'ashlands'|'rift'|'apex';
+export interface CompanionTrialEncounterTheme{id:CompanionTrialEncounterThemeId;label:string;bossName:string;}
+const TRIAL_THEMES:readonly CompanionTrialEncounterTheme[]=[
+ {id:'asterfall',label:'Asterfall Proving Grounds',bossName:'Runebound Colossus'},
+ {id:'sunscar',label:'Sunscar Glass Arena',bossName:'Echo of the Buried Tyrant'},
+ {id:'frostmarch',label:'Frostmarch Bell Vault',bossName:'Frostbell Behemoth'},
+ {id:'ashlands',label:'Ashlands Crucible',bossName:'Ashforge Juggernaut'},
+ {id:'rift',label:'Riftglass Convergence',bossName:'Rift Wyrm'},
+ {id:'apex',label:'Regent Apex',bossName:'Regent of Echoes'},
+];
+export function companionTrialEncounterTheme(floor:number):CompanionTrialEncounterTheme{
+ const f=Math.max(1,Math.min(COMPANION_TRIAL_FLOOR_COUNT,Math.floor(floor)));
+ return TRIAL_THEMES[Math.min(TRIAL_THEMES.length-1,Math.floor((f-1)/5))];
+}
+export interface CompanionTrialFloorDefinition{floor:number;recommendedPower:number;modifiers:string[];boss:boolean;encounterTheme:CompanionTrialEncounterThemeId;}
 export function companionTrialFloorDefinition(floor:number,seasonKey:string):CompanionTrialFloorDefinition{
  if(floor<1||floor>COMPANION_TRIAL_FLOOR_COUNT||!Number.isInteger(floor))throw new Error('invalid_companion_trial_floor');
- const season=companionTrialSeasonDefinition(seasonKey);return {floor,recommendedPower:companionTrialRecommendedPower(floor),modifiers:[...new Set([...season.modifiers,...companionTrialFloorModifiers(floor)])],boss:floor%COMPANION_TRIAL_BOSS_INTERVAL===0};
+ const season=companionTrialSeasonDefinition(seasonKey),theme=companionTrialEncounterTheme(floor);return {floor,recommendedPower:companionTrialRecommendedPower(floor),modifiers:[...new Set([...season.modifiers,...companionTrialFloorModifiers(floor)])],boss:floor%COMPANION_TRIAL_BOSS_INTERVAL===0,encounterTheme:theme.id};
 }
-function enemy(id:string,name:string,floor:number,boss=false,role:'enemy'='enemy'):CompanionCombatantDefinition{
- const scale=companionTrialEnemyScale(floor);return {id,name,team:'enemies',role,level:floor,stats:{maxHp:Math.round((boss?520:180)*scale),attackPower:Number(((boss?28:15)*scale).toFixed(2)),healingPower:0,defense:Number(((boss?24:12)*scale).toFixed(2)),accuracy:.88,evasion:.04,critChance:.05,critMultiplier:1.5,haste:Math.min(.35,.03+floor*.004)},basicAttackMs:boss?2200:2500,basicAttackCoeff:boss?.82:.55,abilities:boss?[{id:`TRIAL_BOSS_${floor}_ACTIVE`,name:'Trial Boss Signature',cooldownMs:14000,castTimeMs:0,target:'current_target',effects:[{kind:'damage',coeff:1.05,tag:'trial_boss'}],priority:80,aiCondition:'always'}]:[],boss,tags:['companion_trial_enemy',boss?'boss':'normal']};
+interface TrialEnemyProfile{name:string;hp:number;attack:number;defense:number;haste:number;basicMs:number;basicCoeff:number;ability?:CompanionCombatantDefinition['abilities'][number];tags:string[];}
+function enemy(id:string,name:string,floor:number,boss=false,profile?:Partial<TrialEnemyProfile>):CompanionCombatantDefinition{
+ const scale=companionTrialEnemyScale(floor),baseHp=boss?520:180,baseAttack=boss?28:15,baseDefense=boss?24:12;
+ return {id,name,team:'enemies',role:'enemy',level:floor,stats:{maxHp:Math.round(baseHp*(profile?.hp??1)*scale),attackPower:Number((baseAttack*(profile?.attack??1)*scale).toFixed(2)),healingPower:0,defense:Number((baseDefense*(profile?.defense??1)*scale).toFixed(2)),accuracy:.88,evasion:.04,critChance:.05,critMultiplier:1.5,haste:Math.min(.35,.03+floor*.004+(profile?.haste??0))},basicAttackMs:profile?.basicMs??(boss?2200:2500),basicAttackCoeff:profile?.basicCoeff??(boss?.82:.55),abilities:profile?.ability?[profile.ability]:[],boss,tags:['companion_trial_enemy',boss?'boss':'normal',...(profile?.tags??[])]};
 }
 export function applyCompanionTrialModifiers(players:CompanionCombatantDefinition[],enemies:CompanionCombatantDefinition[],modifierIds:readonly string[]){
  let playerHealing=1,playerHaste=0,playerShield=1,enemyDefense=1,enemyAttack=1,enemyHp=1,enemyHaste=0,enemyAccuracy=0;
@@ -23,7 +39,40 @@ export function applyCompanionTrialModifiers(players:CompanionCombatantDefinitio
  const nextEnemies=enemies.map(e=>({...e,stats:{...e.stats,maxHp:Math.round(e.stats.maxHp*enemyHp),attackPower:Number((e.stats.attackPower*enemyAttack).toFixed(4)),defense:Number((e.stats.defense*enemyDefense).toFixed(4)),haste:Math.min(.60,e.stats.haste+enemyHaste),accuracy:Math.min(.99,e.stats.accuracy+enemyAccuracy)},tags:tagged(e.tags)}));
  return {players:nextPlayers,enemies:nextEnemies};
 }
-function rawCompanionTrialEncounter(floor:number){const boss=floor%COMPANION_TRIAL_BOSS_INTERVAL===0;return boss?[enemy(`COMPANION_TRIAL_BOSS_${floor}`,`Trial Guardian ${floor}`,floor,true)]:[enemy(`COMPANION_TRIAL_${floor}_A`,'Trial Vanguard',floor),enemy(`COMPANION_TRIAL_${floor}_B`,'Trial Striker',floor),enemy(`COMPANION_TRIAL_${floor}_C`,'Trial Adept',floor)];}
+function normalTrialProfiles(theme:CompanionTrialEncounterTheme):TrialEnemyProfile[]{
+ const prefix:Record<CompanionTrialEncounterThemeId,[string,string,string]>={
+  asterfall:['Runebound Bulwark','Gloamblade Raider','Silverbrook Adept'],
+  sunscar:['Glasshide Warder','Duneclaw Stalker','Mirage Oracle'],
+  frostmarch:['Rimeplate Guard','Bellfang Hunter','Choir Acolyte'],
+  ashlands:['Forgeplate Custodian','Obsidian Prowler','Cinder Channeler'],
+  rift:['Oathglass Sentinel','Echo Predator','Rift Weaver'],
+  apex:['Crown Bulwark','Wyrm Hunter','Regent Adept'],
+ };
+ const [guard,striker,adept]=prefix[theme.id];
+ return [
+  {name:guard,hp:1.28,attack:.82,defense:1.35,haste:-.01,basicMs:2700,basicCoeff:.50,tags:['trial_archetype:guard'],ability:{id:`${theme.id}_GUARD`,name:'Guarded Ward',cooldownMs:15000,castTimeMs:0,target:'self',effects:[{kind:'shield',coeff:.18,tag:'trial_guard'}],priority:70,aiCondition:'self_below_50'}},
+  {name:striker,hp:.84,attack:1.24,defense:.82,haste:.035,basicMs:2150,basicCoeff:.62,tags:['trial_archetype:striker'],ability:{id:`${theme.id}_STRIKE`,name:'Predatory Rush',cooldownMs:12000,castTimeMs:0,target:'current_target',effects:[{kind:'damage',coeff:.78,tag:'trial_striker'}],priority:75,aiCondition:'always'}},
+  {name:adept,hp:.88,attack:.94,defense:.84,haste:.015,basicMs:2650,basicCoeff:.48,tags:['trial_archetype:adept'],ability:{id:`${theme.id}_ADEPT`,name:'Arc Pulse',cooldownMs:14500,castTimeMs:0,target:'all_enemies',effects:[{kind:'damage',coeff:.42,tag:'trial_adept'}],priority:72,aiCondition:'multiple_enemies'}},
+ ];
+}
+function trialBossProfile(floor:number,theme:CompanionTrialEncounterTheme):TrialEnemyProfile{
+ const bossIndex=Math.max(1,Math.floor(floor/COMPANION_TRIAL_BOSS_INTERVAL));
+ const signatures=[
+  {name:'Runic Shockwave',target:'all_enemies' as const,coeff:.72,cooldownMs:15000,tag:'runebound_colossus'},
+  {name:'Tyrant Glass Spear',target:'current_target' as const,coeff:1.08,cooldownMs:13000,tag:'buried_tyrant'},
+  {name:'Bell of White Silence',target:'all_enemies' as const,coeff:.76,cooldownMs:14500,tag:'frostbell_behemoth'},
+  {name:'Crucible Hammer',target:'current_target' as const,coeff:1.12,cooldownMs:13500,tag:'ashforge_juggernaut'},
+  {name:'Riftfire Sweep',target:'all_enemies' as const,coeff:.82,cooldownMs:14000,tag:'rift_wyrm'},
+  {name:'Regent Decree',target:'all_enemies' as const,coeff:.88,cooldownMs:12500,tag:'regent_of_echoes'},
+ ];
+ const signature=signatures[Math.min(signatures.length-1,bossIndex-1)];
+ return {name:theme.bossName,hp:1,attack:1,defense:1,haste:bossIndex>=5?.015:0,basicMs:2200,basicCoeff:.82,tags:[`trial_boss_theme:${theme.id}`],ability:{id:`TRIAL_BOSS_${floor}_ACTIVE`,name:signature.name,cooldownMs:signature.cooldownMs,castTimeMs:0,target:signature.target,effects:[{kind:'damage',coeff:signature.coeff,tag:signature.tag}],priority:80,aiCondition:'always'}};
+}
+function rawCompanionTrialEncounter(floor:number){
+ const theme=companionTrialEncounterTheme(floor),boss=floor%COMPANION_TRIAL_BOSS_INTERVAL===0;
+ if(boss){const profile=trialBossProfile(floor,theme);return [enemy(`COMPANION_TRIAL_BOSS_${floor}`,profile.name,floor,true,profile)];}
+ return normalTrialProfiles(theme).map((profile,index)=>enemy(`COMPANION_TRIAL_${floor}_${String.fromCharCode(65+index)}`,profile.name,floor,false,profile));
+}
 export function buildCompanionTrialEncounter(floor:number,seasonKey='2000-01'){const def=companionTrialFloorDefinition(floor,seasonKey);return applyCompanionTrialModifiers([],rawCompanionTrialEncounter(floor),def.modifiers).enemies;}
 
 function runId(seed:string,nowMs:number){return `CTR_${nowMs.toString(36)}_${Math.abs([...seed].reduce((n,c)=>(n*33+c.charCodeAt(0))|0,5381)).toString(36)}`;}

@@ -14,8 +14,9 @@ import {RegionEncounterList} from '../components/RegionEncounterList';
 import {StatBar} from '../components/StatBar';
 import {COMBAT_TACTIC_IDS,COMBAT_TACTICS} from '../core/combat-tactics';
 import {HUNT_GOAL_IDS,HUNT_GOALS} from '../core/hunt-goals';
+import {ActionQueuePanel} from '../components/ActionQueuePanel';
 
-export function CombatScreen({state,onChangeRegion,onStart,onBoss}:{state:GameState;onChangeRegion:()=>void;onStart:(id:string,challengeId?:CombatChallengeId,tacticId?:CombatTacticId,goalId?:HuntGoalId)=>void;onBoss:()=>void}){
+export function CombatScreen({state,onChangeRegion,onStart,onQueue,onQueueRemove,onQueueClear,onQueueStart,onBoss}:{state:GameState;onChangeRegion:()=>void;onStart:(id:string,challengeId?:CombatChallengeId,tacticId?:CombatTacticId,goalId?:HuntGoalId)=>void;onQueue:(id:string,challengeId?:CombatChallengeId,tacticId?:CombatTacticId,goalId?:HuntGoalId)=>void;onQueueRemove:(index:number)=>void;onQueueClear:()=>void;onQueueStart:()=>void;onBoss:()=>void}){
   const [tacticId,setTacticId]=useState<CombatTacticId>(state.activity?.kind==='combat'?state.activity.combatTacticId??'balanced':'balanced'),[goalId,setGoalId]=useState<HuntGoalId>('open');
   const character=state.character!,progress=characterProgressWithinLevel(character.xp,character.level),tactic=COMBAT_TACTICS[tacticId];
   const zone=WORLD_ZONES.find(entry=>entry.id===currentCombatRegionId(state))??WORLD_ZONES[0];
@@ -26,9 +27,10 @@ export function CombatScreen({state,onChangeRegion,onStart,onBoss}:{state:GameSt
     <View style={s.tactics}><View style={s.tacticCopy}><Text style={s.section}>COMBAT TACTIC</Text><Text style={s.sub}>{tactic.summary}</Text></View><View style={s.tacticRow}>{COMBAT_TACTIC_IDS.map(id=><Pressable key={id} accessibilityRole="radio" accessibilityState={{selected:tacticId===id}} onPress={()=>setTacticId(id)} style={[s.tacticButton,tacticId===id&&s.tacticSelected]}><Text style={[s.tacticText,tacticId===id&&s.tacticTextSelected]}>{COMBAT_TACTICS[id].name}</Text></Pressable>)}</View></View>
     <View style={s.tactics}><View style={s.tacticCopy}><Text style={s.section}>HUNT GOAL</Text><Text style={s.sub}>{HUNT_GOALS[goalId].summary}</Text></View><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.goalRow}>{HUNT_GOAL_IDS.map(id=><Pressable key={id} accessibilityRole="radio" accessibilityState={{selected:goalId===id}} onPress={()=>setGoalId(id)} style={[s.goalButton,goalId===id&&s.tacticSelected]}><Text style={[s.tacticText,goalId===id&&s.tacticTextSelected]}>{HUNT_GOALS[id].label}</Text></Pressable>)}</ScrollView></View>
     <Text style={s.momentumHint}>HUNT MOMENTUM · 25 / 75 / 150 kills → +2 / +4 / +6% character XP & Gold</Text>
+    <ActionQueuePanel state={state} onRemove={onQueueRemove} onClear={onQueueClear} onStartNext={onQueueStart}/>
     {state.activity?.kind==='combat'&&<Text style={s.activeTactic}>ACTIVE HUNT · {COMBAT_TACTICS[state.activity.combatTacticId??'balanced'].name.toUpperCase()} TACTIC</Text>}
     <Text style={s.section}>ENEMIES IN {zone.name.toUpperCase()}</Text><Text style={s.sub}>Choose an enemy to inspect. Drop tables stay hidden until you expand a row.</Text>
-    <RegionEncounterList state={state} zone={zone} tacticId={tacticId} goalId={goalId} onStart={onStart} onBoss={onBoss}/>
+    <RegionEncounterList state={state} zone={zone} tacticId={tacticId} goalId={goalId} onStart={onStart} onQueue={onQueue} onBoss={onBoss}/>
   </ScrollView>;
 }
 

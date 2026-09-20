@@ -1,13 +1,14 @@
 import {createCharacter,newGame,claimActivity,claimQuest,startCombat,previewActivityReward} from '../src/core/game';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
-import {unlockCombatCompanion,equipCombatCompanion,companionCombatContribution,companionLevelCost,applyCompanionBondXp,claimSanctuaryTraining,claimSanctuaryEssence} from '../src/core/combat-companions';
+import {unlockCombatCompanion,equipCombatCompanion,companionCombatContribution,companionLevelCost,companionXpToNextLevel,applyCompanionBondXp,claimSanctuaryTraining,claimSanctuaryEssence} from '../src/core/combat-companions';
 import {refreshCompanions,companionOwned,companionCombatExecutor,recordCompanionActivity} from '../src/core/companion-runtime';
 import {migrateSave} from '../src/core/save-migrations';
 import {createSaveBackup,parseSaveBackup} from '../src/core/save-transfer';
 import {characterPermanentMultipliers} from '../src/core/permanent-boosts';
 import {PET_PERMANENT_BOOSTS} from '../src/content/permanent-boosts';
 import {COMBAT_COMPANIONS} from '../src/content/combat-companions';
-import {companionServerDefinition,companionTechniques} from '../../../backend/src/server/companions/content';
+import {COMPANION_SPECIAL_CHALLENGES,companionServerDefinition,companionTechniques} from '../../../backend/src/server/companions/content';
+import {companionTrialWeekKey} from '../../../backend/src/server/companions/trial-season';
 import {buildOwnedCompanionCombatant} from '../../../backend/src/server/companions/combat-adapter';
 import {buildCompanionTrialEncounter} from '../../../backend/src/server/companions/trials';
 import type {GameState} from '../src/core/types';
@@ -23,12 +24,14 @@ ok(eventCompanions.length===10,'event companion count is 10');
 ok(new Set(COMBAT_COMPANIONS.map(def=>def.id)).size===COMBAT_COMPANIONS.length,'companion ids are unique');
 ok(eventCompanions.map(def=>def.id).join(',')===Array.from({length:10},(_,index)=>`EVT_UNIT_${String(index+1).padStart(3,'0')}`).join(','),'event companion ids remain EVT_UNIT_001 through EVT_UNIT_010');
 let s=fixture();
-for(const d of COMBAT_COMPANIONS){ok(companionServerDefinition(d.id)?.role===d.role,`${d.id} role agrees`);ok(companionServerDefinition(d.id)?.rarity===d.rarity,`${d.id} rarity agrees`);}
+for(const d of COMBAT_COMPANIONS){const server=companionServerDefinition(d.id),techniques=companionTechniques(d.id);ok(server?.role===d.role,`${d.id} role agrees`);ok(server?.rarity===d.rarity,`${d.id} rarity agrees`);ok(server?.active.name===d.activeAbility.name,`${d.id} active identity agrees`);ok(techniques.length===2&&new Set(techniques.map(t=>t.name)).size===2,`${d.id} has two distinct techniques`);}
+const playableSpecials=COMPANION_SPECIAL_CHALLENGES.filter(challenge=>COMBAT_COMPANIONS.some(def=>def.id===challenge.rewardCompanionId));ok(playableSpecials.map(row=>row.rewardCompanionId).includes('UNIT_012')&&playableSpecials.map(row=>row.rewardCompanionId).includes('UNIT_016')&&playableSpecials.map(row=>row.rewardCompanionId).includes('UNIT_020')&&playableSpecials.map(row=>row.rewardCompanionId).includes('UNIT_024'),'one deterministic Prestige challenge exists for each permanent region');
 rejects(()=>command(s,'companion_equip',{id:'UNIT_002'}),'same role rejected');
 rejects(()=>command(s,'companion_equip',{id:'UNIT_024'}),'unowned rejected');
 s=command(s,'companion_equip',{id:'UNIT_001'});ok(s.character!.equippedCombatCompanionId==='UNIT_001','equip persists');
 ok(companionCombatContribution(s).outputMultiplier>1,'assist output applied');
 const beforeGold=s.character!.gold,cost=companionLevelCost('standard',1);s=command(s,'companion_level',{id:'UNIT_001'});ok(s.account.combatCompanionProgress!.UNIT_001.level===2&&s.character!.gold===beforeGold-cost.gold,'level and cost atomic');
+let partial=fixture();const levelTarget=companionXpToNextLevel('standard',1),fullTrainingCost=companionLevelCost('standard',1),nearTrainingCost=companionLevelCost('standard',1,levelTarget-1);ok(nearTrainingCost.gold<fullTrainingCost.gold&&nearTrainingCost.companionEssence<=fullTrainingCost.companionEssence,'paid training cost scales to remaining XP');partial.account.combatCompanionProgress!.UNIT_001.xp=levelTarget-1;const partialGold=partial.character!.gold;partial=command(partial,'companion_level',{id:'UNIT_001'});ok(partial.account.combatCompanionProgress!.UNIT_001.level===2&&partial.character!.gold===partialGold-nearTrainingCost.gold,'earned XP is credited toward paid level completion');
 for(let i=2;i<10;i++)s=command(s,'companion_level',{id:'UNIT_001'});
 rejects(()=>command(s,'companion_level',{id:'UNIT_001'}),'ascension gate');
 let poor=structuredClone(s);poor.account.bondstones=0;const poorBefore=JSON.stringify(poor);rejects(()=>command(poor,'companion_ascend',{id:'UNIT_001'}),'missing resources rejected');ok(JSON.stringify(poor)===poorBefore,'failure leaves original intact');
@@ -36,6 +39,7 @@ s=command(s,'companion_ascend',{id:'UNIT_001'});ok(s.account.combatCompanionProg
 s=command(s,'companion_level',{id:'UNIT_001'});ok(s.account.combatCompanionProgress!.UNIT_001.level===11,'higher level unlocked');
 const bond=applyCompanionBondXp(s.account.combatCompanionProgress!.UNIT_001,2520);ok(bond.bondLevel===10&&bond.bondXp===2520&&bond.bondTraitUnlocked,'cumulative Bond 10');
 s.account.combatCompanionProgress!.UNIT_001=bond;
+const milestoneEssence=s.account.companionEssence!;for(const level of [2,4,8])s=command(s,'companion_bond_reward',{id:'UNIT_001',level});ok(s.account.companionEssence===milestoneEssence+100,'Bond 2/4/8 rewards pay the authored Essence total');ok(s.account.companionPhase2Profile?.codexRewardIds?.some(id=>id.includes('COMPANION_PROFILE_ICON:UNIT_001'))&&s.account.companionPhase2Profile?.codexRewardIds?.some(id=>id.includes('COMPANION_BOND_TITLE:UNIT_001')),'Bond cosmetic milestone entitlements are stored');
 const technique=companionTechniques('UNIT_001')[0].id;
 rejects(()=>command(s,'companion_technique',{id:'UNIT_001',technique}),'technique requires second ascension');
 for(let i=11;i<20;i++)s=command(s,'companion_level',{id:'UNIT_001'});
@@ -53,6 +57,7 @@ legacy.character!.selectedCosmeticPetId='PET_001';mult=characterPermanentMultipl
 legacy.character!.selectedCosmeticPetId='PET_004';mult=characterPermanentMultipliers(legacy);ok(Math.abs(mult.gatheringSpeedMultiplier-(1+(pebble.gatheringSpeedMultiplier!-1)*.25)*(1+(briar.gatheringSpeedMultiplier!-1)*.25))<1e-10&&mult.incomingDamageMultiplier===1,'unowned selected pet cannot grant perk');
 let quest=createCharacter(newGame(now),'IRONWARDEN','Quest Hero');quest.quests=quest.quests.map(q=>q.questId==='QST_005'?{...q,status:'complete'}:q);quest=claimQuest(quest,'QST_005');ok(quest.account.unlockedCombatCompanionIds?.includes('UNIT_001'),'existing quest unlock hook');
 const killState=recordCompanionActivity(createCharacter(newGame(now),'WAYFINDER','Mine Hero'),'combat','CAVE_SKITTER',250,now);ok(killState.account.unlockedCombatCompanionIds?.includes('UNIT_002'),'mine kills unlock sentry');
+let regional=createCharacter(newGame(now),'WAYFINDER','Regional Hero');regional.regionalProgressById={REG_002:{echoesCompleted:3,dungeonsCompleted:3}};regional=refreshCompanions(regional,now);ok(regional.account.unlockedCombatCompanionIds?.includes('UNIT_014')&&regional.account.unlockedCombatCompanionIds?.includes('UNIT_015'),'Sunscar Echo and authored dungeon-set progress unlock regional companions');
 let hunt=command(fixture(),'companion_equip',{id:'UNIT_001'});hunt=startCombat(hunt,'MOSS_RAT',now);const oldXp=hunt.account.combatCompanionProgress!.UNIT_001.xp;const claimed=claimActivity(hunt,now+60000);ok(claimed.reward.kills>0&&claimed.state.account.combatCompanionProgress!.UNIT_001.bondXp>0,'real hunting awards progression');
 const solo=structuredClone(hunt);solo.character!.equippedCombatCompanionId=undefined;ok(previewActivityReward(hunt,now+600000).kills>=previewActivityReward(solo,now+600000).kills,'companion helps hunt');ok(!!oldXp||claimed.state.account.combatCompanionProgress!.UNIT_001.xp!==oldXp,'XP changes');
 let trial=fixture();for(const id of ids)trial.account.combatCompanionProgress![id]={...trial.account.combatCompanionProgress![id],level:20,ascensionTier:2,bondLevel:10,bondXp:2520,bondTraitUnlocked:true};
@@ -89,6 +94,7 @@ monthly=command(monthly,'companion_monthly',{id:'NO_PRESTIGE_15'});ok(monthly.ac
 rejects(()=>command(monthly,'companion_monthly',{id:'NO_PRESTIGE_15'},Date.UTC(2026,9,1)),'expired monthly completion cannot pay next season');
 const recoveryTrial=parseSaveBackup(createSaveBackup(trial));ok(recoveryTrial.account.companionBattleReadyAtMs!>now,'battle recovery persists');rejects(()=>command(recoveryTrial,'companion_trial_floor',{id:run.runId,floor:2}),'consecutive rewards respect simulated combat duration');
 let rematch=fixture();rejects(()=>command(rematch,'companion_boss_rematch'),'rematch requires first story clear');rematch.character!.level=25;rematch.defeatedBossIds=['FALLEN_KNIGHT'];
+let weeklyCapped=fixture();weeklyCapped.character!.level=25;weeklyCapped.defeatedBossIds=['FALLEN_KNIGHT'];weeklyCapped.account.companionBossRematchBondstoneWeek=companionTrialWeekKey(now);weeklyCapped=command(weeklyCapped,'companion_boss_rematch',undefined,now);ok(weeklyCapped.account.companionLastBattle?.bondstones===0,'Fallen Knight rematch cannot pay more than one Bondstone in a UTC week');
 rematch=command(rematch,'companion_boss_rematch');ok(rematch.account.companionBossRematchReadyAtMs===now+86400000,'daily rematch attempt consumed on either outcome');ok(rematch.account.companionLastBattle?.title==='Fallen Knight rematch','rematch result is visible');
 rematch=parseSaveBackup(createSaveBackup(rematch));rejects(()=>command(rematch,'companion_boss_rematch'),'rematch cannot replay after reload');command(rematch,'companion_boss_rematch',undefined,now+86400000);ok(true,'next UTC day permits next attempt');
 const loadedQuest=parseSaveBackup(createSaveBackup({...quest,account:{...quest.account,unlockedCombatCompanionIds:[],combatCompanionProgress:{}}}));ok(loadedQuest.account.unlockedCombatCompanionIds?.includes('UNIT_001'),'legacy completed quest reconciles on load');

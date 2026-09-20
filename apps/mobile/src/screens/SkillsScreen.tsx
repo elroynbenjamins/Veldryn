@@ -33,6 +33,7 @@ import {ActionQueuePanel} from '../components/ActionQueuePanel';
 import {MAX_ACTIVITY_QUEUE} from '../core/activity-queue';
 
 export function SkillsScreen({state,onGather,onQueueGather,onQueueRemove,onQueueClear,onQueueStart,onCraft,onEquipTool,onCharacter,onInventory,onViewToolRecipes,onSelectSkill,onCommand=async()=>{},initialMode='gathering',initialSkill}:{state:GameState;onGather:(id:string)=>void;onQueueGather:(id:string)=>void;onQueueRemove:(index:number)=>void;onQueueClear:()=>void;onQueueStart:()=>void;onCraft:(id:string)=>void;onEquipTool:(id:string)=>void;onCharacter:()=>void;onInventory:()=>void;onViewToolRecipes:()=>void;onSelectSkill?:(id:string)=>void;onCommand?:(command:import('../core/game-commands').GameCommand)=>Promise<void>;initialMode?:'gathering'|'crafting'|'novice'|'faith';initialSkill?:SkillId}){
+  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
   const gatheringDefs=[...GATHERING,...HERB_NODES];
   const [mode,setMode]=useState<'gathering'|'crafting'|'novice'|'faith'>(initialMode);
   const [readyOnly,setReadyOnly]=useState(false),[recipeQuery,setRecipeQuery]=useState(''),[recipeLimits,setRecipeLimits]=useState<Record<string,number>>({});

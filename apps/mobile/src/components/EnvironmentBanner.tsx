@@ -1,7 +1,9 @@
+import {useMemo} from 'react';
 import {StyleSheet,Text,View} from 'react-native';
 import {ActivityKind} from '../core/types';
 import {environmentSummary,WorldEnvironment} from '../core/world-weather';
-import {C,radii,spacing,typography} from '../theme/theme';
+import {radii,spacing,typography,equipmentTheme,type ThemeColors} from '../theme/theme';
+import {useGameTheme} from '../theme/ThemeContext';
 import {EnvironmentArtwork} from './EnvironmentArtwork';
 
 function remaining(changesAtMs:number,nowMs:number){
@@ -10,9 +12,10 @@ function remaining(changesAtMs:number,nowMs:number){
   return hours?`${hours}h ${rest}m`:`${rest}m`;
 }
 export function EnvironmentBanner({environment,kind,nowMs=Date.now(),compact=false,locked=false}:{environment:WorldEnvironment;kind?:ActivityKind;nowMs?:number;compact?:boolean;locked?:boolean}){
+  const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
   return <View style={[s.root,{borderColor:environment.weatherColor},compact&&s.compact]}>
     <View style={s.symbols}><EnvironmentArtwork type="season" id={environment.seasonId} size={compact?30:38}/><EnvironmentArtwork type="weather" id={environment.weatherId} size={compact?30:38}/></View>
     <View style={s.flex}><Text style={s.title}>{environment.seasonName} · {environment.weatherName}</Text><Text style={s.detail}>{environment.zoneName}{kind?` · ${environmentSummary(kind,environment)}`:''}</Text>{!compact&&<Text style={s.timer}>{locked?'Weather locked until this activity ends':`Regional weather changes in ${remaining(environment.changesAtMs,nowMs)}`}</Text>}</View>
   </View>;
 }
-const s=StyleSheet.create({root:{flexDirection:'row',alignItems:'center',gap:spacing.md,backgroundColor:C.panel,borderWidth:1,borderRadius:radii.lg,padding:spacing.md},compact:{padding:spacing.sm},symbols:{flexDirection:'row',gap:spacing.xs},flex:{flex:1},title:{...typography.bodyStrong,color:C.text},detail:{...typography.caption,color:C.info},timer:{...typography.caption,color:C.muted}});
+function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);return StyleSheet.create({root:{flexDirection:'row',alignItems:'center',gap:spacing.md,backgroundColor:C.panel,borderWidth:1,borderRadius:radii.lg,padding:spacing.md},compact:{padding:spacing.sm},symbols:{flexDirection:'row',gap:spacing.xs},flex:{flex:1},title:{...typography.bodyStrong,color:C.text},detail:{...typography.caption,color:C.info},timer:{...typography.caption,color:C.muted}});}

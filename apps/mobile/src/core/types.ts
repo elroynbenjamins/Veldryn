@@ -98,5 +98,6 @@ export interface RewardBundle {
   petDrops?:{petId:string;name:string;sourceId:string}[];
   companionUnlocks?:{companionId:string;name:string;role:string;rarity:string}[];
   challengeHuntFirstClear?:{key:string;monsterId:string;challengeId:CombatChallengeId;label:string};
+  championEncounters?:{count:number;bonusXp:number;bonusGold:number};
 }
 import type {Language} from '../i18n/languages';

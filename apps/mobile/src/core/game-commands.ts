@@ -51,6 +51,14 @@ export function validateGameCommand(value:unknown):GameCommand{
 function text(args:Record<string,unknown>,key:string,max=100):string{const value=args[key];if(typeof value!=='string'||!value.trim()||value.length>max)throw new Error(`invalid_${key}`);return value.trim();}
 function integer(args:Record<string,unknown>,key:string,min=1,max=100000):number{const value=args[key];if(typeof value!=='number'||!Number.isSafeInteger(value)||value<min||value>max)throw new Error(`invalid_${key}`);return value;}
 function oneOf<T extends string>(value:unknown,choices:readonly T[]):T{if(typeof value!=='string'||!choices.includes(value as T))throw new Error('invalid_choice');return value as T;}
+interface CompanionCommandEconomySnapshot{gold:number;companionEssence:number;bondstones:number;}
+function companionCommandEconomySnapshot(state:GameState):CompanionCommandEconomySnapshot{return {gold:state.character?.gold??0,companionEssence:state.account.companionEssence??0,bondstones:state.account.bondstones??0};}
+function recordCompanionCommandMetrics(state:GameState,type:string,before:CompanionCommandEconomySnapshot):GameState{
+ const after=companionCommandEconomySnapshot(state),metrics={...(state.account.longTermMetrics??{})},prefix='companions.command.'+type.replace(/^companion_/,'');
+ metrics[prefix+'.uses']=(metrics[prefix+'.uses']??0)+1;
+ for(const key of ['gold','companionEssence','bondstones'] as const){const delta=after[key]-before[key],label=key==='companionEssence'?'essence':key;if(delta>0)metrics[prefix+'.'+label+'_earned']=(metrics[prefix+'.'+label+'_earned']??0)+delta;else if(delta<0)metrics[prefix+'.'+label+'_spent']=(metrics[prefix+'.'+label+'_spent']??0)-delta;}
+ return {...state,account:{...state.account,longTermMetrics:metrics}};
+}
 export function validateGameSettings(value:unknown):GameState['settings']{
  if(!value||typeof value!=='object'||Array.isArray(value))throw new Error('invalid_settings');const row=value as Record<string,unknown>;
  const keys=Object.keys(game.newGame(0).settings);if(Object.keys(row).some(key=>!keys.includes(key)))throw new Error('invalid_settings');
@@ -72,6 +80,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
  // Settle before any mutation that can alter past activity rates, food, gear or inventory.
  if(state.character&&command.type!=='create')settle();
  state=refreshCompanions(state,now);
+ const companionMetricBefore=command.type.startsWith('companion_')?companionCommandEconomySnapshot(state):undefined;
  if(['companion_equip','companion_level','companion_ascend','companion_master'].includes(command.type))assertCompanionIdle(state,text(a,'id'));
  switch(command.type){
   case 'class_training':state=game.startClassTraining(state,now);break;
@@ -178,6 +187,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'event_purchase':state=events.purchaseEventOffer(state,text(a,'id'),now);break;
   default:throw new Error('invalid_command');
  }
+ if(companionMetricBefore)state=recordCompanionCommandMetrics(state,command.type,companionMetricBefore);
  if(state.character&&(!Number.isSafeInteger(state.character.gold)||state.character.gold<0))throw new Error('invalid_wallet');
  return {state:discoverCharacterSkins(state),reward,activity,message,won,upgrade,contributions};
 }

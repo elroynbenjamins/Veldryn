@@ -11,11 +11,14 @@ ok(candidates.some(row=>row.kind==='hunt'),'Contract Board needs Hunt Order cand
 ok(candidates.some(row=>row.kind==='profession'),'Contract Board needs Work Order candidates');
 const regionalCandidates=candidates.filter(row=>row.kind==='regional');
 ok(regionalCandidates.length>0&&regionalCandidates.every(row=>row.regionId),'Contract Board needs real Regional Problem candidates');
+ok(regionalCandidates.length>=2&&regionalCandidates.every(row=>row.brief&&row.brief.length>40),'Unlocked regions should offer multiple authored Regional Problem scenarios');
+ok(new Set(regionalCandidates.map(row=>row.title)).size===regionalCandidates.length,'Regional Problem scenario titles must remain distinct');
 
 const generated=generateWeeklyOrders(accountId,now,candidates);
 ok(generated.orders.filter(row=>row.kind==='hunt').length===2,'default board should have two Hunt Orders');
 ok(generated.orders.filter(row=>row.kind==='profession').length===2,'default board should have two Work Orders');
 ok(generated.orders.filter(row=>row.kind==='regional').length===1,'default board should have one Regional Problem');
+const generatedRegional=generated.orders.find(row=>row.kind==='regional');ok(!!generatedRegional?.brief&&generatedRegional.reward.label.includes('Relief Cache'),'Generated Regional Problem should preserve authored brief and regional reward identity');
 
 const regional=generated.orders.find(row=>row.kind==='regional')!;
 const direct=applyWeeklyOrderProgress(generated,{eventId:'regional-progress',characterId:state.character!.id,kind:'regional',targetId:regional.targetId,amount:3,completedAtMs:now});

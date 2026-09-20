@@ -2,12 +2,12 @@ export type WeeklyOrderKind='hunt'|'profession'|'regional';
 export type WeeklyOrderProfessionKind='gathering'|'processing'|'crafting'|'cooking'|'smelting';
 export interface WeeklyOrderReward{rewardRef:string;label:string}
 export interface WeeklyOrderSource{kind:'skill'|'monster'|'dungeon'|'recipe'|'item'|'region'|'collection'|'weekly_order';id:string;label:string;available:boolean;reason?:string}
-interface CandidateBase{id:string;title:string;regionId?:string;activityId:string;source:WeeklyOrderSource;estimatedPerHour:number;available:boolean;unavailableReason?:string;reward?:WeeklyOrderReward;priority?:number}
+interface CandidateBase{id:string;title:string;brief?:string;regionId?:string;activityId:string;source:WeeklyOrderSource;estimatedPerHour:number;available:boolean;unavailableReason?:string;reward?:WeeklyOrderReward;priority?:number}
 export interface HuntOrderCandidate extends CandidateBase{kind:'hunt';monsterId:string;boss?:boolean}
 export interface ProfessionOrderCandidate extends CandidateBase{kind:'profession';actionId:string;professionKind:WeeklyOrderProfessionKind}
 export interface RegionalOrderCandidate extends CandidateBase{kind:'regional';regionId:string}
 export type WeeklyOrderCandidate=HuntOrderCandidate|ProfessionOrderCandidate|RegionalOrderCandidate;
-export interface WeeklyOrder{id:string;weekKey:string;slot:number;kind:WeeklyOrderKind;title:string;targetId:string;regionId?:string;activityId:string;source:WeeklyOrderSource;target:number;progress:number;reward:WeeklyOrderReward;claimed:boolean;completedAtMs?:number;professionKind?:WeeklyOrderProfessionKind}
+export interface WeeklyOrder{id:string;weekKey:string;slot:number;kind:WeeklyOrderKind;title:string;brief?:string;targetId:string;regionId?:string;activityId:string;source:WeeklyOrderSource;target:number;progress:number;reward:WeeklyOrderReward;claimed:boolean;completedAtMs?:number;professionKind?:WeeklyOrderProfessionKind}
 export interface WeeklyOrderPolicy{enabled:boolean;huntSlots:number;professionSlots:number;regionalSlots:number;huntTargetMinutes:number;professionTargetMinutes:number;regionalTargetMinutes:number;minimumHuntTarget:number;minimumProfessionTarget:number;minimumRegionalTarget:number;defaultHuntReward:WeeklyOrderReward;defaultProfessionReward:WeeklyOrderReward;defaultRegionalReward:WeeklyOrderReward;completionReward:WeeklyOrderReward}
 export interface WeeklyOrdersState{schemaVersion:41;accountId:string;revision:number;weekKey:string;startsAtMs:number;endsAtMs:number;generatedAtMs:number;orders:WeeklyOrder[];completionClaimed:boolean}
 export interface WeeklyOrderProgressEvent{eventId:string;characterId:string;kind:WeeklyOrderKind;targetId:string;amount:number;completedAtMs:number}
@@ -41,7 +41,7 @@ export function generateWeeklyOrders(accountId:string,nowMs:number,candidates:We
  if(!policy.enabled)return {schemaVersion:41,accountId,revision:0,...window,generatedAtMs:nowMs,orders:[],completionClaimed:false};
  const chosen=[...select(accountId,window.weekKey,candidates,'hunt',policy.huntSlots),...select(accountId,window.weekKey,candidates,'profession',policy.professionSlots),...select(accountId,window.weekKey,candidates,'regional',policy.regionalSlots)];
  return {schemaVersion:41,accountId,revision:0,...window,generatedAtMs:nowMs,completionClaimed:false,orders:chosen.map((candidate,slot)=>({
-   id:`${window.weekKey}:${candidate.kind}:${candidate.id}`,weekKey:window.weekKey,slot,kind:candidate.kind,title:candidate.title,
+   id:`${window.weekKey}:${candidate.kind}:${candidate.id}`,weekKey:window.weekKey,slot,kind:candidate.kind,title:candidate.title,brief:candidate.brief,
    targetId:candidate.kind==='hunt'?candidate.monsterId:candidate.kind==='regional'?candidate.regionId:candidate.actionId,regionId:candidate.regionId,activityId:candidate.activityId,source:{...candidate.source},
    target:targetFor(candidate,policy),progress:0,reward:{...(candidate.reward??(candidate.kind==='hunt'?policy.defaultHuntReward:candidate.kind==='regional'?policy.defaultRegionalReward:policy.defaultProfessionReward))},claimed:false,
    professionKind:candidate.kind==='profession'?candidate.professionKind:undefined

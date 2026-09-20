@@ -85,6 +85,7 @@ function updateCharacter(state:GameState,characterId:string,fn:(character:Charac
  return {...state,otherCharacters};
 }
 export function claimDailySupplies(state:GameState,characterId:string,nowMs:number){
+ if(!state.character||!characterId||(state.character.id!==characterId&&!(state.otherCharacters??[]).some(entry=>entry.character.id===characterId)))throw new Error('Character is not owned.');
  const status=dailySuppliesStatus(state,nowMs),current=track(state);
  if(!status.canClaim)throw new Error('Daily Supplies were already claimed for this UTC day.');
  let next=state;

@@ -1,5 +1,5 @@
 import type {GameState} from './types';
-import {COMBAT_CHALLENGES,COMBAT_CHALLENGE_IDS} from './challenge-hunts';
+import {COMBAT_CHALLENGES,COMBAT_CHALLENGE_IDS,challengeHuntClearSummary} from './challenge-hunts';
 import {MASTERY_POINTS_PER_RANK,MONSTER_MASTERY_MAX_RANK,monsterMastery} from './monster-mastery';
 
 export interface MasteryMilestone{
@@ -25,13 +25,14 @@ export const MONSTER_MASTERY_MILESTONES:readonly MasteryMilestone[]=[
 export function unlockedMasteryMilestones(rank:number){return MONSTER_MASTERY_MILESTONES.filter(row=>rank>=row.rank);}
 export function nextMasteryMilestone(rank:number){return MONSTER_MASTERY_MILESTONES.find(row=>rank<row.rank);}
 export function monsterMasteryGuidance(state:GameState,id:string){
- const mastery=monsterMastery(state,id),next=nextMasteryMilestone(mastery.rank),nextRankPoints=mastery.rank>=MONSTER_MASTERY_MAX_RANK?MASTERY_POINTS_PER_RANK*MONSTER_MASTERY_MAX_RANK:(mastery.rank+1)*MASTERY_POINTS_PER_RANK;
+ const mastery=monsterMastery(state,id),clearSummary=challengeHuntClearSummary(state,id),next=nextMasteryMilestone(mastery.rank),nextRankPoints=mastery.rank>=MONSTER_MASTERY_MAX_RANK?MASTERY_POINTS_PER_RANK*MONSTER_MASTERY_MAX_RANK:(mastery.rank+1)*MASTERY_POINTS_PER_RANK;
  return {
   ...mastery,
   next,
   killsToNextRank:Math.max(0,nextRankPoints-mastery.points),
   killsToNextMilestone:next?Math.max(0,next.rank*MASTERY_POINTS_PER_RANK-mastery.points):0,
-  challengeUnlocks:COMBAT_CHALLENGE_IDS.map(id=>({id,def:COMBAT_CHALLENGES[id],unlocked:mastery.rank>=COMBAT_CHALLENGES[id].masteryRank})),
+  challengeUnlocks:COMBAT_CHALLENGE_IDS.map(id=>({id,def:COMBAT_CHALLENGES[id],unlocked:mastery.rank>=COMBAT_CHALLENGES[id].masteryRank,cleared:clearSummary.rows.find(row=>row.id===id)?.cleared??false})),
+  clearSummary,
  };
 }
 export function masterySummary(state:GameState,ids:string[]){
@@ -43,5 +44,7 @@ export function masterySummary(state:GameState,ids:string[]){
   rank20:rows.filter(row=>row.rank>=20).length,
   rank30:rows.filter(row=>row.rank>=30).length,
   challengeTiers:rows.reduce((sum,row)=>sum+row.challengeUnlocks.filter(challenge=>challenge.unlocked).length,0),
+  challengeClears:rows.reduce((sum,row)=>sum+row.clearSummary.cleared,0),
+  conqueredSpecies:rows.filter(row=>row.clearSummary.conquered).length,
  };
 }

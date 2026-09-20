@@ -10,14 +10,15 @@ import {C,radii,spacing,typography} from '../theme/theme';
 import {Language,ot} from '../i18n';
 import {onlineConfigured} from '../online/supabase';
 import {chatEmoteCount} from '../core/chat-emotes';
-import {guildChatCommandKey,guildChatState,sendGuildChat,type GuildChatMessage,type GuildChatState} from '../online/social';
+import {guildChatCommandKey,guildChatState,markSocialChatRead,sendGuildChat,type GuildChatMessage,type GuildChatState} from '../online/social';
 
-export function GuildChat({language}:{language:Language}){
+export function GuildChat({language,currentPlayerName,onRead}:{language:Language;currentPlayerName?:string;onRead?:()=>void}){
  const [snapshot,setSnapshot]=useState<GuildChatState|null>(null),[selected,setSelected]=useState<GuildChatMessage|null>(null),[body,setBody]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const pending=useRef<{body:string;key:string}|null>(null);
- const active=useRef(true);
- const load=async()=>{if(!onlineConfigured)return;try{const next=await guildChatState();if(active.current){setSnapshot(next);setError('')}}catch(reason){if(active.current)setError(reason instanceof Error?reason.message:'Guild chat unavailable.')}};
- useEffect(()=>{active.current=true;setSnapshot(null);setSelected(null);setBody('');pending.current=null;if(!onlineConfigured)return()=>{active.current=false};void load();const timer=setInterval(()=>void load(),5000);return()=>{active.current=false;clearInterval(timer)};},[]);
+ const active=useRef(true),notifiedRead=useRef(false),onReadRef=useRef(onRead);onReadRef.current=onRead;
+ const markRead=async()=>{try{await markSocialChatRead('guild');if(active.current&&!notifiedRead.current){notifiedRead.current=true;onReadRef.current?.()}}catch{}};
+ const load=async()=>{if(!onlineConfigured)return;try{const next=await guildChatState();if(active.current){setSnapshot(next);setError('');if(next.guild)void markRead();}}catch(reason){if(active.current)setError(reason instanceof Error?reason.message:'Guild chat unavailable.')}};
+ useEffect(()=>{active.current=true;notifiedRead.current=false;setSnapshot(null);setSelected(null);setBody('');pending.current=null;if(!onlineConfigured)return()=>{active.current=false};void load();const timer=setInterval(()=>void load(),5000);return()=>{active.current=false;clearInterval(timer)};},[]);
 
  if(!onlineConfigured)return <View style={s.unavailable}><Text style={s.title}>{ot(language,'chat.guild')}</Text><Text style={s.note}>Guild Chat requires online services. No simulated chat is shown.</Text></View>;
  const guild=snapshot?.guild??null,messages=snapshot?.messages??[];
@@ -38,7 +39,7 @@ export function GuildChat({language}:{language:Language}){
   <ScrollView style={s.log} contentContainerStyle={s.logInner} keyboardShouldPersistTaps="handled">
    {messages.length?messages.map(message=><View key={message.id} style={s.message}>
     <View style={s.messageHead}><Pressable accessibilityRole="button" accessibilityLabel={'Open '+message.sender_name+"'s player profile"} onPress={()=>setSelected(message)} style={s.nameButton}><GuildTaggedPlayerName style={s.name} name={message.sender_name} guildTag={message.guild_tag} tagColorId={message.guild_tag_color_id}/><Text style={s.profileMark}>›</Text></Pressable>{message.guild_role?<Text style={[s.role,message.guild_role==='leader'&&s.roleLeader,message.guild_role==='officer'&&s.roleOfficer]}>{message.guild_role.toUpperCase()}</Text>:null}<Text style={s.time}>{new Date(message.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</Text></View>
-    <ChatMessageText body={message.body}/>
+    <ChatMessageText body={message.body} mentionName={currentPlayerName}/>
    </View>):<Text style={s.empty}>No Guild messages yet. Start the conversation.</Text>}
   </ScrollView>
   {!!error&&<View accessibilityRole="alert" style={s.errorCard}><Text style={s.errorLabel}>GUILD CHAT UNAVAILABLE</Text><Text style={s.error}>{error}</Text><GameButton compact title="Retry" tone="secondary" disabled={busy} onPress={()=>void load()}/></View>}

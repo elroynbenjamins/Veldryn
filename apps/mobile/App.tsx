@@ -315,7 +315,7 @@ const next=discoverCharacterSkins(candidate);stateRef.current=next;setState(next
     {key:'weekly-order-rewards',kind:'weekly_order_complete',unread:contractBoard.pendingRewards>0},
     {key:'event-rewards-ready',kind:'event_reward_ready',count:eventClaims,unread:eventClaims>0},
     {key:'incoming-friend-requests',kind:'friend_request',count:notificationCounts.friendRequests,unread:notificationCounts.friendRequests>0},
-    {key:'profile-customization-review',kind:'collection_unlock',unread:profileAttentionKeys.length>0},
+    {key:'profile-customization-review',kind:'profile_customization',unread:profileAttentionKeys.length>0},
     {key:'unread-direct-messages',kind:'unread_dm',count:notificationCounts.chatUnread,unread:notificationCounts.chatUnread>0},
     {key:'pending-guild-attention',kind:'guild_application',count:notificationCounts.guild,unread:notificationCounts.guild>0},
     {key:'pending-party-invites',kind:'party_invite',count:notificationCounts.party,unread:notificationCounts.party>0},

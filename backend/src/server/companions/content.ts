@@ -55,7 +55,7 @@ export const COMPANION_SERVER_DEFINITIONS:CompanionServerDefinition[]=raw.map(([
 }));
 export const companionServerDefinition=(id:string)=>COMPANION_SERVER_DEFINITIONS.find(x=>x.id===id);
 
-export const COMPANION_TECHNIQUE_UNLOCK={ascensionTier:2,bondLevel:7,mode:'all' as const};
+export const COMPANION_TECHNIQUE_UNLOCK={ascensionTier:2,bondLevel:7,mode:'any' as const};
 
 type TechniqueSeed={suffix:string;name:string;description:string;effects:CompanionTechniqueDefinition['effects']};
 const CUSTOM_TECHNIQUE_SEEDS:Record<string,readonly TechniqueSeed[]>={

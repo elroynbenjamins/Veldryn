@@ -35,6 +35,12 @@ eq(new Set(bosses.map(x=>x.abilities[0]?.name)).size,6,'All six Trial bosses nee
 ok(bosses.every(x=>x.boss===true&&x.tags?.some(tag=>tag.startsWith('trial_boss_theme:'))),'Boss encounters need themed boss metadata');
 eq(bosses[0].name,'Runebound Colossus','Floor 5 boss identity');
 eq(bosses[5].name,'Regent of Echoes','Floor 30 final boss identity');
+ok(bosses[0].abilities.length>=2,'Floor 5 boss should mix offense with a defensive brace');
+ok(bosses[1].abilities.some(a=>a.effects.some(e=>e.kind==='buff'&&e.tag==='damage_done')),'Floor 10 boss should gain a damage phase');
+ok(bosses[2].abilities.some(a=>a.interruptible&&a.castTimeMs>0),'Floor 15 boss should expose an interruptible cast');
+ok(bosses[3].abilities.some(a=>a.effects.some(e=>e.kind==='debuff'&&e.tag==='damage_taken')),'Floor 20 boss should apply vulnerability pressure');
+ok(bosses[4].abilities.length>=2&&bosses[4].abilities.some(a=>a.target==='all_enemies'),'Floor 25 boss should mix focused and team pressure');
+ok(bosses[5].abilities.some(a=>a.interruptible&&a.castTimeMs>0)&&bosses[5].abilities.some(a=>a.target==='all_enemies'),'Floor 30 boss should combine AoE pressure with an interruptible judgment');
 
 // Modifiers alter the authoritative combat snapshot, not only labels.
 const unseasoned=buildCompanionTrialEncounter(1,'2000-01')[0],september=buildCompanionTrialEncounter(1,'2026-09')[0];ok(september.stats.defense>unseasoned.stats.defense,'Armored monthly modifier did not affect enemy defense');ok(september.stats.attackPower>unseasoned.stats.attackPower,'Unstable Magic monthly modifier did not add enemy pressure');const playerBefore=buildOwnedCompanionCombatant(owned.UNIT_001,{mode:'companion_trial'}),playerAfter=applyCompanionTrialModifiers([playerBefore],[],['unstable_magic']).players[0];ok(playerAfter.stats.haste>playerBefore.stats.haste,'Unstable Magic did not improve companion Haste');

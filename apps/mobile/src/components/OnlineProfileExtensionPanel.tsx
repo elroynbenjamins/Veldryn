@@ -12,6 +12,7 @@ import {COMBAT_COMPANIONS} from '../content/combat-companions';
 import {ITEMS} from '../content/items';
 import type {GameState} from '../core/types';
 import {C,radii,spacing,typography} from '../theme/theme';
+import {profileCollectionLabel} from '../core/profile-presentation';
 
 type Picker='visibility'|'character'|'skill'|'companion'|'achievements'|'records'|'collections'|null;
 const visibilityLabel:Record<ProfileVisibilityV43,string>={public:'Public',guild:'Guild only',private:'Private'};
@@ -40,9 +41,15 @@ export function OnlineProfileExtensionPanel({state,onSaved}:{state:GameState;onS
   add('border',state.character?.profileBorderId);
   for(const id of Object.values(state.character?.equipment??{}))add('item',id);
   for(const stack of state.inventory.stacks.filter(row=>row.quantity>0).slice(0,30))add('item',stack.itemId);
-  return refs.slice(0,80);
+  for(const other of state.otherCharacters??[]){
+   for(const id of other.character.unlockedSkinIds??[])add('skin',id);
+   add('background',other.character.profileBackgroundId);add('border',other.character.profileBorderId);add('pet',other.character.selectedCosmeticPetId);
+   for(const id of Object.values(other.character.equipment??{}))add('item',id);
+   for(const stack of [...other.inventory.stacks,...other.overflow.stacks].filter(row=>row.quantity>0).slice(0,20))add('item',stack.itemId);
+  }
+  return refs.slice(0,100);
  },[state]);
- const labelRef=(ref:ProfileCollectionRefV43)=>ref.kind==='companion'?(COMBAT_COMPANIONS.find(row=>row.id===ref.id)?.name??ref.id):ref.kind==='item'?(ITEMS.find(row=>row.id===ref.id)?.name??ref.id):ref.id.replace(/^pet_|^bg_|^frame_/,'').replace(/_/g,' ');
+ const labelRef=(ref:ProfileCollectionRefV43)=>profileCollectionLabel(ref);
  const patch=(next:Partial<ProfileExtensionSelfV43>)=>{if(value)setValue({...value,...next});};
  const toggle=(list:string[],id:string)=>list.includes(id)?list.filter(value=>value!==id):list.length<3?[...list,id]:list;
  const toggleCollection=(list:ProfileCollectionRefV43[],ref:ProfileCollectionRefV43)=>{const key=refKey(ref);return list.some(row=>refKey(row)===key)?list.filter(row=>refKey(row)!==key):list.length<3?[...list,ref]:list};

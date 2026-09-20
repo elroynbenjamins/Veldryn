@@ -4,10 +4,12 @@ import path from 'node:path';
 const root=path.resolve(process.cwd(),'../..');
 const migrationPath=path.join(root,'backend/supabase/migrations/20261018000100_social_direct_invitations.sql');
 const managementMigrationPath=path.join(root,'backend/supabase/migrations/20261018000110_social_member_management.sql');
+const successionMigrationPath=path.join(root,'backend/supabase/migrations/20261018000120_social_departure_succession.sql');
 const clientPath=path.join(root,'apps/mobile/src/online/social.ts');
 const partyClientPath=path.join(root,'apps/mobile/src/online/party-social.ts');
 const migration=fs.readFileSync(migrationPath,'utf8');
 const managementMigration=fs.readFileSync(managementMigrationPath,'utf8');
+const successionMigration=fs.readFileSync(successionMigrationPath,'utf8');
 const client=fs.readFileSync(clientPath,'utf8');
 const partyClient=fs.readFileSync(partyClientPath,'utf8');
 
@@ -64,5 +66,30 @@ for(const rpc of [
  'remove_party_member_v1',
  'cancel_party_invitation_v1',
 ])need(partyClient,"rpc<","Party client typed RPC container"),need(partyClient,"'"+rpc+"'","mobile Party management RPC "+rpc);
+
+for(const [needle,label] of [
+ ["interval '21 days'",'21-day inactivity threshold'],
+ ["case candidate.role when 'officer' then 0 else 1 end",'Guild Officer-first succession'],
+ ["order by candidate.joined_at,candidate.account_id",'oldest active Party successor'],
+ ['player_activity_daily','server activity source'],
+ ['last_sign_in_at','auth sign-in activity fallback'],
+ ['social_activity_leadership_reconcile_v1','activity-triggered succession'],
+ ['update public.guilds set owner_account_id=v_next_account','Guild owner synchronization'],
+ ["set role='officer'",'outgoing Guild leader becomes Officer'],
+ ['guild_leader_must_transfer_or_disband','leader leave safeguard'],
+ ['transfer_guild_leadership_v1','manual Guild leadership transfer'],
+ ['leave_guild_v1','Guild leave RPC'],
+ ['disband_guild_v1','Guild disband RPC'],
+ ['disband_party_v1','Party disband RPC'],
+ ['party_leader_invitation_reconcile_v1','Party invite cleanup after leader change'],
+])need(successionMigration,needle,label);
+
+for(const rpc of [
+ 'guild_leadership_status_v1',
+ 'transfer_guild_leadership_v1',
+ 'leave_guild_v1',
+ 'disband_guild_v1',
+])need(client,"rpc('"+rpc+"'","mobile Guild succession/departure RPC "+rpc);
+need(partyClient,"'disband_party_v1'","mobile Party disband RPC");
 
 console.log('PASS: direct social invitation migration/client contract');

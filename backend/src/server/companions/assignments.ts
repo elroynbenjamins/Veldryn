@@ -1,4 +1,4 @@
-import {COMPANION_EXPEDITION_BOND_RATE,COMPANION_EXPEDITION_BONUS_CHANCE_CAP,COMPANION_EXPEDITION_GRADE_THRESHOLDS,COMPANION_EXPEDITION_PEN_DURATION_REDUCTION,companionMission,companionServerDefinition} from './content';
+import {COMPANION_EXPEDITION_BOND_RATE,COMPANION_EXPEDITION_BONUS_CHANCE_CAP,COMPANION_EXPEDITION_GRADE_THRESHOLDS,COMPANION_EXPEDITION_PEN_DURATION_REDUCTION,COMPANION_MISSIONS,companionMission,companionServerDefinition} from './content';
 import {companionTeamPower} from './team';
 import {companionTrialWeekKey} from './trial-season';
 import type {CompanionAssignment,CompanionAssignmentReward,CompanionEconomyState,CompanionMissionRequirement,OwnedCompanionSnapshot} from './domain';

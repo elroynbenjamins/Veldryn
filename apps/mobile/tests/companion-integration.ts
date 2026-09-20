@@ -1,14 +1,15 @@
 import {createCharacter,newGame,claimActivity,claimQuest,startCombat,previewActivityReward} from '../src/core/game';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
 import {unlockCombatCompanion,equipCombatCompanion,companionCombatContribution,companionLevelCost,companionRemainingLevelCost,companionAscensionCost,applyCompanionBondXp,claimSanctuaryTraining,claimSanctuaryEssence} from '../src/core/combat-companions';
-import {refreshCompanions,companionOwned,companionCombatExecutor,recordCompanionActivity,companionView} from '../src/core/companion-runtime';
+import {refreshCompanions,companionOwned,companionCombatExecutor,recordCompanionActivity,companionView,companionUnlockFacts} from '../src/core/companion-runtime';
 import {migrateSave} from '../src/core/save-migrations';
 import {createSaveBackup,parseSaveBackup} from '../src/core/save-transfer';
 import {characterPermanentMultipliers} from '../src/core/permanent-boosts';
 import {PET_PERMANENT_BOOSTS} from '../src/content/permanent-boosts';
 import {COMBAT_COMPANIONS} from '../src/content/combat-companions';
 import {companionMaterialSources,companionNextMasteryTargets,companionNextUnlockTargets,companionRewardLabel} from '../src/core/companion-presentation';
-import {COMPANION_TECHNIQUE_SWITCH_COST,companionServerDefinition,companionTechniques} from '../../../backend/src/server/companions/content';
+import {COMPANION_SPECIAL_CHALLENGES,COMPANION_TECHNIQUE_SWITCH_COST,companionServerDefinition,companionTechniques} from '../../../backend/src/server/companions/content';
+import {companionUnlockRequirementProgress} from '../../../backend/src/server/companions/progression-v2';
 import {buildOwnedCompanionCombatant} from '../../../backend/src/server/companions/combat-adapter';
 import {buildCompanionTrialEncounter} from '../../../backend/src/server/companions/trials';
 import type {GameState} from '../src/core/types';
@@ -17,6 +18,7 @@ function rejects(f:()=>unknown,label:string){let caught=false;try{f();}catch{cau
 const now=Date.UTC(2026,8,13),ids=['UNIT_001','UNIT_002','UNIT_003'];
 function fixture(){let s=createCharacter(newGame(now),'IRONWARDEN','Companion Test');for(const id of ids)s=unlockCombatCompanion(s,id,now);s.character!.gold=100000;s.account.companionEssence=10000;s.account.bondstones=100;s.account.companionMaterials={IRONWOOD_FANG:100,RUNEBOUND_CORE:100,WISP_DUST:100,ASTER_IRON_INGOT:100,ECHO_QUARTZ:100,OATHGLASS_SHARD:100,OATHGLASS_FRAGMENT:100};return refreshCompanions(s,now);}
 const command=(s:GameState,type:string,args?:Record<string,unknown>,time=now)=>executeGameCommand(s,{type,args},time).state;
+const specialRequirement=COMPANION_SPECIAL_CHALLENGES.find(row=>row.id==='CHALLENGE_OATHGLASS_KNIGHTLING')!.requirements[0],specialRequirementProgress=companionUnlockRequirementProgress(specialRequirement,companionUnlockFacts(fixture()));ok(specialRequirementProgress.current===0&&specialRequirementProgress.total===20&&!specialRequirementProgress.complete,'special challenge requirement progress exposes current and target values');
 const permanentCompanions=COMBAT_COMPANIONS.filter(def=>def.origin.type!=='event'),eventCompanions=COMBAT_COMPANIONS.filter(def=>def.origin.type==='event');
 ok(COMBAT_COMPANIONS.length===34,'roster contains 24 permanent and 10 event companions');
 ok(permanentCompanions.length===24,'permanent companion count remains 24');

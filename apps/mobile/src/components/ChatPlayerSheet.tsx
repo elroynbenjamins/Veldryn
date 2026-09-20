@@ -1,9 +1,10 @@
-import {useEffect,useState} from 'react';
+import {useEffect,useState,useMemo} from 'react';
 import {ActivityIndicator,Alert,Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {sendFriendRequest,setPlayerBlocked} from '../online/social';
 import type {FriendRelationship} from '../online/social';
 import {publicPlayerProfileV43,type PublicPlayerProfileV43} from '../online/profile-extension-v43';
-import {C,equipmentColors,radii,spacing,typography} from '../theme/theme';
+import {radii,spacing,typography,equipmentTheme,type ThemeColors} from '../theme/theme';
+import {useGameTheme} from '../theme/ThemeContext';
 import {profileShowcaseArt} from '../theme/profile-showcase-art';
 import {ProfileShowcaseSection} from './ProfileShowcaseSection';
 import {ProfileFavoriteHighlights} from './ProfileFavoriteHighlights';
@@ -17,6 +18,7 @@ import {profileAchievementPrestige,profileCollectionPrestige,profileRecordPresti
 export type ChatPlayerIdentity={id?:string;account_id:string;sender_name:string;guild_tag?:string|null;guild_tag_color_id?:string|null;relationship?:FriendRelationship};
 
 export function ChatPlayerSheet({message,onClose,onBlocked}:{message:ChatPlayerIdentity|null;onClose:()=>void;onBlocked:(accountId:string)=>void}){
+ const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
  const {session}=useAuthSession();
  const [profile,setProfile]=useState<PublicPlayerProfileV43|null>(null),[loading,setLoading]=useState(false),[busy,setBusy]=useState(false),[unavailable,setUnavailable]=useState(false),[loadError,setLoadError]=useState('');
  async function loadProfile(){if(!message)return;setLoading(true);setUnavailable(false);setLoadError('');try{const row=await publicPlayerProfileV43(message.account_id);setProfile(row);setUnavailable(!row);}catch(error){setProfile(null);setLoadError(error instanceof Error?error.message:'Unable to load this player profile.');}finally{setLoading(false)}}
@@ -43,6 +45,6 @@ export function ChatPlayerSheet({message,onClose,onBlocked}:{message:ChatPlayerI
   {isSelf?<View style={s.selfNotice}><Text style={s.selfNoticeLabel}>THIS IS YOUR PROFILE</Text><Text style={s.selfNoticeText}>Edit your biography, favorites, privacy and showcases from Account → Profile.</Text></View>:<><Text style={s.hint}>PLAYER ACTIONS</Text><View style={s.actions}><Pressable accessibilityRole="button" disabled={busy||message.relationship==='friend'||message.relationship==='outgoing_pending'||message.relationship==='incoming_pending'} onPress={()=>void addFriend()} style={({pressed})=>[s.primary,(pressed||busy||message.relationship==='friend'||message.relationship==='outgoing_pending'||message.relationship==='incoming_pending')&&s.actionDisabled]}><Text style={s.primaryText}>{message.relationship==='friend'?'Friends':message.relationship==='outgoing_pending'?'Request pending':message.relationship==='incoming_pending'?'Respond in Friends':'Add friend'}</Text></Pressable><Pressable accessibilityRole="button" disabled={busy} onPress={confirmBlock} style={({pressed})=>[s.secondary,(pressed||busy)&&s.pressed]}><Text style={s.blockText}>Block</Text></Pressable></View></>}
  </View></View></Modal>;
 }
-const s=StyleSheet.create({
+function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);return StyleSheet.create({
  scrim:{flex:1,justifyContent:'flex-end',backgroundColor:'rgba(0,0,0,.55)'},sheet:{maxHeight:'88%',paddingHorizontal:spacing.lg,paddingTop:8,paddingBottom:24,backgroundColor:'#101923',borderTopWidth:StyleSheet.hairlineWidth,borderColor:C.line,borderTopLeftRadius:22,borderTopRightRadius:22},handle:{width:38,height:4,alignSelf:'center',borderRadius:2,backgroundColor:'#526174',marginBottom:8},top:{minHeight:44,flexDirection:'row',alignItems:'center'},kicker:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:1,flex:1},close:{width:44,height:44,alignItems:'center',justifyContent:'center'},closeText:{fontSize:28,lineHeight:31,color:C.muted},scroll:{gap:spacing.md,paddingBottom:spacing.sm},loading:{minHeight:180,alignItems:'center',justifyContent:'center',gap:8,padding:spacing.lg},identity:{alignItems:'center',gap:3},name:{...typography.hero,color:C.text,textAlign:'center'},title:{...typography.body,color:equipmentColors.goldSoft,fontStyle:'italic',textAlign:'center'},meta:{...typography.body,color:C.muted,textAlign:'center',textTransform:'capitalize'},bio:{...typography.body,color:C.text,textAlign:'center',lineHeight:20,marginTop:5},flex:{flex:1,minWidth:0},privateTitle:{...typography.title,color:C.text},hint:{...typography.caption,color:C.muted,marginTop:spacing.sm,marginBottom:spacing.sm,textTransform:'uppercase',letterSpacing:.8},actions:{flexDirection:'row',gap:spacing.sm},primary:{flex:1,minHeight:48,alignItems:'center',justifyContent:'center',borderRadius:radii.md,backgroundColor:'#23658a'},secondary:{minWidth:100,minHeight:48,alignItems:'center',justifyContent:'center',borderRadius:radii.md,backgroundColor:'#1a2430',borderWidth:StyleSheet.hairlineWidth,borderColor:C.line},primaryText:{...typography.bodyStrong,color:'#f4fbff'},blockText:{...typography.bodyStrong,color:C.bad},selfNotice:{gap:2,marginTop:spacing.sm,padding:spacing.sm,borderWidth:1,borderColor:C.info,borderRadius:radii.md,backgroundColor:'#102536'},selfNoticeLabel:{...typography.caption,color:C.info,fontWeight:'900',letterSpacing:.8},selfNoticeText:{...typography.caption,color:C.muted},retry:{minWidth:120,marginTop:6},actionDisabled:{opacity:.48},pressed:{opacity:.62}
-});
+});}

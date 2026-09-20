@@ -1,10 +1,13 @@
+import {useMemo} from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
 import {activityQueueHandoffStatus,activityQueueLabel,MAX_ACTIVITY_QUEUE,normalizeActivityQueue,queuedActivityReadiness} from '../core/activity-queue';
 import {GameButton} from './GameButton';
-import {C,equipmentColors,radii,spacing,typography} from '../theme/theme';
+import {radii,spacing,typography,equipmentTheme,type ThemeColors} from '../theme/theme';
+import {useGameTheme} from '../theme/ThemeContext';
 
 export function ActionQueuePanel({state,onRemove,onMove,onClear,onStartNext}:{state:GameState;onRemove:(index:number)=>void;onMove:(index:number,direction:'up'|'down')=>void;onClear:()=>void;onStartNext:()=>void}){
+ const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
  const queue=normalizeActivityQueue(state.character?.activityQueue),paused=state.character?.activityQueuePausedReason,handoff=activityQueueHandoffStatus(state);
  if(!queue.length)return null;
  return <View style={s.panel}>
@@ -17,7 +20,7 @@ export function ActionQueuePanel({state,onRemove,onMove,onClear,onStartNext}:{st
  </View>;
 }
 
-const s=StyleSheet.create({
+function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);return StyleSheet.create({
  panel:{gap:spacing.sm,padding:spacing.sm,borderWidth:1,borderColor:equipmentColors.selectedLine,borderRadius:radii.md,backgroundColor:C.panel},
  header:{flexDirection:'row',alignItems:'center',gap:spacing.sm},flex:{flex:1,minWidth:0},clear:{width:78},controls:{flexDirection:'row',alignItems:'center',gap:4},arrow:{width:36,height:36,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.bg},arrowDisabled:{opacity:.28},arrowPressed:{opacity:.65},arrowText:{color:C.accent,fontSize:18,fontWeight:'900'},remove:{width:72},
  kicker:{...typography.caption,color:equipmentColors.goldSoft,fontWeight:'900',letterSpacing:.8},sub:{...typography.caption,color:C.muted},
@@ -25,4 +28,4 @@ const s=StyleSheet.create({
  index:{width:28,height:28,alignItems:'center',justifyContent:'center',borderRadius:14,borderWidth:1,borderColor:C.info},indexText:{...typography.caption,color:C.info,fontWeight:'900'},
  name:{...typography.bodyStrong,color:C.text},meta:{...typography.caption,color:C.muted},readyMeta:{...typography.caption,color:C.good},blockedMeta:{...typography.caption,color:C.warning},
  pause:{gap:2,padding:spacing.sm,borderLeftWidth:3,borderLeftColor:C.warning,backgroundColor:'#332515'},pauseTitle:{...typography.caption,color:C.warning,fontWeight:'900',letterSpacing:.7},pauseText:{...typography.caption,color:C.text},handoff:{gap:2,padding:spacing.sm,borderLeftWidth:3,borderLeftColor:C.good,backgroundColor:'#172b24'},handoffTitle:{...typography.caption,color:C.good,fontWeight:'900',letterSpacing:.7},waiting:{gap:2,padding:spacing.sm,borderLeftWidth:3,borderLeftColor:C.info,backgroundColor:C.panel2},waitingTitle:{...typography.caption,color:C.info,fontWeight:'900',letterSpacing:.7},blocked:{gap:2,padding:spacing.sm,borderLeftWidth:3,borderLeftColor:C.warning,backgroundColor:'#332515'},blockedTitle:{...typography.caption,color:C.warning,fontWeight:'900',letterSpacing:.7},blocker:{...typography.caption,color:C.warning,fontWeight:'800'},safety:{...typography.caption,color:C.muted}
-});
+});}

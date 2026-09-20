@@ -25,6 +25,7 @@ import {challengeHuntLabel} from '../core/challenge-hunts';
 import {ActionQueuePanel} from '../components/ActionQueuePanel';
 import {WorkingTowardSummary} from '../components/WorkingTowardSummary';
 import type {WorkingTowardDestination} from '../core/working-toward';
+import {ContractBoardSummary} from '../components/ContractBoardSummary';
 
 export function HomeScreen({state,preview,onClaim,onStop,onQueueRemove,onQueueClear,onQueueStart,onNavigate,onOpenCombat,onOpenSkill,onOpenPlanner,onNavigateGoal}:{state:GameState;preview:RewardBundle;onClaim:()=>void;onStop:()=>void;onQueueRemove:(index:number)=>void;onQueueClear:()=>void;onQueueStart:()=>void;onNavigate:(tab:DashboardDestination|'Events',zoneId?:string)=>void;onOpenCombat:()=>void;onOpenSkill:(skillId:SkillId)=>void;onOpenPlanner:()=>void;onNavigateGoal:(destination:WorkingTowardDestination)=>void}){
  const [showAfkSources,setShowAfkSources]=useState(false),[showEncounter,setShowEncounter]=useState(false),[showLedger,setShowLedger]=useState(false);
@@ -40,6 +41,7 @@ export function HomeScreen({state,preview,onClaim,onStop,onQueueRemove,onQueueCl
   {state.activity&&activityName?<ActivityCard title={activityName} kind={state.activity.kind==='combat'?'combat':'gathering'} activity={state.activity} cycleSeconds={cycle} capHours={afk.hours} preview={preview} rates={rate} reduceMotion={state.settings.reduceMotion} numberMode={state.settings.numberMode} onClaim={onClaim} onStop={onStop}/>:<Panel><Text style={s.title}>Your next adventure</Text><Text style={s.small}>Choose a hunt or gathering activity to start earning.</Text><GameButton title="Explore activities" onPress={onOpenCombat}/></Panel>}
   <ActionQueuePanel state={state} onRemove={onQueueRemove} onClear={onQueueClear} onStartNext={onQueueStart}/>
   <WorkingTowardSummary state={state} onOpen={onOpenPlanner} onNavigate={onNavigateGoal}/>
+  <ContractBoardSummary state={state} nowMs={Date.now()} onOpen={()=>onNavigate('Quests')}/>
   {completed>0&&<GameButton title={`Claim ${completed} completed quest${completed===1?'':'s'}`} onPress={()=>onNavigate('Quests')}/>}
   <View style={[s.guide,guide.priority==='urgent'&&s.urgent]}><Text style={s.kicker}>{guide.priority==='urgent'?'ATTENTION':'NEXT STEP'}</Text><Text style={s.title}>{guide.title}</Text><Text style={s.small}>{guide.detail}</Text><GameButton title={guide.button} tone={guide.priority==='urgent'?'primary':'secondary'} onPress={()=>onNavigate(guide.destination,guide.zoneId)}/></View>
   <View style={s.campaignStrip}><View style={s.flex}><Text style={s.kicker}>ASTERFALL CAMPAIGN · CHAPTER {campaign.chapter}/{campaign.total}</Text><Text numberOfLines={1} style={s.campaignTitle}>{campaign.currentTitle}</Text><View style={s.campaignTrack}><View style={[s.campaignFill,{width:`${Math.max(2,campaign.campaignPct)}%`}]}/></View><Text style={s.campaignMeta}>{campaign.claimed}/{campaign.total} claimed{campaign.ready?` · ${campaign.ready} reward${campaign.ready===1?'':'s'} ready`:''} · Fallen Knight {campaign.bossDefeated?'defeated':`Lv. ${campaign.level}/25`}</Text></View><GameButton title="Journal" tone="secondary" onPress={()=>onNavigate('Quests')}/></View>

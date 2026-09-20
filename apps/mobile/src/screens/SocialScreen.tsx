@@ -51,7 +51,7 @@ export function SocialScreen({onGuild,onFriends,onAccount}:{onGuild:()=>void;onF
    {tab==='party'&&<PartyHubPanel accountId={social.accountId} party={social.party} contracts={social.contracts} recruitment={cards} nowMs={at} filters={filters} onFiltersChange={setFilters}
     onCreateParty={busy?undefined:()=>void run(()=>repository.createParty({characterId:character(),role,focus,idempotencyKey:key(`create:${focus}:${role}`)}))}
     onLeaveParty={busy?undefined:()=>void run(async()=>{await repository.leaveParty({partyId:social.party!.id,idempotencyKey:key(`leave:${social.party!.id}`)});await social.refresh();})}
-    onOpenPartyChat={()=>setTab('chat')} onOpenRecruitmentPost={id=>setSelected(cards.find(card=>card.id===id)??null)} onCreateRecruitmentPost={post}
+    onOpenPartyChat={()=>setTab('chat')} onOpenMemberProfile={member=>setSelectedProfile({account_id:member.accountId,sender_name:member.characterName})} onOpenRecruitmentPost={id=>setSelected(cards.find(card=>card.id===id)??null)} onCreateRecruitmentPost={post}
     onClaimReward={busy?undefined:id=>void run(()=>claimPartyContractReward(id,character()))}/>}
    {tab==='events'&&<PartyEventHubPanel event={liveEvent} onFindParty={()=>setTab('party')} />}
    {tab==='guild'&&<><GameButton title="Open Guild directory and management" onPress={onGuild}/><GameButton title="Post Guild recruiting advert" tone="secondary" disabled={busy} onPress={()=>post('guild_recruiting')}/><RecruitmentFiltersPanel value={filters} onChange={setFilters}/><GuildSeekerPanel seekers={cards} nowMs={at} onOpen={id=>setSelected(cards.find(card=>card.id===id)??null)} onPostMyAd={()=>post('looking_for_guild')}/></>}

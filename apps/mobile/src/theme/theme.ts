@@ -64,6 +64,7 @@ export const UI_THEMES:Record<UiThemeId,ThemeColors>={
 
 export const DEFAULT_UI_THEME:UiThemeId='veldryn';
 export function resolveTheme(id?:UiThemeId):ThemeColors{return UI_THEMES[id??DEFAULT_UI_THEME]??UI_THEMES.veldryn;}
+export function equipmentTheme(C:ThemeColors){return {background:C.bg,stage:C.stage,panel:C.panel,panelRaised:C.panelRaised,line:C.lineStrong,lineStrong:C.lineStrong,gold:C.accent,goldSoft:C.accentSoft,selected:C.selection,selectedLine:C.selectionLine};}
 
 /** Legacy static tokens. New/updated UI should use useTheme() so player-selected themes apply live. */
 export const C={

@@ -1,6 +1,7 @@
 import {COMPANION_MISSIONS,COMPANION_RARITY_MAX_LEVEL,COMPANION_SERVER_DEFINITIONS,COMPANION_TRIAL_ENEMY_GROWTH,COMPANION_TRIAL_MITIGATION_CONSTANT,companionServerDefinition,companionTechnique,companionTechniques,companionTrialEnemyScale,companionTrialRecommendedPower,companionTrialReward} from '../content';
 import {buildOwnedCompanionCombatant} from '../combat-adapter';
 import {individualCompanionPower} from '../team';
+import {buildCompanionTrialEncounter,companionTrialBossPreview} from '../trials';
 import {awardCompanionBondXpServer} from '../progression-v2';
 import type {CompanionRarity,CompanionRole} from '../policy';
 import type {OwnedCompanionSnapshot} from '../domain';
@@ -42,6 +43,10 @@ const wyrmNoBond=buildOwnedCompanionCombatant(identityProgress('UNIT_020',false)
 const bond5={...identityProgress('UNIT_013',false),bondLevel:5,bondXp:580},bond6={...identityProgress('UNIT_013',false),bondLevel:6,bondXp:840};const bond5Damage=buildOwnedCompanionCombatant(bond5,{mode:'companion_trial'}),bond6Damage=buildOwnedCompanionCombatant(bond6,{mode:'companion_trial'});ok(bond6Damage.basicAttackCoeff>bond5Damage.basicAttackCoeff&&(bond6Damage.abilities[0].effects[0].coeff??0)>(bond5Damage.abilities[0].effects[0].coeff??0),'Bond 6 Damage resonance missing');
 const tank5={...identityProgress('UNIT_015',false),bondLevel:5,bondXp:580},tank6={...identityProgress('UNIT_015',false),bondLevel:6,bondXp:840};const bond5Tank=buildOwnedCompanionCombatant(tank5,{mode:'companion_trial'}),bond6Tank=buildOwnedCompanionCombatant(tank6,{mode:'companion_trial'});ok(bond6Tank.stats.defense>bond5Tank.stats.defense&&(bond6Tank.abilities[0].effects[0].coeff??0)>(bond5Tank.abilities[0].effects[0].coeff??0),'Bond 6 Tank resonance missing');
 ok(companionServerDefinition('EVT_UNIT_001')?.active.name==='First Dawn','Event companion authored active name missing');
+
+// Every checkpoint boss has authored HP-threshold mechanics and readable preview metadata.
+for(const floor of [5,10,15,20,25,30]){const boss=buildCompanionTrialEncounter(floor)[0],preview=companionTrialBossPreview(floor);ok(!!boss.boss&&!!boss.phases?.length,`Trial boss ${floor} has no HP phase`);ok(!!preview?.phases.length,`Trial boss ${floor} phase preview missing`);for(const phase of boss.phases??[])ok(phase.hpPct>0&&phase.hpPct<1,`Trial boss ${floor} invalid phase threshold`);}
+ok((buildCompanionTrialEncounter(30)[0].phases?.length??0)>=2,'Floor 30 should have multiple phase transitions');
 
 // Repeat Trials remain useful for combat XP/Bond but are not an infinite Essence faucet.
 for(const f of [1,10,20,30]){const r=companionTrialReward(f,false,f%5===0);ok(r.companionEssence===0,'Repeat Trial Essence faucet returned');ok(r.bondstones===0,'Repeat Trial Bondstones returned');ok(r.gold<=120,'Repeat Trial Gold too high');}

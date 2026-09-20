@@ -11,7 +11,7 @@ export const NOTIFICATION_DESTINATIONS:Record<NotificationKind,NotificationDesti
  guild_invite:{primary:'account',subroute:'social.guild.invites',mode:'count'},
  guild_application:{primary:'account',subroute:'social.guild.applications',mode:'count'},
  unread_dm:{primary:'account',subroute:'social.chat.direct',mode:'count'},
- weekly_order_complete:{primary:'world',subroute:'world.weekly-orders',mode:'dot'},
+ weekly_order_complete:{primary:'account',subroute:'quests.contract-board',mode:'dot'},
  reward_ready:{primary:'character',subroute:'character.rewards',mode:'dot'},
  collection_unlock:{primary:'account',subroute:'collections',mode:'dot'},
  event_reward_ready:{primary:'account',subroute:'events.rewards',mode:'count'},

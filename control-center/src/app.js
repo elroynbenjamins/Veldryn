@@ -945,7 +945,11 @@ app.addEventListener('click', async (event) => {
       const start=prompt('Event start (ISO 8601; UTC recommended):',new Date(defaultStart).toISOString()); if(!start)return;
       const end=prompt('Event end (ISO 8601; UTC recommended):',new Date(defaultEnd).toISOString()); if(!end)return;
       const grace=Number(prompt('Claim grace days after the event ends (0–30):',String(row.config?.claimGraceDays??7))); if(!Number.isInteger(grace)||grace<0||grace>30)throw new Error('Claim grace must be a whole number from 0 to 30.');
-      await api('schedulePlayerEvent',{eventId:row.event_id,startsAt:start,endsAt:end,claimGraceDays:grace}); toast('Player event schedule updated. Enable it when ready.','success'); return navigate('events');
+      const reason=row.enabled?prompt(`Reason for adjusting the enabled ${row.name||row.event_id} schedule (10+ characters):`,'Live-Ops schedule adjustment'):'';
+      if(row.enabled&&reason===null)return;
+      if(row.enabled&&!confirm('This event is already enabled. Adjusting its schedule can change what players see. Continue?'))return;
+      await api('schedulePlayerEvent',{eventId:row.event_id,startsAt:start,endsAt:end,claimGraceDays:grace,...(row.enabled?{reason}:{})});
+      toast(row.enabled?'Enabled player event schedule updated.':'Player event schedule updated. Enable it when ready.','success'); return navigate('events');
     }
     if (action === 'toggle-player-event') {
       const row=state.playerEvents.find(x=>x.event_id===el.dataset.id); if(!row)return; const enable=el.dataset.enabled==='true';

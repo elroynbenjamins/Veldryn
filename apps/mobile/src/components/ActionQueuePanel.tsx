@@ -1,10 +1,13 @@
+import {useMemo} from 'react';
 import {StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
 import {activityQueueHandoffStatus,activityQueueLabel,MAX_ACTIVITY_QUEUE,normalizeActivityQueue} from '../core/activity-queue';
 import {GameButton} from './GameButton';
-import {C,equipmentColors,radii,spacing,typography} from '../theme/theme';
+import {radii,spacing,typography,equipmentTheme,type ThemeColors} from '../theme/theme';
+import {useGameTheme} from '../theme/ThemeContext';
 
 export function ActionQueuePanel({state,onRemove,onClear,onStartNext}:{state:GameState;onRemove:(index:number)=>void;onClear:()=>void;onStartNext:()=>void}){
+  const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
  const queue=normalizeActivityQueue(state.character?.activityQueue),paused=state.character?.activityQueuePausedReason,handoff=activityQueueHandoffStatus(state);
  if(!queue.length)return null;
  return <View style={s.panel}>
@@ -16,7 +19,7 @@ export function ActionQueuePanel({state,onRemove,onClear,onStartNext}:{state:Gam
  </View>;
 }
 
-const s=StyleSheet.create({
+function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);return StyleSheet.create({
  panel:{gap:spacing.sm,padding:spacing.sm,borderWidth:1,borderColor:equipmentColors.selectedLine,borderRadius:radii.md,backgroundColor:C.panel},
  header:{flexDirection:'row',alignItems:'center',gap:spacing.sm},flex:{flex:1,minWidth:0},clear:{width:78},remove:{width:88},
  kicker:{...typography.caption,color:equipmentColors.goldSoft,fontWeight:'900',letterSpacing:.8},sub:{...typography.caption,color:C.muted},
@@ -24,4 +27,4 @@ const s=StyleSheet.create({
  index:{width:28,height:28,alignItems:'center',justifyContent:'center',borderRadius:14,borderWidth:1,borderColor:C.info},indexText:{...typography.caption,color:C.info,fontWeight:'900'},
  name:{...typography.bodyStrong,color:C.text},meta:{...typography.caption,color:C.muted},
  pause:{gap:2,padding:spacing.sm,borderLeftWidth:3,borderLeftColor:C.warning,backgroundColor:'#332515'},pauseTitle:{...typography.caption,color:C.warning,fontWeight:'900',letterSpacing:.7},pauseText:{...typography.caption,color:C.text},handoff:{gap:2,padding:spacing.sm,borderLeftWidth:3,borderLeftColor:C.good,backgroundColor:'#172b24'},handoffTitle:{...typography.caption,color:C.good,fontWeight:'900',letterSpacing:.7},waiting:{gap:2,padding:spacing.sm,borderLeftWidth:3,borderLeftColor:C.info,backgroundColor:C.panel2},waitingTitle:{...typography.caption,color:C.info,fontWeight:'900',letterSpacing:.7},safety:{...typography.caption,color:C.muted}
-});
+});}

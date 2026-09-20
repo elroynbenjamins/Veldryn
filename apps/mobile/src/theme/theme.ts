@@ -13,14 +13,14 @@ export const typography={
 export const touchTargetMin=44;
 export const touchTargetPreferred=48;
 export const C={
-  bg:'#0b1018',panel:'#151e2b',panel2:'#1c2939',line:'#314259',
-  text:'#eef4ff',muted:'#93a4ba',disabled:'#64748b',accent:'#d4ad58',
-  good:'#7fc59b',bad:'#e08888',warning:'#e6bd72',info:'#7bb7df',
+  bg:'#07111C',panel:'#0D1E2D',panel2:'#14283A',line:'#38506A',
+  text:'#F3F7FC',muted:'#9BAFC4',disabled:'#66798C',accent:'#E2B74D',
+  good:'#57C98A',bad:'#EC7D83',warning:'#E9B95D',info:'#67BDE8',
 };
 
 /** Shared presentation tokens for the approved dark-navy / warm-gold equipment surfaces. */
 export const equipmentColors={
-  background:'#07111c',stage:'#071a2b',panel:'#0c1d2e',panelRaised:'#11283d',
-  line:'#725a2b',lineStrong:'#c69a3d',gold:'#f2c14e',goldSoft:'#efd895',
-  selected:'#123e61',selectedLine:'#43bdf2',
+  background:'#07111C',stage:'#081827',panel:'#0D1E2D',panelRaised:'#14283A',
+  line:'#6E5528',lineStrong:'#B58A35',gold:'#E2B74D',goldSoft:'#F0D58C',
+  selected:'#123B56',selectedLine:'#3EA6D8',
 };

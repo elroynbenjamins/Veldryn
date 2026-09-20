@@ -91,9 +91,10 @@ export function claimDailySupplies(state:GameState,characterId:string,nowMs:numb
  if(status.reward.kind==='premium'){
   next={...next,account:{...next.account,premiumCurrencyBalance:(next.account.premiumCurrencyBalance??0)+status.reward.amount}};
  }else{
+  const reward=status.reward;
   next=updateCharacter(next,characterId,character=>{
-   const bank={...(character.dailySupplyBoostBank??{})},type=status.reward.type;
-   bank[type]=(bank[type]??0)+status.reward.charges;
+   const bank={...(character.dailySupplyBoostBank??{})},type=reward.type;
+   bank[type]=(bank[type]??0)+reward.charges;
    return {...character,dailySupplyBoostBank:bank};
   });
  }
@@ -124,6 +125,8 @@ function bonusInteger(base:number,key:string,fraction:number,remainders:Record<s
 export function previewDailySupplyTimedReward(state:GameState,reward:RewardBundle,mode:'combat'|'gathering'|'skill'|'crafting'|'training'):DailySupplyTimedResult{
  const active=normalizeActiveDailySupplyBoost(state.character?.activeDailySupplyBoost);
  if(!active||!activityModeEligible(active.type,mode)||reward.elapsedSeconds<=0)return {reward,consumedSeconds:0,nextRemainders:{...(active?.remainders??{})}};
+ const hasQualifyingReward=active.type==='combat_xp'?reward.xp>0:active.type==='skill_xp'?reward.xp>0||(reward.faithXp??0)>0||(reward.classSkillXp??[]).some(row=>row.xp>0):reward.items.some(item=>item.quantity>0);
+ if(!hasQualifyingReward)return {reward,consumedSeconds:0,nextRemainders:{...(active.remainders??{})}};
  const qualifyingSeconds=Math.min(Math.max(0,reward.elapsedSeconds),Math.max(0,reward.qualifyingActivitySeconds??reward.elapsedSeconds));if(qualifyingSeconds<=0)return {reward,consumedSeconds:0,nextRemainders:{...(active.remainders??{})}};
  const consumedSeconds=Math.min(active.remainingSeconds,qualifyingSeconds),fraction=consumedSeconds/Math.max(1,qualifyingSeconds),nextRemainders={...(active.remainders??{})};
  let next={...reward,items:reward.items.map(item=>({...item}))};
@@ -156,10 +159,10 @@ export function applyDailySupplyCraft(state:GameState,input:{seconds:number;outp
  const bonusXp=active.type==='skill_xp'?bonusInteger(input.xp,'craft:xp',fraction,remainders):0;
  return {state:commitDailySupplyTimedBoost(state,{consumedSeconds,nextRemainders:remainders}),outputQuantity:input.outputQuantity+bonusQuantity,xp:input.xp+bonusXp,bonusQuantity,bonusXp};
 }
-export function dailySupplyActiveLabel(character:CharacterState|undefined){
+export function dailySupplyActiveLabel(character:CharacterState|null|undefined){
  const active=normalizeActiveDailySupplyBoost(character?.activeDailySupplyBoost);return active?{...active,label:dailySupplyBoostLabel(active.type),hours:active.remainingSeconds/3600}:undefined;
 }
-export function dailySupplyBank(character:CharacterState|undefined){return normalizeDailySupplyBank(character?.dailySupplyBoostBank)??{}}
-export function dailySupplyActivityMode(activity:ActiveActivity|undefined):'combat'|'gathering'|'skill'|'crafting'|undefined{
+export function dailySupplyBank(character:CharacterState|null|undefined){return normalizeDailySupplyBank(character?.dailySupplyBoostBank)??{}}
+export function dailySupplyActivityMode(activity:ActiveActivity|null|undefined):'combat'|'gathering'|'skill'|'crafting'|undefined{
  if(!activity)return undefined;if(activity.kind==='combat')return 'combat';if(['mining','woodcutting','fishing','herbalism'].includes(activity.kind))return 'gathering';if(activity.kind==='alchemy')return 'crafting';return 'skill';
 }

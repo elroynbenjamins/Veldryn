@@ -45,7 +45,7 @@ export interface CompanionCodexProfileState{
 }
 
 export interface EngineAbilityEffect{kind:EngineEffectKind;coeff?:number;flat?:number;durationMs?:number;value?:number;tag?:string;executeBelowHpPct?:number;executeBonus?:number;shieldReflectPct?:number;}
-export interface EngineAbilityDefinition{id:string;name:string;cooldownMs:number;castTimeMs:number;target:EngineTargetRule;exactTargetId?:string;effects:EngineAbilityEffect[];priority:number;aiCondition?:'always'|'self_below_50'|'ally_below_50'|'target_casting'|'multiple_enemies';tags?:string[];}
+export interface EngineAbilityDefinition{id:string;name:string;cooldownMs:number;castTimeMs:number;interruptible?:boolean;target:EngineTargetRule;exactTargetId?:string;effects:EngineAbilityEffect[];priority:number;aiCondition?:'always'|'self_below_50'|'ally_below_50'|'target_casting'|'multiple_enemies';tags?:string[];}
 export interface CompanionCombatantDefinition{
   id:string;name:string;team:'players'|'enemies';role:'tank'|'damage'|'support'|'enemy';level:number;
   stats:{maxHp:number;attackPower:number;healingPower:number;defense:number;accuracy:number;evasion:number;critChance:number;critMultiplier:number;haste:number};

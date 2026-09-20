@@ -27,6 +27,7 @@ type ChromeColors={
   primarySurface:string;primaryBorder:string;secondarySurface:string;secondaryBorder:string;
   dangerSurface:string;dangerBorder:string;dangerText:string;focus:string;selectedText:string;
   positiveSurface:string;warningSurface:string;fieldSurface:string;imageStage:string;badge:string;
+  specialSurface:string;specialText:string;specialAccent:string;
 };
 export type UiThemeDefinition={
   id:UiThemeId;
@@ -45,21 +46,21 @@ export const UI_THEMES:Record<UiThemeId,UiThemeDefinition>={
     description:'Deep Asterfall navy, warm progression gold, and crisp cyan interaction cues.',
     colors:{bg:'#07111C',panel:'#0D1E2D',panel2:'#14283A',line:'#4D6C88',text:'#F3F7FB',muted:'#A8B6C6',disabled:'#718197',accent:'#E2B74D',good:'#57C98A',bad:'#EE7D86',warning:'#F1C66A',info:'#55B8E6'},
     equipmentColors:{background:'#07111C',stage:'#081827',panel:'#0D1E2D',panelRaised:'#14283A',line:'#7B6535',lineStrong:'#D1A646',gold:'#F0C34E',goldSoft:'#F6DC96',selected:'#103955',selectedLine:'#4CC8FF'},
-    chrome:{navBackground:'#08131F',navBorder:'#4D6C88',activeTint:'rgba(226,183,77,.14)',primarySurface:'#173F59',primaryBorder:'#58B7DF',secondarySurface:'#0F2232',secondaryBorder:'#4D6C88',dangerSurface:'#311D25',dangerBorder:'#A95D67',dangerText:'#FFD2D6',focus:'#7DDCF7',selectedText:'#E9F8FF',positiveSurface:'#102B21',warningSurface:'#34260F',fieldSurface:'#0F1D2B',imageStage:'#05090D',badge:'#D93646'},
+    chrome:{navBackground:'#08131F',navBorder:'#4D6C88',activeTint:'rgba(226,183,77,.14)',primarySurface:'#173F59',primaryBorder:'#58B7DF',secondarySurface:'#0F2232',secondaryBorder:'#4D6C88',dangerSurface:'#311D25',dangerBorder:'#A95D67',dangerText:'#FFD2D6',focus:'#7DDCF7',selectedText:'#E9F8FF',positiveSurface:'#102B21',warningSurface:'#34260F',fieldSurface:'#0F1D2B',imageStage:'#05090D',badge:'#D93646',specialSurface:'#5D3674',specialText:'#F4D8FF',specialAccent:'#CBA0F5'},
   },
   'dark-high-contrast':{
     id:'dark-high-contrast',label:'Night High Contrast',shortLabel:'Night HC',mode:'dark',
     description:'Near-black surfaces with white text and brighter yellow/cyan state cues for maximum separation.',
     colors:{bg:'#000000',panel:'#0A0E13',panel2:'#151B22',line:'#7C8EA4',text:'#FFFFFF',muted:'#D2D9E2',disabled:'#94A0AE',accent:'#FFD84D',good:'#66E89C',bad:'#FF858D',warning:'#FFD166',info:'#6BD6FF'},
     equipmentColors:{background:'#000000',stage:'#070A0E',panel:'#0A0E13',panelRaised:'#151B22',line:'#8F9AA8',lineStrong:'#FFE169',gold:'#FFD84D',goldSoft:'#FFF0A8',selected:'#073B57',selectedLine:'#73DCFF'},
-    chrome:{navBackground:'#000000',navBorder:'#8B9CAF',activeTint:'rgba(255,216,77,.16)',primarySurface:'#0B3F5D',primaryBorder:'#7DDFFF',secondarySurface:'#151B22',secondaryBorder:'#8B9CAF',dangerSurface:'#3A1116',dangerBorder:'#FF9097',dangerText:'#FFDADD',focus:'#FFFFFF',selectedText:'#FFFFFF',positiveSurface:'#0B2D1B',warningSurface:'#352700',fieldSurface:'#0A0E13',imageStage:'#000000',badge:'#FF3347'},
+    chrome:{navBackground:'#000000',navBorder:'#8B9CAF',activeTint:'rgba(255,216,77,.16)',primarySurface:'#0B3F5D',primaryBorder:'#7DDFFF',secondarySurface:'#151B22',secondaryBorder:'#8B9CAF',dangerSurface:'#3A1116',dangerBorder:'#FF9097',dangerText:'#FFDADD',focus:'#FFFFFF',selectedText:'#FFFFFF',positiveSurface:'#0B2D1B',warningSurface:'#352700',fieldSurface:'#0A0E13',imageStage:'#000000',badge:'#FF3347',specialSurface:'#321946',specialText:'#F8ECFF',specialAccent:'#E5C8FF'},
   },
   'light-high-contrast':{
     id:'light-high-contrast',label:'Day High Contrast',shortLabel:'Day HC',mode:'light',
     description:'Bright neutral surfaces with near-black text, deep blue actions, and dark amber progression accents.',
     colors:{bg:'#F6F8FB',panel:'#FFFFFF',panel2:'#EAF0F6',line:'#526274',text:'#0A1018',muted:'#334155',disabled:'#667085',accent:'#7A4D00',good:'#116B3A',bad:'#A61B1B',warning:'#7A4A00',info:'#005A8D'},
     equipmentColors:{background:'#F6F8FB',stage:'#E7EDF3',panel:'#FFFFFF',panelRaised:'#EAF0F6',line:'#8A6B2A',lineStrong:'#7A4D00',gold:'#7A4D00',goldSoft:'#5C3A00',selected:'#D9EFFB',selectedLine:'#006EA8'},
-    chrome:{navBackground:'#FFFFFF',navBorder:'#526274',activeTint:'rgba(0,90,141,.10)',primarySurface:'#D9EFFB',primaryBorder:'#006EA8',secondarySurface:'#FFFFFF',secondaryBorder:'#526274',dangerSurface:'#FFE8EA',dangerBorder:'#A61B1B',dangerText:'#7A1010',focus:'#005A8D',selectedText:'#0A1018',positiveSurface:'#E3F6E9',warningSurface:'#FFF2D7',fieldSurface:'#FFFFFF',imageStage:'#E7EDF3',badge:'#B42318'},
+    chrome:{navBackground:'#FFFFFF',navBorder:'#526274',activeTint:'rgba(0,90,141,.10)',primarySurface:'#D9EFFB',primaryBorder:'#006EA8',secondarySurface:'#FFFFFF',secondaryBorder:'#526274',dangerSurface:'#FFE8EA',dangerBorder:'#A61B1B',dangerText:'#7A1010',focus:'#005A8D',selectedText:'#0A1018',positiveSurface:'#E3F6E9',warningSurface:'#FFF2D7',fieldSurface:'#FFFFFF',imageStage:'#E7EDF3',badge:'#B42318',specialSurface:'#EEE1F7',specialText:'#42105F',specialAccent:'#5B2385'},
   },
 };
 
@@ -119,6 +120,15 @@ const legacyTokenMap:Record<string,ThemeColorToken>={
   '#2b2317':'chrome.warningSurface','#17352a':'chrome.positiveSurface','#20384a':'colors.panel2',
   '#272417':'chrome.warningSurface','#101923':'colors.panel2','#29251c':'equipmentColors.selected',
   '#17364b':'equipmentColors.selected','#a9dcf6':'chrome.selectedText','#f4d9dd':'chrome.dangerText',
+  '#293746':'colors.line','#263449':'colors.panel2','#234c65':'equipmentColors.selected','#aab6c7':'colors.muted',
+  '#b8e5f5':'chrome.selectedText','#080c12':'colors.bg','#05090f':'colors.bg',
+  'rgba(12,20,31,.96)':'colors.panel','rgba(16,26,39,.97)':'colors.panel','#2b2417':'chrome.warningSurface',
+  '#14261d':'chrome.positiveSurface','#132333':'colors.panel2','#5d3674':'chrome.specialSurface',
+  '#f4d8ff':'chrome.specialText','#cba0f5':'chrome.specialAccent','#d6b1ee':'chrome.specialAccent',
+  '#9de0b7':'colors.good','#9dccf2':'colors.info','#d7f3df':'colors.good','#214932':'chrome.positiveSurface',
+  '#efbd69':'equipmentColors.goldSoft','#f0c66f':'equipmentColors.goldSoft','#d6a85a':'equipmentColors.lineStrong',
+  '#101724':'colors.panel','#09111c':'equipmentColors.stage','#273142':'colors.panel2','#f2d08d':'equipmentColors.goldSoft',
+  '#172c3c':'equipmentColors.selected','rgba(7,17,28,.88)':'colors.panel2','rgba(18,57,78,.94)':'equipmentColors.selected',
 };
 
 function themeTokenMap():Record<string,ThemeColorToken>{

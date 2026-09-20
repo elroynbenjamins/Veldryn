@@ -1,4 +1,5 @@
 import {CLASSES} from '../content/classes';
+import {COMBAT_COMPANIONS} from '../content/combat-companions';
 import {classSkillsFor} from '../content/class-skills';
 import {MONSTERS} from '../content/monsters';
 import {itemDef} from '../content/items';
@@ -38,6 +39,18 @@ import {evaluateIdleRuleSet,type IdleEvaluationContext,type IdleRuleSet} from '.
 export const beginAlchemyBatch=startAlchemyBatch;
 
 function longTermAccountScope(state:GameState){return state.account.longTermAccountScopeId??`local-account:${state.createdAtMs}`;}
+
+function companionUnlocksBetween(before:GameState,after:GameState){
+  const owned=new Set(before.account.unlockedCombatCompanionIds??[]);
+  return (after.account.unlockedCombatCompanionIds??[]).filter(id=>!owned.has(id)).flatMap(id=>{
+    const def=COMBAT_COMPANIONS.find(row=>row.id===id);
+    return def?[{companionId:id,name:def.name,role:def.role,rarity:def.rarity}]:[];
+  });
+}
+function withCompanionUnlocks(reward:RewardBundle,before:GameState,after:GameState):RewardBundle{
+  const companionUnlocks=companionUnlocksBetween(before,after);
+  return companionUnlocks.length?{...reward,companionUnlocks}:reward;
+}
 
 export const BASE_OFFLINE_CAP_HOURS=24;
 export const MAX_OFFLINE_CAP_HOURS=36;
@@ -332,7 +345,7 @@ export function claimSeasonalContract(state:GameState,period:SeasonalPeriod,cont
 }
 
 export function claimActivity(state:GameState,nowMs:number){
-  if(state.character?.classTraining){const r=settleClassDrills(state,nowMs,offlineCapSeconds(state));return {...r,state:reconcileCombatCompanionUnlocks(r.state,nowMs)};}
+  if(state.character?.classTraining){const r=settleClassDrills(state,nowMs,offlineCapSeconds(state)),next=reconcileCombatCompanionUnlocks(r.state,nowMs);return {state:next,reward:withCompanionUnlocks(r.reward,state,next)};}
   if(state.activity?.kind==='faith'){
     const settled=settleFaithPractice(state,nowMs,offlineCapSeconds(state));
     const reward=settled.reward;
@@ -343,8 +356,9 @@ export function claimActivity(state:GameState,nowMs:number){
       (state.skills.find(x=>x.skillId==='faith')?.xp??0)+(reward.faithXp??0),
     ));
     const skills=state.skills.map(x=>x.skillId==='faith'?{...x,xp:faithXp,level:levelFromXp(faithXp)}:x);
-    const next={...settled.state,...routed,skills,activity:faith?.practice?{...state.activity,lastClaimAtMs:nowMs}:null};
-    return {state:next,reward};
+    const next={...settled.state,...routed,skills,activity:faith?.practice?{...state.activity,lastClaimAtMs:nowMs}:null} as GameState;
+    const reconciled=reconcileCombatCompanionUnlocks(next,nowMs);
+    return {state:reconciled,reward:withCompanionUnlocks(reward,state,reconciled)};
   }
   if(state.activity?.kind==='alchemy'){
     if(nowMs<=state.activity.lastClaimAtMs)return {state,reward:previewActivityReward(state,state.activity.lastClaimAtMs)};
@@ -365,8 +379,9 @@ export function claimActivity(state:GameState,nowMs:number){
     const eventApplied=refreshQuests(applyEventDiscoveries(applyEventDrops(progression,reward.eventDrops??[]),reward.eventDiscoveries??[]));
     const petSourceType=state.activity.kind==='exploration'?'exploration':'gathering';
     const petResult=applyCorePetActivityDrops(eventApplied,petSourceType,state.activity.targetId,reward.kills,`${state.character.id}:${state.activity.lastClaimAtMs}:${settledAtMs}`);
-    const settledReward=petResult.drops.length?{...reward,petDrops:[...(reward.petDrops??[]),...petResult.drops]}:reward;
-    return {state:recordCompanionActivity(petResult.state,'gathering',state.activity.targetId,reward.kills,settledAtMs),reward:settledReward};
+    const petReward:RewardBundle=petResult.drops.length?{...reward,petDrops:[...(reward.petDrops??[]),...petResult.drops]}:reward;
+    const finalState=recordCompanionActivity(petResult.state,'gathering',state.activity.targetId,reward.kills,settledAtMs);
+    return {state:finalState,reward:withCompanionUnlocks(petReward,state,finalState)};
   }
   const xp=state.character.xp+reward.xp,level=characterLevelFromXp(xp);
   const activeRegion=currentRegionId(state);
@@ -385,8 +400,9 @@ export function claimActivity(state:GameState,nowMs:number){
   progressed=applyTrustedLongTermProgression(progressed,[{kind:'combat',contentId:state.activity.targetId,units:reward.kills,startedAtMs:state.activity.lastClaimAtMs}],reward,settledAtMs,{accountId:longTermAccountScope(state),eventId:`combat:${state.character.id}:${state.activity.targetId}:${state.activity.lastClaimAtMs}:${settledAtMs}`}).state;
   const petResult=applyCorePetCombatDrops(progressed,state.activity.targetId,reward.kills,`${state.character.id}:${state.activity.lastClaimAtMs}:${settledAtMs}`);
   progressed=petResult.state;
-  const settledReward=petResult.drops.length?{...reward,petDrops:petResult.drops}:reward;
-  return {state:recordCompanionActivity(progressed,'combat',state.activity.targetId,reward.kills,settledAtMs),reward:settledReward}
+  const petReward:RewardBundle=petResult.drops.length?{...reward,petDrops:petResult.drops}:reward;
+  const finalState=recordCompanionActivity(progressed,'combat',state.activity.targetId,reward.kills,settledAtMs);
+  return {state:finalState,reward:withCompanionUnlocks(petReward,state,finalState)}
 }
 
 export function finishClassDrills(state:GameState,now:number):GameState{

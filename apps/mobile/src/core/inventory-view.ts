@@ -1,6 +1,7 @@
 import {GameState,ItemStack} from './types';
 import {itemDef} from '../content/items';
 import {depositToBank,withdrawFromBank,effectiveStats} from './game';
+import {characterPermanentMultipliers} from './permanent-boosts';
 
 export type InventoryFilter='all'|'favorites'|'gear'|'tool'|'food'|'material'|'potion';
 export type InventorySort='favorite'|'name'|'quantity'|'value';
@@ -18,4 +19,4 @@ export function transferError(state:GameState,id:string,quantity:number,from:'in
   try{(from==='inventory'?depositToBank:withdrawFromBank)(state,id,quantity);return ''}
   catch(error){return error instanceof Error?error.message:'Cannot transfer'}
 }
-export function recoveryAmount(state:GameState,id:string){return Math.max(0,Math.min(itemDef(id).heal??0,effectiveStats(state).hp-(state.character?.currentHp??0)))}
+export function recoveryAmount(state:GameState,id:string){const base=itemDef(id).heal??0,boost=characterPermanentMultipliers(state).healingEffectivenessMultiplier;return Math.max(0,Math.min(Math.ceil(base*boost),effectiveStats(state).hp-(state.character?.currentHp??0)))}

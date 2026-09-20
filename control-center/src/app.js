@@ -211,6 +211,7 @@ function renderDashboard() {
   const nowMs=Date.now(),playerRows=d.playerEvents||[];
   const visiblePlayerEvent=playerRows.find(row=>['live','claiming'].includes(playerEventPhase(row,nowMs)))||null;
   const visiblePlayerPhase=visiblePlayerEvent?playerEventPhase(visiblePlayerEvent,nowMs):null;
+  const visiblePlayerClaimEnd=visiblePlayerEvent?.grace_ends_at||(visiblePlayerEvent?.ends_at?new Date(Date.parse(visiblePlayerEvent.ends_at)+Math.max(0,Number(visiblePlayerEvent.config?.claimGraceDays??7)||0)*86400000).toISOString():null);
   const nextPlayerEvent=playerRows.filter(row=>playerEventPhase(row,nowMs)==='scheduled').sort((a,b)=>Date.parse(a.starts_at)-Date.parse(b.starts_at))[0]||null;
   const needsPlayerSchedule=playerRows.filter(row=>row.enabled&&playerEventPhase(row,nowMs)==='needs_schedule');
   return shell(`
@@ -224,7 +225,7 @@ function renderDashboard() {
     <div class="grid grid-2" style="margin-top:14px">
       <div class="card"><div class="card-head"><div><h3>Player Event screen</h3><div class="tiny muted">What the mobile Event screen is showing now.</div></div>${visiblePlayerEvent?playerEventStatusPill(visiblePlayerPhase):'<span class="pill">Idle</span>'}</div><div class="card-body">${visiblePlayerEvent?`
         <div class="eyebrow">${h(visiblePlayerEvent.event_id)}</div><h3 style="margin:6px 0 8px">${h(visiblePlayerEvent.name||visiblePlayerEvent.event_id)}</h3>
-        <div class="muted small">${visiblePlayerPhase==='live'?`Earning through ${fmtDate(visiblePlayerEvent.ends_at)}`:`Claims through ${fmtDate(visiblePlayerEvent.grace_ends_at)}`}</div>`:`<div class="muted small">No annual/general Event is visible to players right now.</div>`}
+        <div class="muted small">${visiblePlayerPhase==='live'?`Earning through ${fmtDate(visiblePlayerEvent.ends_at)}`:`Claims through ${fmtDate(visiblePlayerClaimEnd)}`}</div>`:`<div class="muted small">No annual/general Event is visible to players right now.</div>`}
         <div class="actions" style="margin-top:12px"><button class="btn btn-sm" data-nav="events">Open Events</button></div></div></div>
       <div class="card"><div class="card-head"><div><h3>Next Player Event</h3><div class="tiny muted">Enabled schedule only.</div></div>${needsPlayerSchedule.length?'<span class="pill bad">Needs attention</span>':nextPlayerEvent?playerEventStatusPill('scheduled'):'<span class="pill">None</span>'}</div><div class="card-body">${needsPlayerSchedule.length?`
         <strong>${fmtNumber(needsPlayerSchedule.length)} enabled event${needsPlayerSchedule.length===1?'':'s'} missing a valid schedule</strong><div class="muted small" style="margin-top:6px">Fix these before relying on automatic activation.</div>`:nextPlayerEvent?`

@@ -1,6 +1,6 @@
 import type {GameState} from './types';
 import type {CompanionDefinition} from './combat-companion-types';
-import {companionUnlockRequirementMet} from './combat-companions';
+import {companionCurrentLevelCap,companionMaxLevel,companionUnlockRequirementMet,isCombatCompanionMastered} from './combat-companions';
 import {MONSTERS} from '../content/monsters';
 import {GATHERING,RECIPES} from '../content/skills';
 import {ITEMS} from '../content/items';
@@ -38,3 +38,39 @@ export function companionRequirementProgress(state:GameState,req:CompanionDefini
  return {current:Math.min(total,current),total,complete:companionUnlockRequirementMet(state,req)};
 }
 export function companionRecoverySeconds(state:GameState,now:number){return Math.max(0,Math.ceil(((state.account.companionBattleReadyAtMs??0)-now)/1000));}
+
+
+export function companionUnlockCompletion(state:GameState,def:CompanionDefinition){
+ const requirements=def.unlockRequirements.map(req=>companionRequirementProgress(state,req));
+ const ratio=requirements.length?requirements.reduce((sum,p)=>sum+(p.total?Math.min(1,p.current/p.total):0),0)/requirements.length:0;
+ return {requirements,ratio,completeCount:requirements.filter(p=>p.complete).length,totalCount:requirements.length};
+}
+export function companionNextUnlockTargets(state:GameState,limit=3){
+ const owned=new Set(state.account.unlockedCombatCompanionIds??[]);
+ return COMBAT_COMPANIONS.filter(def=>!owned.has(def.id)&&def.origin.type!=='event'&&def.unlockRequirements.length>0)
+  .map(def=>({def,progress:companionUnlockCompletion(state,def)}))
+  .sort((a,b)=>b.progress.ratio-a.progress.ratio||b.progress.completeCount-a.progress.completeCount||a.def.name.localeCompare(b.def.name))
+  .slice(0,Math.max(0,limit));
+}
+export function companionMasteryGuidance(state:GameState,id:string){
+ const def=COMBAT_COMPANIONS.find(row=>row.id===id),progress=state.account.combatCompanionProgress?.[id];if(!def||!progress)return undefined;
+ const maxLevel=companionMaxLevel(def),requiredAscension=def.rarity==='standard'||def.rarity==='rare'?2:3,levelCap=companionCurrentLevelCap(def,progress),mastered=isCombatCompanionMastered(def,progress);
+ let nextStep='Mastered';
+ if(!mastered){
+   if(progress.level<maxLevel&&progress.level>=levelCap&&progress.ascensionTier<requiredAscension)nextStep=`Ascend to Tier ${progress.ascensionTier+1}`;
+   else if(progress.level<maxLevel)nextStep=`Train to Level ${Math.min(maxLevel,progress.level+1)}`;
+   else if(progress.ascensionTier<requiredAscension)nextStep=`Ascend to Tier ${progress.ascensionTier+1}`;
+   else if(progress.bondLevel<10)nextStep=`Raise Bond to ${progress.bondLevel+1}`;
+   else if(def.rarity==='prestige'&&!progress.mastered)nextStep='Complete Prestige Mastery';
+   else nextStep='Complete mastery requirements';
+ }
+ const score=.45*(progress.level/maxLevel)+.30*(progress.bondLevel/10)+.20*Math.min(1,progress.ascensionTier/requiredAscension)+.05*(def.rarity!=='prestige'||progress.mastered?1:0);
+ return {def,progress,maxLevel,requiredAscension,mastered,nextStep,score};
+}
+export function companionNextMasteryTargets(state:GameState,limit=3){
+ return Object.keys(state.account.combatCompanionProgress??{})
+  .map(id=>companionMasteryGuidance(state,id))
+  .filter((entry):entry is NonNullable<typeof entry>=>!!entry&&!entry.mastered)
+  .sort((a,b)=>b.score-a.score||a.def.name.localeCompare(b.def.name))
+  .slice(0,Math.max(0,limit));
+}

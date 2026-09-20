@@ -10,6 +10,7 @@ import {applyPersonalRecord,type PersonalRecordEvent} from './personal-records-v
 import {bestiaryProjection} from './bestiary-v40';
 import {COMBAT_COMPANIONS} from '../content/combat-companions';
 import {random01} from './rng';
+import {applyLocalBalanceSnapshot} from './balance-telemetry';
 
 export interface TrustedProgressionActivity{kind:'combat'|'gathering'|'crafting'|'boss';contentId:string;units:number;startedAtMs?:number}
 export interface TrustedProgressionOptions{accountId:string;eventId:string}
@@ -120,5 +121,6 @@ export function applyTrustedLongTermProgression(input:GameState,events:TrustedPr
 
  const journal=ensureJournal(state,options.accountId),recordUpdates=settlementRecords(journal,reward,options.eventId,nowMs,state.character?.id),journalResult=applyJournalSnapshot(journal,{metrics:journalMetrics({...state,account:{...state.account,longTermMetrics:metrics}})},nowMs);
  state={...state,account:{...state.account,crossSkillState:cross,collectionSetState:collections,...(rare?{rareDiscoveryState:rare}:{}),journalState:journal,unlockedKnowledgeIds:knowledge,unlockedCollectionRewardIds:collectionRewards}};
+ state=applyLocalBalanceSnapshot(state,nowMs);
  return {state,weeklyOrderCompletions:weeklyCompleted,journalAchievements:journalResult.newlyUnlockedAchievementIds,journalTitles:journalResult.newlyUnlockedTitleIds,personalRecordUpdates:recordUpdates,crossSkillUnlocks:crossResult.newlyUnlockedDiscoveryIds,collectionSetCompletions:collectionResult.newlyCompletedSetIds,rareDiscoveryGrantRefs:rareGrantRefs};
 }

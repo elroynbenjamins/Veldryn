@@ -25,7 +25,7 @@ import {currentRegionId} from './combat-region';
 import {WORLD_ZONES} from '../content/world-map';
 import {enhancedGearStats,equippedGemBonuses,hasEnhancement} from './equipment-enhancement';
 import {companionCombatContribution,reconcileCombatCompanionUnlocks,grantCompanionEssence,grantBondstones} from './combat-companions';
-import {recordCompanionActivity} from './companion-runtime';
+import {awardCompanionRematchBondstone,companionRematchBondstoneStatus,recordCompanionActivity} from './companion-runtime';
 import {monsterMastery,recordMonsterMastery} from './monster-mastery';
 import {awardClassSkillXp,awardCombatClassXp,characterClassEffects,characterClassSkills,normalizeTrainingFocus,settleClassDrills} from './class-skills';
 import {settleFaithPractice,cancelFaithPractice,normalizeFaith,selectedFaithBlessing} from './faith';
@@ -587,17 +587,23 @@ export function fallenKnightWinChance(state:GameState){const r=regionalReadiness
 export function challengeFallenKnightRematch(state:GameState,nowMs:number):{state:GameState;won:boolean;message:string}{
   if(!state.character||state.character.level<25||!state.defeatedBossIds.includes('FALLEN_KNIGHT'))throw new Error('Defeat the Fallen Knight in the story first.');
   if(nowMs<(state.account.companionBossRematchReadyAtMs??0))throw new Error('The next rematch unlocks at 00:00 UTC.');
-  const readyAt=(Math.floor(nowMs/86400000)+1)*86400000;
-  let next:GameState={...state,account:{...state.account,companionBossRematchReadyAtMs:readyAt}};
+  const readyAt=(Math.floor(nowMs/86400000)+1)*86400000,attemptMetrics={...(state.account.longTermMetrics??{})};
+  attemptMetrics['companions.fallen_knight_rematch_attempts']=(attemptMetrics['companions.fallen_knight_rematch_attempts']??0)+1;
+  let next:GameState={...state,account:{...state.account,companionBossRematchReadyAtMs:readyAt,longTermMetrics:attemptMetrics}};
   const chance=Math.min(.95,fallenKnightWinChance(state)*companionCombatContribution(state).outputMultiplier);
   const won=random01(`${state.character.id}:COMPANION_FALLEN_KNIGHT:${Math.floor(nowMs/86400000)}`,0)<chance;
-  next.account.companionLastBattle={title:'Fallen Knight rematch',won,durationMs:0,gold:0,essence:won?40:0,bondstones:won?1:0,atMs:nowMs};
-  if(!won)return {state:next,won:false,message:'The Fallen Knight won the rematch. Improve your readiness and try again after 00:00 UTC.'};
+  if(!won){next.account.companionLastBattle={title:'Fallen Knight rematch',won:false,durationMs:0,gold:0,essence:0,bondstones:0,atMs:nowMs};return {state:next,won:false,message:'The Fallen Knight won the rematch. Improve your readiness and try again after 00:00 UTC.'};}
+  const stone=awardCompanionRematchBondstone(next,nowMs);next=stone.state;
+  const winMetrics={...(next.account.longTermMetrics??{})};
+  winMetrics['companions.fallen_knight_rematch_wins']=(winMetrics['companions.fallen_knight_rematch_wins']??0)+1;
+  winMetrics['companions.fallen_knight_rematch_bondstones']=(winMetrics['companions.fallen_knight_rematch_bondstones']??0)+stone.reward;
+  next.account={...next.account,longTermMetrics:winMetrics,companionLastBattle:{title:'Fallen Knight rematch',won:true,durationMs:0,gold:0,essence:40,bondstones:stone.reward,atMs:nowMs}};
   // Count an existing story clear even when upgrading a save predating companion counters.
   next.account.companionBossClears={...next.account.companionBossClears,FALLEN_KNIGHT:Math.max(1,next.account.companionBossClears?.FALLEN_KNIGHT??0)};
-  next=recordCompanionActivity(grantBondstones(grantCompanionEssence(next,40),1),'boss','FALLEN_KNIGHT',1,nowMs);
+  next=recordCompanionActivity(grantBondstones(grantCompanionEssence(next,40),stone.reward),'boss','FALLEN_KNIGHT',1,nowMs);
   next=applyTrustedLongTermProgression(next,[{kind:'boss',contentId:'FALLEN_KNIGHT',units:1}],undefined,nowMs,{accountId:longTermAccountScope(next),eventId:`boss-rematch:${state.character.id}:FALLEN_KNIGHT:${Math.floor(nowMs/86400000)}`}).state;
-  return {state:next,won:true,message:'Fallen Knight rematch won: +40 Companion Essence, +1 Bondstone. Companion boss progression recorded.'};
+  const status=companionRematchBondstoneStatus(next,nowMs),stoneText=stone.reward?'+1 Bondstone.':`Weekly Bondstone cap reached (${status.used}/${status.cap}).`;
+  return {state:next,won:true,message:`Fallen Knight rematch won: +40 Companion Essence, ${stoneText} Companion boss progression recorded.`};
 }
 export function challengeFallenKnight(state:GameState,nowMs=Date.now()):{state:GameState;won:boolean;message:string}{
   if(!state.character)throw new Error('No character');

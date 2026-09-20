@@ -11,7 +11,7 @@ export function AnnualEventCalendarPanel({state,highlightEventId,highlightLabel}
     <View style={s.header}><View style={s.flex}><Text style={s.kicker}>YEAR AT A GLANCE</Text><Text style={s.title}>Annual Event Calendar</Text></View><Text style={s.count}>{rows.length} events</Text></View>
     <Text style={s.body}>Event dates are controlled by Live-Ops. These windows show the normal yearly season for each production event; exact start and end times appear when scheduled.</Text>
     <View style={s.grid}>{rows.map(row=>{
-      const highlighted=row.eventId===highlightEventId||!!highlightEventId&&annualEventSeriesId(row.eventId)===annualEventSeriesId(highlightEventId);
+      const rowSeries=annualEventSeriesId(row.eventId),highlightSeries=highlightEventId?annualEventSeriesId(highlightEventId):undefined;const highlighted=row.eventId===highlightEventId||!!rowSeries&&!!highlightSeries&&rowSeries===highlightSeries;
       return <View key={row.eventId} style={[s.card,{borderLeftColor:row.definition.accent},highlighted&&s.highlight]}>
         <View style={s.row}><Text numberOfLines={1} style={s.name}>{row.name}</Text>{highlighted?<Text style={s.badge}>{highlightLabel??'CURRENT'}</Text>:null}</View>
         <Text style={s.window}>{row.windowLabel}</Text>

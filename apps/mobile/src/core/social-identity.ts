@@ -31,3 +31,14 @@ export function compactCharacterSummary(characterName?:string|null,className?:st
  const levelLabel=typeof level==='number'&&Number.isFinite(level)?' · Lv. '+Math.max(1,Math.floor(level)):'';
  return characterName+' · '+classLabel+levelLabel;
 }
+
+
+export type SocialFriendRelationship='none'|'friend'|'outgoing_pending'|'incoming_pending';
+export function friendRelationshipActionPresentation(relationship:SocialFriendRelationship){
+ switch(relationship){
+  case'friend':return {primary:'Remove friend',status:'FRIENDS',tone:'friend' as const};
+  case'outgoing_pending':return {primary:'Cancel request',status:'REQUEST SENT',tone:'pending' as const};
+  case'incoming_pending':return {primary:'Accept request',secondary:'Decline',status:'REQUEST RECEIVED',tone:'pending' as const};
+  default:return {primary:'Add friend',status:'NOT FRIENDS',tone:'neutral' as const};
+ }
+}

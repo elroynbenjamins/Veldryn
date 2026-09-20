@@ -1010,7 +1010,8 @@ app.addEventListener('click', async (event) => {
       const row=state.playerEvents.find(x=>x.event_id===el.dataset.id); if(!row)return;
       const result=await api('playerEventPreflight',{eventId:row.event_id,durationDays:14});
       state.playerEventPreflights={...state.playerEventPreflights,[row.event_id]:result};
-      toast(result.blocking?'Preflight found blocking issues.':'Preflight passed. Review the readiness checks below.',result.blocking?'error':'success');
+      const activationReady=Boolean(result.actions?.canEnableSchedule||result.actions?.canGoLiveNow);
+      toast(activationReady?'Preflight is ready for at least one activation path. Review the details below.':'Preflight found blocking issues for both activation paths.',activationReady?'success':'error');
       return render();
     }
     if (action === 'clone-player-event-season') {

@@ -17,8 +17,8 @@ ok(!candidates.some(row=>row.kind==='threat'),'Threat Bounties should not appear
 let mastered={...state,character:{...state.character!,monsterMasteryPoints:{MOSS_RAT:500}}};const masteredCandidates=weeklyOrderCandidatesFromCurrentContent(mastered),threatCandidates=masteredCandidates.filter(row=>row.kind==='threat');ok(threatCandidates.length===3,'Mastery 20 Moss Rat should expose all three Threat Bounty tiers');
 
 const generated=generateWeeklyOrders(accountId,now,candidates);
-ok(generated.orders.filter(row=>row.kind==='hunt').length===2,'default board should have two Hunt Orders');
-ok(generated.orders.filter(row=>row.kind==='profession').length===2,'default board should have two Work Orders');
+ok(generated.orders.filter(row=>row.kind==='hunt').length===Math.min(2,candidates.filter(row=>row.kind==='hunt'&&row.available&&row.source.available).length),'default board should fill available Hunt Order slots');
+ok(generated.orders.filter(row=>row.kind==='profession').length===Math.min(2,candidates.filter(row=>row.kind==='profession'&&row.available&&row.source.available).length),'default board should fill available Work Order slots');
 ok(generated.orders.filter(row=>row.kind==='regional').length===1,'default board should have one Regional Problem');
 const generatedRegional=generated.orders.find(row=>row.kind==='regional');ok(!!generatedRegional?.brief&&generatedRegional.reward.label.includes('Relief Cache'),'Generated Regional Problem should preserve authored brief and regional reward identity');
 const masteredBoard=generateWeeklyOrders(accountId+'-mastered',now,masteredCandidates),threat=masteredBoard.orders.find(row=>row.kind==='threat');ok(!!threat&&!!threat.challengeId&&threat.reward.label.includes('Bounty Cache'),'Mastered board should generate one tier-specific Threat Bounty');

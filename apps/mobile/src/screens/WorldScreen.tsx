@@ -15,6 +15,7 @@ import {GameButton} from '../components/GameButton';
 import {C,equipmentColors,radii,spacing,typography} from '../theme/theme';
 import {FrostmarchRegionPanel} from '../components/FrostmarchRegionPanel';
 import {RegionalJournalPanel} from '../components/RegionalJournalPanel';
+import {RegionalStoryLeadsPanel} from '../components/RegionalStoryLeadsPanel';
 import {frostmarchCardsV21,frostmarchProgressFromState,type RegionProgressV21} from '../core/region-content-v21';
 import {loadActiveFrostmarchContentVersionV21,loadFrostmarchProgressV21} from '../online/regional-content-v21';
 
@@ -33,6 +34,7 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop}:Pr
   const next=nextRegionUnlock(level);
   const combatCount=MONSTERS.filter(monster=>monster.zone===current.name&&!monster.boss).length;
   const gathering=[...GATHERING,...HERB_NODES].filter(activity=>activity.zoneId===current.id);
+  const storyRegion=currentId==='SUNSCAR'||currentId==='FROSTMARCH'||currentId==='ASHLANDS'?currentId:undefined;
 
   const frostmarch=current.id==='FROSTMARCH';
   const [serverFrostmarchProgress,setServerFrostmarchProgress]=useState<RegionProgressV21|null>(null);
@@ -61,6 +63,8 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop}:Pr
       <Text style={s.sub}>{combatCount} combat encounter{combatCount===1?'':'s'} · {gathering.length?gathering.map(entry=>entry.skillId).filter((value,index,list)=>list.indexOf(value)===index).join(', '):'no gathering nodes'}</Text>
       <View style={s.actions}><View style={s.flex}><GameButton title="Open Combat" onPress={onOpenCombat}/></View><View style={s.flex}><GameButton title="Open Skills" tone="secondary" onPress={onOpenSkills}/></View></View>
     </Panel>
+
+    {storyRegion&&<RegionalStoryLeadsPanel state={state} regionId={storyRegion} onOpenCombat={()=>onOpenCombat()}/>}
 
     <Text style={s.section}>CHOOSE A DESTINATION</Text>
     {WORLD_ZONES.filter(zone=>zone.id!==current.id).map(zone=>{

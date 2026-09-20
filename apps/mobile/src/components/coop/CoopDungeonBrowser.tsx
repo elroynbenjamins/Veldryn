@@ -9,8 +9,8 @@ import type {CoopUiAssetId} from '../../core/coop-ui-contract';
 import {coopColors,coopSpacing,coopTypography} from '../../theme/coop-ui-theme';
 import {CoopImageSlot,ExpeditionScreenShell,FantasyPanel,PrimaryAction,StateChip} from './CoopVisualKit';
 
-type BrowseProps={language:Language;dungeons:CoopDungeonView[];eventExpeditions:CoopEventExpeditionPreview[];loading:boolean;error:string;activeRun?:CoopRunView;onBack:()=>void;onRetry:()=>void;onSelect:(dungeon:CoopDungeonView)=>void;onResume:()=>void};
-export function CoopDungeonList({language,dungeons,eventExpeditions,loading,error,activeRun,onBack,onRetry,onSelect,onResume}:BrowseProps){
+type BrowseProps={language:Language;dungeons:CoopDungeonView[];eventExpeditions:CoopEventExpeditionPreview[];loading:boolean;error:string;activeRun?:CoopRunView;onBack:()=>void;onRetry:()=>void;onSelect:(dungeon:CoopDungeonView)=>void;onSelectEvent:(event:CoopEventExpeditionPreview)=>void;onResume:()=>void};
+export function CoopDungeonList({language,dungeons,eventExpeditions,loading,error,activeRun,onBack,onRetry,onSelect,onSelectEvent,onResume}:BrowseProps){
   const [filter,setFilter]=useState<'all'|'available'>('all'),visible=filterCoopDungeons(dungeons,filter),regions=groupCoopDungeonsByRegion(visible);
   return <ExpeditionScreenShell eyebrow={ct(language,'browse.kicker')} title={ct(language,'browse.title')} onBack={onBack} backLabel={ct(language,'details.backWorld')} banner={<Text style={s.copy}>{ct(language,'browse.subtitle')}</Text>}>
     {activeRun?<FantasyPanel variant="selected"><Text style={s.cardTitle}>{ct(language,'browse.resumeTitle')}</Text><Text style={s.copy}>{ct(language,'browse.resumeBody')}</Text><PrimaryAction label={ct(language,'browse.resume')} onPress={onResume}/></FantasyPanel>:null}
@@ -20,7 +20,7 @@ export function CoopDungeonList({language,dungeons,eventExpeditions,loading,erro
     {!loading&&!error&&!dungeons.length?<FantasyPanel><Text style={s.copy}>{ct(language,'browse.empty')}</Text></FantasyPanel>:null}
     {!loading&&!error&&dungeons.length>0&&!visible.length?<FantasyPanel><Text style={s.copy}>{ct(language,'browse.noResults')}</Text></FantasyPanel>:null}
     {!loading&&!error&&regions.map(group=><View key={group.region} style={s.regionGroup}><View style={s.regionHeading}><Text style={s.section}>{group.region}</Text><Text style={s.regionProgress}>{ct(language,'browse.regionProgress',{available:group.availableCount,total:group.dungeons.length})}</Text></View>{group.dungeons.map(dungeon=><DungeonCard key={dungeon.id} language={language} dungeon={dungeon} onPress={()=>onSelect(dungeon)}/>)}</View>)}
-    {!loading&&!error&&filter==='all'&&eventExpeditions.length?<View style={s.eventSection}><View style={s.eventHeading}><View style={s.flex}><Text style={s.section}>{ct(language,'event.section')}</Text><Text style={s.eventIntro}>{ct(language,'event.sectionCopy')}</Text></View><StateChip label={ct(language,'event.seasonal')} tone="selected"/></View>{eventExpeditions.map(event=><EventExpeditionCard key={event.id} language={language} event={event}/>)}</View>:null}
+    {!loading&&!error&&filter==='all'&&eventExpeditions.length?<View style={s.eventSection}><View style={s.eventHeading}><View style={s.flex}><Text style={s.section}>{ct(language,'event.section')}</Text><Text style={s.eventIntro}>{ct(language,'event.sectionCopy')}</Text></View><StateChip label={ct(language,'event.seasonal')} tone="selected"/></View>{eventExpeditions.map(event=><EventExpeditionCard key={event.id} language={language} event={event} onPress={()=>onSelectEvent(event)}/>)}</View>:null}
   </ExpeditionScreenShell>;
 }
 
@@ -31,8 +31,25 @@ function DungeonCard({language,dungeon,onPress}:{language:Language;dungeon:CoopD
   </Pressable>;
 }
 
-function EventExpeditionCard({language,event}:{language:Language;event:CoopEventExpeditionPreview}){
-  return <FantasyPanel variant="selected"><View style={s.eventTitleRow}><View style={s.flex}><Text style={s.eventName}>{event.eventName}</Text><Text style={s.cardTitle}>{event.name}</Text></View><StateChip label={ct(language,'event.preview')} tone="warning"/></View><Text style={s.copy}>{event.description}</Text><View style={s.eventFacts}><Text style={s.eventFact}><Text style={s.eventFactLabel}>{ct(language,'event.route')} </Text>{event.routeHighlights.join(' · ')}</Text><Text style={s.eventFact}><Text style={s.eventFactLabel}>{ct(language,'event.finalBoss')} </Text>{event.finalBoss}</Text></View></FantasyPanel>;
+function EventExpeditionCard({language,event,onPress}:{language:Language;event:CoopEventExpeditionPreview;onPress:()=>void}){
+  const available=event.status==='available';
+  return <Pressable accessibilityRole="button" accessibilityLabel={`${event.eventName}. ${event.name}. ${available?'Available now':event.lockedReason??'Seasonal preview'}`} onPress={onPress} style={({pressed})=>[s.cardPress,pressed&&s.pressed]}>
+    <FantasyPanel variant={available?'selected':'disabled'}><View style={s.eventTitleRow}><View style={s.flex}><Text style={s.eventName}>{event.eventName}</Text><Text style={s.cardTitle}>{event.name}</Text></View><StateChip label={available?'LIVE':ct(language,'event.preview')} tone={available?'success':'warning'}/></View><Text style={s.copy}>{event.description}</Text><View style={s.eventFacts}><Text style={s.eventFact}><Text style={s.eventFactLabel}>{ct(language,'event.route')} </Text>{event.routeHighlights.join(' · ')}</Text><Text style={s.eventFact}><Text style={s.eventFactLabel}>{ct(language,'event.finalBoss')} </Text>{event.finalBoss}</Text><Text style={s.eventFact}><Text style={s.eventFactLabel}>Entry </Text>Level {event.minLevel}+ · {event.rewardMarks} event currency on clear</Text>{!available&&event.lockedReason?<Text style={s.lock}>{event.lockedReason}</Text>:null}</View></FantasyPanel>
+  </Pressable>;
+}
+
+type EventDetailsProps={language:Language;event:CoopEventExpeditionPreview;notice?:string;busy?:boolean;onBack:()=>void;onLaunch:()=>void};
+export function CoopEventExpeditionDetails({language,event,notice,busy=false,onBack,onLaunch}:EventDetailsProps){
+  const available=event.status==='available';
+  return <ExpeditionScreenShell eyebrow="SEASONAL EVENT EXPEDITION" title={event.name} onBack={onBack} backLabel={ct(language,'details.backList')} banner={<View style={s.eventTitleRow}><Text style={s.eventName}>{event.eventName}</Text><StateChip label={available?'LIVE':ct(language,'event.preview')} tone={available?'success':'warning'}/></View>} stickyAction={<View style={s.stickyStack}>{notice?<Text accessibilityRole="alert" style={s.notice}>{notice}</Text>:null}<PrimaryAction label={available?'Launch seasonal expedition':'Seasonal expedition unavailable'} disabled={!available||busy} onPress={onLaunch}/></View>}>
+    <Text style={s.description}>{event.description}</Text>
+    <FantasyPanel variant={available?'selected':'disabled'}><FactRow label="Entry" value={`Level ${event.minLevel}+`}/><FactRow label={ct(language,'details.party')} value="Your verified character + three eligible Echo recruits (1 Tank / 2 Damage / 1 Support)"/><FactRow label={ct(language,'details.reward')} value={`${event.rewardMarks} active-event currency on a successful clear`} last/></FantasyPanel>
+    {!available?<FantasyPanel variant="danger"><Text style={s.lock}>{event.lockedReason??'This seasonal expedition is only launchable while its LiveOps event is active.'}</Text></FantasyPanel>:null}
+    <Text style={s.section}>{ct(language,'event.route')}</Text>
+    {event.routeHighlights.map((item,index)=><FantasyPanel key={item}><Text style={s.eventFactLabel}>{index+1}. {item}</Text></FantasyPanel>)}
+    <FantasyPanel variant="danger"><Text style={s.eventFactLabel}>{ct(language,'event.finalBoss')}</Text><Text style={s.cardTitle}>{event.finalBoss}</Text></FantasyPanel>
+    <Text style={s.copy}>Route choices and combat outcomes are saved online after every decision. Closing the app does not discard an active seasonal run.</Text>
+  </ExpeditionScreenShell>;
 }
 
 type DetailsProps={language:Language;dungeon:CoopDungeonView;currentLevel:number;mode:CoopMode;tier?:CoopTier;notice?:string;onBack:()=>void;onMode:(mode:CoopMode)=>void;onTier:(tier:CoopTier)=>void;onContinue:()=>void};

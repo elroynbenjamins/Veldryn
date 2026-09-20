@@ -3,6 +3,7 @@ import {RecruitmentListing} from './RecruitmentListing';
 import {GameButton} from './GameButton';
 import {C,equipmentColors,radii,typography} from '../theme/theme';
 import React from 'react';
+import {useTheme} from '../theme/ThemeProvider';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import {
   EMPTY_RECRUITMENT_FILTERS,
@@ -37,6 +38,8 @@ export interface PartyHubPanelProps {
 }
 
 export function PartyHubPanel(props: PartyHubPanelProps) {
+  const {colors:C,equipmentColors}=useTheme();
+  const styles=React.useMemo(()=>createStyles(C,equipmentColors),[C,equipmentColors]);
   const [localFilters, setLocalFilters] = React.useState<RecruitmentClientFilters>(EMPTY_RECRUITMENT_FILTERS);
   const filters=props.filters??localFilters;
   const setFilters=(next:React.SetStateAction<RecruitmentClientFilters>)=>{const result=typeof next==='function'?next(filters):next;setLocalFilters(result);props.onFiltersChange?.(result);};
@@ -84,6 +87,8 @@ export function PartyHubPanel(props: PartyHubPanelProps) {
 }
 
 function ContractCard({ contract, nowMs }: { contract: PartyContractView; nowMs: number }) {
+  const {colors:C,equipmentColors}=useTheme();
+  const styles=React.useMemo(()=>createStyles(C,equipmentColors),[C,equipmentColors]);
   const ratio = contractProgressRatio(contract);
   const eligible = personalContributionEligible(contract);
   const endsAtMs=contract.endsAtMs??(contract.expiresAt?Date.parse(contract.expiresAt):nowMs);
@@ -102,7 +107,7 @@ function PixelButton({ label, secondary, onPress }: { label: string; secondary?:
   return <GameButton title={label} tone={secondary?'secondary':'primary'} disabled={!onPress} onPress={onPress??(()=>{})}/>;
 }
 
-const styles = StyleSheet.create({
+const createStyles=(C:any,equipmentColors:any)=>StyleSheet.create({
   root: { flex: 1, backgroundColor: C.bg }, content: { padding: 12, gap: 12, paddingBottom: 28 },
   heroPanel: { borderRadius:radii.lg,borderWidth: 1, borderColor: C.line, backgroundColor: C.panel, padding: 14, gap: 8 },
   panel: { borderRadius:radii.md,borderWidth: 1, borderColor: C.line, backgroundColor: C.panel, padding: 12, gap: 9 },

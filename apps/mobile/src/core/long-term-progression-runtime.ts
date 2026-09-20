@@ -155,7 +155,7 @@ function sourceKind(event:TrustedProgressionActivity):RareDiscoverySource|undefi
 }
 
 export function applyTrustedLongTermProgression(input:GameState,events:TrustedProgressionActivity[],reward:RewardBundle|undefined,nowMs:number,options:TrustedProgressionOptions):TrustedProgressionResult{
- let state=input;const account={...state.account},metrics={...(account.longTermMetrics??{})},mastery={...(account.professionMasteryByAction??{})};state={...state,account:{...account,longTermMetrics:metrics,professionMasteryByAction:mastery}};
+ let state=reconcileWeeklyOrderRollover(input,nowMs).state;const account={...state.account},metrics={...(account.longTermMetrics??{})},mastery={...(account.professionMasteryByAction??{})};state={...state,account:{...account,longTermMetrics:metrics,professionMasteryByAction:mastery}};
  const weekly=ensureWeeklyOrders(state,options.accountId,nowMs),weeklyCompleted:string[]=[],pending=[...(state.account.weeklyOrderPendingRewards??[])],pendingKeys=new Set(pending.map(row=>row.claimKey));
  const wasComplete=new Set(weekly.orders.filter(row=>row.progress>=row.target).map(row=>row.id));
  for(const event of events){const units=integerUnits(event.units);if(!units)continue;

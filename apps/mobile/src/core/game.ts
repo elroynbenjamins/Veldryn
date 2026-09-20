@@ -38,6 +38,7 @@ import {applyCorePetActivityDrops,applyCorePetCombatDrops} from './core-pet-drop
 import {evaluateIdleRuleSet,type IdleEvaluationContext,type IdleRuleSet} from './idle-rules-v40';
 import {challengeHuntClearKey,challengeHuntCleared,challengeHuntFirstClearReward,challengeHuntStats,challengeHuntUnlocked,challengeRewardMultipliers,rotatingChallengeAffix} from './challenge-hunts';
 import {combatTactic,normalizeCombatTactic} from './combat-tactics';
+import {CHAMPION_DAMAGE_MULTIPLIER,championBonus,isChampionEncounter} from './hunt-champions';
 export const beginAlchemyBatch=startAlchemyBatch;
 
 function longTermAccountScope(state:GameState){return state.account.longTermAccountScopeId??`local-account:${state.createdAtMs}`;}
@@ -190,11 +191,12 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number){
   const theoreticalKills=Math.floor(elapsed/(m.secondsPerKill*COMBAT_TIME_SCALE*(environment?.actionTimeMultiplier??1)/speed));
   const foodId=c.equippedFoodId;const food=foodId?itemDef(foodId):undefined;
   let foodLeft=stackQty(state.inventory.stacks,foodId),foodConsumed=0;
-  let hp=Math.min(c.currentHp||stats.hp,stats.hp),kills=0,stoppedReason='';
+  let hp=Math.min(c.currentHp||stats.hp,stats.hp),kills=0,championKills=0,stoppedReason='';
   const threshold=Math.max(10,Math.min(90,state.settings.autoEatThresholdPct))/100;
   for(let i=0;i<theoreticalKills;i++){
+    const champion=!challengeId&&isChampionEncounter(c.id,state.activity?.lastClaimAtMs??0,monsterId,i);
     const raw=Math.max(1,Math.round((m.attack*COMBAT_MONSTER_DAMAGE_SCALE)-Math.floor(boostedDefense*.58)));
-    const damage=Math.max(1,Math.round((raw*.48 + m.level*.16)*style.damageTakenMultiplier*tactic.damageTakenMultiplier*modifiers.incomingDamageMultiplier*companion.incomingDamageMultiplier*(c.preparation?preparationEffects(c.preparation).damage:1)));
+    const damage=Math.max(1,Math.round((raw*.48 + m.level*.16)*style.damageTakenMultiplier*tactic.damageTakenMultiplier*(champion?CHAMPION_DAMAGE_MULTIPLIER:1)*modifiers.incomingDamageMultiplier*companion.incomingDamageMultiplier*(c.preparation?preparationEffects(c.preparation).damage:1)));
     hp-=damage;
     while(food && food.heal && foodLeft>0 && hp>0 && hp/stats.hp<=threshold){
       hp=Math.min(stats.hp,hp+Math.max(1,Math.ceil(food.heal*modifiers.healingEffectivenessMultiplier)));foodLeft--;foodConsumed++;
@@ -204,10 +206,10 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number){
       stoppedReason=food && state.settings.stopCombatWhenOutOfFood?'Out of food / too injured':'Too injured';
       break;
     }
-    kills++;
+    kills++;if(champion)championKills++;
     hp=Math.min(stats.hp,hp+Math.max(1,Math.floor(stats.hp*style.recoveryPct*tactic.recoveryMultiplier*companion.recoveryMultiplier)));
   }
-  return {kills,foodConsumed,endHp:hp,stoppedReason};
+  return {kills,championKills,foodConsumed,endHp:hp,stoppedReason};
 }
 
 function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number):RewardBundle{
@@ -246,8 +248,8 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
   const mastery=monsterMastery(state,m.id),materialRemainders={...state.character.masteryMaterialRemainders};
   if(mastery.materialBonus)for(const item of items){if(itemDef(item.itemId).type!=='material')continue;const extra=item.quantity*mastery.materialBonus+(materialRemainders[item.itemId]??0),whole=Math.floor(extra+1e-9);item.quantity+=whole;materialRemainders[item.itemId]=Math.max(0,extra-whole);}
   const firstClear=challengeId&&sim.kills>0&&!challengeHuntCleared(state,m.id,challengeId)?challengeHuntFirstClearReward(m,challengeId):undefined;
-  const rewardItems=firstClear?stackItems([],items.concat(firstClear.items)):items;
-  const reward:RewardBundle={classSkillXp:classGain.awards,xp:Math.floor(sim.kills*m.xp*effect.xpMultiplier*multipliers.characterXpMultiplier*challengeReward.xp),gold:Math.floor(sim.kills*m.gold*effect.goldMultiplier*multipliers.goldMultiplier*challengeReward.gold)+(firstClear?.gold??0),items:rewardItems,kills:sim.kills,elapsedSeconds:elapsed,foodConsumed:sim.foodConsumed,endHp:sim.endHp,stoppedReason:sim.stoppedReason,...(firstClear&&challengeId?{challengeHuntFirstClear:{key:challengeHuntClearKey(m.id,challengeId),monsterId:m.id,challengeId,label:firstClear.label}}:{})};
+  const rewardItems=firstClear?stackItems([],items.concat(firstClear.items)):items,champion=championBonus(Math.floor(m.xp*effect.xpMultiplier*multipliers.characterXpMultiplier),Math.floor(m.gold*effect.goldMultiplier*multipliers.goldMultiplier),sim.championKills);
+  const reward:RewardBundle={classSkillXp:classGain.awards,xp:Math.floor(sim.kills*m.xp*effect.xpMultiplier*multipliers.characterXpMultiplier*challengeReward.xp)+champion.xp,gold:Math.floor(sim.kills*m.gold*effect.goldMultiplier*multipliers.goldMultiplier*challengeReward.gold)+(firstClear?.gold??0)+champion.gold,items:rewardItems,kills:sim.kills,elapsedSeconds:elapsed,foodConsumed:sim.foodConsumed,endHp:sim.endHp,stoppedReason:sim.stoppedReason,...(firstClear&&challengeId?{challengeHuntFirstClear:{key:challengeHuntClearKey(m.id,challengeId),monsterId:m.id,challengeId,label:firstClear.label}}:{}),...(sim.championKills>0?{championEncounters:{count:sim.championKills,bonusXp:champion.xp,bonusGold:champion.gold}}:{})};
   return {...reward,masteryMaterialRemainders:materialRemainders,eventDrops:activityEventDrops(state,reward,effectiveNowMs),eventDiscoveries:activityEventDiscoveries(state,'combat',reward.kills,effectiveNowMs)};
 }
 

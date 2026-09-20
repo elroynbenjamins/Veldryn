@@ -11,7 +11,7 @@ import {MONSTERS} from '../content/monsters';
 import {C,radii,spacing,typography} from '../theme/theme';
 
 const KIND_LABEL:Record<IdleStopKind,string>={
- item_quantity:'Item quantity',skill_level:'Skill level',monster_kills:'Monster kills',weekly_order_progress:'Weekly Order',food_below:'Food remaining',free_slots_below:'Free storage slots',duration_seconds:'Elapsed duration'
+ item_quantity:'Item quantity',skill_level:'Skill level',monster_kills:'Monster kills',session_kills:'Hunt session kills',champion_defeats:'Champion defeats',weekly_order_progress:'Weekly Order',food_below:'Food remaining',free_slots_below:'Free storage slots',duration_seconds:'Elapsed duration'
 };
 type Picker='kind'|'target'|null;
 type Target={id:string;label:string;current?:number};

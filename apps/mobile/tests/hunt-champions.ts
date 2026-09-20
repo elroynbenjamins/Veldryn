@@ -16,7 +16,7 @@ ok((longPreview.championEncounters?.count??0)>0,'Long ordinary hunt should surfa
 const repeated=previewActivityReward(state,now+24*60*60*1000);
 ok(JSON.stringify(longPreview)===JSON.stringify(repeated),'Champion hunt previews must remain deterministic');
 
-let challenge=createCharacter(newGame(now),'WAYFINDER','Challenge Champion Tester');
+let challenge=createCharacter(newGame(now),'WAYFINDER','Challenge Tester');
 challenge.character!.monsterMasteryPoints={MOSS_RAT:75};
 challenge=startCombat(challenge,'MOSS_RAT',now,'ferocious','balanced');
 const challengePreview=previewActivityReward(challenge,now+24*60*60*1000);

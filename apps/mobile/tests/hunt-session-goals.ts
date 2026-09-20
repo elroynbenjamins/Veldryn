@@ -14,7 +14,7 @@ ok(fiftyPreview.stoppedReason?.includes('Hunt goal reached'),'Kill goal should e
 const fiftyClaim=claimActivity(fifty,now+4*60*60*1000);
 ok(!fiftyClaim.state.activity,'Claiming a completed hunt goal should stop the hunt');
 
-let hundred=createCharacter(newGame(now),'WAYFINDER','Persistent Goal Tester');
+let hundred=createCharacter(newGame(now),'WAYFINDER','Persist Goal Tester');
 hundred=startCombat(hundred,'MOSS_RAT',now,undefined,'balanced','kills_100');
 const partial=claimActivity(hundred,now+5*60*1000);
 ok(!!partial.state.activity&&partial.reward.kills>0&&partial.reward.kills<100,'Early claim should keep a 100-kill session active');

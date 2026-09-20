@@ -41,3 +41,5 @@ Do not alter the core curves solely from theoretical totals. Review the write-on
 - first Prestige Mastery
 
 These let real player pacing tell us whether the guardrails are too fast or too slow.
+
+Validation note: these guardrails are executed by the mobile core test suite on every companion economy change.

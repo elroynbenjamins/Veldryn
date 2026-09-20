@@ -36,8 +36,8 @@ let eventDrop=createCharacter(newGame(0),'IRONWARDEN','Drop Pet');
 eventDrop={...eventDrop,account:{...eventDrop.account,unlockedCosmeticPetIds:['EVT_PET_010']},character:{...eventDrop.character!,selectedCosmeticPetId:'EVT_PET_010'}};
 near(characterPermanentMultipliers(eventDrop).dropChanceMultiplier,1.045,'Epic event drop pet applies fixed +0.50% passive plus +4.00% active');
 
-const baseline=startGathering(createCharacter(newGame(0),'IRONWARDEN','Baseline Gatherer'),'COPPER_VEIN',0);
-let boosted=startGathering(createCharacter(newGame(0),'IRONWARDEN','Boosted Gatherer'),'COPPER_VEIN',0);
+const baseline=startGathering(createCharacter(newGame(0),'IRONWARDEN','Baseline Gatherer'),'GREENWOOD_TREE',0);
+let boosted=startGathering(createCharacter(newGame(0),'IRONWARDEN','Boosted Gatherer'),'GREENWOOD_TREE',0);
 boosted={...boosted,account:{...boosted.account,unlockedCosmeticPetIds:['PET_001']},character:{...boosted.character!,ownedPetIds:['PET_001'],selectedCosmeticPetId:'PET_001'}};
 const baselineReward=previewActivityReward(baseline,3_600_000),boostedReward=previewActivityReward(boosted,3_600_000);
 equal(boostedReward.kills,baselineReward.kills,'gathering yield pet does not alter completed action count');

@@ -1,7 +1,7 @@
 import {useEffect,useRef,useState} from 'react';
 import {Animated,Easing,Pressable,StyleSheet,Text,View} from 'react-native';
 import {ActiveActivity,RewardBundle} from '../core/types';
-import {huntGoalProgress} from '../core/hunt-goals';
+import {huntGoalProgress,huntMomentumStatus} from '../core/hunt-goals';
 import {itemDef} from '../content/items';
 import {GameButton} from './GameButton';
 import {Panel} from './Panel';
@@ -22,7 +22,7 @@ export function ActivityCard({title,kind,activity,cycleSeconds,capHours,preview,
   const loot=preview.items.map(stack=>`${formatGameNumber(stack.quantity,numberMode)}× ${itemDef(stack.itemId).name}`).join(' · ');
   const capped=preview.elapsedSeconds>=capHours*60*60;
   const cycleProgress=preview.stoppedReason||capped?1:(preview.elapsedSeconds%cycleSeconds)/cycleSeconds;
-  const remaining=Math.max(1,Math.ceil(cycleSeconds-(preview.elapsedSeconds%cycleSeconds))),goal=activity?.kind==='combat'?huntGoalProgress(activity,preview.kills,preview.championEncounters?.count??0):undefined;
+  const remaining=Math.max(1,Math.ceil(cycleSeconds-(preview.elapsedSeconds%cycleSeconds))),goal=activity?.kind==='combat'?huntGoalProgress(activity,preview.kills,preview.championEncounters?.count??0):undefined,momentum=activity?.kind==='combat'?huntMomentumStatus((activity.sessionKills??0)+preview.kills):undefined;
   return <Panel>
     <View style={s.heading}>
       <View style={s.headingCopy}>
@@ -34,6 +34,7 @@ export function ActivityCard({title,kind,activity,cycleSeconds,capHours,preview,
     <View accessible accessibilityRole="progressbar" accessibilityLabel={`${title} action progress`} accessibilityValue={{min:0,max:100,now:Math.round(cycleProgress*100)}} style={s.progressBlock}><View style={s.progressMeta}><Text style={s.progressLabel}>{preview.stoppedReason?'ACTIVITY STOPPED':capped?'OFFLINE STORAGE FULL':kind==='combat'?'NEXT ENCOUNTER':'NEXT GATHER'}</Text><Text style={s.progressTime}>{preview.stoppedReason||capped?'—':`${remaining}s`}</Text></View><View style={s.track}><View style={[s.fill,{width:`${cycleProgress*100}%`}]}>{!reduceMotion&&<Animated.View style={[s.shine,{transform:[{translateX:pulse.interpolate({inputRange:[0,1],outputRange:[-90,260]})}]}]}/>}</View></View></View>
     {!!preview.stoppedReason&&<View accessibilityRole="alert" style={s.stopNotice}><Text style={s.noticeLabel}>ACTIVITY STOPPED</Text><Text style={s.capNotice}>{preview.stoppedReason}. Collect to settle combat, then heal or equip food in Inventory.</Text></View>}
     {goal&&<View style={s.goal}><View style={s.progressMeta}><Text style={s.goalLabel}>HUNT GOAL · {goal.label.toUpperCase()}</Text><Text style={s.goalValue}>{goal.current}/{goal.target}</Text></View><View style={s.goalTrack}><View style={[s.goalFill,{width:`${Math.max(2,Math.min(100,goal.current/goal.target*100))}%`}]}/></View></View>}
+    {momentum&&<View style={s.momentum}><View style={s.progressMeta}><Text style={s.momentumLabel}>HUNT MOMENTUM · {momentum.tier.name.toUpperCase()}</Text><Text style={s.momentumValue}>{momentum.bonusPct?`+${momentum.bonusPct}% XP & GOLD`:'BUILDING'}</Text></View><View style={s.momentumTrack}><View style={[s.momentumFill,{width:`${Math.max(2,Math.round(momentum.progressPct*100))}%`}]}/></View><Text style={s.momentumHint}>{momentum.next?`${momentum.killsToNext} kills to ${momentum.next.name} (+${Math.round(momentum.next.bonus*100)}%)`:`Max momentum · ${momentum.kills} session kills`}</Text></View>}
     {preview.championEncounters?.count?<View style={s.champion}><Text style={s.championLabel}>CHAMPION ENCOUNTER</Text><Text style={s.championText}>{preview.championEncounters.count} champion{preview.championEncounters.count===1?'':'s'} defeated · +{formatGameNumber(preview.championEncounters.bonusXp,numberMode)} XP · +{formatGameNumber(preview.championEncounters.bonusGold,numberMode)} gold</Text></View>:null}
     <View style={s.rewardRow}>
       <View><Text style={s.rewardNumber}>{formatGameNumber(preview.kills,numberMode)}</Text><Text style={s.rewardLabel}>{kind==='combat'?'kills ready':'actions ready'}</Text></View>
@@ -56,6 +57,7 @@ const s=StyleSheet.create({
   status:{borderWidth:1,borderColor:C.good,borderRadius:99,paddingHorizontal:spacing.sm,paddingVertical:spacing.xs},
   statusCapped:{borderColor:C.warning},statusText:{...typography.caption,fontWeight:'900'},statusActive:{color:C.good},statusCappedText:{color:C.warning},statusStopped:{color:C.bad},
   goal:{gap:4,padding:spacing.sm,borderWidth:1,borderColor:C.info,borderRadius:8,backgroundColor:'#132333'},goalLabel:{...typography.caption,color:C.info,fontWeight:'900',letterSpacing:.7},goalValue:{...typography.caption,color:C.text,fontWeight:'900'},goalTrack:{height:7,borderRadius:4,overflow:'hidden',backgroundColor:C.bg},goalFill:{height:'100%',backgroundColor:C.info},
+  momentum:{gap:4,padding:spacing.sm,borderWidth:1,borderColor:C.good,borderRadius:8,backgroundColor:C.panel2},momentumLabel:{...typography.caption,color:C.good,fontWeight:'900',letterSpacing:.7},momentumValue:{...typography.caption,color:C.text,fontWeight:'900'},momentumHint:{...typography.caption,color:C.muted},momentumTrack:{height:7,borderRadius:4,overflow:'hidden',backgroundColor:C.bg},momentumFill:{height:'100%',backgroundColor:C.good},
   champion:{gap:2,padding:spacing.sm,borderWidth:1,borderColor:'#d7a94f',borderRadius:8,backgroundColor:'#2b2417'},championLabel:{...typography.caption,color:'#f2c96f',fontWeight:'900',letterSpacing:.8},championText:{...typography.bodyStrong,color:C.text},
   rewardRow:{flexDirection:'row',flexWrap:'wrap',gap:8,justifyContent:'space-between',alignItems:'center',paddingVertical:spacing.sm},
   rewardNumber:{fontSize:42,lineHeight:46,color:C.text,fontWeight:'900'},rewardLabel:{...typography.caption,color:C.muted},

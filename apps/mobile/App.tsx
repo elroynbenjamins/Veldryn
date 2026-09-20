@@ -56,6 +56,7 @@ import {ArenaScreen} from './src/screens/ArenaScreen';
 import {RankingsScreen} from './src/screens/RankingsScreen';
 import {CollectionsScreen} from './src/screens/CollectionsScreen';
 import {ProfileScreen} from './src/screens/ProfileScreen';
+import {ProfileCustomizeScreen} from './src/screens/ProfileCustomizeScreen';
 import {AchievementsScreen} from './src/screens/AchievementsScreen';
 import {ActivityOverviewScreen} from './src/screens/ActivityOverviewScreen';
 import {ProgressionPlannerScreen} from './src/screens/ProgressionPlannerScreen';
@@ -78,7 +79,7 @@ import {useSocialNotificationCounts} from './src/online/useSocialNotificationCou
 import {fetchActiveEventRuntime} from './src/online/live-events';
 import {onlineConfigured} from './src/online/supabase';
 
-type Tab=QuickNavDestination|'Activity'|'Progression'|'DailySupplies'|'Arena'|'Rankings'|'Collections'|'Profile'|'Achievements'|'Combat'|'Coop';
+type Tab=QuickNavDestination|'Activity'|'Progression'|'DailySupplies'|'Arena'|'Rankings'|'Collections'|'Profile'|'ProfileCustomize'|'Achievements'|'Combat'|'Coop';
 type PrimaryTab='Skills'|'World'|'Character'|'Inventory'|'More';
 const primaryTabs:PrimaryTab[]=['Character','Skills','World','Inventory','More'];
 function tabLabel(language:Language,tab:Tab):string{
@@ -91,6 +92,7 @@ function tabLabel(language:Language,tab:Tab):string{
     case 'Rankings':return 'Rankings';
     case 'Collections':return 'Collections';
     case 'Profile':return 'Profile';
+    case 'ProfileCustomize':return 'Customize Profile';
     case 'Achievements':return 'Achievements';
   }
 }
@@ -325,7 +327,8 @@ const next=discoverCharacterSkins(candidate),newSkins=newlyUnlockedCharacterSkin
     {tab==='Arena'&&<ArenaScreen state={state} onChange={candidate=>void commit(candidate)}/>}
     {tab==='Rankings'&&<RankingsScreen/>}
     {tab==='Collections'&&<CollectionsScreen state={state} onChange={candidate=>void commit(candidate)}/>}
-    {tab==='Profile'&&<ProfileScreen state={state} onNavigate={destination=>{if(destination==='Appearance'){setTab('Character');return;}setTab(destination)}}/>}
+    {tab==='Profile'&&<ProfileScreen state={state} onNavigate={destination=>destination==='Customize'?setTab('ProfileCustomize'):setTab(destination)}/>}
+    {tab==='ProfileCustomize'&&<ProfileCustomizeScreen state={state} onChange={commit}/>} 
     {tab==='Achievements'&&<AchievementsScreen/>}
   </View>
   <ChatOverlay state={state} visible={showChatOverlay} onOpen={()=>setShowChatOverlay(true)} onClose={()=>setShowChatOverlay(false)}/>

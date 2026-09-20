@@ -67,6 +67,7 @@ import {GameButton} from './src/components/GameButton';
 import type {GameCommand} from './src/core/game-commands';
 import {buildNavigationBadges,type NavigationNotification} from './src/core/navigation-notifications';
 import {eventReadyClaimCount} from './src/core/live-events';
+import {companionAttentionSummary} from './src/core/companion-attention';
 import {useSocialNotificationCounts} from './src/online/useSocialNotificationCounts';
 import {fetchActiveEventRuntime} from './src/online/live-events';
 import {onlineConfigured} from './src/online/supabase';
@@ -208,8 +209,10 @@ const next=discoverCharacterSkins(candidate),newSkins=newlyUnlockedCharacterSkin
   if(__DEV__&&showCoopUiGallery)return <SafeAreaView style={s.safe} {...backSwipe.panHandlers}><StatusBar style="light"/><CoopUiGalleryScreen language={state.settings.language} onClose={()=>setShowCoopUiGallery(false)}/></SafeAreaView>;
   const preview=previewActivityReward(state,now);
   const eventClaims=eventReadyClaimCount(state,now);
+  const companionAttention=companionAttentionSummary(state,now);
   const navigationNotifications:NavigationNotification[]=[
     {key:'activity-reward-ready',kind:'reward_ready',unread:rewardHasProgress(preview)},
+    {key:'companion-attention',kind:'companion_attention',unread:companionAttention.hasAttention},
     {key:'event-rewards-ready',kind:'event_reward_ready',count:eventClaims,unread:eventClaims>0},
     {key:'incoming-friend-requests',kind:'friend_request',count:notificationCounts.friendRequests,unread:notificationCounts.friendRequests>0},
     {key:'unread-direct-messages',kind:'unread_dm',count:notificationCounts.chatUnread,unread:notificationCounts.chatUnread>0},
@@ -248,7 +251,7 @@ const next=discoverCharacterSkins(candidate),newSkins=newlyUnlockedCharacterSkin
     {tab==='Events'&&<EventScreen state={state} onChange={commit} onCommand={serverGameplayEnabled?command=>perform(command).then(Boolean):undefined}/>}
     {tab==='Guild'&&<GuildScreen online={serverGameplayEnabled} state={state} onChange={commit} onlineDirectory={<OnlineGuildBrowser/>} onlineManagement={<OnlineGuildManagement/>} onlinePve={<OnlineGuildPve authoritative={serverGameplayEnabled} numberMode={state.settings.numberMode}/>}/>}
     {tab==='Settings'&&<SettingsScreen online={serverGameplayEnabled} state={state} onChange={commit} onExport={exportSave} onImport={importSave} onOpenChatPilot={__DEV__?()=>{setChatPilotInitialPanel('chat');setShowChatPilot(true)}:undefined} onOpenChatEmotes={__DEV__?()=>{setChatPilotInitialPanel('emotes');setShowChatPilot(true)}:undefined} onOpenCoopUiGallery={__DEV__?()=>setShowCoopUiGallery(true):undefined} onLanguage={language=>commit({...state,settings:{...state.settings,language}})} onReset={()=>serverGameplayEnabled?Alert.alert('Online save','Your online character is saved on the server.'):Alert.alert('Reset local save?','This deletes prototype progress only.',[{text:'Cancel'},{text:'Reset',style:'destructive',onPress:async()=>{await repo.reset();setState(newGame(Date.now()));setCurrentTab('Home');setTabHistory([])}}])}/>}
-    {tab==='More'&&<MoreScreen language={state.settings.language} onNavigate={setTab} onOpenChatPilot={__DEV__?()=>{setChatPilotInitialPanel('chat');setShowChatPilot(true)}:undefined}/>}
+    {tab==='More'&&<MoreScreen language={state.settings.language} onNavigate={setTab} companionAttention={companionAttention.hasAttention} onOpenChatPilot={__DEV__?()=>{setChatPilotInitialPanel('chat');setShowChatPilot(true)}:undefined}/>}
     {tab==='Arena'&&<ArenaScreen state={state} onChange={candidate=>void commit(candidate)}/>}
     {tab==='Rankings'&&<RankingsScreen/>}
     {tab==='Collections'&&<CollectionsScreen state={state} onChange={candidate=>void commit(candidate)}/>}

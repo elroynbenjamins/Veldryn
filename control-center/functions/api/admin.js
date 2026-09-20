@@ -629,7 +629,7 @@ async function playerEventAnalytics(env, payload) {
   const [raw,funnelRaw,activity] = await Promise.all([
     supabaseFetch(env,'/rest/v1/rpc/player_event_analytics_server_v1',{method:'POST',body:{p_event_id:eventId}}),
     supabaseFetch(env,'/rest/v1/rpc/player_event_funnel_server_v1',{method:'POST',body:{p_event_id:eventId}}).catch(()=>null),
-    playerActivityAnalytics(env,{days:30}).catch(()=>null),
+    payload.includeGlobalActivity===false?Promise.resolve(null):playerActivityAnalytics(env,{days:30}).catch(()=>null),
   ]);
   const analytics = Array.isArray(raw) ? (raw[0] ?? {}) : (raw ?? {});
   const funnelPayload = Array.isArray(funnelRaw) ? (funnelRaw[0] ?? {}) : (funnelRaw ?? {});
@@ -687,6 +687,33 @@ async function playerEventAnalytics(env, payload) {
     funnel:funnelPayload,
     playerActivity:activity,
   };
+}
+
+async function playerEventSeriesComparison(env, payload) {
+  const eventId=String(payload.eventId??'');
+  const match=eventId.match(/^(EVT_ANNUAL_\d{3})(?:_|$)/);
+  if(!match)throw new Error('player_event_series_invalid');
+  const series=match[1];
+  const rows=(await list(env,'live_events','select=event_id,name,enabled,starts_at,ends_at,grace_ends_at&order=starts_at.desc.nullslast,event_id.desc&limit=200')??[])
+    .filter(row=>String(row.event_id??'').startsWith(series+'_'))
+    .slice(0,8);
+  const seasons=[];
+  for(const row of rows){
+    try{
+      const result=await playerEventAnalytics(env,{eventId:row.event_id,includeGlobalActivity:false});
+      const p=result.analytics?.progress??{},d=result.analytics?.dungeons??{},f=result.funnel?.funnel??{};
+      seasons.push({
+        eventId:row.event_id,name:row.name??row.event_id,startsAt:row.starts_at,endsAt:row.ends_at,
+        participants:Number(p.participants??0),medianReputation:Number(p.progressMedian??0),p90Reputation:Number(p.progressP90??0),
+        dailyGiftReach:result.derived?.dailyGiftReach??null,contractCompletionRate:result.derived?.contractCompletionRate??null,
+        shopBuyerReach:result.derived?.shopBuyerReach??null,dungeonStartReach:result.derived?.dungeonStartReach??null,
+        dungeonClearRate:result.derived?.dungeonClearRate??null,shopPurchases:Number(f.shopPurchases??0),
+      });
+    }catch(error){
+      seasons.push({eventId:row.event_id,name:row.name??row.event_id,startsAt:row.starts_at,endsAt:row.ends_at,error:error instanceof Error?error.message:'analytics_unavailable'});
+    }
+  }
+  return {series,seasons};
 }
 
 async function schedulePlayerEvent(env, actor, payload) {
@@ -1282,6 +1309,7 @@ async function routeAction(env, actor, action, payload) {
     case 'playerEventPreflight': return await playerEventPreflight(env, payload);
     case 'playerEventAnalytics': return await playerEventAnalytics(env, payload);
     case 'playerActivityAnalytics': return await playerActivityAnalytics(env, payload);
+    case 'playerEventSeriesComparison': return await playerEventSeriesComparison(env, payload);
     case 'clonePlayerEventSeason': return await clonePlayerEventSeason(env, actor, payload);
     case 'applySeasonalCalendarPreset': return await applySeasonalCalendarPreset(env, actor, payload);
     case 'schedulePlayerEvent': return await schedulePlayerEvent(env, actor, payload);

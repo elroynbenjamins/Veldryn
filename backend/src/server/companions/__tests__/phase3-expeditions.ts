@@ -62,6 +62,14 @@ const scout=companionMission('MISSION_SCOUT_2H')!,mult=claimed.assignment.perfor
 const fakeClientTomorrow=Date.parse(first.assignment.endsAt)+86400000;ok(fakeClientTomorrow>Date.parse(first.assignment.endsAt),'Test fixture invalid');throws(()=>claimCompanionAssignment({assignment:first.assignment,owned,serverNowMs:now,bondstonesClaimedThisWeek:0}),'Client-clock-like early claim bypassed serverNow');
 // Pens influence capacity/timer modestly, never extreme.
 const pen3=startCompanionAssignment({accountId:'A1',missionId:'MISSION_SCOUT_2H',companionIds:['UNIT_003'],owned,assignments:[],equippedCompanionIds:new Set(),expeditionPensLevel:3,economy,serverNowMs:now,requestId:'PEN3'});eq(pen3.durationMs,Math.round(scout.durationMs*(1-COMPANION_EXPEDITION_PEN_DURATION_REDUCTION[3])),'Pen duration reduction wrong');ok(pen3.durationMs>scout.durationMs*.9,'Pen reduction became extreme');
+// Specialist mission bonuses reward deliberate roster choices without creating a new currency.
+const oldFriends=companionMission('MISSION_OLD_FRIENDS_8H')!;ok(oldFriends.specialtyBonus?.bondXpMultiplier===1.35,'Old Friends Bond specialty missing');
+const oldAssignment:CompanionAssignment={assignmentId:'CA_OLD_FRIENDS_TEST',missionId:oldFriends.id,companionIds:['UNIT_001','UNIT_002','UNIT_003'],startedAt:new Date(now-oldFriends.durationMs).toISOString(),endsAt:new Date(now-1).toISOString(),missionVersion:oldFriends.missionVersion,seed:'OLD_FRIENDS',status:'completed'};
+const oldClaim=claimCompanionAssignment({assignment:oldAssignment,owned,serverNowMs:now,bondstonesClaimedThisWeek:0}),oldGrade=oldClaim.assignment.performanceGrade!,oldMult=oldGrade==='S'?1.5:oldGrade==='A'?1.25:oldGrade==='B'?1.1:1;
+eq(oldClaim.reward.bondXp,Math.max(1,Math.round(oldFriends.baseRewards.bondXp*COMPANION_EXPEDITION_BOND_RATE*oldMult*1.35)),'Old Friends specialty Bond XP not applied');
+const relic=companionMission('MISSION_SUNSCAR_RELIC_6H')!;ok(relic.specialtyBonus?.materialMultiplier===1.25,'Sunscar Relic material specialty missing');
+const prestige=companionMission('MISSION_PRESTIGE_VIGIL_12H')!;ok(prestige.specialtyBonus?.companionXpMultiplier===1.20&&prestige.specialtyBonus?.essenceMultiplier===1.10,'Prestige Vigil specialty missing');
+
 // Unified status vocabulary derives state from authority, never client booleans.
 eq(companionAvailabilityStatus('UNIT_001',{owned,assignments:[first.assignment],equippedCompanionIds:new Set(),serverNowMs:now}),'expedition','Expedition status not derived');eq(companionAvailabilityStatus('UNIT_002',{owned,assignments:[],equippedCompanionIds:new Set(['UNIT_002']),serverNowMs:now}),'equipped','Equipped status not derived');eq(companionAvailabilityStatus('UNIT_999',{owned,assignments:[],equippedCompanionIds:new Set(),serverNowMs:now}),'unavailable','Invalid companion status wrong');
 console.log('companion-phase3-expeditions: PASS');

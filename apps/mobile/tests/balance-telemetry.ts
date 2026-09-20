@@ -18,7 +18,10 @@ state={
   account:{
     ...state.account,
     unlockedCosmeticPetIds:['PET_001'],
-    unlockedCombatCompanionIds:['UNIT_001'],
+    unlockedCombatCompanionIds:['UNIT_001','UNIT_012','EVT_UNIT_001'],
+    companionEssence:123,
+    bondstones:7,
+    combatCompanionProgress:{UNIT_001:{level:20,xp:0,ascensionTier:2,bondLevel:10,bondXp:2520,bondTraitUnlocked:true,obtainedAtMs:1}},
   },
 };
 
@@ -29,7 +32,14 @@ equal(first[BALANCE_METRIC_KEYS.characterLevel],10,'current character level');
 equal(first[BALANCE_METRIC_KEYS.campaignClaimed],1,'claimed campaign chapters');
 equal(first[BALANCE_METRIC_KEYS.equippedGear],10,'equipped gear count');
 equal(first[BALANCE_METRIC_KEYS.petsOwned],1,'owned pet count');
-equal(first[BALANCE_METRIC_KEYS.companionsOwned],1,'owned companion count');
+equal(first[BALANCE_METRIC_KEYS.companionsOwned],3,'owned companion count');
+equal(first[BALANCE_METRIC_KEYS.companionEssenceBalance],123,'companion Essence balance');
+equal(first[BALANCE_METRIC_KEYS.bondstoneBalance],7,'Bondstone balance');
+equal(first[BALANCE_METRIC_KEYS.companionBond6Count],1,'Bond 6 companion count');
+equal(first[BALANCE_METRIC_KEYS.companionBond10Count],1,'Bond 10 companion count');
+equal(first[BALANCE_METRIC_KEYS.companionMasteredCount],1,'Mastered companion count');
+equal(first[BALANCE_METRIC_KEYS.companionPrestigeOwned],1,'Prestige companion ownership count');
+equal(first[BALANCE_METRIC_KEYS.companionEventOwned],1,'Event companion ownership count');
 equal(first[BALANCE_METRIC_KEYS.accountAgeMinutes],2,'account age minutes');
 equal(first[BALANCE_METRIC_KEYS.firstQuestClaimAt],120_000,'first quest milestone timestamp');
 equal(first[BALANCE_METRIC_KEYS.level10At],120_000,'level 10 milestone timestamp');

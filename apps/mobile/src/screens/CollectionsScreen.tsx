@@ -1,3 +1,4 @@
+import {useMemo} from 'react';
 import {Image,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from '../components/GameButton';
 import {Panel} from '../components/Panel';
@@ -5,11 +6,13 @@ import {COLLECTIBLE_TARGET_LABELS,type CollectibleKind} from '../content/collect
 import {collectibleJournal,collectionBonusBreakdown,selectCollectible} from '../core/collectibles';
 import type {GameState} from '../core/types';
 import {petArtSource} from '../theme/pet-art';
-import {C,radii,spacing,typography} from '../theme/theme';
+import {radii,spacing,typography,equipmentTheme,type ThemeColors} from '../theme/theme';
+import {useGameTheme} from '../theme/ThemeContext';
 
 const pct=(bps:number)=>(bps/100).toFixed(2)+'%';
 
 export function CollectionsScreen({state,onChange}:{state:GameState;onChange:(next:GameState)=>void}){
+  const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
   const journal=collectibleJournal(state),breakdown=collectionBonusBreakdown(state),owned=journal.filter(row=>row.owned).length;
   const rows=(kind:CollectibleKind)=>journal.filter(row=>row.kind===kind);
 
@@ -61,7 +64,7 @@ export function CollectionsScreen({state,onChange}:{state:GameState;onChange:(ne
   </ScrollView>;
 }
 
-const s=StyleSheet.create({
+function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);return StyleSheet.create({
   root:{padding:spacing.lg,gap:spacing.md,paddingBottom:110},
   heading:{...typography.hero,color:C.text},
   title:{...typography.title,color:C.text},
@@ -94,4 +97,4 @@ const s=StyleSheet.create({
   context:{fontSize:9,color:C.info,fontWeight:'700'},
   source:{fontSize:9,lineHeight:12,color:C.muted,minHeight:24},
   bonusText:{fontSize:9,lineHeight:12,color:C.accent,fontWeight:'800'},
-});
+});}

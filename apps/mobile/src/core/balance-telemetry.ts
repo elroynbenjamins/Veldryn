@@ -30,6 +30,12 @@ export const BALANCE_METRIC_KEYS={
   firstPetAt:'milestone.first_pet_at_ms',
   firstCompanionAt:'milestone.first_companion_at_ms',
   firstTrialTeamReadyAt:'milestone.first_companion_trial_team_ready_at_ms',
+  firstCompanionAscension1At:'milestone.first_companion_ascension_1_at_ms',
+  firstCompanionAscension2At:'milestone.first_companion_ascension_2_at_ms',
+  firstCompanionAscension3At:'milestone.first_companion_ascension_3_at_ms',
+  firstCompanionBond6At:'milestone.first_companion_bond_6_at_ms',
+  firstCompanionBond10At:'milestone.first_companion_bond_10_at_ms',
+  firstPrestigeMasteryAt:'milestone.first_prestige_companion_mastery_at_ms',
   fullEquipmentAt:'milestone.first_full_equipment_at_ms',
   fallenKnightAt:'milestone.fallen_knight_at_ms',
 } as const;
@@ -54,6 +60,8 @@ export function applyLocalBalanceSnapshot(state:GameState,nowMs=Date.now()):Game
   const companionIds=[...new Set(state.account.unlockedCombatCompanionIds??[])],companionProgress=state.account.combatCompanionProgress??{};
   const bond6=companionIds.filter(id=>(companionProgress[id]?.bondLevel??0)>=6).length,bond10=companionIds.filter(id=>(companionProgress[id]?.bondLevel??0)>=10).length;
   const mastered=companionIds.filter(id=>{const def=combatCompanionDef(id),progress=companionProgress[id];return !!def&&!!progress&&isCombatCompanionMastered(def,progress);}).length;
+  const ascension1=companionIds.some(id=>(companionProgress[id]?.ascensionTier??0)>=1),ascension2=companionIds.some(id=>(companionProgress[id]?.ascensionTier??0)>=2),ascension3=companionIds.some(id=>(companionProgress[id]?.ascensionTier??0)>=3);
+  const prestigeMastered=companionIds.some(id=>combatCompanionDef(id)?.rarity==='prestige'&&companionProgress[id]?.mastered===true);
   const prestige=companionIds.filter(id=>combatCompanionDef(id)?.rarity==='prestige').length,eventOwned=companionIds.filter(id=>combatCompanionDef(id)?.origin.type==='event').length;
   const roleSet=new Set(companionIds.map(id=>combatCompanionDef(id)?.role).filter(Boolean)),trialRolesReady=['tank','damage','support'].every(role=>roleSet.has(role as any));
   const trial=state.account.companionTrialProgress?.lifetime,activeAssignments=(state.account.companionAssignments??[]).filter(row=>row.status==='active').length;
@@ -88,6 +96,12 @@ export function applyLocalBalanceSnapshot(state:GameState,nowMs=Date.now()):Game
   putOnce(metrics,BALANCE_METRIC_KEYS.firstPetAt,pets>0,nowMs);
   putOnce(metrics,BALANCE_METRIC_KEYS.firstCompanionAt,companions>0,nowMs);
   putOnce(metrics,BALANCE_METRIC_KEYS.firstTrialTeamReadyAt,trialRolesReady,nowMs);
+  putOnce(metrics,BALANCE_METRIC_KEYS.firstCompanionAscension1At,ascension1,nowMs);
+  putOnce(metrics,BALANCE_METRIC_KEYS.firstCompanionAscension2At,ascension2,nowMs);
+  putOnce(metrics,BALANCE_METRIC_KEYS.firstCompanionAscension3At,ascension3,nowMs);
+  putOnce(metrics,BALANCE_METRIC_KEYS.firstCompanionBond6At,bond6>0,nowMs);
+  putOnce(metrics,BALANCE_METRIC_KEYS.firstCompanionBond10At,bond10>0,nowMs);
+  putOnce(metrics,BALANCE_METRIC_KEYS.firstPrestigeMasteryAt,prestigeMastered,nowMs);
   putOnce(metrics,BALANCE_METRIC_KEYS.fullEquipmentAt,equipped>=10,nowMs);
   putOnce(metrics,BALANCE_METRIC_KEYS.fallenKnightAt,fallen,nowMs);
 

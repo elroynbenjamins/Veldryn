@@ -50,7 +50,7 @@ export function activityCycleSeconds(state:GameState){
   if(route)return route.seconds;
   const modifiers=characterPermanentMultipliers(state);
   const environmentMultiplier=state.activity?environmentEffectForActivity(state.activity).effect.actionTimeMultiplier:1;
-  if(!monster)return ((gathering?.seconds??1)*GATHER_TIME_SCALE*(gathering?gatheringPacing(state,gathering).timeMultiplier:1)*environmentMultiplier)/modifiers.gatheringSpeedMultiplier;
+  if(!monster){const specialty=gathering?.skillId==='fishing'?modifiers.fishingSpeedMultiplier:gathering?.skillId==='herbalism'?modifiers.herbalismSpeedMultiplier:1;return ((gathering?.seconds??1)*GATHER_TIME_SCALE*(gathering?gatheringPacing(state,gathering).timeMultiplier:1)*environmentMultiplier)/(modifiers.gatheringSpeedMultiplier*specialty);}
   const stats=effectiveStats(state),expected=monster.attack*1.2+monster.defense*.8+monster.level*2.2;
   const boostedPower=Math.max(1,Math.round(stats.power*modifiers.combatPowerMultiplier));
   const adjustedExpected=(expected*COMBAT_EXPECTED_SCALE);

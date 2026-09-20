@@ -48,6 +48,7 @@ const COMBAT_SPEED_MAX=1.3;
 const COMBAT_TIME_SCALE=1.16;
 const COMBAT_EXPECTED_SCALE=1.3;
 const COMBAT_MONSTER_DAMAGE_SCALE=1.13;
+const HUNTING_YIELD_ITEMS=new Set(['BOAR_HIDE','WOLF_PELT','TROLL_HIDE']);
 export const GATHER_TIME_SCALE=1.45;
 
 export function offlineCapBreakdown(state:GameState){
@@ -200,7 +201,7 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
   if(state.activity.kind!=='combat'){
     if(state.activity.kind==='exploration'){
       const route=explorationRoute(state.activity.targetId);if(!route)return {xp:0,gold:0,items:[],kills:0,elapsedSeconds:elapsed};
-      const actions=Math.floor(elapsed/route.seconds);return {xp:Math.floor(actions*route.xp*characterPermanentMultipliers(state).skillXpMultiplier),gold:0,items:[],kills:actions,elapsedSeconds:elapsed,explorationDiscoveries:actions&&route.unlockMonsterId?[route.unlockMonsterId]:[]};
+      const actions=Math.floor(elapsed/route.seconds);return {xp:Math.floor(actions*route.xp*multipliers.skillXpMultiplier*multipliers.explorationProgressMultiplier),gold:0,items:[],kills:actions,elapsedSeconds:elapsed,explorationDiscoveries:actions&&route.unlockMonsterId?[route.unlockMonsterId]:[]};
     }
     const g=[...GATHERING,...HERB_NODES].find(x=>x.id===state.activity!.targetId);if(!g)return {xp:0,gold:0,items:[],kills:0,elapsedSeconds:elapsed};
     const effect=environmentEffectForActivity(state.activity).effect;
@@ -211,7 +212,8 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
     const cycleMs=effectiveActionSeconds*1000;
     const totalMs=(state.activity.progressFraction??0)*cycleMs+elapsedMs;
     const actions=Math.floor(totalMs/cycleMs);
-    const quantityFloat=actions*g.min*effect.itemMultiplier*multipliers.gatheringYieldMultiplier+(state.rewardRemainders?.[g.itemId]??0);
+    const specialtyYield=g.skillId==='mining'?multipliers.miningYieldMultiplier:g.skillId==='woodcutting'?multipliers.woodcuttingYieldMultiplier:g.skillId==='fishing'?multipliers.fishingYieldMultiplier:g.skillId==='herbalism'?multipliers.herbalismYieldMultiplier:1;
+    const quantityFloat=actions*g.min*effect.itemMultiplier*multipliers.gatheringYieldMultiplier*specialtyYield+(state.rewardRemainders?.[g.itemId]??0);
     const quantity=Math.floor(quantityFloat);
     const skill=state.skills.find(x=>x.skillId===g.skillId);
     const rawXp=Math.floor(actions*g.xp*effect.xpMultiplier*multipliers.skillXpMultiplier);
@@ -223,7 +225,7 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
   if(m.boss)return {xp:0,gold:0,items:[],kills:0,elapsedSeconds:elapsed};
   const sim=simulateCombat(state,m.id,elapsed);const items:ItemStack[]=[];
   const effect=environmentEffectForActivity(state.activity).effect;
-  for(const drop of m.drops){let qty=0;const chance=Math.min(1,drop.chance*effect.dropChanceMultiplier*multipliers.dropChanceMultiplier);const seed=`${state.character.id}:${state.activity.lastClaimAtMs}:${m.id}:${drop.itemId}`;for(let i=0;i<sim.kills;i++)if(random01(seed,i)<chance)qty+=drop.min+Math.floor(random01(seed,i+50000)*(drop.max-drop.min+1));if(qty>0)items.push({itemId:drop.itemId,quantity:qty});}
+  for(const drop of m.drops){let qty=0;const chance=Math.min(1,drop.chance*effect.dropChanceMultiplier*multipliers.dropChanceMultiplier);const seed=`${state.character.id}:${state.activity.lastClaimAtMs}:${m.id}:${drop.itemId}`;for(let i=0;i<sim.kills;i++)if(random01(seed,i)<chance)qty+=drop.min+Math.floor(random01(seed,i+50000)*(drop.max-drop.min+1));if(qty>0&&HUNTING_YIELD_ITEMS.has(drop.itemId)&&multipliers.huntingYieldMultiplier>1){const extraFloat=qty*(multipliers.huntingYieldMultiplier-1),extra=Math.floor(extraFloat+random01(`${seed}:hunting-yield`,0));qty+=extra;}if(qty>0)items.push({itemId:drop.itemId,quantity:qty});}
   const classGain=awardCombatClassXp(state.character,sim.kills,m.xp*effect.xpMultiplier*multipliers.skillXpMultiplier,state.activity.classFocus);
   const mastery=monsterMastery(state,m.id),materialRemainders={...state.character.masteryMaterialRemainders};
   if(mastery.materialBonus)for(const item of items){if(itemDef(item.itemId).type!=='material')continue;const extra=item.quantity*mastery.materialBonus+(materialRemainders[item.itemId]??0),whole=Math.floor(extra+1e-9);item.quantity+=whole;materialRemainders[item.itemId]=Math.max(0,extra-whole);}
@@ -381,7 +383,7 @@ export function claimActivity(state:GameState,nowMs:number){
   next.character={...next.character!,classSkills:trained.classSkills,classSkillRemainders:trained.classSkillRemainders,masteryMaterialRemainders:reward.masteryMaterialRemainders};
   if(next.character.preparation&&reward.kills>0){let prep=next.character.preparation;for(let i=0;i<reward.kills;i++)prep=spendPreparationEncounter(prep,prep?.itemId) as typeof prep;next.character={...next.character,preparation:prep};}
   if(next.activity&&reward.kills>0)next.activity.classFocus=normalizeTrainingFocus(next.character.trainingFocus);
-  let progressed=recordMonsterMastery(refreshQuests(applyEventDiscoveries(applyEventDrops(next,reward.eventDrops??[]),reward.eventDiscoveries??[]),state.activity.targetId,reward.kills),state.activity.targetId,reward.kills);
+  let progressed=recordMonsterMastery(refreshQuests(applyEventDiscoveries(applyEventDrops(next,reward.eventDrops??[]),reward.eventDiscoveries??[]),state.activity.targetId,reward.kills),state.activity.targetId,reward.kills,characterPermanentMultipliers(next).monsterMasteryXpMultiplier);
   progressed=applyTrustedLongTermProgression(progressed,[{kind:'combat',contentId:state.activity.targetId,units:reward.kills,startedAtMs:state.activity.lastClaimAtMs}],reward,settledAtMs,{accountId:longTermAccountScope(state),eventId:`combat:${state.character.id}:${state.activity.targetId}:${state.activity.lastClaimAtMs}:${settledAtMs}`}).state;
   const petResult=applyCorePetCombatDrops(progressed,state.activity.targetId,reward.kills,`${state.character.id}:${state.activity.lastClaimAtMs}:${settledAtMs}`);
   progressed=petResult.state;

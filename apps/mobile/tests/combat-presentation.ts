@@ -1,6 +1,7 @@
 import {MONSTERS} from '../src/content/monsters';
 import {combatPresentation} from '../src/core/combat-presentation';
 import {combatMotionProfile} from '../src/core/combat-motion';
+import {encounterIdentity,encounterProfileCoverage} from '../src/core/encounter-identity';
 import {createCharacter,newGame} from '../src/core/game';
 import {itemRarity} from '../src/core/item-rarity';
 import {itemDef} from '../src/content/items';
@@ -12,5 +13,8 @@ const motion=combatMotionProfile(monster.secondsPerKill,false),reduced=combatMot
 if(!motion.enabled||motion.playerAttackAtMs>=motion.enemyAttackAtMs||motion.enemyAttackAtMs>=motion.cycleMs)throw new Error('Combat motion timing order invalid');
 if(reduced.enabled||reduced.playerLungePx!==0||reduced.shakePx!==0)throw new Error('Reduced motion must disable combat transforms');
 if(fast.cycleMs!==1800||slow.cycleMs!==5200)throw new Error('Combat motion cadence must stay within UI-safe bounds');
+const coverage=encounterProfileCoverage(MONSTERS);if(coverage.authored!==coverage.total||coverage.missing.length)throw new Error(`Encounter identity coverage missing: ${coverage.missing.join(', ')}`);
+if(encounterIdentity(MONSTERS.find(row=>row.id==='VENOM_WEAVER')!).archetype!=='Venom Ambush')throw new Error('Venom Weaver encounter identity drifted');
+if(encounterIdentity(MONSTERS.find(row=>row.id==='FALLEN_KNIGHT')!).mechanics.length<3)throw new Error('Fallen Knight boss identity needs multi-mechanic presentation');
 if(itemRarity(itemDef('MOSS_FIBER'))!=='common'||itemRarity(itemDef('OATHGLASS_CAPE'))!=='epic')throw new Error('Rarity classification failed');
 console.log(JSON.stringify({status:'PASS',start,late}));

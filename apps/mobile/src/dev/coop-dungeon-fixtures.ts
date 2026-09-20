@@ -36,8 +36,8 @@ export function createCoopDungeonFixtureSource(language:Language,character?:Char
     {id:'fixture-stale',characterId,revision:5,verifiedRevision:4,name:'Recently Changed',characterName:character?.name??'Preview Hero',className:character?.classId.replace('_',' ')??'WAYFINDER',role,status:'stale',ready:false,failures:[],level,skills:['Snapshot unavailable'],equipment:['Build changed after verification']},
   ];
   const eventExpeditions:CoopEventExpeditionPreview[]=[
-    {id:'EVENT_SUNCREST_SHATTERED_ISLES',eventName:ct(language,'event.suncrest'),name:'The Shattered Isles',description:ct(language,'event.shatteredDescription'),routeHighlights:[ct(language,'event.coastalRuins'),ct(language,'event.sunShrine'),ct(language,'event.pirateCamp')],finalBoss:'Aureon, First Champion',status:'preview'},
-    {id:'EVENT_STARFALL_ASTRAL_RIFT',eventName:ct(language,'event.starfall'),name:'Astral Rift Expedition',description:ct(language,'event.astralDescription'),routeHighlights:[ct(language,'event.meteorField'),ct(language,'event.starShrine'),ct(language,'event.riftGate')],finalBoss:'The Constellation Eater',status:'preview'},
+    {id:'EVENT_SUNCREST_SHATTERED_ISLES',eventName:ct(language,'event.suncrest'),name:'The Shattered Isles',description:ct(language,'event.shatteredDescription'),routeHighlights:[ct(language,'event.coastalRuins'),ct(language,'event.sunShrine'),ct(language,'event.pirateCamp')],enemyNames:['Suncrest Corsair','Shoreline Colossus','Solar Reef Warden'],finalBoss:'Aureon, First Champion',status:'preview'},
+    {id:'EVENT_STARFALL_ASTRAL_RIFT',eventName:ct(language,'event.starfall'),name:'Astral Rift Expedition',description:ct(language,'event.astralDescription'),routeHighlights:[ct(language,'event.meteorField'),ct(language,'event.starShrine'),ct(language,'event.riftGate')],enemyNames:['Astral Marauder','Meteoric Sentinel','Riftbound Herald'],finalBoss:'The Constellation Eater',status:'preview'},
   ];
   return {kind:'fixture',load:async()=>({dungeons,eventExpeditions,loadouts})};
 }

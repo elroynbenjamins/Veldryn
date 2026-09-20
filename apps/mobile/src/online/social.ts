@@ -44,6 +44,19 @@ export async function guildContribute(kind:'project'|'boss',amount:number){const
 export async function searchPlayers(query:string){const client=requireClient();const clean=query.trim();if(clean.length<2)throw new Error('Enter at least two characters.');const {data,error}=await client.rpc('social_player_search',{p_query:clean,p_limit:20});if(error)throw error;return withGuildIdentities((data??[]) as FriendSearchResult[]);}
 export async function friends(){const client=requireClient();const {data,error}=await client.rpc('friend_list');if(error)throw error;return withGuildIdentities((data??[]) as FriendEntry[]);}
 export async function friendRequests(){const client=requireClient();const {data,error}=await client.rpc('friend_request_list');if(error)throw error;return (data??[]) as FriendRequest[];}
+export async function friendRelationshipState(accountId:string):Promise<{relationship:FriendRelationship;requestId?:string}>{
+ const client=requireClient();
+ const [{data:friendData,error:friendError},{data:requestData,error:requestError}]=await Promise.all([
+  client.rpc('friend_list'),
+  client.rpc('friend_request_list'),
+ ]);
+ if(friendError)throw friendError;if(requestError)throw requestError;
+ const friend=((friendData??[]) as FriendEntry[]).find(row=>row.account_id===accountId);
+ if(friend)return {relationship:'friend'};
+ const request=((requestData??[]) as FriendRequest[]).find(row=>row.account_id===accountId);
+ if(request)return {relationship:request.direction==='incoming'?'incoming_pending':'outgoing_pending',requestId:request.request_id};
+ return {relationship:'none'};
+}
 export async function sendFriendRequest(accountId:string){const client=requireClient();const {data,error}=await client.rpc('send_friend_request',{p_target_account_id:accountId});if(error)throw error;return data as 'sent'|'already_friends'|'already_pending'|'incoming_request_exists';}
 export async function respondFriendRequest(requestId:string,accept:boolean){const client=requireClient();const {data,error}=await client.rpc('respond_friend_request',{p_request_id:requestId,p_accept:accept});if(error)throw error;return data as 'accepted'|'declined';}
 export async function cancelFriendRequest(requestId:string){const client=requireClient();const {error}=await client.rpc('cancel_friend_request',{p_request_id:requestId});if(error)throw error;}

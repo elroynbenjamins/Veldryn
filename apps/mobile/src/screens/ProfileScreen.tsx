@@ -5,7 +5,6 @@ import {GameButton} from '../components/GameButton';
 import {ProfileScenePreview} from '../components/ProfileScenePreview';
 import {PublicProfileScene} from '../components/PublicProfileScene';
 import {ProfileShowcaseSection} from '../components/ProfileShowcaseSection';
-import {OnlineProfileExtensionPanel} from '../components/OnlineProfileExtensionPanel';
 import {GuildTaggedPlayerName} from '../components/GuildTaggedPlayerName';
 import {GuildCrest} from '../components/SocialIdentity';
 import type {GameState} from '../core/types';
@@ -24,7 +23,7 @@ import {profileShowcaseArt} from '../theme/profile-showcase-art';
 
 const label=(value?:string)=>value?value.replace(/[_:-]+/g,' ').replace(/\b\w/g,letter=>letter.toUpperCase()):'Default';
 
-type ProfileDestination='Appearance'|'Collections'|'Achievements'|'Rankings';
+type ProfileDestination='Customize'|'Collections'|'Achievements'|'Rankings';
 
 export function ProfileScreen({state,onNavigate}:{state:GameState;onNavigate?:(destination:ProfileDestination)=>void}){
  const c=state.character,account=state.account,{session}=useAuthSession();
@@ -41,7 +40,7 @@ export function ProfileScreen({state,onNavigate}:{state:GameState;onNavigate?:(d
  const favoriteSkillId=publicSelf?.favoriteSkillId??summary.highestSkill?.skillId;
  const favoriteCompanionId=publicSelf?.favoriteCompanionId??state.character?.equippedCombatCompanionId??state.account.unlockedCombatCompanionIds?.[0];
  const favoriteCompanion=favoriteCompanionId?COMBAT_COMPANIONS.find(row=>row.id===favoriteCompanionId):undefined,favoriteCompanionArt=favoriteCompanionId?companionArtSource(favoriteCompanionId):undefined;
- const online=!!publicSelf,background=c.profileBackgroundId??'asterfall-night',displayName=publicSelf?.character.name??c.name,displayLevel=publicSelf?.character.level??c.level,displayClass=publicSelf?.character.classId??c.classId,profileStateLabel=publicError?'SYNC ISSUE':publicSelf?.visibility==='public'?'PUBLIC PROFILE':publicSelf?.visibility==='guild'?'GUILD PROFILE':publicSelf?.visibility==='private'?'PRIVATE PROFILE':'LOCAL PROFILE',bioGuidance=onlineConfigured&&session?(session.user.is_anonymous?'Link this guest account before publishing biography and showcase changes.':'Add a short biography in Online Profile settings to tell other players about your character or play style.'):'This local profile is fully usable on-device. Sign in when you want to publish social profile details.';
+ const online=!!publicSelf,background=c.profileBackgroundId??'asterfall-night',displayName=publicSelf?.character.name??c.name,displayLevel=publicSelf?.character.level??c.level,displayClass=publicSelf?.character.classId??c.classId,profileStateLabel=publicError?'SYNC ISSUE':publicSelf?.visibility==='public'?'PUBLIC PROFILE':publicSelf?.visibility==='guild'?'GUILD PROFILE':publicSelf?.visibility==='private'?'PRIVATE PROFILE':'LOCAL PROFILE',bioGuidance=onlineConfigured&&session?(session.user.is_anonymous?'Link this guest account before publishing biography and showcase changes.':'Add a short biography from Customize Profile to tell other players about your character or play style.'):'This local profile is fully usable on-device. Sign in when you want to publish social profile details.';
 
  return <ScrollView contentContainerStyle={s.root}>
   <View style={s.headingRow}><View style={s.flex}><Text style={s.kicker}>PLAYER IDENTITY</Text><Text accessibilityRole="header" style={s.heading}>Profile</Text></View>{loadingPublic?<ActivityIndicator color={C.accent}/>:<Text style={[s.onlineBadge,publicError?s.syncIssue:online?s.online:s.local]}>{profileStateLabel}</Text>}</View>
@@ -52,8 +51,8 @@ export function ProfileScreen({state,onNavigate}:{state:GameState;onNavigate?:(d
   <Panel>
    <View style={s.identityHead}>{account.guildMember?<GuildCrest size={48} bannerId={account.guildBannerId}/>:null}<View style={s.flex}><GuildTaggedPlayerName name={displayName} guildTag={publicSelf?.guildTag} tagColorId={publicSelf?.guildTagColorId} style={s.name}/><Text style={s.title}>“{publicSelf?.title??c.profileTitle??'New Adventurer'}”</Text><Text style={s.copy}>Level {displayLevel} · {label(displayClass)}{account.guildMember?' · Guild member':''}</Text></View></View>
    {publicSelf?.bio?<Text style={s.bio}>{publicSelf.bio}</Text>:<Text style={s.copy}>{bioGuidance}</Text>}
+   <View style={s.customizeAction}><GameButton title="Customize Profile" onPress={()=>onNavigate?.('Customize')}/></View>
    <View style={s.quickActions}>
-    <View style={s.action}><GameButton compact title="Appearance" tone="secondary" onPress={()=>onNavigate?.('Appearance')}/></View>
     <View style={s.action}><GameButton compact title="Collections" tone="secondary" onPress={()=>onNavigate?.('Collections')}/></View>
     <View style={s.action}><GameButton compact title="Achievements" tone="secondary" onPress={()=>onNavigate?.('Achievements')}/></View>
     <View style={s.action}><GameButton compact title="Rankings" tone="secondary" onPress={()=>onNavigate?.('Rankings')}/></View>
@@ -82,7 +81,6 @@ export function ProfileScreen({state,onNavigate}:{state:GameState;onNavigate?:(d
   <ProfileShowcaseSection title="PERSONAL RECORDS" entries={recordEntries} emptyLabel="No record selected"/>
   <ProfileShowcaseSection title="COLLECTION SHOWCASE" entries={collectionEntries} emptyLabel="Choose a collectible"/>
 
-  <OnlineProfileExtensionPanel state={state} onSaved={refreshPublic}/>
  </ScrollView>;
 }
 
@@ -96,7 +94,7 @@ const s=StyleSheet.create({
  heading:{...typography.hero,color:C.text},
  onlineBadge:{fontSize:9,fontWeight:'900',letterSpacing:.7,paddingHorizontal:8,paddingVertical:5,borderRadius:99,borderWidth:1},online:{color:C.good,borderColor:C.good,backgroundColor:'#14261d'},local:{color:C.muted,borderColor:C.line,backgroundColor:C.panel},syncIssue:{color:C.warning,borderColor:C.warning,backgroundColor:'#332515'},syncCard:{minHeight:60,flexDirection:'row',alignItems:'center',gap:8,padding:spacing.sm,borderWidth:1,borderColor:C.warning,borderRadius:radii.md,backgroundColor:'#332515'},syncTitle:{...typography.bodyStrong,color:C.warning},syncText:{...typography.caption,color:C.muted},syncButton:{width:82},
  identityHead:{flexDirection:'row',alignItems:'center',gap:spacing.sm},name:{...typography.hero,color:C.text},title:{...typography.bodyStrong,color:equipmentColors.goldSoft,fontStyle:'italic'},copy:{...typography.body,color:C.muted,lineHeight:20},bio:{...typography.body,color:C.text,lineHeight:21,marginTop:spacing.sm},
- quickActions:{flexDirection:'row',flexWrap:'wrap',gap:6,marginTop:spacing.md},action:{width:'48%',minWidth:130},
+ customizeAction:{marginTop:spacing.md},quickActions:{flexDirection:'row',flexWrap:'wrap',gap:6,marginTop:6},action:{flex:1,minWidth:96},
  stats:{flexDirection:'row',flexWrap:'wrap',gap:6},stat:{width:'31.5%',minWidth:92,minHeight:66,padding:8,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel,alignItems:'center',justifyContent:'center'},statValue:{...typography.title,color:C.text},statLabel:{fontSize:8,color:C.muted,fontWeight:'900',letterSpacing:.7,marginTop:2,textAlign:'center'},
  section:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.8},highlights:{flexDirection:'row',gap:8,marginTop:spacing.sm},highlight:{flex:1,minWidth:0,padding:9,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2},favoriteCompanionArt:{width:52,height:52,alignSelf:'center',marginBottom:3},highlightLabel:{fontSize:8,color:C.muted,fontWeight:'900',letterSpacing:.7},highlightValue:{...typography.bodyStrong,color:C.text,marginTop:2},highlightMeta:{fontSize:9,lineHeight:12,color:C.info,marginTop:2},
  identityRows:{marginTop:spacing.sm},row:{minHeight:34,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:spacing.sm,borderTopWidth:1,borderTopColor:C.line},rowLabel:{...typography.caption,color:C.muted},rowValue:{...typography.bodyStrong,color:C.text},

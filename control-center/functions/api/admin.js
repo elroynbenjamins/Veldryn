@@ -6,7 +6,7 @@ import { generateRedeemCode, hashRedeemCode, redeemCodeHint, validateRedeemCode 
 const ROLE_RANK = { viewer: 1, editor: 2, owner: 3 };
 const MUTATING_ACTIONS = new Set([
   'saveDraft','deleteDraft','saveTemplate','disableTemplate','cloneTemplateToDraft','cloneDefinitionToDraft',
-  'publishDraft','scheduleDefinition','rescheduleInstance','cancelInstance','archiveInstance','clonePlayerEventSeason','schedulePlayerEvent','setPlayerEventEnabled','goLivePlayerEvent','endPlayerEventNow','saveReward','retryDeadLetter',
+  'publishDraft','scheduleDefinition','rescheduleInstance','cancelInstance','archiveInstance','clonePlayerEventSeason','schedulePlayerEvent','setPlayerEventEnabled','goLivePlayerEvent','endPlayerEventNow','applySeasonalCalendarPreset','saveReward','retryDeadLetter',
   'saveRemoteConfig','updateAlert','saveResetDefinition','retryResetRun','createSupportCase','updateSupportCase','addSupportNote',
   'queueAdminCommand','approveAdminCommand','cancelAdminCommand','retryAdminCommand','reverseAdminCommand','saveAnnouncement','cancelAnnouncement','saveAdminUser',
   'createRedeemCode','setRedeemCodeEnabled'
@@ -549,6 +549,110 @@ async function endPlayerEventNow(env, actor, payload) {
   return rows?.[0];
 }
 
+
+const SEASONAL_CALENDAR_PRESET_2026_27 = Object.freeze([
+  { eventId:'EVT_ANNUAL_010_2026', sourceEventId:'EVT_ANNUAL_010_2026', name:'The Veilbreak', startsAt:'2026-10-23T00:00:00.000Z', endsAt:'2026-11-03T00:00:00.000Z', claimGraceDays:7 },
+  { eventId:'EVT_ANNUAL_011_2026', sourceEventId:'EVT_ANNUAL_011_2026', name:'Merchant & Guild Festival', startsAt:'2026-11-13T00:00:00.000Z', endsAt:'2026-11-28T00:00:00.000Z', claimGraceDays:7 },
+  { eventId:'EVT_ANNUAL_012_2026', sourceEventId:'EVT_ANNUAL_012_2026', name:'Frostfall Festival', startsAt:'2026-12-06T00:00:00.000Z', endsAt:'2026-12-22T00:00:00.000Z', claimGraceDays:7 },
+  { eventId:'EVT_ANNUAL_001_2026', sourceEventId:'EVT_ANNUAL_001_2026', name:'Turning of the Age', startsAt:'2026-12-29T00:00:00.000Z', endsAt:'2027-01-05T00:00:00.000Z', claimGraceDays:7 },
+  { eventId:'EVT_ANNUAL_002_2027', sourceEventId:'EVT_ANNUAL_002_2026', name:'Heartbond Festival', startsAt:'2027-02-07T00:00:00.000Z', endsAt:'2027-02-22T00:00:00.000Z', claimGraceDays:7 },
+  { eventId:'EVT_ANNUAL_003_2027', sourceEventId:'EVT_ANNUAL_003_2026', name:'Bloomwake', startsAt:'2027-03-20T00:00:00.000Z', endsAt:'2027-04-06T00:00:00.000Z', claimGraceDays:7 },
+]);
+
+function seasonalCalendarPreset() {
+  return {
+    id:'seasonal_2026_27',
+    label:'2026–27 seasonal calendar',
+    timezone:'UTC',
+    events:SEASONAL_CALENDAR_PRESET_2026_27.map(row=>({
+      ...row,
+      graceEndsAt:new Date(Date.parse(row.endsAt)+row.claimGraceDays*86400000).toISOString(),
+    })),
+  };
+}
+
+async function ensurePresetPlayerEvent(env, actor, planned) {
+  const existing=await single(env,'live_events',`event_id=eq.${encodeEq(planned.eventId)}`);
+  if(existing)return existing;
+  const source=await single(env,'live_events',`event_id=eq.${encodeEq(planned.sourceEventId)}`);
+  if(!source)throw new Error(`player_event_preset_source_missing:${planned.sourceEventId}`);
+  const parts=annualPlayerEventParts(planned.eventId);
+  const rows=await supabaseFetch(env,'/rest/v1/live_events',{
+    method:'POST',
+    body:{
+      event_id:planned.eventId,
+      name:planned.name||source.name,
+      currency_id:source.currency_id,
+      enabled:false,
+      starts_at:null,
+      ends_at:null,
+      grace_ends_at:null,
+      priority:Number(source.priority??0),
+      modules:Array.isArray(source.modules)?source.modules:[],
+      config:{...(source.config??{}),seasonYear:parts?.year??null,clonedFromEventId:planned.sourceEventId},
+      updated_at:new Date().toISOString(),
+    },
+    prefer:'return=representation',
+  });
+  const row=rows?.[0];
+  await audit(env,actor,'player_event.clone_season','player_event',planned.eventId,{sourceEventId:planned.sourceEventId,preset:'seasonal_2026_27'});
+  return row;
+}
+
+async function applySeasonalCalendarPreset(env, actor, payload) {
+  requireRole(actor,'owner');
+  const reason=String(payload.reason??'').trim();
+  if(reason.length<10)throw new Error('player_event_change_reason_too_short');
+  const plan=seasonalCalendarPreset().events;
+  const nowMs=Date.now();
+  const rowsById=new Map();
+  for(const planned of plan){
+    const row=await ensurePresetPlayerEvent(env,actor,planned);
+    rowsById.set(planned.eventId,row);
+    if(row?.enabled&&row.starts_at&&row.ends_at){
+      const oldStart=Date.parse(row.starts_at),oldEnd=Date.parse(row.ends_at);
+      if(nowMs>=oldStart&&nowMs<oldEnd)throw new Error(`player_event_preset_contains_live_event:${planned.eventId}`);
+    }
+    assertPlayerEventSeasonStart(planned.eventId,Date.parse(planned.startsAt));
+  }
+  for(let i=0;i<plan.length;i++)for(let j=i+1;j<plan.length;j++){
+    const a=plan[i],b=plan[j],aStart=Date.parse(a.startsAt),aVisible=Date.parse(a.endsAt)+a.claimGraceDays*86400000,bStart=Date.parse(b.startsAt),bVisible=Date.parse(b.endsAt)+b.claimGraceDays*86400000;
+    if(aStart<bVisible&&bStart<aVisible)throw new Error(`seasonal_preset_overlap:${a.eventId}:${b.eventId}`);
+  }
+  const targetIds=new Set(plan.map(row=>row.eventId));
+  const enabled=await list(env,'live_events','select=event_id,enabled,starts_at,ends_at,grace_ends_at,config&enabled=eq.true&limit=100');
+  for(const other of enabled??[]){
+    if(targetIds.has(other.event_id)||!other.starts_at||!other.ends_at)continue;
+    const otherStart=Date.parse(other.starts_at),otherEnd=Date.parse(other.ends_at),otherVisible=other.grace_ends_at?Date.parse(other.grace_ends_at):otherEnd+playerEventGraceDays(other)*86400000;
+    for(const planned of plan){
+      const start=Date.parse(planned.startsAt),visible=Date.parse(planned.endsAt)+planned.claimGraceDays*86400000;
+      if(start<otherVisible&&otherStart<visible)throw new Error(`seasonal_preset_conflict:${other.event_id}:${planned.eventId}`);
+    }
+  }
+  for(const planned of plan){
+    const row=rowsById.get(planned.eventId);
+    await supabaseFetch(env,'/rest/v1/live_events',{method:'PATCH',query:`event_id=eq.${encodeEq(planned.eventId)}`,body:{enabled:false,updated_at:new Date().toISOString()},prefer:'return=minimal'});
+    await supabaseFetch(env,'/rest/v1/live_events',{
+      method:'PATCH',
+      query:`event_id=eq.${encodeEq(planned.eventId)}`,
+      body:{
+        starts_at:planned.startsAt,
+        ends_at:planned.endsAt,
+        grace_ends_at:new Date(Date.parse(planned.endsAt)+planned.claimGraceDays*86400000).toISOString(),
+        config:{...(row?.config??{}),claimGraceDays:planned.claimGraceDays,seasonYear:annualPlayerEventParts(planned.eventId)?.year??null,calendarPreset:'seasonal_2026_27'},
+        updated_at:new Date().toISOString(),
+      },
+      prefer:'return=minimal',
+    });
+  }
+  for(const planned of plan){
+    await supabaseFetch(env,'/rest/v1/live_events',{method:'PATCH',query:`event_id=eq.${encodeEq(planned.eventId)}`,body:{enabled:true,updated_at:new Date().toISOString()},prefer:'return=minimal'});
+  }
+  await audit(env,actor,'player_event.calendar_preset_apply','player_event_calendar','seasonal_2026_27',{reason,events:plan.map(({eventId,startsAt,endsAt,claimGraceDays})=>({eventId,startsAt,endsAt,claimGraceDays}))});
+  const saved=await listPlayerEvents(env);
+  return {applied:true,preset:seasonalCalendarPreset(),events:saved.filter(row=>targetIds.has(row.event_id))};
+}
+
 async function saveReward(env, actor, payload) {
   requireRole(actor, 'owner');
   const bundleId = String(payload.bundleId ?? '').trim();
@@ -1004,6 +1108,8 @@ async function routeAction(env, actor, action, payload) {
     case 'scheduleDefinition': return await scheduleDefinition(env, actor, payload);
     case 'listInstances': return await list(env, 'liveops_event_instances', 'select=*&order=starts_at.desc&limit=200');
     case 'listPlayerEvents': return await listPlayerEvents(env);
+    case 'seasonalCalendarPreset': return seasonalCalendarPreset();
+    case 'applySeasonalCalendarPreset': return await applySeasonalCalendarPreset(env, actor, payload);
     case 'clonePlayerEventSeason': return await clonePlayerEventSeason(env, actor, payload);
     case 'schedulePlayerEvent': return await schedulePlayerEvent(env, actor, payload);
     case 'setPlayerEventEnabled': return await setPlayerEventEnabled(env, actor, payload);

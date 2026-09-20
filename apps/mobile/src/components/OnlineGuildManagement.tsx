@@ -7,6 +7,7 @@ import {CompactPlayerIdentity} from './CompactPlayerIdentity';
 import {GuildIdentitySummary} from './GuildIdentitySummary';
 import {C,spacing,typography} from '../theme/theme';
 import {onlineConfigured} from '../online/supabase';
+import {guildMemberManagement} from '../core/social-management';
 import {
  cancelGuildInvitation,guildApplications,guildDetails,guildRoster,myGuild,removeGuildMember,reviewGuildApplication,respondGuildInvitation,socialInvitations,socialOutgoingInvitations,updateGuildMemberRole,
  type GuildApplication,type GuildInvitationView,type GuildMember,type OnlineGuild,type OutgoingInvitationView,
@@ -40,10 +41,13 @@ export function OnlineGuildManagement({onApplicationsChanged}:{onApplicationsCha
  const review=async(id:string,accept:boolean)=>{setBusy(true);try{await reviewGuildApplication(id,accept);await load();onApplicationsChanged?.()}catch(error){Alert.alert('Guild application',error instanceof Error?error.message:'Unable to review application.')}finally{setBusy(false)}};
  const cancelInvite=async(id:string)=>{setBusy(true);try{await cancelGuildInvitation(id);await load()}catch(error){Alert.alert('Guild invitation',error instanceof Error?error.message:'Unable to cancel invitation.')}finally{setBusy(false)}};
  const manageMember=(member:GuildMember)=>{
+  if(!role)return;
+  const permissions=guildMemberManagement(role,member.role,member.account_id===ownAccountId);
+  const runMember=async(action:()=>Promise<unknown>,fallback:string)=>{if(busy)return;setBusy(true);try{await action();await load();onApplicationsChanged?.()}catch(error){Alert.alert('Guild member',error instanceof Error?error.message:fallback)}finally{setBusy(false)}};
   const choices:{text:string;style?:'default'|'cancel'|'destructive';onPress?:()=>void}[]=[{text:'Cancel',style:'cancel'}];
-  if(role==='leader'&&member.role==='member')choices.unshift({text:'Promote to Officer',onPress:()=>void updateGuildMemberRole(member.account_id,'officer').then(load).catch(error=>Alert.alert('Guild member',error instanceof Error?error.message:'Unable to promote member.'))});
-  if(role==='leader'&&member.role==='officer')choices.unshift({text:'Demote to Member',onPress:()=>void updateGuildMemberRole(member.account_id,'member').then(load).catch(error=>Alert.alert('Guild member',error instanceof Error?error.message:'Unable to demote officer.'))});
-  if((role==='leader'&&member.role!=='leader')||(role==='officer'&&member.role==='member'))choices.unshift({text:'Remove from Guild',style:'destructive',onPress:()=>void removeGuildMember(member.account_id).then(load).catch(error=>Alert.alert('Guild member',error instanceof Error?error.message:'Unable to remove member.'))});
+  if(permissions.canPromote)choices.unshift({text:'Promote to Officer',onPress:()=>void runMember(()=>updateGuildMemberRole(member.account_id,'officer'),'Unable to promote member.')});
+  if(permissions.canDemote)choices.unshift({text:'Demote to Member',onPress:()=>void runMember(()=>updateGuildMemberRole(member.account_id,'member'),'Unable to demote officer.')});
+  if(permissions.canRemove)choices.unshift({text:'Remove from Guild',style:'destructive',onPress:()=>void runMember(()=>removeGuildMember(member.account_id),'Unable to remove member.')});
   Alert.alert(member.display_name,'Guild member controls',choices);
  };
  const openMember=(member:GuildMember)=>setSelected({account_id:member.account_id,sender_name:member.display_name,guild_tag:member.guild_tag,guild_tag_color_id:member.guild_tag_color_id});
@@ -52,7 +56,7 @@ export function OnlineGuildManagement({onApplicationsChanged}:{onApplicationsCha
   <View style={s.sectionHead}><Text style={s.section}>ROSTER</Text><Text style={s.sectionMeta}>Your role · {role.toUpperCase()}</Text></View>
   {members.map(member=><View key={member.account_id} style={s.member}>
    <View style={s.memberIdentity}><CompactPlayerIdentity name={member.display_name} guildTag={member.guild_tag} guildTagColorId={member.guild_tag_color_id} role={member.role} hint="VIEW PROFILE ›"/></View>
-   <View style={s.profileButton}><GameButton compact title="Profile" tone="secondary" onPress={()=>openMember(member)}/>{member.account_id!==ownAccountId&&((role==='leader'&&member.role!=='leader')||(role==='officer'&&member.role==='member'))?<GameButton compact title="Manage" tone="secondary" disabled={busy} onPress={()=>manageMember(member)}/>:null}</View>
+   <View style={s.profileButton}><GameButton compact title="Profile" tone="secondary" onPress={()=>openMember(member)}/>{role&&Object.values(guildMemberManagement(role,member.role,member.account_id===ownAccountId)).some(Boolean)?<GameButton compact title="Manage" tone="secondary" disabled={busy} onPress={()=>manageMember(member)}/>:null}</View>
   </View>)}
   {(role==='leader'||role==='officer')?<><View style={s.sectionHead}><Text style={s.section}>PENDING APPLICATIONS</Text><Text style={s.sectionMeta}>{applications.length} waiting</Text></View>{applications.length?applications.map(app=><View key={app.id} style={s.application}><View style={s.copy}><Text style={s.name}>Applicant {app.account_id.slice(0,8)}</Text><Text style={s.subCompact}>Awaiting guild review</Text></View><View style={s.actions}><GameButton compact title="Accept" disabled={busy} onPress={()=>void review(app.id,true)}/><GameButton compact title="Decline" tone="secondary" disabled={busy} onPress={()=>void review(app.id,false)}/></View></View>):<Text style={s.empty}>No pending applications.</Text>}</>:null}
   {(role==='leader'||role==='officer')&&outgoingInvitations.length?<><View style={s.sectionHead}><Text style={s.section}>OUTGOING INVITES</Text><Text style={s.sectionMeta}>{outgoingInvitations.length} pending</Text></View>{outgoingInvitations.map(invite=><View key={invite.id} style={s.application}><View style={s.copy}><Text style={s.name}>{invite.recipientName}</Text><Text style={s.subCompact}>Pending Guild invitation</Text></View><GameButton compact title="Cancel" tone="secondary" disabled={busy} onPress={()=>void cancelInvite(invite.id)}/></View>)}</>:null}

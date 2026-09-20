@@ -18,6 +18,7 @@ import {
   type RecruitmentPostType,
 } from '../core/party-social';
 import {RecruitmentFiltersPanel} from './RecruitmentFiltersPanel';
+import {partyMemberManagement} from '../core/social-management';
 
 export interface PartyHubPanelProps {
   accountId: string;
@@ -66,7 +67,7 @@ export function PartyHubPanel(props: PartyHubPanelProps) {
           <IdentityArtwork name={member.characterName} className={member.className}/>
           <View style={styles.grow}><Text style={styles.bodyStrong}>{member.characterName}</Text><Text style={styles.muted}>{member.className}{member.isLeader?' · Leader':''}</Text><RoleBadge role={member.role}/>{props.onOpenMemberProfile?<Text style={styles.profileHint}>View profile ›</Text>:null}</View>
         </Pressable>
-        {canManageParty&&member.accountId!==props.accountId?<View style={styles.memberActions}><GameButton compact title="Lead" tone="secondary" onPress={()=>props.onTransferLeadership?.(member)}/><GameButton compact title="Kick" tone="secondary" onPress={()=>props.onRemoveMember?.(member)}/></View>:null}
+        {(()=>{const permissions=partyMemberManagement(canManageParty,props.accountId,member.accountId);return permissions.canTransfer||permissions.canRemove?<View style={styles.memberActions}>{permissions.canTransfer?<GameButton compact title="Lead" tone="secondary" onPress={()=>props.onTransferLeadership?.(member)}/>:null}{permissions.canRemove?<GameButton compact title="Kick" tone="secondary" onPress={()=>props.onRemoveMember?.(member)}/>:null}</View>:null})()}
       </View>)}
     </View>}
 

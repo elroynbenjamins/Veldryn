@@ -15,7 +15,7 @@ export function PrimaryNavigation<T extends PrimaryNavigationDestination>({desti
  </Pressable>})}</View>;
 }
 const s=StyleSheet.create({
- nav:{minHeight:78,flexDirection:'row',alignItems:'stretch',borderTopWidth:1,borderColor:'#394657',backgroundColor:'#09131f',paddingHorizontal:4,paddingTop:4},
- item:{position:'relative',flex:1,minWidth:44,minHeight:66,alignItems:'center',justifyContent:'flex-start',gap:2,paddingHorizontal:2},pressed:{opacity:.76},mark:{position:'absolute',top:-4,width:22,height:2,backgroundColor:'#efd895'},iconShell:{position:'relative',width:40,height:34,alignItems:'center',justifyContent:'center',borderRadius:17},iconActive:{backgroundColor:'rgba(212,173,88,.13)'},label:{width:'100%',fontSize:11,lineHeight:15,fontWeight:'600',textAlign:'center',color:'#9eabbc'},active:{color:C.accent},
+ nav:{minHeight:66,flexDirection:'row',alignItems:'stretch',borderTopWidth:1,borderColor:'#394657',backgroundColor:'#09131f',paddingHorizontal:4,paddingTop:2},
+ item:{position:'relative',flex:1,minWidth:44,minHeight:54,alignItems:'center',justifyContent:'flex-start',gap:1,paddingHorizontal:2},pressed:{opacity:.76},mark:{position:'absolute',top:-2,width:24,height:2,backgroundColor:'#efd895'},iconShell:{position:'relative',width:38,height:31,alignItems:'center',justifyContent:'center',borderRadius:16},iconActive:{backgroundColor:'rgba(212,173,88,.13)'},label:{width:'100%',fontSize:10,lineHeight:13,fontWeight:'700',textAlign:'center',color:'#9eabbc'},active:{color:C.accent},
  badge:{position:'absolute',right:-8,top:-5,minWidth:18,height:18,paddingHorizontal:4,borderRadius:9,backgroundColor:'#d93646',borderWidth:2,borderColor:'#09131f',alignItems:'center',justifyContent:'center'},dotBadge:{minWidth:10,width:10,height:10,borderRadius:5,paddingHorizontal:0,right:-3,top:-1},badgeText:{color:'#fff',fontSize:9,lineHeight:11,fontWeight:'900'}
 });

@@ -1,9 +1,20 @@
+import {COLLECTIBLES} from './collectibles';
+
 export interface PermanentBoostDefinition {
   id: string;
   name: string;
   combatSpeedMultiplier?: number;
   combatPowerMultiplier?: number;
   gatheringSpeedMultiplier?: number;
+  gatheringYieldMultiplier?: number;
+  fishingSpeedMultiplier?: number;
+  herbalismSpeedMultiplier?: number;
+  cookingSpeedMultiplier?: number;
+  craftingSpeedMultiplier?: number;
+  materialPreservationMultiplier?: number;
+  healingEffectivenessMultiplier?: number;
+  dungeonRewardMultiplier?: number;
+  guildContributionMultiplier?: number;
   incomingDamageMultiplier?: number;
   skillXpMultiplier?: number;
   characterXpMultiplier?: number;
@@ -18,26 +29,46 @@ type SourceBoostId = string;
 export const SKIN_PERMANENT_BOOSTS: Record<SourceBoostId, PermanentBoostDefinition> = {
   starting: {
     id: 'starting', name: 'Campaign skin', combatSpeedMultiplier: 1,
-    combatPowerMultiplier: 1, gatheringSpeedMultiplier: 1, characterXpMultiplier: 1,
-    skillXpMultiplier: 1, goldMultiplier: 1, dropChanceMultiplier: 1, incomingDamageMultiplier: 1,
+    combatPowerMultiplier: 1, gatheringSpeedMultiplier: 1, gatheringYieldMultiplier:1,
+    characterXpMultiplier: 1, skillXpMultiplier: 1, goldMultiplier: 1,
+    dropChanceMultiplier: 1, incomingDamageMultiplier: 1,
   },
 };
-
-import {MASTER_PET_COLLECTIBLES} from './master-pet-content';
 
 const petBoostFor=(pet:{id:string;name:string;target:string;activeBps:number}):PermanentBoostDefinition=>{
   const amount=1+pet.activeBps/10000;
   const base={id:pet.id,name:pet.name};
-  if(pet.target==='attack')return {...base,combatPowerMultiplier:amount};
-  if(pet.target==='defense'||pet.target==='hp')return {...base,incomingDamageMultiplier:2-amount};
-  if(pet.target==='skillXp')return {...base,skillXpMultiplier:amount};
-  if(pet.target==='characterXp')return {...base,characterXpMultiplier:amount};
-  if(pet.target==='gold')return {...base,goldMultiplier:amount};
-  if(pet.target==='dropChance'||pet.target==='dungeonReward')return {...base,dropChanceMultiplier:amount};
-  if(pet.target==='actionSpeed')return {...base,combatSpeedMultiplier:amount};
-  return {...base,gatheringSpeedMultiplier:amount};
+  switch(pet.target){
+    case 'attack': return {...base,combatPowerMultiplier:amount};
+    case 'defense':
+    case 'hp': return {...base,incomingDamageMultiplier:2-amount};
+    case 'skillXp': return {...base,skillXpMultiplier:amount};
+    case 'characterXp': return {...base,characterXpMultiplier:amount};
+    case 'gold': return {...base,goldMultiplier:amount};
+    case 'dropChance': return {...base,dropChanceMultiplier:amount};
+    case 'dungeonReward': return {...base,dungeonRewardMultiplier:amount};
+    case 'actionSpeed': return {...base,combatSpeedMultiplier:amount,gatheringSpeedMultiplier:amount};
+    case 'gatheringYield': return {...base,gatheringYieldMultiplier:amount};
+    case 'fishingSpeed': return {...base,fishingSpeedMultiplier:amount};
+    case 'herbalismSpeed': return {...base,herbalismSpeedMultiplier:amount};
+    case 'cookingSpeed': return {...base,cookingSpeedMultiplier:amount};
+    case 'craftingSpeed': return {...base,craftingSpeedMultiplier:amount};
+    case 'materialPreservation': return {...base,materialPreservationMultiplier:amount};
+    case 'healingEffectiveness': return {...base,healingEffectivenessMultiplier:amount};
+    case 'guildContribution': return {...base,guildContributionMultiplier:amount};
+    default: return base;
+  }
 };
-export const PET_PERMANENT_BOOSTS:Record<SourceBoostId,PermanentBoostDefinition>=Object.fromEntries(MASTER_PET_COLLECTIBLES.map(pet=>[pet.id,petBoostFor(pet)]));
+
+/**
+ * Catalog mirror kept for diagnostics/tests. Runtime collection math is applied
+ * from collectionBonusBreakdown(), so every pet always gets exactly +0.50%
+ * owned passive plus its authored selected bonus rather than a percentage of
+ * the active value.
+ */
+export const PET_PERMANENT_BOOSTS:Record<SourceBoostId,PermanentBoostDefinition>=Object.fromEntries(
+  COLLECTIBLES.filter(row=>row.kind==='pet').map(pet=>[pet.id,petBoostFor(pet)])
+);
 
 export const BUYABLE_PERMANENT_BOOSTS: Record<SourceBoostId, PermanentBoostDefinition> = {
   'boost:combat_focus': {

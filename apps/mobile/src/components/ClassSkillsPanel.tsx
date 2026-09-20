@@ -1,3 +1,4 @@
+import {useMemo} from 'react';
 import React,{useRef,useState} from 'react';
 import {View,Text,StyleSheet} from 'react-native';
 import type {GameState} from '../core/types';
@@ -9,7 +10,9 @@ import {offlineCapSeconds} from '../core/game';
 import {Panel} from './Panel';
 import {GameButton} from './GameButton';
 import {C,typography} from '../theme/theme';
+import {useTheme} from '../theme/ThemeProvider';
 export function ClassSkillsPanel({state,now,onCommand}:{state:GameState;now:number;onCommand:(command:GameCommand)=>Promise<void>}){
+ const {colors:C,equipmentColors}=useTheme();const s=useMemo(()=>createStyles(C,equipmentColors),[C,equipmentColors]);
  const [busy,setBusy]=useState(false),[error,setError]=useState('');const lock=useRef(false),c=state.character;if(!c)return null;
  const skills=characterClassSkills(c),definitions=classSkillsFor(c.classId),focus=normalizeTrainingFocus(c.trainingFocus),drill=c.classTraining;
  const run=async(command:GameCommand)=>{if(lock.current)return;lock.current=true;setBusy(true);setError('');try{await onCommand(command);}catch(e){setError(e instanceof Error?e.message:'Action failed.');}finally{lock.current=false;setBusy(false);}};
@@ -23,4 +26,4 @@ export function ClassSkillsPanel({state,now,onCommand}:{state:GameState;now:numb
  {drill?<><Text style={s.body}>{available} completed drills ready to claim.</Text>{act('Claim training XP',{type:'claim'})}{act('Stop and claim',{type:'stop'})}</>:act('Start drills · replaces current activity',{type:'class_training'},skills.every(s=>s.level===100))}
  {error?<Text accessibilityLiveRegion="polite" style={s.error}>{error}</Text>:null}</Panel>;
 }
-const s=StyleSheet.create({title:{...typography.title,color:C.text},name:{...typography.bodyStrong,color:C.text},body:{...typography.body,color:C.muted},group:{gap:5,paddingVertical:8},error:{...typography.body,color:C.info}});
+const createStyles=(C:any,equipmentColors:any)=>StyleSheet.create({title:{...typography.title,color:C.text},name:{...typography.bodyStrong,color:C.text},body:{...typography.body,color:C.muted},group:{gap:5,paddingVertical:8},error:{...typography.body,color:C.info}});

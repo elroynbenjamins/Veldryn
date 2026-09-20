@@ -38,6 +38,7 @@ import {applyCorePetActivityDrops,applyCorePetCombatDrops} from './core-pet-drop
 import {evaluateIdleRuleSet,type IdleEvaluationContext,type IdleRuleSet} from './idle-rules-v40';
 import {challengeHuntClearKey,challengeHuntCleared,challengeHuntFirstClearReward,challengeHuntStats,challengeHuntUnlocked,challengeRewardMultipliers,rotatingChallengeAffix} from './challenge-hunts';
 import {combatTactic,normalizeCombatTactic} from './combat-tactics';
+import {huntGoalSnapshot,normalizeHuntGoalId,type HuntGoalId} from './hunt-goals';
 import {CHAMPION_DAMAGE_MULTIPLIER,championBonus,isChampionEncounter} from './hunt-champions';
 export const beginAlchemyBatch=startAlchemyBatch;
 
@@ -120,7 +121,7 @@ export function effectiveStats(state:GameState){
   return {hp,attack,defense,power:Math.round(attack*1.5+defense*.8+hp*.08+c.level*2.5),critChance:role==='Damage'?.10:.05,critMultiplier:1.5,accuracy:.84,evasion:role==='Damage'?.07:.04,haste:.05}
 }
 
-export function startCombat(state:GameState,monsterId:string,nowMs:number,combatChallengeId?:CombatChallengeId,combatTacticId:CombatTacticId='balanced'):GameState{
+export function startCombat(state:GameState,monsterId:string,nowMs:number,combatChallengeId?:CombatChallengeId,combatTacticId:CombatTacticId='balanced',huntGoalId:HuntGoalId='open'):GameState{
   state=finishClassDrills(state,nowMs);
   if(!state.character)throw new Error('Create a character first');
   const m=MONSTERS.find(x=>x.id===monsterId);if(!m)throw new Error('Unknown monster');
@@ -129,7 +130,7 @@ export function startCombat(state:GameState,monsterId:string,nowMs:number,combat
   if(zoneIdForTarget(monsterId)!==currentRegionId(state))throw new Error(`Travel to ${m.zone} before fighting ${m.name}`);
   if(combatChallengeId&&!challengeHuntUnlocked(state,monsterId,combatChallengeId))throw new Error('Raise this monster\'s Mastery to unlock that Challenge Hunt.');
   const combatAffixId=combatChallengeId?rotatingChallengeAffix(monsterId,combatChallengeId,nowMs):undefined;
-  return {...state,activity:{kind:'combat',targetId:monsterId,...(combatChallengeId?{combatChallengeId,combatAffixId}:{}),combatTacticId:normalizeCombatTactic(combatTacticId),startedAtMs:nowMs,lastClaimAtMs:nowMs,classFocus:normalizeTrainingFocus(state.character.trainingFocus),classTrainingSnapshot:{faithBlessingId:selectedFaithBlessing(state)?.id},environment:captureActivityEnvironment(monsterId,nowMs)}}
+  return {...state,activity:{kind:'combat',targetId:monsterId,...(combatChallengeId?{combatChallengeId,combatAffixId}:{}),combatTacticId:normalizeCombatTactic(combatTacticId),...(huntGoalSnapshot(normalizeHuntGoalId(huntGoalId))?{huntGoal:huntGoalSnapshot(normalizeHuntGoalId(huntGoalId))}:{}),sessionKills:0,sessionChampions:0,startedAtMs:nowMs,lastClaimAtMs:nowMs,classFocus:normalizeTrainingFocus(state.character.trainingFocus),classTrainingSnapshot:{faithBlessingId:selectedFaithBlessing(state)?.id},environment:captureActivityEnvironment(monsterId,nowMs)}}
 }
 
 /** Travel is instantaneous for now, but always settles and stops the prior activity. */
@@ -289,16 +290,18 @@ function projectedIdleContext(state:GameState,reward:RewardBundle,settleAtMs:num
   const routed=routeRewards(state,reward.items,settleAtMs);
   const beforeOverflow=state.overflow.stacks.reduce((sum,row)=>sum+row.quantity,0),afterOverflow=routed.overflow.stacks.reduce((sum,row)=>sum+row.quantity,0);
   return {
-    itemQuantities:projectedStoredQuantities(state,reward),skillLevels,monsterKills,weeklyOrderProgress,foodRemaining,
+    itemQuantities:projectedStoredQuantities(state,reward),skillLevels,monsterKills,sessionKills:(activity.sessionKills??0)+(activity.kind==='combat'?reward.kills:0),championDefeats:(activity.sessionChampions??0)+(activity.kind==='combat'?(reward.championEncounters?.count??0):0),weeklyOrderProgress,foodRemaining,
     freeStorageSlots:Math.max(0,state.inventory.capacity-usedSlots(routed.inventory.stacks))+Math.max(0,state.bank.capacity-usedSlots(routed.bank.stacks)),
     elapsedSeconds:Math.max(0,Math.floor((settleAtMs-activity.startedAtMs)/1000)),projectedRewardFits:afterOverflow<=beforeOverflow
   };
 }
 function idleRuleSettlementWindow(state:GameState,nowMs:number){
   const rule=activeIdleRuleForState(state),activity=state.activity;
-  if(!rule||!activity||!state.character)return {settleAtMs:nowMs,shouldStop:false as const};
+  if(!activity||!state.character)return {settleAtMs:nowMs,shouldStop:false as const};
+  const goalRule=activity.kind==='combat'&&activity.huntGoal?{id:'hunt-goal',characterId:state.character.id,name:'Hunt Goal',conditions:[{id:'hunt-goal-condition',kind:activity.huntGoal.kind,targetId:activity.targetId,value:activity.huntGoal.value,enabled:true}],stopIfOutOfFood:false,stopIfRewardsWouldOverflow:false,finishCurrentCycle:true} as IdleRuleSet:undefined;
+  if(!rule&&!goalRule)return {settleAtMs:nowMs,shouldStop:false as const};
   const capAtMs=activity.lastClaimAtMs+offlineCapSeconds(state)*1000,upper=Math.max(activity.lastClaimAtMs,Math.min(nowMs,capAtMs));
-  const evaluateAt=(time:number)=>{const reward=previewStandardActivityRewardRaw(state,time),evaluation=evaluateIdleRuleSet(rule,projectedIdleContext(state,reward,time));return {reward,evaluation}};
+  const evaluateAt=(time:number)=>{const reward=previewStandardActivityRewardRaw(state,time),ctx=projectedIdleContext(state,reward,time),saved=rule?evaluateIdleRuleSet(rule,ctx):{shouldStop:false,safety:false},goal=goalRule?evaluateIdleRuleSet(goalRule,ctx):{shouldStop:false,safety:false},evaluation=goal.shouldStop?{...goal,reason:`Hunt goal reached: ${activity.huntGoal?.label??'target'}.`}:saved;return {reward,evaluation}};
   const upperResult=evaluateAt(upper);
   if(!upperResult.evaluation.shouldStop)return {settleAtMs:upper,shouldStop:false as const};
   const atStart=evaluateAt(activity.lastClaimAtMs);
@@ -404,7 +407,7 @@ export function claimActivity(state:GameState,nowMs:number){
   const monster=MONSTERS.find(m=>m.id===state.activity!.targetId)!;
   const trained=awardCombatClassXp(state.character,reward.kills,monster.xp*environmentEffectForActivity(state.activity).effect.xpMultiplier*characterPermanentMultipliers(state).skillXpMultiplier,state.activity.classFocus).character;
   const challengeHuntClearIds=reward.challengeHuntFirstClear?[...new Set([...(state.character.challengeHuntClearIds??[]),reward.challengeHuntFirstClear.key])]:state.character.challengeHuntClearIds;
-  const next={...state,...routed,character:{...state.character,xp,level,gold:state.character.gold+reward.gold,currentHp:reward.endHp??state.character.currentHp,challengeHuntClearIds},activity:shouldStop?null:{...state.activity,lastClaimAtMs:settledAtMs},unlockedMonsterIds:[...new Set([...state.unlockedMonsterIds,...unlocked])]} as GameState;
+  const next={...state,...routed,character:{...state.character,xp,level,gold:state.character.gold+reward.gold,currentHp:reward.endHp??state.character.currentHp,challengeHuntClearIds},activity:shouldStop?null:{...state.activity,lastClaimAtMs:settledAtMs,sessionKills:(state.activity.sessionKills??0)+reward.kills,sessionChampions:(state.activity.sessionChampions??0)+(reward.championEncounters?.count??0)},unlockedMonsterIds:[...new Set([...state.unlockedMonsterIds,...unlocked])]} as GameState;
   next.character={...next.character!,classSkills:trained.classSkills,classSkillRemainders:trained.classSkillRemainders,masteryMaterialRemainders:reward.masteryMaterialRemainders};
   if(next.character.preparation&&reward.kills>0){let prep=next.character.preparation;for(let i=0;i<reward.kills;i++)prep=spendPreparationEncounter(prep,prep?.itemId) as typeof prep;next.character={...next.character,preparation:prep};}
   if(next.activity&&reward.kills>0)next.activity.classFocus=normalizeTrainingFocus(next.character.trainingFocus);

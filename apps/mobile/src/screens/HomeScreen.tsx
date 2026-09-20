@@ -1,5 +1,5 @@
 import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
-import {useState} from 'react';
+import {useMemo,useState} from 'react';
 import {GameState,RewardBundle,SkillId} from '../core/types';
 import {CLASSES} from '../content/classes';
 import {MONSTERS} from '../content/monsters';
@@ -11,6 +11,7 @@ import {StatBar} from '../components/StatBar';
 import {characterProgressWithinLevel} from '../core/progression';
 import {activityCycleSeconds,activityRate,campaignProgressSummary,dashboardRecommendation,DashboardDestination} from '../core/dashboard';
 import {C,radii,spacing,typography} from '../theme/theme';
+import {useTheme} from '../theme/ThemeProvider';
 import {CharacterPortrait} from '../components/CharacterVisual';
 import {BattleStage} from '../components/BattleStage';
 import {offlineCapBreakdown} from '../core/game';
@@ -24,6 +25,8 @@ import {NewUnlocksPanel} from '../components/NewUnlocksPanel';
 import {challengeHuntLabel} from '../core/challenge-hunts';
 
 export function HomeScreen({state,preview,onClaim,onStop,onNavigate,onOpenCombat,onOpenSkill}:{state:GameState;preview:RewardBundle;onClaim:()=>void;onStop:()=>void;onNavigate:(tab:DashboardDestination|'Events',zoneId?:string)=>void;onOpenCombat:()=>void;onOpenSkill:(skillId:SkillId)=>void}){
+ const {colors:C,equipmentColors}=useTheme();
+ const s=useMemo(()=>createStyles(C,equipmentColors),[C,equipmentColors]);
  const [showAfkSources,setShowAfkSources]=useState(false),[showEncounter,setShowEncounter]=useState(false),[showLedger,setShowLedger]=useState(false);
  const c=state.character!,p=characterProgressWithinLevel(c.xp,c.level),className=CLASSES.find(x=>x.id===c.classId)?.name??c.classId;
  const activityMonster=MONSTERS.find(x=>x.id===state.activity?.targetId),activityName=activityMonster&&state.activity?.kind==='combat'?challengeHuntLabel(state.activity.combatChallengeId,activityMonster.name,state.activity.combatAffixId):activityMonster?.name||GATHERING.find(x=>x.id===state.activity?.targetId)?.name;
@@ -50,4 +53,4 @@ export function HomeScreen({state,preview,onClaim,onStop,onNavigate,onOpenCombat
   </View>}
  </ScrollView>;
 }
-const s=StyleSheet.create({root:{padding:spacing.lg,gap:spacing.md},identity:{flexDirection:'row',alignItems:'center',gap:12,padding:spacing.md,borderWidth:1,borderColor:C.line,borderRadius:radii.lg,backgroundColor:C.panel},portrait:{width:64,height:80},flex:{flex:1,minWidth:0},name:{...typography.hero,color:C.text,fontSize:25,lineHeight:32},small:{...typography.body,color:C.muted},gold:{...typography.bodyStrong,color:C.accent},title:{...typography.title,color:C.text},kicker:{...typography.caption,color:C.accent,letterSpacing:.8,fontWeight:'600'},guide:{gap:8,padding:spacing.md,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel},urgent:{borderLeftWidth:4,borderLeftColor:C.warning,paddingLeft:spacing.md},row:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',gap:12},disclosure:{minHeight:48,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:12,paddingVertical:8},link:{...typography.bodyStrong,color:C.info,flex:1},expanded:{gap:12},event:{padding:16,gap:8,backgroundColor:C.panel,borderRadius:radii.md,borderLeftWidth:3},campaignStrip:{flexDirection:'row',alignItems:'center',gap:10,padding:spacing.sm,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel},campaignTitle:{...typography.bodyStrong,color:C.text},campaignTrack:{height:7,marginVertical:5,borderRadius:4,overflow:'hidden',backgroundColor:C.bg},campaignFill:{height:'100%',backgroundColor:C.accent},campaignMeta:{fontSize:10,lineHeight:14,color:C.muted},earned:{...typography.body,color:C.good}});
+const createStyles=(C:any,equipmentColors:any)=>StyleSheet.create({root:{padding:spacing.lg,gap:spacing.md},identity:{flexDirection:'row',alignItems:'center',gap:12,padding:spacing.md,borderWidth:1,borderColor:C.line,borderRadius:radii.lg,backgroundColor:C.panel},portrait:{width:64,height:80},flex:{flex:1,minWidth:0},name:{...typography.hero,color:C.text,fontSize:25,lineHeight:32},small:{...typography.body,color:C.muted},gold:{...typography.bodyStrong,color:C.accent},title:{...typography.title,color:C.text},kicker:{...typography.caption,color:C.accent,letterSpacing:.8,fontWeight:'600'},guide:{gap:8,padding:spacing.md,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel},urgent:{borderLeftWidth:4,borderLeftColor:C.warning,paddingLeft:spacing.md},row:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',gap:12},disclosure:{minHeight:48,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:12,paddingVertical:8},link:{...typography.bodyStrong,color:C.info,flex:1},expanded:{gap:12},event:{padding:16,gap:8,backgroundColor:C.panel,borderRadius:radii.md,borderLeftWidth:3},campaignStrip:{flexDirection:'row',alignItems:'center',gap:10,padding:spacing.sm,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel},campaignTitle:{...typography.bodyStrong,color:C.text},campaignTrack:{height:7,marginVertical:5,borderRadius:4,overflow:'hidden',backgroundColor:C.bg},campaignFill:{height:'100%',backgroundColor:C.accent},campaignMeta:{fontSize:10,lineHeight:14,color:C.muted},earned:{...typography.body,color:C.good}});

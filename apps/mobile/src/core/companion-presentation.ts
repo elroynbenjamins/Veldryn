@@ -42,6 +42,14 @@ export function companionRequirementProgress(state:GameState,req:CompanionDefini
  return {current:Math.min(total,current),total,complete:companionUnlockRequirementMet(state,req)};
 }
 export function companionRecoverySeconds(state:GameState,now:number){return Math.max(0,Math.ceil(((state.account.companionBattleReadyAtMs??0)-now)/1000));}
+export function companionAssignmentStatusLabel(assignment:{status:string;endsAt:string;performanceGrade?:string},now:number){
+ if(assignment.status==='claimed')return assignment.performanceGrade?`Claimed · Grade ${assignment.performanceGrade}`:'Claimed';
+ if(assignment.status==='cancelled')return 'Cancelled';
+ const remaining=Math.max(0,Date.parse(assignment.endsAt)-now);
+ if(assignment.status==='completed'||remaining<=0)return 'Ready to claim';
+ const minutes=Math.max(1,Math.ceil(remaining/60000)),hours=Math.floor(minutes/60),mins=minutes%60;
+ return hours?`${hours}h ${mins}m remaining`:`${mins}m remaining`;
+}
 
 
 export function companionUnlockCompletion(state:GameState,def:CompanionDefinition){

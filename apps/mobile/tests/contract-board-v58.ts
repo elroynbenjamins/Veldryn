@@ -13,12 +13,15 @@ const regionalCandidates=candidates.filter(row=>row.kind==='regional');
 ok(regionalCandidates.length>0&&regionalCandidates.every(row=>row.regionId),'Contract Board needs real Regional Problem candidates');
 ok(regionalCandidates.length>=2&&regionalCandidates.every(row=>row.brief&&row.brief.length>40),'Unlocked regions should offer multiple authored Regional Problem scenarios');
 ok(new Set(regionalCandidates.map(row=>row.title)).size===regionalCandidates.length,'Regional Problem scenario titles must remain distinct');
+ok(!candidates.some(row=>row.kind==='threat'),'Threat Bounties should not appear before Challenge Hunts are mastered');
+let mastered={...state,character:{...state.character!,monsterMasteryPoints:{MOSS_RAT:500}}};const masteredCandidates=weeklyOrderCandidatesFromCurrentContent(mastered),threatCandidates=masteredCandidates.filter(row=>row.kind==='threat');ok(threatCandidates.length===3,'Mastery 20 Moss Rat should expose all three Threat Bounty tiers');
 
 const generated=generateWeeklyOrders(accountId,now,candidates);
 ok(generated.orders.filter(row=>row.kind==='hunt').length===2,'default board should have two Hunt Orders');
 ok(generated.orders.filter(row=>row.kind==='profession').length===2,'default board should have two Work Orders');
 ok(generated.orders.filter(row=>row.kind==='regional').length===1,'default board should have one Regional Problem');
 const generatedRegional=generated.orders.find(row=>row.kind==='regional');ok(!!generatedRegional?.brief&&generatedRegional.reward.label.includes('Relief Cache'),'Generated Regional Problem should preserve authored brief and regional reward identity');
+const masteredBoard=generateWeeklyOrders(accountId+'-mastered',now,masteredCandidates),threat=masteredBoard.orders.find(row=>row.kind==='threat');ok(!!threat&&!!threat.challengeId&&threat.reward.label.includes('Bounty Cache'),'Mastered board should generate one tier-specific Threat Bounty');
 
 const regional=generated.orders.find(row=>row.kind==='regional')!;
 const direct=applyWeeklyOrderProgress(generated,{eventId:'regional-progress',characterId:state.character!.id,kind:'regional',targetId:regional.targetId,amount:3,completedAtMs:now});
@@ -30,4 +33,5 @@ ok(before?.targetId==='GREENFIELDS','level-one board should target the available
 const settled=applyTrustedLongTermProgression(state,[{kind:'combat',contentId:'MOSS_RAT',units:4,startedAtMs:now-60_000}],undefined,now,{accountId,eventId:'hunt-settlement'}).state;
 const after=settled.account.weeklyOrders!.orders.find(row=>row.kind==='regional');
 ok((after?.progress??0)>=4,'trusted Greenfields combat should advance the Greenfields Regional Problem');
-console.log('PASS: Contract Board Hunt Orders, Work Orders and Regional Problems validate');
+mastered={...mastered,account:{...mastered.account,longTermAccountScopeId:accountId+'-mastered',weeklyOrders:masteredBoard}};const threatBefore=threat!.progress;let threatState=applyTrustedLongTermProgression(mastered,[{kind:'combat',contentId:'MOSS_RAT',units:4,startedAtMs:now-60_000}],undefined,now,{accountId:accountId+'-mastered',eventId:'normal-hunt'}).state;ok(threatState.account.weeklyOrders!.orders.find(row=>row.id===threat!.id)!.progress===threatBefore,'Normal hunt kills must not advance a Threat Bounty');const wrongTier=threat!.challengeId==='ferocious'?'hardened':'ferocious';threatState=applyTrustedLongTermProgression(threatState,[{kind:'combat',contentId:'MOSS_RAT',units:4,challengeId:wrongTier,startedAtMs:now-30_000}],undefined,now,{accountId:accountId+'-mastered',eventId:'wrong-tier'}).state;ok(threatState.account.weeklyOrders!.orders.find(row=>row.id===threat!.id)!.progress===threatBefore,'Wrong Challenge Hunt tier must not advance a Threat Bounty');threatState=applyTrustedLongTermProgression(threatState,[{kind:'combat',contentId:'MOSS_RAT',units:4,challengeId:threat!.challengeId,startedAtMs:now-10_000}],undefined,now,{accountId:accountId+'-mastered',eventId:'correct-tier'}).state;ok(threatState.account.weeklyOrders!.orders.find(row=>row.id===threat!.id)!.progress===Math.min(threat!.target,threatBefore+4),'Exact Challenge Hunt tier should advance its Threat Bounty');
+console.log('PASS: Contract Board Hunt Orders, Work Orders, Regional Problems and Threat Bounties validate');

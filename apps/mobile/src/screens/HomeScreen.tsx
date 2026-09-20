@@ -26,7 +26,7 @@ import {challengeHuntLabel} from '../core/challenge-hunts';
 export function HomeScreen({state,preview,onClaim,onStop,onNavigate,onOpenCombat,onOpenSkill}:{state:GameState;preview:RewardBundle;onClaim:()=>void;onStop:()=>void;onNavigate:(tab:DashboardDestination|'Events',zoneId?:string)=>void;onOpenCombat:()=>void;onOpenSkill:(skillId:SkillId)=>void}){
  const [showAfkSources,setShowAfkSources]=useState(false),[showEncounter,setShowEncounter]=useState(false),[showLedger,setShowLedger]=useState(false);
  const c=state.character!,p=characterProgressWithinLevel(c.xp,c.level),className=CLASSES.find(x=>x.id===c.classId)?.name??c.classId;
- const activityMonster=MONSTERS.find(x=>x.id===state.activity?.targetId),activityName=activityMonster&&state.activity?.kind==='combat'?challengeHuntLabel(state.activity.combatChallengeId,activityMonster.name):activityMonster?.name||GATHERING.find(x=>x.id===state.activity?.targetId)?.name;
+ const activityMonster=MONSTERS.find(x=>x.id===state.activity?.targetId),activityName=activityMonster&&state.activity?.kind==='combat'?challengeHuntLabel(state.activity.combatChallengeId,activityMonster.name,state.activity.combatAffixId):activityMonster?.name||GATHERING.find(x=>x.id===state.activity?.targetId)?.name;
  const cycle=activityCycleSeconds(state),guide=dashboardRecommendation(state),campaign=campaignProgressSummary(state),rate=activityRate(state),afk=offlineCapBreakdown(state);
  const completed=state.quests.filter(q=>q.status==='complete').length,monster=state.activity?.kind==='combat'?MONSTERS.find(x=>x.id===state.activity?.targetId):undefined;
  const environment=state.activity?environmentForActivity(state.activity):undefined;

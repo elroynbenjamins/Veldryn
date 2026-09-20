@@ -74,3 +74,12 @@ export function companionNextMasteryTargets(state:GameState,limit=3){
   .sort((a,b)=>b.score-a.score||a.def.name.localeCompare(b.def.name))
   .slice(0,Math.max(0,limit));
 }
+
+export function companionRewardLabel(id:string){
+ const companionFrom=(prefix:string)=>COMBAT_COMPANIONS.find(row=>row.id===id.slice(prefix.length))?.name;
+ if(id.startsWith('COMPANION_PORTRAIT_'))return `Companion portrait · ${companionFrom('COMPANION_PORTRAIT_')??'Companion'}`;
+ if(id.startsWith('COMPANION_TITLE_'))return `Companion title · ${companionFrom('COMPANION_TITLE_')??'Companion'}`;
+ const prefixes:[string,string][]=[['PROFILE_BADGE_','Profile badge'],['PROFILE_BACKGROUND_','Profile background'],['PROFILE_BORDER_','Profile border'],['TITLE_','Title']];
+ for(const [prefix,label] of prefixes)if(id.startsWith(prefix))return `${label} · ${id.slice(prefix.length).toLowerCase().replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}`;
+ return id.toLowerCase().replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+}

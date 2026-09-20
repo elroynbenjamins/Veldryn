@@ -14,14 +14,14 @@ import {ChatMessageText} from './ChatMessageText';
 import {GuildTaggedPlayerName} from './GuildTaggedPlayerName';
 export function OnlinePartyChat({onRead}:{onRead?:()=>void}={}){
  const {party,accountId,refresh}=usePartySocial();const id=party?.id;
- const activeId=useRef(id),notifiedRead=useRef(false);activeId.current=id;
+ const activeId=useRef(id),notifiedRead=useRef(false),onReadRef=useRef(onRead);activeId.current=id;onReadRef.current=onRead;
  const [messages,setMessages]=useState<Awaited<ReturnType<typeof partyChatMessages>>>([]),[selected,setSelected]=useState<PartyChatMessage|null>(null),[body,setBody]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false);
  const pending=useRef<{body:string;key:string}|null>(null);
  useEffect(()=>{let active=true;setMessages([]);setBody('');pending.current=null;notifiedRead.current=false;
-  const markRead=async()=>{try{await markSocialChatRead('party');if(active&&!notifiedRead.current){notifiedRead.current=true;onRead?.()}}catch{}};
+  const markRead=async()=>{try{await markSocialChatRead('party');if(active&&!notifiedRead.current){notifiedRead.current=true;onReadRef.current?.()}}catch{}};
   const load=async()=>{if(!id)return;try{const next=await partyChatMessages(id);if(active){setMessages(next);void markRead();}}catch(e){if(active){setMessages([]);setError(e instanceof Error?e.message:'Chat unavailable.');void refresh();}}};
   void load();const timer=setInterval(()=>void load(),5000);return()=>{active=false;clearInterval(timer);};
- },[id,accountId,refresh,onRead]);
+ },[id,accountId,refresh]);
  const send=async()=>{if(!id||busy||!body.trim())return;setBusy(true);setError('');
   if(pending.current?.body!==body)pending.current={body,key:partyCommandKey()};
   try{await sendPartyChat(id,body,pending.current.key);const next=await partyChatMessages(id);if(activeId.current===id){setBody('');pending.current=null;setMessages(next);}}

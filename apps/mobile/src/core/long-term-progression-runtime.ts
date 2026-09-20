@@ -9,6 +9,10 @@ import {applyJournalSnapshot,newJournalState,type JournalState} from './adventur
 import {applyPersonalRecord,type PersonalRecordEvent} from './personal-records-v43';
 import {bestiaryProjection} from './bestiary-v40';
 import {COMBAT_COMPANIONS} from '../content/combat-companions';
+import {MONSTERS} from '../content/monsters';
+import {GATHERING} from '../content/skills';
+import {HERB_NODES} from '../content/herbalism';
+import {WORLD_ZONES} from '../content/world-map';
 import {random01} from './rng';
 import {applyLocalBalanceSnapshot} from './balance-telemetry';
 
@@ -27,10 +31,19 @@ export interface TrustedProgressionResult{
 
 function integerUnits(value:number){return Number.isFinite(value)?Math.max(0,Math.floor(value)):0}
 function unique<T>(rows:T[]){return [...new Set(rows)]}
+function trustedEventRegionId(event:TrustedProgressionActivity){
+ if(event.kind==='combat'||event.kind==='boss'){const monster=MONSTERS.find(row=>row.id===event.contentId);return monster?WORLD_ZONES.find(zone=>zone.name===monster.zone)?.id:undefined;}
+ if(event.kind==='gathering')return [...GATHERING,...HERB_NODES].find(row=>row.id===event.contentId)?.zoneId;
+ return undefined;
+}
 function ensureWeeklyOrders(state:GameState,accountId:string,nowMs:number):WeeklyOrdersState{
  const window=weeklyOrderWindow(nowMs),existing=state.account.weeklyOrders;
  if(existing?.schemaVersion===41&&existing.accountId===accountId&&existing.weekKey===window.weekKey)return existing;
  return generateWeeklyOrders(accountId,nowMs,weeklyOrderCandidatesFromCurrentContent(state));
+}
+export function weeklyOrderBoardForState(state:GameState,nowMs=Date.now()){
+ const accountId=state.account.longTermAccountScopeId??`local-account:${state.createdAtMs}`;
+ return ensureWeeklyOrders(state,accountId,nowMs);
 }
 function ensureJournal(state:GameState,accountId:string):JournalState{
  const existing=state.account.journalState;
@@ -106,6 +119,7 @@ export function applyTrustedLongTermProgression(input:GameState,events:TrustedPr
   if(event.kind==='gathering'||event.kind==='crafting'){metrics['profession.actions_completed']=(metrics['profession.actions_completed']??0)+units;mastery[event.contentId]=grantProfessionMastery(mastery[event.contentId] as ProfessionMasteryRecord|undefined,event.contentId,units,nowMs)}
   if(event.kind==='combat')applyWeeklyOrderProgress(weekly,{eventId:`${options.eventId}:${event.kind}:${event.contentId}`,characterId:state.character?.id??'unknown',kind:'hunt',targetId:event.contentId,amount:units,completedAtMs:nowMs});
   if(event.kind==='gathering'||event.kind==='crafting')applyWeeklyOrderProgress(weekly,{eventId:`${options.eventId}:${event.kind}:${event.contentId}`,characterId:state.character?.id??'unknown',kind:'profession',targetId:event.contentId,amount:units,completedAtMs:nowMs});
+  const regionId=trustedEventRegionId(event);if(regionId)applyWeeklyOrderProgress(weekly,{eventId:`${options.eventId}:regional:${regionId}:${event.kind}:${event.contentId}`,characterId:state.character?.id??'unknown',kind:'regional',targetId:regionId,amount:units,completedAtMs:nowMs});
  }
  for(const order of weekly.orders){if(order.progress>=order.target&&!wasComplete.has(order.id)){weeklyCompleted.push(order.id);metrics['weekly_orders.completed']=(metrics['weekly_orders.completed']??0)+1}if(order.progress>=order.target&&!order.claimed){const claim=claimWeeklyOrder(weekly,order.id);if(!pendingKeys.has(claim.claimKey)){pending.push({claimKey:claim.claimKey,rewardRef:claim.reward.rewardRef,label:claim.reward.label,weekKey:claim.weekKey,orderId:claim.orderId});pendingKeys.add(claim.claimKey)}}}
  if(weekly.orders.length&&weekly.orders.every(row=>row.progress>=row.target)&&!weekly.completionClaimed){const claim=claimWeeklyCompletion(weekly);if(!pendingKeys.has(claim.claimKey)){pending.push({claimKey:claim.claimKey,rewardRef:claim.reward.rewardRef,label:claim.reward.label,weekKey:claim.weekKey});pendingKeys.add(claim.claimKey)}}

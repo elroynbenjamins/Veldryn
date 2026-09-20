@@ -255,6 +255,9 @@ function playerEventStatusPill(phase) {
 function renderEvents() {
   const rows = state.instances || [];
   const playerRows = state.playerEvents || [];
+  const nowMs = Date.now();
+  const visiblePlayerEvent = playerRows.find(row => ['live','claiming'].includes(playerEventPhase(row, nowMs))) || null;
+  const visiblePlayerPhase = visiblePlayerEvent ? playerEventPhase(visiblePlayerEvent, nowMs) : null;
   return shell(`
     <div class="page-head"><div><div class="eyebrow">Player events + Party Live-Ops</div><h2>Events</h2><p>Control the Event screen players see, then manage competitive Party Event instances separately.</p></div><div class="actions"><button class="btn btn-primary" data-nav="builder">Create Party Event</button></div></div>
     <div class="card" style="margin-bottom:14px"><div class="card-head"><div><h3>Player Event screen</h3><div class="tiny muted">Annual/general events from <span class="mono">live_events</span>. This is the authority used by the mobile Event screen.</div></div><span class="pill">Server controlled</span></div><div class="card-body">

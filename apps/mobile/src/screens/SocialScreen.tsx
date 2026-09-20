@@ -1,4 +1,4 @@
-import {useCallback,useEffect,useRef,useState} from 'react';
+import {useMemo,useCallback,useEffect,useRef,useState} from 'react';
 import {Alert,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {PartyHubPanel} from '../components/PartyHubPanel';
 import {PartyEventHubPanel} from '../components/PartyEventHubPanel';
@@ -14,7 +14,9 @@ import {partySocialRepository as repository,ownRecruitmentPosts,partyRankings,pa
 import {myGuild,requestGuildMembership,sendFriendRequest} from '../online/social';
 import {EMPTY_RECRUITMENT_FILTERS,PARTY_SOCIAL_TUTORIAL_STEPS,recruitmentTimeLabel,type PartyFocus,type PartyRole,type RecruitmentCardView,type RecruitmentPostType} from '../core/party-social';
 import {C,spacing,typography} from '../theme/theme';
+import {useTheme} from '../theme/ThemeProvider';
 export function SocialScreen({onGuild,onFriends,onAccount}:{onGuild:()=>void;onFriends:()=>void;onAccount:()=>void}){
+ const {colors:C,equipmentColors}=useTheme();const s=useMemo(()=>createStyles(C,equipmentColors),[C,equipmentColors]);
  const social=usePartySocial();const [tab,setTab]=useState<SocialHubTab>('party');const [filters,setFilters]=useState({...EMPTY_RECRUITMENT_FILTERS});
  const [cards,setCards]=useState<RecruitmentCardView[]>([]),[own,setOwn]=useState<RecruitmentCardView[]>([]),[rankings,setRankings]=useState<PartyRanking[]>([]),[liveEvent,setLiveEvent]=useState<import('../core/party-social').PartyEventView|null>(null);
  const [draft,setDraft]=useState<PublishRecruitmentInput|null>(null),[selected,setSelected]=useState<RecruitmentCardView|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState('');
@@ -60,5 +62,6 @@ export function SocialScreen({onGuild,onFriends,onAccount}:{onGuild:()=>void;onF
   </>}
  </ScrollView></SocialHubPanel>;
 }
-function QuickChip({label,selected,onPress}:{label:string;selected:boolean;onPress:()=>void}){return <Pressable accessibilityRole="button" accessibilityState={{selected}} onPress={onPress} style={({pressed})=>[s.chip,selected&&s.chipSelected,pressed&&s.pressed]}><Text style={[s.chipText,selected&&s.chipTextSelected]}>{selected?'✓ ':''}{label}</Text></Pressable>}
-const s=StyleSheet.create({content:{padding:spacing.md,gap:spacing.md,paddingBottom:32},row:{flexDirection:'row',flexWrap:'wrap',gap:spacing.sm},chipRow:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',gap:6},chipLabel:{fontSize:10,fontWeight:'900',letterSpacing:1,color:'#efd895',marginRight:2},chip:{minHeight:38,paddingHorizontal:12,justifyContent:'center',borderWidth:1,borderColor:'#314259',borderRadius:99,backgroundColor:'#0b1018'},chipSelected:{borderColor:'#43bdf2',backgroundColor:'#123e61'},chipText:{fontSize:12,color:'#93a4ba',fontWeight:'800'},chipTextSelected:{color:'#d9f3ff'},pressed:{opacity:.76},title:{color:C.accent,fontSize:18,fontWeight:'800'},selectedLabel:{...typography.caption,color:C.info,fontWeight:'900',letterSpacing:1},text:{color:C.text,lineHeight:21},errorCard:{gap:4,padding:spacing.md,borderWidth:1,borderColor:C.bad,borderRadius:10,backgroundColor:'#2a1b20'},errorLabel:{...typography.caption,color:C.bad,fontWeight:'900',letterSpacing:1},error:{color:C.text,lineHeight:21},ad:{gap:spacing.sm,paddingVertical:spacing.sm}});
+function QuickChip({label,selected,onPress}:{label:string;selected:boolean;onPress:()=>void}){
+ const {colors:C,equipmentColors}=useTheme();const s=useMemo(()=>createStyles(C,equipmentColors),[C,equipmentColors]);return <Pressable accessibilityRole="button" accessibilityState={{selected}} onPress={onPress} style={({pressed})=>[s.chip,selected&&s.chipSelected,pressed&&s.pressed]}><Text style={[s.chipText,selected&&s.chipTextSelected]}>{selected?'✓ ':''}{label}</Text></Pressable>}
+const createStyles=(C:any,equipmentColors:any)=>StyleSheet.create({content:{padding:spacing.md,gap:spacing.md,paddingBottom:32},row:{flexDirection:'row',flexWrap:'wrap',gap:spacing.sm},chipRow:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',gap:6},chipLabel:{fontSize:10,fontWeight:'900',letterSpacing:1,color:'#efd895',marginRight:2},chip:{minHeight:38,paddingHorizontal:12,justifyContent:'center',borderWidth:1,borderColor:'#314259',borderRadius:99,backgroundColor:'#0b1018'},chipSelected:{borderColor:'#43bdf2',backgroundColor:'#123e61'},chipText:{fontSize:12,color:'#93a4ba',fontWeight:'800'},chipTextSelected:{color:'#d9f3ff'},pressed:{opacity:.76},title:{color:C.accent,fontSize:18,fontWeight:'800'},selectedLabel:{...typography.caption,color:C.info,fontWeight:'900',letterSpacing:1},text:{color:C.text,lineHeight:21},errorCard:{gap:4,padding:spacing.md,borderWidth:1,borderColor:C.bad,borderRadius:10,backgroundColor:'#2a1b20'},errorLabel:{...typography.caption,color:C.bad,fontWeight:'900',letterSpacing:1},error:{color:C.text,lineHeight:21},ad:{gap:spacing.sm,paddingVertical:spacing.sm}});

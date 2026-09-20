@@ -19,5 +19,5 @@ const poor={...economy,gold:0,companionEssence:0},snap=JSON.stringify(poor);thro
 // 27 selection persists through save/load snapshot.
 const loaded=JSON.parse(JSON.stringify(switched.progress)) as OwnedCompanionSnapshot;eq(loaded.selectedTechniqueId,'UNIT_015_REFLECTIVE','Technique did not persist');
 // 28 character-assist and 29 Trial combat both consume the selected Technique.
-const assist=buildOwnedCompanionCombatant(loaded,{mode:'character_assist',ownerId:'CHAR_1'}),trial=buildOwnedCompanionCombatant(loaded,{mode:'companion_trial'});ok(assist.abilities[0].tags?.some(x=>x.includes('reflect:0.12')),'Technique missing in assist combat');ok(trial.abilities[0].tags?.some(x=>x.includes('reflect:0.12')),'Technique missing in Trial combat');
+const assist=buildOwnedCompanionCombatant(loaded,{mode:'character_assist',ownerId:'CHAR_1'}),trial=buildOwnedCompanionCombatant(loaded,{mode:'companion_trial'}),reflectEffect=newTechnique.effects.find(effect=>effect.kind==='reflect');ok(!!reflectEffect&&assist.abilities[0].tags?.some(x=>x.includes(`reflect:${reflectEffect.value}`)),'Technique missing in assist combat');ok(!!reflectEffect&&trial.abilities[0].tags?.some(x=>x.includes(`reflect:${reflectEffect.value}`)),'Technique missing in Trial combat');
 console.log('companion-phase3-techniques: PASS');

@@ -1,4 +1,5 @@
 import type {GameState} from './types';
+import {combatCompanionDef,isCombatCompanionMastered} from './combat-companions';
 
 export const BALANCE_METRIC_KEYS={
   characterLevel:'balance.character_level',
@@ -7,6 +8,16 @@ export const BALANCE_METRIC_KEYS={
   equippedGear:'balance.equipment_slots',
   petsOwned:'balance.pets_owned',
   companionsOwned:'balance.companions_owned',
+  companionEssenceBalance:'balance.companion_essence_balance',
+  bondstoneBalance:'balance.companion_bondstone_balance',
+  companionBond6Count:'balance.companion_bond6_count',
+  companionBond10Count:'balance.companion_bond10_count',
+  companionMasteredCount:'balance.companion_mastered_count',
+  companionPrestigeOwned:'balance.companion_prestige_owned',
+  companionEventOwned:'balance.companion_event_owned',
+  companionTrialHighestFloor:'balance.companion_trial_highest_floor',
+  companionTrialFloor30Clears:'balance.companion_trial_floor30_clears',
+  activeCompanionAssignments:'balance.companion_active_assignments',
   combinedSkillLevels:'balance.active_character_skill_levels',
   fallenKnightDefeated:'balance.fallen_knight_defeated',
   accountAgeMinutes:'balance.account_age_minutes',
@@ -37,6 +48,11 @@ export function applyLocalBalanceSnapshot(state:GameState,nowMs=Date.now()):Game
   const equipped=character?Object.values(character.equipment).filter(Boolean).length:0;
   const pets=uniqueCount(state.account.unlockedCosmeticPetIds);
   const companions=uniqueCount(state.account.unlockedCombatCompanionIds);
+  const companionIds=[...new Set(state.account.unlockedCombatCompanionIds??[])],companionProgress=state.account.combatCompanionProgress??{};
+  const bond6=companionIds.filter(id=>(companionProgress[id]?.bondLevel??0)>=6).length,bond10=companionIds.filter(id=>(companionProgress[id]?.bondLevel??0)>=10).length;
+  const mastered=companionIds.filter(id=>{const def=combatCompanionDef(id),progress=companionProgress[id];return !!def&&!!progress&&isCombatCompanionMastered(def,progress);}).length;
+  const prestige=companionIds.filter(id=>combatCompanionDef(id)?.rarity==='prestige').length,eventOwned=companionIds.filter(id=>combatCompanionDef(id)?.origin.type==='event').length;
+  const trial=state.account.companionTrialProgress?.lifetime,activeAssignments=(state.account.companionAssignments??[]).filter(row=>row.status==='active').length;
   const activeSkillLevels=state.skills.reduce((sum,row)=>sum+row.level,0)+(character?.classSkills??[]).reduce((sum,row)=>sum+row.level,0);
   const fallen=state.defeatedBossIds.includes('FALLEN_KNIGHT');
 
@@ -46,6 +62,16 @@ export function applyLocalBalanceSnapshot(state:GameState,nowMs=Date.now()):Game
   metrics[BALANCE_METRIC_KEYS.equippedGear]=equipped;
   metrics[BALANCE_METRIC_KEYS.petsOwned]=pets;
   metrics[BALANCE_METRIC_KEYS.companionsOwned]=companions;
+  metrics[BALANCE_METRIC_KEYS.companionEssenceBalance]=state.account.companionEssence??0;
+  metrics[BALANCE_METRIC_KEYS.bondstoneBalance]=state.account.bondstones??0;
+  metrics[BALANCE_METRIC_KEYS.companionBond6Count]=bond6;
+  metrics[BALANCE_METRIC_KEYS.companionBond10Count]=bond10;
+  metrics[BALANCE_METRIC_KEYS.companionMasteredCount]=mastered;
+  metrics[BALANCE_METRIC_KEYS.companionPrestigeOwned]=prestige;
+  metrics[BALANCE_METRIC_KEYS.companionEventOwned]=eventOwned;
+  metrics[BALANCE_METRIC_KEYS.companionTrialHighestFloor]=trial?.lifetimeHighestFloor??0;
+  metrics[BALANCE_METRIC_KEYS.companionTrialFloor30Clears]=trial?.monthlyFloor30Clears??0;
+  metrics[BALANCE_METRIC_KEYS.activeCompanionAssignments]=activeAssignments;
   metrics[BALANCE_METRIC_KEYS.combinedSkillLevels]=activeSkillLevels;
   metrics[BALANCE_METRIC_KEYS.fallenKnightDefeated]=fallen?1:0;
   metrics[BALANCE_METRIC_KEYS.accountAgeMinutes]=Math.max(0,Math.floor((nowMs-state.createdAtMs)/60000));

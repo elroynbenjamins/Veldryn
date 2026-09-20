@@ -1,13 +1,13 @@
 import {createCharacter,newGame,claimActivity,claimQuest,startCombat,previewActivityReward} from '../src/core/game';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
 import {unlockCombatCompanion,equipCombatCompanion,companionCombatContribution,companionLevelCost,companionRemainingLevelCost,companionAscensionCost,applyCompanionBondXp,claimSanctuaryTraining,claimSanctuaryEssence} from '../src/core/combat-companions';
-import {refreshCompanions,companionOwned,companionCombatExecutor,recordCompanionActivity} from '../src/core/companion-runtime';
+import {refreshCompanions,companionOwned,companionCombatExecutor,recordCompanionActivity,companionView} from '../src/core/companion-runtime';
 import {migrateSave} from '../src/core/save-migrations';
 import {createSaveBackup,parseSaveBackup} from '../src/core/save-transfer';
 import {characterPermanentMultipliers} from '../src/core/permanent-boosts';
 import {PET_PERMANENT_BOOSTS} from '../src/content/permanent-boosts';
 import {COMBAT_COMPANIONS} from '../src/content/combat-companions';
-import {companionMaterialSources,companionNextMasteryTargets,companionNextUnlockTargets} from '../src/core/companion-presentation';
+import {companionMaterialSources,companionNextMasteryTargets,companionNextUnlockTargets,companionRewardLabel} from '../src/core/companion-presentation';
 import {COMPANION_TECHNIQUE_SWITCH_COST,companionServerDefinition,companionTechniques} from '../../../backend/src/server/companions/content';
 import {buildOwnedCompanionCombatant} from '../../../backend/src/server/companions/combat-adapter';
 import {buildCompanionTrialEncounter} from '../../../backend/src/server/companions/trials';
@@ -23,6 +23,7 @@ ok(permanentCompanions.length===24,'permanent companion count remains 24');
 ok(eventCompanions.length===10,'event companion count is 10');
 ok(new Set(COMBAT_COMPANIONS.map(def=>def.id)).size===COMBAT_COMPANIONS.length,'companion ids are unique');
 ok(eventCompanions.map(def=>def.id).join(',')===Array.from({length:10},(_,index)=>`EVT_UNIT_${String(index+1).padStart(3,'0')}`).join(','),'event companion ids remain EVT_UNIT_001 through EVT_UNIT_010');
+ok(companionRewardLabel('COMPANION_PORTRAIT_UNIT_001').includes('Ironwood Hound'),'companion portrait entitlement has readable Codex copy');ok(companionRewardLabel('PROFILE_BORDER_MASTER_HANDLER').includes('Profile border'),'profile reward entitlement has readable Codex copy');ok(companionView(fixture(),now).codex.milestones[0].reward.companionEssence===120,'Codex projection exposes milestone reward details');
 const unlockGuidance=companionNextUnlockTargets(fixture(),3);ok(unlockGuidance.length>0&&unlockGuidance.every(entry=>!ids.includes(entry.def.id)&&entry.def.origin.type!=='event'),'Codex guidance prioritizes locked permanent companion unlocks');ok(unlockGuidance.every(entry=>entry.progress.ratio>=0&&entry.progress.ratio<=1),'unlock guidance progress remains normalized');const masteryGuidance=companionNextMasteryTargets(fixture(),3);ok(masteryGuidance.length===3&&masteryGuidance.every(entry=>entry.nextStep.startsWith('Train')),'Codex mastery guidance gives concrete next training steps');
 let s=fixture();
 for(const d of COMBAT_COMPANIONS){ok(companionServerDefinition(d.id)?.role===d.role,`${d.id} role agrees`);ok(companionServerDefinition(d.id)?.rarity===d.rarity,`${d.id} rarity agrees`);}

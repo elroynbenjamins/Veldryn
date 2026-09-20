@@ -48,6 +48,7 @@ export function validateGameCommand(value:unknown):GameCommand{
   oneOf(creation.body??'male',['male','female']);
  }
  if(row.type==='roster_switch'&&typeof (args as Record<string,unknown>).id!=='string')throw new Error('invalid_id');
+ if(row.type==='start'){const start=args as Record<string,unknown>;oneOf(start.kind,['combat','gathering']);if(start.challengeId!==undefined)oneOf(start.challengeId,COMBAT_CHALLENGE_IDS);if(start.tacticId!==undefined)oneOf(start.tacticId,COMBAT_TACTIC_IDS);if(start.kind!=='combat'&&(start.challengeId!==undefined||start.tacticId!==undefined))throw new Error('invalid_combat_activity_option');}
  return {type:row.type,args:args as Record<string,unknown>};
 }
 function text(args:Record<string,unknown>,key:string,max=100):string{const value=args[key];if(typeof value!=='string'||!value.trim()||value.length>max)throw new Error(`invalid_${key}`);return value.trim();}

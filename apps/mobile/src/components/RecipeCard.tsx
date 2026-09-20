@@ -1,3 +1,4 @@
+import {useMemo} from 'react';
 import {useState} from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {Recipe} from '../content/skills';
@@ -6,11 +7,13 @@ import {GameState} from '../core/types';
 import {recipeAvailability} from '../core/playability';
 import {formatGameNumber} from '../core/number-format';
 import {C,radii,spacing,typography} from '../theme/theme';
+import {useGameTheme,type ThemePalette} from '../theme/app-theme';
 import {ItemArtwork} from './ItemArtwork';
 import {IngredientList} from './IngredientList';
 import {GameButton} from './GameButton';
 import {UiIcon} from './UiIcon';
 export function RecipeCard({state,recipe,status,onCraft}:{state:GameState;recipe:Recipe;status:ReturnType<typeof recipeAvailability>;onCraft:(id:string)=>void}){
+ const T=useGameTheme(),s=useMemo(()=>makeStyles(T),[T]);
  const [expanded,setExpanded]=useState(false),output=itemDef(recipe.output.itemId);
  const f=(value:number)=>formatGameNumber(value,state.settings.numberMode);
  const readyInputs=status.inputs.filter(i=>i.inventory+i.bank>=i.quantity).length;
@@ -24,4 +27,4 @@ export function RecipeCard({state,recipe,status,onCraft}:{state:GameState;recipe
   </View>}
  </View>;
 }
-const s=StyleSheet.create({card:{backgroundColor:C.panel,borderWidth:1,borderColor:C.line,borderRadius:radii.md,overflow:'hidden'},head:{minHeight:100,flexDirection:'row',alignItems:'center',gap:12,padding:12},copy:{flex:1,minWidth:0,gap:3},title:{...typography.bodyStrong,fontSize:16,lineHeight:23,color:C.text},sub:{...typography.caption,color:C.muted},statusCallout:{padding:spacing.sm,borderWidth:1,borderRadius:8},readySurface:{borderColor:C.good,backgroundColor:'#172b24'},missingSurface:{borderColor:C.warning,backgroundColor:'#332515'},ready:{...typography.caption,color:C.good},reason:{...typography.body,color:C.warning},details:{padding:16,gap:10,borderTopWidth:1,borderColor:C.line}});
+const makeStyles=(T:ThemePalette)=>StyleSheet.create({card:{backgroundColor:T.panel,borderWidth:1,borderColor:T.line,borderRadius:radii.md,overflow:'hidden'},head:{minHeight:100,flexDirection:'row',alignItems:'center',gap:12,padding:12},copy:{flex:1,minWidth:0,gap:3},title:{...typography.bodyStrong,fontSize:16,lineHeight:23,color:T.text},sub:{...typography.caption,color:T.muted},statusCallout:{padding:spacing.sm,borderWidth:1,borderRadius:8},readySurface:{borderColor:T.good,backgroundColor:'#172b24'},missingSurface:{borderColor:T.warning,backgroundColor:'#332515'},ready:{...typography.caption,color:T.good},reason:{...typography.body,color:T.warning},details:{padding:16,gap:10,borderTopWidth:1,borderColor:T.line}});

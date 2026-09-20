@@ -15,7 +15,7 @@ import {projectCompanionCodex,projectCompanionTrial,projectCompanionProvingGroun
 import {claimCompanionProvingGroundChallenge,recordCompanionProvingGroundEvent,activeCompanionProvingGroundChallenges,provingGroundEventMatches} from '../../../../backend/src/server/companions/proving-grounds';
 import {companionTrialWeekKey} from '../../../../backend/src/server/companions/trial-season';
 import {companionTeamPower} from '../../../../backend/src/server/companions/team';
-import {companionTrialRecommendedPower,companionServerDefinition} from '../../../../backend/src/server/companions/content';
+import {COMPANION_BOND_MILESTONES,companionTrialRecommendedPower,companionServerDefinition} from '../../../../backend/src/server/companions/content';
 import {resolveSpecialCompanionChallenge} from '../../../../backend/src/server/companions/special-challenges';
 import type {CompanionAssignment,CompanionTrialProgress,CompanionProvingGroundState,CompanionOverflowState,OwnedCompanionSnapshot,CompanionEconomyState,CompanionCombatExecutor,CompanionUnlockFacts,CompanionProvingGroundEvent} from '../../../../backend/src/server/companions/domain';
 
@@ -45,6 +45,7 @@ export interface CompanionAccountState {
   companionBondRewardClaims?:string[];
   companionBattleReadyAtMs?:number;
   companionBossRematchReadyAtMs?:number;
+  companionBossRematchBondstoneWeek?:string;
   companionLastBattle?:{title:string;won:boolean;durationMs:number;gold:number;essence:number;bondstones:number;atMs:number};
 }
 export const companionCombatExecutor:CompanionCombatExecutor={simulate:input=>simulateCombat(input)};
@@ -126,9 +127,13 @@ export function executeCompanionActivity(input:GameState,type:string,a:Record<st
       economy.gold-=250;economy.materials.SUPPLIES=(economy.materials.SUPPLIES??0)+5;state=applyEconomy(state,economy);break;
     }
     case 'companion_bond_reward':{
-      const id=stringArg(a,'id'),key=`${id}:2`;if(!owned[id]||owned[id].bondLevel<2)throw new Error('Reach Bond 2 first.');
+      const id=stringArg(a,'id'),level=Math.floor(Number(a.level??2)) as keyof typeof COMPANION_BOND_MILESTONES;
+      const milestone=COMPANION_BOND_MILESTONES[level];if(!milestone||![2,4,8].includes(level))throw new Error('This Bond milestone is automatic or has no claimable reward.');
+      const key=`${id}:${level}`;if(!owned[id]||owned[id].bondLevel<level)throw new Error(`Reach Bond ${level} first.`);
       if(state.account.companionBondRewardClaims?.includes(key))throw new Error('Bond reward already claimed.');
-      state=reward(state,{companionEssence:20});state.account.companionBondRewardClaims=[...(state.account.companionBondRewardClaims??[]),key];break;
+      state=reward(state,{companionEssence:milestone.companionEssence});
+      if(milestone.rewardId){const current=state.account.companionPhase2Profile??{showcaseCompanionIds:[],showcaseSlotsUnlocked:1};state.account.companionPhase2Profile={...current,codexRewardIds:[...new Set([...(current.codexRewardIds??[]),`${milestone.rewardId}:${id}`])]};}
+      state.account.companionBondRewardClaims=[...(state.account.companionBondRewardClaims??[]),key];break;
     }
     case 'companion_trial_start':{
       const r=startCompanionTrial(trialInput,idsArg(a),seed,[],a.floor===undefined?undefined:Number(a.floor));state.account.companionTrialProgress=r.progress;break;
@@ -181,7 +186,9 @@ export function executeCompanionActivity(input:GameState,type:string,a:Record<st
 export function companionUnlockFacts(state:GameState):CompanionUnlockFacts {
   const owned=companionOwned(state),ownedByRole={tank:0,damage:0,support:0},bondTotalByOrigin:Record<string,number>={},levelTotalByOrigin:Record<string,number>={};
   for(const [id,p] of Object.entries(owned)){const d=companionServerDefinition(id);if(!d)continue;ownedByRole[d.role]++;bondTotalByOrigin[d.originId]=(bondTotalByOrigin[d.originId]??0)+p.bondLevel;levelTotalByOrigin[d.originId]=(levelTotalByOrigin[d.originId]??0)+p.level;}
-  return {highestTrialFloor:state.account.companionTrialProgress?.lifetime.lifetimeHighestFloor??0,specialBossClears:new Set(state.account.companionSpecialClears??[]),bossClearCounts:{...Object.fromEntries(state.defeatedBossIds.map(id=>[id,1])),...state.account.companionBossClears},regionCompletion:new Set(state.quests.some(q=>q.questId==='QST_015'&&q.status==='claimed')?['REG_001']:[]),eventCompletion:new Set(),ownedCompanionIds:new Set(Object.keys(owned)),ownedByRole,bondTotal:Object.values(owned).reduce((s,p)=>s+p.bondLevel,0),levelTotal:Object.values(owned).reduce((s,p)=>s+p.level,0),bondTotalByOrigin,levelTotalByOrigin,achievements:new Set(),mastery:state.account.companionUnlockProgress??{},reputation:{},eventChallenges:new Set(),companionEssence:state.account.companionEssence??0};
+  const regionCompletion=new Set<string>();if(state.quests.some(q=>q.questId==='QST_015'&&q.status==='claimed'))regionCompletion.add('REG_001');
+  for(const region of ['SUNSCAR','FROSTMARCH','ASHLANDS'])if((state.regionalProgressById?.[region]?.storyCompleted??0)>0)regionCompletion.add(`REG_${region}`);
+  return {highestTrialFloor:state.account.companionTrialProgress?.lifetime.lifetimeHighestFloor??0,specialBossClears:new Set(state.account.companionSpecialClears??[]),bossClearCounts:{...Object.fromEntries(state.defeatedBossIds.map(id=>[id,1])),...state.account.companionBossClears},regionCompletion,eventCompletion:new Set(),ownedCompanionIds:new Set(Object.keys(owned)),ownedByRole,bondTotal:Object.values(owned).reduce((s,p)=>s+p.bondLevel,0),levelTotal:Object.values(owned).reduce((s,p)=>s+p.level,0),bondTotalByOrigin,levelTotalByOrigin,achievements:new Set(),mastery:state.account.companionUnlockProgress??{},reputation:{},eventChallenges:new Set(),companionEssence:state.account.companionEssence??0};
 }
 /** Call only for settled, verified activity. Counts never arrive from a client command. */
 export function recordCompanionActivity(state:GameState,source:'combat'|'gathering'|'boss'|'crafting',target:string,units:number,now:number):GameState {

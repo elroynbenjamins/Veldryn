@@ -33,7 +33,7 @@ import {settleFaithPractice,cancelFaithPractice,normalizeFaith,selectedFaithBles
 import {HOLY_WATER_ID} from '../content/faith';
 import {previewAlchemyReward,alchemyRefund,startAlchemyBatch,preparationEffects,spendPreparationEncounter} from './alchemy';
 import {potionDef} from '../content/alchemy';
-import {applyTrustedLongTermProgression} from './long-term-progression-runtime';
+import {applyTrustedLongTermProgression,reconcileWeeklyOrderRollover} from './long-term-progression-runtime';
 import {applyLocalBalanceSnapshot} from './balance-telemetry';
 import {applyCorePetActivityDrops,applyCorePetCombatDrops} from './core-pet-drops';
 import {evaluateIdleRuleSet,type IdleEvaluationContext,type IdleRuleSet} from './idle-rules-v40';
@@ -401,6 +401,7 @@ export function claimSeasonalContract(state:GameState,period:SeasonalPeriod,cont
 }
 
 export function claimActivity(state:GameState,nowMs:number){
+  state=reconcileWeeklyOrderRollover(state,nowMs).state;
   if(state.character?.classTraining){const r=settleClassDrills(state,nowMs,offlineCapSeconds(state)),next=reconcileCombatCompanionUnlocks(r.state,nowMs);return {state:next,reward:withCompanionUnlocks(r.reward,state,next)};}
   if(state.activity?.kind==='faith'){
     const settled=settleFaithPractice(state,nowMs,offlineCapSeconds(state)),boost=previewDailySupplyTimedReward(state,settled.reward,'skill'),reward=boost.reward;

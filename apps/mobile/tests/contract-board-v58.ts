@@ -1,6 +1,6 @@
 import {createCharacter,newGame} from '../src/core/game';
 import {weeklyOrderCandidatesFromCurrentContent} from '../src/core/launch-readiness-v47';
-import {applyTrustedLongTermProgression,weeklyOrderBoardForState} from '../src/core/long-term-progression-runtime';
+import {applyTrustedLongTermProgression,reconcileWeeklyOrderRollover,weeklyOrderBoardForState} from '../src/core/long-term-progression-runtime';
 import {applyWeeklyOrderProgress,generateWeeklyOrders} from '../src/core/weekly-orders-v41';
 import {weeklyOrderDestination,weeklyOrderGoal,weeklyOrderIdleRule,weeklyOrderQueueActivity} from '../src/core/weekly-order-integrations-v41';
 import {contractBoardSummary} from '../src/core/contract-board-summary';
@@ -33,6 +33,18 @@ const stopRule=weeklyOrderIdleRule(huntOrder,state.character!.id);ok(stopRule.co
 const generatedRegional=generated.orders.find(row=>row.kind==='regional');ok(!!generatedRegional?.brief&&generatedRegional.reward.label.includes('Relief Cache'),'Generated Regional Problem should preserve authored brief and regional reward identity');
 const masteredBoard=generateWeeklyOrders(accountId+'-mastered',now,masteredCandidates),threat=masteredBoard.orders.find(row=>row.kind==='threat');ok(!!threat&&!!threat.challengeId&&threat.reward.label.includes('Bounty Cache'),'Mastered board should generate one tier-specific Threat Bounty');
 const threatDestination=weeklyOrderDestination(threat!),threatQueue=weeklyOrderQueueActivity(threat!);ok(threatDestination.kind==='combat'&&threatDestination.monsterId===threat!.targetId.split(':')[0],'Threat Bounty should open its exact monster');ok(threatQueue?.kind==='combat'&&threatQueue.combatChallengeId===threat!.challengeId,'Threat Bounty queue must preserve its exact Challenge Hunt tier');
+
+const staleOrder=generated.orders[0],staleGoal=weeklyOrderGoal(staleOrder,state.character!.id,now),generatedStop=weeklyOrderIdleRule(staleOrder,state.character!.id);
+const mixedRule={id:'mixed-weekly-rule',characterId:state.character!.id,name:'Mixed safety rule',conditions:[{id:'old-week',kind:'weekly_order_progress' as const,targetId:staleOrder.id,value:staleOrder.target,enabled:true},{id:'duration',kind:'duration_seconds' as const,value:3600,enabled:true}],stopIfOutOfFood:true,stopIfRewardsWouldOverflow:true,finishCurrentCycle:true};
+const pendingReceipt={claimKey:'old-week-reward',rewardRef:'weekly_order_hunt_standard',label:'Old reward',weekKey:generated.weekKey,orderId:staleOrder.id};
+const rolloverInput={...state,character:{...state.character!,progressionGoals:[staleGoal],idleRulesV40:[generatedStop,mixedRule],activeIdleRuleIdV40:generatedStop.id},account:{...state.account,longTermAccountScopeId:accountId,weeklyOrders:structuredClone(generated),weeklyOrderPendingRewards:[pendingReceipt]}};
+const rollover=reconcileWeeklyOrderRollover(rolloverInput,now+7*86400_000);
+ok(rollover.changed&&rollover.previousWeekKey===generated.weekKey&&rollover.weekKey!==generated.weekKey,'Monday rollover should replace the expired Contract Board');
+ok(rollover.removedGoals===1&&rollover.removedRules===1&&rollover.removedConditions===2,'Rollover should report stale weekly goal, generated rule and condition cleanup');
+ok(!(rollover.state.character?.progressionGoals??[]).some(goal=>goal.kind==='weekly_order'),'Expired Contract Board goals should be removed');
+ok(!rollover.state.character?.idleRulesV40?.some(rule=>rule.id===generatedStop.id)&&!rollover.state.character?.activeIdleRuleIdV40,'Expired generated Contract stop rule should be removed and deactivated');
+const preservedMixed=rollover.state.character?.idleRulesV40?.find(rule=>rule.id===mixedRule.id);ok(preservedMixed?.conditions.length===1&&preservedMixed.conditions[0].kind==='duration_seconds','Custom Idle Rules should keep unrelated conditions when stale weekly conditions are stripped');
+ok(rollover.state.account.weeklyOrderPendingRewards?.[0]?.claimKey===pendingReceipt.claimKey,'Weekly rollover must preserve pending reward receipts from prior weeks');
 
 const summaryState={...state,account:{...state.account,longTermAccountScopeId:accountId,weeklyOrders:generated}};
 const initialSummary=contractBoardSummary(summaryState,now);

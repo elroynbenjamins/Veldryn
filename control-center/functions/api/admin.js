@@ -142,8 +142,9 @@ async function loadRewardValidation(env, definition) {
 }
 
 async function dashboard(env) {
-  const [instances, drafts, audits, draftCount, healthRows, deadLetterCount] = await Promise.all([
+  const [instances, playerEvents, drafts, audits, draftCount, healthRows, deadLetterCount] = await Promise.all([
     list(env, 'liveops_event_instances', 'select=id,event_id,definition_version,starts_at,ends_at,status,definition_snapshot&status=in.(scheduled,active,settling)&order=starts_at.asc&limit=40'),
+    list(env, 'live_events', 'select=event_id,name,currency_id,enabled,starts_at,ends_at,grace_ends_at,priority,modules,config,updated_at&order=priority.desc,name.asc&limit=100'),
     list(env, 'liveops_event_drafts', 'select=id,name,status,updated_at,definition_json&status=eq.draft&order=updated_at.desc&limit=10'),
     list(env, 'liveops_admin_audit_log', 'select=id,actor_email,action,target_type,target_id,created_at&order=created_at.desc&limit=10'),
     countRows(env, 'liveops_event_drafts', 'status=eq.draft'),
@@ -159,6 +160,7 @@ async function dashboard(env) {
     active: active[0] ?? null,
     next: scheduled[0] ?? null,
     workerHealth: healthRows?.[0] ?? null,
+    playerEvents: playerEvents ?? [],
     drafts: drafts ?? [],
     audits: audits ?? [],
   };

@@ -4,7 +4,7 @@ import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {GameState,ItemStack} from '../core/types';
 import {ItemDef,itemDef} from '../content/items';
 import {InventoryFilter,InventorySort,inventoryFavoriteIds,recoveryAmount,storageCapacityStatus,transferAmount,transferError,visibleStacks} from '../core/inventory-view';
-import {claimOverflowToBank,effectiveStats,StorageLocation,storageUpgradePreview,usedSlots} from '../core/game';
+import {claimOverflowToBank,effectiveStats,StorageLocation,storageUpgradePreview} from '../core/game';
 import {ItemCard} from '../components/ItemCard';
 import {ConfirmModal} from '../components/ConfirmModal';
 import {EmptyState} from '../components/EmptyState';

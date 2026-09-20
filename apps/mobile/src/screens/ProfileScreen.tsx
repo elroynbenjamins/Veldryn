@@ -28,9 +28,9 @@ type ProfileDestination='Appearance'|'Collections'|'Achievements'|'Rankings';
 
 export function ProfileScreen({state,onNavigate}:{state:GameState;onNavigate?:(destination:ProfileDestination)=>void}){
  const c=state.character,account=state.account,{session}=useAuthSession();
- const [publicSelf,setPublicSelf]=useState<PublicPlayerProfileV43|null>(null),[loadingPublic,setLoadingPublic]=useState(false);
+ const [publicSelf,setPublicSelf]=useState<PublicPlayerProfileV43|null>(null),[loadingPublic,setLoadingPublic]=useState(false),[publicError,setPublicError]=useState('');
  const summary=useMemo(()=>localProfileSummary(state),[state]);
- const refreshPublic=useCallback(async()=>{if(!onlineConfigured||!session)return;setLoadingPublic(true);try{setPublicSelf(await publicPlayerProfileV43(session.user.id));}catch{setPublicSelf(null);}finally{setLoadingPublic(false)}},[session?.user.id]);
+ const refreshPublic=useCallback(async()=>{if(!onlineConfigured||!session){setPublicSelf(null);setPublicError('');return;}setLoadingPublic(true);setPublicError('');try{setPublicSelf(await publicPlayerProfileV43(session.user.id));}catch(error){setPublicSelf(null);setPublicError(error instanceof Error?error.message:'Unable to refresh your online profile.');}finally{setLoadingPublic(false)}},[session?.user.id]);
  useEffect(()=>{void refreshPublic()},[refreshPublic]);
  if(!c)return <ScrollView contentContainerStyle={s.root}><Text style={s.heading}>Profile</Text><Panel><Text style={s.copy}>Create a character to build your profile.</Text></Panel></ScrollView>;
 
@@ -41,16 +41,17 @@ export function ProfileScreen({state,onNavigate}:{state:GameState;onNavigate?:(d
  const favoriteSkillId=publicSelf?.favoriteSkillId??summary.highestSkill?.skillId;
  const favoriteCompanionId=publicSelf?.favoriteCompanionId??state.character?.equippedCombatCompanionId??state.account.unlockedCombatCompanionIds?.[0];
  const favoriteCompanion=favoriteCompanionId?COMBAT_COMPANIONS.find(row=>row.id===favoriteCompanionId):undefined,favoriteCompanionArt=favoriteCompanionId?companionArtSource(favoriteCompanionId):undefined;
- const online=!!publicSelf,background=c.profileBackgroundId??'asterfall-night',displayName=publicSelf?.character.name??c.name,displayLevel=publicSelf?.character.level??c.level,displayClass=publicSelf?.character.classId??c.classId;
+ const online=!!publicSelf,background=c.profileBackgroundId??'asterfall-night',displayName=publicSelf?.character.name??c.name,displayLevel=publicSelf?.character.level??c.level,displayClass=publicSelf?.character.classId??c.classId,profileStateLabel=publicError?'SYNC ISSUE':publicSelf?.visibility==='public'?'PUBLIC PROFILE':publicSelf?.visibility==='guild'?'GUILD PROFILE':publicSelf?.visibility==='private'?'PRIVATE PROFILE':'LOCAL PROFILE',bioGuidance=onlineConfigured&&session?(session.user.is_anonymous?'Link this guest account before publishing biography and showcase changes.':'Add a short biography in Online Profile settings to tell other players about your character or play style.'):'This local profile is fully usable on-device. Sign in when you want to publish social profile details.';
 
  return <ScrollView contentContainerStyle={s.root}>
-  <View style={s.headingRow}><View style={s.flex}><Text style={s.kicker}>PLAYER IDENTITY</Text><Text accessibilityRole="header" style={s.heading}>Profile</Text></View>{loadingPublic?<ActivityIndicator color={C.accent}/>:<Text style={[s.onlineBadge,online?s.online:s.local]}>{online?'ONLINE PROFILE':'LOCAL PROFILE'}</Text>}</View>
+  <View style={s.headingRow}><View style={s.flex}><Text style={s.kicker}>PLAYER IDENTITY</Text><Text accessibilityRole="header" style={s.heading}>Profile</Text></View>{loadingPublic?<ActivityIndicator color={C.accent}/>:<Text style={[s.onlineBadge,publicError?s.syncIssue:online?s.online:s.local]}>{profileStateLabel}</Text>}</View>
 
-  {publicSelf?<PublicProfileScene profile={publicSelf}/>:<ProfileScenePreview state={state} backgroundId={background}/>}
+  {publicSelf?<PublicProfileScene profile={publicSelf}/>:<ProfileScenePreview state={state} backgroundId={background}/>} 
+  {publicError?<View accessibilityRole="alert" style={s.syncCard}><View style={s.flex}><Text style={s.syncTitle}>Online profile could not refresh</Text><Text style={s.syncText}>Your local identity is still shown safely. Retry to refresh privacy and showcase selections.</Text></View><View style={s.syncButton}><GameButton compact title="Retry" tone="secondary" onPress={()=>void refreshPublic()}/></View></View>:null}
 
   <Panel>
    <View style={s.identityHead}>{account.guildMember?<GuildCrest size={48} bannerId={account.guildBannerId}/>:null}<View style={s.flex}><GuildTaggedPlayerName name={displayName} guildTag={publicSelf?.guildTag} tagColorId={publicSelf?.guildTagColorId} style={s.name}/><Text style={s.title}>“{publicSelf?.title??c.profileTitle??'New Adventurer'}”</Text><Text style={s.copy}>Level {displayLevel} · {label(displayClass)}{account.guildMember?' · Guild member':''}</Text></View></View>
-   {publicSelf?.bio?<Text style={s.bio}>{publicSelf.bio}</Text>:<Text style={s.copy}>Add a short biography in Online Profile settings to tell other players about your character or play style.</Text>}
+   {publicSelf?.bio?<Text style={s.bio}>{publicSelf.bio}</Text>:<Text style={s.copy}>{bioGuidance}</Text>}
    <View style={s.quickActions}>
     <View style={s.action}><GameButton compact title="Appearance" tone="secondary" onPress={()=>onNavigate?.('Appearance')}/></View>
     <View style={s.action}><GameButton compact title="Collections" tone="secondary" onPress={()=>onNavigate?.('Collections')}/></View>
@@ -93,7 +94,7 @@ const s=StyleSheet.create({
  headingRow:{flexDirection:'row',alignItems:'center',gap:spacing.sm},flex:{flex:1,minWidth:0},
  kicker:{...typography.caption,color:equipmentColors.goldSoft,fontWeight:'900',letterSpacing:1},
  heading:{...typography.hero,color:C.text},
- onlineBadge:{fontSize:9,fontWeight:'900',letterSpacing:.7,paddingHorizontal:8,paddingVertical:5,borderRadius:99,borderWidth:1},online:{color:C.good,borderColor:C.good,backgroundColor:'#14261d'},local:{color:C.muted,borderColor:C.line,backgroundColor:C.panel},
+ onlineBadge:{fontSize:9,fontWeight:'900',letterSpacing:.7,paddingHorizontal:8,paddingVertical:5,borderRadius:99,borderWidth:1},online:{color:C.good,borderColor:C.good,backgroundColor:'#14261d'},local:{color:C.muted,borderColor:C.line,backgroundColor:C.panel},syncIssue:{color:C.warning,borderColor:C.warning,backgroundColor:'#332515'},syncCard:{minHeight:60,flexDirection:'row',alignItems:'center',gap:8,padding:spacing.sm,borderWidth:1,borderColor:C.warning,borderRadius:radii.md,backgroundColor:'#332515'},syncTitle:{...typography.bodyStrong,color:C.warning},syncText:{...typography.caption,color:C.muted},syncButton:{width:82},
  identityHead:{flexDirection:'row',alignItems:'center',gap:spacing.sm},name:{...typography.hero,color:C.text},title:{...typography.bodyStrong,color:equipmentColors.goldSoft,fontStyle:'italic'},copy:{...typography.body,color:C.muted,lineHeight:20},bio:{...typography.body,color:C.text,lineHeight:21,marginTop:spacing.sm},
  quickActions:{flexDirection:'row',flexWrap:'wrap',gap:6,marginTop:spacing.md},action:{width:'48%',minWidth:130},
  stats:{flexDirection:'row',flexWrap:'wrap',gap:6},stat:{width:'31.5%',minWidth:92,minHeight:66,padding:8,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel,alignItems:'center',justifyContent:'center'},statValue:{...typography.title,color:C.text},statLabel:{fontSize:8,color:C.muted,fontWeight:'900',letterSpacing:.7,marginTop:2,textAlign:'center'},

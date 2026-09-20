@@ -1,5 +1,5 @@
 import type {ProgressionGoal} from './progression-goals-v40';
-import type {IdleStopCondition} from './idle-rules-v40';
+import type {IdleRuleSet,IdleStopCondition} from './idle-rules-v40';
 import type {WeeklyOrder,WeeklyOrdersState} from './weekly-orders-v41';
 import type {QueuedActivity,SkillId} from './types';
 import type {WorkingTowardDestination} from './working-toward';
@@ -13,6 +13,11 @@ export function weeklyOrderGoal(order:WeeklyOrder,characterId:string,nowMs:numbe
 }
 export function weeklyOrderIdleCondition(order:WeeklyOrder,id=`weekly:${order.id}`):IdleStopCondition{
  return {id,kind:'weekly_order_progress',targetId:order.id,value:order.target,enabled:true};
+}
+export function weeklyOrderIdleRuleId(order:WeeklyOrder){return `contract:${order.id}`.slice(0,80)}
+export function weeklyOrderIdleRule(order:WeeklyOrder,characterId:string):IdleRuleSet{
+ const id=weeklyOrderIdleRuleId(order);
+ return {id,characterId,name:(`Stop · ${order.title}`).slice(0,40),conditions:[weeklyOrderIdleCondition(order,`${id}:done`.slice(0,80))],stopIfOutOfFood:true,stopIfRewardsWouldOverflow:true,finishCurrentCycle:true};
 }
 export function weeklyOrderProgressMap(state:WeeklyOrdersState){return Object.fromEntries(state.orders.map(order=>[order.id,order.progress]))}
 export function weeklyOrderPriority(input:{regionCompletionPercent?:number;masteryRank?:number;recentlyTargeted?:boolean}){

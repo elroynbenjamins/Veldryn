@@ -269,6 +269,8 @@ function renderEvents() {
         const savedClaimEndMs=claimEnd?Date.parse(claimEnd):NaN;
         const canEnable=roleAtLeast('owner')&&phase==='disabled'&&row.starts_at&&row.ends_at&&Number.isFinite(savedClaimEndMs)&&savedClaimEndMs>nowMs;
         const visibleConflict=visiblePlayerEvent&&visiblePlayerEvent.event_id!==row.event_id?visiblePlayerEvent:null;
+        const annualSeason=row.event_id.match(/^(EVT_ANNUAL_\d{3})_(\d{4})$/);
+        const canCloneSeason=roleAtLeast('owner')&&!!annualSeason;
         const canSchedule=roleAtLeast(row.enabled?'owner':'editor');
         const canGoLive=roleAtLeast('owner')&&phase!=='live'&&!visibleConflict;
         return `<div class="list-row event-row ${h(phase)}">
@@ -280,6 +282,7 @@ function renderEvents() {
             ${visibleConflict?`<p class="tiny" style="margin-top:5px">Go live is blocked while <strong>${h(visibleConflict.name||visibleConflict.event_id)}</strong> is visible.</p>`:''}
           </div>
           <div class="list-meta"><div class="actions" style="justify-content:flex-end">
+            ${canCloneSeason?`<button class="btn btn-sm btn-ghost" data-action="clone-player-event-season" data-id="${attr(row.event_id)}">Clone season</button>`:''}
             ${canSchedule?`<button class="btn btn-sm btn-ghost" data-action="schedule-player-event" data-id="${attr(row.event_id)}">${row.enabled?'Adjust schedule':'Schedule'}</button>`:''}
             ${canEnable?`<button class="btn btn-sm" data-action="toggle-player-event" data-id="${attr(row.event_id)}" data-enabled="true">Enable schedule</button>`:''}
             ${canGoLive?`<button class="btn btn-sm btn-primary" data-action="go-live-player-event" data-id="${attr(row.event_id)}">Go live now</button>`:''}
@@ -939,6 +942,16 @@ app.addEventListener('click', async (event) => {
       const row=await api('cloneDefinitionToDraft',{eventId:el.dataset.id,version:Number(el.dataset.version)}); toast('Published definition cloned as next version.','success'); await loadPageData('builder'); state.currentDraftId=row.id; state.page='builder'; return render();
     }
     if (action === 'open-leaderboard' || action === 'open-event-stats') { state.page='leaderboards'; state.loading=true; render(); await loadPageData('leaderboards'); await loadLeaderboard(el.dataset.id); state.loading=false; return render(); }
+    if (action === 'clone-player-event-season') {
+      const row=state.playerEvents.find(x=>x.event_id===el.dataset.id); if(!row)return;
+      const match=row.event_id.match(/^(EVT_ANNUAL_\d{3})_(\d{4})$/); if(!match)throw new Error('Only annual events can be cloned into a new season.');
+      const defaultYear=Number(match[2])+1;
+      const targetYear=Number(prompt(`Clone ${row.name||row.event_id} into which season year?`,String(defaultYear)));
+      if(!Number.isInteger(targetYear)||targetYear<2026||targetYear>2100||targetYear===Number(match[2]))throw new Error('Choose a different whole season year between 2026 and 2100.');
+      if(!confirm(`Create ${match[1]}_${targetYear} as a disabled, unscheduled season? Player progress and currency will start separately.`))return;
+      const created=await api('clonePlayerEventSeason',{eventId:row.event_id,targetYear});
+      toast(`Created ${created?.event_id||`${match[1]}_${targetYear}`}. Schedule it, then enable it when ready.`,'success'); return navigate('events');
+    }
     if (action === 'schedule-player-event') {
       const row=state.playerEvents.find(x=>x.event_id===el.dataset.id); if(!row)return;
       const now=Date.now(), defaultStart=row.starts_at||new Date(now+3600000).toISOString(), defaultEnd=row.ends_at||new Date(now+14*86400000).toISOString();

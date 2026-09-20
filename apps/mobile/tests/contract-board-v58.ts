@@ -1,7 +1,7 @@
 import {createCharacter,newGame} from '../src/core/game';
 import {weeklyOrderCandidatesFromCurrentContent} from '../src/core/launch-readiness-v47';
 import {applyTrustedLongTermProgression,weeklyOrderBoardForState} from '../src/core/long-term-progression-runtime';
-import {applyWeeklyOrderProgress,generateWeeklyOrders} from '../src/core/weekly-orders-v41';
+import {applyWeeklyOrderProgress,DEFAULT_WEEKLY_ORDER_POLICY,generateWeeklyOrders} from '../src/core/weekly-orders-v41';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 const now=Date.UTC(2026,8,21,12,0,0),accountId='contract-board-test';
@@ -17,9 +17,11 @@ ok(!candidates.some(row=>row.kind==='threat'),'Threat Bounties should not appear
 let mastered={...state,character:{...state.character!,monsterMasteryPoints:{MOSS_RAT:500}}};const masteredCandidates=weeklyOrderCandidatesFromCurrentContent(mastered),threatCandidates=masteredCandidates.filter(row=>row.kind==='threat');ok(threatCandidates.length===3,'Mastery 20 Moss Rat should expose all three Threat Bounty tiers');
 
 const generated=generateWeeklyOrders(accountId,now,candidates);
-ok(generated.orders.filter(row=>row.kind==='hunt').length===2,'default board should have two Hunt Orders');
-ok(generated.orders.filter(row=>row.kind==='profession').length===2,'default board should have two Work Orders');
-ok(generated.orders.filter(row=>row.kind==='regional').length===1,'default board should have one Regional Problem');
+const availableCount=(kind:typeof candidates[number]['kind'])=>candidates.filter(row=>row.kind===kind&&row.available&&row.source.available).length;
+ok(generated.orders.filter(row=>row.kind==='hunt').length===Math.min(DEFAULT_WEEKLY_ORDER_POLICY.huntSlots,availableCount('hunt')),'default board fills available Hunt Order slots');
+ok(generated.orders.filter(row=>row.kind==='profession').length===Math.min(DEFAULT_WEEKLY_ORDER_POLICY.professionSlots,availableCount('profession')),'default board fills available Work Order slots');
+ok(generated.orders.filter(row=>row.kind==='regional').length===Math.min(DEFAULT_WEEKLY_ORDER_POLICY.regionalSlots,availableCount('regional')),'default board fills available Regional Problem slots');
+ok(generated.orders.filter(row=>row.kind==='threat').length===0,'fresh board should not fabricate locked Threat Bounties');
 const generatedRegional=generated.orders.find(row=>row.kind==='regional');ok(!!generatedRegional?.brief&&generatedRegional.reward.label.includes('Relief Cache'),'Generated Regional Problem should preserve authored brief and regional reward identity');
 const masteredBoard=generateWeeklyOrders(accountId+'-mastered',now,masteredCandidates),threat=masteredBoard.orders.find(row=>row.kind==='threat');ok(!!threat&&!!threat.challengeId&&threat.reward.label.includes('Bounty Cache'),'Mastered board should generate one tier-specific Threat Bounty');
 

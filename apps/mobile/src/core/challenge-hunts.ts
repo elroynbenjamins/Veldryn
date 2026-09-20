@@ -85,6 +85,15 @@ export function challengeHuntLabel(id:CombatChallengeId|undefined,monsterName:st
 
 export function challengeHuntClearKey(monsterId:string,challengeId:CombatChallengeId){return `${monsterId}:${challengeId}`;}
 export function challengeHuntCleared(state:GameState,monsterId:string,challengeId:CombatChallengeId){return !!state.character?.challengeHuntClearIds?.includes(challengeHuntClearKey(monsterId,challengeId));}
+export function challengeHuntClearSummary(state:GameState,monsterId:string){
+ const rows=COMBAT_CHALLENGE_IDS.map(id=>({id,def:COMBAT_CHALLENGES[id],unlocked:challengeHuntUnlocked(state,monsterId,id),cleared:challengeHuntCleared(state,monsterId,id)}));
+ const cleared=rows.filter(row=>row.cleared).length;
+ return {rows,cleared,total:rows.length,conquered:cleared===rows.length};
+}
+export function challengeConquestSummary(state:GameState,monsterIds:readonly string[]){
+ const rows=monsterIds.map(monsterId=>({monsterId,...challengeHuntClearSummary(state,monsterId)}));
+ return {species:rows.length,clears:rows.reduce((sum,row)=>sum+row.cleared,0),possible:rows.length*COMBAT_CHALLENGE_IDS.length,conqueredSpecies:rows.filter(row=>row.conquered).length};
+}
 export function challengeHuntFirstClearReward(monster:MonsterDef,challengeId:CombatChallengeId){
  const level=Math.max(1,monster.level);
  const tier=challengeId==='ferocious'?{gold:20,dust:2,cores:0}:challengeId==='hardened'?{gold:34,dust:4,cores:1}:challengeId==='nemesis'?{gold:55,dust:7,cores:1}:{gold:90,dust:10,cores:2};

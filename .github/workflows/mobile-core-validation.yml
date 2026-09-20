@@ -46,5 +46,5 @@ jobs:
         run: pnpm test:collectibles
       - name: Run companion validation
         run: pnpm test:companions
-      - name: Run online transport validation
-        run: pnpm --dir ../../backend test:online
+      - name: Run seasonal expedition online transport validation
+        run: pnpm --dir ../../backend test:event-expedition-online

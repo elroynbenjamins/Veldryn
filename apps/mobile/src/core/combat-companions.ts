@@ -177,6 +177,10 @@ export function companionUnlockRequirementMet(state:CombatCompanionStateHost,req
   if(target==='KNIFE_DANCER_SKILL_TOTAL'&&state.character?.classId==='KNIFE_DANCER')return normalizeClassSkills('KNIFE_DANCER',state.character.classSkills).reduce((sum,s)=>sum+s.level,0)>=amount;
   if(requirement.type==='monster_mastery'&&state.character?.monsterMasteryPoints?.[target]!==undefined)return Math.floor((normalizeMonsterMastery(state.character.monsterMasteryPoints)[target]??0)/25)>=amount;
   if(target==='ASTERFALL_MASTERY_20_ALL'&&state.character?.monsterMasteryPoints)return Object.values(normalizeMonsterMastery(state.character.monsterMasteryPoints)).filter(n=>n>=500).length>=amount;
+  if(requirement.type==='meta'&&target.startsWith('COMPANION_BOND:')){
+    const companionId=target.slice('COMPANION_BOND:'.length),progress=state.account.combatCompanionProgress?.[companionId];
+    return (progress?.bondLevel??0)>=amount;
+  }
   if(requirement.type==='meta'&&['REG_SUNSCAR','REG_FROSTMARCH','REG_ASHLANDS'].includes(target)){
     const owned=new Set(state.account.unlockedCombatCompanionIds??[]);
     const regionalNonPrestige=COMBAT_COMPANIONS.filter(def=>def.origin.id===target&&def.rarity!=='prestige');

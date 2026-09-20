@@ -23,8 +23,8 @@ function active(definition:EventExpeditionDefinition,nowMs:number):boolean{
  return lateYear||earlyYear;
 }
 
-/** The schedule is authoritative, but routes remain preview-only until their
- * server start/settlement transport is deployed. */
+/** Calendar dates are presentation metadata only. Authenticated co-op entry promotes
+ * the matching route to available only when the authoritative LiveOps event is active. */
 export function eventExpeditionPreviews(nowMs:number):Array<EventExpeditionDefinition&{status:'preview';scheduled:boolean}>{
  return EVENT_EXPEDITIONS.map(definition=>({...definition,status:'preview' as const,scheduled:active(definition,nowMs)}));
 }

@@ -6,7 +6,7 @@ import {deriveOnlineCoopLoadout} from '../coop-loadout';
 import {OnlineEventExpeditionRuntime} from '../event-expedition-runtime';
 
 function preparedState(classId:ClassId,name:string,level:number):GameState{
- const state=createCharacter(newGame(0),classId,name);state.character!.level=level;
+ const state=createCharacter(newGame(0),classId,name);state.character!.id=`EVENT_TEST_${name.toUpperCase().replace(/[^A-Z0-9]+/g,'_')}`;state.character!.level=level;
  state.character!.equipment=Object.fromEntries(noviceSetFor(classId).slots.map(slot=>[slot,noviceItemId(classId,slot)]));
  return state;
 }

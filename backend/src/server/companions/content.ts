@@ -229,6 +229,15 @@ export const COMPANION_SPECIAL_CHALLENGES:CompanionSpecialChallengeDefinition[]=
  {id:'CHALLENGE_OATHGLASS_KNIGHTLING',name:'Oathglass Reflection Trial',bossId:'BOSS_COMPANION_OATHGLASS',rewardCompanionId:'UNIT_012',recommendedTeamPower:3800,requirements:[
   {type:'trial_floor',amount:20,description:'Reach Companion Trial Floor 20.'},{type:'boss_clear_count',target:'FALLEN_KNIGHT',amount:10,description:'Defeat the Fallen Knight 10 times.'},{type:'companion_owned',target:'UNIT_007',amount:1,description:'Own Gloamknife Shade.'},{type:'companion_bond_total',amount:18,originId:'REG_001',description:'Reach 18 total Bond across Asterfall companions.'},
  ]},
+ {id:'CHALLENGE_TYRANTS_HEIR',name:"Tyrant's Heir Trial",bossId:'BOSS_COMPANION_TYRANT_HEIR',rewardCompanionId:'UNIT_016',recommendedTeamPower:3950,requirements:[
+  {type:'trial_floor',amount:20,description:'Reach Companion Trial Floor 20.'},{type:'companion_owned',target:'UNIT_013',description:'Own Dune Stalker.'},{type:'companion_owned',target:'UNIT_014',description:'Own Oasis Djinnling.'},{type:'companion_owned',target:'UNIT_015',description:'Own Solar Scarab.'},{type:'companion_bond_total',amount:18,originId:'REG_SUNSCAR',description:'Reach 18 total Bond across Sunscar companions.'},
+ ]},
+ {id:'CHALLENGE_WYRM_ECHO',name:'Wyrm Echo Trial',bossId:'BOSS_COMPANION_WYRM_ECHO',rewardCompanionId:'UNIT_020',recommendedTeamPower:4200,requirements:[
+  {type:'trial_floor',amount:25,description:'Reach Companion Trial Floor 25.'},{type:'companion_owned',target:'UNIT_017',description:'Own Rime Wolf Pup.'},{type:'companion_owned',target:'UNIT_018',description:'Own Bell Sprite.'},{type:'companion_owned',target:'UNIT_019',description:'Own Choir Golem.'},{type:'companion_bond_total',amount:18,originId:'REG_FROSTMARCH',description:'Reach 18 total Bond across Frostmarch companions.'},
+ ]},
+ {id:'CHALLENGE_REGENT_SHADE',name:'Regent Shade Trial',bossId:'BOSS_COMPANION_REGENT_SHADE',rewardCompanionId:'UNIT_024',recommendedTeamPower:4400,requirements:[
+  {type:'trial_floor',amount:30,description:'Reach Companion Trial Floor 30.'},{type:'companion_owned',target:'UNIT_021',description:'Own Obsidian Drakelet.'},{type:'companion_owned',target:'UNIT_022',description:'Own Forge Custodian.'},{type:'companion_owned',target:'UNIT_023',description:'Own Primal Spark.'},{type:'companion_bond_total',amount:21,originId:'REG_ASHLANDS',description:'Reach 21 total Bond across Ashlands companions.'},
+ ]},
  {id:'CHALLENGE_ASHEN_SUNWYRM_FUTURE',name:'Ashen Sunwyrm Challenge',bossId:'BOSS_COMPANION_ASHEN_SUNWYRM',rewardCompanionId:'FUTURE_ASHEN_SUNWYRM',recommendedTeamPower:4350,requirements:[
   {type:'region_completion',target:'REG_SUNSCAR',description:'Complete Sunscar story progression.'},{type:'trial_floor',amount:25,description:'Reach Companion Trial Floor 25.'},{type:'boss_clear_count',target:'SUNSCAR_REGIONAL_BOSS',amount:15,description:'Defeat the Sunscar regional boss 15 times.'},{type:'companion_bond_total',amount:18,originId:'REG_SUNSCAR',description:'Reach 18 total Bond across Sunscar companions.'},
  ]},

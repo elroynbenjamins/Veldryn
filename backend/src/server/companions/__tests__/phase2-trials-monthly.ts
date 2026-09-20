@@ -1,4 +1,4 @@
-import {COMPANION_TRIAL_FLOOR_COUNT,companionTrialReward} from '../content';
+import {COMPANION_TRIAL_FLOOR_COUNT,COMPANION_WEEKLY_CHALLENGES,companionTrialReward,companionTrialSeasonDefinition} from '../content';
 import {applyCompanionTrialModifiers,buildCompanionTrialEncounter,companionTrialBossPreview,companionTrialEncounterTheme,companionTrialFloorDefinition,resolveCompanionTrialFloor,startCompanionTrial} from '../trials';
 import {companionTrialResetInfo,companionTrialSeasonKey,createCompanionTrialProgress,rolloverCompanionTrialSeason} from '../trial-season';
 import {projectCompanionTrial} from '../projection';
@@ -11,6 +11,17 @@ const busy=new Set<string>();
 const win:CompanionCombatExecutor={simulate(input){ok(input.players.length===3,'Trial did not send exactly three companion combatants');ok(input.players.every(x=>x.tags?.includes('companion_trial')),'Non-companion player leaked into Trial');return {victory:true,durationMs:30000,reason:'victory',players:input.players.map(x=>({definition:{id:x.id},alive:true}))};}};
 const lose:CompanionCombatExecutor={simulate(input){return {victory:false,durationMs:60000,reason:'wipe',players:input.players.map((x,i)=>({definition:{id:x.id},alive:i===0}))};}};
 const sep=Date.UTC(2026,8,11,12),oct=Date.UTC(2026,9,1,0,0,1);
+const monthlySets:Record<string,string[]>={
+ '2026-09':['NO_PRESTIGE_15','SUNSCAR_PAIR','WORLDLY_TRIO'],
+ '2026-10':['STANDARD_BOSS','FROSTMARCH_PAIR','FLAWLESS_15'],
+ '2026-11':['RARITY_SPECTRUM','ASHLANDS_PAIR','UNDER_POWER_20'],
+};
+for(const [seasonKey,expected] of Object.entries(monthlySets)){
+ const season=companionTrialSeasonDefinition(seasonKey);eq(season.specialChallenges.join(','),expected.join(','),`${seasonKey} monthly challenge rotation`);
+ const defs=season.specialChallenges.map(id=>COMPANION_WEEKLY_CHALLENGES.find(row=>row.id===id));ok(defs.every(Boolean),`${seasonKey} references unknown monthly challenge`);
+ eq(defs.reduce((sum,row)=>sum+(row?.rewards.bondstones??0),0),1,`${seasonKey} monthly challenge Bondstone budget`);
+}
+
 // Required Trial tests 11-21.
 ok(companionTrialFloorDefinition(20,'2026-09').recommendedPower>companionTrialFloorDefinition(1,'2026-09').recommendedPower,'Floor scaling did not increase');for(let f=1;f<=30;f++)eq(companionTrialFloorDefinition(f,'2026-09').boss,f%5===0,`Boss cadence wrong on ${f}`);
 // Encounter identity changes every five-floor band without changing boss cadence.

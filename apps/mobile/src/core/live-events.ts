@@ -2,6 +2,7 @@ import {liveEventDef,type EventActivitySource,type EventMilestone,type EventRewa
 import {random01} from './rng';
 import type {GameState,LiveEventRuntime,RewardBundle} from './types';
 import {unlockCombatCompanion} from './combat-companions';
+import {combatCompanionDef} from '../content/combat-companions';
 
 export type EventPhase='upcoming'|'active'|'claiming';
 export function eventLifecycle(state:GameState,nowMs=Date.now()){const runtime=state.account.liveEvent;if(!runtime?.enabled)return null;const definition=liveEventDef(runtime.eventId);if(!definition)return null;const claimEndsAtMs=runtime.endsAtMs+definition.claimGraceDays*86400_000;if(nowMs<runtime.startsAtMs)return {runtime,definition,phase:'upcoming' as const,claimEndsAtMs};if(nowMs<runtime.endsAtMs)return {runtime,definition,phase:'active' as const,claimEndsAtMs};if(nowMs<claimEndsAtMs)return {runtime,definition,phase:'claiming' as const,claimEndsAtMs};return null;}
@@ -34,7 +35,12 @@ export function grantEventActivity(state:GameState,source:'crafting'|'boss',nowM
 function addReward(state:GameState,reward:EventReward,nowMs=Date.now()):GameState{
   const account={...state.account};
   let character=state.character;
-  if(reward.kind==='companion')return unlockCombatCompanion(state,reward.id,nowMs);
+  if(reward.kind==='companion'){
+    const alreadyOwned=state.account.unlockedCombatCompanionIds?.includes(reward.id)??false;
+    const unlocked=unlockCombatCompanion(state,reward.id,nowMs),def=combatCompanionDef(reward.id);
+    if(!alreadyOwned&&def?.origin.type==='event')return {...unlocked,account:{...unlocked.account,companionMaterials:{...(unlocked.account.companionMaterials??{}),EVENT_BONDBLOOM:(unlocked.account.companionMaterials?.EVENT_BONDBLOOM??0)+4}}};
+    return unlocked;
+  }
   if(reward.kind==='skin')account.unlockedEventSkinIds=[...new Set([...(account.unlockedEventSkinIds??[]),reward.id])];
   else if(reward.kind==='pet'){
     account.unlockedCosmeticPetIds=[...new Set([...(account.unlockedCosmeticPetIds??[]),reward.id])];

@@ -8,6 +8,7 @@ interface HostCharacter{id:string;classId:VeldrynClassId;gold:number;equippedCom
 interface HostCharacterProgress{character:HostCharacter;}
 interface HostAccount{
   companionBossClears?:Record<string,number>;
+  companionSpecialClears?:string[];
   companionMaterials?:Record<string,number>;
   companionTrialProgress?:{season:{activeRun?:{teamCompanionIds:string[]}}};
   unlockedCombatCompanionIds?:string[];
@@ -177,6 +178,7 @@ export function companionUnlockRequirementMet(state:CombatCompanionStateHost,req
   if(requirement.type==='quest')return (state.quests??[]).some(entry=>entry.questId===target&&entry.status==='claimed');
   if(requirement.type==='boss_kills')return Math.max((state.defeatedBossIds??[]).includes(target)?1:0,state.account.companionBossClears?.[target]??0)>=amount;
   if(requirement.type==='skill_level')return (state.skills??[]).some(skill=>skill.skillId===target&&skill.level>=amount);
+  if(requirement.type==='event_challenge'&&target.startsWith('CHALLENGE_'))return state.account.companionSpecialClears?.includes(target)===true;
   return (state.account.companionUnlockProgress?.[target]??0)>=amount;
 }
 export function reconcileCombatCompanionUnlocks<T extends CombatCompanionStateHost>(state:T,nowMs=Date.now()):T{

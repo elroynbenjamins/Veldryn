@@ -4,6 +4,7 @@ import {companionUnlockRequirementMet} from './combat-companions';
 import {MONSTERS} from '../content/monsters';
 import {GATHERING,RECIPES} from '../content/skills';
 import {ITEMS} from '../content/items';
+import {COMBAT_COMPANIONS} from '../content/combat-companions';
 import {characterClassSkills} from './class-skills';
 import {monsterMastery} from './monster-mastery';
 
@@ -23,6 +24,12 @@ export function companionRequirementProgress(state:GameState,req:CompanionDefini
  if(req.type==='quest')current=state.quests.some(q=>q.questId===target&&q.status==='claimed')?1:0;
  if(req.type==='skill_level')current=state.skills.find(s=>s.skillId===target)?.level??0;
  if(req.type==='boss_kills')current=Math.max(state.defeatedBossIds.includes(target)?1:0,state.account.companionBossClears?.[target]??0);
+ if(req.type==='meta'&&['REG_SUNSCAR','REG_FROSTMARCH','REG_ASHLANDS'].includes(target)){
+   const owned=new Set(state.account.unlockedCombatCompanionIds??[]);
+   const regionalNonPrestige=COMBAT_COMPANIONS.filter(def=>def.origin.id===target&&def.rarity!=='prestige');
+   current=regionalNonPrestige.filter(def=>owned.has(def.id)).length;
+ }
+ if(req.type==='event_challenge'&&target.startsWith('CHALLENGE_'))current=state.account.companionSpecialClears?.includes(target)?1:0;
  if(target==='SILVERBROOK_NODES'){
    const nodes=GATHERING.filter(g=>g.zoneId==='SILVERBROOK');
    return {current:nodes.filter(g=>state.account.companionUnlockProgress?.[`node:${g.id}`]).length,total:nodes.length,complete:companionUnlockRequirementMet(state,req)};

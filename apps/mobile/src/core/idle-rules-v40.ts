@@ -11,9 +11,10 @@ export function evaluateIdleRuleSet(rules:IdleRuleSet,ctx:IdleEvaluationContext)
  for(const c of rules.conditions)if(reached(c,ctx))return {shouldStop:true,conditionId:c.id,safety:c.kind==='food_below'||c.kind==='free_slots_below',reason:c.kind==='weekly_order_progress'?'Weekly Order target completed.':'Configured stop target reached.'};
  return {shouldStop:false,safety:false};
 }
-/** V40/V41 idle rules are stop-only. They never start, chain or travel to another activity. */
+/** Idle Rules remain stop-only: they never choose the next action or auto-travel. A separate Action Queue may use a non-safety stop as a same-region handoff point. */
 export const IDLE_RULES_CAN_AUTO_TRAVEL=false;
 export const IDLE_RULES_CAN_CHAIN_ACTIVITIES=false;
+export const IDLE_RULES_CAN_ADVANCE_ACTION_QUEUE=true;
 
 const IDLE_KINDS:IdleStopKind[]=['item_quantity','skill_level','monster_kills','session_kills','champion_defeats','weekly_order_progress','food_below','free_slots_below','duration_seconds'];
 export function normalizeIdleRuleSets(value:unknown,characterId:string):IdleRuleSet[]{

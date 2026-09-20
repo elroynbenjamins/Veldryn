@@ -45,6 +45,50 @@ export function weeklyOrderBoardForState(state:GameState,nowMs=Date.now()){
  const accountId=state.account.longTermAccountScopeId??`local-account:${state.createdAtMs}`;
  return ensureWeeklyOrders(state,accountId,nowMs);
 }
+
+export interface WeeklyOrderRolloverCleanup{
+ state:GameState;
+ changed:boolean;
+ previousWeekKey?:string;
+ weekKey:string;
+ removedGoals:number;
+ removedRules:number;
+ removedConditions:number;
+}
+function cleanWeeklyOrderCharacter(character:NonNullable<GameState['character']>,activeOrderIds:Set<string>){
+ let removedGoals=0,removedRules=0,removedConditions=0;
+ const progressionGoals=(character.progressionGoals??[]).filter(goal=>{
+  const keep=goal.kind!=='weekly_order'||activeOrderIds.has(goal.orderId);
+  if(!keep)removedGoals++;return keep;
+ });
+ const idleRulesV40=(character.idleRulesV40??[]).flatMap(rule=>{
+  const conditions=rule.conditions.filter(condition=>{
+   const keep=condition.kind!=='weekly_order_progress'||!!condition.targetId&&activeOrderIds.has(condition.targetId);
+   if(!keep)removedConditions++;return keep;
+  });
+  const generatedContractRule=rule.id.startsWith('contract:');
+  if(generatedContractRule&&!conditions.some(condition=>condition.kind==='weekly_order_progress')){removedRules++;return [];}
+  return [{...rule,conditions}];
+ });
+ const activeIdleRuleIdV40=idleRulesV40.some(rule=>rule.id===character.activeIdleRuleIdV40)?character.activeIdleRuleIdV40:undefined;
+ return {character:{...character,progressionGoals,idleRulesV40,activeIdleRuleIdV40},removedGoals,removedRules,removedConditions};
+}
+/** Remove only expired Weekly Order projections when the Monday UTC board rolls over. Pending rewards are intentionally preserved. */
+export function reconcileWeeklyOrderRollover(input:GameState,nowMs=Date.now()):WeeklyOrderRolloverCleanup{
+ const board=weeklyOrderBoardForState(input,nowMs),previousWeekKey=input.account.weeklyOrders?.weekKey;
+ if(previousWeekKey===board.weekKey)return {state:input,changed:false,previousWeekKey,weekKey:board.weekKey,removedGoals:0,removedRules:0,removedConditions:0};
+ const activeOrderIds=new Set(board.orders.map(order=>order.id));
+ let removedGoals=0,removedRules=0,removedConditions=0;
+ const active=input.character?cleanWeeklyOrderCharacter(input.character,activeOrderIds):undefined;
+ if(active){removedGoals+=active.removedGoals;removedRules+=active.removedRules;removedConditions+=active.removedConditions;}
+ const otherCharacters=(input.otherCharacters??[]).map(entry=>{
+  const cleaned=cleanWeeklyOrderCharacter(entry.character,activeOrderIds);
+  removedGoals+=cleaned.removedGoals;removedRules+=cleaned.removedRules;removedConditions+=cleaned.removedConditions;
+  return {...entry,character:cleaned.character};
+ });
+ const state={...input,character:active?.character??input.character,otherCharacters,account:{...input.account,weeklyOrders:board}} as GameState;
+ return {state,changed:true,previousWeekKey,weekKey:board.weekKey,removedGoals,removedRules,removedConditions};
+}
 function ensureJournal(state:GameState,accountId:string):JournalState{
  const existing=state.account.journalState;
  return existing?.schemaVersion===42&&existing.accountId===accountId?existing:newJournalState(accountId);

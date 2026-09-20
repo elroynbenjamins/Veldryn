@@ -23,6 +23,6 @@ export function journalEntries(state:GameState,filter:JournalFilter,query:string
     const quest=state.quests.find(item=>item.questId===def.id);
     if(!quest)return [];
     const matches=filter==='all'||(filter==='current'?quest.status==='active'||quest.status==='complete':quest.status===filter);
-    return matches&&`${def.name} ${def.description}`.toLowerCase().includes(search)?[{def,quest,chapter:index+1,remaining:Math.max(0,def.required-quest.progress),previous:QUESTS[index-1]?.name}]:[];
+    return matches&&`${def.name} ${def.description} ${def.location} ${def.story}`.toLowerCase().includes(search)?[{def,quest,chapter:index+1,remaining:Math.max(0,def.required-quest.progress),previous:QUESTS[index-1]?.name}]:[];
   });
 }

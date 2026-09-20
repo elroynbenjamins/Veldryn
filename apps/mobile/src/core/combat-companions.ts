@@ -184,9 +184,9 @@ export function companionUnlockRequirementMet(state:CombatCompanionStateHost,req
   if(requirement.type==='boss_kills')return Math.max((state.defeatedBossIds??[]).includes(target)?1:0,state.account.companionBossClears?.[target]??0)>=amount;
   if(requirement.type==='skill_level')return (state.skills??[]).some(skill=>skill.skillId===target&&skill.level>=amount);
   const regionalTarget:Record<string,{region:string;field:'echoesCompleted'|'dungeonsCompleted'}>={
-    SUNSCAR_ECHOES:{region:'SUNSCAR',field:'echoesCompleted'},SUNSCAR_DUNGEONS:{region:'SUNSCAR',field:'dungeonsCompleted'},
-    FROSTMARCH_ECHOES:{region:'FROSTMARCH',field:'echoesCompleted'},FROSTMARCH_DUNGEONS:{region:'FROSTMARCH',field:'dungeonsCompleted'},
-    ASHLANDS_ECHOES:{region:'ASHLANDS',field:'echoesCompleted'},ASHLANDS_DUNGEONS:{region:'ASHLANDS',field:'dungeonsCompleted'},
+    SUNSCAR_ECHOES:{region:'REG_002',field:'echoesCompleted'},SUNSCAR_DUNGEONS:{region:'REG_002',field:'dungeonsCompleted'},
+    FROSTMARCH_ECHOES:{region:'REG_003',field:'echoesCompleted'},FROSTMARCH_DUNGEONS:{region:'REG_003',field:'dungeonsCompleted'},
+    ASHLANDS_ECHOES:{region:'REG_004',field:'echoesCompleted'},ASHLANDS_DUNGEONS:{region:'REG_004',field:'dungeonsCompleted'},
   };
   const regional=regionalTarget[target];if(regional)return (state.regionalProgressById?.[regional.region]?.[regional.field]??0)>=amount;
   if(requirement.type==='event_challenge'&&target.startsWith('CHALLENGE_'))return state.account.companionSpecialClears?.includes(target)===true;

@@ -13,7 +13,7 @@
     "test:pre-codex": "node -e \"require('fs').rmSync('.core-build',{recursive:true,force:true})\" && tsc -p tsconfig.core.json --outDir .core-build && node .core-build/apps/mobile/tests/offline-smoke.js && node .core-build/apps/mobile/tests/equipment-screen.js && node .core-build/apps/mobile/tests/quick-navigation.js && node .core-build/apps/mobile/tests/pre-codex-smoke.js",
     "typecheck": "tsc --noEmit",
     "test:companions": "node ../../tools/test-companions.mjs",
-    "test:master-roster": "node ../../tools/validate-master-roster-assets.mjs",
+    "test:master-roster": "node ../../tools/validate-master-roster-assets.mjs && node ../../tools/validate-companion-art-coverage.mjs",
     "test:online": "tsc -p tsconfig.core.json --outDir .core-build && node .core-build/apps/mobile/tests/online-gameplay.js",
     "test:v16": "tsc -p tsconfig.core.json --outDir .core-build && node .core-build/apps/mobile/tests/party-social-v16.js",
     "typecheck:search-loadouts": "tsc -p tsconfig.search-loadouts.json --noEmit",

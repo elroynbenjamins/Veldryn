@@ -1,5 +1,6 @@
 import { strict as assert } from 'node:assert';
 import { EVENT_EXPEDITIONS } from '../event-expeditions';
+import { EVENT_ENCOUNTERS } from '../../../combat/content/event-encounters';
 
 for(const event of EVENT_EXPEDITIONS){
  assert.equal(new Set(event.routeHighlights).size,3);
@@ -11,6 +12,8 @@ for(const event of EVENT_EXPEDITIONS){
  assert.ok(/^EVENT_[A-Z0-9_]+_BOSS$/.test(event.bossEncounterId));
  assert.ok(event.minLevel>0&&event.rewardMarks>0);
  assert.ok(event.startMonth>=1&&event.startMonth<=12&&event.endMonth>=1&&event.endMonth<=12);
+ for(const encounterId of [1,2,3].map(index=>`${event.encounterPrefix}_BATTLE_0${index}`))assert.ok(EVENT_ENCOUNTERS[encounterId],`${encounterId} should have combat content`);
+ assert.ok(EVENT_ENCOUNTERS[event.bossEncounterId],`${event.bossEncounterId} should have boss combat content`);
 }
 assert.ok(EVENT_EXPEDITIONS.some(event=>event.id==='EVENT_VEILBREAK_HOLLOW_BELFRY'));
 assert.ok(EVENT_EXPEDITIONS.some(event=>event.id==='EVENT_MERCHANT_BROKEN_TOLLHOUSE'));

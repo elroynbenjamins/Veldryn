@@ -99,5 +99,10 @@ let startNext=createCharacter(newGame(now),'WAYFINDER','Start Next');
 startNext=enqueueActivity(startNext,{kind:'combat',targetId:'MOSS_RAT',huntGoalId:'kills_50'});
 startNext=executeGameCommand(startNext,{type:'queue_start'},now).state;
 ok(startNext.activity?.targetId==='MOSS_RAT'&&!startNext.character?.activityQueue?.length,'Start-next command should consume and start the first valid queued action');
+let blockedStart=createCharacter(newGame(now),'WAYFINDER','Blocked Start');
+blockedStart={...blockedStart,unlockedMonsterIds:['MOSS_RAT','SILVERFIN_SWARM']};
+blockedStart=enqueueActivity(blockedStart,{kind:'combat',targetId:'SILVERFIN_SWARM'});
+const blockedStartStatus=activityQueueHandoffStatus(blockedStart);
+ok(!blockedStartStatus.nextReady&&(blockedStartStatus.nextBlocker??'').includes('Travel to Silverbrook'),'Idle queue preflight should block a known cross-region manual start before the command is sent');
 
 console.log(JSON.stringify({status:'PASS',plannedNext:advanced.state.activity?.targetId,safetyReason:safetyStop.state.character?.activityQueuePausedReason,regionReason:paused.state.character?.activityQueuePausedReason}));

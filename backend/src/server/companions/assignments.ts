@@ -1,8 +1,28 @@
-import {COMPANION_EXPEDITION_BOND_RATE,COMPANION_EXPEDITION_BONUS_CHANCE_CAP,COMPANION_EXPEDITION_GRADE_THRESHOLDS,COMPANION_EXPEDITION_PEN_DURATION_REDUCTION,companionMission,companionServerDefinition} from './content';
+import {COMPANION_EXPEDITION_BOND_RATE,COMPANION_EXPEDITION_BONUS_CHANCE_CAP,COMPANION_EXPEDITION_GRADE_THRESHOLDS,COMPANION_EXPEDITION_PEN_DURATION_REDUCTION,COMPANION_MISSIONS,companionMission,companionServerDefinition} from './content';
 import {companionTeamPower} from './team';
+import {companionTrialWeekKey} from './trial-season';
 import type {CompanionAssignment,CompanionAssignmentReward,CompanionEconomyState,CompanionMissionRequirement,OwnedCompanionSnapshot} from './domain';
 
 export const companionExpeditionPenCapacity=(level:number)=>level<=0?0:Math.min(3,Math.max(1,Math.floor(level)));
+export const COMPANION_EXPEDITION_WEEKLY_COUNT=6;
+function rotationHash(text:string){let h=2166136261>>>0;for(const ch of text){h^=ch.charCodeAt(0);h=Math.imul(h,16777619)>>>0;}return h>>>0;}
+export function activeCompanionMissions(serverNowMs:number){
+ const weekKey=companionTrialWeekKey(serverNowMs),seed=rotationHash(weekKey);
+ const fixed=companionMission('MISSION_SCOUT_2H');
+ if(!fixed)throw new Error('starter_companion_mission_missing');
+ const buckets=[
+  ['MISSION_APPRENTICE_3H','MISSION_SILVERBROOK_4H','MISSION_ASTERFALL_SHRINE_8H'],
+  ['MISSION_SUNSCAR_4H','MISSION_SUNSCAR_RUINS_8H'],
+  ['MISSION_FROST_SCOUT_4H','MISSION_FROST_8H'],
+  ['MISSION_ASH_RESCUE_8H','MISSION_ASH_12H'],
+ ] as const;
+ const definitions=[fixed],selected=new Set([fixed.id]);
+ buckets.forEach((ids,index)=>{const id=ids[(seed+index*7)%ids.length],mission=companionMission(id);if(mission&&!selected.has(mission.id)){definitions.push(mission);selected.add(mission.id);}});
+ const remaining=COMPANION_MISSIONS.filter(row=>!selected.has(row.id));
+ if(remaining.length){const wildcard=remaining[(seed>>>5)%remaining.length];definitions.push(wildcard);selected.add(wildcard.id);}
+ return {weekKey,definitions:definitions.slice(0,COMPANION_EXPEDITION_WEEKLY_COUNT)};
+}
+
 export function busyCompanionIds(assignments:readonly CompanionAssignment[]){return new Set(assignments.filter(x=>x.status==='active').flatMap(x=>x.companionIds));}
 export function rolloverCompanionAssignmentStatuses(assignments:readonly CompanionAssignment[],serverNowMs:number){return assignments.map(a=>a.status==='active'&&serverNowMs>=Date.parse(a.endsAt)?{...a,status:'completed' as const}:a);}
 function hash(text:string){let h=2166136261>>>0;for(const ch of text){h^=ch.charCodeAt(0);h=Math.imul(h,16777619)>>>0;}return h>>>0;}
@@ -27,8 +47,8 @@ export function companionMissionRequirementSatisfied(requirement:CompanionMissio
 }
 function missionBonusSatisfied(missionId:string,ids:readonly string[],owned:Record<string,OwnedCompanionSnapshot>){const mission=companionMission(missionId);if(!mission)return false;if(mission.bonusRequirements?.length)return mission.bonusRequirements.every(r=>companionMissionRequirementSatisfied(r,ids,owned));return !!mission.bonusOriginId&&ids.some(id=>companionServerDefinition(id)?.originId===mission.bonusOriginId);}
 export function predictedCompanionMissionGrade(missionId:string,ids:string[],owned:Record<string,OwnedCompanionSnapshot>):'C'|'B'|'A'|'S'{const mission=companionMission(missionId);if(!mission)throw new Error('unknown_companion_mission');const power=companionTeamPower(ids,owned),ratio=power/Math.max(1,mission.recommendedPower),bonus=missionBonusSatisfied(missionId,ids,owned);return ratio>=COMPANION_EXPEDITION_GRADE_THRESHOLDS.S&&bonus?'S':ratio>=COMPANION_EXPEDITION_GRADE_THRESHOLDS.A?'A':ratio>=COMPANION_EXPEDITION_GRADE_THRESHOLDS.B?'B':'C';}
-export function validateCompanionMissionTeam(input:{missionId:string;companionIds:string[];owned:Record<string,OwnedCompanionSnapshot>;assignments:CompanionAssignment[];equippedCompanionIds:ReadonlySet<string>;lockedTrialCompanionIds?:ReadonlySet<string>;expeditionPensLevel?:number;unavailableCompanionIds?:ReadonlySet<string>}){
- const mission=companionMission(input.missionId);if(!mission)return {ok:false as const,reason:'unknown_companion_mission'};const ids=input.companionIds;if(ids.length<mission.minCompanions||ids.length>mission.maxCompanions)return {ok:false as const,reason:'invalid_mission_team_size'};if(new Set(ids).size!==ids.length)return {ok:false as const,reason:'duplicate_companion'};if((input.expeditionPensLevel??3)<(mission.minimumPenLevel??1))return {ok:false as const,reason:'companion_expedition_pen_tier'};
+export function validateCompanionMissionTeam(input:{missionId:string;companionIds:string[];owned:Record<string,OwnedCompanionSnapshot>;assignments:CompanionAssignment[];equippedCompanionIds:ReadonlySet<string>;lockedTrialCompanionIds?:ReadonlySet<string>;expeditionPensLevel?:number;unavailableCompanionIds?:ReadonlySet<string>;serverNowMs?:number}){
+ const mission=companionMission(input.missionId);if(!mission)return {ok:false as const,reason:'unknown_companion_mission'};if(input.serverNowMs!==undefined&&!activeCompanionMissions(input.serverNowMs).definitions.some(row=>row.id===mission.id))return {ok:false as const,reason:'companion_mission_not_active'};const ids=input.companionIds;if(ids.length<mission.minCompanions||ids.length>mission.maxCompanions)return {ok:false as const,reason:'invalid_mission_team_size'};if(new Set(ids).size!==ids.length)return {ok:false as const,reason:'duplicate_companion'};if((input.expeditionPensLevel??3)<(mission.minimumPenLevel??1))return {ok:false as const,reason:'companion_expedition_pen_tier'};
  const busy=busyCompanionIds(input.assignments);
  for(const id of ids){const p=input.owned[id],d=companionServerDefinition(id);if(!p||!d)return {ok:false as const,reason:'companion_not_owned'};if(input.unavailableCompanionIds?.has(id))return {ok:false as const,reason:'companion_unavailable'};if(busy.has(id))return {ok:false as const,reason:'companion_busy'};if(input.equippedCompanionIds.has(id))return {ok:false as const,reason:'equipped_companion_cannot_be_assigned'};if(input.lockedTrialCompanionIds?.has(id))return {ok:false as const,reason:'trial_companion_cannot_be_assigned'};if((mission.minimumLevel??1)>p.level)return {ok:false as const,reason:'companion_below_mission_level'};if((mission.minimumBondLevel??1)>p.bondLevel)return {ok:false as const,reason:'companion_below_mission_bond'};if(mission.requiredRarities&&!mission.requiredRarities.includes(d.rarity))return {ok:false as const,reason:'companion_rarity_not_allowed'};if(mission.requiredOriginId&&d.originId!==mission.requiredOriginId)return {ok:false as const,reason:'companion_origin_not_allowed'};}
  for(const [role,count] of Object.entries(mission.requiredRoles??{}))if(count&&(roleCounts(ids)[role as keyof ReturnType<typeof roleCounts>]??0)<count)return {ok:false as const,reason:`mission_requires_${role}`};

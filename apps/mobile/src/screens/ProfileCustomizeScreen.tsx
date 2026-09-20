@@ -12,9 +12,9 @@ export function ProfileCustomizeScreen({state,onChange}:{state:GameState;onChang
  return <ScrollView contentContainerStyle={s.root}>
   <View style={s.headingRow}>
    <View style={s.flex}><Text style={s.kicker}>PROFILE CUSTOMIZATION</Text><Text accessibilityRole="header" style={s.heading}>Customize Profile</Text></View>
-   <View style={s.liveBadge}><Text style={s.liveBadgeText}>LIVE PREVIEW</Text></View>
+   <View style={s.liveBadge}><Text style={s.liveBadgeText}>{section==='Appearance'?'LIVE PREVIEW':'PROFILE SETTINGS'}</Text></View>
   </View>
-  <Text style={s.intro}>Shape the identity other players see. Appearance stays character-based; social details and showcases are account profile settings.</Text>
+  <Text style={s.intro}>Shape the identity other players see. Appearance is saved per character; social details and showcases belong to your account profile.</Text>
 
   <View accessibilityRole="tablist" style={s.tabs}>
    <Pressable accessibilityRole="tab" accessibilityState={{selected:section==='Appearance'}} onPress={()=>setSection('Appearance')} style={({pressed})=>[s.tab,section==='Appearance'&&s.tabOn,pressed&&s.pressed]}>

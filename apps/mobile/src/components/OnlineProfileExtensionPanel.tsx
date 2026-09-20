@@ -22,7 +22,7 @@ export function OnlineProfileExtensionPanel({state,onSaved}:{state:GameState;onS
  const guest=!!session?.user.is_anonymous;
  const [value,setValue]=useState<ProfileExtensionSelfV43|null>(null),[savedValue,setSavedValue]=useState<ProfileExtensionSelfV43|null>(null),[bio,setBio]=useState(''),[picker,setPicker]=useState<Picker>(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
  const load=async()=>{if(!onlineConfigured||!session)return;setBusy(true);setError('');try{const row=await selfProfileExtensionV43();setValue(row);setSavedValue(row);setBio(row.bio);}catch(reason){setError(reason instanceof Error?reason.message:'Unable to load profile settings.')}finally{setBusy(false)}};
- useEffect(()=>{void load()},[session?.user.id]);
+ useEffect(()=>{setValue(null);setSavedValue(null);setBio('');setPicker(null);setNotice('');setError('');void load()},[session?.user.id]);
  const characters=[...(state.character?[state.character]:[]),...(state.otherCharacters??[]).map(row=>row.character)];
  const skills=state.skills.map(row=>({id:row.skillId,label:row.skillId.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}));
  const companions=(state.account.unlockedCombatCompanionIds??[]).map(id=>({id,label:COMBAT_COMPANIONS.find(row=>row.id===id)?.name??id.replace(/_/g,' ')}));

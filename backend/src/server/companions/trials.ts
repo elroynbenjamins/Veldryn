@@ -26,10 +26,10 @@ export function companionTrialFloorDefinition(floor:number,seasonKey:string):Com
  if(floor<1||floor>COMPANION_TRIAL_FLOOR_COUNT||!Number.isInteger(floor))throw new Error('invalid_companion_trial_floor');
  const season=companionTrialSeasonDefinition(seasonKey),theme=companionTrialEncounterTheme(floor);return {floor,recommendedPower:companionTrialRecommendedPower(floor),modifiers:[...new Set([...season.modifiers,...companionTrialFloorModifiers(floor)])],boss:floor%COMPANION_TRIAL_BOSS_INTERVAL===0,encounterTheme:theme.id};
 }
-interface TrialEnemyProfile{name:string;hp:number;attack:number;defense:number;haste:number;basicMs:number;basicCoeff:number;ability?:CompanionCombatantDefinition['abilities'][number];abilities?:CompanionCombatantDefinition['abilities'];tags:string[];}
+interface TrialEnemyProfile{name:string;hp:number;attack:number;defense:number;haste:number;basicMs:number;basicCoeff:number;ability?:CompanionCombatantDefinition['abilities'][number];abilities?:CompanionCombatantDefinition['abilities'];phases?:NonNullable<CompanionCombatantDefinition['phases']>;tags:string[];}
 function enemy(id:string,name:string,floor:number,boss=false,profile?:Partial<TrialEnemyProfile>):CompanionCombatantDefinition{
  const scale=companionTrialEnemyScale(floor),baseHp=boss?520:180,baseAttack=boss?28:15,baseDefense=boss?24:12;
- return {id,name,team:'enemies',role:'enemy',level:floor,stats:{maxHp:Math.round(baseHp*(profile?.hp??1)*scale),attackPower:Number((baseAttack*(profile?.attack??1)*scale).toFixed(2)),healingPower:0,defense:Number((baseDefense*(profile?.defense??1)*scale).toFixed(2)),accuracy:.88,evasion:.04,critChance:.05,critMultiplier:1.5,haste:Math.min(.35,.03+floor*.004+(profile?.haste??0))},basicAttackMs:profile?.basicMs??(boss?2200:2500),basicAttackCoeff:profile?.basicCoeff??(boss?.82:.55),abilities:profile?.abilities??(profile?.ability?[profile.ability]:[]),boss,tags:['companion_trial_enemy',boss?'boss':'normal',...(profile?.tags??[])]};
+ return {id,name,team:'enemies',role:'enemy',level:floor,stats:{maxHp:Math.round(baseHp*(profile?.hp??1)*scale),attackPower:Number((baseAttack*(profile?.attack??1)*scale).toFixed(2)),healingPower:0,defense:Number((baseDefense*(profile?.defense??1)*scale).toFixed(2)),accuracy:.88,evasion:.04,critChance:.05,critMultiplier:1.5,haste:Math.min(.35,.03+floor*.004+(profile?.haste??0))},basicAttackMs:profile?.basicMs??(boss?2200:2500),basicAttackCoeff:profile?.basicCoeff??(boss?.82:.55),abilities:profile?.abilities??(profile?.ability?[profile.ability]:[]),boss,phases:profile?.phases,tags:['companion_trial_enemy',boss?'boss':'normal',...(profile?.tags??[])]};
 }
 export function applyCompanionTrialModifiers(players:CompanionCombatantDefinition[],enemies:CompanionCombatantDefinition[],modifierIds:readonly string[]){
  let playerHealing=1,playerHaste=0,playerShield=1,enemyDefense=1,enemyAttack=1,enemyHp=1,enemyHaste=0,enemyAccuracy=0;
@@ -57,6 +57,14 @@ function normalTrialProfiles(theme:CompanionTrialEncounterTheme):TrialEnemyProfi
 }
 function trialBossProfile(floor:number,theme:CompanionTrialEncounterTheme):TrialEnemyProfile{
  const bossIndex=Math.max(1,Math.floor(floor/COMPANION_TRIAL_BOSS_INTERVAL));
+ const phaseProfiles:Array<NonNullable<CompanionCombatantDefinition['phases']>>=[
+  [{id:'TRIAL_PHASE_5_BASTION',name:'Runic Bastion',hpPct:.55,target:'self',effects:[{kind:'buff',value:-.12,durationMs:10000,tag:'damage_taken'}]}],
+  [{id:'TRIAL_PHASE_10_FURY',name:"Tyrant's Ascendance",hpPct:.65,target:'self',effects:[{kind:'buff',value:.12,durationMs:12000,tag:'damage_done'}]},{id:'TRIAL_PHASE_10_FRACTURE',name:'Glass Fracture',hpPct:.35,target:'all_enemies',effects:[{kind:'debuff',value:.06,durationMs:8000,tag:'damage_taken'}]}],
+  [{id:'TRIAL_PHASE_15_TOLL',name:'White Silence Toll',hpPct:.60,target:'all_enemies',effects:[{kind:'damage',coeff:.45,tag:'frostbell_phase'},{kind:'debuff',value:.07,durationMs:7000,tag:'damage_taken'}]}],
+  [{id:'TRIAL_PHASE_20_OVERHEAT',name:'Crucible Overheat',hpPct:.50,target:'current_target',effects:[{kind:'damage',coeff:.90,tag:'crucible_phase'},{kind:'debuff',value:.10,durationMs:8000,tag:'damage_taken'}]}],
+  [{id:'TRIAL_PHASE_25_RIFT',name:'Rift Unbound',hpPct:.70,target:'all_enemies',effects:[{kind:'damage',coeff:.48,tag:'rift_phase'}]},{id:'TRIAL_PHASE_25_FRENZY',name:'Riftfire Frenzy',hpPct:.35,target:'self',effects:[{kind:'buff',value:.12,durationMs:12000,tag:'damage_done'}]}],
+  [{id:'TRIAL_PHASE_30_DECREE',name:'Final Decree',hpPct:.75,target:'all_enemies',effects:[{kind:'damage',coeff:.52,tag:'regent_phase'},{kind:'debuff',value:.05,durationMs:9000,tag:'damage_taken'}]},{id:'TRIAL_PHASE_30_CROWN',name:'Echo Crown',hpPct:.40,target:'self',effects:[{kind:'buff',value:.15,durationMs:14000,tag:'damage_done'},{kind:'buff',value:-.08,durationMs:14000,tag:'damage_taken'}]}],
+ ];
  const profiles:CompanionCombatantDefinition['abilities'][]=[
   [
    {id:'TRIAL_BOSS_5_SHOCKWAVE',name:'Runic Shockwave',cooldownMs:15000,castTimeMs:0,target:'all_enemies',effects:[{kind:'damage',coeff:.66,tag:'runebound_colossus'}],priority:80,aiCondition:'multiple_enemies'},
@@ -81,7 +89,7 @@ function trialBossProfile(floor:number,theme:CompanionTrialEncounterTheme):Trial
    {id:'TRIAL_BOSS_30_JUDGMENT',name:"Crown's Judgment",cooldownMs:16500,castTimeMs:1600,interruptible:true,target:'current_target',effects:[{kind:'damage',coeff:1.15,tag:'regent_judgment'}],priority:90,aiCondition:'always'},
   ],
  ];
- return {name:theme.bossName,hp:1,attack:1,defense:1,haste:bossIndex>=5?.015:0,basicMs:2200,basicCoeff:.82,tags:[`trial_boss_theme:${theme.id}`],abilities:profiles[Math.min(profiles.length-1,bossIndex-1)]};
+ return {name:theme.bossName,hp:1,attack:1,defense:1,haste:bossIndex>=5?.015:0,basicMs:2200,basicCoeff:.82,tags:[`trial_boss_theme:${theme.id}`],abilities:profiles[Math.min(profiles.length-1,bossIndex-1)],phases:phaseProfiles[Math.min(phaseProfiles.length-1,bossIndex-1)]};
 }
 export function companionTrialBossPreview(floor:number){
  if(!Number.isInteger(floor)||floor<1||floor>COMPANION_TRIAL_FLOOR_COUNT||floor%COMPANION_TRIAL_BOSS_INTERVAL!==0)return undefined;
@@ -96,7 +104,8 @@ export function companionTrialBossPreview(floor:number){
   })));
   return {name:ability.name,target:ability.target,interruptible:ability.interruptible===true,castTimeMs:ability.castTimeMs,effects,condition:ability.aiCondition==='self_below_50'?'below 50% HP':undefined};
  });
- return {floor,name:profile.name,theme:theme.label,abilities};
+ const phases=(profile.phases??[]).map(phase=>({name:phase.name??phase.id,hpPct:phase.hpPct,effects:Array.from(new Set(phase.effects.map(effect=>effect.kind==='damage'?'burst damage':effect.kind==='debuff'&&effect.tag==='damage_taken'?'vulnerability':effect.kind==='buff'&&effect.tag==='damage_done'?'damage boost':effect.kind==='buff'&&effect.tag==='damage_taken'?'defensive stance':effect.kind.replace(/_/g,' '))))}));
+ return {floor,name:profile.name,theme:theme.label,abilities,phases};
 }
 function rawCompanionTrialEncounter(floor:number){
  const theme=companionTrialEncounterTheme(floor),boss=floor%COMPANION_TRIAL_BOSS_INTERVAL===0;

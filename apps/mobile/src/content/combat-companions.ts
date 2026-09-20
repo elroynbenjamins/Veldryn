@@ -100,15 +100,15 @@ const REGIONAL_UNLOCKS:Record<string,CompanionDefinition['unlockRequirements']>=
   UNIT_013:[req('monster_mastery','Reach Sunscar Scorpion Mastery 20','SUNSCAR_SCORPION',20)],
   UNIT_014:[req('achievement','Complete the Mirage Basin Echo achievement','MIRAGE_BASIN_ECHO',1)],
   UNIT_015:[req('dungeon_clears','Clear Buried Observatory 20 times','BURIED_OBSERVATORY_CLEARS',20)],
-  UNIT_016:[req('meta','Complete the Sunscar companion meta challenge','SUNSCAR_COMPANION_META',1)],
+  UNIT_016:[req('event_challenge',"Defeat the Tyrant's Heir companion challenge",'CHALLENGE_TYRANTS_HEIR',1)],
   UNIT_017:[req('monster_mastery','Reach Frostwolf Mastery 20','FROSTWOLF',20)],
   UNIT_018:[req('achievement','Complete the Shiverlake companion achievements','SHIVERLAKE_COMPANION_ACHIEVEMENTS',3)],
   UNIT_019:[req('dungeon_clears','Clear Choir Caverns 20 times','CHOIR_CAVERNS_CLEARS',20)],
-  UNIT_020:[req('meta','Complete the Frostmarch companion meta challenge','FROSTMARCH_COMPANION_META',1)],
+  UNIT_020:[req('event_challenge','Defeat the Wyrm Echo companion challenge','CHALLENGE_WYRM_ECHO',1)],
   UNIT_021:[req('monster_mastery','Reach Blackglass Mireling Mastery 20','BLACKGLASS_MIRELING',20)],
   UNIT_022:[req('dungeon_clears','Clear Crucible Depths 20 times','CRUCIBLE_DEPTHS_CLEARS',20)],
   UNIT_023:[req('achievement','Complete the Ashlands Echo companion achievement','ASHLANDS_ECHO_COMPANION',1)],
-  UNIT_024:[req('meta','Complete the Ashlands companion meta challenge','ASHLANDS_COMPANION_META',1)],
+  UNIT_024:[req('event_challenge','Defeat the Regent Shade companion challenge','CHALLENGE_REGENT_SHADE',1)],
 };
 const REGIONAL_COMPANIONS:CompanionDefinition[]=[
   regional('UNIT_013','Dune Stalker','rare','damage',[req('monster_mastery','Reach Sunscar Scorpion Mastery 20','SUNSCAR_SCORPION',20)],'Assassin / poison pressure',SUNSCAR,'AMBERGLASS','damage'),

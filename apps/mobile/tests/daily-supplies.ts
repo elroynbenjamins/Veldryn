@@ -46,7 +46,7 @@ let activation=createCharacter(newGame(t0),'WAYFINDER','Activation');
 activation={...activation,character:{...activation.character!,dailySupplyBoostBank:{gathering_yield:1}}};
 activation=activateDailySupplyBoost(activation,'gathering_yield');
 home=dailySuppliesHomeSummary(activation,t0);
-ok(home.visible&&!home.canClaim&&home.activeLabel?.includes('Gathering Yield')&&home.activeRemainingSeconds===DAILY_SUPPLY_CHARGE_SECONDS,'Home should surface the active Daily Supplies boost and remaining qualifying time');
+ok(home.visible&&home.activeLabel?.includes('Gathering Yield')&&home.activeRemainingSeconds===DAILY_SUPPLY_CHARGE_SECONDS,'Home should surface the active Daily Supplies boost and remaining qualifying time even if today\'s claim is also ready');
 equal(activation.character?.activeDailySupplyBoost?.remainingSeconds,DAILY_SUPPLY_CHARGE_SECONDS,'Activated charge should contain exactly two hours of qualifying time');
 equal(activation.character?.dailySupplyBoostBank?.gathering_yield,undefined,'Activation should consume one banked charge');
 rejects(()=>activateDailySupplyBoost({...activation,character:{...activation.character!,dailySupplyBoostBank:{combat_xp:1}}},'combat_xp'),'Daily Supplies boosts must not stack percentage-wise');

@@ -255,25 +255,32 @@ function playerEventStatusPill(phase) {
 function renderEvents() {
   const rows = state.instances || [];
   const playerRows = state.playerEvents || [];
+  const nowMs = Date.now();
+  const visiblePlayerEvent = playerRows.find(row => ['live','claiming'].includes(playerEventPhase(row, nowMs))) || null;
+  const visiblePlayerPhase = visiblePlayerEvent ? playerEventPhase(visiblePlayerEvent, nowMs) : null;
   return shell(`
     <div class="page-head"><div><div class="eyebrow">Player events + Party Live-Ops</div><h2>Events</h2><p>Control the Event screen players see, then manage competitive Party Event instances separately.</p></div><div class="actions"><button class="btn btn-primary" data-nav="builder">Create Party Event</button></div></div>
     <div class="card" style="margin-bottom:14px"><div class="card-head"><div><h3>Player Event screen</h3><div class="tiny muted">Annual/general events from <span class="mono">live_events</span>. This is the authority used by the mobile Event screen.</div></div><span class="pill">Server controlled</span></div><div class="card-body">
+      ${visiblePlayerEvent ? `<div class="validation-item ${visiblePlayerPhase==='live'?'ok':'warn'}" style="margin-bottom:12px">Player Event screen currently shows <strong>${h(visiblePlayerEvent.name||visiblePlayerEvent.event_id)}</strong> (${visiblePlayerPhase==='live'?'earning active':'claim grace'}). Other events cannot go live until this visibility window closes or the current event is Hard off.</div>` : `<div class="validation-item ok" style="margin-bottom:12px">Player Event screen currently has <strong>no visible event</strong>. Enabled scheduled events will appear automatically at their start time.</div>`}
       <div class="validation-item ok" style="margin-bottom:12px">Normal shutdown: use <strong>End now</strong>. Earning stops immediately while the claim window stays open. <strong>Hard off</strong> is an emergency master switch and also closes claims.</div>
       <div class="list">${playerRows.length ? playerRows.map(row => {
-        const phase=playerEventPhase(row);
+        const phase=playerEventPhase(row,nowMs);
         const claimEnd=row.grace_ends_at || (row.ends_at ? new Date(Date.parse(row.ends_at)+Math.max(0,Number(row.config?.claimGraceDays??7)||0)*86400000).toISOString() : null);
         const savedClaimEndMs=claimEnd?Date.parse(claimEnd):NaN;
-        const canEnable=roleAtLeast('owner')&&phase==='disabled'&&row.starts_at&&row.ends_at&&Number.isFinite(savedClaimEndMs)&&savedClaimEndMs>Date.now();
-        const canGoLive=roleAtLeast('owner')&&phase!=='live';
+        const canEnable=roleAtLeast('owner')&&phase==='disabled'&&row.starts_at&&row.ends_at&&Number.isFinite(savedClaimEndMs)&&savedClaimEndMs>nowMs;
+        const visibleConflict=visiblePlayerEvent&&visiblePlayerEvent.event_id!==row.event_id?visiblePlayerEvent:null;
+        const canSchedule=roleAtLeast(row.enabled?'owner':'editor');
+        const canGoLive=roleAtLeast('owner')&&phase!=='live'&&!visibleConflict;
         return `<div class="list-row event-row ${h(phase)}">
           <div style="min-width:0;flex:1"><div class="actions"><strong>${h(row.name||row.event_id)}</strong>${playerEventStatusPill(phase)}<span class="pill ${row.enabled?'good':'bad'}">Master ${row.enabled?'ON':'OFF'}</span></div>
             <p><span class="mono">${h(row.event_id)}</span> · ${h(row.currency_id||'No currency')} · priority ${h(row.priority??0)}</p>
             <p class="small muted">${row.starts_at&&row.ends_at?`${fmtDate(row.starts_at)} → ${fmtDate(row.ends_at)}`:'No runtime window configured yet.'}</p>
             ${claimEnd? `<p class="tiny faint">Claims through ${fmtDate(claimEnd)} · ${utc(claimEnd)}</p>`:''}
             <p class="tiny faint">Modules: ${h((row.modules||[]).join(', ')||'default')} · updated ${fmtDate(row.updated_at)}</p>
+            ${visibleConflict?`<p class="tiny" style="margin-top:5px">Go live is blocked while <strong>${h(visibleConflict.name||visibleConflict.event_id)}</strong> is visible.</p>`:''}
           </div>
           <div class="list-meta"><div class="actions" style="justify-content:flex-end">
-            ${roleAtLeast('editor')?`<button class="btn btn-sm btn-ghost" data-action="schedule-player-event" data-id="${attr(row.event_id)}">Schedule</button>`:''}
+            ${canSchedule?`<button class="btn btn-sm btn-ghost" data-action="schedule-player-event" data-id="${attr(row.event_id)}">${row.enabled?'Adjust schedule':'Schedule'}</button>`:''}
             ${canEnable?`<button class="btn btn-sm" data-action="toggle-player-event" data-id="${attr(row.event_id)}" data-enabled="true">Enable schedule</button>`:''}
             ${canGoLive?`<button class="btn btn-sm btn-primary" data-action="go-live-player-event" data-id="${attr(row.event_id)}">Go live now</button>`:''}
             ${phase==='live'&&roleAtLeast('owner')?`<button class="btn btn-sm" data-action="end-player-event" data-id="${attr(row.event_id)}">End now</button>`:''}
@@ -938,7 +945,11 @@ app.addEventListener('click', async (event) => {
       const start=prompt('Event start (ISO 8601; UTC recommended):',new Date(defaultStart).toISOString()); if(!start)return;
       const end=prompt('Event end (ISO 8601; UTC recommended):',new Date(defaultEnd).toISOString()); if(!end)return;
       const grace=Number(prompt('Claim grace days after the event ends (0–30):',String(row.config?.claimGraceDays??7))); if(!Number.isInteger(grace)||grace<0||grace>30)throw new Error('Claim grace must be a whole number from 0 to 30.');
-      await api('schedulePlayerEvent',{eventId:row.event_id,startsAt:start,endsAt:end,claimGraceDays:grace}); toast('Player event schedule updated. Enable it when ready.','success'); return navigate('events');
+      const reason=row.enabled?prompt(`Reason for adjusting the enabled ${row.name||row.event_id} schedule (10+ characters):`,'Live-Ops schedule adjustment'):'';
+      if(row.enabled&&reason===null)return;
+      if(row.enabled&&!confirm('This event is already enabled. Adjusting its schedule can change what players see. Continue?'))return;
+      await api('schedulePlayerEvent',{eventId:row.event_id,startsAt:start,endsAt:end,claimGraceDays:grace,...(row.enabled?{reason}:{})});
+      toast(row.enabled?'Enabled player event schedule updated.':'Player event schedule updated. Enable it when ready.','success'); return navigate('events');
     }
     if (action === 'toggle-player-event') {
       const row=state.playerEvents.find(x=>x.event_id===el.dataset.id); if(!row)return; const enable=el.dataset.enabled==='true';

@@ -1,0 +1,35 @@
+name: Control Center validation
+
+on:
+  pull_request:
+    paths:
+      - 'control-center/**'
+      - '.github/workflows/control-center-validation.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'control-center/**'
+      - '.github/workflows/control-center-validation.yml'
+  workflow_dispatch:
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Check Control Center JavaScript syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' file; do
+            echo "Checking $file"
+            node --input-type=module --check < "$file"
+          done < <(find control-center -type f -name '*.js' -print0)

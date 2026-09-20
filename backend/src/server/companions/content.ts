@@ -55,7 +55,7 @@ export const COMPANION_SERVER_DEFINITIONS:CompanionServerDefinition[]=raw.map(([
 }));
 export const companionServerDefinition=(id:string)=>COMPANION_SERVER_DEFINITIONS.find(x=>x.id===id);
 
-export const COMPANION_TECHNIQUE_UNLOCK={ascensionTier:2,bondLevel:7,mode:'all' as const};
+export const COMPANION_TECHNIQUE_UNLOCK={ascensionTier:2,bondLevel:7,mode:'any' as const};
 
 type TechniqueSeed={suffix:string;name:string;description:string;effects:CompanionTechniqueDefinition['effects']};
 const CUSTOM_TECHNIQUE_SEEDS:Record<string,readonly TechniqueSeed[]>={
@@ -178,7 +178,7 @@ export const COMPANION_EXPEDITION_BOND_RATE=.25;
 export const COMPANION_EXPEDITION_GRADE_THRESHOLDS={B:1.10,A:1.25,S:1.50} as const;
 export const COMPANION_EXPEDITION_PEN_DURATION_REDUCTION:Record<number,number>={0:0,1:0,2:.03,3:.05};
 export const COMPANION_EXPEDITION_BONUS_CHANCE_CAP=.20;
-export const COMPANION_TECHNIQUE_SWITCH_COST={gold:2500,companionEssence:80};
+export const COMPANION_TECHNIQUE_SWITCH_COST={gold:0,companionEssence:80};
 export const COMPANION_SYNERGY_COMBAT_CAP=1.06;
 
 export interface CompanionTrialModifierConfig{

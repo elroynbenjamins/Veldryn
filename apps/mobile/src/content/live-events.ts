@@ -84,4 +84,19 @@ export const LIVE_EVENT_CATALOG:LiveEventDef[]=[{
   ],
 },TURNING_OF_THE_AGE_EVENT,HEARTBOND_EVENT,BLOOMWAKE_EVENT,SUNCREST_GAMES_EVENT,STARFALL_NIGHTS_EVENT,VEILBREAK_EVENT,MERCHANT_GUILD_FESTIVAL_EVENT,FROSTFALL_EVENT];
 
-export function liveEventDef(id:string){return LIVE_EVENT_CATALOG.find(event=>event.id===id);}
+function annualEventSeriesId(id:string){const match=id.match(/^(EVT_ANNUAL_\d{3})_(\d{4})$/);return match?.[1];}
+
+/**
+ * Resolve a seasonal runtime ID against the production event template catalog.
+ * Runtime IDs stay year-specific so progress, balances, claims and purchase limits
+ * never leak between annual runs, while content can reuse the same template until
+ * a future season intentionally ships different rewards or balance.
+ */
+export function liveEventDef(id:string){
+  const exact=LIVE_EVENT_CATALOG.find(event=>event.id===id);
+  if(exact)return exact;
+  const series=annualEventSeriesId(id);
+  if(!series)return undefined;
+  const template=LIVE_EVENT_CATALOG.find(event=>annualEventSeriesId(event.id)===series);
+  return template?{...template,id}:undefined;
+}

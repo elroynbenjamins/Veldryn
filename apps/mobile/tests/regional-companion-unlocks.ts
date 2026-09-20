@@ -12,45 +12,69 @@ ok(regional.every(def=>def.unlockRequirements.every(req=>req.target!==def.id)),'
 
 const masteryTargets=[
   ['UNIT_013','SUNSCAR_SCORPION'],
-  ['UNIT_014','DUNE_ORACLE'],
-  ['UNIT_015','GLASSBOUND_SENTINEL'],
   ['UNIT_017','FROSTWOLF'],
-  ['UNIT_018','BELLWRAITH'],
-  ['UNIT_019','CHOIR_HUNTER'],
   ['UNIT_021','BLACKGLASS_MIRELING'],
-  ['UNIT_022','CINDER_TITAN'],
-  ['UNIT_023','ASHEN_REVENANT'],
 ] as const;
-
 for(const [id,target] of masteryTargets){
-  const def=combatCompanionDef(id)!;
-  equal(def.unlockRequirements[0]?.type,'monster_mastery',`${id} uses monster mastery`);
-  equal(def.unlockRequirements[0]?.target,target,`${id} uses live monster target`);
-  equal(def.unlockRequirements[0]?.amount,20,`${id} requires mastery 20`);
+  const requirement=combatCompanionDef(id)!.unlockRequirements[0]!;
+  equal(requirement.type,'monster_mastery',`${id} uses monster mastery`);
+  equal(requirement.target,target,`${id} uses a live regional monster`);
+  equal(requirement.amount,20,`${id} requires mastery 20`);
+}
+
+const echoTargets=[
+  ['UNIT_014','SUNSCAR_ECHOES'],
+  ['UNIT_018','FROSTMARCH_ECHOES'],
+  ['UNIT_023','ASHLANDS_ECHOES'],
+] as const;
+for(const [id,target] of echoTargets){
+  const requirement=combatCompanionDef(id)!.unlockRequirements[0]!;
+  equal(requirement.type,'achievement',`${id} uses regional Echo progress`);
+  equal(requirement.target,target,`${id} Echo target`);
+  equal(requirement.amount,3,`${id} requires three Echoes`);
+}
+
+const dungeonTargets=[
+  ['UNIT_015','SUNSCAR_DUNGEONS'],
+  ['UNIT_019','FROSTMARCH_DUNGEONS'],
+  ['UNIT_022','ASHLANDS_DUNGEONS'],
+] as const;
+for(const [id,target] of dungeonTargets){
+  const requirement=combatCompanionDef(id)!.unlockRequirements[0]!;
+  equal(requirement.type,'dungeon_clears',`${id} uses regional dungeon-set progress`);
+  equal(requirement.target,target,`${id} dungeon target`);
+  equal(requirement.amount,3,`${id} requires the authored three-dungeon set`);
 }
 
 const prestigeTargets=[
-  ['UNIT_016','REG_SUNSCAR',['UNIT_013','UNIT_014','UNIT_015']],
-  ['UNIT_020','REG_FROSTMARCH',['UNIT_017','UNIT_018','UNIT_019']],
-  ['UNIT_024','REG_ASHLANDS',['UNIT_021','UNIT_022','UNIT_023']],
+  ['UNIT_016','CHALLENGE_TYRANTS_HEIR'],
+  ['UNIT_020','CHALLENGE_WYRM_ECHO'],
+  ['UNIT_024','CHALLENGE_REGENT_SHADE'],
 ] as const;
-
-for(const [id,target,owned] of prestigeTargets){
-  const def=combatCompanionDef(id)!;
-  const requirement=def.unlockRequirements[0]!;
-  equal(requirement.type,'meta',`${id} uses regional meta unlock`);
-  equal(requirement.target,target,`${id} regional target`);
-  equal(requirement.amount,3,`${id} needs three regional companions`);
+for(const [id,target] of prestigeTargets){
+  const requirement=combatCompanionDef(id)!.unlockRequirements[0]!;
+  equal(requirement.type,'meta',`${id} uses a deterministic Prestige challenge`);
+  equal(requirement.target,target,`${id} challenge target`);
   let state=createCharacter(newGame(1),'IRONWARDEN','Regional Tester');
-  state={...state,account:{...state.account,unlockedCombatCompanionIds:[...owned]}};
-  ok(companionUnlockRequirementMet(state,requirement),`${id} unlocks when the three regional companions are owned`);
-  state={...state,account:{...state.account,unlockedCombatCompanionIds:owned.slice(0,2) as unknown as string[]}};
-  ok(!companionUnlockRequirementMet(state,requirement),`${id} remains locked with only two regional companions`);
+  state={...state,account:{...state.account,companionSpecialClears:[target]}};
+  ok(companionUnlockRequirementMet(state,requirement),`${id} recognizes its completed Prestige challenge`);
+  state={...state,account:{...state.account,companionSpecialClears:[]}};
+  ok(!companionUnlockRequirementMet(state,requirement),`${id} remains locked before challenge completion`);
 }
 
-let all=createCharacter(newGame(1),'IRONWARDEN','Mastery Tester');
-all={...all,character:{...all.character!,monsterMasteryPoints:Object.fromEntries(masteryTargets.map(([,target])=>[target,500]))}};
+let all=createCharacter(newGame(1),'IRONWARDEN','Regional Tester');
+all={...all,
+  character:{...all.character!,monsterMasteryPoints:{SUNSCAR_SCORPION:500,FROSTWOLF:500,BLACKGLASS_MIRELING:500}},
+  regionalProgressById:{
+    REG_002:{storyCompleted:10,echoesCompleted:3,dungeonsCompleted:3},
+    REG_003:{storyCompleted:10,echoesCompleted:3,dungeonsCompleted:3},
+    REG_004:{storyCompleted:10,echoesCompleted:3,dungeonsCompleted:3},
+  },
+};
 all=reconcileCombatCompanionUnlocks(all,1000);
-for(const id of regional.map(def=>def.id))ok(all.account.unlockedCombatCompanionIds?.includes(id),`${id} unlocks through the current regional progression chain`);
+for(const id of ['UNIT_013','UNIT_014','UNIT_015','UNIT_017','UNIT_018','UNIT_019','UNIT_021','UNIT_022','UNIT_023'])ok(all.account.unlockedCombatCompanionIds?.includes(id),`${id} unlocks through authored regional progression`);
+all={...all,account:{...all.account,companionSpecialClears:prestigeTargets.map(([,target])=>target)}};
+all=reconcileCombatCompanionUnlocks(all,2000);
+for(const id of regional.map(def=>def.id))ok(all.account.unlockedCombatCompanionIds?.includes(id),`${id} unlocks through the complete regional chain`);
 
-console.log('PASS: regional companion mastery and prestige unlock chains validate');
+console.log('PASS: regional companion mastery, Echo, dungeon and Prestige challenge chains validate');

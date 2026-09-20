@@ -34,7 +34,13 @@ export function grantEventActivity(state:GameState,source:'crafting'|'boss',nowM
 function addReward(state:GameState,reward:EventReward,nowMs=Date.now()):GameState{
   const account={...state.account};
   let character=state.character;
-  if(reward.kind==='companion')return unlockCombatCompanion(state,reward.id,nowMs);
+  if(reward.kind==='companion'){
+    const unlocked=unlockCombatCompanion(state,reward.id,nowMs);
+    const alreadyOwned=(state.account.unlockedCombatCompanionIds??[]).includes(reward.id);
+    if(alreadyOwned)return unlocked;
+    const materials={...(unlocked.account.companionMaterials??{})};materials.EVENT_BONDBLOOM=(materials.EVENT_BONDBLOOM??0)+(reward.rarity==='mythic'||reward.rarity==='legendary'?8:6);
+    return {...unlocked,account:{...unlocked.account,companionMaterials:materials}};
+  }
   if(reward.kind==='skin')account.unlockedEventSkinIds=[...new Set([...(account.unlockedEventSkinIds??[]),reward.id])];
   else if(reward.kind==='pet'){
     account.unlockedCosmeticPetIds=[...new Set([...(account.unlockedCosmeticPetIds??[]),reward.id])];

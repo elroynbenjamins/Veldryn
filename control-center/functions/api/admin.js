@@ -363,6 +363,14 @@ function annualPlayerEventParts(eventId) {
   const match = String(eventId ?? '').match(/^(EVT_ANNUAL_\d{3})_(\d{4})$/);
   return match ? { seriesId: match[1], year: Number(match[2]) } : null;
 }
+function assertPlayerEventSeasonStart(eventId, startsAtMs) {
+  const parts = annualPlayerEventParts(eventId);
+  if (!parts) return;
+  const start = new Date(startsAtMs);
+  const year = start.getUTCFullYear();
+  const turningOfAgeCrossover = parts.seriesId === 'EVT_ANNUAL_001' && year === parts.year + 1 && start.getUTCMonth() === 0 && start.getUTCDate() <= 7;
+  if (year !== parts.year && !turningOfAgeCrossover) throw new Error('player_event_wrong_season_use_clone');
+}
 
 async function clonePlayerEventSeason(env, actor, payload) {
   requireRole(actor, 'owner');
@@ -420,6 +428,7 @@ async function schedulePlayerEvent(env, actor, payload) {
     if (reason.length < 10) throw new Error('player_event_change_reason_too_short');
   }
   const start = parsePlayerEventDate(payload.startsAt, 'player_event_start_invalid');
+  assertPlayerEventSeasonStart(eventId, start.ms);
   const end = parsePlayerEventDate(payload.endsAt, 'player_event_end_invalid');
   if (end.ms <= start.ms) throw new Error('player_event_end_before_start');
   const graceDays = payload.claimGraceDays === undefined ? playerEventGraceDays(row) : Number(payload.claimGraceDays);
@@ -452,6 +461,7 @@ async function setPlayerEventEnabled(env, actor, payload) {
     if (!row.starts_at || !row.ends_at) throw new Error('player_event_schedule_required_before_enable');
     const startMs = Date.parse(row.starts_at), endMs = Date.parse(row.ends_at);
     if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) throw new Error('player_event_schedule_invalid');
+    assertPlayerEventSeasonStart(eventId, startMs);
     const graceEndMs = row.grace_ends_at ? Date.parse(row.grace_ends_at) : endMs + playerEventGraceDays(row) * 86400000;
     if (Number.isFinite(graceEndMs) && graceEndMs <= Date.now()) throw new Error('player_event_window_expired_use_go_live');
     await assertNoPlayerEventOverlap(env, eventId, startMs, endMs, Number.isFinite(graceEndMs) ? graceEndMs : endMs);
@@ -480,6 +490,7 @@ async function goLivePlayerEvent(env, actor, payload) {
   const reason = String(payload.reason ?? '').trim();
   if (reason.length < 10) throw new Error('player_event_change_reason_too_short');
   const startMs = Date.now();
+  assertPlayerEventSeasonStart(eventId, startMs);
   let endMs;
   if (payload.endsAt) endMs = parsePlayerEventDate(payload.endsAt, 'player_event_end_invalid').ms;
   else {

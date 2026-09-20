@@ -1,17 +1,19 @@
 import {Dimensions,Platform,Pressable,StatusBar,StyleSheet,Text,useWindowDimensions,View} from 'react-native';
 import {PrimaryNavigationIcon,type PrimaryNavigationDestination} from './PrimaryNavigationIcon';
 import {C} from '../theme/theme';
+import {useTheme} from '../theme/ThemeProvider';
 
 export type NavigationBadge=number|'dot';
 
 export function PrimaryNavigation<T extends PrimaryNavigationDestination>({destinations,active,labelFor,onNavigate,badges}:{destinations:readonly T[];active:T;labelFor:(destination:T)=>string;onNavigate:(destination:T)=>void;badges?:Partial<Record<T,NavigationBadge>>}){
+ const {colors}=useTheme();
  const {height:windowHeight}=useWindowDimensions();
  const screenHeight=Dimensions.get('screen').height;
  const measuredBottom=Platform.OS==='android'?screenHeight-windowHeight-(StatusBar.currentHeight??0):0;
  const bottomInset=Platform.OS==='android'?Math.max(24,Math.min(52,measuredBottom>0?measuredBottom:30)):4;
- return <View accessibilityRole="tablist" style={[s.nav,{paddingBottom:bottomInset}]}>{destinations.map(item=>{const selected=active===item,label=labelFor(item),badge=badges?.[item];return <Pressable key={item} accessibilityRole="tab" accessibilityState={{selected}} accessibilityLabel={label} onPress={()=>onNavigate(item)} style={({pressed})=>[s.item,pressed&&s.pressed]}>
-  {selected&&<View pointerEvents="none" style={s.mark}/>}<View style={[s.iconShell,selected&&s.iconActive]}><PrimaryNavigationIcon destination={item} active={selected}/>{badge!==undefined&&badge!==0?<View style={[s.badge,badge==='dot'&&s.dotBadge]}><Text style={s.badgeText}>{badge==='dot'?'':typeof badge==='number'?(badge>99?'99+':badge):''}</Text></View>:null}</View>
-  <Text numberOfLines={2} textBreakStrategy="balanced" android_hyphenationFrequency="normal" style={[s.label,selected&&s.active]}>{label}</Text>
+ return <View accessibilityRole="tablist" style={[s.nav,{paddingBottom:bottomInset,backgroundColor:colors.nav,borderColor:colors.line}]}>{destinations.map(item=>{const selected=active===item,label=labelFor(item),badge=badges?.[item];return <Pressable key={item} accessibilityRole="tab" accessibilityState={{selected}} accessibilityLabel={label} onPress={()=>onNavigate(item)} style={({pressed})=>[s.item,pressed&&s.pressed]}>
+  {selected&&<View pointerEvents="none" style={[s.mark,{backgroundColor:colors.accent}]}/>}<View style={[s.iconShell,selected&&s.iconActive,selected&&{backgroundColor:colors.selection}]}><PrimaryNavigationIcon destination={item} active={selected}/>{badge!==undefined&&badge!==0?<View style={[s.badge,badge==='dot'&&s.dotBadge]}><Text style={s.badgeText}>{badge==='dot'?'':typeof badge==='number'?(badge>99?'99+':badge):''}</Text></View>:null}</View>
+  <Text numberOfLines={2} textBreakStrategy="balanced" android_hyphenationFrequency="normal" style={[s.label,{color:colors.muted},selected&&s.active,selected&&{color:colors.accent}]}>{label}</Text>
  </Pressable>})}</View>;
 }
 const s=StyleSheet.create({

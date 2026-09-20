@@ -1,5 +1,5 @@
 import {SearchField} from '../components/SearchField';
-import {useState} from 'react';
+import {useMemo,useState} from 'react';
 import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {GameState,ItemStack} from '../core/types';
 import {ItemDef,itemDef} from '../content/items';
@@ -10,7 +10,8 @@ import {ConfirmModal} from '../components/ConfirmModal';
 import {EmptyState} from '../components/EmptyState';
 import {GameButton} from '../components/GameButton';
 import {Panel} from '../components/Panel';
-import {C,equipmentColors,spacing,typography} from '../theme/theme';
+import {spacing,typography,equipmentTheme,type ThemeColors} from '../theme/theme';
+import {useGameTheme} from '../theme/ThemeContext';
 import {EquipmentPreview} from '../components/EquipmentPreview';
 import {previewEquipment} from '../core/equipment-preview';
 import {formatGameNumber} from '../core/number-format';
@@ -23,6 +24,7 @@ const SORT_OPTIONS:{id:InventorySort;label:string}[]=[{id:'name',label:'Name'},{
 const nextSort=(value:InventorySort)=>SORT_OPTIONS[(SORT_OPTIONS.findIndex(option=>option.id===value)+1)%SORT_OPTIONS.length].id;
 const nextQuantity=(value:1|10|'all'):1|10|'all'=>value===1?10:value===10?'all':1;
 export function InventoryScreen({state,onEquip,onFood,onEat,onSell,onSalvage,onDeposit,onDepositMaterials,onUpgradeStorage,onWithdraw,onOverflow}:{state:GameState;onEquip:(id:string)=>void;onFood:(id:string)=>void;onEat:(id:string)=>void;onSell:(id:string)=>void;onSalvage:(id:string)=>void;onDeposit:(id:string,quantity:number)=>void;onDepositMaterials:()=>void;onUpgradeStorage:(location:StorageLocation)=>void;onWithdraw:(id:string,quantity:number)=>void;onOverflow:()=>void}){
+  const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
   const [pending,setPending]=useState<Pending>(null),[location,setLocation]=useState<'inventory'|'bank'>('inventory');
   const [query,setQuery]=useState(''),[filter,setFilter]=useState<InventoryFilter>('all'),[sort,setSort]=useState<InventorySort>('name');
   const [quantity,setQuantity]=useState<1|10|'all'>(1);
@@ -68,9 +70,9 @@ export function InventoryScreen({state,onEquip,onFood,onEat,onSell,onSalvage,onD
     {overflowCount>0&&<Panel><Text style={s.title}>{ot(state.settings.language,'overflow.title')} · {overflowCount}</Text><Text style={s.warning}>{ot(state.settings.language,'overflow.body')}</Text>{state.overflow.stacks.map((stack,index)=><Text key={`${stack.itemId}:${index}`} style={s.sub}>{stack.quantity}× {itemDef(stack.itemId).name}</Text>)}{state.overflow.expiresAtMs!==null&&<Text style={s.warning}>Recorded expiry: {new Date(state.overflow.expiresAtMs).toLocaleString()}</Text>}<GameButton title={ot(state.settings.language,'overflow.move',{count:overflowCount-remaining})} disabled={remaining===overflowCount} onPress={()=>run(onOverflow)}/>{remaining>0&&<Text style={s.sub}>{ot(state.settings.language,'overflow.remain',{count:remaining})}</Text>}</Panel>}
   </ScrollView><ConfirmModal visible={pending!==null} title={`${pending?.kind==='deposit'?'Bank':pending?.kind==='sell'?'Sell':'Salvage'} ${pending?.item.name??'item'}?`} message={message} confirmLabel={pending?.kind==='deposit'?'Deposit':pending?.kind==='sell'?'Sell 1':'Salvage 1'} danger={pending?.kind!=='deposit'} onConfirm={confirm} onCancel={()=>setPending(null)}/></>;
 }
-function ChoiceChip({label,selected,onPress}:{label:string;selected:boolean;onPress:()=>void}){return <Pressable accessibilityRole="button" accessibilityState={{selected}} onPress={onPress} style={({pressed})=>[s.chip,selected&&s.chipSelected,pressed&&s.pressed]}><Text style={[s.chipText,selected&&s.chipTextSelected]}>{selected?'✓ ':''}{label}</Text></Pressable>}
-function UtilityChip({label,accessibilityLabel,onPress}:{label:string;accessibilityLabel:string;onPress:()=>void}){return <Pressable accessibilityRole="button" accessibilityLabel={accessibilityLabel} onPress={onPress} style={({pressed})=>[s.utilityChip,pressed&&s.pressed]}><Text numberOfLines={1} style={s.utilityChipText}>{label}</Text></Pressable>}
-const s=StyleSheet.create({
+function ChoiceChip({label,selected,onPress}:{label:string;selected:boolean;onPress:()=>void}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);return <Pressable accessibilityRole="button" accessibilityState={{selected}} onPress={onPress} style={({pressed})=>[s.chip,selected&&s.chipSelected,pressed&&s.pressed]}><Text style={[s.chipText,selected&&s.chipTextSelected]}>{selected?'✓ ':''}{label}</Text></Pressable>}
+function UtilityChip({label,accessibilityLabel,onPress}:{label:string;accessibilityLabel:string;onPress:()=>void}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);return <Pressable accessibilityRole="button" accessibilityLabel={accessibilityLabel} onPress={onPress} style={({pressed})=>[s.utilityChip,pressed&&s.pressed]}><Text numberOfLines={1} style={s.utilityChipText}>{label}</Text></Pressable>}
+function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);return StyleSheet.create({
   recovery:{gap:4,padding:spacing.md,borderWidth:1,borderColor:C.line,borderRadius:10,backgroundColor:C.panel},
   root:{padding:spacing.lg,gap:spacing.md},
   h:{...typography.hero,color:C.text},
@@ -96,4 +98,4 @@ const s=StyleSheet.create({
   pressed:{opacity:.76},
   flex:{flex:1,minWidth:148},
   input:{minHeight:48,paddingHorizontal:spacing.md,borderRadius:10,borderWidth:1,borderColor:C.line,color:C.text,backgroundColor:C.panel,fontSize:16}
-});
+});}

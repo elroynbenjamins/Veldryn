@@ -1,8 +1,10 @@
+import {useMemo} from 'react';
 import {ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
 import {accountBonusOverview} from '../core/account-bonuses';
 import {Panel} from '../components/Panel';
-import {C,radii,spacing,typography} from '../theme/theme';
+import {radii,spacing,typography,equipmentTheme,type ThemeColors} from '../theme/theme';
+import {useGameTheme} from '../theme/ThemeContext';
 
 function duration(seconds:number){
  const s=Math.max(0,Math.floor(seconds)),h=Math.floor(s/3600),m=Math.floor((s%3600)/60);
@@ -11,6 +13,7 @@ function duration(seconds:number){
 function pct(value:number){return value.toFixed(value>=10?0:2)+'%'}
 
 export function AccountBonusesScreen({state}:{state:GameState}){
+  const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
  const overview=accountBonusOverview(state);
  const permanentSources=overview.sources.filter(row=>row.scope!=='temporary');
  return <ScrollView contentContainerStyle={s.root}>
@@ -40,7 +43,7 @@ export function AccountBonusesScreen({state}:{state:GameState}){
  </ScrollView>;
 }
 
-const s=StyleSheet.create({
+function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);return StyleSheet.create({
  root:{padding:spacing.lg,gap:spacing.md,paddingBottom:110},
  kicker:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:1},
  heading:{...typography.hero,color:C.text},
@@ -61,4 +64,4 @@ const s=StyleSheet.create({
  characterScope:{borderColor:C.info,backgroundColor:C.panel2},
  scopeText:{fontSize:8,color:C.text,fontWeight:'900',letterSpacing:.5},
  empty:{...typography.body,color:C.muted,paddingVertical:12},
-});
+});}

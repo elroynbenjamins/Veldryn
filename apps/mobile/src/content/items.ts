@@ -270,6 +270,7 @@ const BASE_ITEMS:ItemDef[]=[
 {id:'ECHO_QUARTZ',name:'Echo Quartz',type:'material',value:85},
 {id:'OATHGLASS_FRAGMENT',name:'Oathglass Fragment',type:'material',value:130},
 {id:'GLOAM_DUST',name:'Gloam Dust',type:'material',value:105},
+{id:'EVENT_BONDBLOOM',name:'Event Bondbloom',type:'material',value:175},
 {id:'RUNEBOUND_CORE',name:'Runebound Core',type:'material',value:150},
 {id:'ECHO_BAT_WING',name:'Echo Bat Wing',type:'material',value:80},
 {id:'FALLEN_KNIGHT_SIGIL',name:'Fallen Knight Sigil',type:'quest',value:0},

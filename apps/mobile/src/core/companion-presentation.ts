@@ -14,6 +14,7 @@ export function companionMaterialSources(id:string):string[]{
  if(id==='SUPPLIES')sources.push('Buy at the Sanctuary: 5 for 250 Gold');
  sources.push(...GATHERING.filter(g=>g.itemId===id).map(g=>`Gather at ${g.name}`));
  if(id==='TRIAL_SANCTUARY_MATERIAL')sources.push('First-clear Trial boss rewards');
+ if(id==='EVENT_BONDBLOOM')sources.push('Earn an event companion for a starter bundle','Weekly Proving Grounds while you own an event companion','Future event prestige shops');
  return sources.length?sources:['Companion assignment rewards or later-region content'];
 }
 export function companionRequirementProgress(state:GameState,req:CompanionDefinition['unlockRequirements'][number]){

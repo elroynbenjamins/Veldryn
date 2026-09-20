@@ -126,9 +126,13 @@ export function executeCompanionActivity(input:GameState,type:string,a:Record<st
       economy.gold-=250;economy.materials.SUPPLIES=(economy.materials.SUPPLIES??0)+5;state=applyEconomy(state,economy);break;
     }
     case 'companion_bond_reward':{
-      const id=stringArg(a,'id'),key=`${id}:2`;if(!owned[id]||owned[id].bondLevel<2)throw new Error('Reach Bond 2 first.');
-      if(state.account.companionBondRewardClaims?.includes(key))throw new Error('Bond reward already claimed.');
-      state=reward(state,{companionEssence:20});state.account.companionBondRewardClaims=[...(state.account.companionBondRewardClaims??[]),key];break;
+      const id=stringArg(a,'id'),progress=owned[id];if(!progress)throw new Error('Companion is locked.');
+      const rewards:Record<number,number>={2:20,4:35,6:55,8:80},claims=state.account.companionBondRewardClaims??[];
+      const requested=a.level===undefined?[8,6,4,2].find(level=>progress.bondLevel>=level&&!claims.includes(`${id}:${level}`)):Number(a.level);
+      if(!requested||!rewards[requested])throw new Error('No Bond milestone reward is available.');
+      if(progress.bondLevel<requested)throw new Error(`Reach Bond ${requested} first.`);
+      const key=`${id}:${requested}`;if(claims.includes(key))throw new Error('Bond reward already claimed.');
+      state=reward(state,{companionEssence:rewards[requested]});state.account.companionBondRewardClaims=[...claims,key];break;
     }
     case 'companion_trial_start':{
       const r=startCompanionTrial(trialInput,idsArg(a),seed,[],a.floor===undefined?undefined:Number(a.floor));state.account.companionTrialProgress=r.progress;break;
@@ -164,7 +168,7 @@ export function executeCompanionActivity(input:GameState,type:string,a:Record<st
     }
     case 'companion_codex':{const r=claimCompanionCodexMilestone({milestoneId:stringArg(a,'id'),owned,profile,economy:companionEconomy(state)});state=applyEconomy(state,r.economy);state.account.companionPhase2Profile=r.profile;break;}
     case 'companion_showcase':{state.account.companionPhase2Profile=setCompanionShowcase(profile,new Set(Object.keys(owned)),a.id===undefined?undefined:stringArg(a,'id'),idsArg(a));break;}
-    case 'companion_weekly':{const r=claimCompanionProvingGroundChallenge({state:state.account.companionProvingGround,serverNowMs:now,challengeId:stringArg(a,'id')});state=reward(state,r.reward);state.account.companionProvingGround=r.state;state.account.companionPhase2Profile={...profile,codexRewardIds:[...new Set([...(profile.codexRewardIds??[]),...(r.reward.rewardIds??[])])]};break;}
+    case 'companion_weekly':{const r=claimCompanionProvingGroundChallenge({state:state.account.companionProvingGround,serverNowMs:now,challengeId:stringArg(a,'id')});state=reward(state,r.reward);if(Object.keys(owned).some(id=>companionServerDefinition(id)?.originId.startsWith('EVENT_')))state=reward(state,{materials:{EVENT_BONDBLOOM:1}});state.account.companionProvingGround=r.state;state.account.companionPhase2Profile={...profile,codexRewardIds:[...new Set([...(profile.codexRewardIds??[]),...(r.reward.rewardIds??[])])]};break;}
     case 'companion_special':{
       if(now<(state.account.companionBattleReadyAtMs??0))throw new Error('Companions are recovering from battle.');
       const id=stringArg(a,'id');if(state.account.companionSpecialClears?.includes(id))throw new Error('Special challenge reward already claimed.');

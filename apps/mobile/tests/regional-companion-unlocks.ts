@@ -30,27 +30,25 @@ for(const [id,target] of masteryTargets){
 }
 
 const prestigeTargets=[
-  ['UNIT_016','REG_SUNSCAR',['UNIT_013','UNIT_014','UNIT_015']],
-  ['UNIT_020','REG_FROSTMARCH',['UNIT_017','UNIT_018','UNIT_019']],
-  ['UNIT_024','REG_ASHLANDS',['UNIT_021','UNIT_022','UNIT_023']],
+  ['UNIT_016','CHALLENGE_TYRANTS_HEIR',['UNIT_013','UNIT_014','UNIT_015']],
+  ['UNIT_020','CHALLENGE_WYRM_ECHO',['UNIT_017','UNIT_018','UNIT_019']],
+  ['UNIT_024','CHALLENGE_REGENT_SHADE',['UNIT_021','UNIT_022','UNIT_023']],
 ] as const;
 
 for(const [id,target,owned] of prestigeTargets){
   const def=combatCompanionDef(id)!;
   const requirement=def.unlockRequirements[0]!;
-  equal(requirement.type,'meta',`${id} uses regional meta unlock`);
-  equal(requirement.target,target,`${id} regional target`);
-  equal(requirement.amount,3,`${id} needs three regional companions`);
+  equal(requirement.type,'event_challenge',`${id} uses deterministic special challenge`);
+  equal(requirement.target,target,`${id} challenge target`);
   let state=createCharacter(newGame(1),'IRONWARDEN','Regional Tester');
   state={...state,account:{...state.account,unlockedCombatCompanionIds:[...owned]}};
-  ok(companionUnlockRequirementMet(state,requirement),`${id} unlocks when the three regional companions are owned`);
-  state={...state,account:{...state.account,unlockedCombatCompanionIds:owned.slice(0,2) as unknown as string[]}};
-  ok(!companionUnlockRequirementMet(state,requirement),`${id} remains locked with only two regional companions`);
+  ok(!companionUnlockRequirementMet(state,requirement),`${id} is not granted merely for owning the regional trio`);
 }
 
 let all=createCharacter(newGame(1),'IRONWARDEN','Mastery Tester');
 all={...all,character:{...all.character!,monsterMasteryPoints:Object.fromEntries(masteryTargets.map(([,target])=>[target,500]))}};
 all=reconcileCombatCompanionUnlocks(all,1000);
-for(const id of regional.map(def=>def.id))ok(all.account.unlockedCombatCompanionIds?.includes(id),`${id} unlocks through the current regional progression chain`);
+for(const id of masteryTargets.map(([id])=>id))ok(all.account.unlockedCombatCompanionIds?.includes(id),`${id} unlocks through monster mastery`);
+for(const [id] of prestigeTargets)ok(!all.account.unlockedCombatCompanionIds?.includes(id),`${id} remains reserved for its special challenge`);
 
-console.log('PASS: regional companion mastery and prestige unlock chains validate');
+console.log('PASS: regional companion mastery and deterministic prestige challenge chains validate');

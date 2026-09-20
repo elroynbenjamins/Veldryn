@@ -60,6 +60,13 @@ export function companionLevelCost(rarity:CompanionDefinition['rarity'],level:nu
     companionEssence:Math.max(1,Math.round(COMPANION_LEVEL_CURVE.essenceBase*Math.pow(COMPANION_LEVEL_CURVE.essenceGrowth,l-1)*cfg.levelCostMultiplier)),
   };
 }
+/** Accelerated training only buys the XP still missing from the current level. */
+export function companionRemainingLevelCost(def:CompanionDefinition,progress:OwnedCompanionProgress):CompanionLevelCost{
+  const full=companionLevelCost(def.rarity,progress.level),needed=companionXpToNextLevel(def.rarity,progress.level);
+  if(needed<=0)return full;
+  const remaining=Math.max(1,needed-Math.max(0,progress.xp)),ratio=Math.min(1,remaining/needed);
+  return {gold:Math.max(1,Math.ceil(full.gold*ratio)),companionEssence:Math.max(1,Math.ceil(full.companionEssence*ratio))};
+}
 export function companionCurrentLevelCap(def:CompanionDefinition,progress:OwnedCompanionProgress){
   return Math.min(COMPANION_RARITY_CONFIG[def.rarity].maxLevel,COMPANION_STAGE_CAPS[def.rarity][Math.max(0,Math.min(3,progress.ascensionTier))]);
 }
@@ -220,7 +227,7 @@ export function purchaseCompanionLevel<T extends CombatCompanionStateHost>(state
   const p=progressFor(clean,id),cap=companionCurrentLevelCap(def,p),max=companionMaxLevel(def);
   if(p.level>=max)throw new Error('Maximum companion level reached.');
   if(p.level>=cap)throw new Error('Ascension required before further leveling.');
-  const cost=companionLevelCost(def.rarity,p.level);
+  const cost=companionRemainingLevelCost(def,p);
   if(clean.character.gold<cost.gold)throw new Error('Not enough Gold.');
   if((clean.account.companionEssence??0)<cost.companionEssence)throw new Error('Not enough Companion Essence.');
   clean={...clean,character:{...clean.character,gold:clean.character.gold-cost.gold},account:{...clean.account,companionEssence:(clean.account.companionEssence??0)-cost.companionEssence}} as T;
@@ -323,7 +330,7 @@ export function canUseOwnedCompanion(state:CombatCompanionStateHost,id:string){r
 
 export function combatCompanionUiModel(state:CombatCompanionStateHost,id:string){
   const clean=sanitizeCombatCompanionState(state),def=combatCompanionDef(id);if(!def)return undefined;const owned=(clean.account.unlockedCombatCompanionIds??[]).includes(id),p=owned?clean.account.combatCompanionProgress?.[id]:undefined,characterRole=clean.character?classCompanionRole(clean.character.classId):undefined;
-  const compatible=!!characterRole&&canEquipCompanion(characterRole,def.role),cap=p?companionCurrentLevelCap(def,p):10,max=companionMaxLevel(def),cost=p&&p.level<cap?companionLevelCost(def.rarity,p.level):undefined,tier=p?nextCompanionAscension(def,p):undefined;
+  const compatible=!!characterRole&&canEquipCompanion(characterRole,def.role),cap=p?companionCurrentLevelCap(def,p):10,max=companionMaxLevel(def),cost=p&&p.level<cap?companionRemainingLevelCost(def,p):undefined,tier=p?nextCompanionAscension(def,p):undefined;
   return {def,owned,progress:p,compatible,equipped:clean.character?.equippedCombatCompanionId===id,usableRoles:usableCompanionRoles(def.role),levelCap:cap,maxLevel:max,nextLevelCost:cost,nextAscensionTier:tier,nextAscensionCost:tier?companionAscensionCost(def,tier):undefined,abilityValue:p?companionAbilityValue(def,p):def.activeAbility.scaling.baseValue};
 }
 

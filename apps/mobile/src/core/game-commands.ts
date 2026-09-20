@@ -22,7 +22,7 @@ export interface VerifiedActivity {kind:'combat'|'gathering'|'crafting'|'boss';c
 export interface GameCommandResult {state:GameState;reward?:RewardBundle;activity:GameState['activity'];message?:string;won?:boolean;upgrade?:ReturnType<typeof attemptEquipmentUpgrade>['result'];contributions:VerifiedActivity[]}
 const fields:Record<string,readonly string[]>={
  class_training:[],class_focus:['focus'],faith_practice:['tierId','count'],faith_blessing:['id'],faith_favorite:['id','enabled'],faith_hide:['enabled'],alchemy_start:['id','batches'],
- companion_monthly:['id'],companion_supplies:[],companion_bond_reward:['id'],companion_boss_rematch:[],
+ companion_monthly:['id'],companion_supplies:[],companion_bond_reward:['id','level'],companion_boss_rematch:[],
  companion_equip:['id'],companion_unequip:[],companion_level:['id'],companion_ascend:['id'],companion_master:['id'],companion_upgrade:['id'],companion_training:[],companion_essence:[],
  companion_trial_start:['ids','floor'],companion_trial_floor:['id','floor'],companion_trial_abandon:['id'],companion_assignment_start:['id','ids'],companion_assignment_claim:['id'],companion_technique:['id','technique'],companion_codex:['id'],companion_showcase:['id','ids'],companion_weekly:['id'],companion_special:['id','ids'],
  create:['classId','name','body'],claim:[],start:['kind','id'],explore:['id'],stop:[],travel:['id'],boss:[],craft:['id'],use_potion:['id'],discard_preparation:[],

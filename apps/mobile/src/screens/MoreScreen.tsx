@@ -1,3 +1,4 @@
+import {useMemo} from 'react';
 import {UiIcon} from '../components/UiIcon';
 import {navigationIcons} from '../theme/ui-icons';
 import {Image,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';

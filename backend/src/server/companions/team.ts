@@ -12,7 +12,8 @@ export function individualCompanionPower(progress:OwnedCompanionSnapshot){
  const roleAnchor=def.role==='damage'?{hp:180,power:22,defense:12}:def.role==='tank'?{hp:260,power:14,defense:24}:{hp:150,power:12,defense:10};
  const rawStatIdentity=((base.hp/roleAnchor.hp)+(base.power/roleAnchor.power)+(base.defense/roleAnchor.defense))/3,statIdentity=Math.max(.995,Math.min(1.005,rawStatIdentity));
  const activeIdentity=def.active.effectKind==='damage'?1+Math.max(-.005,Math.min(.005,(def.active.baseCoeff-1)*.01)):1+Math.max(-.005,Math.min(.005,(22000-def.active.cooldownMs)/400000));
- const levelMultiplier=1+.30*fraction,rarityMultiplier=1+(COMPANION_RARITY_TARGET[def.rarity]-1)*fraction,ascensionMultiplier=1+progress.ascensionTier*.006,bondMultiplier=1+.025*Math.max(0,Math.min(9,progress.bondLevel-1))/9;
+ const levelMultiplier=1+.30*fraction,rarityMultiplier=1+(COMPANION_RARITY_TARGET[def.rarity]-1)*fraction,ascensionMultiplier=1+progress.ascensionTier*.006;
+ const bondFraction=Math.max(0,Math.min(9,progress.bondLevel-1))/9,bondMultiplier=1+.015*bondFraction+(progress.bondLevel>=6?.01:0);
  const traitMultiplier=progress.bondTraitUnlocked?1.01:1,techniqueMultiplier=progress.selectedTechniqueId?1.015:1;
  // Team Power is guidance, not combat simulation. It mirrors the already-balanced
  // progression budget and keeps role/ability identity to a narrow ±few-percent band.

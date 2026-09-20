@@ -30,6 +30,7 @@ export interface CombatCompanionStateHost{
   quests?:Array<{questId:string;status:string;progress?:number}>;
   defeatedBossIds?:string[];
   skills?:Array<{skillId:string;level:number;xp?:number}>;
+  regionalProgressById?:Record<string,{storyCompleted?:number;sideQuestsCompleted?:number;echoesCompleted?:number;dungeonsCompleted?:number;collectionEntries?:number;bossMasteryTier?:number}>;
 }
 
 export const CLASS_COMPANION_ROLE:Record<VeldrynClassId,CombatCompanionRole>={
@@ -53,11 +54,15 @@ export function companionXpToNextLevel(rarity:CompanionDefinition['rarity'],leve
   if(level>=COMPANION_RARITY_CONFIG[rarity].maxLevel)return 0;
   return Math.max(1,Math.round(COMPANION_LEVEL_CURVE.baseXp*Math.pow(COMPANION_LEVEL_CURVE.xpGrowth,Math.max(0,level-1))*COMPANION_RARITY_CONFIG[rarity].xpRequiredMultiplier));
 }
-export function companionLevelCost(rarity:CompanionDefinition['rarity'],level:number):CompanionLevelCost{
+export function companionLevelCost(rarity:CompanionDefinition['rarity'],level:number,currentXp=0):CompanionLevelCost{
   const cfg=COMPANION_RARITY_CONFIG[rarity],l=Math.max(1,level);
+  const fullGold=COMPANION_LEVEL_CURVE.goldBase*Math.pow(COMPANION_LEVEL_CURVE.goldGrowth,l-1)*cfg.levelCostMultiplier;
+  const fullEssence=COMPANION_LEVEL_CURVE.essenceBase*Math.pow(COMPANION_LEVEL_CURVE.essenceGrowth,l-1)*cfg.levelCostMultiplier;
+  const target=companionXpToNextLevel(rarity,l),safeXp=Math.max(0,Math.min(Math.max(0,target-1),Math.floor(currentXp)));
+  const missingFraction=target>0?Math.max(1/target,(target-safeXp)/target):1;
   return {
-    gold:Math.round(COMPANION_LEVEL_CURVE.goldBase*Math.pow(COMPANION_LEVEL_CURVE.goldGrowth,l-1)*cfg.levelCostMultiplier),
-    companionEssence:Math.max(1,Math.round(COMPANION_LEVEL_CURVE.essenceBase*Math.pow(COMPANION_LEVEL_CURVE.essenceGrowth,l-1)*cfg.levelCostMultiplier)),
+    gold:Math.max(1,Math.round(fullGold*missingFraction)),
+    companionEssence:Math.max(1,Math.round(fullEssence*missingFraction)),
   };
 }
 export function companionCurrentLevelCap(def:CompanionDefinition,progress:OwnedCompanionProgress){
@@ -178,7 +183,14 @@ export function companionUnlockRequirementMet(state:CombatCompanionStateHost,req
   if(requirement.type==='quest')return (state.quests??[]).some(entry=>entry.questId===target&&entry.status==='claimed');
   if(requirement.type==='boss_kills')return Math.max((state.defeatedBossIds??[]).includes(target)?1:0,state.account.companionBossClears?.[target]??0)>=amount;
   if(requirement.type==='skill_level')return (state.skills??[]).some(skill=>skill.skillId===target&&skill.level>=amount);
+  const regionalTarget:Record<string,{region:string;field:'echoesCompleted'|'dungeonsCompleted'}>={
+    SUNSCAR_ECHOES:{region:'SUNSCAR',field:'echoesCompleted'},SUNSCAR_DUNGEONS:{region:'SUNSCAR',field:'dungeonsCompleted'},
+    FROSTMARCH_ECHOES:{region:'FROSTMARCH',field:'echoesCompleted'},FROSTMARCH_DUNGEONS:{region:'FROSTMARCH',field:'dungeonsCompleted'},
+    ASHLANDS_ECHOES:{region:'ASHLANDS',field:'echoesCompleted'},ASHLANDS_DUNGEONS:{region:'ASHLANDS',field:'dungeonsCompleted'},
+  };
+  const regional=regionalTarget[target];if(regional)return (state.regionalProgressById?.[regional.region]?.[regional.field]??0)>=amount;
   if(requirement.type==='event_challenge'&&target.startsWith('CHALLENGE_'))return state.account.companionSpecialClears?.includes(target)===true;
+  if(requirement.type==='meta'&&target.startsWith('CHALLENGE_'))return state.account.companionSpecialClears?.includes(target)===true;
   return (state.account.companionUnlockProgress?.[target]??0)>=amount;
 }
 export function reconcileCombatCompanionUnlocks<T extends CombatCompanionStateHost>(state:T,nowMs=Date.now()):T{
@@ -220,7 +232,7 @@ export function purchaseCompanionLevel<T extends CombatCompanionStateHost>(state
   const p=progressFor(clean,id),cap=companionCurrentLevelCap(def,p),max=companionMaxLevel(def);
   if(p.level>=max)throw new Error('Maximum companion level reached.');
   if(p.level>=cap)throw new Error('Ascension required before further leveling.');
-  const cost=companionLevelCost(def.rarity,p.level);
+  const cost=companionLevelCost(def.rarity,p.level,p.xp);
   if(clean.character.gold<cost.gold)throw new Error('Not enough Gold.');
   if((clean.account.companionEssence??0)<cost.companionEssence)throw new Error('Not enough Companion Essence.');
   clean={...clean,character:{...clean.character,gold:clean.character.gold-cost.gold},account:{...clean.account,companionEssence:(clean.account.companionEssence??0)-cost.companionEssence}} as T;
@@ -323,7 +335,7 @@ export function canUseOwnedCompanion(state:CombatCompanionStateHost,id:string){r
 
 export function combatCompanionUiModel(state:CombatCompanionStateHost,id:string){
   const clean=sanitizeCombatCompanionState(state),def=combatCompanionDef(id);if(!def)return undefined;const owned=(clean.account.unlockedCombatCompanionIds??[]).includes(id),p=owned?clean.account.combatCompanionProgress?.[id]:undefined,characterRole=clean.character?classCompanionRole(clean.character.classId):undefined;
-  const compatible=!!characterRole&&canEquipCompanion(characterRole,def.role),cap=p?companionCurrentLevelCap(def,p):10,max=companionMaxLevel(def),cost=p&&p.level<cap?companionLevelCost(def.rarity,p.level):undefined,tier=p?nextCompanionAscension(def,p):undefined;
+  const compatible=!!characterRole&&canEquipCompanion(characterRole,def.role),cap=p?companionCurrentLevelCap(def,p):10,max=companionMaxLevel(def),cost=p&&p.level<cap?companionLevelCost(def.rarity,p.level,p.xp):undefined,tier=p?nextCompanionAscension(def,p):undefined;
   return {def,owned,progress:p,compatible,equipped:clean.character?.equippedCombatCompanionId===id,usableRoles:usableCompanionRoles(def.role),levelCap:cap,maxLevel:max,nextLevelCost:cost,nextAscensionTier:tier,nextAscensionCost:tier?companionAscensionCost(def,tier):undefined,abilityValue:p?companionAbilityValue(def,p):def.activeAbility.scaling.baseValue};
 }
 

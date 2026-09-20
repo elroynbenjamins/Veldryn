@@ -50,7 +50,8 @@ export function settleFaithPractice(state:GameState,now:number,capSeconds:number
  const remaining=p.remaining-actions,mastered=faith.xp+xp===MAX_XP,refund=mastered?remaining*tier.water:0;
  const nextPractice=remaining&&!mastered?{...p,remaining,lastClaimAtMs:now,progressMs:total%(tier.seconds*1000)}:undefined;
  const nextActivity=nextPractice&&state.activity?{...state.activity,lastClaimAtMs:now,faithPractice:{tierId:nextPractice.tierId,remainingPractices:nextPractice.remaining,lastClaimAtMs:now,progressFraction:nextPractice.progressMs/(tier.seconds*1000)}}:null;
- return {state:{...state,activity:nextActivity,character:{...state.character,faith:{...faith,xp:faith.xp+xp,practice:nextPractice}}},refund,reward:{...empty,xp,elapsedSeconds:Math.floor(elapsed/1000),faithActions:actions,faithXp:xp,holyWaterConsumed:actions*tier.water,faithWaterRefund:refund}};
+ const qualifyingActivitySeconds=nextPractice?Math.floor(elapsed/1000):actions?Math.max(0,Math.min(Math.floor(elapsed/1000),actions*tier.seconds-Math.floor(p.progressMs/1000))):0;
+ return {state:{...state,activity:nextActivity,character:{...state.character,faith:{...faith,xp:faith.xp+xp,practice:nextPractice}}},refund,reward:{...empty,xp,elapsedSeconds:Math.floor(elapsed/1000),qualifyingActivitySeconds,faithActions:actions,faithXp:xp,holyWaterConsumed:actions*tier.water,faithWaterRefund:refund}};
 }
 export function cancelFaithPractice(state:GameState):{state:GameState;refund:number}{
  const faith=normalizeFaith(state.character?.faith),reservation=state.activity?.faithPractice,p=faith.practice??(reservation?{tierId:reservation.tierId,remaining:reservation.remainingPractices,lastClaimAtMs:reservation.lastClaimAtMs,progressMs:0}:undefined),tier=FAITH_TIERS.find(t=>t.id===p?.tierId);

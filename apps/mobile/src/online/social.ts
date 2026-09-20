@@ -22,6 +22,8 @@ export type BlockedPlayer={account_id:string;display_name:string;blocked_at:stri
 export interface PartyInvitationView{ id:string;partyId:string;inviterAccountId:string;inviterName:string;focus:'combat'|'skilling'|'mixed';memberCount:number;openSpots:number;expiresAt:string; }
 export interface GuildInvitationView{ id:string;guildId:string;inviterAccountId:string;inviterName:string;guildName:string;guildTag?:string|null;memberCount:number;memberCap:number;minimumLevel:number;expiresAt:string; }
 export interface SocialInvitationState{party:PartyInvitationView[];guild:GuildInvitationView[];serverTime:string;}
+export interface OutgoingInvitationView{id:string;recipientAccountId:string;recipientName:string;expiresAt:string;}
+export interface SocialOutgoingInvitationState{party:OutgoingInvitationView[];guild:OutgoingInvitationView[];serverTime:string;}
 export interface InviteCapability{available:boolean;pending:boolean;reason?:string|null;partyId?:string|null;guildId?:string|null;guildName?:string|null;memberCount?:number;memberCap?:number;minimumLevel?:number;}
 export interface SocialInviteCapabilities{party:InviteCapability;guild:InviteCapability;}
 
@@ -77,4 +79,8 @@ export async function sendPartyInvitation(accountId:string){const client=require
 export async function respondPartyInvitation(invitationId:string,accept:boolean,characterId?:string|null){const client=requireClient();const {data,error}=await client.rpc('respond_party_invitation_v1',{p_invitation_id:invitationId,p_accept:accept,p_character_id:characterId??null});if(error)throw error;return data as 'accepted'|'declined';}
 export async function sendGuildInvitation(accountId:string){const client=requireClient();const {data,error}=await client.rpc('send_guild_invitation_v1',{p_target_account_id:accountId});if(error)throw error;return data as {id:string;status:'sent'|'already_pending';expiresAt:string};}
 export async function respondGuildInvitation(invitationId:string,accept:boolean){const client=requireClient();const {data,error}=await client.rpc('respond_guild_invitation_v1',{p_invitation_id:invitationId,p_accept:accept});if(error)throw error;return data as 'accepted'|'declined';}
+export async function socialOutgoingInvitations(){const client=requireClient();const {data,error}=await client.rpc('social_outgoing_invitation_state_v1');if(error)throw error;return data as SocialOutgoingInvitationState;}
+export async function cancelGuildInvitation(invitationId:string){const client=requireClient();const {data,error}=await client.rpc('cancel_guild_invitation_v1',{p_invitation_id:invitationId});if(error)throw error;return data as 'cancelled';}
+export async function updateGuildMemberRole(accountId:string,role:'officer'|'member'){const client=requireClient();const {data,error}=await client.rpc('update_guild_member_role_v1',{p_target_account_id:accountId,p_role:role});if(error)throw error;return data as 'officer'|'member';}
+export async function removeGuildMember(accountId:string){const client=requireClient();const {data,error}=await client.rpc('remove_guild_member_v1',{p_target_account_id:accountId});if(error)throw error;return data as 'removed';}
 

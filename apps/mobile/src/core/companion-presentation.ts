@@ -25,6 +25,10 @@ export function companionRequirementProgress(state:GameState,req:CompanionDefini
  if(req.type==='quest')current=state.quests.some(q=>q.questId===target&&q.status==='claimed')?1:0;
  if(req.type==='skill_level')current=state.skills.find(s=>s.skillId===target)?.level??0;
  if(req.type==='boss_kills')current=Math.max(state.defeatedBossIds.includes(target)?1:0,state.account.companionBossClears?.[target]??0);
+ if(req.type==='meta'&&target.startsWith('COMPANION_BOND:')){
+   const companionId=target.slice('COMPANION_BOND:'.length);
+   current=state.account.combatCompanionProgress?.[companionId]?.bondLevel??0;
+ }
  if(req.type==='meta'&&['REG_SUNSCAR','REG_FROSTMARCH','REG_ASHLANDS'].includes(target)){
    const owned=new Set(state.account.unlockedCombatCompanionIds??[]);
    const regionalNonPrestige=COMBAT_COMPANIONS.filter(def=>def.origin.id===target&&def.rarity!=='prestige');

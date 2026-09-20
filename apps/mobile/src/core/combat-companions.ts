@@ -296,7 +296,7 @@ export function companionCombatContribution(state:CombatCompanionStateHost):Comp
   if(clean.account.companionTrialProgress?.season.activeRun?.teamCompanionIds.includes(id)||(clean.account.companionAssignments??[]).some(a=>a.status!=='claimed'&&a.status!=='cancelled'&&a.companionIds.includes(id)))return {outputMultiplier:1,incomingDamageMultiplier:1,recoveryMultiplier:1,contributionPct:0};
   const def=combatCompanionDef(id)!,p=progressFor(clean,id),rarity=COMPANION_RARITY_CONFIG[def.rarity];
   // Rarity target is deliberately applied exactly once here. Level/Bond only move toward that budget.
-  const investment=.55+.35*(p.level/rarity.maxLevel)+.10*(p.bondLevel/10),base=.07,contribution=Math.min(.12,base*rarity.targetPowerMultiplier*investment);
+  const investment=.55+.35*(p.level/rarity.maxLevel)+.10*(p.bondLevel/10),base=.07,bondResonance=p.bondLevel>=6?1.015:1,contribution=Math.min(.12,base*rarity.targetPowerMultiplier*investment*bondResonance);
   if(def.role==='damage')return {outputMultiplier:1+contribution,incomingDamageMultiplier:1,recoveryMultiplier:1,contributionPct:contribution};
   if(def.role==='tank')return {outputMultiplier:1+contribution*.12,incomingDamageMultiplier:1-contribution*.78,recoveryMultiplier:1+contribution*.25,contributionPct:contribution};
   return {outputMultiplier:1+contribution*.42,incomingDamageMultiplier:1-contribution*.12,recoveryMultiplier:1+contribution*.72,contributionPct:contribution};

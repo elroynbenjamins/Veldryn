@@ -261,6 +261,13 @@ export const COMPANION_CODEX_MILESTONES:CompanionCodexMilestoneDefinition[]=[
  {id:'CODEX_BONDKEEPER',name:'Bondkeeper',description:'Reach Bond 10 with 5 Combat Companions.',requirement:{type:'bond_10',count:5},reward:{companionEssence:160,rewardIds:['TITLE_BONDKEEPER']}},
  {id:'CODEX_MASTER_HANDLER',name:'Master Handler',description:'Fully Master 3 Combat Companions.',requirement:{type:'mastered',count:3},reward:{companionEssence:250,rewardIds:['PROFILE_BORDER_MASTER_HANDLER'],showcaseSlots:3}},
  {id:'CODEX_WORLDLY_COMPANY',name:'Worldly Company',description:'Own Combat Companions from 5 different origins.',requirement:{type:'origins_owned',count:5},reward:{companionEssence:180,rewardIds:['PROFILE_BADGE_WORLDLY_COMPANY']}},
+ {id:'CODEX_COLLECTOR_III',name:'Companion Collector III',description:'Own 24 Combat Companions.',requirement:{type:'owned_total',count:24},reward:{companionEssence:350,rewardIds:['TITLE_COMPANION_CURATOR']}},
+ {id:'CODEX_BONDKEEPER_II',name:'Bondkeeper II',description:'Reach Bond 10 with 12 Combat Companions.',requirement:{type:'bond_10',count:12},reward:{companionEssence:300,rewardIds:['PROFILE_BACKGROUND_BONDED_COMPANY']}},
+ {id:'CODEX_MASTER_HANDLER_II',name:'Master Handler II',description:'Fully Master 8 Combat Companions.',requirement:{type:'mastered',count:8},reward:{companionEssence:450,rewardIds:['TITLE_MASTER_OF_COMPANIONS']}},
+ {id:'CODEX_PRESTIGE_KEEPER',name:'Prestige Keeper',description:'Own 3 Prestige Combat Companions.',requirement:{type:'owned_rarity',rarity:'prestige',count:3},reward:{companionEssence:300,rewardIds:['PROFILE_BADGE_PRESTIGE_KEEPER']}},
+ {id:'CODEX_EVENT_HISTORIAN',name:'Event Historian',description:'Own 5 annual Event Companions.',requirement:{type:'event_owned',count:5},reward:{companionEssence:250,rewardIds:['PROFILE_BACKGROUND_EVENT_HISTORIAN']}},
+ {id:'CODEX_TRIALBOUND',name:'Trialbound',description:'Own 3 companions earned from special Companion challenges.',requirement:{type:'trial_boss_owned',count:3},reward:{companionEssence:325,rewardIds:['PROFILE_BORDER_TRIALBOUND']}},
+
 ];
 
 export const COMPANION_SPECIAL_CHALLENGES:CompanionSpecialChallengeDefinition[]=[

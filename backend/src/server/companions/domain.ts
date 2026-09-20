@@ -138,7 +138,9 @@ export type CompanionCodexMilestoneRequirement=
   |{type:'bond_10';count:number}
   |{type:'mastered';count:number}
   |{type:'origins_owned';count:number}
-  |{type:'max_level';count:number};
+  |{type:'max_level';count:number}
+  |{type:'event_owned';count:number}
+  |{type:'trial_boss_owned';count:number};
 export interface CompanionCodexMilestoneDefinition{
   id:string;name:string;description:string;requirement:CompanionCodexMilestoneRequirement;
   reward:{companionEssence?:number;rewardIds?:string[];showcaseSlots?:number};

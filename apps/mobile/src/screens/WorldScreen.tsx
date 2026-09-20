@@ -1,4 +1,4 @@
-import {useEffect,useState} from 'react';
+import {useEffect,useMemo,useState} from 'react';
 import {RegionArtwork} from '../components/RegionArtwork';
 import {ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
@@ -13,6 +13,7 @@ import {EnvironmentBanner} from '../components/EnvironmentBanner';
 import {Panel} from '../components/Panel';
 import {GameButton} from '../components/GameButton';
 import {C,equipmentColors,radii,spacing,typography} from '../theme/theme';
+import {useTheme} from '../theme/ThemeProvider';
 import {FrostmarchRegionPanel} from '../components/FrostmarchRegionPanel';
 import {RegionalJournalPanel} from '../components/RegionalJournalPanel';
 import {RegionalStoryLeadsPanel} from '../components/RegionalStoryLeadsPanel';
@@ -28,6 +29,8 @@ type Props={
 };
 
 export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop}:Props){
+ const {colors:C,equipmentColors}=useTheme();
+ const s=useMemo(()=>createStyles(C,equipmentColors),[C,equipmentColors]);
   const level=state.character!.level,currentId=currentRegionId(state);
   const current=WORLD_ZONES.find(zone=>zone.id===currentId)??WORLD_ZONES[0];
   const environment=environmentForZone(current.id);
@@ -88,7 +91,7 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop}:Pr
   </ScrollView>;
 }
 
-const s=StyleSheet.create({
+const createStyles=(C:any,equipmentColors:any)=>StyleSheet.create({
   root:{padding:spacing.lg,gap:spacing.md,paddingBottom:spacing.xl},
   kicker:{...typography.caption,color:equipmentColors.gold,fontWeight:'700',letterSpacing:1.2},
   h:{...typography.hero,color:C.text},

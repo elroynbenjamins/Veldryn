@@ -1,6 +1,7 @@
 import {MONSTERS} from '../content/monsters';
 import {QUESTS} from '../content/quests';
 import {GATHERING} from '../content/skills';
+import {WORLD_ZONES} from '../content/world-map';
 import {HERB_NODES} from '../content/herbalism';
 import {alchemyRecipeDef} from '../content/alchemy';
 import {explorationRoute} from '../content/exploration';
@@ -30,10 +31,11 @@ export function dashboardRecommendation(state:GameState):DashboardRecommendation
   const ready=state.quests.find(q=>q.status==='complete');
   if(ready){const def=QUESTS.find(q=>q.id===ready.questId);return {title:'Chapter reward ready',detail:def?`${def.name} is complete. Claim it to unlock the next chapter.`:'A journal reward is ready.',button:'Claim reward',destination:'Quests',priority:'progress'}}
   const active=state.quests.find(q=>q.status==='active'),def=QUESTS.find(q=>q.id===active?.questId);
-  if(def?.kind==='kills'&&def.targetId){const monster=MONSTERS.find(m=>m.id===def.targetId);if(monster&&state.unlockedMonsterIds.includes(monster.id))return {title:`Continue: ${def.name}`,detail:`Hunt ${monster.name} in ${monster.zone} · ${Math.max(0,def.required-(active?.progress??0))} remaining.`,button:'Open hunting ground',destination:'World',zoneId:monster.zone,priority:'progress'}}
+  if(def?.kind==='kills'&&def.targetId){const monster=MONSTERS.find(m=>m.id===def.targetId);if(monster&&state.unlockedMonsterIds.includes(monster.id)){const zoneId=WORLD_ZONES.find(zone=>zone.name===monster.zone)?.id;return {title:`Continue: ${def.name}`,detail:`Hunt ${monster.name} in ${monster.zone} · ${Math.max(0,def.required-(active?.progress??0))} remaining.`,button:'Open hunting ground',destination:'World',zoneId,priority:'progress'}}}
   if(def?.kind==='item')return {title:`Continue: ${def.name}`,detail:def.description,button:'Gather materials',destination:'Skills',priority:'progress'};
   if(def?.kind==='skillLevel')return {title:`Continue: ${def.name}`,detail:def.description,button:'Train a skill',destination:'Skills',priority:'progress'};
   if(def?.kind==='equip')return {title:`Continue: ${def.name}`,detail:def.description,button:'Review equipment',destination:'Inventory',priority:'upgrade'};
+  if(def?.kind==='level'){const remaining=Math.max(0,def.required-c.level);return {title:`Continue: ${def.name}`,detail:`Reach character level ${def.required}${remaining?` · ${remaining} level${remaining===1?'':'s'} remaining`:''}. Keep collecting combat rewards and improving your gear.`,button:'Choose a hunt',destination:'World',priority:'progress'}}
   if(def?.kind==='boss')return {title:'Prepare for the Fallen Knight',detail:'Improve your equipment, food, and mastery before the milestone battle.',button:'Review character',destination:'Character',priority:'upgrade'};
   const next=MONSTERS.filter(m=>!m.boss&&state.unlockedMonsterIds.includes(m.id)).sort((a,b)=>b.level-a.level)[0];
   return next?{title:'Push your combat level',detail:`${next.name} is your strongest unlocked target in ${next.zone}.`,button:'Choose a hunt',destination:'World',zoneId:next.zone,priority:'progress'}:{title:'Build your first supplies',detail:'Gather materials and craft your first upgrade.',button:'Open skills',destination:'Skills',priority:'upgrade'};
@@ -68,4 +70,30 @@ export function activityRate(state:GameState){
   const xpMultiplier = (effect?.xpMultiplier??1)*(monster?multipliers.characterXpMultiplier:multipliers.skillXpMultiplier);
   const goldMultiplier = (effect?.goldMultiplier??1)*(monster?multipliers.goldMultiplier:1);
   return {actionsPerHour:actions,xpPerHour:Math.floor(actions*baseXp*xpMultiplier),goldPerHour:monster?Math.floor(actions*baseGold*goldMultiplier):0};
+}
+
+
+export function campaignProgressSummary(state:GameState){
+  const claimed=state.quests.filter(row=>row.status==='claimed').length;
+  const ready=state.quests.filter(row=>row.status==='complete').length;
+  const current=state.quests.find(row=>row.status==='active'||row.status==='complete');
+  const currentIndex=current?QUESTS.findIndex(def=>def.id===current.questId):-1;
+  const currentDef=currentIndex>=0?QUESTS[currentIndex]:undefined;
+  const fallenKnightDef=QUESTS.find(def=>def.id==='QST_014');
+  const fallenKnightIndex=fallenKnightDef?QUESTS.indexOf(fallenKnightDef):-1;
+  const bossDefeated=state.defeatedBossIds.includes('FALLEN_KNIGHT');
+  const chapter=currentIndex>=0?currentIndex+1:Math.min(QUESTS.length,claimed+1);
+  const campaignPct=Math.round(Math.min(1,claimed/Math.max(1,QUESTS.length))*100);
+  return {
+    claimed,
+    total:QUESTS.length,
+    ready,
+    chapter,
+    currentTitle:currentDef?.name??(claimed>=QUESTS.length?'Asterfall complete':'Next chapter'),
+    campaignPct,
+    fallenKnightChapter:fallenKnightIndex>=0?fallenKnightIndex+1:14,
+    bossDefeated,
+    bossReady:!!state.character&&state.character.level>=25,
+    level:state.character?.level??0,
+  };
 }

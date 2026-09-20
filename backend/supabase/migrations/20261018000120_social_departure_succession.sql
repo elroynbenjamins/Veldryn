@@ -36,23 +36,21 @@ security definer
 set search_path=''
 as $$
 declare
- v_guild public.guilds%rowtype;v_leader_joined timestamptz;v_leader_last timestamptz;
+ v_guild public.guilds%rowtype;v_leader_account uuid;v_leader_joined timestamptz;v_leader_last timestamptz;
  v_next_account uuid;v_next_role text;v_next_last timestamptz;
 begin
  select * into v_guild from public.guilds g where g.id=p_guild_id for update;
  if not found then return jsonb_build_object('changed',false,'reason','guild_not_found');end if;
- select gm.joined_at into v_leader_joined from public.guild_members gm
-  where gm.guild_id=p_guild_id and gm.account_id=v_guild.owner_account_id and gm.role='leader'
-  limit 1;
- if v_leader_joined is null then
-  select gm.account_id,gm.joined_at into v_guild.owner_account_id,v_leader_joined
-  from public.guild_members gm where gm.guild_id=p_guild_id and gm.role='leader'
-  order by gm.joined_at,gm.account_id limit 1;
-  if v_guild.owner_account_id is null then return jsonb_build_object('changed',false,'reason','leader_missing');end if;
+ select gm.account_id,gm.joined_at into v_leader_account,v_leader_joined
+ from public.guild_members gm where gm.guild_id=p_guild_id and gm.role='leader'
+ order by gm.joined_at,gm.account_id limit 1;
+ if v_leader_account is null then return jsonb_build_object('changed',false,'reason','leader_missing');end if;
+ if v_guild.owner_account_id is distinct from v_leader_account then
+  update public.guilds set owner_account_id=v_leader_account where id=p_guild_id;
  end if;
- v_leader_last:=public.social_account_last_active_v1(v_guild.owner_account_id,v_leader_joined);
+ v_leader_last:=public.social_account_last_active_v1(v_leader_account,v_leader_joined);
  if v_leader_last>clock_timestamp()-interval '21 days' then
-  return jsonb_build_object('changed',false,'reason','leader_active','leaderAccountId',v_guild.owner_account_id,'leaderLastActiveAt',v_leader_last);
+  return jsonb_build_object('changed',false,'reason','leader_active','leaderAccountId',v_leader_account,'leaderLastActiveAt',v_leader_last);
  end if;
 
  select candidate.account_id,candidate.role,candidate.last_active
@@ -62,7 +60,7 @@ begin
          public.social_account_last_active_v1(gm.account_id,gm.joined_at) last_active
   from public.guild_members gm
   where gm.guild_id=p_guild_id
-    and gm.account_id<>v_guild.owner_account_id
+    and gm.account_id<>v_leader_account
     and gm.role in('officer','member')
  ) candidate
  where candidate.last_active>clock_timestamp()-interval '21 days'
@@ -70,17 +68,17 @@ begin
  limit 1;
 
  if v_next_account is null then
-  return jsonb_build_object('changed',false,'reason','no_active_successor','leaderAccountId',v_guild.owner_account_id,'leaderLastActiveAt',v_leader_last);
+  return jsonb_build_object('changed',false,'reason','no_active_successor','leaderAccountId',v_leader_account,'leaderLastActiveAt',v_leader_last);
  end if;
 
  update public.guild_members set role='officer'
-  where guild_id=p_guild_id and account_id=v_guild.owner_account_id and role='leader';
+  where guild_id=p_guild_id and account_id=v_leader_account and role='leader';
  update public.guild_members set role='leader'
   where guild_id=p_guild_id and account_id=v_next_account;
  update public.guilds set owner_account_id=v_next_account where id=p_guild_id;
  insert into public.guild_leadership_history_v1(guild_id,previous_account_id,next_account_id,reason)
- values(p_guild_id,v_guild.owner_account_id,v_next_account,'inactivity');
- return jsonb_build_object('changed',true,'reason','inactivity','previousAccountId',v_guild.owner_account_id,'leaderAccountId',v_next_account,'successorPreviousRole',v_next_role,'leaderLastActiveAt',v_next_last);
+ values(p_guild_id,v_leader_account,v_next_account,'inactivity');
+ return jsonb_build_object('changed',true,'reason','inactivity','previousAccountId',v_leader_account,'leaderAccountId',v_next_account,'successorPreviousRole',v_next_role,'leaderLastActiveAt',v_next_last);
 end
 $$;
 

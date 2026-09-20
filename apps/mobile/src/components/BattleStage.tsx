@@ -3,6 +3,7 @@ import {Animated,Easing,StyleSheet,Text,View} from 'react-native';
 import {MonsterDef} from '../content/monsters';
 import {WORLD_ZONES} from '../content/world-map';
 import {combatMotionProfile} from '../core/combat-motion';
+import {combatChallenge} from '../core/challenge-hunts';
 import {combatPresentation} from '../core/combat-presentation';
 import {effectiveStats} from '../core/game';
 import {GameState} from '../core/types';
@@ -14,7 +15,7 @@ import {StatBar} from './StatBar';
 
 export function BattleStage({state,monster,elapsedSeconds,cycleSeconds}:{state:GameState;monster:MonsterDef;elapsedSeconds:number;cycleSeconds:number}){
  const view=combatPresentation(state,monster,elapsedSeconds,cycleSeconds),stats=effectiveStats(state);
- const region=WORLD_ZONES.find(zone=>zone.name===monster.zone),motion=combatMotionProfile(cycleSeconds,state.settings.reduceMotion);
+ const region=WORLD_ZONES.find(zone=>zone.name===monster.zone),motion=combatMotionProfile(cycleSeconds,state.settings.reduceMotion),challenge=combatChallenge(view.challengeId);
  const playerLunge=useRef(new Animated.Value(0)).current,enemyLunge=useRef(new Animated.Value(0)).current;
  const enemyImpact=useRef(new Animated.Value(0)).current,playerImpact=useRef(new Animated.Value(0)).current;
  const shake=useRef(new Animated.Value(0)).current,breath=useRef(new Animated.Value(0)).current;
@@ -58,7 +59,7 @@ export function BattleStage({state,monster,elapsedSeconds,cycleSeconds}:{state:G
  const floatY=(value:Animated.Value)=>value.interpolate({inputRange:[0,1],outputRange:[0,-22]});
  const flash=(value:Animated.Value)=>value.interpolate({inputRange:[0,.08,.22,1],outputRange:[0,.58,.12,0]});
  return <View style={s.stage}>
-  <View style={s.header}><Text accessibilityRole="header" style={s.title}>Combat preview</Text><Text style={[s.safety,{color:view.safety==='safe'?C.good:view.safety==='dangerous'?C.warning:C.info}]}>{view.safety}</Text></View>
+  <View style={s.header}><View><Text accessibilityRole="header" style={s.title}>Combat preview</Text>{challenge&&<Text style={[s.challenge,{color:challenge.accent}]}>{challenge.name.toUpperCase()} · +{Math.round((challenge.xpMultiplier-1)*100)}% XP</Text>}</View><Text style={[s.safety,{color:view.safety==='safe'?C.good:view.safety==='dangerous'?C.warning:C.info}]}>{view.safety}</Text></View>
   <Animated.View style={[s.arena,{transform:[{translateX:shake}]}]}><RegionArtwork regionId={region?.id??'GREENFIELDS'}/><View style={s.shade}/>
    <View style={s.combatants}>
     <Animated.View style={[s.side,{transform:[{translateX:playerLunge.interpolate({inputRange:[0,1],outputRange:[0,motion.playerLungePx]})},{scale:playerScale}]}]}>
@@ -83,7 +84,7 @@ export function BattleStage({state,monster,elapsedSeconds,cycleSeconds}:{state:G
 const s=StyleSheet.create({
  stage:{backgroundColor:C.panel,borderWidth:1,borderColor:C.line,borderRadius:radii.lg,overflow:'hidden'},
  header:{padding:12,flexDirection:'row',flexWrap:'wrap',alignItems:'baseline',justifyContent:'space-between',gap:8},
- title:{...typography.title,color:C.text},safety:{...typography.caption,textTransform:'capitalize',fontWeight:'600'},
+ title:{...typography.title,color:C.text},challenge:{...typography.caption,fontWeight:'900',letterSpacing:.7},safety:{...typography.caption,textTransform:'capitalize',fontWeight:'600'},
  arena:{minHeight:218,overflow:'hidden',justifyContent:'center'},shade:{...StyleSheet.absoluteFillObject,backgroundColor:'rgba(5,12,20,.58)'},
  combatants:{flexDirection:'row',alignItems:'flex-start',padding:10,gap:4},side:{flex:1,minWidth:0,alignItems:'center',gap:4},
  portrait:{width:'100%',maxWidth:128,height:128,alignItems:'center',justifyContent:'flex-end',backgroundColor:'rgba(5,12,20,.6)',borderRadius:36,overflow:'hidden',position:'relative'},

@@ -7,7 +7,7 @@ import {createSaveBackup,parseSaveBackup} from '../src/core/save-transfer';
 import {characterPermanentMultipliers} from '../src/core/permanent-boosts';
 import {PET_PERMANENT_BOOSTS} from '../src/content/permanent-boosts';
 import {COMBAT_COMPANIONS} from '../src/content/combat-companions';
-import {companionMaterialSources} from '../src/core/companion-presentation';
+import {companionMaterialSources,companionNextMasteryTargets,companionNextUnlockTargets} from '../src/core/companion-presentation';
 import {COMPANION_TECHNIQUE_SWITCH_COST,companionServerDefinition,companionTechniques} from '../../../backend/src/server/companions/content';
 import {buildOwnedCompanionCombatant} from '../../../backend/src/server/companions/combat-adapter';
 import {buildCompanionTrialEncounter} from '../../../backend/src/server/companions/trials';
@@ -23,6 +23,7 @@ ok(permanentCompanions.length===24,'permanent companion count remains 24');
 ok(eventCompanions.length===10,'event companion count is 10');
 ok(new Set(COMBAT_COMPANIONS.map(def=>def.id)).size===COMBAT_COMPANIONS.length,'companion ids are unique');
 ok(eventCompanions.map(def=>def.id).join(',')===Array.from({length:10},(_,index)=>`EVT_UNIT_${String(index+1).padStart(3,'0')}`).join(','),'event companion ids remain EVT_UNIT_001 through EVT_UNIT_010');
+const unlockGuidance=companionNextUnlockTargets(fixture(),3);ok(unlockGuidance.length>0&&unlockGuidance.every(entry=>!ids.includes(entry.def.id)&&entry.def.origin.type!=='event'),'Codex guidance prioritizes locked permanent companion unlocks');ok(unlockGuidance.every(entry=>entry.progress.ratio>=0&&entry.progress.ratio<=1),'unlock guidance progress remains normalized');const masteryGuidance=companionNextMasteryTargets(fixture(),3);ok(masteryGuidance.length===3&&masteryGuidance.every(entry=>entry.nextStep.startsWith('Train')),'Codex mastery guidance gives concrete next training steps');
 let s=fixture();
 for(const d of COMBAT_COMPANIONS){ok(companionServerDefinition(d.id)?.role===d.role,`${d.id} role agrees`);ok(companionServerDefinition(d.id)?.rarity===d.rarity,`${d.id} rarity agrees`);}
 rejects(()=>command(s,'companion_equip',{id:'UNIT_002'}),'same role rejected');

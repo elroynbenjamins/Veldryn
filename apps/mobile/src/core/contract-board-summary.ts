@@ -1,3 +1,4 @@
+/** Read-only Home projection for the current Contract Board. */
 import type {GameState} from './types';
 import type {WeeklyOrder} from './weekly-orders-v41';
 import {weeklyOrderBoardForState} from './long-term-progression-runtime';

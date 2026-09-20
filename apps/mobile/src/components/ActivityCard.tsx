@@ -1,11 +1,12 @@
-import {useEffect,useRef,useState} from 'react';
+import {useEffect,useRef,useState,useMemo} from 'react';
 import {Animated,Easing,Pressable,StyleSheet,Text,View} from 'react-native';
 import {ActiveActivity,RewardBundle} from '../core/types';
 import {huntGoalProgress,huntMomentumStatus} from '../core/hunt-goals';
 import {itemDef} from '../content/items';
 import {GameButton} from './GameButton';
 import {Panel} from './Panel';
-import {C,spacing,typography} from '../theme/theme';
+import {spacing,typography,equipmentTheme,type ThemeColors} from '../theme/theme';
+import {useGameTheme} from '../theme/ThemeContext';
 import {formatGameNumber} from '../core/number-format';
 
 function duration(seconds:number){
@@ -15,6 +16,7 @@ function duration(seconds:number){
 }
 
 export function ActivityCard({title,kind,activity,cycleSeconds,capHours,preview,rates,reduceMotion=false,numberMode='abbreviated',onClaim,onStop}:{title:string;kind:'combat'|'gathering';activity?:ActiveActivity;cycleSeconds:number;capHours:number;preview:RewardBundle;rates:{actionsPerHour:number;xpPerHour:number;goldPerHour:number};reduceMotion?:boolean;numberMode?:'abbreviated'|'exact';onClaim:()=>void;onStop:()=>void}){
+  const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
   const [showDetails,setShowDetails]=useState(false);
   const pulse=useRef(new Animated.Value(0)).current;
   useEffect(()=>{pulse.setValue(0);if(reduceMotion)return;const loop=Animated.loop(Animated.timing(pulse,{toValue:1,duration:1100,easing:Easing.linear,useNativeDriver:true}));loop.start();return()=>loop.stop()},[pulse,reduceMotion]);
@@ -50,7 +52,7 @@ export function ActivityCard({title,kind,activity,cycleSeconds,capHours,preview,
   </Panel>;
 }
 
-const s=StyleSheet.create({
+function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);return StyleSheet.create({
   heading:{flexDirection:'row',justifyContent:'space-between',alignItems:'flex-start',gap:spacing.md},
   headingCopy:{flex:1},eyebrow:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:1},
   title:{...typography.title,color:C.text},detail:{...typography.body,color:C.muted},
@@ -67,4 +69,4 @@ const s=StyleSheet.create({
   capNotice:{...typography.body,color:C.text},noticeLabel:{...typography.caption,color:C.warning,fontWeight:'900',letterSpacing:1},stopNotice:{gap:4,padding:spacing.sm,borderWidth:1,borderColor:C.warning,borderRadius:8,backgroundColor:'#332515'},
   progressBlock:{gap:spacing.xs,paddingVertical:spacing.xs},progressMeta:{flexDirection:'row',flexWrap:'wrap',gap:6,justifyContent:'space-between'},progressLabel:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:1},progressTime:{...typography.bodyStrong,color:C.text},track:{height:16,borderRadius:8,overflow:'hidden',backgroundColor:C.bg,borderWidth:1,borderColor:C.line},fill:{height:'100%',overflow:'hidden',backgroundColor:C.good,borderRadius:8},shine:{position:'absolute',width:54,height:'100%',backgroundColor:'rgba(255,255,255,.28)'},
   rateRow:{flexDirection:'row',flexWrap:'wrap',gap:spacing.sm},rate:{...typography.caption,color:C.info,fontWeight:'800'},
-});
+});}

@@ -1,16 +1,18 @@
 import {IdentityArtwork,GuildCrest} from '../components/SocialIdentity';
-import {useState,type ReactNode} from 'react';
+import {useMemo,useState,type ReactNode} from 'react';
 import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from '../components/GameButton';
 import {Panel} from '../components/Panel';
 import {GameState} from '../core/types';
 import {C,equipmentColors,spacing,typography} from '../theme/theme';
+import {useTheme} from '../theme/ThemeProvider';
 import {formatGameNumber} from '../core/number-format';
 
 const ROSTER=[['Elowen','Dawnkeeper',28,'Leader'],['Brann','Ironwarden',24,'Officer'],['Mira','Wayfinder',21,'Member'],['Tovan','Ravager',19,'Member'],['Sera','Hexweaver',17,'Member']];
 type GuildSection='Overview'|'PvE'|'Roster';
 
 export function GuildScreen({state,onChange,onlineDirectory,onlineManagement,onlinePve,online=false}:{online?:boolean;state:GameState;onChange:(next:GameState)=>void;onlineDirectory?:ReactNode;onlineManagement?:ReactNode;onlinePve?:ReactNode}){
+ const {colors:C,equipmentColors}=useTheme();const s=useMemo(()=>createStyles(C,equipmentColors),[C,equipmentColors]);
   const [section,setSection]=useState<GuildSection>('Overview');
   if(online)return <ScrollView contentContainerStyle={s.root}><Text accessibilityRole="header" style={s.h}>Guild</Text>{onlineDirectory}{onlineManagement}{onlinePve}</ScrollView>;
   const joined=state.account.guildMember,contribution=state.account.guildContribution??0,project=state.account.guildProjectProgress??0,bossHp=state.account.guildBossHp??100000;
@@ -25,5 +27,6 @@ export function GuildScreen({state,onChange,onlineDirectory,onlineManagement,onl
   </ScrollView>;
 }
 
-function TabChip({label,selected,onPress}:{label:string;selected:boolean;onPress:()=>void}){return <Pressable accessibilityRole="tab" accessibilityState={{selected}} onPress={onPress} style={({pressed})=>[s.tabChip,selected&&s.tabChipSelected,pressed&&s.pressed]}><Text style={[s.tabText,selected&&s.tabTextSelected]}>{label}</Text></Pressable>}
-const s=StyleSheet.create({root:{padding:spacing.lg,gap:spacing.md},h:{...typography.hero,color:C.text},tabs:{flexDirection:'row',flexWrap:'wrap',gap:6},tabChip:{minHeight:40,paddingHorizontal:13,justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.bg},tabChipSelected:{borderColor:equipmentColors.selectedLine,backgroundColor:equipmentColors.selected},tabText:{fontSize:12,fontWeight:'700',color:C.muted},tabTextSelected:{color:'#d9f3ff'},pressed:{opacity:.76},title:{...typography.title,color:C.text},sub:{...typography.body,color:C.muted},track:{height:10,backgroundColor:C.panel2,borderRadius:5,overflow:'hidden',marginVertical:10},fill:{height:10,backgroundColor:C.accent},bossFill:{height:10,backgroundColor:'#b85c68'},member:{flexDirection:'row',alignItems:'center',gap:10,paddingVertical:8,borderBottomWidth:1,borderBottomColor:C.line},avatar:{width:38,height:38,borderRadius:19,backgroundColor:C.panel2,borderWidth:1,borderColor:C.accent,alignItems:'center',justifyContent:'center'},avatarText:{color:C.accent,fontWeight:'900',fontSize:18},flex:{flex:1},memberName:{color:C.text,fontWeight:'900'},status:{fontSize:12,fontWeight:'700'},statusLeader:{color:equipmentColors.gold},statusOfficer:{color:C.info},statusMember:{color:C.good}});
+function TabChip({label,selected,onPress}:{label:string;selected:boolean;onPress:()=>void}){
+ const {colors:C,equipmentColors}=useTheme();const s=useMemo(()=>createStyles(C,equipmentColors),[C,equipmentColors]);return <Pressable accessibilityRole="tab" accessibilityState={{selected}} onPress={onPress} style={({pressed})=>[s.tabChip,selected&&s.tabChipSelected,pressed&&s.pressed]}><Text style={[s.tabText,selected&&s.tabTextSelected]}>{label}</Text></Pressable>}
+const createStyles=(C:any,equipmentColors:any)=>StyleSheet.create({root:{padding:spacing.lg,gap:spacing.md},h:{...typography.hero,color:C.text},tabs:{flexDirection:'row',flexWrap:'wrap',gap:6},tabChip:{minHeight:40,paddingHorizontal:13,justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.bg},tabChipSelected:{borderColor:equipmentColors.selectedLine,backgroundColor:equipmentColors.selected},tabText:{fontSize:12,fontWeight:'700',color:C.muted},tabTextSelected:{color:'#d9f3ff'},pressed:{opacity:.76},title:{...typography.title,color:C.text},sub:{...typography.body,color:C.muted},track:{height:10,backgroundColor:C.panel2,borderRadius:5,overflow:'hidden',marginVertical:10},fill:{height:10,backgroundColor:C.accent},bossFill:{height:10,backgroundColor:'#b85c68'},member:{flexDirection:'row',alignItems:'center',gap:10,paddingVertical:8,borderBottomWidth:1,borderBottomColor:C.line},avatar:{width:38,height:38,borderRadius:19,backgroundColor:C.panel2,borderWidth:1,borderColor:C.accent,alignItems:'center',justifyContent:'center'},avatarText:{color:C.accent,fontWeight:'900',fontSize:18},flex:{flex:1},memberName:{color:C.text,fontWeight:'900'},status:{fontSize:12,fontWeight:'700'},statusLeader:{color:equipmentColors.gold},statusOfficer:{color:C.info},statusMember:{color:C.good}});

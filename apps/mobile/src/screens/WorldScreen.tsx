@@ -25,9 +25,10 @@ type Props={
   onOpenCombat:(zoneId?:string)=>void;
   onOpenSkills:()=>void;
   onCoop?:(dungeonId?:string)=>void;
+  goalRegionId?:string;
 };
 
-export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop}:Props){
+export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop,goalRegionId}:Props){
   const level=state.character!.level,currentId=currentRegionId(state);
   const current=WORLD_ZONES.find(zone=>zone.id===currentId)??WORLD_ZONES[0];
   const environment=environmentForZone(current.id);
@@ -66,13 +67,14 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop}:Pr
 
     {storyRegion&&<RegionalStoryLeadsPanel state={state} regionId={storyRegion} onOpenCombat={()=>onOpenCombat()}/>}
 
+    {goalRegionId&&goalRegionId!==current.id?<View style={s.goalRoute}><Text style={s.goalRouteLabel}>WORKING TOWARD ROUTE</Text><Text style={s.sub}>Travel to {WORLD_ZONES.find(zone=>zone.id===goalRegionId)?.name??goalRegionId} to continue your pinned goal.</Text></View>:null}
     <Text style={s.section}>CHOOSE A DESTINATION</Text>
     {WORLD_ZONES.filter(zone=>zone.id!==current.id).map(zone=>{
       const unlocked=level>=zone.minLevel,active=zone.id===current.id,environment=environmentForZone(zone.id);
-      return <View key={zone.id} style={[s.destination,active&&{borderColor:zone.accent}]}>
+      const goalTarget=goalRegionId===zone.id;return <View key={zone.id} style={[s.destination,active&&{borderColor:zone.accent},goalTarget&&s.goalDestination]}>
         <View style={s.thumbnail}><RegionArtwork regionId={zone.id} muted={!unlocked}/>{!unlocked&&<View style={s.lockedTag}><Text style={s.lockedText}>Lv. {zone.minLevel}</Text></View>}</View>
         <View style={s.flex}>
-          <Text style={s.destinationName}>{zone.name}</Text>
+          <View style={s.destinationHead}><Text style={s.destinationName}>{zone.name}</Text>{goalTarget?<Text style={s.goalBadge}>GOAL</Text>:null}</View>
           <Text style={s.destinationMeta}>{unlocked?`Levels ${zone.minLevel}–${zone.maxLevel} · ${environment.weatherSymbol} ${environment.weatherName}`:`Unlocks at level ${zone.minLevel}`}</Text>
           {unlocked&&<Text style={s.destinationSub}>{zone.subtitle}</Text>}
         <View style={s.travelButton}><GameButton title={active?'Here':unlocked?'Travel':`Lv. ${zone.minLevel}`} disabled={active||!unlocked} tone={active?'primary':'secondary'} onPress={()=>onTravel(zone.id)}/></View></View>
@@ -105,7 +107,12 @@ const s=StyleSheet.create({
   destination:{minHeight:104,flexDirection:'row',alignItems:'center',gap:spacing.sm,padding:spacing.sm,backgroundColor:equipmentColors.panel,borderWidth:1,borderColor:C.line,borderRadius:radii.lg},
   smallSymbol:{width:44,height:44,alignItems:'center',justifyContent:'center',borderWidth:1,borderRadius:22,backgroundColor:equipmentColors.stage},
   smallSymbolText:{fontSize:21,fontWeight:'700'},
+  destinationHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},
   destinationName:{...typography.bodyStrong,color:C.text},
+  goalDestination:{borderColor:C.info,borderWidth:2},
+  goalBadge:{fontSize:9,color:C.info,fontWeight:'900',letterSpacing:.8},
+  goalRoute:{padding:spacing.sm,borderLeftWidth:3,borderLeftColor:C.info,backgroundColor:'#102536'},
+  goalRouteLabel:{...typography.caption,color:C.info,fontWeight:'900',letterSpacing:.8},
   destinationMeta:{...typography.caption,color:C.info,fontWeight:'600'},
   destinationSub:{fontSize:12,lineHeight:17,color:C.muted},
   travelButton:{alignSelf:'flex-start',minWidth:88,marginTop:8},

@@ -1,11 +1,13 @@
-import {claimCompanionAssignment,companionMissionRequirementSatisfied,predictedCompanionMissionGrade,rolloverCompanionAssignmentStatuses,startCompanionAssignment,validateCompanionMissionTeam} from '../assignments';
-import {COMPANION_EXPEDITION_BOND_RATE,COMPANION_EXPEDITION_PEN_DURATION_REDUCTION,companionMission} from '../content';
+import {activeCompanionMissions,claimCompanionAssignment,companionMissionRequirementSatisfied,predictedCompanionMissionGrade,rolloverCompanionAssignmentStatuses,startCompanionAssignment,validateCompanionMissionTeam} from '../assignments';
+import {COMPANION_EXPEDITION_BOND_RATE,COMPANION_EXPEDITION_PEN_DURATION_REDUCTION,COMPANION_MISSIONS,companionMission} from '../content';
 import {companionAvailabilityStatus} from '../status';
 import type {CompanionAssignment,CompanionEconomyState,OwnedCompanionSnapshot} from '../domain';
 const ok=(v:unknown,m:string)=>{if(!v)throw new Error(m)};const eq=(a:unknown,b:unknown,m:string)=>{if(a!==b)throw new Error(`${m}: expected ${String(b)}, got ${String(a)}`)};const throws=(f:()=>unknown,m:string)=>{let did=false;try{f()}catch{did=true}if(!did)throw new Error(m)};
 const p=(id:string,level=30,bondLevel=8,ascensionTier:0|1|2|3=3):OwnedCompanionSnapshot=>({companionId:id,level,xp:0,ascensionTier,bondLevel,bondXp:0,bondTraitUnlocked:bondLevel>=10});
 const owned:Record<string,OwnedCompanionSnapshot>={UNIT_001:p('UNIT_001',20,8,2),UNIT_002:p('UNIT_002',20,8,2),UNIT_003:p('UNIT_003',20,8,2),UNIT_004:p('UNIT_004',25,8,2),UNIT_006:p('UNIT_006',25,8,2),UNIT_007:p('UNIT_007',30),UNIT_013:p('UNIT_013',25),UNIT_014:p('UNIT_014',30),UNIT_015:p('UNIT_015',30),UNIT_021:p('UNIT_021',25),UNIT_022:p('UNIT_022',30),UNIT_024:p('UNIT_024',35)};
 const economy:CompanionEconomyState={gold:100000,companionEssence:500,bondstones:5,materials:{SUPPLIES:99,IRONWOOD_FANG:99}};const now=Date.UTC(2026,8,11,12);
+eq(COMPANION_MISSIONS.length,12,'Expanded Sanctuary mission pool size');
+const activeNow=activeCompanionMissions(now),activeNext=activeCompanionMissions(now+7*86400000);eq(activeNow.length,8,'Five baseline plus three rotating specialist missions should be visible');ok(['MISSION_SCOUT_2H','MISSION_SUNSCAR_4H','MISSION_ASTERFALL_SHRINE_8H','MISSION_FROST_8H','MISSION_ASH_12H'].every(id=>activeNow.some(m=>m.id===id)),'Baseline missions must always remain available');ok(activeNow.some(m=>!activeNext.some(n=>n.id===m.id))||activeNext.some(m=>!activeNow.some(n=>n.id===m.id)),'Specialist mission rotation did not change week to week');
 // 1: 1-3 companions may be sent when the mission permits.
 ok(validateCompanionMissionTeam({missionId:'MISSION_SCOUT_2H',companionIds:['UNIT_001'],owned,assignments:[],equippedCompanionIds:new Set(),expeditionPensLevel:1}).ok,'One-companion mission rejected');
 ok(validateCompanionMissionTeam({missionId:'MISSION_SUNSCAR_4H',companionIds:['UNIT_015','UNIT_014'],owned,assignments:[],equippedCompanionIds:new Set(),expeditionPensLevel:1}).ok,'Two-companion mission rejected');

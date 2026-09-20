@@ -2,7 +2,7 @@ import {claimActivity,createCharacter,newGame,startCombat,startGathering,BASE_OF
 import {totalXpAtLevel} from '../src/core/progression';
 import type {GameState} from '../src/core/types';
 import type {IdleStopCondition,IdleRuleSet} from '../src/core/idle-rules-v40';
-import {generateWeeklyOrders,type WeeklyOrderCandidate} from '../src/core/weekly-orders-v41';
+import {DEFAULT_WEEKLY_ORDER_POLICY,generateWeeklyOrders,type WeeklyOrderCandidate} from '../src/core/weekly-orders-v41';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 function eq(actual:unknown,expected:unknown,message:string){if(actual!==expected)throw new Error(`${message}: expected ${String(expected)}, got ${String(actual)}`)}
@@ -55,7 +55,7 @@ function withRule(state:GameState,condition:IdleStopCondition,options?:Partial<P
 {
  let state=base();
  const candidate:WeeklyOrderCandidate={id:'moss-weekly',kind:'hunt',title:'Moss Rat Order',monsterId:'MOSS_RAT',regionId:'GREENFIELDS',activityId:'MOSS_RAT',source:{kind:'monster',id:'MOSS_RAT',label:'Moss Rat',available:true},estimatedPerHour:60,available:true,priority:1};
- const weekly=generateWeeklyOrders('account-test',T0,[candidate],{enabled:true,huntSlots:1,professionSlots:0,huntTargetMinutes:1,professionTargetMinutes:45,minimumHuntTarget:1,minimumProfessionTarget:1,defaultHuntReward:{rewardRef:'hunt',label:'Hunt'},defaultProfessionReward:{rewardRef:'profession',label:'Profession'},completionReward:{rewardRef:'completion',label:'Completion'}});
+ const weekly=generateWeeklyOrders('account-test',T0,[candidate],{...DEFAULT_WEEKLY_ORDER_POLICY,huntSlots:1,professionSlots:0,regionalSlots:0,threatSlots:0,huntTargetMinutes:1,minimumHuntTarget:1,defaultHuntReward:{rewardRef:'hunt',label:'Hunt'},defaultProfessionReward:{rewardRef:'profession',label:'Profession'},completionReward:{rewardRef:'completion',label:'Completion'}});
  const order=weekly.orders[0];order.target=1;
  state={...state,account:{...state.account,weeklyOrders:weekly}};
  state=withRule(state,{id:'weekly',kind:'weekly_order_progress',targetId:order.id,value:1,enabled:true});

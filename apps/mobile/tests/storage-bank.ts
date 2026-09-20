@@ -12,4 +12,21 @@ if(s.inventory.stacks.some(x=>x.itemId==='COPPER_ORE'||x.itemId==='GREENWOOD_LOG
 if(storageUpgradePreview(s,'inventory')?.capacity!==40||storageUpgradePreview(s,'bank')?.capacity!==160)throw new Error('starting storage upgrade tiers missing');
 const gold=s.character!.gold;s=upgradeStorage(s,'inventory');
 if(s.inventory.capacity!==40||s.character!.gold!==gold-500)throw new Error('inventory upgrade must charge once and persist capacity');
+
+const blockedDeposit={...s,bank:{stacks:[],capacity:0}};
+const blockedDepositBefore=JSON.stringify(blockedDeposit);
+let depositRejected=false;try{depositToBank(blockedDeposit,'TRAVEL_RATION',1)}catch(error){depositRejected=error instanceof Error&&error.message==='Bank is full'}
+if(!depositRejected||JSON.stringify(blockedDeposit)!==blockedDepositBefore)throw new Error('failed deposit must be atomic');
+
+const bankRations=s.bank.stacks.find(x=>x.itemId==='TRAVEL_RATION')?.quantity??0;
+const blockedWithdraw={...s,inventory:{stacks:[],capacity:0},bank:{...s.bank,stacks:[{itemId:'TRAVEL_RATION',quantity:bankRations||1}]}};
+const blockedWithdrawBefore=JSON.stringify(blockedWithdraw);
+let withdrawRejected=false;try{withdrawFromBank(blockedWithdraw,'TRAVEL_RATION',1)}catch(error){withdrawRejected=error instanceof Error&&error.message==='Inventory is full'}
+if(!withdrawRejected||JSON.stringify(blockedWithdraw)!==blockedWithdrawBefore)throw new Error('failed withdrawal must be atomic');
+
+const poor={...s,character:{...s.character!,gold:0}};
+const poorBefore=JSON.stringify(poor);
+let upgradeRejected=false;try{upgradeStorage(poor,'bank')}catch(error){upgradeRejected=error instanceof Error&&error.message.includes('Requires')}
+if(!upgradeRejected||JSON.stringify(poor)!==poorBefore)throw new Error('failed storage upgrade must not mutate state');
+
 console.log(JSON.stringify({status:'PASS',inventoryCapacity:s.inventory.capacity,bankCapacity:s.bank.capacity,inventoryRations:s.inventory.stacks.find(x=>x.itemId==='TRAVEL_RATION')?.quantity,bankRations:s.bank.stacks.find(x=>x.itemId==='TRAVEL_RATION')?.quantity},null,2));

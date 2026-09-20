@@ -13,12 +13,15 @@ import {Panel} from '../components/Panel';
 import {C,equipmentColors,spacing,typography} from '../theme/theme';
 import {EquipmentPreview} from '../components/EquipmentPreview';
 import {previewEquipment} from '../core/equipment-preview';
-import {GEAR_RARITIES} from '../core/item-rarity';
 import {formatGameNumber} from '../core/number-format';
 import {ot} from '../i18n';
 import {enhancedGearStats,gearEnhancement,gemSocketCapacity,hasEnhancement} from '../core/equipment-enhancement';
 
 type Pending={kind:'sell'|'salvage'|'deposit';item:ItemDef;quantity:number}|null;
+const FILTER_OPTIONS:{id:InventoryFilter;label:string}[]=[{id:'all',label:'All'},{id:'gear',label:'Gear'},{id:'material',label:'Materials'},{id:'gem',label:'Gems'},{id:'food',label:'Food'},{id:'potion',label:'Potions'},{id:'tool',label:'Tools'},{id:'quest',label:'Quest'}];
+const SORT_OPTIONS:{id:InventorySort;label:string}[]=[{id:'name',label:'Name'},{id:'quantity',label:'Quantity ↓'},{id:'value',label:'Value ↓'}];
+const nextSort=(value:InventorySort)=>SORT_OPTIONS[(SORT_OPTIONS.findIndex(option=>option.id===value)+1)%SORT_OPTIONS.length].id;
+const nextQuantity=(value:1|10|'all'):1|10|'all'=>value===1?10:value===10?'all':1;
 export function InventoryScreen({state,onEquip,onFood,onEat,onSell,onSalvage,onDeposit,onDepositMaterials,onUpgradeStorage,onWithdraw,onOverflow}:{state:GameState;onEquip:(id:string)=>void;onFood:(id:string)=>void;onEat:(id:string)=>void;onSell:(id:string)=>void;onSalvage:(id:string)=>void;onDeposit:(id:string,quantity:number)=>void;onDepositMaterials:()=>void;onUpgradeStorage:(location:StorageLocation)=>void;onWithdraw:(id:string,quantity:number)=>void;onOverflow:()=>void}){
   const [pending,setPending]=useState<Pending>(null),[location,setLocation]=useState<'inventory'|'bank'>('inventory');
   const [query,setQuery]=useState(''),[filter,setFilter]=useState<InventoryFilter>('all'),[sort,setSort]=useState<InventorySort>('name');
@@ -26,7 +29,7 @@ export function InventoryScreen({state,onEquip,onFood,onEat,onSell,onSalvage,onD
   const [error,setError]=useState('');
   const [expandedItem,setExpandedItem]=useState<string|null>(null);
   const [previewId,setPreviewId]=useState<string|null>(null);
-  const [showStorage,setShowStorage]=useState(false),[showFilters,setShowFilters]=useState(false);
+  const [showStorage,setShowStorage]=useState(false);
   const run=(action:()=>void)=>{try{action();setError('')}catch(e){setError(e instanceof Error?e.message:'Action failed. Please try again.')}};
   const confirm=()=>{if(!pending)return;run(()=>pending.kind==='deposit'?onDeposit(pending.item.id,pending.quantity):pending.kind==='sell'?onSell(pending.item.id):onSalvage(pending.item.id));setPending(null)};
   const stacks=visibleStacks(state[location].stacks,query,filter,sort);
@@ -52,8 +55,13 @@ export function InventoryScreen({state,onEquip,onFood,onEat,onSell,onSalvage,onD
     {showStorage&&<Panel><Text style={s.sub}>Inventory travels with this character. Bank storage is shared by every character on the account.</Text>{location==='inventory'&&<GameButton title="Deposit all materials" tone="secondary" disabled={!state.inventory.stacks.some(entry=>itemDef(entry.itemId).type==='material')} onPress={()=>run(onDepositMaterials)}/>}<View style={s.row}><View style={s.flex}><Text style={s.upgradeLabel}>INVENTORY · {state.inventory.capacity} SLOTS</Text><GameButton title={inventoryUpgrade?`Upgrade to ${inventoryUpgrade.capacity} · ${formatGameNumber(inventoryUpgrade.cost,state.settings.numberMode)}g`:'Inventory maxed'} disabled={!inventoryUpgrade} tone="secondary" onPress={()=>run(()=>onUpgradeStorage('inventory'))}/></View><View style={s.flex}><Text style={s.upgradeLabel}>BANK · {state.bank.capacity} SLOTS</Text><GameButton title={bankUpgrade?`Upgrade to ${bankUpgrade.capacity} · ${formatGameNumber(bankUpgrade.cost,state.settings.numberMode)}g`:'Bank maxed'} disabled={!bankUpgrade} tone="secondary" onPress={()=>run(()=>onUpgradeStorage('bank'))}/></View></View></Panel>}
     <Text style={s.sub}>{location==='inventory'?'Carried items available during adventures.':'Bank materials are available for crafting, but food must be withdrawn for combat.'}</Text>
     <SearchField accessibilityLabel="Search stored items" placeholder="Search items…" placeholderTextColor={C.muted} value={query} onChangeText={setQuery}/>
-    <Pressable accessibilityRole="button" accessibilityState={{expanded:showFilters}} onPress={()=>setShowFilters(value=>!value)} style={s.disclosure}><View style={s.flex}><Text style={s.disclosureTitle}>FILTERS & DISPLAY</Text><Text style={s.sub}>{filter==='all'?'All items':filter} · sorted by {sort} · transfer {quantity}</Text></View><Text style={s.disclosureMark}>{showFilters?'−':'+'}</Text></Pressable>
-    {showFilters&&<Panel><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.rarityLegend}>{GEAR_RARITIES.map(rarity=><View key={rarity.id} style={[s.rarityKey,{borderColor:rarity.color,backgroundColor:rarity.surface}]}><Text style={[s.rarityKeyText,{color:rarity.color}]}>{rarity.symbol} {rarity.label}</Text></View>)}</ScrollView><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chipRow}>{(['all','gear','tool','food','material'] as const).map(value=><ChoiceChip key={value} label={value} selected={filter===value} onPress={()=>setFilter(value)}/>)}</ScrollView><Text style={s.label}>SORT BY</Text><View style={s.chipRow}>{(['name','quantity','value'] as const).map(value=><ChoiceChip key={value} label={value==='value'?'Unit value':value} selected={sort===value} onPress={()=>setSort(value)}/>)}</View><Text style={s.label}>TRANSFER QUANTITY</Text><View style={s.chipRow}>{([1,10,'all'] as const).map(value=><ChoiceChip key={value} label={String(value)} selected={quantity===value} onPress={()=>setQuantity(value)}/>)}</View></Panel>}
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.controlStrip}>
+      {FILTER_OPTIONS.map(option=><ChoiceChip key={option.id} label={option.label} selected={filter===option.id} onPress={()=>setFilter(option.id)}/>)}
+    </ScrollView>
+    <View style={s.utilityRow}>
+      <UtilityChip label={`↕ Sort · ${SORT_OPTIONS.find(option=>option.id===sort)?.label??'Name'}`} accessibilityLabel={`Sort items. Current sort: ${sort}`} onPress={()=>setSort(value=>nextSort(value))}/>
+      <UtilityChip label={`⇄ Move · ${quantity==='all'?'All':quantity}`} accessibilityLabel={`Transfer quantity. Current amount: ${quantity}`} onPress={()=>setQuantity(value=>nextQuantity(value))}/>
+    </View>
     {!!error&&<Text accessibilityRole="alert" style={s.errorText}>{error}</Text>}
     <Text style={s.sub}>{stacks.length} matching stacks · {Math.max(0,state[location].capacity-usedSlots(state[location].stacks))} free slots</Text>
     {stacks.length?stacks.map(renderStack):<><EmptyState title="No items to show" message="Try another storage tab or clear the search and category filter."/><GameButton title="Clear filters" tone="secondary" onPress={()=>{setQuery('');setFilter('all')}}/></>}
@@ -61,4 +69,31 @@ export function InventoryScreen({state,onEquip,onFood,onEat,onSell,onSalvage,onD
   </ScrollView><ConfirmModal visible={pending!==null} title={`${pending?.kind==='deposit'?'Bank':pending?.kind==='sell'?'Sell':'Salvage'} ${pending?.item.name??'item'}?`} message={message} confirmLabel={pending?.kind==='deposit'?'Deposit':pending?.kind==='sell'?'Sell 1':'Salvage 1'} danger={pending?.kind!=='deposit'} onConfirm={confirm} onCancel={()=>setPending(null)}/></>;
 }
 function ChoiceChip({label,selected,onPress}:{label:string;selected:boolean;onPress:()=>void}){return <Pressable accessibilityRole="button" accessibilityState={{selected}} onPress={onPress} style={({pressed})=>[s.chip,selected&&s.chipSelected,pressed&&s.pressed]}><Text style={[s.chipText,selected&&s.chipTextSelected]}>{selected?'✓ ':''}{label}</Text></Pressable>}
-const s=StyleSheet.create({recovery:{gap:4,padding:spacing.md,borderWidth:1,borderColor:C.line,borderRadius:10,backgroundColor:C.panel},root:{padding:spacing.lg,gap:spacing.md},h:{...typography.hero,color:C.text},title:{...typography.title,color:C.text},sub:{...typography.body,color:C.muted},warning:{...typography.body,color:C.warning},errorText:{...typography.body,color:C.bad,padding:spacing.sm,borderWidth:1,borderColor:C.bad,borderRadius:8,backgroundColor:'#2a1b20'},label:{...typography.caption,color:C.accent,fontWeight:'700'},upgradeLabel:{...typography.caption,color:C.muted,fontWeight:'700',marginBottom:spacing.xs},disclosure:{minHeight:60,flexDirection:'row',alignItems:'center',gap:spacing.sm,paddingHorizontal:spacing.md,borderWidth:1,borderColor:C.line,borderRadius:10,backgroundColor:C.panel},disclosureTitle:{...typography.caption,color:C.accent,fontWeight:'700',letterSpacing:.8},disclosureMark:{width:28,color:C.accent,fontSize:25,textAlign:'center'},rarityLegend:{gap:spacing.sm,paddingRight:spacing.md},rarityKey:{minHeight:32,justifyContent:'center',borderWidth:1,borderRadius:99,paddingHorizontal:spacing.sm},rarityKeyText:{...typography.caption,fontWeight:'700'},row:{flexDirection:'row',gap:spacing.sm},chipRow:{flexDirection:'row',flexWrap:'wrap',gap:6},chip:{minHeight:38,paddingHorizontal:12,justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.bg},chipSelected:{borderColor:equipmentColors.selectedLine,backgroundColor:equipmentColors.selected},chipText:{fontSize:12,color:C.muted,fontWeight:'700'},chipTextSelected:{color:'#d9f3ff'},pressed:{opacity:.76},flex:{flex:1},input:{minHeight:48,paddingHorizontal:spacing.md,borderRadius:10,borderWidth:1,borderColor:C.line,color:C.text,backgroundColor:C.panel,fontSize:16}});
+function UtilityChip({label,accessibilityLabel,onPress}:{label:string;accessibilityLabel:string;onPress:()=>void}){return <Pressable accessibilityRole="button" accessibilityLabel={accessibilityLabel} onPress={onPress} style={({pressed})=>[s.utilityChip,pressed&&s.pressed]}><Text numberOfLines={1} style={s.utilityChipText}>{label}</Text></Pressable>}
+const s=StyleSheet.create({
+  recovery:{gap:4,padding:spacing.md,borderWidth:1,borderColor:C.line,borderRadius:10,backgroundColor:C.panel},
+  root:{padding:spacing.lg,gap:spacing.md},
+  h:{...typography.hero,color:C.text},
+  title:{...typography.title,color:C.text},
+  sub:{...typography.body,color:C.muted},
+  warning:{...typography.body,color:C.warning},
+  errorText:{...typography.body,color:C.bad,padding:spacing.sm,borderWidth:1,borderColor:C.bad,borderRadius:8,backgroundColor:'#2a1b20'},
+  label:{...typography.caption,color:C.accent,fontWeight:'700'},
+  upgradeLabel:{...typography.caption,color:C.muted,fontWeight:'700',marginBottom:spacing.xs},
+  disclosure:{minHeight:56,flexDirection:'row',alignItems:'center',gap:spacing.sm,paddingHorizontal:spacing.md,borderWidth:1,borderColor:C.line,borderRadius:10,backgroundColor:C.panel},
+  disclosureTitle:{...typography.caption,color:C.accent,fontWeight:'700',letterSpacing:.8},
+  disclosureMark:{width:28,color:C.accent,fontSize:25,textAlign:'center'},
+  row:{flexDirection:'row',flexWrap:'wrap',gap:spacing.sm},
+  chipRow:{flexDirection:'row',flexWrap:'wrap',gap:6},
+  controlStrip:{gap:6,paddingRight:spacing.md},
+  chip:{minHeight:44,paddingHorizontal:13,justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.panel},
+  chipSelected:{borderColor:equipmentColors.selectedLine,backgroundColor:equipmentColors.selected},
+  chipText:{fontSize:12,color:C.muted,fontWeight:'700'},
+  chipTextSelected:{color:'#d9f3ff'},
+  utilityRow:{flexDirection:'row',gap:8},
+  utilityChip:{flex:1,minWidth:0,minHeight:44,alignItems:'center',justifyContent:'center',paddingHorizontal:10,borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.panel2},
+  utilityChipText:{fontSize:12,color:C.text,fontWeight:'800'},
+  pressed:{opacity:.76},
+  flex:{flex:1,minWidth:148},
+  input:{minHeight:48,paddingHorizontal:spacing.md,borderRadius:10,borderWidth:1,borderColor:C.line,color:C.text,backgroundColor:C.panel,fontSize:16}
+});

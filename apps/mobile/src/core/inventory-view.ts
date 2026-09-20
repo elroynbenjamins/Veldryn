@@ -3,7 +3,7 @@ import {itemDef} from '../content/items';
 import {depositToBank,withdrawFromBank,effectiveStats} from './game';
 import {characterPermanentMultipliers} from './permanent-boosts';
 
-export type InventoryFilter='all'|'favorites'|'gear'|'tool'|'food'|'material'|'potion';
+export type InventoryFilter='all'|'favorites'|'gear'|'tool'|'food'|'material'|'potion'|'gem'|'quest';
 export type InventorySort='favorite'|'name'|'quantity'|'value';
 export function visibleStacks(stacks:ItemStack[],query:string,filter:InventoryFilter,sort:InventorySort,favoriteItemIds:readonly string[]=[]){
   const term=query.trim().toLowerCase(),favorites=new Set(favoriteItemIds);

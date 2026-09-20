@@ -3,6 +3,7 @@ import {effectiveStats} from './game';
 import {GameState} from './types';
 import {classCombatStyle} from './class-combat';
 import {characterPermanentMultipliers} from './permanent-boosts';
+import {encounterIdentity} from './encounter-identity';
 
 const COMBAT_EXPECTED_SCALE=1.3;
 const COMBAT_MONSTER_DAMAGE_SCALE=1.13;
@@ -27,6 +28,6 @@ export function combatPresentation(state:GameState,monster:MonsterDef,elapsedSec
   const playerHit=Math.max(1,Math.round(boostedAttack*1.35-monster.defense*.45));
   const raw=Math.max(1,Math.round(monster.attack*COMBAT_MONSTER_DAMAGE_SCALE-Math.floor(boostedDefense*.58)));
   const enemyHit=Math.max(1,Math.round((raw*.48+monster.level*.16)*style.damageTakenMultiplier*multipliers.incomingDamageMultiplier));
-  const {safety}=combatReadiness(state,monster);
-  return {enemyHp:Math.max(1,Math.round(monster.hp*(1-enemyProgress))),enemyMaxHp:monster.hp,playerHit,enemyHit,safety,style};
+  const {safety}=combatReadiness(state,monster),encounter=encounterIdentity(monster);
+  return {enemyHp:Math.max(1,Math.round(monster.hp*(1-enemyProgress))),enemyMaxHp:monster.hp,playerHit,enemyHit,safety,style,encounter};
 }

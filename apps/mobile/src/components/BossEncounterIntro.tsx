@@ -5,9 +5,10 @@ import {WORLD_ZONES} from '../content/world-map';
 import {RegionArtwork} from './RegionArtwork';
 import {MonsterPortraitFrame} from './MonsterPortraitFrame';
 import {C,radii,typography} from '../theme/theme';
+import {encounterIdentity} from '../core/encounter-identity';
 
 export function BossEncounterIntro({monster,reduceMotion=false}:{monster:MonsterDef;reduceMotion?:boolean}){
- const region=WORLD_ZONES.find(zone=>zone.name===monster.zone);
+ const region=WORLD_ZONES.find(zone=>zone.name===monster.zone),identity=encounterIdentity(monster);
  const reveal=useRef(new Animated.Value(reduceMotion?1:0)).current,idle=useRef(new Animated.Value(0)).current;
  useEffect(()=>{
   reveal.setValue(reduceMotion?1:0);idle.setValue(0);
@@ -24,7 +25,7 @@ export function BossEncounterIntro({monster,reduceMotion=false}:{monster:Monster
  return <View style={s.root}><RegionArtwork regionId={region?.id??'KINGS_ROAD'}/><View style={s.shade}/><Animated.View style={[s.copy,{opacity:reveal,transform:[{translateY}]}]}>
   <Text style={s.eyebrow}>ASTERFALL BOSS</Text>
   <Animated.View style={{transform:[{scale},{scale:idleScale}]}}><MonsterPortraitFrame monster={monster} size={132} framed={false} reduceMotion={reduceMotion}/></Animated.View>
-  <Text accessibilityRole="header" style={s.name}>{monster.name}</Text><Text style={s.sub}>Level {monster.level} · {monster.hp} HP</Text><Text style={s.sub}>Prepare your equipment and food before challenging this foe.</Text>
+  <Text accessibilityRole="header" style={s.name}>{monster.name}</Text><Text style={s.sub}>Level {monster.level} · {monster.hp} HP · {identity.archetype}</Text><Text style={s.trait}>{identity.mechanics.join(' · ')}</Text><Text style={s.sub}>{identity.tactic}</Text>
  </Animated.View></View>;
 }
-const s=StyleSheet.create({root:{borderRadius:radii.md,overflow:'hidden',borderWidth:1,borderColor:'#856634',marginTop:12},shade:{...StyleSheet.absoluteFillObject,backgroundColor:'rgba(7,12,20,.74)'},copy:{padding:16,gap:8,alignItems:'center'},eyebrow:{...typography.caption,color:C.accent,letterSpacing:1,fontWeight:'600'},name:{...typography.hero,color:'#efd895',textAlign:'center'},sub:{...typography.body,color:C.muted,textAlign:'center'}});
+const s=StyleSheet.create({root:{borderRadius:radii.md,overflow:'hidden',borderWidth:1,borderColor:'#856634',marginTop:12},shade:{...StyleSheet.absoluteFillObject,backgroundColor:'rgba(7,12,20,.74)'},copy:{padding:16,gap:8,alignItems:'center'},eyebrow:{...typography.caption,color:C.accent,letterSpacing:1,fontWeight:'600'},name:{...typography.hero,color:'#efd895',textAlign:'center'},trait:{...typography.caption,color:C.accent,textAlign:'center',fontWeight:'900'},sub:{...typography.body,color:C.muted,textAlign:'center'}});

@@ -9,9 +9,9 @@ import {GameButton} from '../GameButton';
 
 const roomAssets:Record<string,CoopUiAssetId>={battle:'node_battle',elite:'node_elite',event:'node_event',shrine:'node_shrine',camp:'node_camp',treasure:'node_treasure',merchant:'node_merchant',echo:'node_echo',risk:'node_risk',boss:'node_boss'};
 
-export function CoopRunOverview({language,run,onBack,onChoose,onRefresh,onClaim,busy=false,notice,rewards=[]}:{language:Language;run:CoopRunView;onBack:()=>void;onChoose?:(nodeId:string)=>void;onRefresh?:()=>void;onClaim?:(id:string)=>void;busy?:boolean;notice?:string;rewards?:Array<{id:string;claimed_at:string|null;reward_json:{marks?:number}}>}){
+export function CoopRunOverview({language,run,onBack,onChoose,onRefresh,onClaim,busy=false,notice,rewards=[],terminalAction}:{language:Language;run:CoopRunView;onBack:()=>void;onChoose?:(nodeId:string)=>void;onRefresh?:()=>void;onClaim?:(id:string)=>void;busy?:boolean;notice?:string;rewards?:Array<{id:string;claimed_at:string|null;reward_json:{marks?:number}}>;terminalAction?:{label:string;claimed?:boolean;completeText?:string;onPress:()=>void}}){
   validateCoopRunView(run);
-  const modeLabel=run.mode==='qmode'?ct(language,'details.qmode'):ct(language,'details.live');
+  const modeLabel=run.modeLabel??(run.mode==='qmode'?ct(language,'details.qmode'):ct(language,'details.live'));
   return <ExpeditionScreenShell eyebrow={ct(language,'browse.resumeTitle')} title={ct(language,'browse.resume')} onBack={onBack} backLabel={ct(language,'details.backList')} banner={<View style={s.banner}><StateChip label={modeLabel} tone="selected"/><Text style={s.phase}>{run.phase.replaceAll('_',' ')}</Text></View>}>
     <FantasyPanel variant="selected"><View style={s.summary}><View style={s.grow}><Text style={s.title}>{ct(language,'details.party')}</Text><Text style={s.copy}>{ct(language,'details.partyValue')}</Text></View><StateChip label={`Lv. ${run.syncedLevel}`} tone="success"/></View></FantasyPanel>
     <Text style={s.section}>{ct(language,'details.party')}</Text>
@@ -22,6 +22,7 @@ export function CoopRunOverview({language,run,onBack,onChoose,onRefresh,onClaim,
     {run.options.length?run.options.map(option=><FantasyPanel key={option.nodeId}><View style={s.option}><CoopImageSlot assetId={roomAssets[option.kind]} size="node" accessibilityLabel={option.title}/><View style={s.grow}><Text style={s.title}>{option.title}</Text><Text style={s.copy}>{option.risk} · {option.reward}</Text></View>{option.votes!==undefined?<StateChip label={`${option.votes}`} tone="selected"/>:null}</View>{onChoose&&<GameButton title={run.mode==='qmode'?'Choose this room':'Vote for this room'} disabled={busy||run.phase!=='awaiting_choice'} onPress={()=>onChoose(option.nodeId)}/>}</FantasyPanel>):run.phase!=='resolving_node'?<FantasyPanel><Text style={s.copy}>{ct(language,'browse.resumeBody')}</Text></FantasyPanel>:null}
     {onRefresh&&<GameButton title="Refresh saved progress" tone="secondary" disabled={busy} onPress={onRefresh}/>}
     {rewards.map(reward=><FantasyPanel key={reward.id} variant="success">{reward.claimed_at?<Text style={s.copy}>{reward.reward_json.marks??0} Expedition Marks collected.</Text>:<GameButton title="Collect expedition reward" disabled={busy} onPress={()=>onClaim?.(reward.id)}/>}</FantasyPanel>)}
+    {terminalAction?<FantasyPanel variant="success">{terminalAction.claimed?<Text style={s.copy}>{terminalAction.completeText??'Seasonal expedition reward collected.'}</Text>:<GameButton title={terminalAction.label} disabled={busy} onPress={terminalAction.onPress}/>}</FantasyPanel>:null}
     {run.rewardText?<FantasyPanel variant="success"><Text style={s.title}>{ct(language,'details.reward')}</Text><Text style={s.copy}>{run.rewardText}</Text></FantasyPanel>:null}
   </ExpeditionScreenShell>;
 }

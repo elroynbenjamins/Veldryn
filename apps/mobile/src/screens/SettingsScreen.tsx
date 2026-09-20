@@ -7,7 +7,7 @@ import {DeveloperTools} from '../components/DeveloperTools';
 import {OnlineAccountPanel} from '../components/OnlineAccountPanel';
 import {SaveTransferPanel} from '../components/SaveTransferPanel';
 import {GameState} from '../core/types';
-import {C,equipmentColors,typography} from '../theme/theme';
+import {C,equipmentColors,typography,UI_THEME_OPTIONS} from '../theme/theme';
 import {LANGUAGE_NAMES,SUPPORTED_LANGUAGES,t} from '../i18n';
 import {GameGuidePanel} from '../components/GameGuidePanel';
 import {GuideTopicModal} from '../components/GuideTopicModal';
@@ -26,7 +26,7 @@ type Props={
   onOpenChatEmotes?:()=>void;
   onOpenCoopUiGallery?:()=>void;
 };
-type SettingsSection='gameplay'|'accessibility'|'account'|'data'|'guide'|'developer';
+type SettingsSection='gameplay'|'appearance'|'accessibility'|'account'|'data'|'guide'|'developer';
 function SettingChip({label,selected,onPress}:{label:string;selected:boolean;onPress:()=>void}){return <Pressable accessibilityRole="button" accessibilityState={{selected}} onPress={onPress} style={({pressed})=>[s.chip,selected&&s.chipSelected,pressed&&s.pressed]}><Text style={[s.chipText,selected&&s.chipTextSelected]}>{selected?'✓ ':''}{label}</Text></Pressable>}
 
 export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImport,onOpenChatPilot,onOpenChatEmotes,onOpenCoopUiGallery,online=false}:Props){
@@ -38,7 +38,7 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImp
   return <><ScrollView contentContainerStyle={s.root}>
     <Text accessibilityRole="header" style={s.h}>{t(state.settings.language,'settings.title')}</Text>
     <Text style={s.sub}>{t(state.settings.language,'settings.intro')}</Text>
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.tabs}>{(['gameplay','accessibility','account','data','guide',...(__DEV__&&!online?['developer' as const]:[])] as SettingsSection[]).map(value=><SettingChip key={value} label={value==='guide'?'Help & Guide':value.charAt(0).toUpperCase()+value.slice(1)} selected={section===value} onPress={()=>setSection(value)}/>)}</ScrollView><Text style={s.sectionHint}>{section==='gameplay'?'Tune combat, number display, and auto-eat behavior.':section==='accessibility'?'Make text, motion, and language fit your play style.':section==='account'?'Manage your connected account and profile preferences.':section==='data'?'Export, import, or recover your local progress.':section==='guide'?'Browse the interactive VELDRYN help guide.':'Development tools and visual QA controls.'}</Text>
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.tabs}>{(['gameplay','appearance','accessibility','account','data','guide',...(__DEV__&&!online?['developer' as const]:[])] as SettingsSection[]).map(value=><SettingChip key={value} label={value==='guide'?'Help & Guide':value.charAt(0).toUpperCase()+value.slice(1)} selected={section===value} onPress={()=>setSection(value)}/>)}</ScrollView><Text style={s.sectionHint}>{section==='gameplay'?'Tune combat, number display, and auto-eat behavior.':section==='appearance'?'Choose how VELDRYN presents contrast, surfaces, and interaction colors.':section==='accessibility'?'Make text, motion, and language fit your play style.':section==='account'?'Manage your connected account and profile preferences.':section==='data'?'Export, import, or recover your local progress.':section==='guide'?'Browse the interactive VELDRYN help guide.':'Development tools and visual QA controls.'}</Text>
     {section==='guide'&&<GameGuidePanel state={state} onOpen={id=>{onChange(acknowledgeGameGuide(state,id,true));setGuideId(id)}}/>}
     {section==='account'&&<><Panel>
       <Text style={s.title}>{t(state.settings.language,'settings.account')}</Text>
@@ -59,6 +59,15 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImp
       <Text style={s.sub}>Development review only. Emote choices use the same account-scoped preference store as the Chat Pilot.</Text>
       <GameButton title="Emote Tray · 20 slots" tone="secondary" onPress={onOpenChatEmotes}/>
     </Panel>:null}</>}
+    {section==='appearance'&&<><Panel>
+      <Text style={s.title}>Interface theme</Text>
+      <Text style={s.sub}>Themes change the complete UI palette while preserving gameplay colors, region identity, rarity colors, and pixel artwork.</Text>
+      <View style={s.themeList}>{UI_THEME_OPTIONS.map(option=>{const selected=state.settings.uiTheme===option.id;return <Pressable key={option.id} accessibilityRole="button" accessibilityState={{selected}} onPress={()=>update({uiTheme:option.id})} style={({pressed})=>[s.themeCard,selected&&s.themeCardSelected,pressed&&s.pressed]}>
+        <View style={s.themeCopy}><View style={s.themeTitleRow}><Text style={s.themeTitle}>{option.label}</Text>{option.id==='veldryn'?<Text style={s.recommended}>RECOMMENDED</Text>:null}{selected?<Text style={s.selectedMark}>✓ ACTIVE</Text>:null}</View><Text style={s.themeDescription}>{option.description}</Text></View>
+        <View style={s.swatches}>{option.preview.map((color,index)=><View key={color+index} style={[s.swatch,{backgroundColor:color}]}/>)}</View>
+      </Pressable>})}</View>
+      <Text style={s.muted}>High-contrast themes increase separation between text, controls, borders, and surfaces. Theme choice is saved with your settings.</Text>
+    </Panel></>}
     {section==='accessibility'&&<><Panel>
       <Text style={s.title}>{t(state.settings.language,'settings.notifications')}</Text>
       <Text style={s.sub}>Completion, inventory-full and quest-reset reminders.</Text>
@@ -91,4 +100,4 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImp
   </ScrollView><GuideTopicModal definition={guideId?guideDefinition(guideId):undefined} visible={!!guideId} onClose={()=>setGuideId(undefined)}/></>;
 }
 
-const s=StyleSheet.create({root:{padding:16,gap:12},h:{...typography.hero,color:C.text},title:{...typography.title,color:C.text,marginBottom:5},sub:{color:C.muted,lineHeight:20,marginBottom:8},muted:{color:C.muted,lineHeight:19,opacity:.8},tabs:{gap:6,paddingRight:16},sectionHint:{...typography.caption,color:C.info,lineHeight:18},chip:{minHeight:40,paddingHorizontal:13,justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.bg},chipSelected:{borderColor:equipmentColors.selectedLine,backgroundColor:equipmentColors.selected},chipText:{fontSize:12,color:C.muted,fontWeight:'700'},chipTextSelected:{color:'#d9f3ff'},pressed:{opacity:.76},settingLabel:{...typography.bodyStrong,color:C.text,marginTop:8},choices:{flexDirection:'row',flexWrap:'wrap',gap:8},choice:{flexGrow:1,flexBasis:120,minWidth:120},largeChoice:{flexBasis:'100%' as const},languageGrid:{flexDirection:'row',flexWrap:'wrap',gap:8},languageChoice:{minWidth:96,flexGrow:1},flex:{flex:1}});
+const s=StyleSheet.create({root:{padding:16,gap:12},h:{...typography.hero,color:C.text},title:{...typography.title,color:C.text,marginBottom:5},sub:{color:C.muted,lineHeight:20,marginBottom:8},muted:{color:C.muted,lineHeight:19,opacity:.8},tabs:{gap:6,paddingRight:16},sectionHint:{...typography.caption,color:C.info,lineHeight:18},chip:{minHeight:40,paddingHorizontal:13,justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.bg},chipSelected:{borderColor:equipmentColors.selectedLine,backgroundColor:equipmentColors.selected},chipText:{fontSize:12,color:C.muted,fontWeight:'700'},chipTextSelected:{color:'#d9f3ff'},pressed:{opacity:.76},settingLabel:{...typography.bodyStrong,color:C.text,marginTop:8},choices:{flexDirection:'row',flexWrap:'wrap',gap:8},choice:{flexGrow:1,flexBasis:120,minWidth:120},largeChoice:{flexBasis:'100%' as const},languageGrid:{flexDirection:'row',flexWrap:'wrap',gap:8},languageChoice:{minWidth:96,flexGrow:1},themeList:{gap:8},themeCard:{minHeight:96,gap:10,padding:12,borderWidth:1,borderColor:C.line,borderRadius:12,backgroundColor:C.panel2},themeCardSelected:{borderWidth:2,borderColor:equipmentColors.selectedLine,backgroundColor:equipmentColors.selected},themeCopy:{gap:4},themeTitleRow:{flexDirection:'row',alignItems:'center',flexWrap:'wrap',gap:7},themeTitle:{...typography.bodyStrong,color:C.text},themeDescription:{...typography.caption,color:C.muted,lineHeight:17},recommended:{fontSize:9,lineHeight:13,fontWeight:'900',letterSpacing:.7,color:equipmentColors.goldSoft},selectedMark:{fontSize:9,lineHeight:13,fontWeight:'900',letterSpacing:.7,color:C.info},swatches:{height:22,flexDirection:'row',overflow:'hidden',borderWidth:1,borderColor:C.line,borderRadius:6},swatch:{flex:1},flex:{flex:1}});

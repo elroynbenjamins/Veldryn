@@ -2,6 +2,7 @@ import {createCharacter,claimActivity,newGame} from '../src/core/game';
 import {totalXpAtLevel,levelFromXp} from '../src/core/progression';
 import {rewardHasProgress} from '../src/core/playability';
 import {companionMaterialSourceTargets,companionProgressionRoadmap} from '../src/core/companion-presentation';
+import {companionAttentionLabels,companionAttentionSummary} from '../src/core/companion-attention';
 
 function fail(message:string):never{throw new Error(message)}
 function ok(value:unknown,message:string){if(!value)fail(message)}
@@ -50,5 +51,11 @@ const milestoneRoadmap=companionProgressionRoadmap(milestoneState,'UNIT_008');
 equal(milestoneRoadmap?.power.find(step=>step.id==='ascension-1')?.status,'ready','level 10 marks Ascension I ready');
 equal(milestoneRoadmap?.bond.find(step=>step.id==='bond-6')?.status,'ready','reached unclaimed Bond reward is visibly ready');
 ok(milestoneRoadmap?.bond.find(step=>step.id==='bond-6')?.reward.includes('Bond Resonance'),'Bond 6 roadmap names its meaningful reward');
+
+const attention=companionAttentionSummary(milestoneState,30_000);
+ok(attention.hasAttention,'reached Companion milestones consolidate into a player-facing attention signal');
+equal(attention.bondRewards,3,'Bond 2, 4 and 6 are all ready when Bond 6 is reached with no claims');
+ok(attention.recentUnlocks>=1,'a newly recruited companion briefly appears in Companion attention');
+ok(companionAttentionLabels(attention).some(label=>label.includes('Bond reward')),'attention summary explains that Bond rewards are ready');
 
 console.log('PASS: activity-earned companion unlock presentation and Faith reconciliation validate');

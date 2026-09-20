@@ -1,3 +1,4 @@
+import {useMemo} from 'react';
 import {Image,StyleSheet,Text,View} from 'react-native';
 import type {PublicPlayerProfileV43} from '../online/profile-extension-v43';
 import {CharacterPortraitSelection} from './CharacterVisual';
@@ -8,10 +9,12 @@ import {petArtSource} from '../theme/pet-art';
 import {BASE_PROFILE_BACKGROUNDS} from '../core/profile-cosmetics';
 import {CLASSES} from '../content/classes';
 import type {ClassId} from '../core/types';
-import {C,equipmentColors,radii,typography} from '../theme/theme';
+import {radii,typography,equipmentTheme,type ThemeColors} from '../theme/theme';
+import {useGameTheme} from '../theme/ThemeContext';
 import {GuildTaggedPlayerName} from './GuildTaggedPlayerName';
 
 export function PublicProfileScene({profile,height=205}:{profile:PublicPlayerProfileV43;height?:number}){
+ const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
  const background=profileBackgroundPreviewById.get(profile.backgroundId),base=BASE_PROFILE_BACKGROUNDS.find(row=>row.id===profile.backgroundId);
  const border=profile.borderId?profileBorderSourceById.get(profile.borderId):undefined,pet=profile.petId?petArtSource(profile.petId):undefined;
  const classId=(CLASSES.some(row=>row.id===profile.character.classId)?profile.character.classId:'IRONWARDEN') as ClassId;
@@ -29,7 +32,7 @@ export function PublicProfileScene({profile,height=205}:{profile:PublicPlayerPro
   {border?<Image accessible={false} source={border} resizeMode="stretch" style={StyleSheet.absoluteFill}/>:null}
  </View>;
 }
-const s=StyleSheet.create({
+function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);return StyleSheet.create({
  scene:{borderRadius:radii.lg,overflow:'hidden',alignItems:'center',justifyContent:'flex-end',backgroundColor:'#101d2b',borderWidth:1,borderColor:C.line},
  sceneBorder:{borderWidth:2,borderColor:equipmentColors.goldSoft},
  shade:{...StyleSheet.absoluteFillObject,backgroundColor:'rgba(5,12,20,.24)'},
@@ -40,4 +43,4 @@ const s=StyleSheet.create({
  meta:{fontSize:8,lineHeight:11,color:C.muted,textTransform:'capitalize',marginTop:1},
  character:{width:130,height:'80%',zIndex:2},
  pet:{position:'absolute',right:14,bottom:12,width:58,height:58,zIndex:3},
-});
+});}

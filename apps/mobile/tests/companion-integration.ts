@@ -1,12 +1,13 @@
 import {createCharacter,newGame,claimActivity,claimQuest,startCombat,previewActivityReward} from '../src/core/game';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
-import {unlockCombatCompanion,equipCombatCompanion,companionCombatContribution,companionLevelCost,companionRemainingLevelCost,applyCompanionBondXp,claimSanctuaryTraining,claimSanctuaryEssence} from '../src/core/combat-companions';
+import {unlockCombatCompanion,equipCombatCompanion,companionCombatContribution,companionLevelCost,companionRemainingLevelCost,companionAscensionCost,applyCompanionBondXp,claimSanctuaryTraining,claimSanctuaryEssence} from '../src/core/combat-companions';
 import {refreshCompanions,companionOwned,companionCombatExecutor,recordCompanionActivity} from '../src/core/companion-runtime';
 import {migrateSave} from '../src/core/save-migrations';
 import {createSaveBackup,parseSaveBackup} from '../src/core/save-transfer';
 import {characterPermanentMultipliers} from '../src/core/permanent-boosts';
 import {PET_PERMANENT_BOOSTS} from '../src/content/permanent-boosts';
 import {COMBAT_COMPANIONS} from '../src/content/combat-companions';
+import {companionMaterialSources} from '../src/core/companion-presentation';
 import {companionServerDefinition,companionTechniques} from '../../../backend/src/server/companions/content';
 import {buildOwnedCompanionCombatant} from '../../../backend/src/server/companions/combat-adapter';
 import {buildCompanionTrialEncounter} from '../../../backend/src/server/companions/trials';
@@ -103,6 +104,11 @@ ok(companionTechniques('UNIT_013').some(t=>t.name==='Venom Ambush')&&companionTe
 ok(companionTechniques('EVT_UNIT_003').some(t=>t.name==='Root Bastion')&&companionTechniques('EVT_UNIT_009').some(t=>t.name==='Grand Bell'),'event companions have authored techniques');
 ok(COMBAT_COMPANIONS.find(d=>d.id==='UNIT_013')?.activeAbility.name==='Venom Pounce'&&COMBAT_COMPANIONS.find(d=>d.id==='UNIT_015')?.activeAbility.name==='Solar Carapace','regional companion authored ability copy is visible');
 ok(COMBAT_COMPANIONS.find(d=>d.id==='EVT_UNIT_003')?.activeAbility.name==='Living Bastion'&&COMBAT_COMPANIONS.find(d=>d.id==='EVT_UNIT_009')?.activeAbility.name==='Frostbell Cycle','event companion authored ability copy is visible');
+const tyrantDef=COMBAT_COMPANIONS.find(d=>d.id==='UNIT_016')!,regentDef=COMBAT_COMPANIONS.find(d=>d.id==='UNIT_024')!,heartbondDef=COMBAT_COMPANIONS.find(d=>d.id==='EVT_UNIT_002')!;
+ok(companionAscensionCost(tyrantDef,3).materialId==='ASTRAL_SCRIPT'&&companionAscensionCost(tyrantDef,'mastery').materialId==='TRIAL_SANCTUARY_MATERIAL','Sunscar Prestige ascension uses tiered materials');
+ok(companionAscensionCost(regentDef,2).materialId==='BLACKGLASS_CORE'&&companionAscensionCost(regentDef,'mastery').materialId==='REGENT_SIGIL','Ashlands Prestige ascension uses regional catalysts');
+ok(companionAscensionCost(heartbondDef,3).materialId==='TRIAL_SANCTUARY_MATERIAL'&&companionAscensionCost(heartbondDef,'mastery').materialQuantity===10,'event Prestige progression remains available through Trial materials');
+ok(companionMaterialSources('BLACKGLASS_CORE').some(source=>source.includes('Blackglass Mireling'))&&companionMaterialSources('REGENT_SIGIL').some(source=>source.includes('Ashen Revenant')),'new Ashlands ascension catalysts have live sources');
 const bondBase=command(fixture(),'companion_equip',{id:'UNIT_001'}),bondBoost=structuredClone(bondBase);bondBoost.account.companionSanctuary!.bondHallLevel=3;
 ok(recordCompanionActivity(bondBoost,'combat','MOSS_RAT',100,now).account.combatCompanionProgress!.UNIT_001.bondXp===460,'Bond Hall applies exactly once to hunting');
 console.log(`PASS companion integration: ${checks} checks`);

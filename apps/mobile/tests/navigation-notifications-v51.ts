@@ -7,7 +7,7 @@ const notifications:NavigationNotification[]=[
  {key:'friend-1',kind:'friend_request',count:2,unread:true},
  {key:'guild-1',kind:'guild_invite',count:1,unread:true},
  {key:'guild-2',kind:'guild_application',count:3,unread:true},
- {key:'dm-1',kind:'unread_dm',count:5,unread:true},
+ {key:'chat-1',kind:'chat_unread',count:5,unread:true},
  {key:'party-1',kind:'party_invite',count:1,unread:true},
  {key:'event-1',kind:'event_reward_ready',count:4,unread:true},
  {key:'world-1',kind:'weekly_order_complete',unread:true},
@@ -22,7 +22,7 @@ ok(primary.world.dot,'Dot-only notifications reach World');
 equal(primary.world.count,0,'Dot-only notifications do not increment counts');
 const sub=buildSubrouteBadges(notifications);
 equal(sub['social.friends.requests'].count,2,'Friend request count');
-equal(sub['social.chat.direct'].count,5,'Direct message count');
+equal(sub['social.chat'].count,5,'Guild/Party chat unread count');
 equal(mergeRouteBadges(sub,['social.guild.invites','social.guild.applications']).count,4,'Related subroutes merge');
 equal(destinationForNotification('event_reward_ready').subroute,'events.rewards','Destination remains canonical');
 equal(destinationForNotification('companion_attention').subroute,'companions','Companion attention routes to the Companion hub');

@@ -180,7 +180,7 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number){
     const damage=Math.max(1,Math.round((raw*.48 + m.level*.16)*style.damageTakenMultiplier*modifiers.incomingDamageMultiplier*companion.incomingDamageMultiplier*(c.preparation?preparationEffects(c.preparation).damage:1)));
     hp-=damage;
     while(food && food.heal && foodLeft>0 && hp>0 && hp/stats.hp<=threshold){
-      hp=Math.min(stats.hp,hp+food.heal);foodLeft--;foodConsumed++;
+      hp=Math.min(stats.hp,hp+Math.max(1,Math.ceil(food.heal*multipliers.healingEffectivenessMultiplier)));foodLeft--;foodConsumed++;
     }
     if(hp<=0){
       hp=1;
@@ -205,12 +205,13 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
     const g=[...GATHERING,...HERB_NODES].find(x=>x.id===state.activity!.targetId);if(!g)return {xp:0,gold:0,items:[],kills:0,elapsedSeconds:elapsed};
     const effect=environmentEffectForActivity(state.activity).effect;
     const pacing=gatheringPacing(state,g);
-    const effectiveActionSeconds=g.seconds*GATHER_TIME_SCALE*pacing.timeMultiplier*effect.actionTimeMultiplier/multipliers.gatheringSpeedMultiplier;
+    const specialtySpeed=g.skillId==='fishing'?multipliers.fishingSpeedMultiplier:g.skillId==='herbalism'?multipliers.herbalismSpeedMultiplier:1;
+    const effectiveActionSeconds=g.seconds*GATHER_TIME_SCALE*pacing.timeMultiplier*effect.actionTimeMultiplier/(multipliers.gatheringSpeedMultiplier*specialtySpeed);
     const elapsedMs=Math.min(offlineCapSeconds(state)*1000,Math.max(0,effectiveNowMs-state.activity.lastClaimAtMs));
     const cycleMs=effectiveActionSeconds*1000;
     const totalMs=(state.activity.progressFraction??0)*cycleMs+elapsedMs;
     const actions=Math.floor(totalMs/cycleMs);
-    const quantityFloat=actions*g.min*effect.itemMultiplier+(state.rewardRemainders?.[g.itemId]??0);
+    const quantityFloat=actions*g.min*effect.itemMultiplier*multipliers.gatheringYieldMultiplier+(state.rewardRemainders?.[g.itemId]??0);
     const quantity=Math.floor(quantityFloat);
     const skill=state.skills.find(x=>x.skillId===g.skillId);
     const rawXp=Math.floor(actions*g.xp*effect.xpMultiplier*multipliers.skillXpMultiplier);
@@ -422,8 +423,8 @@ export function equipItem(state:GameState,itemId:string):GameState{
   return applyLocalBalanceSnapshot(refreshQuests(temp),Date.now())
 }
 export function equipFood(state:GameState,itemId:string):GameState{if(!state.character)throw new Error('No character');const d=itemDef(itemId);if(d.type!=='food')throw new Error('Not food');if(stackQty(state.inventory.stacks,itemId)<=0)throw new Error('No food available');return {...state,character:{...state.character,equippedFoodId:itemId}}}
-export function eatFood(state:GameState,itemId?:string):GameState{if(!state.character)return state;const id=itemId||state.character.equippedFoodId;if(!id)return state;const d=itemDef(id);if(d.type!=='food'||!d.heal)throw new Error('Not food');const maxHp=effectiveStats(state).hp;return {...state,inventory:{...state.inventory,stacks:consume(state.inventory.stacks,id,1)},character:{...state.character,currentHp:Math.min(maxHp,state.character.currentHp+d.heal)}}}
-export function usePotion(state:GameState,itemId:string):GameState{if(!state.character)throw new Error('Create a character first.');const potion=potionDef(itemId);if(!potion)throw new Error('Unknown potion.');if(state.activity?.kind==='combat')throw new Error('Potions cannot be used during a hunt.');const stacks=consume(state.inventory.stacks,itemId,1);if(potion.effect.kind==='healing'){const max=effectiveStats(state).hp;return {...state,inventory:{...state.inventory,stacks},character:{...state.character,currentHp:Math.min(max,state.character.currentHp+Math.ceil(max*potion.effect.maxHpFraction))}};}return {...state,inventory:{...state.inventory,stacks},character:{...state.character,preparation:{itemId,remainingEncounters:potion.effect.encounters}}};}
+export function eatFood(state:GameState,itemId?:string):GameState{if(!state.character)return state;const id=itemId||state.character.equippedFoodId;if(!id)return state;const d=itemDef(id);if(d.type!=='food'||!d.heal)throw new Error('Not food');const maxHp=effectiveStats(state).hp,heal=Math.max(1,Math.ceil(d.heal*characterPermanentMultipliers(state).healingEffectivenessMultiplier));return {...state,inventory:{...state.inventory,stacks:consume(state.inventory.stacks,id,1)},character:{...state.character,currentHp:Math.min(maxHp,state.character.currentHp+heal)}}}
+export function usePotion(state:GameState,itemId:string):GameState{if(!state.character)throw new Error('Create a character first.');const potion=potionDef(itemId);if(!potion)throw new Error('Unknown potion.');if(state.activity?.kind==='combat')throw new Error('Potions cannot be used during a hunt.');const stacks=consume(state.inventory.stacks,itemId,1);if(potion.effect.kind==='healing'){const max=effectiveStats(state).hp,healing=characterPermanentMultipliers(state).healingEffectivenessMultiplier;return {...state,inventory:{...state.inventory,stacks},character:{...state.character,currentHp:Math.min(max,state.character.currentHp+Math.ceil(max*potion.effect.maxHpFraction*healing))}};}return {...state,inventory:{...state.inventory,stacks},character:{...state.character,preparation:{itemId,remainingEncounters:potion.effect.encounters}}};}
 export function discardPreparation(state:GameState):GameState{return state.character?.preparation?{...state,character:{...state.character,preparation:undefined}}:state;}
 export function unequipItem(state:GameState,slot:GearSlot):GameState{if(!state.character)return state;const old=state.character.equipment[slot];if(!old)return state;const eq={...state.character.equipment};delete eq[slot];const next={...state,inventory:{...state.inventory,stacks:stackItems(state.inventory.stacks,[{itemId:old,quantity:1}])},character:{...state.character,equipment:eq}} as GameState;next.character!.currentHp=Math.min(effectiveStats(next).hp,next.character!.currentHp);return next}
 export function sellItem(state:GameState,itemId:string,quantity=1):GameState{if(!state.character||quantity<=0)return state;if(itemId===HOLY_WATER_ID)throw new Error('Holy Water cannot be sold.');const discovered=discoverCharacterSkins(state),d=itemDef(itemId);if(d.type==='gear'&&hasEnhancement(discovered,itemId))throw new Error('Enhanced equipment is protected. Extract its gems before disposal; upgraded ranks cannot be recovered.');return {...discovered,inventory:{...discovered.inventory,stacks:consume(discovered.inventory.stacks,itemId,quantity)},character:{...discovered.character!,gold:discovered.character!.gold+d.value*quantity}}}

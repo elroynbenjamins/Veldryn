@@ -9,7 +9,6 @@ import {selfProfileExtensionV43,updateProfileExtensionV43,type ProfileCollection
 import {JOURNAL_ACHIEVEMENTS_V42} from '../core/adventurers-journal-v42';
 import {personalRecordDefinition} from '../core/personal-records-v43';
 import {COMBAT_COMPANIONS} from '../content/combat-companions';
-import {ITEMS} from '../content/items';
 import type {GameState} from '../core/types';
 import {C,radii,spacing,typography} from '../theme/theme';
 import {profileCollectionLabel} from '../core/profile-presentation';

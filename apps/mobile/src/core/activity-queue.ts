@@ -37,6 +37,15 @@ export function removeQueuedActivity(state:GameState,index:number):GameState{
  if(!Number.isSafeInteger(index)||index<0||index>=queue.length)throw new Error('Queued action was not found.');
  return {...state,character:{...state.character,activityQueue:queue.filter((_,i)=>i!==index),activityQueuePausedReason:undefined}};
 }
+export function moveQueuedActivity(state:GameState,index:number,direction:'up'|'down'):GameState{
+ if(!state.character)throw new Error('Create a character first.');
+ const queue=normalizeActivityQueue(state.character.activityQueue);
+ if(!Number.isSafeInteger(index)||index<0||index>=queue.length)throw new Error('Queued action was not found.');
+ const target=direction==='up'?index-1:index+1;
+ if(target<0||target>=queue.length)return state;
+ const next=[...queue],[moved]=next.splice(index,1);next.splice(target,0,moved);
+ return {...state,character:{...state.character,activityQueue:next,activityQueuePausedReason:undefined}};
+}
 export function clearActivityQueue(state:GameState):GameState{
  if(!state.character)return state;
  return {...state,character:{...state.character,activityQueue:[],activityQueuePausedReason:undefined}};

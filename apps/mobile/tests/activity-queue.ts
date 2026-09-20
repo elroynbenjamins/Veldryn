@@ -1,5 +1,5 @@
 import {claimActivity,createCharacter,newGame,startCombat,stopActivity} from '../src/core/game';
-import {activityQueueHandoffStatus,enqueueActivity,MAX_ACTIVITY_QUEUE} from '../src/core/activity-queue';
+import {activityQueueHandoffStatus,enqueueActivity,MAX_ACTIVITY_QUEUE,moveQueuedActivity} from '../src/core/activity-queue';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
 import {normalizeSave} from '../src/core/save-normalization';
 import {weeklyOrderBoardForState} from '../src/core/long-term-progression-runtime';
@@ -19,12 +19,28 @@ const normalized=normalizeSave(dirty);
 ok(normalized.character?.activityQueue?.length===3,'Save normalization should keep only three valid queued actions');
 ok((normalized.character?.activityQueuePausedReason?.length??0)<=180,'Save normalization should bound the queue pause message');
 
+let reordered=createCharacter(newGame(now),'WAYFINDER','Queue Reorder');
+reordered=enqueueActivity(reordered,{kind:'combat',targetId:'MOSS_RAT'});
+reordered=enqueueActivity(reordered,{kind:'combat',targetId:'FIELD_WISP'});
+reordered=enqueueActivity(reordered,{kind:'combat',targetId:'ROADSIDE_BOAR'});
+reordered={...reordered,character:{...reordered.character!,activityQueuePausedReason:'Old blocked next action'}};
+reordered=moveQueuedActivity(reordered,2,'up');
+ok(reordered.character?.activityQueue?.map(row=>row.targetId).join(',')==='MOSS_RAT,ROADSIDE_BOAR,FIELD_WISP','Move up should swap a queued action with its immediate predecessor');
+ok(!reordered.character?.activityQueuePausedReason,'Changing queue order should clear a stale pause explanation');
+const boundary=moveQueuedActivity(reordered,0,'up');
+ok(boundary.character?.activityQueue?.map(row=>row.targetId).join(',')===reordered.character?.activityQueue?.map(row=>row.targetId).join(','),'Moving the first entry up should be a no-op');
+
 let commandState=createCharacter(newGame(now),'WAYFINDER','Queue Command');
 commandState=startCombat(commandState,'MOSS_RAT',now);
 const lastClaim=commandState.activity!.lastClaimAtMs;
 const commandQueued=executeGameCommand(commandState,{type:'queue_add',args:{kind:'combat',id:'MOSS_RAT',tacticId:'guarded',goalId:'kills_50'}},now+60_000).state;
 ok(commandQueued.activity?.lastClaimAtMs===lastClaim,'Editing the queue must not claim or shift the active activity clock');
 ok(commandQueued.character?.activityQueue?.[0]?.combatTacticId==='guarded','Trusted queue command should preserve combat options');
+const withSecond=executeGameCommand(commandQueued,{type:'queue_add',args:{kind:'combat',id:'FIELD_WISP'}},now+60_001).state;
+const reorderedCommand=executeGameCommand(withSecond,{type:'queue_move',args:{index:1,direction:'up'}},now+60_002).state;
+ok(reorderedCommand.activity?.lastClaimAtMs===lastClaim,'Reordering the queue must remain settlement-free');
+ok(reorderedCommand.character?.activityQueue?.[0]?.targetId==='FIELD_WISP'&&reorderedCommand.character?.activityQueue?.[1]?.targetId==='MOSS_RAT','Trusted queue_move should reorder adjacent entries');
+rejects(()=>executeGameCommand(withSecond,{type:'queue_move',args:{index:1,direction:'sideways'}},now+60_002),'Queue move should reject unknown directions');
 rejects(()=>validateGameCommand({type:'queue_add',args:{kind:'gathering',id:'X',goalId:'kills_50'}}),'Gathering queue entries must reject combat-only options');
 
 let planned=createCharacter(newGame(now),'WAYFINDER','Planned Queue');

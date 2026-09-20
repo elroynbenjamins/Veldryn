@@ -1,16 +1,18 @@
-import {useState} from 'react';
+import {useState,useMemo} from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {Recipe} from '../content/skills';
 import {itemDef} from '../content/items';
 import {GameState} from '../core/types';
 import {recipeAvailability} from '../core/playability';
 import {formatGameNumber} from '../core/number-format';
-import {C,radii,spacing,typography} from '../theme/theme';
+import {radii,spacing,typography,equipmentTheme,type ThemeColors} from '../theme/theme';
+import {useGameTheme} from '../theme/ThemeContext';
 import {ItemArtwork} from './ItemArtwork';
 import {IngredientList} from './IngredientList';
 import {GameButton} from './GameButton';
 import {UiIcon} from './UiIcon';
 export function RecipeCard({state,recipe,status,onCraft}:{state:GameState;recipe:Recipe;status:ReturnType<typeof recipeAvailability>;onCraft:(id:string)=>void}){
+ const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
  const [expanded,setExpanded]=useState(false),output=itemDef(recipe.output.itemId);
  const f=(value:number)=>formatGameNumber(value,state.settings.numberMode);
  const readyInputs=status.inputs.filter(i=>i.inventory+i.bank>=i.quantity).length;
@@ -24,4 +26,4 @@ export function RecipeCard({state,recipe,status,onCraft}:{state:GameState;recipe
   </View>}
  </View>;
 }
-const s=StyleSheet.create({card:{backgroundColor:C.panel,borderWidth:1,borderColor:C.line,borderRadius:radii.md,overflow:'hidden'},head:{minHeight:100,flexDirection:'row',alignItems:'center',gap:12,padding:12},copy:{flex:1,minWidth:0,gap:3},title:{...typography.bodyStrong,fontSize:16,lineHeight:23,color:C.text},sub:{...typography.caption,color:C.muted},statusCallout:{padding:spacing.sm,borderWidth:1,borderRadius:8},readySurface:{borderColor:C.good,backgroundColor:'#172b24'},missingSurface:{borderColor:C.warning,backgroundColor:'#332515'},ready:{...typography.caption,color:C.good},reason:{...typography.body,color:C.warning},details:{padding:16,gap:10,borderTopWidth:1,borderColor:C.line}});
+function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);return StyleSheet.create({card:{backgroundColor:C.panel,borderWidth:1,borderColor:C.line,borderRadius:radii.md,overflow:'hidden'},head:{minHeight:100,flexDirection:'row',alignItems:'center',gap:12,padding:12},copy:{flex:1,minWidth:0,gap:3},title:{...typography.bodyStrong,fontSize:16,lineHeight:23,color:C.text},sub:{...typography.caption,color:C.muted},statusCallout:{padding:spacing.sm,borderWidth:1,borderRadius:8},readySurface:{borderColor:C.good,backgroundColor:'#172b24'},missingSurface:{borderColor:C.warning,backgroundColor:'#332515'},ready:{...typography.caption,color:C.good},reason:{...typography.body,color:C.warning},details:{padding:16,gap:10,borderTopWidth:1,borderColor:C.line}});}

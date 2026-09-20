@@ -24,20 +24,23 @@ export function ChatOverlay({state,visible,onOpen,onClose,guildUnread=0,guildMen
   useEffect(()=>{if(!onlineConfigured){setOnlineGuildAvailable(state.account.guildMember);return;}let active=true;const load=async()=>{try{const guild=await myGuild();if(active)setOnlineGuildAvailable(!!guild)}catch{if(active)setOnlineGuildAvailable(state.account.guildMember)}};void load();if(!visible)return()=>{active=false};const timer=setInterval(()=>void load(),30000);return()=>{active=false;clearInterval(timer)};},[visible,state.account.guildMember]);
   const guildAvailable=onlineConfigured?onlineGuildAvailable:state.account.guildMember;
   useEffect(()=>{if(!guildAvailable&&channel==='guild')setChannel('world');},[guildAvailable,channel]);
+  const visibleGuildUnread=visible&&channel==='guild'?0:guildUnread,visibleGuildMentions=visible&&channel==='guild'?0:guildMentions;
+  const visiblePartyUnread=visible&&channel==='party'?0:partyUnread,visiblePartyMentions=visible&&channel==='party'?0:partyMentions;
+  const closeChat=()=>{onChatRead?.();onClose();};
   return <>
-    {!visible&&<ChatDock enabled={onlineConfigured} onOpen={onOpen} unreadCount={guildUnread+partyUnread} mentionCount={guildMentions+partyMentions}/>}
-    <Modal visible={visible} transparent statusBarTranslucent animationType={state.settings.reduceMotion?'none':'fade'} onRequestClose={onClose}>
+    {!visible&&<ChatDock enabled={onlineConfigured} onOpen={onOpen} unreadCount={visibleGuildUnread+visiblePartyUnread} mentionCount={visibleGuildMentions+visiblePartyMentions}/>}
+    <Modal visible={visible} transparent statusBarTranslucent animationType={state.settings.reduceMotion?'none':'fade'} onRequestClose={closeChat}>
       <View style={s.modalRoot}>
-        <Pressable accessibilityLabel="Close chat overlay" onPress={onClose} style={StyleSheet.absoluteFill}/>
+        <Pressable accessibilityLabel="Close chat overlay" onPress={closeChat} style={StyleSheet.absoluteFill}/>
         <View style={s.window}>
           <View style={s.header}>
             <View><Text style={s.eyebrow}>LIVE CHAT</Text><Text style={s.title}>{channel==='world'?'World':channel==='party'?'Party':'Guild'}</Text></View>
-            <Pressable accessibilityRole="button" accessibilityLabel="Close chat" onPress={onClose} style={s.close}><UiIcon name="close" size={24}/></Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel="Close chat" onPress={closeChat} style={s.close}><UiIcon name="close" size={24}/></Pressable>
           </View>
           <View accessibilityRole="tablist" style={s.tabs}>
-            <PartyChatGate party={party} accountId={accountId}><Pressable accessibilityRole="tab" accessibilityState={{selected:channel==='party'}} onPress={()=>setChannel('party')} style={[s.tab,partyMentions>0&&s.tabMention,channel==='party'&&s.tabActive]}><Text style={[s.tabText,channel==='party'&&s.tabTextActive]}>PARTY</Text><TabAttention unread={partyUnread} mentions={partyMentions}/></Pressable></PartyChatGate>
+            <PartyChatGate party={party} accountId={accountId}><Pressable accessibilityRole="tab" accessibilityState={{selected:channel==='party'}} onPress={()=>setChannel('party')} style={[s.tab,partyMentions>0&&s.tabMention,channel==='party'&&s.tabActive]}><Text style={[s.tabText,channel==='party'&&s.tabTextActive]}>PARTY</Text><TabAttention unread={visiblePartyUnread} mentions={visiblePartyMentions}/></Pressable></PartyChatGate>
             <Pressable accessibilityRole="tab" accessibilityState={{selected:channel==='world'}} onPress={()=>setChannel('world')} style={[s.tab,channel==='world'&&s.tabActive]}><Text style={[s.tabText,channel==='world'&&s.tabTextActive]}>WORLD</Text></Pressable>
-            <Pressable accessibilityRole="tab" accessibilityState={{selected:channel==='guild',disabled:!guildAvailable}} disabled={!guildAvailable} onPress={()=>setChannel('guild')} style={[s.tab,guildMentions>0&&s.tabMention,channel==='guild'&&s.tabActive,!guildAvailable&&s.tabDisabled]}><Text style={[s.tabText,channel==='guild'&&s.tabTextActive]}>GUILD</Text><TabAttention unread={guildUnread} mentions={guildMentions}/></Pressable>
+            <Pressable accessibilityRole="tab" accessibilityState={{selected:channel==='guild',disabled:!guildAvailable}} disabled={!guildAvailable} onPress={()=>setChannel('guild')} style={[s.tab,guildMentions>0&&s.tabMention,channel==='guild'&&s.tabActive,!guildAvailable&&s.tabDisabled]}><Text style={[s.tabText,channel==='guild'&&s.tabTextActive]}>GUILD</Text><TabAttention unread={visibleGuildUnread} mentions={visibleGuildMentions}/></Pressable>
           </View>
           <View style={s.content}>{channel==='party'?<OnlinePartyChat onRead={onChatRead}/>:channel==='guild'&&guildAvailable?<GuildChat language={state.settings.language} currentPlayerName={state.character?.name} onRead={onChatRead}/>:onlineConfigured?<OnlineWorldChat playerName={state.character!.name} language={state.settings.language} embedded/>:<WorldChat language={state.settings.language} embedded/>}</View>
         </View>

@@ -267,11 +267,12 @@ function projectedIdleContext(state:GameState,reward:RewardBundle,settleAtMs:num
   }
   const monsterKills={...(state.character?.monsterMasteryPoints??{})};
   if(activity.kind==='combat')monsterKills[activity.targetId]=(monsterKills[activity.targetId]??0)+reward.kills;
-  const weeklyOrderProgress:Record<string,number>={};
+  const weeklyOrderProgress:Record<string,number>={},activityRegionId=zoneIdForTarget(activity.targetId);
   for(const order of state.account.weeklyOrders?.orders??[]){
     let progress=order.progress;
-    const expectedKind=activity.kind==='combat'?'hunt':'profession';
-    if(order.kind===expectedKind&&order.targetId===activity.targetId)progress=Math.min(order.target,progress+reward.kills);
+    const expectedKind=activity.kind==='combat'?'hunt':'profession',direct=order.kind===expectedKind&&order.targetId===activity.targetId;
+    const regional=order.kind==='regional'&&order.targetId===activityRegionId&&(activity.kind==='combat'||['mining','woodcutting','fishing','herbalism'].includes(activity.kind));
+    if(direct||regional)progress=Math.min(order.target,progress+reward.kills);
     weeklyOrderProgress[order.id]=progress;
   }
   const foodRemaining=Math.max(0,stackQty(state.inventory.stacks,state.character?.equippedFoodId)-(reward.foodConsumed??0));

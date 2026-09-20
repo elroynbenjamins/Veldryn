@@ -124,7 +124,8 @@ function bonusInteger(base:number,key:string,fraction:number,remainders:Record<s
 export function previewDailySupplyTimedReward(state:GameState,reward:RewardBundle,mode:'combat'|'gathering'|'skill'|'crafting'|'training'):DailySupplyTimedResult{
  const active=normalizeActiveDailySupplyBoost(state.character?.activeDailySupplyBoost);
  if(!active||!activityModeEligible(active.type,mode)||reward.elapsedSeconds<=0)return {reward,consumedSeconds:0,nextRemainders:{...(active?.remainders??{})}};
- const consumedSeconds=Math.min(active.remainingSeconds,Math.max(0,reward.elapsedSeconds)),fraction=consumedSeconds/Math.max(1,reward.elapsedSeconds),nextRemainders={...(active.remainders??{})};
+ const qualifyingSeconds=Math.min(Math.max(0,reward.elapsedSeconds),Math.max(0,reward.qualifyingActivitySeconds??reward.elapsedSeconds));if(qualifyingSeconds<=0)return {reward,consumedSeconds:0,nextRemainders:{...(active.remainders??{})}};
+ const consumedSeconds=Math.min(active.remainingSeconds,qualifyingSeconds),fraction=consumedSeconds/Math.max(1,qualifyingSeconds),nextRemainders={...(active.remainders??{})};
  let next={...reward,items:reward.items.map(item=>({...item}))};
  if(active.type==='combat_xp'){
   next.xp+=bonusInteger(reward.xp,'xp:combat',fraction,nextRemainders);

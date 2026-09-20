@@ -41,10 +41,10 @@ export function ProfileScreen({state,onNavigate}:{state:GameState;onNavigate?:(d
  const favoriteSkillId=publicSelf?.favoriteSkillId??summary.highestSkill?.skillId;
  const favoriteCompanionId=publicSelf?.favoriteCompanionId??state.character?.equippedCombatCompanionId??state.account.unlockedCombatCompanionIds?.[0];
  const favoriteCompanion=favoriteCompanionId?COMBAT_COMPANIONS.find(row=>row.id===favoriteCompanionId):undefined,favoriteCompanionArt=favoriteCompanionId?companionArtSource(favoriteCompanionId):undefined;
- const online=!!publicSelf,background=c.profileBackgroundId??'asterfall-night',displayName=publicSelf?.character.name??c.name,displayLevel=publicSelf?.character.level??c.level,displayClass=publicSelf?.character.classId??c.classId;
+ const online=!!publicSelf,background=c.profileBackgroundId??'asterfall-night',displayName=publicSelf?.character.name??c.name,displayLevel=publicSelf?.character.level??c.level,displayClass=publicSelf?.character.classId??c.classId,profileStateLabel=publicSelf?.visibility==='public'?'PUBLIC PROFILE':publicSelf?.visibility==='guild'?'GUILD PROFILE':publicSelf?.visibility==='private'?'PRIVATE PROFILE':'LOCAL PROFILE';
 
  return <ScrollView contentContainerStyle={s.root}>
-  <View style={s.headingRow}><View style={s.flex}><Text style={s.kicker}>PLAYER IDENTITY</Text><Text accessibilityRole="header" style={s.heading}>Profile</Text></View>{loadingPublic?<ActivityIndicator color={C.accent}/>:<Text style={[s.onlineBadge,online?s.online:s.local]}>{online?'ONLINE PROFILE':'LOCAL PROFILE'}</Text>}</View>
+  <View style={s.headingRow}><View style={s.flex}><Text style={s.kicker}>PLAYER IDENTITY</Text><Text accessibilityRole="header" style={s.heading}>Profile</Text></View>{loadingPublic?<ActivityIndicator color={C.accent}/>:<Text style={[s.onlineBadge,online?s.online:s.local]}>{profileStateLabel}</Text>}</View>
 
   {publicSelf?<PublicProfileScene profile={publicSelf}/>:<ProfileScenePreview state={state} backgroundId={background}/>}
 

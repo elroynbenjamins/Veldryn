@@ -10,10 +10,21 @@ export interface PermanentMultipliers {
   combatPowerMultiplier: number;
   gatheringSpeedMultiplier: number;
   gatheringYieldMultiplier: number;
+  miningYieldMultiplier: number;
+  woodcuttingYieldMultiplier: number;
+  fishingYieldMultiplier: number;
+  herbalismYieldMultiplier: number;
+  huntingYieldMultiplier: number;
   fishingSpeedMultiplier: number;
   herbalismSpeedMultiplier: number;
   cookingSpeedMultiplier: number;
   craftingSpeedMultiplier: number;
+  enchantingSpeedMultiplier: number;
+  monsterMasteryXpMultiplier: number;
+  explorationProgressMultiplier: number;
+  offlineLootCapacityMultiplier: number;
+  echoRewardMultiplier: number;
+  foodDurationMultiplier: number;
   materialPreservationMultiplier: number;
   healingEffectivenessMultiplier: number;
   dungeonRewardMultiplier: number;
@@ -31,10 +42,21 @@ const BASE: PermanentMultipliers = {
   combatPowerMultiplier: 1,
   gatheringSpeedMultiplier: 1,
   gatheringYieldMultiplier: 1,
+  miningYieldMultiplier: 1,
+  woodcuttingYieldMultiplier: 1,
+  fishingYieldMultiplier: 1,
+  herbalismYieldMultiplier: 1,
+  huntingYieldMultiplier: 1,
   fishingSpeedMultiplier: 1,
   herbalismSpeedMultiplier: 1,
   cookingSpeedMultiplier: 1,
   craftingSpeedMultiplier: 1,
+  enchantingSpeedMultiplier: 1,
+  monsterMasteryXpMultiplier: 1,
+  explorationProgressMultiplier: 1,
+  offlineLootCapacityMultiplier: 1,
+  echoRewardMultiplier: 1,
+  foodDurationMultiplier: 1,
   materialPreservationMultiplier: 1,
   healingEffectivenessMultiplier: 1,
   dungeonRewardMultiplier: 1,
@@ -70,10 +92,21 @@ function readMultipliers(definitionId:string|undefined,map:Record<string,Permane
     combatPowerMultiplier:asMultiplier(d.combatPowerMultiplier),
     gatheringSpeedMultiplier:asMultiplier(d.gatheringSpeedMultiplier),
     gatheringYieldMultiplier:asMultiplier(d.gatheringYieldMultiplier),
+    miningYieldMultiplier:asMultiplier(d.miningYieldMultiplier),
+    woodcuttingYieldMultiplier:asMultiplier(d.woodcuttingYieldMultiplier),
+    fishingYieldMultiplier:asMultiplier(d.fishingYieldMultiplier),
+    herbalismYieldMultiplier:asMultiplier(d.herbalismYieldMultiplier),
+    huntingYieldMultiplier:asMultiplier(d.huntingYieldMultiplier),
     fishingSpeedMultiplier:asMultiplier(d.fishingSpeedMultiplier),
     herbalismSpeedMultiplier:asMultiplier(d.herbalismSpeedMultiplier),
     cookingSpeedMultiplier:asMultiplier(d.cookingSpeedMultiplier),
     craftingSpeedMultiplier:asMultiplier(d.craftingSpeedMultiplier),
+    enchantingSpeedMultiplier:asMultiplier(d.enchantingSpeedMultiplier),
+    monsterMasteryXpMultiplier:asMultiplier(d.monsterMasteryXpMultiplier),
+    explorationProgressMultiplier:asMultiplier(d.explorationProgressMultiplier),
+    offlineLootCapacityMultiplier:asMultiplier(d.offlineLootCapacityMultiplier),
+    echoRewardMultiplier:asMultiplier(d.echoRewardMultiplier),
+    foodDurationMultiplier:asMultiplier(d.foodDurationMultiplier),
     materialPreservationMultiplier:asMultiplier(d.materialPreservationMultiplier),
     healingEffectivenessMultiplier:asMultiplier(d.healingEffectivenessMultiplier),
     dungeonRewardMultiplier:asMultiplier(d.dungeonRewardMultiplier),
@@ -93,10 +126,21 @@ function merge(base:PermanentMultipliers,incoming:PermanentMultipliers):Permanen
     combatPowerMultiplier:multiply(base.combatPowerMultiplier,incoming.combatPowerMultiplier),
     gatheringSpeedMultiplier:multiply(base.gatheringSpeedMultiplier,incoming.gatheringSpeedMultiplier),
     gatheringYieldMultiplier:multiply(base.gatheringYieldMultiplier,incoming.gatheringYieldMultiplier),
+    miningYieldMultiplier:multiply(base.miningYieldMultiplier,incoming.miningYieldMultiplier),
+    woodcuttingYieldMultiplier:multiply(base.woodcuttingYieldMultiplier,incoming.woodcuttingYieldMultiplier),
+    fishingYieldMultiplier:multiply(base.fishingYieldMultiplier,incoming.fishingYieldMultiplier),
+    herbalismYieldMultiplier:multiply(base.herbalismYieldMultiplier,incoming.herbalismYieldMultiplier),
+    huntingYieldMultiplier:multiply(base.huntingYieldMultiplier,incoming.huntingYieldMultiplier),
     fishingSpeedMultiplier:multiply(base.fishingSpeedMultiplier,incoming.fishingSpeedMultiplier),
     herbalismSpeedMultiplier:multiply(base.herbalismSpeedMultiplier,incoming.herbalismSpeedMultiplier),
     cookingSpeedMultiplier:multiply(base.cookingSpeedMultiplier,incoming.cookingSpeedMultiplier),
     craftingSpeedMultiplier:multiply(base.craftingSpeedMultiplier,incoming.craftingSpeedMultiplier),
+    enchantingSpeedMultiplier:multiply(base.enchantingSpeedMultiplier,incoming.enchantingSpeedMultiplier),
+    monsterMasteryXpMultiplier:multiply(base.monsterMasteryXpMultiplier,incoming.monsterMasteryXpMultiplier),
+    explorationProgressMultiplier:multiply(base.explorationProgressMultiplier,incoming.explorationProgressMultiplier),
+    offlineLootCapacityMultiplier:multiply(base.offlineLootCapacityMultiplier,incoming.offlineLootCapacityMultiplier),
+    echoRewardMultiplier:multiply(base.echoRewardMultiplier,incoming.echoRewardMultiplier),
+    foodDurationMultiplier:multiply(base.foodDurationMultiplier,incoming.foodDurationMultiplier),
     materialPreservationMultiplier:multiply(base.materialPreservationMultiplier,incoming.materialPreservationMultiplier),
     healingEffectivenessMultiplier:multiply(base.healingEffectivenessMultiplier,incoming.healingEffectivenessMultiplier),
     dungeonRewardMultiplier:multiply(base.dungeonRewardMultiplier,incoming.dungeonRewardMultiplier),
@@ -121,10 +165,22 @@ function collectibleTargetMultipliers(target:CollectibleTarget,appliedBps:number
     case 'dropChance':out.dropChanceMultiplier=amount;break;
     case 'actionSpeed':out.combatSpeedMultiplier=amount;out.gatheringSpeedMultiplier=amount;break;
     case 'gatheringYield':out.gatheringYieldMultiplier=amount;break;
+    case 'miningYield':out.miningYieldMultiplier=amount;break;
+    case 'woodcuttingYield':out.woodcuttingYieldMultiplier=amount;break;
+    case 'fishingYield':out.fishingYieldMultiplier=amount;break;
+    case 'herbalismYield':out.herbalismYieldMultiplier=amount;break;
+    case 'huntingYield':out.huntingYieldMultiplier=amount;break;
+    case 'gatheringSpeed':out.gatheringSpeedMultiplier=amount;break;
     case 'fishingSpeed':out.fishingSpeedMultiplier=amount;break;
     case 'herbalismSpeed':out.herbalismSpeedMultiplier=amount;break;
     case 'cookingSpeed':out.cookingSpeedMultiplier=amount;break;
     case 'craftingSpeed':out.craftingSpeedMultiplier=amount;break;
+    case 'enchantingSpeed':out.enchantingSpeedMultiplier=amount;break;
+    case 'monsterMasteryXp':out.monsterMasteryXpMultiplier=amount;break;
+    case 'explorationProgress':out.explorationProgressMultiplier=amount;break;
+    case 'offlineLootCapacity':out.offlineLootCapacityMultiplier=amount;break;
+    case 'echoReward':out.echoRewardMultiplier=amount;break;
+    case 'foodDuration':out.foodDurationMultiplier=amount;break;
     case 'materialPreservation':out.materialPreservationMultiplier=amount;break;
     case 'healingEffectiveness':out.healingEffectivenessMultiplier=amount;break;
     case 'dungeonReward':out.dungeonRewardMultiplier=amount;break;

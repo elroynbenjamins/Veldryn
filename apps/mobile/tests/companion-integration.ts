@@ -1,6 +1,6 @@
 import {createCharacter,newGame,claimActivity,claimQuest,startCombat,previewActivityReward} from '../src/core/game';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
-import {unlockCombatCompanion,equipCombatCompanion,companionCombatContribution,companionLevelCost,companionRemainingLevelCost,companionAscensionCost,applyCompanionBondXp,claimSanctuaryTraining,claimSanctuaryEssence} from '../src/core/combat-companions';
+import {unlockCombatCompanion,equipCombatCompanion,companionCombatContribution,companionLevelCost,companionRemainingLevelCost,companionAscensionCost,companionPaidLevelingTotals,companionFullInvestmentSummary,applyCompanionBondXp,claimSanctuaryTraining,claimSanctuaryEssence} from '../src/core/combat-companions';
 import {companionAvailability,refreshCompanions,companionOwned,companionCombatExecutor,recordCompanionActivity,companionView,companionUnlockFacts,recommendedCompanionMissionTeam,recommendedCompanionTrialTeam} from '../src/core/companion-runtime';
 import {migrateSave} from '../src/core/save-migrations';
 import {createSaveBackup,parseSaveBackup} from '../src/core/save-transfer';
@@ -113,6 +113,21 @@ ok(companionTechniques('UNIT_013').some(t=>t.name==='Venom Ambush')&&companionTe
 ok(companionTechniques('EVT_UNIT_003').some(t=>t.name==='Root Bastion')&&companionTechniques('EVT_UNIT_009').some(t=>t.name==='Grand Bell'),'event companions have authored techniques');
 ok(COMBAT_COMPANIONS.find(d=>d.id==='UNIT_013')?.activeAbility.name==='Venom Pounce'&&COMBAT_COMPANIONS.find(d=>d.id==='UNIT_015')?.activeAbility.name==='Solar Carapace','regional companion authored ability copy is visible');
 ok(COMBAT_COMPANIONS.find(d=>d.id==='EVT_UNIT_003')?.activeAbility.name==='Living Bastion'&&COMBAT_COMPANIONS.find(d=>d.id==='EVT_UNIT_009')?.activeAbility.name==='Frostbell Cycle','event companion authored ability copy is visible');
+const economyTargets=[
+ ['UNIT_001',300,450,4],
+ ['UNIT_004',850,1200,4],
+ ['UNIT_007',2100,2900,13],
+ ['UNIT_012',5000,7000,29],
+] as const;
+for(const [id,minEss,maxEss,bondstones] of economyTargets){
+ const def=COMBAT_COMPANIONS.find(row=>row.id===id)!;
+ const paid=companionPaidLevelingTotals(def),full=companionFullInvestmentSummary(def);
+ ok(paid.companionEssence>=minEss&&paid.companionEssence<=maxEss,`${id} paid-level Essence stays in target band`);
+ ok(full.ascensionEssence>0&&full.ascensionGold>0,`${id} cumulative Ascension totals exist`);
+ ok(full.bondstones===bondstones,`${id} full-investment Bondstone target stays stable`);
+}
+const standardPaidEconomy=companionPaidLevelingTotals(COMBAT_COMPANIONS.find(row=>row.id==='UNIT_001')!),prestigePaidEconomy=companionPaidLevelingTotals(COMBAT_COMPANIONS.find(row=>row.id==='UNIT_012')!);
+ok(prestigePaidEconomy.companionEssence/standardPaidEconomy.companionEssence<20,'Prestige paid-training spread remains bounded');
 const tyrantDef=COMBAT_COMPANIONS.find(d=>d.id==='UNIT_016')!,regentDef=COMBAT_COMPANIONS.find(d=>d.id==='UNIT_024')!,heartbondDef=COMBAT_COMPANIONS.find(d=>d.id==='EVT_UNIT_002')!;
 ok(companionAscensionCost(tyrantDef,3).materialId==='ASTRAL_SCRIPT'&&companionAscensionCost(tyrantDef,'mastery').materialId==='TRIAL_SANCTUARY_MATERIAL','Sunscar Prestige ascension uses tiered materials');
 ok(companionAscensionCost(regentDef,2).materialId==='BLACKGLASS_CORE'&&companionAscensionCost(regentDef,'mastery').materialId==='REGENT_SIGIL','Ashlands Prestige ascension uses regional catalysts');

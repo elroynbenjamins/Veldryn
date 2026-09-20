@@ -19,6 +19,13 @@ export type FriendEntry=FriendProfile&{friends_since:string};
 export type FriendRequest={request_id:string;account_id:string;display_name:string;direction:'incoming'|'outgoing';created_at:string};
 export type BlockedPlayer={account_id:string;display_name:string;blocked_at:string};
 
+export interface PartyInvitationView{ id:string;partyId:string;inviterAccountId:string;inviterName:string;focus:'combat'|'skilling'|'mixed';memberCount:number;openSpots:number;expiresAt:string; }
+export interface GuildInvitationView{ id:string;guildId:string;inviterAccountId:string;inviterName:string;guildName:string;guildTag?:string|null;memberCount:number;memberCap:number;minimumLevel:number;expiresAt:string; }
+export interface SocialInvitationState{party:PartyInvitationView[];guild:GuildInvitationView[];serverTime:string;}
+export interface InviteCapability{available:boolean;pending:boolean;reason?:string|null;partyId?:string|null;guildId?:string|null;guildName?:string|null;memberCount?:number;memberCap?:number;minimumLevel?:number;}
+export interface SocialInviteCapabilities{party:InviteCapability;guild:InviteCapability;}
+
+
 function requireClient(){if(!supabase)throw new Error('Online services are not configured in this build.');return supabase;}
 export async function guildIdentities(accountIds:readonly string[]):Promise<Map<string,{guild_tag:string;guild_tag_color_id:string}>>{const unique=[...new Set(accountIds.filter(Boolean))];if(!unique.length)return new Map();const client=requireClient();const {data,error}=await client.rpc('guild_identities',{p_account_ids:unique});if(error)throw error;return new Map<string,{guild_tag:string;guild_tag_color_id:string}>((data??[]).map((row:any)=>[row.account_id,{guild_tag:row.guild_tag,guild_tag_color_id:row.guild_tag_color_id}]));}
 async function withGuildIdentities<T extends {account_id:string}>(rows:T[]){const identities=await guildIdentities(rows.map(row=>row.account_id));return rows.map(row=>({...row,...identities.get(row.account_id)}));}
@@ -63,3 +70,11 @@ export async function cancelFriendRequest(requestId:string){const client=require
 export async function removeFriend(accountId:string){const client=requireClient();const {error}=await client.rpc('remove_friend',{p_target_account_id:accountId});if(error)throw error;}
 export async function setPlayerBlocked(accountId:string,blocked:boolean){const client=requireClient();const {error}=await client.rpc('set_player_block',{p_target_account_id:accountId,p_blocked:blocked});if(error)throw error;}
 export async function blockedPlayers(){const client=requireClient();const {data,error}=await client.rpc('blocked_player_list');if(error)throw error;return (data??[]) as BlockedPlayer[];}
+
+export async function socialInvitations(){const client=requireClient();const {data,error}=await client.rpc('social_invitation_state_v1');if(error)throw error;return data as SocialInvitationState;}
+export async function socialInviteCapabilities(accountId:string){const client=requireClient();const {data,error}=await client.rpc('social_invite_capabilities_v1',{p_target_account_id:accountId});if(error)throw error;return data as SocialInviteCapabilities;}
+export async function sendPartyInvitation(accountId:string){const client=requireClient();const {data,error}=await client.rpc('send_party_invitation_v1',{p_target_account_id:accountId});if(error)throw error;return data as {id:string;status:'sent'|'already_pending';expiresAt:string};}
+export async function respondPartyInvitation(invitationId:string,accept:boolean,characterId?:string|null){const client=requireClient();const {data,error}=await client.rpc('respond_party_invitation_v1',{p_invitation_id:invitationId,p_accept:accept,p_character_id:characterId??null});if(error)throw error;return data as 'accepted'|'declined';}
+export async function sendGuildInvitation(accountId:string){const client=requireClient();const {data,error}=await client.rpc('send_guild_invitation_v1',{p_target_account_id:accountId});if(error)throw error;return data as {id:string;status:'sent'|'already_pending';expiresAt:string};}
+export async function respondGuildInvitation(invitationId:string,accept:boolean){const client=requireClient();const {data,error}=await client.rpc('respond_guild_invitation_v1',{p_invitation_id:invitationId,p_accept:accept});if(error)throw error;return data as 'accepted'|'declined';}
+

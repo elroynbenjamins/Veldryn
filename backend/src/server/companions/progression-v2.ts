@@ -31,6 +31,26 @@ export function awardCompanionBondXpServer(progress:OwnedCompanionSnapshot,amoun
 export function companionUnlockRequirementSatisfied(r:CompanionAdvancedUnlockRequirement,f:CompanionUnlockFacts){switch(r.type){
  case 'trial_floor':return f.highestTrialFloor>=(r.amount??1);case 'special_boss_clear':return !!r.target&&f.specialBossClears.has(r.target);case 'boss_clear_count':return !!r.target&&(f.bossClearCounts[r.target]??0)>=(r.amount??1);case 'region_completion':return !!r.target&&f.regionCompletion.has(r.target);case 'event_completion':return !!r.target&&f.eventCompletion.has(r.target);case 'companion_owned':return !!r.target&&f.ownedCompanionIds.has(r.target);case 'companion_role_owned':return !!r.target&&(f.ownedByRole[r.target as keyof typeof f.ownedByRole]??0)>=(r.amount??1);case 'companion_bond_total':return (r.originId?(f.bondTotalByOrigin?.[r.originId]??0):f.bondTotal)>=(r.amount??1);case 'companion_level_total':return (r.originId?(f.levelTotalByOrigin?.[r.originId]??0):f.levelTotal)>=(r.amount??1);case 'achievement':return !!r.target&&f.achievements.has(r.target);case 'currency_cost':return f.companionEssence>=(r.amount??0);case 'mastery':return !!r.target&&(f.mastery[r.target]??0)>=(r.amount??1);case 'reputation':return !!r.target&&(f.reputation[r.target]??0)>=(r.amount??1);case 'event_challenge':return !!r.target&&f.eventChallenges.has(r.target);default:return false;}}
 export function companionUnlockRequirementsSatisfied(requirements:CompanionAdvancedUnlockRequirement[],facts:CompanionUnlockFacts){return requirements.every(r=>companionUnlockRequirementSatisfied(r,facts));}
+export function companionUnlockRequirementProgress(r:CompanionAdvancedUnlockRequirement,f:CompanionUnlockFacts){
+ const total=Math.max(1,r.amount??1);let current=0;
+ switch(r.type){
+  case 'trial_floor':current=f.highestTrialFloor;break;
+  case 'special_boss_clear':current=!!r.target&&f.specialBossClears.has(r.target)?1:0;break;
+  case 'boss_clear_count':current=r.target?f.bossClearCounts[r.target]??0:0;break;
+  case 'region_completion':current=!!r.target&&f.regionCompletion.has(r.target)?1:0;break;
+  case 'event_completion':current=!!r.target&&f.eventCompletion.has(r.target)?1:0;break;
+  case 'companion_owned':current=!!r.target&&f.ownedCompanionIds.has(r.target)?1:0;break;
+  case 'companion_role_owned':current=r.target?f.ownedByRole[r.target as keyof typeof f.ownedByRole]??0:0;break;
+  case 'companion_bond_total':current=r.originId?f.bondTotalByOrigin?.[r.originId]??0:f.bondTotal;break;
+  case 'companion_level_total':current=r.originId?f.levelTotalByOrigin?.[r.originId]??0:f.levelTotal;break;
+  case 'achievement':current=!!r.target&&f.achievements.has(r.target)?1:0;break;
+  case 'currency_cost':current=f.companionEssence;break;
+  case 'mastery':current=r.target?f.mastery[r.target]??0:0;break;
+  case 'reputation':current=r.target?f.reputation[r.target]??0:0;break;
+  case 'event_challenge':current=!!r.target&&f.eventChallenges.has(r.target)?1:0;break;
+ }
+ return {current:Math.min(total,Math.max(0,current)),total,complete:companionUnlockRequirementSatisfied(r,f)};
+}
 
 export function companionCodexEntry(progress:OwnedCompanionSnapshot|undefined,companionId:string){const def=companionServerDefinition(companionId);if(!def)throw new Error('unknown_companion');return {companionId,name:def.name,owned:!!progress,discovered:true,rarity:def.rarity,originId:def.originId,role:def.role,level:progress?.level??0,maxLevel:COMPANION_RARITY_MAX_LEVEL[def.rarity],ascensionTier:progress?.ascensionTier??0,bondLevel:progress?.bondLevel??0,selectedTechniqueId:progress?.selectedTechniqueId,bondTraitUnlocked:progress?.bondTraitUnlocked??false,mastered:progress?.mastered??false,techniques:companionTechniques(companionId).map(x=>({id:x.id,name:x.name,unlocked:progress?techniqueUnlocked(progress,x.id):false}))};}
 export function setCompanionShowcase(state:CompanionCodexProfileState,ownedIds:ReadonlySet<string>,favoriteCompanionId:string|undefined,showcaseCompanionIds:string[]){if(favoriteCompanionId&&!ownedIds.has(favoriteCompanionId))throw new Error('favorite_companion_not_owned');const unique=[...new Set(showcaseCompanionIds)],slots=Math.max(1,Math.min(3,state.showcaseSlotsUnlocked??3));if(unique.length>slots)throw new Error('companion_showcase_slots_locked');if(unique.some(id=>!ownedIds.has(id)))throw new Error('showcase_companion_not_owned');return {...state,favoriteCompanionId,showcaseCompanionIds:unique,showcaseSlotsUnlocked:slots,discoveredCompanionIds:[...new Set([...(state.discoveredCompanionIds??[]),...ownedIds])]};}

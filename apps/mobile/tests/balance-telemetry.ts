@@ -40,6 +40,7 @@ equal(first[BALANCE_METRIC_KEYS.companionBond10Count],1,'Bond 10 companion count
 equal(first[BALANCE_METRIC_KEYS.companionMasteredCount],1,'Mastered companion count');
 equal(first[BALANCE_METRIC_KEYS.companionPrestigeOwned],1,'Prestige companion ownership count');
 equal(first[BALANCE_METRIC_KEYS.companionEventOwned],1,'Event companion ownership count');
+equal(first[BALANCE_METRIC_KEYS.companionTrialRolesReady],0,'Trial role readiness remains false without a Tank');
 equal(first[BALANCE_METRIC_KEYS.accountAgeMinutes],2,'account age minutes');
 equal(first[BALANCE_METRIC_KEYS.firstQuestClaimAt],120_000,'first quest milestone timestamp');
 equal(first[BALANCE_METRIC_KEYS.level10At],120_000,'level 10 milestone timestamp');
@@ -47,12 +48,18 @@ equal(first[BALANCE_METRIC_KEYS.firstPetAt],120_000,'first pet milestone timesta
 equal(first[BALANCE_METRIC_KEYS.firstCompanionAt],120_000,'first companion milestone timestamp');
 equal(first[BALANCE_METRIC_KEYS.fullEquipmentAt],120_000,'full equipment milestone timestamp');
 
+state={...state,account:{...state.account,unlockedCombatCompanionIds:[...state.account.unlockedCombatCompanionIds!,'UNIT_002']}};
+state=applyLocalBalanceSnapshot(state,240_000);
+equal(state.account.longTermMetrics![BALANCE_METRIC_KEYS.companionTrialRolesReady],1,'Trial role readiness records Tank/Damage/Support coverage');
+equal(state.account.longTermMetrics![BALANCE_METRIC_KEYS.firstTrialTeamReadyAt],240_000,'first Trial team milestone timestamp');
+
 state={...state,character:{...state.character!,level:20}};
 state=applyLocalBalanceSnapshot(state,300_000);
 const second=state.account.longTermMetrics!;
 
 equal(second[BALANCE_METRIC_KEYS.characterLevel],20,'current level updates');
 equal(second[BALANCE_METRIC_KEYS.level10At],120_000,'level 10 milestone is write-once');
+equal(second[BALANCE_METRIC_KEYS.firstTrialTeamReadyAt],240_000,'first Trial team milestone is write-once');
 equal(second[BALANCE_METRIC_KEYS.level20At],300_000,'level 20 milestone is recorded when first observed');
 
 state={...state,defeatedBossIds:[...state.defeatedBossIds,'FALLEN_KNIGHT'],character:{...state.character!,level:25}};

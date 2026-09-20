@@ -9,17 +9,18 @@ import {C,spacing,typography} from '../theme/theme';
 import {onlineConfigured} from '../online/supabase';
 import {guildMemberManagement} from '../core/social-management';
 import {
- cancelGuildInvitation,guildApplications,guildDetails,guildRoster,myGuild,removeGuildMember,reviewGuildApplication,respondGuildInvitation,socialInvitations,socialOutgoingInvitations,updateGuildMemberRole,
- type GuildApplication,type GuildInvitationView,type GuildMember,type OnlineGuild,type OutgoingInvitationView,
+ cancelGuildInvitation,disbandGuild,guildApplications,guildDetails,guildLeadershipStatus,guildRoster,leaveGuild,myGuild,removeGuildMember,reviewGuildApplication,respondGuildInvitation,socialInvitations,socialOutgoingInvitations,transferGuildLeadership,updateGuildMemberRole,
+ type GuildApplication,type GuildInvitationView,type GuildLeadershipStatus,type GuildMember,type OnlineGuild,type OutgoingInvitationView,
 } from '../online/social';
 
 export function OnlineGuildManagement({onApplicationsChanged}:{onApplicationsChanged?:()=>void}={}){
- const [members,setMembers]=useState<GuildMember[]>([]),[applications,setApplications]=useState<GuildApplication[]>([]),[invitations,setInvitations]=useState<GuildInvitationView[]>([]),[outgoingInvitations,setOutgoingInvitations]=useState<OutgoingInvitationView[]>([]),[guild,setGuild]=useState<OnlineGuild|null>(null);
+ const [members,setMembers]=useState<GuildMember[]>([]),[applications,setApplications]=useState<GuildApplication[]>([]),[invitations,setInvitations]=useState<GuildInvitationView[]>([]),[outgoingInvitations,setOutgoingInvitations]=useState<OutgoingInvitationView[]>([]),[guild,setGuild]=useState<OnlineGuild|null>(null),[leadership,setLeadership]=useState<GuildLeadershipStatus|null>(null);
  const [selected,setSelected]=useState<ChatPlayerIdentity|null>(null),[role,setRole]=useState<'leader'|'officer'|'member'|null>(null),[ownAccountId,setOwnAccountId]=useState(''),[busy,setBusy]=useState(false),[loaded,setLoaded]=useState(false);
  const load=async()=>{
   if(!onlineConfigured)return;
   setBusy(true);
   try{
+   const succession=await guildLeadershipStatus().catch(()=>null);setLeadership(succession);
    const [mine,inviteState,outgoingState]=await Promise.all([myGuild(),socialInvitations().catch(()=>({party:[],guild:[],serverTime:''})),socialOutgoingInvitations().catch(()=>({party:[],guild:[],serverTime:''}))]);setRole(mine?.role??null);setOwnAccountId(mine?.account_id??'');setInvitations(inviteState.guild);setOutgoingInvitations(outgoingState.guild);
    if(mine){
     const [details,roster,apps]=await Promise.all([
@@ -28,7 +29,7 @@ export function OnlineGuildManagement({onApplicationsChanged}:{onApplicationsCha
      mine.role==='leader'||mine.role==='officer'?guildApplications(mine.guild_id):Promise.resolve([] as GuildApplication[]),
     ]);
     setGuild(details);setMembers(roster);setApplications(apps);
-   }else{setGuild(null);setMembers([]);setApplications([]);}
+   }else{setGuild(null);setMembers([]);setApplications([]);setLeadership(null);}
    setLoaded(true);
   }catch(error){Alert.alert('Guild',error instanceof Error?error.message:'Unable to load your online guild.')}
   finally{setBusy(false)}
@@ -45,6 +46,7 @@ export function OnlineGuildManagement({onApplicationsChanged}:{onApplicationsCha
   const permissions=guildMemberManagement(role,member.role,member.account_id===ownAccountId);
   const runMember=async(action:()=>Promise<unknown>,fallback:string)=>{if(busy)return;setBusy(true);try{await action();await load();onApplicationsChanged?.()}catch(error){Alert.alert('Guild member',error instanceof Error?error.message:fallback)}finally{setBusy(false)}};
   const choices:{text:string;style?:'default'|'cancel'|'destructive';onPress?:()=>void}[]=[{text:'Cancel',style:'cancel'}];
+  if(permissions.canTransferLeadership)choices.unshift({text:'Transfer Leadership',onPress:()=>Alert.alert('Transfer Guild leadership?',member.display_name+' will become Guild Leader. You will become an Officer.',[{text:'Cancel',style:'cancel'},{text:'Transfer',onPress:()=>void runMember(()=>transferGuildLeadership(member.account_id),'Unable to transfer leadership.')}])});
   if(permissions.canPromote)choices.unshift({text:'Promote to Officer',onPress:()=>void runMember(()=>updateGuildMemberRole(member.account_id,'officer'),'Unable to promote member.')});
   if(permissions.canDemote)choices.unshift({text:'Demote to Member',onPress:()=>void runMember(()=>updateGuildMemberRole(member.account_id,'member'),'Unable to demote officer.')});
   if(permissions.canRemove)choices.unshift({text:'Remove from Guild',style:'destructive',onPress:()=>void runMember(()=>removeGuildMember(member.account_id),'Unable to remove member.')});

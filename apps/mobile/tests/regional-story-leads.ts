@@ -11,7 +11,7 @@ for(const regionId of ['SUNSCAR','FROSTMARCH','ASHLANDS'] as const){
  ok(rows.every(row=>MONSTERS.some(monster=>monster.id===row.targetMonsterId&&!monster.boss)),`${regionId} leads must target live regular monsters`);
  ok(rows[0].minLevel<rows[1].minLevel&&rows[1].minLevel<rows[2].minLevel,`${regionId} lead levels must escalate`);
 }
-let state=createCharacter(newGame(1),'WAYFINDER','Regional Story Tester');
+let state=createCharacter(newGame(1),'WAYFINDER','Regional Tester');
 state={...state,character:{...state.character!,level:40}};
 const sunscar=regionalStoryLeads('SUNSCAR',state);
 ok(sunscar[0].status==='available'&&sunscar[1].status==='available'&&sunscar[2].status==='available','Level 40 should expose all authored Sunscar leads');

@@ -85,6 +85,10 @@ begin
  if v_target_role is null then raise exception 'target_not_guild_member';end if;
  if v_target_role='leader' then raise exception 'cannot_manage_guild_leader';end if;
  update public.guild_members set role=p_role where guild_id=v_gid and account_id=p_target_account_id;
+ if p_role='member' then
+  update public.guild_invitations_v1 set status='cancelled',responded_at=now()
+   where guild_id=v_gid and inviter_account_id=p_target_account_id and status='pending';
+ end if;
  return p_role;
 end
 $$;

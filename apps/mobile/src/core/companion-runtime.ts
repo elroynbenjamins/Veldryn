@@ -41,11 +41,24 @@ export interface CompanionAccountState {
   companionSpecialClears?:string[];
   companionAssignmentBondstoneWeek?:string;
   companionAssignmentBondstones?:number;
+  companionRematchBondstoneWeek?:string;
+  companionRematchBondstones?:number;
   companionActionSequence?:number;
   companionBondRewardClaims?:string[];
   companionBattleReadyAtMs?:number;
   companionBossRematchReadyAtMs?:number;
   companionLastBattle?:{title:string;won:boolean;durationMs:number;gold:number;essence:number;bondstones:number;atMs:number};
+}
+export const COMPANION_REMATCH_WEEKLY_BONDSTONE_CAP=2;
+export function companionRematchBondstoneStatus(state:GameState,nowMs:number){
+  const week=companionTrialWeekKey(nowMs),used=state.account.companionRematchBondstoneWeek===week?Math.min(COMPANION_REMATCH_WEEKLY_BONDSTONE_CAP,state.account.companionRematchBondstones??0):0;
+  return {week,used,cap:COMPANION_REMATCH_WEEKLY_BONDSTONE_CAP,remaining:Math.max(0,COMPANION_REMATCH_WEEKLY_BONDSTONE_CAP-used)};
+}
+export function awardCompanionRematchBondstone(state:GameState,nowMs:number){
+  const status=companionRematchBondstoneStatus(state,nowMs);
+  if(status.remaining<=0)return {state,reward:0,status};
+  const used=status.used+1;
+  return {state:{...state,account:{...state.account,companionRematchBondstoneWeek:status.week,companionRematchBondstones:used}},reward:1,status:{...status,used,remaining:Math.max(0,status.cap-used)}};
 }
 export const companionCombatExecutor:CompanionCombatExecutor={simulate:input=>simulateCombat(input)};
 export function companionOwned(state:GameState):Record<string,OwnedCompanionSnapshot>{

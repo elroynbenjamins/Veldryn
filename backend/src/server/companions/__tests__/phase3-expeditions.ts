@@ -1,4 +1,4 @@
-import {activeCompanionMissions,claimCompanionAssignment,companionMissionRequirementSatisfied,predictedCompanionMissionGrade,rolloverCompanionAssignmentStatuses,startCompanionAssignment,validateCompanionMissionTeam} from '../assignments';
+import {activeCompanionMissions,claimCompanionAssignment,COMPANION_EXPEDITION_WEEKLY_COUNT,companionMissionRequirementSatisfied,predictedCompanionMissionGrade,rolloverCompanionAssignmentStatuses,startCompanionAssignment,validateCompanionMissionTeam} from '../assignments';
 import {COMPANION_EXPEDITION_BOND_RATE,COMPANION_EXPEDITION_PEN_DURATION_REDUCTION,COMPANION_MISSIONS,companionMission} from '../content';
 import {companionAvailabilityStatus} from '../status';
 import type {CompanionAssignment,CompanionEconomyState,OwnedCompanionSnapshot} from '../domain';
@@ -6,10 +6,19 @@ const ok=(v:unknown,m:string)=>{if(!v)throw new Error(m)};const eq=(a:unknown,b:
 const p=(id:string,level=30,bondLevel=8,ascensionTier:0|1|2|3=3):OwnedCompanionSnapshot=>({companionId:id,level,xp:0,ascensionTier,bondLevel,bondXp:0,bondTraitUnlocked:bondLevel>=10});
 const owned:Record<string,OwnedCompanionSnapshot>={UNIT_001:p('UNIT_001',20,8,2),UNIT_002:p('UNIT_002',20,8,2),UNIT_003:p('UNIT_003',20,8,2),UNIT_004:p('UNIT_004',25,8,2),UNIT_006:p('UNIT_006',25,8,2),UNIT_007:p('UNIT_007',30),UNIT_013:p('UNIT_013',25),UNIT_014:p('UNIT_014',30),UNIT_015:p('UNIT_015',30),UNIT_017:p('UNIT_017',25),UNIT_018:p('UNIT_018',30),UNIT_021:p('UNIT_021',25),UNIT_022:p('UNIT_022',30),UNIT_024:p('UNIT_024',35)};
 const economy:CompanionEconomyState={gold:100000,companionEssence:500,bondstones:5,materials:{SUPPLIES:99,IRONWOOD_FANG:99}};const now=Date.UTC(2026,8,11,12);
-// Mission-pool variety: preserve the existing ten missions and add seven specialist assignments.
+// Weekly server-authoritative mission rotation.
+const rotation=activeCompanionMissions(now),rotationAgain=activeCompanionMissions(now+60_000);
+eq(rotation.definitions.length,COMPANION_EXPEDITION_WEEKLY_COUNT,'Weekly Sanctuary rotation size');
+eq(rotation.definitions.map(x=>x.id).join(','),rotationAgain.definitions.map(x=>x.id).join(','),'Mission rotation must remain deterministic inside the same UTC week');
+ok(rotation.definitions.some(x=>x.id==='MISSION_SCOUT_2H'),'Starter patrol must always remain active');
+for(const origin of ['REG_001','REG_SUNSCAR','REG_FROSTMARCH','REG_ASHLANDS'])ok(rotation.definitions.some(x=>x.originId===origin),`Weekly mission rotation missing ${origin}`);
+const inactive=COMPANION_MISSIONS.find(x=>!rotation.definitions.some(active=>active.id===x.id));
+ok(!!inactive,'Rotation fixture needs at least one inactive authored mission');
+if(inactive){const ids=inactive.minCompanions===1?['UNIT_001']:inactive.originId==='REG_SUNSCAR'?['UNIT_013','UNIT_014','UNIT_015'].slice(0,inactive.minCompanions):inactive.originId==='REG_FROSTMARCH'?['UNIT_017','UNIT_018','UNIT_002'].slice(0,inactive.minCompanions):inactive.originId==='REG_ASHLANDS'?['UNIT_021','UNIT_022','UNIT_024'].slice(0,inactive.minCompanions):['UNIT_001','UNIT_002','UNIT_003'].slice(0,inactive.minCompanions);ok(!validateCompanionMissionTeam({missionId:inactive.id,companionIds:ids,owned,assignments:[],equippedCompanionIds:new Set(),expeditionPensLevel:3,serverNowMs:now}).ok,'Rotated-out mission should be rejected by authoritative validation');}
+
+// Mission-pool variety: preserve the existing ten and add seven specialist assignments.
 eq(COMPANION_MISSIONS.length,17,'Sanctuary mission pool should contain seventeen authored assignments');
-const activeNow=activeCompanionMissions(now),activeNext=activeCompanionMissions(now+7*86400000);eq(activeNow.length,10,'Five core plus five specialist missions should be visible each week');ok(['MISSION_SCOUT_2H','MISSION_SUNSCAR_4H','MISSION_ASTERFALL_SHRINE_8H','MISSION_FROST_8H','MISSION_ASH_12H'].every(id=>activeNow.some(m=>m.id===id)),'Core Sanctuary missions must always remain active');ok(activeNow.some(m=>!activeNext.some(n=>n.id===m.id))||activeNext.some(m=>!activeNow.some(n=>n.id===m.id)),'Specialist mission rotation did not change week to week');
-for(const id of ['MISSION_GREENFIELDS_FORAGE_2H','MISSION_IRONWOOD_TRACK_4H','MISSION_SUNSCAR_RELIC_6H','MISSION_FROST_RESONANCE_6H','MISSION_ASHLANDS_SALVAGE_8H','MISSION_OLD_FRIENDS_8H','MISSION_PRESTIGE_VIGIL_12H'])ok(!!companionMission(id),`Missing new Sanctuary specialist mission ${id}`);
+for(const id of ['MISSION_GREENFIELDS_FORAGE_2H','MISSION_IRONWOOD_TRACK_4H','MISSION_SUNSCAR_RELIC_6H','MISSION_FROST_RESONANCE_6H','MISSION_ASHLANDS_SALVAGE_8H','MISSION_OLD_FRIENDS_8H','MISSION_PRESTIGE_VIGIL_12H'])ok(!!companionMission(id),`Missing specialist Sanctuary mission ${id}`);
 for(const id of ['MISSION_APPRENTICE_3H','MISSION_SILVERBROOK_4H','MISSION_FROST_SCOUT_4H','MISSION_SUNSCAR_RUINS_8H','MISSION_ASH_RESCUE_8H'])ok(!!companionMission(id),`Missing expanded Sanctuary mission ${id}`);
 ok(validateCompanionMissionTeam({missionId:'MISSION_APPRENTICE_3H',companionIds:['UNIT_001','UNIT_003'],owned,assignments:[],equippedCompanionIds:new Set(),expeditionPensLevel:1}).ok,'Lower-rarity Apprentice Survey should accept Standard companions');
 ok(!validateCompanionMissionTeam({missionId:'MISSION_APPRENTICE_3H',companionIds:['UNIT_007','UNIT_004'],owned,assignments:[],equippedCompanionIds:new Set(),expeditionPensLevel:1}).ok,'Apprentice Survey should reject Elite companions');
@@ -33,7 +42,6 @@ ok(!validateCompanionMissionTeam({missionId:'MISSION_SUNSCAR_4H',companionIds:['
 ok(companionMissionRequirementSatisfied({type:'min_team_power',value:100},['UNIT_006','UNIT_007','UNIT_004'],owned),'Valid Team Power requirement failed');ok(!companionMissionRequirementSatisfied({type:'min_team_power',value:999999},['UNIT_006','UNIT_007','UNIT_004'],owned),'Impossible Team Power requirement passed');
 // Additional requirement primitives: ascension, tag, exact ID, maximum rarity.
 ok(companionMissionRequirementSatisfied({type:'min_ascension',tier:2,count:2},['UNIT_006','UNIT_007','UNIT_004'],owned),'Ascension requirement failed');ok(companionMissionRequirementSatisfied({type:'tag_count',tag:'damage',count:2},['UNIT_006','UNIT_007','UNIT_004'],owned),'Tag requirement failed');ok(companionMissionRequirementSatisfied({type:'companion_id',companionId:'UNIT_006'},['UNIT_006','UNIT_007','UNIT_004'],owned),'Specific companion requirement failed');ok(companionMissionRequirementSatisfied({type:'max_rarity',rarity:'elite'},['UNIT_006','UNIT_007','UNIT_004'],owned),'Maximum rarity requirement failed');
-const inactive=COMPANION_MISSIONS.find(m=>!activeNow.some(a=>a.id===m.id));ok(!!inactive,'Expected at least one inactive rotating mission');throws(()=>startCompanionAssignment({accountId:'A1',missionId:inactive!.id,companionIds:['UNIT_001','UNIT_003'],owned,assignments:[],equippedCompanionIds:new Set(),expeditionPensLevel:3,economy,serverNowMs:now,requestId:'INACTIVE'}),'Inactive weekly mission could be started');
 // 7 equipped cannot be sent.
 throws(()=>startCompanionAssignment({accountId:'A1',missionId:'MISSION_SUNSCAR_4H',companionIds:['UNIT_015','UNIT_014'],owned,assignments:[],equippedCompanionIds:new Set(['UNIT_015']),expeditionPensLevel:1,economy,serverNowMs:now,requestId:'EQUIPPED'}),'Equipped companion assigned');
 // 8 busy cannot be sent twice.

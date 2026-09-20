@@ -15,7 +15,7 @@ export function ActiveActivityBar({state,nowMs,onOpen}:{state:GameState;nowMs:nu
  if(!activity)return null;
  const monster=activity.kind==='combat'?MONSTERS.find(entry=>entry.id===activity.targetId):undefined;
  const gathering=activity.kind!=='combat'?GATHERING.find(entry=>entry.id===activity.targetId):undefined;
- const name=monster?challengeHuntLabel(activity.combatChallengeId,monster.name):gathering?.name??activity.targetId;
+ const name=monster?challengeHuntLabel(activity.combatChallengeId,monster.name,activity.combatAffixId):gathering?.name??activity.targetId;
  const cycleSeconds=Math.max(1,monster?.secondsPerKill??gathering?.seconds??1);
  const cycleElapsedSeconds=Math.max(0,(nowMs-activity.lastClaimAtMs)/1000);
  const progressPct=Math.round((cycleElapsedSeconds%cycleSeconds)/cycleSeconds*100),progress=`${progressPct}%` as `${number}%`;

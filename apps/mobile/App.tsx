@@ -74,6 +74,7 @@ import {eventReadyClaimCount} from './src/core/live-events';
 import {companionAttentionSummary} from './src/core/companion-attention';
 import {workingTowardReadyCount,type WorkingTowardDestination} from './src/core/working-toward';
 import {dailySuppliesStatus} from './src/core/daily-supplies';
+import {contractBoardSummary} from './src/core/contract-board-summary';
 import {weeklyOrderDestination,weeklyOrderGoal,weeklyOrderIdleRule,weeklyOrderIdleRuleId,weeklyOrderQueueActivity} from './src/core/weekly-order-integrations-v41';
 import type {WeeklyOrder} from './src/core/weekly-orders-v41';
 import {useSocialNotificationCounts} from './src/online/useSocialNotificationCounts';
@@ -293,11 +294,13 @@ const next=discoverCharacterSkins(candidate);stateRef.current=next;setState(next
   const companionAttention=companionAttentionSummary(state,now);
   const workingTowardReady=workingTowardReadyCount(state);
   const dailySuppliesReady=dailySuppliesStatus(state,now).canClaim;
+  const contractBoard=contractBoardSummary(state,now);
   const navigationNotifications:NavigationNotification[]=[
     {key:'activity-reward-ready',kind:'reward_ready',unread:rewardHasProgress(preview)},
     {key:'companion-attention',kind:'companion_attention',unread:companionAttention.hasAttention},
     {key:'working-toward-ready',kind:'account_action',unread:workingTowardReady>0},
     {key:'daily-supplies-ready',kind:'account_action',unread:dailySuppliesReady},
+    {key:'weekly-order-rewards',kind:'weekly_order_complete',unread:contractBoard.pendingRewards>0},
     {key:'event-rewards-ready',kind:'event_reward_ready',count:eventClaims,unread:eventClaims>0},
     {key:'incoming-friend-requests',kind:'friend_request',count:notificationCounts.friendRequests,unread:notificationCounts.friendRequests>0},
     {key:'unread-direct-messages',kind:'unread_dm',count:notificationCounts.chatUnread,unread:notificationCounts.chatUnread>0},

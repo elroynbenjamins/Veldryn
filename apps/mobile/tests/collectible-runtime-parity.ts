@@ -17,14 +17,14 @@ equal(Object.keys(PET_PERMANENT_BOOSTS).length,COLLECTIBLES.filter(row=>row.kind
 ok(!!PET_PERMANENT_BOOSTS.EVT_PET_004,'event pets are present in runtime boost metadata');
 
 let state=createCharacter(newGame(0),'IRONWARDEN','Collectible Tester');
-state={...state,account:{...state.account,unlockedCosmeticPetIds:['PET_001','PET_003']},character:{...state.character!,ownedPetIds:['PET_001','PET_003']}};
+state={...state,account:{...state.account,unlockedCosmeticPetIds:['PET_001','PET_002']},character:{...state.character!,ownedPetIds:['PET_001','PET_002']}};
 let multipliers=characterPermanentMultipliers(state);
-near(multipliers.gatheringYieldMultiplier,1.01,'two owned gathering-yield pets contribute +0.50% each');
+near(multipliers.miningYieldMultiplier,1.01,'two owned mining-yield pets contribute +0.50% each');
 near(multipliers.gatheringSpeedMultiplier,1,'yield pets do not incorrectly increase gathering speed');
 
 state={...state,character:{...state.character!,selectedCosmeticPetId:'PET_001'}};
 multipliers=characterPermanentMultipliers(state);
-near(multipliers.gatheringYieldMultiplier,1.03,'selected core pet adds +2.00% active on top of two +0.50% passives');
+near(multipliers.miningYieldMultiplier,1.03,'selected core pet adds +2.00% active on top of two +0.50% passives');
 
 let cooking=createCharacter(newGame(0),'IRONWARDEN','Cooking Pet');
 cooking={...cooking,account:{...cooking.account,unlockedCosmeticPetIds:['EVT_PET_003']},character:{...cooking.character!,selectedCosmeticPetId:'EVT_PET_003'}};
@@ -40,8 +40,8 @@ const baseline=startGathering(createCharacter(newGame(0),'IRONWARDEN','Baseline 
 let boosted=startGathering(createCharacter(newGame(0),'IRONWARDEN','Boosted Gatherer'),'COPPER_VEIN',0);
 boosted={...boosted,account:{...boosted.account,unlockedCosmeticPetIds:['PET_001']},character:{...boosted.character!,ownedPetIds:['PET_001'],selectedCosmeticPetId:'PET_001'}};
 const baselineReward=previewActivityReward(baseline,3_600_000),boostedReward=previewActivityReward(boosted,3_600_000);
-equal(boostedReward.kills,baselineReward.kills,'gathering yield pet does not alter completed action count');
-ok((boostedReward.items[0]?.quantity??0)>(baselineReward.items[0]?.quantity??0),'gathering yield pet increases normal gathered quantity');
+equal(boostedReward.kills,baselineReward.kills,'mining yield pet does not alter completed action count');
+ok((boostedReward.items[0]?.quantity??0)>(baselineReward.items[0]?.quantity??0),'mining yield pet increases normal gathered quantity');
 
 let healing=createCharacter(newGame(0),'IRONWARDEN','Healing Pet');
 healing={...healing,account:{...healing.account,unlockedCosmeticPetIds:['EVT_PET_004']},character:{...healing.character!,selectedCosmeticPetId:'EVT_PET_004',currentHp:1}};

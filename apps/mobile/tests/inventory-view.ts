@@ -1,4 +1,4 @@
-import {createCharacter,newGame,effectiveStats} from '../src/core/game';
+import {createCharacter,newGame,effectiveStats,salvageItem,sellItem} from '../src/core/game';
 import {inventoryFavoriteIds,recoveryAmount,storageCapacityStatus,toggleInventoryFavorite,transferAmount,transferError,visibleStacks} from '../src/core/inventory-view';
 import {validateGameSettings} from '../src/core/game-commands';
 function ok(value:boolean,message:string){if(!value)throw new Error(message)}
@@ -23,6 +23,11 @@ const nearCapacity=storageCapacityStatus(Array.from({length:9},(_,index)=>({item
 ok(nearCapacity.level==='near'&&nearCapacity.free===1&&nearCapacity.percent===90,'Near-full storage status');
 const fullCapacity=storageCapacityStatus(Array.from({length:10},(_,index)=>({itemId:'STACK_'+index,quantity:1})),10);
 ok(fullCapacity.level==='full'&&fullCapacity.free===0,'Full storage status');
+const favoriteProtected={...state,settings:{...state.settings,favoriteItemIds:['WORN_BLADE']},inventory:{...state.inventory,stacks:[{itemId:'WORN_BLADE',quantity:1}]}};
+let favoriteSellBlocked=false;try{sellItem(favoriteProtected,'WORN_BLADE')}catch(error){favoriteSellBlocked=error instanceof Error&&error.message.includes('Favorite item is protected')}
+ok(favoriteSellBlocked,'Favorite items cannot be sold through core logic');
+let favoriteSalvageBlocked=false;try{salvageItem(favoriteProtected,'WORN_BLADE')}catch(error){favoriteSalvageBlocked=error instanceof Error&&error.message.includes('Favorite item is protected')}
+ok(favoriteSalvageBlocked,'Favorite items cannot be salvaged through core logic');
 ok(JSON.stringify(stacks)===original,'Sorting does not mutate save stacks');
 ok(transferAmount(3,10)===3,'Quantity clamps to owned count');
 ok(transferAmount(25,'all')===25,'All transfer');

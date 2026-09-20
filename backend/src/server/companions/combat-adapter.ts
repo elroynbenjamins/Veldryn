@@ -49,8 +49,14 @@ function balancedActiveCoeff(def:CompanionServerDefinition,progress:OwnedCompani
 function engineEffects(def:CompanionServerDefinition,progress:OwnedCompanionSnapshot,context:CompanionCombatBuildContext):EngineAbilityEffect[]{
  const levelCoeff=balancedActiveCoeff(def,progress),tDamage=effectValue(progress,'damage'),tHeal=effectValue(progress,'heal_strength'),tShield=effectValue(progress,'shield_strength');
  switch(def.active.effectKind){
-  case 'damage':return [{kind:'damage',coeff:Math.max(.05,levelCoeff*(1+tDamage)),executeBelowHpPct:.30,executeBonus:effectValue(progress,'execute'),tag:'companion_active'}];
-  case 'shield':return [{kind:'shield',coeff:Math.max(.01,levelCoeff*(1+tShield)),shieldReflectPct:effectValue(progress,'reflect'),tag:'companion_active'}];
+  case 'damage':{
+   const identityExecute=['execute_pressure','chill_shatter','momentum','debuff_hunter','star_marks','telegraph_reward'].includes(def.active.condition??'')?.05:0;
+   return [{kind:'damage',coeff:Math.max(.05,levelCoeff*(1+tDamage)),executeBelowHpPct:.30,executeBonus:effectValue(progress,'execute')+identityExecute,tag:`companion_active:${def.active.condition??'damage'}`}];
+  }
+  case 'shield':{
+   const identityReflect=['solar_reflect','stored_barrier','low_hp_barrier'].includes(def.active.condition??'')?.06:0;
+   return [{kind:'shield',coeff:Math.max(.01,levelCoeff*(1+tShield)),shieldReflectPct:effectValue(progress,'reflect')+identityReflect,tag:`companion_active:${def.active.condition??'shield'}`}];
+  }
   case 'heal':return [{kind:'heal',coeff:Math.max(.02,levelCoeff*(1+tHeal)),tag:'companion_active'}];
   case 'interrupt':return context.mode==='character_assist'?[{kind:'interrupt',coeff:Math.max(.05,levelCoeff),tag:'companion_active'}]:[{kind:'damage',coeff:Math.max(.50,levelCoeff*.9),tag:'companion_active'},{kind:'interrupt',coeff:1,tag:'companion_interrupt'}];
   case 'mitigation':return [{kind:'buff',value:-Math.max(.01,levelCoeff),durationMs:5000,tag:'damage_taken'}];
@@ -62,7 +68,7 @@ function engineEffects(def:CompanionServerDefinition,progress:OwnedCompanionSnap
 export function buildCompanionCombatant(def:CompanionServerDefinition,progress:OwnedCompanionSnapshot,context:CompanionCombatBuildContext):CompanionCombatantDefinition{
  if(progress.companionId!==def.id)throw new Error('companion_progress_definition_mismatch');
  const base=companionBalancedBaseStats(def),scale=companionInvestmentMultiplier(def,progress),synergy=clamp(context.teamSynergyMultiplier??1,1,1.06),hasteBonus=clamp(context.teamHasteBonus??0,0,.06),cooldownChange=effectValue(progress,'cooldown'),target=resolvedTarget(def,context);
- const bond=progress.bondTraitUnlocked?1.03:1,ascension=1+progress.ascensionTier*.006,derived=scale*synergy*bond*ascension;
+ const bondMilestone=progress.bondLevel>=6?1.01:1,bondTrait=progress.bondTraitUnlocked?1.02:1,ascension=1+progress.ascensionTier*.006,derived=scale*synergy*bondMilestone*bondTrait*ascension;
  const maxHp=Math.round(base.hp*derived),attackPower=Number((base.power*derived).toFixed(2));
  // Standalone Tank/Support coefficients represent percentages/utility in source
  // content. Calibrate healingPower to companion-scale HP so shields/heals matter in

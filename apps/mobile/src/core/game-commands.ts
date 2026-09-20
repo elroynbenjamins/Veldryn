@@ -6,6 +6,7 @@ import {discoverCharacterSkins,selectCharacterSkin} from './character-skins';
 import {transitionActivity} from './playability';
 import {SUPPORTED_LANGUAGES} from '../i18n/languages';
 import {QUICK_NAV_DESTINATIONS} from './quick-navigation';
+import {THEMES} from '../theme/theme';
 import * as companions from './combat-companions';
 import {normalizeTrainingFocus} from './class-skills';
 import {reserveFaithPractice,updateFaithPreference} from './faith';
@@ -67,7 +68,7 @@ export function validateGameSettings(value:unknown):GameState['settings']{
  if(!value||typeof value!=='object'||Array.isArray(value))throw new Error('invalid_settings');const row=value as Record<string,unknown>;
  const keys=Object.keys(game.newGame(0).settings);if(Object.keys(row).some(key=>!keys.includes(key)))throw new Error('invalid_settings');
  const defaults=game.newGame(0).settings,result={...defaults,...row} as GameState['settings'];
- oneOf(result.language,SUPPORTED_LANGUAGES);oneOf(result.numberMode,['abbreviated','exact']);
+ oneOf(result.language,SUPPORTED_LANGUAGES);oneOf(result.numberMode,['abbreviated','exact']);if(result.themeId!==undefined)oneOf(result.themeId,Object.keys(THEMES) as Array<keyof typeof THEMES>);
  if(![1,1.15,1.3,1.5].includes(result.textScale)||!Number.isFinite(result.autoEatThresholdPct)||result.autoEatThresholdPct<0||result.autoEatThresholdPct>100)throw new Error('invalid_settings');
  for(const key of ['reduceMotion','stopCombatWhenOutOfFood','autoJoinWorldChat'] as const)if(typeof result[key]!=='boolean')throw new Error('invalid_settings');
  if(![1,2,3,4].includes(result.defaultWorldChat??0)||!Array.isArray(result.quickNavDestinations)||result.quickNavDestinations.length>8||result.quickNavDestinations.some(id=>!QUICK_NAV_DESTINATIONS.includes(id)))throw new Error('invalid_settings');

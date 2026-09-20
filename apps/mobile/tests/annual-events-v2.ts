@@ -24,6 +24,13 @@ veil={...veil,account:{...veil.account,eventPrestigeBalanceById:{...(veil.accoun
 ok(eventShopOffers(veil,now).some(offer=>offer.id==='veil_hollow_knightling'),'Hollow Knightling is always in Veilbreak prestige stock');
 veil=purchaseEventOffer(veil,'veil_hollow_knightling',now);
 ok(veil.account.unlockedCombatCompanionIds?.includes('EVT_UNIT_008'),'Veilbreak prestige purchase grants Hollow Knightling');
+let duplicateVeil=withEvent('EVT_ANNUAL_010_2026');
+duplicateVeil={...duplicateVeil,account:{...duplicateVeil.account,unlockedCombatCompanionIds:['EVT_UNIT_008'],companionEssence:10,companionMaterials:{EVENT_BONDBLOOM:1},eventPrestigeBalanceById:{EVT_ANNUAL_010_2026:8}}};
+duplicateVeil=purchaseEventOffer(duplicateVeil,'veil_hollow_knightling',now);
+equal(duplicateVeil.account.companionEssence,310,'Duplicate Mythic event companion converts to 300 Essence');
+equal(duplicateVeil.account.companionMaterials?.EVENT_BONDBLOOM,4,'Duplicate Mythic event companion converts to 3 Bondbloom');
+equal(duplicateVeil.account.longTermMetrics?.['companions.event_duplicates_converted'],1,'Duplicate event companion conversion telemetry');
+
 veil=applyEventDrops(veil,[{eventId:'EVT_ANNUAL_010_2026',currencyId:'VEIL_SHARD',name:'Veil Shards',quantity:7750}]);
 veil=claimEventReward(veil,'EVT_UNIT_007',now);
 ok(veil.account.unlockedCombatCompanionIds?.includes('EVT_UNIT_007'),'Veilbreak final milestone grants Veil Hound');

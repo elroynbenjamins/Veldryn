@@ -12,6 +12,7 @@ export type ActivityKind = 'combat' | 'mining' | 'woodcutting' | 'fishing' | 'he
 export type CombatChallengeId='ferocious'|'hardened'|'nemesis'|'apex';
 export type CombatAffixId='bloodthirsty'|'ironhide'|'colossal'|'cursed';
 export type CombatTacticId='assault'|'balanced'|'guarded';
+export interface QueuedActivity {kind:'combat'|'gathering';targetId:string;combatChallengeId?:CombatChallengeId;combatTacticId?:CombatTacticId;huntGoalId?:import('./hunt-goals').HuntGoalId;}
 export type GatheringSkillId='mining'|'woodcutting'|'fishing'|'herbalism';
 export type SeasonId='spring'|'summer'|'autumn'|'winter';
 export type WeatherId='clear'|'rain'|'mist'|'storm'|'bloomwind'|'heatwave'|'harvest_wind'|'snow'|'frost';
@@ -52,6 +53,9 @@ export interface CharacterState {
   progressionGoals?:import('./progression-goals-v40').ProgressionGoal[];
   idleRulesV40?:import('./idle-rules-v40').IdleRuleSet[];
   activeIdleRuleIdV40?:string;
+  /** Character-bound action queue. It never auto-travels and pauses on safety failures. */
+  activityQueue?:QueuedActivity[];
+  activityQueuePausedReason?:string;
 }
 export interface ItemStack { itemId:string; quantity:number; }
 export interface InventoryState { stacks:ItemStack[]; capacity:number; }

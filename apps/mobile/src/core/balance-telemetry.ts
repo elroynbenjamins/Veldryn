@@ -18,6 +18,7 @@ export const BALANCE_METRIC_KEYS={
   companionEventOwned:'balance.companion_event_owned',
   companionTrialHighestFloor:'balance.companion_trial_highest_floor',
   companionTrialFloor30Clears:'balance.companion_trial_floor30_clears',
+  companionTrialRolesReady:'balance.companion_trial_roles_ready',
   activeCompanionAssignments:'balance.companion_active_assignments',
   combinedSkillLevels:'balance.active_character_skill_levels',
   fallenKnightDefeated:'balance.fallen_knight_defeated',
@@ -28,6 +29,7 @@ export const BALANCE_METRIC_KEYS={
   level25At:'milestone.level_25_at_ms',
   firstPetAt:'milestone.first_pet_at_ms',
   firstCompanionAt:'milestone.first_companion_at_ms',
+  firstTrialTeamReadyAt:'milestone.first_companion_trial_team_ready_at_ms',
   fullEquipmentAt:'milestone.first_full_equipment_at_ms',
   fallenKnightAt:'milestone.fallen_knight_at_ms',
 } as const;
@@ -53,6 +55,7 @@ export function applyLocalBalanceSnapshot(state:GameState,nowMs=Date.now()):Game
   const bond6=companionIds.filter(id=>(companionProgress[id]?.bondLevel??0)>=6).length,bond10=companionIds.filter(id=>(companionProgress[id]?.bondLevel??0)>=10).length;
   const mastered=companionIds.filter(id=>{const def=combatCompanionDef(id),progress=companionProgress[id];return !!def&&!!progress&&isCombatCompanionMastered(def,progress);}).length;
   const prestige=companionIds.filter(id=>combatCompanionDef(id)?.rarity==='prestige').length,eventOwned=companionIds.filter(id=>combatCompanionDef(id)?.origin.type==='event').length;
+  const roleSet=new Set(companionIds.map(id=>combatCompanionDef(id)?.role).filter(Boolean)),trialRolesReady=['tank','damage','support'].every(role=>roleSet.has(role as any));
   const trial=state.account.companionTrialProgress?.lifetime,activeAssignments=(state.account.companionAssignments??[]).filter(row=>row.status==='active').length;
   const activeSkillLevels=state.skills.reduce((sum,row)=>sum+row.level,0)+(character?.classSkills??[]).reduce((sum,row)=>sum+row.level,0);
   const fallen=state.defeatedBossIds.includes('FALLEN_KNIGHT');
@@ -72,6 +75,7 @@ export function applyLocalBalanceSnapshot(state:GameState,nowMs=Date.now()):Game
   metrics[BALANCE_METRIC_KEYS.companionEventOwned]=eventOwned;
   metrics[BALANCE_METRIC_KEYS.companionTrialHighestFloor]=trial?.lifetimeHighestFloor??0;
   metrics[BALANCE_METRIC_KEYS.companionTrialFloor30Clears]=trial?.monthlyFloor30Clears??0;
+  metrics[BALANCE_METRIC_KEYS.companionTrialRolesReady]=trialRolesReady?1:0;
   metrics[BALANCE_METRIC_KEYS.activeCompanionAssignments]=activeAssignments;
   metrics[BALANCE_METRIC_KEYS.combinedSkillLevels]=activeSkillLevels;
   metrics[BALANCE_METRIC_KEYS.fallenKnightDefeated]=fallen?1:0;
@@ -83,6 +87,7 @@ export function applyLocalBalanceSnapshot(state:GameState,nowMs=Date.now()):Game
   putOnce(metrics,BALANCE_METRIC_KEYS.level25At,level>=25,nowMs);
   putOnce(metrics,BALANCE_METRIC_KEYS.firstPetAt,pets>0,nowMs);
   putOnce(metrics,BALANCE_METRIC_KEYS.firstCompanionAt,companions>0,nowMs);
+  putOnce(metrics,BALANCE_METRIC_KEYS.firstTrialTeamReadyAt,trialRolesReady,nowMs);
   putOnce(metrics,BALANCE_METRIC_KEYS.fullEquipmentAt,equipped>=10,nowMs);
   putOnce(metrics,BALANCE_METRIC_KEYS.fallenKnightAt,fallen,nowMs);
 

@@ -31,6 +31,99 @@ export const COMPANION_SERVER_DEFINITIONS:CompanionServerDefinition[]=raw.map(([
 export const companionServerDefinition=(id:string)=>COMPANION_SERVER_DEFINITIONS.find(x=>x.id===id);
 
 export const COMPANION_TECHNIQUE_UNLOCK={ascensionTier:2,bondLevel:7,mode:'all' as const};
+
+type TechniqueSeed={suffix:string;name:string;description:string;effects:CompanionTechniqueDefinition['effects']};
+const CUSTOM_TECHNIQUE_SEEDS:Record<string,readonly TechniqueSeed[]>={
+  UNIT_013:[
+    {suffix:'VENOM_AMBUSH',name:'Venom Ambush',description:'Lean into poisoned prey with stronger finishing pressure.',effects:[{kind:'damage',value:.04},{kind:'execute',value:.08}]},
+    {suffix:'SANDSTEP',name:'Sandstep',description:'Trade burst for faster repositioning and active cycles.',effects:[{kind:'haste',value:.08},{kind:'cooldown',value:-.06}]},
+  ],
+  UNIT_014:[
+    {suffix:'DEEP_OASIS',name:'Deep Oasis',description:'Strengthen restoration for long encounters.',effects:[{kind:'heal_strength',value:.16}]},
+    {suffix:'MIRAGE_CURRENT',name:'Mirage Current',description:'Quicker support pulses with a small haste bonus.',effects:[{kind:'haste',value:.06},{kind:'cooldown',value:-.08}]},
+  ],
+  UNIT_015:[
+    {suffix:'SOLAR_SHELL',name:'Solar Shell',description:'Build a stronger protective shell before retaliation.',effects:[{kind:'shield_strength',value:.18}]},
+    {suffix:'SUN_MIRROR',name:'Sun Mirror',description:'Slightly thinner shields reflect more absorbed damage.',effects:[{kind:'shield_strength',value:-.03},{kind:'reflect',value:.15}]},
+  ],
+  UNIT_016:[
+    {suffix:'TYRANT_BULWARK',name:'Tyrant Bulwark',description:'Favor raw staying power and stronger barriers.',effects:[{kind:'defense',value:.08},{kind:'shield_strength',value:.10}]},
+    {suffix:'BURNING_CROWN',name:'Burning Crown',description:'Convert some defensive budget into pressure.',effects:[{kind:'damage',value:.05},{kind:'defense',value:.03}]},
+  ],
+  UNIT_017:[
+    {suffix:'SHATTERFANG',name:'Shatterfang',description:'Punish weakened prey with heavier finishing bites.',effects:[{kind:'execute',value:.12}]},
+    {suffix:'WINTER_HUNT',name:'Winter Hunt',description:'Maintain a quicker hunting rhythm against durable targets.',effects:[{kind:'haste',value:.10},{kind:'damage',value:.02}]},
+  ],
+  UNIT_018:[
+    {suffix:'GRAND_RESONANCE',name:'Grand Resonance',description:'Bigger bell pulses improve restorative output.',effects:[{kind:'heal_strength',value:.12}]},
+    {suffix:'QUICK_CHIME',name:'Quick Chime',description:'Ring more often at the cost of peak effect strength.',effects:[{kind:'heal_strength',value:-.03},{kind:'cooldown',value:-.14}]},
+  ],
+  UNIT_019:[
+    {suffix:'RESONANT_PLATING',name:'Resonant Plating',description:'Harden the Choir Golem for sustained punishment.',effects:[{kind:'defense',value:.10},{kind:'shield_strength',value:.06}]},
+    {suffix:'FRACTURE_HYMN',name:'Fracture Hymn',description:'Turn resonance into a more aggressive guard pattern.',effects:[{kind:'damage',value:.05},{kind:'defense',value:.03}]},
+  ],
+  UNIT_020:[
+    {suffix:'WYRMS_FURY',name:"Wyrm's Fury",description:'Commit to higher sustained damage.',effects:[{kind:'damage',value:.07}]},
+    {suffix:'TELEGRAPH_HUNTER',name:'Telegraph Hunter',description:'Gain a larger payoff against enemies near defeat.',effects:[{kind:'execute',value:.11},{kind:'cooldown',value:-.04}]},
+  ],
+  UNIT_021:[
+    {suffix:'OBSIDIAN_FANG',name:'Obsidian Fang',description:'Drive harder through armored targets.',effects:[{kind:'damage',value:.055}]},
+    {suffix:'MOLTEN_PURSUIT',name:'Molten Pursuit',description:'Sacrifice some peak damage for speed and uptime.',effects:[{kind:'haste',value:.09},{kind:'cooldown',value:-.05}]},
+  ],
+  UNIT_022:[
+    {suffix:'FORGE_BARRIER',name:'Forge Barrier',description:'Reinforce every generated barrier.',effects:[{kind:'shield_strength',value:.16},{kind:'defense',value:.04}]},
+    {suffix:'OVERHEAT_GUARD',name:'Overheat Guard',description:'Return a portion of absorbed pressure to attackers.',effects:[{kind:'shield_strength',value:-.02},{kind:'reflect',value:.12}]},
+  ],
+  UNIT_023:[
+    {suffix:'CHAIN_SURGE',name:'Chain Surge',description:'Increase Primal Spark damage output.',effects:[{kind:'damage',value:.06}]},
+    {suffix:'QUICK_SPARK',name:'Quick Spark',description:'Favor rapid casts and attack tempo.',effects:[{kind:'haste',value:.12},{kind:'cooldown',value:-.06}]},
+  ],
+  UNIT_024:[
+    {suffix:'REGENTS_WARD',name:"Regent's Ward",description:'Lean into defensive utility for difficult fights.',effects:[{kind:'defense',value:.08},{kind:'heal_strength',value:.08}]},
+    {suffix:'SHADE_COMMAND',name:'Shade Command',description:'Cycle tactical support effects more quickly.',effects:[{kind:'haste',value:.08},{kind:'cooldown',value:-.08}]},
+  ],
+  EVT_UNIT_001:[
+    {suffix:'FIRST_LIGHT',name:'First Light',description:'Strengthen the Keeper’s opening protection.',effects:[{kind:'shield_strength',value:.12},{kind:'haste',value:.04}]},
+    {suffix:'NEW_DAWN',name:'New Dawn',description:'Trade peak protection for faster support cycles.',effects:[{kind:'cooldown',value:-.12}]},
+  ],
+  EVT_UNIT_002:[
+    {suffix:'SHARED_VOW',name:'Shared Vow',description:'Strengthen restorative effects on vulnerable allies.',effects:[{kind:'heal_strength',value:.14}]},
+    {suffix:'GUARDED_BOND',name:'Guarded Bond',description:'Favor protection over healing throughput.',effects:[{kind:'defense',value:.08},{kind:'cooldown',value:-.05}]},
+  ],
+  EVT_UNIT_003:[
+    {suffix:'ROOT_BASTION',name:'Root Bastion',description:'Grow thicker shields as the fight continues.',effects:[{kind:'shield_strength',value:.15},{kind:'defense',value:.05}]},
+    {suffix:'LIVING_BARK',name:'Living Bark',description:'Favor sustained defense and faster recovery cycles.',effects:[{kind:'defense',value:.09},{kind:'cooldown',value:-.05}]},
+  ],
+  EVT_UNIT_004:[
+    {suffix:'SOLAR_MOMENTUM',name:'Solar Momentum',description:'Build stronger sustained pressure.',effects:[{kind:'damage',value:.07}]},
+    {suffix:'FINAL_RADIANCE',name:'Final Radiance',description:'Save the brightest strike for wounded enemies.',effects:[{kind:'execute',value:.13}]},
+  ],
+  EVT_UNIT_005:[
+    {suffix:'STARFALL',name:'Starfall',description:'Increase the damage budget of Star Mark bursts.',effects:[{kind:'damage',value:.055}]},
+    {suffix:'ASTRAL_TEMPO',name:'Astral Tempo',description:'Cycle Star Marks faster with increased tempo.',effects:[{kind:'haste',value:.10},{kind:'cooldown',value:-.06}]},
+  ],
+  EVT_UNIT_006:[
+    {suffix:'STORED_HARVEST',name:'Stored Harvest',description:'Convert more incoming pressure into future barriers.',effects:[{kind:'shield_strength',value:.15}]},
+    {suffix:'AUTUMN_REPRISAL',name:'Autumn Reprisal',description:'Return a portion of absorbed damage to attackers.',effects:[{kind:'reflect',value:.12},{kind:'defense',value:.03}]},
+  ],
+  EVT_UNIT_007:[
+    {suffix:'VEIL_REND',name:'Veil Rend',description:'Hit weakened, debuffed targets much harder.',effects:[{kind:'execute',value:.12},{kind:'damage',value:.02}]},
+    {suffix:'SHADOW_CHASE',name:'Shadow Chase',description:'Stay on debuffed targets with faster attacks and actives.',effects:[{kind:'haste',value:.08},{kind:'cooldown',value:-.07}]},
+  ],
+  EVT_UNIT_008:[
+    {suffix:'LAST_STAND',name:'Last Stand',description:'Increase defensive scaling when the Knightling is pressured.',effects:[{kind:'defense',value:.11},{kind:'shield_strength',value:.06}]},
+    {suffix:'HOLLOW_MIRROR',name:'Hollow Mirror',description:'Reflect more damage through spectral barriers.',effects:[{kind:'reflect',value:.14},{kind:'shield_strength',value:-.03}]},
+  ],
+  EVT_UNIT_009:[
+    {suffix:'GRAND_BELL',name:'Grand Bell',description:'Favor stronger restorative bell auras.',effects:[{kind:'heal_strength',value:.12}]},
+    {suffix:'QUICK_BELL',name:'Quick Bell',description:'Rotate support bells more frequently.',effects:[{kind:'cooldown',value:-.14},{kind:'haste',value:.04}]},
+  ],
+  EVT_UNIT_010:[
+    {suffix:'CARAVAN_WARD',name:'Caravan Ward',description:'Favor protection for long expeditions and boss fights.',effects:[{kind:'defense',value:.08},{kind:'heal_strength',value:.06}]},
+    {suffix:'ADAPTABLE_ROUTE',name:'Adaptable Route',description:'Favor flexible tempo and shorter support cooldowns.',effects:[{kind:'haste',value:.08},{kind:'cooldown',value:-.06}]},
+  ],
+};
+
 const techniquePair=(def:CompanionServerDefinition):CompanionTechniqueDefinition[]=>{
  const group=`${def.id}:technique`,unlock=COMPANION_TECHNIQUE_UNLOCK;
  if(def.role==='tank')return[

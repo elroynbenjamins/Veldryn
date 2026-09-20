@@ -5,12 +5,12 @@ function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 function equal(actual:unknown,expected:unknown,message:string){if(actual!==expected)throw new Error(`${message}: expected ${String(expected)}, got ${String(actual)}`)}
 
 let state=createCharacter(newGame(Date.UTC(2026,8,14)),'IRONWARDEN','ProgressionTester','male');
-// Weekly Orders unlock into a full 2 Hunt + 2 Profession board once the account has enough genuinely available content.
-// Do not fabricate locked targets for a fresh level-1 character just to fill four slots.
+// The Contract Board fills only from genuinely available content.
+// At this level it has 2 Hunt + 2 Work + 1 Regional Problem; Threat Bounties appear only after Challenge Hunt mastery.
 state={...state,character:{...state.character!,level:10}};
 let first=applyTrustedLongTermProgression(state,[],undefined,Date.UTC(2026,8,14,0,1),{accountId:'acct-runtime',eventId:'setup'});
 state=first.state;
-ok(state.account.weeklyOrders?.orders.length===4,'Trusted runtime creates 2 Hunt + 2 Profession Weekly Orders');
+ok(state.account.weeklyOrders?.orders.length===5,'Trusted runtime creates 2 Hunt + 2 Work + 1 Regional Problem when no Threat Bounty is unlocked');
 ok(state.account.journalState?.schemaVersion===42,'Trusted runtime initializes Journal state');
 const order=state.account.weeklyOrders!.orders[0];
 const kind=order.kind==='hunt'?'combat':order.activityId.startsWith('CRAFT_')||order.targetId.startsWith('SMELT_')||order.targetId.startsWith('SMITH_')?'crafting':'gathering';

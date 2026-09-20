@@ -1,4 +1,4 @@
-import {useEffect,useState} from 'react';
+import {useEffect,useState,useMemo} from 'react';
 import {RegionArtwork} from '../components/RegionArtwork';
 import {ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
@@ -12,7 +12,8 @@ import {environmentForZone} from '../core/world-weather';
 import {EnvironmentBanner} from '../components/EnvironmentBanner';
 import {Panel} from '../components/Panel';
 import {GameButton} from '../components/GameButton';
-import {C,equipmentColors,radii,spacing,typography} from '../theme/theme';
+import {radii,spacing,typography,equipmentTheme,type ThemeColors} from '../theme/theme';
+import {useGameTheme} from '../theme/ThemeContext';
 import {FrostmarchRegionPanel} from '../components/FrostmarchRegionPanel';
 import {RegionalJournalPanel} from '../components/RegionalJournalPanel';
 import {RegionalStoryLeadsPanel} from '../components/RegionalStoryLeadsPanel';
@@ -27,7 +28,8 @@ type Props={
   onCoop?:(dungeonId?:string)=>void;
 };
 
-export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop}:Props){
+export function WorldScreen({
+  const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);state,onTravel,onOpenCombat,onOpenSkills,onCoop}:Props){
   const level=state.character!.level,currentId=currentRegionId(state);
   const current=WORLD_ZONES.find(zone=>zone.id===currentId)??WORLD_ZONES[0];
   const environment=environmentForZone(current.id);
@@ -88,7 +90,7 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop}:Pr
   </ScrollView>;
 }
 
-const s=StyleSheet.create({
+function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);return StyleSheet.create({
   root:{padding:spacing.lg,gap:spacing.md,paddingBottom:spacing.xl},
   kicker:{...typography.caption,color:equipmentColors.gold,fontWeight:'700',letterSpacing:1.2},
   h:{...typography.hero,color:C.text},
@@ -110,4 +112,4 @@ const s=StyleSheet.create({
   destinationSub:{fontSize:12,lineHeight:17,color:C.muted},
   travelButton:{alignSelf:'flex-start',minWidth:88,marginTop:8},
   progress:{...typography.caption,color:C.muted,textAlign:'center'},
-});
+});}

@@ -1,7 +1,7 @@
 import type {CombatCompanionRarity,CompanionDefinition} from './combat-companion-types';
 import {COMPANION_BOND_CONFIG,COMPANION_RARITY_CONFIG} from '../content/combat-companions';
 import {companionAscensionCost,companionLevelCost,companionXpToNextLevel} from './combat-companions';
-import {COMPANION_MONTHLY_COMPLETION_REWARD,COMPANION_TRIAL_FLOOR_COUNT,COMPANION_WEEKLY_CHALLENGES,companionTrialReward} from '../../../../backend/src/server/companions/content';
+import {COMPANION_MONTHLY_COMPLETION_REWARD,COMPANION_TRIAL_FLOOR_COUNT,COMPANION_WEEKLY_CHALLENGES,companionTrialReward,companionTrialSeasonDefinition} from '../../../../backend/src/server/companions/content';
 
 export const COMPANION_ECONOMY_TARGETS={
   focusedNaturalXpPerDay:900,
@@ -34,13 +34,9 @@ export function fullMonthlyTrialEconomy(){
 }
 
 export function monthlyChallengeBondstoneBudget(){
-  const monthlyIds=new Set<string>();
-  for(const month of ['2026-09','2026-10','2026-11']){
-    // The three launch rotations are the economy guardrail for recurring monthly challenge rewards.
-    const ids=month==='2026-09'?['NO_PRESTIGE_15','SUNSCAR_PAIR','WORLDLY_TRIO']:month==='2026-10'?['STANDARD_BOSS','FROSTMARCH_PAIR','FLAWLESS_15']:['RARITY_SPECTRUM','ASHLANDS_PAIR','UNDER_POWER_20'];
-    ids.forEach(id=>monthlyIds.add(id));
-  }
-  return Math.max(0,...[...monthlyIds].map(id=>COMPANION_WEEKLY_CHALLENGES.find(row=>row.id===id)?.rewards.bondstones??0));
+  return Math.max(0,...['2026-09','2026-10','2026-11'].map(month=>
+    companionTrialSeasonDefinition(month).specialChallenges.reduce((sum,id)=>sum+(COMPANION_WEEKLY_CHALLENGES.find(row=>row.id===id)?.rewards.bondstones??0),0)
+  ));
 }
 
 export function companionProgressionBudget(def:CompanionDefinition){

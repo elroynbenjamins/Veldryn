@@ -1,11 +1,13 @@
+import {useMemo} from 'react';
 import {Image,StyleSheet,Text,View} from 'react-native';
 import type {ImageResizeMode,ImageSourcePropType} from 'react-native';
-import {C,equipmentColors,radii,typography} from '../theme/theme';
+import {radii,typography,equipmentTheme,type ThemeColors} from '../theme/theme';
+import {useGameTheme} from '../theme/ThemeContext';
 import type {ProfilePrestigeTone} from '../core/profile-prestige';
 
 export interface ProfileShowcaseEntry{key:string;label:string;meta?:string;value?:string;art?:ImageSourcePropType;artMode?:ImageResizeMode;prestige?:ProfilePrestigeTone;badge?:string}
 
-function toneStyles(tone:ProfilePrestigeTone|undefined){
+function toneStyles(s:ReturnType<typeof makeStyles>,tone:ProfilePrestigeTone|undefined){
  if(tone==='prestige')return {slot:s.prestige,bar:s.barPrestige,badge:s.badgePrestige,badgeText:s.badgeTextPrestige};
  if(tone==='elite')return {slot:s.elite,bar:s.barElite,badge:s.badgeElite,badgeText:s.badgeTextElite};
  if(tone==='rare')return {slot:s.rare,bar:s.barRare,badge:s.badgeRare,badgeText:s.badgeTextRare};
@@ -15,12 +17,13 @@ function toneStyles(tone:ProfilePrestigeTone|undefined){
 }
 
 export function ProfileShowcaseSection({title,entries,emptyLabel='Empty showcase slot',subtitle='Selected by player'}:{title:string;entries:ProfileShowcaseEntry[];emptyLabel?:string;subtitle?:string}){
+ const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const slots:Array<ProfileShowcaseEntry|undefined>=[entries[0],entries[1],entries[2]];
  return <View style={s.block}>
   <View style={s.head}><View style={s.headCopy}><Text style={s.title}>{title}</Text><Text style={s.subtitle}>{subtitle}</Text></View><View style={s.countPill}><Text style={s.count}>{Math.min(3,entries.length)}/3</Text></View></View>
   <View style={s.grid}>{slots.map((entry,index)=>{
    if(!entry)return <View key={'empty-'+index} style={[s.slot,s.empty]}><Text style={s.slotNumber}>SLOT {index+1}</Text><Text style={s.emptyMark}>◇</Text><Text style={s.emptyText}>{emptyLabel}</Text></View>;
-   const tone=toneStyles(entry.prestige);
+   const tone=toneStyles(s,entry.prestige);
    return <View key={entry.key} style={[s.slot,tone.slot]}>
     <View style={[s.topBar,tone.bar]}/>
     <View style={s.slotTop}><Text style={s.slotNumber}>SLOT {index+1}</Text>{entry.badge?<View style={[s.badge,tone.badge]}><Text numberOfLines={1} style={[s.badgeText,tone.badgeText]}>{entry.badge}</Text></View>:null}</View>
@@ -33,7 +36,7 @@ export function ProfileShowcaseSection({title,entries,emptyLabel='Empty showcase
  </View>;
 }
 
-const s=StyleSheet.create({
+function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);return StyleSheet.create({
  block:{gap:8,padding:10,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2},
  head:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},
  headCopy:{flex:1,minWidth:0},
@@ -59,4 +62,4 @@ const s=StyleSheet.create({
  name:{fontSize:10,lineHeight:13,color:C.text,fontWeight:'900'},
  value:{fontSize:11,lineHeight:14,color:C.good,fontWeight:'900'},valuePrestige:{color:equipmentColors.goldSoft},
  meta:{fontSize:8,lineHeight:11,color:C.muted},
-});
+});}

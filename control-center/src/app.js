@@ -275,7 +275,7 @@ function renderEvents() {
   const visiblePlayerEvent = playerRows.find(row => ['live','claiming'].includes(playerEventPhase(row, nowMs))) || null;
   const visiblePlayerPhase = visiblePlayerEvent ? playerEventPhase(visiblePlayerEvent, nowMs) : null;
   return shell(`
-    <div class="page-head"><div><div class="eyebrow">Player events + Party Live-Ops</div><h2>Events</h2><p>Control the Event screen players see, then manage competitive Party Event instances separately.</p></div><div class="actions"><button class="btn btn-primary" data-nav="builder">Create Party Event</button></div></div>
+    <div class="page-head"><div><div class="eyebrow">Player events + Party Live-Ops</div><h2>Events</h2><p>Control the Event screen players see, then manage competitive Party Event instances separately.</p></div><div class="actions">${roleAtLeast('owner')?`<button class="btn" data-action="apply-seasonal-calendar-preset">Schedule seasonal preset</button>`:''}<button class="btn btn-primary" data-nav="builder">Create Party Event</button></div></div>
     <div class="card" style="margin-bottom:14px"><div class="card-head"><div><h3>Player Event screen</h3><div class="tiny muted">Annual/general events from <span class="mono">live_events</span>. This is the authority used by the mobile Event screen.</div></div><span class="pill">Server controlled</span></div><div class="card-body">
       ${visiblePlayerEvent ? `<div class="validation-item ${visiblePlayerPhase==='live'?'ok':'warn'}" style="margin-bottom:12px">Player Event screen currently shows <strong>${h(visiblePlayerEvent.name||visiblePlayerEvent.event_id)}</strong> (${visiblePlayerPhase==='live'?'earning active':'claim grace'}). Other events cannot go live until this visibility window closes or the current event is Hard off.</div>` : `<div class="validation-item ok" style="margin-bottom:12px">Player Event screen currently has <strong>no visible event</strong>. Enabled scheduled events will appear automatically at their start time.</div>`}
       <div class="validation-item ok" style="margin-bottom:12px">Normal shutdown: use <strong>End now</strong>. Earning stops immediately while the claim window stays open. <strong>Hard off</strong> is an emergency master switch and also closes claims.</div>
@@ -958,6 +958,23 @@ app.addEventListener('click', async (event) => {
       const row=await api('cloneDefinitionToDraft',{eventId:el.dataset.id,version:Number(el.dataset.version)}); toast('Published definition cloned as next version.','success'); await loadPageData('builder'); state.currentDraftId=row.id; state.page='builder'; return render();
     }
     if (action === 'open-leaderboard' || action === 'open-event-stats') { state.page='leaderboards'; state.loading=true; render(); await loadPageData('leaderboards'); await loadLeaderboard(el.dataset.id); state.loading=false; return render(); }
+    if (action === 'apply-seasonal-calendar-preset') {
+      const now=new Date(),defaultYear=now.getUTCMonth()>=8?now.getUTCFullYear():now.getUTCFullYear()-1;
+      const startYear=Number(prompt('Seasonal preset start year (Veilbreak through Bloomwake):',String(defaultYear)));
+      if(!Number.isInteger(startYear)||startYear<2026||startYear>2099)throw new Error('Choose a whole year between 2026 and 2099.');
+      const schedule=[
+        `Veilbreak: Oct 23 – Nov 3 ${startYear}`,
+        `Merchant & Guild: Nov 13 – Nov 28 ${startYear}`,
+        `Frostfall: Dec 6 – Dec 22 ${startYear}`,
+        `Turning of the Age: Dec 29 ${startYear} – Jan 5 ${startYear+1}`,
+        `Heartbond: Feb 7 – Feb 17 ${startYear+1}`,
+        `Bloomwake: Mar 20 – Apr 6 ${startYear+1}`,
+      ].join('\n');
+      if(!confirm(`Schedule AND enable this seasonal calendar?\n\n${schedule}\n\nEach event keeps a 7-day claim period and overlap protection remains enforced.`))return;
+      const reason=prompt('Reason for applying this seasonal calendar (10+ characters):','Prepare annual Live-Ops calendar'); if(reason===null)return;
+      const result=await api('applySeasonalCalendarPreset',{startYear,reason});
+      toast(`Scheduled ${result.events?.length||6} seasonal events for ${startYear}–${startYear+1}.`,'success'); return navigate('events');
+    }
     if (action === 'clone-player-event-season') {
       const row=state.playerEvents.find(x=>x.event_id===el.dataset.id); if(!row)return;
       const match=row.event_id.match(/^(EVT_ANNUAL_\d{3})_(\d{4})$/); if(!match)throw new Error('Only annual events can be cloned into a new season.');

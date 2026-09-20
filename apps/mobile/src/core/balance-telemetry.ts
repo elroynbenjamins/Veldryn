@@ -1,5 +1,6 @@
 import type {GameState} from './types';
-import {combatCompanionDef,isCombatCompanionMastered} from './combat-companions';
+import {isCombatCompanionMastered} from './combat-companions';
+import {combatCompanionDef} from '../content/combat-companions';
 
 export const BALANCE_METRIC_KEYS={
   characterLevel:'balance.character_level',

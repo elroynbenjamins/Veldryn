@@ -35,11 +35,13 @@ export function ProfileEditor({state,onChange,showLoadouts=true}:{state:GameStat
  const usable=canUseProfileCosmetic(state,kind,id);
  const applied=tab==='Backgrounds'?background===(character.profileBackgroundId??'asterfall-night'):tab==='Borders'?border===(character.profileBorderId??''):pet===(character.selectedCosmeticPetId??'');
  const apply=()=>{if(!canUseProfileCosmetic(state,kind,id))return;const patch=kind==='background'?{profileBackgroundId:id}:kind==='border'?{profileBorderId:id||undefined}:{selectedCosmeticPetId:id||undefined};onChange({...state,character:{...character,...patch}});};
- const previewing=tab==='Titles'?title.trim()!==(character.profileTitle??'New Adventurer'):!applied;
+ const previewing=title.trim()!==(character.profileTitle??'New Adventurer')||background!==(character.profileBackgroundId??'asterfall-night')||border!==(character.profileBorderId??'')||pet!==(character.selectedCosmeticPetId??'');
+ const resetPreview=()=>{setTitle(character.profileTitle??'New Adventurer');setBackground(character.profileBackgroundId??'asterfall-night');setBorder(character.profileBorderId??'');setPet(character.selectedCosmeticPetId??'');};
  return <Panel>
   <View style={s.editorHead}><View style={s.flex}><Text style={s.eyebrow}>PROFILE APPEARANCE</Text><Text style={s.heading}>Build your look</Text></View><View style={[s.previewState,previewing&&s.previewStateOn]}><Text style={[s.previewStateText,previewing&&s.previewStateTextOn]}>{previewing?'PREVIEW':'EQUIPPED'}</Text></View></View>
   <Text style={s.sub}>Preview backgrounds, borders, titles and Pets before applying them. Locked cosmetics can be inspected without being equipped.</Text>
   <ProfileScenePreview state={preview} backgroundId={background}/>
+  {previewing?<GameButton compact title="Reset preview" tone="secondary" onPress={resetPreview}/>:null}
   {tab==='Pets'&&<Text style={s.sub}>Cosmetic Pets are separate from Combat Companions. This gallery only shows owned Pets you can equip now; browse Collections to discover locked Pets and their sources.</Text>}
   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.tabs}>{(['Backgrounds','Borders','Titles','Pets'] as Tab[]).map(value=><Pressable key={value} accessibilityRole="tab" accessibilityState={{selected:tab===value}} onPress={()=>setTab(value)} style={[s.tab,tab===value&&s.tabOn]}><Text style={[s.tabText,tab===value&&s.selectedText]}>{value}</Text>{tab===value?<View style={s.tabIndicator}/>:null}</Pressable>)}</ScrollView>
   {tab==='Backgrounds'&&<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.gallery}>

@@ -10,6 +10,12 @@ export const COMPANION_ECONOMY_TARGETS={
   bond10Xp:COMPANION_BOND_CONFIG.xpThresholds[9],
   /** Monthly challenge rotation deliberately contains one Bondstone in total. */
   monthlyChallengeBondstones:1,
+  focusedNaturalDaysByRarity:{
+    standard:[6,10],
+    rare:[14,22],
+    elite:[32,48],
+    prestige:[70,100],
+  } as const,
 } as const;
 
 const requiredTiers:Record<CombatCompanionRarity,readonly (1|2|3|'mastery')[]>={

@@ -18,6 +18,7 @@ import {HUNT_GOAL_IDS,HUNT_GOALS} from '../core/hunt-goals';
 import {ActionQueuePanel} from '../components/ActionQueuePanel';
 
 export function CombatScreen({state,onChangeRegion,onStart,onQueue,onQueueRemove,onQueueClear,onQueueStart,onBoss}:{state:GameState;onChangeRegion:()=>void;onStart:(id:string,challengeId?:CombatChallengeId,tacticId?:CombatTacticId,goalId?:HuntGoalId)=>void;onQueue:(id:string,challengeId?:CombatChallengeId,tacticId?:CombatTacticId,goalId?:HuntGoalId)=>void;onQueueRemove:(index:number)=>void;onQueueClear:()=>void;onQueueStart:()=>void;onBoss:()=>void}){
+  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
   const [tacticId,setTacticId]=useState<CombatTacticId>(state.activity?.kind==='combat'?state.activity.combatTacticId??'balanced':'balanced'),[goalId,setGoalId]=useState<HuntGoalId>('open');
   const character=state.character!,progress=characterProgressWithinLevel(character.xp,character.level),tactic=COMBAT_TACTICS[tacticId];
   const zone=WORLD_ZONES.find(entry=>entry.id===currentCombatRegionId(state))??WORLD_ZONES[0];

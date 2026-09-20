@@ -27,7 +27,7 @@ export function rankingPositionPresentation(rank:number){
 
 export function compactCharacterSummary(characterName?:string|null,className?:string|null,level?:number|null){
  if(!characterName)return 'No synced character';
- const classLabel=className?className.replace(/[_-]+/g,' ').replace(/\b\w/g,c=>c.toUpperCase()):'Adventurer';
+ const classLabel=className?className.toLowerCase().replace(/[_-]+/g,' ').replace(/\b\w/g,c=>c.toUpperCase()):'Adventurer';
  const levelLabel=typeof level==='number'&&Number.isFinite(level)?' · Lv. '+Math.max(1,Math.floor(level)):'';
  return characterName+' · '+classLabel+levelLabel;
 }

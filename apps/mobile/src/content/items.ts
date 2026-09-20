@@ -269,6 +269,7 @@ const BASE_ITEMS:ItemDef[]=[
 {id:'FALLEN_RIVET',name:'Fallen Rivet',type:'material',value:90},
 {id:'ECHO_QUARTZ',name:'Echo Quartz',type:'material',value:85},
 {id:'OATHGLASS_FRAGMENT',name:'Oathglass Fragment',type:'material',value:130},
+{id:'EVENT_BONDBLOOM',name:'Event Bondbloom',type:'material',value:0},
 {id:'GLOAM_DUST',name:'Gloam Dust',type:'material',value:105},
 {id:'RUNEBOUND_CORE',name:'Runebound Core',type:'material',value:150},
 {id:'ECHO_BAT_WING',name:'Echo Bat Wing',type:'material',value:80},

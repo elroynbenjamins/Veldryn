@@ -7,7 +7,7 @@ import {GATHERING,RECIPES} from '../content/skills';
 import {HERB_NODES} from '../content/herbalism';
 import {explorationRoute} from '../content/exploration';
 import {QUESTS} from '../content/quests';
-import {GameState,ClassId,RewardBundle,ItemStack,GearSlot,BodyPresentation,GatheringSkillId,CombatChallengeId} from './types';
+import {GameState,ClassId,RewardBundle,ItemStack,GearSlot,BodyPresentation,GatheringSkillId,CombatChallengeId,CombatTacticId} from './types';
 import {characterLevelFromXp,levelFromXp,totalXpAtLevel} from './progression';
 import {random01} from './rng';
 import {characterNameError} from './character-creation';
@@ -37,6 +37,7 @@ import {applyLocalBalanceSnapshot} from './balance-telemetry';
 import {applyCorePetActivityDrops,applyCorePetCombatDrops} from './core-pet-drops';
 import {evaluateIdleRuleSet,type IdleEvaluationContext,type IdleRuleSet} from './idle-rules-v40';
 import {challengeHuntClearKey,challengeHuntCleared,challengeHuntFirstClearReward,challengeHuntStats,challengeHuntUnlocked,challengeRewardMultipliers,rotatingChallengeAffix} from './challenge-hunts';
+import {combatTactic,normalizeCombatTactic} from './combat-tactics';
 export const beginAlchemyBatch=startAlchemyBatch;
 
 function longTermAccountScope(state:GameState){return state.account.longTermAccountScopeId??`local-account:${state.createdAtMs}`;}
@@ -118,7 +119,7 @@ export function effectiveStats(state:GameState){
   return {hp,attack,defense,power:Math.round(attack*1.5+defense*.8+hp*.08+c.level*2.5),critChance:role==='Damage'?.10:.05,critMultiplier:1.5,accuracy:.84,evasion:role==='Damage'?.07:.04,haste:.05}
 }
 
-export function startCombat(state:GameState,monsterId:string,nowMs:number,combatChallengeId?:CombatChallengeId):GameState{
+export function startCombat(state:GameState,monsterId:string,nowMs:number,combatChallengeId?:CombatChallengeId,combatTacticId:CombatTacticId='balanced'):GameState{
   state=finishClassDrills(state,nowMs);
   if(!state.character)throw new Error('Create a character first');
   const m=MONSTERS.find(x=>x.id===monsterId);if(!m)throw new Error('Unknown monster');
@@ -127,7 +128,7 @@ export function startCombat(state:GameState,monsterId:string,nowMs:number,combat
   if(zoneIdForTarget(monsterId)!==currentRegionId(state))throw new Error(`Travel to ${m.zone} before fighting ${m.name}`);
   if(combatChallengeId&&!challengeHuntUnlocked(state,monsterId,combatChallengeId))throw new Error('Raise this monster\'s Mastery to unlock that Challenge Hunt.');
   const combatAffixId=combatChallengeId?rotatingChallengeAffix(monsterId,combatChallengeId,nowMs):undefined;
-  return {...state,activity:{kind:'combat',targetId:monsterId,...(combatChallengeId?{combatChallengeId,combatAffixId}:{}),startedAtMs:nowMs,lastClaimAtMs:nowMs,classFocus:normalizeTrainingFocus(state.character.trainingFocus),classTrainingSnapshot:{faithBlessingId:selectedFaithBlessing(state)?.id},environment:captureActivityEnvironment(monsterId,nowMs)}}
+  return {...state,activity:{kind:'combat',targetId:monsterId,...(combatChallengeId?{combatChallengeId,combatAffixId}:{}),combatTacticId:normalizeCombatTactic(combatTacticId),startedAtMs:nowMs,lastClaimAtMs:nowMs,classFocus:normalizeTrainingFocus(state.character.trainingFocus),classTrainingSnapshot:{faithBlessingId:selectedFaithBlessing(state)?.id},environment:captureActivityEnvironment(monsterId,nowMs)}}
 }
 
 /** Travel is instantaneous for now, but always settles and stops the prior activity. */
@@ -180,12 +181,12 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number){
   const c=state.character!,baseMonster=MONSTERS.find(x=>x.id===monsterId)!,challengeId=state.activity?.kind==='combat'?state.activity.combatChallengeId:undefined,affixId=state.activity?.kind==='combat'?state.activity.combatAffixId:undefined,m=challengeHuntStats(baseMonster,challengeId,affixId),stats=effectiveStats(state);
   const modifiers=characterPermanentMultipliers(state);
   const companion=companionCombatContribution(state);
-  const style=classCombatStyle(c.classId);
+  const style=classCombatStyle(c.classId),tactic=combatTactic(state.activity?.combatTacticId);
   const environment=state.activity?environmentEffectForActivity(state.activity).effect:undefined;
   const boostedDefense=Math.max(1,Math.round(stats.defense*modifiers.combatPowerMultiplier));
   const boostedPower=Math.max(1,Math.round(stats.power*modifiers.combatPowerMultiplier));
   const expected=(m.attack*1.2+m.defense*.8+m.level*2.2)*COMBAT_EXPECTED_SCALE;
-  const speed=Math.max(COMBAT_SPEED_MIN,Math.min(COMBAT_SPEED_MAX,boostedPower/Math.max(1,expected)))*style.speedMultiplier*modifiers.combatSpeedMultiplier*companion.outputMultiplier*(1+monsterMastery(state,monsterId).damageBonus);
+  const speed=Math.max(COMBAT_SPEED_MIN,Math.min(COMBAT_SPEED_MAX,boostedPower/Math.max(1,expected)))*style.speedMultiplier*tactic.speedMultiplier*modifiers.combatSpeedMultiplier*companion.outputMultiplier*(1+monsterMastery(state,monsterId).damageBonus);
   const theoreticalKills=Math.floor(elapsed/(m.secondsPerKill*COMBAT_TIME_SCALE*(environment?.actionTimeMultiplier??1)/speed));
   const foodId=c.equippedFoodId;const food=foodId?itemDef(foodId):undefined;
   let foodLeft=stackQty(state.inventory.stacks,foodId),foodConsumed=0;
@@ -193,7 +194,7 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number){
   const threshold=Math.max(10,Math.min(90,state.settings.autoEatThresholdPct))/100;
   for(let i=0;i<theoreticalKills;i++){
     const raw=Math.max(1,Math.round((m.attack*COMBAT_MONSTER_DAMAGE_SCALE)-Math.floor(boostedDefense*.58)));
-    const damage=Math.max(1,Math.round((raw*.48 + m.level*.16)*style.damageTakenMultiplier*modifiers.incomingDamageMultiplier*companion.incomingDamageMultiplier*(c.preparation?preparationEffects(c.preparation).damage:1)));
+    const damage=Math.max(1,Math.round((raw*.48 + m.level*.16)*style.damageTakenMultiplier*tactic.damageTakenMultiplier*modifiers.incomingDamageMultiplier*companion.incomingDamageMultiplier*(c.preparation?preparationEffects(c.preparation).damage:1)));
     hp-=damage;
     while(food && food.heal && foodLeft>0 && hp>0 && hp/stats.hp<=threshold){
       hp=Math.min(stats.hp,hp+Math.max(1,Math.ceil(food.heal*modifiers.healingEffectivenessMultiplier)));foodLeft--;foodConsumed++;
@@ -204,7 +205,7 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number){
       break;
     }
     kills++;
-    hp=Math.min(stats.hp,hp+Math.max(1,Math.floor(stats.hp*style.recoveryPct*companion.recoveryMultiplier)));
+    hp=Math.min(stats.hp,hp+Math.max(1,Math.floor(stats.hp*style.recoveryPct*tactic.recoveryMultiplier*companion.recoveryMultiplier)));
   }
   return {kills,foodConsumed,endHp:hp,stoppedReason};
 }

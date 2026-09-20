@@ -6,7 +6,7 @@ import { generateRedeemCode, hashRedeemCode, redeemCodeHint, validateRedeemCode 
 const ROLE_RANK = { viewer: 1, editor: 2, owner: 3 };
 const MUTATING_ACTIONS = new Set([
   'saveDraft','deleteDraft','saveTemplate','disableTemplate','cloneTemplateToDraft','cloneDefinitionToDraft',
-  'publishDraft','scheduleDefinition','rescheduleInstance','cancelInstance','archiveInstance','clonePlayerEventSeason','schedulePlayerEvent','setPlayerEventEnabled','goLivePlayerEvent','endPlayerEventNow','saveReward','retryDeadLetter',
+  'publishDraft','scheduleDefinition','rescheduleInstance','cancelInstance','archiveInstance','clonePlayerEventSeason','applySeasonalCalendarPreset','schedulePlayerEvent','setPlayerEventEnabled','goLivePlayerEvent','endPlayerEventNow','saveReward','retryDeadLetter',
   'saveRemoteConfig','updateAlert','saveResetDefinition','retryResetRun','createSupportCase','updateSupportCase','addSupportNote',
   'queueAdminCommand','approveAdminCommand','cancelAdminCommand','retryAdminCommand','reverseAdminCommand','saveAnnouncement','cancelAnnouncement','saveAdminUser',
   'createRedeemCode','setRedeemCodeEnabled'
@@ -406,6 +406,94 @@ async function clonePlayerEventSeason(env, actor, payload) {
   await audit(env, actor, 'player_event.clone_season', 'player_event', targetEventId, { sourceEventId, sourceYear: parts.year, targetYear, enabled: false });
   return rows?.[0];
 }
+
+function seasonalCalendarPreset(startYear) {
+  const year=Number(startYear);
+  if(!Number.isInteger(year)||year<2026||year>2099)throw new Error('seasonal_preset_year_invalid');
+  const iso=(y,m,d)=>new Date(Date.UTC(y,m-1,d,0,0,0,0)).toISOString();
+  return [
+    {eventId:`EVT_ANNUAL_010_${year}`,templateId:'EVT_ANNUAL_010_2026',name:'The Veilbreak',startsAt:iso(year,10,23),endsAt:iso(year,11,3),graceDays:7},
+    {eventId:`EVT_ANNUAL_011_${year}`,templateId:'EVT_ANNUAL_011_2026',name:'Merchant & Guild Festival',startsAt:iso(year,11,13),endsAt:iso(year,11,28),graceDays:7},
+    {eventId:`EVT_ANNUAL_012_${year}`,templateId:'EVT_ANNUAL_012_2026',name:'Frostfall Festival',startsAt:iso(year,12,6),endsAt:iso(year,12,22),graceDays:7},
+    {eventId:`EVT_ANNUAL_001_${year}`,templateId:'EVT_ANNUAL_001_2026',name:'Turning of the Age',startsAt:iso(year,12,29),endsAt:iso(year+1,1,5),graceDays:7},
+    {eventId:`EVT_ANNUAL_002_${year+1}`,templateId:'EVT_ANNUAL_002_2026',name:'Heartbond Festival',startsAt:iso(year+1,2,7),endsAt:iso(year+1,2,17),graceDays:7},
+    {eventId:`EVT_ANNUAL_003_${year+1}`,templateId:'EVT_ANNUAL_003_2026',name:'Bloomwake',startsAt:iso(year+1,3,20),endsAt:iso(year+1,4,6),graceDays:7},
+  ];
+}
+
+async function ensurePlayerEventSeason(env, actor, templateId, eventId) {
+  const existing=await single(env,'live_events',`event_id=eq.${encodeEq(eventId)}`);
+  if(existing)return existing;
+  const template=await single(env,'live_events',`event_id=eq.${encodeEq(templateId)}`);
+  if(!template)throw new Error(`player_event_template_not_found:${templateId}`);
+  const match=eventId.match(/_(\d{4})$/),seasonYear=match?Number(match[1]):null;
+  const rows=await supabaseFetch(env,'/rest/v1/live_events',{
+    method:'POST',
+    body:{
+      event_id:eventId,name:template.name,currency_id:template.currency_id,enabled:false,
+      starts_at:null,ends_at:null,grace_ends_at:null,priority:Number(template.priority??0),
+      modules:Array.isArray(template.modules)?template.modules:[],
+      config:{...(template.config??{}),seasonYear,clonedFromEventId:template.event_id},
+      updated_at:new Date().toISOString(),
+    },
+    prefer:'return=representation',
+  });
+  await audit(env,actor,'player_event.clone_season','player_event',eventId,{sourceEventId:template.event_id,targetYear:seasonYear,source:'seasonal_calendar_preset'});
+  return rows?.[0];
+}
+
+async function applySeasonalCalendarPreset(env, actor, payload) {
+  requireRole(actor,'owner');
+  const startYear=Number(payload.startYear);
+  const reason=String(payload.reason??'').trim();
+  if(reason.length<10)throw new Error('seasonal_preset_reason_too_short');
+  const preset=seasonalCalendarPreset(startYear);
+  const nowMs=Date.now();
+  if(preset.some(entry=>Date.parse(entry.startsAt)<=nowMs))throw new Error('seasonal_preset_has_started_events');
+
+  // Ensure future-year rows exist before validating the complete visible schedule.
+  const rows=[];
+  for(const entry of preset)rows.push(await ensurePlayerEventSeason(env,actor,entry.templateId,entry.eventId));
+
+  // Preflight the preset internally and against all other enabled events.
+  for(let i=0;i<preset.length;i++){
+    const a=preset[i],aStart=Date.parse(a.startsAt),aGrace=Date.parse(a.endsAt)+a.graceDays*86400000;
+    for(let j=i+1;j<preset.length;j++){
+      const b=preset[j],bStart=Date.parse(b.startsAt),bGrace=Date.parse(b.endsAt)+b.graceDays*86400000;
+      if(aStart<bGrace&&bStart<aGrace)throw new Error(`seasonal_preset_internal_overlap:${a.eventId}:${b.eventId}`);
+    }
+    const enabled=await list(env,'live_events','select=event_id,name,enabled,starts_at,ends_at,grace_ends_at,config&enabled=eq.true&limit=100');
+    for(const other of enabled??[]){
+      if(preset.some(entry=>entry.eventId===other.event_id)||!other.starts_at||!other.ends_at)continue;
+      const otherStart=Date.parse(other.starts_at),otherEnd=Date.parse(other.ends_at),otherGrace=other.grace_ends_at?Date.parse(other.grace_ends_at):otherEnd+playerEventGraceDays(other)*86400000;
+      if(aStart<otherGrace&&otherStart<aGrace)throw new Error(`seasonal_preset_visibility_overlap:${other.event_id}`);
+    }
+  }
+
+  // First schedule every row disabled, then enable in chronological order.
+  const applied=[];
+  for(const entry of preset){
+    const row=await single(env,'live_events',`event_id=eq.${encodeEq(entry.eventId)}`);
+    if(!row)throw new Error('player_event_not_found');
+    if(row.enabled)throw new Error(`seasonal_preset_event_already_enabled:${entry.eventId}`);
+    const graceEndsAt=new Date(Date.parse(entry.endsAt)+entry.graceDays*86400000).toISOString();
+    const patched=await supabaseFetch(env,'/rest/v1/live_events',{
+      method:'PATCH',query:`event_id=eq.${encodeEq(entry.eventId)}`,
+      body:{enabled:false,starts_at:entry.startsAt,ends_at:entry.endsAt,grace_ends_at:graceEndsAt,config:{...(row.config??{}),claimGraceDays:entry.graceDays,calendarPreset:`${startYear}-${startYear+1}`},updated_at:new Date().toISOString()},
+      prefer:'return=representation',
+    });
+    applied.push(patched?.[0]);
+  }
+  for(const entry of preset){
+    await supabaseFetch(env,'/rest/v1/live_events',{
+      method:'PATCH',query:`event_id=eq.${encodeEq(entry.eventId)}`,
+      body:{enabled:true,updated_at:new Date().toISOString()},prefer:'return=minimal',
+    });
+  }
+  await audit(env,actor,'player_event.calendar_preset.apply','player_event_calendar',`${startYear}-${startYear+1}`,{reason,events:preset});
+  return {startYear,endYear:startYear+1,events:preset,enabled:true};
+}
+
 async function assertNoPlayerEventOverlap(env, eventId, startsAtMs, endsAtMs, graceEndsAtMs = endsAtMs) {
   const rows = await list(env, 'live_events', 'select=event_id,name,enabled,starts_at,ends_at,grace_ends_at,config&enabled=eq.true&limit=100');
   for (const row of rows ?? []) {
@@ -1005,6 +1093,7 @@ async function routeAction(env, actor, action, payload) {
     case 'listInstances': return await list(env, 'liveops_event_instances', 'select=*&order=starts_at.desc&limit=200');
     case 'listPlayerEvents': return await listPlayerEvents(env);
     case 'clonePlayerEventSeason': return await clonePlayerEventSeason(env, actor, payload);
+    case 'applySeasonalCalendarPreset': return await applySeasonalCalendarPreset(env, actor, payload);
     case 'schedulePlayerEvent': return await schedulePlayerEvent(env, actor, payload);
     case 'setPlayerEventEnabled': return await setPlayerEventEnabled(env, actor, payload);
     case 'goLivePlayerEvent': return await goLivePlayerEvent(env, actor, payload);

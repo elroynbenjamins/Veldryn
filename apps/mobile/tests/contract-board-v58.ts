@@ -2,6 +2,7 @@ import {createCharacter,newGame} from '../src/core/game';
 import {weeklyOrderCandidatesFromCurrentContent} from '../src/core/launch-readiness-v47';
 import {applyTrustedLongTermProgression,weeklyOrderBoardForState} from '../src/core/long-term-progression-runtime';
 import {applyWeeklyOrderProgress,generateWeeklyOrders} from '../src/core/weekly-orders-v41';
+import {weeklyOrderDestination,weeklyOrderGoal,weeklyOrderIdleRule,weeklyOrderQueueActivity} from '../src/core/weekly-order-integrations-v41';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 const now=Date.UTC(2026,8,21,12,0,0),accountId='contract-board-test';
@@ -20,8 +21,17 @@ const generated=generateWeeklyOrders(accountId,now,candidates);
 ok(generated.orders.filter(row=>row.kind==='hunt').length===Math.min(2,candidates.filter(row=>row.kind==='hunt'&&row.available&&row.source.available).length),'default board should fill available Hunt Order slots');
 ok(generated.orders.filter(row=>row.kind==='profession').length===Math.min(2,candidates.filter(row=>row.kind==='profession'&&row.available&&row.source.available).length),'default board should fill available Work Order slots');
 ok(generated.orders.filter(row=>row.kind==='regional').length===1,'default board should have one Regional Problem');
+const huntOrder=generated.orders.find(row=>row.kind==='hunt')!,workOrder=generated.orders.find(row=>row.kind==='profession')!;
+const huntDestination=weeklyOrderDestination(huntOrder),workDestination=weeklyOrderDestination(workOrder),regionalDestination=weeklyOrderDestination(generated.orders.find(row=>row.kind==='regional')!);
+ok(huntDestination.kind==='combat'&&huntDestination.monsterId===huntOrder.targetId,'Hunt Order should deep-link to its exact monster');
+ok(workDestination.kind==='skills'&&(workDestination.actionId===workOrder.targetId||workDestination.recipeId===workOrder.targetId),'Work Order should deep-link to its exact activity or recipe');
+ok(regionalDestination.kind==='world'&&regionalDestination.regionId===generated.orders.find(row=>row.kind==='regional')!.regionId,'Regional Problem should deep-link to its exact region');
+const huntQueue=weeklyOrderQueueActivity(huntOrder);ok(huntQueue?.kind==='combat'&&huntQueue.targetId===huntOrder.targetId,'Hunt Order should be directly queueable');
+const pinnedGoal=weeklyOrderGoal(huntOrder,state.character!.id,now);ok(pinnedGoal.kind==='weekly_order'&&pinnedGoal.orderId===huntOrder.id&&pinnedGoal.targetProgress===huntOrder.target,'Contract Board pin should track the exact weekly job target');
+const stopRule=weeklyOrderIdleRule(huntOrder,state.character!.id);ok(stopRule.conditions.length===1&&stopRule.conditions[0].kind==='weekly_order_progress'&&stopRule.conditions[0].targetId===huntOrder.id&&stopRule.conditions[0].value===huntOrder.target,'Contract Board completion stop should use the exact weekly-order target');ok(stopRule.stopIfOutOfFood&&stopRule.stopIfRewardsWouldOverflow&&stopRule.finishCurrentCycle,'Contract completion stop must preserve safety and finish the current cycle');
 const generatedRegional=generated.orders.find(row=>row.kind==='regional');ok(!!generatedRegional?.brief&&generatedRegional.reward.label.includes('Relief Cache'),'Generated Regional Problem should preserve authored brief and regional reward identity');
 const masteredBoard=generateWeeklyOrders(accountId+'-mastered',now,masteredCandidates),threat=masteredBoard.orders.find(row=>row.kind==='threat');ok(!!threat&&!!threat.challengeId&&threat.reward.label.includes('Bounty Cache'),'Mastered board should generate one tier-specific Threat Bounty');
+const threatDestination=weeklyOrderDestination(threat!),threatQueue=weeklyOrderQueueActivity(threat!);ok(threatDestination.kind==='combat'&&threatDestination.monsterId===threat!.targetId.split(':')[0],'Threat Bounty should open its exact monster');ok(threatQueue?.kind==='combat'&&threatQueue.combatChallengeId===threat!.challengeId,'Threat Bounty queue must preserve its exact Challenge Hunt tier');
 
 const regional=generated.orders.find(row=>row.kind==='regional')!;
 const direct=applyWeeklyOrderProgress(generated,{eventId:'regional-progress',characterId:state.character!.id,kind:'regional',targetId:regional.targetId,amount:3,completedAtMs:now});

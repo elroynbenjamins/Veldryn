@@ -1,5 +1,6 @@
 import { strict as assert } from 'node:assert';
 import { EVENT_EXPEDITIONS } from '../event-expeditions';
+import { EXPEDITION_ENCOUNTERS } from '../../../combat/content/expedition-encounters';
 
 for(const event of EVENT_EXPEDITIONS){
  assert.equal(new Set(event.routeHighlights).size,3);
@@ -8,6 +9,8 @@ for(const event of EVENT_EXPEDITIONS){
  assert.match(event.liveEventSeriesId,/^EVT_ANNUAL_\d{3}$/);
  assert.match(event.encounterPrefix,/^EVENT_[A-Z]+$/);
  assert.match(event.bossEncounterId,/^EVENT_[A-Z]+_BOSS$/);
+ for(const index of [1,2,3])assert.ok(EXPEDITION_ENCOUNTERS[`${event.encounterPrefix}_BATTLE_0${index}`],`missing battle encounter ${event.encounterPrefix} #${index}`);
+ assert.ok(EXPEDITION_ENCOUNTERS[event.bossEncounterId],`missing boss encounter ${event.bossEncounterId}`);
 }
 assert.equal(EVENT_EXPEDITIONS.length,8);
 assert.deepEqual(

@@ -170,7 +170,7 @@ export function sanitizeCombatCompanionState<T extends CombatCompanionStateHost>
 }
 
 
-export function isCombatCompanionMastered(def:CompanionDefinition,progress:OwnedCompanionProgress){const requiredAscension=(def.rarity==='standard'||def.rarity==='rare')?2:3;const techniqueSystemUnlocked=progress.ascensionTier>=2&&progress.bondLevel>=7;return progress.level>=companionMaxLevel(def)&&progress.ascensionTier>=requiredAscension&&progress.bondLevel>=10&&progress.bondTraitUnlocked&&techniqueSystemUnlocked&&(def.rarity!=='prestige'||progress.mastered===true);}
+export function isCombatCompanionMastered(def:CompanionDefinition,progress:OwnedCompanionProgress){const requiredAscension=(def.rarity==='standard'||def.rarity==='rare')?2:3;const techniqueSystemUnlocked=progress.ascensionTier>=2||progress.bondLevel>=7;return progress.level>=companionMaxLevel(def)&&progress.ascensionTier>=requiredAscension&&progress.bondLevel>=10&&progress.bondTraitUnlocked&&techniqueSystemUnlocked&&(def.rarity!=='prestige'||progress.mastered===true);}
 
 export function companionUnlockRequirementMet(state:CombatCompanionStateHost,requirement:CompanionDefinition['unlockRequirements'][number]){
   const target=requirement.target??requirement.description,amount=Math.max(1,requirement.amount??1);

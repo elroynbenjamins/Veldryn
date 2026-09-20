@@ -15,7 +15,7 @@ export function CompactPlayerIdentity({
  return <View style={s.root}>
   <IdentityArtwork name={name} className={className} size={avatarSize}/>
   <View style={s.copy}>
-   <View style={s.nameRow}><GuildTaggedPlayerName name={name} guildTag={guildTag} tagColorId={guildTagColorId} style={s.name}/>{rolePresentation?<View style={[s.rolePill,roleStyle]}><Text style={[s.roleText,rolePresentation.tone==='gold'&&s.roleTextGold]}>{rolePresentation.label.toUpperCase()}</Text></View>:null}</View>
+   <View style={s.nameRow}><View style={s.nameWrap}><GuildTaggedPlayerName name={name} guildTag={guildTag} tagColorId={guildTagColorId} style={s.name}/></View>{rolePresentation?<View style={[s.rolePill,roleStyle]}><Text style={[s.roleText,rolePresentation.tone==='gold'&&s.roleTextGold]}>{rolePresentation.label.toUpperCase()}</Text></View>:null}</View>
    {(characterName||className||level)?<Text numberOfLines={1} style={s.character}>{compactCharacterSummary(characterName,className,level)}</Text>:null}
    {profileTitle?<Text numberOfLines={1} style={s.title}>“{profileTitle}”</Text>:null}
    {(status||hint)?<View style={s.metaRow}>{status?<Text numberOfLines={1} style={s.status}>{status}</Text>:null}{hint?<Text numberOfLines={1} style={s.hint}>{hint}</Text>:null}</View>:null}
@@ -27,7 +27,7 @@ const s=StyleSheet.create({
  root:{flexDirection:'row',alignItems:'center',gap:9,minWidth:0},
  copy:{flex:1,minWidth:0},
  nameRow:{flexDirection:'row',alignItems:'center',gap:6,minWidth:0},
- name:{...typography.bodyStrong,color:C.text},
+ nameWrap:{flex:1,minWidth:0},name:{...typography.bodyStrong,color:C.text},
  character:{...typography.caption,color:C.muted,marginTop:1,textTransform:'capitalize'},
  title:{fontSize:10,lineHeight:13,color:equipmentColors.goldSoft,fontStyle:'italic',marginTop:1},
  metaRow:{flexDirection:'row',alignItems:'center',gap:6,marginTop:2},

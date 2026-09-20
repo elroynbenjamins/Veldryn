@@ -17,7 +17,8 @@ import {
 import {useAuthSession} from '../online/AuthSessionProvider';
 import {onlineConfigured} from '../online/supabase';
 import {publicPlayerProfileV43,type PublicPlayerProfileV43} from '../online/profile-extension-v43';
-import {C,equipmentColors,radii,spacing,typography} from '../theme/theme';
+import {radii,spacing,typography,equipmentTheme,type ThemeColors} from '../theme/theme';
+import {useGameTheme} from '../theme/ThemeContext';
 import {profileShowcaseArt} from '../theme/profile-showcase-art';
 import {profileAchievementPrestige,profileCollectionPrestige,profileRecordPrestige} from '../core/profile-prestige';
 
@@ -26,6 +27,7 @@ const label=(value?:string)=>value?value.replace(/[_:-]+/g,' ').replace(/\b\w/g,
 type ProfileDestination='Customize'|'Collections'|'Achievements'|'Rankings';
 
 export function ProfileScreen({state,onNavigate}:{state:GameState;onNavigate?:(destination:ProfileDestination)=>void}){
+  const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
  const c=state.character,account=state.account,{session}=useAuthSession();
  const [publicSelf,setPublicSelf]=useState<PublicPlayerProfileV43|null>(null),[loadingPublic,setLoadingPublic]=useState(false),[publicError,setPublicError]=useState('');
  const summary=useMemo(()=>localProfileSummary(state),[state]);
@@ -81,10 +83,10 @@ export function ProfileScreen({state,onNavigate}:{state:GameState;onNavigate?:(d
  </ScrollView>;
 }
 
-function Stat({value,label}:{value:string;label:string}){return <View style={s.stat}><Text numberOfLines={1} style={s.statValue}>{value}</Text><Text style={s.statLabel}>{label}</Text></View>}
-function IdentityRow({label:rowLabel,value}:{label:string;value:string}){return <View style={s.row}><Text style={s.rowLabel}>{rowLabel}</Text><Text style={s.rowValue}>{value}</Text></View>}
+function Stat({value,label}:{value:string;label:string}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);return <View style={s.stat}><Text numberOfLines={1} style={s.statValue}>{value}</Text><Text style={s.statLabel}>{label}</Text></View>}
+function IdentityRow({label:rowLabel,value}:{label:string;value:string}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);return <View style={s.row}><Text style={s.rowLabel}>{rowLabel}</Text><Text style={s.rowValue}>{value}</Text></View>}
 
-const s=StyleSheet.create({
+function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);return StyleSheet.create({
  root:{padding:spacing.lg,gap:spacing.md,paddingBottom:110},
  headingRow:{flexDirection:'row',alignItems:'center',gap:spacing.sm},flex:{flex:1,minWidth:0},
  kicker:{...typography.caption,color:equipmentColors.goldSoft,fontWeight:'900',letterSpacing:1},
@@ -95,4 +97,4 @@ const s=StyleSheet.create({
  stats:{flexDirection:'row',flexWrap:'wrap',gap:6},stat:{width:'31.5%',minWidth:92,minHeight:66,padding:8,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel,alignItems:'center',justifyContent:'center'},statValue:{...typography.title,color:C.text},statLabel:{fontSize:8,color:C.muted,fontWeight:'900',letterSpacing:.7,marginTop:2,textAlign:'center'},
  section:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.8,marginBottom:spacing.sm},
  identityRows:{marginTop:spacing.sm},row:{minHeight:34,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:spacing.sm,borderTopWidth:1,borderTopColor:C.line},rowLabel:{...typography.caption,color:C.muted},rowValue:{...typography.bodyStrong,color:C.text},
-});
+});}

@@ -23,6 +23,7 @@ set search_path=''
 as $$
  select max(v.ts)
  from (values
+  ((select max(p.last_seen_at) from public.player_presence_5m p where p.account_id=p_account_id)),
   ((select max(a.last_seen_at) from public.player_activity_daily a where a.account_id=p_account_id)),
   ((select u.last_sign_in_at from auth.users u where u.id=p_account_id)),
   (p_fallback)
@@ -82,61 +83,16 @@ begin
 end
 $$;
 
-create or replace function public.reconcile_party_leadership_v1(p_party_id uuid)
-returns jsonb
-language plpgsql
-security definer
-set search_path=''
-as $$
-declare
- v_party public.parties%rowtype;v_leader_joined timestamptz;v_leader_last timestamptz;
- v_next_account uuid;v_next_character uuid;v_next_last timestamptz;
-begin
- select * into v_party from public.parties p where p.id=p_party_id for update;
- if not found or v_party.status='disbanded' then return jsonb_build_object('changed',false,'reason','party_inactive');end if;
- select pm.joined_at into v_leader_joined from public.party_members pm
-  where pm.party_id=p_party_id and pm.account_id=v_party.leader_account_id and pm.left_at is null limit 1;
- if v_leader_joined is null then return jsonb_build_object('changed',false,'reason','leader_missing');end if;
- v_leader_last:=public.social_account_last_active_v1(v_party.leader_account_id,v_leader_joined);
- if v_leader_last>clock_timestamp()-interval '21 days' then
-  return jsonb_build_object('changed',false,'reason','leader_active','leaderAccountId',v_party.leader_account_id,'leaderLastActiveAt',v_leader_last);
- end if;
-
- select candidate.account_id,candidate.character_id,candidate.last_active
- into v_next_account,v_next_character,v_next_last
- from (
-  select pm.account_id,pm.character_id,pm.joined_at,
-         public.social_account_last_active_v1(pm.account_id,pm.joined_at) last_active
-  from public.party_members pm
-  where pm.party_id=p_party_id and pm.left_at is null and pm.account_id<>v_party.leader_account_id
- ) candidate
- where candidate.last_active>clock_timestamp()-interval '21 days'
- order by candidate.joined_at,candidate.account_id
- limit 1;
- if v_next_account is null then
-  return jsonb_build_object('changed',false,'reason','no_active_successor','leaderAccountId',v_party.leader_account_id,'leaderLastActiveAt',v_leader_last);
- end if;
-
- update public.parties set leader_account_id=v_next_account,leader_character_id=v_next_character,updated_at=now() where id=p_party_id;
- update public.party_invitations_v1 set status='cancelled',responded_at=now()
-  where party_id=p_party_id and status='pending' and inviter_account_id<>v_next_account;
- return jsonb_build_object('changed',true,'reason','inactivity','previousAccountId',v_party.leader_account_id,'leaderAccountId',v_next_account,'leaderLastActiveAt',v_next_last);
-end
-$$;
-
 create or replace function public.social_activity_leadership_reconcile_v1()
 returns trigger
 language plpgsql
 security definer
 set search_path=''
 as $$
-declare v_gid uuid;v_pid uuid;
+declare v_gid uuid;
 begin
  select gm.guild_id into v_gid from public.guild_members gm where gm.account_id=new.account_id limit 1;
  if v_gid is not null then perform public.reconcile_guild_leadership_v1(v_gid);end if;
- select pm.party_id into v_pid from public.party_members pm join public.parties p on p.id=pm.party_id
-  where pm.account_id=new.account_id and pm.left_at is null and p.status<>'disbanded' limit 1;
- if v_pid is not null then perform public.reconcile_party_leadership_v1(v_pid);end if;
  return new;
 end
 $$;
@@ -286,12 +242,11 @@ create trigger party_leader_invitation_reconcile_v1
 after update of leader_account_id on public.parties
 for each row execute function public.party_leader_invitation_reconcile_v1();
 
-revoke all on function public.social_account_last_active_v1(uuid,timestamptz),public.reconcile_guild_leadership_v1(uuid),public.reconcile_party_leadership_v1(uuid),public.social_activity_leadership_reconcile_v1(),public.party_leader_invitation_reconcile_v1() from public,anon,authenticated;
-grant execute on function public.social_account_last_active_v1(uuid,timestamptz),public.reconcile_guild_leadership_v1(uuid),public.reconcile_party_leadership_v1(uuid) to service_role;
+revoke all on function public.social_account_last_active_v1(uuid,timestamptz),public.reconcile_guild_leadership_v1(uuid),public.social_activity_leadership_reconcile_v1(),public.party_leader_invitation_reconcile_v1() from public,anon,authenticated;
+grant execute on function public.social_account_last_active_v1(uuid,timestamptz),public.reconcile_guild_leadership_v1(uuid) to service_role;
 revoke all on function public.guild_leadership_status_v1(),public.transfer_guild_leadership_v1(uuid),public.leave_guild_v1(),public.disband_guild_v1(),public.disband_party_v1(uuid) from public,anon;
 grant execute on function public.guild_leadership_status_v1(),public.transfer_guild_leadership_v1(uuid),public.leave_guild_v1(),public.disband_guild_v1(),public.disband_party_v1(uuid) to authenticated;
 
 comment on function public.guild_leadership_status_v1() is 'Guild leader inactivity status using a 21-day server-authoritative activity threshold.';
 comment on function public.reconcile_guild_leadership_v1(uuid) is 'Transfers 21-day inactive Guild leadership to oldest active Officer, else oldest active Member.';
-comment on function public.reconcile_party_leadership_v1(uuid) is 'Transfers 21-day inactive Party leadership to oldest active remaining Party member.';
 commit;

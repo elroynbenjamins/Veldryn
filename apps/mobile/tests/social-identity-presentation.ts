@@ -1,4 +1,4 @@
-import {compactCharacterSummary,rankingPositionPresentation,socialGuildRolePresentation} from '../src/core/social-identity';
+import {compactCharacterSummary,friendRelationshipActionPresentation,rankingPositionPresentation,socialGuildRolePresentation} from '../src/core/social-identity';
 
 function fail(message:string):never{throw new Error(message)}
 function equal(actual:unknown,expected:unknown,message:string){if(actual!==expected)fail(message+': expected '+String(expected)+', got '+String(actual))}
@@ -19,5 +19,12 @@ equal(compactCharacterSummary('Aela','KNIFE_DANCER',42),'Aela · Knife Dancer ·
 equal(compactCharacterSummary('Brann',null,null),'Brann · Adventurer','missing class uses safe Adventurer label');
 equal(compactCharacterSummary(null,'IRONWARDEN',10),'No synced character','missing character does not invent an identity');
 ok(compactCharacterSummary('Mira','dawnkeeper',7).includes('Dawnkeeper'),'class display formatting is readable');
+
+
+equal(friendRelationshipActionPresentation('none').primary,'Add friend','non-friends can add directly from profile');
+equal(friendRelationshipActionPresentation('friend').primary,'Remove friend','friends can remove directly from profile');
+equal(friendRelationshipActionPresentation('outgoing_pending').primary,'Cancel request','outgoing requests can be cancelled from profile');
+equal(friendRelationshipActionPresentation('incoming_pending').primary,'Accept request','incoming requests can be accepted from profile');
+equal(friendRelationshipActionPresentation('incoming_pending').secondary,'Decline','incoming requests expose decline as secondary action');
 
 console.log('PASS: compact social identity presentation');

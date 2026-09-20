@@ -11,15 +11,19 @@ import {OnlinePartyChat} from './OnlinePartyChat';
 import {PartyChatGate} from './PartyChatGate';
 import {usePartySocial} from '../online/PartySocialProvider';
 import {ChatDock} from './ChatDock';
+import {myGuild} from '../online/social';
 
 type Channel='world'|'guild'|'party';
 
 export function ChatOverlay({state,visible,onOpen,onClose}:{state:GameState;visible:boolean;onOpen:()=>void;onClose:()=>void}){
   const [channel,setChannel]=useState<Channel>('world');
+  const [onlineGuildAvailable,setOnlineGuildAvailable]=useState(state.account.guildMember);
   const {party,accountId,refresh}=usePartySocial();
   useEffect(()=>{if(!party&&channel==='party')setChannel('world');},[party,channel]);
   useEffect(()=>{if(visible)void refresh();},[visible,refresh]);
-  const guildAvailable=state.account.guildMember;
+  useEffect(()=>{if(!onlineConfigured){setOnlineGuildAvailable(state.account.guildMember);return;}let active=true;const load=async()=>{try{const guild=await myGuild();if(active)setOnlineGuildAvailable(!!guild)}catch{if(active)setOnlineGuildAvailable(state.account.guildMember)}};void load();if(!visible)return()=>{active=false};const timer=setInterval(()=>void load(),30000);return()=>{active=false;clearInterval(timer)};},[visible,state.account.guildMember]);
+  const guildAvailable=onlineConfigured?onlineGuildAvailable:state.account.guildMember;
+  useEffect(()=>{if(!guildAvailable&&channel==='guild')setChannel('world');},[guildAvailable,channel]);
   return <>
     {!visible&&<ChatDock enabled={onlineConfigured} onOpen={onOpen}/>}
     <Modal visible={visible} transparent statusBarTranslucent animationType={state.settings.reduceMotion?'none':'fade'} onRequestClose={onClose}>

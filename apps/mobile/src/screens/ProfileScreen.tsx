@@ -3,6 +3,7 @@ import {ActivityIndicator,Image,ScrollView,StyleSheet,Text,View} from 'react-nat
 import {Panel} from '../components/Panel';
 import {GameButton} from '../components/GameButton';
 import {ProfileScenePreview} from '../components/ProfileScenePreview';
+import {PublicProfileScene} from '../components/PublicProfileScene';
 import {ProfileShowcaseSection} from '../components/ProfileShowcaseSection';
 import {OnlineProfileExtensionPanel} from '../components/OnlineProfileExtensionPanel';
 import {GuildTaggedPlayerName} from '../components/GuildTaggedPlayerName';
@@ -45,7 +46,7 @@ export function ProfileScreen({state,onNavigate}:{state:GameState;onNavigate?:(d
  return <ScrollView contentContainerStyle={s.root}>
   <View style={s.headingRow}><View style={s.flex}><Text style={s.kicker}>PLAYER IDENTITY</Text><Text accessibilityRole="header" style={s.heading}>Profile</Text></View>{loadingPublic?<ActivityIndicator color={C.accent}/>:<Text style={[s.onlineBadge,online?s.online:s.local]}>{online?'ONLINE PROFILE':'LOCAL PROFILE'}</Text>}</View>
 
-  <ProfileScenePreview state={state} backgroundId={background}/>
+  {publicSelf?<PublicProfileScene profile={publicSelf}/>:<ProfileScenePreview state={state} backgroundId={background}/>}
 
   <Panel>
    <View style={s.identityHead}>{account.guildMember?<GuildCrest size={48} bannerId={account.guildBannerId}/>:null}<View style={s.flex}><GuildTaggedPlayerName name={c.name} guildTag={publicSelf?.guildTag} tagColorId={publicSelf?.guildTagColorId} style={s.name}/><Text style={s.title}>“{publicSelf?.title??c.profileTitle??'New Adventurer'}”</Text><Text style={s.copy}>Level {c.level} · {label(c.classId)}{account.guildMember?' · Guild member':''}</Text></View></View>

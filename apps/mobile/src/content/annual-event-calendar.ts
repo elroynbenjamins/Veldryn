@@ -1,6 +1,6 @@
 import {LIVE_EVENT_CATALOG,type LiveEventDef} from './live-events';
 import {eventRewardOwned} from '../core/live-events';
-import type {GameState} from '../core/types';
+import type {ClassId,GameState} from '../core/types';
 
 export interface AnnualEventCalendarEntry{
   eventId:string;
@@ -27,7 +27,7 @@ const WINDOWS:Record<string,{windowLabel:string;order:number}>={
   EVT_ANNUAL_012_2026:{windowLabel:'December',order:12},
 };
 
-function rewards(definition:LiveEventDef,classId:GameState['character'] extends infer T?any:any){
+function rewards(definition:LiveEventDef,classId:ClassId){
   const community=definition.communityEnabled===true
     ?definition.communityMilestones.flatMap(entry=>entry.reward?[entry.reward]:[])
     :[];

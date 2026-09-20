@@ -1,3 +1,4 @@
+import {useMemo} from 'react';
 import React,{useState} from 'react';
 import {Text,View,StyleSheet} from 'react-native';
 import type {GameState} from '../core/types';
@@ -8,8 +9,10 @@ import {Panel} from './Panel';
 import {GameButton} from './GameButton';
 import {StatBar} from './StatBar';
 import {C,equipmentColors,radii,spacing,typography} from '../theme/theme';
+import {useTheme} from '../theme/ThemeProvider';
 
 export function MonsterMasteryPanel({state}:{state:GameState}){
+ const {colors:C,equipmentColors}=useTheme();const s=useMemo(()=>createStyles(C,equipmentColors),[C,equipmentColors]);
  const [open,setOpen]=useState(false);
  const available=MONSTERS.filter(m=>!m.boss&&(state.unlockedMonsterIds.includes(m.id)||(state.character?.monsterMasteryPoints?.[m.id]??0)>0));
  const summary=masterySummary(state,available.map(monster=>monster.id));
@@ -30,8 +33,9 @@ export function MonsterMasteryPanel({state}:{state:GameState}){
   </>}
  </Panel>;
 }
-function Summary({label,value}:{label:string;value:number}){return <View style={s.summaryCell}><Text style={s.summaryLabel}>{label}</Text><Text style={s.summaryValue}>{value}</Text></View>}
-const s=StyleSheet.create({
+function Summary({label,value}:{label:string;value:number}){
+ const {colors:C,equipmentColors}=useTheme();const s=useMemo(()=>createStyles(C,equipmentColors),[C,equipmentColors]);return <View style={s.summaryCell}><Text style={s.summaryLabel}>{label}</Text><Text style={s.summaryValue}>{value}</Text></View>}
+const createStyles=(C:any,equipmentColors:any)=>StyleSheet.create({
  title:{...typography.title,color:C.text},name:{...typography.bodyStrong,color:C.text,fontSize:15},rank:{...typography.caption,color:C.muted},body:{...typography.body,color:C.muted,lineHeight:19},
  entry:{gap:8,paddingVertical:12,borderBottomWidth:1,borderBottomColor:C.line},head:{flexDirection:'row',alignItems:'center',gap:8},flex:{flex:1,minWidth:0},max:{...typography.caption,color:C.good,fontWeight:'900'},conquered:{...typography.caption,color:equipmentColors.goldSoft,fontWeight:'900',letterSpacing:.6},
  summary:{flexDirection:'row',gap:6,flexWrap:'wrap'},summaryCell:{minWidth:68,flexGrow:1,padding:8,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2},summaryLabel:{fontSize:8,color:C.muted,fontWeight:'900',letterSpacing:.6},summaryValue:{fontSize:16,color:C.text,fontWeight:'900'},

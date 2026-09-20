@@ -17,6 +17,7 @@ const state = {
   instances: [],
   playerEvents: [],
   playerEventPreflights: {},
+  playerEventAnalytics: {},
   rewards: [],
   audits: [],
   operations: null,
@@ -215,6 +216,7 @@ function renderDashboard() {
   const visiblePlayerClaimEnd=visiblePlayerEvent?.grace_ends_at||(visiblePlayerEvent?.ends_at?new Date(Date.parse(visiblePlayerEvent.ends_at)+Math.max(0,Number(visiblePlayerEvent.config?.claimGraceDays??7)||0)*86400000).toISOString():null);
   const nextPlayerEvent=playerRows.filter(row=>playerEventPhase(row,nowMs)==='scheduled').sort((a,b)=>Date.parse(a.starts_at)-Date.parse(b.starts_at))[0]||null;
   const needsPlayerSchedule=playerRows.filter(row=>row.enabled&&playerEventPhase(row,nowMs)==='needs_schedule');
+  const playerHealth=playerEventHealthView(d.playerEventHealth);
   return shell(`
     <div class="page-head"><div><div class="eyebrow">Operations overview</div><h2>Live-Ops Dashboard</h2><p>Current event state, upcoming schedule and recent control-plane changes.</p></div></div>
     <div class="grid grid-4">
@@ -224,9 +226,10 @@ function renderDashboard() {
       <div class="card metric"><div class="label">Drafts</div><div class="value">${d.counts.drafts}</div><div class="foot">Mutable authoring state</div></div>
     </div>
     <div class="grid grid-2" style="margin-top:14px">
-      <div class="card"><div class="card-head"><div><h3>Player Event screen</h3><div class="tiny muted">What the mobile Event screen is showing now.</div></div>${visiblePlayerEvent?playerEventStatusPill(visiblePlayerPhase):'<span class="pill">Idle</span>'}</div><div class="card-body">${visiblePlayerEvent?`
+      <div class="card"><div class="card-head"><div><h3>Player Event screen</h3><div class="tiny muted">What the mobile Event screen is showing now.</div></div><div class="actions">${visiblePlayerEvent?playerEventStatusPill(visiblePlayerPhase):'<span class="pill">Idle</span>'}${d.playerEventHealth?`<span class="pill ${playerHealth.cls}">${h(playerHealth.label)}</span>`:''}</div></div><div class="card-body">${visiblePlayerEvent?`
         <div class="eyebrow">${h(visiblePlayerEvent.event_id)}</div><h3 style="margin:6px 0 8px">${h(visiblePlayerEvent.name||visiblePlayerEvent.event_id)}</h3>
-        <div class="muted small">${visiblePlayerPhase==='live'?`Earning through ${fmtDate(visiblePlayerEvent.ends_at)}`:`Claims through ${fmtDate(visiblePlayerClaimEnd)}`}</div>`:`<div class="muted small">No annual/general Event is visible to players right now.</div>`}
+        <div class="muted small">${visiblePlayerPhase==='live'?`Earning through ${fmtDate(visiblePlayerEvent.ends_at)}`:`Claims through ${fmtDate(visiblePlayerClaimEnd)}`}</div>
+        ${d.playerEventHealth?`<div class="grid grid-3" style="margin-top:10px"><div class="validation-item"><strong>${fmtNumber(d.playerEventHealth.analytics?.progress?.participants)}</strong><div class="tiny">participants</div></div><div class="validation-item"><strong>${fmtNumber(d.playerEventHealth.analytics?.dungeons?.completed)}</strong><div class="tiny">dungeon clears</div></div><div class="validation-item ${playerHealth.cls==='bad'?'error':playerHealth.cls==='warn'?'warning':playerHealth.cls==='good'?'ok':''}"><strong>${h(playerHealth.label)}</strong><div class="tiny">${h(playerHealth.detail)}</div></div></div>`:''}`:`<div class="muted small">No annual/general Event is visible to players right now.</div>`}
         <div class="actions" style="margin-top:12px"><button class="btn btn-sm" data-nav="events">Open Events</button></div></div></div>
       <div class="card"><div class="card-head"><div><h3>Next Player Event</h3><div class="tiny muted">Enabled schedule only.</div></div>${needsPlayerSchedule.length?'<span class="pill bad">Needs attention</span>':nextPlayerEvent?playerEventStatusPill('scheduled'):'<span class="pill">None</span>'}</div><div class="card-body">${needsPlayerSchedule.length?`
         <strong>${fmtNumber(needsPlayerSchedule.length)} enabled event${needsPlayerSchedule.length===1?'':'s'} missing a valid schedule</strong><div class="muted small" style="margin-top:6px">Fix these before relying on automatic activation.</div>`:nextPlayerEvent?`
@@ -269,6 +272,14 @@ function playerEventStatusPill(phase) {
   const [cls,label]=map[phase]||['',phase];
   return `<span class="pill ${cls}">${h(label)}</span>`;
 }
+function playerEventHealthView(result) {
+  if(!result)return {cls:'',label:'No analytics',detail:'Open Events to inspect.'};
+  const health=result.health||[];
+  const errors=health.filter(item=>item.severity==='error'),warnings=health.filter(item=>item.severity==='warning');
+  if(errors.length)return {cls:'bad',label:'Event error',detail:errors[0].title};
+  if(warnings.length)return {cls:'warn',label:'Event watch',detail:warnings[0].title};
+  return {cls:'good',label:'Event healthy',detail:'No warning/error signals'};
+}
 function playerEventHasSeasonalExpedition(eventId) {
   const series=String(eventId||'').match(/^(EVT_ANNUAL_\d{3})(?:_|$)/)?.[1];
   return new Set(['EVT_ANNUAL_001','EVT_ANNUAL_002','EVT_ANNUAL_003','EVT_ANNUAL_006','EVT_ANNUAL_008','EVT_ANNUAL_010','EVT_ANNUAL_011','EVT_ANNUAL_012']).has(series);
@@ -283,6 +294,34 @@ function renderPlayerEventPreflight(result) {
     <div class="actions" style="margin-bottom:8px"><strong>Activation preflight</strong><span class="pill ${readinessClass}">${readinessLabel}</span>${result.seasonalExpedition?'<span class="pill info">Seasonal dungeon wired</span>':''}</div>
     <div class="grid grid-2">${(result.checks||[]).map(check=>`<div class="validation-item ${checkClass(check.status)}"><strong>${h(check.label)}</strong><div class="tiny" style="margin-top:4px">${h(check.detail)}</div></div>`).join('')}</div>
     <div class="tiny muted" style="margin-top:8px">Saved schedule: <strong>${canEnable?'ready to enable':'not ready'}</strong> · Go live now (preview ${h(result.goLivePreview?.durationDays||14)}d): <strong>${canGoLive?'ready':'blocked'}</strong></div>
+  </div>`;
+}
+function fmtPct(value) {
+  return value===null||value===undefined||!Number.isFinite(Number(value))?'—':`${Math.round(Number(value)*100)}%`;
+}
+function renderPlayerEventAnalytics(result) {
+  if(!result)return '';
+  const a=result.analytics||{},p=a.progress||{},d=a.dungeons||{},con=a.contributions||{},health=result.health||[];
+  const worst=health.some(x=>x.severity==='error')?'bad':health.some(x=>x.severity==='warning')?'warn':health.some(x=>x.severity==='info')?'info':'good';
+  const healthLabel=worst==='bad'?'Error':worst==='warn'?'Watch':worst==='info'?'Info':'Healthy';
+  return `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line)">
+    <div class="actions" style="margin-bottom:8px"><strong>Player Event analytics</strong><span class="pill ${worst}">${healthLabel}</span><span class="tiny muted">Generated ${h(fmtDate(a.generatedAt))}</span></div>
+    <div class="grid grid-4" style="margin-bottom:8px">
+      <div class="card metric"><div class="label">Participants</div><div class="value">${fmtNumber(p.participants)}</div><div class="foot">Last progress ${fmtDate(p.lastProgressAt)}</div></div>
+      <div class="card metric"><div class="label">Median reputation</div><div class="value">${fmtNumber(p.progressMedian)}</div><div class="foot">P90 ${fmtNumber(p.progressP90)} · avg ${fmtNumber(p.progressAverage)}</div></div>
+      <div class="card metric"><div class="label">Lifetime reputation</div><div class="value">${fmtNumber(p.progressTotal)}</div><div class="foot">Max player ${fmtNumber(p.progressMax)}</div></div>
+      <div class="card metric"><div class="label">Common currency held</div><div class="value">${fmtNumber(p.currencyBalance)}</div><div class="foot">Estimated spent ${fmtNumber(p.estimatedCurrencySpent)}</div></div>
+    </div>
+    <div class="grid grid-4" style="margin-bottom:8px">
+      <div class="card metric"><div class="label">Prestige currency held</div><div class="value">${fmtNumber(p.prestigeBalance)}</div><div class="foot">Retention ${fmtPct(result.derived?.currencyRetentionRate)}</div></div>
+      <div class="card metric"><div class="label">Community contribution</div><div class="value">${fmtNumber(con.total)}</div><div class="foot">${fmtNumber(con.contributors)} contributors · ${fmtNumber(con.entries)} entries</div></div>
+      <div class="card metric"><div class="label">Dungeon starts</div><div class="value">${fmtNumber(d.starts)}</div><div class="foot">${fmtNumber(d.uniqueControllers)} unique controllers</div></div>
+      <div class="card metric"><div class="label">Dungeon clear rate</div><div class="value">${fmtPct(result.derived?.dungeonClearRate)}</div><div class="foot">${fmtNumber(d.completed)} cleared · ${fmtNumber(d.failed)} failed</div></div>
+    </div>
+    <div class="validation-item" style="margin-bottom:8px"><strong>Activity mix</strong><div class="tiny" style="margin-top:4px">Combat ${fmtNumber(p.combatActivity)} · Gathering ${fmtNumber(p.gatheringActivity)} · Crafting ${fmtNumber(p.craftingActivity)} · Boss ${fmtNumber(p.bossActivity)} · Repeat caches ${fmtNumber(p.repeatCacheClaims)}</div></div>
+    ${result.event?.seasonalExpedition?`<div class="validation-item ${Number(d.pendingSettlement||0)>0?'warning':'ok'}" style="margin-bottom:8px"><strong>Seasonal dungeon transport</strong><div class="tiny" style="margin-top:4px">${fmtNumber(d.active)} active · ${fmtNumber(d.pendingSettlement)} pending settlement · ${fmtNumber(d.claimedSettlement)} settled · avg ${fmtNumber(d.averageVisitedNodes)} visited nodes · last start ${fmtDate(d.lastStartAt)}</div></div>`:''}
+    <div class="grid grid-2">${health.map(item=>`<div class="validation-item ${item.severity==='error'?'error':item.severity==='warning'?'warning':item.severity==='pass'?'ok':''}"><strong>${h(item.title)}</strong><div class="tiny" style="margin-top:4px">${h(item.detail)}</div></div>`).join('')}</div>
+    <div class="tiny muted" style="margin-top:8px">Common-currency spend is an estimate derived from lifetime reputation minus current common balance. Aggregate telemetry contains no player identity.</div>
   </div>`;
 }
 function renderEvents() {
@@ -317,6 +356,7 @@ function renderEvents() {
         const canSchedule=roleAtLeast(row.enabled?'owner':'editor');
         const canGoLive=roleAtLeast('owner')&&!['live','claiming'].includes(phase)&&!visibleConflict;
         const preflight=state.playerEventPreflights[row.event_id];
+        const analytics=state.playerEventAnalytics[row.event_id];
         return `<div class="list-row event-row ${h(phase)}">
           <div style="min-width:0;flex:1"><div class="actions"><strong>${h(row.name||row.event_id)}</strong>${playerEventStatusPill(phase)}<span class="pill ${row.enabled?'good':'bad'}">Master ${row.enabled?'ON':'OFF'}</span>${playerEventHasSeasonalExpedition(row.event_id)?'<span class="pill info">Dungeon wired</span>':''}</div>
             <p><span class="mono">${h(row.event_id)}</span> · ${h(row.currency_id||'No currency')} · priority ${h(row.priority??0)}</p>
@@ -326,8 +366,10 @@ function renderEvents() {
             ${visibleConflict?`<p class="tiny" style="margin-top:5px">Go live is blocked while <strong>${h(visibleConflict.name||visibleConflict.event_id)}</strong> is visible.</p>`:''}
             ${phase==='claiming'?'<p class="tiny" style="margin-top:5px">Earning restart is locked while this event is in claim grace. End the claim window with Hard off only for an emergency.</p>':''}
             ${renderPlayerEventPreflight(preflight)}
+            ${renderPlayerEventAnalytics(analytics)}
           </div>
           <div class="list-meta"><div class="actions" style="justify-content:flex-end">
+            <button class="btn btn-sm btn-ghost" data-action="analytics-player-event" data-id="${attr(row.event_id)}">Analytics</button>
             <button class="btn btn-sm btn-ghost" data-action="preflight-player-event" data-id="${attr(row.event_id)}">Preflight</button>
             ${canCloneSeason?`<button class="btn btn-sm btn-ghost" data-action="clone-player-event-season" data-id="${attr(row.event_id)}">Clone season</button>`:''}
             ${canSchedule?`<button class="btn btn-sm btn-ghost" data-action="schedule-player-event" data-id="${attr(row.event_id)}">${row.enabled?'Adjust schedule':'Schedule'}</button>`:''}
@@ -803,7 +845,11 @@ async function loadCore() {
 }
 async function loadPageData(page = state.page) {
   if (page === 'dashboard') state.dashboard = await api('dashboard');
-  if (page === 'events') { const [instances,playerEvents]=await Promise.all([api('listInstances'),api('listPlayerEvents')]); state.instances=instances||[]; state.playerEvents=playerEvents||[]; }
+  if (page === 'events') {
+    const [instances,playerEvents]=await Promise.all([api('listInstances'),api('listPlayerEvents')]); state.instances=instances||[]; state.playerEvents=playerEvents||[];
+    const visible=(state.playerEvents||[]).find(row=>['live','claiming'].includes(playerEventPhase(row,Date.now())));
+    if(visible){try{state.playerEventAnalytics={...state.playerEventAnalytics,[visible.event_id]:await api('playerEventAnalytics',{eventId:visible.event_id})};}catch{/* Analytics migration may not be deployed yet; event controls must remain usable. */}}
+  }
   if (page === 'builder') {
     const [drafts,rewards] = await Promise.all([api('listDrafts'),api('listRewards')]);
     state.drafts = drafts || []; state.rewards = rewards || [];
@@ -1005,6 +1051,14 @@ app.addEventListener('click', async (event) => {
       const reason=prompt('Reason for applying this seasonal calendar (10+ characters):','Prepare annual Live-Ops calendar'); if(reason===null)return;
       const result=await api('applySeasonalCalendarPreset',{startYear,reason});
       toast(`Scheduled ${result.events?.length||6} seasonal events for ${startYear}–${startYear+1}.`,'success'); return navigate('events');
+    }
+    if (action === 'analytics-player-event') {
+      const row=state.playerEvents.find(x=>x.event_id===el.dataset.id); if(!row)return;
+      const result=await api('playerEventAnalytics',{eventId:row.event_id});
+      state.playerEventAnalytics={...state.playerEventAnalytics,[row.event_id]:result};
+      const attention=(result.health||[]).filter(item=>item.severity==='error'||item.severity==='warning').length;
+      toast(attention?`Analytics loaded with ${attention} health item${attention===1?'':'s'} to review.`:'Analytics loaded; no event health issues detected.',attention?'error':'success');
+      return render();
     }
     if (action === 'preflight-player-event') {
       const row=state.playerEvents.find(x=>x.event_id===el.dataset.id); if(!row)return;

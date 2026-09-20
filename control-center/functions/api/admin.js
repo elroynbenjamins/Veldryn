@@ -155,12 +155,19 @@ async function dashboard(env) {
   const active = (instances ?? []).filter((row) => row.status === 'active' || (row.status === 'scheduled' && Date.parse(row.starts_at) <= nowMs && Date.parse(row.ends_at) > nowMs));
   const scheduled = (instances ?? []).filter((row) => row.status === 'scheduled' && Date.parse(row.starts_at) > nowMs);
   const settling = (instances ?? []).filter((row) => row.status === 'settling');
+  const visiblePlayerEvent=(playerEvents??[]).find(row=>['live','claiming'].includes(playerEventRuntimePhase(row,nowMs)))??null;
+  let playerEventHealth=null;
+  if(visiblePlayerEvent){
+    try{playerEventHealth=await playerEventAnalytics(env,{eventId:visiblePlayerEvent.event_id});}
+    catch{/* Keep the dashboard usable while the analytics migration is deploying. */}
+  }
   return {
     counts: { active: active.length, scheduled: scheduled.length, settling: settling.length, drafts: draftCount, deadLetters: deadLetterCount },
     active: active[0] ?? null,
     next: scheduled[0] ?? null,
     workerHealth: healthRows?.[0] ?? null,
     playerEvents: playerEvents ?? [],
+    playerEventHealth,
     drafts: drafts ?? [],
     audits: audits ?? [],
   };
@@ -602,6 +609,61 @@ async function playerEventPreflight(env, payload) {
 async function assertNoPlayerEventOverlap(env, eventId, startsAtMs, endsAtMs, graceEndsAtMs = endsAtMs) {
   const conflicts = await playerEventVisibilityConflicts(env, eventId, startsAtMs, graceEndsAtMs);
   if (conflicts.length) throw new Error(`player_event_visibility_overlap:${conflicts[0].eventId}`);
+}
+
+async function playerEventAnalytics(env, payload) {
+  const eventId = String(payload.eventId ?? '');
+  const row = await single(env, 'live_events', `event_id=eq.${encodeEq(eventId)}`);
+  if (!row) throw new Error('player_event_not_found');
+
+  const raw = await supabaseFetch(env, '/rest/v1/rpc/player_event_analytics_server_v1', {
+    method: 'POST',
+    body: { p_event_id: eventId },
+  });
+  const analytics = Array.isArray(raw) ? (raw[0] ?? {}) : (raw ?? {});
+  const phase = playerEventRuntimePhase(row);
+  const progress = analytics.progress ?? {};
+  const dungeons = analytics.dungeons ?? {};
+  const health = [];
+  const add = (severity, code, title, detail) => health.push({ severity, code, title, detail });
+
+  const participants = Number(progress.participants ?? 0);
+  const anomalies = Number(progress.balanceAnomalies ?? 0);
+  const starts = Number(dungeons.starts ?? 0);
+  const completed = Number(dungeons.completed ?? 0);
+  const failed = Number(dungeons.failed ?? 0);
+  const pendingSettlement = Number(dungeons.pendingSettlement ?? 0);
+  const resolved = completed + failed;
+  const failureRate = resolved > 0 ? failed / resolved : 0;
+  const dungeonExpected = playerEventHasSeasonalExpedition(eventId);
+
+  if (anomalies > 0) add('error','event_balance_invariant','Balance invariant issue',`${anomalies} participant record${anomalies===1?'':'s'} have a negative value or a common-currency balance above lifetime reputation.`);
+  if (pendingSettlement > 0) add('warning','event_dungeon_pending_settlement','Dungeon settlements pending',`${pendingSettlement} completed seasonal run${pendingSettlement===1?' is':'s are'} waiting for player settlement.`);
+  if (resolved >= 5 && failureRate >= 0.5) add('warning','event_dungeon_failure_rate','High dungeon failure rate',`${Math.round(failureRate*100)}% of resolved seasonal dungeon runs have failed (${failed}/${resolved}).`);
+  if (phase === 'live' && participants === 0) add('info','event_no_participation_yet','No participation yet','The event is live but no account has recorded event progress yet.');
+  if (phase === 'live' && dungeonExpected && starts === 0) add('info','event_dungeon_no_starts_yet','No seasonal dungeon starts yet','The event dungeon is wired, but no persistent seasonal run has started for this season yet.');
+  if (!health.length) add('pass','event_health_clear','No detected event health issues','Current aggregate event telemetry is internally consistent.');
+
+  return {
+    event: {
+      eventId: row.event_id,
+      name: row.name ?? row.event_id,
+      phase,
+      enabled: row.enabled === true,
+      startsAt: row.starts_at,
+      endsAt: row.ends_at,
+      graceEndsAt: row.grace_ends_at,
+      seasonalExpedition: dungeonExpected,
+    },
+    analytics,
+    health,
+    derived: {
+      resolvedDungeonRuns: resolved,
+      dungeonClearRate: resolved > 0 ? completed / resolved : null,
+      dungeonFailureRate: resolved > 0 ? failureRate : null,
+      currencyRetentionRate: Number(progress.progressTotal ?? 0) > 0 ? Number(progress.currencyBalance ?? 0) / Number(progress.progressTotal ?? 0) : null,
+    },
+  };
 }
 
 async function schedulePlayerEvent(env, actor, payload) {
@@ -1194,6 +1256,7 @@ async function routeAction(env, actor, action, payload) {
     case 'listInstances': return await list(env, 'liveops_event_instances', 'select=*&order=starts_at.desc&limit=200');
     case 'listPlayerEvents': return await listPlayerEvents(env);
     case 'playerEventPreflight': return await playerEventPreflight(env, payload);
+    case 'playerEventAnalytics': return await playerEventAnalytics(env, payload);
     case 'clonePlayerEventSeason': return await clonePlayerEventSeason(env, actor, payload);
     case 'applySeasonalCalendarPreset': return await applySeasonalCalendarPreset(env, actor, payload);
     case 'schedulePlayerEvent': return await schedulePlayerEvent(env, actor, payload);

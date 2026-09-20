@@ -24,6 +24,7 @@ const state = {
   operations: null,
   remoteConfigData: null,
   healthEconomyData: null,
+  segmentDimension: 'starting_class',
   resetsData: null,
   supportResults: [],
   supportAccount: null,
@@ -779,6 +780,21 @@ function renderConfig() {
 
 function metricFind(rows,key){return (rows||[]).find(x=>x.metricKey===key);}
 function metricTotal(rows,key){return Number(metricFind(rows,key)?.total||0);}
+function renderPlayerSegmentComparison(data){
+  if(!data)return '';
+  const dimensions=data.dimensions||[],selected=dimensions.find(row=>row.key===state.segmentDimension)||dimensions[0];
+  if(!selected)return '';
+  const min=Number(data.minSample||5);
+  const options=dimensions.map(row=>`<option value="${attr(row.key)}" ${row.key===selected.key?'selected':''}>${h(row.label)}</option>`).join('');
+  const rows=selected.rows||[];
+  return `<div class="card" style="margin-bottom:14px">
+    <div class="card-head"><div><h3>Player segment comparison</h3><div class="tiny muted">${fmtNumber(data.windowDays)}-day first-active cohorts · ${fmtNumber(data.population)} accounts</div></div><div class="actions"><span class="pill ${selected.kind==='behavior'?'warn':'info'}">${selected.kind==='behavior'?'Correlation view':'Baseline segment'}</span><select id="player-segment-dimension" aria-label="Player segment dimension">${options}</select></div></div>
+    <div class="table-wrap"><table><thead><tr><th>Segment</th><th>Accounts</th><th>Median level</th><th>Lv10+</th><th>Lv25+</th><th>Story</th><th>Active days / 30</th><th>D1</th><th>D7</th><th>D30</th></tr></thead><tbody>
+      ${rows.map(row=>`<tr><td><strong>${h(row.label)}</strong>${!row.sampleOk?`<div class="tiny muted">Rates hidden below n=${fmtNumber(min)}</div>`:''}</td><td>${fmtNumber(row.accounts)}</td><td>${row.medianLevel==null?'—':h(row.medianLevel)}</td><td>${fmtPct(row.level10Reach)}</td><td>${fmtPct(row.level25Reach)}</td><td>${fmtPct(row.storyReach)}</td><td>${row.avgActiveDays30==null?'—':h(row.avgActiveDays30)}</td><td>${fmtPct(row.d1Retention)}<div class="tiny muted">n=${fmtNumber(row.d1Eligible)}</div></td><td>${fmtPct(row.d7Retention)}<div class="tiny muted">n=${fmtNumber(row.d7Eligible)}</div></td><td>${fmtPct(row.d30Retention)}<div class="tiny muted">n=${fmtNumber(row.d30Eligible)}</div></td></tr>`).join('')}
+    </tbody></table></div>
+    <div class="card-body" style="padding-top:8px"><div class="tiny muted">${(data.notes||[]).map(note=>h(note)).join(' · ')}</div></div>
+  </div>`;
+}
 function renderHealth() {
   const d=state.healthEconomyData; if(!d) return shell(loading(),'Health & Economy');
   const alerts=d.alerts||[], critical=alerts.filter(a=>a.severity==='critical'&&a.status!=='resolved').length,activity=d.playerActivity||null,activityDays=activity?.daily||[],cohorts=(activity?.cohorts||[]).filter(row=>Number(row.size||0)>0),lifecycle=d.playerLifecycle||null,lifecycleStages=lifecycle?.stages||[],activePop=lifecycle?.activePopulation||{},longRetention=lifecycle?.longRetention||{},longCohorts=(longRetention.cohorts||[]).filter(row=>Number(row.size||0)>0);
@@ -830,6 +846,7 @@ function renderHealth() {
       <div class="card"><div class="card-head"><h3>Story depth</h3><span class="pill">Claimed chapters</span></div><div class="table-wrap"><table><thead><tr><th>Chapters</th><th>Accounts</th></tr></thead><tbody>${(activePop.storyClaims||[]).map(row=>`<tr><td>${h(row.band)}</td><td>${fmtNumber(row.count)}</td></tr>`).join('')}</tbody></table></div></div>
     </div>
     ${longCohorts.length?`<div class="card" style="margin-bottom:14px"><div class="card-head"><div><h3>Long-term retention cohorts</h3><div class="tiny muted">Exact-day returns from first recorded active day</div></div><span class="pill">D30 / D60 / D90</span></div><div class="table-wrap"><table><thead><tr><th>First active</th><th>Cohort</th><th>D30</th><th>D60</th><th>D90</th></tr></thead><tbody>${longCohorts.slice().reverse().map(row=>`<tr><td>${h(row.date)}</td><td>${fmtNumber(row.size)}</td><td>${fmtPct(row.d30Rate)} <span class="tiny muted">(${fmtNumber(row.d30Retained)})</span></td><td>${fmtPct(row.d60Rate)} <span class="tiny muted">(${fmtNumber(row.d60Retained)})</span></td><td>${fmtPct(row.d90Rate)} <span class="tiny muted">(${fmtNumber(row.d90Retained)})</span></td></tr>`).join('')}</tbody></table></div></div>`:''}`:''}
+    ${renderPlayerSegmentComparison(d.playerSegments)}
     ${activityDays.length?`<div class="card" style="margin-bottom:14px"><div class="card-head"><div><h3>Daily player activity</h3><div class="tiny muted">UTC · authoritative gameplay/foreground activity</div></div><span class="pill">${activityDays.length} days</span></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Active</th><th>New</th><th>Returning</th><th>Active min.</th><th>Sessions</th><th>Peak 5m</th><th>Foregrounds</th><th>Gameplay</th><th>Event</th><th>Co-op</th></tr></thead><tbody>${activityDays.slice().reverse().map(row=>`<tr><td>${h(row.date)}</td><td><strong>${fmtNumber(row.active)}</strong></td><td>${fmtNumber(row.newActive)}</td><td>${fmtNumber(row.returning)}</td><td>${fmtNumber(row.estimatedActiveMinutes)}</td><td>${fmtNumber(row.estimatedSessions)}</td><td>${fmtNumber(row.peakObserved5m)}</td><td>${fmtNumber(row.foregroundOpens)}</td><td>${fmtNumber(row.gameplayActions)}</td><td>${fmtNumber(row.eventActions)}</td><td>${fmtNumber(row.coopActions)}</td></tr>`).join('')}</tbody></table></div></div>`:''}
     ${cohorts.length?`<div class="card" style="margin-bottom:14px"><div class="card-head"><div><h3>First-active retention cohorts</h3><div class="tiny muted">Exact-day return rate from the first recorded active day</div></div><span class="pill">${cohorts.length} cohorts</span></div><div class="table-wrap"><table><thead><tr><th>First active</th><th>Cohort</th><th>D1</th><th>D7</th><th>D30</th></tr></thead><tbody>${cohorts.slice().reverse().map(row=>`<tr><td>${h(row.date)}</td><td>${fmtNumber(row.size)}</td><td>${fmtPct(row.d1Rate)} <span class="tiny muted">(${fmtNumber(row.d1Retained)})</span></td><td>${fmtPct(row.d7Rate)} <span class="tiny muted">(${fmtNumber(row.d7Retained)})</span></td><td>${fmtPct(row.d30Rate)} <span class="tiny muted">(${fmtNumber(row.d30Retained)})</span></td></tr>`).join('')}</tbody></table></div></div>`:''}
     <div class="card"><div class="card-head"><h3>24-hour metric summary</h3><span class="pill">Hourly buckets</span></div><div class="table-wrap">${top.length?`<table><thead><tr><th>Metric</th><th>24h total</th><th>7d total</th><th>Samples</th><th>Top dimensions (24h)</th></tr></thead><tbody>${top.map(m=>`<tr><td><strong>${h(m.metricKey)}</strong></td><td>${fmtNumber(m.total)}</td><td>${fmtNumber(metricTotal(d.metrics7,m.metricKey))}</td><td>${fmtNumber(m.samples)}</td><td class="small muted">${(m.dimensions||[]).slice(0,4).map(x=>`${h(x.key)}: ${fmtNumber(x.value)}`).join('<br>')||'—'}</td></tr>`).join('')}</tbody></table>`:`<div class="card-body">${empty('No ops metrics have been recorded yet. The backend wiring file shows the first transaction-success metrics to emit.')}</div>`}</div></div>`, 'Health & Economy');
@@ -1035,6 +1052,9 @@ app.addEventListener('submit', async (event) => {
 });
 
 app.addEventListener('change', async (event) => {
+  if (event.target.id === 'player-segment-dimension') {
+    state.segmentDimension=event.target.value; return render();
+  }
   if (event.target.id === 'leaderboard-select') {
     state.loading=true; render();
     try { await loadLeaderboard(event.target.value); } catch(e) { toast(errorText(e),'error'); }

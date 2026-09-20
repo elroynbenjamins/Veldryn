@@ -46,3 +46,20 @@ export function activityQueueLabel(activity:QueuedActivity){
  }
  return [...GATHERING,...HERB_NODES].find(row=>row.id===activity.targetId)?.name??activity.targetId;
 }
+
+
+export interface ActivityQueueHandoffStatus{
+ armed:boolean;
+ sourceLabel?:string;
+ nextLabel?:string;
+ safetyEnabled:boolean;
+}
+export function activityQueueHandoffStatus(state:GameState):ActivityQueueHandoffStatus{
+ const queue=normalizeActivityQueue(state.character?.activityQueue),next=queue[0],character=state.character,activity=state.activity;
+ const rule=character?.activeIdleRuleIdV40?character.idleRulesV40?.find(row=>row.id===character.activeIdleRuleIdV40):undefined;
+ const nonSafety=rule?.conditions.some(condition=>condition.enabled&&condition.kind!=='food_below'&&condition.kind!=='free_slots_below')??false;
+ const huntGoal=activity?.kind==='combat'?activity.huntGoal:undefined;
+ const sources=[huntGoal?.label,nonSafety?rule?.name:undefined].filter(Boolean) as string[];
+ const safetyEnabled=!!rule&&(rule.stopIfOutOfFood||rule.stopIfRewardsWouldOverflow||rule.conditions.some(condition=>condition.enabled&&(condition.kind==='food_below'||condition.kind==='free_slots_below')));
+ return {armed:!!activity&&!!next&&(!!huntGoal||nonSafety),sourceLabel:sources.join(' + ')||undefined,nextLabel:next?activityQueueLabel(next):undefined,safetyEnabled};
+}

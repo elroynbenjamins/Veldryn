@@ -1,5 +1,5 @@
 import {claimActivity,createCharacter,newGame,startCombat,stopActivity} from '../src/core/game';
-import {enqueueActivity,MAX_ACTIVITY_QUEUE} from '../src/core/activity-queue';
+import {activityQueueHandoffStatus,enqueueActivity,MAX_ACTIVITY_QUEUE} from '../src/core/activity-queue';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
 import {normalizeSave} from '../src/core/save-normalization';
 
@@ -30,6 +30,7 @@ let planned=createCharacter(newGame(now),'WAYFINDER','Planned Queue');
 planned={...planned,unlockedMonsterIds:['MOSS_RAT','FIELD_WISP']};
 planned=startCombat(planned,'MOSS_RAT',now,undefined,'balanced','kills_50');
 planned=enqueueActivity(planned,{kind:'combat',targetId:'FIELD_WISP',combatTacticId:'guarded',huntGoalId:'kills_50'});
+const huntHandoff=activityQueueHandoffStatus(planned);ok(huntHandoff.armed&&huntHandoff.sourceLabel==='50 kills'&&huntHandoff.nextLabel?.includes('Field Wisp'),'Queue panel status should expose the armed Hunt Goal handoff');
 const advanced=claimActivity(planned,now+4*60*60*1000);
 ok(advanced.reward.kills===50,'First queued transition should settle exactly at the Hunt Goal');
 ok(advanced.state.activity?.targetId==='FIELD_WISP','Planned Hunt Goal stop should start the next queued hunt');
@@ -41,10 +42,18 @@ let unsafe=createCharacter(newGame(now),'WAYFINDER','Safety Queue');
 unsafe={...unsafe,unlockedMonsterIds:['MOSS_RAT','FIELD_WISP'],inventory:{...unsafe.inventory,stacks:[]},character:{...(unsafe.character!),currentHp:1}};
 unsafe=startCombat(unsafe,'MOSS_RAT',now,undefined,'balanced','open');
 unsafe=enqueueActivity(unsafe,{kind:'combat',targetId:'FIELD_WISP'});
+const waitingHandoff=activityQueueHandoffStatus(unsafe);ok(!waitingHandoff.armed&&waitingHandoff.nextLabel?.includes('Field Wisp'),'Queue without a planned stop should report a waiting handoff');
 const safetyStop=claimActivity(unsafe,now+60_000);
 ok(!safetyStop.state.activity,'Injury stop should end the current hunt');
 ok(safetyStop.state.character?.activityQueue?.length===1,'Safety stop must preserve the queued action');
 ok(!!safetyStop.state.character?.activityQueuePausedReason,'Safety stop should expose a visible queue pause reason');
+
+let ruled=createCharacter(newGame(now),'WAYFINDER','Rule Queue');
+ruled={...ruled,unlockedMonsterIds:['MOSS_RAT','FIELD_WISP']};
+ruled=startCombat(ruled,'MOSS_RAT',now);
+ruled=enqueueActivity(ruled,{kind:'combat',targetId:'FIELD_WISP'});
+ruled={...ruled,character:{...ruled.character!,idleRulesV40:[{id:'contract-stop',characterId:ruled.character!.id,name:'Stop · Moss Rat contract',conditions:[{id:'done',kind:'weekly_order_progress',targetId:'week:hunt:moss',value:20,enabled:true}],stopIfOutOfFood:true,stopIfRewardsWouldOverflow:true,finishCurrentCycle:true}],activeIdleRuleIdV40:'contract-stop'}};
+const ruleHandoff=activityQueueHandoffStatus(ruled);ok(ruleHandoff.armed&&ruleHandoff.sourceLabel==='Stop · Moss Rat contract'&&ruleHandoff.safetyEnabled,'Active Contract Idle Rule should show an armed handoff while preserving safety');
 
 let wrongRegion=createCharacter(newGame(now),'WAYFINDER','Region Queue');
 wrongRegion={...wrongRegion,unlockedMonsterIds:['MOSS_RAT','SILVERFIN_SWARM']};

@@ -1,7 +1,9 @@
+import {useMemo} from 'react';
 import {StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
 import {contractBoardSummary} from '../core/contract-board-summary';
-import {C,radii,spacing,typography} from '../theme/theme';
+import {radii,spacing,typography,equipmentTheme,type ThemeColors} from '../theme/theme';
+import {useGameTheme} from '../theme/ThemeContext';
 import {GameButton} from './GameButton';
 import {StatBar} from './StatBar';
 
@@ -12,6 +14,7 @@ function remainingLabel(endsAtMs:number,nowMs:number){
 }
 
 export function ContractBoardSummary({state,nowMs,onOpen,onContinue}:{state:GameState;nowMs:number;onOpen:()=>void;onContinue?:(order:NonNullable<ReturnType<typeof contractBoardSummary>['nextOrder']>)=>void}){
+ const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
  const summary=contractBoardSummary(state,nowMs),next=summary.nextOrder;
  if(!summary.total)return null;
  return <View style={[s.card,summary.pendingRewards>0&&s.ready]}>
@@ -21,4 +24,4 @@ export function ContractBoardSummary({state,nowMs,onOpen,onContinue}:{state:Game
   {next&&onContinue?<View style={s.actions}><View style={s.primary}><GameButton title="Continue job" onPress={()=>onContinue(next)}/></View><View style={s.secondary}><GameButton title="Board" tone="secondary" onPress={onOpen}/></View></View>:<GameButton title={summary.pendingRewards>0?'Open Contract Board rewards':'Open Contract Board'} tone={summary.pendingRewards>0?'primary':'secondary'} onPress={onOpen}/>}
  </View>;
 }
-const s=StyleSheet.create({card:{gap:8,padding:spacing.md,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel},ready:{borderLeftWidth:4,borderLeftColor:C.good},head:{flexDirection:'row',alignItems:'center',gap:8},flex:{flex:1,minWidth:0},kicker:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.8},title:{...typography.bodyStrong,color:C.text},count:{...typography.title,color:C.accent},complete:{...typography.title,color:C.good},meta:{...typography.caption,color:C.muted,lineHeight:16},actions:{flexDirection:'row',gap:8},primary:{flex:2},secondary:{flex:1}});
+function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);return StyleSheet.create({card:{gap:8,padding:spacing.md,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel},ready:{borderLeftWidth:4,borderLeftColor:C.good},head:{flexDirection:'row',alignItems:'center',gap:8},flex:{flex:1,minWidth:0},kicker:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.8},title:{...typography.bodyStrong,color:C.text},count:{...typography.title,color:C.accent},complete:{...typography.title,color:C.good},meta:{...typography.caption,color:C.muted,lineHeight:16},actions:{flexDirection:'row',gap:8},primary:{flex:2},secondary:{flex:1}});}

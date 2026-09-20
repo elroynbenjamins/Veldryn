@@ -234,6 +234,9 @@ export function executeCompanionActivity(input:GameState,type:string,a:Record<st
       const week=companionTrialWeekKey(now),used=state.account.companionAssignmentBondstoneWeek===week?state.account.companionAssignmentBondstones??0:0;
       const r=claimCompanionAssignment({assignment,owned,serverNowMs:now,bondstonesClaimedThisWeek:used});state=reward(state,r.reward);
       for(const id of assignment.companionIds)state=awardUse(state,[id],r.reward.companionXpById?.[id]??0,r.reward.bondXpById?.[id]??0,now);
+      const missionDef=companionMission(assignment.missionId),unlockProgress={...(state.account.companionUnlockProgress??{})};
+      if(missionDef?.originId){const missionKey=`COMPANION_MISSIONS:${missionDef.originId}`;unlockProgress[missionKey]=(unlockProgress[missionKey]??0)+1;if(r.assignment.performanceGrade==='S'){const gradeKey=`COMPANION_S_GRADE:${missionDef.originId}`;unlockProgress[gradeKey]=(unlockProgress[gradeKey]??0)+1;}}
+      state.account.companionUnlockProgress=unlockProgress;
       state.account.companionAssignments=assignments.map(x=>x.assignmentId===assignment.assignmentId?r.assignment:x);state.account.companionAssignmentBondstoneWeek=week;state.account.companionAssignmentBondstones=used+r.reward.bondstones;
       state=companionMetricMany(state,{[`companions.expedition.${assignment.missionId}.claims`]:1,[`companions.expedition.${assignment.missionId}.grade.${r.assignment.performanceGrade??'C'}`]:1,[`companions.expedition.${assignment.missionId}.essence_earned`]:r.reward.companionEssence,[`companions.expedition.${assignment.missionId}.bondstones_earned`]:r.reward.bondstones,[`companions.expedition.${assignment.missionId}.bonus_rewards`]:r.reward.bonusRewardGranted?1:0});
       break;

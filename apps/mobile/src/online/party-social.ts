@@ -82,6 +82,9 @@ export async function partySocialIdentity(){const c=client();const {data:{user},
 export async function ownRecruitmentPosts(){const identity=await partySocialIdentity();if(!identity)return [];const {data,error}=await client().from('recruitment_posts').select('*').eq('owner_account_id',identity.accountId).order('created_at',{ascending:false}).limit(20);if(error)throw error;return cardsWithGuildIdentity(data as RecruitmentRow[]);}
 export const partyRankings=()=>rpc<PartyRanking[]>('party_rankings_board_v16');
 export const claimPartyContractReward=(id:string,characterId:string)=>rpc('claim_party_contract_reward_v16',{p_entitlement_id:id,p_character_id:characterId});
+export const transferPartyLeadership=(partyId:string,targetAccountId:string)=>rpc<'transferred'>('transfer_party_leadership_v1',{p_party_id:partyId,p_target_account_id:targetAccountId});
+export const removePartyMember=(partyId:string,targetAccountId:string)=>rpc<'removed'>('remove_party_member_v1',{p_party_id:partyId,p_target_account_id:targetAccountId});
+export const cancelPartyInvitation=(invitationId:string)=>rpc<'cancelled'>('cancel_party_invitation_v1',{p_invitation_id:invitationId});
 export const sendPartyChat=(id:string,body:string,key:string)=>rpc('send_persistent_party_chat_v16',{p_party_id:id,p_body:body,p_idempotency_key:key});
 export type PartyChatMessage={id:string;account_id:string;sender_name:string;body:string;created_at:string;guild_tag?:string|null;guild_tag_color_id?:string|null};
 export async function partyChatMessages(id:string){const {data,error}=await client().from('chat_messages').select('id,account_id,sender_name,body,created_at').eq('channel_type','party').eq('channel_id',id).order('created_at',{ascending:false}).limit(50);if(error)throw error;const rows=(data??[]).reverse() as PartyChatMessage[],identities=await guildIdentities(rows.map(row=>row.account_id));return rows.map(row=>({...row,...identities.get(row.account_id)}));}

@@ -115,6 +115,10 @@ const legacyTokenMap:Record<string,ThemeColorToken>={
   '#d9f3ff':'chrome.selectedText','#101b27':'colors.panel','#2a1b20':'chrome.dangerSurface',
   '#172b24':'chrome.positiveSurface','#332515':'chrome.warningSurface','#09121a':'colors.panel',
   '#182031':'colors.panel2','#49d783':'colors.good','#e8c36f':'equipmentColors.goldSoft',
+  '#14272a':'chrome.positiveSurface','#102536':'colors.panel2','#20180f':'chrome.warningSurface',
+  '#2b2317':'chrome.warningSurface','#17352a':'chrome.positiveSurface','#20384a':'colors.panel2',
+  '#272417':'chrome.warningSurface','#101923':'colors.panel2','#29251c':'equipmentColors.selected',
+  '#17364b':'equipmentColors.selected','#a9dcf6':'chrome.selectedText','#f4d9dd':'chrome.dangerText',
 };
 
 function themeTokenMap():Record<string,ThemeColorToken>{
@@ -131,15 +135,42 @@ function colorForToken(token:ThemeColorToken):string{
   const theme=activeUiTheme() as any;
   return theme[group]?.[key]??token;
 }
-function resolveThemeValue(value:any):any{
+function hexRgb(value:string):[number,number,number]|null{
+  const match=/^#([0-9a-f]{6})$/i.exec(value);if(!match)return null;
+  const n=parseInt(match[1],16);return [(n>>16)&255,(n>>8)&255,n&255];
+}
+function rgbHex(rgb:[number,number,number]):string{return '#'+rgb.map(value=>Math.max(0,Math.min(255,Math.round(value))).toString(16).padStart(2,'0')).join('').toUpperCase();}
+function relativeLuminance(rgb:[number,number,number]):number{
+  const [r,g,b]=rgb.map(value=>{const c=value/255;return c<=.04045?c/12.92:Math.pow((c+.055)/1.055,2.4);});
+  return .2126*r+.7152*g+.0722*b;
+}
+function contrastRatio(a:[number,number,number],b:[number,number,number]):number{
+  const l1=relativeLuminance(a),l2=relativeLuminance(b);return (Math.max(l1,l2)+.05)/(Math.min(l1,l2)+.05);
+}
+function contrastSafeFixedColor(value:string,targetRatio:number):string{
+  if(activeThemeId==='veldryn')return value;
+  const source=hexRgb(value),background=hexRgb(activeUiTheme().colors.panel);if(!source||!background)return value;
+  if(contrastRatio(source,background)>=targetRatio)return value;
+  const toward=activeUiTheme().mode==='light'?[0,0,0] as [number,number,number]:[255,255,255] as [number,number,number];
+  for(let step=1;step<=10;step++){
+    const t=step/10;
+    const candidate=source.map((channel,index)=>channel+(toward[index]-channel)*t) as [number,number,number];
+    if(contrastRatio(candidate,background)>=targetRatio)return rgbHex(candidate);
+  }
+  return activeUiTheme().colors.text;
+}
+function resolveThemeValue(value:any,property?:string):any{
   if(typeof value==='string'){
     const token=themedColorTokens[value.toLowerCase()];
-    return token?colorForToken(token):value;
+    if(token)return colorForToken(token);
+    if(property==='color'||property==='tintColor')return contrastSafeFixedColor(value,7);
+    if(property==='borderColor'||property==='borderTopColor'||property==='borderBottomColor'||property==='borderLeftColor'||property==='borderRightColor')return contrastSafeFixedColor(value,3);
+    return value;
   }
-  if(Array.isArray(value))return value.map(resolveThemeValue);
+  if(Array.isArray(value))return value.map(entry=>resolveThemeValue(entry,property));
   if(value&&typeof value==='object'){
     const next:any={};
-    for(const [key,entry] of Object.entries(value))next[key]=resolveThemeValue(entry);
+    for(const [key,entry] of Object.entries(value))next[key]=resolveThemeValue(entry,key);
     return next;
   }
   return value;

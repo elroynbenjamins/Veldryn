@@ -2,6 +2,7 @@ import {claimActivity,createCharacter,newGame,startCombat,stopActivity} from '..
 import {activityQueueHandoffStatus,enqueueActivity,MAX_ACTIVITY_QUEUE} from '../src/core/activity-queue';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
 import {normalizeSave} from '../src/core/save-normalization';
+import {weeklyOrderBoardForState} from '../src/core/long-term-progression-runtime';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 function rejects(fn:()=>unknown,message:string){let caught=false;try{fn()}catch{caught=true}ok(caught,message)}
@@ -49,11 +50,16 @@ ok(safetyStop.state.character?.activityQueue?.length===1,'Safety stop must prese
 ok(!!safetyStop.state.character?.activityQueuePausedReason,'Safety stop should expose a visible queue pause reason');
 
 let ruled=createCharacter(newGame(now),'WAYFINDER','Rule Queue');
-ruled={...ruled,unlockedMonsterIds:['MOSS_RAT','FIELD_WISP']};
-ruled=startCombat(ruled,'MOSS_RAT',now);
+ruled={...ruled,account:{...ruled.account,longTermAccountScopeId:'queue-rule'}};
+const ruledBoard=weeklyOrderBoardForState(ruled,now),ruledOrder=ruledBoard.orders.find(order=>order.kind==='hunt')!;
+ruled={...ruled,account:{...ruled.account,weeklyOrders:ruledBoard},unlockedMonsterIds:[...new Set([...ruled.unlockedMonsterIds,ruledOrder.targetId,'FIELD_WISP'])]};
+ruled=startCombat(ruled,ruledOrder.targetId,now);
 ruled=enqueueActivity(ruled,{kind:'combat',targetId:'FIELD_WISP'});
-ruled={...ruled,character:{...ruled.character!,idleRulesV40:[{id:'contract-stop',characterId:ruled.character!.id,name:'Stop · Moss Rat contract',conditions:[{id:'done',kind:'weekly_order_progress',targetId:'week:hunt:moss',value:20,enabled:true}],stopIfOutOfFood:true,stopIfRewardsWouldOverflow:true,finishCurrentCycle:true}],activeIdleRuleIdV40:'contract-stop'}};
-const ruleHandoff=activityQueueHandoffStatus(ruled);ok(ruleHandoff.armed&&ruleHandoff.sourceLabel==='Stop · Moss Rat contract'&&ruleHandoff.safetyEnabled,'Active Contract Idle Rule should show an armed handoff while preserving safety');
+ruled={...ruled,character:{...ruled.character!,idleRulesV40:[{id:'contract-stop',characterId:ruled.character!.id,name:'Stop · current contract',conditions:[{id:'done',kind:'weekly_order_progress',targetId:ruledOrder.id,value:ruledOrder.target,enabled:true}],stopIfOutOfFood:true,stopIfRewardsWouldOverflow:true,finishCurrentCycle:true}],activeIdleRuleIdV40:'contract-stop'}};
+const ruleHandoff=activityQueueHandoffStatus(ruled);ok(ruleHandoff.armed&&ruleHandoff.sourceLabel==='Stop · current contract'&&ruleHandoff.safetyEnabled,'Matching Contract Idle Rule should show an armed handoff while preserving safety');
+const futureOrder={...ruledOrder,id:ruledOrder.id+':future',title:'Future queued contract',targetId:'FIELD_WISP',progress:0,target:20};
+const futureRuled={...ruled,account:{...ruled.account,weeklyOrders:{...ruledBoard,orders:[...ruledBoard.orders,futureOrder]}},character:{...ruled.character!,idleRulesV40:[{id:'future-stop',characterId:ruled.character!.id,name:'Stop · future contract',conditions:[{id:'done',kind:'weekly_order_progress',targetId:futureOrder.id,value:futureOrder.target,enabled:true}],stopIfOutOfFood:true,stopIfRewardsWouldOverflow:true,finishCurrentCycle:true}],activeIdleRuleIdV40:'future-stop'}};
+const futureHandoff=activityQueueHandoffStatus(futureRuled);ok(!futureHandoff.armed&&futureHandoff.nextLabel?.includes('Field Wisp'),'Future Contract rule must not claim the current activity has an armed handoff');
 
 let wrongRegion=createCharacter(newGame(now),'WAYFINDER','Region Queue');
 wrongRegion={...wrongRegion,unlockedMonsterIds:['MOSS_RAT','SILVERFIN_SWARM']};

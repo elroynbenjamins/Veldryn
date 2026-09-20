@@ -6,7 +6,7 @@ import {executeGameCommand,validateGameCommand} from '../src/core/game-commands'
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 function rejects(fn:()=>unknown,message:string){let threw=false;try{fn()}catch{threw=true}ok(threw,message)}
-const now=Date.UTC(2026,8,20),monster=MONSTERS.find(row=>row.id==='MOSS_RAT')!;
+const now=Date.UTC(2026,8,21),monster=MONSTERS.find(row=>row.id==='MOSS_RAT')!;
 let state=createCharacter(newGame(now),'RAVAGER','Challenge Tester');
 
 ok(COMBAT_CHALLENGE_IDS.join(',')==='ferocious,hardened,nemesis','Challenge Hunt tier order drifted');

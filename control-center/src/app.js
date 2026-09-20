@@ -219,7 +219,7 @@ function renderDashboard() {
     ${(() => { const w=workerHealthView(d.workerHealth); return `<div class="grid grid-2" style="margin-top:14px"><div class="card"><div class="card-head"><h3>Live-Ops worker</h3><span class="pill ${w.cls}">${h(w.label)}</span></div><div class="card-body"><div class="small">${h(w.detail)}</div>${d.workerHealth?.last_result_json ? `<div class="mono tiny faint" style="margin-top:8px">${h(JSON.stringify(d.workerHealth.last_result_json))}</div>`:''}<div class="actions" style="margin-top:12px"><button class="btn btn-sm" data-nav="operations">Operations</button></div></div></div><div class="card"><div class="card-head"><h3>Contribution outbox</h3><span class="pill ${d.counts.deadLetters ? 'bad':'good'}">${fmtNumber(d.counts.deadLetters)} dead letter${d.counts.deadLetters===1?'':'s'}</span></div><div class="card-body"><div class="muted small">Dead-letter rows require operator review. Retrying is Owner-only and returns the row to the normal idempotent worker pipeline.</div><div class="actions" style="margin-top:12px"><button class="btn btn-sm" data-nav="operations">Inspect</button></div></div></div></div>`; })()}
     <div class="grid grid-4" style="margin-top:14px"><button class="card quick-link" data-nav="controls"><strong>Full Controls</strong><span>Audited player/system commands</span></button><button class="card quick-link" data-nav="codes"><strong>Redeem Codes</strong><span>Secure one-time code creation</span></button><button class="card quick-link" data-nav="config"><strong>Remote Config</strong><span>Kill switches & staged rollout</span></button><button class="card quick-link" data-nav="health"><strong>Health & Economy</strong><span>Gold, resources, metrics, alerts</span></button></div>
     <div class="grid grid-2" style="margin-top:14px">
-      <div class="card"><div class="card-head"><h3>Current event</h3>${active ? statusPill(active.status) : ''}</div><div class="card-body">${active ? `
+      <div class="card"><div class="card-head"><h3>Current Party Event</h3>${active ? statusPill(active.status) : ''}</div><div class="card-body">${active ? `
         <div class="eyebrow">${h(active.event_id)} · v${h(active.definition_version)}</div><h3 style="margin:6px 0 8px">${h(eventName(active))}</h3>
         <div class="muted small">${fmtDate(active.starts_at)} → ${fmtDate(active.ends_at)}</div>
         <div class="actions" style="margin-top:14px"><button class="btn btn-sm" data-action="open-leaderboard" data-id="${attr(active.id)}">Leaderboard</button><button class="btn btn-sm btn-ghost" data-action="open-event-stats" data-id="${attr(active.id)}">Operational stats</button></div>` : empty('No Party Event is active.')}</div></div>
@@ -262,7 +262,8 @@ function renderEvents() {
       <div class="list">${playerRows.length ? playerRows.map(row => {
         const phase=playerEventPhase(row);
         const claimEnd=row.grace_ends_at || (row.ends_at ? new Date(Date.parse(row.ends_at)+Math.max(0,Number(row.config?.claimGraceDays??7)||0)*86400000).toISOString() : null);
-        const canEnable=roleAtLeast('owner')&&phase==='disabled'&&row.starts_at&&row.ends_at;
+        const savedClaimEndMs=claimEnd?Date.parse(claimEnd):NaN;
+        const canEnable=roleAtLeast('owner')&&phase==='disabled'&&row.starts_at&&row.ends_at&&Number.isFinite(savedClaimEndMs)&&savedClaimEndMs>Date.now();
         const canGoLive=roleAtLeast('owner')&&phase!=='live';
         return `<div class="list-row event-row ${h(phase)}">
           <div style="min-width:0;flex:1"><div class="actions"><strong>${h(row.name||row.event_id)}</strong>${playerEventStatusPill(phase)}<span class="pill ${row.enabled?'good':'bad'}">Master ${row.enabled?'ON':'OFF'}</span></div>

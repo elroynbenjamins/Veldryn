@@ -15,10 +15,10 @@ import {guildChatCommandKey,guildChatState,markSocialChatRead,sendGuildChat,type
 export function GuildChat({language,currentPlayerName,onRead}:{language:Language;currentPlayerName?:string;onRead?:()=>void}){
  const [snapshot,setSnapshot]=useState<GuildChatState|null>(null),[selected,setSelected]=useState<GuildChatMessage|null>(null),[body,setBody]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const pending=useRef<{body:string;key:string}|null>(null);
- const active=useRef(true),notifiedRead=useRef(false);
- const markRead=async()=>{try{await markSocialChatRead('guild');if(active.current&&!notifiedRead.current){notifiedRead.current=true;onRead?.()}}catch{}};
+ const active=useRef(true),notifiedRead=useRef(false),onReadRef=useRef(onRead);onReadRef.current=onRead;
+ const markRead=async()=>{try{await markSocialChatRead('guild');if(active.current&&!notifiedRead.current){notifiedRead.current=true;onReadRef.current?.()}}catch{}};
  const load=async()=>{if(!onlineConfigured)return;try{const next=await guildChatState();if(active.current){setSnapshot(next);setError('');if(next.guild)void markRead();}}catch(reason){if(active.current)setError(reason instanceof Error?reason.message:'Guild chat unavailable.')}};
- useEffect(()=>{active.current=true;notifiedRead.current=false;setSnapshot(null);setSelected(null);setBody('');pending.current=null;if(!onlineConfigured)return()=>{active.current=false};void load();const timer=setInterval(()=>void load(),5000);return()=>{active.current=false;clearInterval(timer)};},[onRead]);
+ useEffect(()=>{active.current=true;notifiedRead.current=false;setSnapshot(null);setSelected(null);setBody('');pending.current=null;if(!onlineConfigured)return()=>{active.current=false};void load();const timer=setInterval(()=>void load(),5000);return()=>{active.current=false;clearInterval(timer)};},[]);
 
  if(!onlineConfigured)return <View style={s.unavailable}><Text style={s.title}>{ot(language,'chat.guild')}</Text><Text style={s.note}>Guild Chat requires online services. No simulated chat is shown.</Text></View>;
  const guild=snapshot?.guild??null,messages=snapshot?.messages??[];

@@ -41,7 +41,7 @@ export function ProfileScreen({state,onNavigate}:{state:GameState;onNavigate?:(d
  const favoriteSkillId=publicSelf?.favoriteSkillId??summary.highestSkill?.skillId;
  const favoriteCompanionId=publicSelf?.favoriteCompanionId??state.character?.equippedCombatCompanionId??state.account.unlockedCombatCompanionIds?.[0];
  const favoriteCompanion=favoriteCompanionId?COMBAT_COMPANIONS.find(row=>row.id===favoriteCompanionId):undefined,favoriteCompanionArt=favoriteCompanionId?companionArtSource(favoriteCompanionId):undefined;
- const online=!!publicSelf,background=c.profileBackgroundId??'asterfall-night';
+ const online=!!publicSelf,background=c.profileBackgroundId??'asterfall-night',displayName=publicSelf?.character.name??c.name,displayLevel=publicSelf?.character.level??c.level,displayClass=publicSelf?.character.classId??c.classId;
 
  return <ScrollView contentContainerStyle={s.root}>
   <View style={s.headingRow}><View style={s.flex}><Text style={s.kicker}>PLAYER IDENTITY</Text><Text accessibilityRole="header" style={s.heading}>Profile</Text></View>{loadingPublic?<ActivityIndicator color={C.accent}/>:<Text style={[s.onlineBadge,online?s.online:s.local]}>{online?'ONLINE PROFILE':'LOCAL PROFILE'}</Text>}</View>
@@ -49,7 +49,7 @@ export function ProfileScreen({state,onNavigate}:{state:GameState;onNavigate?:(d
   {publicSelf?<PublicProfileScene profile={publicSelf}/>:<ProfileScenePreview state={state} backgroundId={background}/>}
 
   <Panel>
-   <View style={s.identityHead}>{account.guildMember?<GuildCrest size={48} bannerId={account.guildBannerId}/>:null}<View style={s.flex}><GuildTaggedPlayerName name={c.name} guildTag={publicSelf?.guildTag} tagColorId={publicSelf?.guildTagColorId} style={s.name}/><Text style={s.title}>“{publicSelf?.title??c.profileTitle??'New Adventurer'}”</Text><Text style={s.copy}>Level {c.level} · {label(c.classId)}{account.guildMember?' · Guild member':''}</Text></View></View>
+   <View style={s.identityHead}>{account.guildMember?<GuildCrest size={48} bannerId={account.guildBannerId}/>:null}<View style={s.flex}><GuildTaggedPlayerName name={displayName} guildTag={publicSelf?.guildTag} tagColorId={publicSelf?.guildTagColorId} style={s.name}/><Text style={s.title}>“{publicSelf?.title??c.profileTitle??'New Adventurer'}”</Text><Text style={s.copy}>Level {displayLevel} · {label(displayClass)}{account.guildMember?' · Guild member':''}</Text></View></View>
    {publicSelf?.bio?<Text style={s.bio}>{publicSelf.bio}</Text>:<Text style={s.copy}>Add a short biography in Online Profile settings to tell other players about your character or play style.</Text>}
    <View style={s.quickActions}>
     <View style={s.action}><GameButton compact title="Appearance" tone="secondary" onPress={()=>onNavigate?.('Appearance')}/></View>

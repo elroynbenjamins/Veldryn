@@ -20,6 +20,7 @@ export function coopEntryHandler(services:Services){return async(request:Request
   const token=request.headers.get('authorization')?.match(/^Bearer (\S+)$/i)?.[1];
   if(!token)return json({error:'auth_required'},401);
   const accountId=await services.authenticate(token);if(!accountId)return json({error:'invalid_session'},401);
+  try{await services.rpc('record_player_activity_server_v1',{p_account_id:accountId,p_kind:'coop_action'});}catch{/* Analytics are best-effort and must never block co-op entry. */}
   const path=new URL(request.url).pathname;
   const entry=path.endsWith('/coop/entry'),echo=path.endsWith('/coop/echo');
   if(!entry&&!echo)return json({error:'not_found'},404);

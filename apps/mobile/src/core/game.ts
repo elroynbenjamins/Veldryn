@@ -283,6 +283,10 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
   const reward:RewardBundle={classSkillXp:classGain.awards,xp:Math.floor(sim.kills*baseXpPerKill)+momentumXp+champion.xp,gold:Math.floor(sim.kills*baseGoldPerKill)+momentumGold+(firstClear?.gold??0)+champion.gold,items:rewardItems,kills:sim.kills,elapsedSeconds:elapsed,foodConsumed:sim.foodConsumed,endHp:sim.endHp,stoppedReason:sim.stoppedReason,...(firstClear&&challengeId?{challengeHuntFirstClear:{key:challengeHuntClearKey(m.id,challengeId),monsterId:m.id,challengeId,label:firstClear.label}}:{}),...(sim.championKills>0?{championEncounters:{count:sim.championKills,bonusXp:champion.xp,bonusGold:champion.gold}}:{})};
   return {...reward,masteryMaterialRemainders:materialRemainders,eventDrops:activityEventDrops(state,reward,effectiveNowMs),eventDiscoveries:activityEventDiscoveries(state,'combat',reward.kills,effectiveNowMs)};
 }
+function previewStandardActivityRewardWithSupplies(state:GameState,effectiveNowMs:number){
+  const base=previewStandardActivityRewardRaw(state,effectiveNowMs),mode=dailySupplyActivityMode(state.activity);
+  return mode?previewDailySupplyTimedReward(state,base,mode):{reward:base,consumedSeconds:0,nextRemainders:{}};
+}
 
 function activeIdleRuleForState(state:GameState):IdleRuleSet|undefined{
   const character=state.character;if(!character?.activeIdleRuleIdV40)return undefined;
@@ -331,7 +335,7 @@ function idleRuleSettlementWindow(state:GameState,nowMs:number){
   const goalRule=activity.kind==='combat'&&activity.huntGoal?{id:'hunt-goal',characterId:state.character.id,name:'Hunt Goal',conditions:[{id:'hunt-goal-condition',kind:activity.huntGoal.kind,targetId:activity.targetId,value:activity.huntGoal.value,enabled:true}],stopIfOutOfFood:false,stopIfRewardsWouldOverflow:false,finishCurrentCycle:true} as IdleRuleSet:undefined;
   if(!rule&&!goalRule)return {settleAtMs:nowMs,shouldStop:false as const,safety:false};
   const capAtMs=activity.lastClaimAtMs+offlineCapSeconds(state)*1000,upper=Math.max(activity.lastClaimAtMs,Math.min(nowMs,capAtMs));
-  const evaluateAt=(time:number)=>{const reward=previewStandardActivityRewardRaw(state,time),ctx=projectedIdleContext(state,reward,time),saved=rule?evaluateIdleRuleSet(rule,ctx):{shouldStop:false,safety:false},goal=goalRule?evaluateIdleRuleSet(goalRule,ctx):{shouldStop:false,safety:false},evaluation=goal.shouldStop?{...goal,reason:`Hunt goal reached: ${activity.huntGoal?.label??'target'}.`}:saved;return {reward,evaluation}};
+  const evaluateAt=(time:number)=>{const reward=previewStandardActivityRewardWithSupplies(state,time).reward,ctx=projectedIdleContext(state,reward,time),saved=rule?evaluateIdleRuleSet(rule,ctx):{shouldStop:false,safety:false},goal=goalRule?evaluateIdleRuleSet(goalRule,ctx):{shouldStop:false,safety:false},evaluation=goal.shouldStop?{...goal,reason:`Hunt goal reached: ${activity.huntGoal?.label??'target'}.`}:saved;return {reward,evaluation}};
   const upperResult=evaluateAt(upper);
   if(!upperResult.evaluation.shouldStop)return {settleAtMs:upper,shouldStop:false as const,safety:false};
   const atStart=evaluateAt(activity.lastClaimAtMs);
@@ -347,10 +351,16 @@ function idleRuleSettlementWindow(state:GameState,nowMs:number){
 
 export function previewActivityReward(state:GameState,nowMs:number):RewardBundle{
   if(state.character?.classTraining)return settleClassDrills(state,nowMs,offlineCapSeconds(state)).reward;
-  if(state.activity?.kind==='faith'){const settled=settleFaithPractice(state,nowMs,offlineCapSeconds(state));return settled.reward;}
-  if(state.activity?.kind==='alchemy'){const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,Math.floor((nowMs-state.activity.lastClaimAtMs)/1000)));return previewAlchemyReward(state,elapsed);}
+  if(state.activity?.kind==='faith'){
+    const settled=settleFaithPractice(state,nowMs,offlineCapSeconds(state));
+    return previewDailySupplyTimedReward(state,settled.reward,'skill').reward;
+  }
+  if(state.activity?.kind==='alchemy'){
+    const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,Math.floor((nowMs-state.activity.lastClaimAtMs)/1000))),base=previewAlchemyReward(state,elapsed);
+    return previewDailySupplyTimedReward(state,base,'crafting').reward;
+  }
   if(!state.activity||!state.character)return {xp:0,gold:0,items:[],kills:0,elapsedSeconds:0};
-  const idleWindow=idleRuleSettlementWindow(state,nowMs),reward=previewStandardActivityRewardRaw(state,idleWindow.settleAtMs);
+  const idleWindow=idleRuleSettlementWindow(state,nowMs),reward=previewStandardActivityRewardWithSupplies(state,idleWindow.settleAtMs).reward;
   return idleWindow.shouldStop&&!reward.stoppedReason?{...reward,stoppedReason:idleWindow.reason}:reward;
 }
 

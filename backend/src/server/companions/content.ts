@@ -125,7 +125,8 @@ const CUSTOM_TECHNIQUE_SEEDS:Record<string,readonly TechniqueSeed[]>={
 };
 
 const techniquePair=(def:CompanionServerDefinition):CompanionTechniqueDefinition[]=>{
- const group=`${def.id}:technique`,unlock=COMPANION_TECHNIQUE_UNLOCK;
+ const group=`${def.id}:technique`,unlock=COMPANION_TECHNIQUE_UNLOCK,custom=CUSTOM_TECHNIQUE_SEEDS[def.id];
+ if(custom?.length===2)return custom.map(seed=>({id:`${def.id}_${seed.suffix}`,companionId:def.id,name:seed.name,description:seed.description,mutuallyExclusiveGroup:group,unlock,effects:[...seed.effects]}));
  if(def.role==='tank')return[
   {id:`${def.id}_FORTIFIED`,companionId:def.id,name:'Fortified Shell',description:'Shield strength +15%.',mutuallyExclusiveGroup:group,unlock,effects:[{kind:'shield_strength',value:.15}]},
   {id:`${def.id}_REFLECTIVE`,companionId:def.id,name:'Reflective Shell',description:'Shield strength -5%, but reflects part of absorbed damage.',mutuallyExclusiveGroup:group,unlock,effects:[{kind:'shield_strength',value:-.05},{kind:'reflect',value:.12}]},

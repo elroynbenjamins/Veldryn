@@ -11,7 +11,7 @@ import {companionMaterialName,companionMaterialSources,companionRequirementProgr
 import {companionTrialEncounterTheme} from '../../../../backend/src/server/companions/trials';
 import {companionTeamPower} from '../../../../backend/src/server/companions/team';
 import {techniqueUnlocked} from '../../../../backend/src/server/companions/progression-v2';
-import {validateCompanionMissionTeam} from '../../../../backend/src/server/companions/assignments';
+import {activeCompanionMissions,validateCompanionMissionTeam} from '../../../../backend/src/server/companions/assignments';
 import {validateSpecialCompanionChallenge} from '../../../../backend/src/server/companions/special-challenges';
 import {Panel} from './Panel';
 import {MonsterPortraitFrame} from './MonsterPortraitFrame';
@@ -32,6 +32,7 @@ const portraitIds=['IRONWOOD_WOLF','OATHBOUND_SQUIRE','FIELD_WISP','VENOM_WEAVER
 const named=(id:string)=>COMBAT_COMPANIONS.find(c=>c.id===id)?.name??companionMaterialName(id);
 const amount=(value:number)=>value.toLocaleString('en');
 export function CombatCompanionPanel({state,now,onCommand}:{state:GameState;now:number;onCommand:(command:GameCommand)=>Promise<void>}){
+  const activeMissions=activeCompanionMissions(now);
   const [section,setSection]=useState<typeof sections[number]>('Collection'),[selection,setSelection]=useState('UNIT_001'),[collectionFilter,setCollectionFilter]=useState<CollectionFilter>('All'),[filterOpen,setFilterOpen]=useState(false),[team,setTeam]=useState<string[]>([]),[mission,setMission]=useState(COMPANION_MISSIONS[0].id),[missionFilter,setMissionFilter]=useState<ExpeditionFilter>('All'),[missionFilterOpen,setMissionFilterOpen]=useState(false),[busy,setBusy]=useState(false),[message,setMessage]=useState('');
   const lock=useRef(false),view=companionView(state,now),model=combatCompanionUiModel(state,selection),e=companionEconomy(state),progress=model?.progress;
   const equipped=state.character?.equippedCombatCompanionId,contribution=companionCombatContribution(state),run=view.trial.progress.season.activeRun;

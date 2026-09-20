@@ -23,7 +23,7 @@ export function SocialScreen({onGuild,onFriends,onAccount,onInvitationsChanged}:
  const requestGeneration=useRef(0);const command=useRef<{signature:string;key:string}|null>(null);
  const key=(signature:string)=>{if(command.current?.signature!==signature)command.current={signature,key:partyCommandKey()};return command.current.key;};
  const load=useCallback(async()=>{const generation=++requestGeneration.current;if(!social.accountId){setCards([]);setOwn([]);setRankings([]);setPartyInvites([]);return;}
-  try{const browse=tab==='guild'?{...filters,postTypes:['looking_for_guild'] as RecruitmentPostType[]}:filters;const [next,mine,board,invites]=await Promise.all([repository.browseRecruitment(browse),ownRecruitmentPosts(),partyRankings(),socialInvitations()]);if(generation===requestGeneration.current){setCards(next);setOwn(mine);setRankings(board);setPartyInvites(invites.party);setError('');}}
+  try{const browse=tab==='guild'?{...filters,postTypes:['looking_for_guild'] as RecruitmentPostType[]}:filters;const [next,mine,board,invites]=await Promise.all([repository.browseRecruitment(browse),ownRecruitmentPosts(),partyRankings(),socialInvitations().catch(()=>({party:[],guild:[],serverTime:''}))]);if(generation===requestGeneration.current){setCards(next);setOwn(mine);setRankings(board);setPartyInvites(invites.party);setError('');}}
   catch(e){if(generation===requestGeneration.current){setCards([]);setError(e instanceof Error?e.message:'Social service unavailable.');}}
  },[filters,tab,social.accountId]);
  useEffect(()=>{const timer=setTimeout(()=>void load(),250);return()=>{clearTimeout(timer);requestGeneration.current++;};},[load,social.party?.id]);

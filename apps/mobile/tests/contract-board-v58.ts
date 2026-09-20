@@ -3,6 +3,7 @@ import {weeklyOrderCandidatesFromCurrentContent} from '../src/core/launch-readin
 import {applyTrustedLongTermProgression,weeklyOrderBoardForState} from '../src/core/long-term-progression-runtime';
 import {applyWeeklyOrderProgress,generateWeeklyOrders} from '../src/core/weekly-orders-v41';
 import {weeklyOrderDestination,weeklyOrderGoal,weeklyOrderIdleRule,weeklyOrderQueueActivity} from '../src/core/weekly-order-integrations-v41';
+import {contractBoardSummary} from '../src/core/contract-board-summary';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 const now=Date.UTC(2026,8,21,12,0,0),accountId='contract-board-test';
@@ -32,6 +33,16 @@ const stopRule=weeklyOrderIdleRule(huntOrder,state.character!.id);ok(stopRule.co
 const generatedRegional=generated.orders.find(row=>row.kind==='regional');ok(!!generatedRegional?.brief&&generatedRegional.reward.label.includes('Relief Cache'),'Generated Regional Problem should preserve authored brief and regional reward identity');
 const masteredBoard=generateWeeklyOrders(accountId+'-mastered',now,masteredCandidates),threat=masteredBoard.orders.find(row=>row.kind==='threat');ok(!!threat&&!!threat.challengeId&&threat.reward.label.includes('Bounty Cache'),'Mastered board should generate one tier-specific Threat Bounty');
 const threatDestination=weeklyOrderDestination(threat!),threatQueue=weeklyOrderQueueActivity(threat!);ok(threatDestination.kind==='combat'&&threatDestination.monsterId===threat!.targetId.split(':')[0],'Threat Bounty should open its exact monster');ok(threatQueue?.kind==='combat'&&threatQueue.combatChallengeId===threat!.challengeId,'Threat Bounty queue must preserve its exact Challenge Hunt tier');
+
+const summaryState={...state,account:{...state.account,longTermAccountScopeId:accountId,weeklyOrders:generated}};
+const initialSummary=contractBoardSummary(summaryState,now);
+ok(initialSummary.total===generated.orders.length&&initialSummary.complete===0,'Home Contract Board summary should mirror the weekly board');
+ok(!!initialSummary.nextOrder,'Home Contract Board summary should recommend an incomplete job');
+if(initialSummary.nextOrder?.regionId)ok(initialSummary.nextOrder.regionId===summaryState.currentRegionId||!generated.orders.some(row=>row.progress<row.target&&row.regionId===summaryState.currentRegionId),'Home Contract Board summary should prefer an incomplete current-region job when available');
+const completedBoard=structuredClone(generated);for(const row of completedBoard.orders)row.progress=row.target;completedBoard.completionClaimed=true;
+const completedSummary=contractBoardSummary({...summaryState,account:{...summaryState.account,weeklyOrders:completedBoard,weeklyOrderPendingRewards:[{claimKey:'weekly-summary-test',rewardRef:'weekly_orders_completion',label:'Weekly Orders completion reward',weekKey:completedBoard.weekKey}]}},now);
+ok(completedSummary.complete===completedSummary.total&&!completedSummary.nextOrder,'Completed Contract Board summary should have no next job');
+ok(completedSummary.pendingRewards===1&&completedSummary.completionRewardQueued,'Home Contract Board summary should surface queued weekly rewards and completion state');
 
 const regional=generated.orders.find(row=>row.kind==='regional')!;
 const direct=applyWeeklyOrderProgress(generated,{eventId:'regional-progress',characterId:state.character!.id,kind:'regional',targetId:regional.targetId,amount:3,completedAtMs:now});

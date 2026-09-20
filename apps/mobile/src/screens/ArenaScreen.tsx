@@ -1,3 +1,4 @@
+import {useMemo} from 'react';
 import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from '../components/GameButton';
 import {Panel} from '../components/Panel';
@@ -6,8 +7,10 @@ import {accountCharacters} from '../core/account-roster';
 import {ARENA_MIN_LEVEL,ARENA_POSITIONS,arenaSquadStatus,setArenaSquadSlot} from '../core/arena-squad';
 import type {GameState} from '../core/types';
 import {C,equipmentColors,spacing,typography} from '../theme/theme';
+import {useGameTheme,type ThemePalette} from '../theme/app-theme';
 
 export function ArenaScreen({state,onChange}:{state:GameState;onChange:(next:GameState)=>void}){
+ const T=useGameTheme(),s=useMemo(()=>makeStyles(T),[T]);
   const entries=accountCharacters(state),status=arenaSquadStatus(state);
   return <ScrollView contentContainerStyle={s.root}>
     <Text style={s.kicker}>THREE-CHARACTER MODE</Text><Text accessibilityRole="header" style={s.heading}>Arena</Text>
@@ -16,5 +19,6 @@ export function ArenaScreen({state,onChange}:{state:GameState;onChange:(next:Gam
     <Panel><Text style={s.title}>Arena integrity</Text><Text style={s.copy}>The server will freeze and verify each character’s loadout before a ranked duel. Client saves only the account-owned slot selection.</Text></Panel>
   </ScrollView>;
 }
-function ArenaChoice({label,selected,disabled,onPress}:{label:string;selected:boolean;disabled:boolean;onPress:()=>void}){return <Pressable accessibilityRole="radio" accessibilityState={{selected,disabled}} disabled={disabled} onPress={onPress} style={({pressed})=>[s.choice,selected&&s.choiceSelected,disabled&&s.choiceDisabled,pressed&&s.pressed]}><Text style={[s.choiceText,selected&&s.choiceTextSelected]}>{selected?'✓ ':''}{label}</Text></Pressable>}
-const s=StyleSheet.create({root:{padding:spacing.lg,gap:spacing.md},kicker:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:1},heading:{...typography.hero,color:C.text},title:{...typography.title,color:C.text},member:{...typography.bodyStrong,color:C.text,marginTop:spacing.xs},copy:{...typography.body,color:C.muted,lineHeight:21},note:{...typography.caption,color:C.muted,marginTop:spacing.xs},statusPill:{alignSelf:'flex-start',paddingHorizontal:spacing.sm,paddingVertical:spacing.xs,borderWidth:1,borderRadius:99},statusReady:{borderColor:C.good,backgroundColor:'#172b24'},statusWarning:{borderColor:C.warning,backgroundColor:'#332515'},warning:{...typography.bodyStrong,color:C.warning},good:{...typography.bodyStrong,color:C.good},position:{...typography.caption,color:C.accent,fontWeight:'900'},choices:{gap:6,marginTop:spacing.sm},choice:{minHeight:40,paddingHorizontal:12,justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.bg},choiceSelected:{borderColor:equipmentColors.selectedLine,backgroundColor:equipmentColors.selected},choiceDisabled:{opacity:.42},choiceText:{fontSize:12,color:C.muted,fontWeight:'700'},choiceTextSelected:{color:'#d9f3ff'},pressed:{opacity:.76}});
+function ArenaChoice({label,selected,disabled,onPress}:{label:string;selected:boolean;disabled:boolean;onPress:()=>void}){
+ const T=useGameTheme(),s=useMemo(()=>makeStyles(T),[T]);return <Pressable accessibilityRole="radio" accessibilityState={{selected,disabled}} disabled={disabled} onPress={onPress} style={({pressed})=>[s.choice,selected&&s.choiceSelected,disabled&&s.choiceDisabled,pressed&&s.pressed]}><Text style={[s.choiceText,selected&&s.choiceTextSelected]}>{selected?'✓ ':''}{label}</Text></Pressable>}
+const makeStyles=(T:ThemePalette)=>StyleSheet.create({root:{padding:spacing.lg,gap:spacing.md},kicker:{...typography.caption,color:T.accent,fontWeight:'900',letterSpacing:1},heading:{...typography.hero,color:T.text},title:{...typography.title,color:T.text},member:{...typography.bodyStrong,color:T.text,marginTop:spacing.xs},copy:{...typography.body,color:T.muted,lineHeight:21},note:{...typography.caption,color:T.muted,marginTop:spacing.xs},statusPill:{alignSelf:'flex-start',paddingHorizontal:spacing.sm,paddingVertical:spacing.xs,borderWidth:1,borderRadius:99},statusReady:{borderColor:T.good,backgroundColor:'#172b24'},statusWarning:{borderColor:T.warning,backgroundColor:'#332515'},warning:{...typography.bodyStrong,color:T.warning},good:{...typography.bodyStrong,color:T.good},position:{...typography.caption,color:T.accent,fontWeight:'900'},choices:{gap:6,marginTop:spacing.sm},choice:{minHeight:40,paddingHorizontal:12,justifyContent:'center',borderWidth:1,borderColor:T.line,borderRadius:99,backgroundColor:T.bg},choiceSelected:{borderColor:T.action,backgroundColor:T.actionSurface},choiceDisabled:{opacity:.42},choiceText:{fontSize:12,color:T.muted,fontWeight:'700'},choiceTextSelected:{color:T.actionText},pressed:{opacity:.76}});

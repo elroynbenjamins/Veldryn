@@ -9,13 +9,13 @@ import {HERB_NODES} from '../content/herbalism';
 import {simulateCombat} from '../../../../backend/src/server/combat/engine';
 import {startCompanionTrial,resolveCompanionTrialFloor,abandonCompanionTrial,claimMonthlyCompanionChallenge} from '../../../../backend/src/server/companions/trials';
 import {startCompanionAssignment,claimCompanionAssignment,rolloverCompanionAssignmentStatuses} from '../../../../backend/src/server/companions/assignments';
-import {awardCompanionXpServer,awardCompanionBondXpServer,selectCompanionTechnique,setCompanionShowcase,grantCombatCompanionOrConvertDuplicate} from '../../../../backend/src/server/companions/progression-v2';
+import {awardCompanionXpServer,awardCompanionBondXpServer,companionUnlockRequirementsSatisfied,selectCompanionTechnique,setCompanionShowcase,grantCombatCompanionOrConvertDuplicate} from '../../../../backend/src/server/companions/progression-v2';
 import {claimCompanionCodexMilestone} from '../../../../backend/src/server/companions/codex';
 import {projectCompanionCodex,projectCompanionTrial,projectCompanionProvingGrounds} from '../../../../backend/src/server/companions/projection';
 import {claimCompanionProvingGroundChallenge,recordCompanionProvingGroundEvent,activeCompanionProvingGroundChallenges,provingGroundEventMatches} from '../../../../backend/src/server/companions/proving-grounds';
 import {companionTrialWeekKey} from '../../../../backend/src/server/companions/trial-season';
 import {companionTeamPower} from '../../../../backend/src/server/companions/team';
-import {companionTrialRecommendedPower,companionServerDefinition} from '../../../../backend/src/server/companions/content';
+import {COMPANION_SPECIAL_CHALLENGES,companionTrialRecommendedPower,companionServerDefinition} from '../../../../backend/src/server/companions/content';
 import {resolveSpecialCompanionChallenge} from '../../../../backend/src/server/companions/special-challenges';
 import type {CompanionAssignment,CompanionTrialProgress,CompanionProvingGroundState,CompanionOverflowState,OwnedCompanionSnapshot,CompanionEconomyState,CompanionCombatExecutor,CompanionUnlockFacts,CompanionProvingGroundEvent} from '../../../../backend/src/server/companions/domain';
 
@@ -98,10 +98,21 @@ function awardUse(state:GameState,ids:string[],xp:number,bond:number,now:number)
   for(const id of ids){if(!owned[id])continue;const r=awardCompanionXpServer({progress:owned[id],amount:xp,companionEssence:essence,overflow,serverNowMs:now});essence=r.companionEssence;overflow=r.overflow;owned[id]=awardCompanionBondXpServer(r.progress,earnedBond);}
   return {...setOwned(state,owned),account:{...setOwned(state,owned).account,companionEssence:essence,companionOverflow:overflow}};
 }
+export function reconcileCompanionDiscoveries(state:GameState):GameState{
+  const current=state.account.companionPhase2Profile??{showcaseCompanionIds:[],showcaseSlotsUnlocked:1},discovered=new Set(current.discoveredCompanionIds??[]),facts=companionUnlockFacts(state);
+  for(const id of state.account.unlockedCombatCompanionIds??[])discovered.add(id);
+  for(const challenge of COMPANION_SPECIAL_CHALLENGES){
+    if(!companionServerDefinition(challenge.rewardCompanionId))continue;
+    if(companionUnlockRequirementsSatisfied(challenge.requirements,facts))discovered.add(challenge.rewardCompanionId);
+  }
+  const nextIds=[...discovered];
+  if(nextIds.length===(current.discoveredCompanionIds??[]).length&&nextIds.every(id=>(current.discoveredCompanionIds??[]).includes(id)))return state;
+  return {...state,account:{...state.account,companionPhase2Profile:{...current,discoveredCompanionIds:nextIds}}};
+}
 export function refreshCompanions(state:GameState,now:number):GameState {
   let next=reconcileCombatCompanionUnlocks(state,now);
   next={...next,account:{...next.account,companionSchemaVersion:1,companionAssignments:rolloverCompanionAssignmentStatuses(next.account.companionAssignments??[],now),companionTrialProgress:projectCompanionTrial(next.account.companionTrialProgress,now).progress,companionProvingGround:projectCompanionProvingGrounds(next.account.companionProvingGround,now).state}};
-  return next;
+  return reconcileCompanionDiscoveries(next);
 }
 export function companionView(state:GameState,now:number){
   const owned=companionOwned(state),profile=state.account.companionPhase2Profile??{showcaseCompanionIds:[],showcaseSlotsUnlocked:1};

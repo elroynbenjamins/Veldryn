@@ -9,6 +9,7 @@ import {profileBackgroundPreviewById} from '../theme/profile-background-assets';
 import {profileBorderSourceById} from '../theme/profile-border-assets';
 import {petArtSource} from '../theme/pet-art';
 import {companionArtSource} from '../theme/companion-art';
+import {profileShowcaseArt} from '../theme/profile-showcase-art';
 import {BASE_PROFILE_BACKGROUNDS} from '../core/profile-cosmetics';
 import {ProfileShowcaseSection} from './ProfileShowcaseSection';
 import {formatProfileRecordValue,profileAchievementLabel,profileCollectionLabel,profileRecordLabel} from '../core/profile-presentation';
@@ -33,7 +34,7 @@ export function ChatPlayerSheet({message,onClose,onBlocked}:{message:ChatPlayerI
  const favoriteCompanion=profile?.favoriteCompanionId?COMBAT_COMPANIONS.find(row=>row.id===profile.favoriteCompanionId):undefined,favoriteCompanionArt=profile?.favoriteCompanionId?companionArtSource(profile.favoriteCompanionId):undefined;
  const achievementEntries=profile?.achievementShowcaseIds.map(id=>({key:id,label:profileAchievementLabel(id)}))??[];
  const recordEntries=profile?.recordShowcaseIds.map(id=>{const record=profile.recordEntries?.[id];return {key:id,label:profileRecordLabel(id),value:record?formatProfileRecordValue(id,record.value):'—',meta:record?.contextLabel}})??[];
- const collectionEntries=profile?.collectionShowcase.map(ref=>({key:ref.kind+':'+ref.id,label:profileCollectionLabel(ref),meta:ref.kind.replace(/_/g,' ')}))??[];
+ const collectionEntries=profile?.collectionShowcase.map(ref=>({key:ref.kind+':'+ref.id,label:profileCollectionLabel(ref),meta:ref.kind.replace(/_/g,' '),art:profileShowcaseArt(ref)}))??[];
  return <Modal visible transparent animationType="fade" onRequestClose={onClose}><View style={s.scrim}><Pressable accessibilityLabel="Close player profile" onPress={onClose} style={StyleSheet.absoluteFill}/><View accessibilityViewIsModal style={s.sheet}>
   <View style={s.handle}/><View style={s.top}><Text style={s.kicker}>PLAYER PROFILE</Text><Pressable accessibilityRole="button" accessibilityLabel="Close player profile" onPress={onClose} style={s.close}><Text style={s.closeText}>×</Text></Pressable></View>
   <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>

@@ -43,6 +43,8 @@ export interface CharacterState {
   ownedPetIds?: string[];
   /** Permanently bought boosts that provide permanent boosts. */
   ownedBoostIds?: string[];
+  /** Character-bound one-time clears for monster Challenge Hunt tiers. */
+  challengeHuntClearIds?:string[];
   /** Cosmetic choice only. Equipment changes stats and never changes this value. */
   selectedSkinId?:string;
   savedLoadouts?:CharacterLoadoutPreset[];
@@ -94,5 +96,6 @@ export interface RewardBundle {
   eventDiscoveries?:{eventId:string;discoveryId:string;name:string;quantity:number}[];
   petDrops?:{petId:string;name:string;sourceId:string}[];
   companionUnlocks?:{companionId:string;name:string;role:string;rarity:string}[];
+  challengeHuntFirstClear?:{key:string;monsterId:string;challengeId:CombatChallengeId;label:string};
 }
 import type {Language} from '../i18n/languages';

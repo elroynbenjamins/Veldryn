@@ -82,3 +82,11 @@ export function challengeRewardMultipliers(id:CombatChallengeId|undefined,affixI
 export function challengeHuntLabel(id:CombatChallengeId|undefined,monsterName:string,affixId?:CombatAffixId){
  const challenge=combatChallenge(id),affix=combatAffix(affixId);return challenge?`${challenge.shortName}${affix?` [${affix.name}]`:''} · ${monsterName}`:monsterName;
 }
+
+export function challengeHuntClearKey(monsterId:string,challengeId:CombatChallengeId){return `${monsterId}:${challengeId}`;}
+export function challengeHuntCleared(state:GameState,monsterId:string,challengeId:CombatChallengeId){return !!state.character?.challengeHuntClearIds?.includes(challengeHuntClearKey(monsterId,challengeId));}
+export function challengeHuntFirstClearReward(monster:MonsterDef,challengeId:CombatChallengeId){
+ const level=Math.max(1,monster.level);
+ const tier=challengeId==='ferocious'?{gold:20,dust:2,cores:0}:challengeId==='hardened'?{gold:34,dust:4,cores:1}:challengeId==='nemesis'?{gold:55,dust:7,cores:1}:{gold:90,dust:10,cores:2};
+ return {gold:Math.max(75,level*tier.gold),items:[{itemId:'TEMPERING_DUST',quantity:tier.dust},...(tier.cores?[{itemId:'TEMPERING_CORE',quantity:tier.cores}]:[])],label:`${COMBAT_CHALLENGES[challengeId].name} first clear`};
+}

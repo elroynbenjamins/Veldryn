@@ -3,20 +3,13 @@ import {ActivityIndicator,Alert,Image,Modal,Pressable,ScrollView,StyleSheet,Text
 import {sendFriendRequest,setPlayerBlocked} from '../online/social';
 import {publicPlayerProfileV43,type PublicPlayerProfileV43} from '../online/profile-extension-v43';
 import {C,equipmentColors,radii,spacing,typography} from '../theme/theme';
-import {CharacterPortraitSelection} from './CharacterVisual';
-import {RegionArtwork} from './RegionArtwork';
-import {profileBackgroundPreviewById} from '../theme/profile-background-assets';
-import {profileBorderSourceById} from '../theme/profile-border-assets';
-import {petArtSource} from '../theme/pet-art';
 import {companionArtSource} from '../theme/companion-art';
 import {profileShowcaseArt} from '../theme/profile-showcase-art';
-import {BASE_PROFILE_BACKGROUNDS} from '../core/profile-cosmetics';
 import {ProfileShowcaseSection} from './ProfileShowcaseSection';
 import {formatProfileRecordValue,profileAchievementLabel,profileCollectionLabel,profileRecordLabel} from '../core/profile-presentation';
 import {COMBAT_COMPANIONS} from '../content/combat-companions';
-import {CLASSES} from '../content/classes';
-import type {ClassId} from '../core/types';
 import {GuildTaggedPlayerName} from './GuildTaggedPlayerName';
+import {PublicProfileScene} from './PublicProfileScene';
 import {useAuthSession} from '../online/AuthSessionProvider';
 
 export type ChatPlayerIdentity={id?:string;account_id:string;sender_name:string;guild_tag?:string|null;guild_tag_color_id?:string|null};
@@ -29,8 +22,6 @@ export function ChatPlayerSheet({message,onClose,onBlocked}:{message:ChatPlayerI
  async function addFriend(){if(busy)return;setBusy(true);try{const result=await sendFriendRequest(message!.account_id);Alert.alert('Friend request',result==='sent'?'Request sent to '+message!.sender_name+'.':result==='already_friends'?'You are already friends.':result==='already_pending'?'Your request is already pending.':'This player has already sent you a request. Open Friends to respond.');}catch(error){Alert.alert('Friend request',error instanceof Error?error.message:'Unable to send request.');}finally{setBusy(false)}}
  function confirmBlock(){Alert.alert('Block '+message!.sender_name+'?','Their messages will be hidden and they will be removed from your social lists.',[{text:'Cancel',style:'cancel'},{text:'Block',style:'destructive',onPress:async()=>{setBusy(true);try{await setPlayerBlocked(message!.account_id,true);onBlocked(message!.account_id);onClose();}catch(error){Alert.alert('Block player',error instanceof Error?error.message:'Unable to block player.');}finally{setBusy(false)}}}]);}
  const isSelf=!!session?.user.id&&message.account_id===session.user.id;
- const background=profile?profileBackgroundPreviewById.get(profile.backgroundId):undefined,base=profile?BASE_PROFILE_BACKGROUNDS.find(row=>row.id===profile.backgroundId):undefined,border=profile?.borderId?profileBorderSourceById.get(profile.borderId):undefined,pet=profile?.petId?petArtSource(profile.petId):undefined;
- const classId=(profile&&CLASSES.some(row=>row.id===profile.character.classId)?profile.character.classId:'IRONWARDEN') as ClassId;
  const favoriteCompanion=profile?.favoriteCompanionId?COMBAT_COMPANIONS.find(row=>row.id===profile.favoriteCompanionId):undefined,favoriteCompanionArt=profile?.favoriteCompanionId?companionArtSource(profile.favoriteCompanionId):undefined;
  const achievementEntries=profile?.achievementShowcaseIds.map(id=>({key:id,label:profileAchievementLabel(id)}))??[];
  const recordEntries=profile?.recordShowcaseIds.map(id=>{const record=profile.recordEntries?.[id];return {key:id,label:profileRecordLabel(id),value:record?formatProfileRecordValue(id,record.value):'—',meta:record?.contextLabel}})??[];
@@ -38,13 +29,7 @@ export function ChatPlayerSheet({message,onClose,onBlocked}:{message:ChatPlayerI
  return <Modal visible transparent animationType="fade" onRequestClose={onClose}><View style={s.scrim}><Pressable accessibilityLabel="Close player profile" onPress={onClose} style={StyleSheet.absoluteFill}/><View accessibilityViewIsModal style={s.sheet}>
   <View style={s.handle}/><View style={s.top}><Text style={s.kicker}>PLAYER PROFILE</Text><Pressable accessibilityRole="button" accessibilityLabel="Close player profile" onPress={onClose} style={s.close}><Text style={s.closeText}>×</Text></Pressable></View>
   <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
-   {loading?<View style={s.loading}><ActivityIndicator color={C.accent}/><Text style={s.meta}>Loading public profile…</Text></View>:profile?<><View style={[s.scene,!!border&&s.sceneBorder]}>
-      {background?<Image source={background.source} resizeMode="cover" style={StyleSheet.absoluteFill}/>:base?<RegionArtwork regionId={base.region}/>:<View style={[StyleSheet.absoluteFill,{backgroundColor:'#101d2b'}]}/>}
-      <View style={s.sceneShade}/>
-      <CharacterPortraitSelection classId={classId} body={profile.character.bodyPresentation} skinId={profile.character.selectedSkinId} compact style={s.character}/>
-      {pet?<Image source={pet} resizeMode="contain" style={s.pet}/>:null}
-      {border?<Image accessible={false} source={border} resizeMode="stretch" style={StyleSheet.absoluteFill}/>:null}
-    </View>
+   {loading?<View style={s.loading}><ActivityIndicator color={C.accent}/><Text style={s.meta}>Loading public profile…</Text></View>:profile?<><PublicProfileScene profile={profile}/>
     <View style={s.identity}><GuildTaggedPlayerName name={profile.character.name||profile.displayName} guildTag={profile.guildTag??message.guild_tag} tagColorId={profile.guildTagColorId??message.guild_tag_color_id} style={s.name}/><Text style={s.title}>“{profile.title}”</Text><Text style={s.meta}>Level {profile.character.level} · {profile.character.classId.replace(/_/g,' ')}</Text>{profile.bio?<Text style={s.bio}>{profile.bio}</Text>:null}</View>
     {(profile.favoriteSkillId||favoriteCompanion)?<View style={s.quickFacts}>{profile.favoriteSkillId?<View style={s.fact}><Text style={s.factLabel}>FAVORITE SKILL</Text><Text style={s.factValue}>{profile.favoriteSkillId.replace(/_/g,' ')}</Text></View>:null}{favoriteCompanion?<View style={s.fact}>{favoriteCompanionArt?<Image source={favoriteCompanionArt} resizeMode="contain" style={s.companionArt}/>:null}<View style={s.flex}><Text style={s.factLabel}>FAVORITE COMPANION</Text><Text style={s.factValue}>{favoriteCompanion.name}</Text></View></View>:null}</View>:null}
     <ProfileShowcaseSection title="ACHIEVEMENT SHOWCASE" entries={achievementEntries} emptyLabel="No achievement selected"/>

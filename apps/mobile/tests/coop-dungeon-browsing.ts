@@ -1,5 +1,5 @@
 import {coopTierEligibility,filterCoopDungeons,groupCoopDungeonsByRegion,presentCoopDungeon,validateCoopDungeonView,type CoopRoomType} from '../src/core/coop-dungeon-browsing';
-import {validateCoopEventExpeditionPreview} from '../src/core/coop-event-expeditions';
+import {seasonalEventHasExpedition,validateCoopEventExpeditionPreview} from '../src/core/coop-event-expeditions';
 import {COOP_MESSAGE_COUNT,SUPPORTED_LANGUAGES,translatedCoopMessageCount} from '../src/i18n';
 
 function equal(actual:unknown,expected:unknown,message:string){if(JSON.stringify(actual)!==JSON.stringify(expected))throw new Error(`${message}: ${JSON.stringify(actual)}`)}
@@ -15,8 +15,12 @@ const locked=presentCoopDungeon({id:'EXP_LOCKED',name:'Locked',minLevel:50,syncL
 equal(filterCoopDungeons([rootbound,locked],'available').map(item=>item.id),['EXP_001'],'available filter failed');
 equal(groupCoopDungeonsByRegion([rootbound,locked]).map(group=>[group.region,group.availableCount,group.dungeons.length]),[['Other',1,2]],'regional grouping failed');
 const sortedRegion=groupCoopDungeonsByRegion([presentCoopDungeon({id:'LATE',name:'Late',region:'Sunscar',minLevel:36,syncLevel:45,available:true}),presentCoopDungeon({id:'EARLY',name:'Early',region:'Sunscar',minLevel:32,syncLevel:45,available:true})]);equal(sortedRegion[0].dungeons.map(item=>item.id),['EARLY','LATE'],'regional progression must sort by minimum level');
-validateCoopEventExpeditionPreview({id:'EVENT_TEST',eventName:'Suncrest Games',name:'The Shattered Isles',description:'A seasonal route.',routeHighlights:['Coastal Ruins','Sun Shrine','Pirate Camp'],finalBoss:'Aureon, First Champion',status:'preview'});
-let eventFailure='';try{validateCoopEventExpeditionPreview({id:'EVENT_BAD',eventName:'Starfall',name:'Rift',description:'Bad duplicate route.',routeHighlights:['Rift Gate','Rift Gate','Boss Nexus'],finalBoss:'The Constellation Eater',status:'preview'})}catch(error){eventFailure=error instanceof Error?error.message:String(error)}equal(eventFailure,'invalid_event_route_highlights','event previews require three distinct route highlights');
+validateCoopEventExpeditionPreview({id:'EVENT_TEST',eventName:'Suncrest Games',name:'The Shattered Isles',description:'A seasonal route.',routeHighlights:['Coastal Ruins','Sun Shrine','Pirate Camp'],finalBoss:'Aureon, First Champion',status:'preview',minLevel:45,rewardMarks:96});
+let eventFailure='';try{validateCoopEventExpeditionPreview({id:'EVENT_BAD',eventName:'Starfall',name:'Rift',description:'Bad duplicate route.',routeHighlights:['Rift Gate','Rift Gate','Boss Nexus'],finalBoss:'The Constellation Eater',status:'preview',minLevel:70,rewardMarks:118})}catch(error){eventFailure=error instanceof Error?error.message:String(error)}equal(eventFailure,'invalid_event_route_highlights','event previews require three distinct route highlights');
+equal(seasonalEventHasExpedition('EVT_ANNUAL_006_2026'),true,'Suncrest should expose its seasonal expedition');
+equal(seasonalEventHasExpedition('EVT_ANNUAL_012_2026'),true,'Frostfall should expose its seasonal expedition');
+equal(seasonalEventHasExpedition('EVT_ANNUAL_009_2026'),false,'Harvestwake should not invent an event dungeon');
+let liveFailure='';try{validateCoopEventExpeditionPreview({id:'EVENT_LIVE',eventName:'Suncrest Games',name:'The Shattered Isles',description:'A seasonal route.',routeHighlights:['Coastal Ruins','Sun Shrine','Pirate Camp'],finalBoss:'Aureon, First Champion',status:'available',minLevel:45,rewardMarks:96})}catch(error){liveFailure=error instanceof Error?error.message:String(error)}equal(liveFailure,'available_event_requires_live_event','live event cards require an authoritative LiveOps id');
 let failure='';try{validateCoopDungeonView(presentCoopDungeon({id:'EXP_BAD',name:'Bad lock',minLevel:2,syncLevel:2,available:false,difficulties:[1]}))}catch(error){failure=error instanceof Error?error.message:String(error)}equal(failure,'locked_reason_required','locked reason must fail closed');
 for(const language of SUPPORTED_LANGUAGES)equal(translatedCoopMessageCount(language),COOP_MESSAGE_COUNT,`${language} co-op catalog incomplete`);
 console.log(`co-op dungeon browsing OK (${SUPPORTED_LANGUAGES.length} languages, ${COOP_MESSAGE_COUNT} messages each)`);

@@ -7,7 +7,7 @@ import {assessOnlineCoopLoadout,deriveOnlineCoopLoadout,onlineCoopLoadoutHash} f
 import {GameplayError,type GameplayServices} from './gameplay';
 
 type Services=Pick<GameplayServices,'authenticate'|'rpc'>;
-interface Loaded {state:GameState|null;version:number;serverNow:number;}
+interface Loaded {state:GameState|null;version:number;serverNow:number;liveEvent?:GameState['account']['liveEvent'];}
 const headers={'Content-Type':'application/json','Cache-Control':'no-store','Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'authorization,apikey,content-type,x-client-info','Access-Control-Allow-Methods':'GET,POST,OPTIONS'};
 const json=(value:unknown,status=200)=>new Response(JSON.stringify(value),{status,headers});
 const tiers:CoopTier[]=[1,2,3,4,5];
@@ -44,9 +44,10 @@ export function coopEntryHandler(services:Services){return async(request:Request
   }
   const character=loaded.state.character;
   const participation=await services.rpc<Record<string,unknown>>('online_coop_entry_state_server_v1',{p_account_id:accountId});
+  const runtime=loaded.liveEvent,activeLiveEventId=runtime?.enabled&&loaded.serverNow>=runtime.startsAtMs&&loaded.serverNow<runtime.endsAtMs?runtime.eventId:undefined;
   return json({...participation,serverNow:loaded.serverNow,gameVersion:loaded.version,
    dungeons:Object.values(EXPEDITIONS).map(def=>({id:def.id,name:def.name,region:def.region,minLevel:def.minLevel,recommendedLevel:def.recommendedLevel,syncLevel:def.recommendedLevel,available:def.coopImplemented&&character.level>=def.minLevel,lockedReason:!def.coopImplemented?'Not yet available':character.level<def.minLevel?`Requires level ${def.minLevel}`:undefined,difficulties:tiers,tierMinLevels:Object.fromEntries(tiers.map(tier=>[tier,coopRequiredLevel(def.minLevel,tier)])),preBossRoomMin:5,preBossRoomMax:5,estimatedMinutes:{min:6,max:8}})),
-   eventExpeditions:eventExpeditionPreviews(loaded.serverNow),
+   eventExpeditions:eventExpeditionPreviews(loaded.serverNow).map(def=>{const matches=Boolean(activeLiveEventId&&activeLiveEventId.startsWith(`${def.liveEventSeriesId}_`)),levelReady=character.level>=def.minLevel,available=matches&&levelReady&&readiness.ready;return {...def,status:available?'available' as const:'preview' as const,liveEventId:matches?activeLiveEventId:undefined,lockedReason:available?undefined:!matches?`Available only while ${def.eventName} is active.`:!levelReady?`Requires level ${def.minLevel}`:'Current co-op loadout is not expedition-ready.'};}),
    loadouts:[{id:'current',characterId:character.id,revision:loaded.version,verifiedRevision:loaded.version,name:'Current equipment',characterName:character.name,className:CLASSES.find(row=>row.id===character.classId)!.name,role:readiness.role,status:readiness.ready?'verified':'ineligible',ready:readiness.ready,failures:readiness.failures,level:character.level,effectiveLevel:normalized.effectiveLevel,beforeStats:normalized.before,effectiveStats:normalized.snapshot,normalizationVersion:normalized.normalizationVersion,verifiedAt:new Date(loaded.serverNow).toISOString(),skills:record.abilities.map(row=>row.name),equipment:Object.values(character.equipment).filter(Boolean)}],
   });
  }catch(error){

@@ -5,7 +5,7 @@ import type {CoopMode,CoopRunView} from '../core/coop-presentation';
 import type {CoopDungeonProjection} from '../core/coop-dungeon-browsing';
 import type {CoopLoadoutProjection} from '../core/coop-loadout-presentation';
 import type {CoopQModeServerProjection} from '../core/coop-qmode';
-import type {CoopEventExpeditionPreview} from '../core/coop-event-expeditions';
+import type {CoopEventExpeditionPreview,CoopEventRunServerProjection} from '../core/coop-event-expeditions';
 import type {LiveQueueView,LiveReadyView} from '../core/coop-live-lobby';
 declare const process:{env:Record<string,string|undefined>};
 const apiBase=process.env.EXPO_PUBLIC_COOP_API_URL?.replace(/\/$/,'');
@@ -13,8 +13,9 @@ export const coopRogueliteEnabled=process.env.EXPO_PUBLIC_COOP_ROGUELITE_V1==='t
 export const coopOnlineConfigured=Boolean(coopRogueliteEnabled&&apiBase&&supabase);
 // Internal lobby validation only; keep off until Live run/recovery gates pass.
 export const coopLiveReadyEnabled=process.env.EXPO_PUBLIC_COOP_LIVE_READY_V1==='true';
-export interface CoopEntryData {dungeons:CoopDungeonProjection[];eventExpeditions?:CoopEventExpeditionPreview[];loadouts:CoopLoadoutProjection[];activeRun?:CoopRunView;activeRunProjection?:CoopQModeServerProjection;echoSharing?:boolean;gameVersion?:number;}
+export interface CoopEntryData {dungeons:CoopDungeonProjection[];eventExpeditions?:CoopEventExpeditionPreview[];loadouts:CoopLoadoutProjection[];activeRun?:CoopRunView;activeRunProjection?:CoopQModeServerProjection;activeEventRunProjection?:CoopEventRunServerProjection;echoSharing?:boolean;gameVersion?:number;}
 export interface CoopStartBody {requestId:string;dungeonId:string;tier:1|2|3|4|5;characterId:string;loadoutId:string;loadoutRevision:number;}
+export interface CoopEventStartBody {requestId:string;eventExpeditionId:string;characterId:string;loadoutId:string;loadoutRevision:number;}
 export interface CoopDecisionBody {requestId:string;decisionId:string;decisionRevision:number;optionId:string;}
 export interface CoopReadyBody {requestId:string;rosterRevision:number;accept:boolean;}
 async function request<T>(path:string,method='GET',body?:unknown,expectedAccount?:string):Promise<T>{
@@ -44,8 +45,12 @@ export const coopClient={
  cancelLive:(ticketId:string)=>mutate(`/coop/queue/${ticketId}/cancel`,{requestId:coopRequestId()}),
  liveReady:(checkId:string)=>request<LiveReadyView>(`/coop/ready/${checkId}`),
  start:(mode:CoopMode,body:CoopStartBody)=>mutate<CoopRunView|CoopQModeServerProjection|{ticketId:string;status:string}>(mode==='qmode'?'/coop/qmode':'/coop/queue',body),
+ startEvent:(body:CoopEventStartBody)=>mutate<CoopEventRunServerProjection>('/coop/event-expeditions',body),
  run:(runId:string)=>request<CoopRunView|CoopQModeServerProjection>(`/coop/runs/${runId}`),
+ eventRun:(runId:string)=>request<CoopEventRunServerProjection>(`/coop/event-runs/${runId}`),
  choose:(runId:string,body:CoopDecisionBody)=>mutate<CoopQModeServerProjection>(`/coop/runs/${runId}/choose`,body),
+ chooseEvent:(runId:string,body:CoopDecisionBody)=>mutate<CoopEventRunServerProjection>(`/coop/event-runs/${runId}/choose`,body),
+ claimEvent:(runId:string)=>mutate<CoopEventRunServerProjection>(`/coop/event-runs/${runId}/claim`,{requestId:coopRequestId()}),
  vote:(runId:string,body:CoopDecisionBody)=>mutate<CoopRunView>(`/coop/runs/${runId}/vote`,body),
  ready:(checkId:string,body:CoopReadyBody)=>mutate<LiveReadyView>(`/coop/ready/${checkId}`,body),
  chat:(partyId:string,text:string)=>request<{ok:boolean;body?:string}>(`/coop/parties/${partyId}/chat`,'POST',{requestId:`chat-${Date.now()}`,text}),

@@ -1,4 +1,5 @@
 import type {GameState,QueuedActivity} from './types';
+import type {IdleStopCondition} from './idle-rules-v40';
 import {GATHERING} from '../content/skills';
 import {HERB_NODES} from '../content/herbalism';
 import {MONSTERS} from '../content/monsters';
@@ -69,7 +70,7 @@ function activityCanAdvanceWeeklyOrder(state:GameState,orderId:string){
  if(order.kind==='regional')return order.targetId===activeRegionId(state)&&(activity.kind==='combat'||['mining','woodcutting','fishing','herbalism'].includes(activity.kind));
  return false;
 }
-function activityCanAdvanceCondition(state:GameState,condition:NonNullable<GameState['character']>['idleRulesV40'][number]['conditions'][number]){
+function activityCanAdvanceCondition(state:GameState,condition:IdleStopCondition){
  if(!condition.enabled)return false;
  const activity=state.activity;if(!activity)return false;
  if(condition.kind==='duration_seconds')return true;

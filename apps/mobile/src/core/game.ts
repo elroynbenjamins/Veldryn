@@ -276,7 +276,8 @@ function projectedIdleContext(state:GameState,reward:RewardBundle,settleAtMs:num
     let progress=order.progress;
     const expectedKind=activity.kind==='combat'?'hunt':'profession',direct=order.kind===expectedKind&&order.targetId===activity.targetId;
     const regional=order.kind==='regional'&&order.targetId===activityRegionId&&(activity.kind==='combat'||['mining','woodcutting','fishing','herbalism'].includes(activity.kind));
-    if(direct||regional)progress=Math.min(order.target,progress+reward.kills);
+    const threat=order.kind==='threat'&&activity.kind==='combat'&&!!activity.combatChallengeId&&order.targetId===`${activity.targetId}:${activity.combatChallengeId}`;
+    if(direct||regional||threat)progress=Math.min(order.target,progress+reward.kills);
     weeklyOrderProgress[order.id]=progress;
   }
   const foodRemaining=Math.max(0,stackQty(state.inventory.stacks,state.character?.equippedFoodId)-(reward.foodConsumed??0));

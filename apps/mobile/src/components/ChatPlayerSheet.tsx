@@ -9,21 +9,14 @@ import {profileBackgroundPreviewById} from '../theme/profile-background-assets';
 import {profileBorderSourceById} from '../theme/profile-border-assets';
 import {eventPetSourceById} from '../theme/event-collectible-assets';
 import {BASE_PROFILE_BACKGROUNDS} from '../core/profile-cosmetics';
-import {JOURNAL_ACHIEVEMENTS_V42} from '../core/adventurers-journal-v42';
-import {personalRecordDefinition} from '../core/personal-records-v43';
+import {ProfileShowcaseSection} from './ProfileShowcaseSection';
+import {formatProfileRecordValue,profileAchievementLabel,profileCollectionLabel,profileRecordLabel} from '../core/profile-presentation';
 import {COMBAT_COMPANIONS} from '../content/combat-companions';
 import {CLASSES} from '../content/classes';
 import type {ClassId} from '../core/types';
 import {GuildTaggedPlayerName} from './GuildTaggedPlayerName';
 
 export type ChatPlayerIdentity={id?:string;account_id:string;sender_name:string;guild_tag?:string|null;guild_tag_color_id?:string|null};
-
-function recordValue(profile:PublicPlayerProfileV43,id:string){
- const def=personalRecordDefinition(id),record=profile.recordEntries?.[id];if(!def||!record)return '—';const value=record.value;
- if(def.unit==='milliseconds'){const seconds=value/1000;return seconds>=60?Math.floor(seconds/60)+'m '+Math.round(seconds%60)+'s':seconds.toFixed(seconds<10?2:1)+'s';}
- if(def.unit==='seconds'){const h=Math.floor(value/3600),m=Math.floor((value%3600)/60);return h?h+'h '+m+'m':m?m+'m':Math.floor(value)+'s';}
- return Math.floor(value).toLocaleString();
-}
 
 export function ChatPlayerSheet({message,onClose,onBlocked}:{message:ChatPlayerIdentity|null;onClose:()=>void;onBlocked:(accountId:string)=>void}){
  const [profile,setProfile]=useState<PublicPlayerProfileV43|null>(null),[loading,setLoading]=useState(false),[busy,setBusy]=useState(false),[unavailable,setUnavailable]=useState(false);
@@ -34,6 +27,9 @@ export function ChatPlayerSheet({message,onClose,onBlocked}:{message:ChatPlayerI
  const background=profile?profileBackgroundPreviewById.get(profile.backgroundId):undefined,base=profile?BASE_PROFILE_BACKGROUNDS.find(row=>row.id===profile.backgroundId):undefined,border=profile?.borderId?profileBorderSourceById.get(profile.borderId):undefined,pet=profile?.petId?eventPetSourceById.get(profile.petId):undefined;
  const classId=(profile&&CLASSES.some(row=>row.id===profile.character.classId)?profile.character.classId:'IRONWARDEN') as ClassId;
  const favoriteCompanion=profile?.favoriteCompanionId?COMBAT_COMPANIONS.find(row=>row.id===profile.favoriteCompanionId):undefined;
+ const achievementEntries=profile?.achievementShowcaseIds.map(id=>({key:id,label:profileAchievementLabel(id)}))??[];
+ const recordEntries=profile?.recordShowcaseIds.map(id=>{const record=profile.recordEntries?.[id];return {key:id,label:profileRecordLabel(id),value:record?formatProfileRecordValue(id,record.value):'—',meta:record?.contextLabel}})??[];
+ const collectionEntries=profile?.collectionShowcase.map(ref=>({key:ref.kind+':'+ref.id,label:profileCollectionLabel(ref),meta:ref.kind.replace(/_/g,' ')}))??[];
  return <Modal visible transparent animationType="fade" onRequestClose={onClose}><View style={s.scrim}><Pressable accessibilityLabel="Close player profile" onPress={onClose} style={StyleSheet.absoluteFill}/><View accessibilityViewIsModal style={s.sheet}>
   <View style={s.handle}/><View style={s.top}><Text style={s.kicker}>PLAYER PROFILE</Text><Pressable accessibilityRole="button" accessibilityLabel="Close player profile" onPress={onClose} style={s.close}><Text style={s.closeText}>×</Text></Pressable></View>
   <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
@@ -46,9 +42,9 @@ export function ChatPlayerSheet({message,onClose,onBlocked}:{message:ChatPlayerI
     </View>
     <View style={s.identity}><GuildTaggedPlayerName name={profile.character.name||profile.displayName} guildTag={profile.guildTag??message.guild_tag} tagColorId={profile.guildTagColorId??message.guild_tag_color_id} style={s.name}/><Text style={s.title}>“{profile.title}”</Text><Text style={s.meta}>Level {profile.character.level} · {profile.character.classId.replace(/_/g,' ')}</Text>{profile.bio?<Text style={s.bio}>{profile.bio}</Text>:null}</View>
     {(profile.favoriteSkillId||favoriteCompanion)?<View style={s.quickFacts}>{profile.favoriteSkillId?<View style={s.fact}><Text style={s.factLabel}>FAVORITE SKILL</Text><Text style={s.factValue}>{profile.favoriteSkillId.replace(/_/g,' ')}</Text></View>:null}{favoriteCompanion?<View style={s.fact}><Text style={s.factLabel}>FAVORITE COMPANION</Text><Text style={s.factValue}>{favoriteCompanion.name}</Text></View>:null}</View>:null}
-    {profile.achievementShowcaseIds.length?<View style={s.block}><Text style={s.blockTitle}>ACHIEVEMENT SHOWCASE</Text>{profile.achievementShowcaseIds.map(id=>{const def=JOURNAL_ACHIEVEMENTS_V42.find(row=>row.id===id);return <Text key={id} style={s.showcase}>✦ {def?.title??id.replace(/_/g,' ')}</Text>})}</View>:null}
-    {profile.recordShowcaseIds.length?<View style={s.block}><Text style={s.blockTitle}>PERSONAL RECORDS</Text>{profile.recordShowcaseIds.map(id=>{const def=personalRecordDefinition(id);return <View key={id} style={s.record}><Text style={s.recordName}>{def?.label??id.replace(/_/g,' ')}</Text><Text style={s.recordValue}>{recordValue(profile,id)}</Text></View>})}</View>:null}
-    {profile.collectionShowcase.length?<View style={s.block}><Text style={s.blockTitle}>COLLECTION SHOWCASE</Text><View style={s.chips}>{profile.collectionShowcase.map(ref=><View key={ref.kind+':'+ref.id} style={s.chip}><Text numberOfLines={1} style={s.chipText}>{ref.kind.toUpperCase()} · {ref.id.replace(/_/g,' ')}</Text></View>)}</View></View>:null}
+    <ProfileShowcaseSection title="ACHIEVEMENT SHOWCASE" entries={achievementEntries} emptyLabel="No achievement selected"/>
+    <ProfileShowcaseSection title="PERSONAL RECORDS" entries={recordEntries} emptyLabel="No record selected"/>
+    <ProfileShowcaseSection title="COLLECTION SHOWCASE" entries={collectionEntries} emptyLabel="No collectible selected"/>
    </>:<View style={s.loading}><Text style={s.privateTitle}>{unavailable?'Profile unavailable':'No public profile'}</Text><Text style={s.meta}>This player’s profile is private, guild-only, unavailable, or has not been published yet.</Text></View>}
   </ScrollView>
   <Text style={s.hint}>PLAYER ACTIONS</Text><View style={s.actions}><Pressable accessibilityRole="button" disabled={busy} onPress={()=>void addFriend()} style={({pressed})=>[s.primary,(pressed||busy)&&s.pressed]}><Text style={s.primaryText}>Add friend</Text></Pressable><Pressable accessibilityRole="button" disabled={busy} onPress={confirmBlock} style={({pressed})=>[s.secondary,(pressed||busy)&&s.pressed]}><Text style={s.blockText}>Block</Text></Pressable></View>

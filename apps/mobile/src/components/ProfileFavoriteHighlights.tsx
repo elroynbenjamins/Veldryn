@@ -1,9 +1,11 @@
+import {useMemo} from 'react';
 import {Image,StyleSheet,Text,View} from 'react-native';
 import type {ImageSourcePropType} from 'react-native';
 import {COMBAT_COMPANIONS} from '../content/combat-companions';
 import {smallSkillIcons} from '../theme/skill-assets';
 import {companionArtSource} from '../theme/companion-art';
-import {C,equipmentColors,radii,typography} from '../theme/theme';
+import {radii,typography,equipmentTheme,type ThemeColors} from '../theme/theme';
+import {useGameTheme} from '../theme/ThemeContext';
 
 const label=(value?:string)=>value?value.replace(/[_:-]+/g,' ').replace(/\b\w/g,c=>c.toUpperCase()):'Not selected';
 
@@ -13,6 +15,7 @@ function skillIcon(id?:string):ImageSourcePropType|undefined{
 }
 
 export function ProfileFavoriteHighlights({favoriteSkillId,favoriteSkillDetail,favoriteCompanionId}:{favoriteSkillId?:string|null;favoriteSkillDetail?:string;favoriteCompanionId?:string|null}){
+ const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
  const companion=favoriteCompanionId?COMBAT_COMPANIONS.find(row=>row.id===favoriteCompanionId):undefined;
  const companionArt=favoriteCompanionId?companionArtSource(favoriteCompanionId):undefined;
  const skillArt=skillIcon(favoriteSkillId??undefined);
@@ -28,7 +31,7 @@ export function ProfileFavoriteHighlights({favoriteSkillId,favoriteSkillDetail,f
  </View>;
 }
 
-const s=StyleSheet.create({
+function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);return StyleSheet.create({
  row:{flexDirection:'row',gap:8},
  card:{flex:1,minWidth:0,minHeight:92,padding:9,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2,justifyContent:'space-between'},
  prestigeCard:{borderColor:equipmentColors.lineStrong,backgroundColor:'#2a2418'},
@@ -50,4 +53,4 @@ const s=StyleSheet.create({
  rarityPrestige:{borderColor:equipmentColors.goldSoft,backgroundColor:'#322814'},
  rarityText:{fontSize:7,color:C.muted,fontWeight:'900',letterSpacing:.45},
  rarityTextPrestige:{color:equipmentColors.goldSoft},
-});
+});}

@@ -12,7 +12,7 @@ const notifications:NavigationNotification[]=[
  {key:'event-1',kind:'event_reward_ready',count:4,unread:true},
  {key:'world-1',kind:'weekly_order_complete',unread:true},
  {key:'companion-1',kind:'companion_attention',unread:true},
- {key:'profile-1',kind:'collection_unlock',unread:true},
+ {key:'profile-1',kind:'profile_customization',unread:true},
  {key:'read-1',kind:'friend_request',count:20,unread:false},
 ];
 const primary=buildNavigationBadges(notifications);
@@ -27,6 +27,6 @@ equal(mergeRouteBadges(sub,['social.guild.invites','social.guild.applications'])
 equal(destinationForNotification('event_reward_ready').subroute,'events.rewards','Destination remains canonical');
 equal(destinationForNotification('companion_attention').subroute,'companions','Companion attention routes to the Companion hub');
 ok(sub['companions'].dot,'Companion subroute receives one consolidated dot');
-ok(sub['collections'].dot,'Profile customization attention routes to Collections/Profile account area as a dot');
+ok(sub['profile.customize'].dot,'Profile customization attention routes to Customize Profile as a dot');
 equal(badgeDisplay(100),'99+','Large counts are capped for display');
 console.log('PASS v51 navigation notification hierarchy');

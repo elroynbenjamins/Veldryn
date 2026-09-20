@@ -1,17 +1,16 @@
 import type {ImageSourcePropType} from 'react-native';
+import {masterPetSourceById} from './master-roster-assets';
 import {eventPetSourceById} from './event-collectible-assets';
 import {eventPetV1SourceById} from './event-collectible-v1-assets';
-import {eventPetSourceById as legacyEventPetSourceById} from './event-pet-assets';
 
 /**
  * Canonical pet-art resolver used by collection surfaces.
  *
- * Core PET_001–PET_033 artwork can be added as another map here once those
- * PNGs exist in the repository. Unknown/missing art deliberately returns
- * undefined so UI can render a stable fallback without inventing paths.
+ * Master PET_001–PET_033 artwork is canonical. Event artwork remains available
+ * for the separate annual event collection.
  */
 export function petArtSource(id:string):ImageSourcePropType|undefined{
-  return eventPetV1SourceById.get(id)
+  return masterPetSourceById.get(id)
     ??eventPetSourceById.get(id)
-    ??legacyEventPetSourceById.get(id);
+    ??eventPetV1SourceById.get(id);
 }

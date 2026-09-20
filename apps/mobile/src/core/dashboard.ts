@@ -61,13 +61,14 @@ export function activityRate(state:GameState){
   const target=state.activity?.targetId;
   const monster=MONSTERS.find(m=>m.id===target),gathering=[...GATHERING,...HERB_NODES].find(g=>g.id===target);
   const brew=state.activity?.kind==='alchemy'?alchemyRecipeDef(target??''):undefined;
+  const route=state.activity?.kind==='exploration'?explorationRoute(target??''):undefined;
   const multipliers=characterPermanentMultipliers(state);
   const effect=state.activity?environmentEffectForActivity(state.activity).effect:undefined;
   const seconds=activityCycleSeconds(state);
   const actions=Math.floor(3600/seconds);
-  const baseXp = monster?.xp ?? gathering?.xp ?? brew?.xp ?? 0;
+  const baseXp = monster?.xp ?? gathering?.xp ?? brew?.xp ?? route?.xp ?? 0;
   const baseGold = monster?monster.gold:0;
-  const xpMultiplier = (effect?.xpMultiplier??1)*(monster?multipliers.characterXpMultiplier:multipliers.skillXpMultiplier);
+  const xpMultiplier = (effect?.xpMultiplier??1)*(monster?multipliers.characterXpMultiplier:multipliers.skillXpMultiplier)*(route?multipliers.explorationProgressMultiplier:1);
   const goldMultiplier = (effect?.goldMultiplier??1)*(monster?multipliers.goldMultiplier:1);
   return {actionsPerHour:actions,xpPerHour:Math.floor(actions*baseXp*xpMultiplier),goldPerHour:monster?Math.floor(actions*baseGold*goldMultiplier):0};
 }

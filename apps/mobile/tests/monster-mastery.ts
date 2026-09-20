@@ -1,5 +1,6 @@
 import {createCharacter,newGame,startCombat,claimActivity,previewActivityReward} from '../src/core/game';
 import {monsterMastery,recordMonsterMastery,normalizeMonsterMastery} from '../src/core/monster-mastery';
+import {MONSTER_MASTERY_MILESTONES,monsterMasteryGuidance,nextMasteryMilestone} from '../src/core/monster-mastery-presentation';
 import {activityCycleSeconds} from '../src/core/dashboard';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
 import {createSaveBackup,parseSaveBackup} from '../src/core/save-transfer';
@@ -7,6 +8,8 @@ let checks=0;const ok=(v:unknown,m:string)=>{checks++;if(!v)throw new Error(m);}
 let s=createCharacter(newGame(now),'WAYFINDER','Mastery Test');s=startCombat(s,'MOSS_RAT',now);
 const claimed=claimActivity(s,now+60000);ok(monsterMastery(claimed.state,'MOSS_RAT').points===claimed.reward.kills,'one point per verified kill');ok(monsterMastery(claimActivity(claimed.state,now+60000).state,'MOSS_RAT').points===claimed.reward.kills,'no repeat points');
 for(const [points,rank,damage,yieldBonus] of [[124,4,0,0],[125,5,.01,0],[250,10,.01,0],[375,15,.01,.03],[750,30,.02,.05]]){const x=structuredClone(s);x.character!.monsterMasteryPoints={MOSS_RAT:points};const m=monsterMastery(x,'MOSS_RAT');ok(m.rank===rank&&m.damageBonus===damage&&m.materialBonus===yieldBonus,'rank bonuses '+rank);}
+ok(MONSTER_MASTERY_MILESTONES.some(row=>row.rank===3&&row.label==='Ferocious Hunt')&&MONSTER_MASTERY_MILESTONES.some(row=>row.rank===10&&row.label==='Hardened Hunt')&&MONSTER_MASTERY_MILESTONES.some(row=>row.rank===20&&row.label==='Nemesis Hunt'),'Challenge Hunt unlock ranks must appear on the Mastery ladder');
+const guidance4=(()=>{const x=structuredClone(s);x.character!.monsterMasteryPoints={MOSS_RAT:100};return monsterMasteryGuidance(x,'MOSS_RAT')})();ok(guidance4.rank===4&&guidance4.next?.rank===5&&guidance4.killsToNextMilestone===25,'Rank 4 guidance should point to Rank 5 combat milestone');const guidance10=(()=>{const x=structuredClone(s);x.character!.monsterMasteryPoints={MOSS_RAT:250};return monsterMasteryGuidance(x,'MOSS_RAT')})();ok(guidance10.challengeUnlocks.filter(row=>row.unlocked).length===2&&nextMasteryMilestone(10)?.rank===15,'Rank 10 should expose Ferocious + Hardened and point to Rank 15');
 const master=recordMonsterMastery(s,'MOSS_RAT',10000);ok(monsterMastery(master,'MOSS_RAT').points===750,'points cap');ok(monsterMastery(master,'FIELD_WISP').damageBonus===0&&monsterMastery(master,'FALLEN_KNIGHT').damageBonus===0,'species only, excludes boss');
 ok(activityCycleSeconds(master)<activityCycleSeconds(s),'dashboard reflects mastery speed');
 const before=previewActivityReward(s,now+activityCycleSeconds(s)*1000*100+1),after=previewActivityReward(master,now+activityCycleSeconds(master)*1000*100+1);

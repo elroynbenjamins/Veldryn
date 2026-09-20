@@ -49,7 +49,7 @@ export function ProfileScreen({state,onNavigate}:{state:GameState;onNavigate?:(d
   {publicError?<View accessibilityRole="alert" style={s.syncCard}><View style={s.flex}><Text style={s.syncTitle}>Online profile could not refresh</Text><Text style={s.syncText}>Your local identity is still shown safely. Retry to refresh privacy and showcase selections.</Text></View><View style={s.syncButton}><GameButton compact title="Retry" tone="secondary" onPress={()=>void refreshPublic()}/></View></View>:null}
 
   <Panel>
-   <View style={s.identityHead}>{account.guildMember?<GuildCrest size={48} bannerId={account.guildBannerId}/>:null}<View style={s.flex}><GuildTaggedPlayerName name={displayName} guildTag={publicSelf?.guildTag} tagColorId={publicSelf?.guildTagColorId} style={s.name}/><Text style={s.title}>“{publicSelf?.title??c.profileTitle??'New Adventurer'}”</Text><Text style={s.copy}>Level {displayLevel} · {label(displayClass)}{account.guildMember?' · Guild member':''}</Text></View></View>
+   <View style={s.identityHead}>{account.guildMember?<GuildCrest size={48} bannerId={account.guildBannerId} frameId={account.guildProfileFrameId}/>:null}<View style={s.flex}><GuildTaggedPlayerName name={displayName} guildTag={publicSelf?.guildTag} tagColorId={publicSelf?.guildTagColorId} style={s.name}/><Text style={s.title}>“{publicSelf?.title??c.profileTitle??'New Adventurer'}”</Text><Text style={s.copy}>Level {displayLevel} · {label(displayClass)}{account.guildMember?' · Guild member':''}</Text></View></View>
    {publicSelf?.bio?<Text style={s.bio}>{publicSelf.bio}</Text>:<Text style={s.copy}>{bioGuidance}</Text>}
    <View style={s.customizeAction}><GameButton title="Customize Profile" onPress={()=>onNavigate?.('Customize')}/></View>
    <View style={s.quickActions}>

@@ -16,6 +16,7 @@ const state = {
   definitions: [],
   instances: [],
   playerEvents: [],
+  seasonalPreset: null,
   rewards: [],
   audits: [],
   operations: null,
@@ -276,6 +277,7 @@ function renderEvents() {
   const visiblePlayerPhase = visiblePlayerEvent ? playerEventPhase(visiblePlayerEvent, nowMs) : null;
   return shell(`
     <div class="page-head"><div><div class="eyebrow">Player events + Party Live-Ops</div><h2>Events</h2><p>Control the Event screen players see, then manage competitive Party Event instances separately.</p></div><div class="actions"><button class="btn btn-primary" data-nav="builder">Create Party Event</button></div></div>
+    ${state.seasonalPreset?`<div class="card" style="margin-bottom:14px"><div class="card-head"><div><h3>Seasonal calendar preset</h3><div class="tiny muted">${h(state.seasonalPreset.label)} · ${h(state.seasonalPreset.timezone)} authoritative</div></div>${roleAtLeast('owner')?`<button class="btn btn-primary" data-action="apply-seasonal-calendar-preset">Schedule + enable all 6</button>`:'<span class="pill warn">Owner only</span>'}</div><div class="card-body"><div class="validation-item ok" style="margin-bottom:12px">Prepares Veilbreak → Merchant & Guild → Frostfall → Turning of the Age → Heartbond → Bloomwake. Seven-day claim windows are spaced so the single-event screen never overlaps.</div><div class="list">${state.seasonalPreset.events.map(plan=>{const row=playerRows.find(item=>item.event_id===plan.eventId),same=!!row&&row.enabled&&row.starts_at===plan.startsAt&&row.ends_at===plan.endsAt&&row.grace_ends_at===plan.graceEndsAt;return `<div class="list-row"><div><strong>${h(plan.name)}</strong><p class="mono tiny">${h(plan.eventId)}</p><p class="small muted">${fmtDate(plan.startsAt)} → ${fmtDate(plan.endsAt)}</p><p class="tiny faint">Claims through ${fmtDate(plan.graceEndsAt)}</p></div><div class="list-meta">${same?'<span class="pill good">Scheduled</span>':row?'<span class="pill warn">Needs preset</span>':'<span class="pill info">Will create season</span>'}</div></div>`}).join('')}</div></div></div>`:''}
     <div class="card" style="margin-bottom:14px"><div class="card-head"><div><h3>Player Event screen</h3><div class="tiny muted">Annual/general events from <span class="mono">live_events</span>. This is the authority used by the mobile Event screen.</div></div><span class="pill">Server controlled</span></div><div class="card-body">
       ${visiblePlayerEvent ? `<div class="validation-item ${visiblePlayerPhase==='live'?'ok':'warn'}" style="margin-bottom:12px">Player Event screen currently shows <strong>${h(visiblePlayerEvent.name||visiblePlayerEvent.event_id)}</strong> (${visiblePlayerPhase==='live'?'earning active':'claim grace'}). Other events cannot go live until this visibility window closes or the current event is Hard off.</div>` : `<div class="validation-item ok" style="margin-bottom:12px">Player Event screen currently has <strong>no visible event</strong>. Enabled scheduled events will appear automatically at their start time.</div>`}
       <div class="validation-item ok" style="margin-bottom:12px">Normal shutdown: use <strong>End now</strong>. Earning stops immediately while the claim window stays open. <strong>Hard off</strong> is an emergency master switch and also closes claims.</div>
@@ -772,7 +774,7 @@ async function loadCore() {
 }
 async function loadPageData(page = state.page) {
   if (page === 'dashboard') state.dashboard = await api('dashboard');
-  if (page === 'events') { const [instances,playerEvents]=await Promise.all([api('listInstances'),api('listPlayerEvents')]); state.instances=instances||[]; state.playerEvents=playerEvents||[]; }
+  if (page === 'events') { const [instances,playerEvents,seasonalPreset]=await Promise.all([api('listInstances'),api('listPlayerEvents'),api('seasonalCalendarPreset')]); state.instances=instances||[]; state.playerEvents=playerEvents||[]; state.seasonalPreset=seasonalPreset||null; }
   if (page === 'builder') {
     const [drafts,rewards] = await Promise.all([api('listDrafts'),api('listRewards')]);
     state.drafts = drafts || []; state.rewards = rewards || [];
@@ -958,6 +960,13 @@ app.addEventListener('click', async (event) => {
       const row=await api('cloneDefinitionToDraft',{eventId:el.dataset.id,version:Number(el.dataset.version)}); toast('Published definition cloned as next version.','success'); await loadPageData('builder'); state.currentDraftId=row.id; state.page='builder'; return render();
     }
     if (action === 'open-leaderboard' || action === 'open-event-stats') { state.page='leaderboards'; state.loading=true; render(); await loadPageData('leaderboards'); await loadLeaderboard(el.dataset.id); state.loading=false; return render(); }
+    if (action === 'apply-seasonal-calendar-preset') {
+      if(!roleAtLeast('owner'))throw new Error('Owner role required.');
+      const reason=prompt('Reason for applying the 2026–27 seasonal calendar (10+ characters):','Prepare upcoming seasonal Live-Ops calendar'); if(reason===null)return;
+      if(!confirm('Schedule and enable all six seasonal events from Veilbreak through Bloomwake? This also creates the 2027 Heartbond/Bloomwake season rows when missing.'))return;
+      const result=await api('applySeasonalCalendarPreset',{reason}); if(!result.applied)throw new Error('Seasonal calendar preset was not applied.');
+      toast('Six-event seasonal calendar scheduled and enabled.','success'); return navigate('events');
+    }
     if (action === 'clone-player-event-season') {
       const row=state.playerEvents.find(x=>x.event_id===el.dataset.id); if(!row)return;
       const match=row.event_id.match(/^(EVT_ANNUAL_\d{3})_(\d{4})$/); if(!match)throw new Error('Only annual events can be cloned into a new season.');

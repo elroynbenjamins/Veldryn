@@ -264,20 +264,23 @@ function renderEvents() {
       ${visiblePlayerEvent ? `<div class="validation-item ${visiblePlayerPhase==='live'?'ok':'warn'}" style="margin-bottom:12px">Player Event screen currently shows <strong>${h(visiblePlayerEvent.name||visiblePlayerEvent.event_id)}</strong> (${visiblePlayerPhase==='live'?'earning active':'claim grace'}). Other events cannot go live until this visibility window closes or the current event is Hard off.</div>` : `<div class="validation-item ok" style="margin-bottom:12px">Player Event screen currently has <strong>no visible event</strong>. Enabled scheduled events will appear automatically at their start time.</div>`}
       <div class="validation-item ok" style="margin-bottom:12px">Normal shutdown: use <strong>End now</strong>. Earning stops immediately while the claim window stays open. <strong>Hard off</strong> is an emergency master switch and also closes claims.</div>
       <div class="list">${playerRows.length ? playerRows.map(row => {
-        const phase=playerEventPhase(row);
+        const phase=playerEventPhase(row,nowMs);
         const claimEnd=row.grace_ends_at || (row.ends_at ? new Date(Date.parse(row.ends_at)+Math.max(0,Number(row.config?.claimGraceDays??7)||0)*86400000).toISOString() : null);
         const savedClaimEndMs=claimEnd?Date.parse(claimEnd):NaN;
-        const canEnable=roleAtLeast('owner')&&phase==='disabled'&&row.starts_at&&row.ends_at&&Number.isFinite(savedClaimEndMs)&&savedClaimEndMs>Date.now();
-        const canGoLive=roleAtLeast('owner')&&phase!=='live';
+        const canEnable=roleAtLeast('owner')&&phase==='disabled'&&row.starts_at&&row.ends_at&&Number.isFinite(savedClaimEndMs)&&savedClaimEndMs>nowMs;
+        const visibleConflict=visiblePlayerEvent&&visiblePlayerEvent.event_id!==row.event_id?visiblePlayerEvent:null;
+        const canSchedule=roleAtLeast(row.enabled?'owner':'editor');
+        const canGoLive=roleAtLeast('owner')&&phase!=='live'&&!visibleConflict;
         return `<div class="list-row event-row ${h(phase)}">
           <div style="min-width:0;flex:1"><div class="actions"><strong>${h(row.name||row.event_id)}</strong>${playerEventStatusPill(phase)}<span class="pill ${row.enabled?'good':'bad'}">Master ${row.enabled?'ON':'OFF'}</span></div>
             <p><span class="mono">${h(row.event_id)}</span> · ${h(row.currency_id||'No currency')} · priority ${h(row.priority??0)}</p>
             <p class="small muted">${row.starts_at&&row.ends_at?`${fmtDate(row.starts_at)} → ${fmtDate(row.ends_at)}`:'No runtime window configured yet.'}</p>
             ${claimEnd? `<p class="tiny faint">Claims through ${fmtDate(claimEnd)} · ${utc(claimEnd)}</p>`:''}
             <p class="tiny faint">Modules: ${h((row.modules||[]).join(', ')||'default')} · updated ${fmtDate(row.updated_at)}</p>
+            ${visibleConflict?`<p class="tiny" style="margin-top:5px">Go live is blocked while <strong>${h(visibleConflict.name||visibleConflict.event_id)}</strong> is visible.</p>`:''}
           </div>
           <div class="list-meta"><div class="actions" style="justify-content:flex-end">
-            ${roleAtLeast('editor')?`<button class="btn btn-sm btn-ghost" data-action="schedule-player-event" data-id="${attr(row.event_id)}">Schedule</button>`:''}
+            ${canSchedule?`<button class="btn btn-sm btn-ghost" data-action="schedule-player-event" data-id="${attr(row.event_id)}">${row.enabled?'Adjust schedule':'Schedule'}</button>`:''}
             ${canEnable?`<button class="btn btn-sm" data-action="toggle-player-event" data-id="${attr(row.event_id)}" data-enabled="true">Enable schedule</button>`:''}
             ${canGoLive?`<button class="btn btn-sm btn-primary" data-action="go-live-player-event" data-id="${attr(row.event_id)}">Go live now</button>`:''}
             ${phase==='live'&&roleAtLeast('owner')?`<button class="btn btn-sm" data-action="end-player-event" data-id="${attr(row.event_id)}">End now</button>`:''}

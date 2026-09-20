@@ -24,6 +24,11 @@ export interface GuildInvitationView{ id:string;guildId:string;inviterAccountId:
 export interface SocialInvitationState{party:PartyInvitationView[];guild:GuildInvitationView[];serverTime:string;}
 export interface OutgoingInvitationView{id:string;recipientAccountId:string;recipientName:string;expiresAt:string;}
 export interface SocialOutgoingInvitationState{party:OutgoingInvitationView[];guild:OutgoingInvitationView[];serverTime:string;}
+export interface GuildLeadershipStatus{
+ guildId:string;leaderMissing?:boolean;leaderAccountId?:string;leaderName?:string;leaderLastActiveAt?:string|null;
+ inactiveDays?:number;thresholdDays:number;eligibleForSuccession?:boolean;
+ successorAccountId?:string|null;successorName?:string|null;successorRole?:'officer'|'member'|null;successorLastActiveAt?:string|null;
+}
 export interface InviteCapability{available:boolean;pending:boolean;reason?:string|null;partyId?:string|null;guildId?:string|null;guildName?:string|null;memberCount?:number;memberCap?:number;minimumLevel?:number;}
 export interface SocialInviteCapabilities{party:InviteCapability;guild:InviteCapability;}
 
@@ -83,4 +88,8 @@ export async function socialOutgoingInvitations(){const client=requireClient();c
 export async function cancelGuildInvitation(invitationId:string){const client=requireClient();const {data,error}=await client.rpc('cancel_guild_invitation_v1',{p_invitation_id:invitationId});if(error)throw error;return data as 'cancelled';}
 export async function updateGuildMemberRole(accountId:string,role:'officer'|'member'){const client=requireClient();const {data,error}=await client.rpc('update_guild_member_role_v1',{p_target_account_id:accountId,p_role:role});if(error)throw error;return data as 'officer'|'member';}
 export async function removeGuildMember(accountId:string){const client=requireClient();const {data,error}=await client.rpc('remove_guild_member_v1',{p_target_account_id:accountId});if(error)throw error;return data as 'removed';}
+export async function guildLeadershipStatus(){const client=requireClient();const {data,error}=await client.rpc('guild_leadership_status_v1');if(error)throw error;return data as GuildLeadershipStatus|null;}
+export async function transferGuildLeadership(accountId:string){const client=requireClient();const {data,error}=await client.rpc('transfer_guild_leadership_v1',{p_target_account_id:accountId});if(error)throw error;return data as 'transferred';}
+export async function leaveGuild(){const client=requireClient();const {data,error}=await client.rpc('leave_guild_v1');if(error)throw error;return data as 'left';}
+export async function disbandGuild(){const client=requireClient();const {data,error}=await client.rpc('disband_guild_v1');if(error)throw error;return data as 'disbanded';}
 

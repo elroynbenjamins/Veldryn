@@ -220,8 +220,14 @@ export const COMPANION_MONTHLY_COMPLETION_REWARD={companionEssence:600,gold:1500
 export const COMPANION_WEEKLY_CHALLENGES:CompanionWeeklyChallengeDefinition[]=[
  {id:'NO_PRESTIGE_15',name:'Humble Resolve',description:'Clear Floor 15 with no Prestige companion.',minimumFloor:15,restrictions:[{type:'prohibit_rarity',rarity:'prestige'}],rewards:{companionEssence:120,bondstones:1,gold:2500}},
  {id:'STANDARD_BOSS',name:'Common Ground',description:'Clear a boss using at least one Standard companion.',minimumFloor:5,restrictions:[{type:'require_rarity',rarity:'standard',count:1}],rewards:{companionEssence:100,bondstones:1,gold:2200}},
- {id:'ASTERFALL_PAIR',name:'Asterfall Kin',description:'Clear 5+ floors with two Asterfall companions.',minimumFloor:5,restrictions:[{type:'require_origin',originId:'REG_001',count:2}],rewards:{companionEssence:110,bondstones:0,gold:2500,materials:{IRONWOOD_FANG:3}}},
- {id:'RARITY_SPECTRUM',name:'Rarity Spectrum',description:'Clear a boss with Standard, Rare and Elite/Prestige represented.',minimumFloor:10,restrictions:[{type:'rarity_mix',rarities:['standard','rare','elite']}],rewards:{companionEssence:150,bondstones:1,gold:3000}},
+ {id:'ASTERFALL_PAIR',name:'Asterfall Kin',description:'Clear Floor 10+ with two Asterfall companions.',minimumFloor:10,restrictions:[{type:'require_origin',originId:'REG_001',count:2}],rewards:{companionEssence:110,bondstones:0,gold:2500,materials:{IRONWOOD_FANG:3}}},
+ {id:'RARITY_SPECTRUM',name:'Rarity Spectrum',description:'Clear Floor 10+ with Standard, Rare and Elite/Prestige represented.',minimumFloor:10,restrictions:[{type:'rarity_mix',rarities:['standard','rare','elite']}],rewards:{companionEssence:150,bondstones:1,gold:3000}},
+ {id:'WORLDLY_TRIO',name:'Worldly Trio',description:'Clear Floor 10+ with companions from three different origins.',minimumFloor:10,restrictions:[{type:'different_origins',count:3}],rewards:{companionEssence:125,bondstones:0,gold:2800,materials:{TRIAL_SANCTUARY_MATERIAL:1}}},
+ {id:'FLAWLESS_15',name:'Unbroken Formation',description:'Clear Floor 15+ without any companion being defeated.',minimumFloor:15,restrictions:[{type:'no_defeats'}],rewards:{companionEssence:135,bondstones:0,gold:3000,materials:{TRIAL_SANCTUARY_MATERIAL:1}}},
+ {id:'UNDER_POWER_20',name:'Against the Measure',description:'Clear Floor 20+ with Team Power at or below 3,600.',minimumFloor:20,restrictions:[{type:'max_team_power',value:3600}],rewards:{companionEssence:165,bondstones:0,gold:3400,materials:{TRIAL_SANCTUARY_MATERIAL:1}}},
+ {id:'SUNSCAR_PAIR',name:'Sunscar Kin',description:'Clear Floor 10+ with at least two Sunscar companions.',minimumFloor:10,restrictions:[{type:'require_origin',originId:'REG_SUNSCAR',count:2}],rewards:{companionEssence:120,bondstones:0,gold:2750,materials:{AMBERGLASS:3}}},
+ {id:'FROSTMARCH_PAIR',name:'Frostmarch Kin',description:'Clear Floor 10+ with at least two Frostmarch companions.',minimumFloor:10,restrictions:[{type:'require_origin',originId:'REG_FROSTMARCH',count:2}],rewards:{companionEssence:120,bondstones:0,gold:2750,materials:{RIMEGLASS:3}}},
+ {id:'ASHLANDS_PAIR',name:'Ashlands Kin',description:'Clear Floor 10+ with at least two Ashlands companions.',minimumFloor:10,restrictions:[{type:'require_origin',originId:'REG_ASHLANDS',count:2}],rewards:{companionEssence:120,bondstones:0,gold:2750,materials:{BANNER_ASH:3}}},
 ];
 
 export const COMPANION_MISSIONS:CompanionMissionDefinition[]=[
@@ -290,9 +296,9 @@ export const COMPANION_SPECIAL_CHALLENGES:CompanionSpecialChallengeDefinition[]=
 
 const utcBounds=(seasonKey:string)=>{const [y,m]=seasonKey.split('-').map(Number);const startsAt=new Date(Date.UTC(y,m-1,1)).toISOString();const endsAt=new Date(Date.UTC(y,m,1)).toISOString();return{startsAt,endsAt};};
 const SEASON_OVERRIDES:Record<string,Partial<Omit<CompanionTrialSeasonDefinition,'seasonKey'|'startsAt'|'endsAt'>>>={
- '2026-09':{floorSetId:'tower_v1',modifiers:['armored','unstable_magic'],rewardSetId:'monthly_v1',specialChallenges:['NO_PRESTIGE_15'],featuredOrigin:'REG_SUNSCAR',featuredCompanionIds:['UNIT_013','UNIT_014','UNIT_015','UNIT_016']},
- '2026-10':{floorSetId:'tower_v1',modifiers:['thick_hide','execution'],rewardSetId:'monthly_v1',specialChallenges:['STANDARD_BOSS'],featuredOrigin:'REG_FROSTMARCH',featuredCompanionIds:['UNIT_017','UNIT_018','UNIT_019','UNIT_020']},
- '2026-11':{floorSetId:'tower_v1',modifiers:['relentless','frailty'],rewardSetId:'monthly_v1',specialChallenges:['RARITY_SPECTRUM'],featuredOrigin:'REG_ASHLANDS',featuredCompanionIds:['UNIT_021','UNIT_022','UNIT_023','UNIT_024']},
+ '2026-09':{floorSetId:'tower_v1',modifiers:['armored','unstable_magic'],rewardSetId:'monthly_v1',specialChallenges:['NO_PRESTIGE_15','SUNSCAR_PAIR','WORLDLY_TRIO'],featuredOrigin:'REG_SUNSCAR',featuredCompanionIds:['UNIT_013','UNIT_014','UNIT_015','UNIT_016']},
+ '2026-10':{floorSetId:'tower_v1',modifiers:['thick_hide','execution'],rewardSetId:'monthly_v1',specialChallenges:['STANDARD_BOSS','FROSTMARCH_PAIR','FLAWLESS_15'],featuredOrigin:'REG_FROSTMARCH',featuredCompanionIds:['UNIT_017','UNIT_018','UNIT_019','UNIT_020']},
+ '2026-11':{floorSetId:'tower_v1',modifiers:['relentless','frailty'],rewardSetId:'monthly_v1',specialChallenges:['RARITY_SPECTRUM','ASHLANDS_PAIR','UNDER_POWER_20'],featuredOrigin:'REG_ASHLANDS',featuredCompanionIds:['UNIT_021','UNIT_022','UNIT_023','UNIT_024']},
 };
 export function companionTrialSeasonDefinition(seasonKey:string):CompanionTrialSeasonDefinition{
  const bounds=utcBounds(seasonKey),rotation=['2026-09','2026-10','2026-11'];

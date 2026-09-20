@@ -35,9 +35,12 @@ function addReward(state:GameState,reward:EventReward,nowMs=Date.now()):GameStat
   const account={...state.account};
   let character=state.character;
   if(reward.kind==='companion'){
-    const unlocked=unlockCombatCompanion(state,reward.id,nowMs);
     const alreadyOwned=(state.account.unlockedCombatCompanionIds??[]).includes(reward.id);
-    if(alreadyOwned)return unlocked;
+    if(alreadyOwned){
+      const high=reward.rarity==='mythic'||reward.rarity==='legendary',essence=high?300:180,bondbloom=high?3:2;
+      return {...state,account:{...state.account,companionEssence:(state.account.companionEssence??0)+essence,companionMaterials:{...(state.account.companionMaterials??{}),EVENT_BONDBLOOM:(state.account.companionMaterials?.EVENT_BONDBLOOM??0)+bondbloom},longTermMetrics:{...(state.account.longTermMetrics??{}),'companions.event_duplicates_converted':(state.account.longTermMetrics?.['companions.event_duplicates_converted']??0)+1,'companions.event_duplicate_essence':(state.account.longTermMetrics?.['companions.event_duplicate_essence']??0)+essence}}};
+    }
+    const unlocked=unlockCombatCompanion(state,reward.id,nowMs);
     const materials={...(unlocked.account.companionMaterials??{})};materials.EVENT_BONDBLOOM=(materials.EVENT_BONDBLOOM??0)+(reward.rarity==='mythic'||reward.rarity==='legendary'?8:6);
     return {...unlocked,account:{...unlocked.account,companionMaterials:materials}};
   }

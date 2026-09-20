@@ -5,15 +5,15 @@ import type {ClassId,GameState} from '../../../apps/mobile/src/core/types';
 import {deriveOnlineCoopLoadout} from '../coop-loadout';
 import {OnlineEventExpeditionRuntime} from '../event-expedition-runtime';
 
-function preparedState(classId:ClassId,name:string,level:number):GameState{
- const state=createCharacter(newGame(0),classId,name);state.character!.level=level;
+function preparedState(classId:ClassId,name:string,level:number,characterId:string):GameState{
+ const state=createCharacter(newGame(0),classId,name);state.character!.level=level;state.character!.id=characterId;
  state.character!.equipment=Object.fromEntries(noviceSetFor(classId).slots.map(slot=>[slot,noviceItemId(classId,slot)]));
  return state;
 }
 
 async function main(){
- const now=Date.UTC(2026,6,15),controllerState=preparedState('IRONWARDEN','Event Tank',50);
- const echoStates=[preparedState('WAYFINDER','Echo Archer',50),preparedState('RAVAGER','Echo Ravager',50),preparedState('DAWNKEEPER','Echo Keeper',50)];
+ const now=Date.UTC(2026,6,15),controllerState=preparedState('IRONWARDEN','Event Tank',50,'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1');
+ const echoStates=[preparedState('WAYFINDER','Echo Archer',50,'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2'),preparedState('RAVAGER','Echo Ravager',50,'cccccccc-cccc-4ccc-8ccc-ccccccccccc3'),preparedState('DAWNKEEPER','Echo Keeper',50,'dddddddd-dddd-4ddd-8ddd-ddddddddddd4')];
  const controllerRecord=deriveOnlineCoopLoadout('00000000-0000-4000-8000-000000000001',controllerState,7);
  const echoRecords=echoStates.map((state,index)=>deriveOnlineCoopLoadout(`00000000-0000-4000-8000-00000000000${index+2}`,state,3));
  let liveEvent={eventId:'EVT_ANNUAL_006_2026',enabled:true,startsAtMs:now-60_000,endsAtMs:now+60_000};

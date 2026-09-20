@@ -62,7 +62,7 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImp
     {section==='appearance'&&<><Panel>
       <Text style={s.title}>Interface theme</Text>
       <Text style={s.sub}>Themes change the complete UI palette while preserving gameplay colors, region identity, rarity colors, and pixel artwork.</Text>
-      <View style={s.themeList}>{UI_THEME_OPTIONS.map(option=>{const selected=state.settings.uiTheme===option.id;return <Pressable key={option.id} accessibilityRole="button" accessibilityState={{selected}} onPress={()=>update({uiTheme:option.id})} style={({pressed})=>[s.themeCard,selected&&s.themeCardSelected,pressed&&s.pressed]}>
+      <View style={s.themeList}>{UI_THEME_OPTIONS.map(option=>{const selected=(state.settings.uiTheme??'veldryn')===option.id;return <Pressable key={option.id} accessibilityRole="button" accessibilityState={{selected}} onPress={()=>update({uiTheme:option.id})} style={({pressed})=>[s.themeCard,selected&&s.themeCardSelected,pressed&&s.pressed]}>
         <View style={s.themeCopy}><View style={s.themeTitleRow}><Text style={s.themeTitle}>{option.label}</Text>{option.id==='veldryn'?<Text style={s.recommended}>RECOMMENDED</Text>:null}{selected?<Text style={s.selectedMark}>✓ ACTIVE</Text>:null}</View><Text style={s.themeDescription}>{option.description}</Text></View>
         <View style={s.swatches}>{option.preview.map((color,index)=><View key={color+index} style={[s.swatch,{backgroundColor:color}]}/>)}</View>
       </Pressable>})}</View>

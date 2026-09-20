@@ -1,6 +1,7 @@
 import {claimActivity,createCharacter,craftRecipe,newGame,offlineCapBreakdown,previewActivityReward,startCombat,startGathering} from '../src/core/game';
 import {executeGameCommand} from '../src/core/game-commands';
 import {activateDailySupplyBoost,applyDailySupplyCraft,claimDailySupplies,DAILY_SUPPLY_CHARGE_SECONDS,dailySuppliesStatus,dailySupplyBank} from '../src/core/daily-supplies';
+import {normalizeSave} from '../src/core/save-normalization';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 function equal(actual:unknown,expected:unknown,message:string){if(actual!==expected)throw new Error(message+': expected '+String(expected)+', got '+String(actual))}
@@ -27,6 +28,7 @@ for(let day=1;day<=28;day++){
 equal(cycle.account.dailySupplies?.totalClaims,28,'A complete cycle should record 28 claims');
 equal(premium,100,'Milestones 7/14/21/28 should award 100 premium currency total');
 equal(cycle.account.premiumCurrencyBalance,100,'Premium milestone currency should be account-wide');
+const reloadedCycle=normalizeSave(structuredClone(cycle));equal(reloadedCycle.account.premiumCurrencyBalance,100,'Premium milestone currency must survive save normalization');equal(reloadedCycle.account.dailySupplies?.totalClaims,28,'Daily Supplies track must survive save normalization');
 for(const type of ['gathering_yield','crafting_output','skill_xp','combat_xp'] as const)equal(dailySupplyBank(cycle.character)[type],6,'Twenty-four normal claims should rotate evenly across all four boosts');
 const nextCycle=dailySuppliesStatus(cycle,t0+28*DAY);equal(nextCycle.cycle,2,'The track should roll into a new cycle after claim 28');equal(nextCycle.dayInTrack,1,'The next cycle should restart at claim 1');
 

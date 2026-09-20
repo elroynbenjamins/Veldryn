@@ -1,4 +1,5 @@
 import {createCharacter,newGame,previewActivityReward,startCombat} from '../src/core/game';
+import {liveEventDef} from '../src/content/live-events';
 import {acceptEventContract,activeLiveEvent,applyEventDiscoveries,applyEventDrops,availableEventRepeatCaches,chooseEventProject,claimAllEventMilestones,claimEventCommunityMilestone,claimEventDailyGift,claimEventDiscovery,claimEventObjective,claimEventRepeatCache,claimEventReward,claimEventWeeklyObjective,contributeEventCurrency,eventCollectionJournal,eventCommunityMilestones,eventContractBoard,eventCurrencyBalance,eventDailyGift,eventDiscoveryBoard,eventLifecycle,eventShopOffers,eventObjectiveClaimed,eventOfferPurchaseCount,eventPrestigeBalance,eventProgress,eventRewardClaimed,eventWeeklyBoard,grantEventActivity,purchaseEventOffer,setLocalEventEnabled} from '../src/core/live-events';
 
 function ok(condition:boolean,message:string){if(!condition)throw new Error(message);}
@@ -10,6 +11,14 @@ ok((previewActivityReward(state,t0+3_600_000).eventDrops?.length??0)===0,'Inacti
 let scheduled={...state,account:{...state.account,liveEvent:{eventId:'EVT_ANNUAL_009_2026',enabled:true,startsAtMs:t0+86400_000,endsAtMs:t0+8*86400_000}}};
 ok(eventLifecycle(scheduled,t0)?.phase==='upcoming','Scheduled events should be visible before they begin');
 
+ok(liveEventDef('EVT_ANNUAL_009_2027')?.id==='EVT_ANNUAL_009_2027','A future annual season should reuse the matching content template under its own runtime ID');
+ok(liveEventDef('EVT_ANNUAL_009_2027')?.name==='Harvestwake','Seasonal runtime IDs should preserve the event template identity');
+let seasonalState:typeof state={...state,account:{...state.account,eventProgressById:{...(state.account.eventProgressById??{}),EVT_ANNUAL_009_2026:777},liveEvent:{eventId:'EVT_ANNUAL_009_2027',enabled:true,startsAtMs:t0-1000,endsAtMs:t0+86400_000}}};
+ok(activeLiveEvent(seasonalState,t0)?.definition.id==='EVT_ANNUAL_009_2027','The active seasonal definition must keep the new year-specific ID');
+ok(eventProgress(seasonalState,'EVT_ANNUAL_009_2027')===0,'A new annual season must start with separate progress');
+seasonalState=grantEventActivity(seasonalState,'crafting',t0+1);
+ok(eventProgress(seasonalState,'EVT_ANNUAL_009_2027')===30,'New-season activity should credit the new seasonal event ID');
+ok(eventProgress(seasonalState,'EVT_ANNUAL_009_2026')===777,'New-season activity must not change the prior season progress');
 state=setLocalEventEnabled(state,true,t0);
 ok(activeLiveEvent(state,t0)?.definition.name==='Harvestwake','Developer switch should enable Harvestwake');
 const gift=eventDailyGift(state,t0)!;const giftProgressBefore=eventProgress(state,'EVT_ANNUAL_009_2026');state=claimEventDailyGift(state,t0);

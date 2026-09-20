@@ -25,6 +25,10 @@ rows=annualEventCalendar(state);
 const turning=rows.find(row=>row.eventId==='EVT_ANNUAL_001_2026')!;
 ok(turning.collectionOwned>=3,'Turning collection counts owned event pets and companion');
 equal(turning.lifetimeReputation,2500,'calendar shows lifetime event reputation');
-equal(turning.hasHistory,true,'owned/progress event is marked as participated');
+state={...state,account:{...state.account,eventProgressById:{...(state.account.eventProgressById??{}),EVT_ANNUAL_001_2027:400}}};
+rows=annualEventCalendar(state);
+const turningAcrossSeasons=rows.find(row=>row.eventId==='EVT_ANNUAL_001_2026')!;
+equal(turningAcrossSeasons.lifetimeReputation,2900,'calendar aggregates lifetime reputation across annual seasons');
+equal(turningAcrossSeasons.hasHistory,true,'owned/progress event is marked as participated');
 
 console.log('PASS: annual Event Hub calendar projection validates');

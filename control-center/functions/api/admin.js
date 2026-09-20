@@ -6,7 +6,7 @@ import { generateRedeemCode, hashRedeemCode, redeemCodeHint, validateRedeemCode 
 const ROLE_RANK = { viewer: 1, editor: 2, owner: 3 };
 const MUTATING_ACTIONS = new Set([
   'saveDraft','deleteDraft','saveTemplate','disableTemplate','cloneTemplateToDraft','cloneDefinitionToDraft',
-  'publishDraft','scheduleDefinition','rescheduleInstance','cancelInstance','archiveInstance','schedulePlayerEvent','setPlayerEventEnabled','goLivePlayerEvent','endPlayerEventNow','saveReward','retryDeadLetter',
+  'publishDraft','scheduleDefinition','rescheduleInstance','cancelInstance','archiveInstance','clonePlayerEventSeason','schedulePlayerEvent','setPlayerEventEnabled','goLivePlayerEvent','endPlayerEventNow','saveReward','retryDeadLetter',
   'saveRemoteConfig','updateAlert','saveResetDefinition','retryResetRun','createSupportCase','updateSupportCase','addSupportNote',
   'queueAdminCommand','approveAdminCommand','cancelAdminCommand','retryAdminCommand','reverseAdminCommand','saveAnnouncement','cancelAnnouncement','saveAdminUser',
   'createRedeemCode','setRedeemCodeEnabled'
@@ -359,6 +359,51 @@ async function listPlayerEvents(env) {
   return await list(env, 'live_events', 'select=event_id,name,currency_id,enabled,starts_at,ends_at,grace_ends_at,priority,modules,config,updated_at&order=priority.desc,name.asc&limit=100') ?? [];
 }
 
+function annualPlayerEventParts(eventId) {
+  const match = String(eventId ?? '').match(/^(EVT_ANNUAL_\d{3})_(\d{4})$/);
+  return match ? { seriesId: match[1], year: Number(match[2]) } : null;
+}
+function assertPlayerEventSeasonStart(eventId, startsAtMs) {
+  const parts = annualPlayerEventParts(eventId);
+  if (!parts) return;
+  const start = new Date(startsAtMs);
+  const year = start.getUTCFullYear();
+  const turningOfAgeCrossover = parts.seriesId === 'EVT_ANNUAL_001' && year === parts.year + 1 && start.getUTCMonth() === 0 && start.getUTCDate() <= 7;
+  if (year !== parts.year && !turningOfAgeCrossover) throw new Error('player_event_wrong_season_use_clone');
+}
+
+async function clonePlayerEventSeason(env, actor, payload) {
+  requireRole(actor, 'owner');
+  const sourceEventId = String(payload.eventId ?? '');
+  const source = await single(env, 'live_events', `event_id=eq.${encodeEq(sourceEventId)}`);
+  if (!source) throw new Error('player_event_not_found');
+  const parts = annualPlayerEventParts(sourceEventId);
+  if (!parts) throw new Error('player_event_not_annual');
+  const targetYear = Number(payload.targetYear);
+  if (!Number.isInteger(targetYear) || targetYear < 2026 || targetYear > 2100 || targetYear === parts.year) throw new Error('player_event_target_year_invalid');
+  const targetEventId = `${parts.seriesId}_${targetYear}`;
+  if (await single(env, 'live_events', `event_id=eq.${encodeEq(targetEventId)}`)) throw new Error('player_event_season_exists');
+  const now = new Date().toISOString();
+  const rows = await supabaseFetch(env, '/rest/v1/live_events', {
+    method: 'POST',
+    body: {
+      event_id: targetEventId,
+      name: source.name,
+      currency_id: source.currency_id,
+      enabled: false,
+      starts_at: null,
+      ends_at: null,
+      grace_ends_at: null,
+      priority: Number(source.priority ?? 0),
+      modules: Array.isArray(source.modules) ? source.modules : [],
+      config: { ...(source.config ?? {}), seasonYear: targetYear, clonedFromEventId: sourceEventId },
+      updated_at: now,
+    },
+    prefer: 'return=representation',
+  });
+  await audit(env, actor, 'player_event.clone_season', 'player_event', targetEventId, { sourceEventId, sourceYear: parts.year, targetYear, enabled: false });
+  return rows?.[0];
+}
 async function assertNoPlayerEventOverlap(env, eventId, startsAtMs, endsAtMs, graceEndsAtMs = endsAtMs) {
   const rows = await list(env, 'live_events', 'select=event_id,name,enabled,starts_at,ends_at,grace_ends_at,config&enabled=eq.true&limit=100');
   for (const row of rows ?? []) {
@@ -383,6 +428,7 @@ async function schedulePlayerEvent(env, actor, payload) {
     if (reason.length < 10) throw new Error('player_event_change_reason_too_short');
   }
   const start = parsePlayerEventDate(payload.startsAt, 'player_event_start_invalid');
+  assertPlayerEventSeasonStart(eventId, start.ms);
   const end = parsePlayerEventDate(payload.endsAt, 'player_event_end_invalid');
   if (end.ms <= start.ms) throw new Error('player_event_end_before_start');
   const graceDays = payload.claimGraceDays === undefined ? playerEventGraceDays(row) : Number(payload.claimGraceDays);
@@ -415,6 +461,7 @@ async function setPlayerEventEnabled(env, actor, payload) {
     if (!row.starts_at || !row.ends_at) throw new Error('player_event_schedule_required_before_enable');
     const startMs = Date.parse(row.starts_at), endMs = Date.parse(row.ends_at);
     if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) throw new Error('player_event_schedule_invalid');
+    assertPlayerEventSeasonStart(eventId, startMs);
     const graceEndMs = row.grace_ends_at ? Date.parse(row.grace_ends_at) : endMs + playerEventGraceDays(row) * 86400000;
     if (Number.isFinite(graceEndMs) && graceEndMs <= Date.now()) throw new Error('player_event_window_expired_use_go_live');
     await assertNoPlayerEventOverlap(env, eventId, startMs, endMs, Number.isFinite(graceEndMs) ? graceEndMs : endMs);
@@ -443,6 +490,7 @@ async function goLivePlayerEvent(env, actor, payload) {
   const reason = String(payload.reason ?? '').trim();
   if (reason.length < 10) throw new Error('player_event_change_reason_too_short');
   const startMs = Date.now();
+  assertPlayerEventSeasonStart(eventId, startMs);
   let endMs;
   if (payload.endsAt) endMs = parsePlayerEventDate(payload.endsAt, 'player_event_end_invalid').ms;
   else {
@@ -954,6 +1002,7 @@ async function routeAction(env, actor, action, payload) {
     case 'scheduleDefinition': return await scheduleDefinition(env, actor, payload);
     case 'listInstances': return await list(env, 'liveops_event_instances', 'select=*&order=starts_at.desc&limit=200');
     case 'listPlayerEvents': return await listPlayerEvents(env);
+    case 'clonePlayerEventSeason': return await clonePlayerEventSeason(env, actor, payload);
     case 'schedulePlayerEvent': return await schedulePlayerEvent(env, actor, payload);
     case 'setPlayerEventEnabled': return await setPlayerEventEnabled(env, actor, payload);
     case 'goLivePlayerEvent': return await goLivePlayerEvent(env, actor, payload);

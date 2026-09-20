@@ -1,4 +1,4 @@
-import {LIVE_EVENT_CATALOG,type LiveEventDef} from './live-events';
+import {annualEventSeriesId,LIVE_EVENT_CATALOG,type LiveEventDef} from './live-events';
 import {eventRewardOwned} from '../core/live-events';
 import type {ClassId,GameState} from '../core/types';
 
@@ -48,7 +48,7 @@ export function annualEventCalendar(state:GameState):AnnualEventCalendarEntry[]{
     const collection=rewards(definition,classId);
     const collectionOwned=collection.filter(reward=>eventRewardOwned(state,reward)).length;
     const collectionTotal=collection.length;
-    const lifetimeReputation=state.account.eventProgressById?.[definition.id]??0;
+    const seriesId=annualEventSeriesId(definition.id);const lifetimeReputation=seriesId?Object.entries(state.account.eventProgressById??{}).reduce((sum,[eventId,value])=>sum+(annualEventSeriesId(eventId)===seriesId?Number(value??0):0),0):(state.account.eventProgressById?.[definition.id]??0);
     return {
       eventId:definition.id,
       name:definition.name,

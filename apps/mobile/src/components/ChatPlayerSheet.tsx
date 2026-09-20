@@ -1,11 +1,12 @@
-import {useEffect,useState} from 'react';
+import {useEffect,useState,useMemo} from 'react';
 import {ActivityIndicator,Alert,Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {
  cancelFriendRequest,friendRelationshipState,removeFriend,respondFriendRequest,sendFriendRequest,setPlayerBlocked,
  type FriendRelationship,
 } from '../online/social';
 import {publicPlayerProfileV43,type PublicPlayerProfileV43} from '../online/profile-extension-v43';
-import {C,radii,spacing,typography} from '../theme/theme';
+import {radii,spacing,typography,equipmentTheme,type ThemeColors} from '../theme/theme';
+import {useGameTheme} from '../theme/ThemeContext';
 import {profileShowcaseArt} from '../theme/profile-showcase-art';
 import {ProfileShowcaseSection} from './ProfileShowcaseSection';
 import {ProfileFavoriteHighlights} from './ProfileFavoriteHighlights';
@@ -25,6 +26,7 @@ export function ChatPlayerSheet({
  message:ChatPlayerIdentity|null;onClose:()=>void;onBlocked:(accountId:string)=>void;
  onRelationshipChanged?:(accountId:string,relationship:FriendRelationship)=>void;
 }){
+  const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
  const {session}=useAuthSession();
  const [profile,setProfile]=useState<PublicPlayerProfileV43|null>(null),[loading,setLoading]=useState(false),[busy,setBusy]=useState(false),[unavailable,setUnavailable]=useState(false),[loadError,setLoadError]=useState('');
  const [relationship,setRelationship]=useState<{relationship:FriendRelationship;requestId?:string}>({relationship:'none'}),[relationshipLoading,setRelationshipLoading]=useState(false),[relationshipError,setRelationshipError]=useState('');
@@ -94,11 +96,11 @@ export function ChatPlayerSheet({
  </View></View></Modal>;
 }
 
-const s=StyleSheet.create({
- scrim:{flex:1,justifyContent:'flex-end',backgroundColor:'rgba(0,0,0,.55)'},sheet:{maxHeight:'88%',paddingHorizontal:spacing.lg,paddingTop:8,paddingBottom:24,backgroundColor:'#101923',borderTopWidth:StyleSheet.hairlineWidth,borderColor:C.line,borderTopLeftRadius:22,borderTopRightRadius:22},handle:{width:38,height:4,alignSelf:'center',borderRadius:2,backgroundColor:'#526174',marginBottom:8},top:{minHeight:44,flexDirection:'row',alignItems:'center'},kicker:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:1,flex:1},close:{width:44,height:44,alignItems:'center',justifyContent:'center'},closeText:{fontSize:28,lineHeight:31,color:C.muted},scroll:{gap:spacing.md,paddingBottom:spacing.sm},
+function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);return StyleSheet.create({
+ scrim:{flex:1,justifyContent:'flex-end',backgroundColor:C.overlay},sheet:{maxHeight:'88%',paddingHorizontal:spacing.lg,paddingTop:8,paddingBottom:24,backgroundColor:C.panel,borderTopWidth:StyleSheet.hairlineWidth,borderColor:C.line,borderTopLeftRadius:22,borderTopRightRadius:22},handle:{width:38,height:4,alignSelf:'center',borderRadius:2,backgroundColor:C.line,marginBottom:8},top:{minHeight:44,flexDirection:'row',alignItems:'center'},kicker:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:1,flex:1},close:{width:44,height:44,alignItems:'center',justifyContent:'center'},closeText:{fontSize:28,lineHeight:31,color:C.muted},scroll:{gap:spacing.md,paddingBottom:spacing.sm},
  limitedCard:{gap:10,padding:spacing.md,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2},limitedCopy:{gap:3},limitedText:{...typography.body,color:C.muted,lineHeight:20},privateTitle:{...typography.title,color:C.text},
  bioCard:{gap:3,padding:10,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2},bioLabel:{fontSize:8,color:C.accent,fontWeight:'900',letterSpacing:.75},bio:{...typography.body,color:C.text,lineHeight:20},
- selfNotice:{gap:2,marginTop:spacing.sm,padding:spacing.sm,borderWidth:1,borderColor:C.info,borderRadius:radii.md,backgroundColor:'#102536'},selfNoticeLabel:{...typography.caption,color:C.info,fontWeight:'900',letterSpacing:.8},selfNoticeText:{...typography.caption,color:C.muted},
+ selfNotice:{gap:2,marginTop:spacing.sm,padding:spacing.sm,borderWidth:1,borderColor:C.info,borderRadius:radii.md,backgroundColor:C.selection},selfNoticeLabel:{...typography.caption,color:C.info,fontWeight:'900',letterSpacing:.8},selfNoticeText:{...typography.caption,color:C.muted},
  actionArea:{gap:6,marginTop:spacing.sm},actionHead:{minHeight:28,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},hint:{...typography.caption,color:C.muted,textTransform:'uppercase',letterSpacing:.8},relationshipPill:{minHeight:24,minWidth:82,alignItems:'center',justifyContent:'center',paddingHorizontal:7,paddingVertical:3,borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.panel2},relationshipFriend:{borderColor:C.good,backgroundColor:'#152b20'},relationshipText:{fontSize:7.5,color:C.muted,fontWeight:'900',letterSpacing:.45},relationshipFriendText:{color:C.good},relationshipError:{fontSize:9,lineHeight:12,color:C.warning},
- actions:{flexDirection:'row',flexWrap:'wrap',gap:6},primaryAction:{flex:1,minWidth:124},secondaryAction:{minWidth:92},blockButton:{minWidth:76,minHeight:44,alignItems:'center',justifyContent:'center',paddingHorizontal:10,borderRadius:radii.md,backgroundColor:'#1a2430',borderWidth:StyleSheet.hairlineWidth,borderColor:C.line},blockText:{...typography.bodyStrong,color:C.bad},pressed:{opacity:.62},
-});
+ actions:{flexDirection:'row',flexWrap:'wrap',gap:6},primaryAction:{flex:1,minWidth:124},secondaryAction:{minWidth:92},blockButton:{minWidth:76,minHeight:44,alignItems:'center',justifyContent:'center',paddingHorizontal:10,borderRadius:radii.md,backgroundColor:C.secondaryButton,borderWidth:StyleSheet.hairlineWidth,borderColor:C.line},blockText:{...typography.bodyStrong,color:C.bad},pressed:{opacity:.62},
+});}

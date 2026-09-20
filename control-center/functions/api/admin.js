@@ -6,7 +6,7 @@ import { generateRedeemCode, hashRedeemCode, redeemCodeHint, validateRedeemCode 
 const ROLE_RANK = { viewer: 1, editor: 2, owner: 3 };
 const MUTATING_ACTIONS = new Set([
   'saveDraft','deleteDraft','saveTemplate','disableTemplate','cloneTemplateToDraft','cloneDefinitionToDraft',
-  'publishDraft','scheduleDefinition','rescheduleInstance','cancelInstance','archiveInstance','saveReward','retryDeadLetter',
+  'publishDraft','scheduleDefinition','rescheduleInstance','cancelInstance','archiveInstance','schedulePlayerEvent','setPlayerEventEnabled','goLivePlayerEvent','endPlayerEventNow','saveReward','retryDeadLetter',
   'saveRemoteConfig','updateAlert','saveResetDefinition','retryResetRun','createSupportCase','updateSupportCase','addSupportNote',
   'queueAdminCommand','approveAdminCommand','cancelAdminCommand','retryAdminCommand','reverseAdminCommand','saveAnnouncement','cancelAnnouncement','saveAdminUser',
   'createRedeemCode','setRedeemCodeEnabled'
@@ -341,6 +341,152 @@ async function archiveInstance(env, actor, payload) {
   });
   await audit(env, actor, 'event.archive', 'event_instance', payload.id, { priorStatus: row.status });
   return { archived: true, instance: rows?.[0] };
+}
+
+
+function playerEventGraceDays(row) {
+  const value = Number(row?.config?.claimGraceDays ?? 7);
+  return Number.isFinite(value) ? Math.max(0, Math.min(30, Math.floor(value))) : 7;
+}
+
+function parsePlayerEventDate(value, errorCode) {
+  const ms = Date.parse(String(value ?? ''));
+  if (!Number.isFinite(ms)) throw new Error(errorCode);
+  return { ms, iso: new Date(ms).toISOString() };
+}
+
+async function listPlayerEvents(env) {
+  return await list(env, 'live_events', 'select=event_id,name,currency_id,enabled,starts_at,ends_at,grace_ends_at,priority,modules,config,updated_at&order=priority.desc,name.asc&limit=100') ?? [];
+}
+
+async function assertNoPlayerEventOverlap(env, eventId, startsAtMs, endsAtMs) {
+  const rows = await list(env, 'live_events', 'select=event_id,name,enabled,starts_at,ends_at&enabled=eq.true&limit=100');
+  for (const row of rows ?? []) {
+    if (row.event_id === eventId || !row.starts_at || !row.ends_at) continue;
+    const rowStart = Date.parse(row.starts_at), rowEnd = Date.parse(row.ends_at);
+    if (!Number.isFinite(rowStart) || !Number.isFinite(rowEnd)) continue;
+    if (startsAtMs < rowEnd && rowStart < endsAtMs) throw new Error(`player_event_overlap:${row.event_id}`);
+  }
+}
+
+async function schedulePlayerEvent(env, actor, payload) {
+  requireRole(actor, 'editor');
+  const eventId = String(payload.eventId ?? '');
+  const row = await single(env, 'live_events', `event_id=eq.${encodeEq(eventId)}`);
+  if (!row) throw new Error('player_event_not_found');
+  const start = parsePlayerEventDate(payload.startsAt, 'player_event_start_invalid');
+  const end = parsePlayerEventDate(payload.endsAt, 'player_event_end_invalid');
+  if (end.ms <= start.ms) throw new Error('player_event_end_before_start');
+  const graceDays = payload.claimGraceDays === undefined ? playerEventGraceDays(row) : Number(payload.claimGraceDays);
+  if (!Number.isInteger(graceDays) || graceDays < 0 || graceDays > 30) throw new Error('player_event_claim_grace_invalid');
+  if (row.enabled) await assertNoPlayerEventOverlap(env, eventId, start.ms, end.ms);
+  const graceEndsAt = new Date(end.ms + graceDays * 86400000).toISOString();
+  const rows = await supabaseFetch(env, '/rest/v1/live_events', {
+    method: 'PATCH',
+    query: `event_id=eq.${encodeEq(eventId)}`,
+    body: { starts_at: start.iso, ends_at: end.iso, grace_ends_at: graceEndsAt, updated_at: new Date().toISOString() },
+    prefer: 'return=representation',
+  });
+  await audit(env, actor, 'player_event.schedule', 'player_event', eventId, {
+    before: { startsAt: row.starts_at, endsAt: row.ends_at, graceEndsAt: row.grace_ends_at, enabled: row.enabled },
+    after: { startsAt: start.iso, endsAt: end.iso, graceEndsAt },
+  });
+  return rows?.[0];
+}
+
+async function setPlayerEventEnabled(env, actor, payload) {
+  requireRole(actor, 'owner');
+  const eventId = String(payload.eventId ?? '');
+  const row = await single(env, 'live_events', `event_id=eq.${encodeEq(eventId)}`);
+  if (!row) throw new Error('player_event_not_found');
+  const enabled = payload.enabled === true;
+  const reason = String(payload.reason ?? '').trim();
+  if (reason.length < 10) throw new Error('player_event_change_reason_too_short');
+  if (enabled) {
+    if (!row.starts_at || !row.ends_at) throw new Error('player_event_schedule_required_before_enable');
+    const startMs = Date.parse(row.starts_at), endMs = Date.parse(row.ends_at);
+    if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) throw new Error('player_event_schedule_invalid');
+    const graceEndMs = row.grace_ends_at ? Date.parse(row.grace_ends_at) : endMs + playerEventGraceDays(row) * 86400000;
+    if (Number.isFinite(graceEndMs) && graceEndMs <= Date.now()) throw new Error('player_event_window_expired_use_go_live');
+    await assertNoPlayerEventOverlap(env, eventId, startMs, endMs);
+  }
+  const rows = await supabaseFetch(env, '/rest/v1/live_events', {
+    method: 'PATCH',
+    query: `event_id=eq.${encodeEq(eventId)}`,
+    body: { enabled, updated_at: new Date().toISOString() },
+    prefer: 'return=representation',
+  });
+  await audit(env, actor, enabled ? 'player_event.enable' : 'player_event.hard_disable', 'player_event', eventId, {
+    reason,
+    priorEnabled: row.enabled,
+    startsAt: row.starts_at,
+    endsAt: row.ends_at,
+    graceEndsAt: row.grace_ends_at,
+  });
+  return rows?.[0];
+}
+
+async function goLivePlayerEvent(env, actor, payload) {
+  requireRole(actor, 'owner');
+  const eventId = String(payload.eventId ?? '');
+  const row = await single(env, 'live_events', `event_id=eq.${encodeEq(eventId)}`);
+  if (!row) throw new Error('player_event_not_found');
+  const reason = String(payload.reason ?? '').trim();
+  if (reason.length < 10) throw new Error('player_event_change_reason_too_short');
+  const startMs = Date.now();
+  let endMs;
+  if (payload.endsAt) endMs = parsePlayerEventDate(payload.endsAt, 'player_event_end_invalid').ms;
+  else {
+    const durationDays = Number(payload.durationDays ?? 14);
+    if (!Number.isFinite(durationDays) || durationDays < 0.25 || durationDays > 60) throw new Error('player_event_duration_invalid');
+    endMs = startMs + Math.round(durationDays * 86400000);
+  }
+  if (endMs <= startMs) throw new Error('player_event_end_before_start');
+  await assertNoPlayerEventOverlap(env, eventId, startMs, endMs);
+  const graceDays = playerEventGraceDays(row);
+  const startsAt = new Date(startMs).toISOString(), endsAt = new Date(endMs).toISOString();
+  const graceEndsAt = new Date(endMs + graceDays * 86400000).toISOString();
+  const rows = await supabaseFetch(env, '/rest/v1/live_events', {
+    method: 'PATCH',
+    query: `event_id=eq.${encodeEq(eventId)}`,
+    body: { enabled: true, starts_at: startsAt, ends_at: endsAt, grace_ends_at: graceEndsAt, updated_at: new Date().toISOString() },
+    prefer: 'return=representation',
+  });
+  await audit(env, actor, 'player_event.go_live', 'player_event', eventId, {
+    reason,
+    before: { enabled: row.enabled, startsAt: row.starts_at, endsAt: row.ends_at, graceEndsAt: row.grace_ends_at },
+    after: { enabled: true, startsAt, endsAt, graceEndsAt },
+  });
+  return rows?.[0];
+}
+
+async function endPlayerEventNow(env, actor, payload) {
+  requireRole(actor, 'owner');
+  const eventId = String(payload.eventId ?? '');
+  const row = await single(env, 'live_events', `event_id=eq.${encodeEq(eventId)}`);
+  if (!row) throw new Error('player_event_not_found');
+  const reason = String(payload.reason ?? '').trim();
+  if (reason.length < 10) throw new Error('player_event_change_reason_too_short');
+  if (!row.enabled || !row.starts_at || Date.parse(row.starts_at) > Date.now()) throw new Error('player_event_not_live');
+  const nowMs = Date.now();
+  const startsAtMs = Date.parse(row.starts_at);
+  const endsAtMs = Math.max(nowMs, startsAtMs + 1000);
+  const graceDays = playerEventGraceDays(row);
+  const endsAt = new Date(endsAtMs).toISOString(), graceEndsAt = new Date(endsAtMs + graceDays * 86400000).toISOString();
+  const rows = await supabaseFetch(env, '/rest/v1/live_events', {
+    method: 'PATCH',
+    query: `event_id=eq.${encodeEq(eventId)}`,
+    body: { enabled: true, ends_at: endsAt, grace_ends_at: graceEndsAt, updated_at: new Date().toISOString() },
+    prefer: 'return=representation',
+  });
+  await audit(env, actor, 'player_event.end_now', 'player_event', eventId, {
+    reason,
+    priorEndsAt: row.ends_at,
+    endsAt,
+    graceEndsAt,
+    claimsRemainOpen: graceDays > 0,
+  });
+  return rows?.[0];
 }
 
 async function saveReward(env, actor, payload) {
@@ -797,6 +943,11 @@ async function routeAction(env, actor, action, payload) {
     case 'publishDraft': return await publishDraft(env, actor, payload);
     case 'scheduleDefinition': return await scheduleDefinition(env, actor, payload);
     case 'listInstances': return await list(env, 'liveops_event_instances', 'select=*&order=starts_at.desc&limit=200');
+    case 'listPlayerEvents': return await listPlayerEvents(env);
+    case 'schedulePlayerEvent': return await schedulePlayerEvent(env, actor, payload);
+    case 'setPlayerEventEnabled': return await setPlayerEventEnabled(env, actor, payload);
+    case 'goLivePlayerEvent': return await goLivePlayerEvent(env, actor, payload);
+    case 'endPlayerEventNow': return await endPlayerEventNow(env, actor, payload);
     case 'rescheduleInstance': return await rescheduleInstance(env, actor, payload);
     case 'cancelInstance': return await cancelInstance(env, actor, payload);
     case 'archiveInstance': return await archiveInstance(env, actor, payload);

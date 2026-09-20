@@ -10,6 +10,7 @@ import {COLLECTION_SETS_V45} from './collection-sets-v45';
 import {CROSS_SKILL_DISCOVERIES_V45} from './cross-skill-discoveries-v45';
 import {RARE_DISCOVERY_POOLS_V46} from './rare-idle-discoveries-v46';
 import {BASE_OFFLINE_CAP_HOURS,MAX_OFFLINE_CAP_HOURS} from './game';
+import {COMBAT_CHALLENGE_IDS,COMBAT_CHALLENGES,challengeHuntStats,challengeHuntUnlocked} from './challenge-hunts';
 
 export const CURRENT_SKILL_IDS:readonly SkillId[]=['mining','woodcutting','fishing','smithing','cooking','herbalism','alchemy','hunting','exploration','tailoring','enchanting','faith'];
 
@@ -59,7 +60,8 @@ export function weeklyOrderCandidatesFromCurrentContent(state:GameState):WeeklyO
   ],
  };
  const regionalProblems=WORLD_ZONES.filter(zone=>availableZoneIds.has(zone.id)).flatMap(zone=>{const rates=[...hunts.filter(row=>row.available&&row.regionId===zone.id).map(row=>row.estimatedPerHour),...gathering.filter(row=>row.available&&row.regionId===zone.id).map(row=>row.estimatedPerHour)],estimatedPerHour=rates.length?Math.max(10,Math.round(rates.reduce((sum,value)=>sum+value,0)/rates.length)):30,seeds=regionalProblemSeeds[zone.id]??[{key:'STABILITY',title:`Trouble in ${zone.name}`,brief:`Local routes through ${zone.name} need adventurers to keep normal activity moving.`}];return seeds.map(seed=>({id:`region:${zone.id}:${seed.key}`,kind:'regional' as const,title:seed.title,brief:seed.brief,regionId:zone.id,activityId:`region:${zone.id}:${seed.key}`,source:{kind:'region' as const,id:zone.id,label:zone.name,available:true},estimatedPerHour,available:true,priority:zone.id===state.currentRegionId?12:28,reward:{rewardRef:`weekly_order_regional_${zone.id.toLowerCase()}`,label:`${zone.name} Relief Cache`}}));});
- return [...hunts,...gathering,...recipes,...regionalProblems];
+ const threatBounties=MONSTERS.filter(monster=>!monster.boss&&level>=monster.unlockLevel&&availableZoneNames.has(monster.zone)).flatMap(monster=>COMBAT_CHALLENGE_IDS.filter(challengeId=>challengeHuntUnlocked(state,monster.id,challengeId)).map(challengeId=>{const challenge=COMBAT_CHALLENGES[challengeId],tuned=challengeHuntStats(monster,challengeId),regionId=WORLD_ZONES.find(zone=>zone.name===monster.zone)?.id;return {id:`threat:${monster.id}:${challengeId}`,kind:'threat' as const,title:`${challenge.shortName}: ${monster.name}`,brief:`Defeat ${monster.name} while running its ${challenge.name}. Normal hunts do not count toward this bounty.`,monsterId:monster.id,challengeId,regionId,activityId:`combat:${monster.id}:${challengeId}`,source:{kind:'monster' as const,id:monster.id,label:monster.name,available:true},estimatedPerHour:Math.max(1,Math.floor(3600/Math.max(1,tuned.secondsPerKill))),available:true,priority:challengeId==='nemesis'?8:challengeId==='hardened'?14:20,reward:{rewardRef:`weekly_order_threat_${challengeId}`,label:`${challenge.name} Bounty Cache`}};}));
+ return [...hunts,...gathering,...recipes,...regionalProblems,...threatBounties];
 }
 
 export function launchReadinessReport(state?:GameState):LaunchReadinessReport{

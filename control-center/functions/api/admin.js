@@ -494,16 +494,114 @@ async function applySeasonalCalendarPreset(env, actor, payload) {
   return {startYear,endYear:startYear+1,events:preset,enabled:true};
 }
 
-async function assertNoPlayerEventOverlap(env, eventId, startsAtMs, endsAtMs, graceEndsAtMs = endsAtMs) {
+const PLAYER_EVENT_EXPEDITION_SERIES = new Set([
+  'EVT_ANNUAL_001','EVT_ANNUAL_002','EVT_ANNUAL_003','EVT_ANNUAL_006',
+  'EVT_ANNUAL_008','EVT_ANNUAL_010','EVT_ANNUAL_011','EVT_ANNUAL_012',
+]);
+
+function playerEventHasSeasonalExpedition(eventId) {
+  const match = String(eventId ?? '').match(/^(EVT_ANNUAL_\d{3})(?:_|$)/);
+  return Boolean(match && PLAYER_EVENT_EXPEDITION_SERIES.has(match[1]));
+}
+
+function playerEventRuntimePhase(row, nowMs = Date.now()) {
+  if (!row?.enabled) return 'disabled';
+  const startsAtMs = row.starts_at ? Date.parse(row.starts_at) : NaN;
+  const endsAtMs = row.ends_at ? Date.parse(row.ends_at) : NaN;
+  if (!Number.isFinite(startsAtMs) || !Number.isFinite(endsAtMs) || endsAtMs <= startsAtMs) return 'needs_schedule';
+  if (nowMs < startsAtMs) return 'scheduled';
+  if (nowMs < endsAtMs) return 'live';
+  const fallbackGraceEndMs = endsAtMs + playerEventGraceDays(row) * 86400000;
+  const claimEndMs = row.grace_ends_at ? Date.parse(row.grace_ends_at) : fallbackGraceEndMs;
+  if (Number.isFinite(claimEndMs) && nowMs < claimEndMs) return 'claiming';
+  return 'expired';
+}
+
+async function playerEventVisibilityConflicts(env, eventId, startsAtMs, visibleEndsAtMs) {
   const rows = await list(env, 'live_events', 'select=event_id,name,enabled,starts_at,ends_at,grace_ends_at,config&enabled=eq.true&limit=100');
+  const conflicts = [];
   for (const row of rows ?? []) {
     if (row.event_id === eventId || !row.starts_at || !row.ends_at) continue;
     const rowStart = Date.parse(row.starts_at), rowEnd = Date.parse(row.ends_at);
     const rowGraceEnd = row.grace_ends_at ? Date.parse(row.grace_ends_at) : rowEnd + playerEventGraceDays(row) * 86400000;
     if (!Number.isFinite(rowStart) || !Number.isFinite(rowEnd)) continue;
     const rowVisibleEnd = Number.isFinite(rowGraceEnd) ? rowGraceEnd : rowEnd;
-    if (startsAtMs < rowVisibleEnd && rowStart < graceEndsAtMs) throw new Error(`player_event_visibility_overlap:${row.event_id}`);
+    if (startsAtMs < rowVisibleEnd && rowStart < visibleEndsAtMs) {
+      conflicts.push({ eventId: row.event_id, name: row.name ?? row.event_id, startsAt: row.starts_at, endsAt: row.ends_at, graceEndsAt: row.grace_ends_at ?? null });
+    }
   }
+  return conflicts;
+}
+
+async function playerEventPreflight(env, payload) {
+  const eventId = String(payload.eventId ?? '');
+  const row = await single(env, 'live_events', `event_id=eq.${encodeEq(eventId)}`);
+  if (!row) throw new Error('player_event_not_found');
+  const nowMs = Date.now(), phase = playerEventRuntimePhase(row, nowMs), checks = [];
+  const add = (key, status, label, detail) => checks.push({ key, status, label, detail });
+
+  let startMs = row.starts_at ? Date.parse(row.starts_at) : NaN;
+  let endMs = row.ends_at ? Date.parse(row.ends_at) : NaN;
+  let graceEndMs = row.grace_ends_at ? Date.parse(row.grace_ends_at) : NaN;
+  let scheduleValid = Number.isFinite(startMs) && Number.isFinite(endMs) && endMs > startMs;
+  let seasonValid = false;
+  let scheduleConflicts = [];
+
+  if (!scheduleValid) add('schedule','error','Schedule','A valid start and end time are required before enabling the saved schedule.');
+  else {
+    add('schedule','pass','Schedule',`${new Date(startMs).toISOString()} → ${new Date(endMs).toISOString()}`);
+    try { assertPlayerEventSeasonStart(eventId, startMs); seasonValid = true; add('season','pass','Season year','The scheduled start matches this annual season ID.'); }
+    catch { add('season','error','Season year','The scheduled start belongs to a different annual season. Clone the event into the correct year instead.'); }
+    if (!Number.isFinite(graceEndMs)) graceEndMs = endMs + playerEventGraceDays(row) * 86400000;
+    if (graceEndMs < endMs) add('claim_window','error','Claim window','Claim grace ends before event earning ends.');
+    else add('claim_window','pass','Claim window',`Claims remain visible through ${new Date(graceEndMs).toISOString()}.`);
+    scheduleConflicts = await playerEventVisibilityConflicts(env, eventId, startMs, Math.max(endMs, graceEndMs));
+    if (scheduleConflicts.length) add('overlap','error','Visibility overlap',`Conflicts with ${scheduleConflicts.map(item=>item.name).join(', ')}.`);
+    else add('overlap','pass','Visibility overlap','No other enabled Player Event overlaps this earning + claim window.');
+  }
+
+  const durationDays = payload.durationDays === undefined ? 14 : Number(payload.durationDays);
+  if (!Number.isFinite(durationDays) || durationDays < 0.25 || durationDays > 60) throw new Error('player_event_duration_invalid');
+  const goLiveEndMs = nowMs + Math.round(durationDays * 86400000);
+  const goLiveGraceEndMs = goLiveEndMs + playerEventGraceDays(row) * 86400000;
+  let goLiveSeasonValid = false, goLiveConflicts = [];
+  try { assertPlayerEventSeasonStart(eventId, nowMs); goLiveSeasonValid = true; }
+  catch {}
+  if (goLiveSeasonValid) goLiveConflicts = await playerEventVisibilityConflicts(env, eventId, nowMs, goLiveGraceEndMs);
+
+  const expedition = playerEventHasSeasonalExpedition(eventId);
+  add('expedition', expedition ? 'pass' : 'info', 'Seasonal dungeon', expedition ? (phase === 'live' ? 'Persistent event-dungeon transport is LIVE for this event.' : 'Persistent event-dungeon transport is wired and will become launchable while earning is live.') : 'This event series does not have a seasonal co-op expedition.');
+  if (phase === 'claiming') add('phase','warning','Current phase','Claims are open. Re-starting earning is intentionally blocked until this claim window closes or the event is hard-disabled.');
+  else if (phase === 'expired' && row.enabled) add('phase','warning','Current phase','The master switch is still ON for an expired event. Disable or reschedule it before the next season.');
+  else add('phase','pass','Current phase',phase.replaceAll('_',' '));
+
+  const claimWindowFuture = scheduleValid && Number.isFinite(graceEndMs) && graceEndMs > nowMs;
+  const canEnableSchedule = !row.enabled && scheduleValid && seasonValid && claimWindowFuture && scheduleConflicts.length === 0;
+  const canGoLiveNow = phase !== 'live' && phase !== 'claiming' && goLiveSeasonValid && goLiveConflicts.length === 0;
+  return {
+    eventId,
+    name: row.name ?? eventId,
+    phase,
+    enabled: row.enabled === true,
+    seasonalExpedition: expedition,
+    checks,
+    blocking: checks.some(check => check.status === 'error'),
+    scheduleConflicts,
+    goLivePreview: {
+      durationDays,
+      startsAt: new Date(nowMs).toISOString(),
+      endsAt: new Date(goLiveEndMs).toISOString(),
+      graceEndsAt: new Date(goLiveGraceEndMs).toISOString(),
+      seasonValid: goLiveSeasonValid,
+      conflicts: goLiveConflicts,
+    },
+    actions: { canEnableSchedule, canGoLiveNow },
+  };
+}
+
+async function assertNoPlayerEventOverlap(env, eventId, startsAtMs, endsAtMs, graceEndsAtMs = endsAtMs) {
+  const conflicts = await playerEventVisibilityConflicts(env, eventId, startsAtMs, graceEndsAtMs);
+  if (conflicts.length) throw new Error(`player_event_visibility_overlap:${conflicts[0].eventId}`);
 }
 
 async function schedulePlayerEvent(env, actor, payload) {
@@ -579,6 +677,9 @@ async function goLivePlayerEvent(env, actor, payload) {
   if (!row) throw new Error('player_event_not_found');
   const reason = String(payload.reason ?? '').trim();
   if (reason.length < 10) throw new Error('player_event_change_reason_too_short');
+  const currentPhase = playerEventRuntimePhase(row);
+  if (currentPhase === 'live') throw new Error('player_event_already_live');
+  if (currentPhase === 'claiming') throw new Error('player_event_claim_window_open');
   const startMs = Date.now();
   assertPlayerEventSeasonStart(eventId, startMs);
   let endMs;
@@ -1092,6 +1193,7 @@ async function routeAction(env, actor, action, payload) {
     case 'scheduleDefinition': return await scheduleDefinition(env, actor, payload);
     case 'listInstances': return await list(env, 'liveops_event_instances', 'select=*&order=starts_at.desc&limit=200');
     case 'listPlayerEvents': return await listPlayerEvents(env);
+    case 'playerEventPreflight': return await playerEventPreflight(env, payload);
     case 'clonePlayerEventSeason': return await clonePlayerEventSeason(env, actor, payload);
     case 'applySeasonalCalendarPreset': return await applySeasonalCalendarPreset(env, actor, payload);
     case 'schedulePlayerEvent': return await schedulePlayerEvent(env, actor, payload);

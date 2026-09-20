@@ -83,6 +83,21 @@ function trialBossProfile(floor:number,theme:CompanionTrialEncounterTheme):Trial
  ];
  return {name:theme.bossName,hp:1,attack:1,defense:1,haste:bossIndex>=5?.015:0,basicMs:2200,basicCoeff:.82,tags:[`trial_boss_theme:${theme.id}`],abilities:profiles[Math.min(profiles.length-1,bossIndex-1)]};
 }
+export function companionTrialBossPreview(floor:number){
+ if(!Number.isInteger(floor)||floor<1||floor>COMPANION_TRIAL_FLOOR_COUNT||floor%COMPANION_TRIAL_BOSS_INTERVAL!==0)return undefined;
+ const theme=companionTrialEncounterTheme(floor),profile=trialBossProfile(floor,theme);
+ const abilities=(profile.abilities??[]).map(ability=>{
+  const effects=Array.from(new Set(ability.effects.map(effect=>{
+   if(effect.kind==='damage')return ability.target==='all_enemies'?'team damage':'focused damage';
+   if(effect.kind==='buff'&&effect.tag==='damage_taken'&&(effect.value??0)<0)return 'defensive brace';
+   if(effect.kind==='buff'&&effect.tag==='damage_done')return 'damage boost';
+   if(effect.kind==='debuff'&&effect.tag==='damage_taken')return 'vulnerability';
+   return effect.kind.replace(/_/g,' ');
+  })));
+  return {name:ability.name,target:ability.target,interruptible:ability.interruptible===true,castTimeMs:ability.castTimeMs,effects,condition:ability.aiCondition==='self_below_50'?'below 50% HP':undefined};
+ });
+ return {floor,name:profile.name,theme:theme.label,abilities};
+}
 function rawCompanionTrialEncounter(floor:number){
  const theme=companionTrialEncounterTheme(floor),boss=floor%COMPANION_TRIAL_BOSS_INTERVAL===0;
  if(boss){const profile=trialBossProfile(floor,theme);return [enemy(`COMPANION_TRIAL_BOSS_${floor}`,profile.name,floor,true,profile)];}

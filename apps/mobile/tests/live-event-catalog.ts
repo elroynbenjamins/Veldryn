@@ -1,4 +1,5 @@
-import {LIVE_EVENT_CATALOG} from '../src/content/live-events';
+import {LIVE_EVENT_CATALOG,liveEventDef} from '../src/content/live-events';
+import {seasonalEventAdventure} from '../src/content/seasonal-event-adventures';
 import {eventUiCopy,validateLiveEventCatalog} from '../src/content/live-event-ui';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
@@ -78,6 +79,22 @@ ok(frost!.milestones('IRONWARDEN').some(row=>row.reward.id==='EVT_PET_015'),'Fro
 ok(frost!.discoveries.some(row=>row.reward.id==='EVT_PET_016'),'Frostfall discovery grants Gift Mimic');
 ok(frost!.shop.some(row=>row.reward.id==='EVT_PET_017'),'Frostfall prestige stock grants Aurora Fox');
 ok(frost!.milestones('IRONWARDEN').some(row=>row.reward.id==='EVT_UNIT_009'),'Frostfall grants Frostbell Herald');
+
+const seasonalAdventureIds=['EVT_ANNUAL_010_2026','EVT_ANNUAL_011_2026','EVT_ANNUAL_012_2026','EVT_ANNUAL_001_2026','EVT_ANNUAL_002_2027','EVT_ANNUAL_003_2027'];
+for(const eventId of seasonalAdventureIds){
+  const adventure=seasonalEventAdventure(eventId);
+  ok(adventure,`${eventId} should have a dedicated seasonal adventure`);
+  equal(adventure!.storyQuests.length,3,`${eventId} should have a three-part event questline`);
+  equal(new Set(adventure!.storyQuests.map(row=>row.id)).size,3,`${eventId} quest ids should be unique`);
+  equal(adventure!.dungeon.routeHighlights.length,3,`${eventId} dungeon should have three route landmarks`);
+  equal(adventure!.dungeon.enemyNames.length,3,`${eventId} dungeon should have three themed enemy types`);
+  equal(new Set(adventure!.dungeon.enemyNames).size,3,`${eventId} dungeon enemy names should be unique`);
+  ok(adventure!.dungeon.finalBoss.length>3,`${eventId} dungeon should have a named boss`);
+}
+const heartbond2027=liveEventDef('EVT_ANNUAL_002_2027');
+const bloomwake2027=liveEventDef('EVT_ANNUAL_003_2027');
+equal(heartbond2027?.id,'EVT_ANNUAL_002_2027','Heartbond 2027 should reuse the series template with fresh runtime identity');
+equal(bloomwake2027?.id,'EVT_ANNUAL_003_2027','Bloomwake 2027 should reuse the series template with fresh runtime identity');
 
 const harvestCopy=eventUiCopy(harvest!);
 equal(harvestCopy.shopTitle,'HARVEST SHOP','Harvestwake uses event-shop wording');

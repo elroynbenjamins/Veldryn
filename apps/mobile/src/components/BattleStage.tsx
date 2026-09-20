@@ -73,6 +73,7 @@ export function BattleStage({state,monster,elapsedSeconds,cycleSeconds}:{state:G
    </View>
   </Animated.View>
   <View style={s.details}><Text style={s.ability}>{view.style.name}</Text><Text style={s.sub}>{view.style.description}</Text>
+   <View style={s.identity}><View style={s.identityHead}><Text style={s.identityLabel}>ENCOUNTER · {view.encounter.archetype.toUpperCase()}</Text><Text style={s.pressure}>{view.encounter.pressure.toUpperCase()}</Text></View><Text style={s.sub}>{view.encounter.summary}</Text><View style={s.mechanics}>{view.encounter.mechanics.map(mechanic=><View key={mechanic} style={s.mechanic}><Text style={s.mechanicText}>{mechanic}</Text></View>)}</View><Text style={s.tactic}>Tactic: {view.encounter.tactic}</Text></View>
    <StatBar label="Current health" current={state.character!.currentHp} max={stats.hp} reduceMotion={state.settings.reduceMotion}/>
    <StatBar label="Estimated enemy health" current={view.enemyHp} max={view.enemyMaxHp} reduceMotion={state.settings.reduceMotion}/>
    <Text style={s.note}>Motion is visual feedback only. Combat rewards and settled health remain authoritative when you collect.</Text>
@@ -91,5 +92,5 @@ const s=StyleSheet.create({
  damageTaken:{fontSize:17,lineHeight:21,color:'#ff8790',fontWeight:'900',textShadowColor:'#180508',textShadowRadius:3},
  name:{...typography.bodyStrong,color:C.text,textAlign:'center'},hit:{...typography.caption,color:'#d5e0ec',textAlign:'center'},
  versus:{width:34,paddingTop:53,alignItems:'center',gap:4},vs:{...typography.caption,color:C.accent,fontWeight:'600'},motionHint:{fontSize:7,lineHeight:9,color:C.muted,fontWeight:'900',letterSpacing:.4,textAlign:'center'},
- details:{padding:12,gap:10},ability:{...typography.bodyStrong,color:C.accent},sub:{...typography.body,color:C.muted},note:{...typography.caption,color:C.muted}
+ details:{padding:12,gap:10},ability:{...typography.bodyStrong,color:C.accent},sub:{...typography.body,color:C.muted},identity:{gap:6,padding:9,borderWidth:1,borderColor:C.line,borderRadius:8,backgroundColor:C.panel2},identityHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},identityLabel:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.7},pressure:{fontSize:9,lineHeight:12,color:C.warning,fontWeight:'900',letterSpacing:.5},mechanics:{flexDirection:'row',flexWrap:'wrap',gap:5},mechanic:{paddingHorizontal:7,paddingVertical:3,borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.bg},mechanicText:{fontSize:9,color:C.text,fontWeight:'800'},tactic:{...typography.caption,color:C.info,lineHeight:16},note:{...typography.caption,color:C.muted}
 });

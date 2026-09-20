@@ -145,7 +145,10 @@ export function executeCompanionActivity(input:GameState,type:string,a:Record<st
       if(!requested||!rewards[requested])throw new Error('No Bond milestone reward is available.');
       if(progress.bondLevel<requested)throw new Error(`Reach Bond ${requested} first.`);
       const key=`${id}:${requested}`;if(claims.includes(key))throw new Error('Bond reward already claimed.');
-      state=reward(state,{companionEssence:rewards[requested]});state.account.companionBondRewardClaims=[...claims,key];break;
+      state=reward(state,{companionEssence:rewards[requested]});
+      const profileRewards=requested===4?[`COMPANION_PORTRAIT_${id}`]:requested===8?[`COMPANION_TITLE_${id}`]:[];
+      if(profileRewards.length){const current=state.account.companionPhase2Profile??{showcaseCompanionIds:[],showcaseSlotsUnlocked:1};state.account.companionPhase2Profile={...current,codexRewardIds:[...new Set([...(current.codexRewardIds??[]),...profileRewards])]};}
+      state.account.companionBondRewardClaims=[...claims,key];break;
     }
     case 'companion_trial_start':{
       const r=startCompanionTrial(trialInput,idsArg(a),seed,[],a.floor===undefined?undefined:Number(a.floor));state.account.companionTrialProgress=r.progress;break;

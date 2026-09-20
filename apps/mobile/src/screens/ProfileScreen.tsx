@@ -1,5 +1,5 @@
 import {useCallback,useEffect,useMemo,useState} from 'react';
-import {ActivityIndicator,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {ActivityIndicator,Image,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {Panel} from '../components/Panel';
 import {GameButton} from '../components/GameButton';
 import {ProfileScenePreview} from '../components/ProfileScenePreview';
@@ -18,6 +18,8 @@ import {useAuthSession} from '../online/AuthSessionProvider';
 import {onlineConfigured} from '../online/supabase';
 import {publicPlayerProfileV43,type PublicPlayerProfileV43} from '../online/profile-extension-v43';
 import {C,equipmentColors,radii,spacing,typography} from '../theme/theme';
+import {companionArtSource} from '../theme/companion-art';
+import {profileShowcaseArt} from '../theme/profile-showcase-art';
 
 const label=(value?:string)=>value?value.replace(/[_:-]+/g,' ').replace(/\b\w/g,letter=>letter.toUpperCase()):'Default';
 
@@ -34,10 +36,10 @@ export function ProfileScreen({state,onNavigate}:{state:GameState;onNavigate?:(d
  const achievementIds=profileAchievementShowcase(state,publicSelf),recordIds=profileRecordShowcase(state,publicSelf),collectionRefs=profileCollectionShowcase(state,publicSelf);
  const achievementEntries=achievementIds.map(id=>{const def=JOURNAL_ACHIEVEMENTS_V42.find(row=>row.id===id);return {key:id,label:profileAchievementLabel(id),meta:def?label(def.category)+' · '+label(def.tier):'Achievement'}});
  const recordEntries=recordIds.map(id=>{const record=publicSelf?.recordEntries?.[id]??state.account.journalState?.records?.[id];return {key:id,label:profileRecordLabel(id),value:record?formatProfileRecordValue(id,record.value):'—',meta:record?.contextLabel}});
- const collectionEntries=collectionRefs.map(ref=>({key:ref.kind+':'+ref.id,label:profileCollectionLabel(ref),meta:label(ref.kind)}));
+ const collectionEntries=collectionRefs.map(ref=>({key:ref.kind+':'+ref.id,label:profileCollectionLabel(ref),meta:label(ref.kind),art:profileShowcaseArt(ref)}));
  const favoriteSkillId=publicSelf?.favoriteSkillId??summary.highestSkill?.skillId;
  const favoriteCompanionId=publicSelf?.favoriteCompanionId??state.character?.equippedCombatCompanionId??state.account.unlockedCombatCompanionIds?.[0];
- const favoriteCompanion=favoriteCompanionId?COMBAT_COMPANIONS.find(row=>row.id===favoriteCompanionId):undefined;
+ const favoriteCompanion=favoriteCompanionId?COMBAT_COMPANIONS.find(row=>row.id===favoriteCompanionId):undefined,favoriteCompanionArt=favoriteCompanionId?companionArtSource(favoriteCompanionId):undefined;
  const online=!!publicSelf,background=c.profileBackgroundId??'asterfall-night';
 
  return <ScrollView contentContainerStyle={s.root}>
@@ -69,7 +71,7 @@ export function ProfileScreen({state,onNavigate}:{state:GameState;onNavigate?:(d
    <Text style={s.section}>PROFILE HIGHLIGHTS</Text>
    <View style={s.highlights}>
     <View style={s.highlight}><Text style={s.highlightLabel}>FAVORITE SKILL</Text><Text style={s.highlightValue}>{favoriteSkillId?label(favoriteSkillId):'Not selected'}</Text>{summary.highestSkill?<Text style={s.highlightMeta}>Highest current skill · Lv. {summary.highestSkill.level}</Text>:null}</View>
-    <View style={s.highlight}><Text style={s.highlightLabel}>FAVORITE COMPANION</Text><Text style={s.highlightValue}>{favoriteCompanion?.name??'Not selected'}</Text><Text style={s.highlightMeta}>{favoriteCompanion?label(favoriteCompanion.role)+' · '+label(favoriteCompanion.rarity):'Choose one in Online Profile settings'}</Text></View>
+    <View style={s.highlight}>{favoriteCompanionArt?<Image source={favoriteCompanionArt} resizeMode="contain" style={s.favoriteCompanionArt}/>:null}<Text style={s.highlightLabel}>FAVORITE COMPANION</Text><Text style={s.highlightValue}>{favoriteCompanion?.name??'Not selected'}</Text><Text style={s.highlightMeta}>{favoriteCompanion?label(favoriteCompanion.role)+' · '+label(favoriteCompanion.rarity):'Choose one in Online Profile settings'}</Text></View>
    </View>
    <View style={s.identityRows}><IdentityRow label="Bosses defeated" value={summary.bossesDefeated.toLocaleString()}/><IdentityRow label="Owned titles" value={(account.unlockedTitleIds?.length??0).toLocaleString()}/><IdentityRow label="Profile cosmetics" value={summary.collectionOwned.toLocaleString()}/><IdentityRow label="Published visibility" value={publicSelf?label(publicSelf.visibility):'Local only'}/></View>
   </Panel>
@@ -94,6 +96,6 @@ const s=StyleSheet.create({
  identityHead:{flexDirection:'row',alignItems:'center',gap:spacing.sm},name:{...typography.hero,color:C.text},title:{...typography.bodyStrong,color:equipmentColors.goldSoft,fontStyle:'italic'},copy:{...typography.body,color:C.muted,lineHeight:20},bio:{...typography.body,color:C.text,lineHeight:21,marginTop:spacing.sm},
  quickActions:{flexDirection:'row',flexWrap:'wrap',gap:6,marginTop:spacing.md},action:{width:'48%',minWidth:130},
  stats:{flexDirection:'row',flexWrap:'wrap',gap:6},stat:{width:'31.5%',minWidth:92,minHeight:66,padding:8,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel,alignItems:'center',justifyContent:'center'},statValue:{...typography.title,color:C.text},statLabel:{fontSize:8,color:C.muted,fontWeight:'900',letterSpacing:.7,marginTop:2,textAlign:'center'},
- section:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.8},highlights:{flexDirection:'row',gap:8,marginTop:spacing.sm},highlight:{flex:1,minWidth:0,padding:9,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2},highlightLabel:{fontSize:8,color:C.muted,fontWeight:'900',letterSpacing:.7},highlightValue:{...typography.bodyStrong,color:C.text,marginTop:2},highlightMeta:{fontSize:9,lineHeight:12,color:C.info,marginTop:2},
+ section:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.8},highlights:{flexDirection:'row',gap:8,marginTop:spacing.sm},highlight:{flex:1,minWidth:0,padding:9,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2},favoriteCompanionArt:{width:52,height:52,alignSelf:'center',marginBottom:3},highlightLabel:{fontSize:8,color:C.muted,fontWeight:'900',letterSpacing:.7},highlightValue:{...typography.bodyStrong,color:C.text,marginTop:2},highlightMeta:{fontSize:9,lineHeight:12,color:C.info,marginTop:2},
  identityRows:{marginTop:spacing.sm},row:{minHeight:34,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:spacing.sm,borderTopWidth:1,borderTopColor:C.line},rowLabel:{...typography.caption,color:C.muted},rowValue:{...typography.bodyStrong,color:C.text},
 });

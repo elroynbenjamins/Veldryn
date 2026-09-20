@@ -1,3 +1,4 @@
+import {useMemo} from 'react';
 import {Image,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from '../components/GameButton';
 import {Panel} from '../components/Panel';
@@ -6,10 +7,12 @@ import {collectibleJournal,collectionBonusBreakdown,selectCollectible} from '../
 import type {GameState} from '../core/types';
 import {petArtSource} from '../theme/pet-art';
 import {C,radii,spacing,typography} from '../theme/theme';
+import {useGameTheme,type ThemePalette} from '../theme/app-theme';
 
 const pct=(bps:number)=>(bps/100).toFixed(2)+'%';
 
 export function CollectionsScreen({state,onChange}:{state:GameState;onChange:(next:GameState)=>void}){
+ const T=useGameTheme(),s=useMemo(()=>makeStyles(T),[T]);
   const journal=collectibleJournal(state),breakdown=collectionBonusBreakdown(state),owned=journal.filter(row=>row.owned).length;
   const rows=(kind:CollectibleKind)=>journal.filter(row=>row.kind===kind);
 
@@ -61,37 +64,37 @@ export function CollectionsScreen({state,onChange}:{state:GameState;onChange:(ne
   </ScrollView>;
 }
 
-const s=StyleSheet.create({
+const makeStyles=(T:ThemePalette)=>StyleSheet.create({
   root:{padding:spacing.lg,gap:spacing.md,paddingBottom:110},
-  heading:{...typography.hero,color:C.text},
-  title:{...typography.title,color:C.text},
-  section:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:1},
-  copy:{...typography.caption,color:C.muted,lineHeight:18},
-  accent:{color:C.accent,fontWeight:'800'},
-  ownedWord:{color:C.good,fontWeight:'900'},
-  lockedWord:{color:C.disabled,fontWeight:'800'},
+  heading:{...typography.hero,color:T.text},
+  title:{...typography.title,color:T.text},
+  section:{...typography.caption,color:T.accent,fontWeight:'900',letterSpacing:1},
+  copy:{...typography.caption,color:T.muted,lineHeight:18},
+  accent:{color:T.accent,fontWeight:'800'},
+  ownedWord:{color:T.good,fontWeight:'900'},
+  lockedWord:{color:T.disabled,fontWeight:'800'},
   flex:{flex:1,minWidth:0},
-  name:{...typography.bodyStrong,color:C.text},
+  name:{...typography.bodyStrong,color:T.text},
   summaryRow:{flexDirection:'row',gap:8,marginTop:spacing.md},
-  summaryCell:{flex:1,alignItems:'center',padding:10,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2},
-  summaryValue:{...typography.title,color:C.text},
-  summaryLabel:{fontSize:8,color:C.muted,fontWeight:'900',letterSpacing:.8,marginTop:2},
-  bonusRow:{minHeight:52,flexDirection:'row',alignItems:'center',gap:spacing.sm,borderBottomWidth:1,borderBottomColor:C.line},
-  bonusValue:{...typography.bodyStrong,color:C.good},
-  row:{flexDirection:'row',alignItems:'center',gap:spacing.sm,paddingVertical:spacing.sm,borderBottomWidth:1,borderBottomColor:C.line,opacity:.52},
+  summaryCell:{flex:1,alignItems:'center',padding:10,borderWidth:1,borderColor:T.line,borderRadius:radii.md,backgroundColor:T.panel2},
+  summaryValue:{...typography.title,color:T.text},
+  summaryLabel:{fontSize:8,color:T.muted,fontWeight:'900',letterSpacing:.8,marginTop:2},
+  bonusRow:{minHeight:52,flexDirection:'row',alignItems:'center',gap:spacing.sm,borderBottomWidth:1,borderBottomColor:T.line},
+  bonusValue:{...typography.bodyStrong,color:T.good},
+  row:{flexDirection:'row',alignItems:'center',gap:spacing.sm,paddingVertical:spacing.sm,borderBottomWidth:1,borderBottomColor:T.line,opacity:.52},
   owned:{opacity:1},
   petGrid:{flexDirection:'row',flexWrap:'wrap',gap:8,marginTop:spacing.sm},
-  petCard:{width:'48%',minWidth:142,gap:5,padding:8,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2},
-  selectedCard:{borderColor:C.accent,backgroundColor:'#272417'},
+  petCard:{width:'48%',minWidth:142,gap:5,padding:8,borderWidth:1,borderColor:T.line,borderRadius:radii.md,backgroundColor:T.panel2},
+  selectedCard:{borderColor:T.accent,backgroundColor:'#272417'},
   lockedCard:{opacity:.46},
   petPortrait:{height:78,alignItems:'center',justifyContent:'center',borderRadius:8,backgroundColor:'#101923',overflow:'hidden'},
   petImage:{width:'100%',height:'100%'},
-  petFallback:{fontSize:28,color:C.accent,fontWeight:'900'},
+  petFallback:{fontSize:28,color:T.accent,fontWeight:'900'},
   petTags:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:4},
-  tag:{fontSize:8,color:C.muted,fontWeight:'900',letterSpacing:.6},
-  activeTag:{fontSize:8,color:C.good,fontWeight:'900',letterSpacing:.6},
-  petName:{fontSize:11,color:C.text,fontWeight:'900'},
-  context:{fontSize:9,color:C.info,fontWeight:'700'},
-  source:{fontSize:9,lineHeight:12,color:C.muted,minHeight:24},
-  bonusText:{fontSize:9,lineHeight:12,color:C.accent,fontWeight:'800'},
+  tag:{fontSize:8,color:T.muted,fontWeight:'900',letterSpacing:.6},
+  activeTag:{fontSize:8,color:T.good,fontWeight:'900',letterSpacing:.6},
+  petName:{fontSize:11,color:T.text,fontWeight:'900'},
+  context:{fontSize:9,color:T.info,fontWeight:'700'},
+  source:{fontSize:9,lineHeight:12,color:T.muted,minHeight:24},
+  bonusText:{fontSize:9,lineHeight:12,color:T.accent,fontWeight:'800'},
 });

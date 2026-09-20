@@ -128,16 +128,16 @@ const regional=(id:string,name:string,rarity:CombatCompanionRarity,role:Companio
 };
 const REGIONAL_COMPANIONS:CompanionDefinition[]=[
   regional('UNIT_013','Dune Stalker','rare','damage',[req('monster_mastery','Reach Sunscar Scorpion Mastery 20','SUNSCAR_SCORPION',20)],'Assassin / poison pressure',SUNSCAR,'AMBERGLASS','damage'),
-  regional('UNIT_014','Oasis Djinnling','elite','support',[req('monster_mastery','Reach Dune Oracle Mastery 20','DUNE_ORACLE',20)],'Support / resource utility',SUNSCAR,'ASTRAL_SCRIPT','resource_restore'),
-  regional('UNIT_015','Solar Scarab','elite','tank',[req('monster_mastery','Reach Glassbound Sentinel Mastery 20','GLASSBOUND_SENTINEL',20)],'Guardian / reflect timing',SUNSCAR,'SUNSTONE_ORE','damage_reduction'),
+  regional('UNIT_014','Oasis Djinnling','elite','support',[req('achievement','Complete 4 Sunscar Sanctuary assignments','COMPANION_MISSIONS:REG_SUNSCAR',4)],'Support / resource utility',SUNSCAR,'ASTRAL_SCRIPT','resource_restore'),
+  regional('UNIT_015','Solar Scarab','elite','tank',[req('achievement','Earn S grade on 2 Sunscar Sanctuary assignments','COMPANION_S_GRADE:REG_SUNSCAR',2)],'Guardian / reflect timing',SUNSCAR,'SUNSTONE_ORE','damage_reduction'),
   regional('UNIT_016',"Tyrant's Heir",'prestige','tank',[req('event_challenge',"Defeat the Tyrant's Heir companion challenge",'CHALLENGE_TYRANTS_HEIR',1)],'Champion / defensive sidegrade',SUNSCAR,'ASTRAL_SCRIPT','shield'),
   regional('UNIT_017','Rime Wolf Pup','rare','damage',[req('monster_mastery','Reach Frostwolf Mastery 20','FROSTWOLF',20)],'Striker / chill setup',FROST,'RIMEGLASS','damage'),
-  regional('UNIT_018','Bell Sprite','elite','support',[req('monster_mastery','Reach Bellwraith Mastery 20','BELLWRAITH',20)],'Support / cooldown rhythm',FROST,'CHOIR_BLOOM','cooldown_reduction'),
-  regional('UNIT_019','Choir Golem','elite','tank',[req('monster_mastery','Reach Choir Hunter Mastery 20','CHOIR_HUNTER',20)],'Guardian / armour break',FROST,'FROSTIRON','damage_reduction'),
+  regional('UNIT_018','Bell Sprite','elite','support',[req('meta','Raise Rime Wolf Pup to Bond 5','COMPANION_BOND:UNIT_017',5)],'Support / cooldown rhythm',FROST,'CHOIR_BLOOM','cooldown_reduction'),
+  regional('UNIT_019','Choir Golem','elite','tank',[req('achievement','Complete 5 Frostmarch Sanctuary assignments','COMPANION_MISSIONS:REG_FROSTMARCH',5)],'Guardian / armour break',FROST,'FROSTIRON','damage_reduction'),
   regional('UNIT_020','Wyrm Echo','prestige','damage',[req('event_challenge','Defeat the Wyrm Echo companion challenge','CHALLENGE_WYRM_ECHO',1)],'Champion / telegraph reward',FROST,'RIMEGLASS','damage'),
   regional('UNIT_021','Obsidian Drakelet','rare','damage',[req('monster_mastery','Reach Blackglass Mireling Mastery 20','BLACKGLASS_MIRELING',20)],'Hunter / armour pierce',ASH,'BANNER_ASH','armor_pierce'),
-  regional('UNIT_022','Forge Custodian','elite','tank',[req('monster_mastery','Reach Cinder Titan Mastery 20','CINDER_TITAN',20)],'Guardian / barrier',ASH,'BANNER_ASH','shield'),
-  regional('UNIT_023','Primal Spark','elite','damage',[req('monster_mastery','Reach Ashen Revenant Mastery 20','ASHEN_REVENANT',20)],'Artillery / chain hits',ASH,'BANNER_ASH','chain_damage'),
+  regional('UNIT_022','Forge Custodian','elite','tank',[req('meta','Raise Obsidian Drakelet to Bond 6','COMPANION_BOND:UNIT_021',6)],'Guardian / barrier',ASH,'BANNER_ASH','shield'),
+  regional('UNIT_023','Primal Spark','elite','damage',[req('achievement','Earn S grade on 2 Ashlands Sanctuary assignments','COMPANION_S_GRADE:REG_ASHLANDS',2)],'Artillery / chain hits',ASH,'BANNER_ASH','chain_damage'),
   regional('UNIT_024','Regent Shade','prestige','support',[req('event_challenge','Defeat the Regent Shade companion challenge','CHALLENGE_REGENT_SHADE',1)],'Champion / tactical utility',ASH,'BANNER_ASH','utility'),
 ];
 

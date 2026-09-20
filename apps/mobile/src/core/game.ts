@@ -36,7 +36,7 @@ import {applyTrustedLongTermProgression} from './long-term-progression-runtime';
 import {applyLocalBalanceSnapshot} from './balance-telemetry';
 import {applyCorePetActivityDrops,applyCorePetCombatDrops} from './core-pet-drops';
 import {evaluateIdleRuleSet,type IdleEvaluationContext,type IdleRuleSet} from './idle-rules-v40';
-import {challengeHuntStats,challengeHuntUnlocked,challengeRewardMultipliers} from './challenge-hunts';
+import {challengeHuntStats,challengeHuntUnlocked,challengeRewardMultipliers,rotatingChallengeAffix} from './challenge-hunts';
 export const beginAlchemyBatch=startAlchemyBatch;
 
 function longTermAccountScope(state:GameState){return state.account.longTermAccountScopeId??`local-account:${state.createdAtMs}`;}
@@ -126,7 +126,8 @@ export function startCombat(state:GameState,monsterId:string,nowMs:number,combat
   if(m.boss)throw new Error('Bosses use challengeFallenKnight');
   if(zoneIdForTarget(monsterId)!==currentRegionId(state))throw new Error(`Travel to ${m.zone} before fighting ${m.name}`);
   if(combatChallengeId&&!challengeHuntUnlocked(state,monsterId,combatChallengeId))throw new Error('Raise this monster\'s Mastery to unlock that Challenge Hunt.');
-  return {...state,activity:{kind:'combat',targetId:monsterId,...(combatChallengeId?{combatChallengeId}:{}),startedAtMs:nowMs,lastClaimAtMs:nowMs,classFocus:normalizeTrainingFocus(state.character.trainingFocus),classTrainingSnapshot:{faithBlessingId:selectedFaithBlessing(state)?.id},environment:captureActivityEnvironment(monsterId,nowMs)}}
+  const combatAffixId=combatChallengeId?rotatingChallengeAffix(monsterId,combatChallengeId,nowMs):undefined;
+  return {...state,activity:{kind:'combat',targetId:monsterId,...(combatChallengeId?{combatChallengeId,combatAffixId}:{}),startedAtMs:nowMs,lastClaimAtMs:nowMs,classFocus:normalizeTrainingFocus(state.character.trainingFocus),classTrainingSnapshot:{faithBlessingId:selectedFaithBlessing(state)?.id},environment:captureActivityEnvironment(monsterId,nowMs)}}
 }
 
 /** Travel is instantaneous for now, but always settles and stops the prior activity. */
@@ -176,7 +177,7 @@ function consume(stacks:ItemStack[],itemId:string,quantity:number){const f=stack
 function stackQty(stacks:ItemStack[],itemId?:string){if(!itemId)return 0;return stacks.find(s=>s.itemId===itemId)?.quantity||0;}
 
 function simulateCombat(state:GameState,monsterId:string,elapsed:number){
-  const c=state.character!,baseMonster=MONSTERS.find(x=>x.id===monsterId)!,challengeId=state.activity?.kind==='combat'?state.activity.combatChallengeId:undefined,m=challengeHuntStats(baseMonster,challengeId),stats=effectiveStats(state);
+  const c=state.character!,baseMonster=MONSTERS.find(x=>x.id===monsterId)!,challengeId=state.activity?.kind==='combat'?state.activity.combatChallengeId:undefined,affixId=state.activity?.kind==='combat'?state.activity.combatAffixId:undefined,m=challengeHuntStats(baseMonster,challengeId,affixId),stats=effectiveStats(state);
   const modifiers=characterPermanentMultipliers(state);
   const companion=companionCombatContribution(state);
   const style=classCombatStyle(c.classId);
@@ -236,7 +237,7 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
   }
   const m=MONSTERS.find(x=>x.id===state.activity!.targetId);if(!m)throw new Error('Unknown monster');
   if(m.boss)return {xp:0,gold:0,items:[],kills:0,elapsedSeconds:elapsed};
-  const challengeId=state.activity.combatChallengeId,challengeReward=challengeRewardMultipliers(challengeId);
+  const challengeId=state.activity.combatChallengeId,affixId=state.activity.combatAffixId,challengeReward=challengeRewardMultipliers(challengeId,affixId);
   const sim=simulateCombat(state,m.id,elapsed);const items:ItemStack[]=[];
   const effect=environmentEffectForActivity(state.activity).effect;
   for(const drop of m.drops){let qty=0;const chance=Math.min(1,drop.chance*effect.dropChanceMultiplier*multipliers.dropChanceMultiplier*challengeReward.dropChance);const seed=`${state.character.id}:${state.activity.lastClaimAtMs}:${m.id}:${drop.itemId}`;for(let i=0;i<sim.kills;i++)if(random01(seed,i)<chance)qty+=drop.min+Math.floor(random01(seed,i+50000)*(drop.max-drop.min+1));if(qty>0)items.push({itemId:drop.itemId,quantity:qty});}

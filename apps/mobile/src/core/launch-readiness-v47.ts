@@ -24,7 +24,41 @@ export function weeklyOrderCandidatesFromCurrentContent(state:GameState):WeeklyO
  const hunts=MONSTERS.filter(monster=>!monster.boss).map(monster=>({id:`monster:${monster.id}`,kind:'hunt' as const,title:`Defeat ${monster.name}`,monsterId:monster.id,regionId:WORLD_ZONES.find(zone=>zone.name===monster.zone)?.id,activityId:`combat:${monster.id}`,source:{kind:'monster' as const,id:monster.id,label:monster.name,available:level>=monster.unlockLevel&&availableZoneNames.has(monster.zone),reason:level<monster.unlockLevel?`Requires level ${monster.unlockLevel}`:undefined},estimatedPerHour:Math.max(1,Math.floor(3600/Math.max(1,monster.secondsPerKill))),available:level>=monster.unlockLevel&&availableZoneNames.has(monster.zone),priority:monster.level<=level?20+Math.abs(level-monster.level):80}));
  const gathering=[...GATHERING,...HERB_NODES].map(action=>({id:`gather:${action.id}`,kind:'profession' as const,title:`${action.name}`,actionId:action.id,professionKind:'gathering' as const,regionId:action.zoneId,activityId:action.id,source:{kind:'skill' as const,id:action.skillId,label:action.name,available:availableZoneIds.has(action.zoneId)&&(state.skills.find(skill=>skill.skillId===action.skillId)?.level??1)>=action.unlockLevel,reason:availableZoneIds.has(action.zoneId)?undefined:'Region locked'},estimatedPerHour:Math.max(1,Math.floor(3600/Math.max(1,action.seconds))),available:availableZoneIds.has(action.zoneId)&&(state.skills.find(skill=>skill.skillId===action.skillId)?.level??1)>=action.unlockLevel,priority:25}));
  const recipes=RECIPES.filter(recipe=>recipe.skillId==='smithing'||recipe.skillId==='cooking').map(recipe=>({id:`recipe:${recipe.id}`,kind:'profession' as const,title:recipe.name,actionId:recipe.id,professionKind:recipe.skillId==='cooking'?'cooking' as const:'crafting' as const,activityId:recipe.id,source:{kind:'recipe' as const,id:recipe.id,label:recipe.name,available:(state.skills.find(skill=>skill.skillId===recipe.skillId)?.level??1)>=recipe.level,reason:`Requires ${recipe.skillId} ${recipe.level}`},estimatedPerHour:Math.max(1,Math.floor(3600/Math.max(1,recipe.seconds))),available:(state.skills.find(skill=>skill.skillId===recipe.skillId)?.level??1)>=recipe.level,priority:35}));
- const regionalProblems=WORLD_ZONES.filter(zone=>availableZoneIds.has(zone.id)).map(zone=>{const rates=[...hunts.filter(row=>row.available&&row.regionId===zone.id).map(row=>row.estimatedPerHour),...gathering.filter(row=>row.available&&row.regionId===zone.id).map(row=>row.estimatedPerHour)],estimatedPerHour=rates.length?Math.max(10,Math.round(rates.reduce((sum,value)=>sum+value,0)/rates.length)):30;return {id:`region:${zone.id}`,kind:'regional' as const,title:`Stabilize ${zone.name}`,regionId:zone.id,activityId:`region:${zone.id}`,source:{kind:'region' as const,id:zone.id,label:zone.name,available:true},estimatedPerHour,available:true,priority:zone.id===state.currentRegionId?12:28};});
+ const regionalProblemSeeds:Record<string,Array<{key:string;title:string;brief:string}>>={
+  GREENFIELDS:[
+   {key:'WARDSTONES',title:'Broken Wardstones',brief:'Old roadside wards are flickering out. Thin the creatures pressing against them and gather what the wardens need to rebuild the line.'},
+   {key:'BURROWWAKE',title:'Burrowwake',brief:'Something below the fields is driving vermin and boars toward the farms. Keep the roads clear while locals reinforce the homesteads.'},
+  ],
+  SILVERBROOK:[
+   {key:'RIVERLIGHTS',title:'Riverlights at Dusk',brief:'Unnatural lights are drifting against the current. Patrol the banks and gather from the river while ferrymen trace the source.'},
+   {key:'DROWNED_TOLL',title:'The Drowned Toll',brief:'A bell is sounding beneath Silverbrook after sunset. Keep the crossings open while the village searches the flooded foundations.'},
+  ],
+  IRONWOOD:[
+   {key:'THORNWAKE',title:'Thornwake',brief:'Briar growth is choking marked trails overnight. Hunt the things nesting in it and gather through Ironwood to push the growth back.'},
+   {key:'RUNE_TREES',title:'Wolves at the Rune Trees',brief:'Predators are circling the oldest oath-marked trees. Wardens need the surrounding paths secured before they can investigate the runes.'},
+  ],
+  OLD_MINES:[
+   {key:'BELL_BELOW',title:'The Bell Below',brief:'The abandoned mine bell is ringing again. Clear the upper tunnels and work the surviving veins while scouts descend toward the sound.'},
+   {key:'RUNEBOUND_COLLAPSE',title:'Runebound Collapse',brief:'A sealed gallery has broken open and runic debris is destabilizing nearby shafts. Keep the tunnels usable while crews shore them up.'},
+  ],
+  KINGS_ROAD:[
+   {key:'OATHBOUND_PATROLS',title:'Oathbound Patrols',brief:'Dead soldiers are marching the royal road in disciplined groups. Break their patrol routes before travelers are cut off from Asterfall.'},
+   {key:'EMPTY_LANTERNS',title:'Lanterns Without Bearers',brief:'Unattended lanterns are appearing farther down the fogline each night. Hold the road while scouts map where the lights are leading.'},
+  ],
+  SUNSCAR:[
+   {key:'GLASSSTORM',title:'Glassstorm Caravan',brief:'A moving wall of glass dust has trapped supply caravans between safe wells. Secure the route and gather usable material before the storm shifts.'},
+   {key:'OBSERVATORY_ECHOES',title:'Observatory Echoes',brief:'Buried observatories are answering one another with pulses of light. Keep nearby camps safe while scholars decipher the sequence.'},
+  ],
+  FROSTMARCH:[
+   {key:'BELLS_UNDER_ICE',title:'Bells Under Ice',brief:'Muted bells are carrying through the frozen ground. Patrol the passes and gather supplies while search parties follow the sound beneath the ice.'},
+   {key:'WHITEOUT_HUNT',title:'Whiteout Hunt',brief:'Predators are using a prolonged whiteout to move close to settled routes. Reduce the threat and keep Frostmarch supply lines operating.'},
+  ],
+  ASHLANDS:[
+   {key:'BLACKGLASS_ERUPTION',title:'Blackglass Eruption',brief:'Fresh blackglass is forcing its way through the mire and drawing hostile creatures with it. Stabilize the area before paths are sealed.'},
+   {key:'CRUCIBLE_SMOKE',title:'Crucible Smoke',brief:'The distant crucible is venting ash across working routes. Keep the approaches clear while crews recover materials before visibility collapses.'},
+  ],
+ };
+ const regionalProblems=WORLD_ZONES.filter(zone=>availableZoneIds.has(zone.id)).flatMap(zone=>{const rates=[...hunts.filter(row=>row.available&&row.regionId===zone.id).map(row=>row.estimatedPerHour),...gathering.filter(row=>row.available&&row.regionId===zone.id).map(row=>row.estimatedPerHour)],estimatedPerHour=rates.length?Math.max(10,Math.round(rates.reduce((sum,value)=>sum+value,0)/rates.length)):30,seeds=regionalProblemSeeds[zone.id]??[{key:'STABILITY',title:`Trouble in ${zone.name}`,brief:`Local routes through ${zone.name} need adventurers to keep normal activity moving.`}];return seeds.map(seed=>({id:`region:${zone.id}:${seed.key}`,kind:'regional' as const,title:seed.title,brief:seed.brief,regionId:zone.id,activityId:`region:${zone.id}:${seed.key}`,source:{kind:'region' as const,id:zone.id,label:zone.name,available:true},estimatedPerHour,available:true,priority:zone.id===state.currentRegionId?12:28,reward:{rewardRef:`weekly_order_regional_${zone.id.toLowerCase()}`,label:`${zone.name} Relief Cache`}}));});
  return [...hunts,...gathering,...recipes,...regionalProblems];
 }
 

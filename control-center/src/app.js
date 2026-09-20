@@ -216,7 +216,7 @@ function renderDashboard() {
   const visiblePlayerClaimEnd=visiblePlayerEvent?.grace_ends_at||(visiblePlayerEvent?.ends_at?new Date(Date.parse(visiblePlayerEvent.ends_at)+Math.max(0,Number(visiblePlayerEvent.config?.claimGraceDays??7)||0)*86400000).toISOString():null);
   const nextPlayerEvent=playerRows.filter(row=>playerEventPhase(row,nowMs)==='scheduled').sort((a,b)=>Date.parse(a.starts_at)-Date.parse(b.starts_at))[0]||null;
   const needsPlayerSchedule=playerRows.filter(row=>row.enabled&&playerEventPhase(row,nowMs)==='needs_schedule');
-  const playerHealth=playerEventHealthView(d.playerEventHealth);
+  const playerHealth=playerEventHealthView(d.playerEventHealth),activity=d.playerActivity||null;
   return shell(`
     <div class="page-head"><div><div class="eyebrow">Operations overview</div><h2>Live-Ops Dashboard</h2><p>Current event state, upcoming schedule and recent control-plane changes.</p></div></div>
     <div class="grid grid-4">
@@ -225,6 +225,12 @@ function renderDashboard() {
       <div class="card metric"><div class="label">Settling</div><div class="value">${d.counts.settling}</div><div class="foot">Awaiting finalization worker</div></div>
       <div class="card metric"><div class="label">Drafts</div><div class="value">${d.counts.drafts}</div><div class="foot">Mutable authoring state</div></div>
     </div>
+    ${activity?`<div class="grid grid-4" style="margin-top:14px">
+      <div class="card metric"><div class="label">DAU · today</div><div class="value">${fmtNumber(activity.dau)}</div><div class="foot">${fmtNumber(activity.newActiveToday)} new · ${fmtNumber(activity.returningToday)} returning</div></div>
+      <div class="card metric"><div class="label">WAU · 7 days</div><div class="value">${fmtNumber(activity.wau)}</div><div class="foot">Unique active accounts</div></div>
+      <div class="card metric"><div class="label">MAU · 30 days</div><div class="value">${fmtNumber(activity.mau)}</div><div class="foot">DAU / MAU ${fmtPct(activity.dauMau)}</div></div>
+      <div class="card metric"><div class="label">D1 retention</div><div class="value">${fmtPct(activity.d1Retention)}</div><div class="foot">${fmtNumber(activity.d1Retained)} / ${fmtNumber(activity.d1Cohort)} first-active cohort</div></div>
+    </div>`:`<div class="validation-item" style="margin-top:14px">Player activity analytics will appear after the daily activity migration is deployed.</div>`}
     <div class="grid grid-2" style="margin-top:14px">
       <div class="card"><div class="card-head"><div><h3>Player Event screen</h3><div class="tiny muted">What the mobile Event screen is showing now.</div></div><div class="actions">${visiblePlayerEvent?playerEventStatusPill(visiblePlayerPhase):'<span class="pill">Idle</span>'}${d.playerEventHealth?`<span class="pill ${playerHealth.cls}">${h(playerHealth.label)}</span>`:''}</div></div><div class="card-body">${visiblePlayerEvent?`
         <div class="eyebrow">${h(visiblePlayerEvent.event_id)}</div><h3 style="margin:6px 0 8px">${h(visiblePlayerEvent.name||visiblePlayerEvent.event_id)}</h3>
@@ -301,7 +307,7 @@ function fmtPct(value) {
 }
 function renderPlayerEventAnalytics(result) {
   if(!result)return '';
-  const a=result.analytics||{},p=a.progress||{},d=a.dungeons||{},con=a.contributions||{},health=result.health||[];
+  const a=result.analytics||{},p=a.progress||{},d=a.dungeons||{},con=a.contributions||{},health=result.health||[],f=result.funnel?.funnel||{},giftDays=result.funnel?.dailyGiftDays||[],shopMix=result.funnel?.shopMix||[];
   const worst=health.some(x=>x.severity==='error')?'bad':health.some(x=>x.severity==='warning')?'warn':health.some(x=>x.severity==='info')?'info':'good';
   const healthLabel=worst==='bad'?'Error':worst==='warn'?'Watch':worst==='info'?'Info':'Healthy';
   return `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line)">
@@ -319,6 +325,20 @@ function renderPlayerEventAnalytics(result) {
       <div class="card metric"><div class="label">Dungeon clear rate</div><div class="value">${fmtPct(result.derived?.dungeonClearRate)}</div><div class="foot">${fmtNumber(d.completed)} cleared · ${fmtNumber(d.failed)} failed</div></div>
     </div>
     <div class="validation-item" style="margin-bottom:8px"><strong>Activity mix</strong><div class="tiny" style="margin-top:4px">Combat ${fmtNumber(p.combatActivity)} · Gathering ${fmtNumber(p.gatheringActivity)} · Crafting ${fmtNumber(p.craftingActivity)} · Boss ${fmtNumber(p.bossActivity)} · Repeat caches ${fmtNumber(p.repeatCacheClaims)}</div></div>
+    <div class="grid grid-4" style="margin-bottom:8px">
+      <div class="card metric"><div class="label">Daily gift reach</div><div class="value">${fmtPct(result.derived?.dailyGiftReach)}</div><div class="foot">${fmtNumber(f.dailyGiftClaimers)} claimers · ${fmtNumber(f.dailyGiftClaims)} claims</div></div>
+      <div class="card metric"><div class="label">Project choice reach</div><div class="value">${fmtPct(result.derived?.projectChoiceReach)}</div><div class="foot">${fmtNumber(f.projectChoosers)} participants chose</div></div>
+      <div class="card metric"><div class="label">Contract engagement</div><div class="value">${fmtPct(result.derived?.contractAcceptReach)}</div><div class="foot">Completion ${fmtPct(result.derived?.contractCompletionRate)}</div></div>
+      <div class="card metric"><div class="label">Shop buyer reach</div><div class="value">${fmtPct(result.derived?.shopBuyerReach)}</div><div class="foot">${fmtNumber(f.shopBuyers)} buyers · ${fmtNumber(f.shopPurchases)} purchases</div></div>
+    </div>
+    <div class="grid grid-4" style="margin-bottom:8px">
+      <div class="card metric"><div class="label">Milestone claim reach</div><div class="value">${fmtPct(result.derived?.milestoneClaimReach)}</div><div class="foot">${fmtNumber(f.milestoneClaims)} milestone claims</div></div>
+      <div class="card metric"><div class="label">Dungeon start reach</div><div class="value">${fmtPct(result.derived?.dungeonStartReach)}</div><div class="foot">Among event participants</div></div>
+      <div class="card metric"><div class="label">Event participants / MAU</div><div class="value">${fmtPct(result.derived?.eventParticipantVsMau)}</div><div class="foot">Directional reach, not same-day conversion</div></div>
+      <div class="card metric"><div class="label">Weekly claims</div><div class="value">${fmtNumber(f.weeklyClaims)}</div><div class="foot">${fmtNumber(f.weeklyClaimers)} unique claimers</div></div>
+    </div>
+    ${giftDays.length?`<div class="validation-item" style="margin-bottom:8px"><strong>Daily gift retention</strong><div class="tiny" style="margin-top:4px">${giftDays.map(day=>`${h(day.date)}: ${fmtNumber(day.claimers)}`).join(' · ')}</div></div>`:''}
+    ${shopMix.length?`<div class="validation-item" style="margin-bottom:8px"><strong>Event Shop mix</strong><div class="tiny" style="margin-top:4px">${shopMix.slice(0,8).map(item=>`${h(item.offerId)}: ${fmtNumber(item.purchases)} purchases / ${fmtNumber(item.buyers)} buyers`).join(' · ')}</div></div>`:''}
     ${result.event?.seasonalExpedition?`<div class="validation-item ${Number(d.pendingSettlement||0)>0?'warning':'ok'}" style="margin-bottom:8px"><strong>Seasonal dungeon transport</strong><div class="tiny" style="margin-top:4px">${fmtNumber(d.active)} active · ${fmtNumber(d.pendingSettlement)} pending settlement · ${fmtNumber(d.claimedSettlement)} settled · avg ${fmtNumber(d.averageVisitedNodes)} visited nodes · last start ${fmtDate(d.lastStartAt)}</div></div>`:''}
     <div class="grid grid-2">${health.map(item=>`<div class="validation-item ${item.severity==='error'?'error':item.severity==='warning'?'warning':item.severity==='pass'?'ok':''}"><strong>${h(item.title)}</strong><div class="tiny" style="margin-top:4px">${h(item.detail)}</div></div>`).join('')}</div>
     <div class="tiny muted" style="margin-top:8px">Common-currency spend is an estimate derived from lifetime reputation minus current common balance. Aggregate telemetry contains no player identity.</div>
@@ -731,10 +751,17 @@ function metricFind(rows,key){return (rows||[]).find(x=>x.metricKey===key);}
 function metricTotal(rows,key){return Number(metricFind(rows,key)?.total||0);}
 function renderHealth() {
   const d=state.healthEconomyData; if(!d) return shell(loading(),'Health & Economy');
-  const alerts=d.alerts||[], critical=alerts.filter(a=>a.severity==='critical'&&a.status!=='resolved').length;
+  const alerts=d.alerts||[], critical=alerts.filter(a=>a.severity==='critical'&&a.status!=='resolved').length,activity=d.playerActivity||null,activityDays=activity?.daily||[];
   const top=(d.metrics24||[]).sort((a,b)=>Math.abs(b.total)-Math.abs(a.total)).slice(0,30);
   return shell(`
     <div class="page-head"><div><div class="eyebrow">Game health</div><h2>Health & Economy</h2><p>Bounded operational telemetry for economy balance and production reliability. Player/account IDs are intentionally not metric dimensions.</p></div></div>
+    ${activity?`<div class="grid grid-4" style="margin-bottom:14px">
+      <div class="card metric"><div class="label">DAU</div><div class="value">${fmtNumber(activity.dau)}</div><div class="foot">Yesterday ${fmtNumber(activity.dauYesterday)}</div></div>
+      <div class="card metric"><div class="label">WAU</div><div class="value">${fmtNumber(activity.wau)}</div><div class="foot">7-day unique active</div></div>
+      <div class="card metric"><div class="label">MAU</div><div class="value">${fmtNumber(activity.mau)}</div><div class="foot">30-day unique active</div></div>
+      <div class="card metric"><div class="label">D1 retention</div><div class="value">${fmtPct(activity.d1Retention)}</div><div class="foot">${fmtNumber(activity.d1Retained)} / ${fmtNumber(activity.d1Cohort)} retained</div></div>
+    </div>
+    <div class="validation-item" style="margin-bottom:14px"><strong>Authentication context</strong><div class="tiny" style="margin-top:4px">${fmtNumber(activity.latestAuthSignInToday)} accounts have their latest auth sign-in today · ${fmtNumber(activity.latestAuthSignIn7d)} within 7 days. These are authentication recency counts, not login-event totals; DAU/WAU/MAU come from actual game activity.</div></div>`:''}
     <div class="grid grid-4" style="margin-bottom:14px">
       <div class="card metric"><div class="label">Gold created · 24h</div><div class="value">${fmtNumber(d.gold?.created24||0)}</div></div>
       <div class="card metric"><div class="label">Gold destroyed · 24h</div><div class="value">${fmtNumber(d.gold?.destroyed24||0)}</div></div>
@@ -745,6 +772,7 @@ function renderHealth() {
       <div class="card"><div class="card-head"><h3>Open alerts</h3><span class="pill ${alerts.length?'warn':'good'}">${alerts.length}</span></div><div class="card-body"><div class="list">${alerts.length?alerts.map(a=>`<div class="list-row"><div><div class="actions"><strong>${h(a.title)}</strong><span class="pill ${a.severity==='critical'?'bad':a.severity==='warning'?'warn':''}">${h(a.severity)}</span><span class="pill">${h(a.status)}</span></div><p>${h(a.detail||'')}</p><p class="tiny faint">Last seen ${fmtDate(a.last_seen_at)}</p></div><div class="list-meta actions">${roleAtLeast('editor')&&a.status==='open'?`<button class="btn btn-sm" data-action="update-alert" data-id="${attr(a.id)}" data-status="acknowledged">Acknowledge</button>`:''}${roleAtLeast(a.severity==='critical'?'owner':'editor')?`<button class="btn btn-sm btn-ghost" data-action="update-alert" data-id="${attr(a.id)}" data-status="resolved">Resolve</button>`:''}</div></div>`).join(''):empty('No open operational alerts.')}</div></div></div>
       <div class="card"><div class="card-head"><h3>Worker health</h3><span class="pill">${d.health?.length||0} components</span></div><div class="card-body"><div class="list">${(d.health||[]).length?(d.health||[]).map(row=>{const w=workerHealthView(row);return `<div class="list-row"><div><strong>${h(row.component)}</strong><p>${h(w.detail)}</p></div><div class="list-meta"><span class="pill ${w.cls}">${h(w.label)}</span></div></div>`}).join(''):empty('No runtime heartbeats yet. Wire backend workers to liveops_runtime_health.')}</div></div></div>
     </div>
+    ${activityDays.length?`<div class="card" style="margin-bottom:14px"><div class="card-head"><div><h3>Daily player activity</h3><div class="tiny muted">UTC · authoritative gameplay/foreground activity</div></div><span class="pill">${activityDays.length} days</span></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Active</th><th>New</th><th>Returning</th><th>Foregrounds</th><th>Gameplay</th><th>Event</th><th>Co-op</th></tr></thead><tbody>${activityDays.slice().reverse().map(row=>`<tr><td>${h(row.date)}</td><td><strong>${fmtNumber(row.active)}</strong></td><td>${fmtNumber(row.newActive)}</td><td>${fmtNumber(row.returning)}</td><td>${fmtNumber(row.foregroundOpens)}</td><td>${fmtNumber(row.gameplayActions)}</td><td>${fmtNumber(row.eventActions)}</td><td>${fmtNumber(row.coopActions)}</td></tr>`).join('')}</tbody></table></div></div>`:''}
     <div class="card"><div class="card-head"><h3>24-hour metric summary</h3><span class="pill">Hourly buckets</span></div><div class="table-wrap">${top.length?`<table><thead><tr><th>Metric</th><th>24h total</th><th>7d total</th><th>Samples</th><th>Top dimensions (24h)</th></tr></thead><tbody>${top.map(m=>`<tr><td><strong>${h(m.metricKey)}</strong></td><td>${fmtNumber(m.total)}</td><td>${fmtNumber(metricTotal(d.metrics7,m.metricKey))}</td><td>${fmtNumber(m.samples)}</td><td class="small muted">${(m.dimensions||[]).slice(0,4).map(x=>`${h(x.key)}: ${fmtNumber(x.value)}`).join('<br>')||'—'}</td></tr>`).join('')}</tbody></table>`:`<div class="card-body">${empty('No ops metrics have been recorded yet. The backend wiring file shows the first transaction-success metrics to emit.')}</div>`}</div></div>`, 'Health & Economy');
 }
 

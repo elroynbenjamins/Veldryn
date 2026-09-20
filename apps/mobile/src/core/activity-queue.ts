@@ -67,7 +67,8 @@ export interface ActivityQueueHandoffStatus{
  nextReady:boolean;
  nextBlocker?:string;
 }
-function queuedActivityReadiness(state:GameState,activity:QueuedActivity|undefined){
+export interface QueuedActivityReadiness{ready:boolean;blocker?:string}
+export function queuedActivityReadiness(state:GameState,activity:QueuedActivity|undefined):QueuedActivityReadiness{
  if(!activity)return {ready:false,blocker:undefined as string|undefined};
  if(!state.character)return {ready:false,blocker:'Create a character first.'};
  if(activity.kind==='combat'){

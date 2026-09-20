@@ -2,7 +2,7 @@ import {EVENT_PET_COLLECTIBLES} from './event-collectible-content';
 import {CORE_PET_COLLECTIBLES} from './core-pets';
 
 export type CollectibleKind='pet'|'background'|'border';
-export type CollectibleTarget='hp'|'attack'|'defense'|'skillXp'|'characterXp'|'gold'|'gatheringYield'|'dropChance'|'actionSpeed'|'cookingSpeed'|'herbalismSpeed'|'healingEffectiveness'|'craftingSpeed'|'dungeonReward'|'fishingSpeed'|'materialPreservation'|'guildContribution';
+export type CollectibleTarget='hp'|'attack'|'defense'|'skillXp'|'characterXp'|'gold'|'gatheringYield'|'miningYield'|'woodcuttingYield'|'fishingYield'|'herbalismYield'|'huntingYield'|'gatheringSpeed'|'dropChance'|'actionSpeed'|'cookingSpeed'|'herbalismSpeed'|'healingEffectiveness'|'craftingSpeed'|'enchantingSpeed'|'dungeonReward'|'fishingSpeed'|'materialPreservation'|'guildContribution'|'monsterMasteryXp'|'explorationProgress'|'offlineLootCapacity'|'echoReward'|'foodDuration';
 export type CollectibleGroup='core'|'event'|'legacy'|'profile';
 export interface CollectibleDefinition{
   id:string;
@@ -52,7 +52,7 @@ export const COLLECTIBLES:readonly CollectibleDefinition[]=[
   ...PROFILE_COLLECTIBLES,
 ];
 
-export const COLLECTIBLE_TARGET_LABELS:Record<CollectibleTarget,string>={hp:'Maximum HP',attack:'Attack',defense:'Defense',skillXp:'Skill XP',characterXp:'Combat XP',gold:'Ordinary combat Gold',gatheringYield:'Ordinary gathered materials',dropChance:'Ordinary drop chance',actionSpeed:'Action speed',cookingSpeed:'Cooking speed',herbalismSpeed:'Herbalism speed',healingEffectiveness:'Healing effectiveness',craftingSpeed:'Crafting speed',dungeonReward:'Dungeon reward quantity',fishingSpeed:'Fishing speed',materialPreservation:'Material preservation',guildContribution:'Guild contribution'};
+export const COLLECTIBLE_TARGET_LABELS:Record<CollectibleTarget,string>={hp:'Maximum HP',attack:'Attack',defense:'Defense',skillXp:'Skill XP',characterXp:'Combat XP',gold:'Ordinary combat Gold',gatheringYield:'Ordinary gathered materials',miningYield:'Mining material yield',woodcuttingYield:'Woodcutting material yield',fishingYield:'Normal fishing catch yield',herbalismYield:'Normal herb yield',huntingYield:'Normal hunting material yield',gatheringSpeed:'Gathering speed',dropChance:'Ordinary drop chance',actionSpeed:'Action speed',cookingSpeed:'Cooking speed',herbalismSpeed:'Herbalism speed',healingEffectiveness:'Healing effectiveness',craftingSpeed:'Crafting speed',enchantingSpeed:'Enchanting speed',dungeonReward:'Dungeon reward quantity',fishingSpeed:'Fishing speed',materialPreservation:'Material preservation',guildContribution:'Guild contribution',monsterMasteryXp:'Monster mastery XP',explorationProgress:'Exploration progress',offlineLootCapacity:'Offline loot capacity',echoReward:'Positive Echo reward effect',foodDuration:'Food duration'};
 
 export function validateCollectibleCatalog(catalog:readonly CollectibleDefinition[]=COLLECTIBLES){
   const ids=new Set<string>();

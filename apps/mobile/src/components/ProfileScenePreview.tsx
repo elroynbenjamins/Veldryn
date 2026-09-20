@@ -5,6 +5,7 @@ import {CharacterPortrait} from './CharacterVisual';
 import {profileBackgroundPreviewById} from '../theme/profile-background-assets';
 import {profileBorderSourceById} from '../theme/profile-border-assets';
 import {eventPetSourceById} from '../theme/event-collectible-assets';
+import {petArtSource} from '../theme/pet-art';
 import {BASE_PROFILE_BACKGROUNDS} from '../core/profile-cosmetics';
 import {RegionArtwork} from './RegionArtwork';
 import {C,typography} from '../theme/theme';
@@ -15,7 +16,7 @@ export function ProfileScenePreview({state,backgroundId}:{state:GameState;backgr
  if(!background&&!base)return null;
  const className=CLASSES.find(item=>item.id===character.classId)?.name??character.classId;
  const rewards=LIVE_EVENT_CATALOG.flatMap(event=>[...event.milestones(character.classId).map(m=>m.reward),...event.shop.map(o=>o.reward)]);
- const pet=rewards.find(reward=>reward.id===character.selectedCosmeticPetId),petSource=eventPetSourceById.get(character.selectedCosmeticPetId??''),borderSource=profileBorderSourceById.get(character.profileBorderId??'');
+ const pet=rewards.find(reward=>reward.id===character.selectedCosmeticPetId),petSource=petArtSource(character.selectedCosmeticPetId??'')??eventPetSourceById.get(character.selectedCosmeticPetId??''),borderSource=profileBorderSourceById.get(character.profileBorderId??'');
  return <View accessibilityLabel={`${character.name}'s profile preview with ${background?.name??base?.name}`} style={s.frame}>
   <View style={s.scene}>
    {background?<Image source={background.source} resizeMode="cover" style={StyleSheet.absoluteFill}/>:<RegionArtwork regionId={base!.region}/>}

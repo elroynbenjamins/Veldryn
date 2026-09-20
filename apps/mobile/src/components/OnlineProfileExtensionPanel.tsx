@@ -9,11 +9,11 @@ import {selfProfileExtensionV43,updateProfileExtensionV43,type ProfileCollection
 import {JOURNAL_ACHIEVEMENTS_V42} from '../core/adventurers-journal-v42';
 import {personalRecordDefinition} from '../core/personal-records-v43';
 import {COMBAT_COMPANIONS} from '../content/combat-companions';
-import {ITEMS} from '../content/items';
 import type {GameState} from '../core/types';
 import {C,radii,spacing,typography} from '../theme/theme';
+import {profileCollectionLabel} from '../core/profile-presentation';
 
-type Picker='visibility'|'skill'|'companion'|'achievements'|'records'|'collections'|null;
+type Picker='visibility'|'character'|'skill'|'companion'|'achievements'|'records'|'collections'|null;
 const visibilityLabel:Record<ProfileVisibilityV43,string>={public:'Public',guild:'Guild only',private:'Private'};
 const refKey=(ref:ProfileCollectionRefV43)=>ref.kind+':'+ref.id;
 
@@ -23,6 +23,7 @@ export function OnlineProfileExtensionPanel({state,onSaved}:{state:GameState;onS
  const [value,setValue]=useState<ProfileExtensionSelfV43|null>(null),[bio,setBio]=useState(''),[picker,setPicker]=useState<Picker>(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
  const load=async()=>{if(!onlineConfigured||!session)return;setBusy(true);setError('');try{const row=await selfProfileExtensionV43();setValue(row);setBio(row.bio);}catch(reason){setError(reason instanceof Error?reason.message:'Unable to load profile settings.')}finally{setBusy(false)}};
  useEffect(()=>{void load()},[session?.user.id]);
+ const characters=[...(state.character?[state.character]:[]),...(state.otherCharacters??[]).map(row=>row.character)];
  const skills=state.skills.map(row=>({id:row.skillId,label:row.skillId.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}));
  const companions=(state.account.unlockedCombatCompanionIds??[]).map(id=>({id,label:COMBAT_COMPANIONS.find(row=>row.id===id)?.name??id.replace(/_/g,' ')}));
  const achievements=Object.keys(state.account.journalState?.unlockedAchievements??{}).map(id=>({id,label:JOURNAL_ACHIEVEMENTS_V42.find(row=>row.id===id)?.title??id.replace(/_/g,' ')}));
@@ -39,24 +40,31 @@ export function OnlineProfileExtensionPanel({state,onSaved}:{state:GameState;onS
   add('border',state.character?.profileBorderId);
   for(const id of Object.values(state.character?.equipment??{}))add('item',id);
   for(const stack of state.inventory.stacks.filter(row=>row.quantity>0).slice(0,30))add('item',stack.itemId);
-  return refs.slice(0,80);
+  for(const other of state.otherCharacters??[]){
+   for(const id of other.character.unlockedSkinIds??[])add('skin',id);
+   add('background',other.character.profileBackgroundId);add('border',other.character.profileBorderId);add('pet',other.character.selectedCosmeticPetId);
+   for(const id of Object.values(other.character.equipment??{}))add('item',id);
+   for(const stack of [...other.inventory.stacks,...other.overflow.stacks].filter(row=>row.quantity>0).slice(0,20))add('item',stack.itemId);
+  }
+  return refs.slice(0,100);
  },[state]);
- const labelRef=(ref:ProfileCollectionRefV43)=>ref.kind==='companion'?(COMBAT_COMPANIONS.find(row=>row.id===ref.id)?.name??ref.id):ref.kind==='item'?(ITEMS.find(row=>row.id===ref.id)?.name??ref.id):ref.id.replace(/^pet_|^bg_|^frame_/,'').replace(/_/g,' ');
+ const labelRef=(ref:ProfileCollectionRefV43)=>profileCollectionLabel(ref);
  const patch=(next:Partial<ProfileExtensionSelfV43>)=>{if(value)setValue({...value,...next});};
  const toggle=(list:string[],id:string)=>list.includes(id)?list.filter(value=>value!==id):list.length<3?[...list,id]:list;
  const toggleCollection=(list:ProfileCollectionRefV43[],ref:ProfileCollectionRefV43)=>{const key=refKey(ref);return list.some(row=>refKey(row)===key)?list.filter(row=>refKey(row)!==key):list.length<3?[...list,ref]:list};
- const save=async()=>{if(!value||busy||guest)return;setBusy(true);setError('');setNotice('');try{const row=await updateProfileExtensionV43({visibility:value.visibility,worldFeedOptOut:value.worldFeedOptOut,selectedCharacterId:state.character?.id??value.selectedCharacterId,bio, favoriteSkillId:value.favoriteSkillId,favoriteCompanionId:value.favoriteCompanionId,achievementShowcaseIds:value.achievementShowcaseIds,collectionShowcase:value.collectionShowcase,recordShowcaseIds:value.recordShowcaseIds});setValue(row);setBio(row.bio);setNotice('Public profile settings saved.');await onSaved?.();}catch(reason){setError(reason instanceof Error?reason.message:'Unable to save profile settings.')}finally{setBusy(false)}};
+ const save=async()=>{if(!value||busy||guest)return;setBusy(true);setError('');setNotice('');try{const row=await updateProfileExtensionV43({visibility:value.visibility,worldFeedOptOut:value.worldFeedOptOut,selectedCharacterId:value.selectedCharacterId??state.character?.id??null,bio, favoriteSkillId:value.favoriteSkillId,favoriteCompanionId:value.favoriteCompanionId,achievementShowcaseIds:value.achievementShowcaseIds,collectionShowcase:value.collectionShowcase,recordShowcaseIds:value.recordShowcaseIds});setValue(row);setBio(row.bio);setNotice('Public profile settings saved.');await onSaved?.();}catch(reason){setError(reason instanceof Error?reason.message:'Unable to save profile settings.')}finally{setBusy(false)}};
  if(!onlineConfigured||!session)return null;
  if(!value)return <Panel><Text style={s.title}>Public Profile Settings</Text>{busy?<ActivityIndicator color={C.accent}/>:<GameButton title="Load profile settings" tone="secondary" onPress={()=>void load()}/>} {error?<Text style={s.error}>{error}</Text>:null}</Panel>;
- const selectedSkill=skills.find(row=>row.id===value.favoriteSkillId),selectedCompanion=companions.find(row=>row.id===value.favoriteCompanionId);
- const pickerTitle=picker==='visibility'?'Profile visibility':picker==='skill'?'Favorite skill':picker==='companion'?'Favorite companion':picker==='achievements'?'Achievement showcase':picker==='records'?'Personal Record showcase':picker==='collections'?'Collection showcase':'Profile settings';
+ const selectedCharacter=characters.find(row=>row.id===(value.selectedCharacterId??state.character?.id)),selectedSkill=skills.find(row=>row.id===value.favoriteSkillId),selectedCompanion=companions.find(row=>row.id===value.favoriteCompanionId);
+ const pickerTitle=picker==='visibility'?'Profile visibility':picker==='character'?'Showcase character':picker==='skill'?'Favorite skill':picker==='companion'?'Favorite companion':picker==='achievements'?'Achievement showcase':picker==='records'?'Personal Record showcase':picker==='collections'?'Collection showcase':'Profile settings';
  return <><Panel>
   <View style={s.heading}><View style={s.flex}><Text style={s.eyebrow}>ONLINE PROFILE</Text><Text style={s.title}>Privacy & Showcase</Text></View><Text style={s.revision}>r{value.revision}</Text></View>
-  <Text style={s.copy}>These settings control the profile opened from chat, guilds, rankings and other social surfaces.</Text>
+  <Text style={s.copy}>These settings control the profile opened from chat, Friends, guild rosters and other supported social surfaces.</Text>
   {guest?<View style={s.warning}><Text style={s.warningTitle}>Secure this guest account first</Text><Text style={s.copy}>Guest progress can continue normally, but public social-profile publishing is held until the account is linked.</Text></View>:null}
   <Text style={s.label}>Biography</Text><GameTextInput editable={!guest&&!busy} multiline value={bio} onChangeText={text=>setBio(text.slice(0,160))} maxLength={160} placeholder="Tell other players a little about your character or play style." placeholderTextColor={C.muted} style={s.bio}/><Text style={s.counter}>{bio.length}/160</Text>
   <View style={s.settings}>
    <GameButton title={'Visibility: '+visibilityLabel[value.visibility]+' ▾'} tone="secondary" disabled={busy} onPress={()=>setPicker('visibility')}/>
+   <GameButton title={'Showcase character: '+(selectedCharacter?.name??'Current character')+' ▾'} tone="secondary" disabled={busy||characters.length<2} onPress={()=>setPicker('character')}/>
    <GameButton title={'Favorite skill: '+(selectedSkill?.label??'None')+' ▾'} tone="secondary" disabled={busy} onPress={()=>setPicker('skill')}/>
    <GameButton title={'Favorite companion: '+(selectedCompanion?.label??'None')+' ▾'} tone="secondary" disabled={busy} onPress={()=>setPicker('companion')}/>
    <GameButton title={'Achievement showcase '+value.achievementShowcaseIds.length+'/3 ▾'} tone="secondary" disabled={busy} onPress={()=>setPicker('achievements')}/>
@@ -68,6 +76,7 @@ export function OnlineProfileExtensionPanel({state,onSaved}:{state:GameState;onS
  </Panel>
  <Modal visible={picker!==null} transparent animationType="slide" onRequestClose={()=>setPicker(null)}><View style={s.backdrop}><Pressable style={StyleSheet.absoluteFill} onPress={()=>setPicker(null)}/><View style={s.sheet}><Text style={s.title}>{pickerTitle}</Text><Text style={s.copy}>{picker==='achievements'||picker==='records'||picker==='collections'?'Choose up to three.':'Choose one option.'}</Text><ScrollView style={s.pickerList} contentContainerStyle={s.pickerContent}>
   {picker==='visibility'?(['public','guild','private'] as ProfileVisibilityV43[]).map(id=><Pressable key={id} onPress={()=>{patch({visibility:id});setPicker(null)}} style={[s.option,value.visibility===id&&s.optionActive]}><Text style={s.optionText}>{value.visibility===id?'✓ ':''}{visibilityLabel[id]}</Text><Text style={s.optionSub}>{id==='public'?'Visible to signed-in players':id==='guild'?'Visible to members of your guild':'Visible only to you'}</Text></Pressable>):null}
+  {picker==='character'?characters.map(row=>{const selected=(value.selectedCharacterId??state.character?.id)===row.id;return <Pressable key={row.id} onPress={()=>{patch({selectedCharacterId:row.id});setPicker(null)}} style={[s.option,selected&&s.optionActive]}><Text style={s.optionText}>{selected?'✓ ':''}{row.name}</Text><Text style={s.optionSub}>{row.classId.replace(/_/g,' ')} · Level {row.level}{row.id===state.character?.id?' · currently active':''}</Text></Pressable>}):null}
   {picker==='skill'?<><Pressable onPress={()=>{patch({favoriteSkillId:null});setPicker(null)}} style={s.option}><Text style={s.optionText}>{!value.favoriteSkillId?'✓ ':''}None</Text></Pressable>{skills.map(row=><Pressable key={row.id} onPress={()=>{patch({favoriteSkillId:row.id});setPicker(null)}} style={[s.option,value.favoriteSkillId===row.id&&s.optionActive]}><Text style={s.optionText}>{value.favoriteSkillId===row.id?'✓ ':''}{row.label}</Text></Pressable>)}</>:null}
   {picker==='companion'?<><Pressable onPress={()=>{patch({favoriteCompanionId:null});setPicker(null)}} style={s.option}><Text style={s.optionText}>{!value.favoriteCompanionId?'✓ ':''}None</Text></Pressable>{companions.map(row=><Pressable key={row.id} onPress={()=>{patch({favoriteCompanionId:row.id});setPicker(null)}} style={[s.option,value.favoriteCompanionId===row.id&&s.optionActive]}><Text style={s.optionText}>{value.favoriteCompanionId===row.id?'✓ ':''}{row.label}</Text></Pressable>)}</>:null}
   {picker==='achievements'?achievements.map(row=>{const selected=value.achievementShowcaseIds.includes(row.id);return <Pressable key={row.id} onPress={()=>patch({achievementShowcaseIds:toggle(value.achievementShowcaseIds,row.id)})} style={[s.option,selected&&s.optionActive]}><Text style={s.optionText}>{selected?'✓ ':''}{row.label}</Text></Pressable>}):null}

@@ -24,6 +24,7 @@ import {bulkSalvageSelected,bulkSellSelected,bulkTransferSelected} from './inven
 import {normalizeChatEmoteTrayIds,CHAT_EMOTE_TRAY_SIZE} from './chat-emotes';
 import {cancelEquipmentCraft,claimAllReadyEquipmentCrafts,claimEquipmentCraft,moveWaitingEquipmentCraft,startEquipmentCraft,timedEquipmentRecipe} from './equipment-crafting-queue';
 import {craftEquipmentPrerequisites} from './equipment-crafting-prerequisites';
+import {buildAdminQaState,refillAdminQaResources} from '../dev/admin-qa-profile';
 
 /** Commands express intent. Neither a client save nor a client reward is accepted. */
 export interface GameCommand {type:string;args?:Record<string,unknown>}
@@ -44,16 +45,17 @@ const fields:Record<string,readonly string[]>={
  quest:['id'],seasonal:['period','id'],settings:['settings'],profile:['profileTitle','profileBackgroundId','profileBorderId','selectedCosmeticPetId'],
  event_daily:[],event_cache:[],event_milestones:[],event_discovery:['id'],event_reward:['id'],event_accept:['id'],
  event_objective:['id'],event_weekly:['id'],event_project:['id'],event_contribute:['quantity'],event_community:['percent'],event_purchase:['id'],
+ qa_prepare:['classId'],qa_refill:[],qa_switch_class:['classId'],
 };
 export function validateGameCommand(value:unknown):GameCommand{
  if(!value||typeof value!=='object'||Array.isArray(value))throw new Error('invalid_command');
  const row=value as Record<string,unknown>;
  if(Object.keys(row).some(key=>key!=='type'&&key!=='args')||typeof row.type!=='string'||!Object.prototype.hasOwnProperty.call(fields,row.type))throw new Error('invalid_command');
  const args=row.args??{};if(!args||typeof args!=='object'||Array.isArray(args)||Object.keys(args).some(key=>!fields[row.type as string].includes(key)))throw new Error('invalid_command_arguments');
- if(row.type==='create'||row.type==='roster_create'){
+ if(row.type==='create'||row.type==='roster_create'||row.type==='qa_prepare'||row.type==='qa_switch_class'){
   const creation=args as Record<string,unknown>;
   oneOf(creation.classId,CLASSES.map(item=>item.id));
-  oneOf(creation.body??'male',['male','female']);
+  if(row.type==='create'||row.type==='roster_create')oneOf(creation.body??'male',['male','female']);
  }
  if((row.type==='roster_switch'||row.type==='roster_delete')&&typeof (args as Record<string,unknown>).id!=='string')throw new Error('invalid_id');
  if(row.type==='roster_delete'&&typeof (args as Record<string,unknown>).confirmation!=='string')throw new Error('invalid_confirmation');
@@ -93,19 +95,36 @@ export function validateGameSettings(value:unknown):GameState['settings']{
 }
 
 /** The caller provides a trusted clock, character ID and random roll on the server. */
-export function executeGameCommand(previous:GameState,value:unknown,now:number,options:{characterId?:string;randomRoll?:number;accountId?:string;eventId?:string}={}):GameCommandResult{
+export function executeGameCommand(previous:GameState,value:unknown,now:number,options:{characterId?:string;randomRoll?:number;accountId?:string;eventId?:string;adminQa?:boolean}={}):GameCommandResult{
  const command=validateGameCommand(value),a=command.args??{},activity=previous.activity,contributions:VerifiedActivity[]=[];
  let state=structuredClone(previous),reward:RewardBundle|undefined,message:string|undefined,won:boolean|undefined,upgrade:GameCommandResult['upgrade'],forgeResults:ForgeCraftResult[]|undefined;
  if(!Number.isSafeInteger(now)||now<previous.createdAtMs)throw new Error('invalid_server_clock');
  const credit=(source:GameState['activity'],earned:RewardBundle)=>{if(!source||earned.kills<=0)return;if(source.kind==='combat')contributions.push({kind:'combat',contentId:source.targetId,units:earned.kills,startedAtMs:Math.max(source.lastClaimAtMs,now-earned.elapsedSeconds*1000),...(source.combatChallengeId?{challengeId:source.combatChallengeId}: {})});else if(['mining','woodcutting','fishing','herbalism'].includes(source.kind))contributions.push({kind:'gathering',contentId:source.targetId,units:earned.kills,startedAtMs:Math.max(source.lastClaimAtMs,now-earned.elapsedSeconds*1000)});};
  const settle=()=>{const source=state.activity,result=game.claimActivity(state,now);state=result.state;reward=result.reward;credit(source,result.reward);};
  // Settle before any mutation that can alter past activity rates, food, gear or inventory.
- const settlementFreeCommand=command.type==='queue_add'||command.type==='queue_remove'||command.type==='queue_move'||command.type==='queue_clear'||command.type==='queue_start'||command.type==='daily_supplies_claim'||command.type==='roster_delete';
+ const settlementFreeCommand=command.type==='queue_add'||command.type==='queue_remove'||command.type==='queue_move'||command.type==='queue_clear'||command.type==='queue_start'||command.type==='daily_supplies_claim'||command.type==='roster_delete'||command.type.startsWith('qa_');
  if(state.character&&command.type!=='create'&&!settlementFreeCommand)settle();
  state=refreshCompanions(state,now);
  const companionMetricBefore=command.type.startsWith('companion_')?companionCommandEconomySnapshot(state):undefined;
  if(['companion_equip','companion_level','companion_ascend','companion_master'].includes(command.type))assertCompanionIdle(state,text(a,'id'));
  switch(command.type){
+  case 'qa_prepare':case 'qa_switch_class':{
+   if(!options.adminQa)throw new Error('admin_qa_required');
+   const classId=oneOf(a.classId,CLASSES.map(item=>item.id));
+   state=buildAdminQaState(state,classId,now);
+   if(options.characterId&&state.character)state.character.id=options.characterId;
+   state.account.longTermAccountScopeId=options.accountId??state.account.longTermAccountScopeId;
+   message=`Admin QA ${classId.replaceAll('_',' ')} profile ready`;
+   break;
+  }
+  case 'qa_refill':{
+   if(!options.adminQa)throw new Error('admin_qa_required');
+   if(!state.character)throw new Error('character_required');
+   state=refillAdminQaResources(state);
+   state.account.longTermAccountScopeId=options.accountId??state.account.longTermAccountScopeId;
+   message='Admin QA resources refilled';
+   break;
+  }
   case 'class_training':state=game.startClassTraining(state,now);break;
   case 'faith_practice':state=reserveFaithPractice(state,text(a,'tierId'),integer(a,'count',1,1000),now);break;
   case 'faith_blessing':state=updateFaithPreference(state,'blessing',text(a,'id'));break;

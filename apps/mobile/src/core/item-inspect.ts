@@ -6,7 +6,7 @@ import {WORLD_ZONES} from '../content/world-map';
 import {equipmentSetDef,equippedSetPieceCount} from '../content/equipment-sets';
 import {GameState,SkillId} from './types';
 import {workingTowardDestinationAvailability,type WorkingTowardDestination,type WorkingTowardDestinationAvailability} from './working-toward';
-import {enhancedGearStats,gearEnhancement,gemSocketCapacity,gearStatsAtRank,MAX_UPGRADE_RANK,upgradeQuote} from './equipment-enhancement';
+import {activeSocketedGemIds,effectGemDescription,enhancedGearStats,gearEnhancement,gemSocketCapacity,gemSocketLayout,gearStatsAtRank,MAX_UPGRADE_RANK,upgradeQuote} from './equipment-enhancement';
 import {effectiveStats} from './game';
 import {previewEquipment} from './equipment-preview';
 import {itemRarity,rarityMeta} from './item-rarity';
@@ -54,7 +54,7 @@ export function itemInspectModel(state:GameState,itemId:string){
   const bankQuantity=state.bank.stacks.find(stack=>stack.itemId===itemId)?.quantity??0;
   const effectLines:string[]=[];
   let upgrade:undefined|{rank:number;nextRank:number;successChance:number;dust:number;cores:number;gold:number;maxed:boolean;failures:number;equipped:boolean};
-  let sockets:undefined|{filled:number;capacity:number;gemNames:string[]};
+  let sockets:undefined|{filled:number;capacity:number;statUnlocked:boolean;effectUnlocked:boolean;statGemId?:string;effectGemId?:string;legacyGemIds:string[]};
   let stats:undefined|{attack:number;defense:number;hp:number};
   let gearDecision:ItemGearDecision|undefined;
 
@@ -62,12 +62,12 @@ export function itemInspectModel(state:GameState,itemId:string){
     const enhancement=gearEnhancement(state,itemId),quote=upgradeQuote(state,itemId),enhanced=enhancedGearStats(state,itemId);
     stats=enhanced;
     upgrade={rank:enhancement.rank,nextRank:quote.targetRank,successChance:quote.successChance,dust:quote.dust,cores:quote.cores,gold:quote.gold,maxed:quote.maxed,failures:enhancement.failures,equipped:!!state.character&&Object.values(state.character.equipment).includes(itemId)};
-    const capacity=gemSocketCapacity(itemId);
-    sockets={filled:enhancement.gemIds.length,capacity,gemNames:enhancement.gemIds.map(id=>itemDef(id).name)};
+    const capacity=gemSocketCapacity(itemId),layout=gemSocketLayout(itemId);
+    sockets={filled:activeSocketedGemIds(state,itemId).length,capacity,statUnlocked:layout.statUnlocked,effectUnlocked:layout.effectUnlocked,statGemId:enhancement.statGemId,effectGemId:enhancement.effectGemId,legacyGemIds:enhancement.legacyGemIds??[]};
     if(state.character&&item.slot){
       const compatible=!item.classRestriction||item.classRestriction===state.character.classId;
       const before=effectiveStats(state),currentId=state.character.equipment[item.slot],currentItem=currentId?itemDef(currentId):undefined,currentRank=currentId?gearEnhancement(state,currentId).rank:0;
-      const gems=enhancement.gemIds.map(id=>{const gem=itemDef(id);return {id,name:gem.name,stat:title(gem.gemStat??'stat'),percent:gem.gemPercent??0};});
+      const gems=activeSocketedGemIds(state,itemId).map(id=>{const gem=itemDef(id);const kind=gem.gemKind==='effect'||gem.gemEffectId?'effect':'stat';return {id,name:gem.name,kind,detail:kind==='effect'?effectGemDescription(id):`+${Math.round((gem.gemPercent??0)*100)}% ${title(gem.gemStat??'stat')}`};});
       let after=before,maxAfter=before,previewState=state;
       if(compatible){try{previewState=previewEquipment(state,itemId);after=effectiveStats(previewState);const maxState:GameState={...state,character:{...state.character,gearEnhancements:{...(state.character.gearEnhancements??{}),[itemId]:{...enhancement,rank:MAX_UPGRADE_RANK}}}};maxAfter=effectiveStats(previewEquipment(maxState,itemId));}catch{}}
       const set=equipmentSetDef(item.equipmentSetId);
@@ -91,8 +91,8 @@ export function itemInspectModel(state:GameState,itemId:string){
     effectLines.push(`${title(item.toolSkillId??'gathering')} tool · Tier ${item.toolTier??1}`);
     const speed=Math.round((1-(item.actionTimeMultiplier??1))*100);
     effectLines.push(speed>0?`${speed}% shorter base action time`:'Baseline action time');
-  }else if(item.type==='gem'&&item.gemStat){
-    effectLines.push(`+${Math.round((item.gemPercent??0)*100)}% ${title(item.gemStat)} when socketed`);
+  }else if(item.type==='gem'&&(item.gemStat||item.gemEffectId)){
+    effectLines.push(item.gemEffectId?effectGemDescription(item.id):`+${Math.round((item.gemPercent??0)*100)}% ${title(item.gemStat!)} when socketed`);
   }else if(item.passive){
     effectLines.push(item.passive);
   }

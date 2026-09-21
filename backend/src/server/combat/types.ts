@@ -100,6 +100,7 @@ export interface ActiveTimedModifier {
   tag: string;
   value: number;
   expiresAt: number;
+  createdAt?: number;
   kind?: 'buff'|'debuff'|'gem';
 }
 

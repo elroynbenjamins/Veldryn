@@ -9,7 +9,8 @@ import {workingTowardDestinationAvailability,type WorkingTowardDestination,type 
 import {enhancedGearStats,gearEnhancement,gemEffectDescription,gemSocketCapacity,gemSocketKind,gemSocketState,gearStatsAtRank,MAX_UPGRADE_RANK,upgradeQuote} from './equipment-enhancement';
 import {effectiveStats} from './game';
 import {previewEquipment} from './equipment-preview';
-import {itemRarity,rarityMeta} from './item-rarity';
+import {rarityMeta} from './item-rarity';
+import {craftedInstancesForItem,effectiveOwnedGearRarity} from './crafted-gear-instances';
 
 export type ItemInspectSourceKind='gathering'|'crafting'|'combat'|'starting';
 export interface ItemInspectSource{kind:ItemInspectSourceKind;title:string;detail:string;navigation?:WorkingTowardDestination;availability?:WorkingTowardDestinationAvailability;}
@@ -25,7 +26,7 @@ const title=(value:string)=>value.toLowerCase().split('_').map(part=>part?part[0
 const pct=(value:number)=>value>=.1?`${Math.round(value*100)}%`:`${(value*100).toFixed(value<.01?2:1)}%`;
 
 export function itemInspectModel(state:GameState,itemId:string){
-  const item=itemDef(itemId),rarityId=itemRarity(item),rarity=rarityMeta(rarityId);
+  const item=itemDef(itemId),rarityId=item.type==='gear'?effectiveOwnedGearRarity(state,itemId):item.rarity??'common',rarity=rarityMeta(rarityId);
   const sources:ItemInspectSource[]=[];
 
   for(const node of [...GATHERING,...HERB_NODES]){
@@ -100,5 +101,6 @@ export function itemInspectModel(state:GameState,itemId:string){
 
   const actionableSources=sources.map(source=>source.navigation?{...source,availability:workingTowardDestinationAvailability(state,source.navigation)}:source);
   const actionableUses=usedIn.map(recipe=>({...recipe,availability:workingTowardDestinationAvailability(state,recipe.navigation)}));
-  return {item,rarityId,rarity,inventoryQuantity,bankQuantity,totalQuantity:inventoryQuantity+bankQuantity,effectLines,stats,upgrade,sockets,gearDecision,sources:actionableSources,usedIn:actionableUses};
+  const craftedInstances=item.type==='gear'?craftedInstancesForItem(state,itemId):[];
+  return {item,rarityId,rarity,inventoryQuantity,bankQuantity,totalQuantity:inventoryQuantity+bankQuantity,craftedCopies:craftedInstances.length,craftedRarities:[...new Set(craftedInstances.map(row=>row.rarity))],effectLines,stats,upgrade,sockets,gearDecision,sources:actionableSources,usedIn:actionableUses};
 }

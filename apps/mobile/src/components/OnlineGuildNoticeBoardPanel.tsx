@@ -35,7 +35,7 @@ export function OnlineGuildNoticeBoardPanel(){
    <View style={s.actions}><View style={s.flex}><GameButton compact title={busy?'Saving…':dirty?'Save Notice':'No Changes'} disabled={busy||!dirty} onPress={()=>void save()}/></View><View style={s.cancel}><GameButton compact title="Cancel" tone="secondary" disabled={busy} onPress={()=>{setDraft(board.body);setEditing(false)}}/></View></View>
   </View>}
   {board.canEdit&&!editing?<GameButton compact title={board.body?'Edit Notice':'Post Notice'} tone="secondary" onPress={()=>setEditing(true)}/>:null}
-  {!board.canEdit?<Text style={s.readOnly}>Read-only · Leaders and Officers can edit the Notice Board.</Text>:null}
+  {!board.canEdit?<Text style={s.readOnly}>Read-only · Your Guild role cannot edit the Notice Board.</Text>:null}
   {!!error&&<View accessibilityRole="alert" style={s.errorCard}><Text style={s.error}>{error}</Text></View>}
  </Panel>;
 }

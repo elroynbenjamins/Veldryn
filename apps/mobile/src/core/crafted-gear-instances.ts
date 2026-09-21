@@ -2,17 +2,18 @@ import {itemDef} from '../content/items';
 import {rarityMeta,type ItemRarity} from './item-rarity';
 import type {GameState,GearEnhancementState,GearInstanceState,GearSlot} from './types';
 
-export const CRAFTED_GEAR_RARITY_CHANCES:Readonly<Record<Exclude<ItemRarity,'legendary'>,number>>={
-  common:.893,uncommon:.07,rare:.03,epic:.006,mythic:.001,
+export const CRAFTED_GEAR_RARITY_CHANCES:Readonly<Record<ItemRarity,number>>={
+  common:.89,uncommon:.07,rare:.03,epic:.006,legendary:.003,mythic:.001,
 };
-export const CRAFTED_GEAR_RARITY_ORDER:ItemRarity[]=['common','uncommon','rare','epic','mythic'];
+export const CRAFTED_GEAR_RARITY_ORDER:ItemRarity[]=['common','uncommon','rare','epic','legendary','mythic'];
 
-export function rollCraftedGearRarity(roll:number):Exclude<ItemRarity,'legendary'>{
+export function rollCraftedGearRarity(roll:number):ItemRarity{
   if(!Number.isFinite(roll)||roll<0||roll>=1)throw new Error('Invalid crafted rarity roll');
   if(roll<CRAFTED_GEAR_RARITY_CHANCES.mythic)return 'mythic';
-  if(roll<CRAFTED_GEAR_RARITY_CHANCES.mythic+CRAFTED_GEAR_RARITY_CHANCES.epic)return 'epic';
-  if(roll<CRAFTED_GEAR_RARITY_CHANCES.mythic+CRAFTED_GEAR_RARITY_CHANCES.epic+CRAFTED_GEAR_RARITY_CHANCES.rare)return 'rare';
-  if(roll<CRAFTED_GEAR_RARITY_CHANCES.mythic+CRAFTED_GEAR_RARITY_CHANCES.epic+CRAFTED_GEAR_RARITY_CHANCES.rare+CRAFTED_GEAR_RARITY_CHANCES.uncommon)return 'uncommon';
+  if(roll<CRAFTED_GEAR_RARITY_CHANCES.mythic+CRAFTED_GEAR_RARITY_CHANCES.legendary)return 'legendary';
+  if(roll<CRAFTED_GEAR_RARITY_CHANCES.mythic+CRAFTED_GEAR_RARITY_CHANCES.legendary+CRAFTED_GEAR_RARITY_CHANCES.epic)return 'epic';
+  if(roll<CRAFTED_GEAR_RARITY_CHANCES.mythic+CRAFTED_GEAR_RARITY_CHANCES.legendary+CRAFTED_GEAR_RARITY_CHANCES.epic+CRAFTED_GEAR_RARITY_CHANCES.rare)return 'rare';
+  if(roll<CRAFTED_GEAR_RARITY_CHANCES.mythic+CRAFTED_GEAR_RARITY_CHANCES.legendary+CRAFTED_GEAR_RARITY_CHANCES.epic+CRAFTED_GEAR_RARITY_CHANCES.rare+CRAFTED_GEAR_RARITY_CHANCES.uncommon)return 'uncommon';
   return 'common';
 }
 export function derivedCraftRarityRoll(seed:number,key:string){

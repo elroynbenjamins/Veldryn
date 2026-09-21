@@ -22,7 +22,7 @@ ok(prereq.includes("itemDef(recipe.output.itemId).type==='material'"),'Auto-prer
 ok(prereq.includes('structuredClone(state)'),'Prerequisite processing must be atomic from the caller state');
 ok(prereq.includes('gathering, combat or another external source'),'Prerequisite processing must stop at external acquisition requirements');
 
-ok(panel.includes('Cancel')&&panel.includes('90% of the Gold'),'Forge UI must expose the cancellation rule');
+ok(panel.includes('Cancel')&&panel.includes('Active cancellation: 100% materials + 90% Gold'),'Forge UI must expose the active-craft cancellation rule');
 ok(card.includes('Craft prerequisites'),'Equipment recipes must expose prerequisite processing when useful');
 ok(skills.includes('onCancelCraft')&&skills.includes('onCraftPrerequisites'),'Skills must wire both management actions');
 ok(commands.includes("case 'craft_cancel'")&&commands.includes("case 'craft_prerequisites'"),'Online-authoritative commands must support both management actions');

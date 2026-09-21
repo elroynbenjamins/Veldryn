@@ -55,13 +55,15 @@ export function gemIncomingDamageMultiplierV1(target:CombatantState,now:number){
 export function gemHealingMultiplierV1(source:CombatantState,now:number){
  const shared=gem(source,'effect_shared_resolve');const potency=shared?stackCount(source,'gem:shared_resolve',now,source.definition.id)*shared.totalValue:0;
  const benediction=gem(source,'effect_benediction');const charge=benediction&&has(source,'gem:benediction_charge',now,source.definition.id)?benediction.totalValue:0;
- return 1+potency+charge;
+ const rhythm=gem(source,'effect_battle_rhythm');const rhythmBonus=rhythm&&has(source,'gem:battle_support_ready',now,source.definition.id)?rhythm.totalValue:0;
+ return 1+potency+charge+rhythmBonus;
 }
 export function gemShieldMultiplierV1(source:CombatantState,now:number){
  const aegis=gem(source,'effect_aegis'),shared=gem(source,'effect_shared_resolve'),benediction=gem(source,'effect_benediction');
  const potency=shared?stackCount(source,'gem:shared_resolve',now,source.definition.id)*shared.totalValue:0;
  const charge=benediction&&has(source,'gem:benediction_charge',now,source.definition.id)?benediction.totalValue:0;
- return 1+(aegis?.totalValue??0)+potency+charge;
+ const rhythm=gem(source,'effect_battle_rhythm');const rhythmBonus=rhythm&&has(source,'gem:battle_support_ready',now,source.definition.id)?rhythm.totalValue:0;
+ return 1+(aegis?.totalValue??0)+potency+charge+rhythmBonus;
 }
 
 export function gemOnAbilityUsedV1(now:number,actor:CombatantState,ability:AbilityDefinition){
@@ -117,10 +119,8 @@ export function gemOnDamageTakenV1(now:number,target:CombatantState,dealt:number
 }
 
 export function gemConsumeSupportChargeV1(now:number,source:CombatantState){
- const benediction=gem(source,'effect_benediction');if(!benediction)return;
- const charges=active(source,'gem:benediction_charge',now,source.definition.id);if(!charges.length)return;
- const oldest=charges.sort((a,b)=>(a.createdAt??0)-(b.createdAt??0))[0];source.modifiers=source.modifiers.filter(row=>row!==oldest);
- if(benediction.resonance>=3)setOne(source,source.definition.id,'gem:haste_bonus',.02,now+4000,now);
+ const benediction=gem(source,'effect_benediction');
+ if(benediction){const charges=active(source,'gem:benediction_charge',now,source.definition.id);if(charges.length){const oldest=charges.sort((a,b)=>(a.createdAt??0)-(b.createdAt??0))[0];source.modifiers=source.modifiers.filter(row=>row!==oldest);if(benediction.resonance>=3)setOne(source,source.definition.id,'gem:haste_bonus',.02,now+4000,now);}}
  if(has(source,'gem:battle_support_ready',now,source.definition.id))clear(source,'gem:battle_support_ready',source.definition.id);
 }
 

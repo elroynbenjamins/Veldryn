@@ -7,6 +7,7 @@ import type {EquipmentCraftJob,GameState,ItemStack,SkillState} from './types';
 
 export const BASE_EQUIPMENT_CRAFT_SLOTS=3;
 export const MAX_EQUIPMENT_CRAFT_SLOTS=5;
+export const MAX_WAITING_EQUIPMENT_CRAFTS=5;
 export const MAX_READY_EQUIPMENT_CRAFTS=20;
 
 export interface EquipmentCraftSlotSource{
@@ -47,7 +48,7 @@ export function normalizeEquipmentCraftingQueue(raw:unknown):EquipmentCraftJob[]
       reservedInputs:Array.isArray(row.reservedInputs)?row.reservedInputs.filter((stack:any)=>stack&&typeof stack.itemId==='string'&&Number.isFinite(Number(stack.quantity))&&Number(stack.quantity)>0).map((stack:any)=>({itemId:String(stack.itemId).slice(0,120),quantity:Math.max(1,Math.floor(Number(stack.quantity)))})).slice(0,12):undefined,
     }))
     .filter(row=>row.completesAtMs>=row.startedAtMs)
-    .slice(-MAX_READY_EQUIPMENT_CRAFTS);
+    .slice(-(MAX_READY_EQUIPMENT_CRAFTS+MAX_EQUIPMENT_CRAFT_SLOTS+MAX_WAITING_EQUIPMENT_CRAFTS));
 }
 
 export function equipmentCraftingQueue(state:GameState){return normalizeEquipmentCraftingQueue(state.account.equipmentCraftingQueue);}
@@ -90,8 +91,39 @@ function validateStart(state:GameState,recipe:Recipe){
   for(const input of recipe.inputs)if(combinedQuantity(state,input.itemId)<input.quantity)throw new Error(`Need ${input.quantity} ${itemDef(input.itemId).name}`);
 }
 
-function activeJobsAt(state:GameState,nowMs:number){return equipmentCraftingQueue(state).filter(job=>job.completesAtMs>nowMs);}
-function readyJobsAt(state:GameState,nowMs:number){return equipmentCraftingQueue(state).filter(job=>job.completesAtMs<=nowMs);}
+const jobDurationMs=(job:EquipmentCraftJob)=>Math.max(1000,job.completesAtMs-job.startedAtMs);
+const isReady=(job:EquipmentCraftJob,nowMs:number)=>job.completesAtMs<=nowMs;
+const isWaiting=(job:EquipmentCraftJob,nowMs:number)=>job.startedAtMs>nowMs;
+const isActive=(job:EquipmentCraftJob,nowMs:number)=>job.startedAtMs<=nowMs&&job.completesAtMs>nowMs;
+
+function scheduleWaiting(queue:EquipmentCraftJob[],capacity:number,nowMs:number,waitingOrder?:string[]){
+  const ready=queue.filter(job=>isReady(job,nowMs)).sort((a,b)=>a.completesAtMs-b.completesAtMs);
+  const active=queue.filter(job=>isActive(job,nowMs)).sort((a,b)=>a.completesAtMs-b.completesAtMs);
+  let waiting=queue.filter(job=>isWaiting(job,nowMs));
+  if(waitingOrder){
+    const order=new Map(waitingOrder.map((id,index)=>[id,index]));
+    waiting=waiting.slice().sort((a,b)=>(order.get(a.id)??999)-(order.get(b.id)??999));
+  }
+  const activeEnds=active.map(job=>job.completesAtMs).sort((a,b)=>a-b);
+  const slotTimes=activeEnds.length>=capacity
+    ?activeEnds.slice(activeEnds.length-capacity)
+    :[...activeEnds,...Array(Math.max(0,capacity-activeEnds.length)).fill(nowMs)];
+  slotTimes.sort((a,b)=>a-b);
+  const scheduled=waiting.map(job=>{
+    const duration=jobDurationMs(job),start=slotTimes[0]??nowMs,completes=start+duration;
+    slotTimes[0]=completes;slotTimes.sort((a,b)=>a-b);
+    return {...job,startedAtMs:start,completesAtMs:completes};
+  });
+  return [...ready,...active,...scheduled];
+}
+
+export function projectedEquipmentCraftingQueue(state:GameState,nowMs:number){
+  return scheduleWaiting(equipmentCraftingQueue(state),equipmentCraftSlotBreakdown(state).capacity,nowMs);
+}
+
+function withProjectedQueue(state:GameState,nowMs:number){
+  return {...state,account:{...state.account,equipmentCraftingQueue:projectedEquipmentCraftingQueue(state,nowMs)}} as GameState;
+}
 
 export function equipmentCraftDurationSeconds(state:GameState,recipeId:string){
   const recipe=timedEquipmentRecipe(recipeId);if(!recipe)throw new Error('Unknown timed equipment recipe');
@@ -101,22 +133,27 @@ export function equipmentCraftDurationSeconds(state:GameState,recipeId:string){
 
 export function startEquipmentCraft(state:GameState,recipeId:string,nowMs:number){
   const recipe=timedEquipmentRecipe(recipeId);if(!recipe)throw new Error('Unknown timed equipment recipe');
-  validateStart(state,recipe);
-  const slots=equipmentCraftSlotBreakdown(state),active=activeJobsAt(state,nowMs);
-  if(active.length>=slots.capacity)throw new Error(`All ${slots.capacity} equipment crafting slots are busy`);
-  const ready=readyJobsAt(state,nowMs);
+  let projected=withProjectedQueue(state,nowMs);
+  validateStart(projected,recipe);
+  const slots=equipmentCraftSlotBreakdown(projected),queue=equipmentCraftingQueue(projected);
+  const active=queue.filter(job=>isActive(job,nowMs)),waiting=queue.filter(job=>isWaiting(job,nowMs)),ready=queue.filter(job=>isReady(job,nowMs));
   if(ready.length>=MAX_READY_EQUIPMENT_CRAFTS)throw new Error('Claim finished equipment before starting more crafts');
-  let next:GameState={...state,character:{...state.character!,gold:state.character!.gold-recipe.gold}};
-  for(const input of recipe.inputs)next=consumeAcross(next,input.itemId,input.quantity);
-  const seconds=equipmentCraftDurationSeconds(state,recipeId);
-  const existingQueue=equipmentCraftingQueue(next);
+  if(active.length>=slots.capacity&&waiting.length>=MAX_WAITING_EQUIPMENT_CRAFTS)throw new Error(`Equipment crafting backlog is full (${MAX_WAITING_EQUIPMENT_CRAFTS}/${MAX_WAITING_EQUIPMENT_CRAFTS})`);
+  projected={...projected,character:{...projected.character!,gold:projected.character!.gold-recipe.gold}};
+  for(const input of recipe.inputs)projected=consumeAcross(projected,input.itemId,input.quantity);
+  const seconds=equipmentCraftDurationSeconds(projected,recipeId),durationMs=seconds*1000;
+  const existingQueue=equipmentCraftingQueue(projected);
+  const startsNow=active.length<slots.capacity&&waiting.length===0;
   const job:EquipmentCraftJob={
-    id:`eqcraft:${state.character!.id}:${recipeId}:${nowMs}:${existingQueue.length}`,
-    recipeId,ownerCharacterId:state.character!.id,startedAtMs:nowMs,completesAtMs:nowMs+seconds*1000,
+    id:`eqcraft:${projected.character!.id}:${recipeId}:${nowMs}:${existingQueue.length}`,
+    recipeId,ownerCharacterId:projected.character!.id,
+    startedAtMs:startsNow?nowMs:nowMs+1,completesAtMs:(startsNow?nowMs:nowMs+1)+durationMs,
     reservedGold:recipe.gold,reservedInputs:recipe.inputs.map(input=>({...input})),
   };
-  next={...next,account:{...next.account,equipmentCraftingQueue:[...existingQueue,job]}};
-  return {state:next,job,seconds};
+  const scheduled=scheduleWaiting([...existingQueue,job],slots.capacity,nowMs);
+  projected={...projected,account:{...projected.account,equipmentCraftingQueue:scheduled}};
+  const finalJob=scheduled.find(row=>row.id===job.id)!;
+  return {state:projected,job:finalJob,seconds,waiting:finalJob.startedAtMs>nowMs};
 }
 
 function addOutput(stacks:ItemStack[],capacity:number,itemId:string,quantityToAdd:number){
@@ -148,21 +185,21 @@ function awardOwnerSkillXp(state:GameState,ownerCharacterId:string,recipe:Recipe
 }
 
 export function claimEquipmentCraft(state:GameState,jobId:string,nowMs:number){
-  const queue=equipmentCraftingQueue(state),job=queue.find(row=>row.id===jobId);
+  const projected=withProjectedQueue(state,nowMs),queue=equipmentCraftingQueue(projected),job=queue.find(row=>row.id===jobId);
   if(!job)throw new Error('Crafting job not found');
-  if(job.completesAtMs>nowMs)throw new Error('This equipment craft is still in progress');
+  if(job.completesAtMs>nowMs)throw new Error(job.startedAtMs>nowMs?'This equipment craft is still waiting for a forge slot':'This equipment craft is still in progress');
   const recipe=timedEquipmentRecipe(job.recipeId);if(!recipe)throw new Error('Crafting recipe is no longer available');
-  let next=grantCraftOutput(state,recipe,job.ownerCharacterId);
+  let next=grantCraftOutput(projected,recipe,job.ownerCharacterId);
   next=awardOwnerSkillXp(next,job.ownerCharacterId,recipe);
   next={...next,account:{...next.account,equipmentCraftingQueue:queue.filter(row=>row.id!==jobId)}};
   return {state:next,recipe,job};
 }
 
 export function claimAllReadyEquipmentCrafts(state:GameState,nowMs:number){
-  let next=state,claimed:string[]=[];
-  for(const job of readyJobsAt(next,nowMs)){
+  let next=withProjectedQueue(state,nowMs),claimed:string[]=[];
+  for(const job of equipmentCraftingQueue(next).filter(row=>isReady(row,nowMs))){
     try{const result=claimEquipmentCraft(next,job.id,nowMs);next=result.state;claimed.push(job.id);}
-    catch(error){if(error instanceof Error&&error.message==='Inventory and Bank are full')break;throw error;}
+    catch(error){if(error instanceof Error&&(error.message==='Inventory and Bank are full'||error.message.startsWith('Bank is full')))break;throw error;}
   }
   return {state:next,claimed};
 }
@@ -200,25 +237,40 @@ function refundMaterialToOwner(state:GameState,ownerCharacterId:string,input:Ite
 }
 
 export function cancelEquipmentCraft(state:GameState,jobId:string,nowMs:number){
-  const queue=equipmentCraftingQueue(state),job=queue.find(row=>row.id===jobId);
+  const projected=withProjectedQueue(state,nowMs),queue=equipmentCraftingQueue(projected),job=queue.find(row=>row.id===jobId);
   if(!job)throw new Error('Crafting job not found');
   if(job.completesAtMs<=nowMs)throw new Error('Finished equipment must be claimed instead of cancelled');
   const recipe=timedEquipmentRecipe(job.recipeId);if(!recipe)throw new Error('Crafting recipe is no longer available');
-  const reservedInputs=job.reservedInputs?.length?job.reservedInputs:recipe.inputs;
-  const reservedGold=job.reservedGold??recipe.gold;
-  const refundGold=Math.floor(reservedGold*EQUIPMENT_CRAFT_CANCEL_GOLD_REFUND);
-  let next=refundOwnerGold(state,job.ownerCharacterId,refundGold);
+  const reservedInputs=job.reservedInputs?.length?job.reservedInputs:recipe.inputs,reservedGold=job.reservedGold??recipe.gold;
+  const waiting=job.startedAtMs>nowMs,refundRate=waiting?1:EQUIPMENT_CRAFT_CANCEL_GOLD_REFUND;
+  const refundGold=Math.floor(reservedGold*refundRate);
+  let next=refundOwnerGold(projected,job.ownerCharacterId,refundGold);
   for(const input of reservedInputs)next=refundMaterialToOwner(next,job.ownerCharacterId,input);
-  next={...next,account:{...next.account,equipmentCraftingQueue:queue.filter(row=>row.id!==jobId)}};
-  return {state:next,job,refundGold,feeGold:reservedGold-refundGold,refundedInputs:reservedInputs.map(row=>({...row}))};
+  const remaining=queue.filter(row=>row.id!==jobId);
+  next={...next,account:{...next.account,equipmentCraftingQueue:scheduleWaiting(remaining,equipmentCraftSlotBreakdown(next).capacity,nowMs)}};
+  return {state:next,job,waiting,refundGold,feeGold:reservedGold-refundGold,refundedInputs:reservedInputs.map(row=>({...row}))};
+}
+
+export function moveWaitingEquipmentCraft(state:GameState,jobId:string,direction:'up'|'down',nowMs:number){
+  const projected=withProjectedQueue(state,nowMs),queue=equipmentCraftingQueue(projected),waiting=queue.filter(row=>isWaiting(row,nowMs));
+  const index=waiting.findIndex(row=>row.id===jobId);if(index<0)throw new Error('Only waiting equipment crafts can be reordered');
+  const target=direction==='up'?index-1:index+1;if(target<0||target>=waiting.length)return projected;
+  const reordered=waiting.slice(),temp=reordered[index];reordered[index]=reordered[target];reordered[target]=temp;
+  const scheduled=scheduleWaiting(queue,equipmentCraftSlotBreakdown(projected).capacity,nowMs,reordered.map(row=>row.id));
+  return {...projected,account:{...projected.account,equipmentCraftingQueue:scheduled}};
 }
 
 export function equipmentCraftQueueModel(state:GameState,nowMs:number){
-  const slotInfo=equipmentCraftSlotBreakdown(state),queue=equipmentCraftingQueue(state);
+  const slotInfo=equipmentCraftSlotBreakdown(state),queue=projectedEquipmentCraftingQueue(state,nowMs);
+  const waitingIds=queue.filter(row=>isWaiting(row,nowMs)).map(row=>row.id);
   const jobs=queue.map(job=>{
-    const recipe=RECIPES.find(row=>row.id===job.recipeId),remainingSeconds=Math.max(0,Math.ceil((job.completesAtMs-nowMs)/1000));
-    return {...job,name:recipe?itemDef(recipe.output.itemId).name:job.recipeId,remainingSeconds,ready:remainingSeconds===0};
-  }).sort((a,b)=>Number(b.ready)-Number(a.ready)||a.completesAtMs-b.completesAtMs);
-  const active=jobs.filter(row=>!row.ready).length;
-  return {slotInfo,jobs,active,ready:jobs.length-active,freeSlots:Math.max(0,slotInfo.capacity-active)};
+    const recipe=RECIPES.find(row=>row.id===job.recipeId),ready=isReady(job,nowMs),waiting=isWaiting(job,nowMs),active=isActive(job,nowMs);
+    const durationSeconds=Math.ceil(jobDurationMs(job)/1000);
+    return {...job,name:recipe?itemDef(recipe.output.itemId).name:job.recipeId,status:ready?'ready' as const:waiting?'waiting' as const:'active' as const,
+      ready,waiting,active,durationSeconds,remainingSeconds:ready?0:Math.max(0,Math.ceil((job.completesAtMs-nowMs)/1000)),
+      startInSeconds:waiting?Math.max(1,Math.ceil((job.startedAtMs-nowMs)/1000)):0,
+      waitingPosition:waiting?waitingIds.indexOf(job.id)+1:0};
+  });
+  const active=jobs.filter(row=>row.active).length,waiting=jobs.filter(row=>row.waiting).length,ready=jobs.filter(row=>row.ready).length;
+  return {slotInfo,jobs,active,waiting,ready,freeSlots:Math.max(0,slotInfo.capacity-active),waitingCapacity:MAX_WAITING_EQUIPMENT_CRAFTS,freeWaiting:Math.max(0,MAX_WAITING_EQUIPMENT_CRAFTS-waiting)};
 }

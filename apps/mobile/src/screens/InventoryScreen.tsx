@@ -1,12 +1,13 @@
 import {SearchField} from '../components/SearchField';
 import {useMemo,useState} from 'react';
-import {Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {GameState,ItemStack} from '../core/types';
 import {ItemDef,itemDef} from '../content/items';
 import {InventoryFilter,InventorySort,inventoryFavoriteIds,inventoryNewItemIds,recoveryAmount,storageCapacityStatus,transferAmount,transferError,visibleStacks} from '../core/inventory-view';
 import {claimOverflowToBank,effectiveStats,StorageLocation,storageUpgradePreview} from '../core/game';
 import {ItemCard} from '../components/ItemCard';
 import {ConfirmModal} from '../components/ConfirmModal';
+import {GameModalHeader,GameModalSurface} from '../components/GameModalSurface';
 import {EmptyState} from '../components/EmptyState';
 import {GameButton} from '../components/GameButton';
 import {Panel} from '../components/Panel';
@@ -97,18 +98,14 @@ export function InventoryScreen({state,onEquip,onFood,onEat,onSell,onSalvage,onD
     {stacks.length?stacks.map(renderStack):<><EmptyState title="No items to show" message="Try another storage tab or clear the search and category filter."/><GameButton title="Clear filters" tone="secondary" onPress={()=>{setQuery('');setFilter('all')}}/></>}
     {overflowCount>0&&<Panel><Text style={s.title}>{ot(state.settings.language,'overflow.title')} · {overflowCount}</Text><Text style={s.warning}>{ot(state.settings.language,'overflow.body')}</Text>{state.overflow.stacks.map((stack,index)=><Text key={`${stack.itemId}:${index}`} style={s.sub}>{stack.quantity}× {itemDef(stack.itemId).name}</Text>)}{state.overflow.expiresAtMs!==null&&<Text style={s.warning}>Recorded expiry: {new Date(state.overflow.expiresAtMs).toLocaleString()}</Text>}<GameButton title={ot(state.settings.language,'overflow.move',{count:overflowCount-remaining})} disabled={remaining===overflowCount} onPress={()=>run(onOverflow)}/>{remaining>0&&<Text style={s.sub}>{ot(state.settings.language,'overflow.remain',{count:remaining})}</Text>}</Panel>}
   </ScrollView>
-  <Modal visible={filterOpen} transparent animationType={state.settings.reduceMotion?'none':'slide'} onRequestClose={()=>setFilterOpen(false)}>
-    <View style={s.modalRoot}><Pressable accessibilityLabel="Close inventory filters" onPress={()=>setFilterOpen(false)} style={StyleSheet.absoluteFill}/>
-      <View style={s.filterSheet}>
-        <View style={s.sheetHeader}><View style={s.resultSummary}><Text style={s.sheetEyebrow}>INVENTORY VIEW</Text><Text style={s.sheetTitle}>Filter items</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Close filters" onPress={()=>setFilterOpen(false)} style={s.sheetClose}><Text style={s.sheetCloseText}>×</Text></Pressable></View>
+  <GameModalSurface visible={filterOpen} reduceMotion={state.settings.reduceMotion} onClose={()=>setFilterOpen(false)} backdropLabel="Close inventory filters" surfaceStyle={s.filterSheet}>
+        <GameModalHeader eyebrow="INVENTORY VIEW" title="Filter items" onClose={()=>setFilterOpen(false)}/>
         <ScrollView style={s.filterList} contentContainerStyle={s.filterListContent}>
           {FILTER_OPTIONS.map(option=>{const selected=filter===option.id,label=option.id==='new'&&activeNewCount?`New · ${activeNewCount}`:option.label;return <Pressable key={option.id} accessibilityRole="radio" accessibilityState={{selected}} onPress={()=>setFilter(option.id)} style={({pressed})=>[s.filterOption,selected&&s.filterOptionSelected,pressed&&s.pressed]}><Text style={[s.filterOptionText,selected&&s.filterOptionTextSelected]}>{label}</Text><Text style={[s.filterOptionMark,selected&&s.filterOptionMarkSelected]}>{selected?'✓':'›'}</Text></Pressable>})}
         </ScrollView>
         <View style={s.sheetActions}><View style={s.flex}><GameButton title="Reset" tone="secondary" onPress={()=>setFilter('all')}/></View><View style={s.flex}><GameButton title="Done" onPress={()=>setFilterOpen(false)}/></View></View>
-      </View>
-    </View>
-  </Modal>
-  <ConfirmModal visible={pending!==null} title={`${pending?.kind==='deposit'?'Bank':pending?.kind==='sell'?'Sell':'Salvage'} ${pending?.item.name??'item'}?`} message={message} confirmLabel={pending?.kind==='deposit'?'Deposit':pending?.kind==='sell'?'Sell 1':'Salvage 1'} danger={pending?.kind!=='deposit'} onConfirm={confirm} onCancel={()=>setPending(null)}/><ConfirmModal visible={bulkPending!==null} title={bulkPending?.kind==='transfer'?`${location==='inventory'?'Deposit':'Withdraw'} selected stacks?`:bulkPending?.kind==='sell'?'Sell selected items?':'Salvage selected equipment?'} message={bulkMessage} confirmLabel={bulkPending?.kind==='transfer'?(location==='inventory'?'Deposit selected':'Withdraw selected'):bulkPending?.kind==='sell'?'Sell eligible':'Salvage eligible'} danger={bulkPending?.kind!=='transfer'} onConfirm={confirmBulk} onCancel={()=>setBulkPending(null)}/></>;
+  </GameModalSurface>
+  <ConfirmModal visible={pending!==null} title={`${pending?.kind==='deposit'?'Bank':pending?.kind==='sell'?'Sell':'Salvage'} ${pending?.item.name??'item'}?`} message={message} confirmLabel={pending?.kind==='deposit'?'Deposit':pending?.kind==='sell'?'Sell 1':'Salvage 1'} danger={pending?.kind!=='deposit'} reduceMotion={state.settings.reduceMotion} onConfirm={confirm} onCancel={()=>setPending(null)}/><ConfirmModal visible={bulkPending!==null} title={bulkPending?.kind==='transfer'?`${location==='inventory'?'Deposit':'Withdraw'} selected stacks?`:bulkPending?.kind==='sell'?'Sell selected items?':'Salvage selected equipment?'} message={bulkMessage} confirmLabel={bulkPending?.kind==='transfer'?(location==='inventory'?'Deposit selected':'Withdraw selected'):bulkPending?.kind==='sell'?'Sell eligible':'Salvage eligible'} danger={bulkPending?.kind!=='transfer'} reduceMotion={state.settings.reduceMotion} onConfirm={confirmBulk} onCancel={()=>setBulkPending(null)}/></>;
 }
 function UtilityChip({label,accessibilityLabel,selected=false,onPress}:{label:string;accessibilityLabel:string;selected?:boolean;onPress:()=>void}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);return <Pressable accessibilityRole="button" accessibilityLabel={accessibilityLabel} accessibilityState={{selected}} onPress={onPress} style={({pressed})=>[s.utilityChip,selected&&s.utilityChipActive,pressed&&s.pressed]}><Text numberOfLines={1} style={[s.utilityChipText,selected&&s.utilityChipTextActive]}>{label}</Text></Pressable>}
 function StorageChip({label,selected,status,onPress}:{label:string;selected:boolean;status:ReturnType<typeof storageCapacityStatus>;onPress:()=>void}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),equipmentColors=equipmentTheme(C),tone=status.level==='full'?C.bad:status.level==='near'?C.warning:selected?equipmentColors.selectedLine:C.line,width=`${status.percent}%` as `${number}%`;return <Pressable accessibilityRole="button" accessibilityLabel={`${label} storage, ${status.used} of ${status.capacity} slots used, ${status.free} free`} accessibilityState={{selected}} onPress={onPress} style={({pressed})=>[s.storageChip,selected&&s.storageChipSelected,status.level==='full'&&s.storageChipFull,pressed&&s.pressed]}><View style={s.storageChipTop}><Text style={[s.storageChipLabel,selected&&s.storageChipLabelSelected]}>{selected?'✓ ':''}{label}</Text><Text style={[s.storageChipCount,{color:tone}]}>{status.used}/{status.capacity}</Text></View><View style={s.capacityTrack}><View style={[s.capacityFill,{width,backgroundColor:tone}]}/></View></Pressable>}
@@ -161,13 +158,7 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
   utilityChipActive:{borderColor:C.selectionLine,backgroundColor:C.selection},
   utilityChipText:{fontSize:11,color:C.text,fontWeight:'800'},
   utilityChipTextActive:{color:C.selectionLine},
-  modalRoot:{flex:1,justifyContent:'flex-end',backgroundColor:C.overlay},
-  filterSheet:{maxHeight:'78%',paddingHorizontal:14,paddingTop:14,paddingBottom:20,backgroundColor:C.bg,borderTopWidth:2,borderTopColor:C.lineStrong,borderTopLeftRadius:18,borderTopRightRadius:18,gap:10},
-  sheetHeader:{flexDirection:'row',alignItems:'center',gap:10},
-  sheetEyebrow:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:1},
-  sheetTitle:{...typography.title,color:C.text},
-  sheetClose:{width:44,height:44,alignItems:'center',justifyContent:'center'},
-  sheetCloseText:{fontSize:28,lineHeight:30,color:C.muted},
+  filterSheet:{maxHeight:'78%',gap:10},
   filterList:{maxHeight:430},
   filterListContent:{gap:5},
   filterOption:{minHeight:44,flexDirection:'row',alignItems:'center',gap:10,paddingHorizontal:12,borderWidth:1,borderColor:C.line,borderRadius:10,backgroundColor:C.panel},

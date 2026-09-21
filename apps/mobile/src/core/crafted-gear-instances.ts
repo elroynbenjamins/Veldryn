@@ -28,13 +28,6 @@ export function normalizeCraftedGearInstances(raw:unknown):CraftedGearInstance[]
 
 export function craftedGearInstances(state:GameState){return allGearInstances(state).filter(row=>row.acquireSource==='craft');}
 export function craftedInstancesForItem(state:GameState,itemId:string,ownerCharacterId=state.character?.id){return craftedGearInstances(state).filter(row=>row.itemId===itemId&&(!ownerCharacterId||row.ownerCharacterId===ownerCharacterId));}
-export function bestCraftedInstanceForItem(state:GameState,itemId:string,ownerCharacterId=state.character?.id){
-  return craftedInstancesForItem(state,itemId,ownerCharacterId).slice().sort((a,b)=>craftedRarityStatMultiplier(itemId,b.rarity)-craftedRarityStatMultiplier(itemId,a.rarity)||b.enhancement.rank-a.enhancement.rank||b.createdAtMs-a.createdAtMs)[0];
-}
-export function effectiveOwnedGearRarity(state:GameState,itemId:string,ownerCharacterId=state.character?.id):ItemRarity{
-  return bestCraftedInstanceForItem(state,itemId,ownerCharacterId)?.rarity??itemRarity(itemDef(itemId));
-}
-
 export function createCraftedGearInstance(state:GameState,args:{itemId:string;ownerCharacterId:string;jobId:string;createdAtMs:number;roll:number}){
   const rarity=craftedGearRarity(args.itemId,args.roll);
   const instance:CraftedGearInstance={

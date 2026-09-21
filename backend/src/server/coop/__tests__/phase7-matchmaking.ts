@@ -1,9 +1,11 @@
 import { strict as assert } from 'node:assert';
-import { chooseBoundedCoopMatch, MemoryQueueRepository, readyRosterFromReservedTickets, resolvedAutoTier, type CoopQueueTicket } from '../queue-service';
+import { chooseBoundedCoopMatch, chooseQuickMatchExpedition, MemoryQueueRepository, readyRosterFromReservedTickets, resolvedAutoTier, type CoopQueueTicket } from '../queue-service';
 const now=100_000;
 const ticket=(id:string,role:'tank'|'damage'|'support',accountId=id):CoopQueueTicket=>({id,accountId,characterId:`char-${id}`,role,normalizedReadiness:1,loadoutId:`load-${id}`,loadoutRevision:1,loadoutSnapshotHash:`hash-${id}`,expeditionId:'EXP_001',tier:1,contentVersion:'v1',balanceVersion:'b1',serviceRegion:'eu',enqueuedAtMs:0,heartbeatExpiresAtMs:now+10_000,status:'queued'});
 assert.equal(chooseBoundedCoopMatch([ticket('d1','damage'),ticket('d2','damage'),ticket('d3','damage'),ticket('d4','damage')],now),null);
 assert.equal(chooseBoundedCoopMatch([ticket('t','tank'),ticket('d1','damage'),ticket('d2','damage')],now),null);
+assert.equal(chooseQuickMatchExpedition([{expeditionId:'EXP_001',tank:0,damage:2,support:1,oldestQueuedAtMs:0},{expeditionId:'EXP_002',tank:0,damage:0,support:0}],['EXP_002','EXP_001'],'tank',now),'EXP_001','Quick Match should fill the role-short dungeon first');
+assert.equal(chooseQuickMatchExpedition([],['EXP_004','EXP_003'],'damage',now),'EXP_004','empty pools should preserve the server-provided progression preference');
 const valid=[{...ticket('t','tank'),tier:5},{...ticket('d1','damage'),tier:3},{...ticket('d2','damage'),tier:4},{...ticket('s','support'),tier:3}];
 const candidate=chooseBoundedCoopMatch(valid,now);assert.ok(candidate);assert.equal(candidate!.ticketIds.length,4);assert.equal(resolvedAutoTier(valid),3,'live roster should resolve to the highest tier shared by all four players');
 const repository=new MemoryQueueRepository();valid.forEach(row=>repository.add(row));

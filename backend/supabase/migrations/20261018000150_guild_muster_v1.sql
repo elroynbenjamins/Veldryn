@@ -21,6 +21,16 @@ create table if not exists public.guild_muster_daily(
 create index if not exists idx_guild_muster_daily_week on public.guild_muster_daily(guild_id,activity_date,contribution_points);
 create index if not exists idx_guild_muster_daily_member on public.guild_muster_daily(account_id,activity_date desc);
 
+create table if not exists private.guild_muster_day_bindings(
+  account_id uuid not null references auth.users(id) on delete cascade,
+  activity_date date not null,
+  guild_id uuid not null references public.guilds(id) on delete cascade,
+  bound_at timestamptz not null default clock_timestamp(),
+  primary key(account_id,activity_date)
+);
+revoke all on table private.guild_muster_day_bindings from public,anon,authenticated;
+grant select,insert,update,delete on table private.guild_muster_day_bindings to service_role;
+
 alter table public.guild_muster_daily enable row level security;
 revoke all on table public.guild_muster_daily from public,anon,authenticated;
 grant select on table public.guild_muster_daily to authenticated;
@@ -49,6 +59,7 @@ as $$
 declare
   v_gid uuid;
   v_before integer:=0;
+  v_bound_gid uuid;
   v_existing_check_in integer:=0;
   v_awarded integer:=0;
   v_now timestamptz:=clock_timestamp();
@@ -59,6 +70,14 @@ begin
   limit 1;
 
   if v_gid is null then return new; end if;
+
+  insert into private.guild_muster_day_bindings(account_id,activity_date,guild_id)
+  values(new.account_id,new.activity_date,v_gid)
+  on conflict(account_id,activity_date) do nothing;
+  select b.guild_id into v_bound_gid
+  from private.guild_muster_day_bindings b
+  where b.account_id=new.account_id and b.activity_date=new.activity_date;
+  if v_bound_gid is distinct from v_gid then return new; end if;
 
   select d.contribution_points,d.check_in_points
   into v_before,v_existing_check_in
@@ -106,9 +125,18 @@ as $$
 declare
   v_day date:=(new.created_at at time zone 'UTC')::date;
   v_before integer:=0;
+  v_bound_gid uuid;
   v_delta integer:=0;
   v_awarded integer:=0;
 begin
+  insert into private.guild_muster_day_bindings(account_id,activity_date,guild_id)
+  values(new.account_id,v_day,new.guild_id)
+  on conflict(account_id,activity_date) do nothing;
+  select b.guild_id into v_bound_gid
+  from private.guild_muster_day_bindings b
+  where b.account_id=new.account_id and b.activity_date=v_day;
+  if v_bound_gid is distinct from new.guild_id then return new; end if;
+
   -- guild_pve_receipts are written by authoritative gameplay after the legacy client writer is revoked.
   -- Use diminishing returns so long idle settlements help without dominating the daily social loop.
   if new.kind='boss' then

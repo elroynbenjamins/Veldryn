@@ -23,7 +23,7 @@ export function EquipmentEnhancementModal({visible,state,itemId,onClose,onUpgrad
   const [tab,setTab]=useState<'upgrade'|'gems'>('upgrade'),[busy,setBusy]=useState(false),[confirmRisk,setConfirmRisk]=useState(false);
   const item=itemDef(itemId),enhancement=gearEnhancement(state,itemId),quote=upgradeQuote(state,itemId),capacity=gemSocketCapacity(itemId),rarity=rarityMeta(itemRarity(item));
   const [feedback,setFeedback]=useState<{message:string;tone:FeedbackTone}|null>(null);
-  const previous=useRef({itemId,rank:enhancement.rank,failures:enhancement.failures,gemIds:enhancement.gemIds});}
+  const previous=useRef({itemId,rank:enhancement.rank,failures:enhancement.failures,gemIds:enhancement.gemIds});
   useEffect(()=>{
     const next={itemId,rank:enhancement.rank,failures:enhancement.failures,gemIds:enhancement.gemIds};
     const result=enhancementFeedback(previous.current,next);previous.current=next;

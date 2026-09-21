@@ -1,12 +1,12 @@
 import type {ImageSourcePropType} from 'react-native';
 
 const NORMALIZED_ENEMY_KEY:Readonly<Record<string,ImageSourcePropType>>=Object.freeze({
- 'the hollow regent':require('../../assets/dungeon-enemies-v1/the_hollow_regent.png'),
- 'the coinbound captain':require('../../assets/dungeon-enemies-v1/the_coinbound_captain.png'),
- 'the rimebell colossus':require('../../assets/dungeon-enemies-v1/the_rimebell_colossus.png'),
- 'veilshade stalker':require('../../assets/dungeon-enemies-v1/veilshade_stalker.png'),
- 'ledger hexer':require('../../assets/dungeon-enemies-v1/ledger_hexer.png'),
- 'bellfrost spirit':require('../../assets/dungeon-enemies-v1/bellfrost_spirit.png'),
+ 'the hollow regent':require('../../assets/dungeon-enemies-v1/the_hollow_regent.webp'),
+ 'the coinbound captain':require('../../assets/dungeon-enemies-v1/the_coinbound_captain.webp'),
+ 'the rimebell colossus':require('../../assets/dungeon-enemies-v1/the_rimebell_colossus.webp'),
+ 'veilshade stalker':require('../../assets/dungeon-enemies-v1/veilshade_stalker.webp'),
+ 'ledger hexer':require('../../assets/dungeon-enemies-v1/ledger_hexer.webp'),
+ 'bellfrost spirit':require('../../assets/dungeon-enemies-v1/bellfrost_spirit.webp'),
 });
 
 export const DUNGEON_ENEMY_ART_NAMES=Object.freeze([

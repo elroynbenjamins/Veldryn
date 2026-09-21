@@ -2,7 +2,7 @@ import {createHash} from 'node:crypto';
 import type {GameState} from '../../apps/mobile/src/core/types';
 import type {CoopRunRequest} from '../src/shared/coop-types';
 import {EXPEDITIONS} from '../src/server/expeditions/content/launch-content';
-import {coopRequiredLevel} from '../src/server/coop/config';
+import {coopRequiredLevel,highestEligibleCoopTier} from '../src/server/coop/config';
 import {resolveAndFreezeLoadout} from '../src/server/coop/loadout-snapshots';
 import {deriveOnlineCoopLoadout,ONLINE_COOP_BALANCE_VERSION} from './coop-loadout';
 import {GameplayError,type GameplayServices} from './gameplay';
@@ -29,10 +29,11 @@ export class OnlineLiveQueue {
   if(game.state.character.id!==request.characterId||request.loadoutId!=='current')throw new GameplayError('loadout_not_owned',403);
   if(game.version!==request.loadoutRevision){const receipt=await replay();if(receipt)return receipt.response;throw new GameplayError('stale_game_version',409);}
   const record=deriveOnlineCoopLoadout(accountId,game.state,game.version);
-  const snapshot=resolveAndFreezeLoadout({accountId,characterId:request.characterId,loadoutId:'current',expectedRevision:game.version,minLevel:coopRequiredLevel(definition.minLevel,request.tier),syncLevel:definition.recommendedLevel,repository:{getOwnedLoadout:()=>record}});
+  const maximumTier=highestEligibleCoopTier(definition.minLevel,game.state.character.level);if(!maximumTier)throw new GameplayError('dungeon_level_requirement');
+  const snapshot=resolveAndFreezeLoadout({accountId,characterId:request.characterId,loadoutId:'current',expectedRevision:game.version,minLevel:coopRequiredLevel(definition.minLevel,maximumTier),syncLevel:definition.recommendedLevel,repository:{getOwnedLoadout:()=>record}});
   return this.services.rpc('join_online_live_queue_server_v1',{
    p_account_id:accountId,p_game_version:game.version,p_request_id:request.requestId,p_request_hash:hash,
-   p_ticket_id:this.services.randomId(),p_expedition_id:definition.id,p_tier:request.tier,
+   p_ticket_id:this.services.randomId(),p_expedition_id:definition.id,p_tier:maximumTier,
    p_content_version:ONLINE_COOP_BALANCE_VERSION,p_snapshot:snapshot,
   });
  }

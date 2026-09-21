@@ -27,7 +27,7 @@ async function main(){
    throw new Error('unexpected_rpc:'+name);
   }});
  const request=(path:string,body?:unknown,token='valid')=>new Request('https://test.invalid/coop/'+path,{method:body===undefined?'GET':'POST',headers:{authorization:'Bearer '+token},body:body===undefined?undefined:JSON.stringify(body)});
- const body={requestId:'live-start-001',dungeonId:'EXP_001',tier:1,characterId:state.character!.id,loadoutId:'current',loadoutRevision:7};
+ const body={requestId:'live-start-001',dungeonId:'EXP_001',tier:5,characterId:state.character!.id,loadoutId:'current',loadoutRevision:7};
  assert.equal((await handler(request('queue',body,'bad'))).status,401);assert.equal(calls.length,0);
  for(const extra of [{accountId:'other'},{role:'support'},{stats:{}},{normalizedReadiness:999},{now:999},{serviceRegion:'other'},{echoAllowed:true}])assert.equal((await handler(request('queue',{...body,...extra}))).status,400);
  assert.equal(calls.length,0);
@@ -38,7 +38,7 @@ async function main(){
  const write=calls.find(row=>row.name==='join_online_live_queue_server_v1')!;
  const frozen=write.args.p_snapshot as {accountId:string;readiness:{role:string;ready:boolean}};
  assert.equal(frozen.accountId,account);assert.equal(frozen.readiness.role,'tank');assert.equal(frozen.readiness.ready,true);
- assert.equal(write.args.p_game_version,7);assert.equal(write.args.p_ticket_id,ticket);
+ assert.equal(write.args.p_game_version,7);assert.equal(write.args.p_ticket_id,ticket);assert.equal(write.args.p_tier,3,'live queue must ignore the requested tier and store the server-derived maximum eligible tier');
  version=8;
  assert.deepEqual(await (await handler(request('queue',body))).json(),await first.json(),'uncertain join replays after gameplay advances');
  receiptOnSecondRead=true;reads=0;

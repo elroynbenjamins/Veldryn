@@ -12,13 +12,14 @@ import {presentQModeRun,type CoopQModeServerProjection} from '../core/coop-qmode
 import {realCoopQModeSource} from '../online/coop-qmode-source';
 import {supabase} from '../online/supabase';
 import {GameButton} from '../components/GameButton';
-import {C} from '../theme/theme';
+import {useGameTheme} from '../theme/ThemeContext';
 import {realCoopEntrySource,type CoopEntrySource} from '../online/coop-entry-source';
 import type {GameState} from '../core/types';
 import {clt} from '../i18n';
 import {presentEventExpeditionRun,validateCoopEventExpeditionPreview,type CoopEventExpeditionPreview,type CoopEventRunServerProjection} from '../core/coop-event-expeditions';
 
 export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoopEntrySource,initialEventLiveId,onInitialEventHandled,onRewardsChanged}:{onClose:()=>void;language:Language;state:GameState;entrySource?:CoopEntrySource;initialEventLiveId?:string;onInitialEventHandled?:()=>void;onRewardsChanged?:()=>void|Promise<void>}){
+  const C=useGameTheme();
   const [entry,setEntry]=useState<CoopEntryData>();
   const [selected,setSelected]=useState<CoopDungeonView>();
   const [selectedEvent,setSelectedEvent]=useState<CoopEventExpeditionPreview>();

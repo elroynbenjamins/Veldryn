@@ -3,7 +3,7 @@ import {validateCoopRunView,type CoopRunView} from './coop-presentation';
 export type CoopQModeStatus='recruiting'|'ready'|'candidate_shortage'|'content_conflict'|'resuming'|'error'|'reward_pending'|'completed';
 export interface CoopQModeMemberView {memberId:string;displayName:string;role:CoopRole;kind:'controller'|'echo';effectiveLevel:number;status:'ready'|'loading'|'unavailable';appearanceId?:string;}
 export interface CoopQModeTeamView {runId?:string;requestId:string;status:CoopQModeStatus;members:CoopQModeMemberView[];message?:string;stateVersion?:number;}
-export interface CoopQModeServerProjection {runId:string;mode:'qmode';phase:string;tier:1|2|3|4|5;expeditionId:string;controller:true;team:Array<{memberId:string;displayName:string;role:CoopRole;classId:string;kind:'controller'|'echo';effectiveLevel:number;currentHp:number;maximumHp:number;downed:boolean}>;graph:unknown;currentNodeId:string;options:unknown[];visitedNodeIds:string[];resources:number;boons:string[];artifacts:string[];curses:string[];settlement:{status:'not_ready'|'pending_entitlement'};}
+export interface CoopQModeServerProjection {runId:string;mode:'qmode';phase:string;tier:1|2|3|4|5;expeditionId:string;controller:true;team:Array<{memberId:string;displayName:string;role:CoopRole;classId:string;companionId?:string;kind:'controller'|'echo';effectiveLevel:number;currentHp:number;maximumHp:number;downed:boolean}>;graph:unknown;currentNodeId:string;options:unknown[];visitedNodeIds:string[];resources:number;boons:string[];artifacts:string[];curses:string[];settlement:{status:'not_ready'|'pending_entitlement'};}
 export function validateCoopQModeTeam(view:CoopQModeTeamView):void{
   const serialized=JSON.stringify(view);if(/sourceAccountId|ownerAccountId|wallet/i.test(serialized))throw new Error('private_echo_data_forbidden');
   if(view.status==='ready'||view.status==='resuming'||view.status==='reward_pending'||view.status==='completed'){
@@ -22,6 +22,6 @@ export function presentQModeRun(projection:CoopQModeServerProjection&{stateVersi
   const kind=node.kind,title=kind==='boss'?'Final boss':kind.charAt(0).toUpperCase()+kind.slice(1);
   return {nodeId:node.nodeId,title,kind,risk:`Risk ${node.risk}`,reward:node.rewardTag.replace(/_/g,' ')};
  });
- const run:CoopRunView={runId:projection.runId,mode:'qmode',phase:projection.phase,syncedLevel:Math.min(...projection.team.map(member=>member.effectiveLevel)),roleSlots:projection.team.map(member=>({role:member.role,name:member.displayName,echo:member.kind==='echo',classId:member.classId,ready:!member.downed})),options,stateVersion:projection.stateVersion,decisionId:projection.decisionId,decisionRevision:projection.decisionRevision,resolvesAtMs:projection.resolvesAtMs};
+ const run:CoopRunView={runId:projection.runId,mode:'qmode',phase:projection.phase,syncedLevel:Math.min(...projection.team.map(member=>member.effectiveLevel)),roleSlots:projection.team.map(member=>({role:member.role,name:member.displayName,echo:member.kind==='echo',classId:member.classId,companionId:member.companionId,currentHp:member.currentHp,maximumHp:member.maximumHp,ready:!member.downed})),options,stateVersion:projection.stateVersion,decisionId:projection.decisionId,decisionRevision:projection.decisionRevision,resolvesAtMs:projection.resolvesAtMs};
  validateCoopRunView(run);return run;
 }

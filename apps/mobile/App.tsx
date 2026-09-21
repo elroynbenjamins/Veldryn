@@ -9,7 +9,7 @@ import {AsyncStorageGameRepository} from './src/storage/async-storage-repository
 import {ActiveActivity,CombatChallengeId,CombatTacticId,GameState,RewardBundle} from './src/core/types';
 import type {HuntGoalId} from './src/core/hunt-goals';
 import {challengeFallenKnight,claimActivity,claimOverflowToBank,claimQuest,claimSeasonalContract,craftRecipe,createCharacter,depositAllMaterials,depositToBank,eatFood,equipFood,equipGatheringTool,equipItem,newGame,previewActivityReward,salvageItem,sellItem,startHerbalism,travelToRegion,unequipItem,upgradeStorage,withdrawFromBank} from './src/core/game';
-import {cancelEquipmentCraft,claimAllReadyEquipmentCrafts,claimEquipmentCraft,claimForgeJob,equipmentCraftQueueModel,moveWaitingEquipmentCraft,startEquipmentCraft,startGemCombine,timedEquipmentRecipe} from './src/core/equipment-crafting-queue';
+import {cancelEquipmentCraft,claimAllReadyEquipmentCrafts,claimForgeJob,equipmentCraftQueueModel,moveWaitingEquipmentCraft,startEquipmentCraft,startGemCombine,timedEquipmentRecipe} from './src/core/equipment-crafting-queue';
 import {craftEquipmentPrerequisites} from './src/core/equipment-crafting-prerequisites';
 import {acknowledgeAllInventoryItems,acknowledgeInventoryItem,toggleInventoryFavorite} from './src/core/inventory-view';
 import {bulkSalvageSelected,bulkSellSelected,bulkTransferSelected} from './src/core/inventory-bulk';

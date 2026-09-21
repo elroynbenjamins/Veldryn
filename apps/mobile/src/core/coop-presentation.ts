@@ -23,6 +23,9 @@ export interface CoopCombatReplayCueView{
  abilityName?:string;
  durationMs?:number;
  actionKind?:'damage'|'heal'|'shield';
+ outcome?:'critical'|'miss';
+ absorbed?:number;
+ gemProc?:boolean;
  amount?:number;
 }
 export interface CoopCombatReplayView{
@@ -59,7 +62,7 @@ export function validateCoopRunView(view:CoopRunView):void{
   if(!replay.nodeId.trim()||!['victory','wipe','timeout'].includes(replay.reason)||!Number.isFinite(replay.durationMs)||replay.durationMs<0||replay.cues.length>48)throw new Error('invalid_combat_replay');
   let previous=-1;
   for(const cue of replay.cues){
-   if(!Number.isFinite(cue.atMs)||cue.atMs<0||cue.atMs>replay.durationMs||cue.atMs<previous||!types.has(cue.type)||cue.durationMs!==undefined&&(!Number.isFinite(cue.durationMs)||cue.durationMs<0)||cue.amount!==undefined&&(!Number.isFinite(cue.amount)||cue.amount<0)||cue.actionKind!==undefined&&!['damage','heal','shield'].includes(cue.actionKind))throw new Error('invalid_combat_replay');
+   if(!Number.isFinite(cue.atMs)||cue.atMs<0||cue.atMs>replay.durationMs||cue.atMs<previous||!types.has(cue.type)||cue.durationMs!==undefined&&(!Number.isFinite(cue.durationMs)||cue.durationMs<0)||cue.amount!==undefined&&(!Number.isFinite(cue.amount)||cue.amount<0)||cue.absorbed!==undefined&&(!Number.isFinite(cue.absorbed)||cue.absorbed<0)||cue.actionKind!==undefined&&!['damage','heal','shield'].includes(cue.actionKind)||cue.outcome!==undefined&&!['critical','miss'].includes(cue.outcome)||cue.gemProc!==undefined&&typeof cue.gemProc!=='boolean')throw new Error('invalid_combat_replay');
    if([cue.actorId,cue.actorName,cue.targetId,cue.targetName,cue.abilityId,cue.abilityName].some(value=>value!==undefined&&!value.trim()))throw new Error('invalid_combat_replay');
    previous=cue.atMs;
   }

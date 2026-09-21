@@ -51,8 +51,12 @@ export function dungeonCombatClassFx(classId:string|undefined):DungeonCombatClas
 export function dungeonCombatCueFx(cue:CoopCombatReplayCueView|undefined,actorClassId?:string):DungeonCombatCueFx|undefined{
   if(!cue)return undefined;
   if(cue.type==='action'){
-    if(cue.actionKind==='heal')return {label:'RESTORE',glyph:'+',accent:'success',actorMotion:'pulse',targetMotion:'pulse',actorTravelPx:0,effectTravelPx:18,targetShakePx:0,durationMs:320};
-    if(cue.actionKind==='shield')return {label:'WARD',glyph:'▣',accent:'gold',actorMotion:'brace',targetMotion:'brace',actorTravelPx:0,effectTravelPx:12,targetShakePx:0,durationMs:320};
+    if(cue.outcome==='miss')return {label:'MISS',glyph:'○',accent:'cyan',actorMotion:'dash',targetMotion:'none',actorTravelPx:4,effectTravelPx:20,targetShakePx:0,durationMs:220};
+    if(cue.actionKind==='heal')return {label:cue.gemProc?'GEM HEAL':'RESTORE',glyph:'+',accent:cue.gemProc?'violet':'success',actorMotion:'pulse',targetMotion:'pulse',actorTravelPx:0,effectTravelPx:18,targetShakePx:0,durationMs:320};
+    if(cue.actionKind==='shield')return {label:cue.gemProc?'GEM BARRIER':'WARD',glyph:'▣',accent:cue.gemProc?'violet':'gold',actorMotion:'brace',targetMotion:'brace',actorTravelPx:0,effectTravelPx:12,targetShakePx:0,durationMs:320};
+    if(cue.outcome==='critical')return {label:cue.gemProc?'GEM CRIT':'CRITICAL',glyph:'✦',accent:'gold',actorMotion:'smash',targetMotion:'shake',actorTravelPx:10,effectTravelPx:36,targetShakePx:6,durationMs:360};
+    if(cue.absorbed&&cue.absorbed>0)return {label:'BARRIER HIT',glyph:'▣',accent:'gold',actorMotion:'lunge',targetMotion:'brace',actorTravelPx:6,effectTravelPx:24,targetShakePx:0,durationMs:300};
+    if(cue.gemProc)return {label:'GEM PROC',glyph:'✧',accent:'violet',actorMotion:'pulse',targetMotion:'shake',actorTravelPx:0,effectTravelPx:24,targetShakePx:3,durationMs:330};
     const profile=dungeonCombatClassFx(actorClassId);
     return profile?{label:profile.damageLabel,glyph:profile.damageGlyph,accent:profile.damageAccent,actorMotion:profile.damageMotion,targetMotion:'shake',actorTravelPx:profile.actorTravelPx,effectTravelPx:profile.effectTravelPx,targetShakePx:profile.targetShakePx,durationMs:profile.durationMs}:DEFAULT_DAMAGE;
   }

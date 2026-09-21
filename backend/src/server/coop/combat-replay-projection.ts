@@ -11,6 +11,9 @@ export interface PublicCombatReplayCue{
   abilityName?:string;
   durationMs?:number;
   actionKind?:'damage'|'heal'|'shield';
+  outcome?:'critical'|'miss';
+  absorbed?:number;
+  gemProc?:boolean;
   amount?:number;
 }
 
@@ -30,7 +33,7 @@ function cue(value:unknown,durationMs:number):PublicCombatReplayCue|undefined{
   if(!value||typeof value!=='object')return undefined;
   const row=value as Record<string,unknown>,at=finite(row.atMs),type=text(row.type) as PublicCombatReplayCueType|undefined;
   if(at===undefined||at<0||at>durationMs||!type||!TYPES.has(type))return undefined;
-  const castDuration=finite(row.durationMs),amount=finite(row.amount),actionKind=row.actionKind==='damage'||row.actionKind==='heal'||row.actionKind==='shield'?row.actionKind:undefined;
+  const castDuration=finite(row.durationMs),amount=finite(row.amount),absorbed=finite(row.absorbed),actionKind=row.actionKind==='damage'||row.actionKind==='heal'||row.actionKind==='shield'?row.actionKind:undefined,outcome=row.outcome==='critical'||row.outcome==='miss'?row.outcome:undefined,gemProc=row.gemProc===true;
   return {
     atMs:Math.round(at),
     type,
@@ -42,6 +45,9 @@ function cue(value:unknown,durationMs:number):PublicCombatReplayCue|undefined{
     abilityName:text(row.abilityName),
     ...(castDuration!==undefined&&castDuration>=0?{durationMs:Math.round(castDuration)}:{}),
     ...(actionKind?{actionKind}:{}),
+    ...(outcome?{outcome}:{}),
+    ...(absorbed!==undefined&&absorbed>=0?{absorbed:Number(absorbed.toFixed(2))}:{}),
+    ...(gemProc?{gemProc:true}:{}),
     ...(amount!==undefined&&amount>=0?{amount:Number(amount.toFixed(2))}:{}),
   };
 }

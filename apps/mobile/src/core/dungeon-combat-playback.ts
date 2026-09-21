@@ -15,7 +15,7 @@ export function playbackCueTone(cue:CoopCombatReplayCueView):DungeonPlaybackTone
     case 'victory': return 'success';
     case 'wipe': case 'down': return 'danger';
     case 'cast': return 'warning';
-    case 'action': return cue.actionKind==='heal'||cue.actionKind==='shield'?'success':'selected';
+    case 'action': return cue.outcome==='miss'?'neutral':cue.outcome==='critical'?'warning':cue.actionKind==='heal'||cue.actionKind==='shield'?'success':'selected';
     case 'phase': case 'interrupt': case 'assist': return 'selected';
     case 'timeout': return 'warning';
     default: return 'neutral';
@@ -26,10 +26,12 @@ export function playbackCueLabel(cue:CoopCombatReplayCueView):string{
   const actor=cue.actorName?.trim(),target=cue.targetName?.trim(),ability=cue.abilityName?.trim(),amount=cue.amount===undefined?'':` · ${Math.round(cue.amount)}`;
   switch(cue.type){
     case 'action': {
-      if(cue.actionKind==='heal')return `${actor??'Support'} heals ${target??'ally'}${amount}`;
-      if(cue.actionKind==='shield')return `${actor??'Support'} shields ${target??'ally'}${amount}`;
-      if(ability==='Basic Attack')return `${actor??'Combatant'} attacks ${target??'target'}${amount}`;
-      return `${actor??'Combatant'} uses ${ability??'an ability'}${target?` on ${target}`:''}${amount}`;
+      const suffix=`${cue.outcome==='critical'?' · CRIT':''}${cue.outcome==='miss'?' · MISS':''}${cue.absorbed&&cue.absorbed>0?` · ${Math.round(cue.absorbed)} absorbed`:''}${cue.gemProc?' · GEM PROC':''}`;
+      if(cue.actionKind==='heal')return `${actor??'Support'} heals ${target??'ally'}${amount}${suffix}`;
+      if(cue.actionKind==='shield')return `${actor??'Support'} shields ${target??'ally'}${amount}${suffix}`;
+      if(cue.outcome==='miss')return `${actor??'Combatant'} misses ${target??'target'}${suffix}`;
+      if(ability==='Basic Attack')return `${actor??'Combatant'} attacks ${target??'target'}${amount}${suffix}`;
+      return `${actor??'Combatant'} uses ${ability??'an ability'}${target?` on ${target}`:''}${amount}${suffix}`;
     }
     case 'phase': return ability?`${actor??'Boss'} enters ${ability}`:`${actor??'Boss'} changes phase`;
     case 'cast': return ability?`${actor??'Boss'} begins ${ability}`:`${actor??'Boss'} begins a cast`;

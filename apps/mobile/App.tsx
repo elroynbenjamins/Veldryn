@@ -400,7 +400,7 @@ const next=discoverCharacterSkins(candidate);stateRef.current=next;setState(next
     {tab==='Collections'&&<CollectionsScreen state={state} onChange={candidate=>void commit(candidate)}/>}
     {tab==='Profile'&&<ProfileScreen state={state} onNavigate={destination=>destination==='Customize'?setTab('ProfileCustomize'):setTab(destination)}/>}
     {tab==='ProfileCustomize'&&<ProfileCustomizeScreen state={state} onChange={commit} onNavigateSource={destination=>setTab(destination)} onDirtyChange={setProfileCustomizeDirty}/>} 
-    {tab==='Achievements'&&<AchievementsScreen/>}
+    {tab==='Achievements'&&<AchievementsScreen reduceMotion={state.settings.reduceMotion} onProfile={()=>setTab('ProfileCustomize')}/>}
   </View>
   <ChatOverlay state={state} visible={showChatOverlay} onOpen={()=>setShowChatOverlay(true)} onClose={()=>setShowChatOverlay(false)} onEmoteTrayChange={ids=>commit({...state,settings:{...state.settings,chatEmoteTrayIds:ids}})} guildUnread={notificationCounts.guildChatUnread} guildMentions={notificationCounts.guildChatMentions} guildFirstUnreadMessageId={notificationCounts.guildFirstUnreadMessageId} partyUnread={notificationCounts.partyChatUnread} partyMentions={notificationCounts.partyChatMentions} partyFirstUnreadMessageId={notificationCounts.partyFirstUnreadMessageId} onChatRead={()=>void refreshSocialNotifications()}/>
   <PrimaryNavigation destinations={primaryTabs} active={activePrimary} labelFor={item=>tabLabel(state.settings.language,item)} onNavigate={setTab} badges={primaryBadges}/>

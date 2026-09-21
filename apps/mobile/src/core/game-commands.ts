@@ -22,7 +22,7 @@ import {clearActivityQueue,enqueueActivity,moveQueuedActivity,removeQueuedActivi
 import {activateDailySupplyBoost,claimDailySupplies,DAILY_SUPPLY_BOOST_TYPES,dailySupplyBoostLabel} from './daily-supplies';
 import {bulkSalvageSelected,bulkSellSelected,bulkTransferSelected} from './inventory-bulk';
 import {normalizeChatEmoteTrayIds,CHAT_EMOTE_TRAY_SIZE} from './chat-emotes';
-import {cancelEquipmentCraft,claimAllReadyEquipmentCrafts,claimEquipmentCraft,startEquipmentCraft,timedEquipmentRecipe} from './equipment-crafting-queue';
+import {cancelEquipmentCraft,claimAllReadyEquipmentCrafts,claimEquipmentCraft,moveWaitingEquipmentCraft,startEquipmentCraft,timedEquipmentRecipe} from './equipment-crafting-queue';
 import {craftEquipmentPrerequisites} from './equipment-crafting-prerequisites';
 
 /** Commands express intent. Neither a client save nor a client reward is accepted. */
@@ -34,7 +34,7 @@ const fields:Record<string,readonly string[]>={
  companion_monthly:['id'],companion_supplies:[],companion_bond_reward:['id','level'],companion_boss_rematch:[],
  companion_equip:['id'],companion_unequip:[],companion_level:['id'],companion_ascend:['id'],companion_master:['id'],companion_upgrade:['id'],companion_training:[],companion_essence:[],
  companion_trial_start:['ids','floor'],companion_trial_floor:['id','floor'],companion_trial_abandon:['id'],companion_assignment_start:['id','ids'],companion_assignment_claim:['id'],companion_technique:['id','technique'],companion_codex:['id'],companion_showcase:['id','ids'],companion_weekly:['id'],companion_special:['id','ids'],
- create:['classId','name','body'],claim:[],start:['kind','id','challengeId','tacticId','goalId'],queue_add:['kind','id','challengeId','tacticId','goalId'],queue_remove:['index'],queue_move:['index','direction'],queue_clear:[],queue_start:[],explore:['id'],stop:[],travel:['id'],boss:[],craft:['id'],craft_claim:['id'],craft_claim_all:[],craft_cancel:['id'],craft_prerequisites:['id'],use_potion:['id'],discard_preparation:[],
+ create:['classId','name','body'],claim:[],start:['kind','id','challengeId','tacticId','goalId'],queue_add:['kind','id','challengeId','tacticId','goalId'],queue_remove:['index'],queue_move:['index','direction'],queue_clear:[],queue_start:[],explore:['id'],stop:[],travel:['id'],boss:[],craft:['id'],craft_claim:['id'],craft_claim_all:[],craft_cancel:['id'],craft_move:['id','direction'],craft_prerequisites:['id'],use_potion:['id'],discard_preparation:[],
  roster_create:['classId','name','body'],roster_switch:['id'],
  equip:['id'],unequip:['slot'],food:['id'],eat:['id'],sell:['id','quantity'],salvage:['id'],
  deposit:['id','quantity'],withdraw:['id','quantity'],deposit_materials:[],bulk_transfer:['location','ids'],bulk_sell:['ids'],bulk_salvage:['ids'],storage:['location'],overflow:[],
@@ -156,7 +156,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'boss':{const result=game.challengeFallenKnight(state,now);state=result.state;message=result.message;won=result.won;if(won)contributions.push({kind:'boss',contentId:'FALLEN_KNIGHT',units:1});break;}
   case 'craft':{
    const id=text(a,'id'),timed=timedEquipmentRecipe(id);
-   if(timed){const started=startEquipmentCraft(state,id,now);state=started.state;message='Equipment crafting started';}
+   if(timed){const started=startEquipmentCraft(state,id,now);state=started.state;message=started.waiting?'Equipment added to forge backlog':'Equipment crafting started';}
    else {state=game.craftRecipe(state,id,now);contributions.push({kind:'crafting',contentId:id,units:1});}
    break;
   }
@@ -172,6 +172,9 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   }
   case 'craft_cancel':{
    const result=cancelEquipmentCraft(state,text(a,'id',160),now);state=result.state;message=`Craft cancelled · ${result.refundGold} Gold refunded`;break;
+  }
+  case 'craft_move':{
+   state=moveWaitingEquipmentCraft(state,text(a,'id',160),oneOf(a.direction,['up','down']),now);message='Forge backlog priority updated';break;
   }
   case 'craft_prerequisites':{
    const id=text(a,'id'),result=craftEquipmentPrerequisites(state,id,now);state=result.state;message=`${result.crafted.reduce((sum,row)=>sum+row.batches,0)} prerequisite batch${result.crafted.reduce((sum,row)=>sum+row.batches,0)===1?'':'es'} crafted`;break;

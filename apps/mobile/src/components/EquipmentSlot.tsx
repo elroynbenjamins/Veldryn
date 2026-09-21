@@ -2,17 +2,17 @@ import {memo,useMemo} from 'react';
 import {Pressable,StyleSheet,Text,useWindowDimensions,View} from 'react-native';
 import type {ItemDef} from '../content/items';
 import type {GearSlot} from '../core/types';
-import {itemRarity,rarityMeta,rarityNameColor} from '../core/item-rarity';
+import {itemRarity,rarityMeta,rarityNameColor,type ItemRarity} from '../core/item-rarity';
 import {equipmentTheme,radii,spacing,touchTargetPreferred,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {EquipmentArtwork,hasEquipmentArtwork} from './EquipmentArtwork';
 
 
-export const EquipmentSlot=memo(function EquipmentSlot({slot,label,item,rank=0,statGemFilled=false,effectGemFilled=false,socketCapacity=0,selected,disabled=false,compact=false,onPress}:{slot:GearSlot;label:string;item?:ItemDef;rank?:number;statGemFilled?:boolean;effectGemFilled?:boolean;socketCapacity?:number;selected:boolean;disabled?:boolean;compact?:boolean;onPress:()=>void}){
+export const EquipmentSlot=memo(function EquipmentSlot({slot,label,item,rarityOverride,rank=0,statGemFilled=false,effectGemFilled=false,socketCapacity=0,selected,disabled=false,compact=false,onPress}:{slot:GearSlot;label:string;item?:ItemDef;rarityOverride?:ItemRarity;rank?:number;statGemFilled?:boolean;effectGemFilled?:boolean;socketCapacity?:number;selected:boolean;disabled?:boolean;compact?:boolean;onPress:()=>void}){
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
   const {width,fontScale}=useWindowDimensions();
   const compactWidth=width<360||fontScale>1.2?'30%':'22%';
-  const rarity=item?itemRarity(item):undefined,meta=rarity?rarityMeta(rarity):undefined,nameColor=rarity?rarityNameColor(rarity,C.dark,C.text):C.text,hasArt=!!item&&hasEquipmentArtwork(item);
+  const rarity=item?(rarityOverride??itemRarity(item)):undefined,meta=rarity?rarityMeta(rarity):undefined,nameColor=rarity?rarityNameColor(rarity,C.dark,C.text):C.text,hasArt=!!item&&hasEquipmentArtwork(item);
   return <Pressable accessibilityRole="button" accessibilityLabel={item?`${label}: ${item.name}, ${meta?.label}`:`${label}: empty`} accessibilityState={{selected,disabled}} disabled={disabled} onPress={onPress} style={({pressed})=>[s.root,compact&&[s.compact,{width:compactWidth}],meta&&{borderColor:meta.color,borderWidth:meta.borderWidth,backgroundColor:meta.surface,shadowColor:meta.color,shadowOpacity:meta.glowOpacity,shadowRadius:6,shadowOffset:{width:0,height:0},elevation:meta.glowOpacity>0?2:0},selected&&s.selected,pressed&&!disabled&&s.pressed,disabled&&s.disabled]}>
     <Text style={s.slotLabel}>{label}</Text><View style={[s.art,compact&&s.compactArt]}>{item&&hasArt?<EquipmentArtwork item={item} compact={compact} framed={false}/>:<View style={{opacity:.3}}><EquipmentArtwork framed={false} compact={compact} item={{id:'empty-slot',name:label,type:'gear',slot,value:0,noviceSetId:'ironwarden_recruit'}}/></View>}</View>
     {!compact&&<Text numberOfLines={2} style={[s.itemName,!item&&s.empty,item&&{color:nameColor}]}>{item?.name??'Empty slot'}</Text>}{!compact&&meta&&<Text style={[s.rarity,{color:meta.color}]}>{meta.symbol} {meta.label}</Text>}{item&&rank>0&&<View pointerEvents="none" style={s.rankBadge}><Text style={s.rankText}>+{rank}</Text></View>}{item&&socketCapacity>0&&<View pointerEvents="none" style={s.socketBadge}><Text style={[s.socketPip,statGemFilled&&s.statFilled]}>S</Text><Text style={[s.socketPip,effectGemFilled&&s.effectFilled]}>F</Text></View>}{selected&&!compact&&<View pointerEvents="none" style={s.selectedCorner}><Text style={s.selectedMark}>✓</Text></View>}

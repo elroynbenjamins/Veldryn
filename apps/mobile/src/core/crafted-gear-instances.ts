@@ -1,5 +1,5 @@
 import {itemDef} from '../content/items';
-import {rarityMeta,type ItemRarity} from './item-rarity';
+import {type ItemRarity} from './item-rarity';
 import type {GameState,GearEnhancementState,GearInstanceState,GearSlot} from './types';
 
 export const CRAFTED_GEAR_RARITY_CHANCES:Readonly<Record<ItemRarity,number>>={
@@ -116,4 +116,21 @@ export function rarityBreakdownForStack(state:GameState,itemId:string,storage:'i
 }
 export function bestRarityForStack(state:GameState,itemId:string,storage:'inventory'|'bank',stackQuantity:number):ItemRarity{
   return rarityBreakdownForStack(state,itemId,storage,stackQuantity)[0]?.rarity??'common';
+}
+
+export function disposableStoredGearCount(state:GameState,itemId:string,storage:'inventory'|'bank'){
+  const legacy=legacyStoredGearCount(state,itemId,storage);
+  const instances=instancesForItem(state,itemId,storage).filter(row=>!(row.enhancement.rank>0||row.enhancement.statGemId||row.enhancement.effectGemId));
+  return legacy+instances.length;
+}
+export function removeDisposableStoredGearCopies(state:GameState,itemId:string,storage:'inventory'|'bank',count:number){
+  if(count<=0)return state;
+  const legacy=legacyStoredGearCount(state,itemId,storage),instanceNeeded=Math.max(0,count-legacy);
+  if(instanceNeeded===0)return state;
+  const candidates=instancesForItem(state,itemId,storage)
+    .filter(row=>!(row.enhancement.rank>0||row.enhancement.statGemId||row.enhancement.effectGemId))
+    .sort((a,b)=>rarityRank(a.craftedRarity)-rarityRank(b.craftedRarity)||a.createdAtMs-b.createdAtMs);
+  if(candidates.length<instanceNeeded)throw new Error('Enhanced equipment is protected. Extract its gems before disposal; upgraded ranks cannot be recovered.');
+  const removeIds=new Set(candidates.slice(0,instanceNeeded).map(row=>row.id));
+  return {...state,account:{...state.account,gearInstances:gearInstances(state).filter(row=>!removeIds.has(row.id))}} as GameState;
 }

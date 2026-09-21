@@ -1,7 +1,7 @@
 import {createCharacter,newGame} from '../src/core/game';
 import {gearEnhancement,replaceGem,socketGem} from '../src/core/equipment-enhancement';
 import {startGemCombine,claimForgeJob,equipmentCraftQueueModel} from '../src/core/equipment-crafting-queue';
-import {availableGemCombinesV1,gemCodexRowsV1,gemCombineRecipeIdV1,recommendedEffectFamiliesV1,resonanceForFamilyV1} from '../src/core/gem-progression-v1';
+import {availableGemCombinesV1,dismantleGemV1,gemCodexRowsV1,gemCombineRecipeIdV1,recommendedEffectFamiliesV1,resonanceForFamilyV1} from '../src/core/gem-progression-v1';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 let state=createCharacter(newGame(1),'IRONWARDEN','Gem Tester','male');
@@ -33,6 +33,10 @@ const recs=recommendedEffectFamiliesV1(state,'IRONWARDEN');
 ok(recs.some(row=>row.family.familyId==='effect_bulwark'&&row.score>0),'Ironwarden recommendations should include Bulwark');
 const codex=gemCodexRowsV1(state);
 ok(codex.length===32,'Codex should expose all 32 canonical gem families');
+const dustBefore=state.inventory.stacks.filter(row=>row.itemId==='GEM_DUST').reduce((sum,row)=>sum+row.quantity,0);
+state=dismantleGemV1(state,'gem:effect_bulwark:g1',1);
+const dustAfter=state.inventory.stacks.filter(row=>row.itemId==='GEM_DUST').reduce((sum,row)=>sum+row.quantity,0);
+ok(dustAfter===dustBefore+1,'Dismantling a Cut gem should return exactly 1 Gem Dust');
 
 const recipeId=gemCombineRecipeIdV1('stat_might',1);
 ok(availableGemCombinesV1(state).some(row=>row.recipe.id===recipeId&&row.ready),'Owned three Cut Might Gems should be combine-ready');

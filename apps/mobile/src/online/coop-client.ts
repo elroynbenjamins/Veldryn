@@ -14,7 +14,7 @@ export const coopRogueliteEnabled=process.env.EXPO_PUBLIC_COOP_ROGUELITE_V1==='t
 export const coopOnlineConfigured=Boolean(coopRogueliteEnabled&&apiBase&&supabase);
 // Internal lobby validation only; keep off until Live run/recovery gates pass.
 export const coopLiveReadyEnabled=process.env.EXPO_PUBLIC_COOP_LIVE_READY_V1==='true';
-export interface CoopEntryData {dungeons:CoopDungeonProjection[];eventExpeditions?:CoopEventExpeditionPreview[];loadouts:CoopLoadoutProjection[];liveRecruitment?:CoopLiveRecruitmentPost[];serverNow?:number;activeRun?:CoopRunView;activeRunProjection?:CoopQModeServerProjection;activeEventRunProjection?:CoopEventRunServerProjection;echoSharing?:boolean;gameVersion?:number;}
+export interface CoopEntryData {dungeons:CoopDungeonProjection[];eventExpeditions?:CoopEventExpeditionPreview[];loadouts:CoopLoadoutProjection[];liveRecruitment?:CoopLiveRecruitmentPost[];liveFellowshipRemaining?:number;serverNow?:number;activeRun?:CoopRunView;activeRunProjection?:CoopQModeServerProjection;activeEventRunProjection?:CoopEventRunServerProjection;echoSharing?:boolean;gameVersion?:number;}
 export interface CoopStartBody {requestId:string;dungeonId:string;tier:1|2|3|4|5;characterId:string;loadoutId:string;loadoutRevision:number;}
 export interface CoopQuickStartBody {requestId:string;characterId:string;loadoutId:string;loadoutRevision:number;}
 export interface CoopLfgPublishBody {requestId:string;dungeonId:string;note?:string;}
@@ -65,5 +65,5 @@ export const coopClient={
  retryPending:async()=>(await journal()).execute(),
  shareEcho:(expectedVersion:number,share:boolean)=>mutate<{sharing:boolean}>('/coop/echo',{requestId:coopRequestId(),expectedVersion,share}),
  rewards:async(runId:string)=>{if(!supabase)throw new Error('Sign in first.');const {data,error}=await supabase.from('coop_reward_entitlements').select('id,claimed_at,reward_json').eq('run_id',runId);if(error)throw error;return data??[];},
- claim:async(id:string)=>{if(!supabase)throw new Error('Sign in first.');const {data,error}=await supabase.rpc('claim_coop_reward',{p_entitlement_id:id,p_request_id:coopRequestId()});if(error)throw error;return data as {marks:number};},
+ claim:async(id:string)=>{if(!supabase)throw new Error('Sign in first.');const {data,error}=await supabase.rpc('claim_coop_reward',{p_entitlement_id:id,p_request_id:coopRequestId()});if(error)throw error;return data as {marks:number;live_fellowship_bonus?:number;live_fellowship_applied?:boolean};},
 };

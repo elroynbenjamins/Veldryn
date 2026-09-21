@@ -48,6 +48,9 @@ jobs:
         run: pnpm test:collectibles
       - name: Run companion validation
         run: pnpm test:companions
+      - name: Run co-op reward validation
+        working-directory: backend
+        run: pnpm test:coop-rewards
       - name: Run Live Quick Match and LFG validation
         run: pnpm --dir ../../backend test:coop-live-social
       - name: Run seasonal expedition online transport validation

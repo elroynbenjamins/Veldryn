@@ -15,6 +15,7 @@ export function playbackCueTone(cue:CoopCombatReplayCueView):DungeonPlaybackTone
     case 'victory': return 'success';
     case 'wipe': case 'down': return 'danger';
     case 'cast': return 'warning';
+    case 'action': return cue.actionKind==='heal'||cue.actionKind==='shield'?'success':'selected';
     case 'phase': case 'interrupt': case 'assist': return 'selected';
     case 'timeout': return 'warning';
     default: return 'neutral';
@@ -22,8 +23,14 @@ export function playbackCueTone(cue:CoopCombatReplayCueView):DungeonPlaybackTone
 }
 
 export function playbackCueLabel(cue:CoopCombatReplayCueView):string{
-  const actor=cue.actorName?.trim(),target=cue.targetName?.trim(),ability=cue.abilityName?.trim();
+  const actor=cue.actorName?.trim(),target=cue.targetName?.trim(),ability=cue.abilityName?.trim(),amount=cue.amount===undefined?'':` · ${Math.round(cue.amount)}`;
   switch(cue.type){
+    case 'action': {
+      if(cue.actionKind==='heal')return `${actor??'Support'} heals ${target??'ally'}${amount}`;
+      if(cue.actionKind==='shield')return `${actor??'Support'} shields ${target??'ally'}${amount}`;
+      if(ability==='Basic Attack')return `${actor??'Combatant'} attacks ${target??'target'}${amount}`;
+      return `${actor??'Combatant'} uses ${ability??'an ability'}${target?` on ${target}`:''}${amount}`;
+    }
     case 'phase': return ability?`${actor??'Boss'} enters ${ability}`:`${actor??'Boss'} changes phase`;
     case 'cast': return ability?`${actor??'Boss'} begins ${ability}`:`${actor??'Boss'} begins a cast`;
     case 'interrupt': return ability?`${actor??'Party'} interrupts with ${ability}`:`${actor??'Party'} interrupts the cast`;

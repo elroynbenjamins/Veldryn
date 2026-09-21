@@ -1,6 +1,7 @@
 import {itemDef} from '../content/items';
 import {itemRarity,ItemRarity} from './item-rarity';
-import {craftedRarityStatMultiplier,effectiveOwnedGearRarity} from './crafted-gear-instances';
+import {effectiveOwnedGearRarity} from './crafted-gear-instances';
+import {craftedRarityStatMultiplier} from './crafted-gear-rarity';
 import {GameState,GearEnhancementState,GemEffectId,GemSocketKind,GemStat,ItemStack} from './types';
 
 export const MAX_UPGRADE_RANK=10;

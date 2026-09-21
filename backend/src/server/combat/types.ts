@@ -48,6 +48,15 @@ export interface AbilityDefinition {
 
 export interface BossPhaseDefinition { id:string; hpPct:number; target:TargetRule; effects:AbilityEffect[]; }
 
+export interface EncounterBossTuning {
+  profileId:string;
+  removeAbilityIds?:string[];
+  abilityDamageMultipliers?:Record<string,number>;
+  abilityCooldownMultipliers?:Record<string,number>;
+  addAbilities?:AbilityDefinition[];
+  addPhases?:BossPhaseDefinition[];
+}
+
 export interface CombatantDefinition {
   id: string;
   classId?: string;

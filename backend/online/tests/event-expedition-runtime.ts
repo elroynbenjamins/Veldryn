@@ -6,7 +6,7 @@ import {deriveOnlineCoopLoadout} from '../coop-loadout';
 import {OnlineEventExpeditionRuntime} from '../event-expedition-runtime';
 import {EVENT_EXPEDITIONS} from '../../src/server/expeditions/content/event-expeditions';
 import {seasonalEventExpeditionInfo} from '../../../apps/mobile/src/core/coop-event-expeditions';
-import {EventExpeditionService,MemoryEventRunRepository,effectiveEventNode} from '../../src/server/expeditions/event-service';
+import {EventExpeditionService,MemoryEventRunRepository,effectiveEventNode,eventBossMechanicProjection} from '../../src/server/expeditions/event-service';
 import {launchPlayer} from '../../src/server/combat/content/launch-combat';
 
 function preparedState(classId:ClassId,name:string,level:number,characterId:string):GameState{
@@ -33,23 +33,37 @@ async function main(){
   const service=new EventExpeditionService(new MemoryEventRunRepository(),`online-route-preflight-${index}`);
   const run=service.start({requestId:`event-preflight-${index}`,runId:`event-route-${index}`,accountId:'domain-a',eventId:definition.id,activeLiveEventId:`${definition.liveEventSeriesId}_2026`,members:domainMembers,players:domainPlayers,nowMs:Date.UTC(2026,6,15)});
   assert.equal(run.graph.preBossNodeCount,definition.routeNodeCount,`route length failed for ${definition.id}`);
-  assert.equal(run.graph.generatorVersion,'event-route-v4');
+  assert.equal(run.graph.generatorVersion,'event-route-v5');
   assert.equal(run.mechanic?.id,definition.mechanic.id);
   assert.equal(run.objective?.id,definition.objective.id);
   assert.equal(run.objective?.count,definition.objective.startCount);
   assert.ok(run.graph.nodes.some(node=>(node.mechanicDelta??0)>0),`missing positive mechanic route for ${definition.id}`);
   assert.ok(run.graph.nodes.some(node=>(node.objectiveDelta??0)>0)||definition.objective.startCount>0,`missing objective route for ${definition.id}`);
   assert.ok(run.graph.nodes.some(node=>!['entry','battle','boss'].includes(node.kind)),`missing themed room variety for ${definition.id}`);
+  const bossProfile=eventBossMechanicProjection(run);assert.ok(bossProfile?.label.trim());assert.ok(bossProfile?.summary.trim());
+  const altCount=definition.objective.startCount===definition.objective.maxCount?0:definition.objective.maxCount;
+  const alternateBoss=eventBossMechanicProjection({...run,objective:{id:definition.objective.id,count:altCount}});assert.ok(alternateBoss);assert.notEqual(alternateBoss!.profileId,bossProfile!.profileId);
   const byId=(id:string)=>run.graph.nodes.find(node=>node.nodeId===id)!;
   if(definition.id==='EVENT_TURNING_CHRONICLE_VAULT'){const reacted=effectiveEventNode({...run,objective:{id:definition.objective.id,count:2}},byId('d5-c0'));assert.equal(reacted.kind,'echo');assert.match(reacted.title??'',/Stable Timeline/);}
   if(definition.id==='EVENT_HEARTBOND_VOW_GARDEN'){const reacted=effectiveEventNode({...run,objective:{id:definition.objective.id,count:2}},byId('d5-c0'));assert.equal(reacted.kind,'camp');assert.match(reacted.title??'',/Vowkeeper/);}
   if(definition.id==='EVENT_BLOOMWAKE_THORNHEART_GROVE'){const reacted=effectiveEventNode({...run,mechanic:{id:definition.mechanic.id,value:0}},byId('d4-c0'));assert.equal(reacted.kind,'elite');assert.ok((reacted.encounterAttackMultiplier??1)>1);}
   if(definition.id==='EVENT_SUNCREST_SHATTERED_ISLES'){const base=byId('d4-c2'),reacted=effectiveEventNode({...run,mechanic:{id:definition.mechanic.id,value:100}},base);assert.ok((reacted.objectiveDelta??0)>(base.objectiveDelta??0));assert.match(reacted.title??'',/Crowd-Favorite/);}
   if(definition.id==='EVENT_STARFALL_ASTRAL_RIFT'){const base=byId('d5-c2'),reacted=effectiveEventNode({...run,objective:{id:definition.objective.id,count:2}},base);assert.ok((reacted.mechanicDelta??0)>(base.mechanicDelta??0));assert.ok(reacted.risk<base.risk);}
-  if(definition.id==='EVENT_VEILBREAK_GLOAM_BREACH'){const reacted=effectiveEventNode({...run,mechanic:{id:definition.mechanic.id,value:0}},byId('d4-c0'));assert.equal(reacted.kind,'elite');assert.match(reacted.title??'',/Blackout Assault/);}
+  if(definition.id==='EVENT_VEILBREAK_GLOAM_BREACH'){
+   const base=byId('d4-c0'),critical={...run,mechanic:{id:definition.mechanic.id,value:0}};
+   const reacted=effectiveEventNode(critical,base);assert.equal(reacted.kind,'elite');assert.match(reacted.title??'',/Blackout Assault/);
+   const v4=effectiveEventNode({...critical,graph:{...run.graph,generatorVersion:'event-route-v4'}},base);assert.equal(v4.kind,'elite');assert.match(v4.title??'',/Blackout Assault/);
+   const v3=effectiveEventNode({...critical,graph:{...run.graph,generatorVersion:'event-route-v3'}},base);assert.equal(v3.kind,base.kind);assert.equal(v3.title,base.title);
+  }
   if(definition.id==='EVENT_MERCHANT_GILDED_ROAD'){const reacted=effectiveEventNode({...run,objective:{id:definition.objective.id,count:1}},byId('d3-c2'));assert.ok((reacted.objectiveDelta??0)>0);assert.match(reacted.title??'',/Emergency Cargo/);}
   if(definition.id==='EVENT_FROSTFALL_AURORA_HOLLOW'){const base=byId('d4-c0'),reacted=effectiveEventNode({...run,objective:{id:definition.objective.id,count:2}},base);assert.ok((reacted.mechanicDelta??0)>(base.mechanicDelta??0));assert.match(reacted.title??'',/Hearthlit/);}
  }
+ const bossRepo=new MemoryEventRunRepository(),bossService=new EventExpeditionService(bossRepo,'boss-tuning-integration-secret'),suncrest=EVENT_EXPEDITIONS.find(row=>row.id==='EVENT_SUNCREST_SHATTERED_ISLES')!;
+ let bossRun=bossService.start({requestId:'boss-profile-request',runId:'boss-profile-run',accountId:'domain-a',eventId:suncrest.id,activeLiveEventId:'EVT_ANNUAL_006_2026',members:domainMembers,players:domainPlayers,nowMs:Date.UTC(2026,6,15)});
+ bossRun.currentNodeId=`d${bossRun.graph.preBossNodeCount}-c0`;bossRun.objective={id:suncrest.objective.id,count:suncrest.objective.maxCount};bossRun.mechanic={id:suncrest.mechanic.id,value:suncrest.mechanic.maxValue};bossRepo.save(bossRun);
+ const expectedBossProfile=eventBossMechanicProjection(bossRun)!;
+ bossRun=bossService.choose({runId:bossRun.id,accountId:'domain-a',optionNodeId:'boss',requestId:'boss-profile-choice'});
+ assert.equal(bossRun.phase,'completed');assert.equal(bossRun.lastResolution?.result.summary.bossTuningProfile,expectedBossProfile.tuning.profileId);
  const now=Date.UTC(2026,6,15),controllerState=preparedState('IRONWARDEN','Event Tank',50,'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1');
  const echoStates=[preparedState('WAYFINDER','Echo Archer',50,'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2'),preparedState('RAVAGER','Echo Ravager',50,'cccccccc-cccc-4ccc-8ccc-ccccccccccc3'),preparedState('DAWNKEEPER','Echo Keeper',50,'dddddddd-dddd-4ddd-8ddd-ddddddddddd4')];
  const controllerRecord=deriveOnlineCoopLoadout('00000000-0000-4000-8000-000000000001',controllerState,7);
@@ -76,7 +90,7 @@ async function main(){
  const runtime=new OnlineEventExpeditionRuntime(services);
  const start=await runtime.start(controllerRecord.accountId,{requestId:'event-start-0001',eventExpeditionId:'EVENT_SUNCREST_SHATTERED_ISLES',characterId:controllerRecord.characterId,loadoutId:'current',loadoutRevision:7}) as any;
  assert.equal(start.eventExpeditionId,'EVENT_SUNCREST_SHATTERED_ISLES');assert.equal(start.liveEventId,'EVT_ANNUAL_006_2026');assert.equal(start.team.length,4);assert.equal(start.options.length,3);assert.equal(start.stateVersion,1);
- assert.equal(start.mechanic.label,'Champion Favor');assert.equal(start.mechanic.value,50);assert.equal(start.objective.label,'Champion Laurels');assert.equal(start.objective.count,0);assert.ok(start.options.every((option:any)=>option.title&&Number.isFinite(option.mechanicDelta)&&Number.isFinite(option.objectiveDelta)));
+ assert.equal(start.mechanic.label,'Champion Favor');assert.equal(start.mechanic.value,50);assert.equal(start.objective.label,'Champion Laurels');assert.equal(start.objective.count,0);assert.equal(start.bossMechanic.label,'Champion’s Reception');assert.match(start.bossMechanic.summary,/Laurels|crowd/i);assert.ok(start.options.every((option:any)=>option.title&&Number.isFinite(option.mechanicDelta)&&Number.isFinite(option.objectiveDelta)));
  const chosen=await runtime.choose(controllerRecord.accountId,start.runId,{requestId:'event-choice-0001',decisionId:start.decisionId,decisionRevision:start.decisionRevision,optionId:start.options[0].nodeId}) as any;
  assert.equal(chosen.stateVersion,2);assert.equal(chosen.mechanic.value,48);assert.equal(chosen.objective.count,0);assert.equal(stored?.stateVersion,2);assert.ok(stored?.privateState.run.lastResolution,'resolved event node is persisted');
  stored!.privateState.run.phase='completed';stored!.privateState.run.settlement='pending';stored!.privateState.run.rewardMarks=96;

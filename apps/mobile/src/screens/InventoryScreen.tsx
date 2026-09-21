@@ -104,7 +104,7 @@ function UtilityChip({label,accessibilityLabel,onPress}:{label:string;accessibil
 function StorageChip({label,selected,status,onPress}:{label:string;selected:boolean;status:ReturnType<typeof storageCapacityStatus>;onPress:()=>void}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),equipmentColors=equipmentTheme(C),tone=status.level==='full'?C.bad:status.level==='near'?C.warning:selected?equipmentColors.selectedLine:C.line,width=`${status.percent}%` as `${number}%`;return <Pressable accessibilityRole="button" accessibilityLabel={`${label} storage, ${status.used} of ${status.capacity} slots used, ${status.free} free`} accessibilityState={{selected}} onPress={onPress} style={({pressed})=>[s.storageChip,selected&&s.storageChipSelected,status.level==='full'&&s.storageChipFull,pressed&&s.pressed]}><View style={s.storageChipTop}><Text style={[s.storageChipLabel,selected&&s.chipTextSelected]}>{selected?'✓ ':''}{label}</Text><Text style={[s.storageChipCount,{color:tone}]}>{status.used}/{status.capacity}</Text></View><View style={s.capacityTrack}><View style={[s.capacityFill,{width,backgroundColor:tone}]}/></View></Pressable>}
 function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);return StyleSheet.create({
   recovery:{gap:4,padding:spacing.md,borderWidth:1,borderColor:C.line,borderRadius:10,backgroundColor:C.panel},
-  root:{padding:spacing.lg,gap:spacing.md},
+  root:{padding:spacing.md,gap:10},
   h:{...typography.hero,color:C.text},
   title:{...typography.title,color:C.text},
   sub:{...typography.body,color:C.muted},
@@ -113,13 +113,13 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
   errorText:{...typography.body,color:C.bad,padding:spacing.sm,borderWidth:1,borderColor:C.bad,borderRadius:8,backgroundColor:C.badSurface},
   label:{...typography.caption,color:C.accent,fontWeight:'700'},
   upgradeLabel:{...typography.caption,color:C.muted,fontWeight:'700',marginBottom:spacing.xs},
-  disclosure:{minHeight:56,flexDirection:'row',alignItems:'center',gap:spacing.sm,paddingHorizontal:spacing.md,borderWidth:1,borderColor:C.line,borderRadius:10,backgroundColor:C.panel},
+  disclosure:{minHeight:50,flexDirection:'row',alignItems:'center',gap:spacing.sm,paddingHorizontal:spacing.md,borderWidth:1,borderColor:C.line,borderRadius:10,backgroundColor:C.panel},
   disclosureTitle:{...typography.caption,color:C.accent,fontWeight:'700',letterSpacing:.8},
   disclosureMark:{width:28,color:C.accent,fontSize:25,textAlign:'center'},
   row:{flexDirection:'row',flexWrap:'wrap',gap:spacing.sm},
   chipRow:{flexDirection:'row',flexWrap:'wrap',gap:6},
   storageRow:{flexDirection:'row',gap:8},
-  storageChip:{flex:1,minWidth:0,minHeight:54,gap:7,justifyContent:'center',paddingHorizontal:12,paddingVertical:8,borderWidth:1,borderColor:C.line,borderRadius:12,backgroundColor:C.panel},
+  storageChip:{flex:1,minWidth:0,minHeight:48,gap:7,justifyContent:'center',paddingHorizontal:12,paddingVertical:8,borderWidth:1,borderColor:C.line,borderRadius:12,backgroundColor:C.panel},
   storageChipSelected:{borderColor:equipmentColors.selectedLine,backgroundColor:equipmentColors.selected},
   storageChipFull:{borderColor:C.bad},
   storageChipTop:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},
@@ -128,7 +128,7 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
   capacityTrack:{height:4,overflow:'hidden',borderRadius:99,backgroundColor:C.bg},
   capacityFill:{height:4,borderRadius:99},
   controlStrip:{gap:6,paddingRight:spacing.md},
-  chip:{minHeight:44,paddingHorizontal:13,justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.panel},
+  chip:{minHeight:40,paddingHorizontal:12,justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.panel},
   chipSelected:{borderColor:equipmentColors.selectedLine,backgroundColor:equipmentColors.selected},
   chipText:{fontSize:12,color:C.muted,fontWeight:'700'},
   chipTextSelected:{color:C.text},
@@ -151,9 +151,9 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
   selectionNote:{...typography.caption,color:C.warning},
   utilityRow:{flexDirection:'row',gap:8},
   inspectHint:{...typography.caption,color:C.muted,textAlign:'center'},
-  utilityChip:{flex:1,minWidth:0,minHeight:44,alignItems:'center',justifyContent:'center',paddingHorizontal:10,borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.panel2},
+  utilityChip:{flex:1,minWidth:0,minHeight:40,alignItems:'center',justifyContent:'center',paddingHorizontal:10,borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.panel2},
   utilityChipText:{fontSize:12,color:C.text,fontWeight:'800'},
   pressed:{opacity:.76},
   flex:{flex:1,minWidth:148},
-  input:{minHeight:48,paddingHorizontal:spacing.md,borderRadius:10,borderWidth:1,borderColor:C.line,color:C.text,backgroundColor:C.panel,fontSize:16}
+  input:{minHeight:44,paddingHorizontal:spacing.md,borderRadius:10,borderWidth:1,borderColor:C.line,color:C.text,backgroundColor:C.panel,fontSize:16}
 });}

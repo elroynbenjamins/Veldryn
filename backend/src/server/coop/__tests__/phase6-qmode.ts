@@ -10,10 +10,11 @@ function frozen(accountId:string,classId:string,characterId:string):FrozenLoadou
  return {accountId,characterId,classId,loadoutId:`load-${characterId}`,revision:1,normalized:{snapshot,abilities:player.abilities,effectiveLevel:25,normalizationVersion:'test',before:{level:25,maxHp:snapshot.maxHp,attackPower:snapshot.attackPower,healingPower:snapshot.healingPower,defense:snapshot.defense}},readiness:{ready:true,role,normalizedScore:1,failures:[]},snapshotHash:`hash-${characterId}`};
 }
 function echo(accountId:string,classId:string,characterId:string):PublishedEcho{return{profileId:`profile-${characterId}`,sourceAccountId:accountId,optedIn:true,publishedAtMs:9_000,contentVersion:'v1',blockedAccountIds:[],snapshot:frozen(accountId,classId,characterId)}}
-const profiles=[echo('tank-owner','Ironwarden','tank-char'),echo('damage-owner-1','Wayfinder','damage-char-1'),echo('damage-owner-2','Ravager','damage-char-2'),echo('support-owner','Stonecaller','support-char')];
+const profiles=[echo('tank-owner','Ironwarden','tank-char'),echo('damage-owner-1','Wayfinder','damage-char-1'),echo('damage-owner-dup','Wayfinder','damage-char-dup'),echo('damage-owner-2','Ravager','damage-char-2'),echo('support-owner','Stonecaller','support-char')];
 const repository=new MemoryQModeRunRepository();const firstService=new QModeService(repository,'q-secret-success');
 let run=firstService.create({requestId:'request-1',runId:'q-run-1',controllerAccountId:'controller',controllerSnapshot:frozen('controller','Dawnkeeper','controller-char'),expeditionId:'EXP_001',tier:1,contentVersion:'v1',balanceVersion:'b1',nowMs:10_000,profiles});
 assert.equal(run.players.length,4);assert.equal(new Set(run.echoSourceAccountIds).size,3);assert.equal(run.phase,'awaiting_choice');
+const damageClasses=run.players.filter(player=>player.role==='damage').map(player=>player.classId);assert.equal(damageClasses.length,2);assert.equal(new Set(damageClasses).size,2,'Q-Mode must choose two different Damage classes even if duplicate-class Echoes are available');
 assert.equal(firstService.create({requestId:'request-1',runId:'different',controllerAccountId:'controller',controllerSnapshot:frozen('controller','Dawnkeeper','controller-char'),expeditionId:'EXP_001',tier:1,contentVersion:'v1',balanceVersion:'b1',nowMs:10_000,profiles}).id,'q-run-1');
 let denied='';try{firstService.getAuthorized(run.id,'tank-owner');}catch(error){denied=error instanceof Error?error.message:String(error);}assert.equal(denied,'not_participant');
 const resumedService=new QModeService(repository,'q-secret-success');

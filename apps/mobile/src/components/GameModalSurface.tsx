@@ -9,7 +9,7 @@ export function GameModalSurface({visible,onClose,reduceMotion=false,presentatio
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),insets=useSafeAreaInsets(),sheet=presentation==='sheet';
   return <Modal visible={visible} transparent statusBarTranslucent animationType={reduceMotion?'none':'fade'} onRequestClose={onClose}>
     <View style={[s.backdrop,!sheet&&s.center]}>
-      <Pressable accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" onPress={onClose} style={StyleSheet.absoluteFill}/>
+      <Pressable accessible={false} accessibilityLabel={backdropLabel} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" onPress={onClose} style={StyleSheet.absoluteFill}/>
       <View accessibilityViewIsModal style={[s.surface,sheet?s.sheet:s.dialog,sheet&&{paddingBottom:Math.max(spacing.lg,insets.bottom+spacing.sm)},surfaceStyle]}>
         {sheet?<View style={s.grabber}/>:null}
         {children}

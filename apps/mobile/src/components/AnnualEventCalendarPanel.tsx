@@ -3,6 +3,7 @@ import type {GameState} from '../core/types';
 import {annualEventCalendar} from '../content/annual-event-calendar';
 import {annualEventSeriesId} from '../content/live-events';
 import {Panel} from './Panel';
+import {EventIdentityBadge} from './EventIdentityBadge';
 import {C,radii,spacing,typography} from '../theme/theme';
 
 export function AnnualEventCalendarPanel({state,highlightEventId,highlightLabel}:{state:GameState;highlightEventId?:string;highlightLabel?:string}){
@@ -13,7 +14,7 @@ export function AnnualEventCalendarPanel({state,highlightEventId,highlightLabel}
     <View style={s.grid}>{rows.map(row=>{
       const rowSeries=annualEventSeriesId(row.eventId),highlightSeries=highlightEventId?annualEventSeriesId(highlightEventId):undefined;const highlighted=row.eventId===highlightEventId||!!rowSeries&&!!highlightSeries&&rowSeries===highlightSeries;
       return <View key={row.eventId} style={[s.card,{borderLeftColor:row.definition.accent},highlighted&&s.highlight]}>
-        <View style={s.row}><Text numberOfLines={1} style={s.name}>{row.name}</Text>{highlighted?<Text style={s.badge}>{highlightLabel??'CURRENT'}</Text>:null}</View>
+        <View style={s.identityRow}><EventIdentityBadge event={row.name} visualKey={row.definition.visualKey} accent={row.definition.accent} size={34}/><View style={s.flex}><View style={s.row}><Text numberOfLines={1} style={s.name}>{row.name}</Text>{highlighted?<Text style={s.badge}>{highlightLabel??'CURRENT'}</Text>:null}</View><Text numberOfLines={1} style={[s.signature,{color:row.definition.accent}]}>{row.definition.signature.title}</Text></View></View>
         <Text style={s.window}>{row.windowLabel}</Text>
         <Text style={s.meta}>Collection {row.collectionOwned}/{row.collectionTotal} · {row.collectionPercent}%</Text>
         <View style={s.track}><View style={[s.fill,{width:`${Math.max(row.collectionPercent?3:0,row.collectionPercent)}%`,backgroundColor:row.definition.accent}]}/></View>
@@ -34,8 +35,10 @@ const s=StyleSheet.create({
   grid:{flexDirection:'row',flexWrap:'wrap',gap:8,marginTop:spacing.md},
   card:{width:'48%',minWidth:142,gap:4,padding:10,borderWidth:1,borderLeftWidth:4,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2},
   highlight:{borderColor:C.accent,backgroundColor:'#272417'},
+  identityRow:{flexDirection:'row',alignItems:'center',gap:8},
   row:{flexDirection:'row',alignItems:'center',gap:5},
   name:{...typography.bodyStrong,color:C.text,flex:1,fontSize:12},
+  signature:{fontSize:8,fontWeight:'800',marginTop:1},
   badge:{fontSize:8,color:C.good,fontWeight:'900',letterSpacing:.6},
   window:{fontSize:10,color:C.accent,fontWeight:'800'},
   meta:{fontSize:9,color:C.muted},

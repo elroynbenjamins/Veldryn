@@ -23,6 +23,7 @@ export const SUNCREST_GAMES_EVENT:LiveEventDef={
   maxProgress:10000,
   claimGraceDays:7,
   visualKey:'suncrest',
+  signature:{kind:'competition',label:'SIGNATURE · SUNCREST CIRCUIT',title:'Treat the festival like a seasonal games circuit',description:'Suncrest emphasizes personal challenge and repeatable performance. Daily and weekly objectives act as the games card, while Shattered Isles provides the festival’s expedition challenge.',highlights:['Competition-flavored daily and weekly card','Performance-oriented reward chase','Shattered Isles seasonal expedition']},
   ui:{
     prepareTitle:'Prepare for the Games',
     dailyGiftTitle:'Today’s Suncrest Gift',
@@ -92,6 +93,7 @@ export const STARFALL_NIGHTS_EVENT:LiveEventDef={
   maxProgress:10000,
   claimGraceDays:7,
   visualKey:'starfall',
+  signature:{kind:'opportunity',label:'SIGNATURE · METEOR WINDOWS',title:'Chase short-lived astral opportunities across normal play',description:'Starfall is built around rare celestial finds. Combat, gathering, crafting, and bosses can reveal different astral discoveries, while the Astral Rift becomes the event’s high-intensity expedition.',highlights:['Astral discovery hunting','Activity focus for meteor-season drops','Astral Rift seasonal expedition']},
   ui:{
     prepareTitle:'Prepare for Starfall',
     dailyGiftTitle:'Tonight’s Starfall Gift',
@@ -161,6 +163,7 @@ export const MERCHANT_GUILD_FESTIVAL_EVENT:LiveEventDef={
   maxProgress:10000,
   claimGraceDays:7,
   visualKey:'merchant_guild',
+  signature:{kind:'trade',label:'SIGNATURE · CARAVAN NETWORK',title:'Invest in the fair while deciding what to keep for yourself',description:'Merchant & Guild Festival is the economy-and-social annual event. Earn Guild Scrip through regular activities, choose a trade focus, and contribute part of your wallet toward the shared Guild Pavilion.',highlights:['Shared Guild Pavilion milestones','Trade-route project choice','Gilded Road seasonal expedition']},
   ui:{
     prepareTitle:'Prepare the guild fair',
     dailyGiftTitle:'Today’s Guild Gift',
@@ -206,9 +209,14 @@ export const MERCHANT_GUILD_FESTIVAL_EVENT:LiveEventDef={
     {id:'elite_escorts',name:'Elite Escorts',description:'Hunt major threats along important trade routes.',bonusLabel:'+20% boss Guild Scrip',dropMultipliers:{boss:1.2}},
   ],
   dailyGifts:[...gifts],
-  communityEnabled:false,
+  communityEnabled:true,
   communityGoal:100000,
-  communityMilestones:[],
+  communityMilestones:[
+    {percent:25,rewardCurrency:200,rewardPrestige:0},
+    {percent:50,rewardCurrency:350,rewardPrestige:1},
+    {percent:75,rewardCurrency:500,rewardPrestige:1},
+    {percent:100,rewardCurrency:750,rewardPrestige:2,reward:{kind:'title',id:'title_pavilion_patron',name:'Pavilion Patron',rarity:'epic'}},
+  ],
   discoveries:[
     {id:'trade_token',name:'Old Trade Token',description:'A worn token occasionally found after combat on caravan routes.',source:'combat',chance:.003,required:5,reward:{kind:'title',id:'title_trade_route_veteran',name:'Trade Route Veteran',rarity:'rare'}},
     {id:'merchant_seal',name:'Merchant Seal',description:'A guild seal hidden among gathered supplies.',source:'gathering',chance:.015,required:5,reward:{kind:'title',id:'title_seal_collector',name:'Seal Collector',rarity:'rare'}},

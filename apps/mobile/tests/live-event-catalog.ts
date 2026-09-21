@@ -1,5 +1,6 @@
 import {LIVE_EVENT_CATALOG} from '../src/content/live-events';
 import {eventUiCopy,validateLiveEventCatalog} from '../src/content/live-event-ui';
+import {isLiveEventVisualKey,LIVE_EVENT_VISUAL_KEYS} from '../src/content/live-event-visual-keys';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 function equal(actual:unknown,expected:unknown,message:string){if(actual!==expected)throw new Error(`${message}: expected ${String(expected)}, got ${String(actual)}`)}
@@ -10,6 +11,14 @@ equal(errors.length,0,`Live event catalog validation failed: ${errors.join(' | '
 const ids=LIVE_EVENT_CATALOG.map(event=>event.id);
 equal(new Set(ids).size,ids.length,'Live event ids must be unique');
 equal(LIVE_EVENT_CATALOG.length,9,'Nine annual events are now production catalog events');
+equal(new Set(LIVE_EVENT_CATALOG.map(event=>event.signature.title)).size,9,'Every annual event should have a distinct signature identity');
+ok(LIVE_EVENT_CATALOG.every(event=>event.signature.highlights.length>=2),'Every annual event should explain its signature loop');
+const communityEvents=LIVE_EVENT_CATALOG.filter(event=>event.communityEnabled===true).map(event=>event.name).sort();
+equal(communityEvents.join('|'),['Bloomwake','Frostfall Festival','Harvestwake','Merchant & Guild Festival'].sort().join('|'),'Only the four communal festivals should use shared progression');
+
+
+ok(LIVE_EVENT_CATALOG.every(event=>isLiveEventVisualKey(event.visualKey)),'Every annual event should resolve to a registered visual key');
+equal(new Set(LIVE_EVENT_CATALOG.map(event=>event.visualKey)).size,LIVE_EVENT_VISUAL_KEYS.length,'Every production annual event should have its own explicit visual key');
 
 
 const turning=LIVE_EVENT_CATALOG.find(event=>event.id==='EVT_ANNUAL_001_2026');

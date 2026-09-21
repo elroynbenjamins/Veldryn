@@ -77,16 +77,18 @@ ok(!!state.account.combatCompanionProgress?.EVT_UNIT_006,'Event companion purcha
 let bonusState=chooseEventProject(state,'guild_pantry',t0+2);const bonusProgressBefore=eventProgress(bonusState,'EVT_ANNUAL_009_2026');bonusState=grantEventActivity(bonusState,'boss',t0+3);
 ok(eventProgress(bonusState,'EVT_ANNUAL_009_2026')===bonusProgressBefore+300,'Guild Pantry should apply its 20% boss-currency bonus');
 bonusState=applyEventDrops(bonusState,[{eventId:'EVT_ANNUAL_009_2026',currencyId:'HARVEST_MARK',name:'Harvest Marks',quantity:100}]);
-const deferredBalance=eventCurrencyBalance(bonusState,'EVT_ANNUAL_009_2026');
-let deferredContributionRejected=false;try{contributeEventCurrency(bonusState,100,t0+3)}catch{deferredContributionRejected=true}
-ok(deferredContributionRejected,'Pre-launch community contributions must stay disabled');
-ok(eventCurrencyBalance(bonusState,'EVT_ANNUAL_009_2026')===deferredBalance,'Disabled community contributions must not spend currency');
+const contributionBalance=eventCurrencyBalance(bonusState,'EVT_ANNUAL_009_2026');
+bonusState=contributeEventCurrency(bonusState,100,t0+3);
+ok(eventCurrencyBalance(bonusState,'EVT_ANNUAL_009_2026')===contributionBalance-100,'Harvestwake community contribution should spend Harvest Marks');
+ok(bonusState.account.eventContributionById?.EVT_ANNUAL_009_2026===125,'Guild Pantry should turn 100 spent Marks into 125 verified contribution value');
 state=chooseEventProject(state,'preserved_supplies',t0+2);
 let choiceLocked=false;try{chooseEventProject(state,'guild_pantry',t0+2)}catch{choiceLocked=true}ok(choiceLocked,'Winter project choice should lock for the event');
-state={...state,account:{...state.account,liveEvent:{eventId:'EVT_ANNUAL_009_2026',enabled:true,startsAtMs:t0-10*86400_000,endsAtMs:t0+3600_000}}};
-ok(eventCommunityMilestones(state,t0+2).length===0,'Community milestones remain dormant before launch population exists');
-let communityClaimRejected=false;try{claimEventCommunityMilestone(state,100,t0+2)}catch{communityClaimRejected=true}ok(communityClaimRejected,'Dormant community rewards cannot be claimed');
-ok(!eventCollectionJournal(state,t0+2).some(entry=>entry.reward.id==='title_storehouse_builder'),'Deferred community cosmetics stay out of the active collection journal');
+state={...state,account:{...state.account,liveEvent:{eventId:'EVT_ANNUAL_009_2026',enabled:true,startsAtMs:t0-10*86400_000,endsAtMs:t0+3600_000},eventCommunityProgressById:{...(state.account.eventCommunityProgressById??{}),EVT_ANNUAL_009_2026:100}}};
+ok(eventCommunityMilestones(state,t0+2).length===4,'Harvestwake should expose four shared Storehouse milestones');
+ok(eventCommunityMilestones(state,t0+2).find(entry=>entry.milestone.percent===100)?.ready===true,'Verified 100% community progress should unlock the final Storehouse milestone');
+ok(eventCollectionJournal(state,t0+2).some(entry=>entry.reward.id==='title_storehouse_builder'),'Community cosmetic should appear in the active Harvestwake collection journal');
+state=claimEventCommunityMilestone(state,100,t0+2);
+ok(state.account.unlockedTitleIds?.includes('title_storehouse_builder')===true,'Final Storehouse milestone should grant its permanent community title');
 const cachesBeforeThreshold=availableEventRepeatCaches(state,'EVT_ANNUAL_009_2026');
 const reputationBeforeThreshold=eventProgress(state,'EVT_ANNUAL_009_2026');
 const nextCacheThreshold=10000+(Math.floor(Math.max(0,reputationBeforeThreshold-10000)/1000)+1)*1000;

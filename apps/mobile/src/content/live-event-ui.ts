@@ -61,6 +61,10 @@ export function validateLiveEventCatalog(events:readonly LiveEventDef[]):string[
     if(!event.currencyId.trim()||!event.prestigeCurrencyId.trim())errors.push(`${event.id} must define both event currencies.`);
     if(Object.values(event.dropRates).some(value=>value<0||!Number.isFinite(value)))errors.push(`${event.id} has an invalid drop rate.`);
 
+    if(!event.signature?.label.trim()||!event.signature?.title.trim()||!event.signature?.description.trim())errors.push(`${event.id} must define a complete signature mechanic.`);
+    if(!event.signature?.highlights?.length||event.signature.highlights.length<2||event.signature.highlights.some(item=>!item.trim()))errors.push(`${event.id} signature mechanic needs at least two highlights.`);
+    if(event.communityEnabled===true&&event.communityMilestones.length<4)errors.push(`${event.id} community event needs four shared milestones.`);
+
     duplicateIds(`${event.id} objectives`,event.objectives.map(row=>row.id));
     duplicateIds(`${event.id} weekly objectives`,event.weeklyObjectives.map(row=>row.id));
     duplicateIds(`${event.id} shop`,event.shop.map(row=>row.id));

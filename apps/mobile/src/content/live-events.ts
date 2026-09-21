@@ -1,5 +1,6 @@
 import type {ClassId} from '../core/types';
 import type {LiveEventUiCopy} from './live-event-ui';
+import type {LiveEventVisualKey} from './live-event-visual-keys';
 import {FROSTFALL_EVENT,VEILBREAK_EVENT} from './annual-events-v2';
 import {BLOOMWAKE_EVENT,HEARTBOND_EVENT,TURNING_OF_THE_AGE_EVENT} from './annual-events-v3';
 import {MERCHANT_GUILD_FESTIVAL_EVENT,STARFALL_NIGHTS_EVENT,SUNCREST_GAMES_EVENT} from './annual-events-v4';
@@ -15,8 +16,10 @@ export interface EventChoice{id:string;name:string;description:string;bonusLabel
 export interface EventDailyGift{day:number;rewardCurrency:number;rewardPrestige:number;}
 export interface EventCommunityMilestone{percent:number;rewardCurrency:number;rewardPrestige:number;reward?:EventReward;}
 export interface EventDiscovery{id:string;name:string;description:string;source:EventActivitySource;chance:number;required:number;reward:EventReward;}
+export type EventSignatureKind='community'|'expedition'|'competition'|'opportunity'|'ritual'|'trade'|'celebration';
+export interface EventSignature{kind:EventSignatureKind;label:string;title:string;description:string;highlights:string[];}
 export interface LiveEventDef{
-  id:string;name:string;summary:string;currencyId:string;currencyName:string;prestigeCurrencyId:string;prestigeCurrencyName:string;accent:string;progressionName:string;maxProgress:number;claimGraceDays:number;visualKey?:string;ui?:Partial<LiveEventUiCopy>;
+  id:string;name:string;summary:string;currencyId:string;currencyName:string;prestigeCurrencyId:string;prestigeCurrencyName:string;accent:string;progressionName:string;maxProgress:number;claimGraceDays:number;visualKey:LiveEventVisualKey;ui?:Partial<LiveEventUiCopy>;signature:EventSignature;
   dropRates:Record<EventActivitySource,number>;milestones:(classId:ClassId)=>EventMilestone[];objectives:EventObjectiveDef[];weeklyObjectives:EventObjectiveDef[];shop:EventShopOffer[];choices:EventChoice[];dailyGifts:EventDailyGift[];communityEnabled?:boolean;communityGoal:number;communityMilestones:EventCommunityMilestone[];discoveries:EventDiscovery[];
 }
 
@@ -28,6 +31,7 @@ const harvestSkins:Record<ClassId,string>={
 export const LIVE_EVENT_CATALOG:LiveEventDef[]=[{
   id:'EVT_ANNUAL_009_2026',name:'Harvestwake',summary:"The year's harvest awakens old field spirits. Gather, craft, and prepare Asterfall for winter.",currencyId:'HARVEST_MARK',currencyName:'Harvest Marks',prestigeCurrencyId:'AMBER_SEED',prestigeCurrencyName:'Amber Seeds',accent:'#d9953f',progressionName:'Harvest Reputation',maxProgress:10000,claimGraceDays:7,
   visualKey:'harvestwake',
+  signature:{kind:'community',label:'SIGNATURE · GRAND STOREHOUSE',title:'Prepare Asterfall for winter together',description:'Harvestwake is the community-first annual festival. Choose a winter project, earn Harvest Marks through normal play, then decide how much to keep for the shop and how much to invest in the shared Grand Storehouse.',highlights:['Shared Storehouse milestones','Project choice changes contribution value','No seasonal dungeon — the communal preparation is the centerpiece']},
   ui:{prepareTitle:'Prepare for the festival',dailyGiftTitle:'Today’s Harvest Gift',cacheName:'Harvest Cache',communityName:'Grand Storehouse',projectTitle:'Winter preparation',projectNoun:'winter project',contractsTitle:'DAILY HARVEST CONTRACTS',shopTitle:'HARVEST SHOP',collectionTitle:'Harvestwake collection',closedTitle:'Harvest activities are closed',closedBody:'No new reputation, daily gifts, contracts, or contributions can be earned. Completed contracts, milestones, Storehouse stages, caches, and shop purchases remain claimable.'},
   // Average currency per unit. Combat uses kills; gathering uses active minutes.
   dropRates:{combat:.18,gathering:1.1,crafting:30,boss:250},
@@ -68,7 +72,7 @@ export const LIVE_EVENT_CATALOG:LiveEventDef[]=[{
   dailyGifts:[
     {day:1,rewardCurrency:100,rewardPrestige:0},{day:2,rewardCurrency:150,rewardPrestige:0},{day:3,rewardCurrency:200,rewardPrestige:0},{day:4,rewardCurrency:250,rewardPrestige:0},{day:5,rewardCurrency:300,rewardPrestige:0},{day:6,rewardCurrency:400,rewardPrestige:0},{day:7,rewardCurrency:500,rewardPrestige:1},
   ],
-  communityEnabled:false,
+  communityEnabled:true,
   communityGoal:100000,
   communityMilestones:[
     {percent:25,rewardCurrency:200,rewardPrestige:0},

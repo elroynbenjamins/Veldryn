@@ -83,3 +83,37 @@ export function rarityBreakdownForItem(state:GameState,itemId:string,storage:'in
   for(const row of rows)counts.set(row.craftedRarity,(counts.get(row.craftedRarity)??0)+1);
   return CRAFTED_GEAR_RARITY_ORDER.slice().reverse().map(rarity=>({rarity,count:counts.get(rarity)??0})).filter(row=>row.count>0);
 }
+
+export function gearInstanceById(state:GameState,instanceId:string){return gearInstances(state).find(row=>row.id===instanceId);}
+export function legacyStoredGearCount(state:GameState,itemId:string,storage:'inventory'|'bank'){
+  const stack=state[storage].stacks.find(row=>row.itemId===itemId)?.quantity??0;
+  return Math.max(0,stack-instancesForItem(state,itemId,storage).length);
+}
+export function bestStoredGearInstance(state:GameState,itemId:string,storage:'inventory'|'bank'){
+  return instancesForItem(state,itemId,storage).slice().sort((a,b)=>rarityRank(b.craftedRarity)-rarityRank(a.craftedRarity)||b.enhancement.rank-a.enhancement.rank||a.createdAtMs-b.createdAtMs)[0];
+}
+export function lowestStoredGearInstance(state:GameState,itemId:string,storage:'inventory'|'bank',requireDisposable=false){
+  return instancesForItem(state,itemId,storage).filter(row=>!requireDisposable||!(row.enhancement.rank>0||row.enhancement.statGemId||row.enhancement.effectGemId))
+    .slice().sort((a,b)=>rarityRank(a.craftedRarity)-rarityRank(b.craftedRarity)||a.enhancement.rank-b.enhancement.rank||a.createdAtMs-b.createdAtMs)[0];
+}
+export function removeGearInstance(state:GameState,instanceId:string){
+  return {...state,account:{...state.account,gearInstances:gearInstances(state).filter(row=>row.id!==instanceId)}} as GameState;
+}
+export function moveStoredGearInstances(state:GameState,itemId:string,from:'inventory'|'bank',to:'inventory'|'bank',count:number){
+  if(count<=0)return state;
+  const candidates=instancesForItem(state,itemId,from).slice().sort((a,b)=>from==='inventory'
+    ?rarityRank(a.craftedRarity)-rarityRank(b.craftedRarity)||a.createdAtMs-b.createdAtMs
+    :rarityRank(b.craftedRarity)-rarityRank(a.craftedRarity)||a.createdAtMs-b.createdAtMs).slice(0,count);
+  if(!candidates.length)return state;
+  const ids=new Set(candidates.map(row=>row.id));
+  return {...state,account:{...state.account,gearInstances:gearInstances(state).map(row=>ids.has(row.id)?{...row,storage:to}:row)}} as GameState;
+}
+export function rarityBreakdownForStack(state:GameState,itemId:string,storage:'inventory'|'bank',stackQuantity:number){
+  const rows=rarityBreakdownForItem(state,itemId,storage),instanceCount=rows.reduce((sum,row)=>sum+row.count,0),legacy=Math.max(0,stackQuantity-instanceCount);
+  const counts=new Map<ItemRarity,number>(rows.map(row=>[row.rarity,row.count]));
+  if(legacy)counts.set('common',(counts.get('common')??0)+legacy);
+  return CRAFTED_GEAR_RARITY_ORDER.slice().reverse().map(rarity=>({rarity,count:counts.get(rarity)??0})).filter(row=>row.count>0);
+}
+export function bestRarityForStack(state:GameState,itemId:string,storage:'inventory'|'bank',stackQuantity:number):ItemRarity{
+  return rarityBreakdownForStack(state,itemId,storage,stackQuantity)[0]?.rarity??'common';
+}

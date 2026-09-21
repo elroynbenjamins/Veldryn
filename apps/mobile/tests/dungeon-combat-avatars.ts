@@ -1,5 +1,5 @@
 import {CLASSES} from '../src/content/classes';
-import {DUNGEON_COMBAT_AVATARS,DUNGEON_COMBAT_FORMATION} from '../src/core/dungeon-combat-avatars';
+import {DUNGEON_COMBAT_AVATARS,DUNGEON_COMBAT_FORMATION,DUNGEON_COMPANION_PRESENTATION} from '../src/core/dungeon-combat-avatars';
 
 function assert(condition:unknown,message:string):asserts condition{if(!condition)throw new Error(message);}
 const avatars=Object.values(DUNGEON_COMBAT_AVATARS);
@@ -18,4 +18,8 @@ for(const classDef of CLASSES){
 assert(DUNGEON_COMBAT_FORMATION.tank.length===1,'formation needs one Tank slot');
 assert(DUNGEON_COMBAT_FORMATION.damage.length===2,'formation needs two Damage slots');
 assert(DUNGEON_COMBAT_FORMATION.support.length===1,'formation needs one Support slot');
+assert(DUNGEON_COMPANION_PRESENTATION.mode==='owner_assist_cameo','companions should use owner-assist cameo presentation');
+assert(DUNGEON_COMPANION_PRESENTATION.occupiesPartySlot===false,'companions must not expand the 4-player dungeon roster');
+assert(DUNGEON_COMPANION_PRESENTATION.persistentArenaActor===false,'companions should not remain full-size arena actors');
+assert(DUNGEON_COMPANION_PRESENTATION.maximumVisibleOwnerAssists===4,'at most one assist identity is shown per party owner');
 console.log('dungeon combat avatar contract OK');

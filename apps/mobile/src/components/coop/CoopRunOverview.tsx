@@ -8,6 +8,7 @@ import {CoopImageSlot,ExpeditionScreenShell,FantasyPanel,RoleBadge,StateChip} fr
 import {GameButton} from '../GameButton';
 import {SeasonalBossTelegraphPanel} from './SeasonalBossTelegraphPanel';
 import {dungeonCombatAvatar} from '../../core/dungeon-combat-avatars';
+import {DungeonCombatStage} from './DungeonCombatStage';
 
 const roomAssets:Record<string,CoopUiAssetId>={battle:'node_battle',elite:'node_elite',event:'node_event',forge:'node_event',shrine:'node_shrine',camp:'node_camp',treasure:'node_treasure',merchant:'node_merchant',echo:'node_echo',risk:'node_risk',secret:'node_treasure',boss:'node_boss'};
 
@@ -22,6 +23,7 @@ export function CoopRunOverview({language,run,onBack,onChoose,onRefresh,onClaim,
     {run.objective?<FantasyPanel variant={run.objective.completed?'success':'selected'}><View style={s.mechanicHead}><View style={s.grow}><Text style={s.title}>{run.objective.label}</Text><Text style={s.copy}>{run.objective.description}</Text></View><StateChip label={`${run.objective.count}/${run.objective.maxCount}`} tone={run.objective.completed?'success':'selected'}/></View><Text style={s.copy}>{run.objective.effectText}</Text></FantasyPanel>:null}
     {run.bossMechanic?<FantasyPanel variant={run.bossMechanic.tone==='danger'?'danger':run.bossMechanic.tone==='benefit'?'success':'selected'}><View style={s.mechanicHead}><View style={s.grow}><Text style={s.title}>Final Boss Reaction · {run.bossMechanic.label}</Text><Text style={s.copy}>{run.bossMechanic.summary}</Text></View><StateChip label={run.bossMechanic.tone==='danger'?'DANGER':run.bossMechanic.tone==='benefit'?'ADVANTAGE':'MIXED'} tone={run.bossMechanic.tone==='danger'?'danger':run.bossMechanic.tone==='benefit'?'success':'warning'}/></View></FantasyPanel>:null}
     <SeasonalBossTelegraphPanel mechanic={run.bossMechanic} recap={run.bossRecap} showPlan={bossNext}/>
+    {(run.phase==='resolving_node'||bossNext)?<DungeonCombatStage run={run} boss={bossNext} enemyLabel={bossNext?run.bossMechanic?.telegraph?.bossName:undefined}/>:null}
     <Text style={s.section}>{ct(language,'details.rooms')}</Text>
     {!!notice&&<Text accessibilityRole="alert" style={s.copy}>{notice}</Text>}
     {run.phase==='resolving_node'&&<FantasyPanel><Text style={s.copy}>Your party is resolving this room. Progress is saved online.</Text></FantasyPanel>}

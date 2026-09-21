@@ -33,7 +33,7 @@ export interface CoopEventRunServerProjection{
   stateVersion:number;
   decisionId?:string;
   decisionRevision?:number;
-  team:Array<{memberId:string;displayName:string;role:CoopRole;classId:string;kind:'controller'|'echo';effectiveLevel:number;downed?:boolean}>;
+  team:Array<{memberId:string;displayName:string;role:CoopRole;classId:string;companionId?:string;kind:'controller'|'echo';effectiveLevel:number;currentHp?:number;maximumHp?:number;downed?:boolean}>;
   options:Array<{nodeId:string;kind:string;risk:number;rewardTag:string;title?:string;mechanicDelta?:number;objectiveDelta?:number;reactionLabel?:string}>;
   mechanic?:{id:string;label:string;description:string;value:number;maxValue:number;lowThreshold:number;highThreshold:number;status:'critical'|'steady'|'strong';bossAttackMultiplier:number;rewardBonus:number;bossEffect:string};
   objective?:{id:string;label:string;description:string;count:number;maxCount:number;effect:string;completed:boolean;bossAttackMultiplier:number;bossHpMultiplier:number;bossDefenseMultiplier:number;rewardBonus:number;preBossHealPct:number;effectText:string};
@@ -109,7 +109,7 @@ export function presentEventExpeditionRun(projection:CoopEventRunServerProjectio
     modeLabel:projection.dungeonName,
     phase:projection.phase,
     syncedLevel:Math.min(...projection.team.map(member=>member.effectiveLevel)),
-    roleSlots:projection.team.map(member=>({role:member.role,name:member.displayName,echo:member.kind==='echo',classId:member.classId,ready:member.downed===undefined?true:!member.downed})),
+    roleSlots:projection.team.map(member=>({role:member.role,name:member.displayName,echo:member.kind==='echo',classId:member.classId,companionId:member.companionId,currentHp:member.currentHp,maximumHp:member.maximumHp,ready:member.downed===undefined?true:!member.downed})),
     options,
     mechanic:projection.mechanic?{label:projection.mechanic.label,description:projection.mechanic.description,value:projection.mechanic.value,maxValue:projection.mechanic.maxValue,status:projection.mechanic.status,bossEffect:projection.mechanic.bossEffect}:undefined,
     objective:projection.objective?{label:projection.objective.label,description:projection.objective.description,count:projection.objective.count,maxCount:projection.objective.maxCount,completed:projection.objective.completed,effectText:projection.objective.effectText}:undefined,

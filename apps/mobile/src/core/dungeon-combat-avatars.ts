@@ -33,6 +33,18 @@ export const DUNGEON_COMBAT_FORMATION:Readonly<Record<DungeonCombatRole,readonly
  support:['rear_right'],
 });
 
+/** Equipped companions remain owner-bound assists in dungeon combat.
+ * They may appear as a small portrait/cameo when their existing assist ability procs,
+ * but they never create extra party slots or persistent full-size arena actors.
+ */
+export const DUNGEON_COMPANION_PRESENTATION=Object.freeze({
+ mode:'owner_assist_cameo' as const,
+ occupiesPartySlot:false,
+ persistentArenaActor:false,
+ maximumVisibleOwnerAssists:4,
+ portraitSize:26,
+});
+
 export function dungeonCombatAvatar(classId:string|undefined):DungeonCombatAvatarDefinition|undefined{
  if(!classId)return undefined;
  return DUNGEON_COMBAT_AVATARS[classId.toUpperCase() as ClassId];

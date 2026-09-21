@@ -1,4 +1,4 @@
-import {useMemo,useState} from 'react';
+import {useEffect,useMemo,useState} from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {GameTextInput} from '../GameTextInput';
 import type {CoopDungeonView} from '../../core/coop-dungeon-browsing';
@@ -9,7 +9,8 @@ import {FantasyPanel,PrimaryAction,StateChip} from './CoopVisualKit';
 export function CoopLiveRecruitmentBoard({
  posts,dungeons,nowMs,busy=false,notice,onQuickMatch,onJoin,onPublish,onCloseMine,onRefresh,
 }:{posts:CoopLiveRecruitmentPost[];dungeons:CoopDungeonView[];nowMs:number;busy?:boolean;notice?:string;onQuickMatch:()=>void;onJoin:(dungeonId:string)=>void;onPublish:(dungeonId:string,note:string)=>void;onCloseMine:()=>void;onRefresh:()=>void}){
- const available=useMemo(()=>dungeons.filter(dungeon=>dungeon.available),[dungeons]),visible=useMemo(()=>activeCoopLiveRecruitment(posts,nowMs),[posts,nowMs]),mine=visible.find(post=>post.mine);
+ const [clock,setClock]=useState(nowMs);useEffect(()=>{setClock(nowMs);const started=Date.now(),timer=setInterval(()=>setClock(nowMs+(Date.now()-started)),15000);return()=>clearInterval(timer)},[nowMs]);
+ const available=useMemo(()=>dungeons.filter(dungeon=>dungeon.available),[dungeons]),visible=useMemo(()=>activeCoopLiveRecruitment(posts,clock),[posts,clock]),mine=visible.find(post=>post.mine);
  const [composer,setComposer]=useState(false),[dungeonId,setDungeonId]=useState(available[0]?.id??''),[note,setNote]=useState('');
  const names=useMemo(()=>new Map(dungeons.map(dungeon=>[dungeon.id,dungeon.name])),[dungeons]);
  return <View style={s.stack}>
@@ -24,8 +25,8 @@ export function CoopLiveRecruitmentBoard({
    {notice?<Text accessibilityRole="alert" style={s.notice}>{notice}</Text>:null}
    <View style={s.actions}><View style={s.flex}><PrimaryAction label={mine?'Replace my post':'Post LFG'} tone="secondary" selected={composer} disabled={busy||!available.length} onPress={()=>setComposer(value=>!value)}/></View><View style={s.flex}><PrimaryAction label="Refresh" tone="secondary" disabled={busy} onPress={onRefresh}/></View></View>
    {composer?<View style={s.composer}><Text style={s.label}>DUNGEON</Text><View style={s.chips}>{available.map(dungeon=><Pressable key={dungeon.id} accessibilityRole="button" accessibilityState={{selected:dungeonId===dungeon.id}} onPress={()=>setDungeonId(dungeon.id)} style={[s.chip,dungeonId===dungeon.id&&s.chipOn]}><Text style={[s.chipText,dungeonId===dungeon.id&&s.chipTextOn]}>{dungeon.name}</Text></Pressable>)}</View><Text style={s.label}>OPTIONAL NOTE</Text><GameTextInput accessibilityLabel="Co-op LFG note" value={note} maxLength={140} placeholder="Starting now, chill run, learning boss…" placeholderTextColor={coopColors.textMuted} style={s.input} onChangeText={setNote}/><Text style={s.meta}>{note.length}/140 · expires 30 minutes after posting</Text><PrimaryAction label={mine?'Replace 30m post':'Publish 30m post'} disabled={busy||!dungeonId} onPress={()=>{onPublish(dungeonId,note.trim());setComposer(false)}}/></View>:null}
-   {mine?<View style={s.mineRow}><Text style={s.mineText}>Your post · {names.get(mine.dungeonId)??mine.dungeonId} · {coopLiveRecruitmentTime(mine,nowMs)}</Text><View style={s.close}><PrimaryAction label="Remove" tone="secondary" disabled={busy} onPress={onCloseMine}/></View></View>:null}
-   <View style={s.posts}>{visible.filter(post=>!post.mine).map(post=><View key={post.id} style={s.post}><View style={s.head}><View style={s.flex}><Text style={s.postName}>{post.ownerName}</Text><Text style={s.dungeon}>{names.get(post.dungeonId)??post.dungeonId}</Text></View><StateChip label={post.role.toUpperCase()} tone={post.role==='tank'?'selected':post.role==='support'?'success':'default'}/></View><View style={s.metaRow}><Text style={s.meta}>Auto Tier ≤ {post.maxTier}</Text><Text style={s.time}>{coopLiveRecruitmentTime(post,nowMs)}</Text></View>{post.note?<Text style={s.note}>{post.note}</Text>:null}<PrimaryAction label="Join this search" tone="secondary" disabled={busy} onPress={()=>onJoin(post.dungeonId)}/></View>)}</View>
+   {mine?<View style={s.mineRow}><Text style={s.mineText}>Your post · {names.get(mine.dungeonId)??mine.dungeonId} · {coopLiveRecruitmentTime(mine,clock)}</Text><View style={s.close}><PrimaryAction label="Remove" tone="secondary" disabled={busy} onPress={onCloseMine}/></View></View>:null}
+   <View style={s.posts}>{visible.filter(post=>!post.mine).map(post=><View key={post.id} style={s.post}><View style={s.head}><View style={s.flex}><Text style={s.postName}>{post.ownerName}</Text><Text style={s.dungeon}>{names.get(post.dungeonId)??post.dungeonId}</Text></View><StateChip label={post.role.toUpperCase()} tone={post.role==='tank'?'selected':post.role==='support'?'success':'default'}/></View><View style={s.metaRow}><Text style={s.meta}>Auto Tier ≤ {post.maxTier}</Text><Text style={s.time}>{coopLiveRecruitmentTime(post,clock)}</Text></View>{post.note?<Text style={s.note}>{post.note}</Text>:null}<PrimaryAction label="Join this search" tone="secondary" disabled={busy} onPress={()=>onJoin(post.dungeonId)}/></View>)}</View>
    {!visible.filter(post=>!post.mine).length?<Text style={s.empty}>No other Live LFG posts right now. Quick Match is still available.</Text>:null}
   </FantasyPanel>
  </View>;

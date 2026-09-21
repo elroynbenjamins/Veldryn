@@ -5,11 +5,20 @@ import {accountCharacters,unlockedCharacterSlots} from './account-roster';
 import {equipmentCraftingQueue} from './equipment-crafting-queue';
 
 function snapshot(state:GameState){return {character:structuredClone(state.character!),inventory:structuredClone(state.inventory),overflow:structuredClone(state.overflow),activity:structuredClone(state.activity),skills:structuredClone(state.skills),quests:structuredClone(state.quests),currentRegionId:state.currentRegionId};}
+function adoptOrphanBankGearInstances(state:GameState,characterId:string,classId:ClassId){
+ const liveIds=new Set(accountCharacters(state).map(entry=>entry.character.id));
+ return {...state,account:{...state.account,gearInstances:(state.account.gearInstances??[]).map(instance=>{
+  if(instance.storage!=='bank'||liveIds.has(instance.ownerCharacterId))return instance;
+  const item=itemDef(instance.itemId);if(item.classRestriction&&item.classRestriction!==classId)return instance;
+  return {...instance,ownerCharacterId:characterId};
+ })}} as GameState;
+}
 export function createAccountCharacter(state:GameState,classId:ClassId,name:string,body:BodyPresentation,now:number){
- if(!state.character) return createCharacter(state,classId,name,body);
+ if(!state.character){const created=createCharacter(state,classId,name,body);return adoptOrphanBankGearInstances(created,created.character!.id,classId);}
  if(accountCharacters(state).length>=unlockedCharacterSlots(state))throw new Error('Character slot is locked.');
  const next=createCharacter(newGame(now),classId,name,body);const active=snapshot(state);const id=`LOCAL_CHAR_${accountCharacters(state).length+1}`;next.character!.id=id;
- return {...next,version:state.version,createdAtMs:state.createdAtMs,settings:state.settings,bank:state.bank,account:{...state.account,createdCharacterCount:Math.max(state.account.createdCharacterCount,accountCharacters(state).length+1)},otherCharacters:[...(state.otherCharacters??[]),active]};
+ return {...next,version:state.version,createdAtMs:state.createdAtMs,settings:state.settings,bank:state.bank,account:{...state.account,createdCharacterCount:Math.max(state.account.createdCharacterCount,accountCharacters(state).length+1)},otherCharacters:[...(state.otherCharacters??[]),active]} as GameState;
+ return adoptOrphanBankGearInstances(created,id,classId);
 }
 export function transitionAccountFaithPractice(state:GameState,now:number,tierId:string,count:number){const {reserveFaithPractice}=require('./faith') as typeof import('./faith');return {state:reserveFaithPractice(state,tierId,count,now)};}
 export function setAccountFaithBlessing(state:GameState,id:string,now:number){const {updateFaithPreference}=require('./faith') as typeof import('./faith');return updateFaithPreference(state,'blessing',id);}
@@ -63,7 +72,7 @@ function deletionRecoveryItems(entry:CharacterSnapshot,sharedBank:GameState['ban
  const socketed=Object.entries(entry.character.gearEnhancements??{}).flatMap(([itemId,enhancement])=>ownedGearIds.has(itemId)?[enhancement.statGemId,enhancement.effectGemId].filter((id):id is string=>Boolean(id)):[]);
  return [...entry.inventory.stacks,...entry.overflow.stacks,...held.map(itemId=>({itemId,quantity:1})),...socketed.map(itemId=>({itemId,quantity:1}))];
 }
-function accountAfterCharacterDelete(state:GameState,character:CharacterSnapshot['character']){
+function accountAfterCharacterDelete(state:GameState,character:CharacterSnapshot['character'],rehomeCharacterId?:string){
  const earnedSlots=unlockedCharacterSlots(state);
  const arena=state.account.arenaSquadCharacterIds?.filter(id=>id!==character.id);
  const unlockedCosmeticPetIds=[...new Set([...(state.account.unlockedCosmeticPetIds??[]),...(character.ownedPetIds??[])])];
@@ -73,6 +82,7 @@ function accountAfterCharacterDelete(state:GameState,character:CharacterSnapshot
   unlockedCharacterSlots:Math.max(state.account.unlockedCharacterSlots??1,earnedSlots),
   unlockedCosmeticPetIds,
   ownedBoostIds,
+  gearInstances:(state.account.gearInstances??[]).map(instance=>instance.ownerCharacterId===character.id?{...instance,ownerCharacterId:rehomeCharacterId??instance.ownerCharacterId,storage:'bank' as const,equippedSlot:undefined}:instance),
   ...(state.account.arenaSquadCharacterIds?{arenaSquadCharacterIds:arena}: {}),
  };
 }
@@ -94,12 +104,13 @@ export function deleteAccountCharacter(state:GameState,id:string,confirmation:st
  if(confirmation.trim()!==characterDeleteConfirmation(stored.character.name))throw new Error(`Type "${characterDeleteConfirmation(stored.character.name)}" to confirm.`);
  const blocked=characterDeleteBlockReason(state,id);if(blocked)throw new Error(blocked);
  const other=(state.otherCharacters??[]).filter(entry=>entry.character.id!==id);
- const account=accountAfterCharacterDelete(state,stored.character);
+ const replacement=active?other[0]:undefined,rehomeCharacterId=active?replacement?.character.id:state.character.id;
+ const account=accountAfterCharacterDelete(state,stored.character,rehomeCharacterId);
  if(!active){
   const recovery=routeToBank(state.bank,state.overflow,deletionRecoveryItems(stored,state.bank),now);
   return {...state,bank:recovery.bank,overflow:recovery.overflow,otherCharacters:other,account};
  }
- const replacement=other[0],remaining=replacement?other.slice(1):[];
+ const remaining=replacement?other.slice(1):[];
  const baseOverflow=replacement?.overflow??{stacks:[],expiresAtMs:null};
  const recovery=routeToBank(state.bank,baseOverflow,deletionRecoveryItems(stored,state.bank),now);
  if(replacement)return {...state,character:replacement.character,inventory:replacement.inventory,overflow:recovery.overflow,activity:replacement.activity,skills:replacement.skills,quests:replacement.quests,currentRegionId:replacement.currentRegionId,bank:recovery.bank,otherCharacters:remaining,account};

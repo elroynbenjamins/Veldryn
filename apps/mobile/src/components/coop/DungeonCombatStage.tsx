@@ -9,6 +9,17 @@ import {CombatantProfileCard,EnemyCombatProfileCard} from './CombatantProfileCar
 
 type Slot=CoopRunView['roleSlots'][number];
 
+function seconds(value:number){return `${Math.max(0,value/1000).toFixed(1)}s`;}
+function fxColor(accent:DungeonCombatFxAccent){
+ switch(accent){
+  case 'gold': return coopColors.gold;
+  case 'danger': return coopColors.danger;
+  case 'violet': return coopColors.violet;
+  case 'success': return coopColors.success;
+  case 'cyan': default: return coopColors.cyan;
+ }
+}
+
 function motionScale(fx:DungeonCombatCueFx|undefined){
  if(!fx)return 1;
  if(fx.actorMotion==='pulse'||fx.actorMotion==='cast')return 1.06;
@@ -38,7 +49,7 @@ export function DungeonCombatStage({run,enemyLabel,boss=false}:{run:CoopRunView;
  },[replay,replayKey,reduceMotion,cueIndex,cues]);
  const currentCue=cues.length?cues[Math.min(cueIndex,cues.length-1)]:undefined,recent=replay?playbackRecentCues(replay,cueIndex):[];
  const partyIds=useMemo(()=>new Set(ordered.map(slot=>slot.memberId).filter((id):id is string=>Boolean(id))),[ordered]);
- const actorSlot=ordered.find(slot=>slot.memberId===currentCue?.actorId),targetSlot=ordered.find(slot=>slot.memberId===currentCue?.targetId);
+ const actorSlot=ordered.find(slot=>slot.memberId===currentCue?.actorId);
  const actorIsParty=currentCue?.actorId?partyIds.has(currentCue.actorId):undefined,targetIsParty=currentCue?.targetId?partyIds.has(currentCue.targetId):undefined;
  const fx=useMemo(()=>dungeonCombatCueFx(currentCue,actorSlot?.classId),[currentCue?.atMs,currentCue?.type,currentCue?.actionKind,currentCue?.abilityId,actorSlot?.classId]);
  useEffect(()=>{

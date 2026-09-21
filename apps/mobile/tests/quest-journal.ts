@@ -1,6 +1,7 @@
 import {createCharacter,newGame,claimQuest,refreshQuests} from '../src/core/game';
 import {journalEntries,questDestination} from '../src/core/quest-journal';
 import {QUESTS,QUEST_ACTS} from '../src/content/quests';
+import {questPresentationMeta,questPresentationTier} from '../src/core/quest-presentation';
 function ok(value:boolean,message:string){if(!value)throw new Error(message)}
 const state=createCharacter(newGame(1000),'IRONWARDEN');
 ok(journalEntries(state,'current','').length===1,'One current chapter initially');
@@ -17,6 +18,11 @@ for(const def of QUESTS)ok(!!questDestination(def).label&&!!questDestination(def
 for(const def of QUESTS)ok(def.act>=1&&def.act<=3&&!!def.location.trim()&&def.story.trim().length>=40,'Every quest has an act, location and substantive story beat');
 ok(QUESTS.slice(0,5).every(def=>def.act===1)&&QUESTS.slice(5,10).every(def=>def.act===2)&&QUESTS.slice(10).every(def=>def.act===3),'Asterfall acts remain ordered 5 / 5 / 5');
 ok(QUEST_ACTS[1].name==='Whispers in the Green'&&QUEST_ACTS[3].name==='The Broken Oath','Campaign act identity remains authored');
+ok(questPresentationTier(QUESTS[0])==='standard'&&questPresentationTier(QUESTS[4])==='rare','Act I tier curve should build from standard to rare');
+ok(questPresentationTier(QUESTS[9])==='epic'&&questPresentationTier(QUESTS[13])==='legendary'&&questPresentationTier(QUESTS[14])==='epic','Major campaign beats keep stronger presentation tiers');
+ok(QUESTS.filter(def=>questPresentationTier(def)==='legendary').every(def=>def.kind==='boss'),'Legendary campaign presentation is reserved for boss-scale chapters');
+const themeFixtures=[{accent:'#gold',accentSurface:'#gold-bg',special:'#violet',specialSurface:'#violet-bg',info:'#blue',infoSurface:'#blue-bg',good:'#green',goodSurface:'#green-bg',muted:'#muted',panel2:'#panel'} as any,{accent:'#bronze',accentSurface:'#cream',special:'#purple',specialSurface:'#lilac',info:'#navy',infoSurface:'#ice',good:'#forest',goodSurface:'#mint',muted:'#slate',panel2:'#ivory'} as any];
+for(const theme of themeFixtures){for(const def of QUESTS){const meta=questPresentationMeta(def,theme);ok(!!meta.color&&!!meta.surface&&!!meta.label,'Every quest tier resolves theme-safe presentation metadata')}}
 const completed=refreshQuests(state,'MOSS_RAT',5);
 ok(journalEntries(completed,'current','')[0].remaining===0,'Ready quest has no remainder');
 const claimed=claimQuest(completed,'QST_001');

@@ -78,7 +78,7 @@ const voidLensElite=()=>[enemy({
   id:'SUNMON_014',name:'Void Lens',level:43,maxHp:13_500,attackPower:395,defense:700,accuracy:875,evasion:210,elite:true,healingPower:330,basicAttackMs:2700,
   abilities:[
     damage('VOID_LENS_BEAM','Null Beam',1.12,'arcane',6100,'current_target',650),
-    {id:'VOID_REFLECTION','Reflection Window',cooldownMs:12500,castTimeMs:0,target:'self',priority:82,effects:[{kind:'shield',coeff:1.0,shieldReflectPct:.18}]},
+    {id:'VOID_REFLECTION',name:'Reflection Window',cooldownMs:12500,castTimeMs:0,target:'self',priority:82,effects:[{kind:'shield',coeff:1.0,shieldReflectPct:.18}]},
   ],
 })];
 

@@ -567,7 +567,7 @@ export function withdrawFromBank(state:GameState,itemId:string,quantity:number):
   const added=addBounded(state.inventory.stacks,state.inventory.capacity,[{itemId,quantity}]);
   if(added.overflow.length)throw new Error('Inventory is full');
   let next={...state,bank:{...state.bank,stacks:removed},inventory:{...state.inventory,stacks:added.stacks}} as GameState;
-  if(itemDef(itemId).type==='gear')next=moveStoredGearInstances(next,itemId,'bank','inventory',quantity);
+  if(itemDef(itemId).type==='gear')next=moveStoredGearInstances(next,itemId,'bank','inventory',quantity,state.character?.id);
   return next;
 }
 export type StorageLocation='inventory'|'bank';

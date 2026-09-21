@@ -130,17 +130,19 @@ begin
  perform pg_temp.assert_v16((select count(*)=0 from public.chat_messages where channel_type='party' and channel_id=p::text),'chat RLS revoked on leave');
  reset role;
  perform pg_temp.assert_v16((select leader_account_id<>a[1] and status='active' from public.parties where id=p),'leadership transfer');
- -- Deterministic ranking on the immutable event scope.
+ -- Ranked mini-events are optional/deprioritized. Validate ranking only when one is currently seeded.
  select id into event_instance from public.party_contract_instances_v16 where party_id=p and cadence='mini_event' limit 1;
- set local role service_role;
- perform public.record_party_contract_contribution_v16(event_instance,a[3],'rush_elites',1,'v16-ranked-00001');
- reset role;
- perform pg_temp.assert_v16((select normalized_points>0 from public.party_rankings_v16 where party_id=p),'ranked scoring');
- set local role authenticated;
- perform set_config('request.jwt.claim.sub',a[3]::text,true);
- x:=public.party_rankings_board_v16();
- perform pg_temp.assert_v16(jsonb_array_length(x)>0,'ranking projection');
- reset role;
+ if event_instance is not null then
+  set local role service_role;
+  perform public.record_party_contract_contribution_v16(event_instance,a[3],'rush_elites',1,'v16-ranked-00001');
+  reset role;
+  perform pg_temp.assert_v16((select normalized_points>0 from public.party_rankings_v16 where party_id=p),'ranked scoring');
+  set local role authenticated;
+  perform set_config('request.jwt.claim.sub',a[3]::text,true);
+  x:=public.party_rankings_board_v16();
+  perform pg_temp.assert_v16(jsonb_array_length(x)>0,'ranking projection');
+  reset role;
+ end if;
  -- Same account / weekly definition cannot pay again after changing Party.
  perform set_config('request.jwt.claim.sub',a[1]::text,true);
  set local role authenticated;

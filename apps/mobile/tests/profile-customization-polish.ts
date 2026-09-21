@@ -1,5 +1,5 @@
 import {createCharacter,newGame} from '../src/core/game';
-import {newlyUnlockedProfileRewards,profileRewardSource} from '../src/core/profile-customization';
+import {newlyUnlockedProfileRewards,profileAudienceCanView,profileRewardSource} from '../src/core/profile-customization';
 
 function fail(message:string):never{throw new Error(message)}
 function ok(value:unknown,message:string){if(!value)fail(message)}
@@ -56,5 +56,13 @@ ok(guildUnlocks.some(row=>row.id==='bloomwarden'),'joining a guild surfaces the 
 
 const fresh=createCharacter(newGame(0),'IRONWARDEN','Fresh Character');
 equal(newlyUnlockedProfileRewards(newGame(0),fresh).length,0,'character creation does not spam baseline profile-title notices');
+
+ok(profileAudienceCanView('public','public'),'public profiles are visible to public viewers');
+ok(profileAudienceCanView('public','guild'),'public profiles are visible to guild viewers');
+ok(profileAudienceCanView('guild','guild'),'guild-only profiles are visible to guild viewers');
+equal(profileAudienceCanView('guild','public'),false,'guild-only profiles stay hidden from public viewers');
+equal(profileAudienceCanView('private','public'),false,'private profiles stay hidden from public viewers');
+equal(profileAudienceCanView('private','guild'),false,'private profiles stay hidden from guild viewers');
+ok(profileAudienceCanView('private','self'),'self preview always remains visible');
 
 console.log('PASS: profile customization sources and unlock moments');

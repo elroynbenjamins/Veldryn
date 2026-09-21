@@ -1,0 +1,46 @@
+import React,{useMemo,useState} from 'react';
+import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import type {GameState} from '../core/types';
+import {availableGemCombinesV1,formatGemValueV1,gemCodexRowsV1,resonanceForFamilyV1} from '../core/gem-progression-v1';
+import {GEM_GRADE_LABEL_V1,type MobileGemGradeV1} from '../content/gems-v1';
+import {GameButton} from './GameButton';
+import {GameModalHeader,GameModalSurface} from './GameModalSurface';
+import {useGameTheme} from '../theme/ThemeContext';
+import {equipmentTheme,radii,spacing,typography,type ThemeColors} from '../theme/theme';
+
+type KindFilter='all'|'stat'|'effect';
+const gradeRoman:Record<MobileGemGradeV1,string>={1:'I',2:'II',3:'III',4:'IV',5:'V'};
+const duration=(seconds:number)=>seconds>=3600?(seconds/3600)+'h':seconds>=60?(seconds/60)+'m':seconds+'s';
+
+export function GemCodexModal({visible,state,onClose,onCombine}:{visible:boolean;state:GameState;onClose:()=>void;onCombine:(familyId:string,fromGrade:1|2|3|4)=>Promise<void>|void}){
+ const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>styles(C),[C]);
+ const [tab,setTab]=useState<'codex'|'forge'>('codex'),[filter,setFilter]=useState<KindFilter>('all'),[busy,setBusy]=useState('');
+ const rows=useMemo(()=>gemCodexRowsV1(state),[state]),combines=useMemo(()=>availableGemCombinesV1(state),[state]);
+ const filtered=rows.filter(row=>filter==='all'||row.family.kind===filter);
+ const ownedFamilies=rows.filter(row=>row.owned.some(g=>g.quantity>0)).length;
+ const cycle=()=>setFilter(value=>value==='all'?'stat':value==='stat'?'effect':'all');
+ const run=async(familyId:string,grade:1|2|3|4)=>{const key=familyId+':'+grade;if(busy)return;setBusy(key);try{await onCombine(familyId,grade)}finally{setBusy('')}};
+ return <GameModalSurface visible={visible} reduceMotion={state.settings.reduceMotion} onClose={onClose} backdropLabel="Close Gem Codex" surfaceStyle={s.surface}>
+  <GameModalHeader eyebrow="EQUIPMENT · GEMS" title="Gem Codex" onClose={onClose}/>
+  <View style={s.summary}><View><Text style={s.summaryValue}>{ownedFamilies}/32</Text><Text style={s.caption}>families owned</Text></View><View style={s.summaryRule}/><View style={s.flex}><Text style={s.summaryCopy}>Recipes are account-wide. Effect Resonance is capped at III across equipped gear.</Text></View></View>
+  <View accessibilityRole="tablist" style={s.tabs}><Pressable accessibilityRole="tab" accessibilityState={{selected:tab==='codex'}} onPress={()=>setTab('codex')} style={[s.tab,tab==='codex'&&s.tabOn]}><Text style={[s.tabText,tab==='codex'&&s.tabTextOn]}>CODEX</Text></Pressable><Pressable accessibilityRole="tab" accessibilityState={{selected:tab==='forge'}} onPress={()=>setTab('forge')} style={[s.tab,tab==='forge'&&s.tabOn]}><Text style={[s.tabText,tab==='forge'&&s.tabTextOn]}>COMBINE · {combines.filter(row=>row.ready).length}</Text></Pressable></View>
+  {tab==='codex'?<>
+   <Pressable accessibilityRole="button" onPress={cycle} style={s.filter}><Text style={s.filterText}>Type · {filter==='all'?'All gems':filter==='stat'?'Stat Gems':'Effect Gems'} ▾</Text></Pressable>
+   <ScrollView contentContainerStyle={s.list} showsVerticalScrollIndicator={false}>{filtered.map(row=>{
+    const resonance=row.family.kind==='effect'?resonanceForFamilyV1(state,row.family.familyId):undefined;
+    const owned=row.owned.filter(entry=>entry.quantity>0);
+    const recommended=row.family.recommendedClasses?.includes(state.character!.classId)??false;
+    return <View key={row.family.familyId} style={s.card}><View style={s.row}><View style={s.flex}><Text style={s.eyebrow}>{row.family.kind==='stat'?'STAT':row.family.category.toUpperCase()} GEM{recommended?' · ★ RECOMMENDED':''}</Text><Text style={s.name}>{row.family.name}</Text></View>{resonance&&resonance.resonance>0?<Text style={s.resonance}>R{resonance.resonance}/III</Text>:null}</View><Text style={s.description}>{row.family.description}</Text>
+    <Text style={s.owned}>{owned.length?owned.map(entry=>gradeRoman[entry.grade]+' ×'+entry.quantity).join('  ·  '):'Not owned yet'}</Text>
+    {row.highestOwned?<Text style={s.value}>{GEM_GRADE_LABEL_V1[row.highestOwned]} · {formatGemValueV1(row.family.familyId,row.highestOwned)}</Text>:null}
+    {row.family.kind==='effect'?<Text style={s.caption}>{row.family.resonance2} · {row.family.resonance3}</Text>:null}
+    <Text style={s.source}>Source · {row.family.sources.join(' · ')}</Text>
+    {row.family.kind==='effect'?<Text style={[s.recipe,row.recipeUnlocked?s.good:s.muted]}>{row.recipeUnlocked?'Recipe unlocked':'Recipe not discovered'}</Text>:null}</View>;
+   })}</ScrollView>
+  </>:<ScrollView contentContainerStyle={s.list} showsVerticalScrollIndicator={false}>
+   <Text style={s.notice}>Combining is deterministic and uses the same forge slots as equipment. No failure chance and no premium currency.</Text>
+   {combines.length?combines.map(row=>{const recipe=row.recipe,key=recipe.familyId+':'+recipe.fromGrade;return <View key={recipe.id} style={[s.card,row.ready&&s.readyCard]}><View style={s.row}><View style={s.flex}><Text style={s.eyebrow}>{GEM_GRADE_LABEL_V1[recipe.fromGrade]} → {GEM_GRADE_LABEL_V1[recipe.toGrade]}</Text><Text style={s.name}>{recipe.name}</Text></View><Text style={row.ready?s.good:s.muted}>{row.ready?'READY':'BLOCKED'}</Text></View><Text style={s.description}>{recipe.inputs.map(input=>input.quantity+'× '+(input.itemId==='GEM_DUST'?'Gem Dust':input.itemId==='REGIONAL_CATALYST'?'Regional Catalyst':input.itemId==='RADIANT_CATALYST'?'Radiant Catalyst':GEM_GRADE_LABEL_V1[recipe.fromGrade]+' gem')).join(' · ')}</Text><Text style={s.source}>{recipe.gold.toLocaleString()} gold · {duration(recipe.seconds)} base craft time</Text><GameButton compact title={row.ready?'Start combine':'Missing requirements'} disabled={!row.ready||Boolean(busy)} loading={busy===key} onPress={()=>void run(recipe.familyId,recipe.fromGrade)}/></View>;}):<Text style={s.notice}>No owned lower-grade gems are currently eligible for combining.</Text>}
+  </ScrollView>}
+ </GameModalSurface>;
+}
+function styles(C:ThemeColors){const E=equipmentTheme(C);return StyleSheet.create({surface:{maxWidth:650,maxHeight:'90%',borderColor:E.lineStrong},flex:{flex:1,minWidth:0},summary:{flexDirection:'row',alignItems:'center',gap:spacing.md,padding:spacing.sm,borderWidth:1,borderColor:E.line,backgroundColor:E.stage,borderRadius:radii.sm},summaryValue:{fontSize:22,lineHeight:26,fontWeight:'900',color:E.goldSoft},summaryRule:{width:1,height:36,backgroundColor:E.line},summaryCopy:{...typography.caption,color:C.muted},caption:{...typography.caption,color:C.muted},tabs:{flexDirection:'row',borderBottomWidth:1,borderBottomColor:E.line},tab:{flex:1,minHeight:44,alignItems:'center',justifyContent:'center'},tabOn:{borderBottomWidth:3,borderBottomColor:E.selectedLine,backgroundColor:C.selection},tabText:{...typography.caption,color:C.muted,fontWeight:'900'},tabTextOn:{color:E.selectedLine},filter:{minHeight:40,justifyContent:'center',paddingHorizontal:spacing.md,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2},filterText:{...typography.bodyStrong,color:C.text},list:{gap:8,paddingVertical:spacing.sm,paddingBottom:spacing.xl},card:{gap:4,padding:spacing.sm,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2},readyCard:{borderColor:C.good},row:{flexDirection:'row',alignItems:'center',gap:spacing.sm},eyebrow:{fontSize:8,lineHeight:11,fontWeight:'900',letterSpacing:.8,color:E.goldSoft},name:{...typography.bodyStrong,color:C.text,fontWeight:'900'},resonance:{...typography.caption,color:C.special,fontWeight:'900'},description:{...typography.body,color:C.text},owned:{...typography.caption,color:C.info,fontWeight:'800'},value:{...typography.caption,color:C.good,fontWeight:'800'},source:{...typography.caption,color:C.muted},recipe:{...typography.caption,fontWeight:'800'},good:{color:C.good,fontWeight:'900'},muted:{color:C.muted},notice:{...typography.body,color:C.muted,padding:spacing.sm,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2,borderRadius:radii.sm}});}

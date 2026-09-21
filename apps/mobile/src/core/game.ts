@@ -24,7 +24,7 @@ import {gatheringPacing} from './gathering-tools';
 import {gatheringToolDef} from '../content/gathering-tools';
 import {currentRegionId} from './combat-region';
 import {WORLD_ZONES} from '../content/world-map';
-import {enhancedGearStats,equippedGemBonuses,hasEnhancement} from './equipment-enhancement';
+import {EFFECT_GEM_BONUS_CAP,enhancedGearStats,equippedGemBonuses,equippedGemEffects,hasEnhancement} from './equipment-enhancement';
 import {companionCombatContribution,reconcileCombatCompanionUnlocks,grantCompanionEssence,grantBondstones} from './combat-companions';
 import {awardCompanionRematchBondstone,companionRematchBondstoneStatus,recordCompanionActivity} from './companion-runtime';
 import {monsterMastery,recordMonsterMastery} from './monster-mastery';
@@ -120,8 +120,9 @@ export function effectiveStats(state:GameState){
   const mastery=characterClassEffects(c);hp=Math.ceil(hp*mastery.hp);attack=Math.ceil(attack*mastery.attack);defense=Math.ceil(defense*mastery.defense);
   const permanent=characterPermanentMultipliers(state);attack=Math.ceil(attack*permanent.combatPowerMultiplier);
   const prep=c.preparation?preparationEffects(c.preparation):undefined;if(prep)attack=Math.ceil(attack*prep.attack);
-  const role=CLASSES.find(def=>def.id===c.classId)?.role;
-  return {hp,attack,defense,power:Math.round(attack*1.5+defense*.8+hp*.08+c.level*2.5),critChance:role==='Damage'?.10:.05,critMultiplier:1.5,accuracy:.84,evasion:role==='Damage'?.07:.04,haste:.05}
+  const role=CLASSES.find(def=>def.id===c.classId)?.role,effects=equippedGemEffects(state);
+  const critBonus=Math.min(EFFECT_GEM_BONUS_CAP,effects.critChance),hasteBonus=Math.min(EFFECT_GEM_BONUS_CAP,effects.haste),evasionBonus=Math.min(EFFECT_GEM_BONUS_CAP,effects.evasion);
+  return {hp,attack,defense,power:Math.round(attack*1.5+defense*.8+hp*.08+c.level*2.5),critChance:(role==='Damage'?.10:.05)+critBonus,critMultiplier:1.5,accuracy:.84,evasion:(role==='Damage'?.07:.04)+evasionBonus,haste:.05+hasteBonus}
 }
 
 export function startCombat(state:GameState,monsterId:string,nowMs:number,combatChallengeId?:CombatChallengeId,combatTacticId:CombatTacticId='balanced',huntGoalId:HuntGoalId='open'):GameState{
@@ -217,7 +218,9 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number){
   const boostedDefense=Math.max(1,Math.round(stats.defense*modifiers.combatPowerMultiplier));
   const boostedPower=Math.max(1,Math.round(stats.power*modifiers.combatPowerMultiplier));
   const expected=(m.attack*1.2+m.defense*.8+m.level*2.2)*COMBAT_EXPECTED_SCALE;
-  const speed=Math.max(COMBAT_SPEED_MIN,Math.min(COMBAT_SPEED_MAX,boostedPower/Math.max(1,expected)))*style.speedMultiplier*tactic.speedMultiplier*modifiers.combatSpeedMultiplier*companion.outputMultiplier*(1+monsterMastery(state,monsterId).damageBonus);
+  const gemEffects=equippedGemEffects(state),gemCrit=Math.min(EFFECT_GEM_BONUS_CAP,gemEffects.critChance),gemHaste=Math.min(EFFECT_GEM_BONUS_CAP,gemEffects.haste),gemEvasion=Math.min(EFFECT_GEM_BONUS_CAP,gemEffects.evasion);
+  const gemOutputMultiplier=(1+gemHaste)*(1+gemCrit*(stats.critMultiplier-1));
+  const speed=Math.max(COMBAT_SPEED_MIN,Math.min(COMBAT_SPEED_MAX,boostedPower/Math.max(1,expected)))*style.speedMultiplier*tactic.speedMultiplier*modifiers.combatSpeedMultiplier*companion.outputMultiplier*(1+monsterMastery(state,monsterId).damageBonus)*gemOutputMultiplier;
   const killCycleSeconds=m.secondsPerKill*COMBAT_TIME_SCALE*(environment?.actionTimeMultiplier??1)/speed;
   const theoreticalKills=Math.floor(elapsed/killCycleSeconds);
   const foodId=c.equippedFoodId;const food=foodId?itemDef(foodId):undefined;
@@ -227,7 +230,7 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number){
   for(let i=0;i<theoreticalKills;i++){
     const champion=!challengeId&&isChampionEncounter(c.id,state.activity?.lastClaimAtMs??0,monsterId,i);
     const raw=Math.max(1,Math.round((m.attack*COMBAT_MONSTER_DAMAGE_SCALE)-Math.floor(boostedDefense*.58)));
-    const damage=Math.max(1,Math.round((raw*.48 + m.level*.16)*style.damageTakenMultiplier*tactic.damageTakenMultiplier*(champion?CHAMPION_DAMAGE_MULTIPLIER:1)*modifiers.incomingDamageMultiplier*companion.incomingDamageMultiplier*(c.preparation?preparationEffects(c.preparation).damage:1)));
+    const damage=Math.max(1,Math.round((raw*.48 + m.level*.16)*style.damageTakenMultiplier*tactic.damageTakenMultiplier*(champion?CHAMPION_DAMAGE_MULTIPLIER:1)*modifiers.incomingDamageMultiplier*companion.incomingDamageMultiplier*(1-gemEvasion)*(c.preparation?preparationEffects(c.preparation).damage:1)));
     hp-=damage;
     while(food && food.heal && foodLeft>0 && hp>0 && hp/stats.hp<=threshold){
       hp=Math.min(stats.hp,hp+Math.max(1,Math.ceil(food.heal*modifiers.healingEffectivenessMultiplier)));foodLeft--;foodConsumed++;

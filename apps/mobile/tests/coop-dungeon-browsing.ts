@@ -1,4 +1,4 @@
-import {coopTierEligibility,filterCoopDungeons,groupCoopDungeonsByRegion,presentCoopDungeon,validateCoopDungeonView,type CoopRoomType} from '../src/core/coop-dungeon-browsing';
+import {coopTierEligibility,filterCoopDungeons,groupCoopDungeonsByRegion,highestEligibleCoopTier,presentCoopDungeon,validateCoopDungeonView,type CoopRoomType} from '../src/core/coop-dungeon-browsing';
 import {seasonalEventExpeditionInfo,seasonalEventHasExpedition,validateCoopEventExpeditionPreview} from '../src/core/coop-event-expeditions';
 import {COOP_MESSAGE_COUNT,SUPPORTED_LANGUAGES,translatedCoopMessageCount} from '../src/i18n';
 
@@ -9,6 +9,7 @@ equal([rootbound.id,rootbound.name,rootbound.minLevel,rootbound.recommendedLevel
 equal(rootbound.heroArtId,'rootbound_hero','Rootbound hero art mapping changed');
 equal(rootbound.estimatedMinutes,{min:6,max:8},'launch duration target changed');equal(rootbound.tierMinLevels,{1:15,2:20,3:25,4:30,5:35},'tier requirements changed');
 equal(coopTierEligibility(rootbound,3,25),{eligible:true,requiredLevel:25},'eligible tier should open');equal(coopTierEligibility(rootbound,4,25),{eligible:false,requiredLevel:30},'under-level tier should fail closed');
+equal(highestEligibleCoopTier(rootbound,25),3,'live auto tier should choose the highest eligible tier');equal(highestEligibleCoopTier(rootbound,14),undefined,'live auto tier should fail closed below dungeon minimum');
 const unknown=presentCoopDungeon({id:'EXP_UNKNOWN',name:'A deliberately very long authoritative expedition title that must remain live text',minLevel:1,syncLevel:1,available:true,enabledRoomTypes:['battle','forge' as unknown as CoopRoomType],difficulties:[1]});
 equal(unknown.artId,undefined,'unknown art must use fallback');equal(unknown.enabledRoomTypes,['battle'],'unsupported rooms must be hidden');
 const locked=presentCoopDungeon({id:'EXP_LOCKED',name:'Locked',minLevel:50,syncLevel:60,available:false,lockedReason:'Requires level 50',difficulties:[1]});validateCoopDungeonView(locked);

@@ -50,9 +50,9 @@ ok(duplicate.craftResult.rarity==='common','Duplicate T1 craft should be able to
 ok(duplicate.craftResult.ownedCopies===2,'Duplicate result must report two owned copies');
 ok(duplicate.craftResult.setProgress?.owned===1,'Duplicate copy must not advance unique set-piece progress');
 
-const t1Stack=state.inventory.stacks.find(row=>row.itemId===t1.output.itemId)!;
-ok(t1Stack.quantity===2,'Two crafted copies should remain represented by the grouped inventory quantity');
-let breakdown=rarityBreakdownForStack(state,t1.output.itemId,'inventory',t1Stack.quantity);
+const t1Quantity=state.inventory.stacks.filter(row=>row.itemId===t1.output.itemId).reduce((sum,row)=>sum+row.quantity,0);
+ok(t1Quantity===2,'Two crafted copies should occupy two raw gear slots while aggregating to quantity two in the UI');
+let breakdown=rarityBreakdownForStack(state,t1.output.itemId,'inventory',t1Quantity);
 ok(breakdown.some(row=>row.rarity==='legendary'&&row.count===1)&&breakdown.some(row=>row.rarity==='common'&&row.count===1),'Grouped stack must preserve per-copy Common + Legendary rarity');
 const best=bestStoredGearInstance(state,t1.output.itemId,'inventory')!;
 ok(best.craftedRarity==='legendary','Equip selection must prefer the best crafted rarity');
@@ -71,7 +71,8 @@ ok(beforeInstances.find(row=>row.id===best.id)!.enhancement.rank===0,'Upgrade mu
 
 state=unequipItem(state,itemDef(t1.output.itemId).slot!);
 state=sellItem(state,t1.output.itemId,1);
-breakdown=rarityBreakdownForStack(state,t1.output.itemId,'inventory',state.inventory.stacks.find(row=>row.itemId===t1.output.itemId)?.quantity??0);
+const afterSellQuantity=state.inventory.stacks.filter(row=>row.itemId===t1.output.itemId).reduce((sum,row)=>sum+row.quantity,0);
+breakdown=rarityBreakdownForStack(state,t1.output.itemId,'inventory',afterSellQuantity);
 ok(breakdown.length===1&&breakdown[0].rarity==='legendary','Selling one duplicate must consume the lowest-rarity disposable Common copy first');
 ok(gearInstances(state).some(row=>row.id===best.id&&row.enhancement.rank===1),'Enhanced Legendary copy must survive duplicate disposal');
 

@@ -11,7 +11,7 @@
     "build": "tsc",
     "typecheck:online": "tsc -p tsconfig.online.json --noEmit",
     "build:online": "tsc -p tsconfig.online.json && node ../tools/build-online.mjs",
-    "test:online": "tsc -p tsconfig.online.json && node dist/online/backend/online/tests/gameplay.js && node dist/online/backend/online/tests/coop-loadout.js && node dist/online/backend/online/tests/coop-entry.js && node dist/online/backend/online/tests/qmode-runtime.js && node dist/online/backend/online/tests/event-expedition-runtime.js && node dist/online/backend/online/tests/live-queue.js && node dist/online/backend/online/tests/live-ready.js && node dist/online/backend/online/tests/coop-published-balance.js",
+    "test:online": "tsc -p tsconfig.online.json && node dist/online/backend/online/tests/gameplay.js && node dist/online/backend/online/tests/coop-loadout.js && node dist/online/backend/online/tests/coop-entry.js && node dist/online/backend/online/tests/qmode-runtime.js && node dist/online/backend/online/tests/event-expedition-runtime.js && node dist/online/backend/online/tests/live-queue.js && node dist/online/backend/online/tests/live-ready.js && node dist/online/backend/online/tests/coop-published-balance.js && node dist/online/backend/online/tests/regional-combat.js",
     "test:event-expedition-online": "tsc -p tsconfig.online.json && node dist/online/backend/online/tests/event-expedition-runtime.js",
     "smoke": "node dist/server/expeditions/__tests__/smoke.js",
     "combat-smoke": "node dist/server/combat/__tests__/combat-smoke.js",

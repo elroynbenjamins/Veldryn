@@ -35,7 +35,7 @@ export function itemInspectModel(state:GameState,itemId:string){
   }
   if(item.id.startsWith('START_')||item.id.startsWith('basic_'))sources.unshift({kind:'starting',title:'Starting equipment',detail:'Granted by a matching class loadout.'});
 
-  const usedIn:ItemRecipeUse[]=RECIPES.flatMap(recipe=>recipe.inputs.filter(input=>input.itemId===itemId).map(input=>({
+  const usedIn:Omit<ItemRecipeUse,'availability'>[]=RECIPES.flatMap(recipe=>recipe.inputs.filter(input=>input.itemId===itemId).map(input=>({
     name:recipe.name,skill:title(recipe.skillId),level:recipe.level,quantity:input.quantity,
     navigation:{kind:'skills',skillId:recipe.skillId,mode:'crafting',recipeId:recipe.id,button:'Open recipe',detail:`Open ${recipe.name}.`} as WorkingTowardDestination,
   })));

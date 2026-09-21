@@ -49,7 +49,10 @@ ok(queue.includes('backgroundColor:C.goodSurface'),'Queue handoff success must r
 const inventory=read('src/screens/InventoryScreen.tsx');
 ok(inventory.includes("root:{padding:spacing.md,gap:10}"),'Inventory should keep compact screen padding');
 ok(inventory.includes("storageChip:{flex:1,minWidth:0,minHeight:48"),'Inventory storage selector should remain compact');
-ok(inventory.includes("chip:{minHeight:44"),'Inventory filter chips must retain accessible touch height');
+ok(inventory.includes("utilityChip:{flex:1,minWidth:0,minHeight:44"),'Inventory quick controls must retain accessible touch height');
+ok(inventory.includes('visible={filterOpen}'),'Inventory categories must open in a compact filter sheet');
+ok(inventory.includes('filterOption:{minHeight:44'),'Inventory filter rows must retain accessible touch height');
+ok(!inventory.includes('contentContainerStyle={s.controlStrip}'),'Inventory must not regress to the long horizontal category strip');
 
 const world=read('src/screens/WorldScreen.tsx');
 ok(world.includes('currentCard:{minHeight:150'),'World current-region card must remain compact');

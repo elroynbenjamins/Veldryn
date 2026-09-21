@@ -22,7 +22,7 @@ ok(board.includes('<StatusPill label="MEMBERS ONLY" tone="good"/>'),'Notice Boar
 ok(board.includes('maxLength={280}'),'Notice Board editor must enforce the 280-character UI cap');
 ok(board.includes('blank text clears the notice'),'Notice Board editor must explain clear behavior');
 ok(board.includes("board.canEdit&&!editing"),'Only server-authorized Guild roles may see edit controls');
-ok(board.includes("Read-only · Leaders and Officers can edit"),'Ordinary members must get a clear read-only state');
+ok(board.includes("Read-only · Your Guild role cannot edit"),'Ordinary members must get a clear read-only state');
 ok(board.includes('LoadingState'),'Notice Board must use the shared loading pattern');
 
 ok(social.includes('GuildNoticeBoardState'),'Online social client must expose Notice Board state');
@@ -32,7 +32,7 @@ ok(social.includes("clean.length>280"),'Client must reject overlong notices befo
 
 ok(sql.includes('security definer'),'Notice Board RPCs must enforce access server-side');
 ok(sql.includes("where gm.account_id=v_uid"),'Notice Board RPCs must resolve Guild membership from authenticated user');
-ok(sql.includes("v_role in('leader','officer')"),'Only Leader/Officer roles may edit the Notice Board');
+ok(sql.includes("v_role in('leader','guild_master','co_leader','officer','quartermaster')"),'Notice Board editing must match the existing bulletin-edit leadership roles');
 ok(sql.includes("GUILD_OFFICER_REQUIRED"),'Unauthorized Notice Board edits must fail explicitly');
 ok(sql.includes("LINK_ACCOUNT_REQUIRED"),'Guest accounts must not edit the Notice Board');
 ok(sql.includes("char_length(v_body)>280"),'Server must enforce the 280-character Notice Board cap');

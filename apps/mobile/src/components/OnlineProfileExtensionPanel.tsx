@@ -18,7 +18,7 @@ type Picker='visibility'|'character'|'skill'|'companion'|'achievements'|'records
 const visibilityLabel:Record<ProfileVisibilityV43,string>={public:'Public',guild:'Guild only',private:'Private'};
 const refKey=(ref:ProfileCollectionRefV43)=>ref.kind+':'+ref.id;
 
-export function OnlineProfileExtensionPanel({state,onSaved}:{state:GameState;onSaved?:()=>void|Promise<void>}){
+export function OnlineProfileExtensionPanel({state,onSaved,onDirtyChange,onDraftChange}:{state:GameState;onSaved?:()=>void|Promise<void>;onDirtyChange?:(dirty:boolean)=>void;onDraftChange?:(draft:ProfileExtensionSelfV43|null)=>void}){
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const {session}=useAuthSession();
  const guest=!!session?.user.is_anonymous;
@@ -56,6 +56,8 @@ export function OnlineProfileExtensionPanel({state,onSaved}:{state:GameState;onS
  const toggleCollection=(list:ProfileCollectionRefV43[],ref:ProfileCollectionRefV43)=>{const key=refKey(ref);return list.some(row=>refKey(row)===key)?list.filter(row=>refKey(row)!==key):list.length<3?[...list,ref]:list};
  const editableSnapshot=(row:ProfileExtensionSelfV43,bioText:string)=>({visibility:row.visibility,worldFeedOptOut:row.worldFeedOptOut,selectedCharacterId:row.selectedCharacterId??null,bio:bioText,favoriteSkillId:row.favoriteSkillId??null,favoriteCompanionId:row.favoriteCompanionId??null,achievementShowcaseIds:row.achievementShowcaseIds,collectionShowcase:row.collectionShowcase,recordShowcaseIds:row.recordShowcaseIds});
  const dirty=!!value&&!!savedValue&&JSON.stringify(editableSnapshot(value,bio))!==JSON.stringify(editableSnapshot(savedValue,savedValue.bio));
+ useEffect(()=>{onDirtyChange?.(dirty)},[dirty,onDirtyChange]);
+ useEffect(()=>{onDraftChange?.(value?{...value,bio}:null)},[value,bio,onDraftChange]);
  const save=async()=>{if(!value||busy||guest)return;setBusy(true);setError('');setNotice('');try{const row=await updateProfileExtensionV43({visibility:value.visibility,worldFeedOptOut:value.worldFeedOptOut,selectedCharacterId:value.selectedCharacterId??state.character?.id??null,bio, favoriteSkillId:value.favoriteSkillId,favoriteCompanionId:value.favoriteCompanionId,achievementShowcaseIds:value.achievementShowcaseIds,collectionShowcase:value.collectionShowcase,recordShowcaseIds:value.recordShowcaseIds});setValue(row);setSavedValue(row);setBio(row.bio);setNotice('Profile saved.');await onSaved?.();}catch(reason){setError(reason instanceof Error?reason.message:'Unable to save profile settings.')}finally{setBusy(false)}};
  if(!onlineConfigured||!session)return <Panel><Text style={s.eyebrow}>SOCIAL PROFILE</Text><Text style={s.title}>Identity & Showcases</Text><Text style={s.copy}>Sign in when online profile services are available to publish a biography, privacy setting, showcase character, favorites and featured achievements, records and collectibles.</Text></Panel>;
  if(!value)return <Panel><Text style={s.title}>Identity & Showcases</Text>{busy?<ActivityIndicator color={C.accent}/>:<GameButton title="Load profile settings" tone="secondary" onPress={()=>void load()}/>} {error?<Text style={s.error}>{error}</Text>:null}</Panel>;

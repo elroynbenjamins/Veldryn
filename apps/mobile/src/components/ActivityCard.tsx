@@ -1,11 +1,12 @@
-import {useEffect,useRef,useState} from 'react';
+import {useEffect,useMemo,useRef,useState} from 'react';
 import {Animated,Easing,Pressable,StyleSheet,Text,View} from 'react-native';
 import {ActiveActivity,RewardBundle} from '../core/types';
 import {huntGoalProgress,huntMomentumStatus} from '../core/hunt-goals';
 import {itemDef} from '../content/items';
 import {GameButton} from './GameButton';
 import {Panel} from './Panel';
-import {C,spacing,typography} from '../theme/theme';
+import {spacing,typography,type ThemeColors} from '../theme/theme';
+import {useGameTheme} from '../theme/ThemeContext';
 import {formatGameNumber} from '../core/number-format';
 
 function duration(seconds:number){
@@ -15,6 +16,7 @@ function duration(seconds:number){
 }
 
 export function ActivityCard({title,kind,activity,cycleSeconds,capHours,preview,rates,reduceMotion=false,numberMode='abbreviated',onClaim,onStop}:{title:string;kind:'combat'|'gathering';activity?:ActiveActivity;cycleSeconds:number;capHours:number;preview:RewardBundle;rates:{actionsPerHour:number;xpPerHour:number;goldPerHour:number};reduceMotion?:boolean;numberMode?:'abbreviated'|'exact';onClaim:()=>void;onStop:()=>void}){
+  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
   const [showDetails,setShowDetails]=useState(false);
   const pulse=useRef(new Animated.Value(0)).current;
   useEffect(()=>{pulse.setValue(0);if(reduceMotion)return;const loop=Animated.loop(Animated.timing(pulse,{toValue:1,duration:1100,easing:Easing.linear,useNativeDriver:true}));loop.start();return()=>loop.stop()},[pulse,reduceMotion]);
@@ -42,29 +44,28 @@ export function ActivityCard({title,kind,activity,cycleSeconds,capHours,preview,
     </View>
     {!loot&&!hasRewards&&<Text style={s.emptyLoot}>Keep this activity running to earn your first reward.</Text>}
     {capped&&!preview.stoppedReason&&<View style={s.stopNotice}><Text style={s.noticeLabel}>STORAGE FULL</Text><Text style={s.capNotice}>Offline storage is full. Collect now to resume earning.</Text></View>}
-    <GameButton title={hasRewards?'Collect Rewards':'Rewards building…'} onPress={onClaim} disabled={!hasRewards}/>
-    <GameButton title="Collect & stop" tone="secondary" onPress={onStop}/>
+    <View style={s.activityActions}><View style={s.action}><GameButton title={hasRewards?'Collect Rewards':'Rewards building…'} onPress={onClaim} disabled={!hasRewards}/></View><View style={s.action}><GameButton title="Collect & stop" tone="secondary" onPress={onStop}/></View></View>
     <Pressable accessibilityRole="button" accessibilityState={{expanded:showDetails}} onPress={()=>setShowDetails(value=>!value)} style={s.detailsToggle}><Text style={s.detailsLabel}>{showDetails?'HIDE DETAILS':'RATES & DETAILS'}</Text><Text style={s.detailsMark}>{showDetails?'−':'+'}</Text></Pressable>
     {showDetails&&<View style={s.details}><Text style={s.detail}>{duration(preview.elapsedSeconds)} since last claim · up to {capHours} hours offline</Text><View style={s.rateRow}><Text style={s.rate}>≈ {formatGameNumber(rates.actionsPerHour,numberMode)}/hr</Text><Text style={s.rate}>+{formatGameNumber(rates.xpPerHour,numberMode)} XP/hr</Text>{rates.goldPerHour>0&&<Text style={s.rate}>+{formatGameNumber(rates.goldPerHour,numberMode)} gold/hr</Text>}</View>{kind==='combat'&&<Text style={s.detail}>Projected health: {preview.endHp??'—'} HP · Food used: {preview.foodConsumed??0}</Text>}{loot?<Text style={s.loot}>{loot}</Text>:null}</View>}
 
   </Panel>;
 }
 
-const s=StyleSheet.create({
+function makeStyles(C:ThemeColors){return StyleSheet.create({
   heading:{flexDirection:'row',justifyContent:'space-between',alignItems:'flex-start',gap:spacing.md},
   headingCopy:{flex:1},eyebrow:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:1},
   title:{...typography.title,color:C.text},detail:{...typography.body,color:C.muted},
   status:{borderWidth:1,borderColor:C.good,borderRadius:99,paddingHorizontal:spacing.sm,paddingVertical:spacing.xs},
   statusCapped:{borderColor:C.warning},statusText:{...typography.caption,fontWeight:'900'},statusActive:{color:C.good},statusCappedText:{color:C.warning},statusStopped:{color:C.bad},
-  goal:{gap:4,padding:spacing.sm,borderWidth:1,borderColor:C.info,borderRadius:8,backgroundColor:'#132333'},goalLabel:{...typography.caption,color:C.info,fontWeight:'900',letterSpacing:.7},goalValue:{...typography.caption,color:C.text,fontWeight:'900'},goalTrack:{height:7,borderRadius:4,overflow:'hidden',backgroundColor:C.bg},goalFill:{height:'100%',backgroundColor:C.info},
+  goal:{gap:4,padding:spacing.sm,borderWidth:1,borderColor:C.info,borderRadius:8,backgroundColor:C.infoSurface},goalLabel:{...typography.caption,color:C.info,fontWeight:'900',letterSpacing:.7},goalValue:{...typography.caption,color:C.text,fontWeight:'900'},goalTrack:{height:7,borderRadius:4,overflow:'hidden',backgroundColor:C.bg},goalFill:{height:'100%',backgroundColor:C.info},
   momentum:{gap:4,padding:spacing.sm,borderWidth:1,borderColor:C.good,borderRadius:8,backgroundColor:C.panel2},momentumLabel:{...typography.caption,color:C.good,fontWeight:'900',letterSpacing:.7},momentumValue:{...typography.caption,color:C.text,fontWeight:'900'},momentumHint:{...typography.caption,color:C.muted},momentumTrack:{height:7,borderRadius:4,overflow:'hidden',backgroundColor:C.bg},momentumFill:{height:'100%',backgroundColor:C.good},
-  champion:{gap:2,padding:spacing.sm,borderWidth:1,borderColor:'#d7a94f',borderRadius:8,backgroundColor:'#2b2417'},championLabel:{...typography.caption,color:'#f2c96f',fontWeight:'900',letterSpacing:.8},championText:{...typography.bodyStrong,color:C.text},
+  champion:{gap:2,padding:spacing.sm,borderWidth:1,borderColor:C.accent,borderRadius:8,backgroundColor:C.accentSurface},championLabel:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.8},championText:{...typography.bodyStrong,color:C.text},
   rewardRow:{flexDirection:'row',flexWrap:'wrap',gap:8,justifyContent:'space-between',alignItems:'center',paddingVertical:spacing.sm},
-  rewardNumber:{fontSize:42,lineHeight:46,color:C.text,fontWeight:'900'},rewardLabel:{...typography.caption,color:C.muted},
+  rewardNumber:{fontSize:36,lineHeight:40,color:C.text,fontWeight:'900'},rewardLabel:{...typography.caption,color:C.muted},
   totals:{alignItems:'flex-end'},xp:{...typography.bodyStrong,color:C.good},gold:{...typography.bodyStrong,color:C.accent},
   loot:{...typography.body,color:C.text},emptyLoot:{...typography.body,color:C.muted},
   detailsToggle:{minHeight:42,flexDirection:'row',alignItems:'center',justifyContent:'space-between',borderTopWidth:1,borderTopColor:C.line},detailsLabel:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.8},detailsMark:{fontSize:22,color:C.accent},details:{gap:spacing.xs},
-  capNotice:{...typography.body,color:C.text},noticeLabel:{...typography.caption,color:C.warning,fontWeight:'900',letterSpacing:1},stopNotice:{gap:4,padding:spacing.sm,borderWidth:1,borderColor:C.warning,borderRadius:8,backgroundColor:'#332515'},
-  progressBlock:{gap:spacing.xs,paddingVertical:spacing.xs},progressMeta:{flexDirection:'row',flexWrap:'wrap',gap:6,justifyContent:'space-between'},progressLabel:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:1},progressTime:{...typography.bodyStrong,color:C.text},track:{height:16,borderRadius:8,overflow:'hidden',backgroundColor:C.bg,borderWidth:1,borderColor:C.line},fill:{height:'100%',overflow:'hidden',backgroundColor:C.good,borderRadius:8},shine:{position:'absolute',width:54,height:'100%',backgroundColor:'rgba(255,255,255,.28)'},
+  capNotice:{...typography.body,color:C.text},noticeLabel:{...typography.caption,color:C.warning,fontWeight:'900',letterSpacing:1},stopNotice:{gap:4,padding:spacing.sm,borderWidth:1,borderColor:C.warning,borderRadius:8,backgroundColor:C.warningSurface},
+  progressBlock:{gap:spacing.xs,paddingVertical:spacing.xs},progressMeta:{flexDirection:'row',flexWrap:'wrap',gap:6,justifyContent:'space-between'},progressLabel:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:1},progressTime:{...typography.bodyStrong,color:C.text},activityActions:{flexDirection:'row',gap:8},action:{flex:1,minWidth:0},track:{height:12,borderRadius:8,overflow:'hidden',backgroundColor:C.bg,borderWidth:1,borderColor:C.line},fill:{height:'100%',overflow:'hidden',backgroundColor:C.good,borderRadius:8},shine:{position:'absolute',width:54,height:'100%',backgroundColor:'rgba(255,255,255,.28)'},
   rateRow:{flexDirection:'row',flexWrap:'wrap',gap:spacing.sm},rate:{...typography.caption,color:C.info,fontWeight:'800'},
-});
+});}

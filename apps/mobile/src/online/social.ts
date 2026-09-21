@@ -39,6 +39,8 @@ export interface GuildLeadershipStatus{
 export interface InviteCapability{available:boolean;pending:boolean;reason?:string|null;partyId?:string|null;guildId?:string|null;guildName?:string|null;memberCount?:number;memberCap?:number;minimumLevel?:number;}
 export interface SocialInviteCapabilities{party:InviteCapability;guild:InviteCapability;}
 
+export interface GuildNoticeBoardState{guildId:string;body:string;updatedAt?:string|null;updatedByAccountId?:string|null;canEdit:boolean;}
+
 
 function requireClient(){if(!supabase)throw new Error('Online services are not configured in this build.');return supabase;}
 export async function guildIdentities(accountIds:readonly string[]):Promise<Map<string,{guild_tag:string;guild_tag_color_id:string}>>{const unique=[...new Set(accountIds.filter(Boolean))];if(!unique.length)return new Map();const client=requireClient();const {data,error}=await client.rpc('guild_identities',{p_account_ids:unique});if(error)throw error;return new Map<string,{guild_tag:string;guild_tag_color_id:string}>((data??[]).map((row:any)=>[row.account_id,{guild_tag:row.guild_tag,guild_tag_color_id:row.guild_tag_color_id}]));}
@@ -100,6 +102,9 @@ export async function guildChatState(limit=50){const client=requireClient();cons
 export async function sendGuildChat(body:string,idempotencyKey:string){const client=requireClient();const {data,error}=await client.rpc('send_guild_chat_v1',{p_body:body,p_idempotency_key:idempotencyKey});if(error)throw error;return data as string;}
 export async function socialChatAttention(){const client=requireClient();const {data,error}=await client.rpc('social_chat_attention_state_v1');if(error)throw error;return data as SocialChatAttentionState;}
 export async function markSocialChatRead(channelType:'guild'|'party'){const client=requireClient();const {data,error}=await client.rpc('mark_social_chat_read_v1',{p_channel_type:channelType});if(error)throw error;return data as {channelType:'guild'|'party';channelId:string;readAt:string};}
+
+export async function guildNoticeBoardState():Promise<GuildNoticeBoardState|null>{const client=requireClient();const {data,error}=await client.rpc('guild_notice_board_state_v1');if(error)throw error;const row=(data?.[0]??null) as {guild_id:string;body:string;updated_at?:string|null;updated_by_account_id?:string|null;can_edit:boolean}|null;return row?{guildId:row.guild_id,body:row.body??'',updatedAt:row.updated_at??null,updatedByAccountId:row.updated_by_account_id??null,canEdit:row.can_edit===true}:null;}
+export async function updateGuildNoticeBoard(body:string):Promise<GuildNoticeBoardState>{const client=requireClient();const clean=body.trim();if(clean.length>280)throw new Error('Guild notices can be at most 280 characters.');const {data,error}=await client.rpc('update_guild_notice_board_v1',{p_body:clean});if(error)throw error;const row=data?.[0] as {guild_id:string;body:string;updated_at?:string|null;updated_by_account_id?:string|null;can_edit:boolean}|undefined;if(!row)throw new Error('Guild notice update was not confirmed.');return{guildId:row.guild_id,body:row.body??'',updatedAt:row.updated_at??null,updatedByAccountId:row.updated_by_account_id??null,canEdit:row.can_edit===true};}
 
 export async function guildLeadershipStatus(){const client=requireClient();const {data,error}=await client.rpc('guild_leadership_status_v1');if(error)throw error;return data as GuildLeadershipStatus|null;}
 export async function transferGuildLeadership(accountId:string){const client=requireClient();const {data,error}=await client.rpc('transfer_guild_leadership_v1',{p_target_account_id:accountId});if(error)throw error;return data as 'transferred';}

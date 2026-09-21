@@ -64,7 +64,8 @@
     "liveops-v17": "node dist/server/liveops/__tests__/party-events-v17.js && node dist/server/liveops/__tests__/party-event-service-v17.js && node dist/server/liveops/__tests__/finalization-rewards-v17.js && node dist/server/liveops/__tests__/outbox-v17.js",
     "combat-rng-portable": "node dist/server/combat/__tests__/portable-rng.js",
     "test:coop-live-social": "tsc -p tsconfig.online.json && node dist/online/backend/online/tests/live-queue.js && node dist/online/backend/online/tests/coop-lfg.js",
-    "test:coop-composition": "tsc -p tsconfig.coop-composition.json && node dist-coop-composition/server/coop/__tests__/phase6-qmode.js && node dist-coop-composition/server/coop/__tests__/phase6-public-projection.js && node dist-coop-composition/server/coop/__tests__/phase7-matchmaking.js"
+    "test:coop-composition": "tsc -p tsconfig.coop-composition.json && node dist-coop-composition/server/coop/__tests__/phase6-qmode.js && node dist-coop-composition/server/coop/__tests__/phase6-public-projection.js && node dist-coop-composition/server/coop/__tests__/phase7-matchmaking.js",
+    "test:gems": "tsc --outDir dist-gems && node dist-gems/server/equipment/gems/gem-v1.test.js"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

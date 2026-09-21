@@ -10,9 +10,9 @@ import {GameState} from '../core/types';
 export type MoreDestination='Home'|'Social'|'Activity'|'Progression'|'DailySupplies'|'AccountBonuses'|'Quests'|'Companions'|'Skills'|'Events'|'Friends'|'Guild'|'Settings'|'Arena'|'Rankings'|'Collections'|'Profile'|'Achievements';
 
 const sections:Array<{label:string;items:MoreDestination[]}>= [
-  {label:'PLAY & PROGRESSION',items:['Home','Activity','Progression','Quests','Skills','Companions','DailySupplies','AccountBonuses']},
+  {label:'PLAY & PROGRESSION',items:['Home','Progression','Quests','Skills','Companions','DailySupplies','AccountBonuses']},
   {label:'SOCIAL & COMPETITION',items:['Social','Friends','Guild','Events','Arena','Rankings']},
-  {label:'IDENTITY & ACCOUNT',items:['Profile','Collections','Achievements','Settings']},
+  {label:'IDENTITY & ACCOUNT',items:['Activity','Profile','Collections','Achievements','Settings']},
 ];
 
 function iconForDestination(id:MoreDestination):keyof typeof navigationIcons{
@@ -26,7 +26,7 @@ function itemMeta(language:GameState['settings']['language'],id:MoreDestination)
   switch(id){
     case 'Home':return {title:'Home',description:'Current activity and account overview'};
     case 'Social':return {title:'Social',description:'Party, contracts, recruitment and chat'};
-    case 'Activity':return {title:'Character Activity',description:'Switch characters and review activity'};
+    case 'Activity':return {title:'Characters',description:'Switch, reroll or safely delete characters'};
     case 'Progression':return {title:'Working Toward',description:'Goals, sources and safe idle rules'};
     case 'DailySupplies':return {title:'Daily Supplies',description:'28-claim track and +10% activity boosts'};
     case 'AccountBonuses':return {title:'Account Bonuses',description:'Permanent and temporary modifiers'};

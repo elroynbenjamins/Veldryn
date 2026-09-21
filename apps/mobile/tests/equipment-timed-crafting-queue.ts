@@ -69,7 +69,7 @@ const commandStart=executeGameCommand(online,{type:'craft',args:{id:recipe.id}},
 online=commandStart.state;
 ok(equipmentCraftingQueue(online).length===1&&!online.inventory.stacks.some(row=>row.itemId===recipe.output.itemId),'Authoritative craft command must reserve equipment instead of granting it instantly');
 const commandJob=equipmentCraftingQueue(online)[0];
-const commandClaim=executeGameCommand(online,{type:'craft_claim',args:{id:commandJob.id}},commandJob.completesAtMs);
+const commandClaim=executeGameCommand(online,{type:'craft_claim',args:{id:commandJob.id}},commandJob.completesAtMs,{randomRoll:.5});
 ok(commandClaim.state.inventory.stacks.some(row=>row.itemId===recipe.output.itemId),'Authoritative claim command must grant finished equipment');
 ok(commandClaim.contributions.some(row=>row.kind==='crafting'&&row.contentId===recipe.id),'Verified crafting contribution must occur on completion');
 

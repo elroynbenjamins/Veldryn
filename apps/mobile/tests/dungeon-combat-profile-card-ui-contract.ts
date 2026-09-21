@@ -1,0 +1,27 @@
+export {};
+const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
+function ok(value:boolean,message:string){if(!value)throw new Error(message)}
+const read=(path:string)=>fs.readFileSync(path,'utf8');
+
+const card=read('src/components/coop/CombatantProfileCard.tsx');
+const stage=read('src/components/coop/DungeonCombatStage.tsx');
+const art=read('src/theme/dungeon-combat-art.ts');
+
+ok(card.includes('useGameTheme'),'Combat profile cards must follow the active UI theme');
+ok(card.includes('dungeonCombatPortraitSource'),'Combat cards must bind canonical full-character artwork');
+ok(card.includes('identityPlate'),'Combat cards must retain the profile-scene identity plate language');
+ok(card.includes('HP')&&card.includes('hpTrack'),'Combat profile cards must prioritize health readability');
+ok(card.includes('COMPANION')&&card.includes('ASSIST PROC'),'Combat profile cards must retain owner-bound companion assists');
+ok(card.includes('ECHO')&&card.includes('DOWN'),'Combat profile cards must expose dungeon state without social clutter');
+ok(!card.includes('profileTitle')&&!card.includes('guildTag'),'Combat cards must not carry biography/title/guild profile clutter into battle');
+ok(stage.includes("import {CombatantProfileCard,EnemyCombatProfileCard} from './CombatantProfileCard'"),'Dungeon stage must use profile-derived combat cards');
+ok(stage.includes('<CombatantProfileCard')&&stage.includes('<EnemyCombatProfileCard'),'Both party and enemy sides must use the combat profile-card language');
+ok(!stage.includes('<ClassAvatar'),'Dungeon stage must not regress to the generic initial/weapon combat box');
+
+for(const classId of ['IRONWARDEN','BASTION','DREADGUARD','WAYFINDER','RAVAGER','HEXWEAVER','KNIFE_DANCER','DAWNKEEPER','STONECALLER']){
+ ok(art.includes(classId+':'),classId+' needs a canonical dungeon combat skin');
+}
+ok(!art.includes('selectedSkinId'),'Dungeon combat art must remain class-locked rather than use player cosmetic skin selection');
+ok(art.includes("body:BodyPresentation='male'"),'Combat art must preserve male/female presentation when available');
+
+console.log('PASS: dungeon combat uses compact profile-derived cards with fixed class artwork and combat-first information');

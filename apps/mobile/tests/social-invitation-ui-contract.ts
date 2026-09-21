@@ -20,6 +20,9 @@ ok(card.includes('marginLeft:48'),'Invitation detail/actions must align under th
 ok(hub.includes('backgroundColor:C.selection'),'Active Social tabs must use the selected theme surface');
 ok(hub.includes('minHeight:44'),'Social tabs must remain compact but touchable');
 ok(hub.includes('backgroundColor:C.selectionLine'),'Active Social tab indicator must use the theme selection line');
+ok(hub.includes('badges?:Partial<Record<SocialHubTab,number>>'),'Social Hub must support compact attention counts');
+ok(hub.includes('backgroundColor:C.notification'),'Social tab attention count must use the semantic notification token');
+ok(social.includes('badges={{party:partyInvites.length}}'),'Party tab must surface the live incoming invite count');
 
 ok(social.includes('<SocialInvitationCard'),'Party invitations must use the shared invitation card');
 ok(social.includes('status="PARTY INVITE"'),'Incoming Party invites must remain explicit');

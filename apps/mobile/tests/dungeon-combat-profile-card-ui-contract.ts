@@ -6,6 +6,7 @@ const read=(path:string)=>fs.readFileSync(path,'utf8');
 const card=read('src/components/coop/CombatantProfileCard.tsx');
 const stage=read('src/components/coop/DungeonCombatStage.tsx');
 const art=read('src/theme/dungeon-combat-art.ts');
+const enemyArt=read('src/theme/dungeon-enemy-art.ts');
 
 ok(card.includes('useGameTheme'),'Combat profile cards must follow the active UI theme');
 ok(card.includes('dungeonCombatPortraitSource'),'Combat cards must bind canonical full-character artwork');
@@ -20,6 +21,10 @@ ok(stage.indexOf('<EnemyCombatProfileCard')<stage.indexOf('<CombatantProfileCard
 ok(stage.includes("partyField:{width:'100%',flexDirection:'row'")&&stage.includes("formationSlot:{flex:1,minWidth:0}"),'Four party combat cards must share one compact bottom row');
 ok(stage.includes("bossField:{width:'66%'"),'Boss encounter card must receive stronger centered emphasis than a normal enemy');
 ok(!stage.includes('<ClassAvatar'),'Dungeon stage must not regress to the generic initial/weapon combat box');
+ok(card.includes('dungeonEnemyPortraitSource(name)'),'Named bosses/enemies must resolve real artwork in the encounter card');
+ok(card.includes("boss?'♛':'◆'"),'Unknown enemies must retain a safe visual fallback');
+for(const boss of ['The Hollow Regent','The Coinbound Captain','The Rimebell Colossus'])ok(enemyArt.toLowerCase().includes(boss.toLowerCase()),boss+' must have registered encounter artwork');
+ok(enemyArt.includes("require('../../assets/dungeon-enemies-v1/"),'Enemy artwork must be bundled as static Metro assets');
 
 for(const classId of ['IRONWARDEN','BASTION','DREADGUARD','WAYFINDER','RAVAGER','HEXWEAVER','KNIFE_DANCER','DAWNKEEPER','STONECALLER']){
  ok(art.includes(classId+':'),classId+' needs a canonical dungeon combat skin');

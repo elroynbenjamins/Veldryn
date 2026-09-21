@@ -17,7 +17,7 @@ export function createAccountCharacter(state:GameState,classId:ClassId,name:stri
  if(!state.character){const created=createCharacter(state,classId,name,body);return adoptOrphanBankGearInstances(created,created.character!.id,classId);}
  if(accountCharacters(state).length>=unlockedCharacterSlots(state))throw new Error('Character slot is locked.');
  const next=createCharacter(newGame(now),classId,name,body);const active=snapshot(state);const id=`LOCAL_CHAR_${accountCharacters(state).length+1}`;next.character!.id=id;
- return {...next,version:state.version,createdAtMs:state.createdAtMs,settings:state.settings,bank:state.bank,account:{...state.account,createdCharacterCount:Math.max(state.account.createdCharacterCount,accountCharacters(state).length+1)},otherCharacters:[...(state.otherCharacters??[]),active]} as GameState;
+ const created={...next,version:state.version,createdAtMs:state.createdAtMs,settings:state.settings,bank:state.bank,account:{...state.account,createdCharacterCount:Math.max(state.account.createdCharacterCount,accountCharacters(state).length+1)},otherCharacters:[...(state.otherCharacters??[]),active]} as GameState;
  return adoptOrphanBankGearInstances(created,id,classId);
 }
 export function transitionAccountFaithPractice(state:GameState,now:number,tierId:string,count:number){const {reserveFaithPractice}=require('./faith') as typeof import('./faith');return {state:reserveFaithPractice(state,tierId,count,now)};}

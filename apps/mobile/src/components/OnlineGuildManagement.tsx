@@ -16,6 +16,11 @@ import {
  type GuildApplication,type GuildInvitationView,type GuildLeadershipStatus,type GuildMember,type OnlineGuild,type OutgoingInvitationView,
 } from '../online/social';
 
+function joinedGuildLabel(value:string){
+ const date=new Date(value);
+ return Number.isFinite(date.getTime())?'JOINED '+date.toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}).toUpperCase():'JOIN DATE UNAVAILABLE';
+}
+
 export function OnlineGuildManagement({onApplicationsChanged}:{onApplicationsChanged?:()=>void}={}){
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [members,setMembers]=useState<GuildMember[]>([]),[applications,setApplications]=useState<GuildApplication[]>([]),[invitations,setInvitations]=useState<GuildInvitationView[]>([]),[outgoingInvitations,setOutgoingInvitations]=useState<OutgoingInvitationView[]>([]),[guild,setGuild]=useState<OnlineGuild|null>(null),[leadership,setLeadership]=useState<GuildLeadershipStatus|null>(null);
@@ -76,7 +81,7 @@ export function OnlineGuildManagement({onApplicationsChanged}:{onApplicationsCha
   </View></View>:null}
   <View style={s.sectionHead}><Text style={s.section}>ROSTER · {members.length}</Text><View style={s.rosterActions}><Text style={s.sectionMeta}>{members.length}/{guild.member_cap}</Text><GameButton compact title={busy?'Refreshing…':'Refresh'} tone="secondary" disabled={busy} onPress={()=>void load()}/></View></View>
   {members.map(member=><View key={member.account_id} style={s.member}>
-   <Pressable accessibilityRole="button" accessibilityLabel={`Open ${member.display_name}'s profile`} onPress={()=>openMember(member)} style={({pressed})=>[s.memberIdentity,pressed&&s.memberPressed]}><CompactPlayerIdentity name={member.display_name} guildTag={member.guild_tag} guildTagColorId={member.guild_tag_color_id} role={member.role} hint="VIEW PROFILE ›"/></Pressable>
+   <Pressable accessibilityRole="button" accessibilityLabel={`Open ${member.display_name}'s profile`} onPress={()=>openMember(member)} style={({pressed})=>[s.memberIdentity,pressed&&s.memberPressed]}><CompactPlayerIdentity name={member.display_name} guildTag={member.guild_tag} guildTagColorId={member.guild_tag_color_id} role={member.role} status={joinedGuildLabel(member.joined_at)} statusTone="muted" hint="VIEW PROFILE ›"/></Pressable>
    {role&&Object.values(guildMemberManagement(role,member.role,member.account_id===ownAccountId)).some(Boolean)?<View style={s.memberActions}><GameButton compact title="Manage" tone="secondary" disabled={busy} onPress={()=>manageMember(member)}/></View>:null}
   </View>)}
   {(role==='leader'||role==='officer')?<><View style={s.sectionHead}><Text style={s.section}>PENDING APPLICATIONS</Text><Text style={s.sectionMeta}>{applications.length} waiting</Text></View>{applications.length?applications.map(app=><SocialInvitationCard key={app.id} name={'Applicant '+app.account_id.slice(0,8)} status="GUILD APPLICATION" statusTone="info" detail="Awaiting Guild review · profile name unavailable for this application." actions={<><GameButton compact title="Accept" disabled={busy} onPress={()=>void review(app.id,true)}/><GameButton compact title="Decline" tone="secondary" disabled={busy} onPress={()=>void review(app.id,false)}/></>}/>):<Text style={s.empty}>No pending applications.</Text>}</>:null}

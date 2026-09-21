@@ -11,7 +11,7 @@ export interface CoopRunBossMechanicView {
  telegraph?:{bossName:string;phases:CoopBossPhaseView[];castAbilities:CoopBossCastView[];suppressedAbilities:Array<{id:string;label:string}>};
 }
 export interface CoopRunBossRecapView {durationMs:number;downs:number;phasesTriggered:string[];abilitiesCast:string[];}
-export type CoopCombatReplayCueType='phase'|'cast'|'interrupt'|'down'|'assist'|'victory'|'wipe'|'timeout';
+export type CoopCombatReplayCueType='action'|'phase'|'cast'|'interrupt'|'down'|'assist'|'victory'|'wipe'|'timeout';
 export interface CoopCombatReplayCueView{
  atMs:number;
  type:CoopCombatReplayCueType;
@@ -22,6 +22,8 @@ export interface CoopCombatReplayCueView{
  abilityId?:string;
  abilityName?:string;
  durationMs?:number;
+ actionKind?:'damage'|'heal'|'shield';
+ amount?:number;
 }
 export interface CoopCombatReplayView{
  nodeId:string;
@@ -52,11 +54,11 @@ export function validateCoopRunView(view:CoopRunView):void{
  }
  if(view.bossRecap&&(!Number.isFinite(view.bossRecap.durationMs)||view.bossRecap.durationMs<0||!Number.isInteger(view.bossRecap.downs)||view.bossRecap.downs<0||view.bossRecap.phasesTriggered.some(item=>!item.trim())||view.bossRecap.abilitiesCast.some(item=>!item.trim())))throw new Error('invalid_boss_recap');
  if(view.lastCombat){
-  const replay=view.lastCombat,types=new Set<CoopCombatReplayCueType>(['phase','cast','interrupt','down','assist','victory','wipe','timeout']);
+  const replay=view.lastCombat,types=new Set<CoopCombatReplayCueType>(['action','phase','cast','interrupt','down','assist','victory','wipe','timeout']);
   if(!replay.nodeId.trim()||!['victory','wipe','timeout'].includes(replay.reason)||!Number.isFinite(replay.durationMs)||replay.durationMs<0||replay.cues.length>48)throw new Error('invalid_combat_replay');
   let previous=-1;
   for(const cue of replay.cues){
-   if(!Number.isFinite(cue.atMs)||cue.atMs<0||cue.atMs>replay.durationMs||cue.atMs<previous||!types.has(cue.type)||cue.durationMs!==undefined&&(!Number.isFinite(cue.durationMs)||cue.durationMs<0))throw new Error('invalid_combat_replay');
+   if(!Number.isFinite(cue.atMs)||cue.atMs<0||cue.atMs>replay.durationMs||cue.atMs<previous||!types.has(cue.type)||cue.durationMs!==undefined&&(!Number.isFinite(cue.durationMs)||cue.durationMs<0)||cue.amount!==undefined&&(!Number.isFinite(cue.amount)||cue.amount<0)||cue.actionKind!==undefined&&!['damage','heal','shield'].includes(cue.actionKind))throw new Error('invalid_combat_replay');
    if([cue.actorId,cue.actorName,cue.targetId,cue.targetName,cue.abilityId,cue.abilityName].some(value=>value!==undefined&&!value.trim()))throw new Error('invalid_combat_replay');
    previous=cue.atMs;
   }

@@ -4,7 +4,7 @@ import type { VerifiedCombatSnapshot } from '../combat/snapshot-adapter';
 import type { CapabilityTag, RoleReadinessResult } from './role-readiness';
 import { deriveRole, evaluateRoleReadiness } from './role-readiness';
 import { normalizeCombatInput, ROOTBOUND_ROLE_REFERENCES, type NormalizedCombatInput } from './normalization';
-import { validateCoopRoster } from './invariants';
+import { validateCoopRoster, validateUniqueDamageClasses } from './invariants';
 
 export interface AuthoritativeLoadoutRecord {
   accountId: string;
@@ -92,5 +92,6 @@ export function freezeCoopRosterAtCommit(input:{
     return snapshot;
   });
   validateCoopRoster(frozen.map(snapshot=>({accountId:snapshot.accountId,characterId:snapshot.characterId,role:snapshot.readiness.role})));
+  validateUniqueDamageClasses(frozen.map(snapshot=>({role:snapshot.readiness.role,classId:snapshot.classId})));
   return structuredClone(frozen);
 }

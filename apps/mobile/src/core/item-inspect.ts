@@ -4,13 +4,13 @@ import {HERB_NODES} from '../content/herbalism';
 import {MONSTERS} from '../content/monsters';
 import {WORLD_ZONES} from '../content/world-map';
 import {GameState,SkillId} from './types';
-import type {WorkingTowardDestination} from './working-toward';
+import {workingTowardDestinationAvailability,type WorkingTowardDestination,type WorkingTowardDestinationAvailability} from './working-toward';
 import {enhancedGearStats,gearEnhancement,gemSocketCapacity,upgradeQuote} from './equipment-enhancement';
 import {itemRarity,rarityMeta} from './item-rarity';
 
 export type ItemInspectSourceKind='gathering'|'crafting'|'combat'|'starting';
-export interface ItemInspectSource{kind:ItemInspectSourceKind;title:string;detail:string;navigation?:WorkingTowardDestination;}
-export interface ItemRecipeUse{name:string;skill:string;level:number;quantity:number;navigation:WorkingTowardDestination;}
+export interface ItemInspectSource{kind:ItemInspectSourceKind;title:string;detail:string;navigation?:WorkingTowardDestination;availability?:WorkingTowardDestinationAvailability;}
+export interface ItemRecipeUse{name:string;skill:string;level:number;quantity:number;navigation:WorkingTowardDestination;availability:WorkingTowardDestinationAvailability;}
 const title=(value:string)=>value.toLowerCase().split('_').map(part=>part?part[0].toUpperCase()+part.slice(1):part).join(' ');
 const pct=(value:number)=>value>=.1?`${Math.round(value*100)}%`:`${(value*100).toFixed(value<.01?2:1)}%`;
 
@@ -35,7 +35,7 @@ export function itemInspectModel(state:GameState,itemId:string){
   }
   if(item.id.startsWith('START_')||item.id.startsWith('basic_'))sources.unshift({kind:'starting',title:'Starting equipment',detail:'Granted by a matching class loadout.'});
 
-  const usedIn:ItemRecipeUse[]=RECIPES.flatMap(recipe=>recipe.inputs.filter(input=>input.itemId===itemId).map(input=>({
+  const usedIn:Omit<ItemRecipeUse,'availability'>[]=RECIPES.flatMap(recipe=>recipe.inputs.filter(input=>input.itemId===itemId).map(input=>({
     name:recipe.name,skill:title(recipe.skillId),level:recipe.level,quantity:input.quantity,
     navigation:{kind:'skills',skillId:recipe.skillId,mode:'crafting',recipeId:recipe.id,button:'Open recipe',detail:`Open ${recipe.name}.`} as WorkingTowardDestination,
   })));
@@ -69,5 +69,7 @@ export function itemInspectModel(state:GameState,itemId:string){
   }
   if(item.salvage)effectLines.push(`Salvage: ${item.salvage.quantity}× ${itemDef(item.salvage.itemId).name}`);
 
-  return {item,rarityId,rarity,inventoryQuantity,bankQuantity,totalQuantity:inventoryQuantity+bankQuantity,effectLines,stats,upgrade,sockets,sources,usedIn};
+  const actionableSources=sources.map(source=>source.navigation?{...source,availability:workingTowardDestinationAvailability(state,source.navigation)}:source);
+  const actionableUses=usedIn.map(recipe=>({...recipe,availability:workingTowardDestinationAvailability(state,recipe.navigation)}));
+  return {item,rarityId,rarity,inventoryQuantity,bankQuantity,totalQuantity:inventoryQuantity+bankQuantity,effectLines,stats,upgrade,sockets,sources:actionableSources,usedIn:actionableUses};
 }

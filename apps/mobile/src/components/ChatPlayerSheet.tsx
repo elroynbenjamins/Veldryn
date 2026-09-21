@@ -2,8 +2,8 @@ import {useEffect,useMemo,useState} from 'react';
 import {ActivityIndicator,Alert,Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {
  cancelFriendRequest,friendRelationshipState,removeFriend,respondFriendRequest,sendFriendRequest,setPlayerBlocked,
- sendPartyInvitation,sendGuildInvitation,socialInviteCapabilities,
- type FriendRelationship,type SocialInviteCapabilities,
+ sendPartyInvitation,sendGuildInvitation,socialInviteCapabilities,reportSocialPlayer,
+ type FriendRelationship,type SocialInviteCapabilities,type SocialReportReason,
 } from '../online/social';
 import {publicPlayerProfileV43,type PublicPlayerProfileV43} from '../online/profile-extension-v43';
 import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
@@ -19,7 +19,7 @@ import {useAuthSession} from '../online/AuthSessionProvider';
 import {profileAchievementPrestige,profileCollectionPrestige,profileRecordPrestige} from '../core/profile-prestige';
 import {friendRelationshipActionPresentation} from '../core/social-identity';
 
-export type ChatPlayerIdentity={id?:string;account_id:string;sender_name:string;guild_tag?:string|null;guild_tag_color_id?:string|null;relationship?:FriendRelationship};
+export type ChatPlayerIdentity={id?:string;message_id?:string;account_id:string;sender_name:string;guild_tag?:string|null;guild_tag_color_id?:string|null;relationship?:FriendRelationship};
 
 export function ChatPlayerSheet({
  message,onClose,onBlocked,onRelationshipChanged,
@@ -75,6 +75,8 @@ export function ChatPlayerSheet({
  async function acceptRequest(){if(!relationship.requestId){await loadRelationship();return;}await runRelationship(async()=>{await respondFriendRequest(relationship.requestId!,true);setRelationshipAndNotify({relationship:'friend'});});}
  async function declineRequest(){if(!relationship.requestId){await loadRelationship();return;}await runRelationship(async()=>{await respondFriendRequest(relationship.requestId!,false);setRelationshipAndNotify({relationship:'none'});});}
  function confirmBlock(){Alert.alert('Block '+target.sender_name+'?','Their messages will be hidden and they will be removed from your social lists.',[{text:'Cancel',style:'cancel'},{text:'Block',style:'destructive',onPress:async()=>{setBusy(true);try{await setPlayerBlocked(target.account_id,true);setRelationshipAndNotify({relationship:'none'});onBlocked(target.account_id);onClose();}catch(error){Alert.alert('Block player',error instanceof Error?error.message:'Unable to block player.');}finally{setBusy(false)}}}]);}
+ async function submitReport(reason:SocialReportReason){if(busy)return;setBusy(true);try{const result=await reportSocialPlayer(target.account_id,reason,reason==='harassment_spam'?target.message_id:undefined);Alert.alert('Report player',result==='already_reported'?'You already submitted this report recently.':'Report submitted for review. Blocking is separate and remains your choice.')}catch(error){Alert.alert('Report player',error instanceof Error?error.message:'Unable to submit this report.')}finally{setBusy(false)}}
+ function reportPlayer(){Alert.alert('Report '+target.sender_name,'Choose what needs review.',[{text:'Cancel',style:'cancel'},{text:'Name / profile',onPress:()=>void submitReport('identity')},{text:'Harassment / spam',style:'destructive',onPress:()=>void submitReport('harassment_spam')}]);}
  async function inviteToParty(){if(busy)return;setBusy(true);try{const result=await sendPartyInvitation(target.account_id);Alert.alert('Party invitation',result.status==='already_pending'?'A Party invitation is already pending.':'Party invitation sent for 24 hours.');await loadInviteCapabilities()}catch(error){Alert.alert('Party invitation',error instanceof Error?error.message:'Unable to send Party invitation.')}finally{setBusy(false)}}
  async function inviteToGuild(){if(busy)return;setBusy(true);try{const result=await sendGuildInvitation(target.account_id);Alert.alert('Guild invitation',result.status==='already_pending'?'A Guild invitation is already pending.':'Guild invitation sent for 24 hours.');await loadInviteCapabilities()}catch(error){Alert.alert('Guild invitation',error instanceof Error?error.message:'Unable to send Guild invitation.')}finally{setBusy(false)}}
 
@@ -105,6 +107,7 @@ export function ChatPlayerSheet({
     {relationship.relationship==='outgoing_pending'?<View style={s.primaryAction}><GameButton title={relationship.requestId?'Cancel request':'Refresh request'} tone="secondary" disabled={busy||relationshipLoading} onPress={()=>void cancelRequest()}/></View>:null}
     {relationship.relationship==='incoming_pending'?<><View style={s.primaryAction}><GameButton title={relationship.requestId?'Accept request':'Refresh request'} disabled={busy||relationshipLoading} onPress={()=>void acceptRequest()}/></View><View style={s.secondaryAction}><GameButton title="Decline" tone="secondary" disabled={busy||relationshipLoading||!relationship.requestId} onPress={()=>void declineRequest()}/></View></>:null}
     <Pressable accessibilityRole="button" disabled={busy} onPress={confirmBlock} style={({pressed})=>[s.blockButton,(pressed||busy)&&s.pressed]}><Text style={s.blockText}>Block</Text></Pressable>
+    <Pressable accessibilityRole="button" disabled={busy} onPress={reportPlayer} style={({pressed})=>[s.reportButton,(pressed||busy)&&s.pressed]}><Text style={s.reportText}>Report</Text></Pressable>
    </View>
    {showInviteActions?<><View style={s.inviteHead}><Text style={s.hint}>DIRECT INVITATIONS</Text>{inviteLoading?<ActivityIndicator size="small" color={C.info}/>:null}</View><View style={s.actions}>
     {inviteCapabilities?.party.available?<View style={s.primaryAction}><GameButton title="Invite to Party" tone="secondary" disabled={busy||inviteLoading} onPress={()=>void inviteToParty()}/></View>:inviteCapabilities?.party.pending?<View style={s.primaryAction}><GameButton title="Party invite sent" tone="secondary" disabled onPress={()=>{}}/></View>:null}
@@ -120,5 +123,5 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  bioCard:{gap:3,padding:10,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2},bioLabel:{fontSize:8,color:C.accent,fontWeight:'900',letterSpacing:.75},bio:{...typography.body,color:C.text,lineHeight:20},
  selfNotice:{gap:2,marginTop:spacing.sm,padding:spacing.sm,borderWidth:1,borderColor:C.info,borderRadius:radii.md,backgroundColor:C.infoSurface},selfNoticeLabel:{...typography.caption,color:C.info,fontWeight:'900',letterSpacing:.8},selfNoticeText:{...typography.caption,color:C.muted},
  actionArea:{gap:6,marginTop:spacing.sm},actionHead:{minHeight:28,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},inviteHead:{minHeight:24,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,marginTop:2},inviteError:{fontSize:9,lineHeight:12,color:C.muted},hint:{...typography.caption,color:C.muted,textTransform:'uppercase',letterSpacing:.8},relationshipPill:{minHeight:24,minWidth:82,alignItems:'center',justifyContent:'center',paddingHorizontal:7,paddingVertical:3,borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.panel2},relationshipFriend:{borderColor:C.good,backgroundColor:C.goodSurface},relationshipText:{fontSize:7.5,color:C.muted,fontWeight:'900',letterSpacing:.45},relationshipFriendText:{color:C.good},relationshipError:{fontSize:9,lineHeight:12,color:C.warning},
- actions:{flexDirection:'row',flexWrap:'wrap',gap:6},primaryAction:{flex:1,minWidth:124},secondaryAction:{minWidth:92},blockButton:{minWidth:76,minHeight:44,alignItems:'center',justifyContent:'center',paddingHorizontal:10,borderRadius:radii.md,backgroundColor:C.panel2,borderWidth:StyleSheet.hairlineWidth,borderColor:C.line},blockText:{...typography.bodyStrong,color:C.bad},pressed:{opacity:.62},
+ actions:{flexDirection:'row',flexWrap:'wrap',gap:6},primaryAction:{flex:1,minWidth:124},secondaryAction:{minWidth:92},blockButton:{minWidth:76,minHeight:44,alignItems:'center',justifyContent:'center',paddingHorizontal:10,borderRadius:radii.md,backgroundColor:C.panel2,borderWidth:StyleSheet.hairlineWidth,borderColor:C.line},blockText:{...typography.bodyStrong,color:C.bad},reportButton:{minWidth:76,minHeight:44,alignItems:'center',justifyContent:'center',paddingHorizontal:10,borderRadius:radii.md,backgroundColor:C.panel2,borderWidth:StyleSheet.hairlineWidth,borderColor:C.line},reportText:{...typography.bodyStrong,color:C.warning},pressed:{opacity:.62},
 });}

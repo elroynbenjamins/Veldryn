@@ -134,6 +134,16 @@ export interface GuildSeekerCard {
   description: string;
 }
 
+export type RecruitmentPresentationTone='accent'|'good'|'info'|'muted';
+export function recruitmentPostTypePresentation(type:RecruitmentPostType){
+ switch(type){
+  case'looking_for_party':return{shortLabel:'LFG',label:'Looking for Party',tone:'info' as const,subject:'PLAYER' as const};
+  case'party_recruiting':return{shortLabel:'LFM',label:'Party recruiting',tone:'good' as const,subject:'PARTY' as const};
+  case'looking_for_guild':return{shortLabel:'GUILD SEEKER',label:'Looking for Guild',tone:'info' as const,subject:'PLAYER' as const};
+  case'guild_recruiting':return{shortLabel:'GUILD RECRUITING',label:'Guild recruiting',tone:'accent' as const,subject:'GUILD' as const};
+ }
+}
+
 export interface RecruitmentCardView {
   id: string;
   ownerAccountId?: string;
@@ -162,6 +172,16 @@ export interface RecruitmentCardView {
   minCombatLevel?: number;
   minTotalLevel?: number;
   expiresAtMs: number;
+}
+
+export function recruitmentContextLabels(card:RecruitmentCardView){
+ const labels:string[]=[];
+ if(card.activityLevel)labels.push(card.activityLevel.charAt(0).toUpperCase()+card.activityLevel.slice(1));
+ if(card.language)labels.push(card.language);
+ if(card.region)labels.push(card.region.toUpperCase());
+ if(card.minCombatLevel!==undefined)labels.push('Combat '+Math.max(0,Math.floor(card.minCombatLevel))+'+');
+ if(card.minTotalLevel!==undefined)labels.push('Total '+Math.max(0,Math.floor(card.minTotalLevel))+'+');
+ return labels;
 }
 
 export interface RecruitmentClientFilters {

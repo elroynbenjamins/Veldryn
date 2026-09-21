@@ -7,9 +7,10 @@ export type ClassId = 'IRONWARDEN' | 'BASTION' | 'DREADGUARD' | 'DAWNKEEPER' | '
 export type BodyPresentation = 'male' | 'female';
 export type GearSlot = 'weapon' | 'offhand' | 'helmet' | 'chest' | 'legs' | 'boots' | 'gloves' | 'cape' | 'amulet' | 'ring';
 export interface CharacterLoadoutPreset{id:string;slotIndex:number;name:string;classId:ClassId;equipment:Partial<Record<GearSlot,string>>;foodId?:string;companionId?:string;createdAtMs:number;updatedAtMs:number;}
-export type GemStat = 'attack'|'defense'|'hp';
+export type GemGrade=1|2|3|4|5;
+export type GemStat = 'attack'|'defense'|'hp'|'power'|'max_hp'|'armor'|'ward'|'accuracy'|'crit_chance'|'crit_damage'|'penetration'|'haste'|'potency'|'evasion'|'tenacity';
 export type GemSocketKind='stat'|'effect';
-export type GemEffectId='combat_speed'|'boss_power'|'damage_reduction'|'recovery';
+export type GemEffectId='combat_speed'|'boss_power'|'damage_reduction'|'recovery'|'momentum'|'execution'|'opening_strike'|'predator'|'critical_surge'|'ruin'|'bulwark'|'aegis'|'last_stand'|'retaliation'|'unyielding'|'mercy'|'benediction'|'guardians_gift'|'renewal'|'shared_resolve'|'sustenance'|'battle_rhythm'|'flow'|'opportunist';
 export interface GearEnhancementState { rank:number; failures:number; statGemId?:string; effectGemId?:string; /** Legacy/read-model compatibility; normalized from named slots. */ gemIds:string[]; }
 export type ActivityKind = 'combat' | 'mining' | 'woodcutting' | 'fishing' | 'herbalism' | 'alchemy' | 'faith' | 'training' | 'hunting' | 'exploration';
 export type CombatChallengeId='ferocious'|'hardened'|'nemesis'|'apex';

@@ -67,6 +67,11 @@ export function coopTierEligibility(dungeon:CoopDungeonView,tier:CoopTier,curren
   return{eligible:dungeon.available&&dungeon.difficulties.includes(tier)&&Number.isInteger(currentLevel)&&currentLevel>=requiredLevel,requiredLevel};
 }
 
+export function highestEligibleCoopTier(dungeon:CoopDungeonView,currentLevel:number):CoopTier|undefined{
+  if(!dungeon.available||!Number.isInteger(currentLevel))return undefined;
+  return [...dungeon.difficulties].sort((a,b)=>b-a).find(tier=>currentLevel>=dungeon.tierMinLevels[tier]);
+}
+
 export function validateCoopDungeonView(view:CoopDungeonView):void{
   if(!view.id||!view.name||view.minLevel<1||view.recommendedLevel<view.minLevel)throw new Error('invalid_dungeon_projection');
   if(!view.available&&!view.lockedReason)throw new Error('locked_reason_required');

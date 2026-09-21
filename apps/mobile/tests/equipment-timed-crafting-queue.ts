@@ -3,6 +3,7 @@ import {createCharacter,newGame} from '../src/core/game';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
 import {equipmentCraftQueueModel,equipmentCraftSlotBreakdown,equipmentCraftingQueue,startEquipmentCraft,claimEquipmentCraft} from '../src/core/equipment-crafting-queue';
 import {normalizeSave} from '../src/core/save-normalization';
+import {accountBonusOverview} from '../src/core/account-bonuses';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 const recipe=V33_EQUIPMENT_RECIPES.find(row=>row.v33SetId==='T1_001'&&row.output.itemId==='T1P_001')!;
@@ -19,6 +20,7 @@ ok(slots.capacity===3&&slots.base===3&&slots.max===5,'Fresh account must start w
 
 slots=equipmentCraftSlotBreakdown({...state,account:{...state.account,entitlements:{supporter:true}}});
 ok(slots.capacity===4,'Supporter must add one crafting slot');
+ok(accountBonusOverview({...state,account:{...state.account,entitlements:{supporter:true}}}).sources.some(row=>row.id==='equipment-craft-slot:supporter'),'Supporter crafting-slot benefit must appear in Account Bonuses');
 slots=equipmentCraftSlotBreakdown({...state,account:{...state.account,entitlements:{vip_plus:true}}});
 ok(slots.capacity===4,'VIP+ must add one crafting slot');
 slots=equipmentCraftSlotBreakdown({...state,account:{...state.account,unlockedCharacterSlots:2}});

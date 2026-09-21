@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "dist-coop-rewards"
+  },
+  "include": [
+    "src/server/coop/__tests__/phase11-rewards.ts"
+  ]
+}

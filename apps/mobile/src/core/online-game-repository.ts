@@ -1,7 +1,7 @@
 import type {GameRepository} from './repository';
 import type {GameState,RewardBundle} from './types';
 import type {GameCommand,GameCommandResult} from './game-commands';
-export interface OnlineSnapshot {accountId:string;state:GameState;version:number;serverNow:number;reward?:RewardBundle;activity?:GameState['activity'];message?:string;won?:boolean;upgrade?:GameCommandResult['upgrade']}
+export interface OnlineSnapshot {accountId:string;state:GameState;version:number;serverNow:number;reward?:RewardBundle;activity?:GameState['activity'];message?:string;won?:boolean;upgrade?:GameCommandResult['upgrade'];forgeResults?:GameCommandResult['forgeResults']}
 export interface PendingGameCommand {requestId:string;expectedVersion:number;command:GameCommand}
 export interface OnlineTransport {read():Promise<OnlineSnapshot>;send(command:PendingGameCommand):Promise<OnlineSnapshot>}
 export interface PendingStore {read():Promise<PendingGameCommand|null>;write(value:PendingGameCommand|null):Promise<void>}

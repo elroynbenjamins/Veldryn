@@ -54,8 +54,8 @@ export function eventBossMechanicProjection(run:EventRun){
  const baseAbilityIds=new Set(baseBoss?.abilities.map(ability=>ability.id)??[]),activeAbilityIds=new Set(tunedBoss?.abilities.map(ability=>ability.id)??[]);
  const suppressedAbilities=(baseBoss?.abilities??[]).filter(ability=>baseAbilityIds.has(ability.id)&&!activeAbilityIds.has(ability.id)).map(ability=>({id:ability.id,label:ability.name}));
  const phases=[...(tunedBoss?.phases??[])].sort((a,b)=>b.hpPct-a.hpPct).map(phase=>({id:phase.id,label:phase.name?.trim()||displayId(phase.id),hpPct:Math.round(phase.hpPct*100),objectiveSensitive:!(baseBoss?.phases??[]).some(base=>base.id===phase.id)}));
- const interruptibleAbilities=(tunedBoss?.abilities??[]).filter(ability=>ability.interruptible&&ability.castTimeMs>0).sort((a,b)=>b.priority-a.priority).map(ability=>({id:ability.id,label:ability.name,castMs:ability.castTimeMs,cooldownMs:ability.cooldownMs,objectiveSensitive:!baseAbilityIds.has(ability.id)}));
- return {profileId:profile.profileId,label:profile.label,summary:profile.summary,tone:profile.tone,tuning:profile.tuning,telegraph:{bossName:tunedBoss?.name??definition.finalBoss,phases,interruptibleAbilities,suppressedAbilities}};
+ const castAbilities=(tunedBoss?.abilities??[]).filter(ability=>ability.castTimeMs>0).sort((a,b)=>b.priority-a.priority).map(ability=>({id:ability.id,label:ability.name,castMs:ability.castTimeMs,cooldownMs:ability.cooldownMs,interruptible:Boolean(ability.interruptible),objectiveSensitive:!baseAbilityIds.has(ability.id)}));
+ return {profileId:profile.profileId,label:profile.label,summary:profile.summary,tone:profile.tone,tuning:profile.tuning,telegraph:{bossName:tunedBoss?.name??definition.finalBoss,phases,castAbilities,suppressedAbilities}};
 }
 
 export interface EffectiveEventNode extends CoopRouteNode {encounterAttackMultiplier?:number;reactionLabel?:string;}

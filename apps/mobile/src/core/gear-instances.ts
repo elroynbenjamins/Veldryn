@@ -1,6 +1,5 @@
 import {itemDef} from '../content/items';
 import {itemRarity,type ItemRarity} from './item-rarity';
-import {craftedRarityStatMultiplier} from './crafted-gear-rarity';
 import type {CharacterState,GameState,GearEnhancementState,GearInstance,GearInstanceLocation,GearSlot,InventoryState,OverflowState} from './types';
 
 export const MAX_GEAR_INSTANCES=1200;

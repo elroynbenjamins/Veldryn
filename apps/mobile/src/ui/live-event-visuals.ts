@@ -16,7 +16,8 @@ const GENERIC:LiveEventVisualBundle={
   rewardArt:EMPTY_ART,
 };
 
-export const LIVE_EVENT_VISUALS:Readonly<Record<LiveEventVisualKey,LiveEventVisualBundle>>={
+type AnnualEventVisualBundle=LiveEventVisualBundle&{badgeIcon:number};
+export const LIVE_EVENT_VISUALS:Readonly<Record<LiveEventVisualKey,AnnualEventVisualBundle>>={
   harvestwake:{
     heroBackground:require('../../assets/profile-backgrounds/bg_harvestwake.png'),
     badgeIcon:require('../../assets/events-startup-v1/badges/badge_harvestwake.png'),
@@ -31,6 +32,7 @@ export const LIVE_EVENT_VISUALS:Readonly<Record<LiveEventVisualKey,LiveEventVisu
     rewardArt:{
       EVT_PET_011:require('../../assets/event_collectibles/harvestwake/pets/EVT_PET_011_Pumpkin_Piglet.png'),
       EVT_PET_012:require('../../assets/event_collectibles/harvestwake/pets/EVT_PET_012_Golden_Sheafling.png'),
+      EVT_UNIT_006:require('../../assets/event_collectibles/harvestwake/companions/EVT_UNIT_006_Harvest_Guardian.png'),
       pet_harvest_fox:require('../../assets/events/harvestwake/pet_harvest_fox.png'),
       pet_field_mouse:require('../../assets/events/harvestwake/pet_field_mouse.png'),
       pet_straw_sparrow:require('../../assets/events/harvestwake/pet_straw_sparrow.png'),
@@ -91,6 +93,7 @@ export const LIVE_EVENT_VISUALS:Readonly<Record<LiveEventVisualKey,LiveEventVisu
   },
   starfall:{
     heroBackground:require('../../assets/profile-backgrounds/bg_starfall.png'),
+    badgeIcon:require('../../assets/events/starfall/badge.png'),
     commonCurrencyIcon:require('../../assets/events/starfall/currency_star_shard.png'),
     prestigeCurrencyIcon:require('../../assets/events/starfall/currency_comet_core.png'),
     discoveryArt:EMPTY_ART,
@@ -102,6 +105,7 @@ export const LIVE_EVENT_VISUALS:Readonly<Record<LiveEventVisualKey,LiveEventVisu
   },
   merchant_guild:{
     heroBackground:require('../../assets/profile-backgrounds/bg_kingdom_approach.png'),
+    badgeIcon:require('../../assets/events/merchant_guild/badge.png'),
     commonCurrencyIcon:require('../../assets/events/merchant_guild/currency_guild_scrip.png'),
     prestigeCurrencyIcon:require('../../assets/events/merchant_guild/currency_caravan_seal.png'),
     discoveryArt:EMPTY_ART,
@@ -113,6 +117,7 @@ export const LIVE_EVENT_VISUALS:Readonly<Record<LiveEventVisualKey,LiveEventVisu
   },
   veilbreak:{
     heroBackground:require('../../assets/profile-backgrounds/bg_veilbreak.png'),
+    badgeIcon:require('../../assets/events/veilbreak/badge.png'),
     commonCurrencyIcon:require('../../assets/events/veilbreak/currency_veil_shard.png'),
     prestigeCurrencyIcon:require('../../assets/events/veilbreak/currency_lantern_ember.png'),
     discoveryArt:EMPTY_ART,
@@ -125,6 +130,7 @@ export const LIVE_EVENT_VISUALS:Readonly<Record<LiveEventVisualKey,LiveEventVisu
   },
   frostfall:{
     heroBackground:require('../../assets/profile-backgrounds/bg_frostfall.png'),
+    badgeIcon:require('../../assets/events/frostfall/badge.png'),
     commonCurrencyIcon:require('../../assets/events/frostfall/currency_frostbell_token.png'),
     prestigeCurrencyIcon:require('../../assets/events/frostfall/currency_aurora_chime.png'),
     discoveryArt:EMPTY_ART,

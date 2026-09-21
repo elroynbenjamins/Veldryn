@@ -2,15 +2,17 @@ import assert from 'node:assert/strict';
 import {gameplayHandler,GameplayError,type GameplayServices} from '../gameplay';
 import type {GameState} from '../../../apps/mobile/src/core/types';
 async function main(){
- let state:GameState|null=null,version=0,commits=0,clock=1700000000000,transportFailure=false,generatedIds=0;
+ let state:GameState|null=null,version=0,commits=0,clock=1700000000000,transportFailure=false,generatedIds=0,blockedDeleteCharacterId:string|null=null,deletedCommitCharacterId:string|null=null;
  const receipts=new Map<string,{response:unknown;requestHash:string}>();
  const services:GameplayServices={authenticate:async token=>token==='alice-token'?'alice':null,randomId:()=>['11111111-1111-4111-8111-111111111111','33333333-3333-4333-8333-333333333333'][generatedIds++]??'44444444-4444-4444-8444-444444444444',randomRoll:()=>.25,
   rpc:async<T>(name:string,args:Record<string,unknown>):Promise<T>=>{
    if(name==='read_online_game_receipt_server_v1')return (receipts.get(args.p_request_id as string)??null) as T;
    if(name==='load_online_game_server_v1')return {state:structuredClone(state),version,serverNow:clock,characterId:state?.character?.id??null,walletGold:state?.character?.gold??null,guildMember:false,communityProgress:{}} as T;
-   if(name==='commit_online_game_server_v1'){
+   if(name==='character_delete_coop_guard_server_v1')return {blocked:args.p_character_id===blockedDeleteCharacterId,reason:'Leave the Live co-op queue or ready check before deleting this character.'} as T;
+   if(name==='commit_online_game_server_v1'||name==='commit_online_game_server_v2'){
     if(args.p_expected_version!==version)throw new GameplayError('stale_state');
     const response=args.p_response as {state:GameState;version:number};state=response.state;version=response.version;commits++;
+    if(name==='commit_online_game_server_v2')deletedCommitCharacterId=args.p_deleted_character_id as string;
     receipts.set(args.p_request_id as string,{response,requestHash:args.p_request_hash as string});
     if(transportFailure){transportFailure=false;throw new Error('lost response after commit');}return response as T;
    }throw new Error('unexpected RPC');
@@ -67,6 +69,11 @@ async function main(){
  state={...state!,account:{...state!.account,unlockedCharacterSlots:3}};
  const created=await request({type:'roster_create',args:{classId:'WAYFINDER',name:'Third Hero',body:'male'}},'roster-create-01',19);assert.equal(created.status,200,'roster creation routes through authenticated gameplay');
  const createdPayload=await created.json();assert.equal(createdPayload.state.character.id,'33333333-3333-4333-8333-333333333333','roster creation persists server identity');
+ blockedDeleteCharacterId=rosterId;
+ const blockedDelete=await request({type:'roster_delete',args:{id:rosterId,confirmation:'DELETE Second Hero'}},'roster-delete-coop-01',20);assert.equal(blockedDelete.status,400,'co-op participation must block server-authoritative roster deletion');assert.equal(commits,20,'blocked co-op deletion must not commit gameplay state');
+ blockedDeleteCharacterId=null;
+ const removed=await request({type:'roster_delete',args:{id:rosterId,confirmation:'DELETE Second Hero'}},'roster-delete-01',20);assert.equal(removed.status,200,'roster deletion routes through authenticated gameplay');
+ const removedPayload=await removed.json();const rosterIds=[removedPayload.state.character?.id,...(removedPayload.state.otherCharacters??[]).map((entry:any)=>entry.character.id)];assert.ok(!rosterIds.includes(rosterId),'server-authoritative deletion removes the requested character');assert.equal(deletedCommitCharacterId,rosterId,'roster deletion must use the atomic delete-aware commit RPC');
  console.log('PASS authenticated gameplay HTTP, input authority, canonical replay, stale version and lost-response recovery');
 }
 void main().catch(error=>{console.error(error);process.exitCode=1;});

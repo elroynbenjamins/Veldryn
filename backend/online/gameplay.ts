@@ -48,6 +48,11 @@ export function gameplayHandler(services:GameplayServices){return async(request:
    if(committed)return committed.requestHash===requestHash?json(committed.response):json({error:'idempotency_key_conflict'},409);
    return json({error:'stale_state',state,version:loaded.version,serverNow:loaded.serverNow,accountId},409);
   }
+  if(command.type==='roster_delete'){
+   const characterId=(command.args as {id:string}).id;
+   const guard=await services.rpc<{blocked:boolean;reason?:string}>('character_delete_coop_guard_server_v1',{p_account_id:accountId,p_character_id:characterId});
+   if(guard?.blocked)throw new GameplayError(guard.reason??'Leave co-op before deleting this character.');
+  }
   let result;try{result=executeGameCommand(state,command,loaded.serverNow,{characterId:command.type==='create'||command.type==='roster_create'?services.randomId():loaded.characterId??services.randomId(),randomRoll:services.randomRoll(),accountId,eventId:String(body.requestId)});}catch(e){throw new GameplayError(e instanceof Error?e.message:'invalid_command');}
   // Translate verified actions using the same current content as the simulation, never client weights.
   const contributions=result.contributions.map(event=>{
@@ -59,7 +64,8 @@ export function gameplayHandler(services:GameplayServices){return async(request:
    return {...event,metric,units};
   });
   const response={state:result.state,version:loaded.version+1,serverNow:loaded.serverNow,accountId,reward:result.reward,activity:result.activity,message:result.message,won:result.won,upgrade:result.upgrade};
-  const committed=await services.rpc('commit_online_game_server_v1',{p_account_id:accountId,p_expected_version:loaded.version,p_expected_gold:loaded.walletGold,p_request_id:body.requestId,p_request_hash:requestHash,p_response:response,p_contributions:contributions});
+  const commitRpc=command.type==='roster_delete'?'commit_online_game_server_v2':'commit_online_game_server_v1';
+  const committed=await services.rpc(commitRpc,{p_account_id:accountId,p_expected_version:loaded.version,p_expected_gold:loaded.walletGold,p_request_id:body.requestId,p_request_hash:requestHash,p_response:response,p_contributions:contributions,...(command.type==='roster_delete'?{p_deleted_character_id:(command.args as {id:string}).id}: {})});
   return json(committed);
  }catch(error){const message=error instanceof Error?error.message:'server_error';const conflict=/stale_state|idempotency_key_conflict/.test(message);const status=conflict?409:error instanceof GameplayError?error.status:503;return json({error:status===503?'Server temporarily unavailable. Retry the pending action.':message},status);}
 };}

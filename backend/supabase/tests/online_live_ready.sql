@@ -6,7 +6,7 @@ begin
   a:=gen_random_uuid();c:=gen_random_uuid();t:=gen_random_uuid();accounts:=array_append(accounts,a);tickets:=array_append(tickets,t);
   v_role:=case when i=1 then 'tank' when i in (2,3) then 'damage' else 'support' end;
   insert into auth.users(id,email) values(a,'live-ready-'||a||'@example.invalid');
-  insert into public.characters(id,account_id,name,class_id,level) values(c,a,'Ready Test','IRONWARDEN',25);
+  insert into public.characters(id,account_id,name,class_id,level) values(c,a,'Ready Test',case when i=1 then 'IRONWARDEN' when i=2 then 'WAYFINDER' when i=3 then 'RAVAGER' when i=4 then 'DAWNKEEPER' else 'STONECALLER' end,25);
   insert into public.online_game_states(account_id,character_id,state,revision) values(a,c,jsonb_build_object('character',jsonb_build_object('id',c,'classId',case when i=1 then 'IRONWARDEN' when i=2 then 'WAYFINDER' when i=3 then 'RAVAGER' when i=4 then 'DAWNKEEPER' else 'STONECALLER' end)),1);
   s:=jsonb_build_object('accountId',a,'characterId',c,'loadoutId','current','revision',1,'snapshotHash',repeat('a',64),'readiness',jsonb_build_object('role',v_role,'ready',true,'normalizedScore',1));
   perform public.join_online_live_queue_server_v1(a,1,'ready-queue-01',repeat('b',64),t,'EXP_001',1::smallint,'online-coop-loadout-v1',s);

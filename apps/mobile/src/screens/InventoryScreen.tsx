@@ -1,6 +1,6 @@
 import {SearchField} from '../components/SearchField';
 import {useMemo,useState} from 'react';
-import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {GameState,ItemStack} from '../core/types';
 import {ItemDef,itemDef} from '../content/items';
 import {InventoryFilter,InventorySort,inventoryFavoriteIds,inventoryNewItemIds,recoveryAmount,storageCapacityStatus,transferAmount,transferError,visibleStacks} from '../core/inventory-view';
@@ -37,7 +37,7 @@ export function InventoryScreen({state,onEquip,onFood,onEat,onSell,onSalvage,onD
   const [expandedItem,setExpandedItem]=useState<string|null>(null);
   const [previewId,setPreviewId]=useState<string|null>(null);
   const [inspectId,setInspectId]=useState<string|null>(null);
-  const [showStorage,setShowStorage]=useState(false);
+  const [showStorage,setShowStorage]=useState(false),[filterOpen,setFilterOpen]=useState(false);
   const [selectMode,setSelectMode]=useState(false),[selectedIds,setSelectedIds]=useState<string[]>([]),[bulkPending,setBulkPending]=useState<BulkPending>(null);
   const run=(action:()=>void)=>{try{action();setError('')}catch(e){setError(e instanceof Error?e.message:'Action failed. Please try again.')}};
   const confirm=()=>{if(!pending)return;run(()=>pending.kind==='deposit'?onDeposit(pending.item.id,pending.quantity):pending.kind==='sell'?onSell(pending.item.id):onSalvage(pending.item.id));setPending(null)};
@@ -85,10 +85,8 @@ export function InventoryScreen({state,onEquip,onFood,onEat,onSell,onSalvage,onD
     {showStorage&&<Panel><Text style={s.sub}>Inventory travels with this character. Bank storage is shared by every character on the account.</Text>{location==='inventory'&&<GameButton title="Deposit all materials" tone="secondary" disabled={!state.inventory.stacks.some(entry=>itemDef(entry.itemId).type==='material')} onPress={()=>run(onDepositMaterials)}/>}<View style={s.row}><View style={s.flex}><Text style={s.upgradeLabel}>INVENTORY · {state.inventory.capacity} SLOTS</Text><GameButton title={inventoryUpgrade?`Upgrade to ${inventoryUpgrade.capacity} · ${formatGameNumber(inventoryUpgrade.cost,state.settings.numberMode)}g`:'Inventory maxed'} disabled={!inventoryUpgrade} tone="secondary" onPress={()=>run(()=>onUpgradeStorage('inventory'))}/></View><View style={s.flex}><Text style={s.upgradeLabel}>BANK · {state.bank.capacity} SLOTS</Text><GameButton title={bankUpgrade?`Upgrade to ${bankUpgrade.capacity} · ${formatGameNumber(bankUpgrade.cost,state.settings.numberMode)}g`:'Bank maxed'} disabled={!bankUpgrade} tone="secondary" onPress={()=>run(()=>onUpgradeStorage('bank'))}/></View></View></Panel>}
     <Text style={s.sub}>{location==='inventory'?'Carried items available during adventures.':'Bank materials are available for crafting, but food must be withdrawn for combat.'}</Text>
     <SearchField accessibilityLabel="Search stored items" placeholder="Search items…" placeholderTextColor={C.muted} value={query} onChangeText={setQuery}/>
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.controlStrip}>
-      {FILTER_OPTIONS.map(option=><ChoiceChip key={option.id} label={option.id==='new'&&activeNewCount?`New · ${activeNewCount}`:option.label} selected={filter===option.id} onPress={()=>setFilter(option.id)}/>)}
-    </ScrollView>
     {!selectMode&&<View style={s.utilityRow}>
+      <UtilityChip label={`Filter · ${filter==='all'?'All':FILTER_OPTIONS.find(option=>option.id===filter)?.label??filter}${filter==='new'&&activeNewCount?` (${activeNewCount})`:''}`} accessibilityLabel={`Filter items. Current filter: ${filter}`} selected={filter!=='all'} onPress={()=>setFilterOpen(true)}/>
       <UtilityChip label={`↕ Sort · ${SORT_OPTIONS.find(option=>option.id===sort)?.label??'Name'}`} accessibilityLabel={`Sort items. Current sort: ${sort}`} onPress={()=>setSort(value=>nextSort(value))}/>
       <UtilityChip label={`⇄ Move · ${quantity==='all'?'All':quantity}`} accessibilityLabel={`Transfer quantity. Current amount: ${quantity}`} onPress={()=>setQuantity(value=>nextQuantity(value))}/>
     </View>}
@@ -98,10 +96,21 @@ export function InventoryScreen({state,onEquip,onFood,onEat,onSell,onSalvage,onD
     {selectMode&&<Panel><View style={s.selectionHead}><View style={s.resultSummary}><Text style={s.selectionTitle}>BULK MANAGEMENT · {selectedIds.length} SELECTED</Text><Text style={s.sub}>Whole stacks only · up to 100 stacks per action</Text></View><View style={s.selectionQuick}><Pressable accessibilityRole="button" onPress={selectShown} style={({pressed})=>[s.selectionQuickButton,pressed&&s.pressed]}><Text style={s.selectionQuickText}>Select shown</Text></Pressable><Pressable accessibilityRole="button" disabled={!selectedIds.length} onPress={()=>setSelectedIds([])} style={({pressed})=>[s.selectionQuickButton,!selectedIds.length&&s.selectionQuickDisabled,pressed&&selectedIds.length>0&&s.pressed]}><Text style={s.selectionQuickText}>Clear</Text></Pressable></View></View><Text style={s.sub}>{location==='inventory'?'Favorites and enhanced gear are automatically excluded from disposal. Your selected auto-eat food also stays in Inventory.':'Withdraw selected moves complete Bank stacks back to this character.'}</Text><View style={s.bulkActions}><GameButton compact title={`${location==='inventory'?'Deposit':'Withdraw'} · ${selectionSummary.transferableStackCount}`} disabled={!selectionSummary.transferableStackCount} tone="secondary" onPress={()=>beginBulk('transfer')}/>{location==='inventory'&&<GameButton compact title={`Sell · ${selectionSummary.sellableStackCount} · ${formatGameNumber(selectionSummary.sellGold,state.settings.numberMode)}g`} disabled={!selectionSummary.sellableStackCount} tone="secondary" onPress={()=>beginBulk('sell')}/>} {location==='inventory'&&<GameButton compact title={`Salvage · ${selectionSummary.salvageableStackCount}`} disabled={!selectionSummary.salvageableStackCount} tone="danger" onPress={()=>beginBulk('salvage')}/>}</View>{selectedIds.length>0&&location==='inventory'&&(selectionSummary.sellProtectedCount>0||selectionSummary.transferProtectedCount>0)&&<Text style={s.selectionNote}>{selectionSummary.sellProtectedCount} selected stacks excluded from bulk sell{selectionSummary.transferProtectedCount?` · ${selectionSummary.transferProtectedCount} auto-eat stack protected from deposit`:``}.</Text>}</Panel>}
     {stacks.length?stacks.map(renderStack):<><EmptyState title="No items to show" message="Try another storage tab or clear the search and category filter."/><GameButton title="Clear filters" tone="secondary" onPress={()=>{setQuery('');setFilter('all')}}/></>}
     {overflowCount>0&&<Panel><Text style={s.title}>{ot(state.settings.language,'overflow.title')} · {overflowCount}</Text><Text style={s.warning}>{ot(state.settings.language,'overflow.body')}</Text>{state.overflow.stacks.map((stack,index)=><Text key={`${stack.itemId}:${index}`} style={s.sub}>{stack.quantity}× {itemDef(stack.itemId).name}</Text>)}{state.overflow.expiresAtMs!==null&&<Text style={s.warning}>Recorded expiry: {new Date(state.overflow.expiresAtMs).toLocaleString()}</Text>}<GameButton title={ot(state.settings.language,'overflow.move',{count:overflowCount-remaining})} disabled={remaining===overflowCount} onPress={()=>run(onOverflow)}/>{remaining>0&&<Text style={s.sub}>{ot(state.settings.language,'overflow.remain',{count:remaining})}</Text>}</Panel>}
-  </ScrollView><ConfirmModal visible={pending!==null} title={`${pending?.kind==='deposit'?'Bank':pending?.kind==='sell'?'Sell':'Salvage'} ${pending?.item.name??'item'}?`} message={message} confirmLabel={pending?.kind==='deposit'?'Deposit':pending?.kind==='sell'?'Sell 1':'Salvage 1'} danger={pending?.kind!=='deposit'} onConfirm={confirm} onCancel={()=>setPending(null)}/><ConfirmModal visible={bulkPending!==null} title={bulkPending?.kind==='transfer'?`${location==='inventory'?'Deposit':'Withdraw'} selected stacks?`:bulkPending?.kind==='sell'?'Sell selected items?':'Salvage selected equipment?'} message={bulkMessage} confirmLabel={bulkPending?.kind==='transfer'?(location==='inventory'?'Deposit selected':'Withdraw selected'):bulkPending?.kind==='sell'?'Sell eligible':'Salvage eligible'} danger={bulkPending?.kind!=='transfer'} onConfirm={confirmBulk} onCancel={()=>setBulkPending(null)}/></>;
+  </ScrollView>
+  <Modal visible={filterOpen} transparent animationType={state.settings.reduceMotion?'none':'slide'} onRequestClose={()=>setFilterOpen(false)}>
+    <View style={s.modalRoot}><Pressable accessibilityLabel="Close inventory filters" onPress={()=>setFilterOpen(false)} style={StyleSheet.absoluteFill}/>
+      <View style={s.filterSheet}>
+        <View style={s.sheetHeader}><View style={s.resultSummary}><Text style={s.sheetEyebrow}>INVENTORY VIEW</Text><Text style={s.sheetTitle}>Filter items</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Close filters" onPress={()=>setFilterOpen(false)} style={s.sheetClose}><Text style={s.sheetCloseText}>×</Text></Pressable></View>
+        <ScrollView style={s.filterList} contentContainerStyle={s.filterListContent}>
+          {FILTER_OPTIONS.map(option=>{const selected=filter===option.id,label=option.id==='new'&&activeNewCount?`New · ${activeNewCount}`:option.label;return <Pressable key={option.id} accessibilityRole="radio" accessibilityState={{selected}} onPress={()=>setFilter(option.id)} style={({pressed})=>[s.filterOption,selected&&s.filterOptionSelected,pressed&&s.pressed]}><Text style={[s.filterOptionText,selected&&s.filterOptionTextSelected]}>{label}</Text><Text style={[s.filterOptionMark,selected&&s.filterOptionMarkSelected]}>{selected?'✓':'›'}</Text></Pressable>})}
+        </ScrollView>
+        <View style={s.sheetActions}><View style={s.flex}><GameButton title="Reset" tone="secondary" onPress={()=>setFilter('all')}/></View><View style={s.flex}><GameButton title="Done" onPress={()=>setFilterOpen(false)}/></View></View>
+      </View>
+    </View>
+  </Modal>
+  <ConfirmModal visible={pending!==null} title={`${pending?.kind==='deposit'?'Bank':pending?.kind==='sell'?'Sell':'Salvage'} ${pending?.item.name??'item'}?`} message={message} confirmLabel={pending?.kind==='deposit'?'Deposit':pending?.kind==='sell'?'Sell 1':'Salvage 1'} danger={pending?.kind!=='deposit'} onConfirm={confirm} onCancel={()=>setPending(null)}/><ConfirmModal visible={bulkPending!==null} title={bulkPending?.kind==='transfer'?`${location==='inventory'?'Deposit':'Withdraw'} selected stacks?`:bulkPending?.kind==='sell'?'Sell selected items?':'Salvage selected equipment?'} message={bulkMessage} confirmLabel={bulkPending?.kind==='transfer'?(location==='inventory'?'Deposit selected':'Withdraw selected'):bulkPending?.kind==='sell'?'Sell eligible':'Salvage eligible'} danger={bulkPending?.kind!=='transfer'} onConfirm={confirmBulk} onCancel={()=>setBulkPending(null)}/></>;
 }
-function ChoiceChip({label,selected,onPress}:{label:string;selected:boolean;onPress:()=>void}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);return <Pressable accessibilityRole="button" accessibilityState={{selected}} onPress={onPress} style={({pressed})=>[s.chip,selected&&s.chipSelected,pressed&&s.pressed]}><Text style={[s.chipText,selected&&s.chipTextSelected]}>{selected?'✓ ':''}{label}</Text></Pressable>}
-function UtilityChip({label,accessibilityLabel,onPress}:{label:string;accessibilityLabel:string;onPress:()=>void}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);return <Pressable accessibilityRole="button" accessibilityLabel={accessibilityLabel} onPress={onPress} style={({pressed})=>[s.utilityChip,pressed&&s.pressed]}><Text numberOfLines={1} style={s.utilityChipText}>{label}</Text></Pressable>}
+function UtilityChip({label,accessibilityLabel,selected=false,onPress}:{label:string;accessibilityLabel:string;selected?:boolean;onPress:()=>void}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);return <Pressable accessibilityRole="button" accessibilityLabel={accessibilityLabel} accessibilityState={{selected}} onPress={onPress} style={({pressed})=>[s.utilityChip,selected&&s.utilityChipActive,pressed&&s.pressed]}><Text numberOfLines={1} style={[s.utilityChipText,selected&&s.utilityChipTextActive]}>{label}</Text></Pressable>}
 function StorageChip({label,selected,status,onPress}:{label:string;selected:boolean;status:ReturnType<typeof storageCapacityStatus>;onPress:()=>void}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),equipmentColors=equipmentTheme(C),tone=status.level==='full'?C.bad:status.level==='near'?C.warning:selected?equipmentColors.selectedLine:C.line,width=`${status.percent}%` as `${number}%`;return <Pressable accessibilityRole="button" accessibilityLabel={`${label} storage, ${status.used} of ${status.capacity} slots used, ${status.free} free`} accessibilityState={{selected}} onPress={onPress} style={({pressed})=>[s.storageChip,selected&&s.storageChipSelected,status.level==='full'&&s.storageChipFull,pressed&&s.pressed]}><View style={s.storageChipTop}><Text style={[s.storageChipLabel,selected&&s.chipTextSelected]}>{selected?'✓ ':''}{label}</Text><Text style={[s.storageChipCount,{color:tone}]}>{status.used}/{status.capacity}</Text></View><View style={s.capacityTrack}><View style={[s.capacityFill,{width,backgroundColor:tone}]}/></View></Pressable>}
 function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);return StyleSheet.create({
   recovery:{gap:4,padding:spacing.md,borderWidth:1,borderColor:C.line,borderRadius:10,backgroundColor:C.panel},
@@ -128,11 +137,6 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
   storageChipCount:{fontSize:11,fontWeight:'900'},
   capacityTrack:{height:4,overflow:'hidden',borderRadius:99,backgroundColor:C.bg},
   capacityFill:{height:4,borderRadius:99},
-  controlStrip:{gap:6,paddingRight:spacing.md},
-  chip:{minHeight:44,paddingHorizontal:12,justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.panel},
-  chipSelected:{borderColor:equipmentColors.selectedLine,backgroundColor:equipmentColors.selected},
-  chipText:{fontSize:12,color:C.muted,fontWeight:'700'},
-  chipTextSelected:{color:C.text},
   resultRow:{flexDirection:'row',alignItems:'center',gap:8},
   resultSummary:{flex:1,minWidth:0},
   markSeen:{minHeight:36,justifyContent:'center',paddingHorizontal:10,borderWidth:1,borderColor:C.info,borderRadius:99,backgroundColor:C.infoSurface},
@@ -150,10 +154,28 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
   selectionQuickText:{fontSize:10,color:C.text,fontWeight:'800'},
   bulkActions:{flexDirection:'row',flexWrap:'wrap',gap:8},
   selectionNote:{...typography.caption,color:C.warning},
-  utilityRow:{flexDirection:'row',gap:8},
+  utilityRow:{flexDirection:'row',gap:6},
   inspectHint:{...typography.caption,color:C.muted,textAlign:'center'},
-  utilityChip:{flex:1,minWidth:0,minHeight:44,alignItems:'center',justifyContent:'center',paddingHorizontal:10,borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.panel2},
-  utilityChipText:{fontSize:12,color:C.text,fontWeight:'800'},
+  utilityChip:{flex:1,minWidth:0,minHeight:44,alignItems:'center',justifyContent:'center',paddingHorizontal:8,borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.panel2},
+  utilityChipActive:{borderColor:C.selectionLine,backgroundColor:C.selection},
+  utilityChipText:{fontSize:11,color:C.text,fontWeight:'800'},
+  utilityChipTextActive:{color:C.selectionLine},
+  modalRoot:{flex:1,justifyContent:'flex-end',backgroundColor:C.overlay},
+  filterSheet:{maxHeight:'78%',paddingHorizontal:14,paddingTop:14,paddingBottom:20,backgroundColor:C.bg,borderTopWidth:2,borderTopColor:C.lineStrong,borderTopLeftRadius:18,borderTopRightRadius:18,gap:10},
+  sheetHeader:{flexDirection:'row',alignItems:'center',gap:10},
+  sheetEyebrow:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:1},
+  sheetTitle:{...typography.title,color:C.text},
+  sheetClose:{width:44,height:44,alignItems:'center',justifyContent:'center'},
+  sheetCloseText:{fontSize:28,lineHeight:30,color:C.muted},
+  filterList:{maxHeight:430},
+  filterListContent:{gap:5},
+  filterOption:{minHeight:44,flexDirection:'row',alignItems:'center',gap:10,paddingHorizontal:12,borderWidth:1,borderColor:C.line,borderRadius:10,backgroundColor:C.panel},
+  filterOptionSelected:{borderColor:C.selectionLine,backgroundColor:C.selection},
+  filterOptionText:{flex:1,...typography.bodyStrong,color:C.text},
+  filterOptionTextSelected:{color:C.text},
+  filterOptionMark:{fontSize:18,color:C.muted,fontWeight:'900'},
+  filterOptionMarkSelected:{color:C.selectionLine},
+  sheetActions:{flexDirection:'row',gap:8},
   pressed:{opacity:.76},
   flex:{flex:1,minWidth:148},
   input:{minHeight:44,paddingHorizontal:spacing.md,borderRadius:10,borderWidth:1,borderColor:C.line,color:C.text,backgroundColor:C.panel,fontSize:16}

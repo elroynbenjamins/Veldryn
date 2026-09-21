@@ -1,0 +1,60 @@
+import type {CoopCombatReplayCueView,CoopCombatReplayView} from './coop-presentation';
+
+export const DUNGEON_COMBAT_PLAYBACK=Object.freeze({
+  timeScale:.12,
+  minCueDelayMs:260,
+  maxCueDelayMs:950,
+  recentCueCount:3,
+  maximumCues:48,
+});
+
+export type DungeonPlaybackTone='neutral'|'selected'|'success'|'warning'|'danger';
+
+export function playbackCueTone(cue:CoopCombatReplayCueView):DungeonPlaybackTone{
+  switch(cue.type){
+    case 'victory': return 'success';
+    case 'wipe': case 'down': return 'danger';
+    case 'cast': return 'warning';
+    case 'action': return cue.actionKind==='heal'||cue.actionKind==='shield'?'success':'selected';
+    case 'phase': case 'interrupt': case 'assist': return 'selected';
+    case 'timeout': return 'warning';
+    default: return 'neutral';
+  }
+}
+
+export function playbackCueLabel(cue:CoopCombatReplayCueView):string{
+  const actor=cue.actorName?.trim(),target=cue.targetName?.trim(),ability=cue.abilityName?.trim(),amount=cue.amount===undefined?'':` · ${Math.round(cue.amount)}`;
+  switch(cue.type){
+    case 'action': {
+      if(cue.actionKind==='heal')return `${actor??'Support'} heals ${target??'ally'}${amount}`;
+      if(cue.actionKind==='shield')return `${actor??'Support'} shields ${target??'ally'}${amount}`;
+      if(ability==='Basic Attack')return `${actor??'Combatant'} attacks ${target??'target'}${amount}`;
+      return `${actor??'Combatant'} uses ${ability??'an ability'}${target?` on ${target}`:''}${amount}`;
+    }
+    case 'phase': return ability?`${actor??'Boss'} enters ${ability}`:`${actor??'Boss'} changes phase`;
+    case 'cast': return ability?`${actor??'Boss'} begins ${ability}`:`${actor??'Boss'} begins a cast`;
+    case 'interrupt': return ability?`${actor??'Party'} interrupts with ${ability}`:`${actor??'Party'} interrupts the cast`;
+    case 'assist': return ability?`${ability}`:`${actor??'Companion'} assist`;
+    case 'down': return `${target??actor??'Party member'} is downed`;
+    case 'victory': return 'Encounter cleared';
+    case 'wipe': return 'Party defeated';
+    case 'timeout': return 'Encounter timed out';
+  }
+}
+
+export function playbackCueDelayMs(current:CoopCombatReplayCueView,next:CoopCombatReplayCueView):number{
+  const gap=Math.max(0,next.atMs-current.atMs),scaled=Math.round(gap*DUNGEON_COMBAT_PLAYBACK.timeScale);
+  return Math.max(DUNGEON_COMBAT_PLAYBACK.minCueDelayMs,Math.min(DUNGEON_COMBAT_PLAYBACK.maxCueDelayMs,scaled));
+}
+
+export function playbackProgress(replay:CoopCombatReplayView,index:number):number{
+  if(!replay.cues.length)return replay.reason==='victory'?1:0;
+  const safe=Math.max(0,Math.min(index,replay.cues.length-1)),at=replay.cues[safe].atMs;
+  return replay.durationMs<=0?1:Math.max(0,Math.min(1,at/replay.durationMs));
+}
+
+export function playbackRecentCues(replay:CoopCombatReplayView,index:number):CoopCombatReplayCueView[]{
+  if(!replay.cues.length)return [];
+  const safe=Math.max(0,Math.min(index,replay.cues.length-1));
+  return replay.cues.slice(Math.max(0,safe-DUNGEON_COMBAT_PLAYBACK.recentCueCount+1),safe+1);
+}

@@ -11,10 +11,33 @@ export interface CoopRunBossMechanicView {
  telegraph?:{bossName:string;phases:CoopBossPhaseView[];castAbilities:CoopBossCastView[];suppressedAbilities:Array<{id:string;label:string}>};
 }
 export interface CoopRunBossRecapView {durationMs:number;downs:number;phasesTriggered:string[];abilitiesCast:string[];}
-export interface CoopRunView {runId:string;mode:CoopMode;modeLabel?:string;phase:string;syncedLevel:number;roleSlots:Array<{role:'tank'|'damage'|'support';name:string;echo:boolean;classId?:string;companionId?:string;currentHp?:number;maximumHp?:number;ready?:boolean}>;options:CoopRouteOptionView[];mechanic?:CoopRunMechanicView;objective?:CoopRunObjectiveView;bossMechanic?:CoopRunBossMechanicView;bossRecap?:CoopRunBossRecapView;rewardText?:string;stateVersion?:number;decisionId?:string;decisionRevision?:number;resolvesAtMs?:number;}
+export type CoopCombatReplayCueType='action'|'phase'|'cast'|'interrupt'|'down'|'assist'|'victory'|'wipe'|'timeout';
+export interface CoopCombatReplayCueView{
+ atMs:number;
+ type:CoopCombatReplayCueType;
+ actorId?:string;
+ actorName?:string;
+ targetId?:string;
+ targetName?:string;
+ abilityId?:string;
+ abilityName?:string;
+ durationMs?:number;
+ actionKind?:'damage'|'heal'|'shield';
+ amount?:number;
+}
+export interface CoopCombatReplayView{
+ nodeId:string;
+ reason:'victory'|'wipe'|'timeout';
+ durationMs:number;
+ cues:CoopCombatReplayCueView[];
+}
+export interface CoopRunView {runId:string;mode:CoopMode;modeLabel?:string;phase:string;syncedLevel:number;roleSlots:Array<{memberId?:string;role:'tank'|'damage'|'support';name:string;echo:boolean;classId?:string;companionId?:string;currentHp?:number;maximumHp?:number;ready?:boolean}>;options:CoopRouteOptionView[];mechanic?:CoopRunMechanicView;objective?:CoopRunObjectiveView;bossMechanic?:CoopRunBossMechanicView;bossRecap?:CoopRunBossRecapView;lastCombat?:CoopCombatReplayView;rewardText?:string;stateVersion?:number;decisionId?:string;decisionRevision?:number;resolvesAtMs?:number;}
 export function validateCoopRunView(view:CoopRunView):void{
  if(view.roleSlots.length!==4||view.roleSlots.filter(slot=>slot.role==='tank').length!==1||view.roleSlots.filter(slot=>slot.role==='damage').length!==2||view.roleSlots.filter(slot=>slot.role==='support').length!==1)throw new Error('invalid_role_slots');
  if(!Number.isInteger(view.syncedLevel)||view.syncedLevel<1||view.roleSlots.some(slot=>!slot.name.trim()))throw new Error('invalid_run_summary');
+ const memberIds=view.roleSlots.map(slot=>slot.memberId?.trim()).filter((value):value is string=>Boolean(value));
+ if(memberIds.length!==new Set(memberIds).size)throw new Error('invalid_member_ids');
+ if(view.roleSlots.some(slot=>slot.memberId!==undefined&&!slot.memberId.trim()))throw new Error('invalid_member_ids');
  if(view.roleSlots.some(slot=>slot.companionId!==undefined&&!slot.companionId.trim()))throw new Error('invalid_companion_assist');
  if(view.roleSlots.some(slot=>slot.currentHp!==undefined&&(!Number.isFinite(slot.currentHp)||slot.currentHp<0)||slot.maximumHp!==undefined&&(!Number.isFinite(slot.maximumHp)||slot.maximumHp<=0)||slot.currentHp!==undefined&&slot.maximumHp!==undefined&&slot.currentHp>slot.maximumHp))throw new Error('invalid_party_health');
  const damageClasses=view.roleSlots.filter(slot=>slot.role==='damage'&&slot.classId?.trim()).map(slot=>slot.classId!.trim().toUpperCase());
@@ -30,5 +53,15 @@ export function validateCoopRunView(view:CoopRunView):void{
   if(!t.bossName.trim()||t.phases.some(phase=>!phase.id.trim()||!phase.label.trim()||!Number.isFinite(phase.hpPct)||phase.hpPct<=0||phase.hpPct>=100)||t.castAbilities.some(ability=>!ability.id.trim()||!ability.label.trim()||!Number.isFinite(ability.castMs)||ability.castMs<0||!Number.isFinite(ability.cooldownMs)||ability.cooldownMs<0)||t.suppressedAbilities.some(ability=>!ability.id.trim()||!ability.label.trim()))throw new Error('invalid_boss_telegraph');
  }
  if(view.bossRecap&&(!Number.isFinite(view.bossRecap.durationMs)||view.bossRecap.durationMs<0||!Number.isInteger(view.bossRecap.downs)||view.bossRecap.downs<0||view.bossRecap.phasesTriggered.some(item=>!item.trim())||view.bossRecap.abilitiesCast.some(item=>!item.trim())))throw new Error('invalid_boss_recap');
+ if(view.lastCombat){
+  const replay=view.lastCombat,types=new Set<CoopCombatReplayCueType>(['action','phase','cast','interrupt','down','assist','victory','wipe','timeout']);
+  if(!replay.nodeId.trim()||!['victory','wipe','timeout'].includes(replay.reason)||!Number.isFinite(replay.durationMs)||replay.durationMs<0||replay.cues.length>48)throw new Error('invalid_combat_replay');
+  let previous=-1;
+  for(const cue of replay.cues){
+   if(!Number.isFinite(cue.atMs)||cue.atMs<0||cue.atMs>replay.durationMs||cue.atMs<previous||!types.has(cue.type)||cue.durationMs!==undefined&&(!Number.isFinite(cue.durationMs)||cue.durationMs<0)||cue.amount!==undefined&&(!Number.isFinite(cue.amount)||cue.amount<0)||cue.actionKind!==undefined&&!['damage','heal','shield'].includes(cue.actionKind))throw new Error('invalid_combat_replay');
+   if([cue.actorId,cue.actorName,cue.targetId,cue.targetName,cue.abilityId,cue.abilityName].some(value=>value!==undefined&&!value.trim()))throw new Error('invalid_combat_replay');
+   previous=cue.atMs;
+  }
+ }
 }
 export function liveAffordances(mode:CoopMode):{ready:boolean;votes:boolean;chat:boolean}{return mode==='live'?{ready:true,votes:true,chat:true}:{ready:false,votes:false,chat:false};}

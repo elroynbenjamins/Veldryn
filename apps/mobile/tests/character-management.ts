@@ -40,7 +40,7 @@ function two(){return createAccountCharacter(first(),'BASTION','Rowan','male',11
  equal(rerolled.bank.stacks,[{itemId:'COPPER_ORE',quantity:7}],'reroll preserves shared Bank');
  equal(rerolled.account.premiumCurrencyBalance,321,'reroll preserves account currency');
  equal(unlockedCharacterSlots(rerolled),2,'reroll does not relock an earned slot after skill reset');
- equal(rerolled.account.createdCharacterCount,createdCount+1,'reroll advances lifetime character count');
+ equal(rerolled.account.createdCharacterCount,createdCount,'reroll does not advance character-creation milestones');
  ok(accountCharacters(rerolled).some(entry=>entry.character.name==='Mira'),'other characters survive reroll');
 }
 {

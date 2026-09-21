@@ -1,0 +1,38 @@
+name: Sync online gameplay bundle
+
+on:
+  push:
+    branches:
+      - codex/safe-character-management-gem-refinement
+
+permissions:
+  contents: write
+
+jobs:
+  sync-gameplay-bundle:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: backend/pnpm-lock.yaml
+      - run: pnpm --dir backend install --frozen-lockfile
+      - run: node tools/build-online.mjs
+      - name: Commit generated gameplay bundle
+        shell: bash
+        run: |
+          if git diff --quiet -- backend/supabase/functions/gameplay/index.ts; then
+            echo "Gameplay bundle already synchronized."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backend/supabase/functions/gameplay/index.ts
+          git commit -m "Rebuild online gameplay bundle"
+          git push

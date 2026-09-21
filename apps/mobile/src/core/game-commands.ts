@@ -10,7 +10,7 @@ import * as companions from './combat-companions';
 import {normalizeTrainingFocus} from './class-skills';
 import {reserveFaithPractice,updateFaithPreference} from './faith';
 import {executeCompanionActivity,refreshCompanions,assertCompanionIdle,claimCompanionTraining} from './companion-runtime';
-import {createAccountCharacter,switchAccountCharacter} from './account-actions';
+import {createAccountCharacter,deleteAccountCharacter,rerollAccountCharacter,switchAccountCharacter} from './account-actions';
 import {CLASSES} from '../content/classes';
 import {applyCharacterLoadout,deleteCharacterLoadout,saveCharacterLoadout} from './character-loadouts';
 import {normalizeProgressionGoals} from './progression-goals-v40';
@@ -33,7 +33,7 @@ const fields:Record<string,readonly string[]>={
  companion_equip:['id'],companion_unequip:[],companion_level:['id'],companion_ascend:['id'],companion_master:['id'],companion_upgrade:['id'],companion_training:[],companion_essence:[],
  companion_trial_start:['ids','floor'],companion_trial_floor:['id','floor'],companion_trial_abandon:['id'],companion_assignment_start:['id','ids'],companion_assignment_claim:['id'],companion_technique:['id','technique'],companion_codex:['id'],companion_showcase:['id','ids'],companion_weekly:['id'],companion_special:['id','ids'],
  create:['classId','name','body'],claim:[],start:['kind','id','challengeId','tacticId','goalId'],queue_add:['kind','id','challengeId','tacticId','goalId'],queue_remove:['index'],queue_move:['index','direction'],queue_clear:[],queue_start:[],explore:['id'],stop:[],travel:['id'],boss:[],craft:['id'],use_potion:['id'],discard_preparation:[],
- roster_create:['classId','name','body'],roster_switch:['id'],
+ roster_create:['classId','name','body'],roster_switch:['id'],roster_reroll:['id','classId','name','body','confirmation'],roster_delete:['id','confirmation'],
  equip:['id'],unequip:['slot'],food:['id'],eat:['id'],sell:['id','quantity'],salvage:['id'],
  deposit:['id','quantity'],withdraw:['id','quantity'],deposit_materials:[],bulk_transfer:['location','ids'],bulk_sell:['ids'],bulk_salvage:['ids'],storage:['location'],overflow:[],
  equip_tool:['id'],equip_set:[],upgrade:['id'],socket:['id','gemId'],unsocket:['id','index'],skin:['id'],
@@ -47,12 +47,12 @@ export function validateGameCommand(value:unknown):GameCommand{
  const row=value as Record<string,unknown>;
  if(Object.keys(row).some(key=>key!=='type'&&key!=='args')||typeof row.type!=='string'||!Object.prototype.hasOwnProperty.call(fields,row.type))throw new Error('invalid_command');
  const args=row.args??{};if(!args||typeof args!=='object'||Array.isArray(args)||Object.keys(args).some(key=>!fields[row.type as string].includes(key)))throw new Error('invalid_command_arguments');
- if(row.type==='create'||row.type==='roster_create'){
+ if(row.type==='create'||row.type==='roster_create'||row.type==='roster_reroll'){
   const creation=args as Record<string,unknown>;
   oneOf(creation.classId,CLASSES.map(item=>item.id));
   oneOf(creation.body??'male',['male','female']);
  }
- if(row.type==='roster_switch'&&typeof (args as Record<string,unknown>).id!=='string')throw new Error('invalid_id');
+ if(['roster_switch','roster_reroll','roster_delete'].includes(row.type)&&typeof (args as Record<string,unknown>).id!=='string')throw new Error('invalid_id');
  if(row.type==='start'||row.type==='queue_add'){const start=args as Record<string,unknown>;oneOf(start.kind,['combat','gathering']);if(start.challengeId!==undefined)oneOf(start.challengeId,COMBAT_CHALLENGE_IDS);if(start.tacticId!==undefined)oneOf(start.tacticId,COMBAT_TACTIC_IDS);if(start.goalId!==undefined)oneOf(start.goalId,HUNT_GOAL_IDS);if(start.kind!=='combat'&&(start.challengeId!==undefined||start.tacticId!==undefined||start.goalId!==undefined))throw new Error('invalid_combat_activity_option');}
  if(row.type==='bulk_transfer'){const bulk=args as Record<string,unknown>;oneOf(bulk.location,['inventory','bank']);stringArray(bulk,'ids');}
  if(row.type==='bulk_sell'||row.type==='bulk_salvage')stringArray(args as Record<string,unknown>,'ids');
@@ -96,7 +96,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
  const credit=(source:GameState['activity'],earned:RewardBundle)=>{if(source&&earned.kills>0)contributions.push({kind:source.kind==='combat'?'combat':'gathering',contentId:source.targetId,units:earned.kills,startedAtMs:Math.max(source.lastClaimAtMs,now-earned.elapsedSeconds*1000),...(source.kind==='combat'&&source.combatChallengeId?{challengeId:source.combatChallengeId}: {})});};
  const settle=()=>{const source=state.activity,result=game.claimActivity(state,now);state=result.state;reward=result.reward;credit(source,result.reward);};
  // Settle before any mutation that can alter past activity rates, food, gear or inventory.
- const settlementFreeCommand=command.type==='queue_add'||command.type==='queue_remove'||command.type==='queue_move'||command.type==='queue_clear'||command.type==='queue_start'||command.type==='daily_supplies_claim';
+ const settlementFreeCommand=command.type==='queue_add'||command.type==='queue_remove'||command.type==='queue_move'||command.type==='queue_clear'||command.type==='queue_start'||command.type==='daily_supplies_claim'||command.type==='roster_reroll'||command.type==='roster_delete';
  if(state.character&&command.type!=='create'&&!settlementFreeCommand)settle();
  state=refreshCompanions(state,now);
  const companionMetricBefore=command.type.startsWith('companion_')?companionCommandEconomySnapshot(state):undefined;
@@ -141,6 +141,8 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
    break;
   }
   case 'roster_switch':state=switchAccountCharacter(state,text(a,'id'),now);break;
+  case 'roster_reroll':state=rerollAccountCharacter(state,text(a,'id'),text(a,'classId') as ClassId,text(a,'name',20),oneOf(a.body??'male',['male','female']) as BodyPresentation,text(a,'confirmation',20),now,options.characterId);break;
+  case 'roster_delete':state=deleteAccountCharacter(state,text(a,'id'),text(a,'confirmation',20),now);break;
   case 'claim':break;
   case 'queue_add':{const kind=oneOf(a.kind,['combat','gathering']),combatChallengeId=a.challengeId===undefined?undefined:oneOf(a.challengeId,COMBAT_CHALLENGE_IDS),combatTacticId=a.tacticId===undefined?undefined:oneOf(a.tacticId,COMBAT_TACTIC_IDS),huntGoalId=a.goalId===undefined?undefined:oneOf(a.goalId,HUNT_GOAL_IDS);state=enqueueActivity(state,{kind,targetId:text(a,'id'),...(combatChallengeId?{combatChallengeId}:{}),...(combatTacticId?{combatTacticId}:{}),...(huntGoalId?{huntGoalId}:{})});break;}
   case 'queue_remove':state=removeQueuedActivity(state,integer(a,'index',0,2));break;

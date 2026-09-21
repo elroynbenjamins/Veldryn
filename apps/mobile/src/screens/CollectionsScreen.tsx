@@ -57,7 +57,7 @@ export function CollectionsScreen({state,onChange}:{state:GameState;onChange:(ne
             <Text style={s.copy}>{row.owned?<Text style={s.ownedWord}>Owned</Text>:<Text style={s.lockedWord}>Locked</Text>} · {row.source}</Text>
             <Text style={s.bonusText}>{COLLECTIBLE_TARGET_LABELS[row.target]} · +{pct(row.activeBps)} active</Text>
           </View>
-          <GameButton title={row.selected?'Selected':row.owned?'Use':'Locked'} disabled={!row.owned||row.selected} tone="secondary" onPress={()=>onChange(selectCollectible(state,kind,row.id))}/>
+          <GameButton compact title={row.selected?'Selected':row.owned?'Use':'Locked'} disabled={!row.owned||row.selected} tone="secondary" onPress={()=>onChange(selectCollectible(state,kind,row.id))}/>
         </View>)}
       </Panel>;
     })}

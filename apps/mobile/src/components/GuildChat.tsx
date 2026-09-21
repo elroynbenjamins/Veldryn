@@ -12,10 +12,10 @@ import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {Language,ot} from '../i18n';
 import {onlineConfigured} from '../online/supabase';
-import {chatEmoteCount,chatUnavailableEmoteIds} from '../core/chat-emotes';
+import {CHAT_MAX_EMOTES_PER_MESSAGE,chatEmoteCount,chatUnavailableEmoteIds} from '../core/chat-emotes';
 import {guildChatCommandKey,guildChatState,guildRoster,markSocialChatRead,sendGuildChat,type GuildChatMessage,type GuildChatState} from '../online/social';
 
-export function GuildChat({language,currentPlayerName,unlockedEmoteIds=[],firstUnreadMessageId,onRead}:{language:Language;currentPlayerName?:string;unlockedEmoteIds?:readonly string[];firstUnreadMessageId?:string;onRead?:()=>void}){
+export function GuildChat({language,currentPlayerName,unlockedEmoteIds=[],trayIds=[],bodyPresentation='male',onTrayChange,firstUnreadMessageId,onRead}:{language:Language;currentPlayerName?:string;unlockedEmoteIds?:readonly string[];trayIds?:readonly string[];bodyPresentation?:'male'|'female';onTrayChange?:(ids:string[])=>void|Promise<void>;firstUnreadMessageId?:string;onRead?:()=>void}){
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [snapshot,setSnapshot]=useState<GuildChatState|null>(null),[selected,setSelected]=useState<GuildChatMessage|null>(null),[body,setBody]=useState(''),[mentionNames,setMentionNames]=useState<string[]>([]),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const pending=useRef<{body:string;key:string}|null>(null);
@@ -28,7 +28,7 @@ export function GuildChat({language,currentPlayerName,unlockedEmoteIds=[],firstU
  const guild=snapshot?.guild??null,messages=snapshot?.messages??[];
  const send=async()=>{
   const clean=body.trim();if(!clean||busy||!guild)return;
-  if(chatEmoteCount(clean)>8){Alert.alert('Guild chat','Use at most 8 emotes in one message.');return}const locked=chatUnavailableEmoteIds(clean,unlockedEmoteIds);if(locked.length){Alert.alert('Guild chat','One or more emotes in this message are still locked.');return}
+  if(chatEmoteCount(clean)>CHAT_MAX_EMOTES_PER_MESSAGE){Alert.alert('Guild chat','Use at most 2 emotes in one message.');return}const locked=chatUnavailableEmoteIds(clean,unlockedEmoteIds);if(locked.length){Alert.alert('Guild chat','One or more emotes in this message are still locked.');return}
   if(pending.current?.body!==clean)pending.current={body:clean,key:guildChatCommandKey()};
   setBusy(true);setError('');
   try{await sendGuildChat(clean,pending.current.key);const next=await guildChatState();if(active.current){setSnapshot(next);setBody('');pending.current=null;}}
@@ -46,7 +46,7 @@ export function GuildChat({language,currentPlayerName,unlockedEmoteIds=[],firstU
    </View>}/>
   {!!error&&<View accessibilityRole="alert" style={s.errorCard}><Text style={s.errorLabel}>GUILD CHAT UNAVAILABLE</Text><Text style={s.error}>{error}</Text><GameButton compact title="Retry" tone="secondary" disabled={busy} onPress={()=>void load()}/></View>}
   <ChatMentionSuggestions value={body} names={mentionNames} currentName={currentPlayerName} onChange={setBody}/>
-  <View style={s.compose}><TextInput accessibilityLabel="Guild message" value={body} onChangeText={setBody} onSubmitEditing={()=>void send()} maxLength={300} placeholder={ot(language,'chat.placeholder')} style={s.input}/><ChatEmotePicker unlockedIds={unlockedEmoteIds} onPick={token=>setBody(value=>(value+token).slice(0,300))}/><View style={s.send}><GameButton compact title={busy?'…':ot(language,'chat.send')} disabled={busy||!body.trim()||!guild} onPress={()=>void send()}/></View></View>
+  <View style={s.compose}><TextInput accessibilityLabel="Guild message" value={body} onChangeText={setBody} onSubmitEditing={()=>void send()} maxLength={300} placeholder={ot(language,'chat.placeholder')} style={s.input}/><ChatEmotePicker unlockedIds={unlockedEmoteIds} trayIds={trayIds} bodyPresentation={bodyPresentation} usedCount={chatEmoteCount(body)} onTrayChange={onTrayChange} onPick={token=>setBody(value=>(value+token).slice(0,300))}/><View style={s.send}><GameButton compact title={busy?'…':ot(language,'chat.send')} disabled={busy||!body.trim()||!guild} onPress={()=>void send()}/></View></View>
   <ChatPlayerSheet message={selected?{...selected,message_id:selected.id}:null} onClose={()=>setSelected(null)} onBlocked={blockedId=>setSnapshot(current=>current?{...current,messages:current.messages.filter(message=>message.account_id!==blockedId)}:current)}/>
  </View>;
 }

@@ -7,6 +7,7 @@ import {MONSTERS} from '../../apps/mobile/src/content/monsters';
 
 export interface GameplayServices{
  authenticate(token:string):Promise<string|null>;
+ adminQa?(token:string):Promise<boolean>;
  rpc<T>(name:string,args:Record<string,unknown>):Promise<T>;
  randomId():string;randomRoll():number;
 }
@@ -24,13 +25,16 @@ export function gameplayHandler(services:GameplayServices){return async(request:
   const bearer=request.headers.get('authorization')?.match(/^Bearer (\S+)$/i)?.[1];
   if(!bearer)return json({error:'auth_required'},401);
   const accountId=await services.authenticate(bearer);if(!accountId)return json({error:'invalid_session'},401);
+  const adminQa=await services.adminQa?.(bearer)??false;
   if(request.method==='GET'){try{await services.rpc('record_player_activity_server_v1',{p_account_id:accountId,p_kind:'foreground'});}catch{/* Activity analytics are best-effort and must never block gameplay. */}}
   let body:Record<string,unknown>|undefined,command:ReturnType<typeof validateGameCommand>|undefined,requestHash:string|undefined;
   if(request.method==='POST'){
    const raw=await request.text();if(raw.length>16384)return json({error:'request_too_large'},413);
    try{body=JSON.parse(raw);}catch{throw new GameplayError('invalid_json');}if(!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).some(key=>!['requestId','expectedVersion','command'].includes(key)))throw new GameplayError('invalid_request');
    if(typeof body.requestId!=='string'||!/^[a-zA-Z0-9_-]{8,128}$/.test(body.requestId)||!Number.isSafeInteger(body.expectedVersion)||(body.expectedVersion as number)<0)throw new GameplayError('invalid_request');
-   try{command=validateGameCommand(body.command);}catch(e){throw new GameplayError(e instanceof Error?e.message:'invalid_command');}requestHash=await hash(canonical(command));
+   try{command=validateGameCommand(body.command);}catch(e){throw new GameplayError(e instanceof Error?e.message:'invalid_command');}
+   if(command.type.startsWith('qa_')&&!adminQa)throw new GameplayError('admin_qa_required',403);
+   requestHash=await hash(canonical(command));
    try{await services.rpc('record_player_activity_server_v1',{p_account_id:accountId,p_kind:command.type.startsWith('event_')?'event_action':'gameplay_action'});}catch{/* Activity analytics are best-effort and must never block gameplay. */}
    const prior=await services.rpc<{response:unknown;requestHash:string}|null>('read_online_game_receipt_server_v1',{p_account_id:accountId,p_request_id:body.requestId});
    if(prior){if(prior.requestHash!==requestHash)return json({error:'idempotency_key_conflict'},409);return json(prior.response);}
@@ -53,9 +57,9 @@ export function gameplayHandler(services:GameplayServices){return async(request:
    const guard=await services.rpc<{blocked:boolean;reason?:string}>('character_delete_coop_guard_server_v1',{p_account_id:accountId,p_character_id:characterId});
    if(guard?.blocked)throw new GameplayError(guard.reason??'Leave co-op before deleting this character.');
   }
-  let result;try{result=executeGameCommand(state,command,loaded.serverNow,{characterId:command.type==='create'||command.type==='roster_create'?services.randomId():loaded.characterId??services.randomId(),randomRoll:services.randomRoll(),accountId,eventId:String(body.requestId)});}catch(e){throw new GameplayError(e instanceof Error?e.message:'invalid_command');}
+  let result;try{result=executeGameCommand(state,command,loaded.serverNow,{characterId:command.type==='create'||command.type==='roster_create'||(command.type==='qa_prepare'&&!loaded.characterId)?services.randomId():loaded.characterId??services.randomId(),randomRoll:services.randomRoll(),accountId,eventId:String(body.requestId),adminQa});}catch(e){throw new GameplayError(e instanceof Error?e.message:'invalid_command');}
   // Translate verified actions using the same current content as the simulation, never client weights.
-  const contributions=result.contributions.map(event=>{
+  const contributions=(adminQa?[]:result.contributions).map(event=>{
    let metric='',units=event.units;
    if(event.kind==='gathering'){const target=[...GATHERING,...HERB_NODES].find(row=>row.id===event.contentId);if(!target)throw new Error('unknown_gathering');metric='verified_weighted_gather_actions';units*=target.seconds/22;}
    else if(event.kind==='crafting'){metric='verified_weighted_crafts';const recipe=RECIPES.find(row=>row.id===event.contentId);if(!recipe)throw new Error('unknown_recipe');}

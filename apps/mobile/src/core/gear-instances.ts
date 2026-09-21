@@ -109,8 +109,25 @@ export function migrateToPerInstanceGear(state:GameState):GameState{
   };
   if(state.character)applyLegacyEnhancements(state.character);
   for(const entry of state.otherCharacters??[])applyLegacyEnhancements(entry.character);
-  const active=state.character?{...state.character,equipmentInstanceIds:equipmentIdsByOwner.get(state.character.id)??{},gearEnhancements:undefined}:null;
-  const others=(state.otherCharacters??[]).map(entry=>({...entry,character:{...entry.character,equipmentInstanceIds:equipmentIdsByOwner.get(entry.character.id)??{},gearEnhancements:undefined}}));
+  const withLoadoutInstances=(character:CharacterState)=>{
+    const equipped=equipmentIdsByOwner.get(character.id)??{};
+    const savedLoadouts=character.savedLoadouts?.map(preset=>{
+      const ids={...(preset.equipmentInstanceIds??{})};
+      for(const slot of GEAR_SLOTS){
+        const itemId=preset.equipment[slot];if(!itemId)continue;
+        const valid=ids[slot]&&assigned.some(instance=>instance.id===ids[slot]&&instance.itemId===itemId);
+        if(valid)continue;
+        const current=character.equipment[slot]===itemId?equipped[slot]:undefined;
+        const fallback=assigned.filter(instance=>instance.itemId===itemId&&(instance.ownerCharacterId===character.id||instance.location==='bank'))
+          .sort((a,b)=>(a.location==='inventory'?0:a.location==='equipped'?1:2)-(b.location==='inventory'?0:b.location==='equipped'?1:2)||a.createdAtMs-b.createdAtMs||a.id.localeCompare(b.id))[0]?.id;
+        if(current||fallback)ids[slot]=current??fallback;
+      }
+      return {...preset,equipmentInstanceIds:ids};
+    });
+    return {...character,equipmentInstanceIds:equipped,gearEnhancements:undefined,savedLoadouts};
+  };
+  const active=state.character?withLoadoutInstances(state.character):null;
+  const others=(state.otherCharacters??[]).map(entry=>({...entry,character:withLoadoutInstances(entry.character)}));
   return {...state,character:active,otherCharacters:others,account:{...state.account,gearInstances:assigned.slice(-MAX_GEAR_INSTANCES),craftedGearInstances:undefined,nextGearInstanceSerial:serial}};
 }
 export const ensureGearInstances=migrateToPerInstanceGear;

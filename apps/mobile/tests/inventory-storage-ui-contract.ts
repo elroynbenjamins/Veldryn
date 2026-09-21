@@ -25,5 +25,7 @@ ok(normalization.includes('favoriteItemIds:stringList')&&commands.includes('resu
 ok(card.includes('accentColor={meta.color}')&&card.includes('borderWidth={meta.borderWidth}'),'Inventory cards must use rarity frame metadata');
 ok(artwork.includes('borderWidth:framed?meta.borderWidth:0'),'Framed equipment art must use rarity border strength');
 ok(slot.includes('borderWidth:meta.borderWidth'),'Equipped item slots must use rarity border strength');
+ok(card.includes('rarityNameColor')&&card.includes("fontWeight:'800'"),'Inventory item names must use bold accessible rarity emphasis');
+ok(slot.includes('rarityNameColor')&&slot.includes("fontWeight:'800'"),'Equipment slot names must use bold accessible rarity emphasis');
 
-console.log('PASS: compact themed inventory/bank controls, favorites, capacity feedback and rarity frame contract');
+console.log('PASS: compact themed inventory/bank controls, favorites, capacity feedback, rarity frames and rarity-colored names');

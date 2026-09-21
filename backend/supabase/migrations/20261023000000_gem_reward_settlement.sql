@@ -120,7 +120,7 @@ begin
  -- Serialize with normal online gameplay commits before mutating authoritative state.
  perform pg_advisory_xact_lock(hashtextextended('party-account:'||new.recipient_account_id::text,0));
  select g.state into v_state from public.online_game_states g where g.account_id=new.recipient_account_id for update;
- if not found or v_state is null then return new;end if;
+ if not found or v_state is null then raise exception 'ONLINE_GAME_STATE_REQUIRED_FOR_GEM_SETTLEMENT';end if;
 
  case v_source
   when 'COP_004' then v_families:=array['effect_bulwark','effect_retaliation','effect_predator','stat_iron'];v_effect_families:=array['effect_bulwark','effect_retaliation','effect_predator'];
@@ -183,7 +183,7 @@ begin
    v_live_clears:=least(3,coalesce((v_cache->>'liveClears')::integer,0)+1);
    v_cache:=v_cache||jsonb_build_object('weekKey',v_week_text,'liveClears',v_live_clears,'claimed',coalesce((v_cache->>'claimed')::boolean,false));
 
-   if v_live_clears>=3 and jsonb_array_length(coalesce(v_cache->'effectChoices','[]'::jsonb))<3 then
+   if v_live_clears>=3 and (jsonb_typeof(v_cache->'effectChoices') is distinct from 'array' or jsonb_array_length(v_cache->'effectChoices')<3) then
     select array_agg(family order by public.veldryn_hash_roll_v1(new.id::text||':cache-choice:'||family))
       into v_choices from unnest(v_all_effects) as f(family);
     v_choices:=v_choices[1:3];

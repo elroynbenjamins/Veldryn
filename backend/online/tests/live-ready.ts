@@ -15,7 +15,7 @@ async function main(){
   const record=deriveOnlineCoopLoadout(accountId,state,1),snapshot=resolveAndFreezeLoadout({accountId,characterId:state.character!.id,loadoutId:'current',expectedRevision:1,minLevel:15,syncLevel:25,repository:{getOwnedLoadout:()=>record}});
   return {accountId,characterId:record.characterId,loadoutId:'current',loadoutRevision:1,loadoutSnapshotHash:snapshot.snapshotHash,state,version:1,role:snapshot.readiness.role};
  });
- const tickets:CoopQueueTicket[]=members.map((row,index)=>({id:'ticket-'+index,accountId:row.accountId,characterId:row.characterId,role:row.role,normalizedReadiness:1,loadoutId:'current',loadoutRevision:1,loadoutSnapshotHash:row.loadoutSnapshotHash,expeditionId:'EXP_001',tier:1,contentVersion:'v1',balanceVersion:'v1',serviceRegion:'default',enqueuedAtMs:0,heartbeatExpiresAtMs:30000,status:'queued'}));
+ const maxTiers=[5,3,4,3] as const;const tickets:CoopQueueTicket[]=members.map((row,index)=>({id:'ticket-'+index,accountId:row.accountId,characterId:row.characterId,role:row.role,normalizedReadiness:1,loadoutId:'current',loadoutRevision:1,loadoutSnapshotHash:row.loadoutSnapshotHash,expeditionId:'EXP_001',tier:maxTiers[index],contentVersion:'v1',balanceVersion:'v1',serviceRegion:'default',enqueuedAtMs:0,heartbeatExpiresAtMs:30000,status:'queued'}));
  const replacement={...tickets[3],id:'replacement',accountId:'replacement',characterId:'replacement',enqueuedAtMs:100};
  assert.equal(chooseBoundedCoopMatch([...tickets,replacement],1000,8,['replacement'])!.ticketIds.includes('replacement'),true);
  assert.equal(chooseBoundedCoopMatch(tickets,1000,8,['missing']),null);
@@ -37,7 +37,7 @@ async function main(){
    throw new Error('unexpected_rpc:'+name);
   }};
  const service=new OnlineLiveReady(services);
- await service.match(members[0].accountId);assert.equal((calls.find(x=>x.name==='open_online_live_ready_server_v1')!.args.p_ticket_ids as string[]).length,4);
+ await service.match(members[0].accountId);assert.equal((calls.find(x=>x.name==='open_online_live_ready_server_v1')!.args.p_ticket_ids as string[]).length,4,'mixed maximum tiers should share one live dungeon queue');
  const command={requestId:'ready-accept-01',rosterRevision:1,accept:true};
  await service.respond(members[0].accountId,checkId,command);
  const frozen=calls.find(x=>x.name==='respond_online_live_ready_server_v1')!.args.p_frozen_roster as Array<{snapshotHash:string}>;

@@ -33,7 +33,7 @@ function managementBlocker(slot:CharacterSlot){
  if((slot.character.activityQueue?.length??0)>0) return 'Clear this character\'s action queue first.';
  if(slot.overflow.stacks.length>0) return 'Claim this character\'s overflow before continuing.';
  if(Object.values(slot.character.equippedToolIds??{}).some(Boolean)) return 'Unequip this character\'s gathering tools first.';
- if(Object.values(slot.character.gearEnhancements??{}).some(value=>(value?.rank??0)>0||(value?.gemIds?.length??0)>0)) return 'Enhanced or socketed equipment is protected. Extract gems and resolve upgrades before continuing.';
+ if(Object.values(slot.character.gearEnhancements??{}).some(value=>(value?.gemIds?.length??0)>0)) return 'Socketed gems are protected. Extract them before continuing.';
  return undefined;
 }
 export function characterManagementBlocker(state:GameState,id:string){
@@ -48,10 +48,10 @@ export function createAccountCharacter(state:GameState,classId:ClassId,name:stri
  return mergeSeenItems(next,fresh.seenItemIds);
 }
 
-export function rerollAccountCharacter(state:GameState,id:string,classId:ClassId,name:string,body:BodyPresentation,confirmation:string,now:number){
+export function rerollAccountCharacter(state:GameState,id:string,classId:ClassId,name:string,body:BodyPresentation,confirmation:string,now:number,replacementId?:string){
  const target=targetSlot(state,id);exactConfirmation(target.slot.character.name,confirmation);
  const blocked=managementBlocker(target.slot);if(blocked)throw new Error(blocked);
- const preserved=recordAccountProgress(state),newId=nextLocalCharacterId(preserved),fresh=freshSlot(classId,name,body,now,newId);
+ const preserved=recordAccountProgress(state),newId=replacementId??nextLocalCharacterId(preserved),fresh=freshSlot(classId,name,body,now,newId);
  const account={...preserved.account,createdCharacterCount:Math.max(preserved.account.createdCharacterCount+1,accountCharacters(preserved).length+1)};
  const next:GameState=target.active
   ?{...preserved,character:fresh.slot.character,inventory:fresh.slot.inventory,overflow:fresh.slot.overflow,activity:fresh.slot.activity,skills:fresh.slot.skills,quests:fresh.slot.quests,currentRegionId:fresh.slot.currentRegionId,account}

@@ -7,6 +7,7 @@ import {bestStoredGearInstance,CRAFTED_GEAR_RARITY_CHANCES,CRAFTED_GEAR_STAT_MUL
 import {itemRarity} from '../src/core/item-rarity';
 import {normalizeSave} from '../src/core/save-normalization';
 import {totalXpAtLevel} from '../src/core/progression';
+import {characterDeleteConfirmation,createAccountCharacter,deleteAccountCharacter} from '../src/core/account-actions';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 function close(actual:number,expected:number,message:string){if(Math.abs(actual-expected)>1e-9)throw new Error(message+' · expected '+expected+', got '+actual)}
@@ -76,5 +77,11 @@ ok(gearInstances(state).some(row=>row.id===best.id&&row.enhancement.rank===1),'E
 
 const normalized=normalizeSave({...state,version:6});
 ok(normalized.account.gearInstances?.some(row=>row.id===best.id&&row.craftedRarity==='legendary'&&row.enhancement.rank===1),'Crafted instance rarity/enhancement must survive save normalization');
+const deleted=deleteAccountCharacter(normalized,normalized.character!.id,characterDeleteConfirmation(normalized.character!.name),50_000);
+const banked=deleted.account.gearInstances?.find(row=>row.id===best.id);
+ok(!deleted.character&&banked?.storage==='bank'&&banked.craftedRarity==='legendary'&&banked.enhancement.rank===1,'Deleting the last character must preserve the crafted instance in Bank recovery state');
+const recreated=createAccountCharacter(deleted,'IRONWARDEN','Reborn Warden','male',60_000);
+const adopted=recreated.account.gearInstances?.find(row=>row.id===best.id);
+ok(adopted?.ownerCharacterId===recreated.character!.id&&adopted.storage==='bank','A matching new character must adopt orphaned Bank gear without losing rarity or enhancement');
 
 console.log('PASS: all tiers roll the same Common→Mythic table; duplicates preserve rarity, best-copy equip and per-instance enhancement');

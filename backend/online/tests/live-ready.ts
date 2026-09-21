@@ -16,6 +16,7 @@ async function main(){
   return {accountId,characterId:record.characterId,loadoutId:'current',loadoutRevision:1,loadoutSnapshotHash:snapshot.snapshotHash,state,version:1,role:snapshot.readiness.role};
  });
  const maxTiers=[5,3,4,3] as const;const tickets:CoopQueueTicket[]=members.map((row,index)=>({id:'ticket-'+index,accountId:row.accountId,characterId:row.characterId,role:row.role,classId:row.state.character!.classId,normalizedReadiness:1,loadoutId:'current',loadoutRevision:1,loadoutSnapshotHash:row.loadoutSnapshotHash,expeditionId:'EXP_001',tier:maxTiers[index],contentVersion:'v1',balanceVersion:'v1',serviceRegion:'default',enqueuedAtMs:0,heartbeatExpiresAtMs:30000,status:'queued'}));
+ const damageClasses=tickets.filter(ticket=>ticket.role==='damage').map(ticket=>ticket.classId);assert.equal(new Set(damageClasses).size,2,'Live ready fixture must preserve distinct Damage classes');
  const replacement={...tickets[3],id:'replacement',accountId:'replacement',characterId:'replacement',enqueuedAtMs:100};
  assert.equal(chooseBoundedCoopMatch([...tickets,replacement],1000,8,['replacement'])!.ticketIds.includes('replacement'),true);
  assert.equal(chooseBoundedCoopMatch(tickets,1000,8,['missing']),null);

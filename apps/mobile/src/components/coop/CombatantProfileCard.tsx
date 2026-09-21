@@ -1,6 +1,5 @@
 import {useMemo} from 'react';
 import {Animated,Image,StyleSheet,Text,View} from 'react-native';
-import type {StyleProp,ViewStyle} from 'react-native';
 import type {CoopCombatReplayCueView,CoopRunView} from '../../core/coop-presentation';
 import {dungeonCombatAvatar} from '../../core/dungeon-combat-avatars';
 import {combatCompanionDef} from '../../content/combat-companions';
@@ -26,7 +25,7 @@ function floatingValue(cue:CoopCombatReplayCueView|undefined,targetId:string|und
  return {label:`-${amount}`,kind:'damage' as const};
 }
 
-export function CombatantProfileCard({slot,active=false,targeted=false,assistProc=false,motionStyle,currentCue}:{slot:Slot;active?:boolean;targeted?:boolean;assistProc?:boolean;motionStyle?:StyleProp<ViewStyle>;currentCue?:CoopCombatReplayCueView}){
+export function CombatantProfileCard({slot,active=false,targeted=false,assistProc=false,motionStyle,currentCue}:{slot:Slot;active?:boolean;targeted?:boolean;assistProc?:boolean;motionStyle?:any;currentCue?:CoopCombatReplayCueView}){
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),equipment=equipmentTheme(C),avatar=dungeonCombatAvatar(slot.classId);
  const portrait=dungeonCombatPortraitSource(slot.classId,slot.bodyPresentation??'male'),pct=hpPercent(slot),companion=slot.companionId?combatCompanionDef(slot.companionId):undefined,companionArt=slot.companionId?companionArtSource(slot.companionId):undefined;
  const accent=slot.role==='tank'?equipment.goldSoft:slot.role==='support'?C.good:C.bad,float=floatingValue(currentCue,slot.memberId);
@@ -58,11 +57,11 @@ export function EnemyCombatProfileCard({name,boss=false,active=false,targeted=fa
 }
 
 function makeStyles(C:ThemeColors){const equipment=equipmentTheme(C);return StyleSheet.create({
- card:{minHeight:164,borderWidth:1,borderRadius:radii.md,overflow:'hidden',backgroundColor:C.panel,shadowColor:'#000',shadowOpacity:.18,shadowRadius:3,elevation:1},
+ card:{minHeight:150,borderWidth:1,borderRadius:radii.md,overflow:'hidden',backgroundColor:C.panel,shadowColor:'#000',shadowOpacity:.18,shadowRadius:3,elevation:1},
  active:{borderWidth:2,borderColor:C.info,shadowColor:C.info,shadowOpacity:.32,shadowRadius:6,elevation:3},targeted:{borderWidth:2,borderColor:C.bad},down:{opacity:.48},
- scene:{height:96,position:'relative',alignItems:'center',justifyContent:'flex-end',overflow:'hidden',backgroundColor:C.stage},
+ scene:{height:84,position:'relative',alignItems:'center',justifyContent:'flex-end',overflow:'hidden',backgroundColor:C.stage},
  sceneBg:{backgroundColor:C.dark?'#0B1B2B':'#E6E0D3'},shade:{...StyleSheet.absoluteFillObject,backgroundColor:C.dark?'rgba(4,11,18,.16)':'rgba(255,255,255,.06)'},
- portrait:{position:'absolute',bottom:0,width:86,height:92},fallback:{position:'absolute',top:20,left:0,right:0,alignItems:'center'},
+ portrait:{position:'absolute',bottom:0,width:76,height:82},fallback:{position:'absolute',top:20,left:0,right:0,alignItems:'center'},
  identityPlate:{position:'absolute',left:4,right:4,bottom:4,paddingHorizontal:5,paddingVertical:3,borderWidth:1,borderColor:C.lineStrong,borderRadius:radii.sm,backgroundColor:C.dark?'rgba(8,15,24,.86)':'rgba(255,255,255,.9)'},
  name:{fontSize:10,lineHeight:12,color:C.text,fontWeight:'900'},className:{fontSize:7.5,lineHeight:10,color:equipment.goldSoft,fontWeight:'800'},
  rolePill:{position:'absolute',left:4,top:4,paddingHorizontal:4,paddingVertical:2,borderWidth:1,borderRadius:99,backgroundColor:C.dark?'rgba(8,15,24,.8)':'rgba(255,255,255,.88)'},roleText:{fontSize:6,lineHeight:8,fontWeight:'900',letterSpacing:.45},
@@ -71,5 +70,5 @@ function makeStyles(C:ThemeColors){const equipment=equipmentTheme(C);return Styl
  floatPill:{position:'absolute',right:5,top:38,minWidth:34,paddingHorizontal:5,paddingVertical:3,borderWidth:1,borderRadius:99,alignItems:'center'},floatText:{fontSize:10,lineHeight:12,fontWeight:'900'},floatDamage:{borderColor:C.bad,backgroundColor:C.badSurface},floatDamageText:{color:C.bad},floatHeal:{borderColor:C.good,backgroundColor:C.goodSurface},floatHealText:{color:C.good},floatShield:{borderColor:C.info,backgroundColor:C.infoSurface},floatShieldText:{color:C.info},
  combatInfo:{padding:5,gap:3,backgroundColor:C.panelRaised},hpHead:{flexDirection:'row',justifyContent:'space-between',gap:4},hpLabel:{fontSize:6.5,lineHeight:8,color:C.muted,fontWeight:'900',letterSpacing:.45},hpValue:{fontSize:6.5,lineHeight:8,color:C.text,fontWeight:'900'},hpTrack:{height:5,borderRadius:99,overflow:'hidden',backgroundColor:C.panel2},hpFill:{height:'100%',borderRadius:99},
  assistRow:{minHeight:27,flexDirection:'row',alignItems:'center',gap:4,paddingTop:2,borderTopWidth:StyleSheet.hairlineWidth,borderTopColor:C.line},assistActive:{marginHorizontal:-2,paddingHorizontal:2,borderRadius:radii.sm,backgroundColor:C.specialSurface},assistArt:{width:23,height:23},assistFallback:{width:23,height:23,borderWidth:1,borderColor:C.special,borderRadius:6,alignItems:'center',justifyContent:'center'},assistFallbackText:{color:C.special},assistCopy:{flex:1,minWidth:0},assistKicker:{fontSize:5.5,lineHeight:7,color:C.special,fontWeight:'900',letterSpacing:.35},assistKickerActive:{color:C.info},assistName:{fontSize:7,lineHeight:9,color:C.muted,fontWeight:'800'},noAssist:{fontSize:6,lineHeight:8,color:C.disabled,textAlign:'center',paddingTop:3},
- enemyCard:{width:'100%',borderWidth:1,borderColor:C.bad,borderRadius:radii.md,overflow:'hidden',backgroundColor:C.panel},enemyBoss:{borderColor:C.special,borderWidth:2},enemyActive:{shadowColor:C.bad,shadowOpacity:.34,shadowRadius:7,elevation:3},enemyScene:{height:150,position:'relative',alignItems:'center',justifyContent:'center',overflow:'hidden',backgroundColor:C.stage},enemyWash:{backgroundColor:C.dark?'rgba(75,19,31,.42)':'rgba(180,70,80,.15)'},enemyMark:{fontSize:45,lineHeight:49,color:C.bad,fontWeight:'900'},enemyBossMark:{color:C.special},enemyPlate:{position:'absolute',left:6,right:6,bottom:6,padding:6,borderWidth:1,borderColor:C.lineStrong,borderRadius:radii.sm,backgroundColor:C.dark?'rgba(8,15,24,.88)':'rgba(255,255,255,.9)'},enemyKicker:{fontSize:6,color:equipment.goldSoft,fontWeight:'900',letterSpacing:.55},enemyName:{fontSize:10,lineHeight:13,color:C.text,fontWeight:'900'},enemyInfo:{minHeight:28,alignItems:'center',justifyContent:'center',backgroundColor:C.panelRaised},enemyHint:{fontSize:6.5,lineHeight:9,color:C.muted,fontWeight:'900',letterSpacing:.5},
+ enemyCard:{width:'100%',borderWidth:1,borderColor:C.bad,borderRadius:radii.md,overflow:'hidden',backgroundColor:C.panel},enemyBoss:{borderColor:C.special,borderWidth:2},enemyActive:{shadowColor:C.bad,shadowOpacity:.34,shadowRadius:7,elevation:3},enemyScene:{height:132,position:'relative',alignItems:'center',justifyContent:'center',overflow:'hidden',backgroundColor:C.stage},enemyWash:{backgroundColor:C.dark?'rgba(75,19,31,.42)':'rgba(180,70,80,.15)'},enemyMark:{fontSize:45,lineHeight:49,color:C.bad,fontWeight:'900'},enemyBossMark:{color:C.special},enemyPlate:{position:'absolute',left:6,right:6,bottom:6,padding:6,borderWidth:1,borderColor:C.lineStrong,borderRadius:radii.sm,backgroundColor:C.dark?'rgba(8,15,24,.88)':'rgba(255,255,255,.9)'},enemyKicker:{fontSize:6,color:equipment.goldSoft,fontWeight:'900',letterSpacing:.55},enemyName:{fontSize:10,lineHeight:13,color:C.text,fontWeight:'900'},enemyInfo:{minHeight:28,alignItems:'center',justifyContent:'center',backgroundColor:C.panelRaised},enemyHint:{fontSize:6.5,lineHeight:9,color:C.muted,fontWeight:'900',letterSpacing:.5},
  });}

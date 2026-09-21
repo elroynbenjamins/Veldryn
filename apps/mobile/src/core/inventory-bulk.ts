@@ -8,8 +8,9 @@ export type BulkStorageLocation='inventory'|'bank';
 
 function uniqueIds(itemIds:readonly string[]){return [...new Set(itemIds.filter(Boolean))].slice(0,100)}
 function selectedStacks(state:GameState,itemIds:readonly string[],location:BulkStorageLocation){
-  const ids=new Set(uniqueIds(itemIds));
-  return state[location].stacks.filter(stack=>stack.quantity>0&&ids.has(stack.itemId));
+  const ids=new Set(uniqueIds(itemIds)),grouped=new Map<string,number>();
+  for(const stack of state[location].stacks)if(stack.quantity>0&&ids.has(stack.itemId))grouped.set(stack.itemId,(grouped.get(stack.itemId)??0)+stack.quantity);
+  return [...grouped].map(([itemId,quantity])=>({itemId,quantity}));
 }
 function protectedFromDisposal(state:GameState,itemId:string){
   const item=itemDef(itemId);

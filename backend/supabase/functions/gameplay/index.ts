@@ -222,12 +222,14 @@ var MONSTERS_RAW = [
 ];
 var MONSTER_TIME_SCALE = 1.95;
 var MONSTER_STAT_SCALE = 1.07;
+var EFFECT_SHARDS = ["FOCUS_SHARD", "CELERITY_SHARD", "VEIL_SHARD"];
 var enhancementDrops = (monster) => {
-  if (monster.boss) return [{ itemId: "TEMPERING_DUST", chance: 1, min: 8, max: 14 }, { itemId: "TEMPERING_CORE", chance: 1, min: 1, max: 2 }, { itemId: "EMBERHEART_GEM", chance: 1e-3, min: 1, max: 1 }, { itemId: "WARDHEART_GEM", chance: 1e-3, min: 1, max: 1 }, { itemId: "VITALITY_HEART_GEM", chance: 1e-3, min: 1, max: 1 }];
-  if (monster.level >= 20) return [{ itemId: "TEMPERING_DUST", chance: 0.18, min: 1, max: 2 }, { itemId: "TEMPERING_CORE", chance: 0.025, min: 1, max: 1 }, { itemId: monster.attack >= monster.defense * 1.7 ? "EMBER_SHARD" : monster.defense >= monster.attack * 0.65 ? "WARD_SHARD" : "VITALITY_SHARD", chance: 4e-3, min: 1, max: 1 }];
+  if (monster.boss) return [{ itemId: "TEMPERING_DUST", chance: 1, min: 8, max: 14 }, { itemId: "TEMPERING_CORE", chance: 1, min: 1, max: 2 }, { itemId: "EMBERHEART_GEM", chance: 1e-3, min: 1, max: 1 }, { itemId: "WARDHEART_GEM", chance: 1e-3, min: 1, max: 1 }, { itemId: "VITALITY_HEART_GEM", chance: 1e-3, min: 1, max: 1 }, { itemId: "FOCUS_HEART_GEM", chance: 75e-5, min: 1, max: 1 }, { itemId: "CELERITY_HEART_GEM", chance: 75e-5, min: 1, max: 1 }, { itemId: "VEILHEART_GEM", chance: 75e-5, min: 1, max: 1 }];
+  if (monster.level >= 20) return [{ itemId: "TEMPERING_DUST", chance: 0.18, min: 1, max: 2 }, { itemId: "TEMPERING_CORE", chance: 0.025, min: 1, max: 1 }, { itemId: monster.attack >= monster.defense * 1.7 ? "EMBER_SHARD" : monster.defense >= monster.attack * 0.65 ? "WARD_SHARD" : "VITALITY_SHARD", chance: 4e-3, min: 1, max: 1 }, { itemId: EFFECT_SHARDS[monster.level % EFFECT_SHARDS.length], chance: 3e-3, min: 1, max: 1 }];
   if (monster.level >= 10) return [{ itemId: "TEMPERING_DUST", chance: 0.1, min: 1, max: 1 }, { itemId: "TEMPERING_CORE", chance: 0.01, min: 1, max: 1 }];
   return monster.level >= 4 ? [{ itemId: "TEMPERING_DUST", chance: 0.05, min: 1, max: 1 }] : [];
 };
+
 var MONSTERS = MONSTERS_RAW.map((monster) => ({
   ...monster,
   drops: [...monster.drops, ...monster.id === "FIELD_WISP" ? [{ itemId: "HOLY_WATER", chance: 0.12, min: 1, max: 1 }] : monster.id === "DROWNED_PILGRIM" ? [{ itemId: "HOLY_WATER", chance: 0.3, min: 1, max: 1 }] : monster.id === "OATHBOUND_SQUIRE" ? [{ itemId: "HOLY_WATER", chance: 0.24, min: 1, max: 1 }] : [], ...enhancementDrops(monster)],
@@ -455,6 +457,12 @@ var ITEMS = [
   { id: "WARDHEART_GEM", name: "Wardheart Gem", type: "gem", gemStat: "defense", gemPercent: 0.05, gemTier: 2, value: 1900, rarity: "legendary" },
   { id: "VITALITY_SHARD", name: "Vitality Shard", type: "gem", gemStat: "hp", gemPercent: 0.02, gemTier: 1, value: 320, rarity: "rare" },
   { id: "VITALITY_HEART_GEM", name: "Vitality Heart Gem", type: "gem", gemStat: "hp", gemPercent: 0.05, gemTier: 2, value: 1900, rarity: "legendary" },
+  { id: "FOCUS_SHARD", name: "Focus Shard", type: "gem", gemEffect: "critChance", gemEffectValue: 0.005, gemTier: 1, value: 360, rarity: "rare" },
+  { id: "FOCUS_HEART_GEM", name: "Focus Heart Gem", type: "gem", gemEffect: "critChance", gemEffectValue: 0.0125, gemTier: 2, value: 2100, rarity: "legendary" },
+  { id: "CELERITY_SHARD", name: "Celerity Shard", type: "gem", gemEffect: "haste", gemEffectValue: 0.005, gemTier: 1, value: 360, rarity: "rare" },
+  { id: "CELERITY_HEART_GEM", name: "Celerity Heart Gem", type: "gem", gemEffect: "haste", gemEffectValue: 0.0125, gemTier: 2, value: 2100, rarity: "legendary" },
+  { id: "VEIL_SHARD", name: "Veil Shard", type: "gem", gemEffect: "evasion", gemEffectValue: 0.005, gemTier: 1, value: 360, rarity: "rare" },
+  { id: "VEILHEART_GEM", name: "Veilheart Gem", type: "gem", gemEffect: "evasion", gemEffectValue: 0.0125, gemTier: 2, value: 2100, rarity: "legendary" },
   // Runtime pack weapon identities; numeric budgets retained from the prior primary weapons.
   { id: "basic_sword", name: "Basic Sword", type: "gear", slot: "weapon", attack: 4, readiness: 1, value: 10 },
   { id: "basic_tower_shield", name: "Basic Tower Shield", type: "gear", slot: "weapon", attack: 3, defense: 1, readiness: 1, value: 10 },
@@ -2209,11 +2217,19 @@ function itemRarity(item) {
 // apps/mobile/src/core/equipment-enhancement.ts
 var MAX_UPGRADE_RANK = 10;
 var UPGRADE_STAT_PER_RANK = 0.03;
+var EFFECT_GEM_BONUS_CAP = 0.15;
 var SUCCESS_BY_TARGET = [0, 1, 0.95, 0.85, 0.7, 0.55, 0.4, 0.28, 0.18, 0.1, 0.05];
 var DUST_BY_TARGET = [0, 4, 8, 15, 24, 36, 52, 72, 96, 125, 160];
 var CORE_BY_TARGET = [0, 0, 0, 0, 1, 2, 3, 5, 7, 10, 14];
 var RARITY_COST = { common: 1, uncommon: 1.2, rare: 1.6, epic: 2.2, legendary: 3.2, mythic: 4.5 };
-var SOCKETS = { common: 0, uncommon: 1, rare: 1, epic: 2, legendary: 2, mythic: 3 };
+var SOCKETS = {
+  common: { stat: false, effect: false },
+  uncommon: { stat: true, effect: false },
+  rare: { stat: true, effect: true },
+  epic: { stat: true, effect: true },
+  legendary: { stat: true, effect: true },
+  mythic: { stat: true, effect: true }
+};
 function gearEnhancement(state, itemId) {
   const raw2 = state.character?.gearEnhancements?.[itemId];
   return { rank: Math.max(0, Math.min(MAX_UPGRADE_RANK, Math.floor(raw2?.rank ?? 0))), failures: Math.max(0, Math.floor(raw2?.failures ?? 0)), gemIds: Array.isArray(raw2?.gemIds) ? raw2.gemIds.slice(0, 3) : [] };
@@ -2222,9 +2238,32 @@ function hasEnhancement(state, itemId) {
   const enhancement = gearEnhancement(state, itemId);
   return enhancement.rank > 0 || enhancement.gemIds.length > 0;
 }
-function gemSocketCapacity(itemId) {
+function gemSocketAvailability(itemId) {
   const item = itemDef(itemId);
-  return item.type === "gear" ? SOCKETS[itemRarity(item)] : 0;
+  return item.type === "gear" ? SOCKETS[itemRarity(item)] : { stat: false, effect: false };
+}
+function gemSocketCapacity(itemId) {
+  const slots = gemSocketAvailability(itemId);
+  return Number(slots.stat) + Number(slots.effect);
+}
+function gemSocketKind(gemId) {
+  const gem = itemDef(gemId);
+  if (gem.type !== "gem") return void 0;
+  if (gem.gemStat) return "stat";
+  if (gem.gemEffect) return "effect";
+  return void 0;
+}
+function gemSocketLayout(state, itemId) {
+  const enhancement = gearEnhancement(state, itemId), availability = gemSocketAvailability(itemId);
+  let stat = { kind: "stat", unlocked: availability.stat }, effect2 = { kind: "effect", unlocked: availability.effect };
+  const legacyExtras = [];
+  enhancement.gemIds.forEach((gemId, index) => {
+    const kind = gemSocketKind(gemId);
+    if (kind === "stat" && stat.gemId === void 0) stat = { ...stat, gemId, index };
+    else if (kind === "effect" && effect2.gemId === void 0) effect2 = { ...effect2, gemId, index };
+    else legacyExtras.push({ gemId, index, kind });
+  });
+  return { stat, effect: effect2, legacyExtras, filled: Number(Boolean(stat.gemId)) + Number(Boolean(effect2.gemId)), capacity: gemSocketCapacity(itemId) };
 }
 function upgradeQuote(state, itemId) {
   const item = itemDef(itemId);
@@ -2276,10 +2315,12 @@ function attemptEquipmentUpgrade(state, itemId, roll = Math.random()) {
 }
 function socketGem(state, itemId, gemId) {
   requireEquipped(state, itemId);
-  const gem = itemDef(gemId);
-  if (gem.type !== "gem" || !gem.gemStat) throw new Error("That item is not a gem");
-  const enhancement = gearEnhancement(state, itemId), capacity = gemSocketCapacity(itemId);
-  if (enhancement.gemIds.length >= capacity) throw new Error(capacity ? "All sockets are filled" : "This rarity has no gem sockets");
+  const gem = itemDef(gemId), kind = gemSocketKind(gemId);
+  if (gem.type !== "gem" || !kind) throw new Error("That item is not a supported gem");
+  const layout = gemSocketLayout(state, itemId), slot = layout[kind];
+  if (!slot.unlocked) throw new Error(kind === "effect" ? "Effect sockets require Rare or better equipment" : "Stat sockets require Uncommon or better equipment");
+  if (slot.gemId) throw new Error(`The ${kind} gem socket is already filled`);
+  const enhancement = gearEnhancement(state, itemId);
   let next = consumeAcross(state, gemId, 1);
   next = setEnhancement(next, itemId, { ...enhancement, gemIds: [...enhancement.gemIds, gemId] });
   return next;
@@ -2316,6 +2357,18 @@ function equippedGemBonuses(state) {
     for (const gemId of gearEnhancement(state, itemId).gemIds) {
       const gem = itemDef(gemId);
       if (gem.type === "gem" && gem.gemStat) result[gem.gemStat] += gem.gemPercent ?? 0;
+    }
+  }
+  return result;
+}
+function equippedGemEffects(state) {
+  const result = { critChance: 0, haste: 0, evasion: 0 };
+  if (!state.character) return result;
+  for (const itemId of Object.values(state.character.equipment)) {
+    if (!itemId) continue;
+    for (const gemId of gearEnhancement(state, itemId).gemIds) {
+      const gem = itemDef(gemId);
+      if (gem.type === "gem" && gem.gemEffect) result[gem.gemEffect] += gem.gemEffectValue ?? 0;
     }
   }
   return result;
@@ -4858,17 +4911,17 @@ function createCharacter(state, classId, name = "Adventurer", bodyPresentation =
   };
 }
 function effectiveStats(state) {
-  const c = state.character;
-  if (!c) return { hp: 0, attack: 0, defense: 0, power: 0 };
-  let hp = c.hp, attack = c.attack, defense = c.defense;
-  for (const id of Object.values(c.equipment)) {
+  const c2 = state.character;
+  if (!c2) return { hp: 0, attack: 0, defense: 0, power: 0 };
+  let hp = c2.hp, attack = c2.attack, defense = c2.defense;
+  for (const id of Object.values(c2.equipment)) {
     if (!id) continue;
     const stats = enhancedGearStats(state, id);
     hp += stats.hp;
     attack += stats.attack;
     defense += stats.defense;
   }
-  const set = noviceSetFor(c.classId), complete = set.slots.every((slot) => c.equipment[slot] === noviceItemId(c.classId, slot));
+  const set = noviceSetFor(c2.classId), complete = set.slots.every((slot) => c2.equipment[slot] === noviceItemId(c2.classId, slot));
   if (complete) {
     hp += set.setBonus.hp;
     attack += set.setBonus.attack;
@@ -4878,16 +4931,17 @@ function effectiveStats(state) {
   hp = Math.ceil(hp * (1 + gems.hp));
   attack = Math.ceil(attack * (1 + gems.attack));
   defense = Math.ceil(defense * (1 + gems.defense));
-  const mastery = characterClassEffects(c);
+  const mastery = characterClassEffects(c2);
   hp = Math.ceil(hp * mastery.hp);
   attack = Math.ceil(attack * mastery.attack);
   defense = Math.ceil(defense * mastery.defense);
   const permanent = characterPermanentMultipliers(state);
   attack = Math.ceil(attack * permanent.combatPowerMultiplier);
-  const prep = c.preparation ? preparationEffects(c.preparation) : void 0;
+  const prep = c2.preparation ? preparationEffects(c2.preparation) : void 0;
   if (prep) attack = Math.ceil(attack * prep.attack);
-  const role = CLASSES.find((def) => def.id === c.classId)?.role;
-  return { hp, attack, defense, power: Math.round(attack * 1.5 + defense * 0.8 + hp * 0.08 + c.level * 2.5), critChance: role === "Damage" ? 0.1 : 0.05, critMultiplier: 1.5, accuracy: 0.84, evasion: role === "Damage" ? 0.07 : 0.04, haste: 0.05 };
+  const role = CLASSES.find((def) => def.id === c2.classId)?.role, effects = equippedGemEffects(state);
+  const critBonus = Math.min(EFFECT_GEM_BONUS_CAP, effects.critChance), hasteBonus = Math.min(EFFECT_GEM_BONUS_CAP, effects.haste), evasionBonus = Math.min(EFFECT_GEM_BONUS_CAP, effects.evasion);
+  return { hp, attack, defense, power: Math.round(attack * 1.5 + defense * 0.8 + hp * 0.08 + c2.level * 2.5), critChance: (role === "Damage" ? 0.1 : 0.05) + critBonus, critMultiplier: 1.5, accuracy: 0.84, evasion: (role === "Damage" ? 0.07 : 0.04) + evasionBonus, haste: 0.05 + hasteBonus };
 }
 function startCombat(state, monsterId, nowMs) {
   state = finishClassDrills(state, nowMs);
@@ -4963,26 +5017,28 @@ function stackQty(stacks, itemId) {
   return stacks.find((s) => s.itemId === itemId)?.quantity || 0;
 }
 function simulateCombat2(state, monsterId, elapsed) {
-  const c = state.character;
+  const c2 = state.character;
   const m = MONSTERS.find((x) => x.id === monsterId);
   const stats = effectiveStats(state);
   const modifiers = characterPermanentMultipliers(state);
   const companion = companionCombatContribution(state);
-  const style = classCombatStyle(c.classId);
+  const style = classCombatStyle(c2.classId);
   const environment = state.activity ? environmentEffectForActivity(state.activity).effect : void 0;
   const boostedDefense = Math.max(1, Math.round(stats.defense * modifiers.combatPowerMultiplier));
   const boostedPower = Math.max(1, Math.round(stats.power * modifiers.combatPowerMultiplier));
   const expected = (m.attack * 1.2 + m.defense * 0.8 + m.level * 2.2) * COMBAT_EXPECTED_SCALE;
-  const speed = Math.max(COMBAT_SPEED_MIN, Math.min(COMBAT_SPEED_MAX, boostedPower / Math.max(1, expected))) * style.speedMultiplier * modifiers.combatSpeedMultiplier * companion.outputMultiplier * (1 + monsterMastery(state, monsterId).damageBonus);
+  const gemEffects = equippedGemEffects(state), gemCrit = Math.min(EFFECT_GEM_BONUS_CAP, gemEffects.critChance), gemHaste = Math.min(EFFECT_GEM_BONUS_CAP, gemEffects.haste), gemEvasion = Math.min(EFFECT_GEM_BONUS_CAP, gemEffects.evasion);
+  const gemOutputMultiplier = (1 + gemHaste) * (1 + gemCrit * (stats.critMultiplier - 1));
+  const speed = Math.max(COMBAT_SPEED_MIN, Math.min(COMBAT_SPEED_MAX, boostedPower / Math.max(1, expected))) * style.speedMultiplier * modifiers.combatSpeedMultiplier * companion.outputMultiplier * (1 + monsterMastery(state, monsterId).damageBonus) * gemOutputMultiplier;
   const theoreticalKills = Math.floor(elapsed / (m.secondsPerKill * COMBAT_TIME_SCALE * (environment?.actionTimeMultiplier ?? 1) / speed));
-  const foodId = c.equippedFoodId;
+  const foodId = c2.equippedFoodId;
   const food = foodId ? itemDef(foodId) : void 0;
   let foodLeft = stackQty(state.inventory.stacks, foodId), foodConsumed = 0;
-  let hp = Math.min(c.currentHp || stats.hp, stats.hp), kills = 0, stoppedReason = "";
+  let hp = Math.min(c2.currentHp || stats.hp, stats.hp), kills = 0, stoppedReason = "";
   const threshold = Math.max(10, Math.min(90, state.settings.autoEatThresholdPct)) / 100;
   for (let i = 0; i < theoreticalKills; i++) {
     const raw2 = Math.max(1, Math.round(m.attack * COMBAT_MONSTER_DAMAGE_SCALE - Math.floor(boostedDefense * 0.58)));
-    const damage = Math.max(1, Math.round((raw2 * 0.48 + m.level * 0.16) * style.damageTakenMultiplier * modifiers.incomingDamageMultiplier * companion.incomingDamageMultiplier * (c.preparation ? preparationEffects(c.preparation).damage : 1)));
+    const damage = Math.max(1, Math.round((raw2 * 0.48 + m.level * 0.16) * style.damageTakenMultiplier * modifiers.incomingDamageMultiplier * companion.incomingDamageMultiplier * (1 - gemEvasion) * (c2.preparation ? preparationEffects(c2.preparation).damage : 1)));
     hp -= damage;
     while (food && food.heal && foodLeft > 0 && hp > 0 && hp / stats.hp <= threshold) {
       hp = Math.min(stats.hp, hp + food.heal);
@@ -5525,14 +5581,71 @@ function accountCharacters(state) {
 function snapshot(state) {
   return { character: structuredClone(state.character), inventory: structuredClone(state.inventory), overflow: structuredClone(state.overflow), activity: structuredClone(state.activity), skills: structuredClone(state.skills), quests: structuredClone(state.quests), currentRegionId: state.currentRegionId };
 }
+function recordAccountProgress2(state) {
+  const slots = unlockedCharacterSlots(state);
+  return { ...state, account: { ...state.account, unlockedCharacterSlots: slots } };
+}
+function targetSlot(state, id) {
+  if (state.character?.id === id) return { active: true, slot: snapshot(state) };
+  const slot = state.otherCharacters?.find((entry) => entry.character.id === id);
+  if (!slot) throw new Error("Character is not owned.");
+  return { active: false, slot: structuredClone(slot) };
+}
+function nextLocalCharacterId(state) {
+  const used = new Set(accountCharacters(state).map((entry) => entry.character.id));
+  let serial = Math.max(1, Math.floor(Number(state.account.createdCharacterCount) || 1));
+  do serial++;
+  while (used.has(`LOCAL_CHAR_${serial}`));
+  return `LOCAL_CHAR_${serial}`;
+}
+function freshSlot(classId, name, body, now, id) {
+  const fresh = createCharacter(newGame(now), classId, name, body);
+  fresh.character.id = id;
+  return { slot: snapshot(fresh), seenItemIds: fresh.settings.seenItemIds ?? [] };
+}
+function mergeSeenItems(state, ids) {
+  return { ...state, settings: { ...state.settings, seenItemIds: [...new Set([...state.settings.seenItemIds ?? [], ...ids])] } };
+}
+function exactConfirmation(characterName, confirmation) {
+  if (confirmation.trim() !== characterName) throw new Error(`Type ${characterName} exactly to confirm this character change.`);
+}
+function managementBlocker(slot) {
+  if (slot.activity) return "Stop this character's current activity first.";
+  if ((slot.character.activityQueue?.length ?? 0) > 0) return "Clear this character's action queue first.";
+  if (slot.overflow.stacks.length > 0) return "Claim this character's overflow before continuing.";
+  if (Object.values(slot.character.equippedToolIds ?? {}).some(Boolean)) return "Unequip this character's gathering tools first.";
+  if (Object.values(slot.character.gearEnhancements ?? {}).some((value) => (value?.gemIds?.length ?? 0) > 0)) return "Socketed gems are protected. Extract them before continuing.";
+  return void 0;
+}
 function createAccountCharacter(state, classId, name, body, now) {
   if (!state.character) return createCharacter(state, classId, name, body);
   if (accountCharacters(state).length >= unlockedCharacterSlots(state)) throw new Error("Character slot is locked.");
-  const next = createCharacter(newGame(now), classId, name, body);
-  const active = snapshot(state);
-  const id = `LOCAL_CHAR_${accountCharacters(state).length + 1}`;
-  next.character.id = id;
-  return { ...next, version: state.version, createdAtMs: state.createdAtMs, settings: state.settings, bank: state.bank, account: { ...state.account, createdCharacterCount: Math.max(state.account.createdCharacterCount, accountCharacters(state).length + 1) }, otherCharacters: [...state.otherCharacters ?? [], active] };
+  const preserved = recordAccountProgress2(state), active = snapshot(preserved), id = nextLocalCharacterId(preserved), fresh = freshSlot(classId, name, body, now, id);
+  const next = { ...preserved, character: fresh.slot.character, inventory: fresh.slot.inventory, overflow: fresh.slot.overflow, activity: fresh.slot.activity, skills: fresh.slot.skills, quests: fresh.slot.quests, currentRegionId: fresh.slot.currentRegionId, account: { ...preserved.account, createdCharacterCount: Math.max(preserved.account.createdCharacterCount + 1, accountCharacters(preserved).length + 1) }, otherCharacters: [...preserved.otherCharacters ?? [], active] };
+  return mergeSeenItems(next, fresh.seenItemIds);
+}
+function rerollAccountCharacter(state, id, classId, name, body, confirmation, now, replacementId) {
+  const target2 = targetSlot(state, id);
+  exactConfirmation(target2.slot.character.name, confirmation);
+  const blocked = managementBlocker(target2.slot);
+  if (blocked) throw new Error(blocked);
+  const preserved = recordAccountProgress2(state), newId = replacementId ?? nextLocalCharacterId(preserved), fresh = freshSlot(classId, name, body, now, newId);
+  const account = { ...preserved.account, createdCharacterCount: Math.max(preserved.account.createdCharacterCount + 1, accountCharacters(preserved).length + 1) };
+  const next = target2.active ? { ...preserved, character: fresh.slot.character, inventory: fresh.slot.inventory, overflow: fresh.slot.overflow, activity: fresh.slot.activity, skills: fresh.slot.skills, quests: fresh.slot.quests, currentRegionId: fresh.slot.currentRegionId, account } : { ...preserved, account, otherCharacters: (preserved.otherCharacters ?? []).map((entry) => entry.character.id === id ? fresh.slot : entry) };
+  return mergeSeenItems(next, fresh.seenItemIds);
+}
+function deleteAccountCharacter(state, id, confirmation, now) {
+  void now;
+  if (accountCharacters(state).length <= 1) throw new Error("Your last character cannot be deleted. Reroll it instead.");
+  const target2 = targetSlot(state, id);
+  exactConfirmation(target2.slot.character.name, confirmation);
+  const blocked = managementBlocker(target2.slot);
+  if (blocked) throw new Error(blocked);
+  const preserved = recordAccountProgress2(state);
+  if (!target2.active) return { ...preserved, otherCharacters: (preserved.otherCharacters ?? []).filter((entry) => entry.character.id !== id) };
+  const replacement = (preserved.otherCharacters ?? [])[0];
+  if (!replacement) throw new Error("A replacement character is required.");
+  return { ...preserved, character: replacement.character, inventory: replacement.inventory, overflow: replacement.overflow, activity: replacement.activity, skills: replacement.skills, quests: replacement.quests, currentRegionId: replacement.currentRegionId, otherCharacters: (preserved.otherCharacters ?? []).slice(1) };
 }
 function switchAccountCharacter(state, id, now) {
   if (!state.character) return state;
@@ -5587,6 +5700,8 @@ var fields = {
   discard_preparation: [],
   roster_create: ["classId", "name", "body"],
   roster_switch: ["id"],
+  roster_reroll: ["id", "classId", "name", "body", "confirmation"],
+  roster_delete: ["id", "confirmation"],
   equip: ["id"],
   unequip: ["slot"],
   food: ["id"],
@@ -5627,12 +5742,12 @@ function validateGameCommand(value) {
   if (Object.keys(row).some((key) => key !== "type" && key !== "args") || typeof row.type !== "string" || !Object.prototype.hasOwnProperty.call(fields, row.type)) throw new Error("invalid_command");
   const args = row.args ?? {};
   if (!args || typeof args !== "object" || Array.isArray(args) || Object.keys(args).some((key) => !fields[row.type].includes(key))) throw new Error("invalid_command_arguments");
-  if (row.type === "create" || row.type === "roster_create") {
+  if (row.type === "create" || row.type === "roster_create" || row.type === "roster_reroll") {
     const creation = args;
     oneOf(creation.classId, CLASSES.map((item) => item.id));
     oneOf(creation.body ?? "male", ["male", "female"]);
   }
-  if (row.type === "roster_switch" && typeof args.id !== "string") throw new Error("invalid_id");
+  if (["roster_switch", "roster_reroll", "roster_delete"].includes(row.type) && typeof args.id !== "string") throw new Error("invalid_id");
   return { type: row.type, args };
 }
 function text(args, key, max = 100) {
@@ -5675,7 +5790,7 @@ function executeGameCommand(previous, value, now, options = {}) {
     reward2 = result.reward;
     credit(source, result.reward);
   };
-  if (state.character && command.type !== "create") settle();
+  if (state.character && command.type !== "create" && command.type !== "roster_reroll" && command.type !== "roster_delete") settle();
   state = refreshCompanions(state, now);
   if (["companion_equip", "companion_level", "companion_ascend", "companion_master"].includes(command.type)) assertCompanionIdle(state, text(a, "id"));
   switch (command.type) {
@@ -5770,6 +5885,12 @@ function executeGameCommand(previous, value, now, options = {}) {
     }
     case "roster_switch":
       state = switchAccountCharacter(state, text(a, "id"), now);
+      break;
+    case "roster_reroll":
+      state = rerollAccountCharacter(state, text(a, "id"), text(a, "classId"), text(a, "name", 20), oneOf(a.body ?? "male", ["male", "female"]), text(a, "confirmation", 20), now, options.characterId);
+      break;
+    case "roster_delete":
+      state = deleteAccountCharacter(state, text(a, "id"), text(a, "confirmation", 20), now);
       break;
     case "claim":
       break;
@@ -5988,7 +6109,7 @@ function gameplayHandler(services) {
       }
       let result;
       try {
-        result = executeGameCommand(state, command, loaded.serverNow, { characterId: command.type === "create" || command.type === "roster_create" ? services.randomId() : loaded.characterId ?? services.randomId(), randomRoll: services.randomRoll() });
+        result = executeGameCommand(state, command, loaded.serverNow, { characterId: command.type === "create" || command.type === "roster_create" || command.type === "roster_reroll" ? services.randomId() : loaded.characterId ?? services.randomId(), randomRoll: services.randomRoll() });
       } catch (e) {
         throw new GameplayError(e instanceof Error ? e.message : "invalid_command");
       }

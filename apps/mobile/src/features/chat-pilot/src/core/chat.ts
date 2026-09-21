@@ -11,18 +11,18 @@ export interface Settings { schemaVersion: 1; tray: string[]; worldOptIn: boolea
 export interface SettingsStore { load(accountId: string): Promise<Settings | null>; save(accountId: string, settings: Settings): Promise<void> }
 export interface Permissions { connected: boolean; worldOptIn: boolean; guildMember: boolean; partyMember: boolean; blockedIds: string[] }
 export interface Snapshot { revision: number; channelId: ChannelId; drafts: Record<string, string>; messages: Message[]; permissions: Permissions; savedTray: string[]; settingsReady: boolean; settingsError: string | null; sending: string[]; unread: Record<string, number>; atBottom: boolean }
-export const TRAY_SIZE = 20;
+export const TRAY_SIZE = 8;
 export const MAX_MESSAGE_UNITS = 500;
-export const MAX_EMOTES = 8;
+export const MAX_EMOTES = 2;
 export const MAX_RAW_LENGTH = 4000;
 export function defaultTray(catalog: readonly Emote[]): string[] {
   const result = catalog.filter(e => e.defaultAvailable).slice(0, TRAY_SIZE).map(e => e.id);
-  if (result.length !== TRAY_SIZE) throw new Error('At least 20 free default emotes are required.');
+  if (result.length !== TRAY_SIZE) throw new Error('At least 8 free default emotes are required.');
   return result;
 }
 export function validateTray(ids: readonly string[], catalog: readonly Emote[], owned: ReadonlySet<string>): string | null {
-  if (ids.length !== TRAY_SIZE) return 'Choose exactly 20 emotes before saving.';
-  if (new Set(ids).size !== TRAY_SIZE) return 'Each of your 20 emotes must be different.';
+  if (ids.length !== TRAY_SIZE) return 'Choose exactly 8 emotes before saving.';
+  if (new Set(ids).size !== TRAY_SIZE) return 'Each of your 8 emotes must be different.';
   const known = new Set(catalog.map(e => e.id));
   if (ids.some(id => !known.has(id))) return 'One of the selected emotes is no longer available.';
   if (ids.some(id => !owned.has(id))) return 'You have not unlocked one of the selected emotes.';
@@ -203,6 +203,6 @@ export const demoProfiles: Profile[] = [
   {id:'lunaria',name:'Lunaria',className:'Dawnkeeper',level:31,portrait:'portraits/adventurer_female',online:true,guild:'Bloomwake Sentinels',title:'Guiding Hand'}
 ];
 export function demoMessages(catalog: readonly Emote[] = []): Message[] {
-  const samples:[ChannelId,string,string][]=[['world','aric','Anyone up for the Ancient Ruins? Need one damage dealer!'],['world','lunaria','The sunset in Veldryn is still unmatched. :female_01:'],['world','aric','Taking a short gathering break. Good luck on your drops!'],['world','lunaria','That fox is adorable! :pet_set_b_02:'],['world','aric','Small companions. Big journeys. :pet_set_a_04:'],['world','lunaria','Remember to save your favourite 20 emotes in Chat Settings.'],['guild','aric','Welcome to the guild! Ask here when you need a hand.'],['party','lunaria','Ready when everyone is here.'],['system','system','This is an offline UI preview. No message is sent to other players.']];
+  const samples:[ChannelId,string,string][]=[['world','aric','Anyone up for the Ancient Ruins? Need one damage dealer!'],['world','lunaria','The sunset in Veldryn is still unmatched. :female_01:'],['world','aric','Taking a short gathering break. Good luck on your drops!'],['world','lunaria','That fox is adorable! :pet_set_b_02:'],['world','aric','Small companions. Big journeys. :pet_set_a_04:'],['world','lunaria','Remember to save your favourite 8 emotes in Chat Settings.'],['guild','aric','Welcome to the guild! Ask here when you need a hand.'],['party','lunaria','Ready when everyone is here.'],['system','system','This is an offline UI preview. No message is sent to other players.']];
   return samples.map(([channelId,senderId,text],i)=>({id:`sample-${i}`,channelId,senderId,segments:parseDraft(text,catalog),createdAt:Date.now()-900000+i*45000,delivery:'sent'}));
 }

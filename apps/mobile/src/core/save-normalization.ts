@@ -22,6 +22,7 @@ import {normalizeGuildBannerId,normalizeGuildFrameId,normalizeGuildMotto,normali
 import {normalizeOwnedPetIds,normalizeSelectedPetId} from './pet-collection';
 import {normalizeActivityQueue} from './activity-queue';
 import {normalizeActiveDailySupplyBoost,normalizeDailySuppliesTrack,normalizeDailySupplyBank} from './daily-supplies';
+import {normalizeChatEmoteTrayIds} from './chat-emotes';
 
 export function normalizeSave(input:any):GameState{
   if(!input || ![4,5,6,7,8,9,10,11].includes(input.version)) throw new Error('Unsupported VELDRYN save version');
@@ -152,6 +153,7 @@ export function normalizeSave(input:any):GameState{
       autoJoinWorldChat:input.settings?.autoJoinWorldChat!==false,
       defaultWorldChat:([1,2,3,4] as number[]).includes(Number(input.settings?.defaultWorldChat))?Number(input.settings.defaultWorldChat):1,
       chatDockLines:([1,2,3] as number[]).includes(Number(input.settings?.chatDockLines))?Number(input.settings.chatDockLines):1,
+      chatEmoteTrayIds:normalizeChatEmoteTrayIds(input.settings?.chatEmoteTrayIds),
       quickNavDestinations:normalizeQuickNavDestinations(input.settings?.quickNavDestinations),
       favoriteItemIds:stringList(input.settings?.favoriteItemIds,100),
       seenItemIds:legacySeenItemIds,

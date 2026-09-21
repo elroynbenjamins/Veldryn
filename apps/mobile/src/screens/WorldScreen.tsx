@@ -93,20 +93,20 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop,goa
 }
 
 function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);return StyleSheet.create({
-  root:{padding:spacing.lg,gap:spacing.md,paddingBottom:spacing.xl},
+  root:{padding:spacing.md,gap:10,paddingBottom:spacing.xl},
   kicker:{...typography.caption,color:equipmentColors.gold,fontWeight:'700',letterSpacing:1.2},
   h:{...typography.hero,color:C.text},
   title:{...typography.title,color:C.text},
   sub:{...typography.body,color:C.muted},
   flex:{flex:1,minWidth:0},
-  heroShade:{...StyleSheet.absoluteFillObject,backgroundColor:'rgba(5,12,20,.6)'},thumbnail:{width:76,height:84,borderRadius:12,overflow:'hidden'},lockedTag:{position:'absolute',bottom:0,left:0,right:0,padding:4,backgroundColor:'#08111dcc'},lockedText:{color:C.muted,textAlign:'center',fontSize:11},currentCard:{minHeight:172,overflow:'hidden',flexDirection:'row',alignItems:'center',gap:spacing.md,padding:spacing.md,backgroundColor:equipmentColors.panel,borderWidth:1,borderRadius:radii.lg},
+  heroShade:{...StyleSheet.absoluteFillObject,backgroundColor:'rgba(5,12,20,.6)'},thumbnail:{width:68,height:76,borderRadius:12,overflow:'hidden'},lockedTag:{position:'absolute',bottom:0,left:0,right:0,padding:4,backgroundColor:'#08111dcc'},lockedText:{color:C.muted,textAlign:'center',fontSize:11},currentCard:{minHeight:150,overflow:'hidden',flexDirection:'row',alignItems:'center',gap:spacing.md,padding:spacing.md,backgroundColor:equipmentColors.panel,borderWidth:1,borderRadius:radii.lg},
   regionSymbol:{width:64,height:64,alignItems:'center',justifyContent:'center',borderWidth:1,borderRadius:32,backgroundColor:equipmentColors.stage},
   symbol:{fontSize:31,fontWeight:'700'},
   overline:{...typography.caption,color:equipmentColors.goldSoft,fontWeight:'700',letterSpacing:1},
   currentName:{...typography.title,color:C.text,fontSize:22},
-  actions:{flexDirection:'row',gap:spacing.sm,marginTop:spacing.sm},
+  actions:{flexDirection:'row',gap:spacing.sm,marginTop:6},
   section:{...typography.caption,color:equipmentColors.goldSoft,fontWeight:'700',letterSpacing:1},
-  destination:{minHeight:104,flexDirection:'row',alignItems:'center',gap:spacing.sm,padding:spacing.sm,backgroundColor:equipmentColors.panel,borderWidth:1,borderColor:C.line,borderRadius:radii.lg},
+  destination:{minHeight:92,flexDirection:'row',alignItems:'center',gap:spacing.sm,padding:spacing.sm,backgroundColor:equipmentColors.panel,borderWidth:1,borderColor:C.line,borderRadius:radii.lg},
   smallSymbol:{width:44,height:44,alignItems:'center',justifyContent:'center',borderWidth:1,borderRadius:22,backgroundColor:equipmentColors.stage},
   smallSymbolText:{fontSize:21,fontWeight:'700'},
   destinationHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},
@@ -117,6 +117,6 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
   goalRouteLabel:{...typography.caption,color:C.info,fontWeight:'900',letterSpacing:.8},
   destinationMeta:{...typography.caption,color:C.info,fontWeight:'600'},
   destinationSub:{fontSize:12,lineHeight:17,color:C.muted},
-  travelButton:{alignSelf:'flex-start',minWidth:88,marginTop:8},
+  travelButton:{alignSelf:'flex-start',minWidth:88,marginTop:5},
   progress:{...typography.caption,color:C.muted,textAlign:'center'},
 });}

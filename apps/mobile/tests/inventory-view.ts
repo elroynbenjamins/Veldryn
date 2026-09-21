@@ -1,6 +1,7 @@
 import {createCharacter,newGame,effectiveStats,salvageItem,sellItem} from '../src/core/game';
 import {acknowledgeAllInventoryItems,acknowledgeInventoryItem,inventoryFavoriteIds,inventoryNewItemIds,recoveryAmount,storageCapacityStatus,toggleInventoryFavorite,transferAmount,transferError,visibleStacks} from '../src/core/inventory-view';
-import {validateGameSettings} from '../src/core/game-commands';
+import {validateGameCommand,validateGameSettings} from '../src/core/game-commands';
+import {bulkSalvageSelected,bulkSelectionSummary,bulkSellSelected,bulkTransferSelected} from '../src/core/inventory-bulk';
 import {normalizeSave} from '../src/core/save-normalization';
 function ok(value:boolean,message:string){if(!value)throw new Error(message)}
 const state=createCharacter(newGame(1000),'IRONWARDEN');
@@ -45,6 +46,26 @@ let favoriteSellBlocked=false;try{sellItem(favoriteProtected,'WORN_BLADE')}catch
 ok(favoriteSellBlocked,'Favorite items cannot be sold through core logic');
 let favoriteSalvageBlocked=false;try{salvageItem(favoriteProtected,'WORN_BLADE')}catch(error){favoriteSalvageBlocked=error instanceof Error&&error.message.includes('Favorite item is protected')}
 ok(favoriteSalvageBlocked,'Favorite items cannot be salvaged through core logic');
+const bulkBase={...state,inventory:{...state.inventory,stacks:[{itemId:'TRAVEL_RATION',quantity:20},{itemId:'COPPER_ORE',quantity:4},{itemId:'WORN_BLADE',quantity:1},{itemId:'HOLY_WATER',quantity:2}]},bank:{stacks:[],capacity:10}};
+const bulkIds=['TRAVEL_RATION','COPPER_ORE','WORN_BLADE','HOLY_WATER'];
+const bulkSummary=bulkSelectionSummary(bulkBase,bulkIds,'inventory');
+ok(bulkSummary.selectedStackCount===4&&bulkSummary.transferableStackCount===3&&bulkSummary.transferProtectedCount===1,'Bulk transfer keeps selected auto-eat food safe');
+ok(bulkSummary.sellableStackCount===2&&bulkSummary.sellGold===55,'Bulk sell includes only eligible stack value');
+const movedBulk=bulkTransferSelected(bulkBase,bulkIds,'inventory');
+ok(movedBulk.inventory.stacks.length===1&&movedBulk.inventory.stacks[0].itemId==='TRAVEL_RATION','Bulk deposit leaves protected auto-eat stack carried');
+ok(movedBulk.bank.stacks.some(stack=>stack.itemId==='COPPER_ORE')&&movedBulk.bank.stacks.some(stack=>stack.itemId==='WORN_BLADE'),'Bulk deposit moves eligible full stacks');
+const tooSmall={...bulkBase,bank:{stacks:[],capacity:1}},tooSmallBefore=JSON.stringify(tooSmall);
+let atomicTransferBlocked=false;try{bulkTransferSelected(tooSmall,['COPPER_ORE','WORN_BLADE'],'inventory')}catch(error){atomicTransferBlocked=error instanceof Error&&error.message.includes('Bank is full')}
+ok(atomicTransferBlocked&&JSON.stringify(tooSmall)===tooSmallBefore,'Bulk transfer failure is atomic and does not partially mutate state');
+const bulkFavorite={...bulkBase,settings:{...bulkBase.settings,favoriteItemIds:['WORN_BLADE']}};
+const soldBulk=bulkSellSelected(bulkFavorite,bulkIds);
+ok(soldBulk.character!.gold===bulkFavorite.character!.gold+20,'Bulk sell totals only eligible non-protected stacks');
+ok(soldBulk.inventory.stacks.some(stack=>stack.itemId==='WORN_BLADE')&&soldBulk.inventory.stacks.some(stack=>stack.itemId==='TRAVEL_RATION'),'Bulk sell keeps favorite gear and auto-eat food');
+const salvagedBulk=bulkSalvageSelected(bulkBase,['WORN_BLADE']);
+ok(!salvagedBulk.inventory.stacks.some(stack=>stack.itemId==='WORN_BLADE')&&salvagedBulk.inventory.stacks.some(stack=>stack.itemId==='MOSS_FIBER'&&stack.quantity===2),'Bulk salvage processes eligible equipment');
+ok(validateGameCommand({type:'bulk_transfer',args:{location:'inventory',ids:['COPPER_ORE']}}).type==='bulk_transfer','Bulk transfer command validates for online execution');
+let invalidBulkCommand=false;try{validateGameCommand({type:'bulk_sell',args:{ids:Array.from({length:101},(_,index)=>'ITEM_'+index)}})}catch{invalidBulkCommand=true}
+ok(invalidBulkCommand,'Bulk commands cap selections at 100 stacks');
 ok(JSON.stringify(stacks)===original,'Sorting does not mutate save stacks');
 ok(transferAmount(3,10)===3,'Quantity clamps to owned count');
 ok(transferAmount(25,'all')===25,'All transfer');
@@ -55,4 +76,4 @@ ok(transferError(state,'TRAVEL_RATION',10,'inventory')==='','Valid transfer');
 ok(!!transferError({...state,bank:{stacks:[],capacity:0}},'TRAVEL_RATION',1,'inventory'),'Full destination rejected');
 ok(!!transferError(state,'TRAVEL_RATION',100,'inventory'),'Insufficient quantity rejected');
 ok(!!transferError(state,'TRAVEL_RATION',1,'bank'),'Empty bank cannot withdraw');
-console.log('PASS: inventory search, NEW tracking, favorites, capacity status, sorting, transfer preflight and healing previews');
+console.log('PASS: inventory search, NEW tracking, favorites, safe bulk actions, capacity status, sorting, transfer preflight and healing previews');

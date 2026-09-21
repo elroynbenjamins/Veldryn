@@ -23,7 +23,7 @@ ok(queue.includes('completesAtMs:nowMs+seconds*1000'),'Timed craft completion mu
 ok(queue.includes('awardOwnerSkillXp'),'Completion XP must follow the character that started the job');
 
 ok(panel.includes('Crafting Queue')&&panel.includes('Queue slots'),'Skills must expose a compact equipment crafting queue');
-ok(panel.includes('max 5'),'Queue UI must make the hard cap visible');
+ok(panel.includes('model.slotInfo.max'),'Queue UI must render the authoritative hard cap');
 ok(panel.includes('Supporter')||panel.includes('slotInfo.sources'),'Queue UI must expose unlock-source progression');
 ok(card.includes('Start craft ·'),'Equipment recipe CTA must start a timed craft rather than complete instantly');
 ok(card.includes('equipmentCraftQueueModel'),'Recipe cards must disable starts when active slots are full');

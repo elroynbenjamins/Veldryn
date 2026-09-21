@@ -80,7 +80,7 @@ export const GEM_PROGRESSION_ITEMS:readonly GemProgressionItem[]=[
   ...EFFECT_GEM_FAMILIES.flatMap(f=>GEM_GRADES.map(g=>({
     id:effectGemItemId(f.id,g.grade),name:`${gradeNames[g.grade]} ${f.name} Gem`,type:'gem' as const,gemKind:'effect' as const,
     gemFamilyId:f.id,gemEffect:f.effectId,gemEffectValue:f.values[g.grade-1],gemGrade:g.grade,gemTier:g.grade,value:160*g.grade*g.grade,
-    rarity:g.grade>=5?'mythic':g.grade===4?'legendary':g.grade===3?'epic':g.grade===2?'rare':'uncommon',passive:f.summary
+    rarity:rarityForGrade(g.grade),passive:f.summary
   }))),
 ];
 

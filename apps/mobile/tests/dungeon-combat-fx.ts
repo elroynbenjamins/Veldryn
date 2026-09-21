@@ -1,7 +1,7 @@
 import {CLASSES} from '../src/content/classes';
 import {DUNGEON_COMBAT_CLASS_FX,dungeonCombatClassFx,dungeonCombatCueFx,dungeonCombatFxNeedsTravel} from '../src/core/dungeon-combat-fx';
 
-function assert(value:unknown,message:string){if(!value)throw new Error(message);}
+function assert(value:unknown,message:string):asserts value{if(!value)throw new Error(message);}
 function equal(actual:unknown,expected:unknown,message='values differ'){if(JSON.stringify(actual)!==JSON.stringify(expected))throw new Error(`${message}: ${JSON.stringify(actual)} !== ${JSON.stringify(expected)}`);}
 
 equal(Object.keys(DUNGEON_COMBAT_CLASS_FX).length,9,'all classes need combat FX');

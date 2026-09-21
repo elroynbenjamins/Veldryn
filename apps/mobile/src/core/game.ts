@@ -25,6 +25,7 @@ import {gatheringToolDef} from '../content/gathering-tools';
 import {currentRegionId} from './combat-region';
 import {WORLD_ZONES} from '../content/world-map';
 import {enhancedGearStats,equippedEffectGemBonuses,equippedGemBonuses,hasEnhancement} from './equipment-enhancement';
+import {gearInstanceById,gearInstancesForStorage,migrateToPerInstanceGear,removeGearInstance,updateGearInstance} from './gear-instances';
 import {activeEquipmentSetRuntime,equipmentSetCombatModifiers} from './equipment-set-runtime';
 import {companionCombatContribution,reconcileCombatCompanionUnlocks,grantCompanionEssence,grantBondstones} from './combat-companions';
 import {awardCompanionRematchBondstone,companionRematchBondstoneStatus,recordCompanionActivity} from './companion-runtime';
@@ -114,7 +115,7 @@ export function createCharacter(state:GameState,classId:ClassId,name='Adventurer
 export function effectiveStats(state:GameState){
   const c=state.character;if(!c)return {hp:0,attack:0,defense:0,power:0};
   let hp=c.hp,attack=c.attack,defense=c.defense;
-  for(const id of Object.values(c.equipment)){if(!id)continue;const stats=enhancedGearStats(state,id);hp+=stats.hp;attack+=stats.attack;defense+=stats.defense;}
+  for(const [slot,id] of Object.entries(c.equipment)){if(!id)continue;const instanceId=c.equipmentInstanceIds?.[slot as GearSlot],stats=enhancedGearStats(state,id,instanceId);hp+=stats.hp;attack+=stats.attack;defense+=stats.defense;}
   const novice=noviceSetFor(c.classId),noviceComplete=novice.slots.every(slot=>c.equipment[slot]===noviceItemId(c.classId,slot));
   if(noviceComplete){hp+=novice.setBonus.hp;attack+=novice.setBonus.attack;defense+=novice.setBonus.defense;}
   const setRuntime=activeEquipmentSetRuntime(state),setStats=setRuntime.stats;
@@ -510,38 +511,99 @@ export function stopActivity(state:GameState):GameState{
   }
   return {...state,activity:null,character:state.character?{...state.character,classTraining:undefined}:null}
 }
-export function equipItem(state:GameState,itemId:string):GameState{
-  if(!state.character)throw new Error('No character');const d=itemDef(itemId);if(d.type!=='gear'||!d.slot)throw new Error('Not gear');
-  if(d.classRestriction&&d.classRestriction!==state.character.classId)throw new Error('This gear belongs to another class');
-  let stacks=consume(state.inventory.stacks,itemId,1);const old=state.character.equipment[d.slot];if(old)stacks=stackItems(stacks,[{itemId:old,quantity:1}]);
-  const temp={...state,inventory:{...state.inventory,stacks},character:{...state.character,equipment:{...state.character.equipment,[d.slot]:itemId}}} as GameState;
-  const maxHp=effectiveStats(temp).hp;temp.character!.currentHp=Math.min(maxHp,temp.character!.currentHp+(d.hp||0));
-  return applyLocalBalanceSnapshot(refreshQuests(temp),Date.now())
+export function equipGearInstance(state:GameState,instanceId:string):GameState{
+  let next=migrateToPerInstanceGear(state);if(!next.character)throw new Error('No character');
+  const instance=gearInstanceById(next,instanceId);if(!instance)throw new Error('Equipment copy not found');
+  if(instance.location!=='inventory'||instance.ownerCharacterId!==next.character.id)throw new Error('That equipment copy is not in this character\'s Inventory');
+  const d=itemDef(instance.itemId);if(d.type!=='gear'||!d.slot)throw new Error('Not gear');
+  if(d.classRestriction&&d.classRestriction!==next.character.classId)throw new Error('This gear belongs to another class');
+  let stacks=consume(next.inventory.stacks,d.id,1);
+  const oldItemId=next.character.equipment[d.slot],oldInstanceId=next.character.equipmentInstanceIds?.[d.slot];
+  if(oldItemId){stacks=stackItems(stacks,[{itemId:oldItemId,quantity:1}]);if(oldInstanceId)next=updateGearInstance(next,oldInstanceId,old=>({...old,location:'inventory',ownerCharacterId:next.character!.id}));}
+  next=updateGearInstance(next,instanceId,current=>({...current,location:'equipped',ownerCharacterId:next.character!.id}));
+  next={...next,inventory:{...next.inventory,stacks},character:{...next.character!,equipment:{...next.character!.equipment,[d.slot]:d.id},equipmentInstanceIds:{...(next.character!.equipmentInstanceIds??{}),[d.slot]:instanceId}}};
+  const maxHp=effectiveStats(next).hp;next.character!.currentHp=Math.min(maxHp,next.character!.currentHp+(d.hp||0));
+  return applyLocalBalanceSnapshot(refreshQuests(next),Date.now());
 }
+export function equipItem(state:GameState,itemId:string):GameState{
+  const projected=migrateToPerInstanceGear(state);if(!projected.character)throw new Error('No character');
+  const d=itemDef(itemId);if(d.type!=='gear'||!d.slot)throw new Error('Not gear');
+  const copies=gearInstancesForStorage(projected,'inventory',itemId,projected.character.id).sort((a,b)=>a.createdAtMs-b.createdAtMs||a.id.localeCompare(b.id));
+  if(!copies.length)throw new Error('That equipment is not in Inventory');
+  return equipGearInstance(projected,copies[0].id);
+}
+
 export function equipFood(state:GameState,itemId:string):GameState{if(!state.character)throw new Error('No character');const d=itemDef(itemId);if(d.type!=='food')throw new Error('Not food');if(stackQty(state.inventory.stacks,itemId)<=0)throw new Error('No food available');return {...state,character:{...state.character,equippedFoodId:itemId}}}
 export function eatFood(state:GameState,itemId?:string):GameState{if(!state.character)return state;const id=itemId||state.character.equippedFoodId;if(!id)return state;const d=itemDef(id);if(d.type!=='food'||!d.heal)throw new Error('Not food');const maxHp=effectiveStats(state).hp,heal=Math.max(1,Math.ceil(d.heal*characterPermanentMultipliers(state).healingEffectivenessMultiplier));return {...state,inventory:{...state.inventory,stacks:consume(state.inventory.stacks,id,1)},character:{...state.character,currentHp:Math.min(maxHp,state.character.currentHp+heal)}}}
 export function usePotion(state:GameState,itemId:string):GameState{if(!state.character)throw new Error('Create a character first.');const potion=potionDef(itemId);if(!potion)throw new Error('Unknown potion.');if(state.activity?.kind==='combat')throw new Error('Potions cannot be used during a hunt.');const stacks=consume(state.inventory.stacks,itemId,1);if(potion.effect.kind==='healing'){const max=effectiveStats(state).hp,healing=characterPermanentMultipliers(state).healingEffectivenessMultiplier;return {...state,inventory:{...state.inventory,stacks},character:{...state.character,currentHp:Math.min(max,state.character.currentHp+Math.ceil(max*potion.effect.maxHpFraction*healing))}};}return {...state,inventory:{...state.inventory,stacks},character:{...state.character,preparation:{itemId,remainingEncounters:potion.effect.encounters}}};}
 export function discardPreparation(state:GameState):GameState{return state.character?.preparation?{...state,character:{...state.character,preparation:undefined}}:state;}
-export function unequipItem(state:GameState,slot:GearSlot):GameState{if(!state.character)return state;const old=state.character.equipment[slot];if(!old)return state;const eq={...state.character.equipment};delete eq[slot];const next={...state,inventory:{...state.inventory,stacks:stackItems(state.inventory.stacks,[{itemId:old,quantity:1}])},character:{...state.character,equipment:eq}} as GameState;next.character!.currentHp=Math.min(effectiveStats(next).hp,next.character!.currentHp);return next}
-export function sellItem(state:GameState,itemId:string,quantity=1):GameState{if(!state.character||quantity<=0)return state;if(itemId===HOLY_WATER_ID)throw new Error('Holy Water cannot be sold.');if(state.settings.favoriteItemIds?.includes(itemId))throw new Error('Favorite item is protected. Remove it from Favorites before selling.');const discovered=discoverCharacterSkins(state),d=itemDef(itemId);if(d.type==='gear'&&hasEnhancement(discovered,itemId))throw new Error('Enhanced equipment is protected. Extract its gems before disposal; upgraded ranks cannot be recovered.');return {...discovered,inventory:{...discovered.inventory,stacks:consume(discovered.inventory.stacks,itemId,quantity)},character:{...discovered.character!,gold:discovered.character!.gold+d.value*quantity}}}
-export function salvageItem(state:GameState,itemId:string):GameState{if(state.settings.favoriteItemIds?.includes(itemId))throw new Error('Favorite item is protected. Remove it from Favorites before salvaging.');const discovered=discoverCharacterSkins(state),d=itemDef(itemId);if(d.type!=='gear'||!d.salvage)throw new Error('Cannot salvage');if(hasEnhancement(discovered,itemId))throw new Error('Enhanced equipment is protected. Extract its gems before disposal; upgraded ranks cannot be recovered.');return {...discovered,inventory:{...discovered.inventory,stacks:stackItems(consume(discovered.inventory.stacks,itemId,1),[d.salvage])}}}
+export function unequipItem(state:GameState,slot:GearSlot):GameState{
+  let next=migrateToPerInstanceGear(state);if(!next.character)return next;
+  const oldItemId=next.character.equipment[slot],oldInstanceId=next.character.equipmentInstanceIds?.[slot];if(!oldItemId)return next;
+  const eq={...next.character.equipment},ids={...(next.character.equipmentInstanceIds??{})};delete eq[slot];delete ids[slot];
+  const stacks=stackItems(next.inventory.stacks,[{itemId:oldItemId,quantity:1}]);
+  if(oldInstanceId)next=updateGearInstance(next,oldInstanceId,instance=>({...instance,location:'inventory',ownerCharacterId:next.character!.id}));
+  next={...next,inventory:{...next.inventory,stacks},character:{...next.character!,equipment:eq,equipmentInstanceIds:ids}};
+  next.character!.currentHp=Math.min(effectiveStats(next).hp,next.character!.currentHp);return next;
+}
+export function sellGearInstance(state:GameState,instanceId:string):GameState{
+  let next=discoverCharacterSkins(migrateToPerInstanceGear(state));if(!next.character)throw new Error('No character');
+  const instance=gearInstanceById(next,instanceId);if(!instance||instance.location!=='inventory'||instance.ownerCharacterId!==next.character.id)throw new Error('That equipment copy is not in Inventory');
+  const d=itemDef(instance.itemId);if(d.type!=='gear')throw new Error('Not gear');
+  if(next.settings.favoriteItemIds?.includes(d.id))throw new Error('Favorite item is protected. Remove it from Favorites before selling.');
+  if(hasEnhancement(next,d.id,instanceId))throw new Error('This selected copy is enhanced. Extract its gems before disposal; upgraded ranks cannot be recovered.');
+  next=removeGearInstance(next,instanceId);
+  return {...next,inventory:{...next.inventory,stacks:consume(next.inventory.stacks,d.id,1)},character:{...next.character!,gold:next.character!.gold+d.value}};
+}
+export function salvageGearInstance(state:GameState,instanceId:string):GameState{
+  let next=discoverCharacterSkins(migrateToPerInstanceGear(state));if(!next.character)throw new Error('No character');
+  const instance=gearInstanceById(next,instanceId);if(!instance||instance.location!=='inventory'||instance.ownerCharacterId!==next.character.id)throw new Error('That equipment copy is not in Inventory');
+  const d=itemDef(instance.itemId);if(d.type!=='gear'||!d.salvage)throw new Error('Cannot salvage');
+  if(next.settings.favoriteItemIds?.includes(d.id))throw new Error('Favorite item is protected. Remove it from Favorites before salvaging.');
+  if(hasEnhancement(next,d.id,instanceId))throw new Error('This selected copy is enhanced. Extract its gems before disposal; upgraded ranks cannot be recovered.');
+  next=removeGearInstance(next,instanceId);
+  return {...next,inventory:{...next.inventory,stacks:stackItems(consume(next.inventory.stacks,d.id,1),[d.salvage])}};
+}
+export function sellItem(state:GameState,itemId:string,quantity=1):GameState{
+  if(!state.character||quantity<=0)return state;if(itemId===HOLY_WATER_ID)throw new Error('Holy Water cannot be sold.');
+  const d=itemDef(itemId);if(d.type==='gear'){const projected=migrateToPerInstanceGear(state),copies=gearInstancesForStorage(projected,'inventory',itemId,projected.character!.id);if(quantity!==1||copies.length!==1)throw new Error('Select the exact equipment copy you want to sell.');return sellGearInstance(projected,copies[0].id);}
+  if(state.settings.favoriteItemIds?.includes(itemId))throw new Error('Favorite item is protected. Remove it from Favorites before selling.');
+  const discovered=discoverCharacterSkins(state);return {...discovered,inventory:{...discovered.inventory,stacks:consume(discovered.inventory.stacks,itemId,quantity)},character:{...discovered.character!,gold:discovered.character!.gold+d.value*quantity}};
+}
+export function salvageItem(state:GameState,itemId:string):GameState{
+  const d=itemDef(itemId);if(d.type==='gear'){const projected=migrateToPerInstanceGear(state);if(!projected.character)throw new Error('No character');const copies=gearInstancesForStorage(projected,'inventory',itemId,projected.character.id);if(copies.length!==1)throw new Error('Select the exact equipment copy you want to salvage.');return salvageGearInstance(projected,copies[0].id);}
+  throw new Error('Cannot salvage');
+}
 
+export function depositGearInstance(state:GameState,instanceId:string):GameState{
+  let next=migrateToPerInstanceGear(state);if(!next.character)throw new Error('No character');const instance=gearInstanceById(next,instanceId);
+  if(!instance||instance.location!=='inventory'||instance.ownerCharacterId!==next.character.id)throw new Error('That equipment copy is not in Inventory');
+  const added=addBounded(next.bank.stacks,next.bank.capacity,[{itemId:instance.itemId,quantity:1}]);if(added.overflow.length)throw new Error('Bank is full');
+  next=updateGearInstance(next,instanceId,row=>({...row,location:'bank'}));
+  return {...next,inventory:{...next.inventory,stacks:consume(next.inventory.stacks,instance.itemId,1)},bank:{...next.bank,stacks:added.stacks}};
+}
+export function withdrawGearInstance(state:GameState,instanceId:string):GameState{
+  let next=migrateToPerInstanceGear(state);if(!next.character)throw new Error('No character');const instance=gearInstanceById(next,instanceId);
+  if(!instance||instance.location!=='bank')throw new Error('That equipment copy is not in Bank');
+  const added=addBounded(next.inventory.stacks,next.inventory.capacity,[{itemId:instance.itemId,quantity:1}]);if(added.overflow.length)throw new Error('Inventory is full');
+  next=updateGearInstance(next,instanceId,row=>({...row,location:'inventory',ownerCharacterId:next.character!.id}));
+  return {...next,bank:{...next.bank,stacks:consume(next.bank.stacks,instance.itemId,1)},inventory:{...next.inventory,stacks:added.stacks}};
+}
 export function depositToBank(state:GameState,itemId:string,quantity:number):GameState{
-  if(quantity<=0)return state;
+  if(quantity<=0)return state;const d=itemDef(itemId);
+  if(d.type==='gear'){const projected=migrateToPerInstanceGear(state);if(!projected.character)throw new Error('No character');const copies=gearInstancesForStorage(projected,'inventory',itemId,projected.character.id);if(quantity!==1||copies.length!==1)throw new Error('Select the exact equipment copy you want to deposit.');return depositGearInstance(projected,copies[0].id);}
   const invQty=stackQty(state.inventory.stacks,itemId);if(invQty<quantity)throw new Error('Not enough items in inventory');
-  const removed=consume(state.inventory.stacks,itemId,quantity);
-  const added=addBounded(state.bank.stacks,state.bank.capacity,[{itemId,quantity}]);
-  if(added.overflow.length)throw new Error('Bank is full');
+  const removed=consume(state.inventory.stacks,itemId,quantity),added=addBounded(state.bank.stacks,state.bank.capacity,[{itemId,quantity}]);if(added.overflow.length)throw new Error('Bank is full');
   return {...state,inventory:{...state.inventory,stacks:removed},bank:{...state.bank,stacks:added.stacks}};
 }
 export function withdrawFromBank(state:GameState,itemId:string,quantity:number):GameState{
-  if(quantity<=0)return state;
+  if(quantity<=0)return state;const d=itemDef(itemId);
+  if(d.type==='gear'){const projected=migrateToPerInstanceGear(state);const copies=gearInstancesForStorage(projected,'bank',itemId);if(quantity!==1||copies.length!==1)throw new Error('Select the exact equipment copy you want to withdraw.');return withdrawGearInstance(projected,copies[0].id);}
   const bankQty=stackQty(state.bank.stacks,itemId);if(bankQty<quantity)throw new Error('Not enough items in Bank');
-  const removed=consume(state.bank.stacks,itemId,quantity);
-  const added=addBounded(state.inventory.stacks,state.inventory.capacity,[{itemId,quantity}]);
-  if(added.overflow.length)throw new Error('Inventory is full');
+  const removed=consume(state.bank.stacks,itemId,quantity),added=addBounded(state.inventory.stacks,state.inventory.capacity,[{itemId,quantity}]);if(added.overflow.length)throw new Error('Inventory is full');
   return {...state,bank:{...state.bank,stacks:removed},inventory:{...state.inventory,stacks:added.stacks}};
 }
+
 export type StorageLocation='inventory'|'bank';
 const STORAGE_UPGRADES:Record<StorageLocation,{capacity:number;cost:number}[]>={
   inventory:[{capacity:40,cost:500},{capacity:50,cost:1500},{capacity:60,cost:4000},{capacity:75,cost:10000},{capacity:100,cost:25000}],

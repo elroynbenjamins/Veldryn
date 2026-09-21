@@ -8,6 +8,7 @@ export interface VerifiedCombatSnapshot {
   characterId: string;
   classId: string;
   displayName?: string;
+  bodyPresentation?: 'male'|'female';
   role: Exclude<CombatRole,'enemy'>;
   level: number;
   maxHp: number;
@@ -32,6 +33,6 @@ export function combatantFromVerifiedSnapshot(s: VerifiedCombatSnapshot, abiliti
   return applyCharacterCompanionAssist({
     id:s.characterId,classId:s.classId,name:s.displayName||s.classId,team:'players',role:s.role,level:s.level,
     stats:{maxHp:s.maxHp,attackPower:s.attackPower,healingPower:s.healingPower,defense:s.defense,accuracy:s.accuracy,evasion:s.evasion,critChance:Math.max(0,Math.min(COMBAT_LIMITS.critChanceCap,s.critChance)),critMultiplier:COMBAT_LIMITS.defaultCritMultiplier,haste:Math.max(-.25,Math.min(.75,s.haste))},
-    basicAttackMs:2400,basicAttackCoeff:.70,abilities,effectGems:s.effectGems,
+    basicAttackMs:2400,basicAttackCoeff:.70,abilities,tags:s.bodyPresentation?[`body:${s.bodyPresentation}`]:[],effectGems:s.effectGems,
   },s.combatCompanion);
 }

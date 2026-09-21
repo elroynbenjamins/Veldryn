@@ -17,7 +17,7 @@ export function initGemCombatRuntimeV34(def:CombatantDefinition):GemCombatRuntim
   openingUntil:opening?(opening.resonance>=2?10000:8000):0,openingPhaseRefreshUsed:false,
   predatorTriggeredTargets:{},predatorBoostUntilByTarget:{},lastStandUsed:false,lastStandUntil:0,retaliationUntil:0,retaliationHealReadyAt:0,
   bulwarkUntil:0,benedictionCharges:0,benedictionExpiresAt:0,battleLastAt:0,battleHasteUntil:0,battleHasteReadyAt:0,
-  flowStacks:0,flowExpiresAt:0,opportunityByTarget:{},sustenanceReadyAt:0,
+  flowStacks:0,flowExpiresAt:0,flowDecayStartedAt:undefined,opportunityByTarget:{},opportunityReadyAtByTarget:{},sustenanceReadyAt:0,
  };
 }
 function rt(state:CombatantState){return state.gemRuntimeV34;}
@@ -40,13 +40,13 @@ export function tickGemCombatRuntimeV34(state:CombatantState,now:number){
  const momentum=effectGemV34(state,'effect_momentum');
  if(momentum&&runtime.momentumStacks>0&&now>=runtime.momentumLastGainAt+4000){
   if(momentum.resonance>=3){
-   if(!runtime.momentumDecayNextAt)runtime.momentumDecayNextAt=runtime.momentumLastGainAt+4000;
+   if(!runtime.momentumDecayNextAt)runtime.momentumDecayNextAt=runtime.momentumLastGainAt+6000;
    while(runtime.momentumStacks>0&&now>=runtime.momentumDecayNextAt){runtime.momentumStacks--;runtime.momentumDecayNextAt+=2000;}
   }else runtime.momentumStacks=0;
  }
  const flow=effectGemV34(state,'effect_flow');
  if(flow&&runtime.flowStacks>0&&now>=runtime.flowExpiresAt){
-  if(flow.resonance>=3){runtime.flowStacks--;runtime.flowExpiresAt=runtime.flowStacks>0?now+2000:0;}else runtime.flowStacks=0;
+  if(flow.resonance>=3){if(runtime.flowDecayStartedAt===undefined){runtime.flowDecayStartedAt=now;runtime.flowExpiresAt=now+2000;}else{runtime.flowStacks--;runtime.flowExpiresAt=runtime.flowStacks>0?now+2000:0;}}else runtime.flowStacks=0;
  }
  for(const [targetId,opportunity] of Object.entries(runtime.opportunityByTarget))if(opportunity.until<=now)delete runtime.opportunityByTarget[targetId];
 }
@@ -116,32 +116,38 @@ export function onGemDamageTakenV34(target:CombatantState,now:number,dealt:numbe
 export function prepareGemSupportOutputV34(actor:CombatantState,now:number,abilityId:string,kind:'heal'|'shield'):PreparedGemSupportV34{
  const runtime=rt(actor);if(!runtime)return{multiplier:1};tickGemCombatRuntimeV34(actor,now);let multiplier=battleRhythmMultiplier(actor,abilityId,now);
  const resolve=effectGemV34(actor,'effect_shared_resolve');if(resolve)multiplier*=1+resolve.totalValue*liveCount(runtime.sharedResolveExpiries,now);
- const benediction=effectGemV34(actor,'effect_benediction');if(benediction&&runtime.benedictionCharges>0&&runtime.benedictionExpiresAt>now){
-  const key=`${now}:${abilityId}:${kind}`;if(runtime.benedictionAbilityKey!==key){runtime.benedictionAbilityKey=key;runtime.benedictionAbilityMultiplier=1+benediction.totalValue;runtime.benedictionCharges--;}
-  multiplier*=runtime.benedictionAbilityMultiplier??1;
+ const benediction=effectGemV34(actor,'effect_benediction');if(benediction&&runtime.benedictionExpiresAt>now){
+  const key=`${now}:${abilityId}:${kind}`;
+  if(runtime.benedictionAbilityKey===key&&runtime.benedictionAbilityMultiplier)multiplier*=runtime.benedictionAbilityMultiplier;
+  else if(runtime.benedictionCharges>0){runtime.benedictionAbilityKey=key;runtime.benedictionAbilityMultiplier=1+benediction.totalValue;runtime.benedictionCharges--;multiplier*=runtime.benedictionAbilityMultiplier;if(benediction.resonance>=3)actor.modifiers.push({sourceId:actor.definition.id,tag:'haste',kind:'buff',value:.02,expiresAt:now+4000,appliedAt:now});}
  }
  if(kind==='shield'){const aegis=effectGemV34(actor,'effect_aegis');if(aegis)multiplier*=1+aegis.totalValue;}
  return{multiplier};
 }
 export function onGemDirectHealV34(source:CombatantState,target:CombatantState,now:number,raw:number,actual:number){
- const mercy=effectGemV34(source,'effect_mercy');if(mercy&&raw>actual){const amount=(raw-actual)*mercy.totalValue,cap=target.definition.stats.maxHp*(mercy.resonance>=2?.04:.03),grant=Math.max(0,Math.min(amount,cap-target.shield));if(grant>0){target.shield+=grant;(target.timedShieldsV34??=[]).push({sourceId:source.definition.id,remaining:grant,expiresAt:now+(mercy.resonance>=3?10000:8000),expireHealRate:effectGemV34(source,'effect_aegis')?.resonance===2||effectGemV34(source,'effect_aegis')?.resonance===3?.05:undefined});}}
+ const mercy=effectGemV34(source,'effect_mercy');if(mercy&&raw>actual){const amount=(raw-actual)*mercy.totalValue,cap=target.definition.stats.maxHp*(mercy.resonance>=2?.04:.03),grant=Math.max(0,Math.min(amount,cap-target.shield));if(grant>0){target.shield+=grant;(target.timedShieldsV34??=[]).push({sourceId:source.definition.id,remaining:grant,expiresAt:now+(mercy.resonance>=3?10000:8000),expireHealRate:(()=>{const aegis=effectGemV34(source,'effect_aegis');return aegis&&aegis.resonance>=2?.05:undefined;})()});}}
  const renewal=effectGemV34(source,'effect_renewal');if(renewal&&actual>0){const duration=renewal.resonance>=2?6000:4000,total=actual*renewal.totalValue*(renewal.resonance>=2?1.2:1),tickMs=1000,flat=total/(duration/tickMs),existing=target.periodic.filter(p=>p.kind==='hot'&&p.effectId==='GEM_RENEWAL'&&p.sourceId===source.definition.id),cap=renewal.resonance>=3?2:1;if(existing.length>=cap){const oldest=existing.sort((a,b)=>a.expiresAt-b.expiresAt)[0];target.periodic=target.periodic.filter(p=>p!==oldest);}target.periodic.push({sourceId:source.definition.id,effectId:'GEM_RENEWAL',kind:'hot',coeff:0,flat,nextTickAt:now+tickMs,expiresAt:now+duration,tickMs});}
 }
+function grantSharedResolveV34(source:CombatantState,target:CombatantState,now:number){
+ if(source===target)return;const resolve=effectGemV34(source,'effect_shared_resolve'),runtime=rt(source);if(resolve&&runtime){runtime.sharedResolveExpiries=runtime.sharedResolveExpiries.filter(t=>t>now);const cap=resolve.resonance>=3?3:2;if(runtime.sharedResolveExpiries.length<cap)runtime.sharedResolveExpiries.push(now+(resolve.resonance>=2?8000:6000));}
+}
+export function onGemBuffAppliedV34(source:CombatantState,target:CombatantState,now:number){grantSharedResolveV34(source,target,now);}
 export function onGemBarrierV34(source:CombatantState,target:CombatantState,now:number,amount:number,durationMs?:number){
  if(amount<=0)return;const aegis=effectGemV34(source,'effect_aegis');if(durationMs){(target.timedShieldsV34??=[]).push({sourceId:source.definition.id,remaining:amount,expiresAt:now+durationMs,expireHealRate:aegis?.resonance&&aegis.resonance>=2?.05:undefined});}
- if(source!==target){const gift=effectGemV34(source,'effect_guardians_gift');if(gift){const duration=gift.resonance>=2?6000:4000;target.modifiers.push({sourceId:source.definition.id,tag:'gem_guardians_gift',kind:'buff',value:-gift.totalValue,expiresAt:now+duration,appliedAt:now});if(gift.resonance>=3)source.modifiers.push({sourceId:source.definition.id,tag:'gem_guardians_gift_self',kind:'buff',value:-gift.totalValue*.5,expiresAt:now+duration,appliedAt:now});}
-  const resolve=effectGemV34(source,'effect_shared_resolve'),runtime=rt(source);if(resolve&&runtime){runtime.sharedResolveExpiries=runtime.sharedResolveExpiries.filter(t=>t>now);const cap=resolve.resonance>=3?3:2;if(runtime.sharedResolveExpiries.length<cap)runtime.sharedResolveExpiries.push(now+(resolve.resonance>=2?8000:6000));}
+ if(source!==target){const gift=effectGemV34(source,'effect_guardians_gift');if(gift){const duration=gift.resonance>=2?6000:4000;target.modifiers.push({sourceId:source.definition.id,tag:'damage_taken',kind:'buff',value:-gift.totalValue,expiresAt:now+duration,appliedAt:now});if(gift.resonance>=3)source.modifiers.push({sourceId:source.definition.id,tag:'damage_taken',kind:'buff',value:-gift.totalValue*.5,expiresAt:now+duration,appliedAt:now});}
+  grantSharedResolveV34(source,target,now);
  }
 }
 export function onGemDebuffAppliedV34(source:CombatantState,target:CombatantState,now:number,tag:string){
  const opportunist=effectGemV34(source,'effect_opportunist'),runtime=rt(source);if(!opportunist||!runtime)return;
- const current=runtime.opportunityByTarget[target.definition.id];if(current&&current.until>now)return;
- runtime.opportunityByTarget[target.definition.id]={until:now+(opportunist.resonance>=2?3000:4000),modifierTag:tag,modifierSourceId:source.definition.id};
+ if((runtime.opportunityReadyAtByTarget[target.definition.id]??0)>now)return;
+ runtime.opportunityByTarget[target.definition.id]={until:now+4000,modifierTag:tag,modifierSourceId:source.definition.id};
+ runtime.opportunityReadyAtByTarget[target.definition.id]=now+(opportunist.resonance>=2?3000:4000);
 }
 export function onGemAbilityUsedV34(actor:CombatantState,ability:AbilityDefinition,now:number){
  const runtime=rt(actor);if(!runtime)return;const category=abilityCategory(ability);
  const rhythm=effectGemV34(actor,'effect_battle_rhythm');if(rhythm){const window=rhythm.resonance>=2?12000:8000,alternated=runtime.battleLastCategory&&runtime.battleLastCategory!==category&&now-runtime.battleLastAt<=window;if(alternated&&rhythm.resonance>=3&&runtime.battleHasteReadyAt<=now){runtime.battleHasteUntil=now+4000;runtime.battleHasteReadyAt=now+6000;}runtime.battleLastCategory=category;runtime.battleLastAt=now;}
- const flow=effectGemV34(actor,'effect_flow');if(flow){if(runtime.flowLastAbilityId!==ability.id)runtime.flowStacks=Math.min(flow.resonance>=2?4:3,runtime.flowStacks+1);runtime.flowLastAbilityId=ability.id;runtime.flowExpiresAt=now+6000;}
+ const flow=effectGemV34(actor,'effect_flow');if(flow){if(runtime.flowLastAbilityId!==ability.id)runtime.flowStacks=Math.min(flow.resonance>=2?4:3,runtime.flowStacks+1);runtime.flowLastAbilityId=ability.id;runtime.flowExpiresAt=now+6000;runtime.flowDecayStartedAt=undefined;}
  const bulwark=effectGemV34(actor,'effect_bulwark');if(bulwark&&category==='defense_support')runtime.bulwarkUntil=now+(bulwark.resonance>=2?5000:4000);
  const benediction=effectGemV34(actor,'effect_benediction');if(benediction&&category==='defense_support'){runtime.benedictionCharges=Math.min(benediction.resonance>=2?2:1,runtime.benedictionCharges+1);runtime.benedictionExpiresAt=now+10000;runtime.benedictionAbilityKey=undefined;runtime.benedictionAbilityMultiplier=undefined;}
 }

@@ -1,5 +1,5 @@
 import {coopTierEligibility,filterCoopDungeons,groupCoopDungeonsByRegion,presentCoopDungeon,validateCoopDungeonView,type CoopRoomType} from '../src/core/coop-dungeon-browsing';
-import {seasonalEventHasExpedition,validateCoopEventExpeditionPreview} from '../src/core/coop-event-expeditions';
+import {seasonalEventExpeditionInfo,seasonalEventHasExpedition,validateCoopEventExpeditionPreview} from '../src/core/coop-event-expeditions';
 import {COOP_MESSAGE_COUNT,SUPPORTED_LANGUAGES,translatedCoopMessageCount} from '../src/i18n';
 
 function equal(actual:unknown,expected:unknown,message:string){if(JSON.stringify(actual)!==JSON.stringify(expected))throw new Error(`${message}: ${JSON.stringify(actual)}`)}
@@ -20,6 +20,15 @@ let eventFailure='';try{validateCoopEventExpeditionPreview({id:'EVENT_BAD',event
 equal(seasonalEventHasExpedition('EVT_ANNUAL_006_2026'),true,'Suncrest should expose its seasonal expedition');
 equal(seasonalEventHasExpedition('EVT_ANNUAL_012_2026'),true,'Frostfall should expose its seasonal expedition');
 equal(seasonalEventHasExpedition('EVT_ANNUAL_009_2026'),false,'Harvestwake should not invent an event dungeon');
+equal(seasonalEventExpeditionInfo('EVT_ANNUAL_001_2026')?.name,'The Chronicle Vault','Turning should present Chronicle Vault');
+equal(seasonalEventExpeditionInfo('EVT_ANNUAL_002_2026')?.finalBoss,'The Severed Vow','Heartbond should present its final boss');
+equal(seasonalEventExpeditionInfo('EVT_ANNUAL_003_2026')?.routeHighlights,['Overgrown Shrine','Pollen Hollow','Rootbound Grove'],'Bloomwake route identity changed');
+equal(seasonalEventExpeditionInfo('EVT_ANNUAL_006_2026')?.name,'The Shattered Isles','Suncrest route identity changed');
+equal(seasonalEventExpeditionInfo('EVT_ANNUAL_008_2026')?.minLevel,70,'Starfall should remain the highest-level seasonal expedition');
+equal(seasonalEventExpeditionInfo('EVT_ANNUAL_010_2026')?.name,'The Gloam Breach','Veilbreak route identity changed');
+equal(seasonalEventExpeditionInfo('EVT_ANNUAL_011_2026')?.finalBoss,'The Coinbound Captain','Merchant final boss identity changed');
+equal(seasonalEventExpeditionInfo('EVT_ANNUAL_012_2026')?.name,'Aurora Hollow','Frostfall route identity changed');
+equal(seasonalEventExpeditionInfo('EVT_ANNUAL_009_2026'),undefined,'Harvestwake remains intentionally dungeonless');
 let liveFailure='';try{validateCoopEventExpeditionPreview({id:'EVENT_LIVE',eventName:'Suncrest Games',name:'The Shattered Isles',description:'A seasonal route.',routeHighlights:['Coastal Ruins','Sun Shrine','Pirate Camp'],finalBoss:'Aureon, First Champion',status:'available',minLevel:45,rewardMarks:96})}catch(error){liveFailure=error instanceof Error?error.message:String(error)}equal(liveFailure,'available_event_requires_live_event','live event cards require an authoritative LiveOps id');
 let failure='';try{validateCoopDungeonView(presentCoopDungeon({id:'EXP_BAD',name:'Bad lock',minLevel:2,syncLevel:2,available:false,difficulties:[1]}))}catch(error){failure=error instanceof Error?error.message:String(error)}equal(failure,'locked_reason_required','locked reason must fail closed');
 for(const language of SUPPORTED_LANGUAGES)equal(translatedCoopMessageCount(language),COOP_MESSAGE_COUNT,`${language} co-op catalog incomplete`);

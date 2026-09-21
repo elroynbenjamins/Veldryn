@@ -159,7 +159,9 @@ export function startEquipmentCraft(state:GameState,recipeId:string,nowMs:number
 
 function addOutput(stacks:ItemStack[],capacity:number,itemId:string,quantityToAdd:number){
   let remaining=quantityToAdd,next=stacks.map(row=>({...row}));
-  while(remaining>0&&next.filter(row=>row.quantity>0).length<capacity){next.push({itemId,quantity:1});remaining--;}
+  const existing=next.findIndex(row=>row.itemId===itemId&&row.quantity>0);
+  if(existing>=0&&remaining>0){next[existing]={...next[existing],quantity:next[existing].quantity+remaining};remaining=0;}
+  while(remaining>0&&next.filter(row=>row.quantity>0).length<capacity){next.push({itemId,quantity:remaining});remaining=0;}
   return {stacks:next,remaining};
 }
 

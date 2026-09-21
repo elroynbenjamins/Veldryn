@@ -104,6 +104,13 @@ export function normalizeSave(input:any):GameState{
   const skills=skillIds.map(skillId=>{const raw=(input.skills??[]).find((entry:any)=>entry?.skillId===skillId);const xp=Number.isFinite(Number(raw?.xp))?Math.max(0,Math.floor(Number(raw.xp))):0;return {skillId,xp,level:Math.max(1,Math.min(100,Number.isFinite(Number(raw?.level))?Math.floor(Number(raw.level)):1))};});
   const liveEvent=rawLiveEvent&&typeof rawLiveEvent.eventId==='string'&&typeof rawLiveEvent.enabled==='boolean'&&Number.isFinite(rawLiveEvent.startsAtMs)&&Number.isFinite(rawLiveEvent.endsAtMs)&&rawLiveEvent.endsAtMs>rawLiveEvent.startsAtMs?{eventId:rawLiveEvent.eventId,enabled:rawLiveEvent.enabled,startsAtMs:Number(rawLiveEvent.startsAtMs),endsAtMs:Number(rawLiveEvent.endsAtMs),...(Number.isFinite(rawLiveEvent.graceEndsAtMs)&&Number(rawLiveEvent.graceEndsAtMs)>=Number(rawLiveEvent.endsAtMs)?{graceEndsAtMs:Number(rawLiveEvent.graceEndsAtMs)}:{}),...(Number.isFinite(rawLiveEvent.priority)?{priority:Math.floor(Number(rawLiveEvent.priority))}:{}),...(Array.isArray(rawLiveEvent.modules)?{modules:[...new Set(rawLiveEvent.modules.filter((value:unknown)=>typeof value==='string'))].slice(0,12) as string[]}:{})}:undefined;
   const stringList=(value:unknown,limit=160)=>Array.isArray(value)?[...new Set(value.filter((id:unknown)=>typeof id==='string'))].slice(-limit):[];
+  const legacySeenItemIds=Array.isArray(input.settings?.seenItemIds)
+    ? stringList(input.settings.seenItemIds,1000)
+    : [...new Set([
+        ...(Array.isArray(input.inventory?.stacks)?input.inventory.stacks:[]),
+        ...(Array.isArray(input.bank?.stacks)?input.bank.stacks:[]),
+        ...(Array.isArray(input.otherCharacters)?input.otherCharacters.flatMap((entry:any)=>Array.isArray(entry?.inventory?.stacks)?entry.inventory.stacks:[]):[]),
+      ].filter((entry:any)=>entry&&typeof entry.itemId==='string'&&Number(entry.quantity)>0).map((entry:any)=>entry.itemId))].slice(-1000);
   const numberRecord=(value:unknown,limit=240)=>Object.fromEntries(Object.entries(value&&typeof value==='object'?value:{}).filter(([id,amount])=>typeof id==='string'&&Number.isFinite(Number(amount))).slice(-limit).map(([id,amount])=>[id,Math.max(0,Math.floor(Number(amount)))]));
   const stringRecord=(value:unknown,limit=24)=>Object.fromEntries(Object.entries(value&&typeof value==='object'?value:{}).filter(([id,entry])=>typeof id==='string'&&typeof entry==='string').slice(-limit));
   const regionalProgressById=Object.fromEntries(Object.entries(input.regionalProgressById&&typeof input.regionalProgressById==='object'?input.regionalProgressById:{}).filter(([id,entry])=>typeof id==='string'&&entry&&typeof entry==='object').slice(-16).map(([id,entry])=>[id,Object.fromEntries(Object.entries(entry as Record<string,unknown>).filter(([key,value])=>['storyCompleted','sideQuestsCompleted','echoesCompleted','dungeonsCompleted','collectionEntries','bossMasteryTier'].includes(key)&&Number.isFinite(Number(value))).map(([key,value])=>[key,Math.max(0,Math.floor(Number(value)))]))]));
@@ -146,6 +153,7 @@ export function normalizeSave(input:any):GameState{
       defaultWorldChat:([1,2,3,4] as number[]).includes(Number(input.settings?.defaultWorldChat))?Number(input.settings.defaultWorldChat):1,
       quickNavDestinations:normalizeQuickNavDestinations(input.settings?.quickNavDestinations),
       favoriteItemIds:stringList(input.settings?.favoriteItemIds,100),
+      seenItemIds:legacySeenItemIds,
     }
   } as GameState;
   normalized.account={...normalized.account,...migrateLegacyCombatCompanionAccount(input),...normalizeCompanionRuntimeSave(input.account)} as GameState['account'];

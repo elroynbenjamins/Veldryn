@@ -74,6 +74,10 @@ export interface EquipmentCraftJob{
   ownerCharacterId:string;
   startedAtMs:number;
   completesAtMs:number;
+  /** Missing on legacy saves means ordinary equipment craft. */
+  kind?:'equipment'|'gem_combine';
+  outputItemId?:string;
+  outputQuantity?:number;
 }
 export interface ItemStack { itemId:string; quantity:number; }
 export interface InventoryState { stacks:ItemStack[]; capacity:number; }

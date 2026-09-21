@@ -52,10 +52,9 @@ export function rerollAccountCharacter(state:GameState,id:string,classId:ClassId
  const target=targetSlot(state,id);exactConfirmation(target.slot.character.name,confirmation);
  const blocked=managementBlocker(target.slot);if(blocked)throw new Error(blocked);
  const preserved=recordAccountProgress(state),newId=replacementId??nextLocalCharacterId(preserved),fresh=freshSlot(classId,name,body,now,newId);
- const account={...preserved.account,createdCharacterCount:Math.max(preserved.account.createdCharacterCount+1,accountCharacters(preserved).length+1)};
  const next:GameState=target.active
-  ?{...preserved,character:fresh.slot.character,inventory:fresh.slot.inventory,overflow:fresh.slot.overflow,activity:fresh.slot.activity,skills:fresh.slot.skills,quests:fresh.slot.quests,currentRegionId:fresh.slot.currentRegionId,account}
-  :{...preserved,account,otherCharacters:(preserved.otherCharacters??[]).map(entry=>entry.character.id===id?fresh.slot:entry)};
+  ?{...preserved,character:fresh.slot.character,inventory:fresh.slot.inventory,overflow:fresh.slot.overflow,activity:fresh.slot.activity,skills:fresh.slot.skills,quests:fresh.slot.quests,currentRegionId:fresh.slot.currentRegionId}
+  :{...preserved,otherCharacters:(preserved.otherCharacters??[]).map(entry=>entry.character.id===id?fresh.slot:entry)};
  return mergeSeenItems(next,fresh.seenItemIds);
 }
 

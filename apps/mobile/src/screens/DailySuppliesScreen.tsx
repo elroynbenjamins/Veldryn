@@ -6,6 +6,8 @@ import {accountCharacters} from '../core/account-roster';
 import {DAILY_SUPPLY_BONUS,DAILY_SUPPLY_BOOST_TYPES,dailySuppliesStatus,dailySupplyActiveLabel,dailySupplyBank,dailySupplyBoostLabel,type DailySupplyBoostType} from '../core/daily-supplies';
 import {Panel} from '../components/Panel';
 import {GameButton} from '../components/GameButton';
+import {ActionFeedback,type FeedbackTone} from '../components/ActionFeedback';
+import {StatusPill} from '../components/StatusPill';
 import {GameModalHeader,GameModalSurface} from '../components/GameModalSurface';
 import {radii,spacing,typography,equipmentTheme,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -18,10 +20,10 @@ export function DailySuppliesScreen({state,nowMs=Date.now(),onCommand}:{state:Ga
   const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
  const status=dailySuppliesStatus(state,nowMs),characters=accountCharacters(state),activeCharacter=state.character!,active=dailySupplyActiveLabel(activeCharacter),bank=dailySupplyBank(activeCharacter);
  const claimedInCycle=(state.account.dailySupplies?.totalClaims??0)%28;
- const [selectedId,setSelectedId]=useState(activeCharacter.id),[pickerOpen,setPickerOpen]=useState(false),[busy,setBusy]=useState(false),[message,setMessage]=useState('');
+ const [selectedId,setSelectedId]=useState(activeCharacter.id),[pickerOpen,setPickerOpen]=useState(false),[busy,setBusy]=useState(false),[feedback,setFeedback]=useState<{message:string;tone:FeedbackTone}|null>(null);
  const selected=characters.find(entry=>entry.character.id===selectedId)?.character??activeCharacter;
  const cells=useMemo(()=>Array.from({length:28},(_,i)=>i+1),[]);
- async function run(command:GameCommand,success:string){setBusy(true);setMessage('');try{await onCommand(command);setMessage(success)}catch(error){setMessage(error instanceof Error?error.message:'Daily Supplies action failed.')}finally{setBusy(false)}}
+ async function run(command:GameCommand,success:string){setBusy(true);setFeedback(null);try{await onCommand(command);setFeedback({message:success,tone:'success'})}catch(error){setFeedback({message:error instanceof Error?error.message:'Daily Supplies action failed.',tone:'error'})}finally{setBusy(false)}}
  const rewardText=status.reward.kind==='premium'
   ?'Milestone reward · +'+status.reward.amount+' premium currency'
   :'+2h banked · +'+Math.round(DAILY_SUPPLY_BONUS*100)+'% '+dailySupplyBoostLabel(status.reward.type);
@@ -29,7 +31,7 @@ export function DailySuppliesScreen({state,nowMs=Date.now(),onCommand}:{state:Ga
   <Text style={s.kicker}>ACCOUNT-WIDE DAILY TRACK</Text><Text accessibilityRole="header" style={s.heading}>Daily Supplies</Text>
   <Text style={s.copy}>One claim per UTC day. Missing a day simply pauses the track—your progress never resets. Normal claims bank two hours of qualifying +10% activity time; milestone claims award account-wide premium currency.</Text>
   <Panel>
-   <View style={s.between}><View style={s.flex}><Text style={s.title}>Cycle {status.cycle}</Text><Text style={s.copy}>{claimedInCycle}/28 claims completed</Text></View><Text style={status.canClaim?s.ready:s.done}>{status.canClaim?'READY':'CLAIMED TODAY'}</Text></View>
+   <View style={s.between}><View style={s.flex}><Text style={s.title}>Cycle {status.cycle}</Text><Text style={s.copy}>{claimedInCycle}/28 claims completed</Text></View><StatusPill label={status.canClaim?'READY':'CLAIMED TODAY'} tone={status.canClaim?'good':'muted'}/></View>
    <View style={s.track}>{cells.map(day=>{const claimed=day<=claimedInCycle,milestone=!!milestonePremium[day],today=day===status.dayInTrack;return <View key={day} accessibilityLabel={'Daily Supplies claim '+day+(claimed?', claimed':'')+(milestone?', '+milestonePremium[day]+' premium currency milestone':'')} style={[s.cell,claimed&&s.cellClaimed,milestone&&s.cellMilestone,today&&status.canClaim&&s.cellToday]}><Text style={[s.cellText,claimed&&s.cellTextClaimed]}>{milestone?'◆'+day:day}</Text></View>})}</View>
    <Text style={s.reward}>{rewardText}</Text>
    {status.reward.kind==='boost'?<><Text style={s.label}>RECEIVING CHARACTER</Text><Pressable accessibilityRole="button" accessibilityState={{expanded:pickerOpen}} disabled={busy} onPress={()=>setPickerOpen(true)} style={s.selector}><View style={s.flex}><Text style={s.selectorName}>{selected.name}</Text><Text style={s.selectorMeta}>{selected.classId} · boost charge stays with this character</Text></View><Text style={s.chevron}>⌄</Text></Pressable></>:<Text style={s.copy}>Premium currency is granted to the account; no character selection is needed.</Text>}
@@ -37,11 +39,11 @@ export function DailySuppliesScreen({state,nowMs=Date.now(),onCommand}:{state:Ga
   </Panel>
   <Panel>
    <Text style={s.title}>Current character boosts</Text><Text style={s.copy}>{activeCharacter.name} · activate one banked boost at a time. Its timer runs only while matching activity is being completed, including eligible offline settlement.</Text>
-   {active?<View style={s.active}><View style={s.flex}><Text style={s.activeTitle}>+10% {active.label}</Text><Text style={s.copy}>{duration(active.remainingSeconds)} qualifying time remaining</Text></View><Text style={s.activeBadge}>ACTIVE</Text></View>:<Text style={s.empty}>No Daily Supplies boost is active.</Text>}
+   {active?<View style={s.active}><View style={s.flex}><Text style={s.activeTitle}>+10% {active.label}</Text><Text style={s.copy}>{duration(active.remainingSeconds)} qualifying time remaining</Text></View><StatusPill label="ACTIVE" tone="good"/></View>:<Text style={s.empty}>No Daily Supplies boost is active.</Text>}
    {DAILY_SUPPLY_BOOST_TYPES.map(type=>{const count=bank[type]??0,isActive=active?.type===type;return <View key={type} style={s.boostRow}><View style={s.flex}><Text style={s.boostName}>+10% {dailySupplyBoostLabel(type)}</Text><Text style={s.meta}>{count} banked charge{count===1?'':'s'} · 2h each · {boostShort(type)}</Text></View><View style={s.activate}><GameButton compact selected={isActive} title={isActive?'Active':count?'Activate':'None'} tone={isActive?'primary':'secondary'} disabled={busy||!!active||count<1} onPress={()=>void run({type:'daily_supplies_activate',args:{type}},'+10% '+dailySupplyBoostLabel(type)+' activated.')}/></View></View>})}
   </Panel>
   <Panel><Text style={s.title}>What counts</Text><Text style={s.rule}>• Gathering Yield: stackable resources from gathering actions.</Text><Text style={s.rule}>• Crafting / Processing Output: stackable crafted/processed output; equipment and tools are never duplicated.</Text><Text style={s.rule}>• Skill XP: qualifying skilling, crafting, Alchemy and Faith XP.</Text><Text style={s.rule}>• Combat XP: character XP from normal and Challenge Hunts; it does not boost Gold, drops, pet chances or event/ranking rewards.</Text><Text style={s.rule}>• Daily Supplies do not extend Offline Reserve.</Text></Panel>
-  {!!message&&<Text accessibilityLiveRegion="polite" style={s.message}>{message}</Text>}
+  {feedback&&<ActionFeedback message={feedback.message} tone={feedback.tone} reduceMotion={state.settings.reduceMotion}/>}
  </ScrollView>
  <GameModalSurface visible={pickerOpen} reduceMotion={state.settings.reduceMotion} onClose={()=>setPickerOpen(false)} backdropLabel="Close character picker"><GameModalHeader eyebrow="DAILY SUPPLIES" title="Choose receiving character" onClose={()=>setPickerOpen(false)}/><View style={s.characterList}>{characters.map(entry=>{const character=entry.character,selectedRow=character.id===selected.id;return <Pressable key={character.id} accessibilityRole="radio" accessibilityState={{selected:selectedRow}} onPress={()=>{setSelectedId(character.id);setPickerOpen(false)}} style={({pressed})=>[s.characterRow,selectedRow&&s.characterSelected,pressed&&s.pressed]}><View style={s.flex}><Text style={s.selectorName}>{character.name}</Text><Text style={s.selectorMeta}>{character.classId}{character.id===activeCharacter.id?' · current character':''}</Text></View><Text style={selectedRow?s.check:s.meta}>{selectedRow?'✓':'○'}</Text></Pressable>})}</View></GameModalSurface></>;
 }

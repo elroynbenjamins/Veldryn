@@ -1,5 +1,6 @@
 import type {ClassId} from '../core/types';
 import type {LiveEventUiCopy} from './live-event-ui';
+import type {LiveEventVisualKey} from './live-event-visual-keys';
 import {FROSTFALL_EVENT,VEILBREAK_EVENT} from './annual-events-v2';
 import {BLOOMWAKE_EVENT,HEARTBOND_EVENT,TURNING_OF_THE_AGE_EVENT} from './annual-events-v3';
 import {MERCHANT_GUILD_FESTIVAL_EVENT,STARFALL_NIGHTS_EVENT,SUNCREST_GAMES_EVENT} from './annual-events-v4';
@@ -18,7 +19,7 @@ export interface EventDiscovery{id:string;name:string;description:string;source:
 export type EventSignatureKind='community'|'expedition'|'competition'|'opportunity'|'ritual'|'trade'|'celebration';
 export interface EventSignature{kind:EventSignatureKind;label:string;title:string;description:string;highlights:string[];}
 export interface LiveEventDef{
-  id:string;name:string;summary:string;currencyId:string;currencyName:string;prestigeCurrencyId:string;prestigeCurrencyName:string;accent:string;progressionName:string;maxProgress:number;claimGraceDays:number;visualKey?:string;ui?:Partial<LiveEventUiCopy>;signature:EventSignature;
+  id:string;name:string;summary:string;currencyId:string;currencyName:string;prestigeCurrencyId:string;prestigeCurrencyName:string;accent:string;progressionName:string;maxProgress:number;claimGraceDays:number;visualKey:LiveEventVisualKey;ui?:Partial<LiveEventUiCopy>;signature:EventSignature;
   dropRates:Record<EventActivitySource,number>;milestones:(classId:ClassId)=>EventMilestone[];objectives:EventObjectiveDef[];weeklyObjectives:EventObjectiveDef[];shop:EventShopOffer[];choices:EventChoice[];dailyGifts:EventDailyGift[];communityEnabled?:boolean;communityGoal:number;communityMilestones:EventCommunityMilestone[];discoveries:EventDiscovery[];
 }
 

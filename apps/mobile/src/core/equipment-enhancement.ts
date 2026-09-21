@@ -2,7 +2,7 @@ import {itemDef} from '../content/items';
 import {itemRarity,ItemRarity} from './item-rarity';
 import {craftedRarityStatMultiplier} from './crafted-gear-rarity';
 import {gearInstanceById,migrateToPerInstanceGear,updateGearInstance} from './gear-instances';
-import {GameState,GearEnhancementState,GemEffectId,GemSocketKind,GemStat,ItemStack} from './types';
+import {GameState,GearEnhancementState,GearSlot,GemEffectId,GemSocketKind,GemStat,ItemStack} from './types';
 
 export const MAX_UPGRADE_RANK=10;
 export const UPGRADE_STAT_PER_RANK=.03;
@@ -110,7 +110,7 @@ export function gearStatsAtRank(itemId:string,rank:number){const item=itemDef(it
 export function enhancedGearStats(state:GameState,itemId:string,instanceId?:string){const stats=gearStatsAtRank(itemId,gearEnhancement(state,itemId,instanceId).rank),rarity=instanceRarity(state,itemId,instanceId),m=craftedRarityStatMultiplier(itemId,rarity),scale=(value:number)=>value>0?Math.ceil(value*m):Math.round(value*m);return {hp:scale(stats.hp),attack:scale(stats.attack),defense:scale(stats.defense)};}
 export function equippedGemBonuses(state:GameState):Record<GemStat,number>{
   const result={attack:0,defense:0,hp:0},projected=migrateToPerInstanceGear(state);if(!projected.character)return result;
-  for(const [slot,itemId] of Object.entries(projected.character.equipment)){if(!itemId)continue;const instanceId=projected.character.equipmentInstanceIds?.[slot as keyof typeof projected.character.equipmentInstanceIds],gemId=gearEnhancement(projected,itemId,instanceId).statGemId;if(!gemId)continue;const gem=itemDef(gemId);if(gem.type==='gem'&&gem.gemStat)result[gem.gemStat]+=gem.gemPercent??0;}
+  for(const [slot,itemId] of Object.entries(projected.character.equipment)){if(!itemId)continue;const instanceId=projected.character.equipmentInstanceIds?.[slot as GearSlot],gemId=gearEnhancement(projected,itemId,instanceId).statGemId;if(!gemId)continue;const gem=itemDef(gemId);if(gem.type==='gem'&&gem.gemStat)result[gem.gemStat]+=gem.gemPercent??0;}
   return result;
 }
 
@@ -118,7 +118,7 @@ export type EquippedEffectGemBonuses=Record<GemEffectId,number>;
 export function equippedEffectGemBonuses(state:GameState):EquippedEffectGemBonuses{
   const result:EquippedEffectGemBonuses={combat_speed:0,boss_power:0,damage_reduction:0,recovery:0},projected=migrateToPerInstanceGear(state);if(!projected.character)return result;
   for(const [slot,itemId] of Object.entries(projected.character.equipment)){
-    if(!itemId)continue;const instanceId=projected.character.equipmentInstanceIds?.[slot as keyof typeof projected.character.equipmentInstanceIds],gemId=gearEnhancement(projected,itemId,instanceId).effectGemId;if(!gemId)continue;
+    if(!itemId)continue;const instanceId=projected.character.equipmentInstanceIds?.[slot as GearSlot],gemId=gearEnhancement(projected,itemId,instanceId).effectGemId;if(!gemId)continue;
     const gem=itemDef(gemId);if(gem.type==='gem'&&gem.gemEffect)result[gem.gemEffect]+=Math.max(0,gem.gemEffectValue??0);
   }
   result.combat_speed=Math.min(.10,result.combat_speed);result.boss_power=Math.min(.15,result.boss_power);result.damage_reduction=Math.min(.10,result.damage_reduction);result.recovery=Math.min(.50,result.recovery);return result;

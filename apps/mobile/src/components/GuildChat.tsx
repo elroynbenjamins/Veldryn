@@ -1,4 +1,4 @@
-import {useEffect,useRef,useState} from 'react';
+import {useEffect,useMemo,useRef,useState} from 'react';
 import {Alert,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {GameTextInput as TextInput} from './GameTextInput';
 import {GameButton} from './GameButton';
@@ -6,13 +6,15 @@ import {ChatEmotePicker} from './ChatEmotePicker';
 import {ChatMessageText} from './ChatMessageText';
 import {ChatPlayerSheet} from './ChatPlayerSheet';
 import {GuildTaggedPlayerName} from './GuildTaggedPlayerName';
-import {C,radii,spacing,typography} from '../theme/theme';
+import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
+import {useGameTheme} from '../theme/ThemeContext';
 import {Language,ot} from '../i18n';
 import {onlineConfigured} from '../online/supabase';
 import {chatEmoteCount} from '../core/chat-emotes';
 import {guildChatCommandKey,guildChatState,markSocialChatRead,sendGuildChat,type GuildChatMessage,type GuildChatState} from '../online/social';
 
 export function GuildChat({language,currentPlayerName,onRead}:{language:Language;currentPlayerName?:string;onRead?:()=>void}){
+ const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [snapshot,setSnapshot]=useState<GuildChatState|null>(null),[selected,setSelected]=useState<GuildChatMessage|null>(null),[body,setBody]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const pending=useRef<{body:string;key:string}|null>(null);
  const active=useRef(true),notifiedRead=useRef(false),onReadRef=useRef(onRead);onReadRef.current=onRead;
@@ -48,10 +50,10 @@ export function GuildChat({language,currentPlayerName,onRead}:{language:Language
  </View>;
 }
 
-const s=StyleSheet.create({
+function makeStyles(C:ThemeColors){return StyleSheet.create({
  root:{gap:spacing.sm},unavailable:{gap:4,padding:spacing.md,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2},
  header:{minHeight:42,flexDirection:'row',alignItems:'center',gap:8},grow:{flex:1,minWidth:0},eyebrow:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.8},title:{...typography.title,color:C.text},secure:{fontSize:8,color:C.good,fontWeight:'900',letterSpacing:.7},
- note:{...typography.body,color:C.muted,lineHeight:18},log:{minHeight:130,maxHeight:260},logInner:{paddingVertical:2},message:{paddingVertical:8,borderBottomWidth:StyleSheet.hairlineWidth,borderBottomColor:C.line},messageHead:{minHeight:24,flexDirection:'row',alignItems:'center',gap:6},nameButton:{flex:1,minWidth:0,alignSelf:'flex-start',flexDirection:'row',alignItems:'center',gap:4},name:{color:'#8dcdf0',fontWeight:'800'},profileMark:{fontSize:16,lineHeight:18,color:C.info,fontWeight:'900'},role:{fontSize:7,color:C.muted,fontWeight:'900',letterSpacing:.5},roleLeader:{color:'#e7c66d'},roleOfficer:{color:C.info},time:{fontSize:9,color:C.muted},
- empty:{...typography.body,color:C.muted,textAlign:'center',paddingVertical:28},errorCard:{gap:5,padding:spacing.sm,borderWidth:1,borderColor:C.bad,borderRadius:radii.md,backgroundColor:'#2a1b20'},errorLabel:{...typography.caption,color:C.bad,fontWeight:'900',letterSpacing:1},error:{...typography.caption,color:C.text},
+ note:{...typography.body,color:C.muted,lineHeight:18},log:{minHeight:130,maxHeight:260},logInner:{paddingVertical:2},message:{paddingVertical:8,borderBottomWidth:StyleSheet.hairlineWidth,borderBottomColor:C.line},messageHead:{minHeight:24,flexDirection:'row',alignItems:'center',gap:6},nameButton:{flex:1,minWidth:0,alignSelf:'flex-start',flexDirection:'row',alignItems:'center',gap:4},name:{color:C.info,fontWeight:'800'},profileMark:{fontSize:16,lineHeight:18,color:C.info,fontWeight:'900'},role:{fontSize:7,color:C.muted,fontWeight:'900',letterSpacing:.5},roleLeader:{color:C.accentSoft},roleOfficer:{color:C.info},time:{fontSize:9,color:C.muted},
+ empty:{...typography.body,color:C.muted,textAlign:'center',paddingVertical:28},errorCard:{gap:5,padding:spacing.sm,borderWidth:1,borderColor:C.bad,borderRadius:radii.md,backgroundColor:C.badSurface},errorLabel:{...typography.caption,color:C.bad,fontWeight:'900',letterSpacing:1},error:{...typography.caption,color:C.text},
  compose:{flexDirection:'row',alignItems:'center',gap:spacing.sm},input:{flex:1},send:{minWidth:72}
-});
+});}

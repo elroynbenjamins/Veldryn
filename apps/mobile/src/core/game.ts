@@ -186,7 +186,19 @@ export function travelToRegion(state:GameState,regionId:string,nowMs:number){
   return {state:{...settled.state,currentRegionId:zone.id,activity:null},reward:settled.reward};
 }
 
-export function stackItems(existing:ItemStack[],incoming:ItemStack[]):ItemStack[]{const m=new Map<string,number>();for(const s of existing)m.set(s.itemId,(m.get(s.itemId)||0)+s.quantity);for(const s of incoming)m.set(s.itemId,(m.get(s.itemId)||0)+s.quantity);return [...m.entries()].filter(([,q])=>q>0).map(([itemId,quantity])=>({itemId,quantity}));}
+export function stackItems(existing:ItemStack[],incoming:ItemStack[]):ItemStack[]{
+ const out:ItemStack[]=[];
+ for(const stack of [...existing,...incoming]){
+  let remaining=Math.max(0,Math.floor(stack.quantity));if(!remaining)continue;
+  const cap=itemStackCap(stack.itemId);
+  while(remaining>0){
+   const found=out.find(row=>row.itemId===stack.itemId&&row.quantity<cap);
+   if(found){const add=Math.min(cap-found.quantity,remaining);found.quantity+=add;remaining-=add;continue;}
+   const add=Math.min(cap,remaining);out.push({itemId:stack.itemId,quantity:add});remaining-=add;
+  }
+ }
+ return out;
+}
 
 export function usedSlots(stacks:ItemStack[]){return stacks.filter(s=>s.quantity>0).length;}
 function itemStackCap(itemId:string){const d=itemDef(itemId);return d.type==='gear'||d.type==='tool'?1:9999;}
@@ -201,8 +213,6 @@ function addBounded(stacks:ItemStack[],capacity:number,incoming:ItemStack[]){
     }
     while(remaining>0 && usedSlots(next)<capacity){
       const add=Math.min(cap,remaining);next.push({itemId:inc.itemId,quantity:add});remaining-=add;
-      // Current prototype identifies stacks by itemId, so equipment duplicates are routed to overflow rather than pretending they are one stack.
-      if(cap===1)break;
     }
     if(remaining>0)overflow.push({itemId:inc.itemId,quantity:remaining});
   }
@@ -219,8 +229,11 @@ function routeRewards(state:GameState,incoming:ItemStack[],nowMs:number){
   };
 }
 
-function consume(stacks:ItemStack[],itemId:string,quantity:number){const f=stacks.find(s=>s.itemId===itemId);if(!f||f.quantity<quantity)throw new Error('Not enough items');return stacks.map(s=>s.itemId===itemId?{...s,quantity:s.quantity-quantity}:s).filter(s=>s.quantity>0)}
-function stackQty(stacks:ItemStack[],itemId?:string){if(!itemId)return 0;return stacks.find(s=>s.itemId===itemId)?.quantity||0;}
+function consume(stacks:ItemStack[],itemId:string,quantity:number){
+ if(stackQty(stacks,itemId)<quantity)throw new Error('Not enough items');
+ let left=quantity;return stacks.map(s=>{if(s.itemId!==itemId||left<=0)return s;const used=Math.min(left,s.quantity);left-=used;return {...s,quantity:s.quantity-used};}).filter(s=>s.quantity>0);
+}
+function stackQty(stacks:ItemStack[],itemId?:string){if(!itemId)return 0;return stacks.filter(s=>s.itemId===itemId).reduce((sum,s)=>sum+s.quantity,0);}
 
 function simulateCombat(state:GameState,monsterId:string,elapsed:number){
   const c=state.character!,baseMonster=MONSTERS.find(x=>x.id===monsterId)!,challengeId=state.activity?.kind==='combat'?state.activity.combatChallengeId:undefined,affixId=state.activity?.kind==='combat'?state.activity.combatAffixId:undefined,m=challengeHuntStats(baseMonster,challengeId,affixId),stats=effectiveStats(state);

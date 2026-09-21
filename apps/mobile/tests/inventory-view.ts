@@ -52,7 +52,7 @@ const bulkBase={...state,inventory:{...state.inventory,stacks:[{itemId:'TRAVEL_R
 const bulkIds=['TRAVEL_RATION','COPPER_ORE','WORN_BLADE','HOLY_WATER'];
 const bulkSummary=bulkSelectionSummary(bulkBase,bulkIds,'inventory');
 ok(bulkSummary.selectedStackCount===4&&bulkSummary.transferableStackCount===3&&bulkSummary.transferProtectedCount===1,'Bulk transfer keeps selected auto-eat food safe');
-ok(bulkSummary.sellableStackCount===2&&bulkSummary.sellGold===55,'Bulk sell includes only eligible stack value');
+ok(bulkSummary.sellableStackCount===1&&bulkSummary.sellGold===20&&bulkSummary.sellProtectedCount===3,'Bulk sell excludes equipment so an exact physical copy must be selected');
 const movedBulk=bulkTransferSelected(bulkBase,bulkIds,'inventory');
 ok(movedBulk.inventory.stacks.length===1&&movedBulk.inventory.stacks[0].itemId==='TRAVEL_RATION','Bulk deposit leaves protected auto-eat stack carried');
 ok(movedBulk.bank.stacks.some(stack=>stack.itemId==='COPPER_ORE')&&movedBulk.bank.stacks.some(stack=>stack.itemId==='WORN_BLADE'),'Bulk deposit moves eligible full stacks');
@@ -63,8 +63,8 @@ const bulkFavorite={...bulkBase,settings:{...bulkBase.settings,favoriteItemIds:[
 const soldBulk=bulkSellSelected(bulkFavorite,bulkIds);
 ok(soldBulk.character!.gold===bulkFavorite.character!.gold+20,'Bulk sell totals only eligible non-protected stacks');
 ok(soldBulk.inventory.stacks.some(stack=>stack.itemId==='WORN_BLADE')&&soldBulk.inventory.stacks.some(stack=>stack.itemId==='TRAVEL_RATION'),'Bulk sell keeps favorite gear and auto-eat food');
-const salvagedBulk=bulkSalvageSelected(bulkBase,['WORN_BLADE']);
-ok(!salvagedBulk.inventory.stacks.some(stack=>stack.itemId==='WORN_BLADE')&&salvagedBulk.inventory.stacks.some(stack=>stack.itemId==='MOSS_FIBER'&&stack.quantity===2),'Bulk salvage processes eligible equipment');
+let bulkGearSalvageBlocked=false;try{bulkSalvageSelected(bulkBase,['WORN_BLADE'])}catch(error){bulkGearSalvageBlocked=error instanceof Error&&error.message.includes('individually')}
+ok(bulkGearSalvageBlocked,'Bulk salvage refuses to guess which equipment copy should be destroyed');
 ok(validateGameCommand({type:'bulk_transfer',args:{location:'inventory',ids:['COPPER_ORE']}}).type==='bulk_transfer','Bulk transfer command validates for online execution');
 let invalidBulkCommand=false;try{validateGameCommand({type:'bulk_sell',args:{ids:Array.from({length:101},(_,index)=>'ITEM_'+index)}})}catch{invalidBulkCommand=true}
 ok(invalidBulkCommand,'Bulk commands cap selections at 100 stacks');

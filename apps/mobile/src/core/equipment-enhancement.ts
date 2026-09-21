@@ -46,11 +46,11 @@ export function hasEnhancement(state:GameState,itemId:string){
 }
 export function gemSocketCapacity(itemId:string){const item=itemDef(itemId);return item.type==='gear'?EQUIPMENT_GEM_SOCKET_COUNT:0;}
 export function gemSocketState(state:GameState,itemId:string){const enhancement=gearEnhancement(state,itemId);return {statGemId:enhancement.statGemId,effectGemId:enhancement.effectGemId,filled:Number(Boolean(enhancement.statGemId))+Number(Boolean(enhancement.effectGemId)),capacity:gemSocketCapacity(itemId)};}
-export function upgradeQuote(state:GameState,itemId:string){
+export function upgradeQuote(state:GameState,itemId:string,instanceId?:string){
   const item=itemDef(itemId);if(item.type!=='gear')throw new Error('Only equipment can be upgraded');
-  const current=gearEnhancement(state,itemId),targetRank=current.rank+1;
+  const instance=instanceId?gearInstanceById(state,instanceId):equippedGearInstance(state,itemId),current=gearEnhancement(state,itemId,instance?.id),targetRank=current.rank+1;
   if(targetRank>MAX_UPGRADE_RANK)return {currentRank:current.rank,targetRank,successChance:0,dust:0,cores:0,gold:0,maxed:true};
-  const rarity=equippedGearInstance(state,itemId)?.craftedRarity??itemRarity(item),pity=Math.min(.10,current.failures*.02);
+  const rarity=instance?.craftedRarity??itemRarity(item),pity=Math.min(.10,current.failures*.02);
   return {currentRank:current.rank,targetRank,successChance:Math.min(1,SUCCESS_BY_TARGET[targetRank]+pity),dust:DUST_BY_TARGET[targetRank],cores:CORE_BY_TARGET[targetRank],gold:Math.ceil(150*targetRank*targetRank*RARITY_COST[rarity]/10)*10,maxed:false};
 }
 function qty(stacks:ItemStack[],id:string){return stacks.find(s=>s.itemId===id)?.quantity??0;}

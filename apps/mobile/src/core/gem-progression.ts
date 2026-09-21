@@ -1,4 +1,5 @@
 import type {ClassId,GameState,GemEffectId,GemGrade,GemStat,ItemStack} from './types';
+import type {ItemRarity} from './item-rarity';
 
 export const GEM_GRADES = [
   {grade:1 as GemGrade,id:'CUT',name:'Cut'},
@@ -61,6 +62,7 @@ export const EFFECT_GEM_FAMILIES:readonly EffectGemFamily[]=[
 ];
 
 const gradeNames=['','Cut','Polished','Refined','Flawless','Radiant'] as const;
+const rarityForGrade=(grade:GemGrade):ItemRarity=>grade>=5?'mythic':grade===4?'legendary':grade===3?'epic':grade===2?'rare':'uncommon';
 export const statGemItemId=(family:StatGemFamilyId,grade:GemGrade)=>`GEM_STAT_${family.toUpperCase()}_G${grade}`;
 export const effectGemItemId=(family:EffectGemFamilyId,grade:GemGrade)=>`GEM_EFFECT_${family.toUpperCase()}_G${grade}`;
 
@@ -68,7 +70,7 @@ export const GEM_PROGRESSION_ITEMS=[
   ...STAT_GEM_FAMILIES.flatMap(f=>GEM_GRADES.map(g=>({
     id:statGemItemId(f.id,g.grade),name:`${gradeNames[g.grade]} ${f.name} Gem`,type:'gem' as const,gemKind:'stat' as const,
     gemFamilyId:f.id,gemStat:f.stat,gemPercent:f.values[g.grade-1],gemGrade:g.grade,gemTier:g.grade,value:120*g.grade*g.grade,
-    rarity:g.grade>=5?'mythic':g.grade===4?'legendary':g.grade===3?'epic':g.grade===2?'rare':'uncommon'
+    rarity:rarityForGrade(g.grade)
   }))),
   ...EFFECT_GEM_FAMILIES.flatMap(f=>GEM_GRADES.map(g=>({
     id:effectGemItemId(f.id,g.grade),name:`${gradeNames[g.grade]} ${f.name} Gem`,type:'gem' as const,gemKind:'effect' as const,
@@ -160,9 +162,9 @@ export function dismantleProgressionGem(state:GameState,itemId:string,amount=1){
 }
 
 export function gemRecipeId(family:EffectGemFamilyId){return `recipe_gem_${family}`;}
-export function hasGemRecipe(state:GameState,family:EffectGemFamilyId){return (state.unlockedKnowledgeIds??[]).includes(gemRecipeId(family));}
+export function hasGemRecipe(state:GameState,family:EffectGemFamilyId){return (state.account.unlockedKnowledgeIds??[]).includes(gemRecipeId(family));}
 export function learnGemRecipe(state:GameState,family:EffectGemFamilyId){
-  const id=gemRecipeId(family),known=state.unlockedKnowledgeIds??[];
+  const id=gemRecipeId(family),known=state.account.unlockedKnowledgeIds??[];
   if(known.includes(id))return grantToInventoryOrBank(state,'GEM_DUST',25);
-  return {...state,unlockedKnowledgeIds:[...known,id]};
+  return {...state,account:{...state.account,unlockedKnowledgeIds:[...known,id]}};
 }

@@ -41,7 +41,7 @@ export interface CharacterState {
   equippedToolIds?:Partial<Record<GatheringSkillId,string>>;
   equippedFoodId?:string;
   bodyPresentation?:BodyPresentation;
-  craftedNoviceItemIds?:string[]; profileTitle?:string; profileBackgroundId?:string; profileBorderId?:string; selectedCosmeticPetId?:string;
+  craftedNoviceItemIds?:string[]; equippedGearInstanceIds?:Partial<Record<GearSlot,string>>; profileTitle?:string; profileBackgroundId?:string; profileBorderId?:string; selectedCosmeticPetId?:string;
   /** Character-bound collection rewards. Once added, a skin ID is never removed by item loss. */
   unlockedSkinIds?:string[];
   /** Permanently collected pets that provide permanent boosts. */
@@ -62,6 +62,17 @@ export interface CharacterState {
   /** Character-bound banked Daily Supplies charges and one active +10% boost. */
   dailySupplyBoostBank?:Partial<Record<import('./daily-supplies').DailySupplyBoostType,number>>;
   activeDailySupplyBoost?:import('./daily-supplies').ActiveDailySupplyBoost;
+}
+export interface GearInstanceState{
+  id:string;
+  itemId:string;
+  ownerCharacterId:string;
+  craftedRarity:import('./item-rarity').ItemRarity;
+  acquireSource:'craft'|'legacy_conversion'|'admin_repair'|'quest_grant';
+  createdAtMs:number;
+  storage:'inventory'|'bank'|'equipped';
+  equippedSlot?:GearSlot;
+  enhancement:GearEnhancementState;
 }
 export interface EquipmentCraftJob{
   id:string;
@@ -91,7 +102,7 @@ export interface GameState {
   /** Optional server/read-model projection for versioned regional journals. */
   regionalProgressById?:Record<string,RegionalProgressState>;
   quests:QuestState[]; unlockedMonsterIds:string[]; defeatedBossIds:string[]; skills:SkillState[];
-  account:CompanionAccountState & {longTermAccountScopeId?:string;entitlements?:Record<string,boolean>;equipmentCraftingQueue?:EquipmentCraftJob[];unlockedCharacterSlots?:number;premiumCurrencyBalance?:number;ownedBoostIds?:string[];eventCommunityProgressById?:Record<string,number>;createdCharacterCount:number;guildMember:boolean;patronTier:'none'|'bloom'|'crown';guildBannerId?:import('./guild-customization').GuildBannerId;guildProfileFrameId?:import('./guild-customization').GuildFrameId;guildNameplateId?:import('./guild-customization').GuildNameplateId;guildMotto?:string;
+  account:CompanionAccountState & {longTermAccountScopeId?:string;entitlements?:Record<string,boolean>;equipmentCraftingQueue?:EquipmentCraftJob[];gearInstances?:GearInstanceState[];unlockedCharacterSlots?:number;premiumCurrencyBalance?:number;ownedBoostIds?:string[];eventCommunityProgressById?:Record<string,number>;createdCharacterCount:number;guildMember:boolean;patronTier:'none'|'bloom'|'crown';guildBannerId?:import('./guild-customization').GuildBannerId;guildProfileFrameId?:import('./guild-customization').GuildFrameId;guildNameplateId?:import('./guild-customization').GuildNameplateId;guildMotto?:string;
   professionMasteryByAction?:Record<string,import('./profession-mastery-v40').ProfessionMasteryRecord>;
   weeklyOrders?:import('./weekly-orders-v41').WeeklyOrdersState;
   weeklyOrderPendingRewards?:Array<{claimKey:string;rewardRef:string;label:string;weekKey:string;orderId?:string}>;

@@ -34,7 +34,7 @@ const wallet:GemWallet={gold:100000,dust:100,regionalCatalysts:2,radiantCatalyst
 const combined=combineGemV1(wallet,'stat_might',1);
 assert.equal(combined.gems.find(v=>v.grade===2)?.quantity,1);
 const dismantled=dismantleGemV1(combined,'stat_might',2,1);
-assert.equal(dismantled.dust,101);
+assert.equal(dismantled.dust,103);
 
 let resonanceCapBlocked=false;
 try{

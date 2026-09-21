@@ -79,7 +79,7 @@ export function validateGameSettings(value:unknown):GameState['settings']{
  for(const key of ['reduceMotion','stopCombatWhenOutOfFood','autoJoinWorldChat'] as const)if(typeof result[key]!=='boolean')throw new Error('invalid_settings');
  if(![1,2,3,4].includes(result.defaultWorldChat??0)||![1,2,3].includes(result.chatDockLines??0)||!Array.isArray(result.quickNavDestinations)||result.quickNavDestinations.length>8||result.quickNavDestinations.some(id=>!QUICK_NAV_DESTINATIONS.includes(id)))throw new Error('invalid_settings');
  const favoriteItemIds=result.favoriteItemIds,seenItemIds=result.seenItemIds,chatEmoteTrayIds=result.chatEmoteTrayIds;
- if(!Array.isArray(chatEmoteTrayIds)||chatEmoteTrayIds.length>CHAT_EMOTE_TRAY_SIZE||normalizeChatEmoteTrayIds(chatEmoteTrayIds).length!==chatEmoteTrayIds.length)throw new Error('invalid_settings');
+ if(!Array.isArray(chatEmoteTrayIds)||(chatEmoteTrayIds.length!==0&&chatEmoteTrayIds.length!==CHAT_EMOTE_TRAY_SIZE)||normalizeChatEmoteTrayIds(chatEmoteTrayIds).length!==chatEmoteTrayIds.length)throw new Error('invalid_settings');
  if(!Array.isArray(favoriteItemIds)||favoriteItemIds.length>100||favoriteItemIds.some(id=>typeof id!=='string'||!id||id.length>120))throw new Error('invalid_settings');
  if(!Array.isArray(seenItemIds)||seenItemIds.length>1000||seenItemIds.some(id=>typeof id!=='string'||!id||id.length>120))throw new Error('invalid_settings');
  result.favoriteItemIds=[...new Set(favoriteItemIds)];

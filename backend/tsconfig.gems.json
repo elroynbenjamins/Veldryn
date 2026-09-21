@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "dist-gems"
+  },
+  "include": [
+    "src/types/node-shims.d.ts",
+    "src/server/equipment/gems/**/*.ts",
+    "src/server/combat/__tests__/gem-effects-v1.ts"
+  ]
+}

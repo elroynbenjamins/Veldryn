@@ -19,14 +19,14 @@ ok(queue.includes('Math.min(MAX_EQUIPMENT_CRAFT_SLOTS,raw)'),'Overlapping bonuse
 ok(queue.includes('unlockedCharacterSlots(state)'),'Character queue bonuses must use unlocked slots rather than created-character count');
 ok(queue.includes('gold:state.character!.gold-recipe.gold'),'Gold must be reserved when a craft starts');
 ok(queue.includes('consumeAcross(next,input.itemId,input.quantity)'),'Materials must be reserved when a craft starts');
-ok(queue.includes('completesAtMs:nowMs+seconds*1000'),'Timed craft completion must use the authoritative clock');
+ok(queue.includes('durationMs=seconds*1000')&&queue.includes('startedAtMs:startsNow?nowMs:nowMs+1'),'Timed craft duration and scheduled start must derive from the authoritative clock');
 ok(queue.includes('awardOwnerSkillXp'),'Completion XP must follow the character that started the job');
 
 ok(panel.includes('Crafting Queue')&&panel.includes('Queue slots'),'Skills must expose a compact equipment crafting queue');
 ok(panel.includes('model.slotInfo.max'),'Queue UI must render the authoritative hard cap');
 ok(panel.includes('Supporter')||panel.includes('slotInfo.sources'),'Queue UI must expose unlock-source progression');
 ok(card.includes('Start craft ·'),'Equipment recipe CTA must start a timed craft rather than complete instantly');
-ok(card.includes('equipmentCraftQueueModel'),'Recipe cards must disable starts when active slots are full');
+ok(card.includes('equipmentCraftQueueModel')&&card.includes('freeWaiting'),'Recipe cards must stay available while backlog space exists and block only when forge + backlog are full');
 ok(skills.includes('EquipmentCraftQueuePanel'),'Crafting mode must display the timed queue');
 ok(commands.includes("case 'craft_claim'")&&commands.includes("case 'craft_claim_all'"),'Online-authoritative gameplay needs claim commands');
 ok(commands.includes('startEquipmentCraft(state,id,now)'),'Authoritative craft command must start timed equipment jobs');
@@ -35,4 +35,4 @@ ok(app.includes('startEquipmentCraft(state,id,Date.now())'),'Offline/local equip
 ok(save.includes('normalizeEquipmentCraftingQueue'),'Timed queue must persist safely through save normalization');
 ok(save.includes('entitlements:booleanRecord'),'Supporter/VIP+ flags must survive save normalization');
 
-console.log('PASS: timed crafting queue UI and authority wiring enforce the requested 3-to-5 slot model');
+console.log('PASS: timed crafting queue UI and authority wiring enforce the requested 3-to-5 active-slot model plus waiting backlog');

@@ -50,21 +50,7 @@ export function coopHandler(services:GameplayServices){
     return json(await service.respond(accountId,ready[1],command));
    }
 
-   const queueRoot=path.endsWith('/coop/queue'),quickQueue=path.endsWith('/coop/quick-queue'),queueCommand=path.match(new RegExp('/coop/queue/('+uuid+')/(heartbeat|cancel)$'));
-   if(queueRoot||quickQueue||queueCommand){
-    if(queueRoot&&request.method==='GET')return json(await queue.state(accountId));
-    if(request.method!=='POST')return json({error:'method_not_allowed'},405);
-    const raw=await request.text();if(raw.length>4096)return json({error:'request_too_large'},413);
-    let body:unknown;try{body=JSON.parse(raw);}catch{throw new GameplayError('invalid_json');}
-    if(!body||typeof body!=='object'||Array.isArray(body))throw new GameplayError('invalid_request');
-    const row=body as Record<string,unknown>,allowed=quickQueue?['requestId','characterId','loadoutId','loadoutRevision']:queueRoot?['requestId','dungeonId','tier','characterId','loadoutId','loadoutRevision']:['requestId'];
-    if(Object.keys(row).some(key=>!allowed.includes(key))||typeof row.requestId!=='string'||!/^[a-zA-Z0-9_-]{8,128}$/.test(row.requestId))throw new GameplayError('invalid_request');
-    if(quickQueue){if(typeof row.characterId!=='string'||typeof row.loadoutId!=='string'||typeof row.loadoutRevision!=='number'||!Number.isInteger(row.loadoutRevision))throw new GameplayError('invalid_request');return json(await queue.quickJoin(accountId,{requestId:row.requestId,characterId:row.characterId,loadoutId:row.loadoutId,loadoutRevision:row.loadoutRevision}));}
-    if(queueRoot)return json(await queue.join(accountId,parseCoopRunRequest(body,'live')));
-    return json(await queue.command(accountId,queueCommand![1],queueCommand![2] as 'heartbeat'|'cancel',row.requestId));
-   }
-
-   const eventStart=path.endsWith('/coop/event-expeditions'),eventRun=path.match(new RegExp('/coop/event-runs/('+uuid+')(?:/(choose|claim))?$'));
+   const queueRoot=path.endsWith('/coop/queue'),quickQueue=path.endsWith('/coop/quick-queue'),queueCommand=path.match(new RegExp('/coop/queue/('+uuid+')/(heartbeat|cancel)   const eventStart=path.endsWith('/coop/event-expeditions'),eventRun=path.match(new RegExp('/coop/event-runs/('+uuid+')(?:/(choose|claim))?$'));
    if(eventStart||eventRun){
     const mutation=eventStart||Boolean(eventRun?.[2]);
     if(request.method!==(mutation?'POST':'GET'))return json({error:'method_not_allowed'},405);
@@ -111,8 +97,9 @@ export function coopHandler(services:GameplayServices){
     const raw=await request.text();if(raw.length>4096)return json({error:'request_too_large'},413);
     let body:unknown;try{body=JSON.parse(raw);}catch{throw new GameplayError('invalid_json');}
     if(!body||typeof body!=='object'||Array.isArray(body))throw new GameplayError('invalid_request');
-    const row=body as Record<string,unknown>,allowed=queueRoot?['requestId','dungeonId','tier','characterId','loadoutId','loadoutRevision']:['requestId'];
+    const row=body as Record<string,unknown>,allowed=quickQueue?['requestId','characterId','loadoutId','loadoutRevision']:queueRoot?['requestId','dungeonId','tier','characterId','loadoutId','loadoutRevision']:['requestId'];
     if(Object.keys(row).some(key=>!allowed.includes(key))||typeof row.requestId!=='string'||!/^[a-zA-Z0-9_-]{8,128}$/.test(row.requestId))throw new GameplayError('invalid_request');
+    if(quickQueue){if(typeof row.characterId!=='string'||typeof row.loadoutId!=='string'||typeof row.loadoutRevision!=='number'||!Number.isInteger(row.loadoutRevision))throw new GameplayError('invalid_request');return json(await queue.quickJoin(accountId,{requestId:row.requestId,characterId:row.characterId,loadoutId:row.loadoutId,loadoutRevision:row.loadoutRevision}));}
     if(queueRoot)return json(await queue.join(accountId,parseCoopRunRequest(body,'live')));
     return json(await queue.command(accountId,queueCommand![1],queueCommand![2] as 'heartbeat'|'cancel',row.requestId));
    }

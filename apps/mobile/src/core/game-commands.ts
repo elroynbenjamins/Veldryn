@@ -53,6 +53,8 @@ export function validateGameCommand(value:unknown):GameCommand{
  }
  if(row.type==='roster_switch'&&typeof (args as Record<string,unknown>).id!=='string')throw new Error('invalid_id');
  if(row.type==='start'||row.type==='queue_add'){const start=args as Record<string,unknown>;oneOf(start.kind,['combat','gathering']);if(start.challengeId!==undefined)oneOf(start.challengeId,COMBAT_CHALLENGE_IDS);if(start.tacticId!==undefined)oneOf(start.tacticId,COMBAT_TACTIC_IDS);if(start.goalId!==undefined)oneOf(start.goalId,HUNT_GOAL_IDS);if(start.kind!=='combat'&&(start.challengeId!==undefined||start.tacticId!==undefined||start.goalId!==undefined))throw new Error('invalid_combat_activity_option');}
+ if(row.type==='bulk_transfer'){const bulk=args as Record<string,unknown>;oneOf(bulk.location,['inventory','bank']);stringArray(bulk,'ids');}
+ if(row.type==='bulk_sell'||row.type==='bulk_salvage')stringArray(args as Record<string,unknown>,'ids');
  return {type:row.type,args:args as Record<string,unknown>};
 }
 function text(args:Record<string,unknown>,key:string,max=100):string{const value=args[key];if(typeof value!=='string'||!value.trim()||value.length>max)throw new Error(`invalid_${key}`);return value.trim();}

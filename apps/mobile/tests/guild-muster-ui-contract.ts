@@ -28,6 +28,7 @@ ok(core.includes('GUILD_MUSTER_RALLY_ACTIVE_SHARE=0.60'),'Shared target must sca
 
 ok(sql.includes('after insert on public.player_activity_daily'),'Daily attendance must derive from trusted activity');
 ok(sql.includes('after insert on public.guild_pve_receipts'),'Contribution must derive from trusted Guild PvE receipts');
+ok(sql.includes('private.guild_muster_day_bindings'),'One UTC day must bind contribution to one Guild to prevent Guild-hopping double credit');
 ok(sql.includes('least(100'),'Server must enforce the daily Muster cap');
 ok(sql.includes("v_threshold integer:=25"),'Server must enforce the Rally Mark threshold');
 ok(sql.includes("v_personal_goal integer:=4"),'Server must enforce the non-consecutive four-day cadence');

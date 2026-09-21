@@ -64,4 +64,13 @@ ok(character.includes('disclosure:{minHeight:54'),'Character secondary disclosur
 const empty=read('src/components/EmptyState.tsx');
 ok(empty.includes('padding:spacing.lg'),'Empty states must avoid excessive vertical padding');
 
-console.log('PASS: UI hierarchy stays compact, theme-aware, and free of redundant Home navigation');
+const primaryNavigation=read('src/components/PrimaryNavigation.tsx');
+const appShell=read('App.tsx');
+const packageJson=read('package.json');
+ok(primaryNavigation.includes('useSafeAreaInsets'),'Bottom navigation must use real safe-area metrics');
+ok(primaryNavigation.includes("Platform.OS==='android'?Math.max(bottom,8):4"),'Android bottom navigation must apply the native bottom inset without reducing touch safety');
+ok(!primaryNavigation.includes("Dimensions.get('screen')")&&!primaryNavigation.includes('StatusBar.currentHeight'),'Bottom navigation must not regress to screen-height/status-bar heuristics');
+ok(appShell.includes('<SafeAreaProvider>'),'App root must provide safe-area metrics');
+ok(packageJson.includes('"react-native-safe-area-context": "5.4.0"'),'Expo 53 safe-area dependency must remain pinned');
+
+console.log('PASS: UI hierarchy stays compact, theme-aware, safe-area aware, and free of redundant Home navigation');

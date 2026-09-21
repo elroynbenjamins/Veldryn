@@ -2,13 +2,15 @@ import {itemDef} from '../content/items';
 import {GATHERING,RECIPES} from '../content/skills';
 import {HERB_NODES} from '../content/herbalism';
 import {MONSTERS} from '../content/monsters';
-import {GameState} from './types';
+import {WORLD_ZONES} from '../content/world-map';
+import {GameState,SkillId} from './types';
+import type {WorkingTowardDestination} from './working-toward';
 import {enhancedGearStats,gearEnhancement,gemSocketCapacity,upgradeQuote} from './equipment-enhancement';
 import {itemRarity,rarityMeta} from './item-rarity';
 
 export type ItemInspectSourceKind='gathering'|'crafting'|'combat'|'starting';
-export interface ItemInspectSource{kind:ItemInspectSourceKind;title:string;detail:string;}
-export interface ItemRecipeUse{name:string;skill:string;level:number;quantity:number;}
+export interface ItemInspectSource{kind:ItemInspectSourceKind;title:string;detail:string;navigation?:WorkingTowardDestination;}
+export interface ItemRecipeUse{name:string;skill:string;level:number;quantity:number;navigation:WorkingTowardDestination;}
 const title=(value:string)=>value.toLowerCase().split('_').map(part=>part?part[0].toUpperCase()+part.slice(1):part).join(' ');
 const pct=(value:number)=>value>=.1?`${Math.round(value*100)}%`:`${(value*100).toFixed(value<.01?2:1)}%`;
 
@@ -18,22 +20,24 @@ export function itemInspectModel(state:GameState,itemId:string){
 
   for(const node of [...GATHERING,...HERB_NODES]){
     if(node.itemId!==itemId)continue;
-    sources.push({kind:'gathering',title:node.name,detail:`${title(node.skillId)} Lv ${node.unlockLevel} · ${title(node.zoneId)}`});
+    sources.push({kind:'gathering',title:node.name,detail:`${title(node.skillId)} Lv ${node.unlockLevel} · ${title(node.zoneId)}`,navigation:{kind:'skills',skillId:node.skillId as SkillId,mode:'gathering',actionId:node.id,regionId:node.zoneId,button:'Open source',detail:`Open ${node.name} in ${title(node.zoneId)}.`}});
   }
   for(const recipe of RECIPES){
     if(recipe.output.itemId!==itemId)continue;
-    sources.push({kind:'crafting',title:recipe.name,detail:`${title(recipe.skillId)} Lv ${recipe.level} · ${recipe.gold} gold`});
+    sources.push({kind:'crafting',title:recipe.name,detail:`${title(recipe.skillId)} Lv ${recipe.level} · ${recipe.gold} gold`,navigation:{kind:'skills',skillId:recipe.skillId,mode:'crafting',recipeId:recipe.id,button:'Open recipe',detail:`Open ${recipe.name}.`}});
   }
   for(const monster of MONSTERS){
     for(const drop of monster.drops){
       if(drop.itemId!==itemId)continue;
-      sources.push({kind:'combat',title:monster.name,detail:`${monster.zone} · Lv ${monster.level} · ${pct(drop.chance)} drop`});
+      const regionId=WORLD_ZONES.find(zone=>zone.name===monster.zone)?.id;
+      sources.push({kind:'combat',title:monster.name,detail:`${monster.zone} · Lv ${monster.level} · ${pct(drop.chance)} drop`,navigation:{kind:'combat',monsterId:monster.id,zoneName:monster.zone,regionId,button:'Open hunt',detail:`Open ${monster.name} in ${monster.zone}.`}});
     }
   }
   if(item.id.startsWith('START_')||item.id.startsWith('basic_'))sources.unshift({kind:'starting',title:'Starting equipment',detail:'Granted by a matching class loadout.'});
 
   const usedIn:ItemRecipeUse[]=RECIPES.flatMap(recipe=>recipe.inputs.filter(input=>input.itemId===itemId).map(input=>({
     name:recipe.name,skill:title(recipe.skillId),level:recipe.level,quantity:input.quantity,
+    navigation:{kind:'skills',skillId:recipe.skillId,mode:'crafting',recipeId:recipe.id,button:'Open recipe',detail:`Open ${recipe.name}.`} as WorkingTowardDestination,
   })));
 
   const inventoryQuantity=state.inventory.stacks.find(stack=>stack.itemId===itemId)?.quantity??0;

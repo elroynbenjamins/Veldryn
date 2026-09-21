@@ -53,8 +53,8 @@ export function CoopEventExpeditionDetails({language,event,notice,busy=false,onB
   </ExpeditionScreenShell>;
 }
 
-type DetailsProps={language:Language;dungeon:CoopDungeonView;currentLevel:number;mode:CoopMode;tier?:CoopTier;notice?:string;onBack:()=>void;onMode:(mode:CoopMode)=>void;onTier:(tier:CoopTier)=>void;onContinue:(tier:CoopTier)=>void};
-export function CoopDungeonDetails({language,dungeon,currentLevel,mode,tier,notice,onBack,onMode,onTier,onContinue}:DetailsProps){
+type DetailsProps={language:Language;dungeon:CoopDungeonView;currentLevel:number;mode:CoopMode;tier?:CoopTier;liveFellowshipRemaining?:number;notice?:string;onBack:()=>void;onMode:(mode:CoopMode)=>void;onTier:(tier:CoopTier)=>void;onContinue:(tier:CoopTier)=>void};
+export function CoopDungeonDetails({language,dungeon,currentLevel,mode,tier,liveFellowshipRemaining=3,notice,onBack,onMode,onTier,onContinue}:DetailsProps){
   const [showRooms,setShowRooms]=useState(false),autoTier=highestEligibleCoopTier(dungeon,currentLevel),effectiveTier=mode==='live'?autoTier:tier,eligibility=effectiveTier?coopTierEligibility(dungeon,effectiveTier,currentLevel):undefined,requiredLevel=eligibility?.requiredLevel??dungeon.minLevel,meetsLevel=eligibility?.eligible??false;
   const canContinue=effectiveTier!==undefined&&meetsLevel;
   const selection=mode==='live'?ct(language,'details.liveAutoSelected',{tier:autoTier??'—'}):ct(language,'details.modeSelected',{mode:ct(language,'details.qmode'),tier:tier??'—'});
@@ -69,6 +69,7 @@ export function CoopDungeonDetails({language,dungeon,currentLevel,mode,tier,noti
     {!meetsLevel?<Text accessibilityRole="alert" style={s.lock}>{ct(language,'browse.requiresLevel',{level:requiredLevel})}</Text>:null}
     <Text style={s.section}>{ct(language,'details.mode')}</Text>
     <ModeChoice selected={mode==='live'} title={ct(language,'details.live')} copy={ct(language,'details.liveCopy')} onPress={()=>onMode('live')}/>
+    {mode==='live'?<FantasyPanel variant="selected"><View style={s.modeHead}><Text style={s.modeTitle}>{coopPolicyText(language,'fellowshipLabel')}</Text><StateChip label={`${Math.max(0,Math.min(3,liveFellowshipRemaining))}/3`} tone={liveFellowshipRemaining>0?'success':'neutral'}/></View><Text style={s.copy}>{coopPolicyText(language,'fellowshipCopy')}</Text></FantasyPanel>:null}
     <ModeChoice selected={mode==='qmode'} title={ct(language,'details.qmode')} copy={ct(language,'details.qmodeCopy')} onPress={()=>onMode('qmode')}/>
     <PrimaryAction label={`${showRooms?'▾':'›'} ${ct(language,'details.roomTypes')} · ${dungeon.enabledRoomTypes.length}`} tone="secondary" selected={showRooms} onPress={()=>setShowRooms(value=>!value)}/>
     {showRooms?(dungeon.enabledRoomTypes.length?<View style={s.roomGrid}>{dungeon.enabledRoomTypes.map(room=><RoomTile key={room} language={language} room={room}/>)}</View>:<FantasyPanel><Text style={s.copy}>{ct(language,'details.noRooms')}</Text></FantasyPanel>):null}

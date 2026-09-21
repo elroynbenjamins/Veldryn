@@ -15,6 +15,8 @@ import {GameButton} from '../components/GameButton';
 import {radii,spacing,typography,equipmentTheme,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {FrostmarchRegionPanel} from '../components/FrostmarchRegionPanel';
+import {SunscarRegionPanel} from '../components/SunscarRegionPanel';
+import {RegionalCombatPanel} from '../components/RegionalCombatPanel';
 import {RegionalJournalPanel} from '../components/RegionalJournalPanel';
 import {RegionalStoryLeadsPanel} from '../components/RegionalStoryLeadsPanel';
 import {frostmarchCardsV21,frostmarchProgressFromState,type RegionProgressV21} from '../core/region-content-v21';
@@ -26,10 +28,11 @@ type Props={
   onOpenCombat:(zoneId?:string)=>void;
   onOpenSkills:()=>void;
   onCoop?:(dungeonId?:string)=>void;
+  onRegionalRewardsChanged?:()=>Promise<void>|void;
   goalRegionId?:string;
 };
 
-export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop,goalRegionId}:Props){
+export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop,onRegionalRewardsChanged,goalRegionId}:Props){
   const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
   const level=state.character!.level,currentId=currentRegionId(state);
   const current=WORLD_ZONES.find(zone=>zone.id===currentId)??WORLD_ZONES[0];
@@ -39,7 +42,7 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop,goa
   const gathering=[...GATHERING,...HERB_NODES].filter(activity=>activity.zoneId===current.id);
   const storyRegion=currentId==='SUNSCAR'||currentId==='FROSTMARCH'||currentId==='ASHLANDS'?currentId:undefined;
 
-  const frostmarch=current.id==='FROSTMARCH';
+  const sunscar=current.id==='SUNSCAR',frostmarch=current.id==='FROSTMARCH';
   const [serverFrostmarchProgress,setServerFrostmarchProgress]=useState<RegionProgressV21|null>(null);
   const [activeFrostmarchVersion,setActiveFrostmarchVersion]=useState<string|null>(null);
   useEffect(()=>{
@@ -48,6 +51,13 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop,goa
     void Promise.all([loadFrostmarchProgressV21(),loadActiveFrostmarchContentVersionV21()]).then(([progress,version])=>{if(mounted){setServerFrostmarchProgress(version?.startsWith('frostmarch-v21.')?progress:null);setActiveFrostmarchVersion(version);}}).catch(()=>{if(mounted){setServerFrostmarchProgress(null);setActiveFrostmarchVersion(null);}});
     return ()=>{mounted=false;};
   },[frostmarch]);
+  const sunscarZones=[
+    {id:'ZONE_006',name:'Saffron Gate',levelRange:'Lv 25–29',locked:level<25,identity:'Caravan gate, spice roads and the first desert settlements.',activities:['Patrol combat','Dunewood','regional contracts']},
+    {id:'ZONE_007',name:'Scorchwind Flats',levelRange:'Lv 30–35',locked:level<30,identity:'Open glass-sand flats where exposure and heat alter fights.',activities:['Sunspine Elite','Sunstone Ore','Charbark']},
+    {id:'ZONE_008',name:'Mirage Basin',levelRange:'Lv 32–38',locked:level<32,identity:'Oasis basin where false targets and reflected memories distort combat.',activities:['Mirage Elite','Fishing','Herbalism']},
+    {id:'ZONE_009',name:'Buried Observatory',levelRange:'Lv 37–43',locked:level<37,identity:'Ancient star machinery beneath the desert, rich in lenses and astral script.',activities:['Observatory Elite','Astral Survey','Amberglass']},
+    {id:'ZONE_010',name:"Tyrant's Crown",levelRange:'Lv 42–45',locked:level<42,identity:'Royal ruins and sand-pillars surrounding the Sand Tyrant.',activities:['Sand Tyrant','Royal Chitin','regional mastery']},
+  ] as const;
   const frostmarchCards=frostmarchCardsV21(level),frostmarchZones=frostmarchCards.zones,frostmarchDungeons=frostmarchCards.dungeons;
   const frostmarchProgress=serverFrostmarchProgress??frostmarchProgressFromState(state);
   return <ScrollView contentContainerStyle={s.root}>
@@ -85,6 +95,7 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop,goa
 
     {onCoop&&<Panel><Text style={s.title}>Co-op Expeditions</Text><Text style={s.sub}>Group expeditions are entered separately from regional solo activities.</Text><GameButton title="Open Co-op Expeditions" tone="secondary" onPress={onCoop}/></Panel>}
     <Text style={s.progress}>{next?`Next region: ${next.name} at character level ${next.minLevel}.`:'All authored regions are unlocked.'}</Text>
+    {sunscar&&<><SunscarRegionPanel zones={sunscarZones} onZone={()=>{}}/>{onRegionalRewardsChanged?<RegionalCombatPanel state={state} onRewardsChanged={onRegionalRewardsChanged}/>:null}</>}
     {frostmarch&&<>
       <FrostmarchRegionPanel zones={frostmarchZones} progress={frostmarchProgress} contentVersion={activeFrostmarchVersion??undefined} weather={{name:environment.weatherName,endsInSeconds:Math.max(0,Math.floor((environment.changesAtMs-Date.now())/1000)),summary:environment.weatherName+' remains readable through the server-backed Season/Weather system.'}} dungeons={frostmarchDungeons} onZone={zoneId=>onOpenCombat(zoneId)} onDungeon={onCoop}/>
       <RegionalJournalPanel name="Frostmarch" progress={frostmarchProgress}/>

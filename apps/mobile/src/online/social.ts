@@ -20,7 +20,7 @@ export type FriendRequest={request_id:string;account_id:string;display_name:stri
 export type BlockedPlayer={account_id:string;display_name:string;blocked_at:string};
 export type GuildChatMessage={id:string;account_id:string;sender_name:string;body:string;created_at:string;guild_tag?:string|null;guild_tag_color_id?:string|null;guild_role?:'leader'|'officer'|'member'|null};
 export interface GuildChatState{guild:{id:string;name:string;tag?:string|null;tagColorId?:string|null}|null;messages:GuildChatMessage[];serverTime:string;}
-export interface SocialChatChannelAttention{channelId?:string|null;unread:number;mentions:number;}
+export interface SocialChatChannelAttention{channelId?:string|null;unread:number;mentions:number;lastReadAt?:string|null;firstUnreadMessageId?:string|null;}
 export interface SocialChatAttentionState{guild:SocialChatChannelAttention;party:SocialChatChannelAttention;totalUnread:number;totalMentions:number;serverTime:string;}
 
 

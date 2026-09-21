@@ -1,5 +1,4 @@
 import type {ClassId,GameState,GemEffectId,GemGrade,GemStat,ItemStack} from './types';
-import type {ItemRarity} from './item-rarity';
 
 export const GEM_GRADES = [
   {grade:1 as GemGrade,id:'CUT',name:'Cut'},
@@ -62,11 +61,17 @@ export const EFFECT_GEM_FAMILIES:readonly EffectGemFamily[]=[
 ];
 
 const gradeNames=['','Cut','Polished','Refined','Flawless','Radiant'] as const;
-const rarityForGrade=(grade:GemGrade):ItemRarity=>grade>=5?'mythic':grade===4?'legendary':grade===3?'epic':grade===2?'rare':'uncommon';
+type GemItemRarity='uncommon'|'rare'|'epic'|'legendary'|'mythic';
+interface GemProgressionItem{
+  id:string;name:string;type:'gem';gemKind:'stat'|'effect';gemFamilyId:string;
+  gemStat?:GemStat;gemPercent?:number;gemEffect?:GemEffectId;gemEffectValue?:number;
+  gemGrade:GemGrade;gemTier:GemGrade;value:number;rarity:GemItemRarity;passive?:string;
+}
+const rarityForGrade=(grade:GemGrade):GemItemRarity=>grade>=5?'mythic':grade===4?'legendary':grade===3?'epic':grade===2?'rare':'uncommon';
 export const statGemItemId=(family:StatGemFamilyId,grade:GemGrade)=>`GEM_STAT_${family.toUpperCase()}_G${grade}`;
 export const effectGemItemId=(family:EffectGemFamilyId,grade:GemGrade)=>`GEM_EFFECT_${family.toUpperCase()}_G${grade}`;
 
-export const GEM_PROGRESSION_ITEMS=[
+export const GEM_PROGRESSION_ITEMS:readonly GemProgressionItem[]=[
   ...STAT_GEM_FAMILIES.flatMap(f=>GEM_GRADES.map(g=>({
     id:statGemItemId(f.id,g.grade),name:`${gradeNames[g.grade]} ${f.name} Gem`,type:'gem' as const,gemKind:'stat' as const,
     gemFamilyId:f.id,gemStat:f.stat,gemPercent:f.values[g.grade-1],gemGrade:g.grade,gemTier:g.grade,value:120*g.grade*g.grade,
@@ -77,7 +82,7 @@ export const GEM_PROGRESSION_ITEMS=[
     gemFamilyId:f.id,gemEffect:f.effectId,gemEffectValue:f.values[g.grade-1],gemGrade:g.grade,gemTier:g.grade,value:160*g.grade*g.grade,
     rarity:g.grade>=5?'mythic':g.grade===4?'legendary':g.grade===3?'epic':g.grade===2?'rare':'uncommon',passive:f.summary
   }))),
-] as const;
+];
 
 export interface GemCombineQuote{fromGrade:GemGrade;toGrade:GemGrade;requiredCopies:3;dust:number;gold:number;catalystId?:'REGIONAL_CATALYST'|'RADIANT_CATALYST';seconds:number;}
 export const GEM_COMBINE_QUOTES:readonly GemCombineQuote[]=[

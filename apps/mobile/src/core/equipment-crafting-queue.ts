@@ -5,6 +5,7 @@ import {characterPermanentMultipliers} from './permanent-boosts';
 import {levelFromXp} from './progression';
 import type {EquipmentCraftJob,GameState,ItemStack,SkillState} from './types';
 import {craftClaimSubRoll,craftedInstanceResult,createCraftedGearInstance} from './crafted-gear-instances';
+import {migrateToPerInstanceGear} from './gear-instances';
 
 export const BASE_EQUIPMENT_CRAFT_SLOTS=3;
 export const MAX_EQUIPMENT_CRAFT_SLOTS=5;
@@ -167,12 +168,12 @@ function grantCraftOutput(state:GameState,recipe:Recipe,ownerCharacterId:string)
   if(state.character?.id!==ownerCharacterId){
     const bank=addOutput(state.bank.stacks,state.bank.capacity,recipe.output.itemId,recipe.output.quantity);
     if(bank.remaining>0)throw new Error('Bank is full; free Bank space before claiming this character\'s equipment');
-    return {...state,bank:{...state.bank,stacks:bank.stacks}};
+    return {state:{...state,bank:{...state.bank,stacks:bank.stacks}},location:'bank' as const};
   }
   const inv=addOutput(state.inventory.stacks,state.inventory.capacity,recipe.output.itemId,recipe.output.quantity);
   const bank=addOutput(state.bank.stacks,state.bank.capacity,recipe.output.itemId,inv.remaining);
   if(bank.remaining>0)throw new Error('Inventory and Bank are full');
-  return {...state,inventory:{...state.inventory,stacks:inv.stacks},bank:{...state.bank,stacks:bank.stacks}};
+  return {state:{...state,inventory:{...state.inventory,stacks:inv.stacks},bank:{...state.bank,stacks:bank.stacks}},location:(inv.remaining>0?'bank':'inventory') as 'inventory'|'bank'};
 }
 
 function awardOwnerSkillXp(state:GameState,ownerCharacterId:string,recipe:Recipe){
@@ -186,13 +187,13 @@ function awardOwnerSkillXp(state:GameState,ownerCharacterId:string,recipe:Recipe
 }
 
 export function claimEquipmentCraft(state:GameState,jobId:string,nowMs:number,rarityRoll=Math.random()){
-  const projected=withProjectedQueue(state,nowMs),queue=equipmentCraftingQueue(projected),job=queue.find(row=>row.id===jobId);
+  const projected=migrateToPerInstanceGear(withProjectedQueue(state,nowMs)),queue=equipmentCraftingQueue(projected),job=queue.find(row=>row.id===jobId);
   if(!job)throw new Error('Crafting job not found');
   if(job.completesAtMs>nowMs)throw new Error(job.startedAtMs>nowMs?'This equipment craft is still waiting for a forge slot':'This equipment craft is still in progress');
   const recipe=timedEquipmentRecipe(job.recipeId);if(!recipe)throw new Error('Crafting recipe is no longer available');
-  let next=grantCraftOutput(projected,recipe,job.ownerCharacterId);
-  next=awardOwnerSkillXp(next,job.ownerCharacterId,recipe);
-  const created=createCraftedGearInstance(next,{itemId:recipe.output.itemId,ownerCharacterId:job.ownerCharacterId,jobId:job.id,createdAtMs:nowMs,roll:rarityRoll});
+  const granted=grantCraftOutput(projected,recipe,job.ownerCharacterId);
+  let next=awardOwnerSkillXp(granted.state,job.ownerCharacterId,recipe);
+  const created=createCraftedGearInstance(next,{itemId:recipe.output.itemId,ownerCharacterId:job.ownerCharacterId,jobId:job.id,createdAtMs:nowMs,roll:rarityRoll,location:granted.location});
   next=created.state;
   next={...next,account:{...next.account,equipmentCraftingQueue:queue.filter(row=>row.id!==jobId)}};
   return {state:next,recipe,job,instance:created.instance,result:craftedInstanceResult(next,created.instance)};

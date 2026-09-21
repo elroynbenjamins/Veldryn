@@ -122,9 +122,14 @@ function addOutput(stacks:ItemStack[],capacity:number,itemId:string,quantityToAd
   return {stacks:next,remaining};
 }
 
-function grantCraftOutput(state:GameState,recipe:Recipe){
-  let inv=addOutput(state.inventory.stacks,state.inventory.capacity,recipe.output.itemId,recipe.output.quantity);
-  let bank=addOutput(state.bank.stacks,state.bank.capacity,recipe.output.itemId,inv.remaining);
+function grantCraftOutput(state:GameState,recipe:Recipe,ownerCharacterId:string){
+  if(state.character?.id!==ownerCharacterId){
+    const bank=addOutput(state.bank.stacks,state.bank.capacity,recipe.output.itemId,recipe.output.quantity);
+    if(bank.remaining>0)throw new Error('Bank is full; free Bank space before claiming this character\'s equipment');
+    return {...state,bank:{...state.bank,stacks:bank.stacks}};
+  }
+  const inv=addOutput(state.inventory.stacks,state.inventory.capacity,recipe.output.itemId,recipe.output.quantity);
+  const bank=addOutput(state.bank.stacks,state.bank.capacity,recipe.output.itemId,inv.remaining);
   if(bank.remaining>0)throw new Error('Inventory and Bank are full');
   return {...state,inventory:{...state.inventory,stacks:inv.stacks},bank:{...state.bank,stacks:bank.stacks}};
 }
@@ -144,7 +149,7 @@ export function claimEquipmentCraft(state:GameState,jobId:string,nowMs:number){
   if(!job)throw new Error('Crafting job not found');
   if(job.completesAtMs>nowMs)throw new Error('This equipment craft is still in progress');
   const recipe=timedEquipmentRecipe(job.recipeId);if(!recipe)throw new Error('Crafting recipe is no longer available');
-  let next=grantCraftOutput(state,recipe);
+  let next=grantCraftOutput(state,recipe,job.ownerCharacterId);
   next=awardOwnerSkillXp(next,job.ownerCharacterId,recipe);
   next={...next,account:{...next.account,equipmentCraftingQueue:queue.filter(row=>row.id!==jobId)}};
   return {state:next,recipe,job};

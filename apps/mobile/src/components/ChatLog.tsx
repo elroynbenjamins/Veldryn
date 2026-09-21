@@ -12,6 +12,7 @@ export function ChatLog<T extends ChatLogItem>({channelKey,items,firstUnreadMess
  const caughtUp=()=>{setPendingNew(0);setDividerCleared(true);if(!latestId||caughtUpIdRef.current===latestId)return;caughtUpIdRef.current=latestId;onCaughtUp?.();};
  useEffect(()=>{nearBottomRef.current=!firstUnreadMessageId;initializedRef.current=false;previousIdsRef.current=new Set();caughtUpIdRef.current=undefined;setDividerId(firstUnreadMessageId);setDividerCleared(false);setPendingNew(0);},[channelKey]);
  useEffect(()=>{if(!initializedRef.current&&!dividerId&&firstUnreadMessageId){nearBottomRef.current=false;setDividerId(firstUnreadMessageId)}},[firstUnreadMessageId,dividerId]);
+ useEffect(()=>{if(!initializedRef.current&&dividerId&&items.length&&!items.some(item=>item.id===dividerId))setDividerId(items[0].id);},[items,dividerId]);
  useEffect(()=>{
   const ids=new Set(items.map(item=>item.id));
   if(!initializedRef.current){previousIdsRef.current=ids;return;}

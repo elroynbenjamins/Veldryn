@@ -51,7 +51,7 @@ function motionScale(fx:DungeonCombatCueFx|undefined){
  if(fx.actorMotion==='dash')return 1.025;
  return 1.015;
 }
-function effectAnchor(actorIsParty:boolean|undefined,targetIsParty:boolean|undefined){
+function effectAnchor(actorIsParty:boolean|undefined,targetIsParty:boolean|undefined):'27%'|'49%'|'71%'{
  if(actorIsParty===true&&targetIsParty===true)return '27%';
  if(actorIsParty===false&&targetIsParty===false)return '71%';
  return '49%';
@@ -119,7 +119,7 @@ export function DungeonCombatStage({run,enemyLabel,boss=false}:{run:CoopRunView;
      <Text style={[s.fxGlyph,{color:effectColor}]}>{fx.glyph}</Text>
      <Text numberOfLines={1} style={[s.fxLabel,{color:effectColor}]}>{fx.label}</Text>
     </Animated.View>
-    {(currentCue?.type==='cast'||currentCue?.type==='phase')?<Animated.View style={[s.castHalo,{borderColor:effectColor,opacity:reduceMotion?.75:fxAnim,transform:[{scale:reduceMotion?1:fxAnim.interpolate({inputRange:[0,1],outputRange:[.82,1.16]})}]}]}/>:null}
+    {(currentCue?.type==='cast'||currentCue?.type==='phase')?<Animated.View style={[s.castHalo,{borderColor:effectColor,opacity:reduceMotion ? .75 : fxAnim,transform:[{scale:reduceMotion?1:fxAnim.interpolate({inputRange:[0,1],outputRange:[.82,1.16]})}]}]}/>:null}
    </View>:null}
   </View>
   {replay?<View style={s.replayPanel}>

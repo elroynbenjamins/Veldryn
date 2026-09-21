@@ -6,7 +6,7 @@ import {GameButton} from '../components/GameButton';
 import {CLASSES,ClassDef} from '../content/classes';
 import {itemDef} from '../content/items';
 import {BodyPresentation,ClassId,GameState} from '../core/types';
-import {carouselIndex,characterNameError} from '../core/character-creation';
+import {carouselIndex,characterNameError,normalizeCharacterName} from '../core/character-creation';
 import {noviceSetFor} from '../content/novice-sets';
 import {spacing,typography,equipmentTheme,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -37,7 +37,7 @@ export function ClassSelectScreen({language='en',onLanguage,onSelect,onCancel,ca
   const [role,setRole]=useState<RoleFilter>('All');
   const filtered=useMemo(()=>role==='All'?CLASSES:CLASSES.filter(item=>item.role===role),[role]);
   const selected=filtered[index]??filtered[0];
-  const safeName=name.trim(),nameError=characterNameError(name);
+  const safeName=normalizeCharacterName(name),nameError=characterNameError(name);
   const starter=itemDef(selected.starterEquipment.weapon);
   const change=(direction:number)=>setIndex(current=>carouselIndex(current,direction,filtered.length));
   const swipe=useMemo(()=>PanResponder.create({

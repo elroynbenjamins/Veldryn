@@ -51,6 +51,12 @@ jobs:
       - name: Run gem progression and combat validation
         working-directory: backend
         run: pnpm test:gems
+      - name: Run authoritative regional combat validation
+        working-directory: backend
+        run: pnpm test:regional-combat
+      - name: Build online Edge Function bundles
+        working-directory: backend
+        run: pnpm build:online
       - name: Run co-op reward validation
         working-directory: backend
         run: pnpm test:coop-rewards

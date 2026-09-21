@@ -76,7 +76,7 @@ export function MoreScreen({language,onNavigate,onOpenChatPilot,companionAttenti
       <Text style={s.sectionLabel}>{section.label}</Text>
       <View style={s.grid}>{section.items.map(id=>{const meta=itemMeta(language,id);const alert=attentionLabel(id);return <Pressable key={id} accessibilityRole="button" accessibilityLabel={alert?`${meta.title}, ${alert}`:meta.title} accessibilityHint={meta.description} onPress={()=>onNavigate(id)} style={({pressed})=>[s.tile,singleColumn&&s.tileWide,pressed&&s.pressed]}>
         <View style={s.tileTop}><View style={s.iconFrame}><Image accessible={false} source={navigationIcons[iconForDestination(id)]} resizeMode="contain" style={s.icon}/></View><View style={s.attentionSlot}>{attention(id)}</View><UiIcon name="next" size={18}/></View>
-        <Text numberOfLines={1} style={s.title}>{meta.title}</Text>
+        <Text numberOfLines={singleColumn?2:1} style={s.title}>{meta.title}</Text>
         <Text numberOfLines={singleColumn?2:1} style={s.description}>{meta.description}</Text>
       </Pressable>})}</View>
     </View>)}

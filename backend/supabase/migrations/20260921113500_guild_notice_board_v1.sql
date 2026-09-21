@@ -34,7 +34,7 @@ begin
          coalesce(gb.body,''),
          gb.updated_at,
          gb.updated_by_account_id,
-         v_role in('leader','officer')
+         (v_role in('leader','officer') and not coalesce((auth.jwt()->>'is_anonymous')::boolean,false))
   from (select 1) seed
   left join public.guild_bulletins gb on gb.guild_id=v_gid;
 end $$;

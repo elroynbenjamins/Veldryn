@@ -145,5 +145,6 @@ export function gemEffectDescription(gemId:string){
     case 'boss_power':return `+${pct}% combat power against bosses`;
     case 'damage_reduction':return `-${pct}% incoming combat damage`;
     case 'recovery':return `+${pct}% between-kill recovery`;
+    default:{const family=EFFECT_GEM_FAMILIES.find(row=>row.effectId===gem.gemEffect);return family?.summary??'Build-oriented combat effect';}
   }
 }

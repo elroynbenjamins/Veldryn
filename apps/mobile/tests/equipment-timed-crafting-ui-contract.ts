@@ -17,8 +17,8 @@ ok(queue.includes("label:'Supporter'")&&queue.includes("label:'VIP+'"),'Supporte
 ok(queue.includes("label:'Unlock character slot #2'")&&queue.includes("label:'Unlock character slot #4'"),'Second and fourth character-slot unlocks must each be explicit queue sources');
 ok(queue.includes('Math.min(MAX_EQUIPMENT_CRAFT_SLOTS,raw)'),'Overlapping bonuses must never exceed the 5-slot cap');
 ok(queue.includes('unlockedCharacterSlots(state)'),'Character queue bonuses must use unlocked slots rather than created-character count');
-ok(queue.includes('gold:state.character!.gold-recipe.gold'),'Gold must be reserved when a craft starts');
-ok(queue.includes('consumeAcross(next,input.itemId,input.quantity)'),'Materials must be reserved when a craft starts');
+ok(queue.includes('gold:projected.character!.gold-recipe.gold'),'Gold must be reserved when a craft is started or queued');
+ok(queue.includes('projected=consumeAcross(projected,input.itemId,input.quantity)'),'Materials must be reserved when a craft is started or queued');
 ok(queue.includes('durationMs=seconds*1000')&&queue.includes('startedAtMs:startsNow?nowMs:nowMs+1'),'Timed craft duration and scheduled start must derive from the authoritative clock');
 ok(queue.includes('awardOwnerSkillXp'),'Completion XP must follow the character that started the job');
 

@@ -173,7 +173,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'equip_set':state=game.equipNoviceSet(state);break;
   case 'upgrade':{if(options.randomRoll===undefined)throw new Error('trusted_random_required');const result=attemptEquipmentUpgrade(state,text(a,'id'),options.randomRoll);state=result.state;upgrade=result.result;break;}
   case 'socket':state=socketGem(state,text(a,'id'),text(a,'gemId'));break;
-  case 'unsocket':state=unsocketGem(state,text(a,'id'),integer(a,'index',0,9));break;
+  case 'unsocket':state=unsocketGem(state,text(a,'id'),integer(a,'index',0,1));break;
   case 'skin':state=selectCharacterSkin(state,text(a,'id'));break;
   case 'loadout_save':state=saveCharacterLoadout(state,integer(a,'index',0,2),typeof a.name==='string'?a.name:undefined,now);break;
   case 'loadout_apply':state=applyCharacterLoadout(state,text(a,'id'));break;

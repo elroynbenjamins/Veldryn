@@ -118,22 +118,23 @@ export function effectiveStats(state:GameState){
   const novice=noviceSetFor(c.classId),noviceComplete=novice.slots.every(slot=>c.equipment[slot]===noviceItemId(c.classId,slot));
   if(noviceComplete){hp+=novice.setBonus.hp;attack+=novice.setBonus.attack;defense+=novice.setBonus.defense;}
   const setRuntime=activeEquipmentSetRuntime(state),setStats=setRuntime.stats;
-  hp=Math.ceil(hp*(1+setStats.maxHp));
-  defense=Math.ceil(defense*(1+setStats.armor));
-  const gems=equippedGemBonuses(state);hp=Math.ceil(hp*(1+gems.hp));attack=Math.ceil(attack*(1+gems.attack));defense=Math.ceil(defense*(1+gems.defense));
+  const gems=equippedGemBonuses(state);
+  hp=Math.ceil(hp*(1+setStats.maxHp+gems.max_hp));
+  defense=Math.ceil(defense*(1+setStats.armor+gems.armor));
+  hp=Math.ceil(hp*(1+gems.hp));attack=Math.ceil(attack*(1+gems.attack));defense=Math.ceil(defense*(1+gems.defense));
   const mastery=characterClassEffects(c);hp=Math.ceil(hp*mastery.hp);attack=Math.ceil(attack*mastery.attack);defense=Math.ceil(defense*mastery.defense);
   const permanent=characterPermanentMultipliers(state);attack=Math.ceil(attack*permanent.combatPowerMultiplier);
   const prep=c.preparation?preparationEffects(c.preparation):undefined;if(prep)attack=Math.ceil(attack*prep.attack);
   const role=CLASSES.find(def=>def.id===c.classId)?.role,baseCritChance=role==='Damage'?.10:.05,baseEvasion=role==='Damage'?.07:.04;
   const basePower=Math.round(attack*1.5+defense*.8+hp*.08+c.level*2.5);
   return {
-    hp,attack,defense,power:Math.round(basePower*(1+setStats.power)),
-    critChance:Math.min(.75,baseCritChance+setStats.critRate),
-    critMultiplier:1.5+setStats.critDamage,
-    accuracy:Math.min(.99,.84+setStats.accuracy),
-    evasion:Math.min(.50,baseEvasion+setStats.evasion),
-    haste:.05+setStats.haste,
-    armor:setStats.armor,ward:setStats.ward,tenacity:setStats.tenacity,potency:setStats.potency,penetration:setStats.penetration,
+    hp,attack,defense,power:Math.round(basePower*(1+setStats.power+gems.power)),
+    critChance:Math.min(.75,baseCritChance+setStats.critRate+gems.crit_chance),
+    critMultiplier:1.5+setStats.critDamage+gems.crit_damage,
+    accuracy:Math.min(.99,.84+setStats.accuracy+gems.accuracy),
+    evasion:Math.min(.50,baseEvasion+setStats.evasion+gems.evasion),
+    haste:.05+setStats.haste+gems.haste,
+    armor:setStats.armor+gems.armor,ward:setStats.ward+gems.ward,tenacity:setStats.tenacity+gems.tenacity,potency:setStats.potency+gems.potency,penetration:setStats.penetration+gems.penetration,
   }
 }
 

@@ -1,4 +1,4 @@
-import {playbackCueDelayMs,playbackCueLabel,playbackCueTone,playbackProgress,playbackRecentCues} from '../src/core/dungeon-combat-playback';
+import {playbackCastDisplayMs,playbackCueDelayMs,playbackCueLabel,playbackCueTone,playbackProgress,playbackRecentCues} from '../src/core/dungeon-combat-playback';
 import {validateCoopRunView,type CoopCombatReplayView} from '../src/core/coop-presentation';
 
 function assert(value:unknown,message:string){if(!value)throw new Error(message);}
@@ -15,6 +15,8 @@ const replay:CoopCombatReplayView={nodeId:'boss',reason:'victory',durationMs:200
 equal(playbackCueTone(replay.cues[0]),'selected');
 equal(playbackCueLabel(replay.cues[0]),'Wayfinder attacks The Hollow Regent · 87');
 equal(playbackCueTone(replay.cues[2]),'warning');
+assert(playbackCastDisplayMs(replay.cues[2])>=420,'boss cast display must remain readable at compressed playback speed');
+assert(playbackCastDisplayMs(replay.cues[2])<=1400,'boss cast display must remain compact');
 equal(playbackCueTone(replay.cues[3]),'selected');
 equal(playbackCueLabel(replay.cues[3]),'Lantern Wisp: Lantern Snuff');
 equal(playbackCueLabel(replay.cues[4]),'Ravager is downed');

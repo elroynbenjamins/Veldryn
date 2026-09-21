@@ -35,6 +35,7 @@ export function gemEffectiveDefenseV1(state:CombatantState,now:number){
 }
 
 export function gemOutgoingDamageMultiplierV1(source:CombatantState,target:CombatantState,now:number,abilityId:string,periodic:boolean){
+ if(abilityId.startsWith('COMPANION_'))return 1;
  let bonus=0;
  const execution=gem(source,'effect_execution');if(execution){const threshold=execution.resonance>=2?.35:.30;if(target.hp/Math.max(1,target.definition.stats.maxHp)<threshold){let value=execution.totalValue;if(execution.resonance>=3&&target.hp/Math.max(1,target.definition.stats.maxHp)<.15)value*=1.25;bonus+=value;}}
  const predator=gem(source,'effect_predator');if(predator&&isEliteTarget(target)){const boosted=has(source,'gem:predator_boost',now,source.definition.id);bonus+=predator.totalValue*(boosted?1.25:1);}

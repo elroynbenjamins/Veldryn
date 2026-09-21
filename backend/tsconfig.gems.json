@@ -6,6 +6,8 @@
   "include": [
     "src/types/node-shims.d.ts",
     "src/server/equipment/gems/**/*.ts",
-    "src/server/combat/__tests__/gem-effects-v1.ts"
+    "src/server/combat/__tests__/gem-effects-v1.ts",
+    "src/server/combat/regional-combat-runtime-v1.ts",
+    "src/server/combat/__tests__/regional-combat-runtime-v1.ts"
   ]
 }

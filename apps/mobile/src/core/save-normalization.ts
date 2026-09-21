@@ -145,6 +145,7 @@ export function normalizeSave(input:any):GameState{
       autoJoinWorldChat:input.settings?.autoJoinWorldChat!==false,
       defaultWorldChat:([1,2,3,4] as number[]).includes(Number(input.settings?.defaultWorldChat))?Number(input.settings.defaultWorldChat):1,
       quickNavDestinations:normalizeQuickNavDestinations(input.settings?.quickNavDestinations),
+      favoriteItemIds:stringList(input.settings?.favoriteItemIds,100),
     }
   } as GameState;
   normalized.account={...normalized.account,...migrateLegacyCombatCompanionAccount(input),...normalizeCompanionRuntimeSave(input.account)} as GameState['account'];

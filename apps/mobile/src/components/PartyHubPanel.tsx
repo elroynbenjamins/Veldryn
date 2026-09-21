@@ -1,7 +1,8 @@
-import {IdentityArtwork,RoleBadge} from './SocialIdentity';
+import {CompactPlayerIdentity} from './CompactPlayerIdentity';
 import {RecruitmentListing} from './RecruitmentListing';
 import {GameButton} from './GameButton';
-import {C,equipmentColors,radii,typography} from '../theme/theme';
+import {equipmentTheme,radii,typography,type ThemeColors} from '../theme/theme';
+import {useGameTheme} from '../theme/ThemeContext';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import {
@@ -42,6 +43,7 @@ export interface PartyHubPanelProps {
 }
 
 export function PartyHubPanel(props: PartyHubPanelProps) {
+  const C=useGameTheme(),styles=React.useMemo(()=>makeStyles(C),[C]);
   const [localFilters, setLocalFilters] = React.useState<RecruitmentClientFilters>(EMPTY_RECRUITMENT_FILTERS);
   const filters=props.filters??localFilters;
   const setFilters=(next:React.SetStateAction<RecruitmentClientFilters>)=>{const result=typeof next==='function'?next(filters):next;setLocalFilters(result);props.onFiltersChange?.(result);};
@@ -66,8 +68,7 @@ export function PartyHubPanel(props: PartyHubPanelProps) {
       <Text style={styles.sectionTitle}>PARTY MEMBERS</Text>
       {props.party.members.map(member => <View key={member.accountId} style={styles.memberRow}>
         <Pressable accessibilityRole="button" accessibilityLabel={`Open ${member.characterName}'s profile`} disabled={!props.onOpenMemberProfile} onPress={()=>props.onOpenMemberProfile?.(member)} style={({pressed})=>[styles.memberIdentity,pressed&&styles.memberPressed]}>
-          <IdentityArtwork name={member.characterName} className={member.className}/>
-          <View style={styles.grow}><Text style={styles.bodyStrong}>{member.characterName}</Text><Text style={styles.muted}>{member.className}{member.isLeader?' · Leader':''}</Text><RoleBadge role={member.role}/>{props.onOpenMemberProfile?<Text style={styles.profileHint}>View profile ›</Text>:null}</View>
+          <CompactPlayerIdentity name={member.characterName} className={member.className} status={member.isLeader?'PARTY LEADER':member.role.toUpperCase()} statusTone={member.isLeader?'accent':'info'} hint={props.onOpenMemberProfile?'VIEW PROFILE ›':undefined}/>
         </Pressable>
         {(()=>{const permissions=partyMemberManagement(canManageParty,props.accountId,member.accountId);return permissions.canTransfer||permissions.canRemove?<View style={styles.memberActions}>{permissions.canTransfer?<GameButton compact title="Lead" tone="secondary" onPress={()=>props.onTransferLeadership?.(member)}/>:null}{permissions.canRemove?<GameButton compact title="Kick" tone="secondary" onPress={()=>props.onRemoveMember?.(member)}/>:null}</View>:null})()}
       </View>)}
@@ -94,6 +95,7 @@ export function PartyHubPanel(props: PartyHubPanelProps) {
 }
 
 function ContractCard({ contract, nowMs }: { contract: PartyContractView; nowMs: number }) {
+  const C=useGameTheme(),styles=React.useMemo(()=>makeStyles(C),[C]);
   const ratio = contractProgressRatio(contract);
   const eligible = personalContributionEligible(contract);
   const endsAtMs=contract.endsAtMs??(contract.expiresAt?Date.parse(contract.expiresAt):nowMs);
@@ -112,10 +114,10 @@ function PixelButton({ label, secondary, onPress }: { label: string; secondary?:
   return <GameButton title={label} tone={secondary?'secondary':'primary'} disabled={!onPress} onPress={onPress??(()=>{})}/>;
 }
 
-const styles = StyleSheet.create({
+function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);return StyleSheet.create({
   root: { flex: 1, backgroundColor: C.bg }, content: { padding: 12, gap: 12, paddingBottom: 28 },
-  heroPanel: { borderRadius:radii.lg,borderWidth: 1, borderColor: C.line, backgroundColor: C.panel, padding: 14, gap: 8 },
-  panel: { borderRadius:radii.md,borderWidth: 1, borderColor: C.line, backgroundColor: C.panel, padding: 12, gap: 9 },
+  heroPanel: { borderRadius:radii.lg,borderWidth: 1, borderColor: C.line, backgroundColor: C.panel, padding: 12, gap: 7 },
+  panel: { borderRadius:radii.md,borderWidth: 1, borderColor: C.line, backgroundColor: C.panel, padding: 10, gap: 8 },
   eyebrow: { color: equipmentColors.selectedLine, fontSize: 11, fontWeight: '800', letterSpacing: 2 }, title: { ...typography.hero,color: equipmentColors.goldSoft },
   sectionTitle: { ...typography.title,color: equipmentColors.goldSoft }, bodyStrong: { color: C.text, fontWeight: '800', fontSize: 14 },
   body: { color: C.text, fontSize: 13, lineHeight: 18 }, muted: { color: C.muted, fontSize: 12, lineHeight: 17 }, small: { color: C.muted, fontSize: 11 },
@@ -123,8 +125,8 @@ const styles = StyleSheet.create({
   button: { minHeight: 46, justifyContent: 'center', paddingHorizontal: 14, borderWidth: 2, borderColor: equipmentColors.lineStrong, backgroundColor: equipmentColors.selected },
   buttonSecondary: { backgroundColor: C.panel2, borderColor: C.line }, buttonText: { color: C.text, fontWeight: '900', fontSize: 12, textTransform: 'uppercase' },
   pressed: { opacity: 0.76 }, disabled: { opacity: 0.4 },
-  memberRow: { paddingVertical:10,minHeight:68,flexDirection:'row',alignItems:'center',gap:8,borderBottomWidth:1,borderBottomColor:C.line },memberIdentity:{flex:1,minWidth:0,flexDirection:'row',alignItems:'center',gap:9},memberActions:{gap:4,width:72},memberPressed:{opacity:.72},profileHint:{color:C.info,fontSize:9,fontWeight:'800',marginTop:2},
-  avatar: { width: 38, height: 38, borderWidth: 2, borderColor: C.line, backgroundColor: C.panel2, alignItems: 'center', justifyContent: 'center' }, avatarText: { color: equipmentColors.goldSoft, fontWeight: '900' },
+  memberRow: { paddingVertical:8,minHeight:62,flexDirection:'row',alignItems:'center',gap:8,borderBottomWidth:1,borderBottomColor:C.line },memberIdentity:{flex:1,minWidth:0,flexDirection:'row',alignItems:'center',gap:9},memberActions:{gap:4,width:72},memberPressed:{opacity:.72},
+  
   contractCard: { borderRadius:radii.md,borderWidth: 1, borderColor: C.line, backgroundColor: equipmentColors.panel, padding: 10, gap: 6 }, badge: { color: equipmentColors.selectedLine, fontWeight: '900', fontSize: 10 },
   progressTrack: { height: 10, borderWidth: 1, borderColor: C.line, backgroundColor: C.bg }, progressFill: { height: '100%', backgroundColor: equipmentColors.selectedLine },
   good: { color: C.good, fontSize: 11, fontWeight: '700' }, warning: { color: C.warning, fontSize: 11, fontWeight: '700' }, objective: { color: C.text, fontSize: 11 },
@@ -135,4 +137,4 @@ const styles = StyleSheet.create({
   time: { color: C.muted, fontSize: 11, fontWeight: '700' }, timeSoon: { color: C.warning, fontSize: 11, fontWeight: '900' }, context: { color: C.info, fontSize: 11 },
   tag: { color: C.text, backgroundColor: C.panel2, borderWidth: 1, borderColor: C.line, paddingHorizontal: 6, paddingVertical: 3, fontSize: 10 },
   empty: { color: C.muted, fontSize: 12, textAlign: 'center', paddingVertical: 12 },
-});
+});}

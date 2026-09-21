@@ -80,7 +80,7 @@ export function moveGearInstance(state:GameState,instanceId:string,nextLocation:
 }
 export function inventoryGearCopies(state:GameState,itemId:string){
   if(!state.character)return [] as CraftedGearInstance[];
-  const quantity=state.inventory.stacks.find(row=>row.itemId===itemId)?.quantity??0;
+  const quantity=state.inventory.stacks.filter(row=>row.itemId===itemId).reduce((total,row)=>total+Math.max(0,row.quantity),0);
   const owner=state.character.id,equippedIds=new Set(Object.values(state.character.equippedGearInstanceIds??{}).filter((id):id is string=>typeof id==='string'));
   const persisted=craftedInstancesForItem(state,itemId,owner).filter(row=>row.location==='inventory'&&!equippedIds.has(row.id)).sort((a,b)=>b.enhancement.rank-a.enhancement.rank||RARITY_ORDER[b.rarity]-RARITY_ORDER[a.rarity]||b.createdAtMs-a.createdAtMs||a.id.localeCompare(b.id));
   const result=persisted.slice(0,quantity),used=new Set(result.map(row=>row.id));

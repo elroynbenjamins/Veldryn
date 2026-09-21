@@ -26,6 +26,12 @@ export function coopRequiredLevel(baseMinimumLevel:number,tier:CoopTier):number{
   return baseMinimumLevel+COOP_ROGUELITE_CONFIG.tierMinimumLevelOffset[tier];
 }
 
+export function highestEligibleCoopTier(baseMinimumLevel:number,characterLevel:number):CoopTier|undefined{
+  if(!Number.isInteger(characterLevel)||characterLevel<1)throw new Error('invalid_character_level');
+  for(const tier of [5,4,3,2,1] as CoopTier[])if(characterLevel>=coopRequiredLevel(baseMinimumLevel,tier))return tier;
+  return undefined;
+}
+
 export interface RootboundCoopBalance {
   version:string;
   enemyAttackMultiplier:number;

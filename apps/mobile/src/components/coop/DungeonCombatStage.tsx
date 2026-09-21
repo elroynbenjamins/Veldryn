@@ -28,12 +28,6 @@ function motionScale(fx:DungeonCombatCueFx|undefined){
  if(fx.actorMotion==='dash')return 1.025;
  return 1.015;
 }
-function effectAnchor(actorIsParty:boolean|undefined,targetIsParty:boolean|undefined):'27%'|'49%'|'71%'{
- if(actorIsParty===true&&targetIsParty===true)return '27%';
- if(actorIsParty===false&&targetIsParty===false)return '71%';
- return '49%';
-}
-
 export function DungeonCombatStage({run,enemyLabel,boss=false}:{run:CoopRunView;enemyLabel?:string;boss?:boolean}){
  const tank=run.roleSlots.find(slot=>slot.role==='tank'),damage=run.roleSlots.filter(slot=>slot.role==='damage'),support=run.roleSlots.find(slot=>slot.role==='support');
  const ordered=[tank,damage[0],damage[1],support].filter((slot):slot is Slot=>Boolean(slot)),assists=ordered.filter(slot=>slot.companionId).length;
@@ -69,28 +63,28 @@ export function DungeonCombatStage({run,enemyLabel,boss=false}:{run:CoopRunView;
  const replayEnemy=useMemo(()=>{for(const cue of cues){if(cue.actorId&&!partyIds.has(cue.actorId)&&cue.actorName)return cue.actorName;if(cue.targetId&&!partyIds.has(cue.targetId)&&cue.targetName)return cue.targetName;}return undefined;},[cues,partyIds]);
  const shownEnemy=enemyLabel??replayEnemy??(boss?'Final Boss':'Dungeon Enemy'),enemyActive=Boolean(currentCue?.actorId&&!partyIds.has(currentCue.actorId)),enemyTargeted=!enemyActive&&Boolean(currentCue?.targetId&&!partyIds.has(currentCue.targetId));
  const progress=replay?playbackProgress(replay,cueIndex):0,complete=Boolean(replay&&(!cues.length||cueIndex>=cues.length-1));
- const actorDirection=actorIsParty===false?-1:1,targetDirection=targetIsParty===false?-1:1;
+ const actorDirection=actorIsParty===false?1:-1,targetDirection=targetIsParty===false?-1:1;
  const actorTravel=(fx?.actorMotion==='lunge'||fx?.actorMotion==='dash'||fx?.actorMotion==='smash'||fx?.actorMotion==='projectile')?(fx.actorTravelPx*actorDirection):0;
  const actorStyle=!reduceMotion&&fx?{transform:[
-  {translateX:actorAnim.interpolate({inputRange:[0,.44,1],outputRange:[0,actorTravel,0]})},
-  {translateY:actorAnim.interpolate({inputRange:[0,.44,1],outputRange:[0,fx.actorMotion==='smash'?3:fx.actorMotion==='cast'?-2:0,0]})},
+  {translateY:actorAnim.interpolate({inputRange:[0,.44,1],outputRange:[0,actorTravel,0]})},
+  {translateX:actorAnim.interpolate({inputRange:[0,.44,1],outputRange:[0,fx.actorMotion==='smash'?3:fx.actorMotion==='cast'?-2:0,0]})},
   {scale:actorAnim.interpolate({inputRange:[0,.44,1],outputRange:[1,motionScale(fx),1]})},
  ]}:undefined;
  const targetStyle=!reduceMotion&&fx?{transform:[
   {translateX:targetAnim.interpolate({inputRange:[0,.28,.45,.62,1],outputRange:[0,0,fx.targetMotion==='shake'?fx.targetShakePx*targetDirection:0,fx.targetMotion==='shake'?-fx.targetShakePx*targetDirection:0,0]})},
   {scale:targetAnim.interpolate({inputRange:[0,.48,1],outputRange:[1,fx.targetMotion==='pulse'?1.055:fx.targetMotion==='brace'?1.035:1,1]})},
  ]}:undefined;
- const effectDirection=actorIsParty===false?-1:1,effectTravel=(fx?.effectTravelPx??0)*effectDirection,effectColor=fx?fxColor(fx.accent):coopColors.cyan;
- const effectStyle=fx?{left:effectAnchor(actorIsParty,targetIsParty),opacity:reduceMotion?1:fxAnim,transform:[
-  {translateX:reduceMotion?0:fxAnim.interpolate({inputRange:[0,1],outputRange:[0,effectTravel]})},
+ const effectDirection=actorIsParty===false?1:-1,effectTravel=(fx?.effectTravelPx??0)*effectDirection,effectColor=fx?fxColor(fx.accent):coopColors.cyan;
+ const effectStyle=fx?{left:'50%' as const,top:actorIsParty===false?'35%' as const:'57%' as const,opacity:reduceMotion?1:fxAnim,transform:[
+  {translateY:reduceMotion?0:fxAnim.interpolate({inputRange:[0,1],outputRange:[0,effectTravel]})},
   {scale:reduceMotion?1:fxAnim.interpolate({inputRange:[0,.5,1],outputRange:[.75,1.16,1]})},
  ]}:undefined;
  return <FantasyPanel variant={boss?'danger':'selected'}>
   <View style={s.header}><View style={s.grow}><Text style={s.kicker}>{replay?'COMBAT PLAYBACK':boss?'FINAL ENCOUNTER':'DUNGEON COMBAT'}</Text><Text style={s.title}>{shownEnemy}</Text></View><StateChip label={assists?`${assists} ASSIST${assists===1?'':'S'}`:'NO ASSISTS'} tone={assists?'success':'neutral'}/></View>
   <View style={s.arena}>
-   <View style={s.partyField}>{ordered.map((slot,index)=>{const active=Boolean(currentCue?.actorId&&slot.memberId===currentCue.actorId),isTarget=Boolean(currentCue?.targetId&&slot.memberId===currentCue.targetId),targeted=!active&&isTarget,assistProc=active&&currentCue?.type==='assist';return <View key={slot.memberId??`${slot.name}-${index}`} style={[s.formationSlot,index===0&&s.slotFront,index===3&&s.slotRear]}><CombatantProfileCard slot={slot} active={active} targeted={targeted} assistProc={assistProc} currentCue={currentCue} motionStyle={active?actorStyle:isTarget?targetStyle:undefined}/></View>;})}</View>
+   <View style={[s.enemyField,boss&&s.bossField]}><EnemyCombatProfileCard name={shownEnemy} boss={boss} active={enemyActive} targeted={enemyTargeted} currentCue={currentCue} motionStyle={enemyActive?actorStyle:enemyTargeted?targetStyle:undefined}/></View>
    <View style={s.divider}><Text style={s.vs}>VS</Text></View>
-   <View style={s.enemyField}><EnemyCombatProfileCard name={shownEnemy} boss={boss} active={enemyActive} targeted={enemyTargeted} currentCue={currentCue} motionStyle={enemyActive?actorStyle:enemyTargeted?targetStyle:undefined}/></View>
+   <View style={s.partyField}>{ordered.map((slot,index)=>{const active=Boolean(currentCue?.actorId&&slot.memberId===currentCue.actorId),isTarget=Boolean(currentCue?.targetId&&slot.memberId===currentCue.targetId),targeted=!active&&isTarget,assistProc=active&&currentCue?.type==='assist';return <View key={slot.memberId??`${slot.name}-${index}`} style={s.formationSlot}><CombatantProfileCard slot={slot} active={active} targeted={targeted} assistProc={assistProc} currentCue={currentCue} motionStyle={active?actorStyle:isTarget?targetStyle:undefined}/></View>;})}</View>
    {fx?<View pointerEvents="none" style={s.fxLayer}>
     <Animated.View style={[s.fxMark,effectStyle,{borderColor:effectColor,shadowColor:effectColor}]}>
      <Text style={[s.fxGlyph,{color:effectColor}]}>{fx.glyph}</Text>
@@ -113,9 +107,10 @@ export function DungeonCombatStage({run,enemyLabel,boss=false}:{run:CoopRunView;
 const s=StyleSheet.create({
  header:{flexDirection:'row',alignItems:'flex-start',gap:coopSpacing.sm},grow:{flex:1,minWidth:0},
  kicker:{...coopTypography.meta,color:coopColors.gold,fontWeight:'900',letterSpacing:.8},title:{...coopTypography.section,color:coopColors.text},
- arena:{position:'relative',minHeight:320,flexDirection:'row',alignItems:'stretch',gap:coopSpacing.xs,padding:coopSpacing.sm,borderWidth:1,borderColor:coopColors.goldDim,borderRadius:coopRadii.tile,backgroundColor:'#04111E',overflow:'hidden'},
- partyField:{flex:1.75,flexDirection:'row',flexWrap:'wrap',alignContent:'center',justifyContent:'center',gap:coopSpacing.xs,zIndex:2},
- formationSlot:{width:'46%'},slotFront:{transform:[{translateX:6}]},slotRear:{transform:[{translateX:-5}]},
+ arena:{position:'relative',minHeight:356,alignItems:'stretch',gap:coopSpacing.xs,padding:coopSpacing.sm,borderWidth:1,borderColor:coopColors.goldDim,borderRadius:coopRadii.tile,backgroundColor:'#04111E',overflow:'hidden'},
+ enemyField:{width:'58%',alignSelf:'center',alignItems:'stretch',justifyContent:'center',zIndex:2},bossField:{width:'66%'},
+ partyField:{width:'100%',flexDirection:'row',alignItems:'flex-end',justifyContent:'space-between',gap:4,zIndex:2},
+ formationSlot:{flex:1,minWidth:0},
  member:{minHeight:126,padding:coopSpacing.xs,borderWidth:1,borderColor:'#274052',borderRadius:coopRadii.tile,backgroundColor:'rgba(7,24,39,.94)',gap:2},
  memberTank:{borderColor:coopColors.gold},memberTargeted:{borderColor:coopColors.danger},memberActive:{borderColor:coopColors.cyan,shadowColor:coopColors.cyan,shadowOpacity:.5,shadowRadius:5,elevation:2},memberDown:{opacity:.48},
  avatarFrame:{height:44,borderRadius:8,borderWidth:1,alignItems:'center',justifyContent:'center',paddingHorizontal:3,backgroundColor:coopColors.surfaceRaised},
@@ -127,8 +122,7 @@ const s=StyleSheet.create({
  assistRowActive:{marginHorizontal:-3,paddingHorizontal:3,borderRadius:5,borderTopColor:coopColors.violet,backgroundColor:'rgba(117,76,164,.24)'},
  companionArt:{width:26,height:26,borderRadius:6},companionArtActive:{transform:[{scale:1.08}]},companionFallback:{width:26,height:26,borderRadius:6,borderWidth:1,borderColor:coopColors.violet,alignItems:'center',justifyContent:'center'},companionFallbackText:{color:coopColors.violet},companionFallbackActive:{borderColor:coopColors.cyan},
  assistCopy:{flex:1,minWidth:0},assistLabel:{fontSize:7,lineHeight:9,color:coopColors.violet,fontWeight:'900',letterSpacing:.35},assistName:{fontSize:8,lineHeight:10,color:coopColors.textSecondary,fontWeight:'800'},assistNameActive:{color:coopColors.text},
- divider:{width:22,alignItems:'center',justifyContent:'center',zIndex:2},vs:{fontSize:9,lineHeight:11,color:coopColors.gold,fontWeight:'900'},
- enemyField:{flex:1,alignItems:'center',justifyContent:'center',zIndex:2},enemyCore:{width:'100%',minHeight:136,alignItems:'center',justifyContent:'center',gap:5,padding:coopSpacing.xs,borderWidth:1,borderColor:coopColors.danger,borderRadius:coopRadii.tile,backgroundColor:'rgba(75,19,31,.35)'},enemyBoss:{minHeight:178,borderColor:coopColors.violet,backgroundColor:'rgba(55,21,76,.42)'},enemyTargeted:{borderWidth:2,borderColor:coopColors.cyan},enemyActive:{borderWidth:2,shadowColor:coopColors.danger,shadowOpacity:.55,shadowRadius:6,elevation:2},
+ divider:{height:18,alignItems:'center',justifyContent:'center',zIndex:2},vs:{fontSize:9,lineHeight:11,color:coopColors.gold,fontWeight:'900'},
  enemyMark:{fontSize:34,lineHeight:38,color:coopColors.danger},enemyName:{...coopTypography.meta,color:coopColors.text,fontWeight:'900',textAlign:'center'},enemyHint:{fontSize:8,lineHeight:11,color:coopColors.textMuted,textAlign:'center'},
  fxLayer:{...StyleSheet.absoluteFillObject,zIndex:4},
  fxMark:{position:'absolute',top:'40%',width:94,minHeight:48,marginLeft:-47,alignItems:'center',justifyContent:'center',paddingHorizontal:4,borderWidth:1,borderRadius:coopRadii.tile,backgroundColor:'rgba(4,17,30,.88)',shadowOpacity:.65,shadowRadius:8,elevation:5},

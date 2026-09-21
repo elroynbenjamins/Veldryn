@@ -118,22 +118,23 @@ export function effectiveStats(state:GameState){
   const novice=noviceSetFor(c.classId),noviceComplete=novice.slots.every(slot=>c.equipment[slot]===noviceItemId(c.classId,slot));
   if(noviceComplete){hp+=novice.setBonus.hp;attack+=novice.setBonus.attack;defense+=novice.setBonus.defense;}
   const setRuntime=activeEquipmentSetRuntime(state),setStats=setRuntime.stats;
-  hp=Math.ceil(hp*(1+setStats.maxHp));
-  defense=Math.ceil(defense*(1+setStats.armor));
-  const gems=equippedGemBonuses(state);hp=Math.ceil(hp*(1+gems.hp));attack=Math.ceil(attack*(1+gems.attack));defense=Math.ceil(defense*(1+gems.defense));
+  const gems=equippedGemBonuses(state);
+  hp=Math.ceil(hp*(1+setStats.maxHp+(gems.max_hp??0)));
+  defense=Math.ceil(defense*(1+setStats.armor+(gems.armor??0)));
+  hp=Math.ceil(hp*(1+gems.hp));attack=Math.ceil(attack*(1+gems.attack));defense=Math.ceil(defense*(1+gems.defense));
   const mastery=characterClassEffects(c);hp=Math.ceil(hp*mastery.hp);attack=Math.ceil(attack*mastery.attack);defense=Math.ceil(defense*mastery.defense);
   const permanent=characterPermanentMultipliers(state);attack=Math.ceil(attack*permanent.combatPowerMultiplier);
   const prep=c.preparation?preparationEffects(c.preparation):undefined;if(prep)attack=Math.ceil(attack*prep.attack);
   const role=CLASSES.find(def=>def.id===c.classId)?.role,baseCritChance=role==='Damage'?.10:.05,baseEvasion=role==='Damage'?.07:.04;
   const basePower=Math.round(attack*1.5+defense*.8+hp*.08+c.level*2.5);
   return {
-    hp,attack,defense,power:Math.round(basePower*(1+setStats.power)),
-    critChance:Math.min(.75,baseCritChance+setStats.critRate),
-    critMultiplier:1.5+setStats.critDamage,
-    accuracy:Math.min(.99,.84+setStats.accuracy),
-    evasion:Math.min(.50,baseEvasion+setStats.evasion),
-    haste:.05+setStats.haste,
-    armor:setStats.armor,ward:setStats.ward,tenacity:setStats.tenacity,potency:setStats.potency,penetration:setStats.penetration,
+    hp,attack,defense,power:Math.round(basePower*(1+setStats.power+(gems.power??0))),
+    critChance:Math.min(.75,baseCritChance+setStats.critRate+(gems.crit_chance??0)),
+    critMultiplier:1.5+setStats.critDamage+(gems.crit_damage??0),
+    accuracy:Math.min(.99,.84+setStats.accuracy+(gems.accuracy??0)),
+    evasion:Math.min(.50,baseEvasion+setStats.evasion+(gems.evasion??0)),
+    haste:.05+setStats.haste+(gems.haste??0),
+    armor:setStats.armor+(gems.armor??0),ward:setStats.ward+(gems.ward??0),tenacity:setStats.tenacity+(gems.tenacity??0),potency:setStats.potency+(gems.potency??0),penetration:setStats.penetration+(gems.penetration??0),
   }
 }
 
@@ -227,13 +228,17 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number){
   const companion=companionCombatContribution(state);
   const style=classCombatStyle(c.classId),tactic=combatTactic(state.activity?.combatTacticId);
   const environment=state.activity?environmentEffectForActivity(state.activity).effect:undefined;
-  const effectGems=equippedEffectGemBonuses(state),baseCritChance=CLASSES.find(def=>def.id===c.classId)?.role==='Damage'?.10:.05,setCombat=equipmentSetCombatModifiers(state,baseCritChance,.84);
+  const effectGems=equippedEffectGemBonuses(state),statGems=equippedGemBonuses(state),baseCritChance=CLASSES.find(def=>def.id===c.classId)?.role==='Damage'?.10:.05,setCombat=equipmentSetCombatModifiers(state,baseCritChance,.84);
+  const gemAccuracyMultiplier=Math.min(.99,.84+(statGems.accuracy??0))/.84;
+  const gemCritExpected=(1+(baseCritChance+(statGems.crit_chance??0))*(.50+(statGems.crit_damage??0)))/(1+baseCritChance*.50);
+  const gemOutput=gemAccuracyMultiplier*gemCritExpected*(1+(statGems.penetration??0));
+  const gemIncoming=Math.max(.5,(1-(statGems.ward??0))*(1-(statGems.evasion??0)));
   const boostedDefense=Math.max(1,Math.round(stats.defense*modifiers.combatPowerMultiplier));
   const bossPowerMultiplier=m.boss?1+effectGems.boss_power:1;
   const boostedPower=Math.max(1,Math.round(stats.power*modifiers.combatPowerMultiplier*bossPowerMultiplier));
   const expected=(m.attack*1.2+m.defense*.8+m.level*2.2)*COMBAT_EXPECTED_SCALE;
   const setOutput=setCombat.accuracyMultiplier*setCombat.critExpectedMultiplier*setCombat.penetrationMultiplier;
-  const speed=Math.max(COMBAT_SPEED_MIN,Math.min(COMBAT_SPEED_MAX,boostedPower/Math.max(1,expected)))*style.speedMultiplier*tactic.speedMultiplier*modifiers.combatSpeedMultiplier*companion.outputMultiplier*(1+monsterMastery(state,monsterId).damageBonus)*(1+effectGems.combat_speed)*setCombat.speedMultiplier*setOutput;
+  const speed=Math.max(COMBAT_SPEED_MIN,Math.min(COMBAT_SPEED_MAX,boostedPower/Math.max(1,expected)))*style.speedMultiplier*tactic.speedMultiplier*modifiers.combatSpeedMultiplier*companion.outputMultiplier*(1+monsterMastery(state,monsterId).damageBonus)*(1+effectGems.combat_speed)*setCombat.speedMultiplier*(1+(statGems.haste??0))*setOutput*gemOutput;
   const killCycleSeconds=m.secondsPerKill*COMBAT_TIME_SCALE*(environment?.actionTimeMultiplier??1)/speed;
   const theoreticalKills=Math.floor(elapsed/killCycleSeconds);
   const foodId=c.equippedFoodId;const food=foodId?itemDef(foodId):undefined;
@@ -243,7 +248,7 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number){
   for(let i=0;i<theoreticalKills;i++){
     const champion=!challengeId&&isChampionEncounter(c.id,state.activity?.lastClaimAtMs??0,monsterId,i);
     const raw=Math.max(1,Math.round((m.attack*COMBAT_MONSTER_DAMAGE_SCALE)-Math.floor(boostedDefense*.58)));
-    const damage=Math.max(1,Math.round((raw*.48 + m.level*.16)*style.damageTakenMultiplier*tactic.damageTakenMultiplier*(champion?CHAMPION_DAMAGE_MULTIPLIER:1)*modifiers.incomingDamageMultiplier*companion.incomingDamageMultiplier*(1-effectGems.damage_reduction)*setCombat.incomingDamageMultiplier*(c.preparation?preparationEffects(c.preparation).damage:1)));
+    const damage=Math.max(1,Math.round((raw*.48 + m.level*.16)*style.damageTakenMultiplier*tactic.damageTakenMultiplier*(champion?CHAMPION_DAMAGE_MULTIPLIER:1)*modifiers.incomingDamageMultiplier*companion.incomingDamageMultiplier*(1-effectGems.damage_reduction)*setCombat.incomingDamageMultiplier*gemIncoming*(c.preparation?preparationEffects(c.preparation).damage:1)));
     hp-=damage;
     while(food && food.heal && foodLeft>0 && hp>0 && hp/stats.hp<=threshold){
       hp=Math.min(stats.hp,hp+Math.max(1,Math.ceil(food.heal*modifiers.healingEffectivenessMultiplier)));foodLeft--;foodConsumed++;
@@ -254,7 +259,7 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number){
       break;
     }
     kills++;if(champion)championKills++;
-    hp=Math.min(stats.hp,hp+Math.max(1,Math.floor(stats.hp*style.recoveryPct*tactic.recoveryMultiplier*companion.recoveryMultiplier*(1+effectGems.recovery)*setCombat.recoveryMultiplier)));
+    hp=Math.min(stats.hp,hp+Math.max(1,Math.floor(stats.hp*style.recoveryPct*tactic.recoveryMultiplier*companion.recoveryMultiplier*(1+effectGems.recovery)*setCombat.recoveryMultiplier*(1+(statGems.potency??0)))));
   }
   const qualifyingActivitySeconds=stoppedReason?Math.min(elapsed,(kills+1)*killCycleSeconds):elapsed;
   return {kills,championKills,foodConsumed,endHp:hp,stoppedReason,qualifyingActivitySeconds};

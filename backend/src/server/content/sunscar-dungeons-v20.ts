@@ -54,7 +54,7 @@ export const SUNSCAR_DUNGEONS_V20:readonly SunscarDungeonDefinitionV20[]=[
       {role:'damage',label:'Exposed Plates',requirement:'Break exposed crystal plates before the armor reseals.',failureEffect:'Boss retains armor and the caravan loses time.'},
       {role:'party',label:'Crossing Integrity',requirement:'Keep caravan integrity above zero while routing threats across moving lanes.',failureEffect:'Run fails.'},
     ],
-    rewardHooks:['SUNRES_001','SUNRES_006','sunscar_cosmetic_cache','generic_equipment_reward_hook'],equipmentRewardsFinalized:false,
+    rewardHooks:['SUNRES_001','SUNRES_006','sunscar_cosmetic_cache','gem_pool_COP_004','generic_equipment_reward_hook'],equipmentRewardsFinalized:false,
   },
   {
     id:'COP_005',name:'Mirage Well',regionId:'REG_002',minLevel:36,expectedMinutes:20,routeDepthMin:5,routeDepthMax:6,branchOptionsMin:3,strictComposition:'1T/2D/1S',bossId:'SUNBOSS_DUN_002',queueRules:queue('COP_005',36),
@@ -64,7 +64,7 @@ export const SUNSCAR_DUNGEONS_V20:readonly SunscarDungeonDefinitionV20[]=[
       {role:'damage',label:'True Target',requirement:'Identify and burst the revealed true target rather than feeding false copies.',failureEffect:'Boss restores a capped amount of health.'},
       {role:'party',label:'Oasis Anchors',requirement:'Vote and rotate between three anchors; the repeated safe option becomes progressively weaker.',failureEffect:'Final phase starts with a curse stack.'},
     ],
-    rewardHooks:['SUNRES_004','SUNRES_008','REL_013_chance','generic_equipment_reward_hook'],equipmentRewardsFinalized:false,
+    rewardHooks:['SUNRES_004','SUNRES_008','REL_013_chance','gem_pool_COP_005','generic_equipment_reward_hook'],equipmentRewardsFinalized:false,
   },
   {
     id:'COP_006',name:'Buried Observatory',regionId:'REG_002',minLevel:40,expectedMinutes:23,routeDepthMin:6,routeDepthMax:7,branchOptionsMin:3,strictComposition:'1T/2D/1S',bossId:'SUNBOSS_DUN_003',queueRules:queue('COP_006',40),
@@ -74,7 +74,7 @@ export const SUNSCAR_DUNGEONS_V20:readonly SunscarDungeonDefinitionV20[]=[
       {role:'damage',label:'Interrupt Order',requirement:'Interrupt marked casts in the server-selected order and use burnout windows.',failureEffect:'Custodian gains an Overclock stack.'},
       {role:'party',label:'Rotating Lens',requirement:'Resolve route-earned lens information and move to the correct quadrant.',failureEffect:'Deterministic heavy damage; telegraph cannot crit.'},
     ],
-    rewardHooks:['SUNRES_002','SUNRES_011','REL_015_chance','generic_equipment_reward_hook'],equipmentRewardsFinalized:false,
+    rewardHooks:['SUNRES_002','SUNRES_011','REL_015_chance','gem_pool_COP_006','generic_equipment_reward_hook'],equipmentRewardsFinalized:false,
   },
 ] as const;
 

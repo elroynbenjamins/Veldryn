@@ -57,6 +57,14 @@ export interface EncounterBossTuning {
   addPhases?:BossPhaseDefinition[];
 }
 
+export interface CombatGemEffect {
+  familyId:string;
+  copies:number;
+  resonance:1|2|3;
+  totalValue:number;
+  grades?:readonly number[];
+}
+
 export interface CombatantDefinition {
   id: string;
   classId?: string;
@@ -71,6 +79,8 @@ export interface CombatantDefinition {
   tags?: string[];
   boss?: boolean;
   phases?: BossPhaseDefinition[];
+  /** Server-derived only. Never accept raw client gem payloads. */
+  effectGems?: readonly CombatGemEffect[];
 }
 
 export interface ActivePeriodicEffect {
@@ -90,6 +100,8 @@ export interface ActiveTimedModifier {
   tag: string;
   value: number;
   expiresAt: number;
+  createdAt?: number;
+  kind?: 'buff'|'debuff'|'gem';
 }
 
 export interface CombatantState {

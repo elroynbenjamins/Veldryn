@@ -1,7 +1,7 @@
 import type {BodyPresentation,ClassId,GameState,GearSlot,RewardBundle} from './types';
 import * as game from './game';
 import * as events from './live-events';
-import {attemptEquipmentUpgrade,socketGem,unsocketGem} from './equipment-enhancement';
+import {attemptEquipmentUpgrade,replaceGem,socketGem,unsocketGem} from './equipment-enhancement';
 import {discoverCharacterSkins,selectCharacterSkin} from './character-skins';
 import {transitionActivity} from './playability';
 import {SUPPORTED_LANGUAGES} from '../i18n/languages';
@@ -22,7 +22,8 @@ import {clearActivityQueue,enqueueActivity,moveQueuedActivity,removeQueuedActivi
 import {activateDailySupplyBoost,claimDailySupplies,DAILY_SUPPLY_BOOST_TYPES,dailySupplyBoostLabel} from './daily-supplies';
 import {bulkSalvageSelected,bulkSellSelected,bulkTransferSelected} from './inventory-bulk';
 import {normalizeChatEmoteTrayIds,CHAT_EMOTE_TRAY_SIZE} from './chat-emotes';
-import {cancelEquipmentCraft,claimAllReadyEquipmentCrafts,claimEquipmentCraft,moveWaitingEquipmentCraft,startEquipmentCraft,timedEquipmentRecipe} from './equipment-crafting-queue';
+import {cancelEquipmentCraft,claimAllReadyEquipmentCrafts,claimEquipmentCraft,claimForgeJob,moveWaitingEquipmentCraft,startEquipmentCraft,startGemCombine,timedEquipmentRecipe} from './equipment-crafting-queue';
+import {claimResonanceCacheV1,dismantleGemV1,gemCombineRecipeIdV1} from './gem-progression-v1';
 import {craftEquipmentPrerequisites} from './equipment-crafting-prerequisites';
 
 /** Commands express intent. Neither a client save nor a client reward is accepted. */
@@ -39,7 +40,7 @@ const fields:Record<string,readonly string[]>={
  roster_create:['classId','name','body'],roster_switch:['id'],roster_delete:['id','confirmation'],
  equip:['id'],unequip:['slot'],food:['id'],eat:['id'],sell:['id','quantity'],salvage:['id'],
  deposit:['id','quantity'],withdraw:['id','quantity'],deposit_materials:[],bulk_transfer:['location','ids'],bulk_sell:['ids'],bulk_salvage:['ids'],storage:['location'],overflow:[],
- equip_tool:['id'],equip_set:[],upgrade:['id'],socket:['id','gemId'],unsocket:['id','index'],skin:['id'],
+ equip_tool:['id'],equip_set:[],upgrade:['id'],socket:['id','gemId'],replace_socket:['id','gemId'],unsocket:['id','index'],gem_combine:['familyId','grade'],gem_dismantle:['gemId','quantity'],resonance_cache_claim:['familyId'],skin:['id'],
  loadout_save:['index','name'],loadout_apply:['id'],loadout_delete:['id'],goals_set:['goals'],idle_rules_set:['rules','activeId'],daily_supplies_claim:['characterId'],daily_supplies_activate:['type'],
  quest:['id'],seasonal:['period','id'],settings:['settings'],profile:['profileTitle','profileBackgroundId','profileBorderId','selectedCosmeticPetId'],
  event_daily:[],event_cache:[],event_milestones:[],event_discovery:['id'],event_reward:['id'],event_accept:['id'],
@@ -164,13 +165,21 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
    break;
   }
   case 'craft_claim':{
-   if(options.randomRoll===undefined)throw new Error('trusted_random_required');const result=claimEquipmentCraft(state,text(a,'id',160),now,options.randomRoll);state=result.state;forgeResults=[result.result];contributions.push({kind:'crafting',contentId:result.recipe.id,units:1});message=`${result.result.rarity.toUpperCase()} ${result.recipe.name}${result.result.qualityProc?' · quality proc':''}${result.result.duplicateCount?` · duplicate ${result.result.duplicateCount+1}`:''}`;break;
+   if(options.randomRoll===undefined)throw new Error('trusted_random_required');
+   const result=claimForgeJob(state,text(a,'id',160),now,options.randomRoll);state=result.state;if(result.kind==='equipment')forgeResults=[result.result];contributions.push({kind:'crafting',contentId:result.recipe.id,units:1});
+   message=result.kind==='equipment'
+    ?`${result.result.rarity.toUpperCase()} ${result.recipe.name}${result.result.qualityProc?' · quality proc':''}${result.result.duplicateCount?` · duplicate ${result.result.duplicateCount+1}`:''}`
+    :`${result.recipe.name} combined`;
+   break;
   }
   case 'craft_claim_all':{
    const beforeIds=new Set((state.account.equipmentCraftingQueue??[]).map(job=>job.id));
    if(options.randomRoll===undefined)throw new Error('trusted_random_required');const result=claimAllReadyEquipmentCrafts(state,now,options.randomRoll);state=result.state;forgeResults=result.results;
    for(const id of result.claimed){if(!beforeIds.has(id))continue;const job=previous.account.equipmentCraftingQueue?.find(row=>row.id===id);if(job)contributions.push({kind:'crafting',contentId:job.recipeId,units:1});}
-   message=result.claimed.length?`${result.claimed.length} equipment craft${result.claimed.length===1?'':'s'} claimed · ${result.results.filter(row=>row.qualityProc).length} quality proc${result.results.filter(row=>row.qualityProc).length===1?'':'s'}`:'No finished equipment crafts';
+   const equipmentCount=result.claimed.length-result.gemClaims,procCount=result.results.filter(row=>row.qualityProc).length;
+   message=result.claimed.length
+    ?`${result.claimed.length} forge job${result.claimed.length===1?'':'s'} claimed · ${equipmentCount} equipment · ${result.gemClaims} gem combine${result.gemClaims===1?'':'s'} · ${procCount} quality proc${procCount===1?'':'s'}`
+    :'No finished forge jobs';
    break;
   }
   case 'craft_cancel':{
@@ -202,7 +211,21 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'equip_set':state=game.equipNoviceSet(state);break;
   case 'upgrade':{if(options.randomRoll===undefined)throw new Error('trusted_random_required');const result=attemptEquipmentUpgrade(state,text(a,'id'),options.randomRoll);state=result.state;upgrade=result.result;break;}
   case 'socket':state=socketGem(state,text(a,'id'),text(a,'gemId'));break;
+  case 'replace_socket':state=replaceGem(state,text(a,'id'),text(a,'gemId'));break;
   case 'unsocket':state=unsocketGem(state,text(a,'id'),integer(a,'index',0,1));break;
+  case 'gem_combine':{
+   const familyId=text(a,'familyId',80),grade=integer(a,'grade',1,4) as 1|2|3|4;
+   const result=startGemCombine(state,gemCombineRecipeIdV1(familyId,grade),now);state=result.state;
+   message=result.waiting?'Gem combination added to forge backlog':'Gem combination started';break;
+  }
+  case 'gem_dismantle':{
+   const gemId=text(a,'gemId',120),quantity=integer(a,'quantity',1,999);
+   state=dismantleGemV1(state,gemId,quantity);
+   message=`Dismantled ${quantity} gem${quantity===1?'':'s'} into Gem Dust`;break;
+  }
+  case 'resonance_cache_claim':{
+   state=claimResonanceCacheV1(state,text(a,'familyId',80),now);message='Resonance Cache claimed';break;
+  }
   case 'skin':state=selectCharacterSkin(state,text(a,'id'));break;
   case 'loadout_save':state=saveCharacterLoadout(state,integer(a,'index',0,2),typeof a.name==='string'?a.name:undefined,now);break;
   case 'loadout_apply':state=applyCharacterLoadout(state,text(a,'id'));break;

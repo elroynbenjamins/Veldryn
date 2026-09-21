@@ -75,7 +75,7 @@ function requireEquipped(state:GameState,itemRef:string){
   if(item.type!=='gear'||!item.slot)throw new Error('Only equipment can be enhanced');
   if(state.character.equipment[item.slot]!==itemId)throw new Error('Equip this item first');
   const equippedInstanceId=state.character.equippedGearInstanceIds?.[item.slot];
-  if(resolved.instance?.id&&resolved.instance.id!==equippedInstanceId)throw new Error('Equip this exact equipment copy first');
+  if(resolved.instanceId&&resolved.instanceId!==equippedInstanceId)throw new Error('Equip this exact equipment copy first');
   return {itemId,instanceId:equippedInstanceId};
 }
 export function attemptEquipmentUpgrade(state:GameState,itemRef:string,roll=Math.random()){

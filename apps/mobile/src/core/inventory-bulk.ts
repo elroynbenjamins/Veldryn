@@ -53,7 +53,7 @@ export function bulkTransferSelected(state:GameState,itemIds:readonly string[],f
   let next=state;
   for(const itemId of summary.transferableIds){
     const source=from==='inventory'?next.inventory:next.bank;
-    const quantity=source.stacks.find(stack=>stack.itemId===itemId)?.quantity??0;
+    const quantity=source.stacks.filter(stack=>stack.itemId===itemId).reduce((sum,stack)=>sum+stack.quantity,0);
     if(quantity<=0)continue;
     next=from==='inventory'?depositToBank(next,itemId,quantity):withdrawFromBank(next,itemId,quantity);
   }
@@ -65,7 +65,7 @@ export function bulkSellSelected(state:GameState,itemIds:readonly string[]):Game
   if(!summary.sellableIds.length)throw new Error('No selected items can be sold. Favorites, enhanced gear, auto-eat food, Holy Water and zero-value items stay protected.');
   let next=state;
   for(const itemId of summary.sellableIds){
-    const quantity=next.inventory.stacks.find(stack=>stack.itemId===itemId)?.quantity??0;
+    const quantity=next.inventory.stacks.filter(stack=>stack.itemId===itemId).reduce((sum,stack)=>sum+stack.quantity,0);
     if(quantity>0)next=sellItem(next,itemId,quantity);
   }
   return next;

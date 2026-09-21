@@ -6,9 +6,9 @@ export const GEAR_RARITIES:GearRarityMeta[]=[
  {id:'common',label:'Common',chance:.89,color:'#9aa4b2',lightTextColor:'#52606D',surface:'rgba(154,164,178,.08)',statMultiplier:1,borderWidth:1,glowOpacity:0,symbol:'◆'},
  {id:'uncommon',label:'Uncommon',chance:.07,color:'#49c873',lightTextColor:'#1F7A46',surface:'rgba(73,200,115,.10)',statMultiplier:1.12,borderWidth:1,glowOpacity:.08,symbol:'◆'},
  {id:'rare',label:'Rare',chance:.03,color:'#4b91ff',lightTextColor:'#2468C9',surface:'rgba(75,145,255,.11)',statMultiplier:1.28,borderWidth:2,glowOpacity:.12,symbol:'✦'},
- {id:'epic',label:'Epic',chance:.01,color:'#ad72ff',lightTextColor:'#6F42C1',surface:'rgba(173,114,255,.12)',statMultiplier:1.5,borderWidth:2,glowOpacity:.18,symbol:'✦'},
- {id:'legendary',label:'Legendary',chance:.001,color:'#ff9f35',lightTextColor:'#9A5200',surface:'rgba(255,159,53,.13)',statMultiplier:1.8,borderWidth:2,glowOpacity:.24,symbol:'★'},
- {id:'mythic',label:'Mythic',chance:.0005,color:'#f25591',lightTextColor:'#B02A60',surface:'rgba(242,85,145,.15)',statMultiplier:2.2,borderWidth:3,glowOpacity:.3,symbol:'✧'},
+ {id:'epic',label:'Epic',chance:.006,color:'#ad72ff',lightTextColor:'#6F42C1',surface:'rgba(173,114,255,.12)',statMultiplier:1.5,borderWidth:2,glowOpacity:.18,symbol:'✦'},
+ {id:'legendary',label:'Legendary',chance:.003,color:'#ff9f35',lightTextColor:'#9A5200',surface:'rgba(255,159,53,.13)',statMultiplier:1.8,borderWidth:2,glowOpacity:.24,symbol:'★'},
+ {id:'mythic',label:'Mythic',chance:.001,color:'#f25591',lightTextColor:'#B02A60',surface:'rgba(242,85,145,.15)',statMultiplier:2.2,borderWidth:3,glowOpacity:.3,symbol:'✧'},
 ];
 export function itemRarity(item:ItemDef):ItemRarity{
   if(item.rarity)return item.rarity;

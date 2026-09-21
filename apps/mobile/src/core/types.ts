@@ -92,6 +92,7 @@ export interface ActiveActivity { kind:ActivityKind; targetId:string; startedAtM
 export interface QuestState { questId:string; status:'locked'|'active'|'complete'|'claimed'; progress:number; }
 export interface RegionalProgressState { storyCompleted?:number; sideQuestsCompleted?:number; echoesCompleted?:number; dungeonsCompleted?:number; collectionEntries?:number; bossMasteryTier?:number; }
 export interface LiveEventRuntime{eventId:string;enabled:boolean;startsAtMs:number;endsAtMs:number;graceEndsAtMs?:number;priority?:number;modules?:string[];}
+export interface ResonanceCacheStateV1{weekKey:string;liveClears:number;claimed:boolean;effectChoices?:string[];dustReward?:number;regionalCatalysts?:number;radiantCatalysts?:number;}
 export interface GameState {
   version:6|11; createdAtMs:number; character:CharacterState|null; inventory:InventoryState; bank:BankState; overflow:OverflowState; activity:ActiveActivity|null;
   otherCharacters?:Array<{character:CharacterState;inventory:InventoryState;overflow:OverflowState;activity:ActiveActivity|null;skills:SkillState[];quests:QuestState[];currentRegionId:string}>;
@@ -112,6 +113,10 @@ export interface GameState {
   longTermMetrics?:Record<string,number>;
   dailySupplies?:import('./daily-supplies').DailySuppliesTrack;
   unlockedKnowledgeIds?:string[];
+  /** Server-owned gem acquisition persistence. Pity is source-level, never one counter per family. */
+  gemPityBySource?:Record<string,number>;
+  /** Current UTC-week Live co-op Resonance Cache projection and pre-rolled reward choices. */
+  resonanceCache?:ResonanceCacheStateV1;
   unlockedCollectionRewardIds?:string[];
   guildContribution?:number;guildProjectProgress?:number;guildBossHp?:number;guildProjectClaimed?:boolean;guildJoinPolicy?:'open'|'apply'|'invite';guildMinimumLevel?:number;guildApplicationStatus?:'none'|'pending'|'accepted'|'declined';seasonalContractClaimIds?:string[];liveEvent?:LiveEventRuntime;eventProgressById?:Record<string,number>;eventCurrencyBalanceById?:Record<string,number>;eventPrestigeBalanceById?:Record<string,number>;eventRepeatCacheClaimsById?:Record<string,number>;eventActivityById?:Record<string,Partial<Record<'combat'|'gathering'|'crafting'|'boss',number>>>;eventPeriodActivityById?:Record<string,Partial<Record<'combat'|'gathering'|'crafting'|'boss',number>>>;eventAcceptedContractIds?:string[];eventContractBaselines?:Record<string,number>;eventObjectiveClaimIds?:string[];eventWeeklyClaimIds?:string[];eventDailyGiftClaimIds?:string[];eventCommunityClaimIds?:string[];eventDiscoveryCounts?:Record<string,number>;eventDiscoveryClaimIds?:string[];eventShopPurchaseCounts?:Record<string,number>;eventChoiceById?:Record<string,string>;eventContributionById?:Record<string,number>;eventRewardClaimIds?:string[];unlockedEventSkinIds?:string[];unlockedCosmeticPetIds?:string[];unlockedProfileBackgroundIds?:string[];unlockedProfileBorderIds?:string[];unlockedEmoteIds?:string[];unlockedTitleIds?:string[]};
   settings:{language:Language;uiTheme?:UiThemeId;numberMode:'abbreviated'|'exact';reduceMotion:boolean;textScale:1|1.15|1.3|1.5;autoEatThresholdPct:number;stopCombatWhenOutOfFood:boolean;autoJoinWorldChat?:boolean;defaultWorldChat?:1|2|3|4;chatDockLines?:1|2|3;chatEmoteTrayIds?:string[];quickNavDestinations?:QuickNavDestination[];favoriteItemIds?:string[];seenItemIds?:string[];};

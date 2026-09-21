@@ -39,6 +39,10 @@ ok(appSource.includes('onNavigateInspect={openWorkingTowardDestination}'),'Quick
 ok(inspect.includes('AvailabilityPill')&&inspect.includes("status==='ready'")&&inspect.includes("status==='travel'")&&inspect.includes("status==='locked'"),'Quick Inspect must visibly distinguish READY, TRAVEL and LOCKED source states');
 ok(inspect.includes('availabilityDetail'),'Quick Inspect must show blocker or travel detail alongside availability');
 ok(inspectModel.includes('workingTowardDestinationAvailability'),'Quick Inspect availability must reuse the shared progression availability rules');
+ok(inspect.includes('GEAR CHECK')&&inspect.includes('DeltaStat')&&inspect.includes('TO +'),'Quick Inspect gear must expose compact loadout deltas and +10 potential');
+ok(inspect.includes('Set milestone text is shown separately')&&inspect.includes('POTENTIAL'),'Gear Check must distinguish set progression from stat math');
+ok(inspectModel.includes('previewEquipment')&&inspectModel.includes('effectiveStats')&&inspectModel.includes('gearStatsAtRank'),'Gear Check must use real preview/effective-stat and enhancement math');
+ok(inspectModel.includes('equippedSetPieceCount')&&inspectModel.includes('MAX_UPGRADE_RANK'),'Gear Check must derive set movement and max-rank potential from authoritative systems');
 ok(screenSource.includes('StorageChip')&&screenSource.includes('storageCapacityStatus'),'Inventory and Bank must show compact capacity feedback');
 ok(screenSource.includes('onToggleFavorite')&&card.includes('favoriteButton'),'Item cards must expose one-tap favorite controls');
 ok(card.includes('protected from selling and salvage'),'Favorite items must explain disposal protection');
@@ -52,4 +56,4 @@ ok(slot.includes('borderWidth:meta.borderWidth'),'Equipped item slots must use r
 ok(card.includes('rarityNameColor')&&card.includes("fontWeight:'800'"),'Inventory item names must use bold accessible rarity emphasis');
 ok(slot.includes('rarityNameColor')&&slot.includes("fontWeight:'800'"),'Equipment slot names must use bold accessible rarity emphasis');
 
-console.log('PASS: compact themed inventory/bank controls, NEW feedback, favorites, safe bulk selection, actionable Quick Inspect availability, capacity feedback, rarity frames and rarity-colored names');
+console.log('PASS: compact themed inventory/bank controls, NEW feedback, favorites, safe bulk selection, Quick Inspect gear decisions and availability, capacity feedback, rarity frames and rarity-colored names');

@@ -34,6 +34,8 @@ export interface RegionalCombatAuthorizerV1{
 }
 export interface RegionalCombatReservationV1{
   receiptId:string;
+  requestId:string;
+  requestHash:string;
   accountId:string;
   characterId:string;
   encounterId:string;
@@ -138,14 +140,16 @@ export function buildRegionalCombatEnemyV1(entry:RegionalCombatCatalogEntryV1):C
 function gemKind(kind:RegionalCombatEncounterKindV1):RegionalGemEncounterKindV1{return kind==='standard'?'enemy':kind;}
 function resultDigest(result:CombatResult){return createHash('sha256').update(JSON.stringify(result.events)).digest().toString('hex');}
 
-export async function startRegionalCombatV1(deps:RegionalCombatRuntimeDepsV1,input:{accountId:string;characterId:string;encounterId:string}):Promise<RegionalCombatReservationV1>{
+export async function startRegionalCombatV1(deps:RegionalCombatRuntimeDepsV1,input:{accountId:string;characterId:string;encounterId:string;requestId:string}):Promise<RegionalCombatReservationV1>{
+  if(!/^[a-zA-Z0-9_-]{8,128}$/.test(input.requestId))throw new Error('invalid_request');
   const encounter=regionalCombatCatalogEntryV1(input.encounterId);if(!encounter)throw new Error('unknown_regional_encounter');
   await deps.authorizer.assertEncounterUnlocked({accountId:input.accountId,characterId:input.characterId,encounter});
   const verified=await deps.authorizer.loadVerifiedPlayer({accountId:input.accountId,characterId:input.characterId,encounter});
   if(verified.snapshot.characterId!==input.characterId)throw new Error('regional_snapshot_character_mismatch');
   const player=combatantFromVerifiedSnapshot(verified.snapshot,[...verified.abilities]);
+  const requestHash=createHash('sha256').update(JSON.stringify({characterId:input.characterId,encounterId:encounter.encounterId})).digest().toString('hex');
   const reservation:RegionalCombatReservationV1={
-    receiptId:deps.randomId(),accountId:input.accountId,characterId:input.characterId,
+    receiptId:deps.randomId(),requestId:input.requestId,requestHash,accountId:input.accountId,characterId:input.characterId,
     encounterId:encounter.encounterId,zoneId:encounter.zoneId,kind:encounter.kind,contentId:encounter.contentId,
     serverSeed:deps.randomSeed(),player,createdAtMs:deps.nowMs(),
   };

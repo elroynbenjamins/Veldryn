@@ -37,8 +37,9 @@ export function CoopLiveLobby({onBack}:{onBack:()=>void}){
   {!!notice&&<Text accessibilityRole="alert" style={{color:C.warning}}>{notice}</Text>}
   {pending&&<GameButton title="Retry pending action" disabled={busy} onPress={()=>void act(()=>coopClient.retryPending())}/>}
   {!queue&&<Text style={{color:C.text}}>Loading your saved queue…</Text>}
-  {status==='queued'&&<Text style={{color:C.text}}>Searching for your party. Keep this screen open to stay in the queue.</Text>}
+  {status==='queued'&&<Text style={{color:C.text}}>Searching for your party · Auto Tier up to {queue?.ticket?.maxTier??queue?.ticket?.tier??'—'}. Keep this screen open to stay in the queue.</Text>}
   {ready&&<>
+   {ready.tier?<Text style={{color:C.muted}}>Matched difficulty · Tier {ready.tier} (highest common eligible tier)</Text>:null}
    <Text style={{color:C.text}}>{ready.status==='open'?`Ready check · ${readySecondsRemaining(ready)} seconds`:ready.status==='refilling'?`Finding replacements · ${readySecondsRemaining(ready)} seconds`:ready.status==='committed'?'Your party is ready. Waiting for the dungeon to start.':'This ready check has ended.'}</Text>
    {ready.members.filter(member=>ready.status!=='refilling'||member.accepted).map(member=><Text key={member.characterId} style={{color:C.text}}>{member.role}{member.self?' · You':''} · {member.accepted?'Accepted':'Waiting'}</Text>)}
    {ready.status==='open'&&<>

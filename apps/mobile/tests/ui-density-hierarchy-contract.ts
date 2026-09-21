@@ -11,7 +11,7 @@ ok(home.includes("completed>0?\`Claim \${completed}\`:'Journal'"),'Quest-ready s
 
 const account=read('src/screens/MoreScreen.tsx');
 ok(account.includes("minHeight:88"),'Account hub tiles must remain compact');
-ok(account.includes('<Text numberOfLines={1} style={s.description}>'),'Account tile descriptions must remain single-line');
+ok(account.includes('<Text numberOfLines={singleColumn?2:1} style={s.description}>'),'Account tile descriptions must stay single-line by default and allow two lines only in narrow/large-text mode');
 
 const skills=read('src/screens/SkillsScreen.tsx');
 ok(skills.includes("minHeight:112"),'Skills hub cards must remain compact');

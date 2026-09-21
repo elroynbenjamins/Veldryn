@@ -52,11 +52,11 @@ export function GameTopBar({state,nowMs,labelForDestination,onNavigate,onChangeD
       <Pressable accessibilityRole="button" accessibilityState={{expanded:environmentOpen}} accessibilityLabel={`${environment.seasonName}, ${environment.weatherName}`} accessibilityHint="Shows season, weather, and activity effects" onPress={()=>setEnvironmentOpen(true)} style={({pressed})=>[styles.environmentButton,{borderColor:environment.weatherColor},pressed&&styles.pressed]}>
         <EnvironmentArtwork type="season" id={environment.seasonId} size={24}/><View style={styles.environmentDivider}/><EnvironmentArtwork type="weather" id={environment.weatherId} size={24}/><View style={[styles.seasonStrip,{backgroundColor:environment.seasonColor}]}/>{activity&&<View style={styles.lockedDot}/>} 
       </Pressable>
-      <View style={styles.hpBlock} accessibilityLabel={`${currentHp} of ${maxHp} health`}>
+      <View accessible accessibilityRole="text" style={styles.hpBlock} accessibilityLabel={`${currentHp} of ${maxHp} health`}>
         <View style={styles.hpHeading}><Text style={styles.hpLabel}>HP</Text><Text style={styles.hpValue}>{currentHp}/{maxHp}</Text></View>
         <View style={styles.hpTrack}><View style={[styles.hpFill,{width:hpPercent}]}/></View>
       </View>
-      <View style={styles.goldBlock}><Text style={styles.goldLabel}>GOLD</Text><Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={.78} style={styles.goldValue}>● {formatGameNumber(state.character?.gold??0,state.settings.numberMode)}</Text></View>
+      <View accessible accessibilityRole="text" accessibilityLabel={`${formatGameNumber(state.character?.gold??0,state.settings.numberMode)} gold`} style={styles.goldBlock}><Text style={styles.goldLabel}>GOLD</Text><Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={.78} style={styles.goldValue}>● {formatGameNumber(state.character?.gold??0,state.settings.numberMode)}</Text></View>
       <Pressable accessibilityRole="button" accessibilityLabel="Open quick navigation" accessibilityHint="Opens five customizable navigation shortcuts" onPress={()=>setOpen(true)} style={({pressed})=>[styles.menuButton,pressed&&styles.pressed]}>
         <View style={styles.menuLine}/><View style={styles.menuLine}/><View style={styles.menuLine}/>
       </Pressable>

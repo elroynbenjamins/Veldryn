@@ -6,6 +6,7 @@ import { validateCoopRoster } from '../coop/invariants';
 import type { CoopRole } from '../../shared/coop-types';
 import { deterministicInt } from './rng';
 import { validateCoopRouteGraph } from './route-generation';
+import { eventBossMechanicProfile } from './event-boss-mechanics';
 
 export interface EventMechanicState {id:string;value:number;}
 export interface EventObjectiveState {id:string;count:number;}
@@ -41,11 +42,18 @@ export function eventObjectiveProjection(run:EventRun){
  return {id:config.id,label:config.label,description:config.description,count,maxCount:config.maxCount,effect:config.effect,completed,bossAttackMultiplier,bossHpMultiplier,bossDefenseMultiplier,rewardBonus,preBossHealPct,effectText};
 }
 
+export function eventBossMechanicProjection(run:EventRun){
+ if(run.graph.generatorVersion!=='event-route-v5')return undefined;
+ const mechanic=eventMechanicProjection(run),objective=eventObjectiveProjection(run);
+ const profile=eventBossMechanicProfile({eventId:run.eventId,objectiveCount:objective.count,objectiveMax:objective.maxCount,mechanicStatus:mechanic.status});
+ return {profileId:profile.profileId,label:profile.label,summary:profile.summary,tone:profile.tone,tuning:profile.tuning};
+}
+
 export interface EffectiveEventNode extends CoopRouteNode {encounterAttackMultiplier?:number;reactionLabel?:string;}
 
 export function effectiveEventNode(run:EventRun,node:CoopRouteNode):EffectiveEventNode{
  const next:EffectiveEventNode={...node};
- if(run.graph.generatorVersion!=='event-route-v4'||node.kind==='entry'||node.kind==='boss')return next;
+ if(run.graph.generatorVersion!=='event-route-v5'||node.kind==='entry'||node.kind==='boss')return next;
  const mechanic=eventMechanicProjection(run),objective=eventObjectiveProjection(run),battleLike=node.kind==='battle'||node.kind==='elite';
  const title=()=>next.title??next.kind.charAt(0).toUpperCase()+next.kind.slice(1);
  const prefix=(label:string)=>{next.title=`${label}: ${title()}`;next.reactionLabel=label;};
@@ -103,7 +111,7 @@ function graph(eventId:string,runId:string,serverSecret:string):CoopRouteGraph{
  const nodes:CoopRouteNode[]=[{nodeId:'entry',depth:0,kind:'entry',contentId:'COOP_ENTRY',modifierId:'none',risk:1,rewardTag:'none',nextNodeIds:idsAt(1)}];
  for(let depth=1;depth<=count;depth++){
   const next=depth===count?['boss']:idsAt(depth+1);
-  const base=deterministicInt(serverSecret,1,3,'event-route-v4',eventId,runId,depth);
+  const base=deterministicInt(serverSecret,1,3,'event-route-v5',eventId,runId,depth);
   for(const choice of [0,1,2]){
    const special=definition.specialNodes.find(item=>item.depth===depth&&item.choice===choice);
    if(special){
@@ -116,7 +124,7 @@ function graph(eventId:string,runId:string,serverSecret:string):CoopRouteGraph{
   }
  }
  nodes.push({nodeId:'boss',depth:count+1,kind:'boss',contentId:boss,modifierId:'final',risk:1.25,rewardTag:'boss',nextNodeIds:[],title:definition.finalBoss,mechanicDelta:0,objectiveDelta:0});
- const result:CoopRouteGraph={schemaVersion:1,generatorVersion:'event-route-v4',runId,expeditionId:eventId,contentVersion:'event-v4',balanceVersion:'event-balance-v4',preBossNodeCount:count,entryNodeId:'entry',bossNodeId:'boss',nodes};validateCoopRouteGraph(result,{preBossNodeMin:5,preBossNodeMax:7});return result;
+ const result:CoopRouteGraph={schemaVersion:1,generatorVersion:'event-route-v5',runId,expeditionId:eventId,contentVersion:'event-v5',balanceVersion:'event-balance-v5',preBossNodeCount:count,entryNodeId:'entry',bossNodeId:'boss',nodes};validateCoopRouteGraph(result,{preBossNodeMin:5,preBossNodeMax:7});return result;
 }
 
 export class EventExpeditionService{
@@ -134,10 +142,10 @@ export class EventExpeditionService{
   const hash=`${input.runId}:${input.accountId}:${input.optionNodeId}`,receiptKey=`${input.runId}:${input.requestId}`,prior=this.commandReceipts.get(receiptKey);if(prior){if(prior.hash!==hash)throw new Error('event_idempotency_conflict');return structuredClone(prior.run);}
   const run=this.repository.get(input.runId);if(!run)throw new Error('event_run_not_found');if(!run.accountIds.includes(input.accountId))throw new Error('not_participant');if(run.phase!=='awaiting_choice')throw new Error('event_run_not_awaiting_choice');
   const current=run.graph.nodes.find(node=>node.nodeId===run.currentNodeId);if(!current||!current.nextNodeIds.includes(input.optionNodeId))throw new Error('invalid_event_option');const baseSelected=run.graph.nodes.find(node=>node.nodeId===input.optionNodeId);if(!baseSelected)throw new Error('invalid_event_option');const selected=effectiveEventNode(run,baseSelected);
-  const beforeMechanic=eventMechanicProjection(run),beforeObjective=eventObjectiveProjection(run);
+  const beforeMechanic=eventMechanicProjection(run),beforeObjective=eventObjectiveProjection(run),bossMechanic=selected.kind==='boss'?eventBossMechanicProjection(run):undefined;
   let startingState=run.persistentState;
   if(selected.kind==='boss'&&beforeObjective.preBossHealPct>0)startingState=healBeforeBoss(startingState,run.players,beforeObjective.preBossHealPct);
-  const result=resolveCoopNode({runId:run.id,serverSecret:this.serverSecret,node:selected,players:run.players,state:startingState,enemyAttackMultiplier:selected.kind==='boss'?beforeMechanic.bossAttackMultiplier*beforeObjective.bossAttackMultiplier:(selected.encounterAttackMultiplier??1),enemyHpMultiplier:selected.kind==='boss'?beforeObjective.bossHpMultiplier:1,enemyDefenseMultiplier:selected.kind==='boss'?beforeObjective.bossDefenseMultiplier:1});
+  const result=resolveCoopNode({runId:run.id,serverSecret:this.serverSecret,node:selected,players:run.players,state:startingState,enemyAttackMultiplier:selected.kind==='boss'?beforeMechanic.bossAttackMultiplier*beforeObjective.bossAttackMultiplier:(selected.encounterAttackMultiplier??1),enemyHpMultiplier:selected.kind==='boss'?beforeObjective.bossHpMultiplier:1,enemyDefenseMultiplier:selected.kind==='boss'?beforeObjective.bossDefenseMultiplier:1,bossTuning:bossMechanic?.tuning});
   run.lastResolution={nodeId:selected.nodeId,result:structuredClone(result)};run.persistentState=result.state;run.currentNodeId=selected.nodeId;
   if(result.success&&selected.kind!=='boss'){
    const definition=definitionFor(run.eventId);

@@ -55,6 +55,6 @@ jobs:
         run: pnpm --dir ../../backend test:coop-live-social
       - name: Run unique dungeon class composition validation
         working-directory: backend
-        run: pnpm build && pnpm coop-phase6 && pnpm coop-phase7
+        run: pnpm test:coop-composition
       - name: Run seasonal expedition online transport validation
         run: pnpm --dir ../../backend test:event-expedition-online

@@ -34,7 +34,7 @@ export function eventBossMechanicProfile(input:{eventId:string;objectiveCount:nu
   case 'EVENT_HEARTBOND_VOW_GARDEN':{
    const thresholds=[.8,.55,.3],extra=thresholds.slice(0,missing).map((hp,index)=>phase('EVENT_HEARTBOND_BOSS',hp,`Severed Promise ${index+1}`,'arcane',.26,'damage_taken',.03));
    const full=count>=input.objectiveMax,nova='EVENT_HEARTBOND_BOSS_NOVA';
-   const multiplier=input.mechanicStatus==='critical'?1.15:input.mechanicStatus==='strong'?.9:1;
+   const multiplier=input.mechanicStatus==='critical'?1.15:input.mechanicStatus==='strong'?0.9:1;
    return {profileId:`heartbond-vows-${count}-${input.mechanicStatus}`,label:'Severed Promises',summary:full?'All vows are restored: The Severed Vow cannot use its festival-wide Nova.':`${missing} broken promise${missing===1?'':'s'} will trigger extra Sorrow phases; current harmony modifies the Nova’s strength.`,tone:full?'benefit':missing>=2?'danger':'mixed',tuning:{profileId:`heartbond-vows-${count}`,addPhases:extra,removeAbilityIds:full?[nova]:[],abilityDamageMultipliers:full?{}:{[nova]:multiplier}}};
   }
   case 'EVENT_BLOOMWAKE_THORNHEART_GROVE':{
@@ -44,7 +44,7 @@ export function eventBossMechanicProfile(input:{eventId:string;objectiveCount:nu
   }
   case 'EVENT_SUNCREST_SHATTERED_ISLES':{
    const nova='EVENT_SUNCREST_BOSS_NOVA',full=count>=input.objectiveMax;
-   const multiplier=count===0?1.1:count===1?.95:count===2?.85:1;
+   const multiplier=count===0?1.1:count===1?0.95:count===2?0.85:1;
    const crowd=count===0?[phase('EVENT_SUNCREST_BOSS',.6,'Crowd Disfavor','fire',.4,'damage_taken',.03)]:[];
    return {profileId:`suncrest-laurels-${count}`,label:'Champion’s Reception',summary:full?'Aureon recognizes a complete Laurel set and fights an honorable duel without Solar Nova.':count===0?'No Laurels: the crowd turns hostile, empowering a Crowd Disfavor phase and a stronger Solar Nova.':`${count}/${input.objectiveMax} Laurels soften Aureon’s Solar Nova; a complete set changes the duel pattern.`,tone:full?'benefit':count===0?'danger':'mixed',tuning:{profileId:`suncrest-laurels-${count}`,removeAbilityIds:full?[nova]:[],abilityDamageMultipliers:full?{}:{[nova]:multiplier},addPhases:crowd}};
   }

@@ -22,7 +22,7 @@ ok(queue.includes('projected=consumeAcross(projected,input.itemId,input.quantity
 ok(queue.includes('durationMs=seconds*1000')&&queue.includes('startedAtMs:startsNow?nowMs:nowMs+1'),'Timed craft duration and scheduled start must derive from the authoritative clock');
 ok(queue.includes('awardOwnerSkillXp'),'Completion XP must follow the character that started the job');
 
-ok(panel.includes('Crafting Queue')&&panel.includes('Queue slots'),'Skills must expose a compact equipment crafting queue');
+ok(panel.includes('Crafting Queue')&&panel.includes('Forge capacity'),'Skills must expose a compact equipment crafting queue and capacity summary');
 ok(panel.includes('model.slotInfo.max'),'Queue UI must render the authoritative hard cap');
 ok(panel.includes('Supporter')||panel.includes('slotInfo.sources'),'Queue UI must expose unlock-source progression');
 ok(card.includes('Start craft ·'),'Equipment recipe CTA must start a timed craft rather than complete instantly');

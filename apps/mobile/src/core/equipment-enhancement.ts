@@ -1,7 +1,7 @@
 import {itemDef} from '../content/items';
 import {itemRarity,ItemRarity} from './item-rarity';
 import {GameState,GearEnhancementState,GemEffectId,GemSocketKind,GemStat,ItemStack} from './types';
-import {effectFamilyV34,GEM_UNSOCKET_COST_V34,gemGradeLabelV34,gemStatLabelV34,type GemGradeV34} from './gem-system-v34';
+import {effectFamilyV34,GEM_DISMANTLE_DUST_V34,GEM_UNSOCKET_COST_V34,gemGradeLabelV34,gemStatLabelV34,type GemGradeV34} from './gem-system-v34';
 
 export const MAX_UPGRADE_RANK=10;
 export const UPGRADE_STAT_PER_RANK=.03;
@@ -83,11 +83,21 @@ export function socketGem(state:GameState,itemId:string,gemId:string){
   next=setEnhancement(next,itemId,{...enhancement,statGemId:kind==='stat'?gemId:enhancement.statGemId,effectGemId:kind==='effect'?gemId:enhancement.effectGemId,gemIds:[]});
   return next;
 }
-function addInventory(state:GameState,itemId:string){const existing=state.inventory.stacks.find(s=>s.itemId===itemId);if(!existing&&state.inventory.stacks.length>=state.inventory.capacity)throw new Error('Inventory is full');const stacks=existing?state.inventory.stacks.map(s=>s.itemId===itemId?{...s,quantity:s.quantity+1}:s):[...state.inventory.stacks,{itemId,quantity:1}];return {...state,inventory:{...state.inventory,stacks}};}
+function addInventoryQuantity(state:GameState,itemId:string,quantityToAdd:number){if(quantityToAdd<=0)return state;const existing=state.inventory.stacks.find(s=>s.itemId===itemId);if(!existing&&state.inventory.stacks.length>=state.inventory.capacity)throw new Error('Inventory is full');const stacks=existing?state.inventory.stacks.map(s=>s.itemId===itemId?{...s,quantity:s.quantity+quantityToAdd}:s):[...state.inventory.stacks,{itemId,quantity:quantityToAdd}];return {...state,inventory:{...state.inventory,stacks}};}
+function addInventory(state:GameState,itemId:string){return addInventoryQuantity(state,itemId,1);}
 export function gemExtractionCost(gemId:string){
   const gem=itemDef(gemId),grade=gem.gemGrade as GemGradeV34|undefined;
   if(grade)return GEM_UNSOCKET_COST_V34[grade];
   return {gold:(gem.gemTier??1)*500,dust:0};
+}
+export function dismantleGemV34(state:GameState,gemId:string,quantityToDismantle=1){
+  const gem=itemDef(gemId),grade=gem.gemGrade as GemGradeV34|undefined;
+  if(gem.type!=='gem'||!grade||!gem.gemFamilyId)throw new Error('Only V34 Gems can be dismantled');
+  const quantity=Math.max(1,Math.floor(quantityToDismantle));
+  if(combinedQuantity(state,gemId)<quantity)throw new Error(`Need ${quantity} ${gem.name}`);
+  let next=consumeAcross(state,gemId,quantity);
+  next=addInventoryQuantity(next,'GEM_DUST',GEM_DISMANTLE_DUST_V34[grade]*quantity);
+  return next;
 }
 export function unsocketGem(state:GameState,itemId:string,index:number){
   requireEquipped(state,itemId);if(index!==0&&index!==1)throw new Error('Unknown gem socket');

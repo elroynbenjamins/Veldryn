@@ -17,6 +17,7 @@ export interface CoopEventExpeditionPreview{
   rewardMarks:number;
   routeNodeCount?:number;
   mechanic?:{id:string;label:string;description:string;startValue:number;maxValue:number;lowThreshold:number;highThreshold:number};
+  objective?:{id:string;label:string;description:string;startCount:number;maxCount:number;effect:'boss_attack_down'|'boss_hp_down'|'boss_defense_down'|'reward_bonus'|'preboss_heal';perPoint:number};
   lockedReason?:string;
   /** Present only when this expedition matches the authoritative active LiveOps runtime. */
   liveEventId?:string;
@@ -33,8 +34,9 @@ export interface CoopEventRunServerProjection{
   decisionId?:string;
   decisionRevision?:number;
   team:Array<{memberId:string;displayName:string;role:CoopRole;kind:'controller'|'echo';effectiveLevel:number;downed?:boolean}>;
-  options:Array<{nodeId:string;kind:string;risk:number;rewardTag:string;title?:string;mechanicDelta?:number}>;
+  options:Array<{nodeId:string;kind:string;risk:number;rewardTag:string;title?:string;mechanicDelta?:number;objectiveDelta?:number}>;
   mechanic?:{id:string;label:string;description:string;value:number;maxValue:number;lowThreshold:number;highThreshold:number;status:'critical'|'steady'|'strong';bossAttackMultiplier:number;rewardBonus:number;bossEffect:string};
+  objective?:{id:string;label:string;description:string;count:number;maxCount:number;effect:string;completed:boolean;bossAttackMultiplier:number;bossHpMultiplier:number;bossDefenseMultiplier:number;rewardBonus:number;preBossHealPct:number;effectText:string};
   settlement:{status:'pending'|'claimed';rewardMarks?:number};
 }
 
@@ -83,6 +85,7 @@ export function validateCoopEventExpeditionPreview(value:CoopEventExpeditionPrev
   if(value.routeHighlights.length<3||new Set(value.routeHighlights.map(item=>item.trim().toLocaleLowerCase())).size!==value.routeHighlights.length||value.routeHighlights.some(item=>!item.trim()))throw new Error('invalid_event_route_highlights');
   if(value.routeNodeCount!==undefined&&(!Number.isInteger(value.routeNodeCount)||value.routeNodeCount<5||value.routeNodeCount>7))throw new Error('invalid_event_route_length');
   if(value.mechanic&&(!value.mechanic.id.trim()||!value.mechanic.label.trim()||!value.mechanic.description.trim()||!Number.isFinite(value.mechanic.startValue)||!Number.isFinite(value.mechanic.maxValue)||value.mechanic.maxValue<=0||value.mechanic.startValue<0||value.mechanic.startValue>value.mechanic.maxValue||value.mechanic.lowThreshold>=value.mechanic.highThreshold))throw new Error('invalid_event_mechanic');
+  if(value.objective&&(!value.objective.id.trim()||!value.objective.label.trim()||!value.objective.description.trim()||!Number.isInteger(value.objective.startCount)||!Number.isInteger(value.objective.maxCount)||value.objective.maxCount<1||value.objective.startCount<0||value.objective.startCount>value.objective.maxCount||!Number.isFinite(value.objective.perPoint)||value.objective.perPoint<=0))throw new Error('invalid_event_objective');
 }
 
 export function presentEventExpeditionRun(projection:CoopEventRunServerProjection):CoopRunView{
@@ -91,8 +94,10 @@ export function presentEventExpeditionRun(projection:CoopEventRunServerProjectio
   const options=projection.options.map(option=>{
     if(!option.nodeId.trim()||!option.kind.trim()||!Number.isFinite(option.risk)||!option.rewardTag.trim())throw new Error('invalid_event_route_option');
     const title=option.title?.trim()||(option.kind==='boss'?'Final boss':option.kind.charAt(0).toUpperCase()+option.kind.slice(1));
-    const delta=option.mechanicDelta??0,deltaText=projection.mechanic&&delta!==0?`${projection.mechanic.label} ${delta>0?'+':''}${delta}`:undefined;
-    return {nodeId:option.nodeId,title,kind:option.kind,risk:`Risk ${option.risk}`,reward:deltaText??option.rewardTag.replace(/_/g,' ')};
+    const mechanicDelta=option.mechanicDelta??0,objectiveDelta=option.objectiveDelta??0,effects:string[]=[];
+    if(projection.mechanic&&mechanicDelta!==0)effects.push(`${projection.mechanic.label} ${mechanicDelta>0?'+':''}${mechanicDelta}`);
+    if(projection.objective&&objectiveDelta!==0)effects.push(`${projection.objective.label} ${objectiveDelta>0?'+':''}${objectiveDelta}`);
+    return {nodeId:option.nodeId,title,kind:option.kind,risk:`Risk ${option.risk}`,reward:effects.join(' · ')||option.rewardTag.replace(/_/g,' ')};
   });
   const marks=projection.settlement.rewardMarks??0;
   const run:CoopRunView={
@@ -104,6 +109,7 @@ export function presentEventExpeditionRun(projection:CoopEventRunServerProjectio
     roleSlots:projection.team.map(member=>({role:member.role,name:member.displayName,echo:member.kind==='echo',ready:member.downed===undefined?true:!member.downed})),
     options,
     mechanic:projection.mechanic?{label:projection.mechanic.label,description:projection.mechanic.description,value:projection.mechanic.value,maxValue:projection.mechanic.maxValue,status:projection.mechanic.status,bossEffect:projection.mechanic.bossEffect}:undefined,
+    objective:projection.objective?{label:projection.objective.label,description:projection.objective.description,count:projection.objective.count,maxCount:projection.objective.maxCount,completed:projection.objective.completed,effectText:projection.objective.effectText}:undefined,
     stateVersion:projection.stateVersion,
     decisionId:projection.decisionId,
     decisionRevision:projection.decisionRevision,

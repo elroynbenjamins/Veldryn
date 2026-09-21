@@ -2,7 +2,7 @@ import React,{useMemo,useState} from 'react';
 import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
 import {availableGemCombinesV1,formatGemValueV1,gemCodexRowsV1,resonanceForFamilyV1} from '../core/gem-progression-v1';
-import {GEM_GRADE_LABEL_V1,type MobileGemGradeV1} from '../content/gems-v1';
+import {GEM_GRADE_LABEL_V1,mobileGemItemIdV1,type MobileGemGradeV1} from '../content/gems-v1';
 import {GameButton} from './GameButton';
 import {GameModalHeader,GameModalSurface} from './GameModalSurface';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -12,14 +12,15 @@ type KindFilter='all'|'stat'|'effect';
 const gradeRoman:Record<MobileGemGradeV1,string>={1:'I',2:'II',3:'III',4:'IV',5:'V'};
 const duration=(seconds:number)=>seconds>=3600?(seconds/3600)+'h':seconds>=60?(seconds/60)+'m':seconds+'s';
 
-export function GemCodexModal({visible,state,onClose,onCombine}:{visible:boolean;state:GameState;onClose:()=>void;onCombine:(familyId:string,fromGrade:1|2|3|4)=>Promise<void>|void}){
+export function GemCodexModal({visible,state,onClose,onCombine,onDismantle}:{visible:boolean;state:GameState;onClose:()=>void;onCombine:(familyId:string,fromGrade:1|2|3|4)=>Promise<void>|void;onDismantle:(gemId:string,quantity:number)=>Promise<void>|void}){
  const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>styles(C),[C]);
- const [tab,setTab]=useState<'codex'|'forge'>('codex'),[filter,setFilter]=useState<KindFilter>('all'),[busy,setBusy]=useState('');
+ const [tab,setTab]=useState<'codex'|'forge'>('codex'),[filter,setFilter]=useState<KindFilter>('all'),[busy,setBusy]=useState(''),[confirmDismantle,setConfirmDismantle]=useState('');
  const rows=useMemo(()=>gemCodexRowsV1(state),[state]),combines=useMemo(()=>availableGemCombinesV1(state),[state]);
  const filtered=rows.filter(row=>filter==='all'||row.family.kind===filter);
  const ownedFamilies=rows.filter(row=>row.owned.some(g=>g.quantity>0)).length;
  const cycle=()=>setFilter(value=>value==='all'?'stat':value==='stat'?'effect':'all');
  const run=async(familyId:string,grade:1|2|3|4)=>{const key=familyId+':'+grade;if(busy)return;setBusy(key);try{await onCombine(familyId,grade)}finally{setBusy('')}};
+ const dismantle=async(familyId:string,grade:MobileGemGradeV1)=>{const gemId=mobileGemItemIdV1(familyId,grade),key='dismantle:'+gemId;if(busy)return;if(grade>=4&&confirmDismantle!==key){setConfirmDismantle(key);return;}setConfirmDismantle('');setBusy(key);try{await onDismantle(gemId,1)}finally{setBusy('')}};
  return <GameModalSurface visible={visible} reduceMotion={state.settings.reduceMotion} onClose={onClose} backdropLabel="Close Gem Codex" surfaceStyle={s.surface}>
   <GameModalHeader eyebrow="EQUIPMENT · GEMS" title="Gem Codex" onClose={onClose}/>
   <View style={s.summary}><View><Text style={s.summaryValue}>{ownedFamilies}/32</Text><Text style={s.caption}>families owned</Text></View><View style={s.summaryRule}/><View style={s.flex}><Text style={s.summaryCopy}>Recipes are account-wide. Effect Resonance is capped at III across equipped gear.</Text></View></View>
@@ -32,7 +33,7 @@ export function GemCodexModal({visible,state,onClose,onCombine}:{visible:boolean
     const recommended=row.family.recommendedClasses?.includes(state.character!.classId)??false;
     return <View key={row.family.familyId} style={s.card}><View style={s.row}><View style={s.flex}><Text style={s.eyebrow}>{row.family.kind==='stat'?'STAT':row.family.category.toUpperCase()} GEM{recommended?' · ★ RECOMMENDED':''}</Text><Text style={s.name}>{row.family.name}</Text></View>{resonance&&resonance.resonance>0?<Text style={s.resonance}>R{resonance.resonance}/III</Text>:null}</View><Text style={s.description}>{row.family.description}</Text>
     <Text style={s.owned}>{owned.length?owned.map(entry=>gradeRoman[entry.grade]+' ×'+entry.quantity).join('  ·  '):'Not owned yet'}</Text>
-    {row.highestOwned?<Text style={s.value}>{GEM_GRADE_LABEL_V1[row.highestOwned]} · {formatGemValueV1(row.family.familyId,row.highestOwned)}</Text>:null}
+    {row.highestOwned?<View style={s.row}><View style={s.flex}><Text style={s.value}>{GEM_GRADE_LABEL_V1[row.highestOwned]} · {formatGemValueV1(row.family.familyId,row.highestOwned)}</Text><Text style={s.caption}>Dismantle value · {({1:1,2:3,3:8,4:22,5:60} as const)[row.highestOwned]} Gem Dust</Text></View><GameButton compact tone={row.highestOwned>=4?'secondary':'secondary'} title={confirmDismantle==='dismantle:'+mobileGemItemIdV1(row.family.familyId,row.highestOwned)?'Confirm dismantle':'Dismantle ×1'} disabled={Boolean(busy)} loading={busy==='dismantle:'+mobileGemItemIdV1(row.family.familyId,row.highestOwned)} onPress={()=>void dismantle(row.family.familyId,row.highestOwned!)}/></View>:null}
     {row.family.kind==='effect'?<Text style={s.caption}>{row.family.resonance2} · {row.family.resonance3}</Text>:null}
     <Text style={s.source}>Source · {row.family.sources.join(' · ')}</Text>
     {row.family.kind==='effect'?<Text style={[s.recipe,row.recipeUnlocked?s.good:s.muted]}>{row.recipeUnlocked?'Recipe unlocked':'Recipe not discovered'}</Text>:null}</View>;

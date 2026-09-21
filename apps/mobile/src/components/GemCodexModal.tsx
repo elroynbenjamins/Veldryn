@@ -1,8 +1,8 @@
 import React,{useMemo,useState} from 'react';
 import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
-import {availableGemCombinesV1,formatGemValueV1,gemCodexRowsV1,resonanceForFamilyV1} from '../core/gem-progression-v1';
-import {GEM_GRADE_LABEL_V1,mobileGemItemIdV1,type MobileGemGradeV1} from '../content/gems-v1';
+import {availableGemCombinesV1,formatGemValueV1,gemCodexRowsV1,resonanceCacheStatusV1,resonanceForFamilyV1} from '../core/gem-progression-v1';
+import {GEM_GRADE_LABEL_V1,mobileGemFamilyV1,mobileGemItemIdV1,type MobileGemGradeV1} from '../content/gems-v1';
 import {GameButton} from './GameButton';
 import {GameModalHeader,GameModalSurface} from './GameModalSurface';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -12,18 +12,20 @@ type KindFilter='all'|'stat'|'effect';
 const gradeRoman:Record<MobileGemGradeV1,string>={1:'I',2:'II',3:'III',4:'IV',5:'V'};
 const duration=(seconds:number)=>seconds>=3600?(seconds/3600)+'h':seconds>=60?(seconds/60)+'m':seconds+'s';
 
-export function GemCodexModal({visible,state,onClose,onCombine,onDismantle}:{visible:boolean;state:GameState;onClose:()=>void;onCombine:(familyId:string,fromGrade:1|2|3|4)=>Promise<void>|void;onDismantle:(gemId:string,quantity:number)=>Promise<void>|void}){
+export function GemCodexModal({visible,state,onClose,onCombine,onDismantle,onClaimCache}:{visible:boolean;state:GameState;onClose:()=>void;onCombine:(familyId:string,fromGrade:1|2|3|4)=>Promise<void>|void;onDismantle:(gemId:string,quantity:number)=>Promise<void>|void;onClaimCache:(familyId:string)=>Promise<void>|void}){
  const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>styles(C),[C]);
  const [tab,setTab]=useState<'codex'|'forge'>('codex'),[filter,setFilter]=useState<KindFilter>('all'),[busy,setBusy]=useState(''),[confirmDismantle,setConfirmDismantle]=useState('');
- const rows=useMemo(()=>gemCodexRowsV1(state),[state]),combines=useMemo(()=>availableGemCombinesV1(state),[state]);
+ const rows=useMemo(()=>gemCodexRowsV1(state),[state]),combines=useMemo(()=>availableGemCombinesV1(state),[state]),cache=useMemo(()=>resonanceCacheStatusV1(state,Date.now()),[state]);
  const filtered=rows.filter(row=>filter==='all'||row.family.kind===filter);
  const ownedFamilies=rows.filter(row=>row.owned.some(g=>g.quantity>0)).length;
  const cycle=()=>setFilter(value=>value==='all'?'stat':value==='stat'?'effect':'all');
  const run=async(familyId:string,grade:1|2|3|4)=>{const key=familyId+':'+grade;if(busy)return;setBusy(key);try{await onCombine(familyId,grade)}finally{setBusy('')}};
  const dismantle=async(familyId:string,grade:MobileGemGradeV1)=>{const gemId=mobileGemItemIdV1(familyId,grade),key='dismantle:'+gemId;if(busy)return;if(grade>=4&&confirmDismantle!==key){setConfirmDismantle(key);return;}setConfirmDismantle('');setBusy(key);try{await onDismantle(gemId,1)}finally{setBusy('')}};
+ const claimCache=async(familyId:string)=>{const key='cache:'+familyId;if(busy)return;setBusy(key);try{await onClaimCache(familyId)}finally{setBusy('')}};
  return <GameModalSurface visible={visible} reduceMotion={state.settings.reduceMotion} onClose={onClose} backdropLabel="Close Gem Codex" surfaceStyle={s.surface}>
   <GameModalHeader eyebrow="EQUIPMENT · GEMS" title="Gem Codex" onClose={onClose}/>
   <View style={s.summary}><View><Text style={s.summaryValue}>{ownedFamilies}/32</Text><Text style={s.caption}>families owned</Text></View><View style={s.summaryRule}/><View style={s.flex}><Text style={s.summaryCopy}>Recipes are account-wide. Effect Resonance is capped at III across equipped gear.</Text></View></View>
+  <View style={[s.card,cache.ready&&!cache.claimed&&s.readyCard]}><View style={s.row}><View style={s.flex}><Text style={s.eyebrow}>WEEKLY · LIVE CO-OP</Text><Text style={s.name}>Resonance Cache</Text></View><Text style={cache.claimed?s.muted:cache.ready?s.good:s.owned}>{cache.claimed?'CLAIMED':cache.liveClears+'/3'}</Text></View><Text style={s.description}>{cache.claimed?'Collected for this UTC week.':cache.ready?'Choose one Grade III Effect Gem.':'Complete '+cache.remaining+' more successful Live co-op clear'+(cache.remaining===1?'':'s')+'.'}</Text>{cache.ready&&!cache.claimed?<><Text style={s.source}>{cache.dustReward} Gem Dust · {cache.regionalCatalysts} Regional Catalyst{cache.radiantCatalysts?' · '+cache.radiantCatalysts+' Radiant Catalyst':''}</Text>{cache.effectChoices.map(familyId=>{const family=mobileGemFamilyV1(familyId);return <GameButton key={familyId} compact tone="secondary" title={(family?.name??familyId)+' · Grade III'} disabled={Boolean(busy)} loading={busy==='cache:'+familyId} onPress={()=>void claimCache(familyId)}/>;})}</>:null}</View>
   <View accessibilityRole="tablist" style={s.tabs}><Pressable accessibilityRole="tab" accessibilityState={{selected:tab==='codex'}} onPress={()=>setTab('codex')} style={[s.tab,tab==='codex'&&s.tabOn]}><Text style={[s.tabText,tab==='codex'&&s.tabTextOn]}>CODEX</Text></Pressable><Pressable accessibilityRole="tab" accessibilityState={{selected:tab==='forge'}} onPress={()=>setTab('forge')} style={[s.tab,tab==='forge'&&s.tabOn]}><Text style={[s.tabText,tab==='forge'&&s.tabTextOn]}>COMBINE · {combines.filter(row=>row.ready).length}</Text></Pressable></View>
   {tab==='codex'?<>
    <Pressable accessibilityRole="button" onPress={cycle} style={s.filter}><Text style={s.filterText}>Type · {filter==='all'?'All gems':filter==='stat'?'Stat Gems':'Effect Gems'} ▾</Text></Pressable>
@@ -40,7 +42,7 @@ export function GemCodexModal({visible,state,onClose,onCombine,onDismantle}:{vis
    })}</ScrollView>
   </>:<ScrollView contentContainerStyle={s.list} showsVerticalScrollIndicator={false}>
    <Text style={s.notice}>Combining is deterministic and uses the same forge slots as equipment. No failure chance and no premium currency.</Text>
-   {combines.length?combines.map(row=>{const recipe=row.recipe,key=recipe.familyId+':'+recipe.fromGrade;return <View key={recipe.id} style={[s.card,row.ready&&s.readyCard]}><View style={s.row}><View style={s.flex}><Text style={s.eyebrow}>{GEM_GRADE_LABEL_V1[recipe.fromGrade]} → {GEM_GRADE_LABEL_V1[recipe.toGrade]}</Text><Text style={s.name}>{recipe.name}</Text></View><Text style={row.ready?s.good:s.muted}>{row.ready?'READY':'BLOCKED'}</Text></View><Text style={s.description}>{recipe.inputs.map(input=>input.quantity+'× '+(input.itemId==='GEM_DUST'?'Gem Dust':input.itemId==='REGIONAL_CATALYST'?'Regional Catalyst':input.itemId==='RADIANT_CATALYST'?'Radiant Catalyst':GEM_GRADE_LABEL_V1[recipe.fromGrade]+' gem')).join(' · ')}</Text><Text style={s.source}>{recipe.gold.toLocaleString()} gold · {duration(recipe.seconds)} base craft time</Text><GameButton compact title={row.ready?'Start combine':'Missing requirements'} disabled={!row.ready||Boolean(busy)} loading={busy===key} onPress={()=>void run(recipe.familyId,recipe.fromGrade)}/></View>;}):<Text style={s.notice}>No owned lower-grade gems are currently eligible for combining.</Text>}
+   {combines.length?combines.map(row=>{const recipe=row.recipe,key=recipe.familyId+':'+recipe.fromGrade;return <View key={recipe.id} style={[s.card,row.ready&&s.readyCard]}><View style={s.row}><View style={s.flex}><Text style={s.eyebrow}>{GEM_GRADE_LABEL_V1[recipe.fromGrade]} → {GEM_GRADE_LABEL_V1[recipe.toGrade]}</Text><Text style={s.name}>{recipe.name}</Text></View><Text style={row.ready?s.good:s.muted}>{row.ready?'READY':'BLOCKED'}</Text></View><Text style={s.description}>{recipe.inputs.map(input=>input.quantity+'× '+(input.itemId==='GEM_DUST'?'Gem Dust':input.itemId==='REGIONAL_CATALYST'?'Regional Catalyst':input.itemId==='RADIANT_CATALYST'?'Radiant Catalyst':GEM_GRADE_LABEL_V1[recipe.fromGrade]+' gem')).join(' · ')}</Text><Text style={s.source}>{!row.recipeReady?'Recipe not discovered · ':''}{recipe.gold.toLocaleString()} gold · {duration(recipe.seconds)} base craft time</Text><GameButton compact title={row.ready?'Start combine':!row.recipeReady?'Recipe locked':'Missing requirements'} disabled={!row.ready||Boolean(busy)} loading={busy===key} onPress={()=>void run(recipe.familyId,recipe.fromGrade)}/></View>;}):<Text style={s.notice}>No owned lower-grade gems are currently eligible for combining.</Text>}
   </ScrollView>}
  </GameModalSurface>;
 }

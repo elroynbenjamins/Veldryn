@@ -18,7 +18,7 @@ export interface ItemGearDecision{
  compatible:boolean;alreadyEquipped:boolean;replaces?:{itemId:string;name:string;rank:number};
  loadoutBefore:{attack:number;defense:number;hp:number;power:number};loadoutAfter:{attack:number;defense:number;hp:number;power:number};loadoutDelta:{attack:number;defense:number;hp:number;power:number};
  maxRank:number;maxItemStats:{attack:number;defense:number;hp:number};maxLoadoutGain:{attack:number;defense:number;hp:number;power:number};
- gems:Array<{id:string;name:string;stat:string;percent:number}>;
+ gems:Array<{id:string;name:string;kind:'stat'|'effect';detail:string}>;
  set?:{name:string;currentPieces:number;previewPieces:number;required:number;reached?:{pieces:number;bonus:string};next?:{pieces:number;bonus:string}};
 }
 const title=(value:string)=>value.toLowerCase().split('_').map(part=>part?part[0].toUpperCase()+part.slice(1):part).join(' ');

@@ -1,7 +1,8 @@
 import {itemDef} from '../content/items';
 import {equipmentSetDef,equippedSetPieceCount} from '../content/equipment-sets';
 import {combinedQuantity,enhancedGearStats,gearEnhancement,gemSocketCapacity,gemSocketState,upgradeQuote} from './equipment-enhancement';
-import {itemRarity,type ItemRarity} from './item-rarity';
+import {type ItemRarity} from './item-rarity';
+import {effectiveOwnedGearRarity} from './crafted-gear-instances';
 import type {GameState} from './types';
 
 export interface EquipmentDecisionModel{
@@ -46,7 +47,7 @@ export function equipmentDecisionModel(state:GameState,itemId:string):EquipmentD
   return {
     itemId,
     name:item.name,
-    rarity:itemRarity(item),
+    rarity:effectiveOwnedGearRarity(state,itemId),
     rank:enhancement.rank,
     stats:enhancedGearStats(state,itemId),
     sockets:{filled:gemSocketState(state,itemId).filled,capacity:gemSocketCapacity(itemId),statFilled:Boolean(gemSocketState(state,itemId).statGemId),effectFilled:Boolean(gemSocketState(state,itemId).effectGemId)},

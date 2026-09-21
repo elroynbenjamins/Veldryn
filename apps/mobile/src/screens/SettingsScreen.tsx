@@ -37,7 +37,7 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImp
   const [guideId,setGuideId]=useState<GameGuideId>();
   const {fontScale}=useWindowDimensions();
   const update=(partial:Partial<GameState['settings']>)=>onChange({...state,settings:{...state.settings,...partial}});
-  const restoreDefaults=()=>update({numberMode:'abbreviated',autoEatThresholdPct:40,stopCombatWhenOutOfFood:true});
+  const restoreDefaults=()=>update({numberMode:'abbreviated',autoEatThresholdPct:40,stopCombatWhenOutOfFood:true,chatDockLines:1});
   return <><ScrollView contentContainerStyle={[s.root,{backgroundColor:theme.bg}]}>
     <Text accessibilityRole="header" style={[s.h,{color:theme.text}]}>{t(state.settings.language,'settings.title')}</Text>
     <Text style={[s.sub,{color:theme.muted}]}>{t(state.settings.language,'settings.intro')}</Text>
@@ -57,6 +57,7 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImp
       <Text style={[s.settingLabel,{color:theme.text}]}>Number display</Text><View style={s.choices}>{(['abbreviated','exact'] as const).map(mode=><SettingChip key={mode} label={mode==='abbreviated'?'Abbreviated · 1.2K':'Exact · 1,200'} selected={state.settings.numberMode===mode} onPress={()=>update({numberMode:mode})}/>)}</View>
       <Text style={[s.settingLabel,{color:theme.text}]}>Auto-eat threshold</Text><Text style={[s.sub,{color:theme.muted}]}>Eat equipped food when HP falls below the selected level.</Text><View style={s.choices}>{([20,40,60,80] as const).map(threshold=><SettingChip key={threshold} label={`${threshold}% HP`} selected={state.settings.autoEatThresholdPct===threshold} onPress={()=>update({autoEatThresholdPct:threshold})}/>)}</View>
       <SettingToggle label="Stop combat when out of food" value={state.settings.stopCombatWhenOutOfFood} onValueChange={value=>update({stopCombatWhenOutOfFood:value})}/>
+      <Text style={[s.settingLabel,{color:theme.text}]}>Collapsed chat preview</Text><Text style={[s.sub,{color:theme.muted}]}>Choose how many recent World chat messages stay visible in the translucent bar above navigation. Tap the bar to open full chat.</Text><View style={s.choices}>{([1,2,3] as const).map(lines=><SettingChip key={lines} label={lines===1?'1 line · compact':`${lines} lines`} selected={(state.settings.chatDockLines??1)===lines} onPress={()=>update({chatDockLines:lines})}/>)}</View>
       <GameButton compact title="Restore gameplay defaults" tone="secondary" onPress={restoreDefaults}/>
     </Panel>
     {__DEV__&&onOpenChatEmotes?<Panel>

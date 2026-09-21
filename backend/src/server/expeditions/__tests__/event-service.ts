@@ -16,7 +16,7 @@ for(const definition of EVENT_EXPEDITIONS){
  const service=new EventExpeditionService(new MemoryEventRunRepository(),`route-secret-${definition.id}`);
  const run=service.start({requestId:`request-${definition.liveEventSeriesId}`,runId:`run-${definition.liveEventSeriesId}`,accountId:'a',eventId:definition.id,activeLiveEventId:`${definition.liveEventSeriesId}_2026`,members,players,nowMs:now});
  assert.equal(run.graph.preBossNodeCount,definition.routeNodeCount,`${definition.eventName} route length drifted`);
- assert.equal(run.graph.generatorVersion,'event-route-v3');
+ assert.equal(run.graph.generatorVersion,'event-route-v4');
  assert.equal(run.mechanic?.id,definition.mechanic.id);
  assert.equal(run.mechanic?.value,definition.mechanic.startValue);
  assert.equal(run.objective?.id,definition.objective.id);

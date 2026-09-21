@@ -47,6 +47,17 @@ function itemMeta(language:GameState['settings']['language'],id:MoreDestination)
 
 export function MoreScreen({language,onNavigate,onOpenChatPilot,companionAttention=false,workingTowardAttention=false,dailySuppliesAttention=false,eventAttention=false,friendRequestCount=0,guildAttentionCount=0,socialAttentionCount=0,profileAttention=false}:{language:GameState['settings']['language'];onNavigate:(destination:MoreDestination)=>void;onOpenChatPilot?:()=>void;companionAttention?:boolean;workingTowardAttention?:boolean;dailySuppliesAttention?:boolean;eventAttention?:boolean;friendRequestCount?:number;guildAttentionCount?:number;socialAttentionCount?:number;profileAttention?:boolean}){
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),singleColumn=width<350||fontScale>=1.25;
+  const attentionLabel=(id:MoreDestination)=>{
+    if(id==='Social'&&socialAttentionCount>0)return `${socialAttentionCount} social update${socialAttentionCount===1?'':'s'}`;
+    if(id==='Friends'&&friendRequestCount>0)return `${friendRequestCount} incoming friend request${friendRequestCount===1?'':'s'}`;
+    if(id==='Guild'&&guildAttentionCount>0)return `${guildAttentionCount} guild update${guildAttentionCount===1?'':'s'}`;
+    if(id==='Companions'&&companionAttention)return 'companion actions ready';
+    if(id==='Progression'&&workingTowardAttention)return 'Working Toward goal complete';
+    if(id==='DailySupplies'&&dailySuppliesAttention)return 'Daily Supplies ready';
+    if(id==='Events'&&eventAttention)return 'event rewards ready';
+    if(id==='Profile'&&profileAttention)return 'new profile customization available';
+    return '';
+  };
   const attention=(id:MoreDestination)=>{
     if(id==='Social'&&socialAttentionCount>0)return <AttentionCount count={socialAttentionCount} label="Social updates"/>;
     if(id==='Friends'&&friendRequestCount>0)return <AttentionCount count={friendRequestCount} label="Incoming friend requests"/>;
@@ -63,7 +74,7 @@ export function MoreScreen({language,onNavigate,onOpenChatPilot,companionAttenti
     <Text style={s.sub}>{t(language,'more.intro')}</Text>
     {sections.map(section=><View key={section.label} style={s.section}>
       <Text style={s.sectionLabel}>{section.label}</Text>
-      <View style={s.grid}>{section.items.map(id=>{const meta=itemMeta(language,id);return <Pressable key={id} accessibilityRole="button" accessibilityLabel={meta.title} accessibilityHint={meta.description} onPress={()=>onNavigate(id)} style={({pressed})=>[s.tile,singleColumn&&s.tileWide,pressed&&s.pressed]}>
+      <View style={s.grid}>{section.items.map(id=>{const meta=itemMeta(language,id);const alert=attentionLabel(id);return <Pressable key={id} accessibilityRole="button" accessibilityLabel={alert?`${meta.title}, ${alert}`:meta.title} accessibilityHint={meta.description} onPress={()=>onNavigate(id)} style={({pressed})=>[s.tile,singleColumn&&s.tileWide,pressed&&s.pressed]}>
         <View style={s.tileTop}><View style={s.iconFrame}><Image accessible={false} source={navigationIcons[iconForDestination(id)]} resizeMode="contain" style={s.icon}/></View><View style={s.attentionSlot}>{attention(id)}</View><UiIcon name="next" size={18}/></View>
         <Text numberOfLines={1} style={s.title}>{meta.title}</Text>
         <Text numberOfLines={singleColumn?2:1} style={s.description}>{meta.description}</Text>
@@ -73,8 +84,8 @@ export function MoreScreen({language,onNavigate,onOpenChatPilot,companionAttenti
   </ScrollView>;
 }
 
-function AttentionDot({label}:{label:string}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);return <View accessible accessibilityLabel={label} style={s.attentionDot}/>}
-function AttentionCount({count,label}:{count:number;label:string}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);return <View accessible accessibilityLabel={`${count} ${label}`} style={s.attentionCount}><Text style={s.attentionCountText}>{count>99?'99+':count}</Text></View>}
+function AttentionDot({label}:{label:string}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);return <View accessible={false} accessibilityLabel={label} style={s.attentionDot}/>}
+function AttentionCount({count,label}:{count:number;label:string}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);return <View accessible={false} accessibilityLabel={`${count} ${label}`} style={s.attentionCount}><Text style={s.attentionCountText}>{count>99?'99+':count}</Text></View>}
 function makeStyles(C:ThemeColors){return StyleSheet.create({
   root:{padding:spacing.md,gap:7,paddingBottom:spacing.xl},
   heading:{...typography.hero,color:C.text},

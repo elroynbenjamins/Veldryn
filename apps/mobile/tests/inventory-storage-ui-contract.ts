@@ -10,6 +10,8 @@ const appSource=fs.readFileSync('App.tsx','utf8');
 const normalization=fs.readFileSync('src/core/save-normalization.ts','utf8');
 const commands=fs.readFileSync('src/core/game-commands.ts','utf8');
 const bulk=fs.readFileSync('src/core/inventory-bulk.ts','utf8');
+const inspect=fs.readFileSync('src/components/ItemQuickInspect.tsx','utf8');
+const inspectModel=fs.readFileSync('src/core/item-inspect.ts','utf8');
 
 ok(!screenSource.includes('FILTERS & DISPLAY'),'Inventory must not regress to the large filters disclosure');
 ok(!screenSource.includes('showFilters'),'Inventory must keep filters always available as compact controls');
@@ -26,6 +28,10 @@ ok(card.includes('selectionMode')&&card.includes('accessibilityRole="checkbox"')
 ok(bulk.includes('bulkTransferSelected')&&bulk.includes('bulkSellSelected')&&bulk.includes('bulkSalvageSelected'),'Bulk actions must use shared core helpers');
 ok(bulk.includes("state.settings.favoriteItemIds")&&bulk.includes('hasEnhancement')&&bulk.includes('equippedFoodId'),'Bulk disposal must protect favorites, enhanced gear, and auto-eat food');
 ok(commands.includes("bulk_transfer:['location','ids']")&&commands.includes("bulk_sell:['ids']")&&commands.includes("bulk_salvage:['ids']"),'Online commands must expose atomic bulk actions');
+ok(card.includes('onLongPress={inspect}')&&card.includes('delayLongPress={350}'),'Item cards must open Quick Inspect on a deliberate hold');
+ok(screenSource.includes('ItemQuickInspect')&&screenSource.includes('Hold an item for Quick Inspect'),'Inventory must expose and explain Quick Inspect without replacing normal tap actions');
+ok(inspect.includes('HOW TO GET')&&inspect.includes('USED IN CRAFTING')&&inspect.includes('UPGRADE'),'Quick Inspect sheet must show sources, crafting uses and equipment upgrade information');
+ok(inspectModel.includes('RECIPES')&&inspectModel.includes('MONSTERS')&&inspectModel.includes('GATHERING')&&inspectModel.includes('upgradeQuote'),'Quick Inspect must derive information from authoritative content data');
 ok(screenSource.includes('StorageChip')&&screenSource.includes('storageCapacityStatus'),'Inventory and Bank must show compact capacity feedback');
 ok(screenSource.includes('onToggleFavorite')&&card.includes('favoriteButton'),'Item cards must expose one-tap favorite controls');
 ok(card.includes('protected from selling and salvage'),'Favorite items must explain disposal protection');
@@ -39,4 +45,4 @@ ok(slot.includes('borderWidth:meta.borderWidth'),'Equipped item slots must use r
 ok(card.includes('rarityNameColor')&&card.includes("fontWeight:'800'"),'Inventory item names must use bold accessible rarity emphasis');
 ok(slot.includes('rarityNameColor')&&slot.includes("fontWeight:'800'"),'Equipment slot names must use bold accessible rarity emphasis');
 
-console.log('PASS: compact themed inventory/bank controls, NEW feedback, favorites, safe bulk selection, capacity feedback, rarity frames and rarity-colored names');
+console.log('PASS: compact themed inventory/bank controls, NEW feedback, favorites, safe bulk selection, Quick Inspect, capacity feedback, rarity frames and rarity-colored names');

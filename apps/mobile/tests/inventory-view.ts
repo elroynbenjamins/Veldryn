@@ -2,6 +2,7 @@ import {createCharacter,newGame,effectiveStats,salvageItem,sellItem} from '../sr
 import {acknowledgeAllInventoryItems,acknowledgeInventoryItem,inventoryFavoriteIds,inventoryNewItemIds,recoveryAmount,storageCapacityStatus,toggleInventoryFavorite,transferAmount,transferError,visibleStacks} from '../src/core/inventory-view';
 import {validateGameCommand,validateGameSettings} from '../src/core/game-commands';
 import {bulkSalvageSelected,bulkSelectionSummary,bulkSellSelected,bulkTransferSelected} from '../src/core/inventory-bulk';
+import {itemInspectModel} from '../src/core/item-inspect';
 import {normalizeSave} from '../src/core/save-normalization';
 function ok(value:boolean,message:string){if(!value)throw new Error(message)}
 const state=createCharacter(newGame(1000),'IRONWARDEN');
@@ -66,6 +67,15 @@ ok(!salvagedBulk.inventory.stacks.some(stack=>stack.itemId==='WORN_BLADE')&&salv
 ok(validateGameCommand({type:'bulk_transfer',args:{location:'inventory',ids:['COPPER_ORE']}}).type==='bulk_transfer','Bulk transfer command validates for online execution');
 let invalidBulkCommand=false;try{validateGameCommand({type:'bulk_sell',args:{ids:Array.from({length:101},(_,index)=>'ITEM_'+index)}})}catch{invalidBulkCommand=true}
 ok(invalidBulkCommand,'Bulk commands cap selections at 100 stacks');
+const copperInspect=itemInspectModel(state,'COPPER_ORE');
+ok(copperInspect.sources.some(source=>source.title==='Copper Vein'&&source.kind==='gathering'),'Quick Inspect exposes gathering sources');
+ok(copperInspect.sources.some(source=>source.kind==='combat'),'Quick Inspect exposes combat drop sources');
+ok(copperInspect.usedIn.some(recipe=>recipe.name==='Smelt Copper Batch'&&recipe.quantity===10),'Quick Inspect exposes crafting uses');
+const ingotInspect=itemInspectModel(state,'COPPER_INGOT');
+ok(ingotInspect.sources.some(source=>source.kind==='crafting'&&source.title==='Smelt Copper Batch'),'Quick Inspect exposes crafting acquisition sources');
+const gearInspect=itemInspectModel(state,'WORN_BLADE');
+ok(gearInspect.upgrade?.rank===0&&gearInspect.upgrade.successChance===1&&gearInspect.upgrade.nextRank===1,'Quick Inspect exposes the guaranteed first equipment upgrade chance');
+ok(gearInspect.stats?.attack===4&&gearInspect.sockets?.capacity===0,'Quick Inspect exposes effective stats and socket capacity');
 ok(JSON.stringify(stacks)===original,'Sorting does not mutate save stacks');
 ok(transferAmount(3,10)===3,'Quantity clamps to owned count');
 ok(transferAmount(25,'all')===25,'All transfer');
@@ -76,4 +86,4 @@ ok(transferError(state,'TRAVEL_RATION',10,'inventory')==='','Valid transfer');
 ok(!!transferError({...state,bank:{stacks:[],capacity:0}},'TRAVEL_RATION',1,'inventory'),'Full destination rejected');
 ok(!!transferError(state,'TRAVEL_RATION',100,'inventory'),'Insufficient quantity rejected');
 ok(!!transferError(state,'TRAVEL_RATION',1,'bank'),'Empty bank cannot withdraw');
-console.log('PASS: inventory search, NEW tracking, favorites, safe bulk actions, capacity status, sorting, transfer preflight and healing previews');
+console.log('PASS: inventory search, NEW tracking, favorites, safe bulk actions, Quick Inspect data, capacity status, sorting, transfer preflight and healing previews');

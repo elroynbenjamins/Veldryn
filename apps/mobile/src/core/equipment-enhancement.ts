@@ -1,5 +1,6 @@
 import {itemDef} from '../content/items';
 import {itemRarity,ItemRarity} from './item-rarity';
+import {craftedRarityStatMultiplier,effectiveOwnedGearRarity} from './crafted-gear-instances';
 import {GameState,GearEnhancementState,GemEffectId,GemSocketKind,GemStat,ItemStack} from './types';
 
 export const MAX_UPGRADE_RANK=10;
@@ -45,7 +46,7 @@ export function upgradeQuote(state:GameState,itemId:string){
   const item=itemDef(itemId);if(item.type!=='gear')throw new Error('Only equipment can be upgraded');
   const current=gearEnhancement(state,itemId),targetRank=current.rank+1;
   if(targetRank>MAX_UPGRADE_RANK)return {currentRank:current.rank,targetRank,successChance:0,dust:0,cores:0,gold:0,maxed:true};
-  const rarity=itemRarity(item),pity=Math.min(.10,current.failures*.02);
+  const rarity=effectiveOwnedGearRarity(state,itemId),pity=Math.min(.10,current.failures*.02);
   return {currentRank:current.rank,targetRank,successChance:Math.min(1,SUCCESS_BY_TARGET[targetRank]+pity),dust:DUST_BY_TARGET[targetRank],cores:CORE_BY_TARGET[targetRank],gold:Math.ceil(150*targetRank*targetRank*RARITY_COST[rarity]/10)*10,maxed:false};
 }
 function qty(stacks:ItemStack[],id:string){return stacks.find(s=>s.itemId===id)?.quantity??0;}
@@ -87,7 +88,7 @@ export function unsocketGem(state:GameState,itemId:string,index:number){
   return next;
 }
 export function gearStatsAtRank(itemId:string,rank:number){const item=itemDef(itemId),m=1+Math.max(0,Math.min(MAX_UPGRADE_RANK,rank))*UPGRADE_STAT_PER_RANK,scale=(value:number)=>value>0?Math.ceil(value*m):Math.round(value*m);return {hp:scale(item.hp??0),attack:scale(item.attack??0),defense:scale(item.defense??0)};}
-export function enhancedGearStats(state:GameState,itemId:string){return gearStatsAtRank(itemId,gearEnhancement(state,itemId).rank);}
+export function enhancedGearStats(state:GameState,itemId:string){const stats=gearStatsAtRank(itemId,gearEnhancement(state,itemId).rank),rarity=effectiveOwnedGearRarity(state,itemId),m=craftedRarityStatMultiplier(itemId,rarity),scale=(value:number)=>value>0?Math.ceil(value*m):Math.round(value*m);return {hp:scale(stats.hp),attack:scale(stats.attack),defense:scale(stats.defense)};}
 export function equippedGemBonuses(state:GameState):Record<GemStat,number>{const result={attack:0,defense:0,hp:0};if(!state.character)return result;for(const itemId of Object.values(state.character.equipment)){if(!itemId)continue;const gemId=gearEnhancement(state,itemId).statGemId;if(!gemId)continue;const gem=itemDef(gemId);if(gem.type==='gem'&&gem.gemStat)result[gem.gemStat]+=gem.gemPercent??0;}return result;}
 
 export type EquippedEffectGemBonuses=Record<GemEffectId,number>;

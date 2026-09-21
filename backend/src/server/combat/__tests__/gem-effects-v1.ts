@@ -13,8 +13,8 @@ const momentum=simulateCombat({seed:'gem-momentum',players:[player([{familyId:'e
 assert.ok(momentum.players[0].modifiers.some(row=>row.tag==='gem:momentum'),'Momentum should build combat-runtime stacks');
 assert.ok(momentum.players[0].damageDone>simulateCombat({seed:'gem-momentum',players:[player()],enemies:[boss()],maxDurationMs:7000}).players[0].damageDone,'Momentum stacks should increase sustained damage');
 
-const companionAbility:CombatantDefinition={...player([{familyId:'effect_predator',copies:3,resonance:3,totalValue:.20}]),basicAttackMs:999999,abilities:[{id:'COMPANION_STRIKE',name:'Companion Strike',cooldownMs:1000,castTimeMs:0,target:'current_target',priority:10,effects:[{kind:'damage',coeff:1,damageType:'physical'}]}]};
-const companionWithGem=simulateCombat({seed:'gem-companion',players:[companionAbility],enemies:[boss()],maxDurationMs:3000});
+const companionAbility:CombatantDefinition={...player([{familyId:'effect_predator',copies:3,resonance:3,totalValue:.20}]),basicAttackMs:999999,abilities:[{id:'COMPANION_STRIKE',name:'Companion Strike',cooldownMs:100,castTimeMs:0,target:'current_target',priority:10,effects:[{kind:'damage',coeff:1,damageType:'physical'}]}]};
+const companionWithGem=simulateCombat({seed:'gem-companion',players:[companionAbility],enemies:[boss()],maxDurationMs:1000});
 const companionWithoutGem=simulateCombat({seed:'gem-companion',players:[{...companionAbility,effectGems:[]}],enemies:[boss()],maxDurationMs:3000});
 assert.equal(companionWithGem.players[0].damageDone,companionWithoutGem.players[0].damageDone,'Companion-prefixed attacks must not inherit player Effect Gems');
 

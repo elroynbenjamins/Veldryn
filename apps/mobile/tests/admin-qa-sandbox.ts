@@ -3,8 +3,8 @@ import {MONSTERS} from '../src/content/monsters';
 import {noviceItemId,noviceSetFor} from '../src/content/novice-sets';
 import {debugPrepareDungeonLab,debugPrepareEquipmentLab,debugPrepareFullQaSandbox} from '../src/dev/debug-tools';
 
-function ok(value:unknown,message:string){if(!value)throw new Error(message)}
-function equal(actual:unknown,expected:unknown,message:string){if(actual!==expected)throw new Error(`${message}: expected ${String(expected)}, got ${String(actual)}`)}
+function ok(value:unknown,message='Expected value to be truthy'){if(!value)throw new Error(message)}
+function equal(actual:unknown,expected:unknown,message='Values differ'){if(actual!==expected)throw new Error(`${message}: expected ${String(expected)}, got ${String(actual)}`)}
 
 const base=createCharacter(newGame(0),'IRONWARDEN','QA Tester');
 

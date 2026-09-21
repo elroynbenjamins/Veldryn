@@ -71,23 +71,24 @@ begin
  -- Real crafting receipts reach the Contract scoring path, without client-reported points.
  insert into public.craft_receipts(character_id,idempotency_key,recipe_id,quantity) values(c[2],'v16-craft-receipt','SMELT_COPPER_INGOT',1);
  perform pg_temp.assert_v16((select count(*)>0 from public.party_contract_member_progress_v16 where account_id=a[2] and normalized_points>0),'craft receipt integration');
- -- Exercise the existing gathering RPC, including its own replay receipt.
+ -- Legacy direct gathering RPCs are client-denied; trusted verified settlement still feeds Contracts exactly once.
  perform set_config('request.jwt.claim.sub',a[2]::text,true);
  update public.party_members set joined_at=now()-interval '1 hour' where character_id=c[2] and left_at is null;
  set local role authenticated;
- perform public.start_gathering_activity(c[2],'COPPER_VEIN');
+ begin perform public.start_gathering_activity(c[2],'COPPER_VEIN');raise exception 'legacy gathering start allowed';exception when insufficient_privilege then null;end;
+ begin perform public.claim_gathering_activity(c[2],'v16-real-gathering-0001');raise exception 'legacy gathering claim allowed';exception when insufficient_privilege then null;end;
  reset role;
- update public.character_activities set last_claim_at=now()-interval '30 minutes' where character_id=c[2];
- set local role authenticated;
- x:=public.claim_gathering_activity(c[2],'v16-real-gathering-0001');
- perform pg_temp.assert_v16((x->>'cycles')::integer>0,'real gathering rewards');
+ select coalesce(sum(normalized_points),0) into before_points from public.party_contract_member_progress_v16 where account_id=a[2];
+ set local role service_role;
+ perform pg_temp.assert_v16(public.settle_party_activity_v16(c[2],'verified_weighted_gather_actions',10,'v16-real-gathering-0001',now())>0,'verified gathering settlement');
  reset role;
- select sum(normalized_points) into before_points from public.party_contract_member_progress_v16 where account_id=a[2];
- set local role authenticated;
- perform public.claim_gathering_activity(c[2],'v16-real-gathering-0001');
+ perform pg_temp.assert_v16((select coalesce(sum(normalized_points),0)>before_points from public.party_contract_member_progress_v16 where account_id=a[2]),'verified gathering reaches Contracts');
+ select coalesce(sum(normalized_points),0) into before_points from public.party_contract_member_progress_v16 where account_id=a[2];
+ set local role service_role;
+ perform public.settle_party_activity_v16(c[2],'verified_weighted_gather_actions',10,'v16-real-gathering-0001',now());
  reset role;
- perform pg_temp.assert_v16((select sum(normalized_points)=before_points from public.party_contract_member_progress_v16 where account_id=a[2]),'gathering replay cannot score twice');
- perform pg_temp.assert_v16((select count(*)>0 from public.party_contract_contributions_v16 where account_id=a[2] and objective_id in ('mixed_gather','gather_materials')),'gathering receipt reaches Contracts');
+ perform pg_temp.assert_v16((select coalesce(sum(normalized_points),0)=before_points from public.party_contract_member_progress_v16 where account_id=a[2]),'verified gathering replay cannot score twice');
+ perform pg_temp.assert_v16((select count(*)>0 from public.party_contract_contributions_v16 where account_id=a[2] and objective_id in ('mixed_gather','gather_materials')),'verified gathering reaches Contract contribution feed');
  -- Guildless seeker, expiry, search, and cross-owner Guild officer cooldown.
  perform set_config('request.jwt.claim.sub',a[5]::text,true);
  set local role authenticated;

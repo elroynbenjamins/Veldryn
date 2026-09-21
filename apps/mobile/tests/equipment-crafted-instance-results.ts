@@ -1,8 +1,8 @@
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
-import {createCharacter,newGame} from '../src/core/game';
+import {createCharacter,equipItem,newGame} from '../src/core/game';
 import {claimEquipmentCraft,equipmentCraftingQueue,startEquipmentCraft} from '../src/core/equipment-crafting-queue';
 import {CRAFTED_EPIC_CHANCE,CRAFTED_MYTHIC_CHANCE,craftedGearRarity,craftedRarityStatMultiplier} from '../src/core/crafted-gear-rarity';
-import {bestCraftedInstanceForItem,craftedGearInstances,craftClaimSubRoll,effectiveOwnedGearRarity} from '../src/core/crafted-gear-instances';
+import {craftedGearInstances,craftClaimSubRoll,effectiveOwnedGearRarity,inventoryGearCopies} from '../src/core/crafted-gear-instances';
 import {enhancedGearStats,upgradeQuote} from '../src/core/equipment-enhancement';
 import {itemDef} from '../src/content/items';
 import {itemRarity} from '../src/core/item-rarity';
@@ -40,11 +40,12 @@ ok(epicClaim.result.rarity==='epic'&&epicClaim.result.qualityProc,'Trusted .002 
 ok(craftedGearInstances(state).length===1,'Claimed Forge gear must create a persisted instance');
 ok(craftedGearInstances(state)[0].id.includes(job.id),'Crafted instance identity must derive from its authoritative Forge receipt');
 ok(craftedGearInstances(state)[0].enhancement.rank===0&&craftedGearInstances(state)[0].enhancement.gemIds.length===0,'Fresh crafted instance must start unenhanced and unsocketed');
-ok(effectiveOwnedGearRarity(state,recipe.output.itemId)==='epic','Best owned crafted copy should become effective rarity');
+ok(effectiveOwnedGearRarity(state,recipe.output.itemId)==='common','Unequipped item-definition reads must no longer borrow rarity from a best-copy compatibility layer');
+ok(inventoryGearCopies(state,recipe.output.itemId)[0]?.id===epicClaim.instance.id,'Inventory must expose the exact forged copy identity');
 ok(craftedRarityStatMultiplier(recipe.output.itemId,'epic')>1,'Epic T1 proc must provide a real stat multiplier');
-const epicStats=enhancedGearStats(state,recipe.output.itemId),epicQuote=upgradeQuote(state,recipe.output.itemId);
-ok(epicStats.attack>beforeStats.attack||epicStats.defense>beforeStats.defense||epicStats.hp>beforeStats.hp,'Epic crafted copy must improve effective gear stats');
-ok(epicQuote.gold>beforeQuote.gold,'Higher forged rarity must increase upgrade Gold cost');
+const epicStats=enhancedGearStats(state,recipe.output.itemId,epicClaim.instance.id),epicQuote=upgradeQuote(state,recipe.output.itemId,epicClaim.instance.id);
+ok(epicStats.attack>beforeStats.attack||epicStats.defense>beforeStats.defense||epicStats.hp>beforeStats.hp,'The selected Epic copy must improve its own exact stats');
+ok(epicQuote.gold>beforeQuote.gold,'The selected higher-rarity copy must have its own higher upgrade Gold cost');
 
 started=startEquipmentCraft(state,recipe.id,job.completesAtMs+1);state=started.state;
 job=equipmentCraftingQueue(state).find(row=>row.recipeId===recipe.id)!;
@@ -54,8 +55,15 @@ ok(commonClaim.result.rarity==='common','Second non-proc craft should preserve C
 ok(commonClaim.result.duplicateCount===1,'Second crafted copy should report one duplicate copy');
 ok(craftedGearInstances(state).length===2,'Duplicate gear crafts must remain distinct owned instances');
 ok(new Set(craftedGearInstances(state).map(row=>row.id)).size===2,'Duplicate crafted copies need distinct instance IDs');
-ok(bestCraftedInstanceForItem(state,recipe.output.itemId)?.rarity==='epic','Lower-rarity duplicate must not displace the better owned copy');
-ok(effectiveOwnedGearRarity(state,recipe.output.itemId)==='epic','Best-copy compatibility layer must retain Epic effective rarity');
+const copies=inventoryGearCopies(state,recipe.output.itemId);
+ok(copies.some(row=>row.id===epicClaim.instance.id&&row.rarity==='epic'),'Epic duplicate must remain independently addressable');
+ok(copies.some(row=>row.id===commonClaim.instance.id&&row.rarity==='common'),'Common duplicate must remain independently addressable');
+state=equipItem(state,commonClaim.instance.id);
+ok(state.character?.equippedGearInstanceIds?.[itemDef(recipe.output.itemId).slot! ]===commonClaim.instance.id,'Equipping must bind the exact selected Common instance');
+ok(effectiveOwnedGearRarity(state,recipe.output.itemId)==='common','Equipped rarity must follow the exact Common copy');
+state=equipItem(state,epicClaim.instance.id);
+ok(state.character?.equippedGearInstanceIds?.[itemDef(recipe.output.itemId).slot! ]===epicClaim.instance.id,'Swapping duplicates must bind the exact selected Epic instance');
+ok(effectiveOwnedGearRarity(state,recipe.output.itemId)==='epic','Equipped rarity must follow the exact Epic copy');
 
 const subA=craftClaimSubRoll(.123456,'job-a'),subB=craftClaimSubRoll(.123456,'job-b');
 ok(subA>=0&&subA<1&&subB>=0&&subB<1&&subA!==subB,'Claim All must derive stable independent per-job sub-rolls');
@@ -74,4 +82,4 @@ const normalized=normalizeSave({...state,version:6} as any);
 ok(normalized.account.craftedGearInstances?.length===2,'Save normalization must preserve crafted gear instances');
 ok(normalized.account.craftedGearInstances?.some(row=>row.rarity==='epic'),'Save normalization must preserve crafted instance rarity');
 
-console.log('PASS: Forge rarity uses 0.60% Epic / 0.10% Mythic upward procs with trusted instance-backed settlement and meaningful stats');
+console.log('PASS: Forge rarity uses 0.60% Epic / 0.10% Mythic upward procs with trusted per-instance settlement, exact duplicate identity and meaningful stats');

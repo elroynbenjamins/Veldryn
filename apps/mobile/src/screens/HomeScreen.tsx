@@ -17,7 +17,6 @@ import {BattleStage} from '../components/BattleStage';
 import {offlineCapBreakdown} from '../core/game';
 import {environmentForActivity} from '../core/world-weather';
 import {EnvironmentBanner} from '../components/EnvironmentBanner';
-import {formatGameNumber} from '../core/number-format';
 import {activeLiveEvent,eventCurrencyBalance,eventProgress} from '../core/live-events';
 import {SkillDashboard} from '../components/SkillDashboard';
 import {UiIcon} from '../components/UiIcon';

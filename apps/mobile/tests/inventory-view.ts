@@ -23,7 +23,7 @@ newItemState=acknowledgeAllInventoryItems(newItemState);
 ok(inventoryNewItemIds(newItemState).length===0,'Mark all seen clears current Inventory and Bank new items');
 const legacySave:any=JSON.parse(JSON.stringify({...state,inventory:{...state.inventory,stacks:[...state.inventory.stacks,{itemId:'COPPER_ORE',quantity:4}]}}));delete legacySave.settings.seenItemIds;
 const normalizedLegacy=normalizeSave(legacySave);
-ok(normalizedLegacy.settings.seenItemIds?.includes('TRAVEL_RATION')&&normalizedLegacy.settings.seenItemIds?.includes('COPPER_ORE'),'Existing old-save storage is migrated as already seen');
+ok(!!normalizedLegacy.settings.seenItemIds?.includes('TRAVEL_RATION')&&!!normalizedLegacy.settings.seenItemIds?.includes('COPPER_ORE'),'Existing old-save storage is migrated as already seen');
 const postMigrationDrop={...normalizedLegacy,inventory:{...normalizedLegacy.inventory,stacks:[...normalizedLegacy.inventory.stacks,{itemId:'EMBER_SHARD',quantity:1}]}};
 ok(inventoryNewItemIds(postMigrationDrop).length===1&&inventoryNewItemIds(postMigrationDrop)[0]==='EMBER_SHARD','Items obtained after migration still become NEW');
 let favoriteState=toggleInventoryFavorite(state,'TRAVEL_RATION');

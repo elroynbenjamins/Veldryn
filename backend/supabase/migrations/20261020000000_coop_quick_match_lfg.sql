@@ -17,11 +17,23 @@ create table if not exists public.online_coop_lfg_posts(
 create index if not exists online_coop_lfg_expiry_idx on public.online_coop_lfg_posts(expires_at) where closed_at is null;
 create index if not exists online_coop_lfg_dungeon_idx on public.online_coop_lfg_posts(dungeon_id,role,created_at) where closed_at is null;
 alter table public.online_coop_lfg_posts enable row level security;
+
+create or replace function public.close_online_coop_lfg_on_ticket_state_v1() returns trigger
+language plpgsql security definer set search_path=public as $
+begin
+ if new.mode='live' and new.account_id is not null and new.status in ('reserved','matched','cancelled','expired') and old.status is distinct from new.status then
+  update public.online_coop_lfg_posts set closed_at=clock_timestamp() where owner_account_id=new.account_id and closed_at is null;
+ end if;
+ return new;
+end $;
+drop trigger if exists close_online_coop_lfg_on_ticket_state_v1 on public.matchmaking_tickets;
+create trigger close_online_coop_lfg_on_ticket_state_v1 after update of status on public.matchmaking_tickets
+ for each row execute function public.close_online_coop_lfg_on_ticket_state_v1();
 revoke all on public.online_coop_lfg_posts from public,anon,authenticated;
 grant all on public.online_coop_lfg_posts to service_role;
 
 create or replace function public.online_live_quick_match_demand_server_v1(p_account_id uuid)
-returns jsonb language plpgsql stable security definer set search_path=public as $$
+returns jsonb language plpgsql security definer set search_path=public as $
 declare v_now timestamptz:=clock_timestamp();v_rows jsonb;
 begin
  with demand as (
@@ -52,9 +64,12 @@ begin
    'expiresAtMs',floor(extract(epoch from p.expires_at)*1000),
    'mine',p.owner_account_id=p_account_id
  ) order by p.expires_at,p.created_at),'[]'::jsonb) into v_rows
- from public.online_coop_lfg_posts p join public.online_game_states g on g.account_id=p.owner_account_id
- where p.closed_at is null and p.expires_at>v_now
- limit 50;
+ from (
+  select * from public.online_coop_lfg_posts
+  where closed_at is null and expires_at>v_now
+  order by expires_at,created_at
+  limit 50
+ ) p join public.online_game_states g on g.account_id=p.owner_account_id;
  return v_rows;
 end $$;
 
@@ -105,6 +120,7 @@ begin
  return v_response;
 end $$;
 
+revoke all on function public.close_online_coop_lfg_on_ticket_state_v1() from public,anon,authenticated;
 revoke all on function public.online_live_quick_match_demand_server_v1(uuid) from public,anon,authenticated;
 revoke all on function public.browse_online_coop_lfg_server_v1(uuid) from public,anon,authenticated;
 revoke all on function public.publish_online_coop_lfg_server_v1(uuid,text,text,uuid,text,text,smallint,text) from public,anon,authenticated;

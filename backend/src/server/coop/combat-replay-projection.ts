@@ -1,4 +1,4 @@
-export type PublicCombatReplayCueType='phase'|'cast'|'interrupt'|'down'|'assist'|'victory'|'wipe'|'timeout';
+export type PublicCombatReplayCueType='action'|'phase'|'cast'|'interrupt'|'down'|'assist'|'victory'|'wipe'|'timeout';
 
 export interface PublicCombatReplayCue{
   atMs:number;
@@ -10,6 +10,8 @@ export interface PublicCombatReplayCue{
   abilityId?:string;
   abilityName?:string;
   durationMs?:number;
+  actionKind?:'damage'|'heal'|'shield';
+  amount?:number;
 }
 
 export interface PublicCombatReplay{
@@ -19,7 +21,7 @@ export interface PublicCombatReplay{
   cues:PublicCombatReplayCue[];
 }
 
-const TYPES=new Set<PublicCombatReplayCueType>(['phase','cast','interrupt','down','assist','victory','wipe','timeout']);
+const TYPES=new Set<PublicCombatReplayCueType>(['action','phase','cast','interrupt','down','assist','victory','wipe','timeout']);
 const REASONS=new Set<PublicCombatReplay['reason']>(['victory','wipe','timeout']);
 const text=(value:unknown)=>typeof value==='string'&&value.trim()?value.trim():undefined;
 const finite=(value:unknown)=>typeof value==='number'&&Number.isFinite(value)?value:undefined;
@@ -28,7 +30,7 @@ function cue(value:unknown,durationMs:number):PublicCombatReplayCue|undefined{
   if(!value||typeof value!=='object')return undefined;
   const row=value as Record<string,unknown>,at=finite(row.atMs),type=text(row.type) as PublicCombatReplayCueType|undefined;
   if(at===undefined||at<0||at>durationMs||!type||!TYPES.has(type))return undefined;
-  const castDuration=finite(row.durationMs);
+  const castDuration=finite(row.durationMs),amount=finite(row.amount),actionKind=row.actionKind==='damage'||row.actionKind==='heal'||row.actionKind==='shield'?row.actionKind:undefined;
   return {
     atMs:Math.round(at),
     type,
@@ -39,6 +41,8 @@ function cue(value:unknown,durationMs:number):PublicCombatReplayCue|undefined{
     abilityId:text(row.abilityId),
     abilityName:text(row.abilityName),
     ...(castDuration!==undefined&&castDuration>=0?{durationMs:Math.round(castDuration)}:{}),
+    ...(actionKind?{actionKind}:{}),
+    ...(amount!==undefined&&amount>=0?{amount:Number(amount.toFixed(2))}:{}),
   };
 }
 

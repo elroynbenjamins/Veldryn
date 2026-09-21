@@ -32,6 +32,7 @@ export const LIVE_EVENT_VISUALS:Readonly<Record<LiveEventVisualKey,AnnualEventVi
     rewardArt:{
       EVT_PET_011:require('../../assets/event_collectibles/harvestwake/pets/EVT_PET_011_Pumpkin_Piglet.png'),
       EVT_PET_012:require('../../assets/event_collectibles/harvestwake/pets/EVT_PET_012_Golden_Sheafling.png'),
+      EVT_UNIT_006:require('../../assets/event_collectibles/harvestwake/companions/EVT_UNIT_006_Harvest_Guardian.png'),
       pet_harvest_fox:require('../../assets/events/harvestwake/pet_harvest_fox.png'),
       pet_field_mouse:require('../../assets/events/harvestwake/pet_field_mouse.png'),
       pet_straw_sparrow:require('../../assets/events/harvestwake/pet_straw_sparrow.png'),

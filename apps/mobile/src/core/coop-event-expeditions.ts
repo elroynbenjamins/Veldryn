@@ -34,7 +34,7 @@ export interface CoopEventRunServerProjection{
   decisionId?:string;
   decisionRevision?:number;
   team:Array<{memberId:string;displayName:string;role:CoopRole;kind:'controller'|'echo';effectiveLevel:number;downed?:boolean}>;
-  options:Array<{nodeId:string;kind:string;risk:number;rewardTag:string;title?:string;mechanicDelta?:number;objectiveDelta?:number}>;
+  options:Array<{nodeId:string;kind:string;risk:number;rewardTag:string;title?:string;mechanicDelta?:number;objectiveDelta?:number;reactionLabel?:string}>;
   mechanic?:{id:string;label:string;description:string;value:number;maxValue:number;lowThreshold:number;highThreshold:number;status:'critical'|'steady'|'strong';bossAttackMultiplier:number;rewardBonus:number;bossEffect:string};
   objective?:{id:string;label:string;description:string;count:number;maxCount:number;effect:string;completed:boolean;bossAttackMultiplier:number;bossHpMultiplier:number;bossDefenseMultiplier:number;rewardBonus:number;preBossHealPct:number;effectText:string};
   settlement:{status:'pending'|'claimed';rewardMarks?:number};
@@ -95,6 +95,7 @@ export function presentEventExpeditionRun(projection:CoopEventRunServerProjectio
     if(!option.nodeId.trim()||!option.kind.trim()||!Number.isFinite(option.risk)||!option.rewardTag.trim())throw new Error('invalid_event_route_option');
     const title=option.title?.trim()||(option.kind==='boss'?'Final boss':option.kind.charAt(0).toUpperCase()+option.kind.slice(1));
     const mechanicDelta=option.mechanicDelta??0,objectiveDelta=option.objectiveDelta??0,effects:string[]=[];
+    if(option.reactionLabel?.trim())effects.push(option.reactionLabel.trim());
     if(projection.mechanic&&mechanicDelta!==0)effects.push(`${projection.mechanic.label} ${mechanicDelta>0?'+':''}${mechanicDelta}`);
     if(projection.objective&&objectiveDelta!==0)effects.push(`${projection.objective.label} ${objectiveDelta>0?'+':''}${objectiveDelta}`);
     return {nodeId:option.nodeId,title,kind:option.kind,risk:`Risk ${option.risk}`,reward:effects.join(' · ')||option.rewardTag.replace(/_/g,' ')};

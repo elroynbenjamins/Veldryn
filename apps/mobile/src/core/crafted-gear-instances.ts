@@ -147,6 +147,26 @@ export function migrateLegacyEquipmentInstances(state:GameState):GameState{
   return {...state,character,otherCharacters,account:{...state.account,craftedGearInstances:instances}};
 }
 
+export function reconcileActiveEquippedGearInstances(state:GameState,preferred?:Partial<Record<GearSlot,string>>):GameState{
+  if(!state.character)return state;
+  let instances=craftedGearInstances(state),mapped:Partial<Record<GearSlot,string>>={},used=new Set<string>();
+  const current={...(state.character.equippedGearInstanceIds??{})};
+  for(const slot of GEAR_SLOTS){
+    const itemId=state.character.equipment[slot];if(!itemId)continue;
+    const wanted=preferred?.[slot]??current[slot];
+    let instance=wanted?instances.find(row=>row.id===wanted&&row.ownerCharacterId===state.character!.id&&row.itemId===itemId):undefined;
+    if(!instance)instance=instances.find(row=>row.ownerCharacterId===state.character!.id&&row.itemId===itemId&&!used.has(row.id)&&row.location!=='equipped');
+    if(!instance)instance=instances.find(row=>row.ownerCharacterId===state.character!.id&&row.itemId===itemId&&!used.has(row.id));
+    if(!instance){
+      instance={id:`gear:reconcile:${encodeURIComponent(state.character.id)}:${slot}:${encodeURIComponent(itemId)}:${state.createdAtMs}`,itemId,ownerCharacterId:state.character.id,rarity:itemRarity(itemDef(itemId)),acquireSource:'migration',sourceReceiptKey:`reconcile:${state.character.id}:${slot}:${itemId}`,createdAtMs:state.createdAtMs,location:'equipped',equippedSlot:slot,enhancement:emptyEnhancement()};
+      instances.push(instance);
+    }
+    const index=instances.findIndex(row=>row.id===instance!.id);instances[index]={...instance,location:'equipped',equippedSlot:slot};mapped[slot]=instance.id;used.add(instance.id);
+  }
+  instances=instances.map(row=>row.ownerCharacterId===state.character!.id&&row.location==='equipped'&&!used.has(row.id)?{...row,location:'inventory' as const,equippedSlot:undefined}:row);
+  return {...state,character:{...state.character,equippedGearInstanceIds:mapped},account:{...state.account,craftedGearInstances:instances.slice(-MAX_CRAFTED_GEAR_INSTANCES)}};
+}
+
 export function craftClaimSubRoll(trustedRoll:number,jobId:string){
   if(trustedRoll<0||trustedRoll>=1)throw new Error('Invalid crafted rarity roll');
   return deterministicCraftRarityRoll(`${trustedRoll.toFixed(12)}:${jobId}`);

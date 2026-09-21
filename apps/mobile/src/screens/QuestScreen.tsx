@@ -1,4 +1,5 @@
 import {QuestReward} from '../components/QuestReward';
+import {StatusPill} from '../components/StatusPill';
 import {UiIcon} from '../components/UiIcon';
 import {ActionFeedback} from '../components/ActionFeedback';
 import {EmptyState} from '../components/EmptyState';

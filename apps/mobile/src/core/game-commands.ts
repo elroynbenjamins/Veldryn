@@ -1,7 +1,7 @@
 import type {BodyPresentation,ClassId,GameState,GearSlot,RewardBundle} from './types';
 import * as game from './game';
 import * as events from './live-events';
-import {attemptEquipmentUpgrade,socketGem,unsocketGem} from './equipment-enhancement';
+import {attemptEquipmentUpgrade,replaceGem,socketGem,unsocketGem} from './equipment-enhancement';
 import {discoverCharacterSkins,selectCharacterSkin} from './character-skins';
 import {transitionActivity} from './playability';
 import {SUPPORTED_LANGUAGES} from '../i18n/languages';
@@ -36,7 +36,7 @@ const fields:Record<string,readonly string[]>={
  roster_create:['classId','name','body'],roster_switch:['id'],roster_delete:['id','confirmation'],
  equip:['id'],unequip:['slot'],food:['id'],eat:['id'],sell:['id','quantity'],salvage:['id'],
  deposit:['id','quantity'],withdraw:['id','quantity'],deposit_materials:[],bulk_transfer:['location','ids'],bulk_sell:['ids'],bulk_salvage:['ids'],storage:['location'],overflow:[],
- equip_tool:['id'],equip_set:[],upgrade:['id'],socket:['id','gemId'],unsocket:['id','index'],skin:['id'],
+ equip_tool:['id'],equip_set:[],upgrade:['id'],socket:['id','gemId'],replace_gem:['id','gemId'],unsocket:['id','index'],skin:['id'],
  loadout_save:['index','name'],loadout_apply:['id'],loadout_delete:['id'],goals_set:['goals'],idle_rules_set:['rules','activeId'],daily_supplies_claim:['characterId'],daily_supplies_activate:['type'],
  quest:['id'],seasonal:['period','id'],settings:['settings'],profile:['profileTitle','profileBackgroundId','profileBorderId','selectedCosmeticPetId'],
  event_daily:[],event_cache:[],event_milestones:[],event_discovery:['id'],event_reward:['id'],event_accept:['id'],
@@ -175,7 +175,8 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'equip_set':state=game.equipNoviceSet(state);break;
   case 'upgrade':{if(options.randomRoll===undefined)throw new Error('trusted_random_required');const result=attemptEquipmentUpgrade(state,text(a,'id'),options.randomRoll);state=result.state;upgrade=result.result;break;}
   case 'socket':state=socketGem(state,text(a,'id'),text(a,'gemId'));break;
-  case 'unsocket':state=unsocketGem(state,text(a,'id'),integer(a,'index',0,1));break;
+  case 'replace_gem':state=replaceGem(state,text(a,'id'),text(a,'gemId'),now);break;
+  case 'unsocket':state=unsocketGem(state,text(a,'id'),integer(a,'index',0,1),now);break;
   case 'skin':state=selectCharacterSkin(state,text(a,'id'));break;
   case 'loadout_save':state=saveCharacterLoadout(state,integer(a,'index',0,2),typeof a.name==='string'?a.name:undefined,now);break;
   case 'loadout_apply':state=applyCharacterLoadout(state,text(a,'id'));break;

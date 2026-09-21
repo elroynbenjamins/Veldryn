@@ -26,11 +26,15 @@ assert.equal(combined.gems.find(v=>v.grade===2)?.quantity,1);
 const dismantled=dismantleGemV1(combined,'stat_might',2,1);
 assert.equal(dismantled.dust,101);
 
-assert.throws(()=>summarizeGemLoadoutV1([
- {equipmentItemId:'1',sockets:{effect:{familyId:'effect_execution',grade:1}}},
- {equipmentItemId:'2',sockets:{effect:{familyId:'effect_execution',grade:1}}},
- {equipmentItemId:'3',sockets:{effect:{familyId:'effect_execution',grade:1}}},
- {equipmentItemId:'4',sockets:{effect:{familyId:'effect_execution',grade:1}}},
-]),/effect_gem_resonance_cap/);
+let resonanceCapBlocked=false;
+try{
+ summarizeGemLoadoutV1([
+  {equipmentItemId:'1',sockets:{effect:{familyId:'effect_execution',grade:1}}},
+  {equipmentItemId:'2',sockets:{effect:{familyId:'effect_execution',grade:1}}},
+  {equipmentItemId:'3',sockets:{effect:{familyId:'effect_execution',grade:1}}},
+  {equipmentItemId:'4',sockets:{effect:{familyId:'effect_execution',grade:1}}},
+ ]);
+}catch(error){resonanceCapBlocked=error instanceof Error&&error.message==='effect_gem_resonance_cap';}
+assert.ok(resonanceCapBlocked,'Fourth matching Effect Gem must be rejected');
 
 console.log('gem v1 tests passed');

@@ -22,6 +22,7 @@ import {clearActivityQueue,enqueueActivity,moveQueuedActivity,removeQueuedActivi
 import {activateDailySupplyBoost,claimDailySupplies,DAILY_SUPPLY_BOOST_TYPES,dailySupplyBoostLabel} from './daily-supplies';
 import {bulkSalvageSelected,bulkSellSelected,bulkTransferSelected} from './inventory-bulk';
 import {normalizeChatEmoteTrayIds,CHAT_EMOTE_TRAY_SIZE} from './chat-emotes';
+import {claimAllReadyEquipmentCrafts,claimEquipmentCraft,startEquipmentCraft,timedEquipmentRecipe} from './equipment-crafting-queue';
 
 /** Commands express intent. Neither a client save nor a client reward is accepted. */
 export interface GameCommand {type:string;args?:Record<string,unknown>}
@@ -32,7 +33,7 @@ const fields:Record<string,readonly string[]>={
  companion_monthly:['id'],companion_supplies:[],companion_bond_reward:['id','level'],companion_boss_rematch:[],
  companion_equip:['id'],companion_unequip:[],companion_level:['id'],companion_ascend:['id'],companion_master:['id'],companion_upgrade:['id'],companion_training:[],companion_essence:[],
  companion_trial_start:['ids','floor'],companion_trial_floor:['id','floor'],companion_trial_abandon:['id'],companion_assignment_start:['id','ids'],companion_assignment_claim:['id'],companion_technique:['id','technique'],companion_codex:['id'],companion_showcase:['id','ids'],companion_weekly:['id'],companion_special:['id','ids'],
- create:['classId','name','body'],claim:[],start:['kind','id','challengeId','tacticId','goalId'],queue_add:['kind','id','challengeId','tacticId','goalId'],queue_remove:['index'],queue_move:['index','direction'],queue_clear:[],queue_start:[],explore:['id'],stop:[],travel:['id'],boss:[],craft:['id'],use_potion:['id'],discard_preparation:[],
+ create:['classId','name','body'],claim:[],start:['kind','id','challengeId','tacticId','goalId'],queue_add:['kind','id','challengeId','tacticId','goalId'],queue_remove:['index'],queue_move:['index','direction'],queue_clear:[],queue_start:[],explore:['id'],stop:[],travel:['id'],boss:[],craft:['id'],craft_claim:['id'],craft_claim_all:[],use_potion:['id'],discard_preparation:[],
  roster_create:['classId','name','body'],roster_switch:['id'],
  equip:['id'],unequip:['slot'],food:['id'],eat:['id'],sell:['id','quantity'],salvage:['id'],
  deposit:['id','quantity'],withdraw:['id','quantity'],deposit_materials:[],bulk_transfer:['location','ids'],bulk_sell:['ids'],bulk_salvage:['ids'],storage:['location'],overflow:[],
@@ -152,7 +153,22 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'stop':state=game.stopActivity(state);break;
   case 'travel':state=game.travelToRegion(state,text(a,'id'),now).state;break;
   case 'boss':{const result=game.challengeFallenKnight(state,now);state=result.state;message=result.message;won=result.won;if(won)contributions.push({kind:'boss',contentId:'FALLEN_KNIGHT',units:1});break;}
-  case 'craft':{const id=text(a,'id');state=game.craftRecipe(state,id,now);contributions.push({kind:'crafting',contentId:id,units:1});break;}
+  case 'craft':{
+   const id=text(a,'id'),timed=timedEquipmentRecipe(id);
+   if(timed){const started=startEquipmentCraft(state,id,now);state=started.state;message='Equipment crafting started';}
+   else {state=game.craftRecipe(state,id,now);contributions.push({kind:'crafting',contentId:id,units:1});}
+   break;
+  }
+  case 'craft_claim':{
+   const result=claimEquipmentCraft(state,text(a,'id',160),now);state=result.state;contributions.push({kind:'crafting',contentId:result.recipe.id,units:1});message='Equipment craft claimed';break;
+  }
+  case 'craft_claim_all':{
+   const beforeIds=new Set((state.account.equipmentCraftingQueue??[]).map(job=>job.id));
+   const result=claimAllReadyEquipmentCrafts(state,now);state=result.state;
+   for(const id of result.claimed){if(!beforeIds.has(id))continue;const job=previous.account.equipmentCraftingQueue?.find(row=>row.id===id);if(job)contributions.push({kind:'crafting',contentId:job.recipeId,units:1});}
+   message=result.claimed.length?`${result.claimed.length} equipment craft${result.claimed.length===1?'':'s'} claimed`:'No finished equipment crafts';
+   break;
+  }
   case 'use_potion':state=game.usePotion(state,text(a,'id'));break;
   case 'discard_preparation':state=game.discardPreparation(state);break;
   case 'equip':state=game.equipItem(state,text(a,'id'));break;

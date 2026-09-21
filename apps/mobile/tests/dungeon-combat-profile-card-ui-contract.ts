@@ -23,7 +23,7 @@ ok(stage.includes("bossField:{width:'66%'"),'Boss encounter card must receive st
 ok(!stage.includes('<ClassAvatar'),'Dungeon stage must not regress to the generic initial/weapon combat box');
 ok(card.includes('dungeonEnemyPortraitSource(name)'),'Named bosses/enemies must resolve real artwork in the encounter card');
 ok(card.includes("boss?'♛':'◆'"),'Unknown enemies must retain a safe visual fallback');
-for(const boss of ['The Hollow Regent','The Coinbound Captain','The Rimebell Colossus'])ok(enemyArt.toLowerCase().includes(boss.toLowerCase()),boss+' must have registered encounter artwork');
+for(const enemy of ['The Hollow Regent','The Coinbound Captain','The Rimebell Colossus','Veilshade Stalker','Ledger Hexer','Bellfrost Spirit'])ok(enemyArt.toLowerCase().includes(enemy.toLowerCase()),enemy+' must have registered encounter artwork');
 ok(enemyArt.includes("require('../../assets/dungeon-enemies-v1/"),'Enemy artwork must be bundled as static Metro assets');
 
 for(const classId of ['IRONWARDEN','BASTION','DREADGUARD','WAYFINDER','RAVAGER','HEXWEAVER','KNIFE_DANCER','DAWNKEEPER','STONECALLER']){

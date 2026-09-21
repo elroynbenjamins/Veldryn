@@ -1,7 +1,7 @@
 import {itemDef} from '../content/items';
 import {itemRarity,ItemRarity} from './item-rarity';
 import {GameState,GearEnhancementState,GemEffectId,GemSocketKind,GemStat,ItemStack} from './types';
-import {effectFamilyV34,GEM_DISMANTLE_DUST_V34,GEM_UNSOCKET_COST_V34,gemGradeLabelV34,gemStatLabelV34,type GemGradeV34} from './gem-system-v34';
+import {EFFECT_GEM_FAMILIES_V34,effectFamilyV34,GEM_DISMANTLE_DUST_V34,GEM_UNSOCKET_COST_V34,gemGradeLabelV34,gemStatLabelV34,type GemGradeV34} from './gem-system-v34';
 
 export const MAX_UPGRADE_RANK=10;
 export const UPGRADE_STAT_PER_RANK=.03;
@@ -122,7 +122,8 @@ export function equippedGemBonuses(state:GameState):Record<GemStat,number>{
 
 export type EquippedEffectGemBonuses=Record<GemEffectId,number>;
 export function equippedEffectGemBonuses(state:GameState):EquippedEffectGemBonuses{
-  const result:EquippedEffectGemBonuses={combat_speed:0,boss_power:0,damage_reduction:0,recovery:0};
+  const ids:GemEffectId[]=['combat_speed','boss_power','damage_reduction','recovery',...EFFECT_GEM_FAMILIES_V34.map(row=>row.id)];
+  const result=Object.fromEntries(ids.map(id=>[id,0])) as EquippedEffectGemBonuses;
   if(!state.character)return result;
   for(const itemId of Object.values(state.character.equipment)){
     if(!itemId)continue;
@@ -135,6 +136,25 @@ export function equippedEffectGemBonuses(state:GameState):EquippedEffectGemBonus
   result.damage_reduction=Math.min(.10,result.damage_reduction);
   result.recovery=Math.min(.50,result.recovery);
   return result;
+}
+export interface IdleEffectGemProjectionV34{speed:number;bossPower:number;damageReduction:number;recovery:number;}
+export function idleEffectGemProjectionV34(state:GameState,isBoss=false):IdleEffectGemProjectionV34{
+  const totals=equippedEffectGemBonuses(state),copies=new Map<GemEffectId,number>();
+  if(state.character)for(const itemId of Object.values(state.character.equipment)){if(!itemId)continue;const gemId=gearEnhancement(state,itemId).effectGemId;if(!gemId)continue;const gem=itemDef(gemId);if(gem.gemEffect?.startsWith('effect_'))copies.set(gem.gemEffect,(copies.get(gem.gemEffect)??0)+1);}
+  const r=(id:GemEffectId)=>Math.min(3,copies.get(id)??0),v=(id:GemEffectId)=>totals[id]??0;
+  let speed=0,bossPower=0,damageReduction=0,recovery=0;
+  speed+=v('effect_momentum')*(r('effect_momentum')>=2?4:3);
+  speed+=v('effect_execution')*(r('effect_execution')>=2?.35:.30)*(r('effect_execution')>=3?1.05:1);
+  speed+=v('effect_opening_strike')*(isBoss?.50:.35);
+  if(isBoss)bossPower+=v('effect_predator')*(r('effect_predator')>=3?1.05:1);
+  speed+=v('effect_critical_surge')*(r('effect_critical_surge')>=2?2.5:2);
+  speed+=v('effect_ruin')*(r('effect_ruin')>=2?1.5:1);
+  damageReduction+=v('effect_bulwark')*.45+v('effect_aegis')*.20+v('effect_last_stand')*.15+v('effect_unyielding')*(r('effect_unyielding')>=2?1.0:.8);
+  speed+=v('effect_retaliation')*.15;
+  recovery+=v('effect_mercy')*.15+v('effect_benediction')*.25+v('effect_renewal')*.35+v('effect_sustenance');
+  damageReduction+=v('effect_guardians_gift')*.15;
+  speed+=v('effect_shared_resolve')*.10+v('effect_battle_rhythm')*.30+v('effect_flow')*(r('effect_flow')>=2?2.5:2)+v('effect_opportunist')*.25;
+  return{speed:Math.min(.15,speed),bossPower:Math.min(.12,bossPower),damageReduction:Math.min(.12,damageReduction),recovery:Math.min(.50,recovery)};
 }
 export function gemStatDescription(gemId:string){
   const gem=itemDef(gemId);if(gem.type!=='gem'||!gem.gemStat)return '';

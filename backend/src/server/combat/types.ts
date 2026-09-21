@@ -1,3 +1,4 @@
+import type {EffectGemSummaryV34} from '../equipment/gem-system-v34';
 export type CombatTeam = 'players' | 'enemies';
 export type CombatRole = 'tank' | 'damage' | 'support' | 'enemy';
 export type DamageType = 'physical' | 'fire' | 'ice' | 'shadow' | 'arcane' | 'nature' | 'true';
@@ -71,6 +72,7 @@ export interface CombatantDefinition {
   tags?: string[];
   boss?: boolean;
   phases?: BossPhaseDefinition[];
+  effectGemsV34?:readonly EffectGemSummaryV34[];
 }
 
 export interface ActivePeriodicEffect {
@@ -90,10 +92,28 @@ export interface ActiveTimedModifier {
   tag: string;
   value: number;
   expiresAt: number;
+  kind?:'buff'|'debuff';
+  appliedAt?:number;
+}
+export interface TimedShieldV34 {sourceId:string;remaining:number;expiresAt:number;expireHealRate?:number;}
+export interface GemCombatRuntimeV34 {
+  momentumStacks:number;momentumLastGainAt:number;momentumNextTriggerAt:number;
+  criticalSurgeExpiries:number[];unyieldingExpiries:number[];sharedResolveExpiries:number[];
+  openingUntil:number;openingPhaseRefreshUsed:boolean;
+  predatorTriggeredTargets:Record<string,boolean>;predatorBoostUntilByTarget:Record<string,number>;
+  lastStandUsed:boolean;lastStandUntil:number;
+  retaliationUntil:number;retaliationHealReadyAt:number;
+  bulwarkUntil:number;benedictionCharges:number;benedictionExpiresAt:number;benedictionAbilityKey?:string;benedictionAbilityMultiplier?:number;
+  battleLastCategory?:'offense'|'defense_support';battleLastAt:number;battleHasteUntil:number;battleHasteReadyAt:number;
+  flowStacks:number;flowExpiresAt:number;flowLastAbilityId?:string;flowDecayStartedAt?:number;
+  opportunityByTarget:Record<string,{until:number;modifierTag?:string;modifierSourceId?:string}>;
+  sustenanceReadyAt:number;
 }
 
 export interface CombatantState {
   reflectiveShields?:Array<{remaining:number;rate:number;sourceId:string}>;
+  timedShieldsV34?:TimedShieldV34[];
+  gemRuntimeV34?:GemCombatRuntimeV34;
   definition: CombatantDefinition;
   hp: number;
   shield: number;

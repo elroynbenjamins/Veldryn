@@ -1,6 +1,6 @@
 import {SearchField} from '../components/SearchField';
-import {useMemo,useState} from 'react';
-import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {useEffect,useMemo,useRef,useState} from 'react';
+import {Animated,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {GameState,ItemStack} from '../core/types';
 import {ItemDef,itemDef} from '../content/items';
 import {InventoryFilter,InventorySort,inventoryFavoriteIds,inventoryNewItemIds,recoveryAmount,storageCapacityStatus,transferAmount,transferError,visibleStacks} from '../core/inventory-view';
@@ -22,6 +22,7 @@ import {enhancedGearStats,gearEnhancement,gemSocketCapacity,hasEnhancement} from
 import {effectiveOwnedGearRarity} from '../core/crafted-gear-instances';
 import {bulkSelectionSummary,type BulkStorageLocation} from '../core/inventory-bulk';
 import type {WorkingTowardDestination} from '../core/working-toward';
+import {equipmentChangeFeedback,equipmentFeedbackSnapshot,type EquipmentChangeFeedback} from '../core/equipment-change-feedback';
 
 type Pending={kind:'sell'|'salvage'|'deposit';item:ItemDef;quantity:number}|null;
 type BulkAction='transfer'|'sell'|'salvage';
@@ -30,6 +31,19 @@ const FILTER_OPTIONS:{id:InventoryFilter;label:string}[]=[{id:'all',label:'All'}
 const SORT_OPTIONS:{id:InventorySort;label:string}[]=[{id:'name',label:'Name'},{id:'new',label:'New first'},{id:'favorite',label:'Favorites first'},{id:'quantity',label:'Quantity ↓'},{id:'value',label:'Value ↓'}];
 const nextSort=(value:InventorySort)=>SORT_OPTIONS[(SORT_OPTIONS.findIndex(option=>option.id===value)+1)%SORT_OPTIONS.length].id;
 const nextQuantity=(value:1|10|'all'):1|10|'all'=>value===1?10:value===10?'all':1;
+const signed=(value:number)=>value>0?`+${value}`:String(value);
+function EquipmentSwapMoment({moment,reduceMotion,onDismiss}:{moment:EquipmentChangeFeedback;reduceMotion:boolean;onDismiss:()=>void}){
+  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),scale=useRef(new Animated.Value(1)).current,dismissRef=useRef(onDismiss);dismissRef.current=onDismiss;
+  useEffect(()=>{const timer=setTimeout(()=>dismissRef.current(),5000);scale.stopAnimation();scale.setValue(1);if(!reduceMotion)Animated.sequence([Animated.spring(scale,{toValue:1.025,damping:9,stiffness:230,mass:.65,useNativeDriver:true}),Animated.spring(scale,{toValue:1,damping:16,stiffness:210,mass:.75,useNativeDriver:true})]).start();return()=>{clearTimeout(timer);scale.stopAnimation()}},[moment,reduceMotion,scale]);
+  const title=moment.action==='replaced'?'GEAR SWAPPED':moment.action==='equipped'?'EQUIPPED':'UNEQUIPPED',accent=moment.action==='unequipped'?C.warning:C.good;
+  const deltas=[['POWER',moment.delta.power],['ATK',moment.delta.attack],['DEF',moment.delta.defense],['HP',moment.delta.hp]].filter(([,value])=>(value as number)!==0);
+  return <Animated.View accessibilityLiveRegion="polite" style={[s.equipMoment,{borderColor:accent,transform:[{scale}]}]}>
+    <View style={s.equipMomentHead}><View style={s.resultSummary}><Text style={[s.equipMomentEyebrow,{color:accent}]}>{title}</Text><Text style={s.equipMomentName}>{moment.itemName??moment.previousItemName??'Equipment updated'}</Text></View><Text style={[s.equipMomentSlot,{color:accent}]}>{moment.slot.toUpperCase()}</Text></View>
+    {moment.action==='replaced'&&moment.previousItemName?<Text style={s.equipMomentMeta}>{moment.previousItemName} returned to Inventory.</Text>:null}
+    {deltas.length?<Text style={s.equipMomentDelta}>{deltas.map(([label,value])=>`${label} ${signed(value as number)}`).join(' · ')}</Text>:<Text style={s.equipMomentMeta}>Loadout stats unchanged.</Text>}
+    {moment.setChanges.map(change=><View key={change.type+':'+change.setId+':'+change.pieces} style={[s.setChange,{borderColor:change.type==='activated'?C.good:C.warning,backgroundColor:change.type==='activated'?C.goodSurface:C.warningSurface}]}><Text style={[s.setChangeTitle,{color:change.type==='activated'?C.good:C.warning}]}>{change.type==='activated'?'SET BONUS ACTIVATED':'SET BONUS LOST'} · {change.pieces}PC · {change.setName}</Text><Text style={s.equipMomentMeta}>{change.bonus}</Text></View>)}
+  </Animated.View>;
+}
 export function InventoryScreen({state,onEquip,onFood,onEat,onSell,onSalvage,onDeposit,onDepositMaterials,onUpgradeStorage,onWithdraw,onOverflow,onToggleFavorite,onAcknowledgeItem,onAcknowledgeAll,onBulkAction,onNavigateInspect}:{state:GameState;onEquip:(id:string)=>void;onFood:(id:string)=>void;onEat:(id:string)=>void;onSell:(id:string)=>void;onSalvage:(id:string)=>void;onDeposit:(id:string,quantity:number)=>void;onDepositMaterials:()=>void;onUpgradeStorage:(location:StorageLocation)=>void;onWithdraw:(id:string,quantity:number)=>void;onOverflow:()=>void;onToggleFavorite:(id:string)=>void;onAcknowledgeItem:(id:string)=>void;onAcknowledgeAll:()=>void;onBulkAction:(kind:BulkAction,location:BulkStorageLocation,ids:string[])=>void;onNavigateInspect:(destination:WorkingTowardDestination)=>void}){
   const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
   const [pending,setPending]=useState<Pending>(null),[location,setLocation]=useState<'inventory'|'bank'>('inventory');
@@ -41,6 +55,8 @@ export function InventoryScreen({state,onEquip,onFood,onEat,onSell,onSalvage,onD
   const [inspectId,setInspectId]=useState<string|null>(null);
   const [showStorage,setShowStorage]=useState(false),[filterOpen,setFilterOpen]=useState(false);
   const [selectMode,setSelectMode]=useState(false),[selectedIds,setSelectedIds]=useState<string[]>([]),[bulkPending,setBulkPending]=useState<BulkPending>(null);
+  const [equipMoment,setEquipMoment]=useState<EquipmentChangeFeedback|null>(null),equipmentSnapshotRef=useRef(equipmentFeedbackSnapshot(state));
+  useEffect(()=>{const next=equipmentFeedbackSnapshot(state),previous=equipmentSnapshotRef.current;equipmentSnapshotRef.current=next;if(previous.characterId!==next.characterId){setEquipMoment(null);return;}const result=equipmentChangeFeedback(previous,next);if(result)setEquipMoment(result)},[state]);
   const run=(action:()=>void)=>{try{action();setError('')}catch(e){setError(e instanceof Error?e.message:'Action failed. Please try again.')}};
   const confirm=()=>{if(!pending)return;run(()=>pending.kind==='deposit'?onDeposit(pending.item.id,pending.quantity):pending.kind==='sell'?onSell(pending.item.id):onSalvage(pending.item.id));setPending(null)};
   const favorites=inventoryFavoriteIds(state),favoriteSet=new Set(favorites),newItemIds=inventoryNewItemIds(state),newItemSet=new Set(newItemIds);
@@ -94,6 +110,7 @@ export function InventoryScreen({state,onEquip,onFood,onEat,onSell,onSalvage,onD
     </View>}
     {!selectMode&&<Text style={s.inspectHint}>Hold an item for Quick Inspect · sources, uses, stats & upgrades</Text>}
     {!!error&&<Text accessibilityRole="alert" style={s.errorText}>{error}</Text>}
+    {equipMoment&&<EquipmentSwapMoment moment={equipMoment} reduceMotion={state.settings.reduceMotion} onDismiss={()=>setEquipMoment(null)}/>}
     <View style={s.resultRow}><Text style={[s.sub,s.resultSummary]}>{selectMode?`${selectedIds.length} selected · ${stacks.length} matching stacks`:`${stacks.length} matching stacks · ${activeCapacity.free} free slots${favorites.length?` · ${favorites.length} favorites`:``}${newItemIds.length?` · ${newItemIds.length} new`:``}`}</Text><View style={s.resultActions}>{!selectMode&&newItemIds.length>0&&<Pressable accessibilityRole="button" accessibilityLabel="Mark all new items as seen" onPress={()=>run(onAcknowledgeAll)} style={({pressed})=>[s.markSeen,pressed&&s.pressed]}><Text style={s.markSeenText}>Mark all seen</Text></Pressable>}{stacks.length>0&&<Pressable accessibilityRole="button" accessibilityLabel={selectMode?`Finish selecting items`:`Select multiple items`} onPress={selectMode?exitSelection:beginSelection} style={({pressed})=>[s.selectModeButton,selectMode&&s.selectModeButtonActive,pressed&&s.pressed]}><Text style={[s.selectModeText,selectMode&&s.selectModeTextActive]}>{selectMode?`Done`:`Select`}</Text></Pressable>}</View></View>
     {selectMode&&<Panel><View style={s.selectionHead}><View style={s.resultSummary}><Text style={s.selectionTitle}>BULK MANAGEMENT · {selectedIds.length} SELECTED</Text><Text style={s.sub}>Whole stacks only · up to 100 stacks per action</Text></View><View style={s.selectionQuick}><Pressable accessibilityRole="button" onPress={selectShown} style={({pressed})=>[s.selectionQuickButton,pressed&&s.pressed]}><Text style={s.selectionQuickText}>Select shown</Text></Pressable><Pressable accessibilityRole="button" disabled={!selectedIds.length} onPress={()=>setSelectedIds([])} style={({pressed})=>[s.selectionQuickButton,!selectedIds.length&&s.selectionQuickDisabled,pressed&&selectedIds.length>0&&s.pressed]}><Text style={s.selectionQuickText}>Clear</Text></Pressable></View></View><Text style={s.sub}>{location==='inventory'?'Favorites and enhanced gear are automatically excluded from disposal. Your selected auto-eat food also stays in Inventory.':'Withdraw selected moves complete Bank stacks back to this character.'}</Text><View style={s.bulkActions}><GameButton compact title={`${location==='inventory'?'Deposit':'Withdraw'} · ${selectionSummary.transferableStackCount}`} disabled={!selectionSummary.transferableStackCount} tone="secondary" onPress={()=>beginBulk('transfer')}/>{location==='inventory'&&<GameButton compact title={`Sell · ${selectionSummary.sellableStackCount} · ${formatGameNumber(selectionSummary.sellGold,state.settings.numberMode)}g`} disabled={!selectionSummary.sellableStackCount} tone="secondary" onPress={()=>beginBulk('sell')}/>} {location==='inventory'&&<GameButton compact title={`Salvage · ${selectionSummary.salvageableStackCount}`} disabled={!selectionSummary.salvageableStackCount} tone="danger" onPress={()=>beginBulk('salvage')}/>}</View>{selectedIds.length>0&&location==='inventory'&&(selectionSummary.sellProtectedCount>0||selectionSummary.transferProtectedCount>0)&&<Text style={s.selectionNote}>{selectionSummary.sellProtectedCount} selected stacks excluded from bulk sell{selectionSummary.transferProtectedCount?` · ${selectionSummary.transferProtectedCount} auto-eat stack protected from deposit`:``}.</Text>}</Panel>}
     {stacks.length?stacks.map(renderStack):<><EmptyState title="No items to show" message="Try another storage tab or clear the search and category filter."/><GameButton title="Clear filters" tone="secondary" onPress={()=>{setQuery('');setFilter('all')}}/></>}
@@ -112,6 +129,15 @@ function UtilityChip({label,accessibilityLabel,selected=false,onPress}:{label:st
 function StorageChip({label,selected,status,onPress}:{label:string;selected:boolean;status:ReturnType<typeof storageCapacityStatus>;onPress:()=>void}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),equipmentColors=equipmentTheme(C),tone=status.level==='full'?C.bad:status.level==='near'?C.warning:selected?equipmentColors.selectedLine:C.line,width=`${status.percent}%` as `${number}%`;return <Pressable accessibilityRole="button" accessibilityLabel={`${label} storage, ${status.used} of ${status.capacity} slots used, ${status.free} free`} accessibilityState={{selected}} onPress={onPress} style={({pressed})=>[s.storageChip,selected&&s.storageChipSelected,status.level==='full'&&s.storageChipFull,pressed&&s.pressed]}><View style={s.storageChipTop}><Text style={[s.storageChipLabel,selected&&s.storageChipLabelSelected]}>{selected?'✓ ':''}{label}</Text><Text style={[s.storageChipCount,{color:tone}]}>{status.used}/{status.capacity}</Text></View><View style={s.capacityTrack}><View style={[s.capacityFill,{width,backgroundColor:tone}]}/></View></Pressable>}
 function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);return StyleSheet.create({
   recovery:{gap:4,padding:spacing.md,borderWidth:1,borderColor:C.line,borderRadius:10,backgroundColor:C.panel},
+  equipMoment:{gap:6,padding:spacing.sm,borderWidth:1,borderLeftWidth:4,borderRadius:10,backgroundColor:C.panel2},
+  equipMomentHead:{flexDirection:'row',alignItems:'center',gap:8},
+  equipMomentEyebrow:{...typography.caption,fontWeight:'900',letterSpacing:.8},
+  equipMomentName:{...typography.bodyStrong,color:C.text,fontWeight:'900'},
+  equipMomentSlot:{...typography.caption,fontWeight:'900',letterSpacing:.6},
+  equipMomentMeta:{...typography.caption,color:C.muted},
+  equipMomentDelta:{...typography.bodyStrong,color:C.info,fontWeight:'900'},
+  setChange:{gap:2,padding:7,borderWidth:1,borderRadius:8},
+  setChangeTitle:{...typography.caption,fontWeight:'900',letterSpacing:.45},
   root:{padding:spacing.md,gap:10},
   h:{...typography.hero,color:C.text},
   title:{...typography.title,color:C.text},

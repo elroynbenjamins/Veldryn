@@ -1,4 +1,5 @@
 import {itemDef} from '../content/items';
+import {equipmentSetDef} from '../content/equipment-sets';
 import {type ItemRarity} from './item-rarity';
 import type {GameState,GearEnhancementState,GearInstanceState,GearSlot} from './types';
 
@@ -133,4 +134,27 @@ export function removeDisposableStoredGearCopies(state:GameState,itemId:string,s
   if(candidates.length<instanceNeeded)throw new Error('Enhanced equipment is protected. Extract its gems before disposal; upgraded ranks cannot be recovered.');
   const removeIds=new Set(candidates.slice(0,instanceNeeded).map(row=>row.id));
   return {...state,account:{...state.account,gearInstances:gearInstances(state).filter(row=>!removeIds.has(row.id))}} as GameState;
+}
+
+export function ownedGearCopyCount(state:GameState,itemId:string,ownerCharacterId?:string){
+  const owner=ownerCharacterId??state.character?.id;
+  let count=(state.inventory.stacks.find(row=>row.itemId===itemId)?.quantity??0)+(state.bank.stacks.find(row=>row.itemId===itemId)?.quantity??0);
+  if(state.character&&(!owner||state.character.id===owner)&&Object.values(state.character.equipment).includes(itemId))count++;
+  for(const entry of state.otherCharacters??[])if((!owner||entry.character.id===owner)&&Object.values(entry.character.equipment).includes(itemId))count++;
+  return count;
+}
+export function ownedSetPieceProgress(state:GameState,setId:string,ownerCharacterId?:string){
+  const set=equipmentSetDef(setId);if(!set)return undefined;
+  const owned=set.itemIds.filter(itemId=>ownedGearCopyCount(state,itemId,ownerCharacterId)>0).length;
+  return {setId:set.id,setName:set.name,owned,required:set.itemIds.length,complete:owned>=set.itemIds.length};
+}
+export function craftedGearResultSummary(state:GameState,instance:GearInstanceState){
+  const item=itemDef(instance.itemId),setProgress=item.equipmentSetId?ownedSetPieceProgress(state,item.equipmentSetId,instance.ownerCharacterId):undefined;
+  return {
+    instanceId:instance.id,itemId:item.id,name:item.name,rarity:instance.craftedRarity,
+    statMultiplier:CRAFTED_GEAR_STAT_MULTIPLIER[instance.craftedRarity],
+    statBonusPct:Math.round((CRAFTED_GEAR_STAT_MULTIPLIER[instance.craftedRarity]-1)*100),
+    ownedCopies:ownedGearCopyCount(state,item.id,instance.ownerCharacterId),
+    setProgress,
+  };
 }

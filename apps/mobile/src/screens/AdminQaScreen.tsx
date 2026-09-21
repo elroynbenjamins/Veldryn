@@ -11,16 +11,35 @@ const labels:Record<ClassId,string>={
   WAYFINDER:'Wayfinder',RAVAGER:'Ravager',HEXWEAVER:'Hexweaver',KNIFE_DANCER:'Knife Dancer',STONECALLER:'Stonecaller',
 };
 
-export function AdminQaScreen({state,onChange,onClose,onOpenDungeon}:{state:GameState;onChange:(state:GameState)=>void|Promise<void>;onClose:()=>void;onOpenDungeon:()=>void}){
+type Props={
+  state:GameState;
+  onChange?:(state:GameState)=>void|Promise<void>;
+  onApplyQa?:(classId:ClassId)=>void|Promise<void>;
+  onRefillQa?:()=>void|Promise<void>;
+  onClose:()=>void;
+  onOpenDungeon:()=>void;
+};
+
+export function AdminQaScreen({state,onChange,onApplyQa,onRefillQa,onClose,onOpenDungeon}:Props){
   const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
-  const [busy,setBusy]=useState(false);
-  const run=async(work:()=>GameState|Promise<GameState>)=>{if(busy)return;setBusy(true);try{await onChange(await work())}catch(error){Alert.alert('Admin QA',error instanceof Error?error.message:String(error))}finally{setBusy(false)}};
+  const [busy,setBusy]=useState(false),online=!!onApplyQa;
+  const run=async(work:()=>void|Promise<void>)=>{if(busy)return;setBusy(true);try{await work()}catch(error){Alert.alert('Admin QA',error instanceof Error?error.message:String(error))}finally{setBusy(false)}};
+  const apply=async(classId:ClassId)=>{
+    if(onApplyQa){await onApplyQa(classId);return;}
+    if(!onChange)throw new Error('Admin QA mutation is unavailable.');
+    await onChange(buildAdminQaState(state,classId));
+  };
+  const refill=async()=>{
+    if(onRefillQa){await onRefillQa();return;}
+    if(!onChange)throw new Error('Admin QA refill is unavailable.');
+    await onChange(refillAdminQaResources(state));
+  };
   return <ScrollView contentContainerStyle={s.root}>
-    <View style={s.header}><View style={{flex:1}}><Text style={s.eyebrow}>DEVELOPER / QA</Text><Text accessibilityRole="header" style={s.title}>Admin QA Console</Text><Text style={s.body}>This profile is for testing only. It unlocks progression gates and supplies materials without changing production balance rules.</Text></View><GameButton title="Close" onPress={onClose}/></View>
-    <View style={s.card}><Text style={s.cardTitle}>Full-access profile</Text><Text style={s.body}>Level 100, all skills 99, all monsters/bosses unlocked, five character slots, VIP/VIP+/Supporter flags, large storage, premium currency and enough materials to exercise crafting recipes.</Text><GameButton title="Apply / reset QA profile" disabled={busy} onPress={()=>void run(()=>buildAdminQaState(state,state.character?.classId??'IRONWARDEN'))}/><GameButton title="Refill gold + materials" disabled={busy} onPress={()=>void run(()=>refillAdminQaResources(state))}/></View>
-    <View style={s.card}><Text style={s.cardTitle}>Class switcher</Text><Text style={s.body}>Switch the active QA character in place so one test account can craft and equip class-restricted sets for all nine classes.</Text><View style={s.grid}>{ADMIN_QA_CLASSES.map(classId=><View key={classId} style={s.cell}><GameButton title={labels[classId]} disabled={busy||state.character?.classId===classId} onPress={()=>void run(()=>buildAdminQaState(state,classId))}/></View>)}</View></View>
-    <View style={s.card}><Text style={s.cardTitle}>Dungeon lab</Text><Text style={s.body}>Open the normal Dungeon screen with the QA profile. In local development, dungeon browsing uses deterministic fixtures. For full run/claim testing, use the online QA Echo profiles documented in docs/ADMIN_QA_TESTING.md.</Text><GameButton title="Open Dungeon" onPress={onOpenDungeon}/></View>
-    <View style={s.warning}><Text style={s.warningTitle}>Safety</Text><Text style={s.body}>QA accounts must be excluded from rankings, first-clear/world-first records, economy telemetry and live reward leaderboards. Do not grant this role to player accounts.</Text></View>
+    <View style={s.header}><View style={{flex:1}}><Text style={s.eyebrow}>{online?'ONLINE ADMIN QA':'DEVELOPER / QA'}</Text><Text accessibilityRole="header" style={s.title}>Admin QA Console</Text><Text style={s.body}>Test-only access to progression, crafting and dungeon systems. Online actions are authorized by the server-side admin_qa role.</Text></View><GameButton title="Close" onPress={onClose}/></View>
+    <View style={s.card}><Text style={s.cardTitle}>Full-access profile</Text><Text style={s.body}>Level 100, max test skills, all monsters/bosses unlocked, five character slots, VIP/VIP+/Supporter flags, large storage, premium currency and enough materials to exercise crafting recipes.</Text><GameButton title={state.character?'Apply / reset QA profile':'Create Admin QA character'} disabled={busy} onPress={()=>void run(()=>apply(state.character?.classId??'IRONWARDEN'))}/><GameButton title="Refill gold + materials" disabled={busy||!state.character} onPress={()=>void run(refill)}/></View>
+    <View style={s.card}><Text style={s.cardTitle}>Class switcher</Text><Text style={s.body}>Reuse the same QA account and character ID while changing its class test profile, so all nine class-restricted equipment paths can be exercised.</Text><View style={s.grid}>{ADMIN_QA_CLASSES.map(classId=><View key={classId} style={s.cell}><GameButton title={labels[classId]} disabled={busy||state.character?.classId===classId} onPress={()=>void run(()=>apply(classId))}/></View>)}</View></View>
+    <View style={s.card}><Text style={s.cardTitle}>Dungeon lab</Text><Text style={s.body}>Use the normal online dungeon runtime. Q-mode can fill missing roles from the tested QA Echo pool; Live mode still requires real connected clients.</Text><GameButton title="Open Dungeon" disabled={!state.character} onPress={onOpenDungeon}/></View>
+    <View style={s.warning}><Text style={s.warningTitle}>QA isolation</Text><Text style={s.body}>Admin QA gameplay contributions are suppressed from the normal progression/ranking contribution pipeline. Keep this role limited to dedicated test accounts.</Text></View>
   </ScrollView>;
 }
 

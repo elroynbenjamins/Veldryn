@@ -1,4 +1,4 @@
-import {useState} from 'react';
+import {useState,type ReactNode} from 'react';
 import {ActivityIndicator,Pressable,StyleSheet,Text,View} from 'react-native';
 import type {CoopDungeonView,CoopRoomType,CoopTier} from '../../core/coop-dungeon-browsing';
 import {coopTierEligibility,filterCoopDungeons,groupCoopDungeonsByRegion,highestEligibleCoopTier} from '../../core/coop-dungeon-browsing';
@@ -9,11 +9,12 @@ import type {CoopUiAssetId} from '../../core/coop-ui-contract';
 import {coopColors,coopSpacing,coopTypography} from '../../theme/coop-ui-theme';
 import {CoopImageSlot,ExpeditionScreenShell,FantasyPanel,PrimaryAction,StateChip} from './CoopVisualKit';
 
-type BrowseProps={language:Language;dungeons:CoopDungeonView[];eventExpeditions:CoopEventExpeditionPreview[];loading:boolean;error:string;activeRun?:CoopRunView;onBack:()=>void;onRetry:()=>void;onSelect:(dungeon:CoopDungeonView)=>void;onSelectEvent:(event:CoopEventExpeditionPreview)=>void;onResume:()=>void};
-export function CoopDungeonList({language,dungeons,eventExpeditions,loading,error,activeRun,onBack,onRetry,onSelect,onSelectEvent,onResume}:BrowseProps){
+type BrowseProps={language:Language;dungeons:CoopDungeonView[];eventExpeditions:CoopEventExpeditionPreview[];loading:boolean;error:string;activeRun?:CoopRunView;liveTools?:ReactNode;onBack:()=>void;onRetry:()=>void;onSelect:(dungeon:CoopDungeonView)=>void;onSelectEvent:(event:CoopEventExpeditionPreview)=>void;onResume:()=>void};
+export function CoopDungeonList({language,dungeons,eventExpeditions,loading,error,activeRun,liveTools,onBack,onRetry,onSelect,onSelectEvent,onResume}:BrowseProps){
   const [filter,setFilter]=useState<'all'|'available'>('all'),visible=filterCoopDungeons(dungeons,filter),regions=groupCoopDungeonsByRegion(visible);
   return <ExpeditionScreenShell eyebrow={ct(language,'browse.kicker')} title={ct(language,'browse.title')} onBack={onBack} backLabel={ct(language,'details.backWorld')} banner={<Text style={s.copy}>{ct(language,'browse.subtitle')}</Text>}>
     {activeRun?<FantasyPanel variant="selected"><Text style={s.cardTitle}>{ct(language,'browse.resumeTitle')}</Text><Text style={s.copy}>{ct(language,'browse.resumeBody')}</Text><PrimaryAction label={ct(language,'browse.resume')} onPress={onResume}/></FantasyPanel>:null}
+    {liveTools}
     <View style={s.filters}><View style={s.flex}><PrimaryAction label={ct(language,'browse.all')} tone="secondary" selected={filter==='all'} onPress={()=>setFilter('all')}/></View><View style={s.flex}><PrimaryAction label={ct(language,'browse.available')} tone="secondary" selected={filter==='available'} onPress={()=>setFilter('available')}/></View></View>
     {loading?<FantasyPanel><View style={s.loading}><ActivityIndicator color={coopColors.cyan}/><Text style={s.copy}>{ct(language,'browse.loading')}</Text></View></FantasyPanel>:null}
     {error?<FantasyPanel variant="danger"><Text accessibilityRole="alert" style={s.error}>{error}</Text><PrimaryAction label={ct(language,'browse.retry')} tone="secondary" onPress={onRetry}/></FantasyPanel>:null}

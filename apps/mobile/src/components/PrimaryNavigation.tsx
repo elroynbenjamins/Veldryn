@@ -1,4 +1,5 @@
-import {Dimensions,Platform,Pressable,StatusBar,StyleSheet,Text,useWindowDimensions,View} from 'react-native';
+import {Platform,Pressable,StyleSheet,Text,View} from 'react-native';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {PrimaryNavigationIcon,type PrimaryNavigationDestination} from './PrimaryNavigationIcon';
 import {useGameTheme} from '../theme/ThemeContext';
 
@@ -6,10 +7,9 @@ export type NavigationBadge=number|'dot';
 
 export function PrimaryNavigation<T extends PrimaryNavigationDestination>({destinations,active,labelFor,onNavigate,badges}:{destinations:readonly T[];active:T;labelFor:(destination:T)=>string;onNavigate:(destination:T)=>void;badges?:Partial<Record<T,NavigationBadge>>}){
  const C=useGameTheme();
- const {height:windowHeight}=useWindowDimensions();
- const screenHeight=Dimensions.get('screen').height;
- const measuredBottom=Platform.OS==='android'?screenHeight-windowHeight-(StatusBar.currentHeight??0):0;
- const bottomInset=Platform.OS==='android'?Math.max(24,Math.min(52,measuredBottom>0?measuredBottom:30)):4;
+ const {bottom}=useSafeAreaInsets();
+ // iOS is already inside the root SafeAreaView. Android needs its real navigation/gesture inset here.
+ const bottomInset=Platform.OS==='android'?Math.max(bottom,8):4;
  return <View accessibilityRole="tablist" style={[s.nav,{paddingBottom:bottomInset,backgroundColor:C.navBg,borderColor:C.line}]}>{destinations.map(item=>{const selected=active===item,label=labelFor(item),badge=badges?.[item];return <Pressable key={item} accessibilityRole="tab" accessibilityState={{selected}} accessibilityLabel={label} onPress={()=>onNavigate(item)} style={({pressed})=>[s.item,pressed&&s.pressed]}>
   {selected&&<View pointerEvents="none" style={[s.mark,{backgroundColor:C.accentSoft}]}/>}<View style={[s.iconShell,selected&&{backgroundColor:C.selection}]}><PrimaryNavigationIcon destination={item} active={selected}/>{badge!==undefined&&badge!==0?<View style={[s.badge,{borderColor:C.navBg,backgroundColor:C.notification},badge==='dot'&&s.dotBadge]}><Text style={[s.badgeText,{color:C.notificationText}]}>{badge==='dot'?'':typeof badge==='number'?(badge>99?'99+':badge):''}</Text></View>:null}</View>
   <Text numberOfLines={2} textBreakStrategy="balanced" android_hyphenationFrequency="normal" style={[s.label,{color:selected?C.accent:C.muted}]}>{label}</Text>

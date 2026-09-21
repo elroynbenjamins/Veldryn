@@ -17,15 +17,20 @@ ok(screenSource.includes('Sort ·')&&screenSource.includes('Move ·'),'Inventory
 ok(screenSource.includes("{id:'potion',label:'Potions'}"),'Potion filter chip must remain available');
 ok(screenSource.includes("{id:'gem',label:'Gems'}")&&screenSource.includes("{id:'quest',label:'Quest'}"),'Gem and quest filter chips must remain available');
 ok(screenSource.includes("{id:'favorites',label:'★ Favorites'}")&&screenSource.includes("{id:'favorite',label:'Favorites first'}"),'Favorites filter and sort must remain compact');
+ok(screenSource.includes("{id:'new',label:'New'}")&&screenSource.includes("{id:'new',label:'New first'}"),'New item filter and sort must remain compact');
+ok(card.includes('newBadge')&&card.includes('NEW'),'New stored items must show a compact NEW badge');
+ok(screenSource.includes('Mark all seen')&&screenSource.includes('onAcknowledgeItem'),'New item acknowledgement controls must remain available');
 ok(screenSource.includes('StorageChip')&&screenSource.includes('storageCapacityStatus'),'Inventory and Bank must show compact capacity feedback');
 ok(screenSource.includes('onToggleFavorite')&&card.includes('favoriteButton'),'Item cards must expose one-tap favorite controls');
 ok(card.includes('protected from selling and salvage'),'Favorite items must explain disposal protection');
 ok(appSource.includes('toggleInventoryFavorite')&&appSource.includes('onToggleFavorite'),'Favorites must persist through the app settings path');
 ok(normalization.includes('favoriteItemIds:stringList')&&commands.includes('result.favoriteItemIds'),'Favorites must survive save normalization and online settings validation');
+ok(normalization.includes('legacySeenItemIds')&&normalization.includes('seenItemIds:legacySeenItemIds'),'Old saves must not mark existing stored items as newly obtained');
+ok(commands.includes('result.seenItemIds'),'Seen item history must survive online settings validation');
 ok(card.includes('accentColor={meta.color}')&&card.includes('borderWidth={meta.borderWidth}'),'Inventory cards must use rarity frame metadata');
 ok(artwork.includes('borderWidth:framed?meta.borderWidth:0'),'Framed equipment art must use rarity border strength');
 ok(slot.includes('borderWidth:meta.borderWidth'),'Equipped item slots must use rarity border strength');
 ok(card.includes('rarityNameColor')&&card.includes("fontWeight:'800'"),'Inventory item names must use bold accessible rarity emphasis');
 ok(slot.includes('rarityNameColor')&&slot.includes("fontWeight:'800'"),'Equipment slot names must use bold accessible rarity emphasis');
 
-console.log('PASS: compact themed inventory/bank controls, favorites, capacity feedback, rarity frames and rarity-colored names');
+console.log('PASS: compact themed inventory/bank controls, NEW feedback, favorites, capacity feedback, rarity frames and rarity-colored names');

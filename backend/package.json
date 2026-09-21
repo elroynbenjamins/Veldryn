@@ -4,6 +4,7 @@
   "version": "2.1",
   "scripts": {
     "typecheck": "tsc --noEmit",
+    "test:gems-v34": "tsc && node dist/server/equipment/gem-v34.test.js && node dist/server/combat/gem-combat-v34.test.js",
     "content-v21": "tsc --noEmit && tsc --outDir dist-v21 && node dist-v21/server/content/region-v21.test.js",
     "test:merged-content": "tsc --outDir dist-merged && node dist-merged/server/content/sunscar-v20.test.js && node dist-merged/server/content/region-v21.test.js && node dist-merged/server/live-dungeon/live-dungeon-v20.test.js && node dist-merged/server/guild/guild-projects-v18.test.js && node dist-merged/server/shared-world/shared-world-v19.test.js",
     "typecheck:companions": "tsc -p tsconfig.companions.json --noEmit",

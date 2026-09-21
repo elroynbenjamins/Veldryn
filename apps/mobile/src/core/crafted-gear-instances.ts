@@ -1,6 +1,6 @@
 import {itemDef} from '../content/items';
 import {equipmentSetDef} from '../content/equipment-sets';
-import {type ItemRarity} from './item-rarity';
+import {itemRarity,type ItemRarity} from './item-rarity';
 import type {GameState,GearEnhancementState,GearInstanceState,GearSlot} from './types';
 
 export const CRAFTED_GEAR_RARITY_CHANCES:Readonly<Record<ItemRarity,number>>={
@@ -112,7 +112,7 @@ export function moveStoredGearInstances(state:GameState,itemId:string,from:'inve
 export function rarityBreakdownForStack(state:GameState,itemId:string,storage:'inventory'|'bank',stackQuantity:number){
   const rows=rarityBreakdownForItem(state,itemId,storage),instanceCount=rows.reduce((sum,row)=>sum+row.count,0),legacy=Math.max(0,stackQuantity-instanceCount);
   const counts=new Map<ItemRarity,number>(rows.map(row=>[row.rarity,row.count]));
-  if(legacy)counts.set('common',(counts.get('common')??0)+legacy);
+  if(legacy){const legacyRarity=itemRarity(itemDef(itemId));counts.set(legacyRarity,(counts.get(legacyRarity)??0)+legacy);}
   return CRAFTED_GEAR_RARITY_ORDER.slice().reverse().map(rarity=>({rarity,count:counts.get(rarity)??0})).filter(row=>row.count>0);
 }
 export function bestRarityForStack(state:GameState,itemId:string,storage:'inventory'|'bank',stackQuantity:number):ItemRarity{

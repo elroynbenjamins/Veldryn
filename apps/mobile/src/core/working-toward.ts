@@ -34,8 +34,9 @@ export function workingTowardSourceAvailability(state:GameState,source:WorkingTo
  }
  if(source.kind==='skills'){
   if(source.recipeId){
-   const recipe=RECIPES.find(row=>row.id===source.recipeId),available=!!recipe&&skillLevel(state,recipe.skillId)>=recipe.level&&(recipe.characterLevel===undefined||state.character!.level>=recipe.characterLevel);
-   return {kind:'recipe',id:source.recipeId,label:recipe?.name??source.recipeId,available,reason:available?undefined:`Requires ${skillLabel(recipe?.skillId??'skill')} ${recipe?.level??'?'}.`};
+   const recipe=RECIPES.find(row=>row.id===source.recipeId),skillReady=!!recipe&&skillLevel(state,recipe.skillId)>=recipe.level,characterReady=!!recipe&&(recipe.characterLevel===undefined||state.character!.level>=recipe.characterLevel),available=!!recipe&&skillReady&&characterReady;
+   const reason=!recipe?'Recipe is not in the current catalog.':!skillReady?`Requires ${skillLabel(recipe.skillId)} ${recipe.level}.`:!characterReady?`Requires character level ${recipe.characterLevel}.`:undefined;
+   return {kind:'recipe',id:source.recipeId,label:recipe?.name??source.recipeId,available,reason};
   }
   if(source.actionId){
    const gather=gatherDefs.find(row=>row.id===source.actionId);
@@ -60,7 +61,8 @@ export function workingTowardDestinationAvailability(state:GameState,source:Work
  if(region&&state.character!.level<region.minLevel)return {status:'locked',label:'LOCKED',detail:`Region unlocks at character level ${region.minLevel}.`,canNavigate:true};
  if(base&&!base.available)return {status:'locked',label:'LOCKED',detail:base.reason??'This source is not available yet.',canNavigate:true};
  if(regionId&&regionId!==state.currentRegionId)return {status:'travel',label:'TRAVEL',detail:`Travel to ${region?.name??regionId} first.`,canNavigate:true};
- return {status:'ready',label:'READY',detail:'Available now.',canNavigate:true};
+ const recipeSource=source.kind==='skills'&&!!source.recipeId;
+ return {status:'ready',label:recipeSource?'AVAILABLE':'READY',detail:recipeSource?'Recipe unlocked.':'Available now.',canNavigate:true};
 }
 
 function itemSource(state:GameState,itemId:string):WorkingTowardDestination{

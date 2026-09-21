@@ -6,7 +6,8 @@ const read=(path:string)=>fs.readFileSync(path,'utf8');
 
 const theme=read('src/theme/theme.ts');
 ok(theme.includes('accentSurface:string'),'Theme colors must expose a semantic accent surface');
-for(const token of ["accentSurface:'#2B2417'","accentSurface:'#332A12'","accentSurface:'#FFF2D0'"]){
+ok(theme.includes('special:string')&&theme.includes('specialSurface:string'),'Theme colors must expose a theme-safe special/discovery accent');
+for(const token of ["accentSurface:'#2B2417'","accentSurface:'#332A12'","accentSurface:'#FFF2D0'","special:'#C79AF3'","special:'#D3A7FF'","special:'#6F3F8F'","specialSurface:'#261A33'","specialSurface:'#2A1B39'","specialSurface:'#F0E4F7'"]){
   ok(theme.includes(token),'All three themes must define '+token);
 }
 
@@ -33,7 +34,8 @@ const checks:Array<[string,string[],string[]]>= [
   ['src/screens/CombatScreen.tsx',["C.dark?'rgba(7,12,20,.8)':'rgba(255,255,255,.78)'"],["shade:{...StyleSheet.absoluteFillObject,backgroundColor:'rgba(7,12,20,.8)'"]],
   ['src/screens/RankingsScreen.tsx',['chipTextSelected:{color:C.text}','backgroundColor:C.accentSurface','backgroundColor:C.panel2','youText:{fontSize:6.5,color:C.text'],["chipTextSelected:{color:'#d9f3ff'}","backgroundColor:'#302713'","backgroundColor:'#202833'","backgroundColor:'#2d2118'","youText:{fontSize:6.5,color:'#d9f3ff'"]],
   ['src/screens/EventScreen.tsx',['backgroundColor:C.accentSurface','backgroundColor:C.goodSurface','tabActive:{backgroundColor:C.selection}'],["backgroundColor:'#20180f'","backgroundColor:'#2b2317'","backgroundColor:'#17352a'","tabActive:{backgroundColor:'#20384A'}"]],
-  ['src/components/RewardPopup.tsx',['backgroundColor:C.accentSurface','backgroundColor:C.goodSurface','backgroundColor:C.warningSurface','backgroundColor:C.infoSurface'],["backgroundColor:'#05090f'","backgroundColor:'#2b2417'","backgroundColor:'#14261d'","backgroundColor:'#132333'","backgroundColor:'#332515'"]],
+  ['src/components/RewardPopup.tsx',['backgroundColor:C.accentSurface','backgroundColor:C.goodSurface','backgroundColor:C.warningSurface','backgroundColor:C.infoSurface','backgroundColor:C.specialSurface','color:C.special'],["backgroundColor:'#05090f'","backgroundColor:'#2b2417'","backgroundColor:'#14261d'","backgroundColor:'#132333'","backgroundColor:'#332515'","#cba0f5","#d6b1ee","#f4d8ff","#5d3674"]],
+  ['src/screens/QuestScreen.tsx',['C.special'],['#b88ae3']],
 ];
 
 for(const [path,required,forbidden] of checks){

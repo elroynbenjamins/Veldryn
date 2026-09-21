@@ -15,18 +15,18 @@ import {ResourceArtwork} from './ResourceArtwork';
 import {hasResourceArtwork} from '../theme/resource-assets';
 import type {WorkingTowardDestination} from '../core/working-toward';
 
-function InspectArt({state,itemId}:{state:GameState;itemId:string}){
-  const C=useGameTheme(),model=itemInspectModel(state,itemId),item=model.item;
+function InspectArt({state,itemId,instanceId}:{state:GameState;itemId:string;instanceId?:string}){
+  const C=useGameTheme(),model=itemInspectModel(state,itemId,instanceId),item=model.item;
   if(item.type==='gear'&&hasEquipmentArtwork(item))return <EquipmentArtwork item={item} framed={false}/>;
   if(item.type==='tool')return <GatheringToolArtwork itemId={item.id} size={72} framed={false}/>;
   if(hasResourceArtwork(item.id))return <ResourceArtwork itemId={item.id} size={72} framed={false}/>;
   return <View style={[art.fallback,{borderColor:model.rarity.color,backgroundColor:model.rarity.surface}]}><Text style={[art.symbol,{color:model.rarity.color}]}>{model.rarity.symbol}</Text><Text style={[art.fallbackText,{color:C.muted}]}>{item.type.toUpperCase()}</Text></View>;
 }
 
-export function ItemQuickInspect({state,itemId,onClose,onNavigate}:{state:GameState;itemId:string|null;onClose:()=>void;onNavigate?:(destination:WorkingTowardDestination)=>void}){
+export function ItemQuickInspect({state,itemId,instanceId,onClose,onNavigate}:{state:GameState;itemId:string|null;instanceId?:string;onClose:()=>void;onNavigate?:(destination:WorkingTowardDestination)=>void}){
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
   if(!itemId)return null;
-  const model=itemInspectModel(state,itemId),item=model.item,rarity=model.rarity,upgrade=model.upgrade,sockets=model.sockets,gearDecision=model.gearDecision,nameColor=rarityNameColor(model.rarityId,C.dark,C.text);
+  const model=itemInspectModel(state,itemId,instanceId),item=model.item,rarity=model.rarity,upgrade=model.upgrade,sockets=model.sockets,gearDecision=model.gearDecision,nameColor=rarityNameColor(model.rarityId,C.dark,C.text);
   const sourceRows=model.sources.slice(0,4),useRows=model.usedIn.slice(0,4),craftPath=item.type==='gear'?equipmentCraftingPath(state,itemId):undefined;
   const upgradeChance=upgrade?Math.round(upgrade.successChance*100):0;
   const upgradeColor=upgrade?.maxed?C.good:upgradeChance>=70?C.good:upgradeChance>=30?C.warning:C.bad;
@@ -36,7 +36,7 @@ export function ItemQuickInspect({state,itemId,onClose,onNavigate}:{state:GameSt
       <View style={s.sheet}>
         <View style={s.grabber}/>
         <View style={s.hero}>
-          <View style={[s.artBox,{borderColor:rarity.color,backgroundColor:rarity.surface}]}><InspectArt state={state} itemId={itemId}/></View>
+          <View style={[s.artBox,{borderColor:rarity.color,backgroundColor:rarity.surface}]}><InspectArt state={state} itemId={itemId} instanceId={instanceId}/></View>
           <View style={s.heroCopy}>
             <Text style={[s.rarity,{color:rarity.color}]}>{rarity.symbol+' '+rarity.label.toUpperCase()+' · '+item.type.toUpperCase()}</Text>
             <Text numberOfLines={2} style={[s.name,{color:nameColor}]}>{item.name+(upgrade?.rank?' +'+upgrade.rank:'')}</Text>

@@ -1,7 +1,7 @@
 import {CLASSES} from '../src/content/classes';
 import {EQUIPMENT_SETS} from '../src/content/equipment-sets';
 import {createCharacter,newGame} from '../src/core/game';
-import {createAccountCharacter,switchAccountCharacter} from '../src/core/account-actions';
+import {createAccountCharacter,deleteActiveAccountCharacter,rerollActiveAccountCharacter,switchAccountCharacter} from '../src/core/account-actions';
 import {accountCharacters,accountSkillLevel,characterCreationError,characterSkillTotal,projectCharacter,recordAccountProgress,unlockedCharacterSlots,CHARACTER_SLOT_THRESHOLDS} from '../src/core/account-roster';
 import {discoverCharacterSkins,equipmentSetSkinId} from '../src/core/character-skins';
 import {migrateSave} from '../src/core/save-migrations';
@@ -38,3 +38,19 @@ test('every current class can start in an eligible slot',()=>{for(const cls of C
 test('permanent ownership is not truncated by claim-history limits',()=>{const state=first();state.account.unlockedCosmeticPetIds=Array.from({length:200},(_,index)=>`legacy_pet_${index}`);state.account.unlockedCosmeticPetIds.push('pet_harvest_fox');const normalized=migrateSave(JSON.parse(JSON.stringify(state)));equal(normalized.account.unlockedCosmeticPetIds!.length,201,'all permanent IDs preserved');});
 
 test('legacy ownership from any character preserves another character selected pet on normalization',()=>{const state=second();state.account.unlockedCosmeticPetIds=[];state.character!.ownedPetIds=['pet_harvest_fox'];state.otherCharacters![0].character.selectedCosmeticPetId='pet_harvest_fox';const migrated=migrateSave(JSON.parse(JSON.stringify(state)));equal(migrated.otherCharacters![0].character.selectedCosmeticPetId,'pet_harvest_fox','ownership union before cleaning inactive selection');equal(migrated.account.unlockedCosmeticPetIds,['pet_harvest_fox'],'one account owner');});
+
+
+test('reroll keeps the slot identity and account scope but resets character-bound progress',()=>{
+ let state=second();const id=state.character!.id;state.character!.gold=9999;state.character!.gearEnhancements={basic_sword:{rank:4,failures:1,gemIds:[]}};state.bank.stacks=[{itemId:'COPPER_ORE',quantity:9}];state.account.premiumCurrencyBalance=77;
+ const next=rerollActiveAccountCharacter(state,'BASTION',state.character!.name,5000);
+ equal(next.character!.id,id,'same slot identity');equal(next.character!.classId,'BASTION','new class');equal(next.character!.name,'Rowan','name kept');equal(next.character!.bodyPresentation,'female','body kept');equal(next.character!.gold,100,'wallet reset');equal(next.character!.gearEnhancements,undefined,'enhancements reset');equal(next.bank.stacks,[{itemId:'COPPER_ORE',quantity:9}],'shared bank kept');equal(next.account.premiumCurrencyBalance,77,'account currency kept');equal(accountCharacters(next).length,2,'slot count kept');
+});
+test('deleting a progressed active character permanently preserves its earned slot watermark',()=>{
+ let state=second();state=switchAccountCharacter(state,'LOCAL_CHAR_1',1000);equal(unlockedCharacterSlots(state),2,'second slot currently earned');
+ const next=deleteActiveAccountCharacter(state,state.character!.name);
+ equal(next.character!.name,'Rowan','remaining character promoted');equal(accountCharacters(next).length,1,'one character remains');equal(unlockedCharacterSlots(next),2,'earned slot stays unlocked');
+});
+test('last character cannot be deleted and destructive confirmations must match exactly',()=>{
+ const only=first();throws(()=>deleteActiveAccountCharacter(only,'Mira'),'last character protected');
+ const multi=second();throws(()=>rerollActiveAccountCharacter(multi,'BASTION','rowan',1000),'reroll confirmation is exact');throws(()=>deleteActiveAccountCharacter(multi,'wrong'),'delete confirmation is exact');
+});

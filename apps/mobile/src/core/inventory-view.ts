@@ -30,8 +30,9 @@ export function storageCapacityStatus(stacks:ItemStack[],capacity:number){
   return {used,free,capacity,percent:Math.round(ratio*100),level:used>=capacity?'full' as const:ratio>=.9?'near' as const:'ok' as const};
 }
 export function visibleStacks(stacks:ItemStack[],query:string,filter:InventoryFilter,sort:InventorySort,favoriteItemIds:readonly string[]=[],newItemIds:readonly string[]=[]){
+  const grouped=[...stacks.reduce((map,stack)=>{if(stack.quantity>0)map.set(stack.itemId,(map.get(stack.itemId)??0)+stack.quantity);return map},new Map<string,number>())].map(([itemId,quantity])=>({itemId,quantity}));
   const term=query.trim().toLowerCase(),favorites=new Set(favoriteItemIds),newItems=new Set(newItemIds);
-  return stacks.filter(stack=>{const item=itemDef(stack.itemId),specialMatch=filter==='favorites'?favorites.has(item.id):filter==='new'?newItems.has(item.id):false;return stack.quantity>0&&item.name.toLowerCase().includes(term)&&(filter==='all'||filter==='favorites'||filter==='new'?filter==='all'||specialMatch:item.type===filter)}).sort((a,b)=>{
+  return grouped.filter(stack=>{const item=itemDef(stack.itemId),specialMatch=filter==='favorites'?favorites.has(item.id):filter==='new'?newItems.has(item.id):false;return stack.quantity>0&&item.name.toLowerCase().includes(term)&&(filter==='all'||filter==='favorites'||filter==='new'?filter==='all'||specialMatch:item.type===filter)}).sort((a,b)=>{
     const first=itemDef(a.itemId),second=itemDef(b.itemId);
     const newDifference=sort==='new'?Number(newItems.has(second.id))-Number(newItems.has(first.id)):0;
     const favoriteDifference=sort==='favorite'?Number(favorites.has(second.id))-Number(favorites.has(first.id)):0;

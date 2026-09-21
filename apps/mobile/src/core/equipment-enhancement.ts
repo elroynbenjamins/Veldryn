@@ -53,15 +53,15 @@ export function normalizeGearEnhancementState(itemId:string,raw:unknown):GearEnh
   const legacy:string[]=[];
   if(statGemId&&!layout.statUnlocked){legacy.push(statGemId);statGemId=undefined}
   if(effectGemId&&!layout.effectUnlocked){legacy.push(effectGemId);effectGemId=undefined}
-  const rawIds=[
-    ...(Array.isArray((value as any).gemIds)?(value as any).gemIds:[]),
-    ...(Array.isArray(value.legacyGemIds)?value.legacyGemIds:[]),
-  ];
+  const hasTypedShape=value.statGemId!==undefined||value.effectGemId!==undefined||Array.isArray(value.legacyGemIds);
+  const rawIds=hasTypedShape
+    ? (Array.isArray(value.legacyGemIds)?value.legacyGemIds:[])
+    : (Array.isArray((value as any).gemIds)?(value as any).gemIds:[]);
   for(const candidate of rawIds){
-    const id=validGemId(candidate);if(!id||id===statGemId||id===effectGemId||legacy.includes(id))continue;
+    const id=validGemId(candidate);if(!id)continue;
     const kind=gemKindById(id);
-    if(kind==='stat'&&layout.statUnlocked&&!statGemId){statGemId=id;continue}
-    if(kind==='effect'&&layout.effectUnlocked&&!effectGemId){effectGemId=id;continue}
+    if(!hasTypedShape&&kind==='stat'&&layout.statUnlocked&&!statGemId){statGemId=id;continue}
+    if(!hasTypedShape&&kind==='effect'&&layout.effectUnlocked&&!effectGemId){effectGemId=id;continue}
     legacy.push(id);
   }
   const normalized={statGemId,effectGemId,legacyGemIds:legacy};

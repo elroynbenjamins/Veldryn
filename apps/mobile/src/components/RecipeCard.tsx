@@ -13,19 +13,22 @@ import {GameButton} from './GameButton';
 import {UiIcon} from './UiIcon';
 import {equipmentCraftingPath} from '../core/equipment-crafting-path';
 import type {WorkingTowardDestination} from '../core/working-toward';
+import {equipmentCraftDurationSeconds,equipmentCraftQueueModel,timedEquipmentRecipe} from '../core/equipment-crafting-queue';
+import {formatQueueTimeV31} from '../core/equipment-crafting-v31';
 export function RecipeCard({state,recipe,status,onCraft,onNavigate}:{state:GameState;recipe:Recipe;status:ReturnType<typeof recipeAvailability>;onCraft:(id:string)=>void;onNavigate?:(destination:WorkingTowardDestination)=>void}){
   const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
- const [expanded,setExpanded]=useState(false),output=itemDef(recipe.output.itemId),craftPath=output.type==='gear'?equipmentCraftingPath(state,output.id):undefined;
+ const [expanded,setExpanded]=useState(false),output=itemDef(recipe.output.itemId),craftPath=output.type==='gear'?equipmentCraftingPath(state,output.id):undefined,timed=Boolean(timedEquipmentRecipe(recipe.id));
+ const queue=timed?equipmentCraftQueueModel(state,Date.now()):undefined,duration=timed?equipmentCraftDurationSeconds(state,recipe.id):0,queueFull=timed&&queue!.freeSlots<=0,craftReady=status.ready&&!queueFull;
  const f=(value:number)=>formatGameNumber(value,state.settings.numberMode);
  const readyInputs=status.inputs.filter(i=>i.inventory+i.bank>=i.quantity).length;
  return <View style={s.card}>
   <Pressable accessibilityRole="button" accessibilityState={{expanded}} accessibilityLabel={recipe.name+(status.ready?', ready to craft':', requirements missing')} onPress={()=>setExpanded(v=>!v)} style={s.head}>
-   <ItemArtwork itemId={output.id} size={48}/><View style={s.copy}><Text style={s.title}>{output.name}</Text><Text style={s.sub}>Makes {f(recipe.output.quantity)} · {recipe.skillId} Lv. {recipe.level}</Text><Text style={status.ready?s.ready:s.sub}>{status.ready?'Ready to craft':`${readyInputs}/${status.inputs.length} materials ready`}</Text></View><UiIcon name={expanded?'close':'next'} size={24}/>
+   <ItemArtwork itemId={output.id} size={48}/><View style={s.copy}><Text style={s.title}>{output.name}</Text><Text style={s.sub}>Makes {f(recipe.output.quantity)} · {recipe.skillId} Lv. {recipe.level}</Text><Text style={craftReady?s.ready:s.sub}>{craftReady?(timed?'Ready to start':'Ready to craft'):queueFull?'Crafting queue full':`${readyInputs}/${status.inputs.length} materials ready`}</Text></View><UiIcon name={expanded?'close':'next'} size={24}/>
   </Pressable>
   {expanded&&<View style={s.details}><Text style={s.sub}>{f(recipe.gold)} gold · +{f(recipe.xp)} skill XP</Text>{recipe.v33EquipmentTier&&<Text style={s.v33Meta}>{recipe.v33EquipmentTier} · {recipe.v33Region} · {recipe.v33Path}</Text>}{output.type==='food'&&<Text style={s.ready}>Restores {f(output.heal??0)} HP</Text>}{output.type==='gear'&&<Text style={s.sub}>ATK {output.attack??0} · DEF {output.defense??0} · HP {output.hp??0}</Text>}{output.type==='tool'&&<Text style={s.sub}>Tier {output.toolTier} · {Math.round((1-(output.actionTimeMultiplier??1))*100)}% shorter action time</Text>}
    <IngredientList inputs={status.inputs} numberMode={state.settings.numberMode} showStorage/>
    {craftPath&&onNavigate&&craftPath.ingredients.some(row=>row.missing>0)&&<View style={s.sourceBox}><Text style={s.sourceTitle}>MISSING MATERIAL SOURCES</Text>{craftPath.ingredients.filter(row=>row.missing>0).map(row=><Pressable key={row.itemId} accessibilityRole="button" accessibilityLabel={'Find '+row.name} onPress={()=>onNavigate(row.source)} style={({pressed})=>[s.sourceRow,pressed&&s.pressed]}><View style={s.copy}><Text style={s.sourceName}>{row.name} · {row.missing} missing</Text><Text style={s.sub}>{row.availability.detail}</Text></View><Text style={[s.sourceState,row.availability.status==='ready'?s.sourceReady:row.availability.status==='travel'?s.sourceTravel:s.sourceLocked]}>{row.availability.label} ›</Text></Pressable>)}</View>}
-   <View style={[s.statusCallout,status.ready?s.readySurface:s.missingSurface]}><Text style={status.ready?s.ready:s.reason}>{status.reason}</Text></View><GameButton title={`Craft ${f(recipe.output.quantity)}× ${output.name}`} disabled={!status.ready} onPress={()=>onCraft(recipe.id)}/>
+   <View style={[s.statusCallout,craftReady?s.readySurface:s.missingSurface]}><Text style={craftReady?s.ready:s.reason}>{queueFull?`All ${queue?.slotInfo.capacity??3} equipment crafting slots are busy`:timed&&status.ready?`Uses one account-wide slot for ${formatQueueTimeV31(duration)}`:status.reason}</Text></View><GameButton title={timed?`Start craft · ${formatQueueTimeV31(duration)}`:`Craft ${f(recipe.output.quantity)}× ${output.name}`} disabled={!craftReady} onPress={()=>onCraft(recipe.id)}/>
   </View>}
  </View>;
 }

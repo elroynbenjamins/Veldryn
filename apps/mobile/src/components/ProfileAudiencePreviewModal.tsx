@@ -1,5 +1,5 @@
 import {useEffect,useMemo,useState} from 'react';
-import {Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
 import {profileAudienceCanView,type ProfilePreviewAudience} from '../core/profile-customization';
 import {profileAchievementLabel,profileCollectionLabel,profileRecordLabel} from '../core/profile-presentation';
@@ -7,7 +7,7 @@ import {COMBAT_COMPANIONS} from '../content/combat-companions';
 import type {ProfileExtensionSelfV43,PublicPlayerProfileV43} from '../online/profile-extension-v43';
 import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
-import {GameButton} from './GameButton';
+import {GameModalHeader,GameModalSurface} from './GameModalSurface';
 import {PublicProfileScene} from './PublicProfileScene';
 
 const audienceRows:ReadonlyArray<{id:ProfilePreviewAudience;label:string;detail:string}>=[
@@ -55,11 +55,8 @@ export function ProfileAudiencePreviewModal({visible,state,identityDraft,onClose
   :visibility==='guild'&&audience==='public'
    ?'Guild-only profiles are hidden from players outside your guild.'
    :'This viewer cannot open the profile with the current privacy setting.';
- return <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-  <View style={s.backdrop}>
-   <Pressable accessibilityRole="button" accessibilityLabel="Close profile preview" style={StyleSheet.absoluteFill} onPress={onClose}/>
-   <View style={s.sheet}>
-    <View style={s.header}><View style={s.flex}><Text style={s.eyebrow}>AUDIENCE PREVIEW</Text><Text style={s.title}>As other players see you</Text></View><View style={[s.visibilityPill,!identityDraft&&s.localPill]}><Text style={[s.visibilityText,!identityDraft&&s.localText]}>{identityDraft?visibilityLabel[visibility].toUpperCase():'LOCAL ONLY'}</Text></View></View>
+ return <GameModalSurface visible={visible} onClose={onClose} backdropLabel="Close profile preview" surfaceStyle={s.sheet}>
+    <GameModalHeader eyebrow="AUDIENCE PREVIEW" title="As other players see you" onClose={onClose} trailing={<View style={[s.visibilityPill,!identityDraft&&s.localPill]}><Text style={[s.visibilityText,!identityDraft&&s.localText]}>{identityDraft?visibilityLabel[visibility].toUpperCase():'LOCAL ONLY'}</Text></View>}/>
     <Text style={s.copy}>Switch audiences to test profile visibility. This preview never publishes or saves changes.</Text>
     <View accessibilityRole="tablist" style={s.audiences}>{audienceRows.map(row=><Pressable key={row.id} accessibilityRole="tab" accessibilityState={{selected:audience===row.id}} onPress={()=>setAudience(row.id)} style={({pressed})=>[s.audience,audience===row.id&&s.audienceOn,pressed&&s.pressed]}><Text style={[s.audienceLabel,audience===row.id&&s.audienceLabelOn]}>{row.label}</Text><Text numberOfLines={2} style={s.audienceDetail}>{row.detail}</Text></Pressable>)}</View>
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
@@ -78,10 +75,7 @@ export function ProfileAudiencePreviewModal({visible,state,identityDraft,onClose
       <Text style={s.footnote}>Guild tag and guild-name styling come from your live guild identity and are not changed by this preview.</Text>
      </>}
     </ScrollView>
-    <GameButton title="Close preview" onPress={onClose}/>
-   </View>
-  </View>
- </Modal>;
+ </GameModalSurface>;
 }
 
 function PreviewRow({label,value}:{label:string;value:string}){
@@ -90,12 +84,8 @@ function PreviewRow({label,value}:{label:string;value:string}){
 }
 
 function makeStyles(C:ThemeColors){return StyleSheet.create({
- backdrop:{flex:1,justifyContent:'flex-end',backgroundColor:C.overlay},
- sheet:{maxHeight:'94%',padding:spacing.lg,gap:spacing.sm,backgroundColor:C.bg,borderTopWidth:1,borderColor:C.line,borderTopLeftRadius:22,borderTopRightRadius:22},
- header:{flexDirection:'row',alignItems:'center',gap:spacing.sm},
+ sheet:{maxHeight:'94%',paddingHorizontal:spacing.lg},
  flex:{flex:1,minWidth:0},
- eyebrow:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:1},
- title:{...typography.title,color:C.text},
  copy:{...typography.caption,color:C.muted,lineHeight:17},
  visibilityPill:{paddingHorizontal:8,paddingVertical:5,borderWidth:1,borderColor:C.info,borderRadius:99,backgroundColor:C.infoSurface},
  visibilityText:{fontSize:8,color:C.info,fontWeight:'900',letterSpacing:.65},
@@ -108,7 +98,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  audienceLabelOn:{color:C.text},
  audienceDetail:{fontSize:7.5,lineHeight:10,color:C.muted,marginTop:2},
  pressed:{opacity:.68},
- scroll:{gap:spacing.sm,paddingBottom:4},
+ scroll:{gap:spacing.sm,paddingBottom:spacing.md},
  hiddenCard:{minHeight:220,alignItems:'center',justifyContent:'center',gap:7,padding:spacing.lg,borderWidth:1,borderColor:C.line,borderRadius:radii.lg,backgroundColor:C.panel},
  hiddenMark:{fontSize:34,color:C.disabled,fontWeight:'900'},
  hiddenTitle:{...typography.title,color:C.text,textAlign:'center'},

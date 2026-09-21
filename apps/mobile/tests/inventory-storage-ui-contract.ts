@@ -27,7 +27,7 @@ ok(screenSource.includes('Mark all seen')&&screenSource.includes('onAcknowledgeI
 ok(screenSource.includes('BULK MANAGEMENT')&&screenSource.includes('Select shown')&&screenSource.includes('onBulkAction'),'Bulk management must stay temporary and player-invoked');
 ok(card.includes('selectionMode')&&card.includes('accessibilityRole="checkbox"'),'Item cards must expose accessible selection controls only in selection mode');
 ok(bulk.includes('bulkTransferSelected')&&bulk.includes('bulkSellSelected')&&bulk.includes('bulkSalvageSelected'),'Bulk actions must use shared core helpers');
-ok(bulk.includes("state.settings.favoriteItemIds")&&bulk.includes('hasEnhancement')&&bulk.includes('equippedFoodId'),'Bulk disposal must protect favorites, enhanced gear, and auto-eat food');
+ok(bulk.includes("state.settings.favoriteItemIds")&&bulk.includes("item.type==='gear'")&&bulk.includes('equippedFoodId'),'Bulk disposal must protect favorites, every equipment copy, and auto-eat food so gear destruction always requires exact-copy selection');
 ok(commands.includes("bulk_transfer:['location','ids']")&&commands.includes("bulk_sell:['ids']")&&commands.includes("bulk_salvage:['ids']"),'Online commands must expose atomic bulk actions');
 ok(card.includes('onLongPress={inspect}')&&card.includes('delayLongPress={350}'),'Item cards must open Quick Inspect on a deliberate hold');
 ok(screenSource.includes('ItemQuickInspect')&&screenSource.includes('Hold an item for Quick Inspect'),'Inventory must expose and explain Quick Inspect without replacing normal tap actions');

@@ -26,6 +26,10 @@ export interface CoopRouteNode {
   risk: number;
   rewardTag: string;
   nextNodeIds: string[];
+  /** Optional server-authored label for themed/event rooms. */
+  title?: string;
+  /** Optional event-meter delta applied after a successful room resolution. */
+  mechanicDelta?: number;
   previewHidden?: boolean;
 }
 

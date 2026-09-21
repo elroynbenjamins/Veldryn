@@ -30,6 +30,9 @@ export interface ExpeditionCombatReplayCue{
   abilityName?:string;
   durationMs?:number;
   actionKind?:'damage'|'heal'|'shield';
+  outcome?:'critical'|'miss';
+  absorbed?:number;
+  gemProc?:boolean;
   amount?:number;
 }
 export interface ExpeditionCombatCommitPayload {
@@ -97,11 +100,12 @@ function publicReplayCues(result:CombatResult):ExpeditionCombatReplayCue[]{
       push({atMs:event.atMs,type:'down',actorId:event.actorId,actorName:names(event.actorId),targetId:event.targetId,targetName:names(event.targetId)});
       continue;
     }
-    if((event.type==='damage'||event.type==='heal'||event.type==='shield')&&event.actorId&&event.targetId&&event.abilityId){
-      const basic=event.abilityId==='BASIC',key=`${event.atMs}:${event.actorId}:${event.abilityId}`;
+    if((event.type==='damage'||event.type==='miss'||event.type==='heal'||event.type==='shield')&&event.actorId&&event.targetId&&event.abilityId){
+      const basic=event.abilityId==='BASIC',key=`${event.atMs}:${event.actorId}:${event.abilityId}:${event.type}`;
       if(!actionSeen.has(key)&&(!basic||event.atMs-lastBasicBeatAt>=900)){
         actionSeen.add(key);if(basic)lastBasicBeatAt=event.atMs;
-        push({atMs:event.atMs,type:'action',actorId:event.actorId,actorName:names(event.actorId),targetId:event.targetId,targetName:names(event.targetId),abilityId:event.abilityId,abilityName:basic?'Basic Attack':abilityNames.get(event.abilityId),actionKind:event.type,amount:event.amount});
+        const actionKind=event.type==='heal'?'heal':event.type==='shield'?'shield':'damage';
+        push({atMs:event.atMs,type:'action',actorId:event.actorId,actorName:names(event.actorId),targetId:event.targetId,targetName:names(event.targetId),abilityId:event.abilityId,abilityName:basic?'Basic Attack':abilityNames.get(event.abilityId),actionKind,...(event.type==='miss'?{outcome:'miss' as const}:event.critical?{outcome:'critical' as const}:{}),...(event.absorbed!==undefined&&event.absorbed>0?{absorbed:event.absorbed}:{}),...(event.abilityId.startsWith('GEM_')?{gemProc:true}:{}),amount:event.type==='miss'?0:event.amount});
       }
       continue;
     }

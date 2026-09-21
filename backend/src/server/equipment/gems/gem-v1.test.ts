@@ -14,6 +14,12 @@ const forcedPity=settleGemSourceV1('COP_004','forced-pity',{pityBySource:{COP_00
 assert.ok(forcedPity.gem,'Dungeon pity must settle one actual gem');
 assert.equal(forcedPity.gem?.pityTriggered,true);
 assert.equal(forcedPity.pityBySource.COP_004,0);
+const forcedElite=settleGemSourceV1('ZONE_007','forced-elite',{pityBySource:{ZONE_007:59},unlockedRecipeIds:[]});
+assert.equal(forcedElite.gem?.grade,2,'Elite pity must settle the configured Grade II gem');
+assert.equal(forcedElite.pityBySource.ZONE_007,0);
+const forcedRegionalBoss=settleGemSourceV1('ZONE_010','forced-regional-boss',{pityBySource:{ZONE_010:24},unlockedRecipeIds:[]});
+assert.equal(forcedRegionalBoss.gem?.grade,3,'Regional boss pity must settle the configured Grade III gem');
+assert.equal(forcedRegionalBoss.pityBySource.ZONE_010,0);
 
 const summary=summarizeGemLoadoutV1([
  {equipmentItemId:'a',sockets:{effect:{familyId:'effect_momentum',grade:5},stat:{familyId:'stat_might',grade:5}}},

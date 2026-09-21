@@ -51,8 +51,9 @@ async function main(){
  const runtime=new OnlineEventExpeditionRuntime(services);
  const start=await runtime.start(controllerRecord.accountId,{requestId:'event-start-0001',eventExpeditionId:'EVENT_SUNCREST_SHATTERED_ISLES',characterId:controllerRecord.characterId,loadoutId:'current',loadoutRevision:7}) as any;
  assert.equal(start.eventExpeditionId,'EVENT_SUNCREST_SHATTERED_ISLES');assert.equal(start.liveEventId,'EVT_ANNUAL_006_2026');assert.equal(start.team.length,4);assert.equal(start.options.length,3);assert.equal(start.stateVersion,1);
+ assert.equal(start.mechanic.label,'Champion Favor');assert.equal(start.mechanic.value,50);assert.ok(start.options.every((option:any)=>option.title&&Number.isFinite(option.mechanicDelta)));
  const chosen=await runtime.choose(controllerRecord.accountId,start.runId,{requestId:'event-choice-0001',decisionId:start.decisionId,decisionRevision:start.decisionRevision,optionId:start.options[0].nodeId}) as any;
- assert.equal(chosen.stateVersion,2);assert.equal(stored?.stateVersion,2);assert.ok(stored?.privateState.run.lastResolution,'resolved event node is persisted');
+ assert.equal(chosen.stateVersion,2);assert.equal(chosen.mechanic.value,48);assert.equal(stored?.stateVersion,2);assert.ok(stored?.privateState.run.lastResolution,'resolved event node is persisted');
  stored!.privateState.run.phase='completed';stored!.privateState.run.settlement='pending';stored!.privateState.run.rewardMarks=96;
  const claimed=await runtime.claim(controllerRecord.accountId,start.runId,'event-claim-0001') as any;
  assert.equal(claimed.stateVersion,3);assert.equal(claimed.settlement.status,'claimed');assert.equal(claimed.settlement.rewardMarks,96);

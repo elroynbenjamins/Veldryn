@@ -1,7 +1,7 @@
 import {useState} from 'react';
 import {ActivityIndicator,Pressable,StyleSheet,Text,View} from 'react-native';
 import type {CoopDungeonView,CoopRoomType,CoopTier} from '../../core/coop-dungeon-browsing';
-import {coopTierEligibility,filterCoopDungeons,groupCoopDungeonsByRegion} from '../../core/coop-dungeon-browsing';
+import {coopTierEligibility,filterCoopDungeons,groupCoopDungeonsByRegion,highestEligibleCoopTier} from '../../core/coop-dungeon-browsing';
 import type {CoopEventExpeditionPreview} from '../../core/coop-event-expeditions';
 import type {CoopMode,CoopRunView} from '../../core/coop-presentation';
 import {clt,coopPolicyText,ct,type CoopMessageKey,type Language} from '../../i18n';
@@ -52,18 +52,19 @@ export function CoopEventExpeditionDetails({language,event,notice,busy=false,onB
   </ExpeditionScreenShell>;
 }
 
-type DetailsProps={language:Language;dungeon:CoopDungeonView;currentLevel:number;mode:CoopMode;tier?:CoopTier;notice?:string;onBack:()=>void;onMode:(mode:CoopMode)=>void;onTier:(tier:CoopTier)=>void;onContinue:()=>void};
+type DetailsProps={language:Language;dungeon:CoopDungeonView;currentLevel:number;mode:CoopMode;tier?:CoopTier;notice?:string;onBack:()=>void;onMode:(mode:CoopMode)=>void;onTier:(tier:CoopTier)=>void;onContinue:(tier:CoopTier)=>void};
 export function CoopDungeonDetails({language,dungeon,currentLevel,mode,tier,notice,onBack,onMode,onTier,onContinue}:DetailsProps){
-  const [showRooms,setShowRooms]=useState(false),eligibility=tier?coopTierEligibility(dungeon,tier,currentLevel):undefined,requiredLevel=eligibility?.requiredLevel??dungeon.minLevel,meetsLevel=eligibility?.eligible??false;
-  const canContinue=tier!==undefined&&meetsLevel;
-  return <ExpeditionScreenShell eyebrow={ct(language,'details.kicker')} title={dungeon.name} onBack={onBack} backLabel={ct(language,'details.backList')} banner={dungeon.region?<Text style={s.region}>{dungeon.region}</Text>:undefined} stickyAction={<View style={s.stickyStack}>{notice?<Text accessibilityRole="alert" style={s.notice}>{notice}</Text>:null}<Text style={s.selection}>{ct(language,'details.modeSelected',{mode:mode==='live'?ct(language,'details.live'):ct(language,'details.qmode'),tier:tier??'—'})}</Text><PrimaryAction label={ct(language,'details.selectLoadout')} disabled={!canContinue} onPress={onContinue}/></View>}>
+  const [showRooms,setShowRooms]=useState(false),autoTier=highestEligibleCoopTier(dungeon,currentLevel),effectiveTier=mode==='live'?autoTier:tier,eligibility=effectiveTier?coopTierEligibility(dungeon,effectiveTier,currentLevel):undefined,requiredLevel=eligibility?.requiredLevel??dungeon.minLevel,meetsLevel=eligibility?.eligible??false;
+  const canContinue=effectiveTier!==undefined&&meetsLevel;
+  const selection=mode==='live'?ct(language,'details.liveAutoSelected',{tier:autoTier??'—'}):ct(language,'details.modeSelected',{mode:ct(language,'details.qmode'),tier:tier??'—'});
+  return <ExpeditionScreenShell eyebrow={ct(language,'details.kicker')} title={dungeon.name} onBack={onBack} backLabel={ct(language,'details.backList')} banner={dungeon.region?<Text style={s.region}>{dungeon.region}</Text>:undefined} stickyAction={<View style={s.stickyStack}>{notice?<Text accessibilityRole="alert" style={s.notice}>{notice}</Text>:null}<Text style={s.selection}>{selection}</Text><PrimaryAction label={ct(language,'details.selectLoadout')} disabled={!canContinue} onPress={()=>effectiveTier&&onContinue(effectiveTier)}/></View>}>
     <CoopImageSlot assetId={dungeon.heroArtId} size="hero" fallbackLabel={ct(language,'details.artUnavailable')} accessibilityLabel={dungeon.name}/>
     <Text style={s.description}>{dungeon.description}</Text>
     {!dungeon.available?<FantasyPanel variant="danger"><Text style={s.lock}>{dungeon.lockedReason}</Text></FantasyPanel>:null}
     <FantasyPanel><FactRow label={clt(language,'level')} value={ct(language,'browse.requiresLevel',{level:requiredLevel})}/><FactRow label={ct(language,'details.party')} value={ct(language,'details.partyValue')}/><FactRow label={ct(language,'details.rooms')} value={ct(language,'details.roomsValue')}/><FactRow label={coopPolicyText(language,'duration')} value={coopPolicyText(language,'durationValue')} last/></FantasyPanel>
     <FantasyPanel variant="selected"><Text style={s.factLabel}>{ct(language,'details.reward')}</Text><Text style={s.copy}>{dungeon.rewardBudgetState??coopPolicyText(language,'rewardCadence')}</Text></FantasyPanel>
     <Text style={s.section}>{ct(language,'details.difficulty')}</Text>
-    {dungeon.difficulties.length?<View style={s.tiers}>{dungeon.difficulties.map(value=><TierChoice key={value} value={value} levelLabel={clt(language,'level')} difficultyLabel={ct(language,'details.difficulty')} requiredLevel={dungeon.tierMinLevels[value]} currentLevel={currentLevel} selected={tier===value} onPress={()=>onTier(value)}/>)}</View>:<FantasyPanel variant="danger"><Text style={s.error}>{ct(language,'details.noDifficulty')}</Text></FantasyPanel>}
+    {mode==='live'?<FantasyPanel variant="selected"><Text style={s.factLabel}>{ct(language,'details.liveAutoSelected',{tier:autoTier??'—'})}</Text><Text style={s.copy}>{autoTier?ct(language,'details.liveAutoCopy',{tier:autoTier}):ct(language,'browse.requiresLevel',{level:dungeon.minLevel})}</Text></FantasyPanel>:dungeon.difficulties.length?<View style={s.tiers}>{dungeon.difficulties.map(value=><TierChoice key={value} value={value} levelLabel={clt(language,'level')} difficultyLabel={ct(language,'details.difficulty')} requiredLevel={dungeon.tierMinLevels[value]} currentLevel={currentLevel} selected={tier===value} onPress={()=>onTier(value)}/>)}</View>:<FantasyPanel variant="danger"><Text style={s.error}>{ct(language,'details.noDifficulty')}</Text></FantasyPanel>}
     {!meetsLevel?<Text accessibilityRole="alert" style={s.lock}>{ct(language,'browse.requiresLevel',{level:requiredLevel})}</Text>:null}
     <Text style={s.section}>{ct(language,'details.mode')}</Text>
     <ModeChoice selected={mode==='live'} title={ct(language,'details.live')} copy={ct(language,'details.liveCopy')} onPress={()=>onMode('live')}/>

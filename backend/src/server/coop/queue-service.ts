@@ -12,7 +12,8 @@ export interface CoopQueueTicket {
 }
 export interface CoopMatchCandidate {ticketIds:string[];score:number;partition:string;}
 
-export function queuePartition(ticket:CoopQueueTicket):string{return `${ticket.expeditionId}|${ticket.tier}|${ticket.contentVersion}|${ticket.balanceVersion}`;}
+export function queuePartition(ticket:CoopQueueTicket):string{return `${ticket.expeditionId}|${ticket.contentVersion}|${ticket.balanceVersion}`;}
+export function resolvedAutoTier(tickets:readonly CoopQueueTicket[]):number{if(!tickets.length)throw new Error('empty_match');const tier=Math.min(...tickets.map(ticket=>ticket.tier));if(!Number.isInteger(tier)||tier<1||tier>5)throw new Error('invalid_auto_tier');return tier;}
 function ticketScore(ticket:CoopQueueTicket,nowMs:number):number{return Math.min(120,(nowMs-ticket.enqueuedAtMs)/1_000)-Math.abs(1-ticket.normalizedReadiness)*20;}
 
 export function chooseBoundedCoopMatch(tickets:readonly CoopQueueTicket[],nowMs:number,maxPerRole=8,requiredTicketIds:readonly string[]=[],canMatch:(roster:readonly CoopQueueTicket[])=>boolean=()=>true):CoopMatchCandidate|null{

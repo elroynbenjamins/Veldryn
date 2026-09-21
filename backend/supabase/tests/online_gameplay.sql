@@ -36,7 +36,7 @@ begin
  begin perform public.start_gathering_activity(c,'COPPER_VEIN');raise exception 'legacy gathering RPC allowed';exception when insufficient_privilege then null;end;
  begin perform public.guild_contribute('boss',50000);raise exception 'client Guild points allowed';exception when insufficient_privilege then null;end;
  reset role;perform set_config('request.jwt.claim.role','service_role',true);
- if (select count(*) from public.server_action_receipts where account_id=a and action='online_game_v1')<>1 then raise exception 'receipt count';end if;
+ if (select count(*) from public.server_action_receipts where account_id=a and action='online_game_v1')<>3 then raise exception 'receipt count';end if;
 end $$;
 select 'PASS: online state, identity, replay, version/wallet races, RLS and legacy mutation denial' as result;
 rollback;

@@ -22,7 +22,7 @@
     "test:rankings": "node -e \"require('fs').rmSync('.core-build',{recursive:true,force:true})\" && tsc -p tsconfig.core.json --outDir .core-build && node .core-build/apps/mobile/tests/rankings.js",
     "test:collectibles": "node -e \"require('fs').rmSync('.core-build',{recursive:true,force:true})\" && tsc -p tsconfig.core.json --outDir .core-build && node .core-build/apps/mobile/tests/core-pets.js && node .core-build/apps/mobile/tests/account-collectibles.js",
     "test:onboarding": "node -e \"require('fs').rmSync('.onboarding-build',{recursive:true,force:true})\" && tsc -p tsconfig.onboarding.json && node .onboarding-build/apps/mobile/tests/onboarding-guide-v1.js",
-    "test:gems-v1": "node -e \"require('fs').rmSync('.core-build',{recursive:true,force:true})\" && tsc -p tsconfig.core.json --outDir .core-build && node .core-build/apps/mobile/tests/gem-progression-v1.js && node .core-build/apps/mobile/tests/gem-artwork-v1.js"
+    "test:gems-v1": "node -e \"require('fs').rmSync('.core-build',{recursive:true,force:true})\" && tsc -p tsconfig.core.json --outDir .core-build && node .core-build/apps/mobile/tests/gem-progression-v1.js && node .core-build/apps/mobile/tests/gem-artwork-v1.js && node .core-build/apps/mobile/tests/gem-artwork-integration-ui-contract.js"
   },
   "dependencies": {
     "@noble/hashes": "1.8.0",

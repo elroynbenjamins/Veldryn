@@ -4,6 +4,8 @@ import {createCharacter,newGame} from '../../../apps/mobile/src/core/game';
 import type {ClassId,GameState} from '../../../apps/mobile/src/core/types';
 import {deriveOnlineCoopLoadout} from '../coop-loadout';
 import {OnlineEventExpeditionRuntime} from '../event-expedition-runtime';
+import {EVENT_EXPEDITIONS} from '../../src/server/expeditions/content/event-expeditions';
+import {seasonalEventExpeditionInfo} from '../../../apps/mobile/src/core/coop-event-expeditions';
 
 function preparedState(classId:ClassId,name:string,level:number,characterId:string):GameState{
  const state=createCharacter(newGame(0),classId,name);state.character!.level=level;state.character!.id=characterId;
@@ -12,6 +14,17 @@ function preparedState(classId:ClassId,name:string,level:number,characterId:stri
 }
 
 async function main(){
+ for(const definition of EVENT_EXPEDITIONS){
+  const mobile=seasonalEventExpeditionInfo(definition.liveEventSeriesId+'_2026');
+  assert.ok(mobile,`mobile identity missing for ${definition.id}`);
+  assert.deepEqual({
+   expeditionId:mobile!.expeditionId,eventName:mobile!.eventName,name:mobile!.name,description:mobile!.description,
+   routeHighlights:[...mobile!.routeHighlights],finalBoss:mobile!.finalBoss,minLevel:mobile!.minLevel,rewardMarks:mobile!.rewardMarks,
+  },{
+   expeditionId:definition.id,eventName:definition.eventName,name:definition.name,description:definition.description,
+   routeHighlights:definition.routeHighlights,finalBoss:definition.finalBoss,minLevel:definition.minLevel,rewardMarks:definition.rewardMarks,
+  },`mobile/server expedition identity drifted for ${definition.id}`);
+ }
  const now=Date.UTC(2026,6,15),controllerState=preparedState('IRONWARDEN','Event Tank',50,'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1');
  const echoStates=[preparedState('WAYFINDER','Echo Archer',50,'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2'),preparedState('RAVAGER','Echo Ravager',50,'cccccccc-cccc-4ccc-8ccc-ccccccccccc3'),preparedState('DAWNKEEPER','Echo Keeper',50,'dddddddd-dddd-4ddd-8ddd-ddddddddddd4')];
  const controllerRecord=deriveOnlineCoopLoadout('00000000-0000-4000-8000-000000000001',controllerState,7);

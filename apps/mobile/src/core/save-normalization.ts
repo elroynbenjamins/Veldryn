@@ -151,6 +151,7 @@ export function normalizeSave(input:any):GameState{
       stopCombatWhenOutOfFood:input.settings?.stopCombatWhenOutOfFood!==false,
       autoJoinWorldChat:input.settings?.autoJoinWorldChat!==false,
       defaultWorldChat:([1,2,3,4] as number[]).includes(Number(input.settings?.defaultWorldChat))?Number(input.settings.defaultWorldChat):1,
+      chatDockLines:([1,2,3] as number[]).includes(Number(input.settings?.chatDockLines))?Number(input.settings.chatDockLines):1,
       quickNavDestinations:normalizeQuickNavDestinations(input.settings?.quickNavDestinations),
       favoriteItemIds:stringList(input.settings?.favoriteItemIds,100),
       seenItemIds:legacySeenItemIds,

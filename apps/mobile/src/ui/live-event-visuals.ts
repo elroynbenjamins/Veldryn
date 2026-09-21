@@ -14,7 +14,7 @@ const GENERIC:LiveEventVisualBundle={
   rewardArt:EMPTY_ART,
 };
 
-const VISUALS:Record<string,LiveEventVisualBundle>={
+export const LIVE_EVENT_VISUALS:Readonly<Record<string,LiveEventVisualBundle>>={
   harvestwake:{
     heroBackground:require('../../assets/profile-backgrounds/bg_harvestwake.png'),
     commonCurrencyIcon:require('../../assets/events/harvestwake/currency_harvest_mark.png'),
@@ -114,6 +114,17 @@ const VISUALS:Record<string,LiveEventVisualBundle>={
   },
 };
 
+export function hasLiveEventVisualBundle(visualKey?:string):boolean{return !!visualKey&&Object.prototype.hasOwnProperty.call(LIVE_EVENT_VISUALS,visualKey);}
 export function liveEventVisuals(visualKey?:string):LiveEventVisualBundle{
-  return visualKey?VISUALS[visualKey]??GENERIC:GENERIC;
+  return visualKey?LIVE_EVENT_VISUALS[visualKey]??GENERIC:GENERIC;
+}
+export function liveEventVisualCoverage(visualKey?:string,discoveryIds:readonly string[]=[]){
+  const bundle=liveEventVisuals(visualKey);
+  return {
+    dedicatedBundle:hasLiveEventVisualBundle(visualKey),
+    commonCurrencyArt:!!bundle.commonCurrencyIcon,
+    prestigeCurrencyArt:!!bundle.prestigeCurrencyIcon,
+    discoveryArtCount:discoveryIds.filter(id=>!!bundle.discoveryArt[id]).length,
+    discoveryTotal:discoveryIds.length,
+  };
 }

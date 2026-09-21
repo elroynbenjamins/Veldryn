@@ -81,6 +81,8 @@ export function validateCoopEventExpeditionPreview(value:CoopEventExpeditionPrev
   if(!Number.isInteger(value.minLevel)||value.minLevel<1||!Number.isInteger(value.rewardMarks)||value.rewardMarks<0)throw new Error('invalid_event_expedition_requirements');
   if(value.status==='available'&&!value.liveEventId?.trim())throw new Error('available_event_requires_live_event');
   if(value.routeHighlights.length<3||new Set(value.routeHighlights.map(item=>item.trim().toLocaleLowerCase())).size!==value.routeHighlights.length||value.routeHighlights.some(item=>!item.trim()))throw new Error('invalid_event_route_highlights');
+  if(value.routeNodeCount!==undefined&&(!Number.isInteger(value.routeNodeCount)||value.routeNodeCount<5||value.routeNodeCount>7))throw new Error('invalid_event_route_length');
+  if(value.mechanic&&(!value.mechanic.id.trim()||!value.mechanic.label.trim()||!value.mechanic.description.trim()||!Number.isFinite(value.mechanic.startValue)||!Number.isFinite(value.mechanic.maxValue)||value.mechanic.maxValue<=0||value.mechanic.startValue<0||value.mechanic.startValue>value.mechanic.maxValue||value.mechanic.lowThreshold>=value.mechanic.highThreshold))throw new Error('invalid_event_mechanic');
 }
 
 export function presentEventExpeditionRun(projection:CoopEventRunServerProjection):CoopRunView{

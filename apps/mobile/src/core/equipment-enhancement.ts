@@ -100,6 +100,10 @@ export function equippedEffectGemBonuses(state:GameState):EquippedEffectGemBonus
     const gem=itemDef(gemId);
     if(gem.type==='gem'&&gem.gemEffect)result[gem.gemEffect]+=Math.max(0,gem.gemEffectValue??0);
   }
+  result.combat_speed=Math.min(.10,result.combat_speed);
+  result.boss_power=Math.min(.15,result.boss_power);
+  result.damage_reduction=Math.min(.10,result.damage_reduction);
+  result.recovery=Math.min(.50,result.recovery);
   return result;
 }
 export function gemEffectDescription(gemId:string){

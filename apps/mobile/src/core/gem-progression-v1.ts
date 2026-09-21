@@ -83,14 +83,16 @@ export function recommendedEffectFamiliesV1(state:GameState,classId:ClassId){
  return rows;
 }
 
+export function gemFamilyRecipeIdV1(familyId:string){return 'recipe_gem_'+familyId.replace(/^effect_|^stat_/,'');}
+export function isGemFamilyRecipeUnlockedV1(state:GameState,familyId:string){const family=mobileGemFamilyV1(familyId);return Boolean(family&&(family.kind==='stat'||(state.account.unlockedKnowledgeIds??[]).includes(gemFamilyRecipeIdV1(familyId))));}
+
 export function gemCodexRowsV1(state:GameState){
- const unlocked=new Set(state.account.unlockedKnowledgeIds??[]);
  return MOBILE_GEM_FAMILIES_V1.map(family=>{
   const owned=([1,2,3,4,5] as MobileGemGradeV1[]).map(grade=>({grade,quantity:combinedGemQuantityV1(state,mobileGemItemIdV1(family.familyId,grade))}));
   const equipped=family.kind==='effect'?resonanceForFamilyV1(state,family.familyId).copies:equippedCanonicalGemIdsV1(state).filter(id=>canonicalGemMetaV1(id)?.familyId===family.familyId).length;
   const highestOwned=[...owned].reverse().find(row=>row.quantity>0)?.grade;
-  const recipeId='recipe_gem_'+family.familyId.replace(/^effect_|^stat_/,'');
-  return {family,owned,equipped,highestOwned,recipeId,recipeUnlocked:family.kind==='stat'||unlocked.has(recipeId)};
+  const recipeId=gemFamilyRecipeIdV1(family.familyId);
+  return {family,owned,equipped,highestOwned,recipeId,recipeUnlocked:isGemFamilyRecipeUnlockedV1(state,family.familyId)};
  });
 }
 
@@ -113,10 +115,47 @@ export function availableGemCombinesV1(state:GameState){
  return MOBILE_GEM_FAMILIES_V1.flatMap(family=>([1,2,3,4] as const).map(fromGrade=>{
   const recipe=gemCombineRecipeV1(gemCombineRecipeIdV1(family.familyId,fromGrade))!;
   const inputReady=recipe.inputs.every(input=>combinedGemQuantityV1(state,input.itemId)>=input.quantity);
-  const goldReady=(state.character?.gold??0)>=recipe.gold;
-  return {recipe,inputReady,goldReady,ready:inputReady&&goldReady};
+  const goldReady=(state.character?.gold??0)>=recipe.gold,recipeReady=isGemFamilyRecipeUnlockedV1(state,recipe.familyId);
+  return {recipe,inputReady,goldReady,recipeReady,ready:inputReady&&goldReady&&recipeReady};
  })).filter(row=>combinedGemQuantityV1(state,mobileGemItemIdV1(row.recipe.familyId,row.recipe.fromGrade))>0||row.ready);
 }
+
+export const RESONANCE_CACHE_REQUIRED_LIVE_CLEARS_V1=3;
+export function resonanceWeekKeyV1(nowMs:number){
+ const date=new Date(nowMs),daysSinceMonday=(date.getUTCDay()+6)%7;
+ date.setUTCDate(date.getUTCDate()-daysSinceMonday);
+ return date.toISOString().slice(0,10);
+}
+export function resonanceCacheStatusV1(state:GameState,nowMs:number){
+ const weekKey=resonanceWeekKeyV1(nowMs),raw=state.account.resonanceCache;
+ if(!raw||raw.weekKey!==weekKey)return {weekKey,liveClears:0,claimed:false,effectChoices:[] as string[],dustReward:0,regionalCatalysts:0,radiantCatalysts:0,ready:false,remaining:RESONANCE_CACHE_REQUIRED_LIVE_CLEARS_V1};
+ const liveClears=Math.min(RESONANCE_CACHE_REQUIRED_LIVE_CLEARS_V1,Math.max(0,Math.floor(raw.liveClears??0))),effectChoices=Array.isArray(raw.effectChoices)?raw.effectChoices.filter(id=>mobileGemFamilyV1(id)?.kind==='effect').slice(0,3):[];
+ return {...raw,weekKey,liveClears,effectChoices,dustReward:Math.max(0,Math.floor(raw.dustReward??0)),regionalCatalysts:Math.max(0,Math.floor(raw.regionalCatalysts??0)),radiantCatalysts:Math.max(0,Math.floor(raw.radiantCatalysts??0)),ready:liveClears>=RESONANCE_CACHE_REQUIRED_LIVE_CLEARS_V1&&effectChoices.length===3,remaining:Math.max(0,RESONANCE_CACHE_REQUIRED_LIVE_CLEARS_V1-liveClears)};
+}
+function addCacheRewardV1(state:GameState,itemId:string,quantityToAdd:number,nowMs:number):GameState{
+ if(quantityToAdd<=0)return state;
+ const add=(stacks:readonly ItemStack[])=>{const existing=stacks.find(row=>row.itemId===itemId);return existing?stacks.map(row=>row.itemId===itemId?{...row,quantity:row.quantity+quantityToAdd}:row):[...stacks,{itemId,quantity:quantityToAdd}];};
+ const invExisting=state.inventory.stacks.some(row=>row.itemId===itemId);
+ if(invExisting||state.inventory.stacks.length<state.inventory.capacity)return {...state,inventory:{...state.inventory,stacks:add(state.inventory.stacks)}};
+ const bankExisting=state.bank.stacks.some(row=>row.itemId===itemId);
+ if(bankExisting||state.bank.stacks.length<state.bank.capacity)return {...state,bank:{...state.bank,stacks:add(state.bank.stacks)}};
+ const overflow=add(state.overflow.stacks);
+ return {...state,overflow:{stacks:overflow,expiresAtMs:Math.max(state.overflow.expiresAtMs??0,nowMs+72*60*60*1000)}};
+}
+export function claimResonanceCacheV1(state:GameState,familyId:string,nowMs:number){
+ const raw=state.account.resonanceCache,status=resonanceCacheStatusV1(state,nowMs),family=mobileGemFamilyV1(familyId);
+ if(!raw||raw.weekKey!==status.weekKey)throw new Error('This week’s Resonance Cache has no progress yet');
+ if(raw.claimed)throw new Error('This week’s Resonance Cache was already claimed');
+ if(!status.ready)throw new Error('Complete three successful Live co-op clears first');
+ if(!status.effectChoices.includes(familyId)||family?.kind!=='effect')throw new Error('Choose one of this week’s offered Effect Gems');
+ if(status.dustReward<25||status.dustReward>40||status.regionalCatalysts<1)throw new Error('Resonance Cache rewards are not ready');
+ let next=addCacheRewardV1(state,mobileGemItemIdV1(familyId,3),1,nowMs);
+ next=addCacheRewardV1(next,'GEM_DUST',status.dustReward,nowMs);
+ next=addCacheRewardV1(next,'REGIONAL_CATALYST',status.regionalCatalysts,nowMs);
+ if(status.radiantCatalysts)next=addCacheRewardV1(next,'RADIANT_CATALYST',status.radiantCatalysts,nowMs);
+ return {...next,account:{...next.account,resonanceCache:{...raw,claimed:true}}} as GameState;
+}
+
 export function formatGemValueV1(familyId:string,grade:MobileGemGradeV1){
  const family=mobileGemFamilyV1(familyId);if(!family)return '';
  const value=family.values[grade]*100;return family.unit==='percentage_point'?'+'+value.toFixed(value<1?2:1)+' pp':family.kind==='stat'?'+'+value.toFixed(value<1?2:1)+'%':value.toFixed(value<1?2:1)+'% effect value';

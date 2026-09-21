@@ -30,6 +30,8 @@ export interface CoopRouteNode {
   title?: string;
   /** Optional event-meter delta applied after a successful room resolution. */
   mechanicDelta?: number;
+  /** Optional signature-objective counter delta applied after a successful room resolution. */
+  objectiveDelta?: number;
   previewHidden?: boolean;
 }
 

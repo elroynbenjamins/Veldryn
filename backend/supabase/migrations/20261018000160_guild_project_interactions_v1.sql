@@ -167,8 +167,8 @@ begin
     raise exception 'GUILD_WEEKLY_PROJECT_ALREADY_ACTIVE';
   end if;
 
-  select slot_no into v_slot
-  from generate_series(1,v_slot_cap) slot_no
+  select slots.slot_no into v_slot
+  from generate_series(1,v_slot_cap) as slots(slot_no)
   where not exists(
     select 1 from public.guild_project_instances p
     where p.guild_id=v_gid and p.status='active' and p.slot_index=slot_no

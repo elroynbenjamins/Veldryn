@@ -93,7 +93,7 @@ export function newGame(nowMs:number):GameState{return {
   unlockedMonsterIds:['MOSS_RAT'],defeatedBossIds:[],
   skills:['mining','woodcutting','fishing','smithing','cooking','herbalism','alchemy','hunting','exploration','tailoring','enchanting','faith'].map(skillId=>({skillId:skillId as any,xp:0,level:1})),
   account:{createdCharacterCount:1,unlockedCharacterSlots:1,guildMember:false,patronTier:'none',guildBannerId:'world_tree_green',guildProfileFrameId:'classic',guildNameplateId:'classic',guildMotto:'Stronger together.',guildContribution:0,guildProjectProgress:0,guildBossHp:100000,guildProjectClaimed:false,guildJoinPolicy:'open',guildMinimumLevel:10,guildApplicationStatus:'none',seasonalContractClaimIds:[]},
-  settings:{language:'en',uiTheme:'veldryn',numberMode:'abbreviated',reduceMotion:false,textScale:1,autoEatThresholdPct:40,stopCombatWhenOutOfFood:true,autoJoinWorldChat:true,defaultWorldChat:1,quickNavDestinations:[...DEFAULT_QUICK_NAV_DESTINATIONS],favoriteItemIds:[]}
+  settings:{language:'en',uiTheme:'veldryn',numberMode:'abbreviated',reduceMotion:false,textScale:1,autoEatThresholdPct:40,stopCombatWhenOutOfFood:true,autoJoinWorldChat:true,defaultWorldChat:1,quickNavDestinations:[...DEFAULT_QUICK_NAV_DESTINATIONS],favoriteItemIds:[],seenItemIds:[]}
 }}
 
 export function createCharacter(state:GameState,classId:ClassId,name='Adventurer',bodyPresentation:BodyPresentation='male'):GameState{
@@ -106,7 +106,7 @@ export function createCharacter(state:GameState,classId:ClassId,name='Adventurer
   let maxHp=c.hp;
   for(const id of Object.values(equipment) as string[]){const d=itemDef(id);maxHp+=d.hp||0;}
   return {...state,character:{id:'LOCAL_CHAR_1',name:name.trim()||'Adventurer',classId,bodyPresentation,classSkills:classSkillsFor(classId).map(skill=>({skillId:skill.id,xp:0,level:1})),trainingFocus:'balanced',profileTitle:'New Adventurer',profileBackgroundId:'asterfall-night',unlockedEventSkinIds:[],unlockedSkinIds:['starting'],ownedPetIds:[],ownedBoostIds:[],selectedSkinId:'starting',faith:{favoriteBlessingIds:[],hideWeakerBlessings:true},level:1,xp:0,gold:100,hp:c.hp,currentHp:maxHp,attack:c.attack,defense:c.defense,equipment,equippedFoodId:'TRAVEL_RATION'},
-    inventory:{...state.inventory,stacks:[{itemId:'TRAVEL_RATION',quantity:20}]}}
+    inventory:{...state.inventory,stacks:[{itemId:'TRAVEL_RATION',quantity:20}]},settings:{...state.settings,seenItemIds:[...new Set([...(state.settings.seenItemIds??[]),'TRAVEL_RATION'])]}}
 }
 
 export function effectiveStats(state:GameState){

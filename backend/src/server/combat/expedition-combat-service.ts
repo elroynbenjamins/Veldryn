@@ -18,7 +18,7 @@ export interface ResolveExpeditionCombatInput extends BuildExpeditionEncounterIn
   maxDurationMs?:number;
   initialPlayerState?:Record<string,PersistentActorState>;
 }
-export type ExpeditionCombatReplayCueType='phase'|'cast'|'interrupt'|'down'|'assist'|'victory'|'wipe'|'timeout';
+export type ExpeditionCombatReplayCueType='action'|'phase'|'cast'|'interrupt'|'down'|'assist'|'victory'|'wipe'|'timeout';
 export interface ExpeditionCombatReplayCue{
   atMs:number;
   type:ExpeditionCombatReplayCueType;
@@ -29,6 +29,8 @@ export interface ExpeditionCombatReplayCue{
   abilityId?:string;
   abilityName?:string;
   durationMs?:number;
+  actionKind?:'damage'|'heal'|'shield';
+  amount?:number;
 }
 export interface ExpeditionCombatCommitPayload {
   success:boolean;
@@ -65,7 +67,8 @@ function publicReplayCues(result:CombatResult):ExpeditionCombatReplayCue[]{
     }
     for(const phase of definition.phases??[])abilityNames.set(phase.id,phase.name?.trim()||phase.id.replace(/_/g,' '));
   }
-  const cues:ExpeditionCombatReplayCue[]=[],assistSeen=new Set<string>();
+  const cues:ExpeditionCombatReplayCue[]=[],assistSeen=new Set<string>(),actionSeen=new Set<string>();
+  let lastBasicBeatAt=-Infinity;
   const names=(id:string|undefined)=>id?byId.get(id)?.name:undefined;
   const push=(cue:ExpeditionCombatReplayCue)=>cues.push(cue);
   for(const event of result.events){
@@ -94,14 +97,23 @@ function publicReplayCues(result:CombatResult):ExpeditionCombatReplayCue[]{
       push({atMs:event.atMs,type:'down',actorId:event.actorId,actorName:names(event.actorId),targetId:event.targetId,targetName:names(event.targetId)});
       continue;
     }
+    if((event.type==='damage'||event.type==='heal'||event.type==='shield')&&event.actorId&&event.targetId&&event.abilityId){
+      const basic=event.abilityId==='BASIC',key=`${event.atMs}:${event.actorId}:${event.abilityId}`;
+      if(!actionSeen.has(key)&&(!basic||event.atMs-lastBasicBeatAt>=900)){
+        actionSeen.add(key);if(basic)lastBasicBeatAt=event.atMs;
+        push({atMs:event.atMs,type:'action',actorId:event.actorId,actorName:names(event.actorId),targetId:event.targetId,targetName:names(event.targetId),abilityId:event.abilityId,abilityName:basic?'Basic Attack':abilityNames.get(event.abilityId),actionKind:event.type,amount:event.amount});
+      }
+      continue;
+    }
     if(event.type==='combat_end'){
       push({atMs:event.atMs,type:result.reason});
     }
   }
   if(cues.length<=48)return cues;
-  const terminal=cues[cues.length-1],source=cues.slice(0,-1),sampled:ExpeditionCombatReplayCue[]=[];
-  for(let i=0;i<47;i++)sampled.push(source[Math.min(source.length-1,Math.floor(i*source.length/47))]);
-  return [...sampled,terminal];
+  const terminal=cues[cues.length-1],source=cues.slice(0,-1);
+  const sample=(items:ExpeditionCombatReplayCue[],limit:number)=>{if(items.length<=limit)return items;if(limit<=0)return[];const picked:ExpeditionCombatReplayCue[]=[];for(let i=0;i<limit;i++)picked.push(items[Math.min(items.length-1,Math.floor(i*items.length/limit))]);return picked;};
+  const important=source.filter(cue=>cue.type!=='action'),keptImportant=sample(important,47),actionBudget=Math.max(0,47-keptImportant.length),keptActions=sample(source.filter(cue=>cue.type==='action'),actionBudget);
+  return [...keptImportant,...keptActions].sort((a,b)=>a.atMs-b.atMs).concat(terminal);
 }
 
 export function resolveExpeditionCombat(input:ResolveExpeditionCombatInput, includeDebugTrace=false):ExpeditionCombatCommitPayload {

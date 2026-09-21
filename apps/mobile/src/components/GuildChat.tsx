@@ -47,7 +47,7 @@ export function GuildChat({language,currentPlayerName,firstUnreadMessageId,onRea
   {!!error&&<View accessibilityRole="alert" style={s.errorCard}><Text style={s.errorLabel}>GUILD CHAT UNAVAILABLE</Text><Text style={s.error}>{error}</Text><GameButton compact title="Retry" tone="secondary" disabled={busy} onPress={()=>void load()}/></View>}
   <ChatMentionSuggestions value={body} names={mentionNames} currentName={currentPlayerName} onChange={setBody}/>
   <View style={s.compose}><TextInput accessibilityLabel="Guild message" value={body} onChangeText={setBody} onSubmitEditing={()=>void send()} maxLength={300} placeholder={ot(language,'chat.placeholder')} style={s.input}/><ChatEmotePicker onPick={token=>setBody(value=>(value+token).slice(0,300))}/><View style={s.send}><GameButton title={busy?'…':ot(language,'chat.send')} disabled={busy||!body.trim()||!guild} onPress={()=>void send()}/></View></View>
-  <ChatPlayerSheet message={selected} onClose={()=>setSelected(null)} onBlocked={blockedId=>setSnapshot(current=>current?{...current,messages:current.messages.filter(message=>message.account_id!==blockedId)}:current)}/>
+  <ChatPlayerSheet message={selected?{...selected,message_id:selected.id}:null} onClose={()=>setSelected(null)} onBlocked={blockedId=>setSnapshot(current=>current?{...current,messages:current.messages.filter(message=>message.account_id!==blockedId)}:current)}/>
  </View>;
 }
 

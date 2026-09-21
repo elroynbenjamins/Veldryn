@@ -1,9 +1,9 @@
 import {createCharacter,effectiveStats,newGame,previewActivityReward,salvageItem,sellItem,startCombat} from '../src/core/game';
-import {attemptEquipmentUpgrade,equippedEffectGemBonuses,gearEnhancement,gemSocketCapacity,normalizeEnhancementGemSlots,socketGem,unsocketGem,upgradeQuote} from '../src/core/equipment-enhancement';
+import {attemptEquipmentUpgrade,EFFECT_GEM_CAPS,equippedEffectGemBonuses,gearEnhancement,gemSocketCapacity,normalizeEnhancementGemSlots,socketGem,unsocketGem,upgradeQuote} from '../src/core/equipment-enhancement';
 function ok(condition:unknown,message:string){if(!condition)throw new Error(message)}
 
 let state=createCharacter(newGame(1),'IRONWARDEN','Smith','male');
-state={...state,character:{...state.character!,gold:100000,equipment:{...state.character!.equipment,ring:'STONEHEART_RING'}},inventory:{...state.inventory,stacks:[...state.inventory.stacks,{itemId:'TEMPERING_DUST',quantity:999},{itemId:'TEMPERING_CORE',quantity:99},{itemId:'WARD_SHARD',quantity:2},{itemId:'SWIFT_SIGIL',quantity:1}]}}; 
+state={...state,character:{...state.character!,gold:100000,equipment:{...state.character!.equipment,ring:'STONEHEART_RING'}},inventory:{...state.inventory,stacks:[...state.inventory.stacks,{itemId:'TEMPERING_DUST',quantity:999},{itemId:'TEMPERING_CORE',quantity:99},{itemId:'WARD_SHARD',quantity:2},{itemId:'EMBER_SHARD',quantity:1},{itemId:'SWIFT_SIGIL',quantity:1},{itemId:'BOSSBANE_SIGIL',quantity:1}]}}; 
 ok(gemSocketCapacity('STONEHEART_RING')===2,'Every equipment piece should expose one Stat and one Effect socket');
 ok(upgradeQuote(state,'STONEHEART_RING').successChance===1,'The first upgrade should be guaranteed');
 const before=effectiveStats(state);
@@ -14,11 +14,17 @@ ok(effectiveStats(upgraded).defense>before.defense,'Upgrade should increase effe
 const statSocketed=socketGem(upgraded,'STONEHEART_RING','WARD_SHARD');
 ok(gearEnhancement(statSocketed,'STONEHEART_RING').statGemId==='WARD_SHARD','Stat Gem should occupy the Stat socket');
 ok(effectiveStats(statSocketed).defense>effectiveStats(upgraded).defense,'Ward gem should increase defense');
-let duplicateStat=false;try{socketGem(statSocketed,'STONEHEART_RING','WARD_SHARD')}catch{duplicateStat=true}ok(duplicateStat,'A second Stat Gem must not occupy the Effect socket');
+const goldBeforeStatReplace=statSocketed.character!.gold;
+const statReplaced=socketGem(statSocketed,'STONEHEART_RING','EMBER_SHARD');
+ok(gearEnhancement(statReplaced,'STONEHEART_RING').statGemId==='EMBER_SHARD','A Stat Gem can be replaced directly');
+ok(statReplaced.character!.gold===goldBeforeStatReplace-500,'Direct Stat replacement should charge the old gem extraction fee');
+ok((statReplaced.inventory.stacks.find(stack=>stack.itemId==='WARD_SHARD')?.quantity??0)>=2,'Direct replacement should return the old Stat Gem');
+let duplicateStat=false;try{socketGem(statReplaced,'STONEHEART_RING','EMBER_SHARD')}catch{duplicateStat=true}ok(duplicateStat,'The exact same Stat Gem cannot be redundantly socketed');
 
-const fullySocketed=socketGem(statSocketed,'STONEHEART_RING','SWIFT_SIGIL');
+const fullySocketed=socketGem(statReplaced,'STONEHEART_RING','SWIFT_SIGIL');
 ok(gearEnhancement(fullySocketed,'STONEHEART_RING').effectGemId==='SWIFT_SIGIL','Effect Gem should occupy the Effect socket');
 ok(Math.abs(equippedEffectGemBonuses(fullySocketed).combat_speed-.02)<.000001,'Swift Sigil should provide its behavioral combat-speed bonus');
+ok(EFFECT_GEM_CAPS.combat_speed===.10&&EFFECT_GEM_CAPS.boss_power===.15,'Effect Gem build caps should be explicit domain rules');
 
 const goldBeforeEffectExtract=fullySocketed.character!.gold;
 const effectExtracted=unsocketGem(fullySocketed,'STONEHEART_RING',1);

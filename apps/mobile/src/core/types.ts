@@ -35,7 +35,9 @@ export interface CharacterState {
   id:string; name:string; classId:ClassId; level:number; xp:number; gold:number;
   hp:number; currentHp:number; attack:number; defense:number;
   equipment:Partial<Record<GearSlot,string>>;
-  /** Local prototype key is the gear definition ID. Online persistence maps this shape to owned item instances. */
+  /** Exact physical copy equipped in each slot. Item-definition IDs remain in equipment for broad content compatibility. */
+  equippedGearInstanceIds?:Partial<Record<GearSlot,string>>;
+  /** Legacy save compatibility only. Normalization migrates these item-keyed values into concrete gear instances. */
   gearEnhancements?:Record<string,GearEnhancementState>;
   /** One character-bound gathering tool per skill. Equipped tools are removed from Inventory. */
   equippedToolIds?:Partial<Record<GatheringSkillId,string>>;
@@ -78,9 +80,11 @@ export interface CraftedGearInstance{
   itemId:string;
   ownerCharacterId:string;
   rarity:import('./item-rarity').ItemRarity;
-  acquireSource:'craft';
+  acquireSource:'craft'|'loot'|'starting'|'migration';
   sourceReceiptKey:string;
   createdAtMs:number;
+  location:'inventory'|'bank'|'equipped';
+  equippedSlot?:GearSlot;
   enhancement:GearEnhancementState;
 }
 export interface ItemStack { itemId:string; quantity:number; }

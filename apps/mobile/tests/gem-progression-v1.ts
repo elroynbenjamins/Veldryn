@@ -1,6 +1,6 @@
 import {createCharacter,newGame} from '../src/core/game';
 import {gearEnhancement,replaceGem,socketGem} from '../src/core/equipment-enhancement';
-import {startGemCombine,claimEquipmentCraft,equipmentCraftQueueModel} from '../src/core/equipment-crafting-queue';
+import {startGemCombine,claimForgeJob,equipmentCraftQueueModel} from '../src/core/equipment-crafting-queue';
 import {availableGemCombinesV1,gemCodexRowsV1,gemCombineRecipeIdV1,recommendedEffectFamiliesV1,resonanceForFamilyV1} from '../src/core/gem-progression-v1';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
@@ -39,7 +39,7 @@ ok(availableGemCombinesV1(state).some(row=>row.recipe.id===recipeId&&row.ready),
 const started=startGemCombine(state,recipeId,1000);
 ok(started.seconds===300,'Cut to Polished base combine should take five minutes without speed modifiers');
 ok(equipmentCraftQueueModel(started.state,1000).jobs.some(job=>job.id===started.job.id),'Gem combine must occupy the shared equipment forge queue');
-const claimed=claimEquipmentCraft(started.state,started.job.id,started.job.completesAtMs);
+const claimed=claimForgeJob(started.state,started.job.id,started.job.completesAtMs);
 ok(claimed.state.inventory.stacks.some(row=>row.itemId==='gem:stat_might:g2'),'Claiming a gem forge job should award the upgraded gem');
 
 console.log('PASS: canonical gem progression, Resonance, replacement and shared forge queue');

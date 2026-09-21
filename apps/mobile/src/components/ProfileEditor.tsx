@@ -1,4 +1,4 @@
-import {useMemo,useState,type ReactNode} from 'react';
+import {useEffect,useMemo,useState,type ReactNode} from 'react';
 import {Image,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {GameTextInput} from './GameTextInput';
 import {GameButton} from './GameButton';
@@ -27,7 +27,7 @@ function CosmeticTile({name,status,detail,selected,onPress,children}:{name:strin
   <Text numberOfLines={2} style={s.name}>{name}</Text>{detail?<Text numberOfLines={2} style={s.detail}>{detail}</Text>:null}
  </Pressable>;
 }
-export function ProfileEditor({state,onChange,showLoadouts=true,onNavigateSource}:{state:GameState;onChange:(next:GameState)=>void;showLoadouts?:boolean;onNavigateSource?:(destination:ProfileCustomizationDestination)=>void}){
+export function ProfileEditor({state,onChange,showLoadouts=true,onNavigateSource,onDirtyChange,onPreviewStateChange}:{state:GameState;onChange:(next:GameState)=>void;showLoadouts?:boolean;onNavigateSource?:(destination:ProfileCustomizationDestination)=>void;onDirtyChange?:(dirty:boolean)=>void;onPreviewStateChange?:(preview:GameState)=>void}){
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const character=state.character!;
  const [tab,setTab]=useState<Tab>('Backgrounds'),[title,setTitle]=useState(character.profileTitle??'New Adventurer');
@@ -40,6 +40,8 @@ export function ProfileEditor({state,onChange,showLoadouts=true,onNavigateSource
  const applied=tab==='Backgrounds'?background===(character.profileBackgroundId??'asterfall-night'):tab==='Borders'?border===(character.profileBorderId??''):pet===(character.selectedCosmeticPetId??'');
  const apply=()=>{if(!canUseProfileCosmetic(state,kind,id))return;const patch=kind==='background'?{profileBackgroundId:id}:kind==='border'?{profileBorderId:id||undefined}:{selectedCosmeticPetId:id||undefined};onChange({...state,character:{...character,...patch}});};
  const previewing=title.trim()!==(character.profileTitle??'New Adventurer')||background!==(character.profileBackgroundId??'asterfall-night')||border!==(character.profileBorderId??'')||pet!==(character.selectedCosmeticPetId??'');
+ useEffect(()=>{onDirtyChange?.(previewing)},[previewing,onDirtyChange]);
+ useEffect(()=>{onPreviewStateChange?.(preview)},[state,title,background,border,pet,onPreviewStateChange]);
  const resetPreview=()=>{setTitle(character.profileTitle??'New Adventurer');setBackground(character.profileBackgroundId??'asterfall-night');setBorder(character.profileBorderId??'');setPet(character.selectedCosmeticPetId??'');};
  const selectedSource=tab==='Backgrounds'&&!usable?profileRewardSource(state,'background',background):tab==='Borders'&&!usable&&border?profileRewardSource(state,'border',border):undefined;
  return <Panel>

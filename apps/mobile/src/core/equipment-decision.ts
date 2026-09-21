@@ -1,6 +1,6 @@
 import {itemDef} from '../content/items';
 import {equipmentSetDef,equippedSetPieceCount} from '../content/equipment-sets';
-import {combinedQuantity,enhancedGearStats,gearEnhancement,gemSocketCapacity,upgradeQuote} from './equipment-enhancement';
+import {activeSocketedGemIds,combinedQuantity,enhancedGearStats,gearEnhancement,gemSocketCapacity,gemSocketLayout,upgradeQuote} from './equipment-enhancement';
 import {itemRarity,type ItemRarity} from './item-rarity';
 import type {GameState} from './types';
 
@@ -10,7 +10,7 @@ export interface EquipmentDecisionModel{
   rarity:ItemRarity;
   rank:number;
   stats:{attack:number;defense:number;hp:number};
-  sockets:{filled:number;capacity:number};
+  sockets:{filled:number;capacity:number;statUnlocked:boolean;effectUnlocked:boolean;statFilled:boolean;effectFilled:boolean;legacyCount:number};
   set?:{
     id:string;
     name:string;
@@ -49,7 +49,7 @@ export function equipmentDecisionModel(state:GameState,itemId:string):EquipmentD
     rarity:itemRarity(item),
     rank:enhancement.rank,
     stats:enhancedGearStats(state,itemId),
-    sockets:{filled:enhancement.gemIds.length,capacity:gemSocketCapacity(itemId)},
+    sockets:{filled:activeSocketedGemIds(state,itemId).length,capacity:gemSocketCapacity(itemId),...gemSocketLayout(itemId),statFilled:!!enhancement.statGemId,effectFilled:!!enhancement.effectGemId,legacyCount:enhancement.legacyGemIds?.length??0},
     set:set?{
       id:set.id,
       name:set.name,

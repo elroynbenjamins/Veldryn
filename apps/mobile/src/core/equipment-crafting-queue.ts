@@ -43,6 +43,8 @@ export function normalizeEquipmentCraftingQueue(raw:unknown):EquipmentCraftJob[]
       ownerCharacterId:String(row.ownerCharacterId).slice(0,120),
       startedAtMs:Math.max(0,Math.floor(Number(row.startedAtMs)||0)),
       completesAtMs:Math.max(0,Math.floor(Number(row.completesAtMs)||0)),
+      reservedGold:Number.isFinite(Number(row.reservedGold))?Math.max(0,Math.floor(Number(row.reservedGold))):undefined,
+      reservedInputs:Array.isArray(row.reservedInputs)?row.reservedInputs.filter((stack:any)=>stack&&typeof stack.itemId==='string'&&Number.isFinite(Number(stack.quantity))&&Number(stack.quantity)>0).map((stack:any)=>({itemId:String(stack.itemId).slice(0,120),quantity:Math.max(1,Math.floor(Number(stack.quantity)))})).slice(0,12):undefined,
     }))
     .filter(row=>row.completesAtMs>=row.startedAtMs)
     .slice(-MAX_READY_EQUIPMENT_CRAFTS);
@@ -111,6 +113,7 @@ export function startEquipmentCraft(state:GameState,recipeId:string,nowMs:number
   const job:EquipmentCraftJob={
     id:`eqcraft:${state.character!.id}:${recipeId}:${nowMs}:${existingQueue.length}`,
     recipeId,ownerCharacterId:state.character!.id,startedAtMs:nowMs,completesAtMs:nowMs+seconds*1000,
+    reservedGold:recipe.gold,reservedInputs:recipe.inputs.map(input=>({...input})),
   };
   next={...next,account:{...next.account,equipmentCraftingQueue:[...existingQueue,job]}};
   return {state:next,job,seconds};
@@ -162,6 +165,52 @@ export function claimAllReadyEquipmentCrafts(state:GameState,nowMs:number){
     catch(error){if(error instanceof Error&&error.message==='Inventory and Bank are full')break;throw error;}
   }
   return {state:next,claimed};
+}
+
+export const EQUIPMENT_CRAFT_CANCEL_GOLD_REFUND=.90;
+
+function addStackable(stacks:ItemStack[],capacity:number,itemId:string,quantityToAdd:number){
+  const existing=stacks.find(row=>row.itemId===itemId);
+  if(existing)return {stacks:stacks.map(row=>row.itemId===itemId?{...row,quantity:row.quantity+quantityToAdd}:row),remaining:0};
+  if(stacks.filter(row=>row.quantity>0).length>=capacity)return {stacks,remaining:quantityToAdd};
+  return {stacks:[...stacks,{itemId,quantity:quantityToAdd}],remaining:0};
+}
+function refundOwnerGold(state:GameState,ownerCharacterId:string,gold:number){
+  if(gold<=0)return state;
+  if(state.character?.id===ownerCharacterId)return {...state,character:{...state.character,gold:state.character.gold+gold}};
+  return {...state,otherCharacters:(state.otherCharacters??[]).map(entry=>entry.character.id===ownerCharacterId?{...entry,character:{...entry.character,gold:entry.character.gold+gold}}:entry)};
+}
+function refundMaterialToOwner(state:GameState,ownerCharacterId:string,input:ItemStack){
+  if(state.character?.id===ownerCharacterId){
+    const inv=addStackable(state.inventory.stacks,state.inventory.capacity,input.itemId,input.quantity);
+    if(inv.remaining===0)return {...state,inventory:{...state.inventory,stacks:inv.stacks}};
+  }else{
+    const index=(state.otherCharacters??[]).findIndex(entry=>entry.character.id===ownerCharacterId);
+    if(index>=0){
+      const target=state.otherCharacters![index],inv=addStackable(target.inventory.stacks,target.inventory.capacity,input.itemId,input.quantity);
+      if(inv.remaining===0){
+        const others=state.otherCharacters!.slice();others[index]={...target,inventory:{...target.inventory,stacks:inv.stacks}};
+        return {...state,otherCharacters:others};
+      }
+    }
+  }
+  const bank=addStackable(state.bank.stacks,state.bank.capacity,input.itemId,input.quantity);
+  if(bank.remaining>0)throw new Error('Free Inventory or Bank space before cancelling this craft');
+  return {...state,bank:{...state.bank,stacks:bank.stacks}};
+}
+
+export function cancelEquipmentCraft(state:GameState,jobId:string,nowMs:number){
+  const queue=equipmentCraftingQueue(state),job=queue.find(row=>row.id===jobId);
+  if(!job)throw new Error('Crafting job not found');
+  if(job.completesAtMs<=nowMs)throw new Error('Finished equipment must be claimed instead of cancelled');
+  const recipe=timedEquipmentRecipe(job.recipeId);if(!recipe)throw new Error('Crafting recipe is no longer available');
+  const reservedInputs=job.reservedInputs?.length?job.reservedInputs:recipe.inputs;
+  const reservedGold=job.reservedGold??recipe.gold;
+  const refundGold=Math.floor(reservedGold*EQUIPMENT_CRAFT_CANCEL_GOLD_REFUND);
+  let next=refundOwnerGold(state,job.ownerCharacterId,refundGold);
+  for(const input of reservedInputs)next=refundMaterialToOwner(next,job.ownerCharacterId,input);
+  next={...next,account:{...next.account,equipmentCraftingQueue:queue.filter(row=>row.id!==jobId)}};
+  return {state:next,job,refundGold,feeGold:reservedGold-refundGold,refundedInputs:reservedInputs.map(row=>({...row}))};
 }
 
 export function equipmentCraftQueueModel(state:GameState,nowMs:number){

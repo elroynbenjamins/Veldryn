@@ -41,6 +41,51 @@ export function eventObjectiveProjection(run:EventRun){
  return {id:config.id,label:config.label,description:config.description,count,maxCount:config.maxCount,effect:config.effect,completed,bossAttackMultiplier,bossHpMultiplier,bossDefenseMultiplier,rewardBonus,preBossHealPct,effectText};
 }
 
+export interface EffectiveEventNode extends CoopRouteNode {encounterAttackMultiplier?:number;reactionLabel?:string;}
+
+export function effectiveEventNode(run:EventRun,node:CoopRouteNode):EffectiveEventNode{
+ const next:EffectiveEventNode={...node};
+ if(run.graph.generatorVersion!=='event-route-v4'||node.kind==='entry'||node.kind==='boss')return next;
+ const mechanic=eventMechanicProjection(run),objective=eventObjectiveProjection(run),battleLike=node.kind==='battle'||node.kind==='elite';
+ const title=()=>next.title??next.kind.charAt(0).toUpperCase()+next.kind.slice(1);
+ const prefix=(label:string)=>{next.title=`${label}: ${title()}`;next.reactionLabel=label;};
+ switch(run.eventId){
+  case 'EVENT_TURNING_CHRONICLE_VAULT':
+   if(objective.count>=2&&node.depth>=5&&node.kind==='battle'&&node.nodeId.endsWith('c0')){next.kind='echo';next.risk=.92;next.mechanicDelta=(next.mechanicDelta??0)+8;next.title='Stable Timeline Echo';next.reactionLabel='Chronicle Seals stabilized this route';}
+   else if(mechanic.status==='critical'&&battleLike){next.kind='elite';next.risk=clamp(next.risk+.12,.75,1.4);next.mechanicDelta=(next.mechanicDelta??0)-2;next.encounterAttackMultiplier=1.08;prefix('Temporal Fracture');}
+   break;
+  case 'EVENT_HEARTBOND_VOW_GARDEN':
+   if(objective.count>=2&&node.depth===5&&node.kind==='battle'&&node.nodeId.endsWith('c0')){next.kind='camp';next.risk=.9;next.mechanicDelta=(next.mechanicDelta??0)+6;next.title="Vowkeeper's Respite";next.reactionLabel='Restored vows opened a safe refuge';}
+   else if(mechanic.status==='critical'&&node.kind==='risk'){next.mechanicDelta=(next.mechanicDelta??0)-4;next.risk=clamp(next.risk+.08,.75,1.4);prefix('Fractured Vow');}
+   break;
+  case 'EVENT_BLOOMWAKE_THORNHEART_GROVE':
+   if(objective.count>=2&&node.kind==='risk'){next.mechanicDelta=Math.min(-1,(next.mechanicDelta??0)+5);next.risk=clamp(next.risk-.08,.75,1.4);prefix('Heartroot-Guided');}
+   if(mechanic.status==='critical'&&battleLike){next.kind='elite';next.risk=clamp(next.risk+.1,.75,1.4);next.encounterAttackMultiplier=1.08;prefix('Feral Bloom');}
+   break;
+  case 'EVENT_SUNCREST_SHATTERED_ISLES':
+   if(mechanic.status==='strong'&&node.kind==='risk'){next.objectiveDelta=(next.objectiveDelta??0)+1;next.mechanicDelta=(next.mechanicDelta??0)+4;prefix('Crowd-Favorite Dare');}
+   if(objective.completed&&node.depth===5&&node.kind==='battle'&&node.nodeId.endsWith('c0')){next.kind='elite';next.risk=1.1;next.encounterAttackMultiplier=1.04;next.mechanicDelta=(next.mechanicDelta??0)+4;next.title='Laurel Exhibition Match';next.reactionLabel='Full laurels unlocked an exhibition challenge';}
+   break;
+  case 'EVENT_STARFALL_ASTRAL_RIFT':
+   if(objective.count>=2&&node.kind==='risk'){const delta=next.mechanicDelta??0;next.mechanicDelta=delta<0?Math.ceil(delta/2):delta;next.risk=clamp(next.risk-.08,.75,1.4);prefix('Anchored Route');}
+   if(mechanic.status==='critical'&&battleLike){next.kind='elite';next.risk=clamp(next.risk+.12,.75,1.4);next.encounterAttackMultiplier=1.1;prefix('Rift Surge');}
+   break;
+  case 'EVENT_VEILBREAK_GLOAM_BREACH':
+   if(objective.count>=2&&['event','shrine','camp'].includes(node.kind)){next.mechanicDelta=(next.mechanicDelta??0)+4;prefix('Wardlit');}
+   if(mechanic.status==='critical'&&battleLike){next.kind='elite';next.risk=clamp(next.risk+.12,.75,1.4);next.encounterAttackMultiplier=1.1;prefix('Blackout Assault');}
+   break;
+  case 'EVENT_MERCHANT_GILDED_ROAD':
+   if(objective.count<=1&&node.kind==='merchant'){next.objectiveDelta=(next.objectiveDelta??0)+1;next.mechanicDelta=(next.mechanicDelta??0)+4;next.title='Emergency Cargo Restock';next.reactionLabel='Low cargo unlocked a recovery stop';}
+   if(objective.count===0&&node.kind==='risk'){next.mechanicDelta=(next.mechanicDelta??0)-3;next.risk=clamp(next.risk+.08,.75,1.4);prefix('Empty-Wagon Gamble');}
+   break;
+  case 'EVENT_FROSTFALL_AURORA_HOLLOW':
+   if(objective.count>=2&&battleLike){next.mechanicDelta=(next.mechanicDelta??0)+3;prefix('Hearthlit');}
+   if(mechanic.status==='critical'&&battleLike){next.kind='elite';next.risk=clamp(next.risk+.1,.75,1.4);next.encounterAttackMultiplier=1.08;prefix('Deep Freeze');}
+   break;
+ }
+ return next;
+}
+
 function healBeforeBoss(state:PersistentRunState,players:readonly CombatantDefinition[],pct:number):PersistentRunState{
  if(pct<=0)return state;
  const actors={...state.actors};
@@ -58,7 +103,7 @@ function graph(eventId:string,runId:string,serverSecret:string):CoopRouteGraph{
  const nodes:CoopRouteNode[]=[{nodeId:'entry',depth:0,kind:'entry',contentId:'COOP_ENTRY',modifierId:'none',risk:1,rewardTag:'none',nextNodeIds:idsAt(1)}];
  for(let depth=1;depth<=count;depth++){
   const next=depth===count?['boss']:idsAt(depth+1);
-  const base=deterministicInt(serverSecret,1,3,'event-route-v3',eventId,runId,depth);
+  const base=deterministicInt(serverSecret,1,3,'event-route-v4',eventId,runId,depth);
   for(const choice of [0,1,2]){
    const special=definition.specialNodes.find(item=>item.depth===depth&&item.choice===choice);
    if(special){
@@ -71,7 +116,7 @@ function graph(eventId:string,runId:string,serverSecret:string):CoopRouteGraph{
   }
  }
  nodes.push({nodeId:'boss',depth:count+1,kind:'boss',contentId:boss,modifierId:'final',risk:1.25,rewardTag:'boss',nextNodeIds:[],title:definition.finalBoss,mechanicDelta:0,objectiveDelta:0});
- const result:CoopRouteGraph={schemaVersion:1,generatorVersion:'event-route-v3',runId,expeditionId:eventId,contentVersion:'event-v3',balanceVersion:'event-balance-v3',preBossNodeCount:count,entryNodeId:'entry',bossNodeId:'boss',nodes};validateCoopRouteGraph(result,{preBossNodeMin:5,preBossNodeMax:7});return result;
+ const result:CoopRouteGraph={schemaVersion:1,generatorVersion:'event-route-v4',runId,expeditionId:eventId,contentVersion:'event-v4',balanceVersion:'event-balance-v4',preBossNodeCount:count,entryNodeId:'entry',bossNodeId:'boss',nodes};validateCoopRouteGraph(result,{preBossNodeMin:5,preBossNodeMax:7});return result;
 }
 
 export class EventExpeditionService{
@@ -88,11 +133,11 @@ export class EventExpeditionService{
  choose(input:{runId:string;accountId:string;optionNodeId:string;requestId:string}):EventRun{
   const hash=`${input.runId}:${input.accountId}:${input.optionNodeId}`,receiptKey=`${input.runId}:${input.requestId}`,prior=this.commandReceipts.get(receiptKey);if(prior){if(prior.hash!==hash)throw new Error('event_idempotency_conflict');return structuredClone(prior.run);}
   const run=this.repository.get(input.runId);if(!run)throw new Error('event_run_not_found');if(!run.accountIds.includes(input.accountId))throw new Error('not_participant');if(run.phase!=='awaiting_choice')throw new Error('event_run_not_awaiting_choice');
-  const current=run.graph.nodes.find(node=>node.nodeId===run.currentNodeId);if(!current||!current.nextNodeIds.includes(input.optionNodeId))throw new Error('invalid_event_option');const selected=run.graph.nodes.find(node=>node.nodeId===input.optionNodeId);if(!selected)throw new Error('invalid_event_option');
+  const current=run.graph.nodes.find(node=>node.nodeId===run.currentNodeId);if(!current||!current.nextNodeIds.includes(input.optionNodeId))throw new Error('invalid_event_option');const baseSelected=run.graph.nodes.find(node=>node.nodeId===input.optionNodeId);if(!baseSelected)throw new Error('invalid_event_option');const selected=effectiveEventNode(run,baseSelected);
   const beforeMechanic=eventMechanicProjection(run),beforeObjective=eventObjectiveProjection(run);
   let startingState=run.persistentState;
   if(selected.kind==='boss'&&beforeObjective.preBossHealPct>0)startingState=healBeforeBoss(startingState,run.players,beforeObjective.preBossHealPct);
-  const result=resolveCoopNode({runId:run.id,serverSecret:this.serverSecret,node:selected,players:run.players,state:startingState,enemyAttackMultiplier:selected.kind==='boss'?beforeMechanic.bossAttackMultiplier*beforeObjective.bossAttackMultiplier:1,enemyHpMultiplier:selected.kind==='boss'?beforeObjective.bossHpMultiplier:1,enemyDefenseMultiplier:selected.kind==='boss'?beforeObjective.bossDefenseMultiplier:1});
+  const result=resolveCoopNode({runId:run.id,serverSecret:this.serverSecret,node:selected,players:run.players,state:startingState,enemyAttackMultiplier:selected.kind==='boss'?beforeMechanic.bossAttackMultiplier*beforeObjective.bossAttackMultiplier:(selected.encounterAttackMultiplier??1),enemyHpMultiplier:selected.kind==='boss'?beforeObjective.bossHpMultiplier:1,enemyDefenseMultiplier:selected.kind==='boss'?beforeObjective.bossDefenseMultiplier:1});
   run.lastResolution={nodeId:selected.nodeId,result:structuredClone(result)};run.persistentState=result.state;run.currentNodeId=selected.nodeId;
   if(result.success&&selected.kind!=='boss'){
    const definition=definitionFor(run.eventId);

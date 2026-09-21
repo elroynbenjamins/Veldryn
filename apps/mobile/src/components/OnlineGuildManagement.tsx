@@ -87,7 +87,7 @@ export function OnlineGuildManagement({onApplicationsChanged}:{onApplicationsCha
 }
 
 function makeStyles(C:ThemeColors){return StyleSheet.create({
- stack:{gap:10},title:{...typography.title,color:C.text},sub:{...typography.body,color:C.muted,lineHeight:19,marginTop:4},managementHead:{flexDirection:'row',alignItems:'center',gap:8,paddingTop:2},rolePill:{paddingHorizontal:7,paddingVertical:4,borderWidth:1,borderRadius:99},roleLeader:{borderColor:C.lineStrong,backgroundColor:C.warningSurface},roleOfficer:{borderColor:C.info,backgroundColor:C.infoSurface},roleMember:{borderColor:C.line,backgroundColor:C.panel2},roleText:{fontSize:7.5,fontWeight:'900',letterSpacing:.6},roleTextLeader:{color:C.accent},roleTextOfficer:{color:C.info},roleTextMember:{color:C.muted},
+ stack:{gap:10},flex:{flex:1,minWidth:0},title:{...typography.title,color:C.text},sub:{...typography.body,color:C.muted,lineHeight:19,marginTop:4},managementHead:{flexDirection:'row',alignItems:'center',gap:8,paddingTop:2},rolePill:{paddingHorizontal:7,paddingVertical:4,borderWidth:1,borderRadius:99},roleLeader:{borderColor:C.lineStrong,backgroundColor:C.warningSurface},roleOfficer:{borderColor:C.info,backgroundColor:C.infoSurface},roleMember:{borderColor:C.line,backgroundColor:C.panel2},roleText:{fontSize:7.5,fontWeight:'900',letterSpacing:.6},roleTextLeader:{color:C.accent},roleTextOfficer:{color:C.info},roleTextMember:{color:C.muted},
  sectionHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,marginTop:spacing.md},
  section:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.8},
  sectionMeta:{fontSize:9,color:C.muted,fontWeight:'800'},

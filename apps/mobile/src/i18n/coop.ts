@@ -48,12 +48,12 @@ const fr:Catalog={
 
 const catalogs:Record<Language,Catalog>={en,de,es,nl,it,fr};
 const policyCopy:Record<Language,{duration:string;durationValue:string;rewardCadence:string}>={
-  en:{duration:'Run time',durationValue:'6–8 minutes',rewardCadence:'3 enhanced charges · +1 every 8 hours · 12 each week · unlimited runs'},
-  de:{duration:'Laufzeit',durationValue:'6–8 Minuten',rewardCadence:'3 verstärkte Belohnungen · +1 alle 8 Stunden · 12 pro Woche · unbegrenzte Läufe'},
-  es:{duration:'Duración',durationValue:'6–8 minutos',rewardCadence:'3 cargas de recompensa mejorada · +1 cada 8 horas · 12 por semana · partidas ilimitadas'},
-  nl:{duration:'Speelduur',durationValue:'6–8 minuten',rewardCadence:'3 versterkte beloningen · +1 elke 8 uur · 12 per week · onbeperkt spelen'},
-  it:{duration:'Durata',durationValue:'6–8 minuti',rewardCadence:'3 cariche ricompensa potenziata · +1 ogni 8 ore · 12 a settimana · partite illimitate'},
-  fr:{duration:'Durée',durationValue:'6–8 minutes',rewardCadence:'3 charges de récompense améliorée · +1 toutes les 8 heures · 12 par semaine · parties illimitées'},
+  en:{duration:'Run time',durationValue:'6–8 minutes',rewardCadence:'3 enhanced charges · +1 every 8 hours · 12 each week · unlimited runs',fellowshipLabel:'Live Fellowship',fellowshipCopy:'First 3 successful Live clears each UTC week award +25% of the run’s full Expedition Mark value.'},
+  de:{duration:'Laufzeit',durationValue:'6–8 Minuten',rewardCadence:'3 verstärkte Belohnungen · +1 alle 8 Stunden · 12 pro Woche · unbegrenzte Läufe',fellowshipLabel:'Live-Gemeinschaft',fellowshipCopy:'Die ersten 3 erfolgreichen Live-Abschlüsse jeder UTC-Woche gewähren +25 % des vollen Expeditionsmarken-Werts.'},
+  es:{duration:'Duración',durationValue:'6–8 minutos',rewardCadence:'3 cargas de recompensa mejorada · +1 cada 8 horas · 12 por semana · partidas ilimitadas',fellowshipLabel:'Compañerismo en vivo',fellowshipCopy:'Las primeras 3 victorias en vivo de cada semana UTC otorgan +25 % del valor completo de Marcas de Expedición.'},
+  nl:{duration:'Speelduur',durationValue:'6–8 minuten',rewardCadence:'3 versterkte beloningen · +1 elke 8 uur · 12 per week · onbeperkt spelen',fellowshipLabel:'Live Fellowship',fellowshipCopy:'De eerste 3 succesvolle Live-runs per UTC-week geven +25% van de volledige Expedition Marks-waarde van de run.'},
+  it:{duration:'Durata',durationValue:'6–8 minuti',rewardCadence:'3 cariche ricompensa potenziata · +1 ogni 8 ore · 12 a settimana · partite illimitate',fellowshipLabel:'Compagnia Live',fellowshipCopy:'Le prime 3 vittorie Live di ogni settimana UTC danno +25% del valore pieno delle Marche Spedizione della run.'},
+  fr:{duration:'Durée',durationValue:'6–8 minutes',rewardCadence:'3 charges de récompense améliorée · +1 toutes les 8 heures · 12 par semaine · parties illimitées',fellowshipLabel:'Camaraderie Live',fellowshipCopy:'Les 3 premières réussites Live de chaque semaine UTC accordent +25 % de la valeur complète en Marques d’expédition.'},
 };
 export type CoopPolicyCopyKey=keyof (typeof policyCopy)['en'];
 export function coopPolicyText(language:Language,key:CoopPolicyCopyKey):string{return policyCopy[language][key];}

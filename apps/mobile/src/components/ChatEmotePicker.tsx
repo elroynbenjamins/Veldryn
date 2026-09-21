@@ -4,9 +4,9 @@ import {GameButton} from './GameButton';
 import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {chatEmoteArtwork} from '../theme/chat-emote-assets';
-import {availableChatEmotes,CHAT_EMOTE_TRAY_SIZE,defaultChatEmoteTray,resolvedChatEmoteTray,type ChatEmoteDef} from '../core/chat-emotes';
+import {availableChatEmotes,CHAT_EMOTE_TRAY_SIZE,CHAT_MAX_EMOTES_PER_MESSAGE,defaultChatEmoteTray,resolvedChatEmoteTray,type ChatEmoteDef} from '../core/chat-emotes';
 
-export function ChatEmotePicker({onPick,unlockedIds=[],trayIds=[],bodyPresentation='male',onTrayChange}:{onPick:(token:string)=>void;unlockedIds?:readonly string[];trayIds?:readonly string[];bodyPresentation?:'male'|'female';onTrayChange?:(ids:string[])=>void|Promise<void>}){
+export function ChatEmotePicker({onPick,unlockedIds=[],trayIds=[],bodyPresentation='male',usedCount=0,onTrayChange}:{onPick:(token:string)=>void;unlockedIds?:readonly string[];trayIds?:readonly string[];bodyPresentation?:'male'|'female';usedCount?:number;onTrayChange?:(ids:string[])=>void|Promise<void>}){
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [open,setOpen]=useState(false),[editing,setEditing]=useState(false),[draft,setDraft]=useState<string[]>([]);
  const available=useMemo(()=>availableChatEmotes(unlockedIds),[unlockedIds]);
@@ -20,8 +20,8 @@ export function ChatEmotePicker({onPick,unlockedIds=[],trayIds=[],bodyPresentati
  return <View>
   <Pressable accessibilityRole="button" accessibilityLabel="Open emote tray" accessibilityState={{expanded:open}} onPress={()=>{setOpen(value=>!value);setEditing(false)}} style={({pressed})=>[s.toggle,pressed&&s.pressed]}><Text style={s.toggleText}>☺ Emotes</Text></Pressable>
   {open&&<View style={s.picker}>
-    <View style={s.headingRow}><View><Text style={s.heading}>{editing?'Choose your 8 emotes':'Quick emotes'}</Text><Text style={s.count}>{editing?draft.length+'/'+CHAT_EMOTE_TRAY_SIZE+' selected':'8 slots · max 2 per message'}</Text></View><Pressable accessibilityRole="button" accessibilityLabel={editing?'Cancel emote tray editing':'Edit emote tray'} onPress={()=>{setDraft(resolved);setEditing(value=>!value)}} style={s.editButton}><Text style={s.editText}>{editing?'Cancel':'Edit 8'}</Text></Pressable></View>
-    {!editing?<View style={s.quickGrid}>{selected.map(id=><EmoteButton key={id} emote={byId.get(id)} id={id} onPress={()=>{onPick(`:${id}:`);setOpen(false)}} selected={false}/>)}</View>:<>
+    <View style={s.headingRow}><View><Text style={s.heading}>{editing?'Choose your 8 emotes':'Quick emotes'}</Text><Text style={s.count}>{editing?draft.length+'/'+CHAT_EMOTE_TRAY_SIZE+' selected':'8 slots · '+Math.min(usedCount,CHAT_MAX_EMOTES_PER_MESSAGE)+'/'+CHAT_MAX_EMOTES_PER_MESSAGE+' used'}</Text></View><Pressable accessibilityRole="button" accessibilityLabel={editing?'Cancel emote tray editing':'Edit emote tray'} onPress={()=>{setDraft(resolved);setEditing(value=>!value)}} style={s.editButton}><Text style={s.editText}>{editing?'Cancel':'Edit 8'}</Text></Pressable></View>
+    {!editing?<View style={s.quickGrid}>{selected.map(id=><EmoteButton key={id} emote={byId.get(id)} id={id} disabled={usedCount>=CHAT_MAX_EMOTES_PER_MESSAGE} onPress={()=>{onPick(`:${id}:`);setOpen(false)}} selected={false}/>)}</View>:<>
       <View style={s.quickGrid}>{draft.map((id,index)=><EmoteButton key={id} emote={byId.get(id)} id={id} labelPrefix={'Slot '+(index+1)+': '} selected onPress={()=>toggle(id)}/>)}</View>
       <Text style={s.help}>Tap selected emotes to remove them, then choose replacements below. Save becomes available when all 8 slots are filled.</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.catalog}>{available.map(emote=><EmoteButton key={emote.id} emote={emote} id={emote.id} selected={draft.includes(emote.id)} disabled={!draft.includes(emote.id)&&draft.length>=CHAT_EMOTE_TRAY_SIZE} onPress={()=>toggle(emote.id)}/>)}</ScrollView>

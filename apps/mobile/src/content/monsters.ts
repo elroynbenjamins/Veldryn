@@ -37,9 +37,10 @@ const MONSTERS_RAW:MonsterDef[]=[
 const MONSTER_TIME_SCALE=1.95;
 const MONSTER_STAT_SCALE=1.07;
 
+const EFFECT_GEM_DROP_IDS=['GEFF_001','GEFF_002','GEFF_003','GEFF_004'] as const;
 const enhancementDrops=(monster:MonsterDef):MonsterDef['drops']=>{
-  if(monster.boss)return [{itemId:'TEMPERING_DUST',chance:1,min:8,max:14},{itemId:'TEMPERING_CORE',chance:1,min:1,max:2},{itemId:'EMBERHEART_GEM',chance:.001,min:1,max:1},{itemId:'WARDHEART_GEM',chance:.001,min:1,max:1},{itemId:'VITALITY_HEART_GEM',chance:.001,min:1,max:1}];
-  if(monster.level>=20)return [{itemId:'TEMPERING_DUST',chance:.18,min:1,max:2},{itemId:'TEMPERING_CORE',chance:.025,min:1,max:1},{itemId:monster.attack>=monster.defense*1.7?'EMBER_SHARD':monster.defense>=monster.attack*.65?'WARD_SHARD':'VITALITY_SHARD',chance:.004,min:1,max:1}];
+  if(monster.boss)return [{itemId:'TEMPERING_DUST',chance:1,min:8,max:14},{itemId:'TEMPERING_CORE',chance:1,min:1,max:2},{itemId:'EMBERHEART_GEM',chance:.001,min:1,max:1},{itemId:'WARDHEART_GEM',chance:.001,min:1,max:1},{itemId:'VITALITY_HEART_GEM',chance:.001,min:1,max:1},...EFFECT_GEM_DROP_IDS.map(itemId=>({itemId,chance:.001,min:1,max:1}))];
+  if(monster.level>=20)return [{itemId:'TEMPERING_DUST',chance:.18,min:1,max:2},{itemId:'TEMPERING_CORE',chance:.025,min:1,max:1},{itemId:monster.attack>=monster.defense*1.7?'EMBER_SHARD':monster.defense>=monster.attack*.65?'WARD_SHARD':'VITALITY_SHARD',chance:.004,min:1,max:1},{itemId:EFFECT_GEM_DROP_IDS[(monster.level+monster.id.length)%EFFECT_GEM_DROP_IDS.length],chance:.001,min:1,max:1}];
   if(monster.level>=10)return [{itemId:'TEMPERING_DUST',chance:.10,min:1,max:1},{itemId:'TEMPERING_CORE',chance:.01,min:1,max:1}];
   return monster.level>=4?[{itemId:'TEMPERING_DUST',chance:.05,min:1,max:1}]:[];
 };

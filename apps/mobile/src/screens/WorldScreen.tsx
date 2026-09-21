@@ -95,7 +95,7 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop,onR
 
     {onCoop&&<Panel><Text style={s.title}>Co-op Expeditions</Text><Text style={s.sub}>Group expeditions are entered separately from regional solo activities.</Text><GameButton title="Open Co-op Expeditions" tone="secondary" onPress={onCoop}/></Panel>}
     <Text style={s.progress}>{next?`Next region: ${next.name} at character level ${next.minLevel}.`:'All authored regions are unlocked.'}</Text>
-    {sunscar&&<><SunscarRegionPanel zones={sunscarZones} onZone={()=>{}}/>{onRegionalRewardsChanged?<RegionalCombatPanel state={state} onRewardsChanged={onRegionalRewardsChanged}/>:null}</>}
+    {sunscar&&<><SunscarRegionPanel zones={sunscarZones}/>{onRegionalRewardsChanged?<RegionalCombatPanel state={state} onRewardsChanged={onRegionalRewardsChanged}/>:null}</>}
     {frostmarch&&<>
       <FrostmarchRegionPanel zones={frostmarchZones} progress={frostmarchProgress} contentVersion={activeFrostmarchVersion??undefined} weather={{name:environment.weatherName,endsInSeconds:Math.max(0,Math.floor((environment.changesAtMs-Date.now())/1000)),summary:environment.weatherName+' remains readable through the server-backed Season/Weather system.'}} dungeons={frostmarchDungeons} onZone={zoneId=>onOpenCombat(zoneId)} onDungeon={onCoop}/>
       <RegionalJournalPanel name="Frostmarch" progress={frostmarchProgress}/>

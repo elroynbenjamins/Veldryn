@@ -15,7 +15,8 @@ async function main(){
  assert(sent[1].body.requestId==='stable-request-01','restart changed request identity');assert(!await journal.pending(),'successful retry not cleared');
  const definitive=new CoopCommandJournal(store,async()=>{throw new CoopRequestError('stale',true);});
  try{await definitive.execute(command);}catch{}assert(!await definitive.pending(),'definitive rejection not cleared');
- const team=(['tank','damage','damage','support'] as const).map((role,index)=>({memberId:String(index),displayName:'Member '+index,role,kind:index===0?'controller' as const:'echo' as const,effectiveLevel:25,currentHp:100,maximumHp:100,downed:false}));
+ const classes=['IRONWARDEN','WAYFINDER','RAVAGER','DAWNKEEPER'] as const;
+ const team=(['tank','damage','damage','support'] as const).map((role,index)=>({memberId:String(index),displayName:'Member '+index,role,classId:classes[index],kind:index===0?'controller' as const:'echo' as const,effectiveLevel:25,currentHp:100,maximumHp:100,downed:false}));
  const projection:CoopQModeServerProjection={runId:'run',mode:'qmode',phase:'awaiting_choice',tier:1,expeditionId:'EXP_001',controller:true,team,graph:{},currentNodeId:'entry',options:[1,2,3].map(n=>({nodeId:'node-'+n,kind:'battle',risk:n,rewardTag:'balanced'})),visitedNodeIds:[],resources:0,boons:[],artifacts:[],curses:[],settlement:{status:'not_ready'}};
  assert(presentQModeRun(projection).options.length===3,'server route choices dropped');
  assert(presentQModeRun({...projection,options:[{nodeId:'boss',kind:'boss',risk:3,rewardTag:'final_reward'}]}).options.length===1,'final boss choice rejected');

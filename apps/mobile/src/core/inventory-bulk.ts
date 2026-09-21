@@ -1,7 +1,6 @@
 import {itemDef} from '../content/items';
 import {HOLY_WATER_ID} from '../content/faith';
 import {GameState} from './types';
-import {hasEnhancement} from './equipment-enhancement';
 import {depositToBank,salvageItem,sellItem,withdrawFromBank} from './game';
 
 export type BulkStorageLocation='inventory'|'bank';
@@ -13,7 +12,9 @@ function selectedStacks(state:GameState,itemIds:readonly string[],location:BulkS
 }
 function protectedFromDisposal(state:GameState,itemId:string){
   const item=itemDef(itemId);
-  return !!state.settings.favoriteItemIds?.includes(itemId)||(item.type==='gear'&&hasEnhancement(state,itemId));
+  // Destructive bulk actions intentionally never choose between equipment copies.
+  // Gear must be opened and a concrete instance selected first.
+  return !!state.settings.favoriteItemIds?.includes(itemId)||item.type==='gear';
 }
 
 export function bulkSelectionSummary(state:GameState,itemIds:readonly string[],location:BulkStorageLocation){
@@ -61,7 +62,7 @@ export function bulkTransferSelected(state:GameState,itemIds:readonly string[],f
 
 export function bulkSellSelected(state:GameState,itemIds:readonly string[]):GameState{
   const summary=bulkSelectionSummary(state,itemIds,'inventory');
-  if(!summary.sellableIds.length)throw new Error('No selected items can be sold. Favorites, enhanced gear, auto-eat food, Holy Water and zero-value items stay protected.');
+  if(!summary.sellableIds.length)throw new Error('No selected items can be sold. Favorites, all equipment copies, auto-eat food, Holy Water and zero-value items stay protected. Choose equipment copies individually.');
   let next=state;
   for(const itemId of summary.sellableIds){
     const quantity=next.inventory.stacks.find(stack=>stack.itemId===itemId)?.quantity??0;
@@ -72,7 +73,7 @@ export function bulkSellSelected(state:GameState,itemIds:readonly string[]):Game
 
 export function bulkSalvageSelected(state:GameState,itemIds:readonly string[]):GameState{
   const summary=bulkSelectionSummary(state,itemIds,'inventory');
-  if(!summary.salvageableIds.length)throw new Error('No selected equipment can be salvaged. Favorites and enhanced gear stay protected.');
+  if(!summary.salvageableIds.length)throw new Error('No selected equipment can be salvaged. Equipment copies must be salvaged individually so the exact copy is explicit.');
   let next=state;
   for(const itemId of summary.salvageableIds){
     const quantity=next.inventory.stacks.find(stack=>stack.itemId===itemId)?.quantity??0;

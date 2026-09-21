@@ -34,7 +34,7 @@ begin
          coalesce(gb.body,''),
          gb.updated_at,
          gb.updated_by_account_id,
-         (v_role in('leader','officer') and not coalesce((auth.jwt()->>'is_anonymous')::boolean,false))
+         (v_role in('leader','guild_master','co_leader','officer','quartermaster') and not coalesce((auth.jwt()->>'is_anonymous')::boolean,false))
   from (select 1) seed
   left join public.guild_bulletins gb on gb.guild_id=v_gid;
 end $$;
@@ -67,7 +67,7 @@ begin
   limit 1;
 
   if v_gid is null then raise exception 'NOT_IN_GUILD'; end if;
-  if v_role not in('leader','officer') then raise exception 'GUILD_OFFICER_REQUIRED'; end if;
+  if v_role not in('leader','guild_master','co_leader','officer','quartermaster') then raise exception 'GUILD_OFFICER_REQUIRED'; end if;
   if char_length(v_body)>280 then raise exception 'GUILD_NOTICE_TOO_LONG'; end if;
   if v_body ~ '[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]' then raise exception 'INVALID_GUILD_NOTICE'; end if;
 

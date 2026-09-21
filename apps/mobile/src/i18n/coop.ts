@@ -47,7 +47,7 @@ const fr:Catalog={
 };
 
 const catalogs:Record<Language,Catalog>={en,de,es,nl,it,fr};
-const policyCopy:Record<Language,{duration:string;durationValue:string;rewardCadence:string}>={
+const policyCopy:Record<Language,{duration:string;durationValue:string;rewardCadence:string;fellowshipLabel:string;fellowshipCopy:string}>={
   en:{duration:'Run time',durationValue:'6–8 minutes',rewardCadence:'3 enhanced charges · +1 every 8 hours · 12 each week · unlimited runs',fellowshipLabel:'Live Fellowship',fellowshipCopy:'First 3 successful Live clears each UTC week award +25% of the run’s full Expedition Mark value.'},
   de:{duration:'Laufzeit',durationValue:'6–8 Minuten',rewardCadence:'3 verstärkte Belohnungen · +1 alle 8 Stunden · 12 pro Woche · unbegrenzte Läufe',fellowshipLabel:'Live-Gemeinschaft',fellowshipCopy:'Die ersten 3 erfolgreichen Live-Abschlüsse jeder UTC-Woche gewähren +25 % des vollen Expeditionsmarken-Werts.'},
   es:{duration:'Duración',durationValue:'6–8 minutos',rewardCadence:'3 cargas de recompensa mejorada · +1 cada 8 horas · 12 por semana · partidas ilimitadas',fellowshipLabel:'Compañerismo en vivo',fellowshipCopy:'Las primeras 3 victorias en vivo de cada semana UTC otorgan +25 % del valor completo de Marcas de Expedición.'},

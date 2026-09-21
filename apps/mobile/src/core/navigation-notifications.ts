@@ -1,5 +1,5 @@
 export type PrimaryNavigationId='character'|'skills'|'world'|'inventory'|'account';
-export type NotificationKind='friend_request'|'party_invite'|'guild_invite'|'guild_application'|'chat_unread'|'weekly_order_complete'|'reward_ready'|'collection_unlock'|'profile_customization'|'event_reward_ready'|'account_action'|'companion_attention';
+export type NotificationKind='friend_request'|'party_invite'|'guild_invite'|'guild_application'|'chat_unread'|'weekly_order_complete'|'reward_ready'|'collection_unlock'|'profile_customization'|'event_reward_ready'|'account_action'|'companion_attention'|'equipment_craft_ready';
 export interface NavigationNotification{key:string;kind:NotificationKind;count?:number;unread?:boolean}
 export interface NavigationBadge{count:number;dot:boolean;display?:string}
 export type NavigationBadgeMap=Record<PrimaryNavigationId,NavigationBadge>;
@@ -18,6 +18,7 @@ export const NOTIFICATION_DESTINATIONS:Record<NotificationKind,NotificationDesti
  event_reward_ready:{primary:'account',subroute:'events.rewards',mode:'count'},
  account_action:{primary:'account',subroute:'account',mode:'dot'},
  companion_attention:{primary:'account',subroute:'companions',mode:'dot'},
+ equipment_craft_ready:{primary:'skills',subroute:'skills.smithing.forge',mode:'count'},
 };
 
 const empty=():NavigationBadge=>({count:0,dot:false});

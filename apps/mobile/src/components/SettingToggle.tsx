@@ -18,9 +18,9 @@ export function SettingToggle({label,description,value,onValueChange,disabled=fa
   </Pressable>;
 }
 function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);return StyleSheet.create({
-  row:{minHeight:64,flexDirection:'row',alignItems:'center',gap:16,padding:12,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:'#101B27'},
+  row:{minHeight:64,flexDirection:'row',alignItems:'center',gap:16,padding:12,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel},
   copy:{flex:1,minWidth:0,gap:4},label:{...typography.bodyStrong,color:C.text},description:{...typography.caption,color:C.muted},
-  control:{alignItems:'center',gap:4},track:{width:48,height:28,padding:3,borderRadius:14,borderWidth:1,borderColor:'#64748B',backgroundColor:'#263449',justifyContent:'center'},
-  trackOn:{borderColor:'#7BB7DF',backgroundColor:'#234C65'},thumb:{width:20,height:20,borderRadius:10,backgroundColor:'#AAB6C7'},thumbOn:{alignSelf:'flex-end',backgroundColor:'#B8E5F5'},
-  state:{...typography.caption,color:C.muted},stateOn:{color:'#B8E5F5'},focused:{borderColor:'#A2E5ED'},pressed:{opacity:.76},disabled:{opacity:.45},
+  control:{alignItems:'center',gap:4},track:{width:48,height:28,padding:3,borderRadius:14,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2,justifyContent:'center'},
+  trackOn:{borderColor:C.selectionLine,backgroundColor:C.selection},thumb:{width:20,height:20,borderRadius:10,backgroundColor:C.muted},thumbOn:{alignSelf:'flex-end',backgroundColor:C.selectionLine},
+  state:{...typography.caption,color:C.muted},stateOn:{color:C.selectionLine},focused:{borderColor:C.selectionLine},pressed:{opacity:.76},disabled:{opacity:.45},
 });}

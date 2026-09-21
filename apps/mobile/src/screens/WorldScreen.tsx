@@ -113,7 +113,7 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
   destinationName:{...typography.bodyStrong,color:C.text},
   goalDestination:{borderColor:C.info,borderWidth:2},
   goalBadge:{fontSize:9,color:C.info,fontWeight:'900',letterSpacing:.8},
-  goalRoute:{padding:spacing.sm,borderLeftWidth:3,borderLeftColor:C.info,backgroundColor:'#102536'},
+  goalRoute:{padding:spacing.sm,borderLeftWidth:3,borderLeftColor:C.info,backgroundColor:C.infoSurface},
   goalRouteLabel:{...typography.caption,color:C.info,fontWeight:'900',letterSpacing:.8},
   destinationMeta:{...typography.caption,color:C.info,fontWeight:'600'},
   destinationSub:{fontSize:12,lineHeight:17,color:C.muted},

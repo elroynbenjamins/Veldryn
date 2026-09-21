@@ -2,6 +2,7 @@ import {EQUIPMENT_SETS} from '../src/content/equipment-sets';
 import {itemDef} from '../src/content/items';
 import {createCharacter,newGame} from '../src/core/game';
 import {equipmentDecisionModel,equipmentUpgradeSummary} from '../src/core/equipment-decision';
+import {migrateToPerInstanceGear} from '../src/core/gear-instances';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 
@@ -11,7 +12,8 @@ if(!set)throw new Error('Expected an Ironwarden T1 set');
 const firstId=set.itemIds[0],first=itemDef(firstId);
 if(!first.slot)throw new Error('Expected set gear slot');
 state={...state,character:{...state.character!,gold:100000,equipment:{...state.character!.equipment,[first.slot]:firstId}},inventory:{...state.inventory,stacks:[...state.inventory.stacks,{itemId:'TEMPERING_DUST',quantity:999},{itemId:'TEMPERING_CORE',quantity:99}]}};
-const model=equipmentDecisionModel(state,firstId);
+state=migrateToPerInstanceGear(state);const instanceId=state.character!.equipmentInstanceIds![first.slot]!;
+const model=equipmentDecisionModel(state,firstId,instanceId);
 ok(model.itemId===firstId,'Decision model must preserve selected item');
 ok(model.set?.id===set.id&&model.set.equippedPieces===1&&model.set.totalPieces===10,'Decision model must expose V33 set identity and equipped count');
 ok(model.rank===0&&model.upgrade.targetRank===1,'Decision model must expose current and next enhancement rank');
@@ -20,7 +22,7 @@ ok(equipmentUpgradeSummary(model).includes('Materials ready'),'Ready enhancement
 ok(model.sockets.capacity>=0&&model.sockets.filled===0,'Decision model must expose socket fill/capacity');
 
 const poor={...state,character:{...state.character!,gold:0},inventory:{...state.inventory,stacks:state.inventory.stacks.filter(stack=>stack.itemId!=='TEMPERING_DUST'&&stack.itemId!=='TEMPERING_CORE')}};
-const blocked=equipmentDecisionModel(poor,firstId);
+const blocked=equipmentDecisionModel(poor,firstId,instanceId);
 ok(!blocked.upgrade.canAfford,'Missing resources must block enhancement readiness');
 ok(equipmentUpgradeSummary(blocked).includes('Missing'),'Blocked enhancement summary must explain missing resources');
 

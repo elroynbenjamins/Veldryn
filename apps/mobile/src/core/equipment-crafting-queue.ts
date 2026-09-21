@@ -4,6 +4,7 @@ import {unlockedCharacterSlots} from './account-roster';
 import {characterPermanentMultipliers} from './permanent-boosts';
 import {levelFromXp} from './progression';
 import type {EquipmentCraftJob,GameState,ItemStack,SkillState} from './types';
+import {craftClaimSubRoll,craftedInstanceResult,createCraftedGearInstance} from './crafted-gear-instances';
 
 export const BASE_EQUIPMENT_CRAFT_SLOTS=3;
 export const MAX_EQUIPMENT_CRAFT_SLOTS=5;
@@ -184,24 +185,26 @@ function awardOwnerSkillXp(state:GameState,ownerCharacterId:string,recipe:Recipe
   return {...state,otherCharacters:(state.otherCharacters??[]).map(entry=>entry.character.id===ownerCharacterId?{...entry,skills:award(entry.skills)}:entry)};
 }
 
-export function claimEquipmentCraft(state:GameState,jobId:string,nowMs:number){
+export function claimEquipmentCraft(state:GameState,jobId:string,nowMs:number,rarityRoll=Math.random()){
   const projected=withProjectedQueue(state,nowMs),queue=equipmentCraftingQueue(projected),job=queue.find(row=>row.id===jobId);
   if(!job)throw new Error('Crafting job not found');
   if(job.completesAtMs>nowMs)throw new Error(job.startedAtMs>nowMs?'This equipment craft is still waiting for a forge slot':'This equipment craft is still in progress');
   const recipe=timedEquipmentRecipe(job.recipeId);if(!recipe)throw new Error('Crafting recipe is no longer available');
   let next=grantCraftOutput(projected,recipe,job.ownerCharacterId);
   next=awardOwnerSkillXp(next,job.ownerCharacterId,recipe);
+  const created=createCraftedGearInstance(next,{itemId:recipe.output.itemId,ownerCharacterId:job.ownerCharacterId,jobId:job.id,createdAtMs:nowMs,roll:rarityRoll});
+  next=created.state;
   next={...next,account:{...next.account,equipmentCraftingQueue:queue.filter(row=>row.id!==jobId)}};
-  return {state:next,recipe,job};
+  return {state:next,recipe,job,instance:created.instance,result:craftedInstanceResult(next,created.instance)};
 }
 
-export function claimAllReadyEquipmentCrafts(state:GameState,nowMs:number){
-  let next=withProjectedQueue(state,nowMs),claimed:string[]=[];
+export function claimAllReadyEquipmentCrafts(state:GameState,nowMs:number,trustedRoll=Math.random()){
+  let next=withProjectedQueue(state,nowMs),claimed:string[]=[],results:ReturnType<typeof craftedInstanceResult>[]=[];
   for(const job of equipmentCraftingQueue(next).filter(row=>isReady(row,nowMs))){
-    try{const result=claimEquipmentCraft(next,job.id,nowMs);next=result.state;claimed.push(job.id);}
+    try{const result=claimEquipmentCraft(next,job.id,nowMs,craftClaimSubRoll(trustedRoll,job.id));next=result.state;claimed.push(job.id);results.push(result.result);}
     catch(error){if(error instanceof Error&&(error.message==='Inventory and Bank are full'||error.message.startsWith('Bank is full')))break;throw error;}
   }
-  return {state:next,claimed};
+  return {state:next,claimed,results};
 }
 
 export const EQUIPMENT_CRAFT_CANCEL_GOLD_REFUND=.90;

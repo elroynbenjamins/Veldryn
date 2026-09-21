@@ -67,6 +67,11 @@ async function main(){
  state={...state!,account:{...state!.account,unlockedCharacterSlots:3}};
  const created=await request({type:'roster_create',args:{classId:'WAYFINDER',name:'Third Hero',body:'male'}},'roster-create-01',19);assert.equal(created.status,200,'roster creation routes through authenticated gameplay');
  const createdPayload=await created.json();assert.equal(createdPayload.state.character.id,'33333333-3333-4333-8333-333333333333','roster creation persists server identity');
- console.log('PASS authenticated gameplay HTTP, input authority, canonical replay, stale version and lost-response recovery');
+ const badReroll=await request({type:'roster_reroll',args:{id:'33333333-3333-4333-8333-333333333333',classId:'HEXWEAVER',name:'Third Reborn',body:'female',confirmation:'Wrong'}},'roster-reroll-bad-01',20);assert.equal(badReroll.status,400,'roster reroll requires exact name confirmation online');
+ const rerolled=await request({type:'roster_reroll',args:{id:'33333333-3333-4333-8333-333333333333',classId:'HEXWEAVER',name:'Third Reborn',body:'female',confirmation:'Third Hero'}},'roster-reroll-01',20);assert.equal(rerolled.status,200,'roster reroll routes through authenticated gameplay');
+ const rerolledPayload=await rerolled.json();assert.equal(rerolledPayload.state.character.id,'44444444-4444-4444-8444-444444444444','roster reroll persists a fresh server identity');assert.equal(rerolledPayload.state.character.classId,'HEXWEAVER','roster reroll persists replacement class');
+ const deleted=await request({type:'roster_delete',args:{id:'44444444-4444-4444-8444-444444444444',confirmation:'Third Reborn'}},'roster-delete-01',21);assert.equal(deleted.status,200,'roster delete routes through authenticated gameplay');
+ const deletedPayload=await deleted.json();assert.notEqual(deletedPayload.state.character.id,'44444444-4444-4444-8444-444444444444','deleting active roster member promotes another owned character');assert.equal(deletedPayload.state.otherCharacters.length,1,'roster delete removes exactly one character');
+ console.log('PASS authenticated gameplay HTTP, input authority, canonical replay, stale version, lost-response recovery and safe roster management');
 }
 void main().catch(error=>{console.error(error);process.exitCode=1;});

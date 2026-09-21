@@ -5,6 +5,7 @@ import {TOOL_ITEMS} from './gathering-tools';
 import {HERB_ITEMS} from './herbalism';
 import {POTION_ITEMS} from './alchemy';
 import {EQUIPMENT_ITEMS_V33} from './equipment-items-v33';
+import {GEM_ITEMS_V1,type MobileGemGradeV1} from './gems-v1';
 export interface ItemDef {
   id:string; name:string; type:'material'|'gear'|'quest'|'food'|'tool'|'gem'|'potion'; slot?:GearSlot;
   attack?:number; defense?:number; hp?:number; heal?:number; readiness?:number;
@@ -12,7 +13,9 @@ export interface ItemDef {
   rarity?:ItemRarity; passive?:string;
   value:number; salvage?:{itemId:string;quantity:number};
   classRestriction?:ClassId; noviceSetId?:string; equipmentSetId?:string;
-  gemStat?:GemStat; gemPercent?:number; gemTier?:1|2; gemKind?:GemSocketKind; gemEffect?:GemEffectId; gemEffectValue?:number;
+  gemStat?:GemStat; gemPercent?:number; gemTier?:MobileGemGradeV1; gemKind?:GemSocketKind; gemEffect?:GemEffectId; gemEffectValue?:number;
+  /** Canonical five-grade gem identity. Legacy shards/sigils omit these fields and remain migration-compatible. */
+  gemFamilyId?:string; gemGrade?:MobileGemGradeV1;
 }
 
 const COMPLETE_SET_SLOTS:GearSlot[]=['helmet','legs','boots','weapon','offhand','amulet'];
@@ -70,6 +73,10 @@ const BASE_ITEMS:ItemDef[]=[
 ...HERB_ITEMS,
 ...POTION_ITEMS,
 // Enhancement economy. Gems are intentionally scarce drops; tempering materials are universal.
+{id:'GEM_DUST',name:'Gem Dust',type:'material',value:18,rarity:'uncommon'},
+{id:'REGIONAL_CATALYST',name:'Regional Catalyst',type:'material',value:650,rarity:'epic'},
+{id:'RADIANT_CATALYST',name:'Radiant Catalyst',type:'material',value:2400,rarity:'mythic'},
+...GEM_ITEMS_V1,
 {id:'TEMPERING_DUST',name:'Tempering Dust',type:'material',value:22,rarity:'uncommon'},
 {id:'TEMPERING_CORE',name:'Tempering Core',type:'material',value:180,rarity:'rare'},
 {id:'EMBER_SHARD',name:'Ember Shard',type:'gem',gemStat:'attack',gemPercent:.02,gemTier:1,value:320,rarity:'rare'},

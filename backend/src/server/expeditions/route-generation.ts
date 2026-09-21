@@ -73,8 +73,10 @@ export function generateCoopRouteGraph(secret:string, expeditionId:string, runId
   return graph;
 }
 
-export function validateCoopRouteGraph(graph:CoopRouteGraph):void {
-  validatePreBossNodeCount(graph.preBossNodeCount);
+export function validateCoopRouteGraph(graph:CoopRouteGraph,limits?:{preBossNodeMin:number;preBossNodeMax:number}):void {
+  if(limits){
+    if(!Number.isInteger(graph.preBossNodeCount)||graph.preBossNodeCount<limits.preBossNodeMin||graph.preBossNodeCount>limits.preBossNodeMax)throw new Error('invalid_coop_route_length');
+  }else validatePreBossNodeCount(graph.preBossNodeCount);
   const byId=new Map(graph.nodes.map(node=>[node.nodeId,node]));
   if(byId.size!==graph.nodes.length)throw new Error('duplicate_route_node');
   const entry=byId.get(graph.entryNodeId),boss=byId.get(graph.bossNodeId);

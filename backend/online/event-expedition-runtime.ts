@@ -39,7 +39,7 @@ export function projectOnlineEventRun(run:EventRun,version:number,liveEventId:st
  return {
   runId:run.id,eventExpeditionId:run.eventId,liveEventId,eventName:definition.eventName,dungeonName:definition.name,phase:run.phase,
   stateVersion:version,decisionId:run.currentNodeId,decisionRevision:version,
-  team:run.players.map((member,index)=>({memberId:member.id,displayName:member.name,role:role(member.role),classId:member.classId??'',kind:index===0?'controller' as const:'echo' as const,effectiveLevel:member.level})),
+  team:run.players.map((member,index)=>{const state=run.persistentState.actors[member.id],companionId=(member.tags??[]).find(tag=>tag.startsWith('companion:'))?.slice('companion:'.length);return{memberId:member.id,displayName:member.name,role:role(member.role),classId:member.classId??'',companionId,kind:index===0?'controller' as const:'echo' as const,effectiveLevel:member.level,currentHp:state?.hp??member.stats.maxHp,maximumHp:member.stats.maxHp,downed:state?.downed??false};}),
   options,mechanic,objective,bossMechanic,bossRecap,settlement:{status:run.settlement,rewardMarks:run.rewardMarks??(definition.rewardMarks+mechanic.rewardBonus+objective.rewardBonus)},
  };
 }

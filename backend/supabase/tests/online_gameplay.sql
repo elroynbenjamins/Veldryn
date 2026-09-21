@@ -34,7 +34,7 @@ begin
  begin update public.characters set gold=999999 where id=c;raise exception 'client progression write allowed';exception when insufficient_privilege then null;end;
  begin update public.character_wallets set gold=999999 where character_id=c;raise exception 'client wallet write allowed';exception when insufficient_privilege then null;end;
  begin perform public.reserve_market_buy_gold(c,gen_random_uuid(),100);raise exception 'client server economy allowed';exception when insufficient_privilege then null;end;
- begin perform public.start_gathering_activity(c,'COPPER_VEIN');raise exception 'parallel gathering allowed';exception when raise_exception then if sqlerrm<>'use_authoritative_gameplay' then raise;end if;end;
+ begin perform public.start_gathering_activity(c,'COPPER_VEIN');raise exception 'legacy gathering RPC allowed';exception when insufficient_privilege then null;end;
  begin perform public.guild_contribute('boss',50000);raise exception 'client Guild points allowed';exception when insufficient_privilege then null;end;
  reset role;perform set_config('request.jwt.claim.role','service_role',true);
  if (select count(*) from public.server_action_receipts where account_id=a and action='online_game_v1')<>1 then raise exception 'receipt count';end if;

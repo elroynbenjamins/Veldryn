@@ -78,3 +78,15 @@ export function rewardLootHighlights(reward:RewardBundle):RewardLootHighlight[]{
     }catch{return []}
   }).sort((a,b)=>RARITY_ORDER.indexOf(b.rarity)-RARITY_ORDER.indexOf(a.rarity)||b.quantity-a.quantity);
 }
+
+export interface RewardFollowUpCandidate{kind:'companion'|'pet'|'inventory'|'skill';label:string;skillId?:string}
+/** Ordered by the most useful immediate follow-up after a reward settlement. */
+export function rewardFollowUpCandidates(args:{progressionMoments:readonly RewardProgressionMoment[];lootHighlights:readonly RewardLootHighlight[];companionUnlockCount:number;petDropCount:number}):RewardFollowUpCandidate[]{
+  const candidates:RewardFollowUpCandidate[]=[];
+  if(args.companionUnlockCount>0)candidates.push({kind:'companion',label:args.companionUnlockCount===1?'View new companion':'View new companions'});
+  if(args.petDropCount>0)candidates.push({kind:'pet',label:args.petDropCount===1?'View pet collection':'View new pets'});
+  if(args.lootHighlights.some(row=>row.spotlight&&(row.type==='gear'||row.type==='gem')))candidates.push({kind:'inventory',label:'Review new loot'});
+  const skill=args.progressionMoments.find(moment=>moment.kind==='skill_level'&&moment.unlocks.length>0);
+  if(skill)candidates.push({kind:'skill',label:`View ${skill.label} unlocks`,skillId:skill.id});
+  return candidates;
+}

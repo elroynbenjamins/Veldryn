@@ -119,14 +119,18 @@ export function bestRarityForStack(state:GameState,itemId:string,storage:'invent
   return rarityBreakdownForStack(state,itemId,storage,stackQuantity)[0]?.rarity??'common';
 }
 
+function legacyEnhancementProtected(state:GameState,itemId:string){
+  const row=state.character?.gearEnhancements?.[itemId];
+  return Boolean(row&&(row.rank>0||row.statGemId||row.effectGemId||row.gemIds?.length));
+}
 export function disposableStoredGearCount(state:GameState,itemId:string,storage:'inventory'|'bank'){
-  const legacy=legacyStoredGearCount(state,itemId,storage);
+  const legacy=legacyStoredGearCount(state,itemId,storage),protectedLegacy=storage==='inventory'&&legacy>0&&legacyEnhancementProtected(state,itemId)?1:0;
   const instances=instancesForItem(state,itemId,storage).filter(row=>!(row.enhancement.rank>0||row.enhancement.statGemId||row.enhancement.effectGemId));
-  return legacy+instances.length;
+  return Math.max(0,legacy-protectedLegacy)+instances.length;
 }
 export function removeDisposableStoredGearCopies(state:GameState,itemId:string,storage:'inventory'|'bank',count:number){
   if(count<=0)return state;
-  const legacy=legacyStoredGearCount(state,itemId,storage),instanceNeeded=Math.max(0,count-legacy);
+  const legacy=legacyStoredGearCount(state,itemId,storage),protectedLegacy=storage==='inventory'&&legacy>0&&legacyEnhancementProtected(state,itemId)?1:0,disposableLegacy=Math.max(0,legacy-protectedLegacy),instanceNeeded=Math.max(0,count-disposableLegacy);
   if(instanceNeeded===0)return state;
   const candidates=instancesForItem(state,itemId,storage)
     .filter(row=>!(row.enhancement.rank>0||row.enhancement.statGemId||row.enhancement.effectGemId))

@@ -23,6 +23,7 @@ export const TURNING_OF_THE_AGE_EVENT:LiveEventDef={
   maxProgress:10000,
   claimGraceDays:7,
   visualKey:'turning_of_the_age',
+  signature:{kind:'ritual',label:'SIGNATURE · CHRONICLE RITE',title:'Close one age and choose how the next begins',description:'Turning of the Age centers on reflection and renewal. Your chosen focus shapes where you earn the best event returns, while the Chronicle Vault provides the season’s persistent expedition.',highlights:['Annual focus choice','Chronicle Vault seasonal expedition','Year-turn collectibles built around memory and first dawn']},
   ui:{
     prepareTitle:'Prepare for the Turning',
     dailyGiftTitle:'Today’s Turning Gift',
@@ -92,6 +93,7 @@ export const HEARTBOND_EVENT:LiveEventDef={
   maxProgress:10000,
   claimGraceDays:7,
   visualKey:'heartbond',
+  signature:{kind:'celebration',label:'SIGNATURE · VOW THREADS',title:'Build a festival bond through the activities you prefer',description:'Heartbond is a lighter cooperative festival built around choosing a vow focus, completing themed daily objectives, and entering the Vow Garden expedition for its strongest seasonal challenge.',highlights:['Vow-focused activity bonus','Vow Garden seasonal expedition','Romantic/friendship themed collectible chase without mandatory pairing']},
   ui:{
     prepareTitle:'Prepare for Heartbond',
     dailyGiftTitle:'Today’s Heartbond Gift',
@@ -161,6 +163,7 @@ export const BLOOMWAKE_EVENT:LiveEventDef={
   maxProgress:10000,
   claimGraceDays:7,
   visualKey:'bloomwake',
+  signature:{kind:'community',label:'SIGNATURE · VERDANT GROVE',title:'Restore the spring grove as a shared festival project',description:'Bloomwake turns normal gathering, crafting, combat, and boss activity into a restoration effort. Keep Bloom Tokens for personal rewards or contribute them to grow the shared Verdant Grove.',highlights:['Shared Grove restoration milestones','Spring-restoration project choice','Thornheart Grove seasonal expedition']},
   ui:{
     prepareTitle:'Prepare for Bloomwake',
     dailyGiftTitle:'Today’s Bloomwake Gift',
@@ -206,9 +209,14 @@ export const BLOOMWAKE_EVENT:LiveEventDef={
     {id:'ancient_grove',name:'Ancient Grove',description:'Challenge the strongest threats around old sacred groves.',bonusLabel:'+20% boss Bloom Tokens',dropMultipliers:{boss:1.2}},
   ],
   dailyGifts:[...gifts],
-  communityEnabled:false,
+  communityEnabled:true,
   communityGoal:100000,
-  communityMilestones:[],
+  communityMilestones:[
+    {percent:25,rewardCurrency:200,rewardPrestige:0},
+    {percent:50,rewardCurrency:350,rewardPrestige:1},
+    {percent:75,rewardCurrency:500,rewardPrestige:1},
+    {percent:100,rewardCurrency:750,rewardPrestige:2,reward:{kind:'title',id:'title_grove_restorer',name:'Grove Restorer',rarity:'epic'}},
+  ],
   discoveries:[
     {id:'bloom_spore',name:'Bloom Spore',description:'A luminous spore sometimes found after ordinary combat.',source:'combat',chance:.003,required:5,reward:{kind:'title',id:'title_bloom_touched',name:'Bloom-Touched',rarity:'rare'}},
     {id:'verdant_antler',name:'Verdant Antler Shard',description:'A tiny antler-like sprout hidden among gathered materials.',source:'gathering',chance:.015,required:5,reward:{kind:'title',id:'title_grove_seeker',name:'Grove Seeker',rarity:'rare'}},

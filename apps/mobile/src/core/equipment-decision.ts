@@ -49,7 +49,7 @@ export function equipmentDecisionModel(state:GameState,itemId:string):EquipmentD
     rarity:itemRarity(item),
     rank:enhancement.rank,
     stats:enhancedGearStats(state,itemId),
-    sockets:{filled:activeSocketedGemIds(state,itemId).length,capacity:gemSocketCapacity(itemId),...gemSocketLayout(itemId),statFilled:!!enhancement.statGemId,effectFilled:!!enhancement.effectGemId,legacyCount:enhancement.legacyGemIds?.length??0},
+    sockets:{filled:activeSocketedGemIds(state,itemId).length,...gemSocketLayout(itemId),statFilled:!!enhancement.statGemId,effectFilled:!!enhancement.effectGemId,legacyCount:enhancement.legacyGemIds?.length??0},
     set:set?{
       id:set.id,
       name:set.name,

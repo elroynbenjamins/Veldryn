@@ -4,7 +4,7 @@ import {CharacterState,GameState,ItemStack} from './types';
 
 /** IDs emitted by the v33 ten-slot catalog (P=primary, X=alternate path). */
 export function isV33EquipmentPieceId(id:string):boolean{
-  return /^T[1-9][PX]_\d{3}$/.test(id);
+  return /^T[1-9][PX]_\d{3,4}$/.test(id);
 }
 const knownV33PieceIds=new Set(EQUIPMENT_ITEMS_V33.map(item=>item.id));
 export function isKnownV33EquipmentPieceId(id:string):boolean{return knownV33PieceIds.has(id);}

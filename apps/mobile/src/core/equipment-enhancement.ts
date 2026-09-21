@@ -5,6 +5,7 @@ import {GameState,GearEnhancementState,GemEffectId,GemSocketKind,GemStat,ItemSta
 export const MAX_UPGRADE_RANK=10;
 export const UPGRADE_STAT_PER_RANK=.03;
 export const EQUIPMENT_GEM_SOCKET_COUNT=2;
+export const GEM_EFFECT_CAPS:Record<GemEffectId,number>={combat_speed:.10,boss_power:.15,damage_reduction:.10,recovery:.50};
 const SUCCESS_BY_TARGET=[0,1,.95,.85,.70,.55,.40,.28,.18,.10,.05];
 const DUST_BY_TARGET=[0,4,8,15,24,36,52,72,96,125,160];
 const CORE_BY_TARGET=[0,0,0,0,1,2,3,5,7,10,14];
@@ -76,15 +77,40 @@ export function socketGem(state:GameState,itemId:string,gemId:string){
   next=setEnhancement(next,itemId,{...enhancement,statGemId:kind==='stat'?gemId:enhancement.statGemId,effectGemId:kind==='effect'?gemId:enhancement.effectGemId,gemIds:[]});
   return next;
 }
-function addInventory(state:GameState,itemId:string){const existing=state.inventory.stacks.find(s=>s.itemId===itemId);if(!existing&&state.inventory.stacks.length>=state.inventory.capacity)throw new Error('Inventory is full');const stacks=existing?state.inventory.stacks.map(s=>s.itemId===itemId?{...s,quantity:s.quantity+1}:s):[...state.inventory.stacks,{itemId,quantity:1}];return {...state,inventory:{...state.inventory,stacks}};}
-export function unsocketGem(state:GameState,itemId:string,index:number){
+function addRecoveredGem(state:GameState,itemId:string,now:number){
+ const inventoryExisting=state.inventory.stacks.find(s=>s.itemId===itemId);
+ if(inventoryExisting)return {...state,inventory:{...state.inventory,stacks:state.inventory.stacks.map(s=>s.itemId===itemId?{...s,quantity:s.quantity+1}:s)}};
+ if(state.inventory.stacks.length<state.inventory.capacity)return {...state,inventory:{...state.inventory,stacks:[...state.inventory.stacks,{itemId,quantity:1}]}};
+ const bankExisting=state.bank.stacks.find(s=>s.itemId===itemId);
+ if(bankExisting)return {...state,bank:{...state.bank,stacks:state.bank.stacks.map(s=>s.itemId===itemId?{...s,quantity:s.quantity+1}:s)}};
+ if(state.bank.stacks.length<state.bank.capacity)return {...state,bank:{...state.bank,stacks:[...state.bank.stacks,{itemId,quantity:1}]}};
+ const overflowExisting=state.overflow.stacks.find(s=>s.itemId===itemId);
+ const stacks=overflowExisting?state.overflow.stacks.map(s=>s.itemId===itemId?{...s,quantity:s.quantity+1}:s):[...state.overflow.stacks,{itemId,quantity:1}];
+ return {...state,overflow:{stacks,expiresAtMs:Math.max(state.overflow.expiresAtMs??0,now+72*60*60*1000)}};
+}
+export function gemExtractionFee(gemId:string){const gem=safeGem(gemId);if(!gem)throw new Error('That item is not a gem');return (gem.gemTier??1)*500;}
+export function unsocketGem(state:GameState,itemId:string,index:number,now=Date.now()){
   requireEquipped(state,itemId);if(index!==0&&index!==1)throw new Error('Unknown gem socket');
   const enhancement=gearEnhancement(state,itemId),gemId=index===0?enhancement.statGemId:enhancement.effectGemId;
   if(!gemId)throw new Error(index===0?'The Stat Gem socket is empty':'The Effect Gem socket is empty');
-  const fee=(itemDef(gemId).gemTier??1)*500;if(state.character!.gold<fee)throw new Error(`Need ${fee} gold to safely extract this gem`);
-  let next:GameState={...state,character:{...state.character!,gold:state.character!.gold-fee}};next=addInventory(next,gemId);
+  const fee=gemExtractionFee(gemId);if(state.character!.gold<fee)throw new Error(`Need ${fee} gold to safely extract this gem`);
+  let next:GameState={...state,character:{...state.character!,gold:state.character!.gold-fee}};next=addRecoveredGem(next,gemId,now);
   next=setEnhancement(next,itemId,{...enhancement,statGemId:index===0?undefined:enhancement.statGemId,effectGemId:index===1?undefined:enhancement.effectGemId,gemIds:[]});
   return next;
+}
+export function replaceGem(state:GameState,itemId:string,gemId:string,now=Date.now()){
+ requireEquipped(state,itemId);const gem=safeGem(gemId);if(!gem)throw new Error('That item is not a gem');
+ const kind=gemSocketKind(gemId),enhancement=gearEnhancement(state,itemId),currentId=kind==='stat'?enhancement.statGemId:enhancement.effectGemId;
+ if(!currentId)return socketGem(state,itemId,gemId);
+ if(currentId===gemId)throw new Error('That gem is already socketed');
+ if(kind==='stat'&&!gem.gemStat)throw new Error('Stat Gems require a primary stat bonus');
+ if(kind==='effect'&&!gem.gemEffect)throw new Error('Effect Gems require a combat effect');
+ const fee=gemExtractionFee(currentId);if(state.character!.gold<fee)throw new Error(`Need ${fee} gold to safely replace this gem`);
+ let next=consumeAcross(state,gemId,1);
+ next={...next,character:{...next.character!,gold:next.character!.gold-fee}};
+ next=addRecoveredGem(next,currentId,now);
+ next=setEnhancement(next,itemId,{...enhancement,statGemId:kind==='stat'?gemId:enhancement.statGemId,effectGemId:kind==='effect'?gemId:enhancement.effectGemId,gemIds:[]});
+ return next;
 }
 export function gearStatsAtRank(itemId:string,rank:number){const item=itemDef(itemId),m=1+Math.max(0,Math.min(MAX_UPGRADE_RANK,rank))*UPGRADE_STAT_PER_RANK,scale=(value:number)=>value>0?Math.ceil(value*m):Math.round(value*m);return {hp:scale(item.hp??0),attack:scale(item.attack??0),defense:scale(item.defense??0)};}
 export function enhancedGearStats(state:GameState,itemId:string){return gearStatsAtRank(itemId,gearEnhancement(state,itemId).rank);}
@@ -100,10 +126,10 @@ export function equippedEffectGemBonuses(state:GameState):EquippedEffectGemBonus
     const gem=itemDef(gemId);
     if(gem.type==='gem'&&gem.gemEffect)result[gem.gemEffect]+=Math.max(0,gem.gemEffectValue??0);
   }
-  result.combat_speed=Math.min(.10,result.combat_speed);
-  result.boss_power=Math.min(.15,result.boss_power);
-  result.damage_reduction=Math.min(.10,result.damage_reduction);
-  result.recovery=Math.min(.50,result.recovery);
+  result.combat_speed=Math.min(GEM_EFFECT_CAPS.combat_speed,result.combat_speed);
+  result.boss_power=Math.min(GEM_EFFECT_CAPS.boss_power,result.boss_power);
+  result.damage_reduction=Math.min(GEM_EFFECT_CAPS.damage_reduction,result.damage_reduction);
+  result.recovery=Math.min(GEM_EFFECT_CAPS.recovery,result.recovery);
   return result;
 }
 export function gemEffectDescription(gemId:string){
@@ -116,3 +142,5 @@ export function gemEffectDescription(gemId:string){
     case 'recovery':return `+${pct}% between-kill recovery`;
   }
 }
+
+export function gemEffectCapDescription(effect:GemEffectId){return `Max ${Math.round(GEM_EFFECT_CAPS[effect]*100)}% equipped bonus`;}

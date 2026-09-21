@@ -10,6 +10,10 @@ equal(errors.length,0,`Live event catalog validation failed: ${errors.join(' | '
 const ids=LIVE_EVENT_CATALOG.map(event=>event.id);
 equal(new Set(ids).size,ids.length,'Live event ids must be unique');
 equal(LIVE_EVENT_CATALOG.length,9,'Nine annual events are now production catalog events');
+equal(new Set(LIVE_EVENT_CATALOG.map(event=>event.signature.title)).size,9,'Every annual event should have a distinct signature identity');
+ok(LIVE_EVENT_CATALOG.every(event=>event.signature.highlights.length>=2),'Every annual event should explain its signature loop');
+const communityEvents=LIVE_EVENT_CATALOG.filter(event=>event.communityEnabled===true).map(event=>event.name).sort();
+equal(communityEvents.join('|'),['Bloomwake','Frostfall Festival','Harvestwake','Merchant & Guild Festival'].sort().join('|'),'Only the four communal festivals should use shared progression');
 
 
 const turning=LIVE_EVENT_CATALOG.find(event=>event.id==='EVT_ANNUAL_001_2026');

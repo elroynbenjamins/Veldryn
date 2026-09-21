@@ -4,6 +4,7 @@ import {executeGameCommand,validateGameCommand} from '../src/core/game-commands'
 import {equipmentCraftQueueModel,equipmentCraftSlotBreakdown,equipmentCraftingQueue,startEquipmentCraft,claimEquipmentCraft} from '../src/core/equipment-crafting-queue';
 import {normalizeSave} from '../src/core/save-normalization';
 import {accountBonusOverview} from '../src/core/account-bonuses';
+import type {GameState} from '../src/core/types';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 const recipe=V33_EQUIPMENT_RECIPES.find(row=>row.v33SetId==='T1_001'&&row.output.itemId==='T1P_001')!;
@@ -39,7 +40,7 @@ let fourthBlocked=false;try{startEquipmentCraft(state,recipe.id,1003)}catch(erro
 ok(fourthBlocked,'Fourth active craft must be blocked on a base account');
 
 const supporterState={...prepared(),account:{...prepared().account,entitlements:{supporter:true}}};
-let supporterQueue=supporterState;
+let supporterQueue:GameState=supporterState;
 for(let i=0;i<4;i++)supporterQueue=startEquipmentCraft(supporterQueue,recipe.id,2000+i).state;
 ok(equipmentCraftQueueModel(supporterQueue,2005).active===4,'Supporter account should run four crafts concurrently');
 

@@ -5,7 +5,7 @@ import {characterPermanentMultipliers} from './permanent-boosts';
 import {levelFromXp} from './progression';
 import type {EquipmentCraftJob,GameState,ItemStack,SkillState} from './types';
 import {craftClaimSubRoll,craftedInstanceResult,createCraftedGearInstance} from './crafted-gear-instances';
-import {gemCombineRecipeV1} from './gem-progression-v1';
+import {gemCombineRecipeV1,isGemFamilyRecipeUnlockedV1} from './gem-progression-v1';
 
 export const BASE_EQUIPMENT_CRAFT_SLOTS=3;
 export const MAX_EQUIPMENT_CRAFT_SLOTS=5;
@@ -95,6 +95,7 @@ function validateStart(state:GameState,recipe:Recipe){
 function validateGemCombineStart(state:GameState,recipeId:string){
   if(!state.character)throw new Error('Create a character first');
   const recipe=gemCombineRecipeV1(recipeId);if(!recipe)throw new Error('Unknown gem combination');
+  if(!isGemFamilyRecipeUnlockedV1(state,recipe.familyId))throw new Error('Discover this Effect Gem recipe first');
   if(state.character.gold<recipe.gold)throw new Error(`Need ${recipe.gold} gold`);
   for(const input of recipe.inputs)if(combinedQuantity(state,input.itemId)<input.quantity)throw new Error(`Need ${input.quantity} ${itemDef(input.itemId).name}`);
   return recipe;

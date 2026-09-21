@@ -37,7 +37,8 @@ export interface CoopEventRunServerProjection{
   options:Array<{nodeId:string;kind:string;risk:number;rewardTag:string;title?:string;mechanicDelta?:number;objectiveDelta?:number;reactionLabel?:string}>;
   mechanic?:{id:string;label:string;description:string;value:number;maxValue:number;lowThreshold:number;highThreshold:number;status:'critical'|'steady'|'strong';bossAttackMultiplier:number;rewardBonus:number;bossEffect:string};
   objective?:{id:string;label:string;description:string;count:number;maxCount:number;effect:string;completed:boolean;bossAttackMultiplier:number;bossHpMultiplier:number;bossDefenseMultiplier:number;rewardBonus:number;preBossHealPct:number;effectText:string};
-  bossMechanic?:{profileId:string;label:string;summary:string;tone:'benefit'|'mixed'|'danger'};
+  bossMechanic?:{profileId:string;label:string;summary:string;tone:'benefit'|'mixed'|'danger';telegraph?:{bossName:string;phases:Array<{id:string;label:string;hpPct:number;objectiveSensitive:boolean}>;castAbilities:Array<{id:string;label:string;castMs:number;cooldownMs:number;interruptible:boolean;objectiveSensitive:boolean}>;suppressedAbilities:Array<{id:string;label:string}>}};
+  bossRecap?:{durationMs:number;downs:number;phasesTriggered:string[];abilitiesCast:string[]};
   settlement:{status:'pending'|'claimed';rewardMarks?:number};
 }
 
@@ -112,7 +113,8 @@ export function presentEventExpeditionRun(projection:CoopEventRunServerProjectio
     options,
     mechanic:projection.mechanic?{label:projection.mechanic.label,description:projection.mechanic.description,value:projection.mechanic.value,maxValue:projection.mechanic.maxValue,status:projection.mechanic.status,bossEffect:projection.mechanic.bossEffect}:undefined,
     objective:projection.objective?{label:projection.objective.label,description:projection.objective.description,count:projection.objective.count,maxCount:projection.objective.maxCount,completed:projection.objective.completed,effectText:projection.objective.effectText}:undefined,
-    bossMechanic:projection.bossMechanic?{label:projection.bossMechanic.label,summary:projection.bossMechanic.summary,tone:projection.bossMechanic.tone}:undefined,
+    bossMechanic:projection.bossMechanic?{label:projection.bossMechanic.label,summary:projection.bossMechanic.summary,tone:projection.bossMechanic.tone,telegraph:projection.bossMechanic.telegraph}:undefined,
+    bossRecap:projection.bossRecap,
     stateVersion:projection.stateVersion,
     decisionId:projection.decisionId,
     decisionRevision:projection.decisionRevision,

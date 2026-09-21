@@ -7,6 +7,7 @@ import type { CoopRole } from '../../shared/coop-types';
 import { deterministicInt } from './rng';
 import { validateCoopRouteGraph } from './route-generation';
 import { eventBossMechanicProfile } from './event-boss-mechanics';
+import { buildExpeditionEncounter } from '../combat/expedition-combat-service';
 
 export interface EventMechanicState {id:string;value:number;}
 export interface EventObjectiveState {id:string;count:number;}
@@ -42,11 +43,19 @@ export function eventObjectiveProjection(run:EventRun){
  return {id:config.id,label:config.label,description:config.description,count,maxCount:config.maxCount,effect:config.effect,completed,bossAttackMultiplier,bossHpMultiplier,bossDefenseMultiplier,rewardBonus,preBossHealPct,effectText};
 }
 
+const displayId=(value:string)=>value.replace(/^EVENT_[A-Z]+_BOSS_/,'').replace(/_/g,' ').toLowerCase().replace(/\b\w/g,char=>char.toUpperCase());
+
 export function eventBossMechanicProjection(run:EventRun){
  if(run.graph.generatorVersion!=='event-route-v5')return undefined;
- const mechanic=eventMechanicProjection(run),objective=eventObjectiveProjection(run);
+ const definition=definitionFor(run.eventId),mechanic=eventMechanicProjection(run),objective=eventObjectiveProjection(run);
  const profile=eventBossMechanicProfile({eventId:run.eventId,objectiveCount:objective.count,objectiveMax:objective.maxCount,mechanicStatus:mechanic.status});
- return {profileId:profile.profileId,label:profile.label,summary:profile.summary,tone:profile.tone,tuning:profile.tuning};
+ const baseBoss=buildExpeditionEncounter({encounterId:definition.bossEncounterId}).find(enemy=>enemy.boss);
+ const tunedBoss=buildExpeditionEncounter({encounterId:definition.bossEncounterId,bossTuning:profile.tuning}).find(enemy=>enemy.boss);
+ const baseAbilityIds=new Set(baseBoss?.abilities.map(ability=>ability.id)??[]),activeAbilityIds=new Set(tunedBoss?.abilities.map(ability=>ability.id)??[]);
+ const suppressedAbilities=(baseBoss?.abilities??[]).filter(ability=>baseAbilityIds.has(ability.id)&&!activeAbilityIds.has(ability.id)).map(ability=>({id:ability.id,label:ability.name}));
+ const phases=[...(tunedBoss?.phases??[])].sort((a,b)=>b.hpPct-a.hpPct).map(phase=>({id:phase.id,label:phase.name?.trim()||displayId(phase.id),hpPct:Math.round(phase.hpPct*100),objectiveSensitive:!(baseBoss?.phases??[]).some(base=>base.id===phase.id)}));
+ const castAbilities=(tunedBoss?.abilities??[]).filter(ability=>ability.castTimeMs>0).sort((a,b)=>b.priority-a.priority).map(ability=>({id:ability.id,label:ability.name,castMs:ability.castTimeMs,cooldownMs:ability.cooldownMs,interruptible:Boolean(ability.interruptible),objectiveSensitive:!baseAbilityIds.has(ability.id)}));
+ return {profileId:profile.profileId,label:profile.label,summary:profile.summary,tone:profile.tone,tuning:profile.tuning,telegraph:{bossName:tunedBoss?.name??definition.finalBoss,phases,castAbilities,suppressedAbilities}};
 }
 
 export interface EffectiveEventNode extends CoopRouteNode {encounterAttackMultiplier?:number;reactionLabel?:string;}

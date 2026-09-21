@@ -46,7 +46,7 @@ export interface AbilityDefinition {
   tags?: string[];
 }
 
-export interface BossPhaseDefinition { id:string; hpPct:number; target:TargetRule; effects:AbilityEffect[]; }
+export interface BossPhaseDefinition { id:string; name?:string; hpPct:number; target:TargetRule; effects:AbilityEffect[]; }
 
 export interface EncounterBossTuning {
   profileId:string;

@@ -12,11 +12,11 @@ export interface EventBossMechanicProfile {
 
 const clamp=(value:number,min:number,max:number)=>Math.max(min,Math.min(max,value));
 const phase=(id:string,hpPct:number,name:string,damageType:DamageType,damageCoeff:number,debuffTag?:string,debuffValue?:number):BossPhaseDefinition=>({
- id:`${id}_${name.replace(/[^A-Z0-9]+/gi,'_').toUpperCase()}`,hpPct,target:'all_enemies',
+ id:`${id}_${name.replace(/[^A-Z0-9]+/gi,'_').toUpperCase()}`,name,hpPct,target:'all_enemies',
  effects:[{kind:'damage',coeff:damageCoeff,damageType},...(debuffTag?[{kind:'debuff' as const,tag:debuffTag,value:debuffValue??0,durationMs:6500}]:[])],
 });
 const selfBuffPhase=(id:string,hpPct:number,index:number):BossPhaseDefinition=>({
- id:`${id}_FERAL_REGROWTH_${index+1}`,hpPct,target:'self',
+ id:`${id}_FERAL_REGROWTH_${index+1}`,name:`Feral Regrowth ${index+1}`,hpPct,target:'self',
  effects:[{kind:'buff',tag:'damage_done',value:.05,durationMs:10000},{kind:'buff',tag:'crit',value:.04,durationMs:10000}],
 });
 const ability=(id:string,name:string,damageType:DamageType,coeff:number,cooldownMs:number,castTimeMs:number):AbilityDefinition=>({

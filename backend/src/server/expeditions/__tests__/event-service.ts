@@ -32,11 +32,16 @@ for(const definition of EVENT_EXPEDITIONS){
  if(objective.effect==='boss_defense_down')assert.ok(objective.bossDefenseMultiplier<1);
  if(objective.effect==='reward_bonus')assert.ok(objective.rewardBonus>0);
  if(objective.effect==='preboss_heal')assert.ok(objective.preBossHealPct>0);
- const bossProfile=eventBossMechanicProjection(run);assert.ok(bossProfile?.label.trim());assert.ok(bossProfile?.summary.trim());
+ const bossProfile=eventBossMechanicProjection(run);assert.ok(bossProfile?.label.trim());assert.ok(bossProfile?.summary.trim());assert.ok(bossProfile?.telegraph.bossName.trim());assert.ok(bossProfile?.telegraph.phases.some(phase=>phase.label==='Pressure Break'));assert.ok(bossProfile?.telegraph.castAbilities.some(ability=>ability.label.trim()));
  const altCount=definition.objective.startCount===definition.objective.maxCount?0:definition.objective.maxCount;
  const alternate=eventBossMechanicProjection({...run,objective:{id:definition.objective.id,count:altCount}});assert.ok(alternate);assert.notEqual(alternate!.profileId,bossProfile!.profileId);
 }
 assert.deepEqual(effects,new Set(['boss_attack_down','boss_hp_down','boss_defense_down','reward_bonus','preboss_heal']));
+const veil=EVENT_EXPEDITIONS.find(item=>item.id==='EVENT_VEILBREAK_GLOAM_BREACH')!,veilService=new EventExpeditionService(new MemoryEventRunRepository(),'veil-telegraph-secret');
+const veilRun=veilService.start({requestId:'veil-telegraph-request',runId:'veil-telegraph-run',accountId:'a',eventId:veil.id,activeLiveEventId:'EVT_ANNUAL_010_2026',members,players,nowMs:now});
+const fullVeil=eventBossMechanicProjection({...veilRun,objective:{id:veil.objective.id,count:veil.objective.maxCount}})!;
+assert.ok(fullVeil.telegraph.suppressedAbilities.some(ability=>ability.label==='Lantern Extinction'));
+assert.ok(!fullVeil.telegraph.castAbilities.some(ability=>ability.label==='Lantern Extinction'));
 
 const service=new EventExpeditionService(new MemoryEventRunRepository(),'event-suncrest-secret');
 const suncrest=EVENT_EXPEDITIONS.find(item=>item.id==='EVENT_SUNCREST_SHATTERED_ISLES')!;

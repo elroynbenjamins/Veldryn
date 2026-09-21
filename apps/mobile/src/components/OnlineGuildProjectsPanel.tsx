@@ -6,7 +6,7 @@ import {GuildActivityFeedPanel} from './GuildActivityFeedPanel';
 import {LoadingState} from './LoadingState';
 import {StatusPill} from './StatusPill';
 import {projectFocusLabel} from '../core/guild-projects-v18';
-import {loadOnlineGuildProjectsV18,type OnlineGuildProjectSummary,type OnlineGuildProjectsSnapshot} from '../online/guild-projects-v18';
+import {loadOnlineGuildProjectsV18,startOnlineGuildProjectCandidate,voteOnlineGuildProjectCandidate,type OnlineGuildProjectCandidate,type OnlineGuildProjectSummary,type OnlineGuildProjectsSnapshot} from '../online/guild-projects-v18';
 import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 
@@ -22,8 +22,9 @@ function progressPercent(project:OnlineGuildProjectSummary){
 
 export function OnlineGuildProjectsPanel(){
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
- const [snapshot,setSnapshot]=useState<OnlineGuildProjectsSnapshot|null>(null),[loading,setLoading]=useState(true),[error,setError]=useState(''),[expanded,setExpanded]=useState<string|null>(null);
+ const [snapshot,setSnapshot]=useState<OnlineGuildProjectsSnapshot|null>(null),[loading,setLoading]=useState(true),[error,setError]=useState(''),[expanded,setExpanded]=useState<string|null>(null),[busy,setBusy]=useState('');
  const load=async()=>{setLoading(true);setError('');try{setSnapshot(await loadOnlineGuildProjectsV18())}catch(reason){setError(reason instanceof Error?reason.message:'Unable to load Guild Projects.')}finally{setLoading(false)}};
+ const act=async(kind:'vote'|'start',candidateId:string)=>{const key=kind+':'+candidateId;setBusy(key);setError('');try{if(kind==='vote')await voteOnlineGuildProjectCandidate(candidateId);else await startOnlineGuildProjectCandidate(candidateId);await load()}catch(reason){setError(reason instanceof Error?reason.message:'Guild Project action failed.')}finally{setBusy('')}};
  useEffect(()=>{void load()},[]);
  if(loading&&!snapshot)return <LoadingState label="Loading Guild Projects…" detail="Syncing shared Project progress and recent Guild activity."/>;
  if(error&&!snapshot)return <Panel><Text style={s.title}>Guild Projects</Text><Text style={s.error}>{error}</Text><GameButton compact title="Retry" tone="secondary" onPress={()=>void load()}/></Panel>;
@@ -33,7 +34,8 @@ export function OnlineGuildProjectsPanel(){
  return <View style={s.root}>
   <Panel>
    <View style={s.sectionHead}><View style={s.flex}><Text style={s.kicker}>GUILD PROJECTS</Text><Text style={s.title}>Shared Progress</Text></View><StatusPill label="LIVE" tone="good"/></View>
-   <Text style={s.copy}>Verified gameplay updates weekly Projects automatically. This view is read-only; management actions remain server-authoritative.</Text>
+   <Text style={s.copy}>Verified gameplay updates active Projects automatically. Members can vote on the weekly board; authorized Guild roles can start the selected Project through server-validated actions.</Text>
+   {snapshot.candidates.length?<View style={s.board}><View style={s.sectionHead}><Text style={s.boardTitle}>NEXT WEEKLY PROJECT</Text><Text style={s.sectionMeta}>1 vote per member</Text></View>{snapshot.candidates.map(candidate=><CandidateCard key={candidate.id} candidate={candidate} busy={busy} onVote={()=>void act('vote',candidate.id)} onStart={()=>void act('start',candidate.id)}/>)}</View>:null}
    {active.length?active.map(project=><ProjectCard key={project.id} project={project} expanded={expanded===project.id} onToggle={()=>setExpanded(id=>id===project.id?null:project.id)}/>):<View style={s.empty}><Text style={s.emptyTitle}>No active Guild Project</Text><Text style={s.emptyText}>The next authored Project will appear here when the Guild starts one.</Text></View>}
   </Panel>
   {completed.length?<Panel><View style={s.sectionHead}><Text style={s.title}>Recent completions</Text><Text style={s.sectionMeta}>{completed.length} shown</Text></View>{completed.map(project=><ProjectCard key={project.id} project={project} compact expanded={expanded===project.id} onToggle={()=>setExpanded(id=>id===project.id?null:project.id)}/>)}</Panel>:null}
@@ -42,7 +44,18 @@ export function OnlineGuildProjectsPanel(){
    <GuildActivityFeedPanel entries={snapshot.activity}/>
   </Panel>
   <GameButton compact title={loading?'Refreshing…':'Refresh Projects'} tone="secondary" disabled={loading} onPress={()=>void load()}/>
+  <Text style={s.safety}>Resource donations and completion rewards stay server-owned until their Gold/inventory settlement is atomic with authoritative gameplay.</Text>
   {!!error&&<Text style={s.error}>{error}</Text>}
+ </View>;
+}
+
+function CandidateCard({candidate,busy,onVote,onStart}:{candidate:OnlineGuildProjectCandidate;busy:string;onVote:()=>void;onStart:()=>void}){
+ const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),voteBusy=busy==='vote:'+candidate.id,startBusy=busy==='start:'+candidate.id;
+ return <View style={[s.candidate,candidate.myVote&&s.candidateVoted]}>
+  <View style={s.projectHead}><View style={s.flex}><Text style={s.projectTitle}>{candidate.name}</Text><Text style={s.meta}>{projectFocusLabel(candidate.focus)} · {candidate.voteCount} vote{candidate.voteCount===1?'':'s'}</Text></View>{candidate.myVote?<StatusPill label="YOUR VOTE" tone="good"/>:null}</View>
+  <Text style={s.description}>{candidate.description}</Text>
+  <Text style={s.meta}>Board closes {new Date(candidate.expiresAt).toLocaleString()}</Text>
+  <View style={s.actions}><GameButton compact title={voteBusy?'Voting…':candidate.myVote?'Voted':'Vote'} tone="secondary" disabled={!!busy||candidate.myVote} onPress={onVote}/>{candidate.canStart?<GameButton compact title={startBusy?'Starting…':'Start Project'} disabled={!!busy} onPress={onStart}/>:null}</View>
  </View>;
 }
 
@@ -63,7 +76,7 @@ function ProjectCard({project,expanded,compact=false,onToggle}:{project:OnlineGu
 }
 
 function makeStyles(C:ThemeColors){return StyleSheet.create({
- root:{gap:10},flex:{flex:1,minWidth:0},sectionHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},kicker:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.8},title:{...typography.title,color:C.text},sectionMeta:{fontSize:8.5,color:C.muted,fontWeight:'800'},copy:{fontSize:10,lineHeight:14,color:C.muted},
+ root:{gap:10},flex:{flex:1,minWidth:0},sectionHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},kicker:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.8},title:{...typography.title,color:C.text},sectionMeta:{fontSize:8.5,color:C.muted,fontWeight:'800'},copy:{fontSize:10,lineHeight:14,color:C.muted},board:{gap:6,paddingTop:8,marginTop:8,borderTopWidth:StyleSheet.hairlineWidth,borderTopColor:C.line},boardTitle:{fontSize:8,color:C.accent,fontWeight:'900',letterSpacing:.55},candidate:{gap:5,padding:8,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2},candidateVoted:{borderColor:C.good},actions:{flexDirection:'row',flexWrap:'wrap',gap:6},safety:{fontSize:8.5,lineHeight:12,color:C.muted,textAlign:'center'},
  project:{gap:5,padding:9,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2,marginTop:7},projectCompact:{paddingVertical:7},projectDone:{borderColor:C.good,backgroundColor:C.goodSurface},pressed:{opacity:.72},
  projectHead:{flexDirection:'row',alignItems:'center',gap:8},projectTitle:{fontSize:11,color:C.text,fontWeight:'900'},meta:{fontSize:8.5,lineHeight:12,color:C.muted},statusPill:{paddingHorizontal:6,paddingVertical:3,borderWidth:1,borderColor:C.info,borderRadius:99,backgroundColor:C.infoSurface},statusText:{fontSize:7,color:C.info,fontWeight:'900',letterSpacing:.4},statusDone:{borderColor:C.good,backgroundColor:C.goodSurface},statusDoneText:{color:C.good},
  progressRow:{flexDirection:'row',alignItems:'center',gap:7},percent:{width:34,fontSize:10,color:C.accent,fontWeight:'900'},track:{flex:1,height:7,borderRadius:4,overflow:'hidden',backgroundColor:C.panel},fill:{height:'100%',backgroundColor:C.accent},

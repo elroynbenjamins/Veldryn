@@ -11,6 +11,9 @@ for(const token of ["accentSurface:'#2B2417'","accentSurface:'#332A12'","accentS
 }
 
 const checks:Array<[string,string[],string[]]>= [
+  ['src/components/SearchField.tsx',['backgroundColor:C.inputBg','focused:{borderColor:C.selectionLine}'],["backgroundColor:'#101B27'","focused:{borderColor:'#8BAFC2'}"]],
+  ['src/components/SettingToggle.tsx',['backgroundColor:C.panel','backgroundColor:C.panel2','backgroundColor:C.selection','backgroundColor:C.selectionLine'],["backgroundColor:'#101B27'","backgroundColor:'#263449'","backgroundColor:'#234C65'","backgroundColor:'#B8E5F5'"]],
+  ['src/components/StatBar.tsx',['backgroundColor:C.panel2'],["backgroundColor:'#080c12'"]],
   ['src/components/PrimaryNavigation.tsx',['C.notification','C.notificationText'],['#d93646',"color:'#fff'"]],
   ['src/components/GameTopBar.tsx',['backgroundColor:C.good','C.dark?C.bg:C.primaryButtonText'],['#49d783','#1a1205']],
   ['src/components/ActiveActivityBar.tsx',['backgroundColor:C.panel','borderBottomColor:C.bad','borderBottomColor:C.info','backgroundColor:C.panel2'],['#101724','#A74D58','#3D93A8','#273142']],

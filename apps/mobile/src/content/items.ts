@@ -1,4 +1,4 @@
-import { ClassId,GatheringSkillId,GearSlot,GemStat } from '../core/types';
+import { ClassId,GatheringSkillId,GearSlot,GemEffect,GemStat } from '../core/types';
 import {ItemRarity} from '../core/item-rarity';
 import {NOVICE_ITEMS} from './novice-sets';
 import {TOOL_ITEMS} from './gathering-tools';
@@ -12,7 +12,7 @@ export interface ItemDef {
   rarity?:ItemRarity; passive?:string;
   value:number; salvage?:{itemId:string;quantity:number};
   classRestriction?:ClassId; noviceSetId?:string; equipmentSetId?:string;
-  gemStat?:GemStat; gemPercent?:number; gemTier?:1|2;
+  gemStat?:GemStat; gemPercent?:number; gemEffect?:GemEffect; gemEffectValue?:number; gemTier?:1|2;
 }
 
 const COMPLETE_SET_SLOTS:GearSlot[]=['helmet','legs','boots','weapon','offhand','amulet'];
@@ -78,6 +78,12 @@ const BASE_ITEMS:ItemDef[]=[
 {id:'WARDHEART_GEM',name:'Wardheart Gem',type:'gem',gemStat:'defense',gemPercent:.05,gemTier:2,value:1900,rarity:'legendary'},
 {id:'VITALITY_SHARD',name:'Vitality Shard',type:'gem',gemStat:'hp',gemPercent:.02,gemTier:1,value:320,rarity:'rare'},
 {id:'VITALITY_HEART_GEM',name:'Vitality Heart Gem',type:'gem',gemStat:'hp',gemPercent:.05,gemTier:2,value:1900,rarity:'legendary'},
+{id:'FOCUS_SHARD',name:'Focus Shard',type:'gem',gemEffect:'critChance',gemEffectValue:.005,gemTier:1,value:360,rarity:'rare'},
+{id:'FOCUS_HEART_GEM',name:'Focus Heart Gem',type:'gem',gemEffect:'critChance',gemEffectValue:.0125,gemTier:2,value:2100,rarity:'legendary'},
+{id:'CELERITY_SHARD',name:'Celerity Shard',type:'gem',gemEffect:'haste',gemEffectValue:.005,gemTier:1,value:360,rarity:'rare'},
+{id:'CELERITY_HEART_GEM',name:'Celerity Heart Gem',type:'gem',gemEffect:'haste',gemEffectValue:.0125,gemTier:2,value:2100,rarity:'legendary'},
+{id:'VEIL_SHARD',name:'Veil Shard',type:'gem',gemEffect:'evasion',gemEffectValue:.005,gemTier:1,value:360,rarity:'rare'},
+{id:'VEILHEART_GEM',name:'Veilheart Gem',type:'gem',gemEffect:'evasion',gemEffectValue:.0125,gemTier:2,value:2100,rarity:'legendary'},
 // Runtime pack weapon identities; numeric budgets retained from the prior primary weapons.
 {id:'basic_sword',name:'Basic Sword',type:'gear',slot:'weapon',attack:4,readiness:1,value:10},
 {id:'basic_tower_shield',name:'Basic Tower Shield',type:'gear',slot:'weapon',attack:3,defense:1,readiness:1,value:10},

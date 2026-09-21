@@ -50,7 +50,10 @@ export function coopHandler(services:GameplayServices){
     return json(await service.respond(accountId,ready[1],command));
    }
 
-   const queueRoot=path.endsWith('/coop/queue'),quickQueue=path.endsWith('/coop/quick-queue'),queueCommand=path.match(new RegExp('/coop/queue/('+uuid+')/(heartbeat|cancel)    if(request.method!=='POST')return json({error:'method_not_allowed'},405);
+   const queueRoot=path.endsWith('/coop/queue'),quickQueue=path.endsWith('/coop/quick-queue'),queueCommand=path.match(new RegExp('/coop/queue/('+uuid+')/(heartbeat|cancel)$'));
+   if(queueRoot||quickQueue||queueCommand){
+    if(queueRoot&&request.method==='GET')return json(await queue.state(accountId));
+    if(request.method!=='POST')return json({error:'method_not_allowed'},405);
     const raw=await request.text();if(raw.length>4096)return json({error:'request_too_large'},413);
     let body:unknown;try{body=JSON.parse(raw);}catch{throw new GameplayError('invalid_json');}
     if(!body||typeof body!=='object'||Array.isArray(body))throw new GameplayError('invalid_request');

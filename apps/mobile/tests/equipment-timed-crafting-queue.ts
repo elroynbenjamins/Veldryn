@@ -1,7 +1,7 @@
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
 import {createCharacter,newGame} from '../src/core/game';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
-import {equipmentCraftQueueModel,equipmentCraftSlotBreakdown,equipmentCraftingQueue,startEquipmentCraft,claimEquipmentCraft} from '../src/core/equipment-crafting-queue';
+import {equipmentCraftQueueModel,equipmentCraftSlotBreakdown,equipmentCraftingQueue,MAX_WAITING_EQUIPMENT_CRAFTS,startEquipmentCraft,claimEquipmentCraft} from '../src/core/equipment-crafting-queue';
 import {normalizeSave} from '../src/core/save-normalization';
 import {accountBonusOverview} from '../src/core/account-bonuses';
 import type {GameState} from '../src/core/types';
@@ -34,26 +34,31 @@ ok(slots.capacity===5&&slots.raw===7,'All bonuses may overlap but active queue c
 const started1=startEquipmentCraft(state,recipe.id,1000);state=started1.state;
 const started2=startEquipmentCraft(state,recipe.id,1001);state=started2.state;
 const started3=startEquipmentCraft(state,recipe.id,1002);state=started3.state;
+const baseActiveState=state;
 ok(equipmentCraftingQueue(state).length===3,'Three base slots should allow three parallel equipment crafts');
 ok(new Set(equipmentCraftingQueue(state).map(row=>row.id)).size===3,'Parallel identical recipes need unique job IDs');
-let fourthBlocked=false;try{startEquipmentCraft(state,recipe.id,1003)}catch(error){fourthBlocked=error instanceof Error&&error.message.includes('3 equipment crafting slots are busy')}
-ok(fourthBlocked,'Fourth active craft must be blocked on a base account');
+const fourth=startEquipmentCraft(state,recipe.id,1003);state=fourth.state;
+ok(fourth.waiting&&equipmentCraftQueueModel(state,1003).waiting===1,'Fourth base-account craft should reserve and enter the waiting backlog');
+for(let i=1;i<MAX_WAITING_EQUIPMENT_CRAFTS;i++)state=startEquipmentCraft(state,recipe.id,1003+i).state;
+ok(equipmentCraftQueueModel(state,1010).waiting===MAX_WAITING_EQUIPMENT_CRAFTS,'Base account should support five reserved waiting crafts behind three active slots');
+let ninthBlocked=false;try{startEquipmentCraft(state,recipe.id,1010)}catch(error){ninthBlocked=error instanceof Error&&error.message.includes('backlog is full')}
+ok(ninthBlocked,'Ninth craft must be blocked when 3 active + 5 waiting positions are occupied');
 
 const supporterState={...prepared(),account:{...prepared().account,entitlements:{supporter:true}}};
 let supporterQueue:GameState=supporterState;
 for(let i=0;i<4;i++)supporterQueue=startEquipmentCraft(supporterQueue,recipe.id,2000+i).state;
 ok(equipmentCraftQueueModel(supporterQueue,2005).active===4,'Supporter account should run four crafts concurrently');
 
-const doneAt=Math.max(...equipmentCraftingQueue(state).map(row=>row.completesAtMs));
-const finishedModel=equipmentCraftQueueModel(state,doneAt);
+const doneAt=Math.max(...equipmentCraftingQueue(baseActiveState).map(row=>row.completesAtMs));
+const finishedModel=equipmentCraftQueueModel(baseActiveState,doneAt);
 ok(finishedModel.active===0&&finishedModel.ready===3&&finishedModel.freeSlots===3,'Finished unclaimed jobs must free their active slots');
-const fourthAfterFinish=startEquipmentCraft(state,recipe.id,doneAt).state;
+const fourthAfterFinish=startEquipmentCraft(baseActiveState,recipe.id,doneAt).state;
 ok(equipmentCraftQueueModel(fourthAfterFinish,doneAt).active===1,'A new craft may start as soon as earlier jobs finish even before they are claimed');
 
-let earlyClaimBlocked=false;try{claimEquipmentCraft(state,equipmentCraftingQueue(state)[0].id,1001)}catch(error){earlyClaimBlocked=error instanceof Error&&error.message.includes('still in progress')}
+let earlyClaimBlocked=false;try{claimEquipmentCraft(baseActiveState,equipmentCraftingQueue(baseActiveState)[0].id,1001)}catch(error){earlyClaimBlocked=error instanceof Error&&error.message.includes('still in progress')}
 ok(earlyClaimBlocked,'Equipment cannot be claimed before its timer ends');
-const smithBefore=state.skills.find(row=>row.skillId==='smithing')!.xp;
-const claimed=claimEquipmentCraft(state,equipmentCraftingQueue(state)[0].id,doneAt);
+const smithBefore=baseActiveState.skills.find(row=>row.skillId==='smithing')!.xp;
+const claimed=claimEquipmentCraft(baseActiveState,equipmentCraftingQueue(baseActiveState)[0].id,doneAt);
 ok(claimed.state.inventory.stacks.some(row=>row.itemId===recipe.output.itemId),'Claiming a finished craft must grant the equipment');
 ok(claimed.state.skills.find(row=>row.skillId==='smithing')!.xp===smithBefore+recipe.xp,'Smithing XP must be awarded on completion, not on reservation');
 
@@ -73,4 +78,4 @@ const normalized=normalizeSave(save);
 ok(normalized.account.entitlements?.supporter===true,'Save normalization must preserve Supporter entitlement');
 ok(normalized.account.equipmentCraftingQueue?.length===4,'Save normalization must preserve valid timed crafting jobs');
 
-console.log('PASS: timed equipment crafting uses 3 base slots, overlapping unlock bonuses, a hard 5-slot cap, authoritative timers and completion claims');
+console.log('PASS: timed equipment crafting uses 3–5 active slots plus a five-job waiting backlog, authoritative timers and completion claims');

@@ -10,7 +10,7 @@ import {enhancedGearStats,gearEnhancement,gemEffectDescription,gemSocketCapacity
 import {effectiveStats} from './game';
 import {previewEquipment} from './equipment-preview';
 import {rarityMeta} from './item-rarity';
-import {craftedInstancesForItem,effectiveOwnedGearRarity} from './crafted-gear-instances';
+import {gearInstanceById,gearInstancesForItem,updateGearInstance} from './gear-instances';
 
 export type ItemInspectSourceKind='gathering'|'crafting'|'combat'|'starting';
 export interface ItemInspectSource{kind:ItemInspectSourceKind;title:string;detail:string;navigation?:WorkingTowardDestination;availability?:WorkingTowardDestinationAvailability;}
@@ -25,8 +25,8 @@ export interface ItemGearDecision{
 const title=(value:string)=>value.toLowerCase().split('_').map(part=>part?part[0].toUpperCase()+part.slice(1):part).join(' ');
 const pct=(value:number)=>value>=.1?`${Math.round(value*100)}%`:`${(value*100).toFixed(value<.01?2:1)}%`;
 
-export function itemInspectModel(state:GameState,itemId:string){
-  const item=itemDef(itemId),rarityId=item.type==='gear'?effectiveOwnedGearRarity(state,itemId):item.rarity??'common',rarity=rarityMeta(rarityId);
+export function itemInspectModel(state:GameState,itemId:string,instanceId?:string){
+  const item=itemDef(itemId),instance=instanceId?gearInstanceById(state,instanceId):undefined,rarityId=item.type==='gear'?(instance?.rarity??item.rarity??'common'):item.rarity??'common',rarity=rarityMeta(rarityId);
   const sources:ItemInspectSource[]=[];
 
   for(const node of [...GATHERING,...HERB_NODES]){
@@ -60,17 +60,17 @@ export function itemInspectModel(state:GameState,itemId:string){
   let gearDecision:ItemGearDecision|undefined;
 
   if(item.type==='gear'){
-    const enhancement=gearEnhancement(state,itemId),quote=upgradeQuote(state,itemId),enhanced=enhancedGearStats(state,itemId);
+    const enhancement=gearEnhancement(state,itemId,instanceId),quote=upgradeQuote(state,itemId,instanceId),enhanced=enhancedGearStats(state,itemId,instanceId);
     stats=enhanced;
     upgrade={rank:enhancement.rank,nextRank:quote.targetRank,successChance:quote.successChance,dust:quote.dust,cores:quote.cores,gold:quote.gold,maxed:quote.maxed,failures:enhancement.failures,equipped:!!state.character&&Object.values(state.character.equipment).includes(itemId)};
-    const capacity=gemSocketCapacity(itemId),slotState=gemSocketState(state,itemId);
+    const capacity=gemSocketCapacity(itemId),slotState=gemSocketState(state,itemId,instanceId);
     sockets={filled:slotState.filled,capacity,statGemName:slotState.statGemId?itemDef(slotState.statGemId).name:undefined,effectGemName:slotState.effectGemId?itemDef(slotState.effectGemId).name:undefined};
     if(state.character&&item.slot){
       const compatible=!item.classRestriction||item.classRestriction===state.character.classId;
-      const before=effectiveStats(state),currentId=state.character.equipment[item.slot],currentItem=currentId?itemDef(currentId):undefined,currentRank=currentId?gearEnhancement(state,currentId).rank:0;
+      const before=effectiveStats(state),currentId=state.character.equipment[item.slot],currentInstanceId=state.character.equipmentInstanceIds?.[item.slot],currentItem=currentId?itemDef(currentId):undefined,currentRank=currentId?gearEnhancement(state,currentId,currentInstanceId).rank:0;
       const gems=enhancement.gemIds.map(id=>{const gem=itemDef(id),kind=gemSocketKind(id);return {id,name:gem.name,kind,detail:kind==='stat'?`+${Math.round((gem.gemPercent??0)*100)}% ${title(gem.gemStat??'stat')}`:gemEffectDescription(id),stat:kind==='stat'?title(gem.gemStat??'stat'):'Effect',percent:kind==='stat'?(gem.gemPercent??0):(gem.gemEffectValue??0)};});
       let after=before,maxAfter=before,previewState=state;
-      if(compatible){try{previewState=previewEquipment(state,itemId);after=effectiveStats(previewState);const maxState:GameState={...state,character:{...state.character,gearEnhancements:{...(state.character.gearEnhancements??{}),[itemId]:{...enhancement,rank:MAX_UPGRADE_RANK}}}};maxAfter=effectiveStats(previewEquipment(maxState,itemId));}catch{}}
+      if(compatible){try{previewState=previewEquipment(state,itemId,instanceId);after=effectiveStats(previewState);if(instanceId){const maxState=updateGearInstance(state,instanceId,row=>({...row,enhancement:{...row.enhancement,rank:MAX_UPGRADE_RANK}}));maxAfter=effectiveStats(previewEquipment(maxState,itemId,instanceId));}}catch{}}
       const set=equipmentSetDef(item.equipmentSetId);
       let setDecision:ItemGearDecision['set'];
       if(set){
@@ -78,7 +78,7 @@ export function itemInspectModel(state:GameState,itemId:string){
         const milestones=[{pieces:2,bonus:set.twoPiece},{pieces:4,bonus:set.fourPiece},{pieces:6,bonus:set.sixPiece},{pieces:8,bonus:set.eightPiece},{pieces:10,bonus:set.tenPiece}];
         setDecision={name:set.name,currentPieces,previewPieces,required:10,reached:[...milestones].reverse().find(row=>row.pieces<=previewPieces),next:milestones.find(row=>row.pieces>previewPieces),active:milestones.filter(row=>row.pieces<=previewPieces).map(row=>({...row,runtime:row.pieces===6?'trigger-hook-pending':'live'} as const))};
       }
-      gearDecision={compatible,alreadyEquipped:currentId===itemId,replaces:currentItem?{itemId:currentItem.id,name:currentItem.name,rank:currentRank}:undefined,
+      gearDecision={compatible,alreadyEquipped:instanceId?currentInstanceId===instanceId:currentId===itemId,replaces:currentItem?{itemId:currentItem.id,name:currentItem.name,rank:currentRank}:undefined,
         loadoutBefore:{attack:before.attack,defense:before.defense,hp:before.hp,power:before.power},loadoutAfter:{attack:after.attack,defense:after.defense,hp:after.hp,power:after.power},
         loadoutDelta:{attack:after.attack-before.attack,defense:after.defense-before.defense,hp:after.hp-before.hp,power:after.power-before.power},maxRank:MAX_UPGRADE_RANK,maxItemStats:gearStatsAtRank(itemId,MAX_UPGRADE_RANK),
         maxLoadoutGain:{attack:maxAfter.attack-after.attack,defense:maxAfter.defense-after.defense,hp:maxAfter.hp-after.hp,power:maxAfter.power-after.power},gems,set:setDecision};
@@ -101,6 +101,6 @@ export function itemInspectModel(state:GameState,itemId:string){
 
   const actionableSources=sources.map(source=>source.navigation?{...source,availability:workingTowardDestinationAvailability(state,source.navigation)}:source);
   const actionableUses=usedIn.map(recipe=>({...recipe,availability:workingTowardDestinationAvailability(state,recipe.navigation)}));
-  const craftedInstances=item.type==='gear'?craftedInstancesForItem(state,itemId):[];
-  return {item,rarityId,rarity,inventoryQuantity,bankQuantity,totalQuantity:inventoryQuantity+bankQuantity,craftedCopies:craftedInstances.length,craftedRarities:[...new Set(craftedInstances.map(row=>row.rarity))],effectLines,stats,upgrade,sockets,gearDecision,sources:actionableSources,usedIn:actionableUses};
+  const ownedInstances=item.type==='gear'?gearInstancesForItem(state,itemId):[];
+  return {item,instanceId,rarityId,rarity,inventoryQuantity,bankQuantity,totalQuantity:inventoryQuantity+bankQuantity,ownedCopies:ownedInstances.length,ownedRarities:[...new Set(ownedInstances.map(row=>row.rarity))],craftedCopies:ownedInstances.filter(row=>row.acquireSource==='craft').length,craftedRarities:[...new Set(ownedInstances.filter(row=>row.acquireSource==='craft').map(row=>row.rarity))],effectLines,stats,upgrade,sockets,gearDecision,sources:actionableSources,usedIn:actionableUses};
 }

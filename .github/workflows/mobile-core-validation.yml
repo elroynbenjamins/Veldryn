@@ -48,6 +48,12 @@ jobs:
         run: pnpm test:collectibles
       - name: Run companion validation
         run: pnpm test:companions
+      - name: Typecheck backend
+        working-directory: backend
+        run: pnpm typecheck
+      - name: Run V34 gem validation
+        working-directory: backend
+        run: pnpm test:gems-v34
       - name: Run co-op reward validation
         working-directory: backend
         run: pnpm test:coop-rewards

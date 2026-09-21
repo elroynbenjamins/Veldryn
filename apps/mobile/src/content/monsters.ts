@@ -1,3 +1,4 @@
+import {effectGemItemId,statGemItemId,type EffectGemFamilyId,type StatGemFamilyId} from '../core/gem-progression';
 export interface MonsterDef {id:string;name:string;level:number;hp:number;attack:number;defense:number;xp:number;gold:number;secondsPerKill:number;unlockLevel:number;zone:string;boss?:boolean;drops:{itemId:string;chance:number;min:number;max:number}[];}
 
 const MONSTERS_RAW:MonsterDef[]=[
@@ -37,11 +38,43 @@ const MONSTERS_RAW:MonsterDef[]=[
 const MONSTER_TIME_SCALE=1.95;
 const MONSTER_STAT_SCALE=1.07;
 
+const STAT_FAMILY_BY_MONSTER=(monster:MonsterDef):StatGemFamilyId=>{
+  if(monster.attack>=monster.defense*1.7)return 'might';
+  if(monster.defense>=monster.attack*.65)return monster.level>=45?'ward':'iron';
+  return monster.level>=28?'swift':'vitality';
+};
+const EFFECT_FAMILY_BY_MONSTER:Partial<Record<string,EffectGemFamilyId>>={
+  ANCIENT_TREANT:'sustenance',
+  RUNEBOUND_MINER:'unyielding',
+  OATHGLASS_REVENANT:'ruin',
+  FALLEN_SENTINEL:'battle_rhythm',
+  BANNER_SHADE:'opportunist',
+  DUNE_ORACLE:'momentum',
+  GLASSBOUND_SENTINEL:'critical_surge',
+  FROSTWOLF:'last_stand',
+  BELLWRAITH:'aegis',
+  CHOIR_HUNTER:'bulwark',
+  BLACKGLASS_MIRELING:'opening_strike',
+  CINDER_TITAN:'retaliation',
+  ASHEN_REVENANT:'renewal',
+  FALLEN_KNIGHT:'execution',
+};
 const enhancementDrops=(monster:MonsterDef):MonsterDef['drops']=>{
-  if(monster.boss)return [{itemId:'TEMPERING_DUST',chance:1,min:8,max:14},{itemId:'TEMPERING_CORE',chance:1,min:1,max:2},{itemId:'EMBERHEART_GEM',chance:.001,min:1,max:1},{itemId:'WARDHEART_GEM',chance:.001,min:1,max:1},{itemId:'VITALITY_HEART_GEM',chance:.001,min:1,max:1}];
-  if(monster.level>=20)return [{itemId:'TEMPERING_DUST',chance:.18,min:1,max:2},{itemId:'TEMPERING_CORE',chance:.025,min:1,max:1},{itemId:monster.attack>=monster.defense*1.7?'EMBER_SHARD':monster.defense>=monster.attack*.65?'WARD_SHARD':'VITALITY_SHARD',chance:.004,min:1,max:1}];
-  if(monster.level>=10)return [{itemId:'TEMPERING_DUST',chance:.10,min:1,max:1},{itemId:'TEMPERING_CORE',chance:.01,min:1,max:1}];
-  return monster.level>=4?[{itemId:'TEMPERING_DUST',chance:.05,min:1,max:1}]:[];
+  const statFamily=STAT_FAMILY_BY_MONSTER(monster);
+  const effectFamily=EFFECT_FAMILY_BY_MONSTER[monster.id];
+  if(monster.boss)return [
+    {itemId:'TEMPERING_DUST',chance:1,min:8,max:14},
+    {itemId:'TEMPERING_CORE',chance:1,min:1,max:2},
+    {itemId:statGemItemId(statFamily,2),chance:.10,min:1,max:1},
+    ...(effectFamily?[{itemId:effectGemItemId(effectFamily,2),chance:.10,min:1,max:1}]:[]),
+    {itemId:'REGIONAL_CATALYST',chance:.05,min:1,max:1},
+  ];
+  const drops:MonsterDef['drops']=[];
+  if(monster.level>=4)drops.push({itemId:'TEMPERING_DUST',chance:monster.level>=20?.18:.05,min:1,max:monster.level>=20?2:1});
+  if(monster.level>=10)drops.push({itemId:'TEMPERING_CORE',chance:monster.level>=20?.025:.01,min:1,max:1});
+  if(monster.level>=4)drops.push({itemId:statGemItemId(statFamily,1),chance:monster.level>=20?.0075:.004,min:1,max:1});
+  if(effectFamily)drops.push({itemId:effectGemItemId(effectFamily,1),chance:monster.level>=45?.006:.004,min:1,max:1});
+  return drops;
 };
 export const MONSTERS:MonsterDef[]=MONSTERS_RAW.map(monster=>({...monster,
   drops:[...monster.drops,...(monster.id==='FIELD_WISP'?[{itemId:'HOLY_WATER',chance:.12,min:1,max:1}]:monster.id==='DROWNED_PILGRIM'?[{itemId:'HOLY_WATER',chance:.30,min:1,max:1}]:monster.id==='OATHBOUND_SQUIRE'?[{itemId:'HOLY_WATER',chance:.24,min:1,max:1}]:[]),...enhancementDrops(monster)],

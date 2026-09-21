@@ -129,6 +129,7 @@ function VeldrynApp(){
   const [collected,setCollected]=useState<{reward:RewardBundle;activity:ActiveActivity|null;welcomeBack?:boolean}|null>(null);
   const [customizationUnlocks,setCustomizationUnlocks]=useState<CustomizationUnlockEntry[]>([]);
   const [profileAttentionKeys,setProfileAttentionKeys]=useState<string[]>([]);
+  const [profileCustomizeDirty,setProfileCustomizeDirty]=useState(false);
   const stateRef=useRef<GameState|null>(null);
   const appStateRef=useRef(AppState.currentState);
   const settlingRef=useRef(false);
@@ -139,23 +140,36 @@ function VeldrynApp(){
   const [pendingEventLiveId,setPendingEventLiveId]=useState<string|undefined>();
   const [chatPilotInitialPanel,setChatPilotInitialPanel]=useState<'chat'|'emotes'>('chat');
   const profileAttentionScope=auth.session?.user.id?`account:${auth.session.user.id}`:state?`local:${state.createdAtMs}`:'local:pending';
+  const confirmProfileCustomizeExit=useCallback((action:()=>void)=>{
+    if(tab!=='ProfileCustomize'||!profileCustomizeDirty){action();return;}
+    Alert.alert('Discard profile changes?','You have unapplied appearance previews or unsaved profile settings.',[
+      {text:'Keep editing',style:'cancel'},
+      {text:'Discard changes',style:'destructive',onPress:()=>{setProfileCustomizeDirty(false);action();}},
+    ]);
+  },[tab,profileCustomizeDirty]);
   const setTab=useCallback((destination:Tab)=>{
     if(destination===tab)return;
-    setTabHistory(history=>[...history,tab].slice(-24));
-    setCurrentTab(destination);
-  },[tab]);
+    confirmProfileCustomizeExit(()=>{
+      setProfileCustomizeDirty(false);
+      setTabHistory(history=>[...history,tab].slice(-24));
+      setCurrentTab(destination);
+    });
+  },[tab,confirmProfileCustomizeExit]);
   const goBack=useCallback(()=>{
     if(showChatOverlay){setShowChatOverlay(false);return true;}
     if(showChatPilot){setShowChatPilot(false);return true;}
     if(showCoopUiGallery){setShowCoopUiGallery(false);return true;}
-    if(tabHistory.length){
-      setCurrentTab(tabHistory[tabHistory.length-1]);
-      setTabHistory(tabHistory.slice(0,-1));
-      return true;
-    }
-    if(tab!=='Home')setCurrentTab('Home');
+    confirmProfileCustomizeExit(()=>{
+      setProfileCustomizeDirty(false);
+      if(tabHistory.length){
+        setCurrentTab(tabHistory[tabHistory.length-1]);
+        setTabHistory(tabHistory.slice(0,-1));
+        return;
+      }
+      if(tab!=='Home')setCurrentTab('Home');
+    });
     return true;
-  },[showChatOverlay,showChatPilot,showCoopUiGallery,tab,tabHistory]);
+  },[showChatOverlay,showChatPilot,showCoopUiGallery,tab,tabHistory,confirmProfileCustomizeExit]);
   const backSwipe=useMemo(()=>PanResponder.create({
     onMoveShouldSetPanResponder:(_event,gesture)=>gesture.x0<=32&&gesture.dx>12&&Math.abs(gesture.dx)>Math.abs(gesture.dy)*1.25,
     onPanResponderRelease:(_event,gesture)=>{if(gesture.dx>=72&&gesture.vx>=0)goBack();},
@@ -364,7 +378,7 @@ const next=discoverCharacterSkins(candidate);stateRef.current=next;setState(next
     {tab==='Rankings'&&<RankingsScreen/>}
     {tab==='Collections'&&<CollectionsScreen state={state} onChange={candidate=>void commit(candidate)}/>}
     {tab==='Profile'&&<ProfileScreen state={state} onNavigate={destination=>destination==='Customize'?setTab('ProfileCustomize'):setTab(destination)}/>}
-    {tab==='ProfileCustomize'&&<ProfileCustomizeScreen state={state} onChange={commit} onNavigateSource={destination=>setTab(destination)}/>} 
+    {tab==='ProfileCustomize'&&<ProfileCustomizeScreen state={state} onChange={commit} onNavigateSource={destination=>setTab(destination)} onDirtyChange={setProfileCustomizeDirty}/>} 
     {tab==='Achievements'&&<AchievementsScreen/>}
   </View>
   <ChatOverlay state={state} visible={showChatOverlay} onOpen={()=>setShowChatOverlay(true)} onClose={()=>setShowChatOverlay(false)} guildUnread={notificationCounts.guildChatUnread} guildMentions={notificationCounts.guildChatMentions} guildFirstUnreadMessageId={notificationCounts.guildFirstUnreadMessageId} partyUnread={notificationCounts.partyChatUnread} partyMentions={notificationCounts.partyChatMentions} partyFirstUnreadMessageId={notificationCounts.partyFirstUnreadMessageId} onChatRead={()=>void refreshSocialNotifications()}/>

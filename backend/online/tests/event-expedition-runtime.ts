@@ -6,6 +6,8 @@ import {deriveOnlineCoopLoadout} from '../coop-loadout';
 import {OnlineEventExpeditionRuntime} from '../event-expedition-runtime';
 import {EVENT_EXPEDITIONS} from '../../src/server/expeditions/content/event-expeditions';
 import {seasonalEventExpeditionInfo} from '../../../apps/mobile/src/core/coop-event-expeditions';
+import {EventExpeditionService,MemoryEventRunRepository} from '../../src/server/expeditions/event-service';
+import {launchPlayer} from '../../src/server/combat/content/launch-combat';
 
 function preparedState(classId:ClassId,name:string,level:number,characterId:string):GameState{
  const state=createCharacter(newGame(0),classId,name);state.character!.level=level;state.character!.id=characterId;
@@ -24,6 +26,17 @@ async function main(){
    expeditionId:definition.id,eventName:definition.eventName,name:definition.name,description:definition.description,
    routeHighlights:definition.routeHighlights,finalBoss:definition.finalBoss,minLevel:definition.minLevel,rewardMarks:definition.rewardMarks,
   },`mobile/server expedition identity drifted for ${definition.id}`);
+ }
+ const domainPlayers=['Ironwarden','Wayfinder','Ravager','Dawnkeeper'].map(classId=>launchPlayer(classId,80));
+ const domainMembers=[['domain-a','domain-c1','tank'],['domain-b','domain-c2','damage'],['domain-c','domain-c3','damage'],['domain-d','domain-c4','support']].map(([accountId,characterId,role])=>({accountId,characterId,role:role as 'tank'|'damage'|'support'}));
+ for(const [index,definition] of EVENT_EXPEDITIONS.entries()){
+  const service=new EventExpeditionService(new MemoryEventRunRepository(),`online-route-preflight-${index}`);
+  const run=service.start({requestId:`event-preflight-${index}`,runId:`event-route-${index}`,accountId:'domain-a',eventId:definition.id,activeLiveEventId:`${definition.liveEventSeriesId}_2026`,members:domainMembers,players:domainPlayers,nowMs:Date.UTC(2026,6,15)});
+  assert.equal(run.graph.preBossNodeCount,definition.routeNodeCount,`route length failed for ${definition.id}`);
+  assert.equal(run.graph.generatorVersion,'event-route-v2');
+  assert.equal(run.mechanic?.id,definition.mechanic.id);
+  assert.ok(run.graph.nodes.some(node=>(node.mechanicDelta??0)>0),`missing positive mechanic route for ${definition.id}`);
+  assert.ok(run.graph.nodes.some(node=>!['entry','battle','boss'].includes(node.kind)),`missing themed room variety for ${definition.id}`);
  }
  const now=Date.UTC(2026,6,15),controllerState=preparedState('IRONWARDEN','Event Tank',50,'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1');
  const echoStates=[preparedState('WAYFINDER','Echo Archer',50,'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2'),preparedState('RAVAGER','Echo Ravager',50,'cccccccc-cccc-4ccc-8ccc-ccccccccccc3'),preparedState('DAWNKEEPER','Echo Keeper',50,'dddddddd-dddd-4ddd-8ddd-ddddddddddd4')];
@@ -51,8 +64,9 @@ async function main(){
  const runtime=new OnlineEventExpeditionRuntime(services);
  const start=await runtime.start(controllerRecord.accountId,{requestId:'event-start-0001',eventExpeditionId:'EVENT_SUNCREST_SHATTERED_ISLES',characterId:controllerRecord.characterId,loadoutId:'current',loadoutRevision:7}) as any;
  assert.equal(start.eventExpeditionId,'EVENT_SUNCREST_SHATTERED_ISLES');assert.equal(start.liveEventId,'EVT_ANNUAL_006_2026');assert.equal(start.team.length,4);assert.equal(start.options.length,3);assert.equal(start.stateVersion,1);
+ assert.equal(start.mechanic.label,'Champion Favor');assert.equal(start.mechanic.value,50);assert.ok(start.options.every((option:any)=>option.title&&Number.isFinite(option.mechanicDelta)));
  const chosen=await runtime.choose(controllerRecord.accountId,start.runId,{requestId:'event-choice-0001',decisionId:start.decisionId,decisionRevision:start.decisionRevision,optionId:start.options[0].nodeId}) as any;
- assert.equal(chosen.stateVersion,2);assert.equal(stored?.stateVersion,2);assert.ok(stored?.privateState.run.lastResolution,'resolved event node is persisted');
+ assert.equal(chosen.stateVersion,2);assert.equal(chosen.mechanic.value,48);assert.equal(stored?.stateVersion,2);assert.ok(stored?.privateState.run.lastResolution,'resolved event node is persisted');
  stored!.privateState.run.phase='completed';stored!.privateState.run.settlement='pending';stored!.privateState.run.rewardMarks=96;
  const claimed=await runtime.claim(controllerRecord.accountId,start.runId,'event-claim-0001') as any;
  assert.equal(claimed.stateVersion,3);assert.equal(claimed.settlement.status,'claimed');assert.equal(claimed.settlement.rewardMarks,96);

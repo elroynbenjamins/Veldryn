@@ -59,7 +59,7 @@ function healAtCamp(state:PersistentRunState,players:readonly CombatantDefinitio
  return {...state,actors};
 }
 
-export function resolveCoopNode(input:{runId:string;serverSecret:string;node:CoopRouteNode;players:CombatantDefinition[];state:PersistentRunState;rootboundBalance?:RootboundCoopBalance}):NodeResolutionResult{
+export function resolveCoopNode(input:{runId:string;serverSecret:string;node:CoopRouteNode;players:CombatantDefinition[];state:PersistentRunState;rootboundBalance?:RootboundCoopBalance;enemyAttackMultiplier?:number}):NodeResolutionResult{
  if(input.state.visitedNodeIds.includes(input.node.nodeId))throw new Error('node_already_resolved');
  if(input.node.kind==='entry')throw new Error('entry_is_not_resolvable');
  let state={...input.state,visitedNodeIds:[...input.state.visitedNodeIds,input.node.nodeId]};
@@ -67,7 +67,7 @@ export function resolveCoopNode(input:{runId:string;serverSecret:string;node:Coo
   const rootbound=input.node.contentId.startsWith('ROOT')||input.node.contentId==='BOSS_EXP_ROOT',balance=input.rootboundBalance??ROOTBOUND_COOP_BALANCE_V2;
   const players=input.players.map(player=>{const multipliers=COOP_CLASS_ABILITY_MULTIPLIERS[player.classId?.toUpperCase()??''];if(!multipliers)return player;return{...player,abilities:player.abilities.map(ability=>{const multiplier=multipliers[ability.id];return multiplier?{...ability,effects:ability.effects.map(effect=>(effect.kind==='shield'||effect.kind==='heal')&&effect.coeff!==undefined?{...effect,coeff:effect.coeff*multiplier}:effect)}:ability;})};});
   const depthMultiplier=input.node.depth>=balance.lateDepthStart?balance.lateDepthAttackMultiplier:1;
-  const combat=resolveExpeditionCombat({runId:input.runId,nodeIndex:input.node.depth,encounterId:input.node.contentId,serverSeed:input.serverSecret,players,initialPlayerState:state.actors,enemyAttackMultiplier:rootbound?balance.enemyAttackMultiplier*depthMultiplier:1});
+  const combat=resolveExpeditionCombat({runId:input.runId,nodeIndex:input.node.depth,encounterId:input.node.contentId,serverSeed:input.serverSecret,players,initialPlayerState:state.actors,enemyAttackMultiplier:(rootbound?balance.enemyAttackMultiplier*depthMultiplier:1)*(input.enemyAttackMultiplier??1)});
   state={...state,actors:combat.endingPlayerState};
   return {success:combat.success,state,summary:{kind:'combat',...combat.resultJson}};
  }

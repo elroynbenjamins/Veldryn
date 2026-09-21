@@ -15,6 +15,8 @@ export interface CoopEventExpeditionPreview{
   status:CoopEventExpeditionStatus;
   minLevel:number;
   rewardMarks:number;
+  routeNodeCount?:number;
+  mechanic?:{id:string;label:string;description:string;startValue:number;maxValue:number;lowThreshold:number;highThreshold:number};
   lockedReason?:string;
   /** Present only when this expedition matches the authoritative active LiveOps runtime. */
   liveEventId?:string;
@@ -31,7 +33,8 @@ export interface CoopEventRunServerProjection{
   decisionId?:string;
   decisionRevision?:number;
   team:Array<{memberId:string;displayName:string;role:CoopRole;kind:'controller'|'echo';effectiveLevel:number;downed?:boolean}>;
-  options:Array<{nodeId:string;kind:string;risk:number;rewardTag:string}>;
+  options:Array<{nodeId:string;kind:string;risk:number;rewardTag:string;title?:string;mechanicDelta?:number}>;
+  mechanic?:{id:string;label:string;description:string;value:number;maxValue:number;lowThreshold:number;highThreshold:number;status:'critical'|'steady'|'strong';bossAttackMultiplier:number;rewardBonus:number;bossEffect:string};
   settlement:{status:'pending'|'claimed';rewardMarks?:number};
 }
 
@@ -78,6 +81,8 @@ export function validateCoopEventExpeditionPreview(value:CoopEventExpeditionPrev
   if(!Number.isInteger(value.minLevel)||value.minLevel<1||!Number.isInteger(value.rewardMarks)||value.rewardMarks<0)throw new Error('invalid_event_expedition_requirements');
   if(value.status==='available'&&!value.liveEventId?.trim())throw new Error('available_event_requires_live_event');
   if(value.routeHighlights.length<3||new Set(value.routeHighlights.map(item=>item.trim().toLocaleLowerCase())).size!==value.routeHighlights.length||value.routeHighlights.some(item=>!item.trim()))throw new Error('invalid_event_route_highlights');
+  if(value.routeNodeCount!==undefined&&(!Number.isInteger(value.routeNodeCount)||value.routeNodeCount<5||value.routeNodeCount>7))throw new Error('invalid_event_route_length');
+  if(value.mechanic&&(!value.mechanic.id.trim()||!value.mechanic.label.trim()||!value.mechanic.description.trim()||!Number.isFinite(value.mechanic.startValue)||!Number.isFinite(value.mechanic.maxValue)||value.mechanic.maxValue<=0||value.mechanic.startValue<0||value.mechanic.startValue>value.mechanic.maxValue||value.mechanic.lowThreshold>=value.mechanic.highThreshold))throw new Error('invalid_event_mechanic');
 }
 
 export function presentEventExpeditionRun(projection:CoopEventRunServerProjection):CoopRunView{
@@ -85,8 +90,9 @@ export function presentEventExpeditionRun(projection:CoopEventRunServerProjectio
   if(!Number.isInteger(projection.stateVersion)||projection.stateVersion<1||projection.team.length!==4)throw new Error('invalid_event_run_projection');
   const options=projection.options.map(option=>{
     if(!option.nodeId.trim()||!option.kind.trim()||!Number.isFinite(option.risk)||!option.rewardTag.trim())throw new Error('invalid_event_route_option');
-    const title=option.kind==='boss'?'Final boss':option.kind.charAt(0).toUpperCase()+option.kind.slice(1);
-    return {nodeId:option.nodeId,title,kind:option.kind,risk:`Risk ${option.risk}`,reward:option.rewardTag.replace(/_/g,' ')};
+    const title=option.title?.trim()||(option.kind==='boss'?'Final boss':option.kind.charAt(0).toUpperCase()+option.kind.slice(1));
+    const delta=option.mechanicDelta??0,deltaText=projection.mechanic&&delta!==0?`${projection.mechanic.label} ${delta>0?'+':''}${delta}`:undefined;
+    return {nodeId:option.nodeId,title,kind:option.kind,risk:`Risk ${option.risk}`,reward:deltaText??option.rewardTag.replace(/_/g,' ')};
   });
   const marks=projection.settlement.rewardMarks??0;
   const run:CoopRunView={
@@ -97,6 +103,7 @@ export function presentEventExpeditionRun(projection:CoopEventRunServerProjectio
     syncedLevel:Math.min(...projection.team.map(member=>member.effectiveLevel)),
     roleSlots:projection.team.map(member=>({role:member.role,name:member.displayName,echo:member.kind==='echo',ready:member.downed===undefined?true:!member.downed})),
     options,
+    mechanic:projection.mechanic?{label:projection.mechanic.label,description:projection.mechanic.description,value:projection.mechanic.value,maxValue:projection.mechanic.maxValue,status:projection.mechanic.status,bossEffect:projection.mechanic.bossEffect}:undefined,
     stateVersion:projection.stateVersion,
     decisionId:projection.decisionId,
     decisionRevision:projection.decisionRevision,

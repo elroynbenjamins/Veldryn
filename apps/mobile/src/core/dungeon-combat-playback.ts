@@ -57,6 +57,10 @@ export function playbackCastDisplayMs(cue:CoopCombatReplayCueView|undefined):num
   return Math.max(DUNGEON_COMBAT_PLAYBACK.minCastDisplayMs,Math.min(DUNGEON_COMBAT_PLAYBACK.maxCastDisplayMs,scaled));
 }
 
+export function playbackAdvanceDelayMs(current:CoopCombatReplayCueView,next:CoopCombatReplayCueView):number{
+  return Math.max(playbackCueDelayMs(current,next),playbackCastDisplayMs(current));
+}
+
 export function playbackProgress(replay:CoopCombatReplayView,index:number):number{
   if(!replay.cues.length)return replay.reason==='victory'?1:0;
   const safe=Math.max(0,Math.min(index,replay.cues.length-1)),at=replay.cues[safe].atMs;

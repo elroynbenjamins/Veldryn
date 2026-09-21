@@ -4,6 +4,7 @@ import {unlockedCharacterSlots} from './account-roster';
 import {characterPermanentMultipliers} from './permanent-boosts';
 import {levelFromXp} from './progression';
 import type {EquipmentCraftJob,GameState,ItemStack,SkillState} from './types';
+import {GEM_COMBINE_COSTS_V34,gemItemIdV34,type GemGradeV34} from './gem-system-v34';
 
 export const BASE_EQUIPMENT_CRAFT_SLOTS=3;
 export const MAX_EQUIPMENT_CRAFT_SLOTS=5;
@@ -43,6 +44,9 @@ export function normalizeEquipmentCraftingQueue(raw:unknown):EquipmentCraftJob[]
       ownerCharacterId:String(row.ownerCharacterId).slice(0,120),
       startedAtMs:Math.max(0,Math.floor(Number(row.startedAtMs)||0)),
       completesAtMs:Math.max(0,Math.floor(Number(row.completesAtMs)||0)),
+      kind:row.kind==='gem_combine'?'gem_combine':'equipment',
+      outputItemId:typeof row.outputItemId==='string'?String(row.outputItemId).slice(0,160):undefined,
+      outputQuantity:Number.isSafeInteger(row.outputQuantity)&&row.outputQuantity>0?Math.min(999,row.outputQuantity):undefined,
     }))
     .filter(row=>row.completesAtMs>=row.startedAtMs)
     .slice(-MAX_READY_EQUIPMENT_CRAFTS);
@@ -110,10 +114,40 @@ export function startEquipmentCraft(state:GameState,recipeId:string,nowMs:number
   const existingQueue=equipmentCraftingQueue(next);
   const job:EquipmentCraftJob={
     id:`eqcraft:${state.character!.id}:${recipeId}:${nowMs}:${existingQueue.length}`,
-    recipeId,ownerCharacterId:state.character!.id,startedAtMs:nowMs,completesAtMs:nowMs+seconds*1000,
+    recipeId,ownerCharacterId:state.character!.id,startedAtMs:nowMs,completesAtMs:nowMs+seconds*1000,kind:'equipment',
   };
   next={...next,account:{...next.account,equipmentCraftingQueue:[...existingQueue,job]}};
   return {state:next,job,seconds};
+}
+
+export function gemCombineQuoteV34(state:GameState,gemId:string){
+  const gem=itemDef(gemId),grade=gem.gemGrade as GemGradeV34|undefined;
+  if(gem.type!=='gem'||!gem.gemFamilyId||!grade)throw new Error('Only V34 Gems can be combined');
+  if(grade===5)throw new Error('Radiant Gems are already maximum grade');
+  const cost=GEM_COMBINE_COSTS_V34[grade as 1|2|3|4],kind=gem.gemKind==='effect'?'effect':'stat',outputItemId=gemItemIdV34(kind,gem.gemFamilyId,(grade+1) as GemGradeV34);
+  return {...cost,inputItemId:gemId,outputItemId,owned:combinedQuantity(state,gemId),dustOwned:combinedQuantity(state,'GEM_DUST'),regionalCatalystOwned:combinedQuantity(state,'REGIONAL_CATALYST'),radiantCatalystOwned:combinedQuantity(state,'RADIANT_CATALYST')};
+}
+
+export function startGemCombineV34(state:GameState,gemId:string,nowMs:number){
+  if(!state.character)throw new Error('Create a character first');
+  const quote=gemCombineQuoteV34(state,gemId);
+  if(quote.owned<quote.copies)throw new Error(`Need ${quote.copies} copies of ${itemDef(gemId).name}`);
+  if(state.character.gold<quote.gold)throw new Error(`Need ${quote.gold} gold`);
+  if(quote.dust&&quote.dustOwned<quote.dust)throw new Error(`Need ${quote.dust} Gem Dust`);
+  if(quote.regionalCatalyst&&quote.regionalCatalystOwned<quote.regionalCatalyst)throw new Error('Need a Regional Catalyst');
+  if(quote.radiantCatalyst&&quote.radiantCatalystOwned<quote.radiantCatalyst)throw new Error('Need a Radiant Catalyst');
+  const slots=equipmentCraftSlotBreakdown(state),active=activeJobsAt(state,nowMs);
+  if(active.length>=slots.capacity)throw new Error(`All ${slots.capacity} equipment crafting slots are busy`);
+  if(readyJobsAt(state,nowMs).length>=MAX_READY_EQUIPMENT_CRAFTS)throw new Error('Claim finished crafts before starting more');
+  let next:GameState={...state,character:{...state.character,gold:state.character.gold-quote.gold}};
+  next=consumeAcross(next,gemId,quote.copies);
+  if(quote.dust)next=consumeAcross(next,'GEM_DUST',quote.dust);
+  if(quote.regionalCatalyst)next=consumeAcross(next,'REGIONAL_CATALYST',quote.regionalCatalyst);
+  if(quote.radiantCatalyst)next=consumeAcross(next,'RADIANT_CATALYST',quote.radiantCatalyst);
+  const speed=Math.max(.1,characterPermanentMultipliers(state).craftingSpeedMultiplier),seconds=Math.max(1,Math.ceil(quote.seconds/speed)),existingQueue=equipmentCraftingQueue(next);
+  const job:EquipmentCraftJob={id:`gemcraft:${state.character.id}:${gemId}:${nowMs}:${existingQueue.length}`,recipeId:`gemcombine:${gemId}`,ownerCharacterId:state.character.id,startedAtMs:nowMs,completesAtMs:nowMs+seconds*1000,kind:'gem_combine',outputItemId:quote.outputItemId,outputQuantity:1};
+  next={...next,account:{...next.account,equipmentCraftingQueue:[...existingQueue,job]}};
+  return {state:next,job,seconds,quote};
 }
 
 function addOutput(stacks:ItemStack[],capacity:number,itemId:string,quantityToAdd:number){
@@ -122,17 +156,18 @@ function addOutput(stacks:ItemStack[],capacity:number,itemId:string,quantityToAd
   return {stacks:next,remaining};
 }
 
-function grantCraftOutput(state:GameState,recipe:Recipe,ownerCharacterId:string){
+function grantCraftItemOutput(state:GameState,itemId:string,quantityToAdd:number,ownerCharacterId:string){
   if(state.character?.id!==ownerCharacterId){
-    const bank=addOutput(state.bank.stacks,state.bank.capacity,recipe.output.itemId,recipe.output.quantity);
-    if(bank.remaining>0)throw new Error('Bank is full; free Bank space before claiming this character\'s equipment');
+    const bank=addOutput(state.bank.stacks,state.bank.capacity,itemId,quantityToAdd);
+    if(bank.remaining>0)throw new Error('Bank is full; free Bank space before claiming this character\'s craft');
     return {...state,bank:{...state.bank,stacks:bank.stacks}};
   }
-  const inv=addOutput(state.inventory.stacks,state.inventory.capacity,recipe.output.itemId,recipe.output.quantity);
-  const bank=addOutput(state.bank.stacks,state.bank.capacity,recipe.output.itemId,inv.remaining);
+  const inv=addOutput(state.inventory.stacks,state.inventory.capacity,itemId,quantityToAdd);
+  const bank=addOutput(state.bank.stacks,state.bank.capacity,itemId,inv.remaining);
   if(bank.remaining>0)throw new Error('Inventory and Bank are full');
   return {...state,inventory:{...state.inventory,stacks:inv.stacks},bank:{...state.bank,stacks:bank.stacks}};
 }
+function grantCraftOutput(state:GameState,recipe:Recipe,ownerCharacterId:string){return grantCraftItemOutput(state,recipe.output.itemId,recipe.output.quantity,ownerCharacterId);}
 
 function awardOwnerSkillXp(state:GameState,ownerCharacterId:string,recipe:Recipe){
   const award=(skills:SkillState[])=>skills.map(row=>{
@@ -147,7 +182,13 @@ function awardOwnerSkillXp(state:GameState,ownerCharacterId:string,recipe:Recipe
 export function claimEquipmentCraft(state:GameState,jobId:string,nowMs:number){
   const queue=equipmentCraftingQueue(state),job=queue.find(row=>row.id===jobId);
   if(!job)throw new Error('Crafting job not found');
-  if(job.completesAtMs>nowMs)throw new Error('This equipment craft is still in progress');
+  if(job.completesAtMs>nowMs)throw new Error('This craft is still in progress');
+  if(job.kind==='gem_combine'){
+    if(!job.outputItemId)throw new Error('Gem craft output is missing');
+    let next=grantCraftItemOutput(state,job.outputItemId,job.outputQuantity??1,job.ownerCharacterId);
+    next={...next,account:{...next.account,equipmentCraftingQueue:queue.filter(row=>row.id!==jobId)}};
+    return {state:next,recipe:undefined,job};
+  }
   const recipe=timedEquipmentRecipe(job.recipeId);if(!recipe)throw new Error('Crafting recipe is no longer available');
   let next=grantCraftOutput(state,recipe,job.ownerCharacterId);
   next=awardOwnerSkillXp(next,job.ownerCharacterId,recipe);
@@ -168,7 +209,8 @@ export function equipmentCraftQueueModel(state:GameState,nowMs:number){
   const slotInfo=equipmentCraftSlotBreakdown(state),queue=equipmentCraftingQueue(state);
   const jobs=queue.map(job=>{
     const recipe=RECIPES.find(row=>row.id===job.recipeId),remainingSeconds=Math.max(0,Math.ceil((job.completesAtMs-nowMs)/1000));
-    return {...job,name:recipe?itemDef(recipe.output.itemId).name:job.recipeId,remainingSeconds,ready:remainingSeconds===0};
+    const name=job.kind==='gem_combine'&&job.outputItemId?itemDef(job.outputItemId).name:recipe?itemDef(recipe.output.itemId).name:job.recipeId;
+    return {...job,name,remainingSeconds,ready:remainingSeconds===0};
   }).sort((a,b)=>Number(b.ready)-Number(a.ready)||a.completesAtMs-b.completesAtMs);
   const active=jobs.filter(row=>!row.ready).length;
   return {slotInfo,jobs,active,ready:jobs.length-active,freeSlots:Math.max(0,slotInfo.capacity-active)};

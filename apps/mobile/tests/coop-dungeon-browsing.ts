@@ -1,6 +1,6 @@
 import {coopTierEligibility,filterCoopDungeons,groupCoopDungeonsByRegion,highestEligibleCoopTier,presentCoopDungeon,validateCoopDungeonView,type CoopRoomType} from '../src/core/coop-dungeon-browsing';
 import {seasonalEventExpeditionInfo,seasonalEventHasExpedition,validateCoopEventExpeditionPreview} from '../src/core/coop-event-expeditions';
-import {COOP_MESSAGE_COUNT,SUPPORTED_LANGUAGES,translatedCoopMessageCount} from '../src/i18n';
+import {COOP_MESSAGE_COUNT,SUPPORTED_LANGUAGES,coopPolicyText,translatedCoopMessageCount} from '../src/i18n';
 
 function equal(actual:unknown,expected:unknown,message:string){if(JSON.stringify(actual)!==JSON.stringify(expected))throw new Error(`${message}: ${JSON.stringify(actual)}`)}
 const rootbound=presentCoopDungeon({id:'EXP_001',name:'Rootbound Vault',minLevel:15,recommendedLevel:25,syncLevel:25,available:true,enabledRoomTypes:['battle','elite','camp','boss'],difficulties:[1,2,3,4,5],preBossRoomMin:5,preBossRoomMax:5});
@@ -32,5 +32,5 @@ equal(seasonalEventExpeditionInfo('EVT_ANNUAL_012_2026')?.name,'Aurora Hollow','
 equal(seasonalEventExpeditionInfo('EVT_ANNUAL_009_2026'),undefined,'Harvestwake remains intentionally dungeonless');
 let liveFailure='';try{validateCoopEventExpeditionPreview({id:'EVENT_LIVE',eventName:'Suncrest Games',name:'The Shattered Isles',description:'A seasonal route.',routeHighlights:['Coastal Ruins','Sun Shrine','Pirate Camp'],finalBoss:'Aureon, First Champion',status:'available',minLevel:45,rewardMarks:96})}catch(error){liveFailure=error instanceof Error?error.message:String(error)}equal(liveFailure,'available_event_requires_live_event','live event cards require an authoritative LiveOps id');
 let failure='';try{validateCoopDungeonView(presentCoopDungeon({id:'EXP_BAD',name:'Bad lock',minLevel:2,syncLevel:2,available:false,difficulties:[1]}))}catch(error){failure=error instanceof Error?error.message:String(error)}equal(failure,'locked_reason_required','locked reason must fail closed');
-for(const language of SUPPORTED_LANGUAGES)equal(translatedCoopMessageCount(language),COOP_MESSAGE_COUNT,`${language} co-op catalog incomplete`);
+for(const language of SUPPORTED_LANGUAGES){equal(translatedCoopMessageCount(language),COOP_MESSAGE_COUNT,`${language} co-op catalog incomplete`);equal(Boolean(coopPolicyText(language,'fellowshipLabel')&&coopPolicyText(language,'fellowshipCopy').includes('25')),true,`${language} Live Fellowship copy incomplete`);}
 console.log(`co-op dungeon browsing OK (${SUPPORTED_LANGUAGES.length} languages, ${COOP_MESSAGE_COUNT} messages each)`);

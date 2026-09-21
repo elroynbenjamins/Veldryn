@@ -1,10 +1,14 @@
 import {useEffect,useMemo,useState} from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
+import type {ForgeCraftResult} from '../core/game-commands';
 import {equipmentCraftQueueModel} from '../core/equipment-crafting-queue';
 import {equipmentTheme,radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {GameButton} from './GameButton';
+import {ForgeClaimBanner} from './ForgeResultFeedback';
+
+const NOOP=()=>{};
 
 function duration(seconds:number){
   const s=Math.max(0,Math.ceil(seconds));
@@ -13,7 +17,7 @@ function duration(seconds:number){
   return m<60?m+'m':Math.floor(m/60)+'h '+(m%60)+'m';
 }
 
-export function EquipmentCraftQueuePanel({state,onClaim,onClaimAll,onCancel,onMoveWaiting}:{state:GameState;onClaim:(jobId:string)=>void;onClaimAll:()=>void;onCancel:(jobId:string)=>void;onMoveWaiting:(jobId:string,direction:'up'|'down')=>void}){
+export function EquipmentCraftQueuePanel({state,onClaim,onClaimAll,onCancel,onMoveWaiting,forgeResults,onDismissForgeResults}:{state:GameState;onClaim:(jobId:string)=>void;onClaimAll:()=>void;onCancel:(jobId:string)=>void;onMoveWaiting:(jobId:string,direction:'up'|'down')=>void;forgeResults?:readonly ForgeCraftResult[]|null;onDismissForgeResults?:()=>void}){
   const C=useGameTheme(),E=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
   const [now,setNow]=useState(Date.now()),[showUnlocks,setShowUnlocks]=useState(false);
   useEffect(()=>{const timer=setInterval(()=>setNow(Date.now()),1000);return()=>clearInterval(timer)},[]);
@@ -21,6 +25,7 @@ export function EquipmentCraftQueuePanel({state,onClaim,onClaimAll,onCancel,onMo
   const readyJobs=model.jobs.filter(job=>job.status==='ready'),activeJobs=model.jobs.filter(job=>job.status==='active'),waitingJobs=model.jobs.filter(job=>job.status==='waiting');
   return <View style={s.card}>
     <View style={s.head}><View style={s.flex}><Text style={s.eyebrow}>EQUIPMENT FORGE</Text><Text style={s.title}>Crafting Queue</Text><Text style={s.meta}>{model.active}/{model.slotInfo.capacity} active · {model.waiting}/{model.waitingCapacity} waiting · {model.ready} finished</Text></View><View style={[s.slotBadge,{borderColor:model.freeSlots?C.good:C.warning}]}><Text style={[s.slotValue,{color:model.freeSlots?C.good:C.warning}]}>{model.slotInfo.capacity}</Text><Text style={s.slotLabel}>ACTIVE</Text></View></View>
+    {!!forgeResults?.length&&<ForgeClaimBanner results={forgeResults} reduceMotion={state.settings.reduceMotion} onDismiss={onDismissForgeResults??NOOP}/>}
 
     {readyJobs.length>0&&<View style={s.group}><Text style={s.groupLabel}>FINISHED</Text>{readyJobs.map(job=><View key={job.id} style={[s.job,s.jobReady]}><View style={s.flex}><Text style={s.jobName}>{job.name}</Text><Text style={s.meta}>Finished · ready to claim</Text></View><GameButton compact title="Claim" onPress={()=>onClaim(job.id)}/></View>)}</View>}
 

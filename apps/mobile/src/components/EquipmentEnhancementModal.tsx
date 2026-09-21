@@ -5,6 +5,7 @@ import {combinedQuantity,gearEnhancement,gearStatsAtRank,gemEffectDescription,ge
 import {equipmentDecisionModel} from '../core/equipment-decision';
 import {GameState,GemStat} from '../core/types';
 import {itemRarity,rarityMeta} from '../core/item-rarity';
+import {gearInstanceById} from '../core/gear-instances';
 import {equipmentTheme,radii,spacing,touchTargetPreferred,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {GameModalHeader,GameModalSurface} from './GameModalSurface';
@@ -36,18 +37,18 @@ function UpgradeResultMoment({feedback,itemId,reduceMotion}:{feedback:Enhancemen
   </Animated.View>;
 }
 
-export function EquipmentEnhancementModal({visible,state,itemId,onClose,onUpgrade,onSocket,onUnsocket}:{visible:boolean;state:GameState;itemId:string;onClose:()=>void;onUpgrade:Action;onSocket:(gemId:string)=>Promise<void>|void;onUnsocket:(index:number)=>Promise<void>|void}){
+export function EquipmentEnhancementModal({visible,state,itemId,instanceId,onClose,onUpgrade,onSocket,onUnsocket}:{visible:boolean;state:GameState;itemId:string;instanceId:string;onClose:()=>void;onUpgrade:Action;onSocket:(gemId:string)=>Promise<void>|void;onUnsocket:(index:number)=>Promise<void>|void}){
   const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
   const [tab,setTab]=useState<'upgrade'|'gems'>('upgrade'),[busy,setBusy]=useState(false),[confirmRisk,setConfirmRisk]=useState(false),[riskApprovedTarget,setRiskApprovedTarget]=useState<number|null>(null);
-  const item=itemDef(itemId),enhancement=gearEnhancement(state,itemId),quote=upgradeQuote(state,itemId),capacity=gemSocketCapacity(itemId),socketState=gemSocketState(state,itemId),rarity=rarityMeta(itemRarity(item)),decision=equipmentDecisionModel(state,itemId);
+  const item=itemDef(itemId),instance=gearInstanceById(state,instanceId),enhancement=gearEnhancement(state,itemId,instanceId),quote=upgradeQuote(state,itemId,instanceId),capacity=gemSocketCapacity(itemId),socketState=gemSocketState(state,itemId,instanceId),rarity=rarityMeta(instance?.rarity??itemRarity(item)),decision=equipmentDecisionModel(state,itemId,instanceId);
   const [feedback,setFeedback]=useState<EnhancementFeedbackResult|null>(null),[actionError,setActionError]=useState<string|null>(null);
-  const previous=useRef({itemId,rank:enhancement.rank,failures:enhancement.failures,gemIds:enhancement.gemIds});
+  const previous=useRef({itemId:instanceId,rank:enhancement.rank,failures:enhancement.failures,gemIds:enhancement.gemIds});
   useEffect(()=>{
-    const next={itemId,rank:enhancement.rank,failures:enhancement.failures,gemIds:enhancement.gemIds};
+    const next={itemId:instanceId,rank:enhancement.rank,failures:enhancement.failures,gemIds:enhancement.gemIds};
     const result=enhancementFeedback(previous.current,next);previous.current=next;
     if(visible&&result)setFeedback(result);
-  },[itemId,enhancement.rank,enhancement.failures,enhancement.gemIds,visible]);
-  useEffect(()=>{setFeedback(null)},[itemId,visible]);
+  },[instanceId,enhancement.rank,enhancement.failures,enhancement.gemIds,visible]);
+  useEffect(()=>{setFeedback(null)},[instanceId,visible]);
   const currentStats=gearStatsAtRank(itemId,enhancement.rank),nextStats=gearStatsAtRank(itemId,Math.min(10,enhancement.rank+1));
   const dust=combinedQuantity(state,'TEMPERING_DUST'),cores=combinedQuantity(state,'TEMPERING_CORE'),gold=state.character!.gold;
   const canUpgrade=!quote.maxed&&gold>=quote.gold&&dust>=quote.dust&&cores>=quote.cores;
@@ -55,7 +56,7 @@ export function EquipmentEnhancementModal({visible,state,itemId,onClose,onUpgrad
   const unavailable=quote.maxed?'Maximum rank reached':gold<quote.gold?`Missing ${(quote.gold-gold).toLocaleString()} gold`:dust<quote.dust?`Missing ${quote.dust-dust} Tempering Dust`:cores<quote.cores?`Missing ${quote.cores-cores} Tempering Cores`:'';
   const ownedGems=useMemo(()=>ITEMS.filter(entry=>entry.type==='gem'&&combinedQuantity(state,entry.id)>0).sort((a,b)=>(b.gemTier??0)-(a.gemTier??0)||a.name.localeCompare(b.name)),[state]);
   const statGems=ownedGems.filter(gem=>gemSocketKind(gem.id)==='stat'),effectGems=ownedGems.filter(gem=>gemSocketKind(gem.id)==='effect');
-  useEffect(()=>{setConfirmRisk(false);setRiskApprovedTarget(null)},[itemId,enhancement.rank,tab,visible]);
+  useEffect(()=>{setConfirmRisk(false);setRiskApprovedTarget(null)},[instanceId,enhancement.rank,tab,visible]);
   const run=async(action:Action)=>{if(busy)return;setBusy(true);setFeedback(null);setActionError(null);try{await action()}catch(error){setActionError(error instanceof Error?error.message:'The action could not be completed.')}finally{setBusy(false)}};
   const attempt=()=>{if(quote.targetRank>=7&&riskApprovedTarget!==quote.targetRank){if(!confirmRisk){setConfirmRisk(true);return;}setRiskApprovedTarget(quote.targetRank);}setConfirmRisk(false);void run(onUpgrade)};
   const close=()=>{if(!busy)onClose()};

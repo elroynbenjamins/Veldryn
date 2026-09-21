@@ -1,17 +1,48 @@
+import {useMemo} from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
-import {recruitmentTimeLabel,type RecruitmentCardView} from '../core/party-social';
-import {IdentityArtwork,RoleBadge} from './SocialIdentity';
+import {recruitmentContextLabels,recruitmentPostTypePresentation,recruitmentTimeLabel,type RecruitmentCardView} from '../core/party-social';
+import {CompactPlayerIdentity,type CompactIdentityStatusTone} from './CompactPlayerIdentity';
+import {RoleBadge} from './SocialIdentity';
 import {UiIcon} from './UiIcon';
-import {C,radii,typography} from '../theme/theme';
-import {GuildTaggedPlayerName} from './GuildTaggedPlayerName';
+import {radii,typography,type ThemeColors} from '../theme/theme';
+import {useGameTheme} from '../theme/ThemeContext';
+
 export function RecruitmentListing({card,nowMs,onPress}:{card:RecruitmentCardView;nowMs:number;onPress?:()=>void}){
- const time=recruitmentTimeLabel(card.expiresAtMs,nowMs),guild=card.postType==='guild_recruiting';
- return <Pressable accessibilityRole="button" accessibilityLabel={`${card.title}, posted by ${card.ownerName}, ${time.text}`} onPress={onPress} style={({pressed})=>[s.card,pressed&&s.pressed]}>
-  <View style={s.head}><IdentityArtwork name={card.ownerName} guild={guild}/><View style={s.copy}><Text style={s.title}>{card.title}</Text>{card.guildName?<Text style={s.owner}>{card.guildName}</Text>:<GuildTaggedPlayerName name={card.ownerName} guildTag={card.guildTag} tagColorId={card.guildTagColorId} style={s.owner}/>}</View><UiIcon name="next" size={24}/></View>
-  <View style={s.meta}><Text style={s.focus}>{card.focus}{card.openSpots!==undefined?` · ${card.openSpots} open spots`:''}</Text><Text style={[s.time,time.urgency==='soon'&&s.soon]}>{time.text}</Text></View>
-  {!!card.currentObjective&&<Text style={s.objective}>Current: {card.currentObjective}</Text>}
+ const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
+ const time=recruitmentTimeLabel(card.expiresAtMs,nowMs),presentation=recruitmentPostTypePresentation(card.postType),guild=presentation.subject==='GUILD';
+ const identityName=guild?(card.guildName??card.ownerName):card.ownerName;
+ const statusTone:CompactIdentityStatusTone=presentation.tone==='good'?'good':presentation.tone==='info'?'info':'accent';
+ const context=recruitmentContextLabels(card);
+ const tags=[...new Set([...card.activityTags,...card.playstyleTags,...card.availabilityTags,...card.guildInterestTags])].slice(0,4);
+ return <Pressable accessibilityRole="button" accessibilityLabel={`${card.title}, ${presentation.label}, posted by ${identityName}, ${time.text}`} onPress={onPress} style={({pressed})=>[s.card,pressed&&s.pressed]}>
+  <CompactPlayerIdentity name={identityName} guildTag={card.guildTag} guildTagColorId={card.guildTagColorId} guild={guild} avatarSize={40} status={presentation.shortLabel} statusTone={statusTone} hint="OPEN DETAILS ›"/>
+  <View style={s.headline}><Text numberOfLines={2} style={s.title}>{card.title}</Text><Text style={[s.time,time.urgency==='soon'&&s.soon]}>{time.text}</Text></View>
+  <View style={s.meta}><View style={s.focusPill}><Text style={s.focus}>{card.focus.toUpperCase()}</Text></View>{card.openSpots!==undefined?<View style={[s.contextPill,card.openSpots>0?s.open:s.full]}><Text style={[s.contextText,card.openSpots>0?s.openText:s.fullText]}>{card.openSpots} OPEN</Text></View>:null}{context.slice(0,3).map(item=><View key={item} style={s.contextPill}><Text numberOfLines={1} style={s.contextText}>{item}</Text></View>)}</View>
+  {!!card.currentObjective&&<Text numberOfLines={1} style={s.objective}>Current · {card.currentObjective}</Text>}
   <Text numberOfLines={2} style={s.body}>{card.body}</Text>
-  <View style={s.tags}>{[...new Set(card.roles)].map(role=><RoleBadge key={role} role={role}/>)}{[...new Set([...card.activityTags,...card.playstyleTags,...card.guildInterestTags])].slice(0,3).map(tag=><Text key={tag} style={s.tag}>{tag}</Text>)}</View>
+  {(card.roles.length>0||tags.length>0)?<View style={s.tags}>{[...new Set(card.roles)].map(role=><RoleBadge key={role} role={role}/>)}{tags.map(tag=><View key={tag} style={s.tag}><Text numberOfLines={1} style={s.tagText}>{tag}</Text></View>)}</View>:null}
+  <View style={s.chevron}><UiIcon name="next" size={20}/></View>
  </Pressable>;
 }
-const s=StyleSheet.create({card:{borderWidth:1,borderColor:C.line,backgroundColor:'#111f2d',borderRadius:radii.md,padding:12,gap:8},pressed:{opacity:.76},head:{flexDirection:'row',gap:10,alignItems:'center'},copy:{flex:1,minWidth:0,gap:3},title:{...typography.bodyStrong,fontSize:16,lineHeight:23,color:C.text},owner:{...typography.caption,color:C.muted},meta:{flexDirection:'row',flexWrap:'wrap',justifyContent:'space-between',gap:8},focus:{...typography.caption,color:C.info,textTransform:'capitalize'},time:{...typography.caption,color:C.muted},soon:{color:C.warning},objective:{...typography.caption,color:C.info},body:{...typography.body,color:C.text},tags:{flexDirection:'row',flexWrap:'wrap',gap:6,alignItems:'center'},tag:{...typography.caption,color:C.muted,paddingVertical:4,paddingHorizontal:8,backgroundColor:C.panel2,borderRadius:8}});
+
+function makeStyles(C:ThemeColors){return StyleSheet.create({
+ card:{position:'relative',borderWidth:1,borderColor:C.line,backgroundColor:C.panel,borderRadius:radii.md,padding:10,gap:6},
+ pressed:{opacity:.74},
+ headline:{flexDirection:'row',alignItems:'flex-start',gap:8},
+ title:{...typography.bodyStrong,color:C.text,flex:1,minWidth:0},
+ time:{fontSize:9,lineHeight:12,color:C.muted,fontWeight:'800',paddingTop:2},
+ soon:{color:C.warning},
+ meta:{flexDirection:'row',flexWrap:'wrap',gap:5,alignItems:'center'},
+ focusPill:{paddingHorizontal:6,paddingVertical:3,borderWidth:1,borderColor:C.info,borderRadius:99,backgroundColor:C.infoSurface},
+ focus:{fontSize:7.5,color:C.info,fontWeight:'900',letterSpacing:.45},
+ contextPill:{maxWidth:120,paddingHorizontal:6,paddingVertical:3,borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.panel2},
+ contextText:{fontSize:7.5,color:C.muted,fontWeight:'800'},
+ open:{borderColor:C.good,backgroundColor:C.goodSurface},openText:{color:C.good},
+ full:{borderColor:C.warning,backgroundColor:C.warningSurface},fullText:{color:C.warning},
+ objective:{fontSize:9,lineHeight:12,color:C.info,fontWeight:'800'},
+ body:{fontSize:11.5,lineHeight:16,color:C.text},
+ tags:{flexDirection:'row',flexWrap:'wrap',gap:5,alignItems:'center'},
+ tag:{maxWidth:112,paddingVertical:3,paddingHorizontal:6,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2},
+ tagText:{fontSize:8.5,lineHeight:11,color:C.muted,textTransform:'capitalize'},
+ chevron:{position:'absolute',right:7,bottom:7,opacity:.55},
+});}

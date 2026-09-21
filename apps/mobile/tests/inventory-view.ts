@@ -1,6 +1,7 @@
 import {createCharacter,newGame,effectiveStats,salvageItem,sellItem} from '../src/core/game';
 import {acknowledgeAllInventoryItems,acknowledgeInventoryItem,inventoryFavoriteIds,inventoryNewItemIds,recoveryAmount,storageCapacityStatus,toggleInventoryFavorite,transferAmount,transferError,visibleStacks} from '../src/core/inventory-view';
 import {validateGameSettings} from '../src/core/game-commands';
+import {normalizeSave} from '../src/core/save-normalization';
 function ok(value:boolean,message:string){if(!value)throw new Error(message)}
 const state=createCharacter(newGame(1000),'IRONWARDEN');
 const stacks=[{itemId:'COPPER_ORE',quantity:12},{itemId:'TRAVEL_RATION',quantity:3},{itemId:'EMBER_SHARD',quantity:2},{itemId:'FALLEN_KNIGHT_SIGIL',quantity:1}];
@@ -20,6 +21,11 @@ newItemState=acknowledgeInventoryItem(newItemState,'COPPER_ORE');
 ok(!inventoryNewItemIds(newItemState).includes('COPPER_ORE')&&inventoryNewItemIds(newItemState).includes('EMBER_SHARD'),'Acknowledging one item clears only that item type');
 newItemState=acknowledgeAllInventoryItems(newItemState);
 ok(inventoryNewItemIds(newItemState).length===0,'Mark all seen clears current Inventory and Bank new items');
+const legacySave:any=JSON.parse(JSON.stringify({...state,inventory:{...state.inventory,stacks:[...state.inventory.stacks,{itemId:'COPPER_ORE',quantity:4}]}}));delete legacySave.settings.seenItemIds;
+const normalizedLegacy=normalizeSave(legacySave);
+ok(normalizedLegacy.settings.seenItemIds?.includes('TRAVEL_RATION')&&normalizedLegacy.settings.seenItemIds?.includes('COPPER_ORE'),'Existing old-save storage is migrated as already seen');
+const postMigrationDrop={...normalizedLegacy,inventory:{...normalizedLegacy.inventory,stacks:[...normalizedLegacy.inventory.stacks,{itemId:'EMBER_SHARD',quantity:1}]}};
+ok(inventoryNewItemIds(postMigrationDrop).length===1&&inventoryNewItemIds(postMigrationDrop)[0]==='EMBER_SHARD','Items obtained after migration still become NEW');
 let favoriteState=toggleInventoryFavorite(state,'TRAVEL_RATION');
 ok(inventoryFavoriteIds(favoriteState).includes('TRAVEL_RATION'),'Favorite persists in settings');
 ok(visibleStacks(stacks,'','favorites','name',inventoryFavoriteIds(favoriteState))[0].itemId==='TRAVEL_RATION','Favorites filter');

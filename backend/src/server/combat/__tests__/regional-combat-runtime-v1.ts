@@ -43,8 +43,10 @@ const deps={
 };
 
 async function main(){
- const reserved=await startRegionalCombatV1(deps,{accountId:'account-1',characterId:'char-1',encounterId:'REGCOM_SUN_007_ELITE'});
+ const reserved=await startRegionalCombatV1(deps,{accountId:'account-1',characterId:'char-1',encounterId:'REGCOM_SUN_007_ELITE',requestId:'regional-start-001'});
  assert.equal(reserved.zoneId,'ZONE_007');
+ assert.equal(reserved.requestId,'regional-start-001');
+ assert.ok(/^[a-f0-9]{64}$/.test(reserved.requestHash));
  assert.ok(reserved.player.effectGems?.some(row=>row.familyId==='effect_predator'),'Verified Effect Gems must be frozen into regional combat snapshot');
 
  const resolved=await resolveRegionalCombatV1(deps,{accountId:'account-1',receiptId:reserved.receiptId});

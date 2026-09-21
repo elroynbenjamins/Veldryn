@@ -83,6 +83,10 @@ const BASE_ITEMS:ItemDef[]=[
 {id:'BOSSBANE_SIGIL',name:'Bossbane Sigil',type:'gem',gemKind:'effect',gemEffect:'boss_power',gemEffectValue:.03,gemTier:1,value:620,rarity:'rare',passive:'+3% combat power against bosses'},
 {id:'BULWARK_SIGIL',name:'Bulwark Sigil',type:'gem',gemKind:'effect',gemEffect:'damage_reduction',gemEffectValue:.02,gemTier:1,value:620,rarity:'rare',passive:'-2% incoming combat damage'},
 {id:'RENEWAL_SIGIL',name:'Renewal Sigil',type:'gem',gemKind:'effect',gemEffect:'recovery',gemEffectValue:.10,gemTier:1,value:560,rarity:'rare',passive:'+10% between-kill recovery'},
+{id:'SWIFTHEART_SIGIL',name:'Swifheart Sigil',type:'gem',gemKind:'effect',gemEffect:'combat_speed',gemEffectValue:.03,gemTier:2,value:2400,rarity:'legendary',passive:'+3% combat speed while equipped'},
+{id:'BOSSBANE_HEART_SIGIL',name:'Bossbane Heart Sigil',type:'gem',gemKind:'effect',gemEffect:'boss_power',gemEffectValue:.05,gemTier:2,value:2800,rarity:'legendary',passive:'+5% combat power against bosses'},
+{id:'BULWARK_HEART_SIGIL',name:'Bulwark Heart Sigil',type:'gem',gemKind:'effect',gemEffect:'damage_reduction',gemEffectValue:.03,gemTier:2,value:2800,rarity:'legendary',passive:'-3% incoming combat damage'},
+{id:'RENEWAL_HEART_SIGIL',name:'Renewal Heart Sigil',type:'gem',gemKind:'effect',gemEffect:'recovery',gemEffectValue:.15,gemTier:2,value:2600,rarity:'legendary',passive:'+15% between-kill recovery'},
 // Runtime pack weapon identities; numeric budgets retained from the prior primary weapons.
 {id:'basic_sword',name:'Basic Sword',type:'gear',slot:'weapon',attack:4,readiness:1,value:10},
 {id:'basic_tower_shield',name:'Basic Tower Shield',type:'gear',slot:'weapon',attack:3,defense:1,readiness:1,value:10},

@@ -73,6 +73,9 @@ export function validateGameSettings(value:unknown):GameState['settings']{
  if(![1,1.15,1.3,1.5].includes(result.textScale)||!Number.isFinite(result.autoEatThresholdPct)||result.autoEatThresholdPct<0||result.autoEatThresholdPct>100)throw new Error('invalid_settings');
  for(const key of ['reduceMotion','stopCombatWhenOutOfFood','autoJoinWorldChat'] as const)if(typeof result[key]!=='boolean')throw new Error('invalid_settings');
  if(![1,2,3,4].includes(result.defaultWorldChat??0)||!Array.isArray(result.quickNavDestinations)||result.quickNavDestinations.length>8||result.quickNavDestinations.some(id=>!QUICK_NAV_DESTINATIONS.includes(id)))throw new Error('invalid_settings');
+ const favoriteItemIds=result.favoriteItemIds;
+ if(!Array.isArray(favoriteItemIds)||favoriteItemIds.length>100||favoriteItemIds.some(id=>typeof id!=='string'||!id||id.length>120))throw new Error('invalid_settings');
+ result.favoriteItemIds=[...new Set(favoriteItemIds)];
  return result;
 }
 

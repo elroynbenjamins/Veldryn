@@ -45,17 +45,17 @@ for(const [needle,label] of [
  ['partyUnread','Party tab unread'],
  ['guildMentions','Guild tab mentions'],
  ['partyMentions','Party tab mentions'],
- ['visibleGuildUnread','active Guild badge suppression'],
- ['visiblePartyUnread','active Party badge suppression'],
 ])need(overlay,needle,label);
+reject(overlay,'visibleGuildUnread','eager Guild unread suppression before catch-up');
+reject(overlay,'visiblePartyUnread','eager Party unread suppression before catch-up');
 
 need(dock,'mentionCount','dock mention attention');
 need(dock,'unreadCount','dock unread attention');
-need(guild,"markSocialChatRead('guild')",'Guild clear-on-view');
-need(party,"markSocialChatRead('party')",'Party clear-on-view');
+need(guild,"markSocialChatRead('guild')",'Guild catch-up read marker');
+need(party,"markSocialChatRead('party')",'Party catch-up read marker');
 need(message,'chatMentionSegments','message mention highlighting');
 need(message,'selfMention','self-mention styling');
 need(nav,"chat_unread:{primary:'account',subroute:'social.chat',mode:'count'}",'canonical chat notification route');
 reject(nav,'unread_dm','obsolete direct-message notification kind');
 
-console.log('PASS: persistent Guild/Party chat unread and mention contract');
+console.log('PASS: persistent Guild/Party chat unread, catch-up and mention contract');

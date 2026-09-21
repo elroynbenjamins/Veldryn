@@ -9,8 +9,10 @@ export interface SocialNotificationCounts{
   chatMentions:number;
   guildChatUnread:number;
   guildChatMentions:number;
+  guildFirstUnreadMessageId?:string;
   partyChatUnread:number;
   partyChatMentions:number;
+  partyFirstUnreadMessageId?:string;
   guild:number;
   guildApplications:number;
   guildInvites:number;
@@ -20,7 +22,7 @@ export interface SocialNotificationCounts{
   account:number;
 }
 
-const ZERO:SocialNotificationCounts={friendRequests:0,chatUnread:0,chatMentions:0,guildChatUnread:0,guildChatMentions:0,partyChatUnread:0,partyChatMentions:0,guild:0,guildApplications:0,guildInvites:0,party:0,partyInvites:0,events:0,account:0};
+const ZERO:SocialNotificationCounts={friendRequests:0,chatUnread:0,chatMentions:0,guildChatUnread:0,guildChatMentions:0,guildFirstUnreadMessageId:undefined,partyChatUnread:0,partyChatMentions:0,partyFirstUnreadMessageId:undefined,guild:0,guildApplications:0,guildInvites:0,party:0,partyInvites:0,events:0,account:0};
 
 export function useSocialNotificationCounts(){
   const {session}=useAuthSession();
@@ -31,14 +33,14 @@ export function useSocialNotificationCounts(){
       const requests=await friendRequests();
       const incoming=requests.filter(request=>request.direction==='incoming').length;
       let guildApplicationsCount=0,guildInvites=0,partyInvites=0;
-      let chatAttention:{guildUnread:number;guildMentions:number;partyUnread:number;partyMentions:number}|null=null;
+      let chatAttention:{guildUnread:number;guildMentions:number;guildFirstUnreadMessageId?:string;partyUnread:number;partyMentions:number;partyFirstUnreadMessageId?:string}|null=null;
       try{
         const invites=await socialInvitations();
         guildInvites=invites.guild.length;partyInvites=invites.party.length;
       }catch{/* Invitation polling is best-effort during migration rollout. */}
       try{
         const chat=await socialChatAttention();
-        chatAttention={guildUnread:Number(chat.guild?.unread??0),guildMentions:Number(chat.guild?.mentions??0),partyUnread:Number(chat.party?.unread??0),partyMentions:Number(chat.party?.mentions??0)};
+        chatAttention={guildUnread:Number(chat.guild?.unread??0),guildMentions:Number(chat.guild?.mentions??0),guildFirstUnreadMessageId:chat.guild?.firstUnreadMessageId??undefined,partyUnread:Number(chat.party?.unread??0),partyMentions:Number(chat.party?.mentions??0),partyFirstUnreadMessageId:chat.party?.firstUnreadMessageId??undefined};
       }catch{/* Chat attention is best-effort during migration rollout. */}
       try{
         const mine=await myGuild();
@@ -47,9 +49,11 @@ export function useSocialNotificationCounts(){
       setCounts(current=>{
         const guild=guildApplicationsCount+guildInvites,party=partyInvites;
         const guildChatUnread=chatAttention?.guildUnread??current.guildChatUnread,guildChatMentions=chatAttention?.guildMentions??current.guildChatMentions;
+        const guildFirstUnreadMessageId=chatAttention?chatAttention.guildFirstUnreadMessageId:current.guildFirstUnreadMessageId;
         const partyChatUnread=chatAttention?.partyUnread??current.partyChatUnread,partyChatMentions=chatAttention?.partyMentions??current.partyChatMentions;
+        const partyFirstUnreadMessageId=chatAttention?chatAttention.partyFirstUnreadMessageId:current.partyFirstUnreadMessageId;
         const chatUnread=guildChatUnread+partyChatUnread,chatMentions=guildChatMentions+partyChatMentions;
-        const next={...current,friendRequests:incoming,chatUnread,chatMentions,guildChatUnread,guildChatMentions,partyChatUnread,partyChatMentions,guild,guildApplications:guildApplicationsCount,guildInvites,party,partyInvites};
+        const next={...current,friendRequests:incoming,chatUnread,chatMentions,guildChatUnread,guildChatMentions,guildFirstUnreadMessageId,partyChatUnread,partyChatMentions,partyFirstUnreadMessageId,guild,guildApplications:guildApplicationsCount,guildInvites,party,partyInvites};
         return {...next,account:next.friendRequests+next.chatUnread+next.guild+next.party+next.events};
       });
     }catch{

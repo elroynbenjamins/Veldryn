@@ -1,9 +1,9 @@
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
-import {createCharacter,equipItem,newGame} from '../src/core/game';
+import {createCharacter,equipItem,newGame,salvageItem,sellItem} from '../src/core/game';
 import {claimEquipmentCraft,equipmentCraftingQueue,startEquipmentCraft} from '../src/core/equipment-crafting-queue';
 import {CRAFTED_EPIC_CHANCE,CRAFTED_MYTHIC_CHANCE,craftedGearRarity,craftedRarityStatMultiplier} from '../src/core/crafted-gear-rarity';
 import {craftedGearInstances,craftClaimSubRoll,effectiveOwnedGearRarity,inventoryGearCopies} from '../src/core/crafted-gear-instances';
-import {enhancedGearStats,upgradeQuote} from '../src/core/equipment-enhancement';
+import {attemptEquipmentUpgrade,enhancedGearStats,gearEnhancement,socketGem,upgradeQuote} from '../src/core/equipment-enhancement';
 import {itemDef} from '../src/content/items';
 import {itemRarity} from '../src/core/item-rarity';
 import {executeGameCommand} from '../src/core/game-commands';
@@ -64,6 +64,26 @@ ok(effectiveOwnedGearRarity(state,recipe.output.itemId)==='common','Equipped rar
 state=equipItem(state,epicClaim.instance.id);
 ok(state.character?.equippedGearInstanceIds?.[itemDef(recipe.output.itemId).slot! ]===epicClaim.instance.id,'Swapping duplicates must bind the exact selected Epic instance');
 ok(effectiveOwnedGearRarity(state,recipe.output.itemId)==='epic','Equipped rarity must follow the exact Epic copy');
+
+// Each duplicate owns its own enhancement state.
+state={...state,inventory:{...state.inventory,stacks:[...state.inventory.stacks,{itemId:'TEMPERING_DUST',quantity:999},{itemId:'TEMPERING_CORE',quantity:99},{itemId:'WARD_SHARD',quantity:1},{itemId:'SWIFT_SIGIL',quantity:1}]}};
+state=attemptEquipmentUpgrade(state,epicClaim.instance.id,0).state;
+state=socketGem(state,epicClaim.instance.id,'WARD_SHARD');
+state=socketGem(state,epicClaim.instance.id,'SWIFT_SIGIL');
+ok(gearEnhancement(state,epicClaim.instance.id).rank===1&&gearEnhancement(state,epicClaim.instance.id).gemIds.length===2,'Selected Epic copy must own its +rank and both gem sockets');
+state=equipItem(state,commonClaim.instance.id);
+ok(gearEnhancement(state,commonClaim.instance.id).rank===0&&gearEnhancement(state,commonClaim.instance.id).gemIds.length===0,'Second copy must remain independently unenhanced');
+ok(gearEnhancement(state,epicClaim.instance.id).rank===1&&gearEnhancement(state,epicClaim.instance.id).gemIds.length===2,'Swapping duplicates must preserve the first copy enhancement state');
+
+// Exact destructive actions may remove only the explicitly selected unenhanced copy.
+state=sellItem(state,commonClaim.instance.id);
+ok(!craftedGearInstances(state).some(row=>row.id===commonClaim.instance.id)&&craftedGearInstances(state).some(row=>row.id===epicClaim.instance.id),'Selling a duplicate must remove only the selected physical copy');
+started=startEquipmentCraft(state,recipe.id,job.completesAtMs+1);state=started.state;
+job=equipmentCraftingQueue(state).find(row=>row.recipeId===recipe.id)!;
+const salvageClaim=claimEquipmentCraft(state,job.id,job.completesAtMs,.5);state=salvageClaim.state;
+ok(!!itemDef(recipe.output.itemId).salvage,'Per-instance salvage fixture requires authored salvage output');
+state=salvageItem(state,salvageClaim.instance.id);
+ok(!craftedGearInstances(state).some(row=>row.id===salvageClaim.instance.id)&&craftedGearInstances(state).some(row=>row.id===epicClaim.instance.id),'Salvaging a duplicate must remove only the selected physical copy');
 
 const subA=craftClaimSubRoll(.123456,'job-a'),subB=craftClaimSubRoll(.123456,'job-b');
 ok(subA>=0&&subA<1&&subB>=0&&subB<1&&subA!==subB,'Claim All must derive stable independent per-job sub-rolls');

@@ -184,14 +184,14 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   }
   case 'use_potion':state=game.usePotion(state,text(a,'id'));break;
   case 'discard_preparation':state=game.discardPreparation(state);break;
-  case 'equip':state=game.equipItem(state,text(a,'id'));break;
+  case 'equip':state=game.equipGearInstance(state,text(a,'instanceId',180));break;
   case 'unequip':state=game.unequipItem(state,oneOf(a.slot,['weapon','offhand','helmet','chest','legs','boots','gloves','cape','amulet','ring']) as GearSlot);break;
   case 'food':state=game.equipFood(state,text(a,'id'));break;
   case 'eat':state=game.eatFood(state,a.id===undefined?undefined:text(a,'id'));break;
-  case 'sell':state=game.sellItem(state,text(a,'id'),a.quantity===undefined?1:integer(a,'quantity'));break;
-  case 'salvage':state=game.salvageItem(state,text(a,'id'));break;
-  case 'deposit':state=game.depositToBank(state,text(a,'id'),integer(a,'quantity'));break;
-  case 'withdraw':state=game.withdrawFromBank(state,text(a,'id'),integer(a,'quantity'));break;
+  case 'sell':state=a.instanceId!==undefined?game.sellGearInstance(state,text(a,'instanceId',180)):game.sellItem(state,text(a,'id'),a.quantity===undefined?1:integer(a,'quantity'));break;
+  case 'salvage':state=game.salvageGearInstance(state,text(a,'instanceId',180));break;
+  case 'deposit':state=a.instanceId!==undefined?game.depositGearInstance(state,text(a,'instanceId',180)):game.depositToBank(state,text(a,'id'),integer(a,'quantity'));break;
+  case 'withdraw':state=a.instanceId!==undefined?game.withdrawGearInstance(state,text(a,'instanceId',180)):game.withdrawFromBank(state,text(a,'id'),integer(a,'quantity'));break;
   case 'deposit_materials':state=game.depositAllMaterials(state);break;
   case 'bulk_transfer':state=bulkTransferSelected(state,stringArray(a,'ids'),oneOf(a.location,['inventory','bank']));break;
   case 'bulk_sell':state=bulkSellSelected(state,stringArray(a,'ids'));break;
@@ -200,9 +200,9 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'overflow':state=game.claimOverflowToBank(state);break;
   case 'equip_tool':state=game.equipGatheringTool(state,text(a,'id'));break;
   case 'equip_set':state=game.equipNoviceSet(state);break;
-  case 'upgrade':{if(options.randomRoll===undefined)throw new Error('trusted_random_required');const result=attemptEquipmentUpgrade(state,text(a,'id'),options.randomRoll);state=result.state;upgrade=result.result;break;}
-  case 'socket':state=socketGem(state,text(a,'id'),text(a,'gemId'));break;
-  case 'unsocket':state=unsocketGem(state,text(a,'id'),integer(a,'index',0,1));break;
+  case 'upgrade':{if(options.randomRoll===undefined)throw new Error('trusted_random_required');const result=attemptEquipmentUpgrade(state,text(a,'instanceId',180),options.randomRoll);state=result.state;upgrade=result.result;break;}
+  case 'socket':state=socketGem(state,text(a,'instanceId',180),text(a,'gemId'));break;
+  case 'unsocket':state=unsocketGem(state,text(a,'instanceId',180),integer(a,'index',0,1));break;
   case 'skin':state=selectCharacterSkin(state,text(a,'id'));break;
   case 'loadout_save':state=saveCharacterLoadout(state,integer(a,'index',0,2),typeof a.name==='string'?a.name:undefined,now);break;
   case 'loadout_apply':state=applyCharacterLoadout(state,text(a,'id'));break;

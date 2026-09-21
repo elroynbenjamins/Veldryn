@@ -1,7 +1,7 @@
 import {createHash} from 'node:crypto';
 import type {GameState} from '../../apps/mobile/src/core/types';
 import {EVENT_EXPEDITIONS} from '../src/server/expeditions/content/event-expeditions';
-import {EventExpeditionService,MemoryEventRunRepository,eventMechanicProjection,eventObjectiveProjection,effectiveEventNode,type EventRun} from '../src/server/expeditions/event-service';
+import {EventExpeditionService,MemoryEventRunRepository,eventBossMechanicProjection,eventMechanicProjection,eventObjectiveProjection,effectiveEventNode,type EventRun} from '../src/server/expeditions/event-service';
 import {resolveAndFreezeLoadout,type AuthoritativeLoadoutRecord,type FrozenLoadoutSnapshot} from '../src/server/coop/loadout-snapshots';
 import {recruitEligibleEchoes,type PublishedEcho} from '../src/server/coop/echo-recruitment';
 import {combatantFromVerifiedSnapshot} from '../src/server/combat/snapshot-adapter';
@@ -23,12 +23,13 @@ function project(run:EventRun,version:number,liveEventId:string){
  const definition=EVENT_EXPEDITIONS.find(item=>item.id===run.eventId);if(!definition)throw new GameplayError('unknown_event_expedition');
  const current=run.graph.nodes.find(node=>node.nodeId===run.currentNodeId);
  const options=run.phase==='awaiting_choice'&&current?current.nextNodeIds.map(id=>run.graph.nodes.find(node=>node.nodeId===id)).filter((node):node is NonNullable<typeof node>=>Boolean(node)).map(node=>effectiveEventNode(run,node)).map(node=>({nodeId:node.nodeId,kind:node.kind,risk:node.risk,rewardTag:node.rewardTag,title:node.title,mechanicDelta:node.mechanicDelta??0,objectiveDelta:node.objectiveDelta??0,reactionLabel:node.reactionLabel})):[];
- const mechanic=eventMechanicProjection(run),objective=eventObjectiveProjection(run);
+ const mechanic=eventMechanicProjection(run),objective=eventObjectiveProjection(run),bossProfile=eventBossMechanicProjection(run);
+ const bossMechanic=bossProfile?{profileId:bossProfile.profileId,label:bossProfile.label,summary:bossProfile.summary,tone:bossProfile.tone}:undefined;
  return {
   runId:run.id,eventExpeditionId:run.eventId,liveEventId,eventName:definition.eventName,dungeonName:definition.name,phase:run.phase,
   stateVersion:version,decisionId:run.currentNodeId,decisionRevision:version,
   team:run.players.map((member,index)=>({memberId:member.id,displayName:member.name,role:role(member.role),kind:index===0?'controller' as const:'echo' as const,effectiveLevel:member.level})),
-  options,mechanic,objective,settlement:{status:run.settlement,rewardMarks:run.rewardMarks??(definition.rewardMarks+mechanic.rewardBonus+objective.rewardBonus)},
+  options,mechanic,objective,bossMechanic,settlement:{status:run.settlement,rewardMarks:run.rewardMarks??(definition.rewardMarks+mechanic.rewardBonus+objective.rewardBonus)},
  };
 }
 

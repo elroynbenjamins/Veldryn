@@ -63,7 +63,7 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImp
     {__DEV__&&onOpenChatEmotes?<Panel>
       <Text style={[s.title,{color:theme.text}]}>Chat</Text>
       <Text style={[s.sub,{color:theme.muted}]}>Development review only. Emote choices use the same account-scoped preference store as the Chat Pilot.</Text>
-      <GameButton title="Emote Tray · 20 slots" tone="secondary" onPress={onOpenChatEmotes}/>
+      <GameButton title="Emote Tray · 8 slots" tone="secondary" onPress={onOpenChatEmotes}/>
     </Panel>:null}</>}
     {section==='accessibility'&&<><Panel>
       <Text style={[s.title,{color:theme.text}]}>{t(state.settings.language,'settings.notifications')}</Text>

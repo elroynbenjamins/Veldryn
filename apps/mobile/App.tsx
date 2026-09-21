@@ -1,6 +1,7 @@
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {ActivityIndicator,Alert,ScrollView,AppState,BackHandler,Image,PanResponder,Pressable,SafeAreaView,Share,StyleSheet,Text,TextInput,View} from 'react-native';
 import {StatusBar} from 'expo-status-bar';
+import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {AccountWelcomeScreen} from './src/components/AccountWelcomeScreen';
 import {StartupScreen} from './src/components/StartupScreen';
 import {pickStartupScene} from './src/theme/startup-art';
@@ -107,7 +108,7 @@ function tabLabel(language:Language,tab:Tab):string{
 }
 const repo=new AsyncStorageGameRepository();
 
-export default function App(){return <AuthSessionProvider><PartySocialProvider><VeldrynApp/></PartySocialProvider></AuthSessionProvider>;}
+export default function App(){return <SafeAreaProvider><AuthSessionProvider><PartySocialProvider><VeldrynApp/></PartySocialProvider></AuthSessionProvider></SafeAreaProvider>;}
 function VeldrynApp(){
   const auth=useAuthSession(),online=useOnlineGame();
   const {counts:notificationCounts,refresh:refreshSocialNotifications}=useSocialNotificationCounts();

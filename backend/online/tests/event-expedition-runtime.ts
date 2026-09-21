@@ -3,7 +3,7 @@ import {noviceItemId,noviceSetFor} from '../../../apps/mobile/src/content/novice
 import {createCharacter,newGame} from '../../../apps/mobile/src/core/game';
 import type {ClassId,GameState} from '../../../apps/mobile/src/core/types';
 import {deriveOnlineCoopLoadout} from '../coop-loadout';
-import {OnlineEventExpeditionRuntime} from '../event-expedition-runtime';
+import {OnlineEventExpeditionRuntime,projectOnlineEventRun} from '../event-expedition-runtime';
 import {EVENT_EXPEDITIONS} from '../../src/server/expeditions/content/event-expeditions';
 import {seasonalEventExpeditionInfo} from '../../../apps/mobile/src/core/coop-event-expeditions';
 import {EventExpeditionService,MemoryEventRunRepository,effectiveEventNode,eventBossMechanicProjection} from '../../src/server/expeditions/event-service';
@@ -64,6 +64,10 @@ async function main(){
  const expectedBossProfile=eventBossMechanicProjection(bossRun)!;
  bossRun=bossService.choose({runId:bossRun.id,accountId:'domain-a',optionNodeId:'boss',requestId:'boss-profile-choice'});
  assert.equal(bossRun.phase,'completed');assert.equal(bossRun.lastResolution?.result.summary.bossTuningProfile,expectedBossProfile.tuning.profileId);
+ assert.ok(expectedBossProfile.telegraph.suppressedAbilities.some(ability=>ability.label==='Solar Nova'));
+ const projectedBoss=projectOnlineEventRun(bossRun,99,'EVT_ANNUAL_006_2026') as any,bossSummary=bossRun.lastResolution!.result.summary as any;
+ assert.equal(projectedBoss.bossMechanic.telegraph.bossName,'Aureon, First Champion');assert.ok(projectedBoss.bossMechanic.telegraph.phases.some((phase:any)=>phase.label==='Pressure Break'));assert.ok(projectedBoss.bossRecap);
+ assert.equal(projectedBoss.bossRecap.durationMs,bossSummary.durationMs);assert.equal(projectedBoss.bossRecap.downs,bossSummary.downs.length);assert.equal(projectedBoss.bossRecap.phasesTriggered.length,bossSummary.bossPhaseIds.length);assert.equal(projectedBoss.bossRecap.abilitiesCast.length,bossSummary.bossCastAbilityIds.length);
  const now=Date.UTC(2026,6,15),controllerState=preparedState('IRONWARDEN','Event Tank',50,'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1');
  const echoStates=[preparedState('WAYFINDER','Echo Archer',50,'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2'),preparedState('RAVAGER','Echo Ravager',50,'cccccccc-cccc-4ccc-8ccc-ccccccccccc3'),preparedState('DAWNKEEPER','Echo Keeper',50,'dddddddd-dddd-4ddd-8ddd-ddddddddddd4')];
  const controllerRecord=deriveOnlineCoopLoadout('00000000-0000-4000-8000-000000000001',controllerState,7);
@@ -90,7 +94,7 @@ async function main(){
  const runtime=new OnlineEventExpeditionRuntime(services);
  const start=await runtime.start(controllerRecord.accountId,{requestId:'event-start-0001',eventExpeditionId:'EVENT_SUNCREST_SHATTERED_ISLES',characterId:controllerRecord.characterId,loadoutId:'current',loadoutRevision:7}) as any;
  assert.equal(start.eventExpeditionId,'EVENT_SUNCREST_SHATTERED_ISLES');assert.equal(start.liveEventId,'EVT_ANNUAL_006_2026');assert.equal(start.team.length,4);assert.equal(start.options.length,3);assert.equal(start.stateVersion,1);
- assert.equal(start.mechanic.label,'Champion Favor');assert.equal(start.mechanic.value,50);assert.equal(start.objective.label,'Champion Laurels');assert.equal(start.objective.count,0);assert.equal(start.bossMechanic.label,'Champion’s Reception');assert.match(start.bossMechanic.summary,/Laurels|crowd/i);assert.ok(start.options.every((option:any)=>option.title&&Number.isFinite(option.mechanicDelta)&&Number.isFinite(option.objectiveDelta)));
+ assert.equal(start.mechanic.label,'Champion Favor');assert.equal(start.mechanic.value,50);assert.equal(start.objective.label,'Champion Laurels');assert.equal(start.objective.count,0);assert.equal(start.bossMechanic.label,'Champion’s Reception');assert.match(start.bossMechanic.summary,/Laurels|crowd/i);assert.ok(start.bossMechanic.telegraph.phases.some((phase:any)=>phase.label==='Pressure Break'));assert.ok(start.bossMechanic.telegraph.castAbilities.some((ability:any)=>ability.label==='Solar Nova'&&ability.interruptible));assert.equal(start.bossRecap,undefined);assert.ok(start.options.every((option:any)=>option.title&&Number.isFinite(option.mechanicDelta)&&Number.isFinite(option.objectiveDelta)));
  const chosen=await runtime.choose(controllerRecord.accountId,start.runId,{requestId:'event-choice-0001',decisionId:start.decisionId,decisionRevision:start.decisionRevision,optionId:start.options[0].nodeId}) as any;
  assert.equal(chosen.stateVersion,2);assert.equal(chosen.mechanic.value,48);assert.equal(chosen.objective.count,0);assert.equal(stored?.stateVersion,2);assert.ok(stored?.privateState.run.lastResolution,'resolved event node is persisted');
  stored!.privateState.run.phase='completed';stored!.privateState.run.settlement='pending';stored!.privateState.run.rewardMarks=96;

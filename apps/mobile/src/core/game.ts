@@ -11,7 +11,7 @@ import {GameState,ClassId,RewardBundle,ItemStack,GearSlot,BodyPresentation,Gathe
 import {normalizeActivityQueue} from './activity-queue';
 import {characterLevelFromXp,levelFromXp,totalXpAtLevel} from './progression';
 import {random01} from './rng';
-import {characterNameError} from './character-creation';
+import {characterNameError,normalizeCharacterName} from './character-creation';
 import {noviceItemId,noviceSetFor} from '../content/novice-sets';
 import {classCombatStyle} from './class-combat';
 import {captureActivityEnvironment,environmentEffectForActivity,zoneIdForTarget} from './world-weather';
@@ -100,12 +100,13 @@ export function createCharacter(state:GameState,classId:ClassId,name='Adventurer
   const c=CLASSES.find(x=>x.id===classId);if(!c)throw new Error('Unknown class');
   if(state.character)throw new Error('A character already exists in this save');
   if(bodyPresentation!=='male'&&bodyPresentation!=='female')throw new Error('Invalid body presentation');
-  const nameError=characterNameError(name.trim()||'Adventurer');
+  const normalizedName=normalizeCharacterName(name||'Adventurer');
+  const nameError=characterNameError(normalizedName||'Adventurer');
   if(nameError)throw new Error(nameError);
   const equipment={weapon:c.starterEquipment.weapon};
   let maxHp=c.hp;
   for(const id of Object.values(equipment) as string[]){const d=itemDef(id);maxHp+=d.hp||0;}
-  return {...state,character:{id:'LOCAL_CHAR_1',name:name.trim()||'Adventurer',classId,bodyPresentation,classSkills:classSkillsFor(classId).map(skill=>({skillId:skill.id,xp:0,level:1})),trainingFocus:'balanced',profileTitle:'New Adventurer',profileBackgroundId:'asterfall-night',unlockedEventSkinIds:[],unlockedSkinIds:['starting'],ownedPetIds:[],ownedBoostIds:[],selectedSkinId:'starting',faith:{favoriteBlessingIds:[],hideWeakerBlessings:true},level:1,xp:0,gold:100,hp:c.hp,currentHp:maxHp,attack:c.attack,defense:c.defense,equipment,equippedFoodId:'TRAVEL_RATION'},
+  return {...state,character:{id:'LOCAL_CHAR_1',name:normalizedName||'Adventurer',classId,bodyPresentation,classSkills:classSkillsFor(classId).map(skill=>({skillId:skill.id,xp:0,level:1})),trainingFocus:'balanced',profileTitle:'New Adventurer',profileBackgroundId:'asterfall-night',unlockedEventSkinIds:[],unlockedSkinIds:['starting'],ownedPetIds:[],ownedBoostIds:[],selectedSkinId:'starting',faith:{favoriteBlessingIds:[],hideWeakerBlessings:true},level:1,xp:0,gold:100,hp:c.hp,currentHp:maxHp,attack:c.attack,defense:c.defense,equipment,equippedFoodId:'TRAVEL_RATION'},
     inventory:{...state.inventory,stacks:[{itemId:'TRAVEL_RATION',quantity:20}]},settings:{...state.settings,seenItemIds:[...new Set([...(state.settings.seenItemIds??[]),'TRAVEL_RATION'])]}}
 }
 

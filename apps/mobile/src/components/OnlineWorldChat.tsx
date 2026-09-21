@@ -33,7 +33,7 @@ export function OnlineWorldChat({playerName,language,embedded=false}:{playerName
   <ChatMentionSuggestions value={text} names={mentionNames} currentName={playerName} onChange={setText}/>
   <View style={s.compose}><TextInput accessibilityLabel="World chat message" value={text} onChangeText={setText} onSubmitEditing={()=>void send()} placeholder={ot(language,'chat.placeholder')} maxLength={300} style={s.input}/><ChatEmotePicker onPick={token=>setText(value=>(value+token).slice(0,300))}/><Pressable accessibilityRole="button" accessibilityLabel="Send message" accessibilityState={{disabled:busy||!text.trim()}} disabled={busy||!text.trim()} onPress={()=>void send()} style={({pressed})=>[s.send,(pressed||busy||!text.trim())&&s.sendDim]}><UiIcon name="next" size={24}/></Pressable></View>
   {!embedded&&<Pressable accessibilityRole="button" onPress={()=>setOpen(false)} style={s.closeInline}><Text style={s.closeText}>{ot(language,'chat.close')}</Text></Pressable>}
-  <ChatPlayerSheet message={selected} onClose={()=>setSelected(null)} onBlocked={accountId=>setRows(current=>current.filter(message=>message.account_id!==accountId))}/>
+  <ChatPlayerSheet message={selected?{...selected,message_id:selected.id}:null} onClose={()=>setSelected(null)} onBlocked={accountId=>setRows(current=>current.filter(message=>message.account_id!==accountId))}/>
  </View>;
  return embedded?content:<Panel>{content}</Panel>;
 }

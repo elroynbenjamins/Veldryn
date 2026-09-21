@@ -6,7 +6,7 @@ import type {ClassSkillState,ClassDrills,TrainingFocus} from './class-skills';
 export type ClassId = 'IRONWARDEN' | 'BASTION' | 'DREADGUARD' | 'DAWNKEEPER' | 'WAYFINDER' | 'RAVAGER' | 'HEXWEAVER' | 'KNIFE_DANCER' | 'STONECALLER';
 export type BodyPresentation = 'male' | 'female';
 export type GearSlot = 'weapon' | 'offhand' | 'helmet' | 'chest' | 'legs' | 'boots' | 'gloves' | 'cape' | 'amulet' | 'ring';
-export interface CharacterLoadoutPreset{id:string;slotIndex:number;name:string;classId:ClassId;equipment:Partial<Record<GearSlot,string>>;foodId?:string;companionId?:string;createdAtMs:number;updatedAtMs:number;}
+export interface CharacterLoadoutPreset{id:string;slotIndex:number;name:string;classId:ClassId;equipment:Partial<Record<GearSlot,string>>;equipmentInstanceIds?:Partial<Record<GearSlot,string>>;foodId?:string;companionId?:string;createdAtMs:number;updatedAtMs:number;}
 export type GemStat = 'attack'|'defense'|'hp';
 export type GemSocketKind='stat'|'effect';
 export type GemEffectId='combat_speed'|'boss_power'|'damage_reduction'|'recovery';

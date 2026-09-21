@@ -1,6 +1,6 @@
 import {itemDef} from '../content/items';
 import {equipmentSetDef,equippedSetPieceCount} from '../content/equipment-sets';
-import {combinedQuantity,enhancedGearStats,gearEnhancement,gemSocketCapacity,upgradeQuote} from './equipment-enhancement';
+import {combinedQuantity,enhancedGearStats,gearEnhancement,gemSocketCapacity,gemSocketState,upgradeQuote} from './equipment-enhancement';
 import {itemRarity,type ItemRarity} from './item-rarity';
 import type {GameState} from './types';
 
@@ -10,7 +10,7 @@ export interface EquipmentDecisionModel{
   rarity:ItemRarity;
   rank:number;
   stats:{attack:number;defense:number;hp:number};
-  sockets:{filled:number;capacity:number};
+  sockets:{filled:number;capacity:number;statFilled:boolean;effectFilled:boolean};
   set?:{
     id:string;
     name:string;
@@ -49,7 +49,7 @@ export function equipmentDecisionModel(state:GameState,itemId:string):EquipmentD
     rarity:itemRarity(item),
     rank:enhancement.rank,
     stats:enhancedGearStats(state,itemId),
-    sockets:{filled:enhancement.gemIds.length,capacity:gemSocketCapacity(itemId)},
+    sockets:{filled:gemSocketState(state,itemId).filled,capacity:gemSocketCapacity(itemId),statFilled:Boolean(gemSocketState(state,itemId).statGemId),effectFilled:Boolean(gemSocketState(state,itemId).effectGemId)},
     set:set?{
       id:set.id,
       name:set.name,

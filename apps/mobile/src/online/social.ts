@@ -1,4 +1,5 @@
 import {supabase} from './supabase';
+import {guildNameError,normalizeGuildName} from '../core/identity-names';
 import type {GuildAppearanceEntitlements,GuildBannerId,GuildFrameId,GuildNameColorId,GuildNameplateId} from '../core/guild-customization';
 import type {GuildTagAvailability,GuildTagColorId} from '../core/guild-tags';
 
@@ -18,6 +19,7 @@ export type FriendSearchResult=FriendProfile&{relationship:FriendRelationship};
 export type FriendEntry=FriendProfile&{friends_since:string};
 export type FriendRequest={request_id:string;account_id:string;display_name:string;direction:'incoming'|'outgoing';created_at:string};
 export type BlockedPlayer={account_id:string;display_name:string;blocked_at:string};
+export type SocialReportReason='identity'|'harassment_spam';
 export type GuildChatMessage={id:string;account_id:string;sender_name:string;body:string;created_at:string;guild_tag?:string|null;guild_tag_color_id?:string|null;guild_role?:'leader'|'officer'|'member'|null};
 export interface GuildChatState{guild:{id:string;name:string;tag?:string|null;tagColorId?:string|null}|null;messages:GuildChatMessage[];serverTime:string;}
 export interface SocialChatChannelAttention{channelId?:string|null;unread:number;mentions:number;lastReadAt?:string|null;firstUnreadMessageId?:string|null;}
@@ -46,7 +48,7 @@ export async function postWorldMessage(channelId:string,body:string,senderName:s
 export async function browseGuilds(){const client=requireClient();const {data,error}=await client.from('guilds').select('id,name,tag,tag_color_id,level,member_cap,minimum_level,join_policy,banner_id,profile_frame_id,name_color_id,nameplate_id,motto').order('level',{ascending:false}).limit(25);if(error)throw error;return (data??[]) as OnlineGuild[];}
 export async function requestGuildMembership(guildId:string){const client=requireClient();const {data,error}=await client.rpc('request_guild_membership',{p_guild_id:guildId});if(error)throw error;return data as 'joined'|'applied';}
 export async function guildTagAvailability(tag:string){const client=requireClient();const {data,error}=await client.rpc('guild_tag_availability',{p_tag:tag});if(error)throw error;const row=data?.[0];return {input:tag,normalizedTag:row?.normalized_tag??undefined,valid:row?.reason!=='invalid_format',available:row?.available===true,reason:row?.reason??undefined} as GuildTagAvailability;}
-export async function createOnlineGuild(name:string,tag:string,joinPolicy:'open'|'apply'|'invite',minimumLevel:number){const client=requireClient();const {data,error}=await client.rpc('create_guild',{p_name:name.trim(),p_tag:tag.trim(),p_join_policy:joinPolicy,p_minimum_level:minimumLevel});if(error)throw error;return data as string;}
+export async function createOnlineGuild(name:string,tag:string,joinPolicy:'open'|'apply'|'invite',minimumLevel:number){const client=requireClient(),normalizedName=normalizeGuildName(name),nameError=guildNameError(normalizedName);if(nameError)throw new Error(nameError);const {data,error}=await client.rpc('create_guild',{p_name:normalizedName,p_tag:tag.trim(),p_join_policy:joinPolicy,p_minimum_level:minimumLevel});if(error)throw error;return data as string;}
 export async function updateOnlineGuildTag(tag:string){const client=requireClient();const {data,error}=await client.rpc('update_guild_tag',{p_tag:tag});if(error)throw error;return data?.[0] as {guild_id:string;tag:string;previous_tag:string|null}|undefined;}
 export async function updateOnlineGuildTagColor(tagColorId:GuildTagColorId){const client=requireClient();const {data,error}=await client.rpc('update_guild_tag_color',{p_tag_color_id:tagColorId});if(error)throw error;return data?.[0] as {guild_id:string;tag_color_id:GuildTagColorId}|undefined;}
 export async function guildRoster(guildId:string){const client=requireClient();const {data,error}=await client.rpc('guild_roster',{p_guild_id:guildId});if(error)throw error;return withGuildIdentities((data??[]) as GuildMember[]);}
@@ -103,4 +105,5 @@ export async function guildLeadershipStatus(){const client=requireClient();const
 export async function transferGuildLeadership(accountId:string){const client=requireClient();const {data,error}=await client.rpc('transfer_guild_leadership_v1',{p_target_account_id:accountId});if(error)throw error;return data as 'transferred';}
 export async function leaveGuild(){const client=requireClient();const {data,error}=await client.rpc('leave_guild_v1');if(error)throw error;return data as 'left';}
 export async function disbandGuild(){const client=requireClient();const {data,error}=await client.rpc('disband_guild_v1');if(error)throw error;return data as 'disbanded';}
+export async function reportSocialPlayer(accountId:string,reason:SocialReportReason,messageId?:string){const client=requireClient();const {data,error}=await client.rpc('report_social_player_v1',{p_target_account_id:accountId,p_reason:reason,p_message_id:messageId??null});if(error)throw error;return data as 'submitted'|'already_reported';}
 

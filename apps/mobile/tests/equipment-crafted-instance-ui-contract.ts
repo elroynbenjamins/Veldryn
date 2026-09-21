@@ -13,6 +13,7 @@ const inventory=read('src/screens/InventoryScreen.tsx');
 const card=read('src/components/ItemCard.tsx');
 const commands=read('src/core/game-commands.ts');
 const app=read('App.tsx');
+const forgeFeedback=read('src/components/ForgeResultFeedback.tsx');
 const save=read('src/core/save-normalization.ts');
 
 ok(rarity.includes('CRAFTED_MYTHIC_CHANCE=.001')&&rarity.includes('CRAFTED_EPIC_CHANCE=.006'),'Forge quality odds must remain exactly 0.10% Mythic / 0.60% Epic');
@@ -32,7 +33,9 @@ ok(card.includes('rarityOverride'),'ItemCard must support instance-derived rarit
 
 ok(commands.includes("if(options.randomRoll===undefined)throw new Error('trusted_random_required')"),'Online Forge settlement must require trusted randomness');
 ok(commands.includes('quality proc'),'Authoritative claim messaging must surface quality procs');
-ok(app.includes("Alert.alert('Equipment forged'"),'Mobile claims must present forged rarity results');
+ok(app.includes('setForgeResults(result.forgeResults)')&&app.includes('ForgeRarityRevealModal'),'Mobile online claims must present authoritative structured Forge rarity results');
+ok(app.includes('setForgeResults([claimed.result])'),'Mobile offline claims must use the same structured Forge rarity result path');
+ok(forgeFeedback.includes('EXCEPTIONAL FORGE RESULT')&&forgeFeedback.includes('qualityProc'),'Quality procs must use the dedicated rarity-aware Forge reveal');
 ok(save.includes('normalizeCraftedGearInstances'),'Crafted instances must persist through save normalization');
 
 console.log('PASS: crafted-instance result/economy UI and authority wiring are protected');

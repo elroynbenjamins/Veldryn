@@ -215,7 +215,7 @@ function awardOwnerSkillXp(state:GameState,ownerCharacterId:string,recipe:Recipe
   return {...state,otherCharacters:(state.otherCharacters??[]).map(entry=>entry.character.id===ownerCharacterId?{...entry,skills:award(entry.skills)}:entry)};
 }
 
-export function claimEquipmentCraft(state:GameState,jobId:string,nowMs:number,rarityRoll=Math.random()){
+export function claimForgeJob(state:GameState,jobId:string,nowMs:number,rarityRoll=Math.random()){
   const projected=withProjectedQueue(state,nowMs),queue=equipmentCraftingQueue(projected),job=queue.find(row=>row.id===jobId);
   if(!job)throw new Error('Crafting job not found');
   if(job.completesAtMs>nowMs)throw new Error(job.startedAtMs>nowMs?'This forge job is still waiting for a slot':'This forge job is still in progress');
@@ -233,11 +233,17 @@ export function claimEquipmentCraft(state:GameState,jobId:string,nowMs:number,ra
   return {state:next,recipe:gemRecipe!,job,kind:'gem' as const};
 }
 
+export function claimEquipmentCraft(state:GameState,jobId:string,nowMs:number,rarityRoll=Math.random()){
+  const result=claimForgeJob(state,jobId,nowMs,rarityRoll);
+  if(result.kind!=='equipment')throw new Error('not_equipment_craft');
+  return result;
+}
+
 export function claimAllReadyEquipmentCrafts(state:GameState,nowMs:number,trustedRoll=Math.random()){
   let next=withProjectedQueue(state,nowMs),claimed:string[]=[],results:ReturnType<typeof craftedInstanceResult>[]=[],gemClaims=0;
   for(const job of equipmentCraftingQueue(next).filter(row=>isReady(row,nowMs))){
     try{
-      const result=claimEquipmentCraft(next,job.id,nowMs,craftClaimSubRoll(trustedRoll,job.id));next=result.state;claimed.push(job.id);
+      const result=claimForgeJob(next,job.id,nowMs,craftClaimSubRoll(trustedRoll,job.id));next=result.state;claimed.push(job.id);
       if(result.kind==='equipment')results.push(result.result);else gemClaims++;
     }
     catch(error){if(error instanceof Error&&(error.message==='Inventory and Bank are full'||error.message.startsWith('Bank is full')))break;throw error;}

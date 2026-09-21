@@ -2,7 +2,7 @@ import {useEffect,useMemo,useState} from 'react';
 import {Image,Pressable,StyleSheet,Text,View} from 'react-native';
 import {WORLD_CHANNELS,worldMessages,type WorldMessage} from '../online/social';
 import {uiIcons} from '../theme/ui-icons';
-import {radii,typography,type ThemeColors} from '../theme/theme';
+import {typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {ChatMessageText} from './ChatMessageText';
 

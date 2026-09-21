@@ -120,7 +120,7 @@ ok(friends.includes('<GameButton compact title="Accept"'),'Friend-request row ac
 ok(friends.includes('<GameButton compact title="Decline"'),'Friend-request decline must remain compact');
 
 const characterPolish=read('src/screens/CharacterScreen.tsx');
-ok(characterPolish.includes('<GameButton compact title="Upgrade"'),'Selected equipment actions must not make the Character detail row oversized');
+ok(characterPolish.includes('<GameButton compact title={selectedDecision?.upgrade.maxed?\'Enhance · MAX\''),'Selected equipment actions must remain compact even when the enhancement chance is surfaced');
 ok(characterPolish.includes("GameButton compact title={skin.selected?"),'Repeated Character appearance actions must remain compact');
 
 const worldPolish=read('src/screens/WorldScreen.tsx');

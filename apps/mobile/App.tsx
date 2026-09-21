@@ -26,6 +26,7 @@ import {CompanionsScreen} from './src/screens/CompanionsScreen';
 import {SettingsScreen} from './src/screens/SettingsScreen';
 import {MoreScreen} from './src/screens/MoreScreen';
 import {ChatPilotDevScreen} from './src/screens/ChatPilotDevScreen';
+import {AdminQaScreen} from './src/screens/AdminQaScreen';
 import {GuildScreen} from './src/screens/GuildScreen';
 import {FriendsScreen} from './src/screens/FriendsScreen';
 import {EventScreen} from './src/screens/EventScreen';
@@ -146,6 +147,7 @@ function VeldrynApp(){
   const appStateRef=useRef(AppState.currentState);
   const settlingRef=useRef(false);
   const [showChatPilot,setShowChatPilot]=useState(false);
+  const [showAdminQa,setShowAdminQa]=useState(false);
   const [creatingRoster,setCreatingRoster]=useState(false);
   const [showChatOverlay,setShowChatOverlay]=useState(false);
   const [showCoopUiGallery,setShowCoopUiGallery]=useState(false);
@@ -170,6 +172,7 @@ function VeldrynApp(){
   const goBack=useCallback(()=>{
     if(showChatOverlay){setShowChatOverlay(false);return true;}
     if(showChatPilot){setShowChatPilot(false);return true;}
+    if(showAdminQa){setShowAdminQa(false);return true;}
     if(showCoopUiGallery){setShowCoopUiGallery(false);return true;}
     confirmProfileCustomizeExit(()=>{
       setProfileCustomizeDirty(false);
@@ -181,7 +184,7 @@ function VeldrynApp(){
       if(tab!=='Home')setCurrentTab('Home');
     });
     return true;
-  },[showChatOverlay,showChatPilot,showCoopUiGallery,tab,tabHistory,confirmProfileCustomizeExit]);
+  },[showChatOverlay,showChatPilot,showAdminQa,showCoopUiGallery,tab,tabHistory,confirmProfileCustomizeExit]);
   const backSwipe=useMemo(()=>PanResponder.create({
     onMoveShouldSetPanResponder:(_event,gesture)=>gesture.x0<=32&&gesture.dx>12&&Math.abs(gesture.dx)>Math.abs(gesture.dy)*1.25,
     onPanResponderRelease:(_event,gesture)=>{if(gesture.dx>=72&&gesture.vx>=0)goBack();},
@@ -330,6 +333,7 @@ const next=discoverCharacterSkins(candidate);stateRef.current=next;setState(next
   if(!state.character){const theme=resolveTheme(state.settings.uiTheme);return <GameThemeProvider themeId={state.settings.uiTheme}><SafeAreaView style={[s.safe,{backgroundColor:theme.bg}]}><StatusBar style={theme.dark?'light':'dark'}/><ClassSelectScreen language={state.settings.language} onLanguage={language=>commit({...state,settings:{...state.settings,language}})} onSelect={async(id,name,body)=>{if(serverGameplayEnabled){await perform({type:'create',args:{classId:id,name,body}});return;}const next=createCharacter(state,id,name,body);await repo.save(next);setState(next)}}/></SafeAreaView></GameThemeProvider>;}
   if(creatingRoster){const theme=resolveTheme(state.settings.uiTheme);return <GameThemeProvider themeId={state.settings.uiTheme}><SafeAreaView style={[s.safe,{backgroundColor:theme.bg}]}><StatusBar style={theme.dark?'light':'dark'}/><ClassSelectScreen language={state.settings.language} cancelLabel={t(state.settings.language,'roster.cancel')} onCancel={()=>setCreatingRoster(false)} onSelect={async(id,name,body)=>{if(serverGameplayEnabled){const result=await perform({type:'roster_create',args:{classId:id,name,body}});if(result)setCreatingRoster(false);return;}const result=executeGameCommand(state,{type:'roster_create',args:{classId:id,name,body}},Date.now());await commit(result.state);setCreatingRoster(false)}}/></SafeAreaView></GameThemeProvider>;}
   if(__DEV__&&showChatPilot)return <View style={s.safe} {...backSwipe.panHandlers}><ChatPilotDevScreen state={state} initialPanel={chatPilotInitialPanel} onClose={()=>setShowChatPilot(false)}/></View>;
+  if(__DEV__&&!serverGameplayEnabled&&showAdminQa)return <SafeAreaView style={s.safe} {...backSwipe.panHandlers}><StatusBar style="light"/><AdminQaScreen state={state} onChange={commit} onClose={()=>setShowAdminQa(false)} onOpenDungeon={()=>{setShowAdminQa(false);setTab('Coop')}}/></SafeAreaView>;
   if(__DEV__&&showCoopUiGallery)return <SafeAreaView style={s.safe} {...backSwipe.panHandlers}><StatusBar style="light"/><CoopUiGalleryScreen language={state.settings.language} onClose={()=>setShowCoopUiGallery(false)}/></SafeAreaView>;
   const theme=resolveTheme(state.settings.uiTheme);
   const preview=previewActivityReward(state,now);
@@ -387,7 +391,7 @@ const next=discoverCharacterSkins(candidate);stateRef.current=next;setState(next
     {tab==='Events'&&<EventScreen state={state} onChange={commit} onCommand={serverGameplayEnabled?command=>perform(command).then(Boolean):undefined} onOpenSeasonalExpedition={coopOnlineConfigured?liveEventId=>{setPendingEventLiveId(liveEventId);setTab('Coop')}:undefined}/>}
     {tab==='Guild'&&<GuildScreen online={serverGameplayEnabled} state={state} onChange={commit} onlineDirectory={<OnlineGuildBrowser/>} onlineManagement={<OnlineGuildManagement onApplicationsChanged={()=>void refreshSocialNotifications()}/>} onlineBoard={<OnlineGuildNoticeBoardPanel/>} onlineProjects={<OnlineGuildProjectsPanel/>} onlinePve={<OnlineGuildPve authoritative={serverGameplayEnabled} numberMode={state.settings.numberMode}/>} onlineChat={<GuildChat language={state.settings.language} currentPlayerName={state.character?.name} unlockedEmoteIds={state.account.unlockedEmoteIds} trayIds={state.settings.chatEmoteTrayIds} bodyPresentation={state.character?.bodyPresentation} onTrayChange={ids=>commit({...state,settings:{...state.settings,chatEmoteTrayIds:ids}})} firstUnreadMessageId={notificationCounts.guildFirstUnreadMessageId} onRead={()=>void refreshSocialNotifications()}/>} onlineChatUnread={notificationCounts.guildChatUnread} onlineChatMentions={notificationCounts.guildChatMentions} onlineHall={<OnlineGuildHallPanel/>} onlineCustomize={<OnlineGuildCustomizationPanel/>}/>} 
     {tab==='Settings'&&<SettingsScreen online={serverGameplayEnabled} state={state} onChange={commit} onExport={exportSave} onImport={importSave} onOpenChatPilot={__DEV__?()=>{setChatPilotInitialPanel('chat');setShowChatPilot(true)}:undefined} onOpenChatEmotes={__DEV__?()=>{setChatPilotInitialPanel('emotes');setShowChatPilot(true)}:undefined} onOpenCoopUiGallery={__DEV__?()=>setShowCoopUiGallery(true):undefined} onLanguage={language=>commit({...state,settings:{...state.settings,language}})} onReset={()=>serverGameplayEnabled?Alert.alert('Online save','Your online character is saved on the server.'):Alert.alert('Reset local save?','This deletes prototype progress only.',[{text:'Cancel'},{text:'Reset',style:'destructive',onPress:async()=>{await repo.reset();setState(newGame(Date.now()));setCurrentTab('Home');setTabHistory([])}}])}/>}
-    {tab==='More'&&<MoreScreen language={state.settings.language} onNavigate={setTab} companionAttention={companionAttention.hasAttention} workingTowardAttention={workingTowardReady>0} dailySuppliesAttention={dailySuppliesReady} eventAttention={eventClaims>0||notificationCounts.events>0} friendRequestCount={notificationCounts.friendRequests} guildAttentionCount={notificationCounts.guild} socialAttentionCount={notificationCounts.partyInvites+notificationCounts.chatUnread} profileAttention={profileAttentionKeys.length>0} onOpenChatPilot={__DEV__?()=>{setChatPilotInitialPanel('chat');setShowChatPilot(true)}:undefined}/>}
+    {tab==='More'&&<MoreScreen language={state.settings.language} onNavigate={setTab} companionAttention={companionAttention.hasAttention} workingTowardAttention={workingTowardReady>0} dailySuppliesAttention={dailySuppliesReady} eventAttention={eventClaims>0||notificationCounts.events>0} friendRequestCount={notificationCounts.friendRequests} guildAttentionCount={notificationCounts.guild} socialAttentionCount={notificationCounts.partyInvites+notificationCounts.chatUnread} profileAttention={profileAttentionKeys.length>0} onOpenChatPilot={__DEV__?()=>{setChatPilotInitialPanel('chat');setShowChatPilot(true)}:undefined} onOpenAdminQa={__DEV__&&!serverGameplayEnabled?()=>setShowAdminQa(true):undefined}/>}
     {tab==='Arena'&&<ArenaScreen state={state} onChange={candidate=>void commit(candidate)}/>}
     {tab==='Rankings'&&<RankingsScreen/>}
     {tab==='Collections'&&<CollectionsScreen state={state} onChange={candidate=>void commit(candidate)}/>}

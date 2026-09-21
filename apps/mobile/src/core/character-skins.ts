@@ -17,7 +17,7 @@ export function equipmentSetSkinId(setId:string){return `equipment-set:${setId}`
 
 function ownedItemIds(state:GameState){
   const ids=new Set<string>();
-  for(const stack of [...state.inventory.stacks,...state.overflow.stacks]){
+  for(const stack of [...state.inventory.stacks,...state.bank.stacks,...state.overflow.stacks]){
     if(stack.quantity>0)ids.add(stack.itemId);
   }
   if(state.character){

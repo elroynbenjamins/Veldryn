@@ -48,6 +48,9 @@ jobs:
         run: pnpm test:collectibles
       - name: Run companion validation
         run: pnpm test:companions
+      - name: Run gem progression and combat validation
+        working-directory: backend
+        run: pnpm test:gems
       - name: Run co-op reward validation
         working-directory: backend
         run: pnpm test:coop-rewards

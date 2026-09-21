@@ -106,7 +106,7 @@ export interface GemCombatRuntimeV34 {
   bulwarkUntil:number;benedictionCharges:number;benedictionExpiresAt:number;benedictionAbilityKey?:string;benedictionAbilityMultiplier?:number;
   battleLastCategory?:'offense'|'defense_support';battleLastAt:number;battleHasteUntil:number;battleHasteReadyAt:number;
   flowStacks:number;flowExpiresAt:number;flowLastAbilityId?:string;flowDecayStartedAt?:number;
-  opportunityByTarget:Record<string,{until:number;modifierTag?:string;modifierSourceId?:string}>;
+  opportunityByTarget:Record<string,{until:number;modifierTag?:string;modifierSourceId?:string}>;opportunityReadyAtByTarget:Record<string,number>;
   sustenanceReadyAt:number;
 }
 

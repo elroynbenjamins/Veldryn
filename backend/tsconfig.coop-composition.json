@@ -5,6 +5,7 @@
   },
   "include": [
     "src/server/coop/__tests__/phase6-qmode.ts",
+    "src/server/coop/__tests__/phase6-public-projection.ts",
     "src/server/coop/__tests__/phase7-matchmaking.ts"
   ]
 }

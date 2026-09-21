@@ -73,6 +73,8 @@ async function main(){
  const projectedBoss=projectOnlineEventRun(bossRun,99,'EVT_ANNUAL_006_2026') as any,bossSummary=bossRun.lastResolution!.result.summary as any;
  assert.equal(projectedBoss.bossMechanic.telegraph.bossName,'Aureon, First Champion');assert.ok(projectedBoss.bossMechanic.telegraph.phases.some((phase:any)=>phase.label==='Pressure Break'));assert.ok(projectedBoss.bossRecap);
  assert.equal(projectedBoss.bossRecap.durationMs,bossSummary.durationMs);assert.equal(projectedBoss.bossRecap.downs,bossSummary.downs.length);assert.equal(projectedBoss.bossRecap.phasesTriggered.length,bossSummary.bossPhaseIds.length);assert.equal(projectedBoss.bossRecap.abilitiesCast.length,bossSummary.bossCastAbilityIds.length);
+ assert.equal(projectedBoss.lastCombat.nodeId,'boss');assert.equal(projectedBoss.lastCombat.durationMs,bossSummary.durationMs);assert.equal(projectedBoss.lastCombat.reason,bossSummary.reason);assert.ok(projectedBoss.lastCombat.cues.length>0);assert.equal(projectedBoss.lastCombat.cues.at(-1)?.type,bossSummary.reason);
+ assert.equal(JSON.stringify(projectedBoss.lastCombat).includes('eventDigest'),false,'combat replay must not expose the full authoritative trace digest');
  const now=Date.UTC(2026,6,15),controllerState=preparedState('IRONWARDEN','Event Tank',50,'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1');
  const echoStates=[preparedState('WAYFINDER','Echo Archer',50,'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2'),preparedState('RAVAGER','Echo Ravager',50,'cccccccc-cccc-4ccc-8ccc-ccccccccccc3'),preparedState('DAWNKEEPER','Echo Keeper',50,'dddddddd-dddd-4ddd-8ddd-ddddddddddd4')];
  const controllerRecord=deriveOnlineCoopLoadout('00000000-0000-4000-8000-000000000001',controllerState,7);

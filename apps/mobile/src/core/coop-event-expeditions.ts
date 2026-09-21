@@ -1,5 +1,5 @@
 import type {CoopRole} from './coop-ui-contract';
-import {validateCoopRunView,type CoopRunView} from './coop-presentation';
+import {validateCoopRunView,type CoopCombatReplayView,type CoopRunView} from './coop-presentation';
 
 export type CoopEventExpeditionStatus='preview'|'available';
 
@@ -39,6 +39,7 @@ export interface CoopEventRunServerProjection{
   objective?:{id:string;label:string;description:string;count:number;maxCount:number;effect:string;completed:boolean;bossAttackMultiplier:number;bossHpMultiplier:number;bossDefenseMultiplier:number;rewardBonus:number;preBossHealPct:number;effectText:string};
   bossMechanic?:{profileId:string;label:string;summary:string;tone:'benefit'|'mixed'|'danger';telegraph?:{bossName:string;phases:Array<{id:string;label:string;hpPct:number;objectiveSensitive:boolean}>;castAbilities:Array<{id:string;label:string;castMs:number;cooldownMs:number;interruptible:boolean;objectiveSensitive:boolean}>;suppressedAbilities:Array<{id:string;label:string}>}};
   bossRecap?:{durationMs:number;downs:number;phasesTriggered:string[];abilitiesCast:string[]};
+  lastCombat?:CoopCombatReplayView;
   settlement:{status:'pending'|'claimed';rewardMarks?:number};
 }
 
@@ -109,12 +110,13 @@ export function presentEventExpeditionRun(projection:CoopEventRunServerProjectio
     modeLabel:projection.dungeonName,
     phase:projection.phase,
     syncedLevel:Math.min(...projection.team.map(member=>member.effectiveLevel)),
-    roleSlots:projection.team.map(member=>({role:member.role,name:member.displayName,echo:member.kind==='echo',classId:member.classId,companionId:member.companionId,currentHp:member.currentHp,maximumHp:member.maximumHp,ready:member.downed===undefined?true:!member.downed})),
+    roleSlots:projection.team.map(member=>({memberId:member.memberId,role:member.role,name:member.displayName,echo:member.kind==='echo',classId:member.classId,companionId:member.companionId,currentHp:member.currentHp,maximumHp:member.maximumHp,ready:member.downed===undefined?true:!member.downed})),
     options,
     mechanic:projection.mechanic?{label:projection.mechanic.label,description:projection.mechanic.description,value:projection.mechanic.value,maxValue:projection.mechanic.maxValue,status:projection.mechanic.status,bossEffect:projection.mechanic.bossEffect}:undefined,
     objective:projection.objective?{label:projection.objective.label,description:projection.objective.description,count:projection.objective.count,maxCount:projection.objective.maxCount,completed:projection.objective.completed,effectText:projection.objective.effectText}:undefined,
     bossMechanic:projection.bossMechanic?{label:projection.bossMechanic.label,summary:projection.bossMechanic.summary,tone:projection.bossMechanic.tone,telegraph:projection.bossMechanic.telegraph}:undefined,
     bossRecap:projection.bossRecap,
+    lastCombat:projection.lastCombat,
     stateVersion:projection.stateVersion,
     decisionId:projection.decisionId,
     decisionRevision:projection.decisionRevision,

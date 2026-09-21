@@ -7,7 +7,7 @@ import { generateCoopRouteGraph } from '../expeditions/route-generation';
 import { marksForRun } from '../expeditions/rewards';
 import type { FrozenLoadoutSnapshot } from './loadout-snapshots';
 import { recruitEligibleEchoes, type PublishedEcho } from './echo-recruitment';
-import { validateCoopRoster } from './invariants';
+import { validateCoopRoster, validateUniqueDamageClasses } from './invariants';
 import {coopRequiredLevel} from './config';
 
 export interface QModeRun {
@@ -34,6 +34,7 @@ export class QModeService{
   const echoes=recruitEligibleEchoes({serverSecret:this.serverSecret,requestId:input.requestId,controllerAccountId:input.controllerAccountId,controllerRole:input.controllerSnapshot.readiness.role,controllerClassId:input.controllerSnapshot.classId,contentVersion:input.contentVersion,nowMs:input.nowMs,profiles:input.profiles});
   const requiredLevel=coopRequiredLevel(definition.minLevel,input.tier);for(const snapshot of [input.controllerSnapshot,...echoes.map(echo=>echo.snapshot)])if(snapshot.normalized.before.level<requiredLevel)throw new Error(`character_below_tier_level:${snapshot.characterId}`);
   validateCoopRoster([{accountId:input.controllerAccountId,characterId:input.controllerSnapshot.characterId,role:input.controllerSnapshot.readiness.role},...echoes.map(echo=>({accountId:echo.sourceAccountId,characterId:echo.snapshot.characterId,role:echo.snapshot.readiness.role}))]);
+  validateUniqueDamageClasses([input.controllerSnapshot,...echoes.map(echo=>echo.snapshot)].map(snapshot=>({role:snapshot.readiness.role,classId:snapshot.classId})));
   const players=[combatant(input.controllerSnapshot),...echoes.map(echo=>combatant(echo.snapshot))];
   const graph=generateCoopRouteGraph(this.serverSecret,input.expeditionId,input.runId,input.contentVersion,input.balanceVersion);
   const run:QModeRun={id:input.runId,requestId:input.requestId,controllerAccountId:input.controllerAccountId,expeditionId:input.expeditionId,tier:input.tier,graph,currentNodeId:graph.entryNodeId,phase:'awaiting_choice',players,persistentState:initialPersistentRunState(players),echoSourceAccountIds:echoes.map(echo=>echo.sourceAccountId)};

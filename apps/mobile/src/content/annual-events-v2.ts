@@ -23,6 +23,7 @@ export const VEILBREAK_EVENT:LiveEventDef={
   maxProgress:10000,
   claimGraceDays:7,
   visualKey:'veilbreak',
+  signature:{kind:'ritual',label:'SIGNATURE · BREACH WATCH',title:'Hold the veil together while hunting what slips through',description:'Veilbreak is the darkest annual event. Normal activities reinforce the ward effort, discoveries represent objects crossing the veil, and Gloam Breach is the season’s persistent expedition.',highlights:['Ward-focused seasonal projects','Gloam-touched discovery chase','Gloam Breach seasonal expedition']},
   ui:{
     prepareTitle:'Prepare the lantern wards',
     dailyGiftTitle:'Today’s Lantern Gift',
@@ -93,6 +94,7 @@ export const FROSTFALL_EVENT:LiveEventDef={
   maxProgress:10000,
   claimGraceDays:7,
   visualKey:'frostfall',
+  signature:{kind:'community',label:'SIGNATURE · WINTER HEARTH',title:'Build the winter celebration together',description:'Frostfall combines a personal gift-and-collection chase with a shared Winter Hearth. Spend Frostbell Tokens on your own collection or contribute them to unlock communal festival milestones.',highlights:['Shared Winter Hearth milestones','Gift-and-aurora collectible chase','Aurora Hollow seasonal expedition']},
   ui:{
     prepareTitle:'Prepare for Frostfall',
     dailyGiftTitle:'Today’s Frostfall Gift',
@@ -140,9 +142,14 @@ export const FROSTFALL_EVENT:LiveEventDef={
     {id:'winter_champions',name:'Winter Champions',description:'Challenge powerful threats before they reach the celebrations.',bonusLabel:'+20% boss Frostbell Tokens',dropMultipliers:{boss:1.2}},
   ],
   dailyGifts:[...gifts],
-  communityEnabled:false,
+  communityEnabled:true,
   communityGoal:100000,
-  communityMilestones:[],
+  communityMilestones:[
+    {percent:25,rewardCurrency:200,rewardPrestige:0},
+    {percent:50,rewardCurrency:350,rewardPrestige:1},
+    {percent:75,rewardCurrency:500,rewardPrestige:1},
+    {percent:100,rewardCurrency:750,rewardPrestige:2,reward:{kind:'title',id:'title_hearth_builder',name:'Hearth Builder',rarity:'epic'}},
+  ],
   discoveries:[
     {id:'snowbell_fragment',name:'Snowbell Fragment',description:'A tiny frozen bell-clapper found after ordinary combat.',source:'combat',chance:.003,required:5,reward:{kind:'title',id:'title_snowbell_seeker',name:'Snowbell Seeker',rarity:'rare'}},
     {id:'gift_ribbon_scrap',name:'Enchanted Ribbon Scrap',description:'A festive ribbon hidden among gathered supplies.',source:'gathering',chance:.015,required:5,reward:{kind:'title',id:'title_ribbon_finder',name:'Ribbon Finder',rarity:'rare'}},

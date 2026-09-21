@@ -25,7 +25,7 @@ import {gatheringToolDef} from '../content/gathering-tools';
 import {currentRegionId} from './combat-region';
 import {WORLD_ZONES} from '../content/world-map';
 import {enhancedGearStats,equippedEffectGemBonuses,equippedGemBonuses,hasEnhancement} from './equipment-enhancement';
-import {craftedGearInstances,materializeGearSelection,moveGearInstance,removeGearInstance,resolveGearSelection} from './crafted-gear-instances';
+import {craftedGearInstances,materializeGearSelection,moveGearInstance,reconcileActiveEquippedGearInstances,removeGearInstance,resolveGearSelection} from './crafted-gear-instances';
 import {activeEquipmentSetRuntime,equipmentSetCombatModifiers} from './equipment-set-runtime';
 import {companionCombatContribution,reconcileCombatCompanionUnlocks,grantCompanionEssence,grantBondstones} from './combat-companions';
 import {awardCompanionRematchBondstone,companionRematchBondstoneStatus,recordCompanionActivity} from './companion-runtime';
@@ -705,6 +705,7 @@ export function equipNoviceSet(state:GameState):GameState{
   const bank=addBounded(next.bank.stacks,next.bank.capacity,inv.overflow);
   if(bank.overflow.length)throw new Error('Free Inventory or Bank space for replaced equipment');
   next={...next,inventory:{...next.inventory,stacks:inv.stacks},bank:{...next.bank,stacks:bank.stacks},character:{...state.character,equipment}};
+  next=reconcileActiveEquippedGearInstances(next);
   next.character!.currentHp=Math.min(state.character.currentHp,effectiveStats(next).hp);
   return refreshQuests(next);
 }

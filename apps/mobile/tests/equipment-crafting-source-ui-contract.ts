@@ -27,7 +27,7 @@ ok(inspect.includes('CRAFTING PATH'),'Quick Inspect must expose the equipment cr
 ok(inspect.includes("ingredient.missing+' missing"),'Quick Inspect must show exact missing material quantities');
 ok(inspect.includes('onNavigate(ingredient.source)'),'Quick Inspect material blockers must be actionable');
 ok(recipeCard.includes('MISSING MATERIAL SOURCES'),'Expanded recipe cards must surface missing-material sources');
-ok(recipeCard.includes('formatQueueTimeV31(recipe.seconds)'),'Recipe cards must show the actual craft timer');
+ok(!recipeCard.includes('craft time'),'Recipe cards must not imply a live timer before the timed crafting queue runtime exists');
 ok(recipeCard.includes('onNavigate(row.source)'),'Recipe source rows must navigate directly');
 ok(skillsScreen.includes('onNavigateCraftingSource'),'Skills must accept source navigation');
 ok(skillsScreen.includes('onNavigate={onNavigateCraftingSource}'),'Skills must pass source routing into recipe cards');

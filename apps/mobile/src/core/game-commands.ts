@@ -20,6 +20,7 @@ import {COMBAT_TACTIC_IDS} from './combat-tactics';
 import {HUNT_GOAL_IDS} from './hunt-goals';
 import {clearActivityQueue,enqueueActivity,moveQueuedActivity,removeQueuedActivity} from './activity-queue';
 import {activateDailySupplyBoost,claimDailySupplies,DAILY_SUPPLY_BOOST_TYPES,dailySupplyBoostLabel} from './daily-supplies';
+import {bulkSalvageSelected,bulkSellSelected,bulkTransferSelected} from './inventory-bulk';
 
 /** Commands express intent. Neither a client save nor a client reward is accepted. */
 export interface GameCommand {type:string;args?:Record<string,unknown>}
@@ -33,7 +34,7 @@ const fields:Record<string,readonly string[]>={
  create:['classId','name','body'],claim:[],start:['kind','id','challengeId','tacticId','goalId'],queue_add:['kind','id','challengeId','tacticId','goalId'],queue_remove:['index'],queue_move:['index','direction'],queue_clear:[],queue_start:[],explore:['id'],stop:[],travel:['id'],boss:[],craft:['id'],use_potion:['id'],discard_preparation:[],
  roster_create:['classId','name','body'],roster_switch:['id'],
  equip:['id'],unequip:['slot'],food:['id'],eat:['id'],sell:['id','quantity'],salvage:['id'],
- deposit:['id','quantity'],withdraw:['id','quantity'],deposit_materials:[],storage:['location'],overflow:[],
+ deposit:['id','quantity'],withdraw:['id','quantity'],deposit_materials:[],bulk_transfer:['location','ids'],bulk_sell:['ids'],bulk_salvage:['ids'],storage:['location'],overflow:[],
  equip_tool:['id'],equip_set:[],upgrade:['id'],socket:['id','gemId'],unsocket:['id','index'],skin:['id'],
  loadout_save:['index','name'],loadout_apply:['id'],loadout_delete:['id'],goals_set:['goals'],idle_rules_set:['rules','activeId'],daily_supplies_claim:['characterId'],daily_supplies_activate:['type'],
  quest:['id'],seasonal:['period','id'],settings:['settings'],profile:['profileTitle','profileBackgroundId','profileBorderId','selectedCosmeticPetId'],
@@ -52,11 +53,14 @@ export function validateGameCommand(value:unknown):GameCommand{
  }
  if(row.type==='roster_switch'&&typeof (args as Record<string,unknown>).id!=='string')throw new Error('invalid_id');
  if(row.type==='start'||row.type==='queue_add'){const start=args as Record<string,unknown>;oneOf(start.kind,['combat','gathering']);if(start.challengeId!==undefined)oneOf(start.challengeId,COMBAT_CHALLENGE_IDS);if(start.tacticId!==undefined)oneOf(start.tacticId,COMBAT_TACTIC_IDS);if(start.goalId!==undefined)oneOf(start.goalId,HUNT_GOAL_IDS);if(start.kind!=='combat'&&(start.challengeId!==undefined||start.tacticId!==undefined||start.goalId!==undefined))throw new Error('invalid_combat_activity_option');}
+ if(row.type==='bulk_transfer'){const bulk=args as Record<string,unknown>;oneOf(bulk.location,['inventory','bank']);stringArray(bulk,'ids');}
+ if(row.type==='bulk_sell'||row.type==='bulk_salvage')stringArray(args as Record<string,unknown>,'ids');
  return {type:row.type,args:args as Record<string,unknown>};
 }
 function text(args:Record<string,unknown>,key:string,max=100):string{const value=args[key];if(typeof value!=='string'||!value.trim()||value.length>max)throw new Error(`invalid_${key}`);return value.trim();}
 function integer(args:Record<string,unknown>,key:string,min=1,max=100000):number{const value=args[key];if(typeof value!=='number'||!Number.isSafeInteger(value)||value<min||value>max)throw new Error(`invalid_${key}`);return value;}
 function oneOf<T extends string>(value:unknown,choices:readonly T[]):T{if(typeof value!=='string'||!choices.includes(value as T))throw new Error('invalid_choice');return value as T;}
+function stringArray(args:Record<string,unknown>,key:string,max=100):string[]{const value=args[key];if(!Array.isArray(value)||value.length<1||value.length>max||value.some(entry=>typeof entry!=='string'||!entry.trim()||entry.length>120))throw new Error(`invalid_${key}`);return [...new Set(value.map(entry=>(entry as string).trim()))];}
 interface CompanionCommandEconomySnapshot{gold:number;companionEssence:number;bondstones:number;}
 function companionCommandEconomySnapshot(state:GameState):CompanionCommandEconomySnapshot{return {gold:state.character?.gold??0,companionEssence:state.account.companionEssence??0,bondstones:state.account.bondstones??0};}
 function recordCompanionCommandMetrics(state:GameState,type:string,before:CompanionCommandEconomySnapshot):GameState{
@@ -157,6 +161,9 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'deposit':state=game.depositToBank(state,text(a,'id'),integer(a,'quantity'));break;
   case 'withdraw':state=game.withdrawFromBank(state,text(a,'id'),integer(a,'quantity'));break;
   case 'deposit_materials':state=game.depositAllMaterials(state);break;
+  case 'bulk_transfer':state=bulkTransferSelected(state,stringArray(a,'ids'),oneOf(a.location,['inventory','bank']));break;
+  case 'bulk_sell':state=bulkSellSelected(state,stringArray(a,'ids'));break;
+  case 'bulk_salvage':state=bulkSalvageSelected(state,stringArray(a,'ids'));break;
   case 'storage':state=game.upgradeStorage(state,oneOf(a.location,['inventory','bank']));break;
   case 'overflow':state=game.claimOverflowToBank(state);break;
   case 'equip_tool':state=game.equipGatheringTool(state,text(a,'id'));break;

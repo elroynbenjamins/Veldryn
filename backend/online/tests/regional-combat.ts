@@ -4,6 +4,8 @@ import {socketGem} from '../../../apps/mobile/src/core/equipment-enhancement';
 import type {GameState} from '../../../apps/mobile/src/core/types';
 import {regionalCombatHandler} from '../regional-combat';
 import type {GameplayServices} from '../gameplay';
+import {resolveRegionalCombatV1,regionalCombatEncounterV1} from '../../src/server/combat/regional-combat-v1';
+import {launchPlayer} from '../../src/server/combat/content/launch-combat';
 
 async function main(){
  let state=createCharacter(newGame(1),'WAYFINDER','Regional Tester','male');state.character!.level=45;state.currentRegionId='SUNSCAR';
@@ -50,6 +52,12 @@ async function main(){
  const wrong=await regionalCombatHandler(wrongServices)(new Request('https://example.test/regional-combat/start',{method:'POST',headers:{authorization:'Bearer ok'},body:JSON.stringify({requestId:'regional-start-003',expectedVersion:4,encounterId:'SUNMON_002'})}));
  assert.equal(wrong.status,400);assert.equal((await wrong.json() as any).error,'regional_combat_wrong_region');
 
- console.log('PASS: authoritative regional combat start/resolve transport and frozen Effect Gem snapshot');
+ const tyrant=regionalCombatEncounterV1('BOSS_002');assert.equal(tyrant?.sourceId,'ZONE_010');assert.equal(tyrant?.kind,'regional_boss');
+ const bossA=resolveRegionalCombatV1({runId:'boss-run-fixed',serverSeed:'boss-seed-fixed',encounterId:'BOSS_002',player:launchPlayer('Wayfinder',45)});
+ const bossB=resolveRegionalCombatV1({runId:'boss-run-fixed',serverSeed:'boss-seed-fixed',encounterId:'BOSS_002',player:launchPlayer('Wayfinder',45)});
+ assert.equal(bossA.eventDigest,bossB.eventDigest,'regional boss simulation must be deterministic for the frozen run seed');
+ assert.deepEqual(bossA.replayCues,bossB.replayCues);
+ assert.ok(bossA.replayCues.some(cue=>cue.type==='phase')||!bossA.success,'successful/extended Sand Tyrant runs should expose boss-phase replay cues');
+ console.log('PASS: authoritative regional combat start/resolve transport, deterministic Sand Tyrant simulation and frozen Effect Gem snapshot');
 }
 void main().catch(error=>{console.error(error);process.exitCode=1;});

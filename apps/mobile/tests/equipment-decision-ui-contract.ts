@@ -22,7 +22,7 @@ ok(preview.includes('equippedSetPieceCount'),'Equipment comparison must compute 
 ok(preview.includes('currently implemented runtime bonuses'),'Comparison copy must not imply unimplemented V33 set effects are active');
 
 ok(setPanel.includes('useGameTheme'),'V33 set-progress presentation must be theme-aware');
-ok(setPanel.includes('Runtime combat effects are handled separately'),'Set collection UI must stay honest about runtime effects');
+ok(setPanel.includes('2/4/8/10 always-on bonuses are live')&&setPanel.includes('6pc conditional remains an authored trigger hook'),'Set collection UI must accurately distinguish live static bonuses from the pending conditional hook');
 ok(decision.includes('upgradeQuote'),'Decision model must reuse authoritative enhancement quote rules');
 ok(decision.includes('equipmentSetDef'),'Decision model must reuse the V33 set catalog');
 

@@ -1,7 +1,7 @@
 import { strict as assert } from 'node:assert';
 import { launchPlayer } from '../../combat/content/launch-combat';
 import { EVENT_EXPEDITIONS } from '../content/event-expeditions';
-import { EventExpeditionService, MemoryEventRunRepository, eventMechanicProjection, eventObjectiveProjection } from '../event-service';
+import { EventExpeditionService, MemoryEventRunRepository, eventBossMechanicProjection, eventMechanicProjection, eventObjectiveProjection } from '../event-service';
 
 const players=['Ironwarden','Wayfinder','Ravager','Dawnkeeper'].map(classId=>launchPlayer(classId,80));
 const members=[['a','c1','tank'],['b','c2','damage'],['c','c3','damage'],['d','c4','support']].map(([accountId,characterId,role])=>({accountId,characterId,role:role as 'tank'|'damage'|'support'}));
@@ -16,7 +16,7 @@ for(const definition of EVENT_EXPEDITIONS){
  const service=new EventExpeditionService(new MemoryEventRunRepository(),`route-secret-${definition.id}`);
  const run=service.start({requestId:`request-${definition.liveEventSeriesId}`,runId:`run-${definition.liveEventSeriesId}`,accountId:'a',eventId:definition.id,activeLiveEventId:`${definition.liveEventSeriesId}_2026`,members,players,nowMs:now});
  assert.equal(run.graph.preBossNodeCount,definition.routeNodeCount,`${definition.eventName} route length drifted`);
- assert.equal(run.graph.generatorVersion,'event-route-v4');
+ assert.equal(run.graph.generatorVersion,'event-route-v5');
  assert.equal(run.mechanic?.id,definition.mechanic.id);
  assert.equal(run.mechanic?.value,definition.mechanic.startValue);
  assert.equal(run.objective?.id,definition.objective.id);
@@ -32,6 +32,9 @@ for(const definition of EVENT_EXPEDITIONS){
  if(objective.effect==='boss_defense_down')assert.ok(objective.bossDefenseMultiplier<1);
  if(objective.effect==='reward_bonus')assert.ok(objective.rewardBonus>0);
  if(objective.effect==='preboss_heal')assert.ok(objective.preBossHealPct>0);
+ const bossProfile=eventBossMechanicProjection(run);assert.ok(bossProfile?.label.trim());assert.ok(bossProfile?.summary.trim());
+ const altCount=definition.objective.startCount===definition.objective.maxCount?0:definition.objective.maxCount;
+ const alternate=eventBossMechanicProjection({...run,objective:{id:definition.objective.id,count:altCount}});assert.ok(alternate);assert.notEqual(alternate!.profileId,bossProfile!.profileId);
 }
 assert.deepEqual(effects,new Set(['boss_attack_down','boss_hp_down','boss_defense_down','reward_bonus','preboss_heal']));
 
@@ -51,9 +54,10 @@ for(let depth=1;depth<=run.graph.preBossNodeCount;depth++){
 }
 assert.ok(run.mechanic!.value>=initialMeter,'themed route choices should be able to improve the seasonal meter');
 assert.ok(run.objective!.count>initialObjective,'signature objective should progress through themed route choices');
-const beforeBoss=eventMechanicProjection(run),objectiveBeforeBoss=eventObjectiveProjection(run);
+const beforeBoss=eventMechanicProjection(run),objectiveBeforeBoss=eventObjectiveProjection(run),bossBefore=eventBossMechanicProjection(run);
 run=service.choose({runId:run.id,accountId:'a',optionNodeId:'boss',requestId:'event-choice-boss'});
 assert.equal(run.phase,'completed');
+assert.equal(run.lastResolution?.result.summary.bossTuningProfile,bossBefore?.tuning.profileId);
 assert.equal(run.rewardMarks,suncrest.rewardMarks+beforeBoss.rewardBonus+objectiveBeforeBoss.rewardBonus);
 assert.equal(service.claimReward({runId:run.id,accountId:'a',requestId:'event-claim'}).marks,run.rewardMarks);
 assert.equal(service.claimReward({runId:run.id,accountId:'a',requestId:'event-claim'}).idempotentReplay,true);

@@ -7,14 +7,17 @@ import type {CoopLoadoutProjection} from '../core/coop-loadout-presentation';
 import type {CoopQModeServerProjection} from '../core/coop-qmode';
 import type {CoopEventExpeditionPreview,CoopEventRunServerProjection} from '../core/coop-event-expeditions';
 import type {LiveQueueView,LiveReadyView} from '../core/coop-live-lobby';
+import type {CoopLiveRecruitmentPost} from '../core/coop-live-recruitment';
 declare const process:{env:Record<string,string|undefined>};
 const apiBase=process.env.EXPO_PUBLIC_COOP_API_URL?.replace(/\/$/,'');
 export const coopRogueliteEnabled=process.env.EXPO_PUBLIC_COOP_ROGUELITE_V1==='true';
 export const coopOnlineConfigured=Boolean(coopRogueliteEnabled&&apiBase&&supabase);
 // Internal lobby validation only; keep off until Live run/recovery gates pass.
 export const coopLiveReadyEnabled=process.env.EXPO_PUBLIC_COOP_LIVE_READY_V1==='true';
-export interface CoopEntryData {dungeons:CoopDungeonProjection[];eventExpeditions?:CoopEventExpeditionPreview[];loadouts:CoopLoadoutProjection[];activeRun?:CoopRunView;activeRunProjection?:CoopQModeServerProjection;activeEventRunProjection?:CoopEventRunServerProjection;echoSharing?:boolean;gameVersion?:number;}
+export interface CoopEntryData {dungeons:CoopDungeonProjection[];eventExpeditions?:CoopEventExpeditionPreview[];loadouts:CoopLoadoutProjection[];liveRecruitment?:CoopLiveRecruitmentPost[];activeRun?:CoopRunView;activeRunProjection?:CoopQModeServerProjection;activeEventRunProjection?:CoopEventRunServerProjection;echoSharing?:boolean;gameVersion?:number;}
 export interface CoopStartBody {requestId:string;dungeonId:string;tier:1|2|3|4|5;characterId:string;loadoutId:string;loadoutRevision:number;}
+export interface CoopQuickStartBody {requestId:string;characterId:string;loadoutId:string;loadoutRevision:number;}
+export interface CoopLfgPublishBody {requestId:string;dungeonId:string;note?:string;}
 export interface CoopEventStartBody {requestId:string;eventExpeditionId:string;characterId:string;loadoutId:string;loadoutRevision:number;}
 export interface CoopDecisionBody {requestId:string;decisionId:string;decisionRevision:number;optionId:string;}
 export interface CoopReadyBody {requestId:string;rosterRevision:number;accept:boolean;}
@@ -40,7 +43,11 @@ export const coopRequestId=()=>`coop-${Date.now()}-${Math.random().toString(36).
 export const coopClient={
  entry:()=>request<CoopEntryData>('/coop/entry'),
  liveQueue:()=>request<LiveQueueView>('/coop/queue'),
+ liveRecruitment:()=>request<CoopLiveRecruitmentPost[]>('/coop/lfg'),
  joinLive:(body:CoopStartBody)=>mutate<LiveQueueView>('/coop/queue',body),
+ quickLive:(body:CoopQuickStartBody)=>mutate<LiveQueueView>('/coop/quick-queue',body),
+ publishLiveRecruitment:(body:CoopLfgPublishBody)=>mutate<CoopLiveRecruitmentPost>('/coop/lfg',body),
+ closeLiveRecruitment:()=>mutate<{closed:boolean}>('/coop/lfg/close',{requestId:coopRequestId()}),
  heartbeatLive:(ticketId:string)=>request(`/coop/queue/${ticketId}/heartbeat`,'POST',{requestId:coopRequestId()}),
  cancelLive:(ticketId:string)=>mutate(`/coop/queue/${ticketId}/cancel`,{requestId:coopRequestId()}),
  liveReady:(checkId:string)=>request<LiveReadyView>(`/coop/ready/${checkId}`),

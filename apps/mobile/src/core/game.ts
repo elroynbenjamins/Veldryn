@@ -117,11 +117,12 @@ export function effectiveStats(state:GameState){
   const set=noviceSetFor(c.classId),complete=set.slots.every(slot=>c.equipment[slot]===noviceItemId(c.classId,slot));
   if(complete){hp+=set.setBonus.hp;attack+=set.setBonus.attack;defense+=set.setBonus.defense;}
   const gems=equippedGemBonuses(state);hp=Math.ceil(hp*(1+gems.hp));attack=Math.ceil(attack*(1+gems.attack));defense=Math.ceil(defense*(1+gems.defense));
+  const effectGems=equippedEffectGemBonuses(state);
   const mastery=characterClassEffects(c);hp=Math.ceil(hp*mastery.hp);attack=Math.ceil(attack*mastery.attack);defense=Math.ceil(defense*mastery.defense);
   const permanent=characterPermanentMultipliers(state);attack=Math.ceil(attack*permanent.combatPowerMultiplier);
   const prep=c.preparation?preparationEffects(c.preparation):undefined;if(prep)attack=Math.ceil(attack*prep.attack);
   const role=CLASSES.find(def=>def.id===c.classId)?.role;
-  return {hp,attack,defense,power:Math.round(attack*1.5+defense*.8+hp*.08+c.level*2.5),critChance:role==='Damage'?.10:.05,critMultiplier:1.5,accuracy:.84,evasion:role==='Damage'?.07:.04,haste:.05}
+  return {hp,attack,defense,power:Math.round(attack*1.5+defense*.8+hp*.08+c.level*2.5),critChance:role==='Damage'?.10:.05,critMultiplier:1.5,accuracy:.84,evasion:role==='Damage'?.07:.04,haste:.05+effectGems.momentum}
 }
 
 export function startCombat(state:GameState,monsterId:string,nowMs:number,combatChallengeId?:CombatChallengeId,combatTacticId:CombatTacticId='balanced',huntGoalId:HuntGoalId='open'):GameState{

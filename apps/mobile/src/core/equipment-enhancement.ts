@@ -1,6 +1,7 @@
 import {itemDef} from '../content/items';
 import {itemRarity,ItemRarity} from './item-rarity';
-import {GameState,GearEnhancementState,GemEffectId,GemSocketKind,GemStat,ItemStack} from './types';
+import {GameState,GearEnhancementState,GemEffectId,GemGrade,GemSocketKind,GemStat,ItemStack} from './types';
+import {EFFECT_GEM_FAMILIES,GEM_UNSOCKET_COST,summarizeEffectGemRows,type EffectGemFamilyId} from './gem-progression';
 
 export const MAX_UPGRADE_RANK=10;
 export const UPGRADE_STAT_PER_RANK=.03;
@@ -72,6 +73,18 @@ export function socketGem(state:GameState,itemId:string,gemId:string){
   if(kind==='effect'&&!gem.gemEffect)throw new Error('Effect Gems require a combat effect');
   if(kind==='stat'&&enhancement.statGemId)throw new Error('The Stat Gem socket is already filled');
   if(kind==='effect'&&enhancement.effectGemId)throw new Error('The Effect Gem socket is already filled');
+  if(kind==='effect'){
+    const family=gem.gemFamilyId??gem.gemEffect;
+    if(family){
+      let copies=0;
+      for(const equippedId of Object.values(state.character!.equipment)){
+        if(!equippedId)continue;
+        const existingId=gearEnhancement(state,equippedId).effectGemId;if(!existingId)continue;
+        const existing=safeGem(existingId);if(existing&&(existing.gemFamilyId??existing.gemEffect)===family)copies++;
+      }
+      if(copies>=3)throw new Error('Effect Gem Resonance is capped at 3 active copies per family');
+    }
+  }
   let next=consumeAcross(state,gemId,1);
   next=setEnhancement(next,itemId,{...enhancement,statGemId:kind==='stat'?gemId:enhancement.statGemId,effectGemId:kind==='effect'?gemId:enhancement.effectGemId,gemIds:[]});
   return next;
@@ -81,16 +94,22 @@ export function unsocketGem(state:GameState,itemId:string,index:number){
   requireEquipped(state,itemId);if(index!==0&&index!==1)throw new Error('Unknown gem socket');
   const enhancement=gearEnhancement(state,itemId),gemId=index===0?enhancement.statGemId:enhancement.effectGemId;
   if(!gemId)throw new Error(index===0?'The Stat Gem socket is empty':'The Effect Gem socket is empty');
-  const fee=(itemDef(gemId).gemTier??1)*500;if(state.character!.gold<fee)throw new Error(`Need ${fee} gold to safely extract this gem`);
-  let next:GameState={...state,character:{...state.character!,gold:state.character!.gold-fee}};next=addInventory(next,gemId);
+  const gem=itemDef(gemId),grade=Math.max(1,Math.min(5,gem.gemGrade??gem.gemTier??1)) as GemGrade;
+  const extraction=gem.gemGrade?GEM_UNSOCKET_COST[grade]:{gold:(gem.gemTier??1)*500,dust:0};
+  if(state.character!.gold<extraction.gold)throw new Error(`Need ${extraction.gold} gold to safely extract this gem`);
+  if(extraction.dust&&combinedQuantity(state,'GEM_DUST')<extraction.dust)throw new Error(`Need ${extraction.dust} Gem Dust to safely extract this gem`);
+  let next:GameState={...state,character:{...state.character!,gold:state.character!.gold-extraction.gold}};
+  if(extraction.dust)next=consumeAcross(next,'GEM_DUST',extraction.dust);
+  next=addInventory(next,gemId);
   next=setEnhancement(next,itemId,{...enhancement,statGemId:index===0?undefined:enhancement.statGemId,effectGemId:index===1?undefined:enhancement.effectGemId,gemIds:[]});
   return next;
 }
 export function gearStatsAtRank(itemId:string,rank:number){const item=itemDef(itemId),m=1+Math.max(0,Math.min(MAX_UPGRADE_RANK,rank))*UPGRADE_STAT_PER_RANK,scale=(value:number)=>value>0?Math.ceil(value*m):Math.round(value*m);return {hp:scale(item.hp??0),attack:scale(item.attack??0),defense:scale(item.defense??0)};}
 export function enhancedGearStats(state:GameState,itemId:string){return gearStatsAtRank(itemId,gearEnhancement(state,itemId).rank);}
-export function equippedGemBonuses(state:GameState):Record<GemStat,number>{const result={attack:0,defense:0,hp:0};if(!state.character)return result;for(const itemId of Object.values(state.character.equipment)){if(!itemId)continue;const gemId=gearEnhancement(state,itemId).statGemId;if(!gemId)continue;const gem=itemDef(gemId);if(gem.type==='gem'&&gem.gemStat)result[gem.gemStat]+=gem.gemPercent??0;}return result;}
+export type EquippedStatGemBonuses=Partial<Record<GemStat,number>> & {attack:number;defense:number;hp:number};
+export function equippedGemBonuses(state:GameState):EquippedStatGemBonuses{const result:EquippedStatGemBonuses={attack:0,defense:0,hp:0};if(!state.character)return result;for(const itemId of Object.values(state.character.equipment)){if(!itemId)continue;const gemId=gearEnhancement(state,itemId).statGemId;if(!gemId)continue;const gem=itemDef(gemId);if(gem.type==='gem'&&gem.gemStat)result[gem.gemStat]=(result[gem.gemStat]??0)+(gem.gemPercent??0);}return result;}
 
-export type EquippedEffectGemBonuses=Record<GemEffectId,number>;
+export type EquippedEffectGemBonuses=Partial<Record<GemEffectId,number>> & {combat_speed:number;boss_power:number;damage_reduction:number;recovery:number};
 export function equippedEffectGemBonuses(state:GameState):EquippedEffectGemBonuses{
   const result:EquippedEffectGemBonuses={combat_speed:0,boss_power:0,damage_reduction:0,recovery:0};
   if(!state.character)return result;
@@ -98,13 +117,25 @@ export function equippedEffectGemBonuses(state:GameState):EquippedEffectGemBonus
     if(!itemId)continue;
     const gemId=gearEnhancement(state,itemId).effectGemId;if(!gemId)continue;
     const gem=itemDef(gemId);
-    if(gem.type==='gem'&&gem.gemEffect)result[gem.gemEffect]+=Math.max(0,gem.gemEffectValue??0);
+    if(gem.type==='gem'&&gem.gemEffect)result[gem.gemEffect]=(result[gem.gemEffect]??0)+Math.max(0,gem.gemEffectValue??0);
   }
   result.combat_speed=Math.min(.10,result.combat_speed);
   result.boss_power=Math.min(.15,result.boss_power);
   result.damage_reduction=Math.min(.10,result.damage_reduction);
   result.recovery=Math.min(.50,result.recovery);
   return result;
+}
+export function equippedEffectGemResonance(state:GameState){
+  const rows:{family:EffectGemFamilyId;value:number}[]=[];
+  if(!state.character)return [];
+  for(const itemId of Object.values(state.character.equipment)){
+    if(!itemId)continue;
+    const gemId=gearEnhancement(state,itemId).effectGemId;if(!gemId)continue;
+    const gem=itemDef(gemId);if(gem.type!=='gem'||!gem.gemFamilyId||!gem.gemEffect)continue;
+    if(!EFFECT_GEM_FAMILIES.some(f=>f.id===gem.gemFamilyId))continue;
+    rows.push({family:gem.gemFamilyId as EffectGemFamilyId,value:gem.gemEffectValue??0});
+  }
+  return summarizeEffectGemRows(rows);
 }
 export function gemEffectDescription(gemId:string){
   const gem=itemDef(gemId);if(gem.type!=='gem'||!gem.gemEffect)return '';

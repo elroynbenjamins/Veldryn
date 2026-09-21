@@ -53,7 +53,7 @@ export interface EffectiveEventNode extends CoopRouteNode {encounterAttackMultip
 
 export function effectiveEventNode(run:EventRun,node:CoopRouteNode):EffectiveEventNode{
  const next:EffectiveEventNode={...node};
- if(run.graph.generatorVersion!=='event-route-v5'||node.kind==='entry'||node.kind==='boss')return next;
+ if(!['event-route-v4','event-route-v5'].includes(run.graph.generatorVersion)||node.kind==='entry'||node.kind==='boss')return next;
  const mechanic=eventMechanicProjection(run),objective=eventObjectiveProjection(run),battleLike=node.kind==='battle'||node.kind==='elite';
  const title=()=>next.title??next.kind.charAt(0).toUpperCase()+next.kind.slice(1);
  const prefix=(label:string)=>{next.title=`${label}: ${title()}`;next.reactionLabel=label;};

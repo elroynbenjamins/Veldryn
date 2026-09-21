@@ -4,6 +4,7 @@ import {CoopDungeonDetails,CoopDungeonList,CoopEventExpeditionDetails} from '../
 import {CoopLoadoutSelection} from '../components/coop/CoopLoadoutSelection';
 import {CoopRunOverview} from '../components/coop/CoopRunOverview';
 import {CoopLiveLobby} from '../components/coop/CoopLiveLobby';
+import {CoopLiveRecruitmentBoard} from '../components/coop/CoopLiveRecruitmentBoard';
 import {presentCoopDungeon,validateCoopDungeonView,type CoopDungeonView,type CoopTier} from '../core/coop-dungeon-browsing';
 import type {CoopMode,CoopRunView} from '../core/coop-presentation';
 import type {Language} from '../i18n';
@@ -65,6 +66,12 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
   useEffect(()=>{let cancelled=false;if(coopLiveReadyEnabled&&entrySource.kind==='real')void coopClient.liveQueue().then(value=>{if(!cancelled&&value.ticket&&['queued','reserved'].includes(value.ticket.status))setShowLive(true);}).catch(()=>{});return()=>{cancelled=true;};},[entrySource]);
   useEffect(()=>{if(entrySource.kind==='real')void coopClient.hasPending().then(setPending).catch(()=>{});},[entrySource]);
   useEffect(()=>{
+    if(!coopLiveReadyEnabled||entrySource.kind!=='real'||showLive||showLoadouts||selected||selectedEvent||run||eventRun)return;
+    let stopped=false,inFlight=false;
+    const refreshBoard=async()=>{if(stopped||inFlight)return;inFlight=true;try{const posts=await coopClient.liveRecruitment();if(!stopped)setEntry(current=>current?{...current,liveRecruitment:posts}:current);}catch{}finally{inFlight=false;}};
+    const timer=setInterval(()=>void refreshBoard(),15_000);return()=>{stopped=true;clearInterval(timer);};
+  },[entrySource.kind,showLive,showLoadouts,selected,selectedEvent,run,eventRun]);
+  useEffect(()=>{
     const id=run?.runId;if(!id||entrySource.kind!=='real')return;
     let stopped=false,inFlight=false;
     const update=async()=>{if(stopped||inFlight)return;inFlight=true;try{await refreshRun(id);}catch(reason){if(!stopped)setNotice(reason instanceof Error?reason.message:String(reason));}finally{inFlight=false;}};
@@ -82,9 +89,18 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
   },[eventRun?.runId,entrySource.kind,refreshEventRun]);
   useEffect(()=>{if(!showLive&&!showLoadouts&&!selected&&!selectedEvent&&!run&&!eventRun)return;const subscription=BackHandler.addEventListener('hardwareBackPress',()=>{if(showLive){onClose();return true}if(eventRun){setEventRun(undefined);return true}if(run){setRun(undefined);return true}if(showLoadouts){setShowLoadouts(false);setNotice('');return true}if(selectedEvent){setSelectedEvent(undefined);setNotice('');return true}if(selected){setSelected(undefined);setNotice('');return true}return false});return()=>subscription.remove()},[showLive,showLoadouts,selected,selectedEvent,run,eventRun,onClose]);
   const dungeons=useMemo(()=>(entry?.dungeons??[]).map(presentCoopDungeon),[entry]);
+  const verifiedLoadout=()=>entry?.loadouts.find(item=>item.id==='current'&&item.status==='verified'&&item.ready)??entry?.loadouts.find(item=>item.status==='verified'&&item.ready);
+  const refreshLiveRecruitment=async()=>{const posts=await coopClient.liveRecruitment();setEntry(current=>current?{...current,liveRecruitment:posts}:current);};
+  function joinRecruitmentSearch(dungeonId:string){const dungeon=dungeons.find(item=>item.id===dungeonId);if(!dungeon?.available){setNotice('That dungeon is no longer available for this character.');return;}setMode('live');chooseDungeon(dungeon);}
   function chooseDungeon(dungeon:CoopDungeonView){setSelectedEvent(undefined);setEventRun(undefined);setSelected(dungeon);setTier(dungeon.difficulties[0]);setNotice('')}
   function chooseEvent(expedition:CoopEventExpeditionPreview){setSelected(undefined);setShowLoadouts(false);setRun(undefined);setSelectedEvent(expedition);setNotice('')}
   const retry=pending?<GameButton title="Retry pending co-op action" disabled={busy} onPress={()=>void action(async()=>{const value=await coopClient.retryPending();if(value&&typeof value==='object'&&'eventExpeditionId' in value)acceptEventRun(value as CoopEventRunServerProjection);else if(value&&typeof value==='object'&&'team' in value)acceptRun(value as CoopQModeServerProjection);await load();})}/>:null;
+  const liveTools=coopLiveReadyEnabled&&entrySource.kind==='real'?<CoopLiveRecruitmentBoard posts={entry?.liveRecruitment??[]} dungeons={dungeons} nowMs={entry?.serverNow??Date.now()} busy={busy} notice={notice}
+    onQuickMatch={()=>void action(async()=>{const loadout=verifiedLoadout();if(!loadout)throw new Error('No verified Live-ready loadout is available. Refresh your co-op loadout first.');await coopClient.quickLive({requestId:coopRequestId(),characterId:loadout.characterId,loadoutId:loadout.id,loadoutRevision:loadout.revision});setShowLive(true);})}
+    onJoin={joinRecruitmentSearch}
+    onPublish={(dungeonId,note)=>void action(async()=>{await coopClient.publishLiveRecruitment({requestId:coopRequestId(),dungeonId,note});await refreshLiveRecruitment();setNotice('Live LFG posted for 30 minutes.');})}
+    onCloseMine={()=>void action(async()=>{await coopClient.closeLiveRecruitment();await refreshLiveRecruitment();setNotice('Live LFG removed.');})}
+    onRefresh={()=>void action(refreshLiveRecruitment)}/>:undefined;
   if(showLive)return <CoopLiveLobby onBack={onClose}/>;
   if(eventRun){
     const view=presentEventExpeditionRun(eventRun),marks=eventRun.settlement.rewardMarks??0;
@@ -100,5 +116,5 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
   })}/>;
   if(selected&&showLoadouts&&tier&&state.character)return <View style={{flex:1}}>{retry}<CoopLoadoutSelection state={state} language={language} dungeonId={selected.id} dungeonName={selected.name} tier={tier} mode={mode} loadouts={entry?.loadouts??[]} notice={notice} refreshing={loading||busy} onBack={()=>{setShowLoadouts(false);setNotice('')}} onRefresh={()=>void load()} onIntent={intent=>void action(async()=>{if(entrySource.kind!=='real'){setNotice(clt(language,'intentOnly'));return;}if(intent.mode==='live'){if(!coopLiveReadyEnabled)throw new Error('Live matchmaking is not enabled yet.');await coopClient.joinLive({requestId:coopRequestId(),dungeonId:intent.dungeonId,tier:intent.tier,characterId:intent.characterId,loadoutId:intent.loadoutId,loadoutRevision:intent.loadoutRevision});setShowLive(true);return;}const started=await realCoopQModeSource.start(intent,coopRequestId());setRun(started.run);})}/></View>;
   if(selected)return <CoopDungeonDetails language={language} dungeon={selected} currentLevel={state.character?.level??0} mode={mode} tier={tier} notice={notice} onBack={()=>{setSelected(undefined);setNotice('')}} onMode={next=>{setMode(next);setNotice('')}} onTier={next=>{setTier(next);setNotice('')}} onContinue={resolvedTier=>{setTier(resolvedTier);setShowLoadouts(true)}}/>;
-  return <View style={{flex:1}}>{retry}{entrySource.kind==='real'&&entry?.gameVersion&&<View style={{padding:12}}><Text style={{color:C.muted}}>Sharing an Echo lets other players recruit a snapshot of your character for 24 hours.</Text><GameButton title={entry.echoSharing?'Stop sharing my Echo':'Share my Echo'} disabled={busy} onPress={()=>void action(async()=>{await coopClient.shareEcho(entry.gameVersion!,!entry.echoSharing);await load();})}/>{!!notice&&<Text accessibilityRole="alert" style={{color:C.warning}}>{notice}</Text>}</View>}<CoopDungeonList language={language} dungeons={dungeons} eventExpeditions={entry?.eventExpeditions??[]} loading={loading} error={error} activeRun={entry?.activeRun} onBack={onClose} onRetry={()=>void load()} onSelect={chooseDungeon} onSelectEvent={chooseEvent} onResume={()=>{if(entry?.activeEventRunProjection){setRun(undefined);setEventRun(entry.activeEventRunProjection);return;}if(entry?.activeRun)setRun(entry.activeRun)}}/></View>;
+  return <View style={{flex:1}}>{retry}{entrySource.kind==='real'&&entry?.gameVersion&&<View style={{padding:12}}><Text style={{color:C.muted}}>Sharing an Echo lets other players recruit a snapshot of your character for 24 hours.</Text><GameButton title={entry.echoSharing?'Stop sharing my Echo':'Share my Echo'} disabled={busy} onPress={()=>void action(async()=>{await coopClient.shareEcho(entry.gameVersion!,!entry.echoSharing);await load();})}/>{!!notice&&<Text accessibilityRole="alert" style={{color:C.warning}}>{notice}</Text>}</View>}<CoopDungeonList language={language} dungeons={dungeons} eventExpeditions={entry?.eventExpeditions??[]} loading={loading} error={error} activeRun={entry?.activeRun} liveTools={liveTools} onBack={onClose} onRetry={()=>void load()} onSelect={chooseDungeon} onSelectEvent={chooseEvent} onResume={()=>{if(entry?.activeEventRunProjection){setRun(undefined);setEventRun(entry.activeEventRunProjection);return;}if(entry?.activeRun)setRun(entry.activeRun)}}/></View>;
 }

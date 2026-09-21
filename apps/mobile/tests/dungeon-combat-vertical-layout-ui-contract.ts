@@ -19,7 +19,7 @@ ok(card.includes('enemyBossScene'),'Boss art must receive a larger upper-stage p
 for(const name of ['The Hollow Regent','The Coinbound Captain','The Rimebell Colossus','Veilshade Stalker','Ledger Hexer','Bellfrost Spirit']){
  ok(art.includes(name),name+' must be registered as implemented dungeon art');
 }
-for(const file of ['the_hollow_regent.png','the_coinbound_captain.png','the_rimebell_colossus.png','veilshade_stalker.png','ledger_hexer.png','bellfrost_spirit.png']){
+for(const file of ['the_hollow_regent.webp','the_coinbound_captain.webp','the_rimebell_colossus.webp','veilshade_stalker.webp','ledger_hexer.webp','bellfrost_spirit.webp']){
  ok(art.includes(file),file+' must have an implementation path');
 }
 console.log('PASS: dungeon battlefield is boss/enemy above four bottom profile cards with implemented enemy art');

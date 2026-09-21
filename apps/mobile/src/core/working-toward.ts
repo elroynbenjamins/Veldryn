@@ -26,7 +26,7 @@ function quantities(state:GameState){
  return out;
 }
 
-function sourceAvailability(state:GameState,source:WorkingTowardDestination):GoalSource|undefined{
+export function workingTowardSourceAvailability(state:GameState,source:WorkingTowardDestination):GoalSource|undefined{
  if(source.kind==='combat'){
   const monster=MONSTERS.find(row=>row.id===source.monsterId);
   const available=!!monster&&(state.unlockedMonsterIds.includes(monster.id)||state.character!.level>=monster.unlockLevel);
@@ -34,8 +34,9 @@ function sourceAvailability(state:GameState,source:WorkingTowardDestination):Goa
  }
  if(source.kind==='skills'){
   if(source.recipeId){
-   const recipe=RECIPES.find(row=>row.id===source.recipeId),available=!!recipe&&skillLevel(state,recipe.skillId)>=recipe.level&&(recipe.characterLevel===undefined||state.character!.level>=recipe.characterLevel);
-   return {kind:'recipe',id:source.recipeId,label:recipe?.name??source.recipeId,available,reason:available?undefined:`Requires ${skillLabel(recipe?.skillId??'skill')} ${recipe?.level??'?'}.`};
+   const recipe=RECIPES.find(row=>row.id===source.recipeId),skillReady=!!recipe&&skillLevel(state,recipe.skillId)>=recipe.level,characterReady=!!recipe&&(recipe.characterLevel===undefined||state.character!.level>=recipe.characterLevel),available=!!recipe&&skillReady&&characterReady;
+   const reason=!recipe?'Recipe is not in the current catalog.':!skillReady?`Requires ${skillLabel(recipe.skillId)} ${recipe.level}.`:!characterReady?`Requires character level ${recipe.characterLevel}.`:undefined;
+   return {kind:'recipe',id:source.recipeId,label:recipe?.name??source.recipeId,available,reason};
   }
   if(source.actionId){
    const gather=gatherDefs.find(row=>row.id===source.actionId);
@@ -47,6 +48,21 @@ function sourceAvailability(state:GameState,source:WorkingTowardDestination):Goa
  if(source.kind==='world')return {kind:'region',id:source.regionId,label:WORLD_ZONES.find(row=>row.id===source.regionId)?.name??source.regionId,available:state.character!.level>=(WORLD_ZONES.find(row=>row.id===source.regionId)?.minLevel??1)};
  if(source.kind==='inventory')return {kind:'item',id:'inventory',label:'Inventory & Bank',available:true};
  return undefined;
+}
+
+export type WorkingTowardAvailabilityStatus='ready'|'travel'|'locked'|'info';
+export interface WorkingTowardDestinationAvailability{status:WorkingTowardAvailabilityStatus;label:string;detail:string;canNavigate:boolean;}
+
+export function workingTowardDestinationAvailability(state:GameState,source:WorkingTowardDestination):WorkingTowardDestinationAvailability{
+ const base=workingTowardSourceAvailability(state,source);
+ if(source.kind==='info')return {status:'info',label:'INFO',detail:source.detail,canNavigate:false};
+ if(source.kind==='inventory'||source.kind==='contracts')return {status:'ready',label:'READY',detail:'Available now.',canNavigate:true};
+ const regionId='regionId' in source?source.regionId:undefined,region=regionId?WORLD_ZONES.find(row=>row.id===regionId):undefined;
+ if(region&&state.character!.level<region.minLevel)return {status:'locked',label:'LOCKED',detail:`Region unlocks at character level ${region.minLevel}.`,canNavigate:true};
+ if(base&&!base.available)return {status:'locked',label:'LOCKED',detail:base.reason??'This source is not available yet.',canNavigate:true};
+ if(regionId&&regionId!==state.currentRegionId)return {status:'travel',label:'TRAVEL',detail:`Travel to ${region?.name??regionId} first.`,canNavigate:true};
+ const recipeSource=source.kind==='skills'&&!!source.recipeId;
+ return {status:'ready',label:recipeSource?'AVAILABLE':'READY',detail:recipeSource?'Recipe unlocked.':'Available now.',canNavigate:true};
 }
 
 function itemSource(state:GameState,itemId:string):WorkingTowardDestination{
@@ -98,12 +114,12 @@ export function progressionGoalDestination(state:GameState,goal:ProgressionGoal)
 
 export function progressionGoalContext(state:GameState):GoalContext{
  const sources:Record<string,GoalSource>={},rates:NonNullable<GoalContext['rates']>={killsPerHour:{},itemPerHour:{}};
- for(const skill of state.skills){const goal={id:'preview',characterId:state.character!.id,kind:'skill_level',title:'',createdAtMs:0,pinnedAtMs:0,skillId:skill.skillId,targetLevel:skill.level+1} as ProgressionGoal;const source=sourceAvailability(state,progressionGoalDestination(state,goal));if(source)sources[`skill:${skill.skillId}`]=source;}
- for(const monster of MONSTERS){const destination:WorkingTowardDestination={kind:'combat',monsterId:monster.id,zoneName:monster.zone,regionId:regionForZoneName(monster.zone)?.id,button:'Hunt',detail:''};const source=sourceAvailability(state,destination);if(source)sources[`monster:${monster.id}`]=source;rates.killsPerHour![monster.id]=3600/Math.max(1,monster.secondsPerKill);}
- for(const action of gatherDefs){const destination:WorkingTowardDestination={kind:'skills',skillId:action.skillId as SkillId,mode:'gathering',actionId:action.id,regionId:action.zoneId,button:'Gather',detail:''};const source=sourceAvailability(state,destination);if(source)sources[`mastery:${action.id}`]=source;rates.itemPerHour![action.itemId]=Math.max(.1,((action.min+action.max)/2)*3600/Math.max(1,action.seconds));}
- for(const recipe of RECIPES){const destination:WorkingTowardDestination={kind:'skills',skillId:recipe.skillId as SkillId,mode:'crafting',recipeId:recipe.id,button:'Craft',detail:''};const source=sourceAvailability(state,destination);if(source){sources[`mastery:${recipe.id}`]=source;sources[`recipe:${recipe.id}`]=source;}}
+ for(const skill of state.skills){const goal={id:'preview',characterId:state.character!.id,kind:'skill_level',title:'',createdAtMs:0,pinnedAtMs:0,skillId:skill.skillId,targetLevel:skill.level+1} as ProgressionGoal;const source=workingTowardSourceAvailability(state,progressionGoalDestination(state,goal));if(source)sources[`skill:${skill.skillId}`]=source;}
+ for(const monster of MONSTERS){const destination:WorkingTowardDestination={kind:'combat',monsterId:monster.id,zoneName:monster.zone,regionId:regionForZoneName(monster.zone)?.id,button:'Hunt',detail:''};const source=workingTowardSourceAvailability(state,destination);if(source)sources[`monster:${monster.id}`]=source;rates.killsPerHour![monster.id]=3600/Math.max(1,monster.secondsPerKill);}
+ for(const action of gatherDefs){const destination:WorkingTowardDestination={kind:'skills',skillId:action.skillId as SkillId,mode:'gathering',actionId:action.id,regionId:action.zoneId,button:'Gather',detail:''};const source=workingTowardSourceAvailability(state,destination);if(source)sources[`mastery:${action.id}`]=source;rates.itemPerHour![action.itemId]=Math.max(.1,((action.min+action.max)/2)*3600/Math.max(1,action.seconds));}
+ for(const recipe of RECIPES){const destination:WorkingTowardDestination={kind:'skills',skillId:recipe.skillId as SkillId,mode:'crafting',recipeId:recipe.id,button:'Craft',detail:''};const source=workingTowardSourceAvailability(state,destination);if(source){sources[`mastery:${recipe.id}`]=source;sources[`recipe:${recipe.id}`]=source;}}
  for(const order of state.account.weeklyOrders?.orders??[])sources[`weekly_order:${order.id}`]={...order.source,kind:'weekly_order',id:order.id,label:order.title};
- for(const item of ITEMS.filter(row=>row.type==='material')){const destination=itemSource(state,item.id),source=sourceAvailability(state,destination);if(source)sources[`item:${item.id}`]={...source,kind:'item',id:item.id,label:item.name};}
+ for(const item of ITEMS.filter(row=>row.type==='material')){const destination=itemSource(state,item.id),source=workingTowardSourceAvailability(state,destination);if(source)sources[`item:${item.id}`]={...source,kind:'item',id:item.id,label:item.name};}
  return {
   skillLevels:Object.fromEntries(state.skills.map(row=>[row.skillId,row.level])),
   skillXp:Object.fromEntries(state.skills.map(row=>[row.skillId,row.xp])),

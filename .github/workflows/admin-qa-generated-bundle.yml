@@ -1,0 +1,30 @@
+name: Admin QA generated bundle
+
+on:
+  pull_request:
+    paths:
+      - 'backend/online/**'
+      - 'apps/mobile/src/**'
+      - 'tools/build-online.mjs'
+      - '.github/workflows/admin-qa-generated-bundle.yml'
+  workflow_dispatch:
+
+jobs:
+  bundle:
+    if: github.head_ref == 'feature/online-admin-qa-account' || github.ref_name == 'feature/online-admin-qa-account'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: pnpm --dir backend install --frozen-lockfile
+      - run: node tools/build-online.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: admin-qa-gameplay-bundle
+          path: backend/supabase/functions/gameplay/index.ts
+          if-no-files-found: error

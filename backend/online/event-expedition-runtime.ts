@@ -19,7 +19,7 @@ export interface OnlineEventExpeditionStartRequest {requestId:string;eventExpedi
 const digest=(value:unknown)=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const player=(snapshot:FrozenLoadoutSnapshot)=>combatantFromVerifiedSnapshot(snapshot.normalized.snapshot,snapshot.normalized.abilities);
 function role(value:string):CoopRole{if(value==='tank'||value==='damage'||value==='support')return value;throw new GameplayError('invalid_coop_role');}
-function project(run:EventRun,version:number,liveEventId:string){
+export function projectOnlineEventRun(run:EventRun,version:number,liveEventId:string){
  const definition=EVENT_EXPEDITIONS.find(item=>item.id===run.eventId);if(!definition)throw new GameplayError('unknown_event_expedition');
  const current=run.graph.nodes.find(node=>node.nodeId===run.currentNodeId);
  const options=run.phase==='awaiting_choice'&&current?current.nextNodeIds.map(id=>run.graph.nodes.find(node=>node.nodeId===id)).filter((node):node is NonNullable<typeof node>=>Boolean(node)).map(node=>effectiveEventNode(run,node)).map(node=>({nodeId:node.nodeId,kind:node.kind,risk:node.risk,rewardTag:node.rewardTag,title:node.title,mechanicDelta:node.mechanicDelta??0,objectiveDelta:node.objectiveDelta??0,reactionLabel:node.reactionLabel})):[];
@@ -81,7 +81,7 @@ export class OnlineEventExpeditionRuntime{
    const chosen=selected[index-1],source=raw.find(item=>item.profileId===chosen.profileId);if(!source)throw new GameplayError('echo_no_longer_eligible',409);
    return {snapshot,sourceHash:onlineCoopLoadoutHash(source.record),profileId:chosen.profileId};
   });
-  return this.services.rpc('start_online_event_expedition_server_v1',{p_account_id:accountId,p_game_version:game.version,p_request_id:request.requestId,p_request_hash:hash,p_run_id:runId,p_live_event_id:runtime.eventId,p_private_state:{run,seed,liveEventId:runtime.eventId},p_client_projection:project(run,1,runtime.eventId),p_members:members,p_seed_hash:digest(seed)});
+  return this.services.rpc('start_online_event_expedition_server_v1',{p_account_id:accountId,p_game_version:game.version,p_request_id:request.requestId,p_request_hash:hash,p_run_id:runId,p_live_event_id:runtime.eventId,p_private_state:{run,seed,liveEventId:runtime.eventId},p_client_projection:projectOnlineEventRun(run,1,runtime.eventId),p_members:members,p_seed_hash:digest(seed)});
  }
  async load(accountId:string,runId:string){
   const loaded=await this.services.rpc<Loaded>('load_online_event_expedition_server_v1',{p_account_id:accountId,p_run_id:runId});
@@ -96,7 +96,7 @@ export class OnlineEventExpeditionRuntime{
   const domain=new EventExpeditionService(repository,loaded.privateState.seed);
   const run=domain.choose({runId,accountId,optionNodeId:request.optionId,requestId:request.requestId});
   const result=run.lastResolution;if(!result)throw new GameplayError('event_resolution_missing');
-  const projection=project(run,loaded.stateVersion+1,loaded.privateState.liveEventId);
+  const projection=projectOnlineEventRun(run,loaded.stateVersion+1,loaded.privateState.liveEventId);
   return this.services.rpc('advance_online_event_expedition_server_v1',{p_account_id:accountId,p_run_id:runId,p_expected_version:loaded.stateVersion,p_request_id:request.requestId,p_request_hash:hash,p_private_state:{run,seed:loaded.privateState.seed,liveEventId:loaded.privateState.liveEventId},p_client_projection:projection,p_node_id:result.nodeId,p_result:result.result,p_start_state_hash:digest(before.persistentState)});
  }
  async claim(accountId:string,runId:string,requestId:string){
@@ -105,7 +105,7 @@ export class OnlineEventExpeditionRuntime{
   const repository=new MemoryEventRunRepository();repository.save(loaded.privateState.run);
   const domain=new EventExpeditionService(repository,loaded.privateState.seed),reward=domain.claimReward({runId,accountId,requestId});
   const run=repository.get(runId);if(!run)throw new GameplayError('event_run_not_found');
-  const projection=project(run,loaded.stateVersion+1,loaded.privateState.liveEventId);
+  const projection=projectOnlineEventRun(run,loaded.stateVersion+1,loaded.privateState.liveEventId);
   return this.services.rpc('claim_online_event_expedition_server_v1',{p_account_id:accountId,p_run_id:runId,p_expected_version:loaded.stateVersion,p_request_id:requestId,p_request_hash:hash,p_marks:reward.marks,p_private_state:{run,seed:loaded.privateState.seed,liveEventId:loaded.privateState.liveEventId},p_client_projection:projection});
  }
 }

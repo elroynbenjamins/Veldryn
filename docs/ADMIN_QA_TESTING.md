@@ -64,8 +64,10 @@ Use the normal online co-op runtime. Seed or publish four QA Echo profiles with 
 - `[QA] Hex` — Hexweaver — Damage
 - `[QA] Dawn` — Dawnkeeper — Support
 
-Canonical fixture definitions live in:
-`backend/src/server/coop/admin-qa-echo-fixtures.ts`
+Canonical tested fixture definitions live in:
+`backend/src/server/coop/qa-echo-fixtures.ts`
+
+The fixture pool covers all nine classes, uses independent source accounts, and the existing `qa-echo-fixtures` test verifies that Q-mode can assemble a valid 1 Tank / 2 Damage / 1 Support party without duplicate Damage classes.
 
 Recommended tests:
 1. Start Q-mode with the QA player in each role and let Echoes fill the remaining roles.

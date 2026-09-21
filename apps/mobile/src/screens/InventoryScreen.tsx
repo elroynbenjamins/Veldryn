@@ -1,6 +1,6 @@
 import {SearchField} from '../components/SearchField';
-import {useMemo,useState} from 'react';
-import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {useEffect,useMemo,useRef,useState} from 'react';
+import {Animated,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {GameState,ItemStack} from '../core/types';
 import {ItemDef,itemDef} from '../content/items';
 import {InventoryFilter,InventorySort,inventoryFavoriteIds,inventoryNewItemIds,recoveryAmount,storageCapacityStatus,transferAmount,transferError,visibleStacks} from '../core/inventory-view';
@@ -22,10 +22,20 @@ import {enhancedGearStats,gearEnhancement,gemSocketCapacity,hasEnhancement} from
 import {effectiveOwnedGearRarity} from '../core/crafted-gear-instances';
 import {bulkSelectionSummary,type BulkStorageLocation} from '../core/inventory-bulk';
 import type {WorkingTowardDestination} from '../core/working-toward';
+import {equipmentEquipDeltaLabel,equipmentEquipFeedback,type EquipmentEquipFeedback} from '../core/equipment-interaction-feedback';
+import {EquipmentArtwork} from '../components/EquipmentArtwork';
 
 type Pending={kind:'sell'|'salvage'|'deposit';item:ItemDef;quantity:number}|null;
 type BulkAction='transfer'|'sell'|'salvage';
 type BulkPending={kind:BulkAction;ids:string[]}|null;
+function EquipmentChangeMoment({feedback,reduceMotion}:{feedback:EquipmentEquipFeedback;reduceMotion:boolean}){
+  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),pulse=useRef(new Animated.Value(1)).current,item=itemDef(feedback.itemId);
+  useEffect(()=>{pulse.stopAnimation();pulse.setValue(1);if(reduceMotion)return;Animated.sequence([Animated.spring(pulse,{toValue:1.025,damping:9,stiffness:230,mass:.6,useNativeDriver:true}),Animated.spring(pulse,{toValue:1,damping:16,stiffness:210,mass:.7,useNativeDriver:true})]).start();return()=>pulse.stopAnimation()},[feedback.itemId,reduceMotion,pulse]);
+  return <Animated.View accessibilityLiveRegion="polite" style={[s.equipMoment,{transform:[{scale:pulse}]}]}>
+    <EquipmentArtwork item={item} compact/>
+    <View style={s.resultSummary}><Text style={s.equipEyebrow}>✓ EQUIPPED · {feedback.slot.toUpperCase()}</Text><Text style={s.equipName}>{feedback.itemName}</Text><Text style={s.equipDelta}>{equipmentEquipDeltaLabel(feedback)}</Text>{feedback.replacedItemName?<Text style={s.equipReplaced}>Replaced {feedback.replacedItemName}</Text>:null}</View>
+  </Animated.View>;
+}
 const FILTER_OPTIONS:{id:InventoryFilter;label:string}[]=[{id:'all',label:'All'},{id:'new',label:'New'},{id:'favorites',label:'★ Favorites'},{id:'gear',label:'Gear'},{id:'material',label:'Materials'},{id:'gem',label:'Gems'},{id:'food',label:'Food'},{id:'potion',label:'Potions'},{id:'tool',label:'Tools'},{id:'quest',label:'Quest'}];
 const SORT_OPTIONS:{id:InventorySort;label:string}[]=[{id:'name',label:'Name'},{id:'new',label:'New first'},{id:'favorite',label:'Favorites first'},{id:'quantity',label:'Quantity ↓'},{id:'value',label:'Value ↓'}];
 const nextSort=(value:InventorySort)=>SORT_OPTIONS[(SORT_OPTIONS.findIndex(option=>option.id===value)+1)%SORT_OPTIONS.length].id;
@@ -41,6 +51,10 @@ export function InventoryScreen({state,onEquip,onFood,onEat,onSell,onSalvage,onD
   const [inspectId,setInspectId]=useState<string|null>(null);
   const [showStorage,setShowStorage]=useState(false),[filterOpen,setFilterOpen]=useState(false);
   const [selectMode,setSelectMode]=useState(false),[selectedIds,setSelectedIds]=useState<string[]>([]),[bulkPending,setBulkPending]=useState<BulkPending>(null);
+  const [equipMoment,setEquipMoment]=useState<EquipmentEquipFeedback|null>(null);
+  const previousState=useRef(state);
+  useEffect(()=>{const feedback=equipmentEquipFeedback(previousState.current,state);previousState.current=state;if(feedback)setEquipMoment(feedback)},[state]);
+  useEffect(()=>{if(!equipMoment)return;const timer=setTimeout(()=>setEquipMoment(null),4500);return()=>clearTimeout(timer)},[equipMoment]);
   const run=(action:()=>void)=>{try{action();setError('')}catch(e){setError(e instanceof Error?e.message:'Action failed. Please try again.')}};
   const confirm=()=>{if(!pending)return;run(()=>pending.kind==='deposit'?onDeposit(pending.item.id,pending.quantity):pending.kind==='sell'?onSell(pending.item.id):onSalvage(pending.item.id));setPending(null)};
   const favorites=inventoryFavoriteIds(state),favoriteSet=new Set(favorites),newItemIds=inventoryNewItemIds(state),newItemSet=new Set(newItemIds);
@@ -82,7 +96,8 @@ export function InventoryScreen({state,onEquip,onFood,onEat,onSell,onSalvage,onD
     <Text accessibilityRole="header" style={s.h}>Inventory</Text>
     <View style={s.recovery}><Text style={s.label}>RECOVERY</Text><Text style={s.sub}>Health {state.character!.currentHp}/{effectiveStats(state).hp} · Auto-eat: {state.character?.equippedFoodId?itemDef(state.character.equippedFoodId).name:'None'}</Text><Text style={s.sub}>Carried auto-eat portions: {state.inventory.stacks.find(item=>item.itemId===state.character?.equippedFoodId)?.quantity??0}</Text></View>
     <View style={s.storageRow}>{(['inventory','bank'] as const).map(value=><StorageChip key={value} label={value==='inventory'?'Inventory':'Bank'} selected={location===value} status={value==='inventory'?inventoryCapacity:bankCapacity} onPress={()=>changeLocation(value)}/>)}</View>
-    {activeCapacity.level!=='ok'&&<Text accessibilityRole="alert" style={activeCapacity.level==='full'?s.capacityFull:s.warning}>{location==='inventory'?'Inventory':'Bank'} {activeCapacity.level==='full'?'is full. Free a slot or upgrade storage before receiving another unique stack.':`is ${activeCapacity.percent}% full · ${activeCapacity.free} slots remain.`}</Text>}
+    {equipMoment&&<EquipmentChangeMoment feedback={equipMoment} reduceMotion={state.settings.reduceMotion}/>} 
+        {activeCapacity.level!=='ok'&&<Text accessibilityRole="alert" style={activeCapacity.level==='full'?s.capacityFull:s.warning}>{location==='inventory'?'Inventory':'Bank'} {activeCapacity.level==='full'?'is full. Free a slot or upgrade storage before receiving another unique stack.':`is ${activeCapacity.percent}% full · ${activeCapacity.free} slots remain.`}</Text>}
     <Pressable accessibilityRole="button" accessibilityState={{expanded:showStorage}} onPress={()=>setShowStorage(value=>!value)} style={s.disclosure}><View style={s.flex}><Text style={s.disclosureTitle}>STORAGE MANAGEMENT</Text><Text style={s.sub}>Bulk deposit and capacity upgrades</Text></View><Text style={s.disclosureMark}>{showStorage?'−':'+'}</Text></Pressable>
     {showStorage&&<Panel><Text style={s.sub}>Inventory travels with this character. Bank storage is shared by every character on the account.</Text>{location==='inventory'&&<GameButton title="Deposit all materials" tone="secondary" disabled={!state.inventory.stacks.some(entry=>itemDef(entry.itemId).type==='material')} onPress={()=>run(onDepositMaterials)}/>}<View style={s.row}><View style={s.flex}><Text style={s.upgradeLabel}>INVENTORY · {state.inventory.capacity} SLOTS</Text><GameButton title={inventoryUpgrade?`Upgrade to ${inventoryUpgrade.capacity} · ${formatGameNumber(inventoryUpgrade.cost,state.settings.numberMode)}g`:'Inventory maxed'} disabled={!inventoryUpgrade} tone="secondary" onPress={()=>run(()=>onUpgradeStorage('inventory'))}/></View><View style={s.flex}><Text style={s.upgradeLabel}>BANK · {state.bank.capacity} SLOTS</Text><GameButton title={bankUpgrade?`Upgrade to ${bankUpgrade.capacity} · ${formatGameNumber(bankUpgrade.cost,state.settings.numberMode)}g`:'Bank maxed'} disabled={!bankUpgrade} tone="secondary" onPress={()=>run(()=>onUpgradeStorage('bank'))}/></View></View></Panel>}
     <Text style={s.sub}>{location==='inventory'?'Carried items available during adventures.':'Bank materials are available for crafting, but food must be withdrawn for combat.'}</Text>
@@ -112,6 +127,11 @@ function UtilityChip({label,accessibilityLabel,selected=false,onPress}:{label:st
 function StorageChip({label,selected,status,onPress}:{label:string;selected:boolean;status:ReturnType<typeof storageCapacityStatus>;onPress:()=>void}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),equipmentColors=equipmentTheme(C),tone=status.level==='full'?C.bad:status.level==='near'?C.warning:selected?equipmentColors.selectedLine:C.line,width=`${status.percent}%` as `${number}%`;return <Pressable accessibilityRole="button" accessibilityLabel={`${label} storage, ${status.used} of ${status.capacity} slots used, ${status.free} free`} accessibilityState={{selected}} onPress={onPress} style={({pressed})=>[s.storageChip,selected&&s.storageChipSelected,status.level==='full'&&s.storageChipFull,pressed&&s.pressed]}><View style={s.storageChipTop}><Text style={[s.storageChipLabel,selected&&s.storageChipLabelSelected]}>{selected?'✓ ':''}{label}</Text><Text style={[s.storageChipCount,{color:tone}]}>{status.used}/{status.capacity}</Text></View><View style={s.capacityTrack}><View style={[s.capacityFill,{width,backgroundColor:tone}]}/></View></Pressable>}
 function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);return StyleSheet.create({
   recovery:{gap:4,padding:spacing.md,borderWidth:1,borderColor:C.line,borderRadius:10,backgroundColor:C.panel},
+  equipMoment:{minHeight:66,flexDirection:'row',alignItems:'center',gap:spacing.sm,padding:spacing.sm,borderWidth:1,borderLeftWidth:4,borderColor:C.good,borderRadius:10,backgroundColor:C.goodSurface},
+  equipEyebrow:{...typography.caption,color:C.good,fontWeight:'900',letterSpacing:.7},
+  equipName:{...typography.bodyStrong,color:C.text,fontWeight:'900'},
+  equipDelta:{...typography.caption,color:C.good,fontWeight:'800'},
+  equipReplaced:{...typography.caption,color:C.muted},
   root:{padding:spacing.md,gap:10},
   h:{...typography.hero,color:C.text},
   title:{...typography.title,color:C.text},

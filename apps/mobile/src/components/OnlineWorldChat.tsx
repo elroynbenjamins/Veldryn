@@ -1,11 +1,12 @@
-import {useEffect,useState} from 'react';
+import {useEffect,useMemo,useState} from 'react';
 import {Alert,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {GameTextInput as TextInput} from './GameTextInput';
 import {GameButton} from './GameButton';
 import {Panel} from './Panel';
 import {ChatPlayerSheet} from './ChatPlayerSheet';
 import {UiIcon} from './UiIcon';
-import {C,radii,spacing,typography} from '../theme/theme';
+import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
+import {useGameTheme} from '../theme/ThemeContext';
 import {onlineConfigured} from '../online/supabase';
 import {postWorldMessage,WORLD_CHANNELS,worldMessages,type WorldMessage} from '../online/social';
 import {Language,ot} from '../i18n';
@@ -17,6 +18,7 @@ import {ChatLog} from './ChatLog';
 import {ChatMentionSuggestions} from './ChatMentionSuggestions';
 
 export function OnlineWorldChat({playerName,language,embedded=false}:{playerName:string;language:Language;embedded?:boolean}){
+ const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [open,setOpen]=useState(embedded),[channel,setChannel]=useState(0),[text,setText]=useState(''),[rows,setRows]=useState<WorldMessage[]>([]),[selected,setSelected]=useState<WorldMessage|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const load=async()=>{try{setRows(await worldMessages(WORLD_CHANNELS[channel].id));setError('');}catch(reason){setError(reason instanceof Error?reason.message:'Unable to load chat.')}};
  useEffect(()=>{if(!open||!onlineConfigured)return;void load();const timer=setInterval(()=>void load(),6000);return()=>clearInterval(timer);},[open,channel]);
@@ -35,4 +37,4 @@ export function OnlineWorldChat({playerName,language,embedded=false}:{playerName
  </View>;
  return embedded?content:<Panel>{content}</Panel>;
 }
-const s=StyleSheet.create({root:{gap:spacing.sm},title:{...typography.title,color:C.text},note:{...typography.caption,color:C.muted},channels:{gap:5,paddingVertical:2},channel:{minHeight:42,minWidth:88,justifyContent:'center',paddingHorizontal:12,borderRadius:radii.md,backgroundColor:'#151f2b'},channelActive:{backgroundColor:'#17364b'},channelText:{...typography.bodyStrong,color:C.muted},channelTextActive:{color:'#a9dcf6'},language:{fontSize:9,lineHeight:12,color:C.muted},messageRow:{paddingVertical:8,borderBottomWidth:StyleSheet.hairlineWidth,borderBottomColor:'#263442'},nameButton:{minHeight:24,alignSelf:'flex-start',flexDirection:'row',alignItems:'center',gap:4,paddingRight:8},name:{...typography.bodyStrong,color:'#8dcdf0'},profileMark:{fontSize:16,lineHeight:18,color:C.info,fontWeight:'900'},time:{position:'absolute',right:2,top:10,...typography.caption,color:C.muted,fontSize:10},msg:{...typography.body,color:C.text,paddingRight:2},errorCard:{gap:4,padding:spacing.sm,borderWidth:1,borderColor:C.bad,borderRadius:8,backgroundColor:'#2a1b20'},errorLabel:{...typography.caption,color:C.bad,fontWeight:'900',letterSpacing:1},error:{...typography.caption,color:C.text},compose:{flexDirection:'row',alignItems:'flex-end',gap:spacing.sm,paddingTop:4},input:{flex:1,maxHeight:104},send:{width:48,height:48,alignItems:'center',justifyContent:'center',borderRadius:24,backgroundColor:'#23658a'},sendDim:{opacity:.4},closeInline:{minHeight:44,alignItems:'center',justifyContent:'center'},closeText:{...typography.bodyStrong,color:C.muted}});
+function makeStyles(C:ThemeColors){return StyleSheet.create({root:{gap:spacing.sm},title:{...typography.title,color:C.text},note:{...typography.caption,color:C.muted},channels:{gap:5,paddingVertical:2},channel:{minHeight:42,minWidth:88,justifyContent:'center',paddingHorizontal:12,borderRadius:radii.md,backgroundColor:C.panel},channelActive:{backgroundColor:C.selection},channelText:{...typography.bodyStrong,color:C.muted},channelTextActive:{color:C.text},language:{fontSize:9,lineHeight:12,color:C.muted},messageRow:{paddingVertical:8,borderBottomWidth:StyleSheet.hairlineWidth,borderBottomColor:C.line},nameButton:{minHeight:24,alignSelf:'flex-start',flexDirection:'row',alignItems:'center',gap:4,paddingRight:8},name:{...typography.bodyStrong,color:C.info},profileMark:{fontSize:16,lineHeight:18,color:C.info,fontWeight:'900'},time:{position:'absolute',right:2,top:10,...typography.caption,color:C.muted,fontSize:10},msg:{...typography.body,color:C.text,paddingRight:2},errorCard:{gap:4,padding:spacing.sm,borderWidth:1,borderColor:C.bad,borderRadius:8,backgroundColor:C.badSurface},errorLabel:{...typography.caption,color:C.bad,fontWeight:'900',letterSpacing:1},error:{...typography.caption,color:C.text},compose:{flexDirection:'row',alignItems:'flex-end',gap:spacing.sm,paddingTop:4},input:{flex:1,maxHeight:104},send:{width:48,height:48,alignItems:'center',justifyContent:'center',borderRadius:24,backgroundColor:C.primaryButton},sendDim:{opacity:.4},closeInline:{minHeight:44,alignItems:'center',justifyContent:'center'},closeText:{...typography.bodyStrong,color:C.muted}});}

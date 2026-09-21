@@ -12,6 +12,8 @@ export interface ResolveExpeditionCombatInput {
   maxDurationMs?:number;
   initialPlayerState?:Record<string,PersistentActorState>;
   enemyAttackMultiplier?:number;
+  enemyHpMultiplier?:number;
+  enemyDefenseMultiplier?:number;
 }
 export interface ExpeditionCombatCommitPayload {
   success:boolean;
@@ -22,7 +24,7 @@ export interface ExpeditionCombatCommitPayload {
 
 export function resolveExpeditionCombat(input:ResolveExpeditionCombatInput, includeDebugTrace=false):ExpeditionCombatCommitPayload {
   const factory=EXPEDITION_ENCOUNTERS[input.encounterId]; if(!factory) throw new Error(`unknown_encounter:${input.encounterId}`);
-  const enemies=factory().map(enemy=>({...enemy,stats:{...enemy.stats,attackPower:enemy.stats.attackPower*(input.enemyAttackMultiplier??1)}}));
+  const enemies=factory().map(enemy=>({...enemy,stats:{...enemy.stats,maxHp:enemy.stats.maxHp*(input.enemyHpMultiplier??1),attackPower:enemy.stats.attackPower*(input.enemyAttackMultiplier??1),defense:enemy.stats.defense*(input.enemyDefenseMultiplier??1)}}));
   const result=simulateCombat({seed:`${input.serverSeed}:${input.runId}:${input.nodeIndex}:${input.encounterId}`,players:input.players,enemies,initialPlayerState:input.initialPlayerState,maxDurationMs:input.maxDurationMs??180000});
   const eventDigest=createHash('sha256').update(JSON.stringify(result.events)).digest().toString('hex');
   const rec=(xs:CombatResult['players'],pick:(x:CombatResult['players'][number])=>number)=>Object.fromEntries(xs.map(x=>[x.definition.id,Number(pick(x).toFixed(2))]));

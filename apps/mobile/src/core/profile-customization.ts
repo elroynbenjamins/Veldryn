@@ -4,6 +4,14 @@ import {PROFILE_TITLES,profileTitleUnlocked} from './profile-unlocks';
 
 export type ProfileCustomizationDestination='Events'|'Guild'|'Character'|'Collections';
 export type ProfileRewardKind='background'|'border'|'title';
+export type ProfilePreviewAudience='public'|'guild'|'self';
+export type ProfilePreviewVisibility='public'|'guild'|'private';
+
+export function profileAudienceCanView(visibility:ProfilePreviewVisibility,audience:ProfilePreviewAudience){
+ if(audience==='self')return true;
+ if(visibility==='public')return true;
+ return visibility==='guild'&&audience==='guild';
+}
 
 export interface ProfileRewardSource{
  kind:ProfileRewardKind;

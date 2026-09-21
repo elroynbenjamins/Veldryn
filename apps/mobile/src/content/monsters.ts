@@ -43,8 +43,32 @@ const enhancementDrops=(monster:MonsterDef):MonsterDef['drops']=>{
   if(monster.level>=10)return [{itemId:'TEMPERING_DUST',chance:.10,min:1,max:1},{itemId:'TEMPERING_CORE',chance:.01,min:1,max:1}];
   return monster.level>=4?[{itemId:'TEMPERING_DUST',chance:.05,min:1,max:1}]:[];
 };
+const V34_STAT_FAMILY_KEYS=['MIGHT','VITALITY','IRON','WARD','PRECISION','KEEN','SAVAGE','PIERCING','SWIFT','POTENT','ELUSIVE','RESOLUTE'] as const;
+const V34_EFFECT_DROPS:Partial<Record<string,MonsterDef['drops']>>={
+  BRIAR_HUSK:[{itemId:'GEM_EFFECT_SUSTENANCE_G1',chance:.0015,min:1,max:1}],
+  DROWNED_PILGRIM:[{itemId:'GEM_EFFECT_MERCY_G1',chance:.0015,min:1,max:1}],
+  FALLEN_SENTINEL:[{itemId:'GEM_EFFECT_MOMENTUM_G1',chance:.004,min:1,max:1}],
+  LANTERN_WRETCH:[{itemId:'GEM_EFFECT_OPENING_STRIKE_G1',chance:.002,min:1,max:1}],
+  DUNE_ORACLE:[{itemId:'GEM_EFFECT_CRITICAL_SURGE_G2',chance:.002,min:1,max:1},{itemId:'GEM_EFFECT_RUIN_G2',chance:.0015,min:1,max:1}],
+  GLASSBOUND_SENTINEL:[{itemId:'GEM_EFFECT_AEGIS_G2',chance:.002,min:1,max:1},{itemId:'GEM_EFFECT_OPPORTUNIST_G2',chance:.0015,min:1,max:1}],
+  FROSTWOLF:[{itemId:'GEM_EFFECT_LAST_STAND_G2',chance:.002,min:1,max:1},{itemId:'GEM_EFFECT_RETALIATION_G2',chance:.0015,min:1,max:1}],
+  BELLWRAITH:[{itemId:'GEM_EFFECT_UNYIELDING_G3',chance:.0015,min:1,max:1},{itemId:'GEM_EFFECT_GUARDIANS_GIFT_G3',chance:.001,min:1,max:1}],
+  CHOIR_HUNTER:[{itemId:'GEM_EFFECT_RENEWAL_G3',chance:.0015,min:1,max:1},{itemId:'GEM_EFFECT_SHARED_RESOLVE_G3',chance:.001,min:1,max:1},{itemId:'GEM_EFFECT_FLOW_G3',chance:.001,min:1,max:1}],
+};
+function v34GemDrops(monster:MonsterDef):MonsterDef['drops']{
+  if(monster.level<10)return [];
+  const hash=[...monster.id].reduce((sum,ch)=>sum+ch.charCodeAt(0),0),family=V34_STAT_FAMILY_KEYS[hash%V34_STAT_FAMILY_KEYS.length];
+  const grade=monster.zone==='Frostmarch'?3:monster.zone==='Sunscar'?2:1;
+  const statChance=monster.zone==='Frostmarch'?.006:monster.zone==='Sunscar'?.005:.004;
+  return [
+    {itemId:`RAW_GEM`,chance:monster.boss?.12:.025,min:1,max:1},
+    {itemId:`GEM_STAT_${family}_G${grade}`,chance:statChance,min:1,max:1},
+    ...(V34_EFFECT_DROPS[monster.id]??[]),
+    ...(monster.boss?[{itemId:'REGIONAL_CATALYST',chance:.05,min:1,max:1}]:[]),
+  ];
+}
 export const MONSTERS:MonsterDef[]=MONSTERS_RAW.map(monster=>({...monster,
-  drops:[...monster.drops,...(monster.id==='FIELD_WISP'?[{itemId:'HOLY_WATER',chance:.12,min:1,max:1}]:monster.id==='DROWNED_PILGRIM'?[{itemId:'HOLY_WATER',chance:.30,min:1,max:1}]:monster.id==='OATHBOUND_SQUIRE'?[{itemId:'HOLY_WATER',chance:.24,min:1,max:1}]:[]),...enhancementDrops(monster)],
+  drops:[...monster.drops,...(monster.id==='FIELD_WISP'?[{itemId:'HOLY_WATER',chance:.12,min:1,max:1}]:monster.id==='DROWNED_PILGRIM'?[{itemId:'HOLY_WATER',chance:.30,min:1,max:1}]:monster.id==='OATHBOUND_SQUIRE'?[{itemId:'HOLY_WATER',chance:.24,min:1,max:1}]:[]),...enhancementDrops(monster),...v34GemDrops(monster)],
   secondsPerKill:Math.ceil(monster.secondsPerKill*MONSTER_TIME_SCALE),
   hp:Math.ceil(monster.hp*MONSTER_STAT_SCALE),
   attack:Math.ceil(monster.attack*MONSTER_STAT_SCALE),

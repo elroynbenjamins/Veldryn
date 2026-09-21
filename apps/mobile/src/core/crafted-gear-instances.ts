@@ -87,7 +87,7 @@ export function rarityBreakdownForItem(state:GameState,itemId:string,storage:'in
 
 export function gearInstanceById(state:GameState,instanceId:string){return gearInstances(state).find(row=>row.id===instanceId);}
 export function legacyStoredGearCount(state:GameState,itemId:string,storage:'inventory'|'bank'){
-  const stack=state[storage].stacks.find(row=>row.itemId===itemId)?.quantity??0;
+  const stack=state[storage].stacks.filter(row=>row.itemId===itemId).reduce((sum,row)=>sum+row.quantity,0);
   return Math.max(0,stack-instancesForItem(state,itemId,storage).length);
 }
 export function bestStoredGearInstance(state:GameState,itemId:string,storage:'inventory'|'bank'){
@@ -142,7 +142,7 @@ export function removeDisposableStoredGearCopies(state:GameState,itemId:string,s
 
 export function ownedGearCopyCount(state:GameState,itemId:string,ownerCharacterId?:string){
   const owner=ownerCharacterId??state.character?.id;
-  let count=(state.inventory.stacks.find(row=>row.itemId===itemId)?.quantity??0)+(state.bank.stacks.find(row=>row.itemId===itemId)?.quantity??0);
+  let count=state.inventory.stacks.filter(row=>row.itemId===itemId).reduce((sum,row)=>sum+row.quantity,0)+state.bank.stacks.filter(row=>row.itemId===itemId).reduce((sum,row)=>sum+row.quantity,0);
   if(state.character&&(!owner||state.character.id===owner)&&Object.values(state.character.equipment).includes(itemId))count++;
   for(const entry of state.otherCharacters??[])if((!owner||entry.character.id===owner)&&Object.values(entry.character.equipment).includes(itemId))count++;
   return count;

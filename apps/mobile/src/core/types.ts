@@ -69,6 +69,9 @@ export interface EquipmentCraftJob{
   ownerCharacterId:string;
   startedAtMs:number;
   completesAtMs:number;
+  /** Reservation snapshot keeps cancellation refunds stable if recipe balance changes later. */
+  reservedGold?:number;
+  reservedInputs?:ItemStack[];
 }
 export interface ItemStack { itemId:string; quantity:number; }
 export interface InventoryState { stacks:ItemStack[]; capacity:number; }

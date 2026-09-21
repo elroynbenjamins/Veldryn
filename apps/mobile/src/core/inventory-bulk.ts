@@ -18,15 +18,12 @@ function protectedFromDisposal(state:GameState,itemId:string){
 
 export function bulkSelectionSummary(state:GameState,itemIds:readonly string[],location:BulkStorageLocation){
   const stacks=selectedStacks(state,itemIds,location),autoEatId=state.character?.equippedFoodId;
-  const transferable=stacks.filter(stack=>location==='bank'||stack.itemId!==autoEatId);
+  const transferable=stacks.filter(stack=>itemDef(stack.itemId).type!=='gear'&&(location==='bank'||stack.itemId!==autoEatId));
   const sellable=location==='inventory'?stacks.filter(stack=>{
     const item=itemDef(stack.itemId);
-    return stack.itemId!==autoEatId&&stack.itemId!==HOLY_WATER_ID&&item.value>0&&!protectedFromDisposal(state,stack.itemId);
+    return item.type!=='gear'&&stack.itemId!==autoEatId&&stack.itemId!==HOLY_WATER_ID&&item.value>0&&!protectedFromDisposal(state,stack.itemId);
   }):[];
-  const salvageable=location==='inventory'?stacks.filter(stack=>{
-    const item=itemDef(stack.itemId);
-    return item.type==='gear'&&!!item.salvage&&!protectedFromDisposal(state,stack.itemId);
-  }):[];
+  const salvageable:typeof stacks=[]; // Equipment must be salvaged one exact instance at a time.
   return {
     selectedStackCount:stacks.length,
     selectedUnitCount:stacks.reduce((sum,stack)=>sum+stack.quantity,0),
@@ -61,7 +58,7 @@ export function bulkTransferSelected(state:GameState,itemIds:readonly string[],f
 
 export function bulkSellSelected(state:GameState,itemIds:readonly string[]):GameState{
   const summary=bulkSelectionSummary(state,itemIds,'inventory');
-  if(!summary.sellableIds.length)throw new Error('No selected items can be sold. Favorites, enhanced gear, auto-eat food, Holy Water and zero-value items stay protected.');
+  if(!summary.sellableIds.length)throw new Error('No selected items can be sold. Equipment copies are managed individually; favorites, auto-eat food, Holy Water and zero-value items stay protected.');
   let next=state;
   for(const itemId of summary.sellableIds){
     const quantity=next.inventory.stacks.find(stack=>stack.itemId===itemId)?.quantity??0;
@@ -72,7 +69,7 @@ export function bulkSellSelected(state:GameState,itemIds:readonly string[]):Game
 
 export function bulkSalvageSelected(state:GameState,itemIds:readonly string[]):GameState{
   const summary=bulkSelectionSummary(state,itemIds,'inventory');
-  if(!summary.salvageableIds.length)throw new Error('No selected equipment can be salvaged. Favorites and enhanced gear stay protected.');
+  if(!summary.salvageableIds.length)throw new Error('Equipment is salvaged one exact copy at a time from its item card.');
   let next=state;
   for(const itemId of summary.salvageableIds){
     const quantity=next.inventory.stacks.find(stack=>stack.itemId===itemId)?.quantity??0;

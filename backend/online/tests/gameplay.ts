@@ -74,6 +74,11 @@ async function main(){
  blockedDeleteCharacterId=null;
  const removed=await request({type:'roster_delete',args:{id:rosterId,confirmation:'DELETE Second Hero'}},'roster-delete-01',20);assert.equal(removed.status,200,'roster deletion routes through authenticated gameplay');
  const removedPayload=await removed.json();const rosterIds=[removedPayload.state.character?.id,...(removedPayload.state.otherCharacters??[]).map((entry:any)=>entry.character.id)];assert.ok(!rosterIds.includes(rosterId),'server-authoritative deletion removes the requested character');assert.equal(deletedCommitCharacterId,rosterId,'roster deletion must use the atomic delete-aware commit RPC');
- console.log('PASS authenticated gameplay HTTP, input authority, canonical replay, stale version and lost-response recovery');
+ const deniedQa=await request({type:'qa_refill'},'qa-denied-001',21);assert.equal(deniedQa.status,403,'normal authenticated accounts cannot invoke Admin QA commands');
+ const qaHandle=gameplayHandler({...services,authenticate:async token=>token==='qa-token'?'alice':null,adminQa:async token=>token==='qa-token'});
+ const qaRequest=(command:unknown,requestId:string,expectedVersion:number)=>qaHandle(new Request('https://example.invalid/gameplay',{method:'POST',headers:{Authorization:'Bearer qa-token'},body:JSON.stringify({command,requestId,expectedVersion})}));
+ const qaPrepared=await qaRequest({type:'qa_prepare',args:{classId:'STONECALLER'}},'qa-prepare-001',21);assert.equal(qaPrepared.status,200,'trusted Admin QA account can prepare a server-owned QA profile');
+ const qaPayload=await qaPrepared.json();assert.equal(qaPayload.state.character.classId,'STONECALLER');assert.equal(qaPayload.state.character.level,100);assert.equal(qaPayload.state.character.classSkills.every((skill:any)=>skill.level===100),true,'Admin QA class disciplines are maxed');assert.equal(qaPayload.state.skills.every((skill:any)=>skill.level===100),true,'Admin QA professions are maxed');
+ console.log('PASS authenticated gameplay HTTP, input authority, Admin QA authorization, canonical replay, stale version and lost-response recovery');
 }
 void main().catch(error=>{console.error(error);process.exitCode=1;});

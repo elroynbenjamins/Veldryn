@@ -25,7 +25,7 @@ import {normalizeActiveDailySupplyBoost,normalizeDailySuppliesTrack,normalizeDai
 import {normalizeChatEmoteTrayIds} from './chat-emotes';
 import {normalizeEquipmentCraftingQueue} from './equipment-crafting-queue';
 import {normalizeEnhancementGemSlots} from './equipment-enhancement';
-import {normalizeCraftedGearInstances} from './crafted-gear-instances';
+import {migrateLegacyEquipmentInstances,normalizeCraftedGearInstances} from './crafted-gear-instances';
 
 function normalizeGearEnhancements(raw:unknown){
   const gearIds=new Set(ITEMS.filter(item=>item.type==='gear').map(item=>item.id));
@@ -209,5 +209,5 @@ export function normalizeSave(input:any):GameState{
   if(character?.id&&rosterIds.has(character.id))throw new Error('Duplicate active account character.');
   normalized.otherCharacters=roster as GameState['otherCharacters'];
   normalized.account.unlockedCharacterSlots=Math.max(1,Math.min(5,Number(input.account?.unlockedCharacterSlots??1)));
-  return discoverCharacterSkins(reconcileCombatCompanionUnlocks(normalized,normalized.createdAtMs));
+  return discoverCharacterSkins(migrateLegacyEquipmentInstances(reconcileCombatCompanionUnlocks(normalized,normalized.createdAtMs)));
 }

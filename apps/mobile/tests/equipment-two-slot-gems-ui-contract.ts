@@ -20,13 +20,16 @@ ok(types.includes("statGemId?:string; effectGemId?:string"),'Enhancement save sh
 ok(enhancement.includes('EQUIPMENT_GEM_SOCKET_COUNT=2'),'Every gear piece must have exactly two logical gem sockets');
 ok(enhancement.includes("kind==='stat'&&enhancement.statGemId"),'Second Stat Gem must be rejected');
 ok(enhancement.includes("kind==='effect'&&enhancement.effectGemId"),'Second Effect Gem must be rejected');
-ok(enhancement.includes('result.combat_speed=Math.min(.10'),'Effect Gem stacking must be capped');
-ok(enhancement.includes('result.boss_power=Math.min(.15'),'Boss Effect Gem stacking must be capped');
-ok(enhancement.includes('result.damage_reduction=Math.min(.10'),'Damage-reduction Effect Gem stacking must be capped');
+ok(enhancement.includes('GEM_EFFECT_CAPS')&&enhancement.includes('combat_speed:.10'),'Effect Gem stacking must expose the 10% speed cap');
+ok(enhancement.includes('boss_power:.15'),'Boss Effect Gem stacking must expose the 15% boss-power cap');
+ok(enhancement.includes('damage_reduction:.10'),'Damage-reduction Effect Gem stacking must expose the 10% mitigation cap');
 
 ok(modal.includes('one Stat Gem and one Effect Gem'),'Enhancement UI must explain the two named slots');
 ok(modal.includes('Socket Stat'),'Stat candidates must have a dedicated action');
 ok(modal.includes('Socket Effect'),'Effect candidates must have a dedicated action');
+ok(modal.includes("socketState.statGemId?'Replace':'Socket Stat'")&&modal.includes("socketState.effectGemId?'Replace':'Socket Effect'"),'Filled sockets must support explicit safe replacement');
+ok(modal.includes('Inventory, then Bank, then Overflow'),'Gem UI must explain safe extraction routing');
+ok(commands.includes("replace_gem:['id','gemId']"),'Gem replacement must be available through the authoritative command path');
 ok(slots.includes('statGemFilled')&&slots.includes('effectGemFilled'),'Equipment tiles must show separate Stat/Effect pips');
 ok(character.includes("S {selectedDecision.sockets.statFilled?'◆':'◇'}"),'Character detail must show named socket status');
 ok(inspect.includes("1 Stat + 1 Effect"),'Quick inspect must describe named socket structure');

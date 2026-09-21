@@ -1,6 +1,6 @@
 import {GEAR_RARITIES,rarityMeta,rarityNameColor,rollGearRarity} from '../src/core/item-rarity';
 import {itemDef} from '../src/content/items';
-if(GEAR_RARITIES.find(x=>x.id==='uncommon')!.chance!==.07||GEAR_RARITIES.find(x=>x.id==='mythic')!.chance!==.0005)throw new Error('Requested rarity odds missing');
+if(GEAR_RARITIES.find(x=>x.id==='common')!.chance!==.89||GEAR_RARITIES.find(x=>x.id==='uncommon')!.chance!==.07||GEAR_RARITIES.find(x=>x.id==='rare')!.chance!==.03||GEAR_RARITIES.find(x=>x.id==='epic')!.chance!==.006||GEAR_RARITIES.find(x=>x.id==='legendary')!.chance!==.003||GEAR_RARITIES.find(x=>x.id==='mythic')!.chance!==.001)throw new Error('Universal Forge rarity odds missing');
 if(itemDef('ASTER_IRON_CHEST').rarity!=='rare'||itemDef('OATHSTONE_WARDPLATE').rarity!=='epic')throw new Error('Gear rarity tiers missing');
 if(rarityMeta('mythic').statMultiplier<=rarityMeta('legendary').statMultiplier)throw new Error('Mythic stats must exceed Legendary');
 if(rarityNameColor('common',false,'#17202A')!=='#17202A')throw new Error('Common names should use theme text');

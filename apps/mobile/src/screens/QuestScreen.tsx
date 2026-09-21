@@ -44,7 +44,7 @@ export function QuestScreen({state,onClaim,onClaimContract,onNavigate,onOpenWeek
     try{setNotice('');setError('');onClaim(id)}
     catch(e){setError(e instanceof Error?e.message:'Unable to claim this quest.');setNotice('')}
   }
-  return <ScrollView contentContainerStyle={s.root} keyboardShouldPersistTaps="handled">
+  return <ScrollView contentContainerStyle={s.root} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
     <View style={s.journalHeading}><UiIcon name="quests" size={40}/><Text accessibilityRole="header" style={[s.h,s.flex]}>Asterfall Journal</Text></View>
     <Panel><Text style={s.actEyebrow}>ACT {roman(currentAct.act)} · {currentAct.name.toUpperCase()}</Text><Text style={s.title}>{claimed===QUESTS.length?'Asterfall campaign complete':currentAct.subtitle}</Text><StatBar reduceMotion={state.settings.reduceMotion} label="Chapters claimed" current={claimed} max={QUESTS.length}/><Text style={s.sub}>{claimed===QUESTS.length?'Every chapter reward has been claimed. You can revisit the story, hunts, crafting, and equipment upgrades.':`${ready} reward${ready===1?'':'s'} ready to claim. Claim each chapter to unlock the next story beat.`}</Text></Panel>
     <ScrollView accessibilityRole="tablist" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.row}>{(['current','all','claimed','locked'] as const).map(value=><FilterChip key={value} label={`${value==='current'?'Current':value==='all'?'All':value==='claimed'?'Completed':'Locked'} · ${value==='current'?entries.length:value==='all'?QUESTS.length:value==='claimed'?claimed:state.quests.filter(quest=>quest.status==='locked').length}`} selected={filter===value} onPress={()=>setFilter(value)}/>)}</ScrollView>
@@ -71,7 +71,7 @@ export function QuestScreen({state,onClaim,onClaimContract,onNavigate,onOpenWeek
   </ScrollView>;
 }
 function roman(act:QuestAct){return act===1?'I':act===2?'II':'III'}
-function FilterChip({label,selected,onPress}:{label:string;selected:boolean;onPress:()=>void}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);return <Pressable accessibilityRole="button" accessibilityState={{selected}} onPress={onPress} style={({pressed})=>[s.filterChip,selected&&s.filterChipSelected,pressed&&s.pressed]}><Text style={[s.filterText,selected&&s.filterTextSelected]}>{selected?'✓ ':''}{label}</Text></Pressable>}
+function FilterChip({label,selected,onPress}:{label:string;selected:boolean;onPress:()=>void}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);return <Pressable accessibilityRole="tab" accessibilityState={{selected}} onPress={onPress} style={({pressed})=>[s.filterChip,selected&&s.filterChipSelected,pressed&&s.pressed]}><Text style={[s.filterText,selected&&s.filterTextSelected]}>{selected?'✓ ':''}{label}</Text></Pressable>}
 function WeeklyOrderRows({state,orders,reduceMotion,onOpenOrder,onPinOrder,onQueueOrder,onStopOrder}:{state:GameState;orders:WeeklyOrder[];reduceMotion:boolean;onOpenOrder:(order:WeeklyOrder)=>void;onPinOrder:(order:WeeklyOrder)=>void;onQueueOrder:(order:WeeklyOrder)=>void;onStopOrder:(order:WeeklyOrder)=>void}){
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const kindLabel={hunt:'HUNT ORDER',profession:'WORK ORDER',regional:'REGIONAL PROBLEM',threat:'THREAT BOUNTY'} as const,queueFull=(state.character?.activityQueue?.length??0)>=MAX_ACTIVITY_QUEUE;

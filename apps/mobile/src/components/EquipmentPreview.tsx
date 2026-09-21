@@ -3,7 +3,7 @@ import {ScrollView,StyleSheet,Text,View} from 'react-native';
 import {itemDef} from '../content/items';
 import {equipmentSetDef,equippedSetPieceCount} from '../content/equipment-sets';
 import {effectiveStats} from '../core/game';
-import {gearEnhancement,gemSocketCapacity} from '../core/equipment-enhancement';
+import {gearEnhancement,gemSocketCapacity,gemSocketState} from '../core/equipment-enhancement';
 import {previewEquipment} from '../core/equipment-preview';
 import {GameState} from '../core/types';
 import {itemRarity,rarityMeta,rarityNameColor} from '../core/item-rarity';
@@ -19,7 +19,7 @@ export function EquipmentPreview({state,itemId,onClose}:{state:GameState;itemId:
   const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
   if(!itemId)return null;
   let projected:GameState;try{projected=previewEquipment(state,itemId)}catch{return null}
-  const item=itemDef(itemId),before=effectiveStats(state),after=effectiveStats(projected),rarityId=itemRarity(item),rarity=rarityMeta(rarityId),nameColor=rarityNameColor(rarityId,C.dark,C.text),enhancement=gearEnhancement(state,itemId),capacity=gemSocketCapacity(itemId);
+  const item=itemDef(itemId),before=effectiveStats(state),after=effectiveStats(projected),rarityId=itemRarity(item),rarity=rarityMeta(rarityId),nameColor=rarityNameColor(rarityId,C.dark,C.text),enhancement=gearEnhancement(state,itemId),capacity=gemSocketCapacity(itemId),sockets=gemSocketState(state,itemId);
   const oldId=item.slot?state.character!.equipment[item.slot]:undefined,old=oldId?itemDef(oldId):undefined,oldEnhancement=oldId?gearEnhancement(state,oldId):undefined;
   const candidateSet=item.equipmentSetId?equipmentSetDef(item.equipmentSetId):undefined,oldSet=old?.equipmentSetId&&old.equipmentSetId!==item.equipmentSetId?equipmentSetDef(old.equipmentSetId):undefined;
   const setRows=[
@@ -31,7 +31,7 @@ export function EquipmentPreview({state,itemId,onClose}:{state:GameState;itemId:
   return <GameModalSurface visible reduceMotion={state.settings.reduceMotion} onClose={onClose} backdropLabel="Close equipment comparison" surfaceStyle={[s.surface,{borderColor:rarity.color}]}>
     <GameModalHeader eyebrow={rarity.label.toUpperCase()+' · '+String(item.slot??'gear').toUpperCase()} title={item.name+(enhancement.rank?` +${enhancement.rank}`:'')} onClose={onClose} leading={leading}/>
     <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false}>
-      <View style={[s.hero,{borderColor:rarity.color,backgroundColor:rarity.surface}]}><View style={s.flex}><Text style={[s.rarity,{color:rarity.color}]}>{rarity.symbol} {rarity.label.toUpperCase()}</Text><Text style={[s.title,{color:nameColor}]}>{item.name}{enhancement.rank?` +${enhancement.rank}`:''}</Text><Text style={s.meta}>{capacity?`◆ ${enhancement.gemIds.length}/${capacity} gems`:'No gem sockets'}{candidateSet?` · ${candidateSet.tier} ${candidateSet.name}`:''}</Text></View><View style={[s.powerBadge,powerDelta>0?s.powerGood:powerDelta<0?s.powerBad:s.powerNeutral]}><Text style={s.powerLabel}>POWER</Text><Text style={[s.powerValue,powerDelta>0?s.better:powerDelta<0?s.worse:s.same]}>{powerDelta===0?'—':`${powerDelta>0?'+':''}${powerDelta}`}</Text></View></View>
+      <View style={[s.hero,{borderColor:rarity.color,backgroundColor:rarity.surface}]}><View style={s.flex}><Text style={[s.rarity,{color:rarity.color}]}>{rarity.symbol} {rarity.label.toUpperCase()}</Text><Text style={[s.title,{color:nameColor}]}>{item.name}{enhancement.rank?` +${enhancement.rank}`:''}</Text><Text style={s.meta}>{capacity?`S ${sockets.statGemId?'◆':'◇'} · FX ${sockets.effectGemId?'✦':'◇'}`:'No gem sockets'}{candidateSet?` · ${candidateSet.tier} ${candidateSet.name}`:''}</Text></View><View style={[s.powerBadge,powerDelta>0?s.powerGood:powerDelta<0?s.powerBad:s.powerNeutral]}><Text style={s.powerLabel}>POWER</Text><Text style={[s.powerValue,powerDelta>0?s.better:powerDelta<0?s.worse:s.same]}>{powerDelta===0?'—':`${powerDelta>0?'+':''}${powerDelta}`}</Text></View></View>
       <View style={s.replacement}><Text style={s.section}>REPLACES</Text><Text style={s.replacementName}>{old?`${old.name}${oldEnhancement?.rank?` +${oldEnhancement.rank}`:''}`:'Empty slot'}</Text></View>
       <View style={s.compare}><View style={s.compareHead}><Text style={s.section}>TOTAL LOADOUT</Text><Text style={s.legend}>Current → Preview · Change</Text></View><CompareRow label="Attack" before={before.attack} after={after.attack}/><CompareRow label="Defense" before={before.defense} after={after.defense}/><CompareRow label="Max health" before={before.hp} after={after.hp}/><CompareRow label="Power" before={before.power} after={after.power}/></View>
       {setRows.length?<View style={s.setPanel}><View style={s.compareHead}><Text style={s.section}>SET CONTEXT</Text><Text style={s.legend}>Equipped pieces after this swap</Text></View>{setRows.map(row=><View key={row.id} style={s.setRow}><View style={s.flex}><Text style={s.setName}>{row.tier} · {row.name}</Text><Text style={s.meta}>V33 ten-piece equipment set</Text></View><Text style={[s.setCount,row.after>row.before?s.better:row.after<row.before?s.worse:s.same]}>{row.before} → {row.after}/10</Text></View>)}</View>:null}

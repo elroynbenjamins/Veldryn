@@ -39,7 +39,7 @@ export function SocialScreen({onGuild,onFriends,onAccount,onInvitationsChanged}:
  // Local countdown advances between snapshots; expiry is also enforced by the database query.
  const clock=useRef({server:now,local:now});useEffect(()=>{if(social.serverTime)clock.current={server:Date.parse(social.serverTime),local:Date.now()};},[social.serverTime]);
  const at=clock.current.server+(now-clock.current.local);
- return <SocialHubPanel active={tab} onChange={next=>{setTab(next);setSelected(null);setDraft(null);}}><ScrollView contentContainerStyle={s.content}>
+ return <SocialHubPanel active={tab} badges={{party:partyInvites.length}} onChange={next=>{setTab(next);setSelected(null);setDraft(null);}}><ScrollView contentContainerStyle={s.content}>
   <View style={s.row}><GameButton title="Friends" tone="secondary" onPress={onFriends}/><GameButton title="Social help" tone="secondary" onPress={()=>setHelp(!help)}/><GameButton title={busy?'Working…':'Refresh'} tone="secondary" disabled={busy} onPress={()=>void run(async()=>{})}/></View>
   {help&&<Panel>{PARTY_SOCIAL_TUTORIAL_STEPS.map(step=><Text key={step} style={s.text}>{step}</Text>)}</Panel>}
   {!!(error||social.error)&&<View accessibilityRole="alert" style={s.errorCard}><Text style={s.errorLabel}>SOCIAL UNAVAILABLE</Text><Text style={s.error}>{error||social.error}</Text></View>}

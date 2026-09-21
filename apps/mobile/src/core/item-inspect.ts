@@ -10,6 +10,7 @@ import {enhancedGearStats,gearEnhancement,gemEffectDescription,gemSocketCapacity
 import {effectiveStats} from './game';
 import {previewEquipment} from './equipment-preview';
 import {itemRarity,rarityMeta} from './item-rarity';
+import {bestInventoryGearInstance,bestStoredGearInstance,equippedGearInstance,gearInstanceRarityMultiplier,updateGearInstance} from './crafted-gear-instances';
 
 export type ItemInspectSourceKind='gathering'|'crafting'|'combat'|'starting';
 export interface ItemInspectSource{kind:ItemInspectSourceKind;title:string;detail:string;navigation?:WorkingTowardDestination;availability?:WorkingTowardDestinationAvailability;}
@@ -25,7 +26,7 @@ const title=(value:string)=>value.toLowerCase().split('_').map(part=>part?part[0
 const pct=(value:number)=>value>=.1?`${Math.round(value*100)}%`:`${(value*100).toFixed(value<.01?2:1)}%`;
 
 export function itemInspectModel(state:GameState,itemId:string){
-  const item=itemDef(itemId),rarityId=itemRarity(item),rarity=rarityMeta(rarityId);
+  const item=itemDef(itemId),ownedInstance=item.type==='gear'?(equippedGearInstance(state,itemId)??bestInventoryGearInstance(state,itemId)??bestStoredGearInstance(state,itemId,'bank')):undefined,rarityId=ownedInstance?.craftedRarity??itemRarity(item),rarity=rarityMeta(rarityId);
   const sources:ItemInspectSource[]=[];
 
   for(const node of [...GATHERING,...HERB_NODES]){
@@ -59,7 +60,7 @@ export function itemInspectModel(state:GameState,itemId:string){
   let gearDecision:ItemGearDecision|undefined;
 
   if(item.type==='gear'){
-    const enhancement=gearEnhancement(state,itemId),quote=upgradeQuote(state,itemId),enhanced=enhancedGearStats(state,itemId);
+    const enhancement=gearEnhancement(state,itemId,ownedInstance?.id),quote=upgradeQuote(state,itemId,ownedInstance?.id),enhanced=enhancedGearStats(state,itemId,ownedInstance?.id);
     stats=enhanced;
     upgrade={rank:enhancement.rank,nextRank:quote.targetRank,successChance:quote.successChance,dust:quote.dust,cores:quote.cores,gold:quote.gold,maxed:quote.maxed,failures:enhancement.failures,equipped:!!state.character&&Object.values(state.character.equipment).includes(itemId)};
     const capacity=gemSocketCapacity(itemId),slotState=gemSocketState(state,itemId);
@@ -69,7 +70,7 @@ export function itemInspectModel(state:GameState,itemId:string){
       const before=effectiveStats(state),currentId=state.character.equipment[item.slot],currentItem=currentId?itemDef(currentId):undefined,currentRank=currentId?gearEnhancement(state,currentId).rank:0;
       const gems=enhancement.gemIds.map(id=>{const gem=itemDef(id),kind=gemSocketKind(id);return {id,name:gem.name,kind,detail:kind==='stat'?`+${Math.round((gem.gemPercent??0)*100)}% ${title(gem.gemStat??'stat')}`:gemEffectDescription(id),stat:kind==='stat'?title(gem.gemStat??'stat'):'Effect',percent:kind==='stat'?(gem.gemPercent??0):(gem.gemEffectValue??0)};});
       let after=before,maxAfter=before,previewState=state;
-      if(compatible){try{previewState=previewEquipment(state,itemId);after=effectiveStats(previewState);const maxState:GameState={...state,character:{...state.character,gearEnhancements:{...(state.character.gearEnhancements??{}),[itemId]:{...enhancement,rank:MAX_UPGRADE_RANK}}}};maxAfter=effectiveStats(previewEquipment(maxState,itemId));}catch{}}
+      if(compatible){try{previewState=previewEquipment(state,itemId);after=effectiveStats(previewState);let maxState=previewEquipment(state,itemId);const previewInstance=equippedGearInstance(maxState,itemId);maxState=previewInstance?updateGearInstance(maxState,previewInstance.id,row=>({...row,enhancement:{...row.enhancement,rank:MAX_UPGRADE_RANK}})):{...maxState,character:{...maxState.character!,gearEnhancements:{...(maxState.character!.gearEnhancements??{}),[itemId]:{...enhancement,rank:MAX_UPGRADE_RANK}}}};maxAfter=effectiveStats(maxState);}catch{}}
       const set=equipmentSetDef(item.equipmentSetId);
       let setDecision:ItemGearDecision['set'];
       if(set){
@@ -79,7 +80,7 @@ export function itemInspectModel(state:GameState,itemId:string){
       }
       gearDecision={compatible,alreadyEquipped:currentId===itemId,replaces:currentItem?{itemId:currentItem.id,name:currentItem.name,rank:currentRank}:undefined,
         loadoutBefore:{attack:before.attack,defense:before.defense,hp:before.hp,power:before.power},loadoutAfter:{attack:after.attack,defense:after.defense,hp:after.hp,power:after.power},
-        loadoutDelta:{attack:after.attack-before.attack,defense:after.defense-before.defense,hp:after.hp-before.hp,power:after.power-before.power},maxRank:MAX_UPGRADE_RANK,maxItemStats:gearStatsAtRank(itemId,MAX_UPGRADE_RANK),
+        loadoutDelta:{attack:after.attack-before.attack,defense:after.defense-before.defense,hp:after.hp-before.hp,power:after.power-before.power},maxRank:MAX_UPGRADE_RANK,maxItemStats:gearStatsAtRank(itemId,MAX_UPGRADE_RANK,gearInstanceRarityMultiplier(ownedInstance)),
         maxLoadoutGain:{attack:maxAfter.attack-after.attack,defense:maxAfter.defense-after.defense,hp:maxAfter.hp-after.hp,power:maxAfter.power-after.power},gems,set:setDecision};
     }
     if(item.readiness)effectLines.push(`Readiness +${item.readiness}`);

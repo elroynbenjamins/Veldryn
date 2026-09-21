@@ -7,6 +7,7 @@ import {gearEnhancement,gemSocketCapacity,gemSocketState} from '../core/equipmen
 import {previewEquipment} from '../core/equipment-preview';
 import {GameState} from '../core/types';
 import {itemRarity,rarityMeta,rarityNameColor} from '../core/item-rarity';
+import {equippedGearInstance,gearInstanceById} from '../core/equipment-instances';
 import {equipmentTheme,radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {EquipmentArtwork,hasEquipmentArtwork} from './EquipmentArtwork';
@@ -19,8 +20,8 @@ export function EquipmentPreview({state,itemId,onClose}:{state:GameState;itemId:
   const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
   if(!itemId)return null;
   let projected:GameState;try{projected=previewEquipment(state,itemId)}catch{return null}
-  const item=itemDef(itemId),before=effectiveStats(state),after=effectiveStats(projected),rarityId=itemRarity(item),rarity=rarityMeta(rarityId),nameColor=rarityNameColor(rarityId,C.dark,C.text),enhancement=gearEnhancement(state,itemId),capacity=gemSocketCapacity(itemId),sockets=gemSocketState(state,itemId);
-  const oldId=item.slot?state.character!.equipment[item.slot]:undefined,old=oldId?itemDef(oldId):undefined,oldEnhancement=oldId?gearEnhancement(state,oldId):undefined;
+  const candidateInstance=gearInstanceById(state,itemId),definitionId=candidateInstance?.itemId??itemId,item=itemDef(definitionId),before=effectiveStats(state),after=effectiveStats(projected),rarityId=candidateInstance?.rarity??itemRarity(item),rarity=rarityMeta(rarityId),nameColor=rarityNameColor(rarityId,C.dark,C.text),enhancement=gearEnhancement(state,candidateInstance?.id??definitionId),capacity=gemSocketCapacity(candidateInstance?.id??definitionId,state),sockets=gemSocketState(state,candidateInstance?.id??definitionId);
+  const oldId=item.slot?state.character!.equipment[item.slot]:undefined,old=oldId?itemDef(oldId):undefined,oldInstance=item.slot?equippedGearInstance(state,item.slot):undefined,oldEnhancement=oldInstance?gearEnhancement(state,oldInstance.id):oldId?gearEnhancement(state,oldId):undefined;
   const candidateSet=item.equipmentSetId?equipmentSetDef(item.equipmentSetId):undefined,oldSet=old?.equipmentSetId&&old.equipmentSetId!==item.equipmentSetId?equipmentSetDef(old.equipmentSetId):undefined;
   const setRows=[
     candidateSet?{id:candidateSet.id,name:candidateSet.name,tier:candidateSet.tier,before:equippedSetPieceCount(state.character!.equipment,candidateSet),after:equippedSetPieceCount(projected.character!.equipment,candidateSet)}:null,

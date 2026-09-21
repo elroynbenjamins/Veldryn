@@ -40,9 +40,15 @@ const failed=attemptEquipmentUpgrade(dangerous,'STONEHEART_RING',.99);
 ok(!failed.result.success&&!failed.result.downgraded&&failed.result.newRank===6,'Failure should preserve the current rank');
 ok(gearEnhancement(failed.state,'STONEHEART_RING').failures===1,'Failure should increment pity');
 ok(Math.abs(upgradeQuote(failed.state,'STONEHEART_RING').successChance-.30)<.000001,'Pity should add two percentage points to the same target rank');
-const storedEnhanced={...upgraded,inventory:{...upgraded.inventory,stacks:[...upgraded.inventory.stacks,{itemId:'STONEHEART_RING',quantity:1}]}};
-let soldEnhanced=false,salvagedEnhanced=false;try{sellItem(storedEnhanced,'STONEHEART_RING')}catch{soldEnhanced=true}try{salvageItem(storedEnhanced,'STONEHEART_RING')}catch{salvagedEnhanced=true}
-ok(soldEnhanced&&salvagedEnhanced,'Enhanced gear must be protected from disposal in the domain layer');
+const owner=upgraded.character!.id;
+const storedEnhanced={...upgraded,inventory:{...upgraded.inventory,stacks:[...upgraded.inventory.stacks,{itemId:'STONEHEART_RING',quantity:2}]},account:{...upgraded.account,craftedGearInstances:[
+  {id:'test-enhanced-copy',itemId:'STONEHEART_RING',ownerCharacterId:owner,rarity:'common' as const,acquireSource:'migration' as const,sourceReceiptKey:'test-enhanced-copy',createdAtMs:1,location:'inventory' as const,enhancement:{rank:6,failures:0,gemIds:[]}},
+  {id:'test-clean-copy',itemId:'STONEHEART_RING',ownerCharacterId:owner,rarity:'common' as const,acquireSource:'migration' as const,sourceReceiptKey:'test-clean-copy',createdAtMs:2,location:'inventory' as const,enhancement:{rank:0,failures:0,gemIds:[]}},
+]}};
+const cleanSold=sellItem(storedEnhanced,'test-clean-copy');
+ok(!cleanSold.account.craftedGearInstances?.some(row=>row.id==='test-clean-copy')&&cleanSold.account.craftedGearInstances?.some(row=>row.id==='test-enhanced-copy'),'A clean duplicate can be sold without touching an enhanced twin');
+let soldEnhanced=false,salvagedEnhanced=false;try{sellItem(storedEnhanced,'test-enhanced-copy')}catch{soldEnhanced=true}try{salvageItem(storedEnhanced,'test-enhanced-copy')}catch{salvagedEnhanced=true}
+ok(soldEnhanced&&salvagedEnhanced,'Only the exact enhanced copy must be protected from disposal in the domain layer');
 
 // Behavioral Effect Gems must change trusted combat simulation rather than being display-only.
 const combatBase=createCharacter(newGame(1),'IRONWARDEN','Effect Test','male');

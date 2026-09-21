@@ -8,6 +8,7 @@ const guildScreen=read('src/screens/GuildScreen.tsx');
 const chat=read('src/components/GuildChat.tsx');
 const onlineProjects=read('src/components/OnlineGuildProjectsPanel.tsx');
 const projectClient=read('src/online/guild-projects-v18.ts');
+const projectTransport=read('../../backend/supabase/migrations/20261018000160_guild_project_interactions_v1.sql');
 const activity=read('src/components/GuildActivityFeedPanel.tsx');
 const projects=read('src/components/GuildProjectsPanel.tsx');
 const detail=read('src/components/GuildProjectDetailPanel.tsx');
@@ -38,9 +39,15 @@ ok(projectClient.includes("from('guild_project_instances')"),'Guild Project clie
 ok(projectClient.includes("from('guild_project_member_progress')"),'Guild Project client must read personal authoritative contribution');
 ok(projectClient.includes("from('guild_project_resource_progress')"),'Guild Project client must read development resource progress');
 ok(projectClient.includes("from('guild_activity_feed')"),'Guild Project client must read the protected Guild activity feed');
-ok(!projectClient.includes('.insert(')&&!projectClient.includes('.update(')&&!projectClient.includes('.delete(')&&!projectClient.includes('.rpc('),'Guild Project mobile client must remain read-only until supported mutation transport exists');
+ok(!projectClient.includes('.insert(')&&!projectClient.includes('.update(')&&!projectClient.includes('.delete('),'Guild Project mobile client must never mutate Project tables directly');
+ok(projectClient.includes("db.rpc('guild_project_board_state_v1')"),'Guild Project board must load through protected transport');
+ok(projectClient.includes("db.rpc('guild_project_vote_v1'"),'Member voting must use a server-authoritative RPC');
+ok(projectClient.includes("db.rpc('guild_project_start_v1'"),'Project starting must use a server-authoritative RPC');
+ok(!projectClient.includes('guild_project_donate_v1')&&!projectClient.includes('guild_project_claim_v1'),'Donation/reward settlement must stay unavailable until atomic authoritative transport exists');
 
-ok(onlineProjects.includes('This view is read-only; management actions remain server-authoritative.'),'Live Projects UI must explain its read-only boundary');
+ok(onlineProjects.includes('Members can vote on the weekly board'),'Live Projects UI must expose supported member voting');
+ok(onlineProjects.includes('Resource donations and completion rewards stay server-owned'),'Unsafe donation/reward actions must keep an explicit authority boundary');
+ok(onlineProjects.includes('Start Project'),'Authorized roles must get the supported server-validated start action');
 ok(onlineProjects.includes("import {LoadingState} from './LoadingState'"),'Live Projects must use the shared loading state');
 ok(onlineProjects.includes("import {StatusPill} from './StatusPill'"),'Live Projects must use shared semantic status pills');
 ok(onlineProjects.includes('<StatusPill label="LIVE" tone="good"/>'),'Live Projects must expose a semantic live status');
@@ -48,6 +55,10 @@ ok(onlineProjects.includes('YOUR CONTRIBUTION'),'Live Projects must surface pers
 ok(onlineProjects.includes('meaningful contributors'),'Live Projects must surface anti-leech contributor progress');
 ok(onlineProjects.includes('<GuildActivityFeedPanel entries={snapshot.activity}/>'),'Live Projects must surface recent Guild activity');
 ok(onlineProjects.includes("project.status==='completed'"),'Live Project cards must distinguish completed state');
+ok(projectTransport.includes("v_role not in('leader','guild_master','co_leader','officer','quartermaster')"),'Server must enforce start-project role permissions');
+ok(projectTransport.includes("v_slot_cap:=case when v_level<5 then 0 when v_level<10 then 1 else 2 end"),'Server must enforce the launch-era Guild Project slot cap');
+ok(projectTransport.includes('for update'),'Vote/start transport must serialize candidate selection');
+ok(projectTransport.includes('GUILD_WEEKLY_PROJECT_ALREADY_ACTIVE'),'Server must enforce one active weekly Guild Project');
 
 ok(chat.includes('MEMBERS ONLY'),'Guild Chat must keep member-only context');
 ok(chat.includes('GuildTaggedPlayerName name={guild.name}'),'Guild Chat header must use the shared Guild identity treatment');
@@ -61,4 +72,4 @@ ok(detail.includes('disabled={!onDonate}')&&detail.includes('disabled={!onClaim}
 ok(decrees.includes('disabled={!onVote}'),'Decree voting must disable without an authoritative callback');
 ok(hub.includes('backgroundColor:C.selection'),'Legacy Guild hub tabs must use active theme selection surfaces');
 
-console.log('PASS: Guild Chat, live read-only Projects and activity presentation are wired, compact and theme-aware');
+console.log('PASS: Guild Chat, safe Project voting/starting and activity presentation are wired, compact and server-authoritative');

@@ -17,6 +17,7 @@ const rpc={
     return {eligible:true,sourceId:String(args.p_source_id),gemItemId:'gem:effect_execution:g3',pityTriggered:true,regionalCatalysts:1} as T;
   },
 };
+async function main(){
 const settled=await settleVerifiedRegionalGemEncounterV1(rpc,{accountId:'account-1',receiptKey:'regional:boss:receipt-001',zoneId:'ZONE_010',kind:'regional_boss',victory:true});
 assert.equal(settled.sourceId,'ZONE_010');
 assert.equal(calls.length,1);
@@ -36,3 +37,5 @@ try{await settleVerifiedRegionalGemEncounterV1(rpc,{accountId:'account-1',receip
 assert.ok(invalid,'Regional settlement receipt keys must be validated before RPC execution');
 
 console.log('PASS: regional gem settlement boundary and source-kind isolation');
+}
+void main().catch(error=>{console.error(error);process.exitCode=1;});

@@ -1,4 +1,4 @@
-import { ClassId,GatheringSkillId,GearSlot,GemStat } from '../core/types';
+import { ClassId,GatheringSkillId,GearSlot,GemEffectId,GemSocketKind,GemStat } from '../core/types';
 import {ItemRarity} from '../core/item-rarity';
 import {NOVICE_ITEMS} from './novice-sets';
 import {TOOL_ITEMS} from './gathering-tools';
@@ -12,7 +12,7 @@ export interface ItemDef {
   rarity?:ItemRarity; passive?:string;
   value:number; salvage?:{itemId:string;quantity:number};
   classRestriction?:ClassId; noviceSetId?:string; equipmentSetId?:string;
-  gemStat?:GemStat; gemPercent?:number; gemTier?:1|2;
+  gemStat?:GemStat; gemPercent?:number; gemTier?:1|2; gemKind?:GemSocketKind; gemEffect?:GemEffectId; gemEffectValue?:number;
 }
 
 const COMPLETE_SET_SLOTS:GearSlot[]=['helmet','legs','boots','weapon','offhand','amulet'];
@@ -78,6 +78,11 @@ const BASE_ITEMS:ItemDef[]=[
 {id:'WARDHEART_GEM',name:'Wardheart Gem',type:'gem',gemStat:'defense',gemPercent:.05,gemTier:2,value:1900,rarity:'legendary'},
 {id:'VITALITY_SHARD',name:'Vitality Shard',type:'gem',gemStat:'hp',gemPercent:.02,gemTier:1,value:320,rarity:'rare'},
 {id:'VITALITY_HEART_GEM',name:'Vitality Heart Gem',type:'gem',gemStat:'hp',gemPercent:.05,gemTier:2,value:1900,rarity:'legendary'},
+// Effect Gems occupy the dedicated Effect socket. They modify combat behavior rather than primary stats.
+{id:'SWIFT_SIGIL',name:'Swift Sigil',type:'gem',gemKind:'effect',gemEffect:'combat_speed',gemEffectValue:.02,gemTier:1,value:520,rarity:'rare',passive:'+2% combat speed while equipped'},
+{id:'BOSSBANE_SIGIL',name:'Bossbane Sigil',type:'gem',gemKind:'effect',gemEffect:'boss_power',gemEffectValue:.03,gemTier:1,value:620,rarity:'rare',passive:'+3% combat power against bosses'},
+{id:'BULWARK_SIGIL',name:'Bulwark Sigil',type:'gem',gemKind:'effect',gemEffect:'damage_reduction',gemEffectValue:.02,gemTier:1,value:620,rarity:'rare',passive:'-2% incoming combat damage'},
+{id:'RENEWAL_SIGIL',name:'Renewal Sigil',type:'gem',gemKind:'effect',gemEffect:'recovery',gemEffectValue:.10,gemTier:1,value:560,rarity:'rare',passive:'+10% between-kill recovery'},
 // Runtime pack weapon identities; numeric budgets retained from the prior primary weapons.
 {id:'basic_sword',name:'Basic Sword',type:'gear',slot:'weapon',attack:4,readiness:1,value:10},
 {id:'basic_tower_shield',name:'Basic Tower Shield',type:'gear',slot:'weapon',attack:3,defense:1,readiness:1,value:10},

@@ -6,7 +6,7 @@ import {WORLD_ZONES} from '../content/world-map';
 import {equipmentSetDef,equippedSetPieceCount} from '../content/equipment-sets';
 import {GameState,SkillId} from './types';
 import {workingTowardDestinationAvailability,type WorkingTowardDestination,type WorkingTowardDestinationAvailability} from './working-toward';
-import {enhancedGearStats,gearEnhancement,gemSocketCapacity,gearStatsAtRank,MAX_UPGRADE_RANK,upgradeQuote} from './equipment-enhancement';
+import {enhancedGearStats,gearEnhancement,gemEffectDescription,gemSocketCapacity,gemSocketKind,gemSocketState,gearStatsAtRank,MAX_UPGRADE_RANK,upgradeQuote} from './equipment-enhancement';
 import {effectiveStats} from './game';
 import {previewEquipment} from './equipment-preview';
 import {itemRarity,rarityMeta} from './item-rarity';
@@ -18,7 +18,7 @@ export interface ItemGearDecision{
  compatible:boolean;alreadyEquipped:boolean;replaces?:{itemId:string;name:string;rank:number};
  loadoutBefore:{attack:number;defense:number;hp:number;power:number};loadoutAfter:{attack:number;defense:number;hp:number;power:number};loadoutDelta:{attack:number;defense:number;hp:number;power:number};
  maxRank:number;maxItemStats:{attack:number;defense:number;hp:number};maxLoadoutGain:{attack:number;defense:number;hp:number;power:number};
- gems:Array<{id:string;name:string;stat:string;percent:number}>;
+ gems:Array<{id:string;name:string;kind:'stat'|'effect';detail:string;stat?:string;percent?:number}>;
  set?:{name:string;currentPieces:number;previewPieces:number;required:number;reached?:{pieces:number;bonus:string};next?:{pieces:number;bonus:string}};
 }
 const title=(value:string)=>value.toLowerCase().split('_').map(part=>part?part[0].toUpperCase()+part.slice(1):part).join(' ');
@@ -54,7 +54,7 @@ export function itemInspectModel(state:GameState,itemId:string){
   const bankQuantity=state.bank.stacks.find(stack=>stack.itemId===itemId)?.quantity??0;
   const effectLines:string[]=[];
   let upgrade:undefined|{rank:number;nextRank:number;successChance:number;dust:number;cores:number;gold:number;maxed:boolean;failures:number;equipped:boolean};
-  let sockets:undefined|{filled:number;capacity:number;gemNames:string[]};
+  let sockets:undefined|{filled:number;capacity:number;statGemName?:string;effectGemName?:string};
   let stats:undefined|{attack:number;defense:number;hp:number};
   let gearDecision:ItemGearDecision|undefined;
 
@@ -62,12 +62,12 @@ export function itemInspectModel(state:GameState,itemId:string){
     const enhancement=gearEnhancement(state,itemId),quote=upgradeQuote(state,itemId),enhanced=enhancedGearStats(state,itemId);
     stats=enhanced;
     upgrade={rank:enhancement.rank,nextRank:quote.targetRank,successChance:quote.successChance,dust:quote.dust,cores:quote.cores,gold:quote.gold,maxed:quote.maxed,failures:enhancement.failures,equipped:!!state.character&&Object.values(state.character.equipment).includes(itemId)};
-    const capacity=gemSocketCapacity(itemId);
-    sockets={filled:enhancement.gemIds.length,capacity,gemNames:enhancement.gemIds.map(id=>itemDef(id).name)};
+    const capacity=gemSocketCapacity(itemId),slotState=gemSocketState(state,itemId);
+    sockets={filled:slotState.filled,capacity,statGemName:slotState.statGemId?itemDef(slotState.statGemId).name:undefined,effectGemName:slotState.effectGemId?itemDef(slotState.effectGemId).name:undefined};
     if(state.character&&item.slot){
       const compatible=!item.classRestriction||item.classRestriction===state.character.classId;
       const before=effectiveStats(state),currentId=state.character.equipment[item.slot],currentItem=currentId?itemDef(currentId):undefined,currentRank=currentId?gearEnhancement(state,currentId).rank:0;
-      const gems=enhancement.gemIds.map(id=>{const gem=itemDef(id);return {id,name:gem.name,stat:title(gem.gemStat??'stat'),percent:gem.gemPercent??0};});
+      const gems=enhancement.gemIds.map(id=>{const gem=itemDef(id),kind=gemSocketKind(id);return {id,name:gem.name,kind,detail:kind==='stat'?`+${Math.round((gem.gemPercent??0)*100)}% ${title(gem.gemStat??'stat')}`:gemEffectDescription(id),stat:kind==='stat'?title(gem.gemStat??'stat'):'Effect',percent:kind==='stat'?(gem.gemPercent??0):(gem.gemEffectValue??0)};});
       let after=before,maxAfter=before,previewState=state;
       if(compatible){try{previewState=previewEquipment(state,itemId);after=effectiveStats(previewState);const maxState:GameState={...state,character:{...state.character,gearEnhancements:{...(state.character.gearEnhancements??{}),[itemId]:{...enhancement,rank:MAX_UPGRADE_RANK}}}};maxAfter=effectiveStats(previewEquipment(maxState,itemId));}catch{}}
       const set=equipmentSetDef(item.equipmentSetId);
@@ -91,8 +91,8 @@ export function itemInspectModel(state:GameState,itemId:string){
     effectLines.push(`${title(item.toolSkillId??'gathering')} tool · Tier ${item.toolTier??1}`);
     const speed=Math.round((1-(item.actionTimeMultiplier??1))*100);
     effectLines.push(speed>0?`${speed}% shorter base action time`:'Baseline action time');
-  }else if(item.type==='gem'&&item.gemStat){
-    effectLines.push(`+${Math.round((item.gemPercent??0)*100)}% ${title(item.gemStat)} when socketed`);
+  }else if(item.type==='gem'){
+    const kind=gemSocketKind(item.id);effectLines.push(kind==='stat'?`Stat Gem · +${Math.round((item.gemPercent??0)*100)}% ${title(item.gemStat??'stat')} when socketed`:`Effect Gem · ${gemEffectDescription(item.id)}`);
   }else if(item.passive){
     effectLines.push(item.passive);
   }

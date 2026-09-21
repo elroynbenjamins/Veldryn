@@ -23,6 +23,37 @@ import {normalizeOwnedPetIds,normalizeSelectedPetId} from './pet-collection';
 import {normalizeActivityQueue} from './activity-queue';
 import {normalizeActiveDailySupplyBoost,normalizeDailySuppliesTrack,normalizeDailySupplyBank} from './daily-supplies';
 import {normalizeChatEmoteTrayIds} from './chat-emotes';
+import {normalizeEnhancementGemSlots} from './equipment-enhancement';
+
+function normalizeGearEnhancements(raw:unknown){
+  const gearIds=new Set(ITEMS.filter(item=>item.type==='gear').map(item=>item.id));
+  return Object.fromEntries(Object.entries((raw&&typeof raw==='object'?raw:{}) as Record<string,any>)
+    .filter(([id,value])=>gearIds.has(id)&&value&&typeof value==='object')
+    .map(([id,value])=>{
+      const slots=normalizeEnhancementGemSlots(value);
+      return [id,{rank:Math.max(0,Math.min(10,Math.floor(Number(value.rank)||0))),failures:Math.max(0,Math.floor(Number(value.failures)||0)),...slots}];
+    }));
+}
+
+function displacedLegacyGemIds(raw:unknown){
+  const result:string[]=[];
+  for(const value of Object.values((raw&&typeof raw==='object'?raw:{}) as Record<string,any>)){
+    if(!value||typeof value!=='object'||value.statGemId||value.effectGemId||!Array.isArray(value.gemIds))continue;
+    const slots=normalizeEnhancementGemSlots(value),keep=new Map<string,number>();
+    for(const id of [slots.statGemId,slots.effectGemId])if(id)keep.set(id,(keep.get(id)??0)+1);
+    for(const id of value.gemIds){
+      if(typeof id!=='string'||!ITEMS.some(item=>item.id===id&&item.type==='gem'))continue;
+      const remaining=keep.get(id)??0;
+      if(remaining>0)keep.set(id,remaining-1);else result.push(id);
+    }
+  }
+  return result;
+}
+function addRefundsToStacks(stacks:any[],ids:string[]){
+  const next=(Array.isArray(stacks)?stacks:[]).map(stack=>({...stack}));
+  for(const itemId of ids){const found=next.find(stack=>stack.itemId===itemId);if(found)found.quantity=Math.max(0,Number(found.quantity)||0)+1;else next.push({itemId,quantity:1});}
+  return next;
+}
 
 export function normalizeSave(input:any):GameState{
   if(!input || ![4,5,6,7,8,9,10,11].includes(input.version)) throw new Error('Unsupported VELDRYN save version');
@@ -54,8 +85,7 @@ export function normalizeSave(input:any):GameState{
     const earnedEventSetIds=classSkinSets.filter(set=>set.unlockEventSkinId&&eventSkinIds.has(set.unlockEventSkinId)).map(set=>equipmentSetSkinId(set.id));
     const unlockedSkinIds=['starting',...(Array.isArray(input.character.unlockedSkinIds)?input.character.unlockedSkinIds.filter((id:unknown)=>typeof id==='string'&&validSkinIds.has(id)):[]),...earnedEventSetIds];
     const ownedPetIds=normalizeOwnedPetIds(input.character.ownedPetIds,legacyCosmeticPets);
-    const gearIds=new Set(ITEMS.filter(item=>item.type==='gear').map(item=>item.id)),gemIds=new Set(ITEMS.filter(item=>item.type==='gem').map(item=>item.id));
-    const gearEnhancements=Object.fromEntries(Object.entries(input.character.gearEnhancements??{}).filter(([id,value])=>gearIds.has(id)&&value&&typeof value==='object').map(([id,value]:[string,any])=>[id,{rank:Math.max(0,Math.min(10,Math.floor(Number(value.rank)||0))),failures:Math.max(0,Math.floor(Number(value.failures)||0)),gemIds:Array.isArray(value.gemIds)?value.gemIds.filter((gemId:unknown)=>typeof gemId==='string'&&gemIds.has(gemId)).slice(0,3):[]}])) as any;
+    const gearEnhancements=normalizeGearEnhancements(input.character.gearEnhancements) as any;
     return {
     ...savedCharacter,
     monsterMasteryPoints:normalizeMonsterMastery(savedCharacter.monsterMasteryPoints),
@@ -128,6 +158,10 @@ export function normalizeSave(input:any):GameState{
   const journalState=input.account?.journalState?.schemaVersion===42?input.account.journalState:undefined;
   const longTermMetrics=numberRecord(input.account?.longTermMetrics,120);
   const dailySupplies=normalizeDailySuppliesTrack(input.account?.dailySupplies);
+  const displacedLegacyGems=[
+    ...displacedLegacyGemIds(input.character?.gearEnhancements),
+    ...(Array.isArray(input.otherCharacters)?input.otherCharacters.flatMap((entry:any)=>displacedLegacyGemIds(entry?.character?.gearEnhancements)):[]),
+  ];
   const normalized={
     ...input,
     version:6,
@@ -137,7 +171,7 @@ export function normalizeSave(input:any):GameState{
     currentRegionId,
     regionalProgressById,
     inventory:{stacks:Array.isArray(input.inventory?.stacks)?input.inventory.stacks:[],capacity:Number(input.inventory?.capacity ?? 30)},
-    bank:{stacks:Array.isArray(input.bank?.stacks)?input.bank.stacks:[],capacity:Number(input.bank?.capacity ?? 120)},
+    bank:{stacks:addRefundsToStacks(input.bank?.stacks,displacedLegacyGems),capacity:Number(input.bank?.capacity ?? 120)},
     overflow:{stacks:Array.isArray(input.overflow?.stacks)?input.overflow.stacks:[],expiresAtMs:input.overflow?.expiresAtMs ?? null},
     quests,
     unlockedMonsterIds:Array.isArray(input.unlockedMonsterIds)?input.unlockedMonsterIds:['MOSS_RAT'],
@@ -168,7 +202,7 @@ export function normalizeSave(input:any):GameState{
   if(input.otherCharacters!==undefined&&!Array.isArray(input.otherCharacters))throw new Error('Invalid account roster.');
   if(Array.isArray(input.otherCharacters)&&input.otherCharacters.length>4)throw new Error('Account roster exceeds the five-character limit.');
   const rosterIds=new Set<string>();
-  const roster=Array.isArray(input.otherCharacters)?input.otherCharacters.filter((entry:any)=>entry?.character?.id).map((entry:any)=>{const id=String(entry.character.id);if(rosterIds.has(id))throw new Error('Duplicate account character.');rosterIds.add(id);return {...entry,character:{...entry.character,dailySupplyBoostBank:normalizeDailySupplyBank(entry.character.dailySupplyBoostBank),activeDailySupplyBoost:normalizeActiveDailySupplyBoost(entry.character.activeDailySupplyBoost)}};}):[];
+  const roster=Array.isArray(input.otherCharacters)?input.otherCharacters.filter((entry:any)=>entry?.character?.id).map((entry:any)=>{const id=String(entry.character.id);if(rosterIds.has(id))throw new Error('Duplicate account character.');rosterIds.add(id);return {...entry,character:{...entry.character,gearEnhancements:normalizeGearEnhancements(entry.character.gearEnhancements),dailySupplyBoostBank:normalizeDailySupplyBank(entry.character.dailySupplyBoostBank),activeDailySupplyBoost:normalizeActiveDailySupplyBoost(entry.character.activeDailySupplyBoost)}};}):[];
   if(character?.id&&rosterIds.has(character.id))throw new Error('Duplicate active account character.');
   normalized.otherCharacters=roster as GameState['otherCharacters'];
   normalized.account.unlockedCharacterSlots=Math.max(1,Math.min(5,Number(input.account?.unlockedCharacterSlots??1)));

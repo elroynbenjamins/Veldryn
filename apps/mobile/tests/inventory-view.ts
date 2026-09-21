@@ -76,7 +76,7 @@ const ingotInspect=itemInspectModel(state,'COPPER_INGOT');
 ok(ingotInspect.sources.some(source=>source.kind==='crafting'&&source.title==='Smelt Copper Batch'),'Quick Inspect exposes crafting acquisition sources');
 const gearInspect=itemInspectModel(state,'WORN_BLADE');
 ok(gearInspect.upgrade?.rank===0&&gearInspect.upgrade.successChance===1&&gearInspect.upgrade.nextRank===1,'Quick Inspect exposes the guaranteed first equipment upgrade chance');
-ok(gearInspect.stats?.attack===4&&gearInspect.sockets?.capacity===0,'Quick Inspect exposes effective stats and socket capacity');
+ok(gearInspect.stats?.attack===4&&gearInspect.sockets?.capacity===2,'Quick Inspect exposes effective stats and the fixed Stat/Effect socket capacity');
 const copperGatherSource=copperInspect.sources.find(source=>source.title==='Copper Vein');
 ok(copperGatherSource?.navigation?.kind==='skills'&&copperGatherSource.navigation.actionId==='COPPER_VEIN'&&copperGatherSource.navigation.regionId==='OLD_MINES','Gathering Quick Inspect routes to the exact source and region');
 const copperCombatSource=copperInspect.sources.find(source=>source.kind==='combat');

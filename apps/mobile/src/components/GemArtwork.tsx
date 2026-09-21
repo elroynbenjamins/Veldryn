@@ -21,7 +21,7 @@ export function GemArtwork({itemId,size=58,framed=true,showGradeBadge=true}:{ite
   const scale=size/GEM_SPRITE_V1_CELL,sheetSize=GEM_SPRITE_V1_SIZE*scale;
   const meta=grade?rarityMeta(GEM_GRADE_RARITY_V1[grade]):undefined,badgeSize=Math.max(14,Math.min(20,Math.round(size*.32)));
   const accessibilityLabel=grade?`${GEM_GRADE_LABEL_V1[grade]} grade ${GRADE_ROMAN[grade]} gem artwork`:'Gem crafting material artwork';
-  return <View accessibilityLabel={accessibilityLabel} style={[s.art,{width:size,height:size},framed&&[s.frame,{borderColor:meta?.color??C.line,backgroundColor:meta?.surface??C.panel2}],meta&&{shadowColor:meta.color,shadowOpacity:Math.max(.05,meta.glowOpacity*.75),shadowRadius:5,shadowOffset:{width:0,height:0},elevation:grade>=3?1:0}]}>
+  return <View accessibilityLabel={accessibilityLabel} style={[s.art,{width:size,height:size},framed&&[s.frame,{borderColor:meta?.color??C.line,backgroundColor:meta?.surface??C.panel2}],meta&&{shadowColor:meta.color,shadowOpacity:Math.max(.05,meta.glowOpacity*.75),shadowRadius:5,shadowOffset:{width:0,height:0},elevation:(grade??0)>=3?1:0}]}>
     <View style={{width:size,height:size,overflow:'hidden',borderRadius:framed?radii.sm:0}}>
       <Image
         source={gemSpriteSourceV1}

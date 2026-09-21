@@ -41,6 +41,9 @@ ok(projectClient.includes("from('guild_activity_feed')"),'Guild Project client m
 ok(!projectClient.includes('.insert(')&&!projectClient.includes('.update(')&&!projectClient.includes('.delete(')&&!projectClient.includes('.rpc('),'Guild Project mobile client must remain read-only until supported mutation transport exists');
 
 ok(onlineProjects.includes('This view is read-only; management actions remain server-authoritative.'),'Live Projects UI must explain its read-only boundary');
+ok(onlineProjects.includes("import {LoadingState} from './LoadingState'"),'Live Projects must use the shared loading state');
+ok(onlineProjects.includes("import {StatusPill} from './StatusPill'"),'Live Projects must use shared semantic status pills');
+ok(onlineProjects.includes('<StatusPill label="LIVE" tone="good"/>'),'Live Projects must expose a semantic live status');
 ok(onlineProjects.includes('YOUR CONTRIBUTION'),'Live Projects must surface personal contribution');
 ok(onlineProjects.includes('meaningful contributors'),'Live Projects must surface anti-leech contributor progress');
 ok(onlineProjects.includes('<GuildActivityFeedPanel entries={snapshot.activity}/>'),'Live Projects must surface recent Guild activity');

@@ -1,5 +1,6 @@
 import {LIVE_EVENT_CATALOG} from '../src/content/live-events';
 import {eventUiCopy,validateLiveEventCatalog} from '../src/content/live-event-ui';
+import {seasonalEventExpeditionInfo} from '../src/core/coop-event-expeditions';
 import {isLiveEventVisualKey,LIVE_EVENT_VISUAL_KEYS} from '../src/content/live-event-visual-keys';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
@@ -87,6 +88,16 @@ ok(frost!.milestones('IRONWARDEN').some(row=>row.reward.id==='EVT_PET_015'),'Fro
 ok(frost!.discoveries.some(row=>row.reward.id==='EVT_PET_016'),'Frostfall discovery grants Gift Mimic');
 ok(frost!.shop.some(row=>row.reward.id==='EVT_PET_017'),'Frostfall prestige stock grants Aurora Fox');
 ok(frost!.milestones('IRONWARDEN').some(row=>row.reward.id==='EVT_UNIT_009'),'Frostfall grants Frostbell Herald');
+
+const seasonalSeries=['EVT_ANNUAL_001_2027','EVT_ANNUAL_002_2027','EVT_ANNUAL_003_2027','EVT_ANNUAL_006_2027','EVT_ANNUAL_008_2027','EVT_ANNUAL_010_2027','EVT_ANNUAL_011_2027','EVT_ANNUAL_012_2027'];
+for(const eventId of seasonalSeries){
+  const expedition=seasonalEventExpeditionInfo(eventId);
+  ok(expedition,`${eventId} should expose a seasonal expedition`);
+  equal(expedition!.questline.length,3,`${eventId} should expose a three-step event questline`);
+  equal(expedition!.enemies.length,3,`${eventId} should expose three named seasonal enemies`);
+  equal(new Set(expedition!.enemies).size,3,`${eventId} enemy roster should be unique within the expedition`);
+  ok(expedition!.finalBoss.length>0,`${eventId} should expose a named final boss`);
+}
 
 const harvestCopy=eventUiCopy(harvest!);
 equal(harvestCopy.shopTitle,'HARVEST SHOP','Harvestwake uses event-shop wording');

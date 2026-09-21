@@ -1,5 +1,6 @@
 import {LIVE_EVENT_CATALOG} from '../src/content/live-events';
 import {eventUiCopy,validateLiveEventCatalog} from '../src/content/live-event-ui';
+import {hasLiveEventVisualBundle,liveEventVisualCoverage} from '../src/ui/live-event-visuals';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 function equal(actual:unknown,expected:unknown,message:string){if(actual!==expected)throw new Error(`${message}: expected ${String(expected)}, got ${String(actual)}`)}
@@ -14,6 +15,12 @@ equal(new Set(LIVE_EVENT_CATALOG.map(event=>event.signature.title)).size,9,'Ever
 ok(LIVE_EVENT_CATALOG.every(event=>event.signature.highlights.length>=2),'Every annual event should explain its signature loop');
 const communityEvents=LIVE_EVENT_CATALOG.filter(event=>event.communityEnabled===true).map(event=>event.name).sort();
 equal(communityEvents.join('|'),['Bloomwake','Frostfall Festival','Harvestwake','Merchant & Guild Festival'].sort().join('|'),'Only the four communal festivals should use shared progression');
+
+
+ok(LIVE_EVENT_CATALOG.every(event=>hasLiveEventVisualBundle(event.visualKey)),'Every annual event should resolve to an explicit visual bundle instead of the generic fallback');
+const harvestVisuals=liveEventVisualCoverage('harvestwake',LIVE_EVENT_CATALOG.find(event=>event.visualKey==='harvestwake')!.discoveries.map(row=>row.id));
+ok(harvestVisuals.commonCurrencyArt&&harvestVisuals.prestigeCurrencyArt,'Harvestwake should retain both bespoke currency icons');
+equal(harvestVisuals.discoveryArtCount,harvestVisuals.discoveryTotal,'Harvestwake should retain bespoke art for every discovery');
 
 
 const turning=LIVE_EVENT_CATALOG.find(event=>event.id==='EVT_ANNUAL_001_2026');

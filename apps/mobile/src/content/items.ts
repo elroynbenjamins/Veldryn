@@ -1,4 +1,4 @@
-import { ClassId,GatheringSkillId,GearSlot,GemStat } from '../core/types';
+import { ClassId,GatheringSkillId,GearSlot,GemStat,GemKind,EffectGemEffectId } from '../core/types';
 import {ItemRarity} from '../core/item-rarity';
 import {NOVICE_ITEMS} from './novice-sets';
 import {TOOL_ITEMS} from './gathering-tools';
@@ -12,7 +12,7 @@ export interface ItemDef {
   rarity?:ItemRarity; passive?:string;
   value:number; salvage?:{itemId:string;quantity:number};
   classRestriction?:ClassId; noviceSetId?:string; equipmentSetId?:string;
-  gemStat?:GemStat; gemPercent?:number; gemTier?:1|2;
+  gemKind?:GemKind; gemStat?:GemStat; gemPercent?:number; gemTier?:1|2; gemEffectId?:EffectGemEffectId; gemEffectValue?:number;
 }
 
 const COMPLETE_SET_SLOTS:GearSlot[]=['helmet','legs','boots','weapon','offhand','amulet'];
@@ -72,12 +72,17 @@ const BASE_ITEMS:ItemDef[]=[
 // Enhancement economy. Gems are intentionally scarce drops; tempering materials are universal.
 {id:'TEMPERING_DUST',name:'Tempering Dust',type:'material',value:22,rarity:'uncommon'},
 {id:'TEMPERING_CORE',name:'Tempering Core',type:'material',value:180,rarity:'rare'},
-{id:'EMBER_SHARD',name:'Ember Shard',type:'gem',gemStat:'attack',gemPercent:.02,gemTier:1,value:320,rarity:'rare'},
-{id:'EMBERHEART_GEM',name:'Emberheart Gem',type:'gem',gemStat:'attack',gemPercent:.05,gemTier:2,value:1900,rarity:'legendary'},
-{id:'WARD_SHARD',name:'Ward Shard',type:'gem',gemStat:'defense',gemPercent:.02,gemTier:1,value:320,rarity:'rare'},
-{id:'WARDHEART_GEM',name:'Wardheart Gem',type:'gem',gemStat:'defense',gemPercent:.05,gemTier:2,value:1900,rarity:'legendary'},
-{id:'VITALITY_SHARD',name:'Vitality Shard',type:'gem',gemStat:'hp',gemPercent:.02,gemTier:1,value:320,rarity:'rare'},
-{id:'VITALITY_HEART_GEM',name:'Vitality Heart Gem',type:'gem',gemStat:'hp',gemPercent:.05,gemTier:2,value:1900,rarity:'legendary'},
+{id:'EMBER_SHARD',name:'Ember Shard',type:'gem',gemKind:'stat',gemStat:'attack',gemPercent:.02,gemTier:1,value:320,rarity:'rare'},
+{id:'EMBERHEART_GEM',name:'Emberheart Gem',type:'gem',gemKind:'stat',gemStat:'attack',gemPercent:.05,gemTier:2,value:1900,rarity:'legendary'},
+{id:'WARD_SHARD',name:'Ward Shard',type:'gem',gemKind:'stat',gemStat:'defense',gemPercent:.02,gemTier:1,value:320,rarity:'rare'},
+{id:'WARDHEART_GEM',name:'Wardheart Gem',type:'gem',gemKind:'stat',gemStat:'defense',gemPercent:.05,gemTier:2,value:1900,rarity:'legendary'},
+{id:'VITALITY_SHARD',name:'Vitality Shard',type:'gem',gemKind:'stat',gemStat:'hp',gemPercent:.02,gemTier:1,value:320,rarity:'rare'},
+{id:'VITALITY_HEART_GEM',name:'Vitality Heart Gem',type:'gem',gemKind:'stat',gemStat:'hp',gemPercent:.05,gemTier:2,value:1900,rarity:'legendary'},
+// Effect Gems use the second typed socket on Rare+ equipment. Values stack across equipped pieces with bounded caps.
+{id:'GEFF_001',name:'Momentum Echo',type:'gem',gemKind:'effect',gemEffectId:'momentum',gemEffectValue:.01,gemTier:1,value:850,rarity:'rare',passive:'+1% combat action speed while equipped.'},
+{id:'GEFF_002',name:'Bulwark Echo',type:'gem',gemKind:'effect',gemEffectId:'bulwark',gemEffectValue:.01,gemTier:1,value:850,rarity:'rare',passive:'-1% incoming combat damage while equipped.'},
+{id:'GEFF_003',name:'Renewal Echo',type:'gem',gemKind:'effect',gemEffectId:'renewal',gemEffectValue:.02,gemTier:1,value:900,rarity:'rare',passive:'+2% post-kill recovery while equipped.'},
+{id:'GEFF_004',name:'Fortune Echo',type:'gem',gemKind:'effect',gemEffectId:'fortune',gemEffectValue:.01,gemTier:1,value:950,rarity:'rare',passive:'+1% combat Gold while equipped.'},
 // Runtime pack weapon identities; numeric budgets retained from the prior primary weapons.
 {id:'basic_sword',name:'Basic Sword',type:'gear',slot:'weapon',attack:4,readiness:1,value:10},
 {id:'basic_tower_shield',name:'Basic Tower Shield',type:'gear',slot:'weapon',attack:3,defense:1,readiness:1,value:10},

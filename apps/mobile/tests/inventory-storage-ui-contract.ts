@@ -36,6 +36,9 @@ ok(inspect.includes('OPEN ›')&&inspect.includes('onNavigate(source.navigation'
 ok(inspectModel.includes("actionId:node.id")&&inspectModel.includes("monsterId:monster.id")&&inspectModel.includes("recipeId:recipe.id"),'Quick Inspect navigation must retain exact source IDs');
 ok(screenSource.includes('onNavigateInspect')&&screenSource.includes('closeInspect();onNavigateInspect(destination)'),'Inventory must close Quick Inspect before navigating');
 ok(appSource.includes('onNavigateInspect={openWorkingTowardDestination}'),'Quick Inspect navigation must reuse the existing region-aware gameplay router');
+ok(inspect.includes('AvailabilityPill')&&inspect.includes("status==='ready'")&&inspect.includes("status==='travel'")&&inspect.includes("status==='locked'"),'Quick Inspect must visibly distinguish READY, TRAVEL and LOCKED source states');
+ok(inspect.includes('availabilityDetail'),'Quick Inspect must show blocker or travel detail alongside availability');
+ok(inspectModel.includes('workingTowardDestinationAvailability'),'Quick Inspect availability must reuse the shared progression availability rules');
 ok(screenSource.includes('StorageChip')&&screenSource.includes('storageCapacityStatus'),'Inventory and Bank must show compact capacity feedback');
 ok(screenSource.includes('onToggleFavorite')&&card.includes('favoriteButton'),'Item cards must expose one-tap favorite controls');
 ok(card.includes('protected from selling and salvage'),'Favorite items must explain disposal protection');
@@ -49,4 +52,4 @@ ok(slot.includes('borderWidth:meta.borderWidth'),'Equipped item slots must use r
 ok(card.includes('rarityNameColor')&&card.includes("fontWeight:'800'"),'Inventory item names must use bold accessible rarity emphasis');
 ok(slot.includes('rarityNameColor')&&slot.includes("fontWeight:'800'"),'Equipment slot names must use bold accessible rarity emphasis');
 
-console.log('PASS: compact themed inventory/bank controls, NEW feedback, favorites, safe bulk selection, actionable Quick Inspect, capacity feedback, rarity frames and rarity-colored names');
+console.log('PASS: compact themed inventory/bank controls, NEW feedback, favorites, safe bulk selection, actionable Quick Inspect availability, capacity feedback, rarity frames and rarity-colored names');

@@ -3,6 +3,7 @@ import {acknowledgeAllInventoryItems,acknowledgeInventoryItem,inventoryFavoriteI
 import {validateGameCommand,validateGameSettings} from '../src/core/game-commands';
 import {bulkSalvageSelected,bulkSelectionSummary,bulkSellSelected,bulkTransferSelected} from '../src/core/inventory-bulk';
 import {itemInspectModel} from '../src/core/item-inspect';
+import {workingTowardDestinationAvailability} from '../src/core/working-toward';
 import {normalizeSave} from '../src/core/save-normalization';
 function ok(value:boolean,message:string){if(!value)throw new Error(message)}
 const state=createCharacter(newGame(1000),'IRONWARDEN');
@@ -84,6 +85,19 @@ const ingotCraftSource=ingotInspect.sources.find(source=>source.kind==='crafting
 ok(ingotCraftSource?.navigation?.kind==='skills'&&ingotCraftSource.navigation.recipeId==='SMELT_COPPER_INGOT'&&ingotCraftSource.navigation.mode==='crafting','Crafted item source opens the exact recipe');
 const copperUse=copperInspect.usedIn.find(recipe=>recipe.name==='Smelt Copper Batch');
 ok(copperUse?.navigation.kind==='skills'&&copperUse.navigation.recipeId==='SMELT_COPPER_INGOT','Crafting-use row opens the recipe that consumes the item');
+ok(copperGatherSource?.availability?.status==='locked'&&copperGatherSource.availability.detail.includes('character level 16'),'Quick Inspect shows a locked region requirement before navigation');
+const travelReadyState={...state,character:{...state.character!,level:20},skills:state.skills.map(row=>row.skillId==='mining'?{...row,level:20}:row),currentRegionId:'GREENFIELDS'};
+const travelCopper=itemInspectModel(travelReadyState,'COPPER_ORE').sources.find(source=>source.title==='Copper Vein');
+ok(travelCopper?.availability?.status==='travel'&&travelCopper.availability.detail.includes('Old Mines'),'Unlocked off-region gathering source is marked TRAVEL');
+const localCopper=itemInspectModel({...travelReadyState,currentRegionId:'OLD_MINES'},'COPPER_ORE').sources.find(source=>source.title==='Copper Vein');
+ok(localCopper?.availability?.status==='ready'&&localCopper.availability.label==='READY','Unlocked local gathering source is marked READY');
+const lowMiningState={...state,character:{...state.character!,level:20},currentRegionId:'OLD_MINES'};
+const oathstoneSource=itemInspectModel(lowMiningState,'OATHSTONE_ORE').sources.find(source=>source.title==='Oathstone Seam');
+ok(oathstoneSource?.availability?.status==='locked'&&oathstoneSource.availability.detail.includes('Mining 16'),'Gathering source shows the actual skill-level blocker');
+ok(copperUse?.availability.status==='ready'&&copperUse.availability.label==='AVAILABLE','Unlocked crafting use is labeled AVAILABLE');
+const smithingReadyCharLocked={...state,character:{...state.character!,level:20},skills:state.skills.map(row=>row.skillId==='smithing'?{...row,level:20}:row)};
+const characterGate=workingTowardDestinationAvailability(smithingReadyCharLocked,{kind:'skills',skillId:'smithing',mode:'crafting',recipeId:'CRAFT_LASTWALL_CHEST',button:'Open recipe',detail:'Open Lastwall Chestguard.'});
+ok(characterGate.status==='locked'&&characterGate.detail.includes('character level 21'),'Recipe availability reports character-level blockers accurately');
 ok(JSON.stringify(stacks)===original,'Sorting does not mutate save stacks');
 ok(transferAmount(3,10)===3,'Quantity clamps to owned count');
 ok(transferAmount(25,'all')===25,'All transfer');
@@ -94,4 +108,4 @@ ok(transferError(state,'TRAVEL_RATION',10,'inventory')==='','Valid transfer');
 ok(!!transferError({...state,bank:{stacks:[],capacity:0}},'TRAVEL_RATION',1,'inventory'),'Full destination rejected');
 ok(!!transferError(state,'TRAVEL_RATION',100,'inventory'),'Insufficient quantity rejected');
 ok(!!transferError(state,'TRAVEL_RATION',1,'bank'),'Empty bank cannot withdraw');
-console.log('PASS: inventory search, NEW tracking, favorites, safe bulk actions, actionable Quick Inspect data, capacity status, sorting, transfer preflight and healing previews');
+console.log('PASS: inventory search, NEW tracking, favorites, safe bulk actions, actionable Quick Inspect availability, capacity status, sorting, transfer preflight and healing previews');

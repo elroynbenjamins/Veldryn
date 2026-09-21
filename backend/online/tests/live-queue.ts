@@ -20,6 +20,7 @@ async function main(){
    }
    if(name==='online_live_queue_state_server_v1')return {ticket:null} as T;
    if(name==='online_live_candidates_server_v1')return {tickets:[],requiredTicketIds:[],refillId:null,serverNow:0} as T;
+   if(name==='online_live_quick_match_demand_server_v1')return {serverNow:1000,demands:[{expeditionId:'EXP_001',tank:0,damage:2,support:1,oldestQueuedAtMs:0},{expeditionId:'EXP_002',tank:0,damage:0,support:0,oldestQueuedAtMs:0}]} as T;
    if(name==='command_online_live_queue_server_v1'){
     if(args.p_ticket_id!==ticket)throw new GameplayError('ticket_not_owned',403);
     return {ticketId:ticket,status:args.p_action==='cancel'?'cancelled':'queued'} as T;
@@ -34,6 +35,12 @@ async function main(){
  assert.equal((await handler(request('queue',{...body,dungeonId:'EXP_005'}))).status,400);
  assert.equal((await handler(request('queue',{...body,characterId:'other'}))).status,403);
  assert.equal((await handler(request('queue',{...body,loadoutRevision:6}))).status,409);
+ const quick={requestId:'quick-start-001',characterId:state.character!.id,loadoutId:'current',loadoutRevision:7};
+ const quickResponse=await handler(request('quick-queue',quick));assert.equal(quickResponse.status,200);
+ const quickWrite=calls.filter(row=>row.name==='join_online_live_queue_server_v1').at(-1)!;
+ assert.equal(quickWrite.args.p_expedition_id,'EXP_001','Quick Match should send the Tank to the nearly complete dungeon pool');
+ assert.equal(quickWrite.args.p_tier,3,'Quick Match still stores the authoritative maximum eligible tier');
+ prior=null;reads=0;calls.length=0;
  const first=await handler(request('queue',body));assert.equal(first.status,200);
  const write=calls.find(row=>row.name==='join_online_live_queue_server_v1')!;
  const frozen=write.args.p_snapshot as {accountId:string;readiness:{role:string;ready:boolean}};

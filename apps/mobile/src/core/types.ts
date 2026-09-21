@@ -8,7 +8,9 @@ export type BodyPresentation = 'male' | 'female';
 export type GearSlot = 'weapon' | 'offhand' | 'helmet' | 'chest' | 'legs' | 'boots' | 'gloves' | 'cape' | 'amulet' | 'ring';
 export interface CharacterLoadoutPreset{id:string;slotIndex:number;name:string;classId:ClassId;equipment:Partial<Record<GearSlot,string>>;foodId?:string;companionId?:string;createdAtMs:number;updatedAtMs:number;}
 export type GemStat = 'attack'|'defense'|'hp';
-export interface GearEnhancementState { rank:number; failures:number; gemIds:string[]; }
+export type GemKind = 'stat'|'effect';
+export type EffectGemEffectId = 'momentum'|'bulwark'|'renewal'|'fortune';
+export interface GearEnhancementState { rank:number; failures:number; statGemId?:string; effectGemId?:string; legacyGemIds?:string[]; /** Legacy-compatible flattened view; canonical slots are statGemId/effectGemId. */ gemIds:string[]; }
 export type ActivityKind = 'combat' | 'mining' | 'woodcutting' | 'fishing' | 'herbalism' | 'alchemy' | 'faith' | 'training' | 'hunting' | 'exploration';
 export type CombatChallengeId='ferocious'|'hardened'|'nemesis'|'apex';
 export type CombatAffixId='bloodthirsty'|'ironhide'|'colossal'|'cursed';

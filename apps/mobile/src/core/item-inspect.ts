@@ -3,14 +3,24 @@ import {GATHERING,RECIPES} from '../content/skills';
 import {HERB_NODES} from '../content/herbalism';
 import {MONSTERS} from '../content/monsters';
 import {WORLD_ZONES} from '../content/world-map';
+import {equipmentSetDef,equippedSetPieceCount} from '../content/equipment-sets';
 import {GameState,SkillId} from './types';
 import {workingTowardDestinationAvailability,type WorkingTowardDestination,type WorkingTowardDestinationAvailability} from './working-toward';
-import {enhancedGearStats,gearEnhancement,gemSocketCapacity,upgradeQuote} from './equipment-enhancement';
+import {enhancedGearStats,gearEnhancement,gemSocketCapacity,gearStatsAtRank,MAX_UPGRADE_RANK,upgradeQuote} from './equipment-enhancement';
+import {effectiveStats} from './game';
+import {previewEquipment} from './equipment-preview';
 import {itemRarity,rarityMeta} from './item-rarity';
 
 export type ItemInspectSourceKind='gathering'|'crafting'|'combat'|'starting';
 export interface ItemInspectSource{kind:ItemInspectSourceKind;title:string;detail:string;navigation?:WorkingTowardDestination;availability?:WorkingTowardDestinationAvailability;}
 export interface ItemRecipeUse{name:string;skill:string;level:number;quantity:number;navigation:WorkingTowardDestination;availability:WorkingTowardDestinationAvailability;}
+export interface ItemGearDecision{
+ compatible:boolean;alreadyEquipped:boolean;replaces?:{itemId:string;name:string;rank:number};
+ loadoutBefore:{attack:number;defense:number;hp:number;power:number};loadoutAfter:{attack:number;defense:number;hp:number;power:number};loadoutDelta:{attack:number;defense:number;hp:number;power:number};
+ maxRank:number;maxItemStats:{attack:number;defense:number;hp:number};maxLoadoutGain:{attack:number;defense:number;hp:number;power:number};
+ gems:Array<{id:string;name:string;stat:string;percent:number}>;
+ set?:{name:string;currentPieces:number;previewPieces:number;required:number;reached?:{pieces:number;bonus:string};next?:{pieces:number;bonus:string}};
+}
 const title=(value:string)=>value.toLowerCase().split('_').map(part=>part?part[0].toUpperCase()+part.slice(1):part).join(' ');
 const pct=(value:number)=>value>=.1?`${Math.round(value*100)}%`:`${(value*100).toFixed(value<.01?2:1)}%`;
 
@@ -46,6 +56,7 @@ export function itemInspectModel(state:GameState,itemId:string){
   let upgrade:undefined|{rank:number;nextRank:number;successChance:number;dust:number;cores:number;gold:number;maxed:boolean;failures:number;equipped:boolean};
   let sockets:undefined|{filled:number;capacity:number;gemNames:string[]};
   let stats:undefined|{attack:number;defense:number;hp:number};
+  let gearDecision:ItemGearDecision|undefined;
 
   if(item.type==='gear'){
     const enhancement=gearEnhancement(state,itemId),quote=upgradeQuote(state,itemId),enhanced=enhancedGearStats(state,itemId);
@@ -53,6 +64,24 @@ export function itemInspectModel(state:GameState,itemId:string){
     upgrade={rank:enhancement.rank,nextRank:quote.targetRank,successChance:quote.successChance,dust:quote.dust,cores:quote.cores,gold:quote.gold,maxed:quote.maxed,failures:enhancement.failures,equipped:!!state.character&&Object.values(state.character.equipment).includes(itemId)};
     const capacity=gemSocketCapacity(itemId);
     sockets={filled:enhancement.gemIds.length,capacity,gemNames:enhancement.gemIds.map(id=>itemDef(id).name)};
+    if(state.character&&item.slot){
+      const compatible=!item.classRestriction||item.classRestriction===state.character.classId;
+      const before=effectiveStats(state),currentId=state.character.equipment[item.slot],currentItem=currentId?itemDef(currentId):undefined,currentRank=currentId?gearEnhancement(state,currentId).rank:0;
+      const gems=enhancement.gemIds.map(id=>{const gem=itemDef(id);return {id,name:gem.name,stat:title(gem.gemStat??'stat'),percent:gem.gemPercent??0};});
+      let after=before,maxAfter=before,previewState=state;
+      if(compatible){try{previewState=previewEquipment(state,itemId);after=effectiveStats(previewState);const maxState:GameState={...state,character:{...state.character,gearEnhancements:{...(state.character.gearEnhancements??{}),[itemId]:{...enhancement,rank:MAX_UPGRADE_RANK}}}};maxAfter=effectiveStats(previewEquipment(maxState,itemId));}catch{}}
+      const set=equipmentSetDef(item.equipmentSetId);
+      let setDecision:ItemGearDecision['set'];
+      if(set){
+        const currentPieces=equippedSetPieceCount(state.character.equipment,set),previewPieces=compatible?equippedSetPieceCount(previewState.character!.equipment,set):currentPieces;
+        const milestones=[{pieces:2,bonus:set.twoPiece},{pieces:4,bonus:set.fourPiece},{pieces:6,bonus:set.sixPiece},{pieces:8,bonus:set.eightPiece},{pieces:10,bonus:set.tenPiece}];
+        setDecision={name:set.name,currentPieces,previewPieces,required:10,reached:[...milestones].reverse().find(row=>row.pieces<=previewPieces),next:milestones.find(row=>row.pieces>previewPieces)};
+      }
+      gearDecision={compatible,alreadyEquipped:currentId===itemId,replaces:currentItem?{itemId:currentItem.id,name:currentItem.name,rank:currentRank}:undefined,
+        loadoutBefore:{attack:before.attack,defense:before.defense,hp:before.hp,power:before.power},loadoutAfter:{attack:after.attack,defense:after.defense,hp:after.hp,power:after.power},
+        loadoutDelta:{attack:after.attack-before.attack,defense:after.defense-before.defense,hp:after.hp-before.hp,power:after.power-before.power},maxRank:MAX_UPGRADE_RANK,maxItemStats:gearStatsAtRank(itemId,MAX_UPGRADE_RANK),
+        maxLoadoutGain:{attack:maxAfter.attack-after.attack,defense:maxAfter.defense-after.defense,hp:maxAfter.hp-after.hp,power:maxAfter.power-after.power},gems,set:setDecision};
+    }
     if(item.readiness)effectLines.push(`Readiness +${item.readiness}`);
     if(item.passive)effectLines.push(item.passive);
   }else if(item.type==='food'){
@@ -71,5 +100,5 @@ export function itemInspectModel(state:GameState,itemId:string){
 
   const actionableSources=sources.map(source=>source.navigation?{...source,availability:workingTowardDestinationAvailability(state,source.navigation)}:source);
   const actionableUses=usedIn.map(recipe=>({...recipe,availability:workingTowardDestinationAvailability(state,recipe.navigation)}));
-  return {item,rarityId,rarity,inventoryQuantity,bankQuantity,totalQuantity:inventoryQuantity+bankQuantity,effectLines,stats,upgrade,sockets,sources:actionableSources,usedIn:actionableUses};
+  return {item,rarityId,rarity,inventoryQuantity,bankQuantity,totalQuantity:inventoryQuantity+bankQuantity,effectLines,stats,upgrade,sockets,gearDecision,sources:actionableSources,usedIn:actionableUses};
 }

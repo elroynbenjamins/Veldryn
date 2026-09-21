@@ -49,7 +49,12 @@ async function main(){
   if(definition.id==='EVENT_BLOOMWAKE_THORNHEART_GROVE'){const reacted=effectiveEventNode({...run,mechanic:{id:definition.mechanic.id,value:0}},byId('d4-c0'));assert.equal(reacted.kind,'elite');assert.ok((reacted.encounterAttackMultiplier??1)>1);}
   if(definition.id==='EVENT_SUNCREST_SHATTERED_ISLES'){const base=byId('d4-c2'),reacted=effectiveEventNode({...run,mechanic:{id:definition.mechanic.id,value:100}},base);assert.ok((reacted.objectiveDelta??0)>(base.objectiveDelta??0));assert.match(reacted.title??'',/Crowd-Favorite/);}
   if(definition.id==='EVENT_STARFALL_ASTRAL_RIFT'){const base=byId('d5-c2'),reacted=effectiveEventNode({...run,objective:{id:definition.objective.id,count:2}},base);assert.ok((reacted.mechanicDelta??0)>(base.mechanicDelta??0));assert.ok(reacted.risk<base.risk);}
-  if(definition.id==='EVENT_VEILBREAK_GLOAM_BREACH'){const reacted=effectiveEventNode({...run,mechanic:{id:definition.mechanic.id,value:0}},byId('d4-c0'));assert.equal(reacted.kind,'elite');assert.match(reacted.title??'',/Blackout Assault/);}
+  if(definition.id==='EVENT_VEILBREAK_GLOAM_BREACH'){
+   const base=byId('d4-c0'),critical={...run,mechanic:{id:definition.mechanic.id,value:0}};
+   const reacted=effectiveEventNode(critical,base);assert.equal(reacted.kind,'elite');assert.match(reacted.title??'',/Blackout Assault/);
+   const v4=effectiveEventNode({...critical,graph:{...run.graph,generatorVersion:'event-route-v4'}},base);assert.equal(v4.kind,'elite');assert.match(v4.title??'',/Blackout Assault/);
+   const v3=effectiveEventNode({...critical,graph:{...run.graph,generatorVersion:'event-route-v3'}},base);assert.equal(v3.kind,base.kind);assert.equal(v3.title,base.title);
+  }
   if(definition.id==='EVENT_MERCHANT_GILDED_ROAD'){const reacted=effectiveEventNode({...run,objective:{id:definition.objective.id,count:1}},byId('d3-c2'));assert.ok((reacted.objectiveDelta??0)>0);assert.match(reacted.title??'',/Emergency Cargo/);}
   if(definition.id==='EVENT_FROSTFALL_AURORA_HOLLOW'){const base=byId('d4-c0'),reacted=effectiveEventNode({...run,objective:{id:definition.objective.id,count:2}},base);assert.ok((reacted.mechanicDelta??0)>(base.mechanicDelta??0));assert.match(reacted.title??'',/Hearthlit/);}
  }

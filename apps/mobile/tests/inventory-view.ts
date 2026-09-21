@@ -74,7 +74,7 @@ ok(copperInspect.usedIn.some(recipe=>recipe.name==='Smelt Copper Batch'&&recipe.
 const ingotInspect=itemInspectModel(state,'COPPER_INGOT');
 ok(ingotInspect.sources.some(source=>source.kind==='crafting'&&source.title==='Smelt Copper Batch'),'Quick Inspect exposes crafting acquisition sources');
 const gearInspect=itemInspectModel(state,'WORN_BLADE');
-ok(gearInspect.upgrade?.rank===0&&gearInspect.upgrade.successChance===.95&&gearInspect.upgrade.nextRank===1,'Quick Inspect exposes the next equipment upgrade chance');
+ok(gearInspect.upgrade?.rank===0&&gearInspect.upgrade.successChance===1&&gearInspect.upgrade.nextRank===1,'Quick Inspect exposes the guaranteed first equipment upgrade chance');
 ok(gearInspect.stats?.attack===4&&gearInspect.sockets?.capacity===0,'Quick Inspect exposes effective stats and socket capacity');
 ok(JSON.stringify(stacks)===original,'Sorting does not mutate save stacks');
 ok(transferAmount(3,10)===3,'Quantity clamps to owned count');

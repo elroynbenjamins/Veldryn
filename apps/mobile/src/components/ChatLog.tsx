@@ -7,7 +7,7 @@ export interface ChatLogItem{id:string}
 export function ChatLog<T extends ChatLogItem>({channelKey,items,firstUnreadMessageId,emptyText,renderItem,onCaughtUp}:{channelKey:string;items:readonly T[];firstUnreadMessageId?:string;emptyText:string;renderItem:(item:T)=>ReactNode;onCaughtUp?:()=>void}){
  const C=useGameTheme(),scrollRef=useRef<ScrollView>(null),nearBottomRef=useRef(!firstUnreadMessageId),initializedRef=useRef(false),previousIdsRef=useRef<Set<string>>(new Set()),caughtUpIdRef=useRef<string|undefined>();
  const [dividerId,setDividerId]=useState(firstUnreadMessageId),[dividerCleared,setDividerCleared]=useState(false),[pendingNew,setPendingNew]=useState(0);
- const latestId=items.at(-1)?.id;
+ const latestId=items.length?items[items.length-1].id:undefined;
 
  const caughtUp=()=>{setPendingNew(0);setDividerCleared(true);if(!latestId||caughtUpIdRef.current===latestId)return;caughtUpIdRef.current=latestId;onCaughtUp?.();};
  useEffect(()=>{nearBottomRef.current=!firstUnreadMessageId;initializedRef.current=false;previousIdsRef.current=new Set();caughtUpIdRef.current=undefined;setDividerId(firstUnreadMessageId);setDividerCleared(false);setPendingNew(0);},[channelKey]);
@@ -43,7 +43,7 @@ export function ChatLog<T extends ChatLogItem>({channelKey,items,firstUnreadMess
 
  return <View style={s.root}>
   <ScrollView ref={scrollRef} style={s.log} contentContainerStyle={s.inner} keyboardShouldPersistTaps="handled" scrollEventThrottle={80} onScroll={onScroll} onContentSizeChange={onContentSizeChange}>
-   {items.length?items.map(item=><View key={item.id}>{!dividerCleared&&dividerId===item.id?<View onLayout={onDividerLayout} style={s.divider}><View style={[s.line,{backgroundColor:C.warning}]}/><Text style={[s.dividerText,{color:C.warning}]}>NEW MESSAGES</Text><View style={[s.line,{backgroundColor:C.warning}]}/></View>:null}{renderItem(item)}</View>):<Text style={[s.empty,{color:C.muted}]}>{emptyText}</Text>}
+   {items.length?items.map(item=><View key={item.id} onLayout={!dividerCleared&&dividerId===item.id?onDividerLayout:undefined}>{!dividerCleared&&dividerId===item.id?<View style={s.divider}><View style={[s.line,{backgroundColor:C.warning}]}/><Text style={[s.dividerText,{color:C.warning}]}>NEW MESSAGES</Text><View style={[s.line,{backgroundColor:C.warning}]}/></View>:null}{renderItem(item)}</View>):<Text style={[s.empty,{color:C.muted}]}>{emptyText}</Text>}
   </ScrollView>
   {pendingNew>0?<Pressable accessibilityRole="button" accessibilityLabel={'Jump to '+pendingNew+' new messages'} onPress={jumpLatest} style={({pressed})=>[s.jump,{backgroundColor:C.selection,borderColor:C.selectionLine},pressed&&s.pressed]}><Text style={[s.jumpText,{color:C.info}]}>↓ {pendingNew>99?'99+':pendingNew} NEW</Text></Pressable>:null}
  </View>;

@@ -62,6 +62,20 @@ alter table public.gem_resonance_cache_live_clears_v1 enable row level security;
 revoke all on public.gem_resonance_cache_live_clears_v1 from public,anon,authenticated;
 grant all on public.gem_resonance_cache_live_clears_v1 to service_role;
 
+-- A completed run may expose more than one reward stage over its lifetime. Gem/pity
+-- settlement is run-scoped so claiming a second stage can never roll the boss twice.
+create table if not exists public.gem_coop_run_settlements_v1(
+ account_id uuid not null references auth.users(id) on delete cascade,
+ run_id uuid not null references public.expedition_runs(id) on delete cascade,
+ source_id text not null,
+ entitlement_id uuid not null references public.coop_reward_entitlements(id) on delete cascade,
+ created_at timestamptz not null default clock_timestamp(),
+ primary key(account_id,run_id)
+);
+alter table public.gem_coop_run_settlements_v1 enable row level security;
+revoke all on public.gem_coop_run_settlements_v1 from public,anon,authenticated;
+grant all on public.gem_coop_run_settlements_v1 to service_role;
+
 create or replace function public.settle_coop_gem_reward_v1()
 returns trigger language plpgsql security definer set search_path=public as $$
 declare
@@ -94,6 +108,7 @@ declare
  v_dust integer;
  v_radiant integer:=0;
  v_inserted integer:=0;
+ v_gem_inserted integer:=0;
  v_changed boolean:=false;
 begin
  if old.claimed_at is not null or new.claimed_at is null or new.entitlement_kind<>'participant' then return new;end if;
@@ -118,7 +133,12 @@ begin
  end case;
 
  -- Authored co-op boss rates: 18% Grade III, source pity at 8, 8% recipe, 15% Regional Catalyst.
- if v_families is not null then
+ if v_families is not null and new.reward_stage in ('clear','final') then
+  insert into public.gem_coop_run_settlements_v1(account_id,run_id,source_id,entitlement_id)
+  values(new.recipient_account_id,new.run_id,v_source,new.id) on conflict do nothing;
+  get diagnostics v_gem_inserted=row_count;
+ end if;
+ if v_gem_inserted=1 then
   v_state:=jsonb_set(v_state,'{account,gemPityBySource}',coalesce(v_state#>'{account,gemPityBySource}','{}'::jsonb),true);
   v_pity:=coalesce((v_state#>>array['account','gemPityBySource',v_source])::integer,0);
   v_hit:=(v_pity+1>=8) or public.veldryn_hash_roll_v1(new.id::text||':gem-drop')<0.18;
@@ -150,7 +170,7 @@ begin
 
  -- Weekly cache only counts a successful Live clear in its current UTC earning week.
  -- Claiming an old entitlement later cannot migrate that clear into a newer week.
- if v_mode='live' and new.period_week_key=v_current_week then
+ if v_mode='live' and new.reward_stage in ('clear','final') and new.period_week_key=v_current_week then
   insert into public.gem_resonance_cache_live_clears_v1(account_id,week_key,run_id)
   values(new.recipient_account_id,v_current_week,new.run_id) on conflict do nothing;
   get diagnostics v_inserted=row_count;

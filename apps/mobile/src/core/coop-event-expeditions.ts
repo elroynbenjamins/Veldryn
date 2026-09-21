@@ -35,14 +35,39 @@ export interface CoopEventRunServerProjection{
   settlement:{status:'pending'|'claimed';rewardMarks?:number};
 }
 
-const EVENT_EXPEDITION_SERIES=new Set([
-  'EVT_ANNUAL_001','EVT_ANNUAL_002','EVT_ANNUAL_003','EVT_ANNUAL_006',
-  'EVT_ANNUAL_008','EVT_ANNUAL_010','EVT_ANNUAL_011','EVT_ANNUAL_012',
-]);
+export interface SeasonalEventExpeditionIdentity{
+  seriesId:string;
+  expeditionId:string;
+  eventName:string;
+  name:string;
+  description:string;
+  routeHighlights:readonly string[];
+  finalBoss:string;
+  minLevel:number;
+  rewardMarks:number;
+}
+
+const EVENT_EXPEDITION_IDENTITIES:Readonly<Record<string,SeasonalEventExpeditionIdentity>>={
+  EVT_ANNUAL_001:{seriesId:'EVT_ANNUAL_001',expeditionId:'EVENT_TURNING_CHRONICLE_VAULT',eventName:'Turning of the Age',name:'The Chronicle Vault',description:'Descend through fractured archives where memories of the closing age have become hostile echoes.',routeHighlights:['Shattered Archive','Hourglass Causeway','First Dawn Observatory'],finalBoss:'The Last Hour',minLevel:50,rewardMarks:110},
+  EVT_ANNUAL_002:{seriesId:'EVT_ANNUAL_002',expeditionId:'EVENT_HEARTBOND_VOW_GARDEN',eventName:'Heartbond Festival',name:'The Broken Vow Garden',description:'Follow a sabotaged festival route through rose gardens and lantern bridges twisted by broken vows.',routeHighlights:['Rosebridge','Vow Garden','Lantern Promenade'],finalBoss:'The Severed Vow',minLevel:30,rewardMarks:92},
+  EVT_ANNUAL_003:{seriesId:'EVT_ANNUAL_003',expeditionId:'EVENT_BLOOMWAKE_THORNHEART_GROVE',eventName:'Bloomwake',name:'Thornheart Grove',description:'Push into an overgrown sacred grove where awakened spring magic has grown feral and predatory.',routeHighlights:['Overgrown Shrine','Pollen Hollow','Rootbound Grove'],finalBoss:'The Thornheart Ancient',minLevel:30,rewardMarks:98},
+  EVT_ANNUAL_006:{seriesId:'EVT_ANNUAL_006',expeditionId:'EVENT_SUNCREST_SHATTERED_ISLES',eventName:'Suncrest Games',name:'The Shattered Isles',description:'Island arenas, pirate camps and sun shrines form a summer expedition route.',routeHighlights:['Coastal Ruins','Sun Shrine','Pirate Camp'],finalBoss:'Aureon, First Champion',minLevel:45,rewardMarks:96},
+  EVT_ANNUAL_008:{seriesId:'EVT_ANNUAL_008',expeditionId:'EVENT_STARFALL_ASTRAL_RIFT',eventName:'Starfall Nights',name:'Astral Rift Expedition',description:'Cross meteor fields and celestial ruins as instability builds toward the rift nexus.',routeHighlights:['Meteor Field','Star Shrine','Rift Gate'],finalBoss:'The Constellation Eater',minLevel:70,rewardMarks:118},
+  EVT_ANNUAL_010:{seriesId:'EVT_ANNUAL_010',expeditionId:'EVENT_VEILBREAK_GLOAM_BREACH',eventName:'The Veilbreak',name:'The Gloam Breach',description:'Enter a ruptured ward district where shades are extinguishing lanterns and pulling the streets into the Gloam.',routeHighlights:['Lantern Gate','Hollow Chapel','Gloam Crossing'],finalBoss:'The Hollow Regent',minLevel:35,rewardMarks:102},
+  EVT_ANNUAL_011:{seriesId:'EVT_ANNUAL_011',expeditionId:'EVENT_MERCHANT_GILDED_ROAD',eventName:'Merchant & Guild Festival',name:'The Gilded Road',description:'Escort a high-value guild caravan through sabotaged tollgates, raider camps and a seized counting house.',routeHighlights:['Broken Tollgate','Caravan Crossroads','Seized Counting House'],finalBoss:'The Coinbound Captain',minLevel:35,rewardMarks:100},
+  EVT_ANNUAL_012:{seriesId:'EVT_ANNUAL_012',expeditionId:'EVENT_FROSTFALL_AURORA_HOLLOW',eventName:'Frostfall Festival',name:'Aurora Hollow',description:'Follow stolen festival bells into a frozen hollow where winter spirits have turned the celebration into a deadly procession.',routeHighlights:['Snowbell Pass','Frozen Giftworks','Aurora Belfry'],finalBoss:'The Rimebell Colossus',minLevel:35,rewardMarks:104},
+};
+
+function eventSeriesId(liveEventId:string){return liveEventId.match(/^(EVT_ANNUAL_\d{3})(?:_|$)/)?.[1];}
+export function seasonalEventExpeditionInfo(liveEventId:string):SeasonalEventExpeditionIdentity|undefined{
+  const series=eventSeriesId(liveEventId);return series?EVENT_EXPEDITION_IDENTITIES[series]:undefined;
+}
+
+const EVENT_EXPEDITION_SERIES=new Set(Object.keys(EVENT_EXPEDITION_IDENTITIES));
 
 export function seasonalEventHasExpedition(liveEventId:string):boolean{
-  const match=liveEventId.match(/^(EVT_ANNUAL_\d{3})(?:_|$)/);
-  return Boolean(match&&EVENT_EXPEDITION_SERIES.has(match[1]));
+  const series=eventSeriesId(liveEventId);
+  return Boolean(series&&EVENT_EXPEDITION_SERIES.has(series));
 }
 
 export function validateCoopEventExpeditionPreview(value:CoopEventExpeditionPreview):void{
@@ -65,7 +90,7 @@ export function presentEventExpeditionRun(projection:CoopEventRunServerProjectio
   const run:CoopRunView={
     runId:projection.runId,
     mode:'qmode',
-    modeLabel:'Seasonal expedition',
+    modeLabel:projection.dungeonName,
     phase:projection.phase,
     syncedLevel:Math.min(...projection.team.map(member=>member.effectiveLevel)),
     roleSlots:projection.team.map(member=>({role:member.role,name:member.displayName,echo:member.kind==='echo',ready:member.downed===undefined?true:!member.downed})),

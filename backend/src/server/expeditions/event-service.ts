@@ -8,7 +8,7 @@ import { deterministicInt } from './rng';
 import { validateCoopRouteGraph } from './route-generation';
 
 export interface EventMechanicState {id:string;value:number;}
-export interface EventRun {id:string;requestId:string;accountIds:string[];eventId:string;graph:CoopRouteGraph;players:CombatantDefinition[];persistentState:PersistentRunState;mechanic:EventMechanicState;currentNodeId:string;phase:'awaiting_choice'|'completed'|'failed';settlement:'pending'|'claimed';rewardMarks?:number;lastResolution?:{nodeId:string;result:NodeResolutionResult};}
+export interface EventRun {id:string;requestId:string;accountIds:string[];eventId:string;graph:CoopRouteGraph;players:CombatantDefinition[];persistentState:PersistentRunState;mechanic?:EventMechanicState;currentNodeId:string;phase:'awaiting_choice'|'completed'|'failed';settlement:'pending'|'claimed';rewardMarks?:number;lastResolution?:{nodeId:string;result:NodeResolutionResult};}
 export interface EventRunRepository {get(id:string):EventRun|undefined;getByRequest(accountId:string,requestId:string):EventRun|undefined;save(run:EventRun):void;}
 export class MemoryEventRunRepository implements EventRunRepository{private runs=new Map<string,EventRun>();private requests=new Map<string,string>();get(id:string){const run=this.runs.get(id);return run?structuredClone(run):undefined;}getByRequest(accountId:string,requestId:string){const id=this.requests.get(`${accountId}:${requestId}`);return id?this.get(id):undefined;}save(run:EventRun){this.runs.set(run.id,structuredClone(run));this.requests.set(`${run.accountIds[0]}:${run.requestId}`,run.id);}}
 
@@ -16,7 +16,7 @@ const clamp=(value:number,min:number,max:number)=>Math.max(min,Math.min(max,valu
 const definitionFor=(eventId:string):EventExpeditionDefinition=>{const definition=EVENT_EXPEDITIONS.find(item=>item.id===eventId);if(!definition)throw new Error('unknown_event_expedition');return definition;};
 
 export function eventMechanicProjection(run:EventRun){
- const definition=definitionFor(run.eventId),config=definition.mechanic,value=clamp(run.mechanic.value,0,config.maxValue);
+ const definition=definitionFor(run.eventId),config=definition.mechanic,value=clamp(run.mechanic?.value??config.startValue,0,config.maxValue);
  const status=value<=config.lowThreshold?'critical' as const:value>=config.highThreshold?'strong' as const:'steady' as const;
  const bossAttackMultiplier=status==='critical'?config.lowBossAttackMultiplier:status==='strong'?config.highBossAttackMultiplier:1;
  const rewardBonus=status==='strong'?config.highRewardBonus:0;
@@ -67,7 +67,7 @@ export class EventExpeditionService{
   const current=run.graph.nodes.find(node=>node.nodeId===run.currentNodeId);if(!current||!current.nextNodeIds.includes(input.optionNodeId))throw new Error('invalid_event_option');const selected=run.graph.nodes.find(node=>node.nodeId===input.optionNodeId);if(!selected)throw new Error('invalid_event_option');
   const beforeMechanic=eventMechanicProjection(run),enemyAttackMultiplier=selected.kind==='boss'?beforeMechanic.bossAttackMultiplier:1;
   const result=resolveCoopNode({runId:run.id,serverSecret:this.serverSecret,node:selected,players:run.players,state:run.persistentState,enemyAttackMultiplier});run.lastResolution={nodeId:selected.nodeId,result:structuredClone(result)};run.persistentState=result.state;run.currentNodeId=selected.nodeId;
-  if(result.success&&selected.kind!=='boss'&&selected.mechanicDelta){const config=definitionFor(run.eventId).mechanic;run.mechanic.value=clamp(run.mechanic.value+selected.mechanicDelta,0,config.maxValue);}
+  if(result.success&&selected.kind!=='boss'&&selected.mechanicDelta){const config=definitionFor(run.eventId).mechanic,current=run.mechanic?.value??config.startValue;run.mechanic={id:config.id,value:clamp(current+selected.mechanicDelta,0,config.maxValue)};}
   if(!result.success)run.phase='failed';
   if(selected.kind==='boss'&&result.success){run.phase='completed';const definition=definitionFor(run.eventId),mechanic=eventMechanicProjection(run);run.rewardMarks=definition.rewardMarks+mechanic.rewardBonus;}
   this.repository.save(run);this.commandReceipts.set(receiptKey,{hash,run:structuredClone(run)});return structuredClone(run);

@@ -6,6 +6,7 @@ export const CRAFTED_GEAR_RARITY_CHANCES:Readonly<Record<ItemRarity,number>>={
   common:.89,uncommon:.07,rare:.03,epic:.006,legendary:.003,mythic:.001,
 };
 export const CRAFTED_GEAR_RARITY_ORDER:ItemRarity[]=['common','uncommon','rare','epic','legendary','mythic'];
+export const CRAFTED_GEAR_STAT_MULTIPLIER:Record<ItemRarity,number>={common:1,uncommon:1.03,rare:1.06,epic:1.10,legendary:1.14,mythic:1.18};
 
 export function rollCraftedGearRarity(roll:number):ItemRarity{
   if(!Number.isFinite(roll)||roll<0||roll>=1)throw new Error('Invalid crafted rarity roll');
@@ -60,7 +61,7 @@ export function bestInventoryGearInstance(state:GameState,itemId:string){
   return instancesForItem(state,itemId,'inventory').filter(row=>!characterId||row.ownerCharacterId===characterId)
     .sort((a,b)=>rarityRank(b.craftedRarity)-rarityRank(a.craftedRarity)||b.enhancement.rank-a.enhancement.rank||a.createdAtMs-b.createdAtMs)[0];
 }
-export function gearInstanceRarityMultiplier(instance:GearInstanceState|undefined){return instance?rarityMeta(instance.craftedRarity).statMultiplier:1;}
+export function gearInstanceRarityMultiplier(instance:GearInstanceState|undefined){return instance?CRAFTED_GEAR_STAT_MULTIPLIER[instance.craftedRarity]:1;}
 export function addCraftedGearInstance(state:GameState,args:{itemId:string;ownerCharacterId:string;storage:'inventory'|'bank';createdAtMs:number;roll:number;instanceId?:string}){
   const item=itemDef(args.itemId);if(item.type!=='gear')throw new Error('Only equipment can have gear instances');
   const rarity=rollCraftedGearRarity(args.roll),existing=gearInstances(state),id=args.instanceId??`gear:${args.ownerCharacterId}:${args.itemId}:${args.createdAtMs}:${existing.length}`;

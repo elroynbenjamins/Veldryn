@@ -1,7 +1,7 @@
 import type { CoopRouteNode } from '../../shared/coop-types';
 import { deterministicInt } from './rng';
 import { resolveExpeditionCombat } from '../combat/expedition-combat-service';
-import type { CombatantDefinition, PersistentActorState } from '../combat/types';
+import type { CombatantDefinition, EncounterBossTuning, PersistentActorState } from '../combat/types';
 import { COOP_CLASS_ABILITY_MULTIPLIERS,ROOTBOUND_COOP_BALANCE_V2, type RootboundCoopBalance } from '../coop/config';
 
 export interface PersistentRunState {
@@ -59,7 +59,7 @@ function healAtCamp(state:PersistentRunState,players:readonly CombatantDefinitio
  return {...state,actors};
 }
 
-export function resolveCoopNode(input:{runId:string;serverSecret:string;node:CoopRouteNode;players:CombatantDefinition[];state:PersistentRunState;rootboundBalance?:RootboundCoopBalance;enemyAttackMultiplier?:number;enemyHpMultiplier?:number;enemyDefenseMultiplier?:number}):NodeResolutionResult{
+export function resolveCoopNode(input:{runId:string;serverSecret:string;node:CoopRouteNode;players:CombatantDefinition[];state:PersistentRunState;rootboundBalance?:RootboundCoopBalance;enemyAttackMultiplier?:number;enemyHpMultiplier?:number;enemyDefenseMultiplier?:number;bossTuning?:EncounterBossTuning}):NodeResolutionResult{
  if(input.state.visitedNodeIds.includes(input.node.nodeId))throw new Error('node_already_resolved');
  if(input.node.kind==='entry')throw new Error('entry_is_not_resolvable');
  let state={...input.state,visitedNodeIds:[...input.state.visitedNodeIds,input.node.nodeId]};
@@ -67,9 +67,9 @@ export function resolveCoopNode(input:{runId:string;serverSecret:string;node:Coo
   const rootbound=input.node.contentId.startsWith('ROOT')||input.node.contentId==='BOSS_EXP_ROOT',balance=input.rootboundBalance??ROOTBOUND_COOP_BALANCE_V2;
   const players=input.players.map(player=>{const multipliers=COOP_CLASS_ABILITY_MULTIPLIERS[player.classId?.toUpperCase()??''];if(!multipliers)return player;return{...player,abilities:player.abilities.map(ability=>{const multiplier=multipliers[ability.id];return multiplier?{...ability,effects:ability.effects.map(effect=>(effect.kind==='shield'||effect.kind==='heal')&&effect.coeff!==undefined?{...effect,coeff:effect.coeff*multiplier}:effect)}:ability;})};});
   const depthMultiplier=input.node.depth>=balance.lateDepthStart?balance.lateDepthAttackMultiplier:1;
-  const combat=resolveExpeditionCombat({runId:input.runId,nodeIndex:input.node.depth,encounterId:input.node.contentId,serverSeed:input.serverSecret,players,initialPlayerState:state.actors,enemyAttackMultiplier:(rootbound?balance.enemyAttackMultiplier*depthMultiplier:1)*(input.enemyAttackMultiplier??1),enemyHpMultiplier:input.enemyHpMultiplier,enemyDefenseMultiplier:input.enemyDefenseMultiplier});
+  const combat=resolveExpeditionCombat({runId:input.runId,nodeIndex:input.node.depth,encounterId:input.node.contentId,serverSeed:input.serverSecret,players,initialPlayerState:state.actors,enemyAttackMultiplier:(rootbound?balance.enemyAttackMultiplier*depthMultiplier:1)*(input.enemyAttackMultiplier??1),enemyHpMultiplier:input.enemyHpMultiplier,enemyDefenseMultiplier:input.enemyDefenseMultiplier,bossTuning:input.bossTuning});
   state={...state,actors:combat.endingPlayerState};
-  return {success:combat.success,state,summary:{kind:'combat',...combat.resultJson}};
+  return {success:combat.success,state,summary:{kind:'combat',...combat.resultJson,...(input.bossTuning?{bossTuningProfile:input.bossTuning.profileId}: {})}};
  }
  if(!IMPLEMENTED_NONCOMBAT.has(input.node.kind))throw new Error(`unsupported_node_kind:${input.node.kind}`);
  const roll=deterministicInt(input.serverSecret,1,999,'node-resolution-v1',input.runId,input.node.nodeId,input.node.contentId);

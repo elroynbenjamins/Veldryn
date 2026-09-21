@@ -61,7 +61,8 @@
     "recruitment-test": "node dist/server/social/recruitment.test.js",
     "guild-recruitment-v17": "node dist/server/social/guild-recruitment-v17.test.js",
     "liveops-v17": "node dist/server/liveops/__tests__/party-events-v17.js && node dist/server/liveops/__tests__/party-event-service-v17.js && node dist/server/liveops/__tests__/finalization-rewards-v17.js && node dist/server/liveops/__tests__/outbox-v17.js",
-    "combat-rng-portable": "node dist/server/combat/__tests__/portable-rng.js"
+    "combat-rng-portable": "node dist/server/combat/__tests__/portable-rng.js",
+    "test:coop-live-social": "tsc -p tsconfig.online.json && node dist/online/backend/online/tests/live-queue.js && node dist/online/backend/online/tests/coop-lfg.js"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

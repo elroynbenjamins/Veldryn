@@ -5,6 +5,7 @@ import {cancelEquipmentCraft,EQUIPMENT_CRAFT_CANCEL_GOLD_REFUND,equipmentCraftin
 import {craftEquipmentPrerequisites,equipmentPrerequisiteCraftability} from '../src/core/equipment-crafting-prerequisites';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
 import type {GameState} from '../src/core/types';
+import {totalXpAtLevel} from '../src/core/progression';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 function qty(state:GameState,id:string){return (state.inventory.stacks.find(row=>row.itemId===id)?.quantity??0)+(state.bank.stacks.find(row=>row.itemId===id)?.quantity??0);}
@@ -36,7 +37,8 @@ const ingotNeed=t4.inputs.find(input=>input.itemId==='OATHSTONE_INGOT')!.quantit
 const batches=Math.ceil(ingotNeed/smelt.output.quantity);
 let prereqState=createCharacter(newGame(0),t4.classId,'Prereq Tester','male');
 const externalInputs=t4.inputs.filter(input=>input.itemId!=='OATHSTONE_INGOT');
-prereqState={...prereqState,character:{...prereqState.character!,level:t4.characterLevel,gold:500000},skills:prereqState.skills.map(row=>row.skillId==='smithing'?{...row,level:Math.max(t4.level,smelt.level,30),xp:0}:row),inventory:{...prereqState.inventory,capacity:100,stacks:[{itemId:'OATHSTONE_ORE',quantity:batches*6},...externalInputs.map(input=>({...input}))]},bank:{...prereqState.bank,capacity:200,stacks:[]}};
+const smithingLevel=Math.max(t4.level,smelt.level,30);
+prereqState={...prereqState,character:{...prereqState.character!,level:t4.characterLevel,gold:500000},skills:prereqState.skills.map(row=>row.skillId==='smithing'?{...row,level:smithingLevel,xp:totalXpAtLevel(smithingLevel)}:row),inventory:{...prereqState.inventory,capacity:100,stacks:[{itemId:'OATHSTONE_ORE',quantity:batches*6},...externalInputs.map(input=>({...input}))]},bank:{...prereqState.bank,capacity:200,stacks:[]}};
 const craftability=equipmentPrerequisiteCraftability(prereqState,t4.id);
 ok(craftability.available&&craftability.processableMissing>=1,'Missing processed equipment inputs must expose Craft prerequisites');
 const processed=craftEquipmentPrerequisites(prereqState,t4.id,5000);

@@ -107,11 +107,12 @@ export function startEquipmentCraft(state:GameState,recipeId:string,nowMs:number
   let next:GameState={...state,character:{...state.character!,gold:state.character!.gold-recipe.gold}};
   for(const input of recipe.inputs)next=consumeAcross(next,input.itemId,input.quantity);
   const seconds=equipmentCraftDurationSeconds(state,recipeId);
+  const existingQueue=equipmentCraftingQueue(next);
   const job:EquipmentCraftJob={
-    id:`eqcraft:${state.character!.id}:${recipeId}:${nowMs}`,
+    id:`eqcraft:${state.character!.id}:${recipeId}:${nowMs}:${existingQueue.length}`,
     recipeId,ownerCharacterId:state.character!.id,startedAtMs:nowMs,completesAtMs:nowMs+seconds*1000,
   };
-  next={...next,account:{...next.account,equipmentCraftingQueue:[...equipmentCraftingQueue(next),job]}};
+  next={...next,account:{...next.account,equipmentCraftingQueue:[...existingQueue,job]}};
   return {state:next,job,seconds};
 }
 

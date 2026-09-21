@@ -12,6 +12,7 @@ import {EquipmentArtwork,hasEquipmentArtwork} from './EquipmentArtwork';
 import {GatheringToolArtwork} from './GatheringToolArtwork';
 import {ResourceArtwork} from './ResourceArtwork';
 import {hasResourceArtwork} from '../theme/resource-assets';
+import type {WorkingTowardDestination} from '../core/working-toward';
 
 function InspectArt({state,itemId}:{state:GameState;itemId:string}){
   const C=useGameTheme(),model=itemInspectModel(state,itemId),item=model.item;
@@ -21,7 +22,7 @@ function InspectArt({state,itemId}:{state:GameState;itemId:string}){
   return <View style={[art.fallback,{borderColor:model.rarity.color,backgroundColor:model.rarity.surface}]}><Text style={[art.symbol,{color:model.rarity.color}]}>{model.rarity.symbol}</Text><Text style={[art.fallbackText,{color:C.muted}]}>{item.type.toUpperCase()}</Text></View>;
 }
 
-export function ItemQuickInspect({state,itemId,onClose}:{state:GameState;itemId:string|null;onClose:()=>void}){
+export function ItemQuickInspect({state,itemId,onClose,onNavigate}:{state:GameState;itemId:string|null;onClose:()=>void;onNavigate?:(destination:WorkingTowardDestination)=>void}){
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
   if(!itemId)return null;
   const model=itemInspectModel(state,itemId),item=model.item,rarity=model.rarity,upgrade=model.upgrade,sockets=model.sockets,nameColor=rarityNameColor(model.rarityId,C.dark,C.text);
@@ -50,9 +51,9 @@ export function ItemQuickInspect({state,itemId,onClose}:{state:GameState;itemId:
 
           {sockets&&<Section title="SOCKETS"><Text style={s.body}>{sockets.capacity?sockets.filled+'/'+sockets.capacity+' filled':'No sockets at this rarity.'}</Text>{sockets.gemNames.map((name,index)=><Text key={index} style={s.body}>{'◆ '+name}</Text>)}</Section>}
 
-          <Section title="HOW TO GET">{sourceRows.length?sourceRows.map((source,index)=><View key={source.kind+':'+source.title+':'+index} style={s.sourceRow}><View style={[s.sourceDot,{backgroundColor:source.kind==='combat'?C.bad:source.kind==='crafting'?C.accent:source.kind==='gathering'?C.good:C.info}]}/><View style={s.flex}><Text style={s.bodyStrong}>{source.title}</Text><Text style={s.note}>{source.detail}</Text></View></View>):<Text style={s.note}>No repeatable source is catalogued for this item yet. It may come from a quest, event, one-time reward, or future content.</Text>}{model.sources.length>sourceRows.length&&<Text style={s.note}>{'+'+(model.sources.length-sourceRows.length)+' more known source'+(model.sources.length-sourceRows.length===1?'':'s')}</Text>}</Section>
+          <Section title="HOW TO GET">{sourceRows.length?sourceRows.map((source,index)=>source.navigation&&onNavigate?<Pressable key={source.kind+':'+source.title+':'+index} accessibilityRole="button" accessibilityLabel={`Open ${source.title}`} accessibilityHint={source.navigation.detail} onPress={()=>onNavigate(source.navigation!)} style={({pressed})=>[s.sourceRow,s.actionRow,pressed&&s.pressed]}><View style={[s.sourceDot,{backgroundColor:source.kind==='combat'?C.bad:source.kind==='crafting'?C.accent:source.kind==='gathering'?C.good:C.info}]}/><View style={s.flex}><Text style={s.bodyStrong}>{source.title}</Text><Text style={s.note}>{source.detail}</Text></View><Text style={s.openMark}>OPEN ›</Text></Pressable>:<View key={source.kind+':'+source.title+':'+index} style={s.sourceRow}><View style={[s.sourceDot,{backgroundColor:source.kind==='combat'?C.bad:source.kind==='crafting'?C.accent:source.kind==='gathering'?C.good:C.info}]}/><View style={s.flex}><Text style={s.bodyStrong}>{source.title}</Text><Text style={s.note}>{source.detail}</Text></View></View>):<Text style={s.note}>No repeatable source is catalogued for this item yet. It may come from a quest, event, one-time reward, or future content.</Text>}{model.sources.length>sourceRows.length&&<Text style={s.note}>{'+'+(model.sources.length-sourceRows.length)+' more known source'+(model.sources.length-sourceRows.length===1?'':'s')}</Text>}</Section>
 
-          <Section title={'USED IN CRAFTING'+(model.usedIn.length?' · '+model.usedIn.length:'')}>{useRows.length?useRows.map((recipe,index)=><View key={recipe.name+':'+index} style={s.recipeRow}><View style={s.flex}><Text style={s.bodyStrong}>{recipe.name}</Text><Text style={s.note}>{recipe.skill+' Lv '+recipe.level+' · needs '+recipe.quantity}</Text></View></View>):<Text style={s.note}>Not currently used as a crafting ingredient.</Text>}{model.usedIn.length>useRows.length&&<Text style={s.note}>{'+'+(model.usedIn.length-useRows.length)+' more recipe'+(model.usedIn.length-useRows.length===1?'':'s')}</Text>}</Section>
+          <Section title={'USED IN CRAFTING'+(model.usedIn.length?' · '+model.usedIn.length:'')}>{useRows.length?useRows.map((recipe,index)=>onNavigate?<Pressable key={recipe.name+':'+index} accessibilityRole="button" accessibilityLabel={`Open ${recipe.name}`} accessibilityHint={recipe.navigation.detail} onPress={()=>onNavigate(recipe.navigation)} style={({pressed})=>[s.recipeRow,s.actionRow,pressed&&s.pressed]}><View style={s.flex}><Text style={s.bodyStrong}>{recipe.name}</Text><Text style={s.note}>{recipe.skill+' Lv '+recipe.level+' · needs '+recipe.quantity}</Text></View><Text style={s.openMark}>OPEN ›</Text></Pressable>:<View key={recipe.name+':'+index} style={s.recipeRow}><View style={s.flex}><Text style={s.bodyStrong}>{recipe.name}</Text><Text style={s.note}>{recipe.skill+' Lv '+recipe.level+' · needs '+recipe.quantity}</Text></View></View>):<Text style={s.note}>Not currently used as a crafting ingredient.</Text>}{model.usedIn.length>useRows.length&&<Text style={s.note}>{'+'+(model.usedIn.length-useRows.length)+' more recipe'+(model.usedIn.length-useRows.length===1?'':'s')}</Text>}</Section>
 
           <View style={s.footerRow}><Text style={s.sell}>{'Sell value · '+formatGameNumber(item.value,state.settings.numberMode)+' gold each'}</Text>{item.classRestriction&&<Text style={s.classText}>{item.classRestriction.replaceAll('_',' ')}</Text>}</View>
         </ScrollView>
@@ -76,7 +77,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
   statRow:{flexDirection:'row',gap:spacing.sm},stat:{flex:1,minWidth:0,padding:spacing.sm,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2},statLabel:{...typography.caption,color:C.muted},statValue:{...typography.bodyStrong,color:C.text,fontWeight:'800'},
   body:{...typography.body,color:C.text},bodyStrong:{...typography.bodyStrong,color:C.text},note:{...typography.caption,color:C.muted},
   upgradeTop:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:spacing.sm},chance:{...typography.bodyStrong,fontWeight:'900'},
-  sourceRow:{flexDirection:'row',alignItems:'flex-start',gap:8},sourceDot:{width:8,height:8,borderRadius:99,marginTop:6},recipeRow:{paddingVertical:2},
+  sourceRow:{flexDirection:'row',alignItems:'flex-start',gap:8},sourceDot:{width:8,height:8,borderRadius:99,marginTop:6},recipeRow:{paddingVertical:2},actionRow:{minHeight:44,alignItems:'center',paddingHorizontal:8,paddingVertical:6,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2},openMark:{...typography.caption,color:C.info,fontWeight:'900'},
   footerRow:{flexDirection:'row',flexWrap:'wrap',alignItems:'center',justifyContent:'space-between',gap:8},sell:{...typography.caption,color:C.muted},classText:{...typography.caption,color:C.info,fontWeight:'800'},
   flex:{flex:1,minWidth:0},pressed:{opacity:.72},
 });}

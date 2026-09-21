@@ -19,6 +19,7 @@ import {formatGameNumber} from '../core/number-format';
 import {ot} from '../i18n';
 import {enhancedGearStats,gearEnhancement,gemSocketCapacity,hasEnhancement} from '../core/equipment-enhancement';
 import {bulkSelectionSummary,type BulkStorageLocation} from '../core/inventory-bulk';
+import type {WorkingTowardDestination} from '../core/working-toward';
 
 type Pending={kind:'sell'|'salvage'|'deposit';item:ItemDef;quantity:number}|null;
 type BulkAction='transfer'|'sell'|'salvage';
@@ -27,7 +28,7 @@ const FILTER_OPTIONS:{id:InventoryFilter;label:string}[]=[{id:'all',label:'All'}
 const SORT_OPTIONS:{id:InventorySort;label:string}[]=[{id:'name',label:'Name'},{id:'new',label:'New first'},{id:'favorite',label:'Favorites first'},{id:'quantity',label:'Quantity ↓'},{id:'value',label:'Value ↓'}];
 const nextSort=(value:InventorySort)=>SORT_OPTIONS[(SORT_OPTIONS.findIndex(option=>option.id===value)+1)%SORT_OPTIONS.length].id;
 const nextQuantity=(value:1|10|'all'):1|10|'all'=>value===1?10:value===10?'all':1;
-export function InventoryScreen({state,onEquip,onFood,onEat,onSell,onSalvage,onDeposit,onDepositMaterials,onUpgradeStorage,onWithdraw,onOverflow,onToggleFavorite,onAcknowledgeItem,onAcknowledgeAll,onBulkAction}:{state:GameState;onEquip:(id:string)=>void;onFood:(id:string)=>void;onEat:(id:string)=>void;onSell:(id:string)=>void;onSalvage:(id:string)=>void;onDeposit:(id:string,quantity:number)=>void;onDepositMaterials:()=>void;onUpgradeStorage:(location:StorageLocation)=>void;onWithdraw:(id:string,quantity:number)=>void;onOverflow:()=>void;onToggleFavorite:(id:string)=>void;onAcknowledgeItem:(id:string)=>void;onAcknowledgeAll:()=>void;onBulkAction:(kind:BulkAction,location:BulkStorageLocation,ids:string[])=>void}){
+export function InventoryScreen({state,onEquip,onFood,onEat,onSell,onSalvage,onDeposit,onDepositMaterials,onUpgradeStorage,onWithdraw,onOverflow,onToggleFavorite,onAcknowledgeItem,onAcknowledgeAll,onBulkAction,onNavigateInspect}:{state:GameState;onEquip:(id:string)=>void;onFood:(id:string)=>void;onEat:(id:string)=>void;onSell:(id:string)=>void;onSalvage:(id:string)=>void;onDeposit:(id:string,quantity:number)=>void;onDepositMaterials:()=>void;onUpgradeStorage:(location:StorageLocation)=>void;onWithdraw:(id:string,quantity:number)=>void;onOverflow:()=>void;onToggleFavorite:(id:string)=>void;onAcknowledgeItem:(id:string)=>void;onAcknowledgeAll:()=>void;onBulkAction:(kind:BulkAction,location:BulkStorageLocation,ids:string[])=>void;onNavigateInspect:(destination:WorkingTowardDestination)=>void}){
   const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
   const [pending,setPending]=useState<Pending>(null),[location,setLocation]=useState<'inventory'|'bank'>('inventory');
   const [query,setQuery]=useState(''),[filter,setFilter]=useState<InventoryFilter>('all'),[sort,setSort]=useState<InventorySort>('name');
@@ -75,7 +76,7 @@ export function InventoryScreen({state,onEquip,onFood,onEat,onSell,onSalvage,onD
   const remaining=claimOverflowToBank(state).overflow.stacks.reduce((sum,item)=>sum+item.quantity,0);
   const overflowCount=state.overflow.stacks.reduce((sum,item)=>sum+item.quantity,0);
   const inventoryUpgrade=storageUpgradePreview(state,'inventory'),bankUpgrade=storageUpgradePreview(state,'bank');
-  return <><EquipmentPreview state={state} itemId={previewId} onClose={()=>setPreviewId(null)}/><ItemQuickInspect state={state} itemId={inspectId} onClose={closeInspect}/><ScrollView contentContainerStyle={s.root} keyboardShouldPersistTaps="handled">
+  return <><EquipmentPreview state={state} itemId={previewId} onClose={()=>setPreviewId(null)}/><ItemQuickInspect state={state} itemId={inspectId} onClose={closeInspect} onNavigate={destination=>{closeInspect();onNavigateInspect(destination)}}/><ScrollView contentContainerStyle={s.root} keyboardShouldPersistTaps="handled">
     <Text accessibilityRole="header" style={s.h}>Inventory</Text>
     <View style={s.recovery}><Text style={s.label}>RECOVERY</Text><Text style={s.sub}>Health {state.character!.currentHp}/{effectiveStats(state).hp} · Auto-eat: {state.character?.equippedFoodId?itemDef(state.character.equippedFoodId).name:'None'}</Text><Text style={s.sub}>Carried auto-eat portions: {state.inventory.stacks.find(item=>item.itemId===state.character?.equippedFoodId)?.quantity??0}</Text></View>
     <View style={s.storageRow}>{(['inventory','bank'] as const).map(value=><StorageChip key={value} label={value==='inventory'?'Inventory':'Bank'} selected={location===value} status={value==='inventory'?inventoryCapacity:bankCapacity} onPress={()=>changeLocation(value)}/>)}</View>

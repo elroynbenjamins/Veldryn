@@ -161,13 +161,18 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
    break;
   }
   case 'craft_claim':{
-   const result=claimEquipmentCraft(state,text(a,'id',160),now);state=result.state;contributions.push({kind:'crafting',contentId:result.recipe.id,units:1});message='Equipment craft claimed';break;
+   if(options.randomRoll===undefined)throw new Error('trusted_random_required');
+   const result=claimEquipmentCraft(state,text(a,'id',160),now,options.randomRoll);state=result.state;contributions.push({kind:'crafting',contentId:result.recipe.id,units:1});
+   const set=result.craftResult.setProgress;
+   message=`${result.craftResult.rarity.toUpperCase()} · ${result.craftResult.name}${result.craftResult.statBonusPct?` · +${result.craftResult.statBonusPct}% quality stats`:''}${set?` · ${set.setName} ${set.owned}/${set.required}`:''}`;
+   break;
   }
   case 'craft_claim_all':{
+   if(options.randomRoll===undefined)throw new Error('trusted_random_required');
    const beforeIds=new Set((state.account.equipmentCraftingQueue??[]).map(job=>job.id));
-   const result=claimAllReadyEquipmentCrafts(state,now);state=result.state;
+   const result=claimAllReadyEquipmentCrafts(state,now,options.randomRoll);state=result.state;
    for(const id of result.claimed){if(!beforeIds.has(id))continue;const job=previous.account.equipmentCraftingQueue?.find(row=>row.id===id);if(job)contributions.push({kind:'crafting',contentId:job.recipeId,units:1});}
-   message=result.claimed.length?`${result.claimed.length} equipment craft${result.claimed.length===1?'':'s'} claimed`:'No finished equipment crafts';
+   const rare=result.results.filter(row=>row.rarity!=='common');message=result.claimed.length?`${result.claimed.length} equipment craft${result.claimed.length===1?'':'s'} claimed${rare.length?` · ${rare.map(row=>row.rarity.toUpperCase()+' '+row.name).join(', ')}`:''}`:'No finished equipment crafts';
    break;
   }
   case 'craft_cancel':{

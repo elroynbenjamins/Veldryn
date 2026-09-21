@@ -24,7 +24,8 @@ import {gatheringPacing} from './gathering-tools';
 import {gatheringToolDef} from '../content/gathering-tools';
 import {currentRegionId} from './combat-region';
 import {WORLD_ZONES} from '../content/world-map';
-import {enhancedGearStats,equippedEffectGemBonuses,equippedGemBonuses,hasEnhancement} from './equipment-enhancement';
+import {enhancedGearStats,equippedEffectGemBonuses,equippedGemBonuses} from './equipment-enhancement';
+import {bestStoredGearInstance,disposableStoredGearCount,gearInstanceById,legacyStoredGearCount,moveGearInstance,moveStoredGearInstances,removeDisposableStoredGearCopies} from './crafted-gear-instances';
 import {activeEquipmentSetRuntime,equipmentSetCombatModifiers} from './equipment-set-runtime';
 import {companionCombatContribution,reconcileCombatCompanionUnlocks,grantCompanionEssence,grantBondstones} from './combat-companions';
 import {awardCompanionRematchBondstone,companionRematchBondstoneStatus,recordCompanionActivity} from './companion-runtime';
@@ -513,8 +514,18 @@ export function stopActivity(state:GameState):GameState{
 export function equipItem(state:GameState,itemId:string):GameState{
   if(!state.character)throw new Error('No character');const d=itemDef(itemId);if(d.type!=='gear'||!d.slot)throw new Error('Not gear');
   if(d.classRestriction&&d.classRestriction!==state.character.classId)throw new Error('This gear belongs to another class');
-  let stacks=consume(state.inventory.stacks,itemId,1);const old=state.character.equipment[d.slot];if(old)stacks=stackItems(stacks,[{itemId:old,quantity:1}]);
-  const temp={...state,inventory:{...state.inventory,stacks},character:{...state.character,equipment:{...state.character.equipment,[d.slot]:itemId}}} as GameState;
+  if(stackQty(state.inventory.stacks,itemId)<=0)throw new Error('No equipment copy available');
+  const legacyEnh=state.character.gearEnhancements?.[itemId],legacyEnhanced=Boolean(legacyEnh&&(legacyEnh.rank>0||legacyEnh.statGemId||legacyEnh.effectGemId||legacyEnh.gemIds?.length));
+  const legacyCount=legacyStoredGearCount(state,itemId,'inventory'),selectedInstance=legacyEnhanced&&legacyCount>0?undefined:bestStoredGearInstance(state,itemId,'inventory');
+  let next=state,stacks=consume(state.inventory.stacks,itemId,1);
+  const old=state.character.equipment[d.slot],oldInstanceId=state.character.equippedGearInstanceIds?.[d.slot];
+  if(old){
+    stacks=stackItems(stacks,[{itemId:old,quantity:1}]);
+    if(oldInstanceId&&gearInstanceById(next,oldInstanceId))next=moveGearInstance(next,oldInstanceId,'inventory',state.character.id);
+  }
+  if(selectedInstance)next=moveGearInstance(next,selectedInstance.id,'equipped',state.character.id,d.slot);
+  const equippedGearInstanceIds={...(state.character.equippedGearInstanceIds??{})};if(selectedInstance)equippedGearInstanceIds[d.slot]=selectedInstance.id;else delete equippedGearInstanceIds[d.slot];
+  const temp={...next,inventory:{...next.inventory,stacks},character:{...next.character!,equipment:{...next.character!.equipment,[d.slot]:itemId},equippedGearInstanceIds}} as GameState;
   const maxHp=effectiveStats(temp).hp;temp.character!.currentHp=Math.min(maxHp,temp.character!.currentHp+(d.hp||0));
   return applyLocalBalanceSnapshot(refreshQuests(temp),Date.now())
 }
@@ -522,9 +533,9 @@ export function equipFood(state:GameState,itemId:string):GameState{if(!state.cha
 export function eatFood(state:GameState,itemId?:string):GameState{if(!state.character)return state;const id=itemId||state.character.equippedFoodId;if(!id)return state;const d=itemDef(id);if(d.type!=='food'||!d.heal)throw new Error('Not food');const maxHp=effectiveStats(state).hp,heal=Math.max(1,Math.ceil(d.heal*characterPermanentMultipliers(state).healingEffectivenessMultiplier));return {...state,inventory:{...state.inventory,stacks:consume(state.inventory.stacks,id,1)},character:{...state.character,currentHp:Math.min(maxHp,state.character.currentHp+heal)}}}
 export function usePotion(state:GameState,itemId:string):GameState{if(!state.character)throw new Error('Create a character first.');const potion=potionDef(itemId);if(!potion)throw new Error('Unknown potion.');if(state.activity?.kind==='combat')throw new Error('Potions cannot be used during a hunt.');const stacks=consume(state.inventory.stacks,itemId,1);if(potion.effect.kind==='healing'){const max=effectiveStats(state).hp,healing=characterPermanentMultipliers(state).healingEffectivenessMultiplier;return {...state,inventory:{...state.inventory,stacks},character:{...state.character,currentHp:Math.min(max,state.character.currentHp+Math.ceil(max*potion.effect.maxHpFraction*healing))}};}return {...state,inventory:{...state.inventory,stacks},character:{...state.character,preparation:{itemId,remainingEncounters:potion.effect.encounters}}};}
 export function discardPreparation(state:GameState):GameState{return state.character?.preparation?{...state,character:{...state.character,preparation:undefined}}:state;}
-export function unequipItem(state:GameState,slot:GearSlot):GameState{if(!state.character)return state;const old=state.character.equipment[slot];if(!old)return state;const eq={...state.character.equipment};delete eq[slot];const next={...state,inventory:{...state.inventory,stacks:stackItems(state.inventory.stacks,[{itemId:old,quantity:1}])},character:{...state.character,equipment:eq}} as GameState;next.character!.currentHp=Math.min(effectiveStats(next).hp,next.character!.currentHp);return next}
-export function sellItem(state:GameState,itemId:string,quantity=1):GameState{if(!state.character||quantity<=0)return state;if(itemId===HOLY_WATER_ID)throw new Error('Holy Water cannot be sold.');if(state.settings.favoriteItemIds?.includes(itemId))throw new Error('Favorite item is protected. Remove it from Favorites before selling.');const discovered=discoverCharacterSkins(state),d=itemDef(itemId);if(d.type==='gear'&&hasEnhancement(discovered,itemId))throw new Error('Enhanced equipment is protected. Extract its gems before disposal; upgraded ranks cannot be recovered.');return {...discovered,inventory:{...discovered.inventory,stacks:consume(discovered.inventory.stacks,itemId,quantity)},character:{...discovered.character!,gold:discovered.character!.gold+d.value*quantity}}}
-export function salvageItem(state:GameState,itemId:string):GameState{if(state.settings.favoriteItemIds?.includes(itemId))throw new Error('Favorite item is protected. Remove it from Favorites before salvaging.');const discovered=discoverCharacterSkins(state),d=itemDef(itemId);if(d.type!=='gear'||!d.salvage)throw new Error('Cannot salvage');if(hasEnhancement(discovered,itemId))throw new Error('Enhanced equipment is protected. Extract its gems before disposal; upgraded ranks cannot be recovered.');return {...discovered,inventory:{...discovered.inventory,stacks:stackItems(consume(discovered.inventory.stacks,itemId,1),[d.salvage])}}}
+export function unequipItem(state:GameState,slot:GearSlot):GameState{if(!state.character)return state;const old=state.character.equipment[slot];if(!old)return state;const eq={...state.character.equipment},instanceIds={...(state.character.equippedGearInstanceIds??{})},instanceId=instanceIds[slot];delete eq[slot];delete instanceIds[slot];let next=state;if(instanceId&&gearInstanceById(state,instanceId))next=moveGearInstance(next,instanceId,'inventory',state.character.id);next={...next,inventory:{...next.inventory,stacks:stackItems(next.inventory.stacks,[{itemId:old,quantity:1}])},character:{...next.character!,equipment:eq,equippedGearInstanceIds:instanceIds}} as GameState;next.character!.currentHp=Math.min(effectiveStats(next).hp,next.character!.currentHp);return next}
+export function sellItem(state:GameState,itemId:string,quantity=1):GameState{if(!state.character||quantity<=0)return state;if(itemId===HOLY_WATER_ID)throw new Error('Holy Water cannot be sold.');if(state.settings.favoriteItemIds?.includes(itemId))throw new Error('Favorite item is protected. Remove it from Favorites before selling.');let discovered=discoverCharacterSkins(state);const d=itemDef(itemId);if(stackQty(discovered.inventory.stacks,itemId)<quantity)throw new Error('Not enough items in inventory');if(d.type==='gear'){if(disposableStoredGearCount(discovered,itemId,'inventory')<quantity)throw new Error('Enhanced equipment is protected. Extract its gems before disposal; upgraded ranks cannot be recovered.');discovered=removeDisposableStoredGearCopies(discovered,itemId,'inventory',quantity);}return {...discovered,inventory:{...discovered.inventory,stacks:consume(discovered.inventory.stacks,itemId,quantity)},character:{...discovered.character!,gold:discovered.character!.gold+d.value*quantity}}}
+export function salvageItem(state:GameState,itemId:string):GameState{if(state.settings.favoriteItemIds?.includes(itemId))throw new Error('Favorite item is protected. Remove it from Favorites before salvaging.');let discovered=discoverCharacterSkins(state);const d=itemDef(itemId);if(d.type!=='gear'||!d.salvage)throw new Error('Cannot salvage');if(stackQty(discovered.inventory.stacks,itemId)<1)throw new Error('No equipment copy available');if(disposableStoredGearCount(discovered,itemId,'inventory')<1)throw new Error('Enhanced equipment is protected. Extract its gems before disposal; upgraded ranks cannot be recovered.');discovered=removeDisposableStoredGearCopies(discovered,itemId,'inventory',1);return {...discovered,inventory:{...discovered.inventory,stacks:stackItems(consume(discovered.inventory.stacks,itemId,1),[d.salvage])}}}
 
 export function depositToBank(state:GameState,itemId:string,quantity:number):GameState{
   if(quantity<=0)return state;
@@ -532,7 +543,9 @@ export function depositToBank(state:GameState,itemId:string,quantity:number):Gam
   const removed=consume(state.inventory.stacks,itemId,quantity);
   const added=addBounded(state.bank.stacks,state.bank.capacity,[{itemId,quantity}]);
   if(added.overflow.length)throw new Error('Bank is full');
-  return {...state,inventory:{...state.inventory,stacks:removed},bank:{...state.bank,stacks:added.stacks}};
+  let next={...state,inventory:{...state.inventory,stacks:removed},bank:{...state.bank,stacks:added.stacks}} as GameState;
+  if(itemDef(itemId).type==='gear')next=moveStoredGearInstances(next,itemId,'inventory','bank',quantity);
+  return next;
 }
 export function withdrawFromBank(state:GameState,itemId:string,quantity:number):GameState{
   if(quantity<=0)return state;
@@ -540,7 +553,9 @@ export function withdrawFromBank(state:GameState,itemId:string,quantity:number):
   const removed=consume(state.bank.stacks,itemId,quantity);
   const added=addBounded(state.inventory.stacks,state.inventory.capacity,[{itemId,quantity}]);
   if(added.overflow.length)throw new Error('Inventory is full');
-  return {...state,bank:{...state.bank,stacks:removed},inventory:{...state.inventory,stacks:added.stacks}};
+  let next={...state,bank:{...state.bank,stacks:removed},inventory:{...state.inventory,stacks:added.stacks}} as GameState;
+  if(itemDef(itemId).type==='gear')next=moveStoredGearInstances(next,itemId,'bank','inventory',quantity);
+  return next;
 }
 export type StorageLocation='inventory'|'bank';
 const STORAGE_UPGRADES:Record<StorageLocation,{capacity:number;cost:number}[]>={

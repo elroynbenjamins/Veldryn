@@ -9,9 +9,19 @@ import type {AuthoritativeLoadoutRecord} from '../src/server/coop/loadout-snapsh
 import {deriveRole,evaluateRoleReadiness,type CapabilityTag} from '../src/server/coop/role-readiness';
 import {normalizeCombatInput,ROOTBOUND_ROLE_REFERENCES} from '../src/server/coop/normalization';
 import {companionOwned,assertCompanionIdle} from '../../apps/mobile/src/core/companion-runtime';
+import {gearEnhancement} from '../../apps/mobile/src/core/equipment-enhancement';
+import {canonicalGemMetaV1,resonanceForFamilyV1} from '../../apps/mobile/src/core/gem-progression-v1';
 import {validateCompanionLoadout} from '../src/server/companions/policy';
 
 export const ONLINE_COOP_BALANCE_VERSION='online-coop-loadout-v1';
+function equippedCombatEffectGems(state:GameState){
+ const families=new Set<string>();
+ if(state.character)for(const equipmentItemId of Object.values(state.character.equipment)){
+  if(!equipmentItemId)continue;const gemId=gearEnhancement(state,equipmentItemId).effectGemId;if(!gemId)continue;
+  const meta=canonicalGemMetaV1(gemId);if(meta?.kind==='effect')families.add(meta.familyId);
+ }
+ return [...families].sort().map(familyId=>resonanceForFamilyV1(state,familyId)).filter(row=>row.resonance>0).map(row=>({familyId:row.familyId,copies:row.copies,resonance:row.resonance as 1|2|3,totalValue:row.totalValue,grades:row.grades}));
+}
 /** Converts the two existing stat units without changing solo gameplay. A complete,
  * unenhanced class novice outfit is the existing co-op kit's level-25 reference.
  * Actual equipped gear (including enhancements/gems) scales each matching stat.
@@ -49,7 +59,7 @@ export function deriveOnlineCoopLoadout(accountId:string,state:GameState,version
    healingPower:kit.stats.healingPower*actual.attack/reference.attack*levelScale,
    defense:kit.stats.defense*actual.defense/reference.defense*levelScale,
    accuracy:kit.stats.accuracy*levelScale,evasion:kit.stats.evasion*levelScale,
-   critChance:kit.stats.critChance,haste:kit.stats.haste,
+   critChance:kit.stats.critChance,haste:kit.stats.haste,effectGems:equippedCombatEffectGems(state),
   }};
 }
 export function onlineCoopLoadoutHash(record:AuthoritativeLoadoutRecord):string{

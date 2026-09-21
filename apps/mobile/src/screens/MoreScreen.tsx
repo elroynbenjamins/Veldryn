@@ -45,7 +45,7 @@ function itemMeta(language:GameState['settings']['language'],id:MoreDestination)
   }
 }
 
-export function MoreScreen({language,onNavigate,onOpenChatPilot,companionAttention=false,workingTowardAttention=false,dailySuppliesAttention=false,eventAttention=false,friendRequestCount=0,guildAttentionCount=0,socialAttentionCount=0,profileAttention=false}:{language:GameState['settings']['language'];onNavigate:(destination:MoreDestination)=>void;onOpenChatPilot?:()=>void;companionAttention?:boolean;workingTowardAttention?:boolean;dailySuppliesAttention?:boolean;eventAttention?:boolean;friendRequestCount?:number;guildAttentionCount?:number;socialAttentionCount?:number;profileAttention?:boolean}){
+export function MoreScreen({language,onNavigate,onOpenChatPilot,onOpenAdminQa,companionAttention=false,workingTowardAttention=false,dailySuppliesAttention=false,eventAttention=false,friendRequestCount=0,guildAttentionCount=0,socialAttentionCount=0,profileAttention=false}:{language:GameState['settings']['language'];onNavigate:(destination:MoreDestination)=>void;onOpenChatPilot?:()=>void;onOpenAdminQa?:()=>void;companionAttention?:boolean;workingTowardAttention?:boolean;dailySuppliesAttention?:boolean;eventAttention?:boolean;friendRequestCount?:number;guildAttentionCount?:number;socialAttentionCount?:number;profileAttention?:boolean}){
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),singleColumn=width<350||fontScale>=1.25;
   const attentionLabel=(id:MoreDestination)=>{
     if(id==='Social'&&socialAttentionCount>0)return `${socialAttentionCount} social update${socialAttentionCount===1?'':'s'}`;
@@ -80,7 +80,7 @@ export function MoreScreen({language,onNavigate,onOpenChatPilot,companionAttenti
         <Text numberOfLines={singleColumn?2:1} style={s.description}>{meta.description}</Text>
       </Pressable>})}</View>
     </View>)}
-    {onOpenChatPilot?<View style={s.section}><Text style={s.sectionLabel}>DEVELOPER</Text><Pressable accessibilityRole="button" accessibilityLabel="Open Chat Pilot development screen" onPress={onOpenChatPilot} style={({pressed})=>[s.devCard,pressed&&s.pressed]}><Image source={navigationIcons.Social} resizeMode="contain" style={s.icon}/><View style={s.devCopy}><Text style={s.title}>Chat Pilot</Text><Text style={s.description}>Development-only interactive chat review</Text></View><UiIcon name="next" size={18}/></Pressable></View>:null}
+    {onOpenChatPilot||onOpenAdminQa?<View style={s.section}><Text style={s.sectionLabel}>DEVELOPER</Text>{onOpenAdminQa?<Pressable accessibilityRole="button" accessibilityLabel="Open Admin QA Console" onPress={onOpenAdminQa} style={({pressed})=>[s.devCard,pressed&&s.pressed]}><Image source={navigationIcons.Character} resizeMode="contain" style={s.icon}/><View style={s.devCopy}><Text style={s.title}>Admin QA Console</Text><Text style={s.description}>Full-content, crafting and dungeon test profile</Text></View><UiIcon name="next" size={18}/></Pressable>:null}{onOpenChatPilot?<Pressable accessibilityRole="button" accessibilityLabel="Open Chat Pilot development screen" onPress={onOpenChatPilot} style={({pressed})=>[s.devCard,pressed&&s.pressed]}><Image source={navigationIcons.Social} resizeMode="contain" style={s.icon}/><View style={s.devCopy}><Text style={s.title}>Chat Pilot</Text><Text style={s.description}>Development-only interactive chat review</Text></View><UiIcon name="next" size={18}/></Pressable>:null}</View>:null}
   </ScrollView>;
 }
 

@@ -1,0 +1,30 @@
+import {createCharacter,newGame} from '../core/game';
+import type {BodyPresentation,ClassId,GameState} from '../core/types';
+import {debugPrepareFullQaSandbox} from './debug-tools';
+
+export const ADMIN_QA_CLASSES:ClassId[]=['IRONWARDEN','BASTION','DREADGUARD','DAWNKEEPER','WAYFINDER','RAVAGER','HEXWEAVER','KNIFE_DANCER','STONECALLER'];
+
+function freshQaCharacter(classId:ClassId,bodyPresentation:BodyPresentation,nowMs:number){
+  return createCharacter(newGame(nowMs),classId,'[QA] Veldryn Admin',bodyPresentation);
+}
+
+/**
+ * Thin UI-facing wrapper around the canonical debug QA sandbox.
+ * A class switch intentionally rebuilds the local QA save so each class starts
+ * from the same deterministic full-access baseline.
+ */
+export function buildAdminQaState(current:GameState|undefined|null,classId:ClassId='IRONWARDEN',nowMs=Date.now()):GameState{
+  const bodyPresentation=current?.character?.bodyPresentation??'male';
+  const base=current?.character?.classId===classId&&current.character.name.startsWith('[QA]')
+    ?current
+    :freshQaCharacter(classId,bodyPresentation,nowMs);
+  return debugPrepareFullQaSandbox(base);
+}
+
+export function refillAdminQaResources(state:GameState):GameState{
+  return debugPrepareFullQaSandbox(state);
+}
+
+export function isAdminQaState(state:GameState|undefined|null):boolean{
+  return !!state?.character?.name?.startsWith('[QA]');
+}

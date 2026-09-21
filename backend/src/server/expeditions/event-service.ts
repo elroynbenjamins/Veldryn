@@ -44,7 +44,7 @@ function graph(eventId:string,runId:string,serverSecret:string):CoopRouteGraph{
   }
  }
  nodes.push({nodeId:'boss',depth:count+1,kind:'boss',contentId:boss,modifierId:'final',risk:1.25,rewardTag:'boss',nextNodeIds:[],title:definition.finalBoss,mechanicDelta:0});
- const result:CoopRouteGraph={schemaVersion:1,generatorVersion:'event-route-v2',runId,expeditionId:eventId,contentVersion:'event-v2',balanceVersion:'event-balance-v2',preBossNodeCount:count,entryNodeId:'entry',bossNodeId:'boss',nodes};validateCoopRouteGraph(result);return result;
+ const result:CoopRouteGraph={schemaVersion:1,generatorVersion:'event-route-v2',runId,expeditionId:eventId,contentVersion:'event-v2',balanceVersion:'event-balance-v2',preBossNodeCount:count,entryNodeId:'entry',bossNodeId:'boss',nodes};validateCoopRouteGraph(result,{preBossNodeMin:5,preBossNodeMax:7});return result;
 }
 
 export class EventExpeditionService{

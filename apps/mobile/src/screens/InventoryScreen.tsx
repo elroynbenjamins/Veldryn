@@ -15,15 +15,16 @@ import {spacing,typography,equipmentTheme,type ThemeColors} from '../theme/theme
 import {useGameTheme} from '../theme/ThemeContext';
 import {EquipmentPreview} from '../components/EquipmentPreview';
 import {ItemQuickInspect} from '../components/ItemQuickInspect';
+import {GearCopiesModal} from '../components/GearCopiesModal';
 import {previewEquipment} from '../core/equipment-preview';
 import {formatGameNumber} from '../core/number-format';
 import {ot} from '../i18n';
-import {enhancedGearStats,gearEnhancement,gemSocketCapacity,hasEnhancement} from '../core/equipment-enhancement';
-import {effectiveOwnedGearRarity} from '../core/crafted-gear-instances';
+import {gearStatsAtRank,gemSocketCapacity} from '../core/equipment-enhancement';
+import {inventoryGearCopies} from '../core/crafted-gear-instances';
 import {bulkSelectionSummary,type BulkStorageLocation} from '../core/inventory-bulk';
 import type {WorkingTowardDestination} from '../core/working-toward';
 
-type Pending={kind:'sell'|'salvage'|'deposit';item:ItemDef;quantity:number}|null;
+type Pending={kind:'sell'|'salvage'|'deposit';item:ItemDef;quantity:number;instanceId?:string;instanceLabel?:string}|null;
 type BulkAction='transfer'|'sell'|'salvage';
 type BulkPending={kind:BulkAction;ids:string[]}|null;
 const FILTER_OPTIONS:{id:InventoryFilter;label:string}[]=[{id:'all',label:'All'},{id:'new',label:'New'},{id:'favorites',label:'★ Favorites'},{id:'gear',label:'Gear'},{id:'material',label:'Materials'},{id:'gem',label:'Gems'},{id:'food',label:'Food'},{id:'potion',label:'Potions'},{id:'tool',label:'Tools'},{id:'quest',label:'Quest'}];
@@ -39,10 +40,11 @@ export function InventoryScreen({state,onEquip,onFood,onEat,onSell,onSalvage,onD
   const [expandedItem,setExpandedItem]=useState<string|null>(null);
   const [previewId,setPreviewId]=useState<string|null>(null);
   const [inspectId,setInspectId]=useState<string|null>(null);
+  const [copyItemId,setCopyItemId]=useState<string|null>(null);
   const [showStorage,setShowStorage]=useState(false),[filterOpen,setFilterOpen]=useState(false);
   const [selectMode,setSelectMode]=useState(false),[selectedIds,setSelectedIds]=useState<string[]>([]),[bulkPending,setBulkPending]=useState<BulkPending>(null);
   const run=(action:()=>void)=>{try{action();setError('')}catch(e){setError(e instanceof Error?e.message:'Action failed. Please try again.')}};
-  const confirm=()=>{if(!pending)return;run(()=>pending.kind==='deposit'?onDeposit(pending.item.id,pending.quantity):pending.kind==='sell'?onSell(pending.item.id):onSalvage(pending.item.id));setPending(null)};
+  const confirm=()=>{if(!pending)return;const ref=pending.instanceId??pending.item.id;run(()=>pending.kind==='deposit'?onDeposit(pending.item.id,pending.quantity):pending.kind==='sell'?onSell(ref):onSalvage(ref));setPending(null)};
   const favorites=inventoryFavoriteIds(state),favoriteSet=new Set(favorites),newItemIds=inventoryNewItemIds(state),newItemSet=new Set(newItemIds);
   const inventoryCapacity=storageCapacityStatus(state.inventory.stacks,state.inventory.capacity),bankCapacity=storageCapacityStatus(state.bank.stacks,state.bank.capacity),activeCapacity=location==='inventory'?inventoryCapacity:bankCapacity;
   const activeNewCount=new Set(state[location].stacks.filter(stack=>stack.quantity>0&&newItemSet.has(stack.itemId)).map(stack=>stack.itemId)).size;
@@ -52,21 +54,24 @@ export function InventoryScreen({state,onEquip,onFood,onEat,onSell,onSalvage,onD
   const changeLocation=(value:BulkStorageLocation)=>{if(value===location)return;exitSelection();setExpandedItem(null);setLocation(value)};
   const toggleSelection=(itemId:string)=>{setSelectedIds(current=>{if(current.includes(itemId))return current.filter(id=>id!==itemId);if(current.length>=100){setError('Select up to 100 item stacks at once.');return current;}setError('');return [...current,itemId]})};
   const selectShown=()=>{const ids=[...new Set(stacks.map(stack=>stack.itemId))].slice(0,100);setSelectedIds(ids);setError(stacks.length>100?'Selected the first 100 matching stacks.':'')};
-  const beginSelection=()=>{setSelectMode(true);setSelectedIds([]);setExpandedItem(null);setPreviewId(null);setInspectId(null);setError('')};
+  const beginSelection=()=>{setSelectMode(true);setSelectedIds([]);setExpandedItem(null);setPreviewId(null);setInspectId(null);setCopyItemId(null);setError('')};
   const beginBulk=(kind:BulkAction)=>{const ids=kind==='transfer'?selectionSummary.transferableIds:kind==='sell'?selectionSummary.sellableIds:selectionSummary.salvageableIds;if(ids.length)setBulkPending({kind,ids})};
   const closeInspect=()=>{if(inspectId&&newItemSet.has(inspectId))run(()=>onAcknowledgeItem(inspectId));setInspectId(null)};
   const toggleItem=(itemId:string,newItem:boolean)=>{const key=location+':'+itemId,closing=expandedItem===key;if(closing&&newItem)run(()=>onAcknowledgeItem(itemId));else if(!closing&&expandedItem){const previousId=expandedItem.slice(expandedItem.indexOf(':')+1);if(newItemSet.has(previousId))run(()=>onAcknowledgeItem(previousId));}setExpandedItem(closing?null:key)};
   const renderStack=(stack:ItemStack)=>{
     const item=itemDef(stack.itemId),equippedId=item.slot?state.character?.equipment[item.slot]:undefined,carried=location==='inventory',favorite=favoriteSet.has(item.id),newItem=newItemSet.has(item.id);
-    const amount=transferAmount(stack.quantity,quantity),selectedFood=state.character?.equippedFoodId===item.id,enhancement=item.type==='gear'?gearEnhancement(state,item.id):undefined,enhancementProtected=item.type==='gear'&&hasEnhancement(state,item.id);
-    return <ItemCard favorite={favorite} newItem={newItem} selectionMode={selectMode} selected={selectedSet.has(item.id)} onSelect={()=>toggleSelection(item.id)} onInspect={!selectMode?()=>setInspectId(item.id):undefined} onToggleFavorite={()=>run(()=>onToggleFavorite(item.id))} expanded={!selectMode&&expandedItem===location+':'+item.id} onToggle={()=>toggleItem(item.id,newItem)} key={`${location}:${item.id}`} item={item} quantity={stack.quantity} equipped={equippedId?itemDef(equippedId):undefined} rarityOverride={item.type==='gear'?effectiveOwnedGearRarity(state,item.id):undefined} upgradeRank={enhancement?.rank} socketed={enhancement?.gemIds.length} socketCapacity={item.type==='gear'?gemSocketCapacity(item.id):0} enhancementProtected={enhancementProtected} displayStats={item.type==='gear'?enhancedGearStats(state,item.id):undefined} equippedDisplayStats={equippedId?enhancedGearStats(state,equippedId):undefined} selectedFood={selectedFood} healAmount={recoveryAmount(state,item.id)} transferQuantity={amount} transferIssue={transferError(state,item.id,amount,location)} numberMode={state.settings.numberMode}
-      onPreview={item.type==='gear'?()=>run(()=>{previewEquipment(state,item.id);setPreviewId(item.id)}):undefined}
-      onEquip={carried&&item.type==='gear'?()=>run(()=>onEquip(item.id)):undefined} onSelectFood={carried&&item.type==='food'?()=>run(()=>onFood(item.id)):undefined} onEat={carried&&item.type==='food'?()=>run(()=>onEat(item.id)):undefined}
-      onSell={carried&&item.value>0&&!enhancementProtected&&!favorite?()=>setPending({kind:'sell',item,quantity:1}):undefined} onSalvage={carried&&item.salvage&&!enhancementProtected&&!favorite?()=>setPending({kind:'salvage',item,quantity:1}):undefined}
+    const amount=transferAmount(stack.quantity,quantity),selectedFood=state.character?.equippedFoodId===item.id,isGear=item.type==='gear';
+    const copies=isGear&&carried?inventoryGearCopies(state,item.id):[],needsCopyChoice=isGear&&carried;
+    const openCopies=()=>setCopyItemId(item.id);
+    return <ItemCard favorite={favorite} newItem={newItem} selectionMode={selectMode} selected={selectedSet.has(item.id)} onSelect={()=>toggleSelection(item.id)} onInspect={!selectMode?()=>setInspectId(item.id):undefined} onToggleFavorite={()=>run(()=>onToggleFavorite(item.id))} expanded={!selectMode&&expandedItem===location+':'+item.id} onToggle={()=>toggleItem(item.id,newItem)} key={`${location}:${item.id}`} item={item} quantity={stack.quantity} equipped={equippedId?itemDef(equippedId):undefined} upgradeRank={undefined} socketed={undefined} socketCapacity={isGear?gemSocketCapacity(item.id):0} enhancementProtected={false} displayStats={isGear?gearStatsAtRank(item.id,0):undefined} equippedDisplayStats={equippedId?gearStatsAtRank(equippedId,0):undefined} selectedFood={selectedFood} healAmount={recoveryAmount(state,item.id)} transferQuantity={amount} transferIssue={transferError(state,item.id,amount,location)} numberMode={state.settings.numberMode}
+      onPreview={isGear?()=>run(()=>{previewEquipment(state,item.id);setPreviewId(item.id)}):undefined}
+      onEquip={needsCopyChoice?openCopies:undefined} onSelectFood={carried&&item.type==='food'?()=>run(()=>onFood(item.id)):undefined} onEat={carried&&item.type==='food'?()=>run(()=>onEat(item.id)):undefined}
+      onSell={carried&&item.value>0&&!favorite?(isGear?openCopies:()=>setPending({kind:'sell',item,quantity:1})):undefined} onSalvage={carried&&item.salvage&&!favorite?(isGear?openCopies:()=>setPending({kind:'salvage',item,quantity:1})):undefined}
       onDeposit={carried?()=>selectedFood?setPending({kind:'deposit',item,quantity:amount}):run(()=>onDeposit(item.id,amount)):undefined} onWithdraw={!carried?()=>run(()=>onWithdraw(item.id,amount)):undefined}/>;
   };
   const foodWarning=pending?.item.id===state.character?.equippedFoodId?' This is your selected auto-eat food. Only food carried in Inventory can be consumed in combat.':'';
-  const message=pending?.kind==='sell'?`Sell 1 for ${pending.item.value} gold. This cannot be undone.${foodWarning}`:pending?.kind==='deposit'?`Move ${pending.quantity}× ${pending.item.name} to Bank?${foodWarning}`:pending?.item.salvage?`Destroy 1 item for ${pending.item.salvage.quantity}× ${itemDef(pending.item.salvage.itemId).name}.`:'';
+  const copyNote=pending?.instanceLabel?` Selected copy: ${pending.instanceLabel}.`:'';
+  const message=pending?.kind==='sell'?`Sell 1 for ${pending.item.value} gold.${copyNote} This cannot be undone.${foodWarning}`:pending?.kind==='deposit'?`Move ${pending.quantity}× ${pending.item.name} to Bank?${foodWarning}`:pending?.item.salvage?`Destroy exactly this selected copy for ${pending.item.salvage.quantity}× ${itemDef(pending.item.salvage.itemId).name}.${copyNote}`:'';
   const bulkMessage=bulkPending?.kind==='transfer'
     ?`Move ${selectionSummary.transferableStackCount} selected stacks (${selectionSummary.transferableUnitCount} items) to ${location==='inventory'?'Bank':'Inventory'}?${selectionSummary.transferProtectedCount?` ${selectionSummary.transferProtectedCount} auto-eat stack stays safely in Inventory.`:''} The move is all-or-nothing if storage space is insufficient.`
     :bulkPending?.kind==='sell'
@@ -78,7 +83,7 @@ export function InventoryScreen({state,onEquip,onFood,onEat,onSell,onSalvage,onD
   const remaining=claimOverflowToBank(state).overflow.stacks.reduce((sum,item)=>sum+item.quantity,0);
   const overflowCount=state.overflow.stacks.reduce((sum,item)=>sum+item.quantity,0);
   const inventoryUpgrade=storageUpgradePreview(state,'inventory'),bankUpgrade=storageUpgradePreview(state,'bank');
-  return <><EquipmentPreview state={state} itemId={previewId} onClose={()=>setPreviewId(null)}/><ItemQuickInspect state={state} itemId={inspectId} onClose={closeInspect} onNavigate={destination=>{closeInspect();onNavigateInspect(destination)}}/><ScrollView contentContainerStyle={s.root} keyboardShouldPersistTaps="handled">
+  return <><EquipmentPreview state={state} itemId={previewId} onClose={()=>setPreviewId(null)}/><ItemQuickInspect state={state} itemId={inspectId} onClose={closeInspect} onNavigate={destination=>{closeInspect();onNavigateInspect(destination)}}/><GearCopiesModal visible={copyItemId!==null} state={state} itemId={copyItemId} onClose={()=>setCopyItemId(null)} onEquip={instanceId=>{run(()=>onEquip(instanceId));setCopyItemId(null)}} onSell={instanceId=>{if(!copyItemId)return;const item=itemDef(copyItemId),copy=inventoryGearCopies(state,copyItemId).find(row=>row.id===instanceId);setPending({kind:'sell',item,quantity:1,instanceId,instanceLabel:copy?`${copy.rarity} +${copy.enhancement.rank}`:'exact copy'});setCopyItemId(null)}} onSalvage={instanceId=>{if(!copyItemId)return;const item=itemDef(copyItemId),copy=inventoryGearCopies(state,copyItemId).find(row=>row.id===instanceId);setPending({kind:'salvage',item,quantity:1,instanceId,instanceLabel:copy?`${copy.rarity} +${copy.enhancement.rank}`:'exact copy'});setCopyItemId(null)}}/><ScrollView contentContainerStyle={s.root} keyboardShouldPersistTaps="handled">
     <Text accessibilityRole="header" style={s.h}>Inventory</Text>
     <View style={s.recovery}><Text style={s.label}>RECOVERY</Text><Text style={s.sub}>Health {state.character!.currentHp}/{effectiveStats(state).hp} · Auto-eat: {state.character?.equippedFoodId?itemDef(state.character.equippedFoodId).name:'None'}</Text><Text style={s.sub}>Carried auto-eat portions: {state.inventory.stacks.find(item=>item.itemId===state.character?.equippedFoodId)?.quantity??0}</Text></View>
     <View style={s.storageRow}>{(['inventory','bank'] as const).map(value=><StorageChip key={value} label={value==='inventory'?'Inventory':'Bank'} selected={location===value} status={value==='inventory'?inventoryCapacity:bankCapacity} onPress={()=>changeLocation(value)}/>)}</View>

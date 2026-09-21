@@ -1,6 +1,7 @@
 import type {LiveEventVisualKey} from '../content/live-event-visual-keys';
 export interface LiveEventVisualBundle{
   heroBackground:number;
+  badgeIcon?:number;
   commonCurrencyIcon?:number;
   prestigeCurrencyIcon?:number;
   discoveryArt:Readonly<Record<string,number>>;
@@ -18,6 +19,7 @@ const GENERIC:LiveEventVisualBundle={
 export const LIVE_EVENT_VISUALS:Readonly<Record<LiveEventVisualKey,LiveEventVisualBundle>>={
   harvestwake:{
     heroBackground:require('../../assets/profile-backgrounds/bg_harvestwake.png'),
+    badgeIcon:require('../../assets/events-startup-v1/badges/badge_harvestwake.png'),
     commonCurrencyIcon:require('../../assets/events/harvestwake/currency_harvest_mark.png'),
     prestigeCurrencyIcon:require('../../assets/events/harvestwake/currency_amber_seed.png'),
     discoveryArt:{
@@ -41,6 +43,7 @@ export const LIVE_EVENT_VISUALS:Readonly<Record<LiveEventVisualKey,LiveEventVisu
   },
   turning_of_the_age:{
     heroBackground:require('../../assets/profile-backgrounds/bg_cosmic_gate.png'),
+    badgeIcon:require('../../assets/events/turning_of_the_age/badge.png'),
     commonCurrencyIcon:require('../../assets/events/turning_of_the_age/currency_age_token.png'),
     prestigeCurrencyIcon:require('../../assets/events/turning_of_the_age/currency_first_dawn_seal.png'),
     discoveryArt:EMPTY_ART,
@@ -52,6 +55,7 @@ export const LIVE_EVENT_VISUALS:Readonly<Record<LiveEventVisualKey,LiveEventVisu
   },
   heartbond:{
     heroBackground:require('../../assets/profile-backgrounds/bg_heartbond.png'),
+    badgeIcon:require('../../assets/events/heartbond/badge.png'),
     commonCurrencyIcon:require('../../assets/events/heartbond/currency_heart_token.png'),
     prestigeCurrencyIcon:require('../../assets/events/heartbond/currency_vow_rose.png'),
     discoveryArt:EMPTY_ART,
@@ -63,6 +67,7 @@ export const LIVE_EVENT_VISUALS:Readonly<Record<LiveEventVisualKey,LiveEventVisu
   },
   bloomwake:{
     heroBackground:require('../../assets/profile-backgrounds/bg_bloomwake.png'),
+    badgeIcon:require('../../assets/events/bloomwake/badge.png'),
     commonCurrencyIcon:require('../../assets/events/bloomwake/currency_bloom_token.png'),
     prestigeCurrencyIcon:require('../../assets/events/bloomwake/currency_verdant_seed.png'),
     discoveryArt:EMPTY_ART,
@@ -74,6 +79,7 @@ export const LIVE_EVENT_VISUALS:Readonly<Record<LiveEventVisualKey,LiveEventVisu
   },
   suncrest:{
     heroBackground:require('../../assets/profile-backgrounds/bg_kingdom_approach.png'),
+    badgeIcon:require('../../assets/events/suncrest/badge.png'),
     commonCurrencyIcon:require('../../assets/events/suncrest/currency_suncrest_medal.png'),
     prestigeCurrencyIcon:require('../../assets/events/suncrest/currency_laurel_seal.png'),
     discoveryArt:EMPTY_ART,
@@ -138,6 +144,7 @@ export function liveEventVisualCoverage(visualKey:LiveEventVisualKey,discoveryId
   const bundle=liveEventVisuals(visualKey);
   return {
     dedicatedBundle:true,
+    badgeArt:!!bundle.badgeIcon,
     commonCurrencyArt:!!bundle.commonCurrencyIcon,
     prestigeCurrencyArt:!!bundle.prestigeCurrencyIcon,
     discoveryArtCount:discoveryIds.filter(id=>!!bundle.discoveryArt[id]).length,

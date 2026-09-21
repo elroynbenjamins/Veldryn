@@ -1,11 +1,14 @@
+import {useMemo} from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
 import {progressionGoalView} from '../core/progression-goals-v40';
 import {progressionGoalContext,progressionGoalDestination,type WorkingTowardDestination} from '../core/working-toward';
-import {C,radii,spacing,typography} from '../theme/theme';
+import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
+import {useGameTheme} from '../theme/ThemeContext';
 import {GameButton} from './GameButton';
 
 export function WorkingTowardSummary({state,onOpen,onNavigate}:{state:GameState;onOpen:()=>void;onNavigate:(destination:WorkingTowardDestination)=>void}){
+ const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const goals=state.character?.progressionGoals??[];
  if(!goals.length)return <View style={s.empty}><View style={s.flex}><Text style={s.kicker}>WORKING TOWARD</Text><Text style={s.title}>Set a progression goal</Text><Text style={s.copy}>Pin up to three targets so Home can show what to do next.</Text></View><View style={s.open}><GameButton compact title="Set goal" tone="secondary" onPress={onOpen}/></View></View>;
  const context=progressionGoalContext(state),views=goals.map(goal=>({goal,view:progressionGoalView(goal,context),destination:progressionGoalDestination(state,goal)}));
@@ -16,8 +19,8 @@ export function WorkingTowardSummary({state,onOpen,onNavigate}:{state:GameState;
  </View>;
 }
 
-const s=StyleSheet.create({
- card:{gap:8,padding:spacing.md,borderWidth:1,borderColor:C.line,borderRadius:radii.lg,backgroundColor:C.panel},
- empty:{minHeight:82,flexDirection:'row',alignItems:'center',gap:spacing.sm,padding:spacing.md,borderWidth:1,borderStyle:'dashed',borderColor:C.line,borderRadius:radii.lg,backgroundColor:C.panel},
- header:{flexDirection:'row',alignItems:'center',gap:8},flex:{flex:1,minWidth:0},kicker:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.8},title:{...typography.title,color:C.text},copy:{...typography.caption,color:C.muted},open:{width:92},manage:{minHeight:36,justifyContent:'center',paddingHorizontal:8},manageText:{fontSize:10,color:C.info,fontWeight:'900',letterSpacing:.7},
- goal:{gap:5,paddingTop:7,borderTopWidth:1,borderTopColor:C.line},goalDone:{borderLeftWidth:3,borderLeftColor:C.good,paddingLeft:7},goalBlocked:{borderLeftWidth:3,borderLeftColor:C.warning,paddingLeft:7},goalTop:{flexDirection:'row',alignItems:'flex-start',gap:8},goalName:{...typography.bodyStrong,color:C.text},meta:{fontSize:9,color:C.muted,fontWeight:'800'},active:{fontSize:9,color:C.info,fontWeight:'900'},done:{fontSize:9,color:C.good,fontWeight:'900'},blocked:{fontSize:9,color:C.warning,fontWeight:'900'},track:{height:5,borderRadius:3,overflow:'hidden',backgroundColor:C.bg},fill:{height:'100%',backgroundColor:C.accent},fillDone:{backgroundColor:C.good},continue:{minHeight:32,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,paddingHorizontal:8,borderRadius:radii.sm,backgroundColor:'#102536'},continueText:{flex:1,fontSize:10,color:C.info,fontWeight:'900'},arrow:{fontSize:14,color:C.info,fontWeight:'900'},reward:{...typography.caption,color:C.muted},});
+function makeStyles(C:ThemeColors){return StyleSheet.create({
+ card:{gap:6,padding:spacing.sm,borderWidth:1,borderColor:C.line,borderRadius:radii.lg,backgroundColor:C.panel},
+ empty:{minHeight:72,flexDirection:'row',alignItems:'center',gap:spacing.sm,padding:spacing.md,borderWidth:1,borderStyle:'dashed',borderColor:C.line,borderRadius:radii.lg,backgroundColor:C.panel},
+ header:{flexDirection:'row',alignItems:'center',gap:8},flex:{flex:1,minWidth:0},kicker:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.8},title:{...typography.bodyStrong,color:C.text},copy:{...typography.caption,color:C.muted},open:{width:92},manage:{minHeight:36,justifyContent:'center',paddingHorizontal:8},manageText:{fontSize:10,color:C.info,fontWeight:'900',letterSpacing:.7},
+ goal:{gap:4,paddingTop:6,borderTopWidth:1,borderTopColor:C.line},goalDone:{borderLeftWidth:3,borderLeftColor:C.good,paddingLeft:7},goalBlocked:{borderLeftWidth:3,borderLeftColor:C.warning,paddingLeft:7},goalTop:{flexDirection:'row',alignItems:'flex-start',gap:8},goalName:{...typography.bodyStrong,color:C.text},meta:{fontSize:9,color:C.muted,fontWeight:'800'},active:{fontSize:9,color:C.info,fontWeight:'900'},done:{fontSize:9,color:C.good,fontWeight:'900'},blocked:{fontSize:9,color:C.warning,fontWeight:'900'},track:{height:5,borderRadius:3,overflow:'hidden',backgroundColor:C.bg},fill:{height:'100%',backgroundColor:C.accent},fillDone:{backgroundColor:C.good},continue:{minHeight:32,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,paddingHorizontal:8,borderRadius:radii.sm,backgroundColor:C.infoSurface},continueText:{flex:1,fontSize:10,color:C.info,fontWeight:'900'},arrow:{fontSize:14,color:C.info,fontWeight:'900'},reward:{...typography.caption,color:C.muted},});}

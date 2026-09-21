@@ -35,6 +35,26 @@ function normalizeGearEnhancements(raw:unknown){
     }));
 }
 
+function displacedLegacyGemIds(raw:unknown){
+  const result:string[]=[];
+  for(const value of Object.values((raw&&typeof raw==='object'?raw:{}) as Record<string,any>)){
+    if(!value||typeof value!=='object'||value.statGemId||value.effectGemId||!Array.isArray(value.gemIds))continue;
+    const slots=normalizeEnhancementGemSlots(value),keep=new Map<string,number>();
+    for(const id of [slots.statGemId,slots.effectGemId])if(id)keep.set(id,(keep.get(id)??0)+1);
+    for(const id of value.gemIds){
+      if(typeof id!=='string'||!ITEMS.some(item=>item.id===id&&item.type==='gem'))continue;
+      const remaining=keep.get(id)??0;
+      if(remaining>0)keep.set(id,remaining-1);else result.push(id);
+    }
+  }
+  return result;
+}
+function addRefundsToStacks(stacks:any[],ids:string[]){
+  const next=(Array.isArray(stacks)?stacks:[]).map(stack=>({...stack}));
+  for(const itemId of ids){const found=next.find(stack=>stack.itemId===itemId);if(found)found.quantity=Math.max(0,Number(found.quantity)||0)+1;else next.push({itemId,quantity:1});}
+  return next;
+}
+
 export function normalizeSave(input:any):GameState{
   if(!input || ![4,5,6,7,8,9,10,11].includes(input.version)) throw new Error('Unsupported VELDRYN save version');
   const existing=new Map<string,any>((input.quests||[]).map((q:any)=>[q.questId,q]));
@@ -138,6 +158,10 @@ export function normalizeSave(input:any):GameState{
   const journalState=input.account?.journalState?.schemaVersion===42?input.account.journalState:undefined;
   const longTermMetrics=numberRecord(input.account?.longTermMetrics,120);
   const dailySupplies=normalizeDailySuppliesTrack(input.account?.dailySupplies);
+  const displacedLegacyGems=[
+    ...displacedLegacyGemIds(input.character?.gearEnhancements),
+    ...(Array.isArray(input.otherCharacters)?input.otherCharacters.flatMap((entry:any)=>displacedLegacyGemIds(entry?.character?.gearEnhancements)):[]),
+  ];
   const normalized={
     ...input,
     version:6,
@@ -147,7 +171,7 @@ export function normalizeSave(input:any):GameState{
     currentRegionId,
     regionalProgressById,
     inventory:{stacks:Array.isArray(input.inventory?.stacks)?input.inventory.stacks:[],capacity:Number(input.inventory?.capacity ?? 30)},
-    bank:{stacks:Array.isArray(input.bank?.stacks)?input.bank.stacks:[],capacity:Number(input.bank?.capacity ?? 120)},
+    bank:{stacks:addRefundsToStacks(input.bank?.stacks,displacedLegacyGems),capacity:Number(input.bank?.capacity ?? 120)},
     overflow:{stacks:Array.isArray(input.overflow?.stacks)?input.overflow.stacks:[],expiresAtMs:input.overflow?.expiresAtMs ?? null},
     quests,
     unlockedMonsterIds:Array.isArray(input.unlockedMonsterIds)?input.unlockedMonsterIds:['MOSS_RAT'],

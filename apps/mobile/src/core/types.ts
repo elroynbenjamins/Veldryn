@@ -7,9 +7,14 @@ export type ClassId = 'IRONWARDEN' | 'BASTION' | 'DREADGUARD' | 'DAWNKEEPER' | '
 export type BodyPresentation = 'male' | 'female';
 export type GearSlot = 'weapon' | 'offhand' | 'helmet' | 'chest' | 'legs' | 'boots' | 'gloves' | 'cape' | 'amulet' | 'ring';
 export interface CharacterLoadoutPreset{id:string;slotIndex:number;name:string;classId:ClassId;equipment:Partial<Record<GearSlot,string>>;foodId?:string;companionId?:string;createdAtMs:number;updatedAtMs:number;}
-export type GemStat = 'attack'|'defense'|'hp';
+export type GemStat = 'attack'|'defense'|'hp'|'power'|'max_hp'|'armor'|'ward'|'accuracy'|'crit_chance'|'crit_damage'|'penetration'|'haste'|'potency'|'evasion'|'tenacity';
 export type GemSocketKind='stat'|'effect';
-export type GemEffectId='combat_speed'|'boss_power'|'damage_reduction'|'recovery';
+export type GemEffectId=
+ 'combat_speed'|'boss_power'|'damage_reduction'|'recovery'|
+ 'effect_momentum'|'effect_execution'|'effect_opening_strike'|'effect_predator'|'effect_critical_surge'|'effect_ruin'|
+ 'effect_bulwark'|'effect_aegis'|'effect_last_stand'|'effect_retaliation'|'effect_unyielding'|
+ 'effect_mercy'|'effect_benediction'|'effect_guardians_gift'|'effect_renewal'|'effect_shared_resolve'|
+ 'effect_sustenance'|'effect_battle_rhythm'|'effect_flow'|'effect_opportunist';
 export interface GearEnhancementState { rank:number; failures:number; statGemId?:string; effectGemId?:string; /** Legacy/read-model compatibility; normalized from named slots. */ gemIds:string[]; }
 export type ActivityKind = 'combat' | 'mining' | 'woodcutting' | 'fishing' | 'herbalism' | 'alchemy' | 'faith' | 'training' | 'hunting' | 'exploration';
 export type CombatChallengeId='ferocious'|'hardened'|'nemesis'|'apex';
@@ -88,7 +93,7 @@ export interface GameState {
   /** Optional server/read-model projection for versioned regional journals. */
   regionalProgressById?:Record<string,RegionalProgressState>;
   quests:QuestState[]; unlockedMonsterIds:string[]; defeatedBossIds:string[]; skills:SkillState[];
-  account:CompanionAccountState & {longTermAccountScopeId?:string;entitlements?:Record<string,boolean>;equipmentCraftingQueue?:EquipmentCraftJob[];unlockedCharacterSlots?:number;premiumCurrencyBalance?:number;ownedBoostIds?:string[];eventCommunityProgressById?:Record<string,number>;createdCharacterCount:number;guildMember:boolean;patronTier:'none'|'bloom'|'crown';guildBannerId?:import('./guild-customization').GuildBannerId;guildProfileFrameId?:import('./guild-customization').GuildFrameId;guildNameplateId?:import('./guild-customization').GuildNameplateId;guildMotto?:string;
+  account:CompanionAccountState & {longTermAccountScopeId?:string;entitlements?:Record<string,boolean>;equipmentCraftingQueue?:EquipmentCraftJob[];unlockedGemRecipeIds?:string[];gemPityState?:{effectMissesBySource?:Record<string,number>;recipeMissesBySource?:Record<string,number>};unlockedCharacterSlots?:number;premiumCurrencyBalance?:number;ownedBoostIds?:string[];eventCommunityProgressById?:Record<string,number>;createdCharacterCount:number;guildMember:boolean;patronTier:'none'|'bloom'|'crown';guildBannerId?:import('./guild-customization').GuildBannerId;guildProfileFrameId?:import('./guild-customization').GuildFrameId;guildNameplateId?:import('./guild-customization').GuildNameplateId;guildMotto?:string;
   professionMasteryByAction?:Record<string,import('./profession-mastery-v40').ProfessionMasteryRecord>;
   weeklyOrders?:import('./weekly-orders-v41').WeeklyOrdersState;
   weeklyOrderPendingRewards?:Array<{claimKey:string;rewardRef:string;label:string;weekKey:string;orderId?:string}>;

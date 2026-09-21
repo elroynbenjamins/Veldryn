@@ -13,12 +13,15 @@ import {EquipmentArtwork,hasEquipmentArtwork} from './EquipmentArtwork';
 import {GatheringToolArtwork} from './GatheringToolArtwork';
 import {ResourceArtwork} from './ResourceArtwork';
 import {hasResourceArtwork} from '../theme/resource-assets';
+import {GemArtwork} from './GemArtwork';
+import {hasGemArtworkV1} from '../theme/gem-assets';
 import type {WorkingTowardDestination} from '../core/working-toward';
 
 function InspectArt({state,itemId}:{state:GameState;itemId:string}){
   const C=useGameTheme(),model=itemInspectModel(state,itemId),item=model.item;
   if(item.type==='gear'&&hasEquipmentArtwork(item))return <EquipmentArtwork item={item} framed={false}/>;
   if(item.type==='tool')return <GatheringToolArtwork itemId={item.id} size={72} framed={false}/>;
+  if(hasGemArtworkV1(item.id))return <GemArtwork itemId={item.id} size={72} framed={false}/>;
   if(hasResourceArtwork(item.id))return <ResourceArtwork itemId={item.id} size={72} framed={false}/>;
   return <View style={[art.fallback,{borderColor:model.rarity.color,backgroundColor:model.rarity.surface}]}><Text style={[art.symbol,{color:model.rarity.color}]}>{model.rarity.symbol}</Text><Text style={[art.fallbackText,{color:C.muted}]}>{item.type.toUpperCase()}</Text></View>;
 }

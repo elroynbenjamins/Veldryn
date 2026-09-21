@@ -21,7 +21,7 @@ export function ProfileShowcaseSection({title,entries,emptyLabel='Nothing featur
  return <View style={s.block}>
   <View style={s.head}><View style={s.headCopy}><Text style={s.title}>{title}</Text><Text style={s.subtitle}>{subtitle}</Text></View><View style={s.countPill}><Text style={s.count}>{Math.min(3,entries.length)}/3</Text></View></View>
   {!entries.length
-   ?<View style={s.emptySummary}><View style={s.emptyIcon}><Text style={s.emptyMark}>◇</Text></View><View style={s.emptyCopy}><Text style={s.emptyTitle}>No selections yet</Text><Text style={s.emptyText}>{emptyLabel} · choose up to 3 from Customize Profile.</Text></View></View>
+   ?<View style={s.emptySummary}><View style={s.emptyIcon}><Text style={s.emptyMark}>◇</Text></View><View style={s.emptyCopy}><Text style={s.emptyTitle}>No selections yet</Text><Text style={[s.emptyText,s.emptySummaryText]}>{emptyLabel} · choose up to 3 from Customize Profile.</Text></View></View>
    :<View style={s.grid}>{slots.map((entry,index)=>{
     if(!entry)return <View key={'empty-'+index} style={[s.slot,s.emptySlot]}><Text style={s.slotNumber}>SLOT {index+1}</Text><Text style={s.openLabel}>OPEN</Text><Text numberOfLines={2} style={s.emptyText}>{emptyLabel}</Text></View>;
     const tone=toneStyles(entry.prestige);
@@ -64,7 +64,7 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C),elite
  emptyMark:{fontSize:18,color:C.disabled,fontWeight:'900'},
  emptyCopy:{flex:1,minWidth:0},
  emptyTitle:{...typography.bodyStrong,color:C.text},
- emptyText:{fontSize:8,lineHeight:11,color:C.muted,textAlign:'center'},
+ emptyText:{fontSize:8,lineHeight:11,color:C.muted,textAlign:'center'},emptySummaryText:{textAlign:'left'},
  name:{fontSize:10,lineHeight:13,color:C.text,fontWeight:'900'},
  value:{fontSize:11,lineHeight:14,color:C.good,fontWeight:'900'},valuePrestige:{color:equipmentColors.goldSoft},
  meta:{fontSize:8,lineHeight:11,color:C.muted},

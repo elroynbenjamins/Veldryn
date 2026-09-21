@@ -22,6 +22,7 @@ import {normalizeGuildBannerId,normalizeGuildFrameId,normalizeGuildMotto,normali
 import {normalizeOwnedPetIds,normalizeSelectedPetId} from './pet-collection';
 import {normalizeActivityQueue} from './activity-queue';
 import {normalizeActiveDailySupplyBoost,normalizeDailySuppliesTrack,normalizeDailySupplyBank} from './daily-supplies';
+import {normalizeGearEnhancementState} from './equipment-enhancement';
 
 export function normalizeSave(input:any):GameState{
   if(!input || ![4,5,6,7,8,9,10,11].includes(input.version)) throw new Error('Unsupported VELDRYN save version');
@@ -53,8 +54,8 @@ export function normalizeSave(input:any):GameState{
     const earnedEventSetIds=classSkinSets.filter(set=>set.unlockEventSkinId&&eventSkinIds.has(set.unlockEventSkinId)).map(set=>equipmentSetSkinId(set.id));
     const unlockedSkinIds=['starting',...(Array.isArray(input.character.unlockedSkinIds)?input.character.unlockedSkinIds.filter((id:unknown)=>typeof id==='string'&&validSkinIds.has(id)):[]),...earnedEventSetIds];
     const ownedPetIds=normalizeOwnedPetIds(input.character.ownedPetIds,legacyCosmeticPets);
-    const gearIds=new Set(ITEMS.filter(item=>item.type==='gear').map(item=>item.id)),gemIds=new Set(ITEMS.filter(item=>item.type==='gem').map(item=>item.id));
-    const gearEnhancements=Object.fromEntries(Object.entries(input.character.gearEnhancements??{}).filter(([id,value])=>gearIds.has(id)&&value&&typeof value==='object').map(([id,value]:[string,any])=>[id,{rank:Math.max(0,Math.min(10,Math.floor(Number(value.rank)||0))),failures:Math.max(0,Math.floor(Number(value.failures)||0)),gemIds:Array.isArray(value.gemIds)?value.gemIds.filter((gemId:unknown)=>typeof gemId==='string'&&gemIds.has(gemId)).slice(0,3):[]}])) as any;
+    const gearIds=new Set(ITEMS.filter(item=>item.type==='gear').map(item=>item.id));
+    const gearEnhancements=Object.fromEntries(Object.entries(input.character.gearEnhancements??{}).filter(([id,value])=>gearIds.has(id)&&value&&typeof value==='object').map(([id,value])=>[id,normalizeGearEnhancementState(id,value)]));
     return {
     ...savedCharacter,
     monsterMasteryPoints:normalizeMonsterMastery(savedCharacter.monsterMasteryPoints),
@@ -166,7 +167,7 @@ export function normalizeSave(input:any):GameState{
   if(input.otherCharacters!==undefined&&!Array.isArray(input.otherCharacters))throw new Error('Invalid account roster.');
   if(Array.isArray(input.otherCharacters)&&input.otherCharacters.length>4)throw new Error('Account roster exceeds the five-character limit.');
   const rosterIds=new Set<string>();
-  const roster=Array.isArray(input.otherCharacters)?input.otherCharacters.filter((entry:any)=>entry?.character?.id).map((entry:any)=>{const id=String(entry.character.id);if(rosterIds.has(id))throw new Error('Duplicate account character.');rosterIds.add(id);return {...entry,character:{...entry.character,dailySupplyBoostBank:normalizeDailySupplyBank(entry.character.dailySupplyBoostBank),activeDailySupplyBoost:normalizeActiveDailySupplyBoost(entry.character.activeDailySupplyBoost)}};}):[];
+  const roster=Array.isArray(input.otherCharacters)?input.otherCharacters.filter((entry:any)=>entry?.character?.id).map((entry:any)=>{const id=String(entry.character.id);if(rosterIds.has(id))throw new Error('Duplicate account character.');rosterIds.add(id);const rosterGearEnhancements=Object.fromEntries(Object.entries(entry.character.gearEnhancements??{}).filter(([gearId,value])=>ITEMS.some(item=>item.id===gearId&&item.type==='gear')&&value&&typeof value==='object').map(([gearId,value])=>[gearId,normalizeGearEnhancementState(gearId,value)]));return {...entry,character:{...entry.character,gearEnhancements:rosterGearEnhancements,dailySupplyBoostBank:normalizeDailySupplyBank(entry.character.dailySupplyBoostBank),activeDailySupplyBoost:normalizeActiveDailySupplyBoost(entry.character.activeDailySupplyBoost)}};}):[];
   if(character?.id&&rosterIds.has(character.id))throw new Error('Duplicate active account character.');
   normalized.otherCharacters=roster as GameState['otherCharacters'];
   normalized.account.unlockedCharacterSlots=Math.max(1,Math.min(5,Number(input.account?.unlockedCharacterSlots??1)));

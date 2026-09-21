@@ -27,11 +27,12 @@ function mergeStacks(stacks:ItemStack[]){
  const merged:ItemStack[]=[];
  for(const stack of stacks){
   if(!stack||typeof stack.itemId!=='string'||!Number.isFinite(stack.quantity)||stack.quantity<=0)continue;
-  const cap=stackCap(stack.itemId);
-  if(cap===1){for(let i=0;i<Math.floor(stack.quantity);i++)merged.push({itemId:stack.itemId,quantity:1});continue;}
-  const existing=merged.find(row=>row.itemId===stack.itemId&&row.quantity<cap);
-  if(existing){existing.quantity=Math.min(cap,existing.quantity+Math.floor(stack.quantity));continue;}
-  merged.push({itemId:stack.itemId,quantity:Math.min(cap,Math.floor(stack.quantity))});
+  const cap=stackCap(stack.itemId);let remaining=Math.floor(stack.quantity);
+  while(remaining>0){
+   const existing=merged.find(row=>row.itemId===stack.itemId&&row.quantity<cap);
+   if(existing){const moved=Math.min(cap-existing.quantity,remaining);existing.quantity+=moved;remaining-=moved;continue;}
+   const moved=Math.min(cap,remaining);merged.push({itemId:stack.itemId,quantity:moved});remaining-=moved;
+  }
  }
  return merged;
 }

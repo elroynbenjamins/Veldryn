@@ -4,7 +4,7 @@ import {attemptEquipmentUpgrade,equippedEffectGemBonuses,gearEnhancement,gemSock
 function ok(condition:unknown,message:string){if(!condition)throw new Error(message)}
 
 let state=createCharacter(newGame(1),'IRONWARDEN','Smith','male');
-state={...state,character:{...state.character!,gold:100000,equipment:{...state.character!.equipment,ring:'STONEHEART_RING'}},inventory:{...state.inventory,stacks:[...state.inventory.stacks,{itemId:'TEMPERING_DUST',quantity:999},{itemId:'TEMPERING_CORE',quantity:99},{itemId:'WARD_SHARD',quantity:2},{itemId:'GEFF_001',quantity:1}]}});
+state={...state,character:{...state.character!,gold:100000,equipment:{...state.character!.equipment,ring:'STONEHEART_RING'}},inventory:{...state.inventory,stacks:[...state.inventory.stacks,{itemId:'TEMPERING_DUST',quantity:999},{itemId:'TEMPERING_CORE',quantity:99},{itemId:'WARD_SHARD',quantity:2},{itemId:'GEFF_001',quantity:1}]}};
 
 const uncommon=EQUIPMENT_ITEMS_V33.find(item=>item.rarity==='uncommon');
 ok(!!uncommon,'Expected an Uncommon V33 item for socket policy coverage');

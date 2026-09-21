@@ -48,7 +48,7 @@ export function CombatantProfileCard({slot,active=false,targeted=false,assistPro
  </Animated.View>;
 }
 
-export function EnemyCombatProfileCard({name,boss=false,active=false,targeted=false,motionStyle,currentCue}:{name:string;boss?:boolean;active?:boolean;targeted?:boolean;motionStyle?:StyleProp<ViewStyle>;currentCue?:CoopCombatReplayCueView}){
+export function EnemyCombatProfileCard({name,boss=false,active=false,targeted=false,motionStyle,currentCue}:{name:string;boss?:boolean;active?:boolean;targeted?:boolean;motionStyle?:any;currentCue?:CoopCombatReplayCueView}){
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),float=currentCue?.type==='action'&&currentCue.targetName===name&&currentCue.amount!==undefined?{label:`${currentCue.actionKind==='heal'?'+':'-'}${Math.round(currentCue.amount)}`,heal:currentCue.actionKind==='heal'}:undefined;
  return <Animated.View accessibilityLabel={`${boss?'Boss':'Dungeon enemy'} ${name}`} style={[s.enemyCard,boss&&s.enemyBoss,targeted&&s.targeted,active&&s.enemyActive,motionStyle]}>
   <View style={s.enemyScene}><View style={[StyleSheet.absoluteFill,s.enemyWash]}/><Text style={[s.enemyMark,boss&&s.enemyBossMark]}>{boss?'♛':'◆'}</Text>{float?<View style={[s.floatPill,float.heal?s.floatHeal:s.floatDamage]}><Text style={[s.floatText,float.heal?s.floatHealText:s.floatDamageText]}>{float.label}</Text></View>:null}<View style={s.enemyPlate}><Text style={s.enemyKicker}>{boss?'FINAL BOSS':'ENCOUNTER'}</Text><Text numberOfLines={2} style={s.enemyName}>{name}</Text></View></View>

@@ -28,7 +28,7 @@ const typed=gearEnhancement(effectSocketed,'STONEHEART_RING');
 ok(typed.statGemId==='WARD_SHARD'&&typed.effectGemId==='GEFF_001','Rare gear should hold one Stat and one Effect Gem');
 ok(typed.gemIds.length===2,'Compatibility gem view should contain the two active typed gems');
 ok(equippedEffectGemBonuses(effectSocketed).combatSpeedMultiplier>1,'Momentum Effect Gem should change the authoritative combat multiplier');
-ok(effectiveStats(effectSocketed).haste>effectiveStats(statSocketed).haste,'Momentum Effect Gem should be visible in the Haste summary');
+ok((effectiveStats(effectSocketed).haste??0)>(effectiveStats(statSocketed).haste??0),'Momentum Effect Gem should be visible in the Haste summary');
 
 const goldBeforeEffectExtract=effectSocketed.character!.gold;
 const effectExtracted=unsocketGem(effectSocketed,'STONEHEART_RING',1);

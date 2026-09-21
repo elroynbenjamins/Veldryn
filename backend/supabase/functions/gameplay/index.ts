@@ -105,8 +105,8 @@ function updateFaithPreference(state, kind, id, enabled) {
   }
   return { ...state, character: { ...state.character, faith } };
 }
-function removeWater(stacks, quantity3) {
-  let remaining = quantity3;
+function removeWater(stacks, quantity4) {
+  let remaining = quantity4;
   return stacks.map((s) => {
     if (s.itemId !== HOLY_WATER_ID) return s;
     const taken = Math.min(remaining, s.quantity);
@@ -66936,6 +66936,67 @@ var EQUIPMENT_ITEMS_V33 = equipment_catalog_t1_t9_v33_default.pieces.map((piece)
   };
 });
 
+// apps/mobile/src/content/gems-v1.ts
+var GEM_GRADE_LABEL_V1 = { 1: "Cut", 2: "Polished", 3: "Refined", 4: "Flawless", 5: "Radiant" };
+var GEM_GRADE_RARITY_V1 = { 1: "common", 2: "uncommon", 3: "rare", 4: "epic", 5: "mythic" };
+var vals = (a, b, c, d, e) => ({ 1: a, 2: b, 3: c, 4: d, 5: e });
+var MOBILE_GEM_FAMILIES_V1 = [
+  { familyId: "stat_might", name: "Might", kind: "stat", category: "stat", values: vals(4e-3, 5e-3, 65e-4, 8e-3, 0.01), unit: "percent", description: "Increases Power.", legacyStat: "attack", sources: ["Saffron Gate", "Crafting"] },
+  { familyId: "stat_vitality", name: "Vitality", kind: "stat", category: "stat", values: vals(6e-3, 8e-3, 0.01, 0.0125, 0.015), unit: "percent", description: "Increases Max HP.", legacyStat: "hp", sources: ["Saffron Gate", "Shiverlake Descent", "Crafting"] },
+  { familyId: "stat_iron", name: "Iron", kind: "stat", category: "stat", values: vals(5e-3, 65e-4, 8e-3, 0.01, 0.0125), unit: "percent", description: "Increases Armor.", legacyStat: "defense", sources: ["Scorchwind Flats", "Caravan of Glass", "Crafting"] },
+  { familyId: "stat_ward", name: "Ward", kind: "stat", category: "stat", values: vals(5e-3, 65e-4, 8e-3, 0.01, 0.0125), unit: "percent", description: "Increases Ward.", sources: ["Buried Observatory", "Crafting"] },
+  { familyId: "stat_precision", name: "Precision", kind: "stat", category: "stat", values: vals(3e-3, 4e-3, 5e-3, 65e-4, 8e-3), unit: "percentage_point", description: "Increases Accuracy.", sources: ["Mirage Basin", "Mirage Well", "Crafting"] },
+  { familyId: "stat_keen", name: "Keen", kind: "stat", category: "stat", values: vals(2e-3, 3e-3, 4e-3, 5e-3, 6e-3), unit: "percentage_point", description: "Increases Critical Chance.", sources: ["Whitepine Hunt", "Crafting"] },
+  { familyId: "stat_savage", name: "Savage", kind: "stat", category: "stat", values: vals(0.01, 0.013, 0.016, 0.02, 0.025), unit: "percent", description: "Increases Critical Damage.", sources: ["Choir Caverns", "Crafting"] },
+  { familyId: "stat_piercing", name: "Piercing", kind: "stat", category: "stat", values: vals(25e-4, 35e-4, 45e-4, 6e-3, 75e-4), unit: "percentage_point", description: "Increases Penetration.", sources: ["Scorchwind Flats", "Crafting"] },
+  { familyId: "stat_swift", name: "Swift", kind: "stat", category: "stat", values: vals(35e-4, 45e-4, 55e-4, 65e-4, 8e-3), unit: "percent", description: "Increases Haste.", sources: ["Buried Observatory", "Crafting"] },
+  { familyId: "stat_potent", name: "Potent", kind: "stat", category: "stat", values: vals(5e-3, 65e-4, 8e-3, 0.01, 0.012), unit: "percent", description: "Increases Potency.", sources: ["Mirage Basin", "Mirage Well", "Crafting"] },
+  { familyId: "stat_elusive", name: "Elusive", kind: "stat", category: "stat", values: vals(2e-3, 25e-4, 3e-3, 4e-3, 5e-3), unit: "percentage_point", description: "Increases Evasion.", sources: ["Regional enemies", "Crafting"] },
+  { familyId: "stat_resolute", name: "Resolute", kind: "stat", category: "stat", values: vals(4e-3, 5e-3, 6e-3, 75e-4, 9e-3), unit: "percent", description: "Increases Tenacity.", sources: ["Shiverlake Descent", "Crafting"] },
+  { familyId: "effect_momentum", name: "Momentum", kind: "effect", category: "damage", values: vals(18e-4, 22e-4, 26e-4, 31e-4, 36e-4), unit: "effect", description: "Successful direct attacks build stacking damage for 4s.", resonance2: "Maximum Momentum stacks becomes 6.", resonance3: "Momentum decays one stack at a time.", recommendedClasses: ["KNIFE_DANCER", "WAYFINDER", "HEXWEAVER"], sources: ["Whitepine Hunt", "Party Contracts"] },
+  { familyId: "effect_execution", name: "Execution", kind: "effect", category: "damage", values: vals(8e-3, 0.01, 0.012, 0.015, 0.018), unit: "effect", description: "Deal more damage to enemies below 30% HP.", resonance2: "Activation threshold becomes 35% HP.", resonance3: "Execution is 25% stronger below 15% HP.", recommendedClasses: ["RAVAGER", "KNIFE_DANCER", "DREADGUARD"], sources: ["Tyrant's Crown", "Choir Caverns", "Party Contracts"] },
+  { familyId: "effect_opening_strike", name: "Opening Strike", kind: "effect", category: "damage", values: vals(7e-3, 9e-3, 0.011, 0.013, 0.015), unit: "effect", description: "Deal more damage during the opening 8s of combat.", resonance2: "Opening window becomes 10s.", resonance3: "Refreshes once on a flagged boss phase.", recommendedClasses: ["RAVAGER", "WAYFINDER", "KNIFE_DANCER"], sources: ["Saffron Gate", "Resonance Cache"] },
+  { familyId: "effect_predator", name: "Predator", kind: "effect", category: "damage", values: vals(8e-3, 0.01, 0.012, 0.014, 0.016), unit: "effect", description: "Deal more damage to Elite and Boss enemies.", resonance2: "Also affects minibosses and Champions.", resonance3: "First hit temporarily increases Predator effectiveness.", recommendedClasses: ["WAYFINDER", "RAVAGER"], legacyEffect: "boss_power", sources: ["Caravan of Glass", "Whitepine Hunt"] },
+  { familyId: "effect_critical_surge", name: "Critical Surge", kind: "effect", category: "damage", values: vals(2e-3, 25e-4, 3e-3, 35e-4, 4e-3), unit: "effect", description: "Critical hits grant stacking Haste.", resonance2: "Maximum stacks becomes 4.", resonance3: "Critical hits refresh the oldest stack at cap.", recommendedClasses: ["KNIFE_DANCER", "WAYFINDER", "RAVAGER"], sources: ["Buried Observatory"] },
+  { familyId: "effect_ruin", name: "Ruin", kind: "effect", category: "damage", values: vals(25e-4, 3e-3, 35e-4, 4e-3, 5e-3), unit: "effect", description: "Deal more damage per different negative effect on the target.", resonance2: "Counts up to 3 negative effects.", resonance3: "A fresh player Mark counts as two effects briefly.", recommendedClasses: ["HEXWEAVER", "WAYFINDER"], sources: ["Mirage Well", "Mirage Basin"] },
+  { familyId: "effect_bulwark", name: "Bulwark", kind: "effect", category: "defense", values: vals(6e-3, 75e-4, 9e-3, 0.0105, 0.012), unit: "effect", description: "Blocking or defensive abilities grant temporary damage reduction.", resonance2: "Damage-reduction duration increases.", resonance3: "Successful blocks refresh the duration.", recommendedClasses: ["IRONWARDEN", "BASTION"], legacyEffect: "damage_reduction", sources: ["Caravan of Glass", "Party Contracts"] },
+  { familyId: "effect_aegis", name: "Aegis", kind: "effect", category: "defense", values: vals(0.01, 0.0125, 0.015, 0.0175, 0.02), unit: "effect", description: "Increase barriers generated by the player.", resonance2: "Expired barriers return a small amount as healing.", resonance3: "Maximum barrier cap increases by 5%.", recommendedClasses: ["BASTION", "STONECALLER"], sources: ["Buried Observatory", "Shiverlake Descent"] },
+  { familyId: "effect_last_stand", name: "Last Stand", kind: "effect", category: "defense", values: vals(0.015, 0.019, 0.023, 0.027, 0.032), unit: "effect", description: "Once per combat, low HP triggers strong mitigation.", resonance2: "Activation threshold becomes 35% HP.", resonance3: "Last Stand lasts 8s.", recommendedClasses: ["IRONWARDEN", "DREADGUARD"], sources: ["Tyrant's Crown"] },
+  { familyId: "effect_retaliation", name: "Retaliation", kind: "effect", category: "defense", values: vals(0.015, 0.019, 0.023, 0.027, 0.032), unit: "effect", description: "Taking a heavy hit empowers your next damaging ability.", resonance2: "Heavy-hit threshold becomes easier to trigger.", resonance3: "Consuming Retaliation restores a small amount of HP.", recommendedClasses: ["DREADGUARD", "IRONWARDEN"], sources: ["Scorchwind Flats", "Caravan of Glass"] },
+  { familyId: "effect_unyielding", name: "Unyielding", kind: "effect", category: "defense", values: vals(15e-4, 2e-3, 25e-4, 3e-3, 35e-4), unit: "effect", description: "Incoming hits build temporary Armor and Ward.", resonance2: "Maximum defensive stacks becomes 5.", resonance3: "Stacks last longer.", recommendedClasses: ["IRONWARDEN", "BASTION", "DREADGUARD"], sources: ["Tyrant's Crown", "Shiverlake Descent"] },
+  { familyId: "effect_mercy", name: "Mercy", kind: "effect", category: "support", values: vals(0.04, 0.05, 0.06, 0.07, 0.08), unit: "effect", description: "A portion of overhealing becomes a temporary barrier.", resonance2: "Mercy barrier cap increases.", resonance3: "Mercy barriers last longer.", recommendedClasses: ["DAWNKEEPER"], sources: ["Mirage Basin", "Mirage Well", "Party Contracts"] },
+  { familyId: "effect_benediction", name: "Benediction", kind: "effect", category: "support", values: vals(8e-3, 0.01, 0.012, 0.014, 0.016), unit: "effect", description: "Support abilities empower the next direct heal or barrier.", resonance2: "May hold two Benediction charges.", resonance3: "Consuming a charge briefly grants Haste.", recommendedClasses: ["DAWNKEEPER", "STONECALLER"], sources: ["Buried Observatory"] },
+  { familyId: "effect_guardians_gift", name: "Guardian's Gift", kind: "effect", category: "support", values: vals(25e-4, 35e-4, 45e-4, 55e-4, 65e-4), unit: "effect", description: "Barriers placed on allies also grant temporary damage reduction.", resonance2: "The damage reduction lasts longer.", resonance3: "The caster receives half of the mitigation.", recommendedClasses: ["STONECALLER", "BASTION"], sources: ["Shiverlake Descent"] },
+  { familyId: "effect_renewal", name: "Renewal", kind: "effect", category: "support", values: vals(0.01, 0.0125, 0.015, 0.0175, 0.02), unit: "effect", description: "Direct healing leaves a small heal-over-time effect.", resonance2: "Renewal lasts longer and heals more.", resonance3: "Two Renewals may coexist on a target.", recommendedClasses: ["DAWNKEEPER"], sources: ["Choir Caverns"] },
+  { familyId: "effect_shared_resolve", name: "Shared Resolve", kind: "effect", category: "support", values: vals(25e-4, 3e-3, 35e-4, 4e-3, 5e-3), unit: "effect", description: "Buffing or shielding another player grants temporary Potency.", resonance2: "Shared Resolve lasts longer.", resonance3: "Maximum stacks becomes 3.", recommendedClasses: ["DAWNKEEPER", "STONECALLER"], sources: ["Choir Caverns"] },
+  { familyId: "effect_sustenance", name: "Sustenance", kind: "effect", category: "hybrid", values: vals(15e-4, 2e-3, 25e-4, 3e-3, 35e-4), unit: "effect", description: "Defeating enemies restores a small amount of Max HP.", resonance2: "Elite and Champion kills restore triple.", resonance3: "Excess healing becomes a small barrier.", recommendedClasses: ["DREADGUARD"], legacyEffect: "recovery", sources: ["Saffron Gate", "Whitepine Hunt"] },
+  { familyId: "effect_battle_rhythm", name: "Battle Rhythm", kind: "effect", category: "hybrid", values: vals(5e-3, 65e-4, 8e-3, 95e-4, 0.011), unit: "effect", description: "Alternating offensive and defensive/support abilities empowers the next opposite category.", resonance2: "The alternation window becomes longer.", resonance3: "Successful alternation briefly grants Haste.", recommendedClasses: ["IRONWARDEN", "DAWNKEEPER"], sources: ["Choir Caverns"] },
+  { familyId: "effect_flow", name: "Flow", kind: "effect", category: "hybrid", values: vals(1e-3, 15e-4, 2e-3, 25e-4, 3e-3), unit: "effect", description: "Using different abilities consecutively builds Haste.", resonance2: "Maximum Flow stacks becomes 4.", resonance3: "Flow decays one stack at a time.", recommendedClasses: ["HEXWEAVER", "KNIFE_DANCER", "DAWNKEEPER"], legacyEffect: "combat_speed", sources: ["Buried Observatory", "Party Contracts"] },
+  { familyId: "effect_opportunist", name: "Opportunist", kind: "effect", category: "hybrid", values: vals(7e-3, 9e-3, 0.011, 0.013, 0.015), unit: "effect", description: "Applying a new Mark/debuff/control effect empowers the next direct hit.", resonance2: "Per-target cooldown becomes shorter.", resonance3: "A critical empowered hit extends the triggering effect once.", recommendedClasses: ["HEXWEAVER", "WAYFINDER"], sources: ["Mirage Basin", "Mirage Well", "Party Contracts"] }
+];
+var GEM_ITEMS_V1 = MOBILE_GEM_FAMILIES_V1.flatMap((family) => [1, 2, 3, 4, 5].map((grade) => ({
+  id: `gem:${family.familyId}:g${grade}`,
+  name: `${GEM_GRADE_LABEL_V1[grade]} ${family.name} Gem`,
+  type: "gem",
+  gemKind: family.kind,
+  gemFamilyId: family.familyId,
+  gemGrade: grade,
+  gemTier: grade,
+  gemStat: family.legacyStat,
+  gemPercent: family.legacyStat ? family.values[grade] : void 0,
+  gemEffect: family.legacyEffect,
+  gemEffectValue: family.legacyEffect ? family.values[grade] : void 0,
+  value: Math.round(120 * Math.pow(2.25, grade - 1)),
+  rarity: GEM_GRADE_RARITY_V1[grade],
+  passive: family.description
+})));
+function mobileGemFamilyV1(familyId) {
+  return MOBILE_GEM_FAMILIES_V1.find((row) => row.familyId === familyId);
+}
+function mobileGemItemIdV1(familyId, grade) {
+  return `gem:${familyId}:g${grade}`;
+}
+
 // apps/mobile/src/content/items.ts
 var COMPLETE_SET_SLOTS = ["helmet", "legs", "boots", "weapon", "offhand", "amulet"];
 var COMPLETE_SET_CONFIG = [
@@ -66992,6 +67053,10 @@ var BASE_ITEMS = [
   ...HERB_ITEMS,
   ...POTION_ITEMS,
   // Enhancement economy. Gems are intentionally scarce drops; tempering materials are universal.
+  { id: "GEM_DUST", name: "Gem Dust", type: "material", value: 18, rarity: "uncommon" },
+  { id: "REGIONAL_CATALYST", name: "Regional Catalyst", type: "material", value: 650, rarity: "epic" },
+  { id: "RADIANT_CATALYST", name: "Radiant Catalyst", type: "material", value: 2400, rarity: "mythic" },
+  ...GEM_ITEMS_V1,
   { id: "TEMPERING_DUST", name: "Tempering Dust", type: "material", value: 22, rarity: "uncommon" },
   { id: "TEMPERING_CORE", name: "Tempering Core", type: "material", value: 180, rarity: "rare" },
   { id: "EMBER_SHARD", name: "Ember Shard", type: "gem", gemStat: "attack", gemPercent: 0.02, gemTier: 1, value: 320, rarity: "rare" },
@@ -68995,14 +69060,14 @@ function unlockCollectible(state, id) {
 function collectionBonusBreakdown(state, catalog2 = COLLECTIBLES) {
   const rows2 = /* @__PURE__ */ new Map();
   for (const row of catalog2) {
-    const owned = ids(state, row.kind).includes(row.id), active = selected(state, row.kind) === row.id;
+    const owned = ids(state, row.kind).includes(row.id), active2 = selected(state, row.kind) === row.id;
     if (!owned) continue;
     const bucket = rows2.get(row.target) ?? { owned: /* @__PURE__ */ new Set(), active: /* @__PURE__ */ new Set(), ownedRaw: 0, activeRaw: 0 };
     if (!bucket.owned.has(row.bonusFamilyId)) {
       bucket.owned.add(row.bonusFamilyId);
       bucket.ownedRaw += row.ownedBps;
     }
-    if (active && !bucket.active.has(row.bonusFamilyId)) {
+    if (active2 && !bucket.active.has(row.bonusFamilyId)) {
       bucket.active.add(row.bonusFamilyId);
       bucket.activeRaw += row.activeBps;
     }
@@ -70316,15 +70381,15 @@ function eventDropQuantity(state, source, units, nowMs) {
 function activityEventDrops(state, reward2, nowMs) {
   const event = activeLiveEvent(state, nowMs);
   if (!event || !state.activity) return [];
-  const source = state.activity.kind === "combat" ? "combat" : "gathering", units = source === "combat" ? reward2.kills : Math.floor(reward2.elapsedSeconds / 60), quantity3 = eventDropQuantity(state, source, units, nowMs);
-  return units > 0 ? [{ eventId: event.definition.id, currencyId: event.definition.currencyId, name: event.definition.currencyName, quantity: quantity3, source, units, recordedAtMs: nowMs }] : [];
+  const source = state.activity.kind === "combat" ? "combat" : "gathering", units = source === "combat" ? reward2.kills : Math.floor(reward2.elapsedSeconds / 60), quantity4 = eventDropQuantity(state, source, units, nowMs);
+  return units > 0 ? [{ eventId: event.definition.id, currencyId: event.definition.currencyId, name: event.definition.currencyName, quantity: quantity4, source, units, recordedAtMs: nowMs }] : [];
 }
 function activityEventDiscoveries(state, source, units, nowMs) {
   const event = activeLiveEvent(state, nowMs);
   if (!event || units <= 0) return [];
   return event.definition.discoveries.filter((discovery) => discovery.source === source).map((discovery) => {
-    const expected = units * discovery.chance, whole = Math.floor(expected), fraction = expected - whole, quantity3 = whole + (random01(`${state.character?.id}:${event.definition.id}:discovery:${discovery.id}:${nowMs}`, 0) < fraction ? 1 : 0);
-    return { eventId: event.definition.id, discoveryId: discovery.id, name: discovery.name, quantity: quantity3 };
+    const expected = units * discovery.chance, whole = Math.floor(expected), fraction = expected - whole, quantity4 = whole + (random01(`${state.character?.id}:${event.definition.id}:discovery:${discovery.id}:${nowMs}`, 0) < fraction ? 1 : 0);
+    return { eventId: event.definition.id, discoveryId: discovery.id, name: discovery.name, quantity: quantity4 };
   }).filter((entry2) => entry2.quantity > 0);
 }
 function applyEventDrops(state, drops) {
@@ -70376,7 +70441,7 @@ function claimEventDiscovery(state, discoveryId, nowMs = Date.now()) {
 function grantEventActivity(state, source, nowMs = Date.now()) {
   const event = activeLiveEvent(state, nowMs);
   if (!event) return state;
-  const quantity3 = eventDropQuantity(state, source, 1, nowMs), withDrops = applyEventDrops(state, [{ eventId: event.definition.id, currencyId: event.definition.currencyId, name: event.definition.currencyName, quantity: quantity3, source, units: 1, recordedAtMs: nowMs }]);
+  const quantity4 = eventDropQuantity(state, source, 1, nowMs), withDrops = applyEventDrops(state, [{ eventId: event.definition.id, currencyId: event.definition.currencyId, name: event.definition.currencyName, quantity: quantity4, source, units: 1, recordedAtMs: nowMs }]);
   return applyEventDiscoveries(withDrops, activityEventDiscoveries(state, source, 1, nowMs));
 }
 function addReward(state, reward2, nowMs = Date.now()) {
@@ -70553,12 +70618,12 @@ function chooseEventProject(state, choiceId, nowMs = Date.now()) {
   if (existing && existing !== choiceId) throw new Error("Your event project is already locked for this event.");
   return { ...state, account: { ...state.account, eventChoiceById: { ...state.account.eventChoiceById ?? {}, [event.definition.id]: choiceId } } };
 }
-function contributeEventCurrency(state, quantity3, nowMs = Date.now()) {
+function contributeEventCurrency(state, quantity4, nowMs = Date.now()) {
   const event = activeLiveEvent(state, nowMs);
   if (!event) throw new Error("This event is not active.");
   if (event.definition.communityEnabled !== true) throw new Error("Community event contributions are not enabled.");
   if (!state.account.eventChoiceById?.[event.definition.id]) throw new Error("Choose an event project first.");
-  const amount = Math.max(0, Math.floor(quantity3)), credited = eventContributionValue(state, event.definition.id, amount), balance = eventCurrencyBalance(state, event.definition.id);
+  const amount = Math.max(0, Math.floor(quantity4)), credited = eventContributionValue(state, event.definition.id, amount), balance = eventCurrencyBalance(state, event.definition.id);
   if (!amount || balance < amount) throw new Error("Not enough event currency.");
   return { ...state, account: { ...state.account, eventCurrencyBalanceById: { ...state.account.eventCurrencyBalanceById ?? {}, [event.definition.id]: balance - amount }, eventContributionById: { ...state.account.eventContributionById ?? {}, [event.definition.id]: (state.account.eventContributionById?.[event.definition.id] ?? 0) + credited } } };
 }
@@ -70760,6 +70825,159 @@ function craftedInstanceResult(state, instance) {
   };
 }
 
+// apps/mobile/src/core/gem-progression-v1.ts
+var GEM_EFFECT_RESONANCE_CAP_V1 = 3;
+var GEM_COMBINE_COSTS_V1 = {
+  1: { to: 2, copies: 3, dust: 0, gold: 1500, seconds: 5 * 60 },
+  2: { to: 3, copies: 3, dust: 5, gold: 5e3, seconds: 15 * 60 },
+  3: { to: 4, copies: 3, dust: 15, gold: 18e3, seconds: 45 * 60, catalystId: "REGIONAL_CATALYST" },
+  4: { to: 5, copies: 3, dust: 40, gold: 6e4, seconds: 2 * 60 * 60, catalystId: "RADIANT_CATALYST" }
+};
+var GEM_DISMANTLE_DUST_V1 = { 1: 1, 2: 3, 3: 8, 4: 22, 5: 60 };
+var GEM_UNSOCKET_COST_V1 = {
+  1: { gold: 0, dust: 0 },
+  2: { gold: 0, dust: 0 },
+  3: { gold: 500, dust: 0 },
+  4: { gold: 1500, dust: 1 },
+  5: { gold: 5e3, dust: 3 }
+};
+function canonicalGemMetaV1(itemId) {
+  let item;
+  try {
+    item = itemDef(itemId);
+  } catch {
+    return void 0;
+  }
+  if (item.type !== "gem" || !item.gemFamilyId || !item.gemGrade) return void 0;
+  const family = mobileGemFamilyV1(item.gemFamilyId);
+  if (!family) return void 0;
+  return { familyId: family.familyId, grade: item.gemGrade, kind: family.kind };
+}
+function gemUnsocketCostV1(itemId) {
+  const meta = canonicalGemMetaV1(itemId);
+  return meta ? GEM_UNSOCKET_COST_V1[meta.grade] : { gold: (itemDef(itemId).gemTier ?? 1) * 500, dust: 0 };
+}
+function consumeStackV1(stacks, itemId, amount) {
+  let left = amount;
+  const next = stacks.map((row) => {
+    if (row.itemId !== itemId || left <= 0) return row;
+    const used = Math.min(left, row.quantity);
+    left -= used;
+    return { ...row, quantity: row.quantity - used };
+  }).filter((row) => row.quantity > 0);
+  return { stacks: next, used: amount - left };
+}
+function addStackV1(stacks, capacity, itemId, quantityToAdd) {
+  if (quantityToAdd <= 0) return [...stacks];
+  const existing = stacks.find((row) => row.itemId === itemId);
+  if (existing) return stacks.map((row) => row.itemId === itemId ? { ...row, quantity: row.quantity + quantityToAdd } : row);
+  if (stacks.length >= capacity) throw new Error("Inventory and Bank are full");
+  return [...stacks, { itemId, quantity: quantityToAdd }];
+}
+function dismantleGemV1(state, itemId, quantityToDismantle = 1) {
+  const meta = canonicalGemMetaV1(itemId);
+  if (!meta) throw new Error("Only canonical gems can be dismantled");
+  if (!Number.isSafeInteger(quantityToDismantle) || quantityToDismantle < 1) throw new Error("Invalid dismantle quantity");
+  if (combinedGemQuantityV1(state, itemId) < quantityToDismantle) throw new Error("You do not own enough of this gem");
+  const dustPer = GEM_DISMANTLE_DUST_V1[meta.grade], inv = consumeStackV1(state.inventory.stacks, itemId, quantityToDismantle);
+  const bank = consumeStackV1(state.bank.stacks, itemId, quantityToDismantle - inv.used), dust = dustPer * quantityToDismantle;
+  let inventory = inv.stacks, bankStacks = bank.stacks;
+  try {
+    inventory = addStackV1(inventory, state.inventory.capacity, "GEM_DUST", dust);
+  } catch {
+    bankStacks = addStackV1(bankStacks, state.bank.capacity, "GEM_DUST", dust);
+  }
+  return { ...state, inventory: { ...state.inventory, stacks: inventory }, bank: { ...state.bank, stacks: bankStacks } };
+}
+function quantity(stacks, itemId) {
+  return stacks.filter((row) => row.itemId === itemId).reduce((sum, row) => sum + row.quantity, 0);
+}
+function combinedGemQuantityV1(state, itemId) {
+  return quantity(state.inventory.stacks, itemId) + quantity(state.bank.stacks, itemId);
+}
+function effectFamilyCopiesV1(state, familyId, excludeEquipmentItemId) {
+  if (!state.character) return 0;
+  let count = 0;
+  for (const equipmentItemId of Object.values(state.character.equipment)) {
+    if (!equipmentItemId || equipmentItemId === excludeEquipmentItemId) continue;
+    const gemId = state.character.gearEnhancements?.[equipmentItemId]?.effectGemId;
+    if (!gemId) continue;
+    if (canonicalGemMetaV1(gemId)?.familyId === familyId) count++;
+  }
+  return count;
+}
+function assertEffectGemEquipAllowedV1(state, equipmentItemId, gemId) {
+  const meta = canonicalGemMetaV1(gemId);
+  if (!meta || meta.kind !== "effect") return;
+  const copies = effectFamilyCopiesV1(state, meta.familyId, equipmentItemId);
+  if (copies >= GEM_EFFECT_RESONANCE_CAP_V1) throw new Error("This Effect Gem family is already at Resonance III (3/3)");
+}
+function gemFamilyRecipeIdV1(familyId) {
+  return "recipe_gem_" + familyId.replace(/^effect_|^stat_/, "");
+}
+function isGemFamilyRecipeUnlockedV1(state, familyId) {
+  const family = mobileGemFamilyV1(familyId);
+  return Boolean(family && (family.kind === "stat" || (state.account.unlockedKnowledgeIds ?? []).includes(gemFamilyRecipeIdV1(familyId))));
+}
+function gemCombineRecipeIdV1(familyId, fromGrade) {
+  return "gem_combine:" + familyId + ":g" + fromGrade;
+}
+function parseGemCombineRecipeIdV1(recipeId) {
+  const match = /^gem_combine:(stat_[a-z_]+|effect_[a-z_]+):g([1-4])$/.exec(recipeId);
+  if (!match) return void 0;
+  const familyId = match[1], fromGrade = Number(match[2]);
+  if (!mobileGemFamilyV1(familyId)) return void 0;
+  return { familyId, fromGrade };
+}
+function gemCombineRecipeV1(recipeId) {
+  const parsed = parseGemCombineRecipeIdV1(recipeId);
+  if (!parsed) return void 0;
+  const family = mobileGemFamilyV1(parsed.familyId);
+  const cost = GEM_COMBINE_COSTS_V1[parsed.fromGrade];
+  const inputs = [{ itemId: mobileGemItemIdV1(parsed.familyId, parsed.fromGrade), quantity: 3 }];
+  if (cost.dust) inputs.push({ itemId: "GEM_DUST", quantity: cost.dust });
+  if (cost.catalystId) inputs.push({ itemId: cost.catalystId, quantity: 1 });
+  return { id: recipeId, familyId: parsed.familyId, fromGrade: parsed.fromGrade, toGrade: cost.to, name: GEM_GRADE_LABEL_V1[cost.to] + " " + family.name + " Gem", inputs, output: { itemId: mobileGemItemIdV1(parsed.familyId, cost.to), quantity: 1 }, gold: cost.gold, seconds: cost.seconds };
+}
+var RESONANCE_CACHE_REQUIRED_LIVE_CLEARS_V1 = 3;
+function resonanceWeekKeyV1(nowMs) {
+  const date = new Date(nowMs), daysSinceMonday = (date.getUTCDay() + 6) % 7;
+  date.setUTCDate(date.getUTCDate() - daysSinceMonday);
+  return date.toISOString().slice(0, 10);
+}
+function resonanceCacheStatusV1(state, nowMs) {
+  const weekKey = resonanceWeekKeyV1(nowMs), raw2 = state.account.resonanceCache;
+  if (!raw2 || raw2.weekKey !== weekKey) return { weekKey, liveClears: 0, claimed: false, effectChoices: [], dustReward: 0, regionalCatalysts: 0, radiantCatalysts: 0, ready: false, remaining: RESONANCE_CACHE_REQUIRED_LIVE_CLEARS_V1 };
+  const liveClears = Math.min(RESONANCE_CACHE_REQUIRED_LIVE_CLEARS_V1, Math.max(0, Math.floor(raw2.liveClears ?? 0))), effectChoices = Array.isArray(raw2.effectChoices) ? raw2.effectChoices.filter((id) => mobileGemFamilyV1(id)?.kind === "effect").slice(0, 3) : [];
+  return { ...raw2, weekKey, liveClears, effectChoices, dustReward: Math.max(0, Math.floor(raw2.dustReward ?? 0)), regionalCatalysts: Math.max(0, Math.floor(raw2.regionalCatalysts ?? 0)), radiantCatalysts: Math.max(0, Math.floor(raw2.radiantCatalysts ?? 0)), ready: liveClears >= RESONANCE_CACHE_REQUIRED_LIVE_CLEARS_V1 && effectChoices.length === 3, remaining: Math.max(0, RESONANCE_CACHE_REQUIRED_LIVE_CLEARS_V1 - liveClears) };
+}
+function addCacheRewardV1(state, itemId, quantityToAdd, nowMs) {
+  if (quantityToAdd <= 0) return state;
+  const add = (stacks) => {
+    const existing = stacks.find((row) => row.itemId === itemId);
+    return existing ? stacks.map((row) => row.itemId === itemId ? { ...row, quantity: row.quantity + quantityToAdd } : row) : [...stacks, { itemId, quantity: quantityToAdd }];
+  };
+  const invExisting = state.inventory.stacks.some((row) => row.itemId === itemId);
+  if (invExisting || state.inventory.stacks.length < state.inventory.capacity) return { ...state, inventory: { ...state.inventory, stacks: add(state.inventory.stacks) } };
+  const bankExisting = state.bank.stacks.some((row) => row.itemId === itemId);
+  if (bankExisting || state.bank.stacks.length < state.bank.capacity) return { ...state, bank: { ...state.bank, stacks: add(state.bank.stacks) } };
+  const overflow = add(state.overflow.stacks);
+  return { ...state, overflow: { stacks: overflow, expiresAtMs: Math.max(state.overflow.expiresAtMs ?? 0, nowMs + 72 * 60 * 60 * 1e3) } };
+}
+function claimResonanceCacheV1(state, familyId, nowMs) {
+  const raw2 = state.account.resonanceCache, status = resonanceCacheStatusV1(state, nowMs), family = mobileGemFamilyV1(familyId);
+  if (!raw2 || raw2.weekKey !== status.weekKey) throw new Error("This week\u2019s Resonance Cache has no progress yet");
+  if (raw2.claimed) throw new Error("This week\u2019s Resonance Cache was already claimed");
+  if (!status.ready) throw new Error("Complete three successful Live co-op clears first");
+  if (!status.effectChoices.includes(familyId) || family?.kind !== "effect") throw new Error("Choose one of this week\u2019s offered Effect Gems");
+  if (status.dustReward < 25 || status.dustReward > 40 || status.regionalCatalysts < 1) throw new Error("Resonance Cache rewards are not ready");
+  let next = addCacheRewardV1(state, mobileGemItemIdV1(familyId, 3), 1, nowMs);
+  next = addCacheRewardV1(next, "GEM_DUST", status.dustReward, nowMs);
+  next = addCacheRewardV1(next, "REGIONAL_CATALYST", status.regionalCatalysts, nowMs);
+  if (status.radiantCatalysts) next = addCacheRewardV1(next, "RADIANT_CATALYST", status.radiantCatalysts, nowMs);
+  return { ...next, account: { ...next.account, resonanceCache: { ...raw2, claimed: true } } };
+}
+
 // apps/mobile/src/core/equipment-enhancement.ts
 var MAX_UPGRADE_RANK = 10;
 var UPGRADE_STAT_PER_RANK = 0.03;
@@ -70777,9 +70995,9 @@ function safeGem(id) {
   }
 }
 function gemSocketKind(gemId) {
-  const gem = safeGem(gemId);
-  if (!gem) throw new Error("That item is not a gem");
-  return gem.gemKind === "effect" || gem.gemEffect ? "effect" : "stat";
+  const gem2 = safeGem(gemId);
+  if (!gem2) throw new Error("That item is not a gem");
+  return gem2.gemKind ?? (gem2.gemEffect ? "effect" : "stat");
 }
 function normalizeEnhancementGemSlots(raw2) {
   let statGemId, effectGemId;
@@ -70788,11 +71006,11 @@ function normalizeEnhancementGemSlots(raw2) {
   const namedEffect = safeGem(raw2?.effectGemId);
   if (namedEffect && gemSocketKind(namedEffect.id) === "effect") effectGemId = namedEffect.id;
   for (const id of Array.isArray(raw2?.gemIds) ? raw2.gemIds : []) {
-    const gem = safeGem(id);
-    if (!gem) continue;
-    const kind = gemSocketKind(gem.id);
-    if (kind === "stat" && !statGemId) statGemId = gem.id;
-    if (kind === "effect" && !effectGemId) effectGemId = gem.id;
+    const gem2 = safeGem(id);
+    if (!gem2) continue;
+    const kind = gemSocketKind(gem2.id);
+    if (kind === "stat" && !statGemId) statGemId = gem2.id;
+    if (kind === "effect" && !effectGemId) effectGemId = gem2.id;
   }
   const gemIds = [statGemId, effectGemId].filter((id) => Boolean(id));
   return { statGemId, effectGemId, gemIds };
@@ -70856,11 +71074,12 @@ function attemptEquipmentUpgrade(state, itemId, roll = Math.random()) {
 }
 function socketGem(state, itemId, gemId) {
   requireEquipped(state, itemId);
-  const gem = safeGem(gemId);
-  if (!gem) throw new Error("That item is not a gem");
+  const gem2 = safeGem(gemId);
+  if (!gem2) throw new Error("That item is not a gem");
   const kind = gemSocketKind(gemId), enhancement = gearEnhancement(state, itemId);
-  if (kind === "stat" && !gem.gemStat) throw new Error("Stat Gems require a primary stat bonus");
-  if (kind === "effect" && !gem.gemEffect) throw new Error("Effect Gems require a combat effect");
+  if (kind === "stat" && !gem2.gemStat && !canonicalGemMetaV1(gemId)) throw new Error("Stat Gems require a primary stat bonus");
+  if (kind === "effect" && !gem2.gemEffect && !canonicalGemMetaV1(gemId)) throw new Error("Effect Gems require a combat effect");
+  if (kind === "effect") assertEffectGemEquipAllowedV1(state, itemId, gemId);
   if (kind === "stat" && enhancement.statGemId) throw new Error("The Stat Gem socket is already filled");
   if (kind === "effect" && enhancement.effectGemId) throw new Error("The Effect Gem socket is already filled");
   let next = consumeAcross(state, gemId, 1);
@@ -70878,11 +71097,32 @@ function unsocketGem(state, itemId, index) {
   if (index !== 0 && index !== 1) throw new Error("Unknown gem socket");
   const enhancement = gearEnhancement(state, itemId), gemId = index === 0 ? enhancement.statGemId : enhancement.effectGemId;
   if (!gemId) throw new Error(index === 0 ? "The Stat Gem socket is empty" : "The Effect Gem socket is empty");
-  const fee = (itemDef(gemId).gemTier ?? 1) * 500;
-  if (state.character.gold < fee) throw new Error(`Need ${fee} gold to safely extract this gem`);
-  let next = { ...state, character: { ...state.character, gold: state.character.gold - fee } };
+  const fee = gemUnsocketCostV1(gemId);
+  if (state.character.gold < fee.gold) throw new Error(`Need ${fee.gold} gold to safely extract this gem`);
+  if (fee.dust && combinedQuantity(state, "GEM_DUST") < fee.dust) throw new Error(`Need ${fee.dust} Gem Dust to safely extract this gem`);
+  let next = { ...state, character: { ...state.character, gold: state.character.gold - fee.gold } };
+  if (fee.dust) next = consumeAcross(next, "GEM_DUST", fee.dust);
   next = addInventory(next, gemId);
   next = setEnhancement(next, itemId, { ...enhancement, statGemId: index === 0 ? void 0 : enhancement.statGemId, effectGemId: index === 1 ? void 0 : enhancement.effectGemId, gemIds: [] });
+  return next;
+}
+function replaceGem(state, itemId, gemId) {
+  requireEquipped(state, itemId);
+  const gem2 = safeGem(gemId);
+  if (!gem2) throw new Error("That item is not a gem");
+  const kind = gemSocketKind(gemId), enhancement = gearEnhancement(state, itemId), currentId = kind === "stat" ? enhancement.statGemId : enhancement.effectGemId;
+  if (!currentId) return socketGem(state, itemId, gemId);
+  if (currentId === gemId) throw new Error("That gem is already socketed here");
+  if (kind === "effect") assertEffectGemEquipAllowedV1(state, itemId, gemId);
+  if (combinedQuantity(state, gemId) < 1) throw new Error("You do not own this gem");
+  const fee = gemUnsocketCostV1(currentId);
+  if (state.character.gold < fee.gold) throw new Error(`Need ${fee.gold} gold to replace this gem`);
+  if (fee.dust && combinedQuantity(state, "GEM_DUST") < fee.dust) throw new Error(`Need ${fee.dust} Gem Dust to replace this gem`);
+  let next = consumeAcross(state, gemId, 1);
+  next = { ...next, character: { ...next.character, gold: next.character.gold - fee.gold } };
+  if (fee.dust) next = consumeAcross(next, "GEM_DUST", fee.dust);
+  next = addInventory(next, currentId);
+  next = setEnhancement(next, itemId, { ...enhancement, statGemId: kind === "stat" ? gemId : enhancement.statGemId, effectGemId: kind === "effect" ? gemId : enhancement.effectGemId, gemIds: [] });
   return next;
 }
 function gearStatsAtRank(itemId, rank) {
@@ -70900,8 +71140,8 @@ function equippedGemBonuses(state) {
     if (!itemId) continue;
     const gemId = gearEnhancement(state, itemId).statGemId;
     if (!gemId) continue;
-    const gem = itemDef(gemId);
-    if (gem.type === "gem" && gem.gemStat) result[gem.gemStat] += gem.gemPercent ?? 0;
+    const gem2 = itemDef(gemId);
+    if (gem2.type === "gem" && gem2.gemStat) result[gem2.gemStat] += gem2.gemPercent ?? 0;
   }
   return result;
 }
@@ -70912,8 +71152,8 @@ function equippedEffectGemBonuses(state) {
     if (!itemId) continue;
     const gemId = gearEnhancement(state, itemId).effectGemId;
     if (!gemId) continue;
-    const gem = itemDef(gemId);
-    if (gem.type === "gem" && gem.gemEffect) result[gem.gemEffect] += Math.max(0, gem.gemEffectValue ?? 0);
+    const gem2 = itemDef(gemId);
+    if (gem2.type === "gem" && gem2.gemEffect) result[gem2.gemEffect] += Math.max(0, gem2.gemEffectValue ?? 0);
   }
   result.combat_speed = Math.min(0.1, result.combat_speed);
   result.boss_power = Math.min(0.15, result.boss_power);
@@ -71571,6 +71811,279 @@ var CombatRng = class {
   }
 };
 
+// backend/src/server/combat/gem-effects-v1.ts
+var FOREVER = 9e15;
+var directAllowed = (abilityId) => !abilityId.startsWith("COMPANION_") && abilityId !== "COMPANION_REFLECT";
+function gem(state, familyId) {
+  return state.definition.effectGems?.find((row) => row.familyId === familyId);
+}
+function active(state, tag, now, sourceId) {
+  return state.modifiers.filter((row) => row.tag === tag && row.expiresAt > now && (!sourceId || row.sourceId === sourceId));
+}
+function has(state, tag, now, sourceId) {
+  return active(state, tag, now, sourceId).length > 0;
+}
+function clear(state, tag, sourceId) {
+  state.modifiers = state.modifiers.filter((row) => row.tag !== tag || sourceId && row.sourceId !== sourceId);
+}
+function setOne(state, sourceId, tag, value, expiresAt, now) {
+  clear(state, tag, sourceId);
+  state.modifiers.push({ sourceId, tag, value, expiresAt, createdAt: now, kind: "gem" });
+}
+function addStack(state, sourceId, tag, value, expiresAt, now, max) {
+  const rows2 = active(state, tag, now, sourceId);
+  if (rows2.length >= max) return false;
+  state.modifiers.push({ sourceId, tag, value, expiresAt, createdAt: now, kind: "gem" });
+  return true;
+}
+function stackValue(state, tag, now, sourceId) {
+  return active(state, tag, now, sourceId).reduce((sum, row) => sum + row.value, 0);
+}
+function stackCount(state, tag, now, sourceId) {
+  return active(state, tag, now, sourceId).length;
+}
+function isEliteTarget(target2) {
+  return Boolean(target2.definition.boss || target2.definition.tags?.some((tag) => ["elite", "champion", "miniboss"].includes(tag)));
+}
+function abilityCategory(ability2) {
+  const kinds = new Set(ability2.effects.map((effect2) => effect2.kind));
+  if (kinds.has("damage") || kinds.has("dot") || kinds.has("debuff") || kinds.has("interrupt")) return "offense";
+  if (kinds.has("heal") || kinds.has("hot") || kinds.has("shield") || kinds.has("buff") || kinds.has("taunt")) return "support";
+  return "neutral";
+}
+function gemEffectiveHasteV1(state, now) {
+  const surge = gem(state, "effect_critical_surge"), flow = gem(state, "effect_flow");
+  return state.definition.stats.haste + (surge ? stackCount(state, "gem:critical_surge", now, state.definition.id) * surge.totalValue : 0) + (flow ? stackCount(state, "gem:flow", now, state.definition.id) * flow.totalValue : 0) + stackValue(state, "gem:haste_bonus", now, state.definition.id);
+}
+function gemEffectiveDefenseV1(state, now) {
+  const unyielding = gem(state, "effect_unyielding"), stacks = unyielding ? stackCount(state, "gem:unyielding", now, state.definition.id) : 0;
+  return state.definition.stats.defense * (1 + (unyielding ? stacks * unyielding.totalValue : 0));
+}
+function gemOutgoingDamageMultiplierV1(source, target2, now, abilityId, periodic) {
+  if (abilityId.startsWith("COMPANION_")) return 1;
+  let bonus = 0;
+  const execution = gem(source, "effect_execution");
+  if (execution) {
+    const threshold = execution.resonance >= 2 ? 0.35 : 0.3;
+    if (target2.hp / Math.max(1, target2.definition.stats.maxHp) < threshold) {
+      let value = execution.totalValue;
+      if (execution.resonance >= 3 && target2.hp / Math.max(1, target2.definition.stats.maxHp) < 0.15) value *= 1.25;
+      bonus += value;
+    }
+  }
+  const predator = gem(source, "effect_predator");
+  if (predator && isEliteTarget(target2)) {
+    const boosted = has(source, "gem:predator_boost", now, source.definition.id);
+    bonus += predator.totalValue * (boosted ? 1.25 : 1);
+  }
+  const opening = gem(source, "effect_opening_strike");
+  if (opening) {
+    const window = opening.resonance >= 2 ? 1e4 : 8e3;
+    if (now <= window || has(source, "gem:opening_phase", now, source.definition.id)) bonus += opening.totalValue;
+  }
+  const ruin = gem(source, "effect_ruin");
+  if (ruin) {
+    const debuffs = target2.modifiers.filter((row) => row.kind === "debuff" && row.sourceId === source.definition.id && row.expiresAt > now);
+    const unique2 = new Map(debuffs.map((row) => [row.tag, row]));
+    let count = 0;
+    for (const row of unique2.values()) {
+      count++;
+      if (ruin.resonance >= 3 && row.tag.toLowerCase().includes("mark") && now - (row.createdAt ?? now) <= 4e3) count++;
+    }
+    bonus += ruin.totalValue * Math.min(ruin.resonance >= 2 ? 3 : 2, count);
+  }
+  if (!periodic && directAllowed(abilityId)) {
+    const momentum = gem(source, "effect_momentum");
+    if (momentum) bonus += momentum.totalValue * stackCount(source, "gem:momentum", now, source.definition.id);
+    const retaliation = gem(source, "effect_retaliation");
+    if (retaliation && has(source, "gem:retaliation_ready", now, source.definition.id)) bonus += retaliation.totalValue;
+    const rhythm = gem(source, "effect_battle_rhythm");
+    if (rhythm && has(source, "gem:battle_offense_ready", now, source.definition.id)) bonus += rhythm.totalValue;
+    const opportunist = gem(source, "effect_opportunist");
+    if (opportunist && has(target2, "gem:opportunist_ready", now, source.definition.id)) bonus += opportunist.totalValue;
+  }
+  return Math.max(0.1, 1 + bonus);
+}
+function gemIncomingDamageMultiplierV1(target2, now) {
+  let reduction = stackValue(target2, "gem:damage_reduction", now);
+  return Math.max(0.25, 1 - Math.min(0.75, reduction));
+}
+function gemHealingMultiplierV1(source, now) {
+  const shared = gem(source, "effect_shared_resolve");
+  const potency = shared ? stackCount(source, "gem:shared_resolve", now, source.definition.id) * shared.totalValue : 0;
+  const benediction = gem(source, "effect_benediction");
+  const charge = benediction && has(source, "gem:benediction_charge", now, source.definition.id) ? benediction.totalValue : 0;
+  const rhythm = gem(source, "effect_battle_rhythm");
+  const rhythmBonus = rhythm && has(source, "gem:battle_support_ready", now, source.definition.id) ? rhythm.totalValue : 0;
+  return 1 + potency + charge + rhythmBonus;
+}
+function gemShieldMultiplierV1(source, now) {
+  const aegis = gem(source, "effect_aegis"), shared = gem(source, "effect_shared_resolve"), benediction = gem(source, "effect_benediction");
+  const potency = shared ? stackCount(source, "gem:shared_resolve", now, source.definition.id) * shared.totalValue : 0;
+  const charge = benediction && has(source, "gem:benediction_charge", now, source.definition.id) ? benediction.totalValue : 0;
+  const rhythm = gem(source, "effect_battle_rhythm");
+  const rhythmBonus = rhythm && has(source, "gem:battle_support_ready", now, source.definition.id) ? rhythm.totalValue : 0;
+  return 1 + (aegis?.totalValue ?? 0) + potency + charge + rhythmBonus;
+}
+function gemOnAbilityUsedV1(now, actor, ability2) {
+  if (actor.definition.team !== "players") return;
+  const category = abilityCategory(ability2);
+  const bulwark = gem(actor, "effect_bulwark");
+  if (bulwark && category === "support") {
+    setOne(actor, actor.definition.id, "gem:damage_reduction", bulwark.totalValue, now + (bulwark.resonance >= 2 ? 5e3 : 4e3), now);
+  }
+  const benediction = gem(actor, "effect_benediction");
+  if (benediction && category === "support") {
+    const max = benediction.resonance >= 2 ? 2 : 1;
+    const current = active(actor, "gem:benediction_charge", now, actor.definition.id);
+    if (current.length < max) actor.modifiers.push({ sourceId: actor.definition.id, tag: "gem:benediction_charge", value: 1, expiresAt: now + 1e4, createdAt: now, kind: "gem" });
+  }
+  const flow = gem(actor, "effect_flow");
+  if (flow) {
+    const last = actor.modifiers.find((row) => row.tag.startsWith("gem:flow_last:"));
+    const same = last?.tag === "gem:flow_last:" + ability2.id;
+    actor.modifiers = actor.modifiers.filter((row) => !row.tag.startsWith("gem:flow_last:"));
+    actor.modifiers.push({ sourceId: actor.definition.id, tag: "gem:flow_last:" + ability2.id, value: 1, expiresAt: FOREVER, createdAt: now, kind: "gem" });
+    const cap = flow.resonance >= 2 ? 4 : 3, rows2 = active(actor, "gem:flow", now, actor.definition.id);
+    if (!same && rows2.length < cap) actor.modifiers.push({ sourceId: actor.definition.id, tag: "gem:flow", value: 1, expiresAt: now + 6e3, createdAt: now, kind: "gem" });
+    const refreshed = active(actor, "gem:flow", now, actor.definition.id).sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0));
+    for (let i = 0; i < refreshed.length; i++) refreshed[i].expiresAt = now + 6e3 + (flow.resonance >= 3 ? i * 2e3 : 0);
+  }
+  const rhythm = gem(actor, "effect_battle_rhythm");
+  if (rhythm && category !== "neutral") {
+    const last = actor.modifiers.find((row) => row.tag.startsWith("gem:battle_last:"));
+    const previous = last?.tag.split(":").pop();
+    actor.modifiers = actor.modifiers.filter((row) => !row.tag.startsWith("gem:battle_last:"));
+    actor.modifiers.push({ sourceId: actor.definition.id, tag: "gem:battle_last:" + category, value: 1, expiresAt: FOREVER, createdAt: now, kind: "gem" });
+    const window = rhythm.resonance >= 2 ? 12e3 : 8e3;
+    if (category === "offense") setOne(actor, actor.definition.id, "gem:battle_support_ready", rhythm.totalValue, now + window, now);
+    else setOne(actor, actor.definition.id, "gem:battle_offense_ready", rhythm.totalValue, now + window, now);
+    if (previous && previous !== category && rhythm.resonance >= 3) setOne(actor, actor.definition.id, "gem:haste_bonus", 0.02, now + 4e3, now);
+  }
+}
+function gemOnDirectHitV1(now, source, target2, abilityId, crit) {
+  if (source.definition.team !== "players" || !directAllowed(abilityId)) return { selfHeal: 0 };
+  const momentum = gem(source, "effect_momentum");
+  if (momentum && !has(source, "gem:momentum_cd", now, source.definition.id)) {
+    const cap = momentum.resonance >= 2 ? 6 : 5;
+    addStack(source, source.definition.id, "gem:momentum", 1, now + 4e3, now, cap);
+    const rows2 = active(source, "gem:momentum", now, source.definition.id).sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0));
+    for (let i = 0; i < rows2.length; i++) rows2[i].expiresAt = now + 4e3 + (momentum.resonance >= 3 ? i * 2e3 : 0);
+    setOne(source, source.definition.id, "gem:momentum_cd", 1, now + 500, now);
+  }
+  const surge = gem(source, "effect_critical_surge");
+  if (surge && crit && !has(source, "gem:critical_surge_cd", now, source.definition.id)) {
+    const cap = surge.resonance >= 2 ? 4 : 3, rows2 = active(source, "gem:critical_surge", now, source.definition.id);
+    if (rows2.length < cap) addStack(source, source.definition.id, "gem:critical_surge", 1, now + 5e3, now, cap);
+    else if (surge.resonance >= 3) {
+      rows2.sort((a, b) => a.expiresAt - b.expiresAt)[0].expiresAt = now + 5e3;
+    }
+    setOne(source, source.definition.id, "gem:critical_surge_cd", 1, now + 750, now);
+  }
+  const predator = gem(source, "effect_predator");
+  if (predator && isEliteTarget(target2) && predator.resonance >= 3 && !has(source, "gem:predator_started:" + target2.definition.id, now, source.definition.id)) {
+    setOne(source, source.definition.id, "gem:predator_started:" + target2.definition.id, 1, FOREVER, now);
+    setOne(source, source.definition.id, "gem:predator_boost", 1, now + 8e3, now);
+  }
+  const retaliation = gem(source, "effect_retaliation");
+  let selfHeal = 0;
+  if (retaliation && has(source, "gem:retaliation_ready", now, source.definition.id)) {
+    clear(source, "gem:retaliation_ready", source.definition.id);
+    if (retaliation.resonance >= 3 && !has(source, "gem:retaliation_heal_cd", now, source.definition.id)) {
+      selfHeal = 0.01;
+      setOne(source, source.definition.id, "gem:retaliation_heal_cd", 1, now + 1e4, now);
+    }
+  }
+  if (has(source, "gem:battle_offense_ready", now, source.definition.id)) clear(source, "gem:battle_offense_ready", source.definition.id);
+  if (has(target2, "gem:opportunist_ready", now, source.definition.id)) clear(target2, "gem:opportunist_ready", source.definition.id);
+  return { selfHeal };
+}
+function gemOnDamageTakenV1(now, target2, dealt) {
+  if (target2.definition.team !== "players" || dealt <= 0) return;
+  const maxHp = Math.max(1, target2.definition.stats.maxHp);
+  const unyielding = gem(target2, "effect_unyielding");
+  if (unyielding && !has(target2, "gem:unyielding_cd", now, target2.definition.id)) {
+    addStack(target2, target2.definition.id, "gem:unyielding", 1, now + (unyielding.resonance >= 3 ? 7e3 : 5e3), now, unyielding.resonance >= 2 ? 5 : 4);
+    setOne(target2, target2.definition.id, "gem:unyielding_cd", 1, now + 750, now);
+  }
+  const lastStand = gem(target2, "effect_last_stand");
+  if (lastStand && !has(target2, "gem:last_stand_used", now, target2.definition.id) && target2.hp / maxHp < (lastStand.resonance >= 2 ? 0.35 : 0.3)) {
+    setOne(target2, target2.definition.id, "gem:last_stand_used", 1, FOREVER, now);
+    target2.modifiers.push({ sourceId: target2.definition.id, tag: "gem:damage_reduction", value: lastStand.totalValue, expiresAt: now + (lastStand.resonance >= 3 ? 8e3 : 6e3), createdAt: now, kind: "gem" });
+  }
+  const retaliation = gem(target2, "effect_retaliation");
+  if (retaliation && dealt / maxHp >= (retaliation.resonance >= 2 ? 0.1 : 0.12) && !has(target2, "gem:retaliation_cd", now, target2.definition.id)) {
+    setOne(target2, target2.definition.id, "gem:retaliation_ready", retaliation.totalValue, now + 8e3, now);
+    setOne(target2, target2.definition.id, "gem:retaliation_cd", 1, now + 8e3, now);
+  }
+}
+function gemConsumeSupportChargeV1(now, source) {
+  const benediction = gem(source, "effect_benediction");
+  if (benediction) {
+    const charges = active(source, "gem:benediction_charge", now, source.definition.id);
+    if (charges.length) {
+      const oldest = charges.sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0))[0];
+      source.modifiers = source.modifiers.filter((row) => row !== oldest);
+      if (benediction.resonance >= 3) setOne(source, source.definition.id, "gem:haste_bonus", 0.02, now + 4e3, now);
+    }
+  }
+  if (has(source, "gem:battle_support_ready", now, source.definition.id)) clear(source, "gem:battle_support_ready", source.definition.id);
+}
+function gemOnDirectHealV1(now, source, target2, attempted, actual) {
+  const result = { mercyBarrier: 0, renewalTotal: 0, renewalDuration: 0, renewalMax: 1 };
+  const mercy = gem(source, "effect_mercy");
+  if (mercy && attempted > actual) {
+    const cap = target2.definition.stats.maxHp * (mercy.resonance >= 2 ? 0.04 : 0.03), room = Math.max(0, cap - target2.shield);
+    result.mercyBarrier = Math.min(room, (attempted - actual) * mercy.totalValue);
+  }
+  const renewal = gem(source, "effect_renewal");
+  if (renewal && actual > 0) {
+    result.renewalDuration = renewal.resonance >= 2 ? 6e3 : 4e3;
+    result.renewalTotal = actual * renewal.totalValue * (renewal.resonance >= 2 ? 1.2 : 1);
+    result.renewalMax = renewal.resonance >= 3 ? 2 : 1;
+  }
+  return result;
+}
+function gemOnShieldAppliedV1(now, source, target2) {
+  const guardian = gem(source, "effect_guardians_gift");
+  if (guardian && source !== target2) {
+    target2.modifiers.push({ sourceId: source.definition.id, tag: "gem:damage_reduction", value: guardian.totalValue, expiresAt: now + (guardian.resonance >= 2 ? 6e3 : 4e3), createdAt: now, kind: "gem" });
+    if (guardian.resonance >= 3) source.modifiers.push({ sourceId: source.definition.id, tag: "gem:damage_reduction", value: guardian.totalValue * 0.5, expiresAt: now + 6e3, createdAt: now, kind: "gem" });
+  }
+  const shared = gem(source, "effect_shared_resolve");
+  if (shared && source !== target2) {
+    addStack(source, source.definition.id, "gem:shared_resolve", 1, now + (shared.resonance >= 2 ? 8e3 : 6e3), now, shared.resonance >= 3 ? 3 : 2);
+  }
+}
+function gemOnBuffAppliedV1(now, source, target2) {
+  const shared = gem(source, "effect_shared_resolve");
+  if (shared && source !== target2) addStack(source, source.definition.id, "gem:shared_resolve", 1, now + (shared.resonance >= 2 ? 8e3 : 6e3), now, shared.resonance >= 3 ? 3 : 2);
+}
+function gemOnDebuffAppliedV1(now, source, target2) {
+  const opportunist = gem(source, "effect_opportunist");
+  if (!opportunist) return;
+  const cd = opportunist.resonance >= 2 ? 3e3 : 4e3;
+  if (has(target2, "gem:opportunist_cd", now, source.definition.id)) return;
+  setOne(target2, source.definition.id, "gem:opportunist_ready", opportunist.totalValue, now + 4e3, now);
+  setOne(target2, source.definition.id, "gem:opportunist_cd", 1, now + cd, now);
+}
+function gemOnKillV1(now, source, target2) {
+  const sustain = gem(source, "effect_sustenance");
+  if (!sustain || has(source, "gem:sustenance_cd", now, source.definition.id)) return;
+  const multiplier = sustain.resonance >= 2 && isEliteTarget(target2) ? 3 : 1, amount = source.definition.stats.maxHp * sustain.totalValue * multiplier, missing = source.definition.stats.maxHp - source.hp, healed = Math.min(missing, amount);
+  source.hp += healed;
+  if (sustain.resonance >= 3 && amount > healed) source.shield = Math.min(source.definition.stats.maxHp * 0.02, source.shield + (amount - healed) * 0.25);
+  setOne(source, source.definition.id, "gem:sustenance_cd", 1, now + 3e3, now);
+}
+function gemOnBossPhaseV1(now, players) {
+  for (const player of players) {
+    const opening = gem(player, "effect_opening_strike");
+    if (!opening || opening.resonance < 3 || has(player, "gem:opening_phase_used", now, player.definition.id)) continue;
+    setOne(player, player.definition.id, "gem:opening_phase_used", 1, FOREVER, now);
+    setOne(player, player.definition.id, "gem:opening_phase", 1, now + (opening.resonance >= 2 ? 1e4 : 8e3), now);
+  }
+}
+
 // backend/src/server/combat/engine.ts
 function init(def, carried) {
   const hp = Math.max(0, Math.min(def.stats.maxHp, carried?.hp ?? def.stats.maxHp));
@@ -71649,11 +72162,13 @@ function simulateCombat(input) {
     if (!target2.alive) return;
     const hc = hitChance(source.definition.stats.accuracy, target2.definition.stats.evasion, accuracyScale);
     if (rng.next(`${now}:${source.definition.id}:${abilityId}:hit`) > hc) return;
-    const mit = effect2.damageType === "true" ? 0 : defenseMitigation(target2.definition.stats.defense, mitigationConstant);
+    const mit = effect2.damageType === "true" ? 0 : defenseMitigation(gemEffectiveDefenseV1(target2, now), mitigationConstant);
     const crit = rng.next(`${now}:${source.definition.id}:${abilityId}:crit`) < clamp2(source.definition.stats.critChance + modifier(source, "crit", now), 0, 0.75);
     let raw2 = damageAfterMitigation(source.definition.stats.attackPower, effect2.coeff ?? 0, mit, 0.95 + rng.next(`${now}:${abilityId}:var`) * 0.1, crit, source.definition.stats.critMultiplier) + (effect2.flat ?? 0);
+    raw2 *= gemOutgoingDamageMultiplierV1(source, target2, now, abilityId, eventType === "dot_tick");
     raw2 *= Math.max(0.1, 1 + modifier(source, "damage_done", now));
     raw2 *= Math.max(0.1, 1 + modifier(target2, "damage_taken", now));
+    raw2 *= gemIncomingDamageMultiplierV1(target2, now);
     if (hpPct(target2) < clamp2(effect2.executeBelowHpPct ?? 0, 0, 1)) raw2 *= 1 + clamp2(effect2.executeBonus ?? 0, 0, 1);
     const absorbed = Math.min(target2.shield, raw2);
     target2.shield -= absorbed;
@@ -71661,6 +72176,15 @@ function simulateCombat(input) {
     target2.hp = Math.max(0, target2.hp - dealt);
     source.damageDone += dealt;
     target2.damageTaken += dealt;
+    gemOnDamageTakenV1(now, target2, dealt);
+    if (eventType === "damage") {
+      const proc = gemOnDirectHitV1(now, source, target2, abilityId, crit);
+      if (proc.selfHeal > 0 && source.alive) {
+        const amount = Math.min(source.definition.stats.maxHp - source.hp, source.definition.stats.maxHp * proc.selfHeal);
+        source.hp += amount;
+        if (amount > 0) events.push({ atMs: now, type: "heal", actorId: source.definition.id, targetId: source.definition.id, abilityId: "GEM_RETALIATION", amount: Number(amount.toFixed(2)) });
+      }
+    }
     addThreat(target2, source, dealt * (effect2.threatMultiplier ?? 1));
     events.push({ atMs: now, type: eventType, actorId: source.definition.id, targetId: target2.definition.id, abilityId, amount: Number(dealt.toFixed(2)) });
     let reflectable = absorbed;
@@ -71683,6 +72207,7 @@ function simulateCombat(input) {
     }
     if (target2.reflectiveShields) target2.reflectiveShields = target2.reflectiveShields.filter((s) => s.remaining > 0);
     if (target2.hp <= 0 && target2.alive) {
+      gemOnKillV1(now, source, target2);
       target2.alive = false;
       target2.downed = target2.definition.team === "players";
       events.push({ atMs: now, type: target2.downed ? "down" : "death", targetId: target2.definition.id, actorId: source.definition.id });
@@ -71690,11 +72215,29 @@ function simulateCombat(input) {
   };
   const applyHeal = (now, source, target2, effect2, abilityId, eventType = "heal") => {
     if (!target2.alive) return;
-    const amount = Math.max(0, source.definition.stats.healingPower * (effect2.coeff ?? 0) + (effect2.flat ?? 0));
+    const direct = eventType === "heal", mult = direct ? gemHealingMultiplierV1(source, now) : 1;
+    const amount = Math.max(0, (source.definition.stats.healingPower * (effect2.coeff ?? 0) + (effect2.flat ?? 0)) * mult);
     const actual = Math.min(amount, target2.definition.stats.maxHp - target2.hp);
     target2.hp += actual;
     source.healingDone += actual;
     events.push({ atMs: now, type: eventType, actorId: source.definition.id, targetId: target2.definition.id, abilityId, amount: Number(actual.toFixed(2)) });
+    if (direct) {
+      const post = gemOnDirectHealV1(now, source, target2, amount, actual);
+      if (post.mercyBarrier > 0) {
+        target2.shield += post.mercyBarrier;
+        events.push({ atMs: now, type: "shield", actorId: source.definition.id, targetId: target2.definition.id, abilityId: "GEM_MERCY", amount: Number(post.mercyBarrier.toFixed(2)) });
+      }
+      if (post.renewalTotal > 0) {
+        const existing = target2.periodic.filter((p) => p.effectId === "GEM_RENEWAL" && p.sourceId === source.definition.id).sort((a, b) => a.expiresAt - b.expiresAt);
+        while (existing.length >= post.renewalMax) {
+          const remove = existing.shift();
+          if (remove) target2.periodic = target2.periodic.filter((p) => p !== remove);
+        }
+        const tickMs = 2e3, ticks = Math.max(1, Math.floor(post.renewalDuration / tickMs));
+        target2.periodic.push({ sourceId: source.definition.id, effectId: "GEM_RENEWAL", kind: "hot", coeff: 0, flat: post.renewalTotal / ticks, nextTickAt: now + tickMs, expiresAt: now + post.renewalDuration, tickMs });
+      }
+      gemConsumeSupportChargeV1(now, source);
+    }
     enemies.forEach((e) => {
       if (e.alive) addThreat(e, source, actual * 0.5 * (effect2.threatMultiplier ?? 1));
     });
@@ -71703,9 +72246,11 @@ function simulateCombat(input) {
     if (effect2.kind === "damage") return applyDamage(now, source, target2, effect2, abilityId);
     if (effect2.kind === "heal") return applyHeal(now, source, target2, effect2, abilityId);
     if (effect2.kind === "shield") {
-      const amt = Math.max(0, source.definition.stats.healingPower * (effect2.coeff ?? 0) + (effect2.flat ?? 0));
+      const amt = Math.max(0, (source.definition.stats.healingPower * (effect2.coeff ?? 0) + (effect2.flat ?? 0)) * gemShieldMultiplierV1(source, now));
       target2.shield += amt;
       if (effect2.shieldReflectPct && amt > 0) (target2.reflectiveShields ??= []).push({ remaining: amt, rate: clamp2(effect2.shieldReflectPct, 0, 0.5), sourceId: source.definition.id });
+      gemOnShieldAppliedV1(now, source, target2);
+      gemConsumeSupportChargeV1(now, source);
       events.push({ atMs: now, type: "shield", actorId: source.definition.id, targetId: target2.definition.id, abilityId, amount: Number(amt.toFixed(2)) });
       return;
     }
@@ -71732,7 +72277,9 @@ function simulateCombat(input) {
       return;
     }
     if (effect2.kind === "buff" || effect2.kind === "debuff") {
-      target2.modifiers.push({ sourceId: source.definition.id, tag: effect2.tag ?? "generic", value: effect2.value ?? 0, expiresAt: now + (effect2.durationMs ?? 5e3) });
+      target2.modifiers.push({ sourceId: source.definition.id, tag: effect2.tag ?? "generic", value: effect2.value ?? 0, expiresAt: now + (effect2.durationMs ?? 5e3), createdAt: now, kind: effect2.kind });
+      if (effect2.kind === "debuff") gemOnDebuffAppliedV1(now, source, target2);
+      else gemOnBuffAppliedV1(now, source, target2);
       return;
     }
   };
@@ -71765,6 +72312,7 @@ function simulateCombat(input) {
         if (hpPct(boss2) <= phase.hpPct && !boss2.triggeredPhases.includes(phase.id)) {
           boss2.triggeredPhases.push(phase.id);
           events.push({ atMs: now, type: "phase", actorId: boss2.definition.id, abilityId: phase.id, detail: `hp<=${phase.hpPct}` });
+          gemOnBossPhaseV1(now, players);
           for (const fx of phase.effects) {
             for (const t of targetsFor(phase.target, boss2, enemies, players, rng, `${now}:${phase.id}:phase`)) applyEffect(now, boss2, t, fx, phase.id);
           }
@@ -71780,6 +72328,7 @@ function simulateCombat(input) {
         actor.casting = void 0;
         if (ab2 && target2?.alive) {
           events.push({ atMs: now, type: "cast_complete", actorId: actor.definition.id, targetId: target2.definition.id, abilityId: ab2.id });
+          gemOnAbilityUsedV1(now, actor, ab2);
           for (const fx of ab2.effects) {
             for (const t of targetsFor(ab2.target, actor, allies, foes, rng, `${now}:${ab2.id}:target`)) applyEffect(now, actor, t, fx, ab2.id);
           }
@@ -71792,11 +72341,12 @@ function simulateCombat(input) {
         const ts = targetsFor(ab.target, actor, allies, foes, rng, `${now}:${ab.id}:select`);
         const t = ts[0];
         if (t) {
-          actor.cooldownReadyAt[ab.id] = now + Math.round(ab.cooldownMs / Math.max(0.25, 1 + actor.definition.stats.haste));
+          actor.cooldownReadyAt[ab.id] = now + Math.round(ab.cooldownMs / Math.max(0.25, 1 + gemEffectiveHasteV1(actor, now)));
           if (ab.castTimeMs > 0) {
             actor.casting = { abilityId: ab.id, completesAt: now + ab.castTimeMs, targetId: t.definition.id };
             events.push({ atMs: now, type: "cast_start", actorId: actor.definition.id, targetId: t.definition.id, abilityId: ab.id });
           } else {
+            gemOnAbilityUsedV1(now, actor, ab);
             for (const fx of ab.effects) {
               for (const x of targetsFor(ab.target, actor, allies, foes, rng, `${now}:${ab.id}:instant`)) applyEffect(now, actor, x, fx, ab.id);
             }
@@ -71808,7 +72358,7 @@ function simulateCombat(input) {
         const t = chooseEnemy(actor, foes, rng, `${now}:${actor.definition.id}:basic`);
         if (t) {
           applyDamage(now, actor, t, { kind: "damage", coeff: actor.definition.basicAttackCoeff, damageType: "physical", threatMultiplier: actor.definition.role === "tank" ? 2.5 : 1 }, "BASIC");
-          actor.nextBasicAt = now + Math.round(actor.definition.basicAttackMs / Math.max(0.25, 1 + actor.definition.stats.haste));
+          actor.nextBasicAt = now + Math.round(actor.definition.basicAttackMs / Math.max(0.25, 1 + gemEffectiveHasteV1(actor, now)));
         }
       }
     }
@@ -72677,8 +73227,8 @@ function validateCompanionMissionTeam(input) {
 }
 function startCompanionAssignment(input) {
   if (!input.requestId) throw new Error("request_id_required");
-  const refreshed = rolloverCompanionAssignmentStatuses(input.assignments, input.serverNowMs), capacity = companionExpeditionPenCapacity(input.expeditionPensLevel), active = refreshed.filter((x) => x.status === "active").length;
-  if (active >= capacity) throw new Error("companion_expedition_pen_capacity");
+  const refreshed = rolloverCompanionAssignmentStatuses(input.assignments, input.serverNowMs), capacity = companionExpeditionPenCapacity(input.expeditionPensLevel), active2 = refreshed.filter((x) => x.status === "active").length;
+  if (active2 >= capacity) throw new Error("companion_expedition_pen_capacity");
   const valid = validateCompanionMissionTeam({ ...input, assignments: refreshed });
   if (!valid.ok) throw new Error(valid.reason);
   const economy = spend(input.economy, valid.mission.costs), seed = `${input.accountId}|${input.requestId}|${valid.mission.id}|${valid.mission.missionVersion}`, assignmentId = `CA_${hash(seed).toString(36)}_${input.serverNowMs.toString(36)}`, reduction = COMPANION_EXPEDITION_PEN_DURATION_REDUCTION[Math.max(0, Math.min(3, Math.floor(input.expeditionPensLevel)))] ?? 0, durationMs = Math.max(6e4, Math.round(valid.mission.durationMs * (1 - reduction)));
@@ -72933,17 +73483,17 @@ function provingGroundEventMatches(definition, event, owned) {
   return true;
 }
 function recordCompanionProvingGroundEvent(input) {
-  const rolled = rolloverCompanionProvingGroundState(input.state, input.serverNowMs), active = activeCompanionProvingGroundChallenges(input.serverNowMs), progress = { ...rolled.state.progress }, completed = new Set(rolled.state.completedIds);
-  for (const def of active.definitions) {
+  const rolled = rolloverCompanionProvingGroundState(input.state, input.serverNowMs), active2 = activeCompanionProvingGroundChallenges(input.serverNowMs), progress = { ...rolled.state.progress }, completed = new Set(rolled.state.completedIds);
+  for (const def of active2.definitions) {
     if (completed.has(def.id) || !provingGroundEventMatches(def, input.event, input.owned)) continue;
     const next = Math.min(def.targetCount, (progress[def.id] ?? 0) + 1);
     progress[def.id] = next;
     if (next >= def.targetCount) completed.add(def.id);
   }
-  return { state: { ...rolled.state, progress, completedIds: [...completed] }, rolled: rolled.rolled, active: active.definitions };
+  return { state: { ...rolled.state, progress, completedIds: [...completed] }, rolled: rolled.rolled, active: active2.definitions };
 }
 function claimCompanionProvingGroundChallenge(input) {
-  const rolled = rolloverCompanionProvingGroundState(input.state, input.serverNowMs), active = activeCompanionProvingGroundChallenges(input.serverNowMs), definition = active.definitions.find((x) => x.id === input.challengeId);
+  const rolled = rolloverCompanionProvingGroundState(input.state, input.serverNowMs), active2 = activeCompanionProvingGroundChallenges(input.serverNowMs), definition = active2.definitions.find((x) => x.id === input.challengeId);
   if (!definition) throw new Error("proving_ground_challenge_not_active");
   if (!rolled.state.completedIds.includes(definition.id)) throw new Error("proving_ground_challenge_not_complete");
   if (rolled.state.claimedIds.includes(definition.id)) throw new Error("proving_ground_challenge_already_claimed");
@@ -72956,8 +73506,8 @@ function projectCompanionTrial(progress, serverNowMs, teamPower) {
   return { progress: rolled.progress, expiredRunId: rolled.expiredRunId, projection: { seasonKey: season.seasonKey, title: info.title, serverNow: info.serverNow, startsAt: info.startsAt, endsAt: info.endsAt, timezone: "UTC", remainingMs: info.remainingMs, notice: info.notice, currentFloor: season.currentFloor, checkpointFloor: season.checkpointFloor, currentSeasonHighestFloor: season.currentSeasonHighestFloor, lifetimeHighestFloor: rolled.progress.lifetime.lifetimeHighestFloor, activeRunId: season.activeRun?.runId, teamPower } };
 }
 function projectCompanionProvingGrounds(state, serverNowMs) {
-  const rolled = rolloverCompanionProvingGroundState(state, serverNowMs), active = activeCompanionProvingGroundChallenges(serverNowMs);
-  return { state: rolled.state, projection: { weekKey: rolled.state.weekKey, serverNow: new Date(serverNowMs).toISOString(), challengeIds: active.definitions.map((x) => x.id), progress: { ...rolled.state.progress }, completedIds: [...rolled.state.completedIds], claimedIds: [...rolled.state.claimedIds] } };
+  const rolled = rolloverCompanionProvingGroundState(state, serverNowMs), active2 = activeCompanionProvingGroundChallenges(serverNowMs);
+  return { state: rolled.state, projection: { weekKey: rolled.state.weekKey, serverNow: new Date(serverNowMs).toISOString(), challengeIds: active2.definitions.map((x) => x.id), progress: { ...rolled.state.progress }, completedIds: [...rolled.state.completedIds], claimedIds: [...rolled.state.claimedIds] } };
 }
 
 // backend/src/server/companions/special-challenges.ts
@@ -73321,8 +73871,8 @@ init_progression();
 function storedQuantity(stacks, itemId) {
   return stacks.filter((stack) => stack.itemId === itemId).reduce((total, stack) => total + stack.quantity, 0);
 }
-function take(stacks, itemId, quantity3) {
-  let remaining = quantity3;
+function take(stacks, itemId, quantity4) {
+  let remaining = quantity4;
   const next = stacks.map((stack) => {
     const amount = stack.itemId === itemId ? Math.min(remaining, stack.quantity) : 0;
     remaining -= amount;
@@ -74020,11 +74570,11 @@ function reconcileWeeklyOrderRollover(input, nowMs = Date.now()) {
   if (previousWeekKey === board.weekKey) return { state: input, changed: false, previousWeekKey, weekKey: board.weekKey, removedGoals: 0, removedRules: 0, removedConditions: 0 };
   const activeOrderIds = new Set(board.orders.map((order2) => order2.id));
   let removedGoals = 0, removedRules = 0, removedConditions = 0;
-  const active = input.character ? cleanWeeklyOrderCharacter(input.character, activeOrderIds) : void 0;
-  if (active) {
-    removedGoals += active.removedGoals;
-    removedRules += active.removedRules;
-    removedConditions += active.removedConditions;
+  const active2 = input.character ? cleanWeeklyOrderCharacter(input.character, activeOrderIds) : void 0;
+  if (active2) {
+    removedGoals += active2.removedGoals;
+    removedRules += active2.removedRules;
+    removedConditions += active2.removedConditions;
   }
   const otherCharacters = (input.otherCharacters ?? []).map((entry2) => {
     const cleaned = cleanWeeklyOrderCharacter(entry2.character, activeOrderIds);
@@ -74033,7 +74583,7 @@ function reconcileWeeklyOrderRollover(input, nowMs = Date.now()) {
     removedConditions += cleaned.removedConditions;
     return { ...entry2, character: cleaned.character };
   });
-  const state = { ...input, character: active?.character ?? input.character, otherCharacters, account: { ...input.account, weeklyOrders: board } };
+  const state = { ...input, character: active2?.character ?? input.character, otherCharacters, account: { ...input.account, weeklyOrders: board } };
   return { state, changed: true, previousWeekKey, weekKey: board.weekKey, removedGoals, removedRules, removedConditions };
 }
 function ensureJournal(state, accountId) {
@@ -74078,8 +74628,8 @@ function collectionOwnershipSnapshotFromGameState(state) {
   return { ownedKeys: Object.fromEntries([...keys].map((key) => [key, true])) };
 }
 function combinedAccountSkillLevels(state) {
-  const active = state.skills.reduce((sum, row) => sum + row.level, 0) + (state.character?.classSkills ?? []).reduce((sum, row) => sum + row.level, 0);
-  return active + (state.otherCharacters ?? []).reduce((sum, row) => sum + row.skills.reduce((a, b) => a + b.level, 0) + (row.character.classSkills ?? []).reduce((a, b) => a + b.level, 0), 0);
+  const active2 = state.skills.reduce((sum, row) => sum + row.level, 0) + (state.character?.classSkills ?? []).reduce((sum, row) => sum + row.level, 0);
+  return active2 + (state.otherCharacters ?? []).reduce((sum, row) => sum + row.skills.reduce((a, b) => a + b.level, 0) + (row.character.classSkills ?? []).reduce((a, b) => a + b.level, 0), 0);
 }
 function companionCollectionPercent(state) {
   const total = COMBAT_COMPANIONS.length, owned = state.account.unlockedCombatCompanionIds?.length ?? 0;
@@ -74440,8 +74990,8 @@ function claimDailySupplies(state, characterId, nowMs) {
 function activateDailySupplyBoost(state, type) {
   if (!state.character) throw new Error("Create a character first.");
   if (!DAILY_SUPPLY_BOOST_TYPES.includes(type)) throw new Error("Unknown Daily Supplies boost.");
-  const active = normalizeActiveDailySupplyBoost(state.character.activeDailySupplyBoost);
-  if (active) throw new Error("Finish the active Daily Supplies boost before starting another.");
+  const active2 = normalizeActiveDailySupplyBoost(state.character.activeDailySupplyBoost);
+  if (active2) throw new Error("Finish the active Daily Supplies boost before starting another.");
   const bank = { ...normalizeDailySupplyBank(state.character.dailySupplyBoostBank) ?? {} }, charges = bank[type] ?? 0;
   if (charges < 1) throw new Error("No banked charge is available for this boost.");
   if (charges === 1) delete bank[type];
@@ -74460,17 +75010,17 @@ function bonusInteger(base, key, fraction, remainders) {
   return extra;
 }
 function previewDailySupplyTimedReward(state, reward2, mode) {
-  const active = normalizeActiveDailySupplyBoost(state.character?.activeDailySupplyBoost);
-  if (!active || !activityModeEligible(active.type, mode) || reward2.elapsedSeconds <= 0) return { reward: reward2, consumedSeconds: 0, nextRemainders: { ...active?.remainders ?? {} } };
-  const hasQualifyingReward = active.type === "combat_xp" ? reward2.xp > 0 : active.type === "skill_xp" ? reward2.xp > 0 || (reward2.faithXp ?? 0) > 0 || (reward2.classSkillXp ?? []).some((row) => row.xp > 0) : reward2.items.some((item) => item.quantity > 0);
-  if (!hasQualifyingReward) return { reward: reward2, consumedSeconds: 0, nextRemainders: { ...active.remainders ?? {} } };
+  const active2 = normalizeActiveDailySupplyBoost(state.character?.activeDailySupplyBoost);
+  if (!active2 || !activityModeEligible(active2.type, mode) || reward2.elapsedSeconds <= 0) return { reward: reward2, consumedSeconds: 0, nextRemainders: { ...active2?.remainders ?? {} } };
+  const hasQualifyingReward = active2.type === "combat_xp" ? reward2.xp > 0 : active2.type === "skill_xp" ? reward2.xp > 0 || (reward2.faithXp ?? 0) > 0 || (reward2.classSkillXp ?? []).some((row) => row.xp > 0) : reward2.items.some((item) => item.quantity > 0);
+  if (!hasQualifyingReward) return { reward: reward2, consumedSeconds: 0, nextRemainders: { ...active2.remainders ?? {} } };
   const qualifyingSeconds = Math.min(Math.max(0, reward2.elapsedSeconds), Math.max(0, reward2.qualifyingActivitySeconds ?? reward2.elapsedSeconds));
-  if (qualifyingSeconds <= 0) return { reward: reward2, consumedSeconds: 0, nextRemainders: { ...active.remainders ?? {} } };
-  const consumedSeconds = Math.min(active.remainingSeconds, qualifyingSeconds), fraction = consumedSeconds / Math.max(1, qualifyingSeconds), nextRemainders = { ...active.remainders ?? {} };
+  if (qualifyingSeconds <= 0) return { reward: reward2, consumedSeconds: 0, nextRemainders: { ...active2.remainders ?? {} } };
+  const consumedSeconds = Math.min(active2.remainingSeconds, qualifyingSeconds), fraction = consumedSeconds / Math.max(1, qualifyingSeconds), nextRemainders = { ...active2.remainders ?? {} };
   let next = { ...reward2, items: reward2.items.map((item) => ({ ...item })) };
-  if (active.type === "combat_xp") {
+  if (active2.type === "combat_xp") {
     next.xp += bonusInteger(reward2.xp, "xp:combat", fraction, nextRemainders);
-  } else if (active.type === "skill_xp") {
+  } else if (active2.type === "skill_xp") {
     if (reward2.classSkillXp?.length) {
       next.classSkillXp = reward2.classSkillXp.map((row) => ({ ...row, xp: row.xp + bonusInteger(row.xp, `class:${row.skillId}`, fraction, nextRemainders) }));
     } else {
@@ -74478,25 +75028,25 @@ function previewDailySupplyTimedReward(state, reward2, mode) {
       next.xp += extra;
       if (reward2.faithXp !== void 0) next.faithXp = (reward2.faithXp ?? 0) + extra;
     }
-  } else if (active.type === "gathering_yield" || active.type === "crafting_output") {
+  } else if (active2.type === "gathering_yield" || active2.type === "crafting_output") {
     next.items = next.items.map((item) => ({ ...item, quantity: item.quantity + bonusInteger(item.quantity, `item:${item.itemId}`, fraction, nextRemainders) }));
   }
   return { reward: next, consumedSeconds, nextRemainders };
 }
 function commitDailySupplyTimedBoost(state, result) {
   if (!state.character || result.consumedSeconds <= 0) return state;
-  const active = normalizeActiveDailySupplyBoost(state.character.activeDailySupplyBoost);
-  if (!active) return state;
-  const remainingSeconds = Math.max(0, active.remainingSeconds - result.consumedSeconds);
-  return { ...state, character: { ...state.character, activeDailySupplyBoost: remainingSeconds ? { ...active, remainingSeconds, remainders: result.nextRemainders } : void 0 } };
+  const active2 = normalizeActiveDailySupplyBoost(state.character.activeDailySupplyBoost);
+  if (!active2) return state;
+  const remainingSeconds = Math.max(0, active2.remainingSeconds - result.consumedSeconds);
+  return { ...state, character: { ...state.character, activeDailySupplyBoost: remainingSeconds ? { ...active2, remainingSeconds, remainders: result.nextRemainders } : void 0 } };
 }
 function applyDailySupplyCraft(state, input) {
   if (!state.character) return { state, outputQuantity: input.outputQuantity, xp: input.xp, bonusQuantity: 0, bonusXp: 0 };
-  const active = normalizeActiveDailySupplyBoost(state.character.activeDailySupplyBoost);
-  if (!active || !["crafting_output", "skill_xp"].includes(active.type) || input.seconds <= 0 || active.type === "crafting_output" && !input.outputEligible) return { state, outputQuantity: input.outputQuantity, xp: input.xp, bonusQuantity: 0, bonusXp: 0 };
-  const consumedSeconds = Math.min(active.remainingSeconds, input.seconds), fraction = consumedSeconds / input.seconds, remainders = { ...active.remainders ?? {} };
-  const bonusQuantity = active.type === "crafting_output" ? bonusInteger(input.outputQuantity, "craft:output", fraction, remainders) : 0;
-  const bonusXp = active.type === "skill_xp" ? bonusInteger(input.xp, "craft:xp", fraction, remainders) : 0;
+  const active2 = normalizeActiveDailySupplyBoost(state.character.activeDailySupplyBoost);
+  if (!active2 || !["crafting_output", "skill_xp"].includes(active2.type) || input.seconds <= 0 || active2.type === "crafting_output" && !input.outputEligible) return { state, outputQuantity: input.outputQuantity, xp: input.xp, bonusQuantity: 0, bonusXp: 0 };
+  const consumedSeconds = Math.min(active2.remainingSeconds, input.seconds), fraction = consumedSeconds / input.seconds, remainders = { ...active2.remainders ?? {} };
+  const bonusQuantity = active2.type === "crafting_output" ? bonusInteger(input.outputQuantity, "craft:output", fraction, remainders) : 0;
+  const bonusXp = active2.type === "skill_xp" ? bonusInteger(input.xp, "craft:xp", fraction, remainders) : 0;
   return { state: commitDailySupplyTimedBoost(state, { consumedSeconds, nextRemainders: remainders }), outputQuantity: input.outputQuantity + bonusQuantity, xp: input.xp + bonusXp, bonusQuantity, bonusXp };
 }
 function dailySupplyActivityMode(activity) {
@@ -74690,7 +75240,7 @@ function stackItems(existing, incoming) {
   const m = /* @__PURE__ */ new Map();
   for (const s of existing) m.set(s.itemId, (m.get(s.itemId) || 0) + s.quantity);
   for (const s of incoming) m.set(s.itemId, (m.get(s.itemId) || 0) + s.quantity);
-  return [...m.entries()].filter(([, q2]) => q2 > 0).map(([itemId, quantity3]) => ({ itemId, quantity: quantity3 }));
+  return [...m.entries()].filter(([, q2]) => q2 > 0).map(([itemId, quantity4]) => ({ itemId, quantity: quantity4 }));
 }
 function usedSlots(stacks) {
   return stacks.filter((s) => s.quantity > 0).length;
@@ -74732,10 +75282,10 @@ function routeRewards(state, incoming, nowMs) {
     overflow: { stacks: overflow, expiresAtMs: overflow.length ? Math.max(state.overflow.expiresAtMs || 0, nowMs + 72 * 60 * 60 * 1e3) : null }
   };
 }
-function consume2(stacks, itemId, quantity3) {
+function consume2(stacks, itemId, quantity4) {
   const f = stacks.find((s) => s.itemId === itemId);
-  if (!f || f.quantity < quantity3) throw new Error("Not enough items");
-  return stacks.map((s) => s.itemId === itemId ? { ...s, quantity: s.quantity - quantity3 } : s).filter((s) => s.quantity > 0);
+  if (!f || f.quantity < quantity4) throw new Error("Not enough items");
+  return stacks.map((s) => s.itemId === itemId ? { ...s, quantity: s.quantity - quantity4 } : s).filter((s) => s.quantity > 0);
 }
 function stackQty(stacks, itemId) {
   if (!itemId) return 0;
@@ -74805,11 +75355,11 @@ function previewStandardActivityRewardRaw(state, effectiveNowMs) {
     const totalMs = (state.activity.progressFraction ?? 0) * cycleMs + elapsedMs;
     const actions = Math.floor(totalMs / cycleMs);
     const quantityFloat = actions * g.min * effect3.itemMultiplier * multipliers.gatheringYieldMultiplier + (state.rewardRemainders?.[g.itemId] ?? 0);
-    const quantity3 = Math.floor(quantityFloat);
+    const quantity4 = Math.floor(quantityFloat);
     const skill2 = state.skills.find((x) => x.skillId === g.skillId);
     const rawXp = Math.floor(actions * g.xp * effect3.xpMultiplier * multipliers.skillXpMultiplier);
     const xp = Math.min(Math.max(0, totalXpAtLevel(100) - (skill2?.xp ?? 0)), rawXp);
-    const reward3 = { xp, gold: 0, items: quantity3 ? [{ itemId: g.itemId, quantity: quantity3 }] : [], kills: actions, elapsedSeconds: elapsed, nextProgressFraction: totalMs % cycleMs / cycleMs, nextRewardRemainders: { ...state.rewardRemainders ?? {}, [g.itemId]: Math.max(0, quantityFloat - quantity3) } };
+    const reward3 = { xp, gold: 0, items: quantity4 ? [{ itemId: g.itemId, quantity: quantity4 }] : [], kills: actions, elapsedSeconds: elapsed, nextProgressFraction: totalMs % cycleMs / cycleMs, nextRewardRemainders: { ...state.rewardRemainders ?? {}, [g.itemId]: Math.max(0, quantityFloat - quantity4) } };
     return { ...reward3, eventDrops: activityEventDrops(state, reward3, effectiveNowMs), eventDiscoveries: activityEventDiscoveries(state, "gathering", Math.floor(reward3.elapsedSeconds / 60), effectiveNowMs) };
   }
   const m = MONSTERS.find((x) => x.id === state.activity.targetId);
@@ -75132,13 +75682,13 @@ function unequipItem(state, slot) {
   next.character.currentHp = Math.min(effectiveStats(next).hp, next.character.currentHp);
   return next;
 }
-function sellItem(state, itemId, quantity3 = 1) {
-  if (!state.character || quantity3 <= 0) return state;
+function sellItem(state, itemId, quantity4 = 1) {
+  if (!state.character || quantity4 <= 0) return state;
   if (itemId === HOLY_WATER_ID) throw new Error("Holy Water cannot be sold.");
   if (state.settings.favoriteItemIds?.includes(itemId)) throw new Error("Favorite item is protected. Remove it from Favorites before selling.");
   const discovered = discoverCharacterSkins(state), d = itemDef(itemId);
   if (d.type === "gear" && hasEnhancement(discovered, itemId)) throw new Error("Enhanced equipment is protected. Extract its gems before disposal; upgraded ranks cannot be recovered.");
-  return { ...discovered, inventory: { ...discovered.inventory, stacks: consume2(discovered.inventory.stacks, itemId, quantity3) }, character: { ...discovered.character, gold: discovered.character.gold + d.value * quantity3 } };
+  return { ...discovered, inventory: { ...discovered.inventory, stacks: consume2(discovered.inventory.stacks, itemId, quantity4) }, character: { ...discovered.character, gold: discovered.character.gold + d.value * quantity4 } };
 }
 function salvageItem(state, itemId) {
   if (state.settings.favoriteItemIds?.includes(itemId)) throw new Error("Favorite item is protected. Remove it from Favorites before salvaging.");
@@ -75147,21 +75697,21 @@ function salvageItem(state, itemId) {
   if (hasEnhancement(discovered, itemId)) throw new Error("Enhanced equipment is protected. Extract its gems before disposal; upgraded ranks cannot be recovered.");
   return { ...discovered, inventory: { ...discovered.inventory, stacks: stackItems(consume2(discovered.inventory.stacks, itemId, 1), [d.salvage]) } };
 }
-function depositToBank(state, itemId, quantity3) {
-  if (quantity3 <= 0) return state;
+function depositToBank(state, itemId, quantity4) {
+  if (quantity4 <= 0) return state;
   const invQty = stackQty(state.inventory.stacks, itemId);
-  if (invQty < quantity3) throw new Error("Not enough items in inventory");
-  const removed = consume2(state.inventory.stacks, itemId, quantity3);
-  const added = addBounded(state.bank.stacks, state.bank.capacity, [{ itemId, quantity: quantity3 }]);
+  if (invQty < quantity4) throw new Error("Not enough items in inventory");
+  const removed = consume2(state.inventory.stacks, itemId, quantity4);
+  const added = addBounded(state.bank.stacks, state.bank.capacity, [{ itemId, quantity: quantity4 }]);
   if (added.overflow.length) throw new Error("Bank is full");
   return { ...state, inventory: { ...state.inventory, stacks: removed }, bank: { ...state.bank, stacks: added.stacks } };
 }
-function withdrawFromBank(state, itemId, quantity3) {
-  if (quantity3 <= 0) return state;
+function withdrawFromBank(state, itemId, quantity4) {
+  if (quantity4 <= 0) return state;
   const bankQty = stackQty(state.bank.stacks, itemId);
-  if (bankQty < quantity3) throw new Error("Not enough items in Bank");
-  const removed = consume2(state.bank.stacks, itemId, quantity3);
-  const added = addBounded(state.inventory.stacks, state.inventory.capacity, [{ itemId, quantity: quantity3 }]);
+  if (bankQty < quantity4) throw new Error("Not enough items in Bank");
+  const removed = consume2(state.bank.stacks, itemId, quantity4);
+  const added = addBounded(state.inventory.stacks, state.inventory.capacity, [{ itemId, quantity: quantity4 }]);
   if (added.overflow.length) throw new Error("Inventory is full");
   return { ...state, bank: { ...state.bank, stacks: removed }, inventory: { ...state.inventory, stacks: added.stacks } };
 }
@@ -75196,11 +75746,11 @@ function depositAllMaterials(state) {
 function combinedQty(state, itemId) {
   return stackQty(state.inventory.stacks, itemId) + stackQty(state.bank.stacks, itemId);
 }
-function consumeInventoryThenBank(state, itemId, quantity3) {
-  if (combinedQty(state, itemId) < quantity3) throw new Error("Not enough items");
-  const fromInv = Math.min(stackQty(state.inventory.stacks, itemId), quantity3);
+function consumeInventoryThenBank(state, itemId, quantity4) {
+  if (combinedQty(state, itemId) < quantity4) throw new Error("Not enough items");
+  const fromInv = Math.min(stackQty(state.inventory.stacks, itemId), quantity4);
   const inv = fromInv ? consume2(state.inventory.stacks, itemId, fromInv) : state.inventory.stacks;
-  const left = quantity3 - fromInv;
+  const left = quantity4 - fromInv;
   const bank = left ? consume2(state.bank.stacks, itemId, left) : state.bank.stacks;
   return { inventory: inv, bank };
 }
@@ -75481,11 +76031,11 @@ function timedEquipmentRecipe(recipeId) {
   const recipe2 = RECIPES.find((row) => row.id === recipeId);
   return recipe2 && isTimedEquipmentRecipe(recipe2) ? recipe2 : void 0;
 }
-function quantity(stacks, itemId) {
+function quantity2(stacks, itemId) {
   return stacks.filter((row) => row.itemId === itemId).reduce((sum, row) => sum + row.quantity, 0);
 }
 function combinedQuantity2(state, itemId) {
-  return quantity(state.inventory.stacks, itemId) + quantity(state.bank.stacks, itemId);
+  return quantity2(state.inventory.stacks, itemId) + quantity2(state.bank.stacks, itemId);
 }
 function consume3(stacks, itemId, amount) {
   let left = amount;
@@ -75513,19 +76063,28 @@ function validateStart(state, recipe2) {
   if (state.character.gold < recipe2.gold) throw new Error(`Need ${recipe2.gold} gold`);
   for (const input of recipe2.inputs) if (combinedQuantity2(state, input.itemId) < input.quantity) throw new Error(`Need ${input.quantity} ${itemDef(input.itemId).name}`);
 }
+function validateGemCombineStart(state, recipeId) {
+  if (!state.character) throw new Error("Create a character first");
+  const recipe2 = gemCombineRecipeV1(recipeId);
+  if (!recipe2) throw new Error("Unknown gem combination");
+  if (!isGemFamilyRecipeUnlockedV1(state, recipe2.familyId)) throw new Error("Discover this Effect Gem recipe first");
+  if (state.character.gold < recipe2.gold) throw new Error(`Need ${recipe2.gold} gold`);
+  for (const input of recipe2.inputs) if (combinedQuantity2(state, input.itemId) < input.quantity) throw new Error(`Need ${input.quantity} ${itemDef(input.itemId).name}`);
+  return recipe2;
+}
 var jobDurationMs = (job) => Math.max(1e3, job.completesAtMs - job.startedAtMs);
 var isReady = (job, nowMs) => job.completesAtMs <= nowMs;
 var isWaiting = (job, nowMs) => job.startedAtMs > nowMs;
 var isActive = (job, nowMs) => job.startedAtMs <= nowMs && job.completesAtMs > nowMs;
 function scheduleWaiting(queue, capacity, nowMs, waitingOrder) {
   const ready = queue.filter((job) => isReady(job, nowMs)).sort((a, b) => a.completesAtMs - b.completesAtMs);
-  const active = queue.filter((job) => isActive(job, nowMs)).sort((a, b) => a.completesAtMs - b.completesAtMs);
+  const active2 = queue.filter((job) => isActive(job, nowMs)).sort((a, b) => a.completesAtMs - b.completesAtMs);
   let waiting = queue.filter((job) => isWaiting(job, nowMs));
   if (waitingOrder) {
     const order2 = new Map(waitingOrder.map((id, index) => [id, index]));
     waiting = waiting.slice().sort((a, b) => (order2.get(a.id) ?? 999) - (order2.get(b.id) ?? 999));
   }
-  const activeEnds = active.map((job) => job.completesAtMs).sort((a, b) => a - b);
+  const activeEnds = active2.map((job) => job.completesAtMs).sort((a, b) => a - b);
   const slotTimes = activeEnds.length >= capacity ? activeEnds.slice(activeEnds.length - capacity) : [...activeEnds, ...Array(Math.max(0, capacity - activeEnds.length)).fill(nowMs)];
   slotTimes.sort((a, b) => a - b);
   const scheduled = waiting.map((job) => {
@@ -75534,7 +76093,7 @@ function scheduleWaiting(queue, capacity, nowMs, waitingOrder) {
     slotTimes.sort((a, b) => a - b);
     return { ...job, startedAtMs: start, completesAtMs: completes };
   });
-  return [...ready, ...active, ...scheduled];
+  return [...ready, ...active2, ...scheduled];
 }
 function projectedEquipmentCraftingQueue(state, nowMs) {
   return scheduleWaiting(equipmentCraftingQueue(state), equipmentCraftSlotBreakdown(state).capacity, nowMs);
@@ -75554,14 +76113,14 @@ function startEquipmentCraft(state, recipeId, nowMs) {
   let projected = withProjectedQueue(state, nowMs);
   validateStart(projected, recipe2);
   const slots2 = equipmentCraftSlotBreakdown(projected), queue = equipmentCraftingQueue(projected);
-  const active = queue.filter((job2) => isActive(job2, nowMs)), waiting = queue.filter((job2) => isWaiting(job2, nowMs)), ready = queue.filter((job2) => isReady(job2, nowMs));
+  const active2 = queue.filter((job2) => isActive(job2, nowMs)), waiting = queue.filter((job2) => isWaiting(job2, nowMs)), ready = queue.filter((job2) => isReady(job2, nowMs));
   if (ready.length >= MAX_READY_EQUIPMENT_CRAFTS) throw new Error("Claim finished equipment before starting more crafts");
-  if (active.length >= slots2.capacity && waiting.length >= MAX_WAITING_EQUIPMENT_CRAFTS) throw new Error(`Equipment crafting backlog is full (${MAX_WAITING_EQUIPMENT_CRAFTS}/${MAX_WAITING_EQUIPMENT_CRAFTS})`);
+  if (active2.length >= slots2.capacity && waiting.length >= MAX_WAITING_EQUIPMENT_CRAFTS) throw new Error(`Equipment crafting backlog is full (${MAX_WAITING_EQUIPMENT_CRAFTS}/${MAX_WAITING_EQUIPMENT_CRAFTS})`);
   projected = { ...projected, character: { ...projected.character, gold: projected.character.gold - recipe2.gold } };
   for (const input of recipe2.inputs) projected = consumeAcross2(projected, input.itemId, input.quantity);
   const seconds = equipmentCraftDurationSeconds(projected, recipeId), durationMs = seconds * 1e3;
   const existingQueue = equipmentCraftingQueue(projected);
-  const startsNow = active.length < slots2.capacity && waiting.length === 0;
+  const startsNow = active2.length < slots2.capacity && waiting.length === 0;
   const job = {
     id: `eqcraft:${projected.character.id}:${recipeId}:${nowMs}:${existingQueue.length}`,
     recipeId,
@@ -75575,6 +76134,31 @@ function startEquipmentCraft(state, recipeId, nowMs) {
   projected = { ...projected, account: { ...projected.account, equipmentCraftingQueue: scheduled } };
   const finalJob = scheduled.find((row) => row.id === job.id);
   return { state: projected, job: finalJob, seconds, waiting: finalJob.startedAtMs > nowMs };
+}
+function startGemCombine(state, recipeId, nowMs) {
+  let projected = withProjectedQueue(state, nowMs);
+  const recipe2 = validateGemCombineStart(projected, recipeId);
+  const slots2 = equipmentCraftSlotBreakdown(projected), queue = equipmentCraftingQueue(projected);
+  const active2 = queue.filter((job2) => isActive(job2, nowMs)), waiting = queue.filter((job2) => isWaiting(job2, nowMs)), ready = queue.filter((job2) => isReady(job2, nowMs));
+  if (ready.length >= MAX_READY_EQUIPMENT_CRAFTS) throw new Error("Claim finished forge jobs before starting more crafts");
+  if (active2.length >= slots2.capacity && waiting.length >= MAX_WAITING_EQUIPMENT_CRAFTS) throw new Error(`Forge backlog is full (${MAX_WAITING_EQUIPMENT_CRAFTS}/${MAX_WAITING_EQUIPMENT_CRAFTS})`);
+  projected = { ...projected, character: { ...projected.character, gold: projected.character.gold - recipe2.gold } };
+  for (const input of recipe2.inputs) projected = consumeAcross2(projected, input.itemId, input.quantity);
+  const speed = Math.max(0.1, characterPermanentMultipliers(projected).craftingSpeedMultiplier), seconds = Math.max(1, Math.ceil(recipe2.seconds / speed)), durationMs = seconds * 1e3;
+  const existingQueue = equipmentCraftingQueue(projected), startsNow = active2.length < slots2.capacity && waiting.length === 0;
+  const job = {
+    id: `gemcraft:${projected.character.id}:${recipeId}:${nowMs}:${existingQueue.length}`,
+    recipeId,
+    ownerCharacterId: projected.character.id,
+    startedAtMs: startsNow ? nowMs : nowMs + 1,
+    completesAtMs: (startsNow ? nowMs : nowMs + 1) + durationMs,
+    reservedGold: recipe2.gold,
+    reservedInputs: recipe2.inputs.map((input) => ({ ...input }))
+  };
+  const scheduled = scheduleWaiting([...existingQueue, job], slots2.capacity, nowMs);
+  projected = { ...projected, account: { ...projected.account, equipmentCraftingQueue: scheduled } };
+  const finalJob = scheduled.find((row) => row.id === job.id);
+  return { state: projected, job: finalJob, seconds, waiting: finalJob.startedAtMs > nowMs, recipe: recipe2 };
 }
 function addOutput(stacks, capacity, itemId, quantityToAdd) {
   let remaining = quantityToAdd, next = stacks.map((row) => ({ ...row }));
@@ -75604,33 +76188,38 @@ function awardOwnerSkillXp(state, ownerCharacterId, recipe2) {
   if (state.character?.id === ownerCharacterId) return { ...state, skills: award(state.skills) };
   return { ...state, otherCharacters: (state.otherCharacters ?? []).map((entry2) => entry2.character.id === ownerCharacterId ? { ...entry2, skills: award(entry2.skills) } : entry2) };
 }
-function claimEquipmentCraft(state, jobId, nowMs, rarityRoll = Math.random()) {
+function claimForgeJob(state, jobId, nowMs, rarityRoll = Math.random()) {
   const projected = withProjectedQueue(state, nowMs), queue = equipmentCraftingQueue(projected), job = queue.find((row) => row.id === jobId);
   if (!job) throw new Error("Crafting job not found");
-  if (job.completesAtMs > nowMs) throw new Error(job.startedAtMs > nowMs ? "This equipment craft is still waiting for a forge slot" : "This equipment craft is still in progress");
-  const recipe2 = timedEquipmentRecipe(job.recipeId);
+  if (job.completesAtMs > nowMs) throw new Error(job.startedAtMs > nowMs ? "This forge job is still waiting for a slot" : "This forge job is still in progress");
+  const equipmentRecipe = timedEquipmentRecipe(job.recipeId), gemRecipe = gemCombineRecipeV1(job.recipeId), recipe2 = equipmentRecipe ?? gemRecipe;
   if (!recipe2) throw new Error("Crafting recipe is no longer available");
   let next = grantCraftOutput(projected, recipe2, job.ownerCharacterId);
-  next = awardOwnerSkillXp(next, job.ownerCharacterId, recipe2);
-  const created = createCraftedGearInstance(next, { itemId: recipe2.output.itemId, ownerCharacterId: job.ownerCharacterId, jobId: job.id, createdAtMs: nowMs, roll: rarityRoll });
-  next = created.state;
+  if (equipmentRecipe) {
+    next = awardOwnerSkillXp(next, job.ownerCharacterId, equipmentRecipe);
+    const created = createCraftedGearInstance(next, { itemId: equipmentRecipe.output.itemId, ownerCharacterId: job.ownerCharacterId, jobId: job.id, createdAtMs: nowMs, roll: rarityRoll });
+    next = created.state;
+    next = { ...next, account: { ...next.account, equipmentCraftingQueue: queue.filter((row) => row.id !== jobId) } };
+    return { state: next, recipe: equipmentRecipe, job, kind: "equipment", instance: created.instance, result: craftedInstanceResult(next, created.instance) };
+  }
   next = { ...next, account: { ...next.account, equipmentCraftingQueue: queue.filter((row) => row.id !== jobId) } };
-  return { state: next, recipe: recipe2, job, instance: created.instance, result: craftedInstanceResult(next, created.instance) };
+  return { state: next, recipe: gemRecipe, job, kind: "gem" };
 }
 function claimAllReadyEquipmentCrafts(state, nowMs, trustedRoll = Math.random()) {
-  let next = withProjectedQueue(state, nowMs), claimed = [], results = [];
+  let next = withProjectedQueue(state, nowMs), claimed = [], results = [], gemClaims = 0;
   for (const job of equipmentCraftingQueue(next).filter((row) => isReady(row, nowMs))) {
     try {
-      const result = claimEquipmentCraft(next, job.id, nowMs, craftClaimSubRoll(trustedRoll, job.id));
+      const result = claimForgeJob(next, job.id, nowMs, craftClaimSubRoll(trustedRoll, job.id));
       next = result.state;
       claimed.push(job.id);
-      results.push(result.result);
+      if (result.kind === "equipment") results.push(result.result);
+      else gemClaims++;
     } catch (error) {
       if (error instanceof Error && (error.message === "Inventory and Bank are full" || error.message.startsWith("Bank is full"))) break;
       throw error;
     }
   }
-  return { state: next, claimed, results };
+  return { state: next, claimed, results, gemClaims };
 }
 var EQUIPMENT_CRAFT_CANCEL_GOLD_REFUND = 0.9;
 function addStackable(stacks, capacity, itemId, quantityToAdd) {
@@ -75667,7 +76256,7 @@ function cancelEquipmentCraft(state, jobId, nowMs) {
   const projected = withProjectedQueue(state, nowMs), queue = equipmentCraftingQueue(projected), job = queue.find((row) => row.id === jobId);
   if (!job) throw new Error("Crafting job not found");
   if (job.completesAtMs <= nowMs) throw new Error("Finished equipment must be claimed instead of cancelled");
-  const recipe2 = timedEquipmentRecipe(job.recipeId);
+  const recipe2 = timedEquipmentRecipe(job.recipeId) ?? gemCombineRecipeV1(job.recipeId);
   if (!recipe2) throw new Error("Crafting recipe is no longer available");
   const reservedInputs = job.reservedInputs?.length ? job.reservedInputs : recipe2.inputs, reservedGold = job.reservedGold ?? recipe2.gold;
   const waiting = job.startedAtMs > nowMs, refundRate = waiting ? 1 : EQUIPMENT_CRAFT_CANCEL_GOLD_REFUND;
@@ -75699,10 +76288,10 @@ function createAccountCharacter(state, classId, name, body, now) {
   if (!state.character) return createCharacter(state, classId, name, body);
   if (accountCharacters(state).length >= unlockedCharacterSlots(state)) throw new Error("Character slot is locked.");
   const next = createCharacter(newGame(now), classId, name, body);
-  const active = snapshot(state);
+  const active2 = snapshot(state);
   const id = `LOCAL_CHAR_${accountCharacters(state).length + 1}`;
   next.character.id = id;
-  return { ...next, version: state.version, createdAtMs: state.createdAtMs, settings: state.settings, bank: state.bank, account: { ...state.account, createdCharacterCount: Math.max(state.account.createdCharacterCount, accountCharacters(state).length + 1) }, otherCharacters: [...state.otherCharacters ?? [], active] };
+  return { ...next, version: state.version, createdAtMs: state.createdAtMs, settings: state.settings, bank: state.bank, account: { ...state.account, createdCharacterCount: Math.max(state.account.createdCharacterCount, accountCharacters(state).length + 1) }, otherCharacters: [...state.otherCharacters ?? [], active2] };
 }
 function switchAccountCharacter(state, id, now) {
   if (!state.character) return state;
@@ -75710,8 +76299,8 @@ function switchAccountCharacter(state, id, now) {
   const target2 = state.otherCharacters?.find((x) => x.character.id === id);
   if (!target2) throw new Error("Character is not owned.");
   const remaining = (state.otherCharacters ?? []).filter((x) => x.character.id !== id);
-  const active = snapshot(state);
-  return { ...state, character: target2.character, inventory: target2.inventory, overflow: target2.overflow, activity: target2.activity, skills: target2.skills, quests: target2.quests, currentRegionId: target2.currentRegionId, otherCharacters: [...remaining, active] };
+  const active2 = snapshot(state);
+  return { ...state, character: target2.character, inventory: target2.inventory, overflow: target2.overflow, activity: target2.activity, skills: target2.skills, quests: target2.quests, currentRegionId: target2.currentRegionId, otherCharacters: [...remaining, active2] };
 }
 function stackCap(itemId) {
   try {
@@ -75793,8 +76382,8 @@ function characterDeleteConfirmation(name) {
 }
 function characterDeleteBlockReason(state, id) {
   if (!state.character) return "Create a character first.";
-  const active = state.character.id === id;
-  const stored = active ? snapshot(state) : (state.otherCharacters ?? []).find((entry2) => entry2.character.id === id);
+  const active2 = state.character.id === id;
+  const stored = active2 ? snapshot(state) : (state.otherCharacters ?? []).find((entry2) => entry2.character.id === id);
   if (!stored) return "Character is not owned.";
   if (stored.activity) return "Stop or claim this character\u2019s current activity before deleting it.";
   if (equipmentCraftingQueue(state).some((job) => job.ownerCharacterId === id)) return "Claim this character\u2019s queued equipment crafts before deleting it.";
@@ -75802,15 +76391,15 @@ function characterDeleteBlockReason(state, id) {
 }
 function deleteAccountCharacter(state, id, confirmation, now) {
   if (!state.character) throw new Error("Create a character first.");
-  const active = state.character.id === id;
-  const stored = active ? snapshot(state) : (state.otherCharacters ?? []).find((entry2) => entry2.character.id === id);
+  const active2 = state.character.id === id;
+  const stored = active2 ? snapshot(state) : (state.otherCharacters ?? []).find((entry2) => entry2.character.id === id);
   if (!stored) throw new Error("Character is not owned.");
   if (confirmation.trim() !== characterDeleteConfirmation(stored.character.name)) throw new Error(`Type "${characterDeleteConfirmation(stored.character.name)}" to confirm.`);
   const blocked = characterDeleteBlockReason(state, id);
   if (blocked) throw new Error(blocked);
   const other = (state.otherCharacters ?? []).filter((entry2) => entry2.character.id !== id);
   const account = accountAfterCharacterDelete(state, stored.character);
-  if (!active) {
+  if (!active2) {
     const recovery2 = routeToBank(state.bank, state.overflow, deletionRecoveryItems(stored, state.bank), now);
     return { ...state, bank: recovery2.bank, overflow: recovery2.overflow, otherCharacters: other, account };
   }
@@ -76008,9 +76597,9 @@ function bulkTransferSelected(state, itemIds2, from) {
   let next = state;
   for (const itemId of summary.transferableIds) {
     const source = from === "inventory" ? next.inventory : next.bank;
-    const quantity3 = source.stacks.find((stack) => stack.itemId === itemId)?.quantity ?? 0;
-    if (quantity3 <= 0) continue;
-    next = from === "inventory" ? depositToBank(next, itemId, quantity3) : withdrawFromBank(next, itemId, quantity3);
+    const quantity4 = source.stacks.find((stack) => stack.itemId === itemId)?.quantity ?? 0;
+    if (quantity4 <= 0) continue;
+    next = from === "inventory" ? depositToBank(next, itemId, quantity4) : withdrawFromBank(next, itemId, quantity4);
   }
   return next;
 }
@@ -76019,8 +76608,8 @@ function bulkSellSelected(state, itemIds2) {
   if (!summary.sellableIds.length) throw new Error("No selected items can be sold. Favorites, enhanced gear, auto-eat food, Holy Water and zero-value items stay protected.");
   let next = state;
   for (const itemId of summary.sellableIds) {
-    const quantity3 = next.inventory.stacks.find((stack) => stack.itemId === itemId)?.quantity ?? 0;
-    if (quantity3 > 0) next = sellItem(next, itemId, quantity3);
+    const quantity4 = next.inventory.stacks.find((stack) => stack.itemId === itemId)?.quantity ?? 0;
+    if (quantity4 > 0) next = sellItem(next, itemId, quantity4);
   }
   return next;
 }
@@ -76029,8 +76618,8 @@ function bulkSalvageSelected(state, itemIds2) {
   if (!summary.salvageableIds.length) throw new Error("No selected equipment can be salvaged. Favorites and enhanced gear stay protected.");
   let next = state;
   for (const itemId of summary.salvageableIds) {
-    const quantity3 = next.inventory.stacks.find((stack) => stack.itemId === itemId)?.quantity ?? 0;
-    for (let count = 0; count < quantity3; count++) next = salvageItem(next, itemId);
+    const quantity4 = next.inventory.stacks.find((stack) => stack.itemId === itemId)?.quantity ?? 0;
+    for (let count = 0; count < quantity4; count++) next = salvageItem(next, itemId);
   }
   return next;
 }
@@ -76882,7 +77471,7 @@ function normalizeChatEmoteTrayIds(value) {
 }
 
 // apps/mobile/src/core/equipment-crafting-prerequisites.ts
-function quantity2(state, itemId) {
+function quantity3(state, itemId) {
   return (state.inventory.stacks.find((row) => row.itemId === itemId)?.quantity ?? 0) + (state.bank.stacks.find((row) => row.itemId === itemId)?.quantity ?? 0);
 }
 function processingRecipeFor(itemId) {
@@ -76900,12 +77489,12 @@ function craftEquipmentPrerequisites(state, equipmentRecipeId, nowMs) {
   const craftedByRecipe = /* @__PURE__ */ new Map();
   const visiting = /* @__PURE__ */ new Set();
   const ensure = (itemId, target2) => {
-    if (quantity2(next, itemId) >= target2) return;
+    if (quantity3(next, itemId) >= target2) return;
     const recipe2 = processingRecipeFor(itemId);
-    if (!recipe2) throw new Error(`Need ${target2 - quantity2(next, itemId)} more ${itemDef(itemId).name} from gathering, combat or another external source`);
+    if (!recipe2) throw new Error(`Need ${target2 - quantity3(next, itemId)} more ${itemDef(itemId).name} from gathering, combat or another external source`);
     if (visiting.has(itemId)) throw new Error("Crafting prerequisite cycle detected");
     visiting.add(itemId);
-    while (quantity2(next, itemId) < target2) {
+    while (quantity3(next, itemId) < target2) {
       for (const input of recipe2.inputs) ensure(input.itemId, input.quantity);
       try {
         next = craftRecipe(next, recipe2.id, nowMs + ++stepClock);
@@ -76938,16 +77527,16 @@ function debugSetLevel(state, level) {
   const unlocked = MONSTERS.filter((m) => m.unlockLevel <= clamped).map((m) => m.id);
   return { ...state, character: { ...c, level: clamped, xp }, unlockedMonsterIds: [.../* @__PURE__ */ new Set([...state.unlockedMonsterIds, ...unlocked])] };
 }
-function debugAddItem(state, itemId, quantity3 = 1) {
+function debugAddItem(state, itemId, quantity4 = 1) {
   itemDef(itemId);
-  const incoming = { itemId, quantity: Math.max(1, Math.floor(quantity3)) };
+  const incoming = { itemId, quantity: Math.max(1, Math.floor(quantity4)) };
   return { ...state, inventory: { ...state.inventory, stacks: stackItems(state.inventory.stacks, [incoming]) } };
 }
-function debugAddQaSupplies(state, quantity3 = 9999) {
+function debugAddQaSupplies(state, quantity4 = 9999) {
   let next = state;
   for (const item of ITEMS) {
     if (item.type === "gear") continue;
-    next = debugAddItem(next, item.id, quantity3);
+    next = debugAddItem(next, item.id, quantity4);
   }
   return next;
 }
@@ -77085,7 +77674,11 @@ var fields = {
   equip_set: [],
   upgrade: ["id"],
   socket: ["id", "gemId"],
+  replace_socket: ["id", "gemId"],
   unsocket: ["id", "index"],
+  gem_combine: ["familyId", "grade"],
+  gem_dismantle: ["gemId", "quantity"],
+  resonance_cache_claim: ["familyId"],
   skin: ["id"],
   loadout_save: ["index", "name"],
   loadout_apply: ["id"],
@@ -77386,11 +77979,11 @@ function executeGameCommand(previous, value, now, options = {}) {
     }
     case "craft_claim": {
       if (options.randomRoll === void 0) throw new Error("trusted_random_required");
-      const result = claimEquipmentCraft(state, text(a, "id", 160), now, options.randomRoll);
+      const result = claimForgeJob(state, text(a, "id", 160), now, options.randomRoll);
       state = result.state;
-      forgeResults = [result.result];
+      if (result.kind === "equipment") forgeResults = [result.result];
       contributions.push({ kind: "crafting", contentId: result.recipe.id, units: 1 });
-      message = `${result.result.rarity.toUpperCase()} ${result.recipe.name}${result.result.qualityProc ? " \xB7 quality proc" : ""}${result.result.duplicateCount ? ` \xB7 duplicate ${result.result.duplicateCount + 1}` : ""}`;
+      message = result.kind === "equipment" ? `${result.result.rarity.toUpperCase()} ${result.recipe.name}${result.result.qualityProc ? " \xB7 quality proc" : ""}${result.result.duplicateCount ? ` \xB7 duplicate ${result.result.duplicateCount + 1}` : ""}` : `${result.recipe.name} combined`;
       break;
     }
     case "craft_claim_all": {
@@ -77404,7 +77997,8 @@ function executeGameCommand(previous, value, now, options = {}) {
         const job = previous.account.equipmentCraftingQueue?.find((row) => row.id === id);
         if (job) contributions.push({ kind: "crafting", contentId: job.recipeId, units: 1 });
       }
-      message = result.claimed.length ? `${result.claimed.length} equipment craft${result.claimed.length === 1 ? "" : "s"} claimed \xB7 ${result.results.filter((row) => row.qualityProc).length} quality proc${result.results.filter((row) => row.qualityProc).length === 1 ? "" : "s"}` : "No finished equipment crafts";
+      const equipmentCount = result.claimed.length - result.gemClaims, procCount = result.results.filter((row) => row.qualityProc).length;
+      message = result.claimed.length ? `${result.claimed.length} forge job${result.claimed.length === 1 ? "" : "s"} claimed \xB7 ${equipmentCount} equipment \xB7 ${result.gemClaims} gem combine${result.gemClaims === 1 ? "" : "s"} \xB7 ${procCount} quality proc${procCount === 1 ? "" : "s"}` : "No finished forge jobs";
       break;
     }
     case "craft_cancel": {
@@ -77488,9 +78082,30 @@ function executeGameCommand(previous, value, now, options = {}) {
     case "socket":
       state = socketGem(state, text(a, "id"), text(a, "gemId"));
       break;
+    case "replace_socket":
+      state = replaceGem(state, text(a, "id"), text(a, "gemId"));
+      break;
     case "unsocket":
       state = unsocketGem(state, text(a, "id"), integer(a, "index", 0, 1));
       break;
+    case "gem_combine": {
+      const familyId = text(a, "familyId", 80), grade = integer(a, "grade", 1, 4);
+      const result = startGemCombine(state, gemCombineRecipeIdV1(familyId, grade), now);
+      state = result.state;
+      message = result.waiting ? "Gem combination added to forge backlog" : "Gem combination started";
+      break;
+    }
+    case "gem_dismantle": {
+      const gemId = text(a, "gemId", 120), quantity4 = integer(a, "quantity", 1, 999);
+      state = dismantleGemV1(state, gemId, quantity4);
+      message = `Dismantled ${quantity4} gem${quantity4 === 1 ? "" : "s"} into Gem Dust`;
+      break;
+    }
+    case "resonance_cache_claim": {
+      state = claimResonanceCacheV1(state, text(a, "familyId", 80), now);
+      message = "Resonance Cache claimed";
+      break;
+    }
     case "skin":
       state = selectCharacterSkin(state, text(a, "id"));
       break;

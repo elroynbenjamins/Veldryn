@@ -28,7 +28,12 @@ async function main(){
   },`mobile/server expedition identity drifted for ${definition.id}`);
  }
  const domainPlayers=['Ironwarden','Wayfinder','Ravager','Dawnkeeper'].map(classId=>launchPlayer(classId,80));
+ const duplicateDpsPlayers=['Ironwarden','Wayfinder','Wayfinder','Dawnkeeper'].map(classId=>launchPlayer(classId,80));
  const domainMembers=[['domain-a','domain-c1','tank'],['domain-b','domain-c2','damage'],['domain-c','domain-c3','damage'],['domain-d','domain-c4','support']].map(([accountId,characterId,role])=>({accountId,characterId,role:role as 'tank'|'damage'|'support'}));
+ {
+  const service=new EventExpeditionService(new MemoryEventRunRepository(),'duplicate-dps-event-secret'),definition=EVENT_EXPEDITIONS[0];
+  assert.throws(()=>service.start({requestId:'duplicate-dps-request',runId:'duplicate-dps-run',accountId:'domain-a',eventId:definition.id,activeLiveEventId:`${definition.liveEventSeriesId}_2026`,members:domainMembers,players:duplicateDpsPlayers,nowMs:Date.UTC(2026,6,15)}),/duplicate_damage_class/);
+ }
  for(const [index,definition] of EVENT_EXPEDITIONS.entries()){
   const service=new EventExpeditionService(new MemoryEventRunRepository(),`online-route-preflight-${index}`);
   const run=service.start({requestId:`event-preflight-${index}`,runId:`event-route-${index}`,accountId:'domain-a',eventId:definition.id,activeLiveEventId:`${definition.liveEventSeriesId}_2026`,members:domainMembers,players:domainPlayers,nowMs:Date.UTC(2026,6,15)});

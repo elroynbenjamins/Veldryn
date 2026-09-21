@@ -11,6 +11,7 @@ const decisions=read('src/core/equipment-decision.ts');
 const inspect=read('src/core/item-inspect.ts');
 const inventory=read('src/screens/InventoryScreen.tsx');
 const card=read('src/components/ItemCard.tsx');
+const copies=read('src/components/GearCopiesModal.tsx');
 const commands=read('src/core/game-commands.ts');
 const app=read('App.tsx');
 const forgeFeedback=read('src/components/ForgeResultFeedback.tsx');
@@ -20,16 +21,19 @@ ok(rarity.includes('CRAFTED_MYTHIC_CHANCE=.001')&&rarity.includes('CRAFTED_EPIC_
 ok(rarity.includes('return base'),'Missed Forge quality proc must preserve authored rarity');
 ok(instances.includes("acquireSource:'craft'"),'Crafted equipment must persist acquisition provenance');
 ok(instances.includes('sourceReceiptKey:args.jobId'),'Forge job receipt must make settlement idempotent');
-ok(instances.includes('bestCraftedInstanceForItem'),'Duplicate copies need a deterministic best-copy compatibility bridge');
+ok(!instances.includes('bestCraftedInstanceForItem'),'The best-copy compatibility bridge must be removed');
+ok(instances.includes('equippedGearInstanceId')&&instances.includes('inventoryGearCopies'),'Exact equipped and carried copy identity must be first-class');
 ok(queue.includes('createCraftedGearInstance'),'Forge claim must create the owned equipment instance');
 ok(queue.includes('craftClaimSubRoll'),'Claim All must derive per-job rolls from trusted randomness');
 
-ok(enhancement.includes('effectiveOwnedGearRarity(state,itemId)'),'Upgrade pricing/stats must use forged quality');
+ok(enhancement.includes('equippedGearInstanceId')&&enhancement.includes('updateGearInstanceEnhancement'),'Upgrade and gem state must resolve and write the exact equipped copy');
 ok(enhancement.includes('craftedRarityStatMultiplier'),'Forged rarity must affect live equipment stats');
 ok(decisions.includes('effectiveOwnedGearRarity(state,itemId)'),'Character equipment decisions must show forged rarity');
 ok(inspect.includes('craftedCopies')&&inspect.includes('craftedRarities'),'Quick Inspect must expose duplicate crafted-copy context');
-ok(inventory.includes('effectiveOwnedGearRarity(state,item.id)'),'Inventory cards must display the best owned forged rarity');
-ok(card.includes('rarityOverride'),'ItemCard must support instance-derived rarity styling');
+ok(inventory.includes('GearCopiesModal')&&inventory.includes('inventoryGearCopies'),'Inventory gear actions must route through exact-copy selection');
+ok(copies.includes('COPY A / B COMPARISON')&&copies.includes('Equip this copy'),'Duplicate picker must support direct same-piece comparison and exact equip');
+ok(copies.includes('Stat Gem')&&copies.includes('Effect Gem'),'Duplicate picker must surface per-copy gem identity');
+ok(card.includes('rarityOverride'),'ItemCard can still support explicit rarity styling where a concrete instance is supplied');
 
 ok(commands.includes("if(options.randomRoll===undefined)throw new Error('trusted_random_required')"),'Online Forge settlement must require trusted randomness');
 ok(commands.includes('quality proc'),'Authoritative claim messaging must surface quality procs');
@@ -38,4 +42,4 @@ ok(app.includes('setForgeResults([claimed.result])'),'Mobile offline claims must
 ok(forgeFeedback.includes('EXCEPTIONAL FORGE RESULT')&&forgeFeedback.includes('qualityProc'),'Quality procs must use the dedicated rarity-aware Forge reveal');
 ok(save.includes('normalizeCraftedGearInstances'),'Crafted instances must persist through save normalization');
 
-console.log('PASS: crafted-instance result/economy UI and authority wiring are protected');
+console.log('PASS: exact equipment-instance result/economy UI and authority wiring are protected');

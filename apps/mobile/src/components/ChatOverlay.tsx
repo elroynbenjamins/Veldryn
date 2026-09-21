@@ -1,9 +1,10 @@
 import {UiIcon} from './UiIcon';
-import {useEffect,useState} from 'react';
+import {useEffect,useMemo,useState} from 'react';
 import {Modal,Platform,Pressable,StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
 import {onlineConfigured} from '../online/supabase';
-import {C} from '../theme/theme';
+import {type ThemeColors} from '../theme/theme';
+import {useGameTheme} from '../theme/ThemeContext';
 import {GuildChat} from './GuildChat';
 import {OnlineWorldChat} from './OnlineWorldChat';
 import {WorldChat} from './WorldChat';
@@ -16,6 +17,7 @@ import {myGuild} from '../online/social';
 type Channel='world'|'guild'|'party';
 
 export function ChatOverlay({state,visible,onOpen,onClose,guildUnread=0,guildMentions=0,partyUnread=0,partyMentions=0,onChatRead}:{state:GameState;visible:boolean;onOpen:()=>void;onClose:()=>void;guildUnread?:number;guildMentions?:number;partyUnread?:number;partyMentions?:number;onChatRead?:()=>void}){
+  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
   const [channel,setChannel]=useState<Channel>('world');
   const [onlineGuildAvailable,setOnlineGuildAvailable]=useState(state.account.guildMember);
   const {party,accountId,refresh}=usePartySocial();
@@ -49,9 +51,9 @@ export function ChatOverlay({state,visible,onOpen,onClose,guildUnread=0,guildMen
   </>;
 }
 
-function TabAttention({unread,mentions}:{unread:number;mentions:number}){if(unread<=0&&mentions<=0)return null;return <View accessible accessibilityLabel={[unread>0?unread+' unread':null,mentions>0?mentions+' mentions':null].filter(Boolean).join(', ')} style={s.tabAttention}>{mentions>0?<Text style={s.tabMentionText}>@{mentions>9?'9+':mentions}</Text>:null}{unread>0?<Text style={s.tabUnreadText}>{unread>99?'99+':unread}</Text>:null}</View>}
+function TabAttention({unread,mentions}:{unread:number;mentions:number}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);if(unread<=0&&mentions<=0)return null;return <View accessible accessibilityLabel={[unread>0?unread+' unread':null,mentions>0?mentions+' mentions':null].filter(Boolean).join(', ')} style={s.tabAttention}>{mentions>0?<Text style={s.tabMentionText}>@{mentions>9?'9+':mentions}</Text>:null}{unread>0?<Text style={s.tabUnreadText}>{unread>99?'99+':unread}</Text>:null}</View>}
 
-const s=StyleSheet.create({
+function makeStyles(C:ThemeColors){return StyleSheet.create({
   pressed:{opacity:.68,transform:[{translateY:1}]},
-  modalRoot:{flex:1,justifyContent:'flex-end',alignItems:'flex-start',paddingBottom:Platform.OS==='android'?76:88,backgroundColor:'rgba(0,0,0,.38)'},window:{width:'100%',maxWidth:480,maxHeight:'70%',backgroundColor:'#0d1621',borderTopWidth:StyleSheet.hairlineWidth,borderTopColor:C.line,borderTopLeftRadius:20,borderTopRightRadius:20,overflow:'hidden'},header:{minHeight:58,flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingLeft:16,paddingRight:4,borderBottomWidth:StyleSheet.hairlineWidth,borderBottomColor:C.line},eyebrow:{color:'#70b9de',fontSize:9,fontWeight:'900',letterSpacing:1.2},title:{color:C.text,fontSize:18,fontWeight:'800'},close:{width:52,height:52,alignItems:'center',justifyContent:'center'},closeText:{color:C.muted,fontSize:30,lineHeight:32},tabs:{flexDirection:'row',paddingHorizontal:10,paddingTop:8,paddingBottom:8,gap:6},tab:{minHeight:38,flex:1,alignItems:'center',justifyContent:'center',borderRadius:99,borderWidth:1,borderColor:'#304659',backgroundColor:'#0b1018'},tabActive:{backgroundColor:'#123e61',borderColor:'#43bdf2'},tabMention:{borderColor:C.warning},tabDisabled:{opacity:.35},tabText:{color:C.muted,fontSize:11,fontWeight:'800',letterSpacing:.7},tabTextActive:{color:'#d9f3ff'},tabAttention:{position:'absolute',right:4,top:3,flexDirection:'row',alignItems:'center',gap:2},tabMentionText:{fontSize:7,color:C.warning,fontWeight:'900'},tabUnreadText:{minWidth:14,height:14,paddingHorizontal:3,borderRadius:7,overflow:'hidden',textAlign:'center',fontSize:7,lineHeight:14,color:'#fff',fontWeight:'900',backgroundColor:'#d93646'},content:{paddingHorizontal:10,paddingBottom:10},
-});
+  modalRoot:{flex:1,justifyContent:'flex-end',alignItems:'flex-start',paddingBottom:Platform.OS==='android'?76:88,backgroundColor:C.overlay},window:{width:'100%',maxWidth:480,maxHeight:'70%',backgroundColor:C.panel,borderTopWidth:StyleSheet.hairlineWidth,borderTopColor:C.line,borderTopLeftRadius:20,borderTopRightRadius:20,overflow:'hidden'},header:{minHeight:58,flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingLeft:16,paddingRight:4,borderBottomWidth:StyleSheet.hairlineWidth,borderBottomColor:C.line},eyebrow:{color:C.info,fontSize:9,fontWeight:'900',letterSpacing:1.2},title:{color:C.text,fontSize:18,fontWeight:'800'},close:{width:52,height:52,alignItems:'center',justifyContent:'center'},closeText:{color:C.muted,fontSize:30,lineHeight:32},tabs:{flexDirection:'row',paddingHorizontal:10,paddingTop:8,paddingBottom:8,gap:6},tab:{minHeight:38,flex:1,alignItems:'center',justifyContent:'center',borderRadius:99,borderWidth:1,borderColor:C.line,backgroundColor:C.bg},tabActive:{backgroundColor:C.selection,borderColor:C.selectionLine},tabMention:{borderColor:C.warning},tabDisabled:{opacity:.35},tabText:{color:C.muted,fontSize:11,fontWeight:'800',letterSpacing:.7},tabTextActive:{color:C.text},tabAttention:{position:'absolute',right:4,top:3,flexDirection:'row',alignItems:'center',gap:2},tabMentionText:{fontSize:7,color:C.warning,fontWeight:'900'},tabUnreadText:{minWidth:14,height:14,paddingHorizontal:3,borderRadius:7,overflow:'hidden',textAlign:'center',fontSize:7,lineHeight:14,color:C.notificationText,fontWeight:'900',backgroundColor:C.notification},content:{paddingHorizontal:10,paddingBottom:10},
+});}

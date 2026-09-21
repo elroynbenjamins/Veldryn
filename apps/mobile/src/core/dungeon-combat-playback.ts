@@ -6,6 +6,8 @@ export const DUNGEON_COMBAT_PLAYBACK=Object.freeze({
   maxCueDelayMs:950,
   recentCueCount:3,
   maximumCues:48,
+  minCastDisplayMs:420,
+  maxCastDisplayMs:1400,
 });
 
 export type DungeonPlaybackTone='neutral'|'selected'|'success'|'warning'|'danger';
@@ -47,6 +49,16 @@ export function playbackCueLabel(cue:CoopCombatReplayCueView):string{
 export function playbackCueDelayMs(current:CoopCombatReplayCueView,next:CoopCombatReplayCueView):number{
   const gap=Math.max(0,next.atMs-current.atMs),scaled=Math.round(gap*DUNGEON_COMBAT_PLAYBACK.timeScale);
   return Math.max(DUNGEON_COMBAT_PLAYBACK.minCueDelayMs,Math.min(DUNGEON_COMBAT_PLAYBACK.maxCueDelayMs,scaled));
+}
+
+export function playbackCastDisplayMs(cue:CoopCombatReplayCueView|undefined):number{
+  if(!cue||cue.type!=='cast'||cue.durationMs===undefined||cue.durationMs<=0)return 0;
+  const scaled=Math.round(cue.durationMs*DUNGEON_COMBAT_PLAYBACK.timeScale);
+  return Math.max(DUNGEON_COMBAT_PLAYBACK.minCastDisplayMs,Math.min(DUNGEON_COMBAT_PLAYBACK.maxCastDisplayMs,scaled));
+}
+
+export function playbackAdvanceDelayMs(current:CoopCombatReplayCueView,next:CoopCombatReplayCueView):number{
+  return Math.max(playbackCueDelayMs(current,next),playbackCastDisplayMs(current));
 }
 
 export function playbackProgress(replay:CoopCombatReplayView,index:number):number{

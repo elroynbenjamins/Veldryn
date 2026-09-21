@@ -2,6 +2,7 @@ import {itemDef} from '../content/items';
 import {equipmentSetDef,equippedSetPieceCount} from '../content/equipment-sets';
 import {combinedQuantity,enhancedGearStats,gearEnhancement,gemSocketCapacity,gemSocketState,upgradeQuote} from './equipment-enhancement';
 import {itemRarity,type ItemRarity} from './item-rarity';
+import {bestInventoryGearInstance,equippedGearInstance} from './crafted-gear-instances';
 import type {GameState} from './types';
 
 export interface EquipmentDecisionModel{
@@ -36,7 +37,7 @@ export function equipmentDecisionModel(state:GameState,itemId:string):EquipmentD
   if(!state.character)throw new Error('Equipment requires a character');
   const item=itemDef(itemId);
   if(item.type!=='gear')throw new Error('Equipment decision requires gear');
-  const enhancement=gearEnhancement(state,itemId);
+  const instance=equippedGearInstance(state,itemId)??bestInventoryGearInstance(state,itemId),enhancement=gearEnhancement(state,itemId,instance?.id);
   const quote=upgradeQuote(state,itemId);
   const set=item.equipmentSetId?equipmentSetDef(item.equipmentSetId):undefined;
   const goldOwned=Math.max(0,state.character.gold);
@@ -46,9 +47,9 @@ export function equipmentDecisionModel(state:GameState,itemId:string):EquipmentD
   return {
     itemId,
     name:item.name,
-    rarity:itemRarity(item),
+    rarity:instance?.craftedRarity??itemRarity(item),
     rank:enhancement.rank,
-    stats:enhancedGearStats(state,itemId),
+    stats:enhancedGearStats(state,itemId,instance?.id),
     sockets:{filled:gemSocketState(state,itemId).filled,capacity:gemSocketCapacity(itemId),statFilled:Boolean(gemSocketState(state,itemId).statGemId),effectFilled:Boolean(gemSocketState(state,itemId).effectGemId)},
     set:set?{
       id:set.id,

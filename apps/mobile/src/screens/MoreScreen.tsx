@@ -1,7 +1,7 @@
 import {useMemo} from 'react';
 import {UiIcon} from '../components/UiIcon';
 import {navigationIcons} from '../theme/ui-icons';
-import {Image,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {Image,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {t} from '../i18n';
@@ -46,7 +46,7 @@ function itemMeta(language:GameState['settings']['language'],id:MoreDestination)
 }
 
 export function MoreScreen({language,onNavigate,onOpenChatPilot,companionAttention=false,workingTowardAttention=false,dailySuppliesAttention=false,eventAttention=false,friendRequestCount=0,guildAttentionCount=0,socialAttentionCount=0,profileAttention=false}:{language:GameState['settings']['language'];onNavigate:(destination:MoreDestination)=>void;onOpenChatPilot?:()=>void;companionAttention?:boolean;workingTowardAttention?:boolean;dailySuppliesAttention?:boolean;eventAttention?:boolean;friendRequestCount?:number;guildAttentionCount?:number;socialAttentionCount?:number;profileAttention?:boolean}){
-  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
+  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),singleColumn=width<350||fontScale>=1.25;
   const attention=(id:MoreDestination)=>{
     if(id==='Social'&&socialAttentionCount>0)return <AttentionCount count={socialAttentionCount} label="Social updates"/>;
     if(id==='Friends'&&friendRequestCount>0)return <AttentionCount count={friendRequestCount} label="Incoming friend requests"/>;
@@ -63,10 +63,10 @@ export function MoreScreen({language,onNavigate,onOpenChatPilot,companionAttenti
     <Text style={s.sub}>{t(language,'more.intro')}</Text>
     {sections.map(section=><View key={section.label} style={s.section}>
       <Text style={s.sectionLabel}>{section.label}</Text>
-      <View style={s.grid}>{section.items.map(id=>{const meta=itemMeta(language,id);return <Pressable key={id} accessibilityRole="button" accessibilityLabel={meta.title} onPress={()=>onNavigate(id)} style={({pressed})=>[s.tile,pressed&&s.pressed]}>
+      <View style={s.grid}>{section.items.map(id=>{const meta=itemMeta(language,id);return <Pressable key={id} accessibilityRole="button" accessibilityLabel={meta.title} accessibilityHint={meta.description} onPress={()=>onNavigate(id)} style={({pressed})=>[s.tile,singleColumn&&s.tileWide,pressed&&s.pressed]}>
         <View style={s.tileTop}><View style={s.iconFrame}><Image accessible={false} source={navigationIcons[iconForDestination(id)]} resizeMode="contain" style={s.icon}/></View><View style={s.attentionSlot}>{attention(id)}</View><UiIcon name="next" size={18}/></View>
         <Text numberOfLines={1} style={s.title}>{meta.title}</Text>
-        <Text numberOfLines={1} style={s.description}>{meta.description}</Text>
+        <Text numberOfLines={singleColumn?2:1} style={s.description}>{meta.description}</Text>
       </Pressable>})}</View>
     </View>)}
     {onOpenChatPilot?<View style={s.section}><Text style={s.sectionLabel}>DEVELOPER</Text><Pressable accessibilityRole="button" accessibilityLabel="Open Chat Pilot development screen" onPress={onOpenChatPilot} style={({pressed})=>[s.devCard,pressed&&s.pressed]}><Image source={navigationIcons.Social} resizeMode="contain" style={s.icon}/><View style={s.devCopy}><Text style={s.title}>Chat Pilot</Text><Text style={s.description}>Development-only interactive chat review</Text></View><UiIcon name="next" size={18}/></Pressable></View>:null}
@@ -82,8 +82,8 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
   section:{gap:5,marginTop:3},
   sectionLabel:{...typography.caption,color:C.accentSoft,fontWeight:'900',letterSpacing:1},
   grid:{flexDirection:'row',flexWrap:'wrap',gap:7},
-  tile:{flexGrow:1,flexBasis:'47%',minWidth:148,minHeight:88,gap:3,padding:8,borderWidth:StyleSheet.hairlineWidth,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel},
-  tileTop:{minHeight:30,flexDirection:'row',alignItems:'center',gap:6},
+  tile:{flexGrow:1,flexBasis:'47%',minWidth:138,minHeight:88,gap:3,padding:8,borderWidth:StyleSheet.hairlineWidth,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel},
+  tileWide:{flexBasis:'100%',minWidth:0},tileTop:{minHeight:30,flexDirection:'row',alignItems:'center',gap:6},
   iconFrame:{width:30,height:30,alignItems:'center',justifyContent:'center',borderWidth:StyleSheet.hairlineWidth,borderColor:C.line,borderRadius:10,backgroundColor:C.panel2},
   icon:{width:24,height:24},
   attentionSlot:{flex:1,alignItems:'flex-start'},

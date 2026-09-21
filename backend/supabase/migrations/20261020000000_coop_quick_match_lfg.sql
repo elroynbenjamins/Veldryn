@@ -19,13 +19,13 @@ create index if not exists online_coop_lfg_dungeon_idx on public.online_coop_lfg
 alter table public.online_coop_lfg_posts enable row level security;
 
 create or replace function public.close_online_coop_lfg_on_ticket_state_v1() returns trigger
-language plpgsql security definer set search_path=public as $
+language plpgsql security definer set search_path=public as $$
 begin
  if new.mode='live' and new.account_id is not null and new.status in ('reserved','matched','cancelled','expired') and old.status is distinct from new.status then
   update public.online_coop_lfg_posts set closed_at=clock_timestamp() where owner_account_id=new.account_id and closed_at is null;
  end if;
  return new;
-end $;
+end $$;
 drop trigger if exists close_online_coop_lfg_on_ticket_state_v1 on public.matchmaking_tickets;
 create trigger close_online_coop_lfg_on_ticket_state_v1 after update of status on public.matchmaking_tickets
  for each row execute function public.close_online_coop_lfg_on_ticket_state_v1();
@@ -33,7 +33,7 @@ revoke all on public.online_coop_lfg_posts from public,anon,authenticated;
 grant all on public.online_coop_lfg_posts to service_role;
 
 create or replace function public.online_live_quick_match_demand_server_v1(p_account_id uuid)
-returns jsonb language plpgsql security definer set search_path=public as $
+returns jsonb language plpgsql security definer set search_path=public as $$
 declare v_now timestamptz:=clock_timestamp();v_rows jsonb;
 begin
  with demand as (

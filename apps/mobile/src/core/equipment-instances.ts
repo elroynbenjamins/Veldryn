@@ -40,9 +40,9 @@ export function normalizeGearInstances(raw:unknown):GearInstance[]{
 }
 export function allGearInstances(state:GameState){return normalizeGearInstances(state.account.gearInstances?.length?state.account.gearInstances:state.account.craftedGearInstances);}
 export function gearInstanceById(state:GameState,instanceId:string){return allGearInstances(state).find(row=>row.id===instanceId);}
-export function gearInstancesForItem(state:GameState,itemId:string){return allGearInstances(state).filter(row=>row.itemId===itemId);}
-export function inventoryGearInstances(state:GameState){const owner=state.character?.id;return allGearInstances(state).filter(row=>row.location==='inventory'&&(!owner||row.ownerCharacterId===owner||row.ownerCharacterId==='ACCOUNT'));}
-export function bankGearInstances(state:GameState){return allGearInstances(state).filter(row=>row.location==='bank');}
+export function gearInstancesForItem(state:GameState,itemId:string){const ready=materializeGearInstances(state);return allGearInstances(ready).filter(row=>row.itemId===itemId);}
+export function inventoryGearInstances(state:GameState){const ready=materializeGearInstances(state),owner=ready.character?.id;return allGearInstances(ready).filter(row=>row.location==='inventory'&&(!owner||row.ownerCharacterId===owner||row.ownerCharacterId==='ACCOUNT'));}
+export function bankGearInstances(state:GameState){const ready=materializeGearInstances(state);return allGearInstances(ready).filter(row=>row.location==='bank');}
 export function equippedGearInstance(state:GameState,slot:GearSlot){
   const id=state.character?.equipmentInstanceIds?.[slot];
   return id?gearInstanceById(state,id):undefined;

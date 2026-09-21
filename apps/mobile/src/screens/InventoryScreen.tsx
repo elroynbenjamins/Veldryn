@@ -70,7 +70,7 @@ export function InventoryScreen({state,onEquip,onFood,onEat,onSell,onSalvage,onD
       <UtilityChip label={`⇄ Move · ${quantity==='all'?'All':quantity}`} accessibilityLabel={`Transfer quantity. Current amount: ${quantity}`} onPress={()=>setQuantity(value=>nextQuantity(value))}/>
     </View>
     {!!error&&<Text accessibilityRole="alert" style={s.errorText}>{error}</Text>}
-    <View style={s.resultRow}><Text style={s.sub}>{stacks.length} matching stacks · {activeCapacity.free} free slots{favorites.length?` · ${favorites.length} favorites`:''}{newItemIds.length?` · ${newItemIds.length} new`:''}</Text>{newItemIds.length>0&&<Pressable accessibilityRole="button" accessibilityLabel="Mark all new items as seen" onPress={()=>run(onAcknowledgeAll)} style={({pressed})=>[s.markSeen,pressed&&s.pressed]}><Text style={s.markSeenText}>Mark all seen</Text></Pressable>}</View>
+    <View style={s.resultRow}><Text style={[s.sub,s.resultSummary]}>{stacks.length} matching stacks · {activeCapacity.free} free slots{favorites.length?` · ${favorites.length} favorites`:''}{newItemIds.length?` · ${newItemIds.length} new`:''}</Text>{newItemIds.length>0&&<Pressable accessibilityRole="button" accessibilityLabel="Mark all new items as seen" onPress={()=>run(onAcknowledgeAll)} style={({pressed})=>[s.markSeen,pressed&&s.pressed]}><Text style={s.markSeenText}>Mark all seen</Text></Pressable>}</View>
     {stacks.length?stacks.map(renderStack):<><EmptyState title="No items to show" message="Try another storage tab or clear the search and category filter."/><GameButton title="Clear filters" tone="secondary" onPress={()=>{setQuery('');setFilter('all')}}/></>}
     {overflowCount>0&&<Panel><Text style={s.title}>{ot(state.settings.language,'overflow.title')} · {overflowCount}</Text><Text style={s.warning}>{ot(state.settings.language,'overflow.body')}</Text>{state.overflow.stacks.map((stack,index)=><Text key={`${stack.itemId}:${index}`} style={s.sub}>{stack.quantity}× {itemDef(stack.itemId).name}</Text>)}{state.overflow.expiresAtMs!==null&&<Text style={s.warning}>Recorded expiry: {new Date(state.overflow.expiresAtMs).toLocaleString()}</Text>}<GameButton title={ot(state.settings.language,'overflow.move',{count:overflowCount-remaining})} disabled={remaining===overflowCount} onPress={()=>run(onOverflow)}/>{remaining>0&&<Text style={s.sub}>{ot(state.settings.language,'overflow.remain',{count:remaining})}</Text>}</Panel>}
   </ScrollView><ConfirmModal visible={pending!==null} title={`${pending?.kind==='deposit'?'Bank':pending?.kind==='sell'?'Sell':'Salvage'} ${pending?.item.name??'item'}?`} message={message} confirmLabel={pending?.kind==='deposit'?'Deposit':pending?.kind==='sell'?'Sell 1':'Salvage 1'} danger={pending?.kind!=='deposit'} onConfirm={confirm} onCancel={()=>setPending(null)}/></>;
@@ -109,6 +109,7 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
   chipText:{fontSize:12,color:C.muted,fontWeight:'700'},
   chipTextSelected:{color:C.text},
   resultRow:{flexDirection:'row',alignItems:'center',gap:8},
+  resultSummary:{flex:1,minWidth:0},
   markSeen:{minHeight:36,justifyContent:'center',paddingHorizontal:10,borderWidth:1,borderColor:C.info,borderRadius:99,backgroundColor:C.infoSurface},
   markSeenText:{fontSize:10,color:C.info,fontWeight:'900'},
   utilityRow:{flexDirection:'row',gap:8},

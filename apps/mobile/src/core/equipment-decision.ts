@@ -38,7 +38,7 @@ export function equipmentDecisionModel(state:GameState,itemId:string):EquipmentD
   const item=itemDef(itemId);
   if(item.type!=='gear')throw new Error('Equipment decision requires gear');
   const instance=equippedGearInstance(state,itemId)??bestInventoryGearInstance(state,itemId),enhancement=gearEnhancement(state,itemId,instance?.id);
-  const quote=upgradeQuote(state,itemId);
+  const quote=upgradeQuote(state,itemId,instance?.id);
   const set=item.equipmentSetId?equipmentSetDef(item.equipmentSetId):undefined;
   const goldOwned=Math.max(0,state.character.gold);
   const dustOwned=combinedQuantity(state,'TEMPERING_DUST');

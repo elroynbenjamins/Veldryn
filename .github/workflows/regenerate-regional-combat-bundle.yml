@@ -29,7 +29,13 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - name: Install mobile dependencies
+        working-directory: apps/mobile
+        run: pnpm install --frozen-lockfile
+      - name: Install backend dependencies
+        working-directory: backend
+        run: pnpm install --frozen-lockfile
       - name: Regenerate online bundles
         working-directory: backend
         run: pnpm build:online

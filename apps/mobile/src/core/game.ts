@@ -24,7 +24,7 @@ import {gatheringPacing} from './gathering-tools';
 import {gatheringToolDef} from '../content/gathering-tools';
 import {currentRegionId} from './combat-region';
 import {WORLD_ZONES} from '../content/world-map';
-import {enhancedGearStats,equippedGemBonuses,hasEnhancement} from './equipment-enhancement';
+import {enhancedGearStats,equippedEffectGemBonuses,equippedGemBonuses,hasEnhancement} from './equipment-enhancement';
 import {companionCombatContribution,reconcileCombatCompanionUnlocks,grantCompanionEssence,grantBondstones} from './combat-companions';
 import {awardCompanionRematchBondstone,companionRematchBondstoneStatus,recordCompanionActivity} from './companion-runtime';
 import {monsterMastery,recordMonsterMastery} from './monster-mastery';
@@ -214,10 +214,11 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number){
   const companion=companionCombatContribution(state);
   const style=classCombatStyle(c.classId),tactic=combatTactic(state.activity?.combatTacticId);
   const environment=state.activity?environmentEffectForActivity(state.activity).effect:undefined;
+  const effectGems=equippedEffectGemBonuses(state);
   const boostedDefense=Math.max(1,Math.round(stats.defense*modifiers.combatPowerMultiplier));
   const boostedPower=Math.max(1,Math.round(stats.power*modifiers.combatPowerMultiplier));
   const expected=(m.attack*1.2+m.defense*.8+m.level*2.2)*COMBAT_EXPECTED_SCALE;
-  const speed=Math.max(COMBAT_SPEED_MIN,Math.min(COMBAT_SPEED_MAX,boostedPower/Math.max(1,expected)))*style.speedMultiplier*tactic.speedMultiplier*modifiers.combatSpeedMultiplier*companion.outputMultiplier*(1+monsterMastery(state,monsterId).damageBonus);
+  const speed=Math.max(COMBAT_SPEED_MIN,Math.min(COMBAT_SPEED_MAX,boostedPower/Math.max(1,expected)))*style.speedMultiplier*tactic.speedMultiplier*modifiers.combatSpeedMultiplier*companion.outputMultiplier*(1+monsterMastery(state,monsterId).damageBonus)*effectGems.combatSpeedMultiplier;
   const killCycleSeconds=m.secondsPerKill*COMBAT_TIME_SCALE*(environment?.actionTimeMultiplier??1)/speed;
   const theoreticalKills=Math.floor(elapsed/killCycleSeconds);
   const foodId=c.equippedFoodId;const food=foodId?itemDef(foodId):undefined;
@@ -227,7 +228,7 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number){
   for(let i=0;i<theoreticalKills;i++){
     const champion=!challengeId&&isChampionEncounter(c.id,state.activity?.lastClaimAtMs??0,monsterId,i);
     const raw=Math.max(1,Math.round((m.attack*COMBAT_MONSTER_DAMAGE_SCALE)-Math.floor(boostedDefense*.58)));
-    const damage=Math.max(1,Math.round((raw*.48 + m.level*.16)*style.damageTakenMultiplier*tactic.damageTakenMultiplier*(champion?CHAMPION_DAMAGE_MULTIPLIER:1)*modifiers.incomingDamageMultiplier*companion.incomingDamageMultiplier*(c.preparation?preparationEffects(c.preparation).damage:1)));
+    const damage=Math.max(1,Math.round((raw*.48 + m.level*.16)*style.damageTakenMultiplier*tactic.damageTakenMultiplier*(champion?CHAMPION_DAMAGE_MULTIPLIER:1)*modifiers.incomingDamageMultiplier*companion.incomingDamageMultiplier*effectGems.incomingDamageMultiplier*(c.preparation?preparationEffects(c.preparation).damage:1)));
     hp-=damage;
     while(food && food.heal && foodLeft>0 && hp>0 && hp/stats.hp<=threshold){
       hp=Math.min(stats.hp,hp+Math.max(1,Math.ceil(food.heal*modifiers.healingEffectivenessMultiplier)));foodLeft--;foodConsumed++;
@@ -238,7 +239,7 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number){
       break;
     }
     kills++;if(champion)championKills++;
-    hp=Math.min(stats.hp,hp+Math.max(1,Math.floor(stats.hp*style.recoveryPct*tactic.recoveryMultiplier*companion.recoveryMultiplier)));
+    hp=Math.min(stats.hp,hp+Math.max(1,Math.floor(stats.hp*style.recoveryPct*tactic.recoveryMultiplier*companion.recoveryMultiplier*effectGems.recoveryMultiplier)));
   }
   const qualifyingActivitySeconds=stoppedReason?Math.min(elapsed,(kills+1)*killCycleSeconds):elapsed;
   return {kills,championKills,foodConsumed,endHp:hp,stoppedReason,qualifyingActivitySeconds};
@@ -281,7 +282,8 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
   if(mastery.materialBonus)for(const item of items){if(itemDef(item.itemId).type!=='material')continue;const extra=item.quantity*mastery.materialBonus+(materialRemainders[item.itemId]??0),whole=Math.floor(extra+1e-9);item.quantity+=whole;materialRemainders[item.itemId]=Math.max(0,extra-whole);}
   const firstClear=challengeId&&sim.kills>0&&!challengeHuntCleared(state,m.id,challengeId)?challengeHuntFirstClearReward(m,challengeId):undefined;
   const rewardItems=firstClear?stackItems([],items.concat(firstClear.items)):items,champion=championBonus(Math.floor(m.xp*effect.xpMultiplier*multipliers.characterXpMultiplier),Math.floor(m.gold*effect.goldMultiplier*multipliers.goldMultiplier),sim.championKills);
-  const baseXpPerKill=m.xp*effect.xpMultiplier*multipliers.characterXpMultiplier*challengeReward.xp,baseGoldPerKill=m.gold*effect.goldMultiplier*multipliers.goldMultiplier*challengeReward.gold,sessionKills=state.activity.sessionKills??0;
+  const effectGems=equippedEffectGemBonuses(state);
+  const baseXpPerKill=m.xp*effect.xpMultiplier*multipliers.characterXpMultiplier*challengeReward.xp,baseGoldPerKill=m.gold*effect.goldMultiplier*multipliers.goldMultiplier*challengeReward.gold*effectGems.combatGoldMultiplier,sessionKills=state.activity.sessionKills??0;
   const momentumXp=huntMomentumBonus(baseXpPerKill,sessionKills,sim.kills),momentumGold=huntMomentumBonus(baseGoldPerKill,sessionKills,sim.kills);
   const reward:RewardBundle={classSkillXp:classGain.awards,xp:Math.floor(sim.kills*baseXpPerKill)+momentumXp+champion.xp,gold:Math.floor(sim.kills*baseGoldPerKill)+momentumGold+(firstClear?.gold??0)+champion.gold,items:rewardItems,kills:sim.kills,elapsedSeconds:elapsed,qualifyingActivitySeconds:sim.qualifyingActivitySeconds,foodConsumed:sim.foodConsumed,endHp:sim.endHp,stoppedReason:sim.stoppedReason,...(firstClear&&challengeId?{challengeHuntFirstClear:{key:challengeHuntClearKey(m.id,challengeId),monsterId:m.id,challengeId,label:firstClear.label}}:{}),...(sim.championKills>0?{championEncounters:{count:sim.championKills,bonusXp:champion.xp,bonusGold:champion.gold}}:{})};
   return {...reward,masteryMaterialRemainders:materialRemainders,eventDrops:activityEventDrops(state,reward,effectiveNowMs),eventDiscoveries:activityEventDiscoveries(state,'combat',reward.kills,effectiveNowMs)};

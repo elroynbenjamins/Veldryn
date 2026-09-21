@@ -29,7 +29,8 @@ import {craftEquipmentPrerequisites} from './equipment-crafting-prerequisites';
 /** Commands express intent. Neither a client save nor a client reward is accepted. */
 export interface GameCommand {type:string;args?:Record<string,unknown>}
 export interface VerifiedActivity {kind:'combat'|'gathering'|'crafting'|'boss';contentId:string;units:number;startedAtMs?:number;challengeId?:import('./types').CombatChallengeId}
-export interface GameCommandResult {state:GameState;reward?:RewardBundle;activity:GameState['activity'];message?:string;won?:boolean;upgrade?:ReturnType<typeof attemptEquipmentUpgrade>['result'];contributions:VerifiedActivity[]}
+export type ForgeCraftResult=Extract<ReturnType<typeof claimEquipmentCraft>,{kind:'equipment'}>['result'];
+export interface GameCommandResult {state:GameState;reward?:RewardBundle;activity:GameState['activity'];message?:string;won?:boolean;upgrade?:ReturnType<typeof attemptEquipmentUpgrade>['result'];forgeResults?:ForgeCraftResult[];contributions:VerifiedActivity[]}
 const fields:Record<string,readonly string[]>={
  class_training:[],class_focus:['focus'],faith_practice:['tierId','count'],faith_blessing:['id'],faith_favorite:['id','enabled'],faith_hide:['enabled'],alchemy_start:['id','batches'],
  companion_monthly:['id'],companion_supplies:[],companion_bond_reward:['id','level'],companion_boss_rematch:[],
@@ -95,7 +96,7 @@ export function validateGameSettings(value:unknown):GameState['settings']{
 /** The caller provides a trusted clock, character ID and random roll on the server. */
 export function executeGameCommand(previous:GameState,value:unknown,now:number,options:{characterId?:string;randomRoll?:number;accountId?:string;eventId?:string}={}):GameCommandResult{
  const command=validateGameCommand(value),a=command.args??{},activity=previous.activity,contributions:VerifiedActivity[]=[];
- let state=structuredClone(previous),reward:RewardBundle|undefined,message:string|undefined,won:boolean|undefined,upgrade:GameCommandResult['upgrade'];
+ let state=structuredClone(previous),reward:RewardBundle|undefined,message:string|undefined,won:boolean|undefined,upgrade:GameCommandResult['upgrade'],forgeResults:ForgeCraftResult[]|undefined;
  if(!Number.isSafeInteger(now)||now<previous.createdAtMs)throw new Error('invalid_server_clock');
  const credit=(source:GameState['activity'],earned:RewardBundle)=>{if(!source||earned.kills<=0)return;if(source.kind==='combat')contributions.push({kind:'combat',contentId:source.targetId,units:earned.kills,startedAtMs:Math.max(source.lastClaimAtMs,now-earned.elapsedSeconds*1000),...(source.combatChallengeId?{challengeId:source.combatChallengeId}: {})});else if(['mining','woodcutting','fishing','herbalism'].includes(source.kind))contributions.push({kind:'gathering',contentId:source.targetId,units:earned.kills,startedAtMs:Math.max(source.lastClaimAtMs,now-earned.elapsedSeconds*1000)});};
  const settle=()=>{const source=state.activity,result=game.claimActivity(state,now);state=result.state;reward=result.reward;credit(source,result.reward);};
@@ -165,7 +166,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   }
   case 'craft_claim':{
    if(options.randomRoll===undefined)throw new Error('trusted_random_required');
-   const result=claimEquipmentCraft(state,text(a,'id',160),now,options.randomRoll);state=result.state;contributions.push({kind:'crafting',contentId:result.recipe.id,units:1});
+   const result=claimEquipmentCraft(state,text(a,'id',160),now,options.randomRoll);state=result.state;if(result.kind==='equipment')forgeResults=[result.result];contributions.push({kind:'crafting',contentId:result.recipe.id,units:1});
    message=result.kind==='equipment'
     ?`${result.result.rarity.toUpperCase()} ${result.recipe.name}${result.result.qualityProc?' · quality proc':''}${result.result.duplicateCount?` · duplicate ${result.result.duplicateCount+1}`:''}`
     :`${result.recipe.name} combined`;
@@ -173,7 +174,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   }
   case 'craft_claim_all':{
    const beforeIds=new Set((state.account.equipmentCraftingQueue??[]).map(job=>job.id));
-   if(options.randomRoll===undefined)throw new Error('trusted_random_required');const result=claimAllReadyEquipmentCrafts(state,now,options.randomRoll);state=result.state;
+   if(options.randomRoll===undefined)throw new Error('trusted_random_required');const result=claimAllReadyEquipmentCrafts(state,now,options.randomRoll);state=result.state;forgeResults=result.results;
    for(const id of result.claimed){if(!beforeIds.has(id))continue;const job=previous.account.equipmentCraftingQueue?.find(row=>row.id===id);if(job)contributions.push({kind:'crafting',contentId:job.recipeId,units:1});}
    const equipmentCount=result.claimed.length-result.gemClaims,procCount=result.results.filter(row=>row.qualityProc).length;
    message=result.claimed.length
@@ -269,5 +270,5 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
  }
  if(companionMetricBefore)state=recordCompanionCommandMetrics(state,command.type,companionMetricBefore);
  if(state.character&&(!Number.isSafeInteger(state.character.gold)||state.character.gold<0))throw new Error('invalid_wallet');
- return {state:discoverCharacterSkins(state),reward,activity,message,won,upgrade,contributions};
+ return {state:discoverCharacterSkins(state),reward,activity,message,won,upgrade,forgeResults,contributions};
 }

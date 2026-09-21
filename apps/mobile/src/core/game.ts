@@ -533,13 +533,15 @@ function exactBankInstance(state:GameState,ref:string){
 }
 export function equipItem(state:GameState,ref:string):GameState{
   if(!state.character)throw new Error('No character');
-  const selected=exactInventoryInstance(state,ref);state=selected.state;const instance=selected.instance,d=itemDef(instance.itemId);
+  const selected=exactInventoryInstance(state,ref);state=selected.state;
+  const character=state.character;if(!character)throw new Error('No character');
+  const instance=selected.instance,d=itemDef(instance.itemId);
   if(d.type!=='gear'||!d.slot)throw new Error('Not gear');
-  if(d.classRestriction&&d.classRestriction!==state.character.classId)throw new Error('This gear belongs to another class');
+  if(d.classRestriction&&d.classRestriction!==character.classId)throw new Error('This gear belongs to another class');
   let stacks=consume(state.inventory.stacks,instance.itemId,1);
-  const oldItemId=state.character.equipment[d.slot],oldInstance=equippedGearInstance(state,d.slot);
+  const oldItemId=character.equipment[d.slot],oldInstance=equippedGearInstance(state,d.slot);
   if(oldItemId)stacks=stackItems(stacks,[{itemId:oldItemId,quantity:1}]);
-  let next={...state,inventory:{...state.inventory,stacks},character:{...state.character,equipment:{...state.character.equipment,[d.slot]:instance.itemId},equipmentInstanceIds:{...(state.character.equipmentInstanceIds??{}),[d.slot]:instance.id}}} as GameState;
+  let next={...state,inventory:{...state.inventory,stacks},character:{...character,equipment:{...character.equipment,[d.slot]:instance.itemId},equipmentInstanceIds:{...(character.equipmentInstanceIds??{}),[d.slot]:instance.id}}} as GameState;
   if(oldInstance)next=setGearInstanceLocation(next,oldInstance.id,'inventory');
   next=setGearInstanceLocation(next,instance.id,'equipped',d.slot);
   const maxHp=effectiveStats(next).hp;next.character!.currentHp=Math.min(maxHp,next.character!.currentHp+(d.hp||0));

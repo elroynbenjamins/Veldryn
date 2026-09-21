@@ -66,7 +66,7 @@ export function MoreScreen({language,onNavigate,onOpenChatPilot,companionAttenti
       <View style={s.grid}>{section.items.map(id=>{const meta=itemMeta(language,id);return <Pressable key={id} accessibilityRole="button" accessibilityLabel={meta.title} onPress={()=>onNavigate(id)} style={({pressed})=>[s.tile,pressed&&s.pressed]}>
         <View style={s.tileTop}><View style={s.iconFrame}><Image accessible={false} source={navigationIcons[iconForDestination(id)]} resizeMode="contain" style={s.icon}/></View><View style={s.attentionSlot}>{attention(id)}</View><UiIcon name="next" size={18}/></View>
         <Text numberOfLines={1} style={s.title}>{meta.title}</Text>
-        <Text numberOfLines={2} style={s.description}>{meta.description}</Text>
+        <Text numberOfLines={1} style={s.description}>{meta.description}</Text>
       </Pressable>})}</View>
     </View>)}
     {onOpenChatPilot?<View style={s.section}><Text style={s.sectionLabel}>DEVELOPER</Text><Pressable accessibilityRole="button" accessibilityLabel="Open Chat Pilot development screen" onPress={onOpenChatPilot} style={({pressed})=>[s.devCard,pressed&&s.pressed]}><Image source={navigationIcons.Social} resizeMode="contain" style={s.icon}/><View style={s.devCopy}><Text style={s.title}>Chat Pilot</Text><Text style={s.description}>Development-only interactive chat review</Text></View><UiIcon name="next" size={18}/></Pressable></View>:null}
@@ -76,19 +76,19 @@ export function MoreScreen({language,onNavigate,onOpenChatPilot,companionAttenti
 function AttentionDot({label}:{label:string}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);return <View accessible accessibilityLabel={label} style={s.attentionDot}/>}
 function AttentionCount({count,label}:{count:number;label:string}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);return <View accessible accessibilityLabel={`${count} ${label}`} style={s.attentionCount}><Text style={s.attentionCountText}>{count>99?'99+':count}</Text></View>}
 function makeStyles(C:ThemeColors){return StyleSheet.create({
-  root:{padding:spacing.md,gap:spacing.sm,paddingBottom:spacing.xl},
+  root:{padding:spacing.md,gap:7,paddingBottom:spacing.xl},
   heading:{...typography.hero,color:C.text},
   sub:{...typography.body,color:C.muted,marginBottom:2},
-  section:{gap:6,marginTop:4},
+  section:{gap:5,marginTop:3},
   sectionLabel:{...typography.caption,color:C.accentSoft,fontWeight:'900',letterSpacing:1},
-  grid:{flexDirection:'row',flexWrap:'wrap',gap:8},
-  tile:{flexGrow:1,flexBasis:'47%',minWidth:148,minHeight:108,gap:4,padding:10,borderWidth:StyleSheet.hairlineWidth,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel},
-  tileTop:{minHeight:34,flexDirection:'row',alignItems:'center',gap:6},
-  iconFrame:{width:34,height:34,alignItems:'center',justifyContent:'center',borderWidth:StyleSheet.hairlineWidth,borderColor:C.line,borderRadius:10,backgroundColor:C.panel2},
-  icon:{width:27,height:27},
+  grid:{flexDirection:'row',flexWrap:'wrap',gap:7},
+  tile:{flexGrow:1,flexBasis:'47%',minWidth:148,minHeight:88,gap:3,padding:8,borderWidth:StyleSheet.hairlineWidth,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel},
+  tileTop:{minHeight:30,flexDirection:'row',alignItems:'center',gap:6},
+  iconFrame:{width:30,height:30,alignItems:'center',justifyContent:'center',borderWidth:StyleSheet.hairlineWidth,borderColor:C.line,borderRadius:10,backgroundColor:C.panel2},
+  icon:{width:24,height:24},
   attentionSlot:{flex:1,alignItems:'flex-start'},
   title:{...typography.bodyStrong,color:C.text,fontSize:13},
-  description:{...typography.caption,color:C.muted,fontSize:10.5,lineHeight:14},
+  description:{...typography.caption,color:C.muted,fontSize:10,lineHeight:13},
   pressed:{opacity:.72,transform:[{translateY:1}]},
   attentionDot:{width:10,height:10,borderRadius:5,backgroundColor:C.notification,borderWidth:1,borderColor:C.notificationText},
   attentionCount:{minWidth:22,height:22,paddingHorizontal:5,borderRadius:11,backgroundColor:C.notification,alignItems:'center',justifyContent:'center'},

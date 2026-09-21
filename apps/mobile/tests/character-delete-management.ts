@@ -34,7 +34,7 @@ ok(qty(deleted,'EMBER_SHARD')>=3,'character Inventory must be recovered to share
 let activeBlock=executeGameCommand(newGame(1),{type:'create',args:{classId:'IRONWARDEN',name:'Runner',body:'male'}},1,{characterId:firstId}).state;
 activeBlock={...activeBlock,account:{...activeBlock.account,unlockedCharacterSlots:2}};
 activeBlock=executeGameCommand(activeBlock,{type:'roster_create',args:{classId:'BASTION',name:'Keeper',body:'female'}},2,{characterId:secondId}).state;
-activeBlock={...activeBlock,otherCharacters:activeBlock.otherCharacters!.map(entry=>entry.character.id===firstId?{...entry,activity:{kind:'mining',targetId:'TEST_NODE',startedAtMs:1,lastClaimAtMs:1}}:entry)};
+activeBlock={...activeBlock,otherCharacters:activeBlock.otherCharacters!.map(entry=>entry.character.id===firstId?{...entry,activity:{kind:'mining',targetId:'TEST_NODE',startedAtMs:1,lastClaimAtMs:1} as any}:entry)};
 throws(()=>executeGameCommand(activeBlock,{type:'roster_delete',args:{id:firstId,confirmation:characterDeleteConfirmation('Runner')}},3),'inactive characters with an activity must require switch/stop before deletion');
 
 let solo=createCharacter(newGame(1),'IRONWARDEN','Solo','male');

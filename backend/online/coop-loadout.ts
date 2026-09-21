@@ -42,7 +42,7 @@ export function deriveOnlineCoopLoadout(accountId:string,state:GameState,version
  if(companionId&&!combatCompanion)throw new Error('missing_companion_progress');
  return {accountId,characterId:character.id,classId:character.classId,loadoutId:'current',revision:version,characterLevel:character.level,
   dungeonUnlocked:true,legalEquipment,capabilities,abilities:structuredClone(kit.abilities),stats:{
-   characterId:character.id,classId:character.classId,displayName:character.name,level:character.level,
+   characterId:character.id,classId:character.classId,displayName:character.name,bodyPresentation:character.bodyPresentation??'male',level:character.level,
    ...(combatCompanion?{combatCompanion:structuredClone(combatCompanion)}:{}),
    maxHp:kit.stats.maxHp*actual.hp/reference.hp*levelScale,
    attackPower:kit.stats.attackPower*actual.attack/reference.attack*levelScale,

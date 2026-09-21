@@ -51,7 +51,7 @@ function routeToBank(bank:GameState['bank'],baseOverflow:OverflowState,incoming:
 function deletionRecoveryItems(entry:CharacterSnapshot,sharedBank:GameState['bank']){
  const equipped=[...new Set(Object.values(entry.character.equipment).filter((id):id is string=>typeof id==='string'&&!!id))];
  const tools=[...new Set(Object.values(entry.character.equippedToolIds??{}).filter((id):id is string=>typeof id==='string'&&!!id))];
- const held=[...equipped,...tools,...(entry.character.equippedFoodId?[entry.character.equippedFoodId]:[])];
+ const held=[...equipped,...tools];
  const ownedGearIds=new Set<string>([
   ...equipped,
   ...entry.inventory.stacks.map(row=>row.itemId),

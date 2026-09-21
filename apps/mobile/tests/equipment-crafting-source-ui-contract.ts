@@ -9,7 +9,7 @@ const path=read('src/core/equipment-crafting-path.ts');
 const inspect=read('src/components/ItemQuickInspect.tsx');
 const recipeCard=read('src/components/RecipeCard.tsx');
 const skillsScreen=read('src/screens/SkillsScreen.tsx');
-const app=read('../../App.tsx');
+const app=read('App.tsx');
 
 ok(recipes.includes('V33_EQUIPMENT_RECIPES')&&recipes.includes("CRAFT_V33_"),'V33 equipment needs a dedicated complete recipe adapter');
 ok(recipes.includes('slotMultiplier')&&recipes.includes('timerRange'),'V33 recipe costs/timers must respect slot and tier pacing');

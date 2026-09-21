@@ -100,14 +100,14 @@ export function lowestStoredGearInstance(state:GameState,itemId:string,storage:'
 export function removeGearInstance(state:GameState,instanceId:string){
   return {...state,account:{...state.account,gearInstances:gearInstances(state).filter(row=>row.id!==instanceId)}} as GameState;
 }
-export function moveStoredGearInstances(state:GameState,itemId:string,from:'inventory'|'bank',to:'inventory'|'bank',count:number){
+export function moveStoredGearInstances(state:GameState,itemId:string,from:'inventory'|'bank',to:'inventory'|'bank',count:number,newOwnerCharacterId?:string){
   if(count<=0)return state;
   const candidates=instancesForItem(state,itemId,from).slice().sort((a,b)=>from==='inventory'
     ?rarityRank(a.craftedRarity)-rarityRank(b.craftedRarity)||a.createdAtMs-b.createdAtMs
     :rarityRank(b.craftedRarity)-rarityRank(a.craftedRarity)||a.createdAtMs-b.createdAtMs).slice(0,count);
   if(!candidates.length)return state;
   const ids=new Set(candidates.map(row=>row.id));
-  return {...state,account:{...state.account,gearInstances:gearInstances(state).map(row=>ids.has(row.id)?{...row,storage:to}:row)}} as GameState;
+  return {...state,account:{...state.account,gearInstances:gearInstances(state).map(row=>ids.has(row.id)?{...row,storage:to,ownerCharacterId:newOwnerCharacterId??row.ownerCharacterId}:row)}} as GameState;
 }
 export function rarityBreakdownForStack(state:GameState,itemId:string,storage:'inventory'|'bank',stackQuantity:number){
   const rows=rarityBreakdownForItem(state,itemId,storage),instanceCount=rows.reduce((sum,row)=>sum+row.count,0),legacy=Math.max(0,stackQuantity-instanceCount);

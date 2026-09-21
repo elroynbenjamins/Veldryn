@@ -5,6 +5,7 @@ import {TOOL_ITEMS} from './gathering-tools';
 import {HERB_ITEMS} from './herbalism';
 import {POTION_ITEMS} from './alchemy';
 import {EQUIPMENT_ITEMS_V33} from './equipment-items-v33';
+import {GEM_ITEMS_V34} from './gem-items-v34';
 export interface ItemDef {
   id:string; name:string; type:'material'|'gear'|'quest'|'food'|'tool'|'gem'|'potion'; slot?:GearSlot;
   attack?:number; defense?:number; hp?:number; heal?:number; readiness?:number;
@@ -12,7 +13,7 @@ export interface ItemDef {
   rarity?:ItemRarity; passive?:string;
   value:number; salvage?:{itemId:string;quantity:number};
   classRestriction?:ClassId; noviceSetId?:string; equipmentSetId?:string;
-  gemStat?:GemStat; gemPercent?:number; gemTier?:1|2; gemKind?:GemSocketKind; gemEffect?:GemEffectId; gemEffectValue?:number;
+  gemStat?:GemStat; gemPercent?:number; gemTier?:1|2|3|4|5; gemGrade?:1|2|3|4|5; gemFamilyId?:string; gemKind?:GemSocketKind; gemEffect?:GemEffectId; gemEffectValue?:number;
 }
 
 const COMPLETE_SET_SLOTS:GearSlot[]=['helmet','legs','boots','weapon','offhand','amulet'];
@@ -293,5 +294,5 @@ const BASE_ITEMS:ItemDef[]=[
 {id:'TROLLGUARD_HELM',name:'Trollguard Helm',type:'gear',slot:'helmet',defense:8,hp:55,readiness:7,value:260,salvage:{itemId:'TROLL_HIDE',quantity:2}},
 {id:'OATHGLASS_CAPE',name:'Oathglass Cape',type:'gear',slot:'cape',attack:5,defense:5,hp:35,readiness:8,value:420,salvage:{itemId:'OATHGLASS_SHARD',quantity:2}},
 ];
-export const ITEMS:ItemDef[]=[...BASE_ITEMS,...EQUIPMENT_ITEMS_V33];
+export const ITEMS:ItemDef[]=[...BASE_ITEMS,...GEM_ITEMS_V34,...EQUIPMENT_ITEMS_V33];
 export function itemDef(id:string){const x=ITEMS.find(i=>i.id===id); if(!x) throw new Error(`Unknown item ${id}`); return x;}

@@ -1,11 +1,12 @@
-import {useEffect,useState} from 'react';
-import {Alert,StyleSheet,Text,View} from 'react-native';
+import {useEffect,useMemo,useState} from 'react';
+import {Alert,Pressable,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from './GameButton';
 import {Panel} from './Panel';
 import {ChatPlayerSheet,type ChatPlayerIdentity} from './ChatPlayerSheet';
 import {CompactPlayerIdentity} from './CompactPlayerIdentity';
 import {GuildIdentitySummary} from './GuildIdentitySummary';
-import {C,spacing,typography} from '../theme/theme';
+import {spacing,typography,type ThemeColors} from '../theme/theme';
+import {useGameTheme} from '../theme/ThemeContext';
 import {onlineConfigured} from '../online/supabase';
 import {guildMemberManagement} from '../core/social-management';
 import {
@@ -14,6 +15,7 @@ import {
 } from '../online/social';
 
 export function OnlineGuildManagement({onApplicationsChanged}:{onApplicationsChanged?:()=>void}={}){
+ const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [members,setMembers]=useState<GuildMember[]>([]),[applications,setApplications]=useState<GuildApplication[]>([]),[invitations,setInvitations]=useState<GuildInvitationView[]>([]),[outgoingInvitations,setOutgoingInvitations]=useState<OutgoingInvitationView[]>([]),[guild,setGuild]=useState<OnlineGuild|null>(null),[leadership,setLeadership]=useState<GuildLeadershipStatus|null>(null);
  const [selected,setSelected]=useState<ChatPlayerIdentity|null>(null),[role,setRole]=useState<'leader'|'officer'|'member'|null>(null),[ownAccountId,setOwnAccountId]=useState(''),[busy,setBusy]=useState(false),[loaded,setLoaded]=useState(false);
  const load=async()=>{
@@ -73,8 +75,8 @@ export function OnlineGuildManagement({onApplicationsChanged}:{onApplicationsCha
   </View></View>:null}
   <View style={s.sectionHead}><Text style={s.section}>ROSTER</Text><Text style={s.sectionMeta}>Your role · {role.toUpperCase()}</Text></View>
   {members.map(member=><View key={member.account_id} style={s.member}>
-   <View style={s.memberIdentity}><CompactPlayerIdentity name={member.display_name} guildTag={member.guild_tag} guildTagColorId={member.guild_tag_color_id} role={member.role} hint="VIEW PROFILE ›"/></View>
-   <View style={s.profileButton}><GameButton compact title="Profile" tone="secondary" onPress={()=>openMember(member)}/>{role&&Object.values(guildMemberManagement(role,member.role,member.account_id===ownAccountId)).some(Boolean)?<GameButton compact title="Manage" tone="secondary" disabled={busy} onPress={()=>manageMember(member)}/>:null}</View>
+   <Pressable accessibilityRole="button" accessibilityLabel={`Open ${member.display_name}'s profile`} onPress={()=>openMember(member)} style={({pressed})=>[s.memberIdentity,pressed&&s.memberPressed]}><CompactPlayerIdentity name={member.display_name} guildTag={member.guild_tag} guildTagColorId={member.guild_tag_color_id} role={member.role} hint="VIEW PROFILE ›"/></Pressable>
+   {role&&Object.values(guildMemberManagement(role,member.role,member.account_id===ownAccountId)).some(Boolean)?<View style={s.memberActions}><GameButton compact title="Manage" tone="secondary" disabled={busy} onPress={()=>manageMember(member)}/></View>:null}
   </View>)}
   {(role==='leader'||role==='officer')?<><View style={s.sectionHead}><Text style={s.section}>PENDING APPLICATIONS</Text><Text style={s.sectionMeta}>{applications.length} waiting</Text></View>{applications.length?applications.map(app=><View key={app.id} style={s.application}><View style={s.copy}><Text style={s.name}>Applicant {app.account_id.slice(0,8)}</Text><Text style={s.subCompact}>Awaiting guild review</Text></View><View style={s.actions}><GameButton compact title="Accept" disabled={busy} onPress={()=>void review(app.id,true)}/><GameButton compact title="Decline" tone="secondary" disabled={busy} onPress={()=>void review(app.id,false)}/></View></View>):<Text style={s.empty}>No pending applications.</Text>}</>:null}
   {(role==='leader'||role==='officer')&&outgoingInvitations.length?<><View style={s.sectionHead}><Text style={s.section}>OUTGOING INVITES</Text><Text style={s.sectionMeta}>{outgoingInvitations.length} pending</Text></View>{outgoingInvitations.map(invite=><View key={invite.id} style={s.application}><View style={s.copy}><Text style={s.name}>{invite.recipientName}</Text><Text style={s.subCompact}>Pending Guild invitation</Text></View><GameButton compact title="Cancel" tone="secondary" disabled={busy} onPress={()=>void cancelInvite(invite.id)}/></View>)}</>:null}
@@ -86,15 +88,15 @@ export function OnlineGuildManagement({onApplicationsChanged}:{onApplicationsCha
  </Panel></View>;
 }
 
-const s=StyleSheet.create({
+function makeStyles(C:ThemeColors){return StyleSheet.create({
  stack:{gap:spacing.md},title:{...typography.title,color:C.text},sub:{...typography.body,color:C.muted,lineHeight:19,marginTop:4},
  sectionHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,marginTop:spacing.md},
  section:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.8},
  sectionMeta:{fontSize:9,color:C.muted,fontWeight:'800'},
  member:{minHeight:66,flexDirection:'row',alignItems:'center',gap:8,paddingVertical:8,borderTopWidth:1,borderColor:C.line},
- memberIdentity:{flex:1,minWidth:0},
- profileButton:{width:82,gap:4},
- leadership:{padding:9,borderWidth:1,borderColor:C.line,borderRadius:8,backgroundColor:C.panel2},leadershipWarn:{borderColor:C.warning,backgroundColor:'#332515'},warningText:{fontSize:10,lineHeight:14,color:C.warning,marginTop:3},departure:{gap:6,marginTop:spacing.sm},departureNote:{fontSize:10,lineHeight:14,color:C.muted},application:{minHeight:62,flexDirection:'row',alignItems:'center',gap:8,paddingVertical:8,borderTopWidth:1,borderColor:C.line},
+ memberIdentity:{flex:1,minWidth:0},memberPressed:{opacity:.72},
+ memberActions:{width:82},
+ leadership:{padding:9,borderWidth:1,borderColor:C.line,borderRadius:8,backgroundColor:C.panel2},leadershipWarn:{borderColor:C.warning,backgroundColor:C.warningSurface},warningText:{fontSize:10,lineHeight:14,color:C.warning,marginTop:3},departure:{gap:6,marginTop:spacing.sm},departureNote:{fontSize:10,lineHeight:14,color:C.muted},application:{minHeight:62,flexDirection:'row',alignItems:'center',gap:8,paddingVertical:8,borderTopWidth:1,borderColor:C.line},
  copy:{flex:1,minWidth:0},name:{color:C.text,fontWeight:'800'},subCompact:{fontSize:10,color:C.muted,marginTop:2},
  actions:{flexDirection:'row',gap:6},empty:{...typography.body,color:C.muted,paddingVertical:spacing.sm},
-});
+});}

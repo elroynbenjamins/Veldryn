@@ -16,6 +16,8 @@ export interface ItemDef {
   gemStat?:GemStat; gemPercent?:number; gemTier?:1|2|3|4|5; gemGrade?:1|2|3|4|5; gemFamilyId?:string; gemKind?:GemSocketKind; gemEffect?:GemEffectId; gemEffectValue?:number;
 }
 
+const PROGRESSION_GEM_ITEMS:ItemDef[]=GEM_PROGRESSION_ITEMS.map(item=>({...item}));
+
 const COMPLETE_SET_SLOTS:GearSlot[]=['helmet','legs','boots','weapon','offhand','amulet'];
 const COMPLETE_SET_CONFIG:Array<{id:string;prefix:string;label:string;classId:ClassId;rarity:ItemRarity;readiness:number;value:number;weapon:string;offhand:string}>=[
   {id:'rootbound_covenant',prefix:'STONEHEART',label:'Stoneheart',classId:'IRONWARDEN',rarity:'rare',readiness:13,value:520,weapon:'Rootbound Blade',offhand:'Rootbound Shield'},
@@ -74,7 +76,7 @@ const BASE_ITEMS:ItemDef[]=[
 {id:'GEM_DUST',name:'Gem Dust',type:'material',value:30,rarity:'uncommon'},
 {id:'REGIONAL_CATALYST',name:'Regional Catalyst',type:'material',value:850,rarity:'epic'},
 {id:'RADIANT_CATALYST',name:'Radiant Catalyst',type:'material',value:4500,rarity:'mythic'},
-...GEM_PROGRESSION_ITEMS,
+...PROGRESSION_GEM_ITEMS,
 {id:'TEMPERING_DUST',name:'Tempering Dust',type:'material',value:22,rarity:'uncommon'},
 {id:'TEMPERING_CORE',name:'Tempering Core',type:'material',value:180,rarity:'rare'},
 {id:'EMBER_SHARD',name:'Ember Shard',type:'gem',gemStat:'attack',gemPercent:.02,gemTier:1,value:320,rarity:'rare'},

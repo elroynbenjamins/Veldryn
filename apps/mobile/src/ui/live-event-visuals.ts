@@ -1,3 +1,4 @@
+import type {LiveEventVisualKey} from '../content/live-event-visual-keys';
 export interface LiveEventVisualBundle{
   heroBackground:number;
   commonCurrencyIcon?:number;
@@ -14,7 +15,7 @@ const GENERIC:LiveEventVisualBundle={
   rewardArt:EMPTY_ART,
 };
 
-export const LIVE_EVENT_VISUALS:Readonly<Record<string,LiveEventVisualBundle>>={
+export const LIVE_EVENT_VISUALS:Readonly<Record<LiveEventVisualKey,LiveEventVisualBundle>>={
   harvestwake:{
     heroBackground:require('../../assets/profile-backgrounds/bg_harvestwake.png'),
     commonCurrencyIcon:require('../../assets/events/harvestwake/currency_harvest_mark.png'),
@@ -114,14 +115,13 @@ export const LIVE_EVENT_VISUALS:Readonly<Record<string,LiveEventVisualBundle>>={
   },
 };
 
-export function hasLiveEventVisualBundle(visualKey?:string):boolean{return !!visualKey&&Object.prototype.hasOwnProperty.call(LIVE_EVENT_VISUALS,visualKey);}
-export function liveEventVisuals(visualKey?:string):LiveEventVisualBundle{
-  return visualKey?LIVE_EVENT_VISUALS[visualKey]??GENERIC:GENERIC;
+export function liveEventVisuals(visualKey?:LiveEventVisualKey):LiveEventVisualBundle{
+  return visualKey?LIVE_EVENT_VISUALS[visualKey]:GENERIC;
 }
-export function liveEventVisualCoverage(visualKey?:string,discoveryIds:readonly string[]=[]){
+export function liveEventVisualCoverage(visualKey:LiveEventVisualKey,discoveryIds:readonly string[]=[]){
   const bundle=liveEventVisuals(visualKey);
   return {
-    dedicatedBundle:hasLiveEventVisualBundle(visualKey),
+    dedicatedBundle:true,
     commonCurrencyArt:!!bundle.commonCurrencyIcon,
     prestigeCurrencyArt:!!bundle.prestigeCurrencyIcon,
     discoveryArtCount:discoveryIds.filter(id=>!!bundle.discoveryArt[id]).length,

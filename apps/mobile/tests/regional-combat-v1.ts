@@ -1,4 +1,4 @@
-import {SUNSCAR_REGIONAL_ENCOUNTERS_V1} from '../src/online/regional-combat';
+import {SUNSCAR_REGIONAL_ENCOUNTERS_V1} from '../src/core/regional-combat-catalog-v1';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 function equal(actual:unknown,expected:unknown,message:string){if(actual!==expected)throw new Error(`${message}: expected ${String(expected)}, got ${String(actual)}`)}

@@ -1,7 +1,8 @@
-import {useEffect,useMemo,useState} from 'react';
-import {AccessibilityInfo,Image,Pressable,StyleSheet,Text,View} from 'react-native';
+import {useEffect,useMemo,useRef,useState} from 'react';
+import {AccessibilityInfo,Animated,Easing,Image,Pressable,StyleSheet,Text,View} from 'react-native';
 import type {CoopRunView} from '../../core/coop-presentation';
 import {dungeonCombatAvatar} from '../../core/dungeon-combat-avatars';
+import {dungeonCombatCueFx,type DungeonCombatCueFx,type DungeonCombatFxAccent} from '../../core/dungeon-combat-fx';
 import {playbackCueDelayMs,playbackCueLabel,playbackCueTone,playbackProgress,playbackRecentCues} from '../../core/dungeon-combat-playback';
 import {combatCompanionDef} from '../../content/combat-companions';
 import {companionArtSource} from '../../theme/companion-art';
@@ -16,11 +17,20 @@ function hpPercent(slot:Slot){
  return Math.max(0,Math.min(1,current/maximum));
 }
 function seconds(value:number){return `${Math.max(0,value/1000).toFixed(1)}s`;}
+function fxColor(accent:DungeonCombatFxAccent){
+ switch(accent){
+  case 'gold': return coopColors.gold;
+  case 'danger': return coopColors.danger;
+  case 'violet': return coopColors.violet;
+  case 'success': return coopColors.success;
+  case 'cyan': default: return coopColors.cyan;
+ }
+}
 
-function ClassAvatar({slot,active=false,targeted=false,assistProc=false}:{slot:Slot;active?:boolean;targeted?:boolean;assistProc?:boolean}){
+function ClassAvatar({slot,active=false,targeted=false,assistProc=false,motionStyle}:{slot:Slot;active?:boolean;targeted?:boolean;assistProc?:boolean;motionStyle?:any}){
  const avatar=dungeonCombatAvatar(slot.classId),pct=hpPercent(slot),companion=slot.companionId?combatCompanionDef(slot.companionId):undefined,art=slot.companionId?companionArtSource(slot.companionId):undefined;
  const initial=(avatar?.label??slot.classId??slot.role).slice(0,1).toUpperCase();
- return <View style={[s.member,slot.role==='tank'&&s.memberTank,targeted&&s.memberTargeted,active&&s.memberActive,slot.ready===false&&s.memberDown]}>
+ return <Animated.View style={[s.member,slot.role==='tank'&&s.memberTank,targeted&&s.memberTargeted,active&&s.memberActive,slot.ready===false&&s.memberDown,motionStyle]}>
   <View style={[s.avatarFrame,slot.role==='tank'?s.avatarTank:slot.role==='support'?s.avatarSupport:s.avatarDamage,active&&s.avatarActive]}>
    <Text style={s.avatarInitial}>{initial}</Text>
    <Text numberOfLines={1} style={s.avatarWeapon}>{avatar?.weaponSilhouette??slot.role}</Text>
@@ -30,7 +40,21 @@ function ClassAvatar({slot,active=false,targeted=false,assistProc=false}:{slot:S
   <View style={s.hpTrack}><View style={[s.hpFill,{width:`${Math.round(pct*100)}%` as `${number}%`}]} /></View>
   {slot.currentHp!==undefined&&slot.maximumHp!==undefined?<Text style={s.hpText}>{Math.max(0,Math.round(slot.currentHp))}/{Math.max(1,Math.round(slot.maximumHp))}</Text>:null}
   {companion?<View style={[s.assistRow,assistProc&&s.assistRowActive]}>{art?<Image source={art} resizeMode="contain" style={[s.companionArt,assistProc&&s.companionArtActive]}/>:<View style={[s.companionFallback,assistProc&&s.companionFallbackActive]}><Text style={s.companionFallbackText}>◇</Text></View>}<View style={s.assistCopy}><Text style={s.assistLabel}>{assistProc?'ASSIST PROC':'COMPANION ASSIST'}</Text><Text numberOfLines={1} style={[s.assistName,assistProc&&s.assistNameActive]}>{companion.name}</Text></View></View>:null}
- </View>;
+ </Animated.View>;
+}
+
+function motionScale(fx:DungeonCombatCueFx|undefined){
+ if(!fx)return 1;
+ if(fx.actorMotion==='pulse'||fx.actorMotion==='cast')return 1.06;
+ if(fx.actorMotion==='brace')return .98;
+ if(fx.actorMotion==='smash')return 1.035;
+ if(fx.actorMotion==='dash')return 1.025;
+ return 1.015;
+}
+function effectAnchor(actorIsParty:boolean|undefined,targetIsParty:boolean|undefined){
+ if(actorIsParty===true&&targetIsParty===true)return '27%';
+ if(actorIsParty===false&&targetIsParty===false)return '71%';
+ return '49%';
 }
 
 export function DungeonCombatStage({run,enemyLabel,boss=false}:{run:CoopRunView;enemyLabel?:string;boss?:boolean}){
@@ -38,6 +62,7 @@ export function DungeonCombatStage({run,enemyLabel,boss=false}:{run:CoopRunView;
  const ordered=[tank,damage[0],damage[1],support].filter((slot):slot is Slot=>Boolean(slot)),assists=ordered.filter(slot=>slot.companionId).length;
  const replay=run.lastCombat,cues=replay?.cues??[],replayKey=`${run.runId}:${replay?.nodeId??'preview'}:${replay?.durationMs??0}:${cues.length}`;
  const [cueIndex,setCueIndex]=useState(0),[reduceMotion,setReduceMotion]=useState(false);
+ const actorAnim=useRef(new Animated.Value(0)).current,targetAnim=useRef(new Animated.Value(0)).current,fxAnim=useRef(new Animated.Value(0)).current;
  useEffect(()=>{let mounted=true;void AccessibilityInfo.isReduceMotionEnabled().then(value=>{if(mounted)setReduceMotion(value);});return()=>{mounted=false;};},[]);
  useEffect(()=>{setCueIndex(reduceMotion&&cues.length?cues.length-1:0);},[replayKey,reduceMotion,cues.length]);
  useEffect(()=>{
@@ -47,15 +72,55 @@ export function DungeonCombatStage({run,enemyLabel,boss=false}:{run:CoopRunView;
  },[replay,replayKey,reduceMotion,cueIndex,cues]);
  const currentCue=cues.length?cues[Math.min(cueIndex,cues.length-1)]:undefined,recent=replay?playbackRecentCues(replay,cueIndex):[];
  const partyIds=useMemo(()=>new Set(ordered.map(slot=>slot.memberId).filter((id):id is string=>Boolean(id))),[ordered]);
+ const actorSlot=ordered.find(slot=>slot.memberId===currentCue?.actorId),targetSlot=ordered.find(slot=>slot.memberId===currentCue?.targetId);
+ const actorIsParty=currentCue?.actorId?partyIds.has(currentCue.actorId):undefined,targetIsParty=currentCue?.targetId?partyIds.has(currentCue.targetId):undefined;
+ const fx=useMemo(()=>dungeonCombatCueFx(currentCue,actorSlot?.classId),[currentCue?.atMs,currentCue?.type,currentCue?.actionKind,currentCue?.abilityId,actorSlot?.classId]);
+ useEffect(()=>{
+  actorAnim.stopAnimation();targetAnim.stopAnimation();fxAnim.stopAnimation();
+  actorAnim.setValue(0);targetAnim.setValue(0);fxAnim.setValue(reduceMotion&&fx?1:0);
+  if(!fx||reduceMotion)return;
+  Animated.parallel([
+   Animated.timing(actorAnim,{toValue:1,duration:fx.durationMs,useNativeDriver:true,easing:Easing.out(Easing.cubic)}),
+   Animated.timing(targetAnim,{toValue:1,duration:Math.max(180,fx.durationMs),delay:Math.round(fx.durationMs*.18),useNativeDriver:true,easing:Easing.out(Easing.quad)}),
+   Animated.sequence([
+    Animated.timing(fxAnim,{toValue:1,duration:Math.max(150,Math.round(fx.durationMs*.62)),useNativeDriver:true,easing:Easing.out(Easing.cubic)}),
+    Animated.timing(fxAnim,{toValue:.01,duration:Math.max(80,Math.round(fx.durationMs*.38)),useNativeDriver:true,easing:Easing.in(Easing.quad)}),
+   ]),
+  ]).start();
+  return()=>{actorAnim.stopAnimation();targetAnim.stopAnimation();fxAnim.stopAnimation();};
+ },[cueIndex,replayKey,reduceMotion,fx?.durationMs,fx?.actorMotion,fx?.targetMotion]);
  const replayEnemy=useMemo(()=>{for(const cue of cues){if(cue.actorId&&!partyIds.has(cue.actorId)&&cue.actorName)return cue.actorName;if(cue.targetId&&!partyIds.has(cue.targetId)&&cue.targetName)return cue.targetName;}return undefined;},[cues,partyIds]);
  const shownEnemy=enemyLabel??replayEnemy??(boss?'Final Boss':'Dungeon Enemy'),enemyActive=Boolean(currentCue?.actorId&&!partyIds.has(currentCue.actorId)),enemyTargeted=!enemyActive&&Boolean(currentCue?.targetId&&!partyIds.has(currentCue.targetId));
  const progress=replay?playbackProgress(replay,cueIndex):0,complete=Boolean(replay&&(!cues.length||cueIndex>=cues.length-1));
+ const actorDirection=actorIsParty===false?-1:1,targetDirection=targetIsParty===false?-1:1;
+ const actorTravel=(fx?.actorMotion==='lunge'||fx?.actorMotion==='dash'||fx?.actorMotion==='smash'||fx?.actorMotion==='projectile')?(fx.actorTravelPx*actorDirection):0;
+ const actorStyle=!reduceMotion&&fx?{transform:[
+  {translateX:actorAnim.interpolate({inputRange:[0,.44,1],outputRange:[0,actorTravel,0]})},
+  {translateY:actorAnim.interpolate({inputRange:[0,.44,1],outputRange:[0,fx.actorMotion==='smash'?3:fx.actorMotion==='cast'?-2:0,0]})},
+  {scale:actorAnim.interpolate({inputRange:[0,.44,1],outputRange:[1,motionScale(fx),1]})},
+ ]}:undefined;
+ const targetStyle=!reduceMotion&&fx?{transform:[
+  {translateX:targetAnim.interpolate({inputRange:[0,.28,.45,.62,1],outputRange:[0,0,fx.targetMotion==='shake'?fx.targetShakePx*targetDirection:0,fx.targetMotion==='shake'?-fx.targetShakePx*targetDirection:0,0]})},
+  {scale:targetAnim.interpolate({inputRange:[0,.48,1],outputRange:[1,fx.targetMotion==='pulse'?1.055:fx.targetMotion==='brace'?1.035:1,1]})},
+ ]}:undefined;
+ const effectDirection=actorIsParty===false?-1:1,effectTravel=(fx?.effectTravelPx??0)*effectDirection,effectColor=fx?fxColor(fx.accent):coopColors.cyan;
+ const effectStyle=fx?{left:effectAnchor(actorIsParty,targetIsParty),opacity:reduceMotion?1:fxAnim,transform:[
+  {translateX:reduceMotion?0:fxAnim.interpolate({inputRange:[0,1],outputRange:[0,effectTravel]})},
+  {scale:reduceMotion?1:fxAnim.interpolate({inputRange:[0,.5,1],outputRange:[.75,1.16,1]})},
+ ]}:undefined;
  return <FantasyPanel variant={boss?'danger':'selected'}>
   <View style={s.header}><View style={s.grow}><Text style={s.kicker}>{replay?'COMBAT PLAYBACK':boss?'FINAL ENCOUNTER':'DUNGEON COMBAT'}</Text><Text style={s.title}>{shownEnemy}</Text></View><StateChip label={assists?`${assists} ASSIST${assists===1?'':'S'}`:'NO ASSISTS'} tone={assists?'success':'neutral'}/></View>
   <View style={s.arena}>
-   <View style={s.partyField}>{ordered.map((slot,index)=>{const active=Boolean(currentCue?.actorId&&slot.memberId===currentCue.actorId),targeted=!active&&Boolean(currentCue?.targetId&&slot.memberId===currentCue.targetId),assistProc=active&&currentCue?.type==='assist';return <View key={slot.memberId??`${slot.name}-${index}`} style={[s.formationSlot,index===0&&s.slotFront,index===3&&s.slotRear]}><ClassAvatar slot={slot} active={active} targeted={targeted} assistProc={assistProc}/></View>;})}</View>
+   <View style={s.partyField}>{ordered.map((slot,index)=>{const active=Boolean(currentCue?.actorId&&slot.memberId===currentCue.actorId),isTarget=Boolean(currentCue?.targetId&&slot.memberId===currentCue.targetId),targeted=!active&&isTarget,assistProc=active&&currentCue?.type==='assist';return <View key={slot.memberId??`${slot.name}-${index}`} style={[s.formationSlot,index===0&&s.slotFront,index===3&&s.slotRear]}><ClassAvatar slot={slot} active={active} targeted={targeted} assistProc={assistProc} motionStyle={active?actorStyle:isTarget?targetStyle:undefined}/></View>;})}</View>
    <View style={s.divider}><Text style={s.vs}>VS</Text></View>
-   <View style={s.enemyField}><View style={[s.enemyCore,boss&&s.enemyBoss,enemyTargeted&&s.enemyTargeted,enemyActive&&s.enemyActive]}><Text style={s.enemyMark}>{boss?'♛':'◆'}</Text><Text numberOfLines={2} style={s.enemyName}>{shownEnemy}</Text><Text style={s.enemyHint}>{replay?'Authoritative server replay':boss?'Phase + cast telegraphs above':'Server-resolved encounter'}</Text></View></View>
+   <View style={s.enemyField}><Animated.View style={[s.enemyCore,boss&&s.enemyBoss,enemyTargeted&&s.enemyTargeted,enemyActive&&s.enemyActive,enemyActive?actorStyle:enemyTargeted?targetStyle:undefined]}><Text style={s.enemyMark}>{boss?'♛':'◆'}</Text><Text numberOfLines={2} style={s.enemyName}>{shownEnemy}</Text><Text style={s.enemyHint}>{replay?'Authoritative server replay':boss?'Phase + cast telegraphs above':'Server-resolved encounter'}</Text></Animated.View></View>
+   {fx?<View pointerEvents="none" style={s.fxLayer}>
+    <Animated.View style={[s.fxMark,effectStyle,{borderColor:effectColor,shadowColor:effectColor}]}>
+     <Text style={[s.fxGlyph,{color:effectColor}]}>{fx.glyph}</Text>
+     <Text numberOfLines={1} style={[s.fxLabel,{color:effectColor}]}>{fx.label}</Text>
+    </Animated.View>
+    {(currentCue?.type==='cast'||currentCue?.type==='phase')?<Animated.View style={[s.castHalo,{borderColor:effectColor,opacity:reduceMotion?.75:fxAnim,transform:[{scale:reduceMotion?1:fxAnim.interpolate({inputRange:[0,1],outputRange:[.82,1.16]})}]}]}/>:null}
+   </View>:null}
   </View>
   {replay?<View style={s.replayPanel}>
    <View style={s.replayHead}><View style={s.grow}><Text style={s.replayKicker}>{complete?'ENCOUNTER RECAP':'NOW PLAYING'}</Text><Text accessibilityLiveRegion="polite" style={s.replayCurrent}>{currentCue?playbackCueLabel(currentCue):replay.reason==='victory'?'Encounter cleared':replay.reason==='wipe'?'Party defeated':'Encounter timed out'}</Text></View><StateChip label={currentCue?.type.toUpperCase()??replay.reason.toUpperCase()} tone={currentCue?playbackCueTone(currentCue):replay.reason==='victory'?'success':replay.reason==='wipe'?'danger':'warning'}/></View>
@@ -64,15 +129,15 @@ export function DungeonCombatStage({run,enemyLabel,boss=false}:{run:CoopRunView;
    <View style={s.replayTrack}><View style={[s.replayFill,{width:`${Math.round(progress*100)}%` as `${number}%`}]} /></View>
    {recent.length?<View style={s.log}>{recent.map((cue,index)=><View key={`${cue.atMs}-${cue.type}-${index}`} style={s.logRow}><Text style={s.logTime}>{seconds(cue.atMs)}</Text><Text numberOfLines={2} style={s.logCopy}>{playbackCueLabel(cue)}</Text></View>)}</View>:<Text style={s.note}>The authoritative result has no detailed replay cues for this older encounter.</Text>}
    {complete&&!reduceMotion&&cues.length>1?<Pressable accessibilityRole="button" accessibilityLabel="Replay combat recap" onPress={()=>setCueIndex(0)} style={({pressed})=>[s.replayButton,pressed&&s.replayButtonPressed]}><Text style={s.replayButtonText}>↻ Replay encounter</Text></Pressable>:null}
-  </View>:<Text style={s.note}>Companions stay attached to their owner and never consume extra party slots. Their existing assist ability flashes here when it actually procs in the server simulation.</Text>}
+  </View>:<Text style={s.note}>Combat uses one fixed class avatar per class plus lightweight motion/VFX. Companions stay attached to their owner and only pop in when their real assist procs.</Text>}
  </FantasyPanel>;
 }
 
 const s=StyleSheet.create({
  header:{flexDirection:'row',alignItems:'flex-start',gap:coopSpacing.sm},grow:{flex:1,minWidth:0},
  kicker:{...coopTypography.meta,color:coopColors.gold,fontWeight:'900',letterSpacing:.8},title:{...coopTypography.section,color:coopColors.text},
- arena:{minHeight:294,flexDirection:'row',alignItems:'stretch',gap:coopSpacing.xs,padding:coopSpacing.sm,borderWidth:1,borderColor:coopColors.goldDim,borderRadius:coopRadii.tile,backgroundColor:'#04111E',overflow:'hidden'},
- partyField:{flex:1.75,flexDirection:'row',flexWrap:'wrap',alignContent:'center',justifyContent:'center',gap:coopSpacing.xs},
+ arena:{position:'relative',minHeight:294,flexDirection:'row',alignItems:'stretch',gap:coopSpacing.xs,padding:coopSpacing.sm,borderWidth:1,borderColor:coopColors.goldDim,borderRadius:coopRadii.tile,backgroundColor:'#04111E',overflow:'hidden'},
+ partyField:{flex:1.75,flexDirection:'row',flexWrap:'wrap',alignContent:'center',justifyContent:'center',gap:coopSpacing.xs,zIndex:2},
  formationSlot:{width:'46%'},slotFront:{transform:[{translateX:6}]},slotRear:{transform:[{translateX:-5}]},
  member:{minHeight:126,padding:coopSpacing.xs,borderWidth:1,borderColor:'#274052',borderRadius:coopRadii.tile,backgroundColor:'rgba(7,24,39,.94)',gap:2},
  memberTank:{borderColor:coopColors.gold},memberTargeted:{borderColor:coopColors.danger},memberActive:{borderColor:coopColors.cyan,shadowColor:coopColors.cyan,shadowOpacity:.5,shadowRadius:5,elevation:2},memberDown:{opacity:.48},
@@ -85,9 +150,13 @@ const s=StyleSheet.create({
  assistRowActive:{marginHorizontal:-3,paddingHorizontal:3,borderRadius:5,borderTopColor:coopColors.violet,backgroundColor:'rgba(117,76,164,.24)'},
  companionArt:{width:26,height:26,borderRadius:6},companionArtActive:{transform:[{scale:1.08}]},companionFallback:{width:26,height:26,borderRadius:6,borderWidth:1,borderColor:coopColors.violet,alignItems:'center',justifyContent:'center'},companionFallbackText:{color:coopColors.violet},companionFallbackActive:{borderColor:coopColors.cyan},
  assistCopy:{flex:1,minWidth:0},assistLabel:{fontSize:7,lineHeight:9,color:coopColors.violet,fontWeight:'900',letterSpacing:.35},assistName:{fontSize:8,lineHeight:10,color:coopColors.textSecondary,fontWeight:'800'},assistNameActive:{color:coopColors.text},
- divider:{width:22,alignItems:'center',justifyContent:'center'},vs:{fontSize:9,lineHeight:11,color:coopColors.gold,fontWeight:'900'},
- enemyField:{flex:1,alignItems:'center',justifyContent:'center'},enemyCore:{width:'100%',minHeight:136,alignItems:'center',justifyContent:'center',gap:5,padding:coopSpacing.xs,borderWidth:1,borderColor:coopColors.danger,borderRadius:coopRadii.tile,backgroundColor:'rgba(75,19,31,.35)'},enemyBoss:{minHeight:178,borderColor:coopColors.violet,backgroundColor:'rgba(55,21,76,.42)'},enemyTargeted:{borderWidth:2,borderColor:coopColors.cyan},enemyActive:{borderWidth:2,shadowColor:coopColors.danger,shadowOpacity:.55,shadowRadius:6,elevation:2},
+ divider:{width:22,alignItems:'center',justifyContent:'center',zIndex:2},vs:{fontSize:9,lineHeight:11,color:coopColors.gold,fontWeight:'900'},
+ enemyField:{flex:1,alignItems:'center',justifyContent:'center',zIndex:2},enemyCore:{width:'100%',minHeight:136,alignItems:'center',justifyContent:'center',gap:5,padding:coopSpacing.xs,borderWidth:1,borderColor:coopColors.danger,borderRadius:coopRadii.tile,backgroundColor:'rgba(75,19,31,.35)'},enemyBoss:{minHeight:178,borderColor:coopColors.violet,backgroundColor:'rgba(55,21,76,.42)'},enemyTargeted:{borderWidth:2,borderColor:coopColors.cyan},enemyActive:{borderWidth:2,shadowColor:coopColors.danger,shadowOpacity:.55,shadowRadius:6,elevation:2},
  enemyMark:{fontSize:34,lineHeight:38,color:coopColors.danger},enemyName:{...coopTypography.meta,color:coopColors.text,fontWeight:'900',textAlign:'center'},enemyHint:{fontSize:8,lineHeight:11,color:coopColors.textMuted,textAlign:'center'},
+ fxLayer:{...StyleSheet.absoluteFillObject,zIndex:4},
+ fxMark:{position:'absolute',top:'40%',width:94,minHeight:48,marginLeft:-47,alignItems:'center',justifyContent:'center',paddingHorizontal:4,borderWidth:1,borderRadius:coopRadii.tile,backgroundColor:'rgba(4,17,30,.88)',shadowOpacity:.65,shadowRadius:8,elevation:5},
+ fxGlyph:{fontSize:25,lineHeight:27,fontWeight:'900'},fxLabel:{fontSize:7,lineHeight:9,fontWeight:'900',letterSpacing:.65,textAlign:'center'},
+ castHalo:{position:'absolute',right:'5%',top:'25%',width:'27%',aspectRatio:1,borderWidth:2,borderRadius:999,backgroundColor:'transparent'},
  replayPanel:{padding:coopSpacing.sm,borderWidth:1,borderColor:'#284255',borderRadius:coopRadii.tile,backgroundColor:'rgba(4,17,30,.82)',gap:coopSpacing.xs},
  replayHead:{flexDirection:'row',alignItems:'flex-start',gap:coopSpacing.sm},replayKicker:{fontSize:8,lineHeight:10,color:coopColors.cyan,fontWeight:'900',letterSpacing:.65},replayCurrent:{...coopTypography.body,color:coopColors.text,fontWeight:'900'},
  castWarning:{minHeight:34,paddingHorizontal:coopSpacing.sm,flexDirection:'row',alignItems:'center',justifyContent:'space-between',borderWidth:1,borderColor:coopColors.danger,borderRadius:coopRadii.tile,backgroundColor:'rgba(113,28,46,.28)'},castWarningLabel:{...coopTypography.meta,color:coopColors.danger,fontWeight:'900'},castWarningTime:{...coopTypography.meta,color:coopColors.gold,fontWeight:'900'},

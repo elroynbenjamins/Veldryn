@@ -12,9 +12,36 @@ export interface CoopQueueTicket {
 }
 export interface CoopMatchCandidate {ticketIds:string[];score:number;partition:string;}
 
+export interface CoopQuickMatchDemand {
+ expeditionId:string;
+ tank:number;
+ damage:number;
+ support:number;
+ oldestQueuedAtMs?:number;
+}
+
 export function queuePartition(ticket:CoopQueueTicket):string{return `${ticket.expeditionId}|${ticket.contentVersion}|${ticket.balanceVersion}`;}
 export function resolvedAutoTier(tickets:readonly CoopQueueTicket[]):number{if(!tickets.length)throw new Error('empty_match');const tier=Math.min(...tickets.map(ticket=>ticket.tier));if(!Number.isInteger(tier)||tier<1||tier>5)throw new Error('invalid_auto_tier');return tier;}
 function ticketScore(ticket:CoopQueueTicket,nowMs:number):number{return Math.min(120,(nowMs-ticket.enqueuedAtMs)/1_000)-Math.abs(1-ticket.normalizedReadiness)*20;}
+
+export function chooseQuickMatchExpedition(demands:readonly CoopQuickMatchDemand[],eligibleExpeditionIds:readonly string[],role:CoopRole,nowMs:number):string|null{
+ if(!eligibleExpeditionIds.length)return null;
+ const eligible=new Set(eligibleExpeditionIds),rows=new Map(demands.filter(row=>eligible.has(row.expeditionId)).map(row=>[row.expeditionId,row]));
+ const required={tank:1,damage:2,support:1} as const;
+ const completeGroups=(row:CoopQuickMatchDemand)=>Math.min(Math.floor(row.tank/required.tank),Math.floor(row.damage/required.damage),Math.floor(row.support/required.support));
+ let best:{id:string;score:number}|null=null;
+ for(let order=0;order<eligibleExpeditionIds.length;order++){
+  const id=eligibleExpeditionIds[order],row=rows.get(id)??{expeditionId:id,tank:0,damage:0,support:0};
+  const before=completeGroups(row),after={...row,[role]:row[role]+1},afterGroups=completeGroups(after);
+  const pressure=role==='tank'?Math.max(0,Math.min(Math.floor(row.damage/2),row.support)-row.tank):
+   role==='support'?Math.max(0,Math.min(row.tank,Math.floor(row.damage/2))-row.support):
+   Math.max(0,Math.min(row.tank,row.support)*2-row.damage);
+  const total=row.tank+row.damage+row.support,oldestWait=row.oldestQueuedAtMs===undefined?0:Math.max(0,Math.min(3600,Math.floor((nowMs-row.oldestQueuedAtMs)/1000)));
+  const score=(afterGroups-before)*1_000_000+pressure*25_000+Math.min(total,32)*500+oldestWait-order*.001;
+  if(!best||score>best.score)best={id,score};
+ }
+ return best?.id??eligibleExpeditionIds[0]??null;
+}
 
 export function chooseBoundedCoopMatch(tickets:readonly CoopQueueTicket[],nowMs:number,maxPerRole=8,requiredTicketIds:readonly string[]=[],canMatch:(roster:readonly CoopQueueTicket[])=>boolean=()=>true):CoopMatchCandidate|null{
  if(!Number.isInteger(maxPerRole)||maxPerRole<1||maxPerRole>32||new Set(requiredTicketIds).size!==requiredTicketIds.length||requiredTicketIds.length>4)throw new Error('invalid_match_bounds');

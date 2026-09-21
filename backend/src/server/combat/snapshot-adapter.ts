@@ -1,4 +1,4 @@
-import type { CombatantDefinition, CombatRole } from './types';
+import type { CombatantDefinition, CombatGemEffect, CombatRole } from './types';
 import { COMBAT_LIMITS } from '../expeditions/constants';
 import type {OwnedCompanionSnapshot} from '../companions/domain';
 import {applyCharacterCompanionAssist} from '../companions/character-assist';
@@ -18,6 +18,8 @@ export interface VerifiedCombatSnapshot {
   evasion: number;
   critChance: number;
   haste: number;
+  /** Produced by the authoritative equipment service after socket validation. */
+  effectGems?:readonly CombatGemEffect[];
 }
 
 /** Converts a server-built/snapshotted character into engine state.
@@ -30,6 +32,6 @@ export function combatantFromVerifiedSnapshot(s: VerifiedCombatSnapshot, abiliti
   return applyCharacterCompanionAssist({
     id:s.characterId,classId:s.classId,name:s.displayName||s.classId,team:'players',role:s.role,level:s.level,
     stats:{maxHp:s.maxHp,attackPower:s.attackPower,healingPower:s.healingPower,defense:s.defense,accuracy:s.accuracy,evasion:s.evasion,critChance:Math.max(0,Math.min(COMBAT_LIMITS.critChanceCap,s.critChance)),critMultiplier:COMBAT_LIMITS.defaultCritMultiplier,haste:Math.max(-.25,Math.min(.75,s.haste))},
-    basicAttackMs:2400,basicAttackCoeff:.70,abilities,
+    basicAttackMs:2400,basicAttackCoeff:.70,abilities,effectGems:s.effectGems,
   },s.combatCompanion);
 }

@@ -5,7 +5,7 @@ import {Panel} from './Panel';
 import {ITEMS} from '../content/items';
 import {MONSTERS} from '../content/monsters';
 import {noviceItemId,noviceSetFor} from '../content/novice-sets';
-import {debugAddGold,debugAddItem,debugAddXp,debugAdvanceActivity,debugDefeatFallenKnight,debugSetLevel,debugUnlockMonster} from '../dev/debug-tools';
+import {debugAddGold,debugAddItem,debugAddXp,debugAdvanceActivity,debugDefeatFallenKnight,debugPrepareDungeonLab,debugPrepareEquipmentLab,debugPrepareFullQaSandbox,debugSetLevel,debugUnlockMonster} from '../dev/debug-tools';
 import {GameState} from '../core/types';
 import {C} from '../theme/theme';
 import {debugCombatBalanceProbe} from '../dev/debug-tools';
@@ -19,6 +19,10 @@ export function DeveloperTools({state,onChange,onOpenChatPilot,onOpenCoopUiGalle
  return <Panel><Text style={s.title}>Developer / testing</Text><Text style={s.warn}>Offline prototype only. These shortcuts persist to the local save and are not available to normal players or future server sessions.</Text><View style={s.grid}>
   {__DEV__&&onOpenChatPilot?<GameButton title="Open Chat Pilot" onPress={onOpenChatPilot}/>:null}
   {__DEV__&&onOpenCoopUiGallery?<GameButton title="Open Co-op UI Lab" onPress={onOpenCoopUiGallery}/>:null}
+  <GameButton title="Prepare full QA access" onPress={()=>run('Full QA access',debugPrepareFullQaSandbox)}/>
+  <GameButton title="Prepare equipment crafting lab" onPress={()=>run('Equipment lab',debugPrepareEquipmentLab)}/>
+  <GameButton title="Prepare dungeon-ready loadout" onPress={()=>run('Dungeon loadout',debugPrepareDungeonLab)}/>
+  <Text style={s.qaHint}>Full QA access keeps crafting and dungeon rewards real: it grants progression, resources and access, but does not auto-craft equipment or auto-clear co-op runs.</Text>
   <GameButton title="Set character level 25" onPress={()=>run('Level 25',s=>debugSetLevel(s,25))}/><GameButton title="Set character level 100" onPress={()=>run('Level 100',s=>debugSetLevel(s,100))}/>
   <GameButton title="Log 1h combat balance" onPress={()=>simulate(60*60)}/><GameButton title="Log 4h combat balance" onPress={()=>simulate(4*60*60)}/>
   <GameButton title="Add 10,000 XP" onPress={()=>run('XP',s=>debugAddXp(s,10000))}/><GameButton title="Add 100,000 gold" onPress={()=>run('Gold',s=>debugAddGold(s,100000))}/>
@@ -32,4 +36,4 @@ export function DeveloperTools({state,onChange,onOpenChatPilot,onOpenCoopUiGalle
   <GameButton title="Complete event contracts" disabled={!activeLiveEvent(state)} onPress={()=>{const event=activeLiveEvent(state);if(event)run('Event contracts completed',s=>({...s,account:{...s.account,eventActivityById:{...(s.account.eventActivityById??{}),[event.definition.id]:{combat:300,gathering:180,crafting:12,boss:1}}}}))}}/>
  </View>{notice?<Text style={s.notice}>{notice}</Text>:null}</Panel>;
 }
-const s=StyleSheet.create({title:{color:C.text,fontSize:18,fontWeight:'900'},warn:{color:C.muted,lineHeight:20,marginTop:6},grid:{gap:8,marginTop:12},notice:{color:C.good,marginTop:10,fontWeight:'700'}});
+const s=StyleSheet.create({title:{color:C.text,fontSize:18,fontWeight:'900'},warn:{color:C.muted,lineHeight:20,marginTop:6},qaHint:{color:C.muted,lineHeight:18,fontSize:12,paddingHorizontal:2},grid:{gap:8,marginTop:12},notice:{color:C.good,marginTop:10,fontWeight:'700'}});

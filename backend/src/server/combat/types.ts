@@ -97,8 +97,8 @@ export interface ActiveTimedModifier {
 }
 export interface TimedShieldV34 {sourceId:string;remaining:number;expiresAt:number;expireHealRate?:number;}
 export interface GemCombatRuntimeV34 {
-  momentumStacks:number;momentumLastGainAt:number;momentumNextTriggerAt:number;
-  criticalSurgeExpiries:number[];unyieldingExpiries:number[];sharedResolveExpiries:number[];
+  momentumStacks:number;momentumLastGainAt:number;momentumNextTriggerAt:number;momentumDecayNextAt:number;
+  criticalSurgeExpiries:number[];criticalSurgeNextTriggerAt:number;unyieldingExpiries:number[];unyieldingNextTriggerAt:number;sharedResolveExpiries:number[];
   openingUntil:number;openingPhaseRefreshUsed:boolean;
   predatorTriggeredTargets:Record<string,boolean>;predatorBoostUntilByTarget:Record<string,number>;
   lastStandUsed:boolean;lastStandUntil:number;

@@ -1,11 +1,11 @@
 import { strict as assert } from 'node:assert';
-import { chooseBoundedCoopMatch, MemoryQueueRepository, readyRosterFromReservedTickets, type CoopQueueTicket } from '../queue-service';
+import { chooseBoundedCoopMatch, MemoryQueueRepository, readyRosterFromReservedTickets, resolvedAutoTier, type CoopQueueTicket } from '../queue-service';
 const now=100_000;
 const ticket=(id:string,role:'tank'|'damage'|'support',accountId=id):CoopQueueTicket=>({id,accountId,characterId:`char-${id}`,role,normalizedReadiness:1,loadoutId:`load-${id}`,loadoutRevision:1,loadoutSnapshotHash:`hash-${id}`,expeditionId:'EXP_001',tier:1,contentVersion:'v1',balanceVersion:'b1',serviceRegion:'eu',enqueuedAtMs:0,heartbeatExpiresAtMs:now+10_000,status:'queued'});
 assert.equal(chooseBoundedCoopMatch([ticket('d1','damage'),ticket('d2','damage'),ticket('d3','damage'),ticket('d4','damage')],now),null);
 assert.equal(chooseBoundedCoopMatch([ticket('t','tank'),ticket('d1','damage'),ticket('d2','damage')],now),null);
-const valid=[ticket('t','tank'),ticket('d1','damage'),ticket('d2','damage'),ticket('s','support')];
-const candidate=chooseBoundedCoopMatch(valid,now);assert.ok(candidate);assert.equal(candidate!.ticketIds.length,4);
+const valid=[{...ticket('t','tank'),tier:5},{...ticket('d1','damage'),tier:3},{...ticket('d2','damage'),tier:4},{...ticket('s','support'),tier:3}];
+const candidate=chooseBoundedCoopMatch(valid,now);assert.ok(candidate);assert.equal(candidate!.ticketIds.length,4);assert.equal(resolvedAutoTier(valid),3,'live roster should resolve to the highest tier shared by all four players');
 const repository=new MemoryQueueRepository();valid.forEach(row=>repository.add(row));
 const first=repository.reserve(candidate!,'reservation-a',now,now+20_000);assert.equal(first.every(row=>row.status==='reserved'),true);
 const readyRoster=readyRosterFromReservedTickets(first);assert.equal(readyRoster[0].loadoutRevision,1);assert.equal(readyRoster.every(row=>row.loadoutSnapshotHash.startsWith('hash-')),true);

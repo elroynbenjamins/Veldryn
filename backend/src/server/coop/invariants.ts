@@ -21,6 +21,15 @@ export function validateCoopRoster(members: readonly CoopMemberIdentity[]): void
   if (!hasExactCoopRoles(members.map(member => member.role))) throw new Error('invalid_coop_role_composition');
 }
 
+export function hasUniqueDamageClasses(members:readonly {role:CoopRole;classId:string}[]):boolean{
+  const damage=members.filter(member=>member.role==='damage').map(member=>member.classId.trim().toUpperCase());
+  return damage.length===COOP_ROLE_REQUIREMENT.damage&&damage.every(Boolean)&&new Set(damage).size===damage.length;
+}
+
+export function validateUniqueDamageClasses(members:readonly {role:CoopRole;classId:string}[]):void{
+  if(!hasUniqueDamageClasses(members))throw new Error('duplicate_damage_class');
+}
+
 export function validatePreBossNodeCount(count: number): void {
   if (!Number.isInteger(count)
     || count < COOP_ROGUELITE_CONFIG.preBossNodeMin

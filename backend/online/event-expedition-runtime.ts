@@ -39,7 +39,7 @@ export function projectOnlineEventRun(run:EventRun,version:number,liveEventId:st
  return {
   runId:run.id,eventExpeditionId:run.eventId,liveEventId,eventName:definition.eventName,dungeonName:definition.name,phase:run.phase,
   stateVersion:version,decisionId:run.currentNodeId,decisionRevision:version,
-  team:run.players.map((member,index)=>({memberId:member.id,displayName:member.name,role:role(member.role),kind:index===0?'controller' as const:'echo' as const,effectiveLevel:member.level})),
+  team:run.players.map((member,index)=>({memberId:member.id,displayName:member.name,role:role(member.role),classId:member.classId??'',kind:index===0?'controller' as const:'echo' as const,effectiveLevel:member.level})),
   options,mechanic,objective,bossMechanic,bossRecap,settlement:{status:run.settlement,rewardMarks:run.rewardMarks??(definition.rewardMarks+mechanic.rewardBonus+objective.rewardBonus)},
  };
 }
@@ -73,7 +73,7 @@ export class OnlineEventExpeditionRuntime{
    try{profiles.push({profileId:echo.profileId,sourceAccountId:echo.sourceAccountId,publishedAtMs:echo.publishedAtMs,optedIn:true,contentVersion:ONLINE_COOP_BALANCE_VERSION,blockedAccountIds:[],snapshot:freeze(echo.record)});}catch{continue;}
   }
   const seed=this.services.randomId()+this.services.randomId();
-  const selected=recruitEligibleEchoes({serverSecret:seed,requestId:request.requestId,controllerAccountId:accountId,controllerRole:controller.readiness.role,contentVersion:ONLINE_COOP_BALANCE_VERSION,nowMs:game.serverNow,profiles});
+  const selected=recruitEligibleEchoes({serverSecret:seed,requestId:request.requestId,controllerAccountId:accountId,controllerRole:controller.readiness.role,controllerClassId:controller.classId,contentVersion:ONLINE_COOP_BALANCE_VERSION,nowMs:game.serverNow,profiles});
   const snapshots=[controller,...selected.map(echo=>echo.snapshot)],runId=this.services.randomId(),repository=new MemoryEventRunRepository(),domain=new EventExpeditionService(repository,seed);
   const run=domain.start({requestId:request.requestId,runId,accountId,eventId:definition.id,activeLiveEventId:runtime.eventId,members:snapshots.map(snapshot=>({accountId:snapshot.accountId,characterId:snapshot.characterId,role:snapshot.readiness.role})),players:snapshots.map(player),nowMs:game.serverNow});
   const members=snapshots.map((snapshot,index)=>{

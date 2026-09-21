@@ -4,7 +4,7 @@ import { hasExactCoopRoles } from './invariants';
 import type { ReadyRosterMember } from './ready-checks';
 
 export interface CoopQueueTicket {
- id:string; accountId:string; characterId:string; role:CoopRole; normalizedReadiness:number;
+ id:string; accountId:string; characterId:string; role:CoopRole; classId:string; normalizedReadiness:number;
  loadoutId:string; loadoutRevision:number; loadoutSnapshotHash:string;
  expeditionId:string; tier:number; contentVersion:string; balanceVersion:string; serviceRegion:string;
  enqueuedAtMs:number; heartbeatExpiresAtMs:number; status:'queued'|'reserved'|'cancelled'|'expired';
@@ -57,6 +57,8 @@ export function chooseBoundedCoopMatch(tickets:readonly CoopQueueTicket[],nowMs:
    if(!canMatch(set))continue;
    if(new Set(set.map(ticket=>ticket.accountId)).size!==4||new Set(set.map(ticket=>ticket.characterId)).size!==4)continue;
    if(!hasExactCoopRoles(set.map(ticket=>ticket.role)))continue;
+   const damageClasses=set.filter(ticket=>ticket.role==='damage').map(ticket=>ticket.classId.trim().toUpperCase());
+   if(damageClasses.length!==2||damageClasses.some(value=>!value)||new Set(damageClasses).size!==2)continue;
    const regionBonus=Math.max(...Object.values(Object.fromEntries(set.map(ticket=>[ticket.serviceRegion,set.filter(other=>other.serviceRegion===ticket.serviceRegion).length]))))*2;
    const spread=Math.max(...set.map(ticket=>ticket.normalizedReadiness))-Math.min(...set.map(ticket=>ticket.normalizedReadiness));
    const score=set.reduce((sum,ticket)=>sum+ticketScore(ticket,nowMs),0)+regionBonus-spread*25;

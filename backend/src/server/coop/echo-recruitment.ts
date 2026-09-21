@@ -20,7 +20,7 @@ function missingRoles(controllerRole:CoopRole):CoopRole[]{
 }
 
 export function recruitEligibleEchoes(input:{
- serverSecret:string; requestId:string; controllerAccountId:string; controllerRole:CoopRole;
+ serverSecret:string; requestId:string; controllerAccountId:string; controllerRole:CoopRole; controllerClassId:string;
  contentVersion:string; nowMs:number; profiles:readonly PublishedEcho[];
 }):ReadonlyArray<PublishedEcho>{
  const eligible=input.profiles.filter(profile=>
@@ -32,10 +32,12 @@ export function recruitEligibleEchoes(input:{
   && profile.snapshot.readiness.ready
  );
  const selected:PublishedEcho[]=[]; const usedAccounts=new Set<string>([input.controllerAccountId]); const usedCharacters=new Set<string>();
+ const usedDamageClasses=new Set<string>(input.controllerRole==='damage'?[input.controllerClassId.trim().toUpperCase()]:[]);
  for(const role of missingRoles(input.controllerRole)){
-  const candidates=deterministicShuffle(input.serverSecret,eligible.filter(profile=>profile.snapshot.readiness.role===role&&!usedAccounts.has(profile.sourceAccountId)&&!usedCharacters.has(profile.snapshot.characterId)),'echo-recruit-v1',input.requestId,input.contentVersion,role,selected.length);
+  const candidates=deterministicShuffle(input.serverSecret,eligible.filter(profile=>profile.snapshot.readiness.role===role&&!usedAccounts.has(profile.sourceAccountId)&&!usedCharacters.has(profile.snapshot.characterId)&&(role!=='damage'||!usedDamageClasses.has(profile.snapshot.classId.trim().toUpperCase()))),'echo-recruit-v2',input.requestId,input.contentVersion,role,selected.length);
   const chosen=candidates[0]; if(!chosen)throw new Error(`echo_pool_unavailable:${role}`);
   selected.push(chosen); usedAccounts.add(chosen.sourceAccountId); usedCharacters.add(chosen.snapshot.characterId);
+  if(role==='damage')usedDamageClasses.add(chosen.snapshot.classId.trim().toUpperCase());
  }
  return Object.freeze(selected.map(profile=>Object.freeze(structuredClone(profile))));
 }

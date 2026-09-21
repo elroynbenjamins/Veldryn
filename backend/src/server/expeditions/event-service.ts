@@ -2,7 +2,7 @@ import type { CoopRouteGraph, CoopRouteNode } from '../../shared/coop-types';
 import type { CombatantDefinition } from '../combat/types';
 import { EVENT_EXPEDITIONS, type EventExpeditionDefinition } from './content/event-expeditions';
 import { initialPersistentRunState, resolveCoopNode, type NodeResolutionResult, type PersistentRunState } from './node-resolution';
-import { validateCoopRoster } from '../coop/invariants';
+import { validateCoopRoster, validateUniqueDamageClasses } from '../coop/invariants';
 import type { CoopRole } from '../../shared/coop-types';
 import { deterministicInt } from './rng';
 import { validateCoopRouteGraph } from './route-generation';
@@ -144,6 +144,7 @@ export class EventExpeditionService{
   const definition=definitionFor(input.eventId);
   if(!input.activeLiveEventId||!input.activeLiveEventId.startsWith(`${definition.liveEventSeriesId}_`))throw new Error('event_not_live');
   validateCoopRoster(input.members);if(input.players.length!==4||input.players.some(player=>player.level<definition.minLevel))throw new Error('event_level_requirement');
+  validateUniqueDamageClasses(input.players.map(player=>({role:player.role as CoopRole,classId:player.classId??''})));
   if(!/^[-a-zA-Z0-9_]{8,128}$/.test(input.requestId)||!/^[-a-zA-Z0-9_]{8,128}$/.test(input.runId))throw new Error('invalid_event_identity');
   const run:EventRun={id:input.runId,requestId:input.requestId,accountIds:input.members.map(member=>member.accountId),eventId:input.eventId,graph:graph(input.eventId,input.runId,this.serverSecret),players:input.players,persistentState:initialPersistentRunState(input.players),mechanic:{id:definition.mechanic.id,value:definition.mechanic.startValue},objective:{id:definition.objective.id,count:definition.objective.startCount},currentNodeId:'entry',phase:'awaiting_choice',settlement:'pending'};this.repository.save(run);return structuredClone(run);
  }

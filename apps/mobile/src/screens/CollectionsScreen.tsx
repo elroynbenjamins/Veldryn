@@ -49,7 +49,7 @@ export function CollectionsScreen({state,onChange}:{state:GameState;onChange:(ne
             {row.region||row.rarity?<Text numberOfLines={1} style={s.context}>{[row.region,row.rarity].filter(Boolean).join(' · ')}</Text>:null}
             <Text numberOfLines={2} style={s.source}>{row.source}</Text>
             <Text style={s.bonusText}>{COLLECTIBLE_TARGET_LABELS[row.target]} · +{pct(row.activeBps)} active</Text>
-            <GameButton title={row.selected?'Selected':row.owned?'Use':'Locked'} disabled={!row.owned||row.selected} tone="secondary" onPress={()=>onChange(selectCollectible(state,'pet',row.id))}/>
+            <GameButton compact title={row.selected?'Selected':row.owned?'Use':'Locked'} disabled={!row.owned||row.selected} tone="secondary" onPress={()=>onChange(selectCollectible(state,'pet',row.id))}/>
           </View>;
         })}</View>:entries.map(row=><View key={row.id} style={[s.row,row.owned&&s.owned]}>
           <View style={s.flex}>
@@ -84,7 +84,7 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
   row:{flexDirection:'row',alignItems:'center',gap:spacing.sm,paddingVertical:spacing.sm,borderBottomWidth:1,borderBottomColor:C.line,opacity:.52},
   owned:{opacity:1},
   petGrid:{flexDirection:'row',flexWrap:'wrap',gap:8,marginTop:spacing.sm},
-  petCard:{width:'48%',minWidth:142,gap:5,padding:8,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2},
+  petCard:{width:'48%',minWidth:0,gap:5,padding:8,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2},
   selectedCard:{borderColor:C.accent,backgroundColor:C.accentSurface},
   lockedCard:{opacity:.46},
   petPortrait:{height:78,alignItems:'center',justifyContent:'center',borderRadius:8,backgroundColor:C.stage,overflow:'hidden'},

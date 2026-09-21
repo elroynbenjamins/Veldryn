@@ -65,7 +65,7 @@ export function workingTowardDestinationAvailability(state:GameState,source:Work
  return {status:'ready',label:recipeSource?'AVAILABLE':'READY',detail:recipeSource?'Recipe unlocked.':'Available now.',canNavigate:true};
 }
 
-function itemSource(state:GameState,itemId:string):WorkingTowardDestination{
+export function workingTowardItemSource(state:GameState,itemId:string):WorkingTowardDestination{
  const gather=gatherDefs.filter(row=>row.itemId===itemId).sort((a,b)=>(skillLevel(state,b.skillId)>=b.unlockLevel?1:0)-(skillLevel(state,a.skillId)>=a.unlockLevel?1:0)||a.unlockLevel-b.unlockLevel)[0];
  if(gather){
   const zone=WORLD_ZONES.find(row=>row.id===gather.zoneId);
@@ -98,7 +98,7 @@ export function progressionGoalDestination(state:GameState,goal:ProgressionGoal)
   return {kind:'skills',button:'Open Skills',detail:'Open Skills to find the tracked mastery action.'};
  }
  if(goal.kind==='weekly_order')return {kind:'contracts',button:'Open Contract Board',detail:'Continue this exact weekly job from the Asterfall Journal.'};
- if(goal.kind==='item_quantity')return itemSource(state,goal.itemId);
+ if(goal.kind==='item_quantity')return workingTowardItemSource(state,goal.itemId);
  if(goal.kind==='recipe'){
   const recipe=RECIPES.find(row=>row.id===goal.recipeId);
   return recipe?{kind:'skills',skillId:recipe.skillId as SkillId,mode:'crafting',recipeId:recipe.id,button:`Craft ${recipe.name}`,detail:'Open the tracked recipe.'}:{kind:'info',button:'Recipe unavailable',detail:'This recipe is not in the current catalog.'};
@@ -119,7 +119,7 @@ export function progressionGoalContext(state:GameState):GoalContext{
  for(const action of gatherDefs){const destination:WorkingTowardDestination={kind:'skills',skillId:action.skillId as SkillId,mode:'gathering',actionId:action.id,regionId:action.zoneId,button:'Gather',detail:''};const source=workingTowardSourceAvailability(state,destination);if(source)sources[`mastery:${action.id}`]=source;rates.itemPerHour![action.itemId]=Math.max(.1,((action.min+action.max)/2)*3600/Math.max(1,action.seconds));}
  for(const recipe of RECIPES){const destination:WorkingTowardDestination={kind:'skills',skillId:recipe.skillId as SkillId,mode:'crafting',recipeId:recipe.id,button:'Craft',detail:''};const source=workingTowardSourceAvailability(state,destination);if(source){sources[`mastery:${recipe.id}`]=source;sources[`recipe:${recipe.id}`]=source;}}
  for(const order of state.account.weeklyOrders?.orders??[])sources[`weekly_order:${order.id}`]={...order.source,kind:'weekly_order',id:order.id,label:order.title};
- for(const item of ITEMS.filter(row=>row.type==='material')){const destination=itemSource(state,item.id),source=workingTowardSourceAvailability(state,destination);if(source)sources[`item:${item.id}`]={...source,kind:'item',id:item.id,label:item.name};}
+ for(const item of ITEMS.filter(row=>row.type==='material')){const destination=workingTowardItemSource(state,item.id),source=workingTowardSourceAvailability(state,destination);if(source)sources[`item:${item.id}`]={...source,kind:'item',id:item.id,label:item.name};}
  return {
   skillLevels:Object.fromEntries(state.skills.map(row=>[row.skillId,row.level])),
   skillXp:Object.fromEntries(state.skills.map(row=>[row.skillId,row.xp])),

@@ -23,7 +23,7 @@ create or replace function public.settle_regional_gem_source_server_v1(
   p_source_id text,
   p_receipt_key text
 ) returns jsonb
-language plpgsql security definer set search_path=public as $$
+language plpgsql security definer set search_path='' as $
 declare
   v_state jsonb;
   v_existing jsonb;

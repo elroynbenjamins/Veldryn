@@ -1,21 +1,14 @@
 import {useEffect,useMemo,useRef,useState} from 'react';
-import {AccessibilityInfo,Animated,Easing,Image,Pressable,StyleSheet,Text,View} from 'react-native';
+import {AccessibilityInfo,Animated,Easing,Pressable,StyleSheet,Text,View} from 'react-native';
 import type {CoopRunView} from '../../core/coop-presentation';
-import {dungeonCombatAvatar} from '../../core/dungeon-combat-avatars';
 import {dungeonCombatCueFx,type DungeonCombatCueFx,type DungeonCombatFxAccent} from '../../core/dungeon-combat-fx';
 import {playbackCueDelayMs,playbackCueLabel,playbackCueTone,playbackProgress,playbackRecentCues} from '../../core/dungeon-combat-playback';
-import {combatCompanionDef} from '../../content/combat-companions';
-import {companionArtSource} from '../../theme/companion-art';
 import {coopColors,coopRadii,coopSpacing,coopTypography} from '../../theme/coop-ui-theme';
 import {FantasyPanel,StateChip} from './CoopVisualKit';
+import {CombatantProfileCard,EnemyCombatProfileCard} from './CombatantProfileCard';
 
 type Slot=CoopRunView['roleSlots'][number];
 
-function hpPercent(slot:Slot){
- const current=slot.currentHp,maximum=slot.maximumHp;
- if(current===undefined||maximum===undefined||!Number.isFinite(current)||!Number.isFinite(maximum)||maximum<=0)return 1;
- return Math.max(0,Math.min(1,current/maximum));
-}
 function seconds(value:number){return `${Math.max(0,value/1000).toFixed(1)}s`;}
 function fxColor(accent:DungeonCombatFxAccent){
  switch(accent){
@@ -25,22 +18,6 @@ function fxColor(accent:DungeonCombatFxAccent){
   case 'success': return coopColors.success;
   case 'cyan': default: return coopColors.cyan;
  }
-}
-
-function ClassAvatar({slot,active=false,targeted=false,assistProc=false,motionStyle}:{slot:Slot;active?:boolean;targeted?:boolean;assistProc?:boolean;motionStyle?:any}){
- const avatar=dungeonCombatAvatar(slot.classId),pct=hpPercent(slot),companion=slot.companionId?combatCompanionDef(slot.companionId):undefined,art=slot.companionId?companionArtSource(slot.companionId):undefined;
- const initial=(avatar?.label??slot.classId??slot.role).slice(0,1).toUpperCase();
- return <Animated.View style={[s.member,slot.role==='tank'&&s.memberTank,targeted&&s.memberTargeted,active&&s.memberActive,slot.ready===false&&s.memberDown,motionStyle]}>
-  <View style={[s.avatarFrame,slot.role==='tank'?s.avatarTank:slot.role==='support'?s.avatarSupport:s.avatarDamage,active&&s.avatarActive]}>
-   <Text style={s.avatarInitial}>{initial}</Text>
-   <Text numberOfLines={1} style={s.avatarWeapon}>{avatar?.weaponSilhouette??slot.role}</Text>
-  </View>
-  <Text numberOfLines={1} style={s.memberName}>{slot.name}</Text>
-  <Text numberOfLines={1} style={s.className}>{avatar?.label??slot.classId??slot.role}</Text>
-  <View style={s.hpTrack}><View style={[s.hpFill,{width:`${Math.round(pct*100)}%` as `${number}%`}]} /></View>
-  {slot.currentHp!==undefined&&slot.maximumHp!==undefined?<Text style={s.hpText}>{Math.max(0,Math.round(slot.currentHp))}/{Math.max(1,Math.round(slot.maximumHp))}</Text>:null}
-  {companion?<View style={[s.assistRow,assistProc&&s.assistRowActive]}>{art?<Image source={art} resizeMode="contain" style={[s.companionArt,assistProc&&s.companionArtActive]}/>:<View style={[s.companionFallback,assistProc&&s.companionFallbackActive]}><Text style={s.companionFallbackText}>◇</Text></View>}<View style={s.assistCopy}><Text style={s.assistLabel}>{assistProc?'ASSIST PROC':'COMPANION ASSIST'}</Text><Text numberOfLines={1} style={[s.assistName,assistProc&&s.assistNameActive]}>{companion.name}</Text></View></View>:null}
- </Animated.View>;
 }
 
 function motionScale(fx:DungeonCombatCueFx|undefined){
@@ -72,7 +49,7 @@ export function DungeonCombatStage({run,enemyLabel,boss=false}:{run:CoopRunView;
  },[replay,replayKey,reduceMotion,cueIndex,cues]);
  const currentCue=cues.length?cues[Math.min(cueIndex,cues.length-1)]:undefined,recent=replay?playbackRecentCues(replay,cueIndex):[];
  const partyIds=useMemo(()=>new Set(ordered.map(slot=>slot.memberId).filter((id):id is string=>Boolean(id))),[ordered]);
- const actorSlot=ordered.find(slot=>slot.memberId===currentCue?.actorId),targetSlot=ordered.find(slot=>slot.memberId===currentCue?.targetId);
+ const actorSlot=ordered.find(slot=>slot.memberId===currentCue?.actorId);
  const actorIsParty=currentCue?.actorId?partyIds.has(currentCue.actorId):undefined,targetIsParty=currentCue?.targetId?partyIds.has(currentCue.targetId):undefined;
  const fx=useMemo(()=>dungeonCombatCueFx(currentCue,actorSlot?.classId),[currentCue?.atMs,currentCue?.type,currentCue?.actionKind,currentCue?.abilityId,actorSlot?.classId]);
  useEffect(()=>{
@@ -111,9 +88,9 @@ export function DungeonCombatStage({run,enemyLabel,boss=false}:{run:CoopRunView;
  return <FantasyPanel variant={boss?'danger':'selected'}>
   <View style={s.header}><View style={s.grow}><Text style={s.kicker}>{replay?'COMBAT PLAYBACK':boss?'FINAL ENCOUNTER':'DUNGEON COMBAT'}</Text><Text style={s.title}>{shownEnemy}</Text></View><StateChip label={assists?`${assists} ASSIST${assists===1?'':'S'}`:'NO ASSISTS'} tone={assists?'success':'neutral'}/></View>
   <View style={s.arena}>
-   <View style={s.partyField}>{ordered.map((slot,index)=>{const active=Boolean(currentCue?.actorId&&slot.memberId===currentCue.actorId),isTarget=Boolean(currentCue?.targetId&&slot.memberId===currentCue.targetId),targeted=!active&&isTarget,assistProc=active&&currentCue?.type==='assist';return <View key={slot.memberId??`${slot.name}-${index}`} style={[s.formationSlot,index===0&&s.slotFront,index===3&&s.slotRear]}><ClassAvatar slot={slot} active={active} targeted={targeted} assistProc={assistProc} motionStyle={active?actorStyle:isTarget?targetStyle:undefined}/></View>;})}</View>
+   <View style={s.partyField}>{ordered.map((slot,index)=>{const active=Boolean(currentCue?.actorId&&slot.memberId===currentCue.actorId),isTarget=Boolean(currentCue?.targetId&&slot.memberId===currentCue.targetId),targeted=!active&&isTarget,assistProc=active&&currentCue?.type==='assist';return <View key={slot.memberId??`${slot.name}-${index}`} style={[s.formationSlot,index===0&&s.slotFront,index===3&&s.slotRear]}><CombatantProfileCard slot={slot} active={active} targeted={targeted} assistProc={assistProc} currentCue={currentCue} motionStyle={active?actorStyle:isTarget?targetStyle:undefined}/></View>;})}</View>
    <View style={s.divider}><Text style={s.vs}>VS</Text></View>
-   <View style={s.enemyField}><Animated.View style={[s.enemyCore,boss&&s.enemyBoss,enemyTargeted&&s.enemyTargeted,enemyActive&&s.enemyActive,enemyActive?actorStyle:enemyTargeted?targetStyle:undefined]}><Text style={s.enemyMark}>{boss?'♛':'◆'}</Text><Text numberOfLines={2} style={s.enemyName}>{shownEnemy}</Text><Text style={s.enemyHint}>{replay?'Authoritative server replay':boss?'Phase + cast telegraphs above':'Server-resolved encounter'}</Text></Animated.View></View>
+   <View style={s.enemyField}><EnemyCombatProfileCard name={shownEnemy} boss={boss} active={enemyActive} targeted={enemyTargeted} currentCue={currentCue} motionStyle={enemyActive?actorStyle:enemyTargeted?targetStyle:undefined}/></View>
    {fx?<View pointerEvents="none" style={s.fxLayer}>
     <Animated.View style={[s.fxMark,effectStyle,{borderColor:effectColor,shadowColor:effectColor}]}>
      <Text style={[s.fxGlyph,{color:effectColor}]}>{fx.glyph}</Text>
@@ -136,7 +113,7 @@ export function DungeonCombatStage({run,enemyLabel,boss=false}:{run:CoopRunView;
 const s=StyleSheet.create({
  header:{flexDirection:'row',alignItems:'flex-start',gap:coopSpacing.sm},grow:{flex:1,minWidth:0},
  kicker:{...coopTypography.meta,color:coopColors.gold,fontWeight:'900',letterSpacing:.8},title:{...coopTypography.section,color:coopColors.text},
- arena:{position:'relative',minHeight:294,flexDirection:'row',alignItems:'stretch',gap:coopSpacing.xs,padding:coopSpacing.sm,borderWidth:1,borderColor:coopColors.goldDim,borderRadius:coopRadii.tile,backgroundColor:'#04111E',overflow:'hidden'},
+ arena:{position:'relative',minHeight:320,flexDirection:'row',alignItems:'stretch',gap:coopSpacing.xs,padding:coopSpacing.sm,borderWidth:1,borderColor:coopColors.goldDim,borderRadius:coopRadii.tile,backgroundColor:'#04111E',overflow:'hidden'},
  partyField:{flex:1.75,flexDirection:'row',flexWrap:'wrap',alignContent:'center',justifyContent:'center',gap:coopSpacing.xs,zIndex:2},
  formationSlot:{width:'46%'},slotFront:{transform:[{translateX:6}]},slotRear:{transform:[{translateX:-5}]},
  member:{minHeight:126,padding:coopSpacing.xs,borderWidth:1,borderColor:'#274052',borderRadius:coopRadii.tile,backgroundColor:'rgba(7,24,39,.94)',gap:2},

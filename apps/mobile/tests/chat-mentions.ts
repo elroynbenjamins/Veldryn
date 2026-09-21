@@ -1,4 +1,4 @@
-import {chatMentionSegments,messageMentionsName} from '../src/core/chat-mentions';
+import {applyChatMentionSuggestion,chatMentionQueryAtEnd,chatMentionSegments,chatMentionSuggestions,messageMentionsName} from '../src/core/chat-mentions';
 
 function fail(message:string):never{throw new Error(message)}
 function equal(actual:unknown,expected:unknown,message:string){if(actual!==expected)fail(message+': expected '+String(expected)+', got '+String(actual))}
@@ -17,3 +17,10 @@ const spaced=chatMentionSegments('Welcome @Iron Warden to the group.','Iron Ward
 equal(spaced.find(row=>row.text.toLowerCase()==='@iron warden')?.kind,'self_mention','Current player names with spaces remain one highlighted segment');
 
 console.log('PASS: chat mention parsing and self-highlight');
+
+const query=chatMentionQueryAtEnd('Hello @Ir');
+equal(query?.query,'ir','Mention query is read from the end of the draft');
+const suggestions=chatMentionSuggestions('Hello @I',['Eira','Iron Warden','Isolde','Iron Warden'],'Eira');
+equal(suggestions.join('|'),'Iron Warden|Isolde','Mention suggestions are prefix-filtered, deduplicated and exclude self');
+equal(applyChatMentionSuggestion('Hello @Ir','Iron Warden'),'Hello @Iron Warden ','Mention suggestion replaces the active query');
+equal(chatMentionQueryAtEnd('email@test')===null,true,'At-sign inside a word does not open suggestions');

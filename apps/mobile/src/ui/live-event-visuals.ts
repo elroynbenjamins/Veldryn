@@ -41,6 +41,8 @@ export const LIVE_EVENT_VISUALS:Readonly<Record<LiveEventVisualKey,LiveEventVisu
   },
   turning_of_the_age:{
     heroBackground:require('../../assets/profile-backgrounds/bg_cosmic_gate.png'),
+    commonCurrencyIcon:require('../../assets/events/turning_of_the_age/currency_age_token.png'),
+    prestigeCurrencyIcon:require('../../assets/events/turning_of_the_age/currency_first_dawn_seal.png'),
     discoveryArt:EMPTY_ART,
     rewardArt:{
       EVT_PET_001:require('../../assets/event_collectibles/turning_of_the_age/pets/EVT_PET_001_Chronicle_Wisp.png'),
@@ -50,6 +52,8 @@ export const LIVE_EVENT_VISUALS:Readonly<Record<LiveEventVisualKey,LiveEventVisu
   },
   heartbond:{
     heroBackground:require('../../assets/profile-backgrounds/bg_heartbond.png'),
+    commonCurrencyIcon:require('../../assets/events/heartbond/currency_heart_token.png'),
+    prestigeCurrencyIcon:require('../../assets/events/heartbond/currency_vow_rose.png'),
     discoveryArt:EMPTY_ART,
     rewardArt:{
       EVT_PET_003:require('../../assets/event_collectibles/heartbond_festival/pets/EVT_PET_003_Rosebud_Bun.png'),
@@ -59,6 +63,8 @@ export const LIVE_EVENT_VISUALS:Readonly<Record<LiveEventVisualKey,LiveEventVisu
   },
   bloomwake:{
     heroBackground:require('../../assets/profile-backgrounds/bg_bloomwake.png'),
+    commonCurrencyIcon:require('../../assets/events/bloomwake/currency_bloom_token.png'),
+    prestigeCurrencyIcon:require('../../assets/events/bloomwake/currency_verdant_seed.png'),
     discoveryArt:EMPTY_ART,
     rewardArt:{
       EVT_PET_005:require('../../assets/event_collectibles/bloomwake/pets/EVT_PET_005_Pollenpuff.png'),
@@ -68,6 +74,8 @@ export const LIVE_EVENT_VISUALS:Readonly<Record<LiveEventVisualKey,LiveEventVisu
   },
   suncrest:{
     heroBackground:require('../../assets/profile-backgrounds/bg_kingdom_approach.png'),
+    commonCurrencyIcon:require('../../assets/events/suncrest/currency_suncrest_medal.png'),
+    prestigeCurrencyIcon:require('../../assets/events/suncrest/currency_laurel_seal.png'),
     discoveryArt:EMPTY_ART,
     rewardArt:{
       EVT_PET_007:require('../../assets/event_collectibles/suncrest_games/pets/EVT_PET_007_Laurel_Lynx.png'),
@@ -77,6 +85,8 @@ export const LIVE_EVENT_VISUALS:Readonly<Record<LiveEventVisualKey,LiveEventVisu
   },
   starfall:{
     heroBackground:require('../../assets/profile-backgrounds/bg_starfall.png'),
+    commonCurrencyIcon:require('../../assets/events/starfall/currency_star_shard.png'),
+    prestigeCurrencyIcon:require('../../assets/events/starfall/currency_comet_core.png'),
     discoveryArt:EMPTY_ART,
     rewardArt:{
       EVT_PET_009:require('../../assets/event_collectibles/starfall_nights/pets/EVT_PET_009_Starwhisker.png'),
@@ -86,6 +96,8 @@ export const LIVE_EVENT_VISUALS:Readonly<Record<LiveEventVisualKey,LiveEventVisu
   },
   merchant_guild:{
     heroBackground:require('../../assets/profile-backgrounds/bg_kingdom_approach.png'),
+    commonCurrencyIcon:require('../../assets/events/merchant_guild/currency_guild_scrip.png'),
+    prestigeCurrencyIcon:require('../../assets/events/merchant_guild/currency_caravan_seal.png'),
     discoveryArt:EMPTY_ART,
     rewardArt:{
       EVT_PET_018:require('../../assets/event_collectibles/merchant_guild_festival/pets/EVT_PET_018_Ledger_Ferret.png'),
@@ -95,6 +107,8 @@ export const LIVE_EVENT_VISUALS:Readonly<Record<LiveEventVisualKey,LiveEventVisu
   },
   veilbreak:{
     heroBackground:require('../../assets/profile-backgrounds/bg_veilbreak.png'),
+    commonCurrencyIcon:require('../../assets/events/veilbreak/currency_veil_shard.png'),
+    prestigeCurrencyIcon:require('../../assets/events/veilbreak/currency_lantern_ember.png'),
     discoveryArt:EMPTY_ART,
     rewardArt:{
       EVT_PET_013:require('../../assets/event_collectibles/veilbreak/pets/EVT_PET_013_Gloomkin.png'),
@@ -105,6 +119,8 @@ export const LIVE_EVENT_VISUALS:Readonly<Record<LiveEventVisualKey,LiveEventVisu
   },
   frostfall:{
     heroBackground:require('../../assets/profile-backgrounds/bg_frostfall.png'),
+    commonCurrencyIcon:require('../../assets/events/frostfall/currency_frostbell_token.png'),
+    prestigeCurrencyIcon:require('../../assets/events/frostfall/currency_aurora_chime.png'),
     discoveryArt:EMPTY_ART,
     rewardArt:{
       EVT_PET_015:require('../../assets/event_collectibles_v1/EVT_PET_015.png'),

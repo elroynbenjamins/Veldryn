@@ -15,7 +15,7 @@ state={...state,character:{...state.character!,gold:100000,equipment:{...state.c
 const combined=combineGem(state,cutMight);
 ok(combined.outputItemId===statGemItemId('might',2),'Three Cut gems should deterministically combine into one Polished gem');
 ok(combined.state.character!.gold===state.character!.gold-1500,'Grade I combine should charge the configured gold');
-ok((combined.state.inventory.stacks.find(s=>s.itemId=cutMight)?.quantity??0)===0,'Combining should consume three lower-grade gems');
+ok((combined.state.inventory.stacks.find(s=>s.itemId===cutMight)?.quantity??0)===0,'Combining should consume three lower-grade gems');
 ok((combined.state.inventory.stacks.find(s=>s.itemId=statGemItemId('might',2))?.quantity??0)===1,'Combining should grant the upgraded gem');
 
 let socketed=socketGem(state,'NIGHTFANG_CHEST',cutMomentum);

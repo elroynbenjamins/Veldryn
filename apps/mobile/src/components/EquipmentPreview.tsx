@@ -7,6 +7,7 @@ import {gearEnhancement,gemSocketCapacity,gemSocketState} from '../core/equipmen
 import {previewEquipment} from '../core/equipment-preview';
 import {GameState} from '../core/types';
 import {itemRarity,rarityMeta,rarityNameColor} from '../core/item-rarity';
+import {gearInstanceById} from '../core/gear-instances';
 import {equipmentTheme,radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {EquipmentArtwork,hasEquipmentArtwork} from './EquipmentArtwork';
@@ -15,12 +16,12 @@ import {GameModalHeader,GameModalSurface} from './GameModalSurface';
 
 function CompareRow({label,before,after}:{label:string;before:number;after:number}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),change=after-before;return <View style={s.statRow}><Text style={s.statLabel}>{label}</Text><Text style={s.old}>{before}</Text><Text style={s.arrow}>→</Text><Text style={s.next}>{after}</Text><Text style={[s.delta,change>0?s.better:change<0?s.worse:s.same]}>{change===0?'—':`${change>0?'+':''}${change}`}</Text></View>}
 
-export function EquipmentPreview({state,itemId,onClose}:{state:GameState;itemId:string|null;onClose:()=>void}){
+export function EquipmentPreview({state,itemId,instanceId,onClose}:{state:GameState;itemId:string|null;instanceId?:string|null;onClose:()=>void}){
   const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
   if(!itemId)return null;
-  let projected:GameState;try{projected=previewEquipment(state,itemId)}catch{return null}
-  const item=itemDef(itemId),before=effectiveStats(state),after=effectiveStats(projected),rarityId=itemRarity(item),rarity=rarityMeta(rarityId),nameColor=rarityNameColor(rarityId,C.dark,C.text),enhancement=gearEnhancement(state,itemId),capacity=gemSocketCapacity(itemId),sockets=gemSocketState(state,itemId);
-  const oldId=item.slot?state.character!.equipment[item.slot]:undefined,old=oldId?itemDef(oldId):undefined,oldEnhancement=oldId?gearEnhancement(state,oldId):undefined;
+  let projected:GameState;try{projected=previewEquipment(state,itemId,instanceId??undefined)}catch{return null}
+  const item=itemDef(itemId),candidate=instanceId?gearInstanceById(state,instanceId):undefined,before=effectiveStats(state),after=effectiveStats(projected),rarityId=candidate?.rarity??itemRarity(item),rarity=rarityMeta(rarityId),nameColor=rarityNameColor(rarityId,C.dark,C.text),enhancement=gearEnhancement(state,itemId,instanceId??undefined),capacity=gemSocketCapacity(itemId),sockets=gemSocketState(state,itemId,instanceId??undefined);
+  const oldId=item.slot?state.character!.equipment[item.slot]:undefined,oldInstanceId=item.slot?state.character!.equipmentInstanceIds?.[item.slot]:undefined,old=oldId?itemDef(oldId):undefined,oldEnhancement=oldId?gearEnhancement(state,oldId,oldInstanceId):undefined;
   const candidateSet=item.equipmentSetId?equipmentSetDef(item.equipmentSetId):undefined,oldSet=old?.equipmentSetId&&old.equipmentSetId!==item.equipmentSetId?equipmentSetDef(old.equipmentSetId):undefined;
   const setRows=[
     candidateSet?{id:candidateSet.id,name:candidateSet.name,tier:candidateSet.tier,before:equippedSetPieceCount(state.character!.equipment,candidateSet),after:equippedSetPieceCount(projected.character!.equipment,candidateSet)}:null,

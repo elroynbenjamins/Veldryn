@@ -430,3 +430,9 @@ enabled = true
 # The mobile co-op feature flag remains off until production release checks pass.
 verify_jwt = false
 entrypoint = "./functions/coop/index.ts"
+[functions.regional-combat]
+enabled = true
+# The handler verifies every bearer token with Supabase Auth before service-role RPCs.
+verify_jwt = false
+entrypoint = "./functions/regional-combat/index.ts"
+

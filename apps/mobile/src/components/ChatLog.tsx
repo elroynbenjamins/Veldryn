@@ -5,7 +5,7 @@ import {useGameTheme} from '../theme/ThemeContext';
 export interface ChatLogItem{id:string}
 
 export function ChatLog<T extends ChatLogItem>({channelKey,items,firstUnreadMessageId,emptyText,renderItem,onCaughtUp}:{channelKey:string;items:readonly T[];firstUnreadMessageId?:string;emptyText:string;renderItem:(item:T)=>ReactNode;onCaughtUp?:()=>void}){
- const C=useGameTheme(),scrollRef=useRef<ScrollView>(null),nearBottomRef=useRef(!firstUnreadMessageId),initializedRef=useRef(false),previousIdsRef=useRef<Set<string>>(new Set()),caughtUpIdRef=useRef<string|undefined>(),viewportHeightRef=useRef(0),contentHeightRef=useRef(0);
+ const C=useGameTheme(),scrollRef=useRef<ScrollView>(null),nearBottomRef=useRef(!firstUnreadMessageId),initializedRef=useRef(false),previousIdsRef=useRef<Set<string>>(new Set()),caughtUpIdRef=useRef<string|undefined>(undefined),viewportHeightRef=useRef(0),contentHeightRef=useRef(0);
  const [dividerId,setDividerId]=useState(firstUnreadMessageId),[dividerCleared,setDividerCleared]=useState(false),[pendingNew,setPendingNew]=useState(0);
  const latestId=items.length?items[items.length-1].id:undefined;
 

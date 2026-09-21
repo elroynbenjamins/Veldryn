@@ -62,7 +62,7 @@ export function equipmentCraftingPath(state:GameState,itemId:string):EquipmentCr
   if(state.character.level<characterLevel)blockers.push({kind:'character_level',label:`Character Lv ${characterLevel}`,detail:`Reach character level ${characterLevel}.`,destination:{kind:'info',button:'Level character',detail:`Reach character level ${characterLevel}.`}});
   const skill=state.skills.find(row=>row.skillId===recipe.skillId),skillLevel=skill?.level??1;
   if(skillLevel<recipe.level){
-    const destination:WorkingTowardDestination={kind:'skills',skillId:recipe.skillId as SkillId,mode:'crafting',recipeId:recipe.id,button:`Train ${label(recipe.skillId)}`,detail:`Requires ${label(recipe.skillId)} level ${recipe.level}.`};
+    const destination:WorkingTowardDestination={kind:'skills',skillId:recipe.skillId as SkillId,mode:'crafting',button:`Train ${label(recipe.skillId)}`,detail:`Requires ${label(recipe.skillId)} level ${recipe.level}.`};
     blockers.push({kind:'skill',label:`${label(recipe.skillId)} Lv ${recipe.level}`,detail:`Current level ${skillLevel}.`,destination,availability:workingTowardDestinationAvailability(state,destination)});
   }
   if(state.character.gold<recipe.gold)blockers.push({kind:'gold',label:`${recipe.gold.toLocaleString()} Gold`,detail:`Missing ${(recipe.gold-state.character.gold).toLocaleString()} Gold.`});

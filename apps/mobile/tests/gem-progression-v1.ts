@@ -51,10 +51,10 @@ const claimed=claimForgeJob(started.state,started.job.id,started.job.completesAt
 ok(claimed.state.inventory.stacks.some(row=>row.itemId==='gem:stat_might:g2'),'Claiming a gem forge job should award the upgraded gem');
 
 const cacheNow=Date.UTC(2026,8,21,12),cacheWeek='2026-09-21';
-let cacheState={...claimed.state,account:{...claimed.state.account,resonanceCache:{weekKey:cacheWeek,liveClears:3,claimed:false,effectChoices:['effect_bulwark','effect_mercy','effect_flow'],dustReward:31,regionalCatalysts:1,radiantCatalysts:1}}};
-ok(resonanceCacheStatusV1(cacheState,cacheNow).ready,'Three Live clears with server-authored choices should make the weekly cache ready');
-const cacheDustBefore=cacheState.inventory.stacks.filter(row=>row.itemId==='GEM_DUST').reduce((sum,row)=>sum+row.quantity,0)+cacheState.bank.stacks.filter(row=>row.itemId==='GEM_DUST').reduce((sum,row)=>sum+row.quantity,0);
-cacheState=claimResonanceCacheV1(cacheState,'effect_bulwark',cacheNow);
+const cacheReadyState={...claimed.state,account:{...claimed.state.account,resonanceCache:{weekKey:cacheWeek,liveClears:3,claimed:false,effectChoices:['effect_bulwark','effect_mercy','effect_flow'],dustReward:31,regionalCatalysts:1,radiantCatalysts:1}}};
+ok(resonanceCacheStatusV1(cacheReadyState,cacheNow).ready,'Three Live clears with server-authored choices should make the weekly cache ready');
+const cacheDustBefore=cacheReadyState.inventory.stacks.filter(row=>row.itemId==='GEM_DUST').reduce((sum,row)=>sum+row.quantity,0)+cacheReadyState.bank.stacks.filter(row=>row.itemId==='GEM_DUST').reduce((sum,row)=>sum+row.quantity,0);
+const cacheState=claimResonanceCacheV1(cacheReadyState,'effect_bulwark',cacheNow);
 ok(cacheState.inventory.stacks.some(row=>row.itemId==='gem:effect_bulwark:g3')||cacheState.bank.stacks.some(row=>row.itemId==='gem:effect_bulwark:g3'),'Resonance Cache choice should settle a Grade III Effect Gem');
 const cacheDustAfter=cacheState.inventory.stacks.filter(row=>row.itemId==='GEM_DUST').reduce((sum,row)=>sum+row.quantity,0)+cacheState.bank.stacks.filter(row=>row.itemId==='GEM_DUST').reduce((sum,row)=>sum+row.quantity,0);
 ok(cacheDustAfter===cacheDustBefore+31,'Resonance Cache should settle its pre-rolled Gem Dust');

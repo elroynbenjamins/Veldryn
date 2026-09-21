@@ -54,7 +54,7 @@ export function itemInspectModel(state:GameState,itemId:string){
   const bankQuantity=state.bank.stacks.find(stack=>stack.itemId===itemId)?.quantity??0;
   const effectLines:string[]=[];
   let upgrade:undefined|{rank:number;nextRank:number;successChance:number;dust:number;cores:number;gold:number;maxed:boolean;failures:number;equipped:boolean};
-  let sockets:undefined|{filled:number;capacity:number;statUnlocked:boolean;effectUnlocked:boolean;statGemId?:string;effectGemId?:string;legacyGemIds:string[]};
+  let sockets:undefined|{filled:number;capacity:number;statUnlocked:boolean;effectUnlocked:boolean;statGemId?:string;effectGemId?:string;statGemName?:string;effectGemName?:string;legacyGemIds:string[];legacyGemNames:string[]};
   let stats:undefined|{attack:number;defense:number;hp:number};
   let gearDecision:ItemGearDecision|undefined;
 
@@ -63,7 +63,7 @@ export function itemInspectModel(state:GameState,itemId:string){
     stats=enhanced;
     upgrade={rank:enhancement.rank,nextRank:quote.targetRank,successChance:quote.successChance,dust:quote.dust,cores:quote.cores,gold:quote.gold,maxed:quote.maxed,failures:enhancement.failures,equipped:!!state.character&&Object.values(state.character.equipment).includes(itemId)};
     const capacity=gemSocketCapacity(itemId),layout=gemSocketLayout(itemId);
-    sockets={filled:activeSocketedGemIds(state,itemId).length,capacity,statUnlocked:layout.statUnlocked,effectUnlocked:layout.effectUnlocked,statGemId:enhancement.statGemId,effectGemId:enhancement.effectGemId,legacyGemIds:enhancement.legacyGemIds??[]};
+    sockets={filled:activeSocketedGemIds(state,itemId).length,capacity,statUnlocked:layout.statUnlocked,effectUnlocked:layout.effectUnlocked,statGemId:enhancement.statGemId,effectGemId:enhancement.effectGemId,statGemName:enhancement.statGemId?itemDef(enhancement.statGemId).name:undefined,effectGemName:enhancement.effectGemId?itemDef(enhancement.effectGemId).name:undefined,legacyGemIds:enhancement.legacyGemIds??[],legacyGemNames:(enhancement.legacyGemIds??[]).map(id=>itemDef(id).name)};
     if(state.character&&item.slot){
       const compatible=!item.classRestriction||item.classRestriction===state.character.classId;
       const before=effectiveStats(state),currentId=state.character.equipment[item.slot],currentItem=currentId?itemDef(currentId):undefined,currentRank=currentId?gearEnhancement(state,currentId).rank:0;

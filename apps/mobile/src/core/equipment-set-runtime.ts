@@ -97,10 +97,10 @@ export function equipmentSetBonusCoverage(){
  * This does not invent 6pc trigger behavior: those remain explicit trigger hooks
  * until the active-skill/ally/barrier event model can fire them faithfully.
  */
-export function equipmentSetCombatModifiers(state:GameState){
+export function equipmentSetCombatModifiers(state:GameState,baseCritChance=.05,baseAccuracy=.84){
   const stats=activeEquipmentSetRuntime(state).stats;
-  const baseAccuracy=0.84,baseCritChance=0.05,baseCritDamage=0.50;
-  const accuracyMultiplier=(baseAccuracy+stats.accuracy)/baseAccuracy;
+  const baseCritDamage=0.50;
+  const accuracyMultiplier=Math.min(.99,baseAccuracy+stats.accuracy)/baseAccuracy;
   const baseCritExpected=1+baseCritChance*baseCritDamage;
   const setCritExpected=1+(baseCritChance+stats.critRate)*(baseCritDamage+stats.critDamage);
   return {

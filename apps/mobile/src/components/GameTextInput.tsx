@@ -9,7 +9,7 @@ export const GameTextInput=forwardRef<TextInput,TextInputProps>(function GameTex
   const [focused,setFocused]=useState(false);
   const metrics=StyleSheet.flatten(style);
   const minimumHeight=typeof metrics?.minHeight==='number'?metrics.minHeight:0;
-  return <TextInput {...props} ref={ref} multiline={multiline} editable={editable} placeholderTextColor={placeholderTextColor??C.muted} underlineColorAndroid="transparent"
+  return <TextInput {...props} ref={ref} multiline={multiline} editable={editable} accessibilityState={{...props.accessibilityState,disabled:!editable}} placeholderTextColor={placeholderTextColor??C.muted} underlineColorAndroid="transparent"
     onFocus={event=>{setFocused(true);onFocus?.(event);}} onBlur={event=>{setFocused(false);onBlur?.(event);}}
     style={[s.input,style,{minHeight:Math.max(multiline?104:48,minimumHeight),paddingTop:10,paddingBottom:10,borderRadius:radii.md,includeFontPadding:false,textAlignVertical:multiline?'top':'center'},focused&&{borderColor:C.selectionLine},!editable&&s.disabled]}/>;
 });

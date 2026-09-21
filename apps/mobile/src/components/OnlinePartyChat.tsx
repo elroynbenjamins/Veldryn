@@ -27,8 +27,8 @@ export function OnlinePartyChat({unlockedEmoteIds=[],firstUnreadMessageId,onRead
   void load();const timer=setInterval(()=>void load(),5000);return()=>{active=false;clearInterval(timer);};
  },[id,accountId,refresh]);
  const send=async()=>{if(!id||busy||!body.trim())return;const clean=body.trim();if(chatEmoteCount(clean)>8){setError('Use at most 8 emotes in one message.');return}const locked=chatUnavailableEmoteIds(clean,unlockedEmoteIds);if(locked.length){setError('One or more emotes in this message are still locked.');return}setBusy(true);setError('');
-  if(pending.current?.body!==body)pending.current={body,key:partyCommandKey()};
-  try{await sendPartyChat(id,body,pending.current.key);const next=await partyChatMessages(id);if(activeId.current===id){setBody('');pending.current=null;setMessages(next);}}
+  if(pending.current?.body!==clean)pending.current={body:clean,key:partyCommandKey()};
+  try{await sendPartyChat(id,clean,pending.current.key);const next=await partyChatMessages(id);if(activeId.current===id){setBody('');pending.current=null;setMessages(next);}}
   catch(e){setError(e instanceof Error?e.message:'Message failed. Try again.');await refresh();}finally{setBusy(false);}
  };
  const mentionName=party?.members.find(member=>member.accountId===accountId)?.characterName??'',mentionNames=party?.members.map(member=>member.characterName)??[];

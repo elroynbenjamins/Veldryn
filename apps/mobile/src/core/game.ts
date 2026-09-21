@@ -219,8 +219,17 @@ function routeRewards(state:GameState,incoming:ItemStack[],nowMs:number){
   };
 }
 
-function consume(stacks:ItemStack[],itemId:string,quantity:number){const f=stacks.find(s=>s.itemId===itemId);if(!f||f.quantity<quantity)throw new Error('Not enough items');return stacks.map(s=>s.itemId===itemId?{...s,quantity:s.quantity-quantity}:s).filter(s=>s.quantity>0)}
-function stackQty(stacks:ItemStack[],itemId?:string){if(!itemId)return 0;return stacks.find(s=>s.itemId===itemId)?.quantity||0;}
+function consume(stacks:ItemStack[],itemId:string,quantity:number){
+  let remaining=Math.max(0,quantity);
+  const available=stacks.filter(s=>s.itemId===itemId).reduce((total,s)=>total+Math.max(0,s.quantity),0);
+  if(available<remaining)throw new Error('Not enough items');
+  return stacks.map(s=>{
+    if(s.itemId!==itemId||remaining<=0)return s;
+    const used=Math.min(remaining,Math.max(0,s.quantity));remaining-=used;
+    return {...s,quantity:s.quantity-used};
+  }).filter(s=>s.quantity>0);
+}
+function stackQty(stacks:ItemStack[],itemId?:string){if(!itemId)return 0;return stacks.filter(s=>s.itemId===itemId).reduce((total,s)=>total+Math.max(0,s.quantity),0);}
 
 function simulateCombat(state:GameState,monsterId:string,elapsed:number){
   const c=state.character!,baseMonster=MONSTERS.find(x=>x.id===monsterId)!,challengeId=state.activity?.kind==='combat'?state.activity.combatChallengeId:undefined,affixId=state.activity?.kind==='combat'?state.activity.combatAffixId:undefined,m=challengeHuntStats(baseMonster,challengeId,affixId),stats=effectiveStats(state);

@@ -2,7 +2,7 @@ import {strict as assert} from 'node:assert';
 import {EFFECT_GEMS_V1,STAT_GEMS_V1,validateGemCatalogV1} from './gem-catalog-v1';
 import {combineGemV1,dismantleGemV1,type GemWallet} from './gem-progression-v1';
 import {summarizeGemLoadoutV1} from './gem-runtime-v1';
-import {buildGemDropsForSourceV1,gemPoolForSourceV1,validateGemAcquisitionV1} from './gem-acquisition-v1';
+import {buildGemDropsForSourceV1,gemPoolForSourceV1,settleGemSourceV1,validateGemAcquisitionV1} from './gem-acquisition-v1';
 
 assert.equal(STAT_GEMS_V1.length,12);
 assert.equal(EFFECT_GEMS_V1.length,20);
@@ -10,6 +10,10 @@ assert.deepEqual(validateGemCatalogV1(),[]);
 assert.deepEqual(validateGemAcquisitionV1(),[]);
 assert.ok(gemPoolForSourceV1('COP_004'));
 assert.ok(buildGemDropsForSourceV1('COP_004').length>0);
+const forcedPity=settleGemSourceV1('COP_004','forced-pity',{pityBySource:{COP_004:7},unlockedRecipeIds:[]});
+assert.ok(forcedPity.gem,'Dungeon pity must settle one actual gem');
+assert.equal(forcedPity.gem?.pityTriggered,true);
+assert.equal(forcedPity.pityBySource.COP_004,0);
 
 const summary=summarizeGemLoadoutV1([
  {equipmentItemId:'a',sockets:{effect:{familyId:'effect_momentum',grade:5},stat:{familyId:'stat_might',grade:5}}},

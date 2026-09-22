@@ -10,6 +10,9 @@ const replay:CoopCombatReplayView={nodeId:'boss',reason:'victory',durationMs:200
  {id:'p2',name:'Ravager',team:'players',maxHp:920,startHp:920,startShield:0,boss:false},
  {id:'p3',name:'Dawnkeeper',team:'players',maxHp:850,startHp:850,startShield:0,boss:false},
  {id:'boss',name:'The Hollow Regent',team:'enemies',maxHp:5000,startHp:5000,startShield:0,boss:true},
+],gemStates:[
+ {atMs:900,states:[{targetId:'p1',tag:'gem:momentum',expiriesAtMs:[5000,7000]},{targetId:'p0',tag:'gem:unyielding',expiriesAtMs:[6000]},{targetId:'boss',tag:'gem:opportunist_ready',expiriesAtMs:[4000]}]},
+ {atMs:5000,states:[{targetId:'p1',tag:'gem:momentum',expiriesAtMs:[7000]},{targetId:'p1',tag:'gem:flow',expiriesAtMs:[9000]},{targetId:'p0',tag:'gem:unyielding',expiriesAtMs:[8000,9000]}]},
 ],statuses:[
  {targetId:'boss',sourceId:'p1',kind:'debuff',tag:'damage_taken',label:'Hex Curse',abilityId:'HX_CURSE',startsAtMs:1000,expiresAtMs:8000},
  {targetId:'boss',sourceId:'p3',kind:'debuff',tag:'damage_taken',label:'Hex Curse',abilityId:'HX_CURSE',startsAtMs:2000,expiresAtMs:7000},
@@ -41,6 +44,13 @@ equal(playbackCombatantState(replay,1,'p0')?.shield,160);
 equal(playbackCombatantState(replay,3,'p0')?.shield,60);
 equal(playbackCombatantState(replay,4,'p2')?.hp,0);
 equal(playbackCombatantState(replay,5,'boss')?.hp,0);
+equal(playbackCombatantStatuses(replay,0,'boss')[0]?.label,'Opportunist Mark');
+equal(playbackCombatantStatuses(replay,0,'boss')[0]?.source,'gem');
+equal(playbackCombatantStatuses(replay,0,'p1')[0]?.label,'Momentum');
+equal(playbackCombatantStatuses(replay,0,'p1')[0]?.stacks,2);
+equal(playbackCombatantStatuses(replay,2,'p1').find(status=>status.tag==='gem:momentum')?.stacks,1);
+equal(playbackCombatantStatuses(replay,2,'p1').find(status=>status.tag==='gem:flow')?.label,'Flow');
+equal(playbackCombatantStatuses(replay,4,'p1').filter(status=>status.source==='gem').length,0);
 equal(playbackCombatantStatuses(replay,0,'boss').length,0);
 equal(playbackCombatantStatuses(replay,1,'boss')[0]?.stacks,2);
 equal(playbackCombatantStatuses(replay,1,'boss')[0]?.kind,'debuff');

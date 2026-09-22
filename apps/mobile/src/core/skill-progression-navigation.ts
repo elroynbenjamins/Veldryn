@@ -75,6 +75,7 @@ export interface RecipeProgressionSource{
  availability:WorkingTowardDestinationAvailability;
  estimatedSeconds?:number;
  estimateLabel?:string;
+ bottleneck?:boolean;
 }
 
 export function recipeProgressionSources(state:GameState,recipe:Recipe,inputs:ReadonlyArray<{itemId:string;quantity:number;inventory:number;bank:number}>):RecipeProgressionSource[]{
@@ -89,7 +90,9 @@ export function recipeProgressionSources(state:GameState,recipe:Recipe,inputs:Re
   const destination=workingTowardItemSource(state,input.itemId),projection=acquisitionProjectionForDestination(state,input.itemId,missing,destination);
   rows.push({key:`material:${input.itemId}`,label:itemDef(input.itemId).name,owned,required:input.quantity,missing,destination,availability:workingTowardDestinationAvailability(state,destination),...(projection?{estimatedSeconds:projection.etaSeconds,estimateLabel:`~${formatBalanceDuration(projection.etaSeconds)} · ${projection.basis==='current'?'current pace':'base pace'}`}:{})});
  }
- return rows.sort((a,b)=>Number(b.key.startsWith('prerequisite:'))-Number(a.key.startsWith('prerequisite:'))||(b.estimatedSeconds??-1)-(a.estimatedSeconds??-1));
+ const sorted=rows.sort((a,b)=>Number(b.key.startsWith('prerequisite:'))-Number(a.key.startsWith('prerequisite:'))||(b.estimatedSeconds??-1)-(a.estimatedSeconds??-1));
+ const bottleneck=[...sorted].filter(row=>row.estimatedSeconds!==undefined).sort((a,b)=>(b.estimatedSeconds??0)-(a.estimatedSeconds??0))[0]?.key;
+ return sorted.map(row=>row.key===bottleneck?{...row,bottleneck:true}:row);
 }
 
 export function recipeSkillTrainingAction(state:GameState,recipe:Recipe):SkillProgressionNavigationAction|undefined{

@@ -1,6 +1,7 @@
 import {executeGameCommand} from '../src/core/game-commands';
 import {newGame} from '../src/core/game';
-import {rewardLootHighlights,rewardProgressionMoments} from '../src/core/reward-game-feel';
+import {masteryRankNoticeMessage,rewardLootHighlights,rewardProgressionMoments} from '../src/core/reward-game-feel';
+import {masteryPointsForRank} from '../src/core/profession-mastery-v40';
 import type {RewardBundle} from '../src/core/types';
 
 const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
@@ -22,6 +23,21 @@ ok(mining?.unlockGroups?.some(group=>group.category==='GATHERING')&&mining.unloc
 equal(mining?.nextMilestone?.level,16,'Mining level 8 should preview the next configured milestone level');
 ok((smithing?.unlocks.length??0)>0,'Smithing level-up must surface newly unlocked recipes when content crosses the level');
 
+const masteryBefore={...before,account:{...before.account,professionMasteryByAction:{GREENWOOD_TREE:{actionId:'GREENWOOD_TREE',points:masteryPointsForRank(9),updatedAtMs:1}}}};
+const masteryAfter={...masteryBefore,account:{...masteryBefore.account,professionMasteryByAction:{GREENWOOD_TREE:{actionId:'GREENWOOD_TREE',points:masteryPointsForRank(10),updatedAtMs:2}}}};
+const masteryMoment=rewardProgressionMoments(masteryBefore,masteryAfter).find(row=>row.kind==='mastery_rank');
+equal(masteryMoment?.beforeLevel,9,'Mastery feedback must retain the previous action rank');
+equal(masteryMoment?.afterLevel,10,'Mastery feedback must expose the committed new action rank');
+ok(masteryMoment?.unlocks.includes('+2% skill XP'),'R10 mastery feedback must explain the newly active XP bonus');
+equal(masteryMoment?.nextMilestone?.level,20,'R10 mastery feedback should preview the next relevant bonus rank');
+equal(masteryMoment?.skillId,'woodcutting','Mastery feedback must retain the destination profession');
+ok(masteryRankNoticeMessage(masteryMoment?[masteryMoment]:[]).includes('R10'),'Lightweight mastery feedback must name the reached rank');
+
+const masteredAfter={...masteryBefore,account:{...masteryBefore.account,professionMasteryByAction:{GREENWOOD_TREE:{actionId:'GREENWOOD_TREE',points:masteryPointsForRank(50),updatedAtMs:3}}}};
+const masteredMoment=rewardProgressionMoments(masteryBefore,masteredAfter).find(row=>row.kind==='mastery_rank');
+equal(masteredMoment?.mastered,true,'R50 mastery must become a permanent mastered moment');
+ok(masteryRankNoticeMessage(masteredMoment?[masteredMoment]:[]).startsWith('Mastered · Greenwood Tree'),'R50 lightweight feedback must use mastered completion wording');
+
 const reward:RewardBundle={xp:1,gold:0,kills:1,elapsedSeconds:1,items:[{itemId:'SUNSCORED_STONEHEART_HELMET',quantity:1},{itemId:'COPPER_ORE',quantity:2}]};
 const loot=rewardLootHighlights(reward);
 const epic=loot.find(row=>row.itemId==='SUNSCORED_STONEHEART_HELMET'),copper=loot.find(row=>row.itemId==='COPPER_ORE');
@@ -33,6 +49,8 @@ const popup=fs.readFileSync('src/components/RewardPopup.tsx','utf8');
 const app=fs.readFileSync('App.tsx','utf8');
 ok(popup.includes('✦ LEVEL UP')&&popup.includes('Lv {moment.beforeLevel} → {moment.afterLevel}'),'Reward popup must clearly show the committed level transition');
 ok(popup.includes('NEWLY UNLOCKED'),'Level-up moment must explain newly unlocked content when available');
+ok(popup.includes('ACTION MASTERED')&&popup.includes('MASTERY RANK UP'),'Reward feedback must distinguish ordinary mastery ranks from R50 completion');
+ok(popup.includes("mastery?'BONUS UNLOCKED':'NEWLY UNLOCKED'"),'Mastery reward moments must label bonus unlocks accurately');
 ok(popup.includes('moment.unlockGroups')&&popup.includes('NEXT · LV'),'Level-up moment must group unlock types and preview the next milestone compactly');
 ok(popup.includes('✦ EXCEPTIONAL LOOT'),'Epic+ drops must receive a stronger reward moment');
 ok(popup.includes('rarityTag')&&popup.includes('rarityNameColor'),'Reward breakdown must remain rarity-legible without over-celebrating normal loot');

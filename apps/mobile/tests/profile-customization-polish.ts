@@ -54,6 +54,11 @@ const guildAfter={...guildBefore,account:{...guildBefore.account,guildMember:tru
 const guildUnlocks=newlyUnlockedProfileRewards(guildBefore,guildAfter);
 ok(guildUnlocks.some(row=>row.id==='bloomwarden'),'joining a guild surfaces the guild profile title');
 
+const journalTitleBefore={...levelUp,account:{...levelUp.account,journalState:{schemaVersion:42,accountId:'acct',revision:0,unlockedAchievements:{},unlockedTitles:{},selectedTitleByCharacter:{},records:{}}}};
+const journalTitleAfter={...journalTitleBefore,account:{...journalTitleBefore.account,journalState:{...journalTitleBefore.account.journalState!,unlockedTitles:{masterwork_savant:123}}}};
+const journalTitleUnlocks=newlyUnlockedProfileRewards(journalTitleBefore,journalTitleAfter);
+ok(journalTitleUnlocks.some(row=>row.kind==='title'&&row.id==='masterwork_savant'&&row.name==='Masterwork Savant'),'new Journal titles surface through the existing profile reward notice flow');
+
 const fresh=createCharacter(newGame(0),'IRONWARDEN','Fresh Character');
 equal(newlyUnlockedProfileRewards(newGame(0),fresh).length,0,'character creation does not spam baseline profile-title notices');
 

@@ -31,7 +31,7 @@ const mechanicTag=(value:PveMechanicId)=>`pve:mechanic:${value}`;
 
 export function withPveIdentity(definition:CombatantDefinition,archetype:PveArchetype,mechanics:readonly PveMechanicId[]):CombatantDefinition{
   const existing=(definition.tags??[]).filter(tag=>!tag.startsWith('pve:archetype:')&&!tag.startsWith('pve:mechanic:'));
-  return {...definition,tags:[...existing,archetypeTag(archetype),...new Set(mechanics)].map(String)};
+  return {...definition,tags:[...existing,archetypeTag(archetype),...[...new Set(mechanics)].map(mechanicTag)]};
 }
 
 export function pveHeavyStrike(id:string,name:string,damageType:DamageType,coeff:number,cooldownMs=6800,castTimeMs=700):AbilityDefinition{

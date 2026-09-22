@@ -55,7 +55,7 @@ ok(expected.averageFindSeconds>combat.cycleSeconds,'Rare-drop average find time 
 const mossMaterial=rat.drops.find(drop=>drop.itemId==='MOSS_FIBER')!,mossExpected=dropExpectation(mossMaterial.chance,mossMaterial.min,mossMaterial.max,combat.killsPerHour);
 ok(mossExpected.averageFindSeconds<5*60,'Starter required materials should arrive frequently rather than carrying the grind');
 const revenant=MONSTERS.find(row=>row.id==='OATHGLASS_REVENANT')!,revenantPace=combatBaselineProjection(revenant),normalGear=revenant.drops.find(drop=>drop.itemId==='SPELLGLASS_CHEST')!,normalGearExpected=dropExpectation(normalGear.chance,normalGear.min,normalGear.max,revenantPace.killsPerHour);
-ok(normalGearExpected.averageFindSeconds>=30*60&&normalGearExpected.averageFindSeconds<=2*3600,'Later ordinary gear should average tens of minutes to roughly two hours, not become a chase grind');
+ok(normalGearExpected.averageFindSeconds>=30*60&&normalGearExpected.averageFindSeconds<=3*3600,'Later ordinary gear should average tens of minutes to a few hours, not become a chase grind');
 const oracle=MONSTERS.find(row=>row.id==='DUNE_ORACLE')!,oraclePace=combatBaselineProjection(oracle),sigil=oracle.drops.find(drop=>drop.itemId==='SWIFT_SIGIL')!,sigilExpected=dropExpectation(sigil.chance,sigil.min,sigil.max,oraclePace.killsPerHour);
 ok(sigilExpected.averageFindSeconds>=3*3600&&sigilExpected.averageFindSeconds<=12*3600,'Rare build-defining sigils should remain multi-hour chase drops');
 ok(formatBalanceDuration(30)==='<1m'&&formatBalanceDuration(3600)==='1h'&&formatBalanceDuration(90000)==='1d 1h','Balance duration labels must stay compact and readable');

@@ -1,3 +1,4 @@
+import {ITEMS} from './items';
 export interface MonsterDef {id:string;name:string;level:number;hp:number;attack:number;defense:number;xp:number;gold:number;secondsPerKill:number;unlockLevel:number;zone:string;boss?:boolean;drops:{itemId:string;chance:number;min:number;max:number}[];}
 
 const MONSTERS_RAW:MonsterDef[]=[
@@ -37,6 +38,13 @@ const MONSTERS_RAW:MonsterDef[]=[
 const MONSTER_TIME_SCALE=1.95;
 const MONSTER_STAT_SCALE=1.07;
 
+export const NORMAL_GEAR_DROP_FLOOR=.02;
+const NORMAL_GEAR_IDS=new Set(ITEMS.filter(item=>item.type==='gear').map(item=>item.id));
+function progressionDrop(drop:MonsterDef['drops'][number],boss:boolean){
+  if(boss||!NORMAL_GEAR_IDS.has(drop.itemId))return drop;
+  return {...drop,chance:Math.max(NORMAL_GEAR_DROP_FLOOR,drop.chance)};
+}
+
 const enhancementDrops=(monster:MonsterDef):MonsterDef['drops']=>{
   if(monster.boss)return [{itemId:'TEMPERING_DUST',chance:1,min:8,max:14},{itemId:'TEMPERING_CORE',chance:1,min:1,max:2},{itemId:'EMBERHEART_GEM',chance:.001,min:1,max:1},{itemId:'WARDHEART_GEM',chance:.001,min:1,max:1},{itemId:'VITALITY_HEART_GEM',chance:.001,min:1,max:1}];
   if(monster.level>=20)return [{itemId:'TEMPERING_DUST',chance:.18,min:1,max:2},{itemId:'TEMPERING_CORE',chance:.025,min:1,max:1},{itemId:monster.attack>=monster.defense*1.7?'EMBER_SHARD':monster.defense>=monster.attack*.65?'WARD_SHARD':'VITALITY_SHARD',chance:.004,min:1,max:1}];
@@ -44,7 +52,7 @@ const enhancementDrops=(monster:MonsterDef):MonsterDef['drops']=>{
   return monster.level>=4?[{itemId:'TEMPERING_DUST',chance:.05,min:1,max:1}]:[];
 };
 export const MONSTERS:MonsterDef[]=MONSTERS_RAW.map(monster=>({...monster,
-  drops:[...monster.drops,...(monster.id==='FIELD_WISP'?[{itemId:'HOLY_WATER',chance:.12,min:1,max:1}]:monster.id==='DROWNED_PILGRIM'?[{itemId:'HOLY_WATER',chance:.30,min:1,max:1}]:monster.id==='OATHBOUND_SQUIRE'?[{itemId:'HOLY_WATER',chance:.24,min:1,max:1}]:[]),...enhancementDrops(monster)],
+  drops:[...monster.drops.map(drop=>progressionDrop(drop,!!monster.boss)),...(monster.id==='FIELD_WISP'?[{itemId:'HOLY_WATER',chance:.12,min:1,max:1}]:monster.id==='DROWNED_PILGRIM'?[{itemId:'HOLY_WATER',chance:.30,min:1,max:1}]:monster.id==='OATHBOUND_SQUIRE'?[{itemId:'HOLY_WATER',chance:.24,min:1,max:1}]:[]),...enhancementDrops(monster)],
   secondsPerKill:Math.ceil(monster.secondsPerKill*MONSTER_TIME_SCALE),
   hp:Math.ceil(monster.hp*MONSTER_STAT_SCALE),
   attack:Math.ceil(monster.attack*MONSTER_STAT_SCALE),

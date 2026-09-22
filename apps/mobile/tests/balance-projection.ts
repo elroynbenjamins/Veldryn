@@ -1,6 +1,6 @@
 import {createCharacter,newGame,startGathering} from '../src/core/game';
 import {characterTotalXpAtLevel,totalXpAtLevel} from '../src/core/progression';
-import {GATHERING} from '../src/content/skills';
+import {GATHERING,RECIPES} from '../src/content/skills';
 import {MONSTERS} from '../src/content/monsters';
 import {activeActivityLevelPace,activityProgressFeedback,characterLevelPace,combatBaselineProjection,craftingPaceProjection,dropExpectation,formatBalanceDuration,gatheringBalanceProjection,skillTargetEta} from '../src/core/balance-projection';
 
@@ -63,6 +63,15 @@ ok(activityProgressFeedback('gathering',.1)==='Preparing tools…'&&activityProg
 ok(activityProgressFeedback('combat',.1)==='Tracking the target…'&&activityProgressFeedback('combat',.8)==='Pressing the advantage…','Combat cycle feedback must describe real progress phases');
 ok(activityProgressFeedback('crafting',.1)==='Preparing materials…'&&activityProgressFeedback('faith',.8)==='Deepening devotion…','Crafting and Faith must use activity-specific progress language');
 ok(activityProgressFeedback('training',.8)==='Refining form…'&&activityProgressFeedback('exploration',.8)==='Following the trail…','Training and Exploration must use activity-specific progress language');
+const copperBlade=RECIPES.find(row=>row.id==='SMITH_COPPER_BLADE')!,asterChest=RECIPES.find(row=>row.id==='SMITH_ASTER_IRON_CHEST')!,oathWard=RECIPES.find(row=>row.id==='SMITH_OATHSTONE_WARD')!;
+const qty=(recipe:typeof copperBlade,itemId:string)=>recipe.inputs.find(row=>row.itemId===itemId)?.quantity??0;
+ok(qty(copperBlade,'COPPER_INGOT')<=12&&qty(copperBlade,'GREENWOOD_LOG')<=24,'Starter crafted gear must stay session-friendly after catalog transforms');
+ok(qty(asterChest,'ASTER_IRON_INGOT')<=55&&qty(asterChest,'IRONWOOD_LOG')<=80&&qty(asterChest,'REINFORCED_FITTING')<=5,'Mid-tier chest material costs must stay progression-scale after catalog transforms');
+ok(qty(oathWard,'OATHSTONE_INGOT')<=28&&qty(oathWard,'CROWNWOOD_LOG')<=48&&qty(oathWard,'OATHGLASS_SHARD')<=8,'Oathstone progression gear must remain demanding but session-scale after catalog transforms');
+ok(copperBlade.seconds>=60&&oathWard.seconds>=240,'Routine recipe material reductions must not erase the existing timed crafting identity');
+const specialCraft=RECIPES.find(row=>row.id==='CRAFT_STONEHEART_CHEST');
+ok(!specialCraft||specialCraft.inputs.some(input=>input.quantity>=20),'Special CRAFT_* Smithing recipes may retain a heavier material burden than routine SMITH_* progression gear');
+
 const mockRecipe={id:'TEST_RECIPE',name:'Test',skillId:'smithing' as const,level:1,xp:100,gold:0,seconds:60,inputs:[],output:{itemId:'COPPER_INGOT',quantity:1}};
 const craftPace=craftingPaceProjection(state,mockRecipe,60,100);
 close(craftPace.craftsPerHour,60,.001,'One-minute timed crafting must project 60 crafts/hour');

@@ -55,10 +55,30 @@ const boss=(id:string,name:string,level:number,scale:number,damageType:DamageTyp
  let lance=pveHeavyStrike(`${id}_LANCE`,lanceName,damageType,1.4,6800,700);
  let nova=pveInterruptibleWave(`${id}_NOVA`,novaName,damageType,1.05,10800,1450);
  const extras:CombatantDefinition['abilities']=[];
- if(name==='The Hollow Regent'){lance=pveFocusStrike(`${id}_LANCE`,lanceName,damageType,1.12,7000);nova=pveDotWave(`${id}_NOVA`,novaName,damageType,.82,10800);}
- if(name==='The Coinbound Captain')extras.push(pveEnrage(`${id}_RALLY`,'Gilded Rally',.08,16000));
- if(name==='The Rimebell Colossus')extras.push(pveBarrier(`${id}_WARD`,'Rimebell Ward',3200*scale,15000));
- const definition:CombatantDefinition={id,name,team:'enemies',role:'enemy',level,boss:true,stats:stats(58_000*scale,3_700*scale,1_500*scale,level),basicAttackMs:2650,basicAttackCoeff:.8,abilities:[lance,nova,...extras],phases:[{id:`${id}_PHASE_50`,name:'Pressure Break',hpPct:.5,target:'all_enemies',effects:[{kind:'damage',coeff:.65,damageType},{kind:'debuff',tag:'damage_taken',value:.06,durationMs:7500}]}]};
+ let phases:NonNullable<CombatantDefinition['phases']>=[{id:`${id}_PHASE_50`,name:'Pressure Break',hpPct:.5,target:'all_enemies',effects:[{kind:'damage',coeff:.65,damageType},{kind:'debuff',tag:'damage_taken',value:.06,durationMs:7500}]}];
+ if(name==='The Hollow Regent'){
+  lance=pveFocusStrike(`${id}_LANCE`,lanceName,damageType,1.12,7000);
+  nova=pveDotWave(`${id}_NOVA`,novaName,damageType,.82,10800);
+  phases=[
+   {id:`${id}_PHASE_LANTERNS_DIM`,name:'Lanterns Dim',hpPct:.7,target:'all_enemies',effects:[{kind:'damage',coeff:.38,damageType:'shadow'},{kind:'dot',coeff:.08,damageType:'shadow',durationMs:6000,tickMs:2000}]},
+   {id:`${id}_PHASE_REGENTS_DECREE`,name:"Regent's Decree",hpPct:.35,target:'random_enemy',effects:[{kind:'damage',coeff:.72,damageType:'shadow',executeBelowHpPct:.35,executeBonus:.25}]},
+  ];
+ }
+ if(name==='The Coinbound Captain'){
+  extras.push(pveEnrage(`${id}_RALLY`,'Gilded Rally',.08,16000));
+  phases=[
+   {id:`${id}_PHASE_TOLL_DUE`,name:'Toll Is Due',hpPct:.7,target:'all_enemies',effects:[{kind:'damage',coeff:.42,damageType:'physical'},{kind:'debuff',tag:'damage_taken',value:.05,durationMs:6500}]},
+   {id:`${id}_PHASE_CAPTAINS_SHARE`,name:"Captain's Share",hpPct:.35,target:'self',effects:[{kind:'buff',tag:'damage_done',value:.12,durationMs:30000},{kind:'buff',tag:'crit',value:.06,durationMs:30000}]},
+  ];
+ }
+ if(name==='The Rimebell Colossus'){
+  extras.push(pveBarrier(`${id}_WARD`,'Rimebell Ward',3200*scale,15000));
+  phases=[
+   {id:`${id}_PHASE_FROZEN_CARAPACE`,name:'Frozen Carapace',hpPct:.65,target:'self',effects:[{kind:'shield',flat:4200*scale}]},
+   {id:`${id}_PHASE_LAST_TOLL`,name:'Last Toll',hpPct:.3,target:'all_enemies',effects:[{kind:'damage',coeff:.62,damageType:'ice'}]},
+  ];
+ }
+ const definition:CombatantDefinition={id,name,team:'enemies',role:'enemy',level,boss:true,stats:stats(58_000*scale,3_700*scale,1_500*scale,level),basicAttackMs:2650,basicAttackCoeff:.8,abilities:[lance,nova,...extras],phases};
  return[withPveIdentity(definition,identity.archetype,identity.mechanics)];
 };
 

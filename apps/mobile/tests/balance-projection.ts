@@ -1,7 +1,7 @@
 import {createCharacter,newGame,startGathering} from '../src/core/game';
 import {GATHERING} from '../src/content/skills';
 import {MONSTERS} from '../src/content/monsters';
-import {activeActivityLevelPace,combatBaselineProjection,dropExpectation,formatBalanceDuration,gatheringBalanceProjection,skillTargetEta} from '../src/core/balance-projection';
+import {activeActivityLevelPace,activityProgressFeedback,combatBaselineProjection,craftingPaceProjection,dropExpectation,formatBalanceDuration,gatheringBalanceProjection,skillTargetEta} from '../src/core/balance-projection';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 function close(actual:number,expected:number,tolerance:number,message:string){if(Math.abs(actual-expected)>tolerance)throw new Error(message+': expected '+expected+', got '+actual)}
@@ -11,10 +11,17 @@ const greenwood=GATHERING.find(row=>row.id==='GREENWOOD_TREE')!;
 const gather=gatheringBalanceProjection(state,greenwood,24);
 ok(gather.cycleSeconds>greenwood.seconds,'Gathering projection must include global pacing/tool/weather modifiers');
 ok(gather.xpPerHour>0&&gather.levelPace.etaSeconds!==undefined,'Gathering projection must expose XP/hour and next-level ETA');
-ok(gather.runtimeItemsPerHour<gather.authoredMeanItemsPerHour,'Projection must expose the current runtime minimum-yield behavior instead of overstating min/max average yield');
-close(gather.runtimeItemsPerHour/gather.authoredMeanItemsPerHour,2/3,.02,'1-2 authored yield should reveal the current 1-vs-1.5 runtime/display gap');
+close(gather.runtimeItemsPerHour,gather.authoredMeanItemsPerHour,.001,'Runtime gathering expectation must honor the authored min/max mean yield');
 const target=skillTargetEta(state,'woodcutting',7,gather.xpPerHour);
 ok((target.etaSeconds??0)>gather.levelPace.etaSeconds!,'Higher skill unlock ETA must include multiple levels of XP');
+const starterToolState={...state,character:{...state.character!,equippedToolIds:{woodcutting:'GREENWOOD_HATCHET'}}};
+const ironToolState={...state,character:{...state.character!,equippedToolIds:{woodcutting:'ASTER_IRON_HATCHET'}}};
+const oathToolState={...state,character:{...state.character!,equippedToolIds:{woodcutting:'OATHSTONE_HATCHET'}}};
+const ironwood=GATHERING.find(row=>row.id==='IRONWOOD_TREE')!,crownwood=GATHERING.find(row=>row.id==='CROWNWOOD_TREE')!;
+const starterPace=gatheringBalanceProjection(starterToolState,greenwood,24),midPace=gatheringBalanceProjection(ironToolState,ironwood,24),highPace=gatheringBalanceProjection(oathToolState,crownwood,24);
+ok(midPace.xpPerHour>starterPace.xpPerHour,'Recommended tier-2 gathering must improve XP/hour over starter gathering');
+ok(highPace.xpPerHour>midPace.xpPerHour,'Recommended tier-3 gathering must improve XP/hour over tier-2 gathering');
+ok(crownwood.recommendedToolTier===3,'Level-15 Crownwood must correctly recommend the tier-3 tool');
 
 state=startGathering(state,'GREENWOOD_TREE',1000);
 const active=activeActivityLevelPace(state,gather.xpPerHour);
@@ -29,5 +36,11 @@ const expected=dropExpectation(gearDrop.chance,gearDrop.min,gearDrop.max,combat.
 close(expected.oneIn,1/gearDrop.chance,.001,'Drop odds must be the reciprocal of per-kill chance');
 ok(expected.averageFindSeconds>combat.cycleSeconds,'Rare-drop average find time must exceed one kill cycle');
 ok(formatBalanceDuration(30)==='<1m'&&formatBalanceDuration(3600)==='1h'&&formatBalanceDuration(90000)==='1d 1h','Balance duration labels must stay compact and readable');
+ok(activityProgressFeedback('gathering',.1)==='Preparing tools…'&&activityProgressFeedback('gathering',.8)==='Finishing the action…','Gathering cycle feedback must describe real progress phases');
+ok(activityProgressFeedback('combat',.1)==='Tracking the target…'&&activityProgressFeedback('combat',.8)==='Pressing the advantage…','Combat cycle feedback must describe real progress phases');
+const mockRecipe={id:'TEST_RECIPE',name:'Test',skillId:'smithing' as const,level:1,xp:100,gold:0,seconds:60,inputs:[],output:{itemId:'COPPER_INGOT',quantity:1}};
+const craftPace=craftingPaceProjection(state,mockRecipe,60,100);
+close(craftPace.craftsPerHour,60,.001,'One-minute timed crafting must project 60 crafts/hour');
+close(craftPace.xpPerHour,6000,.001,'Timed crafting XP/hour must derive from duration and XP/craft');
 
 console.log('PASS: progression pace, gathering runtime yield and combat/drop expectations share authoritative balance math');

@@ -68,9 +68,9 @@ export function professionMasteryAccountRecords(state:GameState):ProfessionMaste
  }
  return rows.sort((a,b)=>b.rank-a.rank||b.points-a.points||a.name.localeCompare(b.name));
 }
-export function professionMasteryMasteredRecords(state:GameState,skillId?:SkillId){
- if(skillId)return professionMasteryActionsForSkill(state,skillId).filter(row=>row.mastered).sort((a,b)=>a.name.localeCompare(b.name));
- return professionMasteryAccountRecords(state).filter(row=>row.mastered).sort((a,b)=>a.name.localeCompare(b.name));
+export function professionMasteryMasteredRecords(state:GameState,skillId?:SkillId):ProfessionMasteryAccountRecord[]{
+ const rows=professionMasteryAccountRecords(state).filter(row=>row.mastered&&(!skillId||row.skillId===skillId));
+ return rows.sort((a,b)=>a.name.localeCompare(b.name));
 }
 export function professionMasteryHallSummary(state:GameState){
  const rows=professionMasteryAccountRecords(state),bySkill=new Map<SkillId,{skillId:SkillId;label:string;mastered:number;trained:number;bestRank:number}>();

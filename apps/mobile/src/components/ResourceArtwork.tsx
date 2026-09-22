@@ -8,6 +8,13 @@ import {
   regionalResourceSheet,
 } from '../theme/regional-resource-assets';
 import {
+  REMAINING_ITEM_CELL,
+  REMAINING_ITEM_SHEET_HEIGHT,
+  REMAINING_ITEM_SHEET_WIDTH,
+  remainingItemCell,
+  remainingItemSheet,
+} from '../theme/remaining-item-assets';
+import {
   RUNTIME_ITEM_CELL,
   RUNTIME_ITEM_SHEET_HEIGHT,
   RUNTIME_ITEM_SHEET_WIDTH,

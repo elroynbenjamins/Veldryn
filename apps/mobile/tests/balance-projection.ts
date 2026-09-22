@@ -40,8 +40,9 @@ ok((active?.etaSeconds??0)>0,'Active gathering pace must expose a next-level ETA
 const rat=MONSTERS.find(row=>row.id==='MOSS_RAT')!,combat=combatBaselineProjection(rat);
 ok(combat.cycleSeconds>rat.secondsPerKill,'Combat baseline must include the global combat-time scale used by settlement');
 ok(combat.killsPerHour>0&&combat.xpPerHour>0,'Combat baseline must expose kills/hour and XP/hour');
-const firstCombatLevel=characterLevelPace(state,combat.xpPerHour);
-ok((firstCombatLevel.etaSeconds??Infinity)>0&&(firstCombatLevel.etaSeconds??Infinity)<=35*60,'Baseline starter combat should gain the first character level within roughly 35 minutes');
+const combatState=createCharacter(newGame(1),'IRONWARDEN','Combat Pace Tester');
+const firstCombatLevel=characterLevelPace(combatState,combat.xpPerHour),firstCombatEta=firstCombatLevel.etaSeconds??Infinity;
+ok(firstCombatEta>0&&firstCombatEta<=35*60,'Baseline starter combat should gain the first character level within roughly 35 minutes; got '+firstCombatEta+'s from '+firstCombatLevel.need+' XP at '+Math.round(combat.xpPerHour)+' XP/hr');
 const thornling=MONSTERS.find(row=>row.id==='THORNLING')!,revenantLevel=MONSTERS.find(row=>row.id==='OATHGLASS_REVENANT')!;
 const level10State={...state,character:{...state.character!,level:10,xp:characterTotalXpAtLevel(10)}},level25State={...state,character:{...state.character!,level:25,xp:characterTotalXpAtLevel(25)}};
 const level10Combat=characterLevelPace(level10State,combatBaselineProjection(thornling).xpPerHour),level25Combat=characterLevelPace(level25State,combatBaselineProjection(revenantLevel).xpPerHour);

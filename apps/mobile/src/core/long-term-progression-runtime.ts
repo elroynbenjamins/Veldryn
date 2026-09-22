@@ -1,5 +1,5 @@
 import type {CombatChallengeId,GameState,RewardBundle} from './types';
-import {grantProfessionMastery,type ProfessionMasteryRecord} from './profession-mastery-v40';
+import {grantProfessionMastery,professionMasteryRank,type ProfessionMasteryRecord} from './profession-mastery-v40';
 import {applyWeeklyOrderProgress,claimWeeklyCompletion,claimWeeklyOrder,generateWeeklyOrders,weeklyOrderWindow,type WeeklyOrdersState} from './weekly-orders-v41';
 import {weeklyOrderCandidatesFromCurrentContent} from './launch-readiness-v47';
 import {applyCrossSkillSnapshot,newCrossSkillState,type CrossSkillState} from './cross-skill-discoveries-v45';
@@ -132,6 +132,7 @@ function journalMetrics(state:GameState){
  metrics['account.combined_skill_levels']=combinedAccountSkillLevels(state);
  metrics['bestiary.completion_percent']=bestiaryProjection(state).completionPercent;
  metrics['companions.collection_percent']=companionCollectionPercent(state);
+ metrics['profession.mastered_actions']=Object.values(state.account.professionMasteryByAction??{}).filter(row=>professionMasteryRank(row.points)>=50).length;
  return metrics;
 }
 function updateRecord(journal:JournalState,event:PersonalRecordEvent,changed:string[]){

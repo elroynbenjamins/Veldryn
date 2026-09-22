@@ -61,6 +61,8 @@ ok(sigilExpected.averageFindSeconds>=3*3600&&sigilExpected.averageFindSeconds<=1
 ok(formatBalanceDuration(30)==='<1m'&&formatBalanceDuration(3600)==='1h'&&formatBalanceDuration(90000)==='1d 1h','Balance duration labels must stay compact and readable');
 ok(activityProgressFeedback('gathering',.1)==='Preparing tools…'&&activityProgressFeedback('gathering',.8)==='Finishing the action…','Gathering cycle feedback must describe real progress phases');
 ok(activityProgressFeedback('combat',.1)==='Tracking the target…'&&activityProgressFeedback('combat',.8)==='Pressing the advantage…','Combat cycle feedback must describe real progress phases');
+ok(activityProgressFeedback('crafting',.1)==='Preparing materials…'&&activityProgressFeedback('faith',.8)==='Deepening devotion…','Crafting and Faith must use activity-specific progress language');
+ok(activityProgressFeedback('training',.8)==='Refining form…'&&activityProgressFeedback('exploration',.8)==='Following the trail…','Training and Exploration must use activity-specific progress language');
 const mockRecipe={id:'TEST_RECIPE',name:'Test',skillId:'smithing' as const,level:1,xp:100,gold:0,seconds:60,inputs:[],output:{itemId:'COPPER_INGOT',quantity:1}};
 const craftPace=craftingPaceProjection(state,mockRecipe,60,100);
 close(craftPace.craftsPerHour,60,.001,'One-minute timed crafting must project 60 crafts/hour');

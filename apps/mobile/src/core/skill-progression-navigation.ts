@@ -7,6 +7,7 @@ import type {GameState,GatheringSkillId,SkillId} from './types';
 import {recipeAvailability} from './playability';
 import {alchemyAvailability} from './alchemy';
 import {workingTowardDestinationAvailability,workingTowardItemSource,type WorkingTowardDestination,type WorkingTowardDestinationAvailability} from './working-toward';
+import {acquisitionProjectionForDestination,formatBalanceDuration} from './balance-projection';
 
 const gatheringDefs=[...GATHERING,...HERB_NODES];
 const pretty=(id:string)=>id.replace(/_/g,' ').replace(/\b\w/g,char=>char.toUpperCase());
@@ -72,6 +73,8 @@ export interface RecipeProgressionSource{
  missing:number;
  destination:WorkingTowardDestination;
  availability:WorkingTowardDestinationAvailability;
+ estimatedSeconds?:number;
+ estimateLabel?:string;
 }
 
 export function recipeProgressionSources(state:GameState,recipe:Recipe,inputs:ReadonlyArray<{itemId:string;quantity:number;inventory:number;bank:number}>):RecipeProgressionSource[]{
@@ -83,8 +86,8 @@ export function recipeProgressionSources(state:GameState,recipe:Recipe,inputs:Re
  for(const input of inputs){
   const owned=input.inventory+input.bank,missing=Math.max(0,input.quantity-owned);
   if(!missing)continue;
-  const destination=workingTowardItemSource(state,input.itemId);
-  rows.push({key:`material:${input.itemId}`,label:itemDef(input.itemId).name,owned,required:input.quantity,missing,destination,availability:workingTowardDestinationAvailability(state,destination)});
+  const destination=workingTowardItemSource(state,input.itemId),projection=acquisitionProjectionForDestination(state,input.itemId,missing,destination);
+  rows.push({key:`material:${input.itemId}`,label:itemDef(input.itemId).name,owned,required:input.quantity,missing,destination,availability:workingTowardDestinationAvailability(state,destination),...(projection?{estimatedSeconds:projection.etaSeconds,estimateLabel:`~${formatBalanceDuration(projection.etaSeconds)} · ${projection.basis==='current'?'current pace':'base pace'}`}:{})});
  }
  return rows;
 }

@@ -3,11 +3,8 @@ import {RegionArtwork} from '../components/RegionArtwork';
 import {ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
 import {WORLD_ZONES} from '../content/world-map';
-import {GATHERING} from '../content/skills';
-import {HERB_NODES} from '../content/herbalism';
-import {MONSTERS} from '../content/monsters';
 import {currentRegionId} from '../core/combat-region';
-import {nextRegionUnlock} from '../core/world-navigation';
+import {nextRegionUnlock,orderedTravelRegions,regionActivitySummary} from '../core/world-navigation';
 import {environmentForZone} from '../core/world-weather';
 import {EnvironmentBanner} from '../components/EnvironmentBanner';
 import {Panel} from '../components/Panel';
@@ -38,9 +35,9 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop,onR
   const current=WORLD_ZONES.find(zone=>zone.id===currentId)??WORLD_ZONES[0];
   const environment=environmentForZone(current.id);
   const next=nextRegionUnlock(level);
-  const combatCount=MONSTERS.filter(monster=>monster.zone===current.name&&!monster.boss).length;
-  const gathering=[...GATHERING,...HERB_NODES].filter(activity=>activity.zoneId===current.id);
   const storyRegion=currentId==='SUNSCAR'||currentId==='FROSTMARCH'||currentId==='ASHLANDS'?currentId:undefined;
+  const currentSummary=regionActivitySummary(state,current.id),travelRegions=orderedTravelRegions(state,current.id,goalRegionId);
+  const nextUnlockProgress=next?Math.max(3,Math.min(100,level/Math.max(1,next.minLevel)*100)):100;
 
   const sunscar=current.id==='SUNSCAR',frostmarch=current.id==='FROSTMARCH';
   const [serverFrostmarchProgress,setServerFrostmarchProgress]=useState<RegionProgressV21|null>(null);
@@ -72,36 +69,45 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop,onR
     <EnvironmentBanner environment={environmentForZone(current.id)}/>
 
     <Panel accentColor={current.accent}>
-      <Text style={s.title}>Activities in {current.name}</Text>
-      <Text style={s.sub}>{combatCount} combat encounter{combatCount===1?'':'s'} · {gathering.length?gathering.map(entry=>entry.skillId).filter((value,index,list)=>list.indexOf(value)===index).join(', '):'no gathering nodes'}</Text>
-      <View style={s.actions}><View style={s.flex}><GameButton title="Open Combat" onPress={onOpenCombat}/></View><View style={s.flex}><GameButton title="Open Skills" tone="secondary" onPress={onOpenSkills}/></View></View>
+      <View style={s.regionHubHead}><View style={s.flex}><Text style={s.section}>CURRENT REGION CONTENT</Text><Text style={s.title}>What can I do in {current.name}?</Text></View><Text style={s.regionLevel}>Lv {current.minLevel}–{current.maxLevel}</Text></View>
+      <View style={s.regionStats}>
+        <RegionStat label="HUNTS" value={currentSummary.combatReady+'/'+currentSummary.combatTotal}/>
+        <RegionStat label="GATHER" value={currentSummary.gatheringReady+'/'+currentSummary.gatheringTotal}/>
+        <RegionStat label="BOSSES" value={currentSummary.bossesReady+'/'+currentSummary.bossesTotal}/>
+      </View>
+      <Text style={s.sub}>{currentSummary.gatheringSkills.length?'Gathering: '+currentSummary.gatheringSkills.join(', '):'No gathering nodes in this region yet.'}</Text>
+      <View style={s.actions}><View style={s.flex}><GameButton compact title="Combat" onPress={onOpenCombat}/></View><View style={s.flex}><GameButton compact title="Skills" tone="secondary" onPress={onOpenSkills}/></View>{onCoop?<View style={s.flex}><GameButton compact title="Co-op" tone="secondary" onPress={onCoop}/></View>:null}</View>
     </Panel>
 
+    {goalRegionId&&goalRegionId!==current.id?<View style={s.goalRoute}><Text style={s.goalRouteLabel}>WORKING TOWARD ROUTE</Text><Text style={s.sub}>Your pinned goal continues in {WORLD_ZONES.find(zone=>zone.id===goalRegionId)?.name??goalRegionId}. It is promoted to the top of Travel Elsewhere below.</Text></View>:null}
+
     {storyRegion&&<RegionalStoryLeadsPanel state={state} regionId={storyRegion} onOpenCombat={()=>onOpenCombat()}/>}
-
-    {goalRegionId&&goalRegionId!==current.id?<View style={s.goalRoute}><Text style={s.goalRouteLabel}>WORKING TOWARD ROUTE</Text><Text style={s.sub}>Travel to {WORLD_ZONES.find(zone=>zone.id===goalRegionId)?.name??goalRegionId} to continue your pinned goal.</Text></View>:null}
-    <Text style={s.section}>CHOOSE A DESTINATION</Text>
-    {WORLD_ZONES.filter(zone=>zone.id!==current.id).map(zone=>{
-      const unlocked=level>=zone.minLevel,active=zone.id===current.id,environment=environmentForZone(zone.id);
-      const goalTarget=goalRegionId===zone.id;return <View key={zone.id} style={[s.destination,active&&{borderColor:zone.accent},goalTarget&&s.goalDestination]}>
-        <View style={s.thumbnail}><RegionArtwork regionId={zone.id} muted={!unlocked}/>{!unlocked&&<View style={s.lockedTag}><Text style={s.lockedText}>Lv. {zone.minLevel}</Text></View>}</View>
-        <View style={s.flex}>
-          <View style={s.destinationHead}><Text style={s.destinationName}>{zone.name}</Text>{goalTarget?<Text style={s.goalBadge}>GOAL</Text>:null}</View>
-          <Text style={s.destinationMeta}>{unlocked?`Levels ${zone.minLevel}–${zone.maxLevel} · ${environment.weatherSymbol} ${environment.weatherName}`:`Unlocks at level ${zone.minLevel}`}</Text>
-          {unlocked&&<Text style={s.destinationSub}>{zone.subtitle}</Text>}
-        <View style={s.travelButton}><GameButton title={active?'Here':unlocked?'Travel':`Lv. ${zone.minLevel}`} disabled={active||!unlocked} tone={active?'primary':'secondary'} onPress={()=>onTravel(zone.id)}/></View></View>
-      </View>;
-    })}
-
-    {onCoop&&<Panel><Text style={s.title}>Co-op Expeditions</Text><Text style={s.sub}>Group expeditions are entered separately from regional solo activities.</Text><GameButton title="Open Co-op Expeditions" tone="secondary" onPress={onCoop}/></Panel>}
-    <Text style={s.progress}>{next?`Next region: ${next.name} at character level ${next.minLevel}.`:'All authored regions are unlocked.'}</Text>
     {sunscar&&<><SunscarRegionPanel zones={sunscarZones}/>{onRegionalRewardsChanged?<RegionalCombatPanel state={state} onRewardsChanged={onRegionalRewardsChanged}/>:null}</>}
     {frostmarch&&<>
       <FrostmarchRegionPanel zones={frostmarchZones} progress={frostmarchProgress} contentVersion={activeFrostmarchVersion??undefined} weather={{name:environment.weatherName,endsInSeconds:Math.max(0,Math.floor((environment.changesAtMs-Date.now())/1000)),summary:environment.weatherName+' remains readable through the server-backed Season/Weather system.'}} dungeons={frostmarchDungeons} onZone={zoneId=>onOpenCombat(zoneId)} onDungeon={onCoop}/>
       <RegionalJournalPanel name="Frostmarch" progress={frostmarchProgress}/>
     </>}
+
+    <Text style={s.section}>TRAVEL ELSEWHERE</Text>
+    <View style={s.unlockCard}><View style={s.unlockHead}><View style={s.flex}><Text style={s.unlockLabel}>{next?'NEXT REGION UNLOCK':'REGION PROGRESSION'}</Text><Text style={s.unlockTitle}>{next?next.name:'All authored regions unlocked'}</Text></View>{next?<Text style={s.unlockLevel}>Lv {level}/{next.minLevel}</Text>:<Text style={s.unlockDone}>COMPLETE</Text>}</View>{next?<><View style={s.unlockTrack}><View style={[s.unlockFill,{width:(nextUnlockProgress+'%') as any}]}/></View><Text style={s.unlockMeta}>{Math.max(0,next.minLevel-level)} level{next.minLevel-level===1?'':'s'} until travel unlock.</Text></>:<Text style={s.unlockMeta}>Every currently authored region can be travelled to.</Text>}</View>
+    {travelRegions.map(zone=>{
+      const unlocked=level>=zone.minLevel,environment=environmentForZone(zone.id),summary=regionActivitySummary(state,zone.id),goalTarget=goalRegionId===zone.id;
+      const content=unlocked?'Hunts '+summary.combatReady+'/'+summary.combatTotal+' · Gather '+summary.gatheringReady+'/'+summary.gatheringTotal+(summary.bossesTotal?' · Boss '+summary.bossesReady+'/'+summary.bossesTotal:''):(summary.combatTotal+' hunts · '+summary.gatheringTotal+' gathering'+(summary.bossesTotal?' · '+summary.bossesTotal+' boss':''));
+      return <View key={zone.id} style={[s.destination,goalTarget&&s.goalDestination]}>
+        <View style={s.thumbnail}><RegionArtwork regionId={zone.id} muted={!unlocked}/>{!unlocked&&<View style={s.lockedTag}><Text style={s.lockedText}>Lv. {zone.minLevel}</Text></View>}</View>
+        <View style={s.flex}>
+          <View style={s.destinationHead}><Text style={s.destinationName}>{zone.name}</Text>{goalTarget?<Text style={s.goalBadge}>GOAL</Text>:null}</View>
+          <Text style={s.destinationMeta}>{unlocked?`Levels ${zone.minLevel}–${zone.maxLevel} · ${environment.weatherSymbol} ${environment.weatherName}`:`Unlocks at level ${zone.minLevel}`}</Text>
+          <Text numberOfLines={1} style={s.destinationContent}>{content}</Text>
+          {unlocked&&<Text numberOfLines={2} style={s.destinationSub}>{zone.subtitle}</Text>}
+          <View style={s.travelButton}><GameButton compact title={unlocked?'Travel':`Lv. ${zone.minLevel}`} disabled={!unlocked} tone="secondary" onPress={()=>onTravel(zone.id)}/></View>
+        </View>
+      </View>;
+    })}
   </ScrollView>;
 }
+
+function RegionStat({label,value}:{label:string;value:string}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);return <View style={s.regionStat}><Text style={s.regionStatLabel}>{label}</Text><Text style={s.regionStatValue}>{value}</Text></View>}
 
 function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);return StyleSheet.create({
   root:{padding:spacing.md,gap:10,paddingBottom:spacing.xl},
@@ -117,6 +123,8 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
   currentName:{...typography.title,color:C.text,fontSize:22},
   actions:{flexDirection:'row',gap:spacing.sm,marginTop:6},
   section:{...typography.caption,color:equipmentColors.goldSoft,fontWeight:'700',letterSpacing:1},
+  regionHubHead:{flexDirection:'row',alignItems:'center',gap:8},regionLevel:{...typography.caption,color:C.info,fontWeight:'900'},regionStats:{flexDirection:'row',gap:6},regionStat:{flex:1,minWidth:0,padding:7,borderWidth:1,borderColor:C.line,borderRadius:8,backgroundColor:C.panel2},regionStatLabel:{fontSize:8,color:C.muted,fontWeight:'900',letterSpacing:.55},regionStatValue:{...typography.bodyStrong,color:C.text,fontWeight:'900'},
+  unlockCard:{gap:5,padding:spacing.sm,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel},unlockHead:{flexDirection:'row',alignItems:'center',gap:8},unlockLabel:{fontSize:8.5,color:C.muted,fontWeight:'900',letterSpacing:.7},unlockTitle:{...typography.bodyStrong,color:C.text},unlockLevel:{...typography.bodyStrong,color:C.info,fontWeight:'900'},unlockDone:{fontSize:9,color:C.good,fontWeight:'900'},unlockTrack:{height:5,borderRadius:3,overflow:'hidden',backgroundColor:C.bg},unlockFill:{height:'100%',borderRadius:3,backgroundColor:C.accent},unlockMeta:{...typography.caption,color:C.muted},
   destination:{minHeight:92,flexDirection:'row',alignItems:'center',gap:spacing.sm,padding:spacing.sm,backgroundColor:equipmentColors.panel,borderWidth:1,borderColor:C.line,borderRadius:radii.lg},
   smallSymbol:{width:44,height:44,alignItems:'center',justifyContent:'center',borderWidth:1,borderRadius:22,backgroundColor:equipmentColors.stage},
   smallSymbolText:{fontSize:21,fontWeight:'700'},
@@ -127,6 +135,7 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
   goalRoute:{padding:spacing.sm,borderLeftWidth:3,borderLeftColor:C.info,backgroundColor:C.infoSurface},
   goalRouteLabel:{...typography.caption,color:C.info,fontWeight:'900',letterSpacing:.8},
   destinationMeta:{...typography.caption,color:C.info,fontWeight:'600'},
+  destinationContent:{fontSize:10,lineHeight:14,color:C.text,fontWeight:'800'},
   destinationSub:{fontSize:12,lineHeight:17,color:C.muted},
   travelButton:{alignSelf:'flex-start',minWidth:88,marginTop:5},
   progress:{...typography.caption,color:C.muted,textAlign:'center'},

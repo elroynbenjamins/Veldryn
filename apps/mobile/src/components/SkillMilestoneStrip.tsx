@@ -10,7 +10,7 @@ import {useGameTheme} from '../theme/ThemeContext';
 function MilestoneRow({row,tone,onNavigate}:{row:SkillMilestone;tone:'latest'|'next';onNavigate?:(destination:WorkingTowardDestination)=>void}){
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),canOpen=!!row.destination&&!!onNavigate;
  const body=<><View style={s.rowTop}><Text style={[s.category,tone==='latest'?s.categoryLatest:s.categoryNext]}>{row.category}</Text><Text style={s.rowLevel}>LV {row.level}</Text></View><Text numberOfLines={1} style={s.name}>{row.title}</Text><Text numberOfLines={2} style={s.detail}>{row.detail}{canOpen?' · Open ›':''}</Text></>;
- return canOpen?<Pressable accessibilityRole="button" accessibilityLabel={'Open '+row.title} onPress={()=>onNavigate(row.destination!)} style={({pressed})=>[s.row,pressed&&s.pressed]}>{body}</Pressable>:<View style={s.row}>{body}</View>;
+ return canOpen?<Pressable accessibilityRole="button" accessibilityLabel={'Open '+row.title} onPress={()=>{if(row.destination&&onNavigate)onNavigate(row.destination)}} style={({pressed})=>[s.row,pressed&&s.pressed]}>{body}</Pressable>:<View style={s.row}>{body}</View>;
 }
 export function SkillMilestoneStrip({state,skillId,onNavigate}:{state:GameState;skillId:SkillId;onNavigate?:(destination:WorkingTowardDestination)=>void}){
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),view=skillMilestoneOverview(state,skillId);

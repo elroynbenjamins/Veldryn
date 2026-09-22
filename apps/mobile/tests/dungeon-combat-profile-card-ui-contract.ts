@@ -80,6 +80,11 @@ ok(inspect.includes('status.label')&&inspect.includes('status.stacks>1')&&inspec
 ok(inspect.includes("status.source==='gem'")&&inspect.includes("return 'Effect Gem'")&&inspect.includes("return 'Damage over time'")&&inspect.includes("return 'Healing over time'"),'Inspection panel must explain Effect Gem and timed-effect sources in player-facing terms');
 ok(inspect.includes('BARRIER')&&inspect.includes('COMPANION')&&inspect.includes('PHASE'),'Inspection panel must surface combat barrier, companion and boss phase context when available');
 ok(inspect.includes('INTERRUPTIBLE CAST')&&inspect.includes('Focus →'),'Boss inspection must retain cast interruptibility and authoritative focus target context');
+ok(stage.includes('stepReplay=(delta:-1|1)')&&stage.includes('setCueIndex(value=>Math.max(0,Math.min(cues.length-1,value+delta)))'),'Paused combat inspection must step safely between authoritative replay cues');
+ok(stage.includes('accessibilityLabel="Previous combat event"')&&stage.includes('accessibilityLabel="Next combat event"'),'Paused replay must expose accessible previous/next event controls');
+ok(stage.includes('disabled={cueIndex<=0}')&&stage.includes('disabled={cueIndex>=cues.length-1}'),'Event-step controls must clamp at replay boundaries');
+ok(stage.includes('(!complete||paused)&&!reduceMotion&&cues.length>1'),'Paused inspection must retain controls even when manually stepped onto the final cue');
+ok(stage.includes('if(!reduceMotion&&cues.length>1)setPaused(true)'),'Inspecting any replay moment, including the final result, must enter a step-capable paused state');
 for(const enemy of ['The Hollow Regent','The Coinbound Captain','The Rimebell Colossus','Veilshade Stalker','Ledger Hexer','Bellfrost Spirit'])ok(enemyArt.toLowerCase().includes(enemy.toLowerCase()),enemy+' must have registered encounter artwork');
 ok(enemyArt.includes("require('../../assets/dungeon-enemies-v1/"),'Enemy artwork must be bundled as static Metro assets');
 

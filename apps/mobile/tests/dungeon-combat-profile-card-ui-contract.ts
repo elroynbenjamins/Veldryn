@@ -73,13 +73,19 @@ ok(stage.includes('layout.contributionIdentityMinWidth')&&stage.includes('layout
 ok(card.includes('selectedForInspect')&&card.includes('Inspect ${slot.name} combat details'),'Party combat cards must expose tap-to-inspect interaction without adding a permanent button row');
 ok(card.includes('Inspect ${name} combat details')&&card.includes('inspectSelected'),'Boss/enemy combat cards must support the same inspect interaction and selected state');
 ok(stage.includes('inspectKey')&&stage.includes("toggleInspect('enemy')")&&stage.includes('slotInspectKey(slot)'),'Battlefield must track inspection for both enemy and all four party cards');
-ok(stage.includes('if(!complete&&!reduceMotion)setPaused(true)'),'Opening combat inspection during active playback must pause automatic cue advance for readability');
+ok(stage.includes('if(!reduceMotion&&cues.length>1)setPaused(true)'),'Opening combat inspection must enter a step-capable paused replay state when replay cues are available');
 ok(stage.includes('<CombatantInspectPanel')&&stage.includes('onClose={()=>setInspectKey(undefined)}'),'Selected combatant must render a closable compact inspection panel');
 ok(inspect.includes('COMBAT INSPECT')&&inspect.includes('ACTIVE EFFECTS'),'Inspection panel must clearly separate combat identity and effect details');
 ok(inspect.includes('status.label')&&inspect.includes('status.stacks>1')&&inspect.includes('remaining(status.remainingMs)'),'Inspection panel must show full effect name, stacks and remaining duration rather than only compact codes');
 ok(inspect.includes("status.source==='gem'")&&inspect.includes("return 'Effect Gem'")&&inspect.includes("return 'Damage over time'")&&inspect.includes("return 'Healing over time'"),'Inspection panel must explain Effect Gem and timed-effect sources in player-facing terms');
 ok(inspect.includes('BARRIER')&&inspect.includes('COMPANION')&&inspect.includes('PHASE'),'Inspection panel must surface combat barrier, companion and boss phase context when available');
 ok(inspect.includes('INTERRUPTIBLE CAST')&&inspect.includes('Focus →'),'Boss inspection must retain cast interruptibility and authoritative focus target context');
+// Paused inspection stepping stays bounded to the authoritative replay cue list.
+ok(stage.includes('stepReplay=(delta:-1|1)')&&stage.includes('setCueIndex(value=>Math.max(0,Math.min(cues.length-1,value+delta)))'),'Paused combat inspection must step safely between authoritative replay cues');
+ok(stage.includes('accessibilityLabel="Previous combat event"')&&stage.includes('accessibilityLabel="Next combat event"'),'Paused replay must expose accessible previous/next event controls');
+ok(stage.includes('disabled={cueIndex<=0}')&&stage.includes('disabled={cueIndex>=cues.length-1}'),'Event-step controls must clamp at replay boundaries');
+ok(stage.includes('(!complete||paused)&&!reduceMotion&&cues.length>1'),'Paused inspection must retain controls even when manually stepped onto the final cue');
+ok(stage.includes('if(!reduceMotion&&cues.length>1)setPaused(true)'),'Inspecting any replay moment, including the final result, must enter a step-capable paused state');
 for(const enemy of ['The Hollow Regent','The Coinbound Captain','The Rimebell Colossus','Veilshade Stalker','Ledger Hexer','Bellfrost Spirit'])ok(enemyArt.toLowerCase().includes(enemy.toLowerCase()),enemy+' must have registered encounter artwork');
 ok(enemyArt.includes("require('../../assets/dungeon-enemies-v1/"),'Enemy artwork must be bundled as static Metro assets');
 

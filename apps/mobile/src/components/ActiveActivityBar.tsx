@@ -23,7 +23,7 @@ export function ActiveActivityBar({state,nowMs,onOpen}:{state:GameState;nowMs:nu
  const cycleSeconds=Math.max(1,monster?.secondsPerKill??gathering?.seconds??1);
  const cycleElapsedSeconds=Math.max(0,(nowMs-activity.lastClaimAtMs)/1000);
  const progressPct=Math.round((cycleElapsedSeconds%cycleSeconds)/cycleSeconds*100),progress=`${progressPct}%` as `${number}%`;
- const combat=activity.kind==='combat',phase=activityProgressFeedback(combat?'combat':'gathering',progressPct/100),cycleRemaining=Math.max(1,Math.ceil(cycleSeconds-(cycleElapsedSeconds%cycleSeconds)));
+ const combat=activity.kind==='combat',progressKind=combat?'combat':activity.kind==='alchemy'?'crafting':activity.kind==='faith'?'faith':activity.kind==='training'?'training':activity.kind==='exploration'?'exploration':'gathering',phase=activityProgressFeedback(progressKind,progressPct/100),cycleRemaining=Math.max(1,Math.ceil(cycleSeconds-(cycleElapsedSeconds%cycleSeconds)));
  const monsterHp=monster?Math.max(0,Math.ceil(monster.hp*(1-progressPct/100))):0,damageDone=monster?Math.max(0,monster.hp-monsterHp):0,damageTaken=combat?Math.max(0,(state.character?.hp??0)-(state.character?.currentHp??0)):0;
  return <Pressable accessibilityRole="button" accessibilityLabel={`${labels[activity.kind]} ${name}, active for ${elapsed(activity.startedAtMs,nowMs)}`} accessibilityHint="Opens the active activity" onPress={onOpen} style={({pressed})=>[s.root,combat?s.combat:s.skilling,pressed&&s.pressed]}>
   <View style={s.art}>{monster?<MonsterPortraitFrame monster={monster} size={38} active reduceMotion={state.settings.reduceMotion} framed={false}/>:<ActivityArtwork id={activity.kind as any} size={36}/>}</View>

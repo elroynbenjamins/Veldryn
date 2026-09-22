@@ -9,6 +9,24 @@ ok(!home.includes('title="Explore world"'),'Home must not duplicate the persiste
 ok(!home.includes('title="Equipment & food"'),'Home must not duplicate the persistent Inventory navigation action');
 ok(home.includes("completed>0?\`Claim \${completed}\`:'Journal'"),'Quest-ready state must stay integrated into the campaign strip');
 
+
+const sessionOverview=read('src/components/HomeSessionOverview.tsx');
+ok(home.includes('<HomeSessionOverview'),'Home must expose one compact session-priority surface');
+ok(home.indexOf('<HomeSessionOverview')<home.indexOf('ASTERFALL CAMPAIGN'),'Session priorities must appear before broader campaign/planning detail');
+ok(home.includes('showProgress&&<View style={s.expanded}><WorkingTowardSummary')&&home.includes('<SkillDashboard state={state}'),'Full goals, weekly, daily and skill snapshots must move behind the secondary progress disclosure');
+ok((home.match(/<SkillDashboard/g)??[]).length===1,'Home must not duplicate the full skill snapshot outside its secondary progress area');
+ok(home.includes('Goals, daily & skill progress')&&home.includes('Working Toward · Contract Board · Daily Supplies · skill snapshot'),'Home secondary disclosure must clearly describe the systems it contains');
+ok(sessionOverview.includes('SESSION OVERVIEW')&&sessionOverview.includes('label="READY"')&&sessionOverview.includes('label="GOALS"')&&sessionOverview.includes('label="WEEKLY"')&&sessionOverview.includes('label="NEW"'),'Home session overview must preserve the four compact action categories');
+ok(sessionOverview.includes("cell:{position:'relative',flex:1,minWidth:0,minHeight:48"),'Home session cells must stay compact while retaining accessible touch height');
+ok(sessionOverview.includes('useWindowDimensions')&&sessionOverview.includes("width<350||fontScale>=1.25")&&sessionOverview.includes("cellStack:{flex:0,flexBasis:'48%'"),'Home session overview must collapse to a clean 2×2 layout on narrow phones or larger text');
+ok(sessionOverview.includes('goodSurface')&&sessionOverview.includes('infoSurface')&&sessionOverview.includes('specialSurface')&&sessionOverview.includes('accentSurface'),'Home session cells must use semantic theme surfaces for restrained color emphasis');
+const dashboardCore=read('src/core/dashboard.ts');
+ok(dashboardCore.includes('homeSessionSummary')&&dashboardCore.includes("kind:'quests'")&&dashboardCore.includes("kind:'daily'")&&dashboardCore.includes("kind:'events'")&&dashboardCore.includes("kind:'goals'"),'Home ready-now priority must remain deterministic and derived from existing systems');
+
+ok(home.includes('identityCopy:{flex:1,minWidth:0,gap:5}')&&home.includes('levelBadge:'),'Home identity must combine character XP and level into one compact modern header');
+ok(home.includes('guideTop:')&&home.includes('RECOMMENDED')&&home.includes("borderLeftColor:C.info"),'Home Next Step must retain a clear modern recommendation treatment');
+ok(home.includes('utilityDisclosure:{minHeight:54')&&home.includes('utilityDisclosureOpen:{borderColor:C.info'),'Home secondary sections must use compact card-like disclosures with a clear open state');
+
 const account=read('src/screens/MoreScreen.tsx');
 ok(account.includes("minHeight:88"),'Account hub tiles must remain compact');
 ok(account.includes('<Text numberOfLines={singleColumn?2:1} style={s.description}>'),'Account tile descriptions must stay single-line by default and allow two lines only in narrow/large-text mode');

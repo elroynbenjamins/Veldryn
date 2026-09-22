@@ -2,7 +2,7 @@ import {createCharacter,newGame,startGathering} from '../src/core/game';
 import {characterTotalXpAtLevel,totalXpAtLevel} from '../src/core/progression';
 import {GATHERING} from '../src/content/skills';
 import {MONSTERS} from '../src/content/monsters';
-import {activeActivityLevelPace,activityProgressFeedback,characterLevelPace,combatBaselineProjection,craftingPaceProjection,dropExpectation,formatBalanceDuration,gatheringBalanceProjection,skillTargetEta} from '../src/core/balance-projection';
+import {acquisitionProjectionForDestination,activeActivityLevelPace,activityProgressFeedback,characterLevelPace,combatBaselineProjection,craftingPaceProjection,dropExpectation,formatBalanceDuration,gatheringBalanceProjection,skillTargetEta} from '../src/core/balance-projection';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 function close(actual:number,expected:number,tolerance:number,message:string){if(Math.abs(actual-expected)>tolerance)throw new Error(message+': expected '+expected+', got '+actual)}
@@ -67,5 +67,11 @@ const mockRecipe={id:'TEST_RECIPE',name:'Test',skillId:'smithing' as const,level
 const craftPace=craftingPaceProjection(state,mockRecipe,60,100);
 close(craftPace.craftsPerHour,60,.001,'One-minute timed crafting must project 60 crafts/hour');
 close(craftPace.xpPerHour,6000,.001,'Timed crafting XP/hour must derive from duration and XP/craft');
+const gatherAcquisition=acquisitionProjectionForDestination(starterToolState,'GREENWOOD_LOG',25,{kind:'skills',skillId:'woodcutting',mode:'gathering',actionId:'GREENWOOD_TREE',regionId:'GREENFIELDS',button:'Gather',detail:''});
+ok(gatherAcquisition?.basis==='current'&&(gatherAcquisition.etaSeconds??0)>0,'Gathering material ETA must use the player current projected gathering pace');
+const combatAcquisition=acquisitionProjectionForDestination(combatState,'MOSS_FIBER',12,{kind:'combat',monsterId:'MOSS_RAT',zoneName:'Greenfields',regionId:'GREENFIELDS',button:'Hunt',detail:''});
+ok(combatAcquisition?.basis==='base'&&(combatAcquisition.quantityPerHour??0)>0&&(combatAcquisition.etaSeconds??0)>0,'Combat material ETA must use baseline kill/drop expectation');
+const unsupportedAcquisition=acquisitionProjectionForDestination(state,'COPPER_INGOT',5,{kind:'skills',skillId:'smithing',mode:'crafting',recipeId:'SMELT_COPPER_INGOT',button:'Craft',detail:''});
+ok(unsupportedAcquisition===undefined,'Crafted intermediates must not show a misleading acquisition ETA when their ingredient chain is not modeled');
 
 console.log('PASS: progression pace, gathering runtime yield and combat/drop expectations share authoritative balance math');

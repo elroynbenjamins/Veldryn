@@ -21,13 +21,12 @@ declare
   v_daily_wins integer:=0;
   v_daily_cap integer:=null;
 begin
-  v_cooldown_seconds:=case p_encounter_kind
-    when 'standard' then 30
-    when 'elite' then 90
-    when 'regional_boss' then 300
-    else raise exception 'invalid_regional_encounter_kind'
-  end;
-  if p_encounter_kind='regional_boss' then v_daily_cap:=3;end if;
+  case p_encounter_kind
+    when 'standard' then v_cooldown_seconds:=30;
+    when 'elite' then v_cooldown_seconds:=90;
+    when 'regional_boss' then v_cooldown_seconds:=300;v_daily_cap:=3;
+    else raise exception 'invalid_regional_encounter_kind';
+  end case;
 
   select max(r.created_at) into v_last
   from public.regional_combat_receipts_v1 r

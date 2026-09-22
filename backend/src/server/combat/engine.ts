@@ -1,6 +1,6 @@
 import { clamp, defenseMitigation, damageAfterMitigation, hitChance } from './calculations';
 import { CombatRng } from './deterministic-rng';
-import type { AbilityDefinition, AbilityEffect, CombatEvent, CombatInput, CombatResult, CombatantDefinition, CombatantState, PersistentActorState, TargetRule } from './types';
+import type { AbilityDefinition, AbilityEffect, CombatEvent, CombatGemStateSnapshot, CombatInput, CombatResult, CombatantDefinition, CombatantState, PersistentActorState, TargetRule } from './types';
 import {gemConsumeSupportChargeV1,gemEffectiveDefenseV1,gemEffectiveHasteV1,gemHealingMultiplierV1,gemIncomingDamageMultiplierV1,gemOnAbilityUsedV1,gemOnBossPhaseV1,gemOnBuffAppliedV1,gemOnDamageTakenV1,gemOnDebuffAppliedV1,gemOnDirectHealV1,gemOnDirectHitV1,gemOnKillV1,gemOnShieldAppliedV1,gemOutgoingDamageMultiplierV1,gemShieldMultiplierV1} from './gem-effects-v1';
 
 function init(def: CombatantDefinition, carried?:PersistentActorState): CombatantState {
@@ -15,6 +15,12 @@ function hpPct(x: CombatantState) { return x.hp / Math.max(1, x.definition.stats
 function modifier(state: CombatantState, tag: string, now: number): number {
   return state.modifiers.filter(m=>m.tag===tag && m.expiresAt>now).reduce((s,m)=>s+m.value,0);
 }
+
+const VISIBLE_GEM_STATE_TAGS=new Set([
+  'gem:momentum','gem:critical_surge','gem:flow','gem:unyielding','gem:predator_boost','gem:opening_phase',
+  'gem:retaliation_ready','gem:battle_offense_ready','gem:battle_support_ready','gem:damage_reduction',
+  'gem:shared_resolve','gem:benediction_charge','gem:haste_bonus','gem:opportunist_ready',
+]);
 
 function chooseEnemy(actor: CombatantState, enemies: CombatantState[], rng: CombatRng, label: string): CombatantState | undefined {
   const live=living(enemies); if (!live.length) return undefined;
@@ -52,6 +58,25 @@ export function simulateCombat(input: CombatInput): CombatResult {
   const maxMs=input.maxDurationMs ?? 180_000; const tick=input.tickMs ?? 100; const mitigationConstant=input.mitigationConstant ?? 1200; const accuracyScale=input.accuracyScale ?? 1400;
   const players=input.players.map(def=>init(def,input.initialPlayerState?.[def.id])), enemies=input.enemies.map(def=>init(def)), all=[...players,...enemies];
   const rng=new CombatRng(input.seed); const events:CombatEvent[]=[{atMs:0,type:'combat_start'}];
+
+  let lastGemStateKey='';
+  const visibleGemStates=(now:number):CombatGemStateSnapshot[]=>{
+    const rows:CombatGemStateSnapshot[]=[];
+    for(const state of all){
+      const grouped=new Map<string,number[]>();
+      for(const modifier of state.modifiers){
+        if(modifier.kind!=='gem'||modifier.expiresAt<=now||!VISIBLE_GEM_STATE_TAGS.has(modifier.tag))continue;
+        const expiries=grouped.get(modifier.tag)??[];expiries.push(modifier.expiresAt);grouped.set(modifier.tag,expiries);
+      }
+      for(const [tag,expiries] of grouped)rows.push({targetId:state.definition.id,tag,expiriesAtMs:expiries.sort((a,b)=>a-b)});
+    }
+    return rows.sort((a,b)=>a.targetId.localeCompare(b.targetId)||a.tag.localeCompare(b.tag));
+  };
+  const emitGemState=(now:number)=>{
+    const gemStates=visibleGemStates(now),key=JSON.stringify(gemStates);
+    if(key===lastGemStateKey)return;
+    lastGemStateKey=key;events.push({atMs:now,type:'gem_state',gemStates});
+  };
 
   const addThreat=(target:CombatantState, source:CombatantState, amount:number)=>{ if(target.definition.team==='enemies') target.threat[source.definition.id]=(target.threat[source.definition.id]||0)+amount; };
   const applyDamage=(now:number, source:CombatantState, target:CombatantState, effect:AbilityEffect, abilityId:string, eventType:'damage'|'dot_tick'='damage')=>{

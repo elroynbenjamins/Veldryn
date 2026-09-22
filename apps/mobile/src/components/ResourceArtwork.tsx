@@ -3,6 +3,7 @@ import {resourceIconSource} from '../theme/resource-assets';
 import {CONSUMABLE_ART_CELL,CONSUMABLE_ART_SHEET_SIZE,consumableArtworkCell,consumableArtworkSheet} from '../theme/consumable-assets';
 import {MISC_ITEM_CELL,MISC_ITEM_SHEET_HEIGHT,MISC_ITEM_SHEET_WIDTH,miscItemCell,miscItemSheet} from '../theme/misc-item-assets';
 import {ASTERFALL_INGREDIENT_CELL,ASTERFALL_INGREDIENT_SHEET_SIZE,asterfallIngredientCell,asterfallIngredientSheet} from '../theme/asterfall-ingredient-assets';
+import {ASTERFALL_ORE_CELL,ASTERFALL_ORE_SHEET_HEIGHT,ASTERFALL_ORE_SHEET_WIDTH,asterfallOreCell,asterfallOreSheet} from '../theme/asterfall-ore-assets';
 import {
   REGIONAL_RESOURCE_CELL,
   REGIONAL_RESOURCE_SHEET_HEIGHT,
@@ -52,6 +53,9 @@ export function ResourceArtwork({itemId,size=58,framed=true}:{itemId:string;size
 
   const regional=regionalResourceCell(itemId);
   if(regional)return <View style={[s.art,{width:size,height:size},framed&&s.frame]}><AtlasCell source={regionalResourceSheet} column={regional.column} row={regional.row} cell={REGIONAL_RESOURCE_CELL} sheetWidth={REGIONAL_RESOURCE_SHEET_WIDTH} sheetHeight={REGIONAL_RESOURCE_SHEET_HEIGHT} size={size}/></View>;
+
+  const asterfallOre=asterfallOreCell(itemId);
+  if(asterfallOre)return <View style={[s.art,{width:size,height:size},framed&&s.frame]}><AtlasCell source={asterfallOreSheet} column={asterfallOre.column} row={asterfallOre.row} cell={ASTERFALL_ORE_CELL} sheetWidth={ASTERFALL_ORE_SHEET_WIDTH} sheetHeight={ASTERFALL_ORE_SHEET_HEIGHT} size={size}/></View>;
 
   const source=resourceIconSource(itemId);if(!source)return null;
   return <View style={[s.art,{width:size,height:size},framed&&s.frame]}><Image source={source} resizeMode="contain" fadeDuration={0} style={s.image}/></View>;

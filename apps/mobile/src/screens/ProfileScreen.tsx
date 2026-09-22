@@ -6,6 +6,7 @@ import {ProfileScenePreview} from '../components/ProfileScenePreview';
 import {PublicProfileScene} from '../components/PublicProfileScene';
 import {ProfileShowcaseSection} from '../components/ProfileShowcaseSection';
 import {ProfileFavoriteHighlights} from '../components/ProfileFavoriteHighlights';
+import {MasteryHallPanel} from '../components/MasteryHallPanel';
 import {GuildCrest} from '../components/SocialIdentity';
 import type {GameState} from '../core/types';
 import {JOURNAL_ACHIEVEMENTS_V42} from '../core/adventurers-journal-v42';
@@ -19,7 +20,8 @@ import {publicPlayerProfileV43,type PublicPlayerProfileV43} from '../online/prof
 import {radii,spacing,typography,equipmentTheme,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {profileShowcaseArt} from '../theme/profile-showcase-art';
-import {profileAchievementPrestige,profileCollectionPrestige,profileRecordPrestige} from '../core/profile-prestige';
+import {profileAchievementPrestige,profileCollectionPrestige,profileMasteryPrestige,profileRecordPrestige} from '../core/profile-prestige';
+import {professionMasteryActionDefinition,professionMasteryMasteredRecords,skillIdentity} from '../core/profession-mastery-presentation';
 
 const label=(value?:string)=>value?value.replace(/[_:-]+/g,' ').replace(/\b\w/g,letter=>letter.toUpperCase()):'Default';
 
@@ -34,11 +36,12 @@ export function ProfileScreen({state,onNavigate}:{state:GameState;onNavigate?:(d
  useEffect(()=>{void refreshPublic()},[refreshPublic]);
  if(!c)return <ScrollView contentContainerStyle={s.root}><Text style={s.heading}>Profile</Text><Panel><Text style={s.copy}>Create a character to build your profile.</Text></Panel></ScrollView>;
 
- const achievementIds=profileAchievementShowcase(state,publicSelf),recordIds=profileRecordShowcase(state,publicSelf),collectionRefs=profileCollectionShowcase(state,publicSelf);
+ const achievementIds=profileAchievementShowcase(state,publicSelf),recordIds=profileRecordShowcase(state,publicSelf),collectionRefs=profileCollectionShowcase(state,publicSelf),masteryIds=publicSelf?.masteryShowcaseActionIds?.length?publicSelf.masteryShowcaseActionIds:professionMasteryMasteredRecords(state).slice(0,3).map(row=>row.actionId);
  const achievementEntries=achievementIds.map(id=>{const def=JOURNAL_ACHIEVEMENTS_V42.find(row=>row.id===id),prestige=profileAchievementPrestige(id);return {key:id,label:profileAchievementLabel(id),meta:def?label(def.category):'Achievement',prestige:prestige.tone,badge:prestige.badge}});
  const recordPrestige=profileRecordPrestige();
  const recordEntries=recordIds.map(id=>{const record=publicSelf?.recordEntries?.[id]??state.account.journalState?.records?.[id];return {key:id,label:profileRecordLabel(id),value:record?formatProfileRecordValue(id,record.value):'—',meta:record?.contextLabel,prestige:recordPrestige.tone,badge:recordPrestige.badge}});
  const collectionEntries=collectionRefs.map(ref=>{const prestige=profileCollectionPrestige(ref);return {key:ref.kind+':'+ref.id,label:profileCollectionLabel(ref),meta:label(ref.kind),art:profileShowcaseArt(ref),artMode:ref.kind==='background'?'cover' as const:'contain' as const,prestige:prestige.tone,badge:prestige.badge}});
+ const masteryPrestige=profileMasteryPrestige(),masteryEntries=masteryIds.flatMap(id=>{const row=professionMasteryActionDefinition(id);return row?[{key:id,label:row.name,value:'R50',meta:skillIdentity(row.skillId).label+' · Account mastery',prestige:masteryPrestige.tone,badge:masteryPrestige.badge}]:[]});
  const favoriteSkillId=publicSelf?.favoriteSkillId??summary.highestSkill?.skillId;
  const favoriteCompanionId=publicSelf?.favoriteCompanionId??state.character?.equippedCombatCompanionId??state.account.unlockedCombatCompanionIds?.[0];
  const online=!!publicSelf,background=c.profileBackgroundId??'asterfall-night',profileStateLabel=publicError?'SYNC ISSUE':publicSelf?.visibility==='public'?'PUBLIC PROFILE':publicSelf?.visibility==='guild'?'GUILD PROFILE':publicSelf?.visibility==='private'?'PRIVATE PROFILE':'LOCAL PROFILE';
@@ -75,6 +78,8 @@ export function ProfileScreen({state,onNavigate}:{state:GameState;onNavigate?:(d
    </View>
   </View>
 
+  <MasteryHallPanel state={state}/>
+
   <View style={s.highlights}>
    <View style={s.sectionHead}><Text style={s.section}>FAVORITES</Text><Text style={s.sectionMeta}>Showcased by player</Text></View>
    <ProfileFavoriteHighlights favoriteSkillId={favoriteSkillId} favoriteSkillDetail={summary.highestSkill&&favoriteSkillId===summary.highestSkill.skillId?'Highest current skill · Lv. '+summary.highestSkill.level:favoriteSkillId?'Showcased by player':undefined} favoriteCompanionId={favoriteCompanionId}/>
@@ -83,6 +88,7 @@ export function ProfileScreen({state,onNavigate}:{state:GameState;onNavigate?:(d
   <ProfileShowcaseSection title="ACHIEVEMENT SHOWCASE" entries={achievementEntries} emptyLabel="Choose an earned achievement"/>
   <ProfileShowcaseSection title="PERSONAL RECORDS" entries={recordEntries} emptyLabel="Choose a personal record"/>
   <ProfileShowcaseSection title="COLLECTION SHOWCASE" entries={collectionEntries} emptyLabel="Choose a collectible"/>
+  <ProfileShowcaseSection title="MASTERY SHOWCASE" entries={masteryEntries} emptyLabel="Master a profession action at R50" subtitle="Selected R50 profession records"/>
  </ScrollView>;
 }
 

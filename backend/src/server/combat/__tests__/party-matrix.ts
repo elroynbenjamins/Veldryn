@@ -1,5 +1,6 @@
-import { simulateCombat } from '../engine';
-import { launchPlayer, rootboundHeartBoss, bellWardenBoss } from '../content/launch-combat';
+import {launchPlayer} from '../content/launch-combat';
+import {runPveBalanceBatch} from '../pve-balance-batch';
+
 const teams=[
  ['Ironwarden','Wayfinder','Ravager','Dawnkeeper'],
  ['Ironwarden','Hexweaver','Knife Dancer','Stonecaller'],
@@ -7,7 +8,9 @@ const teams=[
  ['Wayfinder','Ravager','Hexweaver','Knife Dancer'],
  ['Ironwarden','Wayfinder','Dawnkeeper','Stonecaller'],
 ];
-for(const boss of [rootboundHeartBoss(),bellWardenBoss()]){
- for(const t of teams){let wins=0,total=30,dur=0,downs=0; for(let i=0;i<total;i++){const r=simulateCombat({seed:`${boss.id}:${t.join('-')}:${i}`,players:t.map(c=>launchPlayer(c,25)),enemies:[boss],maxDurationMs:180000}); wins+=+r.victory; dur+=r.durationMs; downs+=r.players.filter(p=>p.downed).length;}
- console.log(`${boss.name}\t${t.join('/')}\t${wins}/${total}\tavg=${Math.round(dur/total/100)/10}s\tdowns=${downs}`);}
+for(const encounterId of ['ROOTBOUND_BOSS','LANTERN_BOSS']){
+ for(const classes of teams){
+  const report=runPveBalanceBatch({encounterId,players:classes.map(classId=>launchPlayer(classId,25)),iterations:30,seedPrefix:`LEGACY_MATRIX:${encounterId}:${classes.join('-')}`,maxDurationMs:180000});
+  console.log(`${encounterId}\t${classes.join('/')}\twins=${report.resultCounts.victory}/${report.iterations}\tp50=${Math.round(report.durationMs.p50/100)/10}s\tp90=${Math.round(report.durationMs.p90/100)/10}s\tdownAvg=${report.partyDowns.mean}`);
+ }
 }

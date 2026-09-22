@@ -13,6 +13,11 @@ import {environmentEffectForActivity} from './world-weather';
 import {gatheringPacing} from './gathering-tools';
 import {companionCombatContribution} from './combat-companions';
 import {monsterMastery} from './monster-mastery';
+import {dailySuppliesHomeSummary} from './daily-supplies-home';
+import {contractBoardSummary} from './contract-board-summary';
+import {workingTowardReadyCount} from './working-toward';
+import {newlyUnlockedGameGuide} from './onboarding';
+import {eventReadyClaimCount} from './live-events';
 const COMBAT_SPEED_MIN=.68;
 const COMBAT_SPEED_MAX=1.3;
 const COMBAT_TIME_SCALE=1.16;
@@ -21,6 +26,38 @@ const GATHER_TIME_SCALE=1.45;
 
 export type DashboardDestination='World'|'Skills'|'Inventory'|'Quests'|'Character'|'Settings';
 export interface DashboardRecommendation{title:string;detail:string;button:string;destination:DashboardDestination;zoneId?:string;priority:'urgent'|'progress'|'upgrade'}
+export type HomeReadyKind='quests'|'daily'|'events'|'goals';
+export interface HomeSessionReadyAction{kind:HomeReadyKind;title:string;detail:string;button:string}
+export interface HomeSessionSummary{
+ readyTotal:number;
+ storyRewards:number;
+ dailyReady:boolean;
+ eventRewards:number;
+ goalReady:number;
+ goalTotal:number;
+ weeklyComplete:number;
+ weeklyTotal:number;
+ newUnlocks:number;
+ primaryReady?:HomeSessionReadyAction;
+}
+export function homeSessionSummary(state:GameState,nowMs=Date.now()):HomeSessionSummary{
+ const storyRewards=state.quests.filter(row=>row.status==='complete').length;
+ const dailyReady=dailySuppliesHomeSummary(state,nowMs).canClaim;
+ const eventRewards=eventReadyClaimCount(state,nowMs);
+ const goalReady=workingTowardReadyCount(state),goalTotal=state.character?.progressionGoals?.length??0;
+ const weekly=contractBoardSummary(state,nowMs),newUnlocks=newlyUnlockedGameGuide(state).length;
+ const readyTotal=storyRewards+(dailyReady?1:0)+eventRewards+goalReady;
+ const primaryReady:HomeSessionReadyAction|undefined=storyRewards
+  ?{kind:'quests',title:storyRewards===1?'Story reward ready':storyRewards+' story rewards ready',detail:'Claim completed Asterfall chapters to unlock the next story beat.',button:'Open Journal'}
+  :dailyReady
+   ?{kind:'daily',title:'Daily Supplies ready',detail:"Today's account-wide supply claim is available.",button:'Open Daily Supplies'}
+   :eventRewards
+    ?{kind:'events',title:eventRewards===1?'Event reward ready':eventRewards+' event rewards ready',detail:'Your active event has claimable rewards or gifts.',button:'Open Event'}
+    :goalReady
+     ?{kind:'goals',title:goalReady===1?'Pinned goal complete':goalReady+' pinned goals complete',detail:'Review completed Working Toward goals and choose what to pursue next.',button:'Open Goals'}
+     :undefined;
+ return {readyTotal,storyRewards,dailyReady,eventRewards,goalReady,goalTotal,weeklyComplete:weekly.complete,weeklyTotal:weekly.total,newUnlocks,primaryReady};
+}
 
 /** A single, deterministic next-step recommendation for the home screen. */
 export function dashboardRecommendation(state:GameState):DashboardRecommendation{

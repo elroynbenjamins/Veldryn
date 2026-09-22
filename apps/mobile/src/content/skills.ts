@@ -21,8 +21,8 @@ export const GATHERING:GatherDef[]=([
 // The 24-hour AFK window is generous; each gathering cycle is therefore
 // stretched by a noticeable amount to avoid rapid early skill acceleration.
 ] as Omit<GatherDef,'difficultyMultiplier'|'recommendedToolTier'>[]).map(activity=>{
-  const difficultyMultiplier=activity.unlockLevel>=16?2:activity.unlockLevel>=7?1.35:1;
-  const recommendedToolTier=activity.unlockLevel>=16?3:activity.unlockLevel>=7?2:1;
+  const difficultyMultiplier=activity.unlockLevel>=15?1.5:activity.unlockLevel>=7?1.2:1;
+  const recommendedToolTier=activity.unlockLevel>=15?3:activity.unlockLevel>=7?2:1;
   return {...activity,seconds:Math.ceil(activity.seconds*2),difficultyMultiplier,recommendedToolTier};
 });
 

@@ -52,7 +52,7 @@ export function GatheringActivityList({state,skillId,skillLevel,offlineHours,que
     <View style={s.actions}><View style={s.queue}><GameButton disabled={!unlocked||queueFull} title={queueFull?'Queue full':'Queue'} tone="secondary" onPress={()=>onQueueGather(activity.id)}/></View><View style={s.start}>{!unlocked&&onNavigate?<GameButton title={'Train to Lv '+activity.unlockLevel} tone="secondary" onPress={()=>onNavigate(gatheringProgressionAction(state,activity).destination)}/>:<GameButton disabled={!unlocked||active} title={active?'Currently gathering':!unlocked?'Requires '+skillId+' level '+activity.unlockLevel:'Gather '+activity.name} onPress={()=>onGather(activity.id)}/>}</View></View>
    </Panel>;
   })}
-  {regional.length===0?<View style={s.unavailableBox}><Text style={s.unavailable}>No {skillId} activity is available in {region.name}.</Text>{trainingDestination&&onNavigate?<GameButton compact title={trainingDestination.regionId&&trainingDestination.regionId!==region.id?'Go to training region':'Open training'} tone="secondary" onPress={()=>onNavigate(trainingDestination)}/>:null}</View>:null}
+  {regional.length===0?<View style={s.unavailableBox}><Text style={s.unavailable}>No {skillId} activity is available in {region.name}.</Text>{trainingDestination&&onNavigate?<GameButton compact title={'regionId' in trainingDestination&&trainingDestination.regionId&&trainingDestination.regionId!==region.id?'Go to training region':'Open training'} tone="secondary" onPress={()=>onNavigate(trainingDestination)}/>:null}</View>:null}
  </>;
 }
 

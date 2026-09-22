@@ -18,12 +18,16 @@ export const GATHERING:GatherDef[]=([
 {id:'SILVERBROOK_SHOAL',skillId:'fishing',name:'Silverbrook Shoal',unlockLevel:1,seconds:17,xp:9,itemId:'SILVERFIN',min:1,max:2,zoneId:'SILVERBROOK'},
 {id:'RIVER_EEL_POOL',skillId:'fishing',name:'River Eel Pool',unlockLevel:8,seconds:29,xp:18,itemId:'RIVER_EEL',min:1,max:1,zoneId:'SILVERBROOK'},
 {id:'OATHSCALE_POOL',skillId:'fishing',name:'Oathscale Pool',unlockLevel:16,seconds:41,xp:28,itemId:'OATHSCALE_PIKE',min:1,max:1,zoneId:'SILVERBROOK'},
-// The 24-hour AFK window is generous; each gathering cycle is therefore
-// stretched by a noticeable amount to avoid rapid early skill acceleration.
+// Time and XP bands are deliberately centralized so gathering progression can be
+// tuned against target hours-per-level without rewriting every node independently.
+export const GATHERING_CONTENT_TIME_SCALE=1.6;
+export const GATHERING_MID_XP_SCALE=1.25;
+export const GATHERING_HIGH_XP_SCALE=1.35;
 ] as Omit<GatherDef,'difficultyMultiplier'|'recommendedToolTier'>[]).map(activity=>{
   const difficultyMultiplier=activity.unlockLevel>=16?2:activity.unlockLevel>=7?1.35:1;
   const recommendedToolTier=activity.unlockLevel>=16?3:activity.unlockLevel>=7?2:1;
-  return {...activity,seconds:Math.ceil(activity.seconds*2),difficultyMultiplier,recommendedToolTier};
+  const xpScale=activity.unlockLevel>=15?GATHERING_HIGH_XP_SCALE:activity.unlockLevel>=7?GATHERING_MID_XP_SCALE:1;
+  return {...activity,seconds:Math.ceil(activity.seconds*GATHERING_CONTENT_TIME_SCALE),xp:Math.ceil(activity.xp*xpScale),difficultyMultiplier,recommendedToolTier};
 });
 
 export interface Recipe{id:string;name:string;skillId:'smithing'|'cooking'|'alchemy';level:number;xp:number;gold:number;seconds:number;repeatableTraining?:boolean;inputs:{itemId:string;quantity:number}[];output:{itemId:string;quantity:number};classId?:ClassId;noviceSetId?:string;characterLevel?:number;requiresCraftedItemId?:string;v33EquipmentTier?:string;v33Region?:string;v33SetId?:string;v33Path?:string;}

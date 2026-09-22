@@ -2,7 +2,7 @@ import {useEffect,useMemo,useRef,useState} from 'react';
 import {AccessibilityInfo,Animated,Easing,Pressable,StyleSheet,Text,View} from 'react-native';
 import type {CoopRunView} from '../../core/coop-presentation';
 import {dungeonCombatCueFx,type DungeonCombatCueFx,type DungeonCombatFxAccent} from '../../core/dungeon-combat-fx';
-import {playbackAdvanceDelayMs,playbackCastDisplayMs,playbackCueLabel,playbackCueTone,playbackProgress,playbackRecentCues} from '../../core/dungeon-combat-playback';
+import {playbackAdvanceDelayMs,playbackBossCombatant,playbackCastDisplayMs,playbackCombatant,playbackCombatantState,playbackCueLabel,playbackCueTone,playbackProgress,playbackRecentCues} from '../../core/dungeon-combat-playback';
 import {coopColors,coopRadii,coopSpacing,coopTypography} from '../../theme/coop-ui-theme';
 import {FantasyPanel,StateChip} from './CoopVisualKit';
 import {CombatantProfileCard,EnemyCombatProfileCard} from './CombatantProfileCard';
@@ -74,6 +74,7 @@ export function DungeonCombatStage({run,enemyLabel,boss=false}:{run:CoopRunView;
  const bossPhaseLabel=useMemo(()=>{for(let index=Math.min(cueIndex,cues.length-1);index>=0;index--){const cue=cues[index];if(cue.type==='phase'&&cue.abilityName)return cue.abilityName;}return undefined;},[cues,cueIndex]);
  const replayEnemy=useMemo(()=>{for(const cue of cues){if(cue.actorId&&!partyIds.has(cue.actorId)&&cue.actorName)return cue.actorName;if(cue.targetId&&!partyIds.has(cue.targetId)&&cue.targetName)return cue.targetName;}return undefined;},[cues,partyIds]);
  const shownEnemy=enemyLabel??replayEnemy??(boss?'Final Boss':'Dungeon Enemy'),enemyActive=Boolean(currentCue?.actorId&&!partyIds.has(currentCue.actorId)),enemyTargeted=!enemyActive&&Boolean(currentCue?.targetId&&!partyIds.has(currentCue.targetId));
+ const enemyCombatant=boss?playbackBossCombatant(replay,shownEnemy):playbackCombatant(replay,shownEnemy),enemyState=playbackCombatantState(replay,cueIndex,enemyCombatant?.id);
  const progress=replay?playbackProgress(replay,cueIndex):0,complete=Boolean(replay&&(!cues.length||cueIndex>=cues.length-1));
  const actorDirection=actorIsParty===false?1:-1,targetDirection=targetIsParty===false?-1:1;
  const actorTravel=(fx?.actorMotion==='lunge'||fx?.actorMotion==='dash'||fx?.actorMotion==='smash'||fx?.actorMotion==='projectile')?(fx.actorTravelPx*actorDirection):0;
@@ -96,9 +97,9 @@ export function DungeonCombatStage({run,enemyLabel,boss=false}:{run:CoopRunView;
  return <FantasyPanel variant={boss?'danger':'selected'}>
   <View style={s.header}><View style={s.grow}><Text style={s.kicker}>{replay?'COMBAT PLAYBACK':boss?'FINAL ENCOUNTER':'DUNGEON COMBAT'}</Text><Text style={s.title}>{shownEnemy}</Text></View><StateChip label={assists?`${assists} ASSIST${assists===1?'':'S'}`:'NO ASSISTS'} tone={assists?'success':'neutral'}/></View>
   <View style={s.arena}>
-   <View style={[s.enemyField,boss&&s.bossField]}><EnemyCombatProfileCard name={shownEnemy} boss={boss} active={enemyActive} targeted={enemyTargeted} currentCue={currentCue} bossPhaseLabel={boss?bossPhaseLabel:undefined} bossCast={boss?bossCast:undefined} feedbackStyle={feedbackStyle} motionStyle={enemyActive?actorStyle:enemyTargeted?targetStyle:undefined}/></View>
+   <View style={[s.enemyField,boss&&s.bossField]}><EnemyCombatProfileCard name={shownEnemy} boss={boss} active={enemyActive} targeted={enemyTargeted} currentCue={currentCue} bossPhaseLabel={boss?bossPhaseLabel:undefined} bossCast={boss?bossCast:undefined} currentHp={enemyState?.hp} maximumHp={enemyState?.maxHp} combatShield={enemyState?.shield??0} animateHealth={!reduceMotion} feedbackStyle={feedbackStyle} motionStyle={enemyActive?actorStyle:enemyTargeted?targetStyle:undefined}/></View>
    <View style={s.divider}><Text style={s.vs}>VS</Text></View>
-   <View style={s.partyField}>{ordered.map((slot,index)=>{const active=Boolean(currentCue?.actorId&&slot.memberId===currentCue.actorId),isTarget=Boolean(currentCue?.targetId&&slot.memberId===currentCue.targetId),targeted=!active&&isTarget,assistProc=active&&currentCue?.type==='assist';return <View key={slot.memberId??`${slot.name}-${index}`} style={s.formationSlot}><CombatantProfileCard slot={slot} active={active} targeted={targeted} assistProc={assistProc} currentCue={currentCue} feedbackStyle={feedbackStyle} motionStyle={active?actorStyle:isTarget?targetStyle:undefined}/></View>;})}</View>
+   <View style={s.partyField}>{ordered.map((slot,index)=>{const active=Boolean(currentCue?.actorId&&slot.memberId===currentCue.actorId),isTarget=Boolean(currentCue?.targetId&&slot.memberId===currentCue.targetId),targeted=!active&&isTarget,assistProc=active&&currentCue?.type==='assist',combatant=playbackCombatant(replay,slot.memberId??slot.name),state=playbackCombatantState(replay,cueIndex,combatant?.id),displaySlot=state?{...slot,currentHp:state.hp,maximumHp:state.maxHp,ready:state.hp>0}:slot;return <View key={slot.memberId??`${slot.name}-${index}`} style={s.formationSlot}><CombatantProfileCard slot={displaySlot} active={active} targeted={targeted} assistProc={assistProc} currentCue={currentCue} combatShield={state?.shield??0} animateHealth={!reduceMotion} feedbackStyle={feedbackStyle} motionStyle={active?actorStyle:isTarget?targetStyle:undefined}/></View>;})}</View>
    {fx?<View pointerEvents="none" style={s.fxLayer}>
     <Animated.View style={[s.fxMark,effectStyle,{borderColor:effectColor,shadowColor:effectColor}]}>
      <Text style={[s.fxGlyph,{color:effectColor}]}>{fx.glyph}</Text>

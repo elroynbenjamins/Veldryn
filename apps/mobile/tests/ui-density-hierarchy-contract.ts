@@ -37,10 +37,23 @@ ok(skills.includes('<ProfessionMasteryPanel'),'Trainable skill details must expo
 ok(skills.includes('masteryGoalForAction')&&skills.includes("type:'goals_set'"),'Skill mastery tracking must use the authoritative Working Toward goal command');
 ok(skills.includes('skillIdentity')&&skills.includes('identityColor'),'Skill headers must preserve distinct semantic identities without larger typography');
 
+const masteryDiscovery=read('src/components/MasteryDiscoveryPanel.tsx');
+const masteryHall=read('src/screens/MasteryHallScreen.tsx');
+ok(masteryHall.includes('<MasteryDiscoveryPanel'),'Mastery Hall must expose account-wide mastery discovery without making every skill detail screen taller');
+ok(masteryDiscovery.includes("label:'Closest to R50'")&&masteryDiscovery.includes("label:'Highest Rank'")&&masteryDiscovery.includes("label:'Mastered only'"),'Mastery discovery must support the requested R50/rank/mastered sorting and filtering');
+ok(masteryDiscovery.includes('All skills')&&masteryDiscovery.includes('All regions'),'Mastery discovery must support compact skill and region filters');
+ok(masteryDiscovery.includes('RECOMMENDED MASTERY TARGET · OPTIONAL'),'Mastery recommendation must stay explicitly optional rather than becoming another progression requirement');
+ok(masteryDiscovery.includes('Unearned bonus visibility')&&masteryDiscovery.includes('BONUS')&&masteryDiscovery.includes('LEFT'),'Mastery rows must make remaining authored bonuses visible');
+ok(masteryDiscovery.includes('rows.slice(0,ROW_LIMIT)')&&masteryDiscovery.includes('const ROW_LIMIT=12'),'Mastery discovery must cap its initial mobile render and offer expansion instead of creating an oversized Hall');
+ok(masteryDiscovery.includes('GameModalSurface')&&masteryDiscovery.includes("filterOption:{minHeight:44"),'Mastery filters must use the compact accessible dropdown/modal pattern rather than a long chip strip');
+ok(read('App.tsx').includes('onNavigate={openWorkingTowardDestination}'),'Mastery discovery rows must route through the canonical exact Working Toward destination handler');
+
 const masteryPresentation=read('src/core/profession-mastery-presentation.ts');
 ok(masteryPresentation.includes("mining:{label:'EXTRACTION'")&&masteryPresentation.includes("woodcutting:{label:'FORESTRY'")&&masteryPresentation.includes("fishing:{label:'ANGLING'")&&masteryPresentation.includes("smithing:{label:'FORGECRAFT'")&&masteryPresentation.includes("cooking:{label:'PROVISIONING'")&&masteryPresentation.includes("alchemy:{label:'BREWCRAFT'"),'Core profession skills must have distinct compact identity labels');
 ok(masteryPresentation.includes('yieldRelevant')&&masteryPresentation.includes('speedRelevant'),'Mastery presentation must distinguish bonuses that are meaningful for each action type');
 ok(masteryPresentation.includes('professionMasteryMasteredRecords'),'R50 completion records must derive from saved mastery state instead of a duplicate collection store');
+ok(masteryPresentation.includes('professionMasteryDiscoveryRecords')&&masteryPresentation.includes('professionMasteryRecommendedTarget'),'Mastery discovery and recommendation must derive from existing profession mastery state');
+ok(masteryPresentation.includes("sort='closest_r50'")&&masteryPresentation.includes("status==='bonus_left'"),'Mastery discovery must keep its core sort/filter semantics explicit and regression-testable');
 
 const masteryCore=read('src/core/profession-mastery-v40.ts');
 ok(masteryCore.includes("{rank:10,kind:'xp'")&&masteryCore.includes("{rank:20,kind:'yield'")&&masteryCore.includes("{rank:30,kind:'speed'")&&masteryCore.includes("{rank:40,kind:'yield'")&&masteryCore.includes("{rank:50,kind:'speed'"),'Profession Mastery bonus ranks must remain explicit and reviewable');

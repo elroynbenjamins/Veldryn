@@ -14,6 +14,12 @@ equal(ordered[3].label,'View Mining unlocks','skill follow-up must name the prog
 equal(ordered[3].skillId,'mining','skill follow-up must retain the destination skill');
 equal(rewardFollowUpCandidates({progressionMoments:[],lootHighlights:[common],companionUnlockCount:0,petDropCount:0}).length,0,'ordinary rewards must keep the simple Continue flow');
 
+const mastery:RewardProgressionMoment={kind:'mastery_rank',id:'GREENWOOD_TREE',actionId:'GREENWOOD_TREE',skillId:'woodcutting',label:'Greenwood Tree Mastery',beforeLevel:9,afterLevel:10,unlocks:['+2% skill XP']};
+const masteryFollow=rewardFollowUpCandidates({progressionMoments:[mastery],lootHighlights:[],companionUnlockCount:0,petDropCount:0});
+equal(masteryFollow[0]?.kind,'skill','meaningful mastery bonus rank-ups should offer a skill follow-up');
+equal(masteryFollow[0]?.skillId,'woodcutting','mastery follow-up must open the correct profession');
+equal(masteryFollow[0]?.label,'View Greenwood Tree Mastery','mastery follow-up should name the mastered action');
+
 const popup=fs.readFileSync('src/components/RewardPopup.tsx','utf8');
 const app=fs.readFileSync('App.tsx','utf8');
 ok(popup.includes('rewardFollowUpCandidates'),'reward popup must use centralized follow-up priority');

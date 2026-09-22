@@ -40,6 +40,8 @@ jobs:
         run: node ../../tools/validate-recent-migration-versions.mjs
       - name: Validate regional combat cadence migration
         run: node ../../tools/validate-regional-combat-cadence.mjs
+      - name: Validate regional combat pending recovery migration
+        run: node ../../tools/validate-regional-combat-pending.mjs
       - name: Typecheck core
         run: pnpm typecheck:core
       - name: Typecheck mobile app

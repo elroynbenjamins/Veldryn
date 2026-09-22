@@ -32,7 +32,7 @@ export function MasteryHallScreen({state,onOpenSkill,onAchievements,onProfile}:{
   </Panel>
 
   <Panel accentColor={records.length?E.goldSoft:undefined}>
-   <View style={s.panelHead}><View style={s.flex}><Text style={s.section}>MASTERED RECORDS</Text><Text style={s.copy}>Permanent R50 records available for profile showcase.</Text></View><Text style={[s.status,records.length&&s.statusDone]}>{records.length}</Text></View>
+   <View style={s.panelHead}><View style={s.flex}><Text style={s.section}>MASTERED RECORDS</Text><Text style={s.copy}>Permanent R50 records available for profile showcase.</Text></View><Text style={[s.status,records.length>0&&s.statusDone]}>{records.length}</Text></View>
    {records.length?records.map(row=><View key={row.actionId} style={s.record}><View style={[s.recordMark,{borderColor:E.goldSoft}]}><Text style={[s.recordMarkText,{color:E.goldSoft}]}>R50</Text></View><View style={s.flex}><Text style={s.recordName}>{row.name}</Text><Text style={s.meta}>{skillIdentity(row.skillId).label} · {prestige.badge}</Text></View></View>):<Text style={s.empty}>Reach Rank 50 on any profession activity or recipe to create your first permanent Mastered Record.</Text>}
    {records.length?<GameButton compact title="Choose Profile Mastery Showcase" onPress={()=>onProfile?.()}/>:null}
   </Panel>

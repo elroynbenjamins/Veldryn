@@ -43,6 +43,7 @@ import {combatTactic,normalizeCombatTactic} from './combat-tactics';
 import {huntGoalSnapshot,huntMomentumBonus,normalizeHuntGoalId,type HuntGoalId} from './hunt-goals';
 import {CHAMPION_DAMAGE_MULTIPLIER,championBonus,isChampionEncounter} from './hunt-champions';
 import {applyDailySupplyCraft,commitDailySupplyTimedBoost,dailySupplyActivityMode,previewDailySupplyTimedReward} from './daily-supplies';
+import {professionMasteryMultipliers} from './profession-mastery-v40';
 export const beginAlchemyBatch=startAlchemyBatch;
 
 function longTermAccountScope(state:GameState){return state.account.longTermAccountScopeId??`local-account:${state.createdAtMs}`;}
@@ -271,17 +272,17 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
     }
     const g=[...GATHERING,...HERB_NODES].find(x=>x.id===state.activity!.targetId);if(!g)return {xp:0,gold:0,items:[],kills:0,elapsedSeconds:elapsed};
     const effect=environmentEffectForActivity(state.activity).effect;
-    const pacing=gatheringPacing(state,g);
+    const pacing=gatheringPacing(state,g),mastery=professionMasteryMultipliers(g.id,state.account.professionMasteryByAction?.[g.id]);
     const specialtySpeed=g.skillId==='fishing'?multipliers.fishingSpeedMultiplier:g.skillId==='herbalism'?multipliers.herbalismSpeedMultiplier:1;
-    const effectiveActionSeconds=g.seconds*GATHER_TIME_SCALE*pacing.timeMultiplier*effect.actionTimeMultiplier/(multipliers.gatheringSpeedMultiplier*specialtySpeed);
+    const effectiveActionSeconds=g.seconds*GATHER_TIME_SCALE*pacing.timeMultiplier*effect.actionTimeMultiplier/(multipliers.gatheringSpeedMultiplier*specialtySpeed*mastery.speed);
     const elapsedMs=Math.min(offlineCapSeconds(state)*1000,Math.max(0,effectiveNowMs-state.activity.lastClaimAtMs));
     const cycleMs=effectiveActionSeconds*1000;
     const totalMs=(state.activity.progressFraction??0)*cycleMs+elapsedMs;
     const actions=Math.floor(totalMs/cycleMs);
-    const quantityFloat=actions*g.min*effect.itemMultiplier*multipliers.gatheringYieldMultiplier+(state.rewardRemainders?.[g.itemId]??0);
+    const quantityFloat=actions*g.min*effect.itemMultiplier*multipliers.gatheringYieldMultiplier*mastery.yield+(state.rewardRemainders?.[g.itemId]??0);
     const quantity=Math.floor(quantityFloat);
     const skill=state.skills.find(x=>x.skillId===g.skillId);
-    const rawXp=Math.floor(actions*g.xp*effect.xpMultiplier*multipliers.skillXpMultiplier);
+    const rawXp=Math.floor(actions*g.xp*effect.xpMultiplier*multipliers.skillXpMultiplier*mastery.xp);
     const xp=Math.min(Math.max(0,totalXpAtLevel(100)-(skill?.xp??0)),rawXp);
     const reward:RewardBundle={xp,gold:0,items:quantity?[{itemId:g.itemId,quantity}]:[],kills:actions,elapsedSeconds:elapsed,nextProgressFraction:(totalMs%cycleMs)/cycleMs,nextRewardRemainders:{...(state.rewardRemainders??{}),[g.itemId]:Math.max(0,quantityFloat-quantity)}};
     return {...reward,eventDrops:activityEventDrops(state,reward,effectiveNowMs),eventDiscoveries:activityEventDiscoveries(state,'gathering',Math.floor(reward.elapsedSeconds/60),effectiveNowMs)};
@@ -439,8 +440,9 @@ export function claimActivity(state:GameState,nowMs:number){
     const routed=routeRewards(state,reward.items,nowMs);
     const skills=state.skills.map(x=>x.skillId==='alchemy'?{...x,xp:Math.min(totalXpAtLevel(100),x.xp+(reward.xp??0)),level:levelFromXp(Math.min(totalXpAtLevel(100),x.xp+(reward.xp??0)))}:x);
     const nextBase={...state,...routed,skills,rewardRemainders:reward.nextRewardRemainders,activity:reward.nextBrewRemaining?{...state.activity,lastClaimAtMs:nowMs,progressFraction:reward.nextProgressFraction,brew:{...brew,remainingBatches:reward.nextBrewRemaining}}:null} as GameState;
-    const next=commitDailySupplyTimedBoost(nextBase,boost);
-    return {state:next,reward};
+    const next=commitDailySupplyTimedBoost(nextBase,boost),actions=reward.craftingActions??0;
+    const progressed=actions>0?applyTrustedLongTermProgression(next,[{kind:'crafting',contentId:brew.recipeId,units:actions,startedAtMs:state.activity.lastClaimAtMs}],reward,nowMs,{accountId:longTermAccountScope(state),eventId:`alchemy:${state.character?.id??'unknown'}:${brew.recipeId}:${state.activity.lastClaimAtMs}:${nowMs}`}).state:next;
+    return {state:progressed,reward};
   }
   const preview=previewActivityReward(state,nowMs);if(!state.character||!state.activity)return {state,reward:preview};
   const idleWindow=idleRuleSettlementWindow(state,nowMs),settledAtMs=idleWindow.settleAtMs,idleStopReason=idleWindow.shouldStop?idleWindow.reason:undefined,supply=previewStandardActivityRewardWithSupplies(state,settledAtMs),boosted=supply.reward;
@@ -606,8 +608,9 @@ export function craftRecipe(state:GameState,recipeId:string,nowMs=Date.now()):Ga
   if(r.requiresCraftedItemId&&!state.character.craftedNoviceItemIds?.includes(r.requiresCraftedItemId))throw new Error(`Craft ${itemDef(r.requiresCraftedItemId).name} first`);
   const sk=state.skills.find(x=>x.skillId===r.skillId);if(!sk||sk.level<r.level)throw new Error('Skill level too low');
   if(state.character.gold<r.gold)throw new Error('Not enough gold');
-  const outputDef=itemDef(r.output.itemId),multipliers=characterPermanentMultipliers(state),baseXp=Math.floor(r.xp*multipliers.skillXpMultiplier);
-  const boosted=applyDailySupplyCraft(state,{seconds:r.seconds,outputQuantity:r.output.quantity,xp:baseXp,outputEligible:outputDef.type!=='gear'&&outputDef.type!=='tool'}),boostedState=boosted.state;
+  const outputDef=itemDef(r.output.itemId),multipliers=characterPermanentMultipliers(state),mastery=professionMasteryMultipliers(r.id,state.account.professionMasteryByAction?.[r.id]),outputEligible=outputDef.type!=='gear'&&outputDef.type!=='tool',baseXp=Math.floor(r.xp*multipliers.skillXpMultiplier*mastery.xp),masteryKey=`mastery:craft:${r.id}:yield`,masteryRaw=r.output.quantity*(outputEligible?mastery.yield:1)+(state.rewardRemainders?.[masteryKey]??0),masteryOutput=outputEligible?Math.floor(masteryRaw):r.output.quantity,masteryRemainder=outputEligible?Math.max(0,masteryRaw-masteryOutput):0;
+  const masteryState={...state,rewardRemainders:{...(state.rewardRemainders??{}),[masteryKey]:masteryRemainder}} as GameState;
+  const boosted=applyDailySupplyCraft(masteryState,{seconds:r.seconds,outputQuantity:masteryOutput,xp:baseXp,outputEligible}),boostedState=boosted.state;
   let inv=boostedState.inventory.stacks,bank=boostedState.bank.stacks;
   let temp={...boostedState,inventory:{...boostedState.inventory,stacks:inv},bank:{...boostedState.bank,stacks:bank}} as GameState;
   for(const i of r.inputs){

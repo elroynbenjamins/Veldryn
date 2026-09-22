@@ -3,6 +3,7 @@ import type {GameState,ItemStack,RewardBundle} from './types';
 import type {ActivePreparation,AlchemyBatchState} from './alchemy-types';
 import {characterPermanentMultipliers} from './permanent-boosts';
 import {totalXpAtLevel} from './progression';
+import {professionMasteryMultipliers} from './profession-mastery-v40';
 
 export function storedQuantity(stacks:readonly ItemStack[],itemId:string):number {
   return stacks.filter(stack=>stack.itemId===itemId).reduce((total,stack)=>total+stack.quantity,0);
@@ -37,10 +38,10 @@ export function startAlchemyBatch(state:GameState,recipeId:string,batches:number
   let inventory=state.inventory.stacks,bank=state.bank.stacks;
   for(const input of status.inputs){const fromInventory=Math.min(storedQuantity(inventory,input.itemId),input.quantity);
     inventory=take(inventory,input.itemId,fromInventory);bank=take(bank,input.itemId,input.quantity-fromInventory);}
-  const bonuses=characterPermanentMultipliers(state);
+  const bonuses=characterPermanentMultipliers(state),mastery=professionMasteryMultipliers(recipeId,state.account.professionMasteryByAction?.[recipeId]);
   const brew:AlchemyBatchState={version:1,recipeId,totalBatches:batches,remainingBatches:batches,
     inputsPerBatch:recipe.inputs.map(input=>({...input})),goldPerBatch:recipe.gold,outputPerBatch:{...recipe.output},
-    cycleSeconds:recipe.seconds,xpPerBatch:recipe.xp*bonuses.skillXpMultiplier};
+    cycleSeconds:recipe.seconds/mastery.speed,xpPerBatch:recipe.xp*bonuses.skillXpMultiplier*mastery.xp};
   return {...state,character:{...state.character!,gold:state.character!.gold-status.gold},
     inventory:{...state.inventory,stacks:inventory},bank:{...state.bank,stacks:bank},
     activity:{kind:'alchemy',targetId:recipeId,startedAtMs:nowMs,lastClaimAtMs:nowMs,progressFraction:0,bonusSnapshot:bonuses,brew}};
@@ -51,14 +52,15 @@ export function previewAlchemyReward(state:GameState,elapsed:number):RewardBundl
   const progress=elapsed/brew.cycleSeconds+(activity.progressFraction??0);
   const actions=Math.min(brew.remainingBatches,Math.max(0,Math.floor(progress+1e-10)));
   const remaining=brew.remainingBatches-actions,remainders={...(state.rewardRemainders??{})};
-  const xpKey='xp:alchemy',raw=actions*brew.xpPerBatch+(remainders[xpKey]??0),whole=Math.floor(raw+1e-10);
+  const mastery=professionMasteryMultipliers(brew.recipeId,state.account.professionMasteryByAction?.[brew.recipeId]),xpKey='xp:alchemy',raw=actions*brew.xpPerBatch+(remainders[xpKey]??0),whole=Math.floor(raw+1e-10);
   const xp=Math.max(0,Math.min(whole,totalXpAtLevel(100)-(state.skills.find(s=>s.skillId==='alchemy')?.xp??0)));
   remainders[xpKey]=xp<whole?0:Math.max(0,raw-whole);
   // Times are from the start of the processed interval, never retroactively shifted to claim time.
   const first=Math.max(0,(1-(activity.progressFraction??0))*brew.cycleSeconds);
   const times=Array.from({length:actions},(_,index)=>Math.round(activity.lastClaimAtMs+(first+index*brew.cycleSeconds)*1000));
   const qualifyingActivitySeconds=remaining?elapsed:actions?Math.max(0,Math.min(elapsed,(times[times.length-1]-activity.lastClaimAtMs)/1000)):0;
-  return {xp,gold:0,items:actions?[{itemId:brew.outputPerBatch.itemId,quantity:brew.outputPerBatch.quantity*actions}]:[],
+  const yieldKey=`mastery:alchemy:${brew.recipeId}:yield`,yieldRaw=actions*brew.outputPerBatch.quantity*mastery.yield+(remainders[yieldKey]??0),yieldQuantity=Math.floor(yieldRaw+1e-10);remainders[yieldKey]=Math.max(0,yieldRaw-yieldQuantity);
+  return {xp,gold:0,items:actions&&yieldQuantity?[{itemId:brew.outputPerBatch.itemId,quantity:yieldQuantity}]:[],
     kills:0,craftingActions:actions,elapsedSeconds:elapsed,qualifyingActivitySeconds,nextBrewRemaining:remaining,
     nextProgressFraction:remaining?Math.max(0,Math.min(1-Number.EPSILON,progress-actions)):0,
     nextRewardRemainders:remainders,craftingCompletedAtMs:times,

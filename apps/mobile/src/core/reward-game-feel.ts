@@ -81,6 +81,15 @@ export function rewardProgressionMoments(before:GameState|null|undefined,after:G
   return moments;
 }
 
+export function masteryRankNoticeMessage(moments:readonly RewardProgressionMoment[]){
+ const mastery=moments.filter(moment=>moment.kind==='mastery_rank');if(!mastery.length)return '';
+ const top=[...mastery].sort((a,b)=>Number(!!b.mastered)-Number(!!a.mastered)||Number(b.unlocks.length>0)-Number(a.unlocks.length>0)||b.afterLevel-a.afterLevel)[0];
+ const suffix=mastery.length>1?` · +${mastery.length-1} more`:'';
+ if(top.mastered)return `Mastered · ${top.label.replace(/ Mastery$/,'')} reached R50${suffix}`;
+ if(top.unlocks.length)return `${top.label.replace(/ Mastery$/,'')} R${top.afterLevel} · ${top.unlocks.join(' · ')}${suffix}`;
+ return `${top.label.replace(/ Mastery$/,'')} mastery advanced to R${top.afterLevel}${suffix}`;
+}
+
 export function rewardLootHighlights(reward:RewardBundle):RewardLootHighlight[]{
   return reward.items.flatMap(stack=>{
     try{

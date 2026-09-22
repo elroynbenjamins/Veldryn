@@ -3,6 +3,7 @@ import {characterTotalXpAtLevel,totalXpAtLevel} from '../src/core/progression';
 import {GATHERING,RECIPES} from '../src/content/skills';
 import {MONSTERS,NORMAL_GEAR_DROP_FLOOR} from '../src/content/monsters';
 import {activeActivityLevelPace,activityProgressFeedback,characterLevelPace,combatBaselineProjection,craftingPaceProjection,dropExpectation,dropPaceBand,formatBalanceDuration,gatheringBalanceProjection,skillTargetEta} from '../src/core/balance-projection';
+import {activityCycleSeconds,activityRate} from '../src/core/dashboard';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 function close(actual:number,expected:number,tolerance:number,message:string){if(Math.abs(actual-expected)>tolerance)throw new Error(message+': expected '+expected+', got '+actual)}
@@ -74,6 +75,26 @@ ok(activityProgressFeedback('gathering',.1)==='Preparing tools…'&&activityProg
 ok(activityProgressFeedback('combat',.1)==='Tracking the target…'&&activityProgressFeedback('combat',.8)==='Pressing the advantage…','Combat cycle feedback must describe real progress phases');
 ok(activityProgressFeedback('crafting',.1)==='Preparing materials…'&&activityProgressFeedback('faith',.8)==='Deepening devotion…','Crafting and Faith must use activity-specific progress language');
 ok(activityProgressFeedback('training',.8)==='Refining form…'&&activityProgressFeedback('exploration',.8)==='Following the trail…','Training and Exploration must use activity-specific progress language');
+ok(activityProgressFeedback('hunting',.1)==='Reading tracks…'&&activityProgressFeedback('hunting',.8)==='Closing in…','Hunting must use hunt-specific progress language');
+
+const activityBase=createCharacter(newGame(1),'IRONWARDEN','Activity Pace Tester');
+const exploreState={...activityBase,activity:{kind:'exploration',targetId:'SCOUT_GREENFIELDS',startedAtMs:1,lastClaimAtMs:1} as any};
+close(activityCycleSeconds(exploreState),60,.001,'Exploration Home cycle must use the authored route duration');
+const exploreRate=activityRate(exploreState),exploreLevel=activeActivityLevelPace(exploreState,exploreRate.xpPerHour);
+close(exploreRate.xpPerHour,1440,.001,'Starter Exploration Home rate must match settlement XP/hour');
+ok(exploreLevel?.label==='Exploration','Active Exploration must resolve the Exploration skill level bar');
+
+const faithState={...activityBase,activity:{kind:'faith',targetId:'FAITH_QUIET',startedAtMs:1,lastClaimAtMs:1} as any};
+close(activityCycleSeconds(faithState),30,.001,'Faith Home cycle must use the authored practice duration');
+const faithRate=activityRate(faithState),faithLevel=activeActivityLevelPace(faithState,faithRate.xpPerHour);
+close(faithRate.xpPerHour,14400,.001,'Quiet Prayer Home rate must match 120 XP per 30-second practice');
+ok(faithLevel?.label==='Faith','Active Faith must resolve the Faith skill level bar');
+
+const alchemyState={...activityBase,activity:{kind:'alchemy',targetId:'TEST_BREW',startedAtMs:1,lastClaimAtMs:1,brew:{version:1,recipeId:'TEST_BREW',totalBatches:5,remainingBatches:5,inputsPerBatch:[],goldPerBatch:0,outputPerBatch:{itemId:'COPPER_INGOT',quantity:1},cycleSeconds:45,xpPerBatch:150}} as any};
+close(activityCycleSeconds(alchemyState),45,.001,'Alchemy Home cycle must use the reserved mastery-adjusted brew snapshot');
+const alchemyRate=activityRate(alchemyState),alchemyLevel=activeActivityLevelPace(alchemyState,alchemyRate.xpPerHour);
+close(alchemyRate.xpPerHour,12000,.001,'Alchemy Home rate must use reserved XP per batch and cycle duration');
+ok(alchemyLevel?.label==='Alchemy','Active Alchemy must resolve the Alchemy skill level bar');
 const copperBlade=RECIPES.find(row=>row.id==='SMITH_COPPER_BLADE')!,asterChest=RECIPES.find(row=>row.id==='SMITH_ASTER_IRON_CHEST')!,oathWard=RECIPES.find(row=>row.id==='SMITH_OATHSTONE_WARD')!;
 const qty=(recipe:typeof copperBlade,itemId:string)=>recipe.inputs.find(row=>row.itemId===itemId)?.quantity??0;
 ok(qty(copperBlade,'COPPER_INGOT')<=12&&qty(copperBlade,'GREENWOOD_LOG')<=24,'Starter crafted gear must stay session-friendly after catalog transforms');

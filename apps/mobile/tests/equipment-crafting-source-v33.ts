@@ -1,5 +1,7 @@
 import {V33_EQUIPMENT_RECIPES,v33EquipmentRecipeForItem} from '../src/content/equipment-recipes-v33';
 import {RECIPES} from '../src/content/skills';
+import {MONSTERS} from '../src/content/monsters';
+import {combatBaselineProjection,dropExpectation} from '../src/core/balance-projection';
 import {itemDef} from '../src/content/items';
 import {createCharacter,craftRecipe,newGame} from '../src/core/game';
 import {equipmentCraftingPath} from '../src/core/equipment-crafting-path';
@@ -37,6 +39,31 @@ const t5=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T5')!;
 ok(t5.inputs.some(row=>row.itemId==='SUNSTONE_ORE')&&t5.inputs.some(row=>row.itemId==='AMBERGLASS'),'T5 must use Sunscar materials');
 const t8=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T8')!;
 ok(t8.inputs.some(row=>row.itemId==='FROSTIRON')&&t8.inputs.some(row=>row.itemId==='CHOIR_BLOOM'),'T8 must use Frostmarch materials');
+const materialSourceMonster:Record<string,string>={
+  SUNSTONE_ORE:'GLASSBOUND_SENTINEL',AMBERGLASS:'GLASSBOUND_SENTINEL',ASTRAL_SCRIPT:'GLASSBOUND_SENTINEL',
+  FROSTIRON:'CHOIR_HUNTER',RIMEGLASS:'CHOIR_HUNTER',CHOIR_BLOOM:'CHOIR_HUNTER',
+};
+function projectedFarmHours(recipe:typeof t8){
+  return recipe.inputs.reduce((hours,input)=>{
+    const monsterId=materialSourceMonster[input.itemId];if(!monsterId)return hours;
+    const monster=MONSTERS.find(row=>row.id===monsterId)!;
+    const drop=monster.drops.find(row=>row.itemId===input.itemId)!;
+    const pace=combatBaselineProjection(monster),expectation=dropExpectation(drop.chance,drop.min,drop.max,pace.killsPerHour);
+    return hours+input.quantity/Math.max(.0001,expectation.expectedQuantityPerHour);
+  },0);
+}
+const highTierBands:Record<string,[number,number]>={
+  T5:[.35,2.5],T6:[.5,3.5],T7:[.6,3.5],T8:[.9,5.5],T9:[1.2,7.0],
+};
+for(const tier of Object.keys(highTierBands)){
+  const rows=V33_EQUIPMENT_RECIPES.filter(row=>row.v33EquipmentTier===tier);
+  const [minHours,maxHours]=highTierBands[tier];
+  for(const recipe of rows){
+    const hours=projectedFarmHours(recipe);
+    ok(hours>=minHours,recipe.id+' regional materials are too trivial for '+tier+': '+hours.toFixed(2)+'h baseline');
+    ok(hours<=maxHours,recipe.id+' regional materials exceed the grind ceiling for '+tier+': '+hours.toFixed(2)+'h baseline');
+  }
+}
 
 let state=createCharacter(newGame(0),'IRONWARDEN','Crafter','male');
 const path=equipmentCraftingPath(state,'T1P_001')!;

@@ -164,6 +164,13 @@ ok(!inventory.includes('contentContainerStyle={s.controlStrip}'),'Inventory must
 const world=read('src/screens/WorldScreen.tsx');
 ok(world.includes('currentCard:{minHeight:150'),'World current-region card must remain compact');
 ok(world.includes('destination:{minHeight:92'),'World destination cards must remain compact');
+ok(world.includes('CURRENT REGION CONTENT')&&world.includes('What can I do in {current.name}?'),'World must behave as a current-region hub before presenting travel-away choices');
+ok(world.indexOf('{sunscar&&')<world.indexOf('TRAVEL ELSEWHERE')&&world.indexOf('{frostmarch&&')<world.indexOf('TRAVEL ELSEWHERE'),'Region-specific Sunscar/Frostmarch content must appear before the travel-away list');
+ok(world.includes('<RegionStat label="HUNTS"')&&world.includes('<RegionStat label="GATHER"')&&world.includes('<RegionStat label="BOSSES"'),'Current region hub must expose compact real-content readiness counts');
+ok(world.includes('NEXT REGION UNLOCK')&&world.includes("unlockTrack:{height:5"),'World travel section must show compact next-region level progress');
+ok(world.includes('orderedTravelRegions(state,current.id,goalRegionId)'),'World travel ordering must reuse the core goal-aware unlocked-first ordering helper');
+ok(world.includes("destinationContent:{fontSize:10"),'Travel destinations must preview authored content without making cards excessively tall');
+ok(!world.includes('Open Co-op Expeditions'),'World must not keep a duplicate standalone co-op panel after adding co-op to current-region quick actions');
 
 const character=read('src/screens/CharacterScreen.tsx');
 ok(character.includes('disclosure:{minHeight:54'),'Character secondary disclosures must remain compact');

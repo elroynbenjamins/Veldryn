@@ -1,6 +1,7 @@
 import {useEffect,useMemo,useRef} from 'react';
 import {Animated,Image,StyleSheet,Text,View} from 'react-native';
 import type {CoopBossPhaseView,CoopCombatReplayCueView,CoopRunView} from '../../core/coop-presentation';
+import type {PlaybackCombatStatus} from '../../core/dungeon-combat-playback';
 import {dungeonCombatAvatar} from '../../core/dungeon-combat-avatars';
 import {combatCompanionDef} from '../../content/combat-companions';
 import {companionArtSource} from '../../theme/companion-art';

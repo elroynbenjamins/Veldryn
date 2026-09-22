@@ -10,6 +10,11 @@ const replay:CoopCombatReplayView={nodeId:'boss',reason:'victory',durationMs:200
  {id:'p2',name:'Ravager',team:'players',maxHp:920,startHp:920,startShield:0,boss:false},
  {id:'p3',name:'Dawnkeeper',team:'players',maxHp:850,startHp:850,startShield:0,boss:false},
  {id:'boss',name:'The Hollow Regent',team:'enemies',maxHp:5000,startHp:5000,startShield:0,boss:true},
+],contributions:[
+ {id:'p0',damage:820,healing:0,damageTaken:3100,interrupts:1},
+ {id:'p1',damage:4800,healing:0,damageTaken:900,interrupts:1},
+ {id:'p2',damage:5200,healing:0,damageTaken:1200,interrupts:0},
+ {id:'p3',damage:650,healing:3900,damageTaken:700,interrupts:0},
 ],gemStates:[
  {atMs:900,states:[{targetId:'p1',tag:'gem:momentum',expiriesAtMs:[5000,7000]},{targetId:'p0',tag:'gem:unyielding',expiriesAtMs:[6000]},{targetId:'boss',tag:'gem:opportunist_ready',expiriesAtMs:[4000]}]},
  {atMs:5000,states:[{targetId:'p1',tag:'gem:momentum',expiriesAtMs:[7000]},{targetId:'p1',tag:'gem:flow',expiriesAtMs:[9000]},{targetId:'p0',tag:'gem:unyielding',expiriesAtMs:[8000,9000]}]},
@@ -61,6 +66,8 @@ equal(playbackCombatantStatuses(replay,1,'boss').find(status=>status.tag==='dama
 equal(playbackCombatantStatuses(replay,1,'boss').find(status=>status.tag==='damage_taken')?.kind,'debuff');
 equal(playbackCombatantStatuses(replay,1,'p0')[0]?.kind,'hot');
 equal(playbackCombatantStatuses(replay,4,'boss').length,0);
+equal(replay.contributions?.find(row=>row.id==='p0')?.damageTaken,3100);
+equal(replay.contributions?.find(row=>row.id==='p3')?.healing,3900);
 
 validateCoopRunView({runId:'run',mode:'qmode',phase:'completed',syncedLevel:35,roleSlots:[
  {memberId:'p0',role:'tank',name:'Tank',echo:false,classId:'IRONWARDEN'},

@@ -1,7 +1,7 @@
 import type {AbilityDefinition,CombatantDefinition,DamageType} from './types';
 
 export type PveArchetype='bruiser'|'assassin'|'caster'|'swarm'|'guardian'|'hexer'|'executioner'|'support';
-export type PveMechanicId='heavy_hit'|'focus'|'interrupt'|'aoe'|'dot'|'vulnerability'|'barrier'|'enrage'|'execute'|'sustain';
+export type PveMechanicId='heavy_hit'|'focus'|'interrupt'|'aoe'|'dot'|'vulnerability'|'healing_reduction'|'barrier'|'enrage'|'execute'|'sustain';
 
 export interface PveMechanicPresentation{id:PveMechanicId;label:string;description:string;}
 export interface PveEncounterPreview{
@@ -20,6 +20,7 @@ const MECHANICS:Readonly<Record<PveMechanicId,PveMechanicPresentation>>=Object.f
   aoe:{id:'aoe',label:'Party Damage',description:'Can damage multiple party members at once.'},
   dot:{id:'dot',label:'DoT',description:'Applies damage over time.'},
   vulnerability:{id:'vulnerability',label:'Vulnerability',description:'Applies increased damage taken.'},
+  healing_reduction:{id:'healing_reduction',label:'Heal Cut',description:'Reduces healing received for a short time.'},
   barrier:{id:'barrier',label:'Barrier',description:'Can create a protective barrier.'},
   enrage:{id:'enrage',label:'Enrage',description:'Temporarily increases offensive pressure.'},
   execute:{id:'execute',label:'Execute',description:'Deals increased damage to low-health targets.'},
@@ -60,6 +61,16 @@ export function pveExecuteStrike(id:string,name:string,damageType:DamageType,coe
 }
 export function pveSustain(id:string,name:string,flat:number,cooldownMs=11000):AbilityDefinition{
   return{id,name,cooldownMs,castTimeMs:900,target:'self',priority:86,aiCondition:'self_below_50',effects:[{kind:'heal',flat}]};
+}
+
+export function pveAllyMend(id:string,name:string,flat:number,cooldownMs=9000):AbilityDefinition{
+  return{id,name,cooldownMs,castTimeMs:850,target:'lowest_hp_ally',priority:96,aiCondition:'ally_below_80',effects:[{kind:'heal',flat}]};
+}
+export function pveSupportRally(id:string,name:string,value=.06,cooldownMs=14500):AbilityDefinition{
+  return{id,name,cooldownMs,castTimeMs:0,target:'all_allies',priority:72,effects:[{kind:'buff',tag:'damage_done',value,durationMs:6000}]};
+}
+export function pveHealingPressure(id:string,name:string,damageType:DamageType,coeff=.52,cooldownMs=8200):AbilityDefinition{
+  return{id,name,cooldownMs,castTimeMs:750,target:'current_target',priority:93,effects:[{kind:'damage',coeff,damageType},{kind:'debuff',tag:'healing_received',value:-.25,durationMs:6000}]};
 }
 
 function parseArchetype(tags:readonly string[]):PveArchetype|undefined{

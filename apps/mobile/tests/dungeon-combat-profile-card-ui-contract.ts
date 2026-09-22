@@ -38,7 +38,7 @@ ok(card.includes('LOW')&&card.includes('criticalInline'),'Party cards must call 
 ok(card.includes('phaseThreshold')&&card.includes('phase.hpPct'),'Boss HP bar must show authoritative phase threshold markers');
 ok(stage.includes('bossPhases={boss?run.bossMechanic?.telegraph?.phases:undefined}'),'Battlefield must pass authoritative boss phase thresholds into the encounter card');
 ok(card.includes('CombatStatusStrip')&&card.includes('statusStrip'),'Combat cards must render a compact status-effect strip');
-ok(card.includes("return 'DOT'")&&card.includes("return 'HOT'")&&card.includes("'VULN'")&&card.includes("'HASTE'"),'Status pills must distinguish harmful, healing and common buff states');
+ok(card.includes("return 'DOT'")&&card.includes("return 'HOT'")&&card.includes("'VULN'")&&card.includes("'HEAL↓'")&&card.includes("'HASTE'"),'Status pills must distinguish damage, healing-pressure, healing and common buff states');
 ok(card.includes('visibleLimit=Math.max(1,gemProc?limit-1:limit)')&&card.includes('statusOverflow'),'Status strips must cap visible pills by responsive layout budget and show overflow rather than expand the card');
 ok(card.includes('Effect Gem proc')&&card.includes('>GEM<'),'Current Effect Gem procs must receive compact card feedback without becoming persistent fake buffs');
 ok(stage.includes('playbackCombatantStatuses')&&stage.includes('statuses={enemyStatuses}')&&stage.includes('statuses={statuses}'),'Battlefield must resolve status windows for both boss/enemy and party cards');

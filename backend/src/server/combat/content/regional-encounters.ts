@@ -1,12 +1,13 @@
 import type {AbilityDefinition,CombatantDefinition,DamageType} from '../types';
-import {pveBarrier,pveDotWave,pveEnrage,pveExecuteStrike,pveFocusStrike,pveHeavyStrike,pveHex,pveInterruptibleWave,withPveIdentity,type PveArchetype,type PveMechanicId} from '../pve-encounter-identity';
+import {pveAllyMend,pveBarrier,pveDotWave,pveEnrage,pveExecuteStrike,pveFocusStrike,pveHealingPressure,pveHeavyStrike,pveHex,pveInterruptibleWave,pveSupportRally,withPveIdentity,type PveArchetype,type PveMechanicId} from '../pve-encounter-identity';
 
 const stats=(maxHp:number,attackPower:number,defense:number,level:number)=>({maxHp,attackPower,healingPower:0,defense,accuracy:930,evasion:190,critChance:.06,critMultiplier:1.5,haste:.03});
 const strike=(id:string,name:string,coeff:number,damageType:DamageType,target:'current_target'|'all_enemies'='current_target'):AbilityDefinition=>({id,name,cooldownMs:target==='all_enemies'?9800:6800,castTimeMs:target==='all_enemies'?1100:700,target,priority:target==='all_enemies'?90:70,interruptible:target==='all_enemies',effects:[{kind:'damage',coeff,damageType}]});
 function normalIdentity(name:string):{archetype:PveArchetype;mechanics:PveMechanicId[]}{
  if(['Glacier Stalker','Icefang Hound','Glassbone Hound'].includes(name))return{archetype:'assassin',mechanics:['focus','execute']};
- if(['Choir Wisp','Glacial Acolyte','Ember Wraith','Crucible Imp'].includes(name))return{archetype:'caster',mechanics:['interrupt','aoe']};
- if(['Rime Cantor','Bellbound Shade','Charred Adept'].includes(name))return{archetype:'hexer',mechanics:['vulnerability']};
+ if(['Choir Wisp','Ember Wraith','Crucible Imp'].includes(name))return{archetype:'caster',mechanics:['interrupt','aoe']};
+ if(['Rime Cantor','Bellbound Shade','Charred Adept'].includes(name))return{archetype:'hexer',mechanics:['vulnerability','healing_reduction']};
+ if(['Frozen Pilgrim','Glacial Acolyte','Molten Pilgrim'].includes(name))return{archetype:'support',mechanics:['sustain']};
  if(['Choir Sentinel','Cinderbound Guard','Ashen Colossus'].includes(name))return{archetype:'guardian',mechanics:['heavy_hit','barrier']};
  if(['Cinder Mireling'].includes(name))return{archetype:'swarm',mechanics:['aoe','dot']};
  if(['Fen Reaver','Prime Scoria'].includes(name))return{archetype:'executioner',mechanics:['heavy_hit','execute']};
@@ -17,7 +18,8 @@ function normalAbilities(id:string,name:string,type:DamageType,index:number,iden
  switch(identity.archetype){
   case 'assassin': return[pveFocusStrike(`${id}_HUNT`,`${name} Hunt`,type,coeff,7200)];
   case 'caster': return[pveInterruptibleWave(`${id}_CAST`,`${name} Channel`,type,.46+index*.02,9800,1200)];
-  case 'hexer': return[pveHex(`${id}_HEX`,`${name} Hex`,type,.58+index*.02,7600)];
+  case 'hexer': return[pveHex(`${id}_HEX`,`${name} Hex`,type,.58+index*.02,7600),pveHealingPressure(`${id}_MEND_BREAK`,`${name} Withering Rite`,type,.42+index*.015,9000)];
+  case 'support': return[pveAllyMend(`${id}_MEND`,`${name} Mend`,900+index*120,9200),pveSupportRally(`${id}_RALLY`,`${name} Rally`,.05,14500)];
   case 'guardian': return[pveHeavyStrike(`${id}_CRUSH`,`${name} Crush`,type,.92+index*.025,7200,700),pveBarrier(`${id}_WARD`,`${name} Ward`,700+index*120,13500)];
   case 'swarm': return[pveDotWave(`${id}_SWARM`,`${name} Swarm`,type,.38+index*.02,10500)];
   case 'executioner': return[pveExecuteStrike(`${id}_EXECUTE`,`${name} Execute`,type,coeff,7600)];
@@ -55,7 +57,7 @@ function elite(id:string,name:string,level:number,type:DamageType,index:number,b
  return[withPveIdentity({id,name,team:'enemies',role:'enemy',level,stats:stats(hp,attackPower,defense,level),basicAttackMs:2750,basicAttackCoeff:.74,abilities},identity.archetype,identity.mechanics)];
 }
 function bossIdentity(name:string):{archetype:PveArchetype;mechanics:PveMechanicId[]}{
- if(name==='The Frozen Cantor')return{archetype:'caster',mechanics:['interrupt','aoe','dot','vulnerability']};
+ if(name==='The Frozen Cantor')return{archetype:'caster',mechanics:['interrupt','aoe','dot','healing_reduction']};
  if(name==='The Blackglass Fen Prime')return{archetype:'executioner',mechanics:['heavy_hit','execute','vulnerability','aoe']};
  if(name==='The Crucible Prime')return{archetype:'guardian',mechanics:['heavy_hit','barrier','aoe','enrage']};
  return{archetype:'bruiser',mechanics:['heavy_hit','aoe','interrupt','enrage']};
@@ -76,6 +78,7 @@ function boss(id:string,name:string,level:number,type:DamageType,baseHp:number,b
  }else if(name==='The Frozen Cantor'){
   abilities=[
    pveHex(`${id}_VERSE`,'Dissonant Verse',type,.8,7200),
+   pveHealingPressure(`${id}_WITHER`,'Withering Refrain',type,.5,9000),
    pveDotWave(`${id}_TEMPEST`,'Choir Tempest',type,.78,10800),
   ];
   phases=[

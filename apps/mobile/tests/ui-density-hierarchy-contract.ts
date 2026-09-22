@@ -149,7 +149,7 @@ for(const path of [
 }
 
 const activeActivityBar=read('src/components/ActiveActivityBar.tsx');
-ok(activeActivityBar.includes('activityProgressFeedback')&&activeActivityBar.includes("phase.replace('…','').toUpperCase()"),'Collapsed active-activity strip must show the same real cycle phase as Home');
+ok(activeActivityBar.includes('activityProgressFeedback')&&activeActivityBar.includes("phase.replace('…','').toUpperCase()")&&activeActivityBar.includes('cycleRemaining'),'Collapsed active-activity strip must show the same real cycle phase and next-action countdown as Home');
 
 const activity=read('src/components/ActivityCard.tsx');
 ok(activity.includes('activityActions:{flexDirection:\'row\''),'Activity actions must remain on one compact row');

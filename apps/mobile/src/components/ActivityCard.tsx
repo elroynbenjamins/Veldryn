@@ -1,6 +1,6 @@
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {Animated,Easing,Pressable,StyleSheet,Text,View} from 'react-native';
-import {ActiveActivity,RewardBundle} from '../core/types';
+import {ActiveActivity,RewardBundle,type ActivityKind} from '../core/types';
 import {huntGoalProgress,huntMomentumStatus} from '../core/hunt-goals';
 import {itemDef} from '../content/items';
 import {GameButton} from './GameButton';
@@ -16,12 +16,18 @@ function duration(seconds:number){
   return hours?`${hours}h ${minutes}m`:`${minutes}m`;
 }
 
-export function ActivityCard({title,kind,activity,cycleSeconds,capHours,preview,rates,levelPace,reduceMotion=false,numberMode='abbreviated',onClaim,onStop}:{title:string;kind:'combat'|'gathering';activity?:ActiveActivity;cycleSeconds:number;capHours:number;preview:RewardBundle;rates:{actionsPerHour:number;xpPerHour:number;goldPerHour:number};levelPace?:LevelPaceProjection;reduceMotion?:boolean;numberMode?:'abbreviated'|'exact';onClaim:()=>void;onStop:()=>void}){
+const kindLabel:Record<ActivityKind,string>={combat:'HUNTING',mining:'MINING',woodcutting:'WOODCUTTING',fishing:'FISHING',herbalism:'HERBALISM',alchemy:'ALCHEMY',faith:'FAITH',training:'TRAINING',hunting:'HUNTING',exploration:'EXPLORATION'};
+const nextLabel:Record<ActivityKind,string>={combat:'NEXT ENCOUNTER',mining:'NEXT ACTION',woodcutting:'NEXT ACTION',fishing:'NEXT ACTION',herbalism:'NEXT ACTION',alchemy:'NEXT BREW',faith:'NEXT PRACTICE',training:'NEXT DRILL',hunting:'NEXT HUNT',exploration:'NEXT ROUTE'};
+const rewardLabel:Record<ActivityKind,string>={combat:'kills ready',mining:'actions ready',woodcutting:'actions ready',fishing:'actions ready',herbalism:'actions ready',alchemy:'brews ready',faith:'practices ready',training:'drills ready',hunting:'actions ready',exploration:'routes ready'};
+const feedbackKind=(kind:ActivityKind)=>kind==='combat'?'combat':kind==='alchemy'?'crafting':kind==='faith'?'faith':kind==='training'?'training':kind==='exploration'?'exploration':kind==='hunting'?'hunting':'gathering';
+
+export function ActivityCard({title,kind,activity,cycleSeconds,capHours,preview,rates,levelPace,reduceMotion=false,numberMode='abbreviated',onClaim,onStop}:{title:string;kind:ActivityKind;activity?:ActiveActivity;cycleSeconds:number;capHours:number;preview:RewardBundle;rates:{actionsPerHour:number;xpPerHour:number;goldPerHour:number};levelPace?:LevelPaceProjection;reduceMotion?:boolean;numberMode?:'abbreviated'|'exact';onClaim:()=>void;onStop:()=>void}){
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
   const [showDetails,setShowDetails]=useState(false);
   const pulse=useRef(new Animated.Value(0)).current;
   useEffect(()=>{pulse.setValue(0);if(reduceMotion)return;const loop=Animated.loop(Animated.timing(pulse,{toValue:1,duration:1100,easing:Easing.linear,useNativeDriver:true}));loop.start();return()=>loop.stop()},[pulse,reduceMotion]);
-  const hasRewards=preview.kills>0||!!preview.stoppedReason;
+  const readyCount=kind==='combat'?preview.kills:kind==='alchemy'?(preview.craftingActions??0):kind==='faith'?(preview.faithActions??0):kind==='training'?(preview.trainingActions??0):preview.kills;
+  const hasRewards=readyCount>0||!!preview.stoppedReason;
   const loot=preview.items.map(stack=>`${formatGameNumber(stack.quantity,numberMode)}× ${itemDef(stack.itemId).name}`).join(' · ');
   const capped=preview.elapsedSeconds>=capHours*60*60;
   const cycleProgress=preview.stoppedReason||capped?1:(preview.elapsedSeconds%cycleSeconds)/cycleSeconds;
@@ -29,19 +35,19 @@ export function ActivityCard({title,kind,activity,cycleSeconds,capHours,preview,
   return <Panel>
     <View style={s.heading}>
       <View style={s.headingCopy}>
-        <Text style={s.eyebrow}>{kind==='combat'?'HUNTING':'GATHERING'}</Text>
+        <Text style={s.eyebrow}>{kindLabel[kind]}</Text>
         <Text style={s.title}>{title}</Text>
       </View>
       <View style={[s.status,(capped||!!preview.stoppedReason)&&s.statusCapped]}><Text style={[s.statusText,preview.stoppedReason?s.statusStopped:capped?s.statusCappedText:s.statusActive]}>{preview.stoppedReason?'STOPPED':capped?`${capHours}H CAP`:'ACTIVE'}</Text></View>
     </View>
-    <View accessible accessibilityRole="progressbar" accessibilityLabel={`${title} action progress`} accessibilityValue={{min:0,max:100,now:Math.round(cycleProgress*100)}} style={s.progressBlock}><View style={s.progressMeta}><Text style={s.progressLabel}>{preview.stoppedReason?'ACTIVITY STOPPED':capped?'OFFLINE STORAGE FULL':kind==='combat'?'NEXT ENCOUNTER':'NEXT GATHER'}</Text><Text style={s.progressTime}>{preview.stoppedReason||capped?'—':`${remaining}s`}</Text></View><View style={s.track}><View style={[s.fill,{width:`${cycleProgress*100}%`}]}>{!reduceMotion&&<Animated.View style={[s.shine,{transform:[{translateX:pulse.interpolate({inputRange:[0,1],outputRange:[-90,260]})}]}]}/>}</View></View>{!preview.stoppedReason&&!capped?<Text style={s.phaseText}>{activityProgressFeedback(kind==='combat'?'combat':'gathering',cycleProgress)}</Text>:null}</View>
+    <View accessible accessibilityRole="progressbar" accessibilityLabel={`${title} action progress`} accessibilityValue={{min:0,max:100,now:Math.round(cycleProgress*100)}} style={s.progressBlock}><View style={s.progressMeta}><Text style={s.progressLabel}>{preview.stoppedReason?'ACTIVITY STOPPED':capped?'OFFLINE STORAGE FULL':nextLabel[kind]}</Text><Text style={s.progressTime}>{preview.stoppedReason||capped?'—':`${remaining}s`}</Text></View><View style={s.track}><View style={[s.fill,{width:`${cycleProgress*100}%`}]}>{!reduceMotion&&<Animated.View style={[s.shine,{transform:[{translateX:pulse.interpolate({inputRange:[0,1],outputRange:[-90,260]})}]}]}/>}</View></View>{!preview.stoppedReason&&!capped?<Text style={s.phaseText}>{activityProgressFeedback(feedbackKind(kind),cycleProgress)}</Text>:null}</View>
     {levelPace?<View accessible accessibilityRole="progressbar" accessibilityLabel={levelPace.label+' level progress'} accessibilityValue={{min:0,max:100,now:Math.round(levelPace.progress*100)}} style={s.levelProgress}><View style={s.progressMeta}><Text style={s.levelProgressLabel}>{levelPace.level>=100?levelPace.label.toUpperCase()+' · LEVEL 100':levelPace.label.toUpperCase()+' · LV '+levelPace.level+' → '+levelPace.nextLevel}</Text><Text style={s.levelProgressEta}>{levelPace.level>=100?'MAX':'~'+formatBalanceDuration(levelPace.etaSeconds)}</Text></View><View style={s.levelTrack}><View style={[s.levelFill,{width:((levelPace.level>=100?100:Math.max(2,levelPace.progress*100))+'%') as `${number}%`}]}/></View><Text style={s.levelProgressMeta}>{levelPace.level>=100?'Maximum level reached':formatGameNumber(Math.ceil(levelPace.remainingXp),numberMode)+' XP remaining · '+formatGameNumber(Math.round(levelPace.xpPerHour),numberMode)+' XP/hr'}</Text></View>:null}
     {!!preview.stoppedReason&&<View accessibilityRole="alert" style={s.stopNotice}><Text style={s.noticeLabel}>ACTIVITY STOPPED</Text><Text style={s.capNotice}>{preview.stoppedReason}. Collect to settle combat, then heal or equip food in Inventory.</Text></View>}
     {goal&&<View style={s.goal}><View style={s.progressMeta}><Text style={s.goalLabel}>HUNT GOAL · {goal.label.toUpperCase()}</Text><Text style={s.goalValue}>{goal.current}/{goal.target}</Text></View><View style={s.goalTrack}><View style={[s.goalFill,{width:`${Math.max(2,Math.min(100,goal.current/goal.target*100))}%`}]}/></View></View>}
     {momentum&&<View style={s.momentum}><View style={s.progressMeta}><Text style={s.momentumLabel}>HUNT MOMENTUM · {momentum.tier.name.toUpperCase()}</Text><Text style={s.momentumValue}>{momentum.bonusPct?`+${momentum.bonusPct}% XP & GOLD`:'BUILDING'}</Text></View><View style={s.momentumTrack}><View style={[s.momentumFill,{width:`${Math.max(2,Math.round(momentum.progressPct*100))}%`}]}/></View><Text style={s.momentumHint}>{momentum.next?`${momentum.killsToNext} kills to ${momentum.next.name} (+${Math.round(momentum.next.bonus*100)}%)`:`Max momentum · ${momentum.kills} session kills`}</Text></View>}
     {preview.championEncounters?.count?<View style={s.champion}><Text style={s.championLabel}>CHAMPION ENCOUNTER</Text><Text style={s.championText}>{preview.championEncounters.count} champion{preview.championEncounters.count===1?'':'s'} defeated · +{formatGameNumber(preview.championEncounters.bonusXp,numberMode)} XP · +{formatGameNumber(preview.championEncounters.bonusGold,numberMode)} gold</Text></View>:null}
     <View style={s.rewardRow}>
-      <View><Text style={s.rewardNumber}>{formatGameNumber(preview.kills,numberMode)}</Text><Text style={s.rewardLabel}>{kind==='combat'?'kills ready':'actions ready'}</Text></View>
+      <View><Text style={s.rewardNumber}>{formatGameNumber(readyCount,numberMode)}</Text><Text style={s.rewardLabel}>{rewardLabel[kind]}</Text></View>
       <View style={s.totals}><Text style={s.xp}>+{formatGameNumber(preview.xp,numberMode)} XP</Text>{preview.gold>0&&<Text style={s.gold}>+{formatGameNumber(preview.gold,numberMode)} gold</Text>}</View>
     </View>
     {!loot&&!hasRewards&&<Text style={s.emptyLoot}>Keep this activity running to earn your first reward.</Text>}

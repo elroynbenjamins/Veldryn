@@ -52,6 +52,7 @@ export function gearInstanceRarity(state:GameState,instanceId:string){const inst
 
 function deterministicId(owner:string,where:string,itemId:string,ordinal:number){return `gear:migrated:${owner}:${where}:${itemId}:${ordinal}`;}
 function legacyEnhancement(character:GameState['character'],itemId:string){return cleanEnhancement(character?.gearEnhancements?.[itemId]);}
+function enhancementHasState(value:GearEnhancementState){return value.rank>0||value.failures>0||!!value.statGemId||!!value.effectGemId||value.gemIds.length>0;}
 function assignPool(existing:GearInstance[],used:Set<string>,itemId:string,count:number,location:GearInstanceLocation,owner:string,make:(ordinal:number)=>GearInstance){
   const candidates=existing.filter(row=>row.itemId===itemId&&!used.has(row.id)&&row.location!=='equipped').sort((a,b)=>score(b)-score(a)||a.createdAtMs-b.createdAtMs||a.id.localeCompare(b.id));
   const assigned:GearInstance[]=[];
@@ -76,38 +77,59 @@ export function materializeGearInstances(state:GameState):GameState{
   const used=new Set<string>();
   const chars=[...(state.character?[{character:state.character,inventory:state.inventory,active:true}]:[]),...(state.otherCharacters??[]).map(entry=>({character:entry.character,inventory:entry.inventory,active:false}))];
   const equipmentIdsByCharacter=new Map<string,Partial<Record<GearSlot,string>>>();
+  const pendingLegacyBank:Array<{ownerCharacterId:string;itemId:string;enhancement:GearEnhancementState}>=[];
 
   for(const ctx of chars){
-    const c=ctx.character,eqIds:{[K in GearSlot]?:string}={};
+    const c=ctx.character,eqIds:{[K in GearSlot]?:string}={},legacyApplied=new Set<string>();
     for(const [slot,itemId] of Object.entries(c.equipment??{}) as [GearSlot,string][]){
       if(!itemId)continue;
-      const explicit=c.equipmentInstanceIds?.[slot];
+      const explicit=c.equipmentInstanceIds?.[slot],legacy=legacyEnhancement(c,itemId);
       let chosen=explicit?existing.find(row=>row.id===explicit&&row.itemId===itemId&&!used.has(row.id)):undefined;
       if(!chosen){
         chosen=existing.filter(row=>row.itemId===itemId&&!used.has(row.id)).sort((a,b)=>score(b)-score(a)||b.createdAtMs-a.createdAtMs||a.id.localeCompare(b.id))[0];
       }
       if(!chosen){
-        chosen={id:deterministicId(c.id,`equipped-${slot}`,itemId,0),itemId,ownerCharacterId:c.id,rarity:itemRarity(itemDef(itemId)),acquireSource:'legacy',sourceReceiptKey:`legacy:equipped:${c.id}:${slot}`,createdAtMs:state.createdAtMs,enhancement:legacyEnhancement(c,itemId),location:'equipped',slot};
-      }else if((c.gearEnhancements?.[itemId]?.rank??0)>0||(c.gearEnhancements?.[itemId]?.gemIds?.length??0)>0){
-        chosen={...chosen,enhancement:legacyEnhancement(c,itemId)};
+        chosen={id:deterministicId(c.id,'equipped-'+slot,itemId,0),itemId,ownerCharacterId:c.id,rarity:itemRarity(itemDef(itemId)),acquireSource:'legacy',sourceReceiptKey:'legacy:equipped:'+c.id+':'+slot,createdAtMs:state.createdAtMs,enhancement:legacy,location:'equipped',slot};
+      }else if(enhancementHasState(legacy)){
+        chosen={...chosen,enhancement:legacy};
       }
+      if(enhancementHasState(legacy))legacyApplied.add(itemId);
       used.add(chosen.id);updates.push({...chosen,ownerCharacterId:c.id,location:'equipped',slot});eqIds[slot]=chosen.id;
     }
     equipmentIdsByCharacter.set(c.id,eqIds);
 
     for(const itemId of [...new Set(gearIds(ctx.inventory.stacks))]){
-      const count=stackQty(ctx.inventory.stacks,itemId);
-      updates.push(...assignPool(existing,used,itemId,count,'inventory',c.id,ordinal=>({
-        id:deterministicId(c.id,'inventory',itemId,ordinal),itemId,ownerCharacterId:c.id,rarity:itemRarity(itemDef(itemId)),acquireSource:'legacy',sourceReceiptKey:`legacy:inventory:${c.id}:${itemId}:${ordinal}`,createdAtMs:state.createdAtMs,enhancement:emptyEnhancement(),location:'inventory'
-      })));
+      const count=stackQty(ctx.inventory.stacks,itemId),legacy=legacyEnhancement(c,itemId);
+      const assigned=assignPool(existing,used,itemId,count,'inventory',c.id,ordinal=>({
+        id:deterministicId(c.id,'inventory',itemId,ordinal),itemId,ownerCharacterId:c.id,rarity:itemRarity(itemDef(itemId)),acquireSource:'legacy',sourceReceiptKey:'legacy:inventory:'+c.id+':'+itemId+':'+ordinal,createdAtMs:state.createdAtMs,enhancement:emptyEnhancement(),location:'inventory'
+      }));
+      if(enhancementHasState(legacy)&&!legacyApplied.has(itemId)&&assigned.length){
+        const target=assigned.findIndex(row=>!enhancementHasState(row.enhancement));
+        if(target>=0)assigned[target]={...assigned[target],enhancement:legacy};
+        legacyApplied.add(itemId);
+      }
+      updates.push(...assigned);
+    }
+    for(const [itemId] of Object.entries(c.gearEnhancements??{})){
+      const legacy=legacyEnhancement(c,itemId);
+      if(enhancementHasState(legacy)&&!legacyApplied.has(itemId)&&stackQty(state.bank.stacks,itemId)>0){
+        pendingLegacyBank.push({ownerCharacterId:c.id,itemId,enhancement:legacy});
+        legacyApplied.add(itemId);
+      }
     }
   }
 
   for(const itemId of [...new Set(gearIds(state.bank.stacks))]){
     const count=stackQty(state.bank.stacks,itemId);
-    updates.push(...assignPool(existing,used,itemId,count,'bank','ACCOUNT',ordinal=>({
-      id:deterministicId('ACCOUNT','bank',itemId,ordinal),itemId,ownerCharacterId:'ACCOUNT',rarity:itemRarity(itemDef(itemId)),acquireSource:'legacy',sourceReceiptKey:`legacy:bank:${itemId}:${ordinal}`,createdAtMs:state.createdAtMs,enhancement:emptyEnhancement(),location:'bank'
-    })));
+    const assigned=assignPool(existing,used,itemId,count,'bank','ACCOUNT',ordinal=>({
+      id:deterministicId('ACCOUNT','bank',itemId,ordinal),itemId,ownerCharacterId:'ACCOUNT',rarity:itemRarity(itemDef(itemId)),acquireSource:'legacy',sourceReceiptKey:'legacy:bank:'+itemId+':'+ordinal,createdAtMs:state.createdAtMs,enhancement:emptyEnhancement(),location:'bank'
+    }));
+    for(const legacy of pendingLegacyBank.filter(row=>row.itemId===itemId)){
+      const target=assigned.findIndex(row=>!enhancementHasState(row.enhancement));
+      if(target<0)break;
+      assigned[target]={...assigned[target],ownerCharacterId:legacy.ownerCharacterId,enhancement:legacy.enhancement};
+    }
+    updates.push(...assigned);
   }
 
   const merged=replaceRows(existing,updates,used);

@@ -21,6 +21,8 @@ export interface ResolveExpeditionCombatInput extends BuildExpeditionEncounterIn
 export type ExpeditionCombatReplayCueType='action'|'phase'|'cast'|'interrupt'|'down'|'assist'|'victory'|'wipe'|'timeout';
 export interface ExpeditionCombatReplayState{ id:string; hp:number; shield:number; }
 export interface ExpeditionCombatReplayStatus{ targetId:string; sourceId?:string; kind:'buff'|'debuff'|'dot'|'hot'; tag:string; label:string; abilityId?:string; startsAtMs:number; expiresAtMs:number; }
+export interface ExpeditionCombatReplayGemState{ targetId:string; tag:string; expiriesAtMs:number[]; }
+export interface ExpeditionCombatReplayGemSnapshot{ atMs:number; states:ExpeditionCombatReplayGemState[]; }
 export interface ExpeditionCombatReplayCombatant{ id:string; name:string; team:'players'|'enemies'; maxHp:number; startHp:number; startShield:number; boss:boolean; }
 export interface ExpeditionCombatReplayCue{
   atMs:number;
@@ -41,7 +43,7 @@ export interface ExpeditionCombatReplayCue{
 }
 export interface ExpeditionCombatCommitPayload {
   success:boolean;
-  resultJson:{reason:string;durationMs:number;downs:string[];playerHp:Record<string,number>;enemyHp:Record<string,number>;damage:Record<string,number>;healing:Record<string,number>;interrupts:Record<string,number>;eventDigest:string;eventCount:number;bossPhaseIds:string[];bossCastAbilityIds:string[];replayCombatants:ExpeditionCombatReplayCombatant[];replayStatuses:ExpeditionCombatReplayStatus[];replayCues:ExpeditionCombatReplayCue[]};
+  resultJson:{reason:string;durationMs:number;downs:string[];playerHp:Record<string,number>;enemyHp:Record<string,number>;damage:Record<string,number>;healing:Record<string,number>;interrupts:Record<string,number>;eventDigest:string;eventCount:number;bossPhaseIds:string[];bossCastAbilityIds:string[];replayCombatants:ExpeditionCombatReplayCombatant[];replayStatuses:ExpeditionCombatReplayStatus[];replayGemStates:ExpeditionCombatReplayGemSnapshot[];replayCues:ExpeditionCombatReplayCue[]};
   debugEvents?:CombatResult['events'];
   endingPlayerState:Record<string,PersistentActorState>;
 }
@@ -62,7 +64,7 @@ export function buildExpeditionEncounter(input:BuildExpeditionEncounterInput):Co
   });
 }
 
-function publicReplay(result:CombatResult,initialPlayerState?:Record<string,PersistentActorState>):{combatants:ExpeditionCombatReplayCombatant[];statuses:ExpeditionCombatReplayStatus[];cues:ExpeditionCombatReplayCue[]}{
+function publicReplay(result:CombatResult,initialPlayerState?:Record<string,PersistentActorState>):{combatants:ExpeditionCombatReplayCombatant[];statuses:ExpeditionCombatReplayStatus[];gemStates:ExpeditionCombatReplayGemSnapshot[];cues:ExpeditionCombatReplayCue[]}{
   const definitions=[...result.players,...result.enemies].map(state=>state.definition);
   const byId=new Map(definitions.map(definition=>[definition.id,definition]));
   const playerIds=new Set(result.players.map(player=>player.definition.id));
@@ -101,6 +103,10 @@ function publicReplay(result:CombatResult,initialPlayerState?:Record<string,Pers
     abilityId:event.abilityId,
     startsAtMs:event.atMs,
     expiresAtMs:event.expiresAtMs!,
+  }));
+  const gemStates:ExpeditionCombatReplayGemSnapshot[]=result.events.filter(event=>event.type==='gem_state'&&Array.isArray(event.gemStates)).map(event=>({
+    atMs:event.atMs,
+    states:(event.gemStates??[]).map(state=>({targetId:state.targetId,tag:state.tag,expiriesAtMs:[...state.expiriesAtMs]})),
   }));
   const cues:ExpeditionCombatReplayCue[]=[],assistSeen=new Set<string>(),actionSeen=new Set<string>();
   let lastBasicBeatAt=-Infinity;
@@ -144,11 +150,11 @@ function publicReplay(result:CombatResult,initialPlayerState?:Record<string,Pers
     }
     if(event.type==='combat_end')push({atMs:event.atMs,type:result.reason});
   }
-  if(cues.length<=48)return{combatants,statuses,cues};
+  if(cues.length<=48)return{combatants,statuses,gemStates,cues};
   const terminal=cues[cues.length-1],source=cues.slice(0,-1);
   const sample=(items:ExpeditionCombatReplayCue[],limit:number)=>{if(items.length<=limit)return items;if(limit<=0)return[];const picked:ExpeditionCombatReplayCue[]=[];for(let i=0;i<limit;i++)picked.push(items[Math.min(items.length-1,Math.floor(i*items.length/limit))]);return picked;};
   const important=source.filter(cue=>cue.type!=='action'),keptImportant=sample(important,47),actionBudget=Math.max(0,47-keptImportant.length),keptActions=sample(source.filter(cue=>cue.type==='action'),actionBudget);
-  return{combatants,statuses,cues:[...keptImportant,...keptActions].sort((a,b)=>a.atMs-b.atMs).concat(terminal)};
+  return{combatants,statuses,gemStates,cues:[...keptImportant,...keptActions].sort((a,b)=>a.atMs-b.atMs).concat(terminal)};
 }
 
 export function resolveExpeditionCombat(input:ResolveExpeditionCombatInput, includeDebugTrace=false):ExpeditionCombatCommitPayload {
@@ -161,5 +167,5 @@ export function resolveExpeditionCombat(input:ResolveExpeditionCombatInput, incl
   const bossPhaseIds=unique(result.events.filter(event=>event.type==='phase'&&event.actorId&&bossIds.has(event.actorId)).map(event=>event.abilityId));
   const bossCastAbilityIds=unique(result.events.filter(event=>event.type==='cast_start'&&event.actorId&&bossIds.has(event.actorId)).map(event=>event.abilityId));
   const replay=publicReplay(result,input.initialPlayerState);
-  return {success:result.victory,resultJson:{reason:result.reason,durationMs:result.durationMs,downs:result.players.filter(p=>p.downed).map(p=>p.definition.id),playerHp:rec(result.players,x=>x.hp),enemyHp:rec(result.enemies,x=>x.hp),damage:rec(result.players,x=>x.damageDone),healing:rec(result.players,x=>x.healingDone),interrupts:rec(result.players,x=>x.interrupts),eventDigest,eventCount:result.events.length,bossPhaseIds,bossCastAbilityIds,replayCombatants:replay.combatants,replayStatuses:replay.statuses,replayCues:replay.cues},endingPlayerState:persistentPlayerState(result),...(includeDebugTrace?{debugEvents:result.events}:{})};
+  return {success:result.victory,resultJson:{reason:result.reason,durationMs:result.durationMs,downs:result.players.filter(p=>p.downed).map(p=>p.definition.id),playerHp:rec(result.players,x=>x.hp),enemyHp:rec(result.enemies,x=>x.hp),damage:rec(result.players,x=>x.damageDone),healing:rec(result.players,x=>x.healingDone),interrupts:rec(result.players,x=>x.interrupts),eventDigest,eventCount:result.events.length,bossPhaseIds,bossCastAbilityIds,replayCombatants:replay.combatants,replayStatuses:replay.statuses,replayGemStates:replay.gemStates,replayCues:replay.cues},endingPlayerState:persistentPlayerState(result),...(includeDebugTrace?{debugEvents:result.events}:{})};
 }

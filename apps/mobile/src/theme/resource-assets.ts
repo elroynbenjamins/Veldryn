@@ -1,9 +1,11 @@
 import {ingredientIcons} from './ingredient-assets';
 import {craftedItemIcons} from './crafted-item-assets';
 import type {ImageSourcePropType} from 'react-native';
+import {coreMaterialIconSourceById} from './core-material-assets';
 
 /** Canonical gathering yields with production-ready transparent pixel artwork. */
 export const resourceIconSourceById:Readonly<Partial<Record<string,ImageSourcePropType>>>={
+  ...coreMaterialIconSourceById,
   ...craftedItemIcons,
   ...ingredientIcons,
   COPPER_ORE:require('../../assets/items/resources/copper_ore.png'),

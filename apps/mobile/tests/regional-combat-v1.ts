@@ -1,4 +1,4 @@
-import {regionalGemIntelV1,SUNSCAR_REGIONAL_ENCOUNTERS_V1} from '../src/core/regional-combat-catalog-v1';
+import {regionalCombatAvailabilityV1,regionalGemIntelV1,SUNSCAR_REGIONAL_ENCOUNTERS_V1} from '../src/core/regional-combat-catalog-v1';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 function equal(actual:unknown,expected:unknown,message:string){if(actual!==expected)throw new Error(`${message}: expected ${String(expected)}, got ${String(actual)}`)}
@@ -30,5 +30,13 @@ equal(patrol.cooldownSeconds,30,'Standard regional combat cadence should be 30 s
 equal(elite.cooldownSeconds,90,'Elite regional combat cadence should be 90 seconds');
 equal(boss.cooldownSeconds,300,'Sand Tyrant cadence should be five minutes');
 equal(boss.dailyVictoryCap,3,'Sand Tyrant should allow at most three successful clears per UTC day');
+const cadenceNow=Date.UTC(2026,8,22,12,0,0);
+const cooldownAvailability=regionalCombatAvailabilityV1(elite,{encounterId:elite.id,cooldownSeconds:90,readyAtMs:cadenceNow+45_000,dailyWins:0},cadenceNow);
+equal(cooldownAvailability.coolingDown,true,'Authoritative readyAt should lock an encounter before the button is pressed');
+equal(cooldownAvailability.readyInMs,45_000,'Cooldown countdown must use the server-projected ready time');
+const bossAvailability=regionalCombatAvailabilityV1(boss,{encounterId:boss.id,cooldownSeconds:300,readyAtMs:null,dailyWins:3,dailyCap:3,dailyResetAtMs:cadenceNow+12*60*60*1000},cadenceNow);
+equal(bossAvailability.dailyCapped,true,'Sand Tyrant should be disabled after the third verified daily victory');
+equal(bossAvailability.dailyRemaining,0,'Daily remaining should reach zero at the authoritative cap');
+equal(bossAvailability.resetInMs,12*60*60*1000,'Daily reset countdown should use the server UTC reset projection');
 
 console.log('PASS: Sunscar regional combat mobile catalog matches server encounter lanes');

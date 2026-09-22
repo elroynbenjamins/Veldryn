@@ -1,5 +1,5 @@
 import type {CoopRole} from './coop-ui-contract';
-import {validateCoopRunView,type CoopCombatReplayView,type CoopRunView} from './coop-presentation';
+import {parseCoopEncounterPreview,validateCoopRunView,type CoopCombatReplayView,type CoopRunView} from './coop-presentation';
 export type CoopQModeStatus='recruiting'|'ready'|'candidate_shortage'|'content_conflict'|'resuming'|'error'|'reward_pending'|'completed';
 export interface CoopQModeMemberView {memberId:string;displayName:string;role:CoopRole;kind:'controller'|'echo';effectiveLevel:number;status:'ready'|'loading'|'unavailable';appearanceId?:string;}
 export interface CoopQModeTeamView {runId?:string;requestId:string;status:CoopQModeStatus;members:CoopQModeMemberView[];message?:string;stateVersion?:number;}
@@ -20,7 +20,7 @@ export function presentQModeRun(projection:CoopQModeServerProjection&{stateVersi
   if(!value||typeof value!=='object')throw new Error('invalid_route_option');const node=value as Record<string,unknown>;
   if(typeof node.nodeId!=='string'||typeof node.kind!=='string'||typeof node.risk!=='number'||!Number.isFinite(node.risk)||typeof node.rewardTag!=='string'||node.previewHidden)throw new Error('invalid_route_option');
   const kind=node.kind,title=kind==='boss'?'Final boss':kind.charAt(0).toUpperCase()+kind.slice(1);
-  return {nodeId:node.nodeId,title,kind,risk:`Risk ${node.risk}`,reward:node.rewardTag.replace(/_/g,' ')};
+  const encounterPreview=parseCoopEncounterPreview(node.encounterPreview);return {nodeId:node.nodeId,title,kind,risk:`Risk ${node.risk}`,reward:node.rewardTag.replace(/_/g,' '),...(encounterPreview?{encounterPreview}:{})};
  });
  const run:CoopRunView={runId:projection.runId,mode:'qmode',phase:projection.phase,syncedLevel:Math.min(...projection.team.map(member=>member.effectiveLevel)),roleSlots:projection.team.map(member=>({memberId:member.memberId,role:member.role,name:member.displayName,echo:member.kind==='echo',classId:member.classId,bodyPresentation:member.bodyPresentation,companionId:member.companionId,currentHp:member.currentHp,maximumHp:member.maximumHp,ready:!member.downed})),options,stateVersion:projection.stateVersion,decisionId:projection.decisionId,decisionRevision:projection.decisionRevision,resolvesAtMs:projection.resolvesAtMs,lastCombat:projection.lastCombat};
  validateCoopRunView(run);return run;

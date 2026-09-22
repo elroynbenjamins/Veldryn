@@ -38,7 +38,7 @@ ok(card.includes('phaseThreshold')&&card.includes('phase.hpPct'),'Boss HP bar mu
 ok(stage.includes('bossPhases={boss?run.bossMechanic?.telegraph?.phases:undefined}'),'Battlefield must pass authoritative boss phase thresholds into the encounter card');
 ok(card.includes('CombatStatusStrip')&&card.includes('statusStrip'),'Combat cards must render a compact status-effect strip');
 ok(card.includes("return 'DOT'")&&card.includes("return 'HOT'")&&card.includes("'VULN'")&&card.includes("'HASTE'"),'Status pills must distinguish harmful, healing and common buff states');
-ok(card.includes('slice(0,gemProc?2:3)')&&card.includes('statusOverflow'),'Status strips must cap visible pills and show overflow rather than expand the card');
+ok(card.includes('visibleLimit=Math.max(1,gemProc?limit-1:limit)')&&card.includes('statusOverflow'),'Status strips must cap visible pills by responsive layout budget and show overflow rather than expand the card');
 ok(card.includes('Effect Gem proc')&&card.includes('>GEM<'),'Current Effect Gem procs must receive compact card feedback without becoming persistent fake buffs');
 ok(stage.includes('playbackCombatantStatuses')&&stage.includes('statuses={enemyStatuses}')&&stage.includes('statuses={statuses}'),'Battlefield must resolve status windows for both boss/enemy and party cards');
 ok(card.includes('GEM_STATUS_CODES')&&card.includes("'gem:momentum':'MOM'")&&card.includes("'gem:flow':'FLOW'")&&card.includes("'gem:unyielding':'UNY'"),'Persistent Effect Gem stacks need compact named combat codes');
@@ -61,6 +61,14 @@ ok(!stage.includes('member:{minHeight:126')&&!stage.includes('avatarFrame:{heigh
 ok(!card.includes('No companion assist')&&!card.includes('noAssist:'),'Party cards must not spend vertical space on empty companion placeholders');
 ok(card.includes('card:{minHeight:136')&&card.includes('combatInfo:{padding:4,gap:2'),'Party combat cards must keep the compact mobile density budget');
 ok(stage.includes("{assists?<StateChip")&&!stage.includes("'NO ASSISTS'"),'Combat header must only show companion-assist summary when assists actually exist');
+ok(stage.includes('useWindowDimensions')&&stage.includes('dungeonCombatLayout(windowWidth)'),'Dungeon battlefield must select a tested layout from the current phone width');
+ok(stage.includes('padding:layout.arenaPadding')&&stage.includes('gap:layout.partyGap'),'Small-phone layout must reclaim arena padding and party-card gap');
+ok(stage.includes('layout.bossWidthPctFinal')&&stage.includes('layout.bossWidthPct'),'Stacked boss/enemy card width must adapt independently from the four-card row');
+ok(stage.includes('layout={layout}')&&card.includes('layout?:DungeonCombatLayout'),'Party combat cards must receive the responsive density contract');
+ok(card.includes('layout.cardMinHeight')&&card.includes('layout.sceneHeight')&&card.includes('layout.portraitWidth'),'Responsive combat cards must adapt height, portrait window and scene height without changing formation');
+ok(card.includes('limit={layout?.statusLimit??3}'),'Narrow phones must reduce visible status-pill count rather than widen cards');
+ok(stage.includes('layout.controlsWrap&&s.playbackControlsWrap')&&stage.includes("playbackControlsWrap:{flexWrap:'wrap'"),'Replay controls must wrap safely on narrow phones');
+ok(stage.includes('layout.contributionIdentityMinWidth')&&stage.includes('layout.contributionIdentityWidthPct'),'Contribution recap identity width must adapt on narrow phones');
 for(const enemy of ['The Hollow Regent','The Coinbound Captain','The Rimebell Colossus','Veilshade Stalker','Ledger Hexer','Bellfrost Spirit'])ok(enemyArt.toLowerCase().includes(enemy.toLowerCase()),enemy+' must have registered encounter artwork');
 ok(enemyArt.includes("require('../../assets/dungeon-enemies-v1/"),'Enemy artwork must be bundled as static Metro assets');
 

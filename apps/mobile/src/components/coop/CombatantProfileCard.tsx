@@ -2,6 +2,7 @@ import {useEffect,useMemo,useRef} from 'react';
 import {Animated,Image,StyleSheet,Text,View} from 'react-native';
 import type {CoopBossPhaseView,CoopCombatReplayCueView,CoopRunView} from '../../core/coop-presentation';
 import type {PlaybackCombatStatus} from '../../core/dungeon-combat-playback';
+import type {DungeonCombatLayout} from '../../core/dungeon-combat-layout';
 import {dungeonCombatAvatar} from '../../core/dungeon-combat-avatars';
 import {combatCompanionDef} from '../../content/combat-companions';
 import {companionArtSource} from '../../theme/companion-art';
@@ -37,8 +38,8 @@ function statusCode(status:PlaybackCombatStatus){
  if(status.tag.includes('haste'))return 'HASTE';
  return 'BUFF';
 }
-function CombatStatusStrip({statuses,gemProc=false,styles}:{statuses?:PlaybackCombatStatus[];gemProc?:boolean;styles:ReturnType<typeof makeStyles>}){
- const combined=(statuses??[]).slice(0,gemProc?2:3),overflow=Math.max(0,(statuses?.length??0)-combined.length);
+function CombatStatusStrip({statuses,gemProc=false,styles,limit=3}:{statuses?:PlaybackCombatStatus[];gemProc?:boolean;styles:ReturnType<typeof makeStyles>;limit?:number}){
+ const visibleLimit=Math.max(1,gemProc?limit-1:limit),combined=(statuses??[]).slice(0,visibleLimit),overflow=Math.max(0,(statuses?.length??0)-combined.length);
  if(!combined.length&&!gemProc)return null;
  return <View style={styles.statusStrip} accessibilityLabel={[...combined.map(status=>`${status.label}${status.stacks>1?`, ${status.stacks} stacks`:''}`),gemProc?'Effect Gem proc':undefined,overflow?`${overflow} more effects`:undefined].filter(Boolean).join(', ')}>
   {combined.map((status,index)=>{const harmful=status.kind==='dot'||status.kind==='debuff',gem=status.source==='gem';return <View key={`${status.kind}:${status.tag}:${status.abilityId??status.label}:${index}`} style={[styles.statusPill,harmful?styles.statusHarmful:gem?styles.statusGem:styles.statusHelpful]}><Text style={[styles.statusPillText,harmful?styles.statusHarmfulText:gem?styles.statusGemText:styles.statusHelpfulText]}>{statusCode(status)}{status.stacks>1?`×${status.stacks}`:''}</Text></View>})}
@@ -61,15 +62,15 @@ function floatingValue(cue:CoopCombatReplayCueView|undefined,targetId:string|und
  return {label:`-${amount}`,kind:'damage' as const,outcome:cue.outcome==='critical'?'CRIT':cue.absorbed&&cue.absorbed>0?`BARRIER -${Math.round(cue.absorbed)}`:cue.gemProc?'GEM PROC':undefined};
 }
 
-export function CombatantProfileCard({slot,active=false,targeted=false,assistProc=false,motionStyle,feedbackStyle,currentCue,combatShield=0,statuses,gemProcActive=false,animateHealth=true}:{slot:Slot;active?:boolean;targeted?:boolean;assistProc?:boolean;motionStyle?:any;feedbackStyle?:any;currentCue?:CoopCombatReplayCueView;combatShield?:number;statuses?:PlaybackCombatStatus[];gemProcActive?:boolean;animateHealth?:boolean}){
+export function CombatantProfileCard({slot,active=false,targeted=false,assistProc=false,motionStyle,feedbackStyle,currentCue,combatShield=0,statuses,gemProcActive=false,animateHealth=true,layout}:{slot:Slot;active?:boolean;targeted?:boolean;assistProc?:boolean;motionStyle?:any;feedbackStyle?:any;currentCue?:CoopCombatReplayCueView;combatShield?:number;statuses?:PlaybackCombatStatus[];gemProcActive?:boolean;animateHealth?:boolean;layout?:DungeonCombatLayout}){
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),equipment=equipmentTheme(C),avatar=dungeonCombatAvatar(slot.classId);
  const portrait=dungeonCombatPortraitSource(slot.classId,slot.bodyPresentation??'male'),pct=hpPercent(slot),shieldPct=slot.maximumHp&&slot.maximumHp>0?Math.max(0,Math.min(1,combatShield/slot.maximumHp)):0,companion=slot.companionId?combatCompanionDef(slot.companionId):undefined,companionArt=slot.companionId?companionArtSource(slot.companionId):undefined;
  const accent=slot.role==='tank'?equipment.goldSoft:slot.role==='support'?C.good:C.bad,float=floatingValue(currentCue,slot.memberId);
- return <Animated.View accessibilityLabel={`${slot.name}, ${avatar?.label??slot.classId??slot.role}, ${roleLabel(slot.role)}, ${Math.round(pct*100)} percent health`} style={[s.card,{borderColor:accent},targeted&&s.targeted,active&&s.active,slot.ready===false&&s.down,motionStyle]}>
-  <View style={s.scene}>
+ return <Animated.View accessibilityLabel={`${slot.name}, ${avatar?.label??slot.classId??slot.role}, ${roleLabel(slot.role)}, ${Math.round(pct*100)} percent health`} style={[s.card,layout&&{minHeight:layout.cardMinHeight},{borderColor:accent},targeted&&s.targeted,active&&s.active,slot.ready===false&&s.down,motionStyle]}>
+  <View style={[s.scene,layout&&{height:layout.sceneHeight}]}>
    <View style={[StyleSheet.absoluteFill,s.sceneBg]}/>
    <View style={s.shade}/>
-   {portrait?<Image source={portrait} resizeMode="contain" fadeDuration={0} style={s.portrait}/>:<View style={s.fallback}><IdentityArtwork name={slot.name} className={slot.classId} size={48}/></View>}
+   {portrait?<Image source={portrait} resizeMode="contain" fadeDuration={0} style={[s.portrait,layout&&{width:layout.portraitWidth,height:layout.portraitHeight}]}/>:<View style={s.fallback}><IdentityArtwork name={slot.name} className={slot.classId} size={48}/></View>}
    <View style={[s.rolePill,{borderColor:accent}]}><Text style={[s.roleText,{color:accent}]}>{roleLabel(slot.role)}</Text></View>
    {slot.echo?<View style={s.echoPill}><Text style={s.echoText}>ECHO</Text></View>:null}
    {slot.ready===false?<View style={s.downPill}><Text style={s.downText}>DOWN</Text></View>:null}
@@ -80,7 +81,7 @@ export function CombatantProfileCard({slot,active=false,targeted=false,assistPro
    <View style={s.hpHead}><View style={s.hpLabelRow}><Text style={s.hpLabel}>HP</Text>{pct<=.25&&slot.ready!==false?<Text style={s.criticalInline}>LOW</Text>:null}</View><Text style={s.hpValue}>{slot.currentHp!==undefined&&slot.maximumHp!==undefined?`${Math.max(0,Math.round(slot.currentHp))}/${Math.max(1,Math.round(slot.maximumHp))}`:`${Math.round(pct*100)}%`}</Text></View>
    <AnimatedHealthBar pct={pct} color={pct<=.25?C.bad:pct<=.55?C.warning:C.good} trackStyle={s.hpTrack} fillStyle={s.hpFill} animate={animateHealth}/>
    {combatShield>0?<View style={s.barrierRow}><Text style={s.barrierLabel}>BARRIER +{Math.round(combatShield)}</Text><AnimatedHealthBar pct={shieldPct} color={C.info} trackStyle={s.barrierTrack} fillStyle={s.barrierFill} animate={animateHealth}/></View>:null}
-   <CombatStatusStrip statuses={statuses} gemProc={gemProcActive} styles={s}/>
+   <CombatStatusStrip statuses={statuses} gemProc={gemProcActive} styles={s} limit={layout?.statusLimit??3}/>
    {companion?<View style={[s.assistRow,assistProc&&s.assistActive]}>{companionArt?<Image source={companionArt} resizeMode="contain" style={s.assistArt}/>:<View style={s.assistFallback}><Text style={s.assistFallbackText}>◇</Text></View>}<View style={s.assistCopy}><Text style={[s.assistKicker,assistProc&&s.assistKickerActive]}>{assistProc?'ASSIST PROC':'COMPANION'}</Text><Text numberOfLines={1} style={s.assistName}>{companion.name}</Text></View></View>:null}
   </View>
  </Animated.View>;

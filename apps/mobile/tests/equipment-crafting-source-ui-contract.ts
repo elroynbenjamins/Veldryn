@@ -26,9 +26,9 @@ ok(path.includes('craftTimeLabel:formatQueueTimeV31'),'Craft planner must show m
 ok(inspect.includes('CRAFTING PATH'),'Quick Inspect must expose the equipment crafting plan');
 ok(inspect.includes("ingredient.missing+' missing"),'Quick Inspect must show exact missing material quantities');
 ok(inspect.includes('onNavigate(ingredient.source)'),'Quick Inspect material blockers must be actionable');
-ok(recipeCard.includes('MISSING MATERIAL SOURCES'),'Expanded recipe cards must surface missing-material sources');
+ok(recipeCard.includes('MISSING SOURCES'),'Expanded recipe cards must surface missing material and prerequisite sources');
 ok(!recipeCard.includes('craft time'),'Recipe cards must not imply a live timer before the timed crafting queue runtime exists');
-ok(recipeCard.includes('onNavigate(row.source)'),'Recipe source rows must navigate directly');
+ok(recipeCard.includes('onNavigate(row.destination)'),'Recipe source rows must navigate through the generalized Working Toward destination');
 ok(skillsScreen.includes('onNavigateCraftingSource'),'Skills must accept source navigation');
 ok(skillsScreen.includes('onNavigate={onNavigateCraftingSource}'),'Skills must pass source routing into recipe cards');
 ok(app.includes('onNavigateCraftingSource={openWorkingTowardDestination}'),'Recipe material actions must reuse the global travel-aware Working Toward router');

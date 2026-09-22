@@ -51,20 +51,20 @@ ok(favoriteSalvageBlocked,'Favorite items cannot be salvaged through core logic'
 const bulkBase={...state,inventory:{...state.inventory,stacks:[{itemId:'TRAVEL_RATION',quantity:20},{itemId:'COPPER_ORE',quantity:4},{itemId:'WORN_BLADE',quantity:1},{itemId:'HOLY_WATER',quantity:2}]},bank:{stacks:[],capacity:10}};
 const bulkIds=['TRAVEL_RATION','COPPER_ORE','WORN_BLADE','HOLY_WATER'];
 const bulkSummary=bulkSelectionSummary(bulkBase,bulkIds,'inventory');
-ok(bulkSummary.selectedStackCount===4&&bulkSummary.transferableStackCount===3&&bulkSummary.transferProtectedCount===1,'Bulk transfer keeps selected auto-eat food safe');
-ok(bulkSummary.sellableStackCount===2&&bulkSummary.sellGold===55,'Bulk sell includes only eligible stack value');
+ok(bulkSummary.selectedStackCount===4&&bulkSummary.transferableStackCount===2&&bulkSummary.transferProtectedCount===2,'Bulk transfer keeps auto-eat food and exact equipment copies out of stack transfer');
+ok(bulkSummary.sellableStackCount===1&&bulkSummary.sellGold===20,'Bulk sell excludes exact equipment copies and other protected stacks');
 const movedBulk=bulkTransferSelected(bulkBase,bulkIds,'inventory');
-ok(movedBulk.inventory.stacks.length===1&&movedBulk.inventory.stacks[0].itemId==='TRAVEL_RATION','Bulk deposit leaves protected auto-eat stack carried');
-ok(movedBulk.bank.stacks.some(stack=>stack.itemId==='COPPER_ORE')&&movedBulk.bank.stacks.some(stack=>stack.itemId==='WORN_BLADE'),'Bulk deposit moves eligible full stacks');
+ok(movedBulk.inventory.stacks.some(stack=>stack.itemId==='TRAVEL_RATION')&&movedBulk.inventory.stacks.some(stack=>stack.itemId==='WORN_BLADE'),'Bulk deposit leaves auto-eat food and equipment copies carried');
+ok(movedBulk.bank.stacks.some(stack=>stack.itemId==='COPPER_ORE')&&movedBulk.bank.stacks.some(stack=>stack.itemId==='HOLY_WATER')&&!movedBulk.bank.stacks.some(stack=>stack.itemId==='WORN_BLADE'),'Bulk deposit moves only eligible non-equipment stacks');
 const tooSmall={...bulkBase,bank:{stacks:[],capacity:1}},tooSmallBefore=JSON.stringify(tooSmall);
-let atomicTransferBlocked=false;try{bulkTransferSelected(tooSmall,['COPPER_ORE','WORN_BLADE'],'inventory')}catch(error){atomicTransferBlocked=error instanceof Error&&error.message.includes('Bank is full')}
+let atomicTransferBlocked=false;try{bulkTransferSelected(tooSmall,['COPPER_ORE','HOLY_WATER'],'inventory')}catch(error){atomicTransferBlocked=error instanceof Error&&error.message.includes('Bank is full')}
 ok(atomicTransferBlocked&&JSON.stringify(tooSmall)===tooSmallBefore,'Bulk transfer failure is atomic and does not partially mutate state');
 const bulkFavorite={...bulkBase,settings:{...bulkBase.settings,favoriteItemIds:['WORN_BLADE']}};
 const soldBulk=bulkSellSelected(bulkFavorite,bulkIds);
 ok(soldBulk.character!.gold===bulkFavorite.character!.gold+20,'Bulk sell totals only eligible non-protected stacks');
-ok(soldBulk.inventory.stacks.some(stack=>stack.itemId==='WORN_BLADE')&&soldBulk.inventory.stacks.some(stack=>stack.itemId==='TRAVEL_RATION'),'Bulk sell keeps favorite gear and auto-eat food');
-const salvagedBulk=bulkSalvageSelected(bulkBase,['WORN_BLADE']);
-ok(!salvagedBulk.inventory.stacks.some(stack=>stack.itemId==='WORN_BLADE')&&salvagedBulk.inventory.stacks.some(stack=>stack.itemId==='MOSS_FIBER'&&stack.quantity===2),'Bulk salvage processes eligible equipment');
+ok(soldBulk.inventory.stacks.some(stack=>stack.itemId==='WORN_BLADE')&&soldBulk.inventory.stacks.some(stack=>stack.itemId==='TRAVEL_RATION'),'Bulk sell keeps exact equipment copies and auto-eat food');
+let bulkSalvageBlocked=false;try{bulkSalvageSelected(bulkBase,['WORN_BLADE'])}catch(error){bulkSalvageBlocked=error instanceof Error&&error.message.includes('one exact copy')}
+ok(bulkSalvageBlocked&&bulkBase.inventory.stacks.some(stack=>stack.itemId==='WORN_BLADE'),'Bulk salvage cannot destroy equipment copies without exact selection');
 ok(validateGameCommand({type:'bulk_transfer',args:{location:'inventory',ids:['COPPER_ORE']}}).type==='bulk_transfer','Bulk transfer command validates for online execution');
 let invalidBulkCommand=false;try{validateGameCommand({type:'bulk_sell',args:{ids:Array.from({length:101},(_,index)=>'ITEM_'+index)}})}catch{invalidBulkCommand=true}
 ok(invalidBulkCommand,'Bulk commands cap selections at 100 stacks');

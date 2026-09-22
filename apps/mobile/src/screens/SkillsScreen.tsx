@@ -5,6 +5,7 @@ import {useMemo,useState} from 'react';
 import {Alert,Image,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {GameState,GatheringSkillId,SkillId} from '../core/types';
 import {GATHERING,RECIPES} from '../content/skills';
+import {MONSTERS} from '../content/monsters';
 import {HERB_NODES} from '../content/herbalism';
 import {itemDef} from '../content/items';
 import {recipeAvailability} from '../core/playability';
@@ -23,6 +24,7 @@ import {characterPermanentMultipliers} from '../core/permanent-boosts';
 import {GatheringToolArtwork} from '../components/GatheringToolArtwork';
 import {WORLD_ZONES} from '../content/world-map';
 import {currentRegionId} from '../core/combat-region';
+import {encounterUnlocked} from '../core/world-navigation';
 import {ResourceArtwork} from '../components/ResourceArtwork';
 import {FaithPanel} from '../components/FaithPanel';
 import {classSkillsFor} from '../content/class-skills';
@@ -43,6 +45,8 @@ import {progressAnticipation} from '../core/progress-anticipation';
 import {ProfessionMasteryPanel} from '../components/ProfessionMasteryPanel';
 import {skillIdentity,type SkillIdentityTone} from '../core/profession-mastery-presentation';
 import {masteryGoalForAction} from '../core/progression-goals-v40';
+import {combatBaselineProjection,formatBalanceDuration} from '../core/balance-projection';
+import {HUNTING_XP_SHARE,huntingXpPerHour} from '../core/hunting-progression';
 
 export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueueRemove,onQueueMove,onQueueClear,onQueueStart,onCraft,onClaimCraft,onClaimAllCrafts,onCancelCraft,onMoveCraftWaiting,onCraftPrerequisites,onEquipTool,onCharacter,onInventory,onViewToolRecipes,onNavigateCraftingSource,onSelectSkill,onBackToHub,onOpenCombat,onCommand=async()=>{},initialMode='gathering',initialSkill,initialActionId,initialRecipeId,forgeResults,onDismissForgeResults}:{state:GameState;now?:number;onGather:(id:string)=>void;onQueueGather:(id:string)=>void;onQueueRemove:(index:number)=>void;onQueueMove:(index:number,direction:'up'|'down')=>void;onQueueClear:()=>void;onQueueStart:()=>void;onCraft:(id:string)=>void;onClaimCraft:(jobId:string)=>void;onClaimAllCrafts:()=>void;onCancelCraft:(jobId:string)=>void;onMoveCraftWaiting:(jobId:string,direction:'up'|'down')=>void;onCraftPrerequisites:(recipeId:string)=>void;onEquipTool:(id:string)=>void;onCharacter:()=>void;onInventory:()=>void;onViewToolRecipes:()=>void;onNavigateCraftingSource?:(destination:import('../core/working-toward').WorkingTowardDestination)=>void;onSelectSkill?:(id:string)=>void;onBackToHub?:()=>void;onOpenCombat?:()=>void;onCommand?:(command:import('../core/game-commands').GameCommand)=>Promise<void>;initialMode?:'gathering'|'crafting'|'novice'|'faith';initialSkill?:SkillId|string;initialActionId?:string;initialRecipeId?:string;forgeResults?:readonly ForgeCraftResult[]|null;onDismissForgeResults?:()=>void}){
   const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
@@ -56,7 +60,13 @@ export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueu
   if(!initialSkill)return <SkillHub state={state} onSelect={onSelectSkill??(()=>{})}/>;
   if(initialSkill.startsWith('class:'))return <ScrollView contentContainerStyle={s.root}><DetailBack onPress={onBackToHub}/><ClassSkillsPanel state={state} now={now} onCommand={onCommand} highlightedSkillId={initialSkill.slice(6)}/></ScrollView>;
   if(initialSkill==='exploration')return <ScrollView contentContainerStyle={s.root}><DetailBack onPress={onBackToHub}/><SkillHero state={state} skillId="exploration" kind="Discovery skill"/><SkillMilestoneStrip state={state} skillId="exploration" onNavigate={onNavigateCraftingSource}/><ExplorationPanel state={state} onCommand={onCommand}/></ScrollView>;
-  if(initialSkill==='hunting')return <ScrollView contentContainerStyle={s.root}><DetailBack onPress={onBackToHub}/><SkillHero state={state} skillId="hunting" kind="Combat-linked skill"/><SkillMilestoneStrip state={state} skillId="hunting" onNavigate={onNavigateCraftingSource}/><Panel><Text style={s.name}>Hunting activities</Text><Text style={s.sub}>Hunting-specific activities are not available yet. Continue monster hunts and mastery from Combat.</Text>{onOpenCombat?<GameButton title="Open Combat" onPress={onOpenCombat}/>:null}</Panel></ScrollView>;
+  if(initialSkill==='hunting'){
+    const huntingSkill=state.skills.find(skill=>skill.skillId==='hunting'),available=MONSTERS.filter(monster=>!monster.boss&&monster.zone===region.name&&encounterUnlocked(state,monster));
+    const best=[...available].sort((a,b)=>huntingXpPerHour(b.xp,combatBaselineProjection(b).killsPerHour)-huntingXpPerHour(a.xp,combatBaselineProjection(a).killsPerHour))[0];
+    const baseRate=best?huntingXpPerHour(best.xp,combatBaselineProjection(best).killsPerHour)*characterPermanentMultipliers(state).skillXpMultiplier:0;
+    const within=progressWithinLevel(huntingSkill?.xp??0,huntingSkill?.level??1),eta=baseRate>0?Math.max(0,within.need-within.current)/baseRate*3600:undefined;
+    return <ScrollView contentContainerStyle={s.root}><DetailBack onPress={onBackToHub}/><SkillHero state={state} skillId="hunting" kind="Combat-linked skill"/><SkillMilestoneStrip state={state} skillId="hunting" onNavigate={onNavigateCraftingSource}/><Panel><Text style={s.name}>Train Hunting through monster hunts</Text><Text style={s.sub}>Every resolved non-boss kill grants {Math.round(HUNTING_XP_SHARE*100)}% of the monster's skill-scaled XP as Hunting XP. Challenge Hunt XP multipliers also apply.</Text><Text style={s.sub}>{best?`Fastest baseline here: ${best.name} · ~${formatGameNumber(Math.round(baseRate),state.settings.numberMode)} Hunting XP/hr · next level ~${formatBalanceDuration(eta)}`:'No unlocked Hunting target is available in this region yet.'}</Text>{onOpenCombat?<GameButton title="Open Combat" onPress={onOpenCombat}/>:null}</Panel></ScrollView>;
+  }
   if(initialSkill==='tailoring'||initialSkill==='enchanting')return <ScrollView contentContainerStyle={s.root}><DetailBack onPress={onBackToHub}/><SkillHero state={state} skillId={initialSkill} kind="Crafting skill"/><SkillMilestoneStrip state={state} skillId={initialSkill} onNavigate={onNavigateCraftingSource}/><Panel><Text style={s.name}>{initialSkill==='tailoring'?'Tailoring':'Enchanting'} workshop</Text><Text style={s.sub}>Your skill level is tracked, but this workshop has no trainable recipes available yet.</Text></Panel></ScrollView>;
   const detailKind=initialSkill==='faith'?'Devotion skill':(['mining','woodcutting','fishing','herbalism'] as string[]).includes(initialSkill)?'Gathering skill':'Crafting skill';
   return <ScrollView contentContainerStyle={s.root} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">

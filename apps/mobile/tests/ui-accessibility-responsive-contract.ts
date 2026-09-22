@@ -33,8 +33,8 @@ ok(skills.includes('modeChip:{minHeight:44'),'Skill mode controls must retain a 
 ok(skills.includes('keyboardDismissMode="on-drag"'),'Skills search/crafting flow must dismiss the keyboard on drag');
 
 const quest=read('src/screens/QuestScreen.tsx');
-ok(quest.includes('filterChip:{minHeight:44'),'Quest filters must retain a 44px touch target');
-ok(quest.includes('accessibilityRole="tab" accessibilityState={{selected}}'),'Quest filter controls must use tab semantics');
+ok(quest.includes('filterToggle:{minWidth:88,minHeight:44')&&quest.includes('filterOption:{minHeight:44'),'Quest filter toggle and sheet rows must retain 44px touch targets');
+ok(quest.includes('accessibilityRole="radio" accessibilityState={{selected}}'),'Quest filter-sheet rows must expose selected radio semantics');
 ok(quest.includes('keyboardDismissMode="on-drag"'),'Quest search must dismiss the keyboard on drag');
 
 const friends=read('src/screens/FriendsScreen.tsx');

@@ -122,7 +122,7 @@ export function simulateCombat(input: CombatInput): CombatResult {
       const owner=all.find(a=>a.definition.id===shield.sourceId);if(!used||!owner||!source.alive||source===target)continue;
       const reflected=Math.min(source.hp,used*shield.rate);source.hp-=reflected;source.damageTaken+=reflected;owner.damageDone+=reflected;
       events.push({atMs:now,type:'damage',actorId:owner.definition.id,targetId:source.definition.id,abilityId:'COMPANION_REFLECT',amount:Number(reflected.toFixed(2))});
-      if(source.hp<=0){source.alive=false;source.downed=source.definition.team==='players';events.push({atMs:now,type:source.downed?'down':'death',targetId:source.definition.id,actorId:owner.definition.id});}
+      if(source.hp<=0){source.alive=false;source.downed=source.definition.team==='players';events.push({atMs:now,type:source.downed?'down':'death',targetId:source.definition.id,actorId:owner.definition.id,abilityId:'COMPANION_REFLECT'});}
     }
     if(target.reflectiveShields)target.reflectiveShields=target.reflectiveShields.filter(s=>s.remaining>0);
     if(target.hp<=0&&target.alive){gemOnKillV1(now,source,target);emitGemState(now);target.alive=false;target.downed=target.definition.team==='players';events.push({atMs:now,type:target.downed?'down':'death',targetId:target.definition.id,actorId:source.definition.id,abilityId});}

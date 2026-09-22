@@ -83,6 +83,11 @@ export function playbackCombatant(replay:CoopCombatReplayView|undefined,idOrName
   return (replay.combatants??[]).find(item=>item.id===idOrName||item.name.trim().toLocaleLowerCase()===key);
 }
 
+export function playbackEnemyCombatants(replay:CoopCombatReplayView|undefined):CoopCombatReplayCombatantView[]{
+  if(!replay)return [];
+  return (replay.combatants??[]).filter(item=>item.team==='enemies').sort((a,b)=>Number(b.boss)-Number(a.boss)||a.id.localeCompare(b.id));
+}
+
 export function playbackBossCombatant(replay:CoopCombatReplayView|undefined,name?:string):CoopCombatReplayCombatantView|undefined{
   if(!replay)return undefined;
   const list=replay.combatants??[],key=name?.trim().toLocaleLowerCase();

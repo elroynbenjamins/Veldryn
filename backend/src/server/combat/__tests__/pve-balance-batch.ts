@@ -34,5 +34,5 @@ for(const cast of first.enemyCasts){
 }
 const encoded=JSON.stringify(first);
 for(const privateField of ['attackPower','defense','accuracy','evasion','events','cooldownReadyAt'])assert.equal(encoded.includes(privateField),false,`batch report leaked ${privateField}`);
-assert.throws(()=>runPveBalanceBatch({...input,iterations:0}),/invalid_balance_iterations/);
+let invalid='';try{runPveBalanceBatch({...input,iterations:0});}catch(error){invalid=error instanceof Error?error.message:String(error);}assert.equal(invalid,'invalid_balance_iterations');
 console.log('PASS deterministic reusable PvE balance batch harness');

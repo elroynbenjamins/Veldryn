@@ -1,4 +1,4 @@
-import type {CoopCombatReplayCombatantView,CoopCombatReplayCueView,CoopCombatReplayStateView,CoopCombatReplayView} from './coop-presentation';
+import type {CoopCombatReplayCombatantView,CoopCombatReplayCueView,CoopCombatReplayStateView,CoopCombatReplayStatusView,CoopCombatReplayView} from './coop-presentation';
 
 export const DUNGEON_COMBAT_PLAYBACK=Object.freeze({
   timeScale:.12,
@@ -85,6 +85,30 @@ export function playbackCombatantState(replay:CoopCombatReplayView|undefined,ind
   const safe=Math.max(0,Math.min(index,replay.cues.length-1));
   for(let i=safe;i>=0;i--){const state=replay.cues[i]?.states?.find(item=>item.id===id);if(state)return{...state,maxHp:combatant?.maxHp??Math.max(1,state.hp)};}
   return combatant?{id:combatant.id,hp:combatant.startHp,shield:combatant.startShield,maxHp:combatant.maxHp}:undefined;
+}
+
+export interface PlaybackCombatStatus{
+  kind:CoopCombatReplayStatusView['kind'];
+  tag:string;
+  label:string;
+  abilityId?:string;
+  stacks:number;
+  remainingMs:number;
+}
+
+const STATUS_PRIORITY:Record<CoopCombatReplayStatusView['kind'],number>={dot:0,debuff:1,hot:2,buff:3};
+
+export function playbackCombatantStatuses(replay:CoopCombatReplayView|undefined,index:number,id:string|undefined):PlaybackCombatStatus[]{
+  if(!replay||!id)return [];
+  const safe=Math.max(0,Math.min(index,replay.cues.length-1)),now=replay.cues[safe]?.atMs??0;
+  const active=(replay.statuses??[]).filter(status=>status.targetId===id&&status.startsAtMs<=now&&status.expiresAtMs>now);
+  const grouped=new Map<string,PlaybackCombatStatus>();
+  for(const status of active){
+    const key=`${status.kind}:${status.tag}:${status.abilityId??status.label}`,remainingMs=Math.max(0,status.expiresAtMs-now),existing=grouped.get(key);
+    if(existing){existing.stacks+=1;existing.remainingMs=Math.max(existing.remainingMs,remainingMs);continue;}
+    grouped.set(key,{kind:status.kind,tag:status.tag,label:status.label,abilityId:status.abilityId,stacks:1,remainingMs});
+  }
+  return [...grouped.values()].sort((a,b)=>STATUS_PRIORITY[a.kind]-STATUS_PRIORITY[b.kind]||a.remainingMs-b.remainingMs||a.label.localeCompare(b.label));
 }
 
 export function playbackRecentCues(replay:CoopCombatReplayView,index:number):CoopCombatReplayCueView[]{

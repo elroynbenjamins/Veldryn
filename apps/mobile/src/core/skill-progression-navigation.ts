@@ -2,6 +2,7 @@ import {GATHERING,RECIPES,type GatherDef,type Recipe} from '../content/skills';
 import {HERB_NODES} from '../content/herbalism';
 import {MONSTERS} from '../content/monsters';
 import {WORLD_ZONES} from '../content/world-map';
+import {itemDef} from '../content/items';
 import type {GameState,GatheringSkillId,SkillId} from './types';
 import {recipeAvailability} from './playability';
 import {alchemyAvailability} from './alchemy';
@@ -83,7 +84,7 @@ export function recipeProgressionSources(state:GameState,recipe:Recipe,inputs:Re
   const owned=input.inventory+input.bank,missing=Math.max(0,input.quantity-owned);
   if(!missing)continue;
   const destination=workingTowardItemSource(state,input.itemId);
-  rows.push({key:`material:${input.itemId}`,label:pretty(input.itemId),owned,required:input.quantity,missing,destination,availability:workingTowardDestinationAvailability(state,destination)});
+  rows.push({key:`material:${input.itemId}`,label:itemDef(input.itemId).name,owned,required:input.quantity,missing,destination,availability:workingTowardDestinationAvailability(state,destination)});
  }
  return rows;
 }

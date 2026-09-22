@@ -148,6 +148,15 @@ ok(world.includes('destination:{minHeight:92'),'World destination cards must rem
 
 const character=read('src/screens/CharacterScreen.tsx');
 ok(character.includes('disclosure:{minHeight:54'),'Character secondary disclosures must remain compact');
+ok(character.includes('identityKicker')&&character.includes('characterName')&&character.includes('classMeta'),'Character must use one consolidated identity hero instead of separate page and class headers');
+ok(!character.includes('pageHeading')&&!character.includes('headingCopy'),'Character must not regress to the duplicate heading stack');
+ok(character.includes('EquipmentSectionHeader title="Loadout preview"'),'Character equipment preview must have a purpose-specific title');
+ok(character.includes('EQUIPMENT READINESS')&&!character.includes('>Lv. {character.level}<'),'Character preview must not repeat the character level beside readiness');
+ok(character.includes("keyStat:{flex:1,alignItems:'center',gap:2,paddingVertical:6")&&character.includes('backgroundColor:C.panel2'),'Character key stats must use compact HUD-style cells');
+ok(character.includes('primaryAction:{flexGrow:2,flexBasis:180}')&&character.includes('secondaryAction:{flexGrow:1,flexBasis:110'),'Character global actions must preserve one obvious primary equipment action');
+ok(!character.includes("title={showLoadouts?'Hide guides':'Build guides'}"),'Build Guides disclosure must not be duplicated by a second global button');
+ok(character.includes('disclosureOpen:{borderColor:C.info,backgroundColor:C.infoSurface}'),'Character secondary disclosures must show a clean selected/open state');
+ok(character.includes('<GameButton compact title={fullSet?')&&character.includes('<GameButton compact title="Craft missing gear"'),'Novice-set utility actions must stay compact');
 
 const empty=read('src/components/EmptyState.tsx');
 ok(empty.includes('padding:spacing.lg'),'Empty states must avoid excessive vertical padding');

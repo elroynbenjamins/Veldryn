@@ -26,3 +26,22 @@ export function grantProfessionMastery(previous:ProfessionMasteryRecord|undefine
   return {actionId,points:Math.min(masteryPointsForRank(PROFESSION_MASTERY_MAX_RANK),(previous?.points??0)+actions),updatedAtMs:nowMs};
 }
 
+
+export const PROFESSION_MASTERY_BONUS_RANKS=[
+ {rank:10,kind:'xp' as const,bps:200,label:'+2% skill XP'},
+ {rank:20,kind:'yield' as const,bps:200,label:'+2% yield'},
+ {rank:30,kind:'speed' as const,bps:300,label:'+3% action speed'},
+ {rank:40,kind:'yield' as const,bps:300,label:'+3% yield'},
+ {rank:50,kind:'speed' as const,bps:200,label:'+2% action speed'},
+] as const;
+export function professionMasteryMultipliers(actionId:string,record?:ProfessionMasteryRecord){
+ const view=professionMasteryView(actionId,record);
+ return {view,xp:1+view.xpBonusBps/10000,yield:1+view.yieldBonusBps/10000,speed:1+view.speedBonusBps/10000};
+}
+export function professionMasteryRankProgress(actionId:string,record?:ProfessionMasteryRecord){
+ const view=professionMasteryView(actionId,record),floor=masteryPointsForRank(view.rank),target=view.nextRankPoints,need=Math.max(0,target-floor),current=Math.max(0,view.points-floor);
+ return {...view,currentRankPoints:floor,pointsIntoRank:current,pointsForNextRank:need,progress:view.mastered?1:Math.max(0,Math.min(1,current/Math.max(1,need)))};
+}
+export function nextProfessionMasteryBonus(rank:number){
+ return PROFESSION_MASTERY_BONUS_RANKS.find(row=>row.rank>rank);
+}

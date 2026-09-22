@@ -5,7 +5,7 @@ const stats=(maxHp:number,attackPower:number,defense:number,level:number)=>({max
 const strike=(id:string,name:string,coeff:number,damageType:DamageType,target:'current_target'|'all_enemies'='current_target'):AbilityDefinition=>({id,name,cooldownMs:target==='all_enemies'?9800:6800,castTimeMs:target==='all_enemies'?1100:700,target,priority:target==='all_enemies'?90:70,interruptible:target==='all_enemies',effects:[{kind:'damage',coeff,damageType}]});
 function normalIdentity(name:string):{archetype:PveArchetype;mechanics:PveMechanicId[]}{
  if(['Glacier Stalker','Icefang Hound','Glassbone Hound'].includes(name))return{archetype:'assassin',mechanics:['focus','execute']};
- if(['Choir Wisp','Glacial Acolyte','Ember Wraith','Crucible Imp'].includes(name))return{archetype:'caster',mechanics:['interrupt','aoe']};
+ if(['Choir Wisp','Ember Wraith','Crucible Imp'].includes(name))return{archetype:'caster',mechanics:['interrupt','aoe']};
  if(['Rime Cantor','Bellbound Shade','Charred Adept'].includes(name))return{archetype:'hexer',mechanics:['vulnerability','healing_reduction']};
  if(['Frozen Pilgrim','Glacial Acolyte','Molten Pilgrim'].includes(name))return{archetype:'support',mechanics:['sustain']};
  if(['Choir Sentinel','Cinderbound Guard','Ashen Colossus'].includes(name))return{archetype:'guardian',mechanics:['heavy_hit','barrier']};

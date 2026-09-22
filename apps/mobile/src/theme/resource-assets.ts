@@ -24,4 +24,4 @@ export const resourceIconSourceById:Readonly<Partial<Record<string,ImageSourcePr
 };
 
 export function resourceIconSource(itemId:string){return resourceIconSourceById[itemId];}
-export function hasResourceArtwork(itemId:string){return hasRuntimeItemArtwork(itemId)||hasRegionalResourceArtwork(itemId)||!!resourceIconSource(itemId);}
+export function hasResourceArtwork(itemId:string){return hasConsumableArtwork(itemId)||hasRuntimeItemArtwork(itemId)||hasRegionalResourceArtwork(itemId)||!!resourceIconSource(itemId);}

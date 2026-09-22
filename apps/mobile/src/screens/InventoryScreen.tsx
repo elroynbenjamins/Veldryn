@@ -20,13 +20,13 @@ import {previewEquipment} from '../core/equipment-preview';
 import {formatGameNumber} from '../core/number-format';
 import {ot} from '../i18n';
 import {enhancedGearStats,gearEnhancement,gemSocketCapacity,hasEnhancement} from '../core/equipment-enhancement';
-import {effectiveOwnedGearRarity} from '../core/crafted-gear-instances';
+import {bankGearInstances,equippedGearInstance,inventoryGearInstances} from '../core/equipment-instances';
 import {bulkSelectionSummary,type BulkStorageLocation} from '../core/inventory-bulk';
 import type {WorkingTowardDestination} from '../core/working-toward';
 import {equipmentChangeFeedback,equipmentFeedbackSnapshot,type EquipmentChangeFeedback} from '../core/equipment-change-feedback';
 import {inventoryFeedbackIntent,resolveInventoryActionFeedback,type InventoryActionFeedback,type InventoryFeedbackIntent,type InventoryFeedbackRequest} from '../core/inventory-action-feedback';
 
-type Pending={kind:'sell'|'salvage'|'deposit';item:ItemDef;quantity:number}|null;
+type Pending={kind:'sell'|'salvage'|'deposit';item:ItemDef;quantity:number;ref?:string}|null;
 type BulkAction='transfer'|'sell'|'salvage';
 type BulkPending={kind:BulkAction;ids:string[]}|null;
 const FILTER_OPTIONS:{id:InventoryFilter;label:string}[]=[{id:'all',label:'All'},{id:'new',label:'New'},{id:'favorites',label:'★ Favorites'},{id:'gear',label:'Gear'},{id:'material',label:'Materials'},{id:'gem',label:'Gems'},{id:'food',label:'Food'},{id:'potion',label:'Potions'},{id:'tool',label:'Tools'},{id:'quest',label:'Quest'}];
@@ -65,7 +65,7 @@ export function InventoryScreen({state,onEquip,onFood,onEat,onSell,onSalvage,onD
   useEffect(()=>{if(!inventoryFeedback)return;const timer=setTimeout(()=>setInventoryFeedback(null),4500);return()=>clearTimeout(timer)},[inventoryFeedback]);
   const run=(action:()=>void)=>{try{action();setError('')}catch(e){setError(e instanceof Error?e.message:'Action failed. Please try again.')}};
   const runInventory=(request:InventoryFeedbackRequest,action:()=>void)=>{const intent=inventoryFeedbackIntent(state,request);try{action();setInventoryIntent(intent);setInventoryFeedback(null);setError('')}catch(e){setInventoryIntent(null);setError(e instanceof Error?e.message:'Action failed. Please try again.')}};
-  const confirm=()=>{if(!pending)return;const request:InventoryFeedbackRequest=pending.kind==='deposit'?{kind:'deposit',itemId:pending.item.id,quantity:pending.quantity}:pending.kind==='sell'?{kind:'sell',itemId:pending.item.id,quantity:1}:{kind:'salvage',itemId:pending.item.id,quantity:1};runInventory(request,()=>pending.kind==='deposit'?onDeposit(pending.item.id,pending.quantity):pending.kind==='sell'?onSell(pending.item.id):onSalvage(pending.item.id));setPending(null)};
+  const confirm=()=>{if(!pending)return;const ref=pending.ref??pending.item.id,request:InventoryFeedbackRequest=pending.kind==='deposit'?{kind:'deposit',itemId:pending.item.id,quantity:pending.quantity}:pending.kind==='sell'?{kind:'sell',itemId:pending.item.id,quantity:1}:{kind:'salvage',itemId:pending.item.id,quantity:1};runInventory(request,()=>pending.kind==='deposit'?onDeposit(ref,pending.quantity):pending.kind==='sell'?onSell(ref):onSalvage(ref));setPending(null)};
   const favorites=inventoryFavoriteIds(state),favoriteSet=new Set(favorites),newItemIds=inventoryNewItemIds(state),newItemSet=new Set(newItemIds);
   const inventoryCapacity=storageCapacityStatus(state.inventory.stacks,state.inventory.capacity),bankCapacity=storageCapacityStatus(state.bank.stacks,state.bank.capacity),activeCapacity=location==='inventory'?inventoryCapacity:bankCapacity;
   const activeNewCount=new Set(state[location].stacks.filter(stack=>stack.quantity>0&&newItemSet.has(stack.itemId)).map(stack=>stack.itemId)).size;
@@ -80,12 +80,26 @@ export function InventoryScreen({state,onEquip,onFood,onEat,onSell,onSalvage,onD
   const closeInspect=()=>{if(inspectId&&newItemSet.has(inspectId))run(()=>onAcknowledgeItem(inspectId));setInspectId(null)};
   const toggleItem=(itemId:string,newItem:boolean)=>{const key=location+':'+itemId,closing=expandedItem===key;if(closing&&newItem)run(()=>onAcknowledgeItem(itemId));else if(!closing&&expandedItem){const previousId=expandedItem.slice(expandedItem.indexOf(':')+1);if(newItemSet.has(previousId))run(()=>onAcknowledgeItem(previousId));}setExpandedItem(closing?null:key)};
   const renderStack=(stack:ItemStack)=>{
-    const item=itemDef(stack.itemId),equippedId=item.slot?state.character?.equipment[item.slot]:undefined,carried=location==='inventory',favorite=favoriteSet.has(item.id),newItem=newItemSet.has(item.id);
-    const amount=transferAmount(stack.quantity,quantity),selectedFood=state.character?.equippedFoodId===item.id,enhancement=item.type==='gear'?gearEnhancement(state,item.id):undefined,enhancementProtected=item.type==='gear'&&hasEnhancement(state,item.id);
-    return <ItemCard favorite={favorite} newItem={newItem} selectionMode={selectMode} selected={selectedSet.has(item.id)} onSelect={()=>toggleSelection(item.id)} onInspect={!selectMode?()=>setInspectId(item.id):undefined} onToggleFavorite={()=>run(()=>onToggleFavorite(item.id))} expanded={!selectMode&&expandedItem===location+':'+item.id} onToggle={()=>toggleItem(item.id,newItem)} key={`${location}:${item.id}`} item={item} quantity={stack.quantity} equipped={equippedId?itemDef(equippedId):undefined} rarityOverride={item.type==='gear'?effectiveOwnedGearRarity(state,item.id):undefined} upgradeRank={enhancement?.rank} socketed={enhancement?.gemIds.length} socketCapacity={item.type==='gear'?gemSocketCapacity(item.id):0} enhancementProtected={enhancementProtected} displayStats={item.type==='gear'?enhancedGearStats(state,item.id):undefined} equippedDisplayStats={equippedId?enhancedGearStats(state,equippedId):undefined} selectedFood={selectedFood} healAmount={recoveryAmount(state,item.id)} transferQuantity={amount} transferIssue={transferError(state,item.id,amount,location)} numberMode={state.settings.numberMode}
-      onPreview={item.type==='gear'?()=>run(()=>{previewEquipment(state,item.id);setPreviewId(item.id)}):undefined}
-      onEquip={carried&&item.type==='gear'?()=>run(()=>onEquip(item.id)):undefined} onSelectFood={carried&&item.type==='food'?()=>run(()=>onFood(item.id)):undefined} onEat={carried&&item.type==='food'?()=>run(()=>onEat(item.id)):undefined}
-      onSell={carried&&item.value>0&&!enhancementProtected&&!favorite?()=>setPending({kind:'sell',item,quantity:1}):undefined} onSalvage={carried&&item.salvage&&!enhancementProtected&&!favorite?()=>setPending({kind:'salvage',item,quantity:1}):undefined}
+    const item=itemDef(stack.itemId),carried=location==='inventory',favorite=favoriteSet.has(item.id),newItem=newItemSet.has(item.id);
+    if(item.type==='gear'){
+      const instances=(carried?inventoryGearInstances(state):bankGearInstances(state)).filter(row=>row.itemId===item.id);
+      const equippedId=item.slot?state.character?.equipment[item.slot]:undefined,equippedInstance=item.slot?equippedGearInstance(state,item.slot):undefined;
+      return instances.map((instance,index)=>{
+        const ref=instance.id,enhancement=gearEnhancement(state,ref),enhancementProtected=hasEnhancement(state,ref),key=`${location}:${ref}`;
+        return <ItemCard favorite={favorite} newItem={newItem&&index===0} selectionMode={false} onInspect={()=>setInspectId(ref)} onToggleFavorite={()=>run(()=>onToggleFavorite(item.id))} expanded={expandedItem===key} onToggle={()=>{if(expandedItem===key&&newItem)run(()=>onAcknowledgeItem(item.id));setExpandedItem(expandedItem===key?null:key)}} key={key} item={item} quantity={1} equipped={equippedId?itemDef(equippedId):undefined} rarityOverride={instance.rarity} upgradeRank={enhancement.rank} socketed={enhancement.gemIds.length} socketCapacity={gemSocketCapacity(ref,state)} enhancementProtected={enhancementProtected} displayStats={enhancedGearStats(state,ref)} equippedDisplayStats={equippedInstance?enhancedGearStats(state,equippedInstance.id):equippedId?enhancedGearStats(state,equippedId):undefined} numberMode={state.settings.numberMode}
+          onPreview={()=>run(()=>{previewEquipment(state,ref);setPreviewId(ref)})}
+          onEquip={carried?()=>run(()=>onEquip(ref)):undefined}
+          onSell={carried&&item.value>0&&!enhancementProtected&&!favorite?()=>setPending({kind:'sell',item,quantity:1,ref}):undefined}
+          onSalvage={carried&&item.salvage&&!enhancementProtected&&!favorite?()=>setPending({kind:'salvage',item,quantity:1,ref}):undefined}
+          onDeposit={carried?()=>runInventory({kind:'deposit',itemId:item.id,quantity:1},()=>onDeposit(ref,1)):undefined}
+          onWithdraw={!carried?()=>runInventory({kind:'withdraw',itemId:item.id,quantity:1},()=>onWithdraw(ref,1)):undefined}/>;
+      });
+    }
+    const equippedId=item.slot?state.character?.equipment[item.slot]:undefined;
+    const amount=transferAmount(stack.quantity,quantity),selectedFood=state.character?.equippedFoodId===item.id;
+    return <ItemCard favorite={favorite} newItem={newItem} selectionMode={selectMode} selected={selectedSet.has(item.id)} onSelect={()=>toggleSelection(item.id)} onInspect={!selectMode?()=>setInspectId(item.id):undefined} onToggleFavorite={()=>run(()=>onToggleFavorite(item.id))} expanded={!selectMode&&expandedItem===location+':'+item.id} onToggle={()=>toggleItem(item.id,newItem)} key={`${location}:${item.id}`} item={item} quantity={stack.quantity} equipped={equippedId?itemDef(equippedId):undefined} selectedFood={selectedFood} healAmount={recoveryAmount(state,item.id)} transferQuantity={amount} transferIssue={transferError(state,item.id,amount,location)} numberMode={state.settings.numberMode}
+      onSelectFood={carried&&item.type==='food'?()=>run(()=>onFood(item.id)):undefined} onEat={carried&&item.type==='food'?()=>run(()=>onEat(item.id)):undefined}
+      onSell={carried&&item.value>0&&!favorite?()=>setPending({kind:'sell',item,quantity:1}):undefined}
       onDeposit={carried?()=>selectedFood?setPending({kind:'deposit',item,quantity:amount}):runInventory({kind:'deposit',itemId:item.id,quantity:amount},()=>onDeposit(item.id,amount)):undefined} onWithdraw={!carried?()=>runInventory({kind:'withdraw',itemId:item.id,quantity:amount},()=>onWithdraw(item.id,amount)):undefined}/>;
   };
   const foodWarning=pending?.item.id===state.character?.equippedFoodId?' This is your selected auto-eat food. Only food carried in Inventory can be consumed in combat.':'';

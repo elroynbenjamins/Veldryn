@@ -119,11 +119,14 @@ export function dropExpectation(chance:number,min:number,max:number,killsPerHour
   return {chance:normalizedChance,oneIn,expectedQuantityPerHour:findsPerHour*meanQuantity,averageFindSeconds:findsPerHour>0?3600/findsPerHour:Number.POSITIVE_INFINITY};
 }
 
-export type ActivityProgressKind='combat'|'gathering'|'crafting';
+export type ActivityProgressKind='combat'|'gathering'|'crafting'|'training'|'exploration'|'faith';
 export function activityProgressFeedback(kind:ActivityProgressKind,progress:number){
  const p=Math.max(0,Math.min(1,progress));
  if(kind==='combat')return p<.25?'Tracking the target…':p<.65?'Trading blows…':p<.92?'Pressing the advantage…':'Finishing the encounter…';
  if(kind==='crafting')return p<.25?'Preparing materials…':p<.7?'Crafting in progress…':p<.95?'Finishing the work…':'Quality check…';
+ if(kind==='training')return p<.25?'Warming up…':p<.7?'Practicing technique…':p<.95?'Refining form…':'Completing the drill…';
+ if(kind==='exploration')return p<.25?'Setting out…':p<.7?'Surveying the route…':p<.95?'Following the trail…':'Completing the route…';
+ if(kind==='faith')return p<.25?'Beginning practice…':p<.7?'Maintaining focus…':p<.95?'Deepening devotion…':'Completing the practice…';
  return p<.25?'Preparing tools…':p<.7?'Working the resource…':p<.95?'Finishing the action…':'Packing the yield…';
 }
 

@@ -31,7 +31,7 @@ export function RecipeCard({state,recipe,status,onCraft,onNavigate,onCraftPrereq
  const skillLocked=skillLevel<recipe.level,characterLocked=characterLevel<(recipe.characterLevel??1),readyInputs=effectiveStatus.inputs.filter(i=>i.inventory+i.bank>=i.quantity).length,multiplier=alchemy?batchCount:1;
  const statusText=forgeFull?'Forge + backlog full':skillLocked?'Unlocks at '+recipe.skillId+' level '+recipe.level:characterLocked?'Requires character level '+recipe.characterLevel:craftReady?(alchemy?'Ready to brew ×'+batchCount:timed?(willWait?'Ready to queue':'Ready to start'):'Ready to craft'):effectiveStatus.reason;
  const statusStyle=craftReady?s.ready:skillLocked||characterLocked?s.locked:s.blocked;
- const maxBatches=alchemyStatus?.maxBatches??0,batchOptions=[1,5,10,25,Math.max(1,maxBatches)].filter((value,index,array)=>value<=100&&array.indexOf(value)===index).sort((a,b)=>a-b);
+ const maxBatches=alchemyStatus?.maxBatches??0,batchCeiling=Math.max(1,maxBatches),batchOptions=[1,5,10,25,batchCeiling].filter((value,index,array)=>value<=batchCeiling&&value<=100&&array.indexOf(value)===index).sort((a,b)=>a-b);
  const runAlchemy=async()=>{if(!onAlchemyStart||!craftReady)return;setActionError('');try{await onAlchemyStart(recipe.id,batchCount);}catch(error){setActionError(error instanceof Error?error.message:'Could not start brewing.');}};
  return <View style={s.card}>
   <Pressable accessibilityRole="button" accessibilityState={{expanded}} accessibilityLabel={recipe.name+(craftReady?', '+statusText:', '+statusText)} onPress={()=>setExpanded(value=>!value)} style={s.head}>

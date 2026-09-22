@@ -3,6 +3,7 @@ import {characterTotalXpAtLevel,totalXpAtLevel} from '../src/core/progression';
 import {GATHERING} from '../src/content/skills';
 import {MONSTERS} from '../src/content/monsters';
 import {acquisitionProjectionForDestination,activeActivityLevelPace,activityProgressFeedback,characterLevelPace,combatBaselineProjection,craftingPaceProjection,dropExpectation,formatBalanceDuration,gatheringBalanceProjection,skillTargetEta} from '../src/core/balance-projection';
+import {recipeProgressionSources} from '../src/core/skill-progression-navigation';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 function close(actual:number,expected:number,tolerance:number,message:string){if(Math.abs(actual-expected)>tolerance)throw new Error(message+': expected '+expected+', got '+actual)}
@@ -73,5 +74,9 @@ const combatAcquisition=acquisitionProjectionForDestination(combatState,'MOSS_FI
 ok(combatAcquisition?.basis==='base'&&(combatAcquisition.quantityPerHour??0)>0&&(combatAcquisition.etaSeconds??0)>0,'Combat material ETA must use baseline kill/drop expectation');
 const unsupportedAcquisition=acquisitionProjectionForDestination(state,'COPPER_INGOT',5,{kind:'skills',skillId:'smithing',mode:'crafting',recipeId:'SMELT_COPPER_INGOT',button:'Craft',detail:''});
 ok(unsupportedAcquisition===undefined,'Crafted intermediates must not show a misleading acquisition ETA when their ingredient chain is not modeled');
+const bottleneckRecipe={id:'TEST_BOTTLENECK',name:'Bottleneck Test',skillId:'smithing' as const,level:1,xp:1,gold:0,seconds:1,inputs:[{itemId:'MOSS_FIBER',quantity:5},{itemId:'GREENWOOD_LOG',quantity:100}],output:{itemId:'COPPER_INGOT',quantity:1}};
+const sourceRows=recipeProgressionSources(combatState,bottleneckRecipe,[{itemId:'MOSS_FIBER',quantity:5,inventory:0,bank:0},{itemId:'GREENWOOD_LOG',quantity:100,inventory:0,bank:0}]);
+ok(sourceRows[0]?.bottleneck===true&&sourceRows[0]?.key==='material:GREENWOOD_LOG','Recipe sources must surface the longest projected material bottleneck first');
+ok(sourceRows.every(row=>row.estimateLabel?.includes('pace')),'Direct gathering/combat material sources must expose readable acquisition pace labels');
 
 console.log('PASS: progression pace, gathering runtime yield and combat/drop expectations share authoritative balance math');

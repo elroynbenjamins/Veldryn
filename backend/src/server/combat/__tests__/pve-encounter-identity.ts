@@ -62,7 +62,7 @@ assert.deepEqual((bellbeast.phases??[]).map(phase=>phase.name),['Cracked Bell','
 assert.ok(bellbeast.abilities.some(ability=>ability.interruptible));
 
 const cantor=buildExpeditionEncounter({encounterId:'BOSS_EXP_CANTOR'})[0];
-assert.deepEqual(cantor.abilities.map(ability=>ability.name),['Dissonant Verse','Choir Tempest']);
+assert.deepEqual(cantor.abilities.map(ability=>ability.name),['Dissonant Verse','Withering Refrain','Choir Tempest']);
 assert.deepEqual((cantor.phases??[]).map(phase=>phase.name),['First Refrain','Final Refrain']);
 assert.ok(cantor.abilities.some(ability=>ability.effects.some(effect=>effect.kind==='dot')));
 

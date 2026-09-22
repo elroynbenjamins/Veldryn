@@ -1,4 +1,5 @@
 import {createCharacter,newGame,startGathering} from '../src/core/game';
+import {characterTotalXpAtLevel,totalXpAtLevel} from '../src/core/progression';
 import {GATHERING} from '../src/content/skills';
 import {MONSTERS} from '../src/content/monsters';
 import {activeActivityLevelPace,activityProgressFeedback,characterLevelPace,combatBaselineProjection,craftingPaceProjection,dropExpectation,formatBalanceDuration,gatheringBalanceProjection,skillTargetEta} from '../src/core/balance-projection';
@@ -25,6 +26,11 @@ ok(crownwood.recommendedToolTier===3,'Level-15 Crownwood must correctly recommen
 ok((starterPace.levelPace.etaSeconds??Infinity)>=8*60&&(starterPace.levelPace.etaSeconds??Infinity)<=25*60,'A properly equipped starter skill should gain its first level in roughly 8–25 minutes');
 const firstUnlock=skillTargetEta(starterToolState,'woodcutting',7,starterPace.xpPerHour);
 ok((firstUnlock.etaSeconds??Infinity)>=4*3600&&(firstUnlock.etaSeconds??Infinity)<=12*3600,'The first major gathering tier should remain reachable within a long playday/offline session');
+const level7Wood={...ironToolState,skills:ironToolState.skills.map(row=>row.skillId==='woodcutting'?{...row,level:7,xp:totalXpAtLevel(7)}:row)};
+const level15Wood={...oathToolState,skills:oathToolState.skills.map(row=>row.skillId==='woodcutting'?{...row,level:15,xp:totalXpAtLevel(15)}:row)};
+const level7Pace=gatheringBalanceProjection(level7Wood,ironwood,24).levelPace,level15Pace=gatheringBalanceProjection(level15Wood,crownwood,24).levelPace;
+ok((level7Pace.etaSeconds??Infinity)<=3*3600,'A recommended mid-tier gathering node should keep a level around 7 within a few hours');
+ok((level15Pace.etaSeconds??Infinity)<=6*3600,'A recommended high Asterfall gathering node should keep level 15 progression within a long session');
 
 state=startGathering(state,'GREENWOOD_TREE',1000);
 const active=activeActivityLevelPace(state,gather.xpPerHour);
@@ -36,6 +42,11 @@ ok(combat.cycleSeconds>rat.secondsPerKill,'Combat baseline must include the glob
 ok(combat.killsPerHour>0&&combat.xpPerHour>0,'Combat baseline must expose kills/hour and XP/hour');
 const firstCombatLevel=characterLevelPace(state,combat.xpPerHour);
 ok((firstCombatLevel.etaSeconds??Infinity)>0&&(firstCombatLevel.etaSeconds??Infinity)<=35*60,'Baseline starter combat should gain the first character level within roughly 35 minutes');
+const thornling=MONSTERS.find(row=>row.id==='THORNLING')!,revenantLevel=MONSTERS.find(row=>row.id==='OATHGLASS_REVENANT')!;
+const level10State={...state,character:{...state.character!,level:10,xp:characterTotalXpAtLevel(10)}},level25State={...state,character:{...state.character!,level:25,xp:characterTotalXpAtLevel(25)}};
+const level10Combat=characterLevelPace(level10State,combatBaselineProjection(thornling).xpPerHour),level25Combat=characterLevelPace(level25State,combatBaselineProjection(revenantLevel).xpPerHour);
+ok((level10Combat.etaSeconds??Infinity)<=4*3600,'Matching-level combat around level 10 should progress within a few hours');
+ok((level25Combat.etaSeconds??Infinity)<=6.5*3600,'Asterfall-end combat levels should remain session-scale rather than day-scale per level');
 const gearDrop=rat.drops.find(drop=>drop.chance<.1)!;
 const expected=dropExpectation(gearDrop.chance,gearDrop.min,gearDrop.max,combat.killsPerHour);
 close(expected.oneIn,1/gearDrop.chance,.001,'Drop odds must be the reciprocal of per-kill chance');

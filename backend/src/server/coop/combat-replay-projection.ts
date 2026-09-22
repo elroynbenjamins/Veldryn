@@ -2,6 +2,7 @@ export type PublicCombatReplayCueType='action'|'phase'|'cast'|'interrupt'|'down'
 
 export interface PublicCombatReplayState{ id:string; hp:number; shield:number; }
 export interface PublicCombatReplayCombatant{ id:string; name:string; team:'players'|'enemies'; maxHp:number; startHp:number; startShield:number; boss:boolean; }
+export interface PublicCombatReplayStatus{ targetId:string; sourceId?:string; kind:'buff'|'debuff'|'dot'|'hot'; tag:string; label:string; abilityId?:string; startsAtMs:number; expiresAtMs:number; }
 
 export interface PublicCombatReplayCue{
   atMs:number;
@@ -26,6 +27,7 @@ export interface PublicCombatReplay{
   reason:'victory'|'wipe'|'timeout';
   durationMs:number;
   combatants:PublicCombatReplayCombatant[];
+  statuses:PublicCombatReplayStatus[];
   cues:PublicCombatReplayCue[];
 }
 
@@ -69,10 +71,12 @@ export function projectCombatReplay(lastResolution:undefined|{nodeId:string;resu
   const reason=text(summary.reason) as PublicCombatReplay['reason']|undefined,duration=finite(summary.durationMs);
   if(!reason||!REASONS.has(reason)||duration===undefined||duration<0)return undefined;
   const combatants=(Array.isArray(summary.replayCombatants)?summary.replayCombatants:[]).map(item=>{if(!item||typeof item!=='object')return undefined;const row=item as Record<string,unknown>,id=text(row.id),name=text(row.name),team=row.team==='players'||row.team==='enemies'?row.team:undefined,maxHp=finite(row.maxHp),startHp=finite(row.startHp),startShield=finite(row.startShield),boss=row.boss===true;if(!id||!name||!team||maxHp===undefined||maxHp<=0||startHp===undefined||startHp<0||startHp>maxHp||startShield===undefined||startShield<0)return undefined;return{id,name,team,maxHp:Number(maxHp.toFixed(2)),startHp:Number(startHp.toFixed(2)),startShield:Number(startShield.toFixed(2)),boss};}).filter((item):item is PublicCombatReplayCombatant=>Boolean(item)).slice(0,12);
+  const combatantIds=new Set(combatants.map(item=>item.id));
+  const statuses=(Array.isArray(summary.replayStatuses)?summary.replayStatuses:[]).map(item=>{if(!item||typeof item!=='object')return undefined;const row=item as Record<string,unknown>,targetId=text(row.targetId),sourceId=text(row.sourceId),kind=row.kind==='buff'||row.kind==='debuff'||row.kind==='dot'||row.kind==='hot'?row.kind:undefined,tag=text(row.tag),label=text(row.label),abilityId=text(row.abilityId),starts=finite(row.startsAtMs),expires=finite(row.expiresAtMs);if(!targetId||!combatantIds.has(targetId)||!kind||!tag||!label||starts===undefined||starts<0||starts>duration||expires===undefined||expires<=starts)return undefined;return{targetId,sourceId,kind,tag,label,abilityId,startsAtMs:Math.round(starts),expiresAtMs:Math.round(Math.min(expires,duration))};}).filter((item):item is PublicCombatReplayStatus=>Boolean(item)).slice(0,96);
   const cues=(Array.isArray(summary.replayCues)?summary.replayCues:[])
     .map(item=>cue(item,duration))
     .filter((item):item is PublicCombatReplayCue=>Boolean(item))
     .slice(0,48)
     .sort((a,b)=>a.atMs-b.atMs);
-  return {nodeId:lastResolution.nodeId,reason,durationMs:Math.round(duration),combatants,cues};
+  return {nodeId:lastResolution.nodeId,reason,durationMs:Math.round(duration),combatants,statuses,cues};
 }

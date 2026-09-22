@@ -17,6 +17,8 @@ export interface CoopMemberIdentity {
   role: CoopRole;
 }
 
+export interface CoopEncounterPreview {archetypes:Array<{id:string;label:string}>;mechanics:Array<{id:string;label:string;description:string}>;summary:string;}
+
 export interface CoopRouteNode {
   nodeId: string;
   depth: number;
@@ -33,6 +35,8 @@ export interface CoopRouteNode {
   /** Optional signature-objective counter delta applied after a successful room resolution. */
   objectiveDelta?: number;
   previewHidden?: boolean;
+  /** Sanitized server-authored PvE identity for a visible combat choice. */
+  encounterPreview?: CoopEncounterPreview;
 }
 
 export interface CoopRouteGraph {

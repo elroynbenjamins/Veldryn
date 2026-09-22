@@ -32,6 +32,20 @@ function chooseEnemy(actor: CombatantState, enemies: CombatantState[], rng: Comb
   return rng.pick(live,label);
 }
 
+function threatenedAlly(allies:CombatantState[],enemies:CombatantState[]):CombatantState|undefined{
+  const liveAllies=new Map(living(allies).map(ally=>[ally.definition.id,ally]));
+  const candidates=living(enemies).flatMap(enemy=>{
+    if(!enemy.casting)return[];
+    const ability=enemy.definition.abilities.find(item=>item.id===enemy.casting!.abilityId);
+    if(!ability||ability.target==='all_enemies'||ability.target==='all_allies'||ability.target==='self')return[];
+    const target=liveAllies.get(enemy.casting.targetId);if(!target)return[];
+    if(!ability.effects.some(effect=>effect.kind==='damage'||effect.kind==='dot'))return[];
+    return[{enemy,target,completesAt:enemy.casting.completesAt}];
+  });
+  candidates.sort((a,b)=>a.completesAt-b.completesAt||Number(Boolean(b.enemy.definition.boss))-Number(Boolean(a.enemy.definition.boss))||a.enemy.definition.id.localeCompare(b.enemy.definition.id));
+  return candidates[0]?.target;
+}
+
 function targetsFor(rule: TargetRule, actor: CombatantState, allies: CombatantState[], enemies: CombatantState[], rng: CombatRng, label: string): CombatantState[] {
   switch(rule) {
     case 'self': return [actor];
@@ -45,6 +59,7 @@ function targetsFor(rule: TargetRule, actor: CombatantState, allies: CombatantSt
       live.sort((a,b)=>(a.casting!.completesAt-b.casting!.completesAt)||Number(Boolean(b.definition.boss))-Number(Boolean(a.definition.boss))||a.definition.id.localeCompare(b.definition.id));
       return [live[0]];
     }
+    case 'threatened_ally': {const threatened=threatenedAlly(allies,enemies);if(threatened)return[threatened];const live=living(allies);return live.length?[live.reduce((a,b)=>hpPct(b)<hpPct(a)?b:a)]:[];}
     case 'current_target': default: { const t=chooseEnemy(actor,enemies,rng,label); return t?[t]:[]; }
   }
 }
@@ -54,6 +69,7 @@ function conditionOk(a: AbilityDefinition, actor: CombatantState, allies: Combat
     case 'self_below_50': return hpPct(actor)<0.5;
     case 'ally_below_50': return living(allies).some(x=>hpPct(x)<0.5);
     case 'ally_below_80': return living(allies).some(x=>hpPct(x)<0.8);
+    case 'ally_below_80_or_targeted': return Boolean(threatenedAlly(allies,enemies))||living(allies).some(x=>hpPct(x)<0.8);
     case 'target_casting': return living(enemies).some(x=>!!x.casting && (x.definition.abilities.find(z=>z.id===x.casting!.abilityId)?.interruptible ?? false));
     case 'multiple_enemies': return living(enemies).length>=2;
     default: return true;

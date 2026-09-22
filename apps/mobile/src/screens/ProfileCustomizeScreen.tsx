@@ -12,9 +12,10 @@ import {useGameTheme} from '../theme/ThemeContext';
 
 type Section='Appearance'|'Identity';
 
-export function ProfileCustomizeScreen({state,onChange,onNavigateSource,onDirtyChange}:{state:GameState;onChange:(next:GameState)=>void;onNavigateSource?:(destination:ProfileCustomizationDestination)=>void;onDirtyChange?:(dirty:boolean)=>void}){
+export function ProfileCustomizeScreen({state,onChange,onNavigateSource,onDirtyChange,initialSection='Appearance'}:{state:GameState;onChange:(next:GameState)=>void;onNavigateSource?:(destination:ProfileCustomizationDestination)=>void;onDirtyChange?:(dirty:boolean)=>void;initialSection?:Section}){
  const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
- const [section,setSection]=useState<Section>('Appearance');
+ const [section,setSection]=useState<Section>(initialSection);
+ useEffect(()=>{setSection(initialSection)},[initialSection]);
  const [appearanceDirty,setAppearanceDirty]=useState(false),[identityDirty,setIdentityDirty]=useState(false);
  const [appearancePreview,setAppearancePreview]=useState<GameState|null>(null),[identityDraft,setIdentityDraft]=useState<ProfileExtensionSelfV43|null>(null);
  const [previewOpen,setPreviewOpen]=useState(false);

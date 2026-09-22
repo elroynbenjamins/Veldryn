@@ -29,7 +29,7 @@ import {activeEquipmentSetRuntime,equipmentSetCombatModifiers} from './equipment
 import {companionCombatContribution,reconcileCombatCompanionUnlocks,grantCompanionEssence,grantBondstones} from './combat-companions';
 import {awardCompanionRematchBondstone,companionRematchBondstoneStatus,recordCompanionActivity} from './companion-runtime';
 import {monsterMastery,recordMonsterMastery} from './monster-mastery';
-import {awardClassSkillXp,awardCombatClassXp,characterClassEffects,characterClassSkills,normalizeTrainingFocus,settleClassDrills} from './class-skills';
+import {awardClassSkillXp,awardCombatClassXp,characterClassEffects,characterClassSkills,CLASS_DRILL_BASE_XP,normalizeTrainingFocus,settleClassDrills} from './class-skills';
 import {settleFaithPractice,cancelFaithPractice,normalizeFaith,selectedFaithBlessing} from './faith';
 import {HOLY_WATER_ID} from '../content/faith';
 import {previewAlchemyReward,alchemyRefund,startAlchemyBatch,preparationEffects,spendPreparationEncounter} from './alchemy';
@@ -508,7 +508,7 @@ export function startClassTraining(state:GameState,now:number):GameState{
  const settled=claimActivity(state,now).state;if(!settled.character)throw new Error('Create a character first.');
  if(characterClassSkills(settled.character).every(s=>s.level===100))throw new Error('Both class skills are at maximum level.');
  if(settled.character.classTraining)return settled;
- return {...settled,activity:null,character:{...settled.character,classTraining:{lastClaimAtMs:now,progressMs:0,focus:normalizeTrainingFocus(settled.character.trainingFocus),xpPerDrill:8*characterPermanentMultipliers(settled).skillXpMultiplier}}};
+ return {...settled,activity:null,character:{...settled.character,classTraining:{lastClaimAtMs:now,progressMs:0,focus:normalizeTrainingFocus(settled.character.trainingFocus),xpPerDrill:CLASS_DRILL_BASE_XP*characterPermanentMultipliers(settled).skillXpMultiplier}}};
 }
 
 export function stopActivity(state:GameState):GameState{

@@ -21,7 +21,7 @@ const checks:Array<[string,string[],string[]]>= [
   ['src/components/ConfirmModal.tsx',['GameModalSurface'],["rgba(4,8,14,.82)"]],
   ['src/components/ItemCard.tsx',['backgroundColor:C.warningSurface'],["backgroundColor:'#332515'"]],
   ['src/components/RecipeCard.tsx',['backgroundColor:C.goodSurface','backgroundColor:C.warningSurface'],["backgroundColor:'#172b24'","backgroundColor:'#332515'"]],
-  ['src/screens/QuestScreen.tsx',['C.goodSurface','filterTextSelected:{color:C.text}'],["'#14272A'","filterTextSelected:{color:'#d9f3ff'}"]],
+  ['src/screens/QuestScreen.tsx',['C.goodSurface','GameModalSurface','filterOptionSelected:{borderColor:equipmentColors.selectedLine,backgroundColor:equipmentColors.selected}','filterOptionTextSelected:{color:C.text}'],["'#14272A'","filterTextSelected:{color:'#d9f3ff'}"]],
   ['src/screens/SocialScreen.tsx',['accentSurface={C.infoSurface}','backgroundColor:C.badSurface'],['accentSurface="#102536"',"backgroundColor:'#2a1b20'"]],
   ['src/screens/GuildScreen.tsx',['tabTextSelected:{color:C.text}','backgroundColor:C.bad'],["tabTextSelected:{color:'#d9f3ff'}","backgroundColor:'#b85c68'"]],
   ['src/screens/AchievementsScreen.tsx',['filterTextSelected:{color:C.text}'],["filterTextSelected:{color:'#d9f3ff'}"]],

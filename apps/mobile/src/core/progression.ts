@@ -1,7 +1,7 @@
 // Fast early skill progression; the long grind comes from later levels, mastery and rare goals.
 const SKILL_XP_SCALE = 1.6;
 // Character levels stay slower than individual professions without making early combat feel stalled.
-const CHARACTER_XP_SCALE = 18.0;
+const CHARACTER_XP_SCALE = 10.0;
 
 export function baseXpForNextLevel(level:number):number {
   return Math.floor(90 * Math.pow(level, 1.42) + level * 35);

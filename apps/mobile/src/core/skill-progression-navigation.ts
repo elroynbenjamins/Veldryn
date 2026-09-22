@@ -89,7 +89,7 @@ export function recipeProgressionSources(state:GameState,recipe:Recipe,inputs:Re
   const destination=workingTowardItemSource(state,input.itemId),projection=acquisitionProjectionForDestination(state,input.itemId,missing,destination);
   rows.push({key:`material:${input.itemId}`,label:itemDef(input.itemId).name,owned,required:input.quantity,missing,destination,availability:workingTowardDestinationAvailability(state,destination),...(projection?{estimatedSeconds:projection.etaSeconds,estimateLabel:`~${formatBalanceDuration(projection.etaSeconds)} · ${projection.basis==='current'?'current pace':'base pace'}`}:{})});
  }
- return rows;
+ return rows.sort((a,b)=>Number(b.key.startsWith('prerequisite:'))-Number(a.key.startsWith('prerequisite:'))||(b.estimatedSeconds??-1)-(a.estimatedSeconds??-1));
 }
 
 export function recipeSkillTrainingAction(state:GameState,recipe:Recipe):SkillProgressionNavigationAction|undefined{

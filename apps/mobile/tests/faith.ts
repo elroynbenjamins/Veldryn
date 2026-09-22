@@ -5,6 +5,7 @@ import {faithPracticeAvailability,startFaithPractice} from '../src/core/faith';
 import {blessingRows,faithLevel,selectFaithBlessing,setFaithFavorite,setFaithHideWeaker} from '../src/core/faith-effects';
 import {accountSkillLevel} from '../src/core/account-roster';
 import {totalXpAtLevel} from '../src/core/progression';
+import {combatBaselineProjection,dropExpectation} from '../src/core/balance-projection';
 import {migrateSave} from '../src/core/save-migrations';
 import {transitionAccountFaithPractice,setAccountFaithBlessing} from '../src/core/account-actions';
 import {characterPermanentMultipliers} from '../src/core/permanent-boosts';
@@ -19,6 +20,13 @@ function qty(s:GameState,id:string){return [...s.inventory.stacks,...s.bank.stac
 test('Faith is a genuine level-one account skill for every new character',()=>{const s=fresh();equal(s.skills.length,12,'twelve professions/skills');equal(faithLevel(s.skills),1,'level');equal(accountSkillLevel(s),14,'12 ordinary + 2 class');});
 test('Faith catalog has escalating water tiers and ordered blessings',()=>{equal(FAITH_TIERS.length,6,'tiers');equal(FAITH_BLESSINGS.length,9,'blessings');for(let i=1;i<FAITH_TIERS.length;i++){ok(FAITH_TIERS[i].level>FAITH_TIERS[i-1].level,'tier level');ok(FAITH_TIERS[i].water>FAITH_TIERS[i-1].water,'water');ok(FAITH_TIERS[i].xp/FAITH_TIERS[i].water>=FAITH_TIERS[i-1].xp/FAITH_TIERS[i-1].water,'efficiency');}});
 test('Holy Water has authored enemy sources and cannot be sold',()=>{const s=water(fresh(),2);for(const source of HOLY_WATER_SOURCES){const monster=MONSTERS.find(x=>x.id===source.monsterId)!;ok(!!monster,'monster');ok(monster.drops.some(x=>x.itemId===HOLY_WATER_ID),'drop wired');}throws(()=>sellItem(s,HOLY_WATER_ID,1),'cannot be sold');equal(qty(s,HOLY_WATER_ID),2,'unchanged');});
+test('Holy Water source strength scales with regional Faith progression',()=>{
+ equal(HOLY_WATER_SOURCES.length,6,'six dedicated sources');
+ const projected=HOLY_WATER_SOURCES.map(source=>{const monster=MONSTERS.find(x=>x.id===source.monsterId)!;const drop=monster.drops.find(x=>x.itemId===HOLY_WATER_ID)!;const pace=combatBaselineProjection(monster);return {source,drop,perHour:dropExpectation(drop.chance,drop.min,drop.max,pace.killsPerHour).expectedQuantityPerHour};});
+ ok(projected[0].perHour>=50,'starter Faith source should provide at least ~50 Water/hour baseline');
+ for(const row of projected.slice(3))ok(row.perHour>=80,'regional Faith source should provide at least ~80 Water/hour baseline');
+ ok(projected[0].drop.max===2&&projected.at(-1)!.drop.max===10,'later sources must award larger Water stacks than the starter source');
+});
 test('practice reserves Inventory before Bank and grants no free XP at start',()=>{let s=water(fresh(),1);s.bank.stacks=[{itemId:HOLY_WATER_ID,quantity:9}];const n=startFaithPractice(s,'FAITH_QUIET',5,T);equal(qty(n,HOLY_WATER_ID),5,'five reserved');equal(n.activity!.kind,'faith','activity');equal(n.skills,s.skills,'no xp');equal(n.activity!.faithPractice!.remainingPractices,5,'five');});
 test('practice tiers are level gated and finite',()=>{const s=water(fresh(),100);equal(faithPracticeAvailability(s,'FAITH_CANDLE',1).ready,false,'locked');equal(faithPracticeAvailability(faithAt(s,10),'FAITH_CANDLE',1).ready,true,'unlocked');throws(()=>startFaithPractice(s,'FAITH_QUIET',1001,T),'1–1000');});
 test('partial practice consumes no water and awards no XP',()=>{const s=startFaithPractice(water(fresh(),10),'FAITH_QUIET',10,T);const r=previewActivityReward(s,T+29_999);equal(r.faithActions,0,'none');equal(r.xp,0,'xp');equal(r.holyWaterConsumed,0,'water');});

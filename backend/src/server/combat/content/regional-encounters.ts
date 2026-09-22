@@ -1,5 +1,5 @@
 import type {AbilityDefinition,CombatantDefinition,DamageType} from '../types';
-import {pveBarrier,pveDotWave,pveEnrage,pveExecuteStrike,pveHex,pveInterruptibleWave,pveSustain,withPveIdentity,type PveArchetype,type PveMechanicId} from '../pve-encounter-identity';
+import {pveBarrier,pveDotWave,pveEnrage,pveExecuteStrike,pveHex,pveInterruptibleWave,withPveIdentity,type PveArchetype,type PveMechanicId} from '../pve-encounter-identity';
 
 const stats=(maxHp:number,attackPower:number,defense:number,level:number)=>({maxHp,attackPower,healingPower:0,defense,accuracy:930,evasion:190,critChance:.06,critMultiplier:1.5,haste:.03});
 const strike=(id:string,name:string,coeff:number,damageType:DamageType,target:'current_target'|'all_enemies'='current_target'):AbilityDefinition=>({id,name,cooldownMs:target==='all_enemies'?9800:6800,castTimeMs:target==='all_enemies'?1100:700,target,priority:target==='all_enemies'?90:70,interruptible:target==='all_enemies',effects:[{kind:'damage',coeff,damageType}]});

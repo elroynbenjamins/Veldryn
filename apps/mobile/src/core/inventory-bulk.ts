@@ -45,7 +45,7 @@ export function bulkSelectionSummary(state:GameState,itemIds:readonly string[],l
 
 export function bulkTransferSelected(state:GameState,itemIds:readonly string[],from:BulkStorageLocation):GameState{
   const summary=bulkSelectionSummary(state,itemIds,from);
-  if(!summary.transferableIds.length)throw new Error(from==='inventory'&&summary.transferProtectedCount?'Selected auto-eat food stays in Inventory.':'No selected items can be moved.');
+  if(!summary.transferableIds.length)throw new Error(from==='inventory'?'No selected stack can be moved. Equipment copies move one exact copy at a time; selected auto-eat food stays in Inventory.':'No selected stack can be moved. Equipment copies move one exact copy at a time.');
   let next=state;
   for(const itemId of summary.transferableIds){
     const source=from==='inventory'?next.inventory:next.bank;

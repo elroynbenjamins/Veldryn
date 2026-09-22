@@ -1,5 +1,5 @@
 import type {CoopRole} from './coop-ui-contract';
-import {validateCoopRunView,type CoopCombatReplayView,type CoopRunView} from './coop-presentation';
+import {parseCoopEncounterPreview,validateCoopRunView,type CoopCombatReplayView,type CoopEncounterPreviewView,type CoopRunView} from './coop-presentation';
 
 export type CoopEventExpeditionStatus='preview'|'available';
 
@@ -34,7 +34,7 @@ export interface CoopEventRunServerProjection{
   decisionId?:string;
   decisionRevision?:number;
   team:Array<{memberId:string;displayName:string;role:CoopRole;classId:string;bodyPresentation?:'male'|'female';companionId?:string;kind:'controller'|'echo';effectiveLevel:number;currentHp?:number;maximumHp?:number;downed?:boolean}>;
-  options:Array<{nodeId:string;kind:string;risk:number;rewardTag:string;title?:string;mechanicDelta?:number;objectiveDelta?:number;reactionLabel?:string}>;
+  options:Array<{nodeId:string;kind:string;risk:number;rewardTag:string;title?:string;mechanicDelta?:number;objectiveDelta?:number;reactionLabel?:string;encounterPreview?:CoopEncounterPreviewView}>;
   mechanic?:{id:string;label:string;description:string;value:number;maxValue:number;lowThreshold:number;highThreshold:number;status:'critical'|'steady'|'strong';bossAttackMultiplier:number;rewardBonus:number;bossEffect:string};
   objective?:{id:string;label:string;description:string;count:number;maxCount:number;effect:string;completed:boolean;bossAttackMultiplier:number;bossHpMultiplier:number;bossDefenseMultiplier:number;rewardBonus:number;preBossHealPct:number;effectText:string};
   bossMechanic?:{profileId:string;label:string;summary:string;tone:'benefit'|'mixed'|'danger';telegraph?:{bossName:string;phases:Array<{id:string;label:string;hpPct:number;objectiveSensitive:boolean}>;castAbilities:Array<{id:string;label:string;castMs:number;cooldownMs:number;interruptible:boolean;objectiveSensitive:boolean}>;suppressedAbilities:Array<{id:string;label:string}>}};
@@ -101,7 +101,7 @@ export function presentEventExpeditionRun(projection:CoopEventRunServerProjectio
     if(option.reactionLabel?.trim())effects.push(option.reactionLabel.trim());
     if(projection.mechanic&&mechanicDelta!==0)effects.push(`${projection.mechanic.label} ${mechanicDelta>0?'+':''}${mechanicDelta}`);
     if(projection.objective&&objectiveDelta!==0)effects.push(`${projection.objective.label} ${objectiveDelta>0?'+':''}${objectiveDelta}`);
-    return {nodeId:option.nodeId,title,kind:option.kind,risk:`Risk ${option.risk}`,reward:effects.join(' · ')||option.rewardTag.replace(/_/g,' ')};
+    const encounterPreview=parseCoopEncounterPreview(option.encounterPreview);return {nodeId:option.nodeId,title,kind:option.kind,risk:`Risk ${option.risk}`,reward:effects.join(' · ')||option.rewardTag.replace(/_/g,' '),...(encounterPreview?{encounterPreview}:{})};
   });
   const marks=projection.settlement.rewardMarks??0;
   const run:CoopRunView={

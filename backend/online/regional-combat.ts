@@ -94,7 +94,7 @@ export function regionalCombatHandlerV1(services:GameplayServices){
    return json(await runtime.start(accountId,row as unknown as RegionalCombatStartRequestV1));
   }catch(error){
    const message=error instanceof Error?error.message:'server_error';
-   const status=error instanceof GameplayError?error.status:/owner_mismatch|not_owned/.test(message)?403:/invalid_|unknown_|locked|below_level|not_active/.test(message)?400:503;
+   const status=error instanceof GameplayError?error.status:/owner_mismatch|not_owned/.test(message)?403:/cooldown|daily_cap/.test(message)?429:/invalid_|unknown_|locked|below_level|not_active/.test(message)?400:503;
    return json({error:status===503?'Server temporarily unavailable. Retry the pending action.':message},status);
   }
  };

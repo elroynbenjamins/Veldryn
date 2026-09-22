@@ -4,6 +4,7 @@ import {masteryPointsForRank,professionMasteryView} from '../src/core/profession
 import {previewAlchemyReward,startAlchemyBatch} from '../src/core/alchemy';
 import {claimForgeJob,equipmentCraftDurationSeconds,startEquipmentCraft,timedEquipmentRecipe} from '../src/core/equipment-crafting-queue';
 import {RECIPES} from '../src/content/skills';
+import {professionMasteryDiscoveryRecords,professionMasteryRecommendedTarget} from '../src/core/profession-mastery-presentation';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 function equal(actual:unknown,expected:unknown,message:string){if(actual!==expected)throw new Error(`${message}: expected ${String(expected)}, got ${String(actual)}`)}
@@ -38,6 +39,33 @@ equal(professionMasteryView('test',{actionId:'test',points:masteryPointsForRank(
 equal(professionMasteryView('test',{actionId:'test',points:masteryPointsForRank(30),updatedAtMs:1}).speedBonusBps,300,'Profession Mastery rank 30 grants +3% speed');
 equal(professionMasteryView('test',{actionId:'test',points:masteryPointsForRank(40),updatedAtMs:1}).yieldBonusBps,500,'Profession Mastery rank 40 raises total yield bonus to +5%');
 equal(professionMasteryView('test',{actionId:'test',points:masteryPointsForRank(50),updatedAtMs:1}).speedBonusBps,500,'Profession Mastery rank 50 raises total speed bonus to +5%');
+
+let masteryDiscovery=createCharacter(newGame(Date.UTC(2026,8,15,11)),'IRONWARDEN','MasteryDiscovery','male');
+masteryDiscovery={...masteryDiscovery,account:{...masteryDiscovery.account,professionMasteryByAction:{
+ GREENWOOD_TREE:{actionId:'GREENWOOD_TREE',points:masteryPointsForRank(9),updatedAtMs:1},
+ IRONWOOD_TREE:{actionId:'IRONWOOD_TREE',points:masteryPointsForRank(30),updatedAtMs:2},
+ COPPER_VEIN:{actionId:'COPPER_VEIN',points:masteryPointsForRank(50),updatedAtMs:3},
+}}};
+const closestMastery=professionMasteryDiscoveryRecords(masteryDiscovery,{sort:'closest_r50',status:'all'});
+equal(closestMastery[0]?.actionId,'IRONWOOD_TREE','Closest-to-R50 sorting favors the nearest unfinished trained action instead of completed R50 records');
+equal(closestMastery[closestMastery.length-1]?.actionId,'COPPER_VEIN','Closest-to-R50 sorting keeps completed R50 records after unfinished targets');
+const highestMastery=professionMasteryDiscoveryRecords(masteryDiscovery,{sort:'highest_rank',status:'all'});
+equal(highestMastery[0]?.actionId,'COPPER_VEIN','Highest Rank sorting surfaces the mastered R50 action first');
+const bonusLeftMastery=professionMasteryDiscoveryRecords(masteryDiscovery,{status:'bonus_left'});
+ok(bonusLeftMastery.some(row=>row.actionId==='GREENWOOD_TREE')&&bonusLeftMastery.some(row=>row.actionId==='IRONWOOD_TREE'),'Unearned-bonus filtering keeps trained actions that still have meaningful bonuses');
+ok(!bonusLeftMastery.some(row=>row.actionId==='COPPER_VEIN'),'Unearned-bonus filtering removes fully mastered actions');
+const masteredOnly=professionMasteryDiscoveryRecords(masteryDiscovery,{status:'mastered'});
+equal(masteredOnly.length,1,'Mastered-only filtering returns only R50 records');
+equal(masteredOnly[0]?.actionId,'COPPER_VEIN','Mastered-only filtering preserves the completed action');
+const greenfieldsMastery=professionMasteryDiscoveryRecords(masteryDiscovery,{status:'all',regionId:'GREENFIELDS'});
+equal(greenfieldsMastery.length,1,'Region filtering narrows trained mastery to the selected region');
+equal(greenfieldsMastery[0]?.actionId,'GREENWOOD_TREE','Region filtering uses the real gathering location metadata');
+const woodcuttingMastery=professionMasteryDiscoveryRecords(masteryDiscovery,{status:'all',skillId:'woodcutting'});
+equal(woodcuttingMastery.length,2,'Skill filtering returns only trained mastery from the selected profession');
+const recommendedMastery=professionMasteryRecommendedTarget(masteryDiscovery);
+equal(recommendedMastery?.actionId,'GREENWOOD_TREE','Recommended mastery target favors the nearest meaningful bonus from existing progress');
+equal(recommendedMastery?.targetRank,10,'Recommended mastery target points to the next authored bonus rank rather than an arbitrary checkpoint');
+equal(recommendedMastery?.pointsToTarget,masteryPointsForRank(10)-masteryPointsForRank(9),'Recommended mastery target exposes the remaining mastery actions to that bonus');
 
 const masteryStart=Date.UTC(2026,8,15,12);
 let masteryJournal=createCharacter(newGame(masteryStart),'IRONWARDEN','MasteryJournal','male');

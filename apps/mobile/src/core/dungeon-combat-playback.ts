@@ -94,9 +94,41 @@ export interface PlaybackCombatStatus{
   abilityId?:string;
   stacks:number;
   remainingMs:number;
+  source?:'ability'|'gem';
 }
 
 const STATUS_PRIORITY:Record<CoopCombatReplayStatusView['kind'],number>={dot:0,debuff:1,hot:2,buff:3};
+
+const GEM_STATUS_PRESENTATION:Readonly<Record<string,{label:string;kind:'buff'|'debuff'}>>=Object.freeze({
+  'gem:momentum':{label:'Momentum',kind:'buff'},
+  'gem:critical_surge':{label:'Critical Surge',kind:'buff'},
+  'gem:flow':{label:'Flow',kind:'buff'},
+  'gem:unyielding':{label:'Unyielding',kind:'buff'},
+  'gem:predator_boost':{label:'Predator',kind:'buff'},
+  'gem:opening_phase':{label:'Opening Strike',kind:'buff'},
+  'gem:retaliation_ready':{label:'Retaliation Ready',kind:'buff'},
+  'gem:battle_offense_ready':{label:'Offense Ready',kind:'buff'},
+  'gem:battle_support_ready':{label:'Support Ready',kind:'buff'},
+  'gem:damage_reduction':{label:'Guard',kind:'buff'},
+  'gem:shared_resolve':{label:'Shared Resolve',kind:'buff'},
+  'gem:benediction_charge':{label:'Benediction',kind:'buff'},
+  'gem:haste_bonus':{label:'Haste',kind:'buff'},
+  'gem:opportunist_ready':{label:'Opportunist Mark',kind:'debuff'},
+});
+
+function playbackGemStatuses(replay:CoopCombatReplayView,now:number,id:string):PlaybackCombatStatus[]{
+  let latest=undefined as (CoopCombatReplayView['gemStates'] extends Array<infer T>|undefined?T:never)|undefined;
+  for(const snapshot of replay.gemStates??[]){if(snapshot.atMs<=now)latest=snapshot;else break;}
+  if(!latest)return [];
+  const result:PlaybackCombatStatus[]=[];
+  for(const state of latest.states){
+    if(state.targetId!==id)continue;
+    const presentation=GEM_STATUS_PRESENTATION[state.tag];if(!presentation)continue;
+    const activeExpiries=state.expiriesAtMs.filter(expiry=>expiry>now);if(!activeExpiries.length)continue;
+    result.push({kind:presentation.kind,tag:state.tag,label:presentation.label,stacks:activeExpiries.length,remainingMs:Math.max(...activeExpiries)-now,source:'gem'});
+  }
+  return result;
+}
 
 export function playbackCombatantStatuses(replay:CoopCombatReplayView|undefined,index:number,id:string|undefined):PlaybackCombatStatus[]{
   if(!replay||!id)return [];
@@ -106,9 +138,10 @@ export function playbackCombatantStatuses(replay:CoopCombatReplayView|undefined,
   for(const status of active){
     const key=`${status.kind}:${status.tag}:${status.abilityId??status.label}`,remainingMs=Math.max(0,status.expiresAtMs-now),existing=grouped.get(key);
     if(existing){existing.stacks+=1;existing.remainingMs=Math.max(existing.remainingMs,remainingMs);continue;}
-    grouped.set(key,{kind:status.kind,tag:status.tag,label:status.label,abilityId:status.abilityId,stacks:1,remainingMs});
+    grouped.set(key,{kind:status.kind,tag:status.tag,label:status.label,abilityId:status.abilityId,stacks:1,remainingMs,source:'ability'});
   }
-  return [...grouped.values()].sort((a,b)=>STATUS_PRIORITY[a.kind]-STATUS_PRIORITY[b.kind]||a.remainingMs-b.remainingMs||a.label.localeCompare(b.label));
+  const merged=[...grouped.values(),...playbackGemStatuses(replay,now,id)];
+  return merged.sort((a,b)=>STATUS_PRIORITY[a.kind]-STATUS_PRIORITY[b.kind]||(a.source==='gem'?-1:0)-(b.source==='gem'?-1:0)||a.remainingMs-b.remainingMs||a.label.localeCompare(b.label));
 }
 
 export function playbackRecentCues(replay:CoopCombatReplayView,index:number):CoopCombatReplayCueView[]{

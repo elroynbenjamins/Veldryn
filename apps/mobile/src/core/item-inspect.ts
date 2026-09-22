@@ -27,6 +27,7 @@ const title=(value:string)=>value.toLowerCase().split('_').map(part=>part?part[0
 const pct=(value:number)=>value>=.1?`${Math.round(value*100)}%`:`${(value*100).toFixed(value<.01?2:1)}%`;
 
 export function itemInspectModel(state:GameState,ref:string){
+  const sourceState=state;
   state=materializeGearInstances(state);
   const directInstance=gearInstanceById(state,ref),item=itemDef(directInstance?.itemId??ref);
   let instance=directInstance;
@@ -69,21 +70,31 @@ export function itemInspectModel(state:GameState,ref:string){
   let gearDecision:ItemGearDecision|undefined;
 
   if(item.type==='gear'){
-    const gearRef=instance?.id,enhancement=gearRef?gearEnhancement(state,gearRef):{rank:0,failures:0,gemIds:[] as string[]},quote=upgradeQuote(state,gearRef??item.id);
-    const enhanced=gearRef?enhancedGearStats(state,gearRef):gearStatsAtRank(item.id,0);
+    const gearRef=instance?.id,inspectState=gearRef?state:sourceState,inspectRef=gearRef??item.id;
+    const enhancement=gearEnhancement(inspectState,inspectRef),quote=upgradeQuote(inspectState,inspectRef);
+    const enhanced=gearRef?enhancedGearStats(state,gearRef):gearStatsAtRank(item.id,enhancement.rank);
     stats=enhanced;
-    upgrade={rank:enhancement.rank,nextRank:quote.targetRank,successChance:quote.successChance,dust:quote.dust,cores:quote.cores,gold:quote.gold,maxed:quote.maxed,failures:enhancement.failures,equipped:!!state.character&&!!item.slot&&state.character.equipmentInstanceIds?.[item.slot]===gearRef};
-    const capacity=gemSocketCapacity(gearRef??item.id,state),slotState=gearRef?gemSocketState(state,gearRef):{filled:0,capacity,statGemId:undefined,effectGemId:undefined};
+    upgrade={rank:enhancement.rank,nextRank:quote.targetRank,successChance:quote.successChance,dust:quote.dust,cores:quote.cores,gold:quote.gold,maxed:quote.maxed,failures:enhancement.failures,equipped:!!state.character&&!!item.slot&&(gearRef?state.character.equipmentInstanceIds?.[item.slot]===gearRef:state.character.equipment[item.slot]===item.id)};
+    const capacity=gemSocketCapacity(inspectRef,inspectState),slotState=gemSocketState(inspectState,inspectRef);
     sockets={filled:slotState.filled,capacity,statGemName:slotState.statGemId?itemDef(slotState.statGemId).name:undefined,effectGemName:slotState.effectGemId?itemDef(slotState.effectGemId).name:undefined};
-    if(state.character&&item.slot&&gearRef){
+    if(state.character&&item.slot){
       const compatible=!item.classRestriction||item.classRestriction===state.character.classId;
       const before=effectiveStats(state),currentId=state.character.equipment[item.slot],currentInstance=equippedGearInstance(state,item.slot),currentRef=currentInstance?.id??currentId,currentItem=currentId?itemDef(currentId):undefined,currentRank=currentRef?gearEnhancement(state,currentRef).rank:0;
       const gems=enhancement.gemIds.map(id=>{const gem=itemDef(id),kind=gemSocketKind(id);return {id,name:gem.name,kind,detail:kind==='stat'?('+'+Math.round((gem.gemPercent??0)*100)+'% '+title(gem.gemStat??'stat')):gemEffectDescription(id),stat:kind==='stat'?title(gem.gemStat??'stat'):'Effect',percent:kind==='stat'?(gem.gemPercent??0):(gem.gemEffectValue??0)};});
       let after=before,maxAfter=before,previewState=state,maxItemStats=enhanced;
       if(compatible){try{
-        previewState=previewEquipment(state,gearRef);after=effectiveStats(previewState);
-        const maxState=updateGearInstance(state,gearRef,row=>({...row,enhancement:{...row.enhancement,rank:MAX_UPGRADE_RANK}}));
-        maxItemStats=enhancedGearStats(maxState,gearRef);maxAfter=effectiveStats(previewEquipment(maxState,gearRef));
+        if(gearRef){
+          previewState=previewEquipment(state,gearRef);after=effectiveStats(previewState);
+          const maxState=updateGearInstance(state,gearRef,row=>({...row,enhancement:{...row.enhancement,rank:MAX_UPGRADE_RANK}}));
+          maxItemStats=enhancedGearStats(maxState,gearRef);maxAfter=effectiveStats(previewEquipment(maxState,gearRef));
+        }else{
+          previewState=previewEquipment(state,item.id);
+          previewState={...previewState,character:{...previewState.character!,gearEnhancements:{...(previewState.character!.gearEnhancements??{}),[item.id]:enhancement}}};
+          after=effectiveStats(previewState);
+          const maxEnhancement={...enhancement,rank:MAX_UPGRADE_RANK};
+          const maxState:GameState={...previewState,character:{...previewState.character!,gearEnhancements:{...(previewState.character!.gearEnhancements??{}),[item.id]:maxEnhancement}}};
+          maxItemStats=gearStatsAtRank(item.id,MAX_UPGRADE_RANK);maxAfter=effectiveStats(maxState);
+        }
       }catch{}}
       const set=equipmentSetDef(item.equipmentSetId);
       let setDecision:ItemGearDecision['set'];
@@ -92,7 +103,7 @@ export function itemInspectModel(state:GameState,ref:string){
         const milestones=[{pieces:2,bonus:set.twoPiece},{pieces:4,bonus:set.fourPiece},{pieces:6,bonus:set.sixPiece},{pieces:8,bonus:set.eightPiece},{pieces:10,bonus:set.tenPiece}];
         setDecision={name:set.name,currentPieces,previewPieces,required:10,reached:[...milestones].reverse().find(row=>row.pieces<=previewPieces),next:milestones.find(row=>row.pieces>previewPieces),active:milestones.filter(row=>row.pieces<=previewPieces).map(row=>({...row,runtime:row.pieces===6?'trigger-hook-pending':'live'} as const))};
       }
-      gearDecision={compatible,alreadyEquipped:currentInstance?.id===gearRef,replaces:currentItem?{itemId:currentItem.id,name:currentItem.name,rank:currentRank}:undefined,
+      gearDecision={compatible,alreadyEquipped:gearRef?currentInstance?.id===gearRef:currentId===item.id,replaces:currentItem?{itemId:currentItem.id,name:currentItem.name,rank:currentRank}:undefined,
         loadoutBefore:{attack:before.attack,defense:before.defense,hp:before.hp,power:before.power},loadoutAfter:{attack:after.attack,defense:after.defense,hp:after.hp,power:after.power},
         loadoutDelta:{attack:after.attack-before.attack,defense:after.defense-before.defense,hp:after.hp-before.hp,power:after.power-before.power},maxRank:MAX_UPGRADE_RANK,maxItemStats,
         maxLoadoutGain:{attack:maxAfter.attack-after.attack,defense:maxAfter.defense-after.defense,hp:maxAfter.hp-after.hp,power:maxAfter.power-after.power},gems,set:setDecision};

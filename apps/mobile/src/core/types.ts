@@ -126,6 +126,7 @@ export interface RewardBundle {
   craftingActions?:number; nextBrewRemaining?:number; craftingCompletedAtMs?:number[]; faithActions?:number; faithXp?:number; holyWaterConsumed?:number; faithWaterRefund?:number; nextFaithRemaining?:number; nextProgressFraction?:number; nextRewardRemainders?:Record<string,number>;
   masteryMaterialRemainders?:Record<string,number>;
   classSkillXp?:Array<{skillId:string;xp:number}>;
+  huntingXp?:number;
   trainingActions?:number;
   xp:number; gold:number; items:ItemStack[]; kills:number; elapsedSeconds:number; qualifyingActivitySeconds?:number;
   foodConsumed?:number; endHp?:number; stoppedReason?:string;

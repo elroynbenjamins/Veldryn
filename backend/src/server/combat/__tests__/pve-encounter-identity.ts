@@ -95,6 +95,7 @@ const interruptRun=simulateCombat({seed:'mechanic-aware-interrupt',players:[laun
 const interrupt=interruptRun.events.find(event=>event.type==='interrupt');
 assert.ok(interrupt,'Hexweaver should react to an interruptible cast');
 assert.equal(interrupt!.targetId,'CASTER','interrupt AI must target the actual interruptible caster rather than a random enemy');
+assert.equal(interrupt!.interruptedAbilityId,'DANGER_CAST','interrupt events must preserve the interrupted PvE ability for simulation telemetry');
 assert.equal(launchPlayer('Hexweaver',25).abilities.find(ability=>ability.id==='HX_NULL')?.target,'interruptible_casting_enemy');
 for(const className of ['Ironwarden','Bastion','Dreadguard'] as const){
  const ability=launchPlayer(className,25).abilities.find(item=>item.effects.some(effect=>effect.kind==='interrupt'));

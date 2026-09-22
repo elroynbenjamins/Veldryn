@@ -33,7 +33,7 @@ ok(card.includes('BARRIER +')&&card.includes('barrierTrack'),'Party combat cards
 ok(card.includes("boss?'BOSS HP':'HP'")&&card.includes('enemyHpTrack'),'Enemy and boss cards must show replay-time HP');
 ok(stage.includes('playbackCombatantState')&&stage.includes('currentHp={enemyState?.hp}')&&stage.includes('combatShield={enemyState?.shield??0}'),'Battlefield must drive boss HP and shield from replay snapshots');
 ok(stage.includes('ready:state.hp>0')&&stage.includes('currentHp:state.hp'),'Party downed and HP state must follow the current replay cue rather than final run state');
-ok(card.includes('LOW HP')&&card.includes('criticalRow'),'Party cards must call out critical health before a down');
+ok(card.includes('LOW')&&card.includes('criticalInline'),'Party cards must call out critical health inline without adding another card row');
 ok(card.includes('phaseThreshold')&&card.includes('phase.hpPct'),'Boss HP bar must show authoritative phase threshold markers');
 ok(stage.includes('bossPhases={boss?run.bossMechanic?.telegraph?.phases:undefined}'),'Battlefield must pass authoritative boss phase thresholds into the encounter card');
 ok(card.includes('CombatStatusStrip')&&card.includes('statusStrip'),'Combat cards must render a compact status-effect strip');
@@ -58,6 +58,9 @@ ok(stage.includes("complete?'ENCOUNTER RECAP':paused?'PAUSED':'NOW PLAYING'")&&s
 ok(stage.includes("accessibilityLabel={showLog?'Hide combat battle log':'Show combat battle log'}")&&stage.includes("recent.length&&(!complete||showLog)"),'Completed replay must collapse the detailed battle log by default');
 ok(stage.includes('setPaused(false);setShowLog(false);setCueIndex(0)'),'Replay encounter must reset pause and collapsed-log state');
 ok(!stage.includes('member:{minHeight:126')&&!stage.includes('avatarFrame:{height:44')&&!stage.includes('castWarning:{minHeight:34'),'Dungeon stage must not retain obsolete pre-profile-card combat styles');
+ok(!card.includes('No companion assist')&&!card.includes('noAssist:'),'Party cards must not spend vertical space on empty companion placeholders');
+ok(card.includes('card:{minHeight:136')&&card.includes('combatInfo:{padding:4,gap:2'),'Party combat cards must keep the compact mobile density budget');
+ok(stage.includes("{assists?<StateChip")&&!stage.includes("'NO ASSISTS'"),'Combat header must only show companion-assist summary when assists actually exist');
 for(const enemy of ['The Hollow Regent','The Coinbound Captain','The Rimebell Colossus','Veilshade Stalker','Ledger Hexer','Bellfrost Spirit'])ok(enemyArt.toLowerCase().includes(enemy.toLowerCase()),enemy+' must have registered encounter artwork');
 ok(enemyArt.includes("require('../../assets/dungeon-enemies-v1/"),'Enemy artwork must be bundled as static Metro assets');
 

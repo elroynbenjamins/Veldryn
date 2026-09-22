@@ -36,7 +36,7 @@ const fenReaver=buildExpeditionEncounter({encounterId:'ASH_FEN_BATTLE_03'});
 assert.ok(fenReaver[0].abilities.some(ability=>ability.effects.some(effect=>effect.executeBelowHpPct!==undefined)));
 assert.ok(expeditionEncounterPreview('ASH_FEN_BATTLE_03')!.mechanics.some(item=>item.id==='execute'));
 
-const crucibleHex=buildExpeditionEncounter({encounterId:'ASH_CRUCIBLE_BATTLE_02'});
+const crucibleHex=buildExpeditionEncounter({encounterId:'ASH_CRUCIBLE_BATTLE_01'});
 assert.ok(crucibleHex[1].abilities.some(ability=>ability.effects.some(effect=>effect.kind==='debuff'&&effect.tag==='damage_taken')));
 
 const bellbeast=buildExpeditionEncounter({encounterId:'BOSS_EXP_BELLBEAST'})[0];

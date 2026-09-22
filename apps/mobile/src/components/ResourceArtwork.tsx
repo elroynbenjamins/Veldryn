@@ -1,5 +1,6 @@
 import {Image,StyleSheet,View} from 'react-native';
 import {resourceIconSource} from '../theme/resource-assets';
+import {CONSUMABLE_ART_CELL,CONSUMABLE_ART_SHEET_SIZE,consumableArtworkCell,consumableArtworkSheet} from '../theme/consumable-assets';
 import {
   REGIONAL_RESOURCE_CELL,
   REGIONAL_RESOURCE_SHEET_HEIGHT,

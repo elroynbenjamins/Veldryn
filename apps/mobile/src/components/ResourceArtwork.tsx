@@ -7,6 +7,13 @@ import {
   regionalResourceCell,
   regionalResourceSheet,
 } from '../theme/regional-resource-assets';
+import {
+  REMAINING_ITEM_CELL,
+  REMAINING_ITEM_SHEET_HEIGHT,
+  REMAINING_ITEM_SHEET_WIDTH,
+  remainingItemCell,
+  remainingItemSheet,
+} from '../theme/remaining-item-assets';
 import {C,radii} from '../theme/theme';
 
 export function ResourceArtwork({itemId,size=58,framed=true}:{itemId:string;size?:number;framed?:boolean}){
@@ -25,6 +32,26 @@ export function ResourceArtwork({itemId,size=58,framed=true}:{itemId:string;size
             height:REGIONAL_RESOURCE_SHEET_HEIGHT*scale,
             left:-cell.column*size,
             top:-cell.row*size,
+          }}
+        />
+      </View>
+    </View>;
+  }
+  const remaining=remainingItemCell(itemId);
+  if(remaining){
+    const scale=size/REMAINING_ITEM_CELL;
+    return <View style={[s.art,{width:size,height:size},framed&&s.frame]}>
+      <View style={{width:size,height:size,overflow:'hidden'}}>
+        <Image
+          source={remainingItemSheet}
+          resizeMode="stretch"
+          fadeDuration={0}
+          style={{
+            position:'absolute',
+            width:REMAINING_ITEM_SHEET_WIDTH*scale,
+            height:REMAINING_ITEM_SHEET_HEIGHT*scale,
+            left:-remaining.column*size,
+            top:-remaining.row*size,
           }}
         />
       </View>

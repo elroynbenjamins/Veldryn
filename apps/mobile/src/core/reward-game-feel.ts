@@ -3,10 +3,12 @@ import {itemRarity,type ItemRarity} from './item-rarity';
 import {faithLevel} from './faith';
 import {newlyUnlockedCrossSkillNames,skillMilestoneOverview,skillMilestonesBetween} from './skill-milestones';
 import type {GameState,RewardBundle,SkillId} from './types';
+import {professionMasteryRank} from './profession-mastery-v40';
+import {professionMasteryActionDefinition,professionMasteryRelevantBonusSteps} from './profession-mastery-presentation';
 
 export interface RewardProgressionUnlockGroup{category:string;items:string[]}
 export interface RewardProgressionMoment{
-  kind:'character_level'|'skill_level';
+  kind:'character_level'|'skill_level'|'mastery_rank';
   id:string;
   label:string;
   beforeLevel:number;
@@ -14,6 +16,9 @@ export interface RewardProgressionMoment{
   unlocks:string[];
   unlockGroups?:RewardProgressionUnlockGroup[];
   nextMilestone?:{level:number;items:string[]};
+  skillId?:SkillId;
+  actionId?:string;
+  mastered?:boolean;
 }
 export interface RewardLootHighlight{
   itemId:string;
@@ -30,6 +35,19 @@ const SKILL_LABELS:Record<SkillId,string>={
  exploration:'Exploration',tailoring:'Tailoring',enchanting:'Enchanting',faith:'Faith',
 };
 const RARITY_ORDER:ItemRarity[]=['common','uncommon','rare','epic','legendary','mythic'];
+export function masteryRankProgressionMoments(before:GameState|null|undefined,after:GameState|null|undefined):RewardProgressionMoment[]{
+ if(!before||!after)return [];
+ const previous=before.account.professionMasteryByAction??{},next=after.account.professionMasteryByAction??{},moments:RewardProgressionMoment[]=[];
+ for(const [actionId,record] of Object.entries(next)){
+  const beforeRank=professionMasteryRank(previous[actionId]?.points??0),afterRank=professionMasteryRank(record.points);
+  if(afterRank<=beforeRank)continue;
+  const definition=professionMasteryActionDefinition(actionId);if(!definition)continue;
+  const relevant=professionMasteryRelevantBonusSteps(actionId),crossed=relevant.filter(step=>step.rank>beforeRank&&step.rank<=afterRank),upcoming=relevant.find(step=>step.rank>afterRank);
+  moments.push({kind:'mastery_rank',id:actionId,actionId,skillId:definition.skillId,label:definition.name+' Mastery',beforeLevel:beforeRank,afterLevel:afterRank,unlocks:crossed.map(step=>step.label),unlockGroups:crossed.length?[{category:'MASTERY BONUS',items:crossed.map(step=>step.label)}]:undefined,nextMilestone:upcoming?{level:upcoming.rank,items:[upcoming.label]}:undefined,mastered:afterRank>=50&&beforeRank<50});
+ }
+ return moments.sort((a,b)=>Number(!!b.mastered)-Number(!!a.mastered)||b.afterLevel-a.afterLevel||a.label.localeCompare(b.label));
+}
+
 /** Derives celebration-worthy level transitions from committed state, never from predicted XP. */
 export function rewardProgressionMoments(before:GameState|null|undefined,after:GameState|null|undefined):RewardProgressionMoment[]{
   if(!before||!after)return [];
@@ -59,6 +77,7 @@ export function rewardProgressionMoments(before:GameState|null|undefined,after:G
       moments.push({kind:'skill_level',id:'faith',label:'Faith',beforeLevel,afterLevel,unlocks,unlockGroups,nextMilestone:overview.nextLevel?{level:overview.nextLevel,items:overview.next.slice(0,3).map(row=>row.title)}:undefined});
     }
   }
+  moments.push(...masteryRankProgressionMoments(before,after));
   return moments;
 }
 
@@ -78,7 +97,7 @@ export function rewardFollowUpCandidates(args:{progressionMoments:readonly Rewar
   if(args.companionUnlockCount>0)candidates.push({kind:'companion',label:args.companionUnlockCount===1?'View new companion':'View new companions'});
   if(args.petDropCount>0)candidates.push({kind:'pet',label:args.petDropCount===1?'View pet collection':'View new pets'});
   if(args.lootHighlights.some(row=>row.spotlight&&(row.type==='gear'||row.type==='gem')))candidates.push({kind:'inventory',label:'Review new loot'});
-  const skill=args.progressionMoments.find(moment=>moment.kind==='skill_level'&&moment.unlocks.length>0);
-  if(skill)candidates.push({kind:'skill',label:`View ${skill.label} unlocks`,skillId:skill.id});
+  const skill=args.progressionMoments.find(moment=>(moment.kind==='skill_level'||moment.kind==='mastery_rank')&&moment.unlocks.length>0&&!!(moment.skillId??(moment.kind==='skill_level'?moment.id:undefined)));
+  if(skill)candidates.push({kind:'skill',label:skill.kind==='mastery_rank'?`View ${skill.label}`:`View ${skill.label} unlocks`,skillId:skill.skillId??skill.id});
   return candidates;
 }

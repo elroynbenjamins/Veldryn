@@ -73,7 +73,7 @@ ok(stage.includes('layout.contributionIdentityMinWidth')&&stage.includes('layout
 ok(card.includes('selectedForInspect')&&card.includes('Inspect ${slot.name} combat details'),'Party combat cards must expose tap-to-inspect interaction without adding a permanent button row');
 ok(card.includes('Inspect ${name} combat details')&&card.includes('inspectSelected'),'Boss/enemy combat cards must support the same inspect interaction and selected state');
 ok(stage.includes('inspectKey')&&stage.includes("toggleInspect('enemy')")&&stage.includes('slotInspectKey(slot)'),'Battlefield must track inspection for both enemy and all four party cards');
-ok(stage.includes('if(!complete&&!reduceMotion)setPaused(true)'),'Opening combat inspection during active playback must pause automatic cue advance for readability');
+ok(stage.includes('if(!reduceMotion&&cues.length>1)setPaused(true)'),'Opening combat inspection must enter a step-capable paused replay state when replay cues are available');
 ok(stage.includes('<CombatantInspectPanel')&&stage.includes('onClose={()=>setInspectKey(undefined)}'),'Selected combatant must render a closable compact inspection panel');
 ok(inspect.includes('COMBAT INSPECT')&&inspect.includes('ACTIVE EFFECTS'),'Inspection panel must clearly separate combat identity and effect details');
 ok(inspect.includes('status.label')&&inspect.includes('status.stacks>1')&&inspect.includes('remaining(status.remainingMs)'),'Inspection panel must show full effect name, stacks and remaining duration rather than only compact codes');

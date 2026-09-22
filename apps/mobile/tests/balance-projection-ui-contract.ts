@@ -24,4 +24,10 @@ ok(encounters.includes('dropExpectation(drop.chance'),'Drop rows must derive odd
 ok(encounters.includes('BASELINE PACE')&&encounters.includes('kills/hr'),'Combat details must show corrected baseline hunt pace');
 ok(encounters.includes('~1/')&&encounters.includes('avg '),'Drop rows must show one-in-N odds and average base find time');
 
+const recipe=read('src/components/RecipeCard.tsx');
+const skillNavigation=read('src/core/skill-progression-navigation.ts');
+ok(recipe.includes('row.estimateLabel')&&recipe.includes('sourceEstimate'),'Missing recipe materials must show compact projected acquisition time when a trustworthy source rate exists');
+ok(skillNavigation.includes('acquisitionProjectionForDestination')&&skillNavigation.includes("current pace")&&skillNavigation.includes("base pace"),'Recipe source estimates must distinguish player-current gathering pace from baseline combat pace');
+ok(skillNavigation.includes("b.key.startsWith('prerequisite:')")&&skillNavigation.includes('b.estimatedSeconds'),'Recipe source list must keep prerequisites first and then surface the longest estimated material bottleneck');
+
 console.log('PASS: player-facing progression bars, ETAs and drop expectations use shared balance projections');

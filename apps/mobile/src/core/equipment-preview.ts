@@ -14,5 +14,7 @@ export function previewEquipment(state:GameState,ref:string):GameState{
   const id=instance?.itemId??ref,item=itemDef(id);
   if(item.type!=='gear'||!item.slot)throw new Error('Only equipment can be previewed');
   if(item.classRestriction&&item.classRestriction!==ready.character!.classId)throw new Error('This equipment belongs to another class');
-  return {...ready,character:{...ready.character!,equipment:{...ready.character!.equipment,[item.slot]:id},equipmentInstanceIds:{...(ready.character!.equipmentInstanceIds??{}),...(instance?{[item.slot]:instance.id}:{})}}};
+  const equipmentInstanceIds={...(ready.character!.equipmentInstanceIds??{})};
+  if(instance)equipmentInstanceIds[item.slot]=instance.id;else delete equipmentInstanceIds[item.slot];
+  return {...ready,character:{...ready.character!,equipment:{...ready.character!.equipment,[item.slot]:id},equipmentInstanceIds}};
 }

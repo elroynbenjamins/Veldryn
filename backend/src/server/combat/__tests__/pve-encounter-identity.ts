@@ -1,6 +1,9 @@
 import {strict as assert} from 'node:assert';
 import {EXPEDITION_ENCOUNTERS} from '../content/expedition-encounters';
 import {buildExpeditionEncounter,expeditionEncounterPreview} from '../expedition-combat-service';
+import {simulateCombat} from '../engine';
+import {launchPlayer} from '../content/launch-combat';
+import type {CombatantDefinition} from '../types';
 
 const veil=buildExpeditionEncounter({encounterId:'EVENT_VEILBREAK_BATTLE_01'});
 const veilPreview=expeditionEncounterPreview('EVENT_VEILBREAK_BATTLE_01')!;
@@ -56,6 +59,29 @@ assert.deepEqual((fenPrime.phases??[]).map(phase=>phase.name),['Cracking Shell',
 const cruciblePrime=buildExpeditionEncounter({encounterId:'BOSS_EXP_PRIME'})[0];
 assert.ok(cruciblePrime.abilities.some(ability=>ability.name==='Molten Aegis'&&ability.effects.some(effect=>effect.kind==='shield')));
 assert.deepEqual((cruciblePrime.phases??[]).map(phase=>phase.name),['Tempered Shell','Overheat']);
+
+const zeroStats={maxHp:20_000,attackPower:0,healingPower:0,defense:0,accuracy:1000,evasion:0,critChance:0,critMultiplier:1.5,haste:0};
+const caster:CombatantDefinition={id:'CASTER',name:'Priority Caster',team:'enemies',role:'enemy',level:25,stats:zeroStats,basicAttackMs:99_999,basicAttackCoeff:0,abilities:[
+ {id:'DANGER_CAST',name:'Danger Cast',cooldownMs:99_999,castTimeMs:3000,target:'all_enemies',priority:100,interruptible:true,effects:[{kind:'damage',flat:100}]},
+]};
+const decoy:CombatantDefinition={id:'DECOY',name:'Decoy',team:'enemies',role:'enemy',level:25,stats:zeroStats,basicAttackMs:99_999,basicAttackCoeff:0,abilities:[]};
+const interruptRun=simulateCombat({seed:'mechanic-aware-interrupt',players:[launchPlayer('Hexweaver',25)],enemies:[decoy,caster],maxDurationMs:1200});
+const interrupt=interruptRun.events.find(event=>event.type==='interrupt');
+assert.ok(interrupt,'Hexweaver should react to an interruptible cast');
+assert.equal(interrupt!.targetId,'CASTER','interrupt AI must target the actual interruptible caster rather than a random enemy');
+assert.equal(launchPlayer('Hexweaver',25).abilities.find(ability=>ability.id==='HX_NULL')?.target,'interruptible_casting_enemy');
+for(const className of ['Ironwarden','Bastion','Dreadguard'] as const){
+ const ability=launchPlayer(className,25).abilities.find(item=>item.effects.some(effect=>effect.kind==='interrupt'));
+ assert.equal(ability?.target,'interruptible_casting_enemy',`${className} interrupt should use caster-aware targeting`);
+}
+
+const harmless:CombatantDefinition={id:'HARMLESS',name:'Harmless Target',team:'enemies',role:'enemy',level:25,stats:zeroStats,basicAttackMs:99_999,basicAttackCoeff:0,abilities:[]};
+const dawnRun=simulateCombat({seed:'support-no-waste-dawn',players:[launchPlayer('Dawnkeeper',25)],enemies:[harmless],maxDurationMs:700});
+assert.equal(dawnRun.events.some(event=>event.abilityId==='DK_HOT'&&(event.type==='status_apply'||event.type==='hot_tick')),false,'Dawnkeeper should not spend Sunthread at full health');
+const stoneRun=simulateCombat({seed:'support-no-waste-stone',players:[launchPlayer('Stonecaller',25)],enemies:[harmless],maxDurationMs:700});
+assert.equal(stoneRun.events.some(event=>event.abilityId==='SC_SHIELD'&&event.type==='shield'),false,'Stonecaller should not spend Resonant Armor at full health');
+assert.equal(launchPlayer('Dawnkeeper',25).abilities.find(ability=>ability.id==='DK_HOT')?.aiCondition,'ally_below_80');
+assert.equal(launchPlayer('Stonecaller',25).abilities.find(ability=>ability.id==='SC_SHIELD')?.aiCondition,'ally_below_80');
 
 for(const [encounterId,factory] of Object.entries(EXPEDITION_ENCOUNTERS)){
  const preview=expeditionEncounterPreview(encounterId);

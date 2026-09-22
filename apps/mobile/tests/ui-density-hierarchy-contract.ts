@@ -28,8 +28,14 @@ ok(home.includes('guideTop:')&&home.includes('RECOMMENDED')&&home.includes("bord
 ok(home.includes('utilityDisclosure:{minHeight:54')&&home.includes('utilityDisclosureOpen:{borderColor:C.info'),'Home secondary sections must use compact card-like disclosures with a clear open state');
 
 const account=read('src/screens/MoreScreen.tsx');
-ok(account.includes("minHeight:88"),'Account hub tiles must remain compact');
+ok(account.includes("minHeight:86"),'Account hub tiles must remain compact');
 ok(account.includes('<Text numberOfLines={singleColumn?2:1} style={s.description}>'),'Account tile descriptions must stay single-line by default and allow two lines only in narrow/large-text mode');
+ok(account.includes('ACCOUNT HUB')&&account.includes('header:{minHeight:86'),'Account must use a compact raised hub header rather than a plain title stack');
+ok(account.includes('attentionPriority')&&account.includes('attentionDestinations.slice(0,3)'),'Account must surface at most three immediate attention destinations before the full navigation grid');
+ok(account.includes('tileAttention:{borderWidth:1,borderColor:C.selectionLine')&&account.includes('iconFrameAttention:'),'Account destinations needing attention must gain restrained theme-semantic emphasis without changing layout');
+ok(account.includes("if(id==='Collections')return 'Inventory'")&&account.includes("if(id==='Achievements')return 'Quests'")&&account.includes("if(id==='MasteryHall')return 'Skills'"),'Account identity and prestige destinations must use distinct meaningful existing icons rather than all reusing Social');
+ok(!account.includes("items:['Home','Progression','Quests','Skills'"),'Account must not duplicate the persistent Skills bottom-navigation destination');
+ok(account.includes("singleColumn=width<350||fontScale>=1.25")&&account.includes('attentionQuickWide'),'Account hub and attention rail must preserve narrow-phone / large-text responsiveness');
 
 const skills=read('src/screens/SkillsScreen.tsx');
 ok(skills.includes("minHeight:112"),'Skills hub cards must remain compact');

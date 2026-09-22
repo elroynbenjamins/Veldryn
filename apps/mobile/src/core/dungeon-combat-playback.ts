@@ -1,4 +1,4 @@
-import type {CoopCombatReplayCueView,CoopCombatReplayView} from './coop-presentation';
+import type {CoopCombatReplayCombatantView,CoopCombatReplayCueView,CoopCombatReplayStateView,CoopCombatReplayView} from './coop-presentation';
 
 export const DUNGEON_COMBAT_PLAYBACK=Object.freeze({
   timeScale:.12,
@@ -65,6 +65,26 @@ export function playbackProgress(replay:CoopCombatReplayView,index:number):numbe
   if(!replay.cues.length)return replay.reason==='victory'?1:0;
   const safe=Math.max(0,Math.min(index,replay.cues.length-1)),at=replay.cues[safe].atMs;
   return replay.durationMs<=0?1:Math.max(0,Math.min(1,at/replay.durationMs));
+}
+
+export function playbackCombatant(replay:CoopCombatReplayView|undefined,idOrName:string|undefined):CoopCombatReplayCombatantView|undefined{
+  if(!replay||!idOrName?.trim())return undefined;
+  const key=idOrName.trim().toLocaleLowerCase();
+  return (replay.combatants??[]).find(item=>item.id===idOrName||item.name.trim().toLocaleLowerCase()===key);
+}
+
+export function playbackBossCombatant(replay:CoopCombatReplayView|undefined,name?:string):CoopCombatReplayCombatantView|undefined{
+  if(!replay)return undefined;
+  const list=replay.combatants??[],key=name?.trim().toLocaleLowerCase();
+  return list.find(item=>item.boss)||(key?list.find(item=>item.team==='enemies'&&item.name.trim().toLocaleLowerCase()===key):undefined)||list.find(item=>item.team==='enemies');
+}
+
+export function playbackCombatantState(replay:CoopCombatReplayView|undefined,index:number,id:string|undefined):({maxHp:number}&CoopCombatReplayStateView)|undefined{
+  if(!replay||!id)return undefined;
+  const combatant=(replay.combatants??[]).find(item=>item.id===id);
+  const safe=Math.max(0,Math.min(index,replay.cues.length-1));
+  for(let i=safe;i>=0;i--){const state=replay.cues[i]?.states?.find(item=>item.id===id);if(state)return{...state,maxHp:combatant?.maxHp??Math.max(1,state.hp)};}
+  return combatant?{id:combatant.id,hp:combatant.startHp,shield:combatant.startShield,maxHp:combatant.maxHp}:undefined;
 }
 
 export function playbackRecentCues(replay:CoopCombatReplayView,index:number):CoopCombatReplayCueView[]{

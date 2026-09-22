@@ -65,7 +65,7 @@ export function simulateCombat(input: CombatInput): CombatResult {
     const absorbed=Math.min(target.shield,raw); target.shield-=absorbed; const dealt=Math.max(0,raw-absorbed); target.hp=Math.max(0,target.hp-dealt); source.damageDone+=dealt; target.damageTaken+=dealt;
     gemOnDamageTakenV1(now,target,dealt);
     if(eventType==='damage'){const proc=gemOnDirectHitV1(now,source,target,abilityId,crit);if(proc.selfHeal>0&&source.alive){const amount=Math.min(source.definition.stats.maxHp-source.hp,source.definition.stats.maxHp*proc.selfHeal);source.hp+=amount;if(amount>0)events.push({atMs:now,type:'heal',actorId:source.definition.id,targetId:source.definition.id,abilityId:'GEM_RETALIATION',amount:Number(amount.toFixed(2))});}}
-    addThreat(target,source,dealt*(effect.threatMultiplier??1)); events.push({atMs:now,type:eventType,actorId:source.definition.id,targetId:target.definition.id,abilityId,amount:Number(dealt.toFixed(2)),...(eventType==='damage'?{critical:crit,absorbed:Number(absorbed.toFixed(2))}:{})});
+    addThreat(target,source,dealt*(effect.threatMultiplier??1)); events.push({atMs:now,type:eventType,actorId:source.definition.id,targetId:target.definition.id,abilityId,amount:Number(dealt.toFixed(2)),...(eventType==='damage'?{critical:crit}:{}),...(absorbed>0?{absorbed:Number(absorbed.toFixed(2))}:{})});
     // Reflect only damage absorbed by the shield that granted this effect. Direct
     // reflection cannot trigger another shield reflection or recurse indefinitely.
     let reflectable=absorbed;

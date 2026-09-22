@@ -1,5 +1,8 @@
 export type PublicCombatReplayCueType='action'|'phase'|'cast'|'interrupt'|'down'|'assist'|'victory'|'wipe'|'timeout';
 
+export interface PublicCombatReplayState{ id:string; hp:number; shield:number; }
+export interface PublicCombatReplayCombatant{ id:string; name:string; team:'players'|'enemies'; maxHp:number; startHp:number; startShield:number; boss:boolean; }
+
 export interface PublicCombatReplayCue{
   atMs:number;
   type:PublicCombatReplayCueType;
@@ -15,12 +18,14 @@ export interface PublicCombatReplayCue{
   absorbed?:number;
   gemProc?:boolean;
   amount?:number;
+  states?:PublicCombatReplayState[];
 }
 
 export interface PublicCombatReplay{
   nodeId:string;
   reason:'victory'|'wipe'|'timeout';
   durationMs:number;
+  combatants:PublicCombatReplayCombatant[];
   cues:PublicCombatReplayCue[];
 }
 
@@ -34,6 +39,7 @@ function cue(value:unknown,durationMs:number):PublicCombatReplayCue|undefined{
   const row=value as Record<string,unknown>,at=finite(row.atMs),type=text(row.type) as PublicCombatReplayCueType|undefined;
   if(at===undefined||at<0||at>durationMs||!type||!TYPES.has(type))return undefined;
   const castDuration=finite(row.durationMs),amount=finite(row.amount),absorbed=finite(row.absorbed),actionKind=row.actionKind==='damage'||row.actionKind==='heal'||row.actionKind==='shield'?row.actionKind:undefined,outcome=row.outcome==='critical'||row.outcome==='miss'?row.outcome:undefined,gemProc=row.gemProc===true;
+  const states=(Array.isArray(row.states)?row.states:[]).map(item=>{if(!item||typeof item!=='object')return undefined;const s=item as Record<string,unknown>,id=text(s.id),hp=finite(s.hp),shield=finite(s.shield);if(!id||hp===undefined||hp<0||shield===undefined||shield<0)return undefined;return{id,hp:Number(hp.toFixed(2)),shield:Number(shield.toFixed(2))};}).filter((item):item is PublicCombatReplayState=>Boolean(item)).slice(0,12);
   return {
     atMs:Math.round(at),
     type,
@@ -49,6 +55,7 @@ function cue(value:unknown,durationMs:number):PublicCombatReplayCue|undefined{
     ...(absorbed!==undefined&&absorbed>=0?{absorbed:Number(absorbed.toFixed(2))}:{}),
     ...(gemProc?{gemProc:true}:{}),
     ...(amount!==undefined&&amount>=0?{amount:Number(amount.toFixed(2))}:{}),
+    ...(states.length?{states}:{}),
   };
 }
 
@@ -61,10 +68,11 @@ export function projectCombatReplay(lastResolution:undefined|{nodeId:string;resu
   if(summary.kind!=='combat')return undefined;
   const reason=text(summary.reason) as PublicCombatReplay['reason']|undefined,duration=finite(summary.durationMs);
   if(!reason||!REASONS.has(reason)||duration===undefined||duration<0)return undefined;
+  const combatants=(Array.isArray(summary.replayCombatants)?summary.replayCombatants:[]).map(item=>{if(!item||typeof item!=='object')return undefined;const row=item as Record<string,unknown>,id=text(row.id),name=text(row.name),team=row.team==='players'||row.team==='enemies'?row.team:undefined,maxHp=finite(row.maxHp),startHp=finite(row.startHp),startShield=finite(row.startShield),boss=row.boss===true;if(!id||!name||!team||maxHp===undefined||maxHp<=0||startHp===undefined||startHp<0||startHp>maxHp||startShield===undefined||startShield<0)return undefined;return{id,name,team,maxHp:Number(maxHp.toFixed(2)),startHp:Number(startHp.toFixed(2)),startShield:Number(startShield.toFixed(2)),boss};}).filter((item):item is PublicCombatReplayCombatant=>Boolean(item)).slice(0,12);
   const cues=(Array.isArray(summary.replayCues)?summary.replayCues:[])
     .map(item=>cue(item,duration))
     .filter((item):item is PublicCombatReplayCue=>Boolean(item))
     .slice(0,48)
     .sort((a,b)=>a.atMs-b.atMs);
-  return {nodeId:lastResolution.nodeId,reason,durationMs:Math.round(duration),cues};
+  return {nodeId:lastResolution.nodeId,reason,durationMs:Math.round(duration),combatants,cues};
 }

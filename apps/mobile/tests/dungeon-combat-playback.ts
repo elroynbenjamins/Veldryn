@@ -51,9 +51,9 @@ equal(playbackCombatantStatuses(replay,0,'p1')[0]?.stacks,2);
 equal(playbackCombatantStatuses(replay,2,'p1').find(status=>status.tag==='gem:momentum')?.stacks,1);
 equal(playbackCombatantStatuses(replay,2,'p1').find(status=>status.tag==='gem:flow')?.label,'Flow');
 equal(playbackCombatantStatuses(replay,4,'p1').filter(status=>status.source==='gem').length,0);
-equal(playbackCombatantStatuses(replay,0,'boss').length,0);
-equal(playbackCombatantStatuses(replay,1,'boss')[0]?.stacks,2);
-equal(playbackCombatantStatuses(replay,1,'boss')[0]?.kind,'debuff');
+equal(playbackCombatantStatuses(replay,0,'boss').length,1);
+equal(playbackCombatantStatuses(replay,1,'boss').find(status=>status.tag==='damage_taken')?.stacks,2);
+equal(playbackCombatantStatuses(replay,1,'boss').find(status=>status.tag==='damage_taken')?.kind,'debuff');
 equal(playbackCombatantStatuses(replay,1,'p0')[0]?.kind,'hot');
 equal(playbackCombatantStatuses(replay,4,'boss').length,0);
 

@@ -10,6 +10,7 @@ import {characterPermanentMultipliers} from './permanent-boosts';
 import {professionMasteryMultipliers,professionMasteryRankProgress} from './profession-mastery-v40';
 import {professionMasteryActiveBonusText} from './profession-mastery-presentation';
 import {characterProgressWithinLevel,characterTotalXpAtLevel,progressWithinLevel,totalXpAtLevel} from './progression';
+import type {WorkingTowardDestination} from './working-toward';
 
 export interface LevelPaceProjection{
   label:string;
@@ -59,6 +60,14 @@ export interface DropExpectation{
   oneIn:number;
   expectedQuantityPerHour:number;
   averageFindSeconds:number;
+}
+
+export interface AcquisitionProjection{
+  sourceKind:'gathering'|'combat';
+  sourceId:string;
+  quantityPerHour:number;
+  etaSeconds:number;
+  basis:'current'|'base';
 }
 
 const safeEta=(remainingXp:number,xpPerHour:number)=>xpPerHour>0&&remainingXp>0?remainingXp/xpPerHour*3600:remainingXp<=0?0:undefined;
@@ -117,6 +126,23 @@ export function combatBaselineProjection(monster:MonsterDef):CombatBaselineProje
 export function dropExpectation(chance:number,min:number,max:number,killsPerHour:number):DropExpectation{
   const normalizedChance=Math.max(0,Math.min(1,chance)),oneIn=normalizedChance>0?1/normalizedChance:Number.POSITIVE_INFINITY,meanQuantity=(Math.max(0,min)+Math.max(min,max))/2,findsPerHour=killsPerHour*normalizedChance;
   return {chance:normalizedChance,oneIn,expectedQuantityPerHour:findsPerHour*meanQuantity,averageFindSeconds:findsPerHour>0?3600/findsPerHour:Number.POSITIVE_INFINITY};
+}
+
+export function acquisitionProjectionForDestination(state:GameState,itemId:string,quantity:number,destination:WorkingTowardDestination):AcquisitionProjection|undefined{
+ const needed=Math.max(0,quantity);if(!needed)return undefined;
+ if(destination.kind==='skills'&&destination.actionId){
+  const activity=[...GATHERING,...HERB_NODES].find(row=>row.id===destination.actionId&&row.itemId===itemId);
+  if(!activity)return undefined;
+  const pace=gatheringBalanceProjection(state,activity,1),rate=pace.runtimeItemsPerHour;
+  return rate>0?{sourceKind:'gathering',sourceId:activity.id,quantityPerHour:rate,etaSeconds:needed/rate*3600,basis:'current'}:undefined;
+ }
+ if(destination.kind==='combat'){
+  const monster=MONSTERS.find(row=>row.id===destination.monsterId),drop=monster?.drops.find(row=>row.itemId===itemId);
+  if(!monster||!drop)return undefined;
+  const combat=combatBaselineProjection(monster),expectation=dropExpectation(drop.chance,drop.min,drop.max,combat.killsPerHour),rate=expectation.expectedQuantityPerHour;
+  return rate>0?{sourceKind:'combat',sourceId:monster.id,quantityPerHour:rate,etaSeconds:needed/rate*3600,basis:'base'}:undefined;
+ }
+ return undefined;
 }
 
 export type ActivityProgressKind='combat'|'gathering'|'crafting'|'training'|'exploration'|'faith';

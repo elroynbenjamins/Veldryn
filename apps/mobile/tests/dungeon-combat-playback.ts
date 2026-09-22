@@ -1,4 +1,4 @@
-import {playbackAdvanceDelayMs,playbackBossCombatant,playbackCastDisplayMs,playbackCombatantState,playbackCombatantStatuses,playbackCueDelayMs,playbackCueLabel,playbackCueTone,playbackProgress,playbackRecentCues,playbackVisualDurationMs} from '../src/core/dungeon-combat-playback';
+import {playbackAdvanceDelayMs,playbackBossCombatant,playbackCastDisplayMs,playbackCombatantState,playbackCombatantStatuses,playbackEnemyCombatants,playbackCueDelayMs,playbackCueLabel,playbackCueTone,playbackProgress,playbackRecentCues,playbackVisualDurationMs} from '../src/core/dungeon-combat-playback';
 import {validateCoopRunView,type CoopCombatReplayView} from '../src/core/coop-presentation';
 
 function assert(value:unknown,message:string){if(!value)throw new Error(message);}
@@ -49,6 +49,8 @@ assert(playbackCueDelayMs(replay.cues[0],replay.cues[1])<=950,'cue delay above c
 equal(playbackProgress(replay,5),1);
 equal(playbackRecentCues(replay,4).length,3);
 equal(playbackBossCombatant(replay)?.id,'boss');
+const multiEnemyReplay:CoopCombatReplayView={...replay,combatants:[...(replay.combatants??[]).filter(item=>item.team==='players'),{id:'e1',name:'Briar Husk',team:'enemies',maxHp:1200,startHp:1200,startShield:0,boss:false},{id:'e2',name:'Briar Husk',team:'enemies',maxHp:1300,startHp:1300,startShield:0,boss:false}]};
+equal(playbackEnemyCombatants(multiEnemyReplay).map(item=>item.id),['e1','e2'],'duplicate-name enemies must remain distinct by replay id');
 equal(playbackCombatantState(replay,0,'boss')?.hp,4912.6);
 equal(playbackCombatantState(replay,1,'p0')?.shield,160);
 equal(playbackCombatantState(replay,3,'p0')?.shield,60);

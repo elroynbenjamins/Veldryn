@@ -1,0 +1,1 @@
+export default "QJ2c8+ctITmO9Pc3joBypEoT/98j3Hfj3cD4fyngonoAtzWzAAAAAElFTkSuQmCC";

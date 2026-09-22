@@ -1,6 +1,7 @@
 import {Image,StyleSheet,View} from 'react-native';
 import {resourceIconSource} from '../theme/resource-assets';
 import {CONSUMABLE_ART_CELL,CONSUMABLE_ART_SHEET_SIZE,consumableArtworkCell,consumableArtworkSheet} from '../theme/consumable-assets';
+import {MISC_ITEM_CELL,MISC_ITEM_SHEET_HEIGHT,MISC_ITEM_SHEET_WIDTH,miscItemCell,miscItemSheet} from '../theme/misc-item-assets';
 import {
   REGIONAL_RESOURCE_CELL,
   REGIONAL_RESOURCE_SHEET_HEIGHT,
@@ -38,6 +39,9 @@ function AtlasCell({source,column,row,cell,sheetWidth,sheetHeight,size}:{source:
 export function ResourceArtwork({itemId,size=58,framed=true}:{itemId:string;size?:number;framed?:boolean}){
   const consumable=consumableArtworkCell(itemId);
   if(consumable)return <View style={[s.art,{width:size,height:size},framed&&s.frame]}><AtlasCell source={consumableArtworkSheet(consumable.sheet)} column={consumable.column} row={consumable.row} cell={CONSUMABLE_ART_CELL} sheetWidth={CONSUMABLE_ART_SHEET_SIZE} sheetHeight={CONSUMABLE_ART_SHEET_SIZE} size={size}/></View>;
+
+  const misc=miscItemCell(itemId);
+  if(misc)return <View style={[s.art,{width:size,height:size},framed&&s.frame]}><AtlasCell source={miscItemSheet} column={misc.column} row={misc.row} cell={MISC_ITEM_CELL} sheetWidth={MISC_ITEM_SHEET_WIDTH} sheetHeight={MISC_ITEM_SHEET_HEIGHT} size={size}/></View>;
 
   const runtime=runtimeItemCell(itemId);
   if(runtime)return <View style={[s.art,{width:size,height:size},framed&&s.frame]}><AtlasCell source={runtimeItemSheet} column={runtime.column} row={runtime.row} cell={RUNTIME_ITEM_CELL} sheetWidth={RUNTIME_ITEM_SHEET_WIDTH} sheetHeight={RUNTIME_ITEM_SHEET_HEIGHT} size={size}/></View>;

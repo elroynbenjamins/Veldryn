@@ -1,5 +1,6 @@
 export type CoopMode='qmode'|'live';
-export interface CoopRouteOptionView {nodeId:string;title:string;kind:string;risk:string;reward:string;votes?:number;hidden?:boolean;}
+export interface CoopEncounterPreviewView {archetypes:Array<{id:string;label:string}>;mechanics:Array<{id:string;label:string;description:string}>;summary:string;}
+export interface CoopRouteOptionView {nodeId:string;title:string;kind:string;risk:string;reward:string;votes?:number;hidden?:boolean;encounterPreview?:CoopEncounterPreviewView;}
 export interface CoopRunMechanicView {label:string;description:string;value:number;maxValue:number;status:'critical'|'steady'|'strong';bossEffect:string;}
 export interface CoopRunObjectiveView {label:string;description:string;count:number;maxCount:number;completed:boolean;effectText:string;}
 export interface CoopBossPhaseView {id:string;label:string;hpPct:number;objectiveSensitive:boolean;}
@@ -46,6 +47,18 @@ export interface CoopCombatReplayView{
  cues:CoopCombatReplayCueView[];
 }
 export interface CoopRunView {runId:string;mode:CoopMode;modeLabel?:string;phase:string;syncedLevel:number;roleSlots:Array<{memberId?:string;role:'tank'|'damage'|'support';name:string;echo:boolean;classId?:string;bodyPresentation?:'male'|'female';companionId?:string;currentHp?:number;maximumHp?:number;ready?:boolean}>;options:CoopRouteOptionView[];mechanic?:CoopRunMechanicView;objective?:CoopRunObjectiveView;bossMechanic?:CoopRunBossMechanicView;bossRecap?:CoopRunBossRecapView;lastCombat?:CoopCombatReplayView;rewardText?:string;stateVersion?:number;decisionId?:string;decisionRevision?:number;resolvesAtMs?:number;}
+export function parseCoopEncounterPreview(value:unknown):CoopEncounterPreviewView|undefined{
+ if(value===undefined||value===null)return undefined;
+ if(!value||typeof value!=='object')throw new Error('invalid_encounter_preview');
+ const row=value as Record<string,unknown>,summary=typeof row.summary==='string'?row.summary.trim():'';
+ const rawArchetypes=Array.isArray(row.archetypes)?row.archetypes:[],rawMechanics=Array.isArray(row.mechanics)?row.mechanics:[];
+ if(!summary||rawArchetypes.length>2||rawMechanics.length>4)throw new Error('invalid_encounter_preview');
+ const archetypes=rawArchetypes.map(item=>{if(!item||typeof item!=='object')throw new Error('invalid_encounter_preview');const v=item as Record<string,unknown>,id=typeof v.id==='string'?v.id.trim():'',label=typeof v.label==='string'?v.label.trim():'';if(!id||!label)throw new Error('invalid_encounter_preview');return{id,label};});
+ const mechanics=rawMechanics.map(item=>{if(!item||typeof item!=='object')throw new Error('invalid_encounter_preview');const v=item as Record<string,unknown>,id=typeof v.id==='string'?v.id.trim():'',label=typeof v.label==='string'?v.label.trim():'',description=typeof v.description==='string'?v.description.trim():'';if(!id||!label||!description)throw new Error('invalid_encounter_preview');return{id,label,description};});
+ if(new Set(archetypes.map(item=>item.id)).size!==archetypes.length||new Set(mechanics.map(item=>item.id)).size!==mechanics.length)throw new Error('invalid_encounter_preview');
+ return{archetypes,mechanics,summary};
+}
+
 export function validateCoopRunView(view:CoopRunView):void{
  if(view.roleSlots.length!==4||view.roleSlots.filter(slot=>slot.role==='tank').length!==1||view.roleSlots.filter(slot=>slot.role==='damage').length!==2||view.roleSlots.filter(slot=>slot.role==='support').length!==1)throw new Error('invalid_role_slots');
  if(!Number.isInteger(view.syncedLevel)||view.syncedLevel<1||view.roleSlots.some(slot=>!slot.name.trim()))throw new Error('invalid_run_summary');
@@ -59,6 +72,7 @@ export function validateCoopRunView(view:CoopRunView):void{
  if(damageClasses.length===2&&new Set(damageClasses).size!==2)throw new Error('duplicate_damage_class');
  if(view.options.length>0&&view.options.length<3&&!(view.options.length===1&&view.options[0].kind==='boss'))throw new Error('insufficient_route_options');
  if(new Set(view.options.map(option=>option.nodeId)).size!==view.options.length||view.options.some(option=>!option.nodeId.trim()||!option.title.trim()||!option.kind.trim()||!option.risk.trim()||!option.reward.trim()))throw new Error('invalid_route_options');
+ for(const option of view.options)if(option.encounterPreview)parseCoopEncounterPreview(option.encounterPreview);
  if(view.mode==='qmode'&&view.options.some(option=>option.votes!==undefined))throw new Error('qmode_cannot_show_votes');
  if(view.mechanic&&(!view.mechanic.label.trim()||!view.mechanic.description.trim()||!Number.isFinite(view.mechanic.value)||!Number.isFinite(view.mechanic.maxValue)||view.mechanic.maxValue<=0||view.mechanic.value<0||view.mechanic.value>view.mechanic.maxValue||!['critical','steady','strong'].includes(view.mechanic.status)||!view.mechanic.bossEffect.trim()))throw new Error('invalid_run_mechanic');
  if(view.objective&&(!view.objective.label.trim()||!view.objective.description.trim()||!Number.isInteger(view.objective.count)||!Number.isInteger(view.objective.maxCount)||view.objective.maxCount<1||view.objective.count<0||view.objective.count>view.objective.maxCount||!view.objective.effectText.trim()))throw new Error('invalid_run_objective');

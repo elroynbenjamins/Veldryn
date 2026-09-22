@@ -41,6 +41,10 @@ export function professionMasteryActionsForSkill(state:GameState,skillId:SkillId
  }
  return rows.sort((a,b)=>b.rank-a.rank||b.points-a.points||a.level-b.level||a.name.localeCompare(b.name));
 }
+export function professionMasteryMasteredRecords(state:GameState,skillId?:SkillId){
+ const ids=skillId?[skillId]:state.skills.map(row=>row.skillId);
+ return ids.flatMap(id=>professionMasteryActionsForSkill(state,id)).filter(row=>row.mastered).sort((a,b)=>a.name.localeCompare(b.name));
+}
 export function professionMasterySkillSummary(state:GameState,skillId:SkillId){
  const rows=professionMasteryActionsForSkill(state,skillId),totalPoints=rows.reduce((sum,row)=>sum+row.points,0),highestRank=rows.reduce((max,row)=>Math.max(max,row.rank),0),mastered=rows.filter(row=>row.mastered).length,trained=rows.filter(row=>row.points>0).length;
  return {rows,totalPoints,highestRank,mastered,trained,total:rows.length,roadmap:PROFESSION_MASTERY_BONUS_RANKS};

@@ -46,6 +46,16 @@ export interface RegionalCombatReservationV1{
   player:CombatantDefinition;
   createdAtMs:number;
 }
+export interface RegionalCombatReplayCueV1{
+  atMs:number;
+  type:'cast'|'phase'|'interrupt'|'damage'|'heal'|'shield'|'down'|'victory'|'wipe'|'timeout';
+  actorName?:string;
+  targetName?:string;
+  abilityName?:string;
+  amount?:number;
+  critical?:boolean;
+  absorbed?:number;
+}
 export interface RegionalCombatStoredResultV1{
   receiptId:string;
   victory:boolean;
@@ -55,7 +65,12 @@ export interface RegionalCombatStoredResultV1{
   damageDone:number;
   healingDone:number;
   playerHp:number;
+  playerMaxHp:number;
+  playerName:string;
   enemyHp:number;
+  enemyMaxHp:number;
+  enemyName:string;
+  replayCues:RegionalCombatReplayCueV1[];
 }
 export interface RegionalCombatStoreV1{
   reserve(input:RegionalCombatReservationV1):Promise<RegionalCombatReservationV1>;
@@ -139,6 +154,25 @@ export function buildRegionalCombatEnemyV1(entry:RegionalCombatCatalogEntryV1):C
 }
 function gemKind(kind:RegionalCombatEncounterKindV1):RegionalGemEncounterKindV1{return kind==='standard'?'enemy':kind;}
 function resultDigest(result:CombatResult){return createHash('sha256').update(JSON.stringify(result.events)).digest().toString('hex');}
+function regionalReplayCuesV1(result:CombatResult):RegionalCombatReplayCueV1[]{
+  const defs=[...result.players,...result.enemies].map(row=>row.definition),names=new Map(defs.map(row=>[row.id,row.name])),abilities=new Map<string,string>();
+  for(const def of defs)for(const ability of def.abilities)abilities.set(ability.id,ability.name);
+  for(const def of defs)for(const phase of def.phases??[])abilities.set(phase.id,phase.name??phase.id.replace(/_/g,' '));
+  const important:RegionalCombatReplayCueV1[]=[],actions:RegionalCombatReplayCueV1[]=[];
+  for(const event of result.events){
+    const base={atMs:event.atMs,actorName:event.actorId?names.get(event.actorId):undefined,targetName:event.targetId?names.get(event.targetId):undefined,abilityName:event.abilityId?(abilities.get(event.abilityId)??(event.abilityId==='BASIC'?'Basic Attack':event.abilityId)):undefined};
+    if(event.type==='phase')important.push({...base,type:'phase'});
+    else if(event.type==='cast_start')important.push({...base,type:'cast'});
+    else if(event.type==='interrupt')important.push({...base,type:'interrupt'});
+    else if(event.type==='down'||event.type==='death')important.push({...base,type:'down'});
+    else if(event.type==='damage'&&event.amount!==undefined&&(event.critical||event.abilityId!=='BASIC'))actions.push({...base,type:'damage',amount:Number(event.amount.toFixed(2)),...(event.critical?{critical:true}:{}),...(event.absorbed?{absorbed:Number(event.absorbed.toFixed(2))}:{})});
+    else if(event.type==='heal'&&event.amount!==undefined)actions.push({...base,type:'heal',amount:Number(event.amount.toFixed(2))});
+    else if(event.type==='shield'&&event.amount!==undefined)actions.push({...base,type:'shield',amount:Number(event.amount.toFixed(2))});
+    else if(event.type==='combat_end')important.push({atMs:event.atMs,type:result.reason});
+  }
+  const sampled=actions.length<=14?actions:Array.from({length:14},(_,i)=>actions[Math.min(actions.length-1,Math.floor(i*actions.length/14))]);
+  return [...important,...sampled].sort((a,b)=>a.atMs-b.atMs).slice(0,24);
+}
 
 export async function startRegionalCombatV1(deps:RegionalCombatRuntimeDepsV1,input:{accountId:string;characterId:string;encounterId:string;requestId:string}):Promise<RegionalCombatReservationV1>{
   if(!/^[a-zA-Z0-9_-]{8,128}$/.test(input.requestId))throw new Error('invalid_request');
@@ -173,7 +207,9 @@ export async function resolveRegionalCombatV1(deps:RegionalCombatRuntimeDepsV1,i
   const stored:RegionalCombatStoredResultV1={
     receiptId:reservation.receiptId,victory:combat.victory,reason:combat.reason,durationMs:combat.durationMs,eventDigest:resultDigest(combat),
     damageDone:Number(combat.players[0].damageDone.toFixed(2)),healingDone:Number(combat.players[0].healingDone.toFixed(2)),
-    playerHp:Number(combat.players[0].hp.toFixed(2)),enemyHp:Number(combat.enemies[0].hp.toFixed(2)),
+    playerHp:Number(combat.players[0].hp.toFixed(2)),playerMaxHp:Number(combat.players[0].definition.stats.maxHp.toFixed(2)),playerName:combat.players[0].definition.name,
+    enemyHp:Number(combat.enemies[0].hp.toFixed(2)),enemyMaxHp:Number(combat.enemies[0].definition.stats.maxHp.toFixed(2)),enemyName:combat.enemies[0].definition.name,
+    replayCues:regionalReplayCuesV1(combat),
   };
   const committed=await deps.store.commitResult(stored);
   const reward=committed.result.victory?await settleVerifiedRegionalGemEncounterV1(deps.rewards,{accountId:input.accountId,receiptKey:'regional:'+reservation.receiptId,zoneId:reservation.zoneId,kind:gemKind(reservation.kind),victory:true}):undefined;

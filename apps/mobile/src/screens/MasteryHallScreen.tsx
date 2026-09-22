@@ -1,23 +1,27 @@
 import {useMemo} from 'react';
 import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {GameState,SkillId} from '../core/types';
+import type {WorkingTowardDestination} from '../core/working-toward';
 import {JOURNAL_ACHIEVEMENTS_V42,JOURNAL_TITLES_V42} from '../core/adventurers-journal-v42';
 import {professionMasteryHallSummary,professionMasteryMasteredRecords,skillIdentity} from '../core/profession-mastery-presentation';
 import {formatGameNumber} from '../core/number-format';
 import {profileMasteryPrestige} from '../core/profile-prestige';
 import {Panel} from '../components/Panel';
 import {GameButton} from '../components/GameButton';
+import {MasteryDiscoveryPanel} from '../components/MasteryDiscoveryPanel';
 import {equipmentTheme,radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 
 const tierLabel=(value:string)=>value.charAt(0).toUpperCase()+value.slice(1);
-export function MasteryHallScreen({state,onOpenSkill,onAchievements,onProfile}:{state:GameState;onOpenSkill?:(skillId:SkillId)=>void;onAchievements?:()=>void;onProfile?:()=>void}){
+export function MasteryHallScreen({state,onOpenSkill,onNavigate,onAchievements,onProfile}:{state:GameState;onOpenSkill?:(skillId:SkillId)=>void;onNavigate?:(destination:WorkingTowardDestination)=>void;onAchievements?:()=>void;onProfile?:()=>void}){
  const C=useGameTheme(),E=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]),summary=professionMasteryHallSummary(state),records=professionMasteryMasteredRecords(state);
  const ladder=JOURNAL_ACHIEVEMENTS_V42.filter(row=>row.id.startsWith('mastery_hall_')),journal=state.account.journalState,masterwork=JOURNAL_TITLES_V42.find(row=>row.id==='masterwork_savant'),titleUnlocked=!!journal?.unlockedTitles?.masterwork_savant,prestige=profileMasteryPrestige();
  const next=ladder.find(row=>summary.mastered<row.target),skills=summary.skills;
  return <ScrollView contentContainerStyle={s.root}>
   <View style={s.headingRow}><View style={s.flex}><Text style={s.kicker}>ACCOUNT PRESTIGE</Text><Text accessibilityRole="header" style={s.heading}>Mastery Hall</Text><Text style={s.copy}>Every profession activity and recipe has its own R50 record. The Hall combines those records across the account for achievements, titles and profile recognition only.</Text></View><View style={[s.seal,summary.mastered>0&&s.sealEarned]}><Text style={[s.sealValue,summary.mastered>0&&{color:E.goldSoft}]}>{summary.mastered}</Text><Text style={s.sealLabel}>R50</Text></View></View>
   <View style={s.stats}><Stat label="TRAINED" value={String(summary.trained)}/><Stat label="R10+" value={String(summary.rank10)}/><Stat label="R30+" value={String(summary.rank30)}/><Stat label="MASTERY POINTS" value={formatGameNumber(summary.totalPoints,state.settings.numberMode)}/></View>
+
+  <MasteryDiscoveryPanel state={state} onNavigate={onNavigate}/>
 
   <Panel accentColor={titleUnlocked?E.goldSoft:C.info}>
    <View style={s.panelHead}><View style={s.flex}><Text style={s.section}>MASTERY HALL LADDER</Text><Text style={s.title}>{next?'Next recognition: '+next.title:'Mastery Hall Grandmaster'}</Text></View><Text style={[s.status,titleUnlocked&&s.statusDone]}>{titleUnlocked?'TITLE EARNED':summary.mastered+' R50'}</Text></View>

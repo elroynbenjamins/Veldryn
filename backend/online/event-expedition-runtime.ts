@@ -6,6 +6,7 @@ import {resolveAndFreezeLoadout,type AuthoritativeLoadoutRecord,type FrozenLoado
 import {recruitEligibleEchoes,type PublishedEcho} from '../src/server/coop/echo-recruitment';
 import {projectCombatReplay} from '../src/server/coop/combat-replay-projection';
 import {combatantFromVerifiedSnapshot} from '../src/server/combat/snapshot-adapter';
+import {expeditionEncounterPreview} from '../src/server/combat/expedition-combat-service';
 import type {CoopDecisionCommand,CoopRole} from '../src/shared/coop-types';
 import {deriveOnlineCoopLoadout,onlineCoopLoadoutHash,ONLINE_COOP_BALANCE_VERSION} from './coop-loadout';
 import {GameplayError,type GameplayServices} from './gameplay';
@@ -23,7 +24,7 @@ function role(value:string):CoopRole{if(value==='tank'||value==='damage'||value=
 export function projectOnlineEventRun(run:EventRun,version:number,liveEventId:string){
  const definition=EVENT_EXPEDITIONS.find(item=>item.id===run.eventId);if(!definition)throw new GameplayError('unknown_event_expedition');
  const current=run.graph.nodes.find(node=>node.nodeId===run.currentNodeId);
- const options=run.phase==='awaiting_choice'&&current?current.nextNodeIds.map(id=>run.graph.nodes.find(node=>node.nodeId===id)).filter((node):node is NonNullable<typeof node>=>Boolean(node)).map(node=>effectiveEventNode(run,node)).map(node=>({nodeId:node.nodeId,kind:node.kind,risk:node.risk,rewardTag:node.rewardTag,title:node.title,mechanicDelta:node.mechanicDelta??0,objectiveDelta:node.objectiveDelta??0,reactionLabel:node.reactionLabel})):[];
+ const options=run.phase==='awaiting_choice'&&current?current.nextNodeIds.map(id=>run.graph.nodes.find(node=>node.nodeId===id)).filter((node):node is NonNullable<typeof node>=>Boolean(node)).map(node=>effectiveEventNode(run,node)).map(node=>({nodeId:node.nodeId,kind:node.kind,risk:node.risk,rewardTag:node.rewardTag,title:node.title,mechanicDelta:node.mechanicDelta??0,objectiveDelta:node.objectiveDelta??0,reactionLabel:node.reactionLabel,...(['battle','elite','boss'].includes(node.kind)?{encounterPreview:expeditionEncounterPreview(node.contentId)}:{})})):[];
  const mechanic=eventMechanicProjection(run),objective=eventObjectiveProjection(run),bossProfile=eventBossMechanicProjection(run);
  const bossMechanic=bossProfile?{profileId:bossProfile.profileId,label:bossProfile.label,summary:bossProfile.summary,tone:bossProfile.tone,telegraph:bossProfile.telegraph}:undefined;
  const summary=run.lastResolution?.nodeId===run.graph.bossNodeId?run.lastResolution.result.summary:undefined;

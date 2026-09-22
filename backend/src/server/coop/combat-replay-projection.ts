@@ -5,6 +5,7 @@ export interface PublicCombatReplayCombatant{ id:string; name:string; team:'play
 export interface PublicCombatReplayStatus{ targetId:string; sourceId?:string; kind:'buff'|'debuff'|'dot'|'hot'; tag:string; label:string; abilityId?:string; startsAtMs:number; expiresAtMs:number; }
 export interface PublicCombatReplayGemState{ targetId:string; tag:string; expiriesAtMs:number[]; }
 export interface PublicCombatReplayGemSnapshot{ atMs:number; states:PublicCombatReplayGemState[]; }
+export interface PublicCombatReplayContribution{ id:string; damage:number; healing:number; damageTaken:number; interrupts:number; }
 
 export interface PublicCombatReplayCue{
   atMs:number;
@@ -31,6 +32,7 @@ export interface PublicCombatReplay{
   combatants:PublicCombatReplayCombatant[];
   statuses:PublicCombatReplayStatus[];
   gemStates:PublicCombatReplayGemSnapshot[];
+  contributions:PublicCombatReplayContribution[];
   cues:PublicCombatReplayCue[];
 }
 
@@ -94,10 +96,12 @@ export function projectCombatReplay(lastResolution:undefined|{nodeId:string;resu
     }).filter((state):state is PublicCombatReplayGemState=>Boolean(state)).slice(0,24);
     return{atMs:Math.round(at),states};
   }).filter((item):item is PublicCombatReplayGemSnapshot=>Boolean(item)).slice(0,128).sort((a,b)=>a.atMs-b.atMs);
+  const metric=(value:unknown,id:string)=>{if(!value||typeof value!=='object')return 0;const raw=finite((value as Record<string,unknown>)[id]);return raw!==undefined&&raw>=0?Number(raw.toFixed(2)):0;};
+  const contributions:PublicCombatReplayContribution[]=combatants.filter(item=>item.team==='players').slice(0,4).map(item=>({id:item.id,damage:metric(summary.damage,item.id),healing:metric(summary.healing,item.id),damageTaken:metric(summary.damageTaken,item.id),interrupts:Math.round(metric(summary.interrupts,item.id))}));
   const cues=(Array.isArray(summary.replayCues)?summary.replayCues:[])
     .map(item=>cue(item,duration))
     .filter((item):item is PublicCombatReplayCue=>Boolean(item))
     .slice(0,48)
     .sort((a,b)=>a.atMs-b.atMs);
-  return {nodeId:lastResolution.nodeId,reason,durationMs:Math.round(duration),combatants,statuses,gemStates,cues};
+  return {nodeId:lastResolution.nodeId,reason,durationMs:Math.round(duration),combatants,statuses,gemStates,contributions,cues};
 }

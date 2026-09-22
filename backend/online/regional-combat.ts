@@ -9,6 +9,7 @@ interface LoadedGame{state:GameState|null;version:number;serverNow:number;}
 interface AccessResult{allowed:boolean;reason?:string;}
 interface LoadedReceipt{reservation:RegionalCombatReservationV1;result?:RegionalCombatStoredResultV1|null;}
 interface CadenceRowV1{cooldownSeconds:number;readyAtMs?:number|null;dailyWins?:number;dailyCap?:number|null;dailyResetAtMs?:number|null;}
+interface PendingReceiptV1{receiptId:string;characterId:string;encounterId:string;zoneId:string;kind:string;contentId:string;createdAtMs:number;expiresAtMs:number;}
 
 class RpcRegionalCombatStore implements RegionalCombatStoreV1{
  constructor(private services:Pick<GameplayServices,'rpc'>,private accountId:string){}
@@ -58,11 +59,12 @@ export class OnlineRegionalCombatRuntimeV1{
  }
  async cadence(accountId:string){
   const game=await this.services.rpc<LoadedGame>('load_online_game_server_v1',{p_account_id:accountId});
+  const pending=await this.services.rpc<PendingReceiptV1[]>('pending_regional_combat_server_v1',{p_account_id:accountId});
   const encounters=await Promise.all(SUNSCAR_REGIONAL_COMBAT_CATALOG_V1.map(async encounter=>{
    const row=await this.services.rpc<CadenceRowV1>('regional_combat_cadence_server_v1',{p_account_id:accountId,p_encounter_id:encounter.encounterId,p_encounter_kind:encounter.kind});
    return {encounterId:encounter.encounterId,cooldownSeconds:row.cooldownSeconds,readyAtMs:row.readyAtMs??null,dailyWins:Math.max(0,Math.floor(row.dailyWins??0)),dailyCap:row.dailyCap??null,dailyResetAtMs:row.dailyResetAtMs??null};
   }));
-  return {serverNow:game.serverNow,encounters};
+  return {serverNow:game.serverNow,encounters,pending};
  }
  async resolve(accountId:string,receiptId:string){
   const store=new RpcRegionalCombatStore(this.services,accountId);
@@ -108,7 +110,7 @@ export function regionalCombatHandlerV1(services:GameplayServices){
    return json(await runtime.start(accountId,row as unknown as RegionalCombatStartRequestV1));
   }catch(error){
    const message=error instanceof Error?error.message:'server_error';
-   const status=error instanceof GameplayError?error.status:/owner_mismatch|not_owned/.test(message)?403:/cooldown|daily_cap/.test(message)?429:/invalid_|unknown_|locked|below_level|not_active/.test(message)?400:503;
+   const status=error instanceof GameplayError?error.status:/owner_mismatch|not_owned/.test(message)?403:/cooldown|daily_cap|regional_combat_pending/.test(message)?429:/receipt_expired|invalid_|unknown_|locked|below_level|not_active/.test(message)?400:503;
    return json({error:status===503?'Server temporarily unavailable. Retry the pending action.':message},status);
   }
  };

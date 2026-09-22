@@ -1,5 +1,5 @@
 import type {CombatantDefinition,DamageType} from '../types';
-import {pveBarrier,pveDotWave,pveEnrage,pveExecuteStrike,pveFocusStrike,pveHeavyStrike,pveHex,pveInterruptibleWave,withPveIdentity,type PveArchetype,type PveMechanicId} from '../pve-encounter-identity';
+import {pveBarrier,pveDotWave,pveEnrage,pveExecuteStrike,pveFocusStrike,pveHealingPressure,pveHeavyStrike,pveHex,pveInterruptibleWave,withPveIdentity,type PveArchetype,type PveMechanicId} from '../pve-encounter-identity';
 
 const stats=(maxHp:number,attackPower:number,defense:number,level:number)=>({maxHp,attackPower,healingPower:0,defense,accuracy:930,evasion:190,critChance:.06,critMultiplier:1.5,haste:.03});
 
@@ -18,7 +18,7 @@ function mechanicsFor(archetype:PveArchetype):PveMechanicId[]{
   case 'caster': return ['interrupt','aoe'];
   case 'swarm': return ['aoe','dot'];
   case 'guardian': return ['heavy_hit','barrier'];
-  case 'hexer': return ['vulnerability','dot'];
+  case 'hexer': return ['vulnerability','healing_reduction','dot'];
   case 'executioner': return ['heavy_hit','execute'];
   case 'support': return ['sustain'];
   case 'bruiser': default: return ['heavy_hit'];
@@ -30,7 +30,7 @@ function primaryAbilities(id:string,name:string,archetype:PveArchetype,scale:num
   case 'caster': return[pveInterruptibleWave(`${id}_A_HIT`,strikeName,damageType,.68,9000,1200)];
   case 'swarm': return[pveDotWave(`${id}_A_HIT`,strikeName,damageType,.48,8500)];
   case 'guardian': return[pveHeavyStrike(`${id}_A_HIT`,strikeName,damageType,.9,7000,650),pveBarrier(`${id}_A_WARD`,`${name} Ward`,700*scale,12000)];
-  case 'hexer': return[pveHex(`${id}_A_HIT`,strikeName,damageType,.62,7200),pveDotWave(`${id}_A_CURSE`,`${name} Curse`,damageType,.38,11000)];
+  case 'hexer': return[pveHex(`${id}_A_HIT`,strikeName,damageType,.62,7200),pveHealingPressure(`${id}_A_WITHER`,`${name} Healing Seal`,damageType,.4,9200),pveDotWave(`${id}_A_CURSE`,`${name} Curse`,damageType,.38,11000)];
   case 'executioner': return[pveExecuteStrike(`${id}_A_HIT`,strikeName,damageType,1.02,7000)];
   case 'support': return[pveHeavyStrike(`${id}_A_HIT`,strikeName,damageType,.72,7600,650),pveEnrage(`${id}_A_RALLY`,`${name} Rally`,.08,15000)];
   case 'bruiser': default: return[pveHeavyStrike(`${id}_A_HIT`,strikeName,damageType,1.02,6800,700)];

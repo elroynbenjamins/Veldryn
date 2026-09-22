@@ -23,6 +23,20 @@ const IDENTITIES:Partial<Record<SkillId,SkillIdentity>>={
 };
 export function skillIdentity(skillId:SkillId):SkillIdentity{return IDENTITIES[skillId]??{label:'SKILL',descriptor:'Long-term character progression',tone:'accent'}}
 
+export interface ProfessionMasteryActionDefinition{actionId:string;name:string;skillId:SkillId;yieldRelevant:boolean;speedRelevant:boolean}
+export function professionMasteryActionDefinition(actionId:string):ProfessionMasteryActionDefinition|undefined{
+ const node=[...GATHERING,...HERB_NODES].find(row=>row.id===actionId);
+ if(node)return {actionId,name:node.name,skillId:node.skillId as SkillId,yieldRelevant:true,speedRelevant:true};
+ const recipe=RECIPES.find(row=>row.id===actionId);
+ if(!recipe)return undefined;
+ const output=itemDef(recipe.output.itemId);
+ return {actionId,name:recipe.name,skillId:recipe.skillId as SkillId,yieldRelevant:output.type!=='gear'&&output.type!=='tool',speedRelevant:recipe.skillId==='alchemy'||output.type==='gear'};
+}
+export function professionMasteryRelevantBonusSteps(actionId:string){
+ const definition=professionMasteryActionDefinition(actionId);if(!definition)return [];
+ return PROFESSION_MASTERY_BONUS_RANKS.filter(row=>row.kind==='xp'||row.kind==='yield'&&definition.yieldRelevant||row.kind==='speed'&&definition.speedRelevant);
+}
+
 export interface ProfessionMasteryActionView{
 id:string;name:string;skillId:SkillId;kind:'gathering'|'crafting';level:number;rank:number;points:number;maxRank:number;progress:number;pointsIntoRank:number;pointsForNextRank:number;mastered:boolean;xpBonusBps:number;yieldBonusBps:number;speedBonusBps:number;yieldRelevant:boolean;speedRelevant:boolean;nextBonus?:typeof PROFESSION_MASTERY_BONUS_RANKS[number];destination:WorkingTowardDestination;
 }

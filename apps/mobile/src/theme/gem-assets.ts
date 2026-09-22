@@ -61,8 +61,22 @@ export const GEM_ARTWORK_CELL_BY_KEY_V1:Readonly<Record<string,GemArtworkCellV1>
   RADIANT_CATALYST:{column:4,row:5},
 };
 
+const LEGACY_GEM_ARTWORK_KEY_V1:Readonly<Record<string,string>>={
+  EMBER_SHARD:'stat_might',
+  EMBERHEART_GEM:'stat_might',
+  WARD_SHARD:'stat_iron',
+  WARDHEART_GEM:'stat_iron',
+  VITALITY_SHARD:'stat_vitality',
+  VITALITY_HEART_GEM:'stat_vitality',
+  SWIFT_SIGIL:'effect_flow',
+  BOSSBANE_SIGIL:'effect_predator',
+  BULWARK_SIGIL:'effect_bulwark',
+  RENEWAL_SIGIL:'effect_renewal',
+};
+
 export function gemArtworkKeyV1(itemId:string){
   if(itemId==='GEM_DUST'||itemId==='REGIONAL_CATALYST'||itemId==='RADIANT_CATALYST')return itemId;
+  if(LEGACY_GEM_ARTWORK_KEY_V1[itemId])return LEGACY_GEM_ARTWORK_KEY_V1[itemId];
   const match=/^gem:(stat_[a-z_]+|effect_[a-z_]+):g[1-5]$/.exec(itemId);
   return match?.[1];
 }

@@ -18,6 +18,13 @@ ok(skills.includes("minHeight:112"),'Skills hub cards must remain compact');
 ok(skills.includes('skillTop:'),'Skills hub cards must keep the compact icon/copy row');
 ok(!skills.includes('Tap to open'),'Skills cards must not waste a line on redundant tap instructions');
 
+const skillMilestones=read('src/components/SkillMilestoneStrip.tsx');
+ok(skillMilestones.includes('SKILL MILESTONES')&&skillMilestones.includes("slice(0,2)"),'Skill detail milestones must remain compact and capped');
+ok(skillMilestones.includes("'JUST REACHED':'LATEST'")&&skillMilestones.includes('NEXT · LV'),'Skill detail milestones must show recent and next unlock states');
+ok(skillMilestones.includes('useGameTheme'),'Skill milestone strip must use the active UI theme');
+ok(skillMilestones.includes('onNavigate(row.destination!)'),'Milestone rows must remain actionable when a destination exists');
+ok(skills.includes('<SkillMilestoneStrip'),'Skills detail screens must include the persistent milestone strip');
+
 const gatheringSkills=read('src/components/GatheringActivityList.tsx');
 ok(gatheringSkills.includes('FASTEST XP HERE'),'Gathering details must identify the fastest local XP option');
 ok(gatheringSkills.includes('EXPECTED / HR')&&gatheringSkills.includes('SKILL XP / HR'),'Gathering cards must surface compact resource and XP hourly rates');

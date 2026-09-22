@@ -1,5 +1,5 @@
 import {createCharacter,newGame,claimQuest,refreshQuests} from '../src/core/game';
-import {journalEntries,questDestination} from '../src/core/quest-journal';
+import {journalActionSummary,journalEntries,questDestination} from '../src/core/quest-journal';
 import {QUESTS,QUEST_ACTS} from '../src/content/quests';
 import {questPresentationMeta,questPresentationTier} from '../src/core/quest-presentation';
 function ok(value:boolean,message:string){if(!value)throw new Error(message)}
@@ -10,6 +10,8 @@ ok(journalEntries(state,'all',' MOSS ').length===1,'Search descriptions, trim an
 ok(journalEntries(state,'all',' oathgate ').length===2,'Search includes authored quest locations');
 ok(journalEntries(state,'all',' ferrymen ').length===1,'Search includes authored story text');
 ok(journalEntries(state,'claimed','').length===0,'Empty completed filter');
+const initialSummary=journalActionSummary(state);
+ok(initialSummary.active===1&&initialSummary.ready===0&&initialSummary.locked===14&&initialSummary.claimed===0,'Journal action summary reflects the initial story state');
 ok(questDestination(QUESTS[0]).zoneId==='GREENFIELDS','Rat quest navigates to region');
 ok(questDestination(QUESTS[3]).tab==='Inventory','Equip quest destination');
 ok(questDestination(QUESTS[6]).tab==='Skills','Gatherable item destination');
@@ -25,6 +27,9 @@ const themeFixtures=[{accent:'#gold',accentSurface:'#gold-bg',special:'#violet',
 for(const theme of themeFixtures){for(const def of QUESTS){const meta=questPresentationMeta(def,theme);ok(!!meta.color&&!!meta.surface&&!!meta.label,'Every quest tier resolves theme-safe presentation metadata')}}
 const completed=refreshQuests(state,'MOSS_RAT',5);
 ok(journalEntries(completed,'current','')[0].remaining===0,'Ready quest has no remainder');
+ok(journalActionSummary(completed).ready===1,'Journal action summary exposes reward-ready chapters');
+const mixed={...state,quests:state.quests.map((quest,index)=>index===0?{...quest,status:'active' as const,progress:1}:index===1?{...quest,status:'complete' as const,progress:QUESTS[1].required}:quest)};
+ok(journalEntries(mixed,'current','')[0].def.id==='QST_002','Current journal view prioritizes reward-ready chapters before merely active chapters');
 const claimed=claimQuest(completed,'QST_001');
 ok(journalEntries(claimed,'claimed','').length===1,'Claimed chapter archived');
 ok(journalEntries(claimed,'current','')[0].def.id==='QST_002','Claim advances journal');

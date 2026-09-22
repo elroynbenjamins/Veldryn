@@ -20,7 +20,7 @@ function fxColor(accent:DungeonCombatFxAccent){
  }
 }
 
-type Contribution={damage:number;healing:number;damageTaken:number;interrupts:number};
+type Contribution={id:string;damage:number;healing:number;damageTaken:number;interrupts:number};
 function compactMetric(value:number){
  const safe=Math.max(0,value);
  if(safe>=1_000_000)return `${(safe/1_000_000).toFixed(safe>=10_000_000?0:1)}m`;

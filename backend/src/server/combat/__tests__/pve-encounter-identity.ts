@@ -16,6 +16,8 @@ assert.ok(veil[0].abilities[0].effects.some(effect=>effect.kind==='damage'&&effe
 const ledger=buildExpeditionEncounter({encounterId:'EVENT_MERCHANT_BATTLE_02'});
 assert.ok(ledger[0].abilities.some(ability=>ability.effects.some(effect=>effect.kind==='debuff'&&effect.tag==='damage_taken')));
 assert.ok(expeditionEncounterPreview('EVENT_MERCHANT_BATTLE_02')!.mechanics.some(item=>item.id==='vulnerability'));
+assert.ok(ledger[0].abilities.some(ability=>ability.effects.some(effect=>effect.kind==='debuff'&&effect.tag==='healing_received')));
+assert.ok(expeditionEncounterPreview('EVENT_MERCHANT_BATTLE_02')!.mechanics.some(item=>item.id==='healing_reduction'));
 
 const frost=buildExpeditionEncounter({encounterId:'EVENT_FROSTFALL_BATTLE_02'});
 assert.ok(frost[0].abilities.some(ability=>ability.target==='all_enemies'&&ability.interruptible));
@@ -34,6 +36,18 @@ assert.ok(expeditionEncounterPreview('FROST_LAKE_BATTLE_02')!.archetypes.some(it
 const choir=buildExpeditionEncounter({encounterId:'FROST_CHOIR_BATTLE_01'});
 assert.ok(choir[0].abilities.some(ability=>ability.target==='all_enemies'&&ability.interruptible));
 assert.ok(expeditionEncounterPreview('FROST_CHOIR_BATTLE_01')!.archetypes.some(item=>item.id==='caster'));
+
+const choirSupport=buildExpeditionEncounter({encounterId:'FROST_CHOIR_BATTLE_03'});
+const glacialAcolyte=choirSupport.find(enemy=>enemy.name==='Glacial Acolyte')!;
+assert.ok((glacialAcolyte.tags??[]).includes('pve:archetype:support'));
+assert.ok(glacialAcolyte.abilities.some(ability=>ability.target==='lowest_hp_ally'&&ability.effects.some(effect=>effect.kind==='heal')));
+assert.ok(glacialAcolyte.abilities.some(ability=>ability.target==='all_allies'&&ability.effects.some(effect=>effect.kind==='buff'&&effect.tag==='damage_done')));
+assert.ok(expeditionEncounterPreview('FROST_CHOIR_BATTLE_03')!.archetypes.some(item=>item.id==='support'));
+assert.ok(expeditionEncounterPreview('FROST_CHOIR_BATTLE_03')!.mechanics.some(item=>item.id==='sustain'));
+
+const drowned=buildExpeditionEncounter({encounterId:'LANTERN_BATTLE_03'}).find(enemy=>enemy.name==='Drowned Pilgrim')!;
+assert.ok((drowned.tags??[]).includes('pve:archetype:support'));
+assert.ok(drowned.abilities.some(ability=>ability.target==='lowest_hp_ally'));
 
 const fenReaver=buildExpeditionEncounter({encounterId:'ASH_FEN_BATTLE_03'});
 assert.ok(fenReaver[0].abilities.some(ability=>ability.effects.some(effect=>effect.executeBelowHpPct!==undefined)));
@@ -85,6 +99,17 @@ for(const [encounterId,expected] of [
  const preview=expeditionEncounterPreview(encounterId)!;
  for(const mechanic of expected)assert.ok(preview.mechanics.some(item=>item.id===mechanic),`${encounterId} preview missing ${mechanic}`);
 }
+
+const healStats={maxHp:1000,attackPower:0,healingPower:100,defense:0,accuracy:1000,evasion:0,critChance:0,critMultiplier:1.5,haste:0};
+const testHealer:CombatantDefinition={id:'HEALER',name:'Test Healer',team:'players',role:'support',level:25,stats:healStats,basicAttackMs:99_999,basicAttackCoeff:0,abilities:[{id:'TEST_HEAL',name:'Test Heal',cooldownMs:99_999,castTimeMs:500,target:'self',priority:100,effects:[{kind:'heal',coeff:1}]}]};
+const healPressureEnemy:CombatantDefinition={id:'HEAL_PRESSURE',name:'Heal Pressure',team:'enemies',role:'enemy',level:25,stats:{...healStats,maxHp:20_000,healingPower:0},basicAttackMs:99_999,basicAttackCoeff:0,abilities:[{id:'HEAL_CUT',name:'Heal Cut',cooldownMs:99_999,castTimeMs:0,target:'current_target',priority:100,effects:[{kind:'debuff',tag:'healing_received',value:-.5,durationMs:2000}]}]};
+const healBaseline=simulateCombat({seed:'heal-baseline',players:[testHealer],enemies:[{...healPressureEnemy,abilities:[]}],initialPlayerState:{HEALER:{hp:500,downed:false,cooldownRemainingMs:{},basicAttackRemainingMs:99_999}},maxDurationMs:700});
+const healReduced=simulateCombat({seed:'heal-reduced',players:[testHealer],enemies:[healPressureEnemy],initialPlayerState:{HEALER:{hp:500,downed:false,cooldownRemainingMs:{},basicAttackRemainingMs:99_999}},maxDurationMs:700});
+const baselineHeal=healBaseline.events.find(event=>event.type==='heal'&&event.abilityId==='TEST_HEAL')?.amount??0;
+const reducedHeal=healReduced.events.find(event=>event.type==='heal'&&event.abilityId==='TEST_HEAL')?.amount??0;
+assert.equal(baselineHeal,100);
+assert.equal(reducedHeal,50,'healing_received debuffs must reduce authoritative healing');
+assert.ok(healReduced.events.some(event=>event.type==='status_apply'&&event.statusTag==='healing_received'));
 
 const zeroStats={maxHp:20_000,attackPower:0,healingPower:0,defense:0,accuracy:1000,evasion:0,critChance:0,critMultiplier:1.5,haste:0};
 const caster:CombatantDefinition={id:'CASTER',name:'Priority Caster',team:'enemies',role:'enemy',level:25,stats:zeroStats,basicAttackMs:99_999,basicAttackCoeff:0,abilities:[

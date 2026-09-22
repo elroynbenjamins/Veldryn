@@ -29,10 +29,13 @@ ok(craftingBrowser.includes("(!recipe.classId||recipe.classId===state.character?
 ok(craftingBrowser.includes("label:'READY NOW'")&&craftingBrowser.includes("label:'NEEDS REQUIREMENTS'")&&craftingBrowser.includes("label:'LOCKED'"),'Crafting recipes must remain grouped by actionable state');
 ok(craftingBrowser.includes("filterToggle:{minHeight:44"),'Crafting filters must use a compact accessible dropdown control');
 ok(craftingBrowser.includes("skillId==='smithing'?{label:'EQUIPMENT FORGE'")&&craftingBrowser.includes("label:'KITCHEN'")&&craftingBrowser.includes("label:'ALCHEMY LAB'"),'Crafting skill screens must preserve distinct workshop identities');
+ok(craftingBrowser.includes('alchemyAvailability')&&craftingBrowser.includes("Stop the current activity before brewing."),'Alchemy recipe readiness must use the reserved batch system');
 
 const recipeCard=read('src/components/RecipeCard.tsx');
 ok(recipeCard.includes("head:{minHeight:96"),'Recipe rows must remain compact');
 ok(recipeCard.includes("statusText=forgeFull?"),'Collapsed recipe cards must expose the actual blocking state');
+ok(recipeCard.includes('BATCH SIZE')&&recipeCard.includes("Brew ×"),'Alchemy recipe cards must expose batch-size and timed brew controls');
+ok(skills.includes("type:'alchemy_start'"),'Skills must route Alchemy through the authoritative alchemy_start command');
 
 const snapshot=read('src/components/SkillDashboard.tsx');
 ok(snapshot.includes('.slice(0,5)'),'Home skill snapshot must show only the five strongest non-combat skills');

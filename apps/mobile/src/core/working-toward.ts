@@ -13,6 +13,7 @@ export type WorkingTowardDestination=
  |{kind:'contracts';button:string;detail:string}
  |{kind:'inventory';button:string;detail:string}
  |{kind:'world';regionId:string;button:string;detail:string}
+ |{kind:'dungeon';dungeonId?:string;button:string;detail:string}
  |{kind:'info';button:string;detail:string};
 
 const gatherDefs=[...GATHERING,...HERB_NODES];
@@ -45,6 +46,7 @@ export function workingTowardSourceAvailability(state:GameState,source:WorkingTo
   return {kind:'skill',id:source.skillId??'skills',label:source.skillId?skillLabel(source.skillId):'Skills',available:true};
  }
  if(source.kind==='contracts')return {kind:'weekly_order',id:'contract-board',label:'Contract Board',available:true};
+ if(source.kind==='dungeon')return {kind:'dungeon',id:source.dungeonId??'dungeon',label:'Dungeon',available:true};
  if(source.kind==='world')return {kind:'region',id:source.regionId,label:WORLD_ZONES.find(row=>row.id===source.regionId)?.name??source.regionId,available:state.character!.level>=(WORLD_ZONES.find(row=>row.id===source.regionId)?.minLevel??1)};
  if(source.kind==='inventory')return {kind:'item',id:'inventory',label:'Inventory & Bank',available:true};
  return undefined;
@@ -56,7 +58,7 @@ export interface WorkingTowardDestinationAvailability{status:WorkingTowardAvaila
 export function workingTowardDestinationAvailability(state:GameState,source:WorkingTowardDestination):WorkingTowardDestinationAvailability{
  const base=workingTowardSourceAvailability(state,source);
  if(source.kind==='info')return {status:'info',label:'INFO',detail:source.detail,canNavigate:false};
- if(source.kind==='inventory'||source.kind==='contracts')return {status:'ready',label:'READY',detail:'Available now.',canNavigate:true};
+ if(source.kind==='inventory'||source.kind==='contracts'||source.kind==='dungeon')return {status:'ready',label:'READY',detail:'Available now.',canNavigate:true};
  const regionId='regionId' in source?source.regionId:undefined,region=regionId?WORLD_ZONES.find(row=>row.id===regionId):undefined;
  if(region&&state.character!.level<region.minLevel)return {status:'locked',label:'LOCKED',detail:`Region unlocks at character level ${region.minLevel}.`,canNavigate:true};
  if(base&&!base.available)return {status:'locked',label:'LOCKED',detail:base.reason??'This source is not available yet.',canNavigate:true};
@@ -107,7 +109,7 @@ export function progressionGoalDestination(state:GameState,goal:ProgressionGoal)
   const monster=goal.sourceKind==='monster'?MONSTERS.find(row=>row.id===goal.sourceId):undefined,region=monster?regionForZoneName(monster.zone):undefined;
   return monster?{kind:'combat',monsterId:monster.id,zoneName:monster.zone,regionId:region?.id,button:`Hunt ${monster.name}`,detail:'This hunt can award the tracked pet.'}:{kind:'info',button:'View pet source',detail:'This pet uses a dungeon or special source.'};
  }
- if(goal.kind==='dungeon_clears')return {kind:'info',button:'Open Dungeon',detail:'Continue the tracked dungeon from Dungeon content.'};
+ if(goal.kind==='dungeon_clears')return {kind:'dungeon',dungeonId:goal.dungeonId,button:'Open Dungeon',detail:'Continue the tracked dungeon from Dungeon content.'};
  if(goal.kind==='equipment_set')return {kind:'skills',mode:'crafting',button:'Open Crafting',detail:'Continue crafting pieces for the tracked equipment set.'};
  return {kind:'info',button:'Review goal',detail:'Review the tracked objective.'};
 }

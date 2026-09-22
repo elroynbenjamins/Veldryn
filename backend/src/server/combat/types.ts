@@ -133,6 +133,7 @@ export interface CombatEvent {
   actorId?: string;
   targetId?: string;
   abilityId?: string;
+  interruptedAbilityId?: string;
   amount?: number;
   critical?: boolean;
   absorbed?: number;

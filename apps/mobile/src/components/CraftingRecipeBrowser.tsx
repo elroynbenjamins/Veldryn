@@ -1,0 +1,47 @@
+import {useMemo,useState} from 'react';
+import {Pressable,StyleSheet,Text,View} from 'react-native';
+import type {GameState,SkillId} from '../core/types';
+import {RECIPES} from '../content/skills';
+import {itemDef} from '../content/items';
+import {recipeAvailability} from '../core/playability';
+import {alchemyAvailability} from '../core/alchemy';
+import {formatGameNumber} from '../core/number-format';
+import type {WorkingTowardDestination} from '../core/working-toward';
+import {RecipeCard} from './RecipeCard';
+import {SearchField} from './SearchField';
+import {GameButton} from './GameButton';
+import {spacing,typography,type ThemeColors} from '../theme/theme';
+import {useGameTheme} from '../theme/ThemeContext';
+
+type CraftingSkillId=Extract<SkillId,'smithing'|'cooking'|'alchemy'>;
+type RecipeStatus={ready:boolean;reason:string;inputs:Array<{itemId:string;quantity:number;inventory:number;bank:number}>};
+type Row={recipe:(typeof RECIPES)[number];status:RecipeStatus};
+
+export function CraftingRecipeBrowser({state,skillId,initialQuery='',onCraft,onAlchemyStart,onNavigate,onCraftPrerequisites}:{state:GameState;skillId:CraftingSkillId;initialQuery?:string;onCraft:(id:string)=>void;onAlchemyStart?:(id:string,batches:number)=>Promise<void>|void;onNavigate?:(destination:WorkingTowardDestination)=>void;onCraftPrerequisites?:(recipeId:string)=>void}){
+ const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
+ const [query,setQuery]=useState(initialQuery),[readyOnly,setReadyOnly]=useState(false),[filterOpen,setFilterOpen]=useState(false),[limit,setLimit]=useState(12);
+ const skill=state.skills.find(row=>row.skillId===skillId),skillLevel=skill?.level??1,characterLevel=state.character?.level??1;
+ const all:Row[]=RECIPES.filter(recipe=>recipe.skillId===skillId&&!recipe.noviceSetId&&(!recipe.classId||recipe.classId===state.character?.classId)).sort((a,b)=>a.level-b.level||a.name.localeCompare(b.name)).map(recipe=>{const base=skillId==='alchemy'?alchemyAvailability(state,recipe.id,1):recipeAvailability(state,recipe.id);const status=skillId==='alchemy'&&state.activity?{...base,ready:false,reason:'Stop the current activity before brewing.'}:base;return {recipe,status};});
+ const q=query.trim().toLowerCase(),matching=all.filter(({recipe})=>!q||(recipe.name+' '+itemDef(recipe.output.itemId).name).toLowerCase().includes(q));
+ const ready=matching.filter(row=>row.status.ready),locked=matching.filter(row=>!row.status.ready&&(row.recipe.level>skillLevel||(row.recipe.characterLevel??1)>characterLevel));
+ const lockedIds=new Set(locked.map(row=>row.recipe.id)),needs=matching.filter(row=>!row.status.ready&&!lockedIds.has(row.recipe.id));
+ const groups:{label:string;tone:'ready'|'needs'|'locked';rows:Row[]}[]=readyOnly?[{label:'READY NOW',tone:'ready',rows:ready}]:[{label:'READY NOW',tone:'ready',rows:ready},{label:'NEEDS REQUIREMENTS',tone:'needs',rows:needs},{label:'LOCKED',tone:'locked',rows:locked}].filter(group=>group.rows.length>0) as {label:string;tone:'ready'|'needs'|'locked';rows:Row[]}[];
+ const perGroup=Math.max(4,Math.ceil(limit/Math.max(1,groups.length))),hasMore=groups.some(group=>group.rows.length>perGroup);
+ const readyAll=all.filter(row=>row.status.ready),highest=[...readyAll].sort((a,b)=>b.recipe.xp-a.recipe.xp)[0];
+ const nextLevel=Math.min(...all.filter(row=>row.recipe.level>skillLevel).map(row=>row.recipe.level),Infinity),nextRows=Number.isFinite(nextLevel)?all.filter(row=>row.recipe.level===nextLevel):[];
+ const meta=skillId==='smithing'?{label:'EQUIPMENT FORGE',copy:'Gear, tools and equipment progression',accent:C.accent}:skillId==='cooking'?{label:'KITCHEN',copy:'Food and restorative batches',accent:C.good}:{label:'ALCHEMY LAB',copy:'Potions and combat preparations',accent:C.special};
+ return <View style={s.root}>
+  <View style={[s.workshop,{borderColor:meta.accent}]}><View style={s.workshopHead}><View style={s.flex}><Text style={[s.workshopLabel,{color:meta.accent}]}>{meta.label}</Text><Text style={s.workshopCopy}>{meta.copy}</Text></View><Text style={[s.workshopReady,{color:meta.accent}]}>{readyAll.length}/{all.length} ready</Text></View><View style={s.workshopStats}><View style={s.stat}><Text style={s.statLabel}>HIGHEST XP READY</Text><Text numberOfLines={1} style={s.statValue}>{highest?.recipe.name??'None'}</Text><Text style={s.statHint}>{highest?'+'+formatGameNumber(highest.recipe.xp,state.settings.numberMode)+' skill XP':readyAll.length?'Ready recipes available':'Gather requirements to craft.'}</Text></View><View style={s.stat}><Text style={s.statLabel}>NEXT SKILL UNLOCK</Text><Text style={s.statValue}>{Number.isFinite(nextLevel)?'Level '+nextLevel:'Path complete'}</Text><Text numberOfLines={1} style={s.statHint}>{nextRows.length?nextRows[0].recipe.name+(nextRows.length>1?' +'+(nextRows.length-1)+' more':''):'No higher-level recipe configured.'}</Text></View></View></View>
+  <View style={s.searchRow}><View style={s.flex}><SearchField accessibilityLabel="Search recipes" value={query} onChangeText={value=>{setQuery(value);setLimit(12);}} placeholder="Search recipes…"/></View><Pressable accessibilityRole="button" accessibilityState={{expanded:filterOpen}} onPress={()=>setFilterOpen(value=>!value)} style={({pressed})=>[s.filterToggle,filterOpen&&s.filterToggleActive,pressed&&s.pressed]}><Text style={s.filterToggleText}>Filters{readyOnly?' · 1':''}</Text></Pressable></View>
+  {filterOpen?<View style={s.filterPanel}><Pressable accessibilityRole="button" accessibilityState={{selected:readyOnly}} onPress={()=>{setReadyOnly(value=>!value);setLimit(12);}} style={({pressed})=>[s.filterRow,readyOnly&&s.filterRowActive,pressed&&s.pressed]}><View style={s.flex}><Text style={s.filterTitle}>Craftable only</Text><Text style={s.filterHint}>Hide locked and missing-requirement recipes.</Text></View><Text style={[s.filterValue,readyOnly&&s.filterValueActive]}>{readyOnly?'ON':'OFF'}</Text></Pressable></View>:null}
+  {groups.map(group=><View key={group.label} style={s.group}><View style={s.groupHead}><Text style={[s.groupLabel,group.tone==='ready'?s.ready:group.tone==='needs'?s.needs:s.locked]}>{group.label}</Text><Text style={s.groupCount}>{group.rows.length}</Text></View>{group.rows.slice(0,perGroup).map(({recipe,status})=><RecipeCard key={recipe.id} state={state} recipe={recipe} status={status} onCraft={onCraft} onNavigate={onNavigate} onCraftPrerequisites={onCraftPrerequisites} alchemy={skillId==='alchemy'} onAlchemyStart={onAlchemyStart}/>)}</View>)}
+  {hasMore?<GameButton title="Show more recipes" tone="secondary" onPress={()=>setLimit(value=>value+12)}/>:null}
+  {matching.length===0?<Text style={s.empty}>{query.trim()?'No recipes match your search.':readyOnly?'No recipes are ready. Open Filters to show locked and missing-requirement recipes.':'No recipes available.'}</Text>:null}
+ </View>;
+}
+
+function makeStyles(C:ThemeColors){return StyleSheet.create({
+ root:{gap:spacing.md},flex:{flex:1,minWidth:0},workshop:{gap:8,padding:10,borderWidth:1,borderRadius:12,backgroundColor:C.panel},workshopHead:{flexDirection:'row',alignItems:'center',gap:8},workshopLabel:{fontSize:9,fontWeight:'900',letterSpacing:.9},workshopCopy:{...typography.caption,color:C.muted},workshopReady:{...typography.caption,fontWeight:'900'},workshopStats:{flexDirection:'row',gap:8,paddingTop:7,borderTopWidth:1,borderTopColor:C.line},stat:{flex:1,minWidth:0},statLabel:{fontSize:8.5,color:C.muted,fontWeight:'900',letterSpacing:.65},statValue:{...typography.bodyStrong,color:C.text},statHint:{fontSize:10,color:C.muted},
+ searchRow:{flexDirection:'row',alignItems:'center',gap:8},filterToggle:{minHeight:44,paddingHorizontal:11,justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:10,backgroundColor:C.panel2},filterToggleActive:{borderColor:C.selectionLine,backgroundColor:C.selection},filterToggleText:{fontSize:11,color:C.text,fontWeight:'900'},filterPanel:{padding:8,borderWidth:1,borderColor:C.line,borderRadius:10,backgroundColor:C.panel},filterRow:{minHeight:44,flexDirection:'row',alignItems:'center',gap:8,paddingHorizontal:8,borderWidth:1,borderColor:C.line,borderRadius:8,backgroundColor:C.panel2},filterRowActive:{borderColor:C.selectionLine,backgroundColor:C.selection},filterTitle:{...typography.bodyStrong,color:C.text},filterHint:{...typography.caption,color:C.muted},filterValue:{...typography.caption,color:C.muted,fontWeight:'900'},filterValueActive:{color:C.good},pressed:{opacity:.76},
+ group:{gap:8},groupHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,paddingTop:2},groupLabel:{...typography.caption,fontWeight:'900',letterSpacing:.8},groupCount:{...typography.caption,color:C.muted,fontWeight:'800'},ready:{color:C.good},needs:{color:C.info},locked:{color:C.warning},empty:{...typography.body,color:C.muted,padding:spacing.md,borderWidth:1,borderColor:C.line,borderRadius:8,backgroundColor:C.panel}
+});}

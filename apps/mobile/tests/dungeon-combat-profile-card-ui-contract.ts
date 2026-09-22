@@ -19,7 +19,7 @@ ok(stage.includes("import {CombatantProfileCard,EnemyCombatProfileCard} from './
 ok(stage.includes('<CombatantProfileCard')&&stage.includes('<EnemyCombatProfileCard'),'Both party and enemy sides must use the combat profile-card language');
 ok(stage.indexOf('<EnemyCombatProfileCard')<stage.indexOf('<CombatantProfileCard'),'Enemy/boss card must render above the party cards on the mobile battlefield');
 ok(stage.includes("partyField:{width:'100%',flexDirection:'row'")&&stage.includes("formationSlot:{flex:1,minWidth:0}"),'Four party combat cards must share one compact bottom row');
-ok(stage.includes("bossField:{width:'66%'"),'Boss encounter card must receive stronger centered emphasis than a normal enemy');
+ok(stage.includes('layout.bossWidthPctFinal')&&stage.includes('layout.bossWidthPct'),'Boss encounter card must retain stronger centered emphasis through the responsive width contract');
 ok(!stage.includes('<ClassAvatar'),'Dungeon stage must not regress to the generic initial/weapon combat box');
 ok(card.includes('dungeonEnemyPortraitSource(name)'),'Named bosses/enemies must resolve real artwork in the encounter card');
 ok(card.includes("boss?'♛':'◆'"),'Unknown enemies must retain a safe visual fallback');

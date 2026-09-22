@@ -65,7 +65,7 @@
     "combat-rng-portable": "node dist/server/combat/__tests__/portable-rng.js",
     "test:coop-live-social": "tsc -p tsconfig.online.json && node dist/online/backend/online/tests/live-queue.js && node dist/online/backend/online/tests/coop-lfg.js",
     "test:coop-composition": "tsc -p tsconfig.coop-composition.json && node dist-coop-composition/server/coop/__tests__/phase6-qmode.js && node dist-coop-composition/server/coop/__tests__/phase6-public-projection.js && node dist-coop-composition/server/coop/__tests__/phase7-matchmaking.js && node dist-coop-composition/server/coop/__tests__/qa-echo-fixtures.js",
-    "test:gems": "tsc -p tsconfig.gems.json && node dist-gems/server/equipment/gems/gem-v1.test.js && node dist-gems/server/equipment/gems/regional-gem-settlement-v1.test.js && node dist-gems/server/combat/__tests__/gem-effects-v1.js && node dist-gems/server/combat/__tests__/regional-combat-runtime-v1.js"
+    "test:gems": "tsc -p tsconfig.gems.json && node dist-gems/server/equipment/gems/gem-v1.test.js && node dist-gems/server/equipment/gems/regional-gem-settlement-v1.test.js && node dist-gems/server/combat/__tests__/gem-effects-v1.js && node dist-gems/server/combat/__tests__/regional-combat-runtime-v1.js && node dist-gems/server/combat/__tests__/pve-encounter-identity.js"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

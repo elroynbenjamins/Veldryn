@@ -1,6 +1,6 @@
 import {claimActivity,createCharacter,newGame,startCombat,startExploration,startGathering,travelToRegion} from '../src/core/game';
 import {currentRegionId} from '../src/core/combat-region';
-import {encounterUnlocked,nextRegionUnlock,regionEncounters} from '../src/core/world-navigation';
+import {encounterUnlocked,nextRegionUnlock,orderedTravelRegions,regionActivitySummary,regionEncounters} from '../src/core/world-navigation';
 
 const ok=(condition:unknown,message:string)=>{if(!condition)throw new Error(message)};
 const beginner=createCharacter(newGame(0),'IRONWARDEN','Region Test');
@@ -56,5 +56,15 @@ ok(startCombat(ashMapped,'BLACKGLASS_MIRELING',373014).activity?.targetId==='BLA
 ok(encounterUnlocked(ashMapped,{id:'BLACKGLASS_MIRELING',name:'Blackglass Mireling',level:72,hp:1,attack:1,defense:1,xp:1,gold:1,secondsPerKill:1,unlockLevel:71,zone:'Ashlands',drops:[]}),'Unlocked Ashlands encounter must appear in the world browser');
 ok(regionEncounters(ashMapped,'Ashlands','glass',true).some(monster=>monster.id==='BLACKGLASS_MIRELING'),'Later-region encounter search must include discovered content');
 ok(nextRegionUnlock(30)?.id==='FROSTMARCH'&&nextRegionUnlock(50)?.id==='ASHLANDS','Next-region navigation must include later regions');
+const greenfieldsSummary=regionActivitySummary(beginner,'GREENFIELDS');
+ok(greenfieldsSummary.unlocked,'Current starter region must report as unlocked');
+ok(greenfieldsSummary.combatTotal>0&&greenfieldsSummary.gatheringTotal>0,'Region summary must expose real authored combat and gathering counts');
+ok(greenfieldsSummary.gatheringSkills.includes('woodcutting'),'Region summary must expose authored gathering skill families');
+const frostSummaryAt30=regionActivitySummary(later,'FROSTMARCH');
+ok(!frostSummaryAt30.unlocked&&frostSummaryAt30.combatReady===0&&frostSummaryAt30.gatheringReady===0,'Locked regions must not report playable readiness');
+const ordered=orderedTravelRegions(later,'SUNSCAR','FROSTMARCH');
+ok(ordered[0]?.id==='FROSTMARCH','Pinned Working Toward destination must be promoted to the top of travel choices');
+const orderedNoGoal=orderedTravelRegions(later,'SUNSCAR');
+ok(orderedNoGoal[0]?.id==='KINGS_ROAD'&&orderedNoGoal.findIndex(zone=>zone.id==='FROSTMARCH')>orderedNoGoal.findIndex(zone=>zone.id==='GREENFIELDS'),'Travel ordering must show unlocked regions first and future locked regions after them');
 
 console.log('PASS: travel persists location and region gates combat and gathering');

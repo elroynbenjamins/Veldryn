@@ -1,7 +1,7 @@
 import {createCharacter,newGame,startGathering} from '../src/core/game';
 import {GATHERING} from '../src/content/skills';
 import {MONSTERS} from '../src/content/monsters';
-import {activeActivityLevelPace,activityProgressFeedback,combatBaselineProjection,craftingPaceProjection,dropExpectation,formatBalanceDuration,gatheringBalanceProjection,skillTargetEta} from '../src/core/balance-projection';
+import {activeActivityLevelPace,activityProgressFeedback,characterLevelPace,combatBaselineProjection,craftingPaceProjection,dropExpectation,formatBalanceDuration,gatheringBalanceProjection,skillTargetEta} from '../src/core/balance-projection';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 function close(actual:number,expected:number,tolerance:number,message:string){if(Math.abs(actual-expected)>tolerance)throw new Error(message+': expected '+expected+', got '+actual)}
@@ -22,6 +22,9 @@ const starterPace=gatheringBalanceProjection(starterToolState,greenwood,24),midP
 ok(midPace.xpPerHour>starterPace.xpPerHour,'Recommended tier-2 gathering must improve XP/hour over starter gathering');
 ok(highPace.xpPerHour>midPace.xpPerHour,'Recommended tier-3 gathering must improve XP/hour over tier-2 gathering');
 ok(crownwood.recommendedToolTier===3,'Level-15 Crownwood must correctly recommend the tier-3 tool');
+ok((starterPace.levelPace.etaSeconds??Infinity)>=8*60&&(starterPace.levelPace.etaSeconds??Infinity)<=25*60,'A properly equipped starter skill should gain its first level in roughly 8–25 minutes');
+const firstUnlock=skillTargetEta(starterToolState,'woodcutting',7,starterPace.xpPerHour);
+ok((firstUnlock.etaSeconds??Infinity)>=4*3600&&(firstUnlock.etaSeconds??Infinity)<=12*3600,'The first major gathering tier should remain reachable within a long playday/offline session');
 
 state=startGathering(state,'GREENWOOD_TREE',1000);
 const active=activeActivityLevelPace(state,gather.xpPerHour);
@@ -31,6 +34,8 @@ ok((active?.etaSeconds??0)>0,'Active gathering pace must expose a next-level ETA
 const rat=MONSTERS.find(row=>row.id==='MOSS_RAT')!,combat=combatBaselineProjection(rat);
 ok(combat.cycleSeconds>rat.secondsPerKill,'Combat baseline must include the global combat-time scale used by settlement');
 ok(combat.killsPerHour>0&&combat.xpPerHour>0,'Combat baseline must expose kills/hour and XP/hour');
+const firstCombatLevel=characterLevelPace(state,combat.xpPerHour);
+ok((firstCombatLevel.etaSeconds??Infinity)>=12*60&&(firstCombatLevel.etaSeconds??Infinity)<=35*60,'Baseline starter combat should gain the first character level in roughly 12–35 minutes');
 const gearDrop=rat.drops.find(drop=>drop.chance<.1)!;
 const expected=dropExpectation(gearDrop.chance,gearDrop.min,gearDrop.max,combat.killsPerHour);
 close(expected.oneIn,1/gearDrop.chance,.001,'Drop odds must be the reciprocal of per-kill chance');

@@ -12,6 +12,14 @@ assert.ok(predator.players[0].damageDone>baseline.players[0].damageDone,'Predato
 const momentum=simulateCombat({seed:'gem-momentum',players:[player([{familyId:'effect_momentum',copies:3,resonance:3,totalValue:.0108}])],enemies:[boss()],maxDurationMs:7000});
 assert.ok(momentum.players[0].modifiers.some(row=>row.tag==='gem:momentum'),'Momentum should build combat-runtime stacks');
 assert.ok(momentum.players[0].damageDone>simulateCombat({seed:'gem-momentum',players:[player()],enemies:[boss()],maxDurationMs:7000}).players[0].damageDone,'Momentum stacks should increase sustained damage');
+const momentumSnapshots=momentum.events.filter(event=>event.type==='gem_state');
+assert.ok(momentumSnapshots.length>0,'visible Effect Gem state changes should emit replay snapshots');
+assert.ok(momentumSnapshots.some(event=>event.gemStates?.some(state=>state.targetId==='P1'&&state.tag==='gem:momentum'&&state.expiriesAtMs.length>=1)),'Momentum must appear in visible gem-state snapshots');
+assert.equal(momentumSnapshots.some(event=>event.gemStates?.some(state=>/_cd$|_last:|_used$|_started:/.test(state.tag))),false,'internal Effect Gem cooldown and bookkeeping tags must never enter visible snapshots');
+
+const unyieldingPlayer=player([{familyId:'effect_unyielding',copies:3,resonance:3,totalValue:.018}]);
+const unyieldingRun=simulateCombat({seed:'gem-unyielding-visible',players:[unyieldingPlayer],enemies:[{...boss(),stats:{...boss().stats,attackPower:500,accuracy:5000},basicAttackMs:500}],maxDurationMs:2200});
+assert.ok(unyieldingRun.events.some(event=>event.type==='gem_state'&&event.gemStates?.some(state=>state.targetId==='P1'&&state.tag==='gem:unyielding')),'Unyielding should expose its active defensive stacks without exposing its cooldown marker');
 
 const companionAbility:CombatantDefinition={...player([{familyId:'effect_predator',copies:3,resonance:3,totalValue:.20}]),basicAttackMs:999999,abilities:[{id:'COMPANION_STRIKE',name:'Companion Strike',cooldownMs:100,castTimeMs:0,target:'current_target',priority:10,effects:[{kind:'damage',coeff:1,damageType:'physical'}]}]};
 const companionWithGem=simulateCombat({seed:'gem-companion',players:[companionAbility],enemies:[boss()],maxDurationMs:3000});

@@ -3,6 +3,7 @@ import { persistentPlayerState, simulateCombat } from './engine';
 import type { CombatantDefinition, CombatResult, EncounterBossTuning, PersistentActorState } from './types';
 import { EXPEDITION_ENCOUNTERS } from './content/expedition-encounters';
 import {pveEncounterPreview,type PveEncounterPreview} from './pve-encounter-identity';
+import {buildPveSimulationTelemetry,type PveSimulationTelemetry} from './pve-simulation-telemetry';
 
 export interface BuildExpeditionEncounterInput {
   encounterId:string;
@@ -44,7 +45,7 @@ export interface ExpeditionCombatReplayCue{
 }
 export interface ExpeditionCombatCommitPayload {
   success:boolean;
-  resultJson:{reason:string;durationMs:number;downs:string[];playerHp:Record<string,number>;enemyHp:Record<string,number>;damage:Record<string,number>;healing:Record<string,number>;damageTaken:Record<string,number>;interrupts:Record<string,number>;eventDigest:string;eventCount:number;bossPhaseIds:string[];bossCastAbilityIds:string[];encounterIdentity?:PveEncounterPreview;replayCombatants:ExpeditionCombatReplayCombatant[];replayStatuses:ExpeditionCombatReplayStatus[];replayGemStates:ExpeditionCombatReplayGemSnapshot[];replayCues:ExpeditionCombatReplayCue[]};
+  resultJson:{reason:string;durationMs:number;downs:string[];playerHp:Record<string,number>;enemyHp:Record<string,number>;damage:Record<string,number>;healing:Record<string,number>;damageTaken:Record<string,number>;interrupts:Record<string,number>;eventDigest:string;eventCount:number;bossPhaseIds:string[];bossCastAbilityIds:string[];encounterIdentity?:PveEncounterPreview;pveTelemetry:PveSimulationTelemetry;replayCombatants:ExpeditionCombatReplayCombatant[];replayStatuses:ExpeditionCombatReplayStatus[];replayGemStates:ExpeditionCombatReplayGemSnapshot[];replayCues:ExpeditionCombatReplayCue[]};
   debugEvents?:CombatResult['events'];
   endingPlayerState:Record<string,PersistentActorState>;
 }
@@ -172,6 +173,6 @@ export function resolveExpeditionCombat(input:ResolveExpeditionCombatInput, incl
   const unique=(values:Array<string|undefined>)=>[...new Set(values.filter((value):value is string=>Boolean(value)))];
   const bossPhaseIds=unique(result.events.filter(event=>event.type==='phase'&&event.actorId&&bossIds.has(event.actorId)).map(event=>event.abilityId));
   const bossCastAbilityIds=unique(result.events.filter(event=>event.type==='cast_start'&&event.actorId&&bossIds.has(event.actorId)).map(event=>event.abilityId));
-  const replay=publicReplay(result,input.initialPlayerState),encounterIdentity=pveEncounterPreview(enemies);
-  return {success:result.victory,resultJson:{reason:result.reason,durationMs:result.durationMs,downs:result.players.filter(p=>p.downed).map(p=>p.definition.id),playerHp:rec(result.players,x=>x.hp),enemyHp:rec(result.enemies,x=>x.hp),damage:rec(result.players,x=>x.damageDone),healing:rec(result.players,x=>x.healingDone),damageTaken:rec(result.players,x=>x.damageTaken),interrupts:rec(result.players,x=>x.interrupts),eventDigest,eventCount:result.events.length,bossPhaseIds,bossCastAbilityIds,...(encounterIdentity?{encounterIdentity}:{}),replayCombatants:replay.combatants,replayStatuses:replay.statuses,replayGemStates:replay.gemStates,replayCues:replay.cues},endingPlayerState:persistentPlayerState(result),...(includeDebugTrace?{debugEvents:result.events}:{})};
+  const replay=publicReplay(result,input.initialPlayerState),encounterIdentity=pveEncounterPreview(enemies),pveTelemetry=buildPveSimulationTelemetry(result,input.encounterId);
+  return {success:result.victory,resultJson:{reason:result.reason,durationMs:result.durationMs,downs:result.players.filter(p=>p.downed).map(p=>p.definition.id),playerHp:rec(result.players,x=>x.hp),enemyHp:rec(result.enemies,x=>x.hp),damage:rec(result.players,x=>x.damageDone),healing:rec(result.players,x=>x.healingDone),damageTaken:rec(result.players,x=>x.damageTaken),interrupts:rec(result.players,x=>x.interrupts),eventDigest,eventCount:result.events.length,bossPhaseIds,bossCastAbilityIds,...(encounterIdentity?{encounterIdentity}:{}),pveTelemetry,replayCombatants:replay.combatants,replayStatuses:replay.statuses,replayGemStates:replay.gemStates,replayCues:replay.cues},endingPlayerState:persistentPlayerState(result),...(includeDebugTrace?{debugEvents:result.events}:{})};
 }

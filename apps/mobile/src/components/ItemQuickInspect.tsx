@@ -30,7 +30,7 @@ export function ItemQuickInspect({state,itemId,onClose,onNavigate}:{state:GameSt
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
   if(!itemId)return null;
   const model=itemInspectModel(state,itemId),item=model.item,rarity=model.rarity,upgrade=model.upgrade,sockets=model.sockets,gearDecision=model.gearDecision,nameColor=rarityNameColor(model.rarityId,C.dark,C.text);
-  const sourceRows=model.sources.slice(0,4),useRows=model.usedIn.slice(0,4),craftPath=item.type==='gear'?equipmentCraftingPath(state,itemId):undefined;
+  const sourceRows=model.sources.slice(0,4),useRows=model.usedIn.slice(0,4),craftPath=item.type==='gear'?equipmentCraftingPath(state,item.id):undefined;
   const upgradeChance=upgrade?Math.round(upgrade.successChance*100):0;
   const upgradeColor=upgrade?.maxed?C.good:upgradeChance>=70?C.good:upgradeChance>=30?C.warning:C.bad;
   return <Modal visible transparent statusBarTranslucent animationType={state.settings.reduceMotion?'none':'fade'} onRequestClose={onClose}>

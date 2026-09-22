@@ -7,6 +7,7 @@ import type {EquipmentCraftJob,GameState,ItemStack,SkillState} from './types';
 import {craftClaimSubRoll,craftedInstanceResult,createCraftedGearInstance} from './crafted-gear-instances';
 import {gemCombineRecipeV1,isGemFamilyRecipeUnlockedV1} from './gem-progression-v1';
 import {professionMasteryMultipliers} from './profession-mastery-v40';
+import {applyTrustedLongTermProgression} from './long-term-progression-runtime';
 
 export const BASE_EQUIPMENT_CRAFT_SLOTS=3;
 export const MAX_EQUIPMENT_CRAFT_SLOTS=5;
@@ -230,6 +231,7 @@ export function claimForgeJob(state:GameState,jobId:string,nowMs:number,rarityRo
     const created=createCraftedGearInstance(next,{itemId:equipmentRecipe.output.itemId,ownerCharacterId:job.ownerCharacterId,jobId:job.id,createdAtMs:nowMs,roll:rarityRoll});
     next=created.state;
     next={...next,account:{...next.account,equipmentCraftingQueue:queue.filter(row=>row.id!==jobId)}};
+    next=applyTrustedLongTermProgression(next,[{kind:'crafting',contentId:equipmentRecipe.id,units:1,startedAtMs:job.startedAtMs}],undefined,nowMs,{accountId:next.account.longTermAccountScopeId??`local-account:${next.createdAtMs}`,eventId:`forge:${job.id}:${nowMs}`}).state;
     return {state:next,recipe:equipmentRecipe,job,kind:'equipment' as const,instance:created.instance,result:craftedInstanceResult(next,created.instance)};
   }
   next={...next,account:{...next.account,equipmentCraftingQueue:queue.filter(row=>row.id!==jobId)}};

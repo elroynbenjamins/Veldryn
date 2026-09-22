@@ -1,6 +1,6 @@
 import type {GameState} from '../../apps/mobile/src/core/types';
 import type {CombatantDefinition} from '../src/server/combat/types';
-import {regionalCombatCatalogEntryV1,resolveRegionalCombatV1,startRegionalCombatV1,type RegionalCombatReservationV1,type RegionalCombatStoreV1,type RegionalCombatStoredResultV1} from '../src/server/combat/regional-combat-runtime-v1';
+import {regionalCombatCatalogEntryV1,resolveRegionalCombatV1,startRegionalCombatV1,SUNSCAR_REGIONAL_COMBAT_CATALOG_V1,type RegionalCombatReservationV1,type RegionalCombatStoreV1,type RegionalCombatStoredResultV1} from '../src/server/combat/regional-combat-runtime-v1';
 import {deriveOnlineCoopLoadout} from './coop-loadout';
 import {deriveRole} from '../src/server/coop/role-readiness';
 import {GameplayError,type GameplayServices} from './gameplay';
@@ -8,6 +8,7 @@ import {GameplayError,type GameplayServices} from './gameplay';
 interface LoadedGame{state:GameState|null;version:number;serverNow:number;}
 interface AccessResult{allowed:boolean;reason?:string;}
 interface LoadedReceipt{reservation:RegionalCombatReservationV1;result?:RegionalCombatStoredResultV1|null;}
+interface CadenceRowV1{cooldownSeconds:number;readyAtMs?:number|null;dailyWins?:number;dailyCap?:number|null;dailyResetAtMs?:number|null;}
 
 class RpcRegionalCombatStore implements RegionalCombatStoreV1{
  constructor(private services:Pick<GameplayServices,'rpc'>,private accountId:string){}
@@ -55,6 +56,14 @@ export class OnlineRegionalCombatRuntimeV1{
   },{accountId,characterId:request.characterId,encounterId:request.encounterId,requestId:request.requestId});
   return projection(reservation);
  }
+ async cadence(accountId:string){
+  const game=await this.services.rpc<LoadedGame>('load_online_game_server_v1',{p_account_id:accountId});
+  const encounters=await Promise.all(SUNSCAR_REGIONAL_COMBAT_CATALOG_V1.map(async encounter=>{
+   const row=await this.services.rpc<CadenceRowV1>('regional_combat_cadence_server_v1',{p_account_id:accountId,p_encounter_id:encounter.encounterId,p_encounter_kind:encounter.kind});
+   return {encounterId:encounter.encounterId,cooldownSeconds:row.cooldownSeconds,readyAtMs:row.readyAtMs??null,dailyWins:Math.max(0,Math.floor(row.dailyWins??0)),dailyCap:row.dailyCap??null,dailyResetAtMs:row.dailyResetAtMs??null};
+  }));
+  return {serverNow:game.serverNow,encounters};
+ }
  async resolve(accountId:string,receiptId:string){
   const store=new RpcRegionalCombatStore(this.services,accountId);
   const resolution=await resolveRegionalCombatV1({
@@ -78,7 +87,12 @@ export function regionalCombatHandlerV1(services:GameplayServices){
   try{
    const bearer=request.headers.get('authorization')?.match(/^Bearer (\S+)$/i)?.[1];if(!bearer)return json({error:'auth_required'},401);
    const accountId=await services.authenticate(bearer);if(!accountId)return json({error:'invalid_session'},401);
-   const path=new URL(request.url).pathname,match=path.match(/\/regional-combat\/([0-9a-fA-F-]+)$/);
+   const path=new URL(request.url).pathname;
+   if(path.endsWith('/regional-combat/status')){
+    if(request.method!=='GET')return json({error:'method_not_allowed'},405);
+    return json(await runtime.cadence(accountId));
+   }
+   const match=path.match(/\/regional-combat\/([0-9a-fA-F-]+)$/);
    if(match){
     if(!uuid.test(match[1]))return json({error:'invalid_request'},400);
     if(request.method!=='POST')return json({error:'method_not_allowed'},405);

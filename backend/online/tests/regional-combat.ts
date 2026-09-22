@@ -19,6 +19,10 @@ const services:GameplayServices={
  async rpc<T>(name:string,args:Record<string,unknown>):Promise<T>{
   if(name==='load_online_game_server_v1')return {state,version:7,serverNow:Date.UTC(2026,8,21,20),characterId:state.character!.id,walletGold:state.character!.gold,guildMember:false,communityProgress:{}} as T;
   if(name==='regional_combat_access_server_v1')return {allowed:true,storyCompleted:8,contentType:'monster'} as T;
+  if(name==='regional_combat_cadence_server_v1'){
+   const encounterId=String(args.p_encounter_id),kind=String(args.p_encounter_kind);
+   return {cooldownSeconds:kind==='regional_boss'?300:kind==='elite'?90:30,readyAtMs:encounterId==='REGCOM_SUN_007_ELITE'?Date.UTC(2026,8,21,20,0,45):null,dailyWins:kind==='regional_boss'?2:0,dailyCap:kind==='regional_boss'?3:null,dailyResetAtMs:kind==='regional_boss'?Date.UTC(2026,8,22):null} as T;
+  }
   if(name==='reserve_regional_combat_server_v1'){
    const requestId=String(args.p_request_id),existing=[...reservations.values()].find((row:any)=>row.requestId===requestId);
    if(existing){if(existing.requestHash!==args.p_request_hash)throw new Error('idempotency_key_conflict');return structuredClone(existing) as T;}
@@ -71,13 +75,28 @@ async function main(){
  const retryStart=await runtime.start('account-1',{requestId:'regional01',characterId:state.character!.id,encounterId:'REGCOM_SUN_006_STANDARD'});
  assert.equal(retryStart.receiptId,started.receiptId,'Start idempotency must return the original receipt');
 
+ const cadence=await runtime.cadence('account-1');
+ assert.equal(cadence.serverNow,Date.UTC(2026,8,21,20));
+ assert.equal(cadence.encounters.length,5);
+ assert.equal(cadence.encounters.find(row=>row.encounterId==='REGCOM_SUN_007_ELITE')?.readyAtMs,Date.UTC(2026,8,21,20,0,45));
+ assert.equal(cadence.encounters.find(row=>row.encounterId==='REGCOM_SUN_010_BOSS')?.dailyWins,2);
+ assert.equal(cadence.encounters.find(row=>row.encounterId==='REGCOM_SUN_010_BOSS')?.dailyCap,3);
+
  const handler=regionalCombatHandlerV1(services);
- const startResponse=await handler(new Request('https://example.test/functions/v1/gameplay/regional-combat',{method:'POST',headers:{authorization:'Bearer test'},body:JSON.stringify({requestId:'regional02',characterId:state.character!.id,encounterId:'REGCOM_SUN_006_STANDARD'})}));
+ const cadenceResponse=await handler(new Request('https://example.test/functions/v1/gameplay/regional-combat/status',{method:'GET',headers:{authorization:'Bearer test'}}));
+ assert.equal(cadenceResponse.status,200);
+ const cadenceHttp=await cadenceResponse.json() as {serverNow:number;encounters:Array<{encounterId:string}>};
+ assert.equal(cadenceHttp.encounters.length,5,'Cadence endpoint should project every authored regional encounter');
+ const cadencePost=await handler(new Request('https://example.test/functions/v1/gameplay/regional-combat/status',{method:'POST',headers:{authorization:'Bearer test'}}));
+ assert.equal(cadencePost.status,405,'Cadence projection must remain read-only');
+
+ const handler2=handler;
+ const startResponse=await handler2(new Request('https://example.test/functions/v1/gameplay/regional-combat',{method:'POST',headers:{authorization:'Bearer test'},body:JSON.stringify({requestId:'regional02',characterId:state.character!.id,encounterId:'REGCOM_SUN_006_STANDARD'})}));
  assert.equal(startResponse.status,200);
  const startedHttp=await startResponse.json() as {receiptId:string};
- const getResolve=await handler(new Request('https://example.test/functions/v1/gameplay/regional-combat/'+startedHttp.receiptId,{method:'GET',headers:{authorization:'Bearer test'}}));
+ const getResolve=await handler2(new Request('https://example.test/functions/v1/gameplay/regional-combat/'+startedHttp.receiptId,{method:'GET',headers:{authorization:'Bearer test'}}));
  assert.equal(getResolve.status,405,'Regional combat resolution must not mutate state through GET');
- const postResolve=await handler(new Request('https://example.test/functions/v1/gameplay/regional-combat/'+startedHttp.receiptId,{method:'POST',headers:{authorization:'Bearer test'}}));
+ const postResolve=await handler2(new Request('https://example.test/functions/v1/gameplay/regional-combat/'+startedHttp.receiptId,{method:'POST',headers:{authorization:'Bearer test'}}));
  assert.equal(postResolve.status,200,'Regional combat resolution should use POST');
 
  const limitedServices:GameplayServices={...services,async rpc<T>(name:string,args:Record<string,unknown>):Promise<T>{

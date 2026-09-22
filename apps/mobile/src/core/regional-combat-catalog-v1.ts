@@ -40,3 +40,39 @@ export function regionalGemIntelV1(encounter:RegionalCombatEncounterV1,pityBySou
   catalystChance:encounter.catalystChance??0,
  };
 }
+
+
+export interface RegionalCombatCadenceStatusV1{
+ encounterId:string;
+ cooldownSeconds:number;
+ readyAtMs?:number|null;
+ dailyWins:number;
+ dailyCap?:number|null;
+ dailyResetAtMs?:number|null;
+}
+export interface RegionalCombatAvailabilityV1{
+ coolingDown:boolean;
+ dailyCapped:boolean;
+ readyInMs:number;
+ dailyRemaining?:number;
+ resetInMs?:number;
+}
+export function regionalCombatAvailabilityV1(
+ encounter:RegionalCombatEncounterV1,
+ cadence:RegionalCombatCadenceStatusV1|undefined,
+ nowMs:number,
+):RegionalCombatAvailabilityV1{
+ const readyAtMs=Number.isFinite(cadence?.readyAtMs)?Number(cadence!.readyAtMs):0;
+ const readyInMs=Math.max(0,readyAtMs-nowMs);
+ const dailyCap=cadence?.dailyCap??encounter.dailyVictoryCap;
+ const dailyWins=Math.max(0,Math.floor(cadence?.dailyWins??0));
+ const dailyRemaining=dailyCap==null?undefined:Math.max(0,dailyCap-dailyWins);
+ const resetAtMs=Number.isFinite(cadence?.dailyResetAtMs)?Number(cadence!.dailyResetAtMs):0;
+ return {
+  coolingDown:readyInMs>0,
+  dailyCapped:dailyRemaining===0,
+  readyInMs,
+  ...(dailyRemaining===undefined?{}:{dailyRemaining}),
+  ...(resetAtMs?{resetInMs:Math.max(0,resetAtMs-nowMs)}:{}),
+ };
+}

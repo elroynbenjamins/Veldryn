@@ -17,7 +17,7 @@ export interface PublicPlayerProfileV43{
 }
 function client(){if(!supabase)throw new Error('Online services are not configured in this build.');return supabase;}
 export async function selfProfileExtensionV43(){
- const {data,error}=await client().rpc('profile_extension_self_v43');if(error)throw error;return data as ProfileExtensionSelfV43;
+ const {data,error}=await client().rpc('profile_extension_self_v43');if(error)throw error;const row=data as ProfileExtensionSelfV43;return {...row,masteryShowcaseActionIds:Array.isArray(row?.masteryShowcaseActionIds)?row.masteryShowcaseActionIds:[]};
 }
 export async function updateProfileExtensionV43(input:{
  visibility:ProfileVisibilityV43;worldFeedOptOut:boolean;selectedCharacterId?:string|null;bio:string;favoriteSkillId?:string|null;favoriteCompanionId?:string|null;
@@ -33,5 +33,5 @@ export async function publicPlayerProfileV43(accountId:string){
  const {data,error}=await client().rpc('profile_public_v43',{p_target_account_id:accountId});if(error)throw error;
  const profile=(data??null) as PublicPlayerProfileV43|null;if(!profile)return null;
  const identity=(await guildIdentities([accountId])).get(accountId);
- return {...profile,guildTag:identity?.guild_tag??null,guildTagColorId:identity?.guild_tag_color_id??null};
+ return {...profile,masteryShowcaseActionIds:Array.isArray(profile.masteryShowcaseActionIds)?profile.masteryShowcaseActionIds:[],guildTag:identity?.guild_tag??null,guildTagColorId:identity?.guild_tag_color_id??null};
 }

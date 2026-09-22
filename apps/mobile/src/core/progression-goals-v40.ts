@@ -12,6 +12,16 @@ export type ProgressionGoal=
  |(GoalBase&{kind:'mastery_rank';actionId:string;targetRank:number})
  |(GoalBase&{kind:'weekly_order';orderId:string;targetProgress:number});
 
+export const MASTERY_GOAL_RANKS=[10,20,30,40,50] as const;
+export function nextMasteryGoalRank(currentRank:number){
+ const rank=Math.max(0,Math.min(50,Math.floor(currentRank)));
+ return MASTERY_GOAL_RANKS.find(value=>value>rank)??50;
+}
+export function masteryGoalForAction(args:{characterId:string;actionId:string;actionName:string;targetRank:number;nowMs:number}):ProgressionGoal{
+ const targetRank=Math.max(1,Math.min(50,Math.floor(args.targetRank)));
+ return {id:`goal:${args.nowMs}:${args.actionId}`,characterId:args.characterId,kind:'mastery_rank',title:`Profession Mastery · ${args.actionName}`,createdAtMs:args.nowMs,pinnedAtMs:args.nowMs,actionId:args.actionId,targetRank};
+}
+
 export interface GoalSource{kind:'skill'|'monster'|'dungeon'|'recipe'|'item'|'region'|'collection'|'weekly_order';id:string;label:string;available:boolean;reason?:string}
 export interface GoalContext{
  skillLevels:Record<string,number>;skillXp:Record<string,number>;skillXpTarget?:Record<string,number>;

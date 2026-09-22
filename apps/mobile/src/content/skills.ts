@@ -23,7 +23,8 @@ export const GATHERING:GatherDef[]=([
 ] as Omit<GatherDef,'difficultyMultiplier'|'recommendedToolTier'>[]).map(activity=>{
   const difficultyMultiplier=activity.unlockLevel>=15?1.5:activity.unlockLevel>=7?1.2:1;
   const recommendedToolTier=activity.unlockLevel>=15?3:activity.unlockLevel>=7?2:1;
-  return {...activity,seconds:Math.ceil(activity.seconds*2),difficultyMultiplier,recommendedToolTier};
+  const xpMultiplier=activity.unlockLevel>=15?1.45:activity.unlockLevel>=7?1.35:1;
+  return {...activity,seconds:Math.ceil(activity.seconds*2),xp:Math.round(activity.xp*xpMultiplier),difficultyMultiplier,recommendedToolTier};
 });
 
 export interface Recipe{id:string;name:string;skillId:'smithing'|'cooking'|'alchemy';level:number;xp:number;gold:number;seconds:number;repeatableTraining?:boolean;inputs:{itemId:string;quantity:number}[];output:{itemId:string;quantity:number};classId?:ClassId;noviceSetId?:string;characterLevel?:number;requiresCraftedItemId?:string;v33EquipmentTier?:string;v33Region?:string;v33SetId?:string;v33Path?:string;}

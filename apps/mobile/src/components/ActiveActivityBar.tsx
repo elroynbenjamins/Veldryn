@@ -8,6 +8,7 @@ import {useGameTheme} from '../theme/ThemeContext';
 import {ActivityArtwork} from './ActivityArtwork';
 import {MonsterPortraitFrame} from './MonsterPortraitFrame';
 import {challengeHuntLabel} from '../core/challenge-hunts';
+import {activityProgressFeedback} from '../core/balance-projection';
 
 const labels:Record<string,string>={combat:'HUNTING',mining:'MINING',woodcutting:'WOODCUTTING',fishing:'FISHING',herbalism:'HERBALISM',alchemy:'ALCHEMY',faith:'FAITH',training:'TRAINING',hunting:'HUNTING',exploration:'EXPLORATION'};
 function elapsed(startedAtMs:number,nowMs:number){const total=Math.max(0,Math.floor((nowMs-startedAtMs)/1000)),hours=Math.floor(total/3600),minutes=Math.floor(total%3600/60),seconds=total%60;return hours?`${hours}h ${minutes}m`:minutes?`${minutes}m ${seconds}s`:`${seconds}s`;}
@@ -22,11 +23,11 @@ export function ActiveActivityBar({state,nowMs,onOpen}:{state:GameState;nowMs:nu
  const cycleSeconds=Math.max(1,monster?.secondsPerKill??gathering?.seconds??1);
  const cycleElapsedSeconds=Math.max(0,(nowMs-activity.lastClaimAtMs)/1000);
  const progressPct=Math.round((cycleElapsedSeconds%cycleSeconds)/cycleSeconds*100),progress=`${progressPct}%` as `${number}%`;
- const combat=activity.kind==='combat';
+ const combat=activity.kind==='combat',phase=activityProgressFeedback(combat?'combat':'gathering',progressPct/100);
  const monsterHp=monster?Math.max(0,Math.ceil(monster.hp*(1-progressPct/100))):0,damageDone=monster?Math.max(0,monster.hp-monsterHp):0,damageTaken=combat?Math.max(0,(state.character?.hp??0)-(state.character?.currentHp??0)):0;
  return <Pressable accessibilityRole="button" accessibilityLabel={`${labels[activity.kind]} ${name}, active for ${elapsed(activity.startedAtMs,nowMs)}`} accessibilityHint="Opens the active activity" onPress={onOpen} style={({pressed})=>[s.root,combat?s.combat:s.skilling,pressed&&s.pressed]}>
   <View style={s.art}>{monster?<MonsterPortraitFrame monster={monster} size={38} active reduceMotion={state.settings.reduceMotion} framed={false}/>:<ActivityArtwork id={activity.kind as any} size={36}/>}</View>
-  <View style={s.copy}><View style={s.line}><Text numberOfLines={1} style={s.name}>{name}</Text><Text style={s.time}>{elapsed(activity.startedAtMs,nowMs)}</Text></View><View style={s.meta}><Text style={[s.kind,combat?s.combatText:s.skillText]}>{labels[activity.kind]}</Text><Text style={s.cycle}>{combat?'ENCOUNTER':'NEXT ACTION'}</Text></View>{combat?<><View style={s.combatStats}><Text style={s.hpText}>HP {monsterHp}/{monster?.hp??0}</Text><Text style={s.damageText}>−{damageDone}</Text><Text style={s.takenText}>+{damageTaken} taken</Text></View><View style={s.track}><View style={[s.fill,s.combatFill,{width:`${100-progressPct}%`}]}/><View style={[s.hit,{left:`${Math.min(96,Math.max(2,progressPct))}%`}]}/></View></>:<View style={s.track}><View style={[s.fill,s.skillFill,{width:progress}]}/></View>}</View>
+  <View style={s.copy}><View style={s.line}><Text numberOfLines={1} style={s.name}>{name}</Text><Text style={s.time}>{elapsed(activity.startedAtMs,nowMs)}</Text></View><View style={s.meta}><Text style={[s.kind,combat?s.combatText:s.skillText]}>{labels[activity.kind]}</Text><Text numberOfLines={1} style={s.cycle}>{phase.replace('…','').toUpperCase()}</Text></View>{combat?<><View style={s.combatStats}><Text style={s.hpText}>HP {monsterHp}/{monster?.hp??0}</Text><Text style={s.damageText}>−{damageDone}</Text><Text style={s.takenText}>+{damageTaken} taken</Text></View><View style={s.track}><View style={[s.fill,s.combatFill,{width:`${100-progressPct}%`}]}/><View style={[s.hit,{left:`${Math.min(96,Math.max(2,progressPct))}%`}]}/></View></>:<View style={s.track}><View style={[s.fill,s.skillFill,{width:progress}]}/></View>}</View>
   <Text style={s.chevron}>›</Text>
  </Pressable>;
 }

@@ -47,7 +47,7 @@ equal(copper?.spotlight,false,'ordinary materials must stay lightweight');
 
 const popup=fs.readFileSync('src/components/RewardPopup.tsx','utf8');
 const app=fs.readFileSync('App.tsx','utf8');
-ok(popup.includes('✦ LEVEL UP')&&popup.includes('Lv {moment.beforeLevel} → {moment.afterLevel}'),'Reward popup must clearly show the committed level transition');
+ok(popup.includes('✦ LEVEL UP')&&popup.includes("{mastery?'R':'Lv '}{moment.beforeLevel}")&&popup.includes("{mastery?'R':''}{moment.afterLevel}"),'Reward popup must clearly show committed level and mastery-rank transitions');
 ok(popup.includes('NEWLY UNLOCKED'),'Level-up moment must explain newly unlocked content when available');
 ok(popup.includes('ACTION MASTERED')&&popup.includes('MASTERY RANK UP'),'Reward feedback must distinguish ordinary mastery ranks from R50 completion');
 ok(popup.includes("mastery?'BONUS UNLOCKED':'NEWLY UNLOCKED'"),'Mastery reward moments must label bonus unlocks accurately');

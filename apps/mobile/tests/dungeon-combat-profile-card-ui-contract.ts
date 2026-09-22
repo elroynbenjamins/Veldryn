@@ -53,6 +53,11 @@ ok(stage.includes('targetLabel:currentBossCast.targetName?.trim()'),'Battlefield
 ok(stage.includes('PARTY CONTRIBUTION')&&stage.includes('authoritative totals'),'Completed combat replay must show a compact factual contribution recap');
 ok(stage.includes("role==='tank'")&&stage.includes('TAKEN')&&stage.includes("role==='support'")&&stage.includes('HEAL'),'Contribution recap must emphasize role-relevant factual metrics');
 ok(stage.includes('DMG')&&stage.includes('INT')&&!stage.includes('MVP'),'Contribution recap must show damage and interrupts without ranking players');
+ok(stage.includes("accessibilityLabel={paused?'Resume combat replay':'Pause combat replay'}")&&stage.includes('paused||cueIndex>=cues.length-1'),'Replay must support pause/resume by stopping automatic cue advance');
+ok(stage.includes("complete?'ENCOUNTER RECAP':paused?'PAUSED':'NOW PLAYING'")&&stage.includes("paused?'▶ Resume':'Ⅱ Pause'"),'Paused replay state must be visibly explicit');
+ok(stage.includes("accessibilityLabel={showLog?'Hide combat battle log':'Show combat battle log'}")&&stage.includes("recent.length&&(!complete||showLog)"),'Completed replay must collapse the detailed battle log by default');
+ok(stage.includes('setPaused(false);setShowLog(false);setCueIndex(0)'),'Replay encounter must reset pause and collapsed-log state');
+ok(!stage.includes('member:{minHeight:126')&&!stage.includes('avatarFrame:{height:44')&&!stage.includes('castWarning:{minHeight:34'),'Dungeon stage must not retain obsolete pre-profile-card combat styles');
 for(const enemy of ['The Hollow Regent','The Coinbound Captain','The Rimebell Colossus','Veilshade Stalker','Ledger Hexer','Bellfrost Spirit'])ok(enemyArt.toLowerCase().includes(enemy.toLowerCase()),enemy+' must have registered encounter artwork');
 ok(enemyArt.includes("require('../../assets/dungeon-enemies-v1/"),'Enemy artwork must be bundled as static Metro assets');
 

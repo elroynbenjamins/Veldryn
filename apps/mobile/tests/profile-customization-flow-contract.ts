@@ -22,6 +22,9 @@ ok(screen.includes('Preview as others see me')&&screen.includes('ProfileAudience
 
 ok(appearance.includes('onDirtyChange?:(dirty:boolean)=>void')&&appearance.includes('onPreviewStateChange?:(preview:GameState)=>void'),'Appearance editor must expose draft/dirty callbacks');
 ok(identity.includes('onDirtyChange?:(dirty:boolean)=>void')&&identity.includes('onDraftChange?:(draft:ProfileExtensionSelfV43|null)=>void'),'Social profile editor must expose draft/dirty callbacks');
+ok(identity.includes("picker==='mastery'")&&identity.includes("title={'Mastery '+value.masteryShowcaseActionIds.length+'/3 ▾'}"),'Social profile editor must expose a three-slot R50 mastery showcase picker');
+ok(identity.includes('professionMasteryMasteredRecords(state)'),'Mastery showcase choices must be derived only from R50-owned profession records');
+ok(identity.includes('masteryShowcaseActionIds:value.masteryShowcaseActionIds'),'Mastery showcase selections must participate in dirty/save state');
 
 ok(preview.includes("id:'public'")&&preview.includes("id:'guild'")&&preview.includes("id:'self'"),'Audience preview must simulate public, guild and self viewers');
 ok(preview.includes('profileAudienceCanView'),'Audience preview must use the shared privacy visibility rule');

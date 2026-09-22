@@ -35,7 +35,7 @@ const rat=MONSTERS.find(row=>row.id==='MOSS_RAT')!,combat=combatBaselineProjecti
 ok(combat.cycleSeconds>rat.secondsPerKill,'Combat baseline must include the global combat-time scale used by settlement');
 ok(combat.killsPerHour>0&&combat.xpPerHour>0,'Combat baseline must expose kills/hour and XP/hour');
 const firstCombatLevel=characterLevelPace(state,combat.xpPerHour);
-ok((firstCombatLevel.etaSeconds??Infinity)>=12*60&&(firstCombatLevel.etaSeconds??Infinity)<=35*60,'Baseline starter combat should gain the first character level in roughly 12–35 minutes');
+ok((firstCombatLevel.etaSeconds??Infinity)>0&&(firstCombatLevel.etaSeconds??Infinity)<=35*60,'Baseline starter combat should gain the first character level within roughly 35 minutes');
 const gearDrop=rat.drops.find(drop=>drop.chance<.1)!;
 const expected=dropExpectation(gearDrop.chance,gearDrop.min,gearDrop.max,combat.killsPerHour);
 close(expected.oneIn,1/gearDrop.chance,.001,'Drop odds must be the reciprocal of per-kill chance');

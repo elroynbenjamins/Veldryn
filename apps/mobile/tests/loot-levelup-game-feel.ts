@@ -51,7 +51,7 @@ ok(popup.includes('✦ LEVEL UP')&&popup.includes("{mastery?'R':'Lv '}{moment.be
 ok(popup.includes('NEWLY UNLOCKED'),'Level-up moment must explain newly unlocked content when available');
 ok(popup.includes('ACTION MASTERED')&&popup.includes('MASTERY RANK UP'),'Reward feedback must distinguish ordinary mastery ranks from R50 completion');
 ok(popup.includes("mastery?'BONUS UNLOCKED':'NEWLY UNLOCKED'"),'Mastery reward moments must label bonus unlocks accurately');
-ok(popup.includes('moment.unlockGroups')&&popup.includes('NEXT · LV'),'Level-up moment must group unlock types and preview the next milestone compactly');
+ok(popup.includes('moment.unlockGroups')&&popup.includes("moment.kind==='mastery_rank'?'R':'LV '"),'Progression moments must group unlock types and preview skill/mastery milestones compactly');
 ok(popup.includes('✦ EXCEPTIONAL LOOT'),'Epic+ drops must receive a stronger reward moment');
 ok(popup.includes('rarityTag')&&popup.includes('rarityNameColor'),'Reward breakdown must remain rarity-legible without over-celebrating normal loot');
 ok(popup.includes('EquipmentArtwork'),'equipment drops must reuse the actual equipment artwork when available');

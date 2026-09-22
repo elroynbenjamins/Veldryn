@@ -58,10 +58,11 @@ export function hasEnhancement(state:GameState,ref:string){const enhancement=gea
 export function gemSocketCapacity(ref:string,state?:GameState){const item=itemDef(state?definitionId(state,ref):ref);return item.type==='gear'?EQUIPMENT_GEM_SOCKET_COUNT:0;}
 export function gemSocketState(state:GameState,ref:string){const enhancement=gearEnhancement(state,ref);return {statGemId:enhancement.statGemId,effectGemId:enhancement.effectGemId,filled:Number(Boolean(enhancement.statGemId))+Number(Boolean(enhancement.effectGemId)),capacity:gemSocketCapacity(ref,state)};}
 export function upgradeQuote(state:GameState,ref:string){
+  const previewEnhancement=gearEnhancement(state,ref);
   const ready=materializeGearInstances(state),instance=resolveEquipmentRef(ready,ref),item=itemDef(instance?.itemId??ref);
   if(item.type!=='gear')throw new Error('Only equipment can be upgraded');
   // Definition IDs remain valid for read-only previews. Mutation paths still require an exact equipped instance.
-  const current=gearEnhancement(ready,instance?.id??item.id),targetRank=current.rank+1;
+  const current=instance?gearEnhancement(ready,instance.id):previewEnhancement,targetRank=current.rank+1;
   if(targetRank>MAX_UPGRADE_RANK)return {currentRank:current.rank,targetRank,successChance:0,dust:0,cores:0,gold:0,maxed:true};
   const rarity=instance?gearInstanceRarity(ready,instance.id):itemRarity(item),pity=Math.min(.10,current.failures*.02);
   return {currentRank:current.rank,targetRank,successChance:Math.min(1,SUCCESS_BY_TARGET[targetRank]+pity),dust:DUST_BY_TARGET[targetRank],cores:CORE_BY_TARGET[targetRank],gold:Math.ceil(150*targetRank*targetRank*RARITY_COST[rarity]/10)*10,maxed:false};

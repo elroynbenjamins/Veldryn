@@ -22,6 +22,41 @@ const warden=buildExpeditionEncounter({encounterId:'FROST_LAKE_ELITE_03'});
 assert.ok(warden[0].abilities.some(ability=>ability.effects.some(effect=>effect.kind==='shield')));
 assert.ok(expeditionEncounterPreview('FROST_LAKE_ELITE_03')!.archetypes.some(item=>item.id==='guardian'));
 
+const glacier=buildExpeditionEncounter({encounterId:'FROST_LAKE_BATTLE_02'});
+assert.equal(glacier[0].name,'Glacier Stalker');
+assert.equal(glacier[0].abilities[0].target,'random_enemy');
+assert.ok(glacier[0].abilities[0].effects.some(effect=>effect.executeBelowHpPct!==undefined));
+assert.ok(expeditionEncounterPreview('FROST_LAKE_BATTLE_02')!.archetypes.some(item=>item.id==='assassin'));
+
+const choir=buildExpeditionEncounter({encounterId:'FROST_CHOIR_BATTLE_01'});
+assert.ok(choir[0].abilities.some(ability=>ability.target==='all_enemies'&&ability.interruptible));
+assert.ok(expeditionEncounterPreview('FROST_CHOIR_BATTLE_01')!.archetypes.some(item=>item.id==='caster'));
+
+const fenReaver=buildExpeditionEncounter({encounterId:'ASH_FEN_BATTLE_03'});
+assert.ok(fenReaver[0].abilities.some(ability=>ability.effects.some(effect=>effect.executeBelowHpPct!==undefined)));
+assert.ok(expeditionEncounterPreview('ASH_FEN_BATTLE_03')!.mechanics.some(item=>item.id==='execute'));
+
+const crucibleHex=buildExpeditionEncounter({encounterId:'ASH_CRUCIBLE_BATTLE_01'});
+assert.ok(crucibleHex[1].abilities.some(ability=>ability.effects.some(effect=>effect.kind==='debuff'&&effect.tag==='damage_taken')));
+
+const bellbeast=buildExpeditionEncounter({encounterId:'BOSS_EXP_BELLBEAST'})[0];
+assert.deepEqual(bellbeast.abilities.map(ability=>ability.name),['Shiverlake Charge','Bellquake','Rimehorn Frenzy']);
+assert.deepEqual((bellbeast.phases??[]).map(phase=>phase.name),['Cracked Bell','Winter Stampede']);
+assert.ok(bellbeast.abilities.some(ability=>ability.interruptible));
+
+const cantor=buildExpeditionEncounter({encounterId:'BOSS_EXP_CANTOR'})[0];
+assert.deepEqual(cantor.abilities.map(ability=>ability.name),['Dissonant Verse','Choir Tempest']);
+assert.deepEqual((cantor.phases??[]).map(phase=>phase.name),['First Refrain','Final Refrain']);
+assert.ok(cantor.abilities.some(ability=>ability.effects.some(effect=>effect.kind==='dot')));
+
+const fenPrime=buildExpeditionEncounter({encounterId:'BOSS_EXP_FEN'})[0];
+assert.ok(fenPrime.abilities.some(ability=>ability.name==='Blackglass Execution'&&ability.effects.some(effect=>effect.executeBelowHpPct!==undefined)));
+assert.deepEqual((fenPrime.phases??[]).map(phase=>phase.name),['Cracking Shell','Devour the Weak']);
+
+const cruciblePrime=buildExpeditionEncounter({encounterId:'BOSS_EXP_PRIME'})[0];
+assert.ok(cruciblePrime.abilities.some(ability=>ability.name==='Molten Aegis'&&ability.effects.some(effect=>effect.kind==='shield')));
+assert.deepEqual((cruciblePrime.phases??[]).map(phase=>phase.name),['Tempered Shell','Overheat']);
+
 for(const [encounterId,factory] of Object.entries(EXPEDITION_ENCOUNTERS)){
  const preview=expeditionEncounterPreview(encounterId);
  assert.ok(preview,`missing PvE preview for ${encounterId}`);

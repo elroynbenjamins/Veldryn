@@ -66,11 +66,6 @@ export function gemArtworkKeyV1(itemId:string){
   const match=/^gem:(stat_[a-z_]+|effect_[a-z_]+):g[1-5]$/.exec(itemId);
   return match?.[1];
 }
-export type GemArtworkGradeV1=1|2|3|4|5;
-export function gemArtworkGradeV1(itemId:string):GemArtworkGradeV1|undefined{
-  const match=/^gem:(?:stat_[a-z_]+|effect_[a-z_]+):g([1-5])$/.exec(itemId);
-  return match?Number(match[1]) as GemArtworkGradeV1:undefined;
-}
 export function gemArtworkCellV1(itemId:string){
   const key=gemArtworkKeyV1(itemId);
   return key?GEM_ARTWORK_CELL_BY_KEY_V1[key]:undefined;

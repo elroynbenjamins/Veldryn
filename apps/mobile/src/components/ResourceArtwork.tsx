@@ -36,6 +36,9 @@ function AtlasCell({source,column,row,cell,sheetWidth,sheetHeight,size}:{source:
 }
 
 export function ResourceArtwork({itemId,size=58,framed=true}:{itemId:string;size?:number;framed?:boolean}){
+  const consumable=consumableArtworkCell(itemId);
+  if(consumable)return <View style={[s.art,{width:size,height:size},framed&&s.frame]}><AtlasCell source={consumableArtworkSheet(consumable.sheet)} column={consumable.column} row={consumable.row} cell={CONSUMABLE_ART_CELL} sheetWidth={CONSUMABLE_ART_SHEET_SIZE} sheetHeight={CONSUMABLE_ART_SHEET_SIZE} size={size}/></View>;
+
   const runtime=runtimeItemCell(itemId);
   if(runtime)return <View style={[s.art,{width:size,height:size},framed&&s.frame]}><AtlasCell source={runtimeItemSheet} column={runtime.column} row={runtime.row} cell={RUNTIME_ITEM_CELL} sheetWidth={RUNTIME_ITEM_SHEET_WIDTH} sheetHeight={RUNTIME_ITEM_SHEET_HEIGHT} size={size}/></View>;
 

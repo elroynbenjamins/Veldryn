@@ -32,7 +32,7 @@ function statusCode(status:PlaybackCombatStatus){
  if(status.source==='gem')return GEM_STATUS_CODES[status.tag]??'GEM';
  if(status.kind==='dot')return 'DOT';
  if(status.kind==='hot')return 'HOT';
- if(status.kind==='debuff')return status.tag==='damage_taken'?'VULN':'DEBUFF';
+ if(status.kind==='debuff')return status.tag==='damage_taken'?'VULN':status.tag==='healing_received'?'HEAL↓':'DEBUFF';
  if(status.tag==='damage_done')return 'DMG↑';
  if(status.tag==='crit')return 'CRIT↑';
  if(status.tag.includes('haste'))return 'HASTE';

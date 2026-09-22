@@ -17,6 +17,9 @@ equal(character?.afterLevel,11,'character level-up must expose the new committed
 equal(mining?.beforeLevel,7,'skill level-up must retain prior level');
 equal(mining?.afterLevel,8,'skill level-up must expose new level');
 ok(mining?.unlocks.includes('Aster-Iron Vein'),'Mining level 8 must explain the newly unlocked Aster-Iron activity');
+ok(mining?.unlocks.includes('Aster-Iron Pickaxe'),'Mining level 8 must also explain the newly equippable tool tier');
+ok(mining?.unlockGroups?.some(group=>group.category==='GATHERING')&&mining.unlockGroups.some(group=>group.category==='TOOL TIER'),'Skill level-up unlocks must be grouped by milestone type');
+equal(mining?.nextMilestone?.level,16,'Mining level 8 should preview the next configured milestone level');
 ok((smithing?.unlocks.length??0)>0,'Smithing level-up must surface newly unlocked recipes when content crosses the level');
 
 const reward:RewardBundle={xp:1,gold:0,kills:1,elapsedSeconds:1,items:[{itemId:'SUNSCORED_STONEHEART_HELMET',quantity:1},{itemId:'COPPER_ORE',quantity:2}]};
@@ -30,6 +33,7 @@ const popup=fs.readFileSync('src/components/RewardPopup.tsx','utf8');
 const app=fs.readFileSync('App.tsx','utf8');
 ok(popup.includes('✦ LEVEL UP')&&popup.includes('Lv {moment.beforeLevel} → {moment.afterLevel}'),'Reward popup must clearly show the committed level transition');
 ok(popup.includes('NEWLY UNLOCKED'),'Level-up moment must explain newly unlocked content when available');
+ok(popup.includes('moment.unlockGroups')&&popup.includes('NEXT · LV'),'Level-up moment must group unlock types and preview the next milestone compactly');
 ok(popup.includes('✦ EXCEPTIONAL LOOT'),'Epic+ drops must receive a stronger reward moment');
 ok(popup.includes('rarityTag')&&popup.includes('rarityNameColor'),'Reward breakdown must remain rarity-legible without over-celebrating normal loot');
 ok(popup.includes('EquipmentArtwork'),'equipment drops must reuse the actual equipment artwork when available');

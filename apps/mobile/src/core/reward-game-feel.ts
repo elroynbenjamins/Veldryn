@@ -1,11 +1,10 @@
-import {GATHERING,RECIPES} from '../content/skills';
-import {HERB_NODES} from '../content/herbalism';
-import {FAITH_BLESSINGS,FAITH_TIERS} from '../content/faith';
 import {itemDef} from '../content/items';
 import {itemRarity,type ItemRarity} from './item-rarity';
 import {faithLevel} from './faith';
+import {newlyUnlockedCrossSkillNames,skillMilestoneOverview,skillMilestonesBetween} from './skill-milestones';
 import type {GameState,RewardBundle,SkillId} from './types';
 
+export interface RewardProgressionUnlockGroup{category:string;items:string[]}
 export interface RewardProgressionMoment{
   kind:'character_level'|'skill_level';
   id:string;
@@ -13,6 +12,8 @@ export interface RewardProgressionMoment{
   beforeLevel:number;
   afterLevel:number;
   unlocks:string[];
+  unlockGroups?:RewardProgressionUnlockGroup[];
+  nextMilestone?:{level:number;items:string[]};
 }
 export interface RewardLootHighlight{
   itemId:string;
@@ -29,27 +30,6 @@ const SKILL_LABELS:Record<SkillId,string>={
  exploration:'Exploration',tailoring:'Tailoring',enchanting:'Enchanting',faith:'Faith',
 };
 const RARITY_ORDER:ItemRarity[]=['common','uncommon','rare','epic','legendary','mythic'];
-const crossed=(level:number,before:number,after:number)=>level>before&&level<=after;
-
-function skillUnlocks(skillId:SkillId,before:number,after:number):string[]{
-  if(after<=before)return [];
-  const unlocks:string[]=[];
-  if(skillId==='mining'||skillId==='woodcutting'||skillId==='fishing'){
-    for(const node of GATHERING)if(node.skillId===skillId&&crossed(node.unlockLevel,before,after))unlocks.push(node.name);
-  }
-  if(skillId==='herbalism'){
-    for(const node of HERB_NODES)if(crossed(node.unlockLevel,before,after))unlocks.push(node.name);
-  }
-  if(skillId==='smithing'||skillId==='cooking'||skillId==='alchemy'){
-    for(const recipe of RECIPES)if(recipe.skillId===skillId&&crossed(recipe.level,before,after))unlocks.push(recipe.name);
-  }
-  if(skillId==='faith'){
-    for(const tier of FAITH_TIERS)if(crossed(tier.level,before,after))unlocks.push(tier.name);
-    for(const blessing of FAITH_BLESSINGS)if(crossed(blessing.level,before,after))unlocks.push(blessing.name);
-  }
-  return [...new Set(unlocks)].slice(0,12);
-}
-
 /** Derives celebration-worthy level transitions from committed state, never from predicted XP. */
 export function rewardProgressionMoments(before:GameState|null|undefined,after:GameState|null|undefined):RewardProgressionMoment[]{
   if(!before||!after)return [];
@@ -60,12 +40,24 @@ export function rewardProgressionMoments(before:GameState|null|undefined,after:G
   const beforeSkills=new Map(before.skills.map(skill=>[skill.skillId,skill]));
   for(const skill of after.skills){
     const previous=beforeSkills.get(skill.skillId),beforeLevel=skill.skillId==='faith'?faithLevel(before):(previous?.level??1),afterLevel=skill.skillId==='faith'?faithLevel(after):skill.level;
-    if(afterLevel>beforeLevel)moments.push({kind:'skill_level',id:skill.skillId,label:SKILL_LABELS[skill.skillId],beforeLevel,afterLevel,unlocks:skillUnlocks(skill.skillId,beforeLevel,afterLevel)});
+    if(afterLevel>beforeLevel){
+      const crossed=skillMilestonesBetween(after,skill.skillId,beforeLevel,afterLevel).filter(row=>row.kind!=='cross_skill'),crossNames=newlyUnlockedCrossSkillNames(before,after,skill.skillId);
+      const unlockGroups=[...new Set(crossed.map(row=>row.category))].map(category=>({category,items:crossed.filter(row=>row.category===category).map(row=>row.title)}));
+      if(crossNames.length)unlockGroups.push({category:'CROSS-SKILL',items:crossNames});
+      const unlocks=[...crossed.map(row=>row.title),...crossNames],overview=skillMilestoneOverview(after,skill.skillId);
+      moments.push({kind:'skill_level',id:skill.skillId,label:SKILL_LABELS[skill.skillId],beforeLevel,afterLevel,unlocks,unlockGroups,nextMilestone:overview.nextLevel?{level:overview.nextLevel,items:overview.next.slice(0,3).map(row=>row.title)}:undefined});
+    }
   }
   // Faith may be character-faith backed even in older saves where the generic skill row is absent.
   if(!after.skills.some(skill=>skill.skillId==='faith')){
     const beforeLevel=faithLevel(before),afterLevel=faithLevel(after);
-    if(afterLevel>beforeLevel)moments.push({kind:'skill_level',id:'faith',label:'Faith',beforeLevel,afterLevel,unlocks:skillUnlocks('faith',beforeLevel,afterLevel)});
+    if(afterLevel>beforeLevel){
+      const crossed=skillMilestonesBetween(after,'faith',beforeLevel,afterLevel).filter(row=>row.kind!=='cross_skill'),crossNames=newlyUnlockedCrossSkillNames(before,after,'faith');
+      const unlockGroups=[...new Set(crossed.map(row=>row.category))].map(category=>({category,items:crossed.filter(row=>row.category===category).map(row=>row.title)}));
+      if(crossNames.length)unlockGroups.push({category:'CROSS-SKILL',items:crossNames});
+      const unlocks=[...crossed.map(row=>row.title),...crossNames],overview=skillMilestoneOverview(after,'faith');
+      moments.push({kind:'skill_level',id:'faith',label:'Faith',beforeLevel,afterLevel,unlocks,unlockGroups,nextMilestone:overview.nextLevel?{level:overview.nextLevel,items:overview.next.slice(0,3).map(row=>row.title)}:undefined});
+    }
   }
   return moments;
 }

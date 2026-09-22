@@ -22,7 +22,7 @@ const skillMilestones=read('src/components/SkillMilestoneStrip.tsx');
 ok(skillMilestones.includes('SKILL MILESTONES')&&skillMilestones.includes("slice(0,2)"),'Skill detail milestones must remain compact and capped');
 ok(skillMilestones.includes("'JUST REACHED':'LATEST'")&&skillMilestones.includes('NEXT · LV'),'Skill detail milestones must show recent and next unlock states');
 ok(skillMilestones.includes('useGameTheme'),'Skill milestone strip must use the active UI theme');
-ok(skillMilestones.includes('onNavigate(row.destination!)'),'Milestone rows must remain actionable when a destination exists');
+ok(skillMilestones.includes('if(row.destination&&onNavigate)onNavigate(row.destination)'),'Milestone rows must remain actionable when a destination exists');
 ok(skills.includes('<SkillMilestoneStrip'),'Skills detail screens must include the persistent milestone strip');
 
 const gatheringSkills=read('src/components/GatheringActivityList.tsx');

@@ -1,5 +1,9 @@
-import {createCharacter,newGame} from '../src/core/game';
+import {claimActivity,createCharacter,newGame,previewActivityReward,startGathering} from '../src/core/game';
 import {applyTrustedLongTermProgression} from '../src/core/long-term-progression-runtime';
+import {masteryPointsForRank,professionMasteryView} from '../src/core/profession-mastery-v40';
+import {previewAlchemyReward,startAlchemyBatch} from '../src/core/alchemy';
+import {claimForgeJob,equipmentCraftDurationSeconds,startEquipmentCraft,timedEquipmentRecipe} from '../src/core/equipment-crafting-queue';
+import {RECIPES} from '../src/content/skills';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 function equal(actual:unknown,expected:unknown,message:string){if(actual!==expected)throw new Error(`${message}: expected ${String(expected)}, got ${String(actual)}`)}
@@ -28,4 +32,50 @@ ok(state.account.journalState?.records.most_xp_single_settlement?.value===500,'T
 const duplicate=applyTrustedLongTermProgression(state,[{kind,contentId:order.targetId,units,startedAtMs:Date.UTC(2026,8,14,0,1)}],undefined,Date.UTC(2026,8,14,0,32),{accountId:'acct-runtime',eventId:'settlement-2'});
 equal(duplicate.state.account.weeklyOrders!.orders.find(row=>row.id===order.id)!.progress,order.target,'Completed Weekly Order stays capped');
 equal(duplicate.state.account.weeklyOrderPendingRewards?.filter(row=>row.orderId===order.id).length,1,'Weekly reward outbox remains unique');
-console.log('PASS: trusted gameplay progression runtime advances mastery/orders/journal from verified activity');
+
+equal(professionMasteryView('test',{actionId:'test',points:masteryPointsForRank(10),updatedAtMs:1}).xpBonusBps,200,'Profession Mastery rank 10 grants +2% skill XP');
+equal(professionMasteryView('test',{actionId:'test',points:masteryPointsForRank(20),updatedAtMs:1}).yieldBonusBps,200,'Profession Mastery rank 20 grants +2% yield');
+equal(professionMasteryView('test',{actionId:'test',points:masteryPointsForRank(30),updatedAtMs:1}).speedBonusBps,300,'Profession Mastery rank 30 grants +3% speed');
+equal(professionMasteryView('test',{actionId:'test',points:masteryPointsForRank(40),updatedAtMs:1}).yieldBonusBps,500,'Profession Mastery rank 40 raises total yield bonus to +5%');
+equal(professionMasteryView('test',{actionId:'test',points:masteryPointsForRank(50),updatedAtMs:1}).speedBonusBps,500,'Profession Mastery rank 50 raises total speed bonus to +5%');
+
+const masteryStart=Date.UTC(2026,8,15,12);
+let gatherBase=createCharacter(newGame(masteryStart),'IRONWARDEN','MasteryGather','male');
+gatherBase=startGathering(gatherBase,'GREENWOOD_TREE',masteryStart);
+const gatherBaseReward=previewActivityReward(gatherBase,masteryStart+3600_000);
+let gatherMaster=createCharacter(newGame(masteryStart),'IRONWARDEN','MasteryGather','male');
+gatherMaster={...gatherMaster,account:{...gatherMaster.account,professionMasteryByAction:{GREENWOOD_TREE:{actionId:'GREENWOOD_TREE',points:masteryPointsForRank(40),updatedAtMs:masteryStart}}}};
+gatherMaster=startGathering(gatherMaster,'GREENWOOD_TREE',masteryStart);
+const gatherMasterReward=previewActivityReward(gatherMaster,masteryStart+3600_000);
+const quantity=(reward:typeof gatherMasterReward,id:string)=>reward.items.find(row=>row.itemId===id)?.quantity??0;
+ok(gatherMasterReward.kills>gatherBaseReward.kills,'Rank 30 gathering speed bonus increases completed actions in the same elapsed time');
+ok(gatherMasterReward.xp>gatherBaseReward.xp,'Rank 10 gathering XP bonus increases skill XP');
+ok(quantity(gatherMasterReward,'GREENWOOD_LOG')>quantity(gatherBaseReward,'GREENWOOD_LOG'),'Rank 20/40 gathering yield bonus increases material output');
+
+let alchemyBase=createCharacter(newGame(masteryStart),'IRONWARDEN','MasteryAlchemy','male');
+alchemyBase={...alchemyBase,character:{...alchemyBase.character!,level:100,gold:100000},skills:alchemyBase.skills.map(row=>row.skillId==='alchemy'?{...row,level:100}:row),inventory:{...alchemyBase.inventory,stacks:[{itemId:'DEWLEAF',quantity:500}]}};
+const brewId='BREW_DEWLEAF_DRAUGHT';
+const alchemyMaster={...alchemyBase,account:{...alchemyBase.account,professionMasteryByAction:{[brewId]:{actionId:brewId,points:masteryPointsForRank(50),updatedAtMs:masteryStart}}}};
+const masteredBrew=startAlchemyBatch(alchemyMaster,brewId,20,masteryStart);
+ok((masteredBrew.activity?.brew?.cycleSeconds??60)<60,'Rank 30/50 speed bonus shortens Alchemy cycle time');
+ok((masteredBrew.activity?.brew?.xpPerBatch??24)>24,'Rank 10 XP bonus is snapshotted into Alchemy batches');
+const masteredBrewReward=previewAlchemyReward(masteredBrew,(masteredBrew.activity!.brew!.cycleSeconds*20)+.01);
+equal(masteredBrewReward.craftingActions,20,'Mastered Alchemy batch completes the reserved action count');
+equal(masteredBrewReward.items.find(row=>row.itemId==='DEWLEAF_DRAUGHT')?.quantity,21,'Rank 20/40 Alchemy yield bonus grants +5% output with deterministic remainder handling');
+
+const claimBrew=startAlchemyBatch(alchemyBase,brewId,2,masteryStart);
+const claimedBrew=claimActivity(claimBrew,masteryStart+61_000);
+ok((claimedBrew.state.account.professionMasteryByAction?.[brewId]?.points??0)>=1,'Settled Alchemy batches advance recipe mastery');
+
+const forgeRecipe=RECIPES.find(recipe=>!!timedEquipmentRecipe(recipe.id)&&(!recipe.classId||recipe.classId==='IRONWARDEN'));
+ok(forgeRecipe,'A compatible timed equipment recipe must exist for mastery validation');
+let forgeBase=createCharacter(newGame(masteryStart),'IRONWARDEN','MasteryForge','male');
+forgeBase={...forgeBase,character:{...forgeBase.character!,level:100,gold:1_000_000},skills:forgeBase.skills.map(row=>row.skillId==='smithing'?{...row,level:100}:row),inventory:{...forgeBase.inventory,capacity:40,stacks:forgeRecipe!.inputs.map(input=>({...input,quantity:input.quantity+10}))}};
+const forgeBaseSeconds=equipmentCraftDurationSeconds(forgeBase,forgeRecipe!.id);
+const forgeMaster={...forgeBase,account:{...forgeBase.account,professionMasteryByAction:{[forgeRecipe!.id]:{actionId:forgeRecipe!.id,points:masteryPointsForRank(30),updatedAtMs:masteryStart}}}};
+ok(equipmentCraftDurationSeconds(forgeMaster,forgeRecipe!.id)<forgeBaseSeconds,'Rank 30 Forge mastery shortens timed equipment crafting');
+const forgeStarted=startEquipmentCraft(forgeBase,forgeRecipe!.id,masteryStart);
+const forgeClaimed=claimForgeJob(forgeStarted.state,forgeStarted.job.id,forgeStarted.job.completesAtMs,.5);
+equal(forgeClaimed.state.account.professionMasteryByAction?.[forgeRecipe!.id]?.points,1,'Claiming a timed Forge recipe advances that recipe mastery locally');
+
+console.log('PASS: trusted gameplay progression runtime advances mastery/orders/journal and Profession Mastery bonuses are live across gathering, Alchemy and timed Forge crafting');

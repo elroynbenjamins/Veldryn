@@ -11,6 +11,12 @@ const oathstone=GATHERING.find(entry=>entry.id==='OATHSTONE_SEAM')!;
 ok(GATHERING_TOOLS.length===12,'Expected four tool tiers for three gathering skills');
 ok(RECIPES.filter(entry=>entry.output.itemId.endsWith('PICKAXE')||entry.output.itemId.endsWith('HATCHET')||entry.output.itemId.endsWith('ROD')).length===12,'Every gathering tool must be craftable');
 ok(oathstone.difficultyMultiplier===1.5&&oathstone.recommendedToolTier===3,'Late gathering should retain a meaningful but not punitive 1.5x difficulty gate');
+const greenwood=GATHERING.find(entry=>entry.id==='GREENWOOD_TREE')!,ironwood=GATHERING.find(entry=>entry.id==='IRONWOOD_TREE')!,crownwood=GATHERING.find(entry=>entry.id==='CROWNWOOD_TREE')!;
+ok(greenwood.xp===8,'Starter gathering XP should stay unchanged');
+ok(ironwood.xp===23,'Tier-2 gathering should gain roughly 35% more XP per action');
+ok(crownwood.xp===39,'Tier-3 gathering should gain roughly 45% more XP per action');
+ok(oathstone.xp===42,'Tier-3 Mining XP should follow the same accelerated curve');
+
 ok(Math.abs(gatheringPacing(state,oathstone).timeMultiplier-1.725)<.001,'Late gathering without a tool should combine the 1.5x node difficulty and 15% no-tool inefficiency');
 
 state={...state,currentRegionId:'OLD_MINES',character:{...state.character!,level:16},skills:state.skills.map(skill=>skill.skillId==='mining'?{...skill,level:16}:skill),inventory:{...state.inventory,stacks:[...state.inventory.stacks,{itemId:'OATHSTONE_PICKAXE',quantity:1}]}};

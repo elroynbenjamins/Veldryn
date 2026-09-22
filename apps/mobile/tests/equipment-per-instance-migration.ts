@@ -1,6 +1,6 @@
 import {createCharacter,equipItem,newGame,salvageItem,sellItem,unequipItem} from '../src/core/game';
 import {attemptEquipmentUpgrade,gearEnhancement} from '../src/core/equipment-enhancement';
-import {inventoryGearInstances,materializeGearInstances} from '../src/core/equipment-instances';
+import {bankGearInstances,inventoryGearInstances,materializeGearInstances} from '../src/core/equipment-instances';
 function ok(condition:unknown,message:string){if(!condition)throw new Error(message)}
 
 let state=createCharacter(newGame(1),'IRONWARDEN','Instance QA','male');
@@ -36,5 +36,19 @@ state=materializeGearInstances(state);
 const fresh=inventoryGearInstances(state).filter(row=>row.itemId==='STONEHEART_RING').find(row=>row.id!==firstId)!;
 state=salvageItem(state,fresh.id);
 ok(inventoryGearInstances(state).filter(row=>row.itemId==='STONEHEART_RING').length===1,'Salvage must remove only its selected duplicate');
+
+let legacyInventory=createCharacter(newGame(3),'IRONWARDEN','Legacy Inventory','male');
+legacyInventory={...legacyInventory,inventory:{...legacyInventory.inventory,stacks:[...legacyInventory.inventory.stacks,{itemId:'STONEHEART_RING',quantity:2}]},character:{...legacyInventory.character!,gearEnhancements:{STONEHEART_RING:{rank:4,failures:2,gemIds:['WARD_SHARD']}}}};
+legacyInventory=materializeGearInstances(legacyInventory);
+const legacyInventoryCopies=inventoryGearInstances(legacyInventory).filter(row=>row.itemId==='STONEHEART_RING');
+ok(legacyInventoryCopies.length===2,'Legacy duplicate stack must materialize every owned copy');
+ok(legacyInventoryCopies.filter(row=>row.enhancement.rank===4&&row.enhancement.failures===2&&row.enhancement.gemIds.includes('WARD_SHARD')).length===1,'Unequipped legacy enhancement and gem state must migrate to exactly one inventory copy');
+ok(!legacyInventory.character?.gearEnhancements,'Legacy item-keyed enhancement map is removed only after instance migration');
+
+let legacyBank=createCharacter(newGame(4),'IRONWARDEN','Legacy Bank','male');
+legacyBank={...legacyBank,bank:{...legacyBank.bank,stacks:[{itemId:'STONEHEART_RING',quantity:1}]},character:{...legacyBank.character!,gearEnhancements:{STONEHEART_RING:{rank:3,failures:1,gemIds:[]}}}};
+legacyBank=materializeGearInstances(legacyBank);
+const migratedBankRing=bankGearInstances(legacyBank).find(row=>row.itemId==='STONEHEART_RING');
+ok(migratedBankRing?.enhancement.rank===3&&migratedBankRing.enhancement.failures===1,'Legacy enhancement state must follow a banked equipment copy instead of being discarded');
 
 console.log('per-instance equipment migration tests passed');

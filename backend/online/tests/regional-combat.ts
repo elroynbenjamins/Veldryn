@@ -1,7 +1,7 @@
 import {strict as assert} from 'node:assert';
 import {createCharacter,newGame} from '../../../apps/mobile/src/core/game';
 import type {GameState} from '../../../apps/mobile/src/core/types';
-import {OnlineRegionalCombatRuntimeV1} from '../regional-combat';
+import {OnlineRegionalCombatRuntimeV1,regionalCombatHandlerV1} from '../regional-combat';
 import type {GameplayServices} from '../gameplay';
 
 let state=createCharacter(newGame(Date.UTC(2026,8,21,20)),'WAYFINDER','Regional Tester','male');
@@ -71,6 +71,15 @@ async function main(){
  const retryStart=await runtime.start('account-1',{requestId:'regional01',characterId:state.character!.id,encounterId:'REGCOM_SUN_006_STANDARD'});
  assert.equal(retryStart.receiptId,started.receiptId,'Start idempotency must return the original receipt');
 
- console.log('PASS: online regional combat start/resolve composition and idempotent gem handoff');
+ const handler=regionalCombatHandlerV1(services);
+ const startResponse=await handler(new Request('https://example.test/functions/v1/gameplay/regional-combat',{method:'POST',headers:{authorization:'Bearer test'},body:JSON.stringify({requestId:'regional02',characterId:state.character!.id,encounterId:'REGCOM_SUN_006_STANDARD'})}));
+ assert.equal(startResponse.status,200);
+ const startedHttp=await startResponse.json() as {receiptId:string};
+ const getResolve=await handler(new Request('https://example.test/functions/v1/gameplay/regional-combat/'+startedHttp.receiptId,{method:'GET',headers:{authorization:'Bearer test'}}));
+ assert.equal(getResolve.status,405,'Regional combat resolution must not mutate state through GET');
+ const postResolve=await handler(new Request('https://example.test/functions/v1/gameplay/regional-combat/'+startedHttp.receiptId,{method:'POST',headers:{authorization:'Bearer test'}}));
+ assert.equal(postResolve.status,200,'Regional combat resolution should use POST');
+
+ console.log('PASS: online regional combat start/resolve composition, POST semantics and idempotent gem handoff');
 }
 void main().catch(error=>{console.error(error);process.exitCode=1;});

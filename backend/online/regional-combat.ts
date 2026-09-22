@@ -80,7 +80,8 @@ export function regionalCombatHandlerV1(services:GameplayServices){
    const accountId=await services.authenticate(bearer);if(!accountId)return json({error:'invalid_session'},401);
    const path=new URL(request.url).pathname,match=path.match(/\/regional-combat\/([0-9a-fA-F-]+)$/);
    if(match){
-    if(request.method!=='GET'||!uuid.test(match[1]))return json({error:'invalid_request'},400);
+    if(!uuid.test(match[1]))return json({error:'invalid_request'},400);
+    if(request.method!=='POST')return json({error:'method_not_allowed'},405);
     return json(await runtime.resolve(accountId,match[1]));
    }
    if(!path.endsWith('/regional-combat'))return json({error:'not_found'},404);

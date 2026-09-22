@@ -31,5 +31,5 @@ export async function startRegionalCombatV1(characterId:string,encounterId:strin
  const requestId=`regional-${Date.now()}-${Math.random().toString(36).slice(2,10)}`;
  return request('/regional-combat',{method:'POST',body:JSON.stringify({requestId,characterId,encounterId})}) as Promise<{receiptId:string;encounterId:string;zoneId:string;kind:RegionalCombatKindV1;contentId:string;status:'ready_to_resolve'}>;
 }
-export async function resolveRegionalCombatV1(receiptId:string){return request('/regional-combat/'+encodeURIComponent(receiptId),{method:'GET'}) as Promise<RegionalCombatResultV1>;}
+export async function resolveRegionalCombatV1(receiptId:string){return request('/regional-combat/'+encodeURIComponent(receiptId),{method:'POST'}) as Promise<RegionalCombatResultV1>;}
 export async function runRegionalCombatV1(characterId:string,encounterId:string){const started=await startRegionalCombatV1(characterId,encounterId);return resolveRegionalCombatV1(started.receiptId);}

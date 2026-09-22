@@ -78922,7 +78922,8 @@ function regionalCombatHandlerV1(services2) {
       if (!accountId) return json2({ error: "invalid_session" }, 401);
       const path = new URL(request.url).pathname, match = path.match(/\/regional-combat\/([0-9a-fA-F-]+)$/);
       if (match) {
-        if (request.method !== "GET" || !uuid.test(match[1])) return json2({ error: "invalid_request" }, 400);
+        if (!uuid.test(match[1])) return json2({ error: "invalid_request" }, 400);
+        if (request.method !== "POST") return json2({ error: "method_not_allowed" }, 405);
         return json2(await runtime.resolve(accountId, match[1]));
       }
       if (!path.endsWith("/regional-combat")) return json2({ error: "not_found" }, 404);

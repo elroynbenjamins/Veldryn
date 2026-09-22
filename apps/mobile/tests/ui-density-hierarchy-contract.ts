@@ -4,6 +4,9 @@ function ok(value:boolean,message:string){if(!value)throw new Error(message)}
 const read=(path:string)=>fs.readFileSync(path,'utf8');
 
 const home=read('src/screens/HomeScreen.tsx');
+ok(home.includes("alchemyRecipeDef")&&home.includes("explorationRoute")&&home.includes("FAITH_TIERS"),'Home must resolve authored Alchemy, Exploration and Faith activity names');
+ok(home.includes("kind={state.activity.kind}"),'Home must pass the real activity kind into the shared progress card');
+
 ok(!home.includes('formatGameNumber'),'Home must not duplicate the Gold already visible in the top bar');
 ok(!home.includes('title="Explore world"'),'Home must not duplicate the persistent World navigation action');
 ok(!home.includes('title="Equipment & food"'),'Home must not duplicate the persistent Inventory navigation action');
@@ -157,6 +160,9 @@ ok(activity.includes('backgroundColor:C.warningSurface'),'Activity warnings must
 ok(activity.includes('backgroundColor:C.infoSurface'),'Activity goal state must use semantic theme surfaces');
 ok(activity.includes('activityProgressFeedback')&&activity.includes('phaseText'),'Active activities must show truthful phase text tied to real cycle progress');
 ok(activity.includes('levelPace')&&activity.includes('XP remaining')&&activity.includes('XP/hr'),'Active activities must expose level progress, remaining XP and effective XP/hour');
+ok(activity.includes("kind:ActivityKind")&&activity.includes("alchemy:'ALCHEMY'")&&activity.includes("faith:'FAITH'")&&activity.includes("exploration:'EXPLORATION'"),'Active activity card must preserve activity-specific headers rather than collapsing everything into Gathering');
+ok(activity.includes("alchemy:'brews ready'")&&activity.includes("faith:'practices ready'")&&activity.includes("exploration:'routes ready'"),'Active activity reward counts must use activity-specific units');
+ok(activity.includes("preview.craftingActions??0")&&activity.includes("preview.faithActions??0"),'Alchemy and Faith must count their real settled actions instead of showing zero ready rewards');
 
 const queue=read('src/components/ActionQueuePanel.tsx');
 ok(queue.includes('backgroundColor:C.warningSurface'),'Queue warnings must remain theme-safe');

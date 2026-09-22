@@ -49,3 +49,4 @@ export function profileCollectionPrestige(ref:ProfileCollectionRefV43):ProfilePr
 }
 
 export const profileRecordPrestige=():ProfilePrestigePresentation=>({tone:'record',badge:'PERSONAL BEST'});
+export const profileMasteryPrestige=():ProfilePrestigePresentation=>({tone:'prestige',badge:'R50 MASTERED'});

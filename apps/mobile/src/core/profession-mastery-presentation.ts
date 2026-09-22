@@ -55,9 +55,27 @@ export function professionMasteryActionsForSkill(state:GameState,skillId:SkillId
  }
  return rows.sort((a,b)=>b.rank-a.rank||b.points-a.points||a.level-b.level||a.name.localeCompare(b.name));
 }
-export function professionMasteryMasteredRecords(state:GameState,skillId?:SkillId){
- const ids=skillId?[skillId]:state.skills.map(row=>row.skillId);
- return ids.flatMap(id=>professionMasteryActionsForSkill(state,id)).filter(row=>row.mastered).sort((a,b)=>a.name.localeCompare(b.name));
+export interface ProfessionMasteryAccountRecord extends ProfessionMasteryActionDefinition{
+ points:number;rank:number;mastered:boolean;progress:number;xpBonusBps:number;yieldBonusBps:number;speedBonusBps:number;
+}
+export function professionMasteryAccountRecords(state:GameState):ProfessionMasteryAccountRecord[]{
+ const rows:ProfessionMasteryAccountRecord[]=[];
+ for(const [actionId,record] of Object.entries(state.account.professionMasteryByAction??{})){
+  if(!record.points)continue;
+  const definition=professionMasteryActionDefinition(actionId);if(!definition)continue;
+  const view=professionMasteryRankProgress(actionId,record);
+  rows.push({...definition,points:view.points,rank:view.rank,mastered:view.mastered,progress:view.progress,xpBonusBps:view.xpBonusBps,yieldBonusBps:view.yieldBonusBps,speedBonusBps:view.speedBonusBps});
+ }
+ return rows.sort((a,b)=>b.rank-a.rank||b.points-a.points||a.name.localeCompare(b.name));
+}
+export function professionMasteryMasteredRecords(state:GameState,skillId?:SkillId):ProfessionMasteryAccountRecord[]{
+ const rows=professionMasteryAccountRecords(state).filter(row=>row.mastered&&(!skillId||row.skillId===skillId));
+ return rows.sort((a,b)=>a.name.localeCompare(b.name));
+}
+export function professionMasteryHallSummary(state:GameState){
+ const rows=professionMasteryAccountRecords(state),bySkill=new Map<SkillId,{skillId:SkillId;label:string;mastered:number;trained:number;bestRank:number}>();
+ for(const row of rows){const current=bySkill.get(row.skillId)??{skillId:row.skillId,label:skillIdentity(row.skillId).label,mastered:0,trained:0,bestRank:0};current.trained++;current.bestRank=Math.max(current.bestRank,row.rank);if(row.mastered)current.mastered++;bySkill.set(row.skillId,current)}
+ return {rows,trained:rows.length,rank10:rows.filter(row=>row.rank>=10).length,rank30:rows.filter(row=>row.rank>=30).length,mastered:rows.filter(row=>row.mastered).length,totalPoints:rows.reduce((sum,row)=>sum+row.points,0),bestRank:rows.reduce((max,row)=>Math.max(max,row.rank),0),skills:[...bySkill.values()].sort((a,b)=>b.mastered-a.mastered||b.bestRank-a.bestRank||a.label.localeCompare(b.label))};
 }
 export function professionMasterySkillSummary(state:GameState,skillId:SkillId){
  const rows=professionMasteryActionsForSkill(state,skillId),totalPoints=rows.reduce((sum,row)=>sum+row.points,0),highestRank=rows.reduce((max,row)=>Math.max(max,row.rank),0),mastered=rows.filter(row=>row.mastered).length,trained=rows.filter(row=>row.points>0).length;

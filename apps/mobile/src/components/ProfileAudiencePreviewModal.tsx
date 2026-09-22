@@ -3,6 +3,7 @@ import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
 import {profileAudienceCanView,type ProfilePreviewAudience} from '../core/profile-customization';
 import {profileAchievementLabel,profileCollectionLabel,profileRecordLabel} from '../core/profile-presentation';
+import {professionMasteryActionDefinition,skillIdentity} from '../core/profession-mastery-presentation';
 import {COMBAT_COMPANIONS} from '../content/combat-companions';
 import type {ProfileExtensionSelfV43,PublicPlayerProfileV43} from '../online/profile-extension-v43';
 import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
@@ -44,12 +45,14 @@ export function ProfileAudiencePreviewModal({visible,state,identityDraft,onClose
   achievementShowcaseIds:identityDraft?.achievementShowcaseIds??[],
   collectionShowcase:identityDraft?.collectionShowcase??[],
   recordShowcaseIds:identityDraft?.recordShowcaseIds??[],
+  masteryShowcaseActionIds:identityDraft?.masteryShowcaseActionIds??[],
   revision:identityDraft?.revision??0,
  };
  const companion=profile.favoriteCompanionId?COMBAT_COMPANIONS.find(row=>row.id===profile.favoriteCompanionId)?.name:undefined;
  const achievements=profile.achievementShowcaseIds.map(profileAchievementLabel);
  const records=profile.recordShowcaseIds.map(profileRecordLabel);
  const collections=profile.collectionShowcase.map(profileCollectionLabel);
+ const masteries=profile.masteryShowcaseActionIds.flatMap(id=>{const row=professionMasteryActionDefinition(id);return row?[row.name+' · '+skillIdentity(row.skillId).label]:[]});
  const hiddenReason=visibility==='private'
   ?'Private profiles are visible only to you.'
   :visibility==='guild'&&audience==='public'
@@ -70,6 +73,7 @@ export function ProfileAudiencePreviewModal({visible,state,identityDraft,onClose
        <PreviewRow label="Achievements" value={achievements.length?achievements.join(' · '):'No featured achievements'}/>
        <PreviewRow label="Personal records" value={records.length?records.join(' · '):'No featured records'}/>
        <PreviewRow label="Collection" value={collections.length?collections.join(' · '):'No featured collectibles'}/>
+       <PreviewRow label="Mastery" value={masteries.length?masteries.join(' · '):'No featured R50 masteries'}/>
       </View>
       {identityDraft?.worldFeedOptOut?<View style={s.feedNote}><Text style={s.feedNoteTitle}>WORLD MILESTONES HIDDEN</Text><Text style={s.copy}>Your profile remains viewable to the selected audience, but your recent milestone cards stay out of the World feed.</Text></View>:null}
       <Text style={s.footnote}>Guild tag and guild-name styling come from your live guild identity and are not changed by this preview.</Text>

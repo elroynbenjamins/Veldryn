@@ -40,6 +40,12 @@ equal(professionMasteryView('test',{actionId:'test',points:masteryPointsForRank(
 equal(professionMasteryView('test',{actionId:'test',points:masteryPointsForRank(50),updatedAtMs:1}).speedBonusBps,500,'Profession Mastery rank 50 raises total speed bonus to +5%');
 
 const masteryStart=Date.UTC(2026,8,15,12);
+let masteryJournal=createCharacter(newGame(masteryStart),'IRONWARDEN','MasteryJournal','male');
+masteryJournal={...masteryJournal,account:{...masteryJournal.account,professionMasteryByAction:{GREENWOOD_TREE:{actionId:'GREENWOOD_TREE',points:masteryPointsForRank(50),updatedAtMs:masteryStart}}}};
+const masteryJournalResult=applyTrustedLongTermProgression(masteryJournal,[],undefined,masteryStart+1,{accountId:'acct-mastery-journal',eventId:'mastery-journal'});
+ok(masteryJournalResult.journalAchievements.includes('mastery_hall_novice'),'First R50 profession action unlocks the Mastery Hall Journal ladder automatically');
+equal(masteryJournalResult.state.account.journalState?.unlockedAchievements.mastery_hall_novice,masteryStart+1,'Mastery Hall achievement persists on the account Journal');
+
 let gatherBase=createCharacter(newGame(masteryStart),'IRONWARDEN','MasteryGather','male');
 gatherBase=startGathering(gatherBase,'GREENWOOD_TREE',masteryStart);
 const gatherBaseReward=previewActivityReward(gatherBase,masteryStart+3600_000);

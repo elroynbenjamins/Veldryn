@@ -1,6 +1,7 @@
 import {LIVE_EVENT_CATALOG,type EventReward,type LiveEventDef} from '../content/live-events';
 import type {GameState} from './types';
 import {PROFILE_TITLES,profileTitleUnlocked} from './profile-unlocks';
+import {JOURNAL_TITLES_V42} from './adventurers-journal-v42';
 
 export type ProfileCustomizationDestination='Events'|'Guild'|'Character'|'Collections';
 export type ProfileRewardKind='background'|'border'|'title';
@@ -130,6 +131,10 @@ export function newlyUnlockedProfileRewards(before:GameState,after:GameState):Pr
  }
  for(const id of addedIds(before.account.unlockedTitleIds,after.account.unlockedTitleIds)){
   notices.push({kind:'title',id,name:eventRewardName(after,'title',id),source:profileRewardSource(after,'title',id)});
+ }
+ const beforeJournalTitles=before.account.journalState?.unlockedTitles??{},afterJournalTitles=after.account.journalState?.unlockedTitles??{};
+ for(const id of Object.keys(afterJournalTitles).filter(id=>beforeJournalTitles[id]===undefined)){
+  const definition=JOURNAL_TITLES_V42.find(row=>row.id===id);if(definition)notices.push({kind:'title',id,name:definition.name});
  }
  if(before.character&&after.character&&before.character.id===after.character.id){
   for(const title of PROFILE_TITLES){

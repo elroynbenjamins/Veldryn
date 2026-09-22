@@ -25,7 +25,7 @@ import {professionMasteryActionDefinition,professionMasteryMasteredRecords,skill
 
 const label=(value?:string)=>value?value.replace(/[_:-]+/g,' ').replace(/\b\w/g,letter=>letter.toUpperCase()):'Default';
 
-type ProfileDestination='Customize'|'Collections'|'Achievements'|'Rankings';
+type ProfileDestination='Customize'|'Collections'|'Achievements'|'Rankings'|'MasteryHall';
 
 export function ProfileScreen({state,onNavigate}:{state:GameState;onNavigate?:(destination:ProfileDestination)=>void}){
  const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
@@ -78,7 +78,7 @@ export function ProfileScreen({state,onNavigate}:{state:GameState;onNavigate?:(d
    </View>
   </View>
 
-  <MasteryHallPanel state={state}/>
+  <MasteryHallPanel state={state} onOpen={()=>onNavigate?.('MasteryHall')}/>
 
   <View style={s.highlights}>
    <View style={s.sectionHead}><Text style={s.section}>FAVORITES</Text><Text style={s.sectionMeta}>Showcased by player</Text></View>

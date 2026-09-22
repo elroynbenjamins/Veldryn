@@ -16,7 +16,7 @@ ok(profile.includes("minHeight:50"),'Career stat cells must remain compact');
 ok(profile.includes('title="Customize"')&&profile.includes('title="Collections"')&&profile.includes('title="Achievements"')&&profile.includes('title="Rankings"'),'Profile actions must remain directly accessible');
 ok(!profile.includes('identityHead')&&!profile.includes('IdentityRow'),'Profile must not reintroduce the redundant second identity block');
 ok(profile.includes('label="BOSSES"')&&profile.includes('label="COLLECTIBLES"'),'Career snapshot must cover boss and collection progression');
-ok(profile.includes('<MasteryHallPanel state={state}/>'),'Profile must expose the account-wide Mastery Hall summary');
+ok(profile.includes('<MasteryHallPanel state={state}')&&profile.includes("onNavigate?.('MasteryHall')"),'Profile must expose the account-wide Mastery Hall summary and link to the full Hall');
 ok(profile.includes('title="MASTERY SHOWCASE"')&&profile.includes("value:'R50'"),'Profile must show compact R50 mastery showcase slots');
 const masteryHall=read('src/components/MasteryHallPanel.tsx');
 ok(masteryHall.includes('ACCOUNT MASTERY HALL')&&masteryHall.includes('prestige, achievements and profile showcase options—not more power'),'Mastery Hall must frame R50 as recognition rather than another power layer');

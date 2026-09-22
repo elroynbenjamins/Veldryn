@@ -7,19 +7,19 @@ import {useGameTheme} from '../theme/ThemeContext';
 import {t} from '../i18n';
 import {GameState} from '../core/types';
 
-export type MoreDestination='Home'|'Social'|'Activity'|'Progression'|'DailySupplies'|'AccountBonuses'|'Quests'|'Companions'|'Skills'|'Events'|'Friends'|'Guild'|'Settings'|'Arena'|'Rankings'|'Collections'|'Profile'|'Achievements';
+export type MoreDestination='Home'|'Social'|'Activity'|'Progression'|'DailySupplies'|'AccountBonuses'|'Quests'|'Companions'|'Skills'|'Events'|'Friends'|'Guild'|'Settings'|'Arena'|'Rankings'|'Collections'|'Profile'|'Achievements'|'MasteryHall';
 
 const sections:Array<{label:string;items:MoreDestination[]}>= [
   {label:'PLAY & PROGRESSION',items:['Home','Progression','Quests','Skills','Companions','DailySupplies','AccountBonuses']},
   {label:'SOCIAL & COMPETITION',items:['Social','Friends','Guild','Events','Arena','Rankings']},
-  {label:'IDENTITY & ACCOUNT',items:['Activity','Profile','Collections','Achievements','Settings']},
+  {label:'IDENTITY & ACCOUNT',items:['Activity','Profile','MasteryHall','Collections','Achievements','Settings']},
 ];
 
 function iconForDestination(id:MoreDestination):keyof typeof navigationIcons{
   if(id==='Activity'||id==='Progression')return 'Home';
   if(id==='DailySupplies')return 'Events';
   if(id==='AccountBonuses')return 'Character';
-  if(id==='Arena'||id==='Rankings'||id==='Collections'||id==='Profile'||id==='Achievements')return 'Social';
+  if(id==='Arena'||id==='Rankings'||id==='Collections'||id==='Profile'||id==='Achievements'||id==='MasteryHall')return 'Social';
   return id;
 }
 function itemMeta(language:GameState['settings']['language'],id:MoreDestination){
@@ -42,6 +42,7 @@ function itemMeta(language:GameState['settings']['language'],id:MoreDestination)
     case 'Collections':return {title:'Collections',description:'Collectibles and account bonuses'};
     case 'Profile':return {title:'Profile',description:'Identity, showcase and customization'};
     case 'Achievements':return {title:'Achievements',description:'Prestige milestones and rewards'};
+    case 'MasteryHall':return {title:'Mastery Hall',description:'Account-wide R50 profession records and prestige'};
   }
 }
 

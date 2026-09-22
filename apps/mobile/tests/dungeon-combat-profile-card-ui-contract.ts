@@ -36,6 +36,11 @@ ok(stage.includes('ready:state.hp>0')&&stage.includes('currentHp:state.hp'),'Par
 ok(card.includes('LOW HP')&&card.includes('criticalRow'),'Party cards must call out critical health before a down');
 ok(card.includes('phaseThreshold')&&card.includes('phase.hpPct'),'Boss HP bar must show authoritative phase threshold markers');
 ok(stage.includes('bossPhases={boss?run.bossMechanic?.telegraph?.phases:undefined}'),'Battlefield must pass authoritative boss phase thresholds into the encounter card');
+ok(card.includes('CombatStatusStrip')&&card.includes('statusStrip'),'Combat cards must render a compact status-effect strip');
+ok(card.includes("return 'DOT'")&&card.includes("return 'HOT'")&&card.includes("'VULN'")&&card.includes("'HASTE'"),'Status pills must distinguish harmful, healing and common buff states');
+ok(card.includes('slice(0,gemProc?2:3)')&&card.includes('statusOverflow'),'Status strips must cap visible pills and show overflow rather than expand the card');
+ok(card.includes('Effect Gem proc')&&card.includes('>GEM<'),'Current Effect Gem procs must receive compact card feedback without becoming persistent fake buffs');
+ok(stage.includes('playbackCombatantStatuses')&&stage.includes('statuses={enemyStatuses}')&&stage.includes('statuses={statuses}'),'Battlefield must resolve status windows for both boss/enemy and party cards');
 for(const enemy of ['The Hollow Regent','The Coinbound Captain','The Rimebell Colossus','Veilshade Stalker','Ledger Hexer','Bellfrost Spirit'])ok(enemyArt.toLowerCase().includes(enemy.toLowerCase()),enemy+' must have registered encounter artwork');
 ok(enemyArt.includes("require('../../assets/dungeon-enemies-v1/"),'Enemy artwork must be bundled as static Metro assets');
 

@@ -60,6 +60,32 @@ const cruciblePrime=buildExpeditionEncounter({encounterId:'BOSS_EXP_PRIME'})[0];
 assert.ok(cruciblePrime.abilities.some(ability=>ability.name==='Molten Aegis'&&ability.effects.some(effect=>effect.kind==='shield')));
 assert.deepEqual((cruciblePrime.phases??[]).map(phase=>phase.name),['Tempered Shell','Overheat']);
 
+const hollowRegent=buildExpeditionEncounter({encounterId:'EVENT_VEILBREAK_BOSS'})[0];
+assert.deepEqual((hollowRegent.phases??[]).map(phase=>phase.name),['Lanterns Dim',"Regent's Decree"]);
+assert.equal(hollowRegent.abilities.find(ability=>ability.id==='EVENT_VEILBREAK_BOSS_LANCE')?.target,'random_enemy');
+assert.ok(hollowRegent.abilities.find(ability=>ability.id==='EVENT_VEILBREAK_BOSS_NOVA')?.effects.some(effect=>effect.kind==='dot'));
+assert.ok((hollowRegent.phases??[]).find(phase=>phase.name==="Regent's Decree")?.effects.some(effect=>effect.executeBelowHpPct!==undefined));
+
+const coinboundCaptain=buildExpeditionEncounter({encounterId:'EVENT_MERCHANT_BOSS'})[0];
+assert.deepEqual((coinboundCaptain.phases??[]).map(phase=>phase.name),['Toll Is Due',"Captain's Share"]);
+assert.ok(coinboundCaptain.abilities.some(ability=>ability.id==='EVENT_MERCHANT_BOSS_RALLY'&&ability.effects.some(effect=>effect.kind==='buff'&&effect.tag==='damage_done')));
+assert.ok((coinboundCaptain.phases??[]).find(phase=>phase.name==='Toll Is Due')?.effects.some(effect=>effect.kind==='debuff'&&effect.tag==='damage_taken'));
+
+const rimebellColossus=buildExpeditionEncounter({encounterId:'EVENT_FROSTFALL_BOSS'})[0];
+assert.deepEqual((rimebellColossus.phases??[]).map(phase=>phase.name),['Frozen Carapace','Last Toll']);
+assert.ok(rimebellColossus.abilities.some(ability=>ability.id==='EVENT_FROSTFALL_BOSS_WARD'&&ability.effects.some(effect=>effect.kind==='shield')));
+assert.ok((rimebellColossus.phases??[]).find(phase=>phase.name==='Frozen Carapace')?.effects.some(effect=>effect.kind==='shield'));
+assert.ok((rimebellColossus.phases??[]).find(phase=>phase.name==='Last Toll')?.effects.some(effect=>effect.kind==='damage'&&effect.damageType==='ice'));
+
+for(const [encounterId,expected] of [
+ ['EVENT_VEILBREAK_BOSS',['focus','execute','interrupt','dot']],
+ ['EVENT_MERCHANT_BOSS',['heavy_hit','aoe','interrupt','enrage']],
+ ['EVENT_FROSTFALL_BOSS',['heavy_hit','aoe','interrupt','barrier']],
+] as const){
+ const preview=expeditionEncounterPreview(encounterId)!;
+ for(const mechanic of expected)assert.ok(preview.mechanics.some(item=>item.id===mechanic),`${encounterId} preview missing ${mechanic}`);
+}
+
 const zeroStats={maxHp:20_000,attackPower:0,healingPower:0,defense:0,accuracy:1000,evasion:0,critChance:0,critMultiplier:1.5,haste:0};
 const caster:CombatantDefinition={id:'CASTER',name:'Priority Caster',team:'enemies',role:'enemy',level:25,stats:zeroStats,basicAttackMs:99_999,basicAttackCoeff:0,abilities:[
  {id:'DANGER_CAST',name:'Danger Cast',cooldownMs:99_999,castTimeMs:3000,target:'all_enemies',priority:100,interruptible:true,effects:[{kind:'damage',flat:100}]},

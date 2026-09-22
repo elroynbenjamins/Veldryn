@@ -3,6 +3,7 @@ import {craftedItemIcons} from './crafted-item-assets';
 import type {ImageSourcePropType} from 'react-native';
 import {coreMaterialIconSourceById} from './core-material-assets';
 import {hasRegionalResourceArtwork} from './regional-resource-assets';
+import {hasRemainingItemArtwork} from './remaining-item-assets';
 
 /** Canonical gathering yields with production-ready transparent pixel artwork. */
 export const resourceIconSourceById:Readonly<Partial<Record<string,ImageSourcePropType>>>={
@@ -22,4 +23,4 @@ export const resourceIconSourceById:Readonly<Partial<Record<string,ImageSourcePr
 };
 
 export function resourceIconSource(itemId:string){return resourceIconSourceById[itemId];}
-export function hasResourceArtwork(itemId:string){return hasRegionalResourceArtwork(itemId)||!!resourceIconSource(itemId);}
+export function hasResourceArtwork(itemId:string){return hasRegionalResourceArtwork(itemId)||hasRemainingItemArtwork(itemId)||!!resourceIconSource(itemId);}

@@ -41,6 +41,9 @@ ok(!account.includes("items:['Home','Progression','Quests','Skills'"),'Account m
 ok(account.includes("singleColumn=width<350||fontScale>=1.25")&&account.includes('attentionQuickWide'),'Account hub and attention rail must preserve narrow-phone / large-text responsiveness');
 
 const skills=read('src/screens/SkillsScreen.tsx');
+ok(!skills.includes('Hunting-specific activities are not available yet'),'Hunting must not regress to a placeholder-only skill screen');
+ok(skills.includes('Train Hunting through monster hunts')&&skills.includes('HUNTING_XP_SHARE')&&skills.includes('Hunting XP/hr'),'Hunting detail must explain its combat-linked progression and current-region pace');
+
 ok(skills.includes("minHeight:112"),'Skills hub cards must remain compact');
 ok(skills.includes('skillTop:'),'Skills hub cards must keep the compact icon/copy row');
 ok(!skills.includes('Tap to open'),'Skills cards must not waste a line on redundant tap instructions');
@@ -160,6 +163,7 @@ ok(activity.includes('backgroundColor:C.warningSurface'),'Activity warnings must
 ok(activity.includes('backgroundColor:C.infoSurface'),'Activity goal state must use semantic theme surfaces');
 ok(activity.includes('activityProgressFeedback')&&activity.includes('phaseText'),'Active activities must show truthful phase text tied to real cycle progress');
 ok(activity.includes('levelPace')&&activity.includes('XP remaining')&&activity.includes('XP/hr'),'Active activities must expose level progress, remaining XP and effective XP/hour');
+ok(activity.includes('preview.huntingXp')&&activity.includes('Hunting XP'),'Combat reward cards must surface Hunting XP separately from character XP');
 ok(activity.includes("kind:ActivityKind")&&activity.includes("alchemy:'ALCHEMY'")&&activity.includes("faith:'FAITH'")&&activity.includes("exploration:'EXPLORATION'"),'Active activity card must preserve activity-specific headers rather than collapsing everything into Gathering');
 ok(activity.includes("alchemy:'brews ready'")&&activity.includes("faith:'practices ready'")&&activity.includes("exploration:'routes ready'"),'Active activity reward counts must use activity-specific units');
 ok(activity.includes("preview.craftingActions??0")&&activity.includes("preview.faithActions??0"),'Alchemy and Faith must count their real settled actions instead of showing zero ready rewards');

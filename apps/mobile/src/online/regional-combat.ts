@@ -9,7 +9,7 @@ import type {RegionalCombatKindV1} from '../core/regional-combat-catalog-v1';
 
 export interface RegionalCombatResultV1{
  receiptId:string;
- result:{receiptId:string;victory:boolean;reason:'victory'|'wipe'|'timeout';durationMs:number;eventDigest:string;damageDone:number;healingDone:number;playerHp:number;enemyHp:number};
+ result:{receiptId:string;victory:boolean;reason:'victory'|'wipe'|'timeout';durationMs:number;eventDigest:string;damageDone:number;healingDone:number;playerHp:number;playerMaxHp:number;playerName:string;enemyHp:number;enemyMaxHp:number;enemyName:string;replayCues:Array<{atMs:number;type:'cast'|'phase'|'interrupt'|'damage'|'heal'|'shield'|'down'|'victory'|'wipe'|'timeout';actorName?:string;targetName?:string;abilityName?:string;amount?:number;critical?:boolean;absorbed?:number}>};
  reward:null|{eligible:boolean;duplicate?:boolean;sourceId?:string;gemItemId?:string;pityTriggered?:boolean;recipeUnlockedId?:string;duplicateRecipeDust?:number;regionalCatalysts?:number};
  duplicate:boolean;
 }

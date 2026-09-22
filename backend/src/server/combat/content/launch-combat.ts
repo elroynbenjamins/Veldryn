@@ -27,11 +27,11 @@ export function launchPlayer(classId:string, level=25):CombatantDefinition {
     ]);
     case 'Dawnkeeper': return make('Dawnkeeper','support',stats(3600*scale,300*scale,720*scale,820*scale,720,230,.07,.08),[
       {id:'DK_HEAL',name:'Dawn Mend',cooldownMs:4200,castTimeMs:500,target:'lowest_hp_ally',priority:100,aiCondition:'ally_below_50',effects:[{kind:'heal',coeff:1.25}]},
-      {id:'DK_HOT',name:'Sunthread',cooldownMs:8000,castTimeMs:0,target:'lowest_hp_ally',priority:80,aiCondition:'ally_below_80',effects:[{kind:'hot',coeff:.34,durationMs:6000,tickMs:2000}]},
+      {id:'DK_HOT',name:'Sunthread',cooldownMs:8000,castTimeMs:0,target:'threatened_ally',priority:80,aiCondition:'ally_below_80_or_targeted',effects:[{kind:'hot',coeff:.34,durationMs:6000,tickMs:2000}]},
       dmg('DK_SMITE','Sun Smite',.75,5500,40)
     ]);
     case 'Stonecaller': return make('Stonecaller','support',stats(4100*scale,340*scale,570*scale,1050*scale,690,190,.06,.04),[
-      {id:'SC_SHIELD',name:'Resonant Armor',cooldownMs:7000,castTimeMs:0,target:'lowest_hp_ally',priority:90,aiCondition:'ally_below_80',effects:[{kind:'shield',coeff:1.1}]},
+      {id:'SC_SHIELD',name:'Resonant Armor',cooldownMs:7000,castTimeMs:0,target:'threatened_ally',priority:90,aiCondition:'ally_below_80_or_targeted',effects:[{kind:'shield',coeff:1.1}]},
       {id:'SC_HEAL',name:'River Stone',cooldownMs:6500,castTimeMs:0,target:'lowest_hp_ally',priority:85,aiCondition:'ally_below_50',effects:[{kind:'heal',coeff:.8}]},
       dmg('SC_THUNDER','Thunder Totem',.95,6000,55,{effects:[{kind:'damage',coeff:.95,damageType:'nature'},{kind:'debuff',tag:'damage_taken',value:.05,durationMs:4000}]})
     ]);

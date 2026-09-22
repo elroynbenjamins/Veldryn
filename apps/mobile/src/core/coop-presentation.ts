@@ -15,6 +15,8 @@ export type CoopCombatReplayCueType='action'|'phase'|'cast'|'interrupt'|'down'|'
 export interface CoopCombatReplayStateView{ id:string; hp:number; shield:number; }
 export interface CoopCombatReplayCombatantView{ id:string; name:string; team:'players'|'enemies'; maxHp:number; startHp:number; startShield:number; boss:boolean; }
 export interface CoopCombatReplayStatusView{ targetId:string; sourceId?:string; kind:'buff'|'debuff'|'dot'|'hot'; tag:string; label:string; abilityId?:string; startsAtMs:number; expiresAtMs:number; }
+export interface CoopCombatReplayGemStateView{ targetId:string; tag:string; expiriesAtMs:number[]; }
+export interface CoopCombatReplayGemSnapshotView{ atMs:number; states:CoopCombatReplayGemStateView[]; }
 export interface CoopCombatReplayCueView{
  atMs:number;
  type:CoopCombatReplayCueType;
@@ -38,6 +40,7 @@ export interface CoopCombatReplayView{
  durationMs:number;
  combatants?:CoopCombatReplayCombatantView[];
  statuses?:CoopCombatReplayStatusView[];
+ gemStates?:CoopCombatReplayGemSnapshotView[];
  cues:CoopCombatReplayCueView[];
 }
 export interface CoopRunView {runId:string;mode:CoopMode;modeLabel?:string;phase:string;syncedLevel:number;roleSlots:Array<{memberId?:string;role:'tank'|'damage'|'support';name:string;echo:boolean;classId?:string;bodyPresentation?:'male'|'female';companionId?:string;currentHp?:number;maximumHp?:number;ready?:boolean}>;options:CoopRouteOptionView[];mechanic?:CoopRunMechanicView;objective?:CoopRunObjectiveView;bossMechanic?:CoopRunBossMechanicView;bossRecap?:CoopRunBossRecapView;lastCombat?:CoopCombatReplayView;rewardText?:string;stateVersion?:number;decisionId?:string;decisionRevision?:number;resolvesAtMs?:number;}
@@ -69,6 +72,7 @@ export function validateCoopRunView(view:CoopRunView):void{
   const combatants=replay.combatants??[],combatantIds=new Set<string>();
   for(const combatant of combatants){if(!combatant.id.trim()||!combatant.name.trim()||!['players','enemies'].includes(combatant.team)||!Number.isFinite(combatant.maxHp)||combatant.maxHp<=0||!Number.isFinite(combatant.startHp)||combatant.startHp<0||combatant.startHp>combatant.maxHp||!Number.isFinite(combatant.startShield)||combatant.startShield<0||combatantIds.has(combatant.id))throw new Error('invalid_combat_replay');combatantIds.add(combatant.id);}
   for(const status of replay.statuses??[]){if(!status.targetId.trim()||combatants.length>0&&!combatantIds.has(status.targetId)||status.sourceId!==undefined&&!status.sourceId.trim()||!['buff','debuff','dot','hot'].includes(status.kind)||!status.tag.trim()||!status.label.trim()||status.abilityId!==undefined&&!status.abilityId.trim()||!Number.isFinite(status.startsAtMs)||status.startsAtMs<0||status.startsAtMs>replay.durationMs||!Number.isFinite(status.expiresAtMs)||status.expiresAtMs<=status.startsAtMs||status.expiresAtMs>replay.durationMs)throw new Error('invalid_combat_replay');}
+  let previousGemStateAt=-1;for(const snapshot of replay.gemStates??[]){if(!Number.isFinite(snapshot.atMs)||snapshot.atMs<0||snapshot.atMs>replay.durationMs||snapshot.atMs<previousGemStateAt)throw new Error('invalid_combat_replay');previousGemStateAt=snapshot.atMs;const gemKeys=new Set<string>();for(const state of snapshot.states){const key=`${state.targetId}:${state.tag}`;if(!state.targetId.trim()||combatants.length>0&&!combatantIds.has(state.targetId)||!state.tag.startsWith('gem:')||gemKeys.has(key)||!Array.isArray(state.expiriesAtMs)||state.expiriesAtMs.length<1||state.expiriesAtMs.length>8||state.expiriesAtMs.some(expiry=>!Number.isFinite(expiry)||expiry<=snapshot.atMs||expiry>replay.durationMs))throw new Error('invalid_combat_replay');gemKeys.add(key);}}
   let previous=-1;
   for(const cue of replay.cues){
    if(!Number.isFinite(cue.atMs)||cue.atMs<0||cue.atMs>replay.durationMs||cue.atMs<previous||!types.has(cue.type)||cue.durationMs!==undefined&&(!Number.isFinite(cue.durationMs)||cue.durationMs<0)||cue.amount!==undefined&&(!Number.isFinite(cue.amount)||cue.amount<0)||cue.absorbed!==undefined&&(!Number.isFinite(cue.absorbed)||cue.absorbed<0)||cue.actionKind!==undefined&&!['damage','heal','shield'].includes(cue.actionKind)||cue.outcome!==undefined&&!['critical','miss'].includes(cue.outcome)||cue.gemProc!==undefined&&typeof cue.gemProc!=='boolean')throw new Error('invalid_combat_replay');

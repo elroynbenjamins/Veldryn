@@ -23,6 +23,20 @@ const IDENTITIES:Partial<Record<SkillId,SkillIdentity>>={
 };
 export function skillIdentity(skillId:SkillId):SkillIdentity{return IDENTITIES[skillId]??{label:'SKILL',descriptor:'Long-term character progression',tone:'accent'}}
 
+export interface ProfessionMasteryActionDefinition{actionId:string;name:string;skillId:SkillId;yieldRelevant:boolean;speedRelevant:boolean}
+export function professionMasteryActionDefinition(actionId:string):ProfessionMasteryActionDefinition|undefined{
+ const node=[...GATHERING,...HERB_NODES].find(row=>row.id===actionId);
+ if(node)return {actionId,name:node.name,skillId:node.skillId as SkillId,yieldRelevant:true,speedRelevant:true};
+ const recipe=RECIPES.find(row=>row.id===actionId);
+ if(!recipe)return undefined;
+ const output=itemDef(recipe.output.itemId);
+ return {actionId,name:recipe.name,skillId:recipe.skillId as SkillId,yieldRelevant:output.type!=='gear'&&output.type!=='tool',speedRelevant:recipe.skillId==='alchemy'||output.type==='gear'};
+}
+export function professionMasteryRelevantBonusSteps(actionId:string){
+ const definition=professionMasteryActionDefinition(actionId);if(!definition)return [];
+ return PROFESSION_MASTERY_BONUS_RANKS.filter(row=>row.kind==='xp'||row.kind==='yield'&&definition.yieldRelevant||row.kind==='speed'&&definition.speedRelevant);
+}
+
 export interface ProfessionMasteryActionView{
 id:string;name:string;skillId:SkillId;kind:'gathering'|'crafting';level:number;rank:number;points:number;maxRank:number;progress:number;pointsIntoRank:number;pointsForNextRank:number;mastered:boolean;xpBonusBps:number;yieldBonusBps:number;speedBonusBps:number;yieldRelevant:boolean;speedRelevant:boolean;nextBonus?:typeof PROFESSION_MASTERY_BONUS_RANKS[number];destination:WorkingTowardDestination;
 }
@@ -40,6 +54,10 @@ export function professionMasteryActionsForSkill(state:GameState,skillId:SkillId
   rows.push({...progress,id:recipe.id,name:recipe.name,skillId,kind:'crafting',level:recipe.level,yieldRelevant,speedRelevant,nextBonus:nextRelevantBonus(progress.rank,yieldRelevant,speedRelevant),destination:{kind:'skills',skillId,mode:'crafting',recipeId:recipe.id,button:'Open '+recipe.name,detail:'Craft '+recipe.name+' to build recipe mastery.'}});
  }
  return rows.sort((a,b)=>b.rank-a.rank||b.points-a.points||a.level-b.level||a.name.localeCompare(b.name));
+}
+export function professionMasteryMasteredRecords(state:GameState,skillId?:SkillId){
+ const ids=skillId?[skillId]:state.skills.map(row=>row.skillId);
+ return ids.flatMap(id=>professionMasteryActionsForSkill(state,id)).filter(row=>row.mastered).sort((a,b)=>a.name.localeCompare(b.name));
 }
 export function professionMasterySkillSummary(state:GameState,skillId:SkillId){
  const rows=professionMasteryActionsForSkill(state,skillId),totalPoints=rows.reduce((sum,row)=>sum+row.points,0),highestRank=rows.reduce((max,row)=>Math.max(max,row.rank),0),mastered=rows.filter(row=>row.mastered).length,trained=rows.filter(row=>row.points>0).length;

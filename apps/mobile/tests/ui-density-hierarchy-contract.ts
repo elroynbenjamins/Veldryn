@@ -30,12 +30,17 @@ ok(masteryPanel.includes('PROFESSION MASTERY')&&masteryPanel.includes('BEST ACTI
 ok(masteryPanel.includes("slice(0,3)"),'Profession Mastery must remain compact by showing only three priority actions');
 ok(masteryPanel.includes("action:{minHeight:62"),'Profession Mastery action rows must stay compact');
 ok(masteryPanel.includes('Yield requires stackable output')&&masteryPanel.includes('speed requires a timed cycle'),'Mastery UI must explain bonus applicability instead of implying every bonus affects every action');
+ok(masteryPanel.includes('MASTERED RECORDS')&&masteryPanel.includes('Permanent R50 record'),'R50 action mastery must have a permanent compact completion treatment');
+ok(masteryPanel.includes('TRACK R')&&masteryPanel.includes('TRACKED R'),'Mastery rows must support one-tap Working Toward tracking without a separate modal');
+ok(masteryPanel.includes('minHeight:30'),'Mastery tracking controls must remain compact secondary actions');
 ok(skills.includes('<ProfessionMasteryPanel'),'Trainable skill details must expose Profession Mastery');
+ok(skills.includes('masteryGoalForAction')&&skills.includes("type:'goals_set'"),'Skill mastery tracking must use the authoritative Working Toward goal command');
 ok(skills.includes('skillIdentity')&&skills.includes('identityColor'),'Skill headers must preserve distinct semantic identities without larger typography');
 
 const masteryPresentation=read('src/core/profession-mastery-presentation.ts');
 ok(masteryPresentation.includes("mining:{label:'EXTRACTION'")&&masteryPresentation.includes("woodcutting:{label:'FORESTRY'")&&masteryPresentation.includes("fishing:{label:'ANGLING'")&&masteryPresentation.includes("smithing:{label:'FORGECRAFT'")&&masteryPresentation.includes("cooking:{label:'PROVISIONING'")&&masteryPresentation.includes("alchemy:{label:'BREWCRAFT'"),'Core profession skills must have distinct compact identity labels');
 ok(masteryPresentation.includes('yieldRelevant')&&masteryPresentation.includes('speedRelevant'),'Mastery presentation must distinguish bonuses that are meaningful for each action type');
+ok(masteryPresentation.includes('professionMasteryMasteredRecords'),'R50 completion records must derive from saved mastery state instead of a duplicate collection store');
 
 const masteryCore=read('src/core/profession-mastery-v40.ts');
 ok(masteryCore.includes("{rank:10,kind:'xp'")&&masteryCore.includes("{rank:20,kind:'yield'")&&masteryCore.includes("{rank:30,kind:'speed'")&&masteryCore.includes("{rank:40,kind:'yield'")&&masteryCore.includes("{rank:50,kind:'speed'"),'Profession Mastery bonus ranks must remain explicit and reviewable');
@@ -74,6 +79,14 @@ const workingToward=read('src/core/working-toward.ts');
 ok(workingToward.includes("kind:'dungeon';dungeonId?:string"),'Working Toward must support a real Dungeon destination');
 ok(workingToward.includes("goal.kind==='dungeon_clears')return {kind:'dungeon'"),'Dungeon goals must navigate instead of rendering info-only dead ends');
 ok(read('App.tsx').includes("destination.kind==='dungeon'){setTab('Coop')"),'Dungeon progression actions must open the real co-op dungeon screen');
+
+const planner=read('src/screens/ProgressionPlannerScreen.tsx');
+ok(planner.includes('MASTERY_GOAL_RANKS')&&planner.includes('nextMasteryGoalRank'),'Working Toward Profession Mastery goals must target authored bonus ranks');
+ok(planner.includes("R{rank}")&&planner.includes("rank===10?'+2% XP'"),'Mastery goal authoring must explain each bonus-rank target');
+
+const appMastery=read('App.tsx');
+ok(appMastery.includes('masteryRankProgressionMoments')&&appMastery.includes('<ActionFeedback message={masteryRankNoticeMessage(masteryNotices)}'),'Non-reward mastery rank-ups must use lightweight in-app feedback');
+ok(appMastery.includes("forgeResults?.some(row=>row.qualityProc)"),'Mastery feedback must defer only behind a real exceptional Forge reveal');
 
 const snapshot=read('src/components/SkillDashboard.tsx');
 ok(snapshot.includes('.slice(0,5)'),'Home skill snapshot must show only the five strongest non-combat skills');

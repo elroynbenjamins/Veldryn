@@ -2,7 +2,7 @@ import {RecipeCard} from '../components/RecipeCard';
 import {SearchField} from '../components/SearchField';
 import {ActivityArtwork} from '../components/ActivityArtwork';
 import {useMemo,useState} from 'react';
-import {Image,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
+import {Alert,Image,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {GameState,GatheringSkillId,SkillId} from '../core/types';
 import {GATHERING,RECIPES} from '../content/skills';
 import {HERB_NODES} from '../content/herbalism';
@@ -42,6 +42,7 @@ import {SkillMilestoneStrip} from '../components/SkillMilestoneStrip';
 import {progressAnticipation} from '../core/progress-anticipation';
 import {ProfessionMasteryPanel} from '../components/ProfessionMasteryPanel';
 import {skillIdentity,type SkillIdentityTone} from '../core/profession-mastery-presentation';
+import {masteryGoalForAction} from '../core/progression-goals-v40';
 
 export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueueRemove,onQueueMove,onQueueClear,onQueueStart,onCraft,onClaimCraft,onClaimAllCrafts,onCancelCraft,onMoveCraftWaiting,onCraftPrerequisites,onEquipTool,onCharacter,onInventory,onViewToolRecipes,onNavigateCraftingSource,onSelectSkill,onBackToHub,onOpenCombat,onCommand=async()=>{},initialMode='gathering',initialSkill,initialActionId,initialRecipeId,forgeResults,onDismissForgeResults}:{state:GameState;now?:number;onGather:(id:string)=>void;onQueueGather:(id:string)=>void;onQueueRemove:(index:number)=>void;onQueueMove:(index:number,direction:'up'|'down')=>void;onQueueClear:()=>void;onQueueStart:()=>void;onCraft:(id:string)=>void;onClaimCraft:(jobId:string)=>void;onClaimAllCrafts:()=>void;onCancelCraft:(jobId:string)=>void;onMoveCraftWaiting:(jobId:string,direction:'up'|'down')=>void;onCraftPrerequisites:(recipeId:string)=>void;onEquipTool:(id:string)=>void;onCharacter:()=>void;onInventory:()=>void;onViewToolRecipes:()=>void;onNavigateCraftingSource?:(destination:import('../core/working-toward').WorkingTowardDestination)=>void;onSelectSkill?:(id:string)=>void;onBackToHub?:()=>void;onOpenCombat?:()=>void;onCommand?:(command:import('../core/game-commands').GameCommand)=>Promise<void>;initialMode?:'gathering'|'crafting'|'novice'|'faith';initialSkill?:SkillId|string;initialActionId?:string;initialRecipeId?:string;forgeResults?:readonly ForgeCraftResult[]|null;onDismissForgeResults?:()=>void}){
   const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
@@ -50,6 +51,7 @@ export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueu
   const initialRecipe=initialRecipeId?RECIPES.find(row=>row.id===initialRecipeId):undefined,goalAction=initialActionId?gatheringDefs.find(row=>row.id===initialActionId):initialRecipe;
   const [openTools,setOpenTools]=useState<Record<string,boolean>>({});
   const offlineCap=offlineCapBreakdown(state),queueFull=(state.character?.activityQueue?.length??0)>=MAX_ACTIVITY_QUEUE;
+  const trackMasteryGoal=async(actionId:string,actionName:string,targetRank:number)=>{const character=state.character;if(!character)return;const goals=character.progressionGoals??[],existing=goals.find(goal=>goal.kind==='mastery_rank'&&goal.actionId===actionId);if(!existing&&goals.length>=3){Alert.alert('Working Toward','Remove a pinned goal before tracking another mastery target.');return;}const nowMs=Date.now(),created=masteryGoalForAction({characterId:character.id,actionId,actionName,targetRank,nowMs}),goal=existing?{...created,id:existing.id,createdAtMs:existing.createdAtMs}:created,next=existing?goals.map(row=>row.id===existing.id?goal:row):[...goals,goal];try{await onCommand({type:'goals_set',args:{goals:next}});}catch(error){Alert.alert('Working Toward',error instanceof Error?error.message:'Could not track this mastery target.');}};
   const region=WORLD_ZONES.find(zone=>zone.id===currentRegionId(state))??WORLD_ZONES[0];
   if(!initialSkill)return <SkillHub state={state} onSelect={onSelectSkill??(()=>{})}/>;
   if(initialSkill.startsWith('class:'))return <ScrollView contentContainerStyle={s.root}><DetailBack onPress={onBackToHub}/><ClassSkillsPanel state={state} now={now} onCommand={onCommand} highlightedSkillId={initialSkill.slice(6)}/></ScrollView>;
@@ -61,7 +63,7 @@ export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueu
     <DetailBack onPress={onBackToHub}/>
     <SkillHero state={state} skillId={initialSkill} kind={detailKind}/>
     <SkillMilestoneStrip state={state} skillId={initialSkill as SkillId} onNavigate={onNavigateCraftingSource}/>
-    <ProfessionMasteryPanel state={state} skillId={initialSkill as SkillId} preferredActionId={initialActionId??initialRecipeId} onNavigate={onNavigateCraftingSource}/>
+    <ProfessionMasteryPanel state={state} skillId={initialSkill as SkillId} preferredActionId={initialActionId??initialRecipeId} onNavigate={onNavigateCraftingSource} onTrackMastery={trackMasteryGoal}/>
     {goalAction?<View style={s.goalTarget}><Text style={s.goalTargetLabel}>WORKING TOWARD TARGET</Text><Text style={s.goalTargetName}>{goalAction.name}</Text><Text style={s.sub}>{initialRecipe?'The recipe list is filtered to this target.':'The target activity is shown first in this skill.'}</Text></View>:null}
     {mode==='gathering'&&<View style={[s.region,{borderColor:region.accent}]}><View style={s.flex}><Text style={s.regionLabel}>CURRENT REGION</Text><Text style={s.regionName}>{region.symbol} {region.name}</Text><Text style={s.sub}>Only gathering nodes in this region are shown.</Text></View></View>}
     {mode==='gathering'&&<ActionQueuePanel state={state} onRemove={onQueueRemove} onMove={onQueueMove} onClear={onQueueClear} onStartNext={onQueueStart}/>}

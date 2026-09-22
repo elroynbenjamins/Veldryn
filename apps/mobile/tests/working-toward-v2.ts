@@ -1,6 +1,6 @@
 import {createCharacter,newGame} from '../src/core/game';
 import {progressionGoalContext,progressionGoalDestination,workingTowardReadyCount,workingTowardTrackableItems} from '../src/core/working-toward';
-import {progressionGoalView,type ProgressionGoal} from '../src/core/progression-goals-v40';
+import {MASTERY_GOAL_RANKS,masteryGoalForAction,nextMasteryGoalRank,progressionGoalView,type ProgressionGoal} from '../src/core/progression-goals-v40';
 
 function fail(message:string):never{throw new Error(message)}
 function ok(value:unknown,message:string){if(!value)fail(message)}
@@ -28,6 +28,15 @@ if(itemDestination.kind==='skills'){equal(itemDestination.actionId,'COPPER_VEIN'
 
 const weeklyGoal:ProgressionGoal={id:'goal-weekly',characterId,kind:'weekly_order',title:'Weekly job',createdAtMs:0,pinnedAtMs:0,orderId:'example',targetProgress:10};
 equal(progressionGoalDestination(state,weeklyGoal).kind,'contracts','weekly goal routes to Contract Board');
+
+equal(nextMasteryGoalRank(0),10,'Untrained action mastery should suggest the first bonus rank');
+equal(nextMasteryGoalRank(10),20,'R10 action mastery should suggest the next authored bonus rank');
+equal(nextMasteryGoalRank(41),50,'Late action mastery should suggest R50 completion');
+equal(MASTERY_GOAL_RANKS.join(','),'10,20,30,40,50','Working Toward mastery targets must stay aligned to authored bonus ranks');
+const masteryGoal=masteryGoalForAction({characterId,actionId:'GREENWOOD_TREE',actionName:'Greenwood Tree',targetRank:20,nowMs:123});
+equal(masteryGoal.kind,'mastery_rank','quick mastery tracking must create a mastery rank goal');
+if(masteryGoal.kind==='mastery_rank'){equal(masteryGoal.actionId,'GREENWOOD_TREE','quick mastery goal retains its exact action');equal(masteryGoal.targetRank,20,'quick mastery goal retains the selected bonus rank');}
+equal(progressionGoalDestination(state,masteryGoal).kind,'skills','mastery goals deep-link back into the profession action');
 
 state={...state,character:{...state.character!,progressionGoals:[{...skillGoal,targetLevel:1}]}};
 const context=progressionGoalContext(state),view=progressionGoalView(state.character!.progressionGoals![0],context);

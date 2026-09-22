@@ -1,7 +1,7 @@
 import {GATHERING,RECIPES,type Recipe} from '../content/skills';
 import {HERB_NODES} from '../content/herbalism';
 import type {GameState,SkillId} from './types';
-import {PROFESSION_MASTERY_BONUS_RANKS,nextProfessionMasteryBonus,professionMasteryRankProgress,professionMasteryView} from './profession-mastery-v40';
+import {PROFESSION_MASTERY_BONUS_RANKS,professionMasteryRankProgress,professionMasteryView} from './profession-mastery-v40';
 import type {WorkingTowardDestination} from './working-toward';
 import {itemDef} from '../content/items';
 
@@ -27,16 +27,17 @@ export interface ProfessionMasteryActionView{
 id:string;name:string;skillId:SkillId;kind:'gathering'|'crafting';level:number;rank:number;points:number;maxRank:number;progress:number;pointsIntoRank:number;pointsForNextRank:number;mastered:boolean;xpBonusBps:number;yieldBonusBps:number;speedBonusBps:number;yieldRelevant:boolean;speedRelevant:boolean;nextBonus?:typeof PROFESSION_MASTERY_BONUS_RANKS[number];destination:WorkingTowardDestination;
 }
 function relevantRecipe(state:GameState,recipe:Recipe){return !recipe.noviceSetId&&(!recipe.classId||recipe.classId===state.character?.classId)}
+function nextRelevantBonus(rank:number,yieldRelevant:boolean,speedRelevant:boolean){return PROFESSION_MASTERY_BONUS_RANKS.find(row=>row.rank>rank&&(row.kind==='xp'||row.kind==='yield'&&yieldRelevant||row.kind==='speed'&&speedRelevant))}
 export function professionMasteryActionsForSkill(state:GameState,skillId:SkillId):ProfessionMasteryActionView[]{
  const rows:ProfessionMasteryActionView[]=[];
  for(const node of [...GATHERING,...HERB_NODES].filter(row=>row.skillId===skillId)){
   const progress=professionMasteryRankProgress(node.id,state.account.professionMasteryByAction?.[node.id]);
-  rows.push({...progress,id:node.id,name:node.name,skillId,kind:'gathering',level:node.unlockLevel,yieldRelevant:true,speedRelevant:true,nextBonus:nextProfessionMasteryBonus(progress.rank),destination:{kind:'skills',skillId,mode:'gathering',actionId:node.id,regionId:node.zoneId,button:'Open '+node.name,detail:'Repeat '+node.name+' to build action mastery.'}});
+  rows.push({...progress,id:node.id,name:node.name,skillId,kind:'gathering',level:node.unlockLevel,yieldRelevant:true,speedRelevant:true,nextBonus:nextRelevantBonus(progress.rank,true,true),destination:{kind:'skills',skillId,mode:'gathering',actionId:node.id,regionId:node.zoneId,button:'Open '+node.name,detail:'Repeat '+node.name+' to build action mastery.'}});
  }
  for(const recipe of RECIPES.filter(row=>row.skillId===skillId&&relevantRecipe(state,row))){
   const progress=professionMasteryRankProgress(recipe.id,state.account.professionMasteryByAction?.[recipe.id]);
   const output=itemDef(recipe.output.itemId),yieldRelevant=output.type!=='gear'&&output.type!=='tool',speedRelevant=recipe.skillId==='alchemy'||output.type==='gear';
-  rows.push({...progress,id:recipe.id,name:recipe.name,skillId,kind:'crafting',level:recipe.level,yieldRelevant,speedRelevant,nextBonus:nextProfessionMasteryBonus(progress.rank),destination:{kind:'skills',skillId,mode:'crafting',recipeId:recipe.id,button:'Open '+recipe.name,detail:'Craft '+recipe.name+' to build recipe mastery.'}});
+  rows.push({...progress,id:recipe.id,name:recipe.name,skillId,kind:'crafting',level:recipe.level,yieldRelevant,speedRelevant,nextBonus:nextRelevantBonus(progress.rank,yieldRelevant,speedRelevant),destination:{kind:'skills',skillId,mode:'crafting',recipeId:recipe.id,button:'Open '+recipe.name,detail:'Craft '+recipe.name+' to build recipe mastery.'}});
  }
  return rows.sort((a,b)=>b.rank-a.rank||b.points-a.points||a.level-b.level||a.name.localeCompare(b.name));
 }

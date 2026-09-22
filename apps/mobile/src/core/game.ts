@@ -440,8 +440,9 @@ export function claimActivity(state:GameState,nowMs:number){
     const routed=routeRewards(state,reward.items,nowMs);
     const skills=state.skills.map(x=>x.skillId==='alchemy'?{...x,xp:Math.min(totalXpAtLevel(100),x.xp+(reward.xp??0)),level:levelFromXp(Math.min(totalXpAtLevel(100),x.xp+(reward.xp??0)))}:x);
     const nextBase={...state,...routed,skills,rewardRemainders:reward.nextRewardRemainders,activity:reward.nextBrewRemaining?{...state.activity,lastClaimAtMs:nowMs,progressFraction:reward.nextProgressFraction,brew:{...brew,remainingBatches:reward.nextBrewRemaining}}:null} as GameState;
-    const next=commitDailySupplyTimedBoost(nextBase,boost);
-    return {state:next,reward};
+    const next=commitDailySupplyTimedBoost(nextBase,boost),actions=reward.craftingActions??0;
+    const progressed=actions>0?applyTrustedLongTermProgression(next,[{kind:'crafting',contentId:brew.recipeId,units:actions,startedAtMs:state.activity.lastClaimAtMs}],reward,nowMs,{accountId:longTermAccountScope(state),eventId:`alchemy:${state.character.id}:${brew.recipeId}:${state.activity.lastClaimAtMs}:${nowMs}`}).state:next;
+    return {state:progressed,reward};
   }
   const preview=previewActivityReward(state,nowMs);if(!state.character||!state.activity)return {state,reward:preview};
   const idleWindow=idleRuleSettlementWindow(state,nowMs),settledAtMs=idleWindow.settleAtMs,idleStopReason=idleWindow.shouldStop?idleWindow.reason:undefined,supply=previewStandardActivityRewardWithSupplies(state,settledAtMs),boosted=supply.reward;

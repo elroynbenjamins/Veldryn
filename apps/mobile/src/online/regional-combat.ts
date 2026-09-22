@@ -5,8 +5,12 @@ const key=process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
 export {SUNSCAR_REGIONAL_ENCOUNTERS_V1} from '../core/regional-combat-catalog-v1';
 export type {RegionalCombatEncounterV1,RegionalCombatKindV1} from '../core/regional-combat-catalog-v1';
-import type {RegionalCombatKindV1} from '../core/regional-combat-catalog-v1';
+import type {RegionalCombatCadenceStatusV1,RegionalCombatKindV1} from '../core/regional-combat-catalog-v1';
 
+export interface RegionalCombatCadenceProjectionV1{
+ serverNow:number;
+ encounters:RegionalCombatCadenceStatusV1[];
+}
 export interface RegionalCombatResultV1{
  receiptId:string;
  result:{receiptId:string;victory:boolean;reason:'victory'|'wipe'|'timeout';durationMs:number;eventDigest:string;damageDone:number;healingDone:number;playerHp:number;playerMaxHp:number;playerName:string;enemyHp:number;enemyMaxHp:number;enemyName:string;replayCues:Array<{atMs:number;type:'cast'|'phase'|'interrupt'|'damage'|'heal'|'shield'|'down'|'victory'|'wipe'|'timeout';actorName?:string;targetName?:string;abilityName?:string;amount?:number;critical?:boolean;absorbed?:number}>};
@@ -27,6 +31,7 @@ async function request(path:string,init:RequestInit){
   return payload;
  }finally{clearTimeout(timeout);}
 }
+export async function fetchRegionalCombatCadenceV1(){return request('/regional-combat/status',{method:'GET'}) as Promise<RegionalCombatCadenceProjectionV1>;}
 export async function startRegionalCombatV1(characterId:string,encounterId:string){
  const requestId=`regional-${Date.now()}-${Math.random().toString(36).slice(2,10)}`;
  return request('/regional-combat',{method:'POST',body:JSON.stringify({requestId,characterId,encounterId})}) as Promise<{receiptId:string;encounterId:string;zoneId:string;kind:RegionalCombatKindV1;contentId:string;status:'ready_to_resolve'}>;

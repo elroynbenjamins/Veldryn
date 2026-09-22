@@ -231,6 +231,14 @@ ok(event.includes("claim:{width:96}"),'Event repeated reward actions must remain
 const quests=read('src/screens/QuestScreen.tsx');
 ok(quests.includes('disclosure:{minHeight:60'),'Quest secondary disclosures must remain compact');
 ok(quests.includes('<GameButton compact title={destination.button}'),'Contract Board utility actions must remain compact');
+ok(quests.includes('GameModalSurface')&&quests.includes('Filter story chapters'),'Quest story filters must use the compact modal/filter-sheet pattern');
+ok(!quests.includes('accessibilityRole="tablist"')&&!quests.includes('function FilterChip'),'Quest Journal must not regress to the old horizontal filter-chip strip');
+ok(quests.includes('<JournalStat stack={stackAttention} label="REWARDS"')&&quests.includes('<JournalStat stack={stackAttention} label="WEEKLY"')&&quests.includes('<JournalStat stack={stackAttention} label="CACHES"'),'Quest Journal must expose compact action-attention counts');
+ok(quests.includes('useWindowDimensions')&&quests.includes("width<360||fontScale>=1.25")&&quests.includes("journalStatStack:{flex:0,flexBasis:'48%'"),'Quest attention summary must adapt to narrow phones and larger text');
+ok(quests.indexOf('{entries.map')<quests.indexOf('CONTRACT BOARD ·'),'Story chapters must appear before secondary Contract Board content');
+ok(quests.includes('const ordered=[...orders].sort')&&quests.includes('Number(b.progress>=b.target)'),'Contract Board rows must prioritize completed/near-complete jobs');
+ok(quests.includes('claimedIds=new Set')&&quests.includes('Number(b.progress>=b.required&&!claimedIds.has(b.id))'),'Class challenge rows must prioritize claimable caches');
+ok(quests.includes("filterToggle:{minWidth:88,minHeight:44"),'Quest filter control must retain accessible compact touch sizing');
 
 const settings=read('src/screens/SettingsScreen.tsx');
 ok(settings.includes('themeChoice:{minHeight:82'),'Theme preview cards must stay compact enough to compare all themes');

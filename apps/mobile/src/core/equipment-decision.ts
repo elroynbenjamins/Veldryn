@@ -1,8 +1,8 @@
 import {itemDef} from '../content/items';
 import {equipmentSetDef,equippedSetPieceCount} from '../content/equipment-sets';
 import {combinedQuantity,enhancedGearStats,gearEnhancement,gemSocketCapacity,gemSocketState,upgradeQuote} from './equipment-enhancement';
-import {type ItemRarity} from './item-rarity';
-import {effectiveOwnedGearRarity} from './crafted-gear-instances';
+import {itemRarity,type ItemRarity} from './item-rarity';
+import {gearInstanceById} from './equipment-instances';
 import type {GameState} from './types';
 
 export interface EquipmentDecisionModel{
@@ -35,7 +35,12 @@ export interface EquipmentDecisionModel{
 
 export function equipmentDecisionModel(state:GameState,itemId:string):EquipmentDecisionModel{
   if(!state.character)throw new Error('Equipment requires a character');
-  const item=itemDef(itemId);
+  const direct=gearInstanceById(state,itemId);
+  const equippedSlot=(Object.entries(state.character.equipment) as Array<[import('./types').GearSlot,string]>).find(([,id])=>id===itemId)?.[0];
+  const equippedId=equippedSlot?state.character.equipmentInstanceIds?.[equippedSlot]:undefined;
+  const instance=direct??(equippedId?gearInstanceById(state,equippedId):undefined);
+  const definitionId=instance?.itemId??itemId;
+  const item=itemDef(definitionId);
   if(item.type!=='gear')throw new Error('Equipment decision requires gear');
   const enhancement=gearEnhancement(state,itemId);
   const quote=upgradeQuote(state,itemId);
@@ -45,12 +50,12 @@ export function equipmentDecisionModel(state:GameState,itemId:string):EquipmentD
   const coresOwned=combinedQuantity(state,'TEMPERING_CORE');
   const missing=(owned:number,needed:number)=>Math.max(0,needed-owned);
   return {
-    itemId,
+    itemId:instance?.id??definitionId,
     name:item.name,
-    rarity:effectiveOwnedGearRarity(state,itemId),
+    rarity:instance?.rarity??itemRarity(item),
     rank:enhancement.rank,
-    stats:enhancedGearStats(state,itemId),
-    sockets:{filled:gemSocketState(state,itemId).filled,capacity:gemSocketCapacity(itemId),statFilled:Boolean(gemSocketState(state,itemId).statGemId),effectFilled:Boolean(gemSocketState(state,itemId).effectGemId)},
+    stats:enhancedGearStats(state,instance?.id??definitionId),
+    sockets:{filled:gemSocketState(state,instance?.id??definitionId).filled,capacity:gemSocketCapacity(instance?.id??definitionId,state),statFilled:Boolean(gemSocketState(state,instance?.id??definitionId).statGemId),effectFilled:Boolean(gemSocketState(state,instance?.id??definitionId).effectGemId)},
     set:set?{
       id:set.id,
       name:set.name,

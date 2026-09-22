@@ -1,4 +1,4 @@
-import type {CoopCombatReplayCombatantView,CoopCombatReplayCueView,CoopCombatReplayStateView,CoopCombatReplayStatusView,CoopCombatReplayView} from './coop-presentation';
+import type {CoopCombatReplayCombatantView,CoopCombatReplayCueView,CoopCombatReplayGemSnapshotView,CoopCombatReplayStateView,CoopCombatReplayStatusView,CoopCombatReplayView} from './coop-presentation';
 
 export const DUNGEON_COMBAT_PLAYBACK=Object.freeze({
   timeScale:.12,
@@ -117,7 +117,7 @@ const GEM_STATUS_PRESENTATION:Readonly<Record<string,{label:string;kind:'buff'|'
 });
 
 function playbackGemStatuses(replay:CoopCombatReplayView,now:number,id:string):PlaybackCombatStatus[]{
-  let latest=undefined as (CoopCombatReplayView['gemStates'] extends Array<infer T>|undefined?T:never)|undefined;
+  let latest:CoopCombatReplayGemSnapshotView|undefined;
   for(const snapshot of replay.gemStates??[]){if(snapshot.atMs<=now)latest=snapshot;else break;}
   if(!latest)return [];
   const result:PlaybackCombatStatus[]=[];

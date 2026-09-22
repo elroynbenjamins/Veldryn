@@ -104,6 +104,17 @@ ok(copperBlade.seconds>=60&&oathWard.seconds>=240,'Routine recipe material reduc
 const specialCraft=RECIPES.find(row=>row.id==='CRAFT_STONEHEART_CHEST');
 ok(!specialCraft||specialCraft.inputs.some(input=>input.quantity>=20),'Special CRAFT_* Smithing recipes may retain a heavier material burden than routine SMITH_* progression gear');
 
+const alchemy1=RECIPES.find(row=>row.id==='BREW_DEWLEAF_DRAUGHT')!,alchemy8=RECIPES.find(row=>row.id==='BREW_VIGOR_TONIC')!,alchemy16=RECIPES.find(row=>row.id==='BREW_WARD_TONIC')!,alchemy85=RECIPES.find(row=>row.id==='BREW_OATH_WARD_TONIC')!;
+const smith1=RECIPES.find(row=>row.id==='SMELT_COPPER_INGOT')!,cook1=RECIPES.find(row=>row.id==='COOK_SILVERFIN')!;
+const hourly=(recipe:typeof alchemy1)=>recipe.xp*3600/recipe.seconds;
+ok(hourly(alchemy1)>=3600,'Starter Alchemy should provide at least 3,600 XP/hour before bonuses');
+ok(hourly(alchemy8)>=5500&&hourly(alchemy16)>=7500,'Mid Asterfall Alchemy must remain session-scale');
+ok(hourly(alchemy1)>=hourly(smith1)*.40&&hourly(alchemy1)>=hourly(cook1)*.35,'Starter Alchemy should stay within a reasonable band of Smithing/Cooking rather than being 5–7x slower');
+ok(hourly(alchemy85)>=30000,'Late Alchemy should remain fast enough that herbs, not the XP curve, carry the grind');
+const level16Alchemy={...state,skills:state.skills.map(row=>row.skillId==='alchemy'?{...row,level:16,xp:totalXpAtLevel(16)}:row)};
+const alchemy16Pace=craftingPaceProjection(level16Alchemy,alchemy16,alchemy16.seconds,alchemy16.xp).levelPace;
+ok((alchemy16Pace.etaSeconds??Infinity)<=90*60,'Level-16 Alchemy should stay around an hour per level before material acquisition');
+
 const mockRecipe={id:'TEST_RECIPE',name:'Test',skillId:'smithing' as const,level:1,xp:100,gold:0,seconds:60,inputs:[],output:{itemId:'COPPER_INGOT',quantity:1}};
 const craftPace=craftingPaceProjection(state,mockRecipe,60,100);
 close(craftPace.craftsPerHour,60,.001,'One-minute timed crafting must project 60 crafts/hour');

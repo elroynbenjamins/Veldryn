@@ -38,6 +38,8 @@ jobs:
         run: pnpm --dir ../../backend install --frozen-lockfile
       - name: Validate recent Supabase migration versions
         run: node ../../tools/validate-recent-migration-versions.mjs
+      - name: Validate regional combat cadence migration
+        run: node ../../tools/validate-regional-combat-cadence.mjs
       - name: Typecheck core
         run: pnpm typecheck:core
       - name: Typecheck mobile app

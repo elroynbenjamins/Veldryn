@@ -80,6 +80,21 @@ async function main(){
  const postResolve=await handler(new Request('https://example.test/functions/v1/gameplay/regional-combat/'+startedHttp.receiptId,{method:'POST',headers:{authorization:'Bearer test'}}));
  assert.equal(postResolve.status,200,'Regional combat resolution should use POST');
 
+ const limitedServices:GameplayServices={...services,async rpc<T>(name:string,args:Record<string,unknown>):Promise<T>{
+  if(name==='reserve_regional_combat_server_v1')throw new Error('regional_combat_cooldown');
+  return services.rpc<T>(name,args);
+ }};
+ const limitedHandler=regionalCombatHandlerV1(limitedServices);
+ const cooldownResponse=await limitedHandler(new Request('https://example.test/functions/v1/gameplay/regional-combat',{method:'POST',headers:{authorization:'Bearer test'},body:JSON.stringify({requestId:'regional03',characterId:state.character!.id,encounterId:'REGCOM_SUN_007_ELITE'})}));
+ assert.equal(cooldownResponse.status,429,'Server-owned regional cooldowns should surface as rate limits');
+ const cappedServices:GameplayServices={...services,async rpc<T>(name:string,args:Record<string,unknown>):Promise<T>{
+  if(name==='reserve_regional_combat_server_v1')throw new Error('regional_boss_daily_cap');
+  return services.rpc<T>(name,args);
+ }};
+ const cappedHandler=regionalCombatHandlerV1(cappedServices);
+ const capResponse=await cappedHandler(new Request('https://example.test/functions/v1/gameplay/regional-combat',{method:'POST',headers:{authorization:'Bearer test'},body:JSON.stringify({requestId:'regional04',characterId:state.character!.id,encounterId:'REGCOM_SUN_010_BOSS'})}));
+ assert.equal(capResponse.status,429,'Sand Tyrant daily cap should surface as a rate limit');
+
  console.log('PASS: online regional combat start/resolve composition, POST semantics and idempotent gem handoff');
 }
 void main().catch(error=>{console.error(error);process.exitCode=1;});

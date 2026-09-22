@@ -49,7 +49,7 @@ ok(skillNavigation.includes('characterTrainingDestination'),'Character-level rec
 const workingToward=read('src/core/working-toward.ts');
 ok(workingToward.includes("kind:'dungeon';dungeonId?:string"),'Working Toward must support a real Dungeon destination');
 ok(workingToward.includes("goal.kind==='dungeon_clears')return {kind:'dungeon'"),'Dungeon goals must navigate instead of rendering info-only dead ends');
-ok(appShell.includes("destination.kind==='dungeon'){setTab('Coop')"),'Dungeon progression actions must open the real co-op dungeon screen');
+ok(read('App.tsx').includes("destination.kind==='dungeon'){setTab('Coop')"),'Dungeon progression actions must open the real co-op dungeon screen');
 
 const snapshot=read('src/components/SkillDashboard.tsx');
 ok(snapshot.includes('.slice(0,5)'),'Home skill snapshot must show only the five strongest non-combat skills');

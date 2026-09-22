@@ -1,5 +1,5 @@
 import type {CombatantDefinition} from '../types';
-import {pveBarrier,withPveIdentity} from '../pve-encounter-identity';
+import {pveAllyMend,pveBarrier,pveSupportRally,withPveIdentity} from '../pve-encounter-identity';
 import {rootboundHeartBoss,bellWardenBoss} from './launch-combat';
 
 const s=(maxHp:number,attackPower:number,defense:number,accuracy=650,evasion=120)=>({maxHp,attackPower,healingPower:0,defense,accuracy,evasion,critChance:.04,critMultiplier:1.5,haste:0});
@@ -11,6 +11,12 @@ const enemy=(id:string,name:string,hp:number,ap:number,def:number,abilityCoeff=1
 function rootWarden():CombatantDefinition{
  const base=enemy('ROOT_WARDEN','Root Warden',13500,430,900,1.25);
  return withPveIdentity({...base,boss:false,abilities:[...base.abilities,pveBarrier('ROOT_WARDEN_WARD','Root Ward',1250,12000)]},'guardian',['heavy_hit','barrier']);
+}
+function lanternPilgrim():CombatantDefinition{
+ return withPveIdentity({
+  id:'LANTERN_PILGRIM_1',name:'Drowned Pilgrim',team:'enemies',role:'enemy',level:25,stats:s(5600,320,620),basicAttackMs:3000,basicAttackCoeff:.58,
+  abilities:[pveAllyMend('LANTERN_PILGRIM_MEND','Drowned Benediction',850,9000),pveSupportRally('LANTERN_PILGRIM_RALLY','Lantern Litany',.05,14500)],
+ },'support',['sustain']);
 }
 function bellSentinel(id='BELL_SENTINEL',name='Bell Sentinel',hp=12800,ap=450,def=840):CombatantDefinition{
  const base=enemy(id,name,hp,ap,def,1.15);
@@ -38,7 +44,7 @@ for(const [index,id] of rootBattleIds.entries()){
 for(const id of ['ROOT_ELITE_BRAMBLE','ROOT_ELITE_WARDEN','ROOT_ELITE_MYCELIUM'])ASTERFALL_ENCOUNTERS[id]=()=>[rootWarden()];
 ASTERFALL_ENCOUNTERS.BOSS_EXP_ROOT=()=>[rootBoss()];
 ASTERFALL_ENCOUNTERS.LANTERN_BATTLE_02=()=>[enemy('LANTERN_SHADE_1','Banner Shade',5000,360,590,1.02),enemy('LANTERN_SHADE_2','Echo Bat',4300,340,520,.94)];
-ASTERFALL_ENCOUNTERS.LANTERN_BATTLE_03=()=>[enemy('LANTERN_PILGRIM_1','Drowned Pilgrim',5600,370,640,1.05),enemy('LANTERN_PILGRIM_2','Lantern Wretch',4700,355,570,1)];
+ASTERFALL_ENCOUNTERS.LANTERN_BATTLE_03=()=>[lanternPilgrim(),enemy('LANTERN_PILGRIM_2','Lantern Wretch',4700,355,570,1)];
 ASTERFALL_ENCOUNTERS.LANTERN_ELITE_02=()=>[bellSentinel('LANTERN_KNIGHT','Fallen Lantern Knight',13200,460,880)];
 ASTERFALL_ENCOUNTERS.LANTERN_ELITE_03=()=>[bellSentinel()];
 ASTERFALL_ENCOUNTERS.BOSS_EXP_BELL=()=>[bellBoss()];

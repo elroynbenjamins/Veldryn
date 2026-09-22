@@ -124,7 +124,9 @@ export interface CombatantState {
   triggeredPhases: string[];
 }
 
-export type CombatEventType = 'combat_start' | 'phase' | 'cast_start' | 'cast_complete' | 'damage' | 'miss' | 'heal' | 'shield' | 'dot_tick' | 'hot_tick' | 'status_apply' | 'interrupt' | 'down' | 'death' | 'combat_end';
+export interface CombatGemStateSnapshot{ targetId:string; tag:string; expiriesAtMs:number[]; }
+
+export type CombatEventType = 'combat_start' | 'phase' | 'cast_start' | 'cast_complete' | 'damage' | 'miss' | 'heal' | 'shield' | 'dot_tick' | 'hot_tick' | 'status_apply' | 'gem_state' | 'interrupt' | 'down' | 'death' | 'combat_end';
 export interface CombatEvent {
   atMs: number;
   type: CombatEventType;
@@ -137,6 +139,7 @@ export interface CombatEvent {
   statusKind?: 'buff'|'debuff'|'dot'|'hot';
   statusTag?: string;
   expiresAtMs?: number;
+  gemStates?: CombatGemStateSnapshot[];
   detail?: string;
 }
 

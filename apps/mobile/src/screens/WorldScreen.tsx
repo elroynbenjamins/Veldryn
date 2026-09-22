@@ -3,9 +3,6 @@ import {RegionArtwork} from '../components/RegionArtwork';
 import {ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
 import {WORLD_ZONES} from '../content/world-map';
-import {GATHERING} from '../content/skills';
-import {HERB_NODES} from '../content/herbalism';
-import {MONSTERS} from '../content/monsters';
 import {currentRegionId} from '../core/combat-region';
 import {nextRegionUnlock,orderedTravelRegions,regionActivitySummary} from '../core/world-navigation';
 import {environmentForZone} from '../core/world-weather';
@@ -38,8 +35,6 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop,onR
   const current=WORLD_ZONES.find(zone=>zone.id===currentId)??WORLD_ZONES[0];
   const environment=environmentForZone(current.id);
   const next=nextRegionUnlock(level);
-  const combatCount=MONSTERS.filter(monster=>monster.zone===current.name&&!monster.boss).length;
-  const gathering=[...GATHERING,...HERB_NODES].filter(activity=>activity.zoneId===current.id);
   const storyRegion=currentId==='SUNSCAR'||currentId==='FROSTMARCH'||currentId==='ASHLANDS'?currentId:undefined;
   const currentSummary=regionActivitySummary(state,current.id),travelRegions=orderedTravelRegions(state,current.id,goalRegionId);
   const nextUnlockProgress=next?Math.max(3,Math.min(100,level/Math.max(1,next.minLevel)*100)):100;

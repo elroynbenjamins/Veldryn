@@ -62,6 +62,22 @@ async function main(){
   }
   if(definition.id==='EVENT_MERCHANT_GILDED_ROAD'){const reacted=effectiveEventNode({...run,objective:{id:definition.objective.id,count:1}},byId('d3-c2'));assert.ok((reacted.objectiveDelta??0)>0);assert.match(reacted.title??'',/Emergency Cargo/);}
   if(definition.id==='EVENT_FROSTFALL_AURORA_HOLLOW'){const base=byId('d4-c0'),reacted=effectiveEventNode({...run,objective:{id:definition.objective.id,count:2}},base);assert.ok((reacted.mechanicDelta??0)>(base.mechanicDelta??0));assert.match(reacted.title??'',/Hearthlit/);}
+
+  if(definition.id==='EVENT_VEILBREAK_GLOAM_BREACH'){
+   assert.ok(bossProfile!.telegraph.phases.some(phase=>phase.label==='Lanterns Dim'));
+   assert.ok(bossProfile!.telegraph.phases.some(phase=>phase.label==="Regent's Decree"));
+   assert.ok(bossProfile!.telegraph.castAbilities.some(ability=>ability.id==='EVENT_VEILBREAK_BOSS_NOVA'&&ability.label==='Lantern Extinction'));
+  }
+  if(definition.id==='EVENT_MERCHANT_GILDED_ROAD'){
+   assert.ok(bossProfile!.telegraph.phases.some(phase=>phase.label==='Toll Is Due'));
+   assert.ok(bossProfile!.telegraph.phases.some(phase=>phase.label==="Captain's Share"));
+   assert.ok(bossProfile!.telegraph.castAbilities.some(ability=>ability.id==='EVENT_MERCHANT_BOSS_NOVA'&&ability.label==='Caravan Breaker'));
+  }
+  if(definition.id==='EVENT_FROSTFALL_AURORA_HOLLOW'){
+   assert.ok(bossProfile!.telegraph.phases.some(phase=>phase.label==='Frozen Carapace'));
+   assert.ok(bossProfile!.telegraph.phases.some(phase=>phase.label==='Last Toll'));
+   assert.ok(bossProfile!.telegraph.castAbilities.some(ability=>ability.id==='EVENT_FROSTFALL_BOSS_NOVA'&&ability.label==='Aurora Shatter'));
+  }
  }
  const bossRepo=new MemoryEventRunRepository(),bossService=new EventExpeditionService(bossRepo,'boss-tuning-integration-secret'),suncrest=EVENT_EXPEDITIONS.find(row=>row.id==='EVENT_SUNCREST_SHATTERED_ISLES')!;
  let bossRun=bossService.start({requestId:'boss-profile-request',runId:'boss-profile-run',accountId:'domain-a',eventId:suncrest.id,activeLiveEventId:'EVT_ANNUAL_006_2026',members:domainMembers,players:domainPlayers,nowMs:Date.UTC(2026,6,15)});

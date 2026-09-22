@@ -51,6 +51,11 @@ async function main(){
 
  const resolved=await resolveRegionalCombatV1(deps,{accountId:'account-1',receiptId:reserved.receiptId});
  assert.equal(resolved.result.victory,true);
+ assert.ok(resolved.result.playerMaxHp>0&&resolved.result.enemyMaxHp>0,'Replay projection must include safe HP maxima');
+ assert.ok(resolved.result.playerName.length>0&&resolved.result.enemyName.length>0,'Replay projection must include display names');
+ assert.ok(resolved.result.replayCues.length>0,'Regional combat must return presentation-safe replay cues');
+ assert.ok(resolved.result.replayCues.some(cue=>cue.type==='victory'),'Replay cues must include the terminal outcome');
+ assert.ok(resolved.result.replayCues.length<=24,'Regional replay payload must remain compact');
  assert.equal(resolved.duplicate,false);
  assert.equal(rewardCalls.length,1);
  assert.equal(rewardCalls[0].name,'settle_regional_gem_source_server_v1');

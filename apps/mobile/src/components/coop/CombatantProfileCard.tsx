@@ -21,7 +21,14 @@ function hpPercent(slot:Slot){
 }
 function roleLabel(role:Slot['role']){return role==='tank'?'TANK':role==='support'?'SUPPORT':'DAMAGE';}
 
+const GEM_STATUS_CODES:Readonly<Record<string,string>>=Object.freeze({
+ 'gem:momentum':'MOM','gem:critical_surge':'SURGE','gem:flow':'FLOW','gem:unyielding':'UNY',
+ 'gem:predator_boost':'PRED','gem:opening_phase':'OPEN','gem:retaliation_ready':'RETAL',
+ 'gem:battle_offense_ready':'OFF','gem:battle_support_ready':'SUP','gem:damage_reduction':'GUARD',
+ 'gem:shared_resolve':'RES','gem:benediction_charge':'BENE','gem:haste_bonus':'HASTE','gem:opportunist_ready':'OPP',
+});
 function statusCode(status:PlaybackCombatStatus){
+ if(status.source==='gem')return GEM_STATUS_CODES[status.tag]??'GEM';
  if(status.kind==='dot')return 'DOT';
  if(status.kind==='hot')return 'HOT';
  if(status.kind==='debuff')return status.tag==='damage_taken'?'VULN':'DEBUFF';
@@ -34,7 +41,7 @@ function CombatStatusStrip({statuses,gemProc=false,styles}:{statuses?:PlaybackCo
  const combined=(statuses??[]).slice(0,gemProc?2:3),overflow=Math.max(0,(statuses?.length??0)-combined.length);
  if(!combined.length&&!gemProc)return null;
  return <View style={styles.statusStrip} accessibilityLabel={[...combined.map(status=>`${status.label}${status.stacks>1?`, ${status.stacks} stacks`:''}`),gemProc?'Effect Gem proc':undefined,overflow?`${overflow} more effects`:undefined].filter(Boolean).join(', ')}>
-  {combined.map((status,index)=><View key={`${status.kind}:${status.tag}:${status.abilityId??status.label}:${index}`} style={[styles.statusPill,status.kind==='dot'||status.kind==='debuff'?styles.statusHarmful:styles.statusHelpful]}><Text style={[styles.statusPillText,status.kind==='dot'||status.kind==='debuff'?styles.statusHarmfulText:styles.statusHelpfulText]}>{statusCode(status)}{status.stacks>1?`×${status.stacks}`:''}</Text></View>)}
+  {combined.map((status,index)=>{const harmful=status.kind==='dot'||status.kind==='debuff',gem=status.source==='gem';return <View key={`${status.kind}:${status.tag}:${status.abilityId??status.label}:${index}`} style={[styles.statusPill,harmful?styles.statusHarmful:gem?styles.statusGem:styles.statusHelpful]}><Text style={[styles.statusPillText,harmful?styles.statusHarmfulText:gem?styles.statusGemText:styles.statusHelpfulText]}>{statusCode(status)}{status.stacks>1?`×${status.stacks}`:''}</Text></View>})}
   {gemProc?<View style={[styles.statusPill,styles.statusGem]}><Text style={[styles.statusPillText,styles.statusGemText]}>GEM</Text></View>:null}
   {overflow?<View style={[styles.statusPill,styles.statusOverflow]}><Text style={[styles.statusPillText,styles.statusOverflowText]}>+{overflow}</Text></View>:null}
  </View>;

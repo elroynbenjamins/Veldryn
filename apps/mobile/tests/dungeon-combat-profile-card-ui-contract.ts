@@ -33,6 +33,9 @@ ok(card.includes('BARRIER +')&&card.includes('barrierTrack'),'Party combat cards
 ok(card.includes("boss?'BOSS HP':'HP'")&&card.includes('enemyHpTrack'),'Enemy and boss cards must show replay-time HP');
 ok(stage.includes('playbackCombatantState')&&stage.includes('currentHp={enemyState?.hp}')&&stage.includes('combatShield={enemyState?.shield??0}'),'Battlefield must drive boss HP and shield from replay snapshots');
 ok(stage.includes('ready:state.hp>0')&&stage.includes('currentHp:state.hp'),'Party downed and HP state must follow the current replay cue rather than final run state');
+ok(card.includes('LOW HP')&&card.includes('criticalRow'),'Party cards must call out critical health before a down');
+ok(card.includes('phaseThreshold')&&card.includes('phase.hpPct'),'Boss HP bar must show authoritative phase threshold markers');
+ok(stage.includes('bossPhases={boss?run.bossMechanic?.telegraph?.phases:undefined}'),'Battlefield must pass authoritative boss phase thresholds into the encounter card');
 for(const enemy of ['The Hollow Regent','The Coinbound Captain','The Rimebell Colossus','Veilshade Stalker','Ledger Hexer','Bellfrost Spirit'])ok(enemyArt.toLowerCase().includes(enemy.toLowerCase()),enemy+' must have registered encounter artwork');
 ok(enemyArt.includes("require('../../assets/dungeon-enemies-v1/"),'Enemy artwork must be bundled as static Metro assets');
 

@@ -36,6 +36,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Install backend dependencies used by reconciliation tests
         run: pnpm --dir ../../backend install --frozen-lockfile
+      - name: Validate recent Supabase migration versions
+        run: node ../../tools/validate-recent-migration-versions.mjs
       - name: Typecheck core
         run: pnpm typecheck:core
       - name: Typecheck mobile app

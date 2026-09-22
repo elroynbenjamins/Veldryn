@@ -148,6 +148,9 @@ for(const path of [
  ok(!source.includes("import {C,"),path+' must not regress to the static Veldryn palette');
 }
 
+const activeActivityBar=read('src/components/ActiveActivityBar.tsx');
+ok(activeActivityBar.includes('activityProgressFeedback')&&activeActivityBar.includes("phase.replace('…','').toUpperCase()"),'Collapsed active-activity strip must show the same real cycle phase as Home');
+
 const activity=read('src/components/ActivityCard.tsx');
 ok(activity.includes('activityActions:{flexDirection:\'row\''),'Activity actions must remain on one compact row');
 ok(activity.includes('backgroundColor:C.warningSurface'),'Activity warnings must use semantic theme surfaces');

@@ -80,8 +80,34 @@ const dawnRun=simulateCombat({seed:'support-no-waste-dawn',players:[launchPlayer
 assert.equal(dawnRun.events.some(event=>event.abilityId==='DK_HOT'&&(event.type==='status_apply'||event.type==='hot_tick')),false,'Dawnkeeper should not spend Sunthread at full health');
 const stoneRun=simulateCombat({seed:'support-no-waste-stone',players:[launchPlayer('Stonecaller',25)],enemies:[harmless],maxDurationMs:700});
 assert.equal(stoneRun.events.some(event=>event.abilityId==='SC_SHIELD'&&event.type==='shield'),false,'Stonecaller should not spend Resonant Armor at full health');
-assert.equal(launchPlayer('Dawnkeeper',25).abilities.find(ability=>ability.id==='DK_HOT')?.aiCondition,'ally_below_80');
-assert.equal(launchPlayer('Stonecaller',25).abilities.find(ability=>ability.id==='SC_SHIELD')?.aiCondition,'ally_below_80');
+assert.equal(launchPlayer('Dawnkeeper',25).abilities.find(ability=>ability.id==='DK_HOT')?.aiCondition,'ally_below_80_or_targeted');
+assert.equal(launchPlayer('Stonecaller',25).abilities.find(ability=>ability.id==='SC_SHIELD')?.aiCondition,'ally_below_80_or_targeted');
+assert.equal(launchPlayer('Dawnkeeper',25).abilities.find(ability=>ability.id==='DK_HOT')?.target,'threatened_ally');
+assert.equal(launchPlayer('Stonecaller',25).abilities.find(ability=>ability.id==='SC_SHIELD')?.target,'threatened_ally');
+
+const focusCaster:CombatantDefinition={id:'FOCUS_CASTER',name:'Focus Caster',team:'enemies',role:'enemy',level:25,stats:zeroStats,basicAttackMs:99_999,basicAttackCoeff:0,abilities:[
+ {id:'FOCUS_CAST',name:'Focus Cast',cooldownMs:99_999,castTimeMs:2000,target:'random_enemy',priority:100,interruptible:false,effects:[{kind:'damage',flat:100}]},
+]};
+const focusPlayers=[launchPlayer('Stonecaller',25),launchPlayer('Wayfinder',25)];
+const focusStone=simulateCombat({seed:'support-focus-stone',players:focusPlayers,enemies:[focusCaster],maxDurationMs:500});
+const focusCast=focusStone.events.find(event=>event.type==='cast_start'&&event.abilityId==='FOCUS_CAST');
+const focusShield=focusStone.events.find(event=>event.type==='shield'&&event.abilityId==='SC_SHIELD');
+assert.ok(focusCast&&focusShield,'Stonecaller should pre-empt a focused incoming cast');
+assert.equal(focusShield!.targetId,focusCast!.targetId,'Stonecaller must shield the exact ally targeted by the incoming cast');
+
+const focusDawn=simulateCombat({seed:'support-focus-dawn',players:[launchPlayer('Dawnkeeper',25),launchPlayer('Wayfinder',25)],enemies:[focusCaster],maxDurationMs:500});
+const dawnCast=focusDawn.events.find(event=>event.type==='cast_start'&&event.abilityId==='FOCUS_CAST');
+const dawnHot=focusDawn.events.find(event=>event.type==='status_apply'&&event.abilityId==='DK_HOT'&&event.statusKind==='hot');
+assert.ok(dawnCast&&dawnHot,'Dawnkeeper should pre-empt a focused incoming cast');
+assert.equal(dawnHot!.targetId,dawnCast!.targetId,'Dawnkeeper must apply Sunthread to the exact ally targeted by the incoming cast');
+
+const aoeCaster:CombatantDefinition={...focusCaster,id:'AOE_CASTER',name:'AoE Caster',abilities:[
+ {id:'AOE_CAST',name:'AoE Cast',cooldownMs:99_999,castTimeMs:2000,target:'all_enemies',priority:100,interruptible:false,effects:[{kind:'damage',flat:100}]},
+]};
+const aoeStone=simulateCombat({seed:'support-aoe-stone',players:[launchPlayer('Stonecaller',25),launchPlayer('Wayfinder',25)],enemies:[aoeCaster],maxDurationMs:500});
+assert.equal(aoeStone.events.some(event=>event.abilityId==='SC_SHIELD'&&event.type==='shield'),false,'party-wide AoE casts must not be misread as single-target focus for Stonecaller');
+const aoeDawn=simulateCombat({seed:'support-aoe-dawn',players:[launchPlayer('Dawnkeeper',25),launchPlayer('Wayfinder',25)],enemies:[aoeCaster],maxDurationMs:500});
+assert.equal(aoeDawn.events.some(event=>event.abilityId==='DK_HOT'&&(event.type==='status_apply'||event.type==='hot_tick')),false,'party-wide AoE casts must not be misread as single-target focus for Dawnkeeper');
 
 for(const [encounterId,factory] of Object.entries(EXPEDITION_ENCOUNTERS)){
  const preview=expeditionEncounterPreview(encounterId);

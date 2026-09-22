@@ -16,7 +16,7 @@ import type {WorkingTowardDestination} from '../core/working-toward';
 import {equipmentCraftDurationSeconds,equipmentCraftQueueModel,timedEquipmentRecipe} from '../core/equipment-crafting-queue';
 import {formatQueueTimeV31} from '../core/equipment-crafting-v31';
 import {equipmentPrerequisiteCraftability} from '../core/equipment-crafting-prerequisites';
-import {professionMasteryMultipliers,professionMasteryRankProgress,nextProfessionMasteryBonus} from '../core/profession-mastery-v40';
+import {PROFESSION_MASTERY_BONUS_RANKS,professionMasteryMultipliers,professionMasteryRankProgress} from '../core/profession-mastery-v40';
 import {professionMasteryActiveBonusText} from '../core/profession-mastery-presentation';
 import {recipeCharacterTrainingAction,recipeProgressionSources,recipeSkillTrainingAction} from '../core/skill-progression-navigation';
 
@@ -25,7 +25,7 @@ type Status=ReturnType<typeof recipeAvailability>;
 export function RecipeCard({state,recipe,status,onCraft,onNavigate,onCraftPrerequisites,alchemy=false,onAlchemyStart}:{state:GameState;recipe:Recipe;status:Status;onCraft:(id:string)=>void;onNavigate?:(destination:WorkingTowardDestination)=>void;onCraftPrerequisites?:(recipeId:string)=>void;alchemy?:boolean;onAlchemyStart?:(id:string,batches:number)=>Promise<void>|void}){
  const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
  const [expanded,setExpanded]=useState(false),[batchCount,setBatchCount]=useState(1),[actionError,setActionError]=useState('');
- const output=itemDef(recipe.output.itemId),timed=Boolean(timedEquipmentRecipe(recipe.id)),prereq=timed?equipmentPrerequisiteCraftability(state,recipe.id):undefined,mastery=professionMasteryMultipliers(recipe.id,state.account.professionMasteryByAction?.[recipe.id]),masteryRank=professionMasteryRankProgress(recipe.id,state.account.professionMasteryByAction?.[recipe.id]),masteryYieldRelevant=output.type!=='gear'&&output.type!=='tool',masterySpeedRelevant=alchemy||timed,masteryNext=nextProfessionMasteryBonus(masteryRank.rank),masteryBonus=professionMasteryActiveBonusText(state,recipe.id,{yieldRelevant:masteryYieldRelevant,speedRelevant:masterySpeedRelevant});
+ const output=itemDef(recipe.output.itemId),timed=Boolean(timedEquipmentRecipe(recipe.id)),prereq=timed?equipmentPrerequisiteCraftability(state,recipe.id):undefined,mastery=professionMasteryMultipliers(recipe.id,state.account.professionMasteryByAction?.[recipe.id]),masteryRank=professionMasteryRankProgress(recipe.id,state.account.professionMasteryByAction?.[recipe.id]),masteryYieldRelevant=output.type!=='gear'&&output.type!=='tool',masterySpeedRelevant=alchemy||timed,masteryNext=PROFESSION_MASTERY_BONUS_RANKS.find(row=>row.rank>masteryRank.rank&&(row.kind==='xp'||row.kind==='yield'&&masteryYieldRelevant||row.kind==='speed'&&masterySpeedRelevant)),masteryBonus=professionMasteryActiveBonusText(state,recipe.id,{yieldRelevant:masteryYieldRelevant,speedRelevant:masterySpeedRelevant});
  const alchemyStatus=alchemy?alchemyAvailability(state,recipe.id,batchCount):undefined;
  const effectiveStatus=alchemyStatus?(state.activity?{...alchemyStatus,ready:false,reason:'Stop the current activity before brewing.'}:alchemyStatus):status;
  const queue=timed?equipmentCraftQueueModel(state,Date.now()):undefined,duration=timed?equipmentCraftDurationSeconds(state,recipe.id):0,forgeFull=timed&&queue!.freeSlots<=0&&queue!.freeWaiting<=0,willWait=timed&&queue!.freeSlots<=0&&!forgeFull,craftReady=effectiveStatus.ready&&!forgeFull;

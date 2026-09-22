@@ -20,6 +20,21 @@ function fxColor(accent:DungeonCombatFxAccent){
  }
 }
 
+type Contribution={damage:number;healing:number;damageTaken:number;interrupts:number};
+function compactMetric(value:number){
+ const safe=Math.max(0,value);
+ if(safe>=1_000_000)return `${(safe/1_000_000).toFixed(safe>=10_000_000?0:1)}m`;
+ if(safe>=1000)return `${(safe/1000).toFixed(safe>=10_000?0:1)}k`;
+ return `${Math.round(safe)}`;
+}
+function contributionSummary(role:Slot['role'],value:Contribution){
+ const dmg=`DMG ${compactMetric(value.damage)}`,heal=`HEAL ${compactMetric(value.healing)}`,taken=`TAKEN ${compactMetric(value.damageTaken)}`,interrupts=`INT ${value.interrupts}`;
+ if(role==='tank')return `${taken} · ${dmg} · ${interrupts}`;
+ if(role==='support')return `${heal} · ${dmg} · ${interrupts}`;
+ return `${dmg} · ${interrupts}${value.healing>0?` · ${heal}`:''}`;
+}
+function roleShort(role:Slot['role']){return role==='tank'?'TANK':role==='support'?'SUP':'DPS';}
+
 function motionScale(fx:DungeonCombatCueFx|undefined){
  if(!fx)return 1;
  if(fx.actorMotion==='pulse'||fx.actorMotion==='cast')return 1.06;
@@ -78,6 +93,7 @@ export function DungeonCombatStage({run,enemyLabel,boss=false}:{run:CoopRunView;
  const enemyCombatant=boss?playbackBossCombatant(replay,shownEnemy):playbackCombatant(replay,shownEnemy),enemyState=playbackCombatantState(replay,cueIndex,enemyCombatant?.id);
  const enemyStatuses=playbackCombatantStatuses(replay,cueIndex,enemyCombatant?.id);
  const progress=replay?playbackProgress(replay,cueIndex):0,complete=Boolean(replay&&(!cues.length||cueIndex>=cues.length-1));
+ const contributionRows=complete&&replay?(ordered.map(slot=>{const combatant=playbackCombatant(replay,slot.memberId??slot.name),value=(replay.contributions??[]).find(row=>row.id===combatant?.id);return value?{slot,value}:undefined;}).filter((row):row is {slot:Slot;value:Contribution}=>Boolean(row))):[];
  const actorDirection=actorIsParty===false?1:-1,targetDirection=targetIsParty===false?-1:1;
  const actorTravel=(fx?.actorMotion==='lunge'||fx?.actorMotion==='dash'||fx?.actorMotion==='smash'||fx?.actorMotion==='projectile')?(fx.actorTravelPx*actorDirection):0;
  const actorStyle=!reduceMotion&&fx?{transform:[
@@ -115,6 +131,7 @@ export function DungeonCombatStage({run,enemyLabel,boss=false}:{run:CoopRunView;
    {!complete&&!reduceMotion&&cues.length>1?<View style={s.playbackControls}><View style={s.speedGroup}>{DUNGEON_PLAYBACK_SPEEDS.map(speed=><Pressable key={speed} accessibilityRole="button" accessibilityLabel={`Combat replay speed ${speed} times`} accessibilityState={{selected:playbackSpeed===speed}} onPress={()=>setPlaybackSpeed(speed)} style={({pressed})=>[s.speedButton,playbackSpeed===speed&&s.speedButtonActive,pressed&&s.controlPressed]}><Text style={[s.speedButtonText,playbackSpeed===speed&&s.speedButtonTextActive]}>{speed}×</Text></Pressable>)}</View><Pressable accessibilityRole="button" accessibilityLabel="Skip combat replay to result" onPress={()=>setCueIndex(Math.max(0,cues.length-1))} style={({pressed})=>[s.skipButton,pressed&&s.controlPressed]}><Text style={s.skipButtonText}>Skip →</Text></Pressable></View>:null}
    <View style={s.replayMeta}><Text style={s.replayTime}>{currentCue?seconds(currentCue.atMs):'0.0s'} / {seconds(replay.durationMs)}</Text><Text style={s.replayTime}>{cueIndex+1}/{Math.max(1,cues.length)} cues</Text></View>
    <View style={s.replayTrack}><View style={[s.replayFill,{width:`${Math.round(progress*100)}%` as `${number}%`}]} /></View>
+   {contributionRows.length?<View style={s.contributionPanel}><View style={s.contributionHead}><Text style={s.contributionKicker}>PARTY CONTRIBUTION</Text><Text style={s.contributionHint}>authoritative totals</Text></View>{contributionRows.map(({slot,value})=><View key={slot.memberId??slot.name} style={s.contributionRow}><View style={s.contributionIdentity}><Text style={s.contributionRole}>{roleShort(slot.role)}</Text><Text numberOfLines={1} style={s.contributionName}>{slot.name}</Text></View><Text numberOfLines={1} style={s.contributionStats}>{contributionSummary(slot.role,value)}</Text></View>)}</View>:null}
    {recent.length?<View style={s.log}>{recent.map((cue,index)=><View key={`${cue.atMs}-${cue.type}-${index}`} style={s.logRow}><Text style={s.logTime}>{seconds(cue.atMs)}</Text><Text numberOfLines={2} style={s.logCopy}>{playbackCueLabel(cue)}</Text></View>)}</View>:<Text style={s.note}>The authoritative result has no detailed replay cues for this older encounter.</Text>}
    {complete&&!reduceMotion&&cues.length>1?<Pressable accessibilityRole="button" accessibilityLabel="Replay combat recap" onPress={()=>setCueIndex(0)} style={({pressed})=>[s.replayButton,pressed&&s.replayButtonPressed]}><Text style={s.replayButtonText}>↻ Replay encounter</Text></Pressable>:null}
   </View>:<Text style={s.note}>Combat uses one fixed class avatar per class plus lightweight motion/VFX. Companions stay attached to their owner and only pop in when their real assist procs.</Text>}
@@ -149,7 +166,7 @@ const s=StyleSheet.create({
  replayHead:{flexDirection:'row',alignItems:'flex-start',gap:coopSpacing.sm},replayKicker:{fontSize:8,lineHeight:10,color:coopColors.cyan,fontWeight:'900',letterSpacing:.65},replayCurrent:{...coopTypography.body,color:coopColors.text,fontWeight:'900'},
  castWarning:{minHeight:34,paddingHorizontal:coopSpacing.sm,flexDirection:'row',alignItems:'center',justifyContent:'space-between',borderWidth:1,borderColor:coopColors.danger,borderRadius:coopRadii.tile,backgroundColor:'rgba(113,28,46,.28)'},castWarningLabel:{...coopTypography.meta,color:coopColors.danger,fontWeight:'900'},castWarningTime:{...coopTypography.meta,color:coopColors.gold,fontWeight:'900'},
  playbackControls:{minHeight:32,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:coopSpacing.xs},speedGroup:{flexDirection:'row',alignItems:'center',gap:4},speedButton:{minWidth:34,minHeight:28,alignItems:'center',justifyContent:'center',paddingHorizontal:6,borderWidth:1,borderColor:'#284255',borderRadius:coopRadii.button,backgroundColor:coopColors.surfaceRaised},speedButtonActive:{borderColor:coopColors.cyan,backgroundColor:'#0A3047'},speedButtonText:{fontSize:9,lineHeight:11,color:coopColors.textMuted,fontWeight:'900'},speedButtonTextActive:{color:coopColors.cyan},skipButton:{minHeight:28,alignItems:'center',justifyContent:'center',paddingHorizontal:9,borderWidth:1,borderColor:coopColors.goldDim,borderRadius:coopRadii.button,backgroundColor:coopColors.surfaceRaised},skipButtonText:{fontSize:8,lineHeight:10,color:coopColors.gold,fontWeight:'900'},controlPressed:{opacity:.62},replayMeta:{flexDirection:'row',justifyContent:'space-between',gap:coopSpacing.sm},replayTime:{fontSize:9,lineHeight:11,color:coopColors.textMuted,fontWeight:'800'},replayTrack:{height:5,borderRadius:99,overflow:'hidden',backgroundColor:'#20313D'},replayFill:{height:'100%',backgroundColor:coopColors.cyan},
- log:{gap:2},logRow:{minHeight:25,flexDirection:'row',alignItems:'center',gap:coopSpacing.xs,paddingVertical:2,borderBottomWidth:StyleSheet.hairlineWidth,borderBottomColor:'#20313D'},logTime:{width:38,fontSize:8,lineHeight:10,color:coopColors.gold,fontWeight:'900'},logCopy:{flex:1,fontSize:9,lineHeight:12,color:coopColors.textSecondary,fontWeight:'700'},
+ contributionPanel:{gap:2,padding:coopSpacing.xs,borderWidth:1,borderColor:'#284255',borderRadius:coopRadii.tile,backgroundColor:'rgba(7,24,39,.62)'},contributionHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:6},contributionKicker:{fontSize:7,lineHeight:9,color:coopColors.gold,fontWeight:'900',letterSpacing:.55},contributionHint:{fontSize:6,lineHeight:8,color:coopColors.textMuted,fontWeight:'700'},contributionRow:{minHeight:24,flexDirection:'row',alignItems:'center',gap:6,borderTopWidth:StyleSheet.hairlineWidth,borderTopColor:'#20313D'},contributionIdentity:{width:'30%',minWidth:68,flexDirection:'row',alignItems:'center',gap:4},contributionRole:{fontSize:6,lineHeight:8,color:coopColors.cyan,fontWeight:'900'},contributionName:{flex:1,fontSize:8,lineHeight:10,color:coopColors.text,fontWeight:'900'},contributionStats:{flex:1,fontSize:7,lineHeight:9,color:coopColors.textSecondary,fontWeight:'800',textAlign:'right'},log:{gap:2},logRow:{minHeight:25,flexDirection:'row',alignItems:'center',gap:coopSpacing.xs,paddingVertical:2,borderBottomWidth:StyleSheet.hairlineWidth,borderBottomColor:'#20313D'},logTime:{width:38,fontSize:8,lineHeight:10,color:coopColors.gold,fontWeight:'900'},logCopy:{flex:1,fontSize:9,lineHeight:12,color:coopColors.textSecondary,fontWeight:'700'},
  replayButton:{minHeight:36,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:coopColors.goldDim,borderRadius:coopRadii.button,backgroundColor:coopColors.surfaceRaised},replayButtonPressed:{opacity:.66},replayButtonText:{...coopTypography.meta,color:coopColors.gold,fontWeight:'900'},
  note:{...coopTypography.meta,color:coopColors.textMuted,fontSize:11,lineHeight:15},
 });

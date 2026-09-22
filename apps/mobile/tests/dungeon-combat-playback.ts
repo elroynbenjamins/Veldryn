@@ -1,4 +1,4 @@
-import {playbackAdvanceDelayMs,playbackBossCombatant,playbackCastDisplayMs,playbackCombatantState,playbackCueDelayMs,playbackCueLabel,playbackCueTone,playbackProgress,playbackRecentCues} from '../src/core/dungeon-combat-playback';
+import {playbackAdvanceDelayMs,playbackBossCombatant,playbackCastDisplayMs,playbackCombatantState,playbackCombatantStatuses,playbackCueDelayMs,playbackCueLabel,playbackCueTone,playbackProgress,playbackRecentCues} from '../src/core/dungeon-combat-playback';
 import {validateCoopRunView,type CoopCombatReplayView} from '../src/core/coop-presentation';
 
 function assert(value:unknown,message:string){if(!value)throw new Error(message);}
@@ -10,6 +10,10 @@ const replay:CoopCombatReplayView={nodeId:'boss',reason:'victory',durationMs:200
  {id:'p2',name:'Ravager',team:'players',maxHp:920,startHp:920,startShield:0,boss:false},
  {id:'p3',name:'Dawnkeeper',team:'players',maxHp:850,startHp:850,startShield:0,boss:false},
  {id:'boss',name:'The Hollow Regent',team:'enemies',maxHp:5000,startHp:5000,startShield:0,boss:true},
+],statuses:[
+ {targetId:'boss',sourceId:'p1',kind:'debuff',tag:'damage_taken',label:'Hex Curse',abilityId:'HX_CURSE',startsAtMs:1000,expiresAtMs:8000},
+ {targetId:'boss',sourceId:'p3',kind:'debuff',tag:'damage_taken',label:'Hex Curse',abilityId:'HX_CURSE',startsAtMs:2000,expiresAtMs:7000},
+ {targetId:'p0',sourceId:'p3',kind:'hot',tag:'hot',label:'Dawn Renewal',abilityId:'DK_HOT',startsAtMs:2000,expiresAtMs:7000},
 ],cues:[
  {atMs:900,type:'action',actorId:'p1',actorName:'Wayfinder',targetId:'boss',targetName:'The Hollow Regent',abilityId:'BASIC',abilityName:'Basic Attack',actionKind:'damage',amount:87.4,states:[{id:'p0',hp:1200,shield:0},{id:'p1',hp:900,shield:0},{id:'p2',hp:920,shield:0},{id:'p3',hp:850,shield:0},{id:'boss',hp:4912.6,shield:0}]},
  {atMs:2500,type:'phase',actorId:'boss',actorName:'The Hollow Regent',abilityId:'P2',abilityName:'Black Lantern',states:[{id:'p0',hp:1200,shield:160},{id:'p1',hp:900,shield:0},{id:'p2',hp:920,shield:0},{id:'p3',hp:850,shield:0},{id:'boss',hp:3700,shield:0}]},
@@ -37,6 +41,11 @@ equal(playbackCombatantState(replay,1,'p0')?.shield,160);
 equal(playbackCombatantState(replay,3,'p0')?.shield,60);
 equal(playbackCombatantState(replay,4,'p2')?.hp,0);
 equal(playbackCombatantState(replay,5,'boss')?.hp,0);
+equal(playbackCombatantStatuses(replay,0,'boss').length,0);
+equal(playbackCombatantStatuses(replay,1,'boss')[0]?.stacks,2);
+equal(playbackCombatantStatuses(replay,1,'boss')[0]?.kind,'debuff');
+equal(playbackCombatantStatuses(replay,1,'p0')[0]?.kind,'hot');
+equal(playbackCombatantStatuses(replay,4,'boss').length,0);
 
 validateCoopRunView({runId:'run',mode:'qmode',phase:'completed',syncedLevel:35,roleSlots:[
  {memberId:'p0',role:'tank',name:'Tank',echo:false,classId:'IRONWARDEN'},

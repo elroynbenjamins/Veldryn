@@ -6,6 +6,7 @@ import {levelFromXp} from './progression';
 import type {EquipmentCraftJob,GameState,ItemStack,SkillState} from './types';
 import {craftClaimSubRoll,craftedInstanceResult,createCraftedGearInstance} from './crafted-gear-instances';
 import {gemCombineRecipeV1,isGemFamilyRecipeUnlockedV1} from './gem-progression-v1';
+import {professionMasteryMultipliers} from './profession-mastery-v40';
 
 export const BASE_EQUIPMENT_CRAFT_SLOTS=3;
 export const MAX_EQUIPMENT_CRAFT_SLOTS=5;
@@ -137,7 +138,7 @@ function withProjectedQueue(state:GameState,nowMs:number){
 
 export function equipmentCraftDurationSeconds(state:GameState,recipeId:string){
   const recipe=timedEquipmentRecipe(recipeId);if(!recipe)throw new Error('Unknown timed equipment recipe');
-  const speed=Math.max(.1,characterPermanentMultipliers(state).craftingSpeedMultiplier);
+  const mastery=professionMasteryMultipliers(recipe.id,state.account.professionMasteryByAction?.[recipe.id]),speed=Math.max(.1,characterPermanentMultipliers(state).craftingSpeedMultiplier*mastery.speed);
   return Math.max(1,Math.ceil(recipe.seconds/speed));
 }
 
@@ -207,9 +208,10 @@ function grantCraftOutput(state:GameState,recipe:{output:{itemId:string;quantity
 }
 
 function awardOwnerSkillXp(state:GameState,ownerCharacterId:string,recipe:Recipe){
+  const mastery=professionMasteryMultipliers(recipe.id,state.account.professionMasteryByAction?.[recipe.id]),awardXp=Math.max(1,Math.floor(recipe.xp*mastery.xp));
   const award=(skills:SkillState[])=>skills.map(row=>{
     if(row.skillId!==recipe.skillId)return row;
-    const xp=row.xp+recipe.xp;
+    const xp=row.xp+awardXp;
     return {...row,xp,level:levelFromXp(xp)};
   });
   if(state.character?.id===ownerCharacterId)return {...state,skills:award(state.skills)};

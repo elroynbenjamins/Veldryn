@@ -1,5 +1,6 @@
-import {createCharacter,effectiveStats,newGame,previewActivityReward,salvageItem,sellItem,startCombat} from '../src/core/game';
+import {createCharacter,effectiveStats,newGame,previewActivityReward,salvageItem,sellItem,startCombat,unequipItem} from '../src/core/game';
 import {attemptEquipmentUpgrade,equippedEffectGemBonuses,gearEnhancement,gemSocketCapacity,normalizeEnhancementGemSlots,socketGem,unsocketGem,upgradeQuote} from '../src/core/equipment-enhancement';
+import {inventoryGearInstances,materializeGearInstances} from '../src/core/equipment-instances';
 function ok(condition:unknown,message:string){if(!condition)throw new Error(message)}
 
 let state=createCharacter(newGame(1),'IRONWARDEN','Smith','male');
@@ -40,9 +41,16 @@ const failed=attemptEquipmentUpgrade(dangerous,'STONEHEART_RING',.99);
 ok(!failed.result.success&&!failed.result.downgraded&&failed.result.newRank===6,'Failure should preserve the current rank');
 ok(gearEnhancement(failed.state,'STONEHEART_RING').failures===1,'Failure should increment pity');
 ok(Math.abs(upgradeQuote(failed.state,'STONEHEART_RING').successChance-.30)<.000001,'Pity should add two percentage points to the same target rank');
-const storedEnhanced={...upgraded,inventory:{...upgraded.inventory,stacks:[...upgraded.inventory.stacks,{itemId:'STONEHEART_RING',quantity:1}]}};
-let soldEnhanced=false,salvagedEnhanced=false;try{sellItem(storedEnhanced,'STONEHEART_RING')}catch{soldEnhanced=true}try{salvageItem(storedEnhanced,'STONEHEART_RING')}catch{salvagedEnhanced=true}
-ok(soldEnhanced&&salvagedEnhanced,'Enhanced gear must be protected from disposal in the domain layer');
+const storedEnhanced=unequipItem(upgraded,'ring');
+const enhancedStoredCopy=inventoryGearInstances(storedEnhanced).find(row=>row.itemId==='STONEHEART_RING'&&gearEnhancement(storedEnhanced,row.id).rank>0);
+ok(!!enhancedStoredCopy,'Unequipping enhanced gear must preserve its exact instance state');
+let soldEnhanced=false,salvagedEnhanced=false;try{sellItem(storedEnhanced,enhancedStoredCopy!.id)}catch{soldEnhanced=true}try{salvageItem(storedEnhanced,enhancedStoredCopy!.id)}catch{salvagedEnhanced=true}
+ok(soldEnhanced&&salvagedEnhanced,'The selected enhanced gear instance must be protected from disposal in the domain layer');
+let duplicateStored={...storedEnhanced,inventory:{...storedEnhanced.inventory,stacks:[...storedEnhanced.inventory.stacks,{itemId:'STONEHEART_RING',quantity:1}]}};
+duplicateStored=materializeGearInstances(duplicateStored);
+const cleanDuplicate=inventoryGearInstances(duplicateStored).find(row=>row.itemId==='STONEHEART_RING'&&row.id!==enhancedStoredCopy!.id)!;
+const soldDuplicate=sellItem(duplicateStored,cleanDuplicate.id);
+ok(inventoryGearInstances(soldDuplicate).some(row=>row.id===enhancedStoredCopy!.id),'Selling a clean duplicate must not dispose or block on another enhanced copy');
 
 // Behavioral Effect Gems must change trusted combat simulation rather than being display-only.
 const combatBase=createCharacter(newGame(1),'IRONWARDEN','Effect Test','male');

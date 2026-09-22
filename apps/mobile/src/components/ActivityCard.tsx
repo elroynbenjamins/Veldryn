@@ -48,7 +48,7 @@ export function ActivityCard({title,kind,activity,cycleSeconds,capHours,preview,
     {preview.championEncounters?.count?<View style={s.champion}><Text style={s.championLabel}>CHAMPION ENCOUNTER</Text><Text style={s.championText}>{preview.championEncounters.count} champion{preview.championEncounters.count===1?'':'s'} defeated · +{formatGameNumber(preview.championEncounters.bonusXp,numberMode)} XP · +{formatGameNumber(preview.championEncounters.bonusGold,numberMode)} gold</Text></View>:null}
     <View style={s.rewardRow}>
       <View><Text style={s.rewardNumber}>{formatGameNumber(readyCount,numberMode)}</Text><Text style={s.rewardLabel}>{rewardLabel[kind]}</Text></View>
-      <View style={s.totals}><Text style={s.xp}>+{formatGameNumber(preview.xp,numberMode)} XP</Text>{preview.gold>0&&<Text style={s.gold}>+{formatGameNumber(preview.gold,numberMode)} gold</Text>}</View>
+      <View style={s.totals}><Text style={s.xp}>+{formatGameNumber(preview.xp,numberMode)} XP</Text>{(preview.huntingXp??0)>0&&<Text style={s.huntingXp}>+{formatGameNumber(preview.huntingXp??0,numberMode)} Hunting XP</Text>}{preview.gold>0&&<Text style={s.gold}>+{formatGameNumber(preview.gold,numberMode)} gold</Text>}</View>
     </View>
     {!loot&&!hasRewards&&<Text style={s.emptyLoot}>Keep this activity running to earn your first reward.</Text>}
     {capped&&!preview.stoppedReason&&<View style={s.stopNotice}><Text style={s.noticeLabel}>STORAGE FULL</Text><Text style={s.capNotice}>Offline storage is full. Collect now to resume earning.</Text></View>}
@@ -70,7 +70,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
   champion:{gap:2,padding:spacing.sm,borderWidth:1,borderColor:C.accent,borderRadius:8,backgroundColor:C.accentSurface},championLabel:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.8},championText:{...typography.bodyStrong,color:C.text},
   rewardRow:{flexDirection:'row',flexWrap:'wrap',gap:8,justifyContent:'space-between',alignItems:'center',paddingVertical:spacing.sm},
   rewardNumber:{fontSize:36,lineHeight:40,color:C.text,fontWeight:'900'},rewardLabel:{...typography.caption,color:C.muted},
-  totals:{alignItems:'flex-end'},xp:{...typography.bodyStrong,color:C.good},gold:{...typography.bodyStrong,color:C.accent},
+  totals:{alignItems:'flex-end'},xp:{...typography.bodyStrong,color:C.good},huntingXp:{...typography.caption,color:C.info,fontWeight:'900'},gold:{...typography.bodyStrong,color:C.accent},
   loot:{...typography.body,color:C.text},emptyLoot:{...typography.body,color:C.muted},
   detailsToggle:{minHeight:42,flexDirection:'row',alignItems:'center',justifyContent:'space-between',borderTopWidth:1,borderTopColor:C.line},detailsLabel:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.8},detailsMark:{fontSize:22,color:C.accent},details:{gap:spacing.xs},
   capNotice:{...typography.body,color:C.text},noticeLabel:{...typography.caption,color:C.warning,fontWeight:'900',letterSpacing:1},stopNotice:{gap:4,padding:spacing.sm,borderWidth:1,borderColor:C.warning,borderRadius:8,backgroundColor:C.warningSurface},

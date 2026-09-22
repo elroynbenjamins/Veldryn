@@ -3,6 +3,7 @@ import {craftedItemIcons} from './crafted-item-assets';
 import type {ImageSourcePropType} from 'react-native';
 import {coreMaterialIconSourceById} from './core-material-assets';
 import {hasRegionalResourceArtwork} from './regional-resource-assets';
+import {hasRemainingItemArtwork} from './remaining-item-assets';
 import {hasRuntimeItemArtwork} from './runtime-item-assets';
 
 /** Canonical gathering yields with production-ready transparent pixel artwork. */

@@ -39,6 +39,12 @@ function targetsFor(rule: TargetRule, actor: CombatantState, allies: CombatantSt
     case 'all_allies': return living(allies);
     case 'all_enemies': return living(enemies);
     case 'random_enemy': { const live=living(enemies); return live.length ? [rng.pick(live,label)] : []; }
+    case 'interruptible_casting_enemy': {
+      const live=living(enemies).filter(enemy=>enemy.casting&&(enemy.definition.abilities.find(ability=>ability.id===enemy.casting!.abilityId)?.interruptible??false));
+      if(!live.length)return [];
+      live.sort((a,b)=>(a.casting!.completesAt-b.casting!.completesAt)||Number(Boolean(b.definition.boss))-Number(Boolean(a.definition.boss))||a.definition.id.localeCompare(b.definition.id));
+      return [live[0]];
+    }
     case 'current_target': default: { const t=chooseEnemy(actor,enemies,rng,label); return t?[t]:[]; }
   }
 }
@@ -47,6 +53,7 @@ function conditionOk(a: AbilityDefinition, actor: CombatantState, allies: Combat
   switch(a.aiCondition || 'always') {
     case 'self_below_50': return hpPct(actor)<0.5;
     case 'ally_below_50': return living(allies).some(x=>hpPct(x)<0.5);
+    case 'ally_below_80': return living(allies).some(x=>hpPct(x)<0.8);
     case 'target_casting': return living(enemies).some(x=>!!x.casting && (x.definition.abilities.find(z=>z.id===x.casting!.abilityId)?.interruptible ?? false));
     case 'multiple_enemies': return living(enemies).length>=2;
     default: return true;

@@ -1,4 +1,4 @@
-import {playbackAdvanceDelayMs,playbackBossCombatant,playbackCastDisplayMs,playbackCombatantState,playbackCombatantStatuses,playbackCueDelayMs,playbackCueLabel,playbackCueTone,playbackProgress,playbackRecentCues} from '../src/core/dungeon-combat-playback';
+import {playbackAdvanceDelayMs,playbackBossCombatant,playbackCastDisplayMs,playbackCombatantState,playbackCombatantStatuses,playbackCueDelayMs,playbackCueLabel,playbackCueTone,playbackProgress,playbackRecentCues,playbackVisualDurationMs} from '../src/core/dungeon-combat-playback';
 import {validateCoopRunView,type CoopCombatReplayView} from '../src/core/coop-presentation';
 
 function assert(value:unknown,message:string){if(!value)throw new Error(message);}
@@ -20,7 +20,7 @@ const replay:CoopCombatReplayView={nodeId:'boss',reason:'victory',durationMs:200
 ],cues:[
  {atMs:900,type:'action',actorId:'p1',actorName:'Wayfinder',targetId:'boss',targetName:'The Hollow Regent',abilityId:'BASIC',abilityName:'Basic Attack',actionKind:'damage',amount:87.4,states:[{id:'p0',hp:1200,shield:0},{id:'p1',hp:900,shield:0},{id:'p2',hp:920,shield:0},{id:'p3',hp:850,shield:0},{id:'boss',hp:4912.6,shield:0}]},
  {atMs:2500,type:'phase',actorId:'boss',actorName:'The Hollow Regent',abilityId:'P2',abilityName:'Black Lantern',states:[{id:'p0',hp:1200,shield:160},{id:'p1',hp:900,shield:0},{id:'p2',hp:920,shield:0},{id:'p3',hp:850,shield:0},{id:'boss',hp:3700,shield:0}]},
- {atMs:5000,type:'cast',actorId:'boss',actorName:'The Hollow Regent',abilityId:'CAST',abilityName:'Gloam Burst',durationMs:1800,states:[{id:'p0',hp:1200,shield:160},{id:'p1',hp:900,shield:0},{id:'p2',hp:920,shield:0},{id:'p3',hp:850,shield:0},{id:'boss',hp:3700,shield:0}]},
+ {atMs:5000,type:'cast',actorId:'boss',actorName:'The Hollow Regent',targetId:'p0',targetName:'Tank',abilityId:'CAST',abilityName:'Gloam Burst',durationMs:1800,states:[{id:'p0',hp:1200,shield:160},{id:'p1',hp:900,shield:0},{id:'p2',hp:920,shield:0},{id:'p3',hp:850,shield:0},{id:'boss',hp:3700,shield:0}]},
  {atMs:6200,type:'assist',actorId:'p1',actorName:'Wayfinder',abilityId:'p1:UNIT_005:assist',abilityName:'Lantern Wisp: Lantern Snuff',states:[{id:'p0',hp:1200,shield:60},{id:'p1',hp:900,shield:0},{id:'p2',hp:920,shield:0},{id:'p3',hp:850,shield:0},{id:'boss',hp:3400,shield:0}]},
  {atMs:9000,type:'down',targetId:'p2',targetName:'Ravager',states:[{id:'p0',hp:1050,shield:0},{id:'p1',hp:900,shield:0},{id:'p2',hp:0,shield:0},{id:'p3',hp:850,shield:0},{id:'boss',hp:2100,shield:0}]},
  {atMs:20000,type:'victory',states:[{id:'p0',hp:1050,shield:0},{id:'p1',hp:760,shield:0},{id:'p2',hp:0,shield:0},{id:'p3',hp:850,shield:0},{id:'boss',hp:0,shield:0}]},
@@ -31,6 +31,11 @@ equal(playbackCueTone(replay.cues[2]),'warning');
 assert(playbackCastDisplayMs(replay.cues[2])>=420,'boss cast display must remain readable at compressed playback speed');
 assert(playbackCastDisplayMs(replay.cues[2])<=1400,'boss cast display must remain compact');
 assert(playbackAdvanceDelayMs(replay.cues[2],replay.cues[3])>=playbackCastDisplayMs(replay.cues[2]),'playback must hold a cast cue until its readable bar completes');
+assert(playbackCueDelayMs(replay.cues[0],replay.cues[1],2)<playbackCueDelayMs(replay.cues[0],replay.cues[1],1),'2x replay should shorten cue timing');
+assert(playbackCueDelayMs(replay.cues[0],replay.cues[1],4)<=playbackCueDelayMs(replay.cues[0],replay.cues[1],2),'4x replay should be at least as fast as 2x');
+assert(playbackCastDisplayMs(replay.cues[2],4)>=260,'fast playback must preserve a readable boss cast floor');
+assert(playbackAdvanceDelayMs(replay.cues[2],replay.cues[3],4)>=playbackCastDisplayMs(replay.cues[2],4),'fast playback must still hold cast cues through the cast bar');
+assert(playbackVisualDurationMs(320,4)<playbackVisualDurationMs(320,1),'combat VFX should accelerate with replay speed');
 equal(playbackCueTone(replay.cues[3]),'selected');
 equal(playbackCueLabel(replay.cues[3]),'Lantern Wisp: Lantern Snuff');
 equal(playbackCueLabel(replay.cues[4]),'Ravager is downed');

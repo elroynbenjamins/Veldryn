@@ -8,9 +8,15 @@ export const DUNGEON_COMBAT_PLAYBACK=Object.freeze({
   maximumCues:48,
   minCastDisplayMs:420,
   maxCastDisplayMs:1400,
+  minFastCueDelayMs:90,
+  minFastCastDisplayMs:260,
 });
 
 export type DungeonPlaybackTone='neutral'|'selected'|'success'|'warning'|'danger';
+export type DungeonPlaybackSpeed=1|2|4;
+export const DUNGEON_PLAYBACK_SPEEDS:readonly DungeonPlaybackSpeed[]=Object.freeze([1,2,4]);
+
+function playbackSpeedValue(speed:DungeonPlaybackSpeed|undefined){return speed===2||speed===4?speed:1;}
 
 export function playbackCueTone(cue:CoopCombatReplayCueView):DungeonPlaybackTone{
   switch(cue.type){
@@ -46,19 +52,23 @@ export function playbackCueLabel(cue:CoopCombatReplayCueView):string{
   }
 }
 
-export function playbackCueDelayMs(current:CoopCombatReplayCueView,next:CoopCombatReplayCueView):number{
-  const gap=Math.max(0,next.atMs-current.atMs),scaled=Math.round(gap*DUNGEON_COMBAT_PLAYBACK.timeScale);
-  return Math.max(DUNGEON_COMBAT_PLAYBACK.minCueDelayMs,Math.min(DUNGEON_COMBAT_PLAYBACK.maxCueDelayMs,scaled));
+export function playbackCueDelayMs(current:CoopCombatReplayCueView,next:CoopCombatReplayCueView,speed:DungeonPlaybackSpeed=1):number{
+  const factor=playbackSpeedValue(speed),gap=Math.max(0,next.atMs-current.atMs),scaled=Math.round(gap*DUNGEON_COMBAT_PLAYBACK.timeScale/factor),floor=Math.max(DUNGEON_COMBAT_PLAYBACK.minFastCueDelayMs,Math.round(DUNGEON_COMBAT_PLAYBACK.minCueDelayMs/factor)),cap=Math.max(floor,Math.round(DUNGEON_COMBAT_PLAYBACK.maxCueDelayMs/factor));
+  return Math.max(floor,Math.min(cap,scaled));
 }
 
-export function playbackCastDisplayMs(cue:CoopCombatReplayCueView|undefined):number{
+export function playbackCastDisplayMs(cue:CoopCombatReplayCueView|undefined,speed:DungeonPlaybackSpeed=1):number{
   if(!cue||cue.type!=='cast'||cue.durationMs===undefined||cue.durationMs<=0)return 0;
-  const scaled=Math.round(cue.durationMs*DUNGEON_COMBAT_PLAYBACK.timeScale);
-  return Math.max(DUNGEON_COMBAT_PLAYBACK.minCastDisplayMs,Math.min(DUNGEON_COMBAT_PLAYBACK.maxCastDisplayMs,scaled));
+  const factor=playbackSpeedValue(speed),base=Math.max(DUNGEON_COMBAT_PLAYBACK.minCastDisplayMs,Math.min(DUNGEON_COMBAT_PLAYBACK.maxCastDisplayMs,Math.round(cue.durationMs*DUNGEON_COMBAT_PLAYBACK.timeScale))),floor=Math.max(DUNGEON_COMBAT_PLAYBACK.minFastCastDisplayMs,Math.round(DUNGEON_COMBAT_PLAYBACK.minCastDisplayMs/factor));
+  return Math.max(floor,Math.round(base/factor));
 }
 
-export function playbackAdvanceDelayMs(current:CoopCombatReplayCueView,next:CoopCombatReplayCueView):number{
-  return Math.max(playbackCueDelayMs(current,next),playbackCastDisplayMs(current));
+export function playbackAdvanceDelayMs(current:CoopCombatReplayCueView,next:CoopCombatReplayCueView,speed:DungeonPlaybackSpeed=1):number{
+  return Math.max(playbackCueDelayMs(current,next,speed),playbackCastDisplayMs(current,speed));
+}
+
+export function playbackVisualDurationMs(baseMs:number,speed:DungeonPlaybackSpeed=1,minMs=110):number{
+  return Math.max(minMs,Math.round(Math.max(0,baseMs)/playbackSpeedValue(speed)));
 }
 
 export function playbackProgress(replay:CoopCombatReplayView,index:number):number{

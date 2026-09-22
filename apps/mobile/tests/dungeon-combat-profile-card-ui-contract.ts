@@ -44,6 +44,12 @@ ok(stage.includes('playbackCombatantStatuses')&&stage.includes('statuses={enemyS
 ok(card.includes('GEM_STATUS_CODES')&&card.includes("'gem:momentum':'MOM'")&&card.includes("'gem:flow':'FLOW'")&&card.includes("'gem:unyielding':'UNY'"),'Persistent Effect Gem stacks need compact named combat codes');
 ok(card.includes("'gem:retaliation_ready':'RETAL'")&&card.includes("'gem:benediction_charge':'BENE'")&&card.includes("'gem:opportunist_ready':'OPP'"),'Ready, charge and harmful Effect Gem states need distinct compact codes');
 ok(card.includes("status.source==='gem'")&&card.includes('styles.statusGem'),'Persistent beneficial Effect Gem states must use the gem visual treatment while harmful marks remain harmful');
+ok(stage.includes('DUNGEON_PLAYBACK_SPEEDS')&&stage.includes('playbackSpeed')&&stage.includes('1×')===false,'Dungeon replay must use shared 1x/2x/4x speed controls rather than hard-coded timing labels');
+ok(stage.includes('accessibilityLabel="Skip combat replay to result"')&&stage.includes('setCueIndex(Math.max(0,cues.length-1))'),'Dungeon replay must offer a direct skip-to-result control');
+ok(stage.includes('playbackAdvanceDelayMs(current,next,playbackSpeed)')&&stage.includes('playbackCastDisplayMs(currentBossCast,playbackSpeed)'),'Replay speed must scale both cue and boss-cast timing');
+ok(stage.includes('playbackVisualDurationMs')&&stage.includes('fxDuration'),'Replay speed must scale combat VFX presentation too');
+ok(card.includes('FOCUS →')&&card.includes('bossCast.targetLabel'),'Boss cast card must show the authoritative focus target when available');
+ok(stage.includes('targetLabel:currentBossCast.targetName?.trim()'),'Battlefield must feed the cast cue target into the boss focus label');
 for(const enemy of ['The Hollow Regent','The Coinbound Captain','The Rimebell Colossus','Veilshade Stalker','Ledger Hexer','Bellfrost Spirit'])ok(enemyArt.toLowerCase().includes(enemy.toLowerCase()),enemy+' must have registered encounter artwork');
 ok(enemyArt.includes("require('../../assets/dungeon-enemies-v1/"),'Enemy artwork must be bundled as static Metro assets');
 

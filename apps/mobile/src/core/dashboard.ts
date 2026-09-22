@@ -5,6 +5,7 @@ import {WORLD_ZONES} from '../content/world-map';
 import {HERB_NODES} from '../content/herbalism';
 import {alchemyRecipeDef} from '../content/alchemy';
 import {explorationRoute} from '../content/exploration';
+import {FAITH_TIERS} from '../content/faith';
 import {GameState} from './types';
 import {effectiveStats,GATHER_TIME_SCALE} from './game';
 import {characterPermanentMultipliers} from './permanent-boosts';
@@ -82,8 +83,10 @@ export function activityCycleSeconds(state:GameState){
   const monster=MONSTERS.find(m=>m.id===target),gathering=[...GATHERING,...HERB_NODES].find(g=>g.id===target);
   const brew=state.activity?.kind==='alchemy'?alchemyRecipeDef(target??''):undefined;
   const route=state.activity?.kind==='exploration'?explorationRoute(target??''):undefined;
-  if(brew)return brew.seconds;
+  const faith=state.activity?.kind==='faith'?FAITH_TIERS.find(row=>row.id===target):undefined;
+  if(state.activity?.kind==='alchemy')return state.activity.brew?.cycleSeconds??brew?.seconds??1;
   if(route)return route.seconds;
+  if(faith)return faith.seconds;
   const modifiers=characterPermanentMultipliers(state);
   const environmentMultiplier=state.activity?environmentEffectForActivity(state.activity).effect.actionTimeMultiplier:1;
   if(!monster){const specialty=gathering?.skillId==='fishing'?modifiers.fishingSpeedMultiplier:gathering?.skillId==='herbalism'?modifiers.herbalismSpeedMultiplier:1;return ((gathering?.seconds??1)*GATHER_TIME_SCALE*(gathering?gatheringPacing(state,gathering).timeMultiplier:1)*environmentMultiplier)/(modifiers.gatheringSpeedMultiplier*specialty);}
@@ -96,15 +99,17 @@ export function activityCycleSeconds(state:GameState){
 export function activityRate(state:GameState){
   const target=state.activity?.targetId;
   const monster=MONSTERS.find(m=>m.id===target),gathering=[...GATHERING,...HERB_NODES].find(g=>g.id===target);
-  const brew=state.activity?.kind==='alchemy'?alchemyRecipeDef(target??''):undefined;
+  const route=state.activity?.kind==='exploration'?explorationRoute(target??''):undefined;
+  const faith=state.activity?.kind==='faith'?FAITH_TIERS.find(row=>row.id===target):undefined;
   const multipliers=characterPermanentMultipliers(state);
+  const seconds=activityCycleSeconds(state),actions=Math.floor(3600/Math.max(.1,seconds));
+  if(state.activity?.kind==='alchemy'&&state.activity.brew)return {actionsPerHour:actions,xpPerHour:Math.floor(actions*state.activity.brew.xpPerBatch),goldPerHour:0};
+  if(route)return {actionsPerHour:actions,xpPerHour:Math.floor(actions*route.xp*multipliers.skillXpMultiplier),goldPerHour:0};
+  if(faith)return {actionsPerHour:actions,xpPerHour:Math.floor(actions*faith.xp),goldPerHour:0};
   const effect=state.activity?environmentEffectForActivity(state.activity).effect:undefined;
-  const seconds=activityCycleSeconds(state);
-  const actions=Math.floor(3600/seconds);
-  const baseXp = monster?.xp ?? gathering?.xp ?? brew?.xp ?? 0;
-  const baseGold = monster?monster.gold:0;
-  const xpMultiplier = (effect?.xpMultiplier??1)*(monster?multipliers.characterXpMultiplier:multipliers.skillXpMultiplier);
-  const goldMultiplier = (effect?.goldMultiplier??1)*(monster?multipliers.goldMultiplier:1);
+  const baseXp=monster?.xp??gathering?.xp??0,baseGold=monster?monster.gold:0;
+  const xpMultiplier=(effect?.xpMultiplier??1)*(monster?multipliers.characterXpMultiplier:multipliers.skillXpMultiplier);
+  const goldMultiplier=(effect?.goldMultiplier??1)*(monster?multipliers.goldMultiplier:1);
   return {actionsPerHour:actions,xpPerHour:Math.floor(actions*baseXp*xpMultiplier),goldPerHour:monster?Math.floor(actions*baseGold*goldMultiplier):0};
 }
 

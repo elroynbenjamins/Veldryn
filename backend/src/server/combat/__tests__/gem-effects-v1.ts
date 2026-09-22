@@ -22,4 +22,13 @@ const healer:CombatantDefinition={id:'H1',classId:'DAWNKEEPER',name:'Healer',tea
 const mercy=simulateCombat({seed:'gem-mercy',players:[healer],enemies:[boss()],maxDurationMs:2200});
 assert.ok(mercy.events.some(event=>event.type==='shield'&&event.abilityId==='GEM_MERCY'),'Mercy overhealing should create an authoritative barrier event');
 
+const statusTester:CombatantDefinition={...player(),basicAttackMs:999999,abilities:[
+ {id:'TEST_DEBUFF',name:'Expose Weakness',cooldownMs:999999,castTimeMs:0,target:'current_target',priority:20,effects:[{kind:'debuff',tag:'damage_taken',value:.1,durationMs:3000},{kind:'dot',coeff:.01,damageType:'shadow',durationMs:3000,tickMs:1000}]},
+ {id:'TEST_BUFF',name:'Battle Rhythm',cooldownMs:999999,castTimeMs:0,target:'self',priority:10,effects:[{kind:'buff',tag:'damage_done',value:.1,durationMs:2500},{kind:'hot',flat:1,durationMs:2500,tickMs:1000}]},
+]};
+const statuses=simulateCombat({seed:'status-windows',players:[statusTester],enemies:[boss()],maxDurationMs:500}).events.filter(event=>event.type==='status_apply');
+assert.equal(statuses.length,4,'timed buffs, debuffs, DoTs and HoTs should emit authoritative status windows');
+assert.deepEqual(new Set(statuses.map(event=>event.statusKind)),new Set(['buff','debuff','dot','hot']));
+assert.ok(statuses.every(event=>event.expiresAtMs!==undefined&&event.expiresAtMs>event.atMs&&event.targetId),'status windows must include target and expiry timing');
+
 console.log('PASS: authoritative Effect Gem combat runtime');

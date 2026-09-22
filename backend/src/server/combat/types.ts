@@ -124,7 +124,7 @@ export interface CombatantState {
   triggeredPhases: string[];
 }
 
-export type CombatEventType = 'combat_start' | 'phase' | 'cast_start' | 'cast_complete' | 'damage' | 'miss' | 'heal' | 'shield' | 'dot_tick' | 'hot_tick' | 'interrupt' | 'down' | 'death' | 'combat_end';
+export type CombatEventType = 'combat_start' | 'phase' | 'cast_start' | 'cast_complete' | 'damage' | 'miss' | 'heal' | 'shield' | 'dot_tick' | 'hot_tick' | 'status_apply' | 'interrupt' | 'down' | 'death' | 'combat_end';
 export interface CombatEvent {
   atMs: number;
   type: CombatEventType;
@@ -134,6 +134,9 @@ export interface CombatEvent {
   amount?: number;
   critical?: boolean;
   absorbed?: number;
+  statusKind?: 'buff'|'debuff'|'dot'|'hot';
+  statusTag?: string;
+  expiresAtMs?: number;
   detail?: string;
 }
 

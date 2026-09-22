@@ -84,12 +84,14 @@ ok(masteryCore.includes("{rank:10,kind:'xp'")&&masteryCore.includes("{rank:20,ki
 
 const gatheringSkills=read('src/components/GatheringActivityList.tsx');
 ok(gatheringSkills.includes('FASTEST XP HERE'),'Gathering details must identify the fastest local XP option');
-ok(gatheringSkills.includes('EXPECTED / HR')&&gatheringSkills.includes('SKILL XP / HR'),'Gathering cards must surface compact resource and XP hourly rates');
+ok(gatheringSkills.includes('EST. YIELD / HR')&&gatheringSkills.includes('SKILL XP / HR'),'Gathering cards must surface compact settlement-aligned resource and XP hourly rates');
 ok(gatheringSkills.includes('NEXT SKILL UNLOCK'),'Gathering details must preview the next skill unlock');
 ok(gatheringSkills.includes("targetTag:{fontSize:9"),'Working Toward gathering targets must remain visible without adding a large banner');
 ok(gatheringSkills.includes('gatheringProgressionAction')&&gatheringSkills.includes('bestGatheringTrainingDestination'),'Gathering locked/empty states must route to useful training actions');
 ok(gatheringSkills.includes("title={'Train to Lv '"),'Locked gathering nodes must offer a direct train-prerequisite action');
-ok(gatheringSkills.includes('professionMasteryMultipliers')&&gatheringSkills.includes('MASTERY'),'Gathering cards must show the same action-specific mastery used by their rate calculations');
+ok(gatheringSkills.includes('gatheringBalanceProjection')&&gatheringSkills.includes('MASTERY'),'Gathering cards must show mastery from the shared action-rate projection');
+const balanceProjection=read('src/core/balance-projection.ts');
+ok(balanceProjection.includes('professionMasteryMultipliers')&&balanceProjection.includes('mastery.speed')&&balanceProjection.includes('mastery.xp')&&balanceProjection.includes('mastery.yield'),'Shared gathering balance projection must apply action-specific mastery to speed, XP and yield');
 
 const craftingBrowser=read('src/components/CraftingRecipeBrowser.tsx');
 ok(craftingBrowser.includes("(!recipe.classId||recipe.classId===state.character?.classId)"),'Crafting lists must hide recipes restricted to other classes');

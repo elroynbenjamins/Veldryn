@@ -26,5 +26,9 @@ equal(eliteIntel.progress,59/60,'Regional pity progress should be proportional t
 const noPity=regionalGemIntelV1(patrol,{ZONE_006:99});
 equal(noPity.pityAt,undefined,'Standard encounter must remain independent-roll only');
 equal(noPity.remaining,undefined,'Standard encounter must not show a fake guarantee');
+equal(patrol.cooldownSeconds,30,'Standard regional combat cadence should be 30 seconds');
+equal(elite.cooldownSeconds,90,'Elite regional combat cadence should be 90 seconds');
+equal(boss.cooldownSeconds,300,'Sand Tyrant cadence should be five minutes');
+equal(boss.dailyVictoryCap,3,'Sand Tyrant should allow at most three successful clears per UTC day');
 
 console.log('PASS: Sunscar regional combat mobile catalog matches server encounter lanes');

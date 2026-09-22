@@ -119,6 +119,14 @@ export function dropExpectation(chance:number,min:number,max:number,killsPerHour
   return {chance:normalizedChance,oneIn,expectedQuantityPerHour:findsPerHour*meanQuantity,averageFindSeconds:findsPerHour>0?3600/findsPerHour:Number.POSITIVE_INFINITY};
 }
 
+export type DropPaceBand='frequent'|'progression'|'chase'|'long_chase';
+export function dropPaceBand(averageFindSeconds:number):{band:DropPaceBand;label:string}{
+  if(!Number.isFinite(averageFindSeconds)||averageFindSeconds>=12*3600)return {band:'long_chase',label:'LONG CHASE'};
+  if(averageFindSeconds>=90*60)return {band:'chase',label:'CHASE'};
+  if(averageFindSeconds>=10*60)return {band:'progression',label:'PROGRESSION'};
+  return {band:'frequent',label:'FREQUENT'};
+}
+
 export type ActivityProgressKind='combat'|'gathering'|'crafting'|'training'|'exploration'|'faith';
 export function activityProgressFeedback(kind:ActivityProgressKind,progress:number){
  const p=Math.max(0,Math.min(1,progress));

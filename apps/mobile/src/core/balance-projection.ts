@@ -1,5 +1,5 @@
 import type {GameState,GatheringSkillId,SkillId} from './types';
-import type {GatherDef} from '../content/skills';
+import type {GatherDef,Recipe} from '../content/skills';
 import type {MonsterDef} from '../content/monsters';
 import {GATHERING} from '../content/skills';
 import {HERB_NODES} from '../content/herbalism';
@@ -44,6 +44,14 @@ export interface CombatBaselineProjection{
   killsPerHour:number;
   xpPerHour:number;
   goldPerHour:number;
+}
+
+export interface CraftingPaceProjection{
+  cycleSeconds:number;
+  craftsPerHour:number;
+  xpPerCraft:number;
+  xpPerHour:number;
+  levelPace:LevelPaceProjection;
 }
 
 export interface DropExpectation{
@@ -94,6 +102,11 @@ export function gatheringBalanceProjection(state:GameState,activity:GatherDef,of
   const authoredMeanItemsPerHour=runtimeItemsPerHour;
   const xpPerHour=actionsPerHour*activity.xp*effect.xpMultiplier*permanent.skillXpMultiplier*mastery.xp,capActions=Math.floor(Math.max(0,offlineHours)*3600/cycleSeconds);
   return {cycleSeconds,actionsPerHour,runtimeItemsPerHour,authoredMeanItemsPerHour,xpPerHour,capActions,capItems:Math.floor(capActions*((activity.min+activity.max)/2)*effect.itemMultiplier*permanent.gatheringYieldMultiplier*mastery.yield),capXp:Math.floor(capActions*activity.xp*effect.xpMultiplier*permanent.skillXpMultiplier*mastery.xp),pacing,mastery,rank,masteryBonus:professionMasteryActiveBonusText(state,activity.id),levelPace:skillLevelPace(state,activity.skillId,xpPerHour)};
+}
+
+export function craftingPaceProjection(state:GameState,recipe:Recipe,cycleSeconds:number,xpPerCraft:number):CraftingPaceProjection{
+  const seconds=Math.max(.1,cycleSeconds),xp=Math.max(0,xpPerCraft),craftsPerHour=3600/seconds,xpPerHour=craftsPerHour*xp;
+  return {cycleSeconds:seconds,craftsPerHour,xpPerCraft:xp,xpPerHour,levelPace:skillLevelPace(state,recipe.skillId,xpPerHour)};
 }
 
 export function combatBaselineProjection(monster:MonsterDef):CombatBaselineProjection{

@@ -25,6 +25,21 @@ ok(skillMilestones.includes('useGameTheme'),'Skill milestone strip must use the 
 ok(skillMilestones.includes('if(row.destination&&onNavigate)onNavigate(row.destination)'),'Milestone rows must remain actionable when a destination exists');
 ok(skills.includes('<SkillMilestoneStrip'),'Skills detail screens must include the persistent milestone strip');
 
+const masteryPanel=read('src/components/ProfessionMasteryPanel.tsx');
+ok(masteryPanel.includes('PROFESSION MASTERY')&&masteryPanel.includes('BEST ACTION BONUS ROADMAP'),'Skill details must explain long-term action mastery and its bonus roadmap');
+ok(masteryPanel.includes("slice(0,3)"),'Profession Mastery must remain compact by showing only three priority actions');
+ok(masteryPanel.includes("action:{minHeight:62"),'Profession Mastery action rows must stay compact');
+ok(masteryPanel.includes('Yield requires stackable output')&&masteryPanel.includes('speed requires a timed cycle'),'Mastery UI must explain bonus applicability instead of implying every bonus affects every action');
+ok(skills.includes('<ProfessionMasteryPanel'),'Trainable skill details must expose Profession Mastery');
+ok(skills.includes('skillIdentity')&&skills.includes('identityColor'),'Skill headers must preserve distinct semantic identities without larger typography');
+
+const masteryPresentation=read('src/core/profession-mastery-presentation.ts');
+ok(masteryPresentation.includes("mining:{label:'EXTRACTION'")&&masteryPresentation.includes("woodcutting:{label:'FORESTRY'")&&masteryPresentation.includes("fishing:{label:'ANGLING'")&&masteryPresentation.includes("smithing:{label:'FORGECRAFT'")&&masteryPresentation.includes("cooking:{label:'PROVISIONING'")&&masteryPresentation.includes("alchemy:{label:'BREWCRAFT'"),'Core profession skills must have distinct compact identity labels');
+ok(masteryPresentation.includes('yieldRelevant')&&masteryPresentation.includes('speedRelevant'),'Mastery presentation must distinguish bonuses that are meaningful for each action type');
+
+const masteryCore=read('src/core/profession-mastery-v40.ts');
+ok(masteryCore.includes("{rank:10,kind:'xp'")&&masteryCore.includes("{rank:20,kind:'yield'")&&masteryCore.includes("{rank:30,kind:'speed'")&&masteryCore.includes("{rank:40,kind:'yield'")&&masteryCore.includes("{rank:50,kind:'speed'"),'Profession Mastery bonus ranks must remain explicit and reviewable');
+
 const gatheringSkills=read('src/components/GatheringActivityList.tsx');
 ok(gatheringSkills.includes('FASTEST XP HERE'),'Gathering details must identify the fastest local XP option');
 ok(gatheringSkills.includes('EXPECTED / HR')&&gatheringSkills.includes('SKILL XP / HR'),'Gathering cards must surface compact resource and XP hourly rates');
@@ -32,6 +47,7 @@ ok(gatheringSkills.includes('NEXT SKILL UNLOCK'),'Gathering details must preview
 ok(gatheringSkills.includes("targetTag:{fontSize:9"),'Working Toward gathering targets must remain visible without adding a large banner');
 ok(gatheringSkills.includes('gatheringProgressionAction')&&gatheringSkills.includes('bestGatheringTrainingDestination'),'Gathering locked/empty states must route to useful training actions');
 ok(gatheringSkills.includes("title={'Train to Lv '"),'Locked gathering nodes must offer a direct train-prerequisite action');
+ok(gatheringSkills.includes('professionMasteryMultipliers')&&gatheringSkills.includes('MASTERY'),'Gathering cards must show the same action-specific mastery used by their rate calculations');
 
 const craftingBrowser=read('src/components/CraftingRecipeBrowser.tsx');
 ok(craftingBrowser.includes("(!recipe.classId||recipe.classId===state.character?.classId)"),'Crafting lists must hide recipes restricted to other classes');
@@ -48,6 +64,7 @@ ok(recipeCard.includes('BATCH SIZE')&&recipeCard.includes("Brew ×"),'Alchemy re
 ok(skills.includes("type:'alchemy_start'"),'Skills must route Alchemy through the authoritative alchemy_start command');
 ok(recipeCard.includes('recipeProgressionSources')&&recipeCard.includes('MISSING SOURCES'),'All recipe types must expose actionable material/prerequisite sources');
 ok(recipeCard.includes('recipeSkillTrainingAction')&&recipeCard.includes('recipeCharacterTrainingAction'),'Recipe level blockers must expose skill and character training actions');
+ok(recipeCard.includes('RECIPE MASTERY')&&recipeCard.includes('professionMasteryMultipliers'),'Recipe cards must show live per-recipe mastery and effective values');
 
 const skillNavigation=read('src/core/skill-progression-navigation.ts');
 ok(skillNavigation.includes('workingTowardItemSource'),'Skill progression navigation must reuse the canonical Working Toward item-source resolver');

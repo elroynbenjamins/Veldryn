@@ -6,7 +6,7 @@ import {HERB_NODES} from '../content/herbalism';
 import {alchemyRecipeDef} from '../content/alchemy';
 import {explorationRoute} from '../content/exploration';
 import {GameState} from './types';
-import {effectiveStats} from './game';
+import {effectiveStats,GATHER_TIME_SCALE} from './game';
 import {characterPermanentMultipliers} from './permanent-boosts';
 import {classCombatStyle} from './class-combat';
 import {environmentEffectForActivity} from './world-weather';
@@ -22,7 +22,6 @@ const COMBAT_SPEED_MIN=.68;
 const COMBAT_SPEED_MAX=1.3;
 const COMBAT_TIME_SCALE=1.16;
 const COMBAT_EXPECTED_SCALE=1.3;
-const GATHER_TIME_SCALE=1.45;
 
 export type DashboardDestination='World'|'Skills'|'Inventory'|'Quests'|'Character'|'Settings';
 export interface DashboardRecommendation{title:string;detail:string;button:string;destination:DashboardDestination;zoneId?:string;priority:'urgent'|'progress'|'upgrade'}

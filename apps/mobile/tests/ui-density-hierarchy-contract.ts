@@ -85,6 +85,7 @@ ok(masteryCore.includes("{rank:10,kind:'xp'")&&masteryCore.includes("{rank:20,ki
 const gatheringSkills=read('src/components/GatheringActivityList.tsx');
 ok(gatheringSkills.includes('FASTEST XP HERE'),'Gathering details must identify the fastest local XP option');
 ok(gatheringSkills.includes('EST. YIELD / HR')&&gatheringSkills.includes('SKILL XP / HR'),'Gathering cards must surface compact settlement-aligned resource and XP hourly rates');
+ok(gatheringSkills.includes("/action · every {view.cycleSeconds.toFixed(1)}s"),'Gathering cards must expose authored yield per action beside effective cycle time');
 ok(gatheringSkills.includes('NEXT SKILL UNLOCK'),'Gathering details must preview the next skill unlock');
 ok(gatheringSkills.includes("targetTag:{fontSize:9"),'Working Toward gathering targets must remain visible without adding a large banner');
 ok(gatheringSkills.includes('gatheringProgressionAction')&&gatheringSkills.includes('bestGatheringTrainingDestination'),'Gathering locked/empty states must route to useful training actions');
@@ -109,6 +110,7 @@ ok(skills.includes("type:'alchemy_start'"),'Skills must route Alchemy through th
 ok(recipeCard.includes('recipeProgressionSources')&&recipeCard.includes('MISSING SOURCES'),'All recipe types must expose actionable material/prerequisite sources');
 ok(recipeCard.includes('recipeSkillTrainingAction')&&recipeCard.includes('recipeCharacterTrainingAction'),'Recipe level blockers must expose skill and character training actions');
 ok(recipeCard.includes('RECIPE MASTERY')&&recipeCard.includes('professionMasteryMultipliers'),'Recipe cards must show live per-recipe mastery and effective values');
+ok(recipeCard.includes('TIMED PACE')&&recipeCard.includes('crafts/hr')&&recipeCard.includes('XP/hr'),'Timed crafting must expose craft rate, XP/hour and level ETA');
 
 const skillNavigation=read('src/core/skill-progression-navigation.ts');
 ok(skillNavigation.includes('workingTowardItemSource'),'Skill progression navigation must reuse the canonical Working Toward item-source resolver');
@@ -146,10 +148,15 @@ for(const path of [
  ok(!source.includes("import {C,"),path+' must not regress to the static Veldryn palette');
 }
 
+const activeActivityBar=read('src/components/ActiveActivityBar.tsx');
+ok(activeActivityBar.includes('activityProgressFeedback')&&activeActivityBar.includes("phase.replace('…','').toUpperCase()")&&activeActivityBar.includes('cycleRemaining'),'Collapsed active-activity strip must show the same real cycle phase and next-action countdown as Home');
+
 const activity=read('src/components/ActivityCard.tsx');
 ok(activity.includes('activityActions:{flexDirection:\'row\''),'Activity actions must remain on one compact row');
 ok(activity.includes('backgroundColor:C.warningSurface'),'Activity warnings must use semantic theme surfaces');
 ok(activity.includes('backgroundColor:C.infoSurface'),'Activity goal state must use semantic theme surfaces');
+ok(activity.includes('activityProgressFeedback')&&activity.includes('phaseText'),'Active activities must show truthful phase text tied to real cycle progress');
+ok(activity.includes('levelPace')&&activity.includes('XP remaining')&&activity.includes('XP/hr'),'Active activities must expose level progress, remaining XP and effective XP/hour');
 
 const queue=read('src/components/ActionQueuePanel.tsx');
 ok(queue.includes('backgroundColor:C.warningSurface'),'Queue warnings must remain theme-safe');
@@ -251,6 +258,10 @@ ok(characterPolish.includes("GameButton compact title={skin.selected?"),'Repeate
 const worldPolish=read('src/screens/WorldScreen.tsx');
 ok(worldPolish.includes("backgroundColor:C.dark?'rgba(5,12,20,.64)':'rgba(255,255,255,.68)'"),'World artwork overlay must preserve text contrast in dark and light themes');
 ok(worldPolish.includes("backgroundColor:C.dark?'rgba(8,17,29,.80)':'rgba(255,255,255,.90)'"),'World locked-region overlay must be theme-safe');
+
+const encounterList=read('src/components/RegionEncounterList.tsx');
+ok(encounterList.includes('NEXT LV ~')&&encounterList.includes('XP to level'),'Expanded encounters must expose baseline combat level ETA and remaining XP');
+ok(encounterList.includes('dropExpectation')&&encounterList.includes("oddsText=drop.chance>0?'~1/'"),'Combat drop rows must expose reciprocal odds and expected find-time context');
 
 const combatPolish=read('src/screens/CombatScreen.tsx');
 ok(combatPolish.includes('<GameButton compact title="Change"'),'Combat region change must stay a compact secondary action');

@@ -1,5 +1,5 @@
 import type {GameState,GatheringSkillId,SkillId} from './types';
-import type {GatherDef} from '../content/skills';
+import type {GatherDef,Recipe} from '../content/skills';
 import type {MonsterDef} from '../content/monsters';
 import {GATHERING} from '../content/skills';
 import {HERB_NODES} from '../content/herbalism';
@@ -46,6 +46,14 @@ export interface CombatBaselineProjection{
   goldPerHour:number;
 }
 
+export interface CraftingPaceProjection{
+  cycleSeconds:number;
+  craftsPerHour:number;
+  xpPerCraft:number;
+  xpPerHour:number;
+  levelPace:LevelPaceProjection;
+}
+
 export interface DropExpectation{
   chance:number;
   oneIn:number;
@@ -87,12 +95,18 @@ export function characterTargetEta(state:GameState,targetLevel:number,xpPerHour:
 export function gatheringBalanceProjection(state:GameState,activity:GatherDef,offlineHours:number):GatheringBalanceProjection{
   const environment=environmentForZone(activity.zoneId),effect=environmentEffect(activity.skillId,environment),pacing=gatheringPacing(state,activity),permanent=characterPermanentMultipliers(state),mastery=professionMasteryMultipliers(activity.id,state.account.professionMasteryByAction?.[activity.id]),rank=professionMasteryRankProgress(activity.id,state.account.professionMasteryByAction?.[activity.id]);
   const cycleSeconds=activity.seconds*GATHER_TIME_SCALE*pacing.timeMultiplier*effect.actionTimeMultiplier/(permanent.gatheringSpeedMultiplier*mastery.speed),actionsPerHour=3600/Math.max(.1,cycleSeconds);
-  // Runtime gathering currently settles deterministic minimum yield per completed action.
-  // Keep the player-facing rate honest until the authored min/max yield model is deliberately rebalanced.
-  const runtimeItemsPerHour=actionsPerHour*activity.min*effect.itemMultiplier*permanent.gatheringYieldMultiplier*mastery.yield;
-  const authoredMeanItemsPerHour=actionsPerHour*((activity.min+activity.max)/2)*effect.itemMultiplier*permanent.gatheringYieldMultiplier*mastery.yield;
+  const meanItems=(activity.min+activity.max)/2;
+  // Settlement now rolls the authored min–max range deterministically per action,
+  // so long-run runtime expectation and authored expectation intentionally match.
+  const runtimeItemsPerHour=actionsPerHour*meanItems*effect.itemMultiplier*permanent.gatheringYieldMultiplier*mastery.yield;
+  const authoredMeanItemsPerHour=runtimeItemsPerHour;
   const xpPerHour=actionsPerHour*activity.xp*effect.xpMultiplier*permanent.skillXpMultiplier*mastery.xp,capActions=Math.floor(Math.max(0,offlineHours)*3600/cycleSeconds);
-  return {cycleSeconds,actionsPerHour,runtimeItemsPerHour,authoredMeanItemsPerHour,xpPerHour,capActions,capItems:Math.floor(capActions*activity.min*effect.itemMultiplier*permanent.gatheringYieldMultiplier*mastery.yield),capXp:Math.floor(capActions*activity.xp*effect.xpMultiplier*permanent.skillXpMultiplier*mastery.xp),pacing,mastery,rank,masteryBonus:professionMasteryActiveBonusText(state,activity.id),levelPace:skillLevelPace(state,activity.skillId,xpPerHour)};
+  return {cycleSeconds,actionsPerHour,runtimeItemsPerHour,authoredMeanItemsPerHour,xpPerHour,capActions,capItems:Math.floor(capActions*((activity.min+activity.max)/2)*effect.itemMultiplier*permanent.gatheringYieldMultiplier*mastery.yield),capXp:Math.floor(capActions*activity.xp*effect.xpMultiplier*permanent.skillXpMultiplier*mastery.xp),pacing,mastery,rank,masteryBonus:professionMasteryActiveBonusText(state,activity.id),levelPace:skillLevelPace(state,activity.skillId,xpPerHour)};
+}
+
+export function craftingPaceProjection(state:GameState,recipe:Recipe,cycleSeconds:number,xpPerCraft:number):CraftingPaceProjection{
+  const seconds=Math.max(.1,cycleSeconds),xp=Math.max(0,xpPerCraft),craftsPerHour=3600/seconds,xpPerHour=craftsPerHour*xp;
+  return {cycleSeconds:seconds,craftsPerHour,xpPerCraft:xp,xpPerHour,levelPace:skillLevelPace(state,recipe.skillId,xpPerHour)};
 }
 
 export function combatBaselineProjection(monster:MonsterDef):CombatBaselineProjection{
@@ -103,6 +117,17 @@ export function combatBaselineProjection(monster:MonsterDef):CombatBaselineProje
 export function dropExpectation(chance:number,min:number,max:number,killsPerHour:number):DropExpectation{
   const normalizedChance=Math.max(0,Math.min(1,chance)),oneIn=normalizedChance>0?1/normalizedChance:Number.POSITIVE_INFINITY,meanQuantity=(Math.max(0,min)+Math.max(min,max))/2,findsPerHour=killsPerHour*normalizedChance;
   return {chance:normalizedChance,oneIn,expectedQuantityPerHour:findsPerHour*meanQuantity,averageFindSeconds:findsPerHour>0?3600/findsPerHour:Number.POSITIVE_INFINITY};
+}
+
+export type ActivityProgressKind='combat'|'gathering'|'crafting'|'training'|'exploration'|'faith';
+export function activityProgressFeedback(kind:ActivityProgressKind,progress:number){
+ const p=Math.max(0,Math.min(1,progress));
+ if(kind==='combat')return p<.25?'Tracking the target…':p<.65?'Trading blows…':p<.92?'Pressing the advantage…':'Finishing the encounter…';
+ if(kind==='crafting')return p<.25?'Preparing materials…':p<.7?'Crafting in progress…':p<.95?'Finishing the work…':'Quality check…';
+ if(kind==='training')return p<.25?'Warming up…':p<.7?'Practicing technique…':p<.95?'Refining form…':'Completing the drill…';
+ if(kind==='exploration')return p<.25?'Setting out…':p<.7?'Surveying the route…':p<.95?'Following the trail…':'Completing the route…';
+ if(kind==='faith')return p<.25?'Beginning practice…':p<.7?'Maintaining focus…':p<.95?'Deepening devotion…':'Completing the practice…';
+ return p<.25?'Preparing tools…':p<.7?'Working the resource…':p<.95?'Finishing the action…':'Packing the yield…';
 }
 
 export function activeActivityLevelPace(state:GameState,xpPerHour:number):LevelPaceProjection|undefined{

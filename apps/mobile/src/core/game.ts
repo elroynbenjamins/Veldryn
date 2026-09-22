@@ -69,7 +69,7 @@ const COMBAT_SPEED_MAX=1.3;
 export const COMBAT_TIME_SCALE=1.16;
 const COMBAT_EXPECTED_SCALE=1.3;
 const COMBAT_MONSTER_DAMAGE_SCALE=1.13;
-export const GATHER_TIME_SCALE=1.45;
+export const GATHER_TIME_SCALE=1.25;
 
 export function offlineCapBreakdown(state:GameState){
   const setComplete=!!state.character&&noviceSetFor(state.character.classId).slots.every(slot=>state.character!.craftedNoviceItemIds?.includes(noviceItemId(state.character!.classId,slot)));
@@ -279,7 +279,10 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
     const cycleMs=effectiveActionSeconds*1000;
     const totalMs=(state.activity.progressFraction??0)*cycleMs+elapsedMs;
     const actions=Math.floor(totalMs/cycleMs);
-    const quantityFloat=actions*g.min*effect.itemMultiplier*multipliers.gatheringYieldMultiplier*mastery.yield+(state.rewardRemainders?.[g.itemId]??0);
+    const seed=`${state.character.id}:${state.activity.lastClaimAtMs}:${g.id}:yield`;
+    let baseQuantity=0;
+    for(let i=0;i<actions;i++)baseQuantity+=g.min+Math.floor(random01(seed,i)*(g.max-g.min+1));
+    const quantityFloat=baseQuantity*effect.itemMultiplier*multipliers.gatheringYieldMultiplier*mastery.yield+(state.rewardRemainders?.[g.itemId]??0);
     const quantity=Math.floor(quantityFloat);
     const skill=state.skills.find(x=>x.skillId===g.skillId);
     const rawXp=Math.floor(actions*g.xp*effect.xpMultiplier*multipliers.skillXpMultiplier*mastery.xp);

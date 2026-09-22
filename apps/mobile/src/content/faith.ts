@@ -20,5 +20,12 @@ export const FAITH_BLESSINGS:FaithBlessing[]=[
  {id:'ETERNAL_BASTION',name:'Eternal Bastion',level:85,family:'defense',bonus:.09},
  {id:'UNDYING_LIGHT',name:'Undying Light',level:90,family:'hp',bonus:.12},
 ];
-export const HOLY_WATER_SOURCES=[{monsterId:'FIELD_WISP',chance:.12},{monsterId:'DROWNED_PILGRIM',chance:.30},{monsterId:'OATHBOUND_SQUIRE',chance:.24}];
+export const HOLY_WATER_SOURCES=[
+ {monsterId:'FIELD_WISP',chance:.20,min:1,max:2},
+ {monsterId:'DROWNED_PILGRIM',chance:.40,min:2,max:4},
+ {monsterId:'OATHBOUND_SQUIRE',chance:.35,min:2,max:4},
+ {monsterId:'DUNE_ORACLE',chance:.50,min:3,max:5},
+ {monsterId:'BELLWRAITH',chance:.60,min:4,max:6},
+ {monsterId:'ASHEN_REVENANT',chance:.75,min:6,max:10},
+] as const;
 export const faithBlessingDef=(id?:string)=>FAITH_BLESSINGS.find(b=>b.id===id);

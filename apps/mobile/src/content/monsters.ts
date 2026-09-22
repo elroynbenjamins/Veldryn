@@ -1,4 +1,5 @@
 import {ITEMS} from './items';
+import {HOLY_WATER_ID,HOLY_WATER_SOURCES} from './faith';
 export interface MonsterDef {id:string;name:string;level:number;hp:number;attack:number;defense:number;xp:number;gold:number;secondsPerKill:number;unlockLevel:number;zone:string;boss?:boolean;drops:{itemId:string;chance:number;min:number;max:number}[];}
 
 const MONSTERS_RAW:MonsterDef[]=[
@@ -51,10 +52,12 @@ const enhancementDrops=(monster:MonsterDef):MonsterDef['drops']=>{
   if(monster.level>=10)return [{itemId:'TEMPERING_DUST',chance:.10,min:1,max:1},{itemId:'TEMPERING_CORE',chance:.01,min:1,max:1}];
   return monster.level>=4?[{itemId:'TEMPERING_DUST',chance:.05,min:1,max:1}]:[];
 };
-export const MONSTERS:MonsterDef[]=MONSTERS_RAW.map(monster=>({...monster,
-  drops:[...monster.drops.map(drop=>progressionDrop(drop,!!monster.boss)),...(monster.id==='FIELD_WISP'?[{itemId:'HOLY_WATER',chance:.12,min:1,max:1}]:monster.id==='DROWNED_PILGRIM'?[{itemId:'HOLY_WATER',chance:.30,min:1,max:1}]:monster.id==='OATHBOUND_SQUIRE'?[{itemId:'HOLY_WATER',chance:.24,min:1,max:1}]:[]),...enhancementDrops(monster)],
+export const MONSTERS:MonsterDef[]=MONSTERS_RAW.map(monster=>{
+  const holyWater=HOLY_WATER_SOURCES.find(source=>source.monsterId===monster.id);
+  return {...monster,
+  drops:[...monster.drops.map(drop=>progressionDrop(drop,!!monster.boss)),...(holyWater?[{itemId:HOLY_WATER_ID,chance:holyWater.chance,min:holyWater.min,max:holyWater.max}]:[]),...enhancementDrops(monster)],
   secondsPerKill:Math.ceil(monster.secondsPerKill*MONSTER_TIME_SCALE),
   hp:Math.ceil(monster.hp*MONSTER_STAT_SCALE),
   attack:Math.ceil(monster.attack*MONSTER_STAT_SCALE),
   defense:Math.ceil(monster.defense*MONSTER_STAT_SCALE),
-}));
+};});

@@ -4,6 +4,7 @@ import type {ImageSourcePropType} from 'react-native';
 import {coreMaterialIconSourceById} from './core-material-assets';
 import {hasConsumableArtwork} from './consumable-assets';
 import {hasMiscItemArtwork} from './misc-item-assets';
+import {hasAsterfallIngredientArtwork} from './asterfall-ingredient-assets';
 import {hasRegionalResourceArtwork} from './regional-resource-assets';
 import {hasRuntimeItemArtwork} from './runtime-item-assets';
 
@@ -25,4 +26,4 @@ export const resourceIconSourceById:Readonly<Partial<Record<string,ImageSourcePr
 };
 
 export function resourceIconSource(itemId:string){return resourceIconSourceById[itemId];}
-export function hasResourceArtwork(itemId:string){return hasConsumableArtwork(itemId)||hasMiscItemArtwork(itemId)||hasRuntimeItemArtwork(itemId)||hasRegionalResourceArtwork(itemId)||!!resourceIconSource(itemId);}
+export function hasResourceArtwork(itemId:string){return hasConsumableArtwork(itemId)||hasMiscItemArtwork(itemId)||hasAsterfallIngredientArtwork(itemId)||hasRuntimeItemArtwork(itemId)||hasRegionalResourceArtwork(itemId)||!!resourceIconSource(itemId);}

@@ -49,10 +49,9 @@ function recipeReady(state:GameState,recipe:Recipe){
 export function bestRecipeTrainingDestination(state:GameState,skillId:Extract<SkillId,'smithing'|'cooking'|'alchemy'>):WorkingTowardDestination{
  const skillLevel=levelFor(state,skillId);
  const candidates=RECIPES.filter(row=>row.skillId===skillId&&!row.noviceSetId&&row.level<=skillLevel&&(!row.classId||row.classId===state.character?.classId))
-   .filter(row=>recipeReady(state,row))
-   .sort((a,b)=>b.xp-a.xp||b.level-a.level);
+   .sort((a,b)=>Number(recipeReady(state,b))-Number(recipeReady(state,a))||b.xp-a.xp||b.level-a.level);
  const best=candidates[0];
- if(best)return {kind:'skills',skillId,mode:'crafting',recipeId:best.id,button:`Train with ${best.name}`,detail:`${best.name} is currently craftable and gives ${best.xp.toLocaleString()} base ${pretty(skillId)} XP.`};
+ if(best){const ready=recipeReady(state,best);return {kind:'skills',skillId,mode:'crafting',recipeId:best.id,button:`Train with ${best.name}`,detail:ready?`${best.name} is currently craftable and gives ${best.xp.toLocaleString()} base ${pretty(skillId)} XP.`:`${best.name} is your strongest unlocked training recipe; open it to resolve its missing requirements.`};}
  return {kind:'skills',skillId,mode:'crafting',button:`Train ${pretty(skillId)}`,detail:`Open ${pretty(skillId)} and review currently available recipes.`};
 }
 

@@ -69,10 +69,10 @@ export function itemInspectModel(state:GameState,ref:string){
   let gearDecision:ItemGearDecision|undefined;
 
   if(item.type==='gear'){
-    const gearRef=instance?.id,enhancement=gearRef?gearEnhancement(state,gearRef):{rank:0,failures:0,gemIds:[] as string[]},quote=gearRef?upgradeQuote(state,gearRef):undefined;
+    const gearRef=instance?.id,enhancement=gearRef?gearEnhancement(state,gearRef):{rank:0,failures:0,gemIds:[] as string[]},quote=upgradeQuote(state,gearRef??item.id);
     const enhanced=gearRef?enhancedGearStats(state,gearRef):gearStatsAtRank(item.id,0);
     stats=enhanced;
-    if(quote)upgrade={rank:enhancement.rank,nextRank:quote.targetRank,successChance:quote.successChance,dust:quote.dust,cores:quote.cores,gold:quote.gold,maxed:quote.maxed,failures:enhancement.failures,equipped:!!state.character&&!!item.slot&&state.character.equipmentInstanceIds?.[item.slot]===gearRef};
+    upgrade={rank:enhancement.rank,nextRank:quote.targetRank,successChance:quote.successChance,dust:quote.dust,cores:quote.cores,gold:quote.gold,maxed:quote.maxed,failures:enhancement.failures,equipped:!!state.character&&!!item.slot&&state.character.equipmentInstanceIds?.[item.slot]===gearRef};
     const capacity=gemSocketCapacity(gearRef??item.id,state),slotState=gearRef?gemSocketState(state,gearRef):{filled:0,capacity,statGemId:undefined,effectGemId:undefined};
     sockets={filled:slotState.filled,capacity,statGemName:slotState.statGemId?itemDef(slotState.statGemId).name:undefined,effectGemName:slotState.effectGemId?itemDef(slotState.effectGemId).name:undefined};
     if(state.character&&item.slot&&gearRef){

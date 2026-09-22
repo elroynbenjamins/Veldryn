@@ -1,11 +1,67 @@
-import type { CombatantDefinition, DamageType } from '../types';
+import type {CombatantDefinition,DamageType} from '../types';
+import {pveBarrier,pveDotWave,pveEnrage,pveExecuteStrike,pveFocusStrike,pveHeavyStrike,pveHex,pveInterruptibleWave,withPveIdentity,type PveArchetype,type PveMechanicId} from '../pve-encounter-identity';
 
 const stats=(maxHp:number,attackPower:number,defense:number,level:number)=>({maxHp,attackPower,healingPower:0,defense,accuracy:930,evasion:190,critChance:.06,critMultiplier:1.5,haste:.03});
-const encounter=(id:string,name:string,level:number,scale:number,damageType:DamageType,strikeName='Event Strike',waveName='Event Wave'):CombatantDefinition[]=>[
- {id:`${id}_A`,name,team:'enemies',role:'enemy',level,stats:stats(6_500*scale,2_800*scale,850*scale,level),basicAttackMs:2750,basicAttackCoeff:.74,abilities:[{id:`${id}_A_HIT`,name:strikeName,cooldownMs:6800,castTimeMs:700,target:'current_target',priority:70,effects:[{kind:'damage',coeff:1.02,damageType}]}]},
- {id:`${id}_B`,name:`${name} Echo`,team:'enemies',role:'enemy',level,stats:stats(5_800*scale,2_600*scale,780*scale,level),basicAttackMs:2900,basicAttackCoeff:.72,abilities:[{id:`${id}_B_WAVE`,name:waveName,cooldownMs:9600,castTimeMs:1100,target:'all_enemies',priority:90,interruptible:true,effects:[{kind:'damage',coeff:.72,damageType}]}]},
-];
-const boss=(id:string,name:string,level:number,scale:number,damageType:DamageType,lanceName='Event Lance',novaName='Event Nova'):CombatantDefinition[]=>[{id,name,team:'enemies',role:'enemy',level,boss:true,stats:stats(58_000*scale,3_700*scale,1_500*scale,level),basicAttackMs:2650,basicAttackCoeff:.8,abilities:[{id:`${id}_LANCE`,name:lanceName,cooldownMs:6800,castTimeMs:700,target:'current_target',priority:70,effects:[{kind:'damage',coeff:1.4,damageType}]},{id:`${id}_NOVA`,name:novaName,cooldownMs:10800,castTimeMs:1450,target:'all_enemies',priority:90,interruptible:true,effects:[{kind:'damage',coeff:1.05,damageType}]}],phases:[{id:`${id}_PHASE_50`,name:'Pressure Break',hpPct:.5,target:'all_enemies',effects:[{kind:'damage',coeff:.65,damageType},{kind:'debuff',tag:'damage_taken',value:.06,durationMs:7500}]}]}];
+
+function archetypeFor(name:string):PveArchetype{
+ const exact:Record<string,PveArchetype>={
+  'Veilshade Stalker':'assassin','Lantern-Eater':'executioner','Hollow Warden':'guardian',
+  'Ledger Hexer':'hexer','Iron Tollkeeper':'guardian','Bellfrost Spirit':'caster','Giftwork Colossus':'guardian',
+  'Briarling Swarm':'swarm','Pollenmaw':'hexer','Solar Reef Warden':'guardian','Meteoric Sentinel':'guardian',
+  'Yearshade Archivist':'hexer','Dawnless Warden':'guardian','Sorrowbound Shade':'assassin','Shoreline Colossus':'bruiser',
+ };
+ return exact[name]??'bruiser';
+}
+function mechanicsFor(archetype:PveArchetype):PveMechanicId[]{
+ switch(archetype){
+  case 'assassin': return ['focus','execute'];
+  case 'caster': return ['interrupt','aoe'];
+  case 'swarm': return ['aoe','dot'];
+  case 'guardian': return ['heavy_hit','barrier'];
+  case 'hexer': return ['vulnerability','dot'];
+  case 'executioner': return ['heavy_hit','execute'];
+  case 'support': return ['sustain'];
+  case 'bruiser': default: return ['heavy_hit'];
+ }
+}
+function primaryAbilities(id:string,name:string,archetype:PveArchetype,scale:number,damageType:DamageType,strikeName:string):CombatantDefinition['abilities']{
+ switch(archetype){
+  case 'assassin': return[pveFocusStrike(`${id}_A_HIT`,strikeName,damageType,.96,6800)];
+  case 'caster': return[pveInterruptibleWave(`${id}_A_HIT`,strikeName,damageType,.68,9000,1200)];
+  case 'swarm': return[pveDotWave(`${id}_A_HIT`,strikeName,damageType,.48,8500)];
+  case 'guardian': return[pveHeavyStrike(`${id}_A_HIT`,strikeName,damageType,.9,7000,650),pveBarrier(`${id}_A_WARD`,`${name} Ward`,700*scale,12000)];
+  case 'hexer': return[pveHex(`${id}_A_HIT`,strikeName,damageType,.62,7200),pveDotWave(`${id}_A_CURSE`,`${name} Curse`,damageType,.38,11000)];
+  case 'executioner': return[pveExecuteStrike(`${id}_A_HIT`,strikeName,damageType,1.02,7000)];
+  case 'support': return[pveHeavyStrike(`${id}_A_HIT`,strikeName,damageType,.72,7600,650),pveEnrage(`${id}_A_RALLY`,`${name} Rally`,.08,15000)];
+  case 'bruiser': default: return[pveHeavyStrike(`${id}_A_HIT`,strikeName,damageType,1.02,6800,700)];
+ }
+}
+const encounter=(id:string,name:string,level:number,scale:number,damageType:DamageType,strikeName='Event Strike',waveName='Event Wave'):CombatantDefinition[]=>{
+ const archetype=archetypeFor(name),primary=withPveIdentity({id:`${id}_A`,name,team:'enemies',role:'enemy',level,stats:stats(6_500*scale,2_800*scale,850*scale,level),basicAttackMs:2750,basicAttackCoeff:.74,abilities:primaryAbilities(id,name,archetype,scale,damageType,strikeName)},archetype,mechanicsFor(archetype));
+ const echo=withPveIdentity({id:`${id}_B`,name:`${name} Echo`,team:'enemies',role:'enemy',level,stats:stats(5_800*scale,2_600*scale,780*scale,level),basicAttackMs:2900,basicAttackCoeff:.72,abilities:[pveInterruptibleWave(`${id}_B_WAVE`,waveName,damageType,.72,9600,1100)]},'caster',['interrupt','aoe']);
+ return[primary,echo];
+};
+
+function bossIdentity(name:string):{archetype:PveArchetype;mechanics:PveMechanicId[]}{
+ if(name==='The Hollow Regent')return{archetype:'hexer',mechanics:['focus','execute','interrupt','dot']};
+ if(name==='The Coinbound Captain')return{archetype:'bruiser',mechanics:['heavy_hit','aoe','interrupt','enrage']};
+ if(name==='The Rimebell Colossus')return{archetype:'guardian',mechanics:['heavy_hit','aoe','interrupt','barrier']};
+ if(name==='The Constellation Eater'||name==='The Last Hour')return{archetype:'caster',mechanics:['interrupt','aoe','vulnerability']};
+ if(name==='The Thornheart Ancient')return{archetype:'bruiser',mechanics:['heavy_hit','aoe','enrage']};
+ return{archetype:'bruiser',mechanics:['heavy_hit','aoe','interrupt','vulnerability']};
+}
+const boss=(id:string,name:string,level:number,scale:number,damageType:DamageType,lanceName='Event Lance',novaName='Event Nova'):CombatantDefinition[]=>{
+ const identity=bossIdentity(name);
+ let lance=pveHeavyStrike(`${id}_LANCE`,lanceName,damageType,1.4,6800,700);
+ let nova=pveInterruptibleWave(`${id}_NOVA`,novaName,damageType,1.05,10800,1450);
+ const extras:CombatantDefinition['abilities']=[];
+ if(name==='The Hollow Regent'){lance=pveFocusStrike(`${id}_LANCE`,lanceName,damageType,1.12,7000);nova=pveDotWave(`${id}_NOVA`,novaName,damageType,.82,10800);}
+ if(name==='The Coinbound Captain')extras.push(pveEnrage(`${id}_RALLY`,'Gilded Rally',.08,16000));
+ if(name==='The Rimebell Colossus')extras.push(pveBarrier(`${id}_WARD`,'Rimebell Ward',3200*scale,15000));
+ const definition:CombatantDefinition={id,name,team:'enemies',role:'enemy',level,boss:true,stats:stats(58_000*scale,3_700*scale,1_500*scale,level),basicAttackMs:2650,basicAttackCoeff:.8,abilities:[lance,nova,...extras],phases:[{id:`${id}_PHASE_50`,name:'Pressure Break',hpPct:.5,target:'all_enemies',effects:[{kind:'damage',coeff:.65,damageType},{kind:'debuff',tag:'damage_taken',value:.06,durationMs:7500}]}]};
+ return[withPveIdentity(definition,identity.archetype,identity.mechanics)];
+};
+
 export const EVENT_ENCOUNTERS:Record<string,()=>CombatantDefinition[]>={
  EVENT_SUNCREST_BATTLE_01:()=>encounter('EVENT_SUNCREST_BATTLE_01','Suncrest Corsair',45,1,'fire'),EVENT_SUNCREST_BATTLE_02:()=>encounter('EVENT_SUNCREST_BATTLE_02','Shoreline Colossus',45,1.04,'fire'),EVENT_SUNCREST_BATTLE_03:()=>encounter('EVENT_SUNCREST_BATTLE_03','Solar Reef Warden',45,1.08,'fire'),
  EVENT_STARFALL_BATTLE_01:()=>encounter('EVENT_STARFALL_BATTLE_01','Astral Marauder',70,1.18,'arcane'),EVENT_STARFALL_BATTLE_02:()=>encounter('EVENT_STARFALL_BATTLE_02','Meteoric Sentinel',70,1.23,'arcane'),EVENT_STARFALL_BATTLE_03:()=>encounter('EVENT_STARFALL_BATTLE_03','Riftbound Herald',70,1.28,'arcane'),

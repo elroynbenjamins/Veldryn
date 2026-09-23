@@ -207,6 +207,11 @@ ok(inventory.includes('visible={filterOpen}'),'Inventory categories must open in
 ok(inventory.includes('filterOption:{minHeight:44'),'Inventory filter rows must retain accessible touch height');
 ok(!inventory.includes('contentContainerStyle={s.controlStrip}'),'Inventory must not regress to the long horizontal category strip');
 
+const dungeonDeepLinkApp=read('App.tsx');
+const dungeonDeepLinkScreen=read('src/screens/CoopExpeditionScreen.tsx');
+ok(dungeonDeepLinkApp.includes("setGoalDungeonId(destination.dungeonId)")&&dungeonDeepLinkApp.includes('initialDungeonId={goalDungeonId}'),'Dungeon progression sources must retain the exact authored dungeon id through app navigation');
+ok(dungeonDeepLinkScreen.includes('dungeons.find(item=>item.id===initialDungeonId)')&&dungeonDeepLinkScreen.includes('setSelected(dungeon)'),'Dungeon screen must open the exact dungeon supplied by a material/progression deep link');
+
 const world=read('src/screens/WorldScreen.tsx');
 ok(world.includes('currentCard:{minHeight:150'),'World current-region card must remain compact');
 ok(world.includes('destination:{minHeight:92'),'World destination cards must remain compact');

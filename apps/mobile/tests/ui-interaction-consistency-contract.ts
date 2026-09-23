@@ -15,6 +15,7 @@ for(const path of [
  'src/components/SaveTransferPanel.tsx',
  'src/components/EnvironmentDetailsModal.tsx',
  'src/components/EquipmentEnhancementModal.tsx',
+ 'src/components/IdleRulesEditorV40.tsx',
  'src/components/ProfileAudiencePreviewModal.tsx',
  'src/screens/DailySuppliesScreen.tsx',
  'src/screens/ProgressionPlannerScreen.tsx',
@@ -61,6 +62,9 @@ ok(daily.includes('GameModalHeader')&&daily.includes('accessibilityRole="radio"'
 const planner=read('src/screens/ProgressionPlannerScreen.tsx');
 ok(planner.includes('GameModalHeader')&&planner.includes('GameModalSurface'),'Working Toward goal creation must use the shared interaction shell');
 ok(planner.includes('backgroundColor:C.selection'),'Working Toward selected options must use semantic selection styling');
+const idleRules=read('src/components/IdleRulesEditorV40.tsx');
+ok(idleRules.includes('GameModalHeader')&&idleRules.includes('reduceMotion={state.settings.reduceMotion}'),'Advanced Idle Rules must use the shared motion-safe sheet/header interaction');
+ok(idleRules.includes('quickBlocked')&&idleRules.includes('idle_rule_limit_reached'),'Quick Idle Rule presets must surface and enforce the five-rule safety boundary');
 
 const profile=read('src/components/ProfileAudiencePreviewModal.tsx');
 ok(profile.includes('GameModalHeader')&&profile.includes('trailing={<View'),'Profile audience preview must use shared header with visibility state');

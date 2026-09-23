@@ -4,7 +4,7 @@ import type {MonsterDef} from '../content/monsters';
 import {GATHERING} from '../content/skills';
 import {HERB_NODES} from '../content/herbalism';
 import {GATHER_TIME_SCALE,COMBAT_TIME_SCALE} from './game';
-import {environmentEffect,environmentForZone} from './world-weather';
+import {environmentEffect,environmentEffectForActivity,environmentForZone} from './world-weather';
 import {gatheringPacing} from './gathering-tools';
 import {characterPermanentMultipliers} from './permanent-boosts';
 import {professionMasteryMultipliers,professionMasteryRankProgress} from './profession-mastery-v40';
@@ -95,7 +95,8 @@ export function characterTargetEta(state:GameState,targetLevel:number,xpPerHour:
 
 export function gatheringBalanceProjection(state:GameState,activity:GatherDef,offlineHours:number):GatheringBalanceProjection{
   const environment=environmentForZone(activity.zoneId),effect=environmentEffect(activity.skillId,environment),pacing=gatheringPacing(state,activity),permanent=characterPermanentMultipliers(state),mastery=professionMasteryMultipliers(activity.id,state.account.professionMasteryByAction?.[activity.id]),rank=professionMasteryRankProgress(activity.id,state.account.professionMasteryByAction?.[activity.id]);
-  const cycleSeconds=activity.seconds*GATHER_TIME_SCALE*pacing.timeMultiplier*effect.actionTimeMultiplier/(permanent.gatheringSpeedMultiplier*mastery.speed),actionsPerHour=3600/Math.max(.1,cycleSeconds);
+  const specialtySpeed=activity.skillId==='fishing'?permanent.fishingSpeedMultiplier:activity.skillId==='herbalism'?permanent.herbalismSpeedMultiplier:1;
+  const cycleSeconds=activity.seconds*GATHER_TIME_SCALE*pacing.timeMultiplier*effect.actionTimeMultiplier/(permanent.gatheringSpeedMultiplier*specialtySpeed*mastery.speed),actionsPerHour=3600/Math.max(.1,cycleSeconds);
   const meanItems=(activity.min+activity.max)/2;
   // Settlement now rolls the authored min–max range deterministically per action,
   // so long-run runtime expectation and authored expectation intentionally match.
@@ -103,6 +104,24 @@ export function gatheringBalanceProjection(state:GameState,activity:GatherDef,of
   const authoredMeanItemsPerHour=runtimeItemsPerHour;
   const xpPerHour=actionsPerHour*activity.xp*effect.xpMultiplier*permanent.skillXpMultiplier*mastery.xp,capActions=Math.floor(Math.max(0,offlineHours)*3600/cycleSeconds);
   return {cycleSeconds,actionsPerHour,runtimeItemsPerHour,authoredMeanItemsPerHour,xpPerHour,capActions,capItems:Math.floor(capActions*((activity.min+activity.max)/2)*effect.itemMultiplier*permanent.gatheringYieldMultiplier*mastery.yield),capXp:Math.floor(capActions*activity.xp*effect.xpMultiplier*permanent.skillXpMultiplier*mastery.xp),pacing,mastery,rank,masteryBonus:professionMasteryActiveBonusText(state,activity.id),levelPace:skillLevelPace(state,activity.skillId,xpPerHour)};
+}
+
+export function activeGatheringRuntimeProjection(state:GameState){
+  const activity=state.activity;
+  if(!activity||!['mining','woodcutting','fishing','herbalism'].includes(activity.kind))return undefined;
+  const definition=[...GATHERING,...HERB_NODES].find(row=>row.id===activity.targetId);
+  if(!definition)return undefined;
+  const effect=environmentEffectForActivity(activity).effect,pacing=gatheringPacing(state,definition),permanent=characterPermanentMultipliers(state),mastery=professionMasteryMultipliers(definition.id,state.account.professionMasteryByAction?.[definition.id]);
+  const specialtySpeed=definition.skillId==='fishing'?permanent.fishingSpeedMultiplier:definition.skillId==='herbalism'?permanent.herbalismSpeedMultiplier:1;
+  const cycleSeconds=definition.seconds*GATHER_TIME_SCALE*pacing.timeMultiplier*effect.actionTimeMultiplier/(permanent.gatheringSpeedMultiplier*specialtySpeed*mastery.speed);
+  const actionsPerHour=3600/Math.max(.1,cycleSeconds),meanItems=(definition.min+definition.max)/2;
+  return {
+    definition,
+    cycleSeconds,
+    actionsPerHour,
+    itemsPerHour:actionsPerHour*meanItems*effect.itemMultiplier*permanent.gatheringYieldMultiplier*mastery.yield,
+    xpPerHour:actionsPerHour*definition.xp*effect.xpMultiplier*permanent.skillXpMultiplier*mastery.xp,
+  };
 }
 
 export function craftingPaceProjection(state:GameState,recipe:Recipe,cycleSeconds:number,xpPerCraft:number,outputPerCraft=recipe.output.quantity):CraftingPaceProjection{

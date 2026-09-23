@@ -36,8 +36,8 @@ const timerRange:Record<string,{base:number;min:number;max:number}>={
 };
 const tierGold:Record<string,number>={T1:120,T2:420,T3:900,T4:1800,T5:3500,T6:6000,T7:9000,T8:14000,T9:20000};
 const tierXp:Record<string,number>={T1:120,T2:250,T3:450,T4:700,T5:1100,T6:1600,T7:2200,T8:2900,T9:3800};
-export const TIER_CHARACTER_LEVEL_FLOOR:Record<string,number>={T1:1,T2:6,T3:13,T4:19,T5:26,T6:38,T7:46,T8:63,T9:71};
-export const TIER_CRAFTING_LEVEL_FLOOR:Record<string,number>={T1:1,T2:3,T3:10,T4:16,T5:23,T6:35,T7:43,T8:60,T9:68};
+export const TIER_CHARACTER_LEVEL_FLOOR:Record<string,number>={T1:2,T2:6,T3:13,T4:19,T5:26,T6:36,T7:46,T8:58,T9:65};
+export const TIER_CRAFTING_LEVEL_FLOOR:Record<string,number>={T1:1,T2:3,T3:10,T4:16,T5:23,T6:33,T7:43,T8:55,T9:62};
 export const EQUIPMENT_CRAFT_SKILL_BY_CLASS:Record<ClassId,'smithing'|'tailoring'>={
   IRONWARDEN:'smithing',BASTION:'smithing',DREADGUARD:'smithing',RAVAGER:'smithing',
   WAYFINDER:'tailoring',HEXWEAVER:'tailoring',KNIFE_DANCER:'tailoring',DAWNKEEPER:'tailoring',STONECALLER:'tailoring',

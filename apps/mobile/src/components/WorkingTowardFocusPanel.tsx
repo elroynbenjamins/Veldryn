@@ -28,7 +28,7 @@ function status(plan:WorkingTowardExecutionPlan){
 export function WorkingTowardFocusPanel({overview,busy,onNavigate,onQueue,onToggleStop,onClear}:{overview:WorkingTowardExecutionOverview;busy:boolean;onNavigate:(destination:WorkingTowardDestination)=>void;onQueue:(plan:WorkingTowardExecutionPlan)=>void;onToggleStop:(plan:WorkingTowardExecutionPlan)=>void;onClear:(plan:WorkingTowardExecutionPlan)=>void}){
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),plan=overview.focus;
  if(!plan)return null;
- const pct=Math.max(2,Math.round(plan.view.progress*100))+'%' as `${number}%`;
+ const pct=Math.max(2,Math.round(plan.view.progress*100))+'%' as `${number}%`,progressMeta='stepLabel' in plan.view?(plan.view.status==='complete'?plan.view.stepLabel+' · crafted':plan.view.stepLabel+' · '+Math.round(plan.view.progress*100)+'% prepared'):Math.floor(plan.view.current).toLocaleString()+' / '+Math.floor(plan.view.target).toLocaleString();
  const blocker=plan.queueBlocker??plan.view.blocker;
  const detail=plan.view.status==='complete'?'This goal is complete. Clear it to free a Working Toward slot.':blocker??plan.destination.detail;
  const canNavigate=plan.view.status!=='complete'&&plan.destination.kind!=='info';
@@ -36,8 +36,8 @@ export function WorkingTowardFocusPanel({overview,busy,onNavigate,onQueue,onTogg
  const queueEnabled=plan.executionState==='ready'&&!busy;
  return <Panel accentColor={plan.view.status==='complete'?C.good:plan.executionState==='blocked'||plan.executionState==='full'?C.warning:C.info}>
   <View style={s.head}><View style={s.flex}><Text style={s.kicker}>FOCUS GOAL · RECOMMENDED</Text><Text style={s.title}>{plan.goal.title}</Text></View><StatusPill label={status(plan)} tone={tone(plan)}/></View>
-  <View style={s.stats}><Stat label="ACTIVE" value={overview.active} /><Stat label="DONE" value={overview.complete}/><Stat label="BLOCKED" value={overview.blocked}/><Stat label="QUEUEABLE" value={overview.queueable}/></View>
-  <View style={s.progressHead}><Text style={s.meta}>{Math.floor(plan.view.current).toLocaleString()} / {Math.floor(plan.view.target).toLocaleString()}</Text><Text style={s.percent}>{Math.round(plan.view.progress*100)}%</Text></View>
+  <View style={s.stats}><Stat label="RUNNING" value={overview.active} /><Stat label="DONE" value={overview.complete}/><Stat label="BLOCKED" value={overview.blocked}/><Stat label="READY" value={overview.queueable}/></View>
+  <View style={s.progressHead}><Text style={s.meta}>{progressMeta}</Text><Text style={s.percent}>{Math.round(plan.view.progress*100)}%</Text></View>
   <View style={s.track}><View style={[s.fill,plan.view.status==='complete'&&s.fillDone,{width:pct}]}/></View>
   <Text style={blocker?s.warning:s.detail}>{detail}</Text>
   <Text style={s.eta}>{plan.view.etaLabel}{plan.stopRuleActive?' · stop-at-goal armed':''}</Text>

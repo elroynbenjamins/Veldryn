@@ -42,7 +42,7 @@ function queueActivityForGoal(state:GameState,goal:ProgressionGoal,destination:W
 function isActiveGoalActivity(state:GameState,activity:QueuedActivity|undefined){
  if(!activity||!state.activity||state.activity.targetId!==activity.targetId)return false;
  if(activity.kind==='combat')return state.activity.kind==='combat'&&state.activity.combatChallengeId===activity.combatChallengeId;
- return state.activity.kind!=='combat'&&state.activity.kind!=='exploration';
+ return ['mining','woodcutting','fishing','herbalism'].includes(state.activity.kind);
 }
 
 function stopCondition(goal:ProgressionGoal):IdleStopCondition|undefined{

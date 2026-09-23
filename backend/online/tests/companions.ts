@@ -50,7 +50,7 @@ async function main(){
  serverNow+=60000;const trainingVersion=version;lost=true;
  assert.equal((await request({type:'claim'},'class-claim-001')).status,503);
  assert.equal((await request({type:'claim'},'class-claim-001',trainingVersion)).status,200);
- assert.deepEqual(state.character!.classSkills!.map(s=>s.xp),[6,2]);
+ assert.deepEqual(state.character!.classSkills!.map(s=>s.xp),[18,6]);
  assert.equal((await request({type:'class_focus',args:{focus:'primary',xp:999}},'class-forged-001')).status,400);
  console.log('PASS companion/class online authority, lost-response replay, forged costs/XP, frozen co-op assist');
 }

@@ -44,8 +44,8 @@ const classSkillsPanel=read('src/components/ClassSkillsPanel.tsx');
 ok(classSkillsPanel.includes('CLASS_DRILL_BASE_XP')&&classSkillsPanel.includes('Balanced: ~')&&classSkillsPanel.includes('Focused: ~'),'Class safe training must show the authoritative drill baseline and hourly split');
 ok(classSkillsPanel.includes('One drill per minute'),'Class safe training cadence must stay explicit');
 
-const craftingBrowser=read('src/components/CraftingRecipeBrowser.tsx');
-ok(craftingBrowser.includes("'tailoring'|'enchanting'")&&craftingBrowser.includes('TAILORING BENCH')&&craftingBrowser.includes('ENCHANTING TABLE'),'Tailoring and Enchanting must use the shared recipe browser and distinct workshop identity');
+const craftingProfessionBrowser=read('src/components/CraftingRecipeBrowser.tsx');
+ok(craftingProfessionBrowser.includes("'tailoring'|'enchanting'")&&craftingProfessionBrowser.includes('TAILORING BENCH')&&craftingProfessionBrowser.includes('ENCHANTING TABLE'),'Tailoring and Enchanting must use the shared recipe browser and distinct workshop identity');
 
 const skills=read('src/screens/SkillsScreen.tsx');
 ok(!skills.includes('Hunting-specific activities are not available yet'),'Hunting must not regress to a placeholder-only skill screen');

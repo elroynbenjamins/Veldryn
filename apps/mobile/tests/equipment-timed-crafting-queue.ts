@@ -1,5 +1,5 @@
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
-import {createCharacter,newGame} from '../src/core/game';
+import {createCharacter,craftRecipe,newGame} from '../src/core/game';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
 import {equipmentCraftQueueModel,equipmentCraftSlotBreakdown,equipmentCraftingQueue,MAX_WAITING_EQUIPMENT_CRAFTS,startEquipmentCraft,claimEquipmentCraft} from '../src/core/equipment-crafting-queue';
 import {normalizeSave} from '../src/core/save-normalization';
@@ -7,7 +7,11 @@ import {accountBonusOverview} from '../src/core/account-bonuses';
 import type {GameState} from '../src/core/types';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
+function throws(fn:()=>unknown,fragment:string,message:string){let error='';try{fn()}catch(e){error=e instanceof Error?e.message:String(e)}ok(error.includes(fragment),message+': '+error)}
 const recipe=V33_EQUIPMENT_RECIPES.find(row=>row.v33SetId==='T1_001'&&row.output.itemId==='T1P_001')!;
+const t9Smith=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T9'&&row.classId==='IRONWARDEN'&&row.skillId==='smithing')!;
+const t9Tailor=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T9'&&row.classId==='WAYFINDER'&&row.skillId==='tailoring')!;
+
 
 function prepared(){
  let state=createCharacter(newGame(0),'IRONWARDEN','Queue Tester','male');
@@ -72,6 +76,27 @@ const commandJob=equipmentCraftingQueue(online)[0];
 const commandClaim=executeGameCommand(online,{type:'craft_claim',args:{id:commandJob.id}},commandJob.completesAtMs,{randomRoll:.5});
 ok(commandClaim.state.inventory.stacks.some(row=>row.itemId===recipe.output.itemId),'Authoritative claim command must grant finished equipment');
 ok(commandClaim.contributions.some(row=>row.kind==='crafting'&&row.contentId===recipe.id),'Verified crafting contribution must occur on completion');
+
+function donatedT9(recipeToTest:typeof t9Smith){
+  let donated=createCharacter(newGame(0),recipeToTest.classId,'Fresh Alt','male');
+  donated={...donated,character:{...donated.character!,gold:999999},bank:{...donated.bank,capacity:200,stacks:recipeToTest.inputs.map(input=>({...input,quantity:input.quantity*2}))}};
+  return donated;
+}
+for(const highRecipe of [t9Smith,t9Tailor]){
+  let alt=donatedT9(highRecipe);
+  throws(()=>startEquipmentCraft(alt,highRecipe.id,5000),'Requires character level','Donated T9 materials must not bypass the character-level gate');
+  alt={...alt,character:{...alt.character!,level:highRecipe.characterLevel}};
+  throws(()=>startEquipmentCraft(alt,highRecipe.id,5000),`Requires ${highRecipe.skillId} level`,'Donated T9 materials must not bypass the crafting-skill gate');
+  alt={...alt,skills:alt.skills.map(row=>row.skillId===highRecipe.skillId?{...row,level:highRecipe.level}:row)};
+  throws(()=>craftRecipe(alt,highRecipe.id,5000),'Equipment Forge','Even a qualified T9 crafter must not bypass the timed Forge through the legacy helper');
+  const started=startEquipmentCraft(alt,highRecipe.id,5000),job=equipmentCraftingQueue(started.state).find(row=>row.recipeId===highRecipe.id)!;
+  ok(job.ownerCharacterId===alt.character!.id,'T9 craft job must remain bound to the character that qualified for and started it');
+  const finished=claimEquipmentCraft(started.state,job.id,job.completesAtMs,.5);
+  ok(finished.instance.ownerCharacterId===alt.character!.id,'Finished T9 crafted instance must remain owned by the qualifying crafter');
+}
+let wrongClass=donatedT9(t9Tailor);
+wrongClass={...wrongClass,character:{...wrongClass.character!,classId:'IRONWARDEN',level:t9Tailor.characterLevel},skills:wrongClass.skills.map(row=>row.skillId==='tailoring'?{...row,level:t9Tailor.level}:row)};
+throws(()=>startEquipmentCraft(wrongClass,t9Tailor.id,6000),'another class','A high-level character cannot craft another class\'s T9 set from donated materials');
 
 const save:any={...supporterQueue,version:6};
 const normalized=normalizeSave(save);

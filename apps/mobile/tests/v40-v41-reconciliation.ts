@@ -21,6 +21,9 @@ equal(rawGemDefinition?.skillId,'enchanting','Gem refinement mastery resolves to
 equal(rawGemDefinition?.speedRelevant,true,'Gem refinement mastery keeps timed speed bonuses relevant');
 equal(rawGemDefinition?.yieldRelevant,false,'Gem refinement mastery must not gain duplicate gem yield');
 equal(combineDefinition?.skillId,'enchanting','Gem combine mastery resolves to Enchanting');
+const distillDefinition=professionMasteryActionDefinition('ENCHANT_DISTILL_WISP_DUST');
+equal(distillDefinition?.skillId,'enchanting','Enchanting distillation resolves to Enchanting mastery');
+equal(distillDefinition?.speedRelevant,true,'Timed Enchanting distillation must visibly retain its mastery speed bonuses');
 let enchantingState=createCharacter(newGame(0),'IRONWARDEN','Mastery Tester');
 enchantingState={...enchantingState,account:{...enchantingState.account,professionMasteryByAction:{
  [rawGemMasteryId]:{actionId:rawGemMasteryId,points:25,updatedAtMs:10},

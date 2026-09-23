@@ -3,7 +3,7 @@ import {companionTrialWeekKey} from '../../../../backend/src/server/companions/t
 
 export const FALLEN_KNIGHT_WEEKLY_REWARD_CAP=1;
 export const FALLEN_KNIGHT_WEEKLY_BOUNTY_TARGET=1;
-export const FALLEN_KNIGHT_WEEKLY_REWARD={gold:500,xp:1200,items:[{itemId:'OATHGLASS_SHARD',quantity:6},{itemId:'TEMPERING_CORE',quantity:2},{itemId:'GEM_DUST',quantity:18},{itemId:'REGIONAL_CATALYST',quantity:1}]} as const;
+export const FALLEN_KNIGHT_WEEKLY_REWARD={gold:500,xp:1200,essence:30,items:[{itemId:'OATHGLASS_SHARD',quantity:6},{itemId:'TEMPERING_CORE',quantity:2},{itemId:'GEM_DUST',quantity:18},{itemId:'REGIONAL_CATALYST',quantity:1}]} as const;
 
 export interface FallenKnightWeeklyState{
   weekKey:string;

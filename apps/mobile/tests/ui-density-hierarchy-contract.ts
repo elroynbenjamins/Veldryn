@@ -40,6 +40,10 @@ ok(account.includes("if(id==='Collections')return 'Inventory'")&&account.include
 ok(!account.includes("items:['Home','Progression','Quests','Skills'"),'Account must not duplicate the persistent Skills bottom-navigation destination');
 ok(account.includes("singleColumn=width<350||fontScale>=1.25")&&account.includes('attentionQuickWide'),'Account hub and attention rail must preserve narrow-phone / large-text responsiveness');
 
+const classSkillsPanel=read('src/components/ClassSkillsPanel.tsx');
+ok(classSkillsPanel.includes('CLASS_DRILL_BASE_XP')&&classSkillsPanel.includes('Balanced: ~')&&classSkillsPanel.includes('Focused: ~'),'Class safe training must show the authoritative drill baseline and hourly split');
+ok(classSkillsPanel.includes('One drill per minute'),'Class safe training cadence must stay explicit');
+
 const skills=read('src/screens/SkillsScreen.tsx');
 ok(!skills.includes('Hunting-specific activities are not available yet'),'Hunting must not regress to a placeholder-only skill screen');
 ok(skills.includes('Train Hunting through monster hunts')&&skills.includes('HUNTING_XP_SHARE')&&skills.includes('Hunting XP/hr'),'Hunting detail must explain its combat-linked progression and current-region pace');

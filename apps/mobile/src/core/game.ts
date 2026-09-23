@@ -791,7 +791,7 @@ export function challengeFallenKnightRematch(state:GameState,nowMs:number):{stat
   const baseGold=500,baseXp=750,baseEssence=30;
   const bountyGold=weeklyRecorded.bountyTriggered?1000:0,bountyXp=weeklyRecorded.bountyTriggered?1500:0,bountyEssence=weeklyRecorded.bountyTriggered?30:0;
   const bossDrops=fallenKnightDropRoll(next,`${state.character.id}:FALLEN_KNIGHT_REMATCH:${weeklyRecorded.status.weekKey}:${weeklyRecorded.clearNumber}`,false);
-  const bountyItems:ItemStack[]=weeklyRecorded.bountyTriggered?[{itemId:'OATHGLASS_SHARD',quantity:6},{itemId:'TEMPERING_CORE',quantity:1}]:[];
+  const bountyItems:ItemStack[]=weeklyRecorded.bountyTriggered?[{itemId:'OATHGLASS_SHARD',quantity:6},{itemId:'OATHGLASS_FRAGMENT',quantity:1},{itemId:'TEMPERING_CORE',quantity:1}]:[];
   const items=stackItems([],bossDrops.concat(bountyItems));
   const routed=routeRewards(next,items,nowMs),xp=next.character!.xp+baseXp+bountyXp;
   next={...next,...routed,character:{...next.character!,xp,level:characterLevelFromXp(xp),gold:next.character!.gold+baseGold+bountyGold}};
@@ -803,7 +803,7 @@ export function challengeFallenKnightRematch(state:GameState,nowMs:number):{stat
   next.account={...next.account,longTermMetrics:winMetrics,companionLastBattle:{title:'Fallen Knight rematch',won:true,durationMs:battle.durationMs,gold:baseGold+bountyGold,essence:baseEssence+bountyEssence,bondstones:stone.reward,atMs:nowMs},companionBossClears:{...next.account.companionBossClears,FALLEN_KNIGHT:(next.account.companionBossClears?.FALLEN_KNIGHT??1)+1}};
   next=recordCompanionActivity(grantEventActivity(next,'boss',nowMs),'boss','FALLEN_KNIGHT',1,nowMs);
   next=applyTrustedLongTermProgression(next,[{kind:'boss',contentId:'FALLEN_KNIGHT',units:1}],undefined,nowMs,{accountId:longTermAccountScope(next),eventId:`boss-rematch:${state.character.id}:FALLEN_KNIGHT:${weeklyRecorded.status.weekKey}:${weeklyRecorded.clearNumber}`}).state;
-  const strikes=battle.events.filter(event=>event.type==='player_hit').length,stoneText=stone.reward?'+1 Bondstone':`Bondstone weekly cap already reached`,bountyText=weeklyRecorded.bountyTriggered?' · Oathglass Bounty complete: +1 Tempering Core, +6 Oathglass Shards, +1,000 Gold, +1,500 XP, +30 Essence':'',dropText=bossDrops.length?bossDrops.map(row=>`${row.quantity}× ${itemDef(row.itemId).name}`).join(', '):'no bonus drop';
+  const strikes=battle.events.filter(event=>event.type==='player_hit').length,stoneText=stone.reward?'+1 Bondstone':`Bondstone weekly cap already reached`,bountyText=weeklyRecorded.bountyTriggered?' · Oathglass Bounty complete: +1 Tempering Core, +1 Oathglass Fragment, +6 Oathglass Shards, +1,000 Gold, +1,500 XP, +30 Essence':'',dropText=bossDrops.length?bossDrops.map(row=>`${row.quantity}× ${itemDef(row.itemId).name}`).join(', '):'no bonus drop';
   return {state:next,won:true,message:`Fallen Knight rematch #${weeklyRecorded.clearNumber}/${weeklyRecorded.status.cap} won${strikes===1?' in one hit':` in ${Math.max(1,Math.round(battle.durationMs/1000))}s`}. +${baseGold} Gold, +${baseXp} XP, +${baseEssence} Essence · Boss drops: ${dropText} · ${stoneText}${bountyText}.`};
 }
 

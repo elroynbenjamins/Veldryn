@@ -13,11 +13,11 @@ function equal(actual:unknown,expected:unknown,message:string){if(actual!==expec
 
 const state=createCharacter(newGame(0),'WAYFINDER','Profession Tester');
 const tailoring=RECIPES.filter(row=>row.skillId==='tailoring'&&!!row.v33SetId);
-const enchantingRecipes=RECIPES.filter(row=>row.skillId==='enchanting');
+const enchantingRecipes=RECIPES.filter(row=>row.skillId==='enchanting'),enchantingGear=enchantingRecipes.filter(row=>row.v33SetId||row.output.itemId.startsWith('T'));
 const retiredRecipeIds=['TAILOR_MOSSWRAP_GLOVES','TAILOR_BOARHIDE_BOOTS','TAILOR_HIDE_VEST','TAILOR_TROLLGUARD_HELM','ENCHANT_WISP_CHARM','ENCHANT_THORN_RING','ENCHANT_OATHGLASS_CAPE'];
 
 ok(tailoring.length>0,'Tailoring must own V33 Equipment 2.0 recipes');
-ok(enchantingRecipes.length===0,'Enchanting must use gem refinement/combining rather than obsolete gear recipes');
+ok(enchantingRecipes.length>=5&&enchantingGear.length===0,'Enchanting may own dust/catalyst processing but must not regain obsolete equipment recipes');
 ok(RECIPES.every(recipe=>!retiredRecipeIds.includes(recipe.id)),'Removed pre-V33 profession gear recipes must not return');
 ok(V33_EQUIPMENT_RECIPES.every(recipe=>recipe.skillId===EQUIPMENT_CRAFT_SKILL_BY_CLASS[recipe.classId]),'Every V33 class must use its authoritative primary equipment profession');
 for(const classId of ['WAYFINDER','HEXWEAVER','KNIFE_DANCER','DAWNKEEPER','STONECALLER'] as const)ok(V33_EQUIPMENT_RECIPES.some(recipe=>recipe.classId===classId&&recipe.skillId==='tailoring'),classId+' must use Tailoring');
@@ -36,7 +36,7 @@ equal(enchantingDestination.kind,'skills','Enchanting training navigation stays 
 if(enchantingDestination.kind==='skills'){
  equal(enchantingDestination.mode,'crafting','Enchanting training opens the refinery/crafting view');
  equal(enchantingDestination.skillId,'enchanting','Enchanting remains selected');
- ok(!enchantingDestination.recipeId,'Enchanting must not invent a normal gear recipe');
+ equal(enchantingDestination.recipeId,'ENCHANT_DISTILL_WISP_DUST','Enchanting training should recommend its deterministic starter distillation rather than depend on rare gem RNG');
 }
 
 for(const skillId of ['tailoring','enchanting'] as const){

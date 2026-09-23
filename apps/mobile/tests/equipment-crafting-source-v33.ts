@@ -1,4 +1,4 @@
-import {V33_EQUIPMENT_RECIPES,v33EquipmentRecipeForItem} from '../src/content/equipment-recipes-v33';
+import {EQUIPMENT_CRAFT_SKILL_BY_CLASS,TIER_CHARACTER_LEVEL_FLOOR,TIER_CRAFTING_LEVEL_FLOOR,V33_EQUIPMENT_RECIPES,v33EquipmentRecipeForItem} from '../src/content/equipment-recipes-v33';
 import {RECIPES} from '../src/content/skills';
 import {itemDef} from '../src/content/items';
 import {createCharacter,craftRecipe,newGame} from '../src/core/game';
@@ -15,6 +15,14 @@ ok(new Set(V33_EQUIPMENT_RECIPES.map(row=>row.id)).size===2430,'V33 recipe IDs m
 ok(new Set(V33_EQUIPMENT_RECIPES.map(row=>row.output.itemId)).size===2430,'Every V33 piece should have exactly one generated output recipe');
 ok(V33_EQUIPMENT_RECIPES.every(row=>RECIPES.some(recipe=>recipe.id===row.id&&recipe.output.itemId===row.output.itemId)),'All generated V33 recipes must be registered in RECIPES');
 ok(V33_EQUIPMENT_RECIPES.every(row=>row.inputs.length>=2&&row.inputs.every(input=>itemDef(input.itemId).type==='material')),'Every V33 recipe needs registered material inputs');
+ok(V33_EQUIPMENT_RECIPES.every(row=>new Set(row.inputs.map(input=>input.itemId)).size===row.inputs.length),'V33 recipes must merge duplicate material rows');
+ok(V33_EQUIPMENT_RECIPES.every(row=>row.skillId===EQUIPMENT_CRAFT_SKILL_BY_CLASS[row.classId]),'Every V33 recipe must use its class primary crafting profession');
+ok(V33_EQUIPMENT_RECIPES.every(row=>row.characterLevel>=(TIER_CHARACTER_LEVEL_FLOOR[row.v33EquipmentTier]??1)),'Every V33 recipe must respect its tier character floor');
+ok(V33_EQUIPMENT_RECIPES.every(row=>row.level>=(TIER_CRAFTING_LEVEL_FLOOR[row.v33EquipmentTier]??1)),'Every V33 recipe must respect its tier profession floor');
+ok(RECIPES.find(row=>row.id==='CRAFT_TRACKER_CHEST')?.skillId==='tailoring','Wayfinder equipment must use Tailoring');
+ok(RECIPES.find(row=>row.id==='CRAFT_SPELLGLASS_CHEST')?.skillId==='tailoring','Hexweaver equipment must use Tailoring');
+ok(RECIPES.find(row=>row.id==='CRAFT_QUICKPRAYER_CHEST')?.skillId==='tailoring','Dawnkeeper equipment must use Tailoring');
+ok(RECIPES.find(row=>row.id==='CRAFT_LASTWALL_CHEST')?.skillId==='smithing','Bastion equipment must remain Smithing');
 
 const timerRanges:Record<string,[number,number]>={T1:[60,180],T2:[180,360],T3:[300,600],T4:[480,900],T5:[720,1200],T6:[900,1500],T7:[1200,1800],T8:[1500,2400],T9:[1800,2700]};
 for(const recipe of V33_EQUIPMENT_RECIPES){
@@ -57,7 +65,7 @@ const highTierBands:Record<string,[number,number]>={
   T5:[.75,2.75],T6:[.75,3.5],T7:[.75,3.5],T8:[.9,5.5],T9:[1.2,7.0],
 };
 for(const tier of Object.keys(highTierBands)){
-  const rows=V33_EQUIPMENT_RECIPES.filter(row=>row.v33EquipmentTier===tier);
+  const rows=V33_EQUIPMENT_RECIPES.filter(row=>row.v33EquipmentTier===tier&&row.skillId==='smithing');
   const [minHours,maxHours]=highTierBands[tier];
   for(const recipe of rows){
     const hours=projectedFarmHours(recipe);
@@ -67,6 +75,10 @@ for(const tier of Object.keys(highTierBands)){
 }
 const t5Ring=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T5'&&itemDef(row.output.itemId).slot==='ring')!;
 ok(projectedFarmHours(t5Ring)>=.75,'Even the cheapest T5 ring must require at least ~45 minutes of baseline regional farming');
+const tailoringT5=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T5'&&row.skillId==='tailoring')!;
+ok(tailoringT5.inputs.some(row=>row.itemId==='SAFFRON_REED')&&tailoringT5.inputs.some(row=>row.itemId==='AMBERGLASS'),'T5 Tailoring must use real Sunscar cloth/magical resources');
+const tailoringT8=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T8'&&row.skillId==='tailoring')!;
+ok(tailoringT8.inputs.some(row=>row.itemId==='WINTERMINT')&&tailoringT8.inputs.some(row=>row.itemId==='RIMEGLASS'),'T8 Tailoring must use real Frostmarch cloth/magical resources');
 
 let state=createCharacter(newGame(0),'IRONWARDEN','Crafter','male');
 const path=equipmentCraftingPath(state,'T1P_001')!;

@@ -12,10 +12,10 @@ const app=read('App.tsx');
 const save=read('src/core/save-normalization.ts');
 
 ok(queue.includes('BASE_EQUIPMENT_CRAFT_SLOTS=3'),'Equipment queue must start with 3 slots');
-ok(queue.includes('MAX_EQUIPMENT_CRAFT_SLOTS=5'),'Equipment queue must hard-cap at 5 slots');
+ok(queue.includes('MAX_EQUIPMENT_CRAFT_SLOTS=7'),'Equipment queue must hard-cap at 7 slots');
 ok(queue.includes("label:'Supporter'")&&queue.includes("label:'VIP+'"),'Supporter and VIP+ must each be explicit slot sources');
 ok(queue.includes("label:'Unlock character slot #2'")&&queue.includes("label:'Unlock character slot #4'"),'Second and fourth character-slot unlocks must each be explicit queue sources');
-ok(queue.includes('Math.min(MAX_EQUIPMENT_CRAFT_SLOTS,raw)'),'Overlapping bonuses must never exceed the 5-slot cap');
+ok(queue.includes('Math.min(MAX_EQUIPMENT_CRAFT_SLOTS,raw)'),'Overlapping bonuses must never exceed the 7-slot cap');
 ok(queue.includes('unlockedCharacterSlots(state)'),'Character queue bonuses must use unlocked slots rather than created-character count');
 ok(queue.includes('gold:projected.character!.gold-recipe.gold'),'Gold must be reserved when a craft is started or queued');
 ok(queue.includes('projected=consumeAcross(projected,input.itemId,input.quantity)'),'Materials must be reserved when a craft is started or queued');
@@ -35,4 +35,4 @@ ok(app.includes('startEquipmentCraft(state,id,Date.now())'),'Offline/local equip
 ok(save.includes('normalizeEquipmentCraftingQueue'),'Timed queue must persist safely through save normalization');
 ok(save.includes('entitlements:booleanRecord'),'Supporter/VIP+ flags must survive save normalization');
 
-console.log('PASS: timed crafting queue UI and authority wiring enforce the requested 3-to-5 active-slot model plus waiting backlog');
+console.log('PASS: timed crafting queue UI and authority wiring enforce the requested 3-to-7 active-slot model plus waiting backlog');

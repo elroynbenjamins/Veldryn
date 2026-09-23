@@ -44,7 +44,7 @@ const simulatedTailoring=visibleRecipeCatalogForSkill([...RECIPES,fakeReplacemen
 ok(simulatedTailoring.some(recipe=>recipe.id===fakeReplacement.id),'Active replacement recipe must enter the Tailoring catalog');
 ok(simulatedTailoring.every(recipe=>recipeCatalogStatus(recipe)!=='legacy_training'),'Active replacement recipes must automatically hide legacy training patterns');
 
-let state=createCharacter(newGame(0),'WAYFINDER','Legacy Catalog Tester','male');
+let state=createCharacter(newGame(0),'WAYFINDER','Legacy Tester','male');
 const source=workingTowardItemSource(state,'TRACKER_CHEST');
 equal(source.kind,'inventory','Working Toward must not recommend retired Tracker crafting');
 ok(!equipmentCraftingPath(state,'TRACKER_CHEST'),'Legacy Tracker gear must not expose an Equipment 2.0 crafting path');

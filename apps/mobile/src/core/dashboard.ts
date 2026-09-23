@@ -19,6 +19,7 @@ import {contractBoardSummary} from './contract-board-summary';
 import {workingTowardReadyCount} from './working-toward';
 import {newlyUnlockedGameGuide} from './onboarding';
 import {eventReadyClaimCount} from './live-events';
+import {firstTrackedRecipePreparation} from './recipe-preparation-tracking';
 const COMBAT_SPEED_MIN=.68;
 const COMBAT_SPEED_MAX=1.3;
 const COMBAT_TIME_SCALE=1.16;
@@ -38,6 +39,7 @@ export interface HomeSessionSummary{
  weeklyComplete:number;
  weeklyTotal:number;
  newUnlocks:number;
+ goalNext?:string;
  primaryReady?:HomeSessionReadyAction;
 }
 export function homeSessionSummary(state:GameState,nowMs=Date.now()):HomeSessionSummary{
@@ -45,7 +47,7 @@ export function homeSessionSummary(state:GameState,nowMs=Date.now()):HomeSession
  const dailyReady=dailySuppliesHomeSummary(state,nowMs).canClaim;
  const eventRewards=eventReadyClaimCount(state,nowMs);
  const goalReady=workingTowardReadyCount(state),goalTotal=state.character?.progressionGoals?.length??0;
- const weekly=contractBoardSummary(state,nowMs),newUnlocks=newlyUnlockedGameGuide(state).length;
+ const weekly=contractBoardSummary(state,nowMs),newUnlocks=newlyUnlockedGameGuide(state).length,trackedPreparation=firstTrackedRecipePreparation(state),goalNext=trackedPreparation?.status==='complete'?undefined:trackedPreparation?.nextLabel;
  const readyTotal=storyRewards+(dailyReady?1:0)+eventRewards+goalReady;
  const primaryReady:HomeSessionReadyAction|undefined=storyRewards
   ?{kind:'quests',title:storyRewards===1?'Story reward ready':storyRewards+' story rewards ready',detail:'Claim completed Asterfall chapters to unlock the next story beat.',button:'Open Journal'}
@@ -56,7 +58,7 @@ export function homeSessionSummary(state:GameState,nowMs=Date.now()):HomeSession
     :goalReady
      ?{kind:'goals',title:goalReady===1?'Pinned goal complete':goalReady+' pinned goals complete',detail:'Review completed Working Toward goals and choose what to pursue next.',button:'Open Goals'}
      :undefined;
- return {readyTotal,storyRewards,dailyReady,eventRewards,goalReady,goalTotal,weeklyComplete:weekly.complete,weeklyTotal:weekly.total,newUnlocks,primaryReady};
+ return {readyTotal,storyRewards,dailyReady,eventRewards,goalReady,goalTotal,weeklyComplete:weekly.complete,weeklyTotal:weekly.total,newUnlocks,goalNext,primaryReady};
 }
 
 /** A single, deterministic next-step recommendation for the home screen. */

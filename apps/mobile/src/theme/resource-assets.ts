@@ -6,6 +6,9 @@ import {hasConsumableArtwork} from './consumable-assets';
 import {hasMiscItemArtwork} from './misc-item-assets';
 import {hasAsterfallIngredientArtwork} from './asterfall-ingredient-assets';
 import {hasAsterfallOreArtwork} from './asterfall-ore-assets';
+import {hasAsterfallGatheringArtwork} from './asterfall-gathering-assets';
+import {hasAsterfallCraftedArtwork} from './asterfall-crafted-assets';
+import {hasArcaneMaterialArtwork} from './arcane-material-assets';
 import {hasRegionalResourceArtwork} from './regional-resource-assets';
 import {hasRuntimeItemArtwork} from './runtime-item-assets';
 
@@ -27,4 +30,4 @@ export const resourceIconSourceById:Readonly<Partial<Record<string,ImageSourcePr
 };
 
 export function resourceIconSource(itemId:string){return resourceIconSourceById[itemId];}
-export function hasResourceArtwork(itemId:string){return hasConsumableArtwork(itemId)||hasMiscItemArtwork(itemId)||hasAsterfallIngredientArtwork(itemId)||hasAsterfallOreArtwork(itemId)||hasRuntimeItemArtwork(itemId)||hasRegionalResourceArtwork(itemId)||!!resourceIconSource(itemId);}
+export function hasResourceArtwork(itemId:string){return hasConsumableArtwork(itemId)||hasMiscItemArtwork(itemId)||hasAsterfallIngredientArtwork(itemId)||hasAsterfallOreArtwork(itemId)||hasAsterfallGatheringArtwork(itemId)||hasAsterfallCraftedArtwork(itemId)||hasArcaneMaterialArtwork(itemId)||hasRuntimeItemArtwork(itemId)||hasRegionalResourceArtwork(itemId)||!!resourceIconSource(itemId);}

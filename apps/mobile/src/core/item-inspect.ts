@@ -12,9 +12,10 @@ import {previewEquipment} from './equipment-preview';
 import {rarityMeta} from './item-rarity';
 import {craftedInstancesForItem,effectiveOwnedGearRarity} from './crafted-gear-instances';
 import {acquisitionEstimateLabel,acquisitionProjectionForDestination} from './balance-projection';
+import {materialAcquisitionPlanForDestination,materialAcquisitionPlanSummary} from './material-acquisition-plan';
 
 export type ItemInspectSourceKind='gathering'|'crafting'|'combat'|'dungeon'|'starting';
-export interface ItemInspectSource{kind:ItemInspectSourceKind;typeLabel?:string;title:string;detail:string;navigation?:WorkingTowardDestination;availability?:WorkingTowardDestinationAvailability;estimatedSeconds?:number;estimateLabel?:string;}
+export interface ItemInspectSource{kind:ItemInspectSourceKind;typeLabel?:string;title:string;detail:string;navigation?:WorkingTowardDestination;availability?:WorkingTowardDestinationAvailability;estimatedSeconds?:number;estimateLabel?:string;chainLabel?:string;chainBlockedReason?:string;}
 export interface ItemRecipeUse{name:string;skill:string;level:number;quantity:number;navigation:WorkingTowardDestination;availability:WorkingTowardDestinationAvailability;}
 export interface ItemGearDecision{
  compatible:boolean;alreadyEquipped:boolean;replaces?:{itemId:string;name:string;rank:number};
@@ -49,6 +50,8 @@ export function itemInspectModel(state:GameState,itemId:string){
   if(item.type==='material'){
     const materialSources=workingTowardItemSourceEntries(state,itemId).map(source=>{
       const projection=acquisitionProjectionForDestination(state,itemId,1,source.destination);
+      const plan=projection||source.type!=='crafting'?undefined:materialAcquisitionPlanForDestination(state,itemId,1,source.destination);
+      const summary=plan?materialAcquisitionPlanSummary(plan):undefined;
       return {
         kind:(source.type==='monster_drop'?'combat':source.type) as ItemInspectSourceKind,
         typeLabel:source.typeLabel,
@@ -57,6 +60,10 @@ export function itemInspectModel(state:GameState,itemId:string){
         navigation:source.destination,
         availability:source.availability,
         ...(projection?{estimatedSeconds:projection.etaSeconds,estimateLabel:acquisitionEstimateLabel(projection)}:{}),
+        ...(plan?.etaSeconds!==undefined?{estimatedSeconds:plan.etaSeconds}:{}),
+        ...(summary?.estimate?{estimateLabel:summary.estimate}:{}),
+        ...(summary?.chain?{chainLabel:summary.chain}:{}),
+        ...(!summary?.complete&&summary?.blockedReasons[0]?{chainBlockedReason:summary.blockedReasons[0]}:{}),
       };
     });
     sources.splice(0,sources.length,...materialSources);

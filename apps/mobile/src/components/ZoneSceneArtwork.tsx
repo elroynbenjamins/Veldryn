@@ -1,4 +1,4 @@
-import {useMemo} from 'react';
+import {useState} from 'react';
 import {Image,StyleSheet,View} from 'react-native';
 import {RegionArtwork} from './RegionArtwork';
 
@@ -26,32 +26,27 @@ const zoneSceneCellById:Readonly<Record<string,ZoneSceneCell>>={
  */
 export function ZoneSceneArtwork({regionId,muted=false,blurRadius=1}:{regionId:string;muted?:boolean;blurRadius?:number}){
   const cell=zoneSceneCellById[regionId];
-  const imageStyle=useMemo(()=>[StyleSheet.absoluteFillObject,muted&&s.muted],[muted]);
+  const [size,setSize]=useState({width:0,height:0});
   if(!cell)return <RegionArtwork regionId={regionId} muted={muted}/>;
-  return <View pointerEvents="none" accessible={false} style={s.crop}>
-    <AtlasScene cell={cell} muted={muted} blurRadius={blurRadius}/>
-  </View>;
-}
-
-function AtlasScene({cell,muted,blurRadius}:{cell:ZoneSceneCell;muted:boolean;blurRadius:number}){
-  return <View style={StyleSheet.absoluteFill} onLayout={()=>{}}>
-    <Image
+  const scale=size.width&&size.height?Math.max(size.width/ZONE_SCENE_CELL_WIDTH,size.height/ZONE_SCENE_CELL_HEIGHT):1;
+  const cellWidth=ZONE_SCENE_CELL_WIDTH*scale,cellHeight=ZONE_SCENE_CELL_HEIGHT*scale;
+  const sheetWidth=ZONE_SCENE_SHEET_WIDTH*scale,sheetHeight=ZONE_SCENE_SHEET_HEIGHT*scale;
+  const left=-cell.column*cellWidth+(size.width-cellWidth)/2;
+  const top=-cell.row*cellHeight+(size.height-cellHeight)/2;
+  return <View
+    pointerEvents="none"
+    accessible={false}
+    onLayout={event=>{const {width,height}=event.nativeEvent.layout;setSize(old=>old.width===width&&old.height===height?old:{width,height});}}
+    style={[StyleSheet.absoluteFill,s.crop,muted&&s.muted]}
+  >
+    {size.width>0&&<Image
       source={zoneSceneSheet}
       resizeMode="stretch"
       blurRadius={blurRadius}
       fadeDuration={0}
-      style={[
-        StyleSheet.absoluteFillObject,
-        {
-          width:ZONE_SCENE_SHEET_WIDTH*2,
-          height:ZONE_SCENE_SHEET_HEIGHT*2,
-          left:-cell.column*ZONE_SCENE_CELL_WIDTH*2,
-          top:-cell.row*ZONE_SCENE_CELL_HEIGHT*2,
-        },
-        muted&&s.muted,
-      ]}
-    />
+      style={{position:'absolute',width:sheetWidth,height:sheetHeight,left,top}}
+    />}
   </View>;
 }
 
-const s=StyleSheet.create({crop:{...StyleSheet.absoluteFillObject,overflow:'hidden',backgroundColor:'#101a24'},muted:{opacity:.52}});
+const s=StyleSheet.create({crop:{overflow:'hidden',backgroundColor:'#101a24'},muted:{opacity:.52}});

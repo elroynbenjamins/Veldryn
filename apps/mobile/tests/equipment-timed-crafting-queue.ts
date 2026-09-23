@@ -8,6 +8,7 @@ import type {GameState} from '../src/core/types';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 const recipe=V33_EQUIPMENT_RECIPES.find(row=>row.v33SetId==='T1_001'&&row.output.itemId==='T1P_001')!;
+const tailoringRecipe=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T1'&&row.skillId==='tailoring'&&row.classId==='WAYFINDER')!;
 
 function prepared(){
  let state=createCharacter(newGame(0),'IRONWARDEN','Queue Tester','male');
@@ -75,6 +76,14 @@ const commandJob=equipmentCraftingQueue(online)[0];
 const commandClaim=executeGameCommand(online,{type:'craft_claim',args:{id:commandJob.id}},commandJob.completesAtMs,{randomRoll:.5});
 ok(commandClaim.state.inventory.stacks.some(row=>row.itemId===recipe.output.itemId),'Authoritative claim command must grant finished equipment');
 ok(commandClaim.contributions.some(row=>row.kind==='crafting'&&row.contentId===recipe.id),'Verified crafting contribution must occur on completion');
+
+let tailor=createCharacter(newGame(0),tailoringRecipe.classId,'Tailor Queue','male');
+tailor={...tailor,character:{...tailor.character!,level:tailoringRecipe.characterLevel,gold:500000},skills:tailor.skills.map(row=>row.skillId==='tailoring'?{...row,level:tailoringRecipe.level,xp:0}:row),inventory:{...tailor.inventory,capacity:60,stacks:tailoringRecipe.inputs.map(input=>({...input,quantity:input.quantity*2}))},bank:{...tailor.bank,capacity:200,stacks:[]}};
+const tailorBefore=tailor.skills.find(row=>row.skillId==='tailoring')!.xp,smithBeforeTailor=tailor.skills.find(row=>row.skillId==='smithing')!.xp;
+const tailorStarted=startEquipmentCraft(tailor,tailoringRecipe.id,4000);
+const tailorClaimed=claimEquipmentCraft(tailorStarted.state,tailorStarted.job.id,tailorStarted.job.completesAtMs,.5);
+ok(tailorClaimed.state.skills.find(row=>row.skillId==='tailoring')!.xp===tailorBefore+tailoringRecipe.xp,'Tailoring V33 craft must award Tailoring XP');
+ok(tailorClaimed.state.skills.find(row=>row.skillId==='smithing')!.xp===smithBeforeTailor,'Tailoring V33 craft must not award Smithing XP');
 
 const save:any={...supporterQueue,version:6};
 const normalized=normalizeSave(save);

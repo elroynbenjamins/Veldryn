@@ -18,10 +18,10 @@ export const SEASON_DEFINITIONS:Record<SeasonId,SeasonDefinition>= {
 };
 export const WEATHER_DEFINITIONS:Record<WeatherId,WeatherDefinition>= {
   clear:{name:'Clear Skies',symbol:'◇',color:'#d8c58c',description:'Favorable visibility speeds every activity.'},
-  rain:{name:'Steady Rain',symbol:'☂',color:'#78acd1',description:'Fish rise quickly, while wet ground slows combat.'},
-  mist:{name:'Gloam Mist',symbol:'≋',color:'#a8b2c2',description:'Hidden paths reveal more combat loot.'},
+  rain:{name:'Steady Rain',symbol:'☂',color:'#78acd1',description:'Fish rise quickly and herbs grow lush, while wet ground slows combat.'},
+  mist:{name:'Gloam Mist',symbol:'≋',color:'#a8b2c2',description:'Hidden paths reveal more combat loot and unusual botanicals.'},
   storm:{name:'Thunderstorm',symbol:'ϟ',color:'#b195df',description:'Charged stone yields more ore; dangerous combat grants more XP.'},
-  bloomwind:{name:'Bloomwind',symbol:'❀',color:'#8fd39a',description:'Living winds carry additional timber from every cut.'},
+  bloomwind:{name:'Bloomwind',symbol:'❀',color:'#8fd39a',description:'Living winds carry extra timber and expose rare botanical traces.'},
   heatwave:{name:'Heatwave',symbol:'☀',color:'#e59b54',description:'Dry seams mine quickly, but woodland and river work slow down.'},
   harvest_wind:{name:'Harvest Wind',symbol:'〰',color:'#d59c65',description:'Steady autumn gusts speed woodcutting.'},
   snow:{name:'Snowfall',symbol:'❄',color:'#b9d8ee',description:'Slow, difficult hunts grant increased combat experience.'},
@@ -81,10 +81,10 @@ export function seasonEffect(kind:ActivityKind,seasonId:SeasonId):EnvironmentEff
 export function weatherEffect(kind:ActivityKind,weatherId:WeatherId):EnvironmentEffect{
   let effect=neutralEffect();const notes:string[]=[];
   if(weatherId==='clear'){effect.actionTimeMultiplier*=.97;notes.push('+3% action speed')}
-  if(weatherId==='rain'){if(kind==='fishing'){effect.actionTimeMultiplier*=.88;effect.itemMultiplier*=1.1;notes.push('+12% fishing speed','+10% fish')}else if(kind==='combat'){effect.actionTimeMultiplier*=1.05;notes.push('−5% combat speed')}}
-  if(weatherId==='mist'&&kind==='combat'){effect.dropChanceMultiplier*=1.12;notes.push('+12% loot chance')}
+  if(weatherId==='rain'){if(kind==='fishing'){effect.actionTimeMultiplier*=.88;effect.itemMultiplier*=1.1;notes.push('+12% fishing speed','+10% fish')}else if(kind==='herbalism'){effect.itemMultiplier*=1.08;notes.push('+8% herbs')}else if(kind==='combat'){effect.actionTimeMultiplier*=1.05;notes.push('−5% combat speed')}}
+  if(weatherId==='mist'){if(kind==='combat'){effect.dropChanceMultiplier*=1.12;notes.push('+12% loot chance')}else if(kind==='herbalism'){effect.dropChanceMultiplier*=1.10;notes.push('+10% rare botanicals')}}
   if(weatherId==='storm'){if(kind==='mining'){effect.itemMultiplier*=1.12;notes.push('+12% ore')}else if(kind==='combat'){effect.actionTimeMultiplier*=1.08;effect.xpMultiplier*=1.1;notes.push('+10% combat XP','−8% combat speed')}}
-  if(weatherId==='bloomwind'&&kind==='woodcutting'){effect.itemMultiplier*=1.12;notes.push('+12% logs')}
+  if(weatherId==='bloomwind'){if(kind==='woodcutting'){effect.itemMultiplier*=1.12;notes.push('+12% logs')}else if(kind==='herbalism'){effect.dropChanceMultiplier*=1.25;notes.push('+25% rare botanicals')}}
   if(weatherId==='heatwave'){if(kind==='mining'){effect.actionTimeMultiplier*=.9;notes.push('+10% mining speed')}else if(kind==='woodcutting'||kind==='fishing'){effect.actionTimeMultiplier*=1.08;notes.push('−8% gathering speed')}}
   if(weatherId==='harvest_wind'&&kind==='woodcutting'){effect.actionTimeMultiplier*=.9;notes.push('+10% woodcutting speed')}
   if(weatherId==='snow'&&kind==='combat'){effect.actionTimeMultiplier*=1.1;effect.xpMultiplier*=1.12;notes.push('+12% combat XP','−10% combat speed')}

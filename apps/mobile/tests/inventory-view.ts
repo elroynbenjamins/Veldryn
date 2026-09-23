@@ -5,8 +5,12 @@ import {bulkSalvageSelected,bulkSelectionSummary,bulkSellSelected,bulkTransferSe
 import {itemInspectModel} from '../src/core/item-inspect';
 import {workingTowardDestinationAvailability} from '../src/core/working-toward';
 import {normalizeSave} from '../src/core/save-normalization';
+import {EQUIPMENT_ITEMS_V33} from '../src/content/equipment-items-v33';
 function ok(value:boolean,message:string){if(!value)throw new Error(message)}
 const state=createCharacter(newGame(1000),'IRONWARDEN');
+const v33Gear=EQUIPMENT_ITEMS_V33.find(item=>item.classRestriction==='IRONWARDEN'&&item.slot==='chest')!;
+const v33Weapon=EQUIPMENT_ITEMS_V33.find(item=>item.classRestriction==='IRONWARDEN'&&item.slot==='weapon')!;
+const otherClassGear=EQUIPMENT_ITEMS_V33.find(item=>item.classRestriction==='WAYFINDER'&&item.slot==='chest')!;
 const stacks=[{itemId:'COPPER_ORE',quantity:12},{itemId:'TRAVEL_RATION',quantity:3},{itemId:'EMBER_SHARD',quantity:2},{itemId:'FALLEN_KNIGHT_SIGIL',quantity:1}];
 const original=JSON.stringify(stacks);
 ok(visibleStacks(stacks,' copper ','all','name').length===1,'Search trims and ignores case');
@@ -43,28 +47,28 @@ const nearCapacity=storageCapacityStatus(Array.from({length:9},(_,index)=>({item
 ok(nearCapacity.level==='near'&&nearCapacity.free===1&&nearCapacity.percent===90,'Near-full storage status');
 const fullCapacity=storageCapacityStatus(Array.from({length:10},(_,index)=>({itemId:'STACK_'+index,quantity:1})),10);
 ok(fullCapacity.level==='full'&&fullCapacity.free===0,'Full storage status');
-const favoriteProtected={...state,settings:{...state.settings,favoriteItemIds:['WORN_BLADE']},inventory:{...state.inventory,stacks:[{itemId:'WORN_BLADE',quantity:1}]}};
-let favoriteSellBlocked=false;try{sellItem(favoriteProtected,'WORN_BLADE')}catch(error){favoriteSellBlocked=error instanceof Error&&error.message.includes('Favorite item is protected')}
+const favoriteProtected={...state,settings:{...state.settings,favoriteItemIds:[v33Gear.id]},inventory:{...state.inventory,stacks:[{itemId:v33Gear.id,quantity:1}]}};
+let favoriteSellBlocked=false;try{sellItem(favoriteProtected,v33Gear.id)}catch(error){favoriteSellBlocked=error instanceof Error&&error.message.includes('Favorite item is protected')}
 ok(favoriteSellBlocked,'Favorite items cannot be sold through core logic');
-let favoriteSalvageBlocked=false;try{salvageItem(favoriteProtected,'WORN_BLADE')}catch(error){favoriteSalvageBlocked=error instanceof Error&&error.message.includes('Favorite item is protected')}
+let favoriteSalvageBlocked=false;try{salvageItem(favoriteProtected,v33Gear.id)}catch(error){favoriteSalvageBlocked=error instanceof Error&&error.message.includes('Favorite item is protected')}
 ok(favoriteSalvageBlocked,'Favorite items cannot be salvaged through core logic');
-const bulkBase={...state,inventory:{...state.inventory,stacks:[{itemId:'TRAVEL_RATION',quantity:20},{itemId:'COPPER_ORE',quantity:4},{itemId:'WORN_BLADE',quantity:1},{itemId:'HOLY_WATER',quantity:2}]},bank:{stacks:[],capacity:10}};
-const bulkIds=['TRAVEL_RATION','COPPER_ORE','WORN_BLADE','HOLY_WATER'];
+const bulkBase={...state,inventory:{...state.inventory,stacks:[{itemId:'TRAVEL_RATION',quantity:20},{itemId:'COPPER_ORE',quantity:4},{itemId:v33Gear.id,quantity:1},{itemId:'HOLY_WATER',quantity:2}]},bank:{stacks:[],capacity:10}};
+const bulkIds=['TRAVEL_RATION','COPPER_ORE',v33Gear.id,'HOLY_WATER'];
 const bulkSummary=bulkSelectionSummary(bulkBase,bulkIds,'inventory');
 ok(bulkSummary.selectedStackCount===4&&bulkSummary.transferableStackCount===3&&bulkSummary.transferProtectedCount===1,'Bulk transfer keeps selected auto-eat food safe');
 ok(bulkSummary.sellableStackCount===2&&bulkSummary.sellGold===55,'Bulk sell includes only eligible stack value');
 const movedBulk=bulkTransferSelected(bulkBase,bulkIds,'inventory');
 ok(movedBulk.inventory.stacks.length===1&&movedBulk.inventory.stacks[0].itemId==='TRAVEL_RATION','Bulk deposit leaves protected auto-eat stack carried');
-ok(movedBulk.bank.stacks.some(stack=>stack.itemId==='COPPER_ORE')&&movedBulk.bank.stacks.some(stack=>stack.itemId==='WORN_BLADE'),'Bulk deposit moves eligible full stacks');
+ok(movedBulk.bank.stacks.some(stack=>stack.itemId==='COPPER_ORE')&&movedBulk.bank.stacks.some(stack=>stack.itemId===v33Gear.id),'Bulk deposit moves eligible full stacks');
 const tooSmall={...bulkBase,bank:{stacks:[],capacity:1}},tooSmallBefore=JSON.stringify(tooSmall);
-let atomicTransferBlocked=false;try{bulkTransferSelected(tooSmall,['COPPER_ORE','WORN_BLADE'],'inventory')}catch(error){atomicTransferBlocked=error instanceof Error&&error.message.includes('Bank is full')}
+let atomicTransferBlocked=false;try{bulkTransferSelected(tooSmall,['COPPER_ORE',v33Gear.id],'inventory')}catch(error){atomicTransferBlocked=error instanceof Error&&error.message.includes('Bank is full')}
 ok(atomicTransferBlocked&&JSON.stringify(tooSmall)===tooSmallBefore,'Bulk transfer failure is atomic and does not partially mutate state');
-const bulkFavorite={...bulkBase,settings:{...bulkBase.settings,favoriteItemIds:['WORN_BLADE']}};
+const bulkFavorite={...bulkBase,settings:{...bulkBase.settings,favoriteItemIds:[v33Gear.id]}};
 const soldBulk=bulkSellSelected(bulkFavorite,bulkIds);
 ok(soldBulk.character!.gold===bulkFavorite.character!.gold+20,'Bulk sell totals only eligible non-protected stacks');
-ok(soldBulk.inventory.stacks.some(stack=>stack.itemId==='WORN_BLADE')&&soldBulk.inventory.stacks.some(stack=>stack.itemId==='TRAVEL_RATION'),'Bulk sell keeps favorite gear and auto-eat food');
-const salvagedBulk=bulkSalvageSelected(bulkBase,['WORN_BLADE']);
-ok(!salvagedBulk.inventory.stacks.some(stack=>stack.itemId==='WORN_BLADE')&&salvagedBulk.inventory.stacks.some(stack=>stack.itemId==='MOSS_FIBER'&&stack.quantity===2),'Bulk salvage processes eligible equipment');
+ok(soldBulk.inventory.stacks.some(stack=>stack.itemId===v33Gear.id)&&soldBulk.inventory.stacks.some(stack=>stack.itemId==='TRAVEL_RATION'),'Bulk sell keeps favorite gear and auto-eat food');
+const salvagedBulk=bulkSalvageSelected(bulkBase,[v33Gear.id]);
+ok(!salvagedBulk.inventory.stacks.some(stack=>stack.itemId===v33Gear.id)&&salvagedBulk.inventory.stacks.some(stack=>stack.itemId===v33Gear.salvage!.itemId&&stack.quantity===v33Gear.salvage!.quantity),'Bulk salvage processes eligible V33 equipment');
 ok(validateGameCommand({type:'bulk_transfer',args:{location:'inventory',ids:['COPPER_ORE']}}).type==='bulk_transfer','Bulk transfer command validates for online execution');
 let invalidBulkCommand=false;try{validateGameCommand({type:'bulk_sell',args:{ids:Array.from({length:101},(_,index)=>'ITEM_'+index)}})}catch{invalidBulkCommand=true}
 ok(invalidBulkCommand,'Bulk commands cap selections at 100 stacks');
@@ -74,9 +78,9 @@ ok(copperInspect.sources.some(source=>source.kind==='combat'),'Quick Inspect exp
 ok(copperInspect.usedIn.some(recipe=>recipe.name==='Smelt Copper Batch'&&recipe.quantity===10),'Quick Inspect exposes crafting uses');
 const ingotInspect=itemInspectModel(state,'COPPER_INGOT');
 ok(ingotInspect.sources.some(source=>source.kind==='crafting'&&source.title==='Smelt Copper Batch'),'Quick Inspect exposes crafting acquisition sources');
-const gearInspect=itemInspectModel(state,'WORN_BLADE');
+const gearInspect=itemInspectModel(state,v33Gear.id);
 ok(gearInspect.upgrade?.rank===0&&gearInspect.upgrade.successChance===1&&gearInspect.upgrade.nextRank===1,'Quick Inspect exposes the guaranteed first equipment upgrade chance');
-ok(gearInspect.stats?.attack===4&&gearInspect.sockets?.capacity===2,'Quick Inspect exposes effective stats and the fixed Stat/Effect socket capacity');
+ok((gearInspect.stats?.defense??0)>0&&gearInspect.sockets?.capacity===2,'Quick Inspect exposes effective V33 stats and the fixed Stat/Effect socket capacity');
 const copperGatherSource=copperInspect.sources.find(source=>source.title==='Copper Vein');
 ok(copperGatherSource?.navigation?.kind==='skills'&&copperGatherSource.navigation.actionId==='COPPER_VEIN'&&copperGatherSource.navigation.regionId==='OLD_MINES','Gathering Quick Inspect routes to the exact source and region');
 const copperCombatSource=copperInspect.sources.find(source=>source.kind==='combat');
@@ -95,18 +99,18 @@ const lowMiningState={...state,character:{...state.character!,level:20},currentR
 const oathstoneSource=itemInspectModel(lowMiningState,'OATHSTONE_ORE').sources.find(source=>source.title==='Oathstone Seam');
 ok(oathstoneSource?.availability?.status==='locked'&&oathstoneSource.availability.detail.includes('Mining 16'),'Gathering source shows the actual skill-level blocker');
 ok(copperUse?.availability.status==='ready'&&copperUse.availability.label==='AVAILABLE','Unlocked crafting use is labeled AVAILABLE');
-const copperGear=itemInspectModel(state,'COPPER_BLADE');
+const copperGear=itemInspectModel(state,v33Weapon.id);
 ok(copperGear.gearDecision?.compatible===true&&copperGear.gearDecision.replaces?.name==='Basic Sword','Gear Check identifies the currently equipped replacement');
-ok((copperGear.gearDecision?.loadoutDelta.attack??0)>0&&(copperGear.gearDecision?.loadoutDelta.power??0)>0,'Gear Check exposes positive whole-loadout deltas');
+ok((copperGear.gearDecision?.loadoutDelta.attack??0)>0&&(copperGear.gearDecision?.loadoutDelta.power??0)>0,'Gear Check exposes positive V33 whole-loadout deltas');
 ok((copperGear.gearDecision?.maxLoadoutGain.attack??0)>0&&copperGear.gearDecision?.maxRank===10,'Gear Check exposes remaining +10 loadout potential');
 const setState={...state,character:{...state.character!,equipment:{...state.character!.equipment,gloves:'T1P_003'}}};
 const oathboundInspect=itemInspectModel(setState,'T1P_002');
 ok(oathboundInspect.gearDecision?.set?.currentPieces===1&&oathboundInspect.gearDecision.set.previewPieces===2,'Gear Check previews authoritative v33 set-piece progress after equip');
 ok(oathboundInspect.gearDecision?.set?.reached?.pieces===2&&oathboundInspect.gearDecision.set.next?.pieces===4,'Gear Check exposes reached and next v33 set milestones');
 const socketState={...state,character:{...state.character!,gearEnhancements:{STONEHEART_CHEST:{rank:2,failures:0,gemIds:['WARD_SHARD']}}}};
-const socketInspect=itemInspectModel(socketState,'STONEHEART_CHEST');
+const socketInspect=itemInspectModel(socketState,v33Gear.id);
 ok(socketInspect.gearDecision?.gems[0]?.name==='Ward Shard'&&socketInspect.gearDecision.gems[0].percent===.02&&socketInspect.gearDecision.gems[0].stat==='Defense','Gear Check exposes current socket contribution');
-const otherClassInspect=itemInspectModel(state,'TRACKER_CHEST');
+const otherClassInspect=itemInspectModel(state,otherClassGear.id);
 ok(otherClassInspect.gearDecision?.compatible===false,'Gear Check prevents misleading loadout deltas for another class');
 ok(JSON.stringify(stacks)===original,'Sorting does not mutate save stacks');
 ok(transferAmount(3,10)===3,'Quantity clamps to owned count');

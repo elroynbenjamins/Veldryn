@@ -4,6 +4,7 @@ import {GATHERING_TOOLS} from '../content/gathering-tools';
 import {FAITH_BLESSINGS,FAITH_TIERS} from '../content/faith';
 import {CROSS_SKILL_DISCOVERIES_V45,crossSkillViews,newCrossSkillState} from './cross-skill-discoveries-v45';
 import {faithLevel} from './faith';
+import {progressWithinLevel} from './progression';
 import type {GameState,SkillId} from './types';
 import type {WorkingTowardDestination} from './working-toward';
 import {ENCHANTING_EXTRACTION_THRESHOLDS_V1,GEM_COMBINE_COSTS_V1,GEM_REFINE_COSTS_V1,GEM_RESEARCH_V1} from './gem-progression-v1';
@@ -128,4 +129,36 @@ export function newlyUnlockedCrossSkillNames(before:GameState,after:GameState,sk
  const relevant=new Set(CROSS_SKILL_DISCOVERIES_V45.filter(row=>row.requirements.some(req=>req.skillId===skillId)).map(row=>row.id));
  const beforeMap=before.account.crossSkillState?.unlockedByCharacter[before.character.id]??{},afterMap=after.account.crossSkillState?.unlockedByCharacter[after.character.id]??{};
  return CROSS_SKILL_DISCOVERIES_V45.filter(row=>relevant.has(row.id)&&beforeMap[row.id]===undefined&&afterMap[row.id]!==undefined).map(row=>row.name);
+}
+
+
+export interface SkillTrainingFocus{
+ skillId:SkillId;
+ skillName:string;
+ currentLevel:number;
+ nextLevel:number;
+ levelsAway:number;
+ currentLevelProgressPct:number;
+ milestoneCount:number;
+ milestoneTitles:string[];
+}
+
+export function skillTrainingFocus(state:GameState):SkillTrainingFocus|undefined{
+ const candidates=state.skills.flatMap(skill=>{
+  if(skill.level>=100)return [];
+  const overview=skillMilestoneOverview(state,skill.skillId);
+  if(overview.nextLevel===undefined||!overview.next.length)return [];
+  const progress=progressWithinLevel(skill.xp,skill.level),ratio=Math.min(1,progress.current/Math.max(1,progress.need));
+  return [{
+   skillId:skill.skillId,
+   skillName:pretty(skill.skillId),
+   currentLevel:overview.currentLevel,
+   nextLevel:overview.nextLevel,
+   levelsAway:Math.max(1,overview.nextLevel-overview.currentLevel),
+   currentLevelProgressPct:Math.round(ratio*100),
+   milestoneCount:overview.next.length,
+   milestoneTitles:overview.next.map(row=>row.title),
+  }];
+ });
+ return candidates.sort((a,b)=>a.levelsAway-b.levelsAway||b.currentLevelProgressPct-a.currentLevelProgressPct||a.nextLevel-b.nextLevel||a.skillName.localeCompare(b.skillName))[0];
 }

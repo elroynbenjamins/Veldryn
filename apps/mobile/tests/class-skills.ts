@@ -6,10 +6,12 @@ import {classSkillsFor} from '../src/content/class-skills';
 import {totalXpAtLevel} from '../src/core/progression';
 import {createSaveBackup,parseSaveBackup} from '../src/core/save-transfer';
 import {settleStartupActivity} from '../src/core/playability';
+import {skillTrainingFocus} from '../src/core/skill-milestones';
 import type {ClassId,GameState} from '../src/core/types';
 let checks=0;const ok=(v:unknown,m:string)=>{checks++;if(!v)throw new Error(m);};const rejects=(f:()=>unknown,m:string)=>{let threw=false;try{f();}catch{threw=true;}ok(threw,m);};
 const now=Date.UTC(2026,8,13),fresh=(id:ClassId='IRONWARDEN')=>createCharacter(newGame(now),id,'Skill Test');
 const total=(s:GameState)=>characterClassSkills(s.character!).reduce((n,r)=>n+r.xp,0);
+const hubFocus=skillTrainingFocus(fresh());ok(!!hubFocus&&hubFocus.nextLevel>hubFocus.currentLevel&&hubFocus.milestoneCount>=1,'skill hub recommends a real upcoming authored milestone');
 for(const cls of CLASSES){let s=startCombat(fresh(cls.id),'MOSS_RAT',now);const snap=JSON.stringify(s),preview=previewActivityReward(s,now+60000);ok(preview.classSkillXp?.every(a=>a.xp>0),'both skills gain '+cls.id);ok(JSON.stringify(s)===snap,'preview pure');s=claimActivity(s,now+60000).state;ok(total(s)>0,'combat XP applied');ok(total(claimActivity(s,now+60000).state)===total(s),'no replay');
 const base=fresh(cls.id),before=effectiveStats(base);for(let i=0;i<2;i++){const c=structuredClone(base);c.character!.classSkills=classSkillsFor(cls.id).map((d,j)=>({skillId:d.id,xp:i===j?MAX_CLASS_SKILL_XP:0,level:1}));const after=effectiveStats(c);ok(after.hp>before.hp||after.attack>before.attack||after.defense>before.defense,'each skill improves runtime '+cls.id);}}
 let train=startClassTraining(fresh(),now);train.character!.currentHp=5;const inventory=JSON.stringify(train.inventory);const first=claimActivity(train,now+60000);ok(first.reward.trainingActions===1&&total(first.state)===CLASS_DRILL_BASE_XP,'24 XP per drill');ok(first.state.character!.currentHp===5&&JSON.stringify(first.state.inventory)===inventory,'drills do not heal or spend food');ok(first.reward.xp===0&&first.reward.gold===0&&first.reward.kills===0&&!first.reward.eventDrops,'no unrelated rewards');

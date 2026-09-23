@@ -1,12 +1,12 @@
 import {useEffect,useRef} from 'react';
 import {Animated,Easing,Image,StyleSheet,Text,View} from 'react-native';
 import type {MonsterDef} from '../content/monsters';
-import {monsterPortraitSource} from '../theme/monster-assets';
+import {monsterPortraitSource,regionalMonsterPortraitAtlas,regionalMonsterPortraitCell,REGIONAL_MONSTER_CELL,REGIONAL_MONSTER_SHEET_SIZE} from '../theme/monster-assets';
 import {C,radii} from '../theme/theme';
 
 export function MonsterPortraitFrame({monster,size=96,active=false,framed=true,reduceMotion=false}:{monster:MonsterDef;size?:number;active?:boolean;framed?:boolean;reduceMotion?:boolean}){
   const accent=monster.boss?'#e2ad52':monster.level>=20?'#a783d8':monster.level>=10?'#5ea3c7':C.good;
-  const portrait=monsterPortraitSource(monster.id);
+  const portrait=monsterPortraitSource(monster.id),regionalCell=regionalMonsterPortraitCell(monster.id);
   const pulse=useRef(new Animated.Value(0)).current;
   useEffect(()=>{
     pulse.setValue(0);
@@ -20,7 +20,7 @@ export function MonsterPortraitFrame({monster,size=96,active=false,framed=true,r
   const scale=pulse.interpolate({inputRange:[0,1],outputRange:[1,1.035]});
   return <Animated.View accessibilityLabel={`${monster.name} pixel portrait`} style={[s.frame,!framed&&s.unframed,{width:size,height:size,borderColor:active?C.accent:accent},active&&framed&&s.active,{transform:[{scale}]}]}>
     {framed&&<><View style={[s.corner,s.topLeft,{borderColor:accent}]}/><View style={[s.corner,s.topRight,{borderColor:accent}]}/><View style={[s.corner,s.bottomLeft,{borderColor:accent}]}/><View style={[s.corner,s.bottomRight,{borderColor:accent}]}/></>}
-    {portrait?<Image source={portrait} resizeMode="contain" fadeDuration={0} style={{width:size-10,height:size-10}}/>:<View style={[s.fallback,{width:size-10,height:size-10,borderColor:accent}]}><Text style={[s.fallbackMark,{color:accent}]}>{monster.name.slice(0,1).toUpperCase()}</Text></View>}
+    {portrait?<Image source={portrait} resizeMode="contain" fadeDuration={0} style={{width:size-10,height:size-10}}/>:regionalCell?<View style={{width:size-10,height:size-10,overflow:'hidden'}}><Image source={regionalMonsterPortraitAtlas} resizeMode="stretch" fadeDuration={0} style={{position:'absolute',width:(size-10)/REGIONAL_MONSTER_CELL*REGIONAL_MONSTER_SHEET_SIZE,height:(size-10)/REGIONAL_MONSTER_CELL*REGIONAL_MONSTER_SHEET_SIZE,left:-regionalCell.column*(size-10),top:-regionalCell.row*(size-10)}}/></View>:<View style={[s.fallback,{width:size-10,height:size-10,borderColor:accent}]}><Text style={[s.fallbackMark,{color:accent}]}>{monster.name.slice(0,1).toUpperCase()}</Text></View>}
     {active&&!reduceMotion&&<Animated.View pointerEvents="none" style={[s.activeGlow,{opacity:pulse.interpolate({inputRange:[0,1],outputRange:[.08,.28]})}]}/>}
     {framed&&<View style={[s.level,{backgroundColor:accent}]}><Text style={s.levelText}>{monster.boss?'BOSS':`LV ${monster.level}`}</Text></View>}
   </Animated.View>;

@@ -90,8 +90,8 @@ export function offlineCapBreakdown(state:GameState){
   const secondSlot=unlockedCharacterSlots(state)>=2;
   const guildMember=state.account.guildMember;
   const firstBoss=state.defeatedBossIds.length>0;
-  const vip=hasAccountEntitlement(state,'vip');
   const vipPlus=hasAccountEntitlement(state,'vip_plus','vipplus','vip+');
+  const vip=hasAccountEntitlement(state,'vip')||vipPlus;
   const supporter=hasAccountEntitlement(state,'supporter','supporter_subscription');
   const sources=[
     {id:'class_set',name:'Complete first class set',category:'progression' as const,hours:setComplete?2:0,earned:setComplete},

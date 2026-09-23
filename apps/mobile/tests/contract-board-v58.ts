@@ -11,6 +11,9 @@ let state=createCharacter(newGame(now),'WAYFINDER','Contract Tester');
 const candidates=weeklyOrderCandidatesFromCurrentContent(state);
 ok(candidates.some(row=>row.kind==='hunt'),'Contract Board needs Hunt Order candidates');
 ok(candidates.some(row=>row.kind==='profession'),'Contract Board needs Work Order candidates');
+const postStory={...state,character:{...state.character!,level:25},defeatedBossIds:['FALLEN_KNIGHT'],currentRegionId:'KINGS_ROAD'};
+const postStoryCandidates=weeklyOrderCandidatesFromCurrentContent(postStory),bossBountyCandidate=postStoryCandidates.find(row=>row.kind==='hunt'&&row.boss&&row.monsterId==='FALLEN_KNIGHT');
+ok(!!bossBountyCandidate&&bossBountyCandidate.reward?.label==='Oathglass Bounty Cache','Defeating the story boss should unlock the weekly Contract Board boss bounty');
 const regionalCandidates=candidates.filter(row=>row.kind==='regional');
 ok(regionalCandidates.length>0&&regionalCandidates.every(row=>row.regionId),'Contract Board needs real Regional Problem candidates');
 ok(regionalCandidates.length>=2&&regionalCandidates.every(row=>row.brief&&row.brief.length>40),'Unlocked regions should offer multiple authored Regional Problem scenarios');
@@ -19,6 +22,10 @@ ok(!candidates.some(row=>row.kind==='threat'),'Threat Bounties should not appear
 let mastered={...state,character:{...state.character!,monsterMasteryPoints:{MOSS_RAT:500}}};const masteredCandidates=weeklyOrderCandidatesFromCurrentContent(mastered),threatCandidates=masteredCandidates.filter(row=>row.kind==='threat');ok(threatCandidates.length===3,'Mastery 20 Moss Rat should expose all three Threat Bounty tiers');
 
 const generated=generateWeeklyOrders(accountId,now,candidates);
+const bossBoard=generateWeeklyOrders(accountId+'-boss',now,postStoryCandidates),bossOrder=bossBoard.orders.find(row=>row.kind==='hunt'&&row.targetId==='FALLEN_KNIGHT');
+ok(!!bossOrder&&bossOrder.target===1,'Fallen Knight Contract Board bounty should require exactly one rewarded weekly victory');
+ok(weeklyOrderQueueActivity(bossOrder!)===undefined,'Boss bounty must remain a manual boss action rather than entering the idle hunt queue');
+ok(weeklyOrderDestination(bossOrder!).button==='Open weekly boss','Boss bounty should deep-link to the weekly boss encounter');
 ok(generated.orders.filter(row=>row.kind==='hunt').length===Math.min(2,candidates.filter(row=>row.kind==='hunt'&&row.available&&row.source.available).length),'default board should fill available Hunt Order slots');
 ok(generated.orders.filter(row=>row.kind==='profession').length===Math.min(2,candidates.filter(row=>row.kind==='profession'&&row.available&&row.source.available).length),'default board should fill available Work Order slots');
 ok(generated.orders.filter(row=>row.kind==='regional').length===1,'default board should have one Regional Problem');
@@ -67,4 +74,9 @@ const settled=applyTrustedLongTermProgression(state,[{kind:'combat',contentId:'M
 const after=settled.account.weeklyOrders!.orders.find(row=>row.kind==='regional');
 ok((after?.progress??0)>=4,'trusted Greenfields combat should advance the Greenfields Regional Problem');
 mastered={...mastered,account:{...mastered.account,longTermAccountScopeId:accountId+'-mastered',weeklyOrders:masteredBoard}};const threatBefore=threat!.progress;let threatState=applyTrustedLongTermProgression(mastered,[{kind:'combat',contentId:'MOSS_RAT',units:4,startedAtMs:now-60_000}],undefined,now,{accountId:accountId+'-mastered',eventId:'normal-hunt'}).state;ok(threatState.account.weeklyOrders!.orders.find(row=>row.id===threat!.id)!.progress===threatBefore,'Normal hunt kills must not advance a Threat Bounty');const wrongTier=threat!.challengeId==='ferocious'?'hardened':'ferocious';threatState=applyTrustedLongTermProgression(threatState,[{kind:'combat',contentId:'MOSS_RAT',units:4,challengeId:wrongTier,startedAtMs:now-30_000}],undefined,now,{accountId:accountId+'-mastered',eventId:'wrong-tier'}).state;ok(threatState.account.weeklyOrders!.orders.find(row=>row.id===threat!.id)!.progress===threatBefore,'Wrong Challenge Hunt tier must not advance a Threat Bounty');threatState=applyTrustedLongTermProgression(threatState,[{kind:'combat',contentId:'MOSS_RAT',units:4,challengeId:threat!.challengeId,startedAtMs:now-10_000}],undefined,now,{accountId:accountId+'-mastered',eventId:'correct-tier'}).state;ok(threatState.account.weeklyOrders!.orders.find(row=>row.id===threat!.id)!.progress===Math.min(threat!.target,threatBefore+4),'Exact Challenge Hunt tier should advance its Threat Bounty');
+let bossProgressState={...postStory,account:{...postStory.account,longTermAccountScopeId:accountId+'-boss',weeklyOrders:bossBoard}};
+const storyOnly=applyTrustedLongTermProgression(bossProgressState,[{kind:'boss',contentId:'FALLEN_KNIGHT',units:1,weeklyEligible:false}],undefined,now,{accountId:accountId+'-boss',eventId:'story-boss'}).state;
+ok(storyOnly.account.weeklyOrders!.orders.find(row=>row.targetId==='FALLEN_KNIGHT')!.progress===0,'One-time story clear must not complete the weekly boss bounty');
+bossProgressState=applyTrustedLongTermProgression(storyOnly,[{kind:'boss',contentId:'FALLEN_KNIGHT',units:1}],undefined,now,{accountId:accountId+'-boss',eventId:'weekly-boss'}).state;
+ok(bossProgressState.account.weeklyOrders!.orders.find(row=>row.targetId==='FALLEN_KNIGHT')!.progress===1,'Verified rewarded weekly boss clear must complete the Oathglass Bounty');
 console.log('PASS: Contract Board Hunt Orders, Work Orders, Regional Problems and Threat Bounties validate');

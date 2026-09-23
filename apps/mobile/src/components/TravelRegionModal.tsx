@@ -15,12 +15,12 @@ export function TravelRegionModal({visible,state,zone,onClose,onTravel}:{visible
   const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
   if(!zone)return null;
   const summary=regionActivitySummary(state,zone.id),environment=environmentForZone(zone.id),availability=regionTravelAvailability(state,zone),preview=regionTravelPreview(state,zone.id);
-  const development=availability==='inDevelopment',locked=availability==='locked',available=availability==='available';
+  const development=availability==='inDevelopment',locked=availability==='locked',unlocked=availability==='available';
   const combat=`${summary.combatReady}/${summary.combatTotal} hunts`;
   const gathering=`${summary.gatheringReady}/${summary.gatheringTotal} gather`;
   const bosses=summary.bossesTotal?`${summary.bossesReady}/${summary.bossesTotal} bosses`:undefined;
   return <GameModalSurface visible={visible} presentation="sheet" onClose={onClose} backdropLabel="Close travel destination">
-    <GameModalHeader eyebrow="TRAVEL DESTINATION" title={zone.name} onClose={onClose}/>
+    <GameModalHeader eyebrow={development?"REGION PREVIEW":locked?"LOCKED REGION PREVIEW":"TRAVEL DESTINATION"} title={zone.name} onClose={onClose}/>
     <ScrollView bounces={false} showsVerticalScrollIndicator={false} contentContainerStyle={s.content}>
       <View style={[s.hero,{borderColor:zone.accent}]}>
         <ZoneSceneArtwork regionId={zone.id} blurRadius={1} muted={development}/>
@@ -46,9 +46,9 @@ export function TravelRegionModal({visible,state,zone,onClose,onTravel}:{visible
 
       {preview.drops.length?<View style={s.dropBlock}><Text style={s.previewLabel}>NOTABLE DROPS</Text><View style={s.dropRow}>{preview.drops.slice(0,6).map(drop=><View key={drop.itemId} style={s.dropItem}><ItemArtwork itemId={drop.itemId} size={34}/><Text numberOfLines={1} style={s.dropName}>{drop.name}</Text></View>)}</View></View>:null}
       {summary.gatheringSkills.length?<View style={s.info}><Text style={s.infoLabel}>GATHERING</Text><Text style={s.infoValue}>{summary.gatheringSkills.join(' · ')}</Text></View>:null}
-      <Text style={s.hint}>{available?`Travel is instant. Your active region, hunts, gathering nodes and regional activities update to ${zone.name} immediately.`:development?'Preview only — this destination cannot be entered yet.':`Preview only until level ${zone.minLevel}.`}</Text>
+      <Text style={s.hint}>{unlocked?`Travel is instant. Your active region, hunts, gathering nodes and regional activities update to ${zone.name} immediately.`:development?'Preview only — this destination cannot be entered yet.':`Preview only until level ${zone.minLevel}.`}</Text>
     </ScrollView>
-    <View style={s.actions}><View style={s.flex}><GameButton title={available?"Cancel":"Close"} tone="secondary" onPress={onClose}/></View><View style={s.flex}><GameButton title={development?"In Development":locked?"Locked":"Travel"} disabled={!available} onPress={()=>available&&onTravel(zone.id)}/></View></View>
+    <View style={s.actions}><View style={s.flex}><GameButton title={unlocked?"Cancel":"Close"} tone="secondary" onPress={onClose}/></View><View style={s.flex}><GameButton title={development?"In Development":locked?"Locked":"Travel"} disabled={!unlocked} onPress={()=>unlocked&&onTravel(zone.id)}/></View></View>
   </GameModalSurface>;
 }
 

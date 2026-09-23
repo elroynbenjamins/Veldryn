@@ -81,14 +81,19 @@ ok(finalPrepView.nextLabel.includes('Reinforced Fitting')&&finalPrepView.destina
 const advancedNotices=recipePreparationTransitionNotices(initialTrackedState,finalReadyState);
 equal(advancedNotices[0]?.kind,'advanced','Completing tracked prerequisite steps emits one preparation-advanced notice');
 ok(advancedNotices[0]?.message.includes('Next:')&&advancedNotices[0]?.message.includes('Reinforced Fitting'),'Advance notice names the newly active preparation step');
+equal(advancedNotices[0]?.actionLabel,'Open next','Advanced preparation notice exposes a direct next-step action');
+equal(advancedNotices[0]?.destination?.kind,'skills','Advanced preparation notice carries the exact live next-step destination');
 const rerankedState={...initialTrackedState,currentRegionId:'OLD_MINES'} as typeof initialTrackedState;
 equal(recipePreparationTransitionNotices(initialTrackedState,rerankedState).length,0,'Source reranking without real preparation progress must not emit a false advancement notice');
 const goldBlockedState={...finalReadyState,character:{...finalReadyState.character!,gold:0}};
 const blockedNotices=recipePreparationTransitionNotices(initialTrackedState,goldBlockedState);
 equal(blockedNotices[0]?.kind,'blocked','Advancing into a Gold-blocked final step emits a blocked transition');
 ok(blockedNotices[0]?.message.includes('Next blocked'),'Blocked advancement explains that the new next step cannot start yet');
+equal(blockedNotices[0]?.actionLabel,'Review','Blocked preparation notice uses a review action rather than implying it can start');
+ok(blockedNotices[0]?.message.includes('Need 50 more Gold')&&!blockedNotices[0]?.message.includes('Gold..'),'Blocked notice includes the actual blocker with normalized punctuation');
 const resumedNotices=recipePreparationTransitionNotices(goldBlockedState,finalReadyState);
 equal(resumedNotices[0]?.kind,'resumed','Restoring a blocked tracked preparation emits a resumed notice');
+equal(resumedNotices[0]?.actionLabel,'Open next','Resumed preparation offers the exact next-step action again');
 
 
 prepState={...prepState,inventory:{...prepState.inventory,stacks:[...prepState.inventory.stacks,{itemId:'REINFORCED_FITTING',quantity:1}]}};
@@ -99,6 +104,8 @@ const completionNotices=recipePreparationTransitionNotices(finalReadyState,compl
 equal(completionNotices[0]?.kind,'complete','Producing the tracked final output emits a completion notice');
 equal(completionNotices[0]?.tone,'success','Tracked craft completion uses success feedback');
 ok(completionNotices[0]?.message.includes('Working Toward complete')&&completionNotices[0]?.message.includes('Reinforced Fitting crafted'),'Completion notice identifies the finished tracked output');
+equal(completionNotices[0]?.actionLabel,'View goal','Completed preparation notice routes the player back to Working Toward management');
+equal(completionNotices[0]?.destination,undefined,'Completion notice must not reopen a stale preparation step');
 
 
 

@@ -6,7 +6,7 @@ import {itemDef} from '../src/content/items';
 import {acquisitionEstimateLabel,acquisitionProjectionForDestination,activeActivityLevelPace,activityProgressFeedback,characterLevelPace,combatBaselineProjection,craftingPaceProjection,dropExpectation,dropPaceBand,formatBalanceDuration,gatheringBalanceProjection,skillTargetEta} from '../src/core/balance-projection';
 import {activityCycleSeconds,activityRate} from '../src/core/dashboard';
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
-import {materialAcquisitionChainLabel,materialAcquisitionPlanForDestination,materialAcquisitionPlanSummary} from '../src/core/material-acquisition-plan';
+import {materialAcquisitionChainLabel,materialAcquisitionPlanForDestination,materialAcquisitionPlanSummary,recipePreparationRoute,recipePreparationRouteLabel} from '../src/core/material-acquisition-plan';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 function close(actual:number,expected:number,tolerance:number,message:string){if(Math.abs(actual-expected)>tolerance)throw new Error(message+': expected '+expected+', got '+actual)}
@@ -93,6 +93,23 @@ ok(stockedPlan.complete&&stockedPlan.craftSteps===1&&stockedPlan.totalGold===50&
 
 const poorChain={...chainState,character:{...chainState.character!,gold:0}},poorPlan=materialAcquisitionPlanForDestination(poorChain,'REINFORCED_FITTING',1,fittingDestination);
 ok(!poorPlan.complete&&poorPlan.etaSeconds===undefined&&poorPlan.goldShortfall===100,'A known material chain must withhold its total ETA when the required crafting Gold is unavailable');
+
+const fittingRecipe=RECIPES.find(row=>row.id==='FORGE_REINFORCED_FITTING')!,prepareRoute=recipePreparationRoute(chainState,fittingRecipe);
+ok(prepareRoute.steps.length===4,'Prepare Materials must collapse the Reinforced Fitting dependency graph into four actionable ordered steps');
+ok(prepareRoute.steps.map(step=>step.label).join(' > ')==='Gather 8× Aster-Iron Ore > Smelt Aster-Iron Batch ×1 > Gather 2× Ironwood Log > Forge Reinforced Fitting','Prepare Materials must keep leaf acquisition before dependent processing and the final craft');
+ok(prepareRoute.steps[0].kind==='gathering'&&prepareRoute.steps[0].destination?.kind==='skills'&&prepareRoute.steps[1].kind==='crafting'&&prepareRoute.steps[1].state==='after'&&prepareRoute.steps[3].kind==='final_craft'&&prepareRoute.steps[3].stateLabel==='FINAL','Prepare Materials steps must carry exact navigation types and dependency-aware states');
+ok(prepareRoute.complete&&prepareRoute.totalGold===100&&(prepareRoute.etaSeconds??0)>0&&recipePreparationRouteLabel(prepareRoute).includes('4 steps'),'Fully modeled preparation routes must expose total Gold, total ETA and compact step count');
+ok(prepareRoute.chainLabel.includes('Aster-Iron Ore → Aster-Iron Ingot → Reinforced Fitting')&&prepareRoute.chainLabel.includes('+1 other input'),'Collapsed preparation summary must show the deepest crafted source chain without pretending parallel inputs are absent');
+ok((prepareRoute.preparationEtaSeconds??0)>0&&prepareRoute.knownPreparationEtaSeconds===prepareRoute.preparationEtaSeconds,'Preparation ETA must cover the prerequisite route before the final craft when every source is modeled');
+ok(!!prepareRoute.bottleneck&&prepareRoute.bottleneck.stepId!==prepareRoute.steps[prepareRoute.steps.length-1].id&&(prepareRoute.bottleneck.etaSeconds??0)>0,'Preparation bottleneck must point at the slowest modeled prerequisite rather than the final equipment craft');
+ok(recipePreparationRouteLabel(prepareRoute).includes('prep ~')&&recipePreparationRouteLabel(prepareRoute).includes('bottleneck'),'Collapsed route meta must surface preparation time and bottleneck without expanding the recipe card');
+
+const poorRoute=recipePreparationRoute(poorChain,fittingRecipe);
+ok(!poorRoute.complete&&poorRoute.etaSeconds===undefined&&(poorRoute.preparationEtaSeconds??0)>0,'A Gold shortfall may block the full route while the trustworthy prerequisite preparation ETA remains visible');
+
+const stockedRoute=recipePreparationRoute(stockedChain,fittingRecipe);
+ok(stockedRoute.steps.length===1&&stockedRoute.steps[0].kind==='final_craft','Prepare Materials must omit redundant acquisition steps when all final-recipe ingredients are already owned');
+
 
 
 ok(activityProgressFeedback('gathering',.1)==='Preparing tools…'&&activityProgressFeedback('gathering',.8)==='Finishing the action…','Gathering cycle feedback must describe real progress phases');

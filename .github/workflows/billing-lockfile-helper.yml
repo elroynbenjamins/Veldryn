@@ -21,6 +21,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Print npm registry integrity
+        run: pnpm view expo-iap@5.6.3 dist.integrity
       - name: Regenerate lockfile metadata
         run: pnpm install --lockfile-only --no-frozen-lockfile --fix-lockfile
       - name: Print expo-iap lock entries

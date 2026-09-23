@@ -18,6 +18,8 @@ const qty=(state:GameState,id:string)=>(state.inventory.stacks.find(row=>row.ite
 const v33GearRecipe=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T1')!;
 ok(processingRecipeDef('SMELT_COPPER_INGOT'),'repeatable material processing is timed');
 ok(processingRecipeDef('COOK_SILVERFIN'),'repeatable cooking is timed');
+ok(processingRecipeDef('ENCHANT_DISTILL_WISP_DUST'),'starter Enchanting distillation is timed processing');
+ok(processingRecipeDef('ENCHANT_REGIONAL_CATALYST'),'late-game Enchanting catalyst synthesis is timed processing');
 ok(!processingRecipeDef(v33GearRecipe.id),'Equipment 2.0 gear uses the Forge instead of stackable processing');
 
 let state=fresh();

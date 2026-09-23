@@ -7,7 +7,7 @@ import {itemDef} from '../src/content/items';
 import {acquisitionEstimateLabel,acquisitionProjectionForDestination,activeActivityLevelPace,activityProgressFeedback,characterLevelPace,combatBaselineProjection,craftingPaceProjection,dropExpectation,dropPaceBand,formatBalanceDuration,gatheringBalanceProjection,skillTargetEta} from '../src/core/balance-projection';
 import {activityCycleSeconds,activityRate} from '../src/core/dashboard';
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
-import {materialAcquisitionChainLabel,materialAcquisitionPlanForDestination,materialAcquisitionPlanSummary,materialPreparationProgress,materialPreparationSteps} from '../src/core/material-acquisition-plan';
+import {materialAcquisitionChainLabel,materialAcquisitionPlanForDestination,materialAcquisitionPlanSummary,recipePreparationRoute,recipePreparationRouteLabel} from '../src/core/material-acquisition-plan';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 function close(actual:number,expected:number,tolerance:number,message:string){if(Math.abs(actual-expected)>tolerance)throw new Error(message+': expected '+expected+', got '+actual)}
@@ -100,24 +100,31 @@ const fittingPlan=materialAcquisitionPlanForDestination(chainState,'REINFORCED_F
 ok(fittingPlan.complete&&fittingPlan.craftSteps===2&&fittingPlan.depth===2&&(fittingPlan.etaSeconds??0)>0,'Recursive planner must resolve Reinforced Fitting through its crafted ingot dependency to direct raw sources');
 ok(fittingChain?.includes('8× Aster-Iron Ore')&&fittingChain.includes('2× Ironwood Log'),'Recursive chain summary must expose the actual remaining raw requirements');
 ok(fittingPlan.totalGold===100&&fittingSummary.estimate?.includes('total chain'),'Recursive plan must include both processing craft costs and only publish a total ETA when the full chain is modeled');
-const fittingSteps=materialPreparationSteps(fittingPlan);
-ok(fittingSteps.length===4&&fittingSteps[0].itemId==='ASTER_IRON_ORE'&&fittingSteps[1].kind==='craft'&&fittingSteps[1].itemId==='ASTER_IRON_INGOT'&&fittingSteps[2].itemId==='IRONWOOD_LOG'&&fittingSteps[3].kind==='craft'&&fittingSteps[3].itemId==='REINFORCED_FITTING','Prepare materials must order dependency actions from raw acquisition through intermediate processing to final craft without hard-coding which ranked source method is currently best');
-ok(fittingSteps.every(step=>step.destination&&step.status==='action'),'Fresh modeled preparation steps must deep-link to their exact actionable source');
-const fittingProgress=materialPreparationProgress(fittingSteps);
-ok(fittingProgress.ready===0&&fittingProgress.total===4&&fittingProgress.nextStep?.itemId==='ASTER_IRON_ORE'&&!fittingProgress.blocked,'Smart preparation progress must recommend the first unmet dependency rather than a later craft');
-
 const stockedChain={...chainState,inventory:{...chainState.inventory,stacks:[...chainState.inventory.stacks,{itemId:'ASTER_IRON_INGOT',quantity:2},{itemId:'IRONWOOD_LOG',quantity:2}]}};
 const stockedPlan=materialAcquisitionPlanForDestination(stockedChain,'REINFORCED_FITTING',1,fittingDestination);
 ok(stockedPlan.complete&&stockedPlan.craftSteps===1&&stockedPlan.totalGold===50&&materialAcquisitionChainLabel(stockedPlan)?.includes('ingredients already owned'),'Recursive planner must consume owned intermediate/raw stock once before expanding deeper recipe steps');
-const stockedSteps=materialPreparationSteps(stockedPlan);
-ok(stockedSteps.length===3&&stockedSteps[0].status==='ready'&&stockedSteps[1].status==='ready'&&stockedSteps[2].kind==='craft','Prepare materials must keep owned intermediate/raw requirements visible as satisfied steps before the remaining craft');
-const stockedProgress=materialPreparationProgress(stockedSteps);
-ok(stockedProgress.ready===2&&stockedProgress.nextStep?.itemId==='REINFORCED_FITTING'&&!stockedProgress.blocked,'Smart preparation progress must advance to the final craft after owned prerequisites are satisfied');
 
 const poorChain={...chainState,character:{...chainState.character!,gold:0}},poorPlan=materialAcquisitionPlanForDestination(poorChain,'REINFORCED_FITTING',1,fittingDestination);
 ok(!poorPlan.complete&&poorPlan.etaSeconds===undefined&&poorPlan.goldShortfall===100,'A known material chain must withhold its total ETA when the required crafting Gold is unavailable');
-const poorStocked={...stockedChain,character:{...stockedChain.character!,gold:0}},poorStockedPlan=materialAcquisitionPlanForDestination(poorStocked,'REINFORCED_FITTING',1,fittingDestination),poorStockedSteps=materialPreparationSteps(poorStockedPlan),poorStockedProgress=materialPreparationProgress(poorStockedSteps);
-ok(poorStockedProgress.ready===2&&poorStockedProgress.nextStep?.itemId==='REINFORCED_FITTING'&&poorStockedProgress.blocked&&poorStockedSteps[2].detail.includes('Need 50 more Gold'),'When materials are ready but Gold is short, the final craft must become the blocked next step instead of a false action');
+
+const fittingRecipe=RECIPES.find(row=>row.id==='FORGE_REINFORCED_FITTING')!,prepareRoute=recipePreparationRoute(chainState,fittingRecipe);
+ok(prepareRoute.steps.length===4,'Prepare Materials must collapse the Reinforced Fitting dependency graph into four ordered route steps');
+ok(prepareRoute.steps.map(step=>step.label).join(' > ')==='Gather 8× Aster-Iron Ore > Smelt Aster-Iron Batch ×1 > Gather 2× Ironwood Log > Forge Reinforced Fitting','Prepare Materials must keep leaf acquisition before dependent processing and the final craft');
+ok(prepareRoute.steps[0].kind==='gathering'&&prepareRoute.steps[0].destination?.kind==='skills'&&prepareRoute.steps[1].kind==='crafting'&&prepareRoute.steps[1].state==='after'&&prepareRoute.steps[3].kind==='final_craft'&&prepareRoute.steps[3].stateLabel==='FINAL','Prepare Materials steps must carry exact navigation types and dependency-aware states');
+ok(prepareRoute.complete&&prepareRoute.totalGold===100&&(prepareRoute.etaSeconds??0)>0&&recipePreparationRouteLabel(prepareRoute).includes('4 steps'),'Fully modeled preparation routes must expose total Gold, total ETA and compact step count');
+ok(prepareRoute.chainLabel.includes('Aster-Iron Ore → Aster-Iron Ingot → Reinforced Fitting')&&prepareRoute.chainLabel.includes('+1 other input'),'Collapsed preparation summary must show the deepest crafted source chain without hiding parallel inputs');
+ok((prepareRoute.preparationEtaSeconds??0)>0&&prepareRoute.knownPreparationEtaSeconds===prepareRoute.preparationEtaSeconds,'Preparation ETA must cover the prerequisite route before the final craft when every source is modeled');
+ok(!!prepareRoute.bottleneck&&prepareRoute.bottleneck.stepId!==prepareRoute.steps[prepareRoute.steps.length-1].id&&(prepareRoute.bottleneck.etaSeconds??0)>0,'Preparation bottleneck must point at the slowest modeled prerequisite rather than the final equipment craft');
+ok(recipePreparationRouteLabel(prepareRoute).includes('prep ~')&&recipePreparationRouteLabel(prepareRoute).includes('bottleneck'),'Collapsed route meta must surface preparation time and bottleneck without expanding the recipe card');
+
+const batchRoute=recipePreparationRoute(chainState,fittingRecipe,2);
+ok(batchRoute.steps[0].label.includes('16× Aster-Iron Ore')&&batchRoute.steps[2].label.includes('4× Ironwood Log')&&batchRoute.steps[3].label.endsWith('×2'),'Prepare Materials must scale the shared dependency route with the selected processing or Alchemy batch size');
+
+const poorRoute=recipePreparationRoute(poorChain,fittingRecipe);
+ok(!poorRoute.complete&&poorRoute.etaSeconds===undefined&&(poorRoute.preparationEtaSeconds??0)>0&&poorRoute.goldShortfall===100,'A Gold shortfall may block the full route while trustworthy prerequisite preparation ETA remains visible');
+
+const stockedRoute=recipePreparationRoute(stockedChain,fittingRecipe);
+ok(stockedRoute.steps.length===1&&stockedRoute.steps[0].kind==='final_craft','Prepare Materials must hide redundant acquisition steps when all final-recipe ingredients are already owned');
 
 
 ok(activityProgressFeedback('gathering',.1)==='Preparing tools…'&&activityProgressFeedback('gathering',.8)==='Finishing the action…','Gathering cycle feedback must describe real progress phases');

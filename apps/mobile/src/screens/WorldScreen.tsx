@@ -62,7 +62,7 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop,onR
   const travelTarget=WORLD_ZONES.find(zone=>zone.id===travelTargetId);
   return <ScrollView contentContainerStyle={s.root}>
     <Text style={s.kicker}>TRAVEL</Text>
-    <Text accessibilityRole="header" style={s.h}>Asterfall Regions</Text>
+    <Text accessibilityRole="header" style={s.h}>World Regions</Text>
     <Text style={s.sub}>Your location controls which enemies and gathering activities are available.</Text>
 
     <View style={[s.currentCard,{borderColor:current.accent}]}><ZoneSceneArtwork regionId={current.id}/><View style={s.heroShade}/>

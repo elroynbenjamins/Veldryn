@@ -46,6 +46,11 @@ const top=read('src/components/GameTopBar.tsx');
 ok(top.includes('GameModalSurface')&&!top.includes('<Modal'),'Quick navigation must use the shared modal shell');
 ok(top.includes('loading={saving}')&&top.includes('GameButton title="Save five"'),'Quick navigation save must use shared loading/button behavior');
 
+const combat=read('src/screens/CombatScreen.tsx');
+ok(combat.includes('HUNT PLAN')&&combat.includes('accessibilityState={{expanded:showPlan}}'),'Combat must collapse tactic and stop-goal setup behind one accessible Hunt Plan disclosure');
+ok(combat.includes('huntGoalIdFromSnapshot(activeCombat?.huntGoal)')&&combat.includes('HUNT_GOALS[activeGoalId].label.toUpperCase()'),'Combat must restore and display the actual saved active hunt goal instead of resetting its presentation to Open');
+ok(combat.includes("planSummary:{minHeight:76")&&combat.includes('planSummaryOpen:{borderColor:C.info,backgroundColor:C.infoSurface}'),'Hunt Plan must remain a compact theme-semantic setup control');
+
 const inventory=read('src/screens/InventoryScreen.tsx');
 ok(inventory.includes('GameModalSurface')&&!inventory.includes('<Modal'),'Inventory filter must use the shared modal shell');
 ok(inventory.includes('reduceMotion={state.settings.reduceMotion}'),'Inventory modal interactions must respect reduced motion');

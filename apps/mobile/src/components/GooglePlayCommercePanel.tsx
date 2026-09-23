@@ -174,7 +174,7 @@ function AndroidGooglePlayCommercePanel({state,onChange}:Props){
         description={COMMERCE_PRODUCTS.find(row=>row.id==='vip')!.description}
         price={productPrice(byId('vip'))}
         status={benefits.vip?'Owned':undefined}
-        disabled={busy||!signedIn||benefits.vip}
+        disabled={busy||!signedIn||!context||benefits.vip}
         action={benefits.vip?'Owned':'Buy VIP'}
         onPress={()=>void buy('vip')}
       />
@@ -183,7 +183,7 @@ function AndroidGooglePlayCommercePanel({state,onChange}:Props){
         description={COMMERCE_PRODUCTS.find(row=>row.id===vipPlusSku)!.description}
         price={productPrice(byId(vipPlusSku))}
         status={benefits.vipPlus?'Owned':undefined}
-        disabled={busy||!signedIn||benefits.vipPlus}
+        disabled={busy||!signedIn||!context||benefits.vipPlus}
         action={benefits.vipPlus?'Owned':benefits.vip?'Upgrade to VIP+':'Buy VIP+'}
         onPress={()=>void buy(vipPlusSku)}
       />
@@ -192,7 +192,7 @@ function AndroidGooglePlayCommercePanel({state,onChange}:Props){
         description={COMMERCE_PRODUCTS.find(row=>row.id==='supporter_monthly')!.description}
         price={subscriptionPrice(sub,offer)}
         status={benefits.supporter?'Active':undefined}
-        disabled={busy||!signedIn||benefits.supporter||!offer?.offerTokenAndroid}
+        disabled={busy||!signedIn||!context||benefits.supporter||!offer?.offerTokenAndroid}
         action={benefits.supporter?'Active':'Subscribe'}
         onPress={()=>void buy('supporter_monthly')}
       />

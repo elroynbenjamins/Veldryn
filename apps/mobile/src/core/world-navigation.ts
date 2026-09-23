@@ -1,5 +1,5 @@
 import {MONSTERS,MonsterDef} from '../content/monsters';
-import {WORLD_ZONES,type WorldZoneDef} from '../content/world-map';
+import {WORLD_ZONES,type WorldZoneDef,worldZoneInDevelopment} from '../content/world-map';
 import {GATHERING} from '../content/skills';
 import {HERB_NODES} from '../content/herbalism';
 import {GameState} from './types';
@@ -7,11 +7,11 @@ import {ITEMS} from '../content/items';
 
 export type RegionTravelAvailability='available'|'locked'|'inDevelopment';
 export function regionTravelAvailability(state:GameState,zone:WorldZoneDef):RegionTravelAvailability{
-  if(zone.releaseState==='inDevelopment')return 'inDevelopment';
+  if(worldZoneInDevelopment(zone))return 'inDevelopment';
   return (state.character?.level??1)>=zone.minLevel?'available':'locked';
 }
 export function nextRegionUnlock(level:number){
-  return WORLD_ZONES.filter(zone=>zone.releaseState!=='inDevelopment'&&zone.minLevel>level).sort((a,b)=>a.minLevel-b.minLevel)[0];
+  return WORLD_ZONES.filter(zone=>!worldZoneInDevelopment(zone)&&zone.minLevel>level).sort((a,b)=>a.minLevel-b.minLevel)[0];
 }
 export function regionEncounters(state:GameState,zoneName:string,query:string,availableOnly:boolean){
   const search=query.trim().toLowerCase();
@@ -38,7 +38,8 @@ export interface RegionActivitySummary{
 export function regionActivitySummary(state:GameState,regionId:string):RegionActivitySummary{
   const region=WORLD_ZONES.find(zone=>zone.id===regionId);
   if(!region)throw new Error('unknown_region');
-  const unlocked=regionTravelAvailability(state,region)==='available';
+  const released=!worldZoneInDevelopment(region);
+  const unlocked=released&&regionTravelAvailability(state,region)==='available';
   const monsters=MONSTERS.filter(monster=>monster.zone===region.name),regular=monsters.filter(monster=>!monster.boss),bosses=monsters.filter(monster=>monster.boss);
   const gathering=[...GATHERING,...HERB_NODES].filter(activity=>activity.zoneId===region.id);
   const skillLevel=(skillId:string)=>state.skills.find(skill=>skill.skillId===skillId)?.level??1;

@@ -96,6 +96,7 @@ export function normalizeSave(input:any):GameState{
     classSkills:normalizeClassSkills(savedCharacter.classId,savedCharacter.classSkills),
     faith:normalizeFaith(savedCharacter.faith),
     trainingFocus:normalizeTrainingFocus(savedCharacter.trainingFocus),
+    herbalismMethodId:['balanced','quick','careful','bountiful'].includes(savedCharacter.herbalismMethodId)?savedCharacter.herbalismMethodId:'balanced',
     classTraining:input.activity?undefined:normalizeClassDrills(savedCharacter.classTraining),
     classSkillRemainders:Object.fromEntries(Object.entries(savedCharacter.classSkillRemainders??{}).filter(([id,v])=>normalizeClassSkills(savedCharacter.classId,[]).some(s=>s.skillId===id)&&typeof v==='number'&&Number.isFinite(v)&&v>=0&&v<1)),
     bodyPresentation:input.character.bodyPresentation==='female'?'female':'male',

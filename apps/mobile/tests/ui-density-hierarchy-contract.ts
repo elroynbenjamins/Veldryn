@@ -261,6 +261,8 @@ ok(empty.includes('padding:spacing.lg'),'Empty states must avoid excessive verti
 const topBar=read('src/components/GameTopBar.tsx');
 ok(topBar.includes('attentionRows')&&topBar.includes('NEEDS ATTENTION')&&topBar.includes('menuBadge'),'Quick navigation must surface attention both on configured shortcuts and for important destinations outside the configured five');
 ok(topBar.includes('attentionTotal')&&topBar.includes('needs attention'),'Quick navigation menu must announce its attention state accessibly');
+ok(topBar.includes('hiddenAttentionCount')&&topBar.includes('attentionMore'),'Quick navigation must acknowledge additional attention destinations beyond the compact top three');
+ok(sessionOverview.includes('visibleParts=parts.slice(0,4)')&&sessionOverview.includes("readyDisplay=summary.readyTotal>99?'99+'"),'High-attention Home sessions must stay compact instead of growing an unbounded readiness line');
 const primaryNavigation=read('src/components/PrimaryNavigation.tsx');
 const appShell=read('App.tsx');
 const packageJson=read('package.json');

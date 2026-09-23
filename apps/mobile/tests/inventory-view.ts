@@ -107,7 +107,7 @@ const setState={...state,character:{...state.character!,equipment:{...state.char
 const oathboundInspect=itemInspectModel(setState,'T1P_002');
 ok(oathboundInspect.gearDecision?.set?.currentPieces===1&&oathboundInspect.gearDecision.set.previewPieces===2,'Gear Check previews authoritative v33 set-piece progress after equip');
 ok(oathboundInspect.gearDecision?.set?.reached?.pieces===2&&oathboundInspect.gearDecision.set.next?.pieces===4,'Gear Check exposes reached and next v33 set milestones');
-const socketState={...state,character:{...state.character!,gearEnhancements:{STONEHEART_CHEST:{rank:2,failures:0,gemIds:['WARD_SHARD']}}}};
+const socketState={...state,character:{...state.character!,gearEnhancements:{[v33Gear.id]:{rank:2,failures:0,gemIds:['WARD_SHARD']}}}};
 const socketInspect=itemInspectModel(socketState,v33Gear.id);
 ok(socketInspect.gearDecision?.gems[0]?.name==='Ward Shard'&&socketInspect.gearDecision.gems[0].percent===.02&&socketInspect.gearDecision.gems[0].stat==='Defense','Gear Check exposes current socket contribution');
 const otherClassInspect=itemInspectModel(state,otherClassGear.id);

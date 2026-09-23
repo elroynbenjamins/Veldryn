@@ -2,7 +2,7 @@ import {MONSTERS} from '../content/monsters';
 import {QUESTS} from '../content/quests';
 import {GATHERING} from '../content/skills';
 import {WORLD_ZONES} from '../content/world-map';
-import {HERB_NODES} from '../content/herbalism';
+import {HERB_NODES,herbalismMethod} from '../content/herbalism';
 import {alchemyRecipeDef} from '../content/alchemy';
 import {explorationRoute} from '../content/exploration';
 import {FAITH_TIERS} from '../content/faith';
@@ -89,7 +89,7 @@ export function activityCycleSeconds(state:GameState){
   if(faith)return faith.seconds;
   const modifiers=characterPermanentMultipliers(state);
   const environmentMultiplier=state.activity?environmentEffectForActivity(state.activity).effect.actionTimeMultiplier:1;
-  if(!monster){const specialty=gathering?.skillId==='fishing'?modifiers.fishingSpeedMultiplier:gathering?.skillId==='herbalism'?modifiers.herbalismSpeedMultiplier:1;return ((gathering?.seconds??1)*GATHER_TIME_SCALE*(gathering?gatheringPacing(state,gathering).timeMultiplier:1)*environmentMultiplier)/(modifiers.gatheringSpeedMultiplier*specialty);}
+  if(!monster){const specialty=gathering?.skillId==='fishing'?modifiers.fishingSpeedMultiplier:gathering?.skillId==='herbalism'?modifiers.herbalismSpeedMultiplier:1,herbLevel=state.skills.find(row=>row.skillId==='herbalism')?.level??1,method=gathering?.skillId==='herbalism'?herbalismMethod(state.activity?.herbalismMethodId??state.character?.herbalismMethodId,herbLevel):undefined;return ((gathering?.seconds??1)*GATHER_TIME_SCALE*(gathering?gatheringPacing(state,gathering).timeMultiplier:1)*environmentMultiplier*(method?.actionTimeMultiplier??1))/(modifiers.gatheringSpeedMultiplier*specialty);}
   const stats=effectiveStats(state),expected=monster.attack*1.2+monster.defense*.8+monster.level*2.2;
   const boostedPower=Math.max(1,Math.round(stats.power*modifiers.combatPowerMultiplier));
   const adjustedExpected=(expected*COMBAT_EXPECTED_SCALE);
@@ -107,8 +107,8 @@ export function activityRate(state:GameState){
   if(route)return {actionsPerHour:actions,xpPerHour:Math.floor(actions*route.xp*multipliers.skillXpMultiplier),goldPerHour:0};
   if(faith)return {actionsPerHour:actions,xpPerHour:Math.floor(actions*faith.xp),goldPerHour:0};
   const effect=state.activity?environmentEffectForActivity(state.activity).effect:undefined;
-  const baseXp=monster?.xp??gathering?.xp??0,baseGold=monster?monster.gold:0;
-  const xpMultiplier=(effect?.xpMultiplier??1)*(monster?multipliers.characterXpMultiplier:multipliers.skillXpMultiplier);
+  const baseXp=monster?.xp??gathering?.xp??0,baseGold=monster?monster.gold:0,herbLevel=state.skills.find(row=>row.skillId==='herbalism')?.level??1,method=gathering?.skillId==='herbalism'?herbalismMethod(state.activity?.herbalismMethodId??state.character?.herbalismMethodId,herbLevel):undefined;
+  const xpMultiplier=(effect?.xpMultiplier??1)*(method?.xpMultiplier??1)*(monster?multipliers.characterXpMultiplier:multipliers.skillXpMultiplier);
   const goldMultiplier=(effect?.goldMultiplier??1)*(monster?multipliers.goldMultiplier:1);
   return {actionsPerHour:actions,xpPerHour:Math.floor(actions*baseXp*xpMultiplier),goldPerHour:monster?Math.floor(actions*baseGold*goldMultiplier):0};
 }

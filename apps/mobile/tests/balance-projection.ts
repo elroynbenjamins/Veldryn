@@ -1,12 +1,13 @@
 import {createCharacter,newGame,startGathering} from '../src/core/game';
 import {characterTotalXpAtLevel,totalXpAtLevel} from '../src/core/progression';
 import {GATHERING,RECIPES} from '../src/content/skills';
+import {HERB_NODES} from '../src/content/herbalism';
 import {MONSTERS} from '../src/content/monsters';
 import {itemDef} from '../src/content/items';
 import {acquisitionEstimateLabel,acquisitionProjectionForDestination,activeActivityLevelPace,activityProgressFeedback,characterLevelPace,combatBaselineProjection,craftingPaceProjection,dropExpectation,dropPaceBand,formatBalanceDuration,gatheringBalanceProjection,skillTargetEta} from '../src/core/balance-projection';
 import {activityCycleSeconds,activityRate} from '../src/core/dashboard';
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
-import {materialAcquisitionChainLabel,materialAcquisitionPlanForDestination,materialAcquisitionPlanSummary} from '../src/core/material-acquisition-plan';
+import {materialAcquisitionChainLabel,materialAcquisitionPlanForDestination,materialAcquisitionPlanSummary,materialPreparationProgress,materialPreparationSteps} from '../src/core/material-acquisition-plan';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 function close(actual:number,expected:number,tolerance:number,message:string){if(Math.abs(actual-expected)>tolerance)throw new Error(message+': expected '+expected+', got '+actual)}
@@ -17,6 +18,19 @@ const gather=gatheringBalanceProjection(state,greenwood,24);
 ok(gather.cycleSeconds>greenwood.seconds,'Gathering projection must include global pacing/tool/weather modifiers');
 ok(gather.xpPerHour>0&&gather.levelPace.etaSeconds!==undefined,'Gathering projection must expose XP/hour and next-level ETA');
 close(gather.runtimeItemsPerHour,gather.authoredMeanItemsPerHour,.001,'Runtime gathering expectation must honor the authored min/max mean yield');
+const herbNode=HERB_NODES.find(row=>row.id==='DEWLEAF_PATCH')!;
+const herbBase={...state,currentRegionId:'GREENFIELDS',skills:state.skills.map(row=>row.skillId==='herbalism'?{...row,level:70,xp:totalXpAtLevel(70)}:row)};
+const herbBalanced=gatheringBalanceProjection({...herbBase,character:{...herbBase.character!,herbalismMethodId:'balanced'}},herbNode,24);
+const herbQuick=gatheringBalanceProjection({...herbBase,character:{...herbBase.character!,herbalismMethodId:'quick'}},herbNode,24);
+const herbCareful=gatheringBalanceProjection({...herbBase,character:{...herbBase.character!,herbalismMethodId:'careful'}},herbNode,24);
+const herbBountiful=gatheringBalanceProjection({...herbBase,character:{...herbBase.character!,herbalismMethodId:'bountiful'}},herbNode,24);
+ok(herbQuick.cycleSeconds<herbBalanced.cycleSeconds,'Quick Harvest must reduce real Herbalism cycle time');
+ok((herbCareful.rareItemsPerHour??0)>(herbBalanced.rareItemsPerHour??0),'Careful Harvest must improve rare botanical rate');
+ok(herbBountiful.runtimeItemsPerHour>herbBalanced.runtimeItemsPerHour,'Bountiful Harvest must improve normal herb throughput');
+const essenceDestination={kind:'skills' as const,skillId:'herbalism' as const,mode:'gathering' as const,actionId:herbNode.id,regionId:'GREENFIELDS',button:'Harvest',detail:''};
+const essenceAcquisition=acquisitionProjectionForDestination({...herbBase,character:{...herbBase.character!,herbalismMethodId:'careful'}},'ASTERFALL_BOTANICAL_ESSENCE',2,essenceDestination);
+ok(essenceAcquisition?.sourceKind==='gathering'&&(essenceAcquisition.quantityPerHour??0)>0,'Rare botanical essences must have a real current-pace Herbalism acquisition ETA');
+
 const target=skillTargetEta(state,'woodcutting',7,gather.xpPerHour);
 ok((target.etaSeconds??0)>gather.levelPace.etaSeconds!,'Higher skill unlock ETA must include multiple levels of XP');
 const starterToolState={...state,character:{...state.character!,equippedToolIds:{woodcutting:'GREENWOOD_HATCHET'}}};
@@ -86,13 +100,24 @@ const fittingPlan=materialAcquisitionPlanForDestination(chainState,'REINFORCED_F
 ok(fittingPlan.complete&&fittingPlan.craftSteps===2&&fittingPlan.depth===2&&(fittingPlan.etaSeconds??0)>0,'Recursive planner must resolve Reinforced Fitting through its crafted ingot dependency to direct raw sources');
 ok(fittingChain?.includes('8× Aster-Iron Ore')&&fittingChain.includes('2× Ironwood Log'),'Recursive chain summary must expose the actual remaining raw requirements');
 ok(fittingPlan.totalGold===100&&fittingSummary.estimate?.includes('total chain'),'Recursive plan must include both processing craft costs and only publish a total ETA when the full chain is modeled');
+const fittingSteps=materialPreparationSteps(fittingPlan);
+ok(fittingSteps.length===4&&fittingSteps[0].itemId==='ASTER_IRON_ORE'&&fittingSteps[1].kind==='craft'&&fittingSteps[1].itemId==='ASTER_IRON_INGOT'&&fittingSteps[2].itemId==='IRONWOOD_LOG'&&fittingSteps[3].kind==='craft'&&fittingSteps[3].itemId==='REINFORCED_FITTING','Prepare materials must order dependency actions from raw acquisition through intermediate processing to final craft without hard-coding which ranked source method is currently best');
+ok(fittingSteps.every(step=>step.destination&&step.status==='action'),'Fresh modeled preparation steps must deep-link to their exact actionable source');
+const fittingProgress=materialPreparationProgress(fittingSteps);
+ok(fittingProgress.ready===0&&fittingProgress.total===4&&fittingProgress.nextStep?.itemId==='ASTER_IRON_ORE'&&!fittingProgress.blocked,'Smart preparation progress must recommend the first unmet dependency rather than a later craft');
 
 const stockedChain={...chainState,inventory:{...chainState.inventory,stacks:[...chainState.inventory.stacks,{itemId:'ASTER_IRON_INGOT',quantity:2},{itemId:'IRONWOOD_LOG',quantity:2}]}};
 const stockedPlan=materialAcquisitionPlanForDestination(stockedChain,'REINFORCED_FITTING',1,fittingDestination);
 ok(stockedPlan.complete&&stockedPlan.craftSteps===1&&stockedPlan.totalGold===50&&materialAcquisitionChainLabel(stockedPlan)?.includes('ingredients already owned'),'Recursive planner must consume owned intermediate/raw stock once before expanding deeper recipe steps');
+const stockedSteps=materialPreparationSteps(stockedPlan);
+ok(stockedSteps.length===3&&stockedSteps[0].status==='ready'&&stockedSteps[1].status==='ready'&&stockedSteps[2].kind==='craft','Prepare materials must keep owned intermediate/raw requirements visible as satisfied steps before the remaining craft');
+const stockedProgress=materialPreparationProgress(stockedSteps);
+ok(stockedProgress.ready===2&&stockedProgress.nextStep?.itemId==='REINFORCED_FITTING'&&!stockedProgress.blocked,'Smart preparation progress must advance to the final craft after owned prerequisites are satisfied');
 
 const poorChain={...chainState,character:{...chainState.character!,gold:0}},poorPlan=materialAcquisitionPlanForDestination(poorChain,'REINFORCED_FITTING',1,fittingDestination);
 ok(!poorPlan.complete&&poorPlan.etaSeconds===undefined&&poorPlan.goldShortfall===100,'A known material chain must withhold its total ETA when the required crafting Gold is unavailable');
+const poorStocked={...stockedChain,character:{...stockedChain.character!,gold:0}},poorStockedPlan=materialAcquisitionPlanForDestination(poorStocked,'REINFORCED_FITTING',1,fittingDestination),poorStockedSteps=materialPreparationSteps(poorStockedPlan),poorStockedProgress=materialPreparationProgress(poorStockedSteps);
+ok(poorStockedProgress.ready===2&&poorStockedProgress.nextStep?.itemId==='REINFORCED_FITTING'&&poorStockedProgress.blocked&&poorStockedSteps[2].detail.includes('Need 50 more Gold'),'When materials are ready but Gold is short, the final craft must become the blocked next step instead of a false action');
 
 
 ok(activityProgressFeedback('gathering',.1)==='Preparing tools…'&&activityProgressFeedback('gathering',.8)==='Finishing the action…','Gathering cycle feedback must describe real progress phases');

@@ -110,7 +110,7 @@ export const V33_EQUIPMENT_RECIPES:V33EquipmentRecipeDef[]=(catalog.pieces as Ar
     xp:q(tierXp[tier]??120,multiplier),
     gold:q(tierGold[tier]??120,multiplier),
     seconds:clamp(Math.round(range.base*multiplier),range.min,range.max),
-    inputs:ingredients(tier,String(piece.Path),multiplier,skillId),
+    inputs:mergeInputs(ingredients(tier,String(piece.Path),multiplier,skillId)),
     output:{itemId:String(piece['Piece ID']),quantity:1},
     classId,
     characterLevel,

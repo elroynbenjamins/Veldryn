@@ -5,13 +5,14 @@ import {IdentityArtwork} from './SocialIdentity';
 import {compactCharacterSummary,socialGuildRolePresentation,type SocialGuildRole} from '../core/social-identity';
 import {equipmentTheme,radii,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
+import type {PlayerNameStyleSelection} from '../core/player-name-style';
 
 export type CompactIdentityStatusTone='accent'|'good'|'warning'|'info'|'muted';
 
 export function CompactPlayerIdentity({
- name,guildTag,guildTagColorId,className,characterName,level,profileTitle,role,status,statusTone='accent',hint,avatarSize=42,guild=false,
+ name,guildTag,guildTagColorId,nameStyle,reduceMotion=false,className,characterName,level,profileTitle,role,status,statusTone='accent',hint,avatarSize=42,guild=false,
 }:{
- name:string;guildTag?:string|null;guildTagColorId?:string|null;className?:string|null;characterName?:string|null;level?:number|null;
+ name:string;guildTag?:string|null;guildTagColorId?:string|null;nameStyle?:PlayerNameStyleSelection|null;reduceMotion?:boolean;className?:string|null;characterName?:string|null;level?:number|null;
  profileTitle?:string|null;role?:SocialGuildRole;status?:string;statusTone?:CompactIdentityStatusTone;hint?:string;avatarSize?:number;guild?:boolean;
 }){
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
@@ -21,7 +22,7 @@ export function CompactPlayerIdentity({
  return <View style={s.root}>
   <IdentityArtwork name={name} className={className} size={avatarSize} guild={guild}/>
   <View style={s.copy}>
-   <View style={s.nameRow}><View style={s.nameWrap}><GuildTaggedPlayerName name={name} guildTag={guildTag} tagColorId={guildTagColorId} style={s.name}/></View>{rolePresentation?<View style={[s.rolePill,roleStyle]}><Text style={[s.roleText,rolePresentation.tone==='gold'&&s.roleTextGold,rolePresentation.tone==='info'&&s.roleTextInfo]}>{rolePresentation.label.toUpperCase()}</Text></View>:null}</View>
+   <View style={s.nameRow}><View style={s.nameWrap}><GuildTaggedPlayerName name={name} guildTag={guildTag} tagColorId={guildTagColorId} nameStyle={nameStyle} reduceMotion={reduceMotion} style={s.name}/></View>{rolePresentation?<View style={[s.rolePill,roleStyle]}><Text style={[s.roleText,rolePresentation.tone==='gold'&&s.roleTextGold,rolePresentation.tone==='info'&&s.roleTextInfo]}>{rolePresentation.label.toUpperCase()}</Text></View>:null}</View>
    {(characterName||className||level)?<Text numberOfLines={1} style={s.character}>{compactCharacterSummary(characterName??name,className,level)}</Text>:null}
    {profileTitle?<Text numberOfLines={1} style={s.title}>“{profileTitle}”</Text>:null}
    {(status||hint)?<View style={s.metaRow}>{status?<Text numberOfLines={1} style={[s.status,statusStyle]}>{status}</Text>:null}{hint?<Text numberOfLines={1} style={s.hint}>{hint}</Text>:null}</View>:null}

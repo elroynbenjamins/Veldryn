@@ -47,6 +47,7 @@ const activeHuntPlan=workingTowardExecutionPlan(activeHuntState,huntGoal);
 equal(activeHuntPlan.executionState,'active','already active hunt goal is recognized instead of offering a duplicate queue action');
 ok(activeHuntPlan.activeNow,'execution plan marks the matching live activity');
 equal(workingTowardExecutionOverview(activeHuntState).focus?.goal.id,huntGoal.id,'currently active goal becomes the execution focus');
+equal(workingTowardExecutionOverview(activeHuntState).active,1,'execution overview ACTIVE count reflects only the actually running goal');
 
 const copper=workingTowardTrackableItems().find(item=>item.id==='COPPER_ORE');
 ok(copper,'direct-source materials are authorable Working Toward items');
@@ -151,5 +152,7 @@ equal(executionOverview.complete,1,'execution overview counts completed goals');
 ok(!!executionOverview.focus,'execution overview always chooses one focus when goals exist');
 equal(executionOverview.focus?.goal.id,'goal-skill','completed focus is promoted so the player can clear a finished slot');
 ok(executionOverview.queueable>=1,'execution overview counts queueable goal actions');
+equal(executionOverview.queueable,1,'execution overview QUEUEABLE count includes only actions that can be queued now');
+equal(executionOverview.active,0,'execution overview does not label merely incomplete goals as active now');
 
 console.log('PASS: actionable Working Toward navigation and progress');

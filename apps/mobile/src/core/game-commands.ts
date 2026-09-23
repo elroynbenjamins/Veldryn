@@ -26,6 +26,7 @@ import {cancelEquipmentCraft,claimAllReadyEquipmentCrafts,claimEquipmentCraft,cl
 import {claimResonanceCacheV1,dismantleGemV1,gemCombineRecipeIdV1} from './gem-progression-v1';
 import {craftEquipmentPrerequisites} from './equipment-crafting-prerequisites';
 import {buildAdminQaState,refillAdminQaResources} from '../dev/admin-qa-profile';
+import {isTimedProcessingRecipe} from './processing';
 
 /** Commands express intent. Neither a client save nor a client reward is accepted. */
 export interface GameCommand {type:string;args?:Record<string,unknown>}
@@ -33,7 +34,7 @@ export interface VerifiedActivity {kind:'combat'|'gathering'|'crafting'|'boss';c
 export type ForgeCraftResult=ReturnType<typeof claimEquipmentCraft>['result'];
 export interface GameCommandResult {state:GameState;reward?:RewardBundle;activity:GameState['activity'];message?:string;won?:boolean;upgrade?:ReturnType<typeof attemptEquipmentUpgrade>['result'];forgeResults?:ForgeCraftResult[];contributions:VerifiedActivity[]}
 const fields:Record<string,readonly string[]>={
- class_training:[],class_focus:['focus'],faith_practice:['tierId','count'],faith_blessing:['id'],faith_favorite:['id','enabled'],faith_hide:['enabled'],alchemy_start:['id','batches'],
+ class_training:[],class_focus:['focus'],faith_practice:['tierId','count'],faith_blessing:['id'],faith_favorite:['id','enabled'],faith_hide:['enabled'],alchemy_start:['id','batches'],processing_start:['id','batches'],
  companion_monthly:['id'],companion_supplies:[],companion_bond_reward:['id','level'],companion_boss_rematch:[],
  companion_equip:['id'],companion_unequip:[],companion_level:['id'],companion_ascend:['id'],companion_master:['id'],companion_upgrade:['id'],companion_training:[],companion_essence:[],
  companion_trial_start:['ids','floor'],companion_trial_floor:['id','floor'],companion_trial_abandon:['id'],companion_assignment_start:['id','ids'],companion_assignment_claim:['id'],companion_technique:['id','technique'],companion_codex:['id'],companion_showcase:['id','ids'],companion_weekly:['id'],companion_special:['id','ids'],
@@ -132,6 +133,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'faith_favorite':state=updateFaithPreference(state,'favorite',text(a,'id'),a.enabled===true);break;
   case 'faith_hide':state=updateFaithPreference(state,'hide',undefined,a.enabled===true);break;
   case 'alchemy_start':state=game.beginAlchemyBatch(state,text(a,'id'),integer(a,'batches',1,100),now);break;
+  case 'processing_start':state=game.beginProcessingBatch(state,text(a,'id'),integer(a,'batches',1,100),now);break;
   case 'class_focus':{
    const focus=oneOf(a.focus,['balanced','primary','secondary']);if(!state.character)throw new Error('character_required');
    state.character={...state.character,trainingFocus:focus};
@@ -179,6 +181,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'boss':{const result=game.challengeFallenKnight(state,now);state=result.state;message=result.message;won=result.won;if(won)contributions.push({kind:'boss',contentId:'FALLEN_KNIGHT',units:1});break;}
   case 'craft':{
    const id=text(a,'id'),timed=timedEquipmentRecipe(id);
+   if(isTimedProcessingRecipe(id))throw new Error('Repeatable processing must be started as a timed batch.');
    if(timed){const started=startEquipmentCraft(state,id,now);state=started.state;message=started.waiting?'Equipment added to forge backlog':'Equipment crafting started';}
    else {state=game.craftRecipe(state,id,now);contributions.push({kind:'crafting',contentId:id,units:1});}
    break;

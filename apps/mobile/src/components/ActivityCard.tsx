@@ -16,22 +16,22 @@ function duration(seconds:number){
   return hours?`${hours}h ${minutes}m`:`${minutes}m`;
 }
 
-const kindLabel:Record<ActivityKind,string>={combat:'HUNTING',mining:'MINING',woodcutting:'WOODCUTTING',fishing:'FISHING',herbalism:'HERBALISM',alchemy:'ALCHEMY',faith:'FAITH',training:'TRAINING',hunting:'HUNTING',exploration:'EXPLORATION'};
-const nextLabel:Record<ActivityKind,string>={combat:'NEXT ENCOUNTER',mining:'NEXT ACTION',woodcutting:'NEXT ACTION',fishing:'NEXT ACTION',herbalism:'NEXT ACTION',alchemy:'NEXT BREW',faith:'NEXT PRACTICE',training:'NEXT DRILL',hunting:'NEXT HUNT',exploration:'NEXT ROUTE'};
-const rewardLabel:Record<ActivityKind,string>={combat:'kills ready',mining:'actions ready',woodcutting:'actions ready',fishing:'actions ready',herbalism:'actions ready',alchemy:'brews ready',faith:'practices ready',training:'drills ready',hunting:'actions ready',exploration:'routes ready'};
-const feedbackKind=(kind:ActivityKind)=>kind==='combat'?'combat':kind==='alchemy'?'crafting':kind==='faith'?'faith':kind==='training'?'training':kind==='exploration'?'exploration':kind==='hunting'?'hunting':'gathering';
+const kindLabel:Record<ActivityKind,string>={combat:'HUNTING',mining:'MINING',woodcutting:'WOODCUTTING',fishing:'FISHING',herbalism:'HERBALISM',alchemy:'ALCHEMY',processing:'PROCESSING',faith:'FAITH',training:'TRAINING',hunting:'HUNTING',exploration:'EXPLORATION'};
+const nextLabel:Record<ActivityKind,string>={combat:'NEXT ENCOUNTER',mining:'NEXT ACTION',woodcutting:'NEXT ACTION',fishing:'NEXT ACTION',herbalism:'NEXT ACTION',alchemy:'NEXT BREW',processing:'NEXT BATCH',faith:'NEXT PRACTICE',training:'NEXT DRILL',hunting:'NEXT HUNT',exploration:'NEXT ROUTE'};
+const rewardLabel:Record<ActivityKind,string>={combat:'kills ready',mining:'actions ready',woodcutting:'actions ready',fishing:'actions ready',herbalism:'actions ready',alchemy:'brews ready',processing:'batches ready',faith:'practices ready',training:'drills ready',hunting:'actions ready',exploration:'routes ready'};
+const feedbackKind=(kind:ActivityKind)=>kind==='combat'?'combat':kind==='alchemy'||kind==='processing'?'crafting':kind==='faith'?'faith':kind==='training'?'training':kind==='exploration'?'exploration':kind==='hunting'?'hunting':'gathering';
 
 export function ActivityCard({title,kind,activity,cycleSeconds,capHours,preview,rates,levelPace,reduceMotion=false,numberMode='abbreviated',onClaim,onStop}:{title:string;kind:ActivityKind;activity?:ActiveActivity;cycleSeconds:number;capHours:number;preview:RewardBundle;rates:{actionsPerHour:number;xpPerHour:number;goldPerHour:number};levelPace?:LevelPaceProjection;reduceMotion?:boolean;numberMode?:'abbreviated'|'exact';onClaim:()=>void;onStop:()=>void}){
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
   const [showDetails,setShowDetails]=useState(false);
   const pulse=useRef(new Animated.Value(0)).current;
   useEffect(()=>{pulse.setValue(0);if(reduceMotion)return;const loop=Animated.loop(Animated.timing(pulse,{toValue:1,duration:1100,easing:Easing.linear,useNativeDriver:true}));loop.start();return()=>loop.stop()},[pulse,reduceMotion]);
-  const readyCount=kind==='combat'?preview.kills:kind==='alchemy'?(preview.craftingActions??0):kind==='faith'?(preview.faithActions??0):kind==='training'?(preview.trainingActions??0):preview.kills;
+  const readyCount=kind==='combat'?preview.kills:kind==='alchemy'||kind==='processing'?(preview.craftingActions??0):kind==='faith'?(preview.faithActions??0):kind==='training'?(preview.trainingActions??0):preview.kills;
   const hasRewards=readyCount>0||!!preview.stoppedReason;
   const loot=preview.items.map(stack=>`${formatGameNumber(stack.quantity,numberMode)}× ${itemDef(stack.itemId).name}`).join(' · ');
   const capped=preview.elapsedSeconds>=capHours*60*60;
-  const cycleProgress=preview.stoppedReason||capped?1:(preview.elapsedSeconds%cycleSeconds)/cycleSeconds;
-  const remaining=Math.max(1,Math.ceil(cycleSeconds-(preview.elapsedSeconds%cycleSeconds))),goal=activity?.kind==='combat'?huntGoalProgress(activity,preview.kills,preview.championEncounters?.count??0):undefined,momentum=activity?.kind==='combat'?huntMomentumStatus((activity.sessionKills??0)+preview.kills):undefined;
+  const cycleProgress=preview.stoppedReason||capped?1:preview.nextProgressFraction??(preview.elapsedSeconds%cycleSeconds)/cycleSeconds;
+  const remaining=Math.max(1,Math.ceil(cycleSeconds*(1-Math.max(0,Math.min(1,cycleProgress))))),goal=activity?.kind==='combat'?huntGoalProgress(activity,preview.kills,preview.championEncounters?.count??0):undefined,momentum=activity?.kind==='combat'?huntMomentumStatus((activity.sessionKills??0)+preview.kills):undefined;
   return <Panel>
     <View style={s.heading}>
       <View style={s.headingCopy}>

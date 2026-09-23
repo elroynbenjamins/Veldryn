@@ -33,6 +33,7 @@ import {awardClassSkillXp,awardCombatClassXp,characterClassEffects,characterClas
 import {settleFaithPractice,cancelFaithPractice,normalizeFaith,selectedFaithBlessing} from './faith';
 import {HOLY_WATER_ID} from '../content/faith';
 import {previewAlchemyReward,alchemyRefund,startAlchemyBatch,preparationEffects,spendPreparationEncounter} from './alchemy';
+import {previewProcessingReward,processingRefund,startProcessingBatch} from './processing';
 import {potionDef} from '../content/alchemy';
 import {applyTrustedLongTermProgression,reconcileWeeklyOrderRollover} from './long-term-progression-runtime';
 import {applyLocalBalanceSnapshot} from './balance-telemetry';
@@ -45,7 +46,8 @@ import {CHAMPION_DAMAGE_MULTIPLIER,championBonus,isChampionEncounter} from './hu
 import {applyDailySupplyCraft,commitDailySupplyTimedBoost,dailySupplyActivityMode,previewDailySupplyTimedReward} from './daily-supplies';
 import {professionMasteryMultipliers} from './profession-mastery-v40';
 import {huntingXpForKills} from './hunting-progression';
-export const beginAlchemyBatch=startAlchemyBatch;
+export function beginAlchemyBatch(state:GameState,recipeId:string,batches:number,nowMs:number){return startAlchemyBatch(finishClassDrills(state,nowMs),recipeId,batches,nowMs);}
+export function beginProcessingBatch(state:GameState,recipeId:string,batches:number,nowMs:number){return startProcessingBatch(finishClassDrills(state,nowMs),recipeId,batches,nowMs);}
 
 function longTermAccountScope(state:GameState){return state.account.longTermAccountScopeId??`local-account:${state.createdAtMs}`;}
 
@@ -386,6 +388,10 @@ export function previewActivityReward(state:GameState,nowMs:number):RewardBundle
     const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,Math.floor((nowMs-state.activity.lastClaimAtMs)/1000))),base=previewAlchemyReward(state,elapsed);
     return previewDailySupplyTimedReward(state,base,'crafting').reward;
   }
+  if(state.activity?.kind==='processing'){
+    const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,Math.floor((nowMs-state.activity.lastClaimAtMs)/1000))),base=previewProcessingReward(state,elapsed);
+    return previewDailySupplyTimedReward(state,base,'crafting').reward;
+  }
   if(!state.activity||!state.character)return {xp:0,gold:0,items:[],kills:0,elapsedSeconds:0};
   const idleWindow=idleRuleSettlementWindow(state,nowMs),reward=previewStandardActivityRewardWithSupplies(state,idleWindow.settleAtMs).reward;
   return idleWindow.shouldStop&&!reward.stoppedReason?{...reward,stoppedReason:idleWindow.reason}:reward;
@@ -450,6 +456,19 @@ export function claimActivity(state:GameState,nowMs:number){
     const next=commitDailySupplyTimedBoost(nextBase,boost),actions=reward.craftingActions??0;
     const progressed=actions>0?applyTrustedLongTermProgression(next,[{kind:'crafting',contentId:brew.recipeId,units:actions,startedAtMs:state.activity.lastClaimAtMs}],reward,nowMs,{accountId:longTermAccountScope(state),eventId:`alchemy:${state.character?.id??'unknown'}:${brew.recipeId}:${state.activity.lastClaimAtMs}:${nowMs}`}).state:next;
     return {state:progressed,reward};
+  }
+  if(state.activity?.kind==='processing'){
+    if(nowMs<=state.activity.lastClaimAtMs)return {state,reward:previewActivityReward(state,state.activity.lastClaimAtMs)};
+    const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,Math.floor((nowMs-state.activity.lastClaimAtMs)/1000))),baseReward=previewProcessingReward(state,elapsed),boost=previewDailySupplyTimedReward(state,baseReward,'crafting'),reward=boost.reward,processing=state.activity.processing!;
+    const routed=routeRewards(state,reward.items,nowMs),nextXp=(state.skills.find(x=>x.skillId===processing.skillId)?.xp??0)+(reward.xp??0);
+    const skills=state.skills.map(x=>x.skillId===processing.skillId?{...x,xp:Math.min(totalXpAtLevel(100),nextXp),level:levelFromXp(Math.min(totalXpAtLevel(100),nextXp))}:x);
+    const nextBase={...state,...routed,skills,rewardRemainders:reward.nextRewardRemainders,activity:reward.nextProcessingRemaining?{...state.activity,lastClaimAtMs:nowMs,progressFraction:reward.nextProgressFraction,processing:{...processing,remainingBatches:reward.nextProcessingRemaining}}:null} as GameState;
+    const next=commitDailySupplyTimedBoost(nextBase,boost),actions=reward.craftingActions??0;
+    let progressed=actions>0?applyTrustedLongTermProgression(next,[{kind:'crafting',contentId:processing.recipeId,units:actions,startedAtMs:state.activity.lastClaimAtMs}],reward,nowMs,{accountId:longTermAccountScope(state),eventId:`processing:${state.character?.id??'unknown'}:${processing.recipeId}:${state.activity.lastClaimAtMs}:${nowMs}`}).state:next;
+    if(actions>0)progressed=grantEventActivity(progressed,'crafting',nowMs,actions);
+    progressed=refreshQuests(progressed);
+    const finalState=reconcileCombatCompanionUnlocks(progressed,nowMs);
+    return {state:finalState,reward:withCompanionUnlocks(reward,state,finalState)};
   }
   const preview=previewActivityReward(state,nowMs);if(!state.character||!state.activity)return {state,reward:preview};
   const idleWindow=idleRuleSettlementWindow(state,nowMs),settledAtMs=idleWindow.settleAtMs,idleStopReason=idleWindow.shouldStop?idleWindow.reason:undefined,supply=previewStandardActivityRewardWithSupplies(state,settledAtMs),boosted=supply.reward;
@@ -520,6 +539,11 @@ export function stopActivity(state:GameState):GameState{
   if(state.activity?.kind==='alchemy'){
     const brew=state.activity.brew;if(!brew)return {...state,activity:null};
     const refund=alchemyRefund(brew),routed=routeRewards(state,refund.items,state.activity.lastClaimAtMs);
+    return {...state,...routed,character:state.character?{...state.character,gold:state.character.gold+refund.gold}:null,activity:null};
+  }
+  if(state.activity?.kind==='processing'){
+    const processing=state.activity.processing;if(!processing)return {...state,activity:null};
+    const refund=processingRefund(processing),routed=routeRewards(state,refund.items,state.activity.lastClaimAtMs);
     return {...state,...routed,character:state.character?{...state.character,gold:state.character.gold+refund.gold}:null,activity:null};
   }
   return {...state,activity:null,character:state.character?{...state.character,classTraining:undefined}:null}

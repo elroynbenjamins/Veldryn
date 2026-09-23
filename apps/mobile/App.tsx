@@ -332,8 +332,9 @@ const next=discoverCharacterSkins(candidate);stateRef.current=next;setState(next
     const activity=state?.activity;
     if(!activity)return;
     if(activity.kind==='combat'){setTab('Combat');return;}
+    if(activity.kind==='processing'){setSelectedSkill(activity.processing?.skillId);setSkillsMode('crafting');setTab('Skills');return;}
     setSelectedSkill(activity.kind as any);
-    setSkillsMode(activity.kind==='faith'?'faith':'gathering');
+    setSkillsMode(activity.kind==='faith'?'faith':activity.kind==='alchemy'?'crafting':'gathering');
     setTab('Skills');
   }
   if(serverGameplayEnabled&&(auth.loading||online.loading))return <StartupScreen scene={startupScene} language={recoveryLanguage}/>;

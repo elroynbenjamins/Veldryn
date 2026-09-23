@@ -39,6 +39,7 @@ export function migrateSave(input:unknown):GameState{
   const hasV11State=Array.isArray(raw.otherCharacters)
     || activity?.kind==='faith'
     || activity?.kind==='alchemy'
+    || activity?.kind==='processing'
     || !!character?.faith?.selectedBlessingId
     || Number((raw.skills as any[])?.find((skill:any)=>skill?.skillId==='alchemy')?.xp)>0
     || Number((raw.rewardRemainders as any)?.['xp:alchemy'])>0

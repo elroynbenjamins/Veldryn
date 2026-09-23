@@ -19,10 +19,19 @@ export function questDestination(def:QuestDef):QuestDestination{
 }
 export function journalEntries(state:GameState,filter:JournalFilter,query:string){
   const search=query.trim().toLowerCase();
-  return QUESTS.flatMap((def,index)=>{
+  const rows=QUESTS.flatMap((def,index)=>{
     const quest=state.quests.find(item=>item.questId===def.id);
     if(!quest)return [];
     const matches=filter==='all'||(filter==='current'?quest.status==='active'||quest.status==='complete':quest.status===filter);
     return matches&&`${def.name} ${def.description} ${def.location} ${def.story}`.toLowerCase().includes(search)?[{def,quest,chapter:index+1,remaining:Math.max(0,def.required-quest.progress),previous:QUESTS[index-1]?.name}]:[];
   });
+  if(filter!=='current')return rows;
+  return rows.sort((a,b)=>Number(b.quest.status==='complete')-Number(a.quest.status==='complete')||a.chapter-b.chapter);
+}
+export function journalActionSummary(state:GameState){
+  const ready=state.quests.filter(quest=>quest.status==='complete').length;
+  const active=state.quests.filter(quest=>quest.status==='active').length;
+  const locked=state.quests.filter(quest=>quest.status==='locked').length;
+  const claimed=state.quests.filter(quest=>quest.status==='claimed').length;
+  return {ready,active,locked,claimed,total:state.quests.length};
 }

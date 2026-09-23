@@ -60,6 +60,13 @@ ok(planner.includes('backgroundColor:C.selection'),'Working Toward selected opti
 const profile=read('src/components/ProfileAudiencePreviewModal.tsx');
 ok(profile.includes('GameModalHeader')&&profile.includes('trailing={<View'),'Profile audience preview must use shared header with visibility state');
 
+
+const settings=read('src/screens/SettingsScreen.tsx');
+ok(settings.includes("DISCORD_INVITE_URL='https://discord.gg/Db83APvP5y'")&&settings.includes('title="Join Discord"'),'Settings must expose the official Discord invite near the top');
+ok(settings.includes("PRIVACY_POLICY_URL='https://elroynbenjamins.github.io/veldryn/privacy/'")&&settings.includes('title="Privacy Policy"'),'Settings must expose the VELDRYN privacy policy as a bottom action');
+ok(settings.includes('Linking.openURL')&&settings.includes('offlineCapBreakdown(state)'),'Settings external links and AFK reserve summary must be runtime-backed');
+ok(settings.includes('{afk.baseHours}h base · up to {afk.freeMaxHours}h through progression · {afk.maxHours}h maximum')&&settings.includes('VIP +2h · VIP+ +2h extra · Supporter +2h'),'Settings must explain the runtime-backed 8→18→24 hour AFK reserve progression');
+
 const button=read('src/components/GameButton.tsx');
 ok(button.includes('selectedStyle')&&button.includes('C.selectionLine'),'Shared buttons must render selected state, not accessibility state only');
 ok(button.includes("transform:[{translateY:1}]"),'Shared buttons must keep consistent pressed feedback');

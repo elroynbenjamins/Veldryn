@@ -1,4 +1,4 @@
-import {claimActivity,createCharacter,newGame,startCombat,startGathering,BASE_OFFLINE_CAP_HOURS,MAX_OFFLINE_CAP_HOURS} from '../src/core/game';
+import {claimActivity,createCharacter,newGame,startCombat,startGathering,BASE_OFFLINE_CAP_HOURS,FREE_OFFLINE_CAP_HOURS,MAX_OFFLINE_CAP_HOURS} from '../src/core/game';
 import {totalXpAtLevel} from '../src/core/progression';
 import type {GameState} from '../src/core/types';
 import type {IdleStopCondition,IdleRuleSet} from '../src/core/idle-rules-v40';
@@ -88,6 +88,7 @@ function withRule(state:GameState,condition:IdleStopCondition,options?:Partial<P
  eq(result.reward.kills,1,'free-slot threshold should stop on first new storage stack');
 }
 
-eq(BASE_OFFLINE_CAP_HOURS,24,'Advanced Idle Rules must not alter 24h base reserve');
-eq(MAX_OFFLINE_CAP_HOURS,36,'Advanced Idle Rules must not alter 36h hard maximum');
+eq(BASE_OFFLINE_CAP_HOURS,8,'Advanced Idle Rules must not alter 8h base reserve');
+eq(FREE_OFFLINE_CAP_HOURS,18,'Advanced Idle Rules must not alter 18h progression ceiling');
+eq(MAX_OFFLINE_CAP_HOURS,24,'Advanced Idle Rules must not alter 24h hard maximum');
 console.log('PASS: all V40 Advanced Idle Rule kinds stop at trusted settlement boundaries without extending Offline Reserve');

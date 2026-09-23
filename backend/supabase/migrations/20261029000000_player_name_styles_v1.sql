@@ -10,8 +10,8 @@ security definer
 set search_path=public
 as $$
   with requested as (
-    select distinct value as account_id
-    from unnest(coalesce(p_account_ids,'{}'::uuid[])) as value
+    select distinct u.account_id
+    from unnest(coalesce(p_account_ids,'{}'::uuid[])) as u(account_id)
     limit 100
   ),
   raw as (

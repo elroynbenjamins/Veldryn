@@ -1,6 +1,9 @@
 import {createCharacter,newGame,startGathering} from '../src/core/game';
 import {characterTotalXpAtLevel,totalXpAtLevel} from '../src/core/progression';
 import {GATHERING,RECIPES} from '../src/content/skills';
+import {HERB_NODES} from '../src/content/herbalism';
+import {setHerbalismHarvestMethod} from '../src/core/herbalism';
+import {weatherEffect} from '../src/core/world-weather';
 import {MONSTERS} from '../src/content/monsters';
 import {itemDef} from '../src/content/items';
 import {acquisitionEstimateLabel,acquisitionProjectionForDestination,activeActivityLevelPace,activityProgressFeedback,characterLevelPace,combatBaselineProjection,craftingPaceProjection,dropExpectation,dropPaceBand,formatBalanceDuration,gatheringBalanceProjection,skillTargetEta} from '../src/core/balance-projection';
@@ -36,6 +39,23 @@ const level7Pace=gatheringBalanceProjection(level7Wood,ironwood,24).levelPace,le
 ok((level7Pace.etaSeconds??Infinity)<=3*3600,'A recommended mid-tier gathering node should keep a level around 7 within a few hours');
 ok((level15Pace.etaSeconds??Infinity)<=6*3600,'A recommended high Asterfall gathering node should keep level 15 progression within a long session');
 
+const dewleaf=HERB_NODES.find(row=>row.id==='DEWLEAF_PATCH')!;
+let herbState=createCharacter(newGame(1),'IRONWARDEN','Herbalist');
+const balancedHerb=gatheringBalanceProjection(herbState,dewleaf,24);
+herbState={...herbState,skills:herbState.skills.map(row=>row.skillId==='herbalism'?{...row,level:20,xp:totalXpAtLevel(20)}:row)};
+const quickState=setHerbalismHarvestMethod(herbState,'quick'),quickHerb=gatheringBalanceProjection(quickState,dewleaf,24);
+ok(quickHerb.cycleSeconds<balancedHerb.cycleSeconds,'Quick Harvest must shorten Herbalism action time');
+ok((quickHerb.secondaryChance??0)<(gatheringBalanceProjection(herbState,dewleaf,24).secondaryChance??0),'Quick Harvest must trade away some Wild Essence chance');
+let carefulState={...herbState,skills:herbState.skills.map(row=>row.skillId==='herbalism'?{...row,level:45,xp:totalXpAtLevel(45)}:row)};
+carefulState=setHerbalismHarvestMethod(carefulState,'careful');
+ok((gatheringBalanceProjection(carefulState,dewleaf,24).secondaryChance??0)>(gatheringBalanceProjection(herbState,dewleaf,24).secondaryChance??0),'Careful Harvest must improve rare Wild Essence chance');
+let bountifulState={...herbState,skills:herbState.skills.map(row=>row.skillId==='herbalism'?{...row,level:70,xp:totalXpAtLevel(70)}:row)};
+bountifulState=setHerbalismHarvestMethod(bountifulState,'bountiful');
+const bountiful=gatheringBalanceProjection(bountifulState,dewleaf,24),balanced70=gatheringBalanceProjection({...bountifulState,character:{...bountifulState.character!,herbalismHarvestMethodId:'balanced'}},dewleaf,24);
+ok(bountiful.runtimeItemsPerHour>balanced70.runtimeItemsPerHour&&bountiful.xpPerHour<balanced70.xpPerHour,'Bountiful Harvest must trade XP pace for higher herb throughput');
+ok(itemDef('WILD_ESSENCE').type==='material','Wild Essence must be a real material output');
+for(const weather of ['rain','mist','storm','bloomwind','harvest_wind','snow','frost'] as const){const effect=weatherEffect('herbalism',weather);ok(effect.actionTimeMultiplier<=1||effect.itemMultiplier>=1||effect.dropChanceMultiplier>=1,'Herbalism weather should never be a pure penalty: '+weather);}
+
 state=startGathering(state,'GREENWOOD_TREE',1000);
 const active=activeActivityLevelPace(state,gather.xpPerHour);
 ok(active?.label==='Woodcutting'&&active.level===1,'Active gathering pace must resolve the trained skill');
@@ -64,9 +84,10 @@ ok(expected.averageFindSeconds>echoPace.cycleSeconds,'Rare material average find
 const mossMaterial=rat.drops.find(drop=>drop.itemId==='MOSS_FIBER')!,mossExpected=dropExpectation(mossMaterial.chance,mossMaterial.min,mossMaterial.max,combat.killsPerHour);
 ok(mossExpected.averageFindSeconds<5*60,'Starter required materials should arrive frequently rather than carrying the grind');
 ok(MONSTERS.every(monster=>monster.drops.every(drop=>itemDef(drop.itemId).type!=='gear')),'Monster loot must not bypass Equipment 2.0 crafting with finished gear drops');
-const oracle=MONSTERS.find(row=>row.id==='DUNE_ORACLE')!,oraclePace=combatBaselineProjection(oracle),sigil=oracle.drops.find(drop=>drop.itemId==='SWIFT_SIGIL')!,sigilExpected=dropExpectation(sigil.chance,sigil.min,sigil.max,oraclePace.killsPerHour);
-ok(sigilExpected.averageFindSeconds>=3*3600&&sigilExpected.averageFindSeconds<=12*3600,'Rare build-defining sigils should remain multi-hour chase drops');
-ok(dropPaceBand(sigilExpected.averageFindSeconds).band==='chase','Build-defining sigils should remain explicitly classified as chase rewards');
+const wolf=MONSTERS.find(row=>row.id==='IRONWOOD_WOLF')!,wolfPace=combatBaselineProjection(wolf),rawKeen=wolf.drops.find(drop=>drop.itemId==='raw_gem:stat_keen:g1')!,rawKeenExpected=dropExpectation(rawKeen.chance,rawKeen.min,rawKeen.max,wolfPace.killsPerHour);
+ok(rawKeenExpected.averageFindSeconds>=60*60,'Starter canonical gems should remain meaningful rare finds rather than routine material drops');
+ok(MONSTERS.some(monster=>monster.drops.some(drop=>drop.itemId.startsWith('raw_gem:'))),'Asterfall combat must provide early unrefined canonical gems for Enchanting');
+ok(MONSTERS.every(monster=>monster.drops.every(drop=>!drop.itemId.startsWith('gem:')&&!['EMBER_SHARD','WARD_SHARD','VITALITY_SHARD','EMBERHEART_GEM','WARDHEART_GEM','VITALITY_HEART_GEM','SWIFT_SIGIL','BOSSBANE_SIGIL','BULWARK_SIGIL','RENEWAL_SIGIL'].includes(drop.itemId))),'Monster loot must not bypass Enchanting by dropping directly socketable legacy or canonical gems');
 const boss=MONSTERS.find(row=>row.id==='FALLEN_KNIGHT')!;
 ok(boss.drops.some(drop=>drop.itemId==='TORN_OATHCLOTH'&&drop.chance===1)&&boss.drops.every(drop=>itemDef(drop.itemId).type!=='gear'),'Boss loot must award crafting inputs/special rewards rather than legacy finished gear');
 ok(dropPaceBand(13*3600).band==='long_chase'&&dropPaceBand(5*60).band==='frequent','Drop pace labels must distinguish frequent and long-chase rewards');

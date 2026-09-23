@@ -1,7 +1,9 @@
 import {V33_EQUIPMENT_RECIPES,TIER_CHARACTER_LEVEL_FLOOR,TIER_EQUIPMENT_CRAFT_LEVEL_FLOOR,equipmentCraftSkillForClass,v33EquipmentRecipeForItem} from '../src/content/equipment-recipes-v33';
 import {RECIPES} from '../src/content/skills';
 import {itemDef} from '../src/content/items';
-import {createCharacter,craftRecipe,newGame} from '../src/core/game';
+import {createCharacter,newGame} from '../src/core/game';
+import {claimEquipmentCraft,startEquipmentCraft} from '../src/core/equipment-crafting-queue';
+import {craftedGearInstances} from '../src/core/crafted-gear-instances';
 import {equipmentCraftingPath} from '../src/core/equipment-crafting-path';
 import {itemInspectModel} from '../src/core/item-inspect';
 import {workingTowardItemSource} from '../src/core/working-toward';
@@ -97,7 +99,7 @@ ok(craftSource?.navigation?.kind==='skills'&&craftSource.navigation.recipeId===t
 state={...state,character:{...state.character!,level:t1.characterLevel,gold:100000},skills:state.skills.map(row=>row.skillId==='smithing'?{...row,level:t1.level}:row),inventory:{...state.inventory,stacks:t1.inputs.map(input=>({...input}))}};
 const readyPath=equipmentCraftingPath(state,'T1P_001')!;
 ok(readyPath.canCraftNow&&readyPath.blockers.length===0,'Recipe planner should become READY when all authoritative requirements are met');
-const crafted=craftRecipe(state,t1.id,1000);
-ok(crafted.inventory.stacks.some(row=>row.itemId==='T1P_001'&&row.quantity===1),'Authoritative craft path must actually create the V33 equipment piece');
+const started=startEquipmentCraft(state,t1.id,1000),claimed=claimEquipmentCraft(started.state,started.job.id,started.job.completesAtMs,.5);
+ok(craftedGearInstances(claimed.state).some(row=>row.itemId==='T1P_001'&&row.ownerCharacterId===state.character!.id),'Authoritative timed Forge path must create a character-owned V33 equipment instance');
 
 console.log('PASS: all V33 equipment pieces have paced, sourceable, actionable recipes and craft through the shared authoritative operation');

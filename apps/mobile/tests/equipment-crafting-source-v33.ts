@@ -17,6 +17,7 @@ ok(new Set(V33_EQUIPMENT_RECIPES.map(row=>row.id)).size===2430,'V33 recipe IDs m
 ok(new Set(V33_EQUIPMENT_RECIPES.map(row=>row.output.itemId)).size===2430,'Every V33 piece should have exactly one generated output recipe');
 ok(V33_EQUIPMENT_RECIPES.every(row=>RECIPES.some(recipe=>recipe.id===row.id&&recipe.output.itemId===row.output.itemId)),'All generated V33 recipes must be registered in RECIPES');
 ok(V33_EQUIPMENT_RECIPES.every(row=>row.inputs.length>=2&&row.inputs.every(input=>itemDef(input.itemId).type==='material')),'Every V33 recipe needs registered material inputs');
+ok(V33_EQUIPMENT_RECIPES.every(row=>new Set(row.inputs.map(input=>input.itemId)).size===row.inputs.length),'V33 recipes must merge duplicate material rows before presentation/settlement');
 ok(V33_EQUIPMENT_RECIPES.every(row=>(itemDef(row.output.itemId).requiredLevel??0)>=row.characterLevel),'Every V33 item must carry at least its recipe character-level requirement when equipped');
 ok(RECIPES.find(row=>row.id==='CRAFT_TRACKER_CHEST')?.skillId==='tailoring','Wayfinder class gear must use Tailoring');
 ok(RECIPES.find(row=>row.id==='CRAFT_SPELLGLASS_CHEST')?.skillId==='tailoring','Hexweaver class gear must use Tailoring');

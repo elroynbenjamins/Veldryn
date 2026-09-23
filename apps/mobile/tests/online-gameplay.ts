@@ -9,6 +9,7 @@ async function main(){
  ok(state.character?.id==='server-character'&&state.character.gold===100,'server character identity');
  throws(()=>validateGameCommand({type:'claim',args:{gold:999,now:now+999999}}),'client authority rejected');
  throws(()=>validateGameCommand({type:'constructor'}),'prototype operation rejected');
+ throws(()=>validateGameCommand({type:'processing_start',args:{id:'SMELT_COPPER_INGOT',batches:5,gold:0}}),'processing batch arguments rejected when client forges economy fields');
  throws(()=>executeGameCommand(state,{type:'deposit',args:{id:'TRAVEL_RATION',quantity:-1}},now),'negative inventory rejected');
  throws(()=>executeGameCommand(state,{type:'profile',args:{profileBorderId:'unowned'}},now),'cosmetic entitlement required');
  state=executeGameCommand(state,{type:'start',args:{kind:'combat',id:'MOSS_RAT'}},now).state;

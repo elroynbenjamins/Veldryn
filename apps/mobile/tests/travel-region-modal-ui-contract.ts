@@ -17,7 +17,8 @@ ok(modal.includes('TRAVEL DESTINATION'),'Travel sheet must have clear destinatio
 ok(modal.includes('<ZoneSceneArtwork regionId={zone.id}'),'Travel sheet must reserve a scenic zone hero');
 ok(modal.includes("Travelling changes your active region immediately."),'Travel sheet must make instant region switching explicit');
 ok(!/travel time|seconds|minute|hour/i.test(modal),'Travel sheet must not introduce travel duration or timers');
-ok(modal.includes('title="Travel"'),'Travel sheet must keep one obvious primary action');
+ok(modal.includes('inDevelopment?"In Development":unlocked?"Travel":"Locked"'),'Travel sheet must keep one obvious state-aware primary action');
+ok(modal.includes('disabled={!unlocked}'),'Locked and in-development previews must never trigger travel');
 ok(modal.includes('environment.weatherName'),'Travel sheet should show current destination conditions');
 ok(modal.includes('regionActivitySummary'),'Travel sheet should preview destination activities');
 

@@ -49,5 +49,14 @@ ok(acquisitionPlan.includes('materialAcquisitionChainLabel')&&acquisitionPlan.in
 ok(recipe.includes('row.chainLabel')&&recipe.includes('row.chainBlockedReason'),'Recipe source rows must show recursive crafting chains and explain why a total estimate is withheld');
 ok(recipe.includes('source.chainLabel')&&recipe.includes('source.chainBlockedReason'),'Expanded Other sources must preserve recursive chain context for crafting alternatives');
 ok(quickInspect.includes('source.chainLabel')&&quickInspect.includes('source.chainBlockedReason'),'Item Quick Inspect must expose the same recursive chain context as crafting requirements');
+ok(acquisitionPlan.includes('materialPreparationSteps')&&acquisitionPlan.includes("MaterialPreparationStepKind='owned'|'acquire'|'craft'"),'Recursive material planning must expose ordered preparation steps with owned, acquisition and craft semantics');
+ok(skillNavigation.includes('prepareSteps?:MaterialPreparationStep[]')&&skillNavigation.includes('materialPreparationSteps(plan)'),'Crafting source presentation must carry the ordered preparation plan into the recipe UI');
+ok(recipe.includes('Prepare materials')&&recipe.includes('function PrepareMaterials')&&recipe.includes('steps.map')&&recipe.includes('onNavigate(step.destination!)'),'Recipe cards must expose a compact reusable numbered preparation disclosure whose actionable steps deep-link to exact activities');
+ok(recipe.includes("step.status==='ready'?'READY'")&&recipe.includes('prepareIndexReady'),'Already-owned preparation requirements must stay visibly satisfied instead of disappearing from the ordered flow');
+ok(acquisitionPlan.includes('materialPreparationProgress')&&acquisitionPlan.includes("steps.find(step=>step.status!=='ready')"),'Preparation progress must deterministically select the first unmet dependency as the next step');
+ok(recipe.includes('NEXT STEP')&&recipe.includes('progress.ready')&&recipe.includes('nextStepCard'),'Prepare materials must surface progress and one prominent next-step recommendation');
+ok(recipe.includes("progress.complete?'All steps ready'")&&recipe.includes("progress.ready+'/'+progress.total+' ready'"),'Prepare materials disclosure must summarize completion or compact ready/total progress before expansion');
+ok(recipe.includes("next.status==='blocked'?'NEXT STEP BLOCKED':'NEXT STEP'")&&acquisitionPlan.includes("goldBlocked=path==='root'&&plan.goldShortfall>0"),'Blocked next-step presentation must come from core planner state, including root Gold gating');
+
 
 console.log('PASS: player-facing progression bars, ETAs and drop expectations use shared balance projections');

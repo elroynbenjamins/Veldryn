@@ -24,6 +24,7 @@ import {WORLD_ZONES} from '../content/world-map';
 import {questPresentationMeta} from '../core/quest-presentation';
 import {contractAnticipation} from '../core/progress-anticipation';
 import {fallenKnightWeeklyStatus} from '../core/weekly-boss';
+import {QuestModeSwitch,type QuestMode} from '../components/QuestModeSwitch';
 
 type ClaimMoment={
   key:string;
@@ -46,11 +47,10 @@ function ClaimMomentCard({moment,reduceMotion}:{moment:ClaimMoment;reduceMotion:
   </Animated.View>;
 }
 
-export function QuestScreen({state,onClaim,onClaimContract,onNavigate,onOpenWeeklyOrder,onPinWeeklyOrder,onQueueWeeklyOrder,onStopWeeklyOrder}:{state:GameState;onClaim:(id:string)=>void;onClaimContract:(period:SeasonalPeriod,id:string)=>void;onNavigate:(destination:QuestDestination)=>void;onOpenWeeklyOrder:(order:WeeklyOrder)=>void;onPinWeeklyOrder:(order:WeeklyOrder)=>void;onQueueWeeklyOrder:(order:WeeklyOrder)=>void;onStopWeeklyOrder:(order:WeeklyOrder)=>void}){
+export function QuestScreen({state,mode,onModeChange,focusedWeeklyOrderId,onClaim,onClaimContract,onNavigate,onOpenWeeklyOrder,onPinWeeklyOrder,onQueueWeeklyOrder,onStopWeeklyOrder}:{state:GameState;mode:QuestMode;onModeChange:(mode:QuestMode)=>void;focusedWeeklyOrderId?:string;onClaim:(id:string)=>void;onClaimContract:(period:SeasonalPeriod,id:string)=>void;onNavigate:(destination:QuestDestination)=>void;onOpenWeeklyOrder:(order:WeeklyOrder)=>void;onPinWeeklyOrder:(order:WeeklyOrder)=>void;onQueueWeeklyOrder:(order:WeeklyOrder)=>void;onStopWeeklyOrder:(order:WeeklyOrder)=>void}){
   const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
-  const [filter,setFilter]=useState<JournalFilter>('current'),[query,setQuery]=useState('');
+  const [filter,setFilter]=useState<JournalFilter>('current'),[query,setQuery]=useState(''),[challengePeriod,setChallengePeriod]=useState<'all'|'daily'|'weekly'|'monthly'>('all');
   const [notice,setNotice]=useState(''),[error,setError]=useState(''),[claimMoment,setClaimMoment]=useState<ClaimMoment|null>(null);
-  const [showBoard,setShowBoard]=useState(true),[showContracts,setShowContracts]=useState(false);
   const confirmed=useRef({characterId:state.character?.id,quests:state.quests.filter(q=>q.status==='claimed').map(q=>q.questId),contracts:state.account.seasonalContractClaimIds??[]});
   useEffect(()=>{
     const next={characterId:state.character?.id,quests:state.quests.filter(q=>q.status==='claimed').map(q=>q.questId),contracts:state.account.seasonalContractClaimIds??[]};

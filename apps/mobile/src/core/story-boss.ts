@@ -71,7 +71,7 @@ function mitigation(defense:number){
   return clamp(defense/Math.max(1,defense+110),0,.72);
 }
 
-export function simulateFallenKnightStoryBattle(player:FallenKnightPlayerSnapshot,seed:string):FallenKnightBattleResult{
+export function simulateFallenKnightStoryBattle(player:FallenKnightPlayerSnapshot,seed:string,mode:'story'|'rematch'='story'):FallenKnightBattleResult{
   const monster=MONSTERS.find(row=>row.id==='FALLEN_KNIGHT');
   if(!monster)throw new Error('fallen_knight_missing');
   const bossSecondary=regionalEnemySecondaryStats(monster);
@@ -101,8 +101,10 @@ export function simulateFallenKnightStoryBattle(player:FallenKnightPlayerSnapsho
     phase=next;phasesReached.push(next);
     if(next===2){
       phaseWardUntilMs=atMs+7000;
+      push({atMs:Math.max(0,atMs-220),type:'telegraph',label:'Oathglass Ward forming',abilityId:'OATHGLASS_WARD'});
       push({atMs:atMs+30,type:'phase',label:'PHASE II · Oathglass Ward'});
     }else{
+      push({atMs:Math.max(0,atMs-220),type:'telegraph',label:'The Last Oath ignites',abilityId:'LAST_OATH'});
       push({atMs:atMs+30,type:'phase',label:'PHASE III · Last Oath'});
     }
   };
@@ -119,12 +121,16 @@ export function simulateFallenKnightStoryBattle(player:FallenKnightPlayerSnapsho
         const variance=.94+random01(seed,rngIndex++)*.12;
         const bossWard=now<phaseWardUntilMs ? .86 : 1;
         const base=Math.max(1,player.power*38+player.attack*14-monster.defense*15);
-        const amount=Math.max(1,Math.round(base*variance*player.damageMultiplier*bossWard*(critical?player.critMultiplier:1)));
-        bossHp=Math.max(0,bossHp-amount);
+        const rolledAmount=Math.max(1,Math.round(base*variance*player.damageMultiplier*bossWard*(critical?player.critMultiplier:1)));
+        let nextBossHp=Math.max(0,bossHp-rolledAmount);
+        if(mode==='story'&&phase===1&&nextBossHp<=bossMaxHp*.65)nextBossHp=Math.max(1,Math.ceil(bossMaxHp*.65));
+        else if(mode==='story'&&phase===2&&nextBossHp<=bossMaxHp*.30)nextBossHp=Math.max(1,Math.ceil(bossMaxHp*.30));
+        const amount=Math.max(1,bossHp-nextBossHp);
+        bossHp=nextBossHp;
         push({atMs:now,type:'player_hit',label:critical?'Critical strike!':'Strike',abilityId:'PLAYER_STRIKE',amount,critical});
         const hpPct=bossHp/bossMaxHp;
         if(phase===1&&hpPct<=.65&&bossHp>0)enterPhase(now,2);
-        if(phase===2&&hpPct<=.30&&bossHp>0)enterPhase(now,3);
+        else if(phase===2&&hpPct<=.30&&bossHp>0)enterPhase(now,3);
       }
       nextPlayerAt+=playerAttackIntervalMs;
       continue;

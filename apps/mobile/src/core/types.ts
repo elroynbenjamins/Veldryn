@@ -106,6 +106,7 @@ export interface GameState {
   professionMasteryByAction?:Record<string,import('./profession-mastery-v40').ProfessionMasteryRecord>;
   weeklyOrders?:import('./weekly-orders-v41').WeeklyOrdersState;
   weeklyOrderPendingRewards?:Array<{claimKey:string;rewardRef:string;label:string;weekKey:string;orderId?:string}>;
+  fallenKnightWeekly?:import('./weekly-boss').FallenKnightWeeklyState;
   crossSkillState?:import('./cross-skill-discoveries-v45').CrossSkillState;
   collectionSetState?:import('./collection-sets-v45').CollectionSetState;
   rareDiscoveryState?:import('./rare-idle-discoveries-v46').RareDiscoveryState;

@@ -16,6 +16,7 @@ import {SunscarRegionPanel} from '../components/SunscarRegionPanel';
 import {RegionalCombatPanel} from '../components/RegionalCombatPanel';
 import {RegionalJournalPanel} from '../components/RegionalJournalPanel';
 import {RegionalStoryLeadsPanel} from '../components/RegionalStoryLeadsPanel';
+import {TravelRegionModal} from '../components/TravelRegionModal';
 import {frostmarchCardsV21,frostmarchProgressFromState,type RegionProgressV21} from '../core/region-content-v21';
 import {loadActiveFrostmarchContentVersionV21,loadFrostmarchProgressV21} from '../online/regional-content-v21';
 
@@ -41,6 +42,7 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop,onR
 
   const sunscar=current.id==='SUNSCAR',frostmarch=current.id==='FROSTMARCH';
   const [serverFrostmarchProgress,setServerFrostmarchProgress]=useState<RegionProgressV21|null>(null);
+  const [travelTargetId,setTravelTargetId]=useState<string|undefined>();
   const [activeFrostmarchVersion,setActiveFrostmarchVersion]=useState<string|null>(null);
   useEffect(()=>{
     let mounted=true;
@@ -57,6 +59,7 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop,onR
   ] as const;
   const frostmarchCards=frostmarchCardsV21(level),frostmarchZones=frostmarchCards.zones,frostmarchDungeons=frostmarchCards.dungeons;
   const frostmarchProgress=serverFrostmarchProgress??frostmarchProgressFromState(state);
+  const travelTarget=WORLD_ZONES.find(zone=>zone.id===travelTargetId);
   return <ScrollView contentContainerStyle={s.root}>
     <Text style={s.kicker}>TRAVEL</Text>
     <Text accessibilityRole="header" style={s.h}>Asterfall Regions</Text>
@@ -100,10 +103,17 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop,onR
           <Text style={s.destinationMeta}>{unlocked?`Levels ${zone.minLevel}–${zone.maxLevel} · ${environment.weatherSymbol} ${environment.weatherName}`:`Unlocks at level ${zone.minLevel}`}</Text>
           <Text numberOfLines={1} style={s.destinationContent}>{content}</Text>
           {unlocked&&<Text numberOfLines={2} style={s.destinationSub}>{zone.subtitle}</Text>}
-          <View style={s.travelButton}><GameButton compact title={unlocked?'Travel':`Lv. ${zone.minLevel}`} disabled={!unlocked} tone="secondary" onPress={()=>onTravel(zone.id)}/></View>
+          <View style={s.travelButton}><GameButton compact title={unlocked?'Travel':`Lv. ${zone.minLevel}`} disabled={!unlocked} tone="secondary" onPress={()=>setTravelTargetId(zone.id)}/></View>
         </View>
       </View>;
     })}
+    <TravelRegionModal
+      visible={Boolean(travelTarget)}
+      state={state}
+      zone={travelTarget}
+      onClose={()=>setTravelTargetId(undefined)}
+      onTravel={regionId=>{setTravelTargetId(undefined);onTravel(regionId);}}
+    />
   </ScrollView>;
 }
 

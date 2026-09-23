@@ -52,6 +52,7 @@ const activeHuntPlan=workingTowardExecutionPlan(activeHuntState,huntGoal);
 equal(activeHuntPlan.executionState,'active','already active hunt goal is recognized instead of offering a duplicate queue action');
 ok(activeHuntPlan.activeNow,'execution plan marks the matching live activity');
 equal(workingTowardExecutionOverview(activeHuntState).focus?.goal.id,huntGoal.id,'currently active goal becomes the execution focus');
+equal(workingTowardExecutionOverview(activeHuntState).active,1,'Execution overview RUNNING count includes only the actually active goal');
 
 const copper=workingTowardTrackableItems().find(item=>item.id==='COPPER_ORE');
 ok(copper,'direct-source materials are authorable Working Toward items');
@@ -118,12 +119,16 @@ if(normalizedPreparation.kind==='recipe_preparation'){equal(normalizedPreparatio
 prepState={...prepState,character:{...prepState.character!,progressionGoals:[preparationGoal]}};
 const initialTrackedState=prepState,initialPrepView=recipePreparationTrackingView(prepState,preparationGoal);
 ok(initialPrepView.status==='active'&&initialPrepView.nextLabel.includes('Aster-Iron Ore'),'Tracked preparation starts on the first remaining dependency');
+equal(initialPrepView.stepNumber,1,'Fresh tracked preparation starts on step one');
+ok(initialPrepView.stepLabel.startsWith('Step 1/'),'Tracked preparation exposes mobile-friendly Step X/Y wording');
 ok(initialPrepView.destination.kind!=='info','Tracked preparation next step must be directly navigable when its source is actionable');
 
 prepState={...prepState,inventory:{...prepState.inventory,stacks:[...prepState.inventory.stacks,{itemId:'ASTER_IRON_INGOT',quantity:2},{itemId:'IRONWOOD_LOG',quantity:2}]}};
 const finalReadyState=prepState,finalPrepView=recipePreparationTrackingView(prepState,preparationGoal);
 equal(finalPrepView.current,Math.max(0,preparationGoal.initialStepCount-1),'Owning prerequisites advances preparation progress to the final tracked craft');
 ok(finalPrepView.nextLabel.includes('Reinforced Fitting')&&finalPrepView.destination.kind==='skills','Preparation tracking automatically advances to the final craft');
+equal(finalPrepView.stepNumber,finalPrepView.target,'Final tracked craft is presented as the last authored preparation step');
+equal(finalPrepView.stepLabel,`Step ${finalPrepView.target}/${finalPrepView.target}`,'Final craft step keeps exact Step X/Y wording');
 const advancedNotices=recipePreparationTransitionNotices(initialTrackedState,finalReadyState);
 equal(advancedNotices[0]?.kind,'advanced','Completing tracked prerequisite steps emits one preparation-advanced notice');
 ok(advancedNotices[0]?.message.includes('Next:')&&advancedNotices[0]?.message.includes('Reinforced Fitting'),'Advance notice names the newly active preparation step');
@@ -145,6 +150,7 @@ equal(resumedNotices[0]?.actionLabel,'Open next','Resumed preparation offers the
 prepState={...prepState,inventory:{...prepState.inventory,stacks:[...prepState.inventory.stacks,{itemId:'REINFORCED_FITTING',quantity:1}]}};
 const completedState=prepState,completedPrepView=recipePreparationTrackingView(prepState,preparationGoal);
 ok(completedPrepView.status==='complete'&&completedPrepView.progress===1,'Preparation goal completes only after the tracked output is actually produced');
+equal(completedPrepView.stepLabel,`Step ${completedPrepView.target}/${completedPrepView.target}`,'Completed preparation preserves its final step label');
 equal(workingTowardReadyCount(prepState),1,'Completed preparation goal contributes to Home Working Toward ready count');
 const completionNotices=recipePreparationTransitionNotices(finalReadyState,completedState);
 equal(completionNotices[0]?.kind,'complete','Producing the tracked final output emits a completion notice');
@@ -160,7 +166,9 @@ equal(executionOverview.plans.length,3,'execution planner projects every pinned 
 equal(executionOverview.complete,1,'execution overview counts completed goals');
 ok(!!executionOverview.focus,'execution overview always chooses one focus when goals exist');
 equal(executionOverview.focus?.goal.id,'goal-skill','completed focus is promoted so the player can clear a finished slot');
-ok(executionOverview.queueable>=1,'execution overview counts queueable goal actions');
+equal(executionOverview.queueable,1,'Execution overview READY count includes only goals that can be queued now');
+equal(executionOverview.active,0,'Execution overview does not mislabel merely incomplete goals as running');
+equal(executionOverview.blocked,1,'Execution overview BLOCKED count includes real execution blockers such as locked regions');
 
 
 

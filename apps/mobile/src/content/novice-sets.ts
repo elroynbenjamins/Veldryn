@@ -1,6 +1,7 @@
 import type {ClassId,GearSlot} from '../core/types';
 import type {ItemDef} from './items';
 import type {Recipe} from './skills';
+import {EQUIPMENT_CRAFT_SKILL_BY_CLASS} from './equipment-recipes-v33';
 
 export interface NoviceSetDef {id:string;classId:ClassId;name:string;appearanceId:string;weaponName:string;weaponAttack:number;offhandName?:string;slots:GearSlot[];setBonus:{name:string;attack:number;defense:number;hp:number;description:string};theme:{accent:string;identity:string;material:string};}
 // Runtime v1 names, design v5 class mappings; budgets below are provisional prototype values.
@@ -35,7 +36,7 @@ export const NOVICE_ITEMS:ItemDef[]=NOVICE_SETS.flatMap(set=>set.slots.map(slot=
 export const NOVICE_RECIPES:Recipe[]=NOVICE_SETS.flatMap(set=>set.slots.map(slot=>{
   const stage=NOVICE_STAGE[slot]??4;
   const item=NOVICE_ITEMS.find(item=>item.id===noviceItemId(set.classId,slot))!;
-  return {id:noviceRecipeId(set.classId,slot),name:item.name,skillId:'smithing',level:1,characterLevel:stage,classId:set.classId,noviceSetId:set.id,
+  return {id:noviceRecipeId(set.classId,slot),name:item.name,skillId:EQUIPMENT_CRAFT_SKILL_BY_CLASS[set.classId],level:1,characterLevel:stage,classId:set.classId,noviceSetId:set.id,
     requiresCraftedItemId:prerequisite[slot]?noviceItemId(set.classId,prerequisite[slot]!):undefined,
     // Full loadouts include relic slots now. Keep their investment aligned with
     // the 2× progression economy rather than letting a 24-hour AFK session

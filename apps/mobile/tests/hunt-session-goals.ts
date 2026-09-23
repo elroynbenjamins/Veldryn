@@ -1,6 +1,6 @@
 import {claimActivity,createCharacter,newGame,previewActivityReward,startCombat} from '../src/core/game';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
-import {huntGoalProgress} from '../src/core/hunt-goals';
+import {huntGoalIdFromSnapshot,huntGoalProgress} from '../src/core/hunt-goals';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 function rejects(fn:()=>unknown,message:string){let caught=false;try{fn()}catch{caught=true}ok(caught,message)}
@@ -11,6 +11,7 @@ fifty=startCombat(fifty,'MOSS_RAT',now,undefined,'balanced','kills_50');
 const fiftyPreview=previewActivityReward(fifty,now+4*60*60*1000);
 ok(fiftyPreview.kills===50,'50-kill goal should clamp the preview to exactly 50 kills');
 ok(fiftyPreview.stoppedReason?.includes('Hunt goal reached'),'Kill goal should expose a stop reason');
+ok(huntGoalIdFromSnapshot(fifty.activity?.huntGoal)==='kills_50','Combat setup should restore the exact saved hunt goal when reopened');
 const fiftyClaim=claimActivity(fifty,now+4*60*60*1000);
 ok(!fiftyClaim.state.activity,'Claiming a completed hunt goal should stop the hunt');
 

@@ -48,6 +48,9 @@ const craftingProfessionBrowser=read('src/components/CraftingRecipeBrowser.tsx')
 ok(craftingProfessionBrowser.includes("'tailoring'|'enchanting'")&&craftingProfessionBrowser.includes('TAILORING BENCH')&&craftingProfessionBrowser.includes('ENCHANTING TABLE'),'Tailoring and Enchanting must use the shared recipe browser and distinct workshop identity');
 
 const skills=read('src/screens/SkillsScreen.tsx');
+ok(skills.includes("initialSkill==='smithing'||initialSkill==='tailoring'")&&skills.includes('<EquipmentCraftQueuePanel'),'Smithing and Tailoring must share the timed Equipment Forge queue surface');
+ok(skills.includes('Repeatable processing uses the Active Activity timer.'),'Equipment profession helper text must match the current timed processing model');
+
 ok(!skills.includes('Hunting-specific activities are not available yet'),'Hunting must not regress to a placeholder-only skill screen');
 ok(!skills.includes('this workshop has no trainable recipes available yet'),'Tailoring and Enchanting must not regress to placeholder-only skill screens');
 ok(skills.includes('Train Hunting through monster hunts')&&skills.includes('HUNTING_XP_SHARE')&&skills.includes('Hunting XP/hr'),'Hunting detail must explain its combat-linked progression and current-region pace');

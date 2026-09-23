@@ -170,6 +170,8 @@ ok(workingTowardFocus.includes('Stop at goal')&&workingTowardFocus.includes('foo
 ok(planner.includes("type:'queue_add'")&&planner.includes('enqueueActivity(state,plan.queueActivity)'),'Working Toward queue actions must use trusted online commands and the shared offline queue helper');
 ok(workingTowardExecution.includes('activityQueueCapacity')&&workingTowardExecution.includes('queuedActivityReadiness')&&workingTowardExecution.includes('workingTowardDestinationAvailability'),'Execution planning must reuse authoritative queue capacity/readiness and progression availability');
 ok(workingTowardExecution.includes("stopIfOutOfFood:true")&&workingTowardExecution.includes("stopIfRewardsWouldOverflow:true")&&workingTowardExecution.includes("finishCurrentCycle:true"),'Generated stop-at-goal rules must preserve all idle safety defaults');
+ok(workingTowardExecution.includes('reconcileWorkingTowardGeneratedRules')&&workingTowardExecution.includes("rule.id.startsWith('goal-rule:')"),'Working Toward must clean orphaned generated stop rules when goals disappear');
+ok(read('src/core/game-commands.ts').includes('reconcileWorkingTowardGeneratedRules'),'Trusted goals_set updates must reconcile generated stop rules server-side');
 ok(!workingTowardExecution.includes('travelToRegion')&&!workingTowardExecution.includes("type:'travel'"),'Working Toward execution planning must never auto-travel');
 ok(planner.includes('offlineCapBreakdown(state)')&&planner.includes('Current reserve: {afk.hours}h')&&planner.includes('maximum {afk.maxHours}h'),'Working Toward must explain the live Offline Reserve model rather than stale fixed-hour copy');
 const workingTowardSummary=read('src/components/WorkingTowardSummary.tsx');

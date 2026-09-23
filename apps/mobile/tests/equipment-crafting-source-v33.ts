@@ -1,7 +1,9 @@
-import {V33_EQUIPMENT_RECIPES,v33EquipmentRecipeForItem} from '../src/content/equipment-recipes-v33';
+import {V33_EQUIPMENT_RECIPES,TIER_CHARACTER_LEVEL_FLOOR,TIER_EQUIPMENT_CRAFT_LEVEL_FLOOR,equipmentCraftSkillForClass,v33EquipmentRecipeForItem} from '../src/content/equipment-recipes-v33';
 import {RECIPES} from '../src/content/skills';
 import {itemDef} from '../src/content/items';
-import {createCharacter,craftRecipe,newGame} from '../src/core/game';
+import {createCharacter,newGame} from '../src/core/game';
+import {claimEquipmentCraft,startEquipmentCraft} from '../src/core/equipment-crafting-queue';
+import {craftedGearInstances} from '../src/core/crafted-gear-instances';
 import {equipmentCraftingPath} from '../src/core/equipment-crafting-path';
 import {itemInspectModel} from '../src/core/item-inspect';
 import {workingTowardItemSource} from '../src/core/working-toward';
@@ -15,6 +17,12 @@ ok(new Set(V33_EQUIPMENT_RECIPES.map(row=>row.id)).size===2430,'V33 recipe IDs m
 ok(new Set(V33_EQUIPMENT_RECIPES.map(row=>row.output.itemId)).size===2430,'Every V33 piece should have exactly one generated output recipe');
 ok(V33_EQUIPMENT_RECIPES.every(row=>RECIPES.some(recipe=>recipe.id===row.id&&recipe.output.itemId===row.output.itemId)),'All generated V33 recipes must be registered in RECIPES');
 ok(V33_EQUIPMENT_RECIPES.every(row=>row.inputs.length>=2&&row.inputs.every(input=>itemDef(input.itemId).type==='material')),'Every V33 recipe needs registered material inputs');
+ok(V33_EQUIPMENT_RECIPES.every(row=>row.skillId===equipmentCraftSkillForClass(row.classId)),'Every V33 class must use its authoritative Smithing/Tailoring profession');
+ok(V33_EQUIPMENT_RECIPES.some(row=>row.skillId==='smithing')&&V33_EQUIPMENT_RECIPES.some(row=>row.skillId==='tailoring'),'V33 equipment must contain both Smithing and Tailoring recipes');
+for(const recipe of V33_EQUIPMENT_RECIPES){
+  ok(recipe.characterLevel>=(TIER_CHARACTER_LEVEL_FLOOR[recipe.v33EquipmentTier]??1),recipe.id+' is below its tier character-level floor');
+  ok(recipe.level>=(TIER_EQUIPMENT_CRAFT_LEVEL_FLOOR[recipe.v33EquipmentTier]??1),recipe.id+' is below its tier crafting-skill floor');
+}
 
 const timerRanges:Record<string,[number,number]>={T1:[60,180],T2:[180,360],T3:[300,600],T4:[480,900],T5:[720,1200],T6:[900,1500],T7:[1200,1800],T8:[1500,2400],T9:[1800,2700]};
 for(const recipe of V33_EQUIPMENT_RECIPES){
@@ -32,6 +40,10 @@ const bySlot=(slot:string)=>oathbound.find(row=>itemDef(row.output.itemId).slot=
 ok(bySlot('ring').gold<bySlot('chest').gold&&bySlot('chest').gold<bySlot('weapon').gold,'Slot cost multipliers should keep Ring < Chest < Weapon');
 ok(bySlot('ring').seconds<bySlot('chest').seconds&&bySlot('chest').seconds<=bySlot('weapon').seconds,'Slot timers should preserve meaningful size differences');
 
+const legacyTailoringIds=['CRAFT_QUICKPRAYER_CHEST','CRAFT_TRACKER_CHEST','CRAFT_SPELLGLASS_CHEST','CRAFT_NIGHTFANG_CHEST','CRAFT_STORMCARVED_CHEST'];
+for(const id of legacyTailoringIds)ok(RECIPES.find(row=>row.id===id)?.skillId==='tailoring',id+' must use Tailoring for its leather/cloth/caster class identity');
+ok(RECIPES.find(row=>row.id==='CRAFT_BLOODRUSH_CHEST')?.skillId==='smithing','Ravager heavy gear must remain Smithing');
+
 const t1=v33EquipmentRecipeForItem('T1P_001')!;
 ok(t1.inputs.some(row=>row.itemId==='GREENWOOD_LOG'),'T1 must use early Asterfall gathering rather than late Oathstone');
 ok(!t1.inputs.some(row=>row.itemId==='OATHSTONE_INGOT'),'T1 must not be accidentally routed through the old late-Asterfall generator');
@@ -43,6 +55,8 @@ ok(t8.inputs.some(row=>row.itemId==='FROSTIRON')&&t8.inputs.some(row=>row.itemId
 const materialSourceMonster:Record<string,string>={
   SUNSTONE_ORE:'GLASSBOUND_SENTINEL',AMBERGLASS:'GLASSBOUND_SENTINEL',ASTRAL_SCRIPT:'GLASSBOUND_SENTINEL',
   FROSTIRON:'CHOIR_HUNTER',RIMEGLASS:'CHOIR_HUNTER',CHOIR_BLOOM:'CHOIR_HUNTER',
+  TORN_OATHCLOTH:'OATHGLASS_REVENANT',ECHO_TOUCHED_PELT:'OATHGLASS_REVENANT',
+  BANNER_ASH:'ASHEN_REVENANT',BLACKGLASS_CORE:'BLACKGLASS_MIRELING',
 };
 function projectedFarmHours(recipe:typeof t8){
   return recipe.inputs.reduce((hours,input)=>{
@@ -54,7 +68,7 @@ function projectedFarmHours(recipe:typeof t8){
   },0);
 }
 const highTierBands:Record<string,[number,number]>={
-  T5:[.75,2.75],T6:[.75,3.5],T7:[.75,3.5],T8:[.9,5.5],T9:[1.2,7.0],
+  T5:[.75,3.0],T6:[1.0,4.5],T7:[1.25,5.5],T8:[1.5,7.5],T9:[2.0,10.0],
 };
 for(const tier of Object.keys(highTierBands)){
   const rows=V33_EQUIPMENT_RECIPES.filter(row=>row.v33EquipmentTier===tier);
@@ -67,6 +81,10 @@ for(const tier of Object.keys(highTierBands)){
 }
 const t5Ring=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T5'&&itemDef(row.output.itemId).slot==='ring')!;
 ok(projectedFarmHours(t5Ring)>=.75,'Even the cheapest T5 ring must require at least ~45 minutes of baseline regional farming');
+const minHoursByTier=Object.fromEntries(Object.keys(highTierBands).map(tier=>[tier,Math.min(...V33_EQUIPMENT_RECIPES.filter(row=>row.v33EquipmentTier===tier).map(projectedFarmHours))]));
+ok(minHoursByTier.T6>minHoursByTier.T5&&minHoursByTier.T7>=minHoursByTier.T6&&minHoursByTier.T8>minHoursByTier.T7&&minHoursByTier.T9>minHoursByTier.T8,'Minimum regional equipment grind must scale upward across T5–T9');
+const tailoredT5=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T5'&&row.skillId==='tailoring'&&itemDef(row.output.itemId).slot==='ring')!;
+ok(projectedFarmHours(tailoredT5)>=.75,'Tailoring regional equipment must respect the same minimum farm-time floor as Smithing');
 
 let state=createCharacter(newGame(0),'IRONWARDEN','Crafter','male');
 const path=equipmentCraftingPath(state,'T1P_001')!;
@@ -81,7 +99,7 @@ ok(craftSource?.navigation?.kind==='skills'&&craftSource.navigation.recipeId===t
 state={...state,character:{...state.character!,level:t1.characterLevel,gold:100000},skills:state.skills.map(row=>row.skillId==='smithing'?{...row,level:t1.level}:row),inventory:{...state.inventory,stacks:t1.inputs.map(input=>({...input}))}};
 const readyPath=equipmentCraftingPath(state,'T1P_001')!;
 ok(readyPath.canCraftNow&&readyPath.blockers.length===0,'Recipe planner should become READY when all authoritative requirements are met');
-const crafted=craftRecipe(state,t1.id,1000);
-ok(crafted.inventory.stacks.some(row=>row.itemId==='T1P_001'&&row.quantity===1),'Authoritative craft path must actually create the V33 equipment piece');
+const started=startEquipmentCraft(state,t1.id,1000),claimed=claimEquipmentCraft(started.state,started.job.id,started.job.completesAtMs,.5);
+ok(craftedGearInstances(claimed.state).some(row=>row.itemId==='T1P_001'&&row.ownerCharacterId===state.character!.id),'Authoritative timed Forge path must create a character-owned V33 equipment instance');
 
 console.log('PASS: all V33 equipment pieces have paced, sourceable, actionable recipes and craft through the shared authoritative operation');

@@ -47,3 +47,7 @@ export function recipePreparationGoalRuntime(state:GameState,goal:Extract<Progre
 export function isRecipePreparationGoal(goal:ProgressionGoal):goal is Extract<ProgressionGoal,{kind:'recipe_preparation'}>{
   return goal.kind==='recipe_preparation';
 }
+
+export function recipePreparationReadyCount(state:GameState){
+  return (state.character?.progressionGoals??[]).filter(isRecipePreparationGoal).filter(goal=>recipePreparationGoalRuntime(state,goal).status==='complete').length;
+}

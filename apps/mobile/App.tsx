@@ -20,7 +20,7 @@ import {InventoryScreen} from './src/screens/InventoryScreen';
 import {CharacterScreen} from './src/screens/CharacterScreen';
 import {CombatCompanionPanel} from './src/components/CombatCompanionPanel';
 import {executeGameCommand,type ForgeCraftResult} from './src/core/game-commands';
-import {QuestScreen} from './src/screens/QuestScreen';
+import {QuestScreen,type QuestMode} from './src/screens/QuestScreen';
 import {SkillsScreen} from './src/screens/SkillsScreen';
 import {CompanionsScreen} from './src/screens/CompanionsScreen';
 import {SettingsScreen} from './src/screens/SettingsScreen';
@@ -135,6 +135,8 @@ function VeldrynApp(){
   const [recoveryLanguage,setRecoveryLanguage]=useState<Language>('en');
   const [tab,setCurrentTab]=useState<Tab>('Home');
   const [tabHistory,setTabHistory]=useState<Tab[]>([]);
+  const [questMode,setQuestMode]=useState<QuestMode>('story');
+  const [questFocusOrderId,setQuestFocusOrderId]=useState<string|undefined>();
   const [skillsMode,setSkillsMode]=useState<'gathering'|'crafting'|'novice'|'faith'>('gathering');
   const [selectedSkill,setSelectedSkill]=useState<string|undefined>();
   const [goalActionId,setGoalActionId]=useState<string|undefined>();
@@ -283,6 +285,7 @@ const next=discoverCharacterSkins(candidate);stateRef.current=next;setState(next
   function queueActivity(next:{kind:'combat'|'gathering';id:string;challengeId?:CombatChallengeId;tacticId?:CombatTacticId;goalId?:HuntGoalId}){
     mutateActionQueue({type:'queue_add',args:{kind:next.kind,id:next.id,...(next.challengeId?{challengeId:next.challengeId}:{}),...(next.tacticId?{tacticId:next.tacticId}:{}),...(next.goalId?{goalId:next.goalId}:{})}});
   }
+  function openQuestMode(mode:QuestMode,focusedOrderId?:string){setQuestMode(mode);setQuestFocusOrderId(mode==='contracts'?focusedOrderId:undefined);setTab('Quests');}
   function openWeeklyOrder(order:WeeklyOrder){openWorkingTowardDestination(weeklyOrderDestination(order));}
   function pinWeeklyOrder(order:WeeklyOrder){
     if(!state?.character)return;
@@ -320,7 +323,7 @@ const next=discoverCharacterSkins(candidate);stateRef.current=next;setState(next
       if(destination.mode){setSelectedSkill(destination.skillId);setSkillsMode(destination.mode);setTab('Skills');return;}
       setSelectedSkill(undefined);setTab('Skills');return;
     }
-    if(destination.kind==='contracts'){setTab('Quests');return;}
+    if(destination.kind==='contracts'){openQuestMode('contracts');return;}
     if(destination.kind==='inventory'){setTab('Inventory');return;}
     if(destination.kind==='dungeon'){setGoalDungeonId(destination.dungeonId);setTab('Coop');return;}
     if(destination.kind==='world'){setGoalRegionId(destination.regionId);setTab('World');}

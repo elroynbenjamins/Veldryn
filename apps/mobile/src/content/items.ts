@@ -12,7 +12,7 @@ export interface ItemDef {
   toolSkillId?:GatheringSkillId;toolTier?:number;actionTimeMultiplier?:number;
   rarity?:ItemRarity; passive?:string;
   value:number; salvage?:{itemId:string;quantity:number};
-  classRestriction?:ClassId; noviceSetId?:string; equipmentSetId?:string;
+  classRestriction?:ClassId; requiredLevel?:number; noviceSetId?:string; equipmentSetId?:string; rawGemFamilyId?:string; rawGemGrade?:MobileGemGradeV1;
   gemStat?:GemStat; gemPercent?:number; gemTier?:MobileGemGradeV1; gemKind?:GemSocketKind; gemEffect?:GemEffectId; gemEffectValue?:number;
   /** Canonical five-grade gem identity. Legacy shards/sigils omit these fields and remain migration-compatible. */
   gemFamilyId?:string; gemGrade?:MobileGemGradeV1;

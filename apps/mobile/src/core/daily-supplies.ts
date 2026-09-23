@@ -165,5 +165,5 @@ export function dailySupplyActiveLabel(character:CharacterState|null|undefined){
 }
 export function dailySupplyBank(character:CharacterState|null|undefined){return normalizeDailySupplyBank(character?.dailySupplyBoostBank)??{}}
 export function dailySupplyActivityMode(activity:ActiveActivity|null|undefined):'combat'|'gathering'|'skill'|'crafting'|undefined{
- if(!activity)return undefined;if(activity.kind==='combat')return 'combat';if(['mining','woodcutting','fishing','herbalism'].includes(activity.kind))return 'gathering';if(activity.kind==='alchemy')return 'crafting';return 'skill';
+ if(!activity)return undefined;if(activity.kind==='combat')return 'combat';if(['mining','woodcutting','fishing','herbalism'].includes(activity.kind))return 'gathering';if(activity.kind==='alchemy'||activity.kind==='processing')return 'crafting';return 'skill';
 }

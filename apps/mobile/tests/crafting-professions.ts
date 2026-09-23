@@ -33,8 +33,9 @@ for(const skillId of ['tailoring','enchanting'] as const){
  const goalDestination=progressionGoalDestination(state,goal);
  equal(goalDestination.kind,'skills',skillId+' goal routes to Skills');
  if(goalDestination.kind==='skills'){
-  equal(goalDestination.mode,'crafting',skillId+' goal routes to crafting mode');
   equal(goalDestination.skillId,skillId,skillId+' remains selected');
+  if((skillId==='tailoring'?tailoring:enchanting).length)equal(goalDestination.mode,'crafting',skillId+' goal uses crafting mode when active recipes exist');
+  else ok(goalDestination.mode===undefined,skillId+' must not pretend a crafting recipe catalog exists before replacement content lands');
  }
 }
 

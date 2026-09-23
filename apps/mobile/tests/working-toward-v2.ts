@@ -6,6 +6,8 @@ import {totalXpAtLevel} from '../src/core/progression';
 import {recipePreparationRoute} from '../src/core/material-acquisition-plan';
 import {recipePreparationGoalForRecipe} from '../src/core/recipe-preparation-goals';
 import {recipePreparationTrackingView,recipePreparationTransitionNotices} from '../src/core/recipe-preparation-tracking';
+import {workingTowardExecutionOverview,workingTowardExecutionPlan,workingTowardStopRule} from '../src/core/working-toward-execution';
+import {activityQueueCapacity} from '../src/core/activity-queue';
 
 function fail(message:string):never{throw new Error(message)}
 function ok(value:unknown,message:string){if(!value)fail(message)}
@@ -24,12 +26,33 @@ const huntDestination=progressionGoalDestination(state,huntGoal);
 equal(huntDestination.kind,'combat','monster kill goal routes to Combat');
 if(huntDestination.kind==='combat'){equal(huntDestination.monsterId,'MOSS_RAT','exact monster is retained');equal(huntDestination.regionId,'GREENFIELDS','hunt goal identifies the correct travel region');}
 
+const huntExecution=workingTowardExecutionPlan(state,huntGoal);
+equal(huntExecution.executionState,'ready','same-region unlocked hunt goal is immediately queueable');
+equal(huntExecution.queueActivity?.kind,'combat','hunt goal execution uses the real combat queue');
+equal(huntExecution.queueActivity?.targetId,'MOSS_RAT','hunt goal queue preserves the exact monster');
+const huntStop=workingTowardStopRule(huntGoal,characterId);
+ok(!!huntStop&&huntStop.conditions[0]?.kind==='monster_kills','hunt goal can create a matching stop-at-goal condition');
+equal(huntStop?.conditions[0]?.targetId,'MOSS_RAT','stop-at-goal retains the exact monster');
+equal(huntStop?.conditions[0]?.value,50,'stop-at-goal retains the exact kill target');
+ok(huntStop?.stopIfOutOfFood&&huntStop.stopIfRewardsWouldOverflow&&huntStop.finishCurrentCycle,'generated stop-at-goal rule keeps food, overflow and cycle safety');
+
 const copper=workingTowardTrackableItems().find(item=>item.id==='COPPER_ORE');
 ok(copper,'direct-source materials are authorable Working Toward items');
 const itemGoal:ProgressionGoal={id:'goal-item',characterId,kind:'item_quantity',title:'Copper stockpile',createdAtMs:0,pinnedAtMs:0,itemId:'COPPER_ORE',targetQuantity:25};
 const itemDestination=progressionGoalDestination(state,itemGoal);
 equal(itemDestination.kind,'skills','gathered item goal routes to Skills');
 if(itemDestination.kind==='skills'){equal(itemDestination.actionId,'COPPER_VEIN','item goal deep-links its gathering source');equal(itemDestination.regionId,'OLD_MINES','item source carries its region');}
+
+const copperTravelExecution=workingTowardExecutionPlan(state,itemGoal);
+equal(copperTravelExecution.executionState,'travel','off-region gathered item goal requires explicit travel before queueing');
+ok(copperTravelExecution.queueBlocker?.includes('Old Mines'),'travel-blocked execution names the required region');
+const copperReadyState={...state,currentRegionId:'OLD_MINES',character:{...state.character!,level:20},skills:state.skills.map(skill=>skill.skillId==='mining'?{...skill,level:20,xp:totalXpAtLevel(20)}:skill)};
+const copperReadyExecution=workingTowardExecutionPlan(copperReadyState,itemGoal);
+equal(copperReadyExecution.executionState,'ready','same-region unlocked gathering source becomes queueable');
+equal(copperReadyExecution.queueActivity?.kind,'gathering','item goal execution uses the real gathering queue');
+equal(copperReadyExecution.queueActivity?.targetId,'COPPER_VEIN','item goal queue preserves the exact gathering node');
+const fullQueueState={...copperReadyState,character:{...copperReadyState.character!,activityQueue:Array.from({length:activityQueueCapacity(copperReadyState)},(_,index)=>({kind:'gathering' as const,targetId:'queue-placeholder-'+index}))}};
+equal(workingTowardExecutionPlan(fullQueueState,itemGoal).executionState,'full','goal execution reports authoritative queue capacity instead of overfilling it');
 
 const copperSources=workingTowardItemSourceEntries(state,'COPPER_ORE');
 ok(copperSources.some(source=>source.type==='gathering'&&source.typeLabel==='Gathering'),'Copper source presentation includes its authored gathering route');
@@ -47,6 +70,8 @@ ok(catalystCrafting[0]?.destination.detail.includes('Enchanting Lv 70'),'Catalys
 
 const weeklyGoal:ProgressionGoal={id:'goal-weekly',characterId,kind:'weekly_order',title:'Weekly job',createdAtMs:0,pinnedAtMs:0,orderId:'example',targetProgress:10};
 equal(progressionGoalDestination(state,weeklyGoal).kind,'contracts','weekly goal routes to Contract Board');
+
+ok(workingTowardStopRule(weeklyGoal,characterId)?.conditions[0]?.kind==='weekly_order_progress','weekly goals can arm the authoritative weekly-order stop condition');
 
 equal(nextMasteryGoalRank(0),10,'Untrained action mastery should suggest the first bonus rank');
 equal(nextMasteryGoalRank(10),20,'R10 action mastery should suggest the next authored bonus rank');
@@ -99,6 +124,15 @@ const completionNotices=recipePreparationTransitionNotices(finalReadyState,compl
 equal(completionNotices[0]?.kind,'complete','Producing the tracked final output emits a completion notice');
 equal(completionNotices[0]?.tone,'success','Tracked craft completion uses success feedback');
 ok(completionNotices[0]?.message.includes('Working Toward complete')&&completionNotices[0]?.message.includes('Reinforced Fitting crafted'),'Completion notice identifies the finished tracked output');
+
+
+const executionState={...state,character:{...state.character!,progressionGoals:[huntGoal,itemGoal,{...skillGoal,targetLevel:1}]}};
+const executionOverview=workingTowardExecutionOverview(executionState);
+equal(executionOverview.plans.length,3,'execution planner projects every pinned goal exactly once');
+equal(executionOverview.complete,1,'execution overview counts completed goals');
+ok(!!executionOverview.focus,'execution overview always chooses one focus when goals exist');
+equal(executionOverview.focus?.goal.id,'goal-skill','completed focus is promoted so the player can clear a finished slot');
+ok(executionOverview.queueable>=1,'execution overview counts queueable goal actions');
 
 
 

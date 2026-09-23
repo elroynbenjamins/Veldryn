@@ -62,6 +62,7 @@ export const EFFECT_GEM_CLASS_AFFINITY_V1:Readonly<Record<string,readonly string
 };
 
 export function gemItemId(familyId:string,grade:GemGrade):string{return `gem:${familyId}:g${grade}`;}
+export function rawGemItemId(familyId:string,grade:GemGrade):string{return `raw_gem:${familyId}:g${grade}`;}
 export function findStatGem(familyId:string):StatGemDefinition|undefined{return STAT_GEMS_V1.find(v=>v.familyId===familyId);}
 export function findEffectGem(familyId:string):EffectGemDefinition|undefined{return EFFECT_GEMS_V1.find(v=>v.familyId===familyId);}
 export function validateGemCatalogV1():string[]{const errors:string[]=[];const ids=[...STAT_GEMS_V1,...EFFECT_GEMS_V1].map(v=>v.familyId);if(new Set(ids).size!==ids.length)errors.push('duplicate_family_id');if(STAT_GEMS_V1.length!==12)errors.push('stat_family_count');if(EFFECT_GEMS_V1.length!==20)errors.push('effect_family_count');for(const e of EFFECT_GEMS_V1)if(e.maxEquippedCopies!==3)errors.push(`${e.familyId}:max_copies`);return errors;}

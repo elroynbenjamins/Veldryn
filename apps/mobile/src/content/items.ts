@@ -5,14 +5,14 @@ import {TOOL_ITEMS} from './gathering-tools';
 import {HERB_ITEMS} from './herbalism';
 import {POTION_ITEMS} from './alchemy';
 import {EQUIPMENT_ITEMS_V33} from './equipment-items-v33';
-import {GEM_ITEMS_V1,type MobileGemGradeV1} from './gems-v1';
+import {GEM_ITEMS_V1,RAW_GEM_ITEMS_V1,type MobileGemGradeV1} from './gems-v1';
 export interface ItemDef {
   id:string; name:string; type:'material'|'gear'|'quest'|'food'|'tool'|'gem'|'potion'; slot?:GearSlot;
   attack?:number; defense?:number; hp?:number; heal?:number; readiness?:number;
   toolSkillId?:GatheringSkillId;toolTier?:number;actionTimeMultiplier?:number;
   rarity?:ItemRarity; passive?:string;
   value:number; salvage?:{itemId:string;quantity:number};
-  classRestriction?:ClassId; noviceSetId?:string; equipmentSetId?:string;
+  classRestriction?:ClassId; requiredLevel?:number; noviceSetId?:string; equipmentSetId?:string; rawGemFamilyId?:string; rawGemGrade?:MobileGemGradeV1;
   gemStat?:GemStat; gemPercent?:number; gemTier?:MobileGemGradeV1; gemKind?:GemSocketKind; gemEffect?:GemEffectId; gemEffectValue?:number;
   /** Canonical five-grade gem identity. Legacy shards/sigils omit these fields and remain migration-compatible. */
   gemFamilyId?:string; gemGrade?:MobileGemGradeV1;
@@ -28,6 +28,7 @@ const BASE_ITEMS:ItemDef[]=[
 {id:'GEM_DUST',name:'Gem Dust',type:'material',value:18,rarity:'uncommon'},
 {id:'REGIONAL_CATALYST',name:'Regional Catalyst',type:'material',value:650,rarity:'epic'},
 {id:'RADIANT_CATALYST',name:'Radiant Catalyst',type:'material',value:2400,rarity:'mythic'},
+...RAW_GEM_ITEMS_V1,
 ...GEM_ITEMS_V1,
 {id:'TEMPERING_DUST',name:'Tempering Dust',type:'material',value:22,rarity:'uncommon'},
 {id:'TEMPERING_CORE',name:'Tempering Core',type:'material',value:180,rarity:'rare'},

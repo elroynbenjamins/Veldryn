@@ -67,23 +67,40 @@ export function workingTowardDestinationAvailability(state:GameState,source:Work
  return {status:'ready',label:recipeSource?'AVAILABLE':'READY',detail:recipeSource?'Recipe unlocked.':'Available now.',canNavigate:true};
 }
 
-export function workingTowardItemSource(state:GameState,itemId:string):WorkingTowardDestination{
- const gather=gatherDefs.filter(row=>row.itemId===itemId).sort((a,b)=>(skillLevel(state,b.skillId)>=b.unlockLevel?1:0)-(skillLevel(state,a.skillId)>=a.unlockLevel?1:0)||a.unlockLevel-b.unlockLevel)[0];
- if(gather){
-  const zone=WORLD_ZONES.find(row=>row.id===gather.zoneId);
-  return {kind:'skills',skillId:gather.skillId as SkillId,mode:'gathering',actionId:gather.id,regionId:gather.zoneId,button:`Gather ${gather.name}`,detail:`${gather.name} in ${zone?.name??gather.zoneId} is a direct source.`};
+interface RankedItemSource{
+ destination:WorkingTowardDestination;
+ availability:WorkingTowardDestinationAvailability;
+ typePriority:number;
+ progressionLevel:number;
+}
+
+const sourceStatusPriority:Record<WorkingTowardAvailabilityStatus,number>={ready:0,travel:1,locked:2,info:3};
+
+export function workingTowardItemSources(state:GameState,itemId:string):WorkingTowardDestination[]{
+ const candidates:RankedItemSource[]=[];
+ for(const gather of gatherDefs.filter(row=>row.itemId===itemId)){
+  const zone=WORLD_ZONES.find(row=>row.id===gather.zoneId),destination:WorkingTowardDestination={kind:'skills',skillId:gather.skillId as SkillId,mode:'gathering',actionId:gather.id,regionId:gather.zoneId,button:`Gather ${gather.name}`,detail:`${gather.name} in ${zone?.name??gather.zoneId} is a direct source.`};
+  candidates.push({destination,availability:workingTowardDestinationAvailability(state,destination),typePriority:0,progressionLevel:gather.unlockLevel});
  }
- const recipe=RECIPES.filter(row=>row.output.itemId===itemId).sort((a,b)=>a.level-b.level)[0];
- if(recipe)return {kind:'skills',skillId:recipe.skillId as SkillId,mode:'crafting',recipeId:recipe.id,button:`Craft ${recipe.name}`,detail:`${recipe.name} produces this item.`};
- const drops=MONSTERS.filter(monster=>monster.drops.some(drop=>drop.itemId===itemId)).sort((a,b)=>(state.unlockedMonsterIds.includes(b.id)?1:0)-(state.unlockedMonsterIds.includes(a.id)?1:0)||a.unlockLevel-b.unlockLevel);
- const monster=drops[0];
- if(monster){const region=regionForZoneName(monster.zone);return {kind:'combat',monsterId:monster.id,zoneName:monster.zone,regionId:region?.id,button:`Hunt ${monster.name}`,detail:`${monster.name} in ${monster.zone} drops this item.`};}
- return {kind:'inventory',button:'Open Inventory',detail:'No direct activity source is currently registered; review your stored materials.'};
+ for(const recipe of RECIPES.filter(row=>row.output.itemId===itemId)){
+  const destination:WorkingTowardDestination={kind:'skills',skillId:recipe.skillId as SkillId,mode:'crafting',recipeId:recipe.id,button:`Craft ${recipe.name}`,detail:`${recipe.name} produces this item.`};
+  candidates.push({destination,availability:workingTowardDestinationAvailability(state,destination),typePriority:1,progressionLevel:recipe.level});
+ }
+ for(const monster of MONSTERS.filter(row=>row.drops.some(drop=>drop.itemId===itemId))){
+  const region=regionForZoneName(monster.zone),destination:WorkingTowardDestination={kind:'combat',monsterId:monster.id,zoneName:monster.zone,regionId:region?.id,button:`Hunt ${monster.name}`,detail:`${monster.name} in ${monster.zone} drops this item.`};
+  candidates.push({destination,availability:workingTowardDestinationAvailability(state,destination),typePriority:2,progressionLevel:monster.unlockLevel});
+ }
+ return candidates.sort((a,b)=>sourceStatusPriority[a.availability.status]-sourceStatusPriority[b.availability.status]||a.typePriority-b.typePriority||a.progressionLevel-b.progressionLevel||a.destination.button.localeCompare(b.destination.button)).map(row=>row.destination);
+}
+
+export function workingTowardItemSource(state:GameState,itemId:string):WorkingTowardDestination{
+ return workingTowardItemSources(state,itemId)[0]??{kind:'inventory',button:'Open Inventory',detail:'No direct activity source is currently registered; review your stored materials.'};
 }
 
 export function progressionGoalDestination(state:GameState,goal:ProgressionGoal):WorkingTowardDestination{
  if(goal.kind==='skill_level'){
   if(goal.skillId==='faith')return {kind:'skills',skillId:'faith' as SkillId,mode:'faith',button:'Train Faith',detail:'Open Faith practice and continue toward this level.'};
+  if(goal.skillId==='enchanting')return {kind:'skills',skillId:'enchanting' as SkillId,mode:'crafting',button:'Train Enchanting',detail:'Open the Gem Refinery and refine or combine gems.'};
   if(gatherDefs.some(row=>row.skillId===goal.skillId))return {kind:'skills',skillId:goal.skillId as SkillId,mode:'gathering',button:`Train ${skillLabel(goal.skillId)}`,detail:'Open this gathering skill and choose an available regional node.'};
   if(RECIPES.some(row=>row.skillId===goal.skillId))return {kind:'skills',skillId:goal.skillId as SkillId,mode:'crafting',button:`Train ${skillLabel(goal.skillId)}`,detail:'Open this profession and choose an available recipe.'};
   return {kind:'skills',skillId:goal.skillId as SkillId,button:'Open Skills',detail:`Review ${skillLabel(goal.skillId)} progression.`};

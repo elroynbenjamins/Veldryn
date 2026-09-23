@@ -22,8 +22,8 @@ import {clearActivityQueue,enqueueActivity,moveQueuedActivity,removeQueuedActivi
 import {activateDailySupplyBoost,claimDailySupplies,DAILY_SUPPLY_BOOST_TYPES,dailySupplyBoostLabel} from './daily-supplies';
 import {bulkSalvageSelected,bulkSellSelected,bulkTransferSelected} from './inventory-bulk';
 import {normalizeChatEmoteTrayIds,CHAT_EMOTE_TRAY_SIZE} from './chat-emotes';
-import {cancelEquipmentCraft,claimAllReadyEquipmentCrafts,claimEquipmentCraft,claimForgeJob,moveWaitingEquipmentCraft,startEquipmentCraft,startGemCombine,timedEquipmentRecipe} from './equipment-crafting-queue';
-import {claimResonanceCacheV1,dismantleGemV1,gemCombineRecipeIdV1} from './gem-progression-v1';
+import {cancelEquipmentCraft,claimAllReadyEquipmentCrafts,claimEquipmentCraft,claimForgeJob,moveWaitingEquipmentCraft,startEquipmentCraft,startGemCombine,startGemRefinement,timedEquipmentRecipe} from './equipment-crafting-queue';
+import {claimResonanceCacheV1,dismantleGemV1,gemCombineRecipeIdV1,gemRefineRecipeIdV1} from './gem-progression-v1';
 import {craftEquipmentPrerequisites} from './equipment-crafting-prerequisites';
 import {buildAdminQaState,refillAdminQaResources} from '../dev/admin-qa-profile';
 import {isTimedProcessingRecipe} from './processing';
@@ -43,7 +43,7 @@ const fields:Record<string,readonly string[]>={
  roster_create:['classId','name','body'],roster_switch:['id'],roster_delete:['id','confirmation'],
  equip:['id'],unequip:['slot'],food:['id'],eat:['id'],sell:['id','quantity'],salvage:['id'],
  deposit:['id','quantity'],withdraw:['id','quantity'],deposit_materials:[],bulk_transfer:['location','ids'],bulk_sell:['ids'],bulk_salvage:['ids'],storage:['location'],overflow:[],
- equip_tool:['id'],equip_set:[],upgrade:['id'],socket:['id','gemId'],replace_socket:['id','gemId'],unsocket:['id','index'],gem_combine:['familyId','grade'],gem_dismantle:['gemId','quantity'],resonance_cache_claim:['familyId'],skin:['id'],
+ equip_tool:['id'],equip_set:[],upgrade:['id'],socket:['id','gemId'],replace_socket:['id','gemId'],unsocket:['id','index'],gem_combine:['familyId','grade'],gem_refine:['familyId','grade'],gem_dismantle:['gemId','quantity'],resonance_cache_claim:['familyId'],skin:['id'],
  loadout_save:['index','name'],loadout_apply:['id'],loadout_delete:['id'],goals_set:['goals'],idle_rules_set:['rules','activeId'],daily_supplies_claim:['characterId'],daily_supplies_activate:['type'],
  quest:['id'],seasonal:['period','id'],settings:['settings'],profile:['profileTitle','profileBackgroundId','profileBorderId','selectedCosmeticPetId'],
  event_daily:[],event_cache:[],event_milestones:[],event_discovery:['id'],event_reward:['id'],event_accept:['id'],
@@ -240,6 +240,11 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
    const familyId=text(a,'familyId',80),grade=integer(a,'grade',1,4) as 1|2|3|4;
    const result=startGemCombine(state,gemCombineRecipeIdV1(familyId,grade),now);state=result.state;
    message=result.waiting?'Gem combination added to forge backlog':'Gem combination started';break;
+  }
+  case 'gem_refine':{
+   const familyId=text(a,'familyId',80),grade=integer(a,'grade',1,5) as 1|2|3|4|5;
+   const result=startGemRefinement(state,gemRefineRecipeIdV1(familyId,grade),now);state=result.state;
+   message=result.waiting?'Gem refinement added to forge backlog':'Gem refinement started';break;
   }
   case 'gem_dismantle':{
    const gemId=text(a,'gemId',120),quantity=integer(a,'quantity',1,999);

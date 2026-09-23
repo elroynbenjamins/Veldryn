@@ -62,7 +62,7 @@ export function recipeProgressionAction(state:GameState,recipe:Recipe):SkillProg
 export function bestRecipeTrainingDestination(state:GameState,skillId:RecipeSkillId):WorkingTowardDestination{
  const skillLevel=levelFor(state,skillId);
  const candidates=RECIPES.filter(row=>row.skillId===skillId&&!row.noviceSetId&&row.level<=skillLevel&&(!row.classId||row.classId===state.character?.classId))
-   .sort((a,b)=>Number(recipeTrainingReady(state,b))-Number(recipeTrainingReady(state,a))||b.xp-a.xp||b.level-a.level);
+   .sort((a,b)=>Number(recipeTrainingReady(state,b))-Number(recipeTrainingReady(state,a))||Number(!!b.repeatableTraining)-Number(!!a.repeatableTraining)||b.xp-a.xp||b.level-a.level);
  const best=candidates[0];
  if(best){const ready=recipeTrainingReady(state,best);return {kind:'skills',skillId,mode:'crafting',recipeId:best.id,button:`Train with ${best.name}`,detail:ready?`${best.name} is currently craftable and gives ${best.xp.toLocaleString()} base ${pretty(skillId)} XP.`:`${best.name} is your strongest unlocked training recipe; open it to resolve its missing requirements.`};}
  return {kind:'skills',skillId,mode:'crafting',button:`Train ${pretty(skillId)}`,detail:`Open ${pretty(skillId)} and review currently available recipes.`};

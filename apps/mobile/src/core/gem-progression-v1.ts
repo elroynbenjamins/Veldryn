@@ -1,13 +1,20 @@
 import {itemDef} from '../content/items';
-import {GEM_GRADE_LABEL_V1,MOBILE_GEM_FAMILIES_V1,mobileGemFamilyV1,mobileGemItemIdV1,type MobileGemGradeV1} from '../content/gems-v1';
+import {GEM_GRADE_LABEL_V1,MOBILE_GEM_FAMILIES_V1,mobileGemFamilyV1,mobileGemItemIdV1,mobileRawGemItemIdV1,type MobileGemGradeV1} from '../content/gems-v1';
 import type {ClassId,GameState,ItemStack} from './types';
 
 export const GEM_EFFECT_RESONANCE_CAP_V1=3;
-export const GEM_COMBINE_COSTS_V1:Readonly<Record<1|2|3|4,{to:2|3|4|5;copies:3;dust:number;gold:number;seconds:number;catalystId?:'REGIONAL_CATALYST'|'RADIANT_CATALYST'}>>={
- 1:{to:2,copies:3,dust:0,gold:1500,seconds:5*60},
- 2:{to:3,copies:3,dust:5,gold:5000,seconds:15*60},
- 3:{to:4,copies:3,dust:15,gold:18000,seconds:45*60,catalystId:'REGIONAL_CATALYST'},
- 4:{to:5,copies:3,dust:40,gold:60000,seconds:2*60*60,catalystId:'RADIANT_CATALYST'},
+export const GEM_COMBINE_COSTS_V1:Readonly<Record<1|2|3|4,{to:2|3|4|5;copies:3;dust:number;gold:number;seconds:number;level:number;xp:number;catalystId?:'REGIONAL_CATALYST'|'RADIANT_CATALYST'}>>={
+ 1:{to:2,copies:3,dust:0,gold:1500,seconds:5*60,level:8,xp:140},
+ 2:{to:3,copies:3,dust:5,gold:5000,seconds:15*60,level:20,xp:420},
+ 3:{to:4,copies:3,dust:15,gold:18000,seconds:45*60,level:40,xp:1200,catalystId:'REGIONAL_CATALYST'},
+ 4:{to:5,copies:3,dust:40,gold:60000,seconds:2*60*60,level:60,xp:3200,catalystId:'RADIANT_CATALYST'},
+};
+export const GEM_REFINE_COSTS_V1:Readonly<Record<MobileGemGradeV1,{level:number;xp:number;gold:number;seconds:number;reagents:readonly ItemStack[]}>>={
+ 1:{level:1,xp:90,gold:75,seconds:60,reagents:[{itemId:'WISP_DUST',quantity:2}]},
+ 2:{level:12,xp:240,gold:300,seconds:180,reagents:[{itemId:'WISP_DUST',quantity:4},{itemId:'OATHGLASS_FRAGMENT',quantity:1}]},
+ 3:{level:28,xp:700,gold:900,seconds:600,reagents:[{itemId:'GLOAM_DUST',quantity:2},{itemId:'OATHGLASS_FRAGMENT',quantity:1}]},
+ 4:{level:45,xp:1600,gold:2600,seconds:1200,reagents:[{itemId:'GLOAM_DUST',quantity:5},{itemId:'RIMEGLASS',quantity:1}]},
+ 5:{level:62,xp:3600,gold:8000,seconds:2700,reagents:[{itemId:'RIMEGLASS',quantity:2},{itemId:'RADIANT_CATALYST',quantity:1}]},
 };
 export const GEM_DISMANTLE_DUST_V1:Readonly<Record<MobileGemGradeV1,number>>={1:1,2:3,3:8,4:22,5:60};
 export const GEM_UNSOCKET_COST_V1:Readonly<Record<MobileGemGradeV1,{gold:number;dust:number}>>={
@@ -88,12 +95,36 @@ export function isGemFamilyRecipeUnlockedV1(state:GameState,familyId:string){con
 
 export function gemCodexRowsV1(state:GameState){
  return MOBILE_GEM_FAMILIES_V1.map(family=>{
+  const raw=([1,2,3,4,5] as MobileGemGradeV1[]).map(grade=>({grade,quantity:combinedGemQuantityV1(state,mobileRawGemItemIdV1(family.familyId,grade))}));
   const owned=([1,2,3,4,5] as MobileGemGradeV1[]).map(grade=>({grade,quantity:combinedGemQuantityV1(state,mobileGemItemIdV1(family.familyId,grade))}));
   const equipped=family.kind==='effect'?resonanceForFamilyV1(state,family.familyId).copies:equippedCanonicalGemIdsV1(state).filter(id=>canonicalGemMetaV1(id)?.familyId===family.familyId).length;
   const highestOwned=[...owned].reverse().find(row=>row.quantity>0)?.grade;
   const recipeId=gemFamilyRecipeIdV1(family.familyId);
-  return {family,owned,equipped,highestOwned,recipeId,recipeUnlocked:isGemFamilyRecipeUnlockedV1(state,family.familyId)};
+  return {family,raw,owned,equipped,highestOwned,recipeId,recipeUnlocked:isGemFamilyRecipeUnlockedV1(state,family.familyId)};
  });
+}
+
+export function gemRefineRecipeIdV1(familyId:string,grade:MobileGemGradeV1){return 'gem_refine:'+familyId+':g'+grade;}
+export function parseGemRefineRecipeIdV1(recipeId:string){
+ const match=/^gem_refine:(stat_[a-z_]+|effect_[a-z_]+):g([1-5])$/.exec(recipeId);if(!match)return undefined;
+ const familyId=match[1],grade=Number(match[2]) as MobileGemGradeV1;if(!mobileGemFamilyV1(familyId))return undefined;
+ return {familyId,grade};
+}
+export interface GemRefineRecipeV1{id:string;familyId:string;grade:MobileGemGradeV1;name:string;skillId:'enchanting';level:number;xp:number;inputs:ItemStack[];output:ItemStack;gold:number;seconds:number;}
+export function gemRefineRecipeV1(recipeId:string):GemRefineRecipeV1|undefined{
+ const parsed=parseGemRefineRecipeIdV1(recipeId);if(!parsed)return undefined;
+ const family=mobileGemFamilyV1(parsed.familyId)!;const cost=GEM_REFINE_COSTS_V1[parsed.grade];
+ return {id:recipeId,familyId:parsed.familyId,grade:parsed.grade,name:'Refine '+family.name+' Gem · G'+parsed.grade,skillId:'enchanting',level:cost.level,xp:cost.xp,
+   inputs:[{itemId:mobileRawGemItemIdV1(parsed.familyId,parsed.grade),quantity:1},...cost.reagents.map(row=>({...row}))],
+   output:{itemId:mobileGemItemIdV1(parsed.familyId,parsed.grade),quantity:1},gold:cost.gold,seconds:cost.seconds};
+}
+export function availableGemRefinementsV1(state:GameState){
+ const skill=state.skills.find(row=>row.skillId==='enchanting')?.level??1;
+ return MOBILE_GEM_FAMILIES_V1.flatMap(family=>([1,2,3,4,5] as MobileGemGradeV1[]).map(grade=>{
+  const recipe=gemRefineRecipeV1(gemRefineRecipeIdV1(family.familyId,grade))!,raw=combinedGemQuantityV1(state,mobileRawGemItemIdV1(family.familyId,grade));
+  const inputReady=recipe.inputs.every(input=>combinedGemQuantityV1(state,input.itemId)>=input.quantity),goldReady=(state.character?.gold??0)>=recipe.gold,skillReady=skill>=recipe.level;
+  return {recipe,raw,inputReady,goldReady,skillReady,ready:raw>0&&inputReady&&goldReady&&skillReady};
+ })).filter(row=>row.raw>0);
 }
 
 export function gemCombineRecipeIdV1(familyId:string,fromGrade:1|2|3|4){return 'gem_combine:'+familyId+':g'+fromGrade;}
@@ -102,21 +133,21 @@ export function parseGemCombineRecipeIdV1(recipeId:string){
  const familyId=match[1],fromGrade=Number(match[2]) as 1|2|3|4;if(!mobileGemFamilyV1(familyId))return undefined;
  return {familyId,fromGrade};
 }
-export interface GemCombineRecipeV1{id:string;familyId:string;fromGrade:1|2|3|4;toGrade:2|3|4|5;name:string;inputs:ItemStack[];output:ItemStack;gold:number;seconds:number;}
+export interface GemCombineRecipeV1{id:string;familyId:string;fromGrade:1|2|3|4;toGrade:2|3|4|5;name:string;skillId:'enchanting';level:number;xp:number;inputs:ItemStack[];output:ItemStack;gold:number;seconds:number;}
 export function gemCombineRecipeV1(recipeId:string):GemCombineRecipeV1|undefined{
  const parsed=parseGemCombineRecipeIdV1(recipeId);if(!parsed)return undefined;
  const family=mobileGemFamilyV1(parsed.familyId)!;const cost=GEM_COMBINE_COSTS_V1[parsed.fromGrade];
  const inputs:ItemStack[]=[{itemId:mobileGemItemIdV1(parsed.familyId,parsed.fromGrade),quantity:3}];
  if(cost.dust)inputs.push({itemId:'GEM_DUST',quantity:cost.dust});
  if(cost.catalystId)inputs.push({itemId:cost.catalystId,quantity:1});
- return {id:recipeId,familyId:parsed.familyId,fromGrade:parsed.fromGrade,toGrade:cost.to,name:GEM_GRADE_LABEL_V1[cost.to]+' '+family.name+' Gem',inputs,output:{itemId:mobileGemItemIdV1(parsed.familyId,cost.to),quantity:1},gold:cost.gold,seconds:cost.seconds};
+ return {id:recipeId,familyId:parsed.familyId,fromGrade:parsed.fromGrade,toGrade:cost.to,name:GEM_GRADE_LABEL_V1[cost.to]+' '+family.name+' Gem',skillId:'enchanting',level:cost.level,xp:cost.xp,inputs,output:{itemId:mobileGemItemIdV1(parsed.familyId,cost.to),quantity:1},gold:cost.gold,seconds:cost.seconds};
 }
 export function availableGemCombinesV1(state:GameState){
  return MOBILE_GEM_FAMILIES_V1.flatMap(family=>([1,2,3,4] as const).map(fromGrade=>{
   const recipe=gemCombineRecipeV1(gemCombineRecipeIdV1(family.familyId,fromGrade))!;
   const inputReady=recipe.inputs.every(input=>combinedGemQuantityV1(state,input.itemId)>=input.quantity);
-  const goldReady=(state.character?.gold??0)>=recipe.gold,recipeReady=isGemFamilyRecipeUnlockedV1(state,recipe.familyId);
-  return {recipe,inputReady,goldReady,recipeReady,ready:inputReady&&goldReady&&recipeReady};
+  const goldReady=(state.character?.gold??0)>=recipe.gold,recipeReady=isGemFamilyRecipeUnlockedV1(state,recipe.familyId),skillLevel=state.skills.find(row=>row.skillId==='enchanting')?.level??1,skillReady=skillLevel>=recipe.level;
+  return {recipe,inputReady,goldReady,recipeReady,skillReady,ready:inputReady&&goldReady&&recipeReady&&skillReady};
  })).filter(row=>combinedGemQuantityV1(state,mobileGemItemIdV1(row.recipe.familyId,row.recipe.fromGrade))>0||row.ready);
 }
 
@@ -149,7 +180,7 @@ export function claimResonanceCacheV1(state:GameState,familyId:string,nowMs:numb
  if(!status.ready)throw new Error('Complete three successful Live co-op clears first');
  if(!status.effectChoices.includes(familyId)||family?.kind!=='effect')throw new Error('Choose one of this week’s offered Effect Gems');
  if(status.dustReward<25||status.dustReward>40||status.regionalCatalysts<1)throw new Error('Resonance Cache rewards are not ready');
- let next=addCacheRewardV1(state,mobileGemItemIdV1(familyId,3),1,nowMs);
+ let next=addCacheRewardV1(state,mobileRawGemItemIdV1(familyId,3),1,nowMs);
  next=addCacheRewardV1(next,'GEM_DUST',status.dustReward,nowMs);
  next=addCacheRewardV1(next,'REGIONAL_CATALYST',status.regionalCatalysts,nowMs);
  if(status.radiantCatalysts)next=addCacheRewardV1(next,'RADIANT_CATALYST',status.radiantCatalysts,nowMs);

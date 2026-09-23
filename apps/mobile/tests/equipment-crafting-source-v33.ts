@@ -1,4 +1,4 @@
-import {V33_EQUIPMENT_RECIPES,v33EquipmentRecipeForItem} from '../src/content/equipment-recipes-v33';
+import {EQUIPMENT_CRAFT_SKILL_BY_CLASS,TIER_CHARACTER_LEVEL_FLOOR,TIER_CRAFTING_LEVEL_FLOOR,V33_EQUIPMENT_RECIPES,v33EquipmentRecipeForItem} from '../src/content/equipment-recipes-v33';
 import {RECIPES} from '../src/content/skills';
 import {itemDef} from '../src/content/items';
 import {createCharacter,craftRecipe,newGame} from '../src/core/game';
@@ -6,7 +6,8 @@ import {equipmentCraftingPath} from '../src/core/equipment-crafting-path';
 import {itemInspectModel} from '../src/core/item-inspect';
 import {workingTowardItemSource} from '../src/core/working-toward';
 import {MONSTERS} from '../src/content/monsters';
-import {combatBaselineProjection,dropExpectation} from '../src/core/balance-projection';
+import {HERB_NODES} from '../src/content/herbalism';
+import {combatBaselineProjection,dropExpectation,gatheringBalanceProjection} from '../src/core/balance-projection';
 import {isV33EquipmentCraftingMaterial,v33EquipmentMaterialUse} from '../src/core/equipment-loot-v33';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
@@ -16,6 +17,11 @@ ok(new Set(V33_EQUIPMENT_RECIPES.map(row=>row.id)).size===2430,'V33 recipe IDs m
 ok(new Set(V33_EQUIPMENT_RECIPES.map(row=>row.output.itemId)).size===2430,'Every V33 piece should have exactly one generated output recipe');
 ok(V33_EQUIPMENT_RECIPES.every(row=>RECIPES.some(recipe=>recipe.id===row.id&&recipe.output.itemId===row.output.itemId)),'All generated V33 recipes must be registered in RECIPES');
 ok(V33_EQUIPMENT_RECIPES.every(row=>row.inputs.length>=2&&row.inputs.every(input=>itemDef(input.itemId).type==='material')),'Every V33 recipe needs registered material inputs');
+ok(V33_EQUIPMENT_RECIPES.every(row=>new Set(row.inputs.map(input=>input.itemId)).size===row.inputs.length),'V33 recipes must merge duplicate material rows');
+ok(V33_EQUIPMENT_RECIPES.every(row=>row.skillId===EQUIPMENT_CRAFT_SKILL_BY_CLASS[row.classId]),'Every V33 recipe must use its class primary crafting profession');
+ok(V33_EQUIPMENT_RECIPES.every(row=>row.characterLevel>=(TIER_CHARACTER_LEVEL_FLOOR[row.v33EquipmentTier]??1)),'Every V33 recipe must respect its tier character floor');
+ok(V33_EQUIPMENT_RECIPES.every(row=>row.level>=(TIER_CRAFTING_LEVEL_FLOOR[row.v33EquipmentTier]??1)),'Every V33 recipe must respect its tier profession floor');
+
 const finishedGearDrops=MONSTERS.flatMap(monster=>monster.drops.map(drop=>({monster,drop}))).filter(row=>itemDef(row.drop.itemId).type==='gear');
 ok(finishedGearDrops.length===0,'Combat must not bypass V33 crafting with finished equipment drops');
 const combatFedV33Materials=['MOSS_FIBER','WISP_DUST','BOAR_HIDE','WOLF_PELT','IRONWOOD_FANG','THORN_SAP','TROLL_HIDE','OATHGLASS_SHARD','TORN_OATHCLOTH','LANTERNSTEEL_SHARD','ECHO_QUARTZ','SUNSTONE_ORE','AMBERGLASS','ASTRAL_SCRIPT','FROSTIRON','RIMEGLASS','CHOIR_BLOOM'];
@@ -48,9 +54,9 @@ ok(bySlot('ring').seconds<bySlot('chest').seconds&&bySlot('chest').seconds<=bySl
 const t1=v33EquipmentRecipeForItem('T1P_001')!;
 ok(t1.inputs.some(row=>row.itemId==='GREENWOOD_LOG'),'T1 must use early Asterfall gathering rather than late Oathstone');
 ok(!t1.inputs.some(row=>row.itemId==='OATHSTONE_INGOT'),'T1 must not be accidentally routed through the old late-Asterfall generator');
-const t5=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T5')!;
+const t5=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T5'&&row.skillId==='smithing')!;
 ok(t5.inputs.some(row=>row.itemId==='SUNSTONE_ORE')&&t5.inputs.some(row=>row.itemId==='AMBERGLASS'),'T5 must use Sunscar materials');
-const t8=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T8')!;
+const t8=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T8'&&row.skillId==='smithing')!;
 ok(t8.inputs.some(row=>row.itemId==='FROSTIRON')&&t8.inputs.some(row=>row.itemId==='CHOIR_BLOOM'),'T8 must use Frostmarch materials');
 
 const materialSourceMonster:Record<string,string>={
@@ -58,7 +64,10 @@ const materialSourceMonster:Record<string,string>={
   FROSTIRON:'CHOIR_HUNTER',RIMEGLASS:'CHOIR_HUNTER',CHOIR_BLOOM:'CHOIR_HUNTER',
 };
 function projectedFarmHours(recipe:typeof t8){
+  const state=createCharacter(newGame(0),recipe.classId,'Farm Pace','male');
   return recipe.inputs.reduce((hours,input)=>{
+    const herb=HERB_NODES.find(row=>row.itemId===input.itemId);
+    if(herb){const pace=gatheringBalanceProjection(state,herb,24);return hours+input.quantity/Math.max(.0001,pace.runtimeItemsPerHour);}
     const monsterId=materialSourceMonster[input.itemId];if(!monsterId)return hours;
     const monster=MONSTERS.find(row=>row.id===monsterId)!;
     const drop=monster.drops.find(row=>row.itemId===input.itemId)!;
@@ -67,7 +76,7 @@ function projectedFarmHours(recipe:typeof t8){
   },0);
 }
 const highTierBands:Record<string,[number,number]>={
-  T5:[.75,2.75],T6:[.75,3.5],T7:[.75,3.5],T8:[.9,5.5],T9:[1.2,7.0],
+  T5:[.75,3.5],T6:[1.0,4.5],T7:[1.2,4.5],T8:[1.5,6.5],T9:[2.5,8.0],
 };
 for(const tier of Object.keys(highTierBands)){
   const rows=V33_EQUIPMENT_RECIPES.filter(row=>row.v33EquipmentTier===tier);
@@ -80,6 +89,13 @@ for(const tier of Object.keys(highTierBands)){
 }
 const t5Ring=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T5'&&itemDef(row.output.itemId).slot==='ring')!;
 ok(projectedFarmHours(t5Ring)>=.75,'Even the cheapest T5 ring must require at least ~45 minutes of baseline regional farming');
+const tailoringT5=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T5'&&row.skillId==='tailoring')!;
+ok(tailoringT5.inputs.some(row=>row.itemId==='SUNSCALE')&&tailoringT5.inputs.some(row=>row.itemId==='AMBERGLASS'),'T5 Tailoring must use Sunscar Herbalism fiber plus regional magical material');
+const tailoringT8=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T8'&&row.skillId==='tailoring')!;
+ok(tailoringT8.inputs.some(row=>row.itemId==='FROSTBLOOM')&&tailoringT8.inputs.some(row=>row.itemId==='RIMEGLASS'),'T8 Tailoring must use Frostmarch Herbalism fiber plus regional magical material');
+const tailoringT9=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T9'&&row.skillId==='tailoring')!;
+ok(tailoringT9.inputs.some(row=>row.itemId==='ASHEN_MYRRH'),'T9 Tailoring must use Ashlands Herbalism fiber');
+
 
 let state=createCharacter(newGame(0),'IRONWARDEN','Crafter','male');
 const path=equipmentCraftingPath(state,'T1P_001')!;

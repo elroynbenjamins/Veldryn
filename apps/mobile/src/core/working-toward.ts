@@ -100,6 +100,7 @@ export function workingTowardItemSource(state:GameState,itemId:string):WorkingTo
 export function progressionGoalDestination(state:GameState,goal:ProgressionGoal):WorkingTowardDestination{
  if(goal.kind==='skill_level'){
   if(goal.skillId==='faith')return {kind:'skills',skillId:'faith' as SkillId,mode:'faith',button:'Train Faith',detail:'Open Faith practice and continue toward this level.'};
+  if(goal.skillId==='enchanting')return {kind:'skills',skillId:'enchanting' as SkillId,mode:'crafting',button:'Train Enchanting',detail:'Open the Gem Refinery and refine or combine gems.'};
   if(gatherDefs.some(row=>row.skillId===goal.skillId))return {kind:'skills',skillId:goal.skillId as SkillId,mode:'gathering',button:`Train ${skillLabel(goal.skillId)}`,detail:'Open this gathering skill and choose an available regional node.'};
   if(RECIPES.some(row=>row.skillId===goal.skillId))return {kind:'skills',skillId:goal.skillId as SkillId,mode:'crafting',button:`Train ${skillLabel(goal.skillId)}`,detail:'Open this profession and choose an available recipe.'};
   return {kind:'skills',skillId:goal.skillId as SkillId,button:'Open Skills',detail:`Review ${skillLabel(goal.skillId)} progression.`};

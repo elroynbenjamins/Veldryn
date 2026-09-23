@@ -6,7 +6,8 @@ import {equipmentCraftingPath} from '../src/core/equipment-crafting-path';
 import {itemInspectModel} from '../src/core/item-inspect';
 import {workingTowardItemSource} from '../src/core/working-toward';
 import {MONSTERS} from '../src/content/monsters';
-import {combatBaselineProjection,dropExpectation} from '../src/core/balance-projection';
+import {HERB_NODES} from '../src/content/herbalism';
+import {combatBaselineProjection,dropExpectation,gatheringBalanceProjection} from '../src/core/balance-projection';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 
@@ -53,7 +54,10 @@ const materialSourceMonster:Record<string,string>={
   FROSTIRON:'CHOIR_HUNTER',RIMEGLASS:'CHOIR_HUNTER',CHOIR_BLOOM:'CHOIR_HUNTER',
 };
 function projectedFarmHours(recipe:typeof t8){
+  const state=createCharacter(newGame(0),recipe.classId,'Farm Pace','male');
   return recipe.inputs.reduce((hours,input)=>{
+    const herb=HERB_NODES.find(row=>row.itemId===input.itemId);
+    if(herb){const pace=gatheringBalanceProjection(state,herb,24);return hours+input.quantity/Math.max(.0001,pace.runtimeItemsPerHour);}
     const monsterId=materialSourceMonster[input.itemId];if(!monsterId)return hours;
     const monster=MONSTERS.find(row=>row.id===monsterId)!;
     const drop=monster.drops.find(row=>row.itemId===input.itemId)!;
@@ -65,7 +69,7 @@ const highTierBands:Record<string,[number,number]>={
   T5:[.75,3.5],T6:[1.0,4.5],T7:[1.2,4.5],T8:[1.5,6.5],T9:[2.5,8.0],
 };
 for(const tier of Object.keys(highTierBands)){
-  const rows=V33_EQUIPMENT_RECIPES.filter(row=>row.v33EquipmentTier===tier&&row.skillId==='smithing');
+  const rows=V33_EQUIPMENT_RECIPES.filter(row=>row.v33EquipmentTier===tier);
   const [minHours,maxHours]=highTierBands[tier];
   for(const recipe of rows){
     const hours=projectedFarmHours(recipe);

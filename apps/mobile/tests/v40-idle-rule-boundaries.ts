@@ -89,6 +89,6 @@ function withRule(state:GameState,condition:IdleStopCondition,options?:Partial<P
 }
 
 eq(BASE_OFFLINE_CAP_HOURS,8,'Advanced Idle Rules must not alter 8h base reserve');
-eq(FREE_OFFLINE_CAP_HOURS,18,'Advanced Idle Rules must not alter 18h progression ceiling');
-eq(MAX_OFFLINE_CAP_HOURS,24,'Advanced Idle Rules must not alter 24h hard maximum');
+eq(FREE_OFFLINE_CAP_HOURS,24,'Advanced Idle Rules must not alter 24h progression ceiling');
+eq(MAX_OFFLINE_CAP_HOURS,30,'Advanced Idle Rules must not alter 30h hard maximum');
 console.log('PASS: all V40 Advanced Idle Rule kinds stop at trusted settlement boundaries without extending Offline Reserve');

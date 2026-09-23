@@ -1,6 +1,6 @@
 import type {CombatChallengeId,GameState,RewardBundle} from './types';
 import {grantProfessionMastery,professionMasteryRank,type ProfessionMasteryRecord} from './profession-mastery-v40';
-import {applyWeeklyOrderProgress,claimWeeklyCompletion,claimWeeklyOrder,generateWeeklyOrders,weeklyOrderWindow,type WeeklyOrdersState} from './weekly-orders-v41';
+import {DEFAULT_WEEKLY_ORDER_POLICY,applyWeeklyOrderProgress,claimWeeklyCompletion,claimWeeklyOrder,generateWeeklyOrders,weeklyOrderWindow,type WeeklyOrdersState} from './weekly-orders-v41';
 import {weeklyOrderCandidatesFromCurrentContent} from './launch-readiness-v47';
 import {applyCrossSkillSnapshot,newCrossSkillState,type CrossSkillState} from './cross-skill-discoveries-v45';
 import {applyCollectionSetSnapshot,collectionMemberKey,newCollectionSetState,type CollectionOwnershipSnapshot,type CollectionSetState} from './collection-sets-v45';
@@ -16,7 +16,7 @@ import {WORLD_ZONES} from '../content/world-map';
 import {random01} from './rng';
 import {applyLocalBalanceSnapshot} from './balance-telemetry';
 
-export interface TrustedProgressionActivity{kind:'combat'|'gathering'|'crafting'|'boss';contentId:string;units:number;startedAtMs?:number;challengeId?:CombatChallengeId}
+export interface TrustedProgressionActivity{kind:'combat'|'gathering'|'crafting'|'boss';contentId:string;units:number;startedAtMs?:number;challengeId?:CombatChallengeId;weeklyEligible?:boolean}
 export interface TrustedProgressionOptions{accountId:string;eventId:string}
 export interface TrustedProgressionResult{
  state:GameState;
@@ -37,9 +37,17 @@ function trustedEventRegionId(event:TrustedProgressionActivity){
  return undefined;
 }
 function ensureWeeklyOrders(state:GameState,accountId:string,nowMs:number):WeeklyOrdersState{
- const window=weeklyOrderWindow(nowMs),existing=state.account.weeklyOrders;
- if(existing?.schemaVersion===41&&existing.accountId===accountId&&existing.weekKey===window.weekKey)return existing;
- return generateWeeklyOrders(accountId,nowMs,weeklyOrderCandidatesFromCurrentContent(state));
+ const window=weeklyOrderWindow(nowMs),existing=state.account.weeklyOrders,candidates=weeklyOrderCandidatesFromCurrentContent(state);
+ if(existing?.schemaVersion===41&&existing.accountId===accountId&&existing.weekKey===window.weekKey){
+  const bossCandidate=candidates.find(candidate=>candidate.kind==='hunt'&&candidate.boss&&candidate.monsterId==='FALLEN_KNIGHT'&&candidate.available&&candidate.source.available);
+  if(bossCandidate&&!existing.orders.some(order=>order.kind==='hunt'&&order.targetId==='FALLEN_KNIGHT')){
+   const bonusPolicy={...DEFAULT_WEEKLY_ORDER_POLICY,huntSlots:1,professionSlots:0,regionalSlots:0,threatSlots:0};
+   const bonus=generateWeeklyOrders(accountId,nowMs,[bossCandidate],bonusPolicy).orders[0];
+   if(bonus)existing.orders.push({...bonus,slot:existing.orders.length});
+  }
+  return existing;
+ }
+ return generateWeeklyOrders(accountId,nowMs,candidates);
 }
 export function weeklyOrderBoardForState(state:GameState,nowMs=Date.now()){
  const accountId=state.account.longTermAccountScopeId??`local-account:${state.createdAtMs}`;
@@ -163,6 +171,7 @@ export function applyTrustedLongTermProgression(input:GameState,events:TrustedPr
   if(event.kind==='combat'||event.kind==='boss')metrics['combat.total_kills']=(metrics['combat.total_kills']??0)+units;
   if(event.kind==='gathering'||event.kind==='crafting'){metrics['profession.actions_completed']=(metrics['profession.actions_completed']??0)+units;mastery[event.contentId]=grantProfessionMastery(mastery[event.contentId] as ProfessionMasteryRecord|undefined,event.contentId,units,nowMs)}
   if(event.kind==='combat')applyWeeklyOrderProgress(weekly,{eventId:`${options.eventId}:${event.kind}:${event.contentId}`,characterId:state.character?.id??'unknown',kind:'hunt',targetId:event.contentId,amount:units,completedAtMs:nowMs});
+  if(event.kind==='boss'&&event.weeklyEligible!==false)applyWeeklyOrderProgress(weekly,{eventId:`${options.eventId}:boss:${event.contentId}`,characterId:state.character?.id??'unknown',kind:'hunt',targetId:event.contentId,amount:units,completedAtMs:nowMs});
   if(event.kind==='combat'&&event.challengeId)applyWeeklyOrderProgress(weekly,{eventId:`${options.eventId}:threat:${event.contentId}:${event.challengeId}`,characterId:state.character?.id??'unknown',kind:'threat',targetId:`${event.contentId}:${event.challengeId}`,amount:units,completedAtMs:nowMs});
   if(event.kind==='gathering'||event.kind==='crafting')applyWeeklyOrderProgress(weekly,{eventId:`${options.eventId}:${event.kind}:${event.contentId}`,characterId:state.character?.id??'unknown',kind:'profession',targetId:event.contentId,amount:units,completedAtMs:nowMs});
   const regionId=trustedEventRegionId(event);if(regionId)applyWeeklyOrderProgress(weekly,{eventId:`${options.eventId}:regional:${regionId}:${event.kind}:${event.contentId}`,characterId:state.character?.id??'unknown',kind:'regional',targetId:regionId,amount:units,completedAtMs:nowMs});

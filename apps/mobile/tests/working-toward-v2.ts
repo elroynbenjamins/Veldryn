@@ -1,6 +1,11 @@
 import {createCharacter,newGame} from '../src/core/game';
 import {progressionGoalContext,progressionGoalDestination,workingTowardItemSourceEntries,workingTowardReadyCount,workingTowardTrackableItems} from '../src/core/working-toward';
-import {MASTERY_GOAL_RANKS,masteryGoalForAction,nextMasteryGoalRank,progressionGoalView,type ProgressionGoal} from '../src/core/progression-goals-v40';
+import {MASTERY_GOAL_RANKS,masteryGoalForAction,nextMasteryGoalRank,normalizeProgressionGoals,progressionGoalView,type ProgressionGoal} from '../src/core/progression-goals-v40';
+import {RECIPES} from '../src/content/skills';
+import {totalXpAtLevel} from '../src/core/progression';
+import {recipePreparationRoute} from '../src/core/material-acquisition-plan';
+import {recipePreparationGoalForRecipe} from '../src/core/recipe-preparation-goals';
+import {recipePreparationTrackingView} from '../src/core/recipe-preparation-tracking';
 
 function fail(message:string):never{throw new Error(message)}
 function ok(value:unknown,message:string){if(!value)fail(message)}
@@ -56,5 +61,28 @@ state={...state,character:{...state.character!,progressionGoals:[{...skillGoal,t
 const context=progressionGoalContext(state),view=progressionGoalView(state.character!.progressionGoals![0],context);
 equal(view.status,'complete','completed goal is detected by the shared planner context');
 equal(workingTowardReadyCount(state),1,'Home/Account attention detects a completed pinned goal');
+
+let prepState=createCharacter(newGame(500),'IRONWARDEN','Preparation Tracker');
+prepState={...prepState,character:{...prepState.character!,level:20,gold:100000},skills:prepState.skills.map(skill=>skill.skillId==='smithing'?{...skill,level:12,xp:totalXpAtLevel(12)}:skill.skillId==='mining'?{...skill,level:8,xp:totalXpAtLevel(8)}:skill.skillId==='woodcutting'?{...skill,level:7,xp:totalXpAtLevel(7)}:skill)};
+const fittingRecipe=RECIPES.find(row=>row.id==='FORGE_REINFORCED_FITTING')!,initialRoute=recipePreparationRoute(prepState,fittingRecipe,1);
+const preparationGoal=recipePreparationGoalForRecipe({state:prepState,recipe:fittingRecipe,batches:1,initialStepCount:initialRoute.steps.length,nowMs:600});
+const normalizedPreparation=normalizeProgressionGoals([preparationGoal],prepState.character!.id)[0];
+equal(normalizedPreparation.kind,'recipe_preparation','Preparation goal must survive save/command normalization');
+if(normalizedPreparation.kind==='recipe_preparation'){equal(normalizedPreparation.initialStepCount,initialRoute.steps.length,'Preparation goal retains its initial route size');equal(normalizedPreparation.outputItemId,'REINFORCED_FITTING','Preparation goal retains its tracked output');}
+prepState={...prepState,character:{...prepState.character!,progressionGoals:[preparationGoal]}};
+const initialPrepView=recipePreparationTrackingView(prepState,preparationGoal);
+ok(initialPrepView.status==='active'&&initialPrepView.nextLabel.includes('Aster-Iron Ore'),'Tracked preparation starts on the first remaining dependency');
+ok(initialPrepView.destination.kind!=='info','Tracked preparation next step must be directly navigable when its source is actionable');
+
+prepState={...prepState,inventory:{...prepState.inventory,stacks:[...prepState.inventory.stacks,{itemId:'ASTER_IRON_INGOT',quantity:2},{itemId:'IRONWOOD_LOG',quantity:2}]}};
+const finalPrepView=recipePreparationTrackingView(prepState,preparationGoal);
+equal(finalPrepView.current,Math.max(0,preparationGoal.initialStepCount-1),'Owning prerequisites advances preparation progress to the final tracked craft');
+ok(finalPrepView.nextLabel.includes('Reinforced Fitting')&&finalPrepView.destination.kind==='skills','Preparation tracking automatically advances to the final craft');
+
+prepState={...prepState,inventory:{...prepState.inventory,stacks:[...prepState.inventory.stacks,{itemId:'REINFORCED_FITTING',quantity:1}]}};
+const completedPrepView=recipePreparationTrackingView(prepState,preparationGoal);
+ok(completedPrepView.status==='complete'&&completedPrepView.progress===1,'Preparation goal completes only after the tracked output is actually produced');
+equal(workingTowardReadyCount(prepState),1,'Completed preparation goal contributes to Home Working Toward ready count');
+
 
 console.log('PASS: actionable Working Toward navigation and progress');

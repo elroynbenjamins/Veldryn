@@ -15,7 +15,7 @@ export function HomeSessionOverview({state,nowMs,onQuests,onDaily,onEvents,onGoa
  if(summary.eventRewards)parts.push(summary.eventRewards+' event');
  if(summary.goalReady)parts.push(summary.goalReady+' goal');
  return <View style={[s.root,summary.readyTotal>0&&s.readyRoot]}>
-  <View style={s.head}><View style={s.flex}><Text style={s.kicker}>SESSION OVERVIEW</Text><Text style={s.title}>{summary.primaryReady?.title??'No immediate claims'}</Text><Text style={s.meta}>{summary.primaryReady?.detail??'Your next progression step is shown above. Use this row to jump into planning and weekly progress.'}</Text></View>{summary.readyTotal>0?<Text style={s.readyBadge}>{summary.readyTotal} READY</Text>:<Text style={s.clearBadge}>CLEAR</Text>}</View>
+  <View style={s.head}><View style={s.flex}><Text style={s.kicker}>SESSION OVERVIEW</Text><Text style={s.title}>{summary.primaryReady?.title??'No immediate claims'}</Text><Text style={s.meta}>{summary.primaryReady?.detail??(summary.goalNext?'Tracked preparation · '+summary.goalNext:'Your next progression step is shown above. Use this row to jump into planning and weekly progress.')}</Text></View>{summary.readyTotal>0?<Text style={s.readyBadge}>{summary.readyTotal} READY</Text>:<Text style={s.clearBadge}>CLEAR</Text>}</View>
   <View style={s.cells}>
    <SessionCell label="READY" value={String(summary.readyTotal)} tone={summary.readyTotal?'good':'muted'} emphasized={summary.readyTotal>0} stack={stackCells} onPress={summary.primaryReady?()=>openReady(summary.primaryReady!.kind):undefined}/>
    <SessionCell label="GOALS" value={summary.goalReady+'/'+summary.goalTotal} tone={summary.goalReady?'good':'info'} emphasized={summary.goalReady>0} stack={stackCells} onPress={onGoals}/>

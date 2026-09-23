@@ -52,8 +52,8 @@ const masteryGoal=masteryGoalForAction({characterId,actionId:'GREENWOOD_TREE',ac
 equal(masteryGoal.kind,'mastery_rank','quick mastery tracking must create a mastery rank goal');
 if(masteryGoal.kind==='mastery_rank'){equal(masteryGoal.actionId,'GREENWOOD_TREE','quick mastery goal retains its exact action');equal(masteryGoal.targetRank,20,'quick mastery goal retains the selected bonus rank');}
 equal(progressionGoalDestination(state,masteryGoal).kind,'skills','mastery goals deep-link back into the profession action');
-const prepState={...createCharacter(newGame(0),'IRONWARDEN','Preparation Tracker'),character:{...createCharacter(newGame(0),'IRONWARDEN','Preparation Tracker').character!,level:20,gold:100000}} as typeof state;
-prepState.skills=prepState.skills.map(skill=>skill.skillId==='smithing'?{...skill,level:12}:skill.skillId==='mining'?{...skill,level:8}:skill.skillId==='woodcutting'?{...skill,level:7}:skill);
+const prepBase=createCharacter(newGame(0),'IRONWARDEN','Preparation Tracker');
+const prepState={...prepBase,character:{...prepBase.character!,level:20,gold:100000},skills:prepBase.skills.map(skill=>skill.skillId==='smithing'?{...skill,level:12}:skill.skillId==='mining'?{...skill,level:8}:skill.skillId==='woodcutting'?{...skill,level:7}:skill)} as typeof state;
 const prepGoal=recipePreparationGoal({characterId:prepState.character!.id,recipeId:'FORGE_REINFORCED_FITTING',recipeName:'Forge Reinforced Fitting',nowMs:456});
 equal(normalizeProgressionGoals([prepGoal],prepState.character!.id)[0]?.kind,'recipe_preparation','Recipe preparation goals survive authoritative normalization');
 const prepRuntime=recipePreparationGoalRuntime(prepState,prepGoal as Extract<ProgressionGoal,{kind:'recipe_preparation'}>);

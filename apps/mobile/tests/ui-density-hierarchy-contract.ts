@@ -137,6 +137,7 @@ ok(recipeCard.includes('RECIPE MASTERY')&&recipeCard.includes('professionMastery
 ok(recipeCard.includes('TIMED PACE')&&recipeCard.includes('batches/hr')&&recipeCard.includes('outputPerHour')&&recipeCard.includes('XP/hr'),'Timed crafting must expose batch rate, output/hour, XP/hour and level ETA');
 ok(recipeCard.includes('Track preparation')&&recipeCard.includes('Tracked in Working Toward')&&recipeCard.includes('onTrackPreparation(recipe,multiplier,preparationRoute.steps.length)'),'Preparation routes must support one-tap persistent Working Toward tracking without duplicate pins');
 ok(craftingBrowser.includes('onTrackPreparation={onTrackPreparation}')&&skills.includes('trackPreparationGoal')&&skills.includes("type:'goals_set'"),'Crafting screens must persist preparation tracking through the canonical goals command');
+ok(skills.includes('MAX_PINNED_GOALS')&&skills.includes("goal.kind==='recipe_preparation'&&goal.recipeId===recipe.id"),'Preparation tracking must respect the shared three-goal cap and avoid duplicate pins for the same recipe');
 
 const skillNavigation=read('src/core/skill-progression-navigation.ts');
 ok(skillNavigation.includes('workingTowardItemSource'),'Skill progression navigation must reuse the canonical Working Toward item-source resolver');

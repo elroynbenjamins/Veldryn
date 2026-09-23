@@ -1,6 +1,7 @@
 import {createCharacter,newGame} from '../src/core/game';
 import {progressionGoalContext,progressionGoalDestination,workingTowardItemSourceEntries,workingTowardReadyCount,workingTowardTrackableItems} from '../src/core/working-toward';
-import {MASTERY_GOAL_RANKS,masteryGoalForAction,nextMasteryGoalRank,progressionGoalView,type ProgressionGoal} from '../src/core/progression-goals-v40';
+import {MASTERY_GOAL_RANKS,masteryGoalForAction,nextMasteryGoalRank,normalizeProgressionGoals,progressionGoalView,recipePreparationGoal,type ProgressionGoal} from '../src/core/progression-goals-v40';
+import {recipePreparationGoalRuntime,recipePreparationReadyCount} from '../src/core/recipe-preparation-tracking';
 
 function fail(message:string):never{throw new Error(message)}
 function ok(value:unknown,message:string){if(!value)fail(message)}
@@ -51,6 +52,25 @@ const masteryGoal=masteryGoalForAction({characterId,actionId:'GREENWOOD_TREE',ac
 equal(masteryGoal.kind,'mastery_rank','quick mastery tracking must create a mastery rank goal');
 if(masteryGoal.kind==='mastery_rank'){equal(masteryGoal.actionId,'GREENWOOD_TREE','quick mastery goal retains its exact action');equal(masteryGoal.targetRank,20,'quick mastery goal retains the selected bonus rank');}
 equal(progressionGoalDestination(state,masteryGoal).kind,'skills','mastery goals deep-link back into the profession action');
+const prepState={...createCharacter(newGame(0),'IRONWARDEN','Preparation Tracker'),character:{...createCharacter(newGame(0),'IRONWARDEN','Preparation Tracker').character!,level:20,gold:100000}} as typeof state;
+prepState.skills=prepState.skills.map(skill=>skill.skillId==='smithing'?{...skill,level:12}:skill.skillId==='mining'?{...skill,level:8}:skill.skillId==='woodcutting'?{...skill,level:7}:skill);
+const prepGoal=recipePreparationGoal({characterId:prepState.character!.id,recipeId:'FORGE_REINFORCED_FITTING',recipeName:'Forge Reinforced Fitting',nowMs:456});
+equal(normalizeProgressionGoals([prepGoal],prepState.character!.id)[0]?.kind,'recipe_preparation','Recipe preparation goals survive authoritative normalization');
+const prepRuntime=recipePreparationGoalRuntime(prepState,prepGoal as Extract<ProgressionGoal,{kind:'recipe_preparation'}>);
+equal(prepRuntime.status,'active','Unprepared tracked recipe stays active');
+ok(prepRuntime.detail.startsWith('Next · '),'Tracked preparation exposes its live next dependency');
+ok(prepRuntime.destination.kind!=='info','Tracked preparation next dependency remains actionable');
+const readyPrepState={...prepState,inventory:{...prepState.inventory,stacks:[...prepState.inventory.stacks,{itemId:'ASTER_IRON_INGOT',quantity:2},{itemId:'IRONWOOD_LOG',quantity:2}]},character:{...prepState.character!,progressionGoals:[prepGoal]}} as typeof prepState;
+const readyPrepRuntime=recipePreparationGoalRuntime(readyPrepState,prepGoal as Extract<ProgressionGoal,{kind:'recipe_preparation'}>);
+equal(readyPrepRuntime.status,'complete','Tracked preparation becomes craft-ready when final inputs and Gold are ready');
+equal(readyPrepRuntime.statusLabel,'CRAFT READY','Craft-ready tracked preparation gets a distinct status label');
+if(readyPrepRuntime.destination.kind==='skills')equal(readyPrepRuntime.destination.recipeId,'FORGE_REINFORCED_FITTING','Craft-ready preparation deep-links the exact final recipe');
+equal(recipePreparationReadyCount(readyPrepState),1,'Home ready summary counts craft-ready tracked preparation');
+const poorPrepState={...readyPrepState,character:{...readyPrepState.character!,gold:0}};
+const poorPrepRuntime=recipePreparationGoalRuntime(poorPrepState,prepGoal as Extract<ProgressionGoal,{kind:'recipe_preparation'}>);
+equal(poorPrepRuntime.status,'blocked','Tracked preparation becomes blocked when only Gold remains');
+ok(poorPrepRuntime.detail.includes('more Gold'),'Gold-blocked preparation explains the remaining Gold requirement');
+
 
 state={...state,character:{...state.character!,progressionGoals:[{...skillGoal,targetLevel:1}]}};
 const context=progressionGoalContext(state),view=progressionGoalView(state.character!.progressionGoals![0],context);

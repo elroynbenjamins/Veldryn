@@ -32,6 +32,11 @@ create table if not exists private.google_play_purchases_v1(
   check(obfuscated_account_id is null or obfuscated_account_id ~ '^[0-9a-f]{64}$')
 );
 
+create table if not exists private.google_play_rtdn_events_v1(
+  message_id text primary key,
+  processed_at timestamptz not null default now()
+);
+
 create index if not exists google_play_purchases_account_product_idx
   on private.google_play_purchases_v1(account_id,product_id);
 create index if not exists google_play_purchases_subscription_expiry_idx
@@ -40,8 +45,10 @@ create index if not exists google_play_purchases_subscription_expiry_idx
 
 alter table private.google_play_account_links_v1 enable row level security;
 alter table private.google_play_purchases_v1 enable row level security;
-revoke all on private.google_play_account_links_v1,private.google_play_purchases_v1 from public,anon,authenticated;
-grant select,insert,update,delete on private.google_play_account_links_v1,private.google_play_purchases_v1 to service_role;
+alter table private.google_play_rtdn_events_v1 enable row level security;
+revoke all on private.google_play_account_links_v1,private.google_play_purchases_v1,private.google_play_rtdn_events_v1 from public,anon,authenticated;
+grant usage on schema private to service_role;
+grant select,insert,update,delete on private.google_play_account_links_v1,private.google_play_purchases_v1,private.google_play_rtdn_events_v1 to service_role;
 
 create or replace function private.google_play_recompute_entitlements_v1(p_account_id uuid)
 returns void
@@ -241,21 +248,47 @@ begin
   perform private.google_play_recompute_entitlements_v1(p_account_id);
 end $$;
 
+create or replace function public.google_play_rtdn_processed_v1(p_message_id text)
+returns boolean
+language sql stable security definer set search_path=''
+as $
+  select exists(
+    select 1 from private.google_play_rtdn_events_v1 e
+    where e.message_id=p_message_id
+  );
+$;
+
+create or replace function public.google_play_mark_rtdn_processed_v1(p_message_id text)
+returns void
+language plpgsql security definer set search_path=''
+as $
+begin
+  if nullif(trim(p_message_id),'') is null then return;end if;
+  insert into private.google_play_rtdn_events_v1(message_id,processed_at)
+  values(p_message_id,now())
+  on conflict(message_id) do nothing;
+end $;
+
 revoke all on function private.google_play_recompute_entitlements_v1(uuid) from public,anon,authenticated;
 revoke all on function public.google_play_register_account_link_v1(uuid,text) from public,anon,authenticated;
 revoke all on function public.google_play_purchase_owner_v1(text) from public,anon,authenticated;
 revoke all on function public.google_play_account_from_obfuscated_v1(text) from public,anon,authenticated;
 revoke all on function public.google_play_tokens_for_account_v1(uuid) from public,anon,authenticated;
 revoke all on function public.google_play_record_purchase_v1(uuid,text,text,text,text,boolean,text,timestamptz,timestamptz,boolean,text,text,text,boolean,text,text,text,text) from public,anon,authenticated;
+revoke all on function public.google_play_rtdn_processed_v1(text) from public,anon,authenticated;
+revoke all on function public.google_play_mark_rtdn_processed_v1(text) from public,anon,authenticated;
 
 grant execute on function public.google_play_register_account_link_v1(uuid,text) to service_role;
 grant execute on function public.google_play_purchase_owner_v1(text) to service_role;
 grant execute on function public.google_play_account_from_obfuscated_v1(text) to service_role;
 grant execute on function public.google_play_tokens_for_account_v1(uuid) to service_role;
 grant execute on function public.google_play_record_purchase_v1(uuid,text,text,text,text,boolean,text,timestamptz,timestamptz,boolean,text,text,text,boolean,text,text,text,text) to service_role;
+grant execute on function public.google_play_rtdn_processed_v1(text) to service_role;
+grant execute on function public.google_play_mark_rtdn_processed_v1(text) to service_role;
 
 comment on table private.google_play_account_links_v1 is 'Server-generated mapping between a recoverable VELDRYN account and Google Play obfuscatedExternalAccountId.';
 comment on table private.google_play_purchases_v1 is 'Server-verified Google Play purchase-token ledger. Purchase tokens, not order IDs, are the ownership key.';
+comment on table private.google_play_rtdn_events_v1 is 'Successfully processed Google Play Pub/Sub message IDs used to suppress duplicate RTDN work.';
 comment on function public.google_play_record_purchase_v1(uuid,text,text,text,text,boolean,text,timestamptz,timestamptz,boolean,text,text,text,boolean,text,text,text,text) is 'Service-role-only verified purchase upsert plus entitlement recomputation. Clients cannot grant paid access.';
 
 commit;

@@ -36,7 +36,7 @@ equal(resetAward.state.account.companionRematchBondstones,1,'new week starts a n
 
 const bossMonday=Date.UTC(2026,8,21,12);
 let bossState=createCharacter(newGame(bossMonday),'RAVAGER','Weekly Boss Tester');
-bossState={...bossState,defeatedBossIds:['FALLEN_KNIGHT'],character:{...bossState.character!,level:100,hp:5000,currentHp:5000,attack:5000,defense:1200},inventory:{...bossState.inventory,stacks:[{itemId:'TRAVEL_RATION',quantity:20}]}};
+bossState={...bossState,defeatedBossIds:['FALLEN_KNIGHT'],account:{...bossState.account,companionBossClears:{FALLEN_KNIGHT:1}},character:{...bossState.character!,level:100,hp:5000,currentHp:5000,attack:5000,defense:1200},inventory:{...bossState.inventory,stacks:[{itemId:'TRAVEL_RATION',quantity:20}]}};
 equal(FALLEN_KNIGHT_WEEKLY_REWARD_CAP,1,'Fallen Knight has one rewarded rematch each UTC week');
 let bossStatus=fallenKnightWeeklyStatus(bossState,bossMonday);equal(bossStatus.rewardedClears,0,'fresh boss week starts with no rewarded rematch');
 const bossFirst=challengeFallenKnightRematch(bossState,bossMonday);bossState=bossFirst.state;bossStatus=fallenKnightWeeklyStatus(bossState,bossMonday);
@@ -44,6 +44,7 @@ equal(bossFirst.won,true,'weekly Fallen Knight rematch can win');
 equal(bossStatus.rewardedClears,1,'weekly win consumes the one rewarded clear');
 equal(bossStatus.bountyAwarded,true,'weekly win automatically completes the Oathglass Bounty');
 equal(bossStatus.remaining,0,'weekly win exhausts rewarded Fallen Knight clears');
+equal(bossState.account.companionBossClears?.FALLEN_KNIGHT,2,'one weekly rematch must add exactly one Fallen Knight clear');
 equal((bossState.inventory.stacks.find(row=>row.itemId==='OATHGLASS_FRAGMENT')?.quantity??0)>=1,true,'weekly bounty guarantees an Oathglass Fragment');
 equal((bossState.inventory.stacks.find(row=>row.itemId==='TEMPERING_CORE')?.quantity??0)>=2,true,'weekly bounty adds a bonus Tempering Core on top of the boss drop table');
 let weeklyBlocked=false;try{challengeFallenKnightRematch(bossState,bossMonday+60_000)}catch{weeklyBlocked=true}equal(weeklyBlocked,true,'second rewarded rematch in the same UTC week must be blocked');

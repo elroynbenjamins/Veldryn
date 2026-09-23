@@ -50,4 +50,12 @@ ok(recipe.includes('row.chainLabel')&&recipe.includes('row.chainBlockedReason'),
 ok(recipe.includes('source.chainLabel')&&recipe.includes('source.chainBlockedReason'),'Expanded Other sources must preserve recursive chain context for crafting alternatives');
 ok(quickInspect.includes('source.chainLabel')&&quickInspect.includes('source.chainBlockedReason'),'Item Quick Inspect must expose the same recursive chain context as crafting requirements');
 
+const prepareRoute=read('src/components/RecipePreparationRoute.tsx');
+ok(recipe.includes('<RecipePreparationRoute')&&recipe.includes('batches={multiplier}'),'Recipe cards must expose the ordered Prepare Materials route and keep batch-size requirements aligned');
+ok(prepareRoute.includes('PREPARE MATERIALS')&&prepareRoute.includes('Ordered route from current stock to the final craft.'),'Prepare Materials must stay compact behind an explicit disclosure');
+ok(prepareRoute.includes('route.steps.map')&&prepareRoute.includes('Step '+"'"+'+(index+1)')&&prepareRoute.includes('OPEN ›'),'Prepare Materials must render a numbered actionable step sequence');
+ok(prepareRoute.includes("step.kind!=='final_craft'")&&prepareRoute.includes('onNavigate?.(step.destination!)'),'Intermediate preparation steps must deep-link to their exact source while the final craft remains in the current card');
+ok(acquisitionPlan.includes('recipePreparationRoute')&&acquisitionPlan.includes("stateLabel:'FINAL'")&&acquisitionPlan.includes("state:'after'"),'Preparation route core must distinguish dependency steps from the final craft');
+
+
 console.log('PASS: player-facing progression bars, ETAs and drop expectations use shared balance projections');

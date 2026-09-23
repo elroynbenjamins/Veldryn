@@ -77,7 +77,7 @@ const LEGACY_GEM_ARTWORK_KEY_V1:Readonly<Record<string,string>>={
 export function gemArtworkKeyV1(itemId:string){
   if(itemId==='GEM_DUST'||itemId==='REGIONAL_CATALYST'||itemId==='RADIANT_CATALYST')return itemId;
   if(LEGACY_GEM_ARTWORK_KEY_V1[itemId])return LEGACY_GEM_ARTWORK_KEY_V1[itemId];
-  const match=/^gem:(stat_[a-z_]+|effect_[a-z_]+):g[1-5]$/.exec(itemId);
+  const match=/^(?:raw_gem|gem):(stat_[a-z_]+|effect_[a-z_]+):g[1-5]$/.exec(itemId);
   return match?.[1];
 }
 export function gemArtworkCellV1(itemId:string){

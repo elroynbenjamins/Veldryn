@@ -54,6 +54,8 @@ bountifulState=setHerbalismHarvestMethod(bountifulState,'bountiful');
 const bountiful=gatheringBalanceProjection(bountifulState,dewleaf,24),balanced70=gatheringBalanceProjection({...bountifulState,character:{...bountifulState.character!,herbalismHarvestMethodId:'balanced'}},dewleaf,24);
 ok(bountiful.runtimeItemsPerHour>balanced70.runtimeItemsPerHour&&bountiful.xpPerHour<balanced70.xpPerHour,'Bountiful Harvest must trade XP pace for higher herb throughput');
 ok(itemDef('WILD_ESSENCE').type==='material','Wild Essence must be a real material output');
+const wildAcquisition=acquisitionProjectionForDestination(herbState,'WILD_ESSENCE',4,{kind:'skills',skillId:'herbalism',mode:'gathering',actionId:'DEWLEAF_PATCH',regionId:'GREENFIELDS',button:'Harvest',detail:''});
+ok(wildAcquisition?.sourceKind==='gathering'&&(wildAcquisition.quantityPerHour??0)>0&&(wildAcquisition.oneIn??0)>1,'Wild Essence acquisition must expose current Herbalism rare-find pace and ETA');
 let sessionState=startGathering(quickState,'DEWLEAF_PATCH',2000);
 sessionState=setHerbalismHarvestMethod(sessionState,'balanced');
 const activeHerbalism=activeGatheringRuntimeProjection(sessionState);

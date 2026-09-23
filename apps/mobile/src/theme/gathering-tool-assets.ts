@@ -1,6 +1,10 @@
-import {ImageSourcePropType} from 'react-native';
+import type {ImageSourcePropType} from 'react-native';
 
-export const gatheringToolAtlas:ImageSourcePropType=require('../../assets/tools/gathering-tools-v1.png');
+export const GATHERING_TOOL_CELL=64;
+export const GATHERING_TOOL_SHEET_WIDTH=256;
+export const GATHERING_TOOL_SHEET_HEIGHT=192;
+export const gatheringToolAtlas:ImageSourcePropType=require('../../assets/tools/gathering-tools-v2.png');
+
 export interface GatheringToolCell{column:0|1|2|3;row:0|1|2}
 export const gatheringToolCells:Record<string,GatheringToolCell>={
   COPPER_PICKAXE:{column:0,row:0},ASTER_IRON_PICKAXE:{column:1,row:0},OATHSTONE_PICKAXE:{column:2,row:0},FROSTIRON_PICKAXE:{column:3,row:0},

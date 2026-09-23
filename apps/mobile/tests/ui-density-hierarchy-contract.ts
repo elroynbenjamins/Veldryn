@@ -294,7 +294,7 @@ const questModes=read('src/components/QuestModeSwitch.tsx');
 ok(quests.includes("mode==='story'")&&quests.includes("mode==='contracts'")&&quests.includes("mode==='challenges'"),'Quest screen must render Story, Contract Board and Class Challenges as separate workloads instead of one long feed');
 ok(quests.includes('<QuestModeSwitch')&&questModes.includes("accessibilityRole=\"tablist\"")&&questModes.includes("accessibilityRole=\"tab\""),'Quest modes must use one compact accessible three-tab switch');
 ok(questModes.includes("minHeight:58")&&questModes.includes("flex:1,minWidth:0"),'Quest mode tabs must stay compact and share narrow mobile width safely');
-ok(quests.includes('focusedWeeklyOrderId')&&quests.includes('FOCUSED CONTRACT')&&quests.includes("Number(b.id===focusedOrderId)-Number(a.id===focusedOrderId)"),'Contract Board deep links must promote the focused weekly job to the top');
+ok(quests.includes('focusedWeeklyOrderId')&&quests.includes('label="FOCUSED"')&&quests.includes("Number(b.id===focusedOrderId)-Number(a.id===focusedOrderId)"),'Contract Board deep links must promote the focused weekly job to the top');
 ok(quests.includes('focusedOrderMissing')&&quests.includes('board refreshed'),'Stale Contract Board deep links must fail visibly after weekly rollover');
 ok(quests.includes("challengePeriod")&&quests.includes("['all','daily','weekly','monthly']"),'Class Challenges must support compact cadence filtering');
 ok(quests.includes("Number(b.progress>=b.required)-Number(a.progress>=a.required)"),'Claimable Class Challenges must sort ahead of incomplete rows');

@@ -35,4 +35,12 @@ ok(encounters.includes('BASELINE PACE')&&encounters.includes('kills/hr'),'Combat
 ok(encounters.includes('formatRegionalEnemySecondaryStats(monster)'),'Ordinary enemy cards must expose the secondary stats that affect regional hunt math');
 ok(encounters.includes('~1/')&&encounters.includes('avg '),'Drop rows must show one-in-N odds and average base find time');
 
+const recipe=read('src/components/RecipeCard.tsx');
+const skillNavigation=read('src/core/skill-progression-navigation.ts');
+const quickInspect=read('src/components/ItemQuickInspect.tsx');
+ok(recipe.includes('row.estimateLabel')&&recipe.includes('sourceEstimate')&&recipe.includes('BOTTLENECK'),'Missing recipe materials must show compact acquisition estimates and the longest modeled bottleneck');
+ok(recipe.includes('source.estimateLabel'),'Expanded Other sources must expose their own acquisition pace when modeled');
+ok(skillNavigation.includes('acquisitionProjectionForDestination')&&skillNavigation.includes('b.estimatedSeconds'),'Recipe source estimates must reuse shared projection math and keep the longest modeled material visible first');
+ok(quickInspect.includes('source.estimateLabel')&&quickInspect.includes('sourceEstimate'),'Item Quick Inspect must show per-item acquisition pace for modeled primary and alternate sources');
+
 console.log('PASS: player-facing progression bars, ETAs and drop expectations use shared balance projections');

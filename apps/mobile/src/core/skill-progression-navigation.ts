@@ -9,6 +9,7 @@ import {alchemyAvailability} from './alchemy';
 import {isTimedProcessingRecipe,processingAvailability} from './processing';
 import {equipmentCraftAvailability,timedEquipmentRecipe} from './equipment-crafting-queue';
 import {workingTowardDestinationAvailability,workingTowardItemSource,workingTowardItemSourceEntries,type WorkingTowardDestination,type WorkingTowardDestinationAvailability,type WorkingTowardItemSourceEntry} from './working-toward';
+import {acquisitionEstimateLabel,acquisitionProjectionForDestination} from './balance-projection';
 
 const gatheringDefs=[...GATHERING,...HERB_NODES];
 const pretty=(id:string)=>id.replace(/_/g,' ').replace(/\b\w/g,char=>char.toUpperCase());
@@ -76,6 +77,10 @@ export function characterTrainingDestination(state:GameState):WorkingTowardDesti
  return monster?{kind:'combat',monsterId:monster.id,zoneName:monster.zone,regionId:region.id,button:'Train character',detail:`Continue combat in ${region.name} with ${monster.name}.`}:undefined;
 }
 
+export interface RecipeProgressionAlternateSource extends WorkingTowardItemSourceEntry{
+ estimatedSeconds?:number;
+ estimateLabel?:string;
+}
 export interface RecipeProgressionSource{
  key:string;
  label:string;
@@ -85,27 +90,38 @@ export interface RecipeProgressionSource{
  destination:WorkingTowardDestination;
  availability:WorkingTowardDestinationAvailability;
  sourceTypeLabel:string;
- otherSources:WorkingTowardItemSourceEntry[];
+ estimatedSeconds?:number;
+ estimateLabel?:string;
+ bottleneck?:boolean;
+ otherSources:RecipeProgressionAlternateSource[];
 }
 
-function materialSourcePresentation(state:GameState,itemId:string){
- const sources=workingTowardItemSourceEntries(state,itemId),primary=sources[0],destination=primary?.destination??workingTowardItemSource(state,itemId);
- return {destination,availability:primary?.availability??workingTowardDestinationAvailability(state,destination),sourceTypeLabel:primary?.typeLabel??'Inventory',otherSources:sources.slice(1)};
+function sourceEstimate(state:GameState,itemId:string,quantity:number,source:WorkingTowardItemSourceEntry):RecipeProgressionAlternateSource{
+ const projection=acquisitionProjectionForDestination(state,itemId,quantity,source.destination);
+ return projection?{...source,estimatedSeconds:projection.etaSeconds,estimateLabel:acquisitionEstimateLabel(projection)}:source;
+}
+
+function materialSourcePresentation(state:GameState,itemId:string,quantity:number){
+ const sources=workingTowardItemSourceEntries(state,itemId).map(source=>sourceEstimate(state,itemId,quantity,source)),primary=sources[0],destination=primary?.destination??workingTowardItemSource(state,itemId);
+ return {destination,availability:primary?.availability??workingTowardDestinationAvailability(state,destination),sourceTypeLabel:primary?.typeLabel??'Inventory',estimatedSeconds:primary?.estimatedSeconds,estimateLabel:primary?.estimateLabel,otherSources:sources.slice(1)};
 }
 
 export function recipeProgressionSources(state:GameState,recipe:Recipe,inputs:ReadonlyArray<{itemId:string;quantity:number;inventory:number;bank:number}>):RecipeProgressionSource[]{
  const rows:RecipeProgressionSource[]=[];
  if(recipe.requiresCraftedItemId&&!state.character?.craftedNoviceItemIds?.includes(recipe.requiresCraftedItemId)){
-  const source=materialSourcePresentation(state,recipe.requiresCraftedItemId);
+  const source=materialSourcePresentation(state,recipe.requiresCraftedItemId,1);
   rows.push({key:`prerequisite:${recipe.requiresCraftedItemId}`,label:'Craft prerequisite',owned:0,required:1,missing:1,...source});
  }
  for(const input of inputs){
   const owned=input.inventory+input.bank,missing=Math.max(0,input.quantity-owned);
   if(!missing)continue;
-  const source=materialSourcePresentation(state,input.itemId);
+  const source=materialSourcePresentation(state,input.itemId,missing);
   rows.push({key:`material:${input.itemId}`,label:itemDef(input.itemId).name,owned,required:input.quantity,missing,...source});
  }
- return rows;
+ const sorted=rows.sort((a,b)=>Number(b.key.startsWith('prerequisite:'))-Number(a.key.startsWith('prerequisite:'))||(b.estimatedSeconds??-1)-(a.estimatedSeconds??-1));
+ const modeled=[...sorted].filter(row=>row.estimatedSeconds!==undefined&&!row.key.startsWith('prerequisite:')).sort((a,b)=>(b.estimatedSeconds??0)-(a.estimatedSeconds??0));
+ const bottleneck=modeled.length>1?modeled[0]?.key:undefined;
+ return sorted.map(row=>row.key===bottleneck?{...row,bottleneck:true}:row);
 }
 
 export function recipeSkillTrainingAction(state:GameState,recipe:Recipe):SkillProgressionNavigationAction|undefined{

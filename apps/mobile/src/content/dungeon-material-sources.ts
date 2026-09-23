@@ -12,16 +12,17 @@ export interface DungeonMaterialSource{
   dungeonId:string;
   dungeonName:string;
   minLevel:number;
+  expectedMinutes:number;
   chance:number;
 }
 
 export const DUNGEON_MATERIAL_SOURCES:readonly DungeonMaterialSource[]=[
-  {itemId:'REGIONAL_CATALYST',dungeonId:'COP_004',dungeonName:'Caravan of Glass',minLevel:30,chance:.15},
-  {itemId:'REGIONAL_CATALYST',dungeonId:'COP_005',dungeonName:'Mirage Well',minLevel:36,chance:.15},
-  {itemId:'REGIONAL_CATALYST',dungeonId:'COP_006',dungeonName:'Buried Observatory',minLevel:40,chance:.15},
-  {itemId:'REGIONAL_CATALYST',dungeonId:'COP_007',dungeonName:'Whitepine Hunt',minLevel:52,chance:.15},
-  {itemId:'REGIONAL_CATALYST',dungeonId:'COP_008',dungeonName:'Shiverlake Descent',minLevel:58,chance:.15},
-  {itemId:'REGIONAL_CATALYST',dungeonId:'COP_009',dungeonName:'Choir Caverns',minLevel:64,chance:.15},
+  {itemId:'REGIONAL_CATALYST',dungeonId:'COP_004',dungeonName:'Caravan of Glass',minLevel:30,expectedMinutes:18,chance:.15},
+  {itemId:'REGIONAL_CATALYST',dungeonId:'COP_005',dungeonName:'Mirage Well',minLevel:36,expectedMinutes:20,chance:.15},
+  {itemId:'REGIONAL_CATALYST',dungeonId:'COP_006',dungeonName:'Buried Observatory',minLevel:40,expectedMinutes:23,chance:.15},
+  {itemId:'REGIONAL_CATALYST',dungeonId:'COP_007',dungeonName:'Whitepine Hunt',minLevel:52,expectedMinutes:19,chance:.15},
+  {itemId:'REGIONAL_CATALYST',dungeonId:'COP_008',dungeonName:'Shiverlake Descent',minLevel:58,expectedMinutes:21,chance:.15},
+  {itemId:'REGIONAL_CATALYST',dungeonId:'COP_009',dungeonName:'Choir Caverns',minLevel:64,expectedMinutes:23,chance:.15},
 ] as const;
 
 export function dungeonMaterialSourcesForItem(itemId:string){

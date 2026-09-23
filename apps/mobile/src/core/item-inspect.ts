@@ -11,9 +11,10 @@ import {effectiveStats} from './game';
 import {previewEquipment} from './equipment-preview';
 import {rarityMeta} from './item-rarity';
 import {craftedInstancesForItem,effectiveOwnedGearRarity} from './crafted-gear-instances';
+import {acquisitionEstimateLabel,acquisitionProjectionForDestination} from './balance-projection';
 
 export type ItemInspectSourceKind='gathering'|'crafting'|'combat'|'dungeon'|'starting';
-export interface ItemInspectSource{kind:ItemInspectSourceKind;typeLabel?:string;title:string;detail:string;navigation?:WorkingTowardDestination;availability?:WorkingTowardDestinationAvailability;}
+export interface ItemInspectSource{kind:ItemInspectSourceKind;typeLabel?:string;title:string;detail:string;navigation?:WorkingTowardDestination;availability?:WorkingTowardDestinationAvailability;estimatedSeconds?:number;estimateLabel?:string;}
 export interface ItemRecipeUse{name:string;skill:string;level:number;quantity:number;navigation:WorkingTowardDestination;availability:WorkingTowardDestinationAvailability;}
 export interface ItemGearDecision{
  compatible:boolean;alreadyEquipped:boolean;replaces?:{itemId:string;name:string;rank:number};
@@ -46,14 +47,18 @@ export function itemInspectModel(state:GameState,itemId:string){
   }
   if(item.id.startsWith('START_')||item.id.startsWith('basic_'))sources.unshift({kind:'starting',title:'Starting equipment',detail:'Granted by a matching class loadout.'});
   if(item.type==='material'){
-    const materialSources=workingTowardItemSourceEntries(state,itemId).map(source=>({
-      kind:(source.type==='monster_drop'?'combat':source.type) as ItemInspectSourceKind,
-      typeLabel:source.typeLabel,
-      title:source.title,
-      detail:source.destination.detail,
-      navigation:source.destination,
-      availability:source.availability,
-    }));
+    const materialSources=workingTowardItemSourceEntries(state,itemId).map(source=>{
+      const projection=acquisitionProjectionForDestination(state,itemId,1,source.destination);
+      return {
+        kind:(source.type==='monster_drop'?'combat':source.type) as ItemInspectSourceKind,
+        typeLabel:source.typeLabel,
+        title:source.title,
+        detail:source.destination.detail,
+        navigation:source.destination,
+        availability:source.availability,
+        ...(projection?{estimatedSeconds:projection.etaSeconds,estimateLabel:acquisitionEstimateLabel(projection)}:{}),
+      };
+    });
     sources.splice(0,sources.length,...materialSources);
   }
 

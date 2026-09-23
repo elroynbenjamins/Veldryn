@@ -30,7 +30,7 @@ ok(modal.includes('TRAVEL DESTINATION')&&modal.includes('REGION PREVIEW')&&modal
 ok(modal.includes('<ZoneSceneArtwork regionId={zone.id}'),'Travel sheet must reserve a scenic zone hero');
 ok(modal.includes('Travel is instant.'),'Travel sheet must make instant region switching explicit');
 ok(!/travel time|seconds|minute|hour/i.test(modal),'Travel sheet must not introduce travel duration or timers');
-ok(modal.includes('title={development?"In Development":locked?"Locked":"Travel"}'),'Unavailable destination buttons must communicate their state');
+ok(modal.includes('title={inDevelopment?"In Development":locked?"Locked":"Travel"}'),'Unavailable destination buttons must communicate their state');
 ok(modal.includes('disabled={!unlocked}'),'Locked and in-development destinations must never travel');
 ok(modal.includes('COMMON ENEMIES')&&modal.includes('NOTABLE DROPS')&&modal.includes('ACTIVITIES'),'Travel sheet must preview meaningful zone content');
 ok(modal.includes('<ItemArtwork itemId={drop.itemId}'),'Notable drops must use the real in-game item visuals');

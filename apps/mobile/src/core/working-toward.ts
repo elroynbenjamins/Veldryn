@@ -151,6 +151,10 @@ export function progressionGoalDestination(state:GameState,goal:ProgressionGoal)
   const recipe=RECIPES.find(row=>row.id===goal.recipeId);
   return recipe?{kind:'skills',skillId:recipe.skillId as SkillId,mode:'crafting',recipeId:recipe.id,button:`Craft ${recipe.name}`,detail:'Open the tracked recipe.'}:{kind:'info',button:'Recipe unavailable',detail:'This recipe is not in the current catalog.'};
  }
+ if(goal.kind==='recipe_preparation'){
+  const recipe=RECIPES.find(row=>row.id===goal.recipeId);
+  return recipe?{kind:'skills',skillId:recipe.skillId as SkillId,mode:'crafting',recipeId:recipe.id,button:`Open ${recipe.name}`,detail:'Open the tracked preparation recipe.'}:{kind:'info',button:'Recipe unavailable',detail:'This tracked preparation recipe is not in the current catalog.'};
+ }
  if(goal.kind==='pet_hunt'){
   const monster=goal.sourceKind==='monster'?MONSTERS.find(row=>row.id===goal.sourceId):undefined,region=monster?regionForZoneName(monster.zone):undefined;
   return monster?{kind:'combat',monsterId:monster.id,zoneName:monster.zone,regionId:region?.id,button:`Hunt ${monster.name}`,detail:'This hunt can award the tracked pet.'}:{kind:'info',button:'View pet source',detail:'This pet uses a dungeon or special source.'};

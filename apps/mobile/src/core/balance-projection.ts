@@ -13,6 +13,7 @@ import {professionMasteryActiveBonusText} from './profession-mastery-presentatio
 import {characterProgressWithinLevel,characterTotalXpAtLevel,progressWithinLevel,totalXpAtLevel} from './progression';
 import {dungeonMaterialSourcesForItem} from '../content/dungeon-material-sources';
 import type {WorkingTowardDestination} from './working-toward';
+import {HERBALISM_ESSENCE_ITEM_ID,herbalismEssenceChance,herbalismHarvestMethodForActivity,selectedHerbalismHarvestMethod} from './herbalism';
 
 export interface LevelPaceProjection{
   label:string;
@@ -40,6 +41,10 @@ export interface GatheringBalanceProjection{
   rank:ReturnType<typeof professionMasteryRankProgress>;
   masteryBonus:string;
   levelPace:LevelPaceProjection;
+  secondaryItemId?:string;
+  secondaryChance?:number;
+  secondaryItemsPerHour?:number;
+  harvestMethod?:ReturnType<typeof selectedHerbalismHarvestMethod>;
 }
 
 export interface CombatBaselineProjection{
@@ -107,16 +112,16 @@ export function characterTargetEta(state:GameState,targetLevel:number,xpPerHour:
 }
 
 export function gatheringBalanceProjection(state:GameState,activity:GatherDef,offlineHours:number):GatheringBalanceProjection{
-  const environment=environmentForZone(activity.zoneId),effect=environmentEffect(activity.skillId,environment),pacing=gatheringPacing(state,activity),permanent=characterPermanentMultipliers(state),mastery=professionMasteryMultipliers(activity.id,state.account.professionMasteryByAction?.[activity.id]),rank=professionMasteryRankProgress(activity.id,state.account.professionMasteryByAction?.[activity.id]);
+  const environment=environmentForZone(activity.zoneId),effect=environmentEffect(activity.skillId,environment),pacing=gatheringPacing(state,activity),permanent=characterPermanentMultipliers(state),mastery=professionMasteryMultipliers(activity.id,state.account.professionMasteryByAction?.[activity.id]),rank=professionMasteryRankProgress(activity.id,state.account.professionMasteryByAction?.[activity.id]),harvestMethod=activity.skillId==='herbalism'?selectedHerbalismHarvestMethod(state):undefined;
   const specialtySpeed=activity.skillId==='fishing'?permanent.fishingSpeedMultiplier:activity.skillId==='herbalism'?permanent.herbalismSpeedMultiplier:1;
-  const cycleSeconds=activity.seconds*GATHER_TIME_SCALE*pacing.timeMultiplier*effect.actionTimeMultiplier/(permanent.gatheringSpeedMultiplier*specialtySpeed*mastery.speed),actionsPerHour=3600/Math.max(.1,cycleSeconds);
+  const cycleSeconds=activity.seconds*GATHER_TIME_SCALE*pacing.timeMultiplier*effect.actionTimeMultiplier*(harvestMethod?.actionTimeMultiplier??1)/(permanent.gatheringSpeedMultiplier*specialtySpeed*mastery.speed),actionsPerHour=3600/Math.max(.1,cycleSeconds);
   const meanItems=(activity.min+activity.max)/2;
-  // Settlement now rolls the authored min–max range deterministically per action,
-  // so long-run runtime expectation and authored expectation intentionally match.
-  const runtimeItemsPerHour=actionsPerHour*meanItems*effect.itemMultiplier*permanent.gatheringYieldMultiplier*mastery.yield;
+  // Settlement rolls the authored min–max range deterministically per action.
+  const runtimeItemsPerHour=actionsPerHour*meanItems*effect.itemMultiplier*permanent.gatheringYieldMultiplier*mastery.yield*(harvestMethod?.yieldMultiplier??1);
   const authoredMeanItemsPerHour=runtimeItemsPerHour;
-  const xpPerHour=actionsPerHour*activity.xp*effect.xpMultiplier*permanent.skillXpMultiplier*mastery.xp,capActions=Math.floor(Math.max(0,offlineHours)*3600/cycleSeconds);
-  return {cycleSeconds,actionsPerHour,runtimeItemsPerHour,authoredMeanItemsPerHour,xpPerHour,capActions,capItems:Math.floor(capActions*((activity.min+activity.max)/2)*effect.itemMultiplier*permanent.gatheringYieldMultiplier*mastery.yield),capXp:Math.floor(capActions*activity.xp*effect.xpMultiplier*permanent.skillXpMultiplier*mastery.xp),pacing,mastery,rank,masteryBonus:professionMasteryActiveBonusText(state,activity.id),levelPace:skillLevelPace(state,activity.skillId,xpPerHour)};
+  const xpPerHour=actionsPerHour*activity.xp*effect.xpMultiplier*permanent.skillXpMultiplier*mastery.xp*(harvestMethod?.xpMultiplier??1),capActions=Math.floor(Math.max(0,offlineHours)*3600/cycleSeconds);
+  const secondaryChance=activity.skillId==='herbalism'?herbalismEssenceChance(state,activity,harvestMethod?.id,effect.dropChanceMultiplier):undefined,secondaryItemsPerHour=secondaryChance===undefined?undefined:actionsPerHour*secondaryChance;
+  return {cycleSeconds,actionsPerHour,runtimeItemsPerHour,authoredMeanItemsPerHour,xpPerHour,capActions,capItems:Math.floor(capActions*meanItems*effect.itemMultiplier*permanent.gatheringYieldMultiplier*mastery.yield*(harvestMethod?.yieldMultiplier??1)),capXp:Math.floor(capActions*activity.xp*effect.xpMultiplier*permanent.skillXpMultiplier*mastery.xp*(harvestMethod?.xpMultiplier??1)),pacing,mastery,rank,masteryBonus:professionMasteryActiveBonusText(state,activity.id),levelPace:skillLevelPace(state,activity.skillId,xpPerHour),...(harvestMethod?{harvestMethod,secondaryItemId:HERBALISM_ESSENCE_ITEM_ID,secondaryChance,secondaryItemsPerHour}:{})};
 }
 
 export function activeGatheringRuntimeProjection(state:GameState){
@@ -124,16 +129,17 @@ export function activeGatheringRuntimeProjection(state:GameState){
   if(!activity||!['mining','woodcutting','fishing','herbalism'].includes(activity.kind))return undefined;
   const definition=[...GATHERING,...HERB_NODES].find(row=>row.id===activity.targetId);
   if(!definition)return undefined;
-  const effect=environmentEffectForActivity(activity).effect,pacing=gatheringPacing(state,definition),permanent=characterPermanentMultipliers(state),mastery=professionMasteryMultipliers(definition.id,state.account.professionMasteryByAction?.[definition.id]);
+  const effect=environmentEffectForActivity(activity).effect,pacing=gatheringPacing(state,definition),permanent=characterPermanentMultipliers(state),mastery=professionMasteryMultipliers(definition.id,state.account.professionMasteryByAction?.[definition.id]),harvestMethod=definition.skillId==='herbalism'?herbalismHarvestMethodForActivity(state):undefined;
   const specialtySpeed=definition.skillId==='fishing'?permanent.fishingSpeedMultiplier:definition.skillId==='herbalism'?permanent.herbalismSpeedMultiplier:1;
-  const cycleSeconds=definition.seconds*GATHER_TIME_SCALE*pacing.timeMultiplier*effect.actionTimeMultiplier/(permanent.gatheringSpeedMultiplier*specialtySpeed*mastery.speed);
-  const actionsPerHour=3600/Math.max(.1,cycleSeconds),meanItems=(definition.min+definition.max)/2;
+  const cycleSeconds=definition.seconds*GATHER_TIME_SCALE*pacing.timeMultiplier*effect.actionTimeMultiplier*(harvestMethod?.actionTimeMultiplier??1)/(permanent.gatheringSpeedMultiplier*specialtySpeed*mastery.speed);
+  const actionsPerHour=3600/Math.max(.1,cycleSeconds),meanItems=(definition.min+definition.max)/2,secondaryChance=definition.skillId==='herbalism'?herbalismEssenceChance(state,definition,harvestMethod?.id,effect.dropChanceMultiplier):undefined;
   return {
     definition,
     cycleSeconds,
     actionsPerHour,
-    itemsPerHour:actionsPerHour*meanItems*effect.itemMultiplier*permanent.gatheringYieldMultiplier*mastery.yield,
-    xpPerHour:actionsPerHour*definition.xp*effect.xpMultiplier*permanent.skillXpMultiplier*mastery.xp,
+    itemsPerHour:actionsPerHour*meanItems*effect.itemMultiplier*permanent.gatheringYieldMultiplier*mastery.yield*(harvestMethod?.yieldMultiplier??1),
+    xpPerHour:actionsPerHour*definition.xp*effect.xpMultiplier*permanent.skillXpMultiplier*mastery.xp*(harvestMethod?.xpMultiplier??1),
+    ...(harvestMethod?{harvestMethod,secondaryItemId:HERBALISM_ESSENCE_ITEM_ID,secondaryChance,secondaryItemsPerHour:actionsPerHour*(secondaryChance??0)}:{}),
   };
 }
 

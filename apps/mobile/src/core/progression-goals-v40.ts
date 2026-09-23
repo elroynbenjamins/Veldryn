@@ -1,10 +1,11 @@
 import {masteryPointsForRank,professionMasteryRank} from './profession-mastery-v40';
-export type GoalKind='skill_level'|'item_quantity'|'recipe'|'monster_kills'|'pet_hunt'|'equipment_set'|'dungeon_clears'|'mastery_rank'|'weekly_order';
+export type GoalKind='skill_level'|'item_quantity'|'recipe'|'recipe_preparation'|'monster_kills'|'pet_hunt'|'equipment_set'|'dungeon_clears'|'mastery_rank'|'weekly_order';
 interface GoalBase{id:string;characterId:string;kind:GoalKind;title:string;createdAtMs:number;pinnedAtMs:number}
 export type ProgressionGoal=
  |(GoalBase&{kind:'skill_level';skillId:string;targetLevel:number})
  |(GoalBase&{kind:'item_quantity';itemId:string;targetQuantity:number})
  |(GoalBase&{kind:'recipe';recipeId:string;targetQuantity:number})
+ |(GoalBase&{kind:'recipe_preparation';recipeId:string})
  |(GoalBase&{kind:'monster_kills';monsterId:string;targetKills:number})
  |(GoalBase&{kind:'pet_hunt';petId:string;sourceKind:'monster'|'dungeon';sourceId:string})
  |(GoalBase&{kind:'equipment_set';setId:string;targetPieces:number})
@@ -20,6 +21,10 @@ export function nextMasteryGoalRank(currentRank:number){
 export function masteryGoalForAction(args:{characterId:string;actionId:string;actionName:string;targetRank:number;nowMs:number}):ProgressionGoal{
  const targetRank=Math.max(1,Math.min(50,Math.floor(args.targetRank)));
  return {id:`goal:${args.nowMs}:${args.actionId}`,characterId:args.characterId,kind:'mastery_rank',title:`Profession Mastery · ${args.actionName}`,createdAtMs:args.nowMs,pinnedAtMs:args.nowMs,actionId:args.actionId,targetRank};
+}
+
+export function recipePreparationGoal(args:{characterId:string;recipeId:string;recipeName:string;nowMs:number}):ProgressionGoal{
+ return {id:`goal:${args.nowMs}:prepare:${args.recipeId}`,characterId:args.characterId,kind:'recipe_preparation',title:`Prepare · ${args.recipeName}`,createdAtMs:args.nowMs,pinnedAtMs:args.nowMs,recipeId:args.recipeId};
 }
 
 export interface GoalSource{kind:'skill'|'monster'|'dungeon'|'recipe'|'item'|'region'|'collection'|'weekly_order';id:string;label:string;available:boolean;reason?:string}
@@ -42,6 +47,7 @@ export function progressionGoalView(goal:ProgressionGoal,context:GoalContext):Go
   case'skill_level':current=context.skillLevels[goal.skillId]??1;target=goal.targetLevel;source=sourceFor(`skill:${goal.skillId}`);if(current<target){const targetXp=context.skillXpTarget?.[`${goal.skillId}:${target}`];seconds=targetXp===undefined?undefined:eta(Math.max(0,targetXp-(context.skillXp[goal.skillId]??0)),context.rates?.skillXpPerHour?.[goal.skillId])}else seconds=0;break;
   case'item_quantity':current=context.itemQuantities[goal.itemId]??0;target=goal.targetQuantity;source=sourceFor(`item:${goal.itemId}`);seconds=eta(target-current,context.rates?.itemPerHour?.[goal.itemId]);break;
   case'recipe':current=context.recipeCraftCounts[goal.recipeId]??0;target=goal.targetQuantity;source=sourceFor(`recipe:${goal.recipeId}`);seconds=eta(target-current,context.rates?.recipePerHour?.[goal.recipeId]);break;
+  case'recipe_preparation':current=0;target=1;source=sourceFor(`recipe:${goal.recipeId}`);break;
   case'monster_kills':current=context.monsterKills[goal.monsterId]??0;target=goal.targetKills;source=sourceFor(`monster:${goal.monsterId}`);seconds=eta(target-current,context.rates?.killsPerHour?.[goal.monsterId]);break;
   case'pet_hunt':current=context.ownedPetIds[goal.petId]?1:0;target=1;source=sourceFor(`${goal.sourceKind}:${goal.sourceId}`);break;
   case'equipment_set':current=context.craftedSetPieceCounts[goal.setId]??0;target=goal.targetPieces;source=sourceFor(`set:${goal.setId}`);break;
@@ -54,7 +60,7 @@ export function progressionGoalView(goal:ProgressionGoal,context:GoalContext):Go
  return {goal,status:complete?'complete':blocker?'blocked':'active',current,target,progress:Math.max(0,Math.min(1,target<=0?1:current/target)),etaSeconds:complete?0:seconds,etaLabel:etaLabel(complete?0:seconds),source,blocker};
 }
 
-const GOAL_KINDS:GoalKind[]=['skill_level','item_quantity','recipe','monster_kills','pet_hunt','equipment_set','dungeon_clears','mastery_rank','weekly_order'];
+const GOAL_KINDS:GoalKind[]=['skill_level','item_quantity','recipe','recipe_preparation','monster_kills','pet_hunt','equipment_set','dungeon_clears','mastery_rank','weekly_order'];
 export function normalizeProgressionGoals(value:unknown,characterId:string):ProgressionGoal[]{
  if(!Array.isArray(value)||!characterId)return [];
  const out:ProgressionGoal[]=[];
@@ -71,6 +77,7 @@ export function normalizeProgressionGoals(value:unknown,characterId:string):Prog
   if(kind==='skill_level'&&typeof row.skillId==='string'&&positive('targetLevel'))goal={...base,kind,skillId:row.skillId,targetLevel:positive('targetLevel')!};
   else if(kind==='item_quantity'&&typeof row.itemId==='string'&&positive('targetQuantity'))goal={...base,kind,itemId:row.itemId,targetQuantity:positive('targetQuantity')!};
   else if(kind==='recipe'&&typeof row.recipeId==='string'&&positive('targetQuantity'))goal={...base,kind,recipeId:row.recipeId,targetQuantity:positive('targetQuantity')!};
+  else if(kind==='recipe_preparation'&&typeof row.recipeId==='string')goal={...base,kind,recipeId:row.recipeId};
   else if(kind==='monster_kills'&&typeof row.monsterId==='string'&&positive('targetKills'))goal={...base,kind,monsterId:row.monsterId,targetKills:positive('targetKills')!};
   else if(kind==='pet_hunt'&&typeof row.petId==='string'&&(row.sourceKind==='monster'||row.sourceKind==='dungeon')&&typeof row.sourceId==='string')goal={...base,kind,petId:row.petId,sourceKind:row.sourceKind,sourceId:row.sourceId};
   else if(kind==='equipment_set'&&typeof row.setId==='string'&&positive('targetPieces'))goal={...base,kind,setId:row.setId,targetPieces:positive('targetPieces')!};

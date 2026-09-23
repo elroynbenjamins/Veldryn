@@ -231,6 +231,13 @@ ok(activity.includes("preview.craftingActions??0")&&activity.includes("preview.f
 const queue=read('src/components/ActionQueuePanel.tsx');
 ok(queue.includes('backgroundColor:C.warningSurface'),'Queue warnings must remain theme-safe');
 ok(queue.includes('backgroundColor:C.goodSurface'),'Queue handoff success must remain theme-safe');
+ok(queue.includes('activityQueueCapacity(state)')&&queue.includes('queue.length}/{capacity}'),'Action Queue panel must display and normalize against entitlement-aware capacity');
+ok(!queue.includes('MAX_ACTIVITY_QUEUE'),'Action Queue UI must not regress to the old fixed three-slot display constant');
+const idleRulesEditor=read('src/components/IdleRulesEditorV40.tsx');
+ok(idleRulesEditor.includes('MAX_IDLE_RULE_SETS')&&idleRulesEditor.includes('upsertIdleRuleSet'),'Advanced Idle Rules UI must use the safe core rule-limit helper');
+ok(idleRulesEditor.includes('GOAL RULE')&&idleRulesEditor.includes("id.startsWith('goal-rule:')"),'Goal-generated stop rules must be visibly distinguished from custom rules');
+ok(idleRulesEditor.includes('backgroundColor:C.goodSurface')&&idleRulesEditor.includes('backgroundColor:C.selection'),'Idle Rules active and selected states must use semantic theme surfaces');
+ok(!idleRulesEditor.includes('.slice(-5)'),'Idle Rule presets must never silently evict another saved rule');
 
 const itemQuickInspect=read('src/components/ItemQuickInspect.tsx');
 ok(itemQuickInspect.includes('Other sources ·')&&itemQuickInspect.includes("'Monster Drop'")&&itemQuickInspect.includes("'Dungeon'"),'Item quick inspect must use the same compact typed source disclosure');

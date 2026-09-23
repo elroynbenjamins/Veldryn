@@ -1,5 +1,5 @@
 import {claimActivity,createCharacter,newGame,startCombat,stopActivity} from '../src/core/game';
-import {activityQueueHandoffStatus,enqueueActivity,MAX_ACTIVITY_QUEUE,moveQueuedActivity,queuedActivityReadiness} from '../src/core/activity-queue';
+import {activityQueueCapacity,activityQueueHandoffStatus,enqueueActivity,moveQueuedActivity,queuedActivityReadiness} from '../src/core/activity-queue';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
 import {normalizeSave} from '../src/core/save-normalization';
 import {weeklyOrderBoardForState} from '../src/core/long-term-progression-runtime';
@@ -9,9 +9,15 @@ function rejects(fn:()=>unknown,message:string){let caught=false;try{fn()}catch{
 const now=1_000_000;
 
 let capped=createCharacter(newGame(now),'WAYFINDER','Queue Cap');
-for(let i=0;i<MAX_ACTIVITY_QUEUE;i++)capped=enqueueActivity(capped,{kind:'combat',targetId:'MOSS_RAT',huntGoalId:'kills_50'});
+for(let i=0;i<activityQueueCapacity(capped);i++)capped=enqueueActivity(capped,{kind:'combat',targetId:'MOSS_RAT',huntGoalId:'kills_50'});
 ok(capped.character?.activityQueue?.length===3,'Action Queue should accept three entries');
 rejects(()=>enqueueActivity(capped,{kind:'combat',targetId:'MOSS_RAT'}),'Action Queue should reject a fourth entry');
+let vipQueue=createCharacter(newGame(now),'WAYFINDER','VIP Queue');
+vipQueue={...vipQueue,account:{...vipQueue.account,entitlements:{vip_plus:true}}};
+ok(activityQueueCapacity(vipQueue)===4,'VIP+ should add one permanent Action Queue slot');
+for(let i=0;i<4;i++)vipQueue=enqueueActivity(vipQueue,{kind:'combat',targetId:'MOSS_RAT'});
+ok(vipQueue.character?.activityQueue?.length===4,'VIP+ should retain four queued actions');
+
 const dirty:any=structuredClone(capped);
 dirty.character.activityQueue=[...dirty.character.activityQueue,{kind:'combat',targetId:''},{kind:'gathering',targetId:'EXTRA'}];
 dirty.character.activityQueuePausedReason='x'.repeat(400);

@@ -4,6 +4,7 @@ import type {GameState} from './types';
 import {acquisitionProjectionForDestination,formatBalanceDuration} from './balance-projection';
 import {isTimedProcessingRecipe} from './processing';
 import {professionMasteryMultipliers} from './profession-mastery-v40';
+import {characterPermanentMultipliers} from './permanent-boosts';
 import {
   workingTowardDestinationAvailability,
   workingTowardItemSourceEntries,
@@ -274,6 +275,163 @@ export function materialAcquisitionEstimateLabel(plan:MaterialAcquisitionPlan){
 export function materialAcquisitionPlanSummary(plan:MaterialAcquisitionPlan){
   const estimate=materialAcquisitionEstimateLabel(plan),chain=materialAcquisitionChainLabel(plan);
   return {estimate,chain,complete:plan.complete,goldShortfall:plan.goldShortfall,blockedReasons:[...new Set(plan.blockedReasons)]};
+}
+
+
+export type RecipePreparationStepKind='gathering'|'monster_drop'|'dungeon'|'crafting'|'final_craft'|'info';
+export type RecipePreparationStepState='ready'|'travel'|'locked'|'after'|'final'|'info';
+export interface RecipePreparationStep{
+  id:string;
+  kind:RecipePreparationStepKind;
+  state:RecipePreparationStepState;
+  stateLabel:string;
+  label:string;
+  detail:string;
+  destination?:WorkingTowardDestination;
+  availability?:WorkingTowardDestinationAvailability;
+  etaSeconds?:number;
+}
+export interface RecipePreparationRoute{
+  recipeId:string;
+  steps:RecipePreparationStep[];
+  acquisitionSteps:number;
+  craftSteps:number;
+  totalGold:number;
+  goldShortfall:number;
+  knownEtaSeconds:number;
+  etaSeconds?:number;
+  complete:boolean;
+  blockedReasons:string[];
+}
+
+function stepState(availability:WorkingTowardDestinationAvailability|undefined,after=false):{state:RecipePreparationStepState;stateLabel:string}{
+  if(after)return {state:'after',stateLabel:'AFTER'};
+  if(!availability)return {state:'info',stateLabel:'INFO'};
+  if(availability.status==='locked')return {state:'locked',stateLabel:'LOCKED'};
+  if(availability.status==='travel')return {state:'travel',stateLabel:'TRAVEL'};
+  if(availability.status==='info')return {state:'info',stateLabel:'INFO'};
+  return {state:'ready',stateLabel:'READY'};
+}
+
+function directStepKind(plan:MaterialAcquisitionPlan):RecipePreparationStepKind{
+  if(plan.destination?.kind==='combat')return 'monster_drop';
+  if(plan.destination?.kind==='dungeon')return 'dungeon';
+  if(plan.destination?.kind==='skills'&&plan.destination.mode==='gathering')return 'gathering';
+  return 'info';
+}
+
+function directStepLabel(plan:MaterialAcquisitionPlan){
+  const quantity=Math.ceil(plan.remaining);
+  if(plan.sourceTypeLabel==='Gathering')return `Gather ${quantity}× ${plan.name}`;
+  if(plan.sourceTypeLabel==='Monster Drop')return `Hunt for ${quantity}× ${plan.name}`;
+  if(plan.sourceTypeLabel==='Dungeon')return `Run for ${quantity}× ${plan.name}`;
+  return `Acquire ${quantity}× ${plan.name}`;
+}
+
+function planPreparationSteps(plan:MaterialAcquisitionPlan,path:string):RecipePreparationStep[]{
+  if(plan.remaining<=0)return [];
+  const children=plan.children.flatMap((child,index)=>planPreparationSteps(child,`${path}.${index}`));
+  if(plan.craft){
+    const timing=plan.craft.craftSeconds>0?` · ${formatBalanceDuration(plan.craft.craftSeconds)}`:'';
+    const state=stepState(plan.availability,children.length>0);
+    return [...children,{
+      id:`${path}:craft:${plan.craft.recipeId}`,
+      kind:'crafting',
+      ...state,
+      label:`${plan.craft.recipeName} ×${plan.craft.batches}`,
+      detail:`Produces ${plan.craft.produced}× ${plan.name} · ${plan.craft.gold.toLocaleString()} Gold${timing}`,
+      destination:plan.destination,
+      availability:plan.availability,
+      ...(plan.craft.craftSeconds>0?{etaSeconds:plan.craft.craftSeconds}:{}),
+    }];
+  }
+  if(plan.destination){
+    const state=stepState(plan.availability),eta=plan.knownEtaSeconds>0?` · ~${formatBalanceDuration(plan.knownEtaSeconds)}`:'';
+    return [{
+      id:`${path}:source:${plan.itemId}`,
+      kind:directStepKind(plan),
+      ...state,
+      label:directStepLabel(plan),
+      detail:`${plan.sourceTitle}${eta}`,
+      destination:plan.destination,
+      availability:plan.availability,
+      ...(plan.knownEtaSeconds>0?{etaSeconds:plan.knownEtaSeconds}:{}),
+    }];
+  }
+  return [{
+    id:`${path}:info:${plan.itemId}`,
+    kind:'info',
+    state:'info',
+    stateLabel:'INFO',
+    label:`Resolve ${Math.ceil(plan.remaining)}× ${plan.name}`,
+    detail:plan.blockedReasons[0]??'No actionable source is currently modeled.',
+  }];
+}
+
+function finalRecipeSeconds(state:GameState,recipe:Recipe,batches:number){
+  const mastery=professionMasteryMultipliers(recipe.id,state.account.professionMasteryByAction?.[recipe.id]);
+  if(recipe.skillId==='alchemy'||isTimedProcessingRecipe(recipe.id))return Math.max(1,recipe.seconds/mastery.speed)*batches;
+  const output=itemDef(recipe.output.itemId);
+  if(output.type==='gear'&&!recipe.noviceSetId){
+    const permanent=characterPermanentMultipliers(state),speed=Math.max(.1,permanent.craftingSpeedMultiplier*mastery.speed);
+    return Math.max(1,Math.ceil(recipe.seconds/speed))*batches;
+  }
+  return 0;
+}
+
+function recipeDestination(recipe:Recipe):WorkingTowardDestination{
+  return {kind:'skills',skillId:recipe.skillId,mode:'crafting',recipeId:recipe.id,button:`Open ${recipe.name}`,detail:`Open ${recipe.name}.`};
+}
+
+export function recipePreparationRoute(state:GameState,recipe:Recipe,batches=1):RecipePreparationRoute{
+  const count=Math.max(1,Math.floor(batches)),ledger=stockLedger(state),plans:MaterialAcquisitionPlan[]=[];
+  if(recipe.requiresCraftedItemId&&!state.character?.craftedNoviceItemIds?.includes(recipe.requiresCraftedItemId)){
+    const prerequisiteSource=workingTowardItemSourceEntries(state,recipe.requiresCraftedItemId).find(source=>source.type==='crafting');
+    plans.push(prerequisiteSource
+      ?planInternal(state,recipe.requiresCraftedItemId,1,prerequisiteSource.destination,ledger,false,new Set())
+      :unknownPlan(recipe.requiresCraftedItemId,1,0,1,`Craft ${itemDef(recipe.requiresCraftedItemId).name} first.`));
+  }
+  for(const input of recipe.inputs)plans.push(planInternal(state,input.itemId,input.quantity*count,undefined,ledger,true,new Set()));
+
+  const preparationSteps=plans.flatMap((plan,index)=>planPreparationSteps(plan,`input:${index}`));
+  const destination=recipeDestination(recipe),availability=workingTowardDestinationAvailability(state,destination),finalSeconds=finalRecipeSeconds(state,recipe,count);
+  const totalGold=recipe.gold*count+plans.reduce((sum,plan)=>sum+plan.totalGold,0),goldShortfall=Math.max(0,totalGold-(state.character?.gold??0));
+  const finalUnlocked=availability.status!=='locked'&&availability.status!=='info',plansComplete=plans.every(plan=>plan.complete);
+  const complete=finalUnlocked&&plansComplete&&goldShortfall===0;
+  const knownEtaSeconds=finalSeconds+plans.reduce((sum,plan)=>sum+plan.knownEtaSeconds,0);
+  const blockers=[
+    ...plans.flatMap(plan=>plan.blockedReasons),
+    ...(!finalUnlocked?[availability.detail]:[]),
+    ...(goldShortfall>0?[`Need ${goldShortfall.toLocaleString()} more Gold for the full route.`]:[]),
+  ];
+  const finalState=preparationSteps.length?{state:'final' as const,stateLabel:'FINAL'}:stepState(availability);
+  const finalTiming=finalSeconds>0?` · ${formatBalanceDuration(finalSeconds)}`:'';
+  const finalStep:RecipePreparationStep={
+    id:`final:${recipe.id}`,
+    kind:'final_craft',
+    ...finalState,
+    label:`${recipe.name}${count>1?` ×${count}`:''}`,
+    detail:`Produces ${recipe.output.quantity*count}× ${itemDef(recipe.output.itemId).name} · ${(recipe.gold*count).toLocaleString()} Gold${finalTiming}`,
+    destination,
+    availability,
+    ...(finalSeconds>0?{etaSeconds:finalSeconds}:{}),
+  };
+  return {
+    recipeId:recipe.id,
+    steps:[...preparationSteps,finalStep],
+    acquisitionSteps:preparationSteps.filter(step=>step.kind==='gathering'||step.kind==='monster_drop'||step.kind==='dungeon').length,
+    craftSteps:preparationSteps.filter(step=>step.kind==='crafting').length+1,
+    totalGold,goldShortfall,knownEtaSeconds,
+    ...(complete?{etaSeconds:knownEtaSeconds}:{}),
+    complete,
+    blockedReasons:[...new Set(blockers)],
+  };
+}
+
+export function recipePreparationRouteLabel(route:RecipePreparationRoute){
+  const stepLabel=`${route.steps.length} step${route.steps.length===1?'':'s'}`;
+  if(route.complete&&route.etaSeconds!==undefined)return `${stepLabel} · ~${formatBalanceDuration(route.etaSeconds)}`;
+  return `${stepLabel} · ${route.blockedReasons.length?'needs attention':'route ready'}`;
 }
 
 export function materialStoredQuantity(state:GameState,itemId:string){return storedQuantity(state,itemId);}

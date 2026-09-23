@@ -10,6 +10,7 @@ import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {GameModalHeader,GameModalSurface} from './GameModalSurface';
 import {PublicProfileScene} from './PublicProfileScene';
+import {effectivePlayerNameStyle} from '../core/player-name-style';
 
 const audienceRows:ReadonlyArray<{id:ProfilePreviewAudience;label:string;detail:string}>=[
  {id:'public',label:'Public viewer',detail:'Signed-in player outside your guild'},
@@ -34,6 +35,7 @@ export function ProfileAudiencePreviewModal({visible,state,identityDraft,onClose
   accountId:identityDraft?.accountId??'preview',
   displayName:character.name,
   visibility,
+  nameStyle:effectivePlayerNameStyle(state),
   character:{id:character.id,name:character.name,classId:character.classId,level:character.level,bodyPresentation:character.bodyPresentation??'male',selectedSkinId:character.selectedSkinId??''},
   title:character.profileTitle??'New Adventurer',
   backgroundId:character.profileBackgroundId??'asterfall-night',
@@ -64,7 +66,7 @@ export function ProfileAudiencePreviewModal({visible,state,identityDraft,onClose
     <View accessibilityRole="tablist" style={s.audiences}>{audienceRows.map(row=><Pressable key={row.id} accessibilityRole="tab" accessibilityState={{selected:audience===row.id}} onPress={()=>setAudience(row.id)} style={({pressed})=>[s.audience,audience===row.id&&s.audienceOn,pressed&&s.pressed]}><Text style={[s.audienceLabel,audience===row.id&&s.audienceLabelOn]}>{row.label}</Text><Text numberOfLines={2} style={s.audienceDetail}>{row.detail}</Text></Pressable>)}</View>
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
      {!canView?<View style={s.hiddenCard}><Text style={s.hiddenMark}>◇</Text><Text style={s.hiddenTitle}>Profile hidden from this viewer</Text><Text style={s.hiddenCopy}>{hiddenReason}</Text></View>:<>
-      <PublicProfileScene profile={profile}/>
+      <PublicProfileScene profile={profile} reduceMotion={state.settings.reduceMotion}/>
       {profile.bio?<View style={s.bioCard}><Text style={s.section}>BIOGRAPHY</Text><Text style={s.bio}>{profile.bio}</Text></View>:<View style={s.bioCard}><Text style={s.section}>BIOGRAPHY</Text><Text style={s.muted}>No biography selected.</Text></View>}
       <View style={s.card}>
        <Text style={s.section}>PROFILE HIGHLIGHTS</Text>

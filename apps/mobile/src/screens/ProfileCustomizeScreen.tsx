@@ -4,6 +4,7 @@ import {GameButton} from '../components/GameButton';
 import {OnlineProfileExtensionPanel} from '../components/OnlineProfileExtensionPanel';
 import {ProfileAudiencePreviewModal} from '../components/ProfileAudiencePreviewModal';
 import {ProfileEditor} from '../components/ProfileEditor';
+import {PlayerNameStyleEditor} from '../components/PlayerNameStyleEditor';
 import type {GameState} from '../core/types';
 import type {ProfileCustomizationDestination} from '../core/profile-customization';
 import type {ProfileExtensionSelfV43} from '../online/profile-extension-v43';
@@ -28,13 +29,13 @@ export function ProfileCustomizeScreen({state,onChange,onNavigateSource,onDirtyC
    <View style={s.flex}><Text style={s.kicker}>PROFILE CUSTOMIZATION</Text><Text accessibilityRole="header" style={s.heading}>Customize Profile</Text></View>
    <View style={[s.liveBadge,dirty&&s.liveBadgeDirty]}><Text style={[s.liveBadgeText,dirty&&s.liveBadgeTextDirty]}>{dirty?'UNSAVED CHANGES':section==='Appearance'?'LIVE PREVIEW':'PROFILE SETTINGS'}</Text></View>
   </View>
-  <Text style={s.intro}>Shape the identity other players see. Appearance is saved per character; social details and showcases belong to your account profile.</Text>
+  <Text style={s.intro}>Shape the identity other players see. Appearance is saved per character; player-name styling and social details belong to your account profile.</Text>
   <View style={s.previewAction}><GameButton compact title="Preview as others see me" tone="secondary" onPress={()=>setPreviewOpen(true)}/></View>
 
   <View accessibilityRole="tablist" style={s.tabs}>
    <Pressable accessibilityRole="tab" accessibilityState={{selected:section==='Appearance'}} onPress={()=>setSection('Appearance')} style={({pressed})=>[s.tab,section==='Appearance'&&s.tabOn,pressed&&s.pressed]}>
     <Text style={[s.tabTitle,section==='Appearance'&&s.tabTitleOn]}>Appearance</Text>
-    <Text style={s.tabMeta}>Background · border · title · Pet</Text>
+    <Text style={s.tabMeta}>Background · border · title · Pet · name style</Text>
    </Pressable>
    <Pressable accessibilityRole="tab" accessibilityState={{selected:section==='Identity'}} onPress={()=>setSection('Identity')} style={({pressed})=>[s.tab,section==='Identity'&&s.tabOn,pressed&&s.pressed]}>
     <Text style={[s.tabTitle,section==='Identity'&&s.tabTitleOn]}>Identity & Showcases</Text>
@@ -44,6 +45,7 @@ export function ProfileCustomizeScreen({state,onChange,onNavigateSource,onDirtyC
 
   <View style={section==='Appearance'?s.sectionShown:s.sectionHidden} pointerEvents={section==='Appearance'?'auto':'none'}>
    <ProfileEditor state={state} onChange={onChange} showLoadouts={false} onNavigateSource={onNavigateSource} onDirtyChange={setAppearanceDirty} onPreviewStateChange={setAppearancePreview}/>
+   <PlayerNameStyleEditor state={state} onChange={onChange}/>
   </View>
   <View style={section==='Identity'?s.sectionShown:s.sectionHidden} pointerEvents={section==='Identity'?'auto':'none'}>
    <OnlineProfileExtensionPanel state={state} onDirtyChange={setIdentityDirty} onDraftChange={setIdentityDraft}/>

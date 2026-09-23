@@ -236,10 +236,15 @@ function VeldrynApp(){
   async function applyOnlineAdminQa(classId:ClassId){const result=await perform({type:'qa_prepare',args:{classId}});if(!result)throw new Error('Admin QA profile was not confirmed by the server.');}
   async function refillOnlineAdminQa(){const result=await perform({type:'qa_refill'});if(!result)throw new Error('Admin QA refill was not confirmed by the server.');}
   async function runCompanionCommand(command:GameCommand){
-    if(serverGameplayEnabled){if(!await perform(command))throw new Error('Companion action was not confirmed.');return;}
+    if(serverGameplayEnabled){
+      const result=await perform(command);if(!result)throw new Error('Companion action was not confirmed.');
+      if(command.type==='companion_boss_rematch'&&result.won===false)throw new Error(result.message??'Fallen Knight rematch lost.');
+      return;
+    }
     const current=stateRef.current;if(!current)throw new Error('Load your character first.');
     const result=executeGameCommand(current,command,Date.now());
     await commit(result.state);if(result.reward)presentCollected(result.reward,result.activity??null,current,result.state);else queueMasteryNotice(current,result.state);
+    if(command.type==='companion_boss_rematch'&&result.won===false)throw new Error(result.message??'Fallen Knight rematch lost.');
   }
   async function commit(candidate:GameState){
     if(serverGameplayEnabled){

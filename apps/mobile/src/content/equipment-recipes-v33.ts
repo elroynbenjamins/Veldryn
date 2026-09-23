@@ -51,10 +51,10 @@ const smithingPathMaterial:Record<string,Record<string,string>>={
   T4:{Foundation:'TORN_OATHCLOTH',Specialist:'LANTERNSTEEL_SHARD',Alternate:'ECHO_QUARTZ'},
 };
 const tailoringPathMaterial:Record<string,Record<string,string>>={
-  T1:{Foundation:'MOSS_FIBER',Specialist:'WISP_DUST',Alternate:'BOAR_HIDE'},
-  T2:{Foundation:'WOLF_PELT',Specialist:'THORN_SAP',Alternate:'BOAR_HIDE'},
-  T3:{Foundation:'TROLL_HIDE',Specialist:'THORN_SAP',Alternate:'WOLF_PELT'},
-  T4:{Foundation:'TORN_OATHCLOTH',Specialist:'ECHO_QUARTZ',Alternate:'ECHO_TOUCHED_PELT'},
+  T1:{Foundation:'BOAR_HIDE',Specialist:'WISP_DUST',Alternate:'THORN_SAP'},
+  T2:{Foundation:'BOAR_HIDE',Specialist:'THORN_SAP',Alternate:'IRONWOOD_FANG'},
+  T3:{Foundation:'WOLF_PELT',Specialist:'THORN_SAP',Alternate:'MOSS_FIBER'},
+  T4:{Foundation:'ECHO_QUARTZ',Specialist:'OATHGLASS_SHARD',Alternate:'BANNER_ASH'},
 };
 
 function q(base:number,multiplier:number){return Math.max(1,Math.round(base*multiplier));}

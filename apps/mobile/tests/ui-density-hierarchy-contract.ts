@@ -281,7 +281,7 @@ ok(worldPolish.includes("backgroundColor:C.dark?'rgba(8,17,29,.80)':'rgba(255,25
 
 const encounterList=read('src/components/RegionEncounterList.tsx');
 ok(encounterList.includes('NEXT LV ~')&&encounterList.includes('XP to level'),'Expanded encounters must expose baseline combat level ETA and remaining XP');
-ok(encounterList.includes('dropExpectation')&&encounterList.includes("oddsText=drop.chance>0?'~1/'"),'Combat drop rows must expose reciprocal odds and expected find-time context');
+ok(encounterList.includes('dropExpectation')&&encounterList.includes("'~1/'+Math.max(1,Math.round(expectation.oneIn))")&&encounterList.includes("'avg '+formatBalanceDuration(expectation.averageFindSeconds)"),'Combat drop rows must expose reciprocal odds and expected find-time context');
 ok(encounterList.includes('dropPaceBand')&&encounterList.includes('pace.label'),'Combat drop rows must label frequent, progression, chase and long-chase acquisition pace');
 
 const combatPolish=read('src/screens/CombatScreen.tsx');

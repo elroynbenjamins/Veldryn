@@ -2,6 +2,7 @@ import {COMPANION_REMATCH_WEEKLY_BONDSTONE_CAP,type CompanionAccountState} from 
 import {companionMission} from '../../../../backend/src/server/companions/content';
 import {combatCompanionDef} from '../content/combat-companions';
 import {newCompanionTrialSeasonState,newCompanionTrialLifetimeStats} from '../../../../backend/src/server/companions/trial-season';
+import {FALLEN_KNIGHT_WEEKLY_REWARD_CAP} from './weekly-boss';
 
 const int=(v:unknown,max=Number.MAX_SAFE_INTEGER)=>typeof v==='number'&&Number.isFinite(v)?Math.max(0,Math.min(max,Math.floor(v))):0;
 const record=(v:unknown):Record<string,number>=>Object.fromEntries(Object.entries(v&&typeof v==='object'?v:{}).filter(([k,n])=>k.length<=120&&typeof n==='number'&&Number.isFinite(n)).slice(0,500).map(([k,n])=>[k,int(n)]));
@@ -16,6 +17,7 @@ export function normalizeCompanionRuntimeSave(raw:any):CompanionAccountState {
   out.companionBondRewardClaims=list(a.companionBondRewardClaims,100);
   out.companionBattleReadyAtMs=int(a.companionBattleReadyAtMs);
   out.companionBossRematchReadyAtMs=int(a.companionBossRematchReadyAtMs);
+  if(a.fallenKnightWeekly&&typeof a.fallenKnightWeekly.weekKey==='string')out.fallenKnightWeekly={weekKey:a.fallenKnightWeekly.weekKey.slice(0,32),rewardedClears:int(a.fallenKnightWeekly.rewardedClears,FALLEN_KNIGHT_WEEKLY_REWARD_CAP),bountyAwarded:a.fallenKnightWeekly.bountyAwarded===true};
   if(a.companionTrialProgress){
     const p=a.companionTrialProgress,s=p.season;if(!s||!month(s.seasonKey))throw new Error('Invalid companion Trial save.');
     const season={...newCompanionTrialSeasonState(s.seasonKey),...s};

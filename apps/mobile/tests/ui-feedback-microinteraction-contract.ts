@@ -47,6 +47,19 @@ ok(daily.includes("tone={status.canClaim?'good':'muted'}"),'Daily Supplies READY
 
 const quest=read('src/screens/QuestScreen.tsx');
 ok(quest.includes('EmptyState')&&quest.includes('No matching chapters'),'Quest Journal no-results state must use the shared empty-state pattern');
+ok(quest.includes('Break the Last Oath')&&quest.includes('WEEKLY BOSS'),'Quest Journal must surface the Fallen Knight weekly bounty after the story clear');
+
+const encounters=read('src/components/RegionEncounterList.tsx');
+ok(encounters.includes('WEEKLY REMATCH')&&encounters.includes('OATHGLASS BOUNTY'),'Fallen Knight card must show weekly rematch and bounty progress');
+ok(encounters.includes('Rematch Fallen Knight')&&encounters.includes('Weekly rematches complete'),'Fallen Knight card must expose remaining weekly clears and cap state');
+
+const storyBoss=read('src/components/StoryBossBattleModal.tsx');
+ok(storyBoss.includes('FALLEN KNIGHT')&&storyBoss.includes('PHASE {phase}'),'Story boss playback must surface boss identity and live phases');
+ok(storyBoss.includes('bossMaxHp')&&storyBoss.includes('playerMaxHp'),'Story boss playback must keep both HP bars');
+ok(storyBoss.includes('TELEGRAPH')&&storyBoss.includes('Skip fight'),'Story boss playback must surface telegraphs and remain skippable');
+ok(storyBoss.includes('slashA')&&storyBoss.includes('spark'),'Story boss playback must retain satisfying slash and particle impact feedback');
+const app=read('App.tsx');
+ok(app.includes('StoryBossBattleModal')&&app.includes('result.storyBossBattle'),'Fallen Knight action must open the returned battle playback instead of reverting to alert-only resolution');
 
 const rewards=read('src/components/RewardPopup.tsx');
 ok(rewards.includes('StatusPill label="NEW" tone="special"'),'Reward discoveries must use the shared special NEW badge');

@@ -43,13 +43,14 @@ export interface CompanionAccountState {
   companionAssignmentBondstones?:number;
   companionRematchBondstoneWeek?:string;
   companionRematchBondstones?:number;
+  fallenKnightWeekly?:import('./weekly-boss').FallenKnightWeeklyState;
   companionActionSequence?:number;
   companionBondRewardClaims?:string[];
   companionBattleReadyAtMs?:number;
   companionBossRematchReadyAtMs?:number;
   companionLastBattle?:{title:string;won:boolean;durationMs:number;gold:number;essence:number;bondstones:number;atMs:number};
 }
-export const COMPANION_REMATCH_WEEKLY_BONDSTONE_CAP=2;
+export const COMPANION_REMATCH_WEEKLY_BONDSTONE_CAP=1;
 export function companionRematchBondstoneStatus(state:GameState,nowMs:number){
   const week=companionTrialWeekKey(nowMs),used=state.account.companionRematchBondstoneWeek===week?Math.min(COMPANION_REMATCH_WEEKLY_BONDSTONE_CAP,state.account.companionRematchBondstones??0):0;
   return {week,used,cap:COMPANION_REMATCH_WEEKLY_BONDSTONE_CAP,remaining:Math.max(0,COMPANION_REMATCH_WEEKLY_BONDSTONE_CAP-used)};

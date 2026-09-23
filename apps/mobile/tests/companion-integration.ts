@@ -13,6 +13,7 @@ import {companionUnlockRequirementProgress} from '../../../backend/src/server/co
 import {buildOwnedCompanionCombatant} from '../../../backend/src/server/companions/combat-adapter';
 import {buildCompanionTrialEncounter} from '../../../backend/src/server/companions/trials';
 import type {GameState} from '../src/core/types';
+import {fallenKnightWeeklyStatus} from '../src/core/weekly-boss';
 let checks=0;function ok(v:unknown,label:string){checks++;if(!v)throw new Error(label);}
 function rejects(f:()=>unknown,label:string){let caught=false;try{f();}catch{caught=true;}ok(caught,label);}
 const now=Date.UTC(2026,8,13),ids=['UNIT_001','UNIT_002','UNIT_003'];
@@ -99,9 +100,9 @@ let monthly=fixture();rejects(()=>command(monthly,'companion_monthly',{id:'NO_PR
 monthly=command(monthly,'companion_monthly',{id:'NO_PRESTIGE_15'});ok(monthly.account.companionEssence===10120,'monthly reward paid');monthly=parseSaveBackup(createSaveBackup(monthly));rejects(()=>command(monthly,'companion_monthly',{id:'NO_PRESTIGE_15'}),'monthly claim survives reload');
 rejects(()=>command(monthly,'companion_monthly',{id:'NO_PRESTIGE_15'},Date.UTC(2026,9,1)),'expired monthly completion cannot pay next season');
 const recoveryTrial=parseSaveBackup(createSaveBackup(trial));ok(recoveryTrial.account.companionBattleReadyAtMs!>now,'battle recovery persists');rejects(()=>command(recoveryTrial,'companion_trial_floor',{id:run.runId,floor:2}),'consecutive rewards respect simulated combat duration');
-let rematch=fixture();rejects(()=>command(rematch,'companion_boss_rematch'),'rematch requires first story clear');rematch.character!.level=25;rematch.defeatedBossIds=['FALLEN_KNIGHT'];
-rematch=command(rematch,'companion_boss_rematch');ok(rematch.account.companionBossRematchReadyAtMs===now+86400000,'daily rematch attempt consumed on either outcome');ok(rematch.account.companionLastBattle?.title==='Fallen Knight rematch','rematch result is visible');
-rematch=parseSaveBackup(createSaveBackup(rematch));rejects(()=>command(rematch,'companion_boss_rematch'),'rematch cannot replay after reload');command(rematch,'companion_boss_rematch',undefined,now+86400000);ok(true,'next UTC day permits next attempt');
+let rematch=fixture();rejects(()=>command(rematch,'companion_boss_rematch'),'rematch requires first story clear');rematch.character={...rematch.character!,level:100,hp:5000,currentHp:5000,attack:5000,defense:1200};rematch.defeatedBossIds=['FALLEN_KNIGHT'];rematch.account.companionBossClears={FALLEN_KNIGHT:1};
+rematch=command(rematch,'companion_boss_rematch');ok(fallenKnightWeeklyStatus(rematch,now).remaining===0,'successful rematch consumes the single UTC-week reward');ok(rematch.account.companionLastBattle?.title==='Fallen Knight rematch','rematch result is visible');
+rematch=parseSaveBackup(createSaveBackup(rematch));rejects(()=>command(rematch,'companion_boss_rematch'),'rewarded rematch cannot replay after reload in the same UTC week');const nextBossWeek=now+7*86400000;rematch.character={...rematch.character!,level:100,currentHp:rematch.character!.hp};command(rematch,'companion_boss_rematch',undefined,nextBossWeek);ok(true,'next UTC week permits the next rewarded rematch');
 const loadedQuest=parseSaveBackup(createSaveBackup({...quest,account:{...quest.account,unlockedCombatCompanionIds:[],combatCompanionProgress:{}}}));ok(loadedQuest.account.unlockedCombatCompanionIds?.includes('UNIT_001'),'legacy completed quest reconciles on load');
 for(const payload of [{type:'companion_supplies',args:{gold:0}},{type:'companion_monthly',args:{id:'NO_PRESTIGE_15',complete:true}},{type:'companion_boss_rematch',args:{won:true}}])rejects(()=>validateGameCommand(payload),'new reward actions reject forged authority');
 let trained=fixture();for(const id of ids)trained.account.combatCompanionProgress![id]={...trained.account.combatCompanionProgress![id],level:20,ascensionTier:2};

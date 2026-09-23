@@ -27,12 +27,13 @@ import {claimResonanceCacheV1,dismantleGemV1,gemCombineRecipeIdV1} from './gem-p
 import {craftEquipmentPrerequisites} from './equipment-crafting-prerequisites';
 import {buildAdminQaState,refillAdminQaResources} from '../dev/admin-qa-profile';
 import {isTimedProcessingRecipe} from './processing';
+import type {FallenKnightBattleResult} from './story-boss';
 
 /** Commands express intent. Neither a client save nor a client reward is accepted. */
 export interface GameCommand {type:string;args?:Record<string,unknown>}
 export interface VerifiedActivity {kind:'combat'|'gathering'|'crafting'|'boss';contentId:string;units:number;startedAtMs?:number;challengeId?:import('./types').CombatChallengeId}
 export type ForgeCraftResult=ReturnType<typeof claimEquipmentCraft>['result'];
-export interface GameCommandResult {state:GameState;reward?:RewardBundle;activity:GameState['activity'];message?:string;won?:boolean;upgrade?:ReturnType<typeof attemptEquipmentUpgrade>['result'];forgeResults?:ForgeCraftResult[];contributions:VerifiedActivity[]}
+export interface GameCommandResult {state:GameState;reward?:RewardBundle;activity:GameState['activity'];message?:string;won?:boolean;storyBossBattle?:FallenKnightBattleResult;upgrade?:ReturnType<typeof attemptEquipmentUpgrade>['result'];forgeResults?:ForgeCraftResult[];contributions:VerifiedActivity[]}
 const fields:Record<string,readonly string[]>={
  class_training:[],class_focus:['focus'],faith_practice:['tierId','count'],faith_blessing:['id'],faith_favorite:['id','enabled'],faith_hide:['enabled'],alchemy_start:['id','batches'],processing_start:['id','batches'],
  companion_monthly:['id'],companion_supplies:[],companion_bond_reward:['id','level'],companion_boss_rematch:[],
@@ -99,7 +100,7 @@ export function validateGameSettings(value:unknown):GameState['settings']{
 /** The caller provides a trusted clock, character ID and random roll on the server. */
 export function executeGameCommand(previous:GameState,value:unknown,now:number,options:{characterId?:string;randomRoll?:number;accountId?:string;eventId?:string;adminQa?:boolean}={}):GameCommandResult{
  const command=validateGameCommand(value),a=command.args??{},activity=previous.activity,contributions:VerifiedActivity[]=[];
- let state=structuredClone(previous),reward:RewardBundle|undefined,message:string|undefined,won:boolean|undefined,upgrade:GameCommandResult['upgrade'],forgeResults:ForgeCraftResult[]|undefined;
+ let state=structuredClone(previous),reward:RewardBundle|undefined,message:string|undefined,won:boolean|undefined,storyBossBattle:FallenKnightBattleResult|undefined,upgrade:GameCommandResult['upgrade'],forgeResults:ForgeCraftResult[]|undefined;
  if(!Number.isSafeInteger(now)||now<previous.createdAtMs)throw new Error('invalid_server_clock');
  const credit=(source:GameState['activity'],earned:RewardBundle)=>{if(!source||earned.kills<=0)return;if(source.kind==='combat')contributions.push({kind:'combat',contentId:source.targetId,units:earned.kills,startedAtMs:Math.max(source.lastClaimAtMs,now-earned.elapsedSeconds*1000),...(source.combatChallengeId?{challengeId:source.combatChallengeId}: {})});else if(['mining','woodcutting','fishing','herbalism'].includes(source.kind))contributions.push({kind:'gathering',contentId:source.targetId,units:earned.kills,startedAtMs:Math.max(source.lastClaimAtMs,now-earned.elapsedSeconds*1000)});};
  const settle=()=>{const source=state.activity,result=game.claimActivity(state,now);state=result.state;reward=result.reward;credit(source,result.reward);};
@@ -141,7 +142,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
    if(state.activity?.startedAtMs===now)state.activity.classFocus=normalizeTrainingFocus(focus);
    break;
   }
-  case 'companion_boss_rematch':{const result=game.challengeFallenKnightRematch(state,now);state=result.state;message=result.message;won=result.won;break;}
+  case 'companion_boss_rematch':{const result=game.challengeFallenKnightRematch(state,now);state=result.state;message=result.message;won=result.won;if(won)contributions.push({kind:'boss',contentId:'FALLEN_KNIGHT',units:1});break;}
   case 'companion_monthly':case 'companion_supplies':case 'companion_bond_reward':state=executeCompanionActivity(state,command.type,a,now);break;
   case 'companion_equip':state=companions.equipCombatCompanion(state,text(a,'id'));break;
   case 'companion_unequip':state=companions.unequipCombatCompanion(state);break;
@@ -178,7 +179,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'explore':state=game.startExploration(state,text(a,'id'),now);break;
   case 'stop':state=game.stopActivity(state);break;
   case 'travel':state=game.travelToRegion(state,text(a,'id'),now).state;break;
-  case 'boss':{const result=game.challengeFallenKnight(state,now);state=result.state;message=result.message;won=result.won;if(won)contributions.push({kind:'boss',contentId:'FALLEN_KNIGHT',units:1});break;}
+  case 'boss':{const result=game.challengeFallenKnight(state,now);state=result.state;message=result.message;won=result.won;storyBossBattle=result.battle;if(won)contributions.push({kind:'boss',contentId:'FALLEN_KNIGHT',units:1});break;}
   case 'craft':{
    const id=text(a,'id'),timed=timedEquipmentRecipe(id);
    if(isTimedProcessingRecipe(id))throw new Error('Repeatable processing must be started as a timed batch.');
@@ -300,5 +301,5 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
  }
  if(companionMetricBefore)state=recordCompanionCommandMetrics(state,command.type,companionMetricBefore);
  if(state.character&&(!Number.isSafeInteger(state.character.gold)||state.character.gold<0))throw new Error('invalid_wallet');
- return {state:discoverCharacterSkins(state),reward,activity,message,won,upgrade,forgeResults,contributions};
+ return {state:discoverCharacterSkins(state),reward,activity,message,won,storyBossBattle,upgrade,forgeResults,contributions};
 }

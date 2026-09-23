@@ -1,6 +1,22 @@
 import type {GatherDef} from './skills';
 import type {ItemDef} from './items';
 
+export type HerbalismMethodId='balanced'|'quick'|'careful'|'bountiful';
+export interface HerbalismMethodDef{id:HerbalismMethodId;name:string;unlockLevel:number;description:string;actionTimeMultiplier:number;yieldMultiplier:number;xpMultiplier:number;rareFindMultiplier:number;}
+export const HERBALISM_METHODS:readonly HerbalismMethodDef[]=[
+  {id:'balanced',name:'Balanced Picking',unlockLevel:1,description:'Standard pace, yield, XP and rare-find chance.',actionTimeMultiplier:1,yieldMultiplier:1,xpMultiplier:1,rareFindMultiplier:1},
+  {id:'quick',name:'Quick Harvest',unlockLevel:15,description:'Harvest faster, but sacrifice some normal yield and rare-find chance.',actionTimeMultiplier:.85,yieldMultiplier:.90,xpMultiplier:.95,rareFindMultiplier:.75},
+  {id:'careful',name:'Careful Harvest',unlockLevel:30,description:'Slower hand-picking with better XP and a much higher rare botanical chance.',actionTimeMultiplier:1.18,yieldMultiplier:1,xpMultiplier:1.05,rareFindMultiplier:1.5},
+  {id:'bountiful',name:'Bountiful Harvest',unlockLevel:45,description:'Take extra time to maximize ordinary herb yield.',actionTimeMultiplier:1.12,yieldMultiplier:1.20,xpMultiplier:.90,rareFindMultiplier:1},
+] as const;
+export function herbalismMethod(id:unknown,level=1){const row=HERBALISM_METHODS.find(method=>method.id===id&&level>=method.unlockLevel);return row??HERBALISM_METHODS[0];}
+export function herbalismMethodUnlocked(id:HerbalismMethodId,level:number){return level>=(HERBALISM_METHODS.find(row=>row.id===id)?.unlockLevel??999);}
+
+export const HERBALISM_ESSENCE_BY_ZONE:Readonly<Record<string,{itemId:string;baseChance:number}>>={
+  GREENFIELDS:{itemId:'ASTERFALL_BOTANICAL_ESSENCE',baseChance:.010},SILVERBROOK:{itemId:'ASTERFALL_BOTANICAL_ESSENCE',baseChance:.010},IRONWOOD:{itemId:'ASTERFALL_BOTANICAL_ESSENCE',baseChance:.010},OLD_MINES:{itemId:'ASTERFALL_BOTANICAL_ESSENCE',baseChance:.010},KINGS_ROAD:{itemId:'ASTERFALL_BOTANICAL_ESSENCE',baseChance:.0125},
+  SUNSCAR:{itemId:'SUNSCAR_BOTANICAL_ESSENCE',baseChance:.015},FROSTMARCH:{itemId:'FROSTMARCH_BOTANICAL_ESSENCE',baseChance:.0175},ASHLANDS:{itemId:'ASHLANDS_BOTANICAL_ESSENCE',baseChance:.020},
+};
+
 /** Regional nodes continue the same hand-picking activity lane beyond Asterfall. */
 export const HERB_NODES:GatherDef[]=[
   {id:'DEWLEAF_PATCH',name:'Dewleaf Patch',itemId:'DEWLEAF',zoneId:'GREENFIELDS',unlockLevel:1,seconds:30,xp:9},
@@ -24,4 +40,8 @@ export const HERB_ITEMS:ItemDef[]=[
   {id:'SUNSCALE',name:'Sunscale Bloom',type:'material',value:48,rarity:'rare'},
   {id:'FROSTBLOOM',name:'Frostbell Flower',type:'material',value:72,rarity:'rare'},
   {id:'ASHEN_MYRRH',name:'Ashen Myrrh',type:'material',value:105,rarity:'epic'},
+  {id:'ASTERFALL_BOTANICAL_ESSENCE',name:'Asterfall Botanical Essence',type:'material',value:55,rarity:'rare',passive:'A rare concentrated botanical reagent from Asterfall harvesting.'},
+  {id:'SUNSCAR_BOTANICAL_ESSENCE',name:'Sunscar Botanical Essence',type:'material',value:110,rarity:'rare',passive:'A rare concentrated botanical reagent from Sunscar harvesting.'},
+  {id:'FROSTMARCH_BOTANICAL_ESSENCE',name:'Frostmarch Botanical Essence',type:'material',value:180,rarity:'epic',passive:'A rare concentrated botanical reagent from Frostmarch harvesting.'},
+  {id:'ASHLANDS_BOTANICAL_ESSENCE',name:'Ashlands Botanical Essence',type:'material',value:300,rarity:'epic',passive:'A rare concentrated botanical reagent from Ashlands harvesting.'},
 ];

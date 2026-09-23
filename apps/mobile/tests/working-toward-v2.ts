@@ -5,7 +5,7 @@ import {RECIPES} from '../src/content/skills';
 import {totalXpAtLevel} from '../src/core/progression';
 import {recipePreparationRoute} from '../src/core/material-acquisition-plan';
 import {recipePreparationGoalForRecipe} from '../src/core/recipe-preparation-goals';
-import {recipePreparationTrackingView} from '../src/core/recipe-preparation-tracking';
+import {recipePreparationTrackingView,recipePreparationTransitionNotices} from '../src/core/recipe-preparation-tracking';
 
 function fail(message:string):never{throw new Error(message)}
 function ok(value:unknown,message:string){if(!value)fail(message)}
@@ -70,19 +70,36 @@ const normalizedPreparation=normalizeProgressionGoals([preparationGoal],prepStat
 equal(normalizedPreparation.kind,'recipe_preparation','Preparation goal must survive save/command normalization');
 if(normalizedPreparation.kind==='recipe_preparation'){equal(normalizedPreparation.initialStepCount,initialRoute.steps.length,'Preparation goal retains its initial route size');equal(normalizedPreparation.outputItemId,'REINFORCED_FITTING','Preparation goal retains its tracked output');}
 prepState={...prepState,character:{...prepState.character!,progressionGoals:[preparationGoal]}};
-const initialPrepView=recipePreparationTrackingView(prepState,preparationGoal);
+const initialTrackedState=prepState,initialPrepView=recipePreparationTrackingView(prepState,preparationGoal);
 ok(initialPrepView.status==='active'&&initialPrepView.nextLabel.includes('Aster-Iron Ore'),'Tracked preparation starts on the first remaining dependency');
 ok(initialPrepView.destination.kind!=='info','Tracked preparation next step must be directly navigable when its source is actionable');
 
 prepState={...prepState,inventory:{...prepState.inventory,stacks:[...prepState.inventory.stacks,{itemId:'ASTER_IRON_INGOT',quantity:2},{itemId:'IRONWOOD_LOG',quantity:2}]}};
-const finalPrepView=recipePreparationTrackingView(prepState,preparationGoal);
+const finalReadyState=prepState,finalPrepView=recipePreparationTrackingView(prepState,preparationGoal);
 equal(finalPrepView.current,Math.max(0,preparationGoal.initialStepCount-1),'Owning prerequisites advances preparation progress to the final tracked craft');
 ok(finalPrepView.nextLabel.includes('Reinforced Fitting')&&finalPrepView.destination.kind==='skills','Preparation tracking automatically advances to the final craft');
+const advancedNotices=recipePreparationTransitionNotices(initialTrackedState,finalReadyState);
+equal(advancedNotices[0]?.kind,'advanced','Completing tracked prerequisite steps emits one preparation-advanced notice');
+ok(advancedNotices[0]?.message.includes('Next:')&&advancedNotices[0]?.message.includes('Reinforced Fitting'),'Advance notice names the newly active preparation step');
+const rerankedState={...initialTrackedState,currentRegionId:'OLD_MINES'} as typeof initialTrackedState;
+equal(recipePreparationTransitionNotices(initialTrackedState,rerankedState).length,0,'Source reranking without real preparation progress must not emit a false advancement notice');
+const goldBlockedState={...finalReadyState,character:{...finalReadyState.character!,gold:0}};
+const blockedNotices=recipePreparationTransitionNotices(initialTrackedState,goldBlockedState);
+equal(blockedNotices[0]?.kind,'blocked','Advancing into a Gold-blocked final step emits a blocked transition');
+ok(blockedNotices[0]?.message.includes('Next blocked'),'Blocked advancement explains that the new next step cannot start yet');
+const resumedNotices=recipePreparationTransitionNotices(goldBlockedState,finalReadyState);
+equal(resumedNotices[0]?.kind,'resumed','Restoring a blocked tracked preparation emits a resumed notice');
+
 
 prepState={...prepState,inventory:{...prepState.inventory,stacks:[...prepState.inventory.stacks,{itemId:'REINFORCED_FITTING',quantity:1}]}};
-const completedPrepView=recipePreparationTrackingView(prepState,preparationGoal);
+const completedState=prepState,completedPrepView=recipePreparationTrackingView(prepState,preparationGoal);
 ok(completedPrepView.status==='complete'&&completedPrepView.progress===1,'Preparation goal completes only after the tracked output is actually produced');
 equal(workingTowardReadyCount(prepState),1,'Completed preparation goal contributes to Home Working Toward ready count');
+const completionNotices=recipePreparationTransitionNotices(finalReadyState,completedState);
+equal(completionNotices[0]?.kind,'complete','Producing the tracked final output emits a completion notice');
+equal(completionNotices[0]?.tone,'success','Tracked craft completion uses success feedback');
+ok(completionNotices[0]?.message.includes('Working Toward complete')&&completionNotices[0]?.message.includes('Reinforced Fitting crafted'),'Completion notice identifies the finished tracked output');
+
 
 
 console.log('PASS: actionable Working Toward navigation and progress');

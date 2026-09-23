@@ -31,11 +31,10 @@ ok(slots.includes('statGemFilled')&&slots.includes('effectGemFilled'),'Equipment
 ok(character.includes("S {selectedDecision.sockets.statFilled?'◆':'◇'}"),'Character detail must show named socket status');
 ok(inspect.includes("1 Stat + 1 Effect"),'Quick inspect must describe named socket structure');
 
-for(const id of ['SWIFT_SIGIL','BOSSBANE_SIGIL','BULWARK_SIGIL','RENEWAL_SIGIL'])ok(items.includes("id:'"+id+"'"),'Missing launch Effect Gem '+id);
-ok(monsters.includes("itemId:'SWIFT_SIGIL',chance:.003"),'Swift Sigil needs a legitimate rare combat source');
-ok(monsters.includes("itemId:'BOSSBANE_SIGIL',chance:.0025"),'Bossbane Sigil needs a legitimate rare combat source');
-ok(monsters.includes("itemId:'BULWARK_SIGIL',chance:.003"),'Bulwark Sigil needs a legitimate rare combat source');
-ok(monsters.includes("itemId:'RENEWAL_SIGIL',chance:.0025"),'Renewal Sigil needs a legitimate rare combat source');
+for(const id of ['SWIFT_SIGIL','BOSSBANE_SIGIL','BULWARK_SIGIL','RENEWAL_SIGIL'])ok(items.includes("id:'"+id+"'"),'Legacy Effect Gem must remain readable for save compatibility: '+id);
+ok(!monsters.includes("itemId:'SWIFT_SIGIL'")&&!monsters.includes("itemId:'BOSSBANE_SIGIL'")&&!monsters.includes("itemId:'BULWARK_SIGIL'")&&!monsters.includes("itemId:'RENEWAL_SIGIL'"),'Legacy socketable Effect Gems must not bypass the unrefined Enchanting loop through monster drops');
+ok(monsters.includes('ASTERFALL_RAW_GEM_DROPS')&&monsters.includes("LANTERN_WRETCH:{familyId:'effect_opening_strike'")&&monsters.includes("FALLEN_SENTINEL:{familyId:'effect_bulwark'"),'Asterfall combat must replace legacy sigil drops with unrefined canonical Effect Gem families');
+ok(monsters.includes('mobileRawGemItemIdV1(raw.familyId,1)'),'Asterfall gem rewards must materialize as Grade I unrefined canonical gems');
 
 ok(save.includes('displacedLegacyGemIds'),'Save normalization must identify displaced old sockets');
 ok(save.includes('addRefundsToStacks'),'Displaced legacy gems must be refunded instead of deleted');

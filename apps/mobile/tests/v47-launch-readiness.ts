@@ -1,10 +1,11 @@
-import {newGame,createCharacter,BASE_OFFLINE_CAP_HOURS,MAX_OFFLINE_CAP_HOURS} from '../src/core/game';
+import {newGame,createCharacter,BASE_OFFLINE_CAP_HOURS,FREE_OFFLINE_CAP_HOURS,MAX_OFFLINE_CAP_HOURS} from '../src/core/game';
 import {launchReadinessReport,weeklyOrderCandidatesFromCurrentContent} from '../src/core/launch-readiness-v47';
 function equal(actual:unknown,expected:unknown,message:string){if(actual!==expected)throw new Error(`${message}: expected ${String(expected)}, got ${String(actual)}`)}
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 let state=createCharacter(newGame(0),'IRONWARDEN','Tester','male');
-equal(BASE_OFFLINE_CAP_HOURS,24,'Offline Reserve base');
-equal(MAX_OFFLINE_CAP_HOURS,36,'Offline Reserve maximum');
+equal(BASE_OFFLINE_CAP_HOURS,8,'Offline Reserve base');
+equal(FREE_OFFLINE_CAP_HOURS,18,'Offline Reserve progression ceiling');
+equal(MAX_OFFLINE_CAP_HOURS,24,'Offline Reserve maximum');
 const report=launchReadinessReport(state);
 if(!report.ok)throw new Error('Launch binding blockers: '+report.issues.filter(row=>row.severity==='blocker').map(row=>`${row.code}:${row.message}`).join(' | '));
 equal(report.counts.classes,9,'Current class count');

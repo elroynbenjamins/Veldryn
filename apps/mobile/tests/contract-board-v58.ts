@@ -3,7 +3,7 @@ import {weeklyOrderCandidatesFromCurrentContent} from '../src/core/launch-readin
 import {applyTrustedLongTermProgression,reconcileWeeklyOrderRollover,weeklyOrderBoardForState} from '../src/core/long-term-progression-runtime';
 import {applyWeeklyOrderProgress,generateWeeklyOrders} from '../src/core/weekly-orders-v41';
 import {weeklyOrderDestination,weeklyOrderGoal,weeklyOrderIdleRule,weeklyOrderQueueActivity} from '../src/core/weekly-order-integrations-v41';
-import {contractBoardSummary} from '../src/core/contract-board-summary';
+import {contractBoardRegionFocus,contractBoardSummary} from '../src/core/contract-board-summary';
 import type {GameState} from '../src/core/types';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
@@ -58,6 +58,7 @@ const summaryState={...state,account:{...state.account,longTermAccountScopeId:ac
 const initialSummary=contractBoardSummary(summaryState,now);
 ok(initialSummary.total===generated.orders.length&&initialSummary.complete===0,'Home Contract Board summary should mirror the weekly board');
 ok(!!initialSummary.nextOrder,'Home Contract Board summary should recommend an incomplete job');
+const regionFocus=contractBoardRegionFocus(summaryState,summaryState.currentRegionId,now),expectedLocal=generated.orders.filter(row=>row.regionId===summaryState.currentRegionId);ok(regionFocus.total===expectedLocal.length,'World regional contract focus should count only jobs for the current region');if(expectedLocal.some(row=>row.progress<row.target))ok(!!regionFocus.nextOrder&&regionFocus.nextOrder.regionId===summaryState.currentRegionId,'World regional contract focus should expose an unfinished local job');
 if(initialSummary.nextOrder?.regionId)ok(initialSummary.nextOrder.regionId===summaryState.currentRegionId||!generated.orders.some(row=>row.progress<row.target&&row.regionId===summaryState.currentRegionId),'Home Contract Board summary should prefer an incomplete current-region job when available');
 const completedBoard=structuredClone(generated);for(const row of completedBoard.orders)row.progress=row.target;completedBoard.completionClaimed=true;
 const completedSummary=contractBoardSummary({...summaryState,account:{...summaryState.account,weeklyOrders:completedBoard,weeklyOrderPendingRewards:[{claimKey:'weekly-summary-test',rewardRef:'weekly_orders_completion',label:'Weekly Orders completion reward',weekKey:completedBoard.weekKey}]}},now);

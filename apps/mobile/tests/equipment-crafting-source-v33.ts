@@ -54,7 +54,7 @@ function projectedFarmHours(recipe:typeof t8){
   },0);
 }
 const highTierBands:Record<string,[number,number]>={
-  T5:[.75,2.75],T6:[.9,3.5],T7:[1.0,3.5],T8:[1.25,5.5],T9:[1.5,7.0],
+  T5:[.75,2.75],T6:[.75,3.5],T7:[.75,3.5],T8:[.9,5.5],T9:[1.2,7.0],
 };
 for(const tier of Object.keys(highTierBands)){
   const rows=V33_EQUIPMENT_RECIPES.filter(row=>row.v33EquipmentTier===tier);

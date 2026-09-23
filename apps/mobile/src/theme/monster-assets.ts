@@ -8,5 +8,14 @@ export const monsterPortraits:Record<MonsterDef['id'],ImageSourcePropType>={
  FALLEN_SENTINEL:require('../../assets/monsters/fallen_sentinel.png'),OATHGLASS_REVENANT:require('../../assets/monsters/oathglass_revenant.png'),FALLEN_KNIGHT:require('../../assets/monsters/fallen_knight.png'),
 };
 
+export const REGIONAL_MONSTER_CELL=48;
+export const REGIONAL_MONSTER_SHEET_SIZE=144;
+export const regionalMonsterPortraitAtlas:ImageSourcePropType=require('../../assets/monsters/regional-monsters-v1.png');
+export const regionalMonsterPortraitCells:Readonly<Record<string,{column:number;row:number}>>={
+ SUNSCAR_SCORPION:{column:0,row:0},DUNE_ORACLE:{column:1,row:0},GLASSBOUND_SENTINEL:{column:2,row:0},
+ FROSTWOLF:{column:0,row:1},BELLWRAITH:{column:1,row:1},CHOIR_HUNTER:{column:2,row:1},
+ BLACKGLASS_MIRELING:{column:0,row:2},CINDER_TITAN:{column:1,row:2},ASHEN_REVENANT:{column:2,row:2},
+};
+export function regionalMonsterPortraitCell(monsterId:string){return regionalMonsterPortraitCells[monsterId];}
 export function monsterPortraitSource(monsterId:string){return monsterPortraits[monsterId];}
-export function hasMonsterPortrait(monsterId:string){return !!monsterPortraitSource(monsterId);}
+export function hasMonsterPortrait(monsterId:string){return !!monsterPortraitSource(monsterId)||!!regionalMonsterPortraitCell(monsterId);}

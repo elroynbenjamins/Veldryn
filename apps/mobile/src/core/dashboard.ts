@@ -107,7 +107,7 @@ export function activityRate(state:GameState){
   if(route)return {actionsPerHour:actions,xpPerHour:Math.floor(actions*route.xp*multipliers.skillXpMultiplier),goldPerHour:0};
   if(faith)return {actionsPerHour:actions,xpPerHour:Math.floor(actions*faith.xp),goldPerHour:0};
   const effect=state.activity?environmentEffectForActivity(state.activity).effect:undefined;
-  const baseXp=monster?.xp??gathering?.xp??0,baseGold=monster?monster.gold:0,herbLevel=state.skills.find(row=>row.skillId==='herbalism')?.level??1,method=gathering?.skillId==='herbalism'?herbalismMethod(state.character?.herbalismMethodId,herbLevel):undefined;
+  const baseXp=monster?.xp??gathering?.xp??0,baseGold=monster?monster.gold:0,herbLevel=state.skills.find(row=>row.skillId==='herbalism')?.level??1,method=gathering?.skillId==='herbalism'?herbalismMethod(state.activity?.herbalismMethodId??state.character?.herbalismMethodId,herbLevel):undefined;
   const xpMultiplier=(effect?.xpMultiplier??1)*(method?.xpMultiplier??1)*(monster?multipliers.characterXpMultiplier:multipliers.skillXpMultiplier);
   const goldMultiplier=(effect?.goldMultiplier??1)*(monster?multipliers.goldMultiplier:1);
   return {actionsPerHour:actions,xpPerHour:Math.floor(actions*baseXp*xpMultiplier),goldPerHour:monster?Math.floor(actions*baseGold*goldMultiplier):0};

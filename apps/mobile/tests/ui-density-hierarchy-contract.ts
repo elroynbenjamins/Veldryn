@@ -302,7 +302,8 @@ ok(quests.includes('<GameButton compact title={destination.button}'),'Contract B
 const questApp=read('App.tsx');
 ok(questApp.includes("const [questMode,setQuestMode]=useState<QuestMode>('story')")&&questApp.includes("openQuestMode('contracts'"),'App routing must preserve explicit Story/Contract destinations');
 ok(questApp.includes("focusedWeeklyOrderId={questFocusOrderId}")&&questApp.includes("onOpenContracts={order=>openQuestMode('contracts',order?.id)}"),'World regional Contract links must open the Contract Board with the exact job focused');
-ok(questApp.includes("destination.tab==='World'&&destination.zoneId")&&questApp.includes('setGoalRegionId(destination.zoneId)'),'Story and weekly-boss Journal destinations must preserve their authored World region instead of dropping zone context');
+ok(questApp.includes("destination.tab==='World'&&destination.zoneId")&&questApp.includes('setGoalRegionId(destination.zoneId)'),'Story Journal destinations must preserve their authored World region instead of dropping zone context');
+ok(quests.includes('onOpenWeeklyBoss')&&questApp.includes("monsterId:'FALLEN_KNIGHT'")&&questApp.includes("regionId:'KINGS_ROAD'"),'Weekly boss action must keep its exact destination');
 
 const settings=read('src/screens/SettingsScreen.tsx');
 ok(settings.includes('themeChoice:{minHeight:82'),'Theme preview cards must stay compact enough to compare all themes');

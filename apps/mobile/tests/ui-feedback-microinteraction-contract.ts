@@ -47,6 +47,11 @@ ok(daily.includes("tone={status.canClaim?'good':'muted'}"),'Daily Supplies READY
 
 const quest=read('src/screens/QuestScreen.tsx');
 ok(quest.includes('EmptyState')&&quest.includes('No matching chapters'),'Quest Journal no-results state must use the shared empty-state pattern');
+ok(quest.includes('Break the Last Oath')&&quest.includes('WEEKLY BOSS'),'Quest Journal must surface the Fallen Knight weekly bounty after the story clear');
+
+const encounters=read('src/components/RegionEncounterList.tsx');
+ok(encounters.includes('WEEKLY REMATCH')&&encounters.includes('OATHGLASS BOUNTY'),'Fallen Knight card must show weekly rematch and bounty progress');
+ok(encounters.includes('Rematch Fallen Knight')&&encounters.includes('Weekly rematches complete'),'Fallen Knight card must expose remaining weekly clears and cap state');
 
 const storyBoss=read('src/components/StoryBossBattleModal.tsx');
 ok(storyBoss.includes('FALLEN KNIGHT')&&storyBoss.includes('PHASE {phase}'),'Story boss playback must surface boss identity and live phases');

@@ -51,7 +51,7 @@ const pathMaterial:Record<string,Record<string,string>>={
 };
 const tailoringPathMaterial:Record<string,Record<string,string>>={
   T1:{Foundation:'BOAR_HIDE',Specialist:'WISP_DUST',Alternate:'THORN_SAP'},
-  T2:{Foundation:'WOLF_PELT',Specialist:'THORN_SAP',Alternate:'BOAR_HIDE'},
+  T2:{Foundation:'BOAR_HIDE',Specialist:'THORN_SAP',Alternate:'IRONWOOD_FANG'},
   T3:{Foundation:'TROLL_HIDE',Specialist:'THORN_SAP',Alternate:'WOLF_PELT'},
   T4:{Foundation:'TORN_OATHCLOTH',Specialist:'OATHGLASS_SHARD',Alternate:'ECHO_TOUCHED_PELT'},
 };

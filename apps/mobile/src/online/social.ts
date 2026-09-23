@@ -2,6 +2,7 @@ import {supabase} from './supabase';
 import {guildNameError,normalizeGuildName} from '../core/identity-names';
 import type {GuildAppearanceEntitlements,GuildBannerId,GuildFrameId,GuildNameColorId,GuildNameplateId} from '../core/guild-customization';
 import type {GuildTagAvailability,GuildTagColorId} from '../core/guild-tags';
+import {normalizePlayerNameStyle,type PlayerNameStyleSelection} from '../core/player-name-style';
 
 export const WORLD_CHANNELS=[
   {id:'world-1',name:'English',language:'English'},
@@ -9,18 +10,18 @@ export const WORLD_CHANNELS=[
   {id:'world-3',name:'Global 1',language:'Global'},
   {id:'world-4',name:'Global 2',language:'Global'},
 ] as const;
-export type WorldMessage={id:string;sender_name:string;body:string;created_at:string;account_id:string;guild_tag?:string|null;guild_tag_color_id?:string|null};
+export type WorldMessage={id:string;sender_name:string;body:string;created_at:string;account_id:string;guild_tag?:string|null;guild_tag_color_id?:string|null;name_style?:PlayerNameStyleSelection|null};
 export type OnlineGuild={id:string;name:string;tag:string|null;tag_color_id:GuildTagColorId;level:number;member_cap:number;minimum_level:number;join_policy:'open'|'apply'|'invite';banner_id:GuildBannerId;profile_frame_id:GuildFrameId;name_color_id:GuildNameColorId;nameplate_id:GuildNameplateId;motto:string};
-export type GuildMember={account_id:string;display_name:string;role:'leader'|'officer'|'member';joined_at:string;guild_tag?:string|null;guild_tag_color_id?:string|null};
+export type GuildMember={account_id:string;display_name:string;role:'leader'|'officer'|'member';joined_at:string;guild_tag?:string|null;guild_tag_color_id?:string|null;name_style?:PlayerNameStyleSelection|null};
 export type GuildApplication={id:string;account_id:string;created_at:string;status:'pending'|'accepted'|'declined'|'withdrawn'};
 export type FriendRelationship='none'|'friend'|'outgoing_pending'|'incoming_pending';
-export type FriendProfile={account_id:string;display_name:string;character_name:string|null;class_id:string|null;level:number|null;profile_title:string|null;guild_tag?:string|null;guild_tag_color_id?:string|null};
+export type FriendProfile={account_id:string;display_name:string;character_name:string|null;class_id:string|null;level:number|null;profile_title:string|null;guild_tag?:string|null;guild_tag_color_id?:string|null;name_style?:PlayerNameStyleSelection|null};
 export type FriendSearchResult=FriendProfile&{relationship:FriendRelationship};
 export type FriendEntry=FriendProfile&{friends_since:string};
 export type FriendRequest={request_id:string;account_id:string;display_name:string;direction:'incoming'|'outgoing';created_at:string};
 export type BlockedPlayer={account_id:string;display_name:string;blocked_at:string};
 export type SocialReportReason='identity'|'harassment_spam';
-export type GuildChatMessage={id:string;account_id:string;sender_name:string;body:string;created_at:string;guild_tag?:string|null;guild_tag_color_id?:string|null;guild_role?:'leader'|'officer'|'member'|null};
+export type GuildChatMessage={id:string;account_id:string;sender_name:string;body:string;created_at:string;guild_tag?:string|null;guild_tag_color_id?:string|null;name_style?:PlayerNameStyleSelection|null;guild_role?:'leader'|'officer'|'member'|null};
 export interface GuildChatState{guild:{id:string;name:string;tag?:string|null;tagColorId?:string|null}|null;messages:GuildChatMessage[];serverTime:string;}
 export interface SocialChatChannelAttention{channelId?:string|null;unread:number;mentions:number;lastReadAt?:string|null;firstUnreadMessageId?:string|null;}
 export interface SocialChatAttentionState{guild:SocialChatChannelAttention;party:SocialChatChannelAttention;totalUnread:number;totalMentions:number;serverTime:string;}
@@ -44,8 +45,9 @@ export interface GuildNoticeBoardState{guildId:string;body:string;updatedAt?:str
 
 function requireClient(){if(!supabase)throw new Error('Online services are not configured in this build.');return supabase;}
 export async function guildIdentities(accountIds:readonly string[]):Promise<Map<string,{guild_tag:string;guild_tag_color_id:string}>>{const unique=[...new Set(accountIds.filter(Boolean))];if(!unique.length)return new Map();const client=requireClient();const {data,error}=await client.rpc('guild_identities',{p_account_ids:unique});if(error)throw error;return new Map<string,{guild_tag:string;guild_tag_color_id:string}>((data??[]).map((row:any)=>[row.account_id,{guild_tag:row.guild_tag,guild_tag_color_id:row.guild_tag_color_id}]));}
-async function withGuildIdentities<T extends {account_id:string}>(rows:T[]){const identities=await guildIdentities(rows.map(row=>row.account_id));return rows.map(row=>({...row,...identities.get(row.account_id)}));}
-export async function worldMessages(channelId:string){const client=requireClient();const {data,error}=await client.from('chat_messages').select('id,account_id,sender_name,body,created_at').eq('channel_type','world').eq('channel_id',channelId).order('created_at',{ascending:true}).limit(50);if(error)throw error;const rows=(data??[]) as WorldMessage[],identities=await guildIdentities(rows.map(row=>row.account_id));return rows.map(row=>({...row,...identities.get(row.account_id)}));}
+export async function playerNameStyles(accountIds:readonly string[]):Promise<Map<string,PlayerNameStyleSelection>>{const unique=[...new Set(accountIds.filter(Boolean))].slice(0,100);if(!unique.length)return new Map();const client=requireClient();const {data,error}=await client.rpc('player_name_styles_v1',{p_account_ids:unique});if(error)throw error;return new Map<string,PlayerNameStyleSelection>((data??[]).map((row:any)=>[row.account_id,normalizePlayerNameStyle(row.name_style)]));}
+async function withSocialIdentities<T extends {account_id:string}>(rows:T[]){const ids=rows.map(row=>row.account_id),[identities,nameStyles]=await Promise.all([guildIdentities(ids),playerNameStyles(ids)]);return rows.map(row=>({...row,...identities.get(row.account_id),...(nameStyles.has(row.account_id)?{name_style:nameStyles.get(row.account_id)!}:{})}));}
+export async function worldMessages(channelId:string){const client=requireClient();const {data,error}=await client.from('chat_messages').select('id,account_id,sender_name,body,created_at').eq('channel_type','world').eq('channel_id',channelId).order('created_at',{ascending:true}).limit(50);if(error)throw error;return withSocialIdentities((data??[]) as WorldMessage[]);}
 export async function postWorldMessage(channelId:string,body:string,senderName:string){const client=requireClient();const clean=body.trim();if(!clean)throw new Error('Write a message first.');const {error}=await client.rpc('send_world_chat',{p_channel_id:channelId,p_body:clean,p_sender_name:senderName.slice(0,20)||'Adventurer'});if(error)throw error;}
 export async function browseGuilds(){const client=requireClient();const {data,error}=await client.from('guilds').select('id,name,tag,tag_color_id,level,member_cap,minimum_level,join_policy,banner_id,profile_frame_id,name_color_id,nameplate_id,motto').order('level',{ascending:false}).limit(25);if(error)throw error;return (data??[]) as OnlineGuild[];}
 export async function requestGuildMembership(guildId:string){const client=requireClient();const {data,error}=await client.rpc('request_guild_membership',{p_guild_id:guildId});if(error)throw error;return data as 'joined'|'applied';}
@@ -53,7 +55,7 @@ export async function guildTagAvailability(tag:string){const client=requireClien
 export async function createOnlineGuild(name:string,tag:string,joinPolicy:'open'|'apply'|'invite',minimumLevel:number){const client=requireClient(),normalizedName=normalizeGuildName(name),nameError=guildNameError(normalizedName);if(nameError)throw new Error(nameError);const {data,error}=await client.rpc('create_guild',{p_name:normalizedName,p_tag:tag.trim(),p_join_policy:joinPolicy,p_minimum_level:minimumLevel});if(error)throw error;return data as string;}
 export async function updateOnlineGuildTag(tag:string){const client=requireClient();const {data,error}=await client.rpc('update_guild_tag',{p_tag:tag});if(error)throw error;return data?.[0] as {guild_id:string;tag:string;previous_tag:string|null}|undefined;}
 export async function updateOnlineGuildTagColor(tagColorId:GuildTagColorId){const client=requireClient();const {data,error}=await client.rpc('update_guild_tag_color',{p_tag_color_id:tagColorId});if(error)throw error;return data?.[0] as {guild_id:string;tag_color_id:GuildTagColorId}|undefined;}
-export async function guildRoster(guildId:string){const client=requireClient();const {data,error}=await client.rpc('guild_roster',{p_guild_id:guildId});if(error)throw error;return withGuildIdentities((data??[]) as GuildMember[]);}
+export async function guildRoster(guildId:string){const client=requireClient();const {data,error}=await client.rpc('guild_roster',{p_guild_id:guildId});if(error)throw error;return withSocialIdentities((data??[]) as GuildMember[]);}
 export async function guildApplications(guildId:string){const client=requireClient();const {data,error}=await client.from('guild_applications').select('id,account_id,created_at,status').eq('guild_id',guildId).eq('status','pending').order('created_at');if(error)throw error;return (data??[]) as GuildApplication[];}
 export async function reviewGuildApplication(applicationId:string,accept:boolean){const client=requireClient();const {data,error}=await client.rpc('review_guild_application',{p_application_id:applicationId,p_accept:accept});if(error)throw error;return data as 'accepted'|'declined';}
 export async function myGuild(){const client=requireClient();const {data:{user},error:userError}=await client.auth.getUser();if(userError)throw userError;if(!user)throw new Error('Sign in before viewing a guild.');const {data,error}=await client.from('guild_members').select('guild_id,role').eq('account_id',user.id).maybeSingle();if(error)throw error;return data?{...(data as {guild_id:string;role:'leader'|'officer'|'member'}),account_id:user.id}:null;}
@@ -64,8 +66,8 @@ export async function updateGuildAppearance(input:{bannerId:GuildBannerId;border
 export type GuildWeeklyState={guild_id:string;project_progress:number;project_goal:number;boss_hp:number;boss_max_hp:number};
 export async function guildWeeklyState(){const client=requireClient();const {data,error}=await client.rpc('guild_weekly_state');if(error)throw error;return (data?.[0]??null) as GuildWeeklyState|null;}
 export async function guildContribute(kind:'project'|'boss',amount:number){const client=requireClient();const {data,error}=await client.rpc('guild_contribute',{p_kind:kind,p_amount:amount});if(error)throw error;return (data?.[0]??null) as {project_progress:number;boss_hp:number}|null;}
-export async function searchPlayers(query:string){const client=requireClient();const clean=query.trim();if(clean.length<2)throw new Error('Enter at least two characters.');const {data,error}=await client.rpc('social_player_search',{p_query:clean,p_limit:20});if(error)throw error;return withGuildIdentities((data??[]) as FriendSearchResult[]);}
-export async function friends(){const client=requireClient();const {data,error}=await client.rpc('friend_list');if(error)throw error;return withGuildIdentities((data??[]) as FriendEntry[]);}
+export async function searchPlayers(query:string){const client=requireClient();const clean=query.trim();if(clean.length<2)throw new Error('Enter at least two characters.');const {data,error}=await client.rpc('social_player_search',{p_query:clean,p_limit:20});if(error)throw error;return withSocialIdentities((data??[]) as FriendSearchResult[]);}
+export async function friends(){const client=requireClient();const {data,error}=await client.rpc('friend_list');if(error)throw error;return withSocialIdentities((data??[]) as FriendEntry[]);}
 export async function friendRequests(){const client=requireClient();const {data,error}=await client.rpc('friend_request_list');if(error)throw error;return (data??[]) as FriendRequest[];}
 export async function friendRelationshipState(accountId:string):Promise<{relationship:FriendRelationship;requestId?:string}>{
  const client=requireClient();
@@ -98,7 +100,7 @@ export async function cancelGuildInvitation(invitationId:string){const client=re
 export async function updateGuildMemberRole(accountId:string,role:'officer'|'member'){const client=requireClient();const {data,error}=await client.rpc('update_guild_member_role_v1',{p_target_account_id:accountId,p_role:role});if(error)throw error;return data as 'officer'|'member';}
 export async function removeGuildMember(accountId:string){const client=requireClient();const {data,error}=await client.rpc('remove_guild_member_v1',{p_target_account_id:accountId});if(error)throw error;return data as 'removed';}
 export function guildChatCommandKey(){return `guild-chat-${Date.now()}-${Math.random().toString(36).slice(2,14)}`;}
-export async function guildChatState(limit=50){const client=requireClient();const {data,error}=await client.rpc('guild_chat_state_v1',{p_limit:limit});if(error)throw error;return data as GuildChatState;}
+export async function guildChatState(limit=50){const client=requireClient();const {data,error}=await client.rpc('guild_chat_state_v1',{p_limit:limit});if(error)throw error;const snapshot=data as GuildChatState;if(!snapshot?.messages?.length)return snapshot;return {...snapshot,messages:await withSocialIdentities(snapshot.messages)};}
 export async function sendGuildChat(body:string,idempotencyKey:string){const client=requireClient();const {data,error}=await client.rpc('send_guild_chat_v1',{p_body:body,p_idempotency_key:idempotencyKey});if(error)throw error;return data as string;}
 export async function socialChatAttention(){const client=requireClient();const {data,error}=await client.rpc('social_chat_attention_state_v1');if(error)throw error;return data as SocialChatAttentionState;}
 export async function markSocialChatRead(channelType:'guild'|'party'){const client=requireClient();const {data,error}=await client.rpc('mark_social_chat_read_v1',{p_channel_type:channelType});if(error)throw error;return data as {channelType:'guild'|'party';channelId:string;readAt:string};}

@@ -73,6 +73,12 @@ export function QuestScreen({state,mode,onModeChange,focusedWeeklyOrderId,onClai
   const claimed=QUESTS.filter(def=>state.quests.some(q=>q.questId===def.id&&q.status==='claimed')).length;
   const ready=state.quests.filter(q=>q.status==='complete').length;
   const currentDef=QUESTS.find(def=>state.quests.find(q=>q.questId===def.id)?.status!=='claimed')??QUESTS[QUESTS.length-1],currentAct=QUEST_ACTS[currentDef.act];
+  const boardComplete=contractBoard.orders.filter(order=>order.progress>=order.target).length,boardActive=Math.max(0,contractBoard.orders.length-boardComplete);
+  const focusedOrder=focusedWeeklyOrderId?contractBoard.orders.find(order=>order.id===focusedWeeklyOrderId):undefined,focusedOrderMissing=!!focusedWeeklyOrderId&&!focusedOrder;
+  const challengeClaimedIds=new Set(state.account.seasonalContractClaimIds??[]),allChallenges=[...daily,...weekly,...monthly];
+  const challengeReadyCount=allChallenges.filter(row=>row.progress>=row.required&&!challengeClaimedIds.has(row.id)).length,challengeClaimedCount=allChallenges.filter(row=>challengeClaimedIds.has(row.id)).length;
+  const modeTitle=mode==='story'?'Asterfall Journal':mode==='contracts'?'Contract Board':'Class Challenges';
+  const modeSubtitle=mode==='story'?'Campaign chapters, story rewards and the next Asterfall objective.':mode==='contracts'?'Weekly Hunt, Work, Regional and Threat jobs with exact progression routes.':'Personal daily, weekly and monthly objectives tied to your class.';
   function claim(id:string){
     try{setClaimMoment(null);setNotice('');setError('');onClaim(id)}
     catch(e){setError(e instanceof Error?e.message:'Unable to claim this quest.');setNotice('')}

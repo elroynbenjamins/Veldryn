@@ -7,6 +7,7 @@ import {itemInspectModel} from '../src/core/item-inspect';
 import {workingTowardItemSource} from '../src/core/working-toward';
 import {MONSTERS} from '../src/content/monsters';
 import {combatBaselineProjection,dropExpectation} from '../src/core/balance-projection';
+import {isV33EquipmentCraftingMaterial,v33EquipmentMaterialUse} from '../src/core/equipment-loot-v33';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 
@@ -15,6 +16,18 @@ ok(new Set(V33_EQUIPMENT_RECIPES.map(row=>row.id)).size===2430,'V33 recipe IDs m
 ok(new Set(V33_EQUIPMENT_RECIPES.map(row=>row.output.itemId)).size===2430,'Every V33 piece should have exactly one generated output recipe');
 ok(V33_EQUIPMENT_RECIPES.every(row=>RECIPES.some(recipe=>recipe.id===row.id&&recipe.output.itemId===row.output.itemId)),'All generated V33 recipes must be registered in RECIPES');
 ok(V33_EQUIPMENT_RECIPES.every(row=>row.inputs.length>=2&&row.inputs.every(input=>itemDef(input.itemId).type==='material')),'Every V33 recipe needs registered material inputs');
+const finishedGearDrops=MONSTERS.flatMap(monster=>monster.drops.map(drop=>({monster,drop}))).filter(row=>itemDef(row.drop.itemId).type==='gear');
+ok(finishedGearDrops.length===0,'Combat must not bypass V33 crafting with finished equipment drops');
+const combatFedV33Materials=['MOSS_FIBER','WISP_DUST','BOAR_HIDE','WOLF_PELT','IRONWOOD_FANG','THORN_SAP','TROLL_HIDE','OATHGLASS_SHARD','TORN_OATHCLOTH','LANTERNSTEEL_SHARD','ECHO_QUARTZ','SUNSTONE_ORE','AMBERGLASS','ASTRAL_SCRIPT','FROSTIRON','RIMEGLASS','CHOIR_BLOOM'];
+for(const itemId of combatFedV33Materials){
+  ok(isV33EquipmentCraftingMaterial(itemId),itemId+' must feed at least one V33 equipment recipe');
+  ok(MONSTERS.some(monster=>monster.drops.some(drop=>drop.itemId===itemId)),itemId+' must retain a combat source for Equipment 2.0');
+}
+const mossUse=v33EquipmentMaterialUse('MOSS_FIBER')!;
+ok(mossUse.tiers.includes('T1')&&mossUse.recipeCount>0,'Starter monster materials must identify their V33 equipment use');
+const frostUse=v33EquipmentMaterialUse('FROSTIRON')!;
+ok(frostUse.tiers.some(tier=>['T7','T8','T9'].includes(tier)),'Frostmarch combat materials must feed later V33 tiers');
+
 
 const timerRanges:Record<string,[number,number]>={T1:[60,180],T2:[180,360],T3:[300,600],T4:[480,900],T5:[720,1200],T6:[900,1500],T7:[1200,1800],T8:[1500,2400],T9:[1800,2700]};
 for(const recipe of V33_EQUIPMENT_RECIPES){

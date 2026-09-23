@@ -140,6 +140,9 @@ ok(skillNavigation.includes('recipeProgressionAction')&&skillNavigation.includes
 ok(skillNavigation.includes('characterTrainingDestination'),'Character-level recipe locks must have a concrete combat training destination when available');
 
 const workingToward=read('src/core/working-toward.ts');
+ok(workingToward.includes('workingTowardItemSources')&&workingToward.includes('sourceStatusPriority'),'Material source navigation must rank every known source by live availability instead of fixed source type order');
+ok(workingToward.includes("ready:0,travel:1,locked:2,info:3"),'Material source ranking must prefer usable local sources before travel and locked alternatives');
+ok(workingToward.includes("typePriority:0")&&workingToward.includes("typePriority:1")&&workingToward.includes("typePriority:2"),'Material source ranking must retain deterministic gather/craft/combat tie-breaks after availability');
 ok(workingToward.includes("kind:'dungeon';dungeonId?:string"),'Working Toward must support a real Dungeon destination');
 ok(workingToward.includes("goal.kind==='dungeon_clears')return {kind:'dungeon'"),'Dungeon goals must navigate instead of rendering info-only dead ends');
 ok(read('App.tsx').includes("destination.kind==='dungeon'){setTab('Coop')"),'Dungeon progression actions must open the real co-op dungeon screen');

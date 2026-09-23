@@ -7,3 +7,6 @@ export const monsterPortraits:Record<MonsterDef['id'],ImageSourcePropType>={
  GLOAM_MITE:require('../../assets/monsters/gloam_mite.png'),LANTERN_WRETCH:require('../../assets/monsters/lantern_wretch.png'),DROWNED_PILGRIM:require('../../assets/monsters/drowned_pilgrim.png'),OATHBOUND_SQUIRE:require('../../assets/monsters/oathbound_squire.png'),BANNER_SHADE:require('../../assets/monsters/banner_shade.png'),
  FALLEN_SENTINEL:require('../../assets/monsters/fallen_sentinel.png'),OATHGLASS_REVENANT:require('../../assets/monsters/oathglass_revenant.png'),FALLEN_KNIGHT:require('../../assets/monsters/fallen_knight.png'),
 };
+
+export function monsterPortraitSource(monsterId:string){return monsterPortraits[monsterId];}
+export function hasMonsterPortrait(monsterId:string){return !!monsterPortraitSource(monsterId);}

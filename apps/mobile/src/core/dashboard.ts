@@ -19,6 +19,7 @@ import {contractBoardSummary} from './contract-board-summary';
 import {workingTowardReadyCount} from './working-toward';
 import {newlyUnlockedGameGuide} from './onboarding';
 import {eventReadyClaimCount} from './live-events';
+import {recipePreparationReadyCount} from './recipe-preparation-tracking';
 const COMBAT_SPEED_MIN=.68;
 const COMBAT_SPEED_MAX=1.3;
 const COMBAT_TIME_SCALE=1.16;
@@ -44,7 +45,7 @@ export function homeSessionSummary(state:GameState,nowMs=Date.now()):HomeSession
  const storyRewards=state.quests.filter(row=>row.status==='complete').length;
  const dailyReady=dailySuppliesHomeSummary(state,nowMs).canClaim;
  const eventRewards=eventReadyClaimCount(state,nowMs);
- const goalReady=workingTowardReadyCount(state),goalTotal=state.character?.progressionGoals?.length??0;
+ const goalReady=workingTowardReadyCount(state)+recipePreparationReadyCount(state),goalTotal=state.character?.progressionGoals?.length??0;
  const weekly=contractBoardSummary(state,nowMs),newUnlocks=newlyUnlockedGameGuide(state).length;
  const readyTotal=storyRewards+(dailyReady?1:0)+eventRewards+goalReady;
  const primaryReady:HomeSessionReadyAction|undefined=storyRewards

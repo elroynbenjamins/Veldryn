@@ -639,12 +639,14 @@ export function craftRecipe(state:GameState,recipeId:string,nowMs=Date.now()):Ga
   if(!state.character)throw new Error('No character');
   if(recipeId.startsWith('BREW_'))throw new Error('Timed alchemy recipes must be started as a batch.');
   const r=RECIPES.find(x=>x.id===recipeId);if(!r)throw new Error('Unknown recipe');
+  const recipeOutput=itemDef(r.output.itemId);
+  if(recipeOutput.type==='gear'&&!r.noviceSetId)throw new Error('Timed equipment recipes must be started in the Equipment Forge.');
   if(r.classId&&r.classId!==state.character.classId)throw new Error('This recipe belongs to another class');
   if(state.character.level<(r.characterLevel??1))throw new Error(`Requires character level ${r.characterLevel}`);
   if(r.requiresCraftedItemId&&!state.character.craftedNoviceItemIds?.includes(r.requiresCraftedItemId))throw new Error(`Craft ${itemDef(r.requiresCraftedItemId).name} first`);
   const sk=state.skills.find(x=>x.skillId===r.skillId);if(!sk||sk.level<r.level)throw new Error('Skill level too low');
   if(state.character.gold<r.gold)throw new Error('Not enough gold');
-  const outputDef=itemDef(r.output.itemId),multipliers=characterPermanentMultipliers(state),mastery=professionMasteryMultipliers(r.id,state.account.professionMasteryByAction?.[r.id]),outputEligible=outputDef.type!=='gear'&&outputDef.type!=='tool',baseXp=Math.floor(r.xp*multipliers.skillXpMultiplier*mastery.xp),masteryKey=`mastery:craft:${r.id}:yield`,masteryRaw=r.output.quantity*(outputEligible?mastery.yield:1)+(state.rewardRemainders?.[masteryKey]??0),masteryOutput=outputEligible?Math.floor(masteryRaw):r.output.quantity,masteryRemainder=outputEligible?Math.max(0,masteryRaw-masteryOutput):0;
+  const outputDef=recipeOutput,multipliers=characterPermanentMultipliers(state),mastery=professionMasteryMultipliers(r.id,state.account.professionMasteryByAction?.[r.id]),outputEligible=outputDef.type!=='gear'&&outputDef.type!=='tool',baseXp=Math.floor(r.xp*multipliers.skillXpMultiplier*mastery.xp),masteryKey=`mastery:craft:${r.id}:yield`,masteryRaw=r.output.quantity*(outputEligible?mastery.yield:1)+(state.rewardRemainders?.[masteryKey]??0),masteryOutput=outputEligible?Math.floor(masteryRaw):r.output.quantity,masteryRemainder=outputEligible?Math.max(0,masteryRaw-masteryOutput):0;
   const masteryState={...state,rewardRemainders:{...(state.rewardRemainders??{}),[masteryKey]:masteryRemainder}} as GameState;
   const boosted=applyDailySupplyCraft(masteryState,{seconds:r.seconds,outputQuantity:masteryOutput,xp:baseXp,outputEligible}),boostedState=boosted.state;
   let inv=boostedState.inventory.stacks,bank=boostedState.bank.stacks;

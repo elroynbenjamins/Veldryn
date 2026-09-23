@@ -96,6 +96,7 @@ export function normalizeSave(input:any):GameState{
     classSkills:normalizeClassSkills(savedCharacter.classId,savedCharacter.classSkills),
     faith:normalizeFaith(savedCharacter.faith),
     trainingFocus:normalizeTrainingFocus(savedCharacter.trainingFocus),
+    herbalismHarvestMethodId:['balanced','quick','careful','bountiful'].includes(savedCharacter.herbalismHarvestMethodId)?savedCharacter.herbalismHarvestMethodId:'balanced',
     classTraining:input.activity?undefined:normalizeClassDrills(savedCharacter.classTraining),
     classSkillRemainders:Object.fromEntries(Object.entries(savedCharacter.classSkillRemainders??{}).filter(([id,v])=>normalizeClassSkills(savedCharacter.classId,[]).some(s=>s.skillId===id)&&typeof v==='number'&&Number.isFinite(v)&&v>=0&&v<1)),
     bodyPresentation:input.character.bodyPresentation==='female'?'female':'male',
@@ -131,7 +132,8 @@ export function normalizeSave(input:any):GameState{
   if(input.activity && input.activity.progressFraction!==undefined && (!Number.isFinite(input.activity.progressFraction)||input.activity.progressFraction<0||input.activity.progressFraction>=1))throw new Error('Invalid activity progress.');
   if(input.activity && (!Number.isSafeInteger(input.activity.lastClaimAtMs)||input.activity.lastClaimAtMs<input.activity.startedAtMs))throw new Error('Invalid activity timeline.');
   const environment=rawEnvironment&&seasonIds.includes(rawEnvironment.seasonId)&&weatherIds.includes(rawEnvironment.weatherId)&&typeof rawEnvironment.zoneId==='string'&&Number.isFinite(rawEnvironment.capturedAtMs)?{seasonId:rawEnvironment.seasonId,weatherId:rawEnvironment.weatherId,zoneId:rawEnvironment.zoneId,capturedAtMs:rawEnvironment.capturedAtMs}:undefined;
-  const activity=input.activity?{...input.activity,environment,brew:input.activity.kind==='alchemy'?normalizeAlchemyBatch(input.activity.brew,input.activity.targetId):undefined,processing:input.activity.kind==='processing'?normalizeProcessingBatch(input.activity.processing,input.activity.targetId):undefined}:null;
+  const herbalismHarvestMethodId=input.activity?.kind==='herbalism'&&['balanced','quick','careful','bountiful'].includes(input.activity.herbalismHarvestMethodId)?input.activity.herbalismHarvestMethodId:input.activity?.kind==='herbalism'?'balanced':undefined;
+  const activity=input.activity?{...input.activity,environment,herbalismHarvestMethodId,brew:input.activity.kind==='alchemy'?normalizeAlchemyBatch(input.activity.brew,input.activity.targetId):undefined,processing:input.activity.kind==='processing'?normalizeProcessingBatch(input.activity.processing,input.activity.targetId):undefined}:null;
   const savedRegionId=typeof input.currentRegionId==='string'?input.currentRegionId:environment?.zoneId;
   const currentRegionId=WORLD_ZONES.some(zone=>zone.id===savedRegionId&&(character?.level??1)>=zone.minLevel)?savedRegionId:'GREENFIELDS';
   const rawLiveEvent=input.account?.liveEvent;
@@ -207,7 +209,7 @@ export function normalizeSave(input:any):GameState{
   if(input.otherCharacters!==undefined&&!Array.isArray(input.otherCharacters))throw new Error('Invalid account roster.');
   if(Array.isArray(input.otherCharacters)&&input.otherCharacters.length>4)throw new Error('Account roster exceeds the five-character limit.');
   const rosterIds=new Set<string>();
-  const roster=Array.isArray(input.otherCharacters)?input.otherCharacters.filter((entry:any)=>entry?.character?.id).map((entry:any)=>{const id=String(entry.character.id);if(rosterIds.has(id))throw new Error('Duplicate account character.');rosterIds.add(id);return {...entry,character:{...entry.character,gearEnhancements:normalizeGearEnhancements(entry.character.gearEnhancements),dailySupplyBoostBank:normalizeDailySupplyBank(entry.character.dailySupplyBoostBank),activeDailySupplyBoost:normalizeActiveDailySupplyBoost(entry.character.activeDailySupplyBoost)}};}):[];
+  const roster=Array.isArray(input.otherCharacters)?input.otherCharacters.filter((entry:any)=>entry?.character?.id).map((entry:any)=>{const id=String(entry.character.id);if(rosterIds.has(id))throw new Error('Duplicate account character.');rosterIds.add(id);return {...entry,character:{...entry.character,herbalismHarvestMethodId:['balanced','quick','careful','bountiful'].includes(entry.character.herbalismHarvestMethodId)?entry.character.herbalismHarvestMethodId:'balanced',gearEnhancements:normalizeGearEnhancements(entry.character.gearEnhancements),dailySupplyBoostBank:normalizeDailySupplyBank(entry.character.dailySupplyBoostBank),activeDailySupplyBoost:normalizeActiveDailySupplyBoost(entry.character.activeDailySupplyBoost)}};}):[];
   if(character?.id&&rosterIds.has(character.id))throw new Error('Duplicate active account character.');
   normalized.otherCharacters=roster as GameState['otherCharacters'];
   normalized.account.unlockedCharacterSlots=Math.max(1,Math.min(5,Number(input.account?.unlockedCharacterSlots??1)));

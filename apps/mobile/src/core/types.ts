@@ -17,6 +17,7 @@ export type CombatAffixId='bloodthirsty'|'ironhide'|'colossal'|'cursed';
 export type CombatTacticId='assault'|'balanced'|'guarded';
 export interface QueuedActivity {kind:'combat'|'gathering';targetId:string;combatChallengeId?:CombatChallengeId;combatTacticId?:CombatTacticId;huntGoalId?:import('./hunt-goals').HuntGoalId;}
 export type GatheringSkillId='mining'|'woodcutting'|'fishing'|'herbalism';
+export type HerbalismHarvestMethodId='balanced'|'quick'|'careful'|'bountiful';
 export type SeasonId='spring'|'summer'|'autumn'|'winter';
 export type WeatherId='clear'|'rain'|'mist'|'storm'|'bloomwind'|'heatwave'|'harvest_wind'|'snow'|'frost';
 export type SkillId=GatheringSkillId|'smithing'|'cooking'|'alchemy'|'hunting'|'exploration'|'tailoring'|'enchanting'|'faith';
@@ -39,6 +40,8 @@ export interface CharacterState {
   gearEnhancements?:Record<string,GearEnhancementState>;
   /** One character-bound gathering tool per skill. Equipped tools are removed from Inventory. */
   equippedToolIds?:Partial<Record<GatheringSkillId,string>>;
+  /** Preferred Herbalism technique. The active activity snapshots this when it starts. */
+  herbalismHarvestMethodId?:HerbalismHarvestMethodId;
   equippedFoodId?:string;
   bodyPresentation?:BodyPresentation;
   craftedNoviceItemIds?:string[]; profileTitle?:string; profileBackgroundId?:string; profileBorderId?:string; selectedCosmeticPetId?:string;
@@ -88,7 +91,7 @@ export interface InventoryState { stacks:ItemStack[]; capacity:number; }
 export interface BankState { stacks:ItemStack[]; capacity:number; }
 export interface OverflowState { stacks:ItemStack[]; expiresAtMs:number|null; }
 export interface ActivityEnvironmentSnapshot{seasonId:SeasonId;weatherId:WeatherId;zoneId:string;capturedAtMs:number;}
-export interface ActiveActivity { kind:ActivityKind; targetId:string; startedAtMs:number; lastClaimAtMs:number; combatChallengeId?:CombatChallengeId; combatAffixId?:CombatAffixId; combatTacticId?:CombatTacticId; huntGoal?:import('./hunt-goals').HuntGoalSnapshot; sessionKills?:number; sessionChampions?:number; environment?:ActivityEnvironmentSnapshot; classFocus?:TrainingFocus; classTrainingSnapshot?:{faithBlessingId?:string}; bonusSnapshot?:import('./permanent-boosts').PermanentMultipliers; progressFraction?:number; brew?:import('./alchemy-types').AlchemyBatchState; processing?:import('./processing').ProcessingBatchState; faithPractice?:import('./faith-types').FaithPracticeReservation; }
+export interface ActiveActivity { kind:ActivityKind; targetId:string; startedAtMs:number; lastClaimAtMs:number; combatChallengeId?:CombatChallengeId; combatAffixId?:CombatAffixId; combatTacticId?:CombatTacticId; huntGoal?:import('./hunt-goals').HuntGoalSnapshot; sessionKills?:number; sessionChampions?:number; environment?:ActivityEnvironmentSnapshot; herbalismHarvestMethodId?:HerbalismHarvestMethodId; classFocus?:TrainingFocus; classTrainingSnapshot?:{faithBlessingId?:string}; bonusSnapshot?:import('./permanent-boosts').PermanentMultipliers; progressFraction?:number; brew?:import('./alchemy-types').AlchemyBatchState; processing?:import('./processing').ProcessingBatchState; faithPractice?:import('./faith-types').FaithPracticeReservation; }
 export interface QuestState { questId:string; status:'locked'|'active'|'complete'|'claimed'; progress:number; }
 export interface RegionalProgressState { storyCompleted?:number; sideQuestsCompleted?:number; echoesCompleted?:number; dungeonsCompleted?:number; collectionEntries?:number; bossMasteryTier?:number; }
 export interface LiveEventRuntime{eventId:string;enabled:boolean;startsAtMs:number;endsAtMs:number;graceEndsAtMs?:number;priority?:number;modules?:string[];}
@@ -115,6 +118,8 @@ export interface GameState {
   unlockedKnowledgeIds?:string[];
   /** Server-owned gem acquisition persistence. Pity is source-level, never one counter per family. */
   gemPityBySource?:Record<string,number>;
+  /** Deterministic fallback progress for Effect Gem recipe research. */
+  gemResearchProgressByFamily?:Record<string,number>;
   /** Current UTC-week Live co-op Resonance Cache projection and pre-rolled reward choices. */
   resonanceCache?:ResonanceCacheStateV1;
   unlockedCollectionRewardIds?:string[];

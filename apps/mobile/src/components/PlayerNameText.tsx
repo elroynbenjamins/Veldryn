@@ -49,7 +49,7 @@ export function PlayerNameText({
   numberOfLines?:number;
 }){
   const normalized=normalizePlayerNameStyle(nameStyle);
-  const animated=normalized.mode==='gradient'&&normalized.animated&&!reduceMotion;
+  const animated=normalized.mode==='gradient'&&normalized.animated===true&&!reduceMotion;
   const phase=useNameFlow(animated);
   if(normalized.mode==='default')return <Text numberOfLines={numberOfLines} style={style}>{name}</Text>;
   if(normalized.mode==='solid')return <Text numberOfLines={numberOfLines} style={[style,{color:normalized.solidColor}]}>{name}</Text>;

@@ -5,6 +5,7 @@ import {MONSTERS} from '../src/content/monsters';
 import {itemDef} from '../src/content/items';
 import {activeActivityLevelPace,activityProgressFeedback,characterLevelPace,combatBaselineProjection,craftingPaceProjection,dropExpectation,dropPaceBand,formatBalanceDuration,gatheringBalanceProjection,skillTargetEta} from '../src/core/balance-projection';
 import {activityCycleSeconds,activityRate} from '../src/core/dashboard';
+import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 function close(actual:number,expected:number,tolerance:number,message:string){if(Math.abs(actual-expected)>tolerance)throw new Error(message+': expected '+expected+', got '+actual)}
@@ -93,14 +94,10 @@ close(activityCycleSeconds(alchemyState),45,.001,'Alchemy Home cycle must use th
 const alchemyRate=activityRate(alchemyState),alchemyLevel=activeActivityLevelPace(alchemyState,alchemyRate.xpPerHour);
 close(alchemyRate.xpPerHour,12000,.001,'Alchemy Home rate must use reserved XP per batch and cycle duration');
 ok(alchemyLevel?.label==='Alchemy','Active Alchemy must resolve the Alchemy skill level bar');
-const copperBlade=RECIPES.find(row=>row.id==='SMITH_COPPER_BLADE')!,asterChest=RECIPES.find(row=>row.id==='SMITH_ASTER_IRON_CHEST')!,oathWard=RECIPES.find(row=>row.id==='SMITH_OATHSTONE_WARD')!;
-const qty=(recipe:typeof copperBlade,itemId:string)=>recipe.inputs.find(row=>row.itemId===itemId)?.quantity??0;
-ok(qty(copperBlade,'COPPER_INGOT')<=12&&qty(copperBlade,'GREENWOOD_LOG')<=24,'Starter crafted gear must stay session-friendly after catalog transforms');
-ok(qty(asterChest,'ASTER_IRON_INGOT')<=55&&qty(asterChest,'IRONWOOD_LOG')<=80&&qty(asterChest,'REINFORCED_FITTING')<=5,'Mid-tier chest material costs must stay progression-scale after catalog transforms');
-ok(qty(oathWard,'OATHSTONE_INGOT')<=28&&qty(oathWard,'CROWNWOOD_LOG')<=48&&qty(oathWard,'OATHGLASS_SHARD')<=8,'Oathstone progression gear must remain demanding but session-scale after catalog transforms');
-ok(copperBlade.seconds>=60&&oathWard.seconds>=240,'Routine recipe material reductions must not erase the existing timed crafting identity');
-const specialCraft=RECIPES.find(row=>row.id==='CRAFT_STONEHEART_CHEST');
-ok(!specialCraft||specialCraft.inputs.some(input=>input.quantity>=20),'Special CRAFT_* Smithing recipes may retain a heavier material burden than routine SMITH_* progression gear');
+const t1Gear=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T1')!,t4Gear=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T4')!;
+ok(t1Gear.seconds>=60&&t1Gear.seconds<=180,'T1 Equipment 2.0 craft time must stay inside its calibrated band');
+ok(t4Gear.seconds>=480&&t4Gear.seconds<=900,'T4 Equipment 2.0 craft time must stay inside its calibrated band');
+ok(t1Gear.inputs.every(input=>itemDef(input.itemId).type==='material')&&t4Gear.inputs.every(input=>itemDef(input.itemId).type==='material'),'Equipment 2.0 pacing fixtures must use real material inputs');
 
 const alchemy1=RECIPES.find(row=>row.id==='BREW_DEWLEAF_DRAUGHT')!,alchemy8=RECIPES.find(row=>row.id==='BREW_VIGOR_TONIC')!,alchemy16=RECIPES.find(row=>row.id==='BREW_WARD_TONIC')!,alchemy85=RECIPES.find(row=>row.id==='BREW_OATH_WARD_TONIC')!;
 const smith1=RECIPES.find(row=>row.id==='SMELT_COPPER_INGOT')!,cook1=RECIPES.find(row=>row.id==='COOK_SILVERFIN')!;

@@ -4,7 +4,7 @@ import {classSkillsFor} from '../content/class-skills';
 import {MONSTERS} from '../content/monsters';
 import {itemDef} from '../content/items';
 import {GATHERING,RECIPES} from '../content/skills';
-import {HERB_NODES} from '../content/herbalism';
+import {HERB_NODES,HERBALISM_ESSENCE_BY_ZONE,herbalismMethod} from '../content/herbalism';
 import {explorationRoute} from '../content/exploration';
 import {QUESTS} from '../content/quests';
 import {GameState,ClassId,RewardBundle,ItemStack,GearSlot,BodyPresentation,GatheringSkillId,CombatChallengeId,CombatTacticId} from './types';
@@ -330,8 +330,9 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
     const g=[...GATHERING,...HERB_NODES].find(x=>x.id===state.activity!.targetId);if(!g)return {xp:0,gold:0,items:[],kills:0,elapsedSeconds:elapsed};
     const effect=environmentEffectForActivity(state.activity).effect;
     const pacing=gatheringPacing(state,g),mastery=professionMasteryMultipliers(g.id,state.account.professionMasteryByAction?.[g.id]);
+    const herbLevel=state.skills.find(row=>row.skillId==='herbalism')?.level??1,method=g.skillId==='herbalism'?herbalismMethod(state.character.herbalismMethodId,herbLevel):undefined;
     const specialtySpeed=g.skillId==='fishing'?multipliers.fishingSpeedMultiplier:g.skillId==='herbalism'?multipliers.herbalismSpeedMultiplier:1;
-    const effectiveActionSeconds=g.seconds*GATHER_TIME_SCALE*pacing.timeMultiplier*effect.actionTimeMultiplier/(multipliers.gatheringSpeedMultiplier*specialtySpeed*mastery.speed);
+    const effectiveActionSeconds=g.seconds*GATHER_TIME_SCALE*pacing.timeMultiplier*effect.actionTimeMultiplier*(method?.actionTimeMultiplier??1)/(multipliers.gatheringSpeedMultiplier*specialtySpeed*mastery.speed);
     const elapsedMs=Math.min(offlineCapSeconds(state)*1000,Math.max(0,effectiveNowMs-state.activity.lastClaimAtMs));
     const cycleMs=effectiveActionSeconds*1000;
     const totalMs=(state.activity.progressFraction??0)*cycleMs+elapsedMs;
@@ -339,12 +340,22 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
     const seed=`${state.character.id}:${state.activity.lastClaimAtMs}:${g.id}:yield`;
     let baseQuantity=0;
     for(let i=0;i<actions;i++)baseQuantity+=g.min+Math.floor(random01(seed,i)*(g.max-g.min+1));
-    const quantityFloat=baseQuantity*effect.itemMultiplier*multipliers.gatheringYieldMultiplier*mastery.yield+(state.rewardRemainders?.[g.itemId]??0);
+    const quantityFloat=baseQuantity*effect.itemMultiplier*(method?.yieldMultiplier??1)*multipliers.gatheringYieldMultiplier*mastery.yield+(state.rewardRemainders?.[g.itemId]??0);
     const quantity=Math.floor(quantityFloat);
     const skill=state.skills.find(x=>x.skillId===g.skillId);
-    const rawXp=Math.floor(actions*g.xp*effect.xpMultiplier*multipliers.skillXpMultiplier*mastery.xp);
+    const rawXp=Math.floor(actions*g.xp*effect.xpMultiplier*(method?.xpMultiplier??1)*multipliers.skillXpMultiplier*mastery.xp);
     const xp=Math.min(Math.max(0,totalXpAtLevel(100)-(skill?.xp??0)),rawXp);
-    const reward:RewardBundle={xp,gold:0,items:quantity?[{itemId:g.itemId,quantity}]:[],kills:actions,elapsedSeconds:elapsed,nextProgressFraction:(totalMs%cycleMs)/cycleMs,nextRewardRemainders:{...(state.rewardRemainders??{}),[g.itemId]:Math.max(0,quantityFloat-quantity)}};
+    const items:ItemStack[]=quantity?[{itemId:g.itemId,quantity}]:[];
+    if(g.skillId==='herbalism'){
+      const essence=HERBALISM_ESSENCE_BY_ZONE[g.zoneId];
+      if(essence&&actions>0){
+        const rareChance=Math.min(1,essence.baseChance*(method?.rareFindMultiplier??1)*effect.dropChanceMultiplier*multipliers.dropChanceMultiplier);
+        const rareSeed=`${state.character.id}:${state.activity.lastClaimAtMs}:${g.id}:botanical-essence`;
+        let rareQuantity=0;for(let i=0;i<actions;i++)if(random01(rareSeed,i)<rareChance)rareQuantity++;
+        if(rareQuantity)items.push({itemId:essence.itemId,quantity:rareQuantity});
+      }
+    }
+    const reward:RewardBundle={xp,gold:0,items,kills:actions,elapsedSeconds:elapsed,nextProgressFraction:(totalMs%cycleMs)/cycleMs,nextRewardRemainders:{...(state.rewardRemainders??{}),[g.itemId]:Math.max(0,quantityFloat-quantity)}};
     return {...reward,eventDrops:activityEventDrops(state,reward,effectiveNowMs),eventDiscoveries:activityEventDiscoveries(state,'gathering',Math.floor(reward.elapsedSeconds/60),effectiveNowMs)};
   }
   const m=MONSTERS.find(x=>x.id===state.activity!.targetId);if(!m)throw new Error('Unknown monster');

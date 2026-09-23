@@ -104,6 +104,7 @@ export function progressionGoalDestination(state:GameState,goal:ProgressionGoal)
  if(goal.kind==='item_quantity')return workingTowardItemSource(state,goal.itemId);
  if(goal.kind==='recipe'){
   const recipe=RECIPES.find(row=>row.id===goal.recipeId);
+  if(recipe&&!recipeVisibleInActiveCatalog(RECIPES,recipe,state.character?.classId))return {kind:'info',button:'Legacy recipe retired',detail:'This tracked recipe was retired when Equipment 2.0 replaced the legacy gear catalog.'};
   return recipe?{kind:'skills',skillId:recipe.skillId as SkillId,mode:'crafting',recipeId:recipe.id,button:`Craft ${recipe.name}`,detail:'Open the tracked recipe.'}:{kind:'info',button:'Recipe unavailable',detail:'This recipe is not in the current catalog.'};
  }
  if(goal.kind==='pet_hunt'){

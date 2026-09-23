@@ -118,6 +118,7 @@ ok(craftingBrowser.includes('bestRecipeTrainingDestination')&&craftingBrowser.in
 ok(craftingBrowser.includes('recipeProgressionAction')&&craftingBrowser.includes('preferredRecipeId'),'Crafting summary actions must deep-link the exact highlighted recipe instead of reopening a generic profession list');
 ok(craftingBrowser.includes('initialExpanded={recipe.id===preferredRecipeId}'),'Deep-linked crafting targets must arrive already expanded');
 ok(craftingBrowser.includes('processingAvailability')&&craftingBrowser.includes('onProcessingStart'),'Repeatable stackable recipes must route through reserved timed processing');
+ok(craftingBrowser.includes('equipmentCraftAvailability')&&craftingBrowser.includes('timedEquipmentRecipe'),'Crafting groups and summary readiness must use real forge-start semantics for timed equipment');
 
 const recipeCard=read('src/components/RecipeCard.tsx');
 ok(recipeCard.includes("processing?'Process ×'")&&recipeCard.includes('Progress continues offline.')&&recipeCard.includes('outputPerHour'),'Processing cards must expose batch controls, offline timing and material throughput');
@@ -134,6 +135,7 @@ ok(recipeCard.includes('TIMED PACE')&&recipeCard.includes('batches/hr')&&recipeC
 const skillNavigation=read('src/core/skill-progression-navigation.ts');
 ok(skillNavigation.includes('workingTowardItemSource'),'Skill progression navigation must reuse the canonical Working Toward item-source resolver');
 ok(skillNavigation.includes('isTimedProcessingRecipe')&&skillNavigation.includes('processingAvailability'),'Training recommendations must use reserved timed-processing readiness for repeatable batch recipes');
+ok(skillNavigation.includes('equipmentCraftAvailability')&&skillNavigation.includes('timedEquipmentRecipe'),'Training recommendations must use forge queue availability for timed equipment recipes');
 ok(skillNavigation.includes('recipeProgressionAction')&&skillNavigation.includes('Preview the exact recipe'),'Locked recipe navigation must retain the exact unlock target');
 ok(skillNavigation.includes('characterTrainingDestination'),'Character-level recipe locks must have a concrete combat training destination when available');
 

@@ -7,6 +7,7 @@ import type {GameState,GatheringSkillId,SkillId} from './types';
 import {recipeAvailability} from './playability';
 import {alchemyAvailability} from './alchemy';
 import {isTimedProcessingRecipe,processingAvailability} from './processing';
+import {equipmentCraftAvailability,timedEquipmentRecipe} from './equipment-crafting-queue';
 import {workingTowardDestinationAvailability,workingTowardItemSource,type WorkingTowardDestination,type WorkingTowardDestinationAvailability} from './working-toward';
 
 const gatheringDefs=[...GATHERING,...HERB_NODES];
@@ -48,6 +49,7 @@ export function gatheringProgressionAction(state:GameState,activity:GatherDef):S
 export function recipeTrainingReady(state:GameState,recipe:Recipe){
  if(recipe.skillId==='alchemy')return alchemyAvailability(state,recipe.id,1).ready;
  if(isTimedProcessingRecipe(recipe.id))return processingAvailability(state,recipe.id,1).ready;
+ if(timedEquipmentRecipe(recipe.id))return equipmentCraftAvailability(state,recipe.id).ready;
  return recipeAvailability(state,recipe.id).ready;
 }
 

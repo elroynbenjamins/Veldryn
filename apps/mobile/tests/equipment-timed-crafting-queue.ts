@@ -1,7 +1,7 @@
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
 import {createCharacter,newGame} from '../src/core/game';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
-import {equipmentCraftQueueModel,equipmentCraftSlotBreakdown,equipmentCraftingQueue,MAX_WAITING_EQUIPMENT_CRAFTS,startEquipmentCraft,claimEquipmentCraft} from '../src/core/equipment-crafting-queue';
+import {equipmentCraftAvailability,equipmentCraftQueueModel,equipmentCraftSlotBreakdown,equipmentCraftingQueue,MAX_WAITING_EQUIPMENT_CRAFTS,startEquipmentCraft,claimEquipmentCraft} from '../src/core/equipment-crafting-queue';
 import {normalizeSave} from '../src/core/save-normalization';
 import {accountBonusOverview} from '../src/core/account-bonuses';
 import type {GameState} from '../src/core/types';
@@ -16,6 +16,7 @@ function prepared(){
 }
 
 let state=prepared();
+ok(equipmentCraftAvailability(state,recipe.id,999).ready,'Forge availability must recognize a valid timed equipment recipe before queueing');
 let slots=equipmentCraftSlotBreakdown(state);
 ok(slots.capacity===3&&slots.base===3&&slots.max===5,'Fresh account must start with 3 equipment crafting slots and cap at 5');
 
@@ -43,6 +44,8 @@ for(let i=1;i<MAX_WAITING_EQUIPMENT_CRAFTS;i++)state=startEquipmentCraft(state,r
 ok(equipmentCraftQueueModel(state,1010).waiting===MAX_WAITING_EQUIPMENT_CRAFTS,'Base account should support five reserved waiting crafts behind three active slots');
 let ninthBlocked=false;try{startEquipmentCraft(state,recipe.id,1010)}catch(error){ninthBlocked=error instanceof Error&&error.message.includes('backlog is full')}
 ok(ninthBlocked,'Ninth craft must be blocked when 3 active + 5 waiting positions are occupied');
+const fullAvailability=equipmentCraftAvailability(state,recipe.id,1010);
+ok(!fullAvailability.ready&&fullAvailability.reason.includes('backlog is full'),'Forge availability must mirror the real full-backlog blocker used by execution');
 
 const supporterState={...prepared(),account:{...prepared().account,entitlements:{supporter:true}}};
 let supporterQueue:GameState=supporterState;

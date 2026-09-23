@@ -28,7 +28,13 @@ const zoneSceneCellById:Readonly<Record<string,ZoneSceneCell>>={
 export function ZoneSceneArtwork({regionId,muted=false,blurRadius=1}:{regionId:string;muted?:boolean;blurRadius?:number}){
   const cell=zoneSceneCellById[regionId];
   const [size,setSize]=useState({width:0,height:0});
-  if(!cell)return <RegionArtwork regionId={regionId} muted={muted}/>;
+  if(!cell){
+    const future=regionId==='VEILLANDS';
+    return <View pointerEvents="none" accessible={false} style={[StyleSheet.absoluteFill,s.crop,muted&&s.muted]}>
+      <RegionArtwork regionId={regionId} muted={muted}/>
+      {future?<><View style={s.futureWash}/><View style={s.futureHaze}/></>:null}
+    </View>;
+  }
   const scale=size.width&&size.height?Math.max(size.width/ZONE_SCENE_CELL_WIDTH,size.height/ZONE_SCENE_CELL_HEIGHT):1;
   const cellWidth=ZONE_SCENE_CELL_WIDTH*scale,cellHeight=ZONE_SCENE_CELL_HEIGHT*scale;
   const sheetWidth=ZONE_SCENE_SHEET_WIDTH*scale,sheetHeight=ZONE_SCENE_SHEET_HEIGHT*scale;
@@ -50,4 +56,4 @@ export function ZoneSceneArtwork({regionId,muted=false,blurRadius=1}:{regionId:s
   </View>;
 }
 
-const s=StyleSheet.create({crop:{overflow:'hidden',backgroundColor:'#101a24'},muted:{opacity:.52}});
+const s=StyleSheet.create({crop:{overflow:'hidden',backgroundColor:'#101a24'},muted:{opacity:.52},futureWash:{...StyleSheet.absoluteFillObject,backgroundColor:'rgba(55,38,88,.52)'},futureHaze:{position:'absolute',left:0,right:0,bottom:0,height:'48%',backgroundColor:'rgba(13,10,22,.46)'}});

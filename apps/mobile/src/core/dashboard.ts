@@ -20,6 +20,8 @@ import {workingTowardReadyCount} from './working-toward';
 import {newlyUnlockedGameGuide} from './onboarding';
 import {eventReadyClaimCount} from './live-events';
 import {firstTrackedRecipePreparation} from './recipe-preparation-tracking';
+import {equipmentCraftQueueModel} from './equipment-crafting-queue';
+import {companionAttentionSummary} from './companion-attention';
 const COMBAT_SPEED_MIN=.68;
 const COMBAT_SPEED_MAX=1.3;
 const COMBAT_TIME_SCALE=1.16;
@@ -27,7 +29,7 @@ const COMBAT_EXPECTED_SCALE=1.3;
 
 export type DashboardDestination='World'|'Skills'|'Inventory'|'Quests'|'Character'|'Settings';
 export interface DashboardRecommendation{title:string;detail:string;button:string;destination:DashboardDestination;zoneId?:string;priority:'urgent'|'progress'|'upgrade'}
-export type HomeReadyKind='quests'|'daily'|'events'|'goals';
+export type HomeReadyKind='quests'|'daily'|'events'|'goals'|'forge'|'weekly'|'companions';
 export interface HomeSessionReadyAction{kind:HomeReadyKind;title:string;detail:string;button:string}
 export interface HomeSessionSummary{
  readyTotal:number;
@@ -38,6 +40,9 @@ export interface HomeSessionSummary{
  goalTotal:number;
  weeklyComplete:number;
  weeklyTotal:number;
+ weeklyRewards:number;
+ forgeReady:number;
+ companionAttention:number;
  newUnlocks:number;
  goalNext?:string;
  primaryReady?:HomeSessionReadyAction;
@@ -47,18 +52,24 @@ export function homeSessionSummary(state:GameState,nowMs=Date.now()):HomeSession
  const dailyReady=dailySuppliesHomeSummary(state,nowMs).canClaim;
  const eventRewards=eventReadyClaimCount(state,nowMs);
  const goalReady=workingTowardReadyCount(state),goalTotal=state.character?.progressionGoals?.length??0;
- const weekly=contractBoardSummary(state,nowMs),newUnlocks=newlyUnlockedGameGuide(state).length,trackedPreparation=firstTrackedRecipePreparation(state),goalNext=trackedPreparation?.status==='complete'?undefined:trackedPreparation?.nextLabel;
- const readyTotal=storyRewards+(dailyReady?1:0)+eventRewards+goalReady;
- const primaryReady:HomeSessionReadyAction|undefined=storyRewards
-  ?{kind:'quests',title:storyRewards===1?'Story reward ready':storyRewards+' story rewards ready',detail:'Claim completed Asterfall chapters to unlock the next story beat.',button:'Open Journal'}
-  :dailyReady
-   ?{kind:'daily',title:'Daily Supplies ready',detail:"Today's account-wide supply claim is available.",button:'Open Daily Supplies'}
-   :eventRewards
-    ?{kind:'events',title:eventRewards===1?'Event reward ready':eventRewards+' event rewards ready',detail:'Your active event has claimable rewards or gifts.',button:'Open Event'}
-    :goalReady
-     ?{kind:'goals',title:goalReady===1?'Pinned goal complete':goalReady+' pinned goals complete',detail:'Review completed Working Toward goals and choose what to pursue next.',button:'Open Goals'}
-     :undefined;
- return {readyTotal,storyRewards,dailyReady,eventRewards,goalReady,goalTotal,weeklyComplete:weekly.complete,weeklyTotal:weekly.total,newUnlocks,goalNext,primaryReady};
+ const weekly=contractBoardSummary(state,nowMs),weeklyRewards=weekly.pendingRewards,forgeReady=equipmentCraftQueueModel(state,nowMs).ready,companionSummary=companionAttentionSummary(state,nowMs),companionAttention=companionSummary.expeditionClaims+companionSummary.bondRewards+companionSummary.ascensions+companionSummary.sanctuaryClaims+companionSummary.codexClaims+companionSummary.monthlyTrialClaims,newUnlocks=newlyUnlockedGameGuide(state).length,trackedPreparation=firstTrackedRecipePreparation(state),goalNext=trackedPreparation?.status==='complete'?undefined:trackedPreparation?.nextLabel;
+ const readyTotal=storyRewards+(dailyReady?1:0)+eventRewards+goalReady+forgeReady+weeklyRewards+companionAttention;
+ const primaryReady:HomeSessionReadyAction|undefined=forgeReady
+  ?{kind:'forge',title:forgeReady===1?'Forge craft ready':forgeReady+' Forge crafts ready',detail:'Completed Forge jobs are waiting to be claimed and may be occupying ready capacity.',button:'Open Forge'}
+  :storyRewards
+   ?{kind:'quests',title:storyRewards===1?'Story reward ready':storyRewards+' story rewards ready',detail:'Claim completed Asterfall chapters to unlock the next story beat.',button:'Open Journal'}
+   :weeklyRewards
+    ?{kind:'weekly',title:weeklyRewards===1?'Contract reward ready':weeklyRewards+' Contract rewards ready',detail:'Weekly Contract Board rewards are queued for review.',button:'Open Contracts'}
+    :dailyReady
+     ?{kind:'daily',title:'Daily Supplies ready',detail:"Today's account-wide supply claim is available.",button:'Open Daily Supplies'}
+     :eventRewards
+      ?{kind:'events',title:eventRewards===1?'Event reward ready':eventRewards+' event rewards ready',detail:'Your active event has claimable rewards or gifts.',button:'Open Event'}
+      :companionAttention
+       ?{kind:'companions',title:companionAttention===1?'Companion action ready':companionAttention+' Companion actions ready',detail:'Companion rewards, training, Ascension or Sanctuary progression can be handled now.',button:'Open Companions'}
+       :goalReady
+        ?{kind:'goals',title:goalReady===1?'Pinned goal complete':goalReady+' pinned goals complete',detail:'Review completed Working Toward goals and choose what to pursue next.',button:'Open Goals'}
+        :undefined;
+ return {readyTotal,storyRewards,dailyReady,eventRewards,goalReady,goalTotal,weeklyComplete:weekly.complete,weeklyTotal:weekly.total,weeklyRewards,forgeReady,companionAttention,newUnlocks,goalNext,primaryReady};
 }
 
 /** A single, deterministic next-step recommendation for the home screen. */
@@ -67,8 +78,6 @@ export function dashboardRecommendation(state:GameState):DashboardRecommendation
   if(!c)return {title:'Create your hero',detail:'Choose a class to begin.',button:'Create character',destination:'Character',priority:'progress'};
   if(state.overflow.stacks.length)return {title:'Overflow needs attention',detail:`${state.overflow.stacks.length} reward stack${state.overflow.stacks.length===1?' is':'s are'} waiting. Move them before the 72-hour hold expires.`,button:'Manage rewards',destination:'Inventory',priority:'urgent'};
   if(c.currentHp<=Math.max(5,Math.floor(c.hp*.35)))return {title:'Recover before hunting',detail:'Your health is low. Eat food or equip a stronger ration before continuing combat.',button:'Open food & gear',destination:'Inventory',priority:'urgent'};
-  const ready=state.quests.find(q=>q.status==='complete');
-  if(ready){const def=QUESTS.find(q=>q.id===ready.questId);return {title:'Chapter reward ready',detail:def?`${def.name} is complete. Claim it to unlock the next chapter.`:'A journal reward is ready.',button:'Claim reward',destination:'Quests',priority:'progress'}}
   const active=state.quests.find(q=>q.status==='active'),def=QUESTS.find(q=>q.id===active?.questId);
   if(def?.kind==='kills'&&def.targetId){const monster=MONSTERS.find(m=>m.id===def.targetId);if(monster&&state.unlockedMonsterIds.includes(monster.id)){const zoneId=WORLD_ZONES.find(zone=>zone.name===monster.zone)?.id;return {title:`Continue: ${def.name}`,detail:`Hunt ${monster.name} in ${monster.zone} · ${Math.max(0,def.required-(active?.progress??0))} remaining.`,button:'Open hunting ground',destination:'World',zoneId,priority:'progress'}}}
   if(def?.kind==='item')return {title:`Continue: ${def.name}`,detail:def.description,button:'Gather materials',destination:'Skills',priority:'progress'};

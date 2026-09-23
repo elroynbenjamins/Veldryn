@@ -15,6 +15,7 @@ ok(home.includes("completed>0?\`Claim \${completed}\`:'Journal'"),'Quest-ready s
 
 const sessionOverview=read('src/components/HomeSessionOverview.tsx');
 ok(home.includes('<HomeSessionOverview'),'Home must expose one compact session-priority surface');
+ok(home.indexOf('<HomeSessionOverview')<home.indexOf("s.guide,guide.priority"),'Session ready-now must precede Next Step progression guidance on Home');
 ok(home.indexOf('<HomeSessionOverview')<home.indexOf('ASTERFALL CAMPAIGN'),'Session priorities must appear before broader campaign/planning detail');
 ok(home.includes('showProgress&&<View style={s.expanded}><WorkingTowardSummary')&&home.includes('<SkillDashboard state={state}'),'Full goals, weekly, daily and skill snapshots must move behind the secondary progress disclosure');
 ok((home.match(/<SkillDashboard/g)??[]).length===1,'Home must not duplicate the full skill snapshot outside its secondary progress area');
@@ -24,7 +25,8 @@ ok(sessionOverview.includes("cell:{position:'relative',flex:1,minWidth:0,minHeig
 ok(sessionOverview.includes('useWindowDimensions')&&sessionOverview.includes("width<350||fontScale>=1.25")&&sessionOverview.includes("cellStack:{flex:0,flexBasis:'48%'"),'Home session overview must collapse to a clean 2×2 layout on narrow phones or larger text');
 ok(sessionOverview.includes('goodSurface')&&sessionOverview.includes('infoSurface')&&sessionOverview.includes('specialSurface')&&sessionOverview.includes('accentSurface'),'Home session cells must use semantic theme surfaces for restrained color emphasis');
 const dashboardCore=read('src/core/dashboard.ts');
-ok(dashboardCore.includes('homeSessionSummary')&&dashboardCore.includes("kind:'quests'")&&dashboardCore.includes("kind:'daily'")&&dashboardCore.includes("kind:'events'")&&dashboardCore.includes("kind:'goals'"),'Home ready-now priority must remain deterministic and derived from existing systems');
+ok(dashboardCore.includes('homeSessionSummary')&&dashboardCore.includes("kind:'quests'")&&dashboardCore.includes("kind:'daily'")&&dashboardCore.includes("kind:'events'")&&dashboardCore.includes("kind:'goals'")&&dashboardCore.includes("kind:'forge'")&&dashboardCore.includes("kind:'weekly'")&&dashboardCore.includes("kind:'companions'"),'Home ready-now priority must include core claimable operational systems');
+ok(dashboardCore.includes('equipmentCraftQueueModel')&&dashboardCore.includes('companionAttentionSummary')&&dashboardCore.includes('weeklyRewards'),'Home ready-now counts must derive from authoritative Forge, Companion and Contract systems');
 
 ok(home.includes('identityCopy:{flex:1,minWidth:0,gap:5}')&&home.includes('levelBadge:'),'Home identity must combine character XP and level into one compact modern header');
 ok(home.includes('guideTop:')&&home.includes('RECOMMENDED')&&home.includes("borderLeftColor:C.info"),'Home Next Step must retain a clear modern recommendation treatment');
@@ -256,13 +258,21 @@ ok(character.includes('<GameButton compact title={fullSet?')&&character.includes
 const empty=read('src/components/EmptyState.tsx');
 ok(empty.includes('padding:spacing.lg'),'Empty states must avoid excessive vertical padding');
 
+const topBar=read('src/components/GameTopBar.tsx');
+ok(topBar.includes('attentionRows')&&topBar.includes('NEEDS ATTENTION')&&topBar.includes('menuBadge'),'Quick navigation must surface attention both on configured shortcuts and for important destinations outside the configured five');
+ok(topBar.includes('attentionTotal')&&topBar.includes('needs attention'),'Quick navigation menu must announce its attention state accessibly');
+ok(topBar.includes('hiddenAttentionCount')&&topBar.includes('attentionMore'),'Quick navigation must acknowledge additional attention destinations beyond the compact top three');
+ok(sessionOverview.includes('visibleParts=parts.slice(0,4)')&&sessionOverview.includes("readyDisplay=summary.readyTotal>99?'99+'"),'High-attention Home sessions must stay compact instead of growing an unbounded readiness line');
 const primaryNavigation=read('src/components/PrimaryNavigation.tsx');
 const appShell=read('App.tsx');
 const packageJson=read('package.json');
 ok(primaryNavigation.includes('useSafeAreaInsets'),'Bottom navigation must use real safe-area metrics');
+ok(primaryNavigation.includes('active?:T'),'Bottom navigation must support a neutral selection state for the session Home dashboard');
+ok(appShell.includes("tab==='Home'?undefined"),'Home must not falsely select Account or another persistent bottom destination');
 ok(primaryNavigation.includes("Platform.OS==='android'?Math.max(bottom,8):4"),'Android bottom navigation must apply the native bottom inset without reducing touch safety');
 ok(!primaryNavigation.includes("Dimensions.get('screen')")&&!primaryNavigation.includes('StatusBar.currentHeight'),'Bottom navigation must not regress to screen-height/status-bar heuristics');
 ok(appShell.includes('<SafeAreaProvider>'),'App root must provide safe-area metrics');
+ok(appShell.includes('buildQuickNavigationBadges')&&appShell.includes("row.kind!=='reward_ready'&&row.kind!=='weekly_order_complete'"),'Primary nav must avoid misleading Home/Contract claim dots while quick navigation routes those notices exactly');
 ok(packageJson.includes('"react-native-safe-area-context": "5.4.0"'),'Expo 53 safe-area dependency must remain pinned');
 
 

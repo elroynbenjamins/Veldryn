@@ -5,7 +5,7 @@ import {useGameTheme} from '../theme/ThemeContext';
 
 export type NavigationBadge=number|'dot';
 
-export function PrimaryNavigation<T extends PrimaryNavigationDestination>({destinations,active,labelFor,onNavigate,badges}:{destinations:readonly T[];active:T;labelFor:(destination:T)=>string;onNavigate:(destination:T)=>void;badges?:Partial<Record<T,NavigationBadge>>}){
+export function PrimaryNavigation<T extends PrimaryNavigationDestination>({destinations,active,labelFor,onNavigate,badges}:{destinations:readonly T[];active?:T;labelFor:(destination:T)=>string;onNavigate:(destination:T)=>void;badges?:Partial<Record<T,NavigationBadge>>}){
  const C=useGameTheme();
  const {bottom}=useSafeAreaInsets();
  // iOS is already inside the root SafeAreaView. Android needs its real navigation/gesture inset here.

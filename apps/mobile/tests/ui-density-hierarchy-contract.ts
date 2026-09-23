@@ -148,7 +148,7 @@ ok(workingToward.includes('workingTowardItemSourceEntries')&&workingToward.inclu
 ok(workingToward.includes('dungeonMaterialSourcesForItem')&&workingToward.includes('typePriority:3'),'Authoritative dungeon material sources must join the shared ranked source resolver without outranking immediately useful local routes');
 ok(workingToward.includes("kind:'dungeon';dungeonId?:string"),'Working Toward must support a real Dungeon destination');
 ok(workingToward.includes("goal.kind==='dungeon_clears')return {kind:'dungeon'"),'Dungeon goals must navigate instead of rendering info-only dead ends');
-ok(read('App.tsx').includes("destination.kind==='dungeon'){setTab('Coop')"),'Dungeon progression actions must open the real co-op dungeon screen');
+ok(read('App.tsx').includes("destination.kind==='dungeon'){setGoalDungeonId(destination.dungeonId);setTab('Coop')"),'Dungeon progression actions must open the real co-op dungeon screen and preserve the exact dungeon target');
 
 const planner=read('src/screens/ProgressionPlannerScreen.tsx');
 ok(planner.includes('MASTERY_GOAL_RANKS')&&planner.includes('nextMasteryGoalRank'),'Working Toward Profession Mastery goals must target authored bonus ranks');
@@ -206,6 +206,12 @@ ok(inventory.includes("utilityChip:{flex:1,minWidth:0,minHeight:44"),'Inventory 
 ok(inventory.includes('visible={filterOpen}'),'Inventory categories must open in a compact filter sheet');
 ok(inventory.includes('filterOption:{minHeight:44'),'Inventory filter rows must retain accessible touch height');
 ok(!inventory.includes('contentContainerStyle={s.controlStrip}'),'Inventory must not regress to the long horizontal category strip');
+
+const dungeonDeepLinkApp=read('App.tsx');
+const dungeonDeepLinkScreen=read('src/screens/CoopExpeditionScreen.tsx');
+ok(dungeonDeepLinkApp.includes("setGoalDungeonId(destination.dungeonId)")&&dungeonDeepLinkApp.includes('initialDungeonId={goalDungeonId}'),'Dungeon progression sources must retain the exact authored dungeon id through app navigation');
+ok(dungeonDeepLinkScreen.includes('dungeons.find(item=>item.id===initialDungeonId)')&&dungeonDeepLinkScreen.includes('setSelected(dungeon)'),'Dungeon screen must open the exact dungeon supplied by a material/progression deep link');
+ok(dungeonDeepLinkScreen.includes('That dungeon source is not currently available in the dungeon catalog.'),'Invalid or stale dungeon deep links must fail visibly instead of silently dropping the player on a generic list');
 
 const world=read('src/screens/WorldScreen.tsx');
 ok(world.includes('currentCard:{minHeight:150'),'World current-region card must remain compact');

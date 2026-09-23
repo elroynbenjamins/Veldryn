@@ -19,7 +19,7 @@ import type {GameState} from '../core/types';
 import {clt} from '../i18n';
 import {presentEventExpeditionRun,validateCoopEventExpeditionPreview,type CoopEventExpeditionPreview,type CoopEventRunServerProjection} from '../core/coop-event-expeditions';
 
-export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoopEntrySource,initialEventLiveId,onInitialEventHandled,onRewardsChanged}:{onClose:()=>void;language:Language;state:GameState;entrySource?:CoopEntrySource;initialEventLiveId?:string;onInitialEventHandled?:()=>void;onRewardsChanged?:()=>void|Promise<void>}){
+export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoopEntrySource,initialDungeonId,onInitialDungeonHandled,initialEventLiveId,onInitialEventHandled,onRewardsChanged}:{onClose:()=>void;language:Language;state:GameState;entrySource?:CoopEntrySource;initialDungeonId?:string;onInitialDungeonHandled?:()=>void;initialEventLiveId?:string;onInitialEventHandled?:()=>void;onRewardsChanged?:()=>void|Promise<void>}){
   const C=useGameTheme();
   const [entry,setEntry]=useState<CoopEntryData>();
   const [selected,setSelected]=useState<CoopDungeonView>();
@@ -36,6 +36,7 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
   const [busy,setBusy]=useState(false),[pending,setPending]=useState(false);
   const activeRunId=useRef<string|undefined>(undefined);activeRunId.current=run?.runId;
   const activeEventRunId=useRef<string|undefined>(undefined);activeEventRunId.current=eventRun?.runId;
+  const initialDungeonHandled=useRef(false);
   const initialEventHandled=useRef(false);
   const [rewards,setRewards]=useState<Array<{id:string;claimed_at:string|null;reward_json:{marks?:number}}>>([]);
   const acceptRun=useCallback((projection:CoopQModeServerProjection)=>{const next=presentQModeRun(projection);setRun(current=>current&&current.runId===next.runId&&(current.stateVersion??0)>(next.stateVersion??0)?current:next);},[]);
@@ -89,6 +90,13 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
   },[eventRun?.runId,entrySource.kind,refreshEventRun]);
   useEffect(()=>{if(!showLive&&!showLoadouts&&!selected&&!selectedEvent&&!run&&!eventRun)return;const subscription=BackHandler.addEventListener('hardwareBackPress',()=>{if(showLive){onClose();return true}if(eventRun){setEventRun(undefined);return true}if(run){setRun(undefined);return true}if(showLoadouts){setShowLoadouts(false);setNotice('');return true}if(selectedEvent){setSelectedEvent(undefined);setNotice('');return true}if(selected){setSelected(undefined);setNotice('');return true}return false});return()=>subscription.remove()},[showLive,showLoadouts,selected,selectedEvent,run,eventRun,onClose]);
   const dungeons=useMemo(()=>(entry?.dungeons??[]).map(presentCoopDungeon),[entry]);
+  useEffect(()=>{
+    if(initialDungeonHandled.current||!initialDungeonId||!entry)return;
+    initialDungeonHandled.current=true;onInitialDungeonHandled?.();
+    const dungeon=dungeons.find(item=>item.id===initialDungeonId);
+    if(dungeon){setSelectedEvent(undefined);setEventRun(undefined);setRun(undefined);setSelected(dungeon);setTier(dungeon.difficulties[0]);setShowLoadouts(false);setNotice('');return;}
+    setNotice('That dungeon source is not currently available in the dungeon catalog.');
+  },[dungeons,entry,initialDungeonId,onInitialDungeonHandled]);
   const verifiedLoadout=()=>entry?.loadouts.find(item=>item.id==='current'&&item.status==='verified'&&item.ready)??entry?.loadouts.find(item=>item.status==='verified'&&item.ready);
   const refreshLiveRecruitment=async()=>{const posts=await coopClient.liveRecruitment();setEntry(current=>current?{...current,liveRecruitment:posts}:current);};
   function joinRecruitmentSearch(dungeonId:string){const dungeon=dungeons.find(item=>item.id===dungeonId);if(!dungeon?.available){setNotice('That dungeon is no longer available for this character.');return;}setMode('live');chooseDungeon(dungeon);}

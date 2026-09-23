@@ -1,6 +1,7 @@
 import {createCharacter,newGame,startGathering} from '../src/core/game';
 import {characterTotalXpAtLevel,totalXpAtLevel} from '../src/core/progression';
 import {GATHERING,RECIPES} from '../src/content/skills';
+import {HERB_NODES} from '../src/content/herbalism';
 import {MONSTERS} from '../src/content/monsters';
 import {itemDef} from '../src/content/items';
 import {acquisitionEstimateLabel,acquisitionProjectionForDestination,activeActivityLevelPace,activityProgressFeedback,characterLevelPace,combatBaselineProjection,craftingPaceProjection,dropExpectation,dropPaceBand,formatBalanceDuration,gatheringBalanceProjection,skillTargetEta} from '../src/core/balance-projection';
@@ -17,6 +18,19 @@ const gather=gatheringBalanceProjection(state,greenwood,24);
 ok(gather.cycleSeconds>greenwood.seconds,'Gathering projection must include global pacing/tool/weather modifiers');
 ok(gather.xpPerHour>0&&gather.levelPace.etaSeconds!==undefined,'Gathering projection must expose XP/hour and next-level ETA');
 close(gather.runtimeItemsPerHour,gather.authoredMeanItemsPerHour,.001,'Runtime gathering expectation must honor the authored min/max mean yield');
+const herbNode=HERB_NODES.find(row=>row.id==='DEWLEAF_PATCH')!;
+const herbBase={...state,currentRegionId:'GREENFIELDS',skills:state.skills.map(row=>row.skillId==='herbalism'?{...row,level:45,xp:totalXpAtLevel(45)}:row)};
+const herbBalanced=gatheringBalanceProjection({...herbBase,character:{...herbBase.character!,herbalismMethodId:'balanced'}},herbNode,24);
+const herbQuick=gatheringBalanceProjection({...herbBase,character:{...herbBase.character!,herbalismMethodId:'quick'}},herbNode,24);
+const herbCareful=gatheringBalanceProjection({...herbBase,character:{...herbBase.character!,herbalismMethodId:'careful'}},herbNode,24);
+const herbBountiful=gatheringBalanceProjection({...herbBase,character:{...herbBase.character!,herbalismMethodId:'bountiful'}},herbNode,24);
+ok(herbQuick.cycleSeconds<herbBalanced.cycleSeconds,'Quick Harvest must reduce real Herbalism cycle time');
+ok((herbCareful.rareItemsPerHour??0)>(herbBalanced.rareItemsPerHour??0),'Careful Harvest must improve rare botanical rate');
+ok(herbBountiful.runtimeItemsPerHour>herbBalanced.runtimeItemsPerHour,'Bountiful Harvest must improve normal herb throughput');
+const essenceDestination={kind:'skills' as const,skillId:'herbalism' as const,mode:'gathering' as const,actionId:herbNode.id,regionId:'GREENFIELDS',button:'Harvest',detail:''};
+const essenceAcquisition=acquisitionProjectionForDestination({...herbBase,character:{...herbBase.character!,herbalismMethodId:'careful'}},'ASTERFALL_BOTANICAL_ESSENCE',2,essenceDestination);
+ok(essenceAcquisition?.sourceKind==='gathering'&&(essenceAcquisition.quantityPerHour??0)>0,'Rare botanical essences must have a real current-pace Herbalism acquisition ETA');
+
 const target=skillTargetEta(state,'woodcutting',7,gather.xpPerHour);
 ok((target.etaSeconds??0)>gather.levelPace.etaSeconds!,'Higher skill unlock ETA must include multiple levels of XP');
 const starterToolState={...state,character:{...state.character!,equippedToolIds:{woodcutting:'GREENWOOD_HATCHET'}}};

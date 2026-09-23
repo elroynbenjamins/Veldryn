@@ -8,7 +8,7 @@ import {HERB_NODES,HERBALISM_ESSENCE_BY_ZONE,herbalismInsightMultiplier,herbalis
 import {explorationRoute} from '../content/exploration';
 import {QUESTS} from '../content/quests';
 import {GameState,ClassId,RewardBundle,ItemStack,GearSlot,BodyPresentation,GatheringSkillId,CombatChallengeId,CombatTacticId} from './types';
-import {normalizeActivityQueue} from './activity-queue';
+import {activityQueueCapacity,normalizeActivityQueue} from './activity-queue';
 import {characterLevelFromXp,levelFromXp,totalXpAtLevel} from './progression';
 import {random01} from './rng';
 import {characterNameError,normalizeCharacterName} from './character-creation';
@@ -21,6 +21,7 @@ import {characterPermanentMultipliers} from './permanent-boosts';
 import {activityEventDiscoveries,activityEventDrops,applyEventDiscoveries,applyEventDrops,grantEventActivity} from './live-events';
 import {DEFAULT_QUICK_NAV_DESTINATIONS} from './quick-navigation';
 import {unlockedCharacterSlots} from './account-roster';
+import {accountEntitlementBenefits,entitlementStorageCapacity} from './account-entitlements';
 import {gatheringPacing} from './gathering-tools';
 import {gatheringToolDef} from '../content/gathering-tools';
 import {currentRegionId} from './combat-region';
@@ -79,11 +80,6 @@ const COMBAT_EXPECTED_SCALE=1.3;
 const COMBAT_MONSTER_DAMAGE_SCALE=1.13;
 export const GATHER_TIME_SCALE=1.25;
 
-function hasAccountEntitlement(state:GameState,...keys:string[]){
-  const entitlements=state.account.entitlements??{};
-  return keys.some(key=>entitlements[key]===true);
-}
-
 export function offlineCapBreakdown(state:GameState){
   const setComplete=!!state.character&&noviceSetFor(state.character.classId).slots.every(slot=>state.character!.craftedNoviceItemIds?.includes(noviceItemId(state.character!.classId,slot)));
   const questMilestone=state.quests.some(q=>q.questId==='QST_005'&&q.status==='claimed');
@@ -94,9 +90,7 @@ export function offlineCapBreakdown(state:GameState){
   const fifthSlot=unlockedSlots>=5;
   const guildMember=state.account.guildMember;
   const firstBoss=state.defeatedBossIds.length>0;
-  const vipPlus=hasAccountEntitlement(state,'vip_plus','vipplus','vip+');
-  const vip=hasAccountEntitlement(state,'vip')||vipPlus;
-  const supporter=hasAccountEntitlement(state,'supporter','supporter_subscription');
+  const benefits=accountEntitlementBenefits(state),vip=benefits.vip,vipPlus=benefits.vipPlus,supporter=benefits.supporter;
   const sources=[
     {id:'class_set',name:'Complete first class set',category:'progression' as const,hours:setComplete?2:0,earned:setComplete},
     {id:'quest_milestone',name:'Claim chapter 5',category:'progression' as const,hours:questMilestone?2:0,earned:questMilestone},
@@ -179,7 +173,7 @@ export function startCombat(state:GameState,monsterId:string,nowMs:number,combat
 function tryStartNextQueuedActivity(state:GameState,nowMs:number,throwOnFailure=false):GameState{
  if(!state.character)throw new Error('Create a character first.');
  if(state.activity)throw new Error('Stop the current activity before starting the queue.');
- const queue=normalizeActivityQueue(state.character.activityQueue),next=queue[0];
+ const queue=normalizeActivityQueue(state.character.activityQueue,activityQueueCapacity(state)),next=queue[0];
  if(!next)throw new Error('Action queue is empty.');
  try{
   const started=next.kind==='combat'
@@ -194,11 +188,11 @@ function tryStartNextQueuedActivity(state:GameState,nowMs:number,throwOnFailure=
 }
 export function startNextQueuedActivity(state:GameState,nowMs:number){return tryStartNextQueuedActivity(state,nowMs,true)}
 function autoAdvanceActivityQueue(state:GameState,nowMs:number){
- if(!state.character||!normalizeActivityQueue(state.character.activityQueue).length)return state;
+ if(!state.character||!normalizeActivityQueue(state.character.activityQueue,activityQueueCapacity(state)).length)return state;
  return tryStartNextQueuedActivity(state,nowMs,false);
 }
 function pauseActivityQueue(state:GameState,reason:string){
- if(!state.character||!normalizeActivityQueue(state.character.activityQueue).length)return state;
+ if(!state.character||!normalizeActivityQueue(state.character.activityQueue,activityQueueCapacity(state)).length)return state;
  return {...state,character:{...state.character,activityQueuePausedReason:reason}};
 }
 
@@ -236,8 +230,8 @@ function addBounded(stacks:ItemStack[],capacity:number,incoming:ItemStack[]){
   return {stacks:next,overflow};
 }
 function routeRewards(state:GameState,incoming:ItemStack[],nowMs:number){
-  const inv=addBounded(state.inventory.stacks,state.inventory.capacity,incoming);
-  const bank=addBounded(state.bank.stacks,state.bank.capacity,inv.overflow);
+  const inv=addBounded(state.inventory.stacks,entitlementStorageCapacity(state,'inventory'),incoming);
+  const bank=addBounded(state.bank.stacks,entitlementStorageCapacity(state,'bank'),inv.overflow);
   const overflow=stackItems(state.overflow.stacks,bank.overflow);
   return {
     inventory:{...state.inventory,stacks:inv.stacks},
@@ -419,7 +413,7 @@ function projectedIdleContext(state:GameState,reward:RewardBundle,settleAtMs:num
   const beforeOverflow=state.overflow.stacks.reduce((sum,row)=>sum+row.quantity,0),afterOverflow=routed.overflow.stacks.reduce((sum,row)=>sum+row.quantity,0);
   return {
     itemQuantities:projectedStoredQuantities(state,reward),skillLevels,monsterKills,sessionKills:(activity.sessionKills??0)+(activity.kind==='combat'?reward.kills:0),championDefeats:(activity.sessionChampions??0)+(activity.kind==='combat'?(reward.championEncounters?.count??0):0),weeklyOrderProgress,foodRemaining,
-    freeStorageSlots:Math.max(0,state.inventory.capacity-usedSlots(routed.inventory.stacks))+Math.max(0,state.bank.capacity-usedSlots(routed.bank.stacks)),
+    freeStorageSlots:Math.max(0,entitlementStorageCapacity(state,'inventory')-usedSlots(routed.inventory.stacks))+Math.max(0,entitlementStorageCapacity(state,'bank')-usedSlots(routed.bank.stacks)),
     elapsedSeconds:Math.max(0,Math.floor((settleAtMs-activity.startedAtMs)/1000)),projectedRewardFits:afterOverflow<=beforeOverflow
   };
 }
@@ -634,7 +628,7 @@ export function depositToBank(state:GameState,itemId:string,quantity:number):Gam
   if(quantity<=0)return state;
   const invQty=stackQty(state.inventory.stacks,itemId);if(invQty<quantity)throw new Error('Not enough items in inventory');
   const removed=consume(state.inventory.stacks,itemId,quantity);
-  const added=addBounded(state.bank.stacks,state.bank.capacity,[{itemId,quantity}]);
+  const added=addBounded(state.bank.stacks,entitlementStorageCapacity(state,'bank'),[{itemId,quantity}]);
   if(added.overflow.length)throw new Error('Bank is full');
   return {...state,inventory:{...state.inventory,stacks:removed},bank:{...state.bank,stacks:added.stacks}};
 }
@@ -642,7 +636,7 @@ export function withdrawFromBank(state:GameState,itemId:string,quantity:number):
   if(quantity<=0)return state;
   const bankQty=stackQty(state.bank.stacks,itemId);if(bankQty<quantity)throw new Error('Not enough items in Bank');
   const removed=consume(state.bank.stacks,itemId,quantity);
-  const added=addBounded(state.inventory.stacks,state.inventory.capacity,[{itemId,quantity}]);
+  const added=addBounded(state.inventory.stacks,entitlementStorageCapacity(state,'inventory'),[{itemId,quantity}]);
   if(added.overflow.length)throw new Error('Inventory is full');
   return {...state,bank:{...state.bank,stacks:removed},inventory:{...state.inventory,stacks:added.stacks}};
 }
@@ -678,7 +672,7 @@ function consumeInventoryThenBank(state:GameState,itemId:string,quantity:number)
 }
 export function claimOverflowToBank(state:GameState):GameState{
   if(!state.overflow.stacks.length)return state;
-  const added=addBounded(state.bank.stacks,state.bank.capacity,state.overflow.stacks);
+  const added=addBounded(state.bank.stacks,entitlementStorageCapacity(state,'bank'),state.overflow.stacks);
   return {...state,bank:{...state.bank,stacks:added.stacks},overflow:{stacks:added.overflow,expiresAtMs:added.overflow.length?state.overflow.expiresAtMs:null}};
 }
 
@@ -697,7 +691,7 @@ export function equipGatheringTool(state:GameState,itemId:string):GameState{
 export function unequipGatheringTool(state:GameState,skillId:GatheringSkillId):GameState{
   if(!state.character)return state;const currentId=state.character.equippedToolIds?.[skillId];if(!currentId)return state;
   const equippedToolIds={...(state.character.equippedToolIds??{})};delete equippedToolIds[skillId];
-  const added=addBounded(state.inventory.stacks,state.inventory.capacity,[{itemId:currentId,quantity:1}]);
+  const added=addBounded(state.inventory.stacks,entitlementStorageCapacity(state,'inventory'),[{itemId:currentId,quantity:1}]);
   if(added.overflow.length)throw new Error('Free one Inventory slot before unequipping this tool');
   return {...state,inventory:{...state.inventory,stacks:added.stacks},character:{...state.character,equippedToolIds}};
 }
@@ -720,10 +714,10 @@ export function craftRecipe(state:GameState,recipeId:string,nowMs=Date.now()):Ga
     inv=consumed.inventory;bank=consumed.bank;
     temp={...temp,inventory:{...temp.inventory,stacks:inv},bank:{...temp.bank,stacks:bank}};
   }
-  const output=addBounded(inv,boostedState.inventory.capacity,[{...r.output,quantity:boosted.outputQuantity}]);
+  const output=addBounded(inv,entitlementStorageCapacity(boostedState,'inventory'),[{...r.output,quantity:boosted.outputQuantity}]);
   inv=output.stacks;
   if(output.overflow.length){
-    const b=addBounded(bank,boostedState.bank.capacity,output.overflow);bank=b.stacks;
+    const b=addBounded(bank,entitlementStorageCapacity(boostedState,'bank'),output.overflow);bank=b.stacks;
     if(b.overflow.length)throw new Error('Inventory and Bank are full');
   }
   const xp=sk.xp+boosted.xp;
@@ -748,8 +742,8 @@ export function equipNoviceSet(state:GameState):GameState{
   }
   // Full-state artwork has no independent cape or unrelated offhand overlay.
   for(const slot of ['cape','offhand'] as GearSlot[]){if(!set.slots.includes(slot)&&equipment[slot]){replaced.push({itemId:equipment[slot]!,quantity:1});delete equipment[slot]}}
-  const inv=addBounded(next.inventory.stacks,next.inventory.capacity,replaced);
-  const bank=addBounded(next.bank.stacks,next.bank.capacity,inv.overflow);
+  const inv=addBounded(next.inventory.stacks,entitlementStorageCapacity(next,'inventory'),replaced);
+  const bank=addBounded(next.bank.stacks,entitlementStorageCapacity(next,'bank'),inv.overflow);
   if(bank.overflow.length)throw new Error('Free Inventory or Bank space for replaced equipment');
   next={...next,inventory:{...next.inventory,stacks:inv.stacks},bank:{...next.bank,stacks:bank.stacks},character:{...state.character,equipment}};
   next.character!.currentHp=Math.min(state.character.currentHp,effectiveStats(next).hp);

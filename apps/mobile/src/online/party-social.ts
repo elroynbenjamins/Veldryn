@@ -11,6 +11,7 @@ import type {
 } from '../core/party-social';
 import {supabase} from './supabase';
 import {guildIdentities} from './social';
+import type {PlayerNameStylePreference} from '../core/player-name-style';
 
 export interface PublishRecruitmentInput {
   postType: RecruitmentPostType;
@@ -87,7 +88,7 @@ export const removePartyMember=(partyId:string,targetAccountId:string)=>rpc<'rem
 export const cancelPartyInvitation=(invitationId:string)=>rpc<'cancelled'>('cancel_party_invitation_v1',{p_invitation_id:invitationId});
 export const disbandParty=(partyId:string)=>rpc<'disbanded'>('disband_party_v1',{p_party_id:partyId});
 export const sendPartyChat=(id:string,body:string,key:string)=>rpc('send_persistent_party_chat_v16',{p_party_id:id,p_body:body,p_idempotency_key:key});
-export type PartyChatMessage={id:string;account_id:string;sender_name:string;body:string;created_at:string;guild_tag?:string|null;guild_tag_color_id?:string|null};
+export type PartyChatMessage={id:string;account_id:string;sender_name:string;body:string;created_at:string;guild_tag?:string|null;guild_tag_color_id?:string|null;player_name_style?:PlayerNameStylePreference|null};
 export async function partyChatMessages(id:string){const {data,error}=await client().from('chat_messages').select('id,account_id,sender_name,body,created_at').eq('channel_type','party').eq('channel_id',id).order('created_at',{ascending:false}).limit(50);if(error)throw error;const rows=(data??[]).reverse() as PartyChatMessage[],identities=await guildIdentities(rows.map(row=>row.account_id));return rows.map(row=>({...row,...identities.get(row.account_id)}));}
 
 export async function activePartyEvent(): Promise<PartyEventView|null>{

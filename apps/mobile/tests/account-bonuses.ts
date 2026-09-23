@@ -21,4 +21,10 @@ ok(overview.sources.some(row=>row.label==='Combat Focus Sigil'&&row.scope==='cha
 ok(overview.temporary?.label==='Combat XP'&&overview.temporary.percent===10&&overview.temporary.remainingSeconds===3600,'Active Daily Supplies boost should appear with exact remaining qualifying time');
 ok(overview.sources.some(row=>row.scope==='temporary'&&row.label.includes('Daily Supplies')),'Temporary Daily Supplies source should be labeled separately from permanent modifiers');
 
+
+state={...state,account:{...state.account,entitlements:{vip_plus:true,supporter:true}}};
+overview=accountBonusOverview(state);
+ok(overview.sources.some(row=>row.id==='entitlement:vip'&&row.detail.includes('+20 Bank')),'VIP inheritance should expose permanent storage/loadout QoL');
+ok(overview.sources.some(row=>row.id==='entitlement:vip_plus'&&row.detail.includes('RGB names')),'VIP+ should expose advanced permanent QoL');
+ok(overview.sources.some(row=>row.id==='entitlement:supporter'&&row.detail.includes('Forge')),'Supporter should expose active Forge/name-style QoL');
 console.log(JSON.stringify({status:'PASS',combatPowerPct:combat?.percent,sourceCount:overview.sources.length,temporary:overview.temporary},null,2));

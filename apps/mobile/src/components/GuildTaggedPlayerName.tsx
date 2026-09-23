@@ -3,12 +3,14 @@ import {StyleSheet,Text,View,type StyleProp,type TextStyle} from 'react-native';
 import {guildTagColor,normalizeGuildTag} from '../core/guild-tags';
 import {type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
+import type {PlayerNameStylePreference} from '../core/player-name-style';
+import {PlayerStyledName} from './PlayerStyledName';
 
-export function GuildTaggedPlayerName({name,guildTag,tagColorId,style,numberOfLines}:{name:string;guildTag?:string|null;tagColorId?:string|null;style?:StyleProp<TextStyle>;numberOfLines?:number}){
+export function GuildTaggedPlayerName({name,guildTag,tagColorId,nameStyle,reduceMotion=false,style,numberOfLines}:{name:string;guildTag?:string|null;tagColorId?:string|null;nameStyle?:PlayerNameStylePreference;reduceMotion?:boolean;style?:StyleProp<TextStyle>;numberOfLines?:number}){
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const normalized=guildTag?normalizeGuildTag(guildTag):undefined;
  const tagColor=guildTagColor(tagColorId??undefined);
- return <View accessible accessibilityLabel={normalized?`[${normalized}] ${name}`:name} style={s.row}>{normalized?<Text numberOfLines={1} style={[s.tag,{color:tagColor,borderColor:tagColor}]}>[{normalized}]</Text>:null}<Text numberOfLines={numberOfLines??1} style={[s.name,style]}>{name}</Text></View>;
+ return <View accessible accessibilityLabel={normalized?`[${normalized}] ${name}`:name} style={s.row}>{normalized?<Text numberOfLines={1} style={[s.tag,{color:tagColor,borderColor:tagColor}]}>[{normalized}]</Text>:null}<PlayerStyledName name={name} nameStyle={nameStyle} reduceMotion={reduceMotion} numberOfLines={numberOfLines??1} style={[s.name,style]}/></View>;
 }
 function makeStyles(C:ThemeColors){return StyleSheet.create({
  row:{flexDirection:'row',alignItems:'center',gap:5,minWidth:0},

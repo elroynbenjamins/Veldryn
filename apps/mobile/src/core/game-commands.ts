@@ -12,13 +12,13 @@ import {reserveFaithPractice,updateFaithPreference} from './faith';
 import {executeCompanionActivity,refreshCompanions,assertCompanionIdle,claimCompanionTraining} from './companion-runtime';
 import {createAccountCharacter,deleteAccountCharacter,switchAccountCharacter} from './account-actions';
 import {CLASSES} from '../content/classes';
-import {applyCharacterLoadout,deleteCharacterLoadout,saveCharacterLoadout} from './character-loadouts';
+import {applyCharacterLoadout,characterLoadoutSlotCount,deleteCharacterLoadout,saveCharacterLoadout} from './character-loadouts';
 import {normalizeProgressionGoals} from './progression-goals-v40';
 import {normalizeIdleRuleSets,validateActiveIdleRuleId} from './idle-rules-v40';
 import {COMBAT_CHALLENGE_IDS} from './challenge-hunts';
 import {COMBAT_TACTIC_IDS} from './combat-tactics';
 import {HUNT_GOAL_IDS} from './hunt-goals';
-import {clearActivityQueue,enqueueActivity,moveQueuedActivity,removeQueuedActivity} from './activity-queue';
+import {activityQueueCapacity,clearActivityQueue,enqueueActivity,moveQueuedActivity,removeQueuedActivity} from './activity-queue';
 import {activateDailySupplyBoost,claimDailySupplies,DAILY_SUPPLY_BOOST_TYPES,dailySupplyBoostLabel} from './daily-supplies';
 import {bulkSalvageSelected,bulkSellSelected,bulkTransferSelected} from './inventory-bulk';
 import {normalizeChatEmoteTrayIds,CHAT_EMOTE_TRAY_SIZE} from './chat-emotes';
@@ -180,8 +180,8 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'roster_delete':state=deleteAccountCharacter(state,text(a,'id'),text(a,'confirmation',80),now);break;
   case 'claim':break;
   case 'queue_add':{const kind=oneOf(a.kind,['combat','gathering']),combatChallengeId=a.challengeId===undefined?undefined:oneOf(a.challengeId,COMBAT_CHALLENGE_IDS),combatTacticId=a.tacticId===undefined?undefined:oneOf(a.tacticId,COMBAT_TACTIC_IDS),huntGoalId=a.goalId===undefined?undefined:oneOf(a.goalId,HUNT_GOAL_IDS);state=enqueueActivity(state,{kind,targetId:text(a,'id'),...(combatChallengeId?{combatChallengeId}:{}),...(combatTacticId?{combatTacticId}:{}),...(huntGoalId?{huntGoalId}:{})});break;}
-  case 'queue_remove':state=removeQueuedActivity(state,integer(a,'index',0,2));break;
-  case 'queue_move':state=moveQueuedActivity(state,integer(a,'index',0,2),oneOf(a.direction,['up','down']));break;
+  case 'queue_remove':state=removeQueuedActivity(state,integer(a,'index',0,activityQueueCapacity(state)-1));break;
+  case 'queue_move':state=moveQueuedActivity(state,integer(a,'index',0,activityQueueCapacity(state)-1),oneOf(a.direction,['up','down']));break;
   case 'queue_clear':state=clearActivityQueue(state);break;
   case 'queue_start':state=game.startNextQueuedActivity(state,now);break;
   case 'start':{const kind=oneOf(a.kind,['combat','gathering']),challengeId=a.challengeId===undefined?undefined:oneOf(a.challengeId,COMBAT_CHALLENGE_IDS),tacticId=a.tacticId===undefined?undefined:oneOf(a.tacticId,COMBAT_TACTIC_IDS),goalId=a.goalId===undefined?undefined:oneOf(a.goalId,HUNT_GOAL_IDS);if(kind!=='combat'&&(challengeId||tacticId||goalId))throw new Error('invalid_combat_activity_option');state=transitionActivity(state,now,{kind,id:text(a,'id'),...(challengeId?{challengeId}: {}),...(tacticId?{tacticId}: {}),...(goalId?{goalId}: {})}).state;break;}
@@ -267,7 +267,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
    state=claimResonanceCacheV1(state,text(a,'familyId',80),now);message='Resonance Cache claimed';break;
   }
   case 'skin':state=selectCharacterSkin(state,text(a,'id'));break;
-  case 'loadout_save':state=saveCharacterLoadout(state,integer(a,'index',0,2),typeof a.name==='string'?a.name:undefined,now);break;
+  case 'loadout_save':state=saveCharacterLoadout(state,integer(a,'index',0,characterLoadoutSlotCount(state)-1),typeof a.name==='string'?a.name:undefined,now);break;
   case 'loadout_apply':state=applyCharacterLoadout(state,text(a,'id'));break;
   case 'loadout_delete':state=deleteCharacterLoadout(state,text(a,'id'));break;
   case 'goals_set':{

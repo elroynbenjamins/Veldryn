@@ -19,7 +19,7 @@ function prepared(){
 let state=prepared();
 ok(equipmentCraftAvailability(state,recipe.id,999).ready,'Forge availability must recognize a valid timed equipment recipe before queueing');
 let slots=equipmentCraftSlotBreakdown(state);
-ok(slots.capacity===3&&slots.base===3&&slots.max===5,'Fresh account must start with 3 equipment crafting slots and cap at 5');
+ok(slots.capacity===3&&slots.base===3&&slots.max===7,'Fresh account must start with 3 equipment crafting slots and cap at 7');
 
 slots=equipmentCraftSlotBreakdown({...state,account:{...state.account,entitlements:{supporter:true}}});
 ok(slots.capacity===4,'Supporter must add one crafting slot');
@@ -31,7 +31,7 @@ ok(slots.capacity===4,'Unlocking character slot #2 must add one crafting slot');
 slots=equipmentCraftSlotBreakdown({...state,account:{...state.account,unlockedCharacterSlots:4}});
 ok(slots.capacity===5,'Unlocking character slot #4 must reach the hard cap through character progression');
 slots=equipmentCraftSlotBreakdown({...state,account:{...state.account,unlockedCharacterSlots:4,entitlements:{supporter:true,vip_plus:true}}});
-ok(slots.capacity===5&&slots.raw===7,'All bonuses may overlap but active queue capacity must never exceed 5');
+ok(slots.capacity===7&&slots.raw===7,'Progression + VIP+ + Supporter should stack to seven active Forge slots');
 
 const started1=startEquipmentCraft(state,recipe.id,1000);state=started1.state;
 const started2=startEquipmentCraft(state,recipe.id,1001);state=started2.state;
@@ -90,4 +90,4 @@ const normalized=normalizeSave(save);
 ok(normalized.account.entitlements?.supporter===true,'Save normalization must preserve Supporter entitlement');
 ok(normalized.account.equipmentCraftingQueue?.length===4,'Save normalization must preserve valid timed crafting jobs');
 
-console.log('PASS: timed equipment crafting uses 3–5 active slots plus a five-job waiting backlog, authoritative timers and completion claims');
+console.log('PASS: timed equipment crafting uses 3–7 active slots plus a five-job waiting backlog, authoritative timers and completion claims');

@@ -8,9 +8,10 @@ import {craftClaimSubRoll,craftedInstanceResult,createCraftedGearInstance} from 
 import {gemCombineRecipeV1,gemRefineRecipeV1,isGemFamilyRecipeUnlockedV1} from './gem-progression-v1';
 import {professionMasteryMultipliers} from './profession-mastery-v40';
 import {applyTrustedLongTermProgression} from './long-term-progression-runtime';
+import {accountEntitlementBenefits} from './account-entitlements';
 
 export const BASE_EQUIPMENT_CRAFT_SLOTS=3;
-export const MAX_EQUIPMENT_CRAFT_SLOTS=5;
+export const MAX_EQUIPMENT_CRAFT_SLOTS=7;
 export const MAX_WAITING_EQUIPMENT_CRAFTS=5;
 export const MAX_READY_EQUIPMENT_CRAFTS=20;
 
@@ -30,8 +31,8 @@ export function equipmentCraftSlotBreakdown(state:GameState){
   const unlocked=unlockedCharacterSlots(state);
   const sources:EquipmentCraftSlotSource[]=[
     {id:'base',label:'Base crafting slots',earned:true,slots:BASE_EQUIPMENT_CRAFT_SLOTS},
-    {id:'supporter',label:'Supporter',earned:entitlement(state,'supporter','supporter_subscription'),slots:1},
-    {id:'vip_plus',label:'VIP+',earned:entitlement(state,'vip_plus','vipplus','vip+'),slots:1},
+    {id:'supporter',label:'Supporter',earned:accountEntitlementBenefits(state).supporter,slots:1},
+    {id:'vip_plus',label:'VIP+',earned:accountEntitlementBenefits(state).vipPlus,slots:1},
     {id:'character_2',label:'Unlock character slot #2',earned:unlocked>=2,slots:1},
     {id:'character_4',label:'Unlock character slot #4',earned:unlocked>=4,slots:1},
   ];

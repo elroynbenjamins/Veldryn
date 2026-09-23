@@ -7,8 +7,11 @@ import {WORLD_ZONES} from '../content/world-map';
 import {COMBAT_CHALLENGE_IDS,COMBAT_CHALLENGES,challengeHuntUnlocked} from './challenge-hunts';
 import {COMBAT_TACTIC_IDS,COMBAT_TACTICS} from './combat-tactics';
 import {HUNT_GOAL_IDS,HUNT_GOALS} from './hunt-goals';
+import {accountEntitlementBenefits} from './account-entitlements';
 
-export const MAX_ACTIVITY_QUEUE=3;
+export const BASE_ACTIVITY_QUEUE=3;
+export const MAX_ACTIVITY_QUEUE=4;
+export function activityQueueCapacity(state:GameState){return Math.min(MAX_ACTIVITY_QUEUE,BASE_ACTIVITY_QUEUE+accountEntitlementBenefits(state).actionQueueSlots);}
 
 export function normalizeQueuedActivity(value:unknown):QueuedActivity|undefined{
  if(!value||typeof value!=='object'||Array.isArray(value))return undefined;
@@ -20,26 +23,26 @@ export function normalizeQueuedActivity(value:unknown):QueuedActivity|undefined{
  const huntGoalId=HUNT_GOAL_IDS.includes(row.huntGoalId as any)?row.huntGoalId as QueuedActivity['huntGoalId']:undefined;
  return {kind,targetId,...(combatChallengeId?{combatChallengeId}:{}),...(combatTacticId?{combatTacticId}:{}),...(huntGoalId?{huntGoalId}:{})};
 }
-export function normalizeActivityQueue(value:unknown):QueuedActivity[]{
+export function normalizeActivityQueue(value:unknown,limit=BASE_ACTIVITY_QUEUE):QueuedActivity[]{
  if(!Array.isArray(value))return [];
- return value.flatMap(row=>{const normalized=normalizeQueuedActivity(row);return normalized?[normalized]:[]}).slice(0,MAX_ACTIVITY_QUEUE);
+ return value.flatMap(row=>{const normalized=normalizeQueuedActivity(row);return normalized?[normalized]:[]}).slice(0,Math.max(BASE_ACTIVITY_QUEUE,Math.min(MAX_ACTIVITY_QUEUE,limit)));
 }
 export function enqueueActivity(state:GameState,activity:QueuedActivity):GameState{
  if(!state.character)throw new Error('Create a character first.');
- const queue=normalizeActivityQueue(state.character.activityQueue),next=normalizeQueuedActivity(activity);
+ const capacity=activityQueueCapacity(state),queue=normalizeActivityQueue(state.character.activityQueue,capacity),next=normalizeQueuedActivity(activity);
  if(!next)throw new Error('Invalid queued activity.');
- if(queue.length>=MAX_ACTIVITY_QUEUE)throw new Error(`Action queue is full (${MAX_ACTIVITY_QUEUE}/${MAX_ACTIVITY_QUEUE}).`);
+ if(queue.length>=capacity)throw new Error(`Action queue is full (${capacity}/${capacity}).`);
  return {...state,character:{...state.character,activityQueue:[...queue,next],activityQueuePausedReason:undefined}};
 }
 export function removeQueuedActivity(state:GameState,index:number):GameState{
  if(!state.character)throw new Error('Create a character first.');
- const queue=normalizeActivityQueue(state.character.activityQueue);
+ const queue=normalizeActivityQueue(state.character.activityQueue,activityQueueCapacity(state));
  if(!Number.isSafeInteger(index)||index<0||index>=queue.length)throw new Error('Queued action was not found.');
  return {...state,character:{...state.character,activityQueue:queue.filter((_,i)=>i!==index),activityQueuePausedReason:undefined}};
 }
 export function moveQueuedActivity(state:GameState,index:number,direction:'up'|'down'):GameState{
  if(!state.character)throw new Error('Create a character first.');
- const queue=normalizeActivityQueue(state.character.activityQueue);
+ const queue=normalizeActivityQueue(state.character.activityQueue,activityQueueCapacity(state));
  if(!Number.isSafeInteger(index)||index<0||index>=queue.length)throw new Error('Queued action was not found.');
  const target=direction==='up'?index-1:index+1;
  if(target<0||target>=queue.length)return state;
@@ -124,7 +127,7 @@ function activityCanAdvanceCondition(state:GameState,condition:IdleStopCondition
  return false;
 }
 export function activityQueueHandoffStatus(state:GameState):ActivityQueueHandoffStatus{
- const queue=normalizeActivityQueue(state.character?.activityQueue),next=queue[0],character=state.character,activity=state.activity;
+ const queue=normalizeActivityQueue(state.character?.activityQueue,activityQueueCapacity(state)),next=queue[0],character=state.character,activity=state.activity;
  const rule=character?.activeIdleRuleIdV40?character.idleRulesV40?.find(row=>row.id===character.activeIdleRuleIdV40):undefined;
  const nonSafetyApplicable=rule?.conditions.some(condition=>condition.kind!=='food_below'&&condition.kind!=='free_slots_below'&&activityCanAdvanceCondition(state,condition))??false;
  const huntGoal=activity?.kind==='combat'?activity.huntGoal:undefined;

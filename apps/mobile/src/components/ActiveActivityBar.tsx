@@ -18,15 +18,15 @@ export function ActiveActivityBar({state,nowMs,onOpen}:{state:GameState;nowMs:nu
  const activity=state.activity;
  if(!activity)return null;
  const monster=activity.kind==='combat'?MONSTERS.find(entry=>entry.id===activity.targetId):undefined;
- const gathering=activity.kind!=='combat'?GATHERING.find(entry=>entry.id===activity.targetId):undefined,processing=activity.kind==='processing'?RECIPES.find(entry=>entry.id===activity.targetId):undefined;
- const name=monster?challengeHuntLabel(activity.combatChallengeId,monster.name,activity.combatAffixId):processing?.name??gathering?.name??activity.targetId;
- const cycleSeconds=Math.max(1,monster?.secondsPerKill??activity.processing?.cycleSeconds??gathering?.seconds??1);
- const cycleElapsedSeconds=Math.max(0,(nowMs-activity.lastClaimAtMs)/1000);
- const progressPct=Math.round((cycleElapsedSeconds%cycleSeconds)/cycleSeconds*100),progress=`${progressPct}%` as `${number}%`;
- const combat=activity.kind==='combat',progressKind=combat?'combat':activity.kind==='alchemy'||activity.kind==='processing'?'crafting':activity.kind==='faith'?'faith':activity.kind==='training'?'training':activity.kind==='exploration'?'exploration':'gathering',phase=activityProgressFeedback(progressKind,progressPct/100),cycleRemaining=Math.max(1,Math.ceil(cycleSeconds-(cycleElapsedSeconds%cycleSeconds)));
+ const gathering=activity.kind!=='combat'?GATHERING.find(entry=>entry.id===activity.targetId):undefined,crafting=activity.kind==='processing'||activity.kind==='alchemy'?RECIPES.find(entry=>entry.id===activity.targetId):undefined;
+ const name=monster?challengeHuntLabel(activity.combatChallengeId,monster.name,activity.combatAffixId):crafting?.name??gathering?.name??activity.targetId;
+ const cycleSeconds=Math.max(1,monster?.secondsPerKill??activity.processing?.cycleSeconds??activity.brew?.cycleSeconds??gathering?.seconds??crafting?.seconds??1);
+ const cycleElapsedSeconds=Math.max(0,(nowMs-activity.lastClaimAtMs)/1000),cycleProgressSeconds=(activity.progressFraction??0)*cycleSeconds+cycleElapsedSeconds;
+ const progressPct=Math.round((cycleProgressSeconds%cycleSeconds)/cycleSeconds*100),progress=`${progressPct}%` as `${number}%`;
+ const combat=activity.kind==='combat',progressKind=combat?'combat':activity.kind==='alchemy'||activity.kind==='processing'?'crafting':activity.kind==='faith'?'faith':activity.kind==='training'?'training':activity.kind==='exploration'?'exploration':'gathering',phase=activityProgressFeedback(progressKind,progressPct/100),cycleRemaining=Math.max(1,Math.ceil(cycleSeconds-(cycleProgressSeconds%cycleSeconds)));
  const monsterHp=monster?Math.max(0,Math.ceil(monster.hp*(1-progressPct/100))):0,damageDone=monster?Math.max(0,monster.hp-monsterHp):0,damageTaken=combat?Math.max(0,(state.character?.hp??0)-(state.character?.currentHp??0)):0;
  return <Pressable accessibilityRole="button" accessibilityLabel={`${labels[activity.kind]} ${name}, active for ${elapsed(activity.startedAtMs,nowMs)}`} accessibilityHint="Opens the active activity" onPress={onOpen} style={({pressed})=>[s.root,combat?s.combat:s.skilling,pressed&&s.pressed]}>
-  <View style={s.art}>{monster?<MonsterPortraitFrame monster={monster} size={38} active reduceMotion={state.settings.reduceMotion} framed={false}/>:<ActivityArtwork id={(processing?.skillId??activity.kind) as any} size={36}/>}</View>
+  <View style={s.art}>{monster?<MonsterPortraitFrame monster={monster} size={38} active reduceMotion={state.settings.reduceMotion} framed={false}/>:<ActivityArtwork id={(crafting?.skillId??activity.kind) as any} size={36}/>}</View>
   <View style={s.copy}><View style={s.line}><Text numberOfLines={1} style={s.name}>{name}</Text><Text style={s.time}>{elapsed(activity.startedAtMs,nowMs)}</Text></View><View style={s.meta}><Text style={[s.kind,combat?s.combatText:s.skillText]}>{labels[activity.kind]}</Text><Text numberOfLines={1} style={s.cycle}>{phase.replace('…','').toUpperCase()} · {cycleRemaining}s</Text></View>{combat?<><View style={s.combatStats}><Text style={s.hpText}>HP {monsterHp}/{monster?.hp??0}</Text><Text style={s.damageText}>−{damageDone}</Text><Text style={s.takenText}>+{damageTaken} taken</Text></View><View style={s.track}><View style={[s.fill,s.combatFill,{width:`${100-progressPct}%`}]}/><View style={[s.hit,{left:`${Math.min(96,Math.max(2,progressPct))}%`}]}/></View></>:<View style={s.track}><View style={[s.fill,s.skillFill,{width:progress}]}/></View>}</View>
   <Text style={s.chevron}>›</Text>
  </Pressable>;

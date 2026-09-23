@@ -43,4 +43,11 @@ ok(recipe.includes('source.estimateLabel'),'Expanded Other sources must expose t
 ok(skillNavigation.includes('acquisitionProjectionForDestination')&&skillNavigation.includes('b.estimatedSeconds'),'Recipe source estimates must reuse shared projection math and keep the longest modeled material visible first');
 ok(quickInspect.includes('source.estimateLabel')&&quickInspect.includes('sourceEstimate'),'Item Quick Inspect must show per-item acquisition pace for modeled primary and alternate sources');
 
+const acquisitionPlan=read('src/core/material-acquisition-plan.ts');
+ok(acquisitionPlan.includes('visitedRecipes')&&acquisitionPlan.includes('consumeOwned')&&acquisitionPlan.includes('addOwned'),'Recursive material planning must guard recipe loops and account for owned stock plus batch overproduction');
+ok(acquisitionPlan.includes('materialAcquisitionChainLabel')&&acquisitionPlan.includes('total chain'),'Recursive material planning must expose a compact raw-needs chain and only a completed total-chain ETA');
+ok(recipe.includes('row.chainLabel')&&recipe.includes('row.chainBlockedReason'),'Recipe source rows must show recursive crafting chains and explain why a total estimate is withheld');
+ok(recipe.includes('source.chainLabel')&&recipe.includes('source.chainBlockedReason'),'Expanded Other sources must preserve recursive chain context for crafting alternatives');
+ok(quickInspect.includes('source.chainLabel')&&quickInspect.includes('source.chainBlockedReason'),'Item Quick Inspect must expose the same recursive chain context as crafting requirements');
+
 console.log('PASS: player-facing progression bars, ETAs and drop expectations use shared balance projections');

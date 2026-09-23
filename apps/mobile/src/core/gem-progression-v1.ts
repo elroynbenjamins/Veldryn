@@ -1,6 +1,7 @@
 import {itemDef} from '../content/items';
 import {GEM_GRADE_LABEL_V1,MOBILE_GEM_FAMILIES_V1,mobileGemFamilyV1,mobileGemItemIdV1,mobileRawGemItemIdV1,type MobileGemGradeV1} from '../content/gems-v1';
 import type {ClassId,GameState,ItemStack} from './types';
+import {levelFromXp,totalXpAtLevel} from './progression';
 
 export const GEM_EFFECT_RESONANCE_CAP_V1=3;
 export const GEM_COMBINE_COSTS_V1:Readonly<Record<1|2|3|4,{to:2|3|4|5;copies:3;dust:number;gold:number;seconds:number;level:number;xp:number;catalystId?:'REGIONAL_CATALYST'|'RADIANT_CATALYST'}>>={
@@ -20,6 +21,13 @@ export const GEM_DISMANTLE_DUST_V1:Readonly<Record<MobileGemGradeV1,number>>={1:
 export const GEM_UNSOCKET_COST_V1:Readonly<Record<MobileGemGradeV1,{gold:number;dust:number}>>={
  1:{gold:0,dust:0},2:{gold:0,dust:0},3:{gold:500,dust:0},4:{gold:1500,dust:1},5:{gold:5000,dust:3},
 };
+export const GEM_RESEARCH_V1={level:25,dust:10,gold:2500,xp:600} as const;
+export const ENCHANTING_EXTRACTION_THRESHOLDS_V1=[
+ {level:30,goldMultiplier:.80,dustMode:'base' as const,label:'Apprentice Extraction · -20% Gold'},
+ {level:45,goldMultiplier:.60,dustMode:'minus_one' as const,label:'Adept Extraction · -40% Gold · -1 Dust'},
+ {level:65,goldMultiplier:.40,dustMode:'half' as const,label:'Master Extraction · -60% Gold · half Dust'},
+ {level:80,goldMultiplier:.25,dustMode:'free' as const,label:'Perfect Extraction · -75% Gold · no Dust'},
+] as const;
 
 export interface CanonicalGemMetaV1{familyId:string;grade:MobileGemGradeV1;kind:'stat'|'effect';}
 export function canonicalGemMetaV1(itemId:string):CanonicalGemMetaV1|undefined{
@@ -28,7 +36,14 @@ export function canonicalGemMetaV1(itemId:string):CanonicalGemMetaV1|undefined{
  const family=mobileGemFamilyV1(item.gemFamilyId);if(!family)return undefined;
  return {familyId:family.familyId,grade:item.gemGrade,kind:family.kind};
 }
-export function gemUnsocketCostV1(itemId:string){const meta=canonicalGemMetaV1(itemId);return meta?GEM_UNSOCKET_COST_V1[meta.grade]:{gold:(itemDef(itemId).gemTier??1)*500,dust:0};}
+export function gemUnsocketCostV1(itemId:string,enchantingLevel=1){
+ const meta=canonicalGemMetaV1(itemId),base=meta?GEM_UNSOCKET_COST_V1[meta.grade]:{gold:(itemDef(itemId).gemTier??1)*500,dust:0};
+ const threshold=[...ENCHANTING_EXTRACTION_THRESHOLDS_V1].reverse().find(row=>enchantingLevel>=row.level);
+ if(!threshold)return base;
+ const dust=threshold.dustMode==='free'?0:threshold.dustMode==='half'?Math.ceil(base.dust/2):threshold.dustMode==='minus_one'?Math.max(0,base.dust-1):base.dust;
+ return {gold:Math.floor(base.gold*threshold.goldMultiplier),dust};
+}
+export function gemUnsocketCostForStateV1(state:GameState,itemId:string){return gemUnsocketCostV1(itemId,state.skills.find(row=>row.skillId==='enchanting')?.level??1);}
 
 function consumeStackV1(stacks:readonly ItemStack[],itemId:string,amount:number){let left=amount;const next=stacks.map(row=>{if(row.itemId!==itemId||left<=0)return row;const used=Math.min(left,row.quantity);left-=used;return {...row,quantity:row.quantity-used};}).filter(row=>row.quantity>0);return {stacks:next,used:amount-left};}
 function addStackV1(stacks:readonly ItemStack[],capacity:number,itemId:string,quantityToAdd:number){if(quantityToAdd<=0)return [...stacks];const existing=stacks.find(row=>row.itemId===itemId);if(existing)return stacks.map(row=>row.itemId===itemId?{...row,quantity:row.quantity+quantityToAdd}:row);if(stacks.length>=capacity)throw new Error('Inventory and Bank are full');return [...stacks,{itemId,quantity:quantityToAdd}];}
@@ -125,6 +140,28 @@ export function availableGemRefinementsV1(state:GameState){
   const inputReady=recipe.inputs.every(input=>combinedGemQuantityV1(state,input.itemId)>=input.quantity),goldReady=(state.character?.gold??0)>=recipe.gold,skillReady=skill>=recipe.level;
   return {recipe,raw,inputReady,goldReady,skillReady,ready:raw>0&&inputReady&&goldReady&&skillReady};
  })).filter(row=>row.raw>0);
+}
+
+
+export function gemResearchStatusV1(state:GameState,familyId:string){
+ const family=mobileGemFamilyV1(familyId),level=state.skills.find(row=>row.skillId==='enchanting')?.level??1,unlocked=isGemFamilyRecipeUnlockedV1(state,familyId);
+ const raw=family?([1,2,3,4,5] as MobileGemGradeV1[]).map(grade=>({grade,quantity:combinedGemQuantityV1(state,mobileRawGemItemIdV1(familyId,grade))})).filter(row=>row.quantity>0):[];
+ const dust=combinedGemQuantityV1(state,'GEM_DUST'),gold=state.character?.gold??0;
+ const valid=family?.kind==='effect',ready=Boolean(valid&&!unlocked&&raw.length&&level>=GEM_RESEARCH_V1.level&&dust>=GEM_RESEARCH_V1.dust&&gold>=GEM_RESEARCH_V1.gold);
+ return {family,raw,level,unlocked,dust,gold,valid,ready,reason:!valid?'Only Effect Gem families require research.':unlocked?'Recipe already discovered.':!raw.length?'Find an unrefined gem from this family first.':level<GEM_RESEARCH_V1.level?`Requires Enchanting level ${GEM_RESEARCH_V1.level}.`:dust<GEM_RESEARCH_V1.dust?`Need ${GEM_RESEARCH_V1.dust} Gem Dust.`:gold<GEM_RESEARCH_V1.gold?`Need ${GEM_RESEARCH_V1.gold} Gold.`:'Ready to research.'};
+}
+export function availableGemResearchV1(state:GameState){
+ return MOBILE_GEM_FAMILIES_V1.filter(family=>family.kind==='effect').map(family=>gemResearchStatusV1(state,family.familyId)).filter(row=>row.raw.length>0&&!row.unlocked);
+}
+export function researchEffectGemV1(state:GameState,familyId:string){
+ const status=gemResearchStatusV1(state,familyId);if(!status.ready)throw new Error(status.reason);
+ const chosen=[...status.raw].sort((a,b)=>a.grade-b.grade)[0],rawId=mobileRawGemItemIdV1(familyId,chosen.grade);
+ const rawInv=consumeStackV1(state.inventory.stacks,rawId,1),rawBank=consumeStackV1(state.bank.stacks,rawId,1-rawInv.used);
+ const dustInv=consumeStackV1(rawInv.stacks,'GEM_DUST',GEM_RESEARCH_V1.dust),dustBank=consumeStackV1(rawBank.stacks,'GEM_DUST',GEM_RESEARCH_V1.dust-dustInv.used);
+ const currentXp=state.skills.find(row=>row.skillId==='enchanting')?.xp??0,nextXp=Math.min(totalXpAtLevel(100),currentXp+GEM_RESEARCH_V1.xp);
+ return {...state,character:{...state.character!,gold:state.character!.gold-GEM_RESEARCH_V1.gold},inventory:{...state.inventory,stacks:dustInv.stacks},bank:{...state.bank,stacks:dustBank.stacks},
+   skills:state.skills.map(row=>row.skillId==='enchanting'?{...row,xp:nextXp,level:levelFromXp(nextXp)}:row),
+   account:{...state.account,unlockedKnowledgeIds:[...new Set([...(state.account.unlockedKnowledgeIds??[]),gemFamilyRecipeIdV1(familyId)])]}} as GameState;
 }
 
 export function gemCombineRecipeIdV1(familyId:string,fromGrade:1|2|3|4){return 'gem_combine:'+familyId+':g'+fromGrade;}

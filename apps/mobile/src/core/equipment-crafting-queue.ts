@@ -327,3 +327,13 @@ export function equipmentCraftQueueModel(state:GameState,nowMs:number){
   const active=jobs.filter(row=>row.active).length,waiting=jobs.filter(row=>row.waiting).length,ready=jobs.filter(row=>row.ready).length;
   return {slotInfo,jobs,active,waiting,ready,freeSlots:Math.max(0,slotInfo.capacity-active),waitingCapacity:MAX_WAITING_EQUIPMENT_CRAFTS,freeWaiting:Math.max(0,MAX_WAITING_EQUIPMENT_CRAFTS-waiting)};
 }
+
+export function equipmentCraftAvailability(state:GameState,recipeId:string,nowMs=Date.now()){
+  const recipe=timedEquipmentRecipe(recipeId),inputs=(recipe?.inputs??[]).map(input=>({...input,inventory:quantity(state.inventory.stacks,input.itemId),bank:quantity(state.bank.stacks,input.itemId)}));
+  if(!recipe)return {ready:false,reason:'This recipe does not use the equipment crafting queue.',inputs,recipe:undefined};
+  try{validateStart(state,recipe);}catch(error){return {ready:false,reason:error instanceof Error?error.message:'Cannot start this equipment craft.',inputs,recipe};}
+  const model=equipmentCraftQueueModel(state,nowMs);
+  if(model.ready>=MAX_READY_EQUIPMENT_CRAFTS)return {ready:false,reason:'Claim finished equipment before starting more crafts.',inputs,recipe};
+  if(model.freeSlots<=0&&model.freeWaiting<=0)return {ready:false,reason:`Equipment crafting backlog is full (${MAX_WAITING_EQUIPMENT_CRAFTS}/${MAX_WAITING_EQUIPMENT_CRAFTS})`,inputs,recipe};
+  return {ready:true,reason:model.freeSlots>0?'Ready to reserve and start.':'Ready to reserve and join the waiting backlog.',inputs,recipe};
+}

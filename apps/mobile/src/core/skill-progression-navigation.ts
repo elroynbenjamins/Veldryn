@@ -6,11 +6,14 @@ import {itemDef} from '../content/items';
 import type {GameState,GatheringSkillId,SkillId} from './types';
 import {recipeAvailability} from './playability';
 import {alchemyAvailability} from './alchemy';
+import {isTimedProcessingRecipe,processingAvailability} from './processing';
+import {equipmentCraftAvailability,timedEquipmentRecipe} from './equipment-crafting-queue';
 import {workingTowardDestinationAvailability,workingTowardItemSource,type WorkingTowardDestination,type WorkingTowardDestinationAvailability} from './working-toward';
 
 const gatheringDefs=[...GATHERING,...HERB_NODES];
 const pretty=(id:string)=>id.replace(/_/g,' ').replace(/\b\w/g,char=>char.toUpperCase());
 const levelFor=(state:GameState,id:string)=>state.skills.find(row=>row.skillId===id)?.level??1;
+type RecipeSkillId=Extract<SkillId,'smithing'|'cooking'|'alchemy'|'tailoring'|'enchanting'>;
 
 export interface SkillProgressionNavigationAction{
  label:string;
@@ -43,16 +46,25 @@ export function gatheringProgressionAction(state:GameState,activity:GatherDef):S
  return action(destination,activity.zoneId===state.currentRegionId?`Open ${activity.name}`:`Go to ${zone?.name??activity.zoneId}`,destination.detail,state);
 }
 
-function recipeReady(state:GameState,recipe:Recipe){
- return recipe.skillId==='alchemy'?alchemyAvailability(state,recipe.id,1).ready:recipeAvailability(state,recipe.id).ready;
+export function recipeTrainingReady(state:GameState,recipe:Recipe){
+ if(recipe.skillId==='alchemy')return alchemyAvailability(state,recipe.id,1).ready;
+ if(isTimedProcessingRecipe(recipe.id))return processingAvailability(state,recipe.id,1).ready;
+ if(timedEquipmentRecipe(recipe.id))return equipmentCraftAvailability(state,recipe.id).ready;
+ return recipeAvailability(state,recipe.id).ready;
 }
 
-export function bestRecipeTrainingDestination(state:GameState,skillId:Extract<SkillId,'smithing'|'cooking'|'alchemy'|'tailoring'|'enchanting'>):WorkingTowardDestination{
+export function recipeProgressionAction(state:GameState,recipe:Recipe):SkillProgressionNavigationAction{
+ const skillId=recipe.skillId as RecipeSkillId,level=levelFor(state,recipe.skillId),destination:WorkingTowardDestination={kind:'skills',skillId,mode:'crafting',recipeId:recipe.id,button:`Open ${recipe.name}`,detail:`Review ${recipe.name} requirements and progression.`};
+ const locked=level<recipe.level,label=locked?`Preview Lv ${recipe.level} unlock`:recipeTrainingReady(state,recipe)?`Open ${recipe.name}`:`Resolve ${recipe.name}`;
+ return action(destination,label,locked?`Requires ${pretty(recipe.skillId)} level ${recipe.level}. Preview the exact recipe and its training action.`:destination.detail,state);
+}
+
+export function bestRecipeTrainingDestination(state:GameState,skillId:RecipeSkillId):WorkingTowardDestination{
  const skillLevel=levelFor(state,skillId);
  const candidates=RECIPES.filter(row=>row.skillId===skillId&&!row.noviceSetId&&row.level<=skillLevel&&(!row.classId||row.classId===state.character?.classId))
-   .sort((a,b)=>Number(recipeReady(state,b))-Number(recipeReady(state,a))||b.xp-a.xp||b.level-a.level);
+   .sort((a,b)=>Number(recipeTrainingReady(state,b))-Number(recipeTrainingReady(state,a))||b.xp-a.xp||b.level-a.level);
  const best=candidates[0];
- if(best){const ready=recipeReady(state,best);return {kind:'skills',skillId,mode:'crafting',recipeId:best.id,button:`Train with ${best.name}`,detail:ready?`${best.name} is currently craftable and gives ${best.xp.toLocaleString()} base ${pretty(skillId)} XP.`:`${best.name} is your strongest unlocked training recipe; open it to resolve its missing requirements.`};}
+ if(best){const ready=recipeTrainingReady(state,best);return {kind:'skills',skillId,mode:'crafting',recipeId:best.id,button:`Train with ${best.name}`,detail:ready?`${best.name} is currently craftable and gives ${best.xp.toLocaleString()} base ${pretty(skillId)} XP.`:`${best.name} is your strongest unlocked training recipe; open it to resolve its missing requirements.`};}
  return {kind:'skills',skillId,mode:'crafting',button:`Train ${pretty(skillId)}`,detail:`Open ${pretty(skillId)} and review currently available recipes.`};
 }
 
@@ -92,7 +104,7 @@ export function recipeProgressionSources(state:GameState,recipe:Recipe,inputs:Re
 export function recipeSkillTrainingAction(state:GameState,recipe:Recipe):SkillProgressionNavigationAction|undefined{
  const level=levelFor(state,recipe.skillId);
  if(level>=recipe.level)return undefined;
- const skillId=recipe.skillId as Extract<SkillId,'smithing'|'cooking'|'alchemy'>,destination=bestRecipeTrainingDestination(state,skillId);
+ const skillId=recipe.skillId as RecipeSkillId,destination=bestRecipeTrainingDestination(state,skillId);
  return action(destination,`Train ${pretty(skillId)}`,`Reach ${pretty(skillId)} level ${recipe.level}. Current level: ${level}.`,state);
 }
 

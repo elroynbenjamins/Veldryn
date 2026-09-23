@@ -1,6 +1,8 @@
 import {claimActivity,createCharacter,newGame,previewActivityReward,startClassTraining,stopActivity} from '../src/core/game';
 import {executeGameCommand} from '../src/core/game-commands';
 import {processingAvailability,processingRecipeDef} from '../src/core/processing';
+import {recipeTrainingReady} from '../src/core/skill-progression-navigation';
+import {RECIPES} from '../src/content/skills';
 import {normalizeSave} from '../src/core/save-normalization';
 import type {GameState} from '../src/core/types';
 
@@ -20,6 +22,8 @@ ok(!processingRecipeDef('ENCHANT_WISP_CHARM'),'Enchanting gear stays an immediat
 let state=fresh();
 const availability=processingAvailability(state,'SMELT_COPPER_INGOT',5);
 ok(availability.ready&&availability.maxBatches>=5,'five copper batches can be reserved');
+const copperTraining=RECIPES.find(row=>row.id==='SMELT_COPPER_INGOT');
+ok(copperTraining&&recipeTrainingReady(state,copperTraining),'skill training recommendations recognize a ready timed-processing recipe');
 const beforeGold=state.character!.gold;
 state=executeGameCommand(state,{type:'processing_start',args:{id:'SMELT_COPPER_INGOT',batches:5}},now).state;
 equal(state.activity?.kind,'processing','processing command creates a timed activity');

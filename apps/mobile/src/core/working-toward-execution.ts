@@ -127,9 +127,9 @@ export interface WorkingTowardExecutionOverview{
 export function workingTowardExecutionOverview(state:GameState):WorkingTowardExecutionOverview{
  const plans=(state.character?.progressionGoals??[]).map(goal=>workingTowardExecutionPlan(state,goal));
  const complete=plans.filter(row=>row.view.status==='complete').length;
- const active=plans.filter(row=>row.view.status==='active').length;
- const blocked=plans.filter(row=>row.view.status==='blocked').length;
- const queueable=plans.filter(row=>row.executionState==='ready'||row.executionState==='queued'||row.executionState==='active').length;
+ const active=plans.filter(row=>row.executionState==='active').length;
+ const blocked=plans.filter(row=>row.executionState==='blocked').length;
+ const queueable=plans.filter(row=>row.executionState==='ready').length;
  const focus=[...plans].sort((a,b)=>{
   const priority=(row:WorkingTowardExecutionPlan)=>row.executionState==='active'?0:row.view.status==='complete'?1:row.executionState==='ready'?2:row.executionState==='queued'?3:row.view.status==='active'?4:5;
   return priority(a)-priority(b)||b.view.progress-a.view.progress||a.goal.pinnedAtMs-b.goal.pinnedAtMs;

@@ -305,11 +305,11 @@ export interface RecipePreparationRoute{
 }
 
 function stepState(availability:WorkingTowardDestinationAvailability|undefined,after=false):{state:RecipePreparationStepState;stateLabel:string}{
-  if(after)return {state:'after',stateLabel:'AFTER'};
   if(!availability)return {state:'info',stateLabel:'INFO'};
   if(availability.status==='locked')return {state:'locked',stateLabel:'LOCKED'};
-  if(availability.status==='travel')return {state:'travel',stateLabel:'TRAVEL'};
   if(availability.status==='info')return {state:'info',stateLabel:'INFO'};
+  if(after)return {state:'after',stateLabel:'AFTER'};
+  if(availability.status==='travel')return {state:'travel',stateLabel:'TRAVEL'};
   return {state:'ready',stateLabel:'READY'};
 }
 
@@ -404,7 +404,7 @@ export function recipePreparationRoute(state:GameState,recipe:Recipe,batches=1):
     ...(!finalUnlocked?[availability.detail]:[]),
     ...(goldShortfall>0?[`Need ${goldShortfall.toLocaleString()} more Gold for the full route.`]:[]),
   ];
-  const finalState=preparationSteps.length?{state:'final' as const,stateLabel:'FINAL'}:stepState(availability);
+  const finalState=availability.status==='locked'||availability.status==='info'?stepState(availability):preparationSteps.length?{state:'final' as const,stateLabel:'FINAL'}:stepState(availability);
   const finalTiming=finalSeconds>0?` · ${formatBalanceDuration(finalSeconds)}`:'';
   const finalStep:RecipePreparationStep={
     id:`final:${recipe.id}`,

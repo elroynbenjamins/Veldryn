@@ -1,10 +1,10 @@
 import {useEffect,useMemo,useRef,useState} from 'react';
-import {Animated,Easing,Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {Animated,Easing,Modal,StyleSheet,Text,View} from 'react-native';
 import {MONSTERS} from '../content/monsters';
 import {WORLD_ZONES} from '../content/world-map';
 import type {GameState} from '../core/types';
 import type {FallenKnightBattleResult,StoryBossEvent} from '../core/story-boss';
-import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
+import {radii,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {CharacterPortrait} from './CharacterVisual';
 import {MonsterPortraitFrame} from './MonsterPortraitFrame';

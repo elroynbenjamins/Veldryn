@@ -224,6 +224,7 @@ ok(world.indexOf('{sunscar&&')<world.indexOf('TRAVEL ELSEWHERE')&&world.indexOf(
 ok(world.includes('<RegionStat label="HUNTS"')&&world.includes('<RegionStat label="GATHER"')&&world.includes('<RegionStat label="BOSSES"'),'Current region hub must expose compact real-content readiness counts');
 ok(world.includes('NEXT REGION UNLOCK')&&world.includes("unlockTrack:{height:5"),'World travel section must show compact next-region level progress');
 ok(world.includes('orderedTravelRegions(state,current.id,goalRegionId)'),'World travel ordering must reuse the core goal-aware unlocked-first ordering helper');
+ok(world.includes('OBJECTIVE ROUTE')&&world.includes('Your current objective continues in'),'World route guidance must remain truthful for both Working Toward and Journal region deep links');
 ok(world.includes("destinationContent:{fontSize:10"),'Travel destinations must preview authored content without making cards excessively tall');
 ok(!world.includes('Open Co-op Expeditions'),'World must not keep a duplicate standalone co-op panel after adding co-op to current-region quick actions');
 ok(world.includes('<RegionalContractFocus')&&world.includes('onOpenOrder={onOpenWeeklyOrder}')&&world.includes('onOpenBoard={onOpenContracts}'),'World current-region hub must embed contextual Contract Board work with exact and board-level actions');

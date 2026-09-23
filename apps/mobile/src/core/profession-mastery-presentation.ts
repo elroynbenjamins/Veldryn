@@ -33,7 +33,7 @@ export function professionMasteryActionDefinition(actionId:string):ProfessionMas
  const recipe=RECIPES.find(row=>row.id===actionId);
  if(recipe){
   const output=itemDef(recipe.output.itemId),recipeRegion=recipe.v33Region?.trim()||undefined;
-  return {actionId,name:recipe.name,skillId:recipe.skillId as SkillId,kind:'crafting',yieldRelevant:output.type!=='gear'&&output.type!=='tool',speedRelevant:recipe.skillId==='alchemy'||output.type==='gear',regionId:recipeRegion,regionLabel:recipeRegion?masteryRegionLabel(recipeRegion):undefined,destination:{kind:'skills',skillId:recipe.skillId as SkillId,mode:'crafting',recipeId:recipe.id,button:'Open '+recipe.name,detail:'Craft '+recipe.name+' to build recipe mastery.'}};
+  return {actionId,name:recipe.name,skillId:recipe.skillId as SkillId,kind:'crafting',yieldRelevant:output.type!=='gear'&&output.type!=='tool',speedRelevant:recipe.skillId==='alchemy'||output.type==='gear'||!!recipe.repeatableTraining,regionId:recipeRegion,regionLabel:recipeRegion?masteryRegionLabel(recipeRegion):undefined,destination:{kind:'skills',skillId:recipe.skillId as SkillId,mode:'crafting',recipeId:recipe.id,button:'Open '+recipe.name,detail:'Craft '+recipe.name+' to build recipe mastery.'}};
  }
  const gemRecipe=gemRefineRecipeV1(actionId)??gemCombineRecipeV1(actionId);
  if(!gemRecipe)return undefined;
@@ -57,7 +57,7 @@ export function professionMasteryActionsForSkill(state:GameState,skillId:SkillId
  }
  for(const recipe of RECIPES.filter(row=>row.skillId===skillId&&relevantRecipe(state,row))){
   const progress=professionMasteryRankProgress(recipe.id,state.account.professionMasteryByAction?.[recipe.id]);
-  const output=itemDef(recipe.output.itemId),yieldRelevant=output.type!=='gear'&&output.type!=='tool',speedRelevant=recipe.skillId==='alchemy'||output.type==='gear';
+  const output=itemDef(recipe.output.itemId),yieldRelevant=output.type!=='gear'&&output.type!=='tool',speedRelevant=recipe.skillId==='alchemy'||output.type==='gear'||!!recipe.repeatableTraining;
   rows.push({...progress,id:recipe.id,name:recipe.name,skillId,kind:'crafting',level:recipe.level,yieldRelevant,speedRelevant,nextBonus:nextRelevantBonus(progress.rank,yieldRelevant,speedRelevant),destination:{kind:'skills',skillId,mode:'crafting',recipeId:recipe.id,button:'Open '+recipe.name,detail:'Craft '+recipe.name+' to build recipe mastery.'}});
  }
  if(skillId==='enchanting'){

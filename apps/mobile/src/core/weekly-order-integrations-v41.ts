@@ -38,7 +38,7 @@ function monsterIdForOrder(order:WeeklyOrder){
 export function weeklyOrderDestination(order:WeeklyOrder):WorkingTowardDestination{
  if(order.kind==='hunt'||order.kind==='threat'){
   const monsterId=monsterIdForOrder(order)!,monster=MONSTERS.find(row=>row.id===monsterId),region=WORLD_ZONES.find(row=>row.id===order.regionId),boss=order.kind==='hunt'&&!!monster?.boss;
-  return {kind:'combat',monsterId,zoneName:monster?.zone??region?.name??order.source.label,regionId:order.regionId,button:boss?'Open weekly boss':order.kind==='threat'?'Open Challenge Hunt':`Hunt ${monster?.name??order.source.label}`,detail:boss?'Defeat the Fallen Knight in its single rewarded UTC-week rematch. Ordinary story completion and extra non-rewarded attempts do not count.':order.kind==='threat'?`Use the exact ${order.challengeId??'required'} Challenge Hunt. Normal hunts do not count.`:`Open ${monster?.name??order.source.label} in ${monster?.zone??region?.name??'its region'}.`};
+  return {kind:'combat',monsterId,zoneName:monster?.zone??region?.name??order.source.label,regionId:order.regionId,button:boss?'Open weekly boss':order.kind==='threat'?'Open Challenge Hunt':`Hunt ${monster?.name??order.source.label}`,detail:boss?'Defeat the Fallen Knight once this UTC week to complete the Oathglass Bounty. Up to three rewarded rematches are available; only the first is required for this Contract.':order.kind==='threat'?`Use the exact ${order.challengeId??'required'} Challenge Hunt. Normal hunts do not count.`:`Open ${monster?.name??order.source.label} in ${monster?.zone??region?.name??'its region'}.`};
  }
  if(order.kind==='profession'){
   const gather=[...GATHERING,...HERB_NODES].find(row=>row.id===order.targetId);

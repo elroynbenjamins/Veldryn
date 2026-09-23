@@ -69,8 +69,8 @@ function withCompanionUnlocks(reward:RewardBundle,before:GameState,after:GameSta
 }
 
 export const BASE_OFFLINE_CAP_HOURS=8;
-export const FREE_OFFLINE_CAP_HOURS=18;
-export const MAX_OFFLINE_CAP_HOURS=24;
+export const FREE_OFFLINE_CAP_HOURS=24;
+export const MAX_OFFLINE_CAP_HOURS=30;
 /** Base cap retained for content/tests; actual saves use offlineCapSeconds(state). */
 export const OFFLINE_CAP_SECONDS=BASE_OFFLINE_CAP_HOURS*60*60;
 const COMBAT_SPEED_MIN=.68;
@@ -88,7 +88,11 @@ function hasAccountEntitlement(state:GameState,...keys:string[]){
 export function offlineCapBreakdown(state:GameState){
   const setComplete=!!state.character&&noviceSetFor(state.character.classId).slots.every(slot=>state.character!.craftedNoviceItemIds?.includes(noviceItemId(state.character!.classId,slot)));
   const questMilestone=state.quests.some(q=>q.questId==='QST_005'&&q.status==='claimed');
-  const secondSlot=unlockedCharacterSlots(state)>=2;
+  const unlockedSlots=unlockedCharacterSlots(state);
+  const secondSlot=unlockedSlots>=2;
+  const thirdSlot=unlockedSlots>=3;
+  const fourthSlot=unlockedSlots>=4;
+  const fifthSlot=unlockedSlots>=5;
   const guildMember=state.account.guildMember;
   const firstBoss=state.defeatedBossIds.length>0;
   const vipPlus=hasAccountEntitlement(state,'vip_plus','vipplus','vip+');
@@ -100,6 +104,9 @@ export function offlineCapBreakdown(state:GameState){
     {id:'first_boss',name:'Defeat first boss',category:'progression' as const,hours:firstBoss?2:0,earned:firstBoss},
     {id:'character_slot_2',name:'Unlock character slot #2',category:'progression' as const,hours:secondSlot?2:0,earned:secondSlot},
     {id:'guild',name:'Join a guild',category:'progression' as const,hours:guildMember?2:0,earned:guildMember},
+    {id:'character_slot_3',name:'Unlock character slot #3',category:'progression' as const,hours:thirdSlot?2:0,earned:thirdSlot},
+    {id:'character_slot_4',name:'Unlock character slot #4',category:'progression' as const,hours:fourthSlot?2:0,earned:fourthSlot},
+    {id:'character_slot_5',name:'Unlock character slot #5',category:'progression' as const,hours:fifthSlot?2:0,earned:fifthSlot},
     {id:'vip',name:'VIP',category:'paid' as const,hours:vip?2:0,earned:vip},
     {id:'vip_plus',name:'VIP+',category:'paid' as const,hours:vipPlus?2:0,earned:vipPlus},
     {id:'supporter',name:'Supporter',category:'paid' as const,hours:supporter?2:0,earned:supporter},

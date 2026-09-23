@@ -6,7 +6,6 @@ import {HERB_NODES} from '../content/herbalism';
 import {MONSTERS} from '../content/monsters';
 import {WORLD_ZONES} from '../content/world-map';
 import {ITEMS} from '../content/items';
-import {recipeVisibleInActiveCatalog} from './equipment-catalog-status';
 
 export type WorkingTowardDestination=
  |{kind:'combat';monsterId:string;zoneName:string;regionId?:string;button:string;detail:string}
@@ -36,8 +35,8 @@ export function workingTowardSourceAvailability(state:GameState,source:WorkingTo
  }
  if(source.kind==='skills'){
   if(source.recipeId){
-   const recipe=RECIPES.find(row=>row.id===source.recipeId),catalogReady=!!recipe&&recipeVisibleInActiveCatalog(RECIPES,recipe,state.character?.classId),skillReady=!!recipe&&skillLevel(state,recipe.skillId)>=recipe.level,characterReady=!!recipe&&(recipe.characterLevel===undefined||state.character!.level>=recipe.characterLevel),available=!!recipe&&catalogReady&&skillReady&&characterReady;
-   const reason=!recipe?'Recipe is not in the current catalog.':!catalogReady?'This legacy equipment recipe was retired by Equipment 2.0.':!skillReady?`Requires ${skillLabel(recipe.skillId)} ${recipe.level}.`:!characterReady?`Requires character level ${recipe.characterLevel}.`:undefined;
+   const recipe=RECIPES.find(row=>row.id===source.recipeId),skillReady=!!recipe&&skillLevel(state,recipe.skillId)>=recipe.level,characterReady=!!recipe&&(recipe.characterLevel===undefined||state.character!.level>=recipe.characterLevel),available=!!recipe&&skillReady&&characterReady;
+   const reason=!recipe?'Recipe is not in the current catalog.':!skillReady?`Requires ${skillLabel(recipe.skillId)} ${recipe.level}.`:!characterReady?`Requires character level ${recipe.characterLevel}.`:undefined;
    return {kind:'recipe',id:source.recipeId,label:recipe?.name??source.recipeId,available,reason};
   }
   if(source.actionId){
@@ -74,7 +73,7 @@ export function workingTowardItemSource(state:GameState,itemId:string):WorkingTo
   const zone=WORLD_ZONES.find(row=>row.id===gather.zoneId);
   return {kind:'skills',skillId:gather.skillId as SkillId,mode:'gathering',actionId:gather.id,regionId:gather.zoneId,button:`Gather ${gather.name}`,detail:`${gather.name} in ${zone?.name??gather.zoneId} is a direct source.`};
  }
- const recipe=RECIPES.filter(row=>row.output.itemId===itemId&&recipeVisibleInActiveCatalog(RECIPES,row,state.character?.classId)).sort((a,b)=>a.level-b.level)[0];
+ const recipe=RECIPES.filter(row=>row.output.itemId===itemId).sort((a,b)=>a.level-b.level)[0];
  if(recipe)return {kind:'skills',skillId:recipe.skillId as SkillId,mode:'crafting',recipeId:recipe.id,button:`Craft ${recipe.name}`,detail:`${recipe.name} produces this item.`};
  const drops=MONSTERS.filter(monster=>monster.drops.some(drop=>drop.itemId===itemId)).sort((a,b)=>(state.unlockedMonsterIds.includes(b.id)?1:0)-(state.unlockedMonsterIds.includes(a.id)?1:0)||a.unlockLevel-b.unlockLevel);
  const monster=drops[0];
@@ -104,8 +103,7 @@ export function progressionGoalDestination(state:GameState,goal:ProgressionGoal)
  if(goal.kind==='item_quantity')return workingTowardItemSource(state,goal.itemId);
  if(goal.kind==='recipe'){
   const recipe=RECIPES.find(row=>row.id===goal.recipeId);
-  if(recipe&&!recipeVisibleInActiveCatalog(RECIPES,recipe,state.character?.classId))return {kind:'info',button:'Legacy recipe retired',detail:'This tracked recipe was retired when Equipment 2.0 replaced the legacy gear catalog.'};
-  return recipe?{kind:'skills',skillId:recipe.skillId as SkillId,mode:'crafting',recipeId:recipe.id,button:`Craft ${recipe.name}`,detail:'Open the tracked recipe.'}:{kind:'info',button:'Recipe unavailable',detail:'This recipe is not in the current catalog.'};
+return recipe?{kind:'skills',skillId:recipe.skillId as SkillId,mode:'crafting',recipeId:recipe.id,button:`Craft ${recipe.name}`,detail:'Open the tracked recipe.'}:{kind:'info',button:'Recipe unavailable',detail:'This recipe is not in the current catalog.'};
  }
  if(goal.kind==='pet_hunt'){
   const monster=goal.sourceKind==='monster'?MONSTERS.find(row=>row.id===goal.sourceId):undefined,region=monster?regionForZoneName(monster.zone):undefined;

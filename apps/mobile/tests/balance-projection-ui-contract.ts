@@ -18,6 +18,12 @@ const home=read('src/screens/HomeScreen.tsx');
 ok(home.includes('activeActivityLevelPace(state,rate.xpPerHour)'),'Home must derive level ETA from the same activity rate shown to the player');
 ok(home.includes('levelPace={levelPace}'),'Home must pass live level pace into the active activity card');
 
+const activeBar=read('src/components/ActiveActivityBar.tsx');
+ok(activeBar.includes('activeCombatRuntimeProjection(state)'),'Active combat bar must use the authoritative regional hunt cycle');
+ok(activeBar.includes('activeGatheringRuntimeProjection(state)'),'Active gathering bar must use runtime-equivalent gathering pace');
+ok(activeBar.includes('NEXT KILL')&&activeBar.includes('XP/hr'),'Active combat feedback must show truthful cycle and pace information');
+ok(!activeBar.includes('monsterHp')&&!activeBar.includes('damageDone'),'Active combat feedback must not fake live HP or damage from timer percentage');
+
 const encounters=read('src/components/RegionEncounterList.tsx');
 ok(encounters.includes('combatBaselineProjection(monster)'),'Encounter details must use the shared corrected combat baseline');
 ok(encounters.includes('dropExpectation(drop.chance'),'Drop rows must derive odds/time from the shared drop projection');

@@ -21,6 +21,8 @@ const storyReadyState={...state,quests:state.quests.map((row,index)=>index===0?{
 const storySession=homeSessionSummary(storyReadyState,Date.UTC(2026,8,22,12));
 equal(storySession.primaryReady?.kind,'quests','Story rewards outrank Daily Supplies in Home ready-now priority');
 ok(storySession.readyTotal>=2,'Home ready total can combine story and Daily Supplies attention without duplicating cards');
+const storyNext=dashboardRecommendation(storyReadyState);ok(!storyNext.title.includes('reward ready'),'Home Next Step must remain progression guidance when Session Overview already owns a ready-now claim');
+ok(storySession.weeklyRewards>=0&&storySession.forgeReady>=0&&storySession.companionAttention>=0,'Home session summary carries operational ready-now categories');
 
 const levelGuide=dashboardRecommendation(state);
 ok(levelGuide.title.includes('Into Ironwood'),'level-gated chapter is named explicitly');

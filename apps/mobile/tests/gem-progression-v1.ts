@@ -1,10 +1,11 @@
 import {createCharacter,newGame} from '../src/core/game';
 import {gearEnhancement,replaceGem,socketGem} from '../src/core/equipment-enhancement';
 import {startGemCombine,startGemRefinement,claimForgeJob,equipmentCraftQueueModel} from '../src/core/equipment-crafting-queue';
-import {availableGemCombinesV1,availableGemRefinementsV1,claimResonanceCacheV1,dismantleGemV1,gemCodexRowsV1,gemCombineRecipeIdV1,gemRefineRecipeIdV1,recommendedEffectFamiliesV1,resonanceCacheStatusV1,resonanceForFamilyV1} from '../src/core/gem-progression-v1';
+import {availableGemCombinesV1,availableGemRefinementsV1,availableGemResearchV1,claimResonanceCacheV1,dismantleGemV1,gemCodexRowsV1,gemCombineRecipeIdV1,gemRefineRecipeIdV1,gemUnsocketCostForStateV1,isGemFamilyRecipeUnlockedV1,recommendedEffectFamiliesV1,researchGemV1,resonanceCacheStatusV1,resonanceForFamilyV1} from '../src/core/gem-progression-v1';
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
 import {itemDef} from '../src/content/items';
 import {totalXpAtLevel} from '../src/core/progression';
+import {RECIPES} from '../src/content/skills';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 const t1Ironwarden=V33_EQUIPMENT_RECIPES.filter(row=>row.classId==='IRONWARDEN'&&row.v33EquipmentTier==='T1');
@@ -74,6 +75,29 @@ const claimed=claimForgeJob(started.state,started.job.id,started.job.completesAt
 ok(claimed.state.inventory.stacks.some(row=>row.itemId==='gem:stat_might:g2'),'Claiming a gem forge job should award the upgraded gem');
 ok(claimed.state.skills.find(row=>row.skillId==='enchanting')!.xp===enchantingBeforeCombine+140,'Gem combining should award Enchanting XP');
 
+let researchState=createCharacter(newGame(2),'IRONWARDEN','Gem Researcher','male');
+researchState={...researchState,character:{...researchState.character!,gold:100000},skills:researchState.skills.map(row=>row.skillId==='enchanting'?{...row,level:25,xp:totalXpAtLevel(25)}:row),inventory:{...researchState.inventory,capacity:80,stacks:[{itemId:'raw_gem:effect_flow:g1',quantity:1},{itemId:'raw_gem:effect_flow:g2',quantity:1},{itemId:'GEM_DUST',quantity:30}]}};
+ok(availableGemResearchV1(researchState).some(row=>row.family?.familyId==='effect_flow'&&row.grade===1&&row.ready),'Owned Effect Gem samples should become researchable at Enchanting 25');
+const researchXpBefore=researchState.skills.find(row=>row.skillId==='enchanting')!.xp;
+researchState=researchGemV1(researchState,'effect_flow',1);
+ok(researchState.account.gemResearchProgressByFamily?.effect_flow===1,'Grade I Effect Gem research should add one progress point');
+ok(!isGemFamilyRecipeUnlockedV1(researchState,'effect_flow'),'One Grade I sample must not instantly discover an Effect Gem recipe');
+researchState=researchGemV1(researchState,'effect_flow',2);
+ok(researchState.account.gemResearchProgressByFamily?.effect_flow===3&&isGemFamilyRecipeUnlockedV1(researchState,'effect_flow'),'A Grade I plus Grade II research path should reach the three-point deterministic unlock');
+ok(researchState.skills.find(row=>row.skillId==='enchanting')!.xp===researchXpBefore+160+420,'Effect Gem research should award authored Enchanting XP');
+ok(!availableGemResearchV1(researchState).some(row=>row.family?.familyId==='effect_flow'),'Discovered families must leave the research queue');
+
+const lowExtraction=gemUnsocketCostForStateV1(createCharacter(newGame(3),'IRONWARDEN','Novice Enchanter'),'gem:effect_flow:g5');
+let expert=createCharacter(newGame(3),'IRONWARDEN','Expert Enchanter');
+expert={...expert,skills:expert.skills.map(row=>row.skillId==='enchanting'?{...row,level:80,xp:totalXpAtLevel(80)}:row)};
+const expertExtraction=gemUnsocketCostForStateV1(expert,'gem:effect_flow:g5');
+ok(lowExtraction.gold===5000&&lowExtraction.dust===3,'Low Enchanting keeps the canonical Grade V extraction cost');
+ok(expertExtraction.gold===2500&&expertExtraction.dust===2&&expertExtraction.discount===.5,'Enchanting 80 should halve safe extraction Gold and reduce Dust without making it free');
+
+const regionalSynthesis=RECIPES.find(row=>row.id==='ENCHANT_REGIONAL_CATALYST'),radiantSynthesis=RECIPES.find(row=>row.id==='ENCHANT_RADIANT_CATALYST');
+ok(regionalSynthesis?.skillId==='enchanting'&&regionalSynthesis.level===70&&regionalSynthesis.output.itemId==='REGIONAL_CATALYST'&&regionalSynthesis.inputs.some(row=>row.itemId==='WILD_ESSENCE'),'Enchanting 70 must synthesize Regional Catalysts using Wild Essence');
+ok(radiantSynthesis?.skillId==='enchanting'&&radiantSynthesis.level===90&&radiantSynthesis.output.itemId==='RADIANT_CATALYST'&&radiantSynthesis.inputs.some(row=>row.itemId==='WILD_ESSENCE'),'Enchanting 90 must synthesize Radiant Catalysts as a late-game sink');
+
 const cacheNow=Date.UTC(2026,8,21,12),cacheWeek='2026-09-21';
 const cacheReadyState={...claimed.state,account:{...claimed.state.account,resonanceCache:{weekKey:cacheWeek,liveClears:3,claimed:false,effectChoices:['effect_bulwark','effect_mercy','effect_flow'],dustReward:31,regionalCatalysts:1,radiantCatalysts:1}}};
 ok(resonanceCacheStatusV1(cacheReadyState,cacheNow).ready,'Three Live clears with server-authored choices should make the weekly cache ready');
@@ -84,4 +108,4 @@ const cacheDustAfter=cacheState.inventory.stacks.filter(row=>row.itemId==='GEM_D
 ok(cacheDustAfter===cacheDustBefore+31,'Resonance Cache should settle its pre-rolled Gem Dust');
 let doubleClaimBlocked=false;try{claimResonanceCacheV1(cacheState,'effect_mercy',cacheNow)}catch{doubleClaimBlocked=true}ok(doubleClaimBlocked,'Resonance Cache must be single-claim per UTC week');
 
-console.log('PASS: raw gem refinement, Enchanting gates/XP, canonical gem progression, Resonance Cache and shared forge queue');
+console.log('PASS: Enchanting refinement, research, extraction expertise, catalyst synthesis, Resonance Cache and shared forge queue');

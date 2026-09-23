@@ -39,4 +39,12 @@ eq(result.state.activity,null,'duration Idle Rule stops activity at its exact bo
 ok((result.reward?.elapsedSeconds??0)<=3600,'duration Idle Rule does not settle beyond one hour');
 eq(result.state.account.weeklyOrders?.schemaVersion,41,'idle settlement still advances unified long-term progression');
 
+
+const vipPlusState={...state,account:{...state.account,entitlements:{vip_plus:true}}};
+const {characterLoadoutSlotCount}=require('../src/core/character-loadouts') as typeof import('../src/core/character-loadouts');
+eq(characterLoadoutSlotCount(state),3,'Base accounts keep three loadout slots');
+eq(characterLoadoutSlotCount({...state,account:{...state.account,entitlements:{vip:true}}}),4,'VIP adds one permanent loadout slot');
+eq(characterLoadoutSlotCount(vipPlusState),5,'VIP+ inherits VIP and adds a second permanent loadout slot');
+const fifth=saveCharacterLoadout(vipPlusState,4,'VIP+ Fifth');
+eq(fifth.character?.savedLoadouts?.some(row=>row.slotIndex===4),true,'VIP+ can save into fifth loadout slot');
 console.log('PASS: V40 Working Toward, exact duration Idle Rules and Saved Loadouts use validated command paths');

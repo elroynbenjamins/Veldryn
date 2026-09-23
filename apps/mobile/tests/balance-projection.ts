@@ -19,7 +19,7 @@ ok(gather.cycleSeconds>greenwood.seconds,'Gathering projection must include glob
 ok(gather.xpPerHour>0&&gather.levelPace.etaSeconds!==undefined,'Gathering projection must expose XP/hour and next-level ETA');
 close(gather.runtimeItemsPerHour,gather.authoredMeanItemsPerHour,.001,'Runtime gathering expectation must honor the authored min/max mean yield');
 const herbNode=HERB_NODES.find(row=>row.id==='DEWLEAF_PATCH')!;
-const herbBase={...state,currentRegionId:'GREENFIELDS',skills:state.skills.map(row=>row.skillId==='herbalism'?{...row,level:45,xp:totalXpAtLevel(45)}:row)};
+const herbBase={...state,currentRegionId:'GREENFIELDS',skills:state.skills.map(row=>row.skillId==='herbalism'?{...row,level:70,xp:totalXpAtLevel(70)}:row)};
 const herbBalanced=gatheringBalanceProjection({...herbBase,character:{...herbBase.character!,herbalismMethodId:'balanced'}},herbNode,24);
 const herbQuick=gatheringBalanceProjection({...herbBase,character:{...herbBase.character!,herbalismMethodId:'quick'}},herbNode,24);
 const herbCareful=gatheringBalanceProjection({...herbBase,character:{...herbBase.character!,herbalismMethodId:'careful'}},herbNode,24);

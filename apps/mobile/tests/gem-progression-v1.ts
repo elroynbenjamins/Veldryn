@@ -1,10 +1,12 @@
 import {createCharacter,newGame} from '../src/core/game';
 import {gearEnhancement,replaceGem,socketGem} from '../src/core/equipment-enhancement';
 import {startGemCombine,startGemRefinement,claimForgeJob,equipmentCraftQueueModel} from '../src/core/equipment-crafting-queue';
-import {availableGemCombinesV1,availableGemRefinementsV1,claimResonanceCacheV1,dismantleGemV1,gemCodexRowsV1,gemCombineRecipeIdV1,gemRefineRecipeIdV1,recommendedEffectFamiliesV1,resonanceCacheStatusV1,resonanceForFamilyV1} from '../src/core/gem-progression-v1';
+import {availableGemCombinesV1,availableGemRefinementsV1,availableGemResearchV1,claimResonanceCacheV1,dismantleGemV1,gemCodexRowsV1,gemCombineRecipeIdV1,gemRefineRecipeIdV1,gemUnsocketCostV1,recommendedEffectFamiliesV1,researchEffectGemV1,resonanceCacheStatusV1,resonanceForFamilyV1} from '../src/core/gem-progression-v1';
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
 import {itemDef} from '../src/content/items';
 import {totalXpAtLevel} from '../src/core/progression';
+import {RECIPES} from '../src/content/skills';
+import {MONSTERS} from '../src/content/monsters';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 const t1Ironwarden=V33_EQUIPMENT_RECIPES.filter(row=>row.classId==='IRONWARDEN'&&row.v33EquipmentTier==='T1');
@@ -17,6 +19,7 @@ state={...state,character:{...state.character!,gold:250000,equipment:{...state.c
  {itemId:'gem:effect_retaliation:g1',quantity:1},
  {itemId:'gem:stat_might:g1',quantity:3},
  {itemId:'raw_gem:stat_vitality:g1',quantity:1},
+ {itemId:'raw_gem:effect_flow:g2',quantity:1},
  {itemId:'WISP_DUST',quantity:10},
  {itemId:'GEM_DUST',quantity:100},
  {itemId:'REGIONAL_CATALYST',quantity:2},
@@ -60,6 +63,22 @@ ok(dustAfter===dustBefore+1,'Dismantling a Cut gem should return exactly 1 Gem D
 
 const lockedEffect=availableGemCombinesV1(state).find(row=>row.recipe.familyId==='effect_bulwark'&&row.recipe.fromGrade===1);
 ok(Boolean(lockedEffect&&!lockedEffect.recipeReady),'Effect Gem combining must remain locked until its recipe is discovered');
+ok(MONSTERS.some(monster=>monster.level>=4&&monster.level<=25&&monster.drops.some(drop=>drop.itemId.startsWith('raw_gem:')&&drop.itemId.endsWith(':g1'))),'Asterfall combat should provide an early unrefined Grade I gem path');
+let researchState={...state,skills:state.skills.map(row=>row.skillId==='enchanting'?{...row,level:25,xp:totalXpAtLevel(25)}:row)};
+const researchBeforeDust=researchState.inventory.stacks.find(row=>row.itemId==='GEM_DUST')?.quantity??0,researchBeforeGold=researchState.character!.gold,researchBeforeXp=researchState.skills.find(row=>row.skillId==='enchanting')!.xp;
+ok(availableGemResearchV1(researchState).some(row=>row.family?.familyId==='effect_flow'&&row.ready),'Found Effect Gem family should become researchable at Enchanting 25');
+researchState=researchEffectGemV1(researchState,'effect_flow');
+ok(researchState.account.unlockedKnowledgeIds?.includes('recipe_gem_flow'),'Research should permanently unlock the Effect Gem combine recipe');
+ok(!researchState.inventory.stacks.some(row=>row.itemId==='raw_gem:effect_flow:g2'),'Research should consume the lowest-grade owned unrefined family gem');
+ok((researchState.inventory.stacks.find(row=>row.itemId==='GEM_DUST')?.quantity??0)===researchBeforeDust-10,'Research should consume 10 Gem Dust');
+ok(researchState.character!.gold===researchBeforeGold-2500,'Research should consume 2,500 Gold');
+ok(researchState.skills.find(row=>row.skillId==='enchanting')!.xp===researchBeforeXp+600,'Research should grant one-time Enchanting XP');
+ok(gemUnsocketCostV1('gem:stat_might:g5',1).gold===5000&&gemUnsocketCostV1('gem:stat_might:g5',1).dust===3,'Base Grade V extraction keeps its authored cost');
+ok(gemUnsocketCostV1('gem:stat_might:g5',45).gold===3000&&gemUnsocketCostV1('gem:stat_might:g5',45).dust===2,'Adept Enchanting should reduce Grade V extraction Gold and Dust');
+ok(gemUnsocketCostV1('gem:stat_might:g5',80).gold===1250&&gemUnsocketCostV1('gem:stat_might:g5',80).dust===0,'Perfect Extraction should remove Dust cost and reduce Gold by 75%');
+const regionalCatalystRecipe=RECIPES.find(row=>row.id==='ENCHANT_REGIONAL_CATALYST'),radiantCatalystRecipe=RECIPES.find(row=>row.id==='ENCHANT_RADIANT_CATALYST');
+ok(regionalCatalystRecipe?.level===70&&regionalCatalystRecipe.inputs.some(row=>row.itemId==='FROSTMARCH_BOTANICAL_ESSENCE'),'Enchanting 70 should synthesize Regional Catalysts from Frostmarch botanical essence');
+ok(radiantCatalystRecipe?.level===90&&radiantCatalystRecipe.inputs.some(row=>row.itemId==='ASHLANDS_BOTANICAL_ESSENCE'),'Enchanting 90 should synthesize Radiant Catalysts from Ashlands botanical essence');
 state={...state,account:{...state.account,unlockedKnowledgeIds:[...(state.account.unlockedKnowledgeIds??[]),'recipe_gem_bulwark']}};
 ok(availableGemCombinesV1(state).some(row=>row.recipe.familyId==='effect_bulwark'&&row.recipe.fromGrade===1&&row.recipeReady),'Discovered Effect Gem recipe should unlock the forge family account-wide');
 const recipeId=gemCombineRecipeIdV1('stat_might',1);
@@ -84,4 +103,4 @@ const cacheDustAfter=cacheState.inventory.stacks.filter(row=>row.itemId==='GEM_D
 ok(cacheDustAfter===cacheDustBefore+31,'Resonance Cache should settle its pre-rolled Gem Dust');
 let doubleClaimBlocked=false;try{claimResonanceCacheV1(cacheState,'effect_mercy',cacheNow)}catch{doubleClaimBlocked=true}ok(doubleClaimBlocked,'Resonance Cache must be single-claim per UTC week');
 
-console.log('PASS: raw gem refinement, Enchanting gates/XP, canonical gem progression, Resonance Cache and shared forge queue');
+console.log('PASS: Enchanting refinement, research, extraction expertise, catalyst synthesis, Resonance Cache and shared forge queue');

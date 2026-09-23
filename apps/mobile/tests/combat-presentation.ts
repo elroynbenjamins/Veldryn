@@ -46,7 +46,7 @@ const storyWinState={...storyState,character:{...storyState.character!,level:100
 const storyWin=challengeFallenKnight(storyWinState,222222);
 if(!storyWin.won||!storyWin.battle)throw new Error('Prepared first story clear must settle through cinematic battle playback');
 if(!storyWin.state.inventory.stacks.some(row=>row.itemId==='FALLEN_KNIGHT_SIGIL'&&row.quantity>=1))throw new Error('First Fallen Knight clear must settle the guaranteed story Sigil from the boss drop table');
-const repeatReady={...storyWin.state,character:{...storyWin.state.character!,currentHp:storyWin.state.character!.hp}};
+const repeatReady={...storyWin.state,character:{...storyWin.state.character!,level:100,currentHp:storyWin.state.character!.hp}};
 const repeat=challengeFallenKnight(repeatReady,222223);
 if(!repeat.won||repeat.battle)throw new Error('Post-story Fallen Knight rematches must resolve quickly without replaying the cinematic phase timeline');
 if(repeat.state.inventory.stacks.filter(row=>row.itemId==='FALLEN_KNIGHT_SIGIL').reduce((sum,row)=>sum+row.quantity,0)!==1)throw new Error('Weekly rematches must not repeat the unique story Sigil');

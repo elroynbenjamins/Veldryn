@@ -1,5 +1,5 @@
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
-import {createCharacter,newGame} from '../src/core/game';
+import {createCharacter,craftRecipe,newGame} from '../src/core/game';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
 import {equipmentCraftQueueModel,equipmentCraftSlotBreakdown,equipmentCraftingQueue,MAX_WAITING_EQUIPMENT_CRAFTS,startEquipmentCraft,claimEquipmentCraft} from '../src/core/equipment-crafting-queue';
 import {normalizeSave} from '../src/core/save-normalization';
@@ -88,6 +88,7 @@ for(const highRecipe of [t9Smith,t9Tailor]){
   alt={...alt,character:{...alt.character!,level:highRecipe.characterLevel}};
   throws(()=>startEquipmentCraft(alt,highRecipe.id,5000),`Requires ${highRecipe.skillId} level`,'Donated T9 materials must not bypass the crafting-skill gate');
   alt={...alt,skills:alt.skills.map(row=>row.skillId===highRecipe.skillId?{...row,level:highRecipe.level}:row)};
+  throws(()=>craftRecipe(alt,highRecipe.id,5000),'Equipment Forge','Even a qualified T9 crafter must not bypass the timed Forge through the legacy helper');
   const started=startEquipmentCraft(alt,highRecipe.id,5000),job=equipmentCraftingQueue(started.state).find(row=>row.recipeId===highRecipe.id)!;
   ok(job.ownerCharacterId===alt.character!.id,'T9 craft job must remain bound to the character that qualified for and started it');
   const finished=claimEquipmentCraft(started.state,job.id,job.completesAtMs,.5);

@@ -136,6 +136,8 @@ ok(recipeCard.includes('recipeSkillTrainingAction')&&recipeCard.includes('recipe
 ok(recipeCard.includes('RECIPE MASTERY')&&recipeCard.includes('professionMasteryMultipliers'),'Recipe cards must show live per-recipe mastery and effective values');
 ok(recipeCard.includes('TIMED PACE')&&recipeCard.includes('batches/hr')&&recipeCard.includes('outputPerHour')&&recipeCard.includes('XP/hr'),'Timed crafting must expose batch rate, output/hour, XP/hour and level ETA');
 ok(recipeCard.includes('Track preparation')&&recipeCard.includes('Tracked in Working Toward')&&recipeCard.includes('onTrackPreparation(recipe,multiplier,preparationRoute.steps.length)'),'Preparation routes must support one-tap persistent Working Toward tracking without duplicate pins');
+ok(recipeCard.includes("'GOAL DONE':'TRACKED'")&&recipeCard.includes('trackedTag'),'Collapsed recipe rows must visibly retain persistent preparation tracking state');
+ok(recipeCard.includes("'Preparation goal complete':tracked?'Tracked in Working Toward'"),'Completed preparation goals must stop looking merely active inside the recipe disclosure');
 ok(craftingBrowser.includes('onTrackPreparation={onTrackPreparation}')&&skills.includes('trackPreparationGoal')&&skills.includes("type:'goals_set'"),'Crafting screens must persist preparation tracking through the canonical goals command');
 ok(skills.includes('MAX_PINNED_GOALS')&&skills.includes("goal.kind==='recipe_preparation'&&goal.recipeId===recipe.id"),'Preparation tracking must respect the shared three-goal cap and avoid duplicate pins for the same recipe');
 
@@ -166,11 +168,16 @@ ok(workingTowardSummary.includes('recipePreparationTrackingView')&&workingToward
 ok(planner.includes('recipePreparationTrackingView')&&planner.includes("'Next · '+tracked.nextLabel"),'Working Toward management must show the same live preparation next step');
 ok(dashboard.includes('firstTrackedRecipePreparation')&&dashboard.includes('goalNext')&&homeSession.includes("'Tracked preparation · '+summary.goalNext"),'Compact Home session overview must surface the active tracked preparation step even when detailed goals are collapsed');
 
+const actionFeedback=read('src/components/ActionFeedback.tsx');
+ok(actionFeedback.includes('actionLabel?:string')&&actionFeedback.includes('accessibilityRole="button"')&&actionFeedback.includes('onPress={onAction}'),'Shared ActionFeedback must support an accessible compact action without changing non-action feedback callers');
+
 const appMastery=read('App.tsx');
 ok(appMastery.includes('masteryRankProgressionMoments')&&appMastery.includes('<ActionFeedback message={masteryRankNoticeMessage(masteryNotices)}'),'Non-reward mastery rank-ups must use lightweight in-app feedback');
 ok(appMastery.includes('recipePreparationTransitionNotices')&&appMastery.includes('queuePreparationNotices(before,result.state)'),'Tracked preparation feedback must be derived at the central online state transition instead of per-feature callbacks');
 ok(appMastery.includes('queuePreparationNotices(current,next)')&&appMastery.includes('queuePreparationNotices(current,settled.state)'),'Local commits and return-from-background settlement must also advance tracked preparation feedback');
 ok(appMastery.includes('preparationNotices[0].message')&&appMastery.includes('preparationNotices[0].tone'),'Tracked preparation transitions must render through the shared ActionFeedback surface');
+ok(appMastery.includes('actionLabel={preparationNotices[0].actionLabel}')&&appMastery.includes('openPreparationNotice(preparationNotices[0])'),'Preparation feedback must provide a one-tap action for the exact current next step');
+ok(appMastery.includes("notice.kind==='complete'||!notice.destination||notice.destination.kind==='info'")&&appMastery.includes('openWorkingTowardDestination(notice.destination)'),'Preparation notice actions must route completion to Working Toward and live steps through canonical deep-link navigation');
 ok(appMastery.includes('preparationNotices.length||collected||forgeResults'),'Mastery feedback must wait behind preparation feedback and higher-priority reward/reveal surfaces');
 ok(appMastery.includes("forgeResults?.some(row=>row.qualityProc)"),'Mastery feedback must defer only behind a real exceptional Forge reveal');
 

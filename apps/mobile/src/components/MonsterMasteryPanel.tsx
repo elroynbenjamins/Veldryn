@@ -8,6 +8,7 @@ import {Panel} from './Panel';
 import {GameButton} from './GameButton';
 import {StatBar} from './StatBar';
 import {ItemArtwork} from './ItemArtwork';
+import {v33EquipmentMaterialLabel} from '../core/equipment-loot-v33';
 import {C,equipmentColors,radii,spacing,typography} from '../theme/theme';
 
 export function MonsterMasteryPanel({state}:{state:GameState}){
@@ -26,7 +27,7 @@ export function MonsterMasteryPanel({state}:{state:GameState}){
     <Text style={s.body}>+{Math.round(p.damageBonus*100)}% damage · +{Math.round(p.materialBonus*100)}% normal materials</Text>
     <View style={s.challengeRow}>{p.challengeUnlocks.map(challenge=><View key={challenge.id} style={[s.challenge,challenge.cleared?s.challengeCleared:challenge.unlocked?s.challengeOn:s.challengeOff]}><Text style={[s.challengeText,challenge.cleared?s.challengeTextCleared:challenge.unlocked?s.challengeTextOn:s.challengeTextOff]}>{challenge.cleared?'✓':challenge.unlocked?'◇':'○'} {challenge.def.shortName} · {challenge.cleared?'CLEAR':challenge.unlocked?'READY':`R${challenge.def.masteryRank}`}</Text></View>)}</View><Text style={p.clearSummary.conquered?s.complete:s.body}>Challenge Conquest · {p.clearSummary.cleared}/{p.clearSummary.total}{p.clearSummary.conquered?' · All four tiers defeated':''}</Text>
     {p.next?<View style={s.next}><Text style={s.nextLabel}>NEXT MILESTONE · RANK {p.next.rank}</Text><Text style={s.nextTitle}>{p.next.label}</Text><Text style={s.body}>{p.next.detail}</Text><Text style={s.nextKills}>{p.killsToNextMilestone} kills remaining</Text></View>:<Text style={s.complete}>All species mastery milestones unlocked.</Text>}
-    {p.dropKnowledge?<><Text style={s.dropTitle}>KNOWN DROPS</Text><View style={s.dropList}>{m.drops.map(d=>{const item=itemDef(d.itemId);return <View key={d.itemId} style={s.dropRow}><ItemArtwork itemId={d.itemId} size={34}/><View style={s.flex}><Text style={s.dropName}>{item.name}</Text><Text style={s.dropMeta}>{(d.chance*100).toFixed(2)}% · {d.min}–{d.max}</Text></View></View>})}</View></>:<Text style={s.locked}>Reach Rank 10 to reveal the full base drop table.</Text>}
+    {p.dropKnowledge?<><Text style={s.dropTitle}>KNOWN DROPS</Text><View style={s.dropList}>{m.drops.map(d=>{const item=itemDef(d.itemId),gearMaterial=v33EquipmentMaterialLabel(d.itemId);return <View key={d.itemId} style={s.dropRow}><ItemArtwork itemId={d.itemId} size={34}/><View style={s.flex}><Text style={s.dropName}>{item.name}</Text><Text style={s.dropMeta}>{(d.chance*100).toFixed(2)}% · {d.min}–{d.max}{gearMaterial?' · '+gearMaterial:''}</Text></View></View>})}</View></>:<Text style={s.locked}>Reach Rank 10 to reveal the full base drop table.</Text>}
    </View>})}
   </>}
  </Panel>;

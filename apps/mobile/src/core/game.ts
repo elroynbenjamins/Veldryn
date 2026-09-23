@@ -763,9 +763,9 @@ function fallenKnightDropRoll(state:GameState,seed:string,includeStorySigil:bool
   return stackItems([],items);
 }
 
-export function previewFallenKnightBattle(state:GameState,nowMs=Date.now()):FallenKnightBattleResult{
+export function previewFallenKnightBattle(state:GameState,nowMs=Date.now(),mode:'story'|'rematch'='story'):FallenKnightBattleResult{
   if(!state.character)throw new Error('No character');
-  return simulateFallenKnightStoryBattle(fallenKnightPlayerSnapshot(state),`${state.character.id}:FALLEN_KNIGHT_STORY:${nowMs}`);
+  return simulateFallenKnightStoryBattle(fallenKnightPlayerSnapshot(state),`${state.character.id}:FALLEN_KNIGHT_${mode.toUpperCase()}:${nowMs}`,mode);
 }
 
 export function fallenKnightWinChance(state:GameState){const r=regionalReadiness(state).total;if(r<50)return .10;if(r<60)return .18;if(r<70)return .34;if(r<80)return .48;if(r<90)return .64;if(r<100)return .82;return .90;}
@@ -774,7 +774,7 @@ export function challengeFallenKnightRematch(state:GameState,nowMs:number):{stat
   if(!state.character||state.character.level<25||!state.defeatedBossIds.includes('FALLEN_KNIGHT'))throw new Error('Defeat the Fallen Knight in the story first.');
   const weekly=fallenKnightWeeklyStatus(state,nowMs);
   if(weekly.remaining<=0)throw new Error('Fallen Knight weekly rematches are complete. Rewards reset with the next UTC week.');
-  const battle=previewFallenKnightBattle(state,nowMs),foodId=state.character.equippedFoodId,stats=effectiveStats(state);
+  const battle=previewFallenKnightBattle(state,nowMs,'rematch'),foodId=state.character.equippedFoodId,stats=effectiveStats(state);
   let inventory=state.inventory.stacks;
   if(battle.foodConsumed&&foodId)inventory=consume(inventory,foodId,battle.foodConsumed);
   const postFightCharacter={...state.character,currentHp:Math.max(1,Math.min(stats.hp,battle.finalPlayerHp||1))};

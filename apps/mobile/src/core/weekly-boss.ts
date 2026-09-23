@@ -1,9 +1,35 @@
 import type {GameState} from './types';
 import {companionTrialWeekKey} from '../../../../backend/src/server/companions/trial-season';
 
-export const FALLEN_KNIGHT_WEEKLY_REWARD_CAP=1;
+/**
+ * First story clear is uncapped and cinematic.
+ * After that, up to three rematch victories per UTC week receive boss rewards.
+ * The first rewarded rematch also completes the weekly Oathglass Bounty.
+ */
+export const FALLEN_KNIGHT_WEEKLY_REWARD_CAP=3;
 export const FALLEN_KNIGHT_WEEKLY_BOUNTY_TARGET=1;
-export const FALLEN_KNIGHT_WEEKLY_REWARD={gold:500,xp:1200,essence:30,items:[{itemId:'OATHGLASS_SHARD',quantity:6},{itemId:'TEMPERING_CORE',quantity:2},{itemId:'GEM_DUST',quantity:18},{itemId:'REGIONAL_CATALYST',quantity:1}]} as const;
+
+export const FALLEN_KNIGHT_CLEAR_REWARD={
+  gold:220,
+  xp:600,
+  essence:8,
+  items:[
+    {itemId:'OATHGLASS_SHARD',quantity:2},
+    {itemId:'GEM_DUST',quantity:4},
+  ],
+} as const;
+
+export const FALLEN_KNIGHT_WEEKLY_BOUNTY_REWARD={
+  gold:500,
+  xp:1200,
+  essence:20,
+  items:[
+    {itemId:'OATHGLASS_FRAGMENT',quantity:1},
+    {itemId:'TEMPERING_CORE',quantity:1},
+    {itemId:'GEM_DUST',quantity:10},
+    {itemId:'REGIONAL_CATALYST',quantity:1},
+  ],
+} as const;
 
 export interface FallenKnightWeeklyState{
   weekKey:string;
@@ -15,7 +41,7 @@ export function fallenKnightWeekKey(nowMs:number){return companionTrialWeekKey(n
 
 export function fallenKnightWeeklyStatus(state:GameState,nowMs:number){
   const weekKey=fallenKnightWeekKey(nowMs),raw=state.account.fallenKnightWeekly;
-  const current: FallenKnightWeeklyState=raw?.weekKey===weekKey
+  const current:FallenKnightWeeklyState=raw?.weekKey===weekKey
     ?{weekKey,rewardedClears:Math.max(0,Math.min(FALLEN_KNIGHT_WEEKLY_REWARD_CAP,Math.floor(raw.rewardedClears??0))),bountyAwarded:raw.bountyAwarded===true}
     :{weekKey,rewardedClears:0,bountyAwarded:false};
   return {

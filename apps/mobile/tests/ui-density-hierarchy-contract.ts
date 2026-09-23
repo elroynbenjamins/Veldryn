@@ -289,8 +289,18 @@ ok(event.includes('discoveryCount:{...typography.title,color:C.special}'),'Event
 ok(event.includes("claim:{width:96}"),'Event repeated reward actions must remain compact');
 
 const quests=read('src/screens/QuestScreen.tsx');
-ok(quests.includes('disclosure:{minHeight:60'),'Quest secondary disclosures must remain compact');
+const questModes=read('src/components/QuestModeSwitch.tsx');
+ok(quests.includes("mode==='story'")&&quests.includes("mode==='contracts'")&&quests.includes("mode==='challenges'"),'Quest screen must render Story, Contract Board and Class Challenges as separate workloads instead of one long feed');
+ok(quests.includes('<QuestModeSwitch')&&questModes.includes("accessibilityRole=\"tablist\"")&&questModes.includes("accessibilityRole=\"tab\""),'Quest modes must use one compact accessible three-tab switch');
+ok(questModes.includes("minHeight:58")&&questModes.includes("flex:1,minWidth:0"),'Quest mode tabs must stay compact and share narrow mobile width safely');
+ok(quests.includes('focusedWeeklyOrderId')&&quests.includes('FOCUSED CONTRACT')&&quests.includes("Number(b.id===focusedOrderId)-Number(a.id===focusedOrderId)"),'Contract Board deep links must promote the focused weekly job to the top');
+ok(quests.includes('focusedOrderMissing')&&quests.includes('board refreshed'),'Stale Contract Board deep links must fail visibly after weekly rollover');
+ok(quests.includes("challengePeriod")&&quests.includes("['all','daily','weekly','monthly']"),'Class Challenges must support compact cadence filtering');
+ok(quests.includes("Number(b.progress>=b.required)-Number(a.progress>=a.required)"),'Claimable Class Challenges must sort ahead of incomplete rows');
 ok(quests.includes('<GameButton compact title={destination.button}'),'Contract Board utility actions must remain compact');
+const questApp=read('App.tsx');
+ok(questApp.includes("const [questMode,setQuestMode]=useState<QuestMode>('story')")&&questApp.includes("openQuestMode('contracts'"),'App routing must preserve explicit Story/Contract destinations');
+ok(questApp.includes("focusedWeeklyOrderId={questFocusOrderId}")&&questApp.includes("onOpenContracts={order=>openQuestMode('contracts',order?.id)}"),'World regional Contract links must open the Contract Board with the exact job focused');
 
 const settings=read('src/screens/SettingsScreen.tsx');
 ok(settings.includes('themeChoice:{minHeight:82'),'Theme preview cards must stay compact enough to compare all themes');

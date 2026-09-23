@@ -63,8 +63,8 @@ export function GameTopBar({state,nowMs,labelForDestination,onNavigate,onChangeD
         <View style={styles.hpTrack}><View style={[styles.hpFill,{width:hpPercent}]}/></View>
       </View>
       <View accessible accessibilityRole="text" accessibilityLabel={`${formatGameNumber(state.character?.gold??0,state.settings.numberMode)} gold`} style={styles.goldBlock}><Text style={styles.goldLabel}>GOLD</Text><Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={.78} style={styles.goldValue}>● {formatGameNumber(state.character?.gold??0,state.settings.numberMode)}</Text></View>
-      <Pressable accessibilityRole="button" accessibilityLabel="Open quick navigation" accessibilityHint="Opens five customizable navigation shortcuts" onPress={()=>setOpen(true)} style={({pressed})=>[styles.menuButton,pressed&&styles.pressed]}>
-        <View style={styles.menuLine}/><View style={styles.menuLine}/><View style={styles.menuLine}/>
+      <Pressable accessibilityRole="button" accessibilityLabel={attentionTotal?'Open quick navigation, '+attentionTotal+' item'+(attentionTotal===1?'':'s')+' need attention':'Open quick navigation'} accessibilityHint="Opens five customizable navigation shortcuts" onPress={()=>setOpen(true)} style={({pressed})=>[styles.menuButton,pressed&&styles.pressed]}>
+        <View style={styles.menuLine}/><View style={styles.menuLine}/><View style={styles.menuLine}/>{attentionTotal>0?<View style={styles.menuBadge}><Text style={styles.menuBadgeText}>{attentionTotal>9?'9+':attentionTotal}</Text></View>:null}
       </Pressable>
     </View>
     <ActiveActivityBar state={state} nowMs={nowMs} onOpen={onOpenActivity}/>

@@ -25,7 +25,7 @@ const artSources=[
 const allArt=artSources.join('\n');
 const dropIds=new Set<string>();
 for(const match of monsters.matchAll(/itemId:'([^']+)'/g))dropIds.add(match[1]);
-dropIds.add('HOLY_WATER');
+for(const id of ['HOLY_WATER','EMBER_SHARD','WARD_SHARD','VITALITY_SHARD'])dropIds.add(id);
 
 function itemLine(id:string){
   const escaped=id.replace(/[-/\\^$*+?.()|[\]{}]/g,'\\$&');

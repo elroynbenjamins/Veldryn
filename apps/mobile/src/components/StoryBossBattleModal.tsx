@@ -116,7 +116,7 @@ export function StoryBossBattleModal({state,battle,message,onClose}:{state:GameS
           {recent.length?recent.map((event,index)=><View key={event.atMs+':'+event.type+':'+index} style={s.logRow}><Text style={s.logTime}>{timeLabel(event.atMs)}</Text><Text numberOfLines={1} style={[s.logText,event.type==='telegraph'&&s.warn,event.type==='phase'&&s.phaseLog,event.critical&&s.critLog]}>{eventText(event)}</Text></View>):<Text style={s.sub}>The duel begins…</Text>}
         </View>
 
-        {finished?<View style={[s.result,battle.won?s.win:s.loss]}><Text style={s.resultTitle}>{battle.won?'VICTORY':'DEFEAT'}</Text><Text style={s.resultCopy}>{message}</Text>{battle.won&&<Text style={s.reward}>+900 Gold · +3,000 XP · +40 Essence · +1 Bondstone · Fallen Knight Sigil</Text>}</View>:<Text style={s.note}>Boss outcome is already resolved by the deterministic combat simulation. Playback can be skipped.</Text>}
+        {finished?<View style={[s.result,battle.won?s.win:s.loss]}><Text style={s.resultTitle}>{battle.won?'VICTORY':'DEFEAT'}</Text><Text style={s.resultCopy}>{message}</Text>{battle.won&&<Text style={s.reward}>+900 Gold · +3,000 XP · +40 Essence · +1 Bondstone · boss drop table rolled</Text>}</View>:<Text style={s.note}>Boss outcome is already resolved by the deterministic combat simulation. Playback can be skipped.</Text>}
 
         <View style={s.actions}>{finished?<GameButton title="Continue" onPress={onClose}/>:<><View style={s.actionFlex}><GameButton title="Skip fight" tone="secondary" onPress={skip}/></View><Text style={s.live}>LIVE</Text></>}</View>
       </View>

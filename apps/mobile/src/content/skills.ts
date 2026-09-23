@@ -45,7 +45,7 @@ export const RECIPES:Recipe[]=([
 
 {id:'ENCHANT_WISP_CHARM',name:'Bind Wisp Charm',skillId:'enchanting',level:1,xp:75,gold:25,seconds:36,repeatableTraining:true,inputs:[{itemId:'WISP_DUST',quantity:6},{itemId:'COPPER_INGOT',quantity:1}],output:{itemId:'WISP_CHARM',quantity:1}},
 {id:'ENCHANT_THORN_RING',name:'Imbue Thorn Ring',skillId:'enchanting',level:6,xp:130,gold:45,seconds:45,repeatableTraining:true,inputs:[{itemId:'THORN_SAP',quantity:7},{itemId:'WISP_DUST',quantity:5}],output:{itemId:'THORN_RING',quantity:1}},
-{id:'ENCHANT_OATHGLASS_CAPE',name:'Attune Oathglass Cape',skillId:'enchanting',level:16,xp:300,gold:180,seconds:75,repeatableTraining:true,inputs:[{itemId:'OATHGLASS_SHARD',quantity:3},{itemId:'WISP_DUST',quantity:10},{itemId:'TORN_OATHCLOTH',quantity:2}],output:{itemId:'OATHGLASS_CAPE',quantity:1}},
+{id:'ENCHANT_OATHGLASS_CAPE',name:'Attune Oathglass Cape',skillId:'enchanting',level:16,xp:300,gold:180,seconds:75,repeatableTraining:true,inputs:[{itemId:'OATHGLASS_SHARD',quantity:3},{itemId:'WISP_DUST',quantity:10},{itemId:'MOSS_FIBER',quantity:10}],output:{itemId:'OATHGLASS_CAPE',quantity:1}},
 ...ALCHEMY_RECIPES as Recipe[],
 ...NOVICE_RECIPES,
 ...GENERATED_COMPLETE_SET_RECIPES,

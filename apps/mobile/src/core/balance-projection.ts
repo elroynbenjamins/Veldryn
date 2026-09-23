@@ -49,6 +49,7 @@ export interface CombatBaselineProjection{
 export interface CraftingPaceProjection{
   cycleSeconds:number;
   craftsPerHour:number;
+  outputPerHour:number;
   xpPerCraft:number;
   xpPerHour:number;
   levelPace:LevelPaceProjection;
@@ -104,9 +105,9 @@ export function gatheringBalanceProjection(state:GameState,activity:GatherDef,of
   return {cycleSeconds,actionsPerHour,runtimeItemsPerHour,authoredMeanItemsPerHour,xpPerHour,capActions,capItems:Math.floor(capActions*((activity.min+activity.max)/2)*effect.itemMultiplier*permanent.gatheringYieldMultiplier*mastery.yield),capXp:Math.floor(capActions*activity.xp*effect.xpMultiplier*permanent.skillXpMultiplier*mastery.xp),pacing,mastery,rank,masteryBonus:professionMasteryActiveBonusText(state,activity.id),levelPace:skillLevelPace(state,activity.skillId,xpPerHour)};
 }
 
-export function craftingPaceProjection(state:GameState,recipe:Recipe,cycleSeconds:number,xpPerCraft:number):CraftingPaceProjection{
-  const seconds=Math.max(.1,cycleSeconds),xp=Math.max(0,xpPerCraft),craftsPerHour=3600/seconds,xpPerHour=craftsPerHour*xp;
-  return {cycleSeconds:seconds,craftsPerHour,xpPerCraft:xp,xpPerHour,levelPace:skillLevelPace(state,recipe.skillId,xpPerHour)};
+export function craftingPaceProjection(state:GameState,recipe:Recipe,cycleSeconds:number,xpPerCraft:number,outputPerCraft=recipe.output.quantity):CraftingPaceProjection{
+  const seconds=Math.max(.1,cycleSeconds),xp=Math.max(0,xpPerCraft),craftsPerHour=3600/seconds,xpPerHour=craftsPerHour*xp,outputPerHour=craftsPerHour*Math.max(0,outputPerCraft);
+  return {cycleSeconds:seconds,craftsPerHour,outputPerHour,xpPerCraft:xp,xpPerHour,levelPace:skillLevelPace(state,recipe.skillId,xpPerHour)};
 }
 
 export function combatBaselineProjection(monster:MonsterDef):CombatBaselineProjection{

@@ -27,7 +27,6 @@ const coverageFiles=[
  'src/theme/regional-resource-assets.ts',
  'src/theme/core-material-assets.ts',
  'src/theme/gem-assets.ts',
- 'src/theme/equipment-assets-v33.ts',
 ];
 const coverage=coverageFiles.map(read).join('\n');
 const dropIds=[...new Set([...monsters.matchAll(/itemId:'([^']+)'/g)].map(match=>match[1]))];

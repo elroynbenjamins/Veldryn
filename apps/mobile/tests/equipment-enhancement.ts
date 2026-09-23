@@ -2,8 +2,6 @@ import {createCharacter,effectiveStats,newGame,previewActivityReward,salvageItem
 import {attemptEquipmentUpgrade,equippedEffectGemBonuses,gearEnhancement,gemSocketCapacity,normalizeEnhancementGemSlots,socketGem,unsocketGem,upgradeQuote} from '../src/core/equipment-enhancement';
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
 import {itemDef} from '../src/content/items';
-import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
-import {itemDef} from '../src/content/items';
 function ok(condition:unknown,message:string){if(!condition)throw new Error(message)}
 
 const ringId=V33_EQUIPMENT_RECIPES.find(row=>row.classId==='IRONWARDEN'&&row.v33EquipmentTier==='T1'&&itemDef(row.output.itemId).slot==='ring')!.output.itemId;

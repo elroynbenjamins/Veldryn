@@ -1,4 +1,5 @@
 import {RECIPES} from '../content/skills';
+import {itemDef} from '../content/items';
 import {formatBalanceDuration} from './balance-projection';
 import {recipePreparationRoute,type RecipePreparationRoute,type RecipePreparationStep} from './material-acquisition-plan';
 import {recipeOutputOwnedQuantity,type RecipePreparationGoal} from './recipe-preparation-goals';
@@ -54,4 +55,47 @@ export function firstTrackedRecipePreparation(state:GameState){
   if(view.status!=='complete')return view;
  }
  return goals[0]?recipePreparationTrackingView(state,goals[0]):undefined;
+}
+
+export type RecipePreparationTransitionKind='advanced'|'blocked'|'resumed'|'regressed'|'complete';
+export interface RecipePreparationTransitionNotice{
+ goalId:string;
+ recipeId:string;
+ kind:RecipePreparationTransitionKind;
+ tone:'success'|'info'|'warning';
+ message:string;
+ priority:number;
+}
+
+function preparationOutputName(goal:RecipePreparationGoal){
+ const recipe=RECIPES.find(row=>row.id===goal.recipeId);
+ return recipe?itemDef(recipe.output.itemId).name:goal.title.replace(/^Prepare\s*·\s*/,'');
+}
+
+export function recipePreparationTransitionNotices(before:GameState|null|undefined,after:GameState|null|undefined):RecipePreparationTransitionNotice[]{
+ if(!before?.character||!after?.character||before.character.id!==after.character.id)return [];
+ const previous=new Map((before.character.progressionGoals??[]).filter((goal):goal is RecipePreparationGoal=>goal.kind==='recipe_preparation').map(goal=>[goal.id,goal]));
+ const notices:RecipePreparationTransitionNotice[]=[];
+ for(const goal of (after.character.progressionGoals??[]).filter((entry):entry is RecipePreparationGoal=>entry.kind==='recipe_preparation')){
+  const oldGoal=previous.get(goal.id);if(!oldGoal)continue;
+  const oldView=recipePreparationTrackingView(before,oldGoal),nextView=recipePreparationTrackingView(after,goal),name=preparationOutputName(goal);
+  if(oldView.status!=='complete'&&nextView.status==='complete'){
+   notices.push({goalId:goal.id,recipeId:goal.recipeId,kind:'complete',tone:'success',message:`Working Toward complete · ${name} crafted.`,priority:5});continue;
+  }
+  if(nextView.current>oldView.current){
+   if(nextView.status==='blocked')notices.push({goalId:goal.id,recipeId:goal.recipeId,kind:'blocked',tone:'warning',message:`Preparation advanced · Next blocked: ${nextView.nextLabel}.`,priority:4});
+   else notices.push({goalId:goal.id,recipeId:goal.recipeId,kind:'advanced',tone:'info',message:`Preparation advanced · Next: ${nextView.nextLabel}.`,priority:3});
+   continue;
+  }
+  if(oldView.status!=='blocked'&&nextView.status==='blocked'){
+   notices.push({goalId:goal.id,recipeId:goal.recipeId,kind:'blocked',tone:'warning',message:`Preparation blocked · ${name} · ${nextView.blocker??nextView.nextLabel}.`,priority:4});continue;
+  }
+  if(oldView.status==='blocked'&&nextView.status==='active'){
+   notices.push({goalId:goal.id,recipeId:goal.recipeId,kind:'resumed',tone:'info',message:`Preparation resumed · Next: ${nextView.nextLabel}.`,priority:2});continue;
+  }
+  if(nextView.current<oldView.current){
+   notices.push({goalId:goal.id,recipeId:goal.recipeId,kind:'regressed',tone:'warning',message:`Preparation changed · Next: ${nextView.nextLabel}.`,priority:1});
+  }
+ }
+ return notices.sort((a,b)=>b.priority-a.priority||a.goalId.localeCompare(b.goalId));
 }

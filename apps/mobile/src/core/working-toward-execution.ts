@@ -1,4 +1,4 @@
-import type {GameState,QueuedActivity} from './types';
+import type {GameState,GatheringSkillId,QueuedActivity} from './types';
 import type {ProgressionGoal,GoalProgress} from './progression-goals-v40';
 import {progressionGoalView} from './progression-goals-v40';
 import {progressionGoalContext,progressionGoalDestination,workingTowardDestinationAvailability,type WorkingTowardDestination} from './working-toward';
@@ -7,6 +7,9 @@ import {activityQueueCapacity,normalizeActivityQueue,queuedActivityReadiness} fr
 import {bestGatheringTrainingDestination} from './skill-progression-navigation';
 import {weeklyOrderQueueActivity} from './weekly-order-integrations-v41';
 import type {IdleRuleSet,IdleStopCondition} from './idle-rules-v40';
+import {GATHERING} from '../content/skills';
+import {HERB_NODES} from '../content/herbalism';
+import {WORLD_ZONES} from '../content/world-map';
 
 export type WorkingTowardExecutionState='active'|'ready'|'queued'|'travel'|'blocked'|'full'|'unsupported';
 
@@ -25,11 +28,30 @@ export interface WorkingTowardExecutionPlan{
  stopRuleActive:boolean;
 }
 
+const gatheringSkillIds=new Set<GatheringSkillId>(['mining','woodcutting','fishing','herbalism']);
+const gatherDefs=[...GATHERING,...HERB_NODES];
+
+function gatheringSkillDestination(state:GameState,skillId:string):WorkingTowardDestination|undefined{
+ if(!gatheringSkillIds.has(skillId as GatheringSkillId))return undefined;
+ const typed=skillId as GatheringSkillId,best=bestGatheringTrainingDestination(state,typed);
+ if(best)return best;
+ const level=state.skills.find(row=>row.skillId===typed)?.level??1;
+ const rows=gatherDefs.filter(row=>row.skillId===typed);
+ const skillReady=rows.filter(row=>row.unlockLevel<=level).sort((a,b)=>{
+  const aRegion=WORLD_ZONES.find(zone=>zone.id===a.zoneId)?.minLevel??999,bRegion=WORLD_ZONES.find(zone=>zone.id===b.zoneId)?.minLevel??999;
+  return aRegion-bRegion||b.unlockLevel-a.unlockLevel;
+ });
+ const target=skillReady[0]??rows.slice().sort((a,b)=>a.unlockLevel-b.unlockLevel)[0];
+ if(!target)return undefined;
+ const region=WORLD_ZONES.find(zone=>zone.id===target.zoneId);
+ return {kind:'skills',skillId:typed,mode:'gathering',actionId:target.id,regionId:target.zoneId,button:`Train at ${target.name}`,detail:`${target.name} in ${region?.name??target.zoneId} is the next authored ${typed} training route.`};
+}
+
 function queueActivityForGoal(state:GameState,goal:ProgressionGoal,destination:WorkingTowardDestination):QueuedActivity|undefined{
  if(destination.kind==='combat')return {kind:'combat',targetId:destination.monsterId};
  if(destination.kind==='skills'&&destination.mode==='gathering'&&destination.actionId)return {kind:'gathering',targetId:destination.actionId};
  if(goal.kind==='skill_level'){
-  const best=bestGatheringTrainingDestination(state,goal.skillId as any);
+  const best=gatheringSkillDestination(state,goal.skillId);
   if(best?.kind==='skills'&&best.actionId)return {kind:'gathering',targetId:best.actionId};
  }
  if(goal.kind==='weekly_order'){
@@ -73,7 +95,8 @@ export function workingTowardExecutionPlan(state:GameState,goal:ProgressionGoal)
  const context=progressionGoalContext(state);
  const tracked=goal.kind==='recipe_preparation'?recipePreparationTrackingView(state,goal):undefined;
  const view=tracked??progressionGoalView(goal,context);
- const destination=tracked?.destination??progressionGoalDestination(state,goal);
+ const baseDestination=tracked?.destination??progressionGoalDestination(state,goal);
+ const destination=goal.kind==='skill_level'?gatheringSkillDestination(state,goal.skillId)??baseDestination:baseDestination;
  const availability=workingTowardDestinationAvailability(state,destination);
  const queueActivity=queueActivityForGoal(state,goal,destination);
  const capacity=activityQueueCapacity(state),queue=normalizeActivityQueue(state.character?.activityQueue,capacity);
@@ -85,9 +108,10 @@ export function workingTowardExecutionPlan(state:GameState,goal:ProgressionGoal)
  if(view.status==='complete'){executionState='unsupported';executionLabel='Goal complete';}
  else if(activeNow){executionState='active';executionLabel='Active now';}
  else if(alreadyQueued){executionState='queued';executionLabel='Queued';}
+ else if(queueActivity&&availability.status==='locked'){executionState='blocked';executionLabel='Resolve blocker';queueBlocker=availability.detail;}
  else if(queueActivity&&availability.status==='travel'){executionState='travel';executionLabel='Travel first';queueBlocker=availability.detail;}
  else if(queueActivity&&!readiness?.ready&&readiness?.blocker?.startsWith('Travel to ')){executionState='travel';executionLabel='Travel first';queueBlocker=readiness.blocker;}
- else if(queueActivity&&(!readiness?.ready||availability.status==='locked')){executionState='blocked';executionLabel='Resolve blocker';queueBlocker=readiness?.blocker??availability.detail;}
+ else if(queueActivity&&!readiness?.ready){executionState='blocked';executionLabel='Resolve blocker';queueBlocker=readiness?.blocker??availability.detail;}
  else if(queueActivity&&queueFull){executionState='full';executionLabel='Queue full';queueBlocker=`Action queue is full (${capacity}/${capacity}).`;}
  else if(queueActivity&&readiness?.ready){executionState='ready';executionLabel='Queue next action';}
  else if(availability.status==='travel'){executionState='travel';executionLabel='Travel first';queueBlocker=availability.detail;}

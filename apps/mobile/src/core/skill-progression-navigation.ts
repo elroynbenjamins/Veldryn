@@ -96,6 +96,9 @@ export interface RecipeProgressionSource{
  sourceTypeLabel:string;
  estimatedSeconds?:number;
  estimateLabel?:string;
+ chainLabel?:string;
+ chainComplete?:boolean;
+ chainBlockedReason?:string;
  bottleneck?:boolean;
  otherSources:RecipeProgressionAlternateSource[];
 }

@@ -30,7 +30,7 @@ type Props={
   onCoop?:(dungeonId?:string)=>void;
   onRegionalRewardsChanged?:()=>Promise<void>|void;
   onOpenWeeklyOrder?:(order:WeeklyOrder)=>void;
-  onOpenContracts?:()=>void;
+  onOpenContracts?:(order?:WeeklyOrder)=>void;
   goalRegionId?:string;
 };
 
@@ -87,7 +87,7 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop,onR
       <View style={s.actions}><View style={s.flex}><GameButton compact title="Combat" onPress={onOpenCombat}/></View><View style={s.flex}><GameButton compact title="Skills" tone="secondary" onPress={onOpenSkills}/></View>{onCoop?<View style={s.flex}><GameButton compact title="Co-op" tone="secondary" onPress={onCoop}/></View>:null}</View>
     </Panel>
 
-    {goalRegionId&&goalRegionId!==current.id?<View style={s.goalRoute}><Text style={s.goalRouteLabel}>WORKING TOWARD ROUTE</Text><Text style={s.sub}>Your pinned goal continues in {WORLD_ZONES.find(zone=>zone.id===goalRegionId)?.name??goalRegionId}. It is promoted to the top of Travel Elsewhere below.</Text></View>:null}
+    {goalRegionId&&goalRegionId!==current.id?<View style={s.goalRoute}><Text style={s.goalRouteLabel}>OBJECTIVE ROUTE</Text><Text style={s.sub}>Your current objective continues in {WORLD_ZONES.find(zone=>zone.id===goalRegionId)?.name??goalRegionId}. That region is promoted to the top of Travel Elsewhere below.</Text></View>:null}
 
     {storyRegion&&<RegionalStoryLeadsPanel state={state} regionId={storyRegion} onOpenCombat={()=>onOpenCombat()}/>}
     {sunscar&&<><SunscarRegionPanel zones={sunscarZones}/>{onRegionalRewardsChanged?<RegionalCombatPanel state={state} onRewardsChanged={onRegionalRewardsChanged}/>:null}</>}

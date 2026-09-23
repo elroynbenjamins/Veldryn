@@ -7,7 +7,7 @@ import {spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {GameButton} from './GameButton';
 
-export function RegionalContractFocus({state,regionId,onOpenOrder,onOpenBoard}:{state:GameState;regionId:string;onOpenOrder?:(order:WeeklyOrder)=>void;onOpenBoard?:()=>void}){
+export function RegionalContractFocus({state,regionId,onOpenOrder,onOpenBoard}:{state:GameState;regionId:string;onOpenOrder?:(order:WeeklyOrder)=>void;onOpenBoard?:(order?:WeeklyOrder)=>void}){
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),focus=contractBoardRegionFocus(state,regionId),order=focus.nextOrder;
  if(!focus.total)return null;
  const remaining=order?Math.max(0,order.target-order.progress):0;
@@ -15,7 +15,7 @@ export function RegionalContractFocus({state,regionId,onOpenOrder,onOpenBoard}:{
  return <View style={s.card}>
   <View style={s.head}><View style={s.flex}><Text style={s.kicker}>REGIONAL CONTRACTS · {focus.complete}/{focus.total}</Text><Text numberOfLines={1} style={s.title}>{order?.title??'All local weekly jobs complete'}</Text></View>{order?<Text style={s.progress}>{remaining} LEFT</Text>:<Text style={s.done}>DONE</Text>}</View>
   <Text numberOfLines={2} style={s.detail}>{order?(order.brief??order.source.label)+' · '+order.reward.label:'This region has no unfinished Contract Board work this week.'}</Text>
-  {order?<View style={s.actions}><View style={s.primary}><GameButton compact title={order.kind==='regional'?'View regional problem':'Continue contract'} disabled={order.kind==='regional'?!onOpenBoard:!onOpenOrder} onPress={()=>order.kind==='regional'?onOpenBoard?.():onOpenOrder?.(order)}/></View>{direct&&onOpenBoard?<View style={s.secondary}><GameButton compact title="Board" tone="secondary" onPress={onOpenBoard}/></View>:null}</View>:onOpenBoard?<GameButton compact title="Open Contract Board" tone="secondary" onPress={onOpenBoard}/>:null}
+  {order?<View style={s.actions}><View style={s.primary}><GameButton compact title={order.kind==='regional'?'View regional problem':'Continue contract'} disabled={order.kind==='regional'?!onOpenBoard:!onOpenOrder} onPress={()=>order.kind==='regional'?onOpenBoard?.(order):onOpenOrder?.(order)}/></View>{direct&&onOpenBoard?<View style={s.secondary}><GameButton compact title="Board" tone="secondary" onPress={onOpenBoard}/></View>:null}</View>:onOpenBoard?<GameButton compact title="Open Contract Board" tone="secondary" onPress={onOpenBoard}/>:null}
  </View>;
 }
 function makeStyles(C:ThemeColors){return StyleSheet.create({

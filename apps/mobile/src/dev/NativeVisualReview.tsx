@@ -51,7 +51,7 @@ const party:PersistentPartySummary={id:'qa-party',maxMembers:4,focus:'mixed',mem
  {accountId:'qa3',characterId:'qa3',characterName:'Wandering Wayfinder',className:'Wayfinder',role:'damage',isLeader:false}
 ]};
 const post:RecruitmentCardView={id:'qa-post',postType:'party_recruiting',ownerName:'Aster Nightfall',title:'Preparing for the Fallen Knight',body:'A relaxed party for hunting, gathering, and the next Asterfall challenge.',roles:['damage','support'],focus:'mixed',activityTags:['Bosses'],playstyleTags:['Relaxed'],availabilityTags:[],guildInterestTags:[],currentObjective:'The Fallen Knight',openSpots:1,expiresAtMs:now+3600000};
-const sections=['Home','Skills','Crafting','Combat','Social','Guild','Login','Ingredients','Settings','Journal','Events','Profile'] as const;
+const sections=['Home','Skills','Crafting','Combat','Social','Guild','Login','Ingredients','Settings','Journal','Contracts','Challenges','Events','Profile'] as const;
 type Section=typeof sections[number];
 const destinations=['Character','Skills','World','Inventory','More'] as const;
 export default function NativeVisualReview(){
@@ -61,8 +61,8 @@ export default function NativeVisualReview(){
  <View style={s.flex}>
  {section==='Login'?<AccountWelcomeScreen scene={STARTUP_SCENES[0]}><OnlineAccountPanel state={newGame(now)}/></AccountWelcomeScreen>:<>
  <GameTopBar state={state} nowMs={now} labelForDestination={x=>x} onNavigate={noop} onChangeDestinations={noop} onOpenActivity={()=>setSection(state.activity?.kind==='combat'?'Combat':'Skills')}/>
- {section==='Home'&&<HomeScreen state={state} preview={previewActivityReward(state,now)} nowMs={now} onClaim={()=>setState(s=>claimActivity(s,now).state)} onStop={()=>setState(stopActivity)} onQueueRemove={noop} onQueueMove={noop} onQueueClear={noop} onQueueStart={noop} onNavigate={noop} onOpenPlanner={noop} onNavigateGoal={noop} onOpenCombat={()=>setSection('Combat')} onOpenSkill={()=>setSection('Skills')}/>} 
- {section==='Journal'&&<QuestScreen state={state} onClaim={noop} onClaimContract={noop} onNavigate={noop} onOpenWeeklyOrder={noop} onPinWeeklyOrder={noop} onQueueWeeklyOrder={noop} onStopWeeklyOrder={noop}/>} 
+ {section==='Home'&&<HomeScreen state={state} preview={previewActivityReward(state,now)} nowMs={now} onClaim={()=>setState(s=>claimActivity(s,now).state)} onStop={()=>setState(stopActivity)} onQueueRemove={noop} onQueueMove={noop} onQueueClear={noop} onQueueStart={noop} onNavigate={noop} onOpenPlanner={noop} onOpenContracts={noop} onNavigateGoal={noop} onOpenCombat={()=>setSection('Combat')} onOpenSkill={()=>setSection('Skills')}/>} 
+ {(section==='Journal'||section==='Contracts'||section==='Challenges')&&<QuestScreen state={state} mode={section==='Contracts'?'contracts':section==='Challenges'?'challenges':'story'} onModeChange={noop} onClaim={noop} onClaimContract={noop} onNavigate={noop} onOpenWeeklyBoss={noop} onOpenWeeklyOrder={noop} onPinWeeklyOrder={noop} onQueueWeeklyOrder={noop} onStopWeeklyOrder={noop}/>} 
  {section==='Events'&&<EventScreen state={state} onChange={setState}/>} 
  {section==='Profile'&&<ScrollView contentContainerStyle={s.content}><ProfileEditor state={state} onChange={setState}/></ScrollView>} 
  {section==='Settings'&&<SettingsScreen state={state} onLanguage={language=>setState(s=>({...s,settings:{...s.settings,language}}))} onReset={noop} onChange={setState} onExport={async()=>{}} onImport={async()=>{}}/>}

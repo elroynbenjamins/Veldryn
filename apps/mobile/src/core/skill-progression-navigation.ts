@@ -8,7 +8,7 @@ import {recipeAvailability} from './playability';
 import {alchemyAvailability} from './alchemy';
 import {isTimedProcessingRecipe,processingAvailability} from './processing';
 import {equipmentCraftAvailability,timedEquipmentRecipe} from './equipment-crafting-queue';
-import {workingTowardDestinationAvailability,workingTowardItemSource,type WorkingTowardDestination,type WorkingTowardDestinationAvailability} from './working-toward';
+import {workingTowardDestinationAvailability,workingTowardItemSource,workingTowardItemSourceEntries,type WorkingTowardDestination,type WorkingTowardDestinationAvailability,type WorkingTowardItemSourceEntry} from './working-toward';
 
 const gatheringDefs=[...GATHERING,...HERB_NODES];
 const pretty=(id:string)=>id.replace(/_/g,' ').replace(/\b\w/g,char=>char.toUpperCase());
@@ -84,19 +84,26 @@ export interface RecipeProgressionSource{
  missing:number;
  destination:WorkingTowardDestination;
  availability:WorkingTowardDestinationAvailability;
+ sourceTypeLabel:string;
+ otherSources:WorkingTowardItemSourceEntry[];
+}
+
+function materialSourcePresentation(state:GameState,itemId:string){
+ const sources=workingTowardItemSourceEntries(state,itemId),primary=sources[0],destination=primary?.destination??workingTowardItemSource(state,itemId);
+ return {destination,availability:primary?.availability??workingTowardDestinationAvailability(state,destination),sourceTypeLabel:primary?.typeLabel??'Inventory',otherSources:sources.slice(1)};
 }
 
 export function recipeProgressionSources(state:GameState,recipe:Recipe,inputs:ReadonlyArray<{itemId:string;quantity:number;inventory:number;bank:number}>):RecipeProgressionSource[]{
  const rows:RecipeProgressionSource[]=[];
  if(recipe.requiresCraftedItemId&&!state.character?.craftedNoviceItemIds?.includes(recipe.requiresCraftedItemId)){
-  const destination=workingTowardItemSource(state,recipe.requiresCraftedItemId);
-  rows.push({key:`prerequisite:${recipe.requiresCraftedItemId}`,label:'Craft prerequisite',owned:0,required:1,missing:1,destination,availability:workingTowardDestinationAvailability(state,destination)});
+  const source=materialSourcePresentation(state,recipe.requiresCraftedItemId);
+  rows.push({key:`prerequisite:${recipe.requiresCraftedItemId}`,label:'Craft prerequisite',owned:0,required:1,missing:1,...source});
  }
  for(const input of inputs){
   const owned=input.inventory+input.bank,missing=Math.max(0,input.quantity-owned);
   if(!missing)continue;
-  const destination=workingTowardItemSource(state,input.itemId);
-  rows.push({key:`material:${input.itemId}`,label:itemDef(input.itemId).name,owned,required:input.quantity,missing,destination,availability:workingTowardDestinationAvailability(state,destination)});
+  const source=materialSourcePresentation(state,input.itemId);
+  rows.push({key:`material:${input.itemId}`,label:itemDef(input.itemId).name,owned,required:input.quantity,missing,...source});
  }
  return rows;
 }

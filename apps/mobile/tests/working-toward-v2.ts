@@ -1,4 +1,4 @@
-import {createCharacter,newGame} from '../src/core/game';
+import {createCharacter,newGame,startCombat} from '../src/core/game';
 import {progressionGoalContext,progressionGoalDestination,workingTowardItemSourceEntries,workingTowardReadyCount,workingTowardTrackableItems} from '../src/core/working-toward';
 import {MASTERY_GOAL_RANKS,masteryGoalForAction,nextMasteryGoalRank,normalizeProgressionGoals,progressionGoalView,type ProgressionGoal} from '../src/core/progression-goals-v40';
 import {RECIPES} from '../src/content/skills';
@@ -38,6 +38,11 @@ ok(!!huntStop&&huntStop.conditions[0]?.kind==='monster_kills','hunt goal can cre
 equal(huntStop?.conditions[0]?.targetId,'MOSS_RAT','stop-at-goal retains the exact monster');
 equal(huntStop?.conditions[0]?.value,50,'stop-at-goal retains the exact kill target');
 ok(huntStop?.stopIfOutOfFood&&huntStop.stopIfRewardsWouldOverflow&&huntStop.finishCurrentCycle,'generated stop-at-goal rule keeps food, overflow and cycle safety');
+const activeHuntState=startCombat({...state,character:{...state.character!,progressionGoals:[huntGoal]}},'MOSS_RAT',1000);
+const activeHuntPlan=workingTowardExecutionPlan(activeHuntState,huntGoal);
+equal(activeHuntPlan.executionState,'active','already active hunt goal is recognized instead of offering a duplicate queue action');
+ok(activeHuntPlan.activeNow,'execution plan marks the matching live activity');
+equal(workingTowardExecutionOverview(activeHuntState).focus?.goal.id,huntGoal.id,'currently active goal becomes the execution focus');
 
 const copper=workingTowardTrackableItems().find(item=>item.id==='COPPER_ORE');
 ok(copper,'direct-source materials are authorable Working Toward items');

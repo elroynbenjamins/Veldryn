@@ -1,6 +1,7 @@
 import {itemDef} from '../content/items';
 import {GEM_GRADE_LABEL_V1,MOBILE_GEM_FAMILIES_V1,mobileGemFamilyV1,mobileGemItemIdV1,mobileRawGemItemIdV1,type MobileGemGradeV1} from '../content/gems-v1';
 import type {ClassId,GameState,ItemStack} from './types';
+import {levelFromXp,totalXpAtLevel} from './progression';
 
 export const GEM_EFFECT_RESONANCE_CAP_V1=3;
 export const GEM_COMBINE_COSTS_V1:Readonly<Record<1|2|3|4,{to:2|3|4|5;copies:3;dust:number;gold:number;seconds:number;level:number;xp:number;catalystId?:'REGIONAL_CATALYST'|'RADIANT_CATALYST'}>>={
@@ -20,6 +21,17 @@ export const GEM_DISMANTLE_DUST_V1:Readonly<Record<MobileGemGradeV1,number>>={1:
 export const GEM_UNSOCKET_COST_V1:Readonly<Record<MobileGemGradeV1,{gold:number;dust:number}>>={
  1:{gold:0,dust:0},2:{gold:0,dust:0},3:{gold:500,dust:0},4:{gold:1500,dust:1},5:{gold:5000,dust:3},
 };
+export const ENCHANTING_EXTRACTION_DISCOUNTS_V1:readonly {level:number;discount:number}[]=[
+ {level:20,discount:.10},{level:40,discount:.20},{level:60,discount:.35},{level:80,discount:.50},{level:100,discount:.60},
+];
+export const GEM_RESEARCH_REQUIRED_POINTS_V1=3;
+export const GEM_RESEARCH_COSTS_V1:Readonly<Record<MobileGemGradeV1,{level:number;points:number;dust:number;gold:number;xp:number}>>={
+ 1:{level:25,points:1,dust:3,gold:500,xp:160},
+ 2:{level:25,points:2,dust:6,gold:1500,xp:420},
+ 3:{level:28,points:3,dust:10,gold:4000,xp:900},
+ 4:{level:45,points:3,dust:15,gold:8000,xp:1500},
+ 5:{level:62,points:3,dust:25,gold:16000,xp:2600},
+};
 
 export interface CanonicalGemMetaV1{familyId:string;grade:MobileGemGradeV1;kind:'stat'|'effect';}
 export function canonicalGemMetaV1(itemId:string):CanonicalGemMetaV1|undefined{
@@ -29,6 +41,11 @@ export function canonicalGemMetaV1(itemId:string):CanonicalGemMetaV1|undefined{
  return {familyId:family.familyId,grade:item.gemGrade,kind:family.kind};
 }
 export function gemUnsocketCostV1(itemId:string){const meta=canonicalGemMetaV1(itemId);return meta?GEM_UNSOCKET_COST_V1[meta.grade]:{gold:(itemDef(itemId).gemTier??1)*500,dust:0};}
+export function enchantingExtractionDiscountV1(level:number){return [...ENCHANTING_EXTRACTION_DISCOUNTS_V1].reverse().find(row=>level>=row.level)?.discount??0;}
+export function gemUnsocketCostForStateV1(state:GameState,itemId:string){
+ const base=gemUnsocketCostV1(itemId),level=state.skills.find(row=>row.skillId==='enchanting')?.level??1,discount=enchantingExtractionDiscountV1(level);
+ return {baseGold:base.gold,baseDust:base.dust,gold:Math.max(0,Math.round(base.gold*(1-discount))),dust:base.dust?Math.max(0,Math.ceil(base.dust*(1-discount))):0,discount,level};
+}
 
 function consumeStackV1(stacks:readonly ItemStack[],itemId:string,amount:number){let left=amount;const next=stacks.map(row=>{if(row.itemId!==itemId||left<=0)return row;const used=Math.min(left,row.quantity);left-=used;return {...row,quantity:row.quantity-used};}).filter(row=>row.quantity>0);return {stacks:next,used:amount-left};}
 function addStackV1(stacks:readonly ItemStack[],capacity:number,itemId:string,quantityToAdd:number){if(quantityToAdd<=0)return [...stacks];const existing=stacks.find(row=>row.itemId===itemId);if(existing)return stacks.map(row=>row.itemId===itemId?{...row,quantity:row.quantity+quantityToAdd}:row);if(stacks.length>=capacity)throw new Error('Inventory and Bank are full');return [...stacks,{itemId,quantity:quantityToAdd}];}
@@ -46,6 +63,29 @@ export function dismantleGemV1(state:GameState,itemId:string,quantityToDismantle
 
 function quantity(stacks:readonly ItemStack[],itemId:string){return stacks.filter(row=>row.itemId===itemId).reduce((sum,row)=>sum+row.quantity,0);}
 export function combinedGemQuantityV1(state:GameState,itemId:string){return quantity(state.inventory.stacks,itemId)+quantity(state.bank.stacks,itemId);}
+export function gemResearchStatusV1(state:GameState,familyId:string,grade:MobileGemGradeV1){
+ const family=mobileGemFamilyV1(familyId),cost=GEM_RESEARCH_COSTS_V1[grade],rawItemId=mobileRawGemItemIdV1(familyId,grade),progress=Math.max(0,Math.min(GEM_RESEARCH_REQUIRED_POINTS_V1,Math.floor(state.account.gemResearchProgressByFamily?.[familyId]??0)));
+ const recipeUnlocked=isGemFamilyRecipeUnlockedV1(state,familyId),skillLevel=state.skills.find(row=>row.skillId==='enchanting')?.level??1,rawOwned=combinedGemQuantityV1(state,rawItemId),dustOwned=combinedGemQuantityV1(state,'GEM_DUST'),goldOwned=state.character?.gold??0;
+ const valid=family?.kind==='effect',skillReady=skillLevel>=cost.level,inputReady=rawOwned>=1&&dustOwned>=cost.dust,goldReady=goldOwned>=cost.gold;
+ return {family,cost,rawItemId,progress,remaining:Math.max(0,GEM_RESEARCH_REQUIRED_POINTS_V1-progress),recipeUnlocked,skillLevel,rawOwned,dustOwned,goldOwned,valid,skillReady,inputReady,goldReady,ready:Boolean(valid&&!recipeUnlocked&&skillReady&&inputReady&&goldReady)};
+}
+export function availableGemResearchV1(state:GameState){
+ return MOBILE_GEM_FAMILIES_V1.filter(family=>family.kind==='effect').flatMap(family=>([1,2,3,4,5] as MobileGemGradeV1[]).map(grade=>gemResearchStatusV1(state,family.familyId,grade))).filter(row=>row.rawOwned>0&&!row.recipeUnlocked);
+}
+export function researchGemV1(state:GameState,familyId:string,grade:MobileGemGradeV1){
+ if(!state.character)throw new Error('Create a character first');
+ const status=gemResearchStatusV1(state,familyId,grade);if(!status.valid)throw new Error('Only Effect Gem families can be researched');
+ if(status.recipeUnlocked)throw new Error('This Effect Gem recipe is already discovered');
+ if(!status.skillReady)throw new Error(`Requires enchanting level ${status.cost.level}`);
+ if(status.rawOwned<1)throw new Error('You do not own this unrefined gem');
+ if(status.dustOwned<status.cost.dust)throw new Error(`Need ${status.cost.dust} Gem Dust`);
+ if(status.goldOwned<status.cost.gold)throw new Error(`Need ${status.cost.gold} gold`);
+ const rawInv=consumeStackV1(state.inventory.stacks,status.rawItemId,1),rawBank=consumeStackV1(state.bank.stacks,status.rawItemId,1-rawInv.used);
+ const dustInv=consumeStackV1(rawInv.stacks,'GEM_DUST',status.cost.dust),dustBank=consumeStackV1(rawBank.stacks,'GEM_DUST',status.cost.dust-dustInv.used);
+ const points=Math.min(GEM_RESEARCH_REQUIRED_POINTS_V1,status.progress+status.cost.points),unlocked=points>=GEM_RESEARCH_REQUIRED_POINTS_V1,knowledge=unlocked?[...new Set([...(state.account.unlockedKnowledgeIds??[]),gemFamilyRecipeIdV1(familyId)])]:state.account.unlockedKnowledgeIds;
+ const skill=state.skills.find(row=>row.skillId==='enchanting')!,xp=Math.min(totalXpAtLevel(100),skill.xp+status.cost.xp);
+ return {...state,inventory:{...state.inventory,stacks:dustInv.stacks},bank:{...state.bank,stacks:dustBank.stacks},character:{...state.character,gold:state.character.gold-status.cost.gold},skills:state.skills.map(row=>row.skillId==='enchanting'?{...row,xp,level:levelFromXp(xp)}:row),account:{...state.account,gemResearchProgressByFamily:{...(state.account.gemResearchProgressByFamily??{}),[familyId]:points},unlockedKnowledgeIds:knowledge}} as GameState;
+}
 export function equippedCanonicalGemIdsV1(state:GameState){
  if(!state.character)return [] as string[];
  const out:string[]=[];

@@ -12,6 +12,11 @@ const skillsScreen=read('src/screens/SkillsScreen.tsx');
 const app=read('App.tsx');
 
 ok(recipes.includes('V33_EQUIPMENT_RECIPES')&&recipes.includes("CRAFT_V33_"),'V33 equipment needs a dedicated complete recipe adapter');
+ok(recipes.includes("skillId:'smithing'|'tailoring'")&&recipes.includes('equipmentCraftSkillForClass'),'V33 recipes must explicitly support both Smithing and Tailoring');
+ok(recipes.includes('tailoringIngredients')&&recipes.includes('smithingIngredients'),'Smithing and Tailoring equipment must use distinct material ladders');
+ok(recipes.includes("TAILORING_EQUIPMENT_CLASSES")&&recipes.includes("'WAYFINDER'")&&recipes.includes("'HEXWEAVER'")&&recipes.includes("'KNIFE_DANCER'"),'Leather/cloth class identities must route into Tailoring');
+ok(skills.includes('equipmentCraftSkillForClass(recipe.classId)'),'Legacy class gear recipes must reuse the same Smithing/Tailoring class rule');
+ok(!skillsScreen.includes('workshop has no trainable recipes available yet'),'Tailoring/Enchanting must not regress to placeholder-only profession screens');
 ok(recipes.includes('slotMultiplier')&&recipes.includes('timerRange'),'V33 recipe costs/timers must respect slot and tier pacing');
 ok(recipes.includes("case 'T5'")&&recipes.includes("case 'T8'"),'Regional material plans must differ across later tiers');
 ok(skills.includes('...(V33_EQUIPMENT_RECIPES as Recipe[])'),'V33 recipes must be part of the authoritative recipe catalog');

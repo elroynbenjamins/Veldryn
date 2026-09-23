@@ -2,6 +2,7 @@ import {supabase} from './supabase';
 import {guildNameError,normalizeGuildName} from '../core/identity-names';
 import type {GuildAppearanceEntitlements,GuildBannerId,GuildFrameId,GuildNameColorId,GuildNameplateId} from '../core/guild-customization';
 import type {GuildTagAvailability,GuildTagColorId} from '../core/guild-tags';
+import type {PlayerNameStylePreference} from '../core/player-name-style';
 
 export const WORLD_CHANNELS=[
   {id:'world-1',name:'English',language:'English'},
@@ -9,18 +10,18 @@ export const WORLD_CHANNELS=[
   {id:'world-3',name:'Global 1',language:'Global'},
   {id:'world-4',name:'Global 2',language:'Global'},
 ] as const;
-export type WorldMessage={id:string;sender_name:string;body:string;created_at:string;account_id:string;guild_tag?:string|null;guild_tag_color_id?:string|null};
+export type WorldMessage={id:string;sender_name:string;body:string;created_at:string;account_id:string;guild_tag?:string|null;guild_tag_color_id?:string|null;player_name_style?:PlayerNameStylePreference|null};
 export type OnlineGuild={id:string;name:string;tag:string|null;tag_color_id:GuildTagColorId;level:number;member_cap:number;minimum_level:number;join_policy:'open'|'apply'|'invite';banner_id:GuildBannerId;profile_frame_id:GuildFrameId;name_color_id:GuildNameColorId;nameplate_id:GuildNameplateId;motto:string};
-export type GuildMember={account_id:string;display_name:string;role:'leader'|'officer'|'member';joined_at:string;guild_tag?:string|null;guild_tag_color_id?:string|null};
+export type GuildMember={account_id:string;display_name:string;role:'leader'|'officer'|'member';joined_at:string;guild_tag?:string|null;guild_tag_color_id?:string|null;player_name_style?:PlayerNameStylePreference|null};
 export type GuildApplication={id:string;account_id:string;created_at:string;status:'pending'|'accepted'|'declined'|'withdrawn'};
 export type FriendRelationship='none'|'friend'|'outgoing_pending'|'incoming_pending';
-export type FriendProfile={account_id:string;display_name:string;character_name:string|null;class_id:string|null;level:number|null;profile_title:string|null;guild_tag?:string|null;guild_tag_color_id?:string|null};
+export type FriendProfile={account_id:string;display_name:string;character_name:string|null;class_id:string|null;level:number|null;profile_title:string|null;guild_tag?:string|null;guild_tag_color_id?:string|null;player_name_style?:PlayerNameStylePreference|null};
 export type FriendSearchResult=FriendProfile&{relationship:FriendRelationship};
 export type FriendEntry=FriendProfile&{friends_since:string};
 export type FriendRequest={request_id:string;account_id:string;display_name:string;direction:'incoming'|'outgoing';created_at:string};
 export type BlockedPlayer={account_id:string;display_name:string;blocked_at:string};
 export type SocialReportReason='identity'|'harassment_spam';
-export type GuildChatMessage={id:string;account_id:string;sender_name:string;body:string;created_at:string;guild_tag?:string|null;guild_tag_color_id?:string|null;guild_role?:'leader'|'officer'|'member'|null};
+export type GuildChatMessage={id:string;account_id:string;sender_name:string;body:string;created_at:string;guild_tag?:string|null;guild_tag_color_id?:string|null;player_name_style?:PlayerNameStylePreference|null;guild_role?:'leader'|'officer'|'member'|null};
 export interface GuildChatState{guild:{id:string;name:string;tag?:string|null;tagColorId?:string|null}|null;messages:GuildChatMessage[];serverTime:string;}
 export interface SocialChatChannelAttention{channelId?:string|null;unread:number;mentions:number;lastReadAt?:string|null;firstUnreadMessageId?:string|null;}
 export interface SocialChatAttentionState{guild:SocialChatChannelAttention;party:SocialChatChannelAttention;totalUnread:number;totalMentions:number;serverTime:string;}
@@ -43,7 +44,7 @@ export interface GuildNoticeBoardState{guildId:string;body:string;updatedAt?:str
 
 
 function requireClient(){if(!supabase)throw new Error('Online services are not configured in this build.');return supabase;}
-export async function guildIdentities(accountIds:readonly string[]):Promise<Map<string,{guild_tag:string;guild_tag_color_id:string}>>{const unique=[...new Set(accountIds.filter(Boolean))];if(!unique.length)return new Map();const client=requireClient();const {data,error}=await client.rpc('guild_identities',{p_account_ids:unique});if(error)throw error;return new Map<string,{guild_tag:string;guild_tag_color_id:string}>((data??[]).map((row:any)=>[row.account_id,{guild_tag:row.guild_tag,guild_tag_color_id:row.guild_tag_color_id}]));}
+export async function guildIdentities(accountIds:readonly string[]):Promise<Map<string,{guild_tag?:string|null;guild_tag_color_id?:string|null;player_name_style?:PlayerNameStylePreference|null}>>{const unique=[...new Set(accountIds.filter(Boolean))];if(!unique.length)return new Map();const client=requireClient();const {data,error}=await client.rpc('guild_identities',{p_account_ids:unique});if(error)throw error;return new Map((data??[]).map((row:any)=>[row.account_id,{guild_tag:row.guild_tag??null,guild_tag_color_id:row.guild_tag_color_id??null,player_name_style:row.player_name_style??null}]));}
 async function withGuildIdentities<T extends {account_id:string}>(rows:T[]){const identities=await guildIdentities(rows.map(row=>row.account_id));return rows.map(row=>({...row,...identities.get(row.account_id)}));}
 export async function worldMessages(channelId:string){const client=requireClient();const {data,error}=await client.from('chat_messages').select('id,account_id,sender_name,body,created_at').eq('channel_type','world').eq('channel_id',channelId).order('created_at',{ascending:true}).limit(50);if(error)throw error;const rows=(data??[]) as WorldMessage[],identities=await guildIdentities(rows.map(row=>row.account_id));return rows.map(row=>({...row,...identities.get(row.account_id)}));}
 export async function postWorldMessage(channelId:string,body:string,senderName:string){const client=requireClient();const clean=body.trim();if(!clean)throw new Error('Write a message first.');const {error}=await client.rpc('send_world_chat',{p_channel_id:channelId,p_body:clean,p_sender_name:senderName.slice(0,20)||'Adventurer'});if(error)throw error;}
@@ -98,7 +99,7 @@ export async function cancelGuildInvitation(invitationId:string){const client=re
 export async function updateGuildMemberRole(accountId:string,role:'officer'|'member'){const client=requireClient();const {data,error}=await client.rpc('update_guild_member_role_v1',{p_target_account_id:accountId,p_role:role});if(error)throw error;return data as 'officer'|'member';}
 export async function removeGuildMember(accountId:string){const client=requireClient();const {data,error}=await client.rpc('remove_guild_member_v1',{p_target_account_id:accountId});if(error)throw error;return data as 'removed';}
 export function guildChatCommandKey(){return `guild-chat-${Date.now()}-${Math.random().toString(36).slice(2,14)}`;}
-export async function guildChatState(limit=50){const client=requireClient();const {data,error}=await client.rpc('guild_chat_state_v1',{p_limit:limit});if(error)throw error;return data as GuildChatState;}
+export async function guildChatState(limit=50){const client=requireClient();const {data,error}=await client.rpc('guild_chat_state_v1',{p_limit:limit});if(error)throw error;const state=data as GuildChatState;if(!state?.messages?.length)return state;return {...state,messages:await withGuildIdentities(state.messages)};}
 export async function sendGuildChat(body:string,idempotencyKey:string){const client=requireClient();const {data,error}=await client.rpc('send_guild_chat_v1',{p_body:body,p_idempotency_key:idempotencyKey});if(error)throw error;return data as string;}
 export async function socialChatAttention(){const client=requireClient();const {data,error}=await client.rpc('social_chat_attention_state_v1');if(error)throw error;return data as SocialChatAttentionState;}
 export async function markSocialChatRead(channelType:'guild'|'party'){const client=requireClient();const {data,error}=await client.rpc('mark_social_chat_read_v1',{p_channel_type:channelType});if(error)throw error;return data as {channelType:'guild'|'party';channelId:string;readAt:string};}
@@ -112,3 +113,5 @@ export async function leaveGuild(){const client=requireClient();const {data,erro
 export async function disbandGuild(){const client=requireClient();const {data,error}=await client.rpc('disband_guild_v1');if(error)throw error;return data as 'disbanded';}
 export async function reportSocialPlayer(accountId:string,reason:SocialReportReason,messageId?:string){const client=requireClient();const {data,error}=await client.rpc('report_social_player_v1',{p_target_account_id:accountId,p_reason:reason,p_message_id:messageId??null});if(error)throw error;return data as 'submitted'|'already_reported';}
 
+
+export async function updateOnlinePlayerNameStyle(style:PlayerNameStylePreference){const client=requireClient();const {data,error}=await client.rpc('update_player_name_style_v1',{p_mode:style.mode,p_solid_color:style.solidColor??null,p_gradient_colors:style.gradientColors??[],p_animation:style.animation??'none'});if(error)throw error;return data as PlayerNameStylePreference;}

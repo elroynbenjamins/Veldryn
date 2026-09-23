@@ -96,6 +96,12 @@ export function workingTowardItemSourceEntries(state:GameState,itemId:string):Wo
   const zone=WORLD_ZONES.find(row=>row.id===gather.zoneId),yieldText=gather.min===gather.max?`${gather.min}/action`:`${gather.min}–${gather.max}/action`,destination:WorkingTowardDestination={kind:'skills',skillId:gather.skillId as SkillId,mode:'gathering',actionId:gather.id,regionId:gather.zoneId,button:`Gather ${gather.name}`,detail:`${gather.name} in ${zone?.name??gather.zoneId} · ${yieldText}.`};
   candidates.push({type:'gathering',typeLabel:'Gathering',title:gather.name,destination,availability:workingTowardDestinationAvailability(state,destination),typePriority:0,progressionLevel:gather.unlockLevel});
  }
+ if(itemId==='WILD_ESSENCE'){
+  for(const gather of HERB_NODES){
+   const zone=WORLD_ZONES.find(row=>row.id===gather.zoneId),destination:WorkingTowardDestination={kind:'skills',skillId:'herbalism',mode:'gathering',actionId:gather.id,regionId:gather.zoneId,button:`Harvest ${gather.name}`,detail:`Wild Essence is a rare secondary Herbalism find at ${gather.name} in ${zone?.name??gather.zoneId}. Careful Harvest improves the chance.`};
+   candidates.push({type:'gathering',typeLabel:'Gathering',title:gather.name+' · Wild Essence',destination,availability:workingTowardDestinationAvailability(state,destination),typePriority:0,progressionLevel:gather.unlockLevel});
+  }
+ }
  for(const recipe of RECIPES.filter(row=>row.output.itemId===itemId)){
   const destination:WorkingTowardDestination={kind:'skills',skillId:recipe.skillId as SkillId,mode:'crafting',recipeId:recipe.id,button:`Craft ${recipe.name}`,detail:`${recipe.name} · makes ${recipe.output.quantity} per craft · ${skillLabel(recipe.skillId)} Lv ${recipe.level}.`};
   candidates.push({type:'crafting',typeLabel:'Crafting',title:recipe.name,destination,availability:workingTowardDestinationAvailability(state,destination),typePriority:1,progressionLevel:recipe.level});
@@ -180,6 +186,6 @@ export function workingTowardReadyCount(state:GameState){
 }
 
 export function workingTowardTrackableItems(){
- const sourceIds=new Set<string>([...gatherDefs.map(row=>row.itemId),...RECIPES.map(row=>row.output.itemId),...MONSTERS.flatMap(row=>row.drops.map(drop=>drop.itemId)),...DUNGEON_MATERIAL_SOURCES.map(row=>row.itemId)]);
+ const sourceIds=new Set<string>([...gatherDefs.map(row=>row.itemId),'WILD_ESSENCE',...RECIPES.map(row=>row.output.itemId),...MONSTERS.flatMap(row=>row.drops.map(drop=>drop.itemId)),...DUNGEON_MATERIAL_SOURCES.map(row=>row.itemId)]);
  return ITEMS.filter(item=>item.type==='material'&&sourceIds.has(item.id)).sort((a,b)=>a.name.localeCompare(b.name));
 }

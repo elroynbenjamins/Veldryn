@@ -13,6 +13,8 @@ const app=read('App.tsx');
 
 ok(recipes.includes('V33_EQUIPMENT_RECIPES')&&recipes.includes("CRAFT_V33_"),'V33 equipment needs a dedicated complete recipe adapter');
 ok(recipes.includes('slotMultiplier')&&recipes.includes('timerRange'),'V33 recipe costs/timers must respect slot and tier pacing');
+ok(recipes.includes('TIER_CHARACTER_LEVEL_FLOOR')&&recipes.includes('TIER_SMITHING_LEVEL_FLOOR'),'V33 recipes must have hard tier-level character and Smithing floors in addition to catalog requirements');
+ok(recipes.includes("T9:66")&&recipes.includes("T9:63"),'T9 must remain late-character / late-Smithing progression even if imported catalog data regresses');
 ok(recipes.includes("case 'T5'")&&recipes.includes("case 'T8'"),'Regional material plans must differ across later tiers');
 ok(skills.includes('...(V33_EQUIPMENT_RECIPES as Recipe[])'),'V33 recipes must be part of the authoritative recipe catalog');
 ok(skills.includes("!/^T[1-9]_/.test(item.equipmentSetId)"),'Legacy generated recipes must not duplicate V33 pieces');
@@ -27,6 +29,7 @@ ok(inspect.includes('CRAFTING PATH'),'Quick Inspect must expose the equipment cr
 ok(inspect.includes("ingredient.missing+' missing"),'Quick Inspect must show exact missing material quantities');
 ok(inspect.includes('onNavigate(ingredient.source)'),'Quick Inspect material blockers must be actionable');
 ok(recipeCard.includes('MISSING SOURCES'),'Expanded recipe cards must surface missing material and prerequisite sources');
+ok(recipeCard.includes('REQUIREMENTS')&&recipeCard.includes('Character Lv {recipe.characterLevel??1}')&&recipeCard.includes('Lv {recipe.level}'),'Timed equipment recipe details must show both character and profession level gates together');
 ok(!recipeCard.includes('craft time'),'Recipe cards must not imply a live timer before the timed crafting queue runtime exists');
 ok(recipeCard.includes('onNavigate(row.destination)'),'Recipe source rows must navigate through the generalized Working Toward destination');
 ok(skillsScreen.includes('onNavigateCraftingSource'),'Skills must accept source navigation');

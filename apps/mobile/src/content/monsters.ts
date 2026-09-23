@@ -1,4 +1,5 @@
 import {HOLY_WATER_ID,HOLY_WATER_SOURCES} from './faith';
+import {mobileRawGemItemIdV1} from './gems-v1';
 export interface MonsterDef {id:string;name:string;level:number;hp:number;attack:number;defense:number;xp:number;gold:number;secondsPerKill:number;unlockLevel:number;zone:string;boss?:boolean;drops:{itemId:string;chance:number;min:number;max:number}[];}
 
 const MONSTERS_RAW:MonsterDef[]=[
@@ -25,24 +26,39 @@ const MONSTERS_RAW:MonsterDef[]=[
 {id:'FALLEN_SENTINEL',name:'Fallen Sentinel',level:24,hp:475,attack:42,defense:25,xp:282,gold:17,secondsPerKill:28,unlockLevel:24,zone:"King's Road",drops:[{itemId:'OATHGLASS_SHARD',chance:.28,min:1,max:1},{itemId:'ECHO_TOUCHED_PELT',chance:.12,min:1,max:1},{itemId:'TORN_OATHCLOTH',chance:.32,min:1,max:2},{itemId:'LANTERNSTEEL_SHARD',chance:.18,min:1,max:1},{itemId:'FALLEN_RIVET',chance:.28,min:1,max:2},{itemId:'RUNEBOUND_CORE',chance:.12,min:1,max:1}]},
 {id:'OATHGLASS_REVENANT',name:'Oathglass Revenant',level:25,hp:540,attack:45,defense:28,xp:315,gold:18,secondsPerKill:30,unlockLevel:25,zone:"King's Road",drops:[{itemId:'OATHGLASS_SHARD',chance:.34,min:1,max:2},{itemId:'OATHGLASS_FRAGMENT',chance:.20,min:1,max:1},{itemId:'ECHO_QUARTZ',chance:.15,min:1,max:1},{itemId:'ECHO_TOUCHED_PELT',chance:.18,min:1,max:1},{itemId:'TORN_OATHCLOTH',chance:.35,min:1,max:2}]},
 {id:'SUNSCAR_SCORPION',name:'Sunscar Scorpion',level:28,hp:610,attack:52,defense:31,xp:350,gold:21,secondsPerKill:31,unlockLevel:26,zone:'Sunscar',drops:[{itemId:'SUNSTONE_ORE',chance:.42,min:1,max:2},{itemId:'AMBERGLASS',chance:.08,min:1,max:1}]},
-{id:'DUNE_ORACLE',name:'Dune Oracle',level:33,hp:760,attack:61,defense:36,xp:438,gold:27,secondsPerKill:35,unlockLevel:31,zone:'Sunscar',drops:[{itemId:'AMBERGLASS',chance:.36,min:1,max:2},{itemId:'ASTRAL_SCRIPT',chance:.08,min:1,max:1},{itemId:'SWIFT_SIGIL',chance:.003,min:1,max:1}]},
+{id:'DUNE_ORACLE',name:'Dune Oracle',level:33,hp:760,attack:61,defense:36,xp:438,gold:27,secondsPerKill:35,unlockLevel:31,zone:'Sunscar',drops:[{itemId:'AMBERGLASS',chance:.36,min:1,max:2},{itemId:'ASTRAL_SCRIPT',chance:.08,min:1,max:1}]},
 {id:'GLASSBOUND_SENTINEL',name:'Glassbound Sentinel',level:40,hp:980,attack:74,defense:45,xp:560,gold:35,secondsPerKill:40,unlockLevel:38,zone:'Sunscar',drops:[{itemId:'SUNSTONE_ORE',chance:.50,min:1,max:2},{itemId:'AMBERGLASS',chance:.28,min:1,max:1},{itemId:'ASTRAL_SCRIPT',chance:.12,min:1,max:1}]},
 {id:'FROSTWOLF',name:'Frostwolf',level:48,hp:1220,attack:88,defense:55,xp:710,gold:43,secondsPerKill:44,unlockLevel:46,zone:'Frostmarch',drops:[{itemId:'FROSTIRON',chance:.42,min:1,max:2},{itemId:'RIMEGLASS',chance:.08,min:1,max:1}]},
 {id:'BELLWRAITH',name:'Bellwraith',level:56,hp:1580,attack:106,defense:68,xp:920,gold:55,secondsPerKill:50,unlockLevel:53,zone:'Frostmarch',drops:[{itemId:'RIMEGLASS',chance:.36,min:1,max:2},{itemId:'CHOIR_BLOOM',chance:.10,min:1,max:1}]},
-{id:'CHOIR_HUNTER',name:'Choir Hunter',level:66,hp:2050,attack:132,defense:82,xp:1180,gold:70,secondsPerKill:58,unlockLevel:63,zone:'Frostmarch',drops:[{itemId:'FROSTIRON',chance:.50,min:1,max:2},{itemId:'RIMEGLASS',chance:.28,min:1,max:1},{itemId:'CHOIR_BLOOM',chance:.12,min:1,max:1},{itemId:'BULWARK_SIGIL',chance:.003,min:1,max:1}]},
+{id:'CHOIR_HUNTER',name:'Choir Hunter',level:66,hp:2050,attack:132,defense:82,xp:1180,gold:70,secondsPerKill:58,unlockLevel:63,zone:'Frostmarch',drops:[{itemId:'FROSTIRON',chance:.50,min:1,max:2},{itemId:'RIMEGLASS',chance:.28,min:1,max:1},{itemId:'CHOIR_BLOOM',chance:.12,min:1,max:1}]},
 {id:'BLACKGLASS_MIRELING',name:'Blackglass Mireling',level:72,hp:2480,attack:154,defense:96,xp:1450,gold:86,secondsPerKill:63,unlockLevel:71,zone:'Ashlands',drops:[{itemId:'BANNER_ASH',chance:.42,min:1,max:2},{itemId:'BLACKGLASS_CORE',chance:.08,min:1,max:1},{itemId:'RIMEGLASS',chance:.12,min:1,max:1}]},
-{id:'CINDER_TITAN',name:'Cinder Titan',level:80,hp:3200,attack:185,defense:118,xp:1840,gold:108,secondsPerKill:72,unlockLevel:78,zone:'Ashlands',drops:[{itemId:'SUNSTONE_ORE',chance:.34,min:1,max:2},{itemId:'CINDER_HEART',chance:.08,min:1,max:1},{itemId:'ASTRAL_SCRIPT',chance:.20,min:1,max:1},{itemId:'CHOIR_BLOOM',chance:.16,min:1,max:1},{itemId:'BOSSBANE_SIGIL',chance:.0025,min:1,max:1}]},
-{id:'ASHEN_REVENANT',name:'Ashen Revenant',level:88,hp:4100,attack:224,defense:142,xp:2320,gold:136,secondsPerKill:82,unlockLevel:86,zone:'Ashlands',drops:[{itemId:'BANNER_ASH',chance:.55,min:1,max:2},{itemId:'CINDER_HEART',chance:.10,min:1,max:1},{itemId:'REGENT_SIGIL',chance:.04,min:1,max:1},{itemId:'ASTRAL_SCRIPT',chance:.28,min:1,max:1},{itemId:'RIMEGLASS',chance:.22,min:1,max:1},{itemId:'RENEWAL_SIGIL',chance:.0025,min:1,max:1}]},
+{id:'CINDER_TITAN',name:'Cinder Titan',level:80,hp:3200,attack:185,defense:118,xp:1840,gold:108,secondsPerKill:72,unlockLevel:78,zone:'Ashlands',drops:[{itemId:'SUNSTONE_ORE',chance:.34,min:1,max:2},{itemId:'CINDER_HEART',chance:.08,min:1,max:1},{itemId:'ASTRAL_SCRIPT',chance:.20,min:1,max:1},{itemId:'CHOIR_BLOOM',chance:.16,min:1,max:1}]},
+{id:'ASHEN_REVENANT',name:'Ashen Revenant',level:88,hp:4100,attack:224,defense:142,xp:2320,gold:136,secondsPerKill:82,unlockLevel:86,zone:'Ashlands',drops:[{itemId:'BANNER_ASH',chance:.55,min:1,max:2},{itemId:'CINDER_HEART',chance:.10,min:1,max:1},{itemId:'REGENT_SIGIL',chance:.04,min:1,max:1},{itemId:'ASTRAL_SCRIPT',chance:.28,min:1,max:1},{itemId:'RIMEGLASS',chance:.22,min:1,max:1}]},
 {id:'FALLEN_KNIGHT',name:'Fallen Knight',level:25,hp:180000,attack:68,defense:36,xp:3000,gold:180,secondsPerKill:75,unlockLevel:25,zone:"King's Road",boss:true,drops:[{itemId:'FALLEN_KNIGHT_SIGIL',chance:1,min:1,max:1},{itemId:'ECHO_TOUCHED_PELT',chance:1,min:2,max:4},{itemId:'TORN_OATHCLOTH',chance:1,min:4,max:6}]},
 ];
 const MONSTER_TIME_SCALE=1.95;
 const MONSTER_STAT_SCALE=1.07;
 
+const ASTERFALL_RAW_GEM_DROPS:Readonly<Record<string,{familyId:string;chance:number}>>={
+  ROADSIDE_BOAR:{familyId:'stat_vitality',chance:.005},
+  IRONWOOD_WOLF:{familyId:'stat_keen',chance:.005},
+  VENOM_WEAVER:{familyId:'stat_precision',chance:.005},
+  ECHO_BAT:{familyId:'stat_swift',chance:.006},
+  RUNEBOUND_MINER:{familyId:'stat_iron',chance:.006},
+  GLOAM_MITE:{familyId:'stat_might',chance:.006},
+  LANTERN_WRETCH:{familyId:'effect_opening_strike',chance:.004},
+  BANNER_SHADE:{familyId:'effect_opportunist',chance:.004},
+  FALLEN_SENTINEL:{familyId:'effect_bulwark',chance:.004},
+  OATHGLASS_REVENANT:{familyId:'effect_flow',chance:.004},
+  FALLEN_KNIGHT:{familyId:'effect_unyielding',chance:.08},
+};
 const enhancementDrops=(monster:MonsterDef):MonsterDef['drops']=>{
-  if(monster.boss)return [{itemId:'TEMPERING_DUST',chance:1,min:8,max:14},{itemId:'TEMPERING_CORE',chance:1,min:1,max:2},{itemId:'EMBERHEART_GEM',chance:.001,min:1,max:1},{itemId:'WARDHEART_GEM',chance:.001,min:1,max:1},{itemId:'VITALITY_HEART_GEM',chance:.001,min:1,max:1}];
-  if(monster.level>=20)return [{itemId:'TEMPERING_DUST',chance:.18,min:1,max:2},{itemId:'TEMPERING_CORE',chance:.025,min:1,max:1},{itemId:monster.attack>=monster.defense*1.7?'EMBER_SHARD':monster.defense>=monster.attack*.65?'WARD_SHARD':'VITALITY_SHARD',chance:.004,min:1,max:1}];
-  if(monster.level>=10)return [{itemId:'TEMPERING_DUST',chance:.10,min:1,max:1},{itemId:'TEMPERING_CORE',chance:.01,min:1,max:1}];
-  return monster.level>=4?[{itemId:'TEMPERING_DUST',chance:.05,min:1,max:1}]:[];
+  const tempering=monster.boss?[{itemId:'TEMPERING_DUST',chance:1,min:8,max:14},{itemId:'TEMPERING_CORE',chance:1,min:1,max:2}]
+    :monster.level>=20?[{itemId:'TEMPERING_DUST',chance:.18,min:1,max:2},{itemId:'TEMPERING_CORE',chance:.025,min:1,max:1}]
+    :monster.level>=10?[{itemId:'TEMPERING_DUST',chance:.10,min:1,max:1},{itemId:'TEMPERING_CORE',chance:.01,min:1,max:1}]
+    :monster.level>=4?[{itemId:'TEMPERING_DUST',chance:.05,min:1,max:1}]:[];
+  const raw=ASTERFALL_RAW_GEM_DROPS[monster.id];
+  return raw?[...tempering,{itemId:mobileRawGemItemIdV1(raw.familyId,1),chance:raw.chance,min:1,max:1}]:tempering;
 };
 export const MONSTERS:MonsterDef[]=MONSTERS_RAW.map(monster=>{
   const holyWater=HOLY_WATER_SOURCES.find(source=>source.monsterId===monster.id);

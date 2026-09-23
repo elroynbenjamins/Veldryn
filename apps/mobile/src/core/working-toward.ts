@@ -2,7 +2,7 @@ import type {GameState,SkillId} from './types';
 import type {GoalContext,GoalSource,ProgressionGoal} from './progression-goals-v40';
 import {professionMasteryRank} from './profession-mastery-v40';
 import {GATHERING,RECIPES} from '../content/skills';
-import {HERB_NODES} from '../content/herbalism';
+import {HERB_NODES,HERBALISM_ESSENCE_BY_ZONE} from '../content/herbalism';
 import {MONSTERS} from '../content/monsters';
 import {WORLD_ZONES} from '../content/world-map';
 import {ITEMS} from '../content/items';
@@ -95,6 +95,13 @@ export function workingTowardItemSourceEntries(state:GameState,itemId:string):Wo
  for(const gather of gatherDefs.filter(row=>row.itemId===itemId)){
   const zone=WORLD_ZONES.find(row=>row.id===gather.zoneId),yieldText=gather.min===gather.max?`${gather.min}/action`:`${gather.min}–${gather.max}/action`,destination:WorkingTowardDestination={kind:'skills',skillId:gather.skillId as SkillId,mode:'gathering',actionId:gather.id,regionId:gather.zoneId,button:`Gather ${gather.name}`,detail:`${gather.name} in ${zone?.name??gather.zoneId} · ${yieldText}.`};
   candidates.push({type:'gathering',typeLabel:'Gathering',title:gather.name,destination,availability:workingTowardDestinationAvailability(state,destination),typePriority:0,progressionLevel:gather.unlockLevel});
+ }
+ for(const [zoneId,essence] of Object.entries(HERBALISM_ESSENCE_BY_ZONE).filter(([,source])=>source.itemId===itemId)){
+  const zone=WORLD_ZONES.find(row=>row.id===zoneId);
+  for(const herb of HERB_NODES.filter(row=>row.zoneId===zoneId)){
+   const destination:WorkingTowardDestination={kind:'skills',skillId:'herbalism',mode:'gathering',actionId:herb.id,regionId:zoneId,button:`Harvest ${herb.name}`,detail:`${itemId.replaceAll('_',' ').replace(/\b\w/g,c=>c.toUpperCase())} is a rare secondary find from Herbalism in ${zone?.name??zoneId}. Careful Harvest improves the chance.`};
+   candidates.push({type:'gathering',typeLabel:'Rare Herbalism',title:herb.name,destination,availability:workingTowardDestinationAvailability(state,destination),typePriority:0,progressionLevel:herb.unlockLevel});
+  }
  }
  for(const recipe of RECIPES.filter(row=>row.output.itemId===itemId)){
   const destination:WorkingTowardDestination={kind:'skills',skillId:recipe.skillId as SkillId,mode:'crafting',recipeId:recipe.id,button:`Craft ${recipe.name}`,detail:`${recipe.name} · makes ${recipe.output.quantity} per craft · ${skillLabel(recipe.skillId)} Lv ${recipe.level}.`};

@@ -17,6 +17,8 @@ type RtdnPayload={
   testNotification?:{version?:string};
   subscriptionNotification?:{notificationType?:number;purchaseToken?:string};
   oneTimeProductNotification?:{notificationType?:number;purchaseToken?:string;sku?:string};
+  voidedPurchaseNotification?:{purchaseToken?:string;orderId?:string;productType?:number;refundType?:number};
+  pendingRefundReviewNotification?:unknown;
 };
 
 function firstJsonSecret(name:string){
@@ -56,6 +58,17 @@ async function record(admin:SupabaseClient,accountId:string,purchase:VerifiedGoo
   });
   if(error)throw error;
 }
+async function rtdnProcessed(admin:SupabaseClient,messageId:string){
+  if(!messageId)return false;
+  const {data,error}=await admin.rpc('google_play_rtdn_processed_v1',{p_message_id:messageId});
+  if(error)throw error;
+  return data===true;
+}
+async function markRtdnProcessed(admin:SupabaseClient,messageId:string){
+  if(!messageId)return;
+  const {error}=await admin.rpc('google_play_mark_rtdn_processed_v1',{p_message_id:messageId});
+  if(error)throw error;
+}
 async function markKnownTokenInactive(admin:SupabaseClient,accountId:string,purchaseToken:string){
   const {data,error}=await admin.rpc('google_play_tokens_for_account_v1',{p_account_id:accountId});
   if(error)throw error;
@@ -73,11 +86,43 @@ Deno.serve(async(req)=>{
   if(req.method!=='POST')return new Response('method not allowed',{status:405});
   try{
     await verifyGooglePubSubOidc(req);
-    const envelope=await req.json() as {message?:{data?:string}};
+    const envelope=await req.json() as {message?:{data?:string;messageId?:string}};
     if(!envelope.message?.data)return new Response('missing Pub/Sub data',{status:400});
+    const messageId=envelope.message.messageId?.trim()??'';
     const payload=decodeMessage(envelope.message.data);
     if(payload.packageName!==GOOGLE_PLAY_PACKAGE_NAME)return new Response('wrong package',{status:400});
-    if(payload.testNotification)return new Response(null,{status:204});
+
+    const admin=adminClient();
+    if(messageId&&await rtdnProcessed(admin,messageId))return new Response(null,{status:204});
+    if(payload.testNotification||payload.pendingRefundReviewNotification){
+      await markRtdnProcessed(admin,messageId);
+      return new Response(null,{status:204});
+    }
+
+    const voided=payload.voidedPurchaseNotification;
+    if(voided?.purchaseToken){
+      const token=voided.purchaseToken.trim();
+      const owner=await ownerByToken(admin,token);
+      if(owner){
+        if(voided.productType===1){
+          try{
+            let verified=await verifyGooglePlayPurchase(token,'subs');
+            await record(admin,owner,verified,'rtdn_voided');
+            if(verified.entitlementActive&&verified.acknowledgementState!=='ACKNOWLEDGEMENT_STATE_ACKNOWLEDGED'){
+              verified=await acknowledgeGooglePlayPurchase(verified);
+              await record(admin,owner,verified,'rtdn_voided');
+            }
+          }catch(error){
+            if(error instanceof GooglePlayApiError&&(error.status===404||error.status===410))await markKnownTokenInactive(admin,owner,token);
+            else throw error;
+          }
+        }else{
+          await markKnownTokenInactive(admin,owner,token);
+        }
+      }
+      await markRtdnProcessed(admin,messageId);
+      return new Response(null,{status:204});
+    }
 
     const sub=payload.subscriptionNotification;
     const one=payload.oneTimeProductNotification;
@@ -86,7 +131,6 @@ Deno.serve(async(req)=>{
     const productType:GooglePlayProductType=sub?'subs':'in-app';
     const expectedProductId=one?.sku&&isGooglePlayProductId(one.sku)?one.sku:undefined;
 
-    const admin=adminClient();
     let accountId=await ownerByToken(admin,purchaseToken);
     let verified:VerifiedGooglePlayPurchase;
     try{
@@ -94,6 +138,7 @@ Deno.serve(async(req)=>{
     }catch(error){
       if(accountId&&error instanceof GooglePlayApiError&&(error.status===404||error.status===410)){
         await markKnownTokenInactive(admin,accountId,purchaseToken);
+        await markRtdnProcessed(admin,messageId);
         return new Response(null,{status:204});
       }
       throw error;
@@ -108,9 +153,12 @@ Deno.serve(async(req)=>{
       verified=await acknowledgeGooglePlayPurchase(verified);
       await record(admin,accountId,verified,'rtdn');
     }
+    await markRtdnProcessed(admin,messageId);
     return new Response(null,{status:204});
   }catch(error){
-    const status=error instanceof GooglePlayApiError&&error.status>=500?503:401;
-    return new Response(error instanceof Error?error.message:'RTDN_FAILED',{status});
+    const message=error instanceof Error?error.message:'RTDN_FAILED';
+    const authError=message.includes('Pub/Sub OIDC');
+    const status=authError?401:error instanceof GooglePlayApiError&&error.status>=500?503:500;
+    return new Response(message,{status});
   }
 });

@@ -17,12 +17,16 @@ const withMaterials=(stacks:Array<{itemId:string;quantity:number}>):GameState=>{
 const skill=(state:GameState,id:'tailoring'|'enchanting')=>state.skills.find(row=>row.skillId===id)!;
 
 const tailoring=RECIPES.filter(row=>row.skillId==='tailoring');
+const tailoringTraining=tailoring.filter(row=>row.repeatableTraining);
+const tailoringEquipment=tailoring.filter(row=>!!row.v33SetId);
 const enchanting=RECIPES.filter(row=>row.skillId==='enchanting');
-equal(tailoring.length,4,'Tailoring has an authored Asterfall training ladder');
-equal(enchanting.length,3,'Enchanting has an authored Asterfall training ladder');
-ok(tailoring.every(row=>row.repeatableTraining),'Tailoring recipes remain repeatable training choices');
-ok(enchanting.every(row=>row.repeatableTraining),'Enchanting recipes remain repeatable training choices');
-for(const recipe of [...tailoring,...enchanting])itemDef(recipe.output.itemId);
+const enchantingTraining=enchanting.filter(row=>row.repeatableTraining);
+equal(tailoringTraining.length,4,'Tailoring keeps its authored Asterfall training ladder');
+ok(tailoringEquipment.length>0,'Tailoring owns leather/fabric V33 class equipment recipes');
+equal(enchantingTraining.length,3,'Enchanting keeps its authored Asterfall training ladder');
+ok(tailoringTraining.every(row=>row.repeatableTraining),'Tailoring training recipes remain repeatable choices');
+ok(enchantingTraining.every(row=>row.repeatableTraining),'Enchanting training recipes remain repeatable choices');
+for(const recipe of [...tailoringTraining,...tailoringEquipment.slice(0,10),...enchantingTraining])itemDef(recipe.output.itemId);
 
 let tail=withMaterials([{itemId:'MOSS_FIBER',quantity:8}]);
 ok(recipeAvailability(tail,'TAILOR_MOSSWRAP_GLOVES').ready,'starter Tailoring recipe is craftable with its listed material');

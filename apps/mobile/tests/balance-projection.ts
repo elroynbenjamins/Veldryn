@@ -87,7 +87,7 @@ ok(fittingPlan.complete&&fittingPlan.craftSteps===2&&fittingPlan.depth===2&&(fit
 ok(fittingChain?.includes('8× Aster-Iron Ore')&&fittingChain.includes('2× Ironwood Log'),'Recursive chain summary must expose the actual remaining raw requirements');
 ok(fittingPlan.totalGold===100&&fittingSummary.estimate?.includes('total chain'),'Recursive plan must include both processing craft costs and only publish a total ETA when the full chain is modeled');
 const fittingSteps=materialPreparationSteps(fittingPlan);
-ok(fittingSteps.map(step=>step.label).join(' > ')==='Gather 8× Aster-Iron Ore > Process 2× Aster-Iron Ingot > Gather 2× Ironwood Log > Craft 1× Reinforced Fitting','Prepare materials must order dependency actions from raw acquisition through intermediate processing to final craft');
+ok(fittingSteps.length===4&&fittingSteps[0].itemId==='ASTER_IRON_ORE'&&fittingSteps[1].kind==='craft'&&fittingSteps[1].itemId==='ASTER_IRON_INGOT'&&fittingSteps[2].itemId==='IRONWOOD_LOG'&&fittingSteps[3].kind==='craft'&&fittingSteps[3].itemId==='REINFORCED_FITTING','Prepare materials must order dependency actions from raw acquisition through intermediate processing to final craft without hard-coding which ranked source method is currently best');
 ok(fittingSteps.every(step=>step.destination&&step.status==='action'),'Fresh modeled preparation steps must deep-link to their exact actionable source');
 
 const stockedChain={...chainState,inventory:{...chainState.inventory,stacks:[...chainState.inventory.stacks,{itemId:'ASTER_IRON_INGOT',quantity:2},{itemId:'IRONWOOD_LOG',quantity:2}]}};

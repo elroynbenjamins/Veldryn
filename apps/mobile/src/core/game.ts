@@ -47,6 +47,7 @@ import {applyDailySupplyCraft,commitDailySupplyTimedBoost,dailySupplyActivityMod
 import {professionMasteryMultipliers} from './profession-mastery-v40';
 import {huntingXpForKills} from './hunting-progression';
 import {regionalSecondaryExchange} from './regional-enemy-stats';
+import {simulateFallenKnightStoryBattle,type FallenKnightBattleResult,type FallenKnightPlayerSnapshot} from './story-boss';
 export function beginAlchemyBatch(state:GameState,recipeId:string,batches:number,nowMs:number){return startAlchemyBatch(finishClassDrills(state,nowMs),recipeId,batches,nowMs);}
 export function beginProcessingBatch(state:GameState,recipeId:string,batches:number,nowMs:number){return startProcessingBatch(finishClassDrills(state,nowMs),recipeId,batches,nowMs);}
 
@@ -733,6 +734,27 @@ export function regionalReadiness(state:GameState){
   mastery=Math.min(10,mastery);const total=level+quest+equipment+food+mastery;
   return {total,level,quest,equipment,food,mastery,recommended:total>=80};
 }
+function fallenKnightPlayerSnapshot(state:GameState):FallenKnightPlayerSnapshot{
+  const character=state.character;if(!character)throw new Error('No character');
+  const stats=effectiveStats(state),multipliers=characterPermanentMultipliers(state),companion=companionCombatContribution(state),style=classCombatStyle(character.classId);
+  const effectGems=equippedEffectGemBonuses(state),baseCritChance=CLASSES.find(def=>def.id===character.classId)?.role==='Damage'?.10:.05,setCombat=equipmentSetCombatModifiers(state,baseCritChance,.84);
+  const foodId=character.equippedFoodId,food=foodId?itemDef(foodId):undefined,foodQuantity=stackQty(state.inventory.stacks,foodId);
+  const prep=character.preparation?preparationEffects(character.preparation):undefined;
+  return {
+    name:character.name,classId:character.classId,maxHp:stats.hp,currentHp:Math.max(1,Math.min(stats.hp,character.currentHp||stats.hp)),
+    attack:stats.attack,defense:stats.defense,power:stats.power,accuracy:stats.accuracy,evasion:stats.evasion,critChance:stats.critChance,critMultiplier:stats.critMultiplier,haste:stats.haste,
+    damageMultiplier:Math.max(.7,(1+effectGems.boss_power)*setCombat.penetrationMultiplier),
+    actionSpeedMultiplier:Math.max(.65,style.speedMultiplier*multipliers.combatSpeedMultiplier*companion.outputMultiplier*(1+effectGems.combat_speed)*setCombat.speedMultiplier),
+    incomingDamageMultiplier:Math.max(.45,style.damageTakenMultiplier*multipliers.incomingDamageMultiplier*companion.incomingDamageMultiplier*(1-effectGems.damage_reduction)*Math.max(.5,1-setCombat.stats.ward)*(prep?.damage??1)),
+    foodHeal:food?.heal??0,foodQuantity,autoEatThresholdPct:state.settings.autoEatThresholdPct,
+  };
+}
+
+export function previewFallenKnightBattle(state:GameState,nowMs=Date.now()):FallenKnightBattleResult{
+  if(!state.character)throw new Error('No character');
+  return simulateFallenKnightStoryBattle(fallenKnightPlayerSnapshot(state),`${state.character.id}:FALLEN_KNIGHT_STORY:${nowMs}`);
+}
+
 export function fallenKnightWinChance(state:GameState){const r=regionalReadiness(state).total;if(r<50)return .10;if(r<60)return .18;if(r<70)return .34;if(r<80)return .48;if(r<90)return .64;if(r<100)return .82;return .90;}
 /** One optional rematch attempt per UTC day, without repeating story loot. */
 export function challengeFallenKnightRematch(state:GameState,nowMs:number):{state:GameState;won:boolean;message:string}{
@@ -756,17 +778,24 @@ export function challengeFallenKnightRematch(state:GameState,nowMs:number):{stat
   const status=companionRematchBondstoneStatus(next,nowMs),stoneText=stone.reward?'+1 Bondstone.':`Weekly Bondstone cap reached (${status.used}/${status.cap}).`;
   return {state:next,won:true,message:`Fallen Knight rematch won: +40 Companion Essence, ${stoneText} Companion boss progression recorded.`};
 }
-export function challengeFallenKnight(state:GameState,nowMs=Date.now()):{state:GameState;won:boolean;message:string}{
+export function challengeFallenKnight(state:GameState,nowMs=Date.now()):{state:GameState;won:boolean;message:string;battle?:FallenKnightBattleResult}{
   if(!state.character)throw new Error('No character');
   if(state.character.level<25)return {state,won:false,message:'Reach level 25 first.'};
   if(state.defeatedBossIds.includes('FALLEN_KNIGHT'))return {state,won:true,message:'The Fallen Knight is already defeated.'};
   const q14=state.quests.find(q=>q.questId==='QST_014');if(q14 && q14.status==='locked')return {state,won:false,message:'Advance the Asterfall questline before challenging the Fallen Knight.'};
-  const ready=regionalReadiness(state);const chance=fallenKnightWinChance(state);
-  const roll=random01(`${state.character.id}:FALLEN_KNIGHT:${nowMs}`,0);const won=roll<chance;
-  if(!won)return {state,won:false,message:`Fallen Knight repelled you. Readiness ${ready.total}/100 (gear ${ready.equipment}/35, food ${ready.food}/10, mastery ${ready.mastery}/10). Recommended: 80+.`};
-  const xp=state.character.xp+3000;let next={...state,defeatedBossIds:[...state.defeatedBossIds,'FALLEN_KNIGHT'],character:{...state.character,gold:state.character.gold+900,xp,level:characterLevelFromXp(xp),currentHp:effectiveStats(state).hp},inventory:{...state.inventory,stacks:stackItems(state.inventory.stacks,[{itemId:'FALLEN_KNIGHT_SIGIL',quantity:1}])},activity:null} as GameState;
+  const battle=previewFallenKnightBattle(state,nowMs),foodId=state.character.equippedFoodId;
+  let inventory=state.inventory.stacks;
+  if(battle.foodConsumed&&foodId)inventory=consume(inventory,foodId,battle.foodConsumed);
+  const postFightCharacter={...state.character,currentHp:Math.max(1,Math.min(effectiveStats(state).hp,battle.finalPlayerHp||1))};
+  if(!battle.won){
+    const next={...state,inventory:{...state.inventory,stacks:inventory},character:postFightCharacter,activity:null} as GameState;
+    return {state:next,won:false,battle,message:`Fallen Knight repelled you after ${Math.max(1,Math.round(battle.durationMs/1000))}s. ${battle.foodConsumed?battle.foodConsumed+' food used. ':''}Upgrade gear, improve class progression or bring stronger food before the next attempt.`};
+  }
+  const xp=state.character.xp+3000;
+  const rewardRouted=routeRewards({...state,inventory:{...state.inventory,stacks:inventory}} as GameState,[{itemId:'FALLEN_KNIGHT_SIGIL',quantity:1}],nowMs);
+  let next={...state,...rewardRouted,defeatedBossIds:[...state.defeatedBossIds,'FALLEN_KNIGHT'],character:{...postFightCharacter,gold:state.character.gold+900,xp,level:characterLevelFromXp(xp)},activity:null} as GameState;
   next.character=awardClassSkillXp(next.character!,3000*characterPermanentMultipliers(state).skillXpMultiplier).character;
   next=recordCompanionActivity(grantBondstones(grantCompanionEssence(refreshQuests(grantEventActivity(next,'boss',nowMs)),40),1),'boss','FALLEN_KNIGHT',1,nowMs);
   next=applyTrustedLongTermProgression(next,[{kind:'boss',contentId:'FALLEN_KNIGHT',units:1}],undefined,nowMs,{accountId:longTermAccountScope(next),eventId:`boss-story:${state.character.id}:FALLEN_KNIGHT`}).state;
-  return {state:next,won:true,message:`Fallen Knight defeated at readiness ${ready.total}/100. +40 Companion Essence, +1 Bondstone. The road toward Sunscar is open.`}
+  return {state:next,won:true,battle,message:`Fallen Knight defeated in ${Math.max(1,Math.round(battle.durationMs/1000))}s. +900 Gold, +3,000 XP, +40 Companion Essence, +1 Bondstone and the Fallen Knight Sigil.`};
 }

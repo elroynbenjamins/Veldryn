@@ -37,8 +37,8 @@ function monsterIdForOrder(order:WeeklyOrder){
 /** Exact player-facing destination for a Contract Board job. */
 export function weeklyOrderDestination(order:WeeklyOrder):WorkingTowardDestination{
  if(order.kind==='hunt'||order.kind==='threat'){
-  const monsterId=monsterIdForOrder(order)!,monster=MONSTERS.find(row=>row.id===monsterId),region=WORLD_ZONES.find(row=>row.id===order.regionId);
-  return {kind:'combat',monsterId,zoneName:monster?.zone??region?.name??order.source.label,regionId:order.regionId,button:order.kind==='threat'?'Open Challenge Hunt':`Hunt ${monster?.name??order.source.label}`,detail:order.kind==='threat'?`Use the exact ${order.challengeId??'required'} Challenge Hunt. Normal hunts do not count.`:`Open ${monster?.name??order.source.label} in ${monster?.zone??region?.name??'its region'}.`};
+  const monsterId=monsterIdForOrder(order)!,monster=MONSTERS.find(row=>row.id===monsterId),region=WORLD_ZONES.find(row=>row.id===order.regionId),boss=order.kind==='hunt'&&!!monster?.boss;
+  return {kind:'combat',monsterId,zoneName:monster?.zone??region?.name??order.source.label,regionId:order.regionId,button:boss?'Open weekly boss':order.kind==='threat'?'Open Challenge Hunt':`Hunt ${monster?.name??order.source.label}`,detail:boss?'Defeat the Fallen Knight in its single rewarded UTC-week rematch. Ordinary story completion and extra non-rewarded attempts do not count.':order.kind==='threat'?`Use the exact ${order.challengeId??'required'} Challenge Hunt. Normal hunts do not count.`:`Open ${monster?.name??order.source.label} in ${monster?.zone??region?.name??'its region'}.`};
  }
  if(order.kind==='profession'){
   const gather=[...GATHERING,...HERB_NODES].find(row=>row.id===order.targetId);
@@ -52,7 +52,7 @@ export function weeklyOrderDestination(order:WeeklyOrder):WorkingTowardDestinati
 
 /** Queueable portion of a Contract Board job. Recipes and broad regional jobs stay manual. */
 export function weeklyOrderQueueActivity(order:WeeklyOrder):QueuedActivity|undefined{
- if(order.kind==='hunt')return {kind:'combat',targetId:order.targetId};
+ if(order.kind==='hunt'){const monster=MONSTERS.find(row=>row.id===order.targetId);return monster?.boss?undefined:{kind:'combat',targetId:order.targetId};}
  if(order.kind==='threat'){
   const monsterId=monsterIdForOrder(order);
   return monsterId&&order.challengeId?{kind:'combat',targetId:monsterId,combatChallengeId:order.challengeId}:undefined;

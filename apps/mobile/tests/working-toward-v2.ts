@@ -31,11 +31,17 @@ ok(copperSources.some(source=>source.type==='gathering'&&source.typeLabel==='Gat
 ok(copperSources.some(source=>source.type==='monster_drop'&&source.typeLabel==='Monster Drop'),'Copper source presentation includes authored monster-drop alternatives');
 ok(copperSources.find(source=>source.type==='gathering')?.destination.detail.includes('/action'),'Gathering source detail exposes authored per-action yield');
 ok(copperSources.find(source=>source.type==='monster_drop')?.destination.detail.includes('% drop'),'Monster source detail exposes authored drop odds');
-const catalystSources=workingTowardItemSourceEntries(state,'REGIONAL_CATALYST');
-equal(catalystSources.length,6,'Regional Catalyst exposes all six authoritative live dungeon sources');
-ok(catalystSources.every(source=>source.type==='dungeon'&&source.typeLabel==='Dungeon'),'Dungeon material sources carry a distinct source type');
-ok(catalystSources.every(source=>source.availability.status==='locked'),'Fresh characters see level-gated dungeon material sources as locked rather than falsely ready');
-ok(catalystSources.every(source=>source.destination.detail.includes('% boss reward chance')),'Dungeon material source detail exposes the canonical boss reward chance');
+const catalystSources=workingTowardItemSourceEntries(state,'REGIONAL_CATALYST'),catalystDungeons=catalystSources.filter(source=>source.type==='dungeon'),catalystCrafting=catalystSources.filter(source=>source.type==='crafting');
+equal(catalystDungeons.length,6,'Regional Catalyst keeps all six authoritative live dungeon sources');
+equal(catalystCrafting.length,1,'Regional Catalyst also exposes its high-level Enchanting synthesis route');
+ok(catalystDungeons.every(source=>source.typeLabel==='Dungeon'),'Dungeon material sources carry a distinct source type');
+ok(catalystDungeons.every(source=>source.availability.status==='locked'),'Fresh characters see level-gated dungeon material sources as locked rather than falsely ready');
+ok(catalystDungeons.every(source=>source.destination.detail.includes('% boss reward chance')),'Dungeon material source detail exposes the canonical boss reward chance');
+ok(catalystCrafting[0]?.destination.detail.includes('Enchanting Lv 70'),'Catalyst synthesis source must expose its Enchanting requirement');
+
+const wildSources=workingTowardItemSourceEntries(state,'WILD_ESSENCE');
+ok(wildSources.some(source=>source.type==='gathering'&&source.destination.kind==='skills'&&source.destination.skillId==='herbalism'),'Wild Essence must route to its Herbalism secondary-find sources');
+ok(workingTowardTrackableItems().some(item=>item.id==='WILD_ESSENCE'),'Wild Essence must be trackable as an acquisition goal');
 
 const weeklyGoal:ProgressionGoal={id:'goal-weekly',characterId,kind:'weekly_order',title:'Weekly job',createdAtMs:0,pinnedAtMs:0,orderId:'example',targetProgress:10};
 equal(progressionGoalDestination(state,weeklyGoal).kind,'contracts','weekly goal routes to Contract Board');

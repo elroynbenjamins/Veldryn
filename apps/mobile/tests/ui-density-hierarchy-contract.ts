@@ -135,6 +135,8 @@ ok(recipeCard.includes('initialExpanded=false')&&recipeCard.includes('useState(i
 ok(recipeCard.includes('recipeSkillTrainingAction')&&recipeCard.includes('recipeCharacterTrainingAction'),'Recipe level blockers must expose skill and character training actions');
 ok(recipeCard.includes('RECIPE MASTERY')&&recipeCard.includes('professionMasteryMultipliers'),'Recipe cards must show live per-recipe mastery and effective values');
 ok(recipeCard.includes('TIMED PACE')&&recipeCard.includes('batches/hr')&&recipeCard.includes('outputPerHour')&&recipeCard.includes('XP/hr'),'Timed crafting must expose batch rate, output/hour, XP/hour and level ETA');
+ok(recipeCard.includes('Track preparation')&&recipeCard.includes('Tracked in Working Toward')&&recipeCard.includes('onTrackPreparation(recipe,multiplier,preparationRoute.steps.length)'),'Preparation routes must support one-tap persistent Working Toward tracking without duplicate pins');
+ok(craftingBrowser.includes('onTrackPreparation={onTrackPreparation}')&&skills.includes('trackPreparationGoal')&&skills.includes("type:'goals_set'"),'Crafting screens must persist preparation tracking through the canonical goals command');
 
 const skillNavigation=read('src/core/skill-progression-navigation.ts');
 ok(skillNavigation.includes('workingTowardItemSource'),'Skill progression navigation must reuse the canonical Working Toward item-source resolver');
@@ -156,6 +158,12 @@ ok(read('App.tsx').includes("destination.kind==='dungeon'){setGoalDungeonId(dest
 const planner=read('src/screens/ProgressionPlannerScreen.tsx');
 ok(planner.includes('MASTERY_GOAL_RANKS')&&planner.includes('nextMasteryGoalRank'),'Working Toward Profession Mastery goals must target authored bonus ranks');
 ok(planner.includes("R{rank}")&&planner.includes("rank===10?'+2% XP'"),'Mastery goal authoring must explain each bonus-rank target');
+const workingTowardSummary=read('src/components/WorkingTowardSummary.tsx');
+const homeSession=read('src/components/HomeSessionOverview.tsx');
+const dashboard=read('src/core/dashboard.ts');
+ok(workingTowardSummary.includes('recipePreparationTrackingView')&&workingTowardSummary.includes("'Next · '+nextLabel"),'Home Working Toward must resolve a tracked preparation goal to its live next step');
+ok(planner.includes('recipePreparationTrackingView')&&planner.includes("'Next · '+tracked.nextLabel"),'Working Toward management must show the same live preparation next step');
+ok(dashboard.includes('firstTrackedRecipePreparation')&&dashboard.includes('goalNext')&&homeSession.includes("'Tracked preparation · '+summary.goalNext"),'Compact Home session overview must surface the active tracked preparation step even when detailed goals are collapsed');
 
 const appMastery=read('App.tsx');
 ok(appMastery.includes('masteryRankProgressionMoments')&&appMastery.includes('<ActionFeedback message={masteryRankNoticeMessage(masteryNotices)}'),'Non-reward mastery rank-ups must use lightweight in-app feedback');

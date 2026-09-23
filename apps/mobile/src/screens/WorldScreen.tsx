@@ -4,7 +4,7 @@ import {ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
 import {WORLD_ZONES} from '../content/world-map';
 import {currentRegionId} from '../core/combat-region';
-import {nextRegionUnlock,orderedTravelRegions,regionActivitySummary} from '../core/world-navigation';
+import {nextRegionUnlock,orderedTravelRegions,regionActivitySummary,regionTravelAvailability} from '../core/world-navigation';
 import {environmentForZone} from '../core/world-weather';
 import {EnvironmentBanner} from '../components/EnvironmentBanner';
 import {Panel} from '../components/Panel';
@@ -94,16 +94,16 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop,onR
     <Text style={s.section}>TRAVEL ELSEWHERE</Text>
     <View style={s.unlockCard}><View style={s.unlockHead}><View style={s.flex}><Text style={s.unlockLabel}>{next?'NEXT REGION UNLOCK':'REGION PROGRESSION'}</Text><Text style={s.unlockTitle}>{next?next.name:'All authored regions unlocked'}</Text></View>{next?<Text style={s.unlockLevel}>Lv {level}/{next.minLevel}</Text>:<Text style={s.unlockDone}>COMPLETE</Text>}</View>{next?<><View style={s.unlockTrack}><View style={[s.unlockFill,{width:(nextUnlockProgress+'%') as any}]}/></View><Text style={s.unlockMeta}>{Math.max(0,next.minLevel-level)} level{next.minLevel-level===1?'':'s'} until travel unlock.</Text></>:<Text style={s.unlockMeta}>Every currently authored region can be travelled to.</Text>}</View>
     {travelRegions.map(zone=>{
-      const unlocked=level>=zone.minLevel,environment=environmentForZone(zone.id),summary=regionActivitySummary(state,zone.id),goalTarget=goalRegionId===zone.id;
-      const content=unlocked?'Hunts '+summary.combatReady+'/'+summary.combatTotal+' · Gather '+summary.gatheringReady+'/'+summary.gatheringTotal+(summary.bossesTotal?' · Boss '+summary.bossesReady+'/'+summary.bossesTotal:''):(summary.combatTotal+' hunts · '+summary.gatheringTotal+' gathering'+(summary.bossesTotal?' · '+summary.bossesTotal+' boss':''));
-      return <View key={zone.id} style={[s.destination,goalTarget&&s.goalDestination]}>
-        <View style={s.thumbnail}><RegionArtwork regionId={zone.id} muted={!unlocked}/>{!unlocked&&<View style={s.lockedTag}><Text style={s.lockedText}>Lv. {zone.minLevel}</Text></View>}</View>
+      const availability=regionTravelAvailability(state,zone),unlocked=availability==='available',development=availability==='inDevelopment',environment=environmentForZone(zone.id),summary=regionActivitySummary(state,zone.id),goalTarget=goalRegionId===zone.id;
+      const content=development?'Preview planned regional content':unlocked?'Hunts '+summary.combatReady+'/'+summary.combatTotal+' · Gather '+summary.gatheringReady+'/'+summary.gatheringTotal+(summary.bossesTotal?' · Boss '+summary.bossesReady+'/'+summary.bossesTotal:''):(summary.combatTotal+' hunts · '+summary.gatheringTotal+' gathering'+(summary.bossesTotal?' · '+summary.bossesTotal+' boss':''));
+      return <View key={zone.id} style={[s.destination,goalTarget&&s.goalDestination,development&&s.developmentDestination]}>
+        <View style={s.thumbnail}><RegionArtwork regionId={zone.id} muted={!unlocked}/>{!unlocked&&<View style={[s.lockedTag,development&&s.developmentTag]}><Text style={s.lockedText}>{development?'IN DEVELOPMENT':`Lv. ${zone.minLevel}`}</Text></View>}</View>
         <View style={s.flex}>
-          <View style={s.destinationHead}><Text style={s.destinationName}>{zone.name}</Text>{goalTarget?<Text style={s.goalBadge}>GOAL</Text>:null}</View>
-          <Text style={s.destinationMeta}>{unlocked?`Levels ${zone.minLevel}–${zone.maxLevel} · ${environment.weatherSymbol} ${environment.weatherName}`:`Unlocks at level ${zone.minLevel}`}</Text>
+          <View style={s.destinationHead}><Text style={[s.destinationName,development&&s.developmentText]}>{zone.name}</Text>{goalTarget?<Text style={s.goalBadge}>GOAL</Text>:null}</View>
+          <Text style={s.destinationMeta}>{development?'In Development':unlocked?`Levels ${zone.minLevel}–${zone.maxLevel} · ${environment.weatherSymbol} ${environment.weatherName}`:`Unlocks at level ${zone.minLevel}`}</Text>
           <Text numberOfLines={1} style={s.destinationContent}>{content}</Text>
-          {unlocked&&<Text numberOfLines={2} style={s.destinationSub}>{zone.subtitle}</Text>}
-          <View style={s.travelButton}><GameButton compact title={unlocked?'Travel':`Lv. ${zone.minLevel}`} disabled={!unlocked} tone="secondary" onPress={()=>setTravelTargetId(zone.id)}/></View>
+          <Text numberOfLines={2} style={s.destinationSub}>{zone.subtitle}</Text>
+          <View style={s.travelButton}><GameButton compact title={development?'In Development':unlocked?'Travel':`Locked · Lv. ${zone.minLevel}`} tone="secondary" onPress={()=>setTravelTargetId(zone.id)}/></View>
         </View>
       </View>;
     })}
@@ -135,7 +135,7 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
   section:{...typography.caption,color:equipmentColors.goldSoft,fontWeight:'700',letterSpacing:1},
   regionHubHead:{flexDirection:'row',alignItems:'center',gap:8},regionLevel:{...typography.caption,color:C.info,fontWeight:'900'},regionStats:{flexDirection:'row',gap:6},regionStat:{flex:1,minWidth:0,padding:7,borderWidth:1,borderColor:C.line,borderRadius:8,backgroundColor:C.panel2},regionStatLabel:{fontSize:8,color:C.muted,fontWeight:'900',letterSpacing:.55},regionStatValue:{...typography.bodyStrong,color:C.text,fontWeight:'900'},
   unlockCard:{gap:5,padding:spacing.sm,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel},unlockHead:{flexDirection:'row',alignItems:'center',gap:8},unlockLabel:{fontSize:8.5,color:C.muted,fontWeight:'900',letterSpacing:.7},unlockTitle:{...typography.bodyStrong,color:C.text},unlockLevel:{...typography.bodyStrong,color:C.info,fontWeight:'900'},unlockDone:{fontSize:9,color:C.good,fontWeight:'900'},unlockTrack:{height:5,borderRadius:3,overflow:'hidden',backgroundColor:C.bg},unlockFill:{height:'100%',borderRadius:3,backgroundColor:C.accent},unlockMeta:{...typography.caption,color:C.muted},
-  destination:{minHeight:92,flexDirection:'row',alignItems:'center',gap:spacing.sm,padding:spacing.sm,backgroundColor:equipmentColors.panel,borderWidth:1,borderColor:C.line,borderRadius:radii.lg},
+  destination:{minHeight:92,flexDirection:'row',alignItems:'center',gap:spacing.sm,padding:spacing.sm,backgroundColor:equipmentColors.panel,borderWidth:1,borderColor:C.line,borderRadius:radii.lg},developmentDestination:{opacity:.72,borderStyle:'dashed'},developmentTag:{backgroundColor:C.dark?'rgba(65,69,76,.90)':'rgba(220,223,228,.94)'},developmentText:{color:C.muted},
   smallSymbol:{width:44,height:44,alignItems:'center',justifyContent:'center',borderWidth:1,borderRadius:22,backgroundColor:equipmentColors.stage},
   smallSymbolText:{fontSize:21,fontWeight:'700'},
   destinationHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},

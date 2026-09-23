@@ -3,6 +3,7 @@ import {acknowledgeAllInventoryItems,acknowledgeInventoryItem,inventoryFavoriteI
 import {validateGameCommand,validateGameSettings} from '../src/core/game-commands';
 import {bulkSalvageSelected,bulkSelectionSummary,bulkSellSelected,bulkTransferSelected} from '../src/core/inventory-bulk';
 import {itemInspectModel} from '../src/core/item-inspect';
+import {itemDef} from '../src/content/items';
 import {workingTowardDestinationAvailability} from '../src/core/working-toward';
 import {normalizeSave} from '../src/core/save-normalization';
 function ok(value:boolean,message:string){if(!value)throw new Error(message)}
@@ -102,7 +103,8 @@ const copperGear=itemInspectModel(state,'COPPER_BLADE');
 ok(copperGear.gearDecision?.compatible===true&&copperGear.gearDecision.replaces?.name==='Basic Sword','Gear Check identifies the currently equipped replacement');
 ok((copperGear.gearDecision?.loadoutDelta.attack??0)>0&&(copperGear.gearDecision?.loadoutDelta.power??0)>0,'Gear Check exposes positive whole-loadout deltas');
 ok((copperGear.gearDecision?.maxLoadoutGain.attack??0)>0&&copperGear.gearDecision?.maxRank===10,'Gear Check exposes remaining +10 loadout potential');
-const setState={...state,character:{...state.character!,equipment:{...state.character!.equipment,gloves:'T1P_003'}}};
+const setPreviewLevel=Math.max(itemDef('T1P_002').requiredLevel??1,itemDef('T1P_003').requiredLevel??1);
+const setState={...state,character:{...state.character!,level:setPreviewLevel,equipment:{...state.character!.equipment,gloves:'T1P_003'}}};
 const oathboundInspect=itemInspectModel(setState,'T1P_002');
 ok(oathboundInspect.gearDecision?.set?.currentPieces===1&&oathboundInspect.gearDecision.set.previewPieces===2,'Gear Check previews authoritative v33 set-piece progress after equip');
 ok(oathboundInspect.gearDecision?.set?.reached?.pieces===2&&oathboundInspect.gearDecision.set.next?.pieces===4,'Gear Check exposes reached and next v33 set milestones');

@@ -77,12 +77,12 @@ export function simulateFallenKnightStoryBattle(player:FallenKnightPlayerSnapsho
   const bossSecondary=regionalEnemySecondaryStats(monster);
   const bossMaxHp=monster.hp,playerMaxHp=Math.max(1,Math.round(player.maxHp));
   let bossHp=bossMaxHp,playerHp=clamp(Math.round(player.currentHp||playerMaxHp),1,playerMaxHp),foodLeft=Math.max(0,Math.floor(player.foodQuantity)),foodConsumed=0;
-  let phase:1|2|3=1,phaseWardUntilMs=0,rngIndex=0,bossAttackCount=0;
+  let phase=1,phaseWardUntilMs=0,rngIndex=0,bossAttackCount=0;
   const phasesReached:(1|2|3)[]=[1],events:StoryBossEvent[]=[];
   const playerHitChance=clamp(player.accuracy-bossSecondary.evasion,.55,.99);
   const playerAttackIntervalMs=clamp(Math.round(2350/Math.max(.65,(1+player.haste)*player.actionSpeedMultiplier)),900,3200);
   let nextPlayerAt=650,nextBossAt=1800;
-  const push=(event:Omit<StoryBossEvent,'playerHp'|'bossHp'|'phase'>)=>events.push({...event,playerHp:Math.max(0,Math.round(playerHp)),bossHp:Math.max(0,Math.round(bossHp)),phase});
+  const push=(event:Omit<StoryBossEvent,'playerHp'|'bossHp'|'phase'>)=>events.push({...event,playerHp:Math.max(0,Math.round(playerHp)),bossHp:Math.max(0,Math.round(bossHp)),phase:phase as 1|2|3});
   push({atMs:0,type:'battle_start',label:'The Fallen Knight raises the oathglass blade.'});
 
   const maybeEat=(atMs:number)=>{
@@ -117,7 +117,7 @@ export function simulateFallenKnightStoryBattle(player:FallenKnightPlayerSnapsho
       }else{
         const critical=random01(seed,rngIndex++)<clamp(player.critChance,0,.75);
         const variance=.94+random01(seed,rngIndex++)*.12;
-        const bossWard=now<phaseWardUntilMs? .86:1;
+        const bossWard=now<phaseWardUntilMs ? .86 : 1;
         const base=Math.max(1,player.power*38+player.attack*14-monster.defense*15);
         const amount=Math.max(1,Math.round(base*variance*player.damageMultiplier*bossWard*(critical?player.critMultiplier:1)));
         bossHp=Math.max(0,bossHp-amount);

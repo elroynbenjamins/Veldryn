@@ -46,6 +46,15 @@ export interface MaterialPreparationStep{
   status:'ready'|'action'|'blocked';
 }
 
+export interface MaterialPreparationProgress{
+  total:number;
+  ready:number;
+  remaining:number;
+  complete:boolean;
+  blocked:boolean;
+  nextStep?:MaterialPreparationStep;
+}
+
 export interface MaterialAcquisitionPlan{
   itemId:string;
   name:string;
@@ -316,18 +325,30 @@ function preparationSteps(plan:MaterialAcquisitionPlan,path:string):MaterialPrep
     }];
   }
   const childSteps=plan.children.flatMap((child,index)=>preparationSteps(child,`${path}:child:${index}`));
-  const availability=plan.availability,status:MaterialPreparationStep['status']=availability?.status==='locked'||availability?.status==='info'?'blocked':'action';
+  const availability=plan.availability,goldBlocked=path==='root'&&plan.goldShortfall>0,status:MaterialPreparationStep['status']=goldBlocked||availability?.status==='locked'||availability?.status==='info'?'blocked':'action';
   const action=isTimedProcessingRecipe(plan.craft.recipeId)?'Process':'Craft';
   return [...childSteps,{
     id:path+':craft',kind:'craft',itemId:plan.itemId,quantity:plan.remaining,
     label:`${action} ${Math.ceil(plan.remaining)}× ${plan.name}`,
-    detail:`${plan.craft.recipeName} · ${plan.craft.batches} batch${plan.craft.batches===1?'':'es'}${plan.craft.gold?` · ${plan.craft.gold.toLocaleString()} Gold`:''}`,
+    detail:`${plan.craft.recipeName} · ${plan.craft.batches} batch${plan.craft.batches===1?'':'es'}${plan.craft.gold?` · ${plan.craft.gold.toLocaleString()} Gold`:''}${goldBlocked?` · Need ${plan.goldShortfall.toLocaleString()} more Gold`:''}`,
     destination:plan.destination,availability,status,
   }];
 }
 
 export function materialPreparationSteps(plan:MaterialAcquisitionPlan){
   return preparationSteps(plan,'root');
+}
+
+export function materialPreparationProgress(steps:readonly MaterialPreparationStep[]):MaterialPreparationProgress{
+  const ready=steps.filter(step=>step.status==='ready').length,nextStep=steps.find(step=>step.status!=='ready');
+  return {
+    total:steps.length,
+    ready,
+    remaining:Math.max(0,steps.length-ready),
+    complete:!nextStep,
+    blocked:nextStep?.status==='blocked',
+    ...(nextStep?{nextStep}:{}),
+  };
 }
 
 export function materialStoredQuantity(state:GameState,itemId:string){return storedQuantity(state,itemId);}

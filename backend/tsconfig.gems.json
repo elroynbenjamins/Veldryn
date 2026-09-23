@@ -10,6 +10,8 @@
     "src/server/combat/regional-combat-runtime-v1.ts",
     "src/server/combat/__tests__/regional-combat-runtime-v1.ts",
     "src/server/combat/__tests__/pve-encounter-identity.ts",
-    "src/server/combat/__tests__/pve-simulation-telemetry.ts"
+    "src/server/combat/__tests__/pve-simulation-telemetry.ts",
+    "src/server/combat/pve-balance-cli.ts",
+    "src/server/combat/__tests__/pve-balance-batch.ts"
   ]
 }

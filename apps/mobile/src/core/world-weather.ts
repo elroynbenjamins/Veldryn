@@ -81,14 +81,14 @@ export function seasonEffect(kind:ActivityKind,seasonId:SeasonId):EnvironmentEff
 export function weatherEffect(kind:ActivityKind,weatherId:WeatherId):EnvironmentEffect{
   let effect=neutralEffect();const notes:string[]=[];
   if(weatherId==='clear'){effect.actionTimeMultiplier*=.97;notes.push('+3% action speed')}
-  if(weatherId==='rain'){if(kind==='fishing'){effect.actionTimeMultiplier*=.88;effect.itemMultiplier*=1.1;notes.push('+12% fishing speed','+10% fish')}else if(kind==='combat'){effect.actionTimeMultiplier*=1.05;notes.push('−5% combat speed')}}
-  if(weatherId==='mist'&&kind==='combat'){effect.dropChanceMultiplier*=1.12;notes.push('+12% loot chance')}
-  if(weatherId==='storm'){if(kind==='mining'){effect.itemMultiplier*=1.12;notes.push('+12% ore')}else if(kind==='combat'){effect.actionTimeMultiplier*=1.08;effect.xpMultiplier*=1.1;notes.push('+10% combat XP','−8% combat speed')}}
-  if(weatherId==='bloomwind'&&kind==='woodcutting'){effect.itemMultiplier*=1.12;notes.push('+12% logs')}
+  if(weatherId==='rain'){if(kind==='fishing'){effect.actionTimeMultiplier*=.88;effect.itemMultiplier*=1.1;notes.push('+12% fishing speed','+10% fish')}else if(kind==='herbalism'){effect.itemMultiplier*=1.1;effect.dropChanceMultiplier*=1.1;notes.push('+10% herb yield','+10% rare botanical finds')}else if(kind==='combat'){effect.actionTimeMultiplier*=1.05;notes.push('−5% combat speed')}}
+  if(weatherId==='mist'){if(kind==='combat'){effect.dropChanceMultiplier*=1.12;notes.push('+12% loot chance')}else if(kind==='herbalism'){effect.dropChanceMultiplier*=1.15;notes.push('+15% rare botanical finds')}}
+  if(weatherId==='storm'){if(kind==='mining'){effect.itemMultiplier*=1.12;notes.push('+12% ore')}else if(kind==='herbalism'){effect.dropChanceMultiplier*=1.1;notes.push('+10% rare botanical finds')}else if(kind==='combat'){effect.actionTimeMultiplier*=1.08;effect.xpMultiplier*=1.1;notes.push('+10% combat XP','−8% combat speed')}}
+  if(weatherId==='bloomwind'){if(kind==='woodcutting'){effect.itemMultiplier*=1.12;notes.push('+12% logs')}else if(kind==='herbalism'){effect.itemMultiplier*=1.08;effect.dropChanceMultiplier*=1.18;notes.push('+8% herb yield','+18% rare botanical finds')}}
   if(weatherId==='heatwave'){if(kind==='mining'){effect.actionTimeMultiplier*=.9;notes.push('+10% mining speed')}else if(kind==='woodcutting'||kind==='fishing'){effect.actionTimeMultiplier*=1.08;notes.push('−8% gathering speed')}}
-  if(weatherId==='harvest_wind'&&kind==='woodcutting'){effect.actionTimeMultiplier*=.9;notes.push('+10% woodcutting speed')}
-  if(weatherId==='snow'&&kind==='combat'){effect.actionTimeMultiplier*=1.1;effect.xpMultiplier*=1.12;notes.push('+12% combat XP','−10% combat speed')}
-  if(weatherId==='frost'){if(kind==='mining'){effect.itemMultiplier*=1.1;notes.push('+10% ore')}else if(kind==='fishing'){effect.actionTimeMultiplier*=1.12;notes.push('−12% fishing speed')}}
+  if(weatherId==='harvest_wind'){if(kind==='woodcutting'){effect.actionTimeMultiplier*=.9;notes.push('+10% woodcutting speed')}else if(kind==='herbalism'){effect.actionTimeMultiplier*=.92;notes.push('+8% herbalism speed')}}
+  if(weatherId==='snow'){if(kind==='combat'){effect.actionTimeMultiplier*=1.1;effect.xpMultiplier*=1.12;notes.push('+12% combat XP','−10% combat speed')}else if(kind==='herbalism'){effect.dropChanceMultiplier*=1.12;notes.push('+12% rare botanical finds')}}
+  if(weatherId==='frost'){if(kind==='mining'){effect.itemMultiplier*=1.1;notes.push('+10% ore')}else if(kind==='fishing'){effect.actionTimeMultiplier*=1.12;notes.push('−12% fishing speed')}else if(kind==='herbalism'){effect.itemMultiplier*=1.08;notes.push('+8% herb yield')}}
   return {...effect,notes};
 }
 export function environmentEffect(kind:ActivityKind,env:Pick<WorldEnvironment,'seasonId'|'weatherId'>):EnvironmentEffect{

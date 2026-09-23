@@ -33,6 +33,19 @@ export interface MaterialAcquisitionCraftStep{
   gold:number;
 }
 
+export type MaterialPreparationStepKind='owned'|'acquire'|'craft';
+export interface MaterialPreparationStep{
+  id:string;
+  kind:MaterialPreparationStepKind;
+  label:string;
+  detail:string;
+  itemId:string;
+  quantity:number;
+  destination?:WorkingTowardDestination;
+  availability?:WorkingTowardDestinationAvailability;
+  status:'ready'|'action'|'blocked';
+}
+
 export interface MaterialAcquisitionPlan{
   itemId:string;
   name:string;
@@ -274,6 +287,46 @@ export function materialAcquisitionEstimateLabel(plan:MaterialAcquisitionPlan){
 export function materialAcquisitionPlanSummary(plan:MaterialAcquisitionPlan){
   const estimate=materialAcquisitionEstimateLabel(plan),chain=materialAcquisitionChainLabel(plan);
   return {estimate,chain,complete:plan.complete,goldShortfall:plan.goldShortfall,blockedReasons:[...new Set(plan.blockedReasons)]};
+}
+
+function acquisitionVerb(typeLabel:string){
+  if(typeLabel==='Gathering')return 'Gather';
+  if(typeLabel==='Monster Drop')return 'Hunt for';
+  if(typeLabel==='Dungeon')return 'Earn';
+  return 'Acquire';
+}
+
+function preparationSteps(plan:MaterialAcquisitionPlan,path:string):MaterialPreparationStep[]{
+  if(plan.remaining<=0){
+    return [{
+      id:path+':owned',kind:'owned',itemId:plan.itemId,quantity:plan.ownedUsed,
+      label:`Use ${Math.ceil(plan.ownedUsed)}× ${plan.name}`,
+      detail:'Already available in Inventory or Bank.',
+      status:'ready',
+    }];
+  }
+  if(!plan.craft){
+    const availability=plan.availability,destination=plan.destination,status:MaterialPreparationStep['status']=availability?.status==='locked'||availability?.status==='info'?'blocked':'action';
+    return [{
+      id:path+':acquire',kind:'acquire',itemId:plan.itemId,quantity:plan.remaining,
+      label:`${acquisitionVerb(plan.sourceTypeLabel)} ${Math.ceil(plan.remaining)}× ${plan.name}`,
+      detail:plan.sourceTitle+(availability?.detail?` · ${availability.detail}`:''),
+      destination,availability,status,
+    }];
+  }
+  const childSteps=plan.children.flatMap((child,index)=>preparationSteps(child,`${path}:child:${index}`));
+  const availability=plan.availability,status:MaterialPreparationStep['status']=availability?.status==='locked'||availability?.status==='info'?'blocked':'action';
+  const action=isTimedProcessingRecipe(plan.craft.recipeId)?'Process':'Craft';
+  return [...childSteps,{
+    id:path+':craft',kind:'craft',itemId:plan.itemId,quantity:plan.remaining,
+    label:`${action} ${Math.ceil(plan.remaining)}× ${plan.name}`,
+    detail:`${plan.craft.recipeName} · ${plan.craft.batches} batch${plan.craft.batches===1?'':'es'}${plan.craft.gold?` · ${plan.craft.gold.toLocaleString()} Gold`:''}`,
+    destination:plan.destination,availability,status,
+  }];
+}
+
+export function materialPreparationSteps(plan:MaterialAcquisitionPlan){
+  return preparationSteps(plan,'root');
 }
 
 export function materialStoredQuantity(state:GameState,itemId:string){return storedQuantity(state,itemId);}

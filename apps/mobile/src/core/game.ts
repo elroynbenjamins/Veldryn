@@ -8,7 +8,7 @@ import {HERB_NODES,HERBALISM_ESSENCE_BY_ZONE,herbalismInsightMultiplier,herbalis
 import {explorationRoute} from '../content/exploration';
 import {QUESTS} from '../content/quests';
 import {GameState,ClassId,RewardBundle,ItemStack,GearSlot,BodyPresentation,GatheringSkillId,CombatChallengeId,CombatTacticId} from './types';
-import {normalizeActivityQueue} from './activity-queue';
+import {activityQueueCapacity,normalizeActivityQueue} from './activity-queue';
 import {characterLevelFromXp,levelFromXp,totalXpAtLevel} from './progression';
 import {random01} from './rng';
 import {characterNameError,normalizeCharacterName} from './character-creation';
@@ -179,7 +179,7 @@ export function startCombat(state:GameState,monsterId:string,nowMs:number,combat
 function tryStartNextQueuedActivity(state:GameState,nowMs:number,throwOnFailure=false):GameState{
  if(!state.character)throw new Error('Create a character first.');
  if(state.activity)throw new Error('Stop the current activity before starting the queue.');
- const queue=normalizeActivityQueue(state.character.activityQueue),next=queue[0];
+ const queue=normalizeActivityQueue(state.character.activityQueue,activityQueueCapacity(state)),next=queue[0];
  if(!next)throw new Error('Action queue is empty.');
  try{
   const started=next.kind==='combat'
@@ -194,11 +194,11 @@ function tryStartNextQueuedActivity(state:GameState,nowMs:number,throwOnFailure=
 }
 export function startNextQueuedActivity(state:GameState,nowMs:number){return tryStartNextQueuedActivity(state,nowMs,true)}
 function autoAdvanceActivityQueue(state:GameState,nowMs:number){
- if(!state.character||!normalizeActivityQueue(state.character.activityQueue).length)return state;
+ if(!state.character||!normalizeActivityQueue(state.character.activityQueue,activityQueueCapacity(state)).length)return state;
  return tryStartNextQueuedActivity(state,nowMs,false);
 }
 function pauseActivityQueue(state:GameState,reason:string){
- if(!state.character||!normalizeActivityQueue(state.character.activityQueue).length)return state;
+ if(!state.character||!normalizeActivityQueue(state.character.activityQueue,activityQueueCapacity(state)).length)return state;
  return {...state,character:{...state.character,activityQueuePausedReason:reason}};
 }
 

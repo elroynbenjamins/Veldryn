@@ -11,14 +11,15 @@ assert.deepEqual(validateGemAcquisitionV1(),[]);
 assert.ok(gemPoolForSourceV1('COP_004'));
 assert.ok(buildGemDropsForSourceV1('COP_004').length>0);
 const forcedPity=settleGemSourceV1('COP_004','forced-pity',{pityBySource:{COP_004:7},unlockedRecipeIds:[]});
-assert.ok(forcedPity.gem,'Dungeon pity must settle one actual gem');
+assert.ok(forcedPity.gem,'Dungeon pity must settle one unrefined gem');
+assert.ok(forcedPity.gem?.itemId.startsWith('raw_gem:'),'Gem acquisition must award an unrefined family gem');
 assert.equal(forcedPity.gem?.pityTriggered,true);
 assert.equal(forcedPity.pityBySource.COP_004,0);
 const forcedElite=settleGemSourceV1('ZONE_007','forced-elite',{pityBySource:{ZONE_007:59},unlockedRecipeIds:[]});
-assert.equal(forcedElite.gem?.grade,2,'Elite pity must settle the configured Grade II gem');
+assert.equal(forcedElite.gem?.grade,2,'Elite pity must preserve the configured Grade II raw gem');
 assert.equal(forcedElite.pityBySource.ZONE_007,0);
 const forcedRegionalBoss=settleGemSourceV1('ZONE_010','forced-regional-boss',{pityBySource:{ZONE_010:24},unlockedRecipeIds:[]});
-assert.equal(forcedRegionalBoss.gem?.grade,3,'Regional boss pity must settle the configured Grade III gem');
+assert.equal(forcedRegionalBoss.gem?.grade,3,'Regional boss pity must preserve the configured Grade III raw gem');
 assert.equal(forcedRegionalBoss.pityBySource.ZONE_010,0);
 
 const summary=summarizeGemLoadoutV1([

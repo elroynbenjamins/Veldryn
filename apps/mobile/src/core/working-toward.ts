@@ -6,6 +6,7 @@ import {HERB_NODES} from '../content/herbalism';
 import {MONSTERS} from '../content/monsters';
 import {WORLD_ZONES} from '../content/world-map';
 import {ITEMS} from '../content/items';
+import {dungeonMaterialSourceById,dungeonMaterialSourcesForItem} from '../content/dungeon-material-sources';
 
 export type WorkingTowardDestination=
  |{kind:'combat';monsterId:string;zoneName:string;regionId?:string;button:string;detail:string}
@@ -46,7 +47,10 @@ export function workingTowardSourceAvailability(state:GameState,source:WorkingTo
   return {kind:'skill',id:source.skillId??'skills',label:source.skillId?skillLabel(source.skillId):'Skills',available:true};
  }
  if(source.kind==='contracts')return {kind:'weekly_order',id:'contract-board',label:'Contract Board',available:true};
- if(source.kind==='dungeon')return {kind:'dungeon',id:source.dungeonId??'dungeon',label:'Dungeon',available:true};
+ if(source.kind==='dungeon'){
+  const dungeon=source.dungeonId?dungeonMaterialSourceById(source.dungeonId):undefined,required=dungeon?.minLevel??1,available=(state.character?.level??1)>=required;
+  return {kind:'dungeon',id:source.dungeonId??'dungeon',label:dungeon?.dungeonName??'Dungeon',available,reason:available?undefined:`Requires character level ${required}.`};
+ }
  if(source.kind==='world')return {kind:'region',id:source.regionId,label:WORLD_ZONES.find(row=>row.id===source.regionId)?.name??source.regionId,available:state.character!.level>=(WORLD_ZONES.find(row=>row.id===source.regionId)?.minLevel??1)};
  if(source.kind==='inventory')return {kind:'item',id:'inventory',label:'Inventory & Bank',available:true};
  return undefined;
@@ -58,7 +62,11 @@ export interface WorkingTowardDestinationAvailability{status:WorkingTowardAvaila
 export function workingTowardDestinationAvailability(state:GameState,source:WorkingTowardDestination):WorkingTowardDestinationAvailability{
  const base=workingTowardSourceAvailability(state,source);
  if(source.kind==='info')return {status:'info',label:'INFO',detail:source.detail,canNavigate:false};
- if(source.kind==='inventory'||source.kind==='contracts'||source.kind==='dungeon')return {status:'ready',label:'READY',detail:'Available now.',canNavigate:true};
+ if(source.kind==='inventory'||source.kind==='contracts')return {status:'ready',label:'READY',detail:'Available now.',canNavigate:true};
+ if(source.kind==='dungeon'){
+  if(base&&!base.available)return {status:'locked',label:'LOCKED',detail:base.reason??'This dungeon is not available yet.',canNavigate:true};
+  return {status:'ready',label:'READY',detail:'Dungeon available now.',canNavigate:true};
+ }
  const regionId='regionId' in source?source.regionId:undefined,region=regionId?WORLD_ZONES.find(row=>row.id===regionId):undefined;
  if(region&&state.character!.level<region.minLevel)return {status:'locked',label:'LOCKED',detail:`Region unlocks at character level ${region.minLevel}.`,canNavigate:true};
  if(base&&!base.available)return {status:'locked',label:'LOCKED',detail:base.reason??'This source is not available yet.',canNavigate:true};
@@ -67,34 +75,47 @@ export function workingTowardDestinationAvailability(state:GameState,source:Work
  return {status:'ready',label:recipeSource?'AVAILABLE':'READY',detail:recipeSource?'Recipe unlocked.':'Available now.',canNavigate:true};
 }
 
-interface RankedItemSource{
+export type WorkingTowardItemSourceType='gathering'|'crafting'|'monster_drop'|'dungeon';
+export interface WorkingTowardItemSourceEntry{
+ type:WorkingTowardItemSourceType;
+ typeLabel:'Gathering'|'Crafting'|'Monster Drop'|'Dungeon';
+ title:string;
  destination:WorkingTowardDestination;
  availability:WorkingTowardDestinationAvailability;
- typePriority:number;
  progressionLevel:number;
 }
 
+interface RankedItemSource extends WorkingTowardItemSourceEntry{typePriority:number;}
+
 const sourceStatusPriority:Record<WorkingTowardAvailabilityStatus,number>={ready:0,travel:1,locked:2,info:3};
 
-export function workingTowardItemSources(state:GameState,itemId:string):WorkingTowardDestination[]{
+export function workingTowardItemSourceEntries(state:GameState,itemId:string):WorkingTowardItemSourceEntry[]{
  const candidates:RankedItemSource[]=[];
  for(const gather of gatherDefs.filter(row=>row.itemId===itemId)){
   const zone=WORLD_ZONES.find(row=>row.id===gather.zoneId),destination:WorkingTowardDestination={kind:'skills',skillId:gather.skillId as SkillId,mode:'gathering',actionId:gather.id,regionId:gather.zoneId,button:`Gather ${gather.name}`,detail:`${gather.name} in ${zone?.name??gather.zoneId} is a direct source.`};
-  candidates.push({destination,availability:workingTowardDestinationAvailability(state,destination),typePriority:0,progressionLevel:gather.unlockLevel});
+  candidates.push({type:'gathering',typeLabel:'Gathering',title:gather.name,destination,availability:workingTowardDestinationAvailability(state,destination),typePriority:0,progressionLevel:gather.unlockLevel});
  }
  for(const recipe of RECIPES.filter(row=>row.output.itemId===itemId)){
   const destination:WorkingTowardDestination={kind:'skills',skillId:recipe.skillId as SkillId,mode:'crafting',recipeId:recipe.id,button:`Craft ${recipe.name}`,detail:`${recipe.name} produces this item.`};
-  candidates.push({destination,availability:workingTowardDestinationAvailability(state,destination),typePriority:1,progressionLevel:recipe.level});
+  candidates.push({type:'crafting',typeLabel:'Crafting',title:recipe.name,destination,availability:workingTowardDestinationAvailability(state,destination),typePriority:1,progressionLevel:recipe.level});
  }
  for(const monster of MONSTERS.filter(row=>row.drops.some(drop=>drop.itemId===itemId))){
   const region=regionForZoneName(monster.zone),destination:WorkingTowardDestination={kind:'combat',monsterId:monster.id,zoneName:monster.zone,regionId:region?.id,button:`Hunt ${monster.name}`,detail:`${monster.name} in ${monster.zone} drops this item.`};
-  candidates.push({destination,availability:workingTowardDestinationAvailability(state,destination),typePriority:2,progressionLevel:monster.unlockLevel});
+  candidates.push({type:'monster_drop',typeLabel:'Monster Drop',title:monster.name,destination,availability:workingTowardDestinationAvailability(state,destination),typePriority:2,progressionLevel:monster.unlockLevel});
  }
- return candidates.sort((a,b)=>sourceStatusPriority[a.availability.status]-sourceStatusPriority[b.availability.status]||a.typePriority-b.typePriority||a.progressionLevel-b.progressionLevel||a.destination.button.localeCompare(b.destination.button)).map(row=>row.destination);
+ for(const dungeon of dungeonMaterialSourcesForItem(itemId)){
+  const chance=Math.round(dungeon.chance*100),destination:WorkingTowardDestination={kind:'dungeon',dungeonId:dungeon.dungeonId,button:`Open ${dungeon.dungeonName}`,detail:`${dungeon.dungeonName} · ${chance}% Regional Catalyst reward chance from the dungeon boss gem pool.`};
+  candidates.push({type:'dungeon',typeLabel:'Dungeon',title:dungeon.dungeonName,destination,availability:workingTowardDestinationAvailability(state,destination),typePriority:3,progressionLevel:dungeon.minLevel});
+ }
+ return candidates.sort((a,b)=>sourceStatusPriority[a.availability.status]-sourceStatusPriority[b.availability.status]||a.typePriority-b.typePriority||a.progressionLevel-b.progressionLevel||a.destination.button.localeCompare(b.destination.button)).map(({typePriority,...row})=>row);
+}
+
+export function workingTowardItemSources(state:GameState,itemId:string):WorkingTowardDestination[]{
+ return workingTowardItemSourceEntries(state,itemId).map(row=>row.destination);
 }
 
 export function workingTowardItemSource(state:GameState,itemId:string):WorkingTowardDestination{
- return workingTowardItemSources(state,itemId)[0]??{kind:'inventory',button:'Open Inventory',detail:'No direct activity source is currently registered; review your stored materials.'};
+ return workingTowardItemSourceEntries(state,itemId)[0]?.destination??{kind:'inventory',button:'Open Inventory',detail:'No direct activity source is currently registered; review your stored materials.'};
 }
 
 export function progressionGoalDestination(state:GameState,goal:ProgressionGoal):WorkingTowardDestination{
@@ -158,6 +179,6 @@ export function workingTowardReadyCount(state:GameState){
 }
 
 export function workingTowardTrackableItems(){
- const sourceIds=new Set<string>([...gatherDefs.map(row=>row.itemId),...RECIPES.map(row=>row.output.itemId),...MONSTERS.flatMap(row=>row.drops.map(drop=>drop.itemId))]);
+ const sourceIds=new Set<string>([...gatherDefs.map(row=>row.itemId),...RECIPES.map(row=>row.output.itemId),...MONSTERS.flatMap(row=>row.drops.map(drop=>drop.itemId)),...dungeonMaterialSourcesForItem('REGIONAL_CATALYST').map(row=>row.itemId)]);
  return ITEMS.filter(item=>item.type==='material'&&sourceIds.has(item.id)).sort((a,b)=>a.name.localeCompare(b.name));
 }

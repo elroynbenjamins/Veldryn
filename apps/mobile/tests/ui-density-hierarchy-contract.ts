@@ -49,11 +49,12 @@ ok(craftingProfessionBrowser.includes("'tailoring'|'enchanting'")&&craftingProfe
 
 const skills=read('src/screens/SkillsScreen.tsx');
 const herbalismMethods=read('src/components/HerbalismMethodPanel.tsx');
+const herbalismCore=read('src/core/herbalism.ts');
 const gatheringList=read('src/components/GatheringActivityList.tsx');
 const enchantingRefinery=read('src/components/EnchantingRefineryPanel.tsx');
 const enhancementModal=read('src/components/EquipmentEnhancementModal.tsx');
 ok(skills.includes('HerbalismMethodPanel')&&skills.includes("initialSkill==='herbalism'"),'Herbalism detail must expose harvest-method selection without a tool ladder');
-ok(herbalismMethods.includes('Quick Harvest')&&herbalismMethods.includes('Careful Harvest')&&herbalismMethods.includes('Bountiful Harvest'),'Herbalism must visibly expose its three earned harvesting techniques');
+ok(herbalismCore.includes("name:'Quick Harvest'")&&herbalismCore.includes("name:'Careful Harvest'")&&herbalismCore.includes("name:'Bountiful Harvest'")&&herbalismMethods.includes('HERBALISM_HARVEST_METHODS'),'Herbalism must visibly expose all authored harvesting techniques from the shared domain model');
 ok(gatheringList.includes('Wild Essence')&&gatheringList.includes('secondaryItemsPerHour'),'Herbalism node cards must show the rare secondary-find pace instead of hiding it');
 ok(enchantingRefinery.includes('availableGemResearchV1')&&enchantingRefinery.includes("type:'gem_research'"),'Enchanting refinery must expose deterministic Effect Gem research');
 ok(enchantingRefinery.includes('Catalyst synthesis unlocks')&&enhancementModal.includes('Enchanting saves'),'Enchanting UI must surface its late-game synthesis and extraction-expertise utility');

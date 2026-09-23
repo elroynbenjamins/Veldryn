@@ -21,13 +21,18 @@ ok(home.includes('levelPace={levelPace}'),'Home must pass live level pace into t
 const activeBar=read('src/components/ActiveActivityBar.tsx');
 ok(activeBar.includes('activeCombatRuntimeProjection(state)'),'Active combat bar must use the authoritative regional hunt cycle');
 ok(activeBar.includes('activeGatheringRuntimeProjection(state)'),'Active gathering bar must use runtime-equivalent gathering pace');
-ok(activeBar.includes('NEXT KILL')&&activeBar.includes('XP/hr'),'Active combat feedback must show truthful cycle and pace information');
-ok(!activeBar.includes('monsterHp')&&!activeBar.includes('damageDone'),'Active combat feedback must not fake live HP or damage from timer percentage');
+ok(activeBar.includes('NEXT KILL')&&activeBar.includes('combatPresentation'),'Active combat feedback must synchronize presentation with the authoritative hunt cycle');
+ok(activeBar.includes('HP {combatView?.enemyHp')&&activeBar.includes('−{combatView?.playerHit'),'Active combat feedback must keep satisfying enemy HP and damage feedback');
+
+const battleStage=read('src/components/BattleStage.tsx');
+ok(battleStage.includes('slashBright')&&battleStage.includes('sparkTravel'),'Expanded combat preview must include slash and particle hit feedback');
+ok(battleStage.includes('synchronized presentation estimates'),'Combat preview must distinguish visual estimates from authoritative settlement');
 
 const encounters=read('src/components/RegionEncounterList.tsx');
 ok(encounters.includes('combatBaselineProjection(monster)'),'Encounter details must use the shared corrected combat baseline');
 ok(encounters.includes('dropExpectation(drop.chance'),'Drop rows must derive odds/time from the shared drop projection');
 ok(encounters.includes('BASELINE PACE')&&encounters.includes('kills/hr'),'Combat details must show corrected baseline hunt pace');
+ok(encounters.includes('formatRegionalEnemySecondaryStats(monster)'),'Ordinary enemy cards must expose the secondary stats that affect regional hunt math');
 ok(encounters.includes('~1/')&&encounters.includes('avg '),'Drop rows must show one-in-N odds and average base find time');
 
 console.log('PASS: player-facing progression bars, ETAs and drop expectations use shared balance projections');

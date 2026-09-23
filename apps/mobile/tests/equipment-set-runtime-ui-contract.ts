@@ -26,8 +26,8 @@ ok(game.includes('1.5+setStats.critDamage'),'Crit Damage set bonuses must affect
 ok(game.includes('.84+setStats.accuracy'),'Accuracy set bonuses must affect live stats');
 ok(game.includes('baseEvasion+setStats.evasion'),'Evasion set bonuses must affect live stats');
 ok(game.includes('.05+setStats.haste'),'Haste set bonuses must affect live stats');
-ok(game.includes('setCombat.speedMultiplier*setOutput'),'Haste/Accuracy/Crit/Penetration set output must reach trusted combat simulation');
-ok(game.includes('setCombat.incomingDamageMultiplier'),'Ward/Evasion set mitigation must reach trusted combat simulation');
+ok(game.includes('regionalSecondaryExchange(stats,m,baseCritChance)')&&game.includes('secondary.playerOutputMultiplier*setCombat.penetrationMultiplier'),'Haste/Accuracy/Crit/Penetration set output must reach trusted regional combat simulation');
+ok(game.includes('secondary.incomingPressureMultiplier')&&game.includes('1-setCombat.stats.ward'),'Ward/Evasion set mitigation must reach trusted regional combat simulation without double counting Evasion');
 ok(game.includes('setCombat.recoveryMultiplier'),'Potency must reach the simulator recovery lane');
 
 ok(character.includes('ACTIVE SET STATS'),'Character stats must surface live set-only combat stats');

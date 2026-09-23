@@ -46,6 +46,7 @@ import {CHAMPION_DAMAGE_MULTIPLIER,championBonus,isChampionEncounter} from './hu
 import {applyDailySupplyCraft,commitDailySupplyTimedBoost,dailySupplyActivityMode,previewDailySupplyTimedReward} from './daily-supplies';
 import {professionMasteryMultipliers} from './profession-mastery-v40';
 import {huntingXpForKills} from './hunting-progression';
+import {regionalSecondaryExchange} from './regional-enemy-stats';
 export function beginAlchemyBatch(state:GameState,recipeId:string,batches:number,nowMs:number){return startAlchemyBatch(finishClassDrills(state,nowMs),recipeId,batches,nowMs);}
 export function beginProcessingBatch(state:GameState,recipeId:string,batches:number,nowMs:number){return startProcessingBatch(finishClassDrills(state,nowMs),recipeId,batches,nowMs);}
 
@@ -116,7 +117,7 @@ export function createCharacter(state:GameState,classId:ClassId,name='Adventurer
 }
 
 export function effectiveStats(state:GameState){
-  const c=state.character;if(!c)return {hp:0,attack:0,defense:0,power:0};
+  const c=state.character;if(!c)return {hp:0,attack:0,defense:0,power:0,critChance:0,critMultiplier:1.5,accuracy:.84,evasion:.04,haste:.05,armor:0,ward:0,tenacity:0,potency:0,penetration:0};
   let hp=c.hp,attack=c.attack,defense=c.defense;
   for(const id of Object.values(c.equipment)){if(!id)continue;const stats=enhancedGearStats(state,id);hp+=stats.hp;attack+=stats.attack;defense+=stats.defense;}
   const novice=noviceSetFor(c.classId),noviceComplete=novice.slots.every(slot=>c.equipment[slot]===noviceItemId(c.classId,slot));
@@ -232,14 +233,15 @@ function combatRuntimeDetails(state:GameState,monsterId:string){
   const style=classCombatStyle(c.classId),tactic=combatTactic(state.activity?.kind==='combat'?state.activity.combatTacticId:undefined);
   const environment=state.activity?environmentEffectForActivity(state.activity).effect:undefined;
   const effectGems=equippedEffectGemBonuses(state),baseCritChance=CLASSES.find(def=>def.id===c.classId)?.role==='Damage'?.10:.05,setCombat=equipmentSetCombatModifiers(state,baseCritChance,.84);
+  const secondary=regionalSecondaryExchange(stats,m,baseCritChance);
   const boostedDefense=Math.max(1,Math.round(stats.defense*modifiers.combatPowerMultiplier));
   const bossPowerMultiplier=m.boss?1+effectGems.boss_power:1;
   const boostedPower=Math.max(1,Math.round(stats.power*modifiers.combatPowerMultiplier*bossPowerMultiplier));
   const expected=(m.attack*1.2+m.defense*.8+m.level*2.2)*COMBAT_EXPECTED_SCALE;
-  const setOutput=setCombat.accuracyMultiplier*setCombat.critExpectedMultiplier*setCombat.penetrationMultiplier;
-  const speed=Math.max(COMBAT_SPEED_MIN,Math.min(COMBAT_SPEED_MAX,boostedPower/Math.max(1,expected)))*style.speedMultiplier*tactic.speedMultiplier*modifiers.combatSpeedMultiplier*companion.outputMultiplier*(1+monsterMastery(state,monsterId).damageBonus)*(1+effectGems.combat_speed)*setCombat.speedMultiplier*setOutput;
+  const setOutput=secondary.playerOutputMultiplier*setCombat.penetrationMultiplier;
+  const speed=Math.max(COMBAT_SPEED_MIN,Math.min(COMBAT_SPEED_MAX,boostedPower/Math.max(1,expected)))*style.speedMultiplier*tactic.speedMultiplier*modifiers.combatSpeedMultiplier*companion.outputMultiplier*(1+monsterMastery(state,monsterId).damageBonus)*(1+effectGems.combat_speed)*setOutput;
   const killCycleSeconds=m.secondsPerKill*COMBAT_TIME_SCALE*(environment?.actionTimeMultiplier??1)/speed;
-  return {c,m,stats,modifiers,companion,style,tactic,environment,effectGems,setCombat,boostedDefense,killCycleSeconds,challengeId,affixId};
+  return {c,m,stats,modifiers,companion,style,tactic,environment,effectGems,setCombat,secondary,boostedDefense,killCycleSeconds,challengeId,affixId};
 }
 
 export function activeCombatRuntimeProjection(state:GameState){
@@ -256,11 +258,15 @@ export function activeCombatRuntimeProjection(state:GameState){
     xpPerHour:killsPerHour*xpPerKill,
     goldPerHour:killsPerHour*goldPerKill,
     huntingXpPerHour:killsPerHour*huntingXpPerKill,
+    enemySecondary:runtime.secondary.enemy,
+    playerHitChance:runtime.secondary.playerHitChance,
+    enemyHitChance:runtime.secondary.enemyHitChance,
+    incomingPressureMultiplier:runtime.secondary.incomingPressureMultiplier,
   };
 }
 
 function simulateCombat(state:GameState,monsterId:string,elapsed:number){
-  const {c,m,stats,modifiers,companion,style,tactic,effectGems,setCombat,boostedDefense,killCycleSeconds,challengeId}=combatRuntimeDetails(state,monsterId);
+  const {c,m,stats,modifiers,companion,style,tactic,effectGems,setCombat,secondary,boostedDefense,killCycleSeconds,challengeId}=combatRuntimeDetails(state,monsterId);
   const carriedSeconds=(state.activity?.kind==='combat'?state.activity.progressFraction??0:0)*killCycleSeconds;
   const totalCombatSeconds=carriedSeconds+elapsed;
   const theoreticalKills=Math.floor(totalCombatSeconds/killCycleSeconds);
@@ -271,7 +277,7 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number){
   for(let i=0;i<theoreticalKills;i++){
     const champion=!challengeId&&isChampionEncounter(c.id,state.activity?.lastClaimAtMs??0,monsterId,i);
     const raw=Math.max(1,Math.round((m.attack*COMBAT_MONSTER_DAMAGE_SCALE)-Math.floor(boostedDefense*.58)));
-    const damage=Math.max(1,Math.round((raw*.48 + m.level*.16)*style.damageTakenMultiplier*tactic.damageTakenMultiplier*(champion?CHAMPION_DAMAGE_MULTIPLIER:1)*modifiers.incomingDamageMultiplier*companion.incomingDamageMultiplier*(1-effectGems.damage_reduction)*setCombat.incomingDamageMultiplier*(c.preparation?preparationEffects(c.preparation).damage:1)));
+    const damage=Math.max(1,Math.round((raw*.48 + m.level*.16)*secondary.incomingPressureMultiplier*style.damageTakenMultiplier*tactic.damageTakenMultiplier*(champion?CHAMPION_DAMAGE_MULTIPLIER:1)*modifiers.incomingDamageMultiplier*companion.incomingDamageMultiplier*(1-effectGems.damage_reduction)*Math.max(.5,1-setCombat.stats.ward)*(c.preparation?preparationEffects(c.preparation).damage:1)));
     hp-=damage;
     while(food && food.heal && foodLeft>0 && hp>0 && hp/stats.hp<=threshold){
       hp=Math.min(stats.hp,hp+Math.max(1,Math.ceil(food.heal*modifiers.healingEffectivenessMultiplier)));foodLeft--;foodConsumed++;

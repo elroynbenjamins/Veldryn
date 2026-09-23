@@ -58,17 +58,20 @@ export function BattleStage({state,monster,elapsedSeconds,cycleSeconds}:{state:G
  const enemyFloatOpacity=enemyImpact.interpolate({inputRange:[0,.08,.55,1],outputRange:[0,1,.6,0]}),playerFloatOpacity=playerImpact.interpolate({inputRange:[0,.08,.55,1],outputRange:[0,1,.6,0]});
  const floatY=(value:Animated.Value)=>value.interpolate({inputRange:[0,1],outputRange:[0,-22]});
  const flash=(value:Animated.Value)=>value.interpolate({inputRange:[0,.08,.22,1],outputRange:[0,.58,.12,0]});
+ const slashOpacity=enemyImpact.interpolate({inputRange:[0,.05,.34,1],outputRange:[0,1,.7,0]}),slashScale=enemyImpact.interpolate({inputRange:[0,.14,1],outputRange:[.15,1,1.2]});
+ const sparkOpacity=enemyImpact.interpolate({inputRange:[0,.08,.45,1],outputRange:[0,1,.75,0]}),sparkTravel=enemyImpact.interpolate({inputRange:[0,1],outputRange:[0,18]});
+ const enemySlashOpacity=playerImpact.interpolate({inputRange:[0,.05,.30,1],outputRange:[0,.8,.45,0]});
  return <View style={s.stage}>
   <View style={s.header}><View><Text accessibilityRole="header" style={s.title}>Combat preview</Text>{challenge&&<Text style={[s.challenge,{color:affix?.accent??challenge.accent}]}>{challenge.name.toUpperCase()}{affix?` · ${affix.name.toUpperCase()}`:''} · +{Math.round((challenge.xpMultiplier*(affix?.xpMultiplier??1)-1)*100)}% XP</Text>}</View><Text style={[s.safety,{color:view.safety==='safe'?C.good:view.safety==='dangerous'?C.warning:C.info}]}>{view.safety}</Text></View>
   <Animated.View style={[s.arena,{transform:[{translateX:shake}]}]}><RegionArtwork regionId={region?.id??'GREENFIELDS'}/><View style={s.shade}/>
    <View style={s.combatants}>
     <Animated.View style={[s.side,{transform:[{translateX:playerLunge.interpolate({inputRange:[0,1],outputRange:[0,motion.playerLungePx]})},{scale:playerScale}]}]}>
-     <View style={s.portrait}><CharacterPortrait state={state} style={{width:96,height:120}}/><Animated.View pointerEvents="none" style={[s.impactFlash,{opacity:flash(playerImpact)}]}/><Animated.View pointerEvents="none" style={[s.floatTextWrap,{opacity:playerFloatOpacity,transform:[{translateY:floatY(playerImpact)}]}]}><Text style={s.damageTaken}>−{view.enemyHit}</Text></Animated.View></View>
+     <View style={s.portrait}><CharacterPortrait state={state} style={{width:96,height:120}}/><Animated.View pointerEvents="none" style={[s.impactFlash,{opacity:flash(playerImpact)}]}/><Animated.View pointerEvents="none" style={[s.enemySlash,{opacity:enemySlashOpacity,transform:[{rotate:'24deg'},{scaleX:playerImpact.interpolate({inputRange:[0,.15,1],outputRange:[.2,1,1.1]})}]}]}/><Animated.View pointerEvents="none" style={[s.floatTextWrap,{opacity:playerFloatOpacity,transform:[{translateY:floatY(playerImpact)}]}]}><Text style={s.damageTaken}>−{view.enemyHit}</Text></Animated.View></View>
      <Text style={s.name}>{state.character!.name}</Text><Text style={s.hit}>≈ {view.playerHit} damage</Text>
     </Animated.View>
     <View style={s.versus}><Text style={s.vs}>VS</Text><Text style={s.motionHint}>{motion.enabled?'LIVE FX':'REDUCED'}</Text></View>
     <Animated.View style={[s.side,{transform:[{translateX:enemyLunge.interpolate({inputRange:[0,1],outputRange:[0,motion.enemyLungePx]})},{scale:enemyScale}]}]}>
-     <View style={s.portrait}><MonsterPortraitFrame monster={monster} size={112} active reduceMotion={state.settings.reduceMotion} framed={false}/><Animated.View pointerEvents="none" style={[s.impactFlash,{opacity:flash(enemyImpact)}]}/><Animated.View pointerEvents="none" style={[s.floatTextWrap,{opacity:enemyFloatOpacity,transform:[{translateY:floatY(enemyImpact)}]}]}><Text style={s.damageDealt}>−{view.playerHit}</Text></Animated.View></View>
+     <View style={s.portrait}><MonsterPortraitFrame monster={monster} size={112} active reduceMotion={state.settings.reduceMotion} framed={false}/><Animated.View pointerEvents="none" style={[s.impactFlash,{opacity:flash(enemyImpact)}]}/><Animated.View pointerEvents="none" style={[s.slash,s.slashBright,{opacity:slashOpacity,transform:[{rotate:'-34deg'},{scaleX:slashScale}]}]}/><Animated.View pointerEvents="none" style={[s.slash,s.slashSoft,{opacity:slashOpacity,transform:[{rotate:'31deg'},{scaleX:slashScale}]}]}/><Animated.View pointerEvents="none" style={[s.spark,{opacity:sparkOpacity,transform:[{translateX:sparkTravel},{translateY:Animated.multiply(sparkTravel,-.55)}]}]}/><Animated.View pointerEvents="none" style={[s.spark,s.sparkSmall,{opacity:sparkOpacity,transform:[{translateX:Animated.multiply(sparkTravel,-.9)},{translateY:Animated.multiply(sparkTravel,-.7)}]}]}/><Animated.View pointerEvents="none" style={[s.spark,s.sparkSmall,{opacity:sparkOpacity,transform:[{translateX:Animated.multiply(sparkTravel,.55)},{translateY:Animated.multiply(sparkTravel,.8)}]}]}/><Animated.View pointerEvents="none" style={[s.floatTextWrap,{opacity:enemyFloatOpacity,transform:[{translateY:floatY(enemyImpact)}]}]}><Text style={s.damageDealt}>−{view.playerHit}</Text></Animated.View></View>
      <Text style={s.name}>{monster.name}</Text><Text style={s.hit}>≈ {view.enemyHit} damage</Text>
     </Animated.View>
    </View>
@@ -77,7 +80,7 @@ export function BattleStage({state,monster,elapsedSeconds,cycleSeconds}:{state:G
    <View style={s.identity}><View style={s.identityHead}><Text style={s.identityLabel}>ENCOUNTER · {view.encounter.archetype.toUpperCase()}</Text><Text style={s.pressure}>{view.encounter.pressure.toUpperCase()}</Text></View><Text style={s.sub}>{view.encounter.summary}</Text><View style={s.mechanics}>{view.encounter.mechanics.map(mechanic=><View key={mechanic} style={s.mechanic}><Text style={s.mechanicText}>{mechanic}</Text></View>)}</View><Text style={s.tactic}>Tactic: {view.encounter.tactic}</Text></View>
    <StatBar label="Current health" current={state.character!.currentHp} max={stats.hp} reduceMotion={state.settings.reduceMotion}/>
    <StatBar label="Estimated enemy health" current={view.enemyHp} max={view.enemyMaxHp} reduceMotion={state.settings.reduceMotion}/>
-   <Text style={s.note}>Motion is visual feedback only. Combat rewards and settled health remain authoritative when you collect.</Text>
+   <Text style={s.note}>HP, damage numbers and combat FX are synchronized presentation estimates. Rewards and settled health remain authoritative when you collect.</Text>
   </View>
  </View>;
 }
@@ -88,7 +91,7 @@ const s=StyleSheet.create({
  arena:{minHeight:218,overflow:'hidden',justifyContent:'center'},shade:{...StyleSheet.absoluteFillObject,backgroundColor:'rgba(5,12,20,.58)'},
  combatants:{flexDirection:'row',alignItems:'flex-start',padding:10,gap:4},side:{flex:1,minWidth:0,alignItems:'center',gap:4},
  portrait:{width:'100%',maxWidth:128,height:128,alignItems:'center',justifyContent:'flex-end',backgroundColor:'rgba(5,12,20,.6)',borderRadius:36,overflow:'hidden',position:'relative'},
- impactFlash:{...StyleSheet.absoluteFillObject,backgroundColor:'rgba(255,238,196,.78)'},floatTextWrap:{position:'absolute',top:18,left:0,right:0,alignItems:'center'},
+ impactFlash:{...StyleSheet.absoluteFillObject,backgroundColor:'rgba(255,238,196,.78)'},slash:{position:'absolute',left:30,top:58,width:70,height:4,borderRadius:4},slashBright:{backgroundColor:'#fff1ad',shadowColor:'#ffd36e',shadowOpacity:.95,shadowRadius:5},slashSoft:{backgroundColor:'#ffd36e',height:3,shadowColor:'#fff1ad',shadowOpacity:.65,shadowRadius:3},enemySlash:{position:'absolute',left:26,top:60,width:72,height:4,borderRadius:4,backgroundColor:'#ff8790',shadowColor:'#ff8790',shadowOpacity:.7,shadowRadius:4},spark:{position:'absolute',left:62,top:61,width:5,height:5,borderRadius:2,backgroundColor:'#fff1ad',shadowColor:'#ffd36e',shadowOpacity:.9,shadowRadius:4},sparkSmall:{width:3,height:3},floatTextWrap:{position:'absolute',top:18,left:0,right:0,alignItems:'center'},
  damageDealt:{fontSize:18,lineHeight:22,color:'#ffd36e',fontWeight:'900',textShadowColor:'#120b03',textShadowRadius:3},
  damageTaken:{fontSize:17,lineHeight:21,color:'#ff8790',fontWeight:'900',textShadowColor:'#180508',textShadowRadius:3},
  name:{...typography.bodyStrong,color:C.text,textAlign:'center'},hit:{...typography.caption,color:'#d5e0ec',textAlign:'center'},

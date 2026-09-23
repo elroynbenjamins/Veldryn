@@ -92,6 +92,8 @@ export function regionTravelPreview(state:GameState,regionId:string):RegionTrave
     if(drops.length>=6)break;
   }
   const summary=regionActivitySummary(state,regionId);
-  const activities=['Combat',...summary.gatheringSkills.map(skill=>skill.replace(/_/g,' ').replace(/\b\w/g,letter=>letter.toUpperCase()))];
+  const activities=worldZoneInDevelopment(region)
+    ?(region.plannedActivities??['Regional content'])
+    :['Combat',...summary.gatheringSkills.map(skill=>skill.replace(/_/g,' ').replace(/\b\w/g,letter=>letter.toUpperCase()))];
   return {enemies,drops,activities:[...new Set(activities)]};
 }

@@ -19,6 +19,7 @@ export function TravelRegionModal({visible,state,zone,onClose,onTravel}:{visible
   const combat=`${summary.combatReady}/${summary.combatTotal} hunts`;
   const gathering=`${summary.gatheringReady}/${summary.gatheringTotal} gather`;
   const bosses=summary.bossesTotal?`${summary.bossesReady}/${summary.bossesTotal} bosses`:undefined;
+  const contentSummary=[combat,gathering,bosses].filter(Boolean).join(' · ');
   return <GameModalSurface visible={visible} presentation="sheet" onClose={onClose} backdropLabel="Close travel destination">
     <GameModalHeader eyebrow={inDevelopment?"REGION PREVIEW":locked?"LOCKED REGION PREVIEW":"TRAVEL DESTINATION"} title={zone.name} onClose={onClose}/>
     <ScrollView bounces={false} showsVerticalScrollIndicator={false} contentContainerStyle={s.content}>
@@ -33,19 +34,19 @@ export function TravelRegionModal({visible,state,zone,onClose,onTravel}:{visible
       </View>
 
       <View style={s.metaRow}>
-        <View style={s.metaCard}><Text style={s.metaLabel}>CONDITIONS</Text><Text style={s.metaValue}>{environment.weatherSymbol} {environment.weatherName}</Text></View>
-        <View style={s.metaCard}><Text style={s.metaLabel}>CONTENT</Text><Text style={s.metaValue}>{[combat,gathering,bosses].filter(Boolean).join(' · ')}</Text></View>
+        <View style={s.metaCard}><Text style={s.metaLabel}>{inDevelopment?'STATUS':'CONDITIONS'}</Text><Text style={s.metaValue}>{inDevelopment?'Preview only':`${environment.weatherSymbol} ${environment.weatherName}`}</Text></View>
+        <View style={s.metaCard}><Text style={s.metaLabel}>{inDevelopment?'PLANNED CONTENT':'CONTENT'}</Text><Text style={s.metaValue}>{inDevelopment?(preview.activities.slice(0,2).join(' · ')||'Coming later'):(contentSummary||'Region activities')}</Text></View>
       </View>
 
       {inDevelopment?<View style={s.developmentNotice}><Text style={s.developmentTitle}>IN DEVELOPMENT</Text><Text style={s.hint}>{zone.developmentNote??'This region is planned but not yet available. You can preview its identity here, but travel remains disabled until the content is released.'}</Text></View>:locked?<View style={s.lockNotice}><Text style={s.lockTitle}>LOCKED</Text><Text style={s.hint}>Reach level {zone.minLevel} to travel here. You can still preview the region, enemies and notable drops.</Text></View>:null}
 
       <View style={s.previewGrid}>
-        <View style={s.previewCard}><Text style={s.previewLabel}>ACTIVITIES</Text><Text style={s.previewValue}>{preview.activities.slice(0,4).join(' · ')||'Regional content'}</Text></View>
-        <View style={s.previewCard}><Text style={s.previewLabel}>COMMON ENEMIES</Text><Text style={s.previewValue}>{preview.enemies.map(enemy=>enemy.name).join(' · ')||'To be revealed'}</Text></View>
+        <View style={s.previewCard}><Text style={s.previewLabel}>{inDevelopment?'PLANNED ACTIVITIES':'ACTIVITIES'}</Text><Text style={s.previewValue}>{preview.activities.slice(0,4).join(' · ')||'Regional content'}</Text></View>
+        <View style={s.previewCard}><Text style={s.previewLabel}>{inDevelopment?'PLANNED ENEMIES':'COMMON ENEMIES'}</Text><Text style={s.previewValue}>{preview.enemies.map(enemy=>enemy.name).join(' · ')||'To be revealed'}</Text></View>
       </View>
 
       {preview.drops.length?<View style={s.dropBlock}><Text style={s.previewLabel}>NOTABLE DROPS</Text><View style={s.dropRow}>{preview.drops.slice(0,6).map(drop=><View key={drop.itemId} style={s.dropItem}><ItemArtwork itemId={drop.itemId} size={34}/><Text numberOfLines={1} style={s.dropName}>{drop.name}</Text></View>)}</View></View>:null}
-      {summary.gatheringSkills.length?<View style={s.info}><Text style={s.infoLabel}>GATHERING</Text><Text style={s.infoValue}>{summary.gatheringSkills.join(' · ')}</Text></View>:null}
+      {!inDevelopment&&summary.gatheringSkills.length?<View style={s.info}><Text style={s.infoLabel}>GATHERING</Text><Text style={s.infoValue}>{summary.gatheringSkills.join(' · ')}</Text></View>:null}
       <Text style={s.hint}>{unlocked?`Travel is instant. Your active region, hunts, gathering nodes and regional activities update to ${zone.name} immediately.`:inDevelopment?'Preview only — this destination cannot be entered yet.':`Preview only until level ${zone.minLevel}.`}</Text>
     </ScrollView>
     <View style={s.actions}><View style={s.flex}><GameButton title={unlocked?"Cancel":"Close"} tone="secondary" onPress={onClose}/></View><View style={s.flex}><GameButton title={inDevelopment?"In Development":locked?"Locked":"Travel"} disabled={!unlocked} onPress={()=>unlocked&&onTravel(zone.id)}/></View></View>

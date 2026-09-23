@@ -21,9 +21,13 @@ ok(world.includes("<ZoneSceneArtwork regionId={zone.id} muted={!unlocked}/>"),'T
 
 ok(map.includes("WorldZoneAvailability='released'|'inDevelopment'"),'World zone definitions must use explicit release metadata');
 ok(map.includes("availability:WorldZoneAvailability"),'Every world zone needs an explicit availability field');
+ok(map.includes("plannedActivities?:string[]"),'Future region definitions must support planned activity metadata');
 ok(map.includes("id:'VEILLANDS'")&&map.includes("availability:'inDevelopment'"),'World map must expose at least one real future-region preview in the In Development state');
+ok(map.includes("plannedActivities:['High-level combat','Regional gathering','Elite encounters','Region progression']"),'Veillands preview must expose useful planned-content categories without pretending content is live');
 ok(navigation.includes("RegionTravelAvailability='available'|'locked'|'inDevelopment'"),'Travel state logic must distinguish available, locked and in-development zones');
 ok(navigation.includes("regionTravelPreview"),'Travel preview must expose enemies, drops and activities');
+ok(navigation.includes("worldZoneInDevelopment(region)"),'Future-region travel previews must branch on release state');
+ok(navigation.includes("region.plannedActivities??['Regional content']"),'Future-region previews must use planned activities instead of fake live counters');
 ok(navigation.includes("!worldZoneInDevelopment(zone)&&zone.minLevel>level"),'In-development zones must not count as progression unlocks');
 ok(navigation.includes("const released=!worldZoneInDevelopment(region)"),'In-development zones must never become active from level alone');
 
@@ -33,9 +37,13 @@ ok(modal.includes('Travel is instant.'),'Travel sheet must make instant region s
 ok(!/travel time|seconds|minute|hour/i.test(modal),'Travel sheet must not introduce travel duration or timers');
 ok(modal.includes('title={inDevelopment?"In Development":locked?"Locked":"Travel"}'),'Unavailable destination buttons must communicate their state');
 ok(modal.includes('disabled={!unlocked}'),'Locked and in-development destinations must never travel');
+ok(modal.includes("inDevelopment?'STATUS':'CONDITIONS'")&&modal.includes("inDevelopment?'Preview only'"),'In-development regions must show preview status rather than live weather');
+ok(modal.includes("inDevelopment?'PLANNED CONTENT':'CONTENT'"),'In-development regions must label future content explicitly');
+ok(modal.includes("inDevelopment?'PLANNED ACTIVITIES':'ACTIVITIES'"),'In-development regions must distinguish planned activities from live activities');
+ok(modal.includes("inDevelopment?'PLANNED ENEMIES':'COMMON ENEMIES'"),'In-development regions must distinguish planned enemies from live encounters');
 ok(modal.includes('COMMON ENEMIES')&&modal.includes('NOTABLE DROPS')&&modal.includes('ACTIVITIES'),'Travel sheet must preview meaningful zone content');
 ok(modal.includes('<ItemArtwork itemId={drop.itemId}'),'Notable drops must use the real in-game item visuals');
-ok(modal.includes('environment.weatherName'),'Travel sheet should show current destination conditions');
+ok(modal.includes('environment.weatherName'),'Released travel sheets should still show current destination conditions');
 
 ok(scene.includes('Falls back to the approved world-map crop'),'Zone scene artwork must have a safe map fallback while dedicated scene art is rolled out');
 

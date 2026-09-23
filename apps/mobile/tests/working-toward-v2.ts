@@ -1,4 +1,4 @@
-import {createCharacter,newGame} from '../src/core/game';
+import {createCharacter,newGame,startCombat} from '../src/core/game';
 import {progressionGoalContext,progressionGoalDestination,workingTowardItemSourceEntries,workingTowardReadyCount,workingTowardTrackableItems} from '../src/core/working-toward';
 import {MASTERY_GOAL_RANKS,masteryGoalForAction,nextMasteryGoalRank,normalizeProgressionGoals,progressionGoalView,type ProgressionGoal} from '../src/core/progression-goals-v40';
 import {RECIPES} from '../src/content/skills';
@@ -6,6 +6,9 @@ import {totalXpAtLevel} from '../src/core/progression';
 import {recipePreparationRoute} from '../src/core/material-acquisition-plan';
 import {recipePreparationGoalForRecipe} from '../src/core/recipe-preparation-goals';
 import {recipePreparationTrackingView,recipePreparationTransitionNotices} from '../src/core/recipe-preparation-tracking';
+import {workingTowardExecutionOverview,workingTowardExecutionPlan,workingTowardStopRule} from '../src/core/working-toward-execution';
+import {activityQueueCapacity} from '../src/core/activity-queue';
+import {executeGameCommand} from '../src/core/game-commands';
 
 function fail(message:string):never{throw new Error(message)}
 function ok(value:unknown,message:string){if(!value)fail(message)}
@@ -18,11 +21,37 @@ const skillGoal:ProgressionGoal={id:'goal-skill',characterId,kind:'skill_level',
 const skillDestination=progressionGoalDestination(state,skillGoal);
 equal(skillDestination.kind,'skills','skill goal routes to Skills');
 if(skillDestination.kind==='skills'){equal(skillDestination.mode,'gathering','Mining routes to gathering mode');equal(skillDestination.skillId,'mining','Mining remains selected');}
+const skillExecution=workingTowardExecutionPlan(state,skillGoal);
+equal(skillExecution.executionState,'blocked','gathering skill goal reports its region progression gate when no authored node is character-accessible yet');
+ok(skillExecution.queueBlocker?.includes('character level 16'),'skill execution blocker exposes the Old Mines character-level gate');
+const travelSkillState={...state,character:{...state.character!,level:20}};
+const travelSkillExecution=workingTowardExecutionPlan(travelSkillState,skillGoal);
+equal(travelSkillExecution.executionState,'travel','gathering skill goal switches to travel once the region is unlocked but not current');
+ok(travelSkillExecution.queueBlocker?.includes('Old Mines'),'skill execution travel state names the destination region');
 
 const huntGoal:ProgressionGoal={id:'goal-hunt',characterId,kind:'monster_kills',title:'Moss Rat kills',createdAtMs:0,pinnedAtMs:0,monsterId:'MOSS_RAT',targetKills:50};
 const huntDestination=progressionGoalDestination(state,huntGoal);
 equal(huntDestination.kind,'combat','monster kill goal routes to Combat');
 if(huntDestination.kind==='combat'){equal(huntDestination.monsterId,'MOSS_RAT','exact monster is retained');equal(huntDestination.regionId,'GREENFIELDS','hunt goal identifies the correct travel region');}
+
+const huntExecution=workingTowardExecutionPlan(state,huntGoal);
+equal(huntExecution.executionState,'ready','same-region unlocked hunt goal is immediately queueable');
+equal(huntExecution.queueActivity?.kind,'combat','hunt goal execution uses the real combat queue');
+equal(huntExecution.queueActivity?.targetId,'MOSS_RAT','hunt goal queue preserves the exact monster');
+const huntStop=workingTowardStopRule(huntGoal,characterId);
+ok(!!huntStop&&huntStop.conditions[0]?.kind==='monster_kills','hunt goal can create a matching stop-at-goal condition');
+equal(huntStop?.conditions[0]?.targetId,'MOSS_RAT','stop-at-goal retains the exact monster');
+equal(huntStop?.conditions[0]?.value,50,'stop-at-goal retains the exact kill target');
+ok(huntStop?.stopIfOutOfFood&&huntStop.stopIfRewardsWouldOverflow&&huntStop.finishCurrentCycle,'generated stop-at-goal rule keeps food, overflow and cycle safety');
+const armedGoalState={...state,character:{...state.character!,progressionGoals:[huntGoal],idleRulesV40:[huntStop!],activeIdleRuleIdV40:huntStop!.id}};
+const clearedGoalState=executeGameCommand(armedGoalState,{type:'goals_set',args:{goals:[]}},2000).state;
+ok(!(clearedGoalState.character?.idleRulesV40??[]).some(rule=>rule.id===huntStop!.id),'trusted goal removal also removes its generated stop rule');
+equal(clearedGoalState.character?.activeIdleRuleIdV40,undefined,'trusted goal removal deactivates an orphaned generated stop rule');
+const activeHuntState=startCombat({...state,character:{...state.character!,progressionGoals:[huntGoal]}},'MOSS_RAT',1000);
+const activeHuntPlan=workingTowardExecutionPlan(activeHuntState,huntGoal);
+equal(activeHuntPlan.executionState,'active','already active hunt goal is recognized instead of offering a duplicate queue action');
+ok(activeHuntPlan.activeNow,'execution plan marks the matching live activity');
+equal(workingTowardExecutionOverview(activeHuntState).focus?.goal.id,huntGoal.id,'currently active goal becomes the execution focus');
 
 const copper=workingTowardTrackableItems().find(item=>item.id==='COPPER_ORE');
 ok(copper,'direct-source materials are authorable Working Toward items');
@@ -30,6 +59,21 @@ const itemGoal:ProgressionGoal={id:'goal-item',characterId,kind:'item_quantity',
 const itemDestination=progressionGoalDestination(state,itemGoal);
 equal(itemDestination.kind,'skills','gathered item goal routes to Skills');
 if(itemDestination.kind==='skills'){equal(itemDestination.actionId,'COPPER_VEIN','item goal deep-links its gathering source');equal(itemDestination.regionId,'OLD_MINES','item source carries its region');}
+
+const copperLockedExecution=workingTowardExecutionPlan(state,itemGoal);
+equal(copperLockedExecution.executionState,'blocked','off-region gathered item goal reports the region level gate before offering travel');
+ok(copperLockedExecution.queueBlocker?.includes('character level 16'),'locked item-source execution exposes the Old Mines level gate');
+const copperTravelState={...state,character:{...state.character!,level:20}};
+const copperTravelExecution=workingTowardExecutionPlan(copperTravelState,itemGoal);
+equal(copperTravelExecution.executionState,'travel','unlocked off-region item source requires explicit travel before queueing');
+ok(copperTravelExecution.queueBlocker?.includes('Old Mines'),'travel-blocked execution names the required region');
+const copperReadyState={...copperTravelState,currentRegionId:'OLD_MINES',skills:copperTravelState.skills.map(skill=>skill.skillId==='mining'?{...skill,level:20,xp:totalXpAtLevel(20)}:skill)};
+const copperReadyExecution=workingTowardExecutionPlan(copperReadyState,itemGoal);
+equal(copperReadyExecution.executionState,'ready','same-region unlocked gathering source becomes queueable');
+equal(copperReadyExecution.queueActivity?.kind,'gathering','item goal execution uses the real gathering queue');
+equal(copperReadyExecution.queueActivity?.targetId,'COPPER_VEIN','item goal queue preserves the exact gathering node');
+const fullQueueState={...copperReadyState,character:{...copperReadyState.character!,activityQueue:Array.from({length:activityQueueCapacity(copperReadyState)},(_,index)=>({kind:'gathering' as const,targetId:'queue-placeholder-'+index}))}};
+equal(workingTowardExecutionPlan(fullQueueState,itemGoal).executionState,'full','goal execution reports authoritative queue capacity instead of overfilling it');
 
 const copperSources=workingTowardItemSourceEntries(state,'COPPER_ORE');
 ok(copperSources.some(source=>source.type==='gathering'&&source.typeLabel==='Gathering'),'Copper source presentation includes its authored gathering route');
@@ -47,6 +91,8 @@ ok(catalystCrafting[0]?.destination.detail.includes('Enchanting Lv 70'),'Catalys
 
 const weeklyGoal:ProgressionGoal={id:'goal-weekly',characterId,kind:'weekly_order',title:'Weekly job',createdAtMs:0,pinnedAtMs:0,orderId:'example',targetProgress:10};
 equal(progressionGoalDestination(state,weeklyGoal).kind,'contracts','weekly goal routes to Contract Board');
+
+ok(workingTowardStopRule(weeklyGoal,characterId)?.conditions[0]?.kind==='weekly_order_progress','weekly goals can arm the authoritative weekly-order stop condition');
 
 equal(nextMasteryGoalRank(0),10,'Untrained action mastery should suggest the first bonus rank');
 equal(nextMasteryGoalRank(10),20,'R10 action mastery should suggest the next authored bonus rank');
@@ -106,6 +152,15 @@ equal(completionNotices[0]?.tone,'success','Tracked craft completion uses succes
 ok(completionNotices[0]?.message.includes('Working Toward complete')&&completionNotices[0]?.message.includes('Reinforced Fitting crafted'),'Completion notice identifies the finished tracked output');
 equal(completionNotices[0]?.actionLabel,'View goal','Completed preparation notice routes the player back to Working Toward management');
 equal(completionNotices[0]?.destination,undefined,'Completion notice must not reopen a stale preparation step');
+
+
+const executionState={...state,character:{...state.character!,progressionGoals:[huntGoal,itemGoal,{...skillGoal,targetLevel:1}]}};
+const executionOverview=workingTowardExecutionOverview(executionState);
+equal(executionOverview.plans.length,3,'execution planner projects every pinned goal exactly once');
+equal(executionOverview.complete,1,'execution overview counts completed goals');
+ok(!!executionOverview.focus,'execution overview always chooses one focus when goals exist');
+equal(executionOverview.focus?.goal.id,'goal-skill','completed focus is promoted so the player can clear a finished slot');
+ok(executionOverview.queueable>=1,'execution overview counts queueable goal actions');
 
 
 

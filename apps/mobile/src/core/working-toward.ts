@@ -100,7 +100,7 @@ export function workingTowardItemSourceEntries(state:GameState,itemId:string):Wo
   const zone=WORLD_ZONES.find(row=>row.id===zoneId);
   for(const herb of HERB_NODES.filter(row=>row.zoneId===zoneId)){
    const destination:WorkingTowardDestination={kind:'skills',skillId:'herbalism',mode:'gathering',actionId:herb.id,regionId:zoneId,button:`Harvest ${herb.name}`,detail:`${itemId.replaceAll('_',' ').replace(/\b\w/g,c=>c.toUpperCase())} is a rare secondary find from Herbalism in ${zone?.name??zoneId}. Careful Harvest improves the chance.`};
-   candidates.push({type:'gathering',typeLabel:'Rare Herbalism',title:herb.name,destination,availability:workingTowardDestinationAvailability(state,destination),typePriority:0,progressionLevel:herb.unlockLevel});
+   candidates.push({type:'gathering',typeLabel:'Gathering',title:herb.name,destination,availability:workingTowardDestinationAvailability(state,destination),typePriority:0,progressionLevel:herb.unlockLevel});
   }
  }
  for(const recipe of RECIPES.filter(row=>row.output.itemId===itemId)){

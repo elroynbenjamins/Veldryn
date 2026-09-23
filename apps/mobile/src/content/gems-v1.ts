@@ -61,6 +61,15 @@ export interface MobileGemItemV1{
  gemStat?:GemStat;gemPercent?:number;gemEffect?:GemEffectId;gemEffectValue?:number;
  value:number;rarity:ItemRarity;passive:string;
 }
+export interface RawGemItemV1{
+ id:string;name:string;type:'material';rawGemFamilyId:string;rawGemGrade:MobileGemGradeV1;
+ value:number;rarity:ItemRarity;passive:string;
+}
+export const RAW_GEM_ITEMS_V1:readonly RawGemItemV1[]=MOBILE_GEM_FAMILIES_V1.flatMap(family=>([1,2,3,4,5] as MobileGemGradeV1[]).map(grade=>({
+ id:`raw_gem:${family.familyId}:g${grade}`,name:`Unrefined ${family.name} Gem · G${grade}`,type:'material' as const,
+ rawGemFamilyId:family.familyId,rawGemGrade:grade,value:Math.round(60*Math.pow(2.1,grade-1)),
+ rarity:GEM_GRADE_RARITY_V1[grade],passive:`Refine with Enchanting to create a ${GEM_GRADE_LABEL_V1[grade]} ${family.name} Gem.`,
+})));
 export const GEM_ITEMS_V1:readonly MobileGemItemV1[]=MOBILE_GEM_FAMILIES_V1.flatMap(family=>([1,2,3,4,5] as MobileGemGradeV1[]).map(grade=>({
  id:`gem:${family.familyId}:g${grade}`,name:`${GEM_GRADE_LABEL_V1[grade]} ${family.name} Gem`,type:'gem' as const,gemKind:family.kind,gemFamilyId:family.familyId,gemGrade:grade,gemTier:grade,
  gemStat:family.legacyStat,gemPercent:family.legacyStat?family.values[grade]:undefined,
@@ -70,4 +79,6 @@ export const GEM_ITEMS_V1:readonly MobileGemItemV1[]=MOBILE_GEM_FAMILIES_V1.flat
 
 export function mobileGemFamilyV1(familyId:string){return MOBILE_GEM_FAMILIES_V1.find(row=>row.familyId===familyId);}
 export function mobileGemItemIdV1(familyId:string,grade:MobileGemGradeV1){return `gem:${familyId}:g${grade}`;}
+export function mobileRawGemItemIdV1(familyId:string,grade:MobileGemGradeV1){return `raw_gem:${familyId}:g${grade}`;}
+export function parseMobileRawGemItemIdV1(itemId:string){const match=/^raw_gem:(stat_[a-z_]+|effect_[a-z_]+):g([1-5])$/.exec(itemId);if(!match)return undefined;const familyId=match[1],grade=Number(match[2]) as MobileGemGradeV1;return mobileGemFamilyV1(familyId)?{familyId,grade}:undefined;}
 export function mobileGemRecipeIdV1(familyId:string){return `recipe_gem_${familyId.replace(/^effect_|^stat_/,'')}`;}

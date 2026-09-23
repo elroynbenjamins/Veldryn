@@ -30,7 +30,7 @@ function queueActivityForGoal(state:GameState,goal:ProgressionGoal,destination:W
  if(destination.kind==='skills'&&destination.mode==='gathering'&&destination.actionId)return {kind:'gathering',targetId:destination.actionId};
  if(goal.kind==='skill_level'){
   const best=bestGatheringTrainingDestination(state,goal.skillId as any);
-  if(best?.actionId)return {kind:'gathering',targetId:best.actionId};
+  if(best?.kind==='skills'&&best.actionId)return {kind:'gathering',targetId:best.actionId};
  }
  if(goal.kind==='weekly_order'){
   const order=state.account.weeklyOrders?.orders.find(row=>row.id===goal.orderId);

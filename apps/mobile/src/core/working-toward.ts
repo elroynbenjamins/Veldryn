@@ -36,8 +36,8 @@ export function workingTowardSourceAvailability(state:GameState,source:WorkingTo
  }
  if(source.kind==='skills'){
   if(source.recipeId){
-   const recipe=RECIPES.find(row=>row.id===source.recipeId),skillReady=!!recipe&&skillLevel(state,recipe.skillId)>=recipe.level,characterReady=!!recipe&&(recipe.characterLevel===undefined||state.character!.level>=recipe.characterLevel),available=!!recipe&&skillReady&&characterReady;
-   const reason=!recipe?'Recipe is not in the current catalog.':!skillReady?`Requires ${skillLabel(recipe.skillId)} ${recipe.level}.`:!characterReady?`Requires character level ${recipe.characterLevel}.`:undefined;
+   const recipe=RECIPES.find(row=>row.id===source.recipeId),catalogReady=!!recipe&&recipeVisibleInActiveCatalog(RECIPES,recipe,state.character?.classId),skillReady=!!recipe&&skillLevel(state,recipe.skillId)>=recipe.level,characterReady=!!recipe&&(recipe.characterLevel===undefined||state.character!.level>=recipe.characterLevel),available=!!recipe&&catalogReady&&skillReady&&characterReady;
+   const reason=!recipe?'Recipe is not in the current catalog.':!catalogReady?'This legacy equipment recipe was retired by Equipment 2.0.':!skillReady?`Requires ${skillLabel(recipe.skillId)} ${recipe.level}.`:!characterReady?`Requires character level ${recipe.characterLevel}.`:undefined;
    return {kind:'recipe',id:source.recipeId,label:recipe?.name??source.recipeId,available,reason};
   }
   if(source.actionId){

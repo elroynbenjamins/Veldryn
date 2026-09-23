@@ -170,6 +170,7 @@ ok(planner.includes("type:'queue_add'")&&planner.includes('enqueueActivity(state
 ok(workingTowardExecution.includes('activityQueueCapacity')&&workingTowardExecution.includes('queuedActivityReadiness')&&workingTowardExecution.includes('workingTowardDestinationAvailability'),'Execution planning must reuse authoritative queue capacity/readiness and progression availability');
 ok(workingTowardExecution.includes("stopIfOutOfFood:true")&&workingTowardExecution.includes("stopIfRewardsWouldOverflow:true")&&workingTowardExecution.includes("finishCurrentCycle:true"),'Generated stop-at-goal rules must preserve all idle safety defaults');
 ok(!workingTowardExecution.includes('travelToRegion')&&!workingTowardExecution.includes("type:'travel'"),'Working Toward execution planning must never auto-travel');
+ok(planner.includes('offlineCapBreakdown(state)')&&planner.includes('Current reserve: {afk.hours}h')&&planner.includes('maximum {afk.maxHours}h'),'Working Toward must explain the live Offline Reserve model rather than stale fixed-hour copy');
 const workingTowardSummary=read('src/components/WorkingTowardSummary.tsx');
 const homeSession=read('src/components/HomeSessionOverview.tsx');
 const dashboard=read('src/core/dashboard.ts');

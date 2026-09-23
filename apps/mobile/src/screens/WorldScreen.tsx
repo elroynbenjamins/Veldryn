@@ -1,5 +1,6 @@
 import {useEffect,useState,useMemo} from 'react';
 import {RegionArtwork} from '../components/RegionArtwork';
+import {ZoneSceneArtwork} from '../components/ZoneSceneArtwork';
 import {ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
 import {WORLD_ZONES} from '../content/world-map';
@@ -65,7 +66,7 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop,onR
     <Text accessibilityRole="header" style={s.h}>Asterfall Regions</Text>
     <Text style={s.sub}>Your location controls which enemies and gathering activities are available.</Text>
 
-    <View style={[s.currentCard,{borderColor:current.accent}]}><RegionArtwork regionId={current.id}/><View style={s.heroShade}/>
+    <View style={[s.currentCard,{borderColor:current.accent}]}><ZoneSceneArtwork regionId={current.id}/><View style={s.heroShade}/>
 
       <View style={s.flex}><Text style={s.overline}>CURRENT REGION</Text><Text style={s.currentName}>{current.name}</Text><Text style={s.sub}>{current.subtitle}</Text></View>
     </View>
@@ -94,16 +95,16 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop,onR
     <Text style={s.section}>TRAVEL ELSEWHERE</Text>
     <View style={s.unlockCard}><View style={s.unlockHead}><View style={s.flex}><Text style={s.unlockLabel}>{next?'NEXT REGION UNLOCK':'REGION PROGRESSION'}</Text><Text style={s.unlockTitle}>{next?next.name:'All authored regions unlocked'}</Text></View>{next?<Text style={s.unlockLevel}>Lv {level}/{next.minLevel}</Text>:<Text style={s.unlockDone}>COMPLETE</Text>}</View>{next?<><View style={s.unlockTrack}><View style={[s.unlockFill,{width:(nextUnlockProgress+'%') as any}]}/></View><Text style={s.unlockMeta}>{Math.max(0,next.minLevel-level)} level{next.minLevel-level===1?'':'s'} until travel unlock.</Text></>:<Text style={s.unlockMeta}>Every currently authored region can be travelled to.</Text>}</View>
     {travelRegions.map(zone=>{
-      const availability=regionTravelAvailability(state,zone),unlocked=availability==='available',development=availability==='inDevelopment',environment=environmentForZone(zone.id),summary=regionActivitySummary(state,zone.id),goalTarget=goalRegionId===zone.id;
-      const content=development?'Preview planned regional content':unlocked?'Hunts '+summary.combatReady+'/'+summary.combatTotal+' · Gather '+summary.gatheringReady+'/'+summary.gatheringTotal+(summary.bossesTotal?' · Boss '+summary.bossesReady+'/'+summary.bossesTotal:''):(summary.combatTotal+' hunts · '+summary.gatheringTotal+' gathering'+(summary.bossesTotal?' · '+summary.bossesTotal+' boss':''));
-      return <View key={zone.id} style={[s.destination,goalTarget&&s.goalDestination,development&&s.developmentDestination]}>
-        <View style={s.thumbnail}><RegionArtwork regionId={zone.id} muted={!unlocked}/>{!unlocked&&<View style={[s.lockedTag,development&&s.developmentTag]}><Text style={s.lockedText}>{development?'IN DEVELOPMENT':`Lv. ${zone.minLevel}`}</Text></View>}</View>
+      const availability=regionTravelAvailability(state,zone),unlocked=availability==='available',inDevelopment=availability==='inDevelopment',environment=environmentForZone(zone.id),summary=regionActivitySummary(state,zone.id),goalTarget=goalRegionId===zone.id;
+      const content=inDevelopment?'Preview planned regional content':unlocked?'Hunts '+summary.combatReady+'/'+summary.combatTotal+' · Gather '+summary.gatheringReady+'/'+summary.gatheringTotal+(summary.bossesTotal?' · Boss '+summary.bossesReady+'/'+summary.bossesTotal:''):(summary.combatTotal+' hunts · '+summary.gatheringTotal+' gathering'+(summary.bossesTotal?' · '+summary.bossesTotal+' boss':''));
+      return <View key={zone.id} style={[s.destination,goalTarget&&s.goalDestination,inDevelopment&&s.developmentDestination]}>
+        <View style={s.thumbnail}><ZoneSceneArtwork regionId={zone.id} muted={!unlocked}/>{!unlocked&&<View style={[s.lockedTag,inDevelopment&&s.developmentTag]}><Text style={s.lockedText}>{inDevelopment?'IN DEVELOPMENT':`Lv. ${zone.minLevel}`}</Text></View>}</View>
         <View style={s.flex}>
-          <View style={s.destinationHead}><Text style={[s.destinationName,development&&s.developmentText]}>{zone.name}</Text>{goalTarget?<Text style={s.goalBadge}>GOAL</Text>:null}</View>
-          <Text style={s.destinationMeta}>{development?'In Development':unlocked?`Levels ${zone.minLevel}–${zone.maxLevel} · ${environment.weatherSymbol} ${environment.weatherName}`:`Unlocks at level ${zone.minLevel}`}</Text>
+          <View style={s.destinationHead}><Text style={[s.destinationName,inDevelopment&&s.developmentText]}>{zone.name}</Text>{goalTarget?<Text style={s.goalBadge}>GOAL</Text>:null}</View>
+          <Text style={s.destinationMeta}>{inDevelopment?'In Development':unlocked?`Levels ${zone.minLevel}–${zone.maxLevel} · ${environment.weatherSymbol} ${environment.weatherName}`:`Unlocks at level ${zone.minLevel}`}</Text>
           <Text numberOfLines={1} style={s.destinationContent}>{content}</Text>
           <Text numberOfLines={2} style={s.destinationSub}>{zone.subtitle}</Text>
-          <View style={s.travelButton}><GameButton compact title={development?'In Development':unlocked?'Travel':`Locked · Lv. ${zone.minLevel}`} tone="secondary" onPress={()=>setTravelTargetId(zone.id)}/></View>
+          <View style={s.travelButton}><GameButton compact title={unlocked?'Travel':'Preview'} tone="secondary" onPress={()=>setTravelTargetId(zone.id)}/></View>
         </View>
       </View>;
     })}

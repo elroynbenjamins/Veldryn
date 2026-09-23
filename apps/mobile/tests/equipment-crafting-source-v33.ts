@@ -1,7 +1,7 @@
 import {EQUIPMENT_CRAFT_SKILL_BY_CLASS,TIER_CHARACTER_LEVEL_FLOOR,TIER_CRAFTING_LEVEL_FLOOR,V33_EQUIPMENT_RECIPES,v33EquipmentRecipeForItem} from '../src/content/equipment-recipes-v33';
 import {RECIPES} from '../src/content/skills';
 import {itemDef} from '../src/content/items';
-import {createCharacter,craftRecipe,newGame} from '../src/core/game';
+import {createCharacter,craftRecipe,equipItem,newGame} from '../src/core/game';
 import {HERB_NODES} from '../src/content/herbalism';
 import {startEquipmentCraft,claimEquipmentCraft} from '../src/core/equipment-crafting-queue';
 import {equipmentCraftingPath} from '../src/core/equipment-crafting-path';
@@ -17,6 +17,15 @@ ok(new Set(V33_EQUIPMENT_RECIPES.map(row=>row.id)).size===2430,'V33 recipe IDs m
 ok(new Set(V33_EQUIPMENT_RECIPES.map(row=>row.output.itemId)).size===2430,'Every V33 piece should have exactly one generated output recipe');
 ok(V33_EQUIPMENT_RECIPES.every(row=>RECIPES.some(recipe=>recipe.id===row.id&&recipe.output.itemId===row.output.itemId)),'All generated V33 recipes must be registered in RECIPES');
 ok(V33_EQUIPMENT_RECIPES.every(row=>row.inputs.length>=2&&row.inputs.every(input=>itemDef(input.itemId).type==='material')),'Every V33 recipe needs registered material inputs');
+ok(V33_EQUIPMENT_RECIPES.every(row=>(itemDef(row.output.itemId).requiredLevel??0)>=row.characterLevel),'Every V33 item must carry at least its recipe character-level requirement when equipped');
+ok(RECIPES.find(row=>row.id==='CRAFT_TRACKER_CHEST')?.skillId==='tailoring','Wayfinder class gear must use Tailoring');
+ok(RECIPES.find(row=>row.id==='CRAFT_SPELLGLASS_CHEST')?.skillId==='tailoring','Hexweaver class gear must use Tailoring');
+ok(RECIPES.find(row=>row.id==='CRAFT_NIGHTFANG_CHEST')?.skillId==='tailoring','Knife Dancer class gear must use Tailoring');
+ok(RECIPES.find(row=>row.id==='CRAFT_STORMCARVED_CHEST')?.skillId==='tailoring','Stonecaller class gear must use Tailoring');
+ok(RECIPES.find(row=>row.id==='CRAFT_QUICKPRAYER_CHEST')?.skillId==='tailoring','Dawnkeeper class gear must use Tailoring');
+ok(RECIPES.find(row=>row.id==='CRAFT_LASTWALL_CHEST')?.skillId==='smithing','Bastion class gear must stay Smithing');
+ok(RECIPES.find(row=>row.id==='CRAFT_MOURNCHAIN_CHEST')?.skillId==='smithing','Dreadguard class gear must stay Smithing');
+ok(RECIPES.find(row=>row.id==='CRAFT_BLOODRUSH_CHEST')?.skillId==='smithing','Ravager class gear must stay Smithing');
 
 const timerRanges:Record<string,[number,number]>={T1:[60,180],T2:[180,360],T3:[300,600],T4:[480,900],T5:[720,1200],T6:[900,1500],T7:[1200,1800],T8:[1500,2400],T9:[1800,2700]};
 for(const recipe of V33_EQUIPMENT_RECIPES){
@@ -101,6 +110,9 @@ for(const skillId of ['smithing','tailoring'] as const){
   const t9=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T9'&&row.skillId===skillId)!;
   let alt=createCharacter(newGame(0),t9.classId,'Fresh Alt','male');
   alt={...alt,character:{...alt.character!,gold:999999},bank:{...alt.bank,stacks:t9.inputs.map(input=>({...input,quantity:input.quantity*2}))}};
+  const rawAlt={...alt,inventory:{...alt.inventory,stacks:[{itemId:t9.output.itemId,quantity:1}]}};let equipGate=false;
+  try{equipItem(rawAlt,t9.output.itemId)}catch(error){equipGate=error instanceof Error&&error.message.includes('character level')}
+  ok(equipGate,'A raw/dropped T9 item must not be equippable by a fresh same-class alt');
   let characterGate=false;try{startEquipmentCraft(alt,t9.id,1000)}catch(error){characterGate=error instanceof Error&&error.message.includes('character level')}
   ok(characterGate,'Donated T9 materials must not bypass the '+skillId+' character-level gate');
   alt={...alt,character:{...alt.character!,level:t9.characterLevel}};

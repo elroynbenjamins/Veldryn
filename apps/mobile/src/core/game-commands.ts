@@ -28,6 +28,7 @@ import {craftEquipmentPrerequisites} from './equipment-crafting-prerequisites';
 import {buildAdminQaState,refillAdminQaResources} from '../dev/admin-qa-profile';
 import {isTimedProcessingRecipe} from './processing';
 import type {FallenKnightBattleResult} from './story-boss';
+import {setHerbalismHarvestMethod} from './herbalism';
 
 /** Commands express intent. Neither a client save nor a client reward is accepted. */
 export interface GameCommand {type:string;args?:Record<string,unknown>}
@@ -35,7 +36,7 @@ export interface VerifiedActivity {kind:'combat'|'gathering'|'crafting'|'boss';c
 export type ForgeCraftResult=ReturnType<typeof claimEquipmentCraft>['result'];
 export interface GameCommandResult {state:GameState;reward?:RewardBundle;activity:GameState['activity'];message?:string;won?:boolean;storyBossBattle?:FallenKnightBattleResult;upgrade?:ReturnType<typeof attemptEquipmentUpgrade>['result'];forgeResults?:ForgeCraftResult[];contributions:VerifiedActivity[]}
 const fields:Record<string,readonly string[]>={
- class_training:[],class_focus:['focus'],faith_practice:['tierId','count'],faith_blessing:['id'],faith_favorite:['id','enabled'],faith_hide:['enabled'],alchemy_start:['id','batches'],processing_start:['id','batches'],
+ class_training:[],class_focus:['focus'],herbalism_method:['id'],faith_practice:['tierId','count'],faith_blessing:['id'],faith_favorite:['id','enabled'],faith_hide:['enabled'],alchemy_start:['id','batches'],processing_start:['id','batches'],
  companion_monthly:['id'],companion_supplies:[],companion_bond_reward:['id','level'],companion_boss_rematch:[],
  companion_equip:['id'],companion_unequip:[],companion_level:['id'],companion_ascend:['id'],companion_master:['id'],companion_upgrade:['id'],companion_training:[],companion_essence:[],
  companion_trial_start:['ids','floor'],companion_trial_floor:['id','floor'],companion_trial_abandon:['id'],companion_assignment_start:['id','ids'],companion_assignment_claim:['id'],companion_technique:['id','technique'],companion_codex:['id'],companion_showcase:['id','ids'],companion_weekly:['id'],companion_special:['id','ids'],
@@ -129,6 +130,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
    break;
   }
   case 'class_training':state=game.startClassTraining(state,now);break;
+  case 'herbalism_method':state=setHerbalismHarvestMethod(state,oneOf(a.id,['balanced','quick','careful','bountiful']));break;
   case 'faith_practice':state=reserveFaithPractice(state,text(a,'tierId'),integer(a,'count',1,1000),now);break;
   case 'faith_blessing':state=updateFaithPreference(state,'blessing',text(a,'id'));break;
   case 'faith_favorite':state=updateFaithPreference(state,'favorite',text(a,'id'),a.enabled===true);break;

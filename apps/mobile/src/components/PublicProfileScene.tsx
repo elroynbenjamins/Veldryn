@@ -13,7 +13,7 @@ import {equipmentTheme,radii,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {GuildTaggedPlayerName} from './GuildTaggedPlayerName';
 
-export function PublicProfileScene({profile,height=205}:{profile:PublicPlayerProfileV43;height?:number}){
+export function PublicProfileScene({profile,height=205,reduceMotion=false}:{profile:PublicPlayerProfileV43;height?:number;reduceMotion?:boolean}){
  const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
  const background=profileBackgroundPreviewById.get(profile.backgroundId),base=BASE_PROFILE_BACKGROUNDS.find(row=>row.id===profile.backgroundId);
  const border=profile.borderId?profileBorderSourceById.get(profile.borderId):undefined,pet=profile.petId?petArtSource(profile.petId):undefined;
@@ -23,7 +23,7 @@ export function PublicProfileScene({profile,height=205}:{profile:PublicPlayerPro
   <View style={s.shade}/>
   <View style={s.identityPlate}>
    <Text style={s.eyebrow}>PLAYER SHOWCASE</Text>
-   <GuildTaggedPlayerName name={profile.character.name||profile.displayName} guildTag={profile.guildTag} tagColorId={profile.guildTagColorId} style={s.name}/>
+   <GuildTaggedPlayerName name={profile.character.name||profile.displayName} guildTag={profile.guildTag} tagColorId={profile.guildTagColorId} nameStyle={profile.nameStyle} reduceMotion={reduceMotion} style={s.name}/>
    <Text numberOfLines={1} style={s.title}>“{profile.title}”</Text>
    <Text style={s.meta}>Lv. {profile.character.level} · {classId.replace(/_/g,' ')}</Text>
   </View>

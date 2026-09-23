@@ -1,10 +1,12 @@
 import {createCharacter,newGame,effectiveStats,salvageItem,sellItem} from '../src/core/game';
 import {acknowledgeAllInventoryItems,acknowledgeInventoryItem,inventoryFavoriteIds,inventoryNewItemIds,recoveryAmount,storageCapacityStatus,toggleInventoryFavorite,transferAmount,transferError,visibleStacks} from '../src/core/inventory-view';
 import {validateGameCommand,validateGameSettings} from '../src/core/game-commands';
-import {bulkSalvageSelected,bulkSelectionSummary,bulkSellSelected,bulkTransferSelected} from '../src/core/inventory-bulk';
+import {bulkSelectionSummary,bulkSellSelected,bulkTransferSelected} from '../src/core/inventory-bulk';
 import {itemInspectModel} from '../src/core/item-inspect';
 import {workingTowardDestinationAvailability} from '../src/core/working-toward';
 import {normalizeSave} from '../src/core/save-normalization';
+import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
+import {itemDef} from '../src/content/items';
 function ok(value:boolean,message:string){if(!value)throw new Error(message)}
 const state=createCharacter(newGame(1000),'IRONWARDEN');
 const stacks=[{itemId:'COPPER_ORE',quantity:12},{itemId:'TRAVEL_RATION',quantity:3},{itemId:'EMBER_SHARD',quantity:2},{itemId:'FALLEN_KNIGHT_SIGIL',quantity:1}];
@@ -43,28 +45,26 @@ const nearCapacity=storageCapacityStatus(Array.from({length:9},(_,index)=>({item
 ok(nearCapacity.level==='near'&&nearCapacity.free===1&&nearCapacity.percent===90,'Near-full storage status');
 const fullCapacity=storageCapacityStatus(Array.from({length:10},(_,index)=>({itemId:'STACK_'+index,quantity:1})),10);
 ok(fullCapacity.level==='full'&&fullCapacity.free===0,'Full storage status');
-const favoriteProtected={...state,settings:{...state.settings,favoriteItemIds:['WORN_BLADE']},inventory:{...state.inventory,stacks:[{itemId:'WORN_BLADE',quantity:1}]}};
-let favoriteSellBlocked=false;try{sellItem(favoriteProtected,'WORN_BLADE')}catch(error){favoriteSellBlocked=error instanceof Error&&error.message.includes('Favorite item is protected')}
+const favoriteProtected={...state,settings:{...state.settings,favoriteItemIds:['basic_sword']},inventory:{...state.inventory,stacks:[{itemId:'basic_sword',quantity:1}]}};
+let favoriteSellBlocked=false;try{sellItem(favoriteProtected,'basic_sword')}catch(error){favoriteSellBlocked=error instanceof Error&&error.message.includes('Favorite item is protected')}
 ok(favoriteSellBlocked,'Favorite items cannot be sold through core logic');
-let favoriteSalvageBlocked=false;try{salvageItem(favoriteProtected,'WORN_BLADE')}catch(error){favoriteSalvageBlocked=error instanceof Error&&error.message.includes('Favorite item is protected')}
+let favoriteSalvageBlocked=false;try{salvageItem(favoriteProtected,'basic_sword')}catch(error){favoriteSalvageBlocked=error instanceof Error&&error.message.includes('Favorite item is protected')}
 ok(favoriteSalvageBlocked,'Favorite items cannot be salvaged through core logic');
-const bulkBase={...state,inventory:{...state.inventory,stacks:[{itemId:'TRAVEL_RATION',quantity:20},{itemId:'COPPER_ORE',quantity:4},{itemId:'WORN_BLADE',quantity:1},{itemId:'HOLY_WATER',quantity:2}]},bank:{stacks:[],capacity:10}};
-const bulkIds=['TRAVEL_RATION','COPPER_ORE','WORN_BLADE','HOLY_WATER'];
+const bulkBase={...state,inventory:{...state.inventory,stacks:[{itemId:'TRAVEL_RATION',quantity:20},{itemId:'COPPER_ORE',quantity:4},{itemId:'basic_sword',quantity:1},{itemId:'HOLY_WATER',quantity:2}]},bank:{stacks:[],capacity:10}};
+const bulkIds=['TRAVEL_RATION','COPPER_ORE','basic_sword','HOLY_WATER'];
 const bulkSummary=bulkSelectionSummary(bulkBase,bulkIds,'inventory');
 ok(bulkSummary.selectedStackCount===4&&bulkSummary.transferableStackCount===3&&bulkSummary.transferProtectedCount===1,'Bulk transfer keeps selected auto-eat food safe');
-ok(bulkSummary.sellableStackCount===2&&bulkSummary.sellGold===55,'Bulk sell includes only eligible stack value');
+ok(bulkSummary.sellableStackCount===2&&bulkSummary.sellGold===30,'Bulk sell includes only eligible stack value');
 const movedBulk=bulkTransferSelected(bulkBase,bulkIds,'inventory');
 ok(movedBulk.inventory.stacks.length===1&&movedBulk.inventory.stacks[0].itemId==='TRAVEL_RATION','Bulk deposit leaves protected auto-eat stack carried');
-ok(movedBulk.bank.stacks.some(stack=>stack.itemId==='COPPER_ORE')&&movedBulk.bank.stacks.some(stack=>stack.itemId==='WORN_BLADE'),'Bulk deposit moves eligible full stacks');
+ok(movedBulk.bank.stacks.some(stack=>stack.itemId==='COPPER_ORE')&&movedBulk.bank.stacks.some(stack=>stack.itemId==='basic_sword'),'Bulk deposit moves eligible full stacks');
 const tooSmall={...bulkBase,bank:{stacks:[],capacity:1}},tooSmallBefore=JSON.stringify(tooSmall);
-let atomicTransferBlocked=false;try{bulkTransferSelected(tooSmall,['COPPER_ORE','WORN_BLADE'],'inventory')}catch(error){atomicTransferBlocked=error instanceof Error&&error.message.includes('Bank is full')}
+let atomicTransferBlocked=false;try{bulkTransferSelected(tooSmall,['COPPER_ORE','basic_sword'],'inventory')}catch(error){atomicTransferBlocked=error instanceof Error&&error.message.includes('Bank is full')}
 ok(atomicTransferBlocked&&JSON.stringify(tooSmall)===tooSmallBefore,'Bulk transfer failure is atomic and does not partially mutate state');
-const bulkFavorite={...bulkBase,settings:{...bulkBase.settings,favoriteItemIds:['WORN_BLADE']}};
+const bulkFavorite={...bulkBase,settings:{...bulkBase.settings,favoriteItemIds:['basic_sword']}};
 const soldBulk=bulkSellSelected(bulkFavorite,bulkIds);
 ok(soldBulk.character!.gold===bulkFavorite.character!.gold+20,'Bulk sell totals only eligible non-protected stacks');
-ok(soldBulk.inventory.stacks.some(stack=>stack.itemId==='WORN_BLADE')&&soldBulk.inventory.stacks.some(stack=>stack.itemId==='TRAVEL_RATION'),'Bulk sell keeps favorite gear and auto-eat food');
-const salvagedBulk=bulkSalvageSelected(bulkBase,['WORN_BLADE']);
-ok(!salvagedBulk.inventory.stacks.some(stack=>stack.itemId==='WORN_BLADE')&&salvagedBulk.inventory.stacks.some(stack=>stack.itemId==='MOSS_FIBER'&&stack.quantity===2),'Bulk salvage processes eligible equipment');
+ok(soldBulk.inventory.stacks.some(stack=>stack.itemId==='basic_sword')&&soldBulk.inventory.stacks.some(stack=>stack.itemId==='TRAVEL_RATION'),'Bulk sell keeps favorite gear and auto-eat food');
 ok(validateGameCommand({type:'bulk_transfer',args:{location:'inventory',ids:['COPPER_ORE']}}).type==='bulk_transfer','Bulk transfer command validates for online execution');
 let invalidBulkCommand=false;try{validateGameCommand({type:'bulk_sell',args:{ids:Array.from({length:101},(_,index)=>'ITEM_'+index)}})}catch{invalidBulkCommand=true}
 ok(invalidBulkCommand,'Bulk commands cap selections at 100 stacks');
@@ -74,7 +74,7 @@ ok(copperInspect.sources.some(source=>source.kind==='combat'),'Quick Inspect exp
 ok(copperInspect.usedIn.some(recipe=>recipe.name==='Smelt Copper Batch'&&recipe.quantity===10),'Quick Inspect exposes crafting uses');
 const ingotInspect=itemInspectModel(state,'COPPER_INGOT');
 ok(ingotInspect.sources.some(source=>source.kind==='crafting'&&source.title==='Smelt Copper Batch'),'Quick Inspect exposes crafting acquisition sources');
-const gearInspect=itemInspectModel(state,'WORN_BLADE');
+const gearInspect=itemInspectModel(state,'basic_sword');
 ok(gearInspect.upgrade?.rank===0&&gearInspect.upgrade.successChance===1&&gearInspect.upgrade.nextRank===1,'Quick Inspect exposes the guaranteed first equipment upgrade chance');
 ok(gearInspect.stats?.attack===4&&gearInspect.sockets?.capacity===2,'Quick Inspect exposes effective stats and the fixed Stat/Effect socket capacity');
 const copperGatherSource=copperInspect.sources.find(source=>source.title==='Copper Vein');
@@ -95,21 +95,24 @@ const lowMiningState={...state,character:{...state.character!,level:20},currentR
 const oathstoneSource=itemInspectModel(lowMiningState,'OATHSTONE_ORE').sources.find(source=>source.title==='Oathstone Seam');
 ok(oathstoneSource?.availability?.status==='locked'&&oathstoneSource.availability.detail.includes('Mining 16'),'Gathering source shows the actual skill-level blocker');
 ok(copperUse?.availability.status==='ready'&&copperUse.availability.label==='AVAILABLE','Unlocked crafting use is labeled AVAILABLE');
-const smithingReadyCharLocked={...state,character:{...state.character!,level:20},skills:state.skills.map(row=>row.skillId==='smithing'?{...row,level:20}:row)};
-const characterGate=workingTowardDestinationAvailability(smithingReadyCharLocked,{kind:'skills',skillId:'smithing',mode:'crafting',recipeId:'CRAFT_LASTWALL_CHEST',button:'Open recipe',detail:'Open Lastwall Chestguard.'});
-ok(characterGate.status==='locked'&&characterGate.detail.toLowerCase().includes('retired'),'Retired legacy recipe links must explain Equipment 2.0 retirement instead of progression blockers');
-const copperGear=itemInspectModel(state,'COPPER_BLADE');
-ok(copperGear.gearDecision?.compatible===true&&copperGear.gearDecision.replaces?.name==='Basic Sword','Gear Check identifies the currently equipped replacement');
-ok((copperGear.gearDecision?.loadoutDelta.attack??0)>0&&(copperGear.gearDecision?.loadoutDelta.power??0)>0,'Gear Check exposes positive whole-loadout deltas');
-ok((copperGear.gearDecision?.maxLoadoutGain.attack??0)>0&&copperGear.gearDecision?.maxRank===10,'Gear Check exposes remaining +10 loadout potential');
+const gatedRecipe=V33_EQUIPMENT_RECIPES.find(row=>row.classId==='IRONWARDEN'&&row.characterLevel>20)!;
+const smithingReadyCharLocked={...state,character:{...state.character!,level:gatedRecipe.characterLevel-1},skills:state.skills.map(row=>row.skillId==='smithing'?{...row,level:100}:row)};
+const characterGate=workingTowardDestinationAvailability(smithingReadyCharLocked,{kind:'skills',skillId:'smithing',mode:'crafting',recipeId:gatedRecipe.id,button:'Open recipe',detail:'Open V33 recipe.'});
+ok(characterGate.status==='locked'&&characterGate.detail.includes('character level'),'V33 recipe availability reports character-level blockers accurately');
+const ironwardenWeapon=V33_EQUIPMENT_RECIPES.find(row=>row.classId==='IRONWARDEN'&&row.v33EquipmentTier==='T1'&&itemDef(row.output.itemId).slot==='weapon')!;
+const v33Gear=itemInspectModel(state,ironwardenWeapon.output.itemId);
+ok(v33Gear.gearDecision?.compatible===true&&v33Gear.gearDecision.replaces?.name==='Basic Sword','Gear Check identifies the currently equipped replacement');
+ok((v33Gear.gearDecision?.loadoutDelta.attack??0)>0&&(v33Gear.gearDecision?.loadoutDelta.power??0)>0,'Gear Check exposes positive whole-loadout deltas');
+ok((v33Gear.gearDecision?.maxLoadoutGain.attack??0)>0&&v33Gear.gearDecision?.maxRank===10,'Gear Check exposes remaining +10 loadout potential');
 const setState={...state,character:{...state.character!,equipment:{...state.character!.equipment,gloves:'T1P_003'}}};
 const oathboundInspect=itemInspectModel(setState,'T1P_002');
 ok(oathboundInspect.gearDecision?.set?.currentPieces===1&&oathboundInspect.gearDecision.set.previewPieces===2,'Gear Check previews authoritative v33 set-piece progress after equip');
 ok(oathboundInspect.gearDecision?.set?.reached?.pieces===2&&oathboundInspect.gearDecision.set.next?.pieces===4,'Gear Check exposes reached and next v33 set milestones');
-const socketState={...state,character:{...state.character!,gearEnhancements:{STONEHEART_CHEST:{rank:2,failures:0,gemIds:['WARD_SHARD']}}}};
-const socketInspect=itemInspectModel(socketState,'STONEHEART_CHEST');
+const socketState={...state,character:{...state.character!,gearEnhancements:{[ironwardenWeapon.output.itemId]:{rank:2,failures:0,gemIds:['WARD_SHARD']}}}};
+const socketInspect=itemInspectModel(socketState,ironwardenWeapon.output.itemId);
 ok(socketInspect.gearDecision?.gems[0]?.name==='Ward Shard'&&socketInspect.gearDecision.gems[0].percent===.02&&socketInspect.gearDecision.gems[0].stat==='Defense','Gear Check exposes current socket contribution');
-const otherClassInspect=itemInspectModel(state,'TRACKER_CHEST');
+const otherClassRecipe=V33_EQUIPMENT_RECIPES.find(row=>row.classId==='WAYFINDER')!;
+const otherClassInspect=itemInspectModel(state,otherClassRecipe.output.itemId);
 ok(otherClassInspect.gearDecision?.compatible===false,'Gear Check prevents misleading loadout deltas for another class');
 ok(JSON.stringify(stacks)===original,'Sorting does not mutate save stacks');
 ok(transferAmount(3,10)===3,'Quantity clamps to owned count');

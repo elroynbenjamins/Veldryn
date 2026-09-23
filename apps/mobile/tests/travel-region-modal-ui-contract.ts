@@ -40,7 +40,7 @@ ok(modal.includes('disabled={!unlocked}'),'Locked and in-development destination
 ok(modal.includes("inDevelopment?'STATUS':'CONDITIONS'")&&modal.includes("inDevelopment?'Preview only'"),'In-development regions must show preview status rather than live weather');
 ok(modal.includes("inDevelopment?'PLANNED CONTENT':'CONTENT'"),'In-development regions must label future content explicitly');
 ok(modal.includes("inDevelopment?'PLANNED ACTIVITIES':'ACTIVITIES'"),'In-development regions must distinguish planned activities from live activities');
-ok(modal.includes("inDevelopment?'PLANNED ENEMIES':'COMMON ENEMIES'"),'In-development regions must distinguish planned enemies from live encounters');
+ok(modal.includes('PLANNED ENEMIES')&&modal.includes('Enemy roster will be revealed'),'In-development regions must distinguish planned enemies from live encounters');
 ok(modal.includes('COMMON ENEMIES')&&modal.includes('NOTABLE DROPS')&&modal.includes('ACTIVITIES'),'Travel sheet must preview meaningful zone content');
 ok(modal.includes('<ItemArtwork itemId={drop.itemId}'),'Notable drops must use the real in-game item visuals');
 ok(modal.includes('environment.weatherName'),'Released travel sheets should still show current destination conditions');

@@ -1,7 +1,9 @@
 import {GEAR_RARITIES,rarityMeta,rarityNameColor,rollGearRarity} from '../src/core/item-rarity';
 import {itemDef} from '../src/content/items';
+import {EQUIPMENT_ITEMS_V33} from '../src/content/equipment-items-v33';
 if(GEAR_RARITIES.find(x=>x.id==='uncommon')!.chance!==.07||GEAR_RARITIES.find(x=>x.id==='mythic')!.chance!==.0005)throw new Error('Requested rarity odds missing');
-if(itemDef('ASTER_IRON_CHEST').rarity!=='rare'||itemDef('OATHSTONE_WARDPLATE').rarity!=='epic')throw new Error('Gear rarity tiers missing');
+const rare=EQUIPMENT_ITEMS_V33.find(item=>item.rarity==='rare')!,epic=EQUIPMENT_ITEMS_V33.find(item=>item.rarity==='epic')!;
+if(itemDef(rare.id).rarity!=='rare'||itemDef(epic.id).rarity!=='epic')throw new Error('V33 gear rarity tiers missing');
 if(rarityMeta('mythic').statMultiplier<=rarityMeta('legendary').statMultiplier)throw new Error('Mythic stats must exceed Legendary');
 if(rarityNameColor('common',false,'#17202A')!=='#17202A')throw new Error('Common names should use theme text');
 if(rarityNameColor('rare',true,'#17202A')!==rarityMeta('rare').color)throw new Error('Dark themes should use canonical rarity color');

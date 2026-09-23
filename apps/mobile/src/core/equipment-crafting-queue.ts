@@ -5,7 +5,7 @@ import {characterPermanentMultipliers} from './permanent-boosts';
 import {levelFromXp} from './progression';
 import type {EquipmentCraftJob,GameState,ItemStack,SkillState} from './types';
 import {craftClaimSubRoll,craftedInstanceResult,createCraftedGearInstance} from './crafted-gear-instances';
-import {gemCombineRecipeV1,isGemFamilyRecipeUnlockedV1} from './gem-progression-v1';
+import {gemCombineRecipeV1,gemRefineRecipeV1,isGemFamilyRecipeUnlockedV1} from './gem-progression-v1';
 import {professionMasteryMultipliers} from './profession-mastery-v40';
 import {applyTrustedLongTermProgression} from './long-term-progression-runtime';
 
@@ -98,6 +98,15 @@ function validateGemCombineStart(state:GameState,recipeId:string){
   if(!state.character)throw new Error('Create a character first');
   const recipe=gemCombineRecipeV1(recipeId);if(!recipe)throw new Error('Unknown gem combination');
   if(!isGemFamilyRecipeUnlockedV1(state,recipe.familyId))throw new Error('Discover this Effect Gem recipe first');
+  const skill=state.skills.find(row=>row.skillId==='enchanting');if(!skill||skill.level<recipe.level)throw new Error(`Requires enchanting level ${recipe.level}`);
+  if(state.character.gold<recipe.gold)throw new Error(`Need ${recipe.gold} gold`);
+  for(const input of recipe.inputs)if(combinedQuantity(state,input.itemId)<input.quantity)throw new Error(`Need ${input.quantity} ${itemDef(input.itemId).name}`);
+  return recipe;
+}
+function validateGemRefineStart(state:GameState,recipeId:string){
+  if(!state.character)throw new Error('Create a character first');
+  const recipe=gemRefineRecipeV1(recipeId);if(!recipe)throw new Error('Unknown gem refinement');
+  const skill=state.skills.find(row=>row.skillId==='enchanting');if(!skill||skill.level<recipe.level)throw new Error(`Requires enchanting level ${recipe.level}`);
   if(state.character.gold<recipe.gold)throw new Error(`Need ${recipe.gold} gold`);
   for(const input of recipe.inputs)if(combinedQuantity(state,input.itemId)<input.quantity)throw new Error(`Need ${input.quantity} ${itemDef(input.itemId).name}`);
   return recipe;
@@ -176,10 +185,32 @@ export function startGemCombine(state:GameState,recipeId:string,nowMs:number){
   if(active.length>=slots.capacity&&waiting.length>=MAX_WAITING_EQUIPMENT_CRAFTS)throw new Error(`Forge backlog is full (${MAX_WAITING_EQUIPMENT_CRAFTS}/${MAX_WAITING_EQUIPMENT_CRAFTS})`);
   projected={...projected,character:{...projected.character!,gold:projected.character!.gold-recipe.gold}};
   for(const input of recipe.inputs)projected=consumeAcross(projected,input.itemId,input.quantity);
-  const speed=Math.max(.1,characterPermanentMultipliers(projected).craftingSpeedMultiplier),seconds=Math.max(1,Math.ceil(recipe.seconds/speed)),durationMs=seconds*1000;
+  const mastery=professionMasteryMultipliers(recipe.id,projected.account.professionMasteryByAction?.[recipe.id]),speed=Math.max(.1,characterPermanentMultipliers(projected).craftingSpeedMultiplier*mastery.speed),seconds=Math.max(1,Math.ceil(recipe.seconds/speed)),durationMs=seconds*1000;
   const existingQueue=equipmentCraftingQueue(projected),startsNow=active.length<slots.capacity&&waiting.length===0;
   const job:EquipmentCraftJob={
     id:`gemcraft:${projected.character!.id}:${recipeId}:${nowMs}:${existingQueue.length}`,
+    recipeId,ownerCharacterId:projected.character!.id,
+    startedAtMs:startsNow?nowMs:nowMs+1,completesAtMs:(startsNow?nowMs:nowMs+1)+durationMs,
+    reservedGold:recipe.gold,reservedInputs:recipe.inputs.map(input=>({...input})),
+  };
+  const scheduled=scheduleWaiting([...existingQueue,job],slots.capacity,nowMs);
+  projected={...projected,account:{...projected.account,equipmentCraftingQueue:scheduled}};
+  const finalJob=scheduled.find(row=>row.id===job.id)!;
+  return {state:projected,job:finalJob,seconds,waiting:finalJob.startedAtMs>nowMs,recipe};
+}
+export function startGemRefinement(state:GameState,recipeId:string,nowMs:number){
+  let projected=withProjectedQueue(state,nowMs);
+  const recipe=validateGemRefineStart(projected,recipeId);
+  const slots=equipmentCraftSlotBreakdown(projected),queue=equipmentCraftingQueue(projected);
+  const active=queue.filter(job=>isActive(job,nowMs)),waiting=queue.filter(job=>isWaiting(job,nowMs)),ready=queue.filter(job=>isReady(job,nowMs));
+  if(ready.length>=MAX_READY_EQUIPMENT_CRAFTS)throw new Error('Claim finished forge jobs before starting more crafts');
+  if(active.length>=slots.capacity&&waiting.length>=MAX_WAITING_EQUIPMENT_CRAFTS)throw new Error(`Forge backlog is full (${MAX_WAITING_EQUIPMENT_CRAFTS}/${MAX_WAITING_EQUIPMENT_CRAFTS})`);
+  projected={...projected,character:{...projected.character!,gold:projected.character!.gold-recipe.gold}};
+  for(const input of recipe.inputs)projected=consumeAcross(projected,input.itemId,input.quantity);
+  const mastery=professionMasteryMultipliers(recipe.id,projected.account.professionMasteryByAction?.[recipe.id]),speed=Math.max(.1,characterPermanentMultipliers(projected).craftingSpeedMultiplier*mastery.speed),seconds=Math.max(1,Math.ceil(recipe.seconds/speed)),durationMs=seconds*1000;
+  const existingQueue=equipmentCraftingQueue(projected),startsNow=active.length<slots.capacity&&waiting.length===0;
+  const job:EquipmentCraftJob={
+    id:`gemrefine:${projected.character!.id}:${recipeId}:${nowMs}:${existingQueue.length}`,
     recipeId,ownerCharacterId:projected.character!.id,
     startedAtMs:startsNow?nowMs:nowMs+1,completesAtMs:(startsNow?nowMs:nowMs+1)+durationMs,
     reservedGold:recipe.gold,reservedInputs:recipe.inputs.map(input=>({...input})),
@@ -208,7 +239,7 @@ function grantCraftOutput(state:GameState,recipe:{output:{itemId:string;quantity
   return {...state,inventory:{...state.inventory,stacks:inv.stacks},bank:{...state.bank,stacks:bank.stacks}};
 }
 
-function awardOwnerSkillXp(state:GameState,ownerCharacterId:string,recipe:Recipe){
+function awardOwnerSkillXp(state:GameState,ownerCharacterId:string,recipe:Pick<Recipe,'id'|'skillId'|'xp'>){
   const mastery=professionMasteryMultipliers(recipe.id,state.account.professionMasteryByAction?.[recipe.id]),awardXp=Math.max(1,Math.floor(recipe.xp*mastery.xp));
   const award=(skills:SkillState[])=>skills.map(row=>{
     if(row.skillId!==recipe.skillId)return row;
@@ -223,7 +254,7 @@ export function claimForgeJob(state:GameState,jobId:string,nowMs:number,rarityRo
   const projected=withProjectedQueue(state,nowMs),queue=equipmentCraftingQueue(projected),job=queue.find(row=>row.id===jobId);
   if(!job)throw new Error('Crafting job not found');
   if(job.completesAtMs>nowMs)throw new Error(job.startedAtMs>nowMs?'This forge job is still waiting for a slot':'This forge job is still in progress');
-  const equipmentRecipe=timedEquipmentRecipe(job.recipeId),gemRecipe=gemCombineRecipeV1(job.recipeId),recipe=equipmentRecipe??gemRecipe;
+  const equipmentRecipe=timedEquipmentRecipe(job.recipeId),gemCombineRecipe=gemCombineRecipeV1(job.recipeId),gemRefineRecipe=gemRefineRecipeV1(job.recipeId),gemRecipe=gemCombineRecipe??gemRefineRecipe,recipe=equipmentRecipe??gemRecipe;
   if(!recipe)throw new Error('Crafting recipe is no longer available');
   let next=grantCraftOutput(projected,recipe,job.ownerCharacterId);
   if(equipmentRecipe){
@@ -234,8 +265,10 @@ export function claimForgeJob(state:GameState,jobId:string,nowMs:number,rarityRo
     next=applyTrustedLongTermProgression(next,[{kind:'crafting',contentId:equipmentRecipe.id,units:1,startedAtMs:job.startedAtMs}],undefined,nowMs,{accountId:next.account.longTermAccountScopeId??`local-account:${next.createdAtMs}`,eventId:`forge:${job.id}:${nowMs}`}).state;
     return {state:next,recipe:equipmentRecipe,job,kind:'equipment' as const,instance:created.instance,result:craftedInstanceResult(next,created.instance)};
   }
+  next=awardOwnerSkillXp(next,job.ownerCharacterId,gemRecipe!);
   next={...next,account:{...next.account,equipmentCraftingQueue:queue.filter(row=>row.id!==jobId)}};
-  return {state:next,recipe:gemRecipe!,job,kind:'gem' as const};
+  next=applyTrustedLongTermProgression(next,[{kind:'crafting',contentId:gemRecipe!.id,units:1,startedAtMs:job.startedAtMs}],undefined,nowMs,{accountId:next.account.longTermAccountScopeId??`local-account:${next.createdAtMs}`,eventId:`forge:${job.id}:${nowMs}`}).state;
+  return {state:next,recipe:gemRecipe!,job,kind:'gem' as const,gemAction:gemRefineRecipe?'refine' as const:'combine' as const};
 }
 
 export function claimEquipmentCraft(state:GameState,jobId:string,nowMs:number,rarityRoll=Math.random()){
@@ -292,7 +325,7 @@ export function cancelEquipmentCraft(state:GameState,jobId:string,nowMs:number){
   const projected=withProjectedQueue(state,nowMs),queue=equipmentCraftingQueue(projected),job=queue.find(row=>row.id===jobId);
   if(!job)throw new Error('Crafting job not found');
   if(job.completesAtMs<=nowMs)throw new Error('Finished equipment must be claimed instead of cancelled');
-  const recipe=timedEquipmentRecipe(job.recipeId)??gemCombineRecipeV1(job.recipeId);if(!recipe)throw new Error('Crafting recipe is no longer available');
+  const recipe=timedEquipmentRecipe(job.recipeId)??gemCombineRecipeV1(job.recipeId)??gemRefineRecipeV1(job.recipeId);if(!recipe)throw new Error('Crafting recipe is no longer available');
   const reservedInputs=job.reservedInputs?.length?job.reservedInputs:recipe.inputs,reservedGold=job.reservedGold??recipe.gold;
   const waiting=job.startedAtMs>nowMs,refundRate=waiting?1:EQUIPMENT_CRAFT_CANCEL_GOLD_REFUND;
   const refundGold=Math.floor(reservedGold*refundRate);
@@ -316,7 +349,7 @@ export function equipmentCraftQueueModel(state:GameState,nowMs:number){
   const slotInfo=equipmentCraftSlotBreakdown(state),queue=projectedEquipmentCraftingQueue(state,nowMs);
   const waitingIds=queue.filter(row=>isWaiting(row,nowMs)).map(row=>row.id);
   const jobs=queue.map(job=>{
-    const recipe=RECIPES.find(row=>row.id===job.recipeId),gemRecipe=gemCombineRecipeV1(job.recipeId),ready=isReady(job,nowMs),waiting=isWaiting(job,nowMs),active=isActive(job,nowMs);
+    const recipe=RECIPES.find(row=>row.id===job.recipeId),gemRecipe=gemCombineRecipeV1(job.recipeId)??gemRefineRecipeV1(job.recipeId),ready=isReady(job,nowMs),waiting=isWaiting(job,nowMs),active=isActive(job,nowMs);
     const durationSeconds=Math.ceil(jobDurationMs(job)/1000);
     const outputItemId=recipe?.output.itemId??gemRecipe?.output.itemId;
     return {...job,name:recipe?itemDef(recipe.output.itemId).name:gemRecipe?.name??job.recipeId,outputItemId,forgeKind:gemRecipe?'gem' as const:'equipment' as const,status:ready?'ready' as const:waiting?'waiting' as const:'active' as const,

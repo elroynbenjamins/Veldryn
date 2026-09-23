@@ -45,6 +45,8 @@ function isActiveGoalActivity(state:GameState,activity:QueuedActivity|undefined)
  return ['mining','woodcutting','fishing','herbalism'].includes(state.activity.kind);
 }
 
+export function workingTowardGeneratedRuleId(goalId:string){return ('goal-rule:'+goalId).slice(0,80);}
+
 function stopCondition(goal:ProgressionGoal):IdleStopCondition|undefined{
  const id=('goal-stop:'+goal.id).slice(0,80);
  if(goal.kind==='item_quantity')return {id,kind:'item_quantity',targetId:goal.itemId,value:goal.targetQuantity,enabled:true};
@@ -57,7 +59,7 @@ function stopCondition(goal:ProgressionGoal):IdleStopCondition|undefined{
 export function workingTowardStopRule(goal:ProgressionGoal,characterId:string):IdleRuleSet|undefined{
  const condition=stopCondition(goal);if(!condition)return undefined;
  return {
-  id:('goal-rule:'+goal.id).slice(0,80),
+  id:workingTowardGeneratedRuleId(goal.id),
   characterId,
   name:('Goal · '+goal.title).slice(0,40),
   conditions:[condition],
@@ -115,4 +117,15 @@ export function workingTowardExecutionOverview(state:GameState):WorkingTowardExe
   return priority(a)-priority(b)||b.view.progress-a.view.progress||a.goal.pinnedAtMs-b.goal.pinnedAtMs;
  })[0];
  return {plans,focus,complete,active,blocked,queueable};
+}
+
+
+export function reconcileWorkingTowardGeneratedRules(state:GameState):GameState{
+ if(!state.character)return state;
+ const valid=new Set((state.character.progressionGoals??[]).map(goal=>workingTowardStopRule(goal,state.character!.id)?.id).filter((id):id is string=>!!id));
+ const rules=state.character.idleRulesV40??[];
+ const nextRules=rules.filter(rule=>!rule.id.startsWith('goal-rule:')||valid.has(rule.id));
+ if(nextRules.length===rules.length)return state;
+ const active=state.character.activeIdleRuleIdV40,activeIdleRuleIdV40=active&&nextRules.some(rule=>rule.id===active)?active:undefined;
+ return {...state,character:{...state.character,idleRulesV40:nextRules,activeIdleRuleIdV40}};
 }

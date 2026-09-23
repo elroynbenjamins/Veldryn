@@ -3,6 +3,7 @@ import {newGame} from '../src/core/game';
 import {masteryRankNoticeMessage,rewardLootHighlights,rewardProgressionMoments} from '../src/core/reward-game-feel';
 import {masteryPointsForRank} from '../src/core/profession-mastery-v40';
 import type {RewardBundle} from '../src/core/types';
+import {EQUIPMENT_ITEMS_V33} from '../src/content/equipment-items-v33';
 
 const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
@@ -38,9 +39,10 @@ const masteredMoment=rewardProgressionMoments(masteryBefore,masteredAfter).find(
 equal(masteredMoment?.mastered,true,'R50 mastery must become a permanent mastered moment');
 ok(masteryRankNoticeMessage(masteredMoment?[masteredMoment]:[]).startsWith('Mastered · Greenwood Tree'),'R50 lightweight feedback must use mastered completion wording');
 
-const reward:RewardBundle={xp:1,gold:0,kills:1,elapsedSeconds:1,items:[{itemId:'SUNSCORED_STONEHEART_HELMET',quantity:1},{itemId:'COPPER_ORE',quantity:2}]};
+const epicGear=EQUIPMENT_ITEMS_V33.find(item=>item.rarity==='epic')!;
+const reward:RewardBundle={xp:1,gold:0,kills:1,elapsedSeconds:1,items:[{itemId:epicGear.id,quantity:1},{itemId:'COPPER_ORE',quantity:2}]};
 const loot=rewardLootHighlights(reward);
-const epic=loot.find(row=>row.itemId==='SUNSCORED_STONEHEART_HELMET'),copper=loot.find(row=>row.itemId==='COPPER_ORE');
+const epic=loot.find(row=>row.itemId===epicGear.id),copper=loot.find(row=>row.itemId==='COPPER_ORE');
 equal(epic?.rarity,'epic','authored Epic equipment must retain its rarity in reward feedback');
 equal(epic?.spotlight,true,'Epic+ loot must receive an exceptional reward callout');
 equal(copper?.spotlight,false,'ordinary materials must stay lightweight');

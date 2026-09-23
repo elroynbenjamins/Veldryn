@@ -59,6 +59,10 @@ const tailoringPathMaterial:Record<string,Record<string,string>>={
 
 function q(base:number,multiplier:number){return Math.max(1,Math.round(base*multiplier));}
 function clamp(value:number,min:number,max:number){return Math.max(min,Math.min(max,value));}
+function mergeInputs(inputs:{itemId:string;quantity:number}[]){
+  const totals=new Map<string,number>();for(const input of inputs)totals.set(input.itemId,(totals.get(input.itemId)??0)+input.quantity);
+  return [...totals].map(([itemId,quantity])=>({itemId,quantity}));
+}
 function smithingIngredients(tier:string,path:string,multiplier:number){
   const pathItem=smithingPathMaterial[tier]?.[path];
   switch(tier){
@@ -108,7 +112,7 @@ export const V33_EQUIPMENT_RECIPES:V33EquipmentRecipeDef[]=(catalog.pieces as Ar
     xp:q(tierXp[tier]??120,multiplier),
     gold:q(tierGold[tier]??120,multiplier),
     seconds:clamp(Math.round(range.base*multiplier),range.min,range.max),
-    inputs:(skillId==='tailoring'?tailoringIngredients:smithingIngredients)(tier,String(piece.Path),multiplier),
+    inputs:mergeInputs((skillId==='tailoring'?tailoringIngredients:smithingIngredients)(tier,String(piece.Path),multiplier)),
     output:{itemId:String(piece['Piece ID']),quantity:1},
     classId,
     characterLevel,

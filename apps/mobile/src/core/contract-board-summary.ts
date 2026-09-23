@@ -33,3 +33,20 @@ export function contractBoardSummary(state:GameState,nowMs=Date.now()):ContractB
   nextOrder,
  };
 }
+
+
+export interface ContractBoardRegionFocus{
+ regionId:string;
+ total:number;
+ complete:number;
+ nextOrder?:WeeklyOrder;
+}
+
+/** Contextual Contract Board projection for the World screen current-region hub. */
+export function contractBoardRegionFocus(state:GameState,regionId:string,nowMs=Date.now()):ContractBoardRegionFocus{
+ const board=weeklyOrderBoardForState(state,nowMs);
+ const local=board.orders.filter(order=>order.regionId===regionId);
+ const incomplete=local.filter(order=>order.progress<order.target);
+ const nextOrder=[...incomplete].sort((a,b)=>progressRatio(b)-progressRatio(a)||a.slot-b.slot)[0];
+ return {regionId,total:local.length,complete:local.filter(order=>order.progress>=order.target).length,nextOrder};
+}

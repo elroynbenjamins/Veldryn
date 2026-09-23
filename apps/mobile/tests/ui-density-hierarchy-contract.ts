@@ -226,6 +226,11 @@ ok(world.includes('NEXT REGION UNLOCK')&&world.includes("unlockTrack:{height:5")
 ok(world.includes('orderedTravelRegions(state,current.id,goalRegionId)'),'World travel ordering must reuse the core goal-aware unlocked-first ordering helper');
 ok(world.includes("destinationContent:{fontSize:10"),'Travel destinations must preview authored content without making cards excessively tall');
 ok(!world.includes('Open Co-op Expeditions'),'World must not keep a duplicate standalone co-op panel after adding co-op to current-region quick actions');
+ok(world.includes('<RegionalContractFocus')&&world.includes('onOpenOrder={onOpenWeeklyOrder}')&&world.includes('onOpenBoard={onOpenContracts}'),'World current-region hub must embed contextual Contract Board work with exact and board-level actions');
+const regionalContractFocus=read('src/components/RegionalContractFocus.tsx');
+ok(regionalContractFocus.includes('REGIONAL CONTRACTS ·')&&regionalContractFocus.includes('contractBoardRegionFocus(state,regionId)'),'Regional contract context must derive from the live weekly board for the current region');
+ok(regionalContractFocus.includes("order.kind==='regional'?'View regional problem':'Continue contract'")&&regionalContractFocus.includes('onOpenOrder?.(order)'),'Specific Hunt/Work/Threat contracts must deep-link while broad Regional Problems stay on the Contract Board');
+ok(regionalContractFocus.includes("card:{gap:5,padding:spacing.sm")&&regionalContractFocus.includes('backgroundColor:C.infoSurface'),'Regional contract context must remain a compact semantic sub-card');
 
 const character=read('src/screens/CharacterScreen.tsx');
 ok(character.includes('disclosure:{minHeight:54'),'Character secondary disclosures must remain compact');

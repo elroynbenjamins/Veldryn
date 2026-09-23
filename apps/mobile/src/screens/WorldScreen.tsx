@@ -17,6 +17,8 @@ import {RegionalCombatPanel} from '../components/RegionalCombatPanel';
 import {RegionalJournalPanel} from '../components/RegionalJournalPanel';
 import {RegionalStoryLeadsPanel} from '../components/RegionalStoryLeadsPanel';
 import {TravelRegionModal} from '../components/TravelRegionModal';
+import {RegionalContractFocus} from '../components/RegionalContractFocus';
+import type {WeeklyOrder} from '../core/weekly-orders-v41';
 import {frostmarchCardsV21,frostmarchProgressFromState,type RegionProgressV21} from '../core/region-content-v21';
 import {loadActiveFrostmarchContentVersionV21,loadFrostmarchProgressV21} from '../online/regional-content-v21';
 
@@ -27,10 +29,12 @@ type Props={
   onOpenSkills:()=>void;
   onCoop?:(dungeonId?:string)=>void;
   onRegionalRewardsChanged?:()=>Promise<void>|void;
+  onOpenWeeklyOrder?:(order:WeeklyOrder)=>void;
+  onOpenContracts?:()=>void;
   goalRegionId?:string;
 };
 
-export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop,onRegionalRewardsChanged,goalRegionId}:Props){
+export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop,onRegionalRewardsChanged,onOpenWeeklyOrder,onOpenContracts,goalRegionId}:Props){
   const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
   const level=state.character!.level,currentId=currentRegionId(state);
   const current=WORLD_ZONES.find(zone=>zone.id===currentId)??WORLD_ZONES[0];
@@ -79,6 +83,7 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop,onR
         <RegionStat label="BOSSES" value={currentSummary.bossesReady+'/'+currentSummary.bossesTotal}/>
       </View>
       <Text style={s.sub}>{currentSummary.gatheringSkills.length?'Gathering: '+currentSummary.gatheringSkills.join(', '):'No gathering nodes in this region yet.'}</Text>
+      <RegionalContractFocus state={state} regionId={current.id} onOpenOrder={onOpenWeeklyOrder} onOpenBoard={onOpenContracts}/>
       <View style={s.actions}><View style={s.flex}><GameButton compact title="Combat" onPress={onOpenCombat}/></View><View style={s.flex}><GameButton compact title="Skills" tone="secondary" onPress={onOpenSkills}/></View>{onCoop?<View style={s.flex}><GameButton compact title="Co-op" tone="secondary" onPress={onCoop}/></View>:null}</View>
     </Panel>
 

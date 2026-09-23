@@ -13,6 +13,13 @@ export const COMPANION_ECONOMY_TARGETS={
     elite:[32,48],
     prestige:[70,100],
   } as const,
+  acceleratedTrainingEssenceByRarity:{
+    standard:[300,450],
+    rare:[850,1200],
+    elite:[2100,2900],
+    prestige:[5000,7000],
+  } as const,
+  maxAcceleratedEssenceSpreadVsStandard:20,
 } as const;
 
 const requiredTiers:Record<CombatCompanionRarity,readonly (1|2|3|'mastery')[]>={

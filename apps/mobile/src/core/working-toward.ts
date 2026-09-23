@@ -6,6 +6,7 @@ import {HERB_NODES} from '../content/herbalism';
 import {MONSTERS} from '../content/monsters';
 import {WORLD_ZONES} from '../content/world-map';
 import {ITEMS} from '../content/items';
+import {recipeVisibleInActiveCatalog} from './equipment-catalog-status';
 
 export type WorkingTowardDestination=
  |{kind:'combat';monsterId:string;zoneName:string;regionId?:string;button:string;detail:string}
@@ -73,7 +74,7 @@ export function workingTowardItemSource(state:GameState,itemId:string):WorkingTo
   const zone=WORLD_ZONES.find(row=>row.id===gather.zoneId);
   return {kind:'skills',skillId:gather.skillId as SkillId,mode:'gathering',actionId:gather.id,regionId:gather.zoneId,button:`Gather ${gather.name}`,detail:`${gather.name} in ${zone?.name??gather.zoneId} is a direct source.`};
  }
- const recipe=RECIPES.filter(row=>row.output.itemId===itemId).sort((a,b)=>a.level-b.level)[0];
+ const recipe=RECIPES.filter(row=>row.output.itemId===itemId&&recipeVisibleInActiveCatalog(RECIPES,row,state.character?.classId)).sort((a,b)=>a.level-b.level)[0];
  if(recipe)return {kind:'skills',skillId:recipe.skillId as SkillId,mode:'crafting',recipeId:recipe.id,button:`Craft ${recipe.name}`,detail:`${recipe.name} produces this item.`};
  const drops=MONSTERS.filter(monster=>monster.drops.some(drop=>drop.itemId===itemId)).sort((a,b)=>(state.unlockedMonsterIds.includes(b.id)?1:0)-(state.unlockedMonsterIds.includes(a.id)?1:0)||a.unlockLevel-b.unlockLevel);
  const monster=drops[0];

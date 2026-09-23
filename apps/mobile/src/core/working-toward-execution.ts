@@ -41,7 +41,7 @@ function queueActivityForGoal(state:GameState,goal:ProgressionGoal,destination:W
 
 function isActiveGoalActivity(state:GameState,activity:QueuedActivity|undefined){
  if(!activity||!state.activity||state.activity.targetId!==activity.targetId)return false;
- if(activity.kind==='combat')return state.activity.kind==='combat'&&state.activity.combatChallengeId===activity.combatChallengeId;
+ if(activity.kind==='combat')return state.activity.kind==='combat'&&(!activity.combatChallengeId||state.activity.combatChallengeId===activity.combatChallengeId);
  return ['mining','woodcutting','fishing','herbalism'].includes(state.activity.kind);
 }
 
@@ -109,7 +109,7 @@ export function workingTowardExecutionOverview(state:GameState):WorkingTowardExe
  const complete=plans.filter(row=>row.view.status==='complete').length;
  const active=plans.filter(row=>row.view.status==='active').length;
  const blocked=plans.filter(row=>row.view.status==='blocked').length;
- const queueable=plans.filter(row=>row.executionState==='ready'||row.executionState==='queued'||row.executionState==='active').length;
+ const queueable=plans.filter(row=>row.executionState==='ready'||row.executionState==='queued').length;
  const focus=[...plans].sort((a,b)=>{
   const priority=(row:WorkingTowardExecutionPlan)=>row.executionState==='active'?0:row.view.status==='complete'?1:row.executionState==='ready'?2:row.executionState==='queued'?3:row.view.status==='active'?4:5;
   return priority(a)-priority(b)||b.view.progress-a.view.progress||a.goal.pinnedAtMs-b.goal.pinnedAtMs;

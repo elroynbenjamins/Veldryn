@@ -10,7 +10,7 @@ import type {
   PartyEventView,
 } from '../core/party-social';
 import {supabase} from './supabase';
-import {guildIdentities} from './social';
+import {guildIdentities,playerNameStyles} from './social';
 
 export interface PublishRecruitmentInput {
   postType: RecruitmentPostType;
@@ -87,8 +87,8 @@ export const removePartyMember=(partyId:string,targetAccountId:string)=>rpc<'rem
 export const cancelPartyInvitation=(invitationId:string)=>rpc<'cancelled'>('cancel_party_invitation_v1',{p_invitation_id:invitationId});
 export const disbandParty=(partyId:string)=>rpc<'disbanded'>('disband_party_v1',{p_party_id:partyId});
 export const sendPartyChat=(id:string,body:string,key:string)=>rpc('send_persistent_party_chat_v16',{p_party_id:id,p_body:body,p_idempotency_key:key});
-export type PartyChatMessage={id:string;account_id:string;sender_name:string;body:string;created_at:string;guild_tag?:string|null;guild_tag_color_id?:string|null};
-export async function partyChatMessages(id:string){const {data,error}=await client().from('chat_messages').select('id,account_id,sender_name,body,created_at').eq('channel_type','party').eq('channel_id',id).order('created_at',{ascending:false}).limit(50);if(error)throw error;const rows=(data??[]).reverse() as PartyChatMessage[],identities=await guildIdentities(rows.map(row=>row.account_id));return rows.map(row=>({...row,...identities.get(row.account_id)}));}
+export type PartyChatMessage={id:string;account_id:string;sender_name:string;body:string;created_at:string;guild_tag?:string|null;guild_tag_color_id?:string|null;name_style?:import('../core/player-name-style').PlayerNameStyleSelection|null};
+export async function partyChatMessages(id:string){const {data,error}=await client().from('chat_messages').select('id,account_id,sender_name,body,created_at').eq('channel_type','party').eq('channel_id',id).order('created_at',{ascending:false}).limit(50);if(error)throw error;const rows=(data??[]).reverse() as PartyChatMessage[],ids=rows.map(row=>row.account_id),[identities,nameStyles]=await Promise.all([guildIdentities(ids),playerNameStyles(ids)]);return rows.map(row=>({...row,...identities.get(row.account_id),...(nameStyles.has(row.account_id)?{name_style:nameStyles.get(row.account_id)!}:{})}));}
 
 export async function activePartyEvent(): Promise<PartyEventView|null>{
  const identity=await partySocialIdentity(); if(!identity)return null;

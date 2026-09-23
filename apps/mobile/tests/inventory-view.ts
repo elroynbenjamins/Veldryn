@@ -3,6 +3,7 @@ import {acknowledgeAllInventoryItems,acknowledgeInventoryItem,inventoryFavoriteI
 import {validateGameCommand,validateGameSettings} from '../src/core/game-commands';
 import {bulkSalvageSelected,bulkSelectionSummary,bulkSellSelected,bulkTransferSelected} from '../src/core/inventory-bulk';
 import {itemInspectModel} from '../src/core/item-inspect';
+import {itemDef} from '../src/content/items';
 import {workingTowardDestinationAvailability} from '../src/core/working-toward';
 import {normalizeSave} from '../src/core/save-normalization';
 function ok(value:boolean,message:string){if(!value)throw new Error(message)}

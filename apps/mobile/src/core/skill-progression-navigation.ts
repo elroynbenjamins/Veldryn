@@ -10,7 +10,7 @@ import {isTimedProcessingRecipe,processingAvailability} from './processing';
 import {equipmentCraftAvailability,timedEquipmentRecipe} from './equipment-crafting-queue';
 import {workingTowardDestinationAvailability,workingTowardItemSource,workingTowardItemSourceEntries,type WorkingTowardDestination,type WorkingTowardDestinationAvailability,type WorkingTowardItemSourceEntry} from './working-toward';
 import {acquisitionEstimateLabel,acquisitionProjectionForDestination} from './balance-projection';
-import {materialAcquisitionPlanForDestination,materialAcquisitionPlanSummary,materialPreparationSteps,type MaterialPreparationStep} from './material-acquisition-plan';
+import {materialAcquisitionPlanForDestination,materialAcquisitionPlanSummary} from './material-acquisition-plan';
 
 const gatheringDefs=[...GATHERING,...HERB_NODES];
 const pretty=(id:string)=>id.replace(/_/g,' ').replace(/\b\w/g,char=>char.toUpperCase());
@@ -84,7 +84,6 @@ export interface RecipeProgressionAlternateSource extends WorkingTowardItemSourc
  chainLabel?:string;
  chainComplete?:boolean;
  chainBlockedReason?:string;
- prepareSteps?:MaterialPreparationStep[];
 }
 export interface RecipeProgressionSource{
  key:string;
@@ -100,7 +99,6 @@ export interface RecipeProgressionSource{
  chainLabel?:string;
  chainComplete?:boolean;
  chainBlockedReason?:string;
- prepareSteps?:MaterialPreparationStep[];
  bottleneck?:boolean;
  otherSources:RecipeProgressionAlternateSource[];
 }
@@ -109,8 +107,8 @@ function sourceEstimate(state:GameState,itemId:string,quantity:number,source:Wor
  const projection=acquisitionProjectionForDestination(state,itemId,quantity,source.destination);
  if(projection)return {...source,estimatedSeconds:projection.etaSeconds,estimateLabel:acquisitionEstimateLabel(projection)};
  if(source.type==='crafting'){
-  const plan=materialAcquisitionPlanForDestination(state,itemId,quantity,source.destination),summary=materialAcquisitionPlanSummary(plan),prepareSteps=materialPreparationSteps(plan);
-  return {...source,...(plan.etaSeconds!==undefined?{estimatedSeconds:plan.etaSeconds}:{}),...(summary.estimate?{estimateLabel:summary.estimate}:{}),...(summary.chain?{chainLabel:summary.chain}:{}),chainComplete:summary.complete,prepareSteps,...(!summary.complete&&summary.blockedReasons[0]?{chainBlockedReason:summary.blockedReasons[0]}:{})};
+  const plan=materialAcquisitionPlanForDestination(state,itemId,quantity,source.destination),summary=materialAcquisitionPlanSummary(plan);
+  return {...source,...(plan.etaSeconds!==undefined?{estimatedSeconds:plan.etaSeconds}:{}),...(summary.estimate?{estimateLabel:summary.estimate}:{}),...(summary.chain?{chainLabel:summary.chain}:{}),chainComplete:summary.complete,...(!summary.complete&&summary.blockedReasons[0]?{chainBlockedReason:summary.blockedReasons[0]}:{})};
  }
  return source;
 }

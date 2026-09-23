@@ -131,10 +131,9 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'class_training':state=game.startClassTraining(state,now);break;
   case 'herbalism_method':{
    if(!state.character)throw new Error('character_required');
-   if(state.activity?.kind==='herbalism')throw new Error('Stop Herbalism before changing harvest method');
    const method=oneOf(a.method,['balanced','quick','careful','bountiful']) as import('../content/herbalism').HerbalismMethodId;
    const level=state.skills.find(row=>row.skillId==='herbalism')?.level??1;
-   const unlock={balanced:1,quick:15,careful:30,bountiful:45}[method];
+   const unlock={balanced:1,quick:20,careful:45,bountiful:70}[method];
    if(level<unlock)throw new Error(`Requires Herbalism level ${unlock}`);
    state={...state,character:{...state.character,herbalismMethodId:method}};
    message='Herbalism method set to '+method;break;

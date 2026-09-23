@@ -28,6 +28,7 @@ import {craftEquipmentPrerequisites} from './equipment-crafting-prerequisites';
 import {buildAdminQaState,refillAdminQaResources} from '../dev/admin-qa-profile';
 import {isTimedProcessingRecipe} from './processing';
 import type {FallenKnightBattleResult} from './story-boss';
+import {reconcileWorkingTowardGeneratedRules} from './working-toward-execution';
 
 /** Commands express intent. Neither a client save nor a client reward is accepted. */
 export interface GameCommand {type:string;args?:Record<string,unknown>}
@@ -272,7 +273,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'loadout_delete':state=deleteCharacterLoadout(state,text(a,'id'));break;
   case 'goals_set':{
    if(!state.character)throw new Error('character_required');
-   state={...state,character:{...state.character,progressionGoals:normalizeProgressionGoals(a.goals,state.character.id)}};break;
+   state=reconcileWorkingTowardGeneratedRules({...state,character:{...state.character,progressionGoals:normalizeProgressionGoals(a.goals,state.character.id)}});break;
   }
   case 'idle_rules_set':{
    if(!state.character)throw new Error('character_required');

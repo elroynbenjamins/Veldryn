@@ -76,9 +76,9 @@ for(const tier of Object.keys(highTierBands)){
 const t5Ring=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T5'&&itemDef(row.output.itemId).slot==='ring')!;
 ok(projectedFarmHours(t5Ring)>=.75,'Even the cheapest T5 ring must require at least ~45 minutes of baseline regional farming');
 const tailoringT5=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T5'&&row.skillId==='tailoring')!;
-ok(tailoringT5.inputs.some(row=>row.itemId==='SAFFRON_REED')&&tailoringT5.inputs.some(row=>row.itemId==='AMBERGLASS'),'T5 Tailoring must use real Sunscar cloth/magical resources');
+ok(tailoringT5.inputs.some(row=>row.itemId==='SUNSCALE')&&tailoringT5.inputs.some(row=>row.itemId==='AMBERGLASS'),'T5 Tailoring must use Sunscar Herbalism fiber plus regional magical material');
 const tailoringT8=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T8'&&row.skillId==='tailoring')!;
-ok(tailoringT8.inputs.some(row=>row.itemId==='WINTERMINT')&&tailoringT8.inputs.some(row=>row.itemId==='RIMEGLASS'),'T8 Tailoring must use real Frostmarch cloth/magical resources');
+ok(tailoringT8.inputs.some(row=>row.itemId==='FROSTBLOOM')&&tailoringT8.inputs.some(row=>row.itemId==='RIMEGLASS'),'T8 Tailoring must use Frostmarch Herbalism fiber plus regional magical material');
 
 let state=createCharacter(newGame(0),'IRONWARDEN','Crafter','male');
 const path=equipmentCraftingPath(state,'T1P_001')!;

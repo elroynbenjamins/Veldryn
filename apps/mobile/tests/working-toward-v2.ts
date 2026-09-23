@@ -60,10 +60,14 @@ const itemDestination=progressionGoalDestination(state,itemGoal);
 equal(itemDestination.kind,'skills','gathered item goal routes to Skills');
 if(itemDestination.kind==='skills'){equal(itemDestination.actionId,'COPPER_VEIN','item goal deep-links its gathering source');equal(itemDestination.regionId,'OLD_MINES','item source carries its region');}
 
-const copperTravelExecution=workingTowardExecutionPlan(state,itemGoal);
-equal(copperTravelExecution.executionState,'travel','off-region gathered item goal requires explicit travel before queueing');
+const copperLockedExecution=workingTowardExecutionPlan(state,itemGoal);
+equal(copperLockedExecution.executionState,'blocked','off-region gathered item goal reports the region level gate before offering travel');
+ok(copperLockedExecution.queueBlocker?.includes('character level 16'),'locked item-source execution exposes the Old Mines level gate');
+const copperTravelState={...state,character:{...state.character!,level:20}};
+const copperTravelExecution=workingTowardExecutionPlan(copperTravelState,itemGoal);
+equal(copperTravelExecution.executionState,'travel','unlocked off-region item source requires explicit travel before queueing');
 ok(copperTravelExecution.queueBlocker?.includes('Old Mines'),'travel-blocked execution names the required region');
-const copperReadyState={...state,currentRegionId:'OLD_MINES',character:{...state.character!,level:20},skills:state.skills.map(skill=>skill.skillId==='mining'?{...skill,level:20,xp:totalXpAtLevel(20)}:skill)};
+const copperReadyState={...copperTravelState,currentRegionId:'OLD_MINES',skills:copperTravelState.skills.map(skill=>skill.skillId==='mining'?{...skill,level:20,xp:totalXpAtLevel(20)}:skill)};
 const copperReadyExecution=workingTowardExecutionPlan(copperReadyState,itemGoal);
 equal(copperReadyExecution.executionState,'ready','same-region unlocked gathering source becomes queueable');
 equal(copperReadyExecution.queueActivity?.kind,'gathering','item goal execution uses the real gathering queue');

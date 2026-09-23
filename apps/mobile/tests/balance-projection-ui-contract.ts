@@ -49,14 +49,15 @@ ok(acquisitionPlan.includes('materialAcquisitionChainLabel')&&acquisitionPlan.in
 ok(recipe.includes('row.chainLabel')&&recipe.includes('row.chainBlockedReason'),'Recipe source rows must show recursive crafting chains and explain why a total estimate is withheld');
 ok(recipe.includes('source.chainLabel')&&recipe.includes('source.chainBlockedReason'),'Expanded Other sources must preserve recursive chain context for crafting alternatives');
 ok(quickInspect.includes('source.chainLabel')&&quickInspect.includes('source.chainBlockedReason'),'Item Quick Inspect must expose the same recursive chain context as crafting requirements');
-ok(acquisitionPlan.includes('materialPreparationSteps')&&acquisitionPlan.includes("MaterialPreparationStepKind='owned'|'acquire'|'craft'"),'Recursive material planning must expose ordered preparation steps with owned, acquisition and craft semantics');
-ok(skillNavigation.includes('prepareSteps?:MaterialPreparationStep[]')&&skillNavigation.includes('materialPreparationSteps(plan)'),'Crafting source presentation must carry the ordered preparation plan into the recipe UI');
-ok(recipe.includes('Prepare materials')&&recipe.includes('function PrepareMaterials')&&recipe.includes('steps.map')&&recipe.includes('onNavigate(step.destination!)'),'Recipe cards must expose a compact reusable numbered preparation disclosure whose actionable steps deep-link to exact activities');
-ok(recipe.includes("step.status==='ready'?'READY'")&&recipe.includes('prepareIndexReady'),'Already-owned preparation requirements must stay visibly satisfied instead of disappearing from the ordered flow');
-ok(acquisitionPlan.includes('materialPreparationProgress')&&acquisitionPlan.includes("steps.find(step=>step.status!=='ready')"),'Preparation progress must deterministically select the first unmet dependency as the next step');
-ok(recipe.includes('NEXT STEP')&&recipe.includes('progress.ready')&&recipe.includes('nextStepCard'),'Prepare materials must surface progress and one prominent next-step recommendation');
-ok(recipe.includes("progress.complete?'All steps ready'")&&recipe.includes("progress.ready+'/'+progress.total+' ready'"),'Prepare materials disclosure must summarize completion or compact ready/total progress before expansion');
-ok(recipe.includes("next.status==='blocked'?'NEXT STEP BLOCKED':'NEXT STEP'")&&acquisitionPlan.includes("goldBlocked=path==='root'&&plan.goldShortfall>0"),'Blocked next-step presentation must come from core planner state, including root Gold gating');
+ok(acquisitionPlan.includes('recipePreparationRoute')&&acquisitionPlan.includes('preparationEtaSeconds')&&acquisitionPlan.includes('preparationBottleneck'),'Recursive material planning must expose one recipe-wide shared-ledger route with prep ETA and bottleneck metadata');
+ok(!skillNavigation.includes('prepareSteps?:MaterialPreparationStep[]')&&!skillNavigation.includes('materialPreparationSteps(plan)'),'Source rows must not carry a second per-source preparation implementation after reconciliation');
+ok(recipe.includes('recipePreparationRoute(state,recipe,multiplier)')&&recipe.includes('preparationRoute.steps.length>1'),'Recipe cards must build one batch-aware Prepare Materials route and hide it when no preparation work remains');
+ok(recipe.includes('Prepare materials')&&recipe.includes('route.chainLabel')&&recipe.includes('recipePreparationRouteLabel(route)')&&recipe.includes('numberOfLines={1}'),'Collapsed Prepare Materials must show a compact source chain plus bounded prep metadata');
+ok(recipe.includes('route.steps.map')&&recipe.includes('onNavigate(step.destination!)')&&recipe.includes("step.kind!=='final_craft'"),'Expanded preparation must render one ordered actionable dependency sequence while keeping the final craft in place');
+ok(recipe.includes('BOTTLENECK')&&recipe.includes("'FINAL · HERE'"),'Expanded route rows must surface the authoritative bottleneck and mark the current recipe as FINAL / HERE');
+ok(recipe.includes('NEXT STEP')&&recipe.includes('next=prepSteps[0]')&&recipe.includes('nextStepCard'),'Prepare Materials must keep one prominent next-step recommendation from the ordered route');
+ok(recipe.includes('route.totalGold.toLocaleString()')&&recipe.includes('route.goldShortfall'),'Expanded route must preserve full-chain Gold accounting and shortfall visibility');
+ok(!recipe.includes('row.prepareSteps')&&!recipe.includes('openPlans'),'Recipe UI must not keep the superseded nested per-source Prepare Materials disclosure');
 
 
 console.log('PASS: player-facing progression bars, ETAs and drop expectations use shared balance projections');

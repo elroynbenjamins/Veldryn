@@ -32,6 +32,8 @@ const visibleSmithing=visibleRecipeCatalogForSkill(RECIPES,'smithing','WAYFINDER
 ok(visibleSmithing.length>0,'Smithing must retain active recipes');
 ok(visibleSmithing.every(recipe=>recipeCatalogStatus(recipe)!=='retired'),'Smithing browser must contain no retired equipment recipes');
 ok(visibleSmithing.some(recipe=>recipe.v33SetId),'Smithing browser must retain V33 equipment recipes');
+const otherClassV33=V33_EQUIPMENT_RECIPES.find(row=>row.classId==='IRONWARDEN')!;
+ok(!visibleSmithing.some(recipe=>recipe.id===otherClassV33.id),'Wayfinder crafting catalog must hide Ironwarden-only V33 recipes');
 
 const tailoringVisible=visibleRecipeCatalogForSkill(RECIPES,'tailoring','WAYFINDER');
 const tailoringStatuses=tailoringVisible.map(recipeCatalogStatus);

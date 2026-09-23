@@ -4,7 +4,7 @@ import catalog from './equipment_catalog_t1_t9_v33.json';
 export interface V33EquipmentRecipeDef{
   id:string;
   name:string;
-  skillId:'smithing';
+  skillId:'smithing'|'tailoring';
   level:number;
   xp:number;
   gold:number;
@@ -36,6 +36,12 @@ const timerRange:Record<string,{base:number;min:number;max:number}>={
 };
 const tierGold:Record<string,number>={T1:120,T2:420,T3:900,T4:1800,T5:3500,T6:6000,T7:9000,T8:14000,T9:20000};
 const tierXp:Record<string,number>={T1:120,T2:250,T3:450,T4:700,T5:1100,T6:1600,T7:2200,T8:2900,T9:3800};
+export const TIER_CHARACTER_LEVEL_FLOOR:Record<string,number>={T1:2,T2:6,T3:13,T4:19,T5:26,T6:36,T7:46,T8:58,T9:65};
+export const TIER_CRAFTING_LEVEL_FLOOR:Record<string,number>={T1:1,T2:3,T3:10,T4:16,T5:23,T6:33,T7:43,T8:55,T9:62};
+export const EQUIPMENT_CRAFT_SKILL_BY_CLASS:Record<ClassId,'smithing'|'tailoring'>={
+  IRONWARDEN:'smithing',BASTION:'smithing',DREADGUARD:'smithing',RAVAGER:'smithing',
+  WAYFINDER:'tailoring',HEXWEAVER:'tailoring',KNIFE_DANCER:'tailoring',DAWNKEEPER:'tailoring',STONECALLER:'tailoring',
+};
 
 const pathMaterial:Record<string,Record<string,string>>={
   T1:{Foundation:'MOSS_FIBER',Specialist:'WISP_DUST',Alternate:'BOAR_HIDE'},
@@ -43,10 +49,40 @@ const pathMaterial:Record<string,Record<string,string>>={
   T3:{Foundation:'TROLL_HIDE',Specialist:'THORN_SAP',Alternate:'WOLF_PELT'},
   T4:{Foundation:'TORN_OATHCLOTH',Specialist:'LANTERNSTEEL_SHARD',Alternate:'ECHO_QUARTZ'},
 };
+const tailoringPathMaterial:Record<string,Record<string,string>>={
+  T1:{Foundation:'BOAR_HIDE',Specialist:'WISP_DUST',Alternate:'THORN_SAP'},
+  T2:{Foundation:'WOLF_PELT',Specialist:'THORN_SAP',Alternate:'BOAR_HIDE'},
+  T3:{Foundation:'TROLL_HIDE',Specialist:'THORN_SAP',Alternate:'WOLF_PELT'},
+  T4:{Foundation:'TORN_OATHCLOTH',Specialist:'OATHGLASS_SHARD',Alternate:'ECHO_TOUCHED_PELT'},
+  T5:{Foundation:'SAFFRON_REED',Specialist:'MIRAGE_BLOOM',Alternate:'ROYAL_CHITIN'},
+  T6:{Foundation:'SAFFRON_REED',Specialist:'MIRAGE_BLOOM',Alternate:'ROYAL_CHITIN'},
+  T7:{Foundation:'WINTERMINT',Specialist:'RIME_RESIN',Alternate:'WYRMSCALE'},
+  T8:{Foundation:'WINTERMINT',Specialist:'RIME_RESIN',Alternate:'WYRMSCALE'},
+  T9:{Foundation:'WYRMSCALE',Specialist:'FROZEN_HEART',Alternate:'RIME_RESIN'},
+};
 
 function q(base:number,multiplier:number){return Math.max(1,Math.round(base*multiplier));}
 function clamp(value:number,min:number,max:number){return Math.max(min,Math.min(max,value));}
-function ingredients(tier:string,path:string,multiplier:number){
+function mergeInputs(inputs:{itemId:string;quantity:number}[]){
+  const totals=new Map<string,number>();for(const input of inputs)totals.set(input.itemId,(totals.get(input.itemId)??0)+input.quantity);
+  return [...totals].map(([itemId,quantity])=>({itemId,quantity}));
+}
+function ingredients(tier:string,path:string,multiplier:number,skillId:'smithing'|'tailoring'){
+  if(skillId==='tailoring'){
+    const accent=tailoringPathMaterial[tier]?.[path];
+    switch(tier){
+      case 'T1':return mergeInputs([{itemId:'MOSS_FIBER',quantity:q(22,multiplier)},{itemId:accent??'BOAR_HIDE',quantity:q(7,multiplier)}]);
+      case 'T2':return mergeInputs([{itemId:'WOLF_PELT',quantity:q(22,multiplier)},{itemId:accent??'BOAR_HIDE',quantity:q(9,multiplier)}]);
+      case 'T3':return mergeInputs([{itemId:'TROLL_HIDE',quantity:q(18,multiplier)},{itemId:accent??'WOLF_PELT',quantity:q(10,multiplier)},{itemId:'THORN_SAP',quantity:q(5,multiplier)}]);
+      case 'T4':return mergeInputs([{itemId:'TORN_OATHCLOTH',quantity:q(18,multiplier)},{itemId:'ECHO_TOUCHED_PELT',quantity:q(7,multiplier)},{itemId:accent??'OATHGLASS_SHARD',quantity:q(5,multiplier)}]);
+      case 'T5':return mergeInputs([{itemId:'SAFFRON_REED',quantity:q(22,multiplier)},{itemId:'AMBERGLASS',quantity:q(7,multiplier)},{itemId:accent??'MIRAGE_BLOOM',quantity:q(4,multiplier)}]);
+      case 'T6':return mergeInputs([{itemId:'SAFFRON_REED',quantity:q(28,multiplier)},{itemId:'AMBERGLASS',quantity:q(9,multiplier)},{itemId:'ASTRAL_SCRIPT',quantity:q(1,multiplier)},{itemId:accent??'MIRAGE_BLOOM',quantity:q(5,multiplier)}]);
+      case 'T7':return mergeInputs([{itemId:'WINTERMINT',quantity:q(28,multiplier)},{itemId:'RIMEGLASS',quantity:q(7,multiplier)},{itemId:accent??'RIME_RESIN',quantity:q(5,multiplier)}]);
+      case 'T8':return mergeInputs([{itemId:'WINTERMINT',quantity:q(34,multiplier)},{itemId:'RIMEGLASS',quantity:q(10,multiplier)},{itemId:'CHOIR_BLOOM',quantity:q(1,multiplier)},{itemId:accent??'RIME_RESIN',quantity:q(6,multiplier)}]);
+      case 'T9':return mergeInputs([{itemId:'WYRMSCALE',quantity:q(22,multiplier)},{itemId:'RIMEGLASS',quantity:q(14,multiplier)},{itemId:'CHOIR_BLOOM',quantity:q(2,multiplier)},{itemId:accent??'RIME_RESIN',quantity:q(7,multiplier)}]);
+      default:return [];
+    }
+  }
   const pathItem=pathMaterial[tier]?.[path];
   switch(tier){
     case 'T1':return [{itemId:'GREENWOOD_LOG',quantity:q(28,multiplier)},{itemId:pathItem??'MOSS_FIBER',quantity:q(8,multiplier)}];
@@ -54,10 +90,10 @@ function ingredients(tier:string,path:string,multiplier:number){
     case 'T3':return [{itemId:'CROWNWOOD_LOG',quantity:q(32,multiplier)},{itemId:pathItem??'TROLL_HIDE',quantity:q(12,multiplier)},{itemId:'THORN_SAP',quantity:q(6,multiplier)}];
     case 'T4':return [{itemId:'OATHSTONE_INGOT',quantity:q(18,multiplier)},{itemId:'OATHGLASS_SHARD',quantity:q(7,multiplier)},{itemId:pathItem??'TORN_OATHCLOTH',quantity:q(5,multiplier)}];
     case 'T5':return [{itemId:'SUNSTONE_ORE',quantity:q(22,multiplier)},{itemId:'AMBERGLASS',quantity:q(7,multiplier)}];
-    case 'T6':return [{itemId:'SUNSTONE_ORE',quantity:q(24,multiplier)},{itemId:'AMBERGLASS',quantity:q(8,multiplier)},{itemId:'ASTRAL_SCRIPT',quantity:q(1,multiplier)}];
-    case 'T7':return [{itemId:'FROSTIRON',quantity:q(22,multiplier)},{itemId:'RIMEGLASS',quantity:q(5,multiplier)}];
-    case 'T8':return [{itemId:'FROSTIRON',quantity:q(28,multiplier)},{itemId:'RIMEGLASS',quantity:q(8,multiplier)},{itemId:'CHOIR_BLOOM',quantity:q(1,multiplier)}];
-    case 'T9':return [{itemId:'FROSTIRON',quantity:q(36,multiplier)},{itemId:'RIMEGLASS',quantity:q(12,multiplier)},{itemId:'CHOIR_BLOOM',quantity:q(2,multiplier)}];
+    case 'T6':return [{itemId:'SUNSTONE_ORE',quantity:q(30,multiplier)},{itemId:'AMBERGLASS',quantity:q(10,multiplier)},{itemId:'ASTRAL_SCRIPT',quantity:q(1,multiplier)}];
+    case 'T7':return [{itemId:'FROSTIRON',quantity:q(32,multiplier)},{itemId:'RIMEGLASS',quantity:q(8,multiplier)}];
+    case 'T8':return [{itemId:'FROSTIRON',quantity:q(36,multiplier)},{itemId:'RIMEGLASS',quantity:q(11,multiplier)},{itemId:'CHOIR_BLOOM',quantity:q(1,multiplier)}];
+    case 'T9':return [{itemId:'FROSTIRON',quantity:q(46,multiplier)},{itemId:'RIMEGLASS',quantity:q(16,multiplier)},{itemId:'CHOIR_BLOOM',quantity:q(3,multiplier)}];
     default:return [];
   }
 }
@@ -67,20 +103,22 @@ const setById=new Map((catalog.sets as Array<Record<string,string|number>>).map(
 export const V33_EQUIPMENT_RECIPES:V33EquipmentRecipeDef[]=(catalog.pieces as Array<Record<string,string|number>>).map(piece=>{
   const setId=String(piece['Set ID']),set=setById.get(setId);
   if(!set)throw new Error(`Missing V33 set for ${setId}`);
-  const tier=String(piece.Tier),slot=slotByName[String(piece.Slot)],multiplier=slotMultiplier[slot],reqLevel=Math.max(1,Number(piece['Req Level']));
+  const tier=String(piece.Tier),slot=slotByName[String(piece.Slot)],multiplier=slotMultiplier[slot],catalogReqLevel=Math.max(1,Number(piece['Req Level']));
+  const classId=classIdByName[String(piece.Class)],skillId=EQUIPMENT_CRAFT_SKILL_BY_CLASS[classId];
+  const characterLevel=Math.max(catalogReqLevel,TIER_CHARACTER_LEVEL_FLOOR[tier]??1),level=Math.max(1,characterLevel-3,TIER_CRAFTING_LEVEL_FLOOR[tier]??1);
   const range=timerRange[tier]??timerRange.T1;
   return {
     id:`CRAFT_V33_${String(piece['Piece ID'])}`,
     name:String(piece['Item Name']),
-    skillId:'smithing',
-    level:Math.max(1,reqLevel-3),
+    skillId,
+    level,
     xp:q(tierXp[tier]??120,multiplier),
     gold:q(tierGold[tier]??120,multiplier),
     seconds:clamp(Math.round(range.base*multiplier),range.min,range.max),
-    inputs:ingredients(tier,String(piece.Path),multiplier),
+    inputs:ingredients(tier,String(piece.Path),multiplier,skillId),
     output:{itemId:String(piece['Piece ID']),quantity:1},
-    classId:classIdByName[String(piece.Class)],
-    characterLevel:reqLevel,
+    classId,
+    characterLevel,
     v33EquipmentTier:tier,
     v33Region:String(set.Region),
     v33SetId:setId,

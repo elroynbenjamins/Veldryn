@@ -1,7 +1,6 @@
 import {GEAR_RARITIES,rarityMeta,rarityNameColor,rollGearRarity} from '../src/core/item-rarity';
 import {itemDef} from '../src/content/items';
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
-import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
 
 if(GEAR_RARITIES.find(x=>x.id==='uncommon')!.chance!==.07||GEAR_RARITIES.find(x=>x.id==='mythic')!.chance!==.0005)throw new Error('Requested rarity odds missing');
 const rareFixture=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T3')!;

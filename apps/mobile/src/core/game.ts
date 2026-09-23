@@ -49,6 +49,7 @@ import {huntingXpForKills} from './hunting-progression';
 import {regionalSecondaryExchange} from './regional-enemy-stats';
 import {simulateFallenKnightStoryBattle,type FallenKnightBattleResult,type FallenKnightPlayerSnapshot} from './story-boss';
 import {FALLEN_KNIGHT_CLEAR_REWARD,FALLEN_KNIGHT_WEEKLY_BOUNTY_REWARD,fallenKnightWeeklyStatus,recordFallenKnightWeeklyVictory} from './weekly-boss';
+import {unlockedCharacterSlots} from './account-roster';
 import {HERBALISM_ESSENCE_ITEM_ID,herbalismEssenceChance,herbalismHarvestMethodForActivity,selectedHerbalismHarvestMethod} from './herbalism';
 export function beginAlchemyBatch(state:GameState,recipeId:string,batches:number,nowMs:number){return startAlchemyBatch(finishClassDrills(state,nowMs),recipeId,batches,nowMs);}
 export function beginProcessingBatch(state:GameState,recipeId:string,batches:number,nowMs:number){return startProcessingBatch(finishClassDrills(state,nowMs),recipeId,batches,nowMs);}
@@ -67,8 +68,9 @@ function withCompanionUnlocks(reward:RewardBundle,before:GameState,after:GameSta
   return companionUnlocks.length?{...reward,companionUnlocks}:reward;
 }
 
-export const BASE_OFFLINE_CAP_HOURS=24;
-export const MAX_OFFLINE_CAP_HOURS=36;
+export const BASE_OFFLINE_CAP_HOURS=8;
+export const FREE_OFFLINE_CAP_HOURS=18;
+export const MAX_OFFLINE_CAP_HOURS=24;
 /** Base cap retained for content/tests; actual saves use offlineCapSeconds(state). */
 export const OFFLINE_CAP_SECONDS=BASE_OFFLINE_CAP_HOURS*60*60;
 const COMBAT_SPEED_MIN=.68;
@@ -78,21 +80,32 @@ const COMBAT_EXPECTED_SCALE=1.3;
 const COMBAT_MONSTER_DAMAGE_SCALE=1.13;
 export const GATHER_TIME_SCALE=1.25;
 
+function hasAccountEntitlement(state:GameState,...keys:string[]){
+  const entitlements=state.account.entitlements??{};
+  return keys.some(key=>entitlements[key]===true);
+}
+
 export function offlineCapBreakdown(state:GameState){
   const setComplete=!!state.character&&noviceSetFor(state.character.classId).slots.every(slot=>state.character!.craftedNoviceItemIds?.includes(noviceItemId(state.character!.classId,slot)));
   const questMilestone=state.quests.some(q=>q.questId==='QST_005'&&q.status==='claimed');
+  const secondSlot=unlockedCharacterSlots(state)>=2;
+  const guildMember=state.account.guildMember;
+  const firstBoss=state.defeatedBossIds.length>0;
+  const vipPlus=hasAccountEntitlement(state,'vip_plus','vipplus','vip+');
+  const vip=hasAccountEntitlement(state,'vip')||vipPlus;
+  const supporter=hasAccountEntitlement(state,'supporter','supporter_subscription');
   const sources=[
-    {id:'class_set',name:'Complete class set',hours:setComplete?2:0,earned:setComplete},
-    {id:'quest_milestone',name:'Claim chapter 5',hours:questMilestone?2:0,earned:questMilestone},
-    {id:'second_character',name:'Create second character',hours:state.account.createdCharacterCount>=2?2:0,earned:state.account.createdCharacterCount>=2},
-    {id:'third_character',name:'Create third character',hours:state.account.createdCharacterCount>=3?2:0,earned:state.account.createdCharacterCount>=3},
-    {id:'guild',name:'Join a guild',hours:state.account.guildMember?2:0,earned:state.account.guildMember},
-    {id:'first_boss',name:'Defeat first boss',hours:state.defeatedBossIds.length?2:0,earned:state.defeatedBossIds.length>0},
-    {id:'bloom_patron',name:'Bloom Patron',hours:state.account.patronTier==='bloom'||state.account.patronTier==='crown'?2:0,earned:state.account.patronTier==='bloom'||state.account.patronTier==='crown'},
-    {id:'crown_patron',name:'Crown Patron',hours:state.account.patronTier==='crown'?2:0,earned:state.account.patronTier==='crown'},
+    {id:'class_set',name:'Complete first class set',category:'progression' as const,hours:setComplete?2:0,earned:setComplete},
+    {id:'quest_milestone',name:'Claim chapter 5',category:'progression' as const,hours:questMilestone?2:0,earned:questMilestone},
+    {id:'first_boss',name:'Defeat first boss',category:'progression' as const,hours:firstBoss?2:0,earned:firstBoss},
+    {id:'character_slot_2',name:'Unlock character slot #2',category:'progression' as const,hours:secondSlot?2:0,earned:secondSlot},
+    {id:'guild',name:'Join a guild',category:'progression' as const,hours:guildMember?2:0,earned:guildMember},
+    {id:'vip',name:'VIP',category:'paid' as const,hours:vip?2:0,earned:vip},
+    {id:'vip_plus',name:'VIP+',category:'paid' as const,hours:vipPlus?2:0,earned:vipPlus},
+    {id:'supporter',name:'Supporter',category:'paid' as const,hours:supporter?2:0,earned:supporter},
   ];
   const earnedHours=sources.reduce((sum,source)=>sum+source.hours,0),hours=Math.min(MAX_OFFLINE_CAP_HOURS,BASE_OFFLINE_CAP_HOURS+earnedHours);
-  return {baseHours:BASE_OFFLINE_CAP_HOURS,maxHours:MAX_OFFLINE_CAP_HOURS,hours,sources};
+  return {baseHours:BASE_OFFLINE_CAP_HOURS,freeMaxHours:FREE_OFFLINE_CAP_HOURS,maxHours:MAX_OFFLINE_CAP_HOURS,hours,sources};
 }
 export function offlineCapSeconds(state:GameState){return offlineCapBreakdown(state).hours*60*60}
 

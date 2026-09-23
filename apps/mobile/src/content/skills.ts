@@ -3,7 +3,7 @@ import {NOVICE_RECIPES} from './novice-sets';
 import {ITEMS} from './items';
 import {TOOL_RECIPES} from './gathering-tools';
 import {ALCHEMY_RECIPES} from './alchemy';
-import {V33_EQUIPMENT_RECIPES} from './equipment-recipes-v33';
+import {V33_EQUIPMENT_RECIPES,equipmentCraftSkillForClass} from './equipment-recipes-v33';
 export interface GatherDef{id:string;skillId:'mining'|'woodcutting'|'fishing'|'herbalism';name:string;unlockLevel:number;seconds:number;xp:number;itemId:string;min:number;max:number;zoneId:string;difficultyMultiplier:number;recommendedToolTier:number;}
 export const GATHERING:GatherDef[]=([
 {id:'COPPER_VEIN',skillId:'mining',name:'Copper Vein',unlockLevel:1,seconds:15,xp:9,itemId:'COPPER_ORE',min:1,max:2,zoneId:'OLD_MINES'},
@@ -31,9 +31,17 @@ export interface Recipe{id:string;name:string;skillId:'smithing'|'cooking'|'alch
 const frostCompleteSetIds=new Set(['frostbell_panoply','winterchain_harness','aurora_vespers','whiteout_stalker','glacierblood_array','rimeglass_script','snowveil_regalia','choirfrost_resonance']);
 const generatedSetSlots=new Set(['helmet','legs','boots','weapon','offhand','amulet']);
 const GENERATED_COMPLETE_SET_RECIPES:Recipe[]=ITEMS.filter(item=>item.type==='gear'&&item.slot&&item.equipmentSetId&&!/^T[1-9]_/.test(item.equipmentSetId)&&(frostCompleteSetIds.has(item.equipmentSetId)||generatedSetSlots.has(item.slot))).map(item=>{
-  const frost=item.id.startsWith('RIMEBOUND_'),sunscar=item.id.startsWith('SUNSCORED_');
-  const inputs=frost?[{itemId:'FROSTIRON',quantity:item.slot==='chest'?20:12},{itemId:'RIMEGLASS',quantity:item.slot==='ring'?3:5},{itemId:'CHOIR_BLOOM',quantity:1}]:sunscar?[{itemId:'SUNSTONE_ORE',quantity:8},{itemId:'AMBERGLASS',quantity:3},{itemId:'ASTRAL_SCRIPT',quantity:1}]:[{itemId:'OATHSTONE_INGOT',quantity:18},{itemId:'OATHGLASS_SHARD',quantity:9},{itemId:'TORN_OATHCLOTH',quantity:6}];
-  return {id:`CRAFT_${item.id}`,name:item.name,skillId:'smithing',level:frost?59:sunscar?35:22,xp:frost?2050:sunscar?1450:850,gold:frost?7900:sunscar?5000:2300,seconds:frost?840:sunscar?570:330,inputs,output:{itemId:item.id,quantity:1},classId:item.classRestriction,characterLevel:frost?62:sunscar?38:21};
+  const frost=item.id.startsWith('RIMEBOUND_'),sunscar=item.id.startsWith('SUNSCORED_'),skillId=item.classRestriction?equipmentCraftSkillForClass(item.classRestriction):'smithing';
+  const tailored=skillId==='tailoring';
+  const inputs=frost
+    ?tailored?[{itemId:'TORN_OATHCLOTH',quantity:item.slot==='chest'?22:14},{itemId:'ECHO_TOUCHED_PELT',quantity:item.slot==='ring'?5:8},{itemId:'RIMEGLASS',quantity:item.slot==='ring'?3:5},{itemId:'CHOIR_BLOOM',quantity:1}]
+      :[{itemId:'FROSTIRON',quantity:item.slot==='chest'?20:12},{itemId:'RIMEGLASS',quantity:item.slot==='ring'?3:5},{itemId:'CHOIR_BLOOM',quantity:1}]
+    :sunscar
+      ?tailored?[{itemId:'TORN_OATHCLOTH',quantity:16},{itemId:'ECHO_TOUCHED_PELT',quantity:7},{itemId:'AMBERGLASS',quantity:3},{itemId:'ASTRAL_SCRIPT',quantity:1}]
+        :[{itemId:'SUNSTONE_ORE',quantity:8},{itemId:'AMBERGLASS',quantity:3},{itemId:'ASTRAL_SCRIPT',quantity:1}]
+      :tailored?[{itemId:'TORN_OATHCLOTH',quantity:16},{itemId:'ECHO_TOUCHED_PELT',quantity:7},{itemId:'OATHGLASS_SHARD',quantity:6}]
+        :[{itemId:'OATHSTONE_INGOT',quantity:18},{itemId:'OATHGLASS_SHARD',quantity:9},{itemId:'TORN_OATHCLOTH',quantity:6}];
+  return {id:`CRAFT_${item.id}`,name:item.name,skillId,level:frost?59:sunscar?35:22,xp:frost?2050:sunscar?1450:850,gold:frost?7900:sunscar?5000:2300,seconds:frost?840:sunscar?570:330,inputs,output:{itemId:item.id,quantity:1},classId:item.classRestriction,characterLevel:frost?62:sunscar?38:21};
 });
 export const RECIPES:Recipe[]=([
 // Tailoring and Enchanting deliberately reuse existing Asterfall drops and gear.
@@ -159,4 +167,9 @@ export const RECIPES:Recipe[]=([
 {id:'COOK_RIVER_EEL',name:'Sear River Eel Batch',skillId:'cooking',level:8,xp:180,gold:80,seconds:44,repeatableTraining:true,inputs:[{itemId:'RIVER_EEL',quantity:4}],output:{itemId:'SEARED_RIVER_EEL',quantity:4}},
 {id:'COOK_OATHSCALE',name:'Roast Oathscale Batch',skillId:'cooking',level:16,xp:260,gold:130,seconds:54,repeatableTraining:true,inputs:[{itemId:'OATHSCALE_PIKE',quantity:3}],output:{itemId:'ROASTED_OATHSCALE',quantity:3}},
 {id:'COOK_IRONWOOD_STEW',name:'Ironwood Hunter Stew',skillId:'cooking',level:15,xp:105,gold:140,seconds:66,inputs:[{itemId:'RIVER_EEL',quantity:2},{itemId:'THORN_SAP',quantity:1}],output:{itemId:'IRONWOOD_STEW',quantity:1}},
-] as Recipe[]).map(recipe=>recipe.skillId==='smithing'&&!recipe.repeatableTraining&&!recipe.noviceSetId&&!recipe.v33SetId&&!recipe.id.startsWith('SMITH_')?{...recipe,inputs:recipe.inputs.map(input=>({...input,quantity:input.quantity*2}))}:recipe);
+] as Recipe[]).map(recipe=>{
+  const normalized=recipe.classId?{...recipe,skillId:equipmentCraftSkillForClass(recipe.classId)}:recipe;
+  return normalized.skillId==='smithing'&&!normalized.repeatableTraining&&!normalized.noviceSetId&&!normalized.v33SetId&&!normalized.id.startsWith('SMITH_')
+    ?{...normalized,inputs:normalized.inputs.map(input=>({...input,quantity:input.quantity*2}))}
+    :normalized;
+});

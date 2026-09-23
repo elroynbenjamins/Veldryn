@@ -44,8 +44,12 @@ const classSkillsPanel=read('src/components/ClassSkillsPanel.tsx');
 ok(classSkillsPanel.includes('CLASS_DRILL_BASE_XP')&&classSkillsPanel.includes('Balanced: ~')&&classSkillsPanel.includes('Focused: ~'),'Class safe training must show the authoritative drill baseline and hourly split');
 ok(classSkillsPanel.includes('One drill per minute'),'Class safe training cadence must stay explicit');
 
+const craftingProfessionBrowser=read('src/components/CraftingRecipeBrowser.tsx');
+ok(craftingProfessionBrowser.includes("'tailoring'|'enchanting'")&&craftingProfessionBrowser.includes('TAILORING BENCH')&&craftingProfessionBrowser.includes('ENCHANTING TABLE'),'Tailoring and Enchanting must use the shared recipe browser and distinct workshop identity');
+
 const skills=read('src/screens/SkillsScreen.tsx');
 ok(!skills.includes('Hunting-specific activities are not available yet'),'Hunting must not regress to a placeholder-only skill screen');
+ok(!skills.includes('this workshop has no trainable recipes available yet'),'Tailoring and Enchanting must not regress to placeholder-only skill screens');
 ok(skills.includes('Train Hunting through monster hunts')&&skills.includes('HUNTING_XP_SHARE')&&skills.includes('Hunting XP/hr'),'Hunting detail must explain its combat-linked progression and current-region pace');
 
 ok(skills.includes("minHeight:112"),'Skills hub cards must remain compact');

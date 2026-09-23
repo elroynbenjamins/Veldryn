@@ -27,7 +27,7 @@ export const GATHERING:GatherDef[]=([
   return {...activity,seconds:Math.ceil(activity.seconds*2),xp:Math.round(activity.xp*xpMultiplier),difficultyMultiplier,recommendedToolTier};
 });
 
-export interface Recipe{id:string;name:string;skillId:'smithing'|'cooking'|'alchemy';level:number;xp:number;gold:number;seconds:number;repeatableTraining?:boolean;inputs:{itemId:string;quantity:number}[];output:{itemId:string;quantity:number};classId?:ClassId;noviceSetId?:string;characterLevel?:number;requiresCraftedItemId?:string;v33EquipmentTier?:string;v33Region?:string;v33SetId?:string;v33Path?:string;}
+export interface Recipe{id:string;name:string;skillId:'smithing'|'cooking'|'alchemy'|'tailoring'|'enchanting';level:number;xp:number;gold:number;seconds:number;repeatableTraining?:boolean;inputs:{itemId:string;quantity:number}[];output:{itemId:string;quantity:number};classId?:ClassId;noviceSetId?:string;characterLevel?:number;requiresCraftedItemId?:string;v33EquipmentTier?:string;v33Region?:string;v33SetId?:string;v33Path?:string;}
 const frostCompleteSetIds=new Set(['frostbell_panoply','winterchain_harness','aurora_vespers','whiteout_stalker','glacierblood_array','rimeglass_script','snowveil_regalia','choirfrost_resonance']);
 const generatedSetSlots=new Set(['helmet','legs','boots','weapon','offhand','amulet']);
 const GENERATED_COMPLETE_SET_RECIPES:Recipe[]=ITEMS.filter(item=>item.type==='gear'&&item.slot&&item.equipmentSetId&&!/^T[1-9]_/.test(item.equipmentSetId)&&(frostCompleteSetIds.has(item.equipmentSetId)||generatedSetSlots.has(item.slot))).map(item=>{
@@ -36,6 +36,16 @@ const GENERATED_COMPLETE_SET_RECIPES:Recipe[]=ITEMS.filter(item=>item.type==='ge
   return {id:`CRAFT_${item.id}`,name:item.name,skillId:'smithing',level:frost?59:sunscar?35:22,xp:frost?2050:sunscar?1450:850,gold:frost?7900:sunscar?5000:2300,seconds:frost?840:sunscar?570:330,inputs,output:{itemId:item.id,quantity:1},classId:item.classRestriction,characterLevel:frost?62:sunscar?38:21};
 });
 export const RECIPES:Recipe[]=([
+// Tailoring and Enchanting deliberately reuse existing Asterfall drops and gear.
+// This gives both professions real training loops without introducing new asset or rare-material economies.
+{id:'TAILOR_MOSSWRAP_GLOVES',name:'Stitch Mosswrap Gloves',skillId:'tailoring',level:1,xp:70,gold:20,seconds:36,repeatableTraining:true,inputs:[{itemId:'MOSS_FIBER',quantity:8}],output:{itemId:'MOSSWRAP_GLOVES',quantity:1}},
+{id:'TAILOR_BOARHIDE_BOOTS',name:'Stitch Boarhide Boots',skillId:'tailoring',level:4,xp:110,gold:35,seconds:42,repeatableTraining:true,inputs:[{itemId:'BOAR_HIDE',quantity:7},{itemId:'MOSS_FIBER',quantity:4}],output:{itemId:'BOARHIDE_BOOTS',quantity:1}},
+{id:'TAILOR_HIDE_VEST',name:'Sew Hide Vest',skillId:'tailoring',level:7,xp:150,gold:55,seconds:48,repeatableTraining:true,inputs:[{itemId:'BOAR_HIDE',quantity:10},{itemId:'WOLF_PELT',quantity:4}],output:{itemId:'HIDE_VEST',quantity:1}},
+{id:'TAILOR_TROLLGUARD_HELM',name:'Bind Trollguard Helm',skillId:'tailoring',level:14,xp:240,gold:95,seconds:60,repeatableTraining:true,inputs:[{itemId:'TROLL_HIDE',quantity:6},{itemId:'WOLF_PELT',quantity:6}],output:{itemId:'TROLLGUARD_HELM',quantity:1}},
+
+{id:'ENCHANT_WISP_CHARM',name:'Bind Wisp Charm',skillId:'enchanting',level:1,xp:75,gold:25,seconds:36,repeatableTraining:true,inputs:[{itemId:'WISP_DUST',quantity:6},{itemId:'COPPER_INGOT',quantity:1}],output:{itemId:'WISP_CHARM',quantity:1}},
+{id:'ENCHANT_THORN_RING',name:'Imbue Thorn Ring',skillId:'enchanting',level:6,xp:130,gold:45,seconds:45,repeatableTraining:true,inputs:[{itemId:'THORN_SAP',quantity:7},{itemId:'WISP_DUST',quantity:5}],output:{itemId:'THORN_RING',quantity:1}},
+{id:'ENCHANT_OATHGLASS_CAPE',name:'Attune Oathglass Cape',skillId:'enchanting',level:16,xp:300,gold:180,seconds:75,repeatableTraining:true,inputs:[{itemId:'OATHGLASS_SHARD',quantity:3},{itemId:'WISP_DUST',quantity:10},{itemId:'MOSS_FIBER',quantity:10}],output:{itemId:'OATHGLASS_CAPE',quantity:1}},
 ...ALCHEMY_RECIPES as Recipe[],
 ...NOVICE_RECIPES,
 ...GENERATED_COMPLETE_SET_RECIPES,

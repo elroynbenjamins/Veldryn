@@ -21,6 +21,7 @@ ok(world.includes("<ZoneSceneArtwork regionId={zone.id} muted={!unlocked}/>"),'T
 
 ok(map.includes("WorldZoneAvailability='released'|'inDevelopment'"),'World zone definitions must use explicit release metadata');
 ok(map.includes("availability:WorldZoneAvailability"),'Every world zone needs an explicit availability field');
+ok(map.includes("id:'VEILLANDS'")&&map.includes("availability:'inDevelopment'"),'World map must expose at least one real future-region preview in the In Development state');
 ok(navigation.includes("RegionTravelAvailability='available'|'locked'|'inDevelopment'"),'Travel state logic must distinguish available, locked and in-development zones');
 ok(navigation.includes("regionTravelPreview"),'Travel preview must expose enemies, drops and activities');
 ok(navigation.includes("!worldZoneInDevelopment(zone)&&zone.minLevel>level"),'In-development zones must not count as progression unlocks');

@@ -11,6 +11,7 @@ import {MonsterPortraitFrame} from './MonsterPortraitFrame';
 import {challengeHuntLabel} from '../core/challenge-hunts';
 import {activeGatheringRuntimeProjection,activityProgressFeedback} from '../core/balance-projection';
 import {activeCombatRuntimeProjection} from '../core/game';
+import {combatPresentation} from '../core/combat-presentation';
 
 const labels:Record<string,string>={combat:'HUNTING',mining:'MINING',woodcutting:'WOODCUTTING',fishing:'FISHING',herbalism:'HERBALISM',alchemy:'ALCHEMY',processing:'PROCESSING',faith:'FAITH',training:'TRAINING',hunting:'HUNTING',exploration:'EXPLORATION'};
 function elapsed(startedAtMs:number,nowMs:number){const total=Math.max(0,Math.floor((nowMs-startedAtMs)/1000)),hours=Math.floor(total/3600),minutes=Math.floor(total%3600/60),seconds=total%60;return hours?`${hours}h ${minutes}m`:minutes?`${minutes}m ${seconds}s`:`${seconds}s`;}
@@ -29,10 +30,11 @@ export function ActiveActivityBar({state,nowMs,onOpen}:{state:GameState;nowMs:nu
  const completedCycles=Math.floor(cycleProgressSeconds/cycleSeconds),progressPct=Math.round((cycleProgressSeconds%cycleSeconds)/cycleSeconds*100),progress=`${progressPct}%` as `${number}%`;
  const progressKind=combat?'combat':activity.kind==='alchemy'||activity.kind==='processing'?'crafting':activity.kind==='faith'?'faith':activity.kind==='training'?'training':activity.kind==='exploration'?'exploration':'gathering',phase=activityProgressFeedback(progressKind,progressPct/100),cycleRemaining=Math.max(1,Math.ceil(cycleSeconds-(cycleProgressSeconds%cycleSeconds)));
  const sessionKills=combat?(activity.sessionKills??0)+completedCycles:0;
+ const combatView=combat&&monster?combatPresentation(state,monster,cycleProgressSeconds,cycleSeconds):undefined;
  const cycleCopy=combat?`NEXT KILL · ${cycleRemaining}s`:`${phase.replace('…','').toUpperCase()} · ${cycleRemaining}s`;
  return <Pressable accessibilityRole="button" accessibilityLabel={`${labels[activity.kind]} ${name}, active for ${elapsed(activity.startedAtMs,nowMs)}`} accessibilityHint="Opens the active activity" onPress={onOpen} style={({pressed})=>[s.root,combat?s.combat:s.skilling,pressed&&s.pressed]}>
   <View style={s.art}>{monster?<MonsterPortraitFrame monster={monster} size={38} active reduceMotion={state.settings.reduceMotion} framed={false}/>:<ActivityArtwork id={(crafting?.skillId??activity.kind) as any} size={36}/>}</View>
-  <View style={s.copy}><View style={s.line}><Text numberOfLines={1} style={s.name}>{name}</Text><Text style={s.time}>{elapsed(activity.startedAtMs,nowMs)}</Text></View><View style={s.meta}><Text style={[s.kind,combat?s.combatText:s.skillText]}>{labels[activity.kind]}</Text><Text numberOfLines={1} style={s.cycle}>{cycleCopy}</Text></View>{combat?<><View style={s.combatStats}><Text style={s.hpText}>KILL #{sessionKills+1}</Text><Text style={s.damageText}>~{Math.round(combatRuntime?.killsPerHour??0)}/hr</Text><Text style={s.takenText}>~{Math.round(combatRuntime?.xpPerHour??0)} XP/hr</Text></View><View style={s.track}><View style={[s.fill,s.combatFill,{width:progress}]}/></View></>:<View style={s.track}><View style={[s.fill,s.skillFill,{width:progress}]}/></View>}</View>
+  <View style={s.copy}><View style={s.line}><Text numberOfLines={1} style={s.name}>{name}</Text><Text style={s.time}>{elapsed(activity.startedAtMs,nowMs)}</Text></View><View style={s.meta}><Text style={[s.kind,combat?s.combatText:s.skillText]}>{labels[activity.kind]}</Text><Text numberOfLines={1} style={s.cycle}>{cycleCopy}</Text></View>{combat?<><View style={s.combatStats}><Text style={s.hpText}>HP {combatView?.enemyHp??monster?.hp??0}/{combatView?.enemyMaxHp??monster?.hp??0}</Text><Text style={s.damageText}>−{combatView?.playerHit??0}</Text><Text style={s.takenText}>KILL #{sessionKills+1} · ~{Math.round(combatRuntime?.killsPerHour??0)}/hr</Text></View><View style={s.track}><View style={[s.fill,s.combatFill,{width:`${Math.max(2,Math.round(((combatView?.enemyHp??1)/Math.max(1,combatView?.enemyMaxHp??1))*100))}%` as `${number}%`}]}/></View></>:<View style={s.track}><View style={[s.fill,s.skillFill,{width:progress}]}/></View>}</View>
   <Text style={s.chevron}>›</Text>
  </Pressable>;
 }

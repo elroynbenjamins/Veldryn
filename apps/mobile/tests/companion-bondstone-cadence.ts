@@ -2,6 +2,7 @@ import {challengeFallenKnightRematch,createCharacter,newGame} from '../src/core/
 import {awardCompanionRematchBondstone,companionRematchBondstoneStatus,COMPANION_REMATCH_WEEKLY_BONDSTONE_CAP} from '../src/core/companion-runtime';
 import {normalizeCompanionRuntimeSave} from '../src/core/companion-save';
 import {FALLEN_KNIGHT_WEEKLY_REWARD_CAP,fallenKnightWeeklyStatus} from '../src/core/weekly-boss';
+import {characterTotalXpAtLevel} from '../src/core/progression';
 
 function fail(message:string):never{throw new Error(message)}
 function equal(actual:unknown,expected:unknown,message:string){if(actual!==expected)fail(`${message}: expected ${String(expected)}, got ${String(actual)}`)}
@@ -36,7 +37,7 @@ equal(resetAward.state.account.companionRematchBondstones,1,'new week starts a n
 
 const bossMonday=Date.UTC(2026,8,21,12);
 let bossState=createCharacter(newGame(bossMonday),'RAVAGER','Weekly Boss Tester');
-bossState={...bossState,defeatedBossIds:['FALLEN_KNIGHT'],account:{...bossState.account,companionBossClears:{FALLEN_KNIGHT:1}},character:{...bossState.character!,level:100,hp:5000,currentHp:5000,attack:5000,defense:1200},inventory:{...bossState.inventory,stacks:[{itemId:'TRAVEL_RATION',quantity:20}]}};
+bossState={...bossState,defeatedBossIds:['FALLEN_KNIGHT'],account:{...bossState.account,companionBossClears:{FALLEN_KNIGHT:1}},character:{...bossState.character!,level:100,xp:characterTotalXpAtLevel(100),hp:5000,currentHp:5000,attack:5000,defense:1200},inventory:{...bossState.inventory,stacks:[{itemId:'TRAVEL_RATION',quantity:20}]}};
 equal(FALLEN_KNIGHT_WEEKLY_REWARD_CAP,3,'Fallen Knight has three rewarded rematches each UTC week');
 let bossStatus=fallenKnightWeeklyStatus(bossState,bossMonday);equal(bossStatus.rewardedClears,0,'fresh boss week starts with no rewarded rematch');
 const bossFirst=challengeFallenKnightRematch(bossState,bossMonday);bossState=bossFirst.state;bossStatus=fallenKnightWeeklyStatus(bossState,bossMonday);

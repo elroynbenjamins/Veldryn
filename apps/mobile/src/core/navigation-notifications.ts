@@ -1,3 +1,4 @@
+import type {QuickNavDestination} from './quick-navigation';
 export type PrimaryNavigationId='character'|'skills'|'world'|'inventory'|'account';
 export type NotificationKind='friend_request'|'party_invite'|'guild_invite'|'guild_application'|'chat_unread'|'weekly_order_complete'|'reward_ready'|'collection_unlock'|'profile_customization'|'event_reward_ready'|'account_action'|'companion_attention'|'equipment_craft_ready';
 export interface NavigationNotification{key:string;kind:NotificationKind;count?:number;unread?:boolean}
@@ -55,4 +56,36 @@ export function mergeRouteBadges(map:SubrouteBadgeMap,routes:string[]):Navigatio
  let count=0,dot=false;
  for(const route of routes){const badge=map[route];if(!badge)continue;count+=badge.count;dot=dot||badge.dot}
  return {count,dot:dot||count>0,display:badgeDisplay(count)};
+}
+
+
+export const QUICK_NOTIFICATION_DESTINATIONS:Record<NotificationKind,QuickNavDestination>={
+ friend_request:'Friends',
+ party_invite:'Party',
+ guild_invite:'Guild',
+ guild_application:'Guild',
+ chat_unread:'Social',
+ weekly_order_complete:'Quests',
+ reward_ready:'Home',
+ collection_unlock:'Account',
+ profile_customization:'Account',
+ event_reward_ready:'Events',
+ account_action:'Account',
+ companion_attention:'Companions',
+ equipment_craft_ready:'Skills',
+};
+
+export type QuickNavigationBadgeMap=Partial<Record<QuickNavDestination,NavigationBadge>>;
+
+export function buildQuickNavigationBadges(rows:NavigationNotification[]):QuickNavigationBadgeMap{
+ const out:QuickNavigationBadgeMap={},seen=new Set<string>();
+ for(const row of rows){
+  if(!row.unread||seen.has(row.key))continue;
+  seen.add(row.key);
+  const destination=QUICK_NOTIFICATION_DESTINATIONS[row.kind],badge=out[destination]??{count:0,dot:false};
+  const primaryMode=NOTIFICATION_DESTINATIONS[row.kind].mode;
+  if(primaryMode==='count')badge.count+=Math.max(1,Math.floor(row.count??1));else badge.dot=true;
+  badge.display=badgeDisplay(badge.count);if(badge.count>0)badge.dot=true;out[destination]=badge;
+ }
+ return out;
 }

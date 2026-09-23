@@ -47,7 +47,7 @@ function recipeReady(state:GameState,recipe:Recipe){
  return recipe.skillId==='alchemy'?alchemyAvailability(state,recipe.id,1).ready:recipeAvailability(state,recipe.id).ready;
 }
 
-export function bestRecipeTrainingDestination(state:GameState,skillId:Extract<SkillId,'smithing'|'cooking'|'alchemy'>):WorkingTowardDestination{
+export function bestRecipeTrainingDestination(state:GameState,skillId:Extract<SkillId,'smithing'|'cooking'|'alchemy'|'tailoring'|'enchanting'>):WorkingTowardDestination{
  const skillLevel=levelFor(state,skillId);
  const candidates=RECIPES.filter(row=>row.skillId===skillId&&!row.noviceSetId&&row.level<=skillLevel&&(!row.classId||row.classId===state.character?.classId))
    .sort((a,b)=>Number(recipeReady(state,b))-Number(recipeReady(state,a))||b.xp-a.xp||b.level-a.level);

@@ -64,12 +64,18 @@ export interface RecipePreparationTransitionNotice{
  kind:RecipePreparationTransitionKind;
  tone:'success'|'info'|'warning';
  message:string;
+ actionLabel:'Open next'|'Review'|'View goal';
+ destination?:WorkingTowardDestination;
  priority:number;
 }
 
 function preparationOutputName(goal:RecipePreparationGoal){
  const recipe=RECIPES.find(row=>row.id===goal.recipeId);
  return recipe?itemDef(recipe.output.itemId).name:goal.title.replace(/^Prepare\s*·\s*/,'');
+}
+
+function noticeDetail(value:string|undefined){
+ return (value??'').trim().replace(/[.!?]+$/,'');
 }
 
 export function recipePreparationTransitionNotices(before:GameState|null|undefined,after:GameState|null|undefined):RecipePreparationTransitionNotice[]{
@@ -80,21 +86,21 @@ export function recipePreparationTransitionNotices(before:GameState|null|undefin
   const oldGoal=previous.get(goal.id);if(!oldGoal)continue;
   const oldView=recipePreparationTrackingView(before,oldGoal),nextView=recipePreparationTrackingView(after,goal),name=preparationOutputName(goal);
   if(oldView.status!=='complete'&&nextView.status==='complete'){
-   notices.push({goalId:goal.id,recipeId:goal.recipeId,kind:'complete',tone:'success',message:`Working Toward complete · ${name} crafted.`,priority:5});continue;
+   notices.push({goalId:goal.id,recipeId:goal.recipeId,kind:'complete',tone:'success',message:`Working Toward complete · ${name} crafted.`,actionLabel:'View goal',priority:5});continue;
   }
   if(nextView.current>oldView.current){
-   if(nextView.status==='blocked')notices.push({goalId:goal.id,recipeId:goal.recipeId,kind:'blocked',tone:'warning',message:`Preparation advanced · Next blocked: ${nextView.nextLabel}.`,priority:4});
-   else notices.push({goalId:goal.id,recipeId:goal.recipeId,kind:'advanced',tone:'info',message:`Preparation advanced · Next: ${nextView.nextLabel}.`,priority:3});
+   if(nextView.status==='blocked'){const reason=noticeDetail(nextView.blocker);notices.push({goalId:goal.id,recipeId:goal.recipeId,kind:'blocked',tone:'warning',message:`Preparation advanced · Next blocked: ${nextView.nextLabel}${reason?' · '+reason:''}.`,actionLabel:'Review',destination:nextView.destination,priority:4});}
+   else notices.push({goalId:goal.id,recipeId:goal.recipeId,kind:'advanced',tone:'info',message:`Preparation advanced · Next: ${nextView.nextLabel}.`,actionLabel:'Open next',destination:nextView.destination,priority:3});
    continue;
   }
   if(oldView.status!=='blocked'&&nextView.status==='blocked'){
-   notices.push({goalId:goal.id,recipeId:goal.recipeId,kind:'blocked',tone:'warning',message:`Preparation blocked · ${name} · ${nextView.blocker??nextView.nextLabel}.`,priority:4});continue;
+   {const reason=noticeDetail(nextView.blocker??nextView.nextLabel);notices.push({goalId:goal.id,recipeId:goal.recipeId,kind:'blocked',tone:'warning',message:`Preparation blocked · ${name}${reason?' · '+reason:''}.`,actionLabel:'Review',destination:nextView.destination,priority:4});}continue;
   }
   if(oldView.status==='blocked'&&nextView.status==='active'){
-   notices.push({goalId:goal.id,recipeId:goal.recipeId,kind:'resumed',tone:'info',message:`Preparation resumed · Next: ${nextView.nextLabel}.`,priority:2});continue;
+   notices.push({goalId:goal.id,recipeId:goal.recipeId,kind:'resumed',tone:'info',message:`Preparation resumed · Next: ${nextView.nextLabel}.`,actionLabel:'Open next',destination:nextView.destination,priority:2});continue;
   }
   if(nextView.current<oldView.current){
-   notices.push({goalId:goal.id,recipeId:goal.recipeId,kind:'regressed',tone:'warning',message:`Preparation changed · Next: ${nextView.nextLabel}.`,priority:1});
+   notices.push({goalId:goal.id,recipeId:goal.recipeId,kind:'regressed',tone:'warning',message:`Preparation changed · Next: ${nextView.nextLabel}.`,actionLabel:'Review',destination:nextView.destination,priority:1});
   }
  }
  return notices.sort((a,b)=>b.priority-a.priority||a.goalId.localeCompare(b.goalId));

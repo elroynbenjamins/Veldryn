@@ -161,10 +161,10 @@ export function dropExpectation(chance:number,min:number,max:number,killsPerHour
 export function acquisitionProjectionForDestination(state:GameState,itemId:string,quantity:number,destination:WorkingTowardDestination):AcquisitionProjection|undefined{
   const needed=Math.max(0,quantity);if(!needed)return undefined;
   if(destination.kind==='skills'&&destination.actionId){
-    const activity=[...GATHERING,...HERB_NODES].find(row=>row.id===destination.actionId&&row.itemId===itemId);
+    const activity=[...GATHERING,...HERB_NODES].find(row=>row.id===destination.actionId);
     if(!activity)return undefined;
-    const pace=gatheringBalanceProjection(state,activity,1),rate=pace.runtimeItemsPerHour;
-    return rate>0?{sourceKind:'gathering',sourceId:activity.id,quantityPerHour:rate,etaSeconds:needed/rate*3600,basis:'current'}:undefined;
+    const pace=gatheringBalanceProjection(state,activity,1),rate=activity.itemId===itemId?pace.runtimeItemsPerHour:itemId==='WILD_ESSENCE'&&activity.skillId==='herbalism'?(pace.secondaryItemsPerHour??0):0;
+    return rate>0?{sourceKind:'gathering',sourceId:activity.id,quantityPerHour:rate,etaSeconds:needed/rate*3600,basis:'current',...(itemId==='WILD_ESSENCE'&&pace.secondaryChance!==undefined?{chance:pace.secondaryChance,oneIn:1/pace.secondaryChance}:{})}:undefined;
   }
   if(destination.kind==='combat'){
     const monster=MONSTERS.find(row=>row.id===destination.monsterId),drop=monster?.drops.find(row=>row.itemId===itemId);

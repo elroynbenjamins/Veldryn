@@ -161,6 +161,15 @@ ok(read('App.tsx').includes("destination.kind==='dungeon'){setGoalDungeonId(dest
 const planner=read('src/screens/ProgressionPlannerScreen.tsx');
 ok(planner.includes('MASTERY_GOAL_RANKS')&&planner.includes('nextMasteryGoalRank'),'Working Toward Profession Mastery goals must target authored bonus ranks');
 ok(planner.includes("R{rank}")&&planner.includes("rank===10?'+2% XP'"),'Mastery goal authoring must explain each bonus-rank target');
+const workingTowardFocus=read('src/components/WorkingTowardFocusPanel.tsx');
+const workingTowardExecution=read('src/core/working-toward-execution.ts');
+ok(planner.includes('<WorkingTowardFocusPanel')&&planner.includes('workingTowardExecutionOverview(state)'),'Working Toward must elevate one deterministic execution focus above the full tracker list');
+ok(workingTowardFocus.includes('FOCUS GOAL · RECOMMENDED')&&workingTowardFocus.includes('READY TO QUEUE')&&workingTowardFocus.includes('QUEUE FULL')&&workingTowardFocus.includes('TRAVEL'),'Focus Goal must distinguish queueable, capacity and travel states');
+ok(workingTowardFocus.includes('Stop at goal')&&workingTowardFocus.includes('food/overflow safety')&&workingTowardFocus.includes('same-region only'),'Focus Goal must explain safe queue and stop-at-goal boundaries');
+ok(planner.includes("type:'queue_add'")&&planner.includes('enqueueActivity(state,plan.queueActivity)'),'Working Toward queue actions must use trusted online commands and the shared offline queue helper');
+ok(workingTowardExecution.includes('activityQueueCapacity')&&workingTowardExecution.includes('queuedActivityReadiness')&&workingTowardExecution.includes('workingTowardDestinationAvailability'),'Execution planning must reuse authoritative queue capacity/readiness and progression availability');
+ok(workingTowardExecution.includes("stopIfOutOfFood:true")&&workingTowardExecution.includes("stopIfRewardsWouldOverflow:true")&&workingTowardExecution.includes("finishCurrentCycle:true"),'Generated stop-at-goal rules must preserve all idle safety defaults');
+ok(!workingTowardExecution.includes('travelToRegion')&&!workingTowardExecution.includes("type:'travel'"),'Working Toward execution planning must never auto-travel');
 const workingTowardSummary=read('src/components/WorkingTowardSummary.tsx');
 const homeSession=read('src/components/HomeSessionOverview.tsx');
 const dashboard=read('src/core/dashboard.ts');

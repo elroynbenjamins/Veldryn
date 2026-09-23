@@ -225,11 +225,11 @@ function routeRewards(state:GameState,incoming:ItemStack[],nowMs:number){
 function consume(stacks:ItemStack[],itemId:string,quantity:number){const f=stacks.find(s=>s.itemId===itemId);if(!f||f.quantity<quantity)throw new Error('Not enough items');return stacks.map(s=>s.itemId===itemId?{...s,quantity:s.quantity-quantity}:s).filter(s=>s.quantity>0)}
 function stackQty(stacks:ItemStack[],itemId?:string){if(!itemId)return 0;return stacks.find(s=>s.itemId===itemId)?.quantity||0;}
 
-function simulateCombat(state:GameState,monsterId:string,elapsed:number){
-  const c=state.character!,baseMonster=MONSTERS.find(x=>x.id===monsterId)!,challengeId=state.activity?.kind==='combat'?state.activity.combatChallengeId:undefined,affixId=state.activity?.kind==='combat'?state.activity.combatAffixId:undefined,m=challengeHuntStats(baseMonster,challengeId,affixId),stats=effectiveStats(state);
-  const modifiers=characterPermanentMultipliers(state);
-  const companion=companionCombatContribution(state);
-  const style=classCombatStyle(c.classId),tactic=combatTactic(state.activity?.combatTacticId);
+function combatRuntimeDetails(state:GameState,monsterId:string){
+  const c=state.character!,baseMonster=MONSTERS.find(x=>x.id===monsterId)!;
+  const challengeId=state.activity?.kind==='combat'?state.activity.combatChallengeId:undefined,affixId=state.activity?.kind==='combat'?state.activity.combatAffixId:undefined;
+  const m=challengeHuntStats(baseMonster,challengeId,affixId),stats=effectiveStats(state),modifiers=characterPermanentMultipliers(state),companion=companionCombatContribution(state);
+  const style=classCombatStyle(c.classId),tactic=combatTactic(state.activity?.kind==='combat'?state.activity.combatTacticId:undefined);
   const environment=state.activity?environmentEffectForActivity(state.activity).effect:undefined;
   const effectGems=equippedEffectGemBonuses(state),baseCritChance=CLASSES.find(def=>def.id===c.classId)?.role==='Damage'?.10:.05,setCombat=equipmentSetCombatModifiers(state,baseCritChance,.84);
   const boostedDefense=Math.max(1,Math.round(stats.defense*modifiers.combatPowerMultiplier));
@@ -239,7 +239,31 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number){
   const setOutput=setCombat.accuracyMultiplier*setCombat.critExpectedMultiplier*setCombat.penetrationMultiplier;
   const speed=Math.max(COMBAT_SPEED_MIN,Math.min(COMBAT_SPEED_MAX,boostedPower/Math.max(1,expected)))*style.speedMultiplier*tactic.speedMultiplier*modifiers.combatSpeedMultiplier*companion.outputMultiplier*(1+monsterMastery(state,monsterId).damageBonus)*(1+effectGems.combat_speed)*setCombat.speedMultiplier*setOutput;
   const killCycleSeconds=m.secondsPerKill*COMBAT_TIME_SCALE*(environment?.actionTimeMultiplier??1)/speed;
-  const theoreticalKills=Math.floor(elapsed/killCycleSeconds);
+  return {c,m,stats,modifiers,companion,style,tactic,environment,effectGems,setCombat,boostedDefense,killCycleSeconds,challengeId,affixId};
+}
+
+export function activeCombatRuntimeProjection(state:GameState){
+  if(!state.character||state.activity?.kind!=='combat')return undefined;
+  const runtime=combatRuntimeDetails(state,state.activity.targetId);
+  const challengeReward=challengeRewardMultipliers(runtime.challengeId,runtime.affixId),effect=runtime.environment;
+  const killsPerHour=3600/Math.max(.1,runtime.killCycleSeconds);
+  const xpPerKill=runtime.m.xp*(effect?.xpMultiplier??1)*runtime.modifiers.characterXpMultiplier*challengeReward.xp;
+  const goldPerKill=runtime.m.gold*(effect?.goldMultiplier??1)*runtime.modifiers.goldMultiplier*challengeReward.gold;
+  const huntingXpPerKill=huntingXpForKills(1,runtime.m.xp,effect?.xpMultiplier??1,runtime.modifiers.skillXpMultiplier,challengeReward.xp);
+  return {
+    killCycleSeconds:runtime.killCycleSeconds,
+    killsPerHour,
+    xpPerHour:killsPerHour*xpPerKill,
+    goldPerHour:killsPerHour*goldPerKill,
+    huntingXpPerHour:killsPerHour*huntingXpPerKill,
+  };
+}
+
+function simulateCombat(state:GameState,monsterId:string,elapsed:number){
+  const {c,m,stats,modifiers,companion,style,tactic,effectGems,setCombat,boostedDefense,killCycleSeconds,challengeId}=combatRuntimeDetails(state,monsterId);
+  const carriedSeconds=(state.activity?.kind==='combat'?state.activity.progressFraction??0:0)*killCycleSeconds;
+  const totalCombatSeconds=carriedSeconds+elapsed;
+  const theoreticalKills=Math.floor(totalCombatSeconds/killCycleSeconds);
   const foodId=c.equippedFoodId;const food=foodId?itemDef(foodId):undefined;
   let foodLeft=stackQty(state.inventory.stacks,foodId),foodConsumed=0;
   let hp=Math.min(c.currentHp||stats.hp,stats.hp),kills=0,championKills=0,stoppedReason='';
@@ -260,8 +284,9 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number){
     kills++;if(champion)championKills++;
     hp=Math.min(stats.hp,hp+Math.max(1,Math.floor(stats.hp*style.recoveryPct*tactic.recoveryMultiplier*companion.recoveryMultiplier*(1+effectGems.recovery)*setCombat.recoveryMultiplier)));
   }
-  const qualifyingActivitySeconds=stoppedReason?Math.min(elapsed,(kills+1)*killCycleSeconds):elapsed;
-  return {kills,championKills,foodConsumed,endHp:hp,stoppedReason,qualifyingActivitySeconds};
+  const qualifyingActivitySeconds=stoppedReason?Math.min(elapsed,Math.max(0,(kills+1)*killCycleSeconds-carriedSeconds)):elapsed;
+  const nextProgressFraction=stoppedReason?0:(totalCombatSeconds%killCycleSeconds)/killCycleSeconds;
+  return {kills,championKills,foodConsumed,endHp:hp,stoppedReason,qualifyingActivitySeconds,nextProgressFraction};
 }
 
 function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number):RewardBundle{

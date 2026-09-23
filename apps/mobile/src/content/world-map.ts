@@ -10,4 +10,5 @@ export const WORLD_ZONES:WorldZoneDef[]=[
   {availability:'released',id:'SUNSCAR',name:'Sunscar',subtitle:'Glass deserts, buried observatories, and the road beyond Asterfall',minLevel:26,maxLevel:45,x:.89,y:.31,accent:'#d58b54',symbol:'☼'},
   {availability:'released',id:'FROSTMARCH',name:'Frostmarch',subtitle:'Frozen passes where every bell carries through the ice',minLevel:45,maxLevel:70,x:.42,y:.10,accent:'#91c7dc',symbol:'❄'},
   {availability:'released',id:'ASHLANDS',name:'Ashlands',subtitle:'Blackglass marshes and the crucible at the edge of the known road',minLevel:71,maxLevel:90,x:.12,y:.22,accent:'#a77972',symbol:'◇'},
+  {availability:'inDevelopment',id:'VEILLANDS',name:'The Veillands',subtitle:'A reality-thin frontier beyond the known road',minLevel:91,maxLevel:110,x:.82,y:.08,accent:'#8a6bc9',symbol:'◈',developmentNote:'The Veillands is a future high-level region. Its travel preview is visible now, while enemies, gathering routes and progression rewards remain in development.'},
 ];

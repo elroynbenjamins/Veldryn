@@ -259,11 +259,11 @@ function aggregateTerminalNeeds(plan:MaterialAcquisitionPlan){
 
 export function materialAcquisitionChainLabel(plan:MaterialAcquisitionPlan){
   if(!plan.craft)return undefined;
-  const leaves=aggregateTerminalNeeds(plan);
-  if(!leaves.length)return `Chain · ${plan.craftSteps} craft step${plan.craftSteps===1?'':'s'} · ingredients already owned`;
+  const leaves=aggregateTerminalNeeds(plan),gold=plan.totalGold>0?` · ${plan.totalGold.toLocaleString()} Gold`:'';
+  if(!leaves.length)return `Chain · ${plan.craftSteps} craft step${plan.craftSteps===1?'':'s'} · ingredients already owned${gold}`;
   const shown=leaves.slice(0,3).map(row=>`${Math.ceil(row.quantity)}× ${row.name}`);
   const extra=leaves.length>3?` · +${leaves.length-3} more`:'';
-  return `Chain · ${plan.craftSteps} craft step${plan.craftSteps===1?'':'s'} · needs ${shown.join(' · ')}${extra}`;
+  return `Chain · ${plan.craftSteps} craft step${plan.craftSteps===1?'':'s'} · needs ${shown.join(' · ')}${extra}${gold}`;
 }
 
 export function materialAcquisitionEstimateLabel(plan:MaterialAcquisitionPlan){

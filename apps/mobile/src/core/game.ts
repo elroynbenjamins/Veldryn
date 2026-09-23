@@ -321,7 +321,7 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
   const m=MONSTERS.find(x=>x.id===state.activity!.targetId);if(!m)throw new Error('Unknown monster');
   if(m.boss)return {xp:0,gold:0,items:[],kills:0,elapsedSeconds:elapsed};
   const challengeId=state.activity.combatChallengeId,affixId=state.activity.combatAffixId,challengeReward=challengeRewardMultipliers(challengeId,affixId);
-  const sim=simulateCombat(state,m.id,elapsed);const items:ItemStack[]=[];
+  const combatElapsed=Math.min(offlineCapSeconds(state),Math.max(0,(effectiveNowMs-state.activity.lastClaimAtMs)/1000)),sim=simulateCombat(state,m.id,combatElapsed);const items:ItemStack[]=[];
   const effect=environmentEffectForActivity(state.activity).effect;
   for(const drop of m.drops){let qty=0;const chance=Math.min(1,drop.chance*effect.dropChanceMultiplier*multipliers.dropChanceMultiplier*challengeReward.dropChance);const seed=`${state.character.id}:${state.activity.lastClaimAtMs}:${m.id}:${drop.itemId}`;for(let i=0;i<sim.kills;i++)if(random01(seed,i)<chance)qty+=drop.min+Math.floor(random01(seed,i+50000)*(drop.max-drop.min+1));if(qty>0)items.push({itemId:drop.itemId,quantity:qty});}
   const classGain=awardCombatClassXp(state.character,sim.kills,m.xp*effect.xpMultiplier*multipliers.skillXpMultiplier*challengeReward.xp,state.activity.classFocus);

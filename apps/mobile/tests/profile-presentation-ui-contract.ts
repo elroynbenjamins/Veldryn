@@ -47,7 +47,7 @@ ok(customize.includes('<PlayerNameStyleEditor state={state} onChange={onChange}/
 ok(nameEditor.includes('VIP+ · SOLID RGB')&&nameEditor.includes('SUPPORTER · ADVANCED STYLES'),'Name-style editor must distinguish permanent VIP+ solid color from Supporter advanced styles');
 ok(nameEditor.includes('updateOnlinePlayerNameStyle')&&nameEditor.includes('savePlayerNameStyle'),'Saving a name style must update both authoritative online projection and local game state');
 ok(nameEditor.includes('reduceMotion={state.settings.reduceMotion}'),'Name-style preview must respect Reduced Motion');
-ok(publicScene.includes('nameStyle={profile.nameStyle}')&&publicScene.includes('reduceMotion={reduceMotion}'),'Public profile scenes must render the authoritative projected name style');
+ok(publicScene.includes('nameStyle={profile.nameStyle??undefined}')&&publicScene.includes('reduceMotion={reduceMotion}'),'Public profile scenes must render the authoritative projected name style');
 ok(audiencePreview.includes('nameStyle:effectivePlayerNameStyle(state)')&&audiencePreview.includes('reduceMotion={state.settings.reduceMotion}'),'Audience preview must show the same effective local style with Reduced Motion semantics');
 ok(profileOnline.includes('nameStyle?:PlayerNameStylePreference|null')&&profileOnline.includes('identity?.player_name_style??null'),'Public profile transport must carry the server-gated style from guild identity authority');
 

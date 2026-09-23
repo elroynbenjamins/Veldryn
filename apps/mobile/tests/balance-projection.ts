@@ -6,6 +6,7 @@ import {itemDef} from '../src/content/items';
 import {acquisitionEstimateLabel,acquisitionProjectionForDestination,activeActivityLevelPace,activityProgressFeedback,characterLevelPace,combatBaselineProjection,craftingPaceProjection,dropExpectation,dropPaceBand,formatBalanceDuration,gatheringBalanceProjection,skillTargetEta} from '../src/core/balance-projection';
 import {activityCycleSeconds,activityRate} from '../src/core/dashboard';
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
+import {materialAcquisitionChainLabel,materialAcquisitionPlanForDestination,materialAcquisitionPlanSummary} from '../src/core/material-acquisition-plan';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 function close(actual:number,expected:number,tolerance:number,message:string){if(Math.abs(actual-expected)>tolerance)throw new Error(message+': expected '+expected+', got '+actual)}
@@ -77,6 +78,22 @@ ok(combatAcquisition?.sourceKind==='combat'&&combatAcquisition.basis==='base'&&(
 const dungeonAcquisition=acquisitionProjectionForDestination(state,'REGIONAL_CATALYST',1,{kind:'dungeon',dungeonId:'COP_004',button:'Open dungeon',detail:''});
 close(dungeonAcquisition?.etaSeconds??0,2*3600,1,'Caravan of Glass catalyst estimate must combine its 18-minute authored run duration with the canonical 15% boss reward chance');
 ok(acquisitionEstimateLabel(dungeonAcquisition!).includes('average clears'),'Dungeon source estimates must clearly identify their average-clear basis');
+
+const chainBase=createCharacter(newGame(2),'IRONWARDEN','Chain Planner');
+const chainState={...chainBase,character:{...chainBase.character!,level:20,gold:100000},skills:chainBase.skills.map(skill=>skill.skillId==='smithing'?{...skill,level:12,xp:totalXpAtLevel(12)}:skill.skillId==='mining'?{...skill,level:8,xp:totalXpAtLevel(8)}:skill.skillId==='woodcutting'?{...skill,level:7,xp:totalXpAtLevel(7)}:skill)};
+const fittingDestination={kind:'skills' as const,skillId:'smithing' as const,mode:'crafting' as const,recipeId:'FORGE_REINFORCED_FITTING',button:'Craft Reinforced Fitting',detail:''};
+const fittingPlan=materialAcquisitionPlanForDestination(chainState,'REINFORCED_FITTING',1,fittingDestination),fittingChain=materialAcquisitionChainLabel(fittingPlan),fittingSummary=materialAcquisitionPlanSummary(fittingPlan);
+ok(fittingPlan.complete&&fittingPlan.craftSteps===2&&fittingPlan.depth===2&&(fittingPlan.etaSeconds??0)>0,'Recursive planner must resolve Reinforced Fitting through its crafted ingot dependency to direct raw sources');
+ok(fittingChain?.includes('8× Aster-Iron Ore')&&fittingChain.includes('2× Ironwood Log'),'Recursive chain summary must expose the actual remaining raw requirements');
+ok(fittingPlan.totalGold===100&&fittingSummary.estimate?.includes('total chain'),'Recursive plan must include both processing craft costs and only publish a total ETA when the full chain is modeled');
+
+const stockedChain={...chainState,inventory:{...chainState.inventory,stacks:[...chainState.inventory.stacks,{itemId:'ASTER_IRON_INGOT',quantity:2},{itemId:'IRONWOOD_LOG',quantity:2}]}};
+const stockedPlan=materialAcquisitionPlanForDestination(stockedChain,'REINFORCED_FITTING',1,fittingDestination);
+ok(stockedPlan.complete&&stockedPlan.craftSteps===1&&stockedPlan.totalGold===50&&materialAcquisitionChainLabel(stockedPlan)?.includes('ingredients already owned'),'Recursive planner must consume owned intermediate/raw stock once before expanding deeper recipe steps');
+
+const poorChain={...chainState,character:{...chainState.character!,gold:0}},poorPlan=materialAcquisitionPlanForDestination(poorChain,'REINFORCED_FITTING',1,fittingDestination);
+ok(!poorPlan.complete&&poorPlan.etaSeconds===undefined&&poorPlan.goldShortfall===100,'A known material chain must withhold its total ETA when the required crafting Gold is unavailable');
+
 
 ok(activityProgressFeedback('gathering',.1)==='Preparing tools…'&&activityProgressFeedback('gathering',.8)==='Finishing the action…','Gathering cycle feedback must describe real progress phases');
 ok(activityProgressFeedback('combat',.1)==='Tracking the target…'&&activityProgressFeedback('combat',.8)==='Pressing the advantage…','Combat cycle feedback must describe real progress phases');

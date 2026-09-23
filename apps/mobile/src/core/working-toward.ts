@@ -6,7 +6,7 @@ import {HERB_NODES} from '../content/herbalism';
 import {MONSTERS} from '../content/monsters';
 import {WORLD_ZONES} from '../content/world-map';
 import {ITEMS} from '../content/items';
-import {dungeonMaterialSourceById,dungeonMaterialSourcesForItem} from '../content/dungeon-material-sources';
+import {DUNGEON_MATERIAL_SOURCES,dungeonMaterialSourceById,dungeonMaterialSourcesForItem} from '../content/dungeon-material-sources';
 
 export type WorkingTowardDestination=
  |{kind:'combat';monsterId:string;zoneName:string;regionId?:string;button:string;detail:string}
@@ -179,6 +179,6 @@ export function workingTowardReadyCount(state:GameState){
 }
 
 export function workingTowardTrackableItems(){
- const sourceIds=new Set<string>([...gatherDefs.map(row=>row.itemId),...RECIPES.map(row=>row.output.itemId),...MONSTERS.flatMap(row=>row.drops.map(drop=>drop.itemId)),...dungeonMaterialSourcesForItem('REGIONAL_CATALYST').map(row=>row.itemId)]);
+ const sourceIds=new Set<string>([...gatherDefs.map(row=>row.itemId),...RECIPES.map(row=>row.output.itemId),...MONSTERS.flatMap(row=>row.drops.map(drop=>drop.itemId)),...DUNGEON_MATERIAL_SOURCES.map(row=>row.itemId)]);
  return ITEMS.filter(item=>item.type==='material'&&sourceIds.has(item.id)).sort((a,b)=>a.name.localeCompare(b.name));
 }

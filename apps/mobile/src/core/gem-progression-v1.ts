@@ -67,7 +67,7 @@ export function gemResearchStatusV1(state:GameState,familyId:string,grade:Mobile
  const family=mobileGemFamilyV1(familyId),cost=GEM_RESEARCH_COSTS_V1[grade],rawItemId=mobileRawGemItemIdV1(familyId,grade),progress=Math.max(0,Math.min(GEM_RESEARCH_REQUIRED_POINTS_V1,Math.floor(state.account.gemResearchProgressByFamily?.[familyId]??0)));
  const recipeUnlocked=isGemFamilyRecipeUnlockedV1(state,familyId),skillLevel=state.skills.find(row=>row.skillId==='enchanting')?.level??1,rawOwned=combinedGemQuantityV1(state,rawItemId),dustOwned=combinedGemQuantityV1(state,'GEM_DUST'),goldOwned=state.character?.gold??0;
  const valid=family?.kind==='effect',skillReady=skillLevel>=cost.level,inputReady=rawOwned>=1&&dustOwned>=cost.dust,goldReady=goldOwned>=cost.gold;
- return {family,cost,rawItemId,progress,remaining:Math.max(0,GEM_RESEARCH_REQUIRED_POINTS_V1-progress),recipeUnlocked,skillLevel,rawOwned,dustOwned,goldOwned,valid,skillReady,inputReady,goldReady,ready:Boolean(valid&&!recipeUnlocked&&skillReady&&inputReady&&goldReady)};
+ return {family,grade,cost,rawItemId,progress,remaining:Math.max(0,GEM_RESEARCH_REQUIRED_POINTS_V1-progress),recipeUnlocked,skillLevel,rawOwned,dustOwned,goldOwned,valid,skillReady,inputReady,goldReady,ready:Boolean(valid&&!recipeUnlocked&&skillReady&&inputReady&&goldReady)};
 }
 export function availableGemResearchV1(state:GameState){
  return MOBILE_GEM_FAMILIES_V1.filter(family=>family.kind==='effect').flatMap(family=>([1,2,3,4,5] as MobileGemGradeV1[]).map(grade=>gemResearchStatusV1(state,family.familyId,grade))).filter(row=>row.rawOwned>0&&!row.recipeUnlocked);

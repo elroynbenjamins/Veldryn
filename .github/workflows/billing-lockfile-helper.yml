@@ -22,7 +22,7 @@ jobs:
         with:
           node-version: 22
       - name: Regenerate lockfile metadata
-        run: pnpm install --lockfile-only --no-frozen-lockfile
+        run: pnpm install --lockfile-only --no-frozen-lockfile --fix-lockfile
       - name: Print expo-iap lock entries
         run: |
           node - <<'NODE'

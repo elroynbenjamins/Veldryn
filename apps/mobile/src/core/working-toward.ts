@@ -21,6 +21,7 @@ const gatherDefs=[...GATHERING,...HERB_NODES];
 const skillLabel=(id:string)=>id.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
 const regionForZoneName=(name:string)=>WORLD_ZONES.find(zone=>zone.name===name);
 const skillLevel=(state:GameState,id:string)=>state.skills.find(row=>row.skillId===id)?.level??1;
+const sourceChanceLabel=(chance:number)=>chance>=.1?`${Math.round(chance*100)}%`:`${(chance*100).toFixed(chance<.01?2:1)}%`;
 
 function quantities(state:GameState){
  const out:Record<string,number>={};
@@ -92,15 +93,15 @@ const sourceStatusPriority:Record<WorkingTowardAvailabilityStatus,number>={ready
 export function workingTowardItemSourceEntries(state:GameState,itemId:string):WorkingTowardItemSourceEntry[]{
  const candidates:RankedItemSource[]=[];
  for(const gather of gatherDefs.filter(row=>row.itemId===itemId)){
-  const zone=WORLD_ZONES.find(row=>row.id===gather.zoneId),destination:WorkingTowardDestination={kind:'skills',skillId:gather.skillId as SkillId,mode:'gathering',actionId:gather.id,regionId:gather.zoneId,button:`Gather ${gather.name}`,detail:`${gather.name} in ${zone?.name??gather.zoneId} is a direct source.`};
+  const zone=WORLD_ZONES.find(row=>row.id===gather.zoneId),yieldText=gather.min===gather.max?`${gather.min}/action`:`${gather.min}–${gather.max}/action`,destination:WorkingTowardDestination={kind:'skills',skillId:gather.skillId as SkillId,mode:'gathering',actionId:gather.id,regionId:gather.zoneId,button:`Gather ${gather.name}`,detail:`${gather.name} in ${zone?.name??gather.zoneId} · ${yieldText}.`};
   candidates.push({type:'gathering',typeLabel:'Gathering',title:gather.name,destination,availability:workingTowardDestinationAvailability(state,destination),typePriority:0,progressionLevel:gather.unlockLevel});
  }
  for(const recipe of RECIPES.filter(row=>row.output.itemId===itemId)){
-  const destination:WorkingTowardDestination={kind:'skills',skillId:recipe.skillId as SkillId,mode:'crafting',recipeId:recipe.id,button:`Craft ${recipe.name}`,detail:`${recipe.name} produces this item.`};
+  const destination:WorkingTowardDestination={kind:'skills',skillId:recipe.skillId as SkillId,mode:'crafting',recipeId:recipe.id,button:`Craft ${recipe.name}`,detail:`${recipe.name} · makes ${recipe.output.quantity} per craft · ${skillLabel(recipe.skillId)} Lv ${recipe.level}.`};
   candidates.push({type:'crafting',typeLabel:'Crafting',title:recipe.name,destination,availability:workingTowardDestinationAvailability(state,destination),typePriority:1,progressionLevel:recipe.level});
  }
  for(const monster of MONSTERS.filter(row=>row.drops.some(drop=>drop.itemId===itemId))){
-  const region=regionForZoneName(monster.zone),destination:WorkingTowardDestination={kind:'combat',monsterId:monster.id,zoneName:monster.zone,regionId:region?.id,button:`Hunt ${monster.name}`,detail:`${monster.name} in ${monster.zone} drops this item.`};
+  const drop=monster.drops.find(row=>row.itemId===itemId)!,region=regionForZoneName(monster.zone),quantity=drop.min===drop.max?`${drop.min}`:`${drop.min}–${drop.max}`,destination:WorkingTowardDestination={kind:'combat',monsterId:monster.id,zoneName:monster.zone,regionId:region?.id,button:`Hunt ${monster.name}`,detail:`${monster.name} in ${monster.zone} · ${sourceChanceLabel(drop.chance)} drop · ${quantity} on hit.`};
   candidates.push({type:'monster_drop',typeLabel:'Monster Drop',title:monster.name,destination,availability:workingTowardDestinationAvailability(state,destination),typePriority:2,progressionLevel:monster.unlockLevel});
  }
  for(const dungeon of dungeonMaterialSourcesForItem(itemId)){

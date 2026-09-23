@@ -1,8 +1,8 @@
 import type {GameState} from './types';
 import {companionTrialWeekKey} from '../../../../backend/src/server/companions/trial-season';
 
-export const FALLEN_KNIGHT_WEEKLY_REWARD_CAP=3;
-export const FALLEN_KNIGHT_WEEKLY_BOUNTY_TARGET=2;
+export const FALLEN_KNIGHT_WEEKLY_REWARD_CAP=1;
+export const FALLEN_KNIGHT_WEEKLY_BOUNTY_TARGET=1;
 
 export interface FallenKnightWeeklyState{
   weekKey:string;

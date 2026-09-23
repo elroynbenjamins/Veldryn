@@ -4,7 +4,7 @@ import {classSkillsFor} from '../content/class-skills';
 import {MONSTERS} from '../content/monsters';
 import {itemDef} from '../content/items';
 import {GATHERING,RECIPES} from '../content/skills';
-import {HERB_NODES,HERBALISM_ESSENCE_BY_ZONE,herbalismMethod} from '../content/herbalism';
+import {HERB_NODES,HERBALISM_ESSENCE_BY_ZONE,herbalismInsightMultiplier,herbalismMethod} from '../content/herbalism';
 import {explorationRoute} from '../content/exploration';
 import {QUESTS} from '../content/quests';
 import {GameState,ClassId,RewardBundle,ItemStack,GearSlot,BodyPresentation,GatheringSkillId,CombatChallengeId,CombatTacticId} from './types';
@@ -330,7 +330,7 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
     const g=[...GATHERING,...HERB_NODES].find(x=>x.id===state.activity!.targetId);if(!g)return {xp:0,gold:0,items:[],kills:0,elapsedSeconds:elapsed};
     const effect=environmentEffectForActivity(state.activity).effect;
     const pacing=gatheringPacing(state,g),mastery=professionMasteryMultipliers(g.id,state.account.professionMasteryByAction?.[g.id]);
-    const herbLevel=state.skills.find(row=>row.skillId==='herbalism')?.level??1,method=g.skillId==='herbalism'?herbalismMethod(state.character.herbalismMethodId,herbLevel):undefined;
+    const herbLevel=state.skills.find(row=>row.skillId==='herbalism')?.level??1,method=g.skillId==='herbalism'?herbalismMethod(state.activity.herbalismMethodId??state.character.herbalismMethodId,herbLevel):undefined;
     const specialtySpeed=g.skillId==='fishing'?multipliers.fishingSpeedMultiplier:g.skillId==='herbalism'?multipliers.herbalismSpeedMultiplier:1;
     const effectiveActionSeconds=g.seconds*GATHER_TIME_SCALE*pacing.timeMultiplier*effect.actionTimeMultiplier*(method?.actionTimeMultiplier??1)/(multipliers.gatheringSpeedMultiplier*specialtySpeed*mastery.speed);
     const elapsedMs=Math.min(offlineCapSeconds(state)*1000,Math.max(0,effectiveNowMs-state.activity.lastClaimAtMs));
@@ -349,7 +349,7 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
     if(g.skillId==='herbalism'){
       const essence=HERBALISM_ESSENCE_BY_ZONE[g.zoneId];
       if(essence&&actions>0){
-        const rareChance=Math.min(1,essence.baseChance*(method?.rareFindMultiplier??1)*effect.dropChanceMultiplier*multipliers.dropChanceMultiplier);
+        const rareChance=Math.min(1,essence.baseChance*(method?.rareFindMultiplier??1)*herbalismInsightMultiplier(herbLevel)*effect.dropChanceMultiplier*multipliers.dropChanceMultiplier);
         const rareSeed=`${state.character.id}:${state.activity.lastClaimAtMs}:${g.id}:botanical-essence`;
         let rareQuantity=0;for(let i=0;i<actions;i++)if(random01(rareSeed,i)<rareChance)rareQuantity++;
         if(rareQuantity)items.push({itemId:essence.itemId,quantity:rareQuantity});
@@ -683,7 +683,7 @@ export function claimOverflowToBank(state:GameState):GameState{
 }
 
 export function startGathering(state:GameState,targetId:string,nowMs:number):GameState{if(HERB_NODES.some(x=>x.id===targetId))return startHerbalism(state,targetId,nowMs);state=finishClassDrills(state,nowMs);const g=GATHERING.find(x=>x.id===targetId);if(!g)throw new Error('Unknown gathering target');const skill=state.skills.find(x=>x.skillId===g.skillId);if(!skill||skill.level<g.unlockLevel)throw new Error('Skill level too low');if(g.zoneId!==currentRegionId(state)){const zone=WORLD_ZONES.find(entry=>entry.id===g.zoneId);throw new Error(`Travel to ${zone?.name??g.zoneId} before gathering ${g.name}`)}return {...state,character:state.character?{...state.character,activityQueuePausedReason:undefined}:null,activity:{kind:g.skillId,targetId,startedAtMs:nowMs,lastClaimAtMs:nowMs,environment:captureActivityEnvironment(targetId,nowMs)}}}
-export function startHerbalism(state:GameState,targetId:string,nowMs:number):GameState{state=finishClassDrills(state,nowMs);const g=HERB_NODES.find(x=>x.id===targetId);if(!g)throw new Error('Unknown herbalism node');const skill=state.skills.find(x=>x.skillId==='herbalism');if(!skill||skill.level<g.unlockLevel)throw new Error('Herbalism level too low');if(g.zoneId!==currentRegionId(state))throw new Error(`Travel to ${g.zoneId} before gathering ${g.name}`);if(state.activity)throw new Error('Settle and stop the current activity first');return {...state,character:state.character?{...state.character,activityQueuePausedReason:undefined}:null,activity:{kind:'herbalism',targetId,startedAtMs:nowMs,lastClaimAtMs:nowMs,environment:captureActivityEnvironment(targetId,nowMs)}}}
+export function startHerbalism(state:GameState,targetId:string,nowMs:number):GameState{state=finishClassDrills(state,nowMs);const g=HERB_NODES.find(x=>x.id===targetId);if(!g)throw new Error('Unknown herbalism node');const skill=state.skills.find(x=>x.skillId==='herbalism');if(!skill||skill.level<g.unlockLevel)throw new Error('Herbalism level too low');if(g.zoneId!==currentRegionId(state))throw new Error(`Travel to ${g.zoneId} before gathering ${g.name}`);if(state.activity)throw new Error('Settle and stop the current activity first');const method=herbalismMethod(state.character?.herbalismMethodId,skill.level);return {...state,character:state.character?{...state.character,activityQueuePausedReason:undefined}:null,activity:{kind:'herbalism',targetId,startedAtMs:nowMs,lastClaimAtMs:nowMs,environment:captureActivityEnvironment(targetId,nowMs),herbalismMethodId:method.id}}}
 export function startExploration(state:GameState,routeId:string,nowMs:number):GameState{state=finishClassDrills(state,nowMs);const route=explorationRoute(routeId);if(!route)throw new Error('Unknown exploration route');if(!state.character||state.character.level<route.requiredLevel)throw new Error(`Reach character level ${route.requiredLevel} to explore this route`);if(route.zoneId!==currentRegionId(state))throw new Error(`Travel to ${route.zoneId} before exploring`);if(state.activity)throw new Error('Settle and stop the current activity first');return {...state,activity:{kind:'exploration',targetId:routeId,startedAtMs:nowMs,lastClaimAtMs:nowMs,environment:captureActivityEnvironment(routeId,nowMs)}}}
 export function equipGatheringTool(state:GameState,itemId:string):GameState{
   if(!state.character)throw new Error('Create a character first');

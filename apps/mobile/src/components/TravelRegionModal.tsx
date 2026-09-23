@@ -37,7 +37,7 @@ export function TravelRegionModal({visible,state,zone,onClose,onTravel}:{visible
       </View>
 
       {inDevelopment?<View style={[s.info,s.developmentInfo]}><Text style={[s.infoLabel,s.developmentInfoLabel]}>IN DEVELOPMENT</Text><Text style={s.infoValue}>{zone.developmentNote??'This region is planned but is not yet available for travel.'}</Text></View>:summary.gatheringSkills.length?<View style={s.info}><Text style={s.infoLabel}>GATHERING</Text><Text style={s.infoValue}>{summary.gatheringSkills.join(' · ')}</Text></View>:null}
-      <Text style={s.hint}>{inDevelopment?'You can preview this region now. Travel will unlock when the region is released.':unlocked?`Travelling changes your active region immediately. Travel is instant; hunts, gathering nodes and regional activities switch to ${zone.name}.`:`You can preview ${zone.name} now. Travel unlocks at level ${zone.minLevel}.`}</Text>
+      <Text style={s.hint}>{inDevelopment?'You can preview this region now. Travel will unlock when the region is released.':unlocked?`Travelling changes your active region immediately. Travel is instant. Hunts, gathering nodes and regional activities switch to ${zone.name}.`:`You can preview ${zone.name} now. Travel unlocks at level ${zone.minLevel}.`}</Text>
     </ScrollView>
     <View style={s.actions}><View style={s.flex}><GameButton title={unlocked?"Cancel":"Close"} tone="secondary" onPress={onClose}/></View><View style={s.flex}><GameButton title={inDevelopment?"In Development":unlocked?"Travel":"Locked"} disabled={!unlocked} onPress={()=>unlocked&&onTravel(zone.id)}/></View></View>
   </GameModalSurface>;

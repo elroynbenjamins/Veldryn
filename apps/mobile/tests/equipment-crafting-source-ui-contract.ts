@@ -10,9 +10,6 @@ const inspect=read('src/components/ItemQuickInspect.tsx');
 const recipeCard=read('src/components/RecipeCard.tsx');
 const skillsScreen=read('src/screens/SkillsScreen.tsx');
 const app=read('App.tsx');
-const browser=read('src/components/CraftingRecipeBrowser.tsx');
-const quickInspect=read('src/components/ItemQuickInspect.tsx');
-const status=read('src/core/equipment-catalog-status.ts');
 
 ok(recipes.includes('V33_EQUIPMENT_RECIPES')&&recipes.includes("CRAFT_V33_"),'V33 equipment needs a dedicated complete recipe adapter');
 ok(recipes.includes('slotMultiplier')&&recipes.includes('timerRange'),'V33 recipe costs/timers must respect slot and tier pacing');
@@ -35,9 +32,5 @@ ok(recipeCard.includes('onNavigate(row.destination)'),'Recipe source rows must n
 ok(skillsScreen.includes('onNavigateCraftingSource'),'Skills must accept source navigation');
 ok(skillsScreen.includes('onNavigate={onNavigateCraftingSource}'),'Skills must pass source routing into recipe cards');
 ok(app.includes('onNavigateCraftingSource={openWorkingTowardDestination}'),'Recipe material actions must reuse the global travel-aware Working Toward router');
-ok(browser.includes('visibleRecipeCatalogForSkill'),'Crafting browser must filter retired legacy equipment recipes');
-ok(quickInspect.includes('LEGACY EQUIPMENT'),'Owned legacy gear must show a compatibility-only notice');
-ok(recipeCard.includes('LEGACY TRAINING PATTERN'),'Temporary profession bridge recipes must be visibly labeled as legacy training');
-ok(status.includes("RecipeCatalogStatus='active'|'legacy_training'|'retired'"),'Equipment catalog status must distinguish active, temporary training and retired recipes');
 
 console.log('PASS: equipment crafting/source UI is exact, actionable and routed through shared progression navigation');

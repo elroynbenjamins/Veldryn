@@ -43,6 +43,7 @@ export interface CompanionAccountState {
   companionAssignmentBondstones?:number;
   companionRematchBondstoneWeek?:string;
   companionRematchBondstones?:number;
+  fallenKnightWeekly?:import('./weekly-boss').FallenKnightWeeklyState;
   companionActionSequence?:number;
   companionBondRewardClaims?:string[];
   companionBattleReadyAtMs?:number;

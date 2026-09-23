@@ -28,6 +28,8 @@ export interface CharacterState {
   masteryMaterialRemainders?:Record<string,number>;
   classSkills?:ClassSkillState[];
   trainingFocus?:TrainingFocus;
+  /** Character-bound Herbalism approach. Cannot be changed while actively harvesting. */
+  herbalismMethodId?:import('../content/herbalism').HerbalismMethodId;
   faith?: import('./faith-types').CharacterFaithState;
   preparation?:import('./alchemy-types').ActivePreparation;
   unlockedEventSkinIds?:string[];

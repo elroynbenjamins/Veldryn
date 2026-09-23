@@ -74,6 +74,7 @@ export function CombatCompanionPanel({state,now,onCommand,onNavigateSource}:{sta
     if(type==='companion_master')return `PRESTIGE MASTERY COMPLETE · ${name} reached its final mastery milestone.`;
     if(type==='companion_bond_reward'){const level=Number(args?.level??0),reward={2:'20 Essence',4:'35 Essence + portrait',6:'55 Essence + Bond Resonance',8:'80 Essence + title'}[level as 2|4|6|8]??'Bond reward';return `BOND REWARD CLAIMED · ${name} · Bond ${level} · ${reward}.`;}
     if(type==='companion_technique')return `TECHNIQUE UPDATED · ${name}'s combat choice is ready.`;
+    if(type==='companion_boss_rematch')return 'FALLEN KNIGHT REMATCH · Weekly boss rewards and progression updated.';
     return 'Companion progress saved.';
   };
   const act=async(type:string,args?:Record<string,unknown>)=>{if(lock.current)return;lock.current=true;setBusy(true);setMessage('');try{const success=successMessage(type,args);await onCommand({type,args});setMessage(success);}catch(error){setMessage(error instanceof Error?error.message:'Unable to complete action.');}finally{lock.current=false;setBusy(false);}};

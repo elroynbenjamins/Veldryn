@@ -134,8 +134,8 @@ export function simulateFallenKnightStoryBattle(player:FallenKnightPlayerSnapsho
     const phaseHaste=phase===3?.18:phase===2?.07:0;
     const attackInterval=clamp(Math.round(2850/(1+bossSecondary.haste+phaseHaste)),1450,3400);
     let abilityId='FALLEN_SLASH',label='Fallen Slash',coeff=1,telegraph=0;
-    if(bossAttackCount%7===0){abilityId='OATHGLASS_COLLAPSE';label='Oathglass Collapse';coeff=1.38;telegraph=1250;}
-    else if(bossAttackCount%4===0){abilityId='OATHBREAKER';label='Oathbreaker';coeff=1.62;telegraph=900;}
+    if(bossAttackCount%6===0){abilityId='OATHGLASS_COLLAPSE';label='Oathglass Collapse';coeff=1.38;telegraph=1250;}
+    else if(bossAttackCount%3===0){abilityId='OATHBREAKER';label='Oathbreaker';coeff=1.62;telegraph=900;}
     if(telegraph)push({atMs:Math.max(0,now-telegraph),type:'telegraph',label:`${label} incoming`,abilityId});
 
     const bossAccuracy=clamp(bossSecondary.accuracy+(phase===3?.025:0),.55,.99);

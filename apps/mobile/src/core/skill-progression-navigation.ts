@@ -119,7 +119,7 @@ export function recipeProgressionSources(state:GameState,recipe:Recipe,inputs:Re
   rows.push({key:`material:${input.itemId}`,label:itemDef(input.itemId).name,owned,required:input.quantity,missing,...source});
  }
  const sorted=rows.sort((a,b)=>Number(b.key.startsWith('prerequisite:'))-Number(a.key.startsWith('prerequisite:'))||(b.estimatedSeconds??-1)-(a.estimatedSeconds??-1));
- const modeled=[...sorted].filter(row=>row.estimatedSeconds!==undefined&&!row.key.startsWith('prerequisite:')).sort((a,b)=>(b.estimatedSeconds??0)-(a.estimatedSeconds??0);
+ const modeled=[...sorted].filter(row=>row.estimatedSeconds!==undefined&&!row.key.startsWith('prerequisite:')).sort((a,b)=>(b.estimatedSeconds??0)-(a.estimatedSeconds??0));
  const bottleneck=modeled.length>1?modeled[0]?.key:undefined;
  return sorted.map(row=>row.key===bottleneck?{...row,bottleneck:true}:row);
 }

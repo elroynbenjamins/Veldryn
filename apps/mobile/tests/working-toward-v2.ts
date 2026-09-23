@@ -8,6 +8,7 @@ import {recipePreparationGoalForRecipe} from '../src/core/recipe-preparation-goa
 import {recipePreparationTrackingView,recipePreparationTransitionNotices} from '../src/core/recipe-preparation-tracking';
 import {workingTowardExecutionOverview,workingTowardExecutionPlan,workingTowardStopRule} from '../src/core/working-toward-execution';
 import {activityQueueCapacity} from '../src/core/activity-queue';
+import {executeGameCommand} from '../src/core/game-commands';
 
 function fail(message:string):never{throw new Error(message)}
 function ok(value:unknown,message:string){if(!value)fail(message)}
@@ -38,6 +39,10 @@ ok(!!huntStop&&huntStop.conditions[0]?.kind==='monster_kills','hunt goal can cre
 equal(huntStop?.conditions[0]?.targetId,'MOSS_RAT','stop-at-goal retains the exact monster');
 equal(huntStop?.conditions[0]?.value,50,'stop-at-goal retains the exact kill target');
 ok(huntStop?.stopIfOutOfFood&&huntStop.stopIfRewardsWouldOverflow&&huntStop.finishCurrentCycle,'generated stop-at-goal rule keeps food, overflow and cycle safety');
+const armedGoalState={...state,character:{...state.character!,progressionGoals:[huntGoal],idleRulesV40:[huntStop!],activeIdleRuleIdV40:huntStop!.id}};
+const clearedGoalState=executeGameCommand(armedGoalState,{type:'goals_set',args:{goals:[]}},2000).state;
+ok(!(clearedGoalState.character?.idleRulesV40??[]).some(rule=>rule.id===huntStop!.id),'trusted goal removal also removes its generated stop rule');
+equal(clearedGoalState.character?.activeIdleRuleIdV40,undefined,'trusted goal removal deactivates an orphaned generated stop rule');
 const activeHuntState=startCombat({...state,character:{...state.character!,progressionGoals:[huntGoal]}},'MOSS_RAT',1000);
 const activeHuntPlan=workingTowardExecutionPlan(activeHuntState,huntGoal);
 equal(activeHuntPlan.executionState,'active','already active hunt goal is recognized instead of offering a duplicate queue action');

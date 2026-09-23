@@ -430,3 +430,15 @@ enabled = true
 # The mobile co-op feature flag remains off until production release checks pass.
 verify_jwt = false
 entrypoint = "./functions/coop/index.ts"
+
+[functions.play-billing]
+enabled = true
+# Authenticated players invoke purchase verification and restore.
+verify_jwt = true
+entrypoint = "./functions/play-billing/index.ts"
+
+[functions.play-billing-rtdn]
+enabled = true
+# Google Pub/Sub does not send a Supabase JWT. The handler verifies Google OIDC itself.
+verify_jwt = false
+entrypoint = "./functions/play-billing-rtdn/index.ts"

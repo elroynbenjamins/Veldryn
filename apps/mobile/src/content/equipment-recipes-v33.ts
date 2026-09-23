@@ -72,7 +72,7 @@ function smithingIngredients(tier:string,path:string,multiplier:number){
     case 'T4':return [{itemId:'OATHSTONE_INGOT',quantity:q(18,multiplier)},{itemId:'OATHGLASS_SHARD',quantity:q(7,multiplier)},{itemId:pathItem??'TORN_OATHCLOTH',quantity:q(5,multiplier)}];
     case 'T5':return [{itemId:'SUNSTONE_ORE',quantity:q(22,multiplier)},{itemId:'AMBERGLASS',quantity:q(7,multiplier)}];
     case 'T6':return [{itemId:'SUNSTONE_ORE',quantity:q(30,multiplier)},{itemId:'AMBERGLASS',quantity:q(10,multiplier)},{itemId:'ASTRAL_SCRIPT',quantity:q(1,multiplier)}];
-    case 'T7':return [{itemId:'FROSTIRON',quantity:q(30,multiplier)},{itemId:'RIMEGLASS',quantity:q(8,multiplier)}];
+    case 'T7':return [{itemId:'FROSTIRON',quantity:q(32,multiplier)},{itemId:'RIMEGLASS',quantity:q(8,multiplier)}];
     case 'T8':return [{itemId:'FROSTIRON',quantity:q(36,multiplier)},{itemId:'RIMEGLASS',quantity:q(11,multiplier)},{itemId:'CHOIR_BLOOM',quantity:q(1,multiplier)}];
     case 'T9':return [{itemId:'FROSTIRON',quantity:q(46,multiplier)},{itemId:'RIMEGLASS',quantity:q(16,multiplier)},{itemId:'CHOIR_BLOOM',quantity:q(3,multiplier)}];
     default:return [];
@@ -87,7 +87,7 @@ function tailoringIngredients(tier:string,path:string,multiplier:number){
     case 'T4':return [{itemId:'TORN_OATHCLOTH',quantity:q(20,multiplier)},{itemId:'ECHO_TOUCHED_PELT',quantity:q(8,multiplier)},{itemId:pathItem??'OATHGLASS_SHARD',quantity:q(5,multiplier)}];
     case 'T5':return [{itemId:'SUNSCALE',quantity:q(24,multiplier)},{itemId:'AMBERGLASS',quantity:q(8,multiplier)}];
     case 'T6':return [{itemId:'SUNSCALE',quantity:q(30,multiplier)},{itemId:'AMBERGLASS',quantity:q(10,multiplier)},{itemId:'ASTRAL_SCRIPT',quantity:q(1,multiplier)}];
-    case 'T7':return [{itemId:'FROSTBLOOM',quantity:q(30,multiplier)},{itemId:'RIMEGLASS',quantity:q(8,multiplier)}];
+    case 'T7':return [{itemId:'FROSTBLOOM',quantity:q(32,multiplier)},{itemId:'RIMEGLASS',quantity:q(8,multiplier)}];
     case 'T8':return [{itemId:'FROSTBLOOM',quantity:q(36,multiplier)},{itemId:'RIMEGLASS',quantity:q(11,multiplier)},{itemId:'CHOIR_BLOOM',quantity:q(1,multiplier)}];
     case 'T9':return [{itemId:'ASHEN_MYRRH',quantity:q(46,multiplier)},{itemId:'RIMEGLASS',quantity:q(16,multiplier)},{itemId:'CHOIR_BLOOM',quantity:q(3,multiplier)}];
     default:return [];

@@ -1,4 +1,4 @@
-import {badgeDisplay,buildNavigationBadges,buildSubrouteBadges,destinationForNotification,mergeRouteBadges,type NavigationNotification} from '../src/core/navigation-notifications';
+import {badgeDisplay,buildNavigationBadges,buildQuickNavigationBadges,buildSubrouteBadges,destinationForNotification,mergeRouteBadges,type NavigationNotification} from '../src/core/navigation-notifications';
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 function equal<T>(actual:T,expected:T,message:string){if(actual!==expected)throw new Error(`${message}: ${String(actual)} !== ${String(expected)}`)}
 
@@ -32,5 +32,12 @@ equal(destinationForNotification('companion_attention').subroute,'companions','C
 equal(destinationForNotification('equipment_craft_ready').subroute,'skills.smithing.forge','Finished equipment routes to the Smithing forge');
 ok(sub['companions'].dot,'Companion subroute receives one consolidated dot');
 ok(sub['profile.customize'].dot,'Profile customization attention routes to Customize Profile as a dot');
+const quick=buildQuickNavigationBadges(notifications);
+ok(quick['Quests']?.dot,'Weekly Contract Board attention should route to Quests in quick navigation');
+equal(quick['Events']?.count,4,'Event reward count should route directly to Events in quick navigation');
+equal(quick['Guild']?.count,4,'Guild invite and application attention should merge on the Guild shortcut');
+equal(quick['Friends']?.count,2,'Friend requests should route directly to Friends in quick navigation');
+equal(quick['Skills']?.count,3,'Finished Forge jobs should route directly to Skills in quick navigation');
+ok(quick['Companions']?.dot,'Companion attention should route directly to Companions in quick navigation');
 equal(badgeDisplay(100),'99+','Large counts are capped for display');
 console.log('PASS v51 navigation notification hierarchy');

@@ -242,18 +242,24 @@ export function materialAcquisitionPlan(state:GameState,itemId:string,quantity:n
   return materialAcquisitionPlanForDestination(state,itemId,quantity,source.destination);
 }
 
-function aggregateLeaves(leaves:readonly MaterialAcquisitionLeaf[]){
+function terminalNeeds(plan:MaterialAcquisitionPlan):Array<{itemId:string;name:string;quantity:number}>{
+  if(plan.children.length)return plan.children.flatMap(child=>terminalNeeds(child));
+  if(plan.remaining<=0)return [];
+  return [{itemId:plan.itemId,name:plan.name,quantity:plan.remaining}];
+}
+
+function aggregateTerminalNeeds(plan:MaterialAcquisitionPlan){
   const rows=new Map<string,{itemId:string;name:string;quantity:number}>();
-  for(const leaf of leaves){
-    const row=rows.get(leaf.itemId)??{itemId:leaf.itemId,name:leaf.name,quantity:0};
-    row.quantity+=leaf.quantity;rows.set(leaf.itemId,row);
+  for(const need of terminalNeeds(plan)){
+    const row=rows.get(need.itemId)??{itemId:need.itemId,name:need.name,quantity:0};
+    row.quantity+=need.quantity;rows.set(need.itemId,row);
   }
   return [...rows.values()].sort((a,b)=>b.quantity-a.quantity||a.name.localeCompare(b.name));
 }
 
 export function materialAcquisitionChainLabel(plan:MaterialAcquisitionPlan){
   if(!plan.craft)return undefined;
-  const leaves=aggregateLeaves(plan.leafNeeds);
+  const leaves=aggregateTerminalNeeds(plan);
   if(!leaves.length)return `Chain · ${plan.craftSteps} craft step${plan.craftSteps===1?'':'s'} · ingredients already owned`;
   const shown=leaves.slice(0,3).map(row=>`${Math.ceil(row.quantity)}× ${row.name}`);
   const extra=leaves.length>3?` · +${leaves.length-3} more`:'';

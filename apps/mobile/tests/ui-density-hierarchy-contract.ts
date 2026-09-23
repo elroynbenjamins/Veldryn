@@ -164,7 +164,8 @@ ok(planner.includes("R{rank}")&&planner.includes("rank===10?'+2% XP'"),'Mastery 
 const workingTowardFocus=read('src/components/WorkingTowardFocusPanel.tsx');
 const workingTowardExecution=read('src/core/working-toward-execution.ts');
 ok(planner.includes('<WorkingTowardFocusPanel')&&planner.includes('workingTowardExecutionOverview(state)'),'Working Toward must elevate one deterministic execution focus above the full tracker list');
-ok(workingTowardFocus.includes('FOCUS GOAL · RECOMMENDED')&&workingTowardFocus.includes('READY TO QUEUE')&&workingTowardFocus.includes('QUEUE FULL')&&workingTowardFocus.includes('TRAVEL'),'Focus Goal must distinguish queueable, capacity and travel states');
+ok(workingTowardFocus.includes('FOCUS GOAL · RECOMMENDED')&&workingTowardFocus.includes('ACTIVE NOW')&&workingTowardFocus.includes('READY TO QUEUE')&&workingTowardFocus.includes('QUEUE FULL')&&workingTowardFocus.includes('TRAVEL'),'Focus Goal must distinguish active, queueable, capacity and travel states');
+ok(workingTowardFocus.includes("!!plan.queueActivity&&!plan.activeNow"),'Already-active goal actions must not offer a duplicate queue button');
 ok(workingTowardFocus.includes('Stop at goal')&&workingTowardFocus.includes('food/overflow safety')&&workingTowardFocus.includes('same-region only'),'Focus Goal must explain safe queue and stop-at-goal boundaries');
 ok(planner.includes("type:'queue_add'")&&planner.includes('enqueueActivity(state,plan.queueActivity)'),'Working Toward queue actions must use trusted online commands and the shared offline queue helper');
 ok(workingTowardExecution.includes('activityQueueCapacity')&&workingTowardExecution.includes('queuedActivityReadiness')&&workingTowardExecution.includes('workingTowardDestinationAvailability'),'Execution planning must reuse authoritative queue capacity/readiness and progression availability');

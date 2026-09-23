@@ -117,7 +117,7 @@ export function simulateFallenKnightStoryBattle(player:FallenKnightPlayerSnapsho
       }else{
         const critical=random01(seed,rngIndex++)<clamp(player.critChance,0,.75);
         const variance=.94+random01(seed,rngIndex++)*.12;
-        const bossWard=now<phaseWardUntilMs?.86:1;
+        const bossWard=now<phaseWardUntilMs? .86:1;
         const base=Math.max(1,player.power*38+player.attack*14-monster.defense*15);
         const amount=Math.max(1,Math.round(base*variance*player.damageMultiplier*bossWard*(critical?player.critMultiplier:1)));
         bossHp=Math.max(0,bossHp-amount);

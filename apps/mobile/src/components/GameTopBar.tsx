@@ -14,6 +14,7 @@ import {EnvironmentDetailsModal} from './EnvironmentDetailsModal';
 import {ActiveActivityBar} from './ActiveActivityBar';
 import {GameButton} from './GameButton';
 import {GameModalHeader,GameModalSurface} from './GameModalSurface';
+import type {NavigationBadge} from '../core/navigation-notifications';
 
 
 
@@ -24,9 +25,10 @@ type Props={
   onNavigate:(destination:QuickNavDestination)=>void;
   onChangeDestinations:(destinations:QuickNavDestination[])=>void|Promise<void>;
   onOpenActivity:()=>void;
+  attention?:Partial<Record<QuickNavDestination,NavigationBadge>>;
 };
 
-export function GameTopBar({state,nowMs,labelForDestination,onNavigate,onChangeDestinations,onOpenActivity}:Props){
+export function GameTopBar({state,nowMs,labelForDestination,onNavigate,onChangeDestinations,onOpenActivity,attention={}}:Props){
   const C=useGameTheme(),equipmentColors=equipmentTheme(C),styles=useMemo(()=>makeStyles(C),[C]);
   const active=normalizeQuickNavDestinations(state.settings.quickNavDestinations);
   const [open,setOpen]=useState(false);
@@ -42,6 +44,10 @@ export function GameTopBar({state,nowMs,labelForDestination,onNavigate,onChangeD
   const selected=new Set(draft);
   const canSave=draft.length===5&&!saving;
   const orderedChoices=useMemo(()=>[...draft,...QUICK_NAV_DESTINATIONS.filter(item=>!draft.includes(item))],[draft]);
+  const attentionRows=QUICK_NAV_DESTINATIONS.filter(destination=>destination!=='Empty'&&!active.includes(destination)&&attention[destination]?.dot).sort((a,b)=>(attention[b]?.count??0)-(attention[a]?.count??0)||a.localeCompare(b)).slice(0,3);
+  const activeAttention=active.reduce((sum,destination)=>sum+(attention[destination]?.count??(attention[destination]?.dot?1:0)),0);
+  const otherAttention=attentionRows.reduce((sum,destination)=>sum+(attention[destination]?.count??1),0);
+  const attentionTotal=activeAttention+otherAttention;
   function close(){setOpen(false);setCustomizing(false)}
   function toggle(destination:QuickNavDestination){
     setDraft(current=>current.includes(destination)?current.filter(item=>item!==destination):current.length<5?[...current,destination]:current);

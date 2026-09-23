@@ -16,6 +16,7 @@ function tone(plan:WorkingTowardExecutionPlan){
 }
 function status(plan:WorkingTowardExecutionPlan){
  if(plan.view.status==='complete')return 'COMPLETE';
+ if(plan.executionState==='active')return 'ACTIVE NOW';
  if(plan.executionState==='ready')return 'READY TO QUEUE';
  if(plan.executionState==='queued')return 'QUEUED';
  if(plan.executionState==='travel')return 'TRAVEL';
@@ -31,7 +32,7 @@ export function WorkingTowardFocusPanel({overview,busy,onNavigate,onQueue,onTogg
  const blocker=plan.queueBlocker??plan.view.blocker;
  const detail=plan.view.status==='complete'?'This goal is complete. Clear it to free a Working Toward slot.':blocker??plan.destination.detail;
  const canNavigate=plan.view.status!=='complete'&&plan.destination.kind!=='info';
- const showQueue=plan.view.status!=='complete'&&!!plan.queueActivity;
+ const showQueue=plan.view.status!=='complete'&&!!plan.queueActivity&&!plan.activeNow;
  const queueEnabled=plan.executionState==='ready'&&!busy;
  return <Panel accentColor={plan.view.status==='complete'?C.good:plan.executionState==='blocked'||plan.executionState==='full'?C.warning:C.info}>
   <View style={s.head}><View style={s.flex}><Text style={s.kicker}>FOCUS GOAL · RECOMMENDED</Text><Text style={s.title}>{plan.goal.title}</Text></View><StatusPill label={status(plan)} tone={tone(plan)}/></View>

@@ -29,4 +29,10 @@ const poorBefore=JSON.stringify(poor);
 let upgradeRejected=false;try{upgradeStorage(poor,'bank')}catch(error){upgradeRejected=error instanceof Error&&error.message.includes('Requires')}
 if(!upgradeRejected||JSON.stringify(poor)!==poorBefore)throw new Error('failed storage upgrade must not mutate state');
 
+
+const vip={...s,account:{...s.account,entitlements:{vip:true}}};
+const vipPlus={...s,account:{...s.account,entitlements:{vip_plus:true}}};
+const {entitlementStorageCapacity}=require('../src/core/account-entitlements') as typeof import('../src/core/account-entitlements');
+if(entitlementStorageCapacity(vip,'inventory')!==s.inventory.capacity+5||entitlementStorageCapacity(vip,'bank')!==s.bank.capacity+20)throw new Error('VIP storage bonuses should stack on earned storage');
+if(entitlementStorageCapacity(vipPlus,'inventory')!==s.inventory.capacity+10||entitlementStorageCapacity(vipPlus,'bank')!==s.bank.capacity+50)throw new Error('VIP+ should inherit VIP storage and add its own storage');
 console.log(JSON.stringify({status:'PASS',inventoryCapacity:s.inventory.capacity,bankCapacity:s.bank.capacity,inventoryRations:s.inventory.stacks.find(x=>x.itemId==='TRAVEL_RATION')?.quantity,bankRations:s.bank.stacks.find(x=>x.itemId==='TRAVEL_RATION')?.quantity},null,2));

@@ -2,6 +2,7 @@ import {RECIPES,type Recipe} from '../content/skills';
 import {itemDef} from '../content/items';
 import type {GameState,SkillId} from './types';
 import {formatQueueTimeV31} from './equipment-crafting-v31';
+import {recipeVisibleInActiveCatalog} from './equipment-catalog-status';
 import {workingTowardDestinationAvailability,workingTowardItemSource,type WorkingTowardDestination,type WorkingTowardDestinationAvailability} from './working-toward';
 
 export interface EquipmentCraftingIngredientPlan{
@@ -44,7 +45,7 @@ function owned(state:GameState,itemId:string){
 function label(id:string){return id.replace(/_/g,' ').replace(/\b\w/g,char=>char.toUpperCase());}
 
 export function equipmentRecipeForItem(itemId:string){
-  const recipes=RECIPES.filter(recipe=>recipe.output.itemId===itemId);
+  const recipes=RECIPES.filter(recipe=>recipe.output.itemId===itemId&&recipeVisibleInActiveCatalog(RECIPES,recipe));
   return recipes.find(recipe=>recipe.v33SetId)??recipes.sort((a,b)=>a.level-b.level||a.seconds-b.seconds)[0];
 }
 

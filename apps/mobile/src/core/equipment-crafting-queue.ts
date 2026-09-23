@@ -8,6 +8,7 @@ import {craftClaimSubRoll,craftedInstanceResult,createCraftedGearInstance} from 
 import {gemCombineRecipeV1,isGemFamilyRecipeUnlockedV1} from './gem-progression-v1';
 import {professionMasteryMultipliers} from './profession-mastery-v40';
 import {applyTrustedLongTermProgression} from './long-term-progression-runtime';
+import {recipeVisibleInActiveCatalog} from './equipment-catalog-status';
 
 export const BASE_EQUIPMENT_CRAFT_SLOTS=3;
 export const MAX_EQUIPMENT_CRAFT_SLOTS=5;
@@ -87,6 +88,7 @@ function consumeAcross(state:GameState,itemId:string,amount:number){
 function validateStart(state:GameState,recipe:Recipe){
   if(!state.character)throw new Error('Create a character first');
   if(!isTimedEquipmentRecipe(recipe))throw new Error('This recipe does not use the equipment crafting queue');
+  if(!recipeVisibleInActiveCatalog(RECIPES,recipe,state.character.classId))throw new Error('This legacy equipment recipe has been retired.');
   if(recipe.classId&&recipe.classId!==state.character.classId)throw new Error('This recipe belongs to another class');
   if(state.character.level<(recipe.characterLevel??1))throw new Error(`Requires character level ${recipe.characterLevel}`);
   const skill=state.skills.find(row=>row.skillId===recipe.skillId);

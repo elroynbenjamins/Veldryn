@@ -11,6 +11,7 @@ import {effectiveStats} from './game';
 import {previewEquipment} from './equipment-preview';
 import {rarityMeta} from './item-rarity';
 import {craftedInstancesForItem,effectiveOwnedGearRarity} from './crafted-gear-instances';
+import {equipmentCatalogStatus,legacyEquipmentNotice,recipeVisibleInActiveCatalog} from './equipment-catalog-status';
 
 export type ItemInspectSourceKind='gathering'|'crafting'|'combat'|'starting';
 export interface ItemInspectSource{kind:ItemInspectSourceKind;title:string;detail:string;navigation?:WorkingTowardDestination;availability?:WorkingTowardDestinationAvailability;}
@@ -34,7 +35,7 @@ export function itemInspectModel(state:GameState,itemId:string){
     sources.push({kind:'gathering',title:node.name,detail:`${title(node.skillId)} Lv ${node.unlockLevel} · ${title(node.zoneId)}`,navigation:{kind:'skills',skillId:node.skillId as SkillId,mode:'gathering',actionId:node.id,regionId:node.zoneId,button:'Open source',detail:`Open ${node.name} in ${title(node.zoneId)}.`}});
   }
   for(const recipe of RECIPES){
-    if(recipe.output.itemId!==itemId)continue;
+    if(recipe.output.itemId!==itemId||!recipeVisibleInActiveCatalog(RECIPES,recipe,state.character?.classId))continue;
     sources.push({kind:'crafting',title:recipe.name,detail:`${title(recipe.skillId)} Lv ${recipe.level} · ${recipe.gold} gold`,navigation:{kind:'skills',skillId:recipe.skillId,mode:'crafting',recipeId:recipe.id,button:'Open recipe',detail:`Open ${recipe.name}.`}});
   }
   for(const monster of MONSTERS){
@@ -46,7 +47,7 @@ export function itemInspectModel(state:GameState,itemId:string){
   }
   if(item.id.startsWith('START_')||item.id.startsWith('basic_'))sources.unshift({kind:'starting',title:'Starting equipment',detail:'Granted by a matching class loadout.'});
 
-  const usedIn:Omit<ItemRecipeUse,'availability'>[]=RECIPES.flatMap(recipe=>recipe.inputs.filter(input=>input.itemId===itemId).map(input=>({
+  const usedIn:Omit<ItemRecipeUse,'availability'>[]=RECIPES.filter(recipe=>recipeVisibleInActiveCatalog(RECIPES,recipe,state.character?.classId)).flatMap(recipe=>recipe.inputs.filter(input=>input.itemId===itemId).map(input=>({
     name:recipe.name,skill:title(recipe.skillId),level:recipe.level,quantity:input.quantity,
     navigation:{kind:'skills',skillId:recipe.skillId,mode:'crafting',recipeId:recipe.id,button:'Open recipe',detail:`Open ${recipe.name}.`} as WorkingTowardDestination,
   })));
@@ -102,5 +103,5 @@ export function itemInspectModel(state:GameState,itemId:string){
   const actionableSources=sources.map(source=>source.navigation?{...source,availability:workingTowardDestinationAvailability(state,source.navigation)}:source);
   const actionableUses=usedIn.map(recipe=>({...recipe,availability:workingTowardDestinationAvailability(state,recipe.navigation)}));
   const craftedInstances=item.type==='gear'?craftedInstancesForItem(state,itemId):[];
-  return {item,rarityId,rarity,inventoryQuantity,bankQuantity,totalQuantity:inventoryQuantity+bankQuantity,craftedCopies:craftedInstances.length,craftedRarities:[...new Set(craftedInstances.map(row=>row.rarity))],effectLines,stats,upgrade,sockets,gearDecision,sources:actionableSources,usedIn:actionableUses};
+  return {item,rarityId,rarity,inventoryQuantity,bankQuantity,totalQuantity:inventoryQuantity+bankQuantity,craftedCopies:craftedInstances.length,craftedRarities:[...new Set(craftedInstances.map(row=>row.rarity))],catalogStatus:item.type==='gear'?equipmentCatalogStatus(item.id):undefined,legacyNotice:item.type==='gear'?legacyEquipmentNotice(item.id):undefined,effectLines,stats,upgrade,sockets,gearDecision,sources:actionableSources,usedIn:actionableUses};
 }

@@ -97,7 +97,7 @@ ok(oathstoneSource?.availability?.status==='locked'&&oathstoneSource.availabilit
 ok(copperUse?.availability.status==='ready'&&copperUse.availability.label==='AVAILABLE','Unlocked crafting use is labeled AVAILABLE');
 const smithingReadyCharLocked={...state,character:{...state.character!,level:20},skills:state.skills.map(row=>row.skillId==='smithing'?{...row,level:20}:row)};
 const characterGate=workingTowardDestinationAvailability(smithingReadyCharLocked,{kind:'skills',skillId:'smithing',mode:'crafting',recipeId:'CRAFT_LASTWALL_CHEST',button:'Open recipe',detail:'Open Lastwall Chestguard.'});
-ok(characterGate.status==='locked'&&characterGate.detail.includes('character level 21'),'Recipe availability reports character-level blockers accurately');
+ok(characterGate.status==='locked'&&characterGate.detail.toLowerCase().includes('retired'),'Retired legacy recipe links must explain Equipment 2.0 retirement instead of progression blockers');
 const copperGear=itemInspectModel(state,'COPPER_BLADE');
 ok(copperGear.gearDecision?.compatible===true&&copperGear.gearDecision.replaces?.name==='Basic Sword','Gear Check identifies the currently equipped replacement');
 ok((copperGear.gearDecision?.loadoutDelta.attack??0)>0&&(copperGear.gearDecision?.loadoutDelta.power??0)>0,'Gear Check exposes positive whole-loadout deltas');

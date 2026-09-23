@@ -5,6 +5,7 @@ import {PROFESSION_MASTERY_BONUS_RANKS,masteryPointsForRank,professionMasteryRan
 import type {WorkingTowardDestination} from './working-toward';
 import {itemDef} from '../content/items';
 import {WORLD_ZONES} from '../content/world-map';
+import {gemCombineRecipeV1,gemRefineRecipeV1} from './gem-progression-v1';
 
 export type SkillIdentityTone='accent'|'good'|'info'|'special'|'warning'|'bad';
 export interface SkillIdentity{label:string;descriptor:string;tone:SkillIdentityTone}
@@ -30,9 +31,13 @@ export function professionMasteryActionDefinition(actionId:string):ProfessionMas
  const node=[...GATHERING,...HERB_NODES].find(row=>row.id===actionId);
  if(node)return {actionId,name:node.name,skillId:node.skillId as SkillId,kind:'gathering',yieldRelevant:true,speedRelevant:true,regionId:node.zoneId,regionLabel:masteryRegionLabel(node.zoneId),destination:{kind:'skills',skillId:node.skillId as SkillId,mode:'gathering',actionId:node.id,regionId:node.zoneId,button:'Open '+node.name,detail:'Repeat '+node.name+' to build action mastery.'}};
  const recipe=RECIPES.find(row=>row.id===actionId);
- if(!recipe)return undefined;
- const output=itemDef(recipe.output.itemId),recipeRegion=recipe.v33Region?.trim()||undefined;
- return {actionId,name:recipe.name,skillId:recipe.skillId as SkillId,kind:'crafting',yieldRelevant:output.type!=='gear'&&output.type!=='tool',speedRelevant:recipe.skillId==='alchemy'||output.type==='gear',regionId:recipeRegion,regionLabel:recipeRegion?masteryRegionLabel(recipeRegion):undefined,destination:{kind:'skills',skillId:recipe.skillId as SkillId,mode:'crafting',recipeId:recipe.id,button:'Open '+recipe.name,detail:'Craft '+recipe.name+' to build recipe mastery.'}};
+ if(recipe){
+  const output=itemDef(recipe.output.itemId),recipeRegion=recipe.v33Region?.trim()||undefined;
+  return {actionId,name:recipe.name,skillId:recipe.skillId as SkillId,kind:'crafting',yieldRelevant:output.type!=='gear'&&output.type!=='tool',speedRelevant:recipe.skillId==='alchemy'||output.type==='gear',regionId:recipeRegion,regionLabel:recipeRegion?masteryRegionLabel(recipeRegion):undefined,destination:{kind:'skills',skillId:recipe.skillId as SkillId,mode:'crafting',recipeId:recipe.id,button:'Open '+recipe.name,detail:'Craft '+recipe.name+' to build recipe mastery.'}};
+ }
+ const gemRecipe=gemRefineRecipeV1(actionId)??gemCombineRecipeV1(actionId);
+ if(!gemRecipe)return undefined;
+ return {actionId,name:gemRecipe.name,skillId:'enchanting',kind:'crafting',yieldRelevant:false,speedRelevant:true,destination:{kind:'skills',skillId:'enchanting',mode:'crafting',button:'Open Enchanting',detail:'Open the Gem Refinery to continue this Enchanting mastery.'}};
 }
 export function professionMasteryRelevantBonusSteps(actionId:string){
  const definition=professionMasteryActionDefinition(actionId);if(!definition)return [];
@@ -54,6 +59,15 @@ export function professionMasteryActionsForSkill(state:GameState,skillId:SkillId
   const progress=professionMasteryRankProgress(recipe.id,state.account.professionMasteryByAction?.[recipe.id]);
   const output=itemDef(recipe.output.itemId),yieldRelevant=output.type!=='gear'&&output.type!=='tool',speedRelevant=recipe.skillId==='alchemy'||output.type==='gear';
   rows.push({...progress,id:recipe.id,name:recipe.name,skillId,kind:'crafting',level:recipe.level,yieldRelevant,speedRelevant,nextBonus:nextRelevantBonus(progress.rank,yieldRelevant,speedRelevant),destination:{kind:'skills',skillId,mode:'crafting',recipeId:recipe.id,button:'Open '+recipe.name,detail:'Craft '+recipe.name+' to build recipe mastery.'}});
+ }
+ if(skillId==='enchanting'){
+  const staticIds=new Set(rows.map(row=>row.id));
+  for(const [actionId,record] of Object.entries(state.account.professionMasteryByAction??{})){
+   if(!record.points||staticIds.has(actionId))continue;
+   const gemRecipe=gemRefineRecipeV1(actionId)??gemCombineRecipeV1(actionId);if(!gemRecipe)continue;
+   const progress=professionMasteryRankProgress(actionId,record),yieldRelevant=false,speedRelevant=true;
+   rows.push({...progress,id:actionId,name:gemRecipe.name,skillId:'enchanting',kind:'crafting',level:gemRecipe.level,yieldRelevant,speedRelevant,nextBonus:nextRelevantBonus(progress.rank,yieldRelevant,speedRelevant),destination:{kind:'skills',skillId:'enchanting',mode:'crafting',button:'Open Enchanting',detail:'Open the Gem Refinery to continue this Enchanting mastery.'}});
+  }
  }
  return rows.sort((a,b)=>b.rank-a.rank||b.points-a.points||a.level-b.level||a.name.localeCompare(b.name));
 }

@@ -56,7 +56,7 @@ const bulkBase={...state,inventory:{...state.inventory,stacks:[{itemId:'TRAVEL_R
 const bulkIds=['TRAVEL_RATION','COPPER_ORE',v33Gear.id,'HOLY_WATER'];
 const bulkSummary=bulkSelectionSummary(bulkBase,bulkIds,'inventory');
 ok(bulkSummary.selectedStackCount===4&&bulkSummary.transferableStackCount===3&&bulkSummary.transferProtectedCount===1,'Bulk transfer keeps selected auto-eat food safe');
-ok(bulkSummary.sellableStackCount===2&&bulkSummary.sellGold===55,'Bulk sell includes only eligible stack value');
+ok(bulkSummary.sellableStackCount===2&&bulkSummary.sellGold===20+v33Gear.value,'Bulk sell includes only eligible stack value');
 const movedBulk=bulkTransferSelected(bulkBase,bulkIds,'inventory');
 ok(movedBulk.inventory.stacks.length===1&&movedBulk.inventory.stacks[0].itemId==='TRAVEL_RATION','Bulk deposit leaves protected auto-eat stack carried');
 ok(movedBulk.bank.stacks.some(stack=>stack.itemId==='COPPER_ORE')&&movedBulk.bank.stacks.some(stack=>stack.itemId===v33Gear.id),'Bulk deposit moves eligible full stacks');

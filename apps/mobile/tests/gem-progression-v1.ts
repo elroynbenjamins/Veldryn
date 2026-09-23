@@ -94,6 +94,11 @@ const expertExtraction=gemUnsocketCostForStateV1(expert,'gem:effect_flow:g5');
 ok(lowExtraction.gold===5000&&lowExtraction.dust===3,'Low Enchanting keeps the canonical Grade V extraction cost');
 ok(expertExtraction.gold===2500&&expertExtraction.dust===2&&expertExtraction.discount===.5,'Enchanting 80 should halve safe extraction Gold and reduce Dust without making it free');
 
+const distill1=RECIPES.find(row=>row.id==='ENCHANT_DISTILL_WISP_DUST'),distill20=RECIPES.find(row=>row.id==='ENCHANT_CONDENSE_GLOAM_DUST'),distill45=RECIPES.find(row=>row.id==='ENCHANT_CRYSTALLIZE_RIME_DUST');
+ok(distill1?.level===1&&distill1.repeatableTraining&&distill1.output.itemId==='GEM_DUST','Enchanting must have a deterministic Lv1 Wisp Dust training loop independent of gem RNG');
+ok(distill20?.level===20&&distill20.output.quantity===5,'Midgame Enchanting must gain a more efficient Gloam Dust distillation loop');
+ok(distill45?.level===45&&distill45.inputs.some(row=>row.itemId==='WILD_ESSENCE'),'High-level Enchanting distillation should connect Herbalism rare finds into the gem economy');
+
 const regionalSynthesis=RECIPES.find(row=>row.id==='ENCHANT_REGIONAL_CATALYST'),radiantSynthesis=RECIPES.find(row=>row.id==='ENCHANT_RADIANT_CATALYST');
 ok(regionalSynthesis?.skillId==='enchanting'&&regionalSynthesis.level===70&&regionalSynthesis.output.itemId==='REGIONAL_CATALYST'&&regionalSynthesis.inputs.some(row=>row.itemId==='WILD_ESSENCE'),'Enchanting 70 must synthesize Regional Catalysts using Wild Essence');
 ok(radiantSynthesis?.skillId==='enchanting'&&radiantSynthesis.level===90&&radiantSynthesis.output.itemId==='RADIANT_CATALYST'&&radiantSynthesis.inputs.some(row=>row.itemId==='WILD_ESSENCE'),'Enchanting 90 must synthesize Radiant Catalysts as a late-game sink');

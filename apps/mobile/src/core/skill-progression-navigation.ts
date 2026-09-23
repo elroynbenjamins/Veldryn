@@ -9,6 +9,7 @@ import {alchemyAvailability} from './alchemy';
 import {isTimedProcessingRecipe,processingAvailability} from './processing';
 import {equipmentCraftAvailability,timedEquipmentRecipe} from './equipment-crafting-queue';
 import {workingTowardDestinationAvailability,workingTowardItemSource,type WorkingTowardDestination,type WorkingTowardDestinationAvailability} from './working-toward';
+import {visibleRecipeCatalogForSkill} from './equipment-catalog-status';
 
 const gatheringDefs=[...GATHERING,...HERB_NODES];
 const pretty=(id:string)=>id.replace(/_/g,' ').replace(/\b\w/g,char=>char.toUpperCase());
@@ -61,7 +62,7 @@ export function recipeProgressionAction(state:GameState,recipe:Recipe):SkillProg
 
 export function bestRecipeTrainingDestination(state:GameState,skillId:RecipeSkillId):WorkingTowardDestination{
  const skillLevel=levelFor(state,skillId);
- const candidates=RECIPES.filter(row=>row.skillId===skillId&&!row.noviceSetId&&row.level<=skillLevel&&(!row.classId||row.classId===state.character?.classId))
+ const candidates=visibleRecipeCatalogForSkill(RECIPES,skillId,state.character?.classId).filter(row=>row.level<=skillLevel)
    .sort((a,b)=>Number(recipeTrainingReady(state,b))-Number(recipeTrainingReady(state,a))||b.xp-a.xp||b.level-a.level);
  const best=candidates[0];
  if(best){const ready=recipeTrainingReady(state,best);return {kind:'skills',skillId,mode:'crafting',recipeId:best.id,button:`Train with ${best.name}`,detail:ready?`${best.name} is currently craftable and gives ${best.xp.toLocaleString()} base ${pretty(skillId)} XP.`:`${best.name} is your strongest unlocked training recipe; open it to resolve its missing requirements.`};}

@@ -1,4 +1,6 @@
 import {masteryPointsForRank,professionMasteryRank,professionMasteryView,grantProfessionMastery} from '../src/core/profession-mastery-v40';
+import {professionMasteryActionDefinition,professionMasteryActionsForSkill} from '../src/core/profession-mastery-presentation';
+import {createCharacter,newGame} from '../src/core/game';
 import {progressionGoalView,validateProgressionGoals,type ProgressionGoal} from '../src/core/progression-goals-v40';
 import {regionCompletionView} from '../src/core/region-completion-v40';
 import {evaluateIdleRuleSet,IDLE_RULES_CAN_AUTO_TRAVEL,IDLE_RULES_CAN_CHAIN_ACTIVITIES,type IdleRuleSet} from '../src/core/idle-rules-v40';
@@ -13,6 +15,20 @@ equal(professionMasteryRank(masteryPointsForRank(10)),10,'Mastery rank lookup');
 const mastery=professionMasteryView('IRON_VEIN',{actionId:'IRON_VEIN',points:masteryPointsForRank(40),updatedAtMs:0});
 equal(mastery.yieldBonusBps,500,'Mastery yield cap at rank 40');
 equal(grantProfessionMastery(undefined,'IRON_VEIN',25,10).points,25,'Mastery action grant');
+const rawGemMasteryId='gem_refine:stat_might:g1',combineMasteryId='gem_combine:stat_might:g1';
+const rawGemDefinition=professionMasteryActionDefinition(rawGemMasteryId),combineDefinition=professionMasteryActionDefinition(combineMasteryId);
+equal(rawGemDefinition?.skillId,'enchanting','Gem refinement mastery resolves to Enchanting');
+equal(rawGemDefinition?.speedRelevant,true,'Gem refinement mastery keeps timed speed bonuses relevant');
+equal(rawGemDefinition?.yieldRelevant,false,'Gem refinement mastery must not gain duplicate gem yield');
+equal(combineDefinition?.skillId,'enchanting','Gem combine mastery resolves to Enchanting');
+let enchantingState=createCharacter(newGame(0),'IRONWARDEN','Mastery Tester');
+enchantingState={...enchantingState,account:{...enchantingState.account,professionMasteryByAction:{
+ [rawGemMasteryId]:{actionId:rawGemMasteryId,points:25,updatedAtMs:10},
+ [combineMasteryId]:{actionId:combineMasteryId,points:10,updatedAtMs:10},
+}}};
+const enchantingActions=professionMasteryActionsForSkill(enchantingState,'enchanting');
+ok(enchantingActions.some(row=>row.id===rawGemMasteryId)&&enchantingActions.some(row=>row.id===combineMasteryId),'Trained gem forge actions remain visible in Enchanting mastery');
+ok(enchantingActions.filter(row=>row.id.startsWith('gem_')).every(row=>row.points>0),'Untrained gem-family mastery actions must not flood the skill view');
 
 const goal:ProgressionGoal={id:'g1',characterId:'c1',kind:'skill_level',title:'Mining 20',createdAtMs:0,pinnedAtMs:0,skillId:'mining',targetLevel:20};
 const view=progressionGoalView(goal,{skillLevels:{mining:18},skillXp:{mining:8000},skillXpTarget:{'mining:20':10000},itemQuantities:{},recipeCraftCounts:{},monsterKills:{},ownedPetIds:{},craftedSetPieceCounts:{},dungeonClears:{},masteryPoints:{},rates:{skillXpPerHour:{mining:1000}}});

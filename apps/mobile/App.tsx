@@ -377,7 +377,7 @@ const next=discoverCharacterSkins(candidate);queuePreparationNotices(current,nex
     {key:'working-toward-ready',kind:'account_action',unread:workingTowardReady>0},
     {key:'daily-supplies-ready',kind:'account_action',unread:dailySuppliesReady},
     {key:'equipment-crafts-ready',kind:'equipment_craft_ready',count:equipmentForge.ready,unread:equipmentForge.ready>0},
-    {key:'weekly-order-rewards',kind:'weekly_order_complete',unread:contractBoard.pendingRewards>0},
+    {key:'weekly-order-rewards',kind:'weekly_order_complete',count:contractBoard.pendingRewards,unread:contractBoard.pendingRewards>0},
     {key:'event-rewards-ready',kind:'event_reward_ready',count:eventClaims,unread:eventClaims>0},
     {key:'incoming-friend-requests',kind:'friend_request',count:notificationCounts.friendRequests,unread:notificationCounts.friendRequests>0},
     {key:'profile-customization-review',kind:'profile_customization',unread:profileAttentionKeys.length>0},

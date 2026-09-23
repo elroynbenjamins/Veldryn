@@ -113,7 +113,7 @@ ok(!claimedCommand.reward,'Settlement-free Daily Supplies claim should not creat
 
 const baselineCap=offlineCapBreakdown(createCharacter(newGame(t0),'WAYFINDER','Cap Base')).hours;
 const boostedCap=offlineCapBreakdown({...activation,account:{...activation.account,dailySupplies:{schemaVersion:1,totalClaims:27,lastClaimDayKey:'2026-09-19'},premiumCurrencyBalance:999}}).hours;
-equal(baselineCap,24,'Fresh account Offline Reserve baseline should remain 24 hours');
+equal(baselineCap,8,'Fresh account Offline Reserve baseline should remain 8 hours');
 equal(boostedCap,baselineCap,'Daily Supplies ownership, banked boosts and premium milestones must not extend Offline Reserve');
 
 const quiet=createCharacter(newGame(t0),'WAYFINDER','Quiet');

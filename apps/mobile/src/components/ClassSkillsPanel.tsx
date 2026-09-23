@@ -3,9 +3,10 @@ import {StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import type {GameState} from '../core/types';
 import type {GameCommand} from '../core/game-commands';
 import {classSkillsFor} from '../content/class-skills';
-import {characterClassSkills,normalizeTrainingFocus,type TrainingFocus} from '../core/class-skills';
+import {characterClassSkills,CLASS_DRILL_BASE_XP,normalizeTrainingFocus,type TrainingFocus} from '../core/class-skills';
 import {progressWithinLevel} from '../core/progression';
 import {offlineCapSeconds} from '../core/game';
+import {characterPermanentMultipliers} from '../core/permanent-boosts';
 import {Panel} from './Panel';
 import {GameButton} from './GameButton';
 import {spacing,typography,type ThemeColors} from '../theme/theme';
@@ -15,6 +16,7 @@ export function ClassSkillsPanel({state,now,onCommand,highlightedSkillId}:{state
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions();
  const [busy,setBusy]=useState(false),[error,setError]=useState('');const lock=useRef(false),c=state.character;if(!c)return null;
  const skills=characterClassSkills(c),definitions=classSkillsFor(c.classId),focus=normalizeTrainingFocus(c.trainingFocus),drill=c.classTraining;
+ const drillXp=drill?.xpPerDrill??CLASS_DRILL_BASE_XP*characterPermanentMultipliers(state).skillXpMultiplier,balancedHourly=Math.round(drillXp*30),focusedMainHourly=Math.round(drillXp*45),focusedOtherHourly=Math.round(drillXp*15);
  const run=async(command:GameCommand)=>{if(lock.current)return;lock.current=true;setBusy(true);setError('');try{await onCommand(command);}catch(e){setError(e instanceof Error?e.message:'Action failed.');}finally{lock.current=false;setBusy(false);}};
  const act=(title:string,command:GameCommand,disabled=false,tone:'primary'|'secondary'='primary')=><GameButton title={title} compact disabled={busy||disabled} tone={tone} onPress={()=>void run(command)}/>;
  const available=drill?Math.floor((Math.min(offlineCapSeconds(state)*1000,Math.max(0,now-drill.lastClaimAtMs))+drill.progressMs)/60000):0;
@@ -32,7 +34,7 @@ export function ClassSkillsPanel({state,now,onCommand,highlightedSkillId}:{state
     {(['balanced','primary','secondary'] as TrainingFocus[]).map(f=><View key={f} style={[s.focusButton,stackFocus&&s.focusButtonStack]}>{act(f==='balanced'?'Balanced · 50 / 50':`${f==='primary'?definitions[0].name:definitions[1].name} · 75 / 25`,{type:'class_focus',args:{focus:f}},focus===f,focus===f?'primary':'secondary')}</View>)}
    </View>
   </View>
-  <View style={s.section}><View style={s.between}><View style={s.flex}><Text style={s.sectionLabel}>SAFE TRAINING</Text><Text style={s.body}>One drill per minute · 8 base class XP · uses your {offlineCapSeconds(state)/3600}h offline cap. No Gold, drops, food, healing or character XP.</Text></View>{drill?<View style={s.readyBadge}><Text style={s.readyNumber}>{available}</Text><Text style={s.readyLabel}>READY</Text></View>:null}</View>
+  <View style={s.section}><View style={s.between}><View style={s.flex}><Text style={s.sectionLabel}>SAFE TRAINING</Text><Text style={s.body}>One drill per minute · {CLASS_DRILL_BASE_XP} base class XP. Balanced: ~{balancedHourly.toLocaleString()} XP/hr each · Focused: ~{focusedMainHourly.toLocaleString()} / {focusedOtherHourly.toLocaleString()} XP/hr. Uses your {offlineCapSeconds(state)/3600}h offline cap; no Gold, drops, food, healing or character XP.</Text></View>{drill?<View style={s.readyBadge}><Text style={s.readyNumber}>{available}</Text><Text style={s.readyLabel}>READY</Text></View>:null}</View>
    {drill?<View style={s.actionRow}><View style={s.flex}>{act('Claim training XP',{type:'claim'})}</View><View style={s.flex}>{act('Stop & claim',{type:'stop'},false,'secondary')}</View></View>:act('Start safe training',{type:'class_training'},skills.every(row=>row.level===100))}
   </View>
   {error?<Text accessibilityLiveRegion="polite" style={s.error}>{error}</Text>:null}

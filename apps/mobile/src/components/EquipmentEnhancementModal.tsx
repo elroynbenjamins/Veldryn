@@ -13,7 +13,7 @@ import {GameButton} from './GameButton';
 
 import {ActionFeedback} from './ActionFeedback';
 import {enhancementFeedback,enhancementPityBonusPct,type EnhancementFeedbackResult} from '../core/visual-feedback';
-import {canonicalGemMetaV1,effectFamilyCopiesV1,formatGemValueV1,gemUnsocketCostV1,recommendedEffectFamiliesV1,resonanceForFamilyV1} from '../core/gem-progression-v1';
+import {canonicalGemMetaV1,effectFamilyCopiesV1,formatGemValueV1,gemUnsocketCostForStateV1,recommendedEffectFamiliesV1,resonanceForFamilyV1} from '../core/gem-progression-v1';
 import {GEM_GRADE_LABEL_V1,mobileGemFamilyV1} from '../content/gems-v1';
 import {GemArtwork} from './GemArtwork';
 

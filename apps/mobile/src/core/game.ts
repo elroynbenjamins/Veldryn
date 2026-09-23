@@ -824,7 +824,7 @@ export function challengeFallenKnight(state:GameState,nowMs=Date.now()):{state:G
   let next={...state,...rewardRouted,defeatedBossIds:[...state.defeatedBossIds,'FALLEN_KNIGHT'],character:{...postFightCharacter,gold:state.character.gold+900,xp,level:characterLevelFromXp(xp)},activity:null} as GameState;
   next.character=awardClassSkillXp(next.character!,3000*characterPermanentMultipliers(state).skillXpMultiplier).character;
   next=recordCompanionActivity(grantBondstones(grantCompanionEssence(refreshQuests(grantEventActivity(next,'boss',nowMs)),40),1),'boss','FALLEN_KNIGHT',1,nowMs);
-  next=applyTrustedLongTermProgression(next,[{kind:'boss',contentId:'FALLEN_KNIGHT',units:1}],undefined,nowMs,{accountId:longTermAccountScope(next),eventId:`boss-story:${state.character.id}:FALLEN_KNIGHT`}).state;
+  next=applyTrustedLongTermProgression(next,[{kind:'boss',contentId:'FALLEN_KNIGHT',units:1,weeklyEligible:false}],undefined,nowMs,{accountId:longTermAccountScope(next),eventId:`boss-story:${state.character.id}:FALLEN_KNIGHT`}).state;
   const storyDropText=storyDrops.length?storyDrops.map(row=>`${row.quantity}× ${itemDef(row.itemId).name}`).join(', '):'no item drops';
   return {state:next,won:true,battle,message:`Fallen Knight defeated in ${Math.max(1,Math.round(battle.durationMs/1000))}s. +900 Gold, +3,000 XP, +40 Companion Essence, +1 Bondstone. Boss drops: ${storyDropText}.`};
 }

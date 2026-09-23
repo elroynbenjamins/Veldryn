@@ -3,7 +3,7 @@ import {NOVICE_RECIPES} from './novice-sets';
 import {ITEMS} from './items';
 import {TOOL_RECIPES} from './gathering-tools';
 import {ALCHEMY_RECIPES} from './alchemy';
-import {V33_EQUIPMENT_RECIPES} from './equipment-recipes-v33';
+import {EQUIPMENT_CRAFT_SKILL_BY_CLASS,V33_EQUIPMENT_RECIPES} from './equipment-recipes-v33';
 export interface GatherDef{id:string;skillId:'mining'|'woodcutting'|'fishing'|'herbalism';name:string;unlockLevel:number;seconds:number;xp:number;itemId:string;min:number;max:number;zoneId:string;difficultyMultiplier:number;recommendedToolTier:number;}
 export const GATHERING:GatherDef[]=([
 {id:'COPPER_VEIN',skillId:'mining',name:'Copper Vein',unlockLevel:1,seconds:15,xp:9,itemId:'COPPER_ORE',min:1,max:2,zoneId:'OLD_MINES'},
@@ -159,4 +159,12 @@ export const RECIPES:Recipe[]=([
 {id:'COOK_RIVER_EEL',name:'Sear River Eel Batch',skillId:'cooking',level:8,xp:180,gold:80,seconds:44,repeatableTraining:true,inputs:[{itemId:'RIVER_EEL',quantity:4}],output:{itemId:'SEARED_RIVER_EEL',quantity:4}},
 {id:'COOK_OATHSCALE',name:'Roast Oathscale Batch',skillId:'cooking',level:16,xp:260,gold:130,seconds:54,repeatableTraining:true,inputs:[{itemId:'OATHSCALE_PIKE',quantity:3}],output:{itemId:'ROASTED_OATHSCALE',quantity:3}},
 {id:'COOK_IRONWOOD_STEW',name:'Ironwood Hunter Stew',skillId:'cooking',level:15,xp:105,gold:140,seconds:66,inputs:[{itemId:'RIVER_EEL',quantity:2},{itemId:'THORN_SAP',quantity:1}],output:{itemId:'IRONWOOD_STEW',quantity:1}},
-] as Recipe[]).map(recipe=>recipe.skillId==='smithing'&&!recipe.repeatableTraining&&!recipe.noviceSetId&&!recipe.v33SetId&&!recipe.id.startsWith('SMITH_')?{...recipe,inputs:recipe.inputs.map(input=>({...input,quantity:input.quantity*2}))}:recipe);
+] as Recipe[]).map(recipe=>{
+  const profession=recipe.classId?EQUIPMENT_CRAFT_SKILL_BY_CLASS[recipe.classId]:recipe.skillId;
+  const normalized=profession!==recipe.skillId?{...recipe,skillId:profession}:recipe;
+  const equipmentProfession=normalized.skillId==='smithing'||normalized.skillId==='tailoring';
+  const directTrainingRecipe=normalized.id.startsWith('SMITH_')||normalized.id.startsWith('TAILOR_');
+  return equipmentProfession&&!normalized.repeatableTraining&&!normalized.noviceSetId&&!normalized.v33SetId&&!directTrainingRecipe
+    ?{...normalized,inputs:normalized.inputs.map(input=>({...input,quantity:input.quantity*2}))}
+    :normalized;
+});

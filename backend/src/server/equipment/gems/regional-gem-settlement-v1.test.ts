@@ -14,7 +14,7 @@ const calls:Array<{name:string;args:Record<string,unknown>}>= [];
 const rpc={
   async rpc<T>(name:string,args:Record<string,unknown>):Promise<T>{
     calls.push({name,args});
-    return {eligible:true,sourceId:String(args.p_source_id),gemItemId:'gem:effect_execution:g3',pityTriggered:true,regionalCatalysts:1} as T;
+    return {eligible:true,sourceId:String(args.p_source_id),gemItemId:'raw_gem:effect_execution:g3',pityTriggered:true,regionalCatalysts:1} as T;
   },
 };
 async function main(){

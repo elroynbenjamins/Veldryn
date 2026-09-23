@@ -118,7 +118,7 @@ ok(!!prepareRoute.bottleneck&&prepareRoute.bottleneck.stepId!==prepareRoute.step
 ok(recipePreparationRouteLabel(prepareRoute).includes('prep ~')&&recipePreparationRouteLabel(prepareRoute).includes('bottleneck'),'Collapsed route meta must surface preparation time and bottleneck without expanding the recipe card');
 
 const batchRoute=recipePreparationRoute(chainState,fittingRecipe,2);
-ok(batchRoute.steps[0].label.includes('16× Aster-Iron Ore')&&batchRoute.steps[2].label.includes('4× Ironwood Log')&&batchRoute.steps[3].label.endsWith('×2'),'Prepare Materials must scale the shared dependency route with the selected processing or Alchemy batch size');
+ok(batchRoute.steps[0].label.includes('8× Aster-Iron Ore')&&batchRoute.steps[1].label.includes('×1')&&batchRoute.steps[2].label.includes('4× Ironwood Log')&&batchRoute.steps[3].label.endsWith('×2'),'Prepare Materials must scale the shared dependency route with the selected batch size while respecting intermediate recipe batch output');
 
 const poorRoute=recipePreparationRoute(poorChain,fittingRecipe);
 ok(!poorRoute.complete&&poorRoute.etaSeconds===undefined&&(poorRoute.preparationEtaSeconds??0)>0&&poorRoute.goldShortfall===100,'A Gold shortfall may block the full route while trustworthy prerequisite preparation ETA remains visible');

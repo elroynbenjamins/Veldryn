@@ -48,7 +48,7 @@ import {professionMasteryMultipliers} from './profession-mastery-v40';
 import {huntingXpForKills} from './hunting-progression';
 import {regionalSecondaryExchange} from './regional-enemy-stats';
 import {simulateFallenKnightStoryBattle,type FallenKnightBattleResult,type FallenKnightPlayerSnapshot} from './story-boss';
-import {FALLEN_KNIGHT_WEEKLY_REWARD,fallenKnightWeeklyStatus,recordFallenKnightWeeklyVictory} from './weekly-boss';
+import {FALLEN_KNIGHT_CLEAR_REWARD,FALLEN_KNIGHT_WEEKLY_BOUNTY_REWARD,fallenKnightWeeklyStatus,recordFallenKnightWeeklyVictory} from './weekly-boss';
 export function beginAlchemyBatch(state:GameState,recipeId:string,batches:number,nowMs:number){return startAlchemyBatch(finishClassDrills(state,nowMs),recipeId,batches,nowMs);}
 export function beginProcessingBatch(state:GameState,recipeId:string,batches:number,nowMs:number){return startProcessingBatch(finishClassDrills(state,nowMs),recipeId,batches,nowMs);}
 
@@ -788,21 +788,23 @@ export function challengeFallenKnightRematch(state:GameState,nowMs:number):{stat
 
   const weeklyRecorded=recordFallenKnightWeeklyVictory(next,nowMs);next=weeklyRecorded.state;
   const stone=awardCompanionRematchBondstone(next,nowMs);next=stone.state;
-  const weeklyReward=FALLEN_KNIGHT_WEEKLY_REWARD;
+  const clearReward=FALLEN_KNIGHT_CLEAR_REWARD,bountyReward=weeklyRecorded.bountyTriggered?FALLEN_KNIGHT_WEEKLY_BOUNTY_REWARD:undefined;
   const bossDrops=fallenKnightDropRoll(next,`${state.character.id}:FALLEN_KNIGHT_REMATCH:${weeklyRecorded.status.weekKey}:${weeklyRecorded.clearNumber}`,false);
-  const items=stackItems([],bossDrops.concat(weeklyReward.items.map(row=>({...row}))));
-  const routed=routeRewards(next,items,nowMs),xp=next.character!.xp+weeklyReward.xp;
-  next={...next,...routed,character:{...next.character!,xp,level:characterLevelFromXp(xp),gold:next.character!.gold+weeklyReward.gold}};
-  next=grantCompanionEssence(next,weeklyReward.essence);
+  const fixedItems=[...clearReward.items.map(row=>({...row})),...(bountyReward?.items.map(row=>({...row}))??[])];
+  const items=stackItems([],bossDrops.concat(fixedItems));
+  const rewardGold=clearReward.gold+(bountyReward?.gold??0),rewardXp=clearReward.xp+(bountyReward?.xp??0),rewardEssence=clearReward.essence+(bountyReward?.essence??0);
+  const routed=routeRewards(next,items,nowMs),xp=next.character!.xp+rewardXp;
+  next={...next,...routed,character:{...next.character!,xp,level:characterLevelFromXp(xp),gold:next.character!.gold+rewardGold}};
+  next=grantCompanionEssence(next,rewardEssence);
   if(stone.reward)next=grantBondstones(next,stone.reward);
   const winMetrics={...(next.account.longTermMetrics??{})};
   winMetrics['companions.fallen_knight_rematch_wins']=(winMetrics['companions.fallen_knight_rematch_wins']??0)+1;
   winMetrics['companions.fallen_knight_rematch_bondstones']=(winMetrics['companions.fallen_knight_rematch_bondstones']??0)+stone.reward;
-  next.account={...next.account,longTermMetrics:winMetrics,companionLastBattle:{title:'Fallen Knight rematch',won:true,durationMs:battle.durationMs,gold:weeklyReward.gold,essence:weeklyReward.essence,bondstones:stone.reward,atMs:nowMs}};
+  next.account={...next.account,longTermMetrics:winMetrics,companionLastBattle:{title:'Fallen Knight rematch',won:true,durationMs:battle.durationMs,gold:rewardGold,essence:rewardEssence,bondstones:stone.reward,atMs:nowMs}};
   next=recordCompanionActivity(grantEventActivity(next,'boss',nowMs),'boss','FALLEN_KNIGHT',1,nowMs);
   next=applyTrustedLongTermProgression(next,[{kind:'boss',contentId:'FALLEN_KNIGHT',units:1}],undefined,nowMs,{accountId:longTermAccountScope(next),eventId:`boss-rematch:${state.character.id}:FALLEN_KNIGHT:${weeklyRecorded.status.weekKey}:${weeklyRecorded.clearNumber}`}).state;
   const strikes=battle.events.filter(event=>event.type==='player_hit').length,stoneText=stone.reward?'+1 Bondstone':`Bondstone weekly cap already reached`,dropText=bossDrops.length?bossDrops.map(row=>`${row.quantity}× ${itemDef(row.itemId).name}`).join(', '):'no bonus drop';
-  return {state:next,won:true,message:`Fallen Knight weekly clear ${weeklyRecorded.clearNumber}/${weeklyRecorded.status.cap} won${strikes===1?' in one hit':` in ${Math.max(1,Math.round(battle.durationMs/1000))}s`}. +${weeklyReward.gold} Gold, +${weeklyReward.xp} XP, +${weeklyReward.essence} Essence · Weekly cache: 6 Oathglass Shards, 2 Tempering Cores, 18 Gem Dust, 1 Regional Catalyst · Boss drops: ${dropText} · ${stoneText}.`};
+  return {state:next,won:true,message:`Fallen Knight weekly clear ${weeklyRecorded.clearNumber}/${weeklyRecorded.status.cap} won${strikes===1?' in one hit':` in ${Math.max(1,Math.round(battle.durationMs/1000))}s`}. +${rewardGold} Gold, +${rewardXp} XP, +${rewardEssence} Essence${weeklyRecorded.bountyTriggered?' · Oathglass Bounty completed: 1 Oathglass Fragment, 1 Tempering Core, 10 Gem Dust, 1 Regional Catalyst':''} · Boss drops: ${dropText} · ${stoneText}.`};
 }
 
 export function challengeFallenKnight(state:GameState,nowMs=Date.now()):{state:GameState;won:boolean;message:string;battle?:FallenKnightBattleResult}{

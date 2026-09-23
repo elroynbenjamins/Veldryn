@@ -19,7 +19,11 @@ const progressed=offlineCapBreakdown(state);
 if(progressed.hours!==18||offlineCapSeconds(state)!==18*60*60)throw new Error(`Gameplay progression must raise AFK reserve to 18h, got ${progressed.hours}`);
 if(progressed.sources.filter(source=>source.category==='progression'&&source.earned).length!==5)throw new Error('All five +2h gameplay AFK milestones must be represented');
 
-state={...state,account:{...state.account,entitlements:{vip:true,vip_plus:true,supporter:true}}};
+const vipPlusState={...state,account:{...state.account,entitlements:{vip_plus:true}}};
+const vipPlus=offlineCapBreakdown(vipPlusState);
+if(vipPlus.hours!==22)throw new Error(`VIP+ must include the VIP +2h and its own +2h, got ${vipPlus.hours}`);
+
+state={...state,account:{...state.account,entitlements:{vip_plus:true,supporter:true}}};
 const full=offlineCapBreakdown(state);
 if(full.hours!==24||offlineCapSeconds(state)!==24*60*60)throw new Error(`Paid AFK upgrades must reach the 24h cap, got ${full.hours}`);
 for(const id of ['vip','vip_plus','supporter']){

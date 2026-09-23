@@ -12,6 +12,10 @@ export const HUNT_GOALS:Record<HuntGoalId,HuntGoalDef>={
 };
 export function normalizeHuntGoalId(value:unknown):HuntGoalId{return HUNT_GOAL_IDS.includes(value as HuntGoalId)?value as HuntGoalId:'open'}
 export function huntGoalSnapshot(value:unknown){return HUNT_GOALS[normalizeHuntGoalId(value)].goal}
+export function huntGoalIdFromSnapshot(snapshot:HuntGoalSnapshot|undefined):HuntGoalId{
+ if(!snapshot)return 'open';
+ return HUNT_GOAL_IDS.find(id=>{const goal=HUNT_GOALS[id].goal;return goal?.kind===snapshot.kind&&goal.value===snapshot.value;})??'open';
+}
 
 export function huntGoalProgress(activity:{startedAtMs:number;huntGoal?:HuntGoalSnapshot;sessionKills?:number;sessionChampions?:number},pendingKills=0,pendingChampions=0,nowMs=Date.now()){
  const goal=activity.huntGoal;if(!goal)return undefined;

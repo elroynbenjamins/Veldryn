@@ -32,6 +32,8 @@ export const RECIPES:Recipe[]=[
 ...NOVICE_RECIPES,
 ...(V33_EQUIPMENT_RECIPES as Recipe[]),
 ...(TOOL_RECIPES as Recipe[]),
+{id:'ENCHANT_REGIONAL_CATALYST',name:'Synthesize Regional Catalyst',skillId:'enchanting',level:70,xp:1800,gold:12000,seconds:1800,repeatableTraining:true,inputs:[{itemId:'GEM_DUST',quantity:50},{itemId:'WILD_ESSENCE',quantity:4},{itemId:'OATHGLASS_FRAGMENT',quantity:2}],output:{itemId:'REGIONAL_CATALYST',quantity:1}},
+{id:'ENCHANT_RADIANT_CATALYST',name:'Synthesize Radiant Catalyst',skillId:'enchanting',level:90,xp:5200,gold:50000,seconds:5400,repeatableTraining:true,inputs:[{itemId:'REGIONAL_CATALYST',quantity:3},{itemId:'GEM_DUST',quantity:120},{itemId:'WILD_ESSENCE',quantity:10},{itemId:'RIMEGLASS',quantity:2}],output:{itemId:'RADIANT_CATALYST',quantity:1}},
 {id:'SMELT_COPPER_INGOT',name:'Smelt Copper Batch',skillId:'smithing',level:1,xp:80,gold:30,seconds:36,repeatableTraining:true,inputs:[{itemId:'COPPER_ORE',quantity:10}],output:{itemId:'COPPER_INGOT',quantity:5}},
 {id:'SMELT_ASTER_IRON_INGOT',name:'Smelt Aster-Iron Batch',skillId:'smithing',level:8,xp:140,gold:50,seconds:42,repeatableTraining:true,inputs:[{itemId:'ASTER_IRON_ORE',quantity:8}],output:{itemId:'ASTER_IRON_INGOT',quantity:4}},
 {id:'FORGE_REINFORCED_FITTING',name:'Forge Reinforced Fitting',skillId:'smithing',level:12,xp:180,gold:50,seconds:48,repeatableTraining:true,inputs:[{itemId:'ASTER_IRON_INGOT',quantity:2},{itemId:'IRONWOOD_LOG',quantity:2}],output:{itemId:'REINFORCED_FITTING',quantity:1}},

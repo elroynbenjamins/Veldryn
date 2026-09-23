@@ -338,6 +338,11 @@ const next=discoverCharacterSkins(candidate);queuePreparationNotices(current,nex
     }
     openGoalAtCurrentRegion(destination);
   }
+  function openPreparationNotice(notice:RecipePreparationTransitionNotice){
+    setPreparationNotices(current=>current.slice(1));
+    if(notice.kind==='complete'||!notice.destination||notice.destination.kind==='info'){setTab('Progression');return;}
+    openWorkingTowardDestination(notice.destination);
+  }
   function continueGoalAfterTravel(regionId:string){
     const destination=pendingGoalDestination;setPendingGoalDestination(undefined);setGoalRegionId(undefined);
     if(!destination||!('regionId' in destination)||destination.regionId!==regionId)return;
@@ -428,7 +433,7 @@ const next=discoverCharacterSkins(candidate);queuePreparationNotices(current,nex
     {tab==='Achievements'&&<AchievementsScreen reduceMotion={state.settings.reduceMotion} onProfile={()=>setTab('ProfileCustomize')}/>}
   </View>
   <ChatOverlay state={state} visible={showChatOverlay} onOpen={()=>setShowChatOverlay(true)} onClose={()=>setShowChatOverlay(false)} onEmoteTrayChange={ids=>commit({...state,settings:{...state.settings,chatEmoteTrayIds:ids}})} guildUnread={notificationCounts.guildChatUnread} guildMentions={notificationCounts.guildChatMentions} guildFirstUnreadMessageId={notificationCounts.guildFirstUnreadMessageId} partyUnread={notificationCounts.partyChatUnread} partyMentions={notificationCounts.partyChatMentions} partyFirstUnreadMessageId={notificationCounts.partyFirstUnreadMessageId} onChatRead={()=>void refreshSocialNotifications()}/>
-  {!collected&&!forgeResults?.some(row=>row.qualityProc)&&preparationNotices.length?<View style={s.masteryNotice}><ActionFeedback message={preparationNotices[0].message} tone={preparationNotices[0].tone} reduceMotion={state.settings.reduceMotion} compact/></View>:!collected&&!forgeResults?.some(row=>row.qualityProc)&&masteryNotices.length?<View style={s.masteryNotice}><ActionFeedback message={masteryRankNoticeMessage(masteryNotices)} tone={masteryNotices.some(moment=>moment.mastered)?'success':'info'} reduceMotion={state.settings.reduceMotion} compact/></View>:null}
+  {!collected&&!forgeResults?.some(row=>row.qualityProc)&&preparationNotices.length?<View style={s.masteryNotice}><ActionFeedback message={preparationNotices[0].message} tone={preparationNotices[0].tone} reduceMotion={state.settings.reduceMotion} compact actionLabel={preparationNotices[0].actionLabel} onAction={()=>openPreparationNotice(preparationNotices[0])}/></View>:!collected&&!forgeResults?.some(row=>row.qualityProc)&&masteryNotices.length?<View style={s.masteryNotice}><ActionFeedback message={masteryRankNoticeMessage(masteryNotices)} tone={masteryNotices.some(moment=>moment.mastered)?'success':'info'} reduceMotion={state.settings.reduceMotion} compact/></View>:null}
     <PrimaryNavigation destinations={primaryTabs} active={activePrimary} labelFor={item=>tabLabel(state.settings.language,item)} onNavigate={setTab} badges={primaryBadges}/>
   <RewardPopup reward={collected?.reward??null} activity={collected?.activity??null} welcomeBack={!!collected?.welcomeBack} progressionMoments={collected?.progressionMoments??[]} reduceMotion={state.settings.reduceMotion} numberMode={state.settings.numberMode} onClose={()=>setCollected(null)} onInventory={()=>setTab('Inventory')} onCollections={()=>setTab('Collections')} onCompanions={()=>setTab('Companions')} onSkill={id=>{const skillId=id as SkillId;setSelectedSkill(skillId);setSkillsMode(id==='faith'?'faith':['mining','woodcutting','fishing','herbalism'].includes(id)?'gathering':'crafting');setTab('Skills')}}/>
   <CustomizationUnlockPopup entries={collected?[]:customizationUnlocks} reduceMotion={state.settings.reduceMotion} onClose={()=>setCustomizationUnlocks([])} onProfile={()=>{setCustomizationUnlocks([]);setTab('ProfileCustomize')}} onCharacter={()=>{setCustomizationUnlocks([]);setTab('Character')}}/>

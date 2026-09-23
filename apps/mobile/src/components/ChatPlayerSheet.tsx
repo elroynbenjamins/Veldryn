@@ -18,14 +18,15 @@ import {PublicProfileScene} from './PublicProfileScene';
 import {useAuthSession} from '../online/AuthSessionProvider';
 import {profileAchievementPrestige,profileCollectionPrestige,profileRecordPrestige} from '../core/profile-prestige';
 import {friendRelationshipActionPresentation} from '../core/social-identity';
+import type {PlayerNameStyleSelection} from '../core/player-name-style';
 
-export type ChatPlayerIdentity={id?:string;message_id?:string;account_id:string;sender_name:string;guild_tag?:string|null;guild_tag_color_id?:string|null;relationship?:FriendRelationship};
+export type ChatPlayerIdentity={id?:string;message_id?:string;account_id:string;sender_name:string;guild_tag?:string|null;guild_tag_color_id?:string|null;name_style?:PlayerNameStyleSelection|null;relationship?:FriendRelationship};
 
 export function ChatPlayerSheet({
- message,onClose,onBlocked,onRelationshipChanged,
+ message,onClose,onBlocked,onRelationshipChanged,reduceMotion=true,
 }:{
  message:ChatPlayerIdentity|null;onClose:()=>void;onBlocked:(accountId:string)=>void;
- onRelationshipChanged?:(accountId:string,relationship:FriendRelationship)=>void;
+ onRelationshipChanged?:(accountId:string,relationship:FriendRelationship)=>void;reduceMotion?:boolean;
 }){
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const {session}=useAuthSession();
@@ -90,13 +91,13 @@ export function ChatPlayerSheet({
  return <Modal visible transparent animationType="fade" onRequestClose={onClose}><View style={s.scrim}><Pressable accessibilityLabel="Close player profile" onPress={onClose} style={StyleSheet.absoluteFill}/><View accessibilityViewIsModal style={s.sheet}>
   <View style={s.handle}/><View style={s.top}><Text style={s.kicker}>PLAYER PROFILE</Text><Pressable accessibilityRole="button" accessibilityLabel="Close player profile" onPress={onClose} style={s.close}><Text style={s.closeText}>×</Text></Pressable></View>
   <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
-   {loading?<View style={s.limitedCard}><CompactPlayerIdentity name={message.sender_name} guildTag={message.guild_tag} guildTagColorId={message.guild_tag_color_id} status="LOADING PROFILE"/><ActivityIndicator color={C.accent}/></View>:profile?<><PublicProfileScene profile={profile}/>
+   {loading?<View style={s.limitedCard}><CompactPlayerIdentity name={message.sender_name} guildTag={message.guild_tag} guildTagColorId={message.guild_tag_color_id} nameStyle={message.name_style} reduceMotion={reduceMotion} status="LOADING PROFILE"/><ActivityIndicator color={C.accent}/></View>:profile?<><PublicProfileScene profile={profile} reduceMotion={reduceMotion}/>
     {profile.bio?<View style={s.bioCard}><Text style={s.bioLabel}>PROFILE BIO</Text><Text style={s.bio}>{profile.bio}</Text></View>:null}
     {(profile.favoriteSkillId||profile.favoriteCompanionId)?<ProfileFavoriteHighlights favoriteSkillId={profile.favoriteSkillId} favoriteCompanionId={profile.favoriteCompanionId}/>:null}
     <ProfileShowcaseSection title="ACHIEVEMENT SHOWCASE" entries={achievementEntries} emptyLabel="No achievement selected"/>
     <ProfileShowcaseSection title="PERSONAL RECORDS" entries={recordEntries} emptyLabel="No record selected"/>
     <ProfileShowcaseSection title="COLLECTION SHOWCASE" entries={collectionEntries} emptyLabel="No collectible selected"/>
-   </>:<View style={s.limitedCard}><CompactPlayerIdentity name={message.sender_name} guildTag={message.guild_tag} guildTagColorId={message.guild_tag_color_id} status={loadError?'PROFILE ERROR':'LIMITED PROFILE'}/><View style={s.limitedCopy}><Text style={s.privateTitle}>{loadError?'Public profile could not load':unavailable?'Full profile unavailable':'No published profile'}</Text><Text style={s.limitedText}>{loadError?'The profile service did not respond successfully. The player identity and social actions below are still available.':'This player may use Private or Guild visibility, may not have published a social profile yet, or may be hidden by a relationship rule.'}</Text></View>{loadError?<GameButton title="Retry profile" tone="secondary" onPress={()=>void loadProfile()}/>:null}</View>}
+   </>:<View style={s.limitedCard}><CompactPlayerIdentity name={message.sender_name} guildTag={message.guild_tag} guildTagColorId={message.guild_tag_color_id} nameStyle={message.name_style} reduceMotion={reduceMotion} status={loadError?'PROFILE ERROR':'LIMITED PROFILE'}/><View style={s.limitedCopy}><Text style={s.privateTitle}>{loadError?'Public profile could not load':unavailable?'Full profile unavailable':'No published profile'}</Text><Text style={s.limitedText}>{loadError?'The profile service did not respond successfully. The player identity and social actions below are still available.':'This player may use Private or Guild visibility, may not have published a social profile yet, or may be hidden by a relationship rule.'}</Text></View>{loadError?<GameButton title="Retry profile" tone="secondary" onPress={()=>void loadProfile()}/>:null}</View>}
   </ScrollView>
   {isSelf?<View style={s.selfNotice}><Text style={s.selfNoticeLabel}>THIS IS YOUR PROFILE</Text><Text style={s.selfNoticeText}>Edit your biography, favorites, privacy and showcases from Account → Profile.</Text></View>:<View style={s.actionArea}>
    <View style={s.actionHead}><Text style={s.hint}>PLAYER ACTIONS</Text><View style={[s.relationshipPill,relationshipPresentation.tone==='friend'&&s.relationshipFriend]}>{relationshipLoading?<ActivityIndicator size="small" color={C.info}/>:<Text style={[s.relationshipText,relationshipPresentation.tone==='friend'&&s.relationshipFriendText]}>{relationshipPresentation.status}</Text>}</View></View>

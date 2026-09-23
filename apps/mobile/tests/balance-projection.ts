@@ -6,7 +6,7 @@ import {itemDef} from '../src/content/items';
 import {acquisitionEstimateLabel,acquisitionProjectionForDestination,activeActivityLevelPace,activityProgressFeedback,characterLevelPace,combatBaselineProjection,craftingPaceProjection,dropExpectation,dropPaceBand,formatBalanceDuration,gatheringBalanceProjection,skillTargetEta} from '../src/core/balance-projection';
 import {activityCycleSeconds,activityRate} from '../src/core/dashboard';
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
-import {materialAcquisitionChainLabel,materialAcquisitionPlanForDestination,materialAcquisitionPlanSummary} from '../src/core/material-acquisition-plan';
+import {materialAcquisitionChainLabel,materialAcquisitionPlanForDestination,materialAcquisitionPlanSummary,materialPreparationSteps} from '../src/core/material-acquisition-plan';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 function close(actual:number,expected:number,tolerance:number,message:string){if(Math.abs(actual-expected)>tolerance)throw new Error(message+': expected '+expected+', got '+actual)}
@@ -86,10 +86,15 @@ const fittingPlan=materialAcquisitionPlanForDestination(chainState,'REINFORCED_F
 ok(fittingPlan.complete&&fittingPlan.craftSteps===2&&fittingPlan.depth===2&&(fittingPlan.etaSeconds??0)>0,'Recursive planner must resolve Reinforced Fitting through its crafted ingot dependency to direct raw sources');
 ok(fittingChain?.includes('8× Aster-Iron Ore')&&fittingChain.includes('2× Ironwood Log'),'Recursive chain summary must expose the actual remaining raw requirements');
 ok(fittingPlan.totalGold===100&&fittingSummary.estimate?.includes('total chain'),'Recursive plan must include both processing craft costs and only publish a total ETA when the full chain is modeled');
+const fittingSteps=materialPreparationSteps(fittingPlan);
+ok(fittingSteps.length===4&&fittingSteps[0].itemId==='ASTER_IRON_ORE'&&fittingSteps[1].kind==='craft'&&fittingSteps[1].itemId==='ASTER_IRON_INGOT'&&fittingSteps[2].itemId==='IRONWOOD_LOG'&&fittingSteps[3].kind==='craft'&&fittingSteps[3].itemId==='REINFORCED_FITTING','Prepare materials must order dependency actions from raw acquisition through intermediate processing to final craft without hard-coding which ranked source method is currently best');
+ok(fittingSteps.every(step=>step.destination&&step.status==='action'),'Fresh modeled preparation steps must deep-link to their exact actionable source');
 
 const stockedChain={...chainState,inventory:{...chainState.inventory,stacks:[...chainState.inventory.stacks,{itemId:'ASTER_IRON_INGOT',quantity:2},{itemId:'IRONWOOD_LOG',quantity:2}]}};
 const stockedPlan=materialAcquisitionPlanForDestination(stockedChain,'REINFORCED_FITTING',1,fittingDestination);
 ok(stockedPlan.complete&&stockedPlan.craftSteps===1&&stockedPlan.totalGold===50&&materialAcquisitionChainLabel(stockedPlan)?.includes('ingredients already owned'),'Recursive planner must consume owned intermediate/raw stock once before expanding deeper recipe steps');
+const stockedSteps=materialPreparationSteps(stockedPlan);
+ok(stockedSteps.length===3&&stockedSteps[0].status==='ready'&&stockedSteps[1].status==='ready'&&stockedSteps[2].kind==='craft','Prepare materials must keep owned intermediate/raw requirements visible as satisfied steps before the remaining craft');
 
 const poorChain={...chainState,character:{...chainState.character!,gold:0}},poorPlan=materialAcquisitionPlanForDestination(poorChain,'REINFORCED_FITTING',1,fittingDestination);
 ok(!poorPlan.complete&&poorPlan.etaSeconds===undefined&&poorPlan.goldShortfall===100,'A known material chain must withhold its total ETA when the required crafting Gold is unavailable');

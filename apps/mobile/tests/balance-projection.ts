@@ -1,7 +1,8 @@
 import {createCharacter,newGame,startGathering} from '../src/core/game';
 import {characterTotalXpAtLevel,totalXpAtLevel} from '../src/core/progression';
 import {GATHERING,RECIPES} from '../src/content/skills';
-import {MONSTERS,NORMAL_GEAR_DROP_FLOOR} from '../src/content/monsters';
+import {MONSTERS} from '../src/content/monsters';
+import {itemDef} from '../src/content/items';
 import {activeActivityLevelPace,activityProgressFeedback,characterLevelPace,combatBaselineProjection,craftingPaceProjection,dropExpectation,dropPaceBand,formatBalanceDuration,gatheringBalanceProjection,skillTargetEta} from '../src/core/balance-projection';
 import {activityCycleSeconds,activityRate} from '../src/core/dashboard';
 
@@ -54,21 +55,18 @@ const level40State={...state,character:{...state.character!,level:40,xp:characte
 const level40Combat=characterLevelPace(level40State,combatBaselineProjection(glassbound).xpPerHour),level88Combat=characterLevelPace(level88State,combatBaselineProjection(ashen).xpPerHour);
 ok((level40Combat.etaSeconds??Infinity)<=7*3600,'Matching-level combat around level 40 should stay within a long session');
 ok((level88Combat.etaSeconds??Infinity)<=10*3600,'Late matching-level combat should remain under roughly ten baseline hours per level');
-const gearDrop=rat.drops.find(drop=>drop.chance<.1)!;
-const expected=dropExpectation(gearDrop.chance,gearDrop.min,gearDrop.max,combat.killsPerHour);
-close(expected.oneIn,1/gearDrop.chance,.001,'Drop odds must be the reciprocal of per-kill chance');
-ok(expected.averageFindSeconds>combat.cycleSeconds,'Rare-drop average find time must exceed one kill cycle');
+const echoBat=MONSTERS.find(row=>row.id==='ECHO_BAT')!,echoPace=combatBaselineProjection(echoBat),rareMaterial=echoBat.drops.find(drop=>drop.itemId==='OATHGLASS_SHARD')!;
+const expected=dropExpectation(rareMaterial.chance,rareMaterial.min,rareMaterial.max,echoPace.killsPerHour);
+close(expected.oneIn,1/rareMaterial.chance,.001,'Drop odds must be the reciprocal of per-kill chance');
+ok(expected.averageFindSeconds>echoPace.cycleSeconds,'Rare material average find time must exceed one kill cycle');
 const mossMaterial=rat.drops.find(drop=>drop.itemId==='MOSS_FIBER')!,mossExpected=dropExpectation(mossMaterial.chance,mossMaterial.min,mossMaterial.max,combat.killsPerHour);
 ok(mossExpected.averageFindSeconds<5*60,'Starter required materials should arrive frequently rather than carrying the grind');
-const revenant=MONSTERS.find(row=>row.id==='OATHGLASS_REVENANT')!,revenantPace=combatBaselineProjection(revenant),normalGear=revenant.drops.find(drop=>drop.itemId==='SPELLGLASS_CHEST')!,normalGearExpected=dropExpectation(normalGear.chance,normalGear.min,normalGear.max,revenantPace.killsPerHour);
-ok(normalGear.chance>=NORMAL_GEAR_DROP_FLOOR,'Ordinary non-boss gear must respect the global progression-friendly drop floor');
-ok(normalGearExpected.averageFindSeconds>=15*60&&normalGearExpected.averageFindSeconds<=90*60,'Later ordinary gear should average minutes to about an hour, not become a chase grind');
-ok(dropPaceBand(normalGearExpected.averageFindSeconds).band==='progression','Ordinary later gear should be classified as progression-paced');
+ok(MONSTERS.every(monster=>monster.drops.every(drop=>itemDef(drop.itemId).type!=='gear')),'Monster loot must not bypass Equipment 2.0 crafting with finished gear drops');
 const oracle=MONSTERS.find(row=>row.id==='DUNE_ORACLE')!,oraclePace=combatBaselineProjection(oracle),sigil=oracle.drops.find(drop=>drop.itemId==='SWIFT_SIGIL')!,sigilExpected=dropExpectation(sigil.chance,sigil.min,sigil.max,oraclePace.killsPerHour);
 ok(sigilExpected.averageFindSeconds>=3*3600&&sigilExpected.averageFindSeconds<=12*3600,'Rare build-defining sigils should remain multi-hour chase drops');
 ok(dropPaceBand(sigilExpected.averageFindSeconds).band==='chase','Build-defining sigils should remain explicitly classified as chase rewards');
-const boss=MONSTERS.find(row=>row.id==='FALLEN_KNIGHT')!,bossGear=boss.drops.find(drop=>drop.itemId==='TRACKER_CHEST')!;
-ok(bossGear.chance===.01,'Boss-specific gear is excluded from the ordinary-world gear floor and keeps authored boss odds');
+const boss=MONSTERS.find(row=>row.id==='FALLEN_KNIGHT')!;
+ok(boss.drops.some(drop=>drop.itemId==='TORN_OATHCLOTH'&&drop.chance===1)&&boss.drops.every(drop=>itemDef(drop.itemId).type!=='gear'),'Boss loot must award crafting inputs/special rewards rather than legacy finished gear');
 ok(dropPaceBand(13*3600).band==='long_chase'&&dropPaceBand(5*60).band==='frequent','Drop pace labels must distinguish frequent and long-chase rewards');
 ok(formatBalanceDuration(30)==='<1m'&&formatBalanceDuration(3600)==='1h'&&formatBalanceDuration(90000)==='1d 1h','Balance duration labels must stay compact and readable');
 ok(activityProgressFeedback('gathering',.1)==='Preparing tools…'&&activityProgressFeedback('gathering',.8)==='Finishing the action…','Gathering cycle feedback must describe real progress phases');

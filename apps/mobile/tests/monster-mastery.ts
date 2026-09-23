@@ -4,6 +4,7 @@ import {MONSTER_MASTERY_MILESTONES,monsterMasteryGuidance,nextMasteryMilestone} 
 import {activityCycleSeconds} from '../src/core/dashboard';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
 import {createSaveBackup,parseSaveBackup} from '../src/core/save-transfer';
+import {itemDef} from '../src/content/items';
 let checks=0;const ok=(v:unknown,m:string)=>{checks++;if(!v)throw new Error(m);};const now=Date.UTC(2026,8,13);
 let s=createCharacter(newGame(now),'WAYFINDER','Mastery Test');s=startCombat(s,'MOSS_RAT',now);
 const claimed=claimActivity(s,now+60000);ok(monsterMastery(claimed.state,'MOSS_RAT').points===claimed.reward.kills,'one point per verified kill');ok(monsterMastery(claimActivity(claimed.state,now+60000).state,'MOSS_RAT').points===claimed.reward.kills,'no repeat points');
@@ -15,7 +16,7 @@ const master=recordMonsterMastery(s,'MOSS_RAT',10000);ok(monsterMastery(master,'
 ok(activityCycleSeconds(master)<activityCycleSeconds(s),'dashboard reflects mastery speed');
 const before=previewActivityReward(s,now+activityCycleSeconds(s)*1000*100+1),after=previewActivityReward(master,now+activityCycleSeconds(master)*1000*100+1);
 ok(before.kills===after.kills,'equal encounter sample');const material=before.items.find(i=>i.itemId==='MOSS_FIBER')!;ok(after.items.find(i=>i.itemId==='MOSS_FIBER')!.quantity===material.quantity+Math.floor(material.quantity*.05),'5% actual normal material yield');
-const gear=before.items.find(i=>i.itemId==='MOSSWRAP_GLOVES');ok(after.items.find(i=>i.itemId==='MOSSWRAP_GLOVES')?.quantity===gear?.quantity,'no mastery bonus to gear');
+ok(before.items.every(item=>itemDef(item.itemId).type!=='gear')&&after.items.every(item=>itemDef(item.itemId).type!=='gear'),'Normal monster rewards should feed crafting rather than drop legacy finished gear');
 let forest=createCharacter(newGame(now),'WAYFINDER','Forest Test');forest.character!.level=25;forest.character!.hp=10000;forest.character!.currentHp=10000;forest.character!.monsterMasteryPoints={FOREST_TROLL:499};forest.currentRegionId='IRONWOOD';forest.unlockedMonsterIds.push('FOREST_TROLL');forest=startCombat(forest,'FOREST_TROLL',now);forest=claimActivity(forest,now+600000).state;
 ok(forest.account.unlockedCombatCompanionIds?.includes('UNIT_004'),'real Forest Troll combat unlocks Briarhorn Cub');
 const saved=parseSaveBackup(createSaveBackup(forest));ok(monsterMastery(saved,'FOREST_TROLL').points===monsterMastery(forest,'FOREST_TROLL').points,'save keeps mastery');

@@ -7,7 +7,7 @@ export type RecipeFilter='all'|'favorites'|'craftable'|'locked';
 export type RecipeSort='favorite'|'level'|'name';
 export function visibleRecipes(state:GameState,skillId:SkillId,query='',filter:RecipeFilter='all',sort:RecipeSort='level'){
   const term=query.trim().toLowerCase(),favorites=new Set(state.account.collectionPreferences?.favoriteRecipeIds??[]),skill=state.skills.find(entry=>entry.skillId===skillId);
-  return RECIPES.filter(recipe=>recipe.skillId===skillId&&!recipe.noviceSetId).map(recipe=>({recipe,status:recipeAvailability(state,recipe.id),favorite:favorites.has(recipe.id)})).filter(row=>{
+  return RECIPES.filter(recipe=>recipe.skillId===skillId&&!recipe.noviceSetId&&(!recipe.classId||recipe.classId===state.character?.classId)).map(recipe=>({recipe,status:recipeAvailability(state,recipe.id),favorite:favorites.has(recipe.id)})).filter(row=>{
     const output=itemDef(row.recipe.output.itemId),matches=!term||row.recipe.name.toLowerCase().includes(term)||output.name.toLowerCase().includes(term);
     if(!matches)return false;
     if(filter==='favorites'&&!row.favorite)return false;

@@ -2,6 +2,7 @@ import {RECIPES} from '../content/skills';
 import {ActiveActivity,CombatChallengeId,CombatTacticId,GameState,RewardBundle} from './types';
 import type {HuntGoalId} from './hunt-goals';
 import {claimActivity,craftRecipe,startCombat,startGathering,startHerbalism,stopActivity} from './game';
+import {startEquipmentCraft,timedEquipmentRecipe} from './equipment-crafting-queue';
 
 /** Settle earned rewards before replacing or stopping an activity. Pure and atomic. */
 export function transitionActivity(state:GameState,nowMs:number,next?:{kind:'combat'|'gathering';id:string;challengeId?:CombatChallengeId;tacticId?:CombatTacticId;goalId?:HuntGoalId}){
@@ -32,6 +33,8 @@ export function recipeAvailability(state:GameState,recipeId:string){
     inventory:state.inventory.stacks.find(stack=>stack.itemId===input.itemId)?.quantity??0,
     bank:state.bank.stacks.find(stack=>stack.itemId===input.itemId)?.quantity??0,
   }));
-  try{craftRecipe(state,recipeId);return {ready:true,reason:'Ready to craft',inputs}}
-  catch(error){return {ready:false,reason:error instanceof Error?error.message:'Cannot craft yet',inputs}}
+  try{
+    if(timedEquipmentRecipe(recipeId)){startEquipmentCraft(state,recipeId,Date.now());return {ready:true,reason:'Ready to start in the Equipment Forge',inputs};}
+    craftRecipe(state,recipeId);return {ready:true,reason:'Ready to craft',inputs};
+  }catch(error){return {ready:false,reason:error instanceof Error?error.message:'Cannot craft yet',inputs}}
 }

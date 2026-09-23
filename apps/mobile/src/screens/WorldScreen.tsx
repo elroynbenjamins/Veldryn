@@ -1,5 +1,4 @@
 import {useEffect,useState,useMemo} from 'react';
-import {RegionArtwork} from '../components/RegionArtwork';
 import {ZoneSceneArtwork} from '../components/ZoneSceneArtwork';
 import {ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';

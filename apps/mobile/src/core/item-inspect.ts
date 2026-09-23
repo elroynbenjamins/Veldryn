@@ -5,15 +5,15 @@ import {MONSTERS} from '../content/monsters';
 import {WORLD_ZONES} from '../content/world-map';
 import {equipmentSetDef,equippedSetPieceCount} from '../content/equipment-sets';
 import {GameState,SkillId} from './types';
-import {workingTowardDestinationAvailability,type WorkingTowardDestination,type WorkingTowardDestinationAvailability} from './working-toward';
+import {workingTowardDestinationAvailability,workingTowardItemSourceEntries,type WorkingTowardDestination,type WorkingTowardDestinationAvailability} from './working-toward';
 import {enhancedGearStats,gearEnhancement,gemEffectDescription,gemSocketCapacity,gemSocketKind,gemSocketState,gearStatsAtRank,MAX_UPGRADE_RANK,upgradeQuote} from './equipment-enhancement';
 import {effectiveStats} from './game';
 import {previewEquipment} from './equipment-preview';
 import {rarityMeta} from './item-rarity';
 import {craftedInstancesForItem,effectiveOwnedGearRarity} from './crafted-gear-instances';
 
-export type ItemInspectSourceKind='gathering'|'crafting'|'combat'|'starting';
-export interface ItemInspectSource{kind:ItemInspectSourceKind;title:string;detail:string;navigation?:WorkingTowardDestination;availability?:WorkingTowardDestinationAvailability;}
+export type ItemInspectSourceKind='gathering'|'crafting'|'combat'|'dungeon'|'starting';
+export interface ItemInspectSource{kind:ItemInspectSourceKind;typeLabel?:string;title:string;detail:string;navigation?:WorkingTowardDestination;availability?:WorkingTowardDestinationAvailability;}
 export interface ItemRecipeUse{name:string;skill:string;level:number;quantity:number;navigation:WorkingTowardDestination;availability:WorkingTowardDestinationAvailability;}
 export interface ItemGearDecision{
  compatible:boolean;alreadyEquipped:boolean;replaces?:{itemId:string;name:string;rank:number};
@@ -45,6 +45,17 @@ export function itemInspectModel(state:GameState,itemId:string){
     }
   }
   if(item.id.startsWith('START_')||item.id.startsWith('basic_'))sources.unshift({kind:'starting',title:'Starting equipment',detail:'Granted by a matching class loadout.'});
+  if(item.type==='material'){
+    const materialSources=workingTowardItemSourceEntries(state,itemId).map(source=>({
+      kind:(source.type==='monster_drop'?'combat':source.type) as ItemInspectSourceKind,
+      typeLabel:source.typeLabel,
+      title:source.title,
+      detail:source.destination.detail,
+      navigation:source.destination,
+      availability:source.availability,
+    }));
+    sources.splice(0,sources.length,...materialSources);
+  }
 
   const usedIn:Omit<ItemRecipeUse,'availability'>[]=RECIPES.flatMap(recipe=>recipe.inputs.filter(input=>input.itemId===itemId).map(input=>({
     name:recipe.name,skill:title(recipe.skillId),level:recipe.level,quantity:input.quantity,

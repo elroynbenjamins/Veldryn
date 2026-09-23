@@ -22,7 +22,8 @@ const zoneSceneCellById:Readonly<Record<string,ZoneSceneCell>>={
 
 /**
  * Scenic travel/world artwork. Every current travel region has a dedicated
- * scene cell; unknown future regions safely fall back to the world-map crop.
+ * scene cell. Falls back to the approved world-map crop for unknown future
+ * regions, keeping preview support safe while new scenes are rolled out.
  */
 export function ZoneSceneArtwork({regionId,muted=false,blurRadius=1}:{regionId:string;muted?:boolean;blurRadius?:number}){
   const cell=zoneSceneCellById[regionId];

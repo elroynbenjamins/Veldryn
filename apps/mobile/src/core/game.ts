@@ -68,8 +68,8 @@ function withCompanionUnlocks(reward:RewardBundle,before:GameState,after:GameSta
 }
 
 export const BASE_OFFLINE_CAP_HOURS=8;
-export const FREE_OFFLINE_CAP_HOURS=12;
-export const MAX_OFFLINE_CAP_HOURS=18;
+export const FREE_OFFLINE_CAP_HOURS=18;
+export const MAX_OFFLINE_CAP_HOURS=24;
 /** Base cap retained for content/tests; actual saves use offlineCapSeconds(state). */
 export const OFFLINE_CAP_SECONDS=BASE_OFFLINE_CAP_HOURS*60*60;
 const COMBAT_SPEED_MIN=.68;
@@ -88,15 +88,17 @@ export function offlineCapBreakdown(state:GameState){
   const setComplete=!!state.character&&noviceSetFor(state.character.classId).slots.every(slot=>state.character!.craftedNoviceItemIds?.includes(noviceItemId(state.character!.classId,slot)));
   const questMilestone=state.quests.some(q=>q.questId==='QST_005'&&q.status==='claimed');
   const secondSlot=unlockedCharacterSlots(state)>=2;
+  const guildMember=state.account.guildMember;
   const firstBoss=state.defeatedBossIds.length>0;
   const vip=hasAccountEntitlement(state,'vip');
   const vipPlus=hasAccountEntitlement(state,'vip_plus','vipplus','vip+');
   const supporter=hasAccountEntitlement(state,'supporter','supporter_subscription');
   const sources=[
-    {id:'class_set',name:'Complete first class set',category:'progression' as const,hours:setComplete?1:0,earned:setComplete},
-    {id:'quest_milestone',name:'Claim chapter 5',category:'progression' as const,hours:questMilestone?1:0,earned:questMilestone},
-    {id:'first_boss',name:'Defeat first boss',category:'progression' as const,hours:firstBoss?1:0,earned:firstBoss},
-    {id:'character_slot_2',name:'Unlock character slot #2',category:'progression' as const,hours:secondSlot?1:0,earned:secondSlot},
+    {id:'class_set',name:'Complete first class set',category:'progression' as const,hours:setComplete?2:0,earned:setComplete},
+    {id:'quest_milestone',name:'Claim chapter 5',category:'progression' as const,hours:questMilestone?2:0,earned:questMilestone},
+    {id:'first_boss',name:'Defeat first boss',category:'progression' as const,hours:firstBoss?2:0,earned:firstBoss},
+    {id:'character_slot_2',name:'Unlock character slot #2',category:'progression' as const,hours:secondSlot?2:0,earned:secondSlot},
+    {id:'guild',name:'Join a guild',category:'progression' as const,hours:guildMember?2:0,earned:guildMember},
     {id:'vip',name:'VIP',category:'paid' as const,hours:vip?2:0,earned:vip},
     {id:'vip_plus',name:'VIP+',category:'paid' as const,hours:vipPlus?2:0,earned:vipPlus},
     {id:'supporter',name:'Supporter',category:'paid' as const,hours:supporter?2:0,earned:supporter},

@@ -15,8 +15,8 @@ ok(recipes.includes('V33_EQUIPMENT_RECIPES')&&recipes.includes("CRAFT_V33_"),'V3
 ok(recipes.includes('slotMultiplier')&&recipes.includes('timerRange'),'V33 recipe costs/timers must respect slot and tier pacing');
 ok(recipes.includes("case 'T5'")&&recipes.includes("case 'T8'"),'Regional material plans must differ across later tiers');
 ok(skills.includes('...(V33_EQUIPMENT_RECIPES as Recipe[])'),'V33 recipes must be part of the authoritative recipe catalog');
-ok(skills.includes("!/^T[1-9]_/.test(item.equipmentSetId)"),'Legacy generated recipes must not duplicate V33 pieces');
-ok(skills.includes('!recipe.v33SetId'),'Legacy global input doubling must not silently double the calibrated V33 recipes');
+ok(!skills.includes('GENERATED_COMPLETE_SET_RECIPES')&&!skills.includes('frostCompleteSetIds'),'Pre-V33 generated equipment recipes must be deleted, not merely filtered');
+ok(!skills.includes('CRAFT_STONEHEART_CHEST')&&!skills.includes('SMITH_ASTER_IRON_CHEST'),'Pre-V33 explicit equipment recipes must be absent from the active catalog');
 
 ok(path.includes('workingTowardItemSource'),'Equipment crafting planner must reuse shared source navigation');
 ok(path.includes("kind:'material'"),'Missing materials must become explicit blockers');

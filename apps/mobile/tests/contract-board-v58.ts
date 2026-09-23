@@ -4,6 +4,7 @@ import {applyTrustedLongTermProgression,reconcileWeeklyOrderRollover,weeklyOrder
 import {applyWeeklyOrderProgress,generateWeeklyOrders} from '../src/core/weekly-orders-v41';
 import {weeklyOrderDestination,weeklyOrderGoal,weeklyOrderIdleRule,weeklyOrderQueueActivity} from '../src/core/weekly-order-integrations-v41';
 import {contractBoardSummary} from '../src/core/contract-board-summary';
+import type {GameState} from '../src/core/types';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 const now=Date.UTC(2026,8,21,12,0,0),accountId='contract-board-test';
@@ -74,7 +75,7 @@ const settled=applyTrustedLongTermProgression(state,[{kind:'combat',contentId:'M
 const after=settled.account.weeklyOrders!.orders.find(row=>row.kind==='regional');
 ok((after?.progress??0)>=4,'trusted Greenfields combat should advance the Greenfields Regional Problem');
 mastered={...mastered,account:{...mastered.account,longTermAccountScopeId:accountId+'-mastered',weeklyOrders:masteredBoard}};const threatBefore=threat!.progress;let threatState=applyTrustedLongTermProgression(mastered,[{kind:'combat',contentId:'MOSS_RAT',units:4,startedAtMs:now-60_000}],undefined,now,{accountId:accountId+'-mastered',eventId:'normal-hunt'}).state;ok(threatState.account.weeklyOrders!.orders.find(row=>row.id===threat!.id)!.progress===threatBefore,'Normal hunt kills must not advance a Threat Bounty');const wrongTier=threat!.challengeId==='ferocious'?'hardened':'ferocious';threatState=applyTrustedLongTermProgression(threatState,[{kind:'combat',contentId:'MOSS_RAT',units:4,challengeId:wrongTier,startedAtMs:now-30_000}],undefined,now,{accountId:accountId+'-mastered',eventId:'wrong-tier'}).state;ok(threatState.account.weeklyOrders!.orders.find(row=>row.id===threat!.id)!.progress===threatBefore,'Wrong Challenge Hunt tier must not advance a Threat Bounty');threatState=applyTrustedLongTermProgression(threatState,[{kind:'combat',contentId:'MOSS_RAT',units:4,challengeId:threat!.challengeId,startedAtMs:now-10_000}],undefined,now,{accountId:accountId+'-mastered',eventId:'correct-tier'}).state;ok(threatState.account.weeklyOrders!.orders.find(row=>row.id===threat!.id)!.progress===Math.min(threat!.target,threatBefore+4),'Exact Challenge Hunt tier should advance its Threat Bounty');
-let bossProgressState={...postStory,account:{...postStory.account,longTermAccountScopeId:accountId+'-boss',weeklyOrders:bossBoard}};
+let bossProgressState:GameState={...postStory,account:{...postStory.account,longTermAccountScopeId:accountId+'-boss',weeklyOrders:bossBoard}};
 const storyOnly=applyTrustedLongTermProgression(bossProgressState,[{kind:'boss',contentId:'FALLEN_KNIGHT',units:1,weeklyEligible:false}],undefined,now,{accountId:accountId+'-boss',eventId:'story-boss'}).state;
 ok(storyOnly.account.weeklyOrders!.orders.find(row=>row.targetId==='FALLEN_KNIGHT')!.progress===0,'One-time story clear must not complete the weekly boss bounty');
 bossProgressState=applyTrustedLongTermProgression(storyOnly,[{kind:'boss',contentId:'FALLEN_KNIGHT',units:1}],undefined,now,{accountId:accountId+'-boss',eventId:'weekly-boss'}).state;

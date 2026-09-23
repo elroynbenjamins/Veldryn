@@ -24,4 +24,5 @@ export const HERB_ITEMS:ItemDef[]=[
   {id:'SUNSCALE',name:'Sunscale Bloom',type:'material',value:48,rarity:'rare'},
   {id:'FROSTBLOOM',name:'Frostbell Flower',type:'material',value:72,rarity:'rare'},
   {id:'ASHEN_MYRRH',name:'Ashen Myrrh',type:'material',value:105,rarity:'epic'},
+  {id:'WILD_ESSENCE',name:'Wild Essence',type:'material',value:180,rarity:'rare',passive:'A rare botanical essence used by advanced Enchanting work.'},
 ];

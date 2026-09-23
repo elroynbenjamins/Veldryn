@@ -32,7 +32,7 @@ ok(stage.includes('bossPhaseLabel')&&stage.includes('bossCast={boss?bossCast:und
 ok(card.includes('AnimatedHealthBar')&&card.includes('animateHealth'),'Combat HP bars must animate between authoritative replay states and honor reduced motion');
 ok(card.includes('BARRIER +')&&card.includes('barrierTrack'),'Party combat cards must show active replay-time barriers');
 ok(card.includes("boss?'BOSS HP':'HP'")&&card.includes('enemyHpTrack'),'Enemy and boss cards must show replay-time HP');
-ok(stage.includes('playbackCombatantState')&&stage.includes('currentHp={enemyState?.hp}')&&stage.includes('combatShield={enemyState?.shield??0}'),'Battlefield must drive boss HP and shield from replay snapshots');
+ok(stage.includes('playbackCombatantState')&&stage.includes('currentHp={state?.hp}')&&stage.includes('combatShield={state?.shield??0}'),'Battlefield must drive each replay enemy HP and shield from authoritative snapshots');
 ok(stage.includes('ready:state.hp>0')&&stage.includes('currentHp:state.hp'),'Party downed and HP state must follow the current replay cue rather than final run state');
 ok(card.includes('LOW')&&card.includes('criticalInline'),'Party cards must call out critical health inline without adding another card row');
 ok(card.includes('phaseThreshold')&&card.includes('phase.hpPct'),'Boss HP bar must show authoritative phase threshold markers');
@@ -41,7 +41,7 @@ ok(card.includes('CombatStatusStrip')&&card.includes('statusStrip'),'Combat card
 ok(card.includes("return 'DOT'")&&card.includes("return 'HOT'")&&card.includes("'VULN'")&&card.includes("'HEAL↓'")&&card.includes("'HASTE'"),'Status pills must distinguish damage, healing-pressure, healing and common buff states');
 ok(card.includes('visibleLimit=Math.max(1,gemProc?limit-1:limit)')&&card.includes('statusOverflow'),'Status strips must cap visible pills by responsive layout budget and show overflow rather than expand the card');
 ok(card.includes('Effect Gem proc')&&card.includes('>GEM<'),'Current Effect Gem procs must receive compact card feedback without becoming persistent fake buffs');
-ok(stage.includes('playbackCombatantStatuses')&&stage.includes('statuses={enemyStatuses}')&&stage.includes('statuses={statuses}'),'Battlefield must resolve status windows for both boss/enemy and party cards');
+ok(stage.includes('playbackCombatantStatuses')&&stage.includes('statuses={statuses}'),'Battlefield must resolve status windows independently for enemy and party cards');
 ok(card.includes('GEM_STATUS_CODES')&&card.includes("'gem:momentum':'MOM'")&&card.includes("'gem:flow':'FLOW'")&&card.includes("'gem:unyielding':'UNY'"),'Persistent Effect Gem stacks need compact named combat codes');
 ok(card.includes("'gem:retaliation_ready':'RETAL'")&&card.includes("'gem:benediction_charge':'BENE'")&&card.includes("'gem:opportunist_ready':'OPP'"),'Ready, charge and harmful Effect Gem states need distinct compact codes');
 ok(card.includes("status.source==='gem'")&&card.includes('styles.statusGem'),'Persistent beneficial Effect Gem states must use the gem visual treatment while harmful marks remain harmful');
@@ -65,6 +65,11 @@ ok(stage.includes("{assists?<StateChip")&&!stage.includes("'NO ASSISTS'"),'Comba
 ok(stage.includes('useWindowDimensions')&&stage.includes('dungeonCombatLayout(windowWidth)'),'Dungeon battlefield must select a tested layout from the current phone width');
 ok(stage.includes('padding:layout.arenaPadding')&&stage.includes('gap:layout.partyGap'),'Small-phone layout must reclaim arena padding and party-card gap');
 ok(stage.includes('layout.bossWidthPctFinal')&&stage.includes('layout.bossWidthPct'),'Stacked boss/enemy card width must adapt independently from the four-card row');
+ok(stage.includes('playbackEnemyCombatants(replay)')&&stage.includes('visibleEnemies.map(enemy=>'),'Normal combat must render each replay enemy rather than collapse the encounter into one card');
+ok(stage.includes("visibleEnemies=boss?(bossEnemy?[bossEnemy]:[]):replayEnemies.slice(0,4)"),'Boss combat must remain a singular emphasized card while normal rooms may show multiple enemies');
+ok(stage.includes('enemyGroup')&&stage.includes('enemySlot')&&stage.includes('compact={!boss&&visibleEnemies.length>1}'),'Multi-enemy rooms must use a compact responsive enemy row');
+ok(card.includes('combatantId?currentCue.targetId===combatantId:currentCue.targetName===name'),'Enemy damage feedback must bind to combatant id so duplicate enemy names do not mirror feedback');
+ok(stage.includes('combatantId={enemy.id}')&&stage.includes('selectedForInspect={inspectKey===key}'),'Each enemy card must bind replay state and inspection to its authoritative combatant id');
 ok(stage.includes('layout={layout}')&&card.includes('layout?:DungeonCombatLayout'),'Party combat cards must receive the responsive density contract');
 ok(card.includes('layout.cardMinHeight')&&card.includes('layout.sceneHeight')&&card.includes('layout.portraitWidth'),'Responsive combat cards must adapt height, portrait window and scene height without changing formation');
 ok(card.includes('limit={layout?.statusLimit??3}'),'Narrow phones must reduce visible status-pill count rather than widen cards');
@@ -72,7 +77,7 @@ ok(stage.includes('layout.controlsWrap&&s.playbackControlsWrap')&&stage.includes
 ok(stage.includes('layout.contributionIdentityMinWidth')&&stage.includes('layout.contributionIdentityWidthPct'),'Contribution recap identity width must adapt on narrow phones');
 ok(card.includes('selectedForInspect')&&card.includes('Inspect ${slot.name} combat details'),'Party combat cards must expose tap-to-inspect interaction without adding a permanent button row');
 ok(card.includes('Inspect ${name} combat details')&&card.includes('inspectSelected'),'Boss/enemy combat cards must support the same inspect interaction and selected state');
-ok(stage.includes('inspectKey')&&stage.includes("toggleInspect('enemy')")&&stage.includes('slotInspectKey(slot)'),'Battlefield must track inspection for both enemy and all four party cards');
+ok(stage.includes('inspectKey')&&stage.includes('enemyInspectKey(enemy.id)')&&stage.includes('slotInspectKey(slot)'),'Battlefield must track inspection by authoritative id for every enemy and all four party cards');
 ok(stage.includes('if(!reduceMotion&&cues.length>1)setPaused(true)'),'Opening combat inspection must enter a step-capable paused replay state when replay cues are available');
 ok(stage.includes('<CombatantInspectPanel')&&stage.includes('onClose={()=>setInspectKey(undefined)}'),'Selected combatant must render a closable compact inspection panel');
 ok(inspect.includes('COMBAT INSPECT')&&inspect.includes('ACTIVE EFFECTS'),'Inspection panel must clearly separate combat identity and effect details');

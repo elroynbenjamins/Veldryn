@@ -31,7 +31,9 @@ ok(slots.capacity===5,'Unlocking character slot #4 must reach the hard cap throu
 slots=equipmentCraftSlotBreakdown({...state,account:{...state.account,unlockedCharacterSlots:4,entitlements:{supporter:true,vip_plus:true}}});
 ok(slots.capacity===5&&slots.raw===7,'All bonuses may overlap but active queue capacity must never exceed 5');
 
+const originalOwnerId=state.character!.id;
 const started1=startEquipmentCraft(state,recipe.id,1000);state=started1.state;
+ok(started1.job.ownerCharacterId===originalOwnerId,'Timed equipment craft must bind the job to the character that started it');
 const started2=startEquipmentCraft(state,recipe.id,1001);state=started2.state;
 const started3=startEquipmentCraft(state,recipe.id,1002);state=started3.state;
 const baseActiveState=state;
@@ -59,6 +61,7 @@ let earlyClaimBlocked=false;try{claimEquipmentCraft(baseActiveState,equipmentCra
 ok(earlyClaimBlocked,'Equipment cannot be claimed before its timer ends');
 const smithBefore=baseActiveState.skills.find(row=>row.skillId==='smithing')!.xp;
 const claimed=claimEquipmentCraft(baseActiveState,equipmentCraftingQueue(baseActiveState)[0].id,doneAt);
+ok(claimed.instance.ownerCharacterId===originalOwnerId,'Finished crafted gear instance must remain owned by the character that started the craft');
 ok(claimed.state.inventory.stacks.some(row=>row.itemId===recipe.output.itemId),'Claiming a finished craft must grant the equipment');
 ok(claimed.state.skills.find(row=>row.skillId==='smithing')!.xp===smithBefore+recipe.xp,'Smithing XP must be awarded on completion, not on reservation');
 

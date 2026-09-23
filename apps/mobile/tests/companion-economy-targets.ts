@@ -13,10 +13,12 @@ const byRarity=Object.fromEntries((['standard','rare','elite','prestige'] as con
 })) as Record<'standard'|'rare'|'elite'|'prestige',ReturnType<typeof companionProgressionBudget>>;
 
 for(const rarity of ['standard','rare','elite','prestige'] as const){
-  const budget=byRarity[rarity],range=COMPANION_ECONOMY_TARGETS.focusedNaturalDaysByRarity[rarity];
+  const budget=byRarity[rarity],range=COMPANION_ECONOMY_TARGETS.focusedNaturalDaysByRarity[rarity],paidRange=COMPANION_ECONOMY_TARGETS.acceleratedTrainingEssenceByRarity[rarity];
   ok(budget.focusedNaturalDaysToMax>=range[0]&&budget.focusedNaturalDaysToMax<=range[1],`${rarity} natural XP pacing left target band: ${budget.focusedNaturalDaysToMax} days`);
+  ok(budget.acceleratedTraining.companionEssence>=paidRange[0]&&budget.acceleratedTraining.companionEssence<=paidRange[1],`${rarity} accelerated-training Essence left target band: ${budget.acceleratedTraining.companionEssence}`);
   ok(budget.fullPaidPath.companionEssence>budget.ascension.companionEssence,`${rarity} accelerated training must remain an optional sink above natural-path Ascension cost`);
 }
+ok(byRarity.prestige.acceleratedTraining.companionEssence/byRarity.standard.acceleratedTraining.companionEssence<COMPANION_ECONOMY_TARGETS.maxAcceleratedEssenceSpreadVsStandard,'Prestige accelerated-training Essence spread must remain bounded versus Standard');
 
 equal(byRarity.standard.ascension.bondstones,4,'Standard full Ascension Bondstone gate');
 equal(byRarity.rare.ascension.bondstones,4,'Rare full Ascension Bondstone gate');

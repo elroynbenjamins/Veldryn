@@ -15,6 +15,23 @@ The balance model uses roughly **900 natural Companion XP per focused day** from
 
 Paid one-level training remains an accelerator/resource sink, not the intended primary route to max level.
 
+## Accelerated training sink
+
+The reconciled paid-training curve keeps the early cost feel while reducing late exponential escalation:
+- Gold growth: **1.21** per level.
+- Companion Essence growth: **1.16** per level.
+
+Full buy-every-level Companion Essence targets:
+
+| Rarity | Target Essence |
+| --- | ---: |
+| Standard | 300–450 |
+| Rare | 850–1,200 |
+| Elite | 2,100–2,900 |
+| Prestige | 5,000–7,000 |
+
+Prestige paid leveling must remain below a 20× Essence spread versus Standard. These ranges apply only to the optional accelerator; natural XP, Ascension, Bondstones, materials, Trials, Expeditions and Sanctuary rewards keep their separate progression roles.
+
 ## Bondstone relationship
 
 A full first-clear monthly Trial run provides **12 Bondstones**. The monthly challenge rotation contributes at most **1 additional Bondstone**, for a Trial-only monthly cycle of **13**.

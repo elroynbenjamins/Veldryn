@@ -126,7 +126,7 @@ ok(skills.includes("type:'alchemy_start'"),'Skills must route Alchemy through th
 ok(recipeCard.includes('recipeProgressionSources')&&recipeCard.includes('MISSING SOURCES'),'All recipe types must expose actionable material/prerequisite sources');
 ok(recipeCard.includes('recipeSkillTrainingAction')&&recipeCard.includes('recipeCharacterTrainingAction'),'Recipe level blockers must expose skill and character training actions');
 ok(recipeCard.includes('RECIPE MASTERY')&&recipeCard.includes('professionMasteryMultipliers'),'Recipe cards must show live per-recipe mastery and effective values');
-ok(recipeCard.includes('TIMED PACE')&&recipeCard.includes('crafts/hr')&&recipeCard.includes('XP/hr'),'Timed crafting must expose craft rate, XP/hour and level ETA');
+ok(recipeCard.includes('TIMED PACE')&&recipeCard.includes('batches/hr')&&recipeCard.includes('outputPerHour')&&recipeCard.includes('XP/hr'),'Timed crafting must expose batch rate, output/hour, XP/hour and level ETA');
 
 const skillNavigation=read('src/core/skill-progression-navigation.ts');
 ok(skillNavigation.includes('workingTowardItemSource'),'Skill progression navigation must reuse the canonical Working Toward item-source resolver');

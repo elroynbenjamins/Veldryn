@@ -4,9 +4,25 @@ import {progressionGoalView} from './progression-goals-v40';
 import {progressionGoalContext,progressionGoalDestination,workingTowardDestinationAvailability,type WorkingTowardDestination} from './working-toward';
 import {recipePreparationTrackingView} from './recipe-preparation-tracking';
 import {activityQueueCapacity,normalizeActivityQueue,queuedActivityReadiness} from './activity-queue';
-import {bestGatheringTrainingDestination} from './skill-progression-navigation';
+import {GATHERING} from '../content/skills';
+import {HERB_NODES} from '../content/herbalism';
+import {WORLD_ZONES} from '../content/world-map';
 import {weeklyOrderQueueActivity} from './weekly-order-integrations-v41';
 import type {IdleRuleSet,IdleStopCondition} from './idle-rules-v40';
+
+const gatheringDefs=[...GATHERING,...HERB_NODES];
+
+function executionGatheringDestination(state:GameState,skillId:string):WorkingTowardDestination|undefined{
+ const skillLevel=state.skills.find(row=>row.skillId===skillId)?.level??1,characterLevel=state.character?.level??1;
+ const candidates=gatheringDefs.filter(row=>row.skillId===skillId&&row.unlockLevel<=skillLevel).sort((a,b)=>{
+  const regionA=WORLD_ZONES.find(zone=>zone.id===a.zoneId),regionB=WORLD_ZONES.find(zone=>zone.id===b.zoneId);
+  const rank=(zoneId:string,minLevel:number)=>zoneId===state.currentRegionId&&characterLevel>=minLevel?0:characterLevel>=minLevel?1:2;
+  return rank(a.zoneId,regionA?.minLevel??1)-rank(b.zoneId,regionB?.minLevel??1)||b.unlockLevel-a.unlockLevel||a.id.localeCompare(b.id);
+ });
+ const best=candidates[0];if(!best)return undefined;
+ const zone=WORLD_ZONES.find(row=>row.id===best.zoneId);
+ return {kind:'skills',skillId:best.skillId,mode:'gathering',actionId:best.id,regionId:best.zoneId,button:`Train at ${best.name}`,detail:`${best.name} in ${zone?.name??best.zoneId} is the best authored ${skillId.replaceAll('_',' ')} training node currently known.`};
+}
 
 export type WorkingTowardExecutionState='active'|'ready'|'queued'|'travel'|'blocked'|'full'|'unsupported';
 
@@ -25,13 +41,16 @@ export interface WorkingTowardExecutionPlan{
  stopRuleActive:boolean;
 }
 
+function executionDestination(state:GameState,goal:ProgressionGoal):WorkingTowardDestination{
+ const tracked=goal.kind==='recipe_preparation'?recipePreparationTrackingView(state,goal):undefined;
+ const base=tracked?.destination??progressionGoalDestination(state,goal);
+ if(goal.kind==='skill_level'&&base.kind==='skills'&&base.mode==='gathering'&&!base.actionId)return executionGatheringDestination(state,goal.skillId)??base;
+ return base;
+}
+
 function queueActivityForGoal(state:GameState,goal:ProgressionGoal,destination:WorkingTowardDestination):QueuedActivity|undefined{
  if(destination.kind==='combat')return {kind:'combat',targetId:destination.monsterId};
  if(destination.kind==='skills'&&destination.mode==='gathering'&&destination.actionId)return {kind:'gathering',targetId:destination.actionId};
- if(goal.kind==='skill_level'){
-  const best=bestGatheringTrainingDestination(state,goal.skillId as any);
-  if(best?.kind==='skills'&&best.actionId)return {kind:'gathering',targetId:best.actionId};
- }
  if(goal.kind==='weekly_order'){
   const order=state.account.weeklyOrders?.orders.find(row=>row.id===goal.orderId);
   return order?weeklyOrderQueueActivity(order):undefined;
@@ -71,7 +90,7 @@ export function workingTowardExecutionPlan(state:GameState,goal:ProgressionGoal)
  const context=progressionGoalContext(state);
  const tracked=goal.kind==='recipe_preparation'?recipePreparationTrackingView(state,goal):undefined;
  const view=tracked??progressionGoalView(goal,context);
- const destination=tracked?.destination??progressionGoalDestination(state,goal);
+ const destination=executionDestination(state,goal);
  const availability=workingTowardDestinationAvailability(state,destination);
  const queueActivity=queueActivityForGoal(state,goal,destination);
  const capacity=activityQueueCapacity(state),queue=normalizeActivityQueue(state.character?.activityQueue,capacity);

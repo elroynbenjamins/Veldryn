@@ -16,6 +16,8 @@ import {radii,spacing,typography,equipmentTheme,type ThemeColors} from '../theme
 import {useGameTheme} from '../theme/ThemeContext';
 import {IdleRulesEditorV40} from '../components/IdleRulesEditorV40';
 import {recipePreparationTrackingView} from '../core/recipe-preparation-tracking';
+import {workingTowardExecutionOverview,type WorkingTowardExecutionPlan} from '../core/working-toward-execution';
+import {enqueueActivity} from '../core/activity-queue';
 
 type AuthorKind='skill_level'|'item_quantity'|'monster_kills'|'mastery_rank'|'weekly_order';
 const KIND_LABEL:Record<AuthorKind,string>={skill_level:'Skill Level',item_quantity:'Item Stockpile',monster_kills:'Monster Kills',mastery_rank:'Profession Mastery',weekly_order:'Weekly Order'};
@@ -42,11 +44,13 @@ export function ProgressionPlannerScreen({state,onChange,onCommand,onNavigateGoa
   const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
  const character=state.character!,goals=character.progressionGoals??[],rules=character.idleRulesV40??[],activeRuleId=character.activeIdleRuleIdV40;
  const [open,setOpen]=useState(false),[kind,setKind]=useState<AuthorKind>('skill_level'),[sourceOpen,setSourceOpen]=useState(false),[selectedId,setSelectedId]=useState<string>(),[targetText,setTargetText]=useState(''),[busy,setBusy]=useState(false),[message,setMessage]=useState('');
- const goalContext=useMemo(()=>progressionGoalContext(state),[state]);
+ const goalContext=useMemo(()=>progressionGoalContext(state),[state]),execution=useMemo(()=>workingTowardExecutionOverview(state),[state]),focus=execution.focus;
  const candidates=sources(state,kind),selected=candidates.find(row=>row.id===selectedId)??candidates[0],parsedTarget=Math.floor(Number(targetText)),targetValue=Number.isFinite(parsedTarget)&&parsedTarget>0?parsedTarget:selected?.defaultTarget??1,targetLocked=kind==='weekly_order'||kind==='mastery_rank',targetStep=kind==='skill_level'?5:kind==='monster_kills'?50:25;
  const saveGoals=async(next:ProgressionGoal[])=>{setBusy(true);setMessage('');try{if(onCommand)await onCommand({type:'goals_set',args:{goals:next}});else await onChange({...state,character:{...character,progressionGoals:next}});setMessage('Working Toward goals updated.')}catch(e){setMessage(e instanceof Error?e.message:'Could not update goals.')}finally{setBusy(false)}};
  const saveRules=async(next:IdleRuleSet[],activeId?:string)=>{setBusy(true);setMessage('');try{if(onCommand)await onCommand({type:'idle_rules_set',args:{rules:next,activeId:activeId??null}});else await onChange({...state,character:{...character,idleRulesV40:next,activeIdleRuleIdV40:activeId}});setMessage('Idle Rules updated.')}catch(e){setMessage(e instanceof Error?e.message:'Could not update Idle Rules.')}finally{setBusy(false)}};
  const addGoal=async()=>{if(!selected||goals.length>=3)return;const next=[...goals,makeGoal(kind,selected,targetValue,character.id,Date.now())];await saveGoals(next);setOpen(false);setSelectedId(undefined);setTargetText('')};
+ const queueExecution=async(plan:WorkingTowardExecutionPlan)=>{if(!plan.queueActivity||plan.executionState!=='ready')return;setBusy(true);setMessage('');try{if(onCommand){const activity=plan.queueActivity;await onCommand({type:'queue_add',args:{kind:activity.kind,id:activity.targetId,...(activity.kind==='combat'&&activity.combatChallengeId?{challengeId:activity.combatChallengeId}: {})}});}else await onChange(enqueueActivity(state,plan.queueActivity));setMessage('Next goal action added to the Action Queue.');}catch(e){setMessage(e instanceof Error?e.message:'Could not queue this goal action.')}finally{setBusy(false)}};
+ const toggleGoalStop=async(plan:WorkingTowardExecutionPlan)=>{const rule=plan.stopRule;if(!rule)return;if(plan.stopRuleActive){await saveRules(rules,undefined);return;}const existing=rules.find(row=>row.id===rule.id);if(!existing&&rules.length>=5){setMessage('Delete an Idle Rule before adding a stop-at-goal rule.');return;}const next=existing?rules.map(row=>row.id===rule.id?rule:row):[...rules,rule];await saveRules(next,rule.id);};
 
  return <><ScrollView contentContainerStyle={s.root}>
    <Text style={s.kicker}>PROGRESSION & TASKS</Text><Text accessibilityRole="header" style={s.heading}>Working Toward</Text><Text style={s.copy}>Pin a few meaningful goals and choose safe stop conditions for idle activities. These tools organize progression; they do not increase the 24h base / 36h maximum Offline Reserve.</Text>

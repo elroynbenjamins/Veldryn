@@ -65,6 +65,9 @@ export function skillMilestones(state:GameState,skillId:SkillId):SkillMilestone[
   for(const method of HERBALISM_METHODS.filter(row=>row.id!=='balanced'))rows.push({
    id:'herbalism-method:'+method.id,kind:'method',level:method.unlockLevel,title:method.name,category:'HARVEST METHOD',detail:method.description,destination:milestoneDestination('herbalism'),
   });
+  for(const [level,bonus] of [[25,10],[50,20],[75,35],[100,50]] as const)rows.push({
+   id:'herbalism-insight:'+level,kind:'service',level,title:level===100?'Master Botanist':'Field Insight '+(level===25?'I':level===50?'II':'III'),category:'BOTANICAL INSIGHT',detail:`Rare botanical essence chance +${bonus}% relative from Herbalism knowledge.`,destination:milestoneDestination('herbalism'),
+  });
  }
  if(craftingIds.has(skillId)){
   for(const recipe of RECIPES.filter(row=>row.skillId===skillId&&!row.noviceSetId&&classRelevant(state,row)))rows.push({

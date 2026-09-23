@@ -55,6 +55,9 @@ ok(skills.includes('Train Hunting through monster hunts')&&skills.includes('HUNT
 ok(skills.includes("minHeight:112"),'Skills hub cards must remain compact');
 ok(skills.includes('skillTop:'),'Skills hub cards must keep the compact icon/copy row');
 ok(!skills.includes('Tap to open'),'Skills cards must not waste a line on redundant tap instructions');
+ok(skills.includes('TRAINING FOCUS · RECOMMENDED')&&skills.includes('skillTrainingFocus(state)'),'Skills hub must surface one deterministic recommended training target from authored milestones');
+ok(skills.includes('NEXT LV {milestone.nextLevel}')&&skills.includes('skillMilestoneOverview(state,skillRow.skillId)'),'Skill cards must preview their next meaningful authored unlock instead of showing XP progress alone');
+ok(skills.includes('focusCard:{minHeight:82')&&skills.includes('backgroundColor:C.infoSurface'),'Skills training focus must remain compact and theme-semantic');
 
 const skillMilestones=read('src/components/SkillMilestoneStrip.tsx');
 ok(skillMilestones.includes('SKILL MILESTONES')&&skillMilestones.includes("slice(0,2)"),'Skill detail milestones must remain compact and capped');

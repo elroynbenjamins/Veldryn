@@ -21,7 +21,7 @@ import {characterPermanentMultipliers} from './permanent-boosts';
 import {activityEventDiscoveries,activityEventDrops,applyEventDiscoveries,applyEventDrops,grantEventActivity} from './live-events';
 import {DEFAULT_QUICK_NAV_DESTINATIONS} from './quick-navigation';
 import {unlockedCharacterSlots} from './account-roster';
-import {entitlementStorageCapacity} from './account-entitlements';
+import {accountEntitlementBenefits,entitlementStorageCapacity} from './account-entitlements';
 import {gatheringPacing} from './gathering-tools';
 import {gatheringToolDef} from '../content/gathering-tools';
 import {currentRegionId} from './combat-region';
@@ -80,11 +80,6 @@ const COMBAT_EXPECTED_SCALE=1.3;
 const COMBAT_MONSTER_DAMAGE_SCALE=1.13;
 export const GATHER_TIME_SCALE=1.25;
 
-function hasAccountEntitlement(state:GameState,...keys:string[]){
-  const entitlements=state.account.entitlements??{};
-  return keys.some(key=>entitlements[key]===true);
-}
-
 export function offlineCapBreakdown(state:GameState){
   const setComplete=!!state.character&&noviceSetFor(state.character.classId).slots.every(slot=>state.character!.craftedNoviceItemIds?.includes(noviceItemId(state.character!.classId,slot)));
   const questMilestone=state.quests.some(q=>q.questId==='QST_005'&&q.status==='claimed');
@@ -95,9 +90,7 @@ export function offlineCapBreakdown(state:GameState){
   const fifthSlot=unlockedSlots>=5;
   const guildMember=state.account.guildMember;
   const firstBoss=state.defeatedBossIds.length>0;
-  const vipPlus=hasAccountEntitlement(state,'vip_plus','vipplus','vip+');
-  const vip=hasAccountEntitlement(state,'vip')||vipPlus;
-  const supporter=hasAccountEntitlement(state,'supporter','supporter_subscription');
+  const benefits=accountEntitlementBenefits(state),vip=benefits.vip,vipPlus=benefits.vipPlus,supporter=benefits.supporter;
   const sources=[
     {id:'class_set',name:'Complete first class set',category:'progression' as const,hours:setComplete?2:0,earned:setComplete},
     {id:'quest_milestone',name:'Claim chapter 5',category:'progression' as const,hours:questMilestone?2:0,earned:questMilestone},

@@ -1,5 +1,5 @@
 import {createCharacter,newGame} from '../src/core/game';
-import {progressionGoalContext,progressionGoalDestination,workingTowardReadyCount,workingTowardTrackableItems} from '../src/core/working-toward';
+import {progressionGoalContext,progressionGoalDestination,workingTowardItemSourceEntries,workingTowardReadyCount,workingTowardTrackableItems} from '../src/core/working-toward';
 import {MASTERY_GOAL_RANKS,masteryGoalForAction,nextMasteryGoalRank,progressionGoalView,type ProgressionGoal} from '../src/core/progression-goals-v40';
 
 function fail(message:string):never{throw new Error(message)}
@@ -25,6 +25,14 @@ const itemGoal:ProgressionGoal={id:'goal-item',characterId,kind:'item_quantity',
 const itemDestination=progressionGoalDestination(state,itemGoal);
 equal(itemDestination.kind,'skills','gathered item goal routes to Skills');
 if(itemDestination.kind==='skills'){equal(itemDestination.actionId,'COPPER_VEIN','item goal deep-links its gathering source');equal(itemDestination.regionId,'OLD_MINES','item source carries its region');}
+
+const copperSources=workingTowardItemSourceEntries(state,'COPPER_ORE');
+ok(copperSources.some(source=>source.type==='gathering'&&source.typeLabel==='Gathering'),'Copper source presentation includes its authored gathering route');
+ok(copperSources.some(source=>source.type==='monster_drop'&&source.typeLabel==='Monster Drop'),'Copper source presentation includes authored monster-drop alternatives');
+const catalystSources=workingTowardItemSourceEntries(state,'REGIONAL_CATALYST');
+equal(catalystSources.length,6,'Regional Catalyst exposes all six authoritative live dungeon sources');
+ok(catalystSources.every(source=>source.type==='dungeon'&&source.typeLabel==='Dungeon'),'Dungeon material sources carry a distinct source type');
+ok(catalystSources.every(source=>source.availability.status==='locked'),'Fresh characters see level-gated dungeon material sources as locked rather than falsely ready');
 
 const weeklyGoal:ProgressionGoal={id:'goal-weekly',characterId,kind:'weekly_order',title:'Weekly job',createdAtMs:0,pinnedAtMs:0,orderId:'example',targetProgress:10};
 equal(progressionGoalDestination(state,weeklyGoal).kind,'contracts','weekly goal routes to Contract Board');

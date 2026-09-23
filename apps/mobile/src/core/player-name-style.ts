@@ -1,4 +1,5 @@
 import type {GameState} from './types';
+import {accountEntitlementBenefits} from './account-entitlements';
 
 export type PlayerNameAnimation='none'|'flow'|'prismatic';
 export interface PlayerNameStylePreference{
@@ -26,15 +27,9 @@ export const SUPPORTER_NAME_PRESETS=[
   {id:'prismatic',name:'Prismatic',colors:['#FF6978','#FFD166','#6EE7B7','#61C7FF','#A978FF'],animation:'prismatic' as const},
 ] as const;
 
-function entitlement(state:GameState,...keys:string[]){
-  const entitlements=state.account.entitlements??{};
-  return keys.some(key=>entitlements[key]===true);
-}
-
 export function playerNameStyleEntitlements(state:GameState):PlayerNameStyleEntitlements{
-  const vipPlus=entitlement(state,'vip_plus','vipplus','vip+');
-  const supporter=entitlement(state,'supporter','supporter_subscription');
-  return {vipPlus,supporter,canUseSolidRgb:vipPlus||supporter,canUseAdvanced:supporter};
+  const benefits=accountEntitlementBenefits(state);
+  return {vipPlus:benefits.vipPlus,supporter:benefits.supporter,canUseSolidRgb:benefits.solidRgbNames,canUseAdvanced:benefits.advancedNameStyles};
 }
 
 export function normalizeHexColor(value:string|undefined,fallback=DEFAULT_VIP_NAME_COLOR){

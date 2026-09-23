@@ -22,6 +22,8 @@ const gatheringSkills=read('src/components/GatheringActivityList.tsx');
 ok(gatheringSkills.includes('FASTEST XP HERE'),'Gathering details must identify the fastest local XP option');
 ok(gatheringSkills.includes('EXPECTED / HR')&&gatheringSkills.includes('SKILL XP / HR'),'Gathering cards must surface compact resource and XP hourly rates');
 ok(gatheringSkills.includes('NEXT SKILL UNLOCK'),'Gathering details must preview the next skill unlock');
+ok(gatheringSkills.includes("'GO TO REGION ›':'TRAIN TO LV '"),'Gathering next unlock must offer compact region or training navigation');
+ok(gatheringSkills.includes('onNavigate(nextDestination)'),'Gathering unlock guidance must route through the shared progression destination model');
 ok(gatheringSkills.includes("targetTag:{fontSize:9"),'Working Toward gathering targets must remain visible without adding a large banner');
 
 const craftingBrowser=read('src/components/CraftingRecipeBrowser.tsx');
@@ -30,11 +32,14 @@ ok(craftingBrowser.includes("label:'READY NOW'")&&craftingBrowser.includes("labe
 ok(craftingBrowser.includes("filterToggle:{minHeight:44"),'Crafting filters must use a compact accessible dropdown control');
 ok(craftingBrowser.includes("skillId==='smithing'?{label:'EQUIPMENT FORGE'")&&craftingBrowser.includes("label:'KITCHEN'")&&craftingBrowser.includes("label:'ALCHEMY LAB'"),'Crafting skill screens must preserve distinct workshop identities');
 ok(craftingBrowser.includes('alchemyAvailability')&&craftingBrowser.includes("Stop the current activity before brewing."),'Alchemy recipe readiness must use the reserved batch system');
+ok(craftingBrowser.includes('nextDestination:WorkingTowardDestination')&&craftingBrowser.includes("'TRAIN ›'"),'Crafting next unlock must open the exact locked recipe through progression navigation');
 
 const recipeCard=read('src/components/RecipeCard.tsx');
 ok(recipeCard.includes("head:{minHeight:96"),'Recipe rows must remain compact');
 ok(recipeCard.includes("statusText=forgeFull?"),'Collapsed recipe cards must expose the actual blocking state');
 ok(recipeCard.includes('BATCH SIZE')&&recipeCard.includes("Brew ×"),'Alchemy recipe cards must expose batch-size and timed brew controls');
+ok(recipeCard.includes('workingTowardItemSource')&&recipeCard.includes('missingSources=effectiveStatus.inputs'),'All crafting professions must expose authoritative missing-material source navigation');
+ok(skills.includes('onNavigate={onNavigateCraftingSource}'),'Gathering and crafting detail screens must share the progression source navigator');
 ok(skills.includes("type:'alchemy_start'"),'Skills must route Alchemy through the authoritative alchemy_start command');
 
 const snapshot=read('src/components/SkillDashboard.tsx');

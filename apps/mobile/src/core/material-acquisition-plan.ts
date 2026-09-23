@@ -296,6 +296,7 @@ function acquisitionVerb(typeLabel:string){
   return 'Acquire';
 }
 
+// Post-order traversal keeps each dependency actionable before the craft that consumes it.
 function preparationSteps(plan:MaterialAcquisitionPlan,path:string):MaterialPreparationStep[]{
   if(plan.remaining<=0){
     return [{

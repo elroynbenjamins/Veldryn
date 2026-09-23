@@ -75,7 +75,7 @@ function AndroidGooglePlayCommercePanel({state,onChange}:Props){
   },[onChange]);
 
   const handlePurchase=useCallback(async(purchase:Purchase)=>{
-    if(purchase.purchaseState==='pending'){setNotice('Payment pending. Benefits will activate automatically after Google Play confirms payment.');return}
+    if(purchase.purchaseState==='pending'){setBusy(false);setNotice('Payment pending. Benefits will activate automatically after Google Play confirms payment.');return}
     if(purchase.purchaseState!=='purchased')return;
     setBusy(true);setError('');setNotice('');
     try{
@@ -88,8 +88,8 @@ function AndroidGooglePlayCommercePanel({state,onChange}:Props){
 
   const {connected,products,subscriptions,fetchProducts,requestPurchase,reconnect}=useIAP({
     onPurchaseSuccess:(purchase)=>{void handlePurchase(purchase)},
-    onPurchaseError:(purchaseError)=>setError(purchaseError.message),
-    onError:(generalError)=>setError(generalError.message),
+    onPurchaseError:(purchaseError)=>{setBusy(false);setError(purchaseError.message)},
+    onError:(generalError)=>{setBusy(false);setError(generalError.message)},
   });
 
   useEffect(()=>{

@@ -36,6 +36,8 @@ const timerRange:Record<string,{base:number;min:number;max:number}>={
 };
 const tierGold:Record<string,number>={T1:120,T2:420,T3:900,T4:1800,T5:3500,T6:6000,T7:9000,T8:14000,T9:20000};
 const tierXp:Record<string,number>={T1:120,T2:250,T3:450,T4:700,T5:1100,T6:1600,T7:2200,T8:2900,T9:3800};
+export const TIER_CHARACTER_LEVEL_FLOOR:Record<string,number>={T1:1,T2:6,T3:13,T4:19,T5:26,T6:36,T7:46,T8:56,T9:66};
+export const TIER_SMITHING_LEVEL_FLOOR:Record<string,number>={T1:1,T2:3,T3:10,T4:16,T5:23,T6:33,T7:43,T8:53,T9:63};
 
 const pathMaterial:Record<string,Record<string,string>>={
   T1:{Foundation:'MOSS_FIBER',Specialist:'WISP_DUST',Alternate:'BOAR_HIDE'},
@@ -54,10 +56,10 @@ function ingredients(tier:string,path:string,multiplier:number){
     case 'T3':return [{itemId:'CROWNWOOD_LOG',quantity:q(32,multiplier)},{itemId:pathItem??'TROLL_HIDE',quantity:q(12,multiplier)},{itemId:'THORN_SAP',quantity:q(6,multiplier)}];
     case 'T4':return [{itemId:'OATHSTONE_INGOT',quantity:q(18,multiplier)},{itemId:'OATHGLASS_SHARD',quantity:q(7,multiplier)},{itemId:pathItem??'TORN_OATHCLOTH',quantity:q(5,multiplier)}];
     case 'T5':return [{itemId:'SUNSTONE_ORE',quantity:q(22,multiplier)},{itemId:'AMBERGLASS',quantity:q(7,multiplier)}];
-    case 'T6':return [{itemId:'SUNSTONE_ORE',quantity:q(24,multiplier)},{itemId:'AMBERGLASS',quantity:q(8,multiplier)},{itemId:'ASTRAL_SCRIPT',quantity:q(1,multiplier)}];
-    case 'T7':return [{itemId:'FROSTIRON',quantity:q(22,multiplier)},{itemId:'RIMEGLASS',quantity:q(5,multiplier)}];
-    case 'T8':return [{itemId:'FROSTIRON',quantity:q(28,multiplier)},{itemId:'RIMEGLASS',quantity:q(8,multiplier)},{itemId:'CHOIR_BLOOM',quantity:q(1,multiplier)}];
-    case 'T9':return [{itemId:'FROSTIRON',quantity:q(36,multiplier)},{itemId:'RIMEGLASS',quantity:q(12,multiplier)},{itemId:'CHOIR_BLOOM',quantity:q(2,multiplier)}];
+    case 'T6':return [{itemId:'SUNSTONE_ORE',quantity:q(30,multiplier)},{itemId:'AMBERGLASS',quantity:q(10,multiplier)},{itemId:'ASTRAL_SCRIPT',quantity:q(1,multiplier)}];
+    case 'T7':return [{itemId:'FROSTIRON',quantity:q(30,multiplier)},{itemId:'RIMEGLASS',quantity:q(8,multiplier)}];
+    case 'T8':return [{itemId:'FROSTIRON',quantity:q(36,multiplier)},{itemId:'RIMEGLASS',quantity:q(11,multiplier)},{itemId:'CHOIR_BLOOM',quantity:q(1,multiplier)}];
+    case 'T9':return [{itemId:'FROSTIRON',quantity:q(46,multiplier)},{itemId:'RIMEGLASS',quantity:q(16,multiplier)},{itemId:'CHOIR_BLOOM',quantity:q(3,multiplier)}];
     default:return [];
   }
 }
@@ -67,20 +69,22 @@ const setById=new Map((catalog.sets as Array<Record<string,string|number>>).map(
 export const V33_EQUIPMENT_RECIPES:V33EquipmentRecipeDef[]=(catalog.pieces as Array<Record<string,string|number>>).map(piece=>{
   const setId=String(piece['Set ID']),set=setById.get(setId);
   if(!set)throw new Error(`Missing V33 set for ${setId}`);
-  const tier=String(piece.Tier),slot=slotByName[String(piece.Slot)],multiplier=slotMultiplier[slot],reqLevel=Math.max(1,Number(piece['Req Level']));
+  const tier=String(piece.Tier),slot=slotByName[String(piece.Slot)],multiplier=slotMultiplier[slot],catalogReqLevel=Math.max(1,Number(piece['Req Level']));
+  const characterLevel=Math.max(catalogReqLevel,TIER_CHARACTER_LEVEL_FLOOR[tier]??1);
+  const smithingLevel=Math.max(1,characterLevel-3,TIER_SMITHING_LEVEL_FLOOR[tier]??1);
   const range=timerRange[tier]??timerRange.T1;
   return {
     id:`CRAFT_V33_${String(piece['Piece ID'])}`,
     name:String(piece['Item Name']),
     skillId:'smithing',
-    level:Math.max(1,reqLevel-3),
+    level:smithingLevel,
     xp:q(tierXp[tier]??120,multiplier),
     gold:q(tierGold[tier]??120,multiplier),
     seconds:clamp(Math.round(range.base*multiplier),range.min,range.max),
     inputs:ingredients(tier,String(piece.Path),multiplier),
     output:{itemId:String(piece['Piece ID']),quantity:1},
     classId:classIdByName[String(piece.Class)],
-    characterLevel:reqLevel,
+    characterLevel,
     v33EquipmentTier:tier,
     v33Region:String(set.Region),
     v33SetId:setId,

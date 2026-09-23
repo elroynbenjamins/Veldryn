@@ -1,7 +1,7 @@
 import {claimActivity,createCharacter,newGame,startCombat,startGathering,BASE_OFFLINE_CAP_HOURS,FREE_OFFLINE_CAP_HOURS,MAX_OFFLINE_CAP_HOURS} from '../src/core/game';
 import {totalXpAtLevel} from '../src/core/progression';
 import type {GameState} from '../src/core/types';
-import type {IdleStopCondition,IdleRuleSet} from '../src/core/idle-rules-v40';
+import {MAX_IDLE_RULE_SETS,upsertIdleRuleSet,type IdleStopCondition,type IdleRuleSet} from '../src/core/idle-rules-v40';
 import {DEFAULT_WEEKLY_ORDER_POLICY,generateWeeklyOrders,type WeeklyOrderCandidate} from '../src/core/weekly-orders-v41';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
@@ -86,6 +86,16 @@ function withRule(state:GameState,condition:IdleStopCondition,options?:Partial<P
  const result=claimActivity(state,T0+6*3600_000);
  eq(result.state.activity,null,'free-slot threshold should stop gathering');
  eq(result.reward.kills,1,'free-slot threshold should stop on first new storage stack');
+}
+
+{
+ const state=base(),rules=Array.from({length:MAX_IDLE_RULE_SETS},(_,index):IdleRuleSet=>({id:'rule-'+index,characterId:state.character!.id,name:'Rule '+index,conditions:[],stopIfOutOfFood:true,stopIfRewardsWouldOverflow:true,finishCurrentCycle:true}));
+ const replacement={...rules[2],name:'Updated Rule'};
+ const replaced=upsertIdleRuleSet(rules,replacement);
+ eq(replaced.length,MAX_IDLE_RULE_SETS,'safe upsert replaces an existing rule without changing rule count');
+ eq(replaced[2].name,'Updated Rule','safe upsert preserves the requested same-id replacement');
+ let threw=false;try{upsertIdleRuleSet(rules,{...replacement,id:'sixth-rule'})}catch{threw=true}
+ ok(threw,'safe upsert rejects a sixth rule instead of silently evicting an existing rule');
 }
 
 eq(BASE_OFFLINE_CAP_HOURS,8,'Advanced Idle Rules must not alter 8h base reserve');

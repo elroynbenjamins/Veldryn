@@ -35,7 +35,7 @@ export interface VerifiedActivity {kind:'combat'|'gathering'|'crafting'|'boss';c
 export type ForgeCraftResult=ReturnType<typeof claimEquipmentCraft>['result'];
 export interface GameCommandResult {state:GameState;reward?:RewardBundle;activity:GameState['activity'];message?:string;won?:boolean;storyBossBattle?:FallenKnightBattleResult;upgrade?:ReturnType<typeof attemptEquipmentUpgrade>['result'];forgeResults?:ForgeCraftResult[];contributions:VerifiedActivity[]}
 const fields:Record<string,readonly string[]>={
- class_training:[],class_focus:['focus'],faith_practice:['tierId','count'],faith_blessing:['id'],faith_favorite:['id','enabled'],faith_hide:['enabled'],alchemy_start:['id','batches'],processing_start:['id','batches'],
+ class_training:[],class_focus:['focus'],herbalism_method:['method'],faith_practice:['tierId','count'],faith_blessing:['id'],faith_favorite:['id','enabled'],faith_hide:['enabled'],alchemy_start:['id','batches'],processing_start:['id','batches'],
  companion_monthly:['id'],companion_supplies:[],companion_bond_reward:['id','level'],companion_boss_rematch:[],
  companion_equip:['id'],companion_unequip:[],companion_level:['id'],companion_ascend:['id'],companion_master:['id'],companion_upgrade:['id'],companion_training:[],companion_essence:[],
  companion_trial_start:['ids','floor'],companion_trial_floor:['id','floor'],companion_trial_abandon:['id'],companion_assignment_start:['id','ids'],companion_assignment_claim:['id'],companion_technique:['id','technique'],companion_codex:['id'],companion_showcase:['id','ids'],companion_weekly:['id'],companion_special:['id','ids'],
@@ -129,6 +129,16 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
    break;
   }
   case 'class_training':state=game.startClassTraining(state,now);break;
+  case 'herbalism_method':{
+   if(!state.character)throw new Error('character_required');
+   if(state.activity?.kind==='herbalism')throw new Error('Stop Herbalism before changing harvest method');
+   const method=oneOf(a.method,['balanced','quick','careful','bountiful']) as import('../content/herbalism').HerbalismMethodId;
+   const level=state.skills.find(row=>row.skillId==='herbalism')?.level??1;
+   const unlock={balanced:1,quick:15,careful:30,bountiful:45}[method];
+   if(level<unlock)throw new Error(`Requires Herbalism level ${unlock}`);
+   state={...state,character:{...state.character,herbalismMethodId:method}};
+   message='Herbalism method set to '+method;break;
+  }
   case 'faith_practice':state=reserveFaithPractice(state,text(a,'tierId'),integer(a,'count',1,1000),now);break;
   case 'faith_blessing':state=updateFaithPreference(state,'blessing',text(a,'id'));break;
   case 'faith_favorite':state=updateFaithPreference(state,'favorite',text(a,'id'),a.enabled===true);break;

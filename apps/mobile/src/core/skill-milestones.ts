@@ -6,6 +6,8 @@ import {CROSS_SKILL_DISCOVERIES_V45,crossSkillViews,newCrossSkillState} from './
 import {faithLevel} from './faith';
 import type {GameState,SkillId} from './types';
 import type {WorkingTowardDestination} from './working-toward';
+import {GEM_COMBINE_COSTS_V1,GEM_REFINE_COSTS_V1} from './gem-progression-v1';
+import {GEM_GRADE_LABEL_V1,type MobileGemGradeV1} from '../content/gems-v1';
 
 export type SkillMilestoneKind='gathering_node'|'tool'|'recipe'|'faith_practice'|'faith_blessing'|'cross_skill';
 export interface SkillMilestone{
@@ -65,6 +67,20 @@ export function skillMilestones(state:GameState,skillId:SkillId):SkillMilestone[
    detail:(recipe.repeatableTraining?'Training recipe':'Crafting recipe')+(recipe.characterLevel?' · character Lv '+recipe.characterLevel:''),
    destination:milestoneDestination(skillId,recipe.id),
   });
+ }
+ if(skillId==='enchanting'){
+  for(const grade of [1,2,3,4,5] as MobileGemGradeV1[]){
+   const cost=GEM_REFINE_COSTS_V1[grade];
+   rows.push({id:'enchant-refine:g'+grade,kind:'recipe',level:cost.level,title:'Refine Grade '+grade+' gems',category:'REFINEMENT',
+    detail:`Unrefined drops can be turned into ${GEM_GRADE_LABEL_V1[grade]} socketable gems · +${cost.xp.toLocaleString()} base XP`,
+    destination:milestoneDestination('enchanting')});
+  }
+  for(const fromGrade of [1,2,3,4] as const){
+   const cost=GEM_COMBINE_COSTS_V1[fromGrade];
+   rows.push({id:'enchant-combine:g'+fromGrade,kind:'recipe',level:cost.level,title:`Combine G${fromGrade} → G${cost.to}`,category:'GEM COMBINE',
+    detail:`Combine three matching ${GEM_GRADE_LABEL_V1[fromGrade]} gems into one ${GEM_GRADE_LABEL_V1[cost.to]} gem · +${cost.xp.toLocaleString()} base XP`,
+    destination:milestoneDestination('enchanting')});
+  }
  }
  if(skillId==='faith'){
   for(const tier of FAITH_TIERS)rows.push({id:'faith-tier:'+tier.id,kind:'faith_practice',level:tier.level,title:tier.name,category:'PRACTICE',detail:tier.water+' Holy Water · '+tier.xp.toLocaleString()+' base Faith XP',destination:milestoneDestination('faith')});

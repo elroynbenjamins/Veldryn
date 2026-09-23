@@ -23,7 +23,7 @@ export function normalizeQueuedActivity(value:unknown):QueuedActivity|undefined{
  const huntGoalId=HUNT_GOAL_IDS.includes(row.huntGoalId as any)?row.huntGoalId as QueuedActivity['huntGoalId']:undefined;
  return {kind,targetId,...(combatChallengeId?{combatChallengeId}:{}),...(combatTacticId?{combatTacticId}:{}),...(huntGoalId?{huntGoalId}:{})};
 }
-export function normalizeActivityQueue(value:unknown,limit=MAX_ACTIVITY_QUEUE):QueuedActivity[]{
+export function normalizeActivityQueue(value:unknown,limit=BASE_ACTIVITY_QUEUE):QueuedActivity[]{
  if(!Array.isArray(value))return [];
  return value.flatMap(row=>{const normalized=normalizeQueuedActivity(row);return normalized?[normalized]:[]}).slice(0,Math.max(BASE_ACTIVITY_QUEUE,Math.min(MAX_ACTIVITY_QUEUE,limit)));
 }
@@ -36,13 +36,13 @@ export function enqueueActivity(state:GameState,activity:QueuedActivity):GameSta
 }
 export function removeQueuedActivity(state:GameState,index:number):GameState{
  if(!state.character)throw new Error('Create a character first.');
- const queue=normalizeActivityQueue(state.character.activityQueue);
+ const queue=normalizeActivityQueue(state.character.activityQueue,activityQueueCapacity(state));
  if(!Number.isSafeInteger(index)||index<0||index>=queue.length)throw new Error('Queued action was not found.');
  return {...state,character:{...state.character,activityQueue:queue.filter((_,i)=>i!==index),activityQueuePausedReason:undefined}};
 }
 export function moveQueuedActivity(state:GameState,index:number,direction:'up'|'down'):GameState{
  if(!state.character)throw new Error('Create a character first.');
- const queue=normalizeActivityQueue(state.character.activityQueue);
+ const queue=normalizeActivityQueue(state.character.activityQueue,activityQueueCapacity(state));
  if(!Number.isSafeInteger(index)||index<0||index>=queue.length)throw new Error('Queued action was not found.');
  const target=direction==='up'?index-1:index+1;
  if(target<0||target>=queue.length)return state;
@@ -127,7 +127,7 @@ function activityCanAdvanceCondition(state:GameState,condition:IdleStopCondition
  return false;
 }
 export function activityQueueHandoffStatus(state:GameState):ActivityQueueHandoffStatus{
- const queue=normalizeActivityQueue(state.character?.activityQueue),next=queue[0],character=state.character,activity=state.activity;
+ const queue=normalizeActivityQueue(state.character?.activityQueue,activityQueueCapacity(state)),next=queue[0],character=state.character,activity=state.activity;
  const rule=character?.activeIdleRuleIdV40?character.idleRulesV40?.find(row=>row.id===character.activeIdleRuleIdV40):undefined;
  const nonSafetyApplicable=rule?.conditions.some(condition=>condition.kind!=='food_below'&&condition.kind!=='free_slots_below'&&activityCanAdvanceCondition(state,condition))??false;
  const huntGoal=activity?.kind==='combat'?activity.huntGoal:undefined;

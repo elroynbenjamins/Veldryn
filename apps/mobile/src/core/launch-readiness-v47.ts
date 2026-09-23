@@ -9,7 +9,7 @@ import type {WeeklyOrderCandidate} from './weekly-orders-v41';
 import {COLLECTION_SETS_V45} from './collection-sets-v45';
 import {CROSS_SKILL_DISCOVERIES_V45} from './cross-skill-discoveries-v45';
 import {RARE_DISCOVERY_POOLS_V46} from './rare-idle-discoveries-v46';
-import {BASE_OFFLINE_CAP_HOURS,MAX_OFFLINE_CAP_HOURS} from './game';
+import {BASE_OFFLINE_CAP_HOURS,FREE_OFFLINE_CAP_HOURS,MAX_OFFLINE_CAP_HOURS} from './game';
 import {COMBAT_CHALLENGE_IDS,COMBAT_CHALLENGES,challengeHuntStats,challengeHuntUnlocked} from './challenge-hunts';
 
 export const CURRENT_SKILL_IDS:readonly SkillId[]=['mining','woodcutting','fishing','smithing','cooking','herbalism','alchemy','hunting','exploration','tailoring','enchanting','faith'];
@@ -69,7 +69,7 @@ export function launchReadinessReport(state?:GameState):LaunchReadinessReport{
  const issues:LaunchReadinessIssue[]=[];
  if(CLASSES.length!==9)issue(issues,'blocker','CLASS_COUNT',`Expected 9 launch classes, found ${CLASSES.length}.`);
  if(new Set(CLASSES.map(row=>row.id)).size!==CLASSES.length)issue(issues,'blocker','DUPLICATE_CLASS','Class IDs must be unique.');
- if(BASE_OFFLINE_CAP_HOURS!==24||MAX_OFFLINE_CAP_HOURS!==36)issue(issues,'blocker','OFFLINE_CAP','Offline Reserve must remain 24h base / 36h max.');
+ if(BASE_OFFLINE_CAP_HOURS!==8||FREE_OFFLINE_CAP_HOURS!==18||MAX_OFFLINE_CAP_HOURS!==24)issue(issues,'blocker','OFFLINE_CAP','Offline Reserve must remain 8h base / 18h progression / 24h max.');
  if(skillIds.has('trading'))issue(issues,'blocker','TRADING_SKILL','Trading must not be a runtime skill.');
  for(const monster of MONSTERS){
   if(!WORLD_ZONES.some(zone=>zone.name===monster.zone))issue(issues,'blocker','MONSTER_ZONE',`${monster.name} references unknown zone ${monster.zone}.`,monster.id);

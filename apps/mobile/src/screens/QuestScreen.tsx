@@ -25,6 +25,7 @@ import {questPresentationMeta} from '../core/quest-presentation';
 import {contractAnticipation} from '../core/progress-anticipation';
 import {fallenKnightWeeklyStatus} from '../core/weekly-boss';
 import {QuestModeSwitch,type QuestMode} from '../components/QuestModeSwitch';
+export type {QuestMode} from '../components/QuestModeSwitch';
 
 type ClaimMoment={
   key:string;

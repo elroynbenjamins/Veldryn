@@ -49,5 +49,9 @@ ok(acquisitionPlan.includes('materialAcquisitionChainLabel')&&acquisitionPlan.in
 ok(recipe.includes('row.chainLabel')&&recipe.includes('row.chainBlockedReason'),'Recipe source rows must show recursive crafting chains and explain why a total estimate is withheld');
 ok(recipe.includes('source.chainLabel')&&recipe.includes('source.chainBlockedReason'),'Expanded Other sources must preserve recursive chain context for crafting alternatives');
 ok(quickInspect.includes('source.chainLabel')&&quickInspect.includes('source.chainBlockedReason'),'Item Quick Inspect must expose the same recursive chain context as crafting requirements');
+ok(acquisitionPlan.includes('materialPreparationSteps')&&acquisitionPlan.includes("MaterialPreparationStepKind='owned'|'acquire'|'craft'"),'Recursive material planning must expose ordered preparation steps with owned, acquisition and craft semantics');
+ok(skillNavigation.includes('prepareSteps?:MaterialPreparationStep[]')&&skillNavigation.includes('materialPreparationSteps(plan)'),'Crafting source presentation must carry the ordered preparation plan into the recipe UI');
+ok(recipe.includes('Prepare materials')&&recipe.includes('row.prepareSteps.map')&&recipe.includes('onNavigate(step.destination!)'),'Recipe cards must expose a compact numbered preparation disclosure whose actionable steps deep-link to exact activities');
+ok(recipe.includes("step.status==='ready'?'READY'")&&recipe.includes('prepareIndexReady'),'Already-owned preparation requirements must stay visibly satisfied instead of disappearing from the ordered flow');
 
 console.log('PASS: player-facing progression bars, ETAs and drop expectations use shared balance projections');

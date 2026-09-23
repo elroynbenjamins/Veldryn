@@ -551,6 +551,7 @@ export function stopActivity(state:GameState):GameState{
 export function equipItem(state:GameState,itemId:string):GameState{
   if(!state.character)throw new Error('No character');const d=itemDef(itemId);if(d.type!=='gear'||!d.slot)throw new Error('Not gear');
   if(d.classRestriction&&d.classRestriction!==state.character.classId)throw new Error('This gear belongs to another class');
+  if(state.character.level<(d.requiredLevel??1))throw new Error(`Requires character level ${d.requiredLevel}`);
   let stacks=consume(state.inventory.stacks,itemId,1);const old=state.character.equipment[d.slot];if(old)stacks=stackItems(stacks,[{itemId:old,quantity:1}]);
   const temp={...state,inventory:{...state.inventory,stacks},character:{...state.character,equipment:{...state.character.equipment,[d.slot]:itemId}}} as GameState;
   const maxHp=effectiveStats(temp).hp;temp.character!.currentHp=Math.min(maxHp,temp.character!.currentHp+(d.hp||0));

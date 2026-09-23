@@ -142,7 +142,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
    if(state.activity?.startedAtMs===now)state.activity.classFocus=normalizeTrainingFocus(focus);
    break;
   }
-  case 'companion_boss_rematch':{const result=game.challengeFallenKnightRematch(state,now);state=result.state;message=result.message;won=result.won;break;}
+  case 'companion_boss_rematch':{const result=game.challengeFallenKnightRematch(state,now);state=result.state;message=result.message;won=result.won;if(won)contributions.push({kind:'boss',contentId:'FALLEN_KNIGHT',units:1});break;}
   case 'companion_monthly':case 'companion_supplies':case 'companion_bond_reward':state=executeCompanionActivity(state,command.type,a,now);break;
   case 'companion_equip':state=companions.equipCombatCompanion(state,text(a,'id'));break;
   case 'companion_unequip':state=companions.unequipCombatCompanion(state);break;
@@ -179,7 +179,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'explore':state=game.startExploration(state,text(a,'id'),now);break;
   case 'stop':state=game.stopActivity(state);break;
   case 'travel':state=game.travelToRegion(state,text(a,'id'),now).state;break;
-  case 'boss':{const result=game.challengeFallenKnight(state,now);state=result.state;message=result.message;won=result.won;storyBossBattle=result.battle;if(won&&result.battle)contributions.push({kind:'boss',contentId:'FALLEN_KNIGHT',units:1});break;}
+  case 'boss':{const result=game.challengeFallenKnight(state,now);state=result.state;message=result.message;won=result.won;storyBossBattle=result.battle;if(won)contributions.push({kind:'boss',contentId:'FALLEN_KNIGHT',units:1});break;}
   case 'craft':{
    const id=text(a,'id'),timed=timedEquipmentRecipe(id);
    if(isTimedProcessingRecipe(id))throw new Error('Repeatable processing must be started as a timed batch.');

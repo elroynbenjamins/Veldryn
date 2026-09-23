@@ -1,6 +1,6 @@
 import type {CombatChallengeId,GameState,RewardBundle} from './types';
 import {grantProfessionMastery,professionMasteryRank,type ProfessionMasteryRecord} from './profession-mastery-v40';
-import {applyWeeklyOrderProgress,claimWeeklyCompletion,claimWeeklyOrder,generateWeeklyOrders,weeklyOrderWindow,type WeeklyOrdersState} from './weekly-orders-v41';
+import {DEFAULT_WEEKLY_ORDER_POLICY,applyWeeklyOrderProgress,claimWeeklyCompletion,claimWeeklyOrder,generateWeeklyOrders,weeklyOrderWindow,type WeeklyOrdersState} from './weekly-orders-v41';
 import {weeklyOrderCandidatesFromCurrentContent} from './launch-readiness-v47';
 import {applyCrossSkillSnapshot,newCrossSkillState,type CrossSkillState} from './cross-skill-discoveries-v45';
 import {applyCollectionSetSnapshot,collectionMemberKey,newCollectionSetState,type CollectionOwnershipSnapshot,type CollectionSetState} from './collection-sets-v45';
@@ -37,9 +37,17 @@ function trustedEventRegionId(event:TrustedProgressionActivity){
  return undefined;
 }
 function ensureWeeklyOrders(state:GameState,accountId:string,nowMs:number):WeeklyOrdersState{
- const window=weeklyOrderWindow(nowMs),existing=state.account.weeklyOrders;
- if(existing?.schemaVersion===41&&existing.accountId===accountId&&existing.weekKey===window.weekKey)return existing;
- return generateWeeklyOrders(accountId,nowMs,weeklyOrderCandidatesFromCurrentContent(state));
+ const window=weeklyOrderWindow(nowMs),existing=state.account.weeklyOrders,candidates=weeklyOrderCandidatesFromCurrentContent(state);
+ if(existing?.schemaVersion===41&&existing.accountId===accountId&&existing.weekKey===window.weekKey){
+  const bossCandidate=candidates.find(candidate=>candidate.kind==='hunt'&&candidate.boss&&candidate.monsterId==='FALLEN_KNIGHT'&&candidate.available&&candidate.source.available);
+  if(bossCandidate&&!existing.orders.some(order=>order.kind==='hunt'&&order.targetId==='FALLEN_KNIGHT')){
+   const bonusPolicy={...DEFAULT_WEEKLY_ORDER_POLICY,huntSlots:1,professionSlots:0,regionalSlots:0,threatSlots:0};
+   const bonus=generateWeeklyOrders(accountId,nowMs,[bossCandidate],bonusPolicy).orders[0];
+   if(bonus)existing.orders.push({...bonus,slot:existing.orders.length});
+  }
+  return existing;
+ }
+ return generateWeeklyOrders(accountId,nowMs,candidates);
 }
 export function weeklyOrderBoardForState(state:GameState,nowMs=Date.now()){
  const accountId=state.account.longTermAccountScopeId??`local-account:${state.createdAtMs}`;

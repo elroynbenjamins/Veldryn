@@ -48,6 +48,7 @@ import {professionMasteryMultipliers} from './profession-mastery-v40';
 import {huntingXpForKills} from './hunting-progression';
 import {regionalSecondaryExchange} from './regional-enemy-stats';
 import {simulateFallenKnightStoryBattle,type FallenKnightBattleResult,type FallenKnightPlayerSnapshot} from './story-boss';
+import {fallenKnightWeeklyStatus,recordFallenKnightWeeklyVictory} from './weekly-boss';
 export function beginAlchemyBatch(state:GameState,recipeId:string,batches:number,nowMs:number){return startAlchemyBatch(finishClassDrills(state,nowMs),recipeId,batches,nowMs);}
 export function beginProcessingBatch(state:GameState,recipeId:string,batches:number,nowMs:number){return startProcessingBatch(finishClassDrills(state,nowMs),recipeId,batches,nowMs);}
 
@@ -756,32 +757,50 @@ export function previewFallenKnightBattle(state:GameState,nowMs=Date.now()):Fall
 }
 
 export function fallenKnightWinChance(state:GameState){const r=regionalReadiness(state).total;if(r<50)return .10;if(r<60)return .18;if(r<70)return .34;if(r<80)return .48;if(r<90)return .64;if(r<100)return .82;return .90;}
-/** One optional rematch attempt per UTC day, without repeating story loot. */
+/** Rewarded rematches are capped weekly. Resolution is immediate; only the first story clear uses cinematic playback. */
 export function challengeFallenKnightRematch(state:GameState,nowMs:number):{state:GameState;won:boolean;message:string}{
   if(!state.character||state.character.level<25||!state.defeatedBossIds.includes('FALLEN_KNIGHT'))throw new Error('Defeat the Fallen Knight in the story first.');
-  if(nowMs<(state.account.companionBossRematchReadyAtMs??0))throw new Error('The next rematch unlocks at 00:00 UTC.');
-  const readyAt=(Math.floor(nowMs/86400000)+1)*86400000,attemptMetrics={...(state.account.longTermMetrics??{})};
+  const weekly=fallenKnightWeeklyStatus(state,nowMs);
+  if(weekly.remaining<=0)throw new Error('Fallen Knight weekly rematches are complete. Rewards reset with the next UTC week.');
+  const battle=previewFallenKnightBattle(state,nowMs),foodId=state.character.equippedFoodId,stats=effectiveStats(state);
+  let inventory=state.inventory.stacks;
+  if(battle.foodConsumed&&foodId)inventory=consume(inventory,foodId,battle.foodConsumed);
+  const postFightCharacter={...state.character,currentHp:Math.max(1,Math.min(stats.hp,battle.finalPlayerHp||1))};
+  const attemptMetrics={...(state.account.longTermMetrics??{})};
   attemptMetrics['companions.fallen_knight_rematch_attempts']=(attemptMetrics['companions.fallen_knight_rematch_attempts']??0)+1;
-  let next:GameState={...state,account:{...state.account,companionBossRematchReadyAtMs:readyAt,longTermMetrics:attemptMetrics}};
-  const chance=Math.min(.95,fallenKnightWinChance(state)*companionCombatContribution(state).outputMultiplier);
-  const won=random01(`${state.character.id}:COMPANION_FALLEN_KNIGHT:${Math.floor(nowMs/86400000)}`,0)<chance;
-  if(!won){next.account.companionLastBattle={title:'Fallen Knight rematch',won:false,durationMs:0,gold:0,essence:0,bondstones:0,atMs:nowMs};return {state:next,won:false,message:'The Fallen Knight won the rematch. Improve your readiness and try again after 00:00 UTC.'};}
+  let next={...state,inventory:{...state.inventory,stacks:inventory},character:postFightCharacter,activity:null,account:{...state.account,longTermMetrics:attemptMetrics}} as GameState;
+  if(!battle.won){
+    next.account.companionLastBattle={title:'Fallen Knight rematch',won:false,durationMs:battle.durationMs,gold:0,essence:0,bondstones:0,atMs:nowMs};
+    return {state:next,won:false,message:`Fallen Knight rematch lost after ${Math.max(1,Math.round(battle.durationMs/1000))}s. No weekly clear was consumed.`};
+  }
+
+  const weeklyRecorded=recordFallenKnightWeeklyVictory(next,nowMs);next=weeklyRecorded.state;
   const stone=awardCompanionRematchBondstone(next,nowMs);next=stone.state;
+  const baseGold=500,baseXp=750,baseEssence=30;
+  const bountyGold=weeklyRecorded.bountyTriggered?1000:0,bountyXp=weeklyRecorded.bountyTriggered?1500:0,bountyEssence=weeklyRecorded.bountyTriggered?30:0;
+  const items:ItemStack[]=[
+    {itemId:'OATHGLASS_SHARD',quantity:3+(weeklyRecorded.bountyTriggered?6:0)},
+    {itemId:'TEMPERING_DUST',quantity:2},
+    ...(weeklyRecorded.bountyTriggered?[{itemId:'TEMPERING_CORE',quantity:1}]:[]),
+  ];
+  const routed=routeRewards(next,items,nowMs),xp=next.character!.xp+baseXp+bountyXp;
+  next={...next,...routed,character:{...next.character!,xp,level:characterLevelFromXp(xp),gold:next.character!.gold+baseGold+bountyGold}};
+  next=grantCompanionEssence(next,baseEssence+bountyEssence);
+  if(stone.reward)next=grantBondstones(next,stone.reward);
   const winMetrics={...(next.account.longTermMetrics??{})};
   winMetrics['companions.fallen_knight_rematch_wins']=(winMetrics['companions.fallen_knight_rematch_wins']??0)+1;
   winMetrics['companions.fallen_knight_rematch_bondstones']=(winMetrics['companions.fallen_knight_rematch_bondstones']??0)+stone.reward;
-  next.account={...next.account,longTermMetrics:winMetrics,companionLastBattle:{title:'Fallen Knight rematch',won:true,durationMs:0,gold:0,essence:40,bondstones:stone.reward,atMs:nowMs}};
-  // Count an existing story clear even when upgrading a save predating companion counters.
-  next.account.companionBossClears={...next.account.companionBossClears,FALLEN_KNIGHT:Math.max(1,next.account.companionBossClears?.FALLEN_KNIGHT??0)};
-  next=recordCompanionActivity(grantBondstones(grantCompanionEssence(next,40),stone.reward),'boss','FALLEN_KNIGHT',1,nowMs);
-  next=applyTrustedLongTermProgression(next,[{kind:'boss',contentId:'FALLEN_KNIGHT',units:1}],undefined,nowMs,{accountId:longTermAccountScope(next),eventId:`boss-rematch:${state.character.id}:FALLEN_KNIGHT:${Math.floor(nowMs/86400000)}`}).state;
-  const status=companionRematchBondstoneStatus(next,nowMs),stoneText=stone.reward?'+1 Bondstone.':`Weekly Bondstone cap reached (${status.used}/${status.cap}).`;
-  return {state:next,won:true,message:`Fallen Knight rematch won: +40 Companion Essence, ${stoneText} Companion boss progression recorded.`};
+  next.account={...next.account,longTermMetrics:winMetrics,companionLastBattle:{title:'Fallen Knight rematch',won:true,durationMs:battle.durationMs,gold:baseGold+bountyGold,essence:baseEssence+bountyEssence,bondstones:stone.reward,atMs:nowMs},companionBossClears:{...next.account.companionBossClears,FALLEN_KNIGHT:(next.account.companionBossClears?.FALLEN_KNIGHT??1)+1}};
+  next=recordCompanionActivity(grantEventActivity(next,'boss',nowMs),'boss','FALLEN_KNIGHT',1,nowMs);
+  next=applyTrustedLongTermProgression(next,[{kind:'boss',contentId:'FALLEN_KNIGHT',units:1}],undefined,nowMs,{accountId:longTermAccountScope(next),eventId:`boss-rematch:${state.character.id}:FALLEN_KNIGHT:${weeklyRecorded.status.weekKey}:${weeklyRecorded.clearNumber}`}).state;
+  const strikes=battle.events.filter(event=>event.type==='player_hit').length,stoneText=stone.reward?'+1 Bondstone':`Bondstone weekly cap already reached`,bountyText=weeklyRecorded.bountyTriggered?' · Oathglass Bounty complete: +1 Tempering Core, +6 bonus Oathglass Shards, +1,000 Gold, +1,500 XP, +30 Essence':'';
+  return {state:next,won:true,message:`Fallen Knight rematch #${weeklyRecorded.clearNumber}/${weeklyRecorded.status.cap} won${strikes===1?' in one hit':` in ${Math.max(1,Math.round(battle.durationMs/1000))}s`}. +${baseGold} Gold, +${baseXp} XP, +${baseEssence} Essence, +3 Oathglass Shards, +2 Tempering Dust · ${stoneText}${bountyText}.`};
 }
+
 export function challengeFallenKnight(state:GameState,nowMs=Date.now()):{state:GameState;won:boolean;message:string;battle?:FallenKnightBattleResult}{
   if(!state.character)throw new Error('No character');
   if(state.character.level<25)return {state,won:false,message:'Reach level 25 first.'};
-  if(state.defeatedBossIds.includes('FALLEN_KNIGHT'))return {state,won:true,message:'The Fallen Knight is already defeated.'};
+  if(state.defeatedBossIds.includes('FALLEN_KNIGHT'))return challengeFallenKnightRematch(state,nowMs);
   const q14=state.quests.find(q=>q.questId==='QST_014');if(q14 && q14.status==='locked')return {state,won:false,message:'Advance the Asterfall questline before challenging the Fallen Knight.'};
   const battle=previewFallenKnightBattle(state,nowMs),foodId=state.character.equippedFoodId;
   let inventory=state.inventory.stacks;

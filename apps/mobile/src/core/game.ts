@@ -117,7 +117,7 @@ export function createCharacter(state:GameState,classId:ClassId,name='Adventurer
 }
 
 export function effectiveStats(state:GameState){
-  const c=state.character;if(!c)return {hp:0,attack:0,defense:0,power:0};
+  const c=state.character;if(!c)return {hp:0,attack:0,defense:0,power:0,critChance:0,critMultiplier:1.5,accuracy:.84,evasion:.04,haste:.05,armor:0,ward:0,tenacity:0,potency:0,penetration:0};
   let hp=c.hp,attack=c.attack,defense=c.defense;
   for(const id of Object.values(c.equipment)){if(!id)continue;const stats=enhancedGearStats(state,id);hp+=stats.hp;attack+=stats.attack;defense+=stats.defense;}
   const novice=noviceSetFor(c.classId),noviceComplete=novice.slots.every(slot=>c.equipment[slot]===noviceItemId(c.classId,slot));

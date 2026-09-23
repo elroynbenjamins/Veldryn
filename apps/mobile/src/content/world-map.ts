@@ -1,22 +1,5 @@
-export type WorldZoneAvailability='released'|'inDevelopment';
-
-export interface WorldZoneDef{
-  id:string;
-  name:string;
-  subtitle:string;
-  minLevel:number;
-  maxLevel:number;
-  x:number;
-  y:number;
-  accent:string;
-  symbol:string;
-  availability?:WorldZoneAvailability;
-  developmentNote?:string;
-}
-
-export function worldZoneAvailability(zone:WorldZoneDef):WorldZoneAvailability{return zone.availability??'released';}
-export function worldZoneInDevelopment(zone:WorldZoneDef){return worldZoneAvailability(zone)==='inDevelopment';}
-
+export type WorldZoneReleaseState='available'|'inDevelopment';
+export interface WorldZoneDef{id:string;name:string;subtitle:string;minLevel:number;maxLevel:number;x:number;y:number;accent:string;symbol:string;releaseState?:WorldZoneReleaseState;developmentNote?:string;}
 export const WORLD_ZONES:WorldZoneDef[]=[
   {id:'GREENFIELDS',name:'Greenfields',subtitle:'First hunts and a level-20 return encounter',minLevel:1,maxLevel:20,x:.18,y:.76,accent:'#79b88a',symbol:'✦'},
   {id:'SILVERBROOK',name:'Silverbrook',subtitle:'River paths and drowned secrets',minLevel:5,maxLevel:22,x:.56,y:.70,accent:'#6aaed6',symbol:'≈'},

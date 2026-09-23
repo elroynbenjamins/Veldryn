@@ -1,15 +1,15 @@
 import {GATHERING,RECIPES,type Recipe} from '../content/skills';
-import {HERB_NODES} from '../content/herbalism';
+import {HERB_NODES,HERBALISM_METHODS} from '../content/herbalism';
 import {GATHERING_TOOLS} from '../content/gathering-tools';
 import {FAITH_BLESSINGS,FAITH_TIERS} from '../content/faith';
 import {CROSS_SKILL_DISCOVERIES_V45,crossSkillViews,newCrossSkillState} from './cross-skill-discoveries-v45';
 import {faithLevel} from './faith';
 import type {GameState,SkillId} from './types';
 import type {WorkingTowardDestination} from './working-toward';
-import {GEM_COMBINE_COSTS_V1,GEM_REFINE_COSTS_V1} from './gem-progression-v1';
+import {ENCHANTING_EXTRACTION_THRESHOLDS_V1,GEM_COMBINE_COSTS_V1,GEM_REFINE_COSTS_V1,GEM_RESEARCH_V1} from './gem-progression-v1';
 import {GEM_GRADE_LABEL_V1,type MobileGemGradeV1} from '../content/gems-v1';
 
-export type SkillMilestoneKind='gathering_node'|'tool'|'recipe'|'faith_practice'|'faith_blessing'|'cross_skill';
+export type SkillMilestoneKind='gathering_node'|'tool'|'recipe'|'method'|'service'|'faith_practice'|'faith_blessing'|'cross_skill';
 export interface SkillMilestone{
  id:string;
  kind:SkillMilestoneKind;
@@ -30,7 +30,7 @@ const gatheringIds=new Set<SkillId>(['mining','woodcutting','fishing','herbalism
 const craftingIds=new Set<SkillId>(['smithing','cooking','alchemy','tailoring','enchanting']);
 const pretty=(value:string)=>value.replace(/_/g,' ').replace(/\b\w/g,char=>char.toUpperCase());
 const classRelevant=(state:GameState,recipe:Recipe)=>!recipe.classId||recipe.classId===state.character?.classId;
-export const skillMilestoneCategory=(kind:SkillMilestoneKind)=>kind==='gathering_node'?'GATHERING':kind==='tool'?'TOOL TIER':kind==='recipe'?'RECIPE':kind==='faith_practice'?'PRACTICE':kind==='faith_blessing'?'BLESSING':'CROSS-SKILL';
+export const skillMilestoneCategory=(kind:SkillMilestoneKind)=>kind==='gathering_node'?'GATHERING':kind==='tool'?'TOOL TIER':kind==='recipe'?'RECIPE':kind==='method'?'METHOD':kind==='service'?'SERVICE':kind==='faith_practice'?'PRACTICE':kind==='faith_blessing'?'BLESSING':'CROSS-SKILL';
 
 function skillMode(skillId:string):'gathering'|'crafting'|'faith'|undefined{
  if(skillId==='faith')return 'faith';
@@ -61,6 +61,14 @@ export function skillMilestones(state:GameState,skillId:SkillId):SkillMilestone[
    destination:{kind:'skills',skillId:'smithing',mode:'crafting',recipeId:'CRAFT_'+tool.id,button:'Craft '+tool.name,detail:'Open the Smithing recipe for '+tool.name+'.'},
   });
  }
+ if(skillId==='herbalism'){
+  for(const method of HERBALISM_METHODS.filter(row=>row.id!=='balanced'))rows.push({
+   id:'herbalism-method:'+method.id,kind:'method',level:method.unlockLevel,title:method.name,category:'HARVEST METHOD',detail:method.description,destination:milestoneDestination('herbalism'),
+  });
+  for(const [level,bonus] of [[25,10],[50,20],[75,35],[100,50]] as const)rows.push({
+   id:'herbalism-insight:'+level,kind:'service',level,title:level===100?'Master Botanist':'Field Insight '+(level===25?'I':level===50?'II':'III'),category:'BOTANICAL INSIGHT',detail:`Rare botanical essence chance +${bonus}% relative from Herbalism knowledge.`,destination:milestoneDestination('herbalism'),
+  });
+ }
  if(craftingIds.has(skillId)){
   for(const recipe of RECIPES.filter(row=>row.skillId===skillId&&!row.noviceSetId&&classRelevant(state,row)))rows.push({
    id:'recipe:'+recipe.id,kind:'recipe',level:recipe.level,title:recipe.name,category:'RECIPE',
@@ -69,6 +77,8 @@ export function skillMilestones(state:GameState,skillId:SkillId):SkillMilestone[
   });
  }
  if(skillId==='enchanting'){
+  rows.push({id:'enchant-research',kind:'service',level:GEM_RESEARCH_V1.level,title:'Effect Gem Research',category:'RESEARCH',detail:`Study a found unrefined Effect Gem family for ${GEM_RESEARCH_V1.dust} Gem Dust + ${GEM_RESEARCH_V1.gold.toLocaleString()} Gold to permanently discover its combine recipe.`,destination:milestoneDestination('enchanting')});
+  for(const tier of ENCHANTING_EXTRACTION_THRESHOLDS_V1)rows.push({id:'enchant-extraction:'+tier.level,kind:'service',level:tier.level,title:tier.label.split(' · ')[0],category:'EXTRACTION',detail:tier.label,destination:milestoneDestination('enchanting')});
   for(const grade of [1,2,3,4,5] as MobileGemGradeV1[]){
    const cost=GEM_REFINE_COSTS_V1[grade];
    rows.push({id:'enchant-refine:g'+grade,kind:'recipe',level:cost.level,title:'Refine Grade '+grade+' gems',category:'REFINEMENT',

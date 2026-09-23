@@ -38,6 +38,9 @@ export const RECIPES:Recipe[]=[
 {id:'SMELT_OATHSTONE_INGOT',name:'Smelt Oathstone Batch',skillId:'smithing',level:16,xp:230,gold:80,seconds:54,repeatableTraining:true,inputs:[{itemId:'OATHSTONE_ORE',quantity:6}],output:{itemId:'OATHSTONE_INGOT',quantity:3}},
 
 
+{id:'ENCHANT_REGIONAL_CATALYST',name:'Synthesize Regional Catalyst',skillId:'enchanting',level:70,xp:2400,gold:12000,seconds:1800,repeatableTraining:true,inputs:[{itemId:'GEM_DUST',quantity:25},{itemId:'FROSTMARCH_BOTANICAL_ESSENCE',quantity:2}],output:{itemId:'REGIONAL_CATALYST',quantity:1}},
+{id:'ENCHANT_RADIANT_CATALYST',name:'Synthesize Radiant Catalyst',skillId:'enchanting',level:90,xp:5600,gold:50000,seconds:5400,repeatableTraining:true,inputs:[{itemId:'REGIONAL_CATALYST',quantity:3},{itemId:'GEM_DUST',quantity:80},{itemId:'ASHLANDS_BOTANICAL_ESSENCE',quantity:2}],output:{itemId:'RADIANT_CATALYST',quantity:1}},
+
 {id:'COOK_SILVERFIN',name:'Cook Silverfin Batch',skillId:'cooking',level:1,xp:100,gold:50,seconds:36,repeatableTraining:true,inputs:[{itemId:'SILVERFIN',quantity:5}],output:{itemId:'COOKED_SILVERFIN',quantity:5}},
 {id:'COOK_RIVER_EEL',name:'Sear River Eel Batch',skillId:'cooking',level:8,xp:180,gold:80,seconds:44,repeatableTraining:true,inputs:[{itemId:'RIVER_EEL',quantity:4}],output:{itemId:'SEARED_RIVER_EEL',quantity:4}},
 {id:'COOK_OATHSCALE',name:'Roast Oathscale Batch',skillId:'cooking',level:16,xp:260,gold:130,seconds:54,repeatableTraining:true,inputs:[{itemId:'OATHSCALE_PIKE',quantity:3}],output:{itemId:'ROASTED_OATHSCALE',quantity:3}},

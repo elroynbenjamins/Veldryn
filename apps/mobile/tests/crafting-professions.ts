@@ -17,7 +17,10 @@ const enchantingRecipes=RECIPES.filter(row=>row.skillId==='enchanting');
 const retiredRecipeIds=['TAILOR_MOSSWRAP_GLOVES','TAILOR_BOARHIDE_BOOTS','TAILOR_HIDE_VEST','TAILOR_TROLLGUARD_HELM','ENCHANT_WISP_CHARM','ENCHANT_THORN_RING','ENCHANT_OATHGLASS_CAPE'];
 
 ok(tailoring.length>0,'Tailoring must own V33 Equipment 2.0 recipes');
-ok(enchantingRecipes.length===0,'Enchanting must use gem refinement/combining rather than obsolete gear recipes');
+ok(enchantingRecipes.every(recipe=>!recipe.v33SetId),'Enchanting utility recipes must never own V33 equipment');
+ok(enchantingRecipes.every(recipe=>!recipe.output.itemId.startsWith('T')),'Enchanting recipes must not resurrect equipment outputs');
+ok(enchantingRecipes.every(recipe=>['REGIONAL_CATALYST','RADIANT_CATALYST'].includes(recipe.output.itemId)),'Enchanting normal recipes are limited to modern catalyst synthesis; gems still use refinement/combining');
+ok(enchantingRecipes.map(recipe=>recipe.level).sort((a,b)=>a-b).join(',')==='70,90','Enchanting utility recipes must remain late-game catalyst synthesis rather than early gear crafting');
 ok(RECIPES.every(recipe=>!retiredRecipeIds.includes(recipe.id)),'Removed pre-V33 profession gear recipes must not return');
 ok(V33_EQUIPMENT_RECIPES.every(recipe=>recipe.skillId===EQUIPMENT_CRAFT_SKILL_BY_CLASS[recipe.classId]),'Every V33 class must use its authoritative primary equipment profession');
 for(const classId of ['WAYFINDER','HEXWEAVER','KNIFE_DANCER','DAWNKEEPER','STONECALLER'] as const)ok(V33_EQUIPMENT_RECIPES.some(recipe=>recipe.classId===classId&&recipe.skillId==='tailoring'),classId+' must use Tailoring');

@@ -1,4 +1,5 @@
 import {HOLY_WATER_ID,HOLY_WATER_SOURCES} from './faith';
+import {mobileRawGemItemIdV1} from './gems-v1';
 export interface MonsterDef {id:string;name:string;level:number;hp:number;attack:number;defense:number;xp:number;gold:number;secondsPerKill:number;unlockLevel:number;zone:string;boss?:boolean;drops:{itemId:string;chance:number;min:number;max:number}[];}
 
 const MONSTERS_RAW:MonsterDef[]=[
@@ -38,11 +39,24 @@ const MONSTERS_RAW:MonsterDef[]=[
 const MONSTER_TIME_SCALE=1.95;
 const MONSTER_STAT_SCALE=1.07;
 
+function asterfallRawGemDrop(monster:MonsterDef):MonsterDef['drops'][number]|undefined{
+  if(monster.boss||monster.level<4||monster.level>25)return undefined;
+  const familyId=monster.level>=20
+    ?(monster.attack>=monster.defense*1.8?'stat_keen':'stat_potent')
+    :monster.level>=16
+      ?(monster.attack>=monster.defense*1.7?'stat_precision':'stat_ward')
+      :monster.level>=10
+        ?(monster.attack>=monster.defense*1.7?'stat_swift':'stat_iron')
+        :(monster.attack>=monster.defense*1.7?'stat_might':'stat_vitality');
+  const chance=monster.level>=20?.006:monster.level>=16?.0055:monster.level>=10?.005:.004;
+  return {itemId:mobileRawGemItemIdV1(familyId,1),chance,min:1,max:1};
+}
 const enhancementDrops=(monster:MonsterDef):MonsterDef['drops']=>{
   if(monster.boss)return [{itemId:'TEMPERING_DUST',chance:1,min:8,max:14},{itemId:'TEMPERING_CORE',chance:1,min:1,max:2},{itemId:'EMBERHEART_GEM',chance:.001,min:1,max:1},{itemId:'WARDHEART_GEM',chance:.001,min:1,max:1},{itemId:'VITALITY_HEART_GEM',chance:.001,min:1,max:1}];
-  if(monster.level>=20)return [{itemId:'TEMPERING_DUST',chance:.18,min:1,max:2},{itemId:'TEMPERING_CORE',chance:.025,min:1,max:1},{itemId:monster.attack>=monster.defense*1.7?'EMBER_SHARD':monster.defense>=monster.attack*.65?'WARD_SHARD':'VITALITY_SHARD',chance:.004,min:1,max:1}];
-  if(monster.level>=10)return [{itemId:'TEMPERING_DUST',chance:.10,min:1,max:1},{itemId:'TEMPERING_CORE',chance:.01,min:1,max:1}];
-  return monster.level>=4?[{itemId:'TEMPERING_DUST',chance:.05,min:1,max:1}]:[];
+  const raw=asterfallRawGemDrop(monster),gem=raw?[raw]:[];
+  if(monster.level>=20)return [{itemId:'TEMPERING_DUST',chance:.18,min:1,max:2},{itemId:'TEMPERING_CORE',chance:.025,min:1,max:1},{itemId:monster.attack>=monster.defense*1.7?'EMBER_SHARD':monster.defense>=monster.attack*.65?'WARD_SHARD':'VITALITY_SHARD',chance:.004,min:1,max:1},...gem];
+  if(monster.level>=10)return [{itemId:'TEMPERING_DUST',chance:.10,min:1,max:1},{itemId:'TEMPERING_CORE',chance:.01,min:1,max:1},...gem];
+  return monster.level>=4?[{itemId:'TEMPERING_DUST',chance:.05,min:1,max:1},...gem]:gem;
 };
 export const MONSTERS:MonsterDef[]=MONSTERS_RAW.map(monster=>{
   const holyWater=HOLY_WATER_SOURCES.find(source=>source.monsterId===monster.id);

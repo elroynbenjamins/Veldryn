@@ -28,6 +28,8 @@ export interface CharacterState {
   masteryMaterialRemainders?:Record<string,number>;
   classSkills?:ClassSkillState[];
   trainingFocus?:TrainingFocus;
+  /** Character-bound Herbalism approach. Cannot be changed while actively harvesting. */
+  herbalismMethodId?:import('../content/herbalism').HerbalismMethodId;
   faith?: import('./faith-types').CharacterFaithState;
   preparation?:import('./alchemy-types').ActivePreparation;
   unlockedEventSkinIds?:string[];
@@ -88,7 +90,7 @@ export interface InventoryState { stacks:ItemStack[]; capacity:number; }
 export interface BankState { stacks:ItemStack[]; capacity:number; }
 export interface OverflowState { stacks:ItemStack[]; expiresAtMs:number|null; }
 export interface ActivityEnvironmentSnapshot{seasonId:SeasonId;weatherId:WeatherId;zoneId:string;capturedAtMs:number;}
-export interface ActiveActivity { kind:ActivityKind; targetId:string; startedAtMs:number; lastClaimAtMs:number; combatChallengeId?:CombatChallengeId; combatAffixId?:CombatAffixId; combatTacticId?:CombatTacticId; huntGoal?:import('./hunt-goals').HuntGoalSnapshot; sessionKills?:number; sessionChampions?:number; environment?:ActivityEnvironmentSnapshot; classFocus?:TrainingFocus; classTrainingSnapshot?:{faithBlessingId?:string}; bonusSnapshot?:import('./permanent-boosts').PermanentMultipliers; progressFraction?:number; brew?:import('./alchemy-types').AlchemyBatchState; processing?:import('./processing').ProcessingBatchState; faithPractice?:import('./faith-types').FaithPracticeReservation; }
+export interface ActiveActivity { kind:ActivityKind; targetId:string; startedAtMs:number; lastClaimAtMs:number; combatChallengeId?:CombatChallengeId; combatAffixId?:CombatAffixId; combatTacticId?:CombatTacticId; huntGoal?:import('./hunt-goals').HuntGoalSnapshot; sessionKills?:number; sessionChampions?:number; environment?:ActivityEnvironmentSnapshot; herbalismMethodId?:import('../content/herbalism').HerbalismMethodId; classFocus?:TrainingFocus; classTrainingSnapshot?:{faithBlessingId?:string}; bonusSnapshot?:import('./permanent-boosts').PermanentMultipliers; progressFraction?:number; brew?:import('./alchemy-types').AlchemyBatchState; processing?:import('./processing').ProcessingBatchState; faithPractice?:import('./faith-types').FaithPracticeReservation; }
 export interface QuestState { questId:string; status:'locked'|'active'|'complete'|'claimed'; progress:number; }
 export interface RegionalProgressState { storyCompleted?:number; sideQuestsCompleted?:number; echoesCompleted?:number; dungeonsCompleted?:number; collectionEntries?:number; bossMasteryTier?:number; }
 export interface LiveEventRuntime{eventId:string;enabled:boolean;startsAtMs:number;endsAtMs:number;graceEndsAtMs?:number;priority?:number;modules?:string[];}

@@ -4,7 +4,7 @@ import {effectiveOwnedGearRarity} from './crafted-gear-instances';
 import {craftedRarityStatMultiplier} from './crafted-gear-rarity';
 import {GameState,GearEnhancementState,GemEffectId,GemSocketKind,GemStat,ItemStack} from './types';
 import {mobileGemFamilyV1} from '../content/gems-v1';
-import {assertEffectGemEquipAllowedV1,canonicalGemMetaV1,gemUnsocketCostV1} from './gem-progression-v1';
+import {assertEffectGemEquipAllowedV1,canonicalGemMetaV1,gemUnsocketCostForStateV1} from './gem-progression-v1';
 
 export const MAX_UPGRADE_RANK=10;
 export const UPGRADE_STAT_PER_RANK=.03;
@@ -86,7 +86,7 @@ export function unsocketGem(state:GameState,itemId:string,index:number){
   requireEquipped(state,itemId);if(index!==0&&index!==1)throw new Error('Unknown gem socket');
   const enhancement=gearEnhancement(state,itemId),gemId=index===0?enhancement.statGemId:enhancement.effectGemId;
   if(!gemId)throw new Error(index===0?'The Stat Gem socket is empty':'The Effect Gem socket is empty');
-  const fee=gemUnsocketCostV1(gemId);if(state.character!.gold<fee.gold)throw new Error(`Need ${fee.gold} gold to safely extract this gem`);
+  const fee=gemUnsocketCostForStateV1(state,gemId);if(state.character!.gold<fee.gold)throw new Error(`Need ${fee.gold} gold to safely extract this gem`);
   if(fee.dust&&combinedQuantity(state,'GEM_DUST')<fee.dust)throw new Error(`Need ${fee.dust} Gem Dust to safely extract this gem`);
   let next:GameState={...state,character:{...state.character!,gold:state.character!.gold-fee.gold}};
   if(fee.dust)next=consumeAcross(next,'GEM_DUST',fee.dust);
@@ -101,7 +101,7 @@ export function replaceGem(state:GameState,itemId:string,gemId:string){
   if(currentId===gemId)throw new Error('That gem is already socketed here');
   if(kind==='effect')assertEffectGemEquipAllowedV1(state,itemId,gemId);
   if(combinedQuantity(state,gemId)<1)throw new Error('You do not own this gem');
-  const fee=gemUnsocketCostV1(currentId);
+  const fee=gemUnsocketCostForStateV1(state,currentId);
   if(state.character!.gold<fee.gold)throw new Error(`Need ${fee.gold} gold to replace this gem`);
   if(fee.dust&&combinedQuantity(state,'GEM_DUST')<fee.dust)throw new Error(`Need ${fee.dust} Gem Dust to replace this gem`);
   let next=consumeAcross(state,gemId,1);

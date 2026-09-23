@@ -36,7 +36,7 @@ type ServiceAccount={
 
 type CachedToken={value:string;expiresAt:number};
 let cachedAccessToken:CachedToken|undefined;
-let cachedJwks:{keys:JsonWebKey[];expiresAt:number}|undefined;
+let cachedJwks:{keys:Array<JsonWebKey&{kid?:string}>;expiresAt:number}|undefined;
 
 export class GooglePlayApiError extends Error{
   constructor(public readonly status:number,message:string){super(message)}
@@ -120,8 +120,8 @@ async function googleJson(url:string,init?:RequestInit){
   const token=await googleAccessToken();
   const response=await fetch(url,{...init,headers:{authorization:'Bearer '+token,'content-type':'application/json',...(init?.headers??{})}});
   if(!response.ok){
-    const text=await response.text();
-    throw new GooglePlayApiError(response.status,'Google Play Developer API error '+response.status+': '+text.slice(0,300));
+    await response.text();
+    throw new GooglePlayApiError(response.status,'Google Play Developer API returned '+response.status);
   }
   if(response.status===204)return null;
   const text=await response.text();
@@ -267,7 +267,7 @@ async function googleJwks(){
   if(cachedJwks&&cachedJwks.expiresAt>Date.now())return cachedJwks.keys;
   const response=await fetch('https://www.googleapis.com/oauth2/v3/certs');
   if(!response.ok)throw new Error('Could not load Google OIDC signing keys');
-  const body=await response.json() as {keys:JsonWebKey[]};
+  const body=await response.json() as {keys:Array<JsonWebKey&{kid?:string}>};
   cachedJwks={keys:body.keys??[],expiresAt:Date.now()+55*60_000};
   return cachedJwks.keys;
 }

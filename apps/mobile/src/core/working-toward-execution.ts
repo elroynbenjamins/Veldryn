@@ -75,6 +75,7 @@ export function workingTowardExecutionPlan(state:GameState,goal:ProgressionGoal)
  if(view.status==='complete'){executionState='unsupported';executionLabel='Goal complete';}
  else if(alreadyQueued){executionState='queued';executionLabel='Queued';}
  else if(queueActivity&&availability.status==='travel'){executionState='travel';executionLabel='Travel first';queueBlocker=availability.detail;}
+ else if(queueActivity&&!readiness?.ready&&readiness?.blocker?.startsWith('Travel to ')){executionState='travel';executionLabel='Travel first';queueBlocker=readiness.blocker;}
  else if(queueActivity&&(!readiness?.ready||availability.status==='locked')){executionState='blocked';executionLabel='Resolve blocker';queueBlocker=readiness?.blocker??availability.detail;}
  else if(queueActivity&&queueFull){executionState='full';executionLabel='Queue full';queueBlocker=`Action queue is full (${capacity}/${capacity}).`;}
  else if(queueActivity&&readiness?.ready){executionState='ready';executionLabel='Queue next action';}

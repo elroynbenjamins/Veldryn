@@ -48,6 +48,16 @@ const craftingProfessionBrowser=read('src/components/CraftingRecipeBrowser.tsx')
 ok(craftingProfessionBrowser.includes("'tailoring'|'enchanting'")&&craftingProfessionBrowser.includes('TAILORING BENCH')&&craftingProfessionBrowser.includes('ENCHANTING TABLE'),'Tailoring and Enchanting must use the shared recipe browser and distinct workshop identity');
 
 const skills=read('src/screens/SkillsScreen.tsx');
+const herbalismMethods=read('src/components/HerbalismMethodPanel.tsx');
+const gatheringList=read('src/components/GatheringActivityList.tsx');
+const enchantingRefinery=read('src/components/EnchantingRefineryPanel.tsx');
+const enhancementModal=read('src/components/EquipmentEnhancementModal.tsx');
+ok(skills.includes('HerbalismMethodPanel')&&skills.includes("initialSkill==='herbalism'"),'Herbalism detail must expose harvest-method selection without a tool ladder');
+ok(herbalismMethods.includes('Quick Harvest')&&herbalismMethods.includes('Careful Harvest')&&herbalismMethods.includes('Bountiful Harvest'),'Herbalism must visibly expose its three earned harvesting techniques');
+ok(gatheringList.includes('Wild Essence')&&gatheringList.includes('secondaryItemsPerHour'),'Herbalism node cards must show the rare secondary-find pace instead of hiding it');
+ok(enchantingRefinery.includes('availableGemResearchV1')&&enchantingRefinery.includes("type:'gem_research'"),'Enchanting refinery must expose deterministic Effect Gem research');
+ok(enchantingRefinery.includes('Catalyst synthesis unlocks')&&enhancementModal.includes('Enchanting saves'),'Enchanting UI must surface its late-game synthesis and extraction-expertise utility');
+
 ok(!skills.includes('Hunting-specific activities are not available yet'),'Hunting must not regress to a placeholder-only skill screen');
 ok(!skills.includes('this workshop has no trainable recipes available yet'),'Tailoring and Enchanting must not regress to placeholder-only skill screens');
 ok(skills.includes('Train Hunting through monster hunts')&&skills.includes('HUNTING_XP_SHARE')&&skills.includes('Hunting XP/hr'),'Hunting detail must explain its combat-linked progression and current-region pace');

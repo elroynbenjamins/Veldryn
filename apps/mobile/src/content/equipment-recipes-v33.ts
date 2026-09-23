@@ -54,11 +54,6 @@ const tailoringPathMaterial:Record<string,Record<string,string>>={
   T2:{Foundation:'WOLF_PELT',Specialist:'THORN_SAP',Alternate:'BOAR_HIDE'},
   T3:{Foundation:'TROLL_HIDE',Specialist:'THORN_SAP',Alternate:'WOLF_PELT'},
   T4:{Foundation:'TORN_OATHCLOTH',Specialist:'OATHGLASS_SHARD',Alternate:'ECHO_TOUCHED_PELT'},
-  T5:{Foundation:'SAFFRON_REED',Specialist:'MIRAGE_BLOOM',Alternate:'ROYAL_CHITIN'},
-  T6:{Foundation:'SAFFRON_REED',Specialist:'MIRAGE_BLOOM',Alternate:'ROYAL_CHITIN'},
-  T7:{Foundation:'WINTERMINT',Specialist:'RIME_RESIN',Alternate:'WYRMSCALE'},
-  T8:{Foundation:'WINTERMINT',Specialist:'RIME_RESIN',Alternate:'WYRMSCALE'},
-  T9:{Foundation:'WYRMSCALE',Specialist:'FROZEN_HEART',Alternate:'RIME_RESIN'},
 };
 
 function q(base:number,multiplier:number){return Math.max(1,Math.round(base*multiplier));}
@@ -75,11 +70,11 @@ function ingredients(tier:string,path:string,multiplier:number,skillId:'smithing
       case 'T2':return mergeInputs([{itemId:'WOLF_PELT',quantity:q(22,multiplier)},{itemId:accent??'BOAR_HIDE',quantity:q(9,multiplier)}]);
       case 'T3':return mergeInputs([{itemId:'TROLL_HIDE',quantity:q(18,multiplier)},{itemId:accent??'WOLF_PELT',quantity:q(10,multiplier)},{itemId:'THORN_SAP',quantity:q(5,multiplier)}]);
       case 'T4':return mergeInputs([{itemId:'TORN_OATHCLOTH',quantity:q(18,multiplier)},{itemId:'ECHO_TOUCHED_PELT',quantity:q(7,multiplier)},{itemId:accent??'OATHGLASS_SHARD',quantity:q(5,multiplier)}]);
-      case 'T5':return mergeInputs([{itemId:'SAFFRON_REED',quantity:q(22,multiplier)},{itemId:'AMBERGLASS',quantity:q(7,multiplier)},{itemId:accent??'MIRAGE_BLOOM',quantity:q(4,multiplier)}]);
-      case 'T6':return mergeInputs([{itemId:'SAFFRON_REED',quantity:q(28,multiplier)},{itemId:'AMBERGLASS',quantity:q(9,multiplier)},{itemId:'ASTRAL_SCRIPT',quantity:q(1,multiplier)},{itemId:accent??'MIRAGE_BLOOM',quantity:q(5,multiplier)}]);
-      case 'T7':return mergeInputs([{itemId:'WINTERMINT',quantity:q(28,multiplier)},{itemId:'RIMEGLASS',quantity:q(7,multiplier)},{itemId:accent??'RIME_RESIN',quantity:q(5,multiplier)}]);
-      case 'T8':return mergeInputs([{itemId:'WINTERMINT',quantity:q(34,multiplier)},{itemId:'RIMEGLASS',quantity:q(10,multiplier)},{itemId:'CHOIR_BLOOM',quantity:q(1,multiplier)},{itemId:accent??'RIME_RESIN',quantity:q(6,multiplier)}]);
-      case 'T9':return mergeInputs([{itemId:'WYRMSCALE',quantity:q(22,multiplier)},{itemId:'RIMEGLASS',quantity:q(14,multiplier)},{itemId:'CHOIR_BLOOM',quantity:q(2,multiplier)},{itemId:accent??'RIME_RESIN',quantity:q(7,multiplier)}]);
+      case 'T5':return [{itemId:'SUNSCALE',quantity:q(24,multiplier)},{itemId:'AMBERGLASS',quantity:q(8,multiplier)}];
+      case 'T6':return [{itemId:'SUNSCALE',quantity:q(30,multiplier)},{itemId:'AMBERGLASS',quantity:q(10,multiplier)},{itemId:'ASTRAL_SCRIPT',quantity:q(1,multiplier)}];
+      case 'T7':return [{itemId:'FROSTBLOOM',quantity:q(32,multiplier)},{itemId:'RIMEGLASS',quantity:q(8,multiplier)}];
+      case 'T8':return [{itemId:'FROSTBLOOM',quantity:q(36,multiplier)},{itemId:'RIMEGLASS',quantity:q(11,multiplier)},{itemId:'CHOIR_BLOOM',quantity:q(1,multiplier)}];
+      case 'T9':return [{itemId:'ASHEN_MYRRH',quantity:q(46,multiplier)},{itemId:'RIMEGLASS',quantity:q(16,multiplier)},{itemId:'CHOIR_BLOOM',quantity:q(3,multiplier)}];
       default:return [];
     }
   }

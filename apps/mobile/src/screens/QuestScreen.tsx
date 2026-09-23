@@ -124,6 +124,7 @@ export function QuestScreen({state,mode,onModeChange,focusedWeeklyOrderId,onClai
       </Panel>
     </>:null}
     {claimMoment&&<ClaimMomentCard moment={claimMoment} reduceMotion={state.settings.reduceMotion}/>}    {!!notice&&<ActionFeedback message={notice} reduceMotion={state.settings.reduceMotion}/>}{!!error&&<ActionFeedback message={error} tone="error" reduceMotion={state.settings.reduceMotion}/>}
+    {mode==='story'?<>
     {entries.length===0&&<View style={s.emptyBlock}><EmptyState title="No matching chapters" message={filter==='current'&&claimed===QUESTS.length?'You have completed this journal. View Completed to revisit it.':'Try another search or view all chapters.'} icon="quests"/><GameButton compact title="Show all chapters" tone="secondary" onPress={()=>{setQuery('');setFilter('all')}}/></View>}
     {entries.map(({def,quest,chapter,remaining,previous})=>{
       const destination=questDestination(def),presentation=questPresentationMeta(def,C),statusColor=quest.status==='complete'?C.good:quest.status==='claimed'?C.muted:undefined,statusSurface=quest.status==='complete'?C.goodSurface:quest.status==='claimed'?C.panel2:undefined;
@@ -138,6 +139,7 @@ export function QuestScreen({state,mode,onModeChange,focusedWeeklyOrderId,onClai
         {quest.status==='complete'&&<GameButton title="Claim chapter rewards" onPress={()=>claim(def.id)}/>}
       </Panel>;
     })}
+    </>:null}
   </ScrollView>;
 }
 function roman(act:QuestAct){return act===1?'I':act===2?'II':'III'}

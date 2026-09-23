@@ -20,6 +20,9 @@ const skillGoal:ProgressionGoal={id:'goal-skill',characterId,kind:'skill_level',
 const skillDestination=progressionGoalDestination(state,skillGoal);
 equal(skillDestination.kind,'skills','skill goal routes to Skills');
 if(skillDestination.kind==='skills'){equal(skillDestination.mode,'gathering','Mining routes to gathering mode');equal(skillDestination.skillId,'mining','Mining remains selected');}
+const skillExecution=workingTowardExecutionPlan(state,skillGoal);
+equal(skillExecution.executionState,'travel','generic gathering skill goal reports travel when its best usable node is in another region');
+ok(skillExecution.queueBlocker?.includes('Old Mines'),'skill execution travel state names the destination region');
 
 const huntGoal:ProgressionGoal={id:'goal-hunt',characterId,kind:'monster_kills',title:'Moss Rat kills',createdAtMs:0,pinnedAtMs:0,monsterId:'MOSS_RAT',targetKills:50};
 const huntDestination=progressionGoalDestination(state,huntGoal);

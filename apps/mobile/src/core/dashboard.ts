@@ -52,7 +52,7 @@ export function homeSessionSummary(state:GameState,nowMs=Date.now()):HomeSession
  const dailyReady=dailySuppliesHomeSummary(state,nowMs).canClaim;
  const eventRewards=eventReadyClaimCount(state,nowMs);
  const goalReady=workingTowardReadyCount(state),goalTotal=state.character?.progressionGoals?.length??0;
- const weekly=contractBoardSummary(state,nowMs),weeklyRewards=weekly.pendingRewards,forgeReady=equipmentCraftQueueModel(state,nowMs).ready,companionAttention=companionAttentionSummary(state,nowMs).total,newUnlocks=newlyUnlockedGameGuide(state).length,trackedPreparation=firstTrackedRecipePreparation(state),goalNext=trackedPreparation?.status==='complete'?undefined:trackedPreparation?.nextLabel;
+ const weekly=contractBoardSummary(state,nowMs),weeklyRewards=weekly.pendingRewards,forgeReady=equipmentCraftQueueModel(state,nowMs).ready,companionSummary=companionAttentionSummary(state,nowMs),companionAttention=companionSummary.expeditionClaims+companionSummary.bondRewards+companionSummary.ascensions+companionSummary.sanctuaryClaims+companionSummary.codexClaims+companionSummary.monthlyTrialClaims,newUnlocks=newlyUnlockedGameGuide(state).length,trackedPreparation=firstTrackedRecipePreparation(state),goalNext=trackedPreparation?.status==='complete'?undefined:trackedPreparation?.nextLabel;
  const readyTotal=storyRewards+(dailyReady?1:0)+eventRewards+goalReady+forgeReady+weeklyRewards+companionAttention;
  const primaryReady:HomeSessionReadyAction|undefined=forgeReady
   ?{kind:'forge',title:forgeReady===1?'Forge craft ready':forgeReady+' Forge crafts ready',detail:'Completed Forge jobs are waiting to be claimed and may be occupying ready capacity.',button:'Open Forge'}
@@ -65,7 +65,7 @@ export function homeSessionSummary(state:GameState,nowMs=Date.now()):HomeSession
      :eventRewards
       ?{kind:'events',title:eventRewards===1?'Event reward ready':eventRewards+' event rewards ready',detail:'Your active event has claimable rewards or gifts.',button:'Open Event'}
       :companionAttention
-       ?{kind:'companions',title:companionAttention===1?'Companion action ready':companionAttention+' Companion actions ready',detail:'Companion rewards, training or progression can be reviewed now.',button:'Open Companions'}
+       ?{kind:'companions',title:companionAttention===1?'Companion action ready':companionAttention+' Companion actions ready',detail:'Companion rewards, training, Ascension or Sanctuary progression can be handled now.',button:'Open Companions'}
        :goalReady
         ?{kind:'goals',title:goalReady===1?'Pinned goal complete':goalReady+' pinned goals complete',detail:'Review completed Working Toward goals and choose what to pursue next.',button:'Open Goals'}
         :undefined;

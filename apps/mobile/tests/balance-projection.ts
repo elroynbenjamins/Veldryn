@@ -6,7 +6,7 @@ import {setHerbalismHarvestMethod} from '../src/core/herbalism';
 import {weatherEffect} from '../src/core/world-weather';
 import {MONSTERS} from '../src/content/monsters';
 import {itemDef} from '../src/content/items';
-import {acquisitionEstimateLabel,acquisitionProjectionForDestination,activeActivityLevelPace,activityProgressFeedback,characterLevelPace,combatBaselineProjection,craftingPaceProjection,dropExpectation,dropPaceBand,formatBalanceDuration,gatheringBalanceProjection,skillTargetEta} from '../src/core/balance-projection';
+import {acquisitionEstimateLabel,acquisitionProjectionForDestination,activeActivityLevelPace,activeGatheringRuntimeProjection,activityProgressFeedback,characterLevelPace,combatBaselineProjection,craftingPaceProjection,dropExpectation,dropPaceBand,formatBalanceDuration,gatheringBalanceProjection,skillTargetEta} from '../src/core/balance-projection';
 import {activityCycleSeconds,activityRate} from '../src/core/dashboard';
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
 import {materialAcquisitionChainLabel,materialAcquisitionPlanForDestination,materialAcquisitionPlanSummary} from '../src/core/material-acquisition-plan';
@@ -54,6 +54,10 @@ bountifulState=setHerbalismHarvestMethod(bountifulState,'bountiful');
 const bountiful=gatheringBalanceProjection(bountifulState,dewleaf,24),balanced70=gatheringBalanceProjection({...bountifulState,character:{...bountifulState.character!,herbalismHarvestMethodId:'balanced'}},dewleaf,24);
 ok(bountiful.runtimeItemsPerHour>balanced70.runtimeItemsPerHour&&bountiful.xpPerHour<balanced70.xpPerHour,'Bountiful Harvest must trade XP pace for higher herb throughput');
 ok(itemDef('WILD_ESSENCE').type==='material','Wild Essence must be a real material output');
+let sessionState=startGathering(quickState,'DEWLEAF_PATCH',2000);
+sessionState=setHerbalismHarvestMethod(sessionState,'balanced');
+const activeHerbalism=activeGatheringRuntimeProjection(sessionState);
+ok(activeHerbalism?.harvestMethod?.id==='quick','An active Herbalism session must keep the method it started with even if the preferred method changes');
 for(const weather of ['rain','mist','storm','bloomwind','harvest_wind','snow','frost'] as const){const effect=weatherEffect('herbalism',weather);ok(effect.actionTimeMultiplier<=1||effect.itemMultiplier>=1||effect.dropChanceMultiplier>=1,'Herbalism weather should never be a pure penalty: '+weather);}
 
 state=startGathering(state,'GREENWOOD_TREE',1000);

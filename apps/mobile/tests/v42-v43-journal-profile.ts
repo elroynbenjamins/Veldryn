@@ -13,8 +13,8 @@ equal(journalCompletionPercent(journal,{metrics}),100,'Journal completion reache
 selectJournalTitle(journal,'c1','the_unbroken');equal(journal.selectedTitleByCharacter.c1,'the_unbroken','Title selection is per character');
 
 const profile=newProfileExtensionState('a',0);
-const ownership={characterIds:['c1'],skillIds:['mining'],backgroundIds:['bg'],borderIds:['border'],petIds:['pet'],companionIds:['comp'],unlockedAchievementIds:['combatant_grandmaster'],personalRecordIds:['highest_single_hit'],masteredProfessionActionIds:['GREENWOOD_TREE'],ownedCollectionRefs:[{kind:'item' as const,id:'OATHSTONE_HELM'}]};
-applyProfileExtensionEdit(profile,{visibility:'guild',selectedCharacterId:'c1',bio:'  Hello   Veldryn  ',favoriteSkillId:'mining',achievementShowcaseIds:['combatant_grandmaster'],recordShowcaseIds:['highest_single_hit'],collectionShowcase:[{kind:'item',id:'OATHSTONE_HELM'}],masteryShowcaseActionIds:['GREENWOOD_TREE']},ownership,10);
+const ownership={characterIds:['c1'],skillIds:['mining'],backgroundIds:['bg'],borderIds:['border'],petIds:['pet'],companionIds:['comp'],unlockedAchievementIds:['combatant_grandmaster'],personalRecordIds:['highest_single_hit'],masteredProfessionActionIds:['GREENWOOD_TREE'],ownedCollectionRefs:[{kind:'item' as const,id:'T1P_001'}]};
+applyProfileExtensionEdit(profile,{visibility:'guild',selectedCharacterId:'c1',bio:'  Hello   Veldryn  ',favoriteSkillId:'mining',achievementShowcaseIds:['combatant_grandmaster'],recordShowcaseIds:['highest_single_hit'],collectionShowcase:[{kind:'item',id:'T1P_001'}],masteryShowcaseActionIds:['GREENWOOD_TREE']},ownership,10);
 equal(profile.masteryShowcaseActionIds[0],'GREENWOOD_TREE','R50 profession mastery can be selected as a profile showcase');
 let masteryRejected=false;try{applyProfileExtensionEdit(newProfileExtensionState('b',0),{masteryShowcaseActionIds:['COPPER_VEIN']},ownership,11)}catch{masteryRejected=true}ok(masteryRejected,'Profile showcase rejects profession actions that are not R50-owned');
 ok(canViewExtendedProfile(profile,{viewerAccountId:'b',sameGuild:true}),'Guild-only profile visible to same guild');

@@ -109,7 +109,7 @@ const balanceProjection=read('src/core/balance-projection.ts');
 ok(balanceProjection.includes('professionMasteryMultipliers')&&balanceProjection.includes('mastery.speed')&&balanceProjection.includes('mastery.xp')&&balanceProjection.includes('mastery.yield'),'Shared gathering balance projection must apply action-specific mastery to speed, XP and yield');
 
 const craftingBrowser=read('src/components/CraftingRecipeBrowser.tsx');
-ok(craftingBrowser.includes('visibleRecipeCatalogForSkill(RECIPES,skillId,state.character?.classId)'),'Crafting lists must pass the active character class into the catalog filter');
+ok(craftingBrowser.includes("(!recipe.classId||recipe.classId===state.character?.classId)"),'Crafting lists must hide recipes restricted to other classes');
 ok(craftingBrowser.includes("label:'READY NOW'")&&craftingBrowser.includes("label:'NEEDS REQUIREMENTS'")&&craftingBrowser.includes("label:'LOCKED'"),'Crafting recipes must remain grouped by actionable state');
 ok(craftingBrowser.includes("filterToggle:{minHeight:44"),'Crafting filters must use a compact accessible dropdown control');
 ok(craftingBrowser.includes("skillId==='smithing'?{label:'EQUIPMENT FORGE'")&&craftingBrowser.includes("label:'KITCHEN'")&&craftingBrowser.includes("label:'ALCHEMY LAB'"),'Crafting skill screens must preserve distinct workshop identities');

@@ -2,10 +2,15 @@ import {createCharacter,newGame} from '../src/core/game';
 import {gearEnhancement,replaceGem,socketGem} from '../src/core/equipment-enhancement';
 import {startGemCombine,claimForgeJob,equipmentCraftQueueModel} from '../src/core/equipment-crafting-queue';
 import {availableGemCombinesV1,claimResonanceCacheV1,dismantleGemV1,gemCodexRowsV1,gemCombineRecipeIdV1,recommendedEffectFamiliesV1,resonanceCacheStatusV1,resonanceForFamilyV1} from '../src/core/gem-progression-v1';
+import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
+import {itemDef} from '../src/content/items';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
+const t1Ironwarden=V33_EQUIPMENT_RECIPES.filter(row=>row.classId==='IRONWARDEN'&&row.v33EquipmentTier==='T1');
+const gearFor=(slot:string)=>t1Ironwarden.find(row=>itemDef(row.output.itemId).slot===slot)!.output.itemId;
+const offhandId=gearFor('offhand'),ringId=gearFor('ring'),chestId=gearFor('chest');
 let state=createCharacter(newGame(1),'IRONWARDEN','Gem Tester','male');
-state={...state,character:{...state.character!,gold:250000,equipment:{...state.character!.equipment,weapon:'basic_sword',offhand:'START_KITE_SHIELD',ring:'STONEHEART_RING',chest:'STONEHEART_CHEST'},gearEnhancements:{}},inventory:{...state.inventory,capacity:80,stacks:[
+state={...state,character:{...state.character!,gold:250000,equipment:{...state.character!.equipment,weapon:'basic_sword',offhand:offhandId,ring:ringId,chest:chestId},gearEnhancements:{}},inventory:{...state.inventory,capacity:80,stacks:[
  ...state.inventory.stacks,
  {itemId:'gem:effect_bulwark:g1',quantity:4},
  {itemId:'gem:effect_retaliation:g1',quantity:1},
@@ -16,10 +21,10 @@ state={...state,character:{...state.character!,gold:250000,equipment:{...state.c
 ]}};
 
 state=socketGem(state,'basic_sword','gem:effect_bulwark:g1');
-state=socketGem(state,'START_KITE_SHIELD','gem:effect_bulwark:g1');
-state=socketGem(state,'STONEHEART_RING','gem:effect_bulwark:g1');
+state=socketGem(state,offhandId,'gem:effect_bulwark:g1');
+state=socketGem(state,ringId,'gem:effect_bulwark:g1');
 ok(resonanceForFamilyV1(state,'effect_bulwark').resonance===3,'Three matching Effect Gems should reach Resonance III');
-let capBlocked=false;try{socketGem(state,'STONEHEART_CHEST','gem:effect_bulwark:g1')}catch{capBlocked=true}
+let capBlocked=false;try{socketGem(state,chestId,'gem:effect_bulwark:g1')}catch{capBlocked=true}
 ok(capBlocked,'A fourth matching Effect Gem must be rejected across equipped gear');
 
 const oldBulwarkCount=state.inventory.stacks.filter(row=>row.itemId==='gem:effect_bulwark:g1').reduce((sum,row)=>sum+row.quantity,0);

@@ -3,6 +3,7 @@ import {executeGameCommand} from '../src/core/game-commands';
 import {processingAvailability,processingRecipeDef} from '../src/core/processing';
 import {recipeTrainingReady} from '../src/core/skill-progression-navigation';
 import {RECIPES} from '../src/content/skills';
+import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
 import {normalizeSave} from '../src/core/save-normalization';
 import type {GameState} from '../src/core/types';
 
@@ -14,10 +15,10 @@ const now=Date.UTC(2026,8,23);
 const fresh=(ore=100)=>{let state=createCharacter(newGame(now),'IRONWARDEN','Processor');state={...state,character:{...state.character!,gold:10000},inventory:{...state.inventory,stacks:[{itemId:'COPPER_ORE',quantity:ore}]}};return state;};
 const qty=(state:GameState,id:string)=>(state.inventory.stacks.find(row=>row.itemId===id)?.quantity??0)+(state.bank.stacks.find(row=>row.itemId===id)?.quantity??0)+(state.overflow.stacks.find(row=>row.itemId===id)?.quantity??0);
 
+const v33GearRecipe=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T1')!;
 ok(processingRecipeDef('SMELT_COPPER_INGOT'),'repeatable material processing is timed');
 ok(processingRecipeDef('COOK_SILVERFIN'),'repeatable cooking is timed');
-ok(!processingRecipeDef('TAILOR_MOSSWRAP_GLOVES'),'repeatable gear crafting stays an immediate single craft');
-ok(!processingRecipeDef('ENCHANT_WISP_CHARM'),'Enchanting gear stays an immediate single craft');
+ok(!processingRecipeDef(v33GearRecipe.id),'Equipment 2.0 gear uses the Forge instead of stackable processing');
 
 let state=fresh();
 const availability=processingAvailability(state,'SMELT_COPPER_INGOT',5);
@@ -65,6 +66,6 @@ equal(normalized.activity?.processing?.remainingBatches,5,'save normalization pr
 
 throws(()=>executeGameCommand(fresh(),{type:'craft',args:{id:'SMELT_COPPER_INGOT'}},now),'public instant-craft command cannot bypass timed processing');
 throws(()=>executeGameCommand(fresh(2000),{type:'processing_start',args:{id:'SMELT_COPPER_INGOT',batches:101}},now),'processing batch size is server-authoritatively capped');
-throws(()=>executeGameCommand(fresh(),{type:'processing_start',args:{id:'TAILOR_MOSSWRAP_GLOVES',batches:1}},now),'gear recipes cannot enter the stackable processing activity');
+throws(()=>executeGameCommand(fresh(),{type:'processing_start',args:{id:v33GearRecipe.id,batches:1}},now),'Equipment 2.0 gear recipes cannot enter the stackable processing activity');
 
 console.log('PASS: reserved timed processing, offline progress, refunds and command authority');

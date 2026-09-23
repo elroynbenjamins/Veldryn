@@ -25,13 +25,7 @@ const sellIntent=inventoryFeedbackIntent(withdrawn,{kind:'sell',itemId:'COPPER_O
 const sold={...withdrawn,inventory:{...withdrawn.inventory,stacks:withdrawn.inventory.stacks.map(row=>row.itemId==='COPPER_ORE'?{...row,quantity:6}:row)},character:{...withdrawn.character!,gold:withdrawn.character!.gold+copperValue+17}};
 ok(resolveInventoryActionFeedback(sellIntent,sold)?.message.includes('+'+copperValue+' Gold'),'sale feedback must report sale value without folding in unrelated activity settlement');
 
-const salvageItem=ITEMS.find(item=>item.type==='gear'&&item.salvage);if(!salvageItem?.salvage)throw new Error('salvageable gear fixture missing');
-const salvageBase={...sold,inventory:{...sold.inventory,stacks:[...sold.inventory.stacks,{itemId:salvageItem.id,quantity:1}]},bank:{...sold.bank,stacks:sold.bank.stacks.filter(row=>row.itemId!==salvageItem.salvage!.itemId)}};
-const salvageIntent=inventoryFeedbackIntent(salvageBase,{kind:'salvage',itemId:salvageItem.id,quantity:1});
-const salvaged={...salvageBase,inventory:{...salvageBase.inventory,stacks:[...salvageBase.inventory.stacks.filter(row=>row.itemId!==salvageItem.id),{itemId:salvageItem.salvage.itemId,quantity:salvageItem.salvage.quantity}]}};
-const salvageFeedback=resolveInventoryActionFeedback(salvageIntent,salvaged);
-ok(salvageFeedback?.message.includes('Salvaged'),'salvage feedback must wait for and report the committed destruction');
-ok(salvageFeedback?.message.includes(salvageItem.salvage.quantity+' '+ITEMS.find(item=>item.id===salvageItem.salvage!.itemId)!.name),'salvage feedback must show the recovered material');
+ok(!ITEMS.some(item=>item.type==='gear'&&item.salvage),'Active Equipment 2.0 catalog should not depend on retired legacy salvage definitions');
 
 const bulkIntent=inventoryFeedbackIntent(state,{kind:'bulk_transfer',direction:'deposit',stacks:1,units:5});
 ok(resolveInventoryActionFeedback(bulkIntent,deposited)?.message.includes('Bulk deposit complete'),'bulk transfers must receive compact committed feedback');

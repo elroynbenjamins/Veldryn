@@ -9,6 +9,7 @@ import {itemDef} from '../src/content/items';
 import {simulateFallenKnightStoryBattle} from '../src/core/story-boss';
 import {challengeFallenKnight} from '../src/core/game';
 import {regionalEnemySecondaryStats,regionalSecondaryExchange} from '../src/core/regional-enemy-stats';
+import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
 const state=createCharacter(newGame(0),'BASTION','Tester');
 const monster=MONSTERS[0],start=combatPresentation(state,monster,0,monster.secondsPerKill),late=combatPresentation(state,monster,6,monster.secondsPerKill);
 if(start.enemyHp!==monster.hp||late.enemyHp>=start.enemyHp)throw new Error('Enemy health cycle must visibly fall');
@@ -31,7 +32,8 @@ const baselinePlayer={accuracy:.84,evasion:.04,critChance:.05,critMultiplier:1.5
 const stalkerExchange=regionalSecondaryExchange(baselinePlayer,stalker),bulwarkExchange=regionalSecondaryExchange(baselinePlayer,bulwark),bruteExchange=regionalSecondaryExchange(baselinePlayer,brute);
 if(!(stalkerExchange.playerOutputMultiplier<bulwarkExchange.playerOutputMultiplier))throw new Error('Enemy evasion must reduce expected idle-hunt output');
 if(!(bruteExchange.enemyCritExpected>bulwarkExchange.enemyCritExpected))throw new Error('Brute crit profile must create higher expected crit pressure');
-if(itemRarity(itemDef('MOSS_FIBER'))!=='common'||itemRarity(itemDef('OATHGLASS_CAPE'))!=='epic')throw new Error('Rarity classification failed');
+const epicGearId=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T5')!.output.itemId;
+if(itemRarity(itemDef('MOSS_FIBER'))!=='common'||itemRarity(itemDef(epicGearId))!=='epic')throw new Error('Rarity classification failed');
 const strongBoss=simulateFallenKnightStoryBattle({name:'Prepared',classId:'WAYFINDER',maxHp:900,currentHp:900,attack:95,defense:95,power:760,accuracy:.96,evasion:.18,critChance:.28,critMultiplier:1.75,haste:.20,damageMultiplier:1.25,actionSpeedMultiplier:1.2,incomingDamageMultiplier:.72,foodHeal:120,foodQuantity:8,autoEatThresholdPct:45},'strong-boss');
 if(!strongBoss.won||!strongBoss.phasesReached.includes(2)||!strongBoss.phasesReached.includes(3))throw new Error('Prepared story boss build must visibly reach both phases and win');
 if(!strongBoss.events.some(event=>event.type==='telegraph')||!strongBoss.events.some(event=>event.type==='player_hit'&&event.amount&&event.amount>0))throw new Error('Story boss battle must emit telegraphs and damage events for playback');

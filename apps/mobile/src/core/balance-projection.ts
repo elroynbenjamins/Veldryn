@@ -11,7 +11,7 @@ import {characterPermanentMultipliers} from './permanent-boosts';
 import {professionMasteryMultipliers,professionMasteryRankProgress} from './profession-mastery-v40';
 import {professionMasteryActiveBonusText} from './profession-mastery-presentation';
 import {characterProgressWithinLevel,characterTotalXpAtLevel,progressWithinLevel,totalXpAtLevel} from './progression';
-import {dungeonMaterialSourceById} from '../content/dungeon-material-sources';
+import {dungeonMaterialSourcesForItem} from '../content/dungeon-material-sources';
 import type {WorkingTowardDestination} from './working-toward';
 
 export interface LevelPaceProjection{
@@ -167,8 +167,8 @@ export function acquisitionProjectionForDestination(state:GameState,itemId:strin
     return rate>0?{sourceKind:'combat',sourceId:monster.id,quantityPerHour:rate,etaSeconds:needed/rate*3600,basis:'base',chance:expectation.chance,oneIn:expectation.oneIn}:undefined;
   }
   if(destination.kind==='dungeon'&&destination.dungeonId){
-    const source=dungeonMaterialSourceById(destination.dungeonId);
-    if(!source||source.itemId!==itemId||source.expectedMinutes<=0||source.chance<=0)return undefined;
+    const source=dungeonMaterialSourcesForItem(itemId).find(row=>row.dungeonId===destination.dungeonId);
+    if(!source||source.expectedMinutes<=0||source.chance<=0)return undefined;
     const clearsPerHour=60/source.expectedMinutes,rate=clearsPerHour*source.chance;
     return {sourceKind:'dungeon',sourceId:source.dungeonId,quantityPerHour:rate,etaSeconds:needed/rate*3600,basis:'average',chance:source.chance,oneIn:1/source.chance};
   }

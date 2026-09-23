@@ -211,6 +211,7 @@ const dungeonDeepLinkApp=read('App.tsx');
 const dungeonDeepLinkScreen=read('src/screens/CoopExpeditionScreen.tsx');
 ok(dungeonDeepLinkApp.includes("setGoalDungeonId(destination.dungeonId)")&&dungeonDeepLinkApp.includes('initialDungeonId={goalDungeonId}'),'Dungeon progression sources must retain the exact authored dungeon id through app navigation');
 ok(dungeonDeepLinkScreen.includes('dungeons.find(item=>item.id===initialDungeonId)')&&dungeonDeepLinkScreen.includes('setSelected(dungeon)'),'Dungeon screen must open the exact dungeon supplied by a material/progression deep link');
+ok(dungeonDeepLinkScreen.includes('That dungeon source is not currently available in the dungeon catalog.'),'Invalid or stale dungeon deep links must fail visibly instead of silently dropping the player on a generic list');
 
 const world=read('src/screens/WorldScreen.tsx');
 ok(world.includes('currentCard:{minHeight:150'),'World current-region card must remain compact');

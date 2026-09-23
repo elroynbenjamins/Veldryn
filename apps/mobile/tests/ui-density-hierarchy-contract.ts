@@ -168,6 +168,10 @@ ok(dashboard.includes('firstTrackedRecipePreparation')&&dashboard.includes('goal
 
 const appMastery=read('App.tsx');
 ok(appMastery.includes('masteryRankProgressionMoments')&&appMastery.includes('<ActionFeedback message={masteryRankNoticeMessage(masteryNotices)}'),'Non-reward mastery rank-ups must use lightweight in-app feedback');
+ok(appMastery.includes('recipePreparationTransitionNotices')&&appMastery.includes('queuePreparationNotices(before,result.state)'),'Tracked preparation feedback must be derived at the central online state transition instead of per-feature callbacks');
+ok(appMastery.includes('queuePreparationNotices(current,next)')&&appMastery.includes('queuePreparationNotices(current,settled.state)'),'Local commits and return-from-background settlement must also advance tracked preparation feedback');
+ok(appMastery.includes('preparationNotices[0].message')&&appMastery.includes('preparationNotices[0].tone'),'Tracked preparation transitions must render through the shared ActionFeedback surface');
+ok(appMastery.includes('preparationNotices.length||collected||forgeResults'),'Mastery feedback must wait behind preparation feedback and higher-priority reward/reveal surfaces');
 ok(appMastery.includes("forgeResults?.some(row=>row.qualityProc)"),'Mastery feedback must defer only behind a real exceptional Forge reveal');
 
 const snapshot=read('src/components/SkillDashboard.tsx');

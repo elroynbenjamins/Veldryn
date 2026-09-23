@@ -23,7 +23,7 @@ export function PublicProfileScene({profile,height=205,reduceMotion=false}:{prof
   <View style={s.shade}/>
   <View style={s.identityPlate}>
    <Text style={s.eyebrow}>PLAYER SHOWCASE</Text>
-   <GuildTaggedPlayerName name={profile.character.name||profile.displayName} guildTag={profile.guildTag} tagColorId={profile.guildTagColorId} nameStyle={profile.nameStyle} reduceMotion={reduceMotion} style={s.name}/>
+   <GuildTaggedPlayerName name={profile.character.name||profile.displayName} guildTag={profile.guildTag} tagColorId={profile.guildTagColorId} nameStyle={profile.nameStyle??undefined} reduceMotion={reduceMotion} style={s.name}/>
    <Text numberOfLines={1} style={s.title}>“{profile.title}”</Text>
    <Text style={s.meta}>Lv. {profile.character.level} · {classId.replace(/_/g,' ')}</Text>
   </View>

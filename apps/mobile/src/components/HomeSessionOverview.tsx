@@ -17,15 +17,16 @@ export function HomeSessionOverview({state,nowMs,onQuests,onDaily,onEvents,onGoa
  if(summary.forgeReady)parts.push(summary.forgeReady+' forge');
  if(summary.weeklyRewards)parts.push(summary.weeklyRewards+' contract');
  if(summary.companionAttention)parts.push(summary.companionAttention+' companion');
+ const visibleParts=parts.slice(0,4),hiddenPartCount=Math.max(0,parts.length-visibleParts.length),readyDisplay=summary.readyTotal>99?'99+':String(summary.readyTotal);
  return <View style={[s.root,summary.readyTotal>0&&s.readyRoot]}>
-  <View style={s.head}><View style={s.flex}><Text style={s.kicker}>SESSION OVERVIEW</Text><Text style={s.title}>{summary.primaryReady?.title??'No immediate claims'}</Text><Text style={s.meta}>{summary.primaryReady?.detail??(summary.goalNext?'Tracked preparation · '+summary.goalNext:'Your next progression step is shown above. Use this row to jump into planning and weekly progress.')}</Text></View>{summary.readyTotal>0?<Text style={s.readyBadge}>{summary.readyTotal} READY</Text>:<Text style={s.clearBadge}>CLEAR</Text>}</View>
+  <View style={s.head}><View style={s.flex}><Text style={s.kicker}>SESSION OVERVIEW</Text><Text style={s.title}>{summary.primaryReady?.title??'No immediate claims'}</Text><Text style={s.meta}>{summary.primaryReady?.detail??(summary.goalNext?'Tracked preparation · '+summary.goalNext:'Your next progression step is shown above. Use this row to jump into planning and weekly progress.')}</Text></View>{summary.readyTotal>0?<Text style={s.readyBadge}>{readyDisplay} READY</Text>:<Text style={s.clearBadge}>CLEAR</Text>}</View>
   <View style={s.cells}>
-   <SessionCell label="READY" value={String(summary.readyTotal)} tone={summary.readyTotal?'good':'muted'} emphasized={summary.readyTotal>0} stack={stackCells} onPress={summary.primaryReady?()=>openReady(summary.primaryReady!.kind):undefined}/>
+   <SessionCell label="READY" value={readyDisplay} tone={summary.readyTotal?'good':'muted'} emphasized={summary.readyTotal>0} stack={stackCells} onPress={summary.primaryReady?()=>openReady(summary.primaryReady!.kind):undefined}/>
    <SessionCell label="GOALS" value={summary.goalReady+'/'+summary.goalTotal} tone={summary.goalReady?'good':'info'} emphasized={summary.goalReady>0} stack={stackCells} onPress={onGoals}/>
    <SessionCell label="WEEKLY" value={summary.weeklyRewards?summary.weeklyRewards+' ready':summary.weeklyComplete+'/'+summary.weeklyTotal} tone={summary.weeklyRewards?'good':summary.weeklyTotal&&summary.weeklyComplete===summary.weeklyTotal?'good':'accent'} emphasized={summary.weeklyRewards>0||summary.weeklyTotal>0} stack={stackCells} onPress={onWeekly}/>
    <SessionCell label="NEW" value={String(summary.newUnlocks)} tone={summary.newUnlocks?'special':'muted'} emphasized={summary.newUnlocks>0} stack={stackCells} onPress={onNew}/>
   </View>
-  {parts.length?<Text style={s.breakdown}>Ready now · {parts.join(' · ')}</Text>:null}
+  {visibleParts.length?<Text style={s.breakdown}>Ready now · {visibleParts.join(' · ')}{hiddenPartCount?' · +'+hiddenPartCount+' more':''}</Text>:null}
   {summary.primaryReady?<GameButton compact title={summary.primaryReady.button} onPress={()=>openReady(summary.primaryReady!.kind)}/>:null}
  </View>;
 }

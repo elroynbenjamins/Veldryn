@@ -8,6 +8,10 @@ const setPanel=read('src/components/EquipmentSetProgressPanel.tsx');
 const decision=read('src/core/equipment-decision.ts');
 
 ok(character.includes('equipmentDecisionModel'),'Character equipment detail must use the shared decision model');
+ok(character.includes('equipmentFocusModel'),'Character screen must derive its next action from the shared loadout focus model');
+ok(character.includes('LOADOUT FOCUS'),'Character screen must expose one compact contextual equipment priority');
+ok(character.includes('focus.upgradesReady')&&character.includes('focus.openSockets'),'Loadout focus must summarize ready upgrades and open sockets without requiring the player to inspect every slot');
+ok(character.includes('focus.next.button'),'Loadout focus must expose an actionable CTA rather than passive status only');
 ok(character.includes('rarityNameColor'),'Selected equipped item names must follow rarity color');
 ok(character.includes('selectedDecision.set.equippedPieces'),'Selected set gear must show equipped set-piece context');
 ok(character.includes('equipmentUpgradeSummary(selectedDecision)'),'Selected gear must expose next enhancement readiness');

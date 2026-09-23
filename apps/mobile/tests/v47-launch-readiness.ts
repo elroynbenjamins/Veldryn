@@ -4,8 +4,8 @@ function equal(actual:unknown,expected:unknown,message:string){if(actual!==expec
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 let state=createCharacter(newGame(0),'IRONWARDEN','Tester','male');
 equal(BASE_OFFLINE_CAP_HOURS,8,'Offline Reserve base');
-equal(FREE_OFFLINE_CAP_HOURS,18,'Offline Reserve progression ceiling');
-equal(MAX_OFFLINE_CAP_HOURS,24,'Offline Reserve maximum');
+equal(FREE_OFFLINE_CAP_HOURS,24,'Offline Reserve progression ceiling');
+equal(MAX_OFFLINE_CAP_HOURS,30,'Offline Reserve maximum');
 const report=launchReadinessReport(state);
 if(!report.ok)throw new Error('Launch binding blockers: '+report.issues.filter(row=>row.severity==='blocker').map(row=>`${row.code}:${row.message}`).join(' | '));
 equal(report.counts.classes,9,'Current class count');

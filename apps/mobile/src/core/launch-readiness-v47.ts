@@ -69,7 +69,7 @@ export function launchReadinessReport(state?:GameState):LaunchReadinessReport{
  const issues:LaunchReadinessIssue[]=[];
  if(CLASSES.length!==9)issue(issues,'blocker','CLASS_COUNT',`Expected 9 launch classes, found ${CLASSES.length}.`);
  if(new Set(CLASSES.map(row=>row.id)).size!==CLASSES.length)issue(issues,'blocker','DUPLICATE_CLASS','Class IDs must be unique.');
- if(BASE_OFFLINE_CAP_HOURS!==8||FREE_OFFLINE_CAP_HOURS!==18||MAX_OFFLINE_CAP_HOURS!==24)issue(issues,'blocker','OFFLINE_CAP','Offline Reserve must remain 8h base / 18h progression / 24h max.');
+ if(BASE_OFFLINE_CAP_HOURS!==8||FREE_OFFLINE_CAP_HOURS!==24||MAX_OFFLINE_CAP_HOURS!==30)issue(issues,'blocker','OFFLINE_CAP','Offline Reserve must remain 8h base / 24h progression / 30h max.');
  if(skillIds.has('trading'))issue(issues,'blocker','TRADING_SKILL','Trading must not be a runtime skill.');
  for(const monster of MONSTERS){
   if(!WORLD_ZONES.some(zone=>zone.name===monster.zone))issue(issues,'blocker','MONSTER_ZONE',`${monster.name} references unknown zone ${monster.zone}.`,monster.id);

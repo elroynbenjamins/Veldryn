@@ -27,10 +27,7 @@ export const GATHERING:GatherDef[]=([
 });
 
 export interface Recipe{id:string;name:string;skillId:'smithing'|'cooking'|'alchemy'|'tailoring'|'enchanting';level:number;xp:number;gold:number;seconds:number;repeatableTraining?:boolean;inputs:{itemId:string;quantity:number}[];output:{itemId:string;quantity:number};classId?:ClassId;noviceSetId?:string;characterLevel?:number;requiresCraftedItemId?:string;v33EquipmentTier?:string;v33Region?:string;v33SetId?:string;v33Path?:string;}
-export const RECIPES:Recipe[]=([
-// Tailoring and Enchanting deliberately reuse existing Asterfall drops and gear.
-// This gives both professions real training loops without introducing new asset or rare-material economies.
-
+export const RECIPES:Recipe[]=[
 ...ALCHEMY_RECIPES as Recipe[],
 ...NOVICE_RECIPES,
 ...(V33_EQUIPMENT_RECIPES as Recipe[]),
@@ -45,4 +42,4 @@ export const RECIPES:Recipe[]=([
 {id:'COOK_RIVER_EEL',name:'Sear River Eel Batch',skillId:'cooking',level:8,xp:180,gold:80,seconds:44,repeatableTraining:true,inputs:[{itemId:'RIVER_EEL',quantity:4}],output:{itemId:'SEARED_RIVER_EEL',quantity:4}},
 {id:'COOK_OATHSCALE',name:'Roast Oathscale Batch',skillId:'cooking',level:16,xp:260,gold:130,seconds:54,repeatableTraining:true,inputs:[{itemId:'OATHSCALE_PIKE',quantity:3}],output:{itemId:'ROASTED_OATHSCALE',quantity:3}},
 {id:'COOK_IRONWOOD_STEW',name:'Ironwood Hunter Stew',skillId:'cooking',level:15,xp:105,gold:140,seconds:66,inputs:[{itemId:'RIVER_EEL',quantity:2},{itemId:'THORN_SAP',quantity:1}],output:{itemId:'IRONWOOD_STEW',quantity:1}},
-] as Recipe[];
+];

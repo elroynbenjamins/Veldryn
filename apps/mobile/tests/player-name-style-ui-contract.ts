@@ -18,7 +18,12 @@ ok(tagged.includes('PlayerNameText')&&tagged.includes('nameStyle')&&tagged.inclu
 for(const path of ['src/components/OnlineWorldChat.tsx','src/components/OnlinePartyChat.tsx','src/components/GuildChat.tsx']){
  const source=read(path);
  ok(source.includes('nameStyle=')&&source.includes('reduceMotion={reduceMotion}'),path+' must pass remote name styles through the shared renderer');
+ ok(source.includes('ChatPlayerSheet')&&source.includes('reduceMotion={reduceMotion}'),path+' must preserve Reduced Motion when opening the player sheet');
 }
+
+const playerSheet=read('src/components/ChatPlayerSheet.tsx');
+ok(playerSheet.includes('name_style?:PlayerNameStyleSelection')&&playerSheet.includes('nameStyle={message.name_style}'),'Player sheet must carry the selected social identity name style');
+ok(playerSheet.includes('PublicProfileScene profile={profile} reduceMotion={reduceMotion}'),'Player sheet profile scene must preserve Reduced Motion');
 
 const overlay=read('src/components/ChatOverlay.tsx');
 ok((overlay.match(/reduceMotion=\{state\.settings\.reduceMotion\}/g)??[]).length>=3,'Chat overlay must pass Reduced Motion to world, party and guild name rendering');

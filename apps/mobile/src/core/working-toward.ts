@@ -20,10 +20,6 @@ const gatherDefs=[...GATHERING,...HERB_NODES];
 const skillLabel=(id:string)=>id.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
 const regionForZoneName=(name:string)=>WORLD_ZONES.find(zone=>zone.name===name);
 const skillLevel=(state:GameState,id:string)=>state.skills.find(row=>row.skillId===id)?.level??1;
-const regionalMaterialRegion:Record<string,string>={
- SAFFRON_REED:'SUNSCAR',MIRAGE_BLOOM:'SUNSCAR',ROYAL_CHITIN:'SUNSCAR',
- WINTERMINT:'FROSTMARCH',RIME_RESIN:'FROSTMARCH',WYRMSCALE:'FROSTMARCH',FROZEN_HEART:'FROSTMARCH',
-};
 
 function quantities(state:GameState){
  const out:Record<string,number>={};
@@ -82,8 +78,6 @@ export function workingTowardItemSource(state:GameState,itemId:string):WorkingTo
  const drops=MONSTERS.filter(monster=>monster.drops.some(drop=>drop.itemId===itemId)).sort((a,b)=>(state.unlockedMonsterIds.includes(b.id)?1:0)-(state.unlockedMonsterIds.includes(a.id)?1:0)||a.unlockLevel-b.unlockLevel);
  const monster=drops[0];
  if(monster){const region=regionForZoneName(monster.zone);return {kind:'combat',monsterId:monster.id,zoneName:monster.zone,regionId:region?.id,button:`Hunt ${monster.name}`,detail:`${monster.name} in ${monster.zone} drops this item.`};}
- const regionalId=regionalMaterialRegion[itemId];
- if(regionalId){const region=WORLD_ZONES.find(row=>row.id===regionalId);return {kind:'world',regionId:regionalId,button:`Open ${region?.name??regionalId}`,detail:`${itemId.replace(/_/g,' ').replace(/\b\w/g,char=>char.toUpperCase())} is a regional material sourced from ${region?.name??regionalId} content.`};}
  return {kind:'inventory',button:'Open Inventory',detail:'No direct activity source is currently registered; review your stored materials.'};
 }
 

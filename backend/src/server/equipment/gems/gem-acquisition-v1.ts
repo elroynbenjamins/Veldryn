@@ -1,6 +1,6 @@
 import type {Drop} from '../../items/loot';
 import {CombatRng} from '../../combat/deterministic-rng';
-import {gemItemId,type GemGrade} from './gem-catalog-v1';
+import {rawGemItemId,type GemGrade} from './gem-catalog-v1';
 
 export type GemSourceKind='enemy'|'elite'|'regional_boss'|'dungeon_boss'|'contract'|'party_contract'|'live_coop_weekly'|'crafting';
 export interface GemSourcePoolV1{id:string;kind:GemSourceKind;regionId?:string;families:readonly string[];grade:GemGrade;chance:number;pityAt?:number;recipeChance?:number;catalystChance?:number;}
@@ -31,7 +31,7 @@ export function gemPoolForSourceV1(sourceId:string):GemSourcePoolV1|undefined{re
 export function buildGemDropsForSourceV1(sourceId:string):Drop[]{
  const p=gemPoolForSourceV1(sourceId);if(!p)return[];const perFamily=p.chance/p.families.length;
  // Preview rows only. Production pity is source-level so a pity hit awards exactly one family.
- return p.families.map(f=>({itemId:gemItemId(f,p.grade),chance:perFamily,min:1,max:1}));
+ return p.families.map(f=>({itemId:rawGemItemId(f,p.grade),chance:perFamily,min:1,max:1}));
 }
 
 export interface GemAcquisitionProgressV1{pityBySource:Readonly<Record<string,number>>;unlockedRecipeIds:readonly string[];}
@@ -59,6 +59,6 @@ export function settleGemSourceV1(sourceId:string,seed:string,progress:GemAcquis
   if(progress.unlockedRecipeIds.includes(recipeId))duplicateRecipeDust=GEM_RECIPE_DUPLICATE_CONVERSION_DUST_V1;else recipeUnlockedId=recipeId;
  }
  const regionalCatalysts=pool.catalystChance&&rng.next('gem:'+sourceId+':catalyst')<pool.catalystChance?1:0;
- return {sourceId,gem:familyId?{familyId,grade:pool.grade,itemId:gemItemId(familyId,pool.grade),pityTriggered}:undefined,pityBySource,recipeUnlockedId,duplicateRecipeDust,regionalCatalysts};
+ return {sourceId,gem:familyId?{familyId,grade:pool.grade,itemId:rawGemItemId(familyId,pool.grade),pityTriggered}:undefined,pityBySource,recipeUnlockedId,duplicateRecipeDust,regionalCatalysts};
 }
 export function validateGemAcquisitionV1():string[]{const errors:string[]=[];for(const p of GEM_SOURCE_POOLS_V1){if(!p.families.length)errors.push(`${p.id}:empty`);if(p.chance<0||p.chance>1)errors.push(`${p.id}:chance`);}return errors;}

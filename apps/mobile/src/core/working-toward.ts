@@ -105,7 +105,7 @@ export function workingTowardItemSourceEntries(state:GameState,itemId:string):Wo
   candidates.push({type:'monster_drop',typeLabel:'Monster Drop',title:monster.name,destination,availability:workingTowardDestinationAvailability(state,destination),typePriority:2,progressionLevel:monster.unlockLevel});
  }
  for(const dungeon of dungeonMaterialSourcesForItem(itemId)){
-  const chance=Math.round(dungeon.chance*100),destination:WorkingTowardDestination={kind:'dungeon',dungeonId:dungeon.dungeonId,button:`Open ${dungeon.dungeonName}`,detail:`${dungeon.dungeonName} · ${chance}% Regional Catalyst reward chance from the dungeon boss gem pool.`};
+  const chance=Math.round(dungeon.chance*100),destination:WorkingTowardDestination={kind:'dungeon',dungeonId:dungeon.dungeonId,button:`Open ${dungeon.dungeonName}`,detail:`${dungeon.dungeonName} · ${chance}% boss reward chance.`};
   candidates.push({type:'dungeon',typeLabel:'Dungeon',title:dungeon.dungeonName,destination,availability:workingTowardDestinationAvailability(state,destination),typePriority:3,progressionLevel:dungeon.minLevel});
  }
  return candidates.sort((a,b)=>sourceStatusPriority[a.availability.status]-sourceStatusPriority[b.availability.status]||a.typePriority-b.typePriority||a.progressionLevel-b.progressionLevel||a.destination.button.localeCompare(b.destination.button)).map(({typePriority,...row})=>row);

@@ -265,6 +265,8 @@ const primaryNavigation=read('src/components/PrimaryNavigation.tsx');
 const appShell=read('App.tsx');
 const packageJson=read('package.json');
 ok(primaryNavigation.includes('useSafeAreaInsets'),'Bottom navigation must use real safe-area metrics');
+ok(primaryNavigation.includes('active?:T'),'Bottom navigation must support a neutral selection state for the session Home dashboard');
+ok(appShell.includes("tab==='Home'?undefined"),'Home must not falsely select Account or another persistent bottom destination');
 ok(primaryNavigation.includes("Platform.OS==='android'?Math.max(bottom,8):4"),'Android bottom navigation must apply the native bottom inset without reducing touch safety');
 ok(!primaryNavigation.includes("Dimensions.get('screen')")&&!primaryNavigation.includes('StatusBar.currentHeight'),'Bottom navigation must not regress to screen-height/status-bar heuristics');
 ok(appShell.includes('<SafeAreaProvider>'),'App root must provide safe-area metrics');

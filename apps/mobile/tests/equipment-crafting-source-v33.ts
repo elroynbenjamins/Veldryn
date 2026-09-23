@@ -38,6 +38,10 @@ const bySlot=(slot:string)=>oathbound.find(row=>itemDef(row.output.itemId).slot=
 ok(bySlot('ring').gold<bySlot('chest').gold&&bySlot('chest').gold<bySlot('weapon').gold,'Slot cost multipliers should keep Ring < Chest < Weapon');
 ok(bySlot('ring').seconds<bySlot('chest').seconds&&bySlot('chest').seconds<=bySlot('weapon').seconds,'Slot timers should preserve meaningful size differences');
 
+const legacyTailoringIds=['CRAFT_QUICKPRAYER_CHEST','CRAFT_TRACKER_CHEST','CRAFT_SPELLGLASS_CHEST','CRAFT_NIGHTFANG_CHEST','CRAFT_STORMCARVED_CHEST'];
+for(const id of legacyTailoringIds)ok(RECIPES.find(row=>row.id===id)?.skillId==='tailoring',id+' must use Tailoring for its leather/cloth/caster class identity');
+ok(RECIPES.find(row=>row.id==='CRAFT_BLOODRUSH_CHEST')?.skillId==='smithing','Ravager heavy gear must remain Smithing');
+
 const t1=v33EquipmentRecipeForItem('T1P_001')!;
 ok(t1.inputs.some(row=>row.itemId==='GREENWOOD_LOG'),'T1 must use early Asterfall gathering rather than late Oathstone');
 ok(!t1.inputs.some(row=>row.itemId==='OATHSTONE_INGOT'),'T1 must not be accidentally routed through the old late-Asterfall generator');

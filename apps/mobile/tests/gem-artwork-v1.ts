@@ -1,4 +1,4 @@
-import {MOBILE_GEM_FAMILIES_V1,mobileGemItemIdV1,type MobileGemGradeV1} from '../src/content/gems-v1';
+import {MOBILE_GEM_FAMILIES_V1,mobileGemItemIdV1,mobileRawGemItemIdV1,type MobileGemGradeV1} from '../src/content/gems-v1';
 import {GEM_ARTWORK_CELL_BY_KEY_V1,gemArtworkCellV1,hasGemArtworkV1} from '../src/theme/gem-assets';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
@@ -10,6 +10,7 @@ for(const family of MOBILE_GEM_FAMILIES_V1){
   for(const grade of [1,2,3,4,5] as MobileGemGradeV1[]){
     const itemId=mobileGemItemIdV1(family.familyId,grade);
     ok(hasGemArtworkV1(itemId),`Missing gem art for ${itemId}`);
+    ok(hasGemArtworkV1(mobileRawGemItemIdV1(family.familyId,grade)),`Missing unrefined gem family art for ${family.familyId} G${grade}`);
     const cell=gemArtworkCellV1(itemId)!;
     ok(cell.column>=0&&cell.column<6&&cell.row>=0&&cell.row<6,`Invalid atlas cell for ${itemId}`);
   }

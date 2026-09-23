@@ -48,7 +48,7 @@ async function invokeBilling<T>(body:Record<string,unknown>):Promise<T>{
 export function googlePlayPurchaseEvidence(purchase:Purchase):GooglePlayPurchaseEvidence{
   const product=commerceProduct(purchase.productId);
   if(!product)throw new Error('This Google Play product is not recognized by VELDRYN.');
-  if(purchase.store!=='google-play')throw new Error('Only Google Play purchases can be verified here.');
+  if(purchase.store!=='google')throw new Error('Only Google Play purchases can be verified here.');
   const purchaseToken=purchase.purchaseToken?.trim();
   if(!purchaseToken)throw new Error('Google Play did not return a purchase token.');
   return {purchaseToken,productId:product.playProductId,productType:product.playProductType};

@@ -127,6 +127,7 @@ ok(recipeCard.includes("statusText=forgeFull?"),'Collapsed recipe cards must exp
 ok(recipeCard.includes('BATCH SIZE')&&recipeCard.includes("Brew ×"),'Alchemy recipe cards must expose batch-size and timed brew controls');
 ok(skills.includes("type:'alchemy_start'"),'Skills must route Alchemy through the authoritative alchemy_start command');
 ok(recipeCard.includes('recipeProgressionSources')&&recipeCard.includes('MISSING SOURCES'),'All recipe types must expose actionable material/prerequisite sources');
+ok(recipeCard.includes('Other sources ·')&&recipeCard.includes('sourceTypeLabel')&&recipeCard.includes('accessibilityState={{expanded:!!openSources[row.key]}}'),'Recipe material sources must keep one primary route compact and disclose typed alternatives on demand');
 ok(recipeCard.includes('initialExpanded=false')&&recipeCard.includes('useState(initialExpanded)'),'Recipe cards must support exact-target auto-expansion from progression navigation');
 ok(recipeCard.includes('recipeSkillTrainingAction')&&recipeCard.includes('recipeCharacterTrainingAction'),'Recipe level blockers must expose skill and character training actions');
 ok(recipeCard.includes('RECIPE MASTERY')&&recipeCard.includes('professionMasteryMultipliers'),'Recipe cards must show live per-recipe mastery and effective values');
@@ -143,6 +144,8 @@ const workingToward=read('src/core/working-toward.ts');
 ok(workingToward.includes('workingTowardItemSources')&&workingToward.includes('sourceStatusPriority'),'Material source navigation must rank every known source by live availability instead of fixed source type order');
 ok(workingToward.includes("ready:0,travel:1,locked:2,info:3"),'Material source ranking must prefer usable local sources before travel and locked alternatives');
 ok(workingToward.includes("typePriority:0")&&workingToward.includes("typePriority:1")&&workingToward.includes("typePriority:2"),'Material source ranking must retain deterministic gather/craft/combat tie-breaks after availability');
+ok(workingToward.includes('workingTowardItemSourceEntries')&&workingToward.includes("typeLabel:'Gathering'")&&workingToward.includes("typeLabel:'Crafting'")&&workingToward.includes("typeLabel:'Monster Drop'")&&workingToward.includes("typeLabel:'Dungeon'"),'Material source presentation must carry explicit acquisition-method labels');
+ok(workingToward.includes('dungeonMaterialSourcesForItem')&&workingToward.includes('typePriority:3'),'Authoritative dungeon material sources must join the shared ranked source resolver without outranking immediately useful local routes');
 ok(workingToward.includes("kind:'dungeon';dungeonId?:string"),'Working Toward must support a real Dungeon destination');
 ok(workingToward.includes("goal.kind==='dungeon_clears')return {kind:'dungeon'"),'Dungeon goals must navigate instead of rendering info-only dead ends');
 ok(read('App.tsx').includes("destination.kind==='dungeon'){setTab('Coop')"),'Dungeon progression actions must open the real co-op dungeon screen');
@@ -191,6 +194,10 @@ ok(activity.includes("preview.craftingActions??0")&&activity.includes("preview.f
 const queue=read('src/components/ActionQueuePanel.tsx');
 ok(queue.includes('backgroundColor:C.warningSurface'),'Queue warnings must remain theme-safe');
 ok(queue.includes('backgroundColor:C.goodSurface'),'Queue handoff success must remain theme-safe');
+
+const itemQuickInspect=read('src/components/ItemQuickInspect.tsx');
+ok(itemQuickInspect.includes('Other sources ·')&&itemQuickInspect.includes("'Monster Drop'")&&itemQuickInspect.includes("'Dungeon'"),'Item quick inspect must use the same compact typed source disclosure');
+ok(!itemQuickInspect.includes('model.sources.slice(0,4)'),'Item quick inspect must not silently hide known sources behind a fixed four-row cap');
 
 const inventory=read('src/screens/InventoryScreen.tsx');
 ok(inventory.includes("root:{padding:spacing.md,gap:10}"),'Inventory should keep compact screen padding');

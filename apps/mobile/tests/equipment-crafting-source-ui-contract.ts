@@ -16,7 +16,8 @@ ok(recipes.includes('slotMultiplier')&&recipes.includes('timerRange'),'V33 recip
 ok(recipes.includes("case 'T5'")&&recipes.includes("case 'T8'"),'Regional material plans must differ across later tiers');
 ok(skills.includes('...(V33_EQUIPMENT_RECIPES as Recipe[])'),'V33 recipes must be part of the authoritative recipe catalog');
 ok(skills.includes("!/^T[1-9]_/.test(item.equipmentSetId)"),'Legacy generated recipes must not duplicate V33 pieces');
-ok(skills.includes('!recipe.v33SetId'),'Legacy global input doubling must not silently double the calibrated V33 recipes');
+ok(skills.includes('!normalized.v33SetId'),'Legacy global input doubling must not silently double the calibrated V33 recipes after profession normalization');
+ok(skills.includes('EQUIPMENT_CRAFT_SKILL_BY_CLASS')&&skills.includes('profession!==recipe.skillId'),'Class-bound gear must normalize to the shared Smithing/Tailoring profession map before legacy balancing transforms');
 
 ok(path.includes('workingTowardItemSource'),'Equipment crafting planner must reuse shared source navigation');
 ok(path.includes("kind:'material'"),'Missing materials must become explicit blockers');

@@ -148,7 +148,7 @@ ok(workingToward.includes('workingTowardItemSourceEntries')&&workingToward.inclu
 ok(workingToward.includes('dungeonMaterialSourcesForItem')&&workingToward.includes('typePriority:3'),'Authoritative dungeon material sources must join the shared ranked source resolver without outranking immediately useful local routes');
 ok(workingToward.includes("kind:'dungeon';dungeonId?:string"),'Working Toward must support a real Dungeon destination');
 ok(workingToward.includes("goal.kind==='dungeon_clears')return {kind:'dungeon'"),'Dungeon goals must navigate instead of rendering info-only dead ends');
-ok(read('App.tsx').includes("destination.kind==='dungeon'){setTab('Coop')"),'Dungeon progression actions must open the real co-op dungeon screen');
+ok(read('App.tsx').includes("destination.kind==='dungeon'){setGoalDungeonId(destination.dungeonId);setTab('Coop')"),'Dungeon progression actions must open the real co-op dungeon screen and preserve the exact dungeon target');
 
 const planner=read('src/screens/ProgressionPlannerScreen.tsx');
 ok(planner.includes('MASTERY_GOAL_RANKS')&&planner.includes('nextMasteryGoalRank'),'Working Toward Profession Mastery goals must target authored bonus ranks');

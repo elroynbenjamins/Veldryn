@@ -22,8 +22,12 @@ const skillDestination=progressionGoalDestination(state,skillGoal);
 equal(skillDestination.kind,'skills','skill goal routes to Skills');
 if(skillDestination.kind==='skills'){equal(skillDestination.mode,'gathering','Mining routes to gathering mode');equal(skillDestination.skillId,'mining','Mining remains selected');}
 const skillExecution=workingTowardExecutionPlan(state,skillGoal);
-equal(skillExecution.executionState,'travel','generic gathering skill goal reports travel when its best usable node is in another region');
-ok(skillExecution.queueBlocker?.includes('Old Mines'),'skill execution travel state names the destination region');
+equal(skillExecution.executionState,'blocked','gathering skill goal reports its region progression gate when no authored node is character-accessible yet');
+ok(skillExecution.queueBlocker?.includes('character level 16'),'skill execution blocker exposes the Old Mines character-level gate');
+const travelSkillState={...state,character:{...state.character!,level:20}};
+const travelSkillExecution=workingTowardExecutionPlan(travelSkillState,skillGoal);
+equal(travelSkillExecution.executionState,'travel','gathering skill goal switches to travel once the region is unlocked but not current');
+ok(travelSkillExecution.queueBlocker?.includes('Old Mines'),'skill execution travel state names the destination region');
 
 const huntGoal:ProgressionGoal={id:'goal-hunt',characterId,kind:'monster_kills',title:'Moss Rat kills',createdAtMs:0,pinnedAtMs:0,monsterId:'MOSS_RAT',targetKills:50};
 const huntDestination=progressionGoalDestination(state,huntGoal);

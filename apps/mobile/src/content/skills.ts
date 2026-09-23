@@ -162,7 +162,9 @@ export const RECIPES:Recipe[]=([
 ] as Recipe[]).map(recipe=>{
   const profession=recipe.classId?EQUIPMENT_CRAFT_SKILL_BY_CLASS[recipe.classId]:recipe.skillId;
   const normalized=profession!==recipe.skillId?{...recipe,skillId:profession}:recipe;
-  return normalized.skillId==='smithing'&&!normalized.repeatableTraining&&!normalized.noviceSetId&&!normalized.v33SetId&&!normalized.id.startsWith('SMITH_')
+  const equipmentProfession=normalized.skillId==='smithing'||normalized.skillId==='tailoring';
+  const directTrainingRecipe=normalized.id.startsWith('SMITH_')||normalized.id.startsWith('TAILOR_');
+  return equipmentProfession&&!normalized.repeatableTraining&&!normalized.noviceSetId&&!normalized.v33SetId&&!directTrainingRecipe
     ?{...normalized,inputs:normalized.inputs.map(input=>({...input,quantity:input.quantity*2}))}
     :normalized;
 });

@@ -29,10 +29,13 @@ if(itemDestination.kind==='skills'){equal(itemDestination.actionId,'COPPER_VEIN'
 const copperSources=workingTowardItemSourceEntries(state,'COPPER_ORE');
 ok(copperSources.some(source=>source.type==='gathering'&&source.typeLabel==='Gathering'),'Copper source presentation includes its authored gathering route');
 ok(copperSources.some(source=>source.type==='monster_drop'&&source.typeLabel==='Monster Drop'),'Copper source presentation includes authored monster-drop alternatives');
+ok(copperSources.find(source=>source.type==='gathering')?.destination.detail.includes('/action'),'Gathering source detail exposes authored per-action yield');
+ok(copperSources.find(source=>source.type==='monster_drop')?.destination.detail.includes('% drop'),'Monster source detail exposes authored drop odds');
 const catalystSources=workingTowardItemSourceEntries(state,'REGIONAL_CATALYST');
 equal(catalystSources.length,6,'Regional Catalyst exposes all six authoritative live dungeon sources');
 ok(catalystSources.every(source=>source.type==='dungeon'&&source.typeLabel==='Dungeon'),'Dungeon material sources carry a distinct source type');
 ok(catalystSources.every(source=>source.availability.status==='locked'),'Fresh characters see level-gated dungeon material sources as locked rather than falsely ready');
+ok(catalystSources.every(source=>source.destination.detail.includes('% boss reward chance')),'Dungeon material source detail exposes the canonical boss reward chance');
 
 const weeklyGoal:ProgressionGoal={id:'goal-weekly',characterId,kind:'weekly_order',title:'Weekly job',createdAtMs:0,pinnedAtMs:0,orderId:'example',targetProgress:10};
 equal(progressionGoalDestination(state,weeklyGoal).kind,'contracts','weekly goal routes to Contract Board');

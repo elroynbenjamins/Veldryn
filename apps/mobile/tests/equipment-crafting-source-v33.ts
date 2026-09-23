@@ -1,12 +1,14 @@
-import {V33_EQUIPMENT_RECIPES,v33EquipmentRecipeForItem} from '../src/content/equipment-recipes-v33';
+import {EQUIPMENT_CRAFT_SKILL_BY_CLASS,TIER_CHARACTER_LEVEL_FLOOR,TIER_CRAFTING_LEVEL_FLOOR,V33_EQUIPMENT_RECIPES,v33EquipmentRecipeForItem} from '../src/content/equipment-recipes-v33';
 import {RECIPES} from '../src/content/skills';
 import {itemDef} from '../src/content/items';
 import {createCharacter,craftRecipe,newGame} from '../src/core/game';
+import {HERB_NODES} from '../src/content/herbalism';
+import {startEquipmentCraft,claimEquipmentCraft} from '../src/core/equipment-crafting-queue';
 import {equipmentCraftingPath} from '../src/core/equipment-crafting-path';
 import {itemInspectModel} from '../src/core/item-inspect';
 import {workingTowardItemSource} from '../src/core/working-toward';
 import {MONSTERS} from '../src/content/monsters';
-import {combatBaselineProjection,dropExpectation} from '../src/core/balance-projection';
+import {combatBaselineProjection,dropExpectation,gatheringBalanceProjection} from '../src/core/balance-projection';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 
@@ -17,6 +19,12 @@ ok(V33_EQUIPMENT_RECIPES.every(row=>RECIPES.some(recipe=>recipe.id===row.id&&rec
 ok(V33_EQUIPMENT_RECIPES.every(row=>row.inputs.length>=2&&row.inputs.every(input=>itemDef(input.itemId).type==='material')),'Every V33 recipe needs registered material inputs');
 
 const timerRanges:Record<string,[number,number]>={T1:[60,180],T2:[180,360],T3:[300,600],T4:[480,900],T5:[720,1200],T6:[900,1500],T7:[1200,1800],T8:[1500,2400],T9:[1800,2700]};
+for(const recipe of V33_EQUIPMENT_RECIPES){
+  ok(recipe.skillId===EQUIPMENT_CRAFT_SKILL_BY_CLASS[recipe.classId],recipe.id+' uses the wrong equipment profession for '+recipe.classId);
+  ok(recipe.characterLevel>=(TIER_CHARACTER_LEVEL_FLOOR[recipe.v33EquipmentTier]??1),recipe.id+' is below the tier character-level floor');
+  ok(recipe.level>=(TIER_CRAFTING_LEVEL_FLOOR[recipe.v33EquipmentTier]??1),recipe.id+' is below the tier crafting-level floor');
+}
+ok(V33_EQUIPMENT_RECIPES.some(row=>row.skillId==='smithing')&&V33_EQUIPMENT_RECIPES.some(row=>row.skillId==='tailoring'),'V33 equipment must be split across Smithing and Tailoring');
 for(const recipe of V33_EQUIPMENT_RECIPES){
   const range=timerRanges[recipe.v33EquipmentTier];
   ok(!!range&&recipe.seconds>=range[0]&&recipe.seconds<=range[1],recipe.id+' craft timer is outside the V33 tier pacing band');
@@ -45,7 +53,10 @@ const materialSourceMonster:Record<string,string>={
   FROSTIRON:'CHOIR_HUNTER',RIMEGLASS:'CHOIR_HUNTER',CHOIR_BLOOM:'CHOIR_HUNTER',
 };
 function projectedFarmHours(recipe:typeof t8){
+  const state=createCharacter(newGame(0),recipe.classId,'Farm Pace','male');
   return recipe.inputs.reduce((hours,input)=>{
+    const herb=HERB_NODES.find(row=>row.itemId===input.itemId);
+    if(herb){const pace=gatheringBalanceProjection(state,herb,24);return hours+input.quantity/Math.max(.0001,pace.runtimeItemsPerHour);}
     const monsterId=materialSourceMonster[input.itemId];if(!monsterId)return hours;
     const monster=MONSTERS.find(row=>row.id===monsterId)!;
     const drop=monster.drops.find(row=>row.itemId===input.itemId)!;
@@ -54,7 +65,7 @@ function projectedFarmHours(recipe:typeof t8){
   },0);
 }
 const highTierBands:Record<string,[number,number]>={
-  T5:[.75,2.75],T6:[.75,3.5],T7:[.75,3.5],T8:[.9,5.5],T9:[1.2,7.0],
+  T5:[.75,3.5],T6:[1.0,4.5],T7:[1.2,4.5],T8:[1.5,6.5],T9:[2.5,8.0],
 };
 for(const tier of Object.keys(highTierBands)){
   const rows=V33_EQUIPMENT_RECIPES.filter(row=>row.v33EquipmentTier===tier);
@@ -67,6 +78,8 @@ for(const tier of Object.keys(highTierBands)){
 }
 const t5Ring=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T5'&&itemDef(row.output.itemId).slot==='ring')!;
 ok(projectedFarmHours(t5Ring)>=.75,'Even the cheapest T5 ring must require at least ~45 minutes of baseline regional farming');
+const tailoringT5Ring=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T5'&&row.skillId==='tailoring'&&itemDef(row.output.itemId).slot==='ring')!;
+ok(projectedFarmHours(tailoringT5Ring)>=.75,'The cheapest T5 Tailoring ring must respect the same 45-minute floor as Smithing');
 
 let state=createCharacter(newGame(0),'IRONWARDEN','Crafter','male');
 const path=equipmentCraftingPath(state,'T1P_001')!;
@@ -84,4 +97,19 @@ ok(readyPath.canCraftNow&&readyPath.blockers.length===0,'Recipe planner should b
 const crafted=craftRecipe(state,t1.id,1000);
 ok(crafted.inventory.stacks.some(row=>row.itemId==='T1P_001'&&row.quantity===1),'Authoritative craft path must actually create the V33 equipment piece');
 
-console.log('PASS: all V33 equipment pieces have paced, sourceable, actionable recipes and craft through the shared authoritative operation');
+for(const skillId of ['smithing','tailoring'] as const){
+  const t9=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T9'&&row.skillId===skillId)!;
+  let alt=createCharacter(newGame(0),t9.classId,'Fresh Alt','male');
+  alt={...alt,character:{...alt.character!,gold:999999},bank:{...alt.bank,stacks:t9.inputs.map(input=>({...input,quantity:input.quantity*2}))}};
+  let characterGate=false;try{startEquipmentCraft(alt,t9.id,1000)}catch(error){characterGate=error instanceof Error&&error.message.includes('character level')}
+  ok(characterGate,'Donated T9 materials must not bypass the '+skillId+' character-level gate');
+  alt={...alt,character:{...alt.character!,level:t9.characterLevel}};
+  let professionGate=false;try{startEquipmentCraft(alt,t9.id,1000)}catch(error){professionGate=error instanceof Error&&error.message.includes(skillId)}
+  ok(professionGate,'Donated T9 materials must not bypass the '+skillId+' profession-level gate');
+  alt={...alt,skills:alt.skills.map(row=>row.skillId===skillId?{...row,level:t9.level}:row)};
+  const started=startEquipmentCraft(alt,t9.id,1000);
+  const claimed=claimEquipmentCraft(started.state,started.job.id,started.job.completesAtMs,.5);
+  ok(claimed.instance.ownerCharacterId===alt.character!.id,'Finished T9 equipment must remain bound to the character that qualified and crafted it');
+}
+
+console.log('PASS: all V33 equipment pieces have paced, sourceable, profession-correct recipes with hard anti-alt progression gates');

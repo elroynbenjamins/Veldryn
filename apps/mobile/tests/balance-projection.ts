@@ -3,7 +3,7 @@ import {characterTotalXpAtLevel,totalXpAtLevel} from '../src/core/progression';
 import {GATHERING,RECIPES} from '../src/content/skills';
 import {MONSTERS} from '../src/content/monsters';
 import {itemDef} from '../src/content/items';
-import {activeActivityLevelPace,activityProgressFeedback,characterLevelPace,combatBaselineProjection,craftingPaceProjection,dropExpectation,dropPaceBand,formatBalanceDuration,gatheringBalanceProjection,skillTargetEta} from '../src/core/balance-projection';
+import {acquisitionEstimateLabel,acquisitionProjectionForDestination,activeActivityLevelPace,activityProgressFeedback,characterLevelPace,combatBaselineProjection,craftingPaceProjection,dropExpectation,dropPaceBand,formatBalanceDuration,gatheringBalanceProjection,skillTargetEta} from '../src/core/balance-projection';
 import {activityCycleSeconds,activityRate} from '../src/core/dashboard';
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
 
@@ -70,6 +70,14 @@ const boss=MONSTERS.find(row=>row.id==='FALLEN_KNIGHT')!;
 ok(boss.drops.some(drop=>drop.itemId==='TORN_OATHCLOTH'&&drop.chance===1)&&boss.drops.every(drop=>itemDef(drop.itemId).type!=='gear'),'Boss loot must award crafting inputs/special rewards rather than legacy finished gear');
 ok(dropPaceBand(13*3600).band==='long_chase'&&dropPaceBand(5*60).band==='frequent','Drop pace labels must distinguish frequent and long-chase rewards');
 ok(formatBalanceDuration(30)==='<1m'&&formatBalanceDuration(3600)==='1h'&&formatBalanceDuration(90000)==='1d 1h','Balance duration labels must stay compact and readable');
+const gatherAcquisition=acquisitionProjectionForDestination(state,'GREENWOOD_LOG',10,{kind:'skills',skillId:'woodcutting',mode:'gathering',actionId:'GREENWOOD_TREE',regionId:'GREENFIELDS',button:'Gather',detail:''});
+ok(gatherAcquisition?.sourceKind==='gathering'&&gatherAcquisition.basis==='current'&&(gatherAcquisition.etaSeconds??0)>0,'Material acquisition projection must use current player gathering pace');
+const combatAcquisition=acquisitionProjectionForDestination(state,'MOSS_FIBER',10,{kind:'combat',monsterId:'MOSS_RAT',zoneName:'Greenfields',regionId:'GREENFIELDS',button:'Hunt',detail:''});
+ok(combatAcquisition?.sourceKind==='combat'&&combatAcquisition.basis==='base'&&(combatAcquisition.chance??0)>0,'Monster material projection must use authored drop odds and baseline hunt pace');
+const dungeonAcquisition=acquisitionProjectionForDestination(state,'REGIONAL_CATALYST',1,{kind:'dungeon',dungeonId:'COP_004',button:'Open dungeon',detail:''});
+close(dungeonAcquisition?.etaSeconds??0,2*3600,1,'Caravan of Glass catalyst estimate must combine its 18-minute authored run duration with the canonical 15% boss reward chance');
+ok(acquisitionEstimateLabel(dungeonAcquisition!).includes('average clears'),'Dungeon source estimates must clearly identify their average-clear basis');
+
 ok(activityProgressFeedback('gathering',.1)==='Preparing tools…'&&activityProgressFeedback('gathering',.8)==='Finishing the action…','Gathering cycle feedback must describe real progress phases');
 ok(activityProgressFeedback('combat',.1)==='Tracking the target…'&&activityProgressFeedback('combat',.8)==='Pressing the advantage…','Combat cycle feedback must describe real progress phases');
 ok(activityProgressFeedback('crafting',.1)==='Preparing materials…'&&activityProgressFeedback('faith',.8)==='Deepening devotion…','Crafting and Faith must use activity-specific progress language');

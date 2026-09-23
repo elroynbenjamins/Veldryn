@@ -7,6 +7,7 @@ import {MONSTERS} from '../content/monsters';
 import {WORLD_ZONES} from '../content/world-map';
 import {ITEMS} from '../content/items';
 import {DUNGEON_MATERIAL_SOURCES,dungeonMaterialSourceById,dungeonMaterialSourcesForItem} from '../content/dungeon-material-sources';
+import {recipeOutputOwnedQuantity} from './recipe-preparation-goals';
 
 export type WorkingTowardDestination=
  |{kind:'combat';monsterId:string;zoneName:string;regionId?:string;button:string;detail:string}
@@ -151,6 +152,10 @@ export function progressionGoalDestination(state:GameState,goal:ProgressionGoal)
   const recipe=RECIPES.find(row=>row.id===goal.recipeId);
   return recipe?{kind:'skills',skillId:recipe.skillId as SkillId,mode:'crafting',recipeId:recipe.id,button:`Craft ${recipe.name}`,detail:'Open the tracked recipe.'}:{kind:'info',button:'Recipe unavailable',detail:'This recipe is not in the current catalog.'};
  }
+ if(goal.kind==='recipe_preparation'){
+  const recipe=RECIPES.find(row=>row.id===goal.recipeId);
+  return recipe?{kind:'skills',skillId:recipe.skillId as SkillId,mode:'crafting',recipeId:recipe.id,button:`Open ${recipe.name}`,detail:'Open the tracked preparation recipe. Home and Working Toward resolve its live next step.'}:{kind:'info',button:'Recipe unavailable',detail:'This tracked preparation recipe is not in the current catalog.'};
+ }
  if(goal.kind==='pet_hunt'){
   const monster=goal.sourceKind==='monster'?MONSTERS.find(row=>row.id===goal.sourceId):undefined,region=monster?regionForZoneName(monster.zone):undefined;
   return monster?{kind:'combat',monsterId:monster.id,zoneName:monster.zone,regionId:region?.id,button:`Hunt ${monster.name}`,detail:'This hunt can award the tracked pet.'}:{kind:'info',button:'View pet source',detail:'This pet uses a dungeon or special source.'};
@@ -161,17 +166,18 @@ export function progressionGoalDestination(state:GameState,goal:ProgressionGoal)
 }
 
 export function progressionGoalContext(state:GameState):GoalContext{
- const sources:Record<string,GoalSource>={},rates:NonNullable<GoalContext['rates']>={killsPerHour:{},itemPerHour:{}};
+ const sources:Record<string,GoalSource>={},rates:NonNullable<GoalContext['rates']>={killsPerHour:{},itemPerHour:{}},recipePreparationOutputQuantities:Record<string,number>={};
  for(const skill of state.skills){const goal={id:'preview',characterId:state.character!.id,kind:'skill_level',title:'',createdAtMs:0,pinnedAtMs:0,skillId:skill.skillId,targetLevel:skill.level+1} as ProgressionGoal;const source=workingTowardSourceAvailability(state,progressionGoalDestination(state,goal));if(source)sources[`skill:${skill.skillId}`]=source;}
  for(const monster of MONSTERS){const destination:WorkingTowardDestination={kind:'combat',monsterId:monster.id,zoneName:monster.zone,regionId:regionForZoneName(monster.zone)?.id,button:'Hunt',detail:''};const source=workingTowardSourceAvailability(state,destination);if(source)sources[`monster:${monster.id}`]=source;rates.killsPerHour![monster.id]=3600/Math.max(1,monster.secondsPerKill);}
  for(const action of gatherDefs){const destination:WorkingTowardDestination={kind:'skills',skillId:action.skillId as SkillId,mode:'gathering',actionId:action.id,regionId:action.zoneId,button:'Gather',detail:''};const source=workingTowardSourceAvailability(state,destination);if(source)sources[`mastery:${action.id}`]=source;rates.itemPerHour![action.itemId]=Math.max(.1,((action.min+action.max)/2)*3600/Math.max(1,action.seconds));}
  for(const recipe of RECIPES){const destination:WorkingTowardDestination={kind:'skills',skillId:recipe.skillId as SkillId,mode:'crafting',recipeId:recipe.id,button:'Craft',detail:''};const source=workingTowardSourceAvailability(state,destination);if(source){sources[`mastery:${recipe.id}`]=source;sources[`recipe:${recipe.id}`]=source;}}
+ for(const goal of state.character?.progressionGoals??[]){if(goal.kind!=='recipe_preparation')continue;recipePreparationOutputQuantities[goal.outputItemId]=recipeOutputOwnedQuantity(state,goal.outputItemId);const recipe=RECIPES.find(row=>row.id===goal.recipeId);if(recipe){const destination:WorkingTowardDestination={kind:'skills',skillId:recipe.skillId as SkillId,mode:'crafting',recipeId:recipe.id,button:'Prepare',detail:''};const source=workingTowardSourceAvailability(state,destination);if(source)sources[`recipe_preparation:${recipe.id}`]=source;}}
  for(const order of state.account.weeklyOrders?.orders??[])sources[`weekly_order:${order.id}`]={...order.source,kind:'weekly_order',id:order.id,label:order.title};
  for(const item of ITEMS.filter(row=>row.type==='material')){const destination=workingTowardItemSource(state,item.id),source=workingTowardSourceAvailability(state,destination);if(source)sources[`item:${item.id}`]={...source,kind:'item',id:item.id,label:item.name};}
  return {
   skillLevels:Object.fromEntries(state.skills.map(row=>[row.skillId,row.level])),
   skillXp:Object.fromEntries(state.skills.map(row=>[row.skillId,row.xp])),
-  itemQuantities:quantities(state),recipeCraftCounts:{},
+  itemQuantities:quantities(state),recipeCraftCounts:{},recipePreparationOutputQuantities,
   monsterKills:{...(state.character?.monsterMasteryPoints??{})},
   ownedPetIds:Object.fromEntries([...(state.account.unlockedCosmeticPetIds??[]),...(state.character?.ownedPetIds??[])].map(id=>[id,true as const])),
   craftedSetPieceCounts:{},dungeonClears:{},
@@ -183,7 +189,7 @@ export function progressionGoalContext(state:GameState):GoalContext{
 
 export function workingTowardReadyCount(state:GameState){
  const goals=state.character?.progressionGoals??[],context=state.character?progressionGoalContext(state):undefined;
- return context?goals.filter(goal=>{const kind=goal.kind;if(kind==='mastery_rank')return professionMasteryRank(context.masteryPoints[goal.actionId]??0)>=goal.targetRank;if(kind==='item_quantity')return (context.itemQuantities[goal.itemId]??0)>=goal.targetQuantity;if(kind==='monster_kills')return (context.monsterKills[goal.monsterId]??0)>=goal.targetKills;if(kind==='skill_level')return (context.skillLevels[goal.skillId]??1)>=goal.targetLevel;if(kind==='weekly_order')return (context.weeklyOrderProgress?.[goal.orderId]??0)>=goal.targetProgress;return false;}).length:0;
+ return context?goals.filter(goal=>{const kind=goal.kind;if(kind==='mastery_rank')return professionMasteryRank(context.masteryPoints[goal.actionId]??0)>=goal.targetRank;if(kind==='item_quantity')return (context.itemQuantities[goal.itemId]??0)>=goal.targetQuantity;if(kind==='recipe_preparation')return (context.recipePreparationOutputQuantities?.[goal.outputItemId]??goal.baselineOutputQuantity)>=goal.targetOutputQuantity;if(kind==='monster_kills')return (context.monsterKills[goal.monsterId]??0)>=goal.targetKills;if(kind==='skill_level')return (context.skillLevels[goal.skillId]??1)>=goal.targetLevel;if(kind==='weekly_order')return (context.weeklyOrderProgress?.[goal.orderId]??0)>=goal.targetProgress;return false;}).length:0;
 }
 
 export function workingTowardTrackableItems(){

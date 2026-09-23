@@ -1,10 +1,11 @@
 import {masteryPointsForRank,professionMasteryRank} from './profession-mastery-v40';
-export type GoalKind='skill_level'|'item_quantity'|'recipe'|'monster_kills'|'pet_hunt'|'equipment_set'|'dungeon_clears'|'mastery_rank'|'weekly_order';
+export type GoalKind='skill_level'|'item_quantity'|'recipe'|'recipe_preparation'|'monster_kills'|'pet_hunt'|'equipment_set'|'dungeon_clears'|'mastery_rank'|'weekly_order';
 interface GoalBase{id:string;characterId:string;kind:GoalKind;title:string;createdAtMs:number;pinnedAtMs:number}
 export type ProgressionGoal=
  |(GoalBase&{kind:'skill_level';skillId:string;targetLevel:number})
  |(GoalBase&{kind:'item_quantity';itemId:string;targetQuantity:number})
  |(GoalBase&{kind:'recipe';recipeId:string;targetQuantity:number})
+ |(GoalBase&{kind:'recipe_preparation';recipeId:string;batches:number;outputItemId:string;initialStepCount:number;baselineOutputQuantity:number;targetOutputQuantity:number})
  |(GoalBase&{kind:'monster_kills';monsterId:string;targetKills:number})
  |(GoalBase&{kind:'pet_hunt';petId:string;sourceKind:'monster'|'dungeon';sourceId:string})
  |(GoalBase&{kind:'equipment_set';setId:string;targetPieces:number})
@@ -25,7 +26,7 @@ export function masteryGoalForAction(args:{characterId:string;actionId:string;ac
 export interface GoalSource{kind:'skill'|'monster'|'dungeon'|'recipe'|'item'|'region'|'collection'|'weekly_order';id:string;label:string;available:boolean;reason?:string}
 export interface GoalContext{
  skillLevels:Record<string,number>;skillXp:Record<string,number>;skillXpTarget?:Record<string,number>;
- itemQuantities:Record<string,number>;recipeCraftCounts:Record<string,number>;monsterKills:Record<string,number>;
+ itemQuantities:Record<string,number>;recipeCraftCounts:Record<string,number>;recipePreparationOutputQuantities?:Record<string,number>;monsterKills:Record<string,number>;
  ownedPetIds:Record<string,true>;craftedSetPieceCounts:Record<string,number>;dungeonClears:Record<string,number>;masteryPoints:Record<string,number>;
  weeklyOrderProgress?:Record<string,number>;sources?:Record<string,GoalSource>;
  rates?:{skillXpPerHour?:Record<string,number>;itemPerHour?:Record<string,number>;recipePerHour?:Record<string,number>;killsPerHour?:Record<string,number>;dungeonClearsPerHour?:Record<string,number>;masteryPointsPerHour?:Record<string,number>;weeklyOrderPerHour?:Record<string,number>};
@@ -42,6 +43,7 @@ export function progressionGoalView(goal:ProgressionGoal,context:GoalContext):Go
   case'skill_level':current=context.skillLevels[goal.skillId]??1;target=goal.targetLevel;source=sourceFor(`skill:${goal.skillId}`);if(current<target){const targetXp=context.skillXpTarget?.[`${goal.skillId}:${target}`];seconds=targetXp===undefined?undefined:eta(Math.max(0,targetXp-(context.skillXp[goal.skillId]??0)),context.rates?.skillXpPerHour?.[goal.skillId])}else seconds=0;break;
   case'item_quantity':current=context.itemQuantities[goal.itemId]??0;target=goal.targetQuantity;source=sourceFor(`item:${goal.itemId}`);seconds=eta(target-current,context.rates?.itemPerHour?.[goal.itemId]);break;
   case'recipe':current=context.recipeCraftCounts[goal.recipeId]??0;target=goal.targetQuantity;source=sourceFor(`recipe:${goal.recipeId}`);seconds=eta(target-current,context.rates?.recipePerHour?.[goal.recipeId]);break;
+  case'recipe_preparation':{const owned=context.recipePreparationOutputQuantities?.[goal.outputItemId]??goal.baselineOutputQuantity;current=Math.max(0,owned-goal.baselineOutputQuantity);target=Math.max(1,goal.targetOutputQuantity-goal.baselineOutputQuantity);source=sourceFor(`recipe_preparation:${goal.recipeId}`);seconds=current>=target?0:undefined;break;}
   case'monster_kills':current=context.monsterKills[goal.monsterId]??0;target=goal.targetKills;source=sourceFor(`monster:${goal.monsterId}`);seconds=eta(target-current,context.rates?.killsPerHour?.[goal.monsterId]);break;
   case'pet_hunt':current=context.ownedPetIds[goal.petId]?1:0;target=1;source=sourceFor(`${goal.sourceKind}:${goal.sourceId}`);break;
   case'equipment_set':current=context.craftedSetPieceCounts[goal.setId]??0;target=goal.targetPieces;source=sourceFor(`set:${goal.setId}`);break;
@@ -54,7 +56,7 @@ export function progressionGoalView(goal:ProgressionGoal,context:GoalContext):Go
  return {goal,status:complete?'complete':blocker?'blocked':'active',current,target,progress:Math.max(0,Math.min(1,target<=0?1:current/target)),etaSeconds:complete?0:seconds,etaLabel:etaLabel(complete?0:seconds),source,blocker};
 }
 
-const GOAL_KINDS:GoalKind[]=['skill_level','item_quantity','recipe','monster_kills','pet_hunt','equipment_set','dungeon_clears','mastery_rank','weekly_order'];
+const GOAL_KINDS:GoalKind[]=['skill_level','item_quantity','recipe','recipe_preparation','monster_kills','pet_hunt','equipment_set','dungeon_clears','mastery_rank','weekly_order'];
 export function normalizeProgressionGoals(value:unknown,characterId:string):ProgressionGoal[]{
  if(!Array.isArray(value)||!characterId)return [];
  const out:ProgressionGoal[]=[];
@@ -71,6 +73,7 @@ export function normalizeProgressionGoals(value:unknown,characterId:string):Prog
   if(kind==='skill_level'&&typeof row.skillId==='string'&&positive('targetLevel'))goal={...base,kind,skillId:row.skillId,targetLevel:positive('targetLevel')!};
   else if(kind==='item_quantity'&&typeof row.itemId==='string'&&positive('targetQuantity'))goal={...base,kind,itemId:row.itemId,targetQuantity:positive('targetQuantity')!};
   else if(kind==='recipe'&&typeof row.recipeId==='string'&&positive('targetQuantity'))goal={...base,kind,recipeId:row.recipeId,targetQuantity:positive('targetQuantity')!};
+  else if(kind==='recipe_preparation'&&typeof row.recipeId==='string'&&typeof row.outputItemId==='string'&&positive('batches')&&positive('initialStepCount')&&Number.isFinite(Number(row.baselineOutputQuantity))&&positive('targetOutputQuantity')){const baselineOutputQuantity=Math.max(0,Math.floor(Number(row.baselineOutputQuantity))),targetOutputQuantity=Math.max(baselineOutputQuantity+1,positive('targetOutputQuantity')!);goal={...base,kind,recipeId:row.recipeId,batches:Math.min(100,positive('batches')!),outputItemId:row.outputItemId,initialStepCount:Math.min(99,positive('initialStepCount')!),baselineOutputQuantity,targetOutputQuantity};}
   else if(kind==='monster_kills'&&typeof row.monsterId==='string'&&positive('targetKills'))goal={...base,kind,monsterId:row.monsterId,targetKills:positive('targetKills')!};
   else if(kind==='pet_hunt'&&typeof row.petId==='string'&&(row.sourceKind==='monster'||row.sourceKind==='dungeon')&&typeof row.sourceId==='string')goal={...base,kind,petId:row.petId,sourceKind:row.sourceKind,sourceId:row.sourceId};
   else if(kind==='equipment_set'&&typeof row.setId==='string'&&positive('targetPieces'))goal={...base,kind,setId:row.setId,targetPieces:positive('targetPieces')!};

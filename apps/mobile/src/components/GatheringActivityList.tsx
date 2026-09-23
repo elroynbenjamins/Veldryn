@@ -1,5 +1,5 @@
 import {useMemo} from 'react';
-import {StyleSheet,Text,View} from 'react-native';
+import {Pressable,StyleSheet,Text,View} from 'react-native';
 import type {GameState,GatheringSkillId} from '../core/types';
 import {GATHERING,type GatherDef} from '../content/skills';
 import {HERB_NODES} from '../content/herbalism';
@@ -16,6 +16,7 @@ import {ResourceArtwork} from './ResourceArtwork';
 import {GameButton} from './GameButton';
 import {spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
+import type {WorkingTowardDestination} from '../core/working-toward';
 
 function metrics(state:GameState,activity:GatherDef,offlineHours:number){
  const environment=environmentForZone(activity.zoneId),effect=environmentEffect(activity.skillId,environment),pacing=gatheringPacing(state,activity),permanent=characterPermanentMultipliers(state);
@@ -27,7 +28,7 @@ function metrics(state:GameState,activity:GatherDef,offlineHours:number){
  return {cycle,itemsPerHour,xpPerHour,capActions,baselineItems:Math.floor(capActions*activity.min*effect.itemMultiplier),capXp:Math.floor(capActions*activity.xp*effect.xpMultiplier*permanent.skillXpMultiplier),pacing};
 }
 
-export function GatheringActivityList({state,skillId,skillLevel,offlineHours,queueFull,preferredActionId,onGather,onQueueGather}:{state:GameState;skillId:GatheringSkillId;skillLevel:number;offlineHours:number;queueFull:boolean;preferredActionId?:string;onGather:(id:string)=>void;onQueueGather:(id:string)=>void}){
+export function GatheringActivityList({state,skillId,skillLevel,offlineHours,queueFull,preferredActionId,onGather,onQueueGather,onNavigate}:{state:GameState;skillId:GatheringSkillId;skillLevel:number;offlineHours:number;queueFull:boolean;preferredActionId?:string;onGather:(id:string)=>void;onQueueGather:(id:string)=>void;onNavigate?:(destination:WorkingTowardDestination)=>void}){
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const all=[...GATHERING,...HERB_NODES].filter(row=>row.skillId===skillId);
  const regionId=currentRegionId(state),region=WORLD_ZONES.find(row=>row.id===regionId)??WORLD_ZONES[0];
@@ -35,10 +36,12 @@ export function GatheringActivityList({state,skillId,skillLevel,offlineHours,que
  const fastest=[...regional].filter(row=>skillLevel>=row.activity.unlockLevel).sort((a,b)=>b.view.xpPerHour-a.view.xpPerHour)[0];
  const next=[...all].filter(row=>row.unlockLevel>skillLevel).sort((a,b)=>a.unlockLevel-b.unlockLevel)[0];
  const nextZone=next?WORLD_ZONES.find(row=>row.id===next.zoneId):undefined;
+ const nextDestination:WorkingTowardDestination|undefined=next?{kind:'skills',skillId,mode:'gathering',actionId:next.id,regionId:next.zoneId,button:next.zoneId!==region.id?`Go to ${nextZone?.name??next.zoneId}`:`Train ${skillId}`,detail:next.zoneId!==region.id?`Travel to ${nextZone?.name??next.zoneId} for ${next.name}.`:`Train ${skillId} to level ${next.unlockLevel} for ${next.name}.`}:undefined;
+ const nextAction=next?(next.zoneId!==region.id?'GO TO REGION ›':'TRAIN TO LV '+next.unlockLevel+' ›'):'';
  return <>
   <View style={s.guidanceRow}>
    <View style={[s.guidanceCard,s.fastCard]}><Text style={s.guidanceLabel}>FASTEST XP HERE</Text><Text numberOfLines={1} style={s.guidanceValue}>{fastest?.activity.name??'No unlocked node'}</Text><Text style={s.guidanceHint}>{fastest?formatGameNumber(Math.round(fastest.view.xpPerHour),state.settings.numberMode)+' XP/hr':'Travel or level up to continue.'}</Text></View>
-   <View style={s.guidanceCard}><Text style={s.guidanceLabel}>NEXT SKILL UNLOCK</Text><Text numberOfLines={1} style={s.guidanceValue}>{next?'Lv '+next.unlockLevel+' · '+next.name:'Skill path complete'}</Text><Text style={s.guidanceHint}>{next?(nextZone?.name??next.zoneId):'No higher-level node configured.'}</Text></View>
+   {nextDestination&&onNavigate?<Pressable accessibilityRole="button" accessibilityLabel={`Next ${skillId} unlock: ${next.name}. ${nextAction.replace(' ›','')}`} onPress={()=>onNavigate(nextDestination)} style={({pressed})=>[s.guidanceCard,s.nextCard,pressed&&s.pressed]}><Text style={s.guidanceLabel}>NEXT SKILL UNLOCK</Text><Text numberOfLines={1} style={s.guidanceValue}>{'Lv '+next.unlockLevel+' · '+next.name}</Text><View style={s.nextHintRow}><Text numberOfLines={1} style={s.guidanceHint}>{nextZone?.name??next.zoneId}</Text><Text style={s.nextAction}>{nextAction}</Text></View></Pressable>:<View style={s.guidanceCard}><Text style={s.guidanceLabel}>NEXT SKILL UNLOCK</Text><Text numberOfLines={1} style={s.guidanceValue}>{next?'Lv '+next.unlockLevel+' · '+next.name:'Skill path complete'}</Text><Text style={s.guidanceHint}>{next?(nextZone?.name??next.zoneId):'No higher-level node configured.'}</Text></View>}
   </View>
   {regional.map(({activity,view})=>{
    const active=state.activity?.targetId===activity.id,target=preferredActionId===activity.id,unlocked=skillLevel>=activity.unlockLevel,fastestXp=fastest?.activity.id===activity.id,resource=itemDef(activity.itemId),pacing=view.pacing;
@@ -55,7 +58,7 @@ export function GatheringActivityList({state,skillId,skillLevel,offlineHours,que
 }
 
 function makeStyles(C:ThemeColors){return StyleSheet.create({
- flex:{flex:1,minWidth:0},guidanceRow:{flexDirection:'row',gap:8},guidanceCard:{flex:1,minWidth:0,padding:9,borderWidth:1,borderColor:C.line,borderRadius:10,backgroundColor:C.panel},fastCard:{borderColor:C.info,backgroundColor:C.infoSurface},guidanceLabel:{fontSize:9,color:C.muted,fontWeight:'900',letterSpacing:.7},guidanceValue:{...typography.bodyStrong,color:C.text},guidanceHint:{...typography.caption,color:C.muted},
+ flex:{flex:1,minWidth:0},guidanceRow:{flexDirection:'row',gap:8},guidanceCard:{flex:1,minWidth:0,minHeight:76,padding:9,borderWidth:1,borderColor:C.line,borderRadius:10,backgroundColor:C.panel},fastCard:{borderColor:C.info,backgroundColor:C.infoSurface},nextCard:{borderColor:C.selectionLine,backgroundColor:C.selection},guidanceLabel:{fontSize:9,color:C.muted,fontWeight:'900',letterSpacing:.7},guidanceValue:{...typography.bodyStrong,color:C.text},guidanceHint:{...typography.caption,color:C.muted,flexShrink:1},nextHintRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:6},nextAction:{fontSize:8.5,color:C.accent,fontWeight:'900',letterSpacing:.4},pressed:{opacity:.72},
  heading:{minHeight:62,flexDirection:'row',alignItems:'center',gap:spacing.sm},nameRow:{flexDirection:'row',alignItems:'center',flexWrap:'wrap',gap:6},name:{...typography.title,color:C.text},sub:{...typography.caption,color:C.muted},targetTag:{fontSize:9,color:C.accent,fontWeight:'900',letterSpacing:.6},fastTag:{fontSize:9,color:C.info,fontWeight:'900',letterSpacing:.6},lockTag:{fontSize:9,color:C.warning,fontWeight:'900',letterSpacing:.6},
  tierBadge:{minWidth:42,height:36,alignItems:'center',justifyContent:'center',borderWidth:1,borderRadius:8},handBadge:{borderColor:C.special,backgroundColor:C.specialSurface},handText:{fontSize:9,color:C.special,fontWeight:'900',letterSpacing:.5},tierReady:{borderColor:C.good,backgroundColor:C.goodSurface},tierSlow:{borderColor:C.warning,backgroundColor:C.warningSurface},tierText:{...typography.bodyStrong,color:C.text},
  rateStrip:{flexDirection:'row',gap:8,paddingVertical:2},rateCell:{flex:1,minWidth:0},rateLabel:{fontSize:8.5,color:C.muted,fontWeight:'900',letterSpacing:.65},rateValue:{...typography.caption,color:C.text,fontWeight:'800'},

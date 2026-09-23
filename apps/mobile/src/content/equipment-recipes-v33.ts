@@ -53,7 +53,7 @@ function ingredients(tier:string,path:string,multiplier:number){
     case 'T2':return [{itemId:'IRONWOOD_LOG',quantity:q(34,multiplier)},{itemId:pathItem??'WOLF_PELT',quantity:q(10,multiplier)}];
     case 'T3':return [{itemId:'CROWNWOOD_LOG',quantity:q(32,multiplier)},{itemId:pathItem??'TROLL_HIDE',quantity:q(12,multiplier)},{itemId:'THORN_SAP',quantity:q(6,multiplier)}];
     case 'T4':return [{itemId:'OATHSTONE_INGOT',quantity:q(18,multiplier)},{itemId:'OATHGLASS_SHARD',quantity:q(7,multiplier)},{itemId:pathItem??'TORN_OATHCLOTH',quantity:q(5,multiplier)}];
-    case 'T5':return [{itemId:'SUNSTONE_ORE',quantity:q(18,multiplier)},{itemId:'AMBERGLASS',quantity:q(5,multiplier)}];
+    case 'T5':return [{itemId:'SUNSTONE_ORE',quantity:q(22,multiplier)},{itemId:'AMBERGLASS',quantity:q(7,multiplier)}];
     case 'T6':return [{itemId:'SUNSTONE_ORE',quantity:q(24,multiplier)},{itemId:'AMBERGLASS',quantity:q(8,multiplier)},{itemId:'ASTRAL_SCRIPT',quantity:q(1,multiplier)}];
     case 'T7':return [{itemId:'FROSTIRON',quantity:q(22,multiplier)},{itemId:'RIMEGLASS',quantity:q(5,multiplier)}];
     case 'T8':return [{itemId:'FROSTIRON',quantity:q(28,multiplier)},{itemId:'RIMEGLASS',quantity:q(8,multiplier)},{itemId:'CHOIR_BLOOM',quantity:q(1,multiplier)}];

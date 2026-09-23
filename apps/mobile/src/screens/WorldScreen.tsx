@@ -30,7 +30,7 @@ type Props={
   onCoop?:(dungeonId?:string)=>void;
   onRegionalRewardsChanged?:()=>Promise<void>|void;
   onOpenWeeklyOrder?:(order:WeeklyOrder)=>void;
-  onOpenContracts?:()=>void;
+  onOpenContracts?:(order?:WeeklyOrder)=>void;
   goalRegionId?:string;
 };
 

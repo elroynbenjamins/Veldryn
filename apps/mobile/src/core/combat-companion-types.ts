@@ -9,7 +9,7 @@ export type CombatCompanionRarity='standard'|'rare'|'elite'|'prestige';
 export type CompanionAffinity='wild'|'arcane'|'radiant'|'umbral'|'primal'|'construct';
 export type CompanionOriginType='region'|'story'|'achievement'|'event'|'raid'|'meta';
 export type CompanionUnlockRequirementType='quest'|'achievement'|'boss_kills'|'dungeon_clears'|'monster_mastery'|'skill_level'|'reputation'|'collection'|'event_currency'|'event_challenge'|'meta';
-export type CompanionEffectKind='damage'|'damage_reduction'|'shield'|'haste'|'resource_restore'|'defense_shred'|'interrupt'|'execute'|'accuracy'|'cleanse'|'cooldown_reduction'|'armor_pierce'|'chain_damage'|'utility';
+export type CompanionEffectKind='damage'|'heal'|'damage_reduction'|'shield'|'haste'|'resource_restore'|'defense_shred'|'interrupt'|'execute'|'accuracy'|'cleanse'|'cooldown_reduction'|'armor_pierce'|'chain_damage'|'utility';
 export type CompanionBondSource='battle'|'boss'|'dungeon'|'companion_objective'|'future_activity';
 export type CompanionSanctuaryUpgrade='trainingGround'|'essenceBasin'|'bondHall'|'expeditionPens'|'masteryChamber';
 export type CompanionAvailabilityStatus='available'|'equipped'|'expedition'|'active_trial'|'locked'|'unavailable';
@@ -122,6 +122,8 @@ export interface CompanionCombatContribution{
   incomingDamageMultiplier:number;
   /** Multiplier applied to between-encounter recovery. */
   recoveryMultiplier:number;
+  /** Capped direct healing contribution for long-hunt simulation, as max HP restored per hour. */
+  directHealingPctPerHour:number;
   /** Informational contribution budget used by combat/UI tests. */
   contributionPct:number;
 }

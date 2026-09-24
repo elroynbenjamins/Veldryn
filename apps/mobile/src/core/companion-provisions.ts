@@ -1,10 +1,21 @@
-export interface CompanionProvisionPolicy{foodUnits:number;bondXpBonusPercent:number;rewardBonusPercent:number;}
-/**
- * Companions do not consume food merely for being equipped.
- * Food is an expedition provision sink: optional, bounded and paid per expedition.
- */
-export function companionExpeditionProvisionPolicy(durationHours:number):CompanionProvisionPolicy{
+import {itemDef} from '../content/items';
+
+export const COMPANION_STAMINA_HP_PER_POINT=10;
+export const COMPANION_EXPEDITION_STAMINA=100;
+
+export function companionFoodStamina(itemId:string){
+ const item=itemDef(itemId);
+ return item.type==='food'&&item.heal?item.heal/COMPANION_STAMINA_HP_PER_POINT:0;
+}
+export function companionFoodNeededForStamina(itemId:string,stamina=COMPANION_EXPEDITION_STAMINA){
+ const per=companionFoodStamina(itemId);return per>0?Math.ceil(stamina/per):Infinity;
+}
+export function companionExpeditionStaminaCost(durationHours:number){
  const hours=Math.max(1,Math.min(24,Math.ceil(durationHours)));
- const foodUnits=Math.max(1,Math.ceil(hours/4));
- return {foodUnits,bondXpBonusPercent:foodUnits>=4?10:foodUnits>=2?5:2,rewardBonusPercent:foodUnits>=4?5:foodUnits>=2?3:1};
+ // 100 stamina is the normal expedition baseline; long expeditions scale but remain bounded.
+ return Math.min(300,Math.max(50,Math.ceil(hours/8)*50));
+}
+export function companionExpeditionProvisionPolicy(durationHours:number){
+ const stamina=companionExpeditionStaminaCost(durationHours);
+ return {stamina,healingHpEquivalent:stamina*COMPANION_STAMINA_HP_PER_POINT,bondXpBonusPercent:5,rewardBonusPercent:3};
 }

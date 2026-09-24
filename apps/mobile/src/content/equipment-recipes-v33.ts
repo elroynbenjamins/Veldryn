@@ -115,7 +115,7 @@ export const V33_EQUIPMENT_RECIPES:V33EquipmentRecipeDef[]=(catalog.pieces as Ar
     classId,
     characterLevel,
     v33EquipmentTier:tier,
-    v33Region:String(set.Region),
+    v33Region:tier==='T9'?'Ashlands':String(set.Region),
     v33SetId:setId,
     v33Path:String(piece.Path),
   };

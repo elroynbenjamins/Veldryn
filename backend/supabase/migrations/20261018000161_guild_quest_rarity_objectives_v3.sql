@@ -82,12 +82,12 @@ language sql immutable set search_path=public as $$
   case pick when 0 then 'Fishing + Mining' when 1 then 'Fishing' when 2 then 'Mining' when 3 then 'Woodcutting + Herbalism' when 4 then 'Smithing + Cooking' else 'Multi-skill' end,
   rarity,public.guild_quest_rarity_minutes_v3(rarity),
   case pick
-   when 0 then jsonb_build_object('mode','all','objectives',jsonb_build_array(jsonb_build_object('key','fishing','target',public.guild_quest_rarity_actions_v3(rarity)),jsonb_build_object('key','mining','target',public.guild_quest_rarity_actions_v3(rarity))))
+   when 0 then jsonb_build_object('mode','all','objectives',jsonb_build_array(jsonb_build_object('key','fishing','target',ceil(public.guild_quest_rarity_actions_v3(rarity)*.5)::int),jsonb_build_object('key','mining','target',ceil(public.guild_quest_rarity_actions_v3(rarity)*.5)::int)))
    when 1 then jsonb_build_object('mode','all','objectives',jsonb_build_array(jsonb_build_object('key','fishing','target',public.guild_quest_rarity_actions_v3(rarity))))
    when 2 then jsonb_build_object('mode','all','objectives',jsonb_build_array(jsonb_build_object('key','mining','target',public.guild_quest_rarity_actions_v3(rarity))))
-   when 3 then jsonb_build_object('mode','all','objectives',jsonb_build_array(jsonb_build_object('key','woodcutting','target',public.guild_quest_rarity_actions_v3(rarity)),jsonb_build_object('key','herbalism','target',public.guild_quest_rarity_actions_v3(rarity))))
-   when 4 then jsonb_build_object('mode','all','objectives',jsonb_build_array(jsonb_build_object('key','smithing','target',public.guild_quest_rarity_actions_v3(rarity)),jsonb_build_object('key','cooking','target',public.guild_quest_rarity_actions_v3(rarity))))
-   else jsonb_build_object('mode','all','objectives',jsonb_build_array(jsonb_build_object('key','fishing','target',ceil(public.guild_quest_rarity_actions_v3(rarity)*.7)::int),jsonb_build_object('key','mining','target',ceil(public.guild_quest_rarity_actions_v3(rarity)*.7)::int),jsonb_build_object('key','woodcutting','target',ceil(public.guild_quest_rarity_actions_v3(rarity)*.7)::int))) end,
+   when 3 then jsonb_build_object('mode','all','objectives',jsonb_build_array(jsonb_build_object('key','woodcutting','target',ceil(public.guild_quest_rarity_actions_v3(rarity)*.5)::int),jsonb_build_object('key','herbalism','target',ceil(public.guild_quest_rarity_actions_v3(rarity)*.5)::int)))
+   when 4 then jsonb_build_object('mode','all','objectives',jsonb_build_array(jsonb_build_object('key','smithing','target',ceil(public.guild_quest_rarity_actions_v3(rarity)*.5)::int),jsonb_build_object('key','cooking','target',ceil(public.guild_quest_rarity_actions_v3(rarity)*.5)::int)))
+   else jsonb_build_object('mode','all','objectives',jsonb_build_array(jsonb_build_object('key','fishing','target',ceil(public.guild_quest_rarity_actions_v3(rarity)/3.0)::int),jsonb_build_object('key','mining','target',ceil(public.guild_quest_rarity_actions_v3(rarity)/3.0)::int),jsonb_build_object('key','woodcutting','target',ceil(public.guild_quest_rarity_actions_v3(rarity)/3.0)::int))) end,
   public.guild_quest_rarity_reward_v3(rarity),3+slot
  from slots
 $$;

@@ -20,6 +20,17 @@ ok(processingRecipeDef('SMELT_COPPER_INGOT'),'repeatable material processing is 
 ok(processingRecipeDef('COOK_SILVERFIN'),'repeatable cooking is timed');
 ok(!processingRecipeDef(v33GearRecipe.id),'Equipment 2.0 gear uses the Forge instead of stackable processing');
 
+let cooking=createCharacter(newGame(now),'IRONWARDEN','Cook');
+cooking={...cooking,character:{...cooking.character!,gold:10000},inventory:{...cooking.inventory,stacks:[{itemId:'SILVERFIN',quantity:5},{itemId:'GREENWOOD_LOG',quantity:1}]}};
+const cookingReady=processingAvailability(cooking,'COOK_SILVERFIN',1);
+ok(cookingReady.ready,'regional fish Cooking batch is ready with fish and wood fuel');
+cooking=executeGameCommand(cooking,{type:'processing_start',args:{id:'COOK_SILVERFIN',batches:1}},now).state;
+equal(qty(cooking,'SILVERFIN'),0,'Cooking reserves the fish ingredient');
+equal(qty(cooking,'GREENWOOD_LOG'),0,'Cooking reserves its wood fuel');
+const cooked=claimActivity(cooking,now+36_000);
+equal(qty(cooked.state,'COOKED_SILVERFIN'),5,'completed Cooking batch produces edible fish');
+equal(cooked.state.skills.find(row=>row.skillId==='cooking')?.xp,100,'completed Cooking batch grants Cooking XP');
+
 let state=fresh();
 const availability=processingAvailability(state,'SMELT_COPPER_INGOT',5);
 ok(availability.ready&&availability.maxBatches>=5,'five copper batches can be reserved');

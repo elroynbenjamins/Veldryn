@@ -1,4 +1,5 @@
 import type {GameState} from './types';
+import {earlyFeatureUnlocked} from './early-feature-gates';
 export const BASE_PROFILE_BACKGROUNDS=[
   {id:'asterfall-night',name:'Asterfall Night',region:'KINGS_ROAD'},
   {id:'ironwood-dawn',name:'Ironwood Dawn',region:'IRONWOOD'},
@@ -6,6 +7,7 @@ export const BASE_PROFILE_BACKGROUNDS=[
   {id:'oathglass-hall',name:'Oathglass Hall',region:'KINGS_ROAD'},
 ] as const;
 export function canUseProfileCosmetic(state:GameState,kind:'background'|'border'|'pet',id:string){
+  if(kind==='pet'&&!earlyFeatureUnlocked(state,'pets'))return false;
   if(!id)return kind!=='background';
   if(kind==='background'&&BASE_PROFILE_BACKGROUNDS.some(item=>item.id===id))return true;
   const owned=kind==='background'?state.account.unlockedProfileBackgroundIds:kind==='border'?state.account.unlockedProfileBorderIds:state.account.unlockedCosmeticPetIds;

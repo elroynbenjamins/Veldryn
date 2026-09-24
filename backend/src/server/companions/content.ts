@@ -301,12 +301,12 @@ export const COMPANION_SPECIAL_CHALLENGES:CompanionSpecialChallengeDefinition[]=
 
 const utcBounds=(seasonKey:string)=>{const [y,m]=seasonKey.split('-').map(Number);const startsAt=new Date(Date.UTC(y,m-1,1)).toISOString();const endsAt=new Date(Date.UTC(y,m,1)).toISOString();return{startsAt,endsAt};};
 export const COMPANION_TRIAL_ROTATIONS=[
- {id:'ROTATION_1_GLASS_AND_SAND',name:'Glass & Sand',floorSetId:'tower_v1',modifiers:['armored','unstable_magic'],rewardSetId:'monthly_v1',specialChallenges:['NO_PRESTIGE_15','SUNSCAR_PAIR','AFFINITY_TRIAD'],featuredOrigin:'REG_SUNSCAR',featuredCompanionIds:['UNIT_013','UNIT_014','UNIT_015','UNIT_016']},
- {id:'ROTATION_2_BELLS_AND_SHADOW',name:'Bells & Shadow',floorSetId:'tower_v1',modifiers:['thick_hide','execution'],rewardSetId:'monthly_v1',specialChallenges:['STANDARD_BOSS','FROSTMARCH_PAIR','RADIANT_UMBRAL'],featuredOrigin:'REG_FROSTMARCH',featuredCompanionIds:['UNIT_017','UNIT_018','UNIT_019','UNIT_020']},
+ {id:'ROTATION_1_GLASS_AND_SAND',name:'Glass & Sand',floorSetId:'tower_v1',modifiers:['armored','unstable_magic'],rewardSetId:'monthly_v1',specialChallenges:['SUNSCAR_PAIR','AFFINITY_TRIAD','WORLDLY_TRIO'],featuredOrigin:'REG_SUNSCAR',featuredCompanionIds:['UNIT_013','UNIT_014','UNIT_015','UNIT_016']},
+ {id:'ROTATION_2_BELLS_AND_SHADOW',name:'Bells & Shadow',floorSetId:'tower_v1',modifiers:['thick_hide','execution'],rewardSetId:'monthly_v1',specialChallenges:['FROSTMARCH_PAIR','RADIANT_UMBRAL','FLAWLESS_15'],featuredOrigin:'REG_FROSTMARCH',featuredCompanionIds:['UNIT_017','UNIT_018','UNIT_019','UNIT_020']},
  {id:'ROTATION_3_CRUCIBLE',name:'The Crucible',floorSetId:'tower_v1',modifiers:['relentless','frailty'],rewardSetId:'monthly_v1',specialChallenges:['RARITY_SPECTRUM','ASHLANDS_PAIR','NO_CONSTRUCT_15'],featuredOrigin:'REG_ASHLANDS',featuredCompanionIds:['UNIT_021','UNIT_022','UNIT_023','UNIT_024']},
- {id:'ROTATION_4_ROOTS_AND_RUNES',name:'Roots & Runes',floorSetId:'tower_v1',modifiers:['rushing','shattering'],rewardSetId:'monthly_v1',specialChallenges:['ASTERFALL_PAIR','PRIMAL_WILD_PAIR','FLAWLESS_15'],featuredOrigin:'REG_001',featuredCompanionIds:['UNIT_001','UNIT_002','UNIT_003','UNIT_004']},
+ {id:'ROTATION_4_ROOTS_AND_RUNES',name:'Roots & Runes',floorSetId:'tower_v1',modifiers:['rushing','shattering'],rewardSetId:'monthly_v1',specialChallenges:['STANDARD_BOSS','ASTERFALL_PAIR','PRIMAL_WILD_PAIR'],featuredOrigin:'REG_001',featuredCompanionIds:['UNIT_001','UNIT_002','UNIT_003','UNIT_004']},
  {id:'ROTATION_5_RIFT_CONVERGENCE',name:'Rift Convergence',floorSetId:'tower_v1',modifiers:['arcane_storm','anti_heal'],rewardSetId:'monthly_v1',specialChallenges:['AFFINITY_TRIAD','WORLDLY_TRIO','UNDER_POWER_20']},
- {id:'ROTATION_6_ECHO_CROWN',name:'Echo Crown',floorSetId:'tower_v1',modifiers:['predator','armored'],rewardSetId:'monthly_v1',specialChallenges:['RADIANT_UMBRAL','RARITY_SPECTRUM','PRIMAL_WILD_PAIR']},
+ {id:'ROTATION_6_ECHO_CROWN',name:'Echo Crown',floorSetId:'tower_v1',modifiers:['predator','armored'],rewardSetId:'monthly_v1',specialChallenges:['RADIANT_UMBRAL','NO_CONSTRUCT_15','UNDER_POWER_20']},
 ] as const;
 export const COMPANION_TRIAL_ROTATION_ANCHOR='2026-09';
 export function companionTrialRotationIndex(seasonKey:string){

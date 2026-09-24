@@ -28,6 +28,11 @@ ok(chatPlayer.includes('useWindowDimensions')&&chatPlayer.includes("stackActions
 ok(chatPlayer.includes('actionsStack')&&chatPlayer.includes("actionStack:{flex:0,width:'100%',minWidth:0}"),'Chat player actions must stack full-width instead of squeezing');
 ok(chatPlayer.includes("blockButton:{minWidth:76,minHeight:44")&&chatPlayer.includes("reportButton:{minWidth:76,minHeight:44"),'Chat moderation actions must retain 44px touch targets');
 
+const forgeResult=read('src/components/ForgeResultFeedback.tsx');
+ok(forgeResult.includes('useWindowDimensions')&&forgeResult.includes('actionsStack'),'Forge result actions must remain reachable on narrow or large-text layouts');
+const travelModal=read('src/components/TravelRegionModal.tsx');
+ok(travelModal.includes('useWindowDimensions')&&travelModal.includes('actionsStack'),'Travel actions must remain reachable on narrow or large-text layouts');
+
 const nav=read('src/components/PrimaryNavigation.tsx');
 ok(nav.includes("badgeLabel=badge==='dot'?'new activity'"),'Primary navigation must announce dot badges');
 ok(nav.includes('notification'),'Primary navigation must announce numeric badge counts');

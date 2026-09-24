@@ -62,7 +62,7 @@ ok(activitySql.includes('private.guild_activity_receipts'),'Active Guild awards 
 ok(activitySql.includes("'muster_day'"),'Verified Muster qualification must temporarily sustain activity before Guild Quests ship');
 ok(activitySql.includes('grant execute on function public.guild_activity_award_v1')&&activitySql.includes('to service_role'),'Clients must not directly award Guild Activity');
 ok(screen.includes('<GuildActivitySummaryPanel compact/>'),'Guild Home must surface the Active Guild meter');
-ok(activitySummary.includes('20%')&&activitySummary.includes('Guild Activity'),'Guild Home Activity card must expose milestone progress');
+ok(activitySummary.includes('GUILD_ACTIVITY_MILESTONE_DEFS')&&activitySummary.includes('milestones active')&&activitySummary.includes('Guild Activity'),'Guild Home Activity card must expose milestone progress from authoritative definitions');
 ok(activitySummary.includes('Protected today')&&activitySummary.includes('if inactive'),'Guild Home must explain current decay protection state');
 
 console.log('PASS: Guild Muster is automatic, verified, capped, member-only, forgiving and tied to Hall progression');

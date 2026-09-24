@@ -66,7 +66,7 @@ export function MoreScreen({language,onNavigate,onOpenChatPilot,onOpenAdminQa,co
     if(id==='Social'&&socialAttentionCount>0)return <AttentionCount count={socialAttentionCount} label="Social updates"/>;
     if(id==='Friends'&&friendRequestCount>0)return <AttentionCount count={friendRequestCount} label="Incoming friend requests"/>;
     if(id==='Guild'&&guildAttentionCount>0)return <AttentionCount count={guildAttentionCount} label="Guild updates"/>;
-    if(id==='Companions'&&companionAttention)return <AttentionDot label="Companion actions ready"/>;
+    if(id==='Companions'&&companionsUnlocked&&companionAttention)return <AttentionDot label="Companion actions ready"/>;
     if(id==='Progression'&&workingTowardAttention)return <AttentionDot label="Working Toward goal complete"/>;
     if(id==='DailySupplies'&&dailySuppliesAttention)return <AttentionDot label="Daily Supplies ready"/>;
     if(id==='Events'&&eventAttention)return <AttentionDot label="Event rewards ready"/>;
@@ -75,7 +75,7 @@ export function MoreScreen({language,onNavigate,onOpenChatPilot,onOpenAdminQa,co
   };
   const attentionPriority:MoreDestination[]=['DailySupplies','Events','Progression','Companions','Social','Friends','Guild','Profile'];
   const attentionDestinations=attentionPriority.filter(id=>!!attentionLabel(id));
-  const attentionTotal=socialAttentionCount+friendRequestCount+guildAttentionCount+Number(companionAttention)+Number(workingTowardAttention)+Number(dailySuppliesAttention)+Number(eventAttention)+Number(profileAttention);
+  const attentionTotal=socialAttentionCount+friendRequestCount+guildAttentionCount+Number(companionsUnlocked&&companionAttention)+Number(workingTowardAttention)+Number(dailySuppliesAttention)+Number(eventAttention)+Number(profileAttention);
   return <ScrollView contentContainerStyle={s.root}>
     <View style={s.header}><View style={s.flex}><Text style={s.kicker}>ACCOUNT HUB</Text><Text accessibilityRole="header" style={s.heading}>Account</Text><Text style={s.sub}>{t(language,'more.intro')}</Text></View>{attentionTotal>0?<View style={s.headerAttention}><Text style={s.headerAttentionValue}>{attentionTotal>99?'99+':attentionTotal}</Text><Text style={s.headerAttentionLabel}>NEEDS ATTENTION</Text></View>:<View style={s.headerClear}><Text style={s.headerClearText}>CAUGHT UP</Text></View>}</View>
     {attentionDestinations.length?<View style={s.attentionRail}><View style={s.attentionRailHead}><Text style={s.sectionLabel}>NEEDS ATTENTION</Text><Text style={s.attentionRailMeta}>{attentionDestinations.length} destination{attentionDestinations.length===1?'':'s'}</Text></View><View style={s.attentionQuickRow}>{attentionDestinations.slice(0,3).map(id=>{const meta=itemMeta(language,id),alert=attentionLabel(id);return <Pressable key={id} accessibilityRole="button" accessibilityLabel={meta.title+', '+alert} onPress={()=>onNavigate(id)} style={({pressed})=>[s.attentionQuick,singleColumn&&s.attentionQuickWide,pressed&&s.pressed]}><View style={s.quickIconFrame}><Image accessible={false} source={navigationIcons[iconForDestination(id)]} resizeMode="contain" style={s.quickIcon}/></View><View style={s.quickCopy}><Text numberOfLines={1} style={s.quickTitle}>{meta.title}</Text><Text numberOfLines={1} style={s.quickDetail}>{alert}</Text></View><UiIcon name="next" size={16}/></Pressable>})}</View>{attentionDestinations.length>3?<Text style={s.attentionMore}>+{attentionDestinations.length-3} more highlighted below</Text>:null}</View>:null}

@@ -26,6 +26,30 @@ export const GUILD_XP_THRESHOLDS=Object.freeze([0,1200,3200,6500,11000,17000,245
 export const GUILD_SKILL_POINTS_BY_LEVEL=Object.freeze([0,3,6,9,14,17,20,23,26,31] as const);
 export const GUILD_SKILL_POINT_BUDGET=GUILD_SKILL_POINTS_BY_LEVEL[GUILD_LAUNCH_LEVEL_CAP-1];
 
+export type GuildTreeTier=1|2|3;
+export interface GuildTreeTierRequirement{
+ branch:GuildSkillBranch;tier:GuildTreeTier;requiredGuildLevel:number;
+ projectKey?:string;goldCost:number;materialContributionUnits:number;
+}
+/**
+ * Skill Points buy individual ranks. Resources do not get charged on every click.
+ * Instead, communal Development Projects unlock the expensive Tree tiers.
+ * materialContributionUnits are normalized project units so content data can map them
+ * to current authored materials without hard-coding stale item IDs here.
+ */
+export const GUILD_TREE_TIER_REQUIREMENTS:readonly GuildTreeTierRequirement[]=[
+ {branch:'professions',tier:1,requiredGuildLevel:1,goldCost:0,materialContributionUnits:0},
+ {branch:'professions',tier:2,requiredGuildLevel:5,projectKey:'guild.tree.professions.2',goldCost:60000,materialContributionUnits:900},
+ {branch:'professions',tier:3,requiredGuildLevel:9,projectKey:'guild.tree.professions.3',goldCost:180000,materialContributionUnits:2400},
+ {branch:'fellowship',tier:1,requiredGuildLevel:1,goldCost:0,materialContributionUnits:0},
+ {branch:'fellowship',tier:2,requiredGuildLevel:4,projectKey:'guild.tree.fellowship.2',goldCost:50000,materialContributionUnits:750},
+ {branch:'fellowship',tier:3,requiredGuildLevel:8,projectKey:'guild.tree.fellowship.3',goldCost:150000,materialContributionUnits:2100},
+ {branch:'vanguard',tier:1,requiredGuildLevel:1,goldCost:0,materialContributionUnits:0},
+ {branch:'vanguard',tier:2,requiredGuildLevel:6,projectKey:'guild.tree.vanguard.2',goldCost:90000,materialContributionUnits:1200},
+ {branch:'vanguard',tier:3,requiredGuildLevel:10,projectKey:'guild.tree.vanguard.3',goldCost:250000,materialContributionUnits:3200},
+] as const;
+
+
 const SMALL_RANK_COSTS=[1,1,2,2,3] as const;
 export const GUILD_TREE_DEVELOPMENT_UNLOCKS=Object.freeze({
  professionsTier2:'guild.tree.professions.tier2',
@@ -55,19 +79,19 @@ export function guildTreeDevelopmentCost(gate:GuildTreeDevelopmentGate,activeMem
 }
 
 export const GUILD_SKILLS:readonly GuildSkill[]=[
- {id:'professions_training',branch:'professions',name:'Skilling Mentorship',description:'Improves non-combat Skill XP for Guild members.',maxRank:5,costPerRank:[...SMALL_RANK_COSTS],effectKey:'skillXpBps',effectPerRank:120,requiredGuildLevelByRank:[2,3,5,7,9],requiredDevelopmentUnlockByRank:[null,null,GUILD_TREE_DEVELOPMENT_UNLOCKS.professionsTier2,GUILD_TREE_DEVELOPMENT_UNLOCKS.professionsTier2,GUILD_TREE_DEVELOPMENT_UNLOCKS.professionsTier3],scope:'all_skilling'},
- {id:'professions_gathering',branch:'professions',name:"Gatherer's Network",description:'Improves gathering action speed. No combat effect.',maxRank:5,costPerRank:[...SMALL_RANK_COSTS],effectKey:'gatheringSpeedBps',effectPerRank:120,requiredGuildLevelByRank:[2,4,5,7,10],requiredDevelopmentUnlockByRank:[null,null,GUILD_TREE_DEVELOPMENT_UNLOCKS.professionsTier2,GUILD_TREE_DEVELOPMENT_UNLOCKS.professionsTier2,GUILD_TREE_DEVELOPMENT_UNLOCKS.professionsTier3],scope:'all_skilling'},
- {id:'professions_production',branch:'professions',name:'Workshop Rhythm',description:'Improves crafting and processing speed. No combat effect.',maxRank:5,costPerRank:[...SMALL_RANK_COSTS],effectKey:'productionSpeedBps',effectPerRank:120,requiredGuildLevelByRank:[3,4,6,8,10],requiredDevelopmentUnlockByRank:[null,null,GUILD_TREE_DEVELOPMENT_UNLOCKS.professionsTier2,GUILD_TREE_DEVELOPMENT_UNLOCKS.professionsTier2,GUILD_TREE_DEVELOPMENT_UNLOCKS.professionsTier3],scope:'all_skilling'},
+ {id:'professions_training',branch:'professions',name:'Skilling Mentorship',description:'Six small ranks of non-combat Skill XP. Max +6%.',maxRank:6,costPerRank:[...PROFESSION_COSTS],effectKey:'skillXpBps',effectPerRank:100,requiredGuildLevelByRank:[2,3,4,6,8,10],scope:'all_skilling'},
+ {id:'professions_gathering',branch:'professions',name:"Gatherer's Network",description:'Six small ranks of gathering action speed. Max +6%.',maxRank:6,costPerRank:[...PROFESSION_COSTS],effectKey:'gatheringSpeedBps',effectPerRank:100,requiredGuildLevelByRank:[2,3,5,6,8,10],scope:'all_skilling'},
+ {id:'professions_production',branch:'professions',name:'Workshop Rhythm',description:'Six small ranks of crafting and processing speed. Max +6%.',maxRank:6,costPerRank:[...PROFESSION_COSTS],effectKey:'productionSpeedBps',effectPerRank:100,requiredGuildLevelByRank:[3,4,5,7,9,10],scope:'all_skilling'},
 
- {id:'member_capacity',branch:'fellowship',name:'Open Halls',description:'Expands the launch Guild member cap by 2 per rank.',maxRank:4,costPerRank:[2,2,3,4],effectKey:'memberCap',effectPerRank:2,requiredGuildLevelByRank:[...GUILD_MEMBER_CAP_LEVEL_GATES],requiredDevelopmentUnlockByRank:[null,null,GUILD_TREE_DEVELOPMENT_UNLOCKS.fellowshipTier2,GUILD_TREE_DEVELOPMENT_UNLOCKS.fellowshipTier3],scope:'guild_system'},
- {id:'fellowship_projects',branch:'fellowship',name:'Project Council',description:'Adds extra candidates to future Guild Project boards.',maxRank:2,costPerRank:[3,5],effectKey:'projectDraftChoices',effectPerRank:1,requiredGuildLevelByRank:[5,9],requiredDevelopmentUnlockByRank:[GUILD_TREE_DEVELOPMENT_UNLOCKS.fellowshipTier2,GUILD_TREE_DEVELOPMENT_UNLOCKS.fellowshipTier3],scope:'guild_system'},
- {id:'fellowship_quests',branch:'fellowship',name:'Guild Quests',description:'Unlocks deeper cooperative Guild quest tiers.',maxRank:4,costPerRank:[1,2,3,4],effectKey:'guildQuestTier',effectPerRank:1,requiredGuildLevelByRank:[3,5,7,10],requiredDevelopmentUnlockByRank:[null,GUILD_TREE_DEVELOPMENT_UNLOCKS.fellowshipTier2,GUILD_TREE_DEVELOPMENT_UNLOCKS.fellowshipTier2,GUILD_TREE_DEVELOPMENT_UNLOCKS.fellowshipTier3],scope:'guild_system'},
- {id:'fellowship_network',branch:'fellowship',name:'Fellowship Network',description:'Unlocks Decrees and later cooperative Guild systems.',maxRank:3,costPerRank:[2,4,6],effectKey:'fellowshipUnlockTier',effectPerRank:1,requiredGuildLevelByRank:[4,7,10],requiredDevelopmentUnlockByRank:[null,GUILD_TREE_DEVELOPMENT_UNLOCKS.fellowshipTier2,GUILD_TREE_DEVELOPMENT_UNLOCKS.fellowshipTier3],scope:'guild_system'},
+ {id:'member_capacity',branch:'fellowship',name:'Open Halls',description:'Expands the launch Guild member cap by 2 per rank.',maxRank:4,costPerRank:[...FELLOWSHIP_COSTS],effectKey:'memberCap',effectPerRank:2,requiredGuildLevelByRank:[...GUILD_MEMBER_CAP_LEVEL_GATES],scope:'guild_system'},
+ {id:'fellowship_projects',branch:'fellowship',name:'Project Council',description:'Unlocks extra Project-board choice and coordination tiers.',maxRank:4,costPerRank:[...FELLOWSHIP_COSTS],effectKey:'projectDraftChoices',effectPerRank:1,requiredGuildLevelByRank:[3,5,7,10],scope:'guild_system'},
+ {id:'fellowship_quests',branch:'fellowship',name:'Guild Quests',description:'Unlocks deeper cooperative Guild quest tiers.',maxRank:4,costPerRank:[...FELLOWSHIP_COSTS],effectKey:'guildQuestTier',effectPerRank:1,requiredGuildLevelByRank:[3,5,7,10],scope:'guild_system'},
+ {id:'fellowship_network',branch:'fellowship',name:'Fellowship Network',description:'Unlocks Decree and future cooperative-system tiers.',maxRank:4,costPerRank:[...FELLOWSHIP_COSTS],effectKey:'fellowshipUnlockTier',effectPerRank:1,requiredGuildLevelByRank:[4,6,8,10],scope:'guild_system'},
 
- {id:'vanguard_assault',branch:'vanguard',name:'Guild Assault Drills',description:'Increases damage only inside Guild combat content.',maxRank:5,costPerRank:[...SMALL_RANK_COSTS],effectKey:'guildCombatDamageBps',effectPerRank:120,requiredGuildLevelByRank:[3,4,6,8,10],requiredDevelopmentUnlockByRank:[null,null,GUILD_TREE_DEVELOPMENT_UNLOCKS.vanguardTier2,GUILD_TREE_DEVELOPMENT_UNLOCKS.vanguardTier2,GUILD_TREE_DEVELOPMENT_UNLOCKS.vanguardTier3],scope:'guild_combat_only'},
- {id:'vanguard_guard',branch:'vanguard',name:'Guild Guard Drills',description:'Increases mitigation only inside Guild combat content.',maxRank:5,costPerRank:[...SMALL_RANK_COSTS],effectKey:'guildCombatDefenseBps',effectPerRank:120,requiredGuildLevelByRank:[3,4,6,8,10],requiredDevelopmentUnlockByRank:[null,null,GUILD_TREE_DEVELOPMENT_UNLOCKS.vanguardTier2,GUILD_TREE_DEVELOPMENT_UNLOCKS.vanguardTier2,GUILD_TREE_DEVELOPMENT_UNLOCKS.vanguardTier3],scope:'guild_combat_only'},
- {id:'vanguard_support',branch:'vanguard',name:'Guild Support Drills',description:'Improves healing/support only inside Guild combat content.',maxRank:5,costPerRank:[...SMALL_RANK_COSTS],effectKey:'guildSupportPowerBps',effectPerRank:120,requiredGuildLevelByRank:[4,5,7,9,10],requiredDevelopmentUnlockByRank:[null,null,GUILD_TREE_DEVELOPMENT_UNLOCKS.vanguardTier2,GUILD_TREE_DEVELOPMENT_UNLOCKS.vanguardTier2,GUILD_TREE_DEVELOPMENT_UNLOCKS.vanguardTier3],scope:'guild_combat_only'},
- {id:'vanguard_boss',branch:'vanguard',name:'Boss Coordination',description:'Improves contribution efficiency only for Guild bosses and raids.',maxRank:5,costPerRank:[...SMALL_RANK_COSTS],effectKey:'guildBossContributionBps',effectPerRank:120,requiredGuildLevelByRank:[4,5,7,9,10],requiredDevelopmentUnlockByRank:[null,null,GUILD_TREE_DEVELOPMENT_UNLOCKS.vanguardTier2,GUILD_TREE_DEVELOPMENT_UNLOCKS.vanguardTier2,GUILD_TREE_DEVELOPMENT_UNLOCKS.vanguardTier3],scope:'guild_combat_only'},
+ {id:'vanguard_assault',branch:'vanguard',name:'Guild Assault Drills',description:'Six costly ranks of damage only inside Guild combat. Max +6%.',maxRank:6,costPerRank:[...VANGUARD_COSTS],effectKey:'guildCombatDamageBps',effectPerRank:100,requiredGuildLevelByRank:[3,4,5,6,8,10],scope:'guild_combat_only'},
+ {id:'vanguard_guard',branch:'vanguard',name:'Guild Guard Drills',description:'Six costly ranks of mitigation only inside Guild combat. Max +6%.',maxRank:6,costPerRank:[...VANGUARD_COSTS],effectKey:'guildCombatDefenseBps',effectPerRank:100,requiredGuildLevelByRank:[3,4,5,6,8,10],scope:'guild_combat_only'},
+ {id:'vanguard_support',branch:'vanguard',name:'Guild Support Drills',description:'Six costly ranks of healing/support power only inside Guild combat. Max +6%.',maxRank:6,costPerRank:[...VANGUARD_COSTS],effectKey:'guildSupportPowerBps',effectPerRank:100,requiredGuildLevelByRank:[4,5,6,7,9,10],scope:'guild_combat_only'},
+ {id:'vanguard_boss',branch:'vanguard',name:'Boss Coordination',description:'Six costly ranks of Guild boss/raid contribution. Max +6%.',maxRank:6,costPerRank:[...VANGUARD_COSTS],effectKey:'guildBossContributionBps',effectPerRank:100,requiredGuildLevelByRank:[4,5,6,7,9,10],scope:'guild_combat_only'},
 ];
 
 export function guildLevelForXp(xp:number):number{

@@ -1,5 +1,8 @@
 import {createCharacter,newGame} from '../src/core/game';
 import {campaignProgressSummary,dashboardRecommendation,homeSessionSummary} from '../src/core/dashboard';
+import {RECIPES} from '../src/content/skills';
+import {recipePreparationRoute} from '../src/core/material-acquisition-plan';
+import {recipePreparationGoalForRecipe} from '../src/core/recipe-preparation-goals';
 
 function fail(message:string):never{throw new Error(message)}
 function equal(actual:unknown,expected:unknown,message:string){if(actual!==expected)fail(`${message}: expected ${String(expected)}, got ${String(actual)}`)}
@@ -15,6 +18,17 @@ const firstSession=homeSessionSummary(state,Date.UTC(2026,8,22,12));
 ok(firstSession.dailyReady,'Fresh session exposes the Daily Supplies claim in Home session priorities');
 equal(firstSession.primaryReady?.kind,'daily','Daily Supplies becomes the primary ready action when no story reward is waiting');
 ok(firstSession.goalTotal===0&&firstSession.goalReady===0,'Home session priorities do not invent Working Toward progress');
+const prepBase=createCharacter(newGame(2),'IRONWARDEN','Home Preparation');
+const prepState={...prepBase,character:{...prepBase.character!,level:20,gold:100000},skills:prepBase.skills.map(skill=>skill.skillId==='smithing'?{...skill,level:12}:skill.skillId==='mining'?{...skill,level:8}:skill.skillId==='woodcutting'?{...skill,level:7}:skill)};
+const prepRecipe=RECIPES.find(row=>row.id==='FORGE_REINFORCED_FITTING')!,prepRoute=recipePreparationRoute(prepState,prepRecipe,1),prepGoal=recipePreparationGoalForRecipe({state:prepState,recipe:prepRecipe,batches:1,initialStepCount:prepRoute.steps.length,nowMs:10});
+const trackedHomeState={...prepState,character:{...prepState.character!,progressionGoals:[prepGoal]}};
+const prepSession=homeSessionSummary(trackedHomeState,Date.UTC(2026,8,22,12));
+ok(prepSession.goalNext?.includes('Aster-Iron Ore'),'Home session exposes the live tracked preparation next step');
+equal(prepSession.goalNextStep,`Step 1/${prepRoute.steps.length}`,'Home session exposes exact Step X/Y preparation progress');
+ok(!!prepSession.goalNextDestination&&prepSession.goalNextDestination.kind!=='info','Home session carries the exact actionable preparation destination');
+equal(prepSession.goalNextBlocked,false,'Actionable tracked preparation is not mislabeled as blocked');
+equal(prepSession.primaryReady?.kind,'daily','Higher-priority ready claims still outrank tracked preparation continuation');
+
 
 state={...state,character:{...state.character!,level:7},quests:state.quests.map(row=>row.questId==='QST_005'?{...row,status:'active',progress:7}:{...row,status:'locked',progress:0})};
 const storyReadyState={...state,quests:state.quests.map((row,index)=>index===0?{...row,status:'complete' as const,progress:5}:row)};

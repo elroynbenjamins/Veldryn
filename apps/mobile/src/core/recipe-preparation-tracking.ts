@@ -13,6 +13,8 @@ export interface RecipePreparationTrackingView{
  current:number;
  target:number;
  progress:number;
+ stepNumber:number;
+ stepLabel:string;
  etaSeconds?:number;
  etaLabel:string;
  nextStep?:RecipePreparationStep;
@@ -33,7 +35,7 @@ export function recipePreparationTrackingView(state:GameState,goal:RecipePrepara
  const recipe=RECIPES.find(row=>row.id===goal.recipeId),outputOwned=recipeOutputOwnedQuantity(state,goal.outputItemId);
  const target=Math.max(1,goal.initialStepCount),crafted=outputOwned>=goal.targetOutputQuantity;
  if(!recipe){
-  return {goal,status:'blocked',current:0,target,progress:0,etaLabel:'ETA unavailable',nextLabel:'Recipe unavailable',destination:fallbackDestination(goal.recipeId),blocker:'This tracked recipe is no longer in the current catalog.',outputOwned};
+  return {goal,status:'blocked',current:0,target,progress:0,stepNumber:1,stepLabel:`Step 1/${target}`,etaLabel:'ETA unavailable',nextLabel:'Recipe unavailable',destination:fallbackDestination(goal.recipeId),blocker:'This tracked recipe is no longer in the current catalog.',outputOwned};
  }
  const route=recipePreparationRoute(state,recipe,goal.batches),remaining=Math.max(1,route.steps.length);
  const current=crafted?target:Math.max(0,Math.min(target-1,target-remaining));
@@ -42,8 +44,9 @@ export function recipePreparationTrackingView(state:GameState,goal:RecipePrepara
  const destination=crafted?fallbackDestination(goal.recipeId):nextStep?.destination??fallbackDestination(goal.recipeId);
  const blocker=blocked?(goldBlocked?`Need ${route.goldShortfall.toLocaleString()} more Gold for the tracked craft.`:route.blockedReasons[0]??nextStep?.detail):undefined;
  const etaSeconds=crafted?0:route.etaSeconds,etaLabel=crafted?'Complete':etaSeconds!==undefined?`~${formatBalanceDuration(etaSeconds)}`:'ETA unavailable';
+ const stepNumber=crafted?target:Math.max(1,Math.min(target,current+1)),stepLabel=`Step ${stepNumber}/${target}`;
  return {
-  goal,route,status:crafted?'complete':blocked?'blocked':'active',current,target,progress:crafted?1:Math.max(0,Math.min(1,current/target)),
+  goal,route,status:crafted?'complete':blocked?'blocked':'active',current,target,progress:crafted?1:Math.max(0,Math.min(1,current/target)),stepNumber,stepLabel,
   etaSeconds,etaLabel,nextStep,nextLabel:crafted?'Tracked craft complete':nextStep?.label??recipe.name,destination,blocker,outputOwned,
  };
 }

@@ -24,7 +24,7 @@ import {QuestScreen,type QuestMode} from './src/screens/QuestScreen';
 import {SkillsScreen} from './src/screens/SkillsScreen';
 import {CompanionsScreen} from './src/screens/CompanionsScreen';
 import {SettingsScreen} from './src/screens/SettingsScreen';
-import {MoreScreen} from './src/screens/MoreScreen';
+import {MoreScreen,type MoreDestination} from './src/screens/MoreScreen';
 import {ChatPilotDevScreen} from './src/screens/ChatPilotDevScreen';
 import {AdminQaScreen} from './src/screens/AdminQaScreen';
 import {GuildScreen} from './src/screens/GuildScreen';
@@ -179,6 +179,8 @@ function VeldrynApp(){
   },[tab,profileCustomizeDirty]);
   const setTab=useCallback((destination:Tab)=>{
     if(destination===tab)return;
+    const current=stateRef.current,lockReason=current?earlyFeatureLockReason(current,destination):'';
+    if(lockReason){Alert.alert('Locked for now',lockReason);return;}
     confirmProfileCustomizeExit(()=>{
       setProfileCustomizeDirty(false);
       setTabHistory(history=>[...history,tab].slice(-24));
@@ -296,7 +298,7 @@ const next=discoverCharacterSkins(candidate);queuePreparationNotices(current,nex
   function queueActivity(next:{kind:'combat'|'gathering';id:string;challengeId?:CombatChallengeId;tacticId?:CombatTacticId;goalId?:HuntGoalId}){
     mutateActionQueue({type:'queue_add',args:{kind:next.kind,id:next.id,...(next.challengeId?{challengeId:next.challengeId}:{}),...(next.tacticId?{tacticId:next.tacticId}:{}),...(next.goalId?{goalId:next.goalId}:{})}});
   }
-  function openQuestMode(mode:QuestMode,focusedOrderId?:string){setQuestMode(mode);setQuestFocusOrderId(mode==='contracts'?focusedOrderId:undefined);setTab('Quests');}
+  function openQuestMode(mode:QuestMode,focusedOrderId?:string){const current=stateRef.current;if(mode==='contracts'&&current&&!earlyFeatureUnlocked(current,'contracts')){Alert.alert('Contract Board locked','Complete Into Ironwood to unlock regional and weekly Contracts.');return;}setQuestMode(mode);setQuestFocusOrderId(mode==='contracts'?focusedOrderId:undefined);setTab('Quests');}
   function openWeeklyOrder(order:WeeklyOrder){openWorkingTowardDestination(weeklyOrderDestination(order));}
   function pinWeeklyOrder(order:WeeklyOrder){
     if(!state?.character)return;

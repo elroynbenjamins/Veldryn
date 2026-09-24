@@ -1,4 +1,4 @@
-import {strict as assert} from 'node:assert';
+import {assert} from './test-assert';
 import {COMPANION_HOUSING_VISUALS,companionHousingVisual} from '../src/core/companion-housing';
 
 assert.equal(COMPANION_HOUSING_VISUALS.length,4);

@@ -30,6 +30,7 @@ import {buildAdminQaState,refillAdminQaResources} from '../dev/admin-qa-profile'
 import {isTimedProcessingRecipe} from './processing';
 import type {FallenKnightBattleResult} from './story-boss';
 import {reconcileWorkingTowardGeneratedRules} from './working-toward-execution';
+import {upgradeCompanionHousing} from './companion-housing';
 
 /** Commands express intent. Neither a client save nor a client reward is accepted. */
 export interface GameCommand {type:string;args?:Record<string,unknown>}
@@ -39,7 +40,7 @@ export interface GameCommandResult {state:GameState;reward?:RewardBundle;activit
 const fields:Record<string,readonly string[]>={
  class_training:[],class_focus:['focus'],herbalism_method:['method'],faith_practice:['tierId','count'],faith_blessing:['id'],faith_favorite:['id','enabled'],faith_hide:['enabled'],alchemy_start:['id','batches'],processing_start:['id','batches'],
  companion_monthly:['id'],companion_supplies:[],companion_bond_reward:['id','level'],companion_boss_rematch:[],
- companion_equip:['id'],companion_unequip:[],companion_level:['id'],companion_ascend:['id'],companion_master:['id'],companion_upgrade:['id'],companion_training:[],companion_essence:[],
+ companion_equip:['id'],companion_unequip:[],companion_housing_upgrade:['id'],companion_level:['id'],companion_ascend:['id'],companion_master:['id'],companion_upgrade:['id'],companion_training:[],companion_essence:[],
  companion_trial_start:['ids','floor'],companion_trial_floor:['id','floor'],companion_trial_abandon:['id'],companion_assignment_start:['id','ids'],companion_assignment_claim:['id'],companion_technique:['id','technique'],companion_codex:['id'],companion_showcase:['id','ids'],companion_weekly:['id'],companion_special:['id','ids'],
  create:['classId','name','body'],claim:[],start:['kind','id','challengeId','tacticId','goalId'],queue_add:['kind','id','challengeId','tacticId','goalId'],queue_remove:['index'],queue_move:['index','direction'],queue_clear:[],queue_start:[],explore:['id'],stop:[],travel:['id'],boss:[],craft:['id'],craft_claim:['id'],craft_claim_all:[],craft_cancel:['id'],craft_move:['id','direction'],craft_prerequisites:['id'],use_potion:['id'],discard_preparation:[],
  roster_create:['classId','name','body'],roster_switch:['id'],roster_delete:['id','confirmation'],
@@ -157,6 +158,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'companion_monthly':case 'companion_supplies':case 'companion_bond_reward':state=executeCompanionActivity(state,command.type,a,now);break;
   case 'companion_equip':state=companions.equipCombatCompanion(state,text(a,'id'));break;
   case 'companion_unequip':state=companions.unequipCombatCompanion(state);break;
+  case 'companion_housing_upgrade':state=upgradeCompanionHousing(state,text(a,'id'));message='Companion quarters upgraded';break;
   case 'companion_level':state=companions.purchaseCompanionLevel(state,text(a,'id'));break;
   case 'companion_ascend':state=companions.ascendCombatCompanion(state,text(a,'id'));break;
   case 'companion_master':state=companions.masterPrestigeCompanion(state,text(a,'id'));break;

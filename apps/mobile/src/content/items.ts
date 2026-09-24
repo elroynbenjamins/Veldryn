@@ -1,7 +1,7 @@
 import { ClassId,GatheringSkillId,GearSlot,GemEffectId,GemSocketKind,GemStat } from '../core/types';
 import {ItemRarity} from '../core/item-rarity';
 import {NOVICE_ITEMS} from './novice-sets';
-import {TOOL_ITEMS} from './gathering-tools';
+import {TOOL_BLUEPRINT_ITEMS,TOOL_ITEMS} from './gathering-tools';
 import {HERB_ITEMS} from './herbalism';
 import {POTION_ITEMS} from './alchemy';
 import {EQUIPMENT_ITEMS_V33} from './equipment-items-v33';
@@ -10,7 +10,7 @@ export interface ItemDef {
   id:string; name:string; type:'material'|'gear'|'quest'|'food'|'tool'|'gem'|'potion'; slot?:GearSlot;
   attack?:number; defense?:number; hp?:number; heal?:number; readiness?:number;
   toolSkillId?:GatheringSkillId;toolTier?:number;actionTimeMultiplier?:number;
-  rarity?:ItemRarity; passive?:string;
+  rarity?:ItemRarity; passive?:string; knowledgeUnlockId?:string;
   value:number; salvage?:{itemId:string;quantity:number};
   classRestriction?:ClassId; requiredLevel?:number; noviceSetId?:string; equipmentSetId?:string; rawGemFamilyId?:string; rawGemGrade?:MobileGemGradeV1;
   gemStat?:GemStat; gemPercent?:number; gemTier?:MobileGemGradeV1; gemKind?:GemSocketKind; gemEffect?:GemEffectId; gemEffectValue?:number;
@@ -22,6 +22,7 @@ const BASE_ITEMS:ItemDef[]=[
 ...NOVICE_ITEMS,
 {id:'HOLY_WATER',name:'Holy Water',type:'material',value:0,rarity:'uncommon'},
 ...TOOL_ITEMS,
+...TOOL_BLUEPRINT_ITEMS,
 ...HERB_ITEMS,
 ...POTION_ITEMS,
 // Enhancement economy. Gems are intentionally scarce drops; tempering materials are universal.

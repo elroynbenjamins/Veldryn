@@ -76,6 +76,7 @@ const BASE_ITEMS:ItemDef[]=[
 {id:'AMBERGLASS',name:'Amberglass',type:'material',value:180,rarity:'uncommon'},
 {id:'ASTRAL_SCRIPT',name:'Astral Script',type:'material',value:420,rarity:'rare'},
 {id:'FROSTIRON',name:'Frostiron',type:'material',value:150},
+{id:'BLACKGLASS_ORE',name:'Blackglass Ore',type:'material',value:240,rarity:'rare'},
 {id:'RIMEGLASS',name:'Rimeglass',type:'material',value:430,rarity:'rare'},
 {id:'CHOIR_BLOOM',name:'Choir Bloom',type:'material',value:480,rarity:'rare'},
 // V33 regional resource identities. Source/drop wiring is authoritative on the backend.

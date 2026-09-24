@@ -17,7 +17,20 @@ import {companionTrialWeekKey} from '../../../../backend/src/server/companions/t
 import {companionTeamPower} from '../../../../backend/src/server/companions/team';
 import {COMPANION_SPECIAL_CHALLENGES,companionMission,companionTrialRecommendedPower,companionServerDefinition} from '../../../../backend/src/server/companions/content';
 import {resolveSpecialCompanionChallenge} from '../../../../backend/src/server/companions/special-challenges';
+import {companionExpeditionStaminaCost,companionFoodStamina} from './companion-provisions';
+import {itemDef} from '../content/items';
 import type {CompanionAssignment,CompanionTrialProgress,CompanionProvingGroundState,CompanionOverflowState,OwnedCompanionSnapshot,CompanionEconomyState,CompanionCombatExecutor,CompanionUnlockFacts,CompanionProvingGroundEvent} from '../../../../backend/src/server/companions/domain';
+
+function expeditionFoodArg(value:unknown){if(!Array.isArray(value)||value.length<1||value.length>20)throw new Error('invalid_companion_food');return value.map(row=>{if(!row||typeof row!=='object'||Array.isArray(row))throw new Error('invalid_companion_food');const r=row as Record<string,unknown>;if(typeof r.itemId!=='string'||!Number.isSafeInteger(r.quantity)||Number(r.quantity)<1||Number(r.quantity)>10000)throw new Error('invalid_companion_food');const item=itemDef(r.itemId);if(item.type!=='food'||!item.heal)throw new Error('invalid_companion_food');return {itemId:r.itemId,quantity:Number(r.quantity)};});}
+function spendExpeditionFood(state:GameState,food:{itemId:string;quantity:number}[],requiredStamina:number){
+ const available=(id:string)=>[...state.inventory.stacks,...state.bank.stacks].filter(s=>s.itemId===id).reduce((sum,s)=>sum+s.quantity,0);
+ for(const row of food)if(available(row.itemId)<row.quantity)throw new Error('companion_food_missing');
+ const supplied=food.reduce((sum,row)=>sum+companionFoodStamina(row.itemId)*row.quantity,0);if(supplied<requiredStamina)throw new Error('companion_stamina_required');
+ const spend=(stacks:typeof state.inventory.stacks,id:string,amount:number)=>stacks.map(s=>s.itemId===id?{...s,quantity:s.quantity-amount}:s).filter(s=>s.quantity>0);
+ let inventory=state.inventory.stacks.map(x=>({...x})),bank=state.bank.stacks.map(x=>({...x}));
+ for(const row of food){let remaining=row.quantity,take=Math.min(remaining,inventory.find(s=>s.itemId===row.itemId)?.quantity??0);if(take){inventory=spend(inventory,row.itemId,take);remaining-=take;}if(remaining)bank=spend(bank,row.itemId,remaining);}
+ return {...state,inventory:{...state.inventory,stacks:inventory},bank:{...state.bank,stacks:bank},account:{...state.account,longTermMetrics:{...(state.account.longTermMetrics??{}),'companions.expedition.stamina_supplied':(state.account.longTermMetrics?.['companions.expedition.stamina_supplied']??0)+Math.floor(supplied)}}};
+}
 
 /** Additive account schema; game schema 6 and the existing atomic online store remain compatible. */
 export interface CompanionAccountState {
@@ -225,8 +238,9 @@ export function executeCompanionActivity(input:GameState,type:string,a:Record<st
       state.account.companionLastBattle={title:`Trial Floor ${run.currentFloor}`,won:r.result.victory,durationMs:r.result.durationMs,gold:r.reward.gold,essence:r.reward.companionEssence,bondstones:r.reward.bondstones,atMs:now};break;
     }
     case 'companion_assignment_start':{
+      const missionDef=companionMission(stringArg(a,'id'));if(!missionDef)throw new Error('unknown_companion_mission');const food=expeditionFoodArg(a.food),requiredStamina=companionExpeditionStaminaCost(missionDef.durationMs/3600000);
       const r=startCompanionAssignment({accountId:state.character.id,missionId:stringArg(a,'id'),companionIds:idsArg(a),owned,assignments:assignments.filter(x=>x.status!=='claimed'&&x.status!=='cancelled'),equippedCompanionIds:new Set(state.character.equippedCombatCompanionId?[state.character.equippedCombatCompanionId]:[]),lockedTrialCompanionIds:new Set(state.account.companionTrialProgress?.season.activeRun?.teamCompanionIds??[]),expeditionPensLevel:state.account.companionSanctuary?.expeditionPensLevel??0,economy:companionEconomy(state),serverNowMs:now,requestId:seed});
-      state=applyEconomy(state,r.economy);state.account.companionAssignments=[...assignments.filter(x=>x.status==='claimed'||x.status==='cancelled').slice(-8),...assignments.filter(x=>x.status!=='claimed'&&x.status!=='cancelled'),r.assignment];
+      state=spendExpeditionFood(state,food,requiredStamina);state=applyEconomy(state,r.economy);state.account.companionAssignments=[...assignments.filter(x=>x.status==='claimed'||x.status==='cancelled').slice(-8),...assignments.filter(x=>x.status!=='claimed'&&x.status!=='cancelled'),r.assignment];
       state=companionMetric(state,`companions.expedition.${r.assignment.missionId}.starts`);for(const id of r.assignment.companionIds)state=companionMetric(state,`companions.expedition.usage.${id}`);
       break;
     }

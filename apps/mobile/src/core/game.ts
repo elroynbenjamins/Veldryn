@@ -78,6 +78,9 @@ const COMBAT_SPEED_MAX=1.3;
 export const COMBAT_TIME_SCALE=1.16;
 const COMBAT_EXPECTED_SCALE=1.3;
 const COMBAT_MONSTER_DAMAGE_SCALE=1.13;
+/** Ordinary regional combat should consume some food for a reasonably prepared player. */
+export const REGIONAL_COMBAT_PRESSURE:Readonly<Record<string,number>>={Greenfields:1.00,Silverbrook:1.04,'Ironwood Forest':1.08,'Old Mines':1.12,"King's Road":1.16,Sunscar:1.20,Frostmarch:1.25,Ashlands:1.30};
+export const REGIONAL_FOOD_SUSTAIN_TARGETS:Readonly<Record<string,{foodPerHourMin:number;foodPerHourMax:number}>>={Greenfields:{foodPerHourMin:0,foodPerHourMax:3},Silverbrook:{foodPerHourMin:1,foodPerHourMax:4},'Ironwood Forest':{foodPerHourMin:2,foodPerHourMax:6},'Old Mines':{foodPerHourMin:3,foodPerHourMax:7},"King's Road":{foodPerHourMin:4,foodPerHourMax:8},Sunscar:{foodPerHourMin:5,foodPerHourMax:10},Frostmarch:{foodPerHourMin:6,foodPerHourMax:12},Ashlands:{foodPerHourMin:7,foodPerHourMax:14}};
 export const GATHER_TIME_SCALE=1.25;
 
 export function offlineCapBreakdown(state:GameState){
@@ -294,7 +297,8 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number){
   for(let i=0;i<theoreticalKills;i++){
     const champion=!challengeId&&isChampionEncounter(c.id,state.activity?.lastClaimAtMs??0,monsterId,i);
     const raw=Math.max(1,Math.round((m.attack*COMBAT_MONSTER_DAMAGE_SCALE)-Math.floor(boostedDefense*.58)));
-    const damage=Math.max(1,Math.round((raw*.48 + m.level*.16)*secondary.incomingPressureMultiplier*style.damageTakenMultiplier*tactic.damageTakenMultiplier*(champion?CHAMPION_DAMAGE_MULTIPLIER:1)*modifiers.incomingDamageMultiplier*companion.incomingDamageMultiplier*(1-effectGems.damage_reduction)*Math.max(.5,1-setCombat.stats.ward)*(c.preparation?preparationEffects(c.preparation).damage:1)));
+    const regionalPressure=REGIONAL_COMBAT_PRESSURE[m.zone]??1;
+    const damage=Math.max(1,Math.round((raw*.48 + m.level*.16)*regionalPressure*secondary.incomingPressureMultiplier*style.damageTakenMultiplier*tactic.damageTakenMultiplier*(champion?CHAMPION_DAMAGE_MULTIPLIER:1)*modifiers.incomingDamageMultiplier*companion.incomingDamageMultiplier*(1-effectGems.damage_reduction)*Math.max(.5,1-setCombat.stats.ward)*(c.preparation?preparationEffects(c.preparation).damage:1)));
     hp-=damage;
     while(food && food.heal && foodLeft>0 && hp>0 && hp/stats.hp<=threshold){
       hp=Math.min(stats.hp,hp+Math.max(1,Math.ceil(food.heal*modifiers.healingEffectivenessMultiplier)));foodLeft--;foodConsumed++;

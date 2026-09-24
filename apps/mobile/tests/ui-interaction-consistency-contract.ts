@@ -26,6 +26,7 @@ for(const path of [
  'src/components/ChatPlayerSheet.tsx',
  'src/screens/DailySuppliesScreen.tsx',
  'src/screens/ProgressionPlannerScreen.tsx',
+ 'src/screens/PetBonusOverviewScreen.tsx',
 ]){
  const source=read(path);
  ok(source.includes('GameModalSurface'),path+' must use the shared modal shell');
@@ -101,6 +102,12 @@ ok(chatPlayer.includes('GameModalHeader')&&chatPlayer.includes('presentation="sh
 ok(chatPlayer.indexOf('{isSelf?')>chatPlayer.indexOf('<ScrollView')&&chatPlayer.indexOf('{isSelf?')<chatPlayer.lastIndexOf('</ScrollView>'),'Chat player social actions must stay inside reachable scroll content');
 ok(chatPlayer.includes('reduceMotion={reduceMotion}'),'Chat player profile presentation must respect reduced motion');
 
+
+
+const petBonus=read('src/screens/PetBonusOverviewScreen.tsx');
+ok(petBonus.includes('useGameTheme')&&petBonus.includes('makeStyles(C:ThemeColors)'),'Pet Bonus Overview must use the active theme instead of the static palette');
+ok(petBonus.includes('GameModalHeader')&&petBonus.includes('GameModalSurface'),'Active Pet selection must use the shared safe modal shell');
+ok(petBonus.includes('accessibilityRole="radio"')&&petBonus.includes('accessibilityState={{selected:row.selected}}'),'Active Pet choices must expose single-selection semantics');
 
 const settings=read('src/screens/SettingsScreen.tsx');
 ok(settings.includes("DISCORD_INVITE_URL='https://discord.gg/Db83APvP5y'")&&settings.includes('title="Join Discord"'),'Settings must expose the official Discord invite near the top');

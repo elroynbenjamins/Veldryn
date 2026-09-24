@@ -27,7 +27,7 @@ for(const skillId of ['mining','woodcutting','fishing'] as const){
  }
 }
 
-ok(oathstone.difficultyMultiplier===1.5&&oathstone.recommendedToolTier===3,'Late gathering should retain a meaningful but not punitive 1.5x difficulty gate');
+ok(oathstone.difficultyMultiplier===1.5&&oathstone.recommendedToolTier===2,'Level-16 Mining should recommend the highest legally reachable tool tier rather than a locked Tier 3');
 const greenwood=GATHERING.find(entry=>entry.id==='GREENWOOD_TREE')!,ironwood=GATHERING.find(entry=>entry.id==='IRONWOOD_TREE')!,crownwood=GATHERING.find(entry=>entry.id==='CROWNWOOD_TREE')!;
 ok(greenwood.xp===8,'Starter gathering XP should stay unchanged');
 ok(ironwood.xp===23,'Tier-2 gathering should gain roughly 35% more XP per action');
@@ -40,7 +40,7 @@ state={...state,currentRegionId:'OLD_MINES',character:{...state.character!,level
 state=equipGatheringTool(state,'OATHSTONE_PICKAXE');
 ok(state.character?.equippedToolIds?.mining==='OATHSTONE_PICKAXE','Crafted pickaxe should equip in the mining tool slot');
 ok(!state.inventory.stacks.some(stack=>stack.itemId==='OATHSTONE_PICKAXE'),'Equipped tool should leave carried Inventory');
-ok(Math.abs(gatheringPacing(state,oathstone).timeMultiplier-.75)<.001,'Recommended tier-3 tool should make a late node feel faster than its raw difficulty gate');
+ok(Math.abs(gatheringPacing(state,oathstone).timeMultiplier-.75)<.001,'A higher-tier pickaxe should make the Level-16 node substantially faster than its raw difficulty gate');
 
 state=startGathering(state,'OATHSTONE_SEAM',0);
 ok(Math.abs(activityCycleSeconds(state)-oathstone.seconds*GATHER_TIME_SCALE*.75)<.001,'Dashboard cycle must use the same fast recommended-tool pacing as reward settlement');

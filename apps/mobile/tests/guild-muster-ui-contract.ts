@@ -26,7 +26,7 @@ ok(panel.includes('there is no manual point button to spam'),'Muster must explai
 ok(panel.includes('Refresh Muster'),'Muster needs explicit refresh feedback');
 ok(panel.includes('ACTIVE GUILD')&&panel.includes('Guild Activity'),'Guild Activities must surface the persistent Active Guild meter');
 ok(panel.includes('Guild Quests, Muster and completed shared Projects'),'Active Guild meter must explain its cooperative sources');
-ok(panel.includes('does not hard-reset each week'),'Active Guild meter must explain the non-punitive persistence model');
+ok(panel.includes('There is no weekly hard reset.'),'Active Guild meter must explain the non-punitive persistence model');
 ok(panel.includes('relative rare materials'),'100% activity reward must be visible');
 
 ok(client.includes("db.rpc('guild_muster_state_v1')"),'Muster summary must come from a membership-gated server RPC');

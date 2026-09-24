@@ -26,3 +26,22 @@ export const COMPANION_HOUSING_VISUALS=[
  {tier:3,label:'Master Quarters',borderColor:'#d0ad63',borderWidth:3,surface:'rgba(208,173,99,0.13)',accent:'MASTER'},
 ] as const;
 export function companionHousingVisual(companionId:string,tiers?:CompanionHousingTiers){return COMPANION_HOUSING_VISUALS[companionHousingTier(companionId,tiers)];}
+
+function qty(stacks:{itemId:string;quantity:number}[],id:string){return stacks.find(s=>s.itemId===id)?.quantity??0;}
+export function companionHousingUpgradeCost(companionId:string,tiers?:CompanionHousingTiers){
+ const next=companionHousingTier(companionId,tiers)+1;return COMPANION_HOUSING_UPGRADES.find(row=>row.tier===next);
+}
+export function companionHousingUpgradeAffordability(state:{character:{gold:number}|null;inventory:{stacks:{itemId:string;quantity:number}[]};bank:{stacks:{itemId:string;quantity:number}[]};account:{companionHousingTiers?:CompanionHousingTiers}},companionId:string){
+ const cost=companionHousingUpgradeCost(companionId,state.account.companionHousingTiers);if(!cost)return {ready:false,cost:undefined,materials:[]};
+ const all=[...state.inventory.stacks,...state.bank.stacks],materials=cost.inputs.map(input=>({...input,owned:qty(all,input.itemId)}));
+ return {ready:(state.character?.gold??0)>=cost.gold&&materials.every(x=>x.owned>=x.quantity),cost,materials};
+}
+export function upgradeCompanionHousing<T extends {character:{gold:number}|null;inventory:{stacks:{itemId:string;quantity:number}[]};bank:{stacks:{itemId:string;quantity:number}[]};account:{companionHousingTiers?:CompanionHousingTiers}}>(state:T,companionId:string):T{
+ if(!state.character)throw new Error('character_required');
+ const check=companionHousingUpgradeAffordability(state,companionId);if(!check.cost)throw new Error('companion_housing_max');if(!check.ready)throw new Error('companion_housing_resources');
+ const spend=(stacks:{itemId:string;quantity:number}[],id:string,amount:number)=>stacks.map(s=>s.itemId===id?{...s,quantity:s.quantity-amount}:s).filter(s=>s.quantity>0);
+ let inventory=state.inventory.stacks.map(x=>({...x})),bank=state.bank.stacks.map(x=>({...x}));
+ for(const input of check.cost.inputs){let remaining=input.quantity,have=qty(inventory,input.itemId),take=Math.min(have,remaining);if(take){inventory=spend(inventory,input.itemId,take);remaining-=take;}if(remaining)bank=spend(bank,input.itemId,remaining);}
+ const tier=companionHousingTier(companionId,state.account.companionHousingTiers)+1;
+ return {...state,character:{...state.character,gold:state.character.gold-check.cost.gold},inventory:{...state.inventory,stacks:inventory},bank:{...state.bank,stacks:bank},account:{...state.account,companionHousingTiers:{...(state.account.companionHousingTiers??{}),[companionId]:tier}}};
+}

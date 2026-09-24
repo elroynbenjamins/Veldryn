@@ -1,4 +1,4 @@
-import {strict as assert} from 'node:assert';
+import {assert} from './test-assert';
 import {simulateCombat} from '../../../backend/src/server/combat/engine';
 import type {CombatantDefinition} from '../../../backend/src/server/combat/types';
 import {companionBattlePlayback} from '../src/core/companion-runtime';

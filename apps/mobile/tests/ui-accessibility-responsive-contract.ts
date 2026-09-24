@@ -16,6 +16,12 @@ const modal=read('src/components/GameModalSurface.tsx');
 ok(modal.includes('KeyboardAvoidingView'),'Shared modals must protect focused fields from the iOS keyboard');
 ok(modal.includes('onAccessibilityEscape={onClose}'),'Shared modals must support the accessibility escape gesture');
 ok(modal.includes('accessible={false}')&&modal.includes('no-hide-descendants'),'Modal backdrops must not become redundant screen-reader focus targets');
+ok(modal.includes("Platform.OS==='ios'?'padding':'height'"),'Shared modals must avoid Android keyboard overlap');
+
+const reward=read('src/components/RewardPopup.tsx');
+ok(reward.includes('useSafeAreaInsets')&&reward.includes('statusBarTranslucent'),'Reward results must honor modal safe areas on edge-to-edge devices');
+ok(reward.includes('useWindowDimensions')&&reward.includes('rewardActionsStack'),'Reward follow-up actions must stack on narrow phones or large text');
+ok(reward.includes('accessibilityViewIsModal')&&reward.includes('onAccessibilityEscape={onClose}'),'Reward results must expose modal accessibility semantics');
 
 const nav=read('src/components/PrimaryNavigation.tsx');
 ok(nav.includes("badgeLabel=badge==='dot'?'new activity'"),'Primary navigation must announce dot badges');

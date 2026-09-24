@@ -1,5 +1,5 @@
 import {useEffect,useMemo,useRef,useState} from 'react';
-import {Animated,Easing,Modal,StyleSheet,Text,View} from 'react-native';
+import {Animated,Easing,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {MONSTERS} from '../content/monsters';
 import {WORLD_ZONES} from '../content/world-map';
 import type {GameState} from '../core/types';
@@ -10,6 +10,7 @@ import {CharacterPortrait} from './CharacterVisual';
 import {MonsterPortraitFrame} from './MonsterPortraitFrame';
 import {RegionArtwork} from './RegionArtwork';
 import {GameButton} from './GameButton';
+import {GameModalSurface} from './GameModalSurface';
 
 function pct(current:number,max:number){return Math.max(0,Math.min(100,max>0?current/max*100:0));}
 function timeLabel(ms:number){return `${(Math.max(0,ms)/1000).toFixed(1)}s`;}
@@ -66,9 +67,8 @@ export function StoryBossBattleModal({state,battle,message,onClose}:{state:GameS
     return event.label;
   };
 
-  return <Modal visible transparent animationType="fade" onRequestClose={finished?onClose:skip}>
-    <View style={s.backdrop}>
-      <View style={s.modal}>
+  return <GameModalSurface visible presentation="dialog" reduceMotion={reduceMotion} onClose={finished?onClose:skip} dismissOnBackdrop={false} backdropLabel="Story boss battle" surfaceStyle={s.modal}>
+      <ScrollView style={s.scroll} contentContainerStyle={s.modalContent} showsVerticalScrollIndicator={false}>
         <View style={s.top}>
           <View><Text style={s.kicker}>ASTERFALL STORY BOSS</Text><Text accessibilityRole="header" style={s.title}>The Fallen Knight</Text></View>
           <View style={[s.phaseBadge,phase===3&&s.phaseDanger]}><Text style={s.phaseText}>PHASE {phase}</Text></View>
@@ -119,14 +119,12 @@ export function StoryBossBattleModal({state,battle,message,onClose}:{state:GameS
         {finished?<View style={[s.result,battle.won?s.win:s.loss]}><Text style={s.resultTitle}>{battle.won?'VICTORY':'DEFEAT'}</Text><Text style={s.resultCopy}>{message}</Text>{battle.won&&<Text style={s.reward}>+900 Gold · +3,000 XP · +40 Essence · +1 Bondstone · boss drop table rolled</Text>}</View>:<Text style={s.note}>Boss outcome is already resolved by the deterministic combat simulation. Playback can be skipped.</Text>}
 
         <View style={s.actions}>{finished?<GameButton title="Continue" onPress={onClose}/>:<><View style={s.actionFlex}><GameButton title="Skip fight" tone="secondary" onPress={skip}/></View><Text style={s.live}>LIVE</Text></>}</View>
-      </View>
-    </View>
-  </Modal>;
+      </ScrollView>
+  </GameModalSurface>;
 }
 
 function makeStyles(C:ThemeColors){return StyleSheet.create({
-  backdrop:{flex:1,backgroundColor:'rgba(2,6,12,.88)',justifyContent:'center',padding:14},
-  modal:{maxHeight:'94%',overflow:'hidden',gap:10,padding:12,borderWidth:1,borderColor:C.lineStrong,borderRadius:radii.lg,backgroundColor:C.bg},
+  modal:{maxHeight:'94%',overflow:'hidden',padding:0,borderColor:C.lineStrong,backgroundColor:C.bg},scroll:{maxHeight:'100%'},modalContent:{gap:10,padding:12},
   top:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10},
   kicker:{...typography.caption,color:C.warning,fontWeight:'900',letterSpacing:1},title:{...typography.hero,color:C.text},
   phaseBadge:{paddingHorizontal:9,paddingVertical:5,borderWidth:1,borderColor:C.info,borderRadius:99,backgroundColor:C.infoSurface},phaseDanger:{borderColor:C.bad,backgroundColor:C.badSurface},phaseText:{fontSize:9,color:C.text,fontWeight:'900',letterSpacing:.7},

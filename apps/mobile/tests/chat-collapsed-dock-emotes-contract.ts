@@ -43,6 +43,9 @@ const overlay=read('src/components/ChatOverlay.tsx');
 ok(overlay.includes('lines={state.settings.chatDockLines??1}'),'Chat overlay must pass the saved dock height preference');
 ok(overlay.includes('trayIds={state.settings.chatEmoteTrayIds}'),'All overlay chat channels must receive the saved quick tray');
 ok(overlay.includes('onTrayChange={onEmoteTrayChange}'),'All overlay chat channels must be able to persist edited tray choices');
+ok(overlay.includes('useSafeAreaInsets')&&overlay.includes('bottomOffset=72+'),'Expanded chat must use real safe-area offsets above navigation');
+ok(overlay.includes('keyboardVerticalOffset={insets.top}'),'Expanded chat must account for the top inset during keyboard avoidance');
+ok(!overlay.includes("paddingBottom:Platform.OS==='android'?76:88"),'Expanded chat must not regress to fixed device-specific bottom offsets');
 
 const app=read('App.tsx');
 ok(app.includes('onEmoteTrayChange={ids=>commit('),'Global chat tray edits must persist through normal settings save flow');

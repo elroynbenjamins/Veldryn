@@ -66,6 +66,9 @@ export interface CharacterState {
   activeDailySupplyBoost?:import('./daily-supplies').ActiveDailySupplyBoost;
 }
 export interface EquipmentCraftJob{
+  /** XP and affinity are captured for the crafting owner when inputs are reserved. */
+  xpPerCraft?:number;
+  skillAffinity?:import('./class-skill-affinities').SkillAffinitySnapshot;
   id:string;
   recipeId:string;
   ownerCharacterId:string;
@@ -90,7 +93,7 @@ export interface InventoryState { stacks:ItemStack[]; capacity:number; }
 export interface BankState { stacks:ItemStack[]; capacity:number; }
 export interface OverflowState { stacks:ItemStack[]; expiresAtMs:number|null; }
 export interface ActivityEnvironmentSnapshot{seasonId:SeasonId;weatherId:WeatherId;zoneId:string;capturedAtMs:number;}
-export interface ActiveActivity { kind:ActivityKind; targetId:string; startedAtMs:number; lastClaimAtMs:number; combatChallengeId?:CombatChallengeId; combatAffixId?:CombatAffixId; combatTacticId?:CombatTacticId; huntGoal?:import('./hunt-goals').HuntGoalSnapshot; sessionKills?:number; sessionChampions?:number; environment?:ActivityEnvironmentSnapshot; herbalismMethodId?:import('../content/herbalism').HerbalismMethodId; classFocus?:TrainingFocus; classTrainingSnapshot?:{faithBlessingId?:string}; bonusSnapshot?:import('./permanent-boosts').PermanentMultipliers; progressFraction?:number; brew?:import('./alchemy-types').AlchemyBatchState; processing?:import('./processing').ProcessingBatchState; faithPractice?:import('./faith-types').FaithPracticeReservation; }
+export interface ActiveActivity { skillAffinity?:import('./class-skill-affinities').SkillAffinitySnapshot; kind:ActivityKind; targetId:string; startedAtMs:number; lastClaimAtMs:number; combatChallengeId?:CombatChallengeId; combatAffixId?:CombatAffixId; combatTacticId?:CombatTacticId; huntGoal?:import('./hunt-goals').HuntGoalSnapshot; sessionKills?:number; sessionChampions?:number; environment?:ActivityEnvironmentSnapshot; herbalismMethodId?:import('../content/herbalism').HerbalismMethodId; classFocus?:TrainingFocus; classTrainingSnapshot?:{faithBlessingId?:string}; bonusSnapshot?:import('./permanent-boosts').PermanentMultipliers; progressFraction?:number; brew?:import('./alchemy-types').AlchemyBatchState; processing?:import('./processing').ProcessingBatchState; faithPractice?:import('./faith-types').FaithPracticeReservation; }
 export interface QuestState { questId:string; status:'locked'|'active'|'complete'|'claimed'; progress:number; }
 export interface RegionalProgressState { storyCompleted?:number; sideQuestsCompleted?:number; echoesCompleted?:number; dungeonsCompleted?:number; collectionEntries?:number; bossMasteryTier?:number; }
 export interface LiveEventRuntime{eventId:string;enabled:boolean;startsAtMs:number;endsAtMs:number;graceEndsAtMs?:number;priority?:number;modules?:string[];}

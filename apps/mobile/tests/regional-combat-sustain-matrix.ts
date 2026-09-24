@@ -1,7 +1,8 @@
 import {assert} from './test-assert';
-import {combatSustainProjection,createCharacter,newGame} from '../src/core/game';
+import {combatSustainProjection} from '../src/core/game';
 import {itemDef} from '../src/content/items';
 import type {GameState} from '../src/core/types';
+import {REGIONAL_COMBAT_FIXTURES,regionalCombatFixture} from '../src/core/regional-combat-fixtures';
 
 const localFoodByRegion:Readonly<Record<string,string>>={
  Greenfields:'COOKED_MEADOW_PERCH',

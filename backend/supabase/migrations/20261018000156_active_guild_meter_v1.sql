@@ -204,7 +204,7 @@ returns trigger
 language plpgsql
 security definer
 set search_path=public
-as $
+as $$
 declare
   v_before_qualified boolean:=false;
   v_after_qualified boolean:=false;
@@ -223,7 +223,7 @@ begin
     coalesce(new.last_contribution_at,clock_timestamp())
   );
   return new;
-end $;
+end $$;
 
 drop trigger if exists trg_guild_activity_from_muster_v1 on public.guild_muster_daily;
 create trigger trg_guild_activity_from_muster_v1

@@ -1,5 +1,5 @@
 import {EQUIPMENT_CRAFT_SKILL_BY_CLASS,TIER_CHARACTER_LEVEL_FLOOR,TIER_CRAFTING_LEVEL_FLOOR,V33_EQUIPMENT_RECIPES,v33EquipmentRecipeForItem} from '../src/content/equipment-recipes-v33';
-import {RECIPES} from '../src/content/skills';
+import {GATHERING,RECIPES} from '../src/content/skills';
 import {itemDef} from '../src/content/items';
 import {createCharacter,craftRecipe,newGame} from '../src/core/game';
 import {equipmentCraftingPath} from '../src/core/equipment-crafting-path';
@@ -24,10 +24,19 @@ ok(V33_EQUIPMENT_RECIPES.every(row=>row.level>=(TIER_CRAFTING_LEVEL_FLOOR[row.v3
 
 const finishedGearDrops=MONSTERS.flatMap(monster=>monster.drops.map(drop=>({monster,drop}))).filter(row=>itemDef(row.drop.itemId).type==='gear');
 ok(finishedGearDrops.length===0,'Combat must not bypass V33 crafting with finished equipment drops');
-const combatFedV33Materials=['MOSS_FIBER','WISP_DUST','BOAR_HIDE','WOLF_PELT','IRONWOOD_FANG','THORN_SAP','TROLL_HIDE','OATHGLASS_SHARD','TORN_OATHCLOTH','LANTERNSTEEL_SHARD','ECHO_QUARTZ','SUNSTONE_ORE','AMBERGLASS','ASTRAL_SCRIPT','FROSTIRON','RIMEGLASS','CHOIR_BLOOM'];
+const combatFedV33Materials=['MOSS_FIBER','WISP_DUST','BOAR_HIDE','WOLF_PELT','IRONWOOD_FANG','THORN_SAP','TROLL_HIDE','OATHGLASS_SHARD','TORN_OATHCLOTH','LANTERNSTEEL_SHARD','ECHO_QUARTZ','AMBERGLASS','ASTRAL_SCRIPT','RIMEGLASS','CHOIR_BLOOM'];
 for(const itemId of combatFedV33Materials){
   ok(isV33EquipmentCraftingMaterial(itemId),itemId+' must feed at least one V33 equipment recipe');
   ok(MONSTERS.some(monster=>monster.drops.some(drop=>drop.itemId===itemId)),itemId+' must retain a combat source for Equipment 2.0');
+}
+for(const chain of [
+  {raw:'SUNSTONE_ORE',processed:'SUNSTONE_INGOT',recipe:'SMELT_SUNSTONE_INGOT'},
+  {raw:'FROSTIRON',processed:'FROSTIRON_INGOT',recipe:'SMELT_FROSTIRON_INGOT'},
+] as const){
+  ok(MONSTERS.some(monster=>monster.drops.some(drop=>drop.itemId===chain.raw)),chain.raw+' must retain its combat source');
+  ok(isV33EquipmentCraftingMaterial(chain.processed),chain.processed+' must feed V33 equipment');
+  const processing=RECIPES.find(recipe=>recipe.id===chain.recipe);
+  ok(processing?.inputs.some(input=>input.itemId===chain.raw)&&processing.output.itemId===chain.processed,chain.raw+' must reach equipment through regional processing');
 }
 const mossUse=v33EquipmentMaterialUse('MOSS_FIBER')!;
 ok(mossUse.tiers.includes('T1')&&mossUse.recipeCount>0,'Starter monster materials must identify their V33 equipment use');
@@ -55,25 +64,28 @@ const t1=v33EquipmentRecipeForItem('T1P_001')!;
 ok(t1.inputs.some(row=>row.itemId==='GREENWOOD_LOG'),'T1 must use early Asterfall gathering rather than late Oathstone');
 ok(!t1.inputs.some(row=>row.itemId==='OATHSTONE_INGOT'),'T1 must not be accidentally routed through the old late-Asterfall generator');
 const t5=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T5'&&row.skillId==='smithing')!;
-ok(t5.inputs.some(row=>row.itemId==='SUNSTONE_ORE')&&t5.inputs.some(row=>row.itemId==='AMBERGLASS'),'T5 must use Sunscar materials');
+ok(t5.inputs.some(row=>row.itemId==='SUNSTONE_INGOT')&&t5.inputs.some(row=>row.itemId==='AMBERGLASS'),'T5 must use processed Sunscar materials');
 const t8=V33_EQUIPMENT_RECIPES.find(row=>row.v33EquipmentTier==='T8'&&row.skillId==='smithing')!;
-ok(t8.inputs.some(row=>row.itemId==='FROSTIRON')&&t8.inputs.some(row=>row.itemId==='CHOIR_BLOOM'),'T8 must use Frostmarch materials');
+ok(t8.inputs.some(row=>row.itemId==='FROSTIRON_INGOT')&&t8.inputs.some(row=>row.itemId==='CHOIR_BLOOM'),'T8 must use processed Frostmarch materials');
 
 const materialSourceMonster:Record<string,string>={
   SUNSTONE_ORE:'GLASSBOUND_SENTINEL',AMBERGLASS:'GLASSBOUND_SENTINEL',ASTRAL_SCRIPT:'GLASSBOUND_SENTINEL',
   FROSTIRON:'CHOIR_HUNTER',RIMEGLASS:'CHOIR_HUNTER',CHOIR_BLOOM:'CHOIR_HUNTER',
 };
+function materialFarmHours(state:ReturnType<typeof createCharacter>,itemId:string,quantity:number,depth=0):number{
+  if(depth>4)return 0;
+  const gather=[...GATHERING,...HERB_NODES].find(row=>row.itemId===itemId);
+  if(gather){const pace=gatheringBalanceProjection(state,gather,24);return quantity/Math.max(.0001,pace.runtimeItemsPerHour);}
+  const monsterId=materialSourceMonster[itemId];
+  if(monsterId){const monster=MONSTERS.find(row=>row.id===monsterId)!;const drop=monster.drops.find(row=>row.itemId===itemId)!;const pace=combatBaselineProjection(monster),expectation=dropExpectation(drop.chance,drop.min,drop.max,pace.killsPerHour);return quantity/Math.max(.0001,expectation.expectedQuantityPerHour);}
+  const processing=RECIPES.find(row=>row.repeatableTraining&&row.output.itemId===itemId);
+  if(!processing)return 0;
+  const batches=quantity/Math.max(1,processing.output.quantity);
+  return processing.inputs.reduce((sum,input)=>sum+materialFarmHours(state,input.itemId,input.quantity*batches,depth+1),0);
+}
 function projectedFarmHours(recipe:typeof t8){
   const state=createCharacter(newGame(0),recipe.classId,'Farm Pace','male');
-  return recipe.inputs.reduce((hours,input)=>{
-    const herb=HERB_NODES.find(row=>row.itemId===input.itemId);
-    if(herb){const pace=gatheringBalanceProjection(state,herb,24);return hours+input.quantity/Math.max(.0001,pace.runtimeItemsPerHour);}
-    const monsterId=materialSourceMonster[input.itemId];if(!monsterId)return hours;
-    const monster=MONSTERS.find(row=>row.id===monsterId)!;
-    const drop=monster.drops.find(row=>row.itemId===input.itemId)!;
-    const pace=combatBaselineProjection(monster),expectation=dropExpectation(drop.chance,drop.min,drop.max,pace.killsPerHour);
-    return hours+input.quantity/Math.max(.0001,expectation.expectedQuantityPerHour);
-  },0);
+  return recipe.inputs.reduce((hours,input)=>hours+materialFarmHours(state,input.itemId,input.quantity),0);
 }
 const highTierBands:Record<string,[number,number]>={
   T5:[.75,3.5],T6:[1.0,4.5],T7:[1.2,4.5],T8:[1.5,6.5],T9:[2.5,8.0],

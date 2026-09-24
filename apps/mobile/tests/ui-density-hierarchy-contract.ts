@@ -355,6 +355,8 @@ ok(event.includes("claim:{width:96}"),'Event repeated reward actions must remain
 ok(event.includes("type JournalSection='Discoveries'|'Collection'|'Milestones'")&&event.includes("journalSection==='Discoveries'")&&event.includes("journalSection==='Collection'")&&event.includes("journalSection==='Milestones'"),'Event Journal must split discoveries, collection and milestones into separate mobile workloads instead of one long feed');
 ok(event.includes('EVENT DETAILS · {definition.signature.label}')&&event.includes('accessibilityState={{expanded:showEventDetails}}'),'Secondary event identity detail must use progressive disclosure while the active event actions stay visible');
 ok(event.includes('journalTabs:{flexDirection:\'row\'')&&event.includes('journalTab:{flex:1,minHeight:44'),'Event Journal sub-navigation must remain compact and touch-accessible');
+ok(event.includes('history.slice(0,showEventArchive?history.length:6)')&&event.includes('Show older events · ${history.length-6}'),'Inactive Event archive must cap the initial history instead of growing indefinitely year over year');
+ok(event.includes('accessibilityState={{expanded:showProjectDetails}}')&&event.includes("(!projectId||showProjectDetails)?<View style={s.choiceList}"),'Locked event project alternatives must collapse after selection while the contribution controls remain on the main Commons surface');
 
 const quests=read('src/screens/QuestScreen.tsx');
 const questModes=read('src/components/QuestModeSwitch.tsx');

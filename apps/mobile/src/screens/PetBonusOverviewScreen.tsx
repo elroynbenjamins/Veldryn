@@ -9,6 +9,7 @@ import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {GameModalHeader,GameModalSurface} from '../components/GameModalSurface';
 import {petArtSource} from '../theme/pet-art';
+import {earlyFeatureGate} from '../core/early-feature-gates';
 
 const PETS=COLLECTIBLES.filter(row=>row.kind==='pet');
 const pct=(bps:number)=>(bps/100).toFixed(2)+'%';
@@ -20,7 +21,7 @@ type RegionFilter=typeof regionOptions[number];
 export function PetBonusOverviewScreen({state,onChange}:{state:GameState;onChange:(next:GameState)=>void}){
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),singleColumn=width<360||fontScale>=1.25;
  const [pickerOpen,setPickerOpen]=useState(false),[viewFilter,setViewFilter]=useState<ViewFilter>('All'),[regionFilter,setRegionFilter]=useState<RegionFilter>('All regions'),[filterOpen,setFilterOpen]=useState<'view'|'region'|null>(null),[showBonusHelp,setShowBonusHelp]=useState(false);
- const journal=collectibleJournal(state,PETS),owned=journal.filter(row=>row.owned),active=journal.find(row=>row.selected),breakdown=collectionBonusBreakdown(state,PETS);
+ const petGate=earlyFeatureGate(state,'pets'),journal=collectibleJournal(state,PETS),owned=journal.filter(row=>row.owned),active=journal.find(row=>row.selected),breakdown=collectionBonusBreakdown(state,PETS);
  const corePets=journal.filter(row=>row.collectionGroup==='core'),eventPets=journal.filter(row=>row.collectionGroup==='event'),legacyPets=journal.filter(row=>row.collectionGroup==='legacy');
  const visiblePets=journal.filter(row=>{
   if(viewFilter==='Owned'&&!row.owned)return false;if(viewFilter==='Locked'&&row.owned)return false;
@@ -28,6 +29,7 @@ export function PetBonusOverviewScreen({state,onChange}:{state:GameState;onChang
   if(regionFilter!=='All regions'&&row.region!==regionFilter)return false;return true;
  });
  const choose=(id?:string)=>{onChange(selectCollectible(state,'pet',id));setPickerOpen(false)};
+ if(!petGate.unlocked)return <ScrollView contentContainerStyle={s.root}><Text style={s.kicker}>ACCOUNT BONUSES</Text><Text accessibilityRole="header" style={s.heading}>Pets</Text><Panel><View style={s.lockedFeature}><Text style={s.lockGlyph}>🔒</Text><View style={s.flex}><Text style={s.title}>Pet Collection is locked</Text><Text style={s.sub}>{petGate.requirement}</Text><Text style={s.lockDetail}>{petGate.detail}</Text></View></View></Panel></ScrollView>;
  return <><ScrollView contentContainerStyle={s.root}>
   <Text style={s.kicker}>ACCOUNT BONUSES</Text><Text accessibilityRole="header" style={s.heading}>Pet Bonus Overview</Text><Text style={s.sub}>Every owned pet contributes its small account-wide passive bonus. Your selected pet also contributes its stronger active bonus.</Text>
   <View style={[s.columns,singleColumn&&s.columnsStack]}>

@@ -14,7 +14,7 @@ import {
 import { roleHasPermission, validateGuildBulletin } from './guild-social';
 
 function run(){
-  assert.equal(guildProjectSlotCap(4),0); assert.equal(guildProjectSlotCap(5),1); assert.equal(guildProjectSlotCap(10),2); assert.equal(guildProjectSlotCap(25),3);
+  assert.equal(guildProjectSlotCap(2),0); assert.equal(guildProjectSlotCap(3),1); assert.equal(guildProjectSlotCap(10),2); assert.equal(guildProjectSlotCap(20),3);
   const small=deriveGuildWeeklyProjectBalance(4); const large=deriveGuildWeeklyProjectBalance(40);
   assert.equal(small.targetPoints,6800); assert.equal(large.targetPoints,32000); assert.equal(small.minimumMeaningfulContributors,2); assert.equal(large.minimumMeaningfulContributors,8);
   assert.ok(large.singleAccountCompletionShareCap<small.singleAccountCompletionShareCap);
@@ -32,8 +32,8 @@ function run(){
   assert.equal(memberEligibleForGuildProjectCompletionReward(mixedBalance,{accountId:'x',rawPoints:1000,completionPoints:1000,combatPoints:500,skillingPoints:500},{currentMember:true,wasMemberAtStart:false,joinedAtMs:0,progressFractionAtJoin:.2,projectStartedAtMs:0,projectCompletedAtMs:49*3600000}),true);
   assert.equal(memberEligibleForGuildProjectCompletionReward(mixedBalance,{accountId:'x',rawPoints:1000,completionPoints:1000,combatPoints:500,skillingPoints:500},{currentMember:true,wasMemberAtStart:false,joinedAtMs:0,progressFractionAtJoin:.8,projectStartedAtMs:0,projectCompletedAtMs:72*3600000}),false);
   assert.deepEqual(reachedGuildMilestones(12500,10000),[25,50,75,100,125]);
-  const board1=buildGuildWeeklyProjectBoard('11111111-1111-1111-1111-111111111111',25,new Date('2026-09-14T12:00:00Z'));
-  const board2=buildGuildWeeklyProjectBoard('11111111-1111-1111-1111-111111111111',25,new Date('2026-09-15T12:00:00Z'));
+  const board1=buildGuildWeeklyProjectBoard('11111111-1111-1111-1111-111111111111',10,new Date('2026-09-14T12:00:00Z'));
+  const board2=buildGuildWeeklyProjectBoard('11111111-1111-1111-1111-111111111111',10,new Date('2026-09-15T12:00:00Z'));
   assert.deepEqual(board1.map(x=>x.templateId),board2.map(x=>x.templateId)); assert.deepEqual(board1.map(x=>x.focus),['combat','skilling','mixed']);
   assert.equal(autoStartVoteThreshold(30),3); assert.equal(autoStartVoteThreshold(60),6);
   assert.ok(chooseVoteWinner([{templateId:'a',votes:2},{templateId:'b',votes:2}],'g','2026-09-14'));

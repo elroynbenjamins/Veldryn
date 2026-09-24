@@ -3,6 +3,8 @@ import {HERB_NODES} from '../src/content/herbalism';
 import {EXPLORATION_ROUTES} from '../src/content/exploration';
 import {HOLY_WATER_SOURCES} from '../src/content/faith';
 import {MONSTERS} from '../src/content/monsters';
+import {itemDef} from '../src/content/items';
+import {processingRecipeDef} from '../src/core/processing';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 const gather=(id:string)=>GATHERING.find(row=>row.id===id);
@@ -35,7 +37,11 @@ for(const [region,fish,cook] of [
  ['ASHLANDS','EMBERFIN','COOK_EMBERFIN'],
 ] as const){
  ok(GATHERING.some(x=>x.skillId==='fishing'&&x.zoneId===region&&x.itemId===fish),region+' must have a local Fishing sustain source');
- ok(recipe(cook)?.inputs.some(x=>x.itemId===fish),region+' local fish must feed Cooking');
+ const cooking=recipe(cook);
+ ok(cooking?.inputs.some(x=>x.itemId===fish),region+' local fish must feed Cooking');
+ ok(cooking?.repeatableTraining,region+' fish recipe must be repeatable timed Cooking');
+ ok(itemDef(cooking!.output.itemId).type==='food',region+' fish recipe must output equippable combat food');
+ ok(processingRecipeDef(cook)?.skillId==='cooking',region+' fish recipe must be executable through timed Cooking processing');
 }
 ok(HERB_NODES.some(x=>x.id==='WINTERMINT_PATCH'&&x.zoneId==='FROSTMARCH'),'Wintermint must have a Frostmarch Herbalism source');
 

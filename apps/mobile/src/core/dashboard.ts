@@ -1,5 +1,6 @@
 import {MONSTERS} from '../content/monsters';
 import {QUESTS} from '../content/quests';
+import {itemDef} from '../content/items';
 import {GATHERING} from '../content/skills';
 import {WORLD_ZONES} from '../content/world-map';
 import {HERB_NODES,herbalismMethod} from '../content/herbalism';
@@ -84,6 +85,12 @@ export function dashboardRecommendation(state:GameState):DashboardRecommendation
   if(!c)return {title:'Create your hero',detail:'Choose a class to begin.',button:'Create character',destination:'Character',priority:'progress'};
   if(state.overflow.stacks.length)return {title:'Overflow needs attention',detail:`${state.overflow.stacks.length} reward stack${state.overflow.stacks.length===1?' is':'s are'} waiting. Move them before the 72-hour hold expires.`,button:'Manage rewards',destination:'Inventory',priority:'urgent'};
   if(c.currentHp<=Math.max(5,Math.floor(c.hp*.35)))return {title:'Recover before hunting',detail:'Your health is low. Eat food or equip a stronger ration before continuing combat.',button:'Open food & gear',destination:'Inventory',priority:'urgent'};
+  const carriedFood=state.inventory.stacks.filter(stack=>itemDef(stack.itemId).type==='food').reduce((sum,stack)=>sum+stack.quantity,0);
+  if(carriedFood<=2){
+    const bankedFood=state.bank.stacks.filter(stack=>itemDef(stack.itemId).type==='food').reduce((sum,stack)=>sum+stack.quantity,0);
+    if(bankedFood>0)return {title:'Restock combat sustain',detail:`Only ${carriedFood} carried food portion${carriedFood===1?' remains':'s remain'}. Withdraw cooked food before a long hunt; auto-eat only uses Inventory.`,button:'Withdraw food',destination:'Inventory',priority:'upgrade'};
+    return {title:'Restock combat sustain',detail:'Catch local fish, gather cooking fuel, and cook more food before a long hunt. Healing companions help, but long combat still consumes provisions.',button:'Open Fishing & Cooking',destination:'Skills',priority:'upgrade'};
+  }
   const active=state.quests.find(q=>q.status==='active'),def=QUESTS.find(q=>q.id===active?.questId);
   if(def?.kind==='kills'&&def.targetId){const monster=MONSTERS.find(m=>m.id===def.targetId);if(monster&&state.unlockedMonsterIds.includes(monster.id)){const zoneId=WORLD_ZONES.find(zone=>zone.name===monster.zone)?.id;return {title:`Continue: ${def.name}`,detail:`Hunt ${monster.name} in ${monster.zone} · ${Math.max(0,def.required-(active?.progress??0))} remaining.`,button:'Open hunting ground',destination:'World',zoneId,priority:'progress'}}}
   if(def?.kind==='item')return {title:`Continue: ${def.name}`,detail:def.description,button:'Gather materials',destination:'Skills',priority:'progress'};

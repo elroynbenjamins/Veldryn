@@ -8,7 +8,7 @@ type Presentation='sheet'|'dialog';
 export function GameModalSurface({visible,onClose,reduceMotion=false,presentation='sheet',children,surfaceStyle,backdropLabel='Close dialog',dismissOnBackdrop=true}:PropsWithChildren<{visible:boolean;onClose:()=>void;reduceMotion?:boolean;presentation?:Presentation;surfaceStyle?:StyleProp<ViewStyle>;backdropLabel?:string;dismissOnBackdrop?:boolean}>){
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),insets=useSafeAreaInsets(),sheet=presentation==='sheet';
   return <Modal visible={visible} transparent statusBarTranslucent animationType={reduceMotion?'none':'fade'} onRequestClose={onClose}>
-    <View style={[s.backdrop,{paddingTop:Math.max(spacing.sm,insets.top)},!sheet&&s.center,!sheet&&{paddingBottom:Math.max(spacing.lg,insets.bottom+spacing.sm)}]}>
+    <View style={[s.backdrop,!sheet&&s.center,{paddingTop:Math.max(spacing.sm,insets.top)},!sheet&&{paddingBottom:Math.max(spacing.lg,insets.bottom+spacing.sm)}]}>
       {dismissOnBackdrop?<Pressable accessible={false} accessibilityLabel={backdropLabel} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" onPress={onClose} style={StyleSheet.absoluteFill}/>:<View pointerEvents="none" style={StyleSheet.absoluteFill}/>} 
       <KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':'height'} keyboardVerticalOffset={insets.top} style={s.keyboardAvoider}>
       <View accessibilityViewIsModal onAccessibilityEscape={onClose} style={[s.surface,sheet?s.sheet:s.dialog,sheet&&{paddingBottom:Math.max(spacing.lg,insets.bottom+spacing.sm)},surfaceStyle]}>

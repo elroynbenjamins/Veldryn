@@ -50,4 +50,4 @@ ok(management.includes('DANGER ZONE'),'Leave/disband controls must stay separate
 ok(management.includes("title={busy?'Refreshing…':'Refresh'}"),'Roster refresh must stay compact in the roster header');
 ok(management.includes('guildMemberManagement(role,member.role'),'Guild management permissions must remain authoritative');
 
-console.log('PASS: online Guild management, Hall, PvE and customization stay compact, wired and theme-aware');
+console.log('PASS: consolidated online Guild Home, management, activities, Hall, PvE and customization stay compact, wired and theme-aware');

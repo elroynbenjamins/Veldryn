@@ -5,6 +5,7 @@ function eq(actual:unknown,expected:unknown,message:string){if(actual!==expected
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 const start=Date.UTC(2026,8,14,12);
 let state=createCharacter(newGame(start),'IRONWARDEN','ScopeTest','male');
+state={...state,quests:state.quests.map(q=>q.questId==='QST_006'?{...q,status:'claimed' as const,progress:8}:q)};
 state.account.longTermAccountScopeId='00000000-0000-0000-0000-000000000123';
 state=startGathering(state,'GREENWOOD_TREE',start+1000);
 const result=executeGameCommand(state,{type:'claim'},start+3600_000,{accountId:'00000000-0000-0000-0000-000000000123',eventId:'claim-once'});

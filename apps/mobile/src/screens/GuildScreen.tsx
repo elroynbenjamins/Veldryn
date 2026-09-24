@@ -36,8 +36,9 @@ function GuildFutureContent(){
   ['Guild Raids','LARGE-SCALE PVE','Longer guild encounters built around role contribution, shared boss progress and guild-wide completion rewards.'],
   ['Guild Trials','ROTATING CHALLENGES','Short rotating guild challenges with authored restrictions, score targets and cooperative mastery goals.'],
   ['Guild Expeditions','ASYNC GUILD MISSIONS','Long-form cooperative missions where members contribute different combat and skilling requirements over time.'],
+  ['Guild Legacy','SEASONS & HISTORY','A permanent guild record of past seasons, raid clears, Guild vs Guild results, major Projects, trophies and notable guild milestones.'],
  ] as const;
- return <View style={s.futureWrap}><Panel><Text style={s.kicker}>FUTURE GUILD CONTENT</Text><Text style={s.title}>In Development</Text><Text style={s.sub}>These destinations are visible for roadmap clarity only. They do not accept contributions, consume resources or affect rankings yet.</Text></Panel>
+ return <View style={s.futureWrap}><Panel><Text style={s.kicker}>FUTURE GUILD CONTENT</Text><Text style={s.title}>In Development</Text><Text style={s.sub}>These destinations are visible for roadmap clarity only. They do not accept contributions, consume resources or affect rankings yet. Guild Legacy will eventually extend the Guild Hall Trophy Room into a permanent seasonal history.</Text></Panel>
   <View style={s.futureGrid}>{entries.map(([title,label,copy])=><View key={title} accessible accessibilityRole="summary" accessibilityLabel={title+', In Development'} style={s.futureCard}><Text style={s.futureLabel}>{label}</Text><Text style={s.futureTitle}>{title}</Text><Text style={s.futureCopy}>{copy}</Text><GameButton compact title="In Development" tone="secondary" disabled onPress={()=>{}}/></View>)}</View>
  </View>;
 }

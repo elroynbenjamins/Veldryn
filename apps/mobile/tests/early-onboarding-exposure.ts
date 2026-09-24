@@ -1,12 +1,13 @@
 import {assert} from './test-assert';
 import {createCharacter,newGame} from '../src/core/game';
-import {EARLY_FEATURE_UNLOCKS,earlyFeatureLockReason,earlyFeatureUnlocked} from '../src/core/feature-unlocks';
+import {EARLY_FEATURE_DESTINATION_ORDER,EARLY_FEATURE_UNLOCKS,earlyFeatureLockReason,earlyFeatureUnlocked} from '../src/core/feature-unlocks';
 import {homeSessionSummary} from '../src/core/dashboard';
 import {executeGameCommand} from '../src/core/game-commands';
 
 function claimQuest(state:any,id:string,progress:number){return {...state,quests:state.quests.map((q:any)=>q.questId===id?{...q,status:'claimed',progress}:q)}}
 function expectLocked(state:any,command:any,message:string){let actual='';try{executeGameCommand(state,command,1)}catch(error){actual=error instanceof Error?error.message:''}assert.equal(actual,message);}
 
+assert.deepEqual([...EARLY_FEATURE_DESTINATION_ORDER],['Progression','DailySupplies','Events','AccountBonuses','Friends','Companions','Social','MasteryHall','Guild','Rankings']);
 let state=createCharacter(newGame(0),'IRONWARDEN','Onboarding Audit');
 for(const id of Object.keys(EARLY_FEATURE_UNLOCKS) as Array<keyof typeof EARLY_FEATURE_UNLOCKS>)assert.equal(earlyFeatureUnlocked(state,id),false,id+' should begin locked');
 const fresh=homeSessionSummary(state,1);

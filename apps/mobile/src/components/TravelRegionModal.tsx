@@ -1,5 +1,5 @@
 import {useMemo} from 'react';
-import {ScrollView,StyleSheet,Text,View} from 'react-native';
+import {ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import type {GameState} from '../core/types';
 import type {WorldZoneDef} from '../content/world-map';
 import {MONSTERS} from '../content/monsters';
@@ -14,7 +14,7 @@ import {ItemArtwork} from './ItemArtwork';
 import {MonsterPortraitFrame} from './MonsterPortraitFrame';
 
 export function TravelRegionModal({visible,state,zone,onClose,onTravel}:{visible:boolean;state:GameState;zone?:WorldZoneDef;onClose:()=>void;onTravel:(regionId:string)=>void}){
-  const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
+  const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),stackLayout=width<360||fontScale>=1.25;
   if(!zone)return null;
   const summary=regionActivitySummary(state,zone.id),environment=environmentForZone(zone.id),availability=regionTravelAvailability(state,zone),preview=regionTravelPreview(state,zone.id);
   const inDevelopment=availability==='inDevelopment',locked=availability==='locked',unlocked=availability==='available';
@@ -22,7 +22,7 @@ export function TravelRegionModal({visible,state,zone,onClose,onTravel}:{visible
   const gathering=`${summary.gatheringReady}/${summary.gatheringTotal} gather`;
   const bosses=summary.bossesTotal?`${summary.bossesReady}/${summary.bossesTotal} bosses`:undefined;
   const contentSummary=[combat,gathering,bosses].filter(Boolean).join(' · ');
-  return <GameModalSurface visible={visible} presentation="sheet" onClose={onClose} backdropLabel="Close travel destination">
+  return <GameModalSurface visible={visible} presentation="sheet" reduceMotion={state.settings.reduceMotion} onClose={onClose} backdropLabel="Close travel destination">
     <GameModalHeader eyebrow={inDevelopment?"REGION PREVIEW":locked?"LOCKED REGION PREVIEW":"TRAVEL DESTINATION"} title={zone.name} onClose={onClose}/>
     <ScrollView bounces={false} showsVerticalScrollIndicator={false} contentContainerStyle={s.content}>
       <View style={[s.hero,{borderColor:zone.accent}]}>
@@ -35,7 +35,7 @@ export function TravelRegionModal({visible,state,zone,onClose,onTravel}:{visible
         </View>
       </View>
 
-      <View style={s.metaRow}>
+      <View style={[s.metaRow,stackLayout&&s.metaRowStack]}>
         <View style={s.metaCard}><Text style={s.metaLabel}>{inDevelopment?'STATUS':'CONDITIONS'}</Text><Text style={s.metaValue}>{inDevelopment?'Preview only':`${environment.weatherSymbol} ${environment.weatherName}`}</Text></View>
         <View style={s.metaCard}><Text style={s.metaLabel}>{inDevelopment?'PLANNED CONTENT':'CONTENT'}</Text><Text style={s.metaValue}>{inDevelopment?(preview.activities.slice(0,2).join(' · ')||'Coming later'):(contentSummary||'Region activities')}</Text></View>
       </View>
@@ -50,7 +50,7 @@ export function TravelRegionModal({visible,state,zone,onClose,onTravel}:{visible
       {!inDevelopment&&summary.gatheringSkills.length?<View style={s.info}><Text style={s.infoLabel}>GATHERING</Text><Text style={s.infoValue}>{summary.gatheringSkills.join(' · ')}</Text></View>:null}
       <Text style={s.hint}>{unlocked?`Travel is instant. Your active region, hunts, gathering nodes and regional activities update to ${zone.name} immediately.`:inDevelopment?'Preview only — this destination cannot be entered yet.':`Preview only until level ${zone.minLevel}.`}</Text>
     </ScrollView>
-    <View style={s.actions}><View style={s.flex}><GameButton title={unlocked?"Cancel":"Close"} tone="secondary" onPress={onClose}/></View><View style={s.flex}><GameButton title={inDevelopment?"In Development":locked?"Locked":"Travel"} disabled={!unlocked} onPress={()=>unlocked&&onTravel(zone.id)}/></View></View>
+    <View style={[s.actions,stackLayout&&s.actionsStack]}><View style={[s.flex,stackLayout&&s.actionStack]}><GameButton title={unlocked?"Cancel":"Close"} tone="secondary" onPress={onClose}/></View><View style={[s.flex,stackLayout&&s.actionStack]}><GameButton title={inDevelopment?"In Development":locked?"Locked":"Travel"} disabled={!unlocked} onPress={()=>unlocked&&onTravel(zone.id)}/></View></View>
   </GameModalSurface>;
 }
 
@@ -62,7 +62,7 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
   level:{...typography.caption,color:equipmentColors.goldSoft,fontWeight:'900',letterSpacing:1},
   heroTitle:{...typography.hero,color:C.text,fontSize:27},
   heroSub:{...typography.body,color:C.text,maxWidth:520},
-  metaRow:{flexDirection:'row',gap:spacing.sm},
+  metaRow:{flexDirection:'row',gap:spacing.sm},metaRowStack:{flexDirection:'column'},
   metaCard:{flex:1,minWidth:0,gap:3,padding:spacing.sm,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:equipmentColors.panel},
   metaLabel:{fontSize:9,color:C.muted,fontWeight:'900',letterSpacing:.7},
   metaValue:{...typography.caption,color:C.text,fontWeight:'800'},
@@ -70,6 +70,6 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
   infoLabel:{fontSize:9,color:C.info,fontWeight:'900',letterSpacing:.7},
   infoValue:{...typography.bodyStrong,color:C.text},
   hint:{...typography.caption,color:C.muted,lineHeight:18},
-  actions:{flexDirection:'row',gap:spacing.sm,paddingTop:spacing.xs,paddingBottom:spacing.sm,flexShrink:0},
-  flex:{flex:1,minWidth:0},
+  actions:{flexDirection:'row',gap:spacing.sm,paddingTop:spacing.xs,paddingBottom:spacing.sm,flexShrink:0},actionsStack:{flexDirection:'column'},
+  flex:{flex:1,minWidth:0},actionStack:{flex:0,width:'100%'},
 });}

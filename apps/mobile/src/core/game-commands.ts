@@ -13,6 +13,7 @@ import {executeCompanionActivity,refreshCompanions,assertCompanionIdle,claimComp
 import {createAccountCharacter,deleteAccountCharacter,switchAccountCharacter} from './account-actions';
 import {CLASSES} from '../content/classes';
 import {applyCharacterLoadout,characterLoadoutSlotCount,deleteCharacterLoadout,saveCharacterLoadout} from './character-loadouts';
+import {setArenaSquadSlot} from './arena-squad';
 import {normalizeProgressionGoals} from './progression-goals-v40';
 import {normalizeIdleRuleSets,validateActiveIdleRuleId} from './idle-rules-v40';
 import {COMBAT_CHALLENGE_IDS} from './challenge-hunts';
@@ -45,7 +46,7 @@ const fields:Record<string,readonly string[]>={
  equip:['id'],unequip:['slot'],food:['id'],eat:['id'],sell:['id','quantity'],salvage:['id'],
  deposit:['id','quantity'],withdraw:['id','quantity'],deposit_materials:[],bulk_transfer:['location','ids'],bulk_sell:['ids'],bulk_salvage:['ids'],storage:['location'],overflow:[],
  equip_tool:['id'],equip_set:[],upgrade:['id'],socket:['id','gemId'],replace_socket:['id','gemId'],unsocket:['id','index'],gem_combine:['familyId','grade'],gem_refine:['familyId','grade'],gem_research:['familyId'],gem_dismantle:['gemId','quantity'],resonance_cache_claim:['familyId'],skin:['id'],
- loadout_save:['index','name'],loadout_apply:['id'],loadout_delete:['id'],goals_set:['goals'],idle_rules_set:['rules','activeId'],daily_supplies_claim:['characterId'],daily_supplies_activate:['type'],
+ loadout_save:['index','name'],loadout_apply:['id'],loadout_delete:['id'],arena_slot:['index','characterId'],goals_set:['goals'],idle_rules_set:['rules','activeId'],daily_supplies_claim:['characterId'],daily_supplies_activate:['type'],
  quest:['id'],seasonal:['period','id'],settings:['settings'],profile:['profileTitle','profileBackgroundId','profileBorderId','selectedCosmeticPetId'],
  event_daily:[],event_cache:[],event_milestones:[],event_discovery:['id'],event_reward:['id'],event_accept:['id'],
  event_objective:['id'],event_weekly:['id'],event_project:['id'],event_contribute:['quantity'],event_community:['percent'],event_purchase:['id'],
@@ -179,6 +180,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   }
   case 'roster_switch':state=switchAccountCharacter(state,text(a,'id'),now);break;
   case 'roster_delete':state=deleteAccountCharacter(state,text(a,'id'),text(a,'confirmation',80),now);break;
+  case 'arena_slot':{const index=integer(a,'index',0,2) as 0|1|2;state=setArenaSquadSlot(state,index,a.characterId===undefined?undefined:text(a,'characterId',80));break;}
   case 'claim':break;
   case 'queue_add':{const kind=oneOf(a.kind,['combat','gathering']),combatChallengeId=a.challengeId===undefined?undefined:oneOf(a.challengeId,COMBAT_CHALLENGE_IDS),combatTacticId=a.tacticId===undefined?undefined:oneOf(a.tacticId,COMBAT_TACTIC_IDS),huntGoalId=a.goalId===undefined?undefined:oneOf(a.goalId,HUNT_GOAL_IDS);state=enqueueActivity(state,{kind,targetId:text(a,'id'),...(combatChallengeId?{combatChallengeId}:{}),...(combatTacticId?{combatTacticId}:{}),...(huntGoalId?{huntGoalId}:{})});break;}
   case 'queue_remove':state=removeQueuedActivity(state,integer(a,'index',0,activityQueueCapacity(state)-1));break;

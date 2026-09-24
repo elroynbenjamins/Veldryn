@@ -22,9 +22,12 @@ ok(app.includes("import {OnlineGuildCustomizationPanel}"),'App must wire server-
 ok(app.includes('onlineHall={<OnlineGuildHallPanel/>}'),'Guild screen must receive Guild Hall content');
 ok(app.includes('onlineCustomize={<OnlineGuildCustomizationPanel/>}'),'Guild screen must receive Guild customization content');
 
-for(const label of ['My Guild','Directory','PvE','Hall','Customize'])ok(screen.includes("'"+label+"'"),'Online Guild tabs must include '+label);
+for(const label of ['Home','Members','Activities','Hall','Chat','Manage','Future'])ok(screen.includes("'"+label+"'"),'Online Guild tabs must include '+label);
+ok(screen.includes("onlineSection==='Home'?<GuildOnlineHome"),'Guild Home must remain the compact online landing page');
+ok(screen.includes("onlineSection==='Members'?onlineManagement:null"),'Members tab must render authoritative roster and management content');
+ok(screen.includes("onlineSection==='Activities'?<View"),'Activities tab must group Muster, Projects and PvE');
 ok(screen.includes("onlineSection==='Hall'?onlineHall:null"),'Hall tab must render Hall content');
-ok(screen.includes("onlineSection==='Customize'?onlineCustomize:null"),'Customize tab must render customization content');
+ok(screen.includes("onlineSection==='Manage'?<View"),'Manage tab must group Directory and customization content');
 ok(screen.includes("root:{padding:spacing.md,gap:10"),'Online Guild shell must remain compact');
 
 ok(customization.includes('appearanceDirty='),'Guild customization must track unsaved appearance changes');

@@ -374,9 +374,9 @@ ok(questApp.includes("focusedWeeklyOrderId={questFocusOrderId}")&&questApp.inclu
 ok(questApp.includes("destination.tab==='World'&&destination.zoneId")&&questApp.includes('setGoalRegionId(destination.zoneId)'),'Story Journal destinations must preserve their authored World region instead of dropping zone context');
 ok(quests.includes('onOpenWeeklyBoss')&&questApp.includes("monsterId:'FALLEN_KNIGHT'")&&questApp.includes("regionId:'KINGS_ROAD'"),'Weekly boss action must keep its exact destination');
 
-const planner=read('src/screens/ProgressionPlannerScreen.tsx');
-ok(planner.includes('ADVANCED IDLE RULES')&&planner.includes('showIdleRules&&<IdleRulesEditorV40'),'Working Toward must keep advanced Idle Rules behind a secondary disclosure rather than permanently lengthening the common goal workflow');
-ok(planner.includes('accessibilityState={{expanded:showIdleRules}}')&&planner.includes("secondaryDisclosure:{minHeight:54"),'Working Toward advanced disclosure must expose state accessibly and retain a safe mobile touch target');
+const progressionPlanner=read('src/screens/ProgressionPlannerScreen.tsx');
+ok(progressionPlanner.includes('ADVANCED IDLE RULES')&&progressionPlanner.includes('showIdleRules&&<IdleRulesEditorV40'),'Working Toward must keep advanced Idle Rules behind a secondary disclosure rather than permanently lengthening the common goal workflow');
+ok(progressionPlanner.includes('accessibilityState={{expanded:showIdleRules}}')&&progressionPlanner.includes("secondaryDisclosure:{minHeight:54"),'Working Toward advanced disclosure must expose state accessibly and retain a safe mobile touch target');
 
 const settings=read('src/screens/SettingsScreen.tsx');
 ok(settings.includes('themeChoice:{minHeight:82'),'Theme preview cards must stay compact enough to compare all themes');

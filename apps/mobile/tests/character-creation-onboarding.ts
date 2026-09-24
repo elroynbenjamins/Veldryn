@@ -1,5 +1,5 @@
-import {readFileSync} from 'node:fs';
 import {assert} from './test-assert';
+const {readFileSync}=require('fs') as {readFileSync(path:string,encoding:'utf8'):string};
 const creation=readFileSync('src/screens/ClassSelectScreen.tsx','utf8');
 const app=readFileSync('App.tsx','utf8');
 const welcome=readFileSync('src/components/AsterfallWelcomeModal.tsx','utf8');

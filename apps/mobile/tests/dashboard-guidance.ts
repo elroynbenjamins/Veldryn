@@ -15,11 +15,11 @@ equal(first.zoneId,'GREENFIELDS','first hunt recommendation carries canonical re
 ok(first.title.includes('A Name in the Ledger'),'first quest is named in Home guidance');
 
 const firstSession=homeSessionSummary(state,Date.UTC(2026,8,22,12));
-ok(firstSession.dailyReady,'Fresh session exposes the Daily Supplies claim in Home session priorities');
-equal(firstSession.primaryReady?.kind,'daily','Daily Supplies becomes the primary ready action when no story reward is waiting');
+equal(firstSession.dailyReady,false,'Fresh session keeps Daily Supplies out of Home until its guided skill milestone');
+equal(firstSession.primaryReady,undefined,'Fresh session stays focused when no unlocked reward is ready');
 ok(firstSession.goalTotal===0&&firstSession.goalReady===0,'Home session priorities do not invent Working Toward progress');
 const prepBase=createCharacter(newGame(2),'IRONWARDEN','Home Preparation');
-const prepState={...prepBase,character:{...prepBase.character!,level:20,gold:100000},skills:prepBase.skills.map(skill=>skill.skillId==='smithing'?{...skill,level:12}:skill.skillId==='mining'?{...skill,level:8}:skill.skillId==='woodcutting'?{...skill,level:7}:skill)};
+const prepState={...prepBase,quests:prepBase.quests.map(row=>row.questId==='QST_002'?{...row,status:'claimed' as const,progress:2}:row),character:{...prepBase.character!,level:20,gold:100000},skills:prepBase.skills.map(skill=>skill.skillId==='smithing'?{...skill,level:12}:skill.skillId==='mining'?{...skill,level:8}:skill.skillId==='woodcutting'?{...skill,level:7}:skill)};
 const prepRecipe=RECIPES.find(row=>row.id==='FORGE_REINFORCED_FITTING')!,prepRoute=recipePreparationRoute(prepState,prepRecipe,1),prepGoal=recipePreparationGoalForRecipe({state:prepState,recipe:prepRecipe,batches:1,initialStepCount:prepRoute.steps.length,nowMs:10});
 const trackedHomeState={...prepState,character:{...prepState.character!,progressionGoals:[prepGoal]}};
 const prepSession=homeSessionSummary(trackedHomeState,Date.UTC(2026,8,22,12));
@@ -30,7 +30,7 @@ equal(prepSession.goalNextBlocked,false,'Actionable tracked preparation is not m
 equal(prepSession.primaryReady?.kind,'daily','Higher-priority ready claims still outrank tracked preparation continuation');
 
 
-state={...state,character:{...state.character!,level:7},quests:state.quests.map(row=>row.questId==='QST_005'?{...row,status:'active',progress:7}:{...row,status:'locked',progress:0})};
+state={...state,character:{...state.character!,level:7},quests:state.quests.map(row=>row.questId==='QST_005'?{...row,status:'active',progress:7}:row.questId==='QST_002'?{...row,status:'claimed' as const,progress:2}:{...row,status:'locked',progress:0})};
 const storyReadyState={...state,quests:state.quests.map((row,index)=>index===0?{...row,status:'complete' as const,progress:5}:row)};
 const storySession=homeSessionSummary(storyReadyState,Date.UTC(2026,8,22,12));
 equal(storySession.primaryReady?.kind,'quests','Story rewards outrank Daily Supplies in Home ready-now priority');

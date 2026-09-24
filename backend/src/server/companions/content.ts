@@ -229,6 +229,10 @@ export const COMPANION_WEEKLY_CHALLENGES:CompanionWeeklyChallengeDefinition[]=[
  {id:'SUNSCAR_PAIR',name:'Sunscar Kin',description:'Clear Floor 10+ with at least two Sunscar companions.',minimumFloor:10,restrictions:[{type:'require_origin',originId:'REG_SUNSCAR',count:2}],rewards:{companionEssence:120,bondstones:0,gold:2750,materials:{AMBERGLASS:3}}},
  {id:'FROSTMARCH_PAIR',name:'Frostmarch Kin',description:'Clear Floor 10+ with at least two Frostmarch companions.',minimumFloor:10,restrictions:[{type:'require_origin',originId:'REG_FROSTMARCH',count:2}],rewards:{companionEssence:120,bondstones:0,gold:2750,materials:{RIMEGLASS:3}}},
  {id:'ASHLANDS_PAIR',name:'Ashlands Kin',description:'Clear Floor 10+ with at least two Ashlands companions.',minimumFloor:10,restrictions:[{type:'require_origin',originId:'REG_ASHLANDS',count:2}],rewards:{companionEssence:120,bondstones:0,gold:2750,materials:{BANNER_ASH:3}}},
+ {id:'AFFINITY_TRIAD',name:'Threefold Nature',description:'Clear Floor 10+ with three different Companion Affinities.',minimumFloor:10,restrictions:[{type:'affinity_unique'}],rewards:{companionEssence:145,bondstones:1,gold:3000,materials:{TRIAL_SANCTUARY_MATERIAL:1}}},
+ {id:'RADIANT_UMBRAL',name:'Light and Shadow',description:'Clear Floor 15+ with at least one Radiant and one Umbral companion.',minimumFloor:15,restrictions:[{type:'require_affinity',affinity:'radiant',count:1},{type:'require_affinity',affinity:'umbral',count:1}],rewards:{companionEssence:150,bondstones:1,gold:3150}},
+ {id:'NO_CONSTRUCT_15',name:'Flesh and Spirit',description:'Clear Floor 15+ without a Construct companion.',minimumFloor:15,restrictions:[{type:'prohibit_affinity',affinity:'construct'}],rewards:{companionEssence:130,bondstones:0,gold:2950,materials:{TRIAL_SANCTUARY_MATERIAL:1}}},
+ {id:'PRIMAL_WILD_PAIR',name:'Untamed Company',description:'Clear Floor 10+ with at least one Primal and one Wild companion.',minimumFloor:10,restrictions:[{type:'require_affinity',affinity:'primal',count:1},{type:'require_affinity',affinity:'wild',count:1}],rewards:{companionEssence:135,bondstones:0,gold:2900}},
 ];
 
 export const COMPANION_MISSIONS:CompanionMissionDefinition[]=[
@@ -278,16 +282,16 @@ export const COMPANION_CODEX_MILESTONES:CompanionCodexMilestoneDefinition[]=[
 ];
 
 export const COMPANION_SPECIAL_CHALLENGES:CompanionSpecialChallengeDefinition[]=[
- {id:'CHALLENGE_OATHGLASS_KNIGHTLING',name:'Oathglass Reflection Trial',bossId:'BOSS_COMPANION_OATHGLASS',rewardCompanionId:'UNIT_012',recommendedTeamPower:3800,requirements:[
+ {id:'CHALLENGE_OATHGLASS_KNIGHTLING',name:'Oathglass Reflection Trial',bossId:'BOSS_COMPANION_OATHGLASS',rewardCompanionId:'UNIT_012',recommendedTeamPower:3800,teamRestrictions:[{type:'affinity_unique'}],requirements:[
   {type:'trial_floor',amount:20,description:'Reach Companion Trial Floor 20.'},{type:'boss_clear_count',target:'FALLEN_KNIGHT',amount:10,description:'Defeat the Fallen Knight 10 times.'},{type:'companion_owned',target:'UNIT_007',amount:1,description:'Own Gloamknife Shade.'},{type:'companion_bond_total',amount:18,originId:'REG_001',description:'Reach 18 total Bond across Asterfall companions.'},
  ]},
- {id:'CHALLENGE_TYRANTS_HEIR',name:"Tyrant's Heir Trial",bossId:'BOSS_COMPANION_TYRANT_HEIR',rewardCompanionId:'UNIT_016',recommendedTeamPower:3950,requirements:[
+ {id:'CHALLENGE_TYRANTS_HEIR',name:"Tyrant's Heir Trial",bossId:'BOSS_COMPANION_TYRANT_HEIR',rewardCompanionId:'UNIT_016',recommendedTeamPower:3950,teamRestrictions:[{type:'require_affinity',affinity:'primal',count:1},{type:'require_affinity',affinity:'radiant',count:1}],requirements:[
   {type:'trial_floor',amount:20,description:'Reach Companion Trial Floor 20.'},{type:'companion_owned',target:'UNIT_013',description:'Own Dune Stalker.'},{type:'companion_owned',target:'UNIT_014',description:'Own Oasis Djinnling.'},{type:'companion_owned',target:'UNIT_015',description:'Own Solar Scarab.'},{type:'companion_bond_total',amount:18,originId:'REG_SUNSCAR',description:'Reach 18 total Bond across Sunscar companions.'},
  ]},
- {id:'CHALLENGE_WYRM_ECHO',name:'Wyrm Echo Trial',bossId:'BOSS_COMPANION_WYRM_ECHO',rewardCompanionId:'UNIT_020',recommendedTeamPower:4200,requirements:[
+ {id:'CHALLENGE_WYRM_ECHO',name:'Wyrm Echo Trial',bossId:'BOSS_COMPANION_WYRM_ECHO',rewardCompanionId:'UNIT_020',recommendedTeamPower:4200,teamRestrictions:[{type:'require_affinity',affinity:'wild',count:1},{type:'require_affinity',affinity:'arcane',count:1}],requirements:[
   {type:'trial_floor',amount:25,description:'Reach Companion Trial Floor 25.'},{type:'companion_owned',target:'UNIT_017',description:'Own Rime Wolf Pup.'},{type:'companion_owned',target:'UNIT_018',description:'Own Bell Sprite.'},{type:'companion_owned',target:'UNIT_019',description:'Own Choir Golem.'},{type:'companion_bond_total',amount:18,originId:'REG_FROSTMARCH',description:'Reach 18 total Bond across Frostmarch companions.'},
  ]},
- {id:'CHALLENGE_REGENT_SHADE',name:'Regent Shade Trial',bossId:'BOSS_COMPANION_REGENT_SHADE',rewardCompanionId:'UNIT_024',recommendedTeamPower:4400,requirements:[
+ {id:'CHALLENGE_REGENT_SHADE',name:'Regent Shade Trial',bossId:'BOSS_COMPANION_REGENT_SHADE',rewardCompanionId:'UNIT_024',recommendedTeamPower:4400,teamRestrictions:[{type:'affinity_diversity',count:3}],requirements:[
   {type:'trial_floor',amount:30,description:'Reach Companion Trial Floor 30.'},{type:'companion_owned',target:'UNIT_021',description:'Own Obsidian Drakelet.'},{type:'companion_owned',target:'UNIT_022',description:'Own Forge Custodian.'},{type:'companion_owned',target:'UNIT_023',description:'Own Primal Spark.'},{type:'companion_bond_total',amount:21,originId:'REG_ASHLANDS',description:'Reach 21 total Bond across Ashlands companions.'},
  ]},
  {id:'CHALLENGE_ASHEN_SUNWYRM_FUTURE',name:'Ashen Sunwyrm Challenge',bossId:'BOSS_COMPANION_ASHEN_SUNWYRM',rewardCompanionId:'FUTURE_ASHEN_SUNWYRM',recommendedTeamPower:4350,requirements:[
@@ -297,9 +301,9 @@ export const COMPANION_SPECIAL_CHALLENGES:CompanionSpecialChallengeDefinition[]=
 
 const utcBounds=(seasonKey:string)=>{const [y,m]=seasonKey.split('-').map(Number);const startsAt=new Date(Date.UTC(y,m-1,1)).toISOString();const endsAt=new Date(Date.UTC(y,m,1)).toISOString();return{startsAt,endsAt};};
 const SEASON_OVERRIDES:Record<string,Partial<Omit<CompanionTrialSeasonDefinition,'seasonKey'|'startsAt'|'endsAt'>>>={
- '2026-09':{floorSetId:'tower_v1',modifiers:['armored','unstable_magic'],rewardSetId:'monthly_v1',specialChallenges:['NO_PRESTIGE_15','SUNSCAR_PAIR','WORLDLY_TRIO'],featuredOrigin:'REG_SUNSCAR',featuredCompanionIds:['UNIT_013','UNIT_014','UNIT_015','UNIT_016']},
- '2026-10':{floorSetId:'tower_v1',modifiers:['thick_hide','execution'],rewardSetId:'monthly_v1',specialChallenges:['STANDARD_BOSS','FROSTMARCH_PAIR','FLAWLESS_15'],featuredOrigin:'REG_FROSTMARCH',featuredCompanionIds:['UNIT_017','UNIT_018','UNIT_019','UNIT_020']},
- '2026-11':{floorSetId:'tower_v1',modifiers:['relentless','frailty'],rewardSetId:'monthly_v1',specialChallenges:['RARITY_SPECTRUM','ASHLANDS_PAIR','UNDER_POWER_20'],featuredOrigin:'REG_ASHLANDS',featuredCompanionIds:['UNIT_021','UNIT_022','UNIT_023','UNIT_024']},
+ '2026-09':{floorSetId:'tower_v1',modifiers:['armored','unstable_magic'],rewardSetId:'monthly_v1',specialChallenges:['NO_PRESTIGE_15','SUNSCAR_PAIR','AFFINITY_TRIAD'],featuredOrigin:'REG_SUNSCAR',featuredCompanionIds:['UNIT_013','UNIT_014','UNIT_015','UNIT_016']},
+ '2026-10':{floorSetId:'tower_v1',modifiers:['thick_hide','execution'],rewardSetId:'monthly_v1',specialChallenges:['STANDARD_BOSS','FROSTMARCH_PAIR','RADIANT_UMBRAL'],featuredOrigin:'REG_FROSTMARCH',featuredCompanionIds:['UNIT_017','UNIT_018','UNIT_019','UNIT_020']},
+ '2026-11':{floorSetId:'tower_v1',modifiers:['relentless','frailty'],rewardSetId:'monthly_v1',specialChallenges:['RARITY_SPECTRUM','ASHLANDS_PAIR','NO_CONSTRUCT_15'],featuredOrigin:'REG_ASHLANDS',featuredCompanionIds:['UNIT_021','UNIT_022','UNIT_023','UNIT_024']},
 };
 export function companionTrialSeasonDefinition(seasonKey:string):CompanionTrialSeasonDefinition{
  const bounds=utcBounds(seasonKey),rotation=['2026-09','2026-10','2026-11'];

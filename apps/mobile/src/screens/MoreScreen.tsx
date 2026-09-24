@@ -29,7 +29,7 @@ function itemMeta(language:GameState['settings']['language'],id:MoreDestination)
   switch(id){
     case 'Home':return {title:'Home',description:'Current activity and account overview'};
     case 'Social':return {title:'Social',description:'Party, contracts, recruitment and chat'};
-    case 'Activity':return {title:'Characters',description:'Switch, reroll or safely delete characters'};
+    case 'Activity':return {title:'Characters',description:'Activity, queues, switching and safe character management'};
     case 'Progression':return {title:'Working Toward',description:'Goals, sources and safe idle rules'};
     case 'DailySupplies':return {title:'Daily Supplies',description:'28-claim track and +10% activity boosts'};
     case 'AccountBonuses':return {title:'Account Bonuses',description:'Permanent and temporary modifiers'};

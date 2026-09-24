@@ -77,7 +77,8 @@ export function MoreScreen({language,onNavigate,onOpenChatPilot,onOpenAdminQa,co
     return null;
   };
   const attentionPriority:MoreDestination[]=['DailySupplies','Events','Progression','Companions','Social','Friends','Guild','Profile'];
-  const lockedItems=sections.flatMap(section=>section.items).filter(id=>!!lockedReason(id));
+  const unlockOrder:MoreDestination[]=['Progression','DailySupplies','Events','AccountBonuses','Friends','Companions','Social','MasteryHall','Guild','Rankings'];
+  const lockedItems=unlockOrder.filter(id=>!!lockedReason(id));
   const upcomingLocked=lockedItems.slice(0,4);
   const attentionDestinations=attentionPriority.filter(id=>!!attentionLabel(id));
   const attentionTotal=(lockedReason('Social')?0:socialAttentionCount)+(lockedReason('Friends')?0:friendRequestCount)+(lockedReason('Guild')?0:guildAttentionCount)+Number(!lockedReason('Companions')&&companionAttention)+Number(!lockedReason('Progression')&&workingTowardAttention)+Number(!lockedReason('DailySupplies')&&dailySuppliesAttention)+Number(!lockedReason('Events')&&eventAttention)+Number(profileAttention);

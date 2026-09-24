@@ -1,0 +1,44 @@
+name: Class affinity implementation validation
+on:
+  push:
+    branches: ['feature/class-skill-affinities']
+    paths: ['tools/implement-class-affinities.mjs']
+permissions:
+  contents: write
+jobs:
+  implement-and-check:
+    if: github.repository == 'elroynbenjamins/Veldryn' && github.ref == 'refs/heads/feature/class-skill-affinities'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/class-skill-affinities
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply reviewed, exact-match affinity integration
+        run: node tools/implement-class-affinities.mjs
+      - name: Commit implementation only to the affinity branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add apps/mobile/src apps/mobile/tests apps/mobile/package.json docs/CLASS_SKILL_AFFINITIES.md
+          if ! git diff --cached --quiet; then
+            git commit -m 'Implement accepted class profession affinities across rewards and UI'
+            git push origin HEAD:refs/heads/feature/class-skill-affinities
+          fi
+          echo "Validated tree commit: $(git rev-parse HEAD)"
+      - name: Install pinned mobile dependencies
+        run: pnpm --dir apps/mobile install --frozen-lockfile
+      - name: Install backend dependencies
+        run: pnpm --dir backend install --frozen-lockfile
+      - name: Typecheck shared core
+        run: pnpm --dir apps/mobile typecheck:core
+      - name: Typecheck mobile UI
+        run: pnpm --dir apps/mobile typecheck
+      - name: Test class affinities
+        run: pnpm --dir apps/mobile test:class-affinities

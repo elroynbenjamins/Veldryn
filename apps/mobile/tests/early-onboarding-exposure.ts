@@ -37,6 +37,11 @@ for(const id of ['companions','social','contracts','masteryHall','guild'] as con
 assert.equal(earlyFeatureLockReason(state,'Guild'),'');
 assert.equal(earlyFeatureUnlocked(state,'rankings'),false,'Rankings should remain a later progression unlock');
 
+const freshAlt=createCharacter(newGame(0),'WAYFINDER','Fresh Alt');
+const learnedAccount={...freshAlt,otherCharacters:[{character:state.character!,inventory:state.inventory,overflow:state.overflow,activity:null,skills:state.skills,quests:state.quests,currentRegionId:state.currentRegionId}]};
+for(const id of ['workingToward','dailySupplies','events','pets','accountBonuses','friends','companions','social','contracts','masteryHall','guild'] as const)assert.equal(earlyFeatureUnlocked(learnedAccount,id),true,id+' should stay unlocked on a fresh alt once another character earned it');
+assert.equal(earlyFeatureUnlocked(learnedAccount,'rankings'),false,'Fresh alt should not invent an account milestone that no character has earned');
+
 state=claimQuest(state,'QST_011',20);
 assert.equal(earlyFeatureUnlocked(state,'rankings'),true,'Rankings should unlock at QST_011');
 assert.equal(earlyFeatureLockReason(state,'Rankings'),'');

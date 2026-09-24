@@ -67,7 +67,7 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
     if(expedition){setSelectedEvent(expedition);setSelected(undefined);setShowLoadouts(false);setNotice('');return;}
     setNotice('This active event does not currently offer a launchable seasonal expedition.');
   },[entry,initialEventLiveId,onInitialEventHandled]);
-  useEffect(()=>{let cancelled=false;if(unlocked&&coopLiveReadyEnabled&&entrySource.kind==='real')void coopClient.liveQueue().then(value=>{if(!cancelled&&value.ticket&&['queued','reserved'].includes(value.ticket.status))setShowLive(true);}).catch(()=>{});return()=>{cancelled=true;};},[entrySource]);
+  useEffect(()=>{let cancelled=false;if(unlocked&&coopLiveReadyEnabled&&entrySource.kind==='real')void coopClient.liveQueue().then(value=>{if(!cancelled&&value.ticket&&['queued','reserved'].includes(value.ticket.status))setShowLive(true);}).catch(()=>{});return()=>{cancelled=true;};},[entrySource,unlocked]);
   useEffect(()=>{if(unlocked&&entrySource.kind==='real')void coopClient.hasPending().then(setPending).catch(()=>{});},[entrySource,unlocked]);
   useEffect(()=>{
     if(!unlocked||!coopLiveReadyEnabled||entrySource.kind!=='real'||showLive||showLoadouts||selected||selectedEvent||run||eventRun)return;

@@ -49,13 +49,13 @@ function itemMeta(language:GameState['settings']['language'],id:MoreDestination)
   }
 }
 
-export function MoreScreen({language,onNavigate,onOpenChatPilot,onOpenAdminQa,companionAttention=false,workingTowardAttention=false,dailySuppliesAttention=false,eventAttention=false,friendRequestCount=0,guildAttentionCount=0,socialAttentionCount=0,profileAttention=false}:{language:GameState['settings']['language'];onNavigate:(destination:MoreDestination)=>void;onOpenChatPilot?:()=>void;onOpenAdminQa?:()=>void;companionAttention?:boolean;workingTowardAttention?:boolean;dailySuppliesAttention?:boolean;eventAttention?:boolean;friendRequestCount?:number;guildAttentionCount?:number;socialAttentionCount?:number;profileAttention?:boolean}){
+export function MoreScreen({language,onNavigate,onOpenChatPilot,onOpenAdminQa,companionAttention=false,companionUnlocked=true,workingTowardAttention=false,dailySuppliesAttention=false,eventAttention=false,friendRequestCount=0,guildAttentionCount=0,socialAttentionCount=0,profileAttention=false}:{language:GameState['settings']['language'];onNavigate:(destination:MoreDestination)=>void;onOpenChatPilot?:()=>void;onOpenAdminQa?:()=>void;companionAttention?:boolean;companionUnlocked?:boolean;workingTowardAttention?:boolean;dailySuppliesAttention?:boolean;eventAttention?:boolean;friendRequestCount?:number;guildAttentionCount?:number;socialAttentionCount?:number;profileAttention?:boolean}){
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),singleColumn=width<350||fontScale>=1.25;
   const attentionLabel=(id:MoreDestination)=>{
     if(id==='Social'&&socialAttentionCount>0)return `${socialAttentionCount} social update${socialAttentionCount===1?'':'s'}`;
     if(id==='Friends'&&friendRequestCount>0)return `${friendRequestCount} incoming friend request${friendRequestCount===1?'':'s'}`;
     if(id==='Guild'&&guildAttentionCount>0)return `${guildAttentionCount} guild update${guildAttentionCount===1?'':'s'}`;
-    if(id==='Companions'&&companionAttention)return 'companion actions ready';
+    if(id==='Companions'&&companionUnlocked&&companionAttention)return 'companion actions ready';
     if(id==='Progression'&&workingTowardAttention)return 'Working Toward goal complete';
     if(id==='DailySupplies'&&dailySuppliesAttention)return 'Daily Supplies ready';
     if(id==='Events'&&eventAttention)return 'event rewards ready';
@@ -66,7 +66,7 @@ export function MoreScreen({language,onNavigate,onOpenChatPilot,onOpenAdminQa,co
     if(id==='Social'&&socialAttentionCount>0)return <AttentionCount count={socialAttentionCount} label="Social updates"/>;
     if(id==='Friends'&&friendRequestCount>0)return <AttentionCount count={friendRequestCount} label="Incoming friend requests"/>;
     if(id==='Guild'&&guildAttentionCount>0)return <AttentionCount count={guildAttentionCount} label="Guild updates"/>;
-    if(id==='Companions'&&companionAttention)return <AttentionDot label="Companion actions ready"/>;
+    if(id==='Companions'&&companionUnlocked&&companionAttention)return <AttentionDot label="Companion actions ready"/>;
     if(id==='Progression'&&workingTowardAttention)return <AttentionDot label="Working Toward goal complete"/>;
     if(id==='DailySupplies'&&dailySuppliesAttention)return <AttentionDot label="Daily Supplies ready"/>;
     if(id==='Events'&&eventAttention)return <AttentionDot label="Event rewards ready"/>;
@@ -81,10 +81,10 @@ export function MoreScreen({language,onNavigate,onOpenChatPilot,onOpenAdminQa,co
     {attentionDestinations.length?<View style={s.attentionRail}><View style={s.attentionRailHead}><Text style={s.sectionLabel}>NEEDS ATTENTION</Text><Text style={s.attentionRailMeta}>{attentionDestinations.length} destination{attentionDestinations.length===1?'':'s'}</Text></View><View style={s.attentionQuickRow}>{attentionDestinations.slice(0,3).map(id=>{const meta=itemMeta(language,id),alert=attentionLabel(id);return <Pressable key={id} accessibilityRole="button" accessibilityLabel={meta.title+', '+alert} onPress={()=>onNavigate(id)} style={({pressed})=>[s.attentionQuick,singleColumn&&s.attentionQuickWide,pressed&&s.pressed]}><View style={s.quickIconFrame}><Image accessible={false} source={navigationIcons[iconForDestination(id)]} resizeMode="contain" style={s.quickIcon}/></View><View style={s.quickCopy}><Text numberOfLines={1} style={s.quickTitle}>{meta.title}</Text><Text numberOfLines={1} style={s.quickDetail}>{alert}</Text></View><UiIcon name="next" size={16}/></Pressable>})}</View>{attentionDestinations.length>3?<Text style={s.attentionMore}>+{attentionDestinations.length-3} more highlighted below</Text>:null}</View>:null}
     {sections.map(section=><View key={section.label} style={s.section}>
       <Text style={s.sectionLabel}>{section.label}</Text>
-      <View style={s.grid}>{section.items.map(id=>{const meta=itemMeta(language,id),alert=attentionLabel(id),inDevelopment=id==='Arena';return <Pressable key={id} accessibilityRole="button" accessibilityState={{disabled:inDevelopment}} accessibilityLabel={inDevelopment?`${meta.title}, In Development`:alert?`${meta.title}, ${alert}`:meta.title} accessibilityHint={meta.description} disabled={inDevelopment} onPress={()=>onNavigate(id)} style={({pressed})=>[s.tile,alert&&s.tileAttention,inDevelopment&&s.tileDisabled,singleColumn&&s.tileWide,pressed&&!inDevelopment&&s.pressed]}>
+      <View style={s.grid}>{section.items.map(id=>{const meta=itemMeta(language,id),alert=attentionLabel(id),locked=id==='Companions'&&!companionUnlocked,inDevelopment=id==='Arena';return <Pressable key={id} accessibilityRole="button" accessibilityState={{disabled:inDevelopment}} accessibilityLabel={inDevelopment?`${meta.title}, In Development`:locked?`${meta.title}, Locked until Into Ironwood`:alert?`${meta.title}, ${alert}`:meta.title} accessibilityHint={locked?'Complete Into Ironwood to unlock the Companion Sanctuary.':meta.description} disabled={inDevelopment} onPress={()=>onNavigate(id)} style={({pressed})=>[s.tile,alert&&s.tileAttention,(inDevelopment||locked)&&s.tileDisabled,singleColumn&&s.tileWide,pressed&&!inDevelopment&&s.pressed]}>
         <View style={s.tileTop}><View style={[s.iconFrame,alert&&s.iconFrameAttention]}><Image accessible={false} source={navigationIcons[iconForDestination(id)]} resizeMode="contain" style={s.icon}/></View><View style={s.attentionSlot}>{attention(id)}</View><UiIcon name="next" size={18}/></View>
-        <View style={s.titleRow}><Text numberOfLines={singleColumn?2:1} style={s.title}>{meta.title}</Text>{inDevelopment?<View style={s.developmentPill}><Text style={s.developmentPillText}>IN DEVELOPMENT</Text></View>:null}</View>
-        <Text numberOfLines={singleColumn?2:1} style={s.description}>{meta.description}</Text>
+        <View style={s.titleRow}><Text numberOfLines={singleColumn?2:1} style={s.title}>{meta.title}</Text>{locked?<View style={s.lockPill}><Text style={s.lockPillText}>LOCKED</Text></View>:inDevelopment?<View style={s.developmentPill}><Text style={s.developmentPillText}>IN DEVELOPMENT</Text></View>:null}</View>
+        <Text numberOfLines={singleColumn?2:1} style={s.description}>{locked?'Unlock after Into Ironwood (Level 10).':meta.description}</Text>
       </Pressable>})}</View>
     </View>)}
     {onOpenChatPilot||onOpenAdminQa?<View style={s.section}><Text style={s.sectionLabel}>DEVELOPER</Text>{onOpenAdminQa?<Pressable accessibilityRole="button" accessibilityLabel="Open Admin QA Console" onPress={onOpenAdminQa} style={({pressed})=>[s.devCard,pressed&&s.pressed]}><Image source={navigationIcons.Character} resizeMode="contain" style={s.icon}/><View style={s.devCopy}><Text style={s.title}>Admin QA Console</Text><Text style={s.description}>Full-content, crafting and dungeon test profile</Text></View><UiIcon name="next" size={18}/></Pressable>:null}{onOpenChatPilot?<Pressable accessibilityRole="button" accessibilityLabel="Open Chat Pilot development screen" onPress={onOpenChatPilot} style={({pressed})=>[s.devCard,pressed&&s.pressed]}><Image source={navigationIcons.Social} resizeMode="contain" style={s.icon}/><View style={s.devCopy}><Text style={s.title}>Chat Pilot</Text><Text style={s.description}>Development-only interactive chat review</Text></View><UiIcon name="next" size={18}/></Pressable>:null}</View>:null}
@@ -110,7 +110,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
   grid:{flexDirection:'row',flexWrap:'wrap',gap:7},
   tile:{flexGrow:1,flexBasis:'47%',minWidth:138,minHeight:86,gap:3,padding:8,borderWidth:StyleSheet.hairlineWidth,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel},
   tileAttention:{borderWidth:1,borderColor:C.selectionLine,backgroundColor:C.panelRaised},
-  tileDisabled:{opacity:.62,borderStyle:'dashed'},
+  tileDisabled:{opacity:.62,borderStyle:'dashed'},lockPill:{paddingHorizontal:5,paddingVertical:2,borderWidth:1,borderColor:C.muted,borderRadius:99},lockPillText:{fontSize:7,color:C.muted,fontWeight:'900',letterSpacing:.5},
   tileWide:{flexBasis:'100%',minWidth:0},tileTop:{minHeight:30,flexDirection:'row',alignItems:'center',gap:6},
   iconFrame:{width:30,height:30,alignItems:'center',justifyContent:'center',borderWidth:StyleSheet.hairlineWidth,borderColor:C.line,borderRadius:10,backgroundColor:C.panel2},
   iconFrameAttention:{borderColor:C.selectionLine,backgroundColor:C.selection},

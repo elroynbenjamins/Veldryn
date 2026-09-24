@@ -2,6 +2,7 @@ import {CORE_PET_COLLECTIBLES} from '../content/core-pets';
 import {unlockCollectible} from './collectibles';
 import {random01} from './rng';
 import type {GameState} from './types';
+import {earlyFeatureUnlocked} from './feature-unlocks';
 
 export interface CorePetSignatureDrop{
   petId:string;
@@ -93,7 +94,7 @@ function resolveRules(
   seedBase:string,
   roll:CorePetDropRoll,
 ){
-  if(attempts<=0||!rules.length)return [] as string[];
+  if(!earlyFeatureUnlocked(state,'pets')||attempts<=0||!rules.length)return [] as string[];
   const owned=ownedPetIds(state),found:string[]=[];
   const tries=Math.max(0,Math.floor(attempts));
   for(const rule of rules){

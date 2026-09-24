@@ -47,4 +47,11 @@ eq(characterLoadoutSlotCount({...state,account:{...state.account,entitlements:{v
 eq(characterLoadoutSlotCount(vipPlusState),5,'VIP+ inherits VIP and adds a second permanent loadout slot');
 const fifth=saveCharacterLoadout(vipPlusState,4,'VIP+ Fifth');
 eq(fifth.character?.savedLoadouts?.some(row=>row.slotIndex===4),true,'VIP+ can save into fifth loadout slot');
-console.log('PASS: V40 Working Toward, exact duration Idle Rules and Saved Loadouts use validated command paths');
+const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
+const savedLoadoutUi=fs.readFileSync('src/components/SavedLoadoutsPanel.tsx','utf8');
+const profileEditorUi=fs.readFileSync('src/components/ProfileEditor.tsx','utf8');
+const appUi=fs.readFileSync('App.tsx','utf8');
+ok(savedLoadoutUi.includes("type:'loadout_save'")&&savedLoadoutUi.includes("type:'loadout_apply'")&&savedLoadoutUi.includes("type:'loadout_delete'"),'Saved Loadouts UI must emit authoritative loadout commands when online');
+ok(savedLoadoutUi.includes('if(onCommand)await onCommand(command);else await onChange(action())'),'Saved Loadouts UI must keep offline fallback without bypassing the online command path');
+ok(profileEditorUi.includes('onCommand={onCommand}')&&appUi.includes('<ProfileEditor state={state} onChange={commit} onCommand={runCompanionCommand}/>'),'Character profile editor must wire Saved Loadouts to the authoritative command executor');
+console.log('PASS: V40 Working Toward, exact duration Idle Rules and Saved Loadouts use validated online command paths');

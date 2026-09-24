@@ -34,7 +34,7 @@ function run(){
   assert.deepEqual(reachedGuildMilestones(12500,10000),[25,50,75,100,125]);
   const board1=buildGuildWeeklyProjectBoard('11111111-1111-1111-1111-111111111111',10,new Date('2026-09-14T12:00:00Z'));
   const board2=buildGuildWeeklyProjectBoard('11111111-1111-1111-1111-111111111111',10,new Date('2026-09-15T12:00:00Z'));
-  assert.deepEqual(board1.map(x=>x.templateId),board2.map(x=>x.templateId)); assert.deepEqual(board1.map(x=>x.focus),['combat','skilling','mixed']);
+  assert.deepEqual(board1.map(x=>x.templateId),board2.map(x=>x.templateId)); assert.deepEqual(board1.map(x=>x.focus),['combat','skilling','mixed']); assert.ok(GUILD_WEEKLY_PROJECT_POOL.every(project=>project.minGuildLevel<=10),'launch weekly Project pool must be reachable by Guild Level 10');
   assert.equal(autoStartVoteThreshold(30),3); assert.equal(autoStartVoteThreshold(60),6);
   assert.ok(chooseVoteWinner([{templateId:'a',votes:2},{templateId:'b',votes:2}],'g','2026-09-14'));
   assert.equal(cappedGuildSourcedBonus(.10,decreeCandidates('g','w',50)[0]),Math.min(decreeCandidates('g','w',50)[0].guildSourcedHardCap,.10+decreeCandidates('g','w',50)[0].bonusValue));

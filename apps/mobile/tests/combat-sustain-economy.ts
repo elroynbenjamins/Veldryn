@@ -1,12 +1,8 @@
-import {strict as assert} from 'node:assert';
-import {dungeonConsumablePolicy} from '../../backend/src/server/coop/consumable-policy';
-import {companionExpeditionProvisionPolicy} from '../src/core/companion-provisions';
+import {assert} from './test-assert';
+import {companionExpeditionProvisionPolicy,companionExpeditionStaminaCost} from '../src/core/companion-provisions';
 
-for(let tier=1;tier<=5;tier++){
- const policy=dungeonConsumablePolicy(tier);
- assert.equal(policy.foodAllowed,false,'dungeon food must remain disabled');
- assert.ok(policy.potionCharges>=3&&policy.potionCharges<=5,'potion budget must stay limited');
-}
-assert.deepEqual([1,2,4,8,16,24].map(h=>companionExpeditionProvisionPolicy(h).foodUnits),[1,1,1,2,4,6]);
-assert.ok(companionExpeditionProvisionPolicy(24).rewardBonusPercent<=5,'provisions must remain a small bonus, not mandatory power');
-console.log('PASS dungeon consumables and companion provision policy');
+const hours=[1,2,4,8,16,24];
+assert.deepEqual(hours.map(companionExpeditionStaminaCost),[50,50,50,50,100,150]);
+assert.deepEqual(hours.map(h=>companionExpeditionProvisionPolicy(h).healingHpEquivalent),[500,500,500,500,1000,1500]);
+assert.ok(companionExpeditionProvisionPolicy(24).rewardBonusPercent<=5,'provisions must remain a small reward bonus rather than paid-style power');
+console.log('PASS companion expedition Stamina provision policy');

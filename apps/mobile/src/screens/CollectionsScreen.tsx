@@ -6,6 +6,7 @@ import {COLLECTIBLE_TARGET_LABELS,type CollectibleKind} from '../content/collect
 import {collectibleJournal,collectionBonusBreakdown,selectCollectible} from '../core/collectibles';
 import type {GameState} from '../core/types';
 import {petArtSource} from '../theme/pet-art';
+import {earlyFeatureGate} from '../core/early-feature-gates';
 import {radii,spacing,typography,equipmentTheme,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 
@@ -13,7 +14,7 @@ const pct=(bps:number)=>(bps/100).toFixed(2)+'%';
 
 export function CollectionsScreen({state,onChange}:{state:GameState;onChange:(next:GameState)=>void}){
   const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
-  const journal=collectibleJournal(state),breakdown=collectionBonusBreakdown(state),owned=journal.filter(row=>row.owned).length;
+  const journal=collectibleJournal(state),breakdown=collectionBonusBreakdown(state),owned=journal.filter(row=>row.owned).length,petGate=earlyFeatureGate(state,'pets');
   const rows=(kind:CollectibleKind)=>journal.filter(row=>row.kind===kind);
 
   return <ScrollView contentContainerStyle={s.root}>
@@ -40,7 +41,7 @@ export function CollectionsScreen({state,onChange}:{state:GameState;onChange:(ne
       const entries=rows(kind);
       return <Panel key={kind}>
         <Text style={s.section}>{kind.toUpperCase()} · {entries.filter(row=>row.owned).length}/{entries.length}</Text>
-        {kind==='pet'?<View style={s.petGrid}>{entries.map(row=>{
+        {kind==='pet'&&!petGate.unlocked?<View style={s.featureLock}><Text style={s.lockIcon}>🔒</Text><View style={s.flex}><Text style={s.lockTitle}>Pet Collection unlocks soon</Text><Text style={s.copy}>{petGate.requirement}</Text><Text style={s.lockDetail}>{petGate.detail}</Text></View></View>:kind==='pet'?<View style={s.petGrid}>{entries.map(row=>{
           const art=petArtSource(row.id);
           return <View key={row.id} style={[s.petCard,row.selected&&s.selectedCard,!row.owned&&s.lockedCard]}>
             <View style={s.petPortrait}>{art?<Image source={art} resizeMode="contain" style={s.petImage}/>:<Text style={s.petFallback}>{row.owned?'◆':'?'}</Text>}</View>
@@ -97,4 +98,5 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
   context:{fontSize:9,color:C.info,fontWeight:'700'},
   source:{fontSize:9,lineHeight:12,color:C.muted,minHeight:24},
   bonusText:{fontSize:9,lineHeight:12,color:C.accent,fontWeight:'800'},
+  featureLock:{flexDirection:'row',alignItems:'center',gap:10,padding:12,marginTop:8,borderWidth:1,borderStyle:'dashed',borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2},lockIcon:{fontSize:22},lockTitle:{...typography.bodyStrong,color:C.text},lockDetail:{fontSize:9,lineHeight:13,color:C.info,marginTop:3},
 });}

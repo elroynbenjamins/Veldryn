@@ -1,5 +1,5 @@
 import {useEffect,useMemo,useState} from 'react';
-import {ActivityIndicator,Alert,Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {ActivityIndicator,Alert,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {
  cancelFriendRequest,friendRelationshipState,removeFriend,respondFriendRequest,sendFriendRequest,setPlayerBlocked,
  sendPartyInvitation,sendGuildInvitation,socialInviteCapabilities,reportSocialPlayer,
@@ -18,16 +18,17 @@ import {PublicProfileScene} from './PublicProfileScene';
 import {useAuthSession} from '../online/AuthSessionProvider';
 import {profileAchievementPrestige,profileCollectionPrestige,profileRecordPrestige} from '../core/profile-prestige';
 import {friendRelationshipActionPresentation} from '../core/social-identity';
+import {GameModalHeader,GameModalSurface} from './GameModalSurface';
 
 export type ChatPlayerIdentity={id?:string;message_id?:string;account_id:string;sender_name:string;guild_tag?:string|null;guild_tag_color_id?:string|null;relationship?:FriendRelationship};
 
 export function ChatPlayerSheet({
- message,onClose,onBlocked,onRelationshipChanged,
+ message,onClose,onBlocked,onRelationshipChanged,reduceMotion=false,
 }:{
- message:ChatPlayerIdentity|null;onClose:()=>void;onBlocked:(accountId:string)=>void;
+ message:ChatPlayerIdentity|null;onClose:()=>void;onBlocked:(accountId:string)=>void;reduceMotion?:boolean;
  onRelationshipChanged?:(accountId:string,relationship:FriendRelationship)=>void;
 }){
- const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
+ const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),stackActions=width<360||fontScale>=1.25;
  const {session}=useAuthSession();
  const [profile,setProfile]=useState<PublicPlayerProfileV43|null>(null),[loading,setLoading]=useState(false),[busy,setBusy]=useState(false),[unavailable,setUnavailable]=useState(false),[loadError,setLoadError]=useState('');
  const [relationship,setRelationship]=useState<{relationship:FriendRelationship;requestId?:string}>({relationship:'none'}),[relationshipLoading,setRelationshipLoading]=useState(false),[relationshipError,setRelationshipError]=useState('');
@@ -87,9 +88,9 @@ export function ChatPlayerSheet({
  const relationshipPresentation=friendRelationshipActionPresentation(relationship.relationship);
  const showInviteActions=!!inviteCapabilities&&(inviteCapabilities.party.available||inviteCapabilities.party.pending||inviteCapabilities.guild.available||inviteCapabilities.guild.pending);
 
- return <Modal visible transparent animationType="fade" onRequestClose={onClose}><View style={s.scrim}><Pressable accessibilityLabel="Close player profile" onPress={onClose} style={StyleSheet.absoluteFill}/><View accessibilityViewIsModal style={s.sheet}>
-  <View style={s.handle}/><View style={s.top}><Text style={s.kicker}>PLAYER PROFILE</Text><Pressable accessibilityRole="button" accessibilityLabel="Close player profile" onPress={onClose} style={s.close}><Text style={s.closeText}>×</Text></Pressable></View>
-  <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
+ return <GameModalSurface visible presentation="sheet" reduceMotion={reduceMotion} onClose={onClose} backdropLabel="Close player profile" surfaceStyle={s.sheet}>
+  <GameModalHeader eyebrow="PLAYER PROFILE" title={target.sender_name} onClose={onClose}/>
+  <ScrollView style={s.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
    {loading?<View style={s.limitedCard}><CompactPlayerIdentity name={message.sender_name} guildTag={message.guild_tag} guildTagColorId={message.guild_tag_color_id} status="LOADING PROFILE"/><ActivityIndicator color={C.accent}/></View>:profile?<><PublicProfileScene profile={profile}/>
     {profile.bio?<View style={s.bioCard}><Text style={s.bioLabel}>PROFILE BIO</Text><Text style={s.bio}>{profile.bio}</Text></View>:null}
     {(profile.favoriteSkillId||profile.favoriteCompanionId)?<ProfileFavoriteHighlights favoriteSkillId={profile.favoriteSkillId} favoriteCompanionId={profile.favoriteCompanionId}/>:null}
@@ -97,31 +98,31 @@ export function ChatPlayerSheet({
     <ProfileShowcaseSection title="PERSONAL RECORDS" entries={recordEntries} emptyLabel="No record selected"/>
     <ProfileShowcaseSection title="COLLECTION SHOWCASE" entries={collectionEntries} emptyLabel="No collectible selected"/>
    </>:<View style={s.limitedCard}><CompactPlayerIdentity name={message.sender_name} guildTag={message.guild_tag} guildTagColorId={message.guild_tag_color_id} status={loadError?'PROFILE ERROR':'LIMITED PROFILE'}/><View style={s.limitedCopy}><Text style={s.privateTitle}>{loadError?'Public profile could not load':unavailable?'Full profile unavailable':'No published profile'}</Text><Text style={s.limitedText}>{loadError?'The profile service did not respond successfully. The player identity and social actions below are still available.':'This player may use Private or Guild visibility, may not have published a social profile yet, or may be hidden by a relationship rule.'}</Text></View>{loadError?<GameButton title="Retry profile" tone="secondary" onPress={()=>void loadProfile()}/>:null}</View>}
-  </ScrollView>
   {isSelf?<View style={s.selfNotice}><Text style={s.selfNoticeLabel}>THIS IS YOUR PROFILE</Text><Text style={s.selfNoticeText}>Edit your biography, favorites, privacy and showcases from Account → Profile.</Text></View>:<View style={s.actionArea}>
    <View style={s.actionHead}><Text style={s.hint}>PLAYER ACTIONS</Text><View style={[s.relationshipPill,relationshipPresentation.tone==='friend'&&s.relationshipFriend]}>{relationshipLoading?<ActivityIndicator size="small" color={C.info}/>:<Text style={[s.relationshipText,relationshipPresentation.tone==='friend'&&s.relationshipFriendText]}>{relationshipPresentation.status}</Text>}</View></View>
    {relationshipError?<Text style={s.relationshipError}>Friend status could not refresh; showing the last known state.</Text>:null}
-   <View style={s.actions}>
-    {relationship.relationship==='none'?<View style={s.primaryAction}><GameButton title="Add friend" disabled={busy||relationshipLoading} onPress={()=>void addFriend()}/></View>:null}
-    {relationship.relationship==='friend'?<View style={s.primaryAction}><GameButton title="Remove friend" tone="secondary" disabled={busy||relationshipLoading} onPress={confirmRemoveFriend}/></View>:null}
-    {relationship.relationship==='outgoing_pending'?<View style={s.primaryAction}><GameButton title={relationship.requestId?'Cancel request':'Refresh request'} tone="secondary" disabled={busy||relationshipLoading} onPress={()=>void cancelRequest()}/></View>:null}
-    {relationship.relationship==='incoming_pending'?<><View style={s.primaryAction}><GameButton title={relationship.requestId?'Accept request':'Refresh request'} disabled={busy||relationshipLoading} onPress={()=>void acceptRequest()}/></View><View style={s.secondaryAction}><GameButton title="Decline" tone="secondary" disabled={busy||relationshipLoading||!relationship.requestId} onPress={()=>void declineRequest()}/></View></>:null}
-    <Pressable accessibilityRole="button" disabled={busy} onPress={confirmBlock} style={({pressed})=>[s.blockButton,(pressed||busy)&&s.pressed]}><Text style={s.blockText}>Block</Text></Pressable>
-    <Pressable accessibilityRole="button" disabled={busy} onPress={reportPlayer} style={({pressed})=>[s.reportButton,(pressed||busy)&&s.pressed]}><Text style={s.reportText}>Report</Text></Pressable>
+   <View style={[s.actions,stackActions&&s.actionsStack]}>
+    {relationship.relationship==='none'?<View style={[s.primaryAction,stackActions&&s.actionStack]}><GameButton title="Add friend" disabled={busy||relationshipLoading} onPress={()=>void addFriend()}/></View>:null}
+    {relationship.relationship==='friend'?<View style={[s.primaryAction,stackActions&&s.actionStack]}><GameButton title="Remove friend" tone="secondary" disabled={busy||relationshipLoading} onPress={confirmRemoveFriend}/></View>:null}
+    {relationship.relationship==='outgoing_pending'?<View style={[s.primaryAction,stackActions&&s.actionStack]}><GameButton title={relationship.requestId?'Cancel request':'Refresh request'} tone="secondary" disabled={busy||relationshipLoading} onPress={()=>void cancelRequest()}/></View>:null}
+    {relationship.relationship==='incoming_pending'?<><View style={[s.primaryAction,stackActions&&s.actionStack]}><GameButton title={relationship.requestId?'Accept request':'Refresh request'} disabled={busy||relationshipLoading} onPress={()=>void acceptRequest()}/></View><View style={[s.secondaryAction,stackActions&&s.actionStack]}><GameButton title="Decline" tone="secondary" disabled={busy||relationshipLoading||!relationship.requestId} onPress={()=>void declineRequest()}/></View></>:null}
+    <Pressable accessibilityRole="button" disabled={busy} onPress={confirmBlock} style={({pressed})=>[s.blockButton,stackActions&&s.actionStack,(pressed||busy)&&s.pressed]}><Text style={s.blockText}>Block</Text></Pressable>
+    <Pressable accessibilityRole="button" disabled={busy} onPress={reportPlayer} style={({pressed})=>[s.reportButton,stackActions&&s.actionStack,(pressed||busy)&&s.pressed]}><Text style={s.reportText}>Report</Text></Pressable>
    </View>
-   {showInviteActions?<><View style={s.inviteHead}><Text style={s.hint}>DIRECT INVITATIONS</Text>{inviteLoading?<ActivityIndicator size="small" color={C.info}/>:null}</View><View style={s.actions}>
-    {inviteCapabilities?.party.available?<View style={s.primaryAction}><GameButton title="Invite to Party" tone="secondary" disabled={busy||inviteLoading} onPress={()=>void inviteToParty()}/></View>:inviteCapabilities?.party.pending?<View style={s.primaryAction}><GameButton title="Party invite sent" tone="secondary" disabled onPress={()=>{}}/></View>:null}
-    {inviteCapabilities?.guild.available?<View style={s.primaryAction}><GameButton title="Invite to Guild" tone="secondary" disabled={busy||inviteLoading} onPress={()=>void inviteToGuild()}/></View>:inviteCapabilities?.guild.pending?<View style={s.primaryAction}><GameButton title="Guild invite sent" tone="secondary" disabled onPress={()=>{}}/></View>:null}
+   {showInviteActions?<><View style={s.inviteHead}><Text style={s.hint}>DIRECT INVITATIONS</Text>{inviteLoading?<ActivityIndicator size="small" color={C.info}/>:null}</View><View style={[s.actions,stackActions&&s.actionsStack]}>
+    {inviteCapabilities?.party.available?<View style={[s.primaryAction,stackActions&&s.actionStack]}><GameButton title="Invite to Party" tone="secondary" disabled={busy||inviteLoading} onPress={()=>void inviteToParty()}/></View>:inviteCapabilities?.party.pending?<View style={[s.primaryAction,stackActions&&s.actionStack]}><GameButton title="Party invite sent" tone="secondary" disabled onPress={()=>{}}/></View>:null}
+    {inviteCapabilities?.guild.available?<View style={[s.primaryAction,stackActions&&s.actionStack]}><GameButton title="Invite to Guild" tone="secondary" disabled={busy||inviteLoading} onPress={()=>void inviteToGuild()}/></View>:inviteCapabilities?.guild.pending?<View style={[s.primaryAction,stackActions&&s.actionStack]}><GameButton title="Guild invite sent" tone="secondary" disabled onPress={()=>{}}/></View>:null}
    </View></>:inviteError?<Text style={s.inviteError}>Direct invitations are temporarily unavailable.</Text>:null}
   </View>}
- </View></View></Modal>;
+  </ScrollView>
+ </GameModalSurface>;
 }
 
 function makeStyles(C:ThemeColors){return StyleSheet.create({
- scrim:{flex:1,justifyContent:'flex-end',backgroundColor:C.overlay},sheet:{maxHeight:'88%',paddingHorizontal:spacing.lg,paddingTop:8,paddingBottom:24,backgroundColor:C.panel,borderTopWidth:StyleSheet.hairlineWidth,borderColor:C.line,borderTopLeftRadius:22,borderTopRightRadius:22},handle:{width:38,height:4,alignSelf:'center',borderRadius:2,backgroundColor:C.muted,marginBottom:8},top:{minHeight:44,flexDirection:'row',alignItems:'center'},kicker:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:1,flex:1},close:{width:44,height:44,alignItems:'center',justifyContent:'center'},closeText:{fontSize:28,lineHeight:31,color:C.muted},scroll:{gap:spacing.md,paddingBottom:spacing.sm},
+ sheet:{maxWidth:640,maxHeight:'92%',backgroundColor:C.panel,borderColor:C.line},scrollView:{maxHeight:'100%'},scroll:{gap:spacing.md,paddingBottom:spacing.md},
  limitedCard:{gap:10,padding:spacing.md,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2},limitedCopy:{gap:3},limitedText:{...typography.body,color:C.muted,lineHeight:20},privateTitle:{...typography.title,color:C.text},
  bioCard:{gap:3,padding:10,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2},bioLabel:{fontSize:8,color:C.accent,fontWeight:'900',letterSpacing:.75},bio:{...typography.body,color:C.text,lineHeight:20},
  selfNotice:{gap:2,marginTop:spacing.sm,padding:spacing.sm,borderWidth:1,borderColor:C.info,borderRadius:radii.md,backgroundColor:C.infoSurface},selfNoticeLabel:{...typography.caption,color:C.info,fontWeight:'900',letterSpacing:.8},selfNoticeText:{...typography.caption,color:C.muted},
  actionArea:{gap:6,marginTop:spacing.sm},actionHead:{minHeight:28,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},inviteHead:{minHeight:24,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,marginTop:2},inviteError:{fontSize:9,lineHeight:12,color:C.muted},hint:{...typography.caption,color:C.muted,textTransform:'uppercase',letterSpacing:.8},relationshipPill:{minHeight:24,minWidth:82,alignItems:'center',justifyContent:'center',paddingHorizontal:7,paddingVertical:3,borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.panel2},relationshipFriend:{borderColor:C.good,backgroundColor:C.goodSurface},relationshipText:{fontSize:7.5,color:C.muted,fontWeight:'900',letterSpacing:.45},relationshipFriendText:{color:C.good},relationshipError:{fontSize:9,lineHeight:12,color:C.warning},
- actions:{flexDirection:'row',flexWrap:'wrap',gap:6},primaryAction:{flex:1,minWidth:124},secondaryAction:{minWidth:92},blockButton:{minWidth:76,minHeight:44,alignItems:'center',justifyContent:'center',paddingHorizontal:10,borderRadius:radii.md,backgroundColor:C.panel2,borderWidth:StyleSheet.hairlineWidth,borderColor:C.line},blockText:{...typography.bodyStrong,color:C.bad},reportButton:{minWidth:76,minHeight:44,alignItems:'center',justifyContent:'center',paddingHorizontal:10,borderRadius:radii.md,backgroundColor:C.panel2,borderWidth:StyleSheet.hairlineWidth,borderColor:C.line},reportText:{...typography.bodyStrong,color:C.warning},pressed:{opacity:.62},
+ actions:{flexDirection:'row',flexWrap:'wrap',gap:6},actionsStack:{flexDirection:'column'},primaryAction:{flex:1,minWidth:124},secondaryAction:{minWidth:92},actionStack:{flex:0,width:'100%',minWidth:0},blockButton:{minWidth:76,minHeight:44,alignItems:'center',justifyContent:'center',paddingHorizontal:10,borderRadius:radii.md,backgroundColor:C.panel2,borderWidth:StyleSheet.hairlineWidth,borderColor:C.line},blockText:{...typography.bodyStrong,color:C.bad},reportButton:{minWidth:76,minHeight:44,alignItems:'center',justifyContent:'center',paddingHorizontal:10,borderRadius:radii.md,backgroundColor:C.panel2,borderWidth:StyleSheet.hairlineWidth,borderColor:C.line},reportText:{...typography.bodyStrong,color:C.warning},pressed:{opacity:.62},
 });}

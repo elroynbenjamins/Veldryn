@@ -1,4 +1,4 @@
-import {strict as assert} from 'node:assert';
+import {assert} from './test-assert';
 import {createCharacter,newGame} from '../src/core/game';
 import {EARLY_FEATURE_UNLOCKS,earlyFeatureLockReason,earlyFeatureUnlocked} from '../src/core/feature-unlocks';
 import {homeSessionSummary} from '../src/core/dashboard';

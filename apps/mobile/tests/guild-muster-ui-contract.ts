@@ -8,7 +8,7 @@ const panel=read('src/components/OnlineGuildMusterPanel.tsx');
 const client=read('src/online/guild-muster.ts');
 const core=read('src/core/guild-muster.ts');
 const sql=read('../../backend/supabase/migrations/20261018000155_guild_muster_v1.sql');
-const activitySql=read('../../backend/supabase/migrations/20260924090000_active_guild_meter_v1.sql');
+const activitySql=read('../../backend/supabase/migrations/20261018000156_active_guild_meter_v1.sql');
 const activityCore=read('src/core/guild-activity.ts');
 
 ok(screen.includes("'Activities'"),'Consolidated online Guild sections must include Activities');

@@ -84,6 +84,8 @@ const BASE_ITEMS:ItemDef[]=[
 {id:'MIRAGE_BLOOM',name:'Mirage Bloom',type:'material',value:160,rarity:'uncommon'},
 {id:'DUNEWOOD',name:'Dunewood',type:'material',value:85,rarity:'uncommon'},
 {id:'CHARBARK',name:'Charbark',type:'material',value:140,rarity:'uncommon'},
+{id:'CINDERWOOD_LOG',name:'Cinderwood Log',type:'material',value:210,rarity:'rare'},
+{id:'BLACKGLASS_INGOT',name:'Blackglass Ingot',type:'material',value:720,rarity:'epic'},
 {id:'OASIS_CARP',name:'Oasis Carp',type:'material',value:100,rarity:'uncommon'},
 {id:'GLASSFIN',name:'Glassfin',type:'material',value:170,rarity:'rare'},
 {id:'SCORPION_VENOM',name:'Scorpion Venom',type:'material',value:130,rarity:'uncommon'},

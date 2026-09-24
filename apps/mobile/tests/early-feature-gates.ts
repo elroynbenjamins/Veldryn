@@ -1,4 +1,4 @@
-import {strict as assert} from 'node:assert';
+import {assert} from './test-assert';
 import {createCharacter,newGame} from '../src/core/game';
 import {earlyFeatureGate,earlyFeatureUnlocked} from '../src/core/early-feature-gates';
 import {resolveCorePetCombatDrops} from '../src/core/core-pet-drops';

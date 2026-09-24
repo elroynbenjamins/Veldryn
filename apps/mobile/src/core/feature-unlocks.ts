@@ -52,3 +52,12 @@ export function newlyUnlockedEarlyFeatures(before:GameState|null|undefined,after
  });
  return out;
 }
+
+export function earlyFeatureForDestination(destination:string):EarlyFeatureId|undefined{
+ const map:Record<string,EarlyFeatureId>={
+  Progression:'workingToward',DailySupplies:'dailySupplies',AccountBonuses:'accountBonuses',
+  Companions:'companions',Events:'events',Friends:'friends',Social:'social',MasteryHall:'masteryHall',
+  Guild:'guild',Rankings:'rankings',
+ };
+ return map[destination];
+}

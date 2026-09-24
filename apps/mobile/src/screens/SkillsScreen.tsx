@@ -18,11 +18,9 @@ import {formatGameNumber} from '../core/number-format';
 import {ot} from '../i18n';
 import {gatheringToolsFor} from '../content/gathering-tools';
 import {equippedGatheringTool,gatheringPacing} from '../core/gathering-tools';
-import {characterPermanentMultipliers} from '../core/permanent-boosts';
 import {GatheringToolArtwork} from '../components/GatheringToolArtwork';
 import {WORLD_ZONES} from '../content/world-map';
 import {currentRegionId} from '../core/combat-region';
-import {encounterUnlocked} from '../core/world-navigation';
 import {ResourceArtwork} from '../components/ResourceArtwork';
 import {FaithPanel} from '../components/FaithPanel';
 import {classSkillsFor} from '../content/class-skills';
@@ -42,8 +40,6 @@ import {progressAnticipation} from '../core/progress-anticipation';
 import {skillIdentity,type SkillIdentityTone} from '../core/profession-mastery-presentation';
 import {MAX_PINNED_GOALS} from '../core/progression-goals-v40';
 import {recipePreparationGoalForRecipe} from '../core/recipe-preparation-goals';
-import {combatBaselineProjection,formatBalanceDuration} from '../core/balance-projection';
-import {HUNTING_XP_SHARE,huntingXpPerHour} from '../core/hunting-progression';
 import {HerbalismMethodPanel} from '../components/HerbalismMethodPanel';
 import {EnchantingRefineryPanel} from '../components/EnchantingRefineryPanel';
 import {skillMilestoneOverview,skillTrainingFocus} from '../core/skill-milestones';
@@ -59,13 +55,6 @@ export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueu
   const region=WORLD_ZONES.find(zone=>zone.id===currentRegionId(state))??WORLD_ZONES[0];
   if(!initialSkill)return <SkillHub state={state} onSelect={onSelectSkill??(()=>{})} onCombat={onOpenCombat}/>;
   if(initialSkill==='exploration')return <ScrollView contentContainerStyle={s.root}><DetailBack onPress={onBackToHub}/><SkillHero state={state} skillId="exploration" kind="Discovery skill"/><ExplorationPanel state={state} onCommand={onCommand}/></ScrollView>;
-  if(initialSkill==='hunting'){
-    const huntingSkill=state.skills.find(skill=>skill.skillId==='hunting'),available=MONSTERS.filter(monster=>!monster.boss&&monster.zone===region.name&&encounterUnlocked(state,monster));
-    const best=[...available].sort((a,b)=>huntingXpPerHour(b.xp,combatBaselineProjection(b).killsPerHour)-huntingXpPerHour(a.xp,combatBaselineProjection(a).killsPerHour))[0];
-    const baseRate=best?huntingXpPerHour(best.xp,combatBaselineProjection(best).killsPerHour)*characterPermanentMultipliers(state).skillXpMultiplier:0;
-    const within=progressWithinLevel(huntingSkill?.xp??0,huntingSkill?.level??1),eta=baseRate>0?Math.max(0,within.need-within.current)/baseRate*3600:undefined;
-    return <ScrollView contentContainerStyle={s.root}><DetailBack onPress={onBackToHub}/><SkillHero state={state} skillId="hunting" kind="Combat-linked skill"/><Panel><Text style={s.name}>Train Hunting through monster hunts</Text><Text style={s.sub}>Every resolved non-boss kill grants {Math.round(HUNTING_XP_SHARE*100)}% of the monster's skill-scaled XP as Hunting XP. Challenge Hunt XP multipliers also apply.</Text><Text style={s.sub}>{best?`Fastest baseline here: ${best.name} · ~${formatGameNumber(Math.round(baseRate),state.settings.numberMode)} Hunting XP/hr · next level ~${formatBalanceDuration(eta)}`:'No unlocked Hunting target is available in this region yet.'}</Text>{onOpenCombat?<GameButton title="Open Combat" onPress={onOpenCombat}/>:null}</Panel></ScrollView>;
-  }
   const detailKind=initialSkill==='faith'?'Devotion skill':(['mining','woodcutting','fishing','herbalism'] as string[]).includes(initialSkill)?'Gathering skill':'Crafting skill';
   return <ScrollView contentContainerStyle={s.root} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
     <DetailBack onPress={onBackToHub}/>
@@ -131,9 +120,9 @@ function SkillHub({state,onSelect,onCombat}:{state:GameState;onSelect:(id:string
  const classRows=state.character?characterClassSkills(state.character):[],focus=skillTrainingFocus(state);
  const cards=(rows:ReadonlyArray<{id:string;name:string;level:number;kind:string;xp?:number}>,includeCombat=false)=><View style={hubStyles.cardGrid}>{includeCombat?<Pressable accessibilityRole="button" accessibilityLabel="Open Combat" accessibilityHint="Choose an enemy and set your combat skill XP split" accessibilityState={{disabled:!onCombat}} disabled={!onCombat} onPress={onCombat} style={({pressed})=>[hubStyles.skillCard,!stackCards&&hubStyles.combatCard,stackCards&&hubStyles.skillCardWide,hubStyles.combatLink,pressed&&hubStyles.cardPressed]}><ActivityArtwork id="combat" size={36}/><Text style={hubStyles.skillName}>Combat</Text><Text style={hubStyles.skillKind}>Fight & train</Text><Text style={hubStyles.combatLinkText}>Open ›</Text></Pressable>:null}{rows.map(card=>{const icon=card.id==='companion'?uiIcons.party:card.id.startsWith('class:')&&state.character?classEmblemIconArtwork[state.character.classId]:null;const p=card.xp===undefined?undefined:progressWithinLevel(card.xp,card.level),ratio=card.level>=100?1:p?Math.min(1,p.current/Math.max(1,p.need)):Math.min(1,card.level/100),anticipation=p&&card.level<100?progressAnticipation(p.current,p.need,{nearAt:.92,urgentAt:.98}):undefined,skillRow=state.skills.find(row=>row.skillId===card.id),milestone=skillRow?skillMilestoneOverview(state,skillRow.skillId):undefined;return <Pressable key={card.id} accessibilityRole="button" accessibilityLabel={`${card.name}, ${card.kind}, level ${card.level}`} accessibilityHint={`Open ${card.name} information`} onPress={()=>card.id.startsWith('class:')?setClassSkillId(card.id.slice(6)):onSelect(card.id)} style={({pressed})=>[hubStyles.skillCard,includeCombat&&!stackCards&&hubStyles.combatCard,stackCards&&hubStyles.skillCardWide,pressed&&hubStyles.cardPressed]}><View style={[hubStyles.skillTop,includeCombat&&!stackCards&&hubStyles.combatTop]}>{icon?<Image source={icon} resizeMode="contain" style={hubStyles.skillIcon}/>:<ActivityArtwork id={card.id as any} size={36}/>}<View style={hubStyles.skillCopy}><Text numberOfLines={includeCombat||stackCards?2:1} style={hubStyles.skillName}>{card.name}</Text><Text numberOfLines={1} style={hubStyles.skillKind}>{card.kind}</Text></View></View><View style={hubStyles.levelRow}><View><Text style={hubStyles.skillLevel}>Level {card.level}</Text>{p&&card.level<100?<Text style={[hubStyles.xpHint,anticipation?.band==='urgent'&&hubStyles.xpHintUrgent]}>{anticipation?.band==='urgent'?`${Math.ceil(anticipation.remaining).toLocaleString()} XP left`:`${Math.round(ratio*100)}% to next`}</Text>:null}</View><Text style={hubStyles.openMark}>›</Text></View><View style={hubStyles.skillTrack}><View style={[hubStyles.skillFill,{width:`${Math.max(card.level>=100?100:3,ratio*100)}%`}]}/></View>{milestone?.nextLevel&&milestone.next[0]?<Text numberOfLines={1} style={hubStyles.skillNext}>NEXT LV {milestone.nextLevel} · {milestone.next[0].title}</Text>:null}</Pressable>})}</View>;
  const combat=classRows.map((row,i)=>({id:`class:${row.skillId}`,name:classSkillsFor(state.character!.classId)[i]?.name??row.skillId,level:row.level,xp:row.xp,kind:'Combat skill'}));
- const skilling=state.skills.filter(sk=>['mining','woodcutting','fishing','herbalism','hunting','exploration'].includes(sk.skillId)).map(sk=>({id:sk.skillId,name:sk.skillId.charAt(0).toUpperCase()+sk.skillId.slice(1),level:sk.level,xp:sk.xp,kind:['hunting','exploration'].includes(sk.skillId)?'Adventure skill':'Gathering'}));
+ const skilling=state.skills.filter(sk=>['mining','woodcutting','fishing','herbalism','exploration'].includes(sk.skillId)).map(sk=>({id:sk.skillId,name:sk.skillId.charAt(0).toUpperCase()+sk.skillId.slice(1),level:sk.level,xp:sk.xp,kind:sk.skillId==='exploration'?'Adventure skill':'Gathering'}));
  const crafting=state.skills.filter(sk=>['smithing','cooking','alchemy','tailoring','enchanting','faith'].includes(sk.skillId)).map(sk=>({id:sk.skillId,name:sk.skillId.charAt(0).toUpperCase()+sk.skillId.slice(1),level:sk.level,xp:sk.xp,kind:sk.skillId==='faith'?'Devotion':'Crafting'}));
- const tracked=[...state.skills,...classRows],total=tracked.reduce((sum,row)=>sum+row.level,0),highest=Math.max(1,...tracked.map(row=>row.level)),mastered=tracked.filter(row=>row.level>=100).length;
+ const tracked=[...state.skills.filter(row=>row.skillId!=='hunting'),...classRows],total=tracked.reduce((sum,row)=>sum+row.level,0),highest=Math.max(1,...tracked.map(row=>row.level)),mastered=tracked.filter(row=>row.level>=100).length;
  const section=(label:string,rows:ReadonlyArray<{id:string;name:string;level:number;kind:string;xp?:number}>,includeCombat=false)=><><View style={hubStyles.sectionHeading}><Text style={hubStyles.sectionLabel}>{label}</Text><Text style={hubStyles.sectionCount}>{rows.length}</Text></View>{cards(rows,includeCombat)}</>;
  const selectedDefinition=state.character&&classSkillId?classSkillsFor(state.character.classId).find(definition=>definition.id===classSkillId):undefined;
  const selectedRow=classRows.find(row=>row.skillId===classSkillId);

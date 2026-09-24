@@ -1,4 +1,4 @@
-import {UiIcon} from './UiIcon';
+import {ChatChannelIcon} from './ChatChannelIcon';
 import {useEffect,useMemo,useState} from 'react';
 import {KeyboardAvoidingView,Modal,Platform,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import type {GameState} from '../core/types';
@@ -22,6 +22,8 @@ export function ChatOverlay({state,visible,onOpen,onClose,onEmoteTrayChange,guil
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),insets=useSafeAreaInsets(),{width,fontScale}=useWindowDimensions(),expandWindow=width<360||fontScale>=1.25,bottomOffset=72+(Platform.OS==='android'?Math.max(insets.bottom,8):Math.max(insets.bottom,4));
   const [channel,setChannel]=useState<Channel>('world');
   const [worldChannel,setWorldChannel]=useState((state.settings.defaultWorldChat??1)-1);
+  const [languageMenuOpen,setLanguageMenuOpen]=useState(false);
+  useEffect(()=>{setLanguageMenuOpen(false);},[visible,channel]);
   const [onlineGuildAvailable,setOnlineGuildAvailable]=useState(state.account.guildMember);
   const {party,accountId,refresh}=usePartySocial();
   useEffect(()=>{if(!party&&channel==='party')setChannel('world');},[party,channel]);
@@ -36,28 +38,58 @@ export function ChatOverlay({state,visible,onOpen,onClose,onEmoteTrayChange,guil
       <View style={[s.modalRoot,{paddingTop:Math.max(insets.top,8),paddingBottom:bottomOffset}]}>
         <Pressable accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" onPress={closeChat} style={StyleSheet.absoluteFill}/>
         <KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':'height'} keyboardVerticalOffset={insets.top} style={s.keyboard}><View accessibilityViewIsModal onAccessibilityEscape={closeChat} style={[s.window,expandWindow&&s.windowExpanded]}>
-          <View style={s.header}>
-            <View style={s.heading}><Text style={s.eyebrow}>ASTERFALL CHAT</Text><Text style={s.title}>Conversations</Text></View>
-            <TabAttention unread={guildUnread+partyUnread} mentions={guildMentions+partyMentions}/>
-            <Pressable accessibilityRole="button" accessibilityLabel="Close chat" onPress={closeChat} style={s.close}><UiIcon name="close" size={24}/></Pressable>
-          </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.primaryTabs} keyboardShouldPersistTaps="handled">
-            <Pressable accessibilityRole="tab" accessibilityState={{selected:channel==='world'}} onPress={()=>setChannel('world')} style={[s.primaryTab,channel==='world'&&s.primaryTabActive]}><Text style={[s.primaryTabText,channel==='world'&&s.primaryTabTextActive]}>World</Text></Pressable>
-            <Pressable accessibilityRole="tab" accessibilityLabel={'Guild'+(!guildAvailable?', join a guild to chat':', '+guildUnread+' unread, '+guildMentions+' mentions')} accessibilityState={{selected:channel==='guild',disabled:!guildAvailable}} disabled={!guildAvailable} onPress={()=>setChannel('guild')} style={[s.primaryTab,guildMentions>0&&s.tabMention,channel==='guild'&&s.primaryTabActive,!guildAvailable&&s.tabDisabled]}><Text style={[s.primaryTabText,channel==='guild'&&s.primaryTabTextActive]}>Guild</Text><TabAttention unread={guildUnread} mentions={guildMentions}/></Pressable>
-            <PartyChatGate party={party} accountId={accountId}><Pressable accessibilityRole="tab" accessibilityLabel={'Party, '+partyUnread+' unread, '+partyMentions+' mentions'} accessibilityState={{selected:channel==='party'}} onPress={()=>setChannel('party')} style={[s.primaryTab,partyMentions>0&&s.tabMention,channel==='party'&&s.primaryTabActive]}><Text style={[s.primaryTabText,channel==='party'&&s.primaryTabTextActive]}>Party</Text><TabAttention unread={partyUnread} mentions={partyMentions}/></Pressable></PartyChatGate>
-            <Pressable accessibilityRole="tab" accessibilityState={{selected:channel==='system'}} onPress={()=>setChannel('system')} style={[s.primaryTab,channel==='system'&&s.primaryTabActive]}><Text style={[s.primaryTabText,channel==='system'&&s.primaryTabTextActive]}>System</Text></Pressable>
-          </ScrollView>
-          {channel==='world'&&<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.worldTabs} keyboardShouldPersistTaps="handled">{WORLD_CHANNELS.map((item,index)=><Pressable key={item.id} accessibilityRole="tab" accessibilityState={{selected:worldChannel===index}} onPress={()=>setWorldChannel(index)} style={[s.worldTab,worldChannel===index&&s.worldTabActive]}><Text style={[s.worldTabText,worldChannel===index&&s.worldTabTextActive]}>{item.name}</Text></Pressable>)}</ScrollView>}
+          <View style={s.chatLayout}>
+            <View accessibilityRole="tablist" style={s.rail}>
+              <RailTab channel="world" label="World" selected={channel==='world'} onPress={()=>setChannel('world')}/>
+              <RailTab channel="guild" label="Guild" selected={channel==='guild'} disabled={!guildAvailable} unread={guildUnread} mentions={guildMentions} onPress={()=>setChannel('guild')}/>
+              <PartyChatGate party={party} accountId={accountId}><RailTab channel="party" label="Party" selected={channel==='party'} unread={partyUnread} mentions={partyMentions} onPress={()=>setChannel('party')}/></PartyChatGate>
+              <RailTab channel="system" label="System" selected={channel==='system'} onPress={()=>setChannel('system')}/>
+            </View>
+            <View style={s.conversation}>
+              <View style={s.header}>
+                <Text accessibilityRole="header" style={s.title}>{channel==='world'?'World':channel==='guild'?'Guild':channel==='party'?'Party':'System'}</Text>
+                {channel==='world'&&<Pressable accessibilityRole="button" accessibilityLabel={'World language: '+WORLD_CHANNELS[worldChannel].name} accessibilityState={{expanded:languageMenuOpen}} onPress={()=>setLanguageMenuOpen(value=>!value)} style={({pressed})=>[s.languageButton,pressed&&s.pressed]}><Text style={s.languageText}>{WORLD_CHANNELS[worldChannel].name}</Text><Text style={s.chevron}>{languageMenuOpen?'⌃':'⌄'}</Text></Pressable>}
+                <Pressable accessibilityRole="button" accessibilityLabel="Close chat" onPress={closeChat} style={({pressed})=>[s.close,pressed&&s.pressed]}><Text style={s.closeText}>×</Text></Pressable>
+              </View>
+              {languageMenuOpen&&channel==='world'&&<View style={s.languagePopover}>
+                <ScrollView keyboardShouldPersistTaps="handled" style={s.languageOptions}>{WORLD_CHANNELS.map((item,index)=><Pressable key={item.id} accessibilityRole="button" accessibilityState={{selected:worldChannel===index}} onPress={()=>{setWorldChannel(index);setLanguageMenuOpen(false);}} style={({pressed})=>[s.languageOption,worldChannel===index&&s.languageOptionSelected,pressed&&s.pressed]}><Text style={s.languageOptionText}>{item.name}</Text>{worldChannel===index&&<Text style={s.languageCheck}>✓</Text>}</Pressable>)}</ScrollView>
+              </View>}
           <View style={s.content}>{channel==='system'?<SystemNoticeLog state={state}/>:channel==='party'?<OnlinePartyChat reduceMotion={state.settings.reduceMotion} unlockedEmoteIds={state.account.unlockedEmoteIds} trayIds={state.settings.chatEmoteTrayIds} bodyPresentation={state.character?.bodyPresentation} onTrayChange={onEmoteTrayChange} firstUnreadMessageId={partyFirstUnreadMessageId} onRead={onChatRead}/>:channel==='guild'&&guildAvailable?<GuildChat reduceMotion={state.settings.reduceMotion} language={state.settings.language} currentPlayerName={state.character?.name} unlockedEmoteIds={state.account.unlockedEmoteIds} trayIds={state.settings.chatEmoteTrayIds} bodyPresentation={state.character?.bodyPresentation} onTrayChange={onEmoteTrayChange} firstUnreadMessageId={guildFirstUnreadMessageId} onRead={onChatRead}/>:onlineConfigured?<OnlineWorldChat key={worldChannel} selectedChannel={worldChannel} reduceMotion={state.settings.reduceMotion} playerName={state.character!.name} language={state.settings.language} unlockedEmoteIds={state.account.unlockedEmoteIds} trayIds={state.settings.chatEmoteTrayIds} bodyPresentation={state.character?.bodyPresentation} onTrayChange={onEmoteTrayChange} embedded/>:<WorldChat selectedChannel={worldChannel} language={state.settings.language} unlockedEmoteIds={state.account.unlockedEmoteIds} trayIds={state.settings.chatEmoteTrayIds} bodyPresentation={state.character?.bodyPresentation} onTrayChange={onEmoteTrayChange} embedded/>}</View>
+            </View>
+          </View>
         </View></KeyboardAvoidingView>
       </View>
     </Modal>
   </>;
 }
 
-function TabAttention({unread,mentions}:{unread:number;mentions:number}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);if(unread<=0&&mentions<=0)return null;return <View accessible={false} style={s.tabAttention}>{mentions>0?<Text style={s.tabMentionText}>@{mentions>9?'9+':mentions}</Text>:null}{unread>0?<Text style={s.tabUnreadText}>{unread>99?'99+':unread}</Text>:null}</View>}
+function RailTab({channel,label,selected,disabled=false,unread=0,mentions=0,onPress}:{channel:Channel;label:string;selected:boolean;disabled?:boolean;unread?:number;mentions?:number;onPress:()=>void}){
+ const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
+ const attention=mentions>0?'@':unread>0?(unread>9?'9+':String(unread)):undefined;
+ return <Pressable accessibilityRole="tab" accessibilityLabel={label+(disabled?', join a guild to chat':'')+(unread?', '+unread+' unread':'')+(mentions?', '+mentions+' mentions':'')} accessibilityState={{selected,disabled}} disabled={disabled} onPress={onPress} style={({pressed})=>[s.railTab,selected&&s.railTabSelected,disabled&&s.railTabDisabled,pressed&&s.pressed]}>
+  <ChatChannelIcon channel={channel} color={selected?C.info:C.muted}/>
+  {attention&&<View accessible={false} style={[s.badge,mentions>0&&s.mentionBadge]}><Text style={s.badgeText}>{attention}</Text></View>}
+ </Pressable>;
+}
 
 function makeStyles(C:ThemeColors){return StyleSheet.create({
-  pressed:{opacity:.68,transform:[{translateY:1}]},
-  modalRoot:{flex:1,justifyContent:'flex-end',alignItems:'flex-start',backgroundColor:C.overlay},keyboard:{width:'100%',maxWidth:480,flex:1,justifyContent:'flex-end'},window:{width:'100%',maxWidth:480,maxHeight:'88%',flexShrink:1,marginHorizontal:8,backgroundColor:C.panel,borderWidth:1,borderColor:C.line,borderRadius:24,overflow:'hidden',elevation:16,shadowColor:'#000',shadowOpacity:.32,shadowRadius:20,shadowOffset:{width:0,height:10}},windowExpanded:{maxHeight:'94%'},heading:{flex:1,minWidth:0},header:{minHeight:62,flexDirection:'row',alignItems:'center',paddingLeft:18,paddingRight:6,borderBottomWidth:StyleSheet.hairlineWidth,borderBottomColor:C.line,backgroundColor:C.panel2},eyebrow:{color:C.info,fontSize:9,fontWeight:'900',letterSpacing:1.2},title:{color:C.text,fontSize:19,fontWeight:'900'},close:{width:48,height:48,alignItems:'center',justifyContent:'center',borderRadius:24,marginLeft:8,marginRight:2,backgroundColor:C.bg},closeText:{color:C.muted,fontSize:30,lineHeight:32},primaryTabs:{gap:8,paddingHorizontal:12,paddingVertical:10,borderBottomWidth:StyleSheet.hairlineWidth,borderBottomColor:C.line,backgroundColor:C.bg},primaryTab:{position:'relative',minHeight:38,paddingHorizontal:14,justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:19,backgroundColor:C.panel},primaryTabActive:{borderColor:C.selectionLine,backgroundColor:C.selection},primaryTabText:{fontSize:11,color:C.muted,fontWeight:'900',letterSpacing:.5},primaryTabTextActive:{color:C.text},worldTabs:{gap:6,paddingHorizontal:12,paddingBottom:8,paddingTop:2,borderBottomWidth:StyleSheet.hairlineWidth,borderBottomColor:C.line,backgroundColor:C.panel},worldTab:{minHeight:30,paddingHorizontal:11,justifyContent:'center',borderRadius:15},worldTabActive:{backgroundColor:C.infoSurface},worldTabText:{fontSize:10,color:C.muted,fontWeight:'800'},worldTabTextActive:{color:C.info},tabMention:{borderColor:C.warning},tabDisabled:{opacity:.35},tabAttention:{position:'absolute',right:4,top:-5,flexDirection:'row',alignItems:'center',gap:2},tabMentionText:{fontSize:7,color:C.warning,fontWeight:'900'},tabUnreadText:{minWidth:16,height:16,paddingHorizontal:3,borderRadius:8,overflow:'hidden',textAlign:'center',fontSize:7,lineHeight:16,color:C.notificationText,fontWeight:'900',backgroundColor:C.notification},content:{minHeight:0,flexShrink:1,paddingHorizontal:12,paddingTop:10,paddingBottom:12},
+ pressed:{opacity:.7},modalRoot:{flex:1,justifyContent:'flex-end',alignItems:'flex-start',backgroundColor:C.overlay,paddingHorizontal:8},
+ keyboard:{width:'100%',maxWidth:480,flex:1,justifyContent:'flex-end'},
+ window:{width:'100%',maxWidth:480,maxHeight:'88%',flexShrink:1,backgroundColor:C.panel,borderWidth:1,borderColor:C.line,borderRadius:16,overflow:'hidden',elevation:12,shadowColor:'#000',shadowOpacity:.25,shadowRadius:16,shadowOffset:{width:0,height:6}},
+ windowExpanded:{maxHeight:'94%'},chatLayout:{flexDirection:'row',flexShrink:1,minHeight:0},
+ rail:{width:52,flexShrink:0,paddingVertical:6,paddingHorizontal:3,gap:4,borderRightWidth:StyleSheet.hairlineWidth,borderRightColor:C.line,backgroundColor:C.bg},
+ railTab:{width:44,height:44,alignItems:'center',justifyContent:'center',borderRadius:11,position:'relative'},
+ railTabSelected:{backgroundColor:C.infoSurface},railTabDisabled:{opacity:.4},
+ badge:{position:'absolute',top:1,right:0,minWidth:15,height:15,borderRadius:8,paddingHorizontal:3,alignItems:'center',justifyContent:'center',backgroundColor:C.notification},
+ mentionBadge:{backgroundColor:C.warning},badgeText:{fontSize:9,lineHeight:13,color:C.notificationText,fontWeight:'800'},
+ conversation:{flex:1,minWidth:0,minHeight:0,flexShrink:1,position:'relative'},
+ header:{minHeight:46,flexDirection:'row',flexWrap:'wrap',alignItems:'center',paddingLeft:12,paddingRight:2,gap:2,borderBottomWidth:StyleSheet.hairlineWidth,borderBottomColor:C.line},
+ title:{flexGrow:1,flexShrink:1,color:C.text,fontSize:14,fontWeight:'700'},
+ languageButton:{minHeight:44,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:5,paddingHorizontal:7,flexShrink:1},
+ languageText:{fontSize:12,color:C.muted,flexShrink:1},chevron:{fontSize:16,color:C.muted},
+ close:{width:44,height:44,alignItems:'center',justifyContent:'center'},closeText:{fontSize:25,color:C.muted,fontWeight:'400'},
+ languagePopover:{position:'absolute',zIndex:50,elevation:16,top:46,right:8,left:8,padding:6,borderWidth:1,borderColor:C.line,borderRadius:12,backgroundColor:C.panel2,shadowColor:'#000',shadowOpacity:.25,shadowRadius:12,shadowOffset:{width:0,height:6}},
+ languageOptions:{maxHeight:196},languageOption:{minHeight:44,flexDirection:'row',alignItems:'center',gap:8,paddingHorizontal:12,paddingVertical:8,borderRadius:8},
+ languageOptionSelected:{backgroundColor:C.selection},languageOptionText:{flex:1,color:C.text,fontSize:13,fontWeight:'500'},languageCheck:{color:C.info,fontSize:14},
+ content:{minHeight:0,flexShrink:1,paddingHorizontal:10,paddingTop:8,paddingBottom:10},
 });}

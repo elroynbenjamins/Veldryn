@@ -10,7 +10,7 @@ as $$
  select p_name is not null
     and char_length(p_name) between p_min_length and p_max_length
     and p_name=btrim(p_name)
-    and p_name ~ $rx$^[A-Za-zÀ-ÖØ-öø-ÿĀ-ſƀ-ɏḀ-ỿ]+([ '-][A-Za-zÀ-ÖØ-öø-ÿĀ-ſƀ-ɏḀ-ỿ]+)*$$rx$;
+    and p_name ~ ($rx$^[A-Za-zÀ-ÖØ-öø-ÿĀ-ſƀ-ɏḀ-ỿ]+([ '-][A-Za-zÀ-ÖØ-öø-ÿĀ-ſƀ-ɏḀ-ỿ]+)*$rx$ || '$');
 $$;
 
 create or replace function public.enforce_identity_name_v1()

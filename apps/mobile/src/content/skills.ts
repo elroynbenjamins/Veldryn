@@ -9,6 +9,7 @@ export const GATHERING:GatherDef[]=([
 {id:'ASTER_IRON_VEIN',skillId:'mining',name:'Aster-Iron Vein',unlockLevel:8,seconds:24,xp:18,itemId:'ASTER_IRON_ORE',min:1,max:2,zoneId:'OLD_MINES'},
 {id:'OATHSTONE_SEAM',skillId:'mining',name:'Oathstone Seam',unlockLevel:16,seconds:36,xp:29,itemId:'OATHSTONE_ORE',min:1,max:1,zoneId:'OLD_MINES'},
 {id:'ECHO_QUARTZ_GEODE',skillId:'mining',name:'Echo Quartz Geode',unlockLevel:20,seconds:38,xp:42,itemId:'ECHO_QUARTZ',min:1,max:1,zoneId:'OLD_MINES'},
+{id:'BLACKGLASS_VEIN',skillId:'mining',name:'Blackglass Vein',unlockLevel:68,seconds:78,xp:310,itemId:'BLACKGLASS_ORE',min:1,max:1,zoneId:'ASHLANDS'},
 
 {id:'GREENWOOD_TREE',skillId:'woodcutting',name:'Greenwood Tree',unlockLevel:1,seconds:14,xp:8,itemId:'GREENWOOD_LOG',min:1,max:2,zoneId:'GREENFIELDS'},
 {id:'IRONWOOD_TREE',skillId:'woodcutting',name:'Ironwood Tree',unlockLevel:7,seconds:24,xp:17,itemId:'IRONWOOD_LOG',min:1,max:2,zoneId:'IRONWOOD'},

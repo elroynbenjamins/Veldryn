@@ -70,7 +70,7 @@ function ingredients(tier:string,path:string,multiplier:number,skillId:'smithing
       case 'T2':return mergeInputs([{itemId:'WOLF_PELT',quantity:q(22,multiplier)},{itemId:accent??'BOAR_HIDE',quantity:q(9,multiplier)}]);
       case 'T3':return mergeInputs([{itemId:'TROLL_HIDE',quantity:q(18,multiplier)},{itemId:accent??'WOLF_PELT',quantity:q(10,multiplier)},{itemId:'THORN_SAP',quantity:q(5,multiplier)}]);
       case 'T4':return mergeInputs([{itemId:'TORN_OATHCLOTH',quantity:q(18,multiplier)},{itemId:'ECHO_TOUCHED_PELT',quantity:q(7,multiplier)},{itemId:accent??'OATHGLASS_SHARD',quantity:q(5,multiplier)}]);
-      case 'T5':return [{itemId:'SUNSCALE',quantity:q(24,multiplier)},{itemId:'AMBERGLASS',quantity:q(8,multiplier)}];
+      case 'T5':return [{itemId:'SUNSCALE',quantity:q(25,multiplier)},{itemId:'AMBERGLASS',quantity:q(8,multiplier)}];
       case 'T6':return [{itemId:'SUNSCALE',quantity:q(30,multiplier)},{itemId:'AMBERGLASS',quantity:q(10,multiplier)},{itemId:'ASTRAL_SCRIPT',quantity:q(1,multiplier)}];
       case 'T7':return [{itemId:'FROSTBLOOM',quantity:q(32,multiplier)},{itemId:'RIMEGLASS',quantity:q(8,multiplier)}];
       case 'T8':return [{itemId:'FROSTBLOOM',quantity:q(36,multiplier)},{itemId:'RIMEGLASS',quantity:q(11,multiplier)},{itemId:'CHOIR_BLOOM',quantity:q(1,multiplier)}];

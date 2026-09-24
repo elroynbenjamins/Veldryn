@@ -3,6 +3,7 @@ import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {Panel} from './Panel';
 import {StatusPill} from './StatusPill';
 import {loadOnlineGuildQuests,type OnlineGuildQuest} from '../online/guild-quests';
+import {rarityMeta} from '../core/item-rarity';
 import {radii,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 
@@ -21,10 +22,12 @@ export function GuildQuestPanel(){
  </Panel>;
 }
 function Quest({quest:q}:{quest:OnlineGuildQuest}){
- const C=useGameTheme(),s=useMemo(()=>styles(C),[C]),pct=Math.min(100,Math.floor(q.progress/q.target*100));
- return <View style={[s.quest,q.completed&&s.done]}>
-  <View style={s.head}><View style={s.flex}><Text style={s.category}>{q.category.toUpperCase()} · {q.theme.toUpperCase()}</Text><Text style={s.questTitle}>{q.title}</Text></View><StatusPill label={q.completed?'COMPLETE':pct+'%'} tone={q.completed?'good':'neutral'}/></View>
+ const C=useGameTheme(),s=useMemo(()=>styles(C),[C]),pct=Math.min(100,Math.floor(q.progress/q.target*100)),rarity=rarityMeta(q.rarity);
+ const duration=q.estimatedMinutes>=60?`${q.estimatedMinutes/60}h`:`${q.estimatedMinutes}m`;
+ return <View style={[s.quest,{borderColor:rarity.color,borderWidth:rarity.borderWidth,backgroundColor:q.completed?C.goodSurface:rarity.surface}]}>
+  <View style={s.head}><View style={s.flex}><Text style={[s.category,{color:rarity.color}]}>{rarity.label.toUpperCase()} · {q.category.toUpperCase()} · ~{duration}</Text><Text style={s.questTitle}>{q.title}</Text></View><StatusPill label={q.completed?'COMPLETE':pct+'%'} tone={q.completed?'good':'neutral'}/></View>
   <Text style={s.questCopy}>{q.description}</Text>
+  {q.objectiveProgress.length?<View style={s.objectives}>{q.objectiveProgress.map(o=><Text key={o.key} style={s.objective}>{o.key.replace(/_/g,' ').replace(/\b\w/g,m=>m.toUpperCase())}: {Math.min(o.progress,o.target).toLocaleString()} / {o.target.toLocaleString()}</Text>)}</View>:null}
   <View accessibilityRole="progressbar" accessibilityValue={{min:0,max:q.target,now:Math.min(q.target,q.progress)}} style={s.track}><View style={[s.fill,{width:(pct+'%') as any}]}/></View>
   <View style={s.meta}><Text style={s.metaText}>{Math.min(q.progress,q.target).toLocaleString()} / {q.target.toLocaleString()}</Text><Text style={s.reward}>+{q.activityReward} Activity units</Text></View>
   <Text style={s.foot}>{q.contributorCount} contributor{q.contributorCount===1?'':'s'} this week · personal daily credit is capped</Text>
@@ -33,7 +36,7 @@ function Quest({quest:q}:{quest:OnlineGuildQuest}){
 function styles(C:ThemeColors){return StyleSheet.create({
  head:{flexDirection:'row',alignItems:'center',gap:8},flex:{flex:1,minWidth:0},kicker:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.8},
  title:{...typography.title,color:C.text},copy:{fontSize:9.5,lineHeight:13,color:C.muted,marginTop:3},stack:{gap:7,marginTop:9},
- quest:{gap:4,padding:9,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2},done:{borderColor:C.good,backgroundColor:C.goodSurface},
+ quest:{gap:4,padding:9,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2},done:{borderColor:C.good,backgroundColor:C.goodSurface},objectives:{gap:2,marginTop:2},objective:{fontSize:8.5,color:C.text,fontWeight:'800'},
  category:{fontSize:7.5,color:C.accentSoft,fontWeight:'900',letterSpacing:.65},questTitle:{fontSize:11,color:C.text,fontWeight:'900'},questCopy:{fontSize:9,lineHeight:12.5,color:C.muted},
  track:{height:7,borderRadius:4,overflow:'hidden',backgroundColor:C.panel,marginTop:3},fill:{height:'100%',backgroundColor:C.accent},
  meta:{flexDirection:'row',justifyContent:'space-between',gap:8},metaText:{fontSize:8.5,color:C.muted,fontWeight:'800'},reward:{fontSize:8.5,color:C.good,fontWeight:'900'},

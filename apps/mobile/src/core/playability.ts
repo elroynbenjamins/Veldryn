@@ -2,6 +2,7 @@ import {RECIPES} from '../content/skills';
 import {ActiveActivity,CombatChallengeId,CombatTacticId,GameState,RewardBundle} from './types';
 import type {HuntGoalId} from './hunt-goals';
 import {claimActivity,craftRecipe,startCombat,startGathering,startHerbalism,stopActivity} from './game';
+import {gatheringToolDef} from '../content/gathering-tools';
 
 /** Settle earned rewards before replacing or stopping an activity. Pure and atomic. */
 export function transitionActivity(state:GameState,nowMs:number,next?:{kind:'combat'|'gathering';id:string;challengeId?:CombatChallengeId;tacticId?:CombatTacticId;goalId?:HuntGoalId}){
@@ -28,10 +29,17 @@ export function settleStartupActivity(state:GameState,nowMs:number):{state:GameS
 export function recipeAvailability(state:GameState,recipeId:string){
   const recipe=RECIPES.find(item=>item.id===recipeId);
   if(!recipe)return {ready:false,reason:'Unknown recipe',inputs:[]};
-  const inputs=recipe.inputs.map(input=>({ ...input,
+  const learned=!recipe.requiredKnowledgeId||(state.account.unlockedKnowledgeIds??[]).includes(recipe.requiredKnowledgeId);
+  const sourceInputs=learned||!recipe.knowledgeItemId?recipe.inputs:[{itemId:recipe.knowledgeItemId,quantity:1},...recipe.inputs];
+  const inputs=sourceInputs.map(input=>({ ...input,
     inventory:state.inventory.stacks.find(stack=>stack.itemId===input.itemId)?.quantity??0,
     bank:state.bank.stacks.find(stack=>stack.itemId===input.itemId)?.quantity??0,
   }));
+  const tool=gatheringToolDef(recipe.output.itemId);
+  if(tool){
+    const skill=state.skills.find(row=>row.skillId===tool.skillId);
+    if((skill?.level??0)<tool.unlockLevel)return {ready:false,reason:`Requires ${tool.skillId} level ${tool.unlockLevel}`,inputs};
+  }
   try{craftRecipe(state,recipeId);return {ready:true,reason:'Ready to craft',inputs}}
   catch(error){return {ready:false,reason:error instanceof Error?error.message:'Cannot craft yet',inputs}}
 }

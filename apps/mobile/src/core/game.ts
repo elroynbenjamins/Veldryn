@@ -83,7 +83,7 @@ export const REGIONAL_COMBAT_PRESSURE:Readonly<Record<string,number>>={Greenfiel
 export type RegionalMonsterPressureBand='entry'|'standard'|'hard';
 export const REGIONAL_MONSTER_PRESSURE_MULTIPLIER:Readonly<Record<RegionalMonsterPressureBand,number>>={entry:.92,standard:1,hard:1.10};
 export const REGIONAL_FOOD_SUSTAIN_TARGETS:Readonly<Record<string,{foodPerHourMin:number;foodPerHourMax:number}>>={Greenfields:{foodPerHourMin:2,foodPerHourMax:4},Silverbrook:{foodPerHourMin:3,foodPerHourMax:5},'Ironwood Forest':{foodPerHourMin:2,foodPerHourMax:4},'Old Mines':{foodPerHourMin:2,foodPerHourMax:5},"King's Road":{foodPerHourMin:2,foodPerHourMax:5},Sunscar:{foodPerHourMin:2,foodPerHourMax:5},Frostmarch:{foodPerHourMin:1.75,foodPerHourMax:5},Ashlands:{foodPerHourMin:4,foodPerHourMax:8}};
-/** Minimum unavoidable hourly attrition keeps long idle hunts from becoming permanently food-free without punishing fast early enemies. */
+/** Baseline hourly attrition keeps long hunts provision-dependent; restorative Support companions can soften, but never erase, this floor. */
 export const REGIONAL_MIN_ATTRITION_HP_PER_HOUR:Readonly<Record<string,number>>={Greenfields:60,Silverbrook:80,'Ironwood Forest':115,'Old Mines':180,"King's Road":230,Sunscar:330,Frostmarch:520,Ashlands:620};
 export const GATHER_TIME_SCALE=1.25;
 

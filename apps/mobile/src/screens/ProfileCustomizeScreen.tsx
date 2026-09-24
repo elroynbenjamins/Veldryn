@@ -24,7 +24,7 @@ export function ProfileCustomizeScreen({state,onChange,onNavigateSource,onDirtyC
  useEffect(()=>{onDirtyChange?.(dirty)},[dirty,onDirtyChange]);
  useEffect(()=>()=>onDirtyChange?.(false),[onDirtyChange]);
 
- return <><ScrollView contentContainerStyle={s.root}>
+ return <><ScrollView contentContainerStyle={s.root} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
   <View style={s.headingRow}>
    <View style={s.flex}><Text style={s.kicker}>PROFILE CUSTOMIZATION</Text><Text accessibilityRole="header" style={s.heading}>Customize Profile</Text></View>
    <View style={[s.liveBadge,dirty&&s.liveBadgeDirty]}><Text style={[s.liveBadgeText,dirty&&s.liveBadgeTextDirty]}>{dirty?'UNSAVED CHANGES':section==='Appearance'?'LIVE PREVIEW':'PROFILE SETTINGS'}</Text></View>

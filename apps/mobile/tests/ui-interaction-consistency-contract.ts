@@ -20,6 +20,7 @@ for(const path of [
  'src/components/EquipmentEnhancementModal.tsx',
  'src/components/IdleRulesEditorV40.tsx',
  'src/components/ProfileAudiencePreviewModal.tsx',
+ 'src/components/ChatPlayerSheet.tsx',
  'src/components/CustomizationUnlockPopup.tsx',
  'src/components/StoryBossBattleModal.tsx',
  'src/screens/DailySuppliesScreen.tsx',
@@ -74,6 +75,11 @@ ok(idleRules.includes('useWindowDimensions')&&idleRules.includes('footerStack'),
 
 const profile=read('src/components/ProfileAudiencePreviewModal.tsx');
 ok(profile.includes('GameModalHeader')&&profile.includes('trailing={<View'),'Profile audience preview must use shared header with visibility state');
+
+const chatPlayerSheet=read('src/components/ChatPlayerSheet.tsx');
+ok(chatPlayerSheet.includes('GameModalSurface')&&!chatPlayerSheet.includes('<Modal'),'Chat player profile must use the shared safe-area modal shell');
+ok(chatPlayerSheet.indexOf('<ScrollView')<chatPlayerSheet.indexOf('{isSelf?')&&chatPlayerSheet.indexOf('{isSelf?')<chatPlayerSheet.indexOf('</ScrollView>'),'Chat player social actions must stay inside the scrollable sheet on short or large-text layouts');
+ok(chatPlayerSheet.includes("blockButton:{minWidth:76,minHeight:44")&&chatPlayerSheet.includes("reportButton:{minWidth:76,minHeight:44"),'Chat player safety actions must retain 44px touch targets');
 
 const customization=read('src/components/CustomizationUnlockPopup.tsx');
 ok(customization.includes('useGameTheme')&&customization.includes('equipmentTheme(C)'),'Customization rewards must use the active theme');

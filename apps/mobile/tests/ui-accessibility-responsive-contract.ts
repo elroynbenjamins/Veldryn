@@ -51,6 +51,17 @@ ok(account.includes("tileWide:{flexBasis:'100%',minWidth:0}"),'Account tiles mus
 ok(account.includes('accessibilityHint={meta.description}'),'Account tiles must expose descriptions without depending on truncated visual copy');
 ok(account.includes('attentionLabel=(id:MoreDestination)'),'Account attention must be announced on the parent navigation tile');
 
+const world=read('src/screens/WorldScreen.tsx');
+ok(world.includes("title:'Combat World Boss'")&&world.includes("title:'Mining World Boss'")&&world.includes("title:'Fishing World Boss'")&&world.includes("title:'Woodcutting World Boss'"),'World must expose all four planned World Boss previews');
+ok(world.includes('IN DEVELOPMENT')&&world.includes("futureGrid:{flexDirection:'row',flexWrap:'wrap'"),'World Boss previews must be clearly disabled and responsive');
+
+ok(account.includes("inDevelopment=id==='Arena'")&&account.includes('disabled={inDevelopment}'),'Arena entry must remain visibly disabled while the mode is in development');
+ok(account.includes('IN DEVELOPMENT'),'Account hub must label disabled future destinations');
+
+const guildFuture=read('src/screens/GuildScreen.tsx');
+ok(guildFuture.includes("'Guild vs Guild'")&&guildFuture.includes("'Guild Raids'")&&guildFuture.includes("'Guild Trials'")&&guildFuture.includes("'Guild Expeditions'"),'Guild must expose the approved future-content previews');
+ok(guildFuture.includes("onlineSection==='Future'?<GuildFutureContent/>"),'Guild future content must have a dedicated destination');
+
 const skills=read('src/screens/SkillsScreen.tsx');
 ok(skills.includes('useWindowDimensions')&&skills.includes('stackCards=width<350||fontScale>=1.25'),'Skills hub must stack on narrow phones or large text');
 ok(skills.includes("skillCardWide:{width:'100%',minWidth:0}"),'Skills cards must support full-width responsive mode');

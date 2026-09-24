@@ -1,5 +1,6 @@
 import {newGame,createCharacter} from '../src/core/game';
 import {arenaSquadIds,arenaSquadStatus,setArenaSquadSlot} from '../src/core/arena-squad';
+import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
 
 const ok=(value:unknown,message:string)=>{if(!value)throw new Error(message)};
 const state=()=>createCharacter(newGame(0),'IRONWARDEN','Front');
@@ -13,4 +14,9 @@ const moved=setArenaSquadSlot(chosen,0,base.otherCharacters![0].character.id);
 ok(arenaSquadIds(moved)[0]===base.otherCharacters![0].character.id&&arenaSquadIds(moved)[1]==='', 'Moving a character must clear its prior slot');
 const normalized={...chosen,account:{...chosen.account,arenaSquadCharacterIds:['missing',base.character!.id,base.character!.id]}};
 ok(arenaSquadIds(normalized)[0]===''&&arenaSquadIds(normalized)[1]===base.character!.id,'Invalid and duplicate saved IDs must be ignored');
+ok(validateGameCommand({type:'arena_slot',args:{index:0,characterId:base.character!.id}}).type==='arena_slot','Arena slot command must be accepted by online authority');
+const onlineChosen=executeGameCommand(base,{type:'arena_slot',args:{index:0,characterId:base.character!.id}},1).state;
+ok(arenaSquadIds(onlineChosen)[0]===base.character!.id,'Authoritative Arena command must persist the selected character');
+const onlineCleared=executeGameCommand(onlineChosen,{type:'arena_slot',args:{index:0}},2).state;
+ok(arenaSquadIds(onlineCleared)[0]==='','Authoritative Arena command must clear a slot');
 console.log('arena squad tests passed');

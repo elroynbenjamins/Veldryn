@@ -66,6 +66,15 @@ const input=read('src/components/GameTextInput.tsx');
 ok(input.includes('accessibilityState={{...props.accessibilityState,disabled:!editable}}'),'Text inputs must expose disabled state');
 ok(input.includes('selectionColor={props.selectionColor??C.selectionLine}'),'Text inputs must keep visible theme-aware selection/caret contrast');
 
+const recruitmentFilters=read('src/components/RecruitmentFiltersPanel.tsx');
+ok(recruitmentFilters.includes('clear:{minHeight:44')&&recruitmentFilters.includes('chip:{minHeight:44'),'Recruitment filter clear/chip actions must retain 44px touch targets');
+
+const inventoryTouch=read('src/screens/InventoryScreen.tsx');
+ok(inventoryTouch.includes('markSeen:{minHeight:44')&&inventoryTouch.includes('selectModeButton:{minHeight:44')&&inventoryTouch.includes('selectionQuickButton:{minHeight:44'),'Inventory utility and bulk-selection controls must retain 44px touch targets');
+
+const companionTrainingTouch=read('src/components/CompanionTrainingV50Panel.tsx');
+ok(companionTrainingTouch.includes('tab:{flex:1,minHeight:44')&&companionTrainingTouch.includes('sourceButton:{minWidth:56,minHeight:44'),'Companion Training tabs and source actions must retain 44px touch targets');
+
 const account=read('src/screens/MoreScreen.tsx');
 ok(account.includes('useWindowDimensions')&&account.includes('singleColumn=width<350||fontScale>=1.25'),'Account hub must stack on narrow phones or large text');
 ok(account.includes("tileWide:{flexBasis:'100%',minWidth:0}"),'Account tiles must support a full-width responsive mode');

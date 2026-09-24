@@ -35,7 +35,7 @@ export const GATHERING:GatherDef[]=([
 // stretched by a noticeable amount to avoid rapid early skill acceleration.
 ] as Omit<GatherDef,'difficultyMultiplier'|'recommendedToolTier'>[]).map(activity=>{
   const difficultyMultiplier=activity.unlockLevel>=15?1.5:activity.unlockLevel>=7?1.2:1;
-  const recommendedToolTier=activity.unlockLevel>=15?3:activity.unlockLevel>=7?2:1;
+  const recommendedToolTier=activity.unlockLevel>=46?4:activity.unlockLevel>=20?3:activity.unlockLevel>=10?2:1;
   const xpMultiplier=activity.unlockLevel>=15?1.45:activity.unlockLevel>=7?1.35:1;
   return {...activity,seconds:Math.ceil(activity.seconds*2),xp:Math.round(activity.xp*xpMultiplier),difficultyMultiplier,recommendedToolTier};
 });

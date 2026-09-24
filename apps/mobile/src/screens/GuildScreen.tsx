@@ -5,6 +5,7 @@ import {GameButton} from '../components/GameButton';
 import {Panel} from '../components/Panel';
 import {OnlineGuildMusterPanel} from '../components/OnlineGuildMusterPanel';
 import {GuildActivitySummaryPanel} from '../components/GuildActivitySummaryPanel';
+import {GuildQuestPanel} from '../components/GuildQuestPanel';
 import {GameState} from '../core/types';
 import {spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -22,7 +23,7 @@ export function GuildScreen({state,onChange,onlineDirectory,onlineManagement,onl
     <ScrollView horizontal keyboardShouldPersistTaps="handled" showsHorizontalScrollIndicator={false} contentContainerStyle={s.onlineTabs}>{(['Home','Members','Activities','Hall','Chat','Manage','Future'] as const).map(value=><TabChip key={value} label={value} badge={value==='Chat'?Math.max(onlineChatUnread,onlineChatMentions):0} warningBadge={value==='Chat'&&onlineChatMentions>0} selected={onlineSection===value} onPress={()=>setOnlineSection(value)}/>)}</ScrollView>
     {onlineSection==='Home'?<GuildOnlineHome onNavigate={setOnlineSection} board={onlineBoard}/>:null}
     {onlineSection==='Members'?onlineManagement:null}
-    {onlineSection==='Activities'?<View style={s.sectionStack}><GuildSectionHeader label="DAILY & WEEKLY" title="Muster & Rally" copy="Daily participation rolls into the shared weekly Rally without adding another currency."/><OnlineGuildMusterPanel/><GuildSectionHeader label="SHARED PROGRESSION" title="Guild Projects" copy="Vote on the weekly board, progress active Projects through verified play, and review recent Guild activity."/>{onlineProjects}<GuildSectionHeader label="WEEKLY PVE" title="Guild Boss" copy="Shared PvE progress and personal contribution remain server-validated."/>{onlinePve}</View>:null}
+    {onlineSection==='Activities'?<View style={s.sectionStack}><GuildSectionHeader label="DAILY & WEEKLY" title="Muster & Rally" copy="Daily participation rolls into the shared weekly Rally without adding another currency."/><OnlineGuildMusterPanel/><GuildSectionHeader label="INTENTIONAL PROGRESSION" title="Guild Quests" copy="Weekly cooperative objectives are the primary way to push and maintain Guild Activity through normal verified play."/><GuildQuestPanel/><GuildSectionHeader label="SHARED PROGRESSION" title="Guild Projects" copy="Vote on the weekly board, progress active Projects through verified play, and review recent Guild activity."/>{onlineProjects}<GuildSectionHeader label="WEEKLY PVE" title="Guild Boss" copy="Shared PvE progress and personal contribution remain server-validated."/>{onlinePve}</View>:null}
     {onlineSection==='Hall'?onlineHall:null}
     {onlineSection==='Chat'?onlineChat:null}
     {onlineSection==='Manage'?<View style={s.sectionStack}><GuildSectionHeader label="RECRUITMENT" title="Directory & Creation" copy="Find another Guild when eligible, or create and configure a new Guild identity."/>{onlineDirectory}<GuildSectionHeader label="IDENTITY" title="Guild Appearance" copy="Manage the Guild tag, banner, border, colors, nameplate and motto with role-based permissions."/>{onlineCustomize}</View>:null}

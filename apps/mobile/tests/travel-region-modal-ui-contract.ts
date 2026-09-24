@@ -44,6 +44,9 @@ ok(modal.includes('PLANNED ENEMIES')&&modal.includes('Enemy roster will be revea
 ok(modal.includes('COMMON ENEMIES')&&modal.includes('NOTABLE DROPS')&&modal.includes('ACTIVITIES'),'Travel sheet must preview meaningful zone content');
 ok(modal.includes('<ItemArtwork itemId={drop.itemId}'),'Notable drops must use the real in-game item visuals');
 ok(modal.includes('environment.weatherName'),'Released travel sheets should still show current destination conditions');
+ok(modal.includes('useWindowDimensions')&&modal.includes("stackLayout=width<360||fontScale>=1.25"),'Travel preview layout must adapt to narrow phones and large text');
+ok(modal.includes('metaRowStack')&&modal.includes('actionsStack')&&modal.includes("actionStack:{flex:0,width:'100%'}"),'Travel metadata and actions must stack instead of squeezing');
+ok(modal.includes('reduceMotion={state.settings.reduceMotion}'),'Travel preview sheet must respect reduced motion');
 
 ok(scene.includes('Falls back to the approved world-map crop'),'Zone scene artwork must have a safe map fallback while dedicated scene art is rolled out');
 

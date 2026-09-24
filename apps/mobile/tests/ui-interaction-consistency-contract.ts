@@ -22,6 +22,7 @@ for(const path of [
  'src/components/ProfileAudiencePreviewModal.tsx',
  'src/components/CustomizationUnlockPopup.tsx',
  'src/components/StoryBossBattleModal.tsx',
+ 'src/components/ChatPlayerSheet.tsx',
  'src/screens/DailySuppliesScreen.tsx',
  'src/screens/ProgressionPlannerScreen.tsx',
 ]){
@@ -81,6 +82,11 @@ ok(customization.includes('<ScrollView')&&customization.includes('GameModalSurfa
 
 const storyBoss=read('src/components/StoryBossBattleModal.tsx');
 ok(storyBoss.includes('dismissOnBackdrop={false}')&&storyBoss.includes('<ScrollView'),'Story boss playback must avoid accidental backdrop dismissal while keeping bottom actions reachable');
+
+const chatPlayer=read('src/components/ChatPlayerSheet.tsx');
+ok(chatPlayer.includes('GameModalHeader')&&chatPlayer.includes('presentation="sheet"'),'Chat player profiles must use the shared safe sheet/header');
+ok(chatPlayer.indexOf('{isSelf?')>chatPlayer.indexOf('<ScrollView')&&chatPlayer.indexOf('{isSelf?')<chatPlayer.lastIndexOf('</ScrollView>'),'Chat player social actions must stay inside reachable scroll content');
+ok(chatPlayer.includes('reduceMotion={reduceMotion}'),'Chat player profile presentation must respect reduced motion');
 
 
 const settings=read('src/screens/SettingsScreen.tsx');

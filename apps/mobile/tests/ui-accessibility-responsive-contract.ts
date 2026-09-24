@@ -23,6 +23,11 @@ ok(reward.includes('useSafeAreaInsets')&&reward.includes('statusBarTranslucent')
 ok(reward.includes('useWindowDimensions')&&reward.includes('rewardActionsStack'),'Reward follow-up actions must stack on narrow phones or large text');
 ok(reward.includes('accessibilityViewIsModal')&&reward.includes('onAccessibilityEscape={onClose}'),'Reward results must expose modal accessibility semantics');
 
+const chatPlayer=read('src/components/ChatPlayerSheet.tsx');
+ok(chatPlayer.includes('useWindowDimensions')&&chatPlayer.includes("stackActions=width<360||fontScale>=1.25"),'Chat player actions must adapt to narrow phones and large text');
+ok(chatPlayer.includes('actionsStack')&&chatPlayer.includes("actionStack:{flex:0,width:'100%',minWidth:0}"),'Chat player actions must stack full-width instead of squeezing');
+ok(chatPlayer.includes("blockButton:{minWidth:76,minHeight:44")&&chatPlayer.includes("reportButton:{minWidth:76,minHeight:44"),'Chat moderation actions must retain 44px touch targets');
+
 const nav=read('src/components/PrimaryNavigation.tsx');
 ok(nav.includes("badgeLabel=badge==='dot'?'new activity'"),'Primary navigation must announce dot badges');
 ok(nav.includes('notification'),'Primary navigation must announce numeric badge counts');

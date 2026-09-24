@@ -11,6 +11,10 @@ const party=read('src/components/PartyHubPanel.tsx');
 const guild=read('src/components/OnlineGuildManagement.tsx');
 const rankings=read('src/screens/RankingsScreen.tsx');
 const legacyGuild=read('src/components/GuildMemberRosterPanel.tsx');
+const chatPlayer=read('src/components/ChatPlayerSheet.tsx');
+const worldChat=read('src/components/OnlineWorldChat.tsx');
+const guildChat=read('src/components/GuildChat.tsx');
+const partyChat=read('src/components/OnlinePartyChat.tsx');
 
 for(const [name,source] of [['CompactPlayerIdentity',compact],['GuildTaggedPlayerName',tagged],['SocialIdentity',identity],['PartyHubPanel',party],['OnlineGuildManagement',guild],['GuildMemberRosterPanel',legacyGuild]] as const){
  ok(source.includes('useGameTheme'),name+' must use the active UI theme');
@@ -33,5 +37,10 @@ ok(!guild.includes('title="Profile"'),'Guild roster must not duplicate a separat
 ok(rankings.includes("import {CompactPlayerIdentity} from '../components/CompactPlayerIdentity'"),'Rankings must use the shared identity presentation');
 ok(rankings.includes("guild={entry.entityType==='guild'}"),'Rankings must distinguish Guild and player identity artwork');
 ok(legacyGuild.includes('CompactPlayerIdentity'),'Legacy Guild roster fallback must also use the shared identity component');
+ok(chatPlayer.includes('CompactPlayerIdentity')&&chatPlayer.includes('GameModalSurface'),'Chat player profile must combine shared identity with the shared safe modal shell');
+ok(chatPlayer.includes('actionsStack')&&chatPlayer.includes('actionStack'),'Chat player social and moderation actions must remain reachable at constrained widths');
+for(const [name,source] of [['World Chat',worldChat],['Guild Chat',guildChat],['Party Chat',partyChat]] as const){
+ ok(source.includes('<ChatPlayerSheet reduceMotion={reduceMotion} '),name+' must propagate reduced-motion preference to the player profile sheet');
+}
 
 console.log('PASS: Friends, Party, Guild and Rankings share one compact theme-aware player identity language');

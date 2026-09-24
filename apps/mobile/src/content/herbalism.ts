@@ -28,6 +28,7 @@ export const HERB_NODES:GatherDef[]=[
   {id:'OATHBLOSSOM_PATCH',name:'Oathblossom Patch',itemId:'OATHBLOSSOM',zoneId:'KINGS_ROAD',unlockLevel:60,seconds:80,xp:170},
   {id:'SUNSCALE_BLOOM',name:'Sunscale Bloom',itemId:'SUNSCALE',zoneId:'SUNSCAR',unlockLevel:26,seconds:92,xp:215},
   {id:'FROSTBELL_FLOWER',name:'Frostbell Flower',itemId:'FROSTBLOOM',zoneId:'FROSTMARCH',unlockLevel:46,seconds:118,xp:310},
+{id:'WINTERMINT_PATCH',name:'Wintermint Patch',itemId:'WINTERMINT',zoneId:'FROSTMARCH',unlockLevel:48,seconds:122,xp:325},
   {id:'ASHEN_MYRRH_GROVE',name:'Ashen Myrrh Grove',itemId:'ASHEN_MYRRH',zoneId:'ASHLANDS',unlockLevel:71,seconds:145,xp:440},
 ].map(node=>({...node,skillId:'herbalism',min:1,max:1,difficultyMultiplier:1,recommendedToolTier:0}));
 

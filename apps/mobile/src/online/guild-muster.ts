@@ -27,6 +27,10 @@ export interface OnlineGuildMusterState{
   activityPercent:number;
   activityTargetUnits:number;
   activityDailyDecayPercent:number;
+  activityPartialDecayPercent:number;
+  activityDecayMode:'protected'|'partial'|'inactive';
+  activityTodayUnits:number;
+  activityActiveMemberCount:number;
   gatheringSpeedBps:number;
   productionSpeedBps:number;
   activitySkillXpBps:number;
@@ -52,7 +56,7 @@ export async function loadOnlineGuildMuster():Promise<{state:OnlineGuildMusterSt
   const [{data:stateData,error:stateError},{data:rosterData,error:rosterError},{data:activityData,error:activityError}]=await Promise.all([
     db.rpc('guild_muster_state_v1'),
     db.rpc('guild_muster_roster_v1'),
-    db.rpc('guild_activity_state_v1'),
+    db.rpc('guild_activity_state_v2'),
   ]);
   if(stateError)throw stateError;
   if(rosterError)throw rosterError;
@@ -86,7 +90,11 @@ export async function loadOnlineGuildMuster():Promise<{state:OnlineGuildMusterSt
     guildWeeklyPoints:num(row.guild_weekly_points),
     activityPercent:num(activityRow?.activity_percent),
     activityTargetUnits:num(activityRow?.target_units)||100,
-    activityDailyDecayPercent:num(activityRow?.daily_decay_percent)||10,
+    activityDailyDecayPercent:num(activityRow?.inactive_decay_percent)||10,
+    activityPartialDecayPercent:num(activityRow?.partial_decay_percent)||5,
+    activityDecayMode:(activityRow?.decay_mode==='protected'||activityRow?.decay_mode==='partial'?activityRow.decay_mode:'inactive') as 'protected'|'partial'|'inactive',
+    activityTodayUnits:num(activityRow?.activity_today_units),
+    activityActiveMemberCount:num(activityRow?.active_member_count)||1,
     gatheringSpeedBps:num(activityRow?.gathering_speed_bps),
     productionSpeedBps:num(activityRow?.production_speed_bps),
     activitySkillXpBps:num(activityRow?.skill_xp_bps),

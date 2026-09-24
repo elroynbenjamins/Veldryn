@@ -297,14 +297,16 @@ export function grantCompanionBondFromUse<T extends CombatCompanionStateHost>(st
 
 export function companionAbilityValue(def:CompanionDefinition,progress:OwnedCompanionProgress){const scaling=def.activeAbility.scaling,value=scaling.baseValue+scaling.perLevel*Math.max(0,progress.level-1);return Math.min(scaling.maxValue??Number.POSITIVE_INFINITY,value);}
 export function companionCombatContribution(state:CombatCompanionStateHost):CompanionCombatContribution{
-  const clean=sanitizeCombatCompanionState(state),id=clean.character?.equippedCombatCompanionId;if(!id)return {outputMultiplier:1,incomingDamageMultiplier:1,recoveryMultiplier:1,contributionPct:0};
-  if(clean.account.companionTrialProgress?.season.activeRun?.teamCompanionIds.includes(id)||(clean.account.companionAssignments??[]).some(a=>a.status!=='claimed'&&a.status!=='cancelled'&&a.companionIds.includes(id)))return {outputMultiplier:1,incomingDamageMultiplier:1,recoveryMultiplier:1,contributionPct:0};
+  const clean=sanitizeCombatCompanionState(state),id=clean.character?.equippedCombatCompanionId;if(!id)return {outputMultiplier:1,incomingDamageMultiplier:1,recoveryMultiplier:1,directHealingPctPerHour:0,contributionPct:0};
+  if(clean.account.companionTrialProgress?.season.activeRun?.teamCompanionIds.includes(id)||(clean.account.companionAssignments??[]).some(a=>a.status!=='claimed'&&a.status!=='cancelled'&&a.companionIds.includes(id)))return {outputMultiplier:1,incomingDamageMultiplier:1,recoveryMultiplier:1,directHealingPctPerHour:0,contributionPct:0};
   const def=combatCompanionDef(id)!,p=progressFor(clean,id),rarity=COMPANION_RARITY_CONFIG[def.rarity];
   // Rarity target is deliberately applied exactly once here. Level/Bond only move toward that budget.
   const investment=.55+.35*(p.level/rarity.maxLevel)+.10*(p.bondLevel/10),base=.07,bondResonance=p.bondLevel>=6?1.015:1,contribution=Math.min(.12,base*rarity.targetPowerMultiplier*investment*bondResonance);
-  if(def.role==='damage')return {outputMultiplier:1+contribution,incomingDamageMultiplier:1,recoveryMultiplier:1,contributionPct:contribution};
-  if(def.role==='tank')return {outputMultiplier:1+contribution*.12,incomingDamageMultiplier:1-contribution*.78,recoveryMultiplier:1+contribution*.25,contributionPct:contribution};
-  return {outputMultiplier:1+contribution*.42,incomingDamageMultiplier:1-contribution*.12,recoveryMultiplier:1+contribution*.72,contributionPct:contribution};
+  if(def.role==='damage')return {outputMultiplier:1+contribution,incomingDamageMultiplier:1,recoveryMultiplier:1,directHealingPctPerHour:0,contributionPct:contribution};
+  if(def.role==='tank')return {outputMultiplier:1+contribution*.12,incomingDamageMultiplier:1-contribution*.78,recoveryMultiplier:1+contribution*.25,directHealingPctPerHour:0,contributionPct:contribution};
+  const restorative=def.activeAbility.effect.kind==='heal';
+  const directHealingPctPerHour=restorative?Math.min(.12,companionAbilityValue(def,p)*1.5):0;
+  return {outputMultiplier:1+contribution*.42,incomingDamageMultiplier:1-contribution*.12,recoveryMultiplier:1+contribution*.72,directHealingPctPerHour,contributionPct:contribution};
 }
 
 export function companionSanctuaryUpgradeCost(state:CombatCompanionStateHost,upgrade:CompanionSanctuaryUpgrade){const clean=sanitizeCombatCompanionState(state),cfg=COMPANION_SANCTUARY_CONFIG[upgrade],level=int(clean.account.companionSanctuary?.[`${upgrade}Level` as keyof CompanionSanctuaryState],0,cfg.maxLevel);if(level>=cfg.maxLevel)return undefined;return {gold:cfg.goldCosts[level],companionEssence:cfg.essenceCosts[level],materialId:cfg.materialId,materialQuantity:cfg.materialCosts?.[level]??0};}

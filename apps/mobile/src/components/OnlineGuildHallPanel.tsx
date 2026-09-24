@@ -40,7 +40,7 @@ export function OnlineGuildHallPanel(){
   <Panel>
    <View style={s.sectionHead}><Text style={s.title}>Trophy Room</Text><Text style={s.sectionMeta}>{state.trophies.length} recorded</Text></View>
    {state.trophies.slice(0,5).map(trophy=><View key={trophy.trophyKey} style={s.trophy}><Text style={s.facilityName}>{trophy.label}</Text><Text style={s.note}>{trophy.description||trophy.sourceKind} · {new Date(trophy.earnedAtMs).toLocaleDateString()}</Text></View>)}
-   {!state.trophies.length?<View style={s.empty}><Text style={s.emptyTitle}>No trophies yet</Text><Text style={s.note}>Completed eligible Guild Projects and raids will appear here.</Text></View>:null}
+   {!state.trophies.length?<View style={s.empty}><Text style={s.emptyTitle}>No trophies yet</Text><Text style={s.note}>Completed eligible Guild Projects and raids will appear here. Future Guild Legacy will preserve major trophies and season records permanently.</Text></View>:null}
   </Panel>
   <GameButton compact title={loading?'Refreshing…':'Refresh Guild Hall'} tone="secondary" disabled={loading} onPress={()=>void load()}/>
   {!!error&&<Text style={s.error}>{error}</Text>}

@@ -6,9 +6,10 @@ import type {WorkingTowardDestination} from '../core/working-toward';
 import {GameButton} from './GameButton';
 import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
+import {earlyFeatureUnlocked} from '../core/feature-unlocks';
 
 export function HomeSessionOverview({state,nowMs,onQuests,onDaily,onEvents,onGoals,onWeekly,onForge,onCompanions,onNew,onGoalNext}:{state:GameState;nowMs:number;onQuests:()=>void;onDaily:()=>void;onEvents:()=>void;onGoals:()=>void;onWeekly:()=>void;onForge:()=>void;onCompanions:()=>void;onNew:()=>void;onGoalNext:(destination:WorkingTowardDestination)=>void}){
- const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),summary=homeSessionSummary(state,nowMs),{width,fontScale}=useWindowDimensions(),stackCells=width<350||fontScale>=1.25;
+ const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),summary=homeSessionSummary(state,nowMs),{width,fontScale}=useWindowDimensions(),stackCells=width<350||fontScale>=1.25,weeklyUnlocked=earlyFeatureUnlocked(state,'contracts'),storyClaimed=state.quests.filter(row=>row.status==='claimed').length;
  const openReady=(kind:HomeReadyKind)=>{if(kind==='quests')onQuests();else if(kind==='daily')onDaily();else if(kind==='events')onEvents();else if(kind==='weekly')onWeekly();else if(kind==='forge')onForge();else if(kind==='companions')onCompanions();else onGoals()};
  const parts:string[]=[];
  if(summary.storyRewards)parts.push(summary.storyRewards+' story');
@@ -24,7 +25,7 @@ export function HomeSessionOverview({state,nowMs,onQuests,onDaily,onEvents,onGoa
   <View style={s.cells}>
    <SessionCell label="READY" value={readyDisplay} tone={summary.readyTotal?'good':'muted'} emphasized={summary.readyTotal>0} stack={stackCells} onPress={summary.primaryReady?()=>openReady(summary.primaryReady!.kind):undefined}/>
    <SessionCell label="GOALS" value={summary.goalReady+'/'+summary.goalTotal} tone={summary.goalReady?'good':'info'} emphasized={summary.goalReady>0} stack={stackCells} onPress={onGoals}/>
-   <SessionCell label="WEEKLY" value={summary.weeklyRewards?summary.weeklyRewards+' ready':summary.weeklyComplete+'/'+summary.weeklyTotal} tone={summary.weeklyRewards?'good':summary.weeklyTotal&&summary.weeklyComplete===summary.weeklyTotal?'good':'accent'} emphasized={summary.weeklyRewards>0||summary.weeklyTotal>0} stack={stackCells} onPress={onWeekly}/>
+   {weeklyUnlocked?<SessionCell label="WEEKLY" value={summary.weeklyRewards?summary.weeklyRewards+' ready':summary.weeklyComplete+'/'+summary.weeklyTotal} tone={summary.weeklyRewards?'good':summary.weeklyTotal&&summary.weeklyComplete===summary.weeklyTotal?'good':'accent'} emphasized={summary.weeklyRewards>0||summary.weeklyTotal>0} stack={stackCells} onPress={onWeekly}/>:<SessionCell label="STORY" value={storyClaimed+'/'+state.quests.length} tone={summary.storyRewards?'good':'accent'} emphasized={summary.storyRewards>0} stack={stackCells} onPress={onQuests}/>}
    <SessionCell label="NEW" value={String(summary.newUnlocks)} tone={summary.newUnlocks?'special':'muted'} emphasized={summary.newUnlocks>0} stack={stackCells} onPress={onNew}/>
   </View>
   {visibleParts.length?<Text style={s.breakdown}>Ready now · {visibleParts.join(' · ')}{hiddenPartCount?' · +'+hiddenPartCount+' more':''}</Text>:null}

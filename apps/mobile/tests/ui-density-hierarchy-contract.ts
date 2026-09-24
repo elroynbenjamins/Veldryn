@@ -76,6 +76,8 @@ ok(masteryPanel.includes('Yield requires stackable output')&&masteryPanel.includ
 ok(masteryPanel.includes('MASTERED RECORDS')&&masteryPanel.includes('Permanent R50 record'),'R50 action mastery must have a permanent compact completion treatment');
 ok(masteryPanel.includes('TRACK R')&&masteryPanel.includes('TRACKED R'),'Mastery rows must support one-tap Working Toward tracking without a separate modal');
 ok(masteryPanel.includes('minHeight:30'),'Mastery tracking controls must remain compact secondary actions');
+ok(masteryPanel.includes("const [expanded,setExpanded]=useState(!!preferredActionId)")&&masteryPanel.includes('MASTERY DETAILS'),'Profession Mastery must stay summary-first instead of making every skill detail screen excessively tall');
+ok(masteryPanel.includes('accessibilityState={{expanded}}')&&masteryPanel.includes("if(preferredActionId)setExpanded(true)"),'Profession Mastery disclosure must remain accessible and auto-open exact deep-linked mastery targets');
 ok(skills.includes('<ProfessionMasteryPanel'),'Trainable skill details must expose Profession Mastery');
 ok(skills.includes('masteryGoalForAction')&&skills.includes("type:'goals_set'"),'Skill mastery tracking must use the authoritative Working Toward goal command');
 ok(skills.includes('skillIdentity')&&skills.includes('identityColor'),'Skill headers must preserve distinct semantic identities without larger typography');
@@ -326,6 +328,9 @@ const collections=read('src/screens/CollectionsScreen.tsx');
 ok(collections.includes("petCard:{width:'48%',minWidth:0"),'Collections pet grid must keep two-column cards viable on narrow phones');
 ok((collections.match(/<GameButton compact title=\{row\.selected\?/g)??[]).length>=2,'Collections repeated item actions must remain compact');
 
+const petBonusOverview=read('src/screens/PetBonusOverviewScreen.tsx');
+ok(petBonusOverview.includes('accessibilityState={{expanded:showBonusHelp}}')&&petBonusOverview.includes('HOW PET BONUSES WORK'),'Pet Bonus explanation must use progressive disclosure so collection controls remain closer to the top');
+
 const achievements=read('src/screens/AchievementsScreen.tsx');
 ok(achievements.includes('<GameButton compact title="Save showcase"'),'Achievements showcase action must not dominate the screen');
 ok(achievements.includes("<GameButton compact title={entry.claimed?'Claimed':entry.completed?'Claim':'Locked'}"),'Achievement row actions must remain compact');
@@ -337,6 +342,7 @@ ok(activityOverview.includes('faithTone:{color:C.special}'),'Character Activity 
 const dailySupplies=read('src/screens/DailySuppliesScreen.tsx');
 ok(dailySupplies.includes("cell:{width:'12.5%',minWidth:31,maxWidth:40,height:32"),'Daily Supplies track must fit seven compact columns on narrow phones');
 ok(dailySupplies.includes('boostRow:{minHeight:56'),'Daily Supplies banked boost rows must remain compact');
+ok(dailySupplies.includes('accessibilityState={{expanded:showRules}}')&&dailySupplies.includes('WHAT COUNTS'),'Daily Supplies reference rules must stay collapsed until requested instead of lengthening the main claim/boost workflow');
 
 const accountBonuses=read('src/screens/AccountBonusesScreen.tsx');
 ok(accountBonuses.includes('row:{minHeight:48'),'Account bonus totals must remain dense and scannable');
@@ -352,6 +358,11 @@ ok(arena.includes("choices:{flexDirection:'row',flexWrap:'wrap'"),'Arena roster 
 const event=read('src/screens/EventScreen.tsx');
 ok(event.includes('discoveryCount:{...typography.title,color:C.special}'),'Event discovery emphasis must use the semantic theme token');
 ok(event.includes("claim:{width:96}"),'Event repeated reward actions must remain compact');
+ok(event.includes("type JournalSection='Discoveries'|'Collection'|'Milestones'")&&event.includes("journalSection==='Discoveries'")&&event.includes("journalSection==='Collection'")&&event.includes("journalSection==='Milestones'"),'Event Journal must split discoveries, collection and milestones into separate mobile workloads instead of one long feed');
+ok(event.includes('EVENT DETAILS · {definition.signature.label}')&&event.includes('accessibilityState={{expanded:showEventDetails}}'),'Secondary event identity detail must use progressive disclosure while the active event actions stay visible');
+ok(event.includes('journalTabs:{flexDirection:\'row\'')&&event.includes('journalTab:{flex:1,minHeight:44'),'Event Journal sub-navigation must remain compact and touch-accessible');
+ok(event.includes('history.slice(0,showEventArchive?history.length:6)')&&event.includes('Show older events · ${history.length-6}'),'Inactive Event archive must cap the initial history instead of growing indefinitely year over year');
+ok(event.includes('accessibilityState={{expanded:showProjectDetails}}')&&event.includes("(!projectId||showProjectDetails)?<View style={s.choiceList}"),'Locked event project alternatives must collapse after selection while the contribution controls remain on the main Commons surface');
 
 const quests=read('src/screens/QuestScreen.tsx');
 const questModes=read('src/components/QuestModeSwitch.tsx');
@@ -368,6 +379,10 @@ ok(questApp.includes("const [questMode,setQuestMode]=useState<QuestMode>('story'
 ok(questApp.includes("focusedWeeklyOrderId={questFocusOrderId}")&&questApp.includes("onOpenContracts={order=>openQuestMode('contracts',order?.id)}"),'World regional Contract links must open the Contract Board with the exact job focused');
 ok(questApp.includes("destination.tab==='World'&&destination.zoneId")&&questApp.includes('setGoalRegionId(destination.zoneId)'),'Story Journal destinations must preserve their authored World region instead of dropping zone context');
 ok(quests.includes('onOpenWeeklyBoss')&&questApp.includes("monsterId:'FALLEN_KNIGHT'")&&questApp.includes("regionId:'KINGS_ROAD'"),'Weekly boss action must keep its exact destination');
+
+const progressionPlanner=read('src/screens/ProgressionPlannerScreen.tsx');
+ok(progressionPlanner.includes('ADVANCED IDLE RULES')&&progressionPlanner.includes('showIdleRules&&<IdleRulesEditorV40'),'Working Toward must keep advanced Idle Rules behind a secondary disclosure rather than permanently lengthening the common goal workflow');
+ok(progressionPlanner.includes('accessibilityState={{expanded:showIdleRules}}')&&progressionPlanner.includes("secondaryDisclosure:{minHeight:54"),'Working Toward advanced disclosure must expose state accessibly and retain a safe mobile touch target');
 
 const settings=read('src/screens/SettingsScreen.tsx');
 ok(settings.includes('themeChoice:{minHeight:82'),'Theme preview cards must stay compact enough to compare all themes');

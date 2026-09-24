@@ -90,8 +90,9 @@ function projectedFarmHours(recipe:typeof t8){
 const highTierBands:Record<string,[number,number]>={
   // Regional ore -> ingot processing now includes its local wood fuel. T7 is the first Frostmarch tier,
   // so its ceiling includes the new Frostiron + Whitepine processing chain while staying below T8.
-  // T9 keeps a lower floor for Ring/Amulet slot multipliers; large-slot pieces still scale much higher.
-  T5:[.75,4.5],T6:[1.0,5.5],T7:[1.2,6.5],T8:[1.5,7.5],T9:[1.5,9.0],
+  // T9 keeps a lower floor for Ring/Amulet slot multipliers; generated small-slot pieces may land near ~1.3h,
+  // while large-slot pieces still scale much higher. This floor guards against near-free recipes without flattening slot identity.
+  T5:[.75,4.5],T6:[1.0,5.5],T7:[1.2,6.5],T8:[1.5,7.5],T9:[1.2,9.0],
 };
 for(const tier of Object.keys(highTierBands)){
   const rows=V33_EQUIPMENT_RECIPES.filter(row=>row.v33EquipmentTier===tier);

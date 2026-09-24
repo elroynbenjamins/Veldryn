@@ -381,7 +381,7 @@ const next=discoverCharacterSkins(candidate);queuePreparationNotices(current,nex
   const preview=previewActivityReward(state,now);
   const eventsUnlocked=earlyFeatureUnlocked(state,'events'),companionsUnlocked=earlyFeatureUnlocked(state,'companions'),workingTowardUnlocked=earlyFeatureUnlocked(state,'workingToward'),dailySuppliesUnlocked=earlyFeatureUnlocked(state,'dailySupplies'),contractsUnlocked=earlyFeatureUnlocked(state,'contracts'),friendsUnlocked=earlyFeatureUnlocked(state,'friends'),socialUnlocked=earlyFeatureUnlocked(state,'social'),guildUnlocked=earlyFeatureUnlocked(state,'guild');
   const eventClaims=eventsUnlocked?eventReadyClaimCount(state,now):0;
-  const companionAttention=companionsUnlocked?companionAttentionSummary(state,now):{hasAttention:false,expeditionClaims:0,bondRewards:0,ascensions:0,sanctuaryClaims:0,codexClaims:0,monthlyTrialClaims:0};
+  const companionAttention=companionsUnlocked?companionAttentionSummary(state,now):{total:0,hasAttention:false,expeditionClaims:0,bondRewards:0,ascensions:0,sanctuaryClaims:0,codexClaims:0,monthlyTrialClaims:0,recentUnlocks:0};
   const workingTowardReady=workingTowardUnlocked?workingTowardReadyCount(state):0;
   const dailySuppliesReady=dailySuppliesUnlocked&&dailySuppliesStatus(state,now).canClaim;
   const contractBoard=contractsUnlocked?contractBoardSummary(state,now):{pendingRewards:0};

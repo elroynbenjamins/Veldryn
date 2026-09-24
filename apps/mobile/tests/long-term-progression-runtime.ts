@@ -10,6 +10,7 @@ function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 function equal(actual:unknown,expected:unknown,message:string){if(actual!==expected)throw new Error(`${message}: expected ${String(expected)}, got ${String(actual)}`)}
 
 let state=createCharacter(newGame(Date.UTC(2026,8,14)),'IRONWARDEN','ProgressionTester','male');
+state={...state,quests:state.quests.map(q=>q.questId==='QST_006'?{...q,status:'claimed' as const,progress:8}:q)};
 // The Contract Board fills only from genuinely available content.
 // At this level it has 2 Hunt + 2 Work + 1 Regional Problem; Threat Bounties appear only after Challenge Hunt mastery.
 state={...state,character:{...state.character!,level:10}};

@@ -1,5 +1,5 @@
 import {useEffect,useMemo,useState} from 'react';
-import {ActivityIndicator,Alert,Modal,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {ActivityIndicator,Alert,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {
  cancelFriendRequest,friendRelationshipState,removeFriend,respondFriendRequest,sendFriendRequest,setPlayerBlocked,
  sendPartyInvitation,sendGuildInvitation,socialInviteCapabilities,reportSocialPlayer,
@@ -18,6 +18,7 @@ import {PublicProfileScene} from './PublicProfileScene';
 import {useAuthSession} from '../online/AuthSessionProvider';
 import {profileAchievementPrestige,profileCollectionPrestige,profileRecordPrestige} from '../core/profile-prestige';
 import {friendRelationshipActionPresentation} from '../core/social-identity';
+import {GameModalSurface} from './GameModalSurface';
 
 export type ChatPlayerIdentity={id?:string;message_id?:string;account_id:string;sender_name:string;guild_tag?:string|null;guild_tag_color_id?:string|null;relationship?:FriendRelationship};
 
@@ -87,8 +88,8 @@ export function ChatPlayerSheet({
  const relationshipPresentation=friendRelationshipActionPresentation(relationship.relationship);
  const showInviteActions=!!inviteCapabilities&&(inviteCapabilities.party.available||inviteCapabilities.party.pending||inviteCapabilities.guild.available||inviteCapabilities.guild.pending);
 
- return <Modal visible transparent animationType="fade" onRequestClose={onClose}><View style={s.scrim}><Pressable accessibilityLabel="Close player profile" onPress={onClose} style={StyleSheet.absoluteFill}/><View accessibilityViewIsModal style={s.sheet}>
-  <View style={s.handle}/><View style={s.top}><Text style={s.kicker}>PLAYER PROFILE</Text><Pressable accessibilityRole="button" accessibilityLabel="Close player profile" onPress={onClose} style={s.close}><Text style={s.closeText}>×</Text></Pressable></View>
+ return <GameModalSurface visible={!!message} onClose={onClose} surfaceStyle={s.sheetSurface} backdropLabel="Close player profile">
+  <View style={s.top}><Text style={s.kicker}>PLAYER PROFILE</Text><Pressable accessibilityRole="button" accessibilityLabel="Close player profile" onPress={onClose} style={s.close}><Text style={s.closeText}>×</Text></Pressable></View>
   <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
    {loading?<View style={s.limitedCard}><CompactPlayerIdentity name={message.sender_name} guildTag={message.guild_tag} guildTagColorId={message.guild_tag_color_id} status="LOADING PROFILE"/><ActivityIndicator color={C.accent}/></View>:profile?<><PublicProfileScene profile={profile}/>
     {profile.bio?<View style={s.bioCard}><Text style={s.bioLabel}>PROFILE BIO</Text><Text style={s.bio}>{profile.bio}</Text></View>:null}
@@ -97,7 +98,6 @@ export function ChatPlayerSheet({
     <ProfileShowcaseSection title="PERSONAL RECORDS" entries={recordEntries} emptyLabel="No record selected"/>
     <ProfileShowcaseSection title="COLLECTION SHOWCASE" entries={collectionEntries} emptyLabel="No collectible selected"/>
    </>:<View style={s.limitedCard}><CompactPlayerIdentity name={message.sender_name} guildTag={message.guild_tag} guildTagColorId={message.guild_tag_color_id} status={loadError?'PROFILE ERROR':'LIMITED PROFILE'}/><View style={s.limitedCopy}><Text style={s.privateTitle}>{loadError?'Public profile could not load':unavailable?'Full profile unavailable':'No published profile'}</Text><Text style={s.limitedText}>{loadError?'The profile service did not respond successfully. The player identity and social actions below are still available.':'This player may use Private or Guild visibility, may not have published a social profile yet, or may be hidden by a relationship rule.'}</Text></View>{loadError?<GameButton title="Retry profile" tone="secondary" onPress={()=>void loadProfile()}/>:null}</View>}
-  </ScrollView>
   {isSelf?<View style={s.selfNotice}><Text style={s.selfNoticeLabel}>THIS IS YOUR PROFILE</Text><Text style={s.selfNoticeText}>Edit your biography, favorites, privacy and showcases from Account → Profile.</Text></View>:<View style={s.actionArea}>
    <View style={s.actionHead}><Text style={s.hint}>PLAYER ACTIONS</Text><View style={[s.relationshipPill,relationshipPresentation.tone==='friend'&&s.relationshipFriend]}>{relationshipLoading?<ActivityIndicator size="small" color={C.info}/>:<Text style={[s.relationshipText,relationshipPresentation.tone==='friend'&&s.relationshipFriendText]}>{relationshipPresentation.status}</Text>}</View></View>
    {relationshipError?<Text style={s.relationshipError}>Friend status could not refresh; showing the last known state.</Text>:null}
@@ -114,11 +114,12 @@ export function ChatPlayerSheet({
     {inviteCapabilities?.guild.available?<View style={s.primaryAction}><GameButton title="Invite to Guild" tone="secondary" disabled={busy||inviteLoading} onPress={()=>void inviteToGuild()}/></View>:inviteCapabilities?.guild.pending?<View style={s.primaryAction}><GameButton title="Guild invite sent" tone="secondary" disabled onPress={()=>{}}/></View>:null}
    </View></>:inviteError?<Text style={s.inviteError}>Direct invitations are temporarily unavailable.</Text>:null}
   </View>}
- </View></View></Modal>;
+  </ScrollView>
+ </GameModalSurface>;
 }
 
 function makeStyles(C:ThemeColors){return StyleSheet.create({
- scrim:{flex:1,justifyContent:'flex-end',backgroundColor:C.overlay},sheet:{maxHeight:'88%',paddingHorizontal:spacing.lg,paddingTop:8,paddingBottom:24,backgroundColor:C.panel,borderTopWidth:StyleSheet.hairlineWidth,borderColor:C.line,borderTopLeftRadius:22,borderTopRightRadius:22},handle:{width:38,height:4,alignSelf:'center',borderRadius:2,backgroundColor:C.muted,marginBottom:8},top:{minHeight:44,flexDirection:'row',alignItems:'center'},kicker:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:1,flex:1},close:{width:44,height:44,alignItems:'center',justifyContent:'center'},closeText:{fontSize:28,lineHeight:31,color:C.muted},scroll:{gap:spacing.md,paddingBottom:spacing.sm},
+ sheetSurface:{maxHeight:'88%',paddingHorizontal:spacing.lg,backgroundColor:C.panel},top:{minHeight:44,flexDirection:'row',alignItems:'center'},kicker:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:1,flex:1},close:{width:44,height:44,alignItems:'center',justifyContent:'center'},closeText:{fontSize:28,lineHeight:31,color:C.muted},scroll:{gap:spacing.md,paddingBottom:spacing.lg},
  limitedCard:{gap:10,padding:spacing.md,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2},limitedCopy:{gap:3},limitedText:{...typography.body,color:C.muted,lineHeight:20},privateTitle:{...typography.title,color:C.text},
  bioCard:{gap:3,padding:10,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2},bioLabel:{fontSize:8,color:C.accent,fontWeight:'900',letterSpacing:.75},bio:{...typography.body,color:C.text,lineHeight:20},
  selfNotice:{gap:2,marginTop:spacing.sm,padding:spacing.sm,borderWidth:1,borderColor:C.info,borderRadius:radii.md,backgroundColor:C.infoSurface},selfNoticeLabel:{...typography.caption,color:C.info,fontWeight:'900',letterSpacing:.8},selfNoticeText:{...typography.caption,color:C.muted},

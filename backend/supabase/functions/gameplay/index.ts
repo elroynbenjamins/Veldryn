@@ -9,7 +9,44 @@ var __esm = (fn, res, err) => function __init() {
   }
 };
 
-// ../apps/mobile/src/core/progression.ts
+// apps/mobile/src/content/faith.ts
+var HOLY_WATER_ID, FAITH_TIERS, FAITH_BLESSINGS, HOLY_WATER_SOURCES, faithBlessingDef;
+var init_faith = __esm({
+  "apps/mobile/src/content/faith.ts"() {
+    "use strict";
+    HOLY_WATER_ID = "HOLY_WATER";
+    FAITH_TIERS = [
+      { id: "FAITH_QUIET", name: "Quiet prayer", level: 1, water: 1, xp: 120, seconds: 30 },
+      { id: "FAITH_CANDLE", name: "Candle vigil", level: 10, water: 2, xp: 260, seconds: 30 },
+      { id: "FAITH_LITANY", name: "Sacred litany", level: 25, water: 4, xp: 560, seconds: 30 },
+      { id: "FAITH_DEVOTION", name: "Devotion", level: 40, water: 8, xp: 1200, seconds: 30 },
+      { id: "FAITH_COMMUNION", name: "Communion", level: 60, water: 16, xp: 2560, seconds: 30 },
+      { id: "FAITH_ASCENDANT", name: "Ascendant prayer", level: 80, water: 32, xp: 5440, seconds: 30 }
+    ];
+    FAITH_BLESSINGS = [
+      { id: "EMBER_VOW", name: "Ember Vow", level: 1, family: "attack", bonus: 0.02 },
+      { id: "WARD_OF_STONE", name: "Ward of Stone", level: 10, family: "defense", bonus: 0.03 },
+      { id: "WELLSPRING", name: "Wellspring", level: 15, family: "hp", bonus: 0.04 },
+      { id: "SUNFIRE_VOW", name: "Sunfire Vow", level: 40, family: "attack", bonus: 0.04 },
+      { id: "IRON_SANCTUARY", name: "Iron Sanctuary", level: 45, family: "defense", bonus: 0.06 },
+      { id: "LIVING_GRACE", name: "Living Grace", level: 50, family: "hp", bonus: 0.08 },
+      { id: "DAWN_COVENANT", name: "Dawn Covenant", level: 80, family: "attack", bonus: 0.06 },
+      { id: "ETERNAL_BASTION", name: "Eternal Bastion", level: 85, family: "defense", bonus: 0.09 },
+      { id: "UNDYING_LIGHT", name: "Undying Light", level: 90, family: "hp", bonus: 0.12 }
+    ];
+    HOLY_WATER_SOURCES = [
+      { monsterId: "FIELD_WISP", chance: 0.2, min: 1, max: 2 },
+      { monsterId: "DROWNED_PILGRIM", chance: 0.4, min: 2, max: 4 },
+      { monsterId: "OATHBOUND_SQUIRE", chance: 0.35, min: 2, max: 4 },
+      { monsterId: "DUNE_ORACLE", chance: 0.5, min: 3, max: 5 },
+      { monsterId: "BELLWRAITH", chance: 0.6, min: 4, max: 6 },
+      { monsterId: "ASHEN_REVENANT", chance: 0.75, min: 6, max: 10 }
+    ];
+    faithBlessingDef = (id) => FAITH_BLESSINGS.find((b) => b.id === id);
+  }
+});
+
+// apps/mobile/src/core/progression.ts
 function baseXpForNextLevel(level) {
   return Math.floor(90 * Math.pow(level, 1.42) + level * 35);
 }
@@ -46,45 +83,20 @@ function totalXpAtLevel(level) {
 function characterTotalXpAtLevel(level) {
   return totalXpAtLevelWith(level, characterXpForNextLevel);
 }
+function progressWithinLevel(totalXp, level) {
+  const floor = totalXpAtLevel(level);
+  return { current: Math.max(0, totalXp - floor), need: skillXpForNextLevel(level) };
+}
 var SKILL_XP_SCALE, CHARACTER_XP_SCALE;
 var init_progression = __esm({
-  "../apps/mobile/src/core/progression.ts"() {
+  "apps/mobile/src/core/progression.ts"() {
     "use strict";
-    SKILL_XP_SCALE = 4.3;
-    CHARACTER_XP_SCALE = 43.2;
+    SKILL_XP_SCALE = 1.6;
+    CHARACTER_XP_SCALE = 8;
   }
 });
 
-// ../apps/mobile/src/content/faith.ts
-var HOLY_WATER_ID, FAITH_TIERS, FAITH_BLESSINGS, faithBlessingDef;
-var init_faith = __esm({
-  "../apps/mobile/src/content/faith.ts"() {
-    "use strict";
-    HOLY_WATER_ID = "HOLY_WATER";
-    FAITH_TIERS = [
-      { id: "FAITH_QUIET", name: "Quiet prayer", level: 1, water: 1, xp: 120, seconds: 30 },
-      { id: "FAITH_CANDLE", name: "Candle vigil", level: 10, water: 2, xp: 260, seconds: 30 },
-      { id: "FAITH_LITANY", name: "Sacred litany", level: 25, water: 4, xp: 560, seconds: 30 },
-      { id: "FAITH_DEVOTION", name: "Devotion", level: 40, water: 8, xp: 1200, seconds: 30 },
-      { id: "FAITH_COMMUNION", name: "Communion", level: 60, water: 16, xp: 2560, seconds: 30 },
-      { id: "FAITH_ASCENDANT", name: "Ascendant prayer", level: 80, water: 32, xp: 5440, seconds: 30 }
-    ];
-    FAITH_BLESSINGS = [
-      { id: "EMBER_VOW", name: "Ember Vow", level: 1, family: "attack", bonus: 0.02 },
-      { id: "WARD_OF_STONE", name: "Ward of Stone", level: 10, family: "defense", bonus: 0.03 },
-      { id: "WELLSPRING", name: "Wellspring", level: 15, family: "hp", bonus: 0.04 },
-      { id: "SUNFIRE_VOW", name: "Sunfire Vow", level: 40, family: "attack", bonus: 0.04 },
-      { id: "IRON_SANCTUARY", name: "Iron Sanctuary", level: 45, family: "defense", bonus: 0.06 },
-      { id: "LIVING_GRACE", name: "Living Grace", level: 50, family: "hp", bonus: 0.08 },
-      { id: "DAWN_COVENANT", name: "Dawn Covenant", level: 80, family: "attack", bonus: 0.06 },
-      { id: "ETERNAL_BASTION", name: "Eternal Bastion", level: 85, family: "defense", bonus: 0.09 },
-      { id: "UNDYING_LIGHT", name: "Undying Light", level: 90, family: "hp", bonus: 0.12 }
-    ];
-    faithBlessingDef = (id) => FAITH_BLESSINGS.find((b) => b.id === id);
-  }
-});
-
-// ../apps/mobile/src/core/faith.ts
+// apps/mobile/src/core/faith.ts
 function normalizeFaith(raw2) {
   const xp = typeof raw2?.xp === "number" && Number.isFinite(raw2.xp) ? Math.max(0, Math.min(MAX_XP, Math.floor(raw2.xp))) : 0;
   const selected2 = faithBlessingDef(raw2?.selectedBlessingId), p = raw2?.practice, tier = FAITH_TIERS.find((t) => t.id === p?.tierId);
@@ -145,7 +157,7 @@ function cancelFaithPractice(state) {
 }
 var MAX_XP, faithLevel, selectedFaithBlessing, holyWaterAvailable;
 var init_faith2 = __esm({
-  "../apps/mobile/src/core/faith.ts"() {
+  "apps/mobile/src/core/faith.ts"() {
     "use strict";
     init_faith();
     init_progression();
@@ -159,7 +171,1223 @@ var init_faith2 = __esm({
   }
 });
 
-// ../apps/mobile/src/content/classes.ts
+// apps/mobile/src/content/event-collectible-metadata.ts
+var EVENT_COLLECTIBLE_METADATA = [
+  {
+    "id": "EVT_PET_001",
+    "name": "Chronicle Wisp",
+    "type": "pet",
+    "event": "turning_of_the_age",
+    "rarity": "Rare",
+    "source": "chronicle_wisp_and_clockwork_tome.png",
+    "buff": "+3% Skill XP",
+    "owned_passive": "+0.50% account-wide owned collectible passive",
+    "role": "",
+    "description": "A floating chronicle spirit orbiting a tiny clockwork tome.",
+    "master_path": "event_extras/turning_of_the_age/pets/masters/EVT_PET_001_Chronicle_Wisp.png",
+    "runtime_path": "event_extras/turning_of_the_age/pets/runtime_96/EVT_PET_001_Chronicle_Wisp.png",
+    "event_name": "Turning of the Age",
+    "event_window": "Dec 29 \u2013 Jan 4 / January event window",
+    "rarity_rank": 3,
+    "implementation_status": "IMPLEMENT_READY",
+    "runtime_canvas": "96x96 transparent PNG",
+    "anchor": "bottom-center",
+    "safe_margin": "4 px minimum",
+    "balance_note": "Pet active bonus; owned passive remains separate."
+  },
+  {
+    "id": "EVT_PET_002",
+    "name": "Gilded Hourling",
+    "type": "pet",
+    "event": "turning_of_the_age",
+    "rarity": "Epic",
+    "source": "gilded_hourling_clockwork_griffin.png",
+    "buff": "+4% Action Speed",
+    "owned_passive": "+0.50% account-wide owned collectible passive",
+    "role": "",
+    "description": "A gilded clockwork hourling with celestial time motifs.",
+    "master_path": "event_extras/turning_of_the_age/pets/masters/EVT_PET_002_Gilded_Hourling.png",
+    "runtime_path": "event_extras/turning_of_the_age/pets/runtime_96/EVT_PET_002_Gilded_Hourling.png",
+    "event_name": "Turning of the Age",
+    "event_window": "Dec 29 \u2013 Jan 4 / January event window",
+    "rarity_rank": 4,
+    "implementation_status": "IMPLEMENT_READY",
+    "runtime_canvas": "96x96 transparent PNG",
+    "anchor": "bottom-center",
+    "safe_margin": "4 px minimum",
+    "balance_note": "Pet active bonus; owned passive remains separate."
+  },
+  {
+    "id": "EVT_UNIT_001",
+    "name": "Keeper of First Dawn",
+    "type": "companion",
+    "event": "turning_of_the_age",
+    "rarity": "Epic",
+    "source": "radiant_pixel_gryphon_guardian.png",
+    "buff": "Periodically grants Haste and a small shield to the most pressured ally.",
+    "owned_passive": "",
+    "role": "Support",
+    "description": "A radiant dawn guardian companion marking the beginning of a new age.",
+    "master_path": "event_extras/turning_of_the_age/companions/masters/EVT_UNIT_001_Keeper_of_First_Dawn.png",
+    "runtime_path": "event_extras/turning_of_the_age/companions/runtime_96/EVT_UNIT_001_Keeper_of_First_Dawn.png",
+    "event_name": "Turning of the Age",
+    "event_window": "Dec 29 \u2013 Jan 4 / January event window",
+    "rarity_rank": 4,
+    "implementation_status": "IMPLEMENT_READY",
+    "runtime_canvas": "96x96 transparent PNG",
+    "anchor": "bottom-center",
+    "safe_margin": "4 px minimum",
+    "balance_note": "Event companion should remain within normal same-rarity combat power bands; value comes from mechanic identity, not raw stat superiority."
+  },
+  {
+    "id": "EVT_PET_003",
+    "name": "Rosebud Bun",
+    "type": "pet",
+    "event": "heartbond_festival",
+    "rarity": "Uncommon",
+    "source": "romantic_rose_bunny_sprite.png",
+    "buff": "+2.5% Cooking Speed",
+    "owned_passive": "+0.50% account-wide owned collectible passive",
+    "role": "",
+    "description": "A soft festival bunny decorated with roses, ribbons and heart charms.",
+    "master_path": "event_extras/heartbond_festival/pets/masters/EVT_PET_003_Rosebud_Bun.png",
+    "runtime_path": "event_extras/heartbond_festival/pets/runtime_96/EVT_PET_003_Rosebud_Bun.png",
+    "event_name": "Heartbond Festival",
+    "event_window": "February",
+    "rarity_rank": 2,
+    "implementation_status": "IMPLEMENT_READY",
+    "runtime_canvas": "96x96 transparent PNG",
+    "anchor": "bottom-center",
+    "safe_margin": "4 px minimum",
+    "balance_note": "Pet active bonus; owned passive remains separate."
+  },
+  {
+    "id": "EVT_PET_004",
+    "name": "Heartwing",
+    "type": "pet",
+    "event": "heartbond_festival",
+    "rarity": "Epic",
+    "source": "chibi_rosegold_heartwing_bird.png",
+    "buff": "+4% Healing Effectiveness",
+    "owned_passive": "+0.50% account-wide owned collectible passive",
+    "role": "",
+    "description": "A rose-gold heart-winged festival bird.",
+    "master_path": "event_extras/heartbond_festival/pets/masters/EVT_PET_004_Heartwing.png",
+    "runtime_path": "event_extras/heartbond_festival/pets/runtime_96/EVT_PET_004_Heartwing.png",
+    "event_name": "Heartbond Festival",
+    "event_window": "February",
+    "rarity_rank": 4,
+    "implementation_status": "IMPLEMENT_READY",
+    "runtime_canvas": "96x96 transparent PNG",
+    "anchor": "bottom-center",
+    "safe_margin": "4 px minimum",
+    "balance_note": "Pet active bonus; owned passive remains separate."
+  },
+  {
+    "id": "EVT_UNIT_002",
+    "name": "Vowbound Cherub",
+    "type": "companion",
+    "event": "heartbond_festival",
+    "rarity": "Mythic",
+    "source": "cherubic_heartbow_companion.png",
+    "buff": "Links to the lowest-HP ally; reduces part of incoming damage and periodically heals the linked ally.",
+    "owned_passive": "",
+    "role": "Support",
+    "description": "A ceremonial heartbow guardian built around protection and vows.",
+    "master_path": "event_extras/heartbond_festival/companions/masters/EVT_UNIT_002_Vowbound_Cherub.png",
+    "runtime_path": "event_extras/heartbond_festival/companions/runtime_96/EVT_UNIT_002_Vowbound_Cherub.png",
+    "event_name": "Heartbond Festival",
+    "event_window": "February",
+    "rarity_rank": 5,
+    "implementation_status": "IMPLEMENT_READY",
+    "runtime_canvas": "96x96 transparent PNG",
+    "anchor": "bottom-center",
+    "safe_margin": "4 px minimum",
+    "balance_note": "Event companion should remain within normal same-rarity combat power bands; value comes from mechanic identity, not raw stat superiority."
+  },
+  {
+    "id": "EVT_PET_005",
+    "name": "Pollenpuff",
+    "type": "pet",
+    "event": "bloomwake",
+    "rarity": "Common",
+    "source": "pollenpuff_the_blooming_forest_sprite.png",
+    "buff": "+2% Herbalism Speed",
+    "owned_passive": "+0.50% account-wide owned collectible passive",
+    "role": "",
+    "description": "A fluffy blossom spirit surrounded by pollen motes.",
+    "master_path": "event_extras/bloomwake/pets/masters/EVT_PET_005_Pollenpuff.png",
+    "runtime_path": "event_extras/bloomwake/pets/runtime_96/EVT_PET_005_Pollenpuff.png",
+    "event_name": "Bloomwake",
+    "event_window": "March / April",
+    "rarity_rank": 1,
+    "implementation_status": "IMPLEMENT_READY",
+    "runtime_canvas": "96x96 transparent PNG",
+    "anchor": "bottom-center",
+    "safe_margin": "4 px minimum",
+    "balance_note": "Pet active bonus; owned passive remains separate."
+  },
+  {
+    "id": "EVT_PET_006",
+    "name": "Verdant Fawn",
+    "type": "pet",
+    "event": "bloomwake",
+    "rarity": "Rare",
+    "source": "botanical_fawn_forest_spirit.png",
+    "buff": "+3% Gathering Yield Chance",
+    "owned_passive": "+0.50% account-wide owned collectible passive",
+    "role": "",
+    "description": "A young fawn wrapped in fresh leaves and spring blossoms.",
+    "master_path": "event_extras/bloomwake/pets/masters/EVT_PET_006_Verdant_Fawn.png",
+    "runtime_path": "event_extras/bloomwake/pets/runtime_96/EVT_PET_006_Verdant_Fawn.png",
+    "event_name": "Bloomwake",
+    "event_window": "March / April",
+    "rarity_rank": 3,
+    "implementation_status": "IMPLEMENT_READY",
+    "runtime_canvas": "96x96 transparent PNG",
+    "anchor": "bottom-center",
+    "safe_margin": "4 px minimum",
+    "balance_note": "Pet active bonus; owned passive remains separate."
+  },
+  {
+    "id": "EVT_UNIT_003",
+    "name": "Bloomwarden",
+    "type": "companion",
+    "event": "bloomwake",
+    "rarity": "Epic",
+    "source": "ancient_forest_guardian_beast.png",
+    "buff": "Builds a stacking bark shield over time and periodically heals nearby allies.",
+    "owned_passive": "",
+    "role": "Tank",
+    "description": "A protective forest guardian grown from old roots and blossoms.",
+    "master_path": "event_extras/bloomwake/companions/masters/EVT_UNIT_003_Bloomwarden.png",
+    "runtime_path": "event_extras/bloomwake/companions/runtime_96/EVT_UNIT_003_Bloomwarden.png",
+    "event_name": "Bloomwake",
+    "event_window": "March / April",
+    "rarity_rank": 4,
+    "implementation_status": "IMPLEMENT_READY",
+    "runtime_canvas": "96x96 transparent PNG",
+    "anchor": "bottom-center",
+    "safe_margin": "4 px minimum",
+    "balance_note": "Event companion should remain within normal same-rarity combat power bands; value comes from mechanic identity, not raw stat superiority."
+  },
+  {
+    "id": "EVT_PET_007",
+    "name": "Laurel Lynx",
+    "type": "pet",
+    "event": "suncrest_games",
+    "rarity": "Rare",
+    "source": "laurel_crowned_lynx_champion.png",
+    "buff": "+3% Combat XP",
+    "owned_passive": "+0.50% account-wide owned collectible passive",
+    "role": "",
+    "description": "A proud festival lynx wearing a champion's laurel.",
+    "master_path": "event_extras/suncrest_games/pets/masters/EVT_PET_007_Laurel_Lynx.png",
+    "runtime_path": "event_extras/suncrest_games/pets/runtime_96/EVT_PET_007_Laurel_Lynx.png",
+    "event_name": "Suncrest Games",
+    "event_window": "June / July",
+    "rarity_rank": 3,
+    "implementation_status": "IMPLEMENT_READY",
+    "runtime_canvas": "96x96 transparent PNG",
+    "anchor": "bottom-center",
+    "safe_margin": "4 px minimum",
+    "balance_note": "Pet active bonus; owned passive remains separate."
+  },
+  {
+    "id": "EVT_PET_008",
+    "name": "Golden Gryphlet",
+    "type": "pet",
+    "event": "suncrest_games",
+    "rarity": "Mythic",
+    "source": "celestial_griffin_guardian_sprite.png",
+    "buff": "+5% Combat Skill XP",
+    "owned_passive": "+0.50% account-wide owned collectible passive",
+    "role": "",
+    "description": "A radiant golden gryphlet representing the prestige of the games.",
+    "master_path": "event_extras/suncrest_games/pets/masters/EVT_PET_008_Golden_Gryphlet.png",
+    "runtime_path": "event_extras/suncrest_games/pets/runtime_96/EVT_PET_008_Golden_Gryphlet.png",
+    "event_name": "Suncrest Games",
+    "event_window": "June / July",
+    "rarity_rank": 5,
+    "implementation_status": "IMPLEMENT_READY",
+    "runtime_canvas": "96x96 transparent PNG",
+    "anchor": "bottom-center",
+    "safe_margin": "4 px minimum",
+    "balance_note": "Pet active bonus; owned passive remains separate."
+  },
+  {
+    "id": "EVT_UNIT_004",
+    "name": "Suncrest Champion",
+    "type": "companion",
+    "event": "suncrest_games",
+    "rarity": "Mythic",
+    "source": "golden_lion_sun_guardian.png",
+    "buff": "Builds Momentum while attacking; at maximum Momentum unleashes a powerful radiant strike.",
+    "owned_passive": "",
+    "role": "Damage",
+    "description": "A solar lion champion in ceremonial tournament armor.",
+    "master_path": "event_extras/suncrest_games/companions/masters/EVT_UNIT_004_Suncrest_Champion.png",
+    "runtime_path": "event_extras/suncrest_games/companions/runtime_96/EVT_UNIT_004_Suncrest_Champion.png",
+    "event_name": "Suncrest Games",
+    "event_window": "June / July",
+    "rarity_rank": 5,
+    "implementation_status": "IMPLEMENT_READY",
+    "runtime_canvas": "96x96 transparent PNG",
+    "anchor": "bottom-center",
+    "safe_margin": "4 px minimum",
+    "balance_note": "Event companion should remain within normal same-rarity combat power bands; value comes from mechanic identity, not raw stat superiority."
+  },
+  {
+    "id": "EVT_PET_009",
+    "name": "Starwhisker",
+    "type": "pet",
+    "event": "starfall_nights",
+    "rarity": "Rare",
+    "source": "celestial_chibi_cat_companion.png",
+    "buff": "+3% Enchanting Speed",
+    "owned_passive": "+0.50% account-wide owned collectible passive",
+    "role": "",
+    "description": "A constellation-marked night cat with a comet-like tail.",
+    "master_path": "event_extras/starfall_nights/pets/masters/EVT_PET_009_Starwhisker.png",
+    "runtime_path": "event_extras/starfall_nights/pets/runtime_96/EVT_PET_009_Starwhisker.png",
+    "event_name": "Starfall Nights",
+    "event_window": "August",
+    "rarity_rank": 3,
+    "implementation_status": "IMPLEMENT_READY",
+    "runtime_canvas": "96x96 transparent PNG",
+    "anchor": "bottom-center",
+    "safe_margin": "4 px minimum",
+    "balance_note": "Pet active bonus; owned passive remains separate."
+  },
+  {
+    "id": "EVT_PET_010",
+    "name": "Comet Moth",
+    "type": "pet",
+    "event": "starfall_nights",
+    "rarity": "Epic",
+    "source": "celestial_comet_moth_companion.png",
+    "buff": "+4% relative Rare-Material Drop Chance",
+    "owned_passive": "+0.50% account-wide owned collectible passive",
+    "role": "",
+    "description": "A luminous moth whose wings resemble a moving night sky.",
+    "master_path": "event_extras/starfall_nights/pets/masters/EVT_PET_010_Comet_Moth.png",
+    "runtime_path": "event_extras/starfall_nights/pets/runtime_96/EVT_PET_010_Comet_Moth.png",
+    "event_name": "Starfall Nights",
+    "event_window": "August",
+    "rarity_rank": 4,
+    "implementation_status": "IMPLEMENT_READY",
+    "runtime_canvas": "96x96 transparent PNG",
+    "anchor": "bottom-center",
+    "safe_margin": "4 px minimum",
+    "balance_note": "Pet active bonus; owned passive remains separate."
+  },
+  {
+    "id": "EVT_UNIT_005",
+    "name": "Astral Wayfarer",
+    "type": "companion",
+    "event": "starfall_nights",
+    "rarity": "Epic",
+    "source": "celestial_wolf_mage_companion.png",
+    "buff": "Attacks build Star Marks; marked targets periodically take an Arcane burst.",
+    "owned_passive": "",
+    "role": "Damage",
+    "description": "A celestial wayfarer carrying a star-focus and astral magic.",
+    "master_path": "event_extras/starfall_nights/companions/masters/EVT_UNIT_005_Astral_Wayfarer.png",
+    "runtime_path": "event_extras/starfall_nights/companions/runtime_96/EVT_UNIT_005_Astral_Wayfarer.png",
+    "event_name": "Starfall Nights",
+    "event_window": "August",
+    "rarity_rank": 4,
+    "implementation_status": "IMPLEMENT_READY",
+    "runtime_canvas": "96x96 transparent PNG",
+    "anchor": "bottom-center",
+    "safe_margin": "4 px minimum",
+    "balance_note": "Event companion should remain within normal same-rarity combat power bands; value comes from mechanic identity, not raw stat superiority."
+  },
+  {
+    "id": "EVT_PET_011",
+    "name": "Pumpkin Piglet",
+    "type": "pet",
+    "event": "harvestwake",
+    "rarity": "Common",
+    "source": "pumpkin_piglet_s_autumn_cheer.png",
+    "buff": "+2% Cooking Speed",
+    "owned_passive": "+0.50% account-wide owned collectible passive",
+    "role": "",
+    "description": "A cheerful piglet dressed for the autumn harvest.",
+    "master_path": "event_extras/harvestwake/pets/masters/EVT_PET_011_Pumpkin_Piglet.png",
+    "runtime_path": "event_extras/harvestwake/pets/runtime_96/EVT_PET_011_Pumpkin_Piglet.png",
+    "event_name": "Harvestwake",
+    "event_window": "September",
+    "rarity_rank": 1,
+    "implementation_status": "IMPLEMENT_READY",
+    "runtime_canvas": "96x96 transparent PNG",
+    "anchor": "bottom-center",
+    "safe_margin": "4 px minimum",
+    "balance_note": "Pet active bonus; owned passive remains separate."
+  },
+  {
+    "id": "EVT_PET_012",
+    "name": "Golden Sheafling",
+    "type": "pet",
+    "event": "harvestwake",
+    "rarity": "Epic",
+    "source": "golden_harvest_spirit_mascot.png",
+    "buff": "+4% Gathering Yield Chance",
+    "owned_passive": "+0.50% account-wide owned collectible passive",
+    "role": "",
+    "description": "A golden harvest spirit formed from grain and autumn leaves.",
+    "master_path": "event_extras/harvestwake/pets/masters/EVT_PET_012_Golden_Sheafling.png",
+    "runtime_path": "event_extras/harvestwake/pets/runtime_96/EVT_PET_012_Golden_Sheafling.png",
+    "event_name": "Harvestwake",
+    "event_window": "September",
+    "rarity_rank": 4,
+    "implementation_status": "IMPLEMENT_READY",
+    "runtime_canvas": "96x96 transparent PNG",
+    "anchor": "bottom-center",
+    "safe_margin": "4 px minimum",
+    "balance_note": "Pet active bonus; owned passive remains separate."
+  },
+  {
+    "id": "EVT_UNIT_006",
+    "name": "Harvest Guardian",
+    "type": "companion",
+    "event": "harvestwake",
+    "rarity": "Epic",
+    "source": "autumn_harvest_guardian_golem.png",
+    "buff": "Stores part of damage received, then converts the stored amount into a temporary barrier.",
+    "owned_passive": "",
+    "role": "Tank",
+    "description": "A sturdy seasonal guardian built from harvest materials and autumn magic.",
+    "master_path": "event_extras/harvestwake/companions/masters/EVT_UNIT_006_Harvest_Guardian.png",
+    "runtime_path": "event_extras/harvestwake/companions/runtime_96/EVT_UNIT_006_Harvest_Guardian.png",
+    "event_name": "Harvestwake",
+    "event_window": "September",
+    "rarity_rank": 4,
+    "implementation_status": "IMPLEMENT_READY",
+    "runtime_canvas": "96x96 transparent PNG",
+    "anchor": "bottom-center",
+    "safe_margin": "4 px minimum",
+    "balance_note": "Event companion should remain within normal same-rarity combat power bands; value comes from mechanic identity, not raw stat superiority."
+  },
+  {
+    "id": "EVT_PET_013",
+    "name": "Gloomkin",
+    "type": "pet",
+    "event": "veilbreak",
+    "rarity": "Rare",
+    "source": "mystical_lantern_void_kitten.png",
+    "buff": "+3% relative Combat Drop Chance",
+    "owned_passive": "+0.50% account-wide owned collectible passive",
+    "role": "",
+    "description": "A playful void kitten carrying a small spectral lantern.",
+    "master_path": "event_extras/veilbreak/pets/masters/EVT_PET_013_Gloomkin.png",
+    "runtime_path": "event_extras/veilbreak/pets/runtime_96/EVT_PET_013_Gloomkin.png",
+    "event_name": "The Veilbreak",
+    "event_window": "October",
+    "rarity_rank": 3,
+    "implementation_status": "IMPLEMENT_READY",
+    "runtime_canvas": "96x96 transparent PNG",
+    "anchor": "bottom-center",
+    "safe_margin": "4 px minimum",
+    "balance_note": "Pet active bonus; owned passive remains separate."
+  },
+  {
+    "id": "EVT_PET_014",
+    "name": "Lantern Mimic",
+    "type": "pet",
+    "event": "veilbreak",
+    "rarity": "Epic",
+    "source": "chibi_lantern_mimic_sprite.png",
+    "buff": "+4% Dungeon Reward Quantity Chance",
+    "owned_passive": "+0.50% account-wide owned collectible passive",
+    "role": "",
+    "description": "A compact mimic filled with ghost-fire and lantern light.",
+    "master_path": "event_extras/veilbreak/pets/masters/EVT_PET_014_Lantern_Mimic.png",
+    "runtime_path": "event_extras/veilbreak/pets/runtime_96/EVT_PET_014_Lantern_Mimic.png",
+    "event_name": "The Veilbreak",
+    "event_window": "October",
+    "rarity_rank": 4,
+    "implementation_status": "IMPLEMENT_READY",
+    "runtime_canvas": "96x96 transparent PNG",
+    "anchor": "bottom-center",
+    "safe_margin": "4 px minimum",
+    "balance_note": "Pet active bonus; owned passive remains separate."
+  },
+  {
+    "id": "EVT_UNIT_007",
+    "name": "Veil Hound",
+    "type": "companion",
+    "event": "veilbreak",
+    "rarity": "Epic",
+    "source": "spectral_purple_rune_hellhound.png",
+    "buff": "Deals bonus Shadow damage against enemies affected by player-applied debuffs.",
+    "owned_passive": "",
+    "role": "Damage",
+    "description": "A spectral rune hound that hunts weakened targets.",
+    "master_path": "event_extras/veilbreak/companions/masters/EVT_UNIT_007_Veil_Hound.png",
+    "runtime_path": "event_extras/veilbreak/companions/runtime_96/EVT_UNIT_007_Veil_Hound.png",
+    "event_name": "The Veilbreak",
+    "event_window": "October",
+    "rarity_rank": 4,
+    "implementation_status": "IMPLEMENT_READY",
+    "runtime_canvas": "96x96 transparent PNG",
+    "anchor": "bottom-center",
+    "safe_margin": "4 px minimum",
+    "balance_note": "Event companion should remain within normal same-rarity combat power bands; value comes from mechanic identity, not raw stat superiority."
+  },
+  {
+    "id": "EVT_UNIT_008",
+    "name": "Hollow Knightling",
+    "type": "companion",
+    "event": "veilbreak",
+    "rarity": "Mythic",
+    "source": "spectral_violet_knightling_sprite.png",
+    "buff": "Gains defensive scaling as HP falls and a once-per-battle spectral barrier at critical HP.",
+    "owned_passive": "",
+    "role": "Tank",
+    "description": "A compact void-forged knightling burning with violet spectral fire.",
+    "master_path": "event_extras/veilbreak/companions/masters/EVT_UNIT_008_Hollow_Knightling.png",
+    "runtime_path": "event_extras/veilbreak/companions/runtime_96/EVT_UNIT_008_Hollow_Knightling.png",
+    "event_name": "The Veilbreak",
+    "event_window": "October",
+    "rarity_rank": 5,
+    "implementation_status": "IMPLEMENT_READY",
+    "runtime_canvas": "96x96 transparent PNG",
+    "anchor": "bottom-center",
+    "safe_margin": "4 px minimum",
+    "balance_note": "Event companion should remain within normal same-rarity combat power bands; value comes from mechanic identity, not raw stat superiority."
+  },
+  {
+    "id": "EVT_PET_015",
+    "name": "Snowbell Pup",
+    "type": "pet",
+    "event": "frostfall_festival",
+    "rarity": "Common",
+    "source": "chibi_winter_puppy_sprite.png",
+    "buff": "+2% Fishing Speed",
+    "owned_passive": "+0.50% account-wide owned collectible passive",
+    "role": "",
+    "description": "A fluffy winter pup with a bell collar and scarf.",
+    "master_path": "event_extras/frostfall_festival/pets/masters/EVT_PET_015_Snowbell_Pup.png",
+    "runtime_path": "event_extras/frostfall_festival/pets/runtime_96/EVT_PET_015_Snowbell_Pup.png",
+    "event_name": "Frostfall Festival",
+    "event_window": "December",
+    "rarity_rank": 1,
+    "implementation_status": "IMPLEMENT_READY",
+    "runtime_canvas": "96x96 transparent PNG",
+    "anchor": "bottom-center",
+    "safe_margin": "4 px minimum",
+    "balance_note": "Pet active bonus; owned passive remains separate."
+  },
+  {
+    "id": "EVT_PET_016",
+    "name": "Gift Mimic",
+    "type": "pet",
+    "event": "frostfall_festival",
+    "rarity": "Rare",
+    "source": "festive_red_gift_mimic_sprite.png",
+    "buff": "+3% Crafting Material Preservation Chance",
+    "owned_passive": "+0.50% account-wide owned collectible passive",
+    "role": "",
+    "description": "A festive present mimic with a ribbon bow and mischievous expression.",
+    "master_path": "event_extras/frostfall_festival/pets/masters/EVT_PET_016_Gift_Mimic.png",
+    "runtime_path": "event_extras/frostfall_festival/pets/runtime_96/EVT_PET_016_Gift_Mimic.png",
+    "event_name": "Frostfall Festival",
+    "event_window": "December",
+    "rarity_rank": 3,
+    "implementation_status": "IMPLEMENT_READY",
+    "runtime_canvas": "96x96 transparent PNG",
+    "anchor": "bottom-center",
+    "safe_margin": "4 px minimum",
+    "balance_note": "Pet active bonus; owned passive remains separate."
+  },
+  {
+    "id": "EVT_PET_017",
+    "name": "Aurora Fox",
+    "type": "pet",
+    "event": "frostfall_festival",
+    "rarity": "Mythic",
+    "source": "aurora_frost_fox_sprite.png",
+    "buff": "+5% Offline Skill XP",
+    "owned_passive": "+0.50% account-wide owned collectible passive",
+    "role": "",
+    "description": "A luminous frost fox wrapped in aurora ribbons and ice crystal ornaments.",
+    "master_path": "event_extras/frostfall_festival/pets/masters/EVT_PET_017_Aurora_Fox.png",
+    "runtime_path": "event_extras/frostfall_festival/pets/runtime_96/EVT_PET_017_Aurora_Fox.png",
+    "event_name": "Frostfall Festival",
+    "event_window": "December",
+    "rarity_rank": 5,
+    "implementation_status": "IMPLEMENT_READY",
+    "runtime_canvas": "96x96 transparent PNG",
+    "anchor": "bottom-center",
+    "safe_margin": "4 px minimum",
+    "balance_note": "Pet active bonus; owned passive remains separate."
+  },
+  {
+    "id": "EVT_UNIT_009",
+    "name": "Frostbell Herald",
+    "type": "companion",
+    "event": "frostfall_festival",
+    "rarity": "Epic",
+    "source": "snowbell_winter_mage_mascot.png",
+    "buff": "Rotates between Haste, Ward, and regeneration bell auras.",
+    "owned_passive": "",
+    "role": "Support",
+    "description": "A tiny frost-bell herald that supports allies through rhythmic winter magic.",
+    "master_path": "event_extras/frostfall_festival/companions/masters/EVT_UNIT_009_Frostbell_Herald.png",
+    "runtime_path": "event_extras/frostfall_festival/companions/runtime_96/EVT_UNIT_009_Frostbell_Herald.png",
+    "event_name": "Frostfall Festival",
+    "event_window": "December",
+    "rarity_rank": 4,
+    "implementation_status": "IMPLEMENT_READY",
+    "runtime_canvas": "96x96 transparent PNG",
+    "anchor": "bottom-center",
+    "safe_margin": "4 px minimum",
+    "balance_note": "Event companion should remain within normal same-rarity combat power bands; value comes from mechanic identity, not raw stat superiority."
+  },
+  {
+    "id": "EVT_PET_018",
+    "name": "Ledger Ferret",
+    "type": "pet",
+    "event": "merchant_guild_festival",
+    "rarity": "Rare",
+    "source": "pixel_merchant_ferret_with_treasure_satchel.png",
+    "buff": "+3% Crafting Speed",
+    "owned_passive": "+0.50% account-wide owned collectible passive",
+    "role": "",
+    "description": "A clever merchant ferret carrying ledgers, seals and coin charms.",
+    "master_path": "event_extras/merchant_guild_festival/pets/masters/EVT_PET_018_Ledger_Ferret.png",
+    "runtime_path": "event_extras/merchant_guild_festival/pets/runtime_96/EVT_PET_018_Ledger_Ferret.png",
+    "event_name": "Merchant / Guild Festival",
+    "event_window": "November",
+    "rarity_rank": 3,
+    "implementation_status": "IMPLEMENT_READY",
+    "runtime_canvas": "96x96 transparent PNG",
+    "anchor": "bottom-center",
+    "safe_margin": "4 px minimum",
+    "balance_note": "Pet active bonus; owned passive remains separate."
+  },
+  {
+    "id": "EVT_PET_019",
+    "name": "Guildcrest Drakelet",
+    "type": "pet",
+    "event": "merchant_guild_festival",
+    "rarity": "Epic",
+    "source": "royal_guild_dragon_sprite.png",
+    "buff": "+4% Guild Project Contribution",
+    "owned_passive": "+0.50% account-wide owned collectible passive",
+    "role": "",
+    "description": "A blue-and-gold guild drakelet wearing civic heraldry.",
+    "master_path": "event_extras/merchant_guild_festival/pets/masters/EVT_PET_019_Guildcrest_Drakelet.png",
+    "runtime_path": "event_extras/merchant_guild_festival/pets/runtime_96/EVT_PET_019_Guildcrest_Drakelet.png",
+    "event_name": "Merchant / Guild Festival",
+    "event_window": "November",
+    "rarity_rank": 4,
+    "implementation_status": "IMPLEMENT_READY",
+    "runtime_canvas": "96x96 transparent PNG",
+    "anchor": "bottom-center",
+    "safe_margin": "4 px minimum",
+    "balance_note": "Pet active bonus; owned passive remains separate."
+  },
+  {
+    "id": "EVT_UNIT_010",
+    "name": "Caravan Sentinel",
+    "type": "companion",
+    "event": "merchant_guild_festival",
+    "rarity": "Epic",
+    "source": "pixel_art_caravan_guardian_beast.png",
+    "buff": "Adaptive Support: the active buff changes according to party composition.",
+    "owned_passive": "",
+    "role": "Flexible",
+    "description": "A heavily equipped caravan guardian built for long expeditions and escort duty.",
+    "master_path": "event_extras/merchant_guild_festival/companions/masters/EVT_UNIT_010_Caravan_Sentinel.png",
+    "runtime_path": "event_extras/merchant_guild_festival/companions/runtime_96/EVT_UNIT_010_Caravan_Sentinel.png",
+    "event_name": "Merchant / Guild Festival",
+    "event_window": "November",
+    "rarity_rank": 4,
+    "implementation_status": "IMPLEMENT_READY",
+    "runtime_canvas": "96x96 transparent PNG",
+    "anchor": "bottom-center",
+    "safe_margin": "4 px minimum",
+    "balance_note": "Event companion should remain within normal same-rarity combat power bands; value comes from mechanic identity, not raw stat superiority."
+  }
+];
+
+// apps/mobile/src/content/event-collectible-content.ts
+var targetById = {
+  EVT_PET_001: "skillXp",
+  EVT_PET_002: "actionSpeed",
+  EVT_PET_003: "cookingSpeed",
+  EVT_PET_004: "healingEffectiveness",
+  EVT_PET_005: "herbalismSpeed",
+  EVT_PET_006: "gatheringYield",
+  EVT_PET_007: "characterXp",
+  EVT_PET_008: "skillXp",
+  EVT_PET_009: "craftingSpeed",
+  EVT_PET_010: "dropChance",
+  EVT_PET_011: "cookingSpeed",
+  EVT_PET_012: "gatheringYield",
+  EVT_PET_013: "dropChance",
+  EVT_PET_014: "dungeonReward",
+  EVT_PET_015: "fishingSpeed",
+  EVT_PET_016: "materialPreservation",
+  EVT_PET_017: "skillXp",
+  EVT_PET_018: "craftingSpeed",
+  EVT_PET_019: "guildContribution"
+};
+var activeBps = (buff) => Math.round(Number(buff.match(/\+(\d+(?:\.\d+)?)%/)?.[1] ?? 2) * 100);
+var EVENT_PET_COLLECTIBLES = EVENT_COLLECTIBLE_METADATA.filter((row) => row.type === "pet").map((row) => ({
+  id: row.id,
+  kind: "pet",
+  name: row.name,
+  bonusFamilyId: row.id,
+  target: targetById[row.id] ?? "skillXp",
+  ownedBps: 50,
+  activeBps: activeBps(row.buff),
+  collectionGroup: "event",
+  source: `${row.event_name} \xB7 ${row.event_window}`,
+  event: row.event,
+  rarity: row.rarity,
+  buff: row.buff,
+  description: row.description
+}));
+
+// apps/mobile/src/content/core-pets.ts
+var pet = (id, name, region, target2, nativeSize, activeBps2 = 200, source) => ({
+  id,
+  kind: "pet",
+  name,
+  bonusFamilyId: id,
+  target: target2,
+  ownedBps: 50,
+  activeBps: activeBps2,
+  source: source ?? `${region} pet collection`,
+  collectionGroup: "core",
+  region,
+  nativeSize,
+  rarity: nativeSize === 64 ? "Epic" : void 0,
+  description: `A permanent ${region} pet collectible.`
+});
+var CORE_PET_COLLECTIBLES = [
+  pet("PET_001", "Pebblemole", "Asterfall", "gatheringYield", 48, 200, "Rare discovery while mining Copper Veins"),
+  pet("PET_002", "Cinderchip", "Asterfall", "craftingSpeed", 48, 200, "Rare discovery while mining Aster-Iron Veins"),
+  pet("PET_003", "Twiglet", "Asterfall", "gatheringYield", 48, 200, "Rare discovery while cutting Greenwood Trees"),
+  pet("PET_004", "Mossback Pup", "Asterfall", "characterXp", 48, 200, "Rare drop from Ironwood Wolf"),
+  pet("PET_005", "Silverfin", "Asterfall", "fishingSpeed", 48, 200, "Rare discovery while fishing Silverbrook Shoals"),
+  pet("PET_006", "Lantern Carp Fry", "Asterfall", "fishingSpeed", 48, 200, "Rare discovery while fishing Oathscale Pools"),
+  pet("PET_007", "Briarbud", "Asterfall", "herbalismSpeed", 48, 200, "Rare discovery while gathering Ironbloom"),
+  pet("PET_008", "Gloamcap", "Asterfall", "herbalismSpeed", 48, 200, "Rare discovery while gathering Cavelichen"),
+  pet("PET_009", "Tusklet", "Asterfall", "dropChance", 48, 200, "Rare drop from Roadside Boar"),
+  pet("PET_010", "Redfeather Chick", "Asterfall", "cookingSpeed", 48, 200, "Rare discovery while scouting the Greenfields"),
+  pet("PET_011", "Forge Spark", "Asterfall", "craftingSpeed", 48, 200, "Rare discovery while mining Oathstone Seams"),
+  pet("PET_012", "Mini Wretch", "Asterfall", "dropChance", 48, 200, "Rare drop from Lantern Wretch"),
+  pet("PET_013", "Mapwing", "Asterfall", "skillXp", 48, 200, "Rare discovery while surveying the King's Road"),
+  pet("PET_014", "Pack Mimic", "Asterfall", "materialPreservation", 48, 200, "Rare discovery while surveying the Old Mines"),
+  pet("PET_015", "Coinmouse", "Asterfall", "gold", 48, 200, "Rare discovery while mapping Silverbrook"),
+  pet("PET_016", "Echo Wisp", "Asterfall", "actionSpeed", 48, 200, "Rare drop from Echo Bat"),
+  pet("PET_017", "Campfox", "Asterfall", "skillXp", 48, 200, "Rare discovery while tracing Ironwood paths"),
+  pet("PET_018", "Oathling", "Asterfall", "defense", 64, 300, "0.05% drop from Oathglass Revenant"),
+  pet("PET_019", "Duneling", "Sunscar", "gatheringYield", 48, 200, "Rare drop from Sunscar Scorpion"),
+  pet("PET_020", "Mirage Minnow", "Sunscar", "fishingSpeed", 48, 200, "Rare discovery while charting the Sunscar glasslands"),
+  pet("PET_021", "Sunscarab", "Sunscar", "craftingSpeed", 48, 200, "Rare discovery while gathering Sunscale Bloom"),
+  pet("PET_022", "Tiny Sphinx", "Sunscar", "skillXp", 64, 300, "Rare drop from Dune Oracle"),
+  pet("PET_023", "Tyrant Larva", "Sunscar", "characterXp", 64, 300, "0.05% drop from Glassbound Sentinel"),
+  pet("PET_024", "Snowpuff Hare", "Frostmarch", "actionSpeed", 48, 200, "Rare discovery while following the Frostmarch bells"),
+  pet("PET_025", "Rimecap", "Frostmarch", "herbalismSpeed", 48, 200, "Rare discovery while gathering Frostbell Flowers"),
+  pet("PET_026", "Bellfin Fry", "Frostmarch", "fishingSpeed", 48, 200, "Rare drop from Frostwolf"),
+  pet("PET_027", "Choir Pebble", "Frostmarch", "defense", 64, 300, "Rare drop from Bellwraith"),
+  pet("PET_028", "Wyrmling Flake", "Frostmarch", "skillXp", 64, 300, "0.05% drop from Choir Hunter"),
+  pet("PET_029", "Coalbug", "Ashlands", "craftingSpeed", 48, 200, "Rare drop from Blackglass Mireling"),
+  pet("PET_030", "Sootling", "Ashlands", "materialPreservation", 48, 200, "Rare discovery while gathering Ashen Myrrh"),
+  pet("PET_031", "Ember Eel Fry", "Ashlands", "fishingSpeed", 48, 200, "Rare discovery while reading the Ashlands smoke"),
+  pet("PET_032", "Forge Imp", "Ashlands", "craftingSpeed", 64, 300, "Rare drop from Cinder Titan"),
+  pet("PET_033", "Cinder Crownling", "Ashlands", "dropChance", 64, 300, "0.05% drop from Ashen Revenant")
+];
+var CORE_PET_IDS = new Set(CORE_PET_COLLECTIBLES.map((row) => row.id));
+function validateCorePetCatalog(catalog2 = CORE_PET_COLLECTIBLES) {
+  const expected = Array.from({ length: 33 }, (_, index) => `PET_${String(index + 1).padStart(3, "0")}`);
+  const actual = catalog2.map((row) => row.id);
+  if (actual.length !== 33) throw new Error(`Canonical core pet catalog must contain 33 pets, got ${actual.length}.`);
+  if (actual.join("|") !== expected.join("|")) throw new Error("Canonical core pet IDs must remain PET_001 through PET_033 in order.");
+  for (const row of catalog2) {
+    if (row.kind !== "pet" || row.collectionGroup !== "core" || row.ownedBps !== 50 || row.activeBps < 200) throw new Error(`Invalid core pet ${row.id}.`);
+  }
+}
+validateCorePetCatalog();
+
+// apps/mobile/src/content/collectibles.ts
+var entry = (id, kind, name, target2, source, activeBps2 = 200, requiredCharacterLevel, collectionGroup = "profile") => ({ id, kind, name, bonusFamilyId: id, target: target2, ownedBps: 50, activeBps: activeBps2, source, requiredCharacterLevel, collectionGroup });
+var LEGACY_PET_COLLECTIBLES = [
+  entry("pet_harvest_fox", "pet", "Harvest Fox", "gold", "Harvestwake reputation milestone", 200, void 0, "legacy"),
+  entry("pet_field_mouse", "pet", "Field Mouse", "skillXp", "Harvestwake event shop", 250, void 0, "legacy"),
+  entry("pet_straw_sparrow", "pet", "Straw Sparrow", "gatheringYield", "Golden Field Feather discovery", 200, void 0, "legacy"),
+  entry("pet_amber_owl", "pet", "Amber Owl", "dropChance", "Harvestwake Amber Pantry", 400, void 0, "legacy"),
+  entry("pet:feral_rat", "pet", "Feral Rat", "attack", "Existing legacy pet unlock", 200, void 0, "legacy"),
+  entry("pet:emberhound", "pet", "Emberhound", "attack", "Existing legacy pet unlock", 300, void 0, "legacy"),
+  entry("pet:forgebound_mooncat", "pet", "Forgebound Mooncat", "attack", "Existing legacy pet unlock", 500, void 0, "legacy")
+];
+var PROFILE_COLLECTIBLES = [
+  entry("ironwood-dawn", "background", "Ironwood Dawn", "skillXp", "Reach character level 10", 200, 10, "profile"),
+  entry("silverbrook-mist", "background", "Silverbrook Mist", "gatheringYield", "Reach character level 20", 200, 20, "profile"),
+  entry("oathglass-hall", "background", "Oathglass Hall", "hp", "Reach character level 25", 200, 25, "profile"),
+  entry("bg_harvestwake", "background", "Golden Fields", "gold", "Harvestwake event shop", 200, void 0, "event"),
+  entry("bg_grand_storehouse", "background", "Grand Storehouse", "gatheringYield", "Harvestwake reputation milestone", 200, void 0, "event"),
+  entry("bg_spirit_storehouse", "background", "Spirit Storehouse", "defense", "Guardian Lantern discovery", 200, void 0, "event"),
+  entry("frame_amber_vine", "border", "Amber Vine", "defense", "Harvestwake reputation milestone", 200, void 0, "event"),
+  entry("frame_wheat_crown", "border", "Wheat Crown", "gold", "Harvestwake event shop", 200, void 0, "event")
+];
+var COLLECTIBLES = [
+  ...CORE_PET_COLLECTIBLES,
+  ...EVENT_PET_COLLECTIBLES,
+  ...LEGACY_PET_COLLECTIBLES,
+  ...PROFILE_COLLECTIBLES
+];
+var COLLECTIBLE_TARGET_LABELS = { hp: "Maximum HP", attack: "Attack", defense: "Defense", skillXp: "Skill XP", characterXp: "Combat XP", gold: "Ordinary combat Gold", gatheringYield: "Ordinary gathered materials", dropChance: "Ordinary drop chance", actionSpeed: "Action speed", cookingSpeed: "Cooking speed", herbalismSpeed: "Herbalism speed", healingEffectiveness: "Healing effectiveness", craftingSpeed: "Crafting speed", dungeonReward: "Dungeon reward quantity", fishingSpeed: "Fishing speed", materialPreservation: "Material preservation", guildContribution: "Guild contribution" };
+function validateCollectibleCatalog(catalog2 = COLLECTIBLES) {
+  const ids2 = /* @__PURE__ */ new Set();
+  for (const row of catalog2) {
+    if (!row.id || ids2.has(row.id) || row.ownedBps !== 50 || row.activeBps < 200 || !COLLECTIBLE_TARGET_LABELS[row.target]) throw new Error(`Invalid collectible ${row.id}`);
+    if (row.kind === "pet" && !row.collectionGroup) throw new Error(`Pet ${row.id} is missing collectionGroup.`);
+    ids2.add(row.id);
+  }
+}
+validateCollectibleCatalog();
+
+// apps/mobile/src/content/permanent-boosts.ts
+var SKIN_PERMANENT_BOOSTS = {
+  starting: {
+    id: "starting",
+    name: "Campaign skin",
+    combatSpeedMultiplier: 1,
+    combatPowerMultiplier: 1,
+    gatheringSpeedMultiplier: 1,
+    gatheringYieldMultiplier: 1,
+    characterXpMultiplier: 1,
+    skillXpMultiplier: 1,
+    goldMultiplier: 1,
+    dropChanceMultiplier: 1,
+    incomingDamageMultiplier: 1
+  }
+};
+var petBoostFor = (pet2) => {
+  const amount = 1 + pet2.activeBps / 1e4;
+  const base = { id: pet2.id, name: pet2.name };
+  switch (pet2.target) {
+    case "attack":
+      return { ...base, combatPowerMultiplier: amount };
+    case "defense":
+    case "hp":
+      return { ...base, incomingDamageMultiplier: 2 - amount };
+    case "skillXp":
+      return { ...base, skillXpMultiplier: amount };
+    case "characterXp":
+      return { ...base, characterXpMultiplier: amount };
+    case "gold":
+      return { ...base, goldMultiplier: amount };
+    case "dropChance":
+      return { ...base, dropChanceMultiplier: amount };
+    case "dungeonReward":
+      return { ...base, dungeonRewardMultiplier: amount };
+    case "actionSpeed":
+      return { ...base, combatSpeedMultiplier: amount, gatheringSpeedMultiplier: amount };
+    case "gatheringYield":
+      return { ...base, gatheringYieldMultiplier: amount };
+    case "fishingSpeed":
+      return { ...base, fishingSpeedMultiplier: amount };
+    case "herbalismSpeed":
+      return { ...base, herbalismSpeedMultiplier: amount };
+    case "cookingSpeed":
+      return { ...base, cookingSpeedMultiplier: amount };
+    case "craftingSpeed":
+      return { ...base, craftingSpeedMultiplier: amount };
+    case "materialPreservation":
+      return { ...base, materialPreservationMultiplier: amount };
+    case "healingEffectiveness":
+      return { ...base, healingEffectivenessMultiplier: amount };
+    case "guildContribution":
+      return { ...base, guildContributionMultiplier: amount };
+    default:
+      return base;
+  }
+};
+var PET_PERMANENT_BOOSTS = Object.fromEntries(
+  COLLECTIBLES.filter((row) => row.kind === "pet").map((pet2) => [pet2.id, petBoostFor(pet2)])
+);
+var BUYABLE_PERMANENT_BOOSTS = {
+  "boost:combat_focus": {
+    id: "boost:combat_focus",
+    name: "Combat Focus Sigil",
+    combatSpeedMultiplier: 1.08,
+    combatPowerMultiplier: 1.06,
+    incomingDamageMultiplier: 0.99,
+    skillXpMultiplier: 1,
+    characterXpMultiplier: 1,
+    goldMultiplier: 1.02,
+    dropChanceMultiplier: 1.02
+  },
+  "boost:craftsman_charm": {
+    id: "boost:craftsman_charm",
+    name: "Craftsman Charm",
+    combatSpeedMultiplier: 1,
+    combatPowerMultiplier: 1,
+    gatheringSpeedMultiplier: 1.06,
+    skillXpMultiplier: 1.08,
+    characterXpMultiplier: 1,
+    goldMultiplier: 1.03,
+    dropChanceMultiplier: 1.01,
+    incomingDamageMultiplier: 1
+  },
+  "boost:prospector_ledger": {
+    id: "boost:prospector_ledger",
+    name: "Prospector Ledger",
+    gatheringSpeedMultiplier: 1.08,
+    characterXpMultiplier: 1,
+    skillXpMultiplier: 1.04,
+    goldMultiplier: 1.06,
+    dropChanceMultiplier: 1.05,
+    combatSpeedMultiplier: 1,
+    combatPowerMultiplier: 1,
+    incomingDamageMultiplier: 1
+  },
+  "boost:wardcaller_banner": {
+    id: "boost:wardcaller_banner",
+    name: "Wardcaller Banner",
+    characterXpMultiplier: 1.06,
+    combatSpeedMultiplier: 1.02,
+    combatPowerMultiplier: 1.02,
+    incomingDamageMultiplier: 0.985,
+    gatheringSpeedMultiplier: 1.03,
+    skillXpMultiplier: 1.02,
+    goldMultiplier: 1.025,
+    dropChanceMultiplier: 1.02
+  }
+};
+var PERMANENT_BOOSTS_BASE = {
+  none: { id: "none", name: "No permanent boosts" },
+  ...SKIN_PERMANENT_BOOSTS,
+  ...PET_PERMANENT_BOOSTS,
+  ...BUYABLE_PERMANENT_BOOSTS
+};
+
+// apps/mobile/src/core/permanent-boosts.ts
+init_faith2();
+
+// apps/mobile/src/core/feature-unlocks.ts
+var EARLY_FEATURE_UNLOCKS = {
+  workingToward: { questId: "QST_002", title: "Working Toward", requirement: "Complete First Blood, First Skill", description: "Goal planning appears after the player has completed the first guided skill milestone." },
+  dailySupplies: { questId: "QST_002", title: "Daily Supplies", requirement: "Complete First Blood, First Skill", description: "The daily reward track appears after the player understands basic skilling." },
+  events: { questId: "QST_002", title: "Events", requirement: "Complete First Blood, First Skill", description: "Live events appear early enough that new players do not miss limited-time content." },
+  pets: { questId: "QST_003", title: "Pets", requirement: "Complete A Hound's Trail", description: "Pets unlock after you have learned the basics of combat, gathering and early regional progression." },
+  accountBonuses: { questId: "QST_003", title: "Account Bonuses", requirement: "Complete A Hound's Trail", description: "Account-wide bonus summaries appear alongside the first collectible system." },
+  friends: { questId: "QST_003", title: "Friends", requirement: "Complete A Hound's Trail", description: "Friends unlock once the first regional combat loop has been completed." },
+  companions: { questId: "QST_005", title: "Companions", requirement: "Complete Into Ironwood", description: "The Companion Sanctuary unlocks after reaching Level 10 and entering deeper Ironwood progression." },
+  social: { questId: "QST_005", title: "Social & Parties", requirement: "Complete Into Ironwood", description: "Party recruitment and cooperative social systems unlock after the core solo loop is understood." },
+  contracts: { questId: "QST_005", title: "Contract Board", requirement: "Complete Into Ironwood", description: "Weekly and cooperative contract planning unlocks with deeper regional progression." },
+  masteryHall: { questId: "QST_005", title: "Mastery Hall", requirement: "Complete Into Ironwood", description: "Long-term profession mastery records appear once the player has enough skill actions to make the system meaningful." },
+  guild: { questId: "QST_005", title: "Guilds", requirement: "Reach Level 10 and complete Into Ironwood", description: "Guilds unlock at Level 10, once the core solo loop is established and social progression becomes useful." },
+  rankings: { questId: "QST_011", title: "Rankings", requirement: "Reach Level 20 and complete Place Among Guilds", description: "Prestige rankings unlock later at Level 20, after the player has had time to establish their character and social identity." }
+};
+function earlyFeatureUnlocked(state, id) {
+  const rule = EARLY_FEATURE_UNLOCKS[id];
+  return state.quests.some((row) => row.questId === rule.questId && row.status === "claimed");
+}
+
+// apps/mobile/src/core/collectibles.ts
+var ids = (state, kind) => kind === "pet" ? state.account.unlockedCosmeticPetIds ?? [] : kind === "background" ? state.account.unlockedProfileBackgroundIds ?? [] : state.account.unlockedProfileBorderIds ?? [];
+var selected = (state, kind) => kind === "pet" ? state.character?.selectedCosmeticPetId : kind === "background" ? state.character?.profileBackgroundId : state.character?.profileBorderId;
+function unlockCollectible(state, id) {
+  const row = COLLECTIBLES.find((item) => item.id === id);
+  if (!row) throw new Error("Unknown collectible.");
+  const key = row.kind === "pet" ? "unlockedCosmeticPetIds" : row.kind === "background" ? "unlockedProfileBackgroundIds" : "unlockedProfileBorderIds";
+  const owned = state.account[key] ?? [];
+  return owned.includes(id) ? state : { ...state, account: { ...state.account, [key]: [...owned, id] } };
+}
+function collectionBonusBreakdown(state, catalog2 = COLLECTIBLES) {
+  const rows2 = /* @__PURE__ */ new Map();
+  for (const row of catalog2) {
+    const owned = ids(state, row.kind).includes(row.id), active2 = selected(state, row.kind) === row.id;
+    if (!owned) continue;
+    const bucket = rows2.get(row.target) ?? { owned: /* @__PURE__ */ new Set(), active: /* @__PURE__ */ new Set(), ownedRaw: 0, activeRaw: 0 };
+    if (!bucket.owned.has(row.bonusFamilyId)) {
+      bucket.owned.add(row.bonusFamilyId);
+      bucket.ownedRaw += row.ownedBps;
+    }
+    if (active2 && !bucket.active.has(row.bonusFamilyId)) {
+      bucket.active.add(row.bonusFamilyId);
+      bucket.activeRaw += row.activeBps;
+    }
+    rows2.set(row.target, bucket);
+  }
+  return [...rows2].map(([target2, row]) => {
+    const cap = target2 === "hp" || target2 === "attack" || target2 === "defense" ? 500 : 800;
+    const ownedApplied = Math.min(cap, row.ownedRaw), activeApplied = Math.min(cap, row.activeRaw), total = Math.min(target2 === "hp" || target2 === "attack" || target2 === "defense" ? 1e3 : 1500, ownedApplied + activeApplied);
+    return { target: target2, ownedRawBps: row.ownedRaw, ownedAppliedBps: ownedApplied, activeRawBps: row.activeRaw, activeAppliedBps: activeApplied, appliedBps: total, suppressedBps: row.ownedRaw + row.activeRaw - total };
+  });
+}
+
+// apps/mobile/src/core/permanent-boosts.ts
+var BASE = {
+  attackMultiplier: 1,
+  combatSpeedMultiplier: 1,
+  combatPowerMultiplier: 1,
+  gatheringSpeedMultiplier: 1,
+  gatheringYieldMultiplier: 1,
+  fishingSpeedMultiplier: 1,
+  herbalismSpeedMultiplier: 1,
+  cookingSpeedMultiplier: 1,
+  craftingSpeedMultiplier: 1,
+  materialPreservationMultiplier: 1,
+  healingEffectivenessMultiplier: 1,
+  dungeonRewardMultiplier: 1,
+  guildContributionMultiplier: 1,
+  incomingDamageMultiplier: 1,
+  skillXpMultiplier: 1,
+  characterXpMultiplier: 1,
+  goldMultiplier: 1,
+  dropChanceMultiplier: 1
+};
+function normalizeMultiplier(value) {
+  if (!Number.isFinite(value)) return 1;
+  if (value < 0.75) return 0.75;
+  if (value > 2) return 2;
+  return value;
+}
+function asMultiplier(value) {
+  return normalizeMultiplier(value ?? 1);
+}
+function multiply(base, value) {
+  return normalizeMultiplier(base * value);
+}
+function readMultipliers(definitionId, map) {
+  if (!definitionId || !map[definitionId]) return BASE;
+  const d = map[definitionId];
+  return {
+    attackMultiplier: asMultiplier(d.combatPowerMultiplier),
+    combatSpeedMultiplier: asMultiplier(d.combatSpeedMultiplier),
+    combatPowerMultiplier: asMultiplier(d.combatPowerMultiplier),
+    gatheringSpeedMultiplier: asMultiplier(d.gatheringSpeedMultiplier),
+    gatheringYieldMultiplier: asMultiplier(d.gatheringYieldMultiplier),
+    fishingSpeedMultiplier: asMultiplier(d.fishingSpeedMultiplier),
+    herbalismSpeedMultiplier: asMultiplier(d.herbalismSpeedMultiplier),
+    cookingSpeedMultiplier: asMultiplier(d.cookingSpeedMultiplier),
+    craftingSpeedMultiplier: asMultiplier(d.craftingSpeedMultiplier),
+    materialPreservationMultiplier: asMultiplier(d.materialPreservationMultiplier),
+    healingEffectivenessMultiplier: asMultiplier(d.healingEffectivenessMultiplier),
+    dungeonRewardMultiplier: asMultiplier(d.dungeonRewardMultiplier),
+    guildContributionMultiplier: asMultiplier(d.guildContributionMultiplier),
+    incomingDamageMultiplier: asMultiplier(d.incomingDamageMultiplier),
+    skillXpMultiplier: asMultiplier(d.skillXpMultiplier),
+    characterXpMultiplier: asMultiplier(d.characterXpMultiplier),
+    goldMultiplier: asMultiplier(d.goldMultiplier),
+    dropChanceMultiplier: asMultiplier(d.dropChanceMultiplier)
+  };
+}
+function merge(base, incoming) {
+  return {
+    attackMultiplier: multiply(base.attackMultiplier, incoming.attackMultiplier),
+    combatSpeedMultiplier: multiply(base.combatSpeedMultiplier, incoming.combatSpeedMultiplier),
+    combatPowerMultiplier: multiply(base.combatPowerMultiplier, incoming.combatPowerMultiplier),
+    gatheringSpeedMultiplier: multiply(base.gatheringSpeedMultiplier, incoming.gatheringSpeedMultiplier),
+    gatheringYieldMultiplier: multiply(base.gatheringYieldMultiplier, incoming.gatheringYieldMultiplier),
+    fishingSpeedMultiplier: multiply(base.fishingSpeedMultiplier, incoming.fishingSpeedMultiplier),
+    herbalismSpeedMultiplier: multiply(base.herbalismSpeedMultiplier, incoming.herbalismSpeedMultiplier),
+    cookingSpeedMultiplier: multiply(base.cookingSpeedMultiplier, incoming.cookingSpeedMultiplier),
+    craftingSpeedMultiplier: multiply(base.craftingSpeedMultiplier, incoming.craftingSpeedMultiplier),
+    materialPreservationMultiplier: multiply(base.materialPreservationMultiplier, incoming.materialPreservationMultiplier),
+    healingEffectivenessMultiplier: multiply(base.healingEffectivenessMultiplier, incoming.healingEffectivenessMultiplier),
+    dungeonRewardMultiplier: multiply(base.dungeonRewardMultiplier, incoming.dungeonRewardMultiplier),
+    guildContributionMultiplier: multiply(base.guildContributionMultiplier, incoming.guildContributionMultiplier),
+    incomingDamageMultiplier: multiply(base.incomingDamageMultiplier, incoming.incomingDamageMultiplier),
+    skillXpMultiplier: multiply(base.skillXpMultiplier, incoming.skillXpMultiplier),
+    characterXpMultiplier: multiply(base.characterXpMultiplier, incoming.characterXpMultiplier),
+    goldMultiplier: multiply(base.goldMultiplier, incoming.goldMultiplier),
+    dropChanceMultiplier: multiply(base.dropChanceMultiplier, incoming.dropChanceMultiplier)
+  };
+}
+function collectibleTargetMultipliers(target2, appliedBps) {
+  const amount = normalizeMultiplier(1 + Math.max(0, appliedBps) / 1e4), out = { ...BASE };
+  switch (target2) {
+    case "attack":
+      out.combatPowerMultiplier = amount;
+      break;
+    case "defense":
+    case "hp":
+      out.incomingDamageMultiplier = normalizeMultiplier(2 - amount);
+      break;
+    case "skillXp":
+      out.skillXpMultiplier = amount;
+      break;
+    case "characterXp":
+      out.characterXpMultiplier = amount;
+      break;
+    case "gold":
+      out.goldMultiplier = amount;
+      break;
+    case "dropChance":
+      out.dropChanceMultiplier = amount;
+      break;
+    case "actionSpeed":
+      out.combatSpeedMultiplier = amount;
+      out.gatheringSpeedMultiplier = amount;
+      break;
+    case "gatheringYield":
+      out.gatheringYieldMultiplier = amount;
+      break;
+    case "fishingSpeed":
+      out.fishingSpeedMultiplier = amount;
+      break;
+    case "herbalismSpeed":
+      out.herbalismSpeedMultiplier = amount;
+      break;
+    case "cookingSpeed":
+      out.cookingSpeedMultiplier = amount;
+      break;
+    case "craftingSpeed":
+      out.craftingSpeedMultiplier = amount;
+      break;
+    case "materialPreservation":
+      out.materialPreservationMultiplier = amount;
+      break;
+    case "healingEffectiveness":
+      out.healingEffectivenessMultiplier = amount;
+      break;
+    case "dungeonReward":
+      out.dungeonRewardMultiplier = amount;
+      break;
+    case "guildContribution":
+      out.guildContributionMultiplier = amount;
+      break;
+  }
+  return out;
+}
+function characterPermanentMultipliers(state) {
+  let result = { ...BASE };
+  const c = state.character;
+  if (!c) return result;
+  const blessing = selectedFaithBlessing(state);
+  if (blessing) {
+    if (blessing.family === "attack") result = merge(result, { ...BASE, attackMultiplier: 1 + blessing.bonus, combatPowerMultiplier: 1 + blessing.bonus });
+    if (blessing.family === "defense") result = merge(result, { ...BASE, incomingDamageMultiplier: 1 - blessing.bonus });
+    if (blessing.family === "hp") result = merge(result, { ...BASE, characterXpMultiplier: 1, combatPowerMultiplier: 1 + blessing.bonus * 0.25 });
+  }
+  for (const skinId of new Set(c.unlockedSkinIds ?? [])) {
+    if (SKIN_PERMANENT_BOOSTS[skinId]) result = merge(result, readMultipliers(skinId, SKIN_PERMANENT_BOOSTS));
+  }
+  for (const row of collectionBonusBreakdown(state)) {
+    if (row.appliedBps > 0) result = merge(result, collectibleTargetMultipliers(row.target, row.appliedBps));
+  }
+  for (const boostId of new Set(c.ownedBoostIds ?? [])) {
+    if (BUYABLE_PERMANENT_BOOSTS[boostId]) result = merge(result, readMultipliers(boostId, BUYABLE_PERMANENT_BOOSTS));
+  }
+  return result;
+}
+
+// apps/mobile/src/core/profession-mastery-v40.ts
+var PROFESSION_MASTERY_MAX_RANK = 50;
+function masteryPointsForRank(rank) {
+  const r = Math.max(0, Math.min(PROFESSION_MASTERY_MAX_RANK, Math.floor(rank)));
+  return 10 * r * (r + 1) / 2;
+}
+function professionMasteryRank(points) {
+  const p = Math.max(0, Math.floor(points));
+  let lo = 0, hi = PROFESSION_MASTERY_MAX_RANK;
+  while (lo < hi) {
+    const mid = Math.ceil((lo + hi) / 2);
+    if (masteryPointsForRank(mid) <= p) lo = mid;
+    else hi = mid - 1;
+  }
+  return lo;
+}
+function professionMasteryView(actionId, record) {
+  const points = Math.max(0, Math.floor(record?.points ?? 0)), rank = professionMasteryRank(points);
+  return {
+    actionId,
+    points,
+    rank,
+    maxRank: PROFESSION_MASTERY_MAX_RANK,
+    nextRankPoints: rank >= PROFESSION_MASTERY_MAX_RANK ? masteryPointsForRank(PROFESSION_MASTERY_MAX_RANK) : masteryPointsForRank(rank + 1),
+    xpBonusBps: rank >= 10 ? 200 : 0,
+    yieldBonusBps: (rank >= 20 ? 200 : 0) + (rank >= 40 ? 300 : 0),
+    speedBonusBps: (rank >= 30 ? 300 : 0) + (rank >= 50 ? 200 : 0),
+    mastered: rank >= PROFESSION_MASTERY_MAX_RANK
+  };
+}
+function grantProfessionMastery(previous, actionId, actions, nowMs) {
+  if (!Number.isSafeInteger(actions) || actions <= 0) throw new Error("invalid_mastery_actions");
+  if (!Number.isFinite(nowMs) || nowMs < 0) throw new Error("invalid_mastery_time");
+  return { actionId, points: Math.min(masteryPointsForRank(PROFESSION_MASTERY_MAX_RANK), (previous?.points ?? 0) + actions), updatedAtMs: nowMs };
+}
+function professionMasteryMultipliers(actionId, record) {
+  const view = professionMasteryView(actionId, record);
+  return { view, xp: 1 + view.xpBonusBps / 1e4, yield: 1 + view.yieldBonusBps / 1e4, speed: 1 + view.speedBonusBps / 1e4 };
+}
+function professionMasteryRankProgress(actionId, record) {
+  const view = professionMasteryView(actionId, record), floor = masteryPointsForRank(view.rank), target2 = view.nextRankPoints, need = Math.max(0, target2 - floor), current = Math.max(0, view.points - floor);
+  return { ...view, currentRankPoints: floor, pointsIntoRank: current, pointsForNextRank: need, progress: view.mastered ? 1 : Math.max(0, Math.min(1, current / Math.max(1, need))) };
+}
+
+// apps/mobile/src/core/class-skill-affinities.ts
+var CLASS_SKILL_AFFINITIES = Object.freeze({
+  IRONWARDEN: "smithing",
+  BASTION: "smithing",
+  DREADGUARD: "alchemy",
+  WAYFINDER: "fishing",
+  RAVAGER: "woodcutting",
+  HEXWEAVER: "enchanting",
+  KNIFE_DANCER: "tailoring",
+  DAWNKEEPER: "herbalism",
+  STONECALLER: "mining"
+});
+var CLASS_AFFINITY_XP_MULTIPLIER = 1.05;
+var CLASS_AFFINITY_SPEED_MULTIPLIER = 1.03;
+var NEUTRAL = Object.freeze({ xpMultiplier: 1, speedMultiplier: 1 });
+var MATCHED = Object.freeze({ xpMultiplier: CLASS_AFFINITY_XP_MULTIPLIER, speedMultiplier: CLASS_AFFINITY_SPEED_MULTIPLIER });
+var validClass = (value) => typeof value === "string" && Object.prototype.hasOwnProperty.call(CLASS_SKILL_AFFINITIES, value);
+function classSkillAffinity(classId) {
+  return validClass(classId) ? CLASS_SKILL_AFFINITIES[classId] : void 0;
+}
+function skillAffinityModifiers(classId, skillId) {
+  return validClass(classId) && CLASS_SKILL_AFFINITIES[classId] === skillId ? MATCHED : NEUTRAL;
+}
+function captureSkillAffinity(state, skillId) {
+  const c = state.character;
+  if (!c || classSkillAffinity(c.classId) !== skillId) return void 0;
+  return { version: 1, ownerCharacterId: c.id, classId: c.classId, skillId, ...MATCHED };
+}
+function normalizeSkillAffinitySnapshot(value) {
+  if (!value || typeof value !== "object") return void 0;
+  const s = value;
+  if (s.version !== 1 || !validClass(s.classId) || CLASS_SKILL_AFFINITIES[s.classId] !== s.skillId || typeof s.ownerCharacterId !== "string" || !s.ownerCharacterId || s.ownerCharacterId.length > 160 || s.xpMultiplier !== CLASS_AFFINITY_XP_MULTIPLIER || s.speedMultiplier !== CLASS_AFFINITY_SPEED_MULTIPLIER) return void 0;
+  return { version: 1, ownerCharacterId: s.ownerCharacterId, classId: s.classId, skillId: s.skillId, ...MATCHED };
+}
+function activeSkillAffinity(state, skillId) {
+  const s = normalizeSkillAffinitySnapshot(state.activity?.skillAffinity);
+  return s && s.ownerCharacterId === state.character?.id && s.classId === state.character?.classId && s.skillId === skillId ? s : NEUTRAL;
+}
+function affinityXpRemainderKey(ownerCharacterId, skillId) {
+  return `xp:affinity:${encodeURIComponent(ownerCharacterId)}:${skillId}`;
+}
+function settleAffinitySkillXp(rawXp, remainder = 0, remainingXp = Number.MAX_SAFE_INTEGER) {
+  if (!Number.isFinite(rawXp) || rawXp < 0) throw new Error("Invalid profession XP.");
+  const carry = Number.isFinite(remainder) && remainder >= 0 && remainder < 1 ? remainder : 0;
+  const room = Number.isFinite(remainingXp) ? Math.max(0, Math.floor(remainingXp)) : Number.MAX_SAFE_INTEGER;
+  const raw2 = rawXp + carry, whole = Math.floor(raw2 + 1e-9), xp = Math.min(whole, room);
+  return { xp, remainder: xp >= room ? 0 : Math.max(0, Math.min(1 - Number.EPSILON, raw2 - whole)) };
+}
+
+// apps/mobile/src/core/profession-action-pace.ts
+function professionActionPace(state, recipe2, mode) {
+  const permanent = characterPermanentMultipliers(state);
+  const mastery = professionMasteryMultipliers(recipe2.id, state.account.professionMasteryByAction?.[recipe2.id]);
+  const affinity = skillAffinityModifiers(state.character?.classId, recipe2.skillId);
+  const xpPerAction = recipe2.xp * mastery.xp * (mode === "forge" ? 1 : permanent.skillXpMultiplier) * affinity.xpMultiplier;
+  const speed = mastery.speed * (mode === "forge" ? permanent.craftingSpeedMultiplier : 1) * affinity.speedMultiplier;
+  const rawSeconds = recipe2.seconds / Math.max(0.1, speed);
+  const cycleSeconds = mode === "instant" ? 0 : mode === "forge" ? Math.max(1, Math.ceil(rawSeconds)) : Math.max(1, rawSeconds);
+  return { cycleSeconds, xpPerAction, affinity, mastery, speed };
+}
+
+// apps/mobile/src/content/classes.ts
 var CLASSES = [
   { id: "IRONWARDEN", name: "Ironwarden", role: "Tank", description: "Runic defender built around guard, threat and counterplay.", hp: 155, attack: 15, defense: 19, roleRatings: { tank: 5, damage: 2, support: 1 }, starterEquipment: { weapon: "basic_sword" } },
   { id: "BASTION", name: "Bastion", role: "Tank", description: "Fortress tank using layered barriers and heavy protection.", hp: 164, attack: 14, defense: 20, roleRatings: { tank: 5, damage: 1, support: 2 }, starterEquipment: { weapon: "basic_tower_shield" } },
@@ -172,7 +1400,7 @@ var CLASSES = [
   { id: "STONECALLER", name: "Stonecaller", role: "Support", description: "Earth-and-storm support caster using resonance, geomancy and totems.", hp: 120, attack: 20, defense: 12, roleRatings: { tank: 2, damage: 2, support: 5 }, starterEquipment: { weapon: "basic_staff" } }
 ];
 
-// ../apps/mobile/src/content/event-companions-v2.ts
+// apps/mobile/src/content/event-companions-v2.ts
 var eventNames = { turning_of_the_age: "Turning of the Age", heartbond_festival: "Heartbond Festival", bloomwake: "Bloomwake", suncrest_games: "Suncrest Games", starfall_nights: "Starfall Nights", harvestwake: "Harvestwake", veilbreak: "The Veilbreak", frostfall_festival: "Frostfall Festival", merchant_guild_festival: "Merchant / Guild Festival" };
 var seeds = [
   { id: "EVT_UNIT_001", name: "Keeper of First Dawn", rarity: "elite", role: "support", event: "turning_of_the_age", description: "Fast support pulses improve tempo and recovery for pressured allies." },
@@ -206,7 +1434,7 @@ var EVENT_COMPANIONS = seeds.map((seed) => {
   return { id: seed.id, name: seed.name, description: seed.description, archetype: `Event ${seed.role}`, role: seed.role, rarity: seed.rarity, origin: { id: `EVENT_${seed.event.toUpperCase()}`, name: eventNames[seed.event] ?? seed.event.replaceAll("_", " "), type: "event" }, unlockRequirements: [{ type: "event_challenge", target: seed.event, description: `Earn ${seed.name} from ${eventNames[seed.event] ?? seed.event.replaceAll("_", " ")}.` }], baseStats: baseStats(seed.role, seed.rarity), activeAbility: { id: `${seed.id}_ACTIVE`, name: copy?.activeName ?? `${seed.name} Signature`, description: copy?.activeDescription ?? seed.description, cooldownSeconds: seed.rarity === "prestige" ? 24 : 20, target: seed.role === "support" ? "Lowest-HP ally" : seed.role === "tank" ? "Owner" : "Priority target", effect: { kind: copy?.activeKind ?? effect2, value: amount, description: copy?.activeDescription ?? seed.description, durationSeconds: 5 }, scaling: { baseValue: amount, perLevel: (copy?.activeKind ?? effect2) === "damage" ? 4e-3 : 1e-3, maxValue: (copy?.activeKind ?? effect2) === "damage" ? 1.35 : void 0 } }, passiveAbility: { kind: copy?.passiveKind ?? effect2, value: copy?.passiveValue ?? (effect2 === "damage" ? 0.035 : 0.025), description: copy?.passiveDescription ?? `${seed.name} reinforces its event identity.` }, bondTrait: { id: `${seed.id}_BOND`, name: copy?.bondName ?? `${seed.name} Bond`, description: copy?.bondDescription ?? `Bond mastery strengthens the ${seed.name} signature interaction.`, effect: { kind: copy?.bondKind ?? effect2, value: copy?.bondValue ?? (effect2 === "damage" ? 0.05 : 0.03), description: copy?.bondDescription ?? `Bond mastery strengthens ${seed.name}.` } }, ascensionMaterialId: "EVENT_BONDBLOOM", ascensionMaterialCosts: eventAscensionMaterials(seed.rarity), availability: { eventSource: eventNames[seed.event] ?? seed.event, originalReleaseYear: 2026, recurringAvailability: "annual", veteranCosmeticEligibility: true }, visual: { portraitId: seed.id, pixelSize: "96x96", accessibilityLabel: seed.name } };
 });
 
-// ../apps/mobile/src/content/combat-companions.ts
+// apps/mobile/src/content/combat-companions.ts
 var COMPANION_RARITY_CONFIG = {
   standard: { maxLevel: 20, targetPowerMultiplier: 1, levelCostMultiplier: 1, xpRequiredMultiplier: 1, label: "Standard" },
   rare: { maxLevel: 25, targetPowerMultiplier: 1.09, levelCostMultiplier: 1.18, xpRequiredMultiplier: 1.08, label: "Rare" },
@@ -219,7 +1447,7 @@ var COMPANION_STAGE_CAPS = {
   elite: [10, 20, 25, 30],
   prestige: [10, 20, 25, 35]
 };
-var COMPANION_LEVEL_CURVE = { baseXp: 65, xpGrowth: 1.16, goldBase: 38, goldGrowth: 1.24, essenceBase: 4, essenceGrowth: 1.19 };
+var COMPANION_LEVEL_CURVE = { baseXp: 65, xpGrowth: 1.16, goldBase: 38, goldGrowth: 1.21, essenceBase: 4, essenceGrowth: 1.16 };
 var COMPANION_BOND_CONFIG = {
   maxLevel: 10,
   // cumulative XP required for Bond Levels 1-10
@@ -262,7 +1490,7 @@ var ASH = origin("REG_ASHLANDS", "Ashlands");
 var ASTERFALL_COMPANIONS = [
   { id: "UNIT_001", name: "Ironwood Hound", description: "Fast finisher for farming.", archetype: "Striker", role: "damage", rarity: "standard", origin: ASTER, unlockRequirements: [req("quest", "Complete Ironwood introduction", "QST_005", 1)], baseStats: { hp: 180, power: 22, defense: 12, attackSpeed: 2 }, activeAbility: ability("UABL_001", "Hamstring Pounce", "Damage + 8% slow", 14, "Lowest-HP enemy", "damage", 1, 6e-3, { secondaryValue: 0.08, durationSeconds: 4 }), passiveAbility: passive("execute", 0.04, "Pack Instinct: +4% damage against enemies below 35% HP.", "target_hp_below_35"), bondTrait: trait("BOND_001", "Relentless Chase", "cooldown_reduction", 0.08, "Hamstring Pounce recharges 8% faster after defeating a weakened target.", "target_defeated_below_35"), ascensionMaterialId: "IRONWOOD_FANG" },
   { id: "UNIT_002", name: "Runebound Sentry", description: "Smooths solo and boss damage spikes.", archetype: "Guardian", role: "tank", rarity: "standard", origin: ASTER, unlockRequirements: [req("achievement", "Defeat 250 Old Mines enemies", "OLD_MINES_KILLS", 250)], baseStats: { hp: 260, power: 14, defense: 24, attackSpeed: 2.6 }, activeAbility: ability("UABL_002", "Rune Brace", "6% damage reduction to next 2 hits", 18, "Owner", "damage_reduction", 0.06, 1e-3, { secondaryValue: 2, durationSeconds: 5 }), passiveAbility: passive("damage_reduction", 0.06, "Runic Guard: every 12s, owner takes 6% less damage from the next hit.", "every_12_seconds"), bondTrait: trait("BOND_002", "Carved Shelter", "shield", 0.025, "Rune Brace also grants a small follow-up shield after its second protected hit.", "rune_brace_consumed"), ascensionMaterialId: "RUNEBOUND_CORE" },
-  { id: "UNIT_003", name: "Silverbrook Sprite", description: "Small tempo and class-resource support.", archetype: "Support", role: "support", rarity: "standard", origin: ASTER, unlockRequirements: [req("skill_level", "Reach Fishing 16", "fishing", 16), req("collection", "Discover all Silverbrook nodes", "SILVERBROOK_NODES")], baseStats: { hp: 150, power: 12, defense: 10, attackSpeed: 2.2 }, activeAbility: ability("UABL_003", "Silver Current", "Restore 4% class resource + 3% Haste", 20, "Owner", "resource_restore", 0.04, 1e-3, { secondaryValue: 0.03, durationSeconds: 5 }), passiveAbility: passive("cooldown_reduction", 0.05, "Flowing Current: owner's first ability after combat starts has 5% shorter cooldown.", "first_owner_ability"), bondTrait: trait("BOND_003", "Deep Current", "haste", 0.025, "Silver Current grants an additional short Haste pulse after restoring class resource.", "silver_current_used"), ascensionMaterialId: "WISP_DUST" },
+  { id: "UNIT_003", name: "Silverbrook Sprite", description: "Small restorative and tempo support.", archetype: "Support", role: "support", rarity: "standard", origin: ASTER, unlockRequirements: [req("skill_level", "Reach Fishing 16", "fishing", 16), req("collection", "Discover all Silverbrook nodes", "SILVERBROOK_NODES")], baseStats: { hp: 150, power: 12, defense: 10, attackSpeed: 2.2 }, activeAbility: ability("UABL_003", "Silver Current", "Restore 4% max HP + 3% Haste", 20, "Owner", "heal", 0.04, 1e-3, { secondaryValue: 0.03, durationSeconds: 5 }), passiveAbility: passive("cooldown_reduction", 0.05, "Flowing Current: owner's first ability after combat starts has 5% shorter cooldown.", "first_owner_ability"), bondTrait: trait("BOND_003", "Deep Current", "haste", 0.025, "Silver Current grants an additional short Haste pulse after restoring class resource.", "silver_current_used"), ascensionMaterialId: "WISP_DUST" },
   { id: "UNIT_004", name: "Briarhorn Cub", description: "Durable-target pressure through mild defense shred.", archetype: "Bruiser", role: "damage", rarity: "rare", origin: ASTER, unlockRequirements: [req("monster_mastery", "Reach Forest Troll Mastery 20", "FOREST_TROLL", 20)], baseStats: { hp: 230, power: 25, defense: 18, attackSpeed: 2.4 }, activeAbility: ability("UABL_004", "Briar Charge", "Damage + -5% Defence", 16, "Highest-Defence enemy", "damage", 1.2, 6e-3, { secondaryValue: 0.05, durationSeconds: 5 }), passiveAbility: passive("defense_shred", 0.03, "Barkbreaker: attacks have a 12% chance to apply -3% Defence for 5s; non-stacking.", "12_percent_proc"), bondTrait: trait("BOND_004", "Rootbreaker", "damage", 0.06, "Deals 6% more companion damage to targets currently affected by defense reduction.", "target_defense_reduced"), ascensionMaterialId: "THORN_SAP" },
   { id: "UNIT_005", name: "Lantern Wisp", description: "Interrupt-focused co-op helper.", archetype: "Disruptor", role: "support", rarity: "rare", origin: ASTER, unlockRequirements: [req("monster_mastery", "Reach Lantern Wretch Mastery 20", "LANTERN_WRETCH", 20)], baseStats: { hp: 145, power: 18, defense: 11, attackSpeed: 2 }, activeAbility: ability("UABL_005", "Lantern Snuff", "Damage + interrupt", 22, "Casting enemy", "interrupt", 0.55, 4e-3), passiveAbility: passive("accuracy", 0.08, "Flicker Sense: +8% unit accuracy against enemies currently casting.", "enemy_casting"), bondTrait: trait("BOND_005", "Afterglow", "cooldown_reduction", 0.1, "A successful interrupt shortens the next Lantern Snuff cooldown by 10%.", "successful_interrupt"), ascensionMaterialId: "LANTERNSTEEL_SHARD" },
   { id: "UNIT_006", name: "Oathbound Page", description: "Boss-progression defensive companion.", archetype: "Guardian", role: "tank", rarity: "rare", origin: ASTER, unlockRequirements: [req("boss_kills", "Defeat The Fallen Knight once", "FALLEN_KNIGHT", 1)], baseStats: { hp: 290, power: 16, defense: 25, attackSpeed: 2.8 }, activeAbility: ability("UABL_006", "Page's Vow", "Shield for 5% owner max HP", 24, "Owner", "shield", 0.05, 1e-3), passiveAbility: passive("damage_reduction", 0.08, "Oathkeeper: once per encounter, intercepts 8% of one hit dealt to owner.", "once_per_encounter"), bondTrait: trait("BOND_006", "Renewed Vow", "damage_reduction", 0.025, "After the shield breaks, the owner gains brief mitigation.", "shield_broken"), ascensionMaterialId: "OATHGLASS_SHARD" },
@@ -289,17 +1517,17 @@ var REGIONAL_ASCENSION_MATERIALS = {
 };
 var REGIONAL_IDENTITY_COPY = {
   UNIT_013: { activeName: "Venom Pounce", activeDescription: "A fast strike that gains extra finishing pressure against enemies below 30% HP.", activeKind: "damage", activeValue: 1.1, passiveKind: "execute", passiveValue: 0.05, passiveDescription: "Sand Predator: basic attacks are more dangerous against weakened prey.", bondName: "Perfect Ambush", bondKind: "execute", bondValue: 0.03, bondDescription: "Bond 10 further strengthens Dune Stalker finishers." },
-  UNIT_014: { activeName: "Mirage Spring", activeDescription: "Restores the lowest-HP ally and cycles slightly faster than a normal support active.", activeKind: "utility", activeValue: 0.05, passiveKind: "haste", passiveValue: 0.02, passiveDescription: "Oasis Rhythm: slightly improves support tempo.", bondName: "Deep Oasis", bondKind: "haste", bondValue: 0.02, bondDescription: "Bond 10 improves the Djinnling\u2019s restorative tempo." },
+  UNIT_014: { activeName: "Mirage Spring", activeDescription: "Restores the lowest-HP ally and cycles slightly faster than a normal support active.", activeKind: "heal", activeValue: 0.05, passiveKind: "haste", passiveValue: 0.02, passiveDescription: "Oasis Rhythm: slightly improves support tempo.", bondName: "Deep Oasis", bondKind: "haste", bondValue: 0.02, bondDescription: "Bond 10 improves the Djinnling\u2019s restorative tempo." },
   UNIT_015: { activeName: "Solar Carapace", activeDescription: "Creates a stronger shield that reflects a small share of absorbed damage.", activeKind: "shield", activeValue: 0.058, passiveKind: "damage_reduction", passiveValue: 0.02, passiveDescription: "Sunplate: slightly improves personal durability.", bondName: "Sun Mirror", bondKind: "damage_reduction", bondValue: 0.02, bondDescription: "Bond 10 strengthens the Scarab\u2019s reflective defense." },
   UNIT_016: { activeName: "Crownward", activeDescription: "Creates a heavy royal barrier and reinforces the companion\u2019s defensive stance.", activeKind: "shield", activeValue: 0.067, passiveKind: "damage_reduction", passiveValue: 0.04, passiveDescription: "Tyrant Guard: increased defensive stability.", bondName: "Unbroken Crown", bondKind: "shield", bondValue: 0.04, bondDescription: "Bond 10 strengthens Crownward and the Heir\u2019s defensive identity." },
   UNIT_017: { activeName: "Rimefang Rush", activeDescription: "A cold finishing strike with extra pressure against wounded enemies.", activeKind: "damage", activeValue: 1.1, passiveKind: "haste", passiveValue: 0.02, passiveDescription: "Winter Hunt: slightly faster combat tempo.", bondName: "Shatterfang", bondKind: "execute", bondValue: 0.03, bondDescription: "Bond 10 sharpens the Rime Wolf\u2019s finishing pressure." },
-  UNIT_018: { activeName: "Resonant Chime", activeDescription: "Restores the weakest ally and returns faster than most support actives.", activeKind: "utility", activeValue: 0.05, passiveKind: "cooldown_reduction", passiveValue: 0.1, passiveDescription: "Bell Rhythm: support cycles recover more quickly.", bondName: "Grand Resonance", bondKind: "haste", bondValue: 0.02, bondDescription: "Bond 10 adds a small tempo bonus to the Bell Sprite." },
+  UNIT_018: { activeName: "Resonant Chime", activeDescription: "Restores the weakest ally and returns faster than most support actives.", activeKind: "heal", activeValue: 0.05, passiveKind: "cooldown_reduction", passiveValue: 0.1, passiveDescription: "Bell Rhythm: support cycles recover more quickly.", bondName: "Grand Resonance", bondKind: "haste", bondValue: 0.02, bondDescription: "Bond 10 adds a small tempo bonus to the Bell Sprite." },
   UNIT_019: { activeName: "Choir Ward", activeDescription: "Raises a reinforced ward while the Golem\u2019s resonant plating improves durability.", activeKind: "shield", activeValue: 0.055, passiveKind: "damage_reduction", passiveValue: 0.05, passiveDescription: "Resonant Plating: increased defense in companion combat.", bondName: "Fortified Hymn", bondKind: "shield", bondValue: 0.04, bondDescription: "Bond 10 further strengthens Choir Ward." },
   UNIT_020: { activeName: "Wyrm's Verdict", activeDescription: "A powerful strike that becomes especially dangerous as the target nears defeat.", activeKind: "damage", activeValue: 1.18, passiveKind: "execute", passiveValue: 0.07, passiveDescription: "Predatory Echo: stronger finishing pressure.", bondName: "Ancient Verdict", bondKind: "cooldown_reduction", bondValue: 0.04, bondDescription: "Bond 10 lets Wyrm\u2019s Verdict cycle slightly faster." },
   UNIT_021: { activeName: "Obsidian Rend", activeDescription: "A hard-hitting attack built to keep pressure on armored enemies.", activeKind: "damage", activeValue: 1.1, passiveKind: "damage", passiveValue: 0.04, passiveDescription: "Obsidian Fang: slightly stronger basic attacks.", bondName: "Molten Pursuit", bondKind: "execute", bondValue: 0.04, bondDescription: "Bond 10 adds finishing pressure to the Drakelet." },
   UNIT_022: { activeName: "Forge Barrier", activeDescription: "Creates a reinforced barrier that reflects a portion of absorbed pressure.", activeKind: "shield", activeValue: 0.057, passiveKind: "damage_reduction", passiveValue: 0.04, passiveDescription: "Custodian Plating: increased defensive stability.", bondName: "Overheat Guard", bondKind: "shield", bondValue: 0.04, bondDescription: "Bond 10 strengthens the Forge Custodian\u2019s reactive guard." },
   UNIT_023: { activeName: "Primal Arc", activeDescription: "An aggressive arc of energy with strong damage and fast combat tempo.", activeKind: "damage", activeValue: 1.14, passiveKind: "haste", passiveValue: 0.03, passiveDescription: "Living Current: naturally faster attack tempo.", bondName: "Chain Surge", bondKind: "damage", bondValue: 0.03, bondDescription: "Bond 10 increases Primal Spark\u2019s damage output." },
-  UNIT_024: { activeName: "Regent's Decree", activeDescription: "Restores the weakest ally while maintaining a faster tactical support cycle.", activeKind: "utility", activeValue: 0.06, passiveKind: "haste", passiveValue: 0.02, passiveDescription: "Shade Command: slightly faster support tempo.", bondName: "Royal Veil", bondKind: "damage_reduction", bondValue: 0.02, bondDescription: "Bond 10 adds a small defensive edge to Regent Shade support." }
+  UNIT_024: { activeName: "Regent's Decree", activeDescription: "Restores the weakest ally while maintaining a faster tactical support cycle.", activeKind: "heal", activeValue: 0.06, passiveKind: "haste", passiveValue: 0.02, passiveDescription: "Shade Command: slightly faster support tempo.", bondName: "Royal Veil", bondKind: "damage_reduction", bondValue: 0.02, bondDescription: "Bond 10 adds a small defensive edge to Regent Shade support." }
 };
 var regional = (id, name, rarity, role, unlockRequirements, identity, region, materialId, effect2) => {
   const copy = REGIONAL_IDENTITY_COPY[id];
@@ -338,7 +1566,7 @@ var REGIONAL_COMPANIONS = [
 var COMBAT_COMPANIONS = [...ASTERFALL_COMPANIONS, ...REGIONAL_COMPANIONS, ...EVENT_COMPANIONS];
 var combatCompanionDef = (id) => COMBAT_COMPANIONS.find((entry2) => entry2.id === id);
 
-// ../apps/mobile/src/content/class-skills.ts
+// apps/mobile/src/content/class-skills.ts
 var skill = (id, name, theme) => ({ id, name, theme });
 var guard = skill("guardcraft", "Guardcraft", "Physical protection");
 var ward = skill("warding", "Warding", "Magical protection");
@@ -355,214 +1583,146 @@ var CLASS_SKILLS = {
 };
 var classSkillsFor = (id) => CLASS_SKILLS[id];
 
-// ../apps/mobile/src/content/monsters.ts
+// apps/mobile/src/content/monsters.ts
+init_faith();
+
+// apps/mobile/src/content/gems-v1.ts
+var GEM_GRADE_LABEL_V1 = { 1: "Cut", 2: "Polished", 3: "Refined", 4: "Flawless", 5: "Radiant" };
+var GEM_GRADE_RARITY_V1 = { 1: "common", 2: "uncommon", 3: "rare", 4: "epic", 5: "mythic" };
+var vals = (a, b, c, d, e) => ({ 1: a, 2: b, 3: c, 4: d, 5: e });
+var MOBILE_GEM_FAMILIES_V1 = [
+  { familyId: "stat_might", name: "Might", kind: "stat", category: "stat", values: vals(4e-3, 5e-3, 65e-4, 8e-3, 0.01), unit: "percent", description: "Increases Power.", legacyStat: "attack", sources: ["Saffron Gate", "Crafting"] },
+  { familyId: "stat_vitality", name: "Vitality", kind: "stat", category: "stat", values: vals(6e-3, 8e-3, 0.01, 0.0125, 0.015), unit: "percent", description: "Increases Max HP.", legacyStat: "hp", sources: ["Saffron Gate", "Shiverlake Descent", "Crafting"] },
+  { familyId: "stat_iron", name: "Iron", kind: "stat", category: "stat", values: vals(5e-3, 65e-4, 8e-3, 0.01, 0.0125), unit: "percent", description: "Increases Armor.", legacyStat: "defense", sources: ["Scorchwind Flats", "Caravan of Glass", "Crafting"] },
+  { familyId: "stat_ward", name: "Ward", kind: "stat", category: "stat", values: vals(5e-3, 65e-4, 8e-3, 0.01, 0.0125), unit: "percent", description: "Increases Ward.", sources: ["Buried Observatory", "Crafting"] },
+  { familyId: "stat_precision", name: "Precision", kind: "stat", category: "stat", values: vals(3e-3, 4e-3, 5e-3, 65e-4, 8e-3), unit: "percentage_point", description: "Increases Accuracy.", sources: ["Mirage Basin", "Mirage Well", "Crafting"] },
+  { familyId: "stat_keen", name: "Keen", kind: "stat", category: "stat", values: vals(2e-3, 3e-3, 4e-3, 5e-3, 6e-3), unit: "percentage_point", description: "Increases Critical Chance.", sources: ["Whitepine Hunt", "Crafting"] },
+  { familyId: "stat_savage", name: "Savage", kind: "stat", category: "stat", values: vals(0.01, 0.013, 0.016, 0.02, 0.025), unit: "percent", description: "Increases Critical Damage.", sources: ["Choir Caverns", "Crafting"] },
+  { familyId: "stat_piercing", name: "Piercing", kind: "stat", category: "stat", values: vals(25e-4, 35e-4, 45e-4, 6e-3, 75e-4), unit: "percentage_point", description: "Increases Penetration.", sources: ["Scorchwind Flats", "Crafting"] },
+  { familyId: "stat_swift", name: "Swift", kind: "stat", category: "stat", values: vals(35e-4, 45e-4, 55e-4, 65e-4, 8e-3), unit: "percent", description: "Increases Haste.", sources: ["Buried Observatory", "Crafting"] },
+  { familyId: "stat_potent", name: "Potent", kind: "stat", category: "stat", values: vals(5e-3, 65e-4, 8e-3, 0.01, 0.012), unit: "percent", description: "Increases Potency.", sources: ["Mirage Basin", "Mirage Well", "Crafting"] },
+  { familyId: "stat_elusive", name: "Elusive", kind: "stat", category: "stat", values: vals(2e-3, 25e-4, 3e-3, 4e-3, 5e-3), unit: "percentage_point", description: "Increases Evasion.", sources: ["Regional enemies", "Crafting"] },
+  { familyId: "stat_resolute", name: "Resolute", kind: "stat", category: "stat", values: vals(4e-3, 5e-3, 6e-3, 75e-4, 9e-3), unit: "percent", description: "Increases Tenacity.", sources: ["Shiverlake Descent", "Crafting"] },
+  { familyId: "effect_momentum", name: "Momentum", kind: "effect", category: "damage", values: vals(18e-4, 22e-4, 26e-4, 31e-4, 36e-4), unit: "effect", description: "Successful direct attacks build stacking damage for 4s.", resonance2: "Maximum Momentum stacks becomes 6.", resonance3: "Momentum decays one stack at a time.", recommendedClasses: ["KNIFE_DANCER", "WAYFINDER", "HEXWEAVER"], sources: ["Whitepine Hunt", "Party Contracts"] },
+  { familyId: "effect_execution", name: "Execution", kind: "effect", category: "damage", values: vals(8e-3, 0.01, 0.012, 0.015, 0.018), unit: "effect", description: "Deal more damage to enemies below 30% HP.", resonance2: "Activation threshold becomes 35% HP.", resonance3: "Execution is 25% stronger below 15% HP.", recommendedClasses: ["RAVAGER", "KNIFE_DANCER", "DREADGUARD"], sources: ["Tyrant's Crown", "Choir Caverns", "Party Contracts"] },
+  { familyId: "effect_opening_strike", name: "Opening Strike", kind: "effect", category: "damage", values: vals(7e-3, 9e-3, 0.011, 0.013, 0.015), unit: "effect", description: "Deal more damage during the opening 8s of combat.", resonance2: "Opening window becomes 10s.", resonance3: "Refreshes once on a flagged boss phase.", recommendedClasses: ["RAVAGER", "WAYFINDER", "KNIFE_DANCER"], sources: ["Saffron Gate", "Resonance Cache"] },
+  { familyId: "effect_predator", name: "Predator", kind: "effect", category: "damage", values: vals(8e-3, 0.01, 0.012, 0.014, 0.016), unit: "effect", description: "Deal more damage to Elite and Boss enemies.", resonance2: "Also affects minibosses and Champions.", resonance3: "First hit temporarily increases Predator effectiveness.", recommendedClasses: ["WAYFINDER", "RAVAGER"], legacyEffect: "boss_power", sources: ["Caravan of Glass", "Whitepine Hunt"] },
+  { familyId: "effect_critical_surge", name: "Critical Surge", kind: "effect", category: "damage", values: vals(2e-3, 25e-4, 3e-3, 35e-4, 4e-3), unit: "effect", description: "Critical hits grant stacking Haste.", resonance2: "Maximum stacks becomes 4.", resonance3: "Critical hits refresh the oldest stack at cap.", recommendedClasses: ["KNIFE_DANCER", "WAYFINDER", "RAVAGER"], sources: ["Buried Observatory"] },
+  { familyId: "effect_ruin", name: "Ruin", kind: "effect", category: "damage", values: vals(25e-4, 3e-3, 35e-4, 4e-3, 5e-3), unit: "effect", description: "Deal more damage per different negative effect on the target.", resonance2: "Counts up to 3 negative effects.", resonance3: "A fresh player Mark counts as two effects briefly.", recommendedClasses: ["HEXWEAVER", "WAYFINDER"], sources: ["Mirage Well", "Mirage Basin"] },
+  { familyId: "effect_bulwark", name: "Bulwark", kind: "effect", category: "defense", values: vals(6e-3, 75e-4, 9e-3, 0.0105, 0.012), unit: "effect", description: "Blocking or defensive abilities grant temporary damage reduction.", resonance2: "Damage-reduction duration increases.", resonance3: "Successful blocks refresh the duration.", recommendedClasses: ["IRONWARDEN", "BASTION"], legacyEffect: "damage_reduction", sources: ["Caravan of Glass", "Party Contracts"] },
+  { familyId: "effect_aegis", name: "Aegis", kind: "effect", category: "defense", values: vals(0.01, 0.0125, 0.015, 0.0175, 0.02), unit: "effect", description: "Increase barriers generated by the player.", resonance2: "Expired barriers return a small amount as healing.", resonance3: "Maximum barrier cap increases by 5%.", recommendedClasses: ["BASTION", "STONECALLER"], sources: ["Buried Observatory", "Shiverlake Descent"] },
+  { familyId: "effect_last_stand", name: "Last Stand", kind: "effect", category: "defense", values: vals(0.015, 0.019, 0.023, 0.027, 0.032), unit: "effect", description: "Once per combat, low HP triggers strong mitigation.", resonance2: "Activation threshold becomes 35% HP.", resonance3: "Last Stand lasts 8s.", recommendedClasses: ["IRONWARDEN", "DREADGUARD"], sources: ["Tyrant's Crown"] },
+  { familyId: "effect_retaliation", name: "Retaliation", kind: "effect", category: "defense", values: vals(0.015, 0.019, 0.023, 0.027, 0.032), unit: "effect", description: "Taking a heavy hit empowers your next damaging ability.", resonance2: "Heavy-hit threshold becomes easier to trigger.", resonance3: "Consuming Retaliation restores a small amount of HP.", recommendedClasses: ["DREADGUARD", "IRONWARDEN"], sources: ["Scorchwind Flats", "Caravan of Glass"] },
+  { familyId: "effect_unyielding", name: "Unyielding", kind: "effect", category: "defense", values: vals(15e-4, 2e-3, 25e-4, 3e-3, 35e-4), unit: "effect", description: "Incoming hits build temporary Armor and Ward.", resonance2: "Maximum defensive stacks becomes 5.", resonance3: "Stacks last longer.", recommendedClasses: ["IRONWARDEN", "BASTION", "DREADGUARD"], sources: ["Tyrant's Crown", "Shiverlake Descent"] },
+  { familyId: "effect_mercy", name: "Mercy", kind: "effect", category: "support", values: vals(0.04, 0.05, 0.06, 0.07, 0.08), unit: "effect", description: "A portion of overhealing becomes a temporary barrier.", resonance2: "Mercy barrier cap increases.", resonance3: "Mercy barriers last longer.", recommendedClasses: ["DAWNKEEPER"], sources: ["Mirage Basin", "Mirage Well", "Party Contracts"] },
+  { familyId: "effect_benediction", name: "Benediction", kind: "effect", category: "support", values: vals(8e-3, 0.01, 0.012, 0.014, 0.016), unit: "effect", description: "Support abilities empower the next direct heal or barrier.", resonance2: "May hold two Benediction charges.", resonance3: "Consuming a charge briefly grants Haste.", recommendedClasses: ["DAWNKEEPER", "STONECALLER"], sources: ["Buried Observatory"] },
+  { familyId: "effect_guardians_gift", name: "Guardian's Gift", kind: "effect", category: "support", values: vals(25e-4, 35e-4, 45e-4, 55e-4, 65e-4), unit: "effect", description: "Barriers placed on allies also grant temporary damage reduction.", resonance2: "The damage reduction lasts longer.", resonance3: "The caster receives half of the mitigation.", recommendedClasses: ["STONECALLER", "BASTION"], sources: ["Shiverlake Descent"] },
+  { familyId: "effect_renewal", name: "Renewal", kind: "effect", category: "support", values: vals(0.01, 0.0125, 0.015, 0.0175, 0.02), unit: "effect", description: "Direct healing leaves a small heal-over-time effect.", resonance2: "Renewal lasts longer and heals more.", resonance3: "Two Renewals may coexist on a target.", recommendedClasses: ["DAWNKEEPER"], sources: ["Choir Caverns"] },
+  { familyId: "effect_shared_resolve", name: "Shared Resolve", kind: "effect", category: "support", values: vals(25e-4, 3e-3, 35e-4, 4e-3, 5e-3), unit: "effect", description: "Buffing or shielding another player grants temporary Potency.", resonance2: "Shared Resolve lasts longer.", resonance3: "Maximum stacks becomes 3.", recommendedClasses: ["DAWNKEEPER", "STONECALLER"], sources: ["Choir Caverns"] },
+  { familyId: "effect_sustenance", name: "Sustenance", kind: "effect", category: "hybrid", values: vals(15e-4, 2e-3, 25e-4, 3e-3, 35e-4), unit: "effect", description: "Defeating enemies restores a small amount of Max HP.", resonance2: "Elite and Champion kills restore triple.", resonance3: "Excess healing becomes a small barrier.", recommendedClasses: ["DREADGUARD"], legacyEffect: "recovery", sources: ["Saffron Gate", "Whitepine Hunt"] },
+  { familyId: "effect_battle_rhythm", name: "Battle Rhythm", kind: "effect", category: "hybrid", values: vals(5e-3, 65e-4, 8e-3, 95e-4, 0.011), unit: "effect", description: "Alternating offensive and defensive/support abilities empowers the next opposite category.", resonance2: "The alternation window becomes longer.", resonance3: "Successful alternation briefly grants Haste.", recommendedClasses: ["IRONWARDEN", "DAWNKEEPER"], sources: ["Choir Caverns"] },
+  { familyId: "effect_flow", name: "Flow", kind: "effect", category: "hybrid", values: vals(1e-3, 15e-4, 2e-3, 25e-4, 3e-3), unit: "effect", description: "Using different abilities consecutively builds Haste.", resonance2: "Maximum Flow stacks becomes 4.", resonance3: "Flow decays one stack at a time.", recommendedClasses: ["HEXWEAVER", "KNIFE_DANCER", "DAWNKEEPER"], legacyEffect: "combat_speed", sources: ["Buried Observatory", "Party Contracts"] },
+  { familyId: "effect_opportunist", name: "Opportunist", kind: "effect", category: "hybrid", values: vals(7e-3, 9e-3, 0.011, 0.013, 0.015), unit: "effect", description: "Applying a new Mark/debuff/control effect empowers the next direct hit.", resonance2: "Per-target cooldown becomes shorter.", resonance3: "A critical empowered hit extends the triggering effect once.", recommendedClasses: ["HEXWEAVER", "WAYFINDER"], sources: ["Mirage Basin", "Mirage Well", "Party Contracts"] }
+];
+var RAW_GEM_ITEMS_V1 = MOBILE_GEM_FAMILIES_V1.flatMap((family) => [1, 2, 3, 4, 5].map((grade) => ({
+  id: `raw_gem:${family.familyId}:g${grade}`,
+  name: `Unrefined ${family.name} Gem \xB7 G${grade}`,
+  type: "material",
+  rawGemFamilyId: family.familyId,
+  rawGemGrade: grade,
+  value: Math.round(60 * Math.pow(2.1, grade - 1)),
+  rarity: GEM_GRADE_RARITY_V1[grade],
+  passive: `Refine with Enchanting to create a ${GEM_GRADE_LABEL_V1[grade]} ${family.name} Gem.`
+})));
+var GEM_ITEMS_V1 = MOBILE_GEM_FAMILIES_V1.flatMap((family) => [1, 2, 3, 4, 5].map((grade) => ({
+  id: `gem:${family.familyId}:g${grade}`,
+  name: `${GEM_GRADE_LABEL_V1[grade]} ${family.name} Gem`,
+  type: "gem",
+  gemKind: family.kind,
+  gemFamilyId: family.familyId,
+  gemGrade: grade,
+  gemTier: grade,
+  gemStat: family.legacyStat,
+  gemPercent: family.legacyStat ? family.values[grade] : void 0,
+  gemEffect: family.legacyEffect,
+  gemEffectValue: family.legacyEffect ? family.values[grade] : void 0,
+  value: Math.round(120 * Math.pow(2.25, grade - 1)),
+  rarity: GEM_GRADE_RARITY_V1[grade],
+  passive: family.description
+})));
+function mobileGemFamilyV1(familyId) {
+  return MOBILE_GEM_FAMILIES_V1.find((row) => row.familyId === familyId);
+}
+function mobileGemItemIdV1(familyId, grade) {
+  return `gem:${familyId}:g${grade}`;
+}
+function mobileRawGemItemIdV1(familyId, grade) {
+  return `raw_gem:${familyId}:g${grade}`;
+}
+
+// apps/mobile/src/content/monsters.ts
 var MONSTERS_RAW = [
-  { id: "MOSS_RAT", name: "Moss Rat", level: 1, hp: 28, attack: 5, defense: 2, xp: 14, gold: 1, secondsPerKill: 7, unlockLevel: 1, zone: "Greenfields", drops: [{ itemId: "MOSS_FIBER", chance: 0.55, min: 1, max: 2 }, { itemId: "MOSSWRAP_GLOVES", chance: 0.025, min: 1, max: 1 }] },
-  { id: "FIELD_WISP", name: "Field Wisp", level: 2, hp: 36, attack: 6, defense: 2, xp: 18, gold: 1, secondsPerKill: 8, unlockLevel: 2, zone: "Greenfields", drops: [{ itemId: "WISP_DUST", chance: 0.36, min: 1, max: 1 }, { itemId: "WISP_CHARM", chance: 0.02, min: 1, max: 1 }] },
-  { id: "ROADSIDE_BOAR", name: "Roadside Boar", level: 4, hp: 58, attack: 8, defense: 4, xp: 29, gold: 2, secondsPerKill: 10, unlockLevel: 4, zone: "Greenfields", drops: [{ itemId: "BOAR_HIDE", chance: 0.5, min: 1, max: 2 }, { itemId: "BOARHIDE_BOOTS", chance: 0.018, min: 1, max: 1 }, { itemId: "HIDE_VEST", chance: 0.012, min: 1, max: 1 }] },
+  { id: "MOSS_RAT", name: "Moss Rat", level: 1, hp: 28, attack: 5, defense: 2, xp: 14, gold: 1, secondsPerKill: 7, unlockLevel: 1, zone: "Greenfields", drops: [{ itemId: "MOSS_FIBER", chance: 0.55, min: 1, max: 2 }] },
+  { id: "FIELD_WISP", name: "Field Wisp", level: 2, hp: 36, attack: 6, defense: 2, xp: 18, gold: 1, secondsPerKill: 8, unlockLevel: 2, zone: "Greenfields", drops: [{ itemId: "WISP_DUST", chance: 0.36, min: 1, max: 1 }] },
+  { id: "ROADSIDE_BOAR", name: "Roadside Boar", level: 4, hp: 58, attack: 8, defense: 4, xp: 29, gold: 2, secondsPerKill: 10, unlockLevel: 4, zone: "Greenfields", drops: [{ itemId: "BOAR_HIDE", chance: 0.5, min: 1, max: 2 }] },
   { id: "SILVERFIN_SWARM", name: "Silverfin Swarm", level: 5, hp: 66, attack: 9, defense: 4, xp: 34, gold: 2, secondsPerKill: 10, unlockLevel: 5, zone: "Silverbrook", drops: [{ itemId: "SILVERFIN", chance: 0.6, min: 1, max: 2 }, { itemId: "WISP_DUST", chance: 0.12, min: 1, max: 1 }] },
-  { id: "IRONWOOD_WOLF", name: "Ironwood Wolf", level: 7, hp: 96, attack: 12, defense: 7, xp: 48, gold: 3, secondsPerKill: 12, unlockLevel: 7, zone: "Ironwood Forest", drops: [{ itemId: "WOLF_PELT", chance: 0.48, min: 1, max: 1 }, { itemId: "IRONWOOD_FANG", chance: 0.14, min: 1, max: 1 }, { itemId: "IRONWOOD_BLADE", chance: 0.011, min: 1, max: 1 }] },
+  { id: "IRONWOOD_WOLF", name: "Ironwood Wolf", level: 7, hp: 96, attack: 12, defense: 7, xp: 48, gold: 3, secondsPerKill: 12, unlockLevel: 7, zone: "Ironwood Forest", drops: [{ itemId: "WOLF_PELT", chance: 0.48, min: 1, max: 1 }, { itemId: "IRONWOOD_FANG", chance: 0.14, min: 1, max: 1 }] },
   { id: "VENOM_WEAVER", name: "Venom Weaver", level: 8, hp: 108, attack: 14, defense: 6, xp: 55, gold: 4, secondsPerKill: 13, unlockLevel: 8, zone: "Ironwood Forest", drops: [{ itemId: "THORN_SAP", chance: 0.3, min: 1, max: 1 }, { itemId: "MOSS_FIBER", chance: 0.28, min: 1, max: 2 }] },
-  { id: "THORNLING", name: "Thornling", level: 10, hp: 138, attack: 16, defense: 9, xp: 72, gold: 4, secondsPerKill: 15, unlockLevel: 10, zone: "Ironwood Forest", drops: [{ itemId: "THORN_SAP", chance: 0.42, min: 1, max: 2 }, { itemId: "THORN_RING", chance: 0.012, min: 1, max: 1 }] },
+  { id: "THORNLING", name: "Thornling", level: 10, hp: 138, attack: 16, defense: 9, xp: 72, gold: 4, secondsPerKill: 15, unlockLevel: 10, zone: "Ironwood Forest", drops: [{ itemId: "THORN_SAP", chance: 0.42, min: 1, max: 2 }, { itemId: "BP_ASTER_IRON_HATCHET", chance: 0.05, min: 1, max: 1 }] },
   { id: "BRIAR_HUSK", name: "Briar Husk", level: 11, hp: 154, attack: 18, defense: 10, xp: 82, gold: 5, secondsPerKill: 16, unlockLevel: 11, zone: "Ironwood Forest", drops: [{ itemId: "THORN_SAP", chance: 0.38, min: 1, max: 2 }, { itemId: "GREENWOOD_LOG", chance: 0.24, min: 1, max: 2 }] },
-  { id: "MIRE_HERON", name: "Mire Heron", level: 12, hp: 166, attack: 19, defense: 9, xp: 91, gold: 5, secondsPerKill: 16, unlockLevel: 12, zone: "Silverbrook", drops: [{ itemId: "RIVER_EEL", chance: 0.35, min: 1, max: 1 }, { itemId: "WISP_DUST", chance: 0.22, min: 1, max: 1 }] },
-  { id: "FOREST_TROLL", name: "Forest Troll", level: 14, hp: 215, attack: 23, defense: 13, xp: 118, gold: 7, secondsPerKill: 19, unlockLevel: 14, zone: "Ironwood Forest", drops: [{ itemId: "TROLL_HIDE", chance: 0.32, min: 1, max: 1 }, { itemId: "TROLLGUARD_HELM", chance: 0.01, min: 1, max: 1 }] },
-  { id: "ANCIENT_TREANT", name: "Ancient Treant", level: 15, hp: 242, attack: 24, defense: 15, xp: 132, gold: 8, secondsPerKill: 20, unlockLevel: 15, zone: "Ironwood Forest", drops: [{ itemId: "IRONWOOD_LOG", chance: 0.52, min: 1, max: 2 }, { itemId: "THORN_SAP", chance: 0.3, min: 1, max: 1 }] },
-  { id: "CAVE_SKITTER", name: "Cave Skitter", level: 16, hp: 255, attack: 26, defense: 14, xp: 145, gold: 8, secondsPerKill: 20, unlockLevel: 16, zone: "Old Mines", drops: [{ itemId: "COPPER_ORE", chance: 0.44, min: 1, max: 2 }, { itemId: "ASTER_IRON_ORE", chance: 0.16, min: 1, max: 1 }] },
+  { id: "MIRE_HERON", name: "Mire Heron", level: 12, hp: 166, attack: 19, defense: 9, xp: 91, gold: 5, secondsPerKill: 16, unlockLevel: 12, zone: "Silverbrook", drops: [{ itemId: "RIVER_EEL", chance: 0.35, min: 1, max: 1 }, { itemId: "WISP_DUST", chance: 0.22, min: 1, max: 1 }, { itemId: "BP_IRONWOOD_ROD", chance: 0.05, min: 1, max: 1 }] },
+  { id: "FOREST_TROLL", name: "Forest Troll", level: 14, hp: 215, attack: 23, defense: 13, xp: 118, gold: 7, secondsPerKill: 19, unlockLevel: 14, zone: "Ironwood Forest", drops: [{ itemId: "TROLL_HIDE", chance: 0.32, min: 1, max: 1 }] },
+  { id: "ANCIENT_TREANT", name: "Ancient Treant", level: 15, hp: 242, attack: 24, defense: 15, xp: 132, gold: 8, secondsPerKill: 20, unlockLevel: 15, zone: "Ironwood Forest", drops: [{ itemId: "IRONWOOD_LOG", chance: 0.52, min: 1, max: 2 }, { itemId: "THORN_SAP", chance: 0.3, min: 1, max: 1 }, { itemId: "BP_OATHSTONE_HATCHET", chance: 0.02, min: 1, max: 1 }] },
+  { id: "CAVE_SKITTER", name: "Cave Skitter", level: 16, hp: 255, attack: 26, defense: 14, xp: 145, gold: 8, secondsPerKill: 20, unlockLevel: 16, zone: "Old Mines", drops: [{ itemId: "COPPER_ORE", chance: 0.44, min: 1, max: 2 }, { itemId: "ASTER_IRON_ORE", chance: 0.16, min: 1, max: 1 }, { itemId: "BP_ASTER_IRON_PICKAXE", chance: 0.05, min: 1, max: 1 }] },
   { id: "IRONBACK_MOLE", name: "Ironback Mole", level: 17, hp: 280, attack: 27, defense: 18, xp: 158, gold: 9, secondsPerKill: 21, unlockLevel: 17, zone: "Old Mines", drops: [{ itemId: "ASTER_IRON_ORE", chance: 0.4, min: 1, max: 2 }, { itemId: "COPPER_ORE", chance: 0.3, min: 1, max: 2 }] },
   { id: "ECHO_BAT", name: "Echo Bat", level: 18, hp: 290, attack: 29, defense: 14, xp: 170, gold: 10, secondsPerKill: 21, unlockLevel: 18, zone: "Old Mines", drops: [{ itemId: "WISP_DUST", chance: 0.35, min: 1, max: 2 }, { itemId: "OATHGLASS_SHARD", chance: 0.05, min: 1, max: 1 }, { itemId: "ECHO_BAT_WING", chance: 0.28, min: 1, max: 2 }] },
-  { id: "RUNEBOUND_MINER", name: "Runebound Miner", level: 19, hp: 320, attack: 31, defense: 18, xp: 185, gold: 11, secondsPerKill: 22, unlockLevel: 19, zone: "Old Mines", drops: [{ itemId: "ASTER_IRON_ORE", chance: 0.42, min: 1, max: 2 }, { itemId: "OATHGLASS_SHARD", chance: 0.08, min: 1, max: 1 }, { itemId: "ECHO_QUARTZ", chance: 0.12, min: 1, max: 1 }, { itemId: "RUNEBOUND_CORE", chance: 0.08, min: 1, max: 1 }] },
+  { id: "RUNEBOUND_MINER", name: "Runebound Miner", level: 19, hp: 320, attack: 31, defense: 18, xp: 185, gold: 11, secondsPerKill: 22, unlockLevel: 19, zone: "Old Mines", drops: [{ itemId: "ASTER_IRON_ORE", chance: 0.42, min: 1, max: 2 }, { itemId: "OATHGLASS_SHARD", chance: 0.08, min: 1, max: 1 }, { itemId: "ECHO_QUARTZ", chance: 0.12, min: 1, max: 1 }, { itemId: "RUNEBOUND_CORE", chance: 0.08, min: 1, max: 1 }, { itemId: "BP_OATHSTONE_PICKAXE", chance: 0.02, min: 1, max: 1 }] },
   { id: "GLOAM_MITE", name: "Gloam Mite", level: 20, hp: 335, attack: 33, defense: 18, xp: 198, gold: 12, secondsPerKill: 23, unlockLevel: 20, zone: "Greenfields", drops: [{ itemId: "WISP_DUST", chance: 0.32, min: 1, max: 2 }, { itemId: "MOSS_FIBER", chance: 0.28, min: 1, max: 2 }, { itemId: "GLOAM_DUST", chance: 0.24, min: 1, max: 1 }] },
-  { id: "LANTERN_WRETCH", name: "Lantern Wretch", level: 21, hp: 365, attack: 35, defense: 19, xp: 216, gold: 13, secondsPerKill: 24, unlockLevel: 21, zone: "King's Road", drops: [{ itemId: "WISP_DUST", chance: 0.4, min: 1, max: 2 }, { itemId: "OATHGLASS_SHARD", chance: 0.1, min: 1, max: 1 }, { itemId: "LANTERNSTEEL_SHARD", chance: 0.18, min: 1, max: 1 }, { itemId: "BLOODRUSH_CHEST", chance: 875e-5, min: 1, max: 1 }, { itemId: "BLOODRUSH_GLOVES", chance: 875e-5, min: 1, max: 1 }, { itemId: "BLOODRUSH_CAPE", chance: 875e-5, min: 1, max: 1 }, { itemId: "BLOODRUSH_RING", chance: 875e-5, min: 1, max: 1 }] },
-  { id: "DROWNED_PILGRIM", name: "Drowned Pilgrim", level: 22, hp: 390, attack: 36, defense: 21, xp: 232, gold: 14, secondsPerKill: 25, unlockLevel: 22, zone: "Silverbrook", drops: [{ itemId: "RIVER_EEL", chance: 0.28, min: 1, max: 1 }, { itemId: "OATHGLASS_SHARD", chance: 0.12, min: 1, max: 1 }] },
-  { id: "OATHBOUND_SQUIRE", name: "Oathbound Squire", level: 22, hp: 405, attack: 37, defense: 22, xp: 240, gold: 14, secondsPerKill: 25, unlockLevel: 22, zone: "King's Road", drops: [{ itemId: "OATHGLASS_SHARD", chance: 0.18, min: 1, max: 1 }, { itemId: "TORN_OATHCLOTH", chance: 0.2, min: 1, max: 1 }, { itemId: "FALLEN_RIVET", chance: 0.2, min: 1, max: 1 }, { itemId: "HIDE_VEST", chance: 8e-3, min: 1, max: 1 }] },
-  { id: "BANNER_SHADE", name: "Banner Shade", level: 23, hp: 435, attack: 39, defense: 22, xp: 258, gold: 15, secondsPerKill: 26, unlockLevel: 23, zone: "King's Road", drops: [{ itemId: "OATHGLASS_SHARD", chance: 0.22, min: 1, max: 1 }, { itemId: "TORN_OATHCLOTH", chance: 0.28, min: 1, max: 1 }, { itemId: "BANNER_ASH", chance: 0.28, min: 1, max: 2 }, { itemId: "LANTERNSTEEL_SHARD", chance: 0.1, min: 1, max: 1 }, { itemId: "GLOAM_DUST", chance: 0.18, min: 1, max: 1 }, { itemId: "THORN_RING", chance: 6e-3, min: 1, max: 1 }, { itemId: "NIGHTFANG_CHEST", chance: 875e-5, min: 1, max: 1 }, { itemId: "NIGHTFANG_GLOVES", chance: 875e-5, min: 1, max: 1 }, { itemId: "NIGHTFANG_CAPE", chance: 875e-5, min: 1, max: 1 }, { itemId: "NIGHTFANG_RING", chance: 875e-5, min: 1, max: 1 }] },
-  { id: "FALLEN_SENTINEL", name: "Fallen Sentinel", level: 24, hp: 475, attack: 42, defense: 25, xp: 282, gold: 17, secondsPerKill: 28, unlockLevel: 24, zone: "King's Road", drops: [{ itemId: "OATHGLASS_SHARD", chance: 0.28, min: 1, max: 1 }, { itemId: "ECHO_TOUCHED_PELT", chance: 0.12, min: 1, max: 1 }, { itemId: "TORN_OATHCLOTH", chance: 0.32, min: 1, max: 2 }, { itemId: "LANTERNSTEEL_SHARD", chance: 0.18, min: 1, max: 1 }, { itemId: "FALLEN_RIVET", chance: 0.28, min: 1, max: 2 }, { itemId: "RUNEBOUND_CORE", chance: 0.12, min: 1, max: 1 }, { itemId: "OATHGLASS_CAPE", chance: 8e-3, min: 1, max: 1 }, { itemId: "STORMCARVED_CHEST", chance: 875e-5, min: 1, max: 1 }, { itemId: "STORMCARVED_GLOVES", chance: 875e-5, min: 1, max: 1 }, { itemId: "STORMCARVED_CAPE", chance: 875e-5, min: 1, max: 1 }, { itemId: "STORMCARVED_RING", chance: 875e-5, min: 1, max: 1 }] },
-  { id: "OATHGLASS_REVENANT", name: "Oathglass Revenant", level: 25, hp: 540, attack: 45, defense: 28, xp: 315, gold: 18, secondsPerKill: 30, unlockLevel: 25, zone: "King's Road", drops: [{ itemId: "OATHGLASS_SHARD", chance: 0.34, min: 1, max: 2 }, { itemId: "OATHGLASS_FRAGMENT", chance: 0.2, min: 1, max: 1 }, { itemId: "ECHO_QUARTZ", chance: 0.15, min: 1, max: 1 }, { itemId: "ECHO_TOUCHED_PELT", chance: 0.18, min: 1, max: 1 }, { itemId: "TORN_OATHCLOTH", chance: 0.35, min: 1, max: 2 }, { itemId: "OATHGLASS_CAPE", chance: 6e-3, min: 1, max: 1 }, { itemId: "SPELLGLASS_CHEST", chance: 875e-5, min: 1, max: 1 }, { itemId: "SPELLGLASS_GLOVES", chance: 875e-5, min: 1, max: 1 }, { itemId: "SPELLGLASS_CAPE", chance: 875e-5, min: 1, max: 1 }, { itemId: "SPELLGLASS_RING", chance: 875e-5, min: 1, max: 1 }] },
+  { id: "LANTERN_WRETCH", name: "Lantern Wretch", level: 21, hp: 365, attack: 35, defense: 19, xp: 216, gold: 13, secondsPerKill: 24, unlockLevel: 20, zone: "King's Road", drops: [{ itemId: "WISP_DUST", chance: 0.4, min: 1, max: 2 }, { itemId: "OATHGLASS_SHARD", chance: 0.1, min: 1, max: 1 }, { itemId: "LANTERNSTEEL_SHARD", chance: 0.18, min: 1, max: 1 }] },
+  { id: "DROWNED_PILGRIM", name: "Drowned Pilgrim", level: 22, hp: 390, attack: 36, defense: 21, xp: 232, gold: 14, secondsPerKill: 25, unlockLevel: 22, zone: "Silverbrook", drops: [{ itemId: "RIVER_EEL", chance: 0.28, min: 1, max: 1 }, { itemId: "OATHGLASS_SHARD", chance: 0.12, min: 1, max: 1 }, { itemId: "BP_OATHSCALE_ROD", chance: 0.02, min: 1, max: 1 }] },
+  { id: "OATHBOUND_SQUIRE", name: "Oathbound Squire", level: 22, hp: 405, attack: 37, defense: 22, xp: 240, gold: 14, secondsPerKill: 25, unlockLevel: 22, zone: "King's Road", drops: [{ itemId: "OATHGLASS_SHARD", chance: 0.18, min: 1, max: 1 }, { itemId: "TORN_OATHCLOTH", chance: 0.2, min: 1, max: 1 }, { itemId: "FALLEN_RIVET", chance: 0.2, min: 1, max: 1 }] },
+  { id: "BANNER_SHADE", name: "Banner Shade", level: 23, hp: 435, attack: 39, defense: 22, xp: 258, gold: 15, secondsPerKill: 26, unlockLevel: 23, zone: "King's Road", drops: [{ itemId: "OATHGLASS_SHARD", chance: 0.22, min: 1, max: 1 }, { itemId: "TORN_OATHCLOTH", chance: 0.28, min: 1, max: 1 }, { itemId: "BANNER_ASH", chance: 0.28, min: 1, max: 2 }, { itemId: "LANTERNSTEEL_SHARD", chance: 0.1, min: 1, max: 1 }, { itemId: "GLOAM_DUST", chance: 0.18, min: 1, max: 1 }] },
+  { id: "FALLEN_SENTINEL", name: "Fallen Sentinel", level: 24, hp: 475, attack: 42, defense: 25, xp: 282, gold: 17, secondsPerKill: 28, unlockLevel: 24, zone: "King's Road", drops: [{ itemId: "OATHGLASS_SHARD", chance: 0.28, min: 1, max: 1 }, { itemId: "ECHO_TOUCHED_PELT", chance: 0.12, min: 1, max: 1 }, { itemId: "TORN_OATHCLOTH", chance: 0.32, min: 1, max: 2 }, { itemId: "LANTERNSTEEL_SHARD", chance: 0.18, min: 1, max: 1 }, { itemId: "FALLEN_RIVET", chance: 0.28, min: 1, max: 2 }, { itemId: "RUNEBOUND_CORE", chance: 0.12, min: 1, max: 1 }] },
+  { id: "OATHGLASS_REVENANT", name: "Oathglass Revenant", level: 25, hp: 540, attack: 45, defense: 28, xp: 315, gold: 18, secondsPerKill: 30, unlockLevel: 25, zone: "King's Road", drops: [{ itemId: "OATHGLASS_SHARD", chance: 0.34, min: 1, max: 2 }, { itemId: "OATHGLASS_FRAGMENT", chance: 0.2, min: 1, max: 1 }, { itemId: "ECHO_QUARTZ", chance: 0.15, min: 1, max: 1 }, { itemId: "ECHO_TOUCHED_PELT", chance: 0.18, min: 1, max: 1 }, { itemId: "TORN_OATHCLOTH", chance: 0.35, min: 1, max: 2 }] },
   { id: "SUNSCAR_SCORPION", name: "Sunscar Scorpion", level: 28, hp: 610, attack: 52, defense: 31, xp: 350, gold: 21, secondsPerKill: 31, unlockLevel: 26, zone: "Sunscar", drops: [{ itemId: "SUNSTONE_ORE", chance: 0.42, min: 1, max: 2 }, { itemId: "AMBERGLASS", chance: 0.08, min: 1, max: 1 }] },
   { id: "DUNE_ORACLE", name: "Dune Oracle", level: 33, hp: 760, attack: 61, defense: 36, xp: 438, gold: 27, secondsPerKill: 35, unlockLevel: 31, zone: "Sunscar", drops: [{ itemId: "AMBERGLASS", chance: 0.36, min: 1, max: 2 }, { itemId: "ASTRAL_SCRIPT", chance: 0.08, min: 1, max: 1 }, { itemId: "SWIFT_SIGIL", chance: 3e-3, min: 1, max: 1 }] },
   { id: "GLASSBOUND_SENTINEL", name: "Glassbound Sentinel", level: 40, hp: 980, attack: 74, defense: 45, xp: 560, gold: 35, secondsPerKill: 40, unlockLevel: 38, zone: "Sunscar", drops: [{ itemId: "SUNSTONE_ORE", chance: 0.5, min: 1, max: 2 }, { itemId: "AMBERGLASS", chance: 0.28, min: 1, max: 1 }, { itemId: "ASTRAL_SCRIPT", chance: 0.12, min: 1, max: 1 }] },
-  { id: "FROSTWOLF", name: "Frostwolf", level: 48, hp: 1220, attack: 88, defense: 55, xp: 710, gold: 43, secondsPerKill: 44, unlockLevel: 46, zone: "Frostmarch", drops: [{ itemId: "FROSTIRON", chance: 0.42, min: 1, max: 2 }, { itemId: "RIMEGLASS", chance: 0.08, min: 1, max: 1 }] },
-  { id: "BELLWRAITH", name: "Bellwraith", level: 56, hp: 1580, attack: 106, defense: 68, xp: 920, gold: 55, secondsPerKill: 50, unlockLevel: 53, zone: "Frostmarch", drops: [{ itemId: "RIMEGLASS", chance: 0.36, min: 1, max: 2 }, { itemId: "CHOIR_BLOOM", chance: 0.1, min: 1, max: 1 }] },
-  { id: "CHOIR_HUNTER", name: "Choir Hunter", level: 66, hp: 2050, attack: 132, defense: 82, xp: 1180, gold: 70, secondsPerKill: 58, unlockLevel: 63, zone: "Frostmarch", drops: [{ itemId: "FROSTIRON", chance: 0.5, min: 1, max: 2 }, { itemId: "RIMEGLASS", chance: 0.28, min: 1, max: 1 }, { itemId: "CHOIR_BLOOM", chance: 0.12, min: 1, max: 1 }, { itemId: "BULWARK_SIGIL", chance: 3e-3, min: 1, max: 1 }] },
+  { id: "FROSTWOLF", name: "Frostwolf", level: 48, hp: 1220, attack: 88, defense: 55, xp: 710, gold: 43, secondsPerKill: 44, unlockLevel: 46, zone: "Frostmarch", drops: [{ itemId: "FROSTIRON", chance: 0.42, min: 1, max: 2 }, { itemId: "RIMEGLASS", chance: 0.08, min: 1, max: 1 }, { itemId: "BP_FROSTIRON_HATCHET", chance: 0.01, min: 1, max: 1 }] },
+  { id: "BELLWRAITH", name: "Bellwraith", level: 56, hp: 1580, attack: 106, defense: 68, xp: 920, gold: 55, secondsPerKill: 50, unlockLevel: 53, zone: "Frostmarch", drops: [{ itemId: "RIMEGLASS", chance: 0.36, min: 1, max: 2 }, { itemId: "CHOIR_BLOOM", chance: 0.1, min: 1, max: 1 }, { itemId: "BP_FROSTIRON_PICKAXE", chance: 0.01, min: 1, max: 1 }] },
+  { id: "CHOIR_HUNTER", name: "Choir Hunter", level: 66, hp: 2050, attack: 132, defense: 82, xp: 1180, gold: 70, secondsPerKill: 58, unlockLevel: 63, zone: "Frostmarch", drops: [{ itemId: "FROSTIRON", chance: 0.5, min: 1, max: 2 }, { itemId: "RIMEGLASS", chance: 0.28, min: 1, max: 1 }, { itemId: "CHOIR_BLOOM", chance: 0.12, min: 1, max: 1 }, { itemId: "BULWARK_SIGIL", chance: 3e-3, min: 1, max: 1 }, { itemId: "BP_RIMEGLASS_ROD", chance: 0.01, min: 1, max: 1 }] },
   { id: "BLACKGLASS_MIRELING", name: "Blackglass Mireling", level: 72, hp: 2480, attack: 154, defense: 96, xp: 1450, gold: 86, secondsPerKill: 63, unlockLevel: 71, zone: "Ashlands", drops: [{ itemId: "BANNER_ASH", chance: 0.42, min: 1, max: 2 }, { itemId: "BLACKGLASS_CORE", chance: 0.08, min: 1, max: 1 }, { itemId: "RIMEGLASS", chance: 0.12, min: 1, max: 1 }] },
   { id: "CINDER_TITAN", name: "Cinder Titan", level: 80, hp: 3200, attack: 185, defense: 118, xp: 1840, gold: 108, secondsPerKill: 72, unlockLevel: 78, zone: "Ashlands", drops: [{ itemId: "SUNSTONE_ORE", chance: 0.34, min: 1, max: 2 }, { itemId: "CINDER_HEART", chance: 0.08, min: 1, max: 1 }, { itemId: "ASTRAL_SCRIPT", chance: 0.2, min: 1, max: 1 }, { itemId: "CHOIR_BLOOM", chance: 0.16, min: 1, max: 1 }, { itemId: "BOSSBANE_SIGIL", chance: 25e-4, min: 1, max: 1 }] },
   { id: "ASHEN_REVENANT", name: "Ashen Revenant", level: 88, hp: 4100, attack: 224, defense: 142, xp: 2320, gold: 136, secondsPerKill: 82, unlockLevel: 86, zone: "Ashlands", drops: [{ itemId: "BANNER_ASH", chance: 0.55, min: 1, max: 2 }, { itemId: "CINDER_HEART", chance: 0.1, min: 1, max: 1 }, { itemId: "REGENT_SIGIL", chance: 0.04, min: 1, max: 1 }, { itemId: "ASTRAL_SCRIPT", chance: 0.28, min: 1, max: 1 }, { itemId: "RIMEGLASS", chance: 0.22, min: 1, max: 1 }, { itemId: "RENEWAL_SIGIL", chance: 25e-4, min: 1, max: 1 }] },
-  { id: "FALLEN_KNIGHT", name: "Fallen Knight", level: 25, hp: 18e4, attack: 68, defense: 36, xp: 3e3, gold: 180, secondsPerKill: 75, unlockLevel: 25, zone: "King's Road", boss: true, drops: [{ itemId: "FALLEN_KNIGHT_SIGIL", chance: 1, min: 1, max: 1 }, { itemId: "ECHO_TOUCHED_PELT", chance: 1, min: 2, max: 4 }, { itemId: "TORN_OATHCLOTH", chance: 1, min: 4, max: 6 }, { itemId: "TRACKER_CHEST", chance: 0.01, min: 1, max: 1 }, { itemId: "TRACKER_GLOVES", chance: 0.01, min: 1, max: 1 }, { itemId: "TRACKER_CAPE", chance: 0.01, min: 1, max: 1 }, { itemId: "TRACKER_RING", chance: 0.01, min: 1, max: 1 }] }
+  { id: "FALLEN_KNIGHT", name: "Fallen Knight", level: 25, hp: 18e4, attack: 68, defense: 36, xp: 3e3, gold: 180, secondsPerKill: 75, unlockLevel: 25, zone: "King's Road", boss: true, drops: [{ itemId: "FALLEN_KNIGHT_SIGIL", chance: 1, min: 1, max: 1 }, { itemId: "ECHO_TOUCHED_PELT", chance: 1, min: 2, max: 4 }, { itemId: "TORN_OATHCLOTH", chance: 1, min: 4, max: 6 }] }
 ];
 var MONSTER_TIME_SCALE = 1.95;
 var MONSTER_STAT_SCALE = 1.07;
+function asterfallRawGemDrop(monster) {
+  if (monster.boss || monster.level < 4 || monster.level > 25) return void 0;
+  const familyId = monster.level >= 20 ? monster.attack >= monster.defense * 1.8 ? "stat_keen" : "stat_potent" : monster.level >= 16 ? monster.attack >= monster.defense * 1.7 ? "stat_precision" : "stat_ward" : monster.level >= 10 ? monster.attack >= monster.defense * 1.7 ? "stat_swift" : "stat_iron" : monster.attack >= monster.defense * 1.7 ? "stat_might" : "stat_vitality";
+  const chance = monster.level >= 20 ? 6e-3 : monster.level >= 16 ? 55e-4 : monster.level >= 10 ? 5e-3 : 4e-3;
+  return { itemId: mobileRawGemItemIdV1(familyId, 1), chance, min: 1, max: 1 };
+}
 var enhancementDrops = (monster) => {
   if (monster.boss) return [{ itemId: "TEMPERING_DUST", chance: 1, min: 8, max: 14 }, { itemId: "TEMPERING_CORE", chance: 1, min: 1, max: 2 }, { itemId: "EMBERHEART_GEM", chance: 1e-3, min: 1, max: 1 }, { itemId: "WARDHEART_GEM", chance: 1e-3, min: 1, max: 1 }, { itemId: "VITALITY_HEART_GEM", chance: 1e-3, min: 1, max: 1 }];
-  if (monster.level >= 20) return [{ itemId: "TEMPERING_DUST", chance: 0.18, min: 1, max: 2 }, { itemId: "TEMPERING_CORE", chance: 0.025, min: 1, max: 1 }, { itemId: monster.attack >= monster.defense * 1.7 ? "EMBER_SHARD" : monster.defense >= monster.attack * 0.65 ? "WARD_SHARD" : "VITALITY_SHARD", chance: 4e-3, min: 1, max: 1 }];
-  if (monster.level >= 10) return [{ itemId: "TEMPERING_DUST", chance: 0.1, min: 1, max: 1 }, { itemId: "TEMPERING_CORE", chance: 0.01, min: 1, max: 1 }];
-  return monster.level >= 4 ? [{ itemId: "TEMPERING_DUST", chance: 0.05, min: 1, max: 1 }] : [];
+  const raw2 = asterfallRawGemDrop(monster), gem2 = raw2 ? [raw2] : [];
+  if (monster.level >= 20) return [{ itemId: "TEMPERING_DUST", chance: 0.18, min: 1, max: 2 }, { itemId: "TEMPERING_CORE", chance: 0.025, min: 1, max: 1 }, { itemId: monster.attack >= monster.defense * 1.7 ? "EMBER_SHARD" : monster.defense >= monster.attack * 0.65 ? "WARD_SHARD" : "VITALITY_SHARD", chance: 4e-3, min: 1, max: 1 }, ...gem2];
+  if (monster.level >= 10) return [{ itemId: "TEMPERING_DUST", chance: 0.1, min: 1, max: 1 }, { itemId: "TEMPERING_CORE", chance: 0.01, min: 1, max: 1 }, ...gem2];
+  return monster.level >= 4 ? [{ itemId: "TEMPERING_DUST", chance: 0.05, min: 1, max: 1 }, ...gem2] : gem2;
 };
-var MONSTERS = MONSTERS_RAW.map((monster) => ({
-  ...monster,
-  drops: [...monster.drops, ...monster.id === "FIELD_WISP" ? [{ itemId: "HOLY_WATER", chance: 0.12, min: 1, max: 1 }] : monster.id === "DROWNED_PILGRIM" ? [{ itemId: "HOLY_WATER", chance: 0.3, min: 1, max: 1 }] : monster.id === "OATHBOUND_SQUIRE" ? [{ itemId: "HOLY_WATER", chance: 0.24, min: 1, max: 1 }] : [], ...enhancementDrops(monster)],
-  secondsPerKill: Math.ceil(monster.secondsPerKill * MONSTER_TIME_SCALE),
-  hp: Math.ceil(monster.hp * MONSTER_STAT_SCALE),
-  attack: Math.ceil(monster.attack * MONSTER_STAT_SCALE),
-  defense: Math.ceil(monster.defense * MONSTER_STAT_SCALE)
-}));
-
-// ../apps/mobile/src/content/novice-sets.ts
-var definitions = [
-  { id: "ironwarden_recruit", classId: "IRONWARDEN", name: "Ironwarden Recruit", appearanceId: "beginner-ironwarden-recruit", weaponName: "Recruit Sword", weaponAttack: 6, offhandName: "Recruit Shield", setBonus: { name: "Runic Formation", attack: 3, defense: 8, hp: 28, description: "+8 DEF and +28 HP while the full set is equipped." }, theme: { accent: "#83a9c8", identity: "Disciplined steel frontline", material: "Steel, blue cloth and field leather" } },
-  { id: "wallkeeper_initiate", classId: "BASTION", name: "Wallkeeper Initiate", appearanceId: "beginner-wallkeeper-initiate", weaponName: "Initiate Tower Shield", weaponAttack: 5, offhandName: "Initiate Guard Bell", setBonus: { name: "Unbroken Wall", attack: 1, defense: 12, hp: 42, description: "+12 DEF and +42 HP while the full set is equipped." }, theme: { accent: "#d2a04d", identity: "Maximum defense and immovable presence", material: "Dark plate, gold trim and tower shield" } },
-  { id: "chainwatch_novice", classId: "DREADGUARD", name: "Chainwatch Novice", appearanceId: "beginner-chainwatch-novice", weaponName: "Novice Chained Weapon", weaponAttack: 7, offhandName: "Novice Shield", setBonus: { name: "Dread Chain", attack: 7, defense: 3, hp: 18, description: "+7 ATK and +18 HP while the full set is equipped." }, theme: { accent: "#a97070", identity: "Relentless control at close range", material: "Black iron, chain and weathered hide" } },
-  { id: "sunlamp_acolyte", classId: "DAWNKEEPER", name: "Sunlamp Acolyte", appearanceId: "beginner-sunlamp-acolyte", weaponName: "Acolyte Mace", weaponAttack: 5, offhandName: "Acolyte Relic", setBonus: { name: "Sunlit Benediction", attack: 3, defense: 4, hp: 55, description: "+55 HP and +3 ATK while the full set is equipped." }, theme: { accent: "#e2b849", identity: "Radiant support and sacred resolve", material: "Ivory cloth, bronze and sun-gold" } },
-  { id: "trailbow_scout", classId: "WAYFINDER", name: "Trailbow Scout", appearanceId: "beginner-trailbow-scout", weaponName: "Scout Bow", weaponAttack: 7, offhandName: "Scout Hunting Knife", setBonus: { name: "Trail Instinct", attack: 8, defense: 2, hp: 12, description: "+8 ATK and +12 HP while the full set is equipped." }, theme: { accent: "#73a775", identity: "Mobile ranged pathfinder", material: "Greenwood, layered leather and moss cloth" } },
-  { id: "breaksteel_marauder", classId: "RAVAGER", name: "Breaksteel Marauder", appearanceId: "beginner-breaksteel-marauder", weaponName: "Marauder Two-Handed Weapon", weaponAttack: 8, offhandName: "Marauder War Charm", setBonus: { name: "Breaksteel Fury", attack: 10, defense: 0, hp: 10, description: "+10 ATK while the full set is equipped." }, theme: { accent: "#b06746", identity: "Raw power and two-handed aggression", material: "Spiked iron, dark leather and rust-red cloth" } },
-  { id: "runespark_adept", classId: "HEXWEAVER", name: "Runespark Adept", appearanceId: "accepted-front-runespark-adept", weaponName: "Adept Wand", weaponAttack: 6, offhandName: "Adept Focus", setBonus: { name: "Runic Resonance", attack: 8, defense: 2, hp: 22, description: "+8 ATK and +22 HP while the full set is equipped." }, theme: { accent: "#9a78d0", identity: "Arcane focus and runic control", material: "Violet weave, brass and crystal" } },
-  { id: "twinstep_initiate", classId: "KNIFE_DANCER", name: "Twinstep Initiate", appearanceId: "beginner-twinstep-initiate", weaponName: "Initiate Main Blade", weaponAttack: 6, offhandName: "Initiate Second Blade", setBonus: { name: "Twin Tempo", attack: 9, defense: 1, hp: 8, description: "+9 ATK while the full set is equipped." }, theme: { accent: "#a9a8bd", identity: "Speed, precision and paired blades", material: "Light steel, charcoal cloth and soft leather" } },
-  { id: "earthseal_disciple", classId: "STONECALLER", name: "Earthseal Disciple", appearanceId: "beginner-earthseal-disciple", weaponName: "Disciple Staff", weaponAttack: 6, offhandName: "Disciple Totem", setBonus: { name: "Earthen Resonance", attack: 4, defense: 6, hp: 34, description: "+6 DEF and +34 HP while the full set is equipped." }, theme: { accent: "#b49a66", identity: "Earthen endurance and primal support", material: "Stone, bark and ochre wool" } }
-];
-var NOVICE_SETS = definitions.map((set) => ({ ...set, slots: ["chest", "weapon", ...set.offhandName ? ["offhand"] : [], "gloves", "boots", "helmet", "legs", "cape", "amulet", "ring"] }));
-function noviceSetFor(classId) {
-  return NOVICE_SETS.find((set) => set.classId === classId);
-}
-function noviceItemId(classId, slot) {
-  return `NOVICE_${classId}_${slot.toUpperCase()}`;
-}
-function noviceRecipeId(classId, slot) {
-  return `CRAFT_${noviceItemId(classId, slot)}`;
-}
-var NOVICE_STAGE = { chest: 1, weapon: 2, offhand: 2, gloves: 3, boots: 3, helmet: 4, legs: 4, cape: 4, amulet: 5, ring: 5 };
-var labels = { chest: "Armor", gloves: "Gloves", boots: "Boots", helmet: "Headpiece", legs: "Legguards", cape: "Cloak", amulet: "Amulet", ring: "Signet Ring" };
-var prerequisite = { weapon: "chest", offhand: "chest", gloves: "weapon", boots: "weapon", helmet: "boots", legs: "boots", cape: "boots", amulet: "cape", ring: "amulet" };
-var NOVICE_ITEMS = NOVICE_SETS.flatMap((set) => set.slots.map((slot) => ({
-  id: noviceItemId(set.classId, slot),
-  name: slot === "weapon" ? set.weaponName : slot === "offhand" ? set.offhandName : `${set.name} ${labels[slot]}`,
-  type: "gear",
-  slot,
-  classRestriction: set.classId,
-  noviceSetId: set.id,
-  value: 5,
-  readiness: 1,
-  attack: slot === "weapon" ? set.weaponAttack : slot === "ring" ? 1 : 0,
-  defense: slot === "weapon" ? set.classId === "BASTION" ? 2 : set.classId === "DAWNKEEPER" ? 1 : 0 : slot === "chest" ? 2 : slot === "cape" ? 1 : 1,
-  hp: slot === "chest" ? 6 : slot === "legs" ? 4 : slot === "helmet" ? 2 : slot === "cape" ? 3 : slot === "amulet" ? 5 : slot === "weapon" && set.classId === "STONECALLER" ? 5 : 0
-})));
-var NOVICE_RECIPES = NOVICE_SETS.flatMap((set) => set.slots.map((slot) => {
-  const stage = NOVICE_STAGE[slot] ?? 4;
-  const item = NOVICE_ITEMS.find((item2) => item2.id === noviceItemId(set.classId, slot));
+var MONSTERS = MONSTERS_RAW.map((monster) => {
+  const holyWater = HOLY_WATER_SOURCES.find((source) => source.monsterId === monster.id);
   return {
-    id: noviceRecipeId(set.classId, slot),
-    name: item.name,
-    skillId: "smithing",
-    level: 1,
-    characterLevel: stage,
-    classId: set.classId,
-    noviceSetId: set.id,
-    requiresCraftedItemId: prerequisite[slot] ? noviceItemId(set.classId, prerequisite[slot]) : void 0,
-    // Full loadouts include relic slots now. Keep their investment aligned with
-    // the 2× progression economy rather than letting a 24-hour AFK session
-    // fund several complete crafted sets.
-    xp: stage * 40,
-    gold: (slot === "weapon" || slot === "amulet" || slot === "ring" ? 20 : stage === 4 ? 15 : 10) * 2,
-    seconds: 0,
-    inputs: [{ itemId: "COPPER_ORE", quantity: (stage >= 4 ? 16 : slot === "chest" || slot === "weapon" ? 16 : 8) * 2 }, { itemId: "GREENWOOD_LOG", quantity: (stage >= 4 ? 16 : slot === "chest" || slot === "weapon" ? 16 : 8) * 2 }, { itemId: "MOSS_FIBER", quantity: (stage >= 5 ? 8 : 4) * 2 }],
-    output: { itemId: item.id, quantity: 1 }
+    ...monster,
+    drops: [...monster.drops, ...holyWater ? [{ itemId: HOLY_WATER_ID, chance: holyWater.chance, min: holyWater.min, max: holyWater.max }] : [], ...enhancementDrops(monster)],
+    secondsPerKill: Math.ceil(monster.secondsPerKill * MONSTER_TIME_SCALE),
+    hp: Math.ceil(monster.hp * MONSTER_STAT_SCALE),
+    attack: Math.ceil(monster.attack * MONSTER_STAT_SCALE),
+    defense: Math.ceil(monster.defense * MONSTER_STAT_SCALE)
   };
-}));
-
-// ../apps/mobile/src/content/gathering-tools.ts
-var tool = (definition) => definition;
-var GATHERING_TOOLS = [
-  tool({ id: "COPPER_PICKAXE", name: "Copper Pickaxe", skillId: "mining", tier: 1, actionTimeMultiplier: 1, unlockLevel: 1, icon: "\u26CF", rarity: "common", value: 120, recipe: { level: 2, xp: 95, gold: 90, seconds: 90, inputs: [{ itemId: "COPPER_INGOT", quantity: 6 }, { itemId: "GREENWOOD_LOG", quantity: 10 }] } }),
-  tool({ id: "ASTER_IRON_PICKAXE", name: "Aster-Iron Pickaxe", skillId: "mining", tier: 2, actionTimeMultiplier: 0.75, unlockLevel: 8, icon: "\u26CF", rarity: "uncommon", value: 440, recipe: { level: 9, xp: 280, gold: 460, seconds: 180, inputs: [{ itemId: "ASTER_IRON_INGOT", quantity: 12 }, { itemId: "IRONWOOD_LOG", quantity: 20 }, { itemId: "REINFORCED_FITTING", quantity: 2 }] } }),
-  tool({ id: "OATHSTONE_PICKAXE", name: "Oathstone Pickaxe", skillId: "mining", tier: 3, actionTimeMultiplier: 0.5, unlockLevel: 16, icon: "\u26CF", rarity: "rare", value: 1180, recipe: { level: 18, xp: 720, gold: 1800, seconds: 360, inputs: [{ itemId: "OATHSTONE_INGOT", quantity: 16 }, { itemId: "CROWNWOOD_LOG", quantity: 30 }, { itemId: "OATHGLASS_SHARD", quantity: 5 }] } }),
-  tool({ id: "FROSTIRON_PICKAXE", name: "Frostiron Pickaxe", skillId: "mining", tier: 4, actionTimeMultiplier: 0.4, unlockLevel: 30, icon: "\u26CF", rarity: "epic", value: 3600, recipe: { level: 36, xp: 1800, gold: 6200, seconds: 720, inputs: [{ itemId: "FROSTIRON", quantity: 24 }, { itemId: "RIMEGLASS", quantity: 8 }, { itemId: "REINFORCED_FITTING", quantity: 8 }] } }),
-  tool({ id: "GREENWOOD_HATCHET", name: "Greenwood Hatchet", skillId: "woodcutting", tier: 1, actionTimeMultiplier: 1, unlockLevel: 1, icon: "\u{1FA93}", rarity: "common", value: 110, recipe: { level: 2, xp: 90, gold: 80, seconds: 84, inputs: [{ itemId: "COPPER_INGOT", quantity: 5 }, { itemId: "GREENWOOD_LOG", quantity: 12 }] } }),
-  tool({ id: "ASTER_IRON_HATCHET", name: "Aster-Iron Hatchet", skillId: "woodcutting", tier: 2, actionTimeMultiplier: 0.75, unlockLevel: 7, icon: "\u{1FA93}", rarity: "uncommon", value: 430, recipe: { level: 9, xp: 270, gold: 440, seconds: 174, inputs: [{ itemId: "ASTER_IRON_INGOT", quantity: 11 }, { itemId: "IRONWOOD_LOG", quantity: 22 }, { itemId: "REINFORCED_FITTING", quantity: 2 }] } }),
-  tool({ id: "OATHSTONE_HATCHET", name: "Oathstone Hatchet", skillId: "woodcutting", tier: 3, actionTimeMultiplier: 0.5, unlockLevel: 15, icon: "\u{1FA93}", rarity: "rare", value: 1160, recipe: { level: 18, xp: 700, gold: 1750, seconds: 348, inputs: [{ itemId: "OATHSTONE_INGOT", quantity: 15 }, { itemId: "CROWNWOOD_LOG", quantity: 34 }, { itemId: "OATHGLASS_SHARD", quantity: 4 }] } }),
-  tool({ id: "FROSTIRON_HATCHET", name: "Frostiron Hatchet", skillId: "woodcutting", tier: 4, actionTimeMultiplier: 0.4, unlockLevel: 30, icon: "\u{1FA93}", rarity: "epic", value: 3550, recipe: { level: 36, xp: 1760, gold: 6100, seconds: 708, inputs: [{ itemId: "FROSTIRON", quantity: 22 }, { itemId: "RIMEGLASS", quantity: 7 }, { itemId: "CHOIR_BLOOM", quantity: 2 }] } }),
-  tool({ id: "REEDLINE_ROD", name: "Reedline Fishing Rod", skillId: "fishing", tier: 1, actionTimeMultiplier: 1, unlockLevel: 1, icon: "\u{1F3A3}", rarity: "common", value: 100, recipe: { level: 2, xp: 85, gold: 75, seconds: 84, inputs: [{ itemId: "GREENWOOD_LOG", quantity: 16 }, { itemId: "MOSS_FIBER", quantity: 8 }] } }),
-  tool({ id: "IRONWOOD_ROD", name: "Ironwood Fishing Rod", skillId: "fishing", tier: 2, actionTimeMultiplier: 0.75, unlockLevel: 8, icon: "\u{1F3A3}", rarity: "uncommon", value: 420, recipe: { level: 9, xp: 260, gold: 420, seconds: 168, inputs: [{ itemId: "IRONWOOD_LOG", quantity: 28 }, { itemId: "ASTER_IRON_INGOT", quantity: 7 }, { itemId: "WISP_DUST", quantity: 8 }] } }),
-  tool({ id: "OATHSCALE_ROD", name: "Oathscale Fishing Rod", skillId: "fishing", tier: 3, actionTimeMultiplier: 0.5, unlockLevel: 16, icon: "\u{1F3A3}", rarity: "rare", value: 1140, recipe: { level: 18, xp: 680, gold: 1680, seconds: 342, inputs: [{ itemId: "CROWNWOOD_LOG", quantity: 32 }, { itemId: "OATHSTONE_INGOT", quantity: 10 }, { itemId: "OATHSCALE_PIKE", quantity: 8 }] } }),
-  tool({ id: "RIMEGLASS_ROD", name: "Rimeglass Fishing Rod", skillId: "fishing", tier: 4, actionTimeMultiplier: 0.4, unlockLevel: 30, icon: "\u{1F3A3}", rarity: "epic", value: 3500, recipe: { level: 36, xp: 1720, gold: 6e3, seconds: 696, inputs: [{ itemId: "FROSTIRON", quantity: 16 }, { itemId: "RIMEGLASS", quantity: 10 }, { itemId: "CHOIR_BLOOM", quantity: 2 }] } })
-];
-var TOOL_ITEMS = GATHERING_TOOLS.map((entry2) => ({ id: entry2.id, name: entry2.name, type: "tool", value: entry2.value, rarity: entry2.rarity, toolSkillId: entry2.skillId, toolTier: entry2.tier, actionTimeMultiplier: entry2.actionTimeMultiplier }));
-var TOOL_RECIPES = GATHERING_TOOLS.map((entry2) => ({ id: `CRAFT_${entry2.id}`, name: entry2.name, skillId: "smithing", level: entry2.recipe.level, xp: entry2.recipe.xp, gold: entry2.recipe.gold, seconds: entry2.recipe.seconds, inputs: entry2.recipe.inputs, output: { itemId: entry2.id, quantity: 1 } }));
-var gatheringToolDef = (id) => id ? GATHERING_TOOLS.find((entry2) => entry2.id === id) : void 0;
-var gatheringToolsFor = (skillId) => GATHERING_TOOLS.filter((entry2) => entry2.skillId === skillId);
-
-// ../apps/mobile/src/content/herbalism.ts
-var HERB_NODES = [
-  { id: "DEWLEAF_PATCH", name: "Dewleaf Patch", itemId: "DEWLEAF", zoneId: "GREENFIELDS", unlockLevel: 1, seconds: 30, xp: 9 },
-  { id: "RIVER_MINT_BED", name: "River Mint Bed", itemId: "RIVER_MINT", zoneId: "SILVERBROOK", unlockLevel: 8, seconds: 40, xp: 20 },
-  { id: "IRONBLOOM_THICKET", name: "Ironbloom Thicket", itemId: "IRONBLOOM", zoneId: "IRONWOOD", unlockLevel: 18, seconds: 50, xp: 38 },
-  { id: "CAVELICHEN_COLONY", name: "Cavelichen Colony", itemId: "CAVELICHEN", zoneId: "OLD_MINES", unlockLevel: 30, seconds: 60, xp: 68 },
-  { id: "CROWN_SAGE_GROVE", name: "Crown Sage Grove", itemId: "CROWN_SAGE", zoneId: "KINGS_ROAD", unlockLevel: 45, seconds: 70, xp: 110 },
-  { id: "OATHBLOSSOM_PATCH", name: "Oathblossom Patch", itemId: "OATHBLOSSOM", zoneId: "KINGS_ROAD", unlockLevel: 60, seconds: 80, xp: 170 },
-  { id: "SUNSCALE_BLOOM", name: "Sunscale Bloom", itemId: "SUNSCALE", zoneId: "SUNSCAR", unlockLevel: 26, seconds: 92, xp: 215 },
-  { id: "FROSTBELL_FLOWER", name: "Frostbell Flower", itemId: "FROSTBLOOM", zoneId: "FROSTMARCH", unlockLevel: 46, seconds: 118, xp: 310 },
-  { id: "ASHEN_MYRRH_GROVE", name: "Ashen Myrrh Grove", itemId: "ASHEN_MYRRH", zoneId: "ASHLANDS", unlockLevel: 71, seconds: 145, xp: 440 }
-].map((node) => ({ ...node, skillId: "herbalism", min: 1, max: 1, difficultyMultiplier: 1, recommendedToolTier: 0 }));
-var HERB_ITEMS = [
-  { id: "DEWLEAF", name: "Dewleaf", type: "material", value: 2, rarity: "common" },
-  { id: "RIVER_MINT", name: "River Mint", type: "material", value: 4, rarity: "common" },
-  { id: "IRONBLOOM", name: "Ironbloom", type: "material", value: 8, rarity: "uncommon" },
-  { id: "CAVELICHEN", name: "Cavelichen", type: "material", value: 14, rarity: "uncommon" },
-  { id: "CROWN_SAGE", name: "Crown Sage", type: "material", value: 22, rarity: "rare" },
-  { id: "OATHBLOSSOM", name: "Oathblossom", type: "material", value: 32, rarity: "rare" },
-  { id: "SUNSCALE", name: "Sunscale Bloom", type: "material", value: 48, rarity: "rare" },
-  { id: "FROSTBLOOM", name: "Frostbell Flower", type: "material", value: 72, rarity: "rare" },
-  { id: "ASHEN_MYRRH", name: "Ashen Myrrh", type: "material", value: 105, rarity: "epic" }
-];
-
-// ../apps/mobile/src/content/alchemy.ts
-var MAX_ALCHEMY_BATCHES = 100;
-var POTIONS = [
-  { id: "DEWLEAF_DRAUGHT", name: "Dewleaf Draught", effect: { kind: "healing", maxHpFraction: 0.25 }, description: "Restore 25% of maximum HP outside a hunt. No effect at full health." },
-  { id: "RIVERHEART_DRAUGHT", name: "Riverheart Draught", effect: { kind: "healing", maxHpFraction: 0.45 }, description: "Restore 45% of maximum HP outside a hunt. No effect at full health." },
-  { id: "OATHBLOOM_DRAUGHT", name: "Oathbloom Draught", effect: { kind: "healing", maxHpFraction: 0.65 }, description: "Restore 65% of maximum HP outside a hunt. No effect at full health." },
-  { id: "VIGOR_TONIC", name: "Vigor Tonic", effect: { kind: "preparation", attackFraction: 0.04, damageReductionFraction: 0, encounters: 30 }, description: "+4% attack for 30 resolved ordinary encounters." },
-  { id: "GREATER_VIGOR_TONIC", name: "Greater Vigor Tonic", effect: { kind: "preparation", attackFraction: 0.06, damageReductionFraction: 0, encounters: 45 }, description: "+6% attack for 45 resolved ordinary encounters." },
-  { id: "OATH_VIGOR_TONIC", name: "Oath Vigor Tonic", effect: { kind: "preparation", attackFraction: 0.08, damageReductionFraction: 0, encounters: 60 }, description: "+8% attack for 60 resolved ordinary encounters." },
-  { id: "WARD_TONIC", name: "Ward Tonic", effect: { kind: "preparation", attackFraction: 0, damageReductionFraction: 0.04, encounters: 30 }, description: "4% less incoming damage for 30 resolved ordinary encounters." },
-  { id: "GREATER_WARD_TONIC", name: "Greater Ward Tonic", effect: { kind: "preparation", attackFraction: 0, damageReductionFraction: 0.06, encounters: 45 }, description: "6% less incoming damage for 45 resolved ordinary encounters." },
-  { id: "OATH_WARD_TONIC", name: "Oath Ward Tonic", effect: { kind: "preparation", attackFraction: 0, damageReductionFraction: 0.08, encounters: 60 }, description: "8% less incoming damage for 60 resolved ordinary encounters." }
-];
-var recipe = (potionId, level, seconds, xp, gold, inputs, suffix = "") => ({
-  id: `BREW_${potionId}${suffix}`,
-  name: POTIONS.find((p) => p.id === potionId).name,
-  skillId: "alchemy",
-  level,
-  seconds,
-  xp,
-  gold,
-  inputs,
-  output: { itemId: potionId, quantity: 1 }
 });
-var ALCHEMY_RECIPES = [
-  recipe("DEWLEAF_DRAUGHT", 1, 60, 24, 4, [{ itemId: "DEWLEAF", quantity: 2 }]),
-  recipe("VIGOR_TONIC", 8, 75, 46, 8, [{ itemId: "DEWLEAF", quantity: 2 }, { itemId: "RIVER_MINT", quantity: 2 }]),
-  recipe("WARD_TONIC", 16, 90, 78, 12, [{ itemId: "DEWLEAF", quantity: 2 }, { itemId: "IRONBLOOM", quantity: 2 }]),
-  recipe("RIVERHEART_DRAUGHT", 25, 105, 126, 18, [{ itemId: "DEWLEAF", quantity: 3 }, { itemId: "RIVER_MINT", quantity: 3 }]),
-  recipe("GREATER_VIGOR_TONIC", 35, 120, 190, 28, [{ itemId: "RIVER_MINT", quantity: 3 }, { itemId: "CAVELICHEN", quantity: 2 }]),
-  recipe("GREATER_WARD_TONIC", 45, 135, 280, 40, [{ itemId: "IRONBLOOM", quantity: 3 }, { itemId: "CROWN_SAGE", quantity: 2 }]),
-  recipe("OATHBLOOM_DRAUGHT", 60, 150, 430, 60, [{ itemId: "DEWLEAF", quantity: 4 }, { itemId: "OATHBLOSSOM", quantity: 2 }]),
-  recipe("OATH_VIGOR_TONIC", 75, 165, 620, 90, [{ itemId: "CAVELICHEN", quantity: 3 }, { itemId: "OATHBLOSSOM", quantity: 3 }]),
-  recipe("OATH_WARD_TONIC", 85, 180, 800, 120, [{ itemId: "CROWN_SAGE", quantity: 3 }, { itemId: "OATHBLOSSOM", quantity: 3 }]),
-  recipe("GREATER_VIGOR_TONIC", 35, 132, 220, 32, [{ itemId: "SUNSCALE", quantity: 2 }, { itemId: "RIVER_MINT", quantity: 2 }], "_SUNSCAR"),
-  recipe("OATH_VIGOR_TONIC", 75, 174, 680, 98, [{ itemId: "FROSTBLOOM", quantity: 2 }, { itemId: "OATHBLOSSOM", quantity: 2 }], "_FROSTMARCH"),
-  recipe("OATH_WARD_TONIC", 85, 190, 860, 128, [{ itemId: "ASHEN_MYRRH", quantity: 2 }, { itemId: "FROSTBLOOM", quantity: 2 }], "_ASHLANDS")
-];
-var POTION_ITEMS = POTIONS.map((potion) => ({
-  id: potion.id,
-  name: potion.name,
-  type: "potion",
-  value: potion.id === "DEWLEAF_DRAUGHT" ? 4 : potion.id.includes("OATH") ? 32 : potion.id.includes("GREATER") ? 20 : 8,
-  rarity: potion.id.includes("OATH") ? "rare" : potion.id.includes("GREATER") ? "uncommon" : "common",
-  passive: potion.description
-}));
-var potionDef = (id) => POTIONS.find((p) => p.id === id);
-var alchemyRecipeDef = (id) => ALCHEMY_RECIPES.find((recipe2) => recipe2.id === id);
 
-// ../apps/mobile/src/content/equipment_catalog_t1_t9_v33.json
+// apps/mobile/src/content/equipment_catalog_t1_t9_v33.json
 var equipment_catalog_t1_t9_v33_default = {
   schemaVersion: "equipment-2.0-v33-10slot-fresh-start",
   source: "v23 catalog expanded by v33 GitHub integration",
@@ -66901,386 +68061,8 @@ var equipment_catalog_t1_t9_v33_default = {
   ]
 };
 
-// ../apps/mobile/src/content/equipment-items-v33.ts
-var classIdByName = { Ironwarden: "IRONWARDEN", Bastion: "BASTION", Dreadguard: "DREADGUARD", Dawnkeeper: "DAWNKEEPER", Wayfinder: "WAYFINDER", Ravager: "RAVAGER", Hexweaver: "HEXWEAVER", "Knife Dancer": "KNIFE_DANCER", Stonecaller: "STONECALLER" };
-var slotByName = { Helmet: "helmet", Chest: "chest", Gloves: "gloves", Legs: "legs", Boots: "boots", Weapon: "weapon", "Off-hand": "offhand", Cape: "cape", Amulet: "amulet", Ring: "ring" };
-var rarityByTier = { T1: "common", T2: "uncommon", T3: "rare", T4: "rare", T5: "epic", T6: "epic", T7: "legendary", T8: "legendary", T9: "mythic" };
-var slotWeight = {
-  helmet: { attack: 0, defense: 4, hp: 8 },
-  chest: { attack: 0, defense: 7, hp: 16 },
-  gloves: { attack: 1, defense: 3, hp: 6 },
-  legs: { attack: 0, defense: 5, hp: 12 },
-  boots: { attack: 1, defense: 3, hp: 7 },
-  weapon: { attack: 9, defense: 0, hp: 0 },
-  offhand: { attack: 3, defense: 6, hp: 4 },
-  cape: { attack: 1, defense: 3, hp: 9 },
-  amulet: { attack: 3, defense: 1, hp: 8 },
-  ring: { attack: 3, defense: 1, hp: 6 }
-};
-var EQUIPMENT_ITEMS_V33 = equipment_catalog_t1_t9_v33_default.pieces.map((piece) => {
-  const tier = String(piece.Tier), slot = slotByName[String(piece.Slot)], level = Math.max(1, Number(piece["Req Level"]));
-  const weight = slotWeight[slot], scale = Number(tier.slice(1));
-  return {
-    id: String(piece["Piece ID"]),
-    name: String(piece["Item Name"]),
-    type: "gear",
-    slot,
-    attack: weight.attack * scale,
-    defense: weight.defense * scale,
-    hp: weight.hp * scale,
-    readiness: Math.max(1, Math.ceil(level / 4)),
-    value: Math.max(10, level * scale * 12),
-    rarity: rarityByTier[tier] ?? "common",
-    classRestriction: classIdByName[String(piece.Class)],
-    equipmentSetId: String(piece["Set ID"])
-  };
-});
-
-// ../apps/mobile/src/content/gems-v1.ts
-var GEM_GRADE_LABEL_V1 = { 1: "Cut", 2: "Polished", 3: "Refined", 4: "Flawless", 5: "Radiant" };
-var GEM_GRADE_RARITY_V1 = { 1: "common", 2: "uncommon", 3: "rare", 4: "epic", 5: "mythic" };
-var vals = (a, b, c, d, e) => ({ 1: a, 2: b, 3: c, 4: d, 5: e });
-var MOBILE_GEM_FAMILIES_V1 = [
-  { familyId: "stat_might", name: "Might", kind: "stat", category: "stat", values: vals(4e-3, 5e-3, 65e-4, 8e-3, 0.01), unit: "percent", description: "Increases Power.", legacyStat: "attack", sources: ["Saffron Gate", "Crafting"] },
-  { familyId: "stat_vitality", name: "Vitality", kind: "stat", category: "stat", values: vals(6e-3, 8e-3, 0.01, 0.0125, 0.015), unit: "percent", description: "Increases Max HP.", legacyStat: "hp", sources: ["Saffron Gate", "Shiverlake Descent", "Crafting"] },
-  { familyId: "stat_iron", name: "Iron", kind: "stat", category: "stat", values: vals(5e-3, 65e-4, 8e-3, 0.01, 0.0125), unit: "percent", description: "Increases Armor.", legacyStat: "defense", sources: ["Scorchwind Flats", "Caravan of Glass", "Crafting"] },
-  { familyId: "stat_ward", name: "Ward", kind: "stat", category: "stat", values: vals(5e-3, 65e-4, 8e-3, 0.01, 0.0125), unit: "percent", description: "Increases Ward.", sources: ["Buried Observatory", "Crafting"] },
-  { familyId: "stat_precision", name: "Precision", kind: "stat", category: "stat", values: vals(3e-3, 4e-3, 5e-3, 65e-4, 8e-3), unit: "percentage_point", description: "Increases Accuracy.", sources: ["Mirage Basin", "Mirage Well", "Crafting"] },
-  { familyId: "stat_keen", name: "Keen", kind: "stat", category: "stat", values: vals(2e-3, 3e-3, 4e-3, 5e-3, 6e-3), unit: "percentage_point", description: "Increases Critical Chance.", sources: ["Whitepine Hunt", "Crafting"] },
-  { familyId: "stat_savage", name: "Savage", kind: "stat", category: "stat", values: vals(0.01, 0.013, 0.016, 0.02, 0.025), unit: "percent", description: "Increases Critical Damage.", sources: ["Choir Caverns", "Crafting"] },
-  { familyId: "stat_piercing", name: "Piercing", kind: "stat", category: "stat", values: vals(25e-4, 35e-4, 45e-4, 6e-3, 75e-4), unit: "percentage_point", description: "Increases Penetration.", sources: ["Scorchwind Flats", "Crafting"] },
-  { familyId: "stat_swift", name: "Swift", kind: "stat", category: "stat", values: vals(35e-4, 45e-4, 55e-4, 65e-4, 8e-3), unit: "percent", description: "Increases Haste.", sources: ["Buried Observatory", "Crafting"] },
-  { familyId: "stat_potent", name: "Potent", kind: "stat", category: "stat", values: vals(5e-3, 65e-4, 8e-3, 0.01, 0.012), unit: "percent", description: "Increases Potency.", sources: ["Mirage Basin", "Mirage Well", "Crafting"] },
-  { familyId: "stat_elusive", name: "Elusive", kind: "stat", category: "stat", values: vals(2e-3, 25e-4, 3e-3, 4e-3, 5e-3), unit: "percentage_point", description: "Increases Evasion.", sources: ["Regional enemies", "Crafting"] },
-  { familyId: "stat_resolute", name: "Resolute", kind: "stat", category: "stat", values: vals(4e-3, 5e-3, 6e-3, 75e-4, 9e-3), unit: "percent", description: "Increases Tenacity.", sources: ["Shiverlake Descent", "Crafting"] },
-  { familyId: "effect_momentum", name: "Momentum", kind: "effect", category: "damage", values: vals(18e-4, 22e-4, 26e-4, 31e-4, 36e-4), unit: "effect", description: "Successful direct attacks build stacking damage for 4s.", resonance2: "Maximum Momentum stacks becomes 6.", resonance3: "Momentum decays one stack at a time.", recommendedClasses: ["KNIFE_DANCER", "WAYFINDER", "HEXWEAVER"], sources: ["Whitepine Hunt", "Party Contracts"] },
-  { familyId: "effect_execution", name: "Execution", kind: "effect", category: "damage", values: vals(8e-3, 0.01, 0.012, 0.015, 0.018), unit: "effect", description: "Deal more damage to enemies below 30% HP.", resonance2: "Activation threshold becomes 35% HP.", resonance3: "Execution is 25% stronger below 15% HP.", recommendedClasses: ["RAVAGER", "KNIFE_DANCER", "DREADGUARD"], sources: ["Tyrant's Crown", "Choir Caverns", "Party Contracts"] },
-  { familyId: "effect_opening_strike", name: "Opening Strike", kind: "effect", category: "damage", values: vals(7e-3, 9e-3, 0.011, 0.013, 0.015), unit: "effect", description: "Deal more damage during the opening 8s of combat.", resonance2: "Opening window becomes 10s.", resonance3: "Refreshes once on a flagged boss phase.", recommendedClasses: ["RAVAGER", "WAYFINDER", "KNIFE_DANCER"], sources: ["Saffron Gate", "Resonance Cache"] },
-  { familyId: "effect_predator", name: "Predator", kind: "effect", category: "damage", values: vals(8e-3, 0.01, 0.012, 0.014, 0.016), unit: "effect", description: "Deal more damage to Elite and Boss enemies.", resonance2: "Also affects minibosses and Champions.", resonance3: "First hit temporarily increases Predator effectiveness.", recommendedClasses: ["WAYFINDER", "RAVAGER"], legacyEffect: "boss_power", sources: ["Caravan of Glass", "Whitepine Hunt"] },
-  { familyId: "effect_critical_surge", name: "Critical Surge", kind: "effect", category: "damage", values: vals(2e-3, 25e-4, 3e-3, 35e-4, 4e-3), unit: "effect", description: "Critical hits grant stacking Haste.", resonance2: "Maximum stacks becomes 4.", resonance3: "Critical hits refresh the oldest stack at cap.", recommendedClasses: ["KNIFE_DANCER", "WAYFINDER", "RAVAGER"], sources: ["Buried Observatory"] },
-  { familyId: "effect_ruin", name: "Ruin", kind: "effect", category: "damage", values: vals(25e-4, 3e-3, 35e-4, 4e-3, 5e-3), unit: "effect", description: "Deal more damage per different negative effect on the target.", resonance2: "Counts up to 3 negative effects.", resonance3: "A fresh player Mark counts as two effects briefly.", recommendedClasses: ["HEXWEAVER", "WAYFINDER"], sources: ["Mirage Well", "Mirage Basin"] },
-  { familyId: "effect_bulwark", name: "Bulwark", kind: "effect", category: "defense", values: vals(6e-3, 75e-4, 9e-3, 0.0105, 0.012), unit: "effect", description: "Blocking or defensive abilities grant temporary damage reduction.", resonance2: "Damage-reduction duration increases.", resonance3: "Successful blocks refresh the duration.", recommendedClasses: ["IRONWARDEN", "BASTION"], legacyEffect: "damage_reduction", sources: ["Caravan of Glass", "Party Contracts"] },
-  { familyId: "effect_aegis", name: "Aegis", kind: "effect", category: "defense", values: vals(0.01, 0.0125, 0.015, 0.0175, 0.02), unit: "effect", description: "Increase barriers generated by the player.", resonance2: "Expired barriers return a small amount as healing.", resonance3: "Maximum barrier cap increases by 5%.", recommendedClasses: ["BASTION", "STONECALLER"], sources: ["Buried Observatory", "Shiverlake Descent"] },
-  { familyId: "effect_last_stand", name: "Last Stand", kind: "effect", category: "defense", values: vals(0.015, 0.019, 0.023, 0.027, 0.032), unit: "effect", description: "Once per combat, low HP triggers strong mitigation.", resonance2: "Activation threshold becomes 35% HP.", resonance3: "Last Stand lasts 8s.", recommendedClasses: ["IRONWARDEN", "DREADGUARD"], sources: ["Tyrant's Crown"] },
-  { familyId: "effect_retaliation", name: "Retaliation", kind: "effect", category: "defense", values: vals(0.015, 0.019, 0.023, 0.027, 0.032), unit: "effect", description: "Taking a heavy hit empowers your next damaging ability.", resonance2: "Heavy-hit threshold becomes easier to trigger.", resonance3: "Consuming Retaliation restores a small amount of HP.", recommendedClasses: ["DREADGUARD", "IRONWARDEN"], sources: ["Scorchwind Flats", "Caravan of Glass"] },
-  { familyId: "effect_unyielding", name: "Unyielding", kind: "effect", category: "defense", values: vals(15e-4, 2e-3, 25e-4, 3e-3, 35e-4), unit: "effect", description: "Incoming hits build temporary Armor and Ward.", resonance2: "Maximum defensive stacks becomes 5.", resonance3: "Stacks last longer.", recommendedClasses: ["IRONWARDEN", "BASTION", "DREADGUARD"], sources: ["Tyrant's Crown", "Shiverlake Descent"] },
-  { familyId: "effect_mercy", name: "Mercy", kind: "effect", category: "support", values: vals(0.04, 0.05, 0.06, 0.07, 0.08), unit: "effect", description: "A portion of overhealing becomes a temporary barrier.", resonance2: "Mercy barrier cap increases.", resonance3: "Mercy barriers last longer.", recommendedClasses: ["DAWNKEEPER"], sources: ["Mirage Basin", "Mirage Well", "Party Contracts"] },
-  { familyId: "effect_benediction", name: "Benediction", kind: "effect", category: "support", values: vals(8e-3, 0.01, 0.012, 0.014, 0.016), unit: "effect", description: "Support abilities empower the next direct heal or barrier.", resonance2: "May hold two Benediction charges.", resonance3: "Consuming a charge briefly grants Haste.", recommendedClasses: ["DAWNKEEPER", "STONECALLER"], sources: ["Buried Observatory"] },
-  { familyId: "effect_guardians_gift", name: "Guardian's Gift", kind: "effect", category: "support", values: vals(25e-4, 35e-4, 45e-4, 55e-4, 65e-4), unit: "effect", description: "Barriers placed on allies also grant temporary damage reduction.", resonance2: "The damage reduction lasts longer.", resonance3: "The caster receives half of the mitigation.", recommendedClasses: ["STONECALLER", "BASTION"], sources: ["Shiverlake Descent"] },
-  { familyId: "effect_renewal", name: "Renewal", kind: "effect", category: "support", values: vals(0.01, 0.0125, 0.015, 0.0175, 0.02), unit: "effect", description: "Direct healing leaves a small heal-over-time effect.", resonance2: "Renewal lasts longer and heals more.", resonance3: "Two Renewals may coexist on a target.", recommendedClasses: ["DAWNKEEPER"], sources: ["Choir Caverns"] },
-  { familyId: "effect_shared_resolve", name: "Shared Resolve", kind: "effect", category: "support", values: vals(25e-4, 3e-3, 35e-4, 4e-3, 5e-3), unit: "effect", description: "Buffing or shielding another player grants temporary Potency.", resonance2: "Shared Resolve lasts longer.", resonance3: "Maximum stacks becomes 3.", recommendedClasses: ["DAWNKEEPER", "STONECALLER"], sources: ["Choir Caverns"] },
-  { familyId: "effect_sustenance", name: "Sustenance", kind: "effect", category: "hybrid", values: vals(15e-4, 2e-3, 25e-4, 3e-3, 35e-4), unit: "effect", description: "Defeating enemies restores a small amount of Max HP.", resonance2: "Elite and Champion kills restore triple.", resonance3: "Excess healing becomes a small barrier.", recommendedClasses: ["DREADGUARD"], legacyEffect: "recovery", sources: ["Saffron Gate", "Whitepine Hunt"] },
-  { familyId: "effect_battle_rhythm", name: "Battle Rhythm", kind: "effect", category: "hybrid", values: vals(5e-3, 65e-4, 8e-3, 95e-4, 0.011), unit: "effect", description: "Alternating offensive and defensive/support abilities empowers the next opposite category.", resonance2: "The alternation window becomes longer.", resonance3: "Successful alternation briefly grants Haste.", recommendedClasses: ["IRONWARDEN", "DAWNKEEPER"], sources: ["Choir Caverns"] },
-  { familyId: "effect_flow", name: "Flow", kind: "effect", category: "hybrid", values: vals(1e-3, 15e-4, 2e-3, 25e-4, 3e-3), unit: "effect", description: "Using different abilities consecutively builds Haste.", resonance2: "Maximum Flow stacks becomes 4.", resonance3: "Flow decays one stack at a time.", recommendedClasses: ["HEXWEAVER", "KNIFE_DANCER", "DAWNKEEPER"], legacyEffect: "combat_speed", sources: ["Buried Observatory", "Party Contracts"] },
-  { familyId: "effect_opportunist", name: "Opportunist", kind: "effect", category: "hybrid", values: vals(7e-3, 9e-3, 0.011, 0.013, 0.015), unit: "effect", description: "Applying a new Mark/debuff/control effect empowers the next direct hit.", resonance2: "Per-target cooldown becomes shorter.", resonance3: "A critical empowered hit extends the triggering effect once.", recommendedClasses: ["HEXWEAVER", "WAYFINDER"], sources: ["Mirage Basin", "Mirage Well", "Party Contracts"] }
-];
-var GEM_ITEMS_V1 = MOBILE_GEM_FAMILIES_V1.flatMap((family) => [1, 2, 3, 4, 5].map((grade) => ({
-  id: `gem:${family.familyId}:g${grade}`,
-  name: `${GEM_GRADE_LABEL_V1[grade]} ${family.name} Gem`,
-  type: "gem",
-  gemKind: family.kind,
-  gemFamilyId: family.familyId,
-  gemGrade: grade,
-  gemTier: grade,
-  gemStat: family.legacyStat,
-  gemPercent: family.legacyStat ? family.values[grade] : void 0,
-  gemEffect: family.legacyEffect,
-  gemEffectValue: family.legacyEffect ? family.values[grade] : void 0,
-  value: Math.round(120 * Math.pow(2.25, grade - 1)),
-  rarity: GEM_GRADE_RARITY_V1[grade],
-  passive: family.description
-})));
-function mobileGemFamilyV1(familyId) {
-  return MOBILE_GEM_FAMILIES_V1.find((row) => row.familyId === familyId);
-}
-function mobileGemItemIdV1(familyId, grade) {
-  return `gem:${familyId}:g${grade}`;
-}
-
-// ../apps/mobile/src/content/items.ts
-var COMPLETE_SET_SLOTS = ["helmet", "legs", "boots", "weapon", "offhand", "amulet"];
-var COMPLETE_SET_CONFIG = [
-  { id: "rootbound_covenant", prefix: "STONEHEART", label: "Stoneheart", classId: "IRONWARDEN", rarity: "rare", readiness: 13, value: 520, weapon: "Rootbound Blade", offhand: "Rootbound Shield" },
-  { id: "lastwall_panoply", prefix: "LASTWALL", label: "Lastwall", classId: "BASTION", rarity: "rare", readiness: 13, value: 530, weapon: "Lastwall Mace", offhand: "Lastwall Tower Shield" },
-  { id: "mournchain_harness", prefix: "MOURNCHAIN", label: "Mournchain", classId: "DREADGUARD", rarity: "rare", readiness: 14, value: 540, weapon: "Mournchain Flail", offhand: "Mournchain Shield" },
-  { id: "thread_of_dawn", prefix: "QUICKPRAYER", label: "Quickprayer", classId: "DAWNKEEPER", rarity: "rare", readiness: 13, value: 520, weapon: "Dawn Mace", offhand: "Sun Reliquary" },
-  { id: "regretwalker", prefix: "TRACKER", label: "Regretwalker", classId: "WAYFINDER", rarity: "rare", readiness: 14, value: 530, weapon: "Tracker Bow", offhand: "Tracker Knife" },
-  { id: "lanternsteel_array", prefix: "BLOODRUSH", label: "Lanternsteel", classId: "RAVAGER", rarity: "rare", readiness: 14, value: 540, weapon: "Lanternsteel Greataxe", offhand: "Lanternsteel War Charm" },
-  { id: "glassbound_script", prefix: "SPELLGLASS", label: "Glassbound", classId: "HEXWEAVER", rarity: "rare", readiness: 14, value: 530, weapon: "Spellglass Wand", offhand: "Glassbound Tome" },
-  { id: "gloamstep_regalia", prefix: "NIGHTFANG", label: "Gloamstep", classId: "KNIFE_DANCER", rarity: "rare", readiness: 14, value: 530, weapon: "Nightfang Dagger", offhand: "Nightfang Off-Dagger" },
-  { id: "resonant_tempest", prefix: "STORMCARVED", label: "Stormcarved", classId: "STONECALLER", rarity: "rare", readiness: 14, value: 530, weapon: "Tempest Staff", offhand: "Resonant Totem" },
-  { id: "glassward_covenant", prefix: "SUNSCORED_STONEHEART", label: "Glassward", classId: "IRONWARDEN", rarity: "epic", readiness: 27, value: 1180, weapon: "Glassward Blade", offhand: "Glassward Shield" },
-  { id: "sunvault_panoply", prefix: "SUNSCORED_LASTWALL", label: "Sunvault", classId: "BASTION", rarity: "epic", readiness: 27, value: 1190, weapon: "Sunvault Mace", offhand: "Sunvault Tower Shield" },
-  { id: "cinderchain_harness", prefix: "SUNSCORED_MOURNCHAIN", label: "Cinderchain", classId: "DREADGUARD", rarity: "epic", readiness: 28, value: 1200, weapon: "Cinderchain Flail", offhand: "Cinderchain Shield" },
-  { id: "dawn_of_saffron", prefix: "SUNSCORED_QUICKPRAYER", label: "Saffron Dawn", classId: "DAWNKEEPER", rarity: "epic", readiness: 27, value: 1180, weapon: "Saffron Mace", offhand: "Saffron Sun Reliquary" },
-  { id: "mirage_hunter", prefix: "SUNSCORED_TRACKER", label: "Mirage Hunter", classId: "WAYFINDER", rarity: "epic", readiness: 29, value: 1190, weapon: "Mirage Bow", offhand: "Mirage Knife" },
-  { id: "scorchblood_array", prefix: "SUNSCORED_BLOODRUSH", label: "Scorchblood", classId: "RAVAGER", rarity: "epic", readiness: 29, value: 1200, weapon: "Scorchblood Greataxe", offhand: "Scorchblood War Charm" },
-  { id: "astral_script", prefix: "SUNSCORED_SPELLGLASS", label: "Astral Script", classId: "HEXWEAVER", rarity: "epic", readiness: 28, value: 1190, weapon: "Astral Wand", offhand: "Astral Tome" },
-  { id: "dunestep_regalia", prefix: "SUNSCORED_NIGHTFANG", label: "Dunestep", classId: "KNIFE_DANCER", rarity: "epic", readiness: 30, value: 1190, weapon: "Dunestep Dagger", offhand: "Dunestep Off-Dagger" },
-  { id: "oasis_resonance", prefix: "SUNSCORED_STORMCARVED", label: "Oasis Resonance", classId: "STONECALLER", rarity: "epic", readiness: 28, value: 1190, weapon: "Oasis Staff", offhand: "Oasis Totem" },
-  { id: "rimewall_oath", prefix: "RIMEBOUND_STONEHEART", label: "Rimewall", classId: "IRONWARDEN", rarity: "epic", readiness: 34, value: 2100, weapon: "Rimewall Blade", offhand: "Rimewall Shield" }
-];
-var FROSTMARCH_SET_CONFIG = [
-  { id: "frostbell_panoply", prefix: "RIMEBOUND_LASTWALL", label: "Frostbell", classId: "BASTION", weapon: "Frostbell Mace", offhand: "Frostbell Tower Shield" },
-  { id: "winterchain_harness", prefix: "RIMEBOUND_MOURNCHAIN", label: "Winterchain", classId: "DREADGUARD", weapon: "Winterchain Flail", offhand: "Winterchain Shield" },
-  { id: "aurora_vespers", prefix: "RIMEBOUND_QUICKPRAYER", label: "Aurora Vespers", classId: "DAWNKEEPER", weapon: "Aurora Mace", offhand: "Aurora Sun Focus" },
-  { id: "whiteout_stalker", prefix: "RIMEBOUND_TRACKER", label: "Whiteout Stalker", classId: "WAYFINDER", weapon: "Whiteout Bow", offhand: "Whiteout Hunting Knife" },
-  { id: "glacierblood_array", prefix: "RIMEBOUND_BLOODRUSH", label: "Glacierblood", classId: "RAVAGER", weapon: "Glacierblood Greataxe", offhand: "Frozen War Charm" },
-  { id: "rimeglass_script", prefix: "RIMEBOUND_SPELLGLASS", label: "Rimeglass", classId: "HEXWEAVER", weapon: "Rimeglass Wand", offhand: "Rimeglass Tome" },
-  { id: "snowveil_regalia", prefix: "RIMEBOUND_NIGHTFANG", label: "Snowveil", classId: "KNIFE_DANCER", weapon: "Snowveil Dagger", offhand: "Snowveil Off-Dagger" },
-  { id: "choirfrost_resonance", prefix: "RIMEBOUND_STORMCARVED", label: "Choirfrost", classId: "STONECALLER", weapon: "Choirfrost Staff", offhand: "Choir-Stone Totem" }
-];
-var slotLabel = { helmet: "Helm", chest: "Chest", gloves: "Gloves", legs: "Legguards", boots: "Boots", weapon: "Weapon", offhand: "Offhand", cape: "Cape", amulet: "Amulet", ring: "Ring" };
-var COMPLETE_SET_ADDITIONAL_ITEMS = COMPLETE_SET_CONFIG.flatMap((set) => COMPLETE_SET_SLOTS.map((slot) => {
-  const tank = set.classId === "IRONWARDEN" || set.classId === "BASTION" || set.classId === "DREADGUARD";
-  const stats3 = slot === "helmet" ? { defense: tank ? 11 : 7, hp: tank ? 58 : 38 } : slot === "legs" ? { defense: tank ? 12 : 8, hp: tank ? 68 : 46 } : slot === "boots" ? { defense: tank ? 8 : 5, hp: tank ? 42 : 28 } : slot === "weapon" ? { attack: tank ? 16 : 19, defense: tank ? 2 : 0 } : slot === "offhand" ? { attack: tank ? 2 : 8, defense: tank ? 11 : 3, hp: tank ? 54 : 24 } : { attack: 6, defense: 5, hp: 34 };
-  const name = slot === "weapon" ? set.weapon : slot === "offhand" ? set.offhand : `${set.label} ${slotLabel[slot]}`;
-  return { id: `${set.prefix}_${slot.toUpperCase()}`, name, type: "gear", slot, ...stats3, readiness: set.readiness, value: set.value, rarity: set.rarity, classRestriction: set.classId, equipmentSetId: set.id };
-}));
-var FROSTMARCH_SET_ITEMS = FROSTMARCH_SET_CONFIG.flatMap((set) => Object.keys(slotLabel).map((slot) => {
-  const tank = set.classId === "BASTION" || set.classId === "DREADGUARD";
-  const stats3 = slot === "helmet" ? { attack: tank ? 3 : 6, defense: tank ? 15 : 10, hp: tank ? 82 : 54 } : slot === "chest" ? { attack: tank ? 5 : 10, defense: tank ? 21 : 14, hp: tank ? 132 : 84 } : slot === "gloves" ? { attack: tank ? 3 : 8, defense: tank ? 12 : 8, hp: tank ? 58 : 38 } : slot === "legs" ? { attack: tank ? 3 : 7, defense: tank ? 17 : 11, hp: tank ? 94 : 62 } : slot === "boots" ? { attack: tank ? 2 : 6, defense: tank ? 11 : 7, hp: tank ? 55 : 36 } : slot === "weapon" ? { attack: tank ? 23 : 29, defense: tank ? 4 : 1 } : slot === "offhand" ? { attack: tank ? 4 : 12, defense: tank ? 17 : 5, hp: tank ? 78 : 34 } : slot === "cape" ? { attack: tank ? 5 : 10, defense: tank ? 12 : 8, hp: tank ? 72 : 48 } : slot === "amulet" ? { attack: 9, defense: 7, hp: 44 } : { attack: 8, defense: 6, hp: 36 };
-  const name = slot === "weapon" ? set.weapon : slot === "offhand" ? set.offhand : `${set.label} ${slotLabel[slot]}`;
-  const salvage = { itemId: slot === "cape" ? "CHOIR_BLOOM" : "RIMEGLASS", quantity: slot === "chest" ? 4 : slot === "legs" || slot === "weapon" || slot === "offhand" ? 3 : 2 };
-  return { id: `${set.prefix}_${slot.toUpperCase()}`, name, type: "gear", slot, ...stats3, readiness: 34, value: slot === "chest" ? 2420 : slot === "weapon" || slot === "offhand" ? 2280 : 2100, rarity: "epic", classRestriction: set.classId, equipmentSetId: set.id, salvage };
-}));
-var BASE_ITEMS = [
-  ...NOVICE_ITEMS,
-  { id: "HOLY_WATER", name: "Holy Water", type: "material", value: 0, rarity: "uncommon" },
-  ...COMPLETE_SET_ADDITIONAL_ITEMS,
-  ...FROSTMARCH_SET_ITEMS,
-  ...TOOL_ITEMS,
-  ...HERB_ITEMS,
-  ...POTION_ITEMS,
-  // Enhancement economy. Gems are intentionally scarce drops; tempering materials are universal.
-  { id: "GEM_DUST", name: "Gem Dust", type: "material", value: 18, rarity: "uncommon" },
-  { id: "REGIONAL_CATALYST", name: "Regional Catalyst", type: "material", value: 650, rarity: "epic" },
-  { id: "RADIANT_CATALYST", name: "Radiant Catalyst", type: "material", value: 2400, rarity: "mythic" },
-  ...GEM_ITEMS_V1,
-  { id: "TEMPERING_DUST", name: "Tempering Dust", type: "material", value: 22, rarity: "uncommon" },
-  { id: "TEMPERING_CORE", name: "Tempering Core", type: "material", value: 180, rarity: "rare" },
-  { id: "EMBER_SHARD", name: "Ember Shard", type: "gem", gemStat: "attack", gemPercent: 0.02, gemTier: 1, value: 320, rarity: "rare" },
-  { id: "EMBERHEART_GEM", name: "Emberheart Gem", type: "gem", gemStat: "attack", gemPercent: 0.05, gemTier: 2, value: 1900, rarity: "legendary" },
-  { id: "WARD_SHARD", name: "Ward Shard", type: "gem", gemStat: "defense", gemPercent: 0.02, gemTier: 1, value: 320, rarity: "rare" },
-  { id: "WARDHEART_GEM", name: "Wardheart Gem", type: "gem", gemStat: "defense", gemPercent: 0.05, gemTier: 2, value: 1900, rarity: "legendary" },
-  { id: "VITALITY_SHARD", name: "Vitality Shard", type: "gem", gemStat: "hp", gemPercent: 0.02, gemTier: 1, value: 320, rarity: "rare" },
-  { id: "VITALITY_HEART_GEM", name: "Vitality Heart Gem", type: "gem", gemStat: "hp", gemPercent: 0.05, gemTier: 2, value: 1900, rarity: "legendary" },
-  // Effect Gems occupy the dedicated Effect socket. They modify combat behavior rather than primary stats.
-  { id: "SWIFT_SIGIL", name: "Swift Sigil", type: "gem", gemKind: "effect", gemEffect: "combat_speed", gemEffectValue: 0.02, gemTier: 1, value: 520, rarity: "rare", passive: "+2% combat speed while equipped" },
-  { id: "BOSSBANE_SIGIL", name: "Bossbane Sigil", type: "gem", gemKind: "effect", gemEffect: "boss_power", gemEffectValue: 0.03, gemTier: 1, value: 620, rarity: "rare", passive: "+3% combat power against bosses" },
-  { id: "BULWARK_SIGIL", name: "Bulwark Sigil", type: "gem", gemKind: "effect", gemEffect: "damage_reduction", gemEffectValue: 0.02, gemTier: 1, value: 620, rarity: "rare", passive: "-2% incoming combat damage" },
-  { id: "RENEWAL_SIGIL", name: "Renewal Sigil", type: "gem", gemKind: "effect", gemEffect: "recovery", gemEffectValue: 0.1, gemTier: 1, value: 560, rarity: "rare", passive: "+10% between-kill recovery" },
-  // Runtime pack weapon identities; numeric budgets retained from the prior primary weapons.
-  { id: "basic_sword", name: "Basic Sword", type: "gear", slot: "weapon", attack: 4, readiness: 1, value: 10 },
-  { id: "basic_tower_shield", name: "Basic Tower Shield", type: "gear", slot: "weapon", attack: 3, defense: 1, readiness: 1, value: 10 },
-  { id: "basic_chained_weapon", name: "Basic Chained Weapon", type: "gear", slot: "weapon", attack: 5, readiness: 1, value: 10 },
-  { id: "basic_mace", name: "Basic Mace", type: "gear", slot: "weapon", attack: 3, defense: 1, readiness: 1, value: 10 },
-  { id: "basic_bow", name: "Basic Bow", type: "gear", slot: "weapon", attack: 5, readiness: 1, value: 10 },
-  { id: "basic_two_handed_weapon", name: "Basic Two-Handed Weapon", type: "gear", slot: "weapon", attack: 6, defense: -1, readiness: 1, value: 10 },
-  { id: "basic_wand", name: "Basic Wand", type: "gear", slot: "weapon", attack: 4, readiness: 1, value: 10 },
-  { id: "basic_main_hand_blade", name: "Basic Main-Hand Blade", type: "gear", slot: "weapon", attack: 4, readiness: 1, value: 10 },
-  { id: "basic_staff", name: "Basic Staff", type: "gear", slot: "weapon", attack: 4, hp: 5, readiness: 1, value: 10 },
-  { id: "START_IRON_SWORD", name: "Recruit Sword", type: "gear", slot: "weapon", attack: 4, readiness: 1, value: 10 },
-  { id: "START_KITE_SHIELD", name: "Recruit Kite Shield", type: "gear", slot: "offhand", defense: 3, hp: 8, readiness: 1, value: 10 },
-  { id: "START_BASTION_MACE", name: "Recruit Mace", type: "gear", slot: "weapon", attack: 3, defense: 1, readiness: 1, value: 10 },
-  { id: "START_TOWER_SHIELD", name: "Recruit Tower Shield", type: "gear", slot: "offhand", defense: 4, hp: 10, readiness: 1, value: 10 },
-  { id: "START_DREAD_AXE", name: "Dread Iron Axe", type: "gear", slot: "weapon", attack: 5, readiness: 1, value: 10 },
-  { id: "START_SPIKED_SHIELD", name: "Spiked Recruit Shield", type: "gear", slot: "offhand", attack: 1, defense: 2, hp: 6, readiness: 1, value: 10 },
-  { id: "START_DAWN_MACE", name: "Dawn Acolyte Mace", type: "gear", slot: "weapon", attack: 3, defense: 1, readiness: 1, value: 10 },
-  { id: "START_HOLY_FOCUS", name: "Acolyte Sun Focus", type: "gear", slot: "offhand", hp: 10, readiness: 1, value: 10 },
-  { id: "START_SHORTBOW", name: "Greenwood Shortbow", type: "gear", slot: "weapon", attack: 5, readiness: 1, value: 10 },
-  { id: "START_RAVAGER_AXE", name: "Rough Two-Handed Axe", type: "gear", slot: "weapon", attack: 6, defense: -1, readiness: 1, value: 10 },
-  { id: "START_HEX_WAND", name: "Apprentice Hex Wand", type: "gear", slot: "weapon", attack: 4, readiness: 1, value: 10 },
-  { id: "START_HEX_TOME", name: "Faded Hex Tome", type: "gear", slot: "offhand", attack: 1, hp: 5, readiness: 1, value: 10 },
-  { id: "START_DAGGER", name: "Practice Dagger", type: "gear", slot: "weapon", attack: 4, readiness: 1, value: 10 },
-  { id: "START_OFF_DAGGER", name: "Practice Off-Dagger", type: "gear", slot: "offhand", attack: 2, readiness: 1, value: 10 },
-  { id: "START_STONE_STAFF", name: "Carved Stone Staff", type: "gear", slot: "weapon", attack: 4, hp: 5, readiness: 1, value: 10 },
-  { id: "START_STONE_TOTEM", name: "Pebble Totem", type: "gear", slot: "offhand", attack: 1, defense: 1, readiness: 1, value: 10 },
-  { id: "TRAVEL_RATION", name: "Travel Ration", type: "food", heal: 35, readiness: 1, value: 5 },
-  { id: "COOKED_SILVERFIN", name: "Cooked Silverfin", type: "food", heal: 55, readiness: 3, value: 15 },
-  { id: "SEARED_RIVER_EEL", name: "Seared River Eel", type: "food", heal: 95, readiness: 5, value: 34 },
-  { id: "IRONWOOD_STEW", name: "Ironwood Hunter Stew", type: "food", heal: 145, readiness: 7, value: 62 },
-  { id: "COPPER_ORE", name: "Copper Ore", type: "material", value: 5 },
-  { id: "OATHSTONE_ORE", name: "Oathstone Ore", type: "material", value: 32 },
-  { id: "CROWNWOOD_LOG", name: "Crownwood Log", type: "material", value: 30 },
-  { id: "OATHSCALE_PIKE", name: "Oathscale Pike", type: "material", value: 32 },
-  { id: "COPPER_INGOT", name: "Copper Ingot", type: "material", value: 28 },
-  { id: "ASTER_IRON_INGOT", name: "Aster-Iron Ingot", type: "material", value: 64 },
-  { id: "OATHSTONE_INGOT", name: "Oathstone Ingot", type: "material", value: 145 },
-  { id: "REINFORCED_FITTING", name: "Reinforced Fitting", type: "material", value: 155 },
-  { id: "ROASTED_OATHSCALE", name: "Roasted Oathscale Pike", type: "food", heal: 175, readiness: 8, value: 90 },
-  { id: "OATHSTONE_HELM", name: "Oathstone Greathelm", type: "gear", slot: "helmet", defense: 11, hp: 62, readiness: 12, value: 520, rarity: "epic", salvage: { itemId: "OATHSTONE_INGOT", quantity: 3 } },
-  { id: "OATHSTONE_WARDPLATE", name: "Oathstone Wardplate", type: "gear", slot: "chest", defense: 15, hp: 105, readiness: 16, value: 680, rarity: "epic", salvage: { itemId: "OATHSTONE_INGOT", quantity: 5 }, passive: "Stonewall: +4% damage mitigation." },
-  { id: "OATHSTONE_GAUNTLETS", name: "Oathstone Gauntlets", type: "gear", slot: "gloves", defense: 8, hp: 42, readiness: 12, value: 460, rarity: "epic", salvage: { itemId: "OATHSTONE_INGOT", quantity: 3 } },
-  { id: "OATHSTONE_LEGPLATES", name: "Oathstone Legplates", type: "gear", slot: "legs", defense: 12, hp: 74, readiness: 14, value: 590, rarity: "epic", salvage: { itemId: "OATHSTONE_INGOT", quantity: 4 } },
-  { id: "OATHSTONE_GREAVES", name: "Oathstone Greaves", type: "gear", slot: "boots", defense: 8, hp: 46, readiness: 12, value: 470, rarity: "epic", salvage: { itemId: "OATHSTONE_INGOT", quantity: 3 } },
-  { id: "OATHSTONE_BLADE", name: "Oathstone Runeblade", type: "gear", slot: "weapon", attack: 19, defense: 3, readiness: 14, value: 650, rarity: "epic", salvage: { itemId: "OATHSTONE_INGOT", quantity: 4 } },
-  { id: "OATHSTONE_TOWER_SHIELD", name: "Oathstone Tower Shield", type: "gear", slot: "offhand", defense: 14, hp: 70, readiness: 15, value: 640, rarity: "epic", salvage: { itemId: "OATHSTONE_INGOT", quantity: 4 } },
-  { id: "OATHSTONE_MANTLE", name: "Oathstone Mantle", type: "gear", slot: "cape", attack: 3, defense: 7, hp: 48, readiness: 13, value: 560, rarity: "epic", salvage: { itemId: "OATHGLASS_SHARD", quantity: 3 } },
-  { id: "OATHSTONE_AMULET", name: "Oathstone Ward Amulet", type: "gear", slot: "amulet", attack: 4, defense: 5, hp: 38, readiness: 13, value: 540, rarity: "epic", salvage: { itemId: "OATHGLASS_SHARD", quantity: 3 } },
-  { id: "OATHSTONE_SIGNET", name: "Oathstone Signet", type: "gear", slot: "ring", attack: 4, defense: 4, hp: 30, readiness: 12, value: 510, rarity: "epic", salvage: { itemId: "OATHGLASS_SHARD", quantity: 2 } },
-  { id: "STONEHEART_CHEST", name: "Stoneheart Chest", type: "gear", slot: "chest", defense: 14, hp: 88, readiness: 14, value: 610, rarity: "rare", classRestriction: "IRONWARDEN", equipmentSetId: "rootbound_covenant", salvage: { itemId: "OATHSTONE_INGOT", quantity: 4 } },
-  { id: "STONEHEART_GLOVES", name: "Stoneheart Gloves", type: "gear", slot: "gloves", defense: 7, hp: 36, readiness: 12, value: 455, rarity: "rare", classRestriction: "IRONWARDEN", equipmentSetId: "rootbound_covenant", salvage: { itemId: "OATHSTONE_INGOT", quantity: 2 } },
-  { id: "STONEHEART_CAPE", name: "Stoneheart Cape", type: "gear", slot: "cape", defense: 6, hp: 46, readiness: 13, value: 520, rarity: "rare", classRestriction: "IRONWARDEN", equipmentSetId: "rootbound_covenant", salvage: { itemId: "THORN_SAP", quantity: 5 } },
-  { id: "STONEHEART_RING", name: "Stoneheart Ring", type: "gear", slot: "ring", defense: 4, hp: 32, readiness: 12, value: 480, rarity: "rare", classRestriction: "IRONWARDEN", equipmentSetId: "rootbound_covenant", salvage: { itemId: "OATHGLASS_SHARD", quantity: 2 } },
-  { id: "LASTWALL_CHEST", name: "Lastwall Chestguard", type: "gear", slot: "chest", defense: 16, hp: 100, readiness: 13, value: 625, rarity: "rare", classRestriction: "BASTION", equipmentSetId: "lastwall_panoply", salvage: { itemId: "OATHSTONE_INGOT", quantity: 4 } },
-  { id: "LASTWALL_GLOVES", name: "Lastwall Gauntlets", type: "gear", slot: "gloves", defense: 8, hp: 42, readiness: 11, value: 470, rarity: "rare", classRestriction: "BASTION", equipmentSetId: "lastwall_panoply", salvage: { itemId: "LANTERNSTEEL_SHARD", quantity: 2 } },
-  { id: "LASTWALL_CAPE", name: "Lastwall Mantle", type: "gear", slot: "cape", defense: 7, hp: 54, readiness: 12, value: 540, rarity: "rare", classRestriction: "BASTION", equipmentSetId: "lastwall_panoply", salvage: { itemId: "TORN_OATHCLOTH", quantity: 4 } },
-  { id: "LASTWALL_RING", name: "Lastwall Signet", type: "gear", slot: "ring", defense: 5, hp: 38, readiness: 11, value: 500, rarity: "rare", classRestriction: "BASTION", equipmentSetId: "lastwall_panoply", salvage: { itemId: "OATHGLASS_SHARD", quantity: 2 } },
-  { id: "MOURNCHAIN_CHEST", name: "Mournchain Cuirass", type: "gear", slot: "chest", attack: 4, defense: 12, hp: 82, readiness: 15, value: 650, rarity: "rare", classRestriction: "DREADGUARD", equipmentSetId: "mournchain_harness", salvage: { itemId: "LANTERNSTEEL_SHARD", quantity: 4 } },
-  { id: "MOURNCHAIN_GLOVES", name: "Mournchain Grips", type: "gear", slot: "gloves", attack: 4, defense: 6, hp: 30, readiness: 14, value: 490, rarity: "rare", classRestriction: "DREADGUARD", equipmentSetId: "mournchain_harness", salvage: { itemId: "FALLEN_RIVET", quantity: 3 } },
-  { id: "MOURNCHAIN_CAPE", name: "Mournchain Shroud", type: "gear", slot: "cape", attack: 5, defense: 5, hp: 38, readiness: 15, value: 560, rarity: "rare", classRestriction: "DREADGUARD", equipmentSetId: "mournchain_harness", salvage: { itemId: "TORN_OATHCLOTH", quantity: 5 } },
-  { id: "MOURNCHAIN_RING", name: "Mournchain Loop", type: "gear", slot: "ring", attack: 4, defense: 3, hp: 24, readiness: 15, value: 525, rarity: "rare", classRestriction: "DREADGUARD", equipmentSetId: "mournchain_harness", salvage: { itemId: "OATHGLASS_SHARD", quantity: 2 } },
-  { id: "QUICKPRAYER_CHEST", name: "Quickprayer Chest", type: "gear", slot: "chest", attack: 3, defense: 8, hp: 64, readiness: 13, value: 600, rarity: "rare", classRestriction: "DAWNKEEPER", equipmentSetId: "thread_of_dawn", salvage: { itemId: "WISP_DUST", quantity: 6 } },
-  { id: "QUICKPRAYER_GLOVES", name: "Quickprayer Gloves", type: "gear", slot: "gloves", attack: 3, defense: 4, hp: 28, readiness: 12, value: 450, rarity: "rare", classRestriction: "DAWNKEEPER", equipmentSetId: "thread_of_dawn", salvage: { itemId: "WISP_DUST", quantity: 4 } },
-  { id: "QUICKPRAYER_CAPE", name: "Quickprayer Cape", type: "gear", slot: "cape", attack: 4, defense: 4, hp: 38, readiness: 13, value: 525, rarity: "rare", classRestriction: "DAWNKEEPER", equipmentSetId: "thread_of_dawn", salvage: { itemId: "WISP_DUST", quantity: 5 } },
-  { id: "QUICKPRAYER_RING", name: "Quickprayer Ring", type: "gear", slot: "ring", attack: 4, defense: 2, hp: 30, readiness: 12, value: 490, rarity: "rare", classRestriction: "DAWNKEEPER", equipmentSetId: "thread_of_dawn", salvage: { itemId: "OATHGLASS_SHARD", quantity: 2 } },
-  { id: "TRACKER_CHEST", name: "Tracker Chest", type: "gear", slot: "chest", attack: 11, defense: 7, hp: 52, readiness: 17, value: 760, rarity: "rare", classRestriction: "WAYFINDER", equipmentSetId: "regretwalker", salvage: { itemId: "ECHO_TOUCHED_PELT", quantity: 3 } },
-  { id: "TRACKER_GLOVES", name: "Tracker Gloves", type: "gear", slot: "gloves", attack: 6, defense: 3, hp: 24, readiness: 15, value: 570, rarity: "rare", classRestriction: "WAYFINDER", equipmentSetId: "regretwalker", salvage: { itemId: "ECHO_TOUCHED_PELT", quantity: 2 } },
-  { id: "TRACKER_CAPE", name: "Tracker Cape", type: "gear", slot: "cape", attack: 8, defense: 3, hp: 32, readiness: 16, value: 690, rarity: "rare", classRestriction: "WAYFINDER", equipmentSetId: "regretwalker", salvage: { itemId: "TORN_OATHCLOTH", quantity: 4 } },
-  { id: "TRACKER_RING", name: "Tracker Ring", type: "gear", slot: "ring", attack: 7, defense: 1, hp: 18, readiness: 16, value: 720, rarity: "rare", classRestriction: "WAYFINDER", equipmentSetId: "regretwalker", salvage: { itemId: "OATHGLASS_SHARD", quantity: 2 } },
-  { id: "BLOODRUSH_CHEST", name: "Bloodrush Chest", type: "gear", slot: "chest", attack: 12, defense: 8, hp: 52, readiness: 17, value: 740, rarity: "rare", classRestriction: "RAVAGER", equipmentSetId: "lanternsteel_array", salvage: { itemId: "LANTERNSTEEL_SHARD", quantity: 3 } },
-  { id: "BLOODRUSH_GLOVES", name: "Bloodrush Gloves", type: "gear", slot: "gloves", attack: 8, defense: 4, hp: 22, readiness: 16, value: 560, rarity: "rare", classRestriction: "RAVAGER", equipmentSetId: "lanternsteel_array", salvage: { itemId: "LANTERNSTEEL_SHARD", quantity: 2 } },
-  { id: "BLOODRUSH_CAPE", name: "Bloodrush Cape", type: "gear", slot: "cape", attack: 9, defense: 3, hp: 28, readiness: 16, value: 680, rarity: "rare", classRestriction: "RAVAGER", equipmentSetId: "lanternsteel_array", salvage: { itemId: "BANNER_ASH", quantity: 4 } },
-  { id: "BLOODRUSH_RING", name: "Bloodrush Ring", type: "gear", slot: "ring", attack: 8, defense: 1, hp: 16, readiness: 16, value: 700, rarity: "rare", classRestriction: "RAVAGER", equipmentSetId: "lanternsteel_array", salvage: { itemId: "FALLEN_RIVET", quantity: 2 } },
-  { id: "SPELLGLASS_CHEST", name: "Spellglass Chest", type: "gear", slot: "chest", attack: 9, defense: 4, hp: 38, readiness: 16, value: 730, rarity: "rare", classRestriction: "HEXWEAVER", equipmentSetId: "glassbound_script", salvage: { itemId: "ECHO_QUARTZ", quantity: 3 } },
-  { id: "SPELLGLASS_GLOVES", name: "Spellglass Gloves", type: "gear", slot: "gloves", attack: 4, defense: 2, hp: 16, readiness: 15, value: 545, rarity: "rare", classRestriction: "HEXWEAVER", equipmentSetId: "glassbound_script", salvage: { itemId: "ECHO_QUARTZ", quantity: 2 } },
-  { id: "SPELLGLASS_CAPE", name: "Spellglass Cape", type: "gear", slot: "cape", attack: 5, defense: 2, hp: 24, readiness: 16, value: 670, rarity: "rare", classRestriction: "HEXWEAVER", equipmentSetId: "glassbound_script", salvage: { itemId: "OATHGLASS_FRAGMENT", quantity: 2 } },
-  { id: "SPELLGLASS_RING", name: "Spellglass Ring", type: "gear", slot: "ring", attack: 3, defense: 1, hp: 14, readiness: 16, value: 690, rarity: "rare", classRestriction: "HEXWEAVER", equipmentSetId: "glassbound_script", salvage: { itemId: "OATHGLASS_FRAGMENT", quantity: 2 } },
-  { id: "NIGHTFANG_CHEST", name: "Nightfang Chest", type: "gear", slot: "chest", attack: 10, defense: 4, hp: 34, readiness: 18, value: 745, rarity: "rare", classRestriction: "KNIFE_DANCER", equipmentSetId: "gloamstep_regalia", salvage: { itemId: "GLOAM_DUST", quantity: 4 } },
-  { id: "NIGHTFANG_GLOVES", name: "Nightfang Gloves", type: "gear", slot: "gloves", attack: 7, defense: 2, hp: 14, readiness: 18, value: 565, rarity: "rare", classRestriction: "KNIFE_DANCER", equipmentSetId: "gloamstep_regalia", salvage: { itemId: "GLOAM_DUST", quantity: 3 } },
-  { id: "NIGHTFANG_CAPE", name: "Nightfang Cape", type: "gear", slot: "cape", attack: 7, defense: 2, hp: 20, readiness: 19, value: 685, rarity: "rare", classRestriction: "KNIFE_DANCER", equipmentSetId: "gloamstep_regalia", salvage: { itemId: "LANTERNSTEEL_SHARD", quantity: 2 } },
-  { id: "NIGHTFANG_RING", name: "Nightfang Ring", type: "gear", slot: "ring", attack: 6, defense: 1, hp: 12, readiness: 19, value: 705, rarity: "rare", classRestriction: "KNIFE_DANCER", equipmentSetId: "gloamstep_regalia", salvage: { itemId: "ECHO_QUARTZ", quantity: 2 } },
-  { id: "STORMCARVED_CHEST", name: "Stormcarved Chest", type: "gear", slot: "chest", attack: 5, defense: 7, hp: 48, readiness: 16, value: 735, rarity: "rare", classRestriction: "STONECALLER", equipmentSetId: "resonant_tempest", salvage: { itemId: "RUNEBOUND_CORE", quantity: 2 } },
-  { id: "STORMCARVED_GLOVES", name: "Stormcarved Gloves", type: "gear", slot: "gloves", attack: 3, defense: 4, hp: 20, readiness: 15, value: 555, rarity: "rare", classRestriction: "STONECALLER", equipmentSetId: "resonant_tempest", salvage: { itemId: "ECHO_QUARTZ", quantity: 2 } },
-  { id: "STORMCARVED_CAPE", name: "Stormcarved Cape", type: "gear", slot: "cape", attack: 4, defense: 4, hp: 30, readiness: 16, value: 675, rarity: "rare", classRestriction: "STONECALLER", equipmentSetId: "resonant_tempest", salvage: { itemId: "ECHO_BAT_WING", quantity: 3 } },
-  { id: "STORMCARVED_RING", name: "Stormcarved Ring", type: "gear", slot: "ring", attack: 3, defense: 2, hp: 18, readiness: 16, value: 695, rarity: "rare", classRestriction: "STONECALLER", equipmentSetId: "resonant_tempest", salvage: { itemId: "RUNEBOUND_CORE", quantity: 1 } },
-  { id: "SUNSCORED_STONEHEART_CHEST", name: "Sunscored Stoneheart Chest", type: "gear", slot: "chest", defense: 19, hp: 126, readiness: 25, value: 1320, rarity: "epic", classRestriction: "IRONWARDEN", equipmentSetId: "glassward_covenant", salvage: { itemId: "AMBERGLASS", quantity: 4 } },
-  { id: "SUNSCORED_STONEHEART_GLOVES", name: "Sunscored Stoneheart Gloves", type: "gear", slot: "gloves", defense: 10, hp: 52, readiness: 23, value: 940, rarity: "epic", classRestriction: "IRONWARDEN", equipmentSetId: "glassward_covenant", salvage: { itemId: "AMBERGLASS", quantity: 2 } },
-  { id: "SUNSCORED_STONEHEART_CAPE", name: "Sunscored Stoneheart Cape", type: "gear", slot: "cape", defense: 9, hp: 70, readiness: 24, value: 1160, rarity: "epic", classRestriction: "IRONWARDEN", equipmentSetId: "glassward_covenant", salvage: { itemId: "ASTRAL_SCRIPT", quantity: 1 } },
-  { id: "SUNSCORED_STONEHEART_RING", name: "Sunscored Stoneheart Ring", type: "gear", slot: "ring", defense: 7, hp: 44, readiness: 24, value: 1100, rarity: "epic", classRestriction: "IRONWARDEN", equipmentSetId: "glassward_covenant", salvage: { itemId: "AMBERGLASS", quantity: 2 } },
-  { id: "SUNSCORED_LASTWALL_CHEST", name: "Sunscored Lastwall Chestguard", type: "gear", slot: "chest", defense: 21, hp: 140, readiness: 24, value: 1340, rarity: "epic", classRestriction: "BASTION", equipmentSetId: "sunvault_panoply", salvage: { itemId: "AMBERGLASS", quantity: 4 } },
-  { id: "SUNSCORED_LASTWALL_GLOVES", name: "Sunscored Lastwall Gauntlets", type: "gear", slot: "gloves", defense: 11, hp: 58, readiness: 23, value: 955, rarity: "epic", classRestriction: "BASTION", equipmentSetId: "sunvault_panoply", salvage: { itemId: "AMBERGLASS", quantity: 2 } },
-  { id: "SUNSCORED_LASTWALL_CAPE", name: "Sunscored Lastwall Mantle", type: "gear", slot: "cape", defense: 10, hp: 76, readiness: 24, value: 1180, rarity: "epic", classRestriction: "BASTION", equipmentSetId: "sunvault_panoply", salvage: { itemId: "ASTRAL_SCRIPT", quantity: 1 } },
-  { id: "SUNSCORED_LASTWALL_RING", name: "Sunscored Lastwall Signet", type: "gear", slot: "ring", defense: 8, hp: 50, readiness: 24, value: 1120, rarity: "epic", classRestriction: "BASTION", equipmentSetId: "sunvault_panoply", salvage: { itemId: "AMBERGLASS", quantity: 2 } },
-  { id: "SUNSCORED_MOURNCHAIN_CHEST", name: "Sunscored Mournchain Cuirass", type: "gear", slot: "chest", attack: 7, defense: 17, hp: 118, readiness: 27, value: 1360, rarity: "epic", classRestriction: "DREADGUARD", equipmentSetId: "cinderchain_harness", salvage: { itemId: "AMBERGLASS", quantity: 4 } },
-  { id: "SUNSCORED_MOURNCHAIN_GLOVES", name: "Sunscored Mournchain Grips", type: "gear", slot: "gloves", attack: 6, defense: 8, hp: 44, readiness: 26, value: 970, rarity: "epic", classRestriction: "DREADGUARD", equipmentSetId: "cinderchain_harness", salvage: { itemId: "AMBERGLASS", quantity: 2 } },
-  { id: "SUNSCORED_MOURNCHAIN_CAPE", name: "Sunscored Mournchain Shroud", type: "gear", slot: "cape", attack: 7, defense: 7, hp: 60, readiness: 27, value: 1200, rarity: "epic", classRestriction: "DREADGUARD", equipmentSetId: "cinderchain_harness", salvage: { itemId: "ASTRAL_SCRIPT", quantity: 1 } },
-  { id: "SUNSCORED_MOURNCHAIN_RING", name: "Sunscored Mournchain Loop", type: "gear", slot: "ring", attack: 6, defense: 5, hp: 38, readiness: 27, value: 1140, rarity: "epic", classRestriction: "DREADGUARD", equipmentSetId: "cinderchain_harness", salvage: { itemId: "AMBERGLASS", quantity: 2 } },
-  { id: "SUNSCORED_QUICKPRAYER_CHEST", name: "Sunscored Quickprayer Chest", type: "gear", slot: "chest", attack: 6, defense: 12, hp: 88, readiness: 26, value: 1300, rarity: "epic", classRestriction: "DAWNKEEPER", equipmentSetId: "dawn_of_saffron", salvage: { itemId: "AMBERGLASS", quantity: 4 } },
-  { id: "SUNSCORED_QUICKPRAYER_GLOVES", name: "Sunscored Quickprayer Gloves", type: "gear", slot: "gloves", attack: 5, defense: 6, hp: 38, readiness: 25, value: 925, rarity: "epic", classRestriction: "DAWNKEEPER", equipmentSetId: "dawn_of_saffron", salvage: { itemId: "AMBERGLASS", quantity: 2 } },
-  { id: "SUNSCORED_QUICKPRAYER_CAPE", name: "Sunscored Quickprayer Cape", type: "gear", slot: "cape", attack: 6, defense: 6, hp: 54, readiness: 26, value: 1140, rarity: "epic", classRestriction: "DAWNKEEPER", equipmentSetId: "dawn_of_saffron", salvage: { itemId: "ASTRAL_SCRIPT", quantity: 1 } },
-  { id: "SUNSCORED_QUICKPRAYER_RING", name: "Sunscored Quickprayer Ring", type: "gear", slot: "ring", attack: 6, defense: 3, hp: 34, readiness: 26, value: 1085, rarity: "epic", classRestriction: "DAWNKEEPER", equipmentSetId: "dawn_of_saffron", salvage: { itemId: "AMBERGLASS", quantity: 2 } },
-  { id: "SUNSCORED_TRACKER_CHEST", name: "Sunscored Tracker Chest", type: "gear", slot: "chest", attack: 17, defense: 10, hp: 72, readiness: 27, value: 1340, rarity: "epic", classRestriction: "WAYFINDER", equipmentSetId: "mirage_hunter", salvage: { itemId: "AMBERGLASS", quantity: 4 } },
-  { id: "SUNSCORED_TRACKER_GLOVES", name: "Sunscored Tracker Gloves", type: "gear", slot: "gloves", attack: 10, defense: 5, hp: 32, readiness: 26, value: 955, rarity: "epic", classRestriction: "WAYFINDER", equipmentSetId: "mirage_hunter", salvage: { itemId: "AMBERGLASS", quantity: 2 } },
-  { id: "SUNSCORED_TRACKER_CAPE", name: "Sunscored Tracker Cape", type: "gear", slot: "cape", attack: 12, defense: 5, hp: 44, readiness: 27, value: 1180, rarity: "epic", classRestriction: "WAYFINDER", equipmentSetId: "mirage_hunter", salvage: { itemId: "ASTRAL_SCRIPT", quantity: 1 } },
-  { id: "SUNSCORED_TRACKER_RING", name: "Sunscored Tracker Ring", type: "gear", slot: "ring", attack: 10, defense: 2, hp: 24, readiness: 27, value: 1120, rarity: "epic", classRestriction: "WAYFINDER", equipmentSetId: "mirage_hunter", salvage: { itemId: "AMBERGLASS", quantity: 2 } },
-  { id: "SUNSCORED_BLOODRUSH_CHEST", name: "Sunscored Bloodrush Chest", type: "gear", slot: "chest", attack: 18, defense: 11, hp: 70, readiness: 28, value: 1360, rarity: "epic", classRestriction: "RAVAGER", equipmentSetId: "scorchblood_array", salvage: { itemId: "AMBERGLASS", quantity: 4 } },
-  { id: "SUNSCORED_BLOODRUSH_GLOVES", name: "Sunscored Bloodrush Gloves", type: "gear", slot: "gloves", attack: 12, defense: 6, hp: 30, readiness: 27, value: 970, rarity: "epic", classRestriction: "RAVAGER", equipmentSetId: "scorchblood_array", salvage: { itemId: "AMBERGLASS", quantity: 2 } },
-  { id: "SUNSCORED_BLOODRUSH_CAPE", name: "Sunscored Bloodrush Cape", type: "gear", slot: "cape", attack: 14, defense: 5, hp: 40, readiness: 28, value: 1200, rarity: "epic", classRestriction: "RAVAGER", equipmentSetId: "scorchblood_array", salvage: { itemId: "ASTRAL_SCRIPT", quantity: 1 } },
-  { id: "SUNSCORED_BLOODRUSH_RING", name: "Sunscored Bloodrush Ring", type: "gear", slot: "ring", attack: 12, defense: 2, hp: 22, readiness: 28, value: 1140, rarity: "epic", classRestriction: "RAVAGER", equipmentSetId: "scorchblood_array", salvage: { itemId: "AMBERGLASS", quantity: 2 } },
-  { id: "SUNSCORED_SPELLGLASS_CHEST", name: "Sunscored Spellglass Chest", type: "gear", slot: "chest", attack: 17, defense: 7, hp: 56, readiness: 27, value: 1350, rarity: "epic", classRestriction: "HEXWEAVER", equipmentSetId: "astral_script", salvage: { itemId: "AMBERGLASS", quantity: 4 } },
-  { id: "SUNSCORED_SPELLGLASS_GLOVES", name: "Sunscored Spellglass Gloves", type: "gear", slot: "gloves", attack: 9, defense: 4, hp: 24, readiness: 26, value: 965, rarity: "epic", classRestriction: "HEXWEAVER", equipmentSetId: "astral_script", salvage: { itemId: "AMBERGLASS", quantity: 2 } },
-  { id: "SUNSCORED_SPELLGLASS_CAPE", name: "Sunscored Spellglass Cape", type: "gear", slot: "cape", attack: 11, defense: 4, hp: 34, readiness: 27, value: 1190, rarity: "epic", classRestriction: "HEXWEAVER", equipmentSetId: "astral_script", salvage: { itemId: "ASTRAL_SCRIPT", quantity: 1 } },
-  { id: "SUNSCORED_SPELLGLASS_RING", name: "Sunscored Spellglass Ring", type: "gear", slot: "ring", attack: 9, defense: 2, hp: 18, readiness: 27, value: 1130, rarity: "epic", classRestriction: "HEXWEAVER", equipmentSetId: "astral_script", salvage: { itemId: "AMBERGLASS", quantity: 2 } },
-  { id: "SUNSCORED_NIGHTFANG_CHEST", name: "Sunscored Nightfang Chest", type: "gear", slot: "chest", attack: 18, defense: 7, hp: 52, readiness: 29, value: 1370, rarity: "epic", classRestriction: "KNIFE_DANCER", equipmentSetId: "dunestep_regalia", salvage: { itemId: "AMBERGLASS", quantity: 4 } },
-  { id: "SUNSCORED_NIGHTFANG_GLOVES", name: "Sunscored Nightfang Gloves", type: "gear", slot: "gloves", attack: 12, defense: 4, hp: 22, readiness: 29, value: 980, rarity: "epic", classRestriction: "KNIFE_DANCER", equipmentSetId: "dunestep_regalia", salvage: { itemId: "AMBERGLASS", quantity: 2 } },
-  { id: "SUNSCORED_NIGHTFANG_CAPE", name: "Sunscored Nightfang Cape", type: "gear", slot: "cape", attack: 13, defense: 4, hp: 30, readiness: 30, value: 1210, rarity: "epic", classRestriction: "KNIFE_DANCER", equipmentSetId: "dunestep_regalia", salvage: { itemId: "ASTRAL_SCRIPT", quantity: 1 } },
-  { id: "SUNSCORED_NIGHTFANG_RING", name: "Sunscored Nightfang Ring", type: "gear", slot: "ring", attack: 11, defense: 2, hp: 16, readiness: 30, value: 1150, rarity: "epic", classRestriction: "KNIFE_DANCER", equipmentSetId: "dunestep_regalia", salvage: { itemId: "AMBERGLASS", quantity: 2 } },
-  { id: "SUNSCORED_STORMCARVED_CHEST", name: "Sunscored Stormcarved Chest", type: "gear", slot: "chest", attack: 10, defense: 12, hp: 78, readiness: 27, value: 1360, rarity: "epic", classRestriction: "STONECALLER", equipmentSetId: "oasis_resonance", salvage: { itemId: "AMBERGLASS", quantity: 4 } },
-  { id: "SUNSCORED_STORMCARVED_GLOVES", name: "Sunscored Stormcarved Gloves", type: "gear", slot: "gloves", attack: 6, defense: 7, hp: 34, readiness: 26, value: 970, rarity: "epic", classRestriction: "STONECALLER", equipmentSetId: "oasis_resonance", salvage: { itemId: "AMBERGLASS", quantity: 2 } },
-  { id: "SUNSCORED_STORMCARVED_CAPE", name: "Sunscored Stormcarved Cape", type: "gear", slot: "cape", attack: 8, defense: 7, hp: 48, readiness: 27, value: 1200, rarity: "epic", classRestriction: "STONECALLER", equipmentSetId: "oasis_resonance", salvage: { itemId: "ASTRAL_SCRIPT", quantity: 1 } },
-  { id: "SUNSCORED_STORMCARVED_RING", name: "Sunscored Stormcarved Ring", type: "gear", slot: "ring", attack: 6, defense: 4, hp: 28, readiness: 27, value: 1140, rarity: "epic", classRestriction: "STONECALLER", equipmentSetId: "oasis_resonance", salvage: { itemId: "AMBERGLASS", quantity: 2 } },
-  { id: "RIMEBOUND_STONEHEART_CHEST", name: "Rimebound Stoneheart Chest", type: "gear", slot: "chest", attack: 6, defense: 18, hp: 115, readiness: 34, value: 2420, rarity: "epic", classRestriction: "IRONWARDEN", equipmentSetId: "rimewall_oath", salvage: { itemId: "RIMEGLASS", quantity: 4 } },
-  { id: "RIMEBOUND_STONEHEART_GLOVES", name: "Rimebound Stoneheart Gloves", type: "gear", slot: "gloves", attack: 4, defense: 10, hp: 50, readiness: 33, value: 1740, rarity: "epic", classRestriction: "IRONWARDEN", equipmentSetId: "rimewall_oath", salvage: { itemId: "RIMEGLASS", quantity: 2 } },
-  { id: "RIMEBOUND_STONEHEART_CAPE", name: "Rimebound Stoneheart Cape", type: "gear", slot: "cape", attack: 5, defense: 11, hp: 70, readiness: 34, value: 2160, rarity: "epic", classRestriction: "IRONWARDEN", equipmentSetId: "rimewall_oath", salvage: { itemId: "CHOIR_BLOOM", quantity: 1 } },
-  { id: "RIMEBOUND_STONEHEART_RING", name: "Rimebound Stoneheart Ring", type: "gear", slot: "ring", attack: 4, defense: 8, hp: 42, readiness: 34, value: 2050, rarity: "epic", classRestriction: "IRONWARDEN", equipmentSetId: "rimewall_oath", salvage: { itemId: "RIMEGLASS", quantity: 2 } },
-  { id: "ASTER_IRON_ORE", name: "Aster-Iron Ore", type: "material", value: 14 },
-  { id: "SUNSTONE_ORE", name: "Sunstone Ore", type: "material", value: 65 },
-  { id: "AMBERGLASS", name: "Amberglass", type: "material", value: 180, rarity: "uncommon" },
-  { id: "ASTRAL_SCRIPT", name: "Astral Script", type: "material", value: 420, rarity: "rare" },
-  { id: "FROSTIRON", name: "Frostiron", type: "material", value: 150 },
-  { id: "RIMEGLASS", name: "Rimeglass", type: "material", value: 430, rarity: "rare" },
-  { id: "CHOIR_BLOOM", name: "Choir Bloom", type: "material", value: 480, rarity: "rare" },
-  // V33 regional resource identities. Source/drop wiring is authoritative on the backend.
-  { id: "SAFFRON_REED", name: "Saffron Reed", type: "material", value: 95, rarity: "uncommon" },
-  { id: "MIRAGE_BLOOM", name: "Mirage Bloom", type: "material", value: 160, rarity: "uncommon" },
-  { id: "DUNEWOOD", name: "Dunewood", type: "material", value: 85, rarity: "uncommon" },
-  { id: "CHARBARK", name: "Charbark", type: "material", value: 140, rarity: "uncommon" },
-  { id: "OASIS_CARP", name: "Oasis Carp", type: "material", value: 100, rarity: "uncommon" },
-  { id: "GLASSFIN", name: "Glassfin", type: "material", value: 170, rarity: "rare" },
-  { id: "SCORPION_VENOM", name: "Scorpion Venom", type: "material", value: 130, rarity: "uncommon" },
-  { id: "ROYAL_CHITIN", name: "Royal Chitin", type: "material", value: 300, rarity: "rare" },
-  { id: "TYRANT_SEAL", name: "Tyrant Seal", type: "material", value: 620, rarity: "rare" },
-  { id: "WHITEPINE_LOG", name: "Whitepine Log", type: "material", value: 120, rarity: "uncommon" },
-  { id: "RIME_RESIN", name: "Rime Resin", type: "material", value: 190, rarity: "uncommon" },
-  { id: "WINTERMINT", name: "Wintermint", type: "material", value: 170, rarity: "uncommon" },
-  { id: "ICEFIN", name: "Icefin", type: "material", value: 180, rarity: "rare" },
-  { id: "BELLFIN_SCALE", name: "Bellfin Scale", type: "material", value: 260, rarity: "rare" },
-  { id: "WYRMSCALE", name: "Wyrm Scale", type: "material", value: 520, rarity: "rare" },
-  { id: "FROZEN_HEART", name: "Frozen Heart", type: "material", value: 900, rarity: "legendary" },
-  { id: "GREENWOOD_LOG", name: "Greenwood Log", type: "material", value: 4 },
-  { id: "IRONWOOD_LOG", name: "Ironwood Log", type: "material", value: 13 },
-  { id: "SILVERFIN", name: "Silverfin", type: "material", value: 6 },
-  { id: "RIVER_EEL", name: "River Eel", type: "material", value: 15 },
-  { id: "COPPER_BLADE", name: "Copper Blade", type: "gear", slot: "weapon", attack: 7, readiness: 4, value: 75 },
-  { id: "ASTER_IRON_BLADE", name: "Aster-Iron Blade", type: "gear", slot: "weapon", attack: 13, readiness: 8, value: 220, rarity: "rare", salvage: { itemId: "ASTER_IRON_INGOT", quantity: 4 } },
-  { id: "ASTER_IRON_HELM", name: "Aster-Iron Helm", type: "gear", slot: "helmet", defense: 7, hp: 38, readiness: 6, value: 195, rarity: "rare", salvage: { itemId: "ASTER_IRON_INGOT", quantity: 3 } },
-  { id: "ASTER_IRON_CHEST", name: "Aster-Iron Cuirass", type: "gear", slot: "chest", defense: 11, hp: 72, readiness: 9, value: 310, rarity: "rare", salvage: { itemId: "ASTER_IRON_INGOT", quantity: 5 } },
-  { id: "ASTER_IRON_LEGS", name: "Aster-Iron Legguards", type: "gear", slot: "legs", defense: 8, hp: 48, readiness: 7, value: 245, rarity: "rare", salvage: { itemId: "ASTER_IRON_INGOT", quantity: 4 } },
-  { id: "ASTER_IRON_BOOTS", name: "Aster-Iron Greaves", type: "gear", slot: "boots", defense: 5, hp: 30, readiness: 6, value: 205, rarity: "rare", salvage: { itemId: "ASTER_IRON_INGOT", quantity: 3 } },
-  { id: "ASTER_IRON_GLOVES", name: "Aster-Iron Gauntlets", type: "gear", slot: "gloves", defense: 5, hp: 24, readiness: 6, value: 195, rarity: "rare", salvage: { itemId: "ASTER_IRON_INGOT", quantity: 3 } },
-  { id: "ASTER_IRON_OFFHAND", name: "Aster-Iron Guard", type: "gear", slot: "offhand", defense: 8, hp: 38, readiness: 7, value: 225, rarity: "rare", salvage: { itemId: "ASTER_IRON_INGOT", quantity: 3 } },
-  { id: "ASTER_IRON_CAPE", name: "Aster-Iron Mantle", type: "gear", slot: "cape", attack: 2, defense: 5, hp: 30, readiness: 7, value: 215, rarity: "rare", salvage: { itemId: "ASTER_IRON_INGOT", quantity: 2 } },
-  { id: "ASTER_IRON_AMULET", name: "Aster-Iron Star Amulet", type: "gear", slot: "amulet", attack: 3, defense: 3, hp: 24, readiness: 7, value: 210, rarity: "rare", salvage: { itemId: "ASTER_IRON_INGOT", quantity: 2 } },
-  { id: "ASTER_IRON_RING", name: "Aster-Iron Signet", type: "gear", slot: "ring", attack: 3, defense: 2, hp: 18, readiness: 7, value: 205, rarity: "rare", salvage: { itemId: "ASTER_IRON_INGOT", quantity: 2 } },
-  { id: "IRONWOOD_GUARD", name: "Ironwood Guard", type: "gear", slot: "offhand", defense: 7, hp: 34, readiness: 6, value: 185 },
-  { id: "IRONWOOD_LONGBOW", name: "Ironwood Longbow", type: "gear", slot: "weapon", attack: 12, readiness: 8, value: 220 },
-  { id: "IRONWOOD_STAFF", name: "Ironwood Runestaff", type: "gear", slot: "weapon", attack: 10, hp: 28, readiness: 8, value: 220 },
-  { id: "IRONWOOD_DAGGERS", name: "Ironwood Twin Daggers", type: "gear", slot: "weapon", attack: 12, readiness: 8, value: 220 },
-  { id: "IRONWOOD_GREATAXE", name: "Ironwood Great-Axe", type: "gear", slot: "weapon", attack: 14, defense: -1, readiness: 8, value: 220 },
-  { id: "MOSS_FIBER", name: "Moss Fiber", type: "material", value: 3 },
-  { id: "WISP_DUST", name: "Wisp Dust", type: "material", value: 7 },
-  { id: "BOAR_HIDE", name: "Boar Hide", type: "material", value: 8 },
-  { id: "WOLF_PELT", name: "Wolf Pelt", type: "material", value: 13 },
-  { id: "IRONWOOD_FANG", name: "Ironwood Fang", type: "material", value: 28 },
-  { id: "THORN_SAP", name: "Thorn Sap", type: "material", value: 20 },
-  { id: "TROLL_HIDE", name: "Troll Hide", type: "material", value: 42 },
-  { id: "OATHGLASS_SHARD", name: "Oathglass Shard", type: "material", value: 85 },
-  { id: "ECHO_TOUCHED_PELT", name: "Echo-Touched Pelt", type: "material", value: 140 },
-  { id: "TORN_OATHCLOTH", name: "Torn Oathcloth", type: "material", value: 95 },
-  { id: "LANTERNSTEEL_SHARD", name: "Lanternsteel Shard", type: "material", value: 125 },
-  { id: "BANNER_ASH", name: "Banner Ash", type: "material", value: 75 },
-  { id: "BLACKGLASS_CORE", name: "Blackglass Core", type: "material", value: 260, rarity: "rare" },
-  { id: "CINDER_HEART", name: "Cinder Heart", type: "material", value: 420, rarity: "rare" },
-  { id: "REGENT_SIGIL", name: "Regent Sigil", type: "material", value: 850, rarity: "legendary" },
-  { id: "FALLEN_RIVET", name: "Fallen Rivet", type: "material", value: 90 },
-  { id: "ECHO_QUARTZ", name: "Echo Quartz", type: "material", value: 85 },
-  { id: "OATHGLASS_FRAGMENT", name: "Oathglass Fragment", type: "material", value: 130 },
-  { id: "GLOAM_DUST", name: "Gloam Dust", type: "material", value: 105 },
-  { id: "EVENT_BONDBLOOM", name: "Event Bondbloom", type: "material", value: 175 },
-  { id: "RUNEBOUND_CORE", name: "Runebound Core", type: "material", value: 150 },
-  { id: "ECHO_BAT_WING", name: "Echo Bat Wing", type: "material", value: 80 },
-  { id: "FALLEN_KNIGHT_SIGIL", name: "Fallen Knight Sigil", type: "quest", value: 0 },
-  { id: "WORN_BLADE", name: "Worn Blade", type: "gear", slot: "weapon", attack: 4, readiness: 2, value: 35, salvage: { itemId: "MOSS_FIBER", quantity: 2 } },
-  { id: "MOSSWRAP_GLOVES", name: "Mosswrap Gloves", type: "gear", slot: "gloves", defense: 2, hp: 8, readiness: 3, value: 55, salvage: { itemId: "MOSS_FIBER", quantity: 3 } },
-  { id: "WISP_CHARM", name: "Wisp Charm", type: "gear", slot: "amulet", attack: 2, hp: 12, readiness: 3, value: 80, salvage: { itemId: "WISP_DUST", quantity: 2 } },
-  { id: "BOARHIDE_BOOTS", name: "Boarhide Boots", type: "gear", slot: "boots", defense: 3, hp: 15, readiness: 4, value: 95, salvage: { itemId: "BOAR_HIDE", quantity: 3 } },
-  { id: "IRONWOOD_BLADE", name: "Ironwood Blade", type: "gear", slot: "weapon", attack: 9, readiness: 5, value: 120, salvage: { itemId: "IRONWOOD_FANG", quantity: 1 } },
-  { id: "HIDE_VEST", name: "Hide Vest", type: "gear", slot: "chest", defense: 5, hp: 28, readiness: 4, value: 90, salvage: { itemId: "BOAR_HIDE", quantity: 4 } },
-  { id: "THORN_RING", name: "Thorn Ring", type: "gear", slot: "ring", attack: 4, defense: 1, readiness: 5, value: 155, salvage: { itemId: "THORN_SAP", quantity: 3 } },
-  { id: "TROLLGUARD_HELM", name: "Trollguard Helm", type: "gear", slot: "helmet", defense: 8, hp: 55, readiness: 7, value: 260, salvage: { itemId: "TROLL_HIDE", quantity: 2 } },
-  { id: "OATHGLASS_CAPE", name: "Oathglass Cape", type: "gear", slot: "cape", attack: 5, defense: 5, hp: 35, readiness: 8, value: 420, salvage: { itemId: "OATHGLASS_SHARD", quantity: 2 } }
-];
-var ITEMS = [...BASE_ITEMS, ...EQUIPMENT_ITEMS_V33];
-function itemDef(id) {
-  const x = ITEMS.find((i) => i.id === id);
-  if (!x) throw new Error(`Unknown item ${id}`);
-  return x;
-}
-
-// ../apps/mobile/src/content/equipment-recipes-v33.ts
-var classIdByName2 = {
+// apps/mobile/src/content/equipment-recipes-v33.ts
+var classIdByName = {
   Ironwarden: "IRONWARDEN",
   Bastion: "BASTION",
   Dreadguard: "DREADGUARD",
@@ -67291,7 +68073,7 @@ var classIdByName2 = {
   "Knife Dancer": "KNIFE_DANCER",
   Stonecaller: "STONECALLER"
 };
-var slotByName2 = {
+var slotByName = {
   Helmet: "helmet",
   Chest: "chest",
   Gloves: "gloves",
@@ -67328,11 +68110,30 @@ var timerRange = {
 };
 var tierGold = { T1: 120, T2: 420, T3: 900, T4: 1800, T5: 3500, T6: 6e3, T7: 9e3, T8: 14e3, T9: 2e4 };
 var tierXp = { T1: 120, T2: 250, T3: 450, T4: 700, T5: 1100, T6: 1600, T7: 2200, T8: 2900, T9: 3800 };
+var TIER_CHARACTER_LEVEL_FLOOR = { T1: 2, T2: 6, T3: 13, T4: 19, T5: 26, T6: 36, T7: 46, T8: 58, T9: 71 };
+var TIER_CRAFTING_LEVEL_FLOOR = { T1: 1, T2: 3, T3: 10, T4: 16, T5: 23, T6: 33, T7: 43, T8: 55, T9: 68 };
+var EQUIPMENT_CRAFT_SKILL_BY_CLASS = {
+  IRONWARDEN: "smithing",
+  BASTION: "smithing",
+  DREADGUARD: "smithing",
+  RAVAGER: "smithing",
+  WAYFINDER: "tailoring",
+  HEXWEAVER: "tailoring",
+  KNIFE_DANCER: "tailoring",
+  DAWNKEEPER: "tailoring",
+  STONECALLER: "tailoring"
+};
 var pathMaterial = {
   T1: { Foundation: "MOSS_FIBER", Specialist: "WISP_DUST", Alternate: "BOAR_HIDE" },
   T2: { Foundation: "WOLF_PELT", Specialist: "THORN_SAP", Alternate: "IRONWOOD_FANG" },
   T3: { Foundation: "TROLL_HIDE", Specialist: "THORN_SAP", Alternate: "WOLF_PELT" },
   T4: { Foundation: "TORN_OATHCLOTH", Specialist: "LANTERNSTEEL_SHARD", Alternate: "ECHO_QUARTZ" }
+};
+var tailoringPathMaterial = {
+  T1: { Foundation: "BOAR_HIDE", Specialist: "WISP_DUST", Alternate: "THORN_SAP" },
+  T2: { Foundation: "BOAR_HIDE", Specialist: "THORN_SAP", Alternate: "IRONWOOD_FANG" },
+  T3: { Foundation: "TROLL_HIDE", Specialist: "THORN_SAP", Alternate: "WOLF_PELT" },
+  T4: { Foundation: "TORN_OATHCLOTH", Specialist: "OATHGLASS_SHARD", Alternate: "ECHO_TOUCHED_PELT" }
 };
 function q(base, multiplier) {
   return Math.max(1, Math.round(base * multiplier));
@@ -67340,7 +68141,37 @@ function q(base, multiplier) {
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
-function ingredients(tier, path, multiplier) {
+function mergeInputs(inputs) {
+  const totals = /* @__PURE__ */ new Map();
+  for (const input of inputs) totals.set(input.itemId, (totals.get(input.itemId) ?? 0) + input.quantity);
+  return [...totals].map(([itemId, quantity4]) => ({ itemId, quantity: quantity4 }));
+}
+function ingredients(tier, path, multiplier, skillId) {
+  if (skillId === "tailoring") {
+    const accent = tailoringPathMaterial[tier]?.[path];
+    switch (tier) {
+      case "T1":
+        return mergeInputs([{ itemId: "MOSS_FIBER", quantity: q(22, multiplier) }, { itemId: accent ?? "BOAR_HIDE", quantity: q(7, multiplier) }]);
+      case "T2":
+        return mergeInputs([{ itemId: "WOLF_PELT", quantity: q(22, multiplier) }, { itemId: accent ?? "BOAR_HIDE", quantity: q(9, multiplier) }]);
+      case "T3":
+        return mergeInputs([{ itemId: "TROLL_HIDE", quantity: q(18, multiplier) }, { itemId: accent ?? "WOLF_PELT", quantity: q(10, multiplier) }, { itemId: "THORN_SAP", quantity: q(5, multiplier) }]);
+      case "T4":
+        return mergeInputs([{ itemId: "TORN_OATHCLOTH", quantity: q(18, multiplier) }, { itemId: "ECHO_TOUCHED_PELT", quantity: q(7, multiplier) }, { itemId: accent ?? "OATHGLASS_SHARD", quantity: q(5, multiplier) }]);
+      case "T5":
+        return [{ itemId: "SUNSCALE", quantity: q(25, multiplier) }, { itemId: "AMBERGLASS", quantity: q(8, multiplier) }];
+      case "T6":
+        return [{ itemId: "SUNSCALE", quantity: q(30, multiplier) }, { itemId: "AMBERGLASS", quantity: q(10, multiplier) }, { itemId: "ASTRAL_SCRIPT", quantity: q(1, multiplier) }];
+      case "T7":
+        return [{ itemId: "FROSTBLOOM", quantity: q(32, multiplier) }, { itemId: "RIMEGLASS", quantity: q(8, multiplier) }];
+      case "T8":
+        return [{ itemId: "FROSTBLOOM", quantity: q(36, multiplier) }, { itemId: "RIMEGLASS", quantity: q(11, multiplier) }, { itemId: "CHOIR_BLOOM", quantity: q(1, multiplier) }];
+      case "T9":
+        return [{ itemId: "ASHEN_MYRRH", quantity: q(40, multiplier) }, { itemId: "BLACKGLASS_CORE", quantity: q(10, multiplier) }, { itemId: "CINDER_HEART", quantity: q(3, multiplier) }];
+      default:
+        return [];
+    }
+  }
   const pathItem = pathMaterial[tier]?.[path];
   switch (tier) {
     case "T1":
@@ -67352,15 +68183,15 @@ function ingredients(tier, path, multiplier) {
     case "T4":
       return [{ itemId: "OATHSTONE_INGOT", quantity: q(18, multiplier) }, { itemId: "OATHGLASS_SHARD", quantity: q(7, multiplier) }, { itemId: pathItem ?? "TORN_OATHCLOTH", quantity: q(5, multiplier) }];
     case "T5":
-      return [{ itemId: "SUNSTONE_ORE", quantity: q(18, multiplier) }, { itemId: "AMBERGLASS", quantity: q(5, multiplier) }];
+      return [{ itemId: "SUNSTONE_INGOT", quantity: q(11, multiplier) }, { itemId: "AMBERGLASS", quantity: q(7, multiplier) }];
     case "T6":
-      return [{ itemId: "SUNSTONE_ORE", quantity: q(24, multiplier) }, { itemId: "AMBERGLASS", quantity: q(8, multiplier) }, { itemId: "ASTRAL_SCRIPT", quantity: q(1, multiplier) }];
+      return [{ itemId: "SUNSTONE_INGOT", quantity: q(15, multiplier) }, { itemId: "AMBERGLASS", quantity: q(10, multiplier) }, { itemId: "ASTRAL_SCRIPT", quantity: q(1, multiplier) }];
     case "T7":
-      return [{ itemId: "FROSTIRON", quantity: q(22, multiplier) }, { itemId: "RIMEGLASS", quantity: q(5, multiplier) }];
+      return [{ itemId: "FROSTIRON_INGOT", quantity: q(16, multiplier) }, { itemId: "RIMEGLASS", quantity: q(8, multiplier) }];
     case "T8":
-      return [{ itemId: "FROSTIRON", quantity: q(28, multiplier) }, { itemId: "RIMEGLASS", quantity: q(8, multiplier) }, { itemId: "CHOIR_BLOOM", quantity: q(1, multiplier) }];
+      return [{ itemId: "FROSTIRON_INGOT", quantity: q(18, multiplier) }, { itemId: "RIMEGLASS", quantity: q(11, multiplier) }, { itemId: "CHOIR_BLOOM", quantity: q(1, multiplier) }];
     case "T9":
-      return [{ itemId: "FROSTIRON", quantity: q(36, multiplier) }, { itemId: "RIMEGLASS", quantity: q(12, multiplier) }, { itemId: "CHOIR_BLOOM", quantity: q(2, multiplier) }];
+      return [{ itemId: "BLACKGLASS_INGOT", quantity: q(20, multiplier) }, { itemId: "BLACKGLASS_CORE", quantity: q(10, multiplier) }, { itemId: "CINDER_HEART", quantity: q(3, multiplier) }];
     default:
       return [];
   }
@@ -67369,181 +68200,479 @@ var setById = new Map(equipment_catalog_t1_t9_v33_default.sets.map((set) => [Str
 var V33_EQUIPMENT_RECIPES = equipment_catalog_t1_t9_v33_default.pieces.map((piece) => {
   const setId = String(piece["Set ID"]), set = setById.get(setId);
   if (!set) throw new Error(`Missing V33 set for ${setId}`);
-  const tier = String(piece.Tier), slot = slotByName2[String(piece.Slot)], multiplier = slotMultiplier[slot], reqLevel = Math.max(1, Number(piece["Req Level"]));
+  const tier = String(piece.Tier), slot = slotByName[String(piece.Slot)], multiplier = slotMultiplier[slot], catalogReqLevel = Math.max(1, Number(piece["Req Level"]));
+  const classId = classIdByName[String(piece.Class)], skillId = EQUIPMENT_CRAFT_SKILL_BY_CLASS[classId];
+  const characterLevel = Math.max(catalogReqLevel, TIER_CHARACTER_LEVEL_FLOOR[tier] ?? 1), level = Math.max(1, characterLevel - 3, TIER_CRAFTING_LEVEL_FLOOR[tier] ?? 1);
   const range = timerRange[tier] ?? timerRange.T1;
   return {
     id: `CRAFT_V33_${String(piece["Piece ID"])}`,
     name: String(piece["Item Name"]),
-    skillId: "smithing",
-    level: Math.max(1, reqLevel - 3),
+    skillId,
+    level,
     xp: q(tierXp[tier] ?? 120, multiplier),
     gold: q(tierGold[tier] ?? 120, multiplier),
     seconds: clamp(Math.round(range.base * multiplier), range.min, range.max),
-    inputs: ingredients(tier, String(piece.Path), multiplier),
+    inputs: mergeInputs(ingredients(tier, String(piece.Path), multiplier, skillId)),
     output: { itemId: String(piece["Piece ID"]), quantity: 1 },
-    classId: classIdByName2[String(piece.Class)],
-    characterLevel: reqLevel,
+    classId,
+    characterLevel,
     v33EquipmentTier: tier,
-    v33Region: String(set.Region),
+    v33Region: tier === "T9" ? "Ashlands" : String(set.Region),
     v33SetId: setId,
     v33Path: String(piece.Path)
   };
 });
 
-// ../apps/mobile/src/content/skills.ts
+// apps/mobile/src/content/novice-sets.ts
+var definitions = [
+  { id: "ironwarden_recruit", classId: "IRONWARDEN", name: "Ironwarden Recruit", appearanceId: "beginner-ironwarden-recruit", weaponName: "Recruit Sword", weaponAttack: 6, offhandName: "Recruit Shield", setBonus: { name: "Runic Formation", attack: 3, defense: 8, hp: 28, description: "+8 DEF and +28 HP while the full set is equipped." }, theme: { accent: "#83a9c8", identity: "Disciplined steel frontline", material: "Steel, blue cloth and field leather" } },
+  { id: "wallkeeper_initiate", classId: "BASTION", name: "Wallkeeper Initiate", appearanceId: "beginner-wallkeeper-initiate", weaponName: "Initiate Tower Shield", weaponAttack: 5, offhandName: "Initiate Guard Bell", setBonus: { name: "Unbroken Wall", attack: 1, defense: 12, hp: 42, description: "+12 DEF and +42 HP while the full set is equipped." }, theme: { accent: "#d2a04d", identity: "Maximum defense and immovable presence", material: "Dark plate, gold trim and tower shield" } },
+  { id: "chainwatch_novice", classId: "DREADGUARD", name: "Chainwatch Novice", appearanceId: "beginner-chainwatch-novice", weaponName: "Novice Chained Weapon", weaponAttack: 7, offhandName: "Novice Shield", setBonus: { name: "Dread Chain", attack: 7, defense: 3, hp: 18, description: "+7 ATK and +18 HP while the full set is equipped." }, theme: { accent: "#a97070", identity: "Relentless control at close range", material: "Black iron, chain and weathered hide" } },
+  { id: "sunlamp_acolyte", classId: "DAWNKEEPER", name: "Sunlamp Acolyte", appearanceId: "beginner-sunlamp-acolyte", weaponName: "Acolyte Mace", weaponAttack: 5, offhandName: "Acolyte Relic", setBonus: { name: "Sunlit Benediction", attack: 3, defense: 4, hp: 55, description: "+55 HP and +3 ATK while the full set is equipped." }, theme: { accent: "#e2b849", identity: "Radiant support and sacred resolve", material: "Ivory cloth, bronze and sun-gold" } },
+  { id: "trailbow_scout", classId: "WAYFINDER", name: "Trailbow Scout", appearanceId: "beginner-trailbow-scout", weaponName: "Scout Bow", weaponAttack: 7, offhandName: "Scout Hunting Knife", setBonus: { name: "Trail Instinct", attack: 8, defense: 2, hp: 12, description: "+8 ATK and +12 HP while the full set is equipped." }, theme: { accent: "#73a775", identity: "Mobile ranged pathfinder", material: "Greenwood, layered leather and moss cloth" } },
+  { id: "breaksteel_marauder", classId: "RAVAGER", name: "Breaksteel Marauder", appearanceId: "beginner-breaksteel-marauder", weaponName: "Marauder Two-Handed Weapon", weaponAttack: 8, offhandName: "Marauder War Charm", setBonus: { name: "Breaksteel Fury", attack: 10, defense: 0, hp: 10, description: "+10 ATK while the full set is equipped." }, theme: { accent: "#b06746", identity: "Raw power and two-handed aggression", material: "Spiked iron, dark leather and rust-red cloth" } },
+  { id: "runespark_adept", classId: "HEXWEAVER", name: "Runespark Adept", appearanceId: "accepted-front-runespark-adept", weaponName: "Adept Wand", weaponAttack: 6, offhandName: "Adept Focus", setBonus: { name: "Runic Resonance", attack: 8, defense: 2, hp: 22, description: "+8 ATK and +22 HP while the full set is equipped." }, theme: { accent: "#9a78d0", identity: "Arcane focus and runic control", material: "Violet weave, brass and crystal" } },
+  { id: "twinstep_initiate", classId: "KNIFE_DANCER", name: "Twinstep Initiate", appearanceId: "beginner-twinstep-initiate", weaponName: "Initiate Main Blade", weaponAttack: 6, offhandName: "Initiate Second Blade", setBonus: { name: "Twin Tempo", attack: 9, defense: 1, hp: 8, description: "+9 ATK while the full set is equipped." }, theme: { accent: "#a9a8bd", identity: "Speed, precision and paired blades", material: "Light steel, charcoal cloth and soft leather" } },
+  { id: "earthseal_disciple", classId: "STONECALLER", name: "Earthseal Disciple", appearanceId: "beginner-earthseal-disciple", weaponName: "Disciple Staff", weaponAttack: 6, offhandName: "Disciple Totem", setBonus: { name: "Earthen Resonance", attack: 4, defense: 6, hp: 34, description: "+6 DEF and +34 HP while the full set is equipped." }, theme: { accent: "#b49a66", identity: "Earthen endurance and primal support", material: "Stone, bark and ochre wool" } }
+];
+var NOVICE_SETS = definitions.map((set) => ({ ...set, slots: ["chest", "weapon", ...set.offhandName ? ["offhand"] : [], "gloves", "boots", "helmet", "legs", "cape", "amulet", "ring"] }));
+function noviceSetFor(classId) {
+  return NOVICE_SETS.find((set) => set.classId === classId);
+}
+function noviceItemId(classId, slot) {
+  return `NOVICE_${classId}_${slot.toUpperCase()}`;
+}
+function noviceRecipeId(classId, slot) {
+  return `CRAFT_${noviceItemId(classId, slot)}`;
+}
+var NOVICE_STAGE = { chest: 1, weapon: 2, offhand: 2, gloves: 3, boots: 3, helmet: 4, legs: 4, cape: 4, amulet: 5, ring: 5 };
+var labels = { chest: "Armor", gloves: "Gloves", boots: "Boots", helmet: "Headpiece", legs: "Legguards", cape: "Cloak", amulet: "Amulet", ring: "Signet Ring" };
+var prerequisite = { weapon: "chest", offhand: "chest", gloves: "weapon", boots: "weapon", helmet: "boots", legs: "boots", cape: "boots", amulet: "cape", ring: "amulet" };
+var NOVICE_ITEMS = NOVICE_SETS.flatMap((set) => set.slots.map((slot) => ({
+  id: noviceItemId(set.classId, slot),
+  name: slot === "weapon" ? set.weaponName : slot === "offhand" ? set.offhandName : `${set.name} ${labels[slot]}`,
+  type: "gear",
+  slot,
+  classRestriction: set.classId,
+  noviceSetId: set.id,
+  value: 5,
+  readiness: 1,
+  attack: slot === "weapon" ? set.weaponAttack : slot === "ring" ? 1 : 0,
+  defense: slot === "weapon" ? set.classId === "BASTION" ? 2 : set.classId === "DAWNKEEPER" ? 1 : 0 : slot === "chest" ? 2 : slot === "cape" ? 1 : 1,
+  hp: slot === "chest" ? 6 : slot === "legs" ? 4 : slot === "helmet" ? 2 : slot === "cape" ? 3 : slot === "amulet" ? 5 : slot === "weapon" && set.classId === "STONECALLER" ? 5 : 0
+})));
+var NOVICE_RECIPES = NOVICE_SETS.flatMap((set) => set.slots.map((slot) => {
+  const stage = NOVICE_STAGE[slot] ?? 4;
+  const item = NOVICE_ITEMS.find((item2) => item2.id === noviceItemId(set.classId, slot));
+  return {
+    id: noviceRecipeId(set.classId, slot),
+    name: item.name,
+    skillId: EQUIPMENT_CRAFT_SKILL_BY_CLASS[set.classId],
+    level: 1,
+    characterLevel: stage,
+    classId: set.classId,
+    noviceSetId: set.id,
+    requiresCraftedItemId: prerequisite[slot] ? noviceItemId(set.classId, prerequisite[slot]) : void 0,
+    // Full loadouts include relic slots now. Keep their investment aligned with
+    // the 2× progression economy rather than letting a 24-hour AFK session
+    // fund several complete crafted sets.
+    xp: stage * 40,
+    gold: (slot === "weapon" || slot === "amulet" || slot === "ring" ? 20 : stage === 4 ? 15 : 10) * 2,
+    seconds: 0,
+    inputs: [{ itemId: "COPPER_ORE", quantity: (stage >= 4 ? 16 : slot === "chest" || slot === "weapon" ? 16 : 8) * 2 }, { itemId: "GREENWOOD_LOG", quantity: (stage >= 4 ? 16 : slot === "chest" || slot === "weapon" ? 16 : 8) * 2 }, { itemId: "MOSS_FIBER", quantity: (stage >= 5 ? 8 : 4) * 2 }],
+    output: { itemId: item.id, quantity: 1 }
+  };
+}));
+
+// apps/mobile/src/content/gathering-tools.ts
+var tool = (definition) => definition;
+var blueprint = (itemId, knowledgeId, sourceMonsterId, dropChance) => ({ itemId, knowledgeId, sourceMonsterId, dropChance });
+var GATHERING_TOOLS = [
+  // Tier 1 is always learnable, but still requires early investment in the relevant gathering skill.
+  tool({ id: "COPPER_PICKAXE", name: "Copper Pickaxe", skillId: "mining", tier: 1, actionTimeMultiplier: 1, unlockLevel: 3, requiredCharacterLevel: 16, icon: "\u26CF", rarity: "common", value: 120, recipe: { level: 4, xp: 110, gold: 120, seconds: 120, inputs: [{ itemId: "COPPER_INGOT", quantity: 8 }, { itemId: "GREENWOOD_LOG", quantity: 14 }] } }),
+  tool({ id: "GREENWOOD_HATCHET", name: "Greenwood Hatchet", skillId: "woodcutting", tier: 1, actionTimeMultiplier: 1, unlockLevel: 3, requiredCharacterLevel: 3, icon: "\u{1FA93}", rarity: "common", value: 110, recipe: { level: 1, xp: 105, gold: 110, seconds: 114, inputs: [{ itemId: "GREENWOOD_LOG", quantity: 24 }, { itemId: "MOSS_FIBER", quantity: 12 }] } }),
+  tool({ id: "REEDLINE_ROD", name: "Reedline Fishing Rod", skillId: "fishing", tier: 1, actionTimeMultiplier: 1, unlockLevel: 3, requiredCharacterLevel: 3, icon: "\u{1F3A3}", rarity: "common", value: 100, recipe: { level: 1, xp: 100, gold: 100, seconds: 114, inputs: [{ itemId: "GREENWOOD_LOG", quantity: 20 }, { itemId: "MOSS_FIBER", quantity: 10 }] } }),
+  // Tier 2 blueprints are approachable regional drops; the tool itself remains a meaningful material craft.
+  tool({ id: "ASTER_IRON_PICKAXE", name: "Aster-Iron Pickaxe", skillId: "mining", tier: 2, actionTimeMultiplier: 0.75, unlockLevel: 10, requiredCharacterLevel: 16, icon: "\u26CF", rarity: "uncommon", value: 440, blueprint: blueprint("BP_ASTER_IRON_PICKAXE", "tool_recipe:ASTER_IRON_PICKAXE", "CAVE_SKITTER", 0.05), recipe: { level: 12, xp: 340, gold: 650, seconds: 240, inputs: [{ itemId: "ASTER_IRON_INGOT", quantity: 16 }, { itemId: "IRONWOOD_LOG", quantity: 26 }, { itemId: "REINFORCED_FITTING", quantity: 3 }] } }),
+  tool({ id: "ASTER_IRON_HATCHET", name: "Aster-Iron Hatchet", skillId: "woodcutting", tier: 2, actionTimeMultiplier: 0.75, unlockLevel: 10, requiredCharacterLevel: 16, icon: "\u{1FA93}", rarity: "uncommon", value: 430, blueprint: blueprint("BP_ASTER_IRON_HATCHET", "tool_recipe:ASTER_IRON_HATCHET", "THORNLING", 0.05), recipe: { level: 12, xp: 330, gold: 620, seconds: 228, inputs: [{ itemId: "ASTER_IRON_INGOT", quantity: 15 }, { itemId: "IRONWOOD_LOG", quantity: 30 }, { itemId: "REINFORCED_FITTING", quantity: 3 }] } }),
+  tool({ id: "IRONWOOD_ROD", name: "Ironwood Fishing Rod", skillId: "fishing", tier: 2, actionTimeMultiplier: 0.75, unlockLevel: 10, requiredCharacterLevel: 16, icon: "\u{1F3A3}", rarity: "uncommon", value: 420, blueprint: blueprint("BP_IRONWOOD_ROD", "tool_recipe:IRONWOOD_ROD", "MIRE_HERON", 0.05), recipe: { level: 12, xp: 320, gold: 600, seconds: 222, inputs: [{ itemId: "IRONWOOD_LOG", quantity: 36 }, { itemId: "ASTER_IRON_INGOT", quantity: 9 }, { itemId: "WISP_DUST", quantity: 10 }] } }),
+  // Tier 3 is a genuine progression chase: higher gathering level, Level 20 and a rarer blueprint.
+  tool({ id: "OATHSTONE_PICKAXE", name: "Oathstone Pickaxe", skillId: "mining", tier: 3, actionTimeMultiplier: 0.5, unlockLevel: 20, requiredCharacterLevel: 20, icon: "\u26CF", rarity: "rare", value: 1180, blueprint: blueprint("BP_OATHSTONE_PICKAXE", "tool_recipe:OATHSTONE_PICKAXE", "RUNEBOUND_MINER", 0.02), recipe: { level: 24, xp: 900, gold: 2400, seconds: 480, inputs: [{ itemId: "OATHSTONE_INGOT", quantity: 22 }, { itemId: "CROWNWOOD_LOG", quantity: 40 }, { itemId: "OATHGLASS_SHARD", quantity: 8 }] } }),
+  tool({ id: "OATHSTONE_HATCHET", name: "Oathstone Hatchet", skillId: "woodcutting", tier: 3, actionTimeMultiplier: 0.5, unlockLevel: 20, requiredCharacterLevel: 20, icon: "\u{1FA93}", rarity: "rare", value: 1160, blueprint: blueprint("BP_OATHSTONE_HATCHET", "tool_recipe:OATHSTONE_HATCHET", "ANCIENT_TREANT", 0.02), recipe: { level: 24, xp: 880, gold: 2300, seconds: 468, inputs: [{ itemId: "OATHSTONE_INGOT", quantity: 20 }, { itemId: "CROWNWOOD_LOG", quantity: 46 }, { itemId: "OATHGLASS_SHARD", quantity: 7 }] } }),
+  tool({ id: "OATHSCALE_ROD", name: "Oathscale Fishing Rod", skillId: "fishing", tier: 3, actionTimeMultiplier: 0.5, unlockLevel: 20, requiredCharacterLevel: 20, icon: "\u{1F3A3}", rarity: "rare", value: 1140, blueprint: blueprint("BP_OATHSCALE_ROD", "tool_recipe:OATHSCALE_ROD", "DROWNED_PILGRIM", 0.02), recipe: { level: 24, xp: 860, gold: 2200, seconds: 456, inputs: [{ itemId: "CROWNWOOD_LOG", quantity: 44 }, { itemId: "OATHSTONE_INGOT", quantity: 14 }, { itemId: "OATHSCALE_PIKE", quantity: 10 }] } }),
+  // Tier 4 belongs to Frostmarch. It is deliberately a long-term efficiency upgrade, not required to enter the region.
+  tool({ id: "FROSTIRON_PICKAXE", name: "Frostiron Pickaxe", skillId: "mining", tier: 4, actionTimeMultiplier: 0.4, unlockLevel: 46, requiredCharacterLevel: 46, icon: "\u26CF", rarity: "epic", value: 3600, blueprint: blueprint("BP_FROSTIRON_PICKAXE", "tool_recipe:FROSTIRON_PICKAXE", "BELLWRAITH", 0.01), recipe: { level: 50, xp: 2400, gold: 8500, seconds: 960, inputs: [{ itemId: "FROSTIRON", quantity: 32 }, { itemId: "RIMEGLASS", quantity: 12 }, { itemId: "REINFORCED_FITTING", quantity: 10 }] } }),
+  tool({ id: "FROSTIRON_HATCHET", name: "Frostiron Hatchet", skillId: "woodcutting", tier: 4, actionTimeMultiplier: 0.4, unlockLevel: 46, requiredCharacterLevel: 46, icon: "\u{1FA93}", rarity: "epic", value: 3550, blueprint: blueprint("BP_FROSTIRON_HATCHET", "tool_recipe:FROSTIRON_HATCHET", "FROSTWOLF", 0.01), recipe: { level: 50, xp: 2350, gold: 8300, seconds: 948, inputs: [{ itemId: "FROSTIRON", quantity: 30 }, { itemId: "RIMEGLASS", quantity: 10 }, { itemId: "CHOIR_BLOOM", quantity: 4 }] } }),
+  tool({ id: "RIMEGLASS_ROD", name: "Rimeglass Fishing Rod", skillId: "fishing", tier: 4, actionTimeMultiplier: 0.4, unlockLevel: 46, requiredCharacterLevel: 46, icon: "\u{1F3A3}", rarity: "epic", value: 3500, blueprint: blueprint("BP_RIMEGLASS_ROD", "tool_recipe:RIMEGLASS_ROD", "CHOIR_HUNTER", 0.01), recipe: { level: 50, xp: 2300, gold: 8100, seconds: 936, inputs: [{ itemId: "FROSTIRON", quantity: 22 }, { itemId: "RIMEGLASS", quantity: 14 }, { itemId: "CHOIR_BLOOM", quantity: 4 }] } })
+];
+var TOOL_ITEMS = GATHERING_TOOLS.map((entry2) => ({ id: entry2.id, name: entry2.name, type: "tool", value: entry2.value, rarity: entry2.rarity, toolSkillId: entry2.skillId, toolTier: entry2.tier, actionTimeMultiplier: entry2.actionTimeMultiplier }));
+var TOOL_BLUEPRINT_ITEMS = GATHERING_TOOLS.flatMap((entry2) => entry2.blueprint ? [{
+  id: entry2.blueprint.itemId,
+  name: entry2.name + " Blueprint",
+  type: "quest",
+  value: 0,
+  rarity: entry2.rarity,
+  knowledgeUnlockId: entry2.blueprint.knowledgeId
+}] : []);
+var TOOL_RECIPES = GATHERING_TOOLS.map((entry2) => ({
+  id: `CRAFT_${entry2.id}`,
+  name: entry2.name,
+  skillId: "smithing",
+  level: entry2.recipe.level,
+  xp: entry2.recipe.xp,
+  gold: entry2.recipe.gold,
+  seconds: entry2.recipe.seconds,
+  inputs: entry2.recipe.inputs,
+  output: { itemId: entry2.id, quantity: 1 },
+  characterLevel: entry2.requiredCharacterLevel,
+  requiredKnowledgeId: entry2.blueprint?.knowledgeId,
+  knowledgeItemId: entry2.blueprint?.itemId
+}));
+var gatheringToolDef = (id) => id ? GATHERING_TOOLS.find((entry2) => entry2.id === id) : void 0;
+var gatheringToolsFor = (skillId) => GATHERING_TOOLS.filter((entry2) => entry2.skillId === skillId);
+
+// apps/mobile/src/content/herbalism.ts
+var HERBALISM_METHODS = [
+  { id: "balanced", name: "Balanced Picking", unlockLevel: 1, description: "Standard pace, yield, XP and rare-find chance.", actionTimeMultiplier: 1, yieldMultiplier: 1, xpMultiplier: 1, rareFindMultiplier: 1 },
+  { id: "quick", name: "Quick Harvest", unlockLevel: 20, description: "Harvest faster, but sacrifice some normal yield and rare-find chance.", actionTimeMultiplier: 0.85, yieldMultiplier: 0.9, xpMultiplier: 0.95, rareFindMultiplier: 0.75 },
+  { id: "careful", name: "Careful Harvest", unlockLevel: 45, description: "Slower hand-picking with better XP and a much higher rare botanical chance.", actionTimeMultiplier: 1.18, yieldMultiplier: 1, xpMultiplier: 1.05, rareFindMultiplier: 1.5 },
+  { id: "bountiful", name: "Bountiful Harvest", unlockLevel: 70, description: "Take extra time to maximize ordinary herb yield.", actionTimeMultiplier: 1.12, yieldMultiplier: 1.2, xpMultiplier: 0.9, rareFindMultiplier: 1 }
+];
+function herbalismMethod(id, level = 1) {
+  const row = HERBALISM_METHODS.find((method) => method.id === id && level >= method.unlockLevel);
+  return row ?? HERBALISM_METHODS[0];
+}
+function herbalismInsightMultiplier(level) {
+  return level >= 100 ? 1.5 : level >= 75 ? 1.35 : level >= 50 ? 1.2 : level >= 25 ? 1.1 : 1;
+}
+var HERBALISM_ESSENCE_BY_ZONE = {
+  GREENFIELDS: { itemId: "ASTERFALL_BOTANICAL_ESSENCE", baseChance: 0.01 },
+  SILVERBROOK: { itemId: "ASTERFALL_BOTANICAL_ESSENCE", baseChance: 0.01 },
+  IRONWOOD: { itemId: "ASTERFALL_BOTANICAL_ESSENCE", baseChance: 0.01 },
+  OLD_MINES: { itemId: "ASTERFALL_BOTANICAL_ESSENCE", baseChance: 0.01 },
+  KINGS_ROAD: { itemId: "ASTERFALL_BOTANICAL_ESSENCE", baseChance: 0.0125 },
+  SUNSCAR: { itemId: "SUNSCAR_BOTANICAL_ESSENCE", baseChance: 0.015 },
+  FROSTMARCH: { itemId: "FROSTMARCH_BOTANICAL_ESSENCE", baseChance: 0.0175 },
+  ASHLANDS: { itemId: "ASHLANDS_BOTANICAL_ESSENCE", baseChance: 0.02 }
+};
+var HERB_NODES = [
+  { id: "DEWLEAF_PATCH", name: "Dewleaf Patch", itemId: "DEWLEAF", zoneId: "GREENFIELDS", unlockLevel: 1, seconds: 30, xp: 9 },
+  { id: "RIVER_MINT_BED", name: "River Mint Bed", itemId: "RIVER_MINT", zoneId: "SILVERBROOK", unlockLevel: 8, seconds: 40, xp: 20 },
+  { id: "IRONBLOOM_THICKET", name: "Ironbloom Thicket", itemId: "IRONBLOOM", zoneId: "IRONWOOD", unlockLevel: 18, seconds: 50, xp: 38 },
+  { id: "CAVELICHEN_COLONY", name: "Cavelichen Colony", itemId: "CAVELICHEN", zoneId: "OLD_MINES", unlockLevel: 30, seconds: 60, xp: 68 },
+  { id: "CROWN_SAGE_GROVE", name: "Crown Sage Grove", itemId: "CROWN_SAGE", zoneId: "KINGS_ROAD", unlockLevel: 45, seconds: 70, xp: 110 },
+  { id: "OATHBLOSSOM_PATCH", name: "Oathblossom Patch", itemId: "OATHBLOSSOM", zoneId: "KINGS_ROAD", unlockLevel: 60, seconds: 80, xp: 170 },
+  { id: "SUNSCALE_BLOOM", name: "Sunscale Bloom", itemId: "SUNSCALE", zoneId: "SUNSCAR", unlockLevel: 26, seconds: 92, xp: 215 },
+  { id: "FROSTBELL_FLOWER", name: "Frostbell Flower", itemId: "FROSTBLOOM", zoneId: "FROSTMARCH", unlockLevel: 46, seconds: 118, xp: 310 },
+  { id: "WINTERMINT_PATCH", name: "Wintermint Patch", itemId: "WINTERMINT", zoneId: "FROSTMARCH", unlockLevel: 48, seconds: 122, xp: 325 },
+  { id: "ASHEN_MYRRH_GROVE", name: "Ashen Myrrh Grove", itemId: "ASHEN_MYRRH", zoneId: "ASHLANDS", unlockLevel: 71, seconds: 145, xp: 440 }
+].map((node) => ({ ...node, skillId: "herbalism", min: 1, max: 1, difficultyMultiplier: 1, recommendedToolTier: 0 }));
+var HERB_ITEMS = [
+  { id: "DEWLEAF", name: "Dewleaf", type: "material", value: 2, rarity: "common" },
+  { id: "RIVER_MINT", name: "River Mint", type: "material", value: 4, rarity: "common" },
+  { id: "IRONBLOOM", name: "Ironbloom", type: "material", value: 8, rarity: "uncommon" },
+  { id: "CAVELICHEN", name: "Cavelichen", type: "material", value: 14, rarity: "uncommon" },
+  { id: "CROWN_SAGE", name: "Crown Sage", type: "material", value: 22, rarity: "rare" },
+  { id: "OATHBLOSSOM", name: "Oathblossom", type: "material", value: 32, rarity: "rare" },
+  { id: "SUNSCALE", name: "Sunscale Bloom", type: "material", value: 48, rarity: "rare" },
+  { id: "FROSTBLOOM", name: "Frostbell Flower", type: "material", value: 72, rarity: "rare" },
+  { id: "ASHEN_MYRRH", name: "Ashen Myrrh", type: "material", value: 105, rarity: "epic" },
+  { id: "ASTERFALL_BOTANICAL_ESSENCE", name: "Asterfall Botanical Essence", type: "material", value: 55, rarity: "rare", passive: "A rare concentrated botanical reagent from Asterfall harvesting." },
+  { id: "SUNSCAR_BOTANICAL_ESSENCE", name: "Sunscar Botanical Essence", type: "material", value: 110, rarity: "rare", passive: "A rare concentrated botanical reagent from Sunscar harvesting." },
+  { id: "FROSTMARCH_BOTANICAL_ESSENCE", name: "Frostmarch Botanical Essence", type: "material", value: 180, rarity: "epic", passive: "A rare concentrated botanical reagent from Frostmarch harvesting." },
+  { id: "ASHLANDS_BOTANICAL_ESSENCE", name: "Ashlands Botanical Essence", type: "material", value: 300, rarity: "epic", passive: "A rare concentrated botanical reagent from Ashlands harvesting." }
+];
+
+// apps/mobile/src/content/alchemy.ts
+var MAX_ALCHEMY_BATCHES = 100;
+var POTIONS = [
+  { id: "DEWLEAF_DRAUGHT", name: "Dewleaf Draught", effect: { kind: "healing", maxHpFraction: 0.25 }, description: "Restore 25% of maximum HP outside a hunt. No effect at full health." },
+  { id: "RIVERHEART_DRAUGHT", name: "Riverheart Draught", effect: { kind: "healing", maxHpFraction: 0.45 }, description: "Restore 45% of maximum HP outside a hunt. No effect at full health." },
+  { id: "OATHBLOOM_DRAUGHT", name: "Oathbloom Draught", effect: { kind: "healing", maxHpFraction: 0.65 }, description: "Restore 65% of maximum HP outside a hunt. No effect at full health." },
+  { id: "VIGOR_TONIC", name: "Vigor Tonic", effect: { kind: "preparation", attackFraction: 0.04, damageReductionFraction: 0, encounters: 30 }, description: "+4% attack for 30 resolved ordinary encounters." },
+  { id: "GREATER_VIGOR_TONIC", name: "Greater Vigor Tonic", effect: { kind: "preparation", attackFraction: 0.06, damageReductionFraction: 0, encounters: 45 }, description: "+6% attack for 45 resolved ordinary encounters." },
+  { id: "OATH_VIGOR_TONIC", name: "Oath Vigor Tonic", effect: { kind: "preparation", attackFraction: 0.08, damageReductionFraction: 0, encounters: 60 }, description: "+8% attack for 60 resolved ordinary encounters." },
+  { id: "WARD_TONIC", name: "Ward Tonic", effect: { kind: "preparation", attackFraction: 0, damageReductionFraction: 0.04, encounters: 30 }, description: "4% less incoming damage for 30 resolved ordinary encounters." },
+  { id: "GREATER_WARD_TONIC", name: "Greater Ward Tonic", effect: { kind: "preparation", attackFraction: 0, damageReductionFraction: 0.06, encounters: 45 }, description: "6% less incoming damage for 45 resolved ordinary encounters." },
+  { id: "OATH_WARD_TONIC", name: "Oath Ward Tonic", effect: { kind: "preparation", attackFraction: 0, damageReductionFraction: 0.08, encounters: 60 }, description: "8% less incoming damage for 60 resolved ordinary encounters." }
+];
+var recipe = (potionId, level, seconds, xp, gold, inputs, suffix = "") => ({
+  id: `BREW_${potionId}${suffix}`,
+  name: POTIONS.find((p) => p.id === potionId).name,
+  skillId: "alchemy",
+  level,
+  seconds,
+  xp,
+  gold,
+  inputs,
+  output: { itemId: potionId, quantity: 1 }
+});
+var ALCHEMY_RECIPES = [
+  recipe("DEWLEAF_DRAUGHT", 1, 60, 60, 4, [{ itemId: "DEWLEAF", quantity: 2 }]),
+  recipe("VIGOR_TONIC", 8, 75, 115, 8, [{ itemId: "DEWLEAF", quantity: 2 }, { itemId: "RIVER_MINT", quantity: 2 }]),
+  recipe("WARD_TONIC", 16, 90, 195, 12, [{ itemId: "DEWLEAF", quantity: 2 }, { itemId: "IRONBLOOM", quantity: 2 }]),
+  recipe("RIVERHEART_DRAUGHT", 25, 105, 315, 18, [{ itemId: "DEWLEAF", quantity: 3 }, { itemId: "RIVER_MINT", quantity: 3 }]),
+  recipe("GREATER_VIGOR_TONIC", 35, 120, 475, 28, [{ itemId: "RIVER_MINT", quantity: 3 }, { itemId: "CAVELICHEN", quantity: 2 }]),
+  recipe("GREATER_WARD_TONIC", 45, 135, 700, 40, [{ itemId: "IRONBLOOM", quantity: 3 }, { itemId: "CROWN_SAGE", quantity: 2 }]),
+  recipe("OATHBLOOM_DRAUGHT", 60, 150, 1075, 60, [{ itemId: "DEWLEAF", quantity: 4 }, { itemId: "OATHBLOSSOM", quantity: 2 }]),
+  recipe("OATH_VIGOR_TONIC", 75, 165, 1550, 90, [{ itemId: "CAVELICHEN", quantity: 3 }, { itemId: "OATHBLOSSOM", quantity: 3 }]),
+  recipe("OATH_WARD_TONIC", 85, 180, 2e3, 120, [{ itemId: "CROWN_SAGE", quantity: 3 }, { itemId: "OATHBLOSSOM", quantity: 3 }]),
+  recipe("GREATER_VIGOR_TONIC", 35, 132, 550, 32, [{ itemId: "SUNSCALE", quantity: 2 }, { itemId: "RIVER_MINT", quantity: 2 }], "_SUNSCAR"),
+  recipe("OATH_VIGOR_TONIC", 75, 174, 1700, 98, [{ itemId: "FROSTBLOOM", quantity: 2 }, { itemId: "OATHBLOSSOM", quantity: 2 }], "_FROSTMARCH"),
+  recipe("OATH_WARD_TONIC", 85, 190, 2150, 128, [{ itemId: "ASHEN_MYRRH", quantity: 2 }, { itemId: "FROSTBLOOM", quantity: 2 }], "_ASHLANDS")
+];
+var POTION_ITEMS = POTIONS.map((potion) => ({
+  id: potion.id,
+  name: potion.name,
+  type: "potion",
+  value: potion.id === "DEWLEAF_DRAUGHT" ? 4 : potion.id.includes("OATH") ? 32 : potion.id.includes("GREATER") ? 20 : 8,
+  rarity: potion.id.includes("OATH") ? "rare" : potion.id.includes("GREATER") ? "uncommon" : "common",
+  passive: potion.description
+}));
+var potionDef = (id) => POTIONS.find((p) => p.id === id);
+var alchemyRecipeDef = (id) => ALCHEMY_RECIPES.find((recipe2) => recipe2.id === id);
+
+// apps/mobile/src/content/equipment-items-v33.ts
+var classIdByName2 = { Ironwarden: "IRONWARDEN", Bastion: "BASTION", Dreadguard: "DREADGUARD", Dawnkeeper: "DAWNKEEPER", Wayfinder: "WAYFINDER", Ravager: "RAVAGER", Hexweaver: "HEXWEAVER", "Knife Dancer": "KNIFE_DANCER", Stonecaller: "STONECALLER" };
+var slotByName2 = { Helmet: "helmet", Chest: "chest", Gloves: "gloves", Legs: "legs", Boots: "boots", Weapon: "weapon", "Off-hand": "offhand", Cape: "cape", Amulet: "amulet", Ring: "ring" };
+var rarityByTier = { T1: "common", T2: "uncommon", T3: "rare", T4: "rare", T5: "epic", T6: "epic", T7: "legendary", T8: "legendary", T9: "mythic" };
+var slotWeight = {
+  helmet: { attack: 0, defense: 4, hp: 8 },
+  chest: { attack: 0, defense: 7, hp: 16 },
+  gloves: { attack: 1, defense: 3, hp: 6 },
+  legs: { attack: 0, defense: 5, hp: 12 },
+  boots: { attack: 1, defense: 3, hp: 7 },
+  weapon: { attack: 9, defense: 0, hp: 0 },
+  offhand: { attack: 3, defense: 6, hp: 4 },
+  cape: { attack: 1, defense: 3, hp: 9 },
+  amulet: { attack: 3, defense: 1, hp: 8 },
+  ring: { attack: 3, defense: 1, hp: 6 }
+};
+var EQUIPMENT_ITEMS_V33 = equipment_catalog_t1_t9_v33_default.pieces.map((piece) => {
+  const tier = String(piece.Tier), slot = slotByName2[String(piece.Slot)], level = Math.max(1, Number(piece["Req Level"]), TIER_CHARACTER_LEVEL_FLOOR[tier] ?? 1);
+  const weight = slotWeight[slot], scale = Number(tier.slice(1));
+  return {
+    id: String(piece["Piece ID"]),
+    name: String(piece["Item Name"]),
+    type: "gear",
+    slot,
+    attack: weight.attack * scale,
+    defense: weight.defense * scale,
+    hp: weight.hp * scale,
+    readiness: Math.max(1, Math.ceil(level / 4)),
+    value: Math.max(10, level * scale * 12),
+    rarity: rarityByTier[tier] ?? "common",
+    classRestriction: classIdByName2[String(piece.Class)],
+    requiredLevel: level,
+    equipmentSetId: String(piece["Set ID"])
+  };
+});
+
+// apps/mobile/src/content/items.ts
+var BASE_ITEMS = [
+  ...NOVICE_ITEMS,
+  { id: "HOLY_WATER", name: "Holy Water", type: "material", value: 0, rarity: "uncommon" },
+  ...TOOL_ITEMS,
+  ...TOOL_BLUEPRINT_ITEMS,
+  ...HERB_ITEMS,
+  ...POTION_ITEMS,
+  // Enhancement economy. Gems are intentionally scarce drops; tempering materials are universal.
+  { id: "GEM_DUST", name: "Gem Dust", type: "material", value: 18, rarity: "uncommon" },
+  { id: "REGIONAL_CATALYST", name: "Regional Catalyst", type: "material", value: 650, rarity: "epic" },
+  { id: "RADIANT_CATALYST", name: "Radiant Catalyst", type: "material", value: 2400, rarity: "mythic" },
+  ...RAW_GEM_ITEMS_V1,
+  ...GEM_ITEMS_V1,
+  { id: "TEMPERING_DUST", name: "Tempering Dust", type: "material", value: 22, rarity: "uncommon" },
+  { id: "TEMPERING_CORE", name: "Tempering Core", type: "material", value: 180, rarity: "rare" },
+  { id: "EMBER_SHARD", name: "Ember Shard", type: "gem", gemStat: "attack", gemPercent: 0.02, gemTier: 1, value: 320, rarity: "rare" },
+  { id: "EMBERHEART_GEM", name: "Emberheart Gem", type: "gem", gemStat: "attack", gemPercent: 0.05, gemTier: 2, value: 1900, rarity: "legendary" },
+  { id: "WARD_SHARD", name: "Ward Shard", type: "gem", gemStat: "defense", gemPercent: 0.02, gemTier: 1, value: 320, rarity: "rare" },
+  { id: "WARDHEART_GEM", name: "Wardheart Gem", type: "gem", gemStat: "defense", gemPercent: 0.05, gemTier: 2, value: 1900, rarity: "legendary" },
+  { id: "VITALITY_SHARD", name: "Vitality Shard", type: "gem", gemStat: "hp", gemPercent: 0.02, gemTier: 1, value: 320, rarity: "rare" },
+  { id: "VITALITY_HEART_GEM", name: "Vitality Heart Gem", type: "gem", gemStat: "hp", gemPercent: 0.05, gemTier: 2, value: 1900, rarity: "legendary" },
+  // Effect Gems occupy the dedicated Effect socket. They modify combat behavior rather than primary stats.
+  { id: "SWIFT_SIGIL", name: "Swift Sigil", type: "gem", gemKind: "effect", gemEffect: "combat_speed", gemEffectValue: 0.02, gemTier: 1, value: 520, rarity: "rare", passive: "+2% combat speed while equipped" },
+  { id: "BOSSBANE_SIGIL", name: "Bossbane Sigil", type: "gem", gemKind: "effect", gemEffect: "boss_power", gemEffectValue: 0.03, gemTier: 1, value: 620, rarity: "rare", passive: "+3% combat power against bosses" },
+  { id: "BULWARK_SIGIL", name: "Bulwark Sigil", type: "gem", gemKind: "effect", gemEffect: "damage_reduction", gemEffectValue: 0.02, gemTier: 1, value: 620, rarity: "rare", passive: "-2% incoming combat damage" },
+  { id: "RENEWAL_SIGIL", name: "Renewal Sigil", type: "gem", gemKind: "effect", gemEffect: "recovery", gemEffectValue: 0.1, gemTier: 1, value: 560, rarity: "rare", passive: "+10% between-kill recovery" },
+  // Runtime pack weapon identities; numeric budgets retained from the prior primary weapons.
+  { id: "basic_sword", name: "Basic Sword", type: "gear", slot: "weapon", attack: 4, readiness: 1, value: 10 },
+  { id: "basic_tower_shield", name: "Basic Tower Shield", type: "gear", slot: "weapon", attack: 3, defense: 1, readiness: 1, value: 10 },
+  { id: "basic_chained_weapon", name: "Basic Chained Weapon", type: "gear", slot: "weapon", attack: 5, readiness: 1, value: 10 },
+  { id: "basic_mace", name: "Basic Mace", type: "gear", slot: "weapon", attack: 3, defense: 1, readiness: 1, value: 10 },
+  { id: "basic_bow", name: "Basic Bow", type: "gear", slot: "weapon", attack: 5, readiness: 1, value: 10 },
+  { id: "basic_two_handed_weapon", name: "Basic Two-Handed Weapon", type: "gear", slot: "weapon", attack: 6, defense: -1, readiness: 1, value: 10 },
+  { id: "basic_wand", name: "Basic Wand", type: "gear", slot: "weapon", attack: 4, readiness: 1, value: 10 },
+  { id: "basic_main_hand_blade", name: "Basic Main-Hand Blade", type: "gear", slot: "weapon", attack: 4, readiness: 1, value: 10 },
+  { id: "basic_staff", name: "Basic Staff", type: "gear", slot: "weapon", attack: 4, hp: 5, readiness: 1, value: 10 },
+  { id: "TRAVEL_RATION", name: "Travel Ration", type: "food", heal: 18, readiness: 1, value: 5 },
+  { id: "COOKED_MEADOW_PERCH", name: "Cooked Meadow Perch", type: "food", heal: 24, readiness: 2, value: 10 },
+  { id: "COOKED_SILVERFIN", name: "Cooked Silverfin", type: "food", heal: 30, readiness: 3, value: 15 },
+  { id: "ROASTED_ROOTSTREAM_TROUT", name: "Roasted Rootstream Trout", type: "food", heal: 40, readiness: 4, value: 25 },
+  { id: "SEARED_RIVER_EEL", name: "Seared River Eel", type: "food", heal: 52, readiness: 5, value: 34 },
+  { id: "IRONWOOD_STEW", name: "Ironwood Hunter Stew", type: "food", heal: 90, readiness: 7, value: 62 },
+  { id: "COPPER_ORE", name: "Copper Ore", type: "material", value: 5 },
+  { id: "OATHSTONE_ORE", name: "Oathstone Ore", type: "material", value: 32 },
+  { id: "CROWNWOOD_LOG", name: "Crownwood Log", type: "material", value: 30 },
+  { id: "OATHSCALE_PIKE", name: "Oathscale Pike", type: "material", value: 32 },
+  { id: "COPPER_INGOT", name: "Copper Ingot", type: "material", value: 28 },
+  { id: "ASTER_IRON_INGOT", name: "Aster-Iron Ingot", type: "material", value: 64 },
+  { id: "OATHSTONE_INGOT", name: "Oathstone Ingot", type: "material", value: 145 },
+  { id: "REINFORCED_FITTING", name: "Reinforced Fitting", type: "material", value: 155 },
+  { id: "BAKED_CAVE_LOACH", name: "Baked Cave Loach", type: "food", heal: 65, readiness: 6, value: 58 },
+  { id: "ROASTED_CROWN_CARP", name: "Roasted Crown Carp", type: "food", heal: 82, readiness: 8, value: 82 },
+  { id: "ROASTED_OATHSCALE", name: "Roasted Oathscale Pike", type: "food", heal: 95, readiness: 8, value: 90 },
+  { id: "ASTER_IRON_ORE", name: "Aster-Iron Ore", type: "material", value: 14 },
+  { id: "SUNSTONE_ORE", name: "Sunstone Ore", type: "material", value: 65 },
+  { id: "AMBERGLASS", name: "Amberglass", type: "material", value: 180, rarity: "uncommon" },
+  { id: "ASTRAL_SCRIPT", name: "Astral Script", type: "material", value: 420, rarity: "rare" },
+  { id: "FROSTIRON", name: "Frostiron", type: "material", value: 150 },
+  { id: "BLACKGLASS_ORE", name: "Blackglass Ore", type: "material", value: 240, rarity: "rare" },
+  { id: "RIMEGLASS", name: "Rimeglass", type: "material", value: 430, rarity: "rare" },
+  { id: "CHOIR_BLOOM", name: "Choir Bloom", type: "material", value: 480, rarity: "rare" },
+  // V33 regional resource identities. Source/drop wiring is authoritative on the backend.
+  { id: "SAFFRON_REED", name: "Saffron Reed", type: "material", value: 95, rarity: "uncommon" },
+  { id: "MIRAGE_BLOOM", name: "Mirage Bloom", type: "material", value: 160, rarity: "uncommon" },
+  { id: "DUNEWOOD", name: "Dunewood", type: "material", value: 85, rarity: "uncommon" },
+  { id: "CHARBARK", name: "Charbark", type: "material", value: 140, rarity: "uncommon" },
+  { id: "CINDERWOOD_LOG", name: "Cinderwood Log", type: "material", value: 210, rarity: "rare" },
+  { id: "BLACKGLASS_INGOT", name: "Blackglass Ingot", type: "material", value: 720, rarity: "epic" },
+  { id: "SUNSTONE_INGOT", name: "Sunstone Ingot", type: "material", value: 260, rarity: "rare" },
+  { id: "FROSTIRON_INGOT", name: "Frostiron Ingot", type: "material", value: 480, rarity: "rare" },
+  { id: "GRILLED_OASIS_CARP", name: "Grilled Oasis Carp", type: "food", heal: 130, readiness: 10, value: 145, rarity: "uncommon" },
+  { id: "GLASSFIN_FEAST", name: "Amberglass Glassfin Feast", type: "food", heal: 190, readiness: 12, value: 230, rarity: "rare" },
+  { id: "FROSTED_ICEFIN", name: "Frosted Icefin", type: "food", heal: 250, readiness: 14, value: 340, rarity: "rare" },
+  { id: "CHARRED_EMBERFIN", name: "Charred Emberfin", type: "food", heal: 330, readiness: 16, value: 455, rarity: "rare" },
+  { id: "ASHLANDS_EMBER_STEW", name: "Ashlands Ember Stew", type: "food", heal: 390, readiness: 17, value: 520, rarity: "epic" },
+  { id: "OASIS_CARP", name: "Oasis Carp", type: "material", value: 100, rarity: "uncommon" },
+  { id: "GLASSFIN", name: "Glassfin", type: "material", value: 170, rarity: "rare" },
+  { id: "SCORPION_VENOM", name: "Scorpion Venom", type: "material", value: 130, rarity: "uncommon" },
+  { id: "ROYAL_CHITIN", name: "Royal Chitin", type: "material", value: 300, rarity: "rare" },
+  { id: "TYRANT_SEAL", name: "Tyrant Seal", type: "material", value: 620, rarity: "rare" },
+  { id: "WHITEPINE_LOG", name: "Whitepine Log", type: "material", value: 120, rarity: "uncommon" },
+  { id: "RIME_RESIN", name: "Rime Resin", type: "material", value: 190, rarity: "uncommon" },
+  { id: "WINTERMINT", name: "Wintermint", type: "material", value: 170, rarity: "uncommon" },
+  { id: "ICEFIN", name: "Icefin", type: "material", value: 180, rarity: "rare" },
+  { id: "BELLFIN_SCALE", name: "Bellfin Scale", type: "material", value: 260, rarity: "rare" },
+  { id: "WYRMSCALE", name: "Wyrm Scale", type: "material", value: 520, rarity: "rare" },
+  { id: "FROZEN_HEART", name: "Frozen Heart", type: "material", value: 900, rarity: "legendary" },
+  { id: "GREENWOOD_LOG", name: "Greenwood Log", type: "material", value: 4 },
+  { id: "IRONWOOD_LOG", name: "Ironwood Log", type: "material", value: 13 },
+  { id: "MEADOW_PERCH", name: "Meadow Perch", type: "material", value: 4 },
+  { id: "ROOTSTREAM_TROUT", name: "Rootstream Trout", type: "material", value: 11 },
+  { id: "CAVE_LOACH", name: "Cave Loach", type: "material", value: 24 },
+  { id: "CROWN_CARP", name: "Crown Carp", type: "material", value: 40 },
+  { id: "EMBERFIN", name: "Emberfin", type: "material", value: 250, rarity: "rare" },
+  { id: "SILVERFIN", name: "Silverfin", type: "material", value: 6 },
+  { id: "RIVER_EEL", name: "River Eel", type: "material", value: 15 },
+  { id: "MOSS_FIBER", name: "Moss Fiber", type: "material", value: 3 },
+  { id: "WISP_DUST", name: "Wisp Dust", type: "material", value: 7 },
+  { id: "BOAR_HIDE", name: "Boar Hide", type: "material", value: 8 },
+  { id: "WOLF_PELT", name: "Wolf Pelt", type: "material", value: 13 },
+  { id: "IRONWOOD_FANG", name: "Ironwood Fang", type: "material", value: 28 },
+  { id: "THORN_SAP", name: "Thorn Sap", type: "material", value: 20 },
+  { id: "TROLL_HIDE", name: "Troll Hide", type: "material", value: 42 },
+  { id: "OATHGLASS_SHARD", name: "Oathglass Shard", type: "material", value: 85 },
+  { id: "ECHO_TOUCHED_PELT", name: "Echo-Touched Pelt", type: "material", value: 140 },
+  { id: "TORN_OATHCLOTH", name: "Torn Oathcloth", type: "material", value: 95 },
+  { id: "LANTERNSTEEL_SHARD", name: "Lanternsteel Shard", type: "material", value: 125 },
+  { id: "BANNER_ASH", name: "Banner Ash", type: "material", value: 75 },
+  { id: "BLACKGLASS_CORE", name: "Blackglass Core", type: "material", value: 260, rarity: "rare" },
+  { id: "CINDER_HEART", name: "Cinder Heart", type: "material", value: 420, rarity: "rare" },
+  { id: "REGENT_SIGIL", name: "Regent Sigil", type: "material", value: 850, rarity: "legendary" },
+  { id: "FALLEN_RIVET", name: "Fallen Rivet", type: "material", value: 90 },
+  { id: "ECHO_QUARTZ", name: "Echo Quartz", type: "material", value: 85 },
+  { id: "OATHGLASS_FRAGMENT", name: "Oathglass Fragment", type: "material", value: 130 },
+  { id: "GLOAM_DUST", name: "Gloam Dust", type: "material", value: 105 },
+  { id: "EVENT_BONDBLOOM", name: "Event Bondbloom", type: "material", value: 175 },
+  { id: "RUNEBOUND_CORE", name: "Runebound Core", type: "material", value: 150 },
+  { id: "ECHO_BAT_WING", name: "Echo Bat Wing", type: "material", value: 80 },
+  { id: "FALLEN_KNIGHT_SIGIL", name: "Fallen Knight Sigil", type: "quest", value: 0 }
+];
+var ITEMS = [...BASE_ITEMS, ...EQUIPMENT_ITEMS_V33];
+function itemDef(id) {
+  const x = ITEMS.find((i) => i.id === id);
+  if (!x) throw new Error(`Unknown item ${id}`);
+  return x;
+}
+
+// apps/mobile/src/content/skills.ts
 var GATHERING = [
   { id: "COPPER_VEIN", skillId: "mining", name: "Copper Vein", unlockLevel: 1, seconds: 15, xp: 9, itemId: "COPPER_ORE", min: 1, max: 2, zoneId: "OLD_MINES" },
   { id: "ASTER_IRON_VEIN", skillId: "mining", name: "Aster-Iron Vein", unlockLevel: 8, seconds: 24, xp: 18, itemId: "ASTER_IRON_ORE", min: 1, max: 2, zoneId: "OLD_MINES" },
   { id: "OATHSTONE_SEAM", skillId: "mining", name: "Oathstone Seam", unlockLevel: 16, seconds: 36, xp: 29, itemId: "OATHSTONE_ORE", min: 1, max: 1, zoneId: "OLD_MINES" },
   { id: "ECHO_QUARTZ_GEODE", skillId: "mining", name: "Echo Quartz Geode", unlockLevel: 20, seconds: 38, xp: 42, itemId: "ECHO_QUARTZ", min: 1, max: 1, zoneId: "OLD_MINES" },
+  { id: "SUNSTONE_OUTCROP", skillId: "mining", name: "Sunstone Outcrop", unlockLevel: 26, seconds: 48, xp: 92, itemId: "SUNSTONE_ORE", min: 1, max: 1, zoneId: "SUNSCAR" },
+  { id: "FROSTIRON_VEIN", skillId: "mining", name: "Frostiron Vein", unlockLevel: 46, seconds: 62, xp: 180, itemId: "FROSTIRON", min: 1, max: 1, zoneId: "FROSTMARCH" },
+  { id: "BLACKGLASS_VEIN", skillId: "mining", name: "Blackglass Vein", unlockLevel: 68, seconds: 78, xp: 310, itemId: "BLACKGLASS_ORE", min: 1, max: 1, zoneId: "ASHLANDS" },
   { id: "GREENWOOD_TREE", skillId: "woodcutting", name: "Greenwood Tree", unlockLevel: 1, seconds: 14, xp: 8, itemId: "GREENWOOD_LOG", min: 1, max: 2, zoneId: "GREENFIELDS" },
   { id: "IRONWOOD_TREE", skillId: "woodcutting", name: "Ironwood Tree", unlockLevel: 7, seconds: 24, xp: 17, itemId: "IRONWOOD_LOG", min: 1, max: 2, zoneId: "IRONWOOD" },
   { id: "CROWNWOOD_TREE", skillId: "woodcutting", name: "Crownwood Tree", unlockLevel: 15, seconds: 36, xp: 27, itemId: "CROWNWOOD_LOG", min: 1, max: 1, zoneId: "IRONWOOD" },
+  { id: "DUNEWOOD_TREE", skillId: "woodcutting", name: "Dunewood Tree", unlockLevel: 26, seconds: 46, xp: 88, itemId: "DUNEWOOD", min: 1, max: 1, zoneId: "SUNSCAR" },
+  { id: "WHITEPINE_TREE", skillId: "woodcutting", name: "Whitepine Tree", unlockLevel: 46, seconds: 60, xp: 172, itemId: "WHITEPINE_LOG", min: 1, max: 1, zoneId: "FROSTMARCH" },
+  { id: "CINDERWOOD_TREE", skillId: "woodcutting", name: "Cinderwood Tree", unlockLevel: 68, seconds: 76, xp: 300, itemId: "CINDERWOOD_LOG", min: 1, max: 1, zoneId: "ASHLANDS" },
+  { id: "MEADOW_PERCH_POOL", skillId: "fishing", name: "Meadow Perch Pool", unlockLevel: 1, seconds: 16, xp: 8, itemId: "MEADOW_PERCH", min: 1, max: 2, zoneId: "GREENFIELDS" },
   { id: "SILVERBROOK_SHOAL", skillId: "fishing", name: "Silverbrook Shoal", unlockLevel: 1, seconds: 17, xp: 9, itemId: "SILVERFIN", min: 1, max: 2, zoneId: "SILVERBROOK" },
   { id: "RIVER_EEL_POOL", skillId: "fishing", name: "River Eel Pool", unlockLevel: 8, seconds: 29, xp: 18, itemId: "RIVER_EEL", min: 1, max: 1, zoneId: "SILVERBROOK" },
-  { id: "OATHSCALE_POOL", skillId: "fishing", name: "Oathscale Pool", unlockLevel: 16, seconds: 41, xp: 28, itemId: "OATHSCALE_PIKE", min: 1, max: 1, zoneId: "SILVERBROOK" }
+  { id: "ROOTSTREAM_TROUT_POOL", skillId: "fishing", name: "Rootstream Trout Pool", unlockLevel: 7, seconds: 27, xp: 17, itemId: "ROOTSTREAM_TROUT", min: 1, max: 1, zoneId: "IRONWOOD" },
+  { id: "OATHSCALE_POOL", skillId: "fishing", name: "Oathscale Pool", unlockLevel: 16, seconds: 41, xp: 28, itemId: "OATHSCALE_PIKE", min: 1, max: 1, zoneId: "SILVERBROOK" },
+  { id: "CAVE_LOACH_POOL", skillId: "fishing", name: "Cave Loach Pool", unlockLevel: 16, seconds: 39, xp: 27, itemId: "CAVE_LOACH", min: 1, max: 1, zoneId: "OLD_MINES" },
+  { id: "CROWN_CARP_POOL", skillId: "fishing", name: "Crown Carp Pool", unlockLevel: 20, seconds: 44, xp: 34, itemId: "CROWN_CARP", min: 1, max: 1, zoneId: "KINGS_ROAD" },
+  { id: "OASIS_CARP_POOL", skillId: "fishing", name: "Oasis Carp Pool", unlockLevel: 26, seconds: 50, xp: 94, itemId: "OASIS_CARP", min: 1, max: 1, zoneId: "SUNSCAR" },
+  { id: "GLASSFIN_POOL", skillId: "fishing", name: "Glassfin Pool", unlockLevel: 36, seconds: 56, xp: 128, itemId: "GLASSFIN", min: 1, max: 1, zoneId: "SUNSCAR" },
+  { id: "ICEFISH_POOL", skillId: "fishing", name: "Icefin Pool", unlockLevel: 46, seconds: 66, xp: 188, itemId: "ICEFIN", min: 1, max: 1, zoneId: "FROSTMARCH" },
+  { id: "EMBERFIN_POOL", skillId: "fishing", name: "Emberfin Mire", unlockLevel: 72, seconds: 84, xp: 340, itemId: "EMBERFIN", min: 1, max: 1, zoneId: "ASHLANDS" }
   // The 24-hour AFK window is generous; each gathering cycle is therefore
   // stretched by a noticeable amount to avoid rapid early skill acceleration.
 ].map((activity) => {
-  const difficultyMultiplier = activity.unlockLevel >= 16 ? 2 : activity.unlockLevel >= 7 ? 1.35 : 1;
-  const recommendedToolTier = activity.unlockLevel >= 16 ? 3 : activity.unlockLevel >= 7 ? 2 : 1;
-  return { ...activity, seconds: Math.ceil(activity.seconds * 2), difficultyMultiplier, recommendedToolTier };
-});
-var frostCompleteSetIds = /* @__PURE__ */ new Set(["frostbell_panoply", "winterchain_harness", "aurora_vespers", "whiteout_stalker", "glacierblood_array", "rimeglass_script", "snowveil_regalia", "choirfrost_resonance"]);
-var generatedSetSlots = /* @__PURE__ */ new Set(["helmet", "legs", "boots", "weapon", "offhand", "amulet"]);
-var GENERATED_COMPLETE_SET_RECIPES = ITEMS.filter((item) => item.type === "gear" && item.slot && item.equipmentSetId && !/^T[1-9]_/.test(item.equipmentSetId) && (frostCompleteSetIds.has(item.equipmentSetId) || generatedSetSlots.has(item.slot))).map((item) => {
-  const frost = item.id.startsWith("RIMEBOUND_"), sunscar = item.id.startsWith("SUNSCORED_");
-  const inputs = frost ? [{ itemId: "FROSTIRON", quantity: item.slot === "chest" ? 20 : 12 }, { itemId: "RIMEGLASS", quantity: item.slot === "ring" ? 3 : 5 }, { itemId: "CHOIR_BLOOM", quantity: 1 }] : sunscar ? [{ itemId: "SUNSTONE_ORE", quantity: 8 }, { itemId: "AMBERGLASS", quantity: 3 }, { itemId: "ASTRAL_SCRIPT", quantity: 1 }] : [{ itemId: "OATHSTONE_INGOT", quantity: 18 }, { itemId: "OATHGLASS_SHARD", quantity: 9 }, { itemId: "TORN_OATHCLOTH", quantity: 6 }];
-  return { id: `CRAFT_${item.id}`, name: item.name, skillId: "smithing", level: frost ? 59 : sunscar ? 35 : 22, xp: frost ? 2050 : sunscar ? 1450 : 850, gold: frost ? 7900 : sunscar ? 5e3 : 2300, seconds: frost ? 840 : sunscar ? 570 : 330, inputs, output: { itemId: item.id, quantity: 1 }, classId: item.classRestriction, characterLevel: frost ? 62 : sunscar ? 38 : 21 };
+  const difficultyMultiplier = activity.unlockLevel >= 15 ? 1.5 : activity.unlockLevel >= 7 ? 1.2 : 1;
+  const recommendedToolTier = activity.unlockLevel >= 46 ? 4 : activity.unlockLevel >= 20 ? 3 : activity.unlockLevel >= 10 ? 2 : 1;
+  const xpMultiplier = activity.unlockLevel >= 15 ? 1.45 : activity.unlockLevel >= 7 ? 1.35 : 1;
+  return { ...activity, seconds: Math.ceil(activity.seconds * 2), xp: Math.round(activity.xp * xpMultiplier), difficultyMultiplier, recommendedToolTier };
 });
 var RECIPES = [
   ...ALCHEMY_RECIPES,
   ...NOVICE_RECIPES,
-  ...GENERATED_COMPLETE_SET_RECIPES,
   ...V33_EQUIPMENT_RECIPES,
   ...TOOL_RECIPES,
   { id: "SMELT_COPPER_INGOT", name: "Smelt Copper Batch", skillId: "smithing", level: 1, xp: 80, gold: 30, seconds: 36, repeatableTraining: true, inputs: [{ itemId: "COPPER_ORE", quantity: 10 }], output: { itemId: "COPPER_INGOT", quantity: 5 } },
   { id: "SMELT_ASTER_IRON_INGOT", name: "Smelt Aster-Iron Batch", skillId: "smithing", level: 8, xp: 140, gold: 50, seconds: 42, repeatableTraining: true, inputs: [{ itemId: "ASTER_IRON_ORE", quantity: 8 }], output: { itemId: "ASTER_IRON_INGOT", quantity: 4 } },
   { id: "FORGE_REINFORCED_FITTING", name: "Forge Reinforced Fitting", skillId: "smithing", level: 12, xp: 180, gold: 50, seconds: 48, repeatableTraining: true, inputs: [{ itemId: "ASTER_IRON_INGOT", quantity: 2 }, { itemId: "IRONWOOD_LOG", quantity: 2 }], output: { itemId: "REINFORCED_FITTING", quantity: 1 } },
   { id: "SMELT_OATHSTONE_INGOT", name: "Smelt Oathstone Batch", skillId: "smithing", level: 16, xp: 230, gold: 80, seconds: 54, repeatableTraining: true, inputs: [{ itemId: "OATHSTONE_ORE", quantity: 6 }], output: { itemId: "OATHSTONE_INGOT", quantity: 3 } },
-  { id: "SMITH_COPPER_BLADE", name: "Copper Blade", skillId: "smithing", level: 3, xp: 120, gold: 180, seconds: 84, inputs: [{ itemId: "COPPER_INGOT", quantity: 22 }, { itemId: "GREENWOOD_LOG", quantity: 45 }], output: { itemId: "COPPER_BLADE", quantity: 1 } },
-  { id: "SMITH_ASTER_IRON_BLADE", name: "Aster-Iron Blade", skillId: "smithing", level: 9, xp: 260, gold: 550, seconds: 126, inputs: [{ itemId: "ASTER_IRON_INGOT", quantity: 45 }, { itemId: "IRONWOOD_LOG", quantity: 90 }, { itemId: "REINFORCED_FITTING", quantity: 4 }], output: { itemId: "ASTER_IRON_BLADE", quantity: 1 } },
-  { id: "SMITH_ASTER_IRON_HELM", name: "Aster-Iron Helm", skillId: "smithing", level: 10, xp: 300, gold: 620, seconds: 132, inputs: [{ itemId: "ASTER_IRON_INGOT", quantity: 55 }, { itemId: "IRONWOOD_LOG", quantity: 70 }, { itemId: "REINFORCED_FITTING", quantity: 5 }], output: { itemId: "ASTER_IRON_HELM", quantity: 1 } },
-  { id: "SMITH_IRONWOOD_GUARD", name: "Ironwood Guard", skillId: "smithing", level: 11, xp: 320, gold: 660, seconds: 138, inputs: [{ itemId: "IRONWOOD_LOG", quantity: 140 }, { itemId: "ASTER_IRON_INGOT", quantity: 35 }, { itemId: "REINFORCED_FITTING", quantity: 5 }], output: { itemId: "IRONWOOD_GUARD", quantity: 1 } },
-  { id: "SMITH_IRONWOOD_LONGBOW", name: "Ironwood Longbow", skillId: "smithing", level: 12, xp: 340, gold: 700, seconds: 144, inputs: [{ itemId: "IRONWOOD_LOG", quantity: 165 }, { itemId: "ASTER_IRON_INGOT", quantity: 28 }, { itemId: "REINFORCED_FITTING", quantity: 4 }], output: { itemId: "IRONWOOD_LONGBOW", quantity: 1 } },
-  { id: "SMITH_IRONWOOD_STAFF", name: "Ironwood Runestaff", skillId: "smithing", level: 12, xp: 340, gold: 700, seconds: 144, inputs: [{ itemId: "IRONWOOD_LOG", quantity: 150 }, { itemId: "WISP_DUST", quantity: 35 }, { itemId: "REINFORCED_FITTING", quantity: 4 }], output: { itemId: "IRONWOOD_STAFF", quantity: 1 } },
-  { id: "SMITH_IRONWOOD_DAGGERS", name: "Ironwood Twin Daggers", skillId: "smithing", level: 12, xp: 340, gold: 700, seconds: 144, inputs: [{ itemId: "IRONWOOD_LOG", quantity: 110 }, { itemId: "ASTER_IRON_INGOT", quantity: 38 }, { itemId: "REINFORCED_FITTING", quantity: 5 }], output: { itemId: "IRONWOOD_DAGGERS", quantity: 1 } },
-  { id: "SMITH_IRONWOOD_GREATAXE", name: "Ironwood Great-Axe", skillId: "smithing", level: 12, xp: 340, gold: 700, seconds: 144, inputs: [{ itemId: "IRONWOOD_LOG", quantity: 105 }, { itemId: "ASTER_IRON_INGOT", quantity: 50 }, { itemId: "REINFORCED_FITTING", quantity: 5 }], output: { itemId: "IRONWOOD_GREATAXE", quantity: 1 } },
-  { id: "SMITH_ASTER_IRON_LEGS", name: "Aster-Iron Legguards", skillId: "smithing", level: 13, xp: 420, gold: 950, seconds: 174, inputs: [{ itemId: "ASTER_IRON_INGOT", quantity: 72 }, { itemId: "IRONWOOD_LOG", quantity: 105 }, { itemId: "REINFORCED_FITTING", quantity: 7 }], output: { itemId: "ASTER_IRON_LEGS", quantity: 1 } },
-  { id: "SMITH_ASTER_IRON_BOOTS", name: "Aster-Iron Greaves", skillId: "smithing", level: 11, xp: 360, gold: 820, seconds: 156, inputs: [{ itemId: "ASTER_IRON_INGOT", quantity: 48 }, { itemId: "IRONWOOD_LOG", quantity: 70 }, { itemId: "REINFORCED_FITTING", quantity: 6 }], output: { itemId: "ASTER_IRON_BOOTS", quantity: 1 } },
-  { id: "SMITH_ASTER_IRON_GLOVES", name: "Aster-Iron Gauntlets", skillId: "smithing", level: 11, xp: 360, gold: 820, seconds: 156, inputs: [{ itemId: "ASTER_IRON_INGOT", quantity: 44 }, { itemId: "IRONWOOD_LOG", quantity: 60 }, { itemId: "REINFORCED_FITTING", quantity: 6 }], output: { itemId: "ASTER_IRON_GLOVES", quantity: 1 } },
-  { id: "SMITH_ASTER_IRON_CHEST", name: "Aster-Iron Cuirass", skillId: "smithing", level: 15, xp: 520, gold: 1250, seconds: 216, inputs: [{ itemId: "ASTER_IRON_INGOT", quantity: 95 }, { itemId: "IRONWOOD_LOG", quantity: 145 }, { itemId: "REINFORCED_FITTING", quantity: 10 }], output: { itemId: "ASTER_IRON_CHEST", quantity: 1 } },
-  { id: "SMITH_OATHSTONE_HELM", name: "Oathstone Greathelm", skillId: "smithing", level: 17, xp: 620, gold: 1520, seconds: 252, inputs: [{ itemId: "OATHSTONE_INGOT", quantity: 28 }, { itemId: "ASTER_IRON_INGOT", quantity: 30 }, { itemId: "OATHGLASS_SHARD", quantity: 7 }], output: { itemId: "OATHSTONE_HELM", quantity: 1 } },
-  { id: "SMITH_OATHSTONE_WARD", name: "Oathstone Wardplate", skillId: "smithing", level: 18, xp: 700, gold: 1850, seconds: 288, inputs: [{ itemId: "OATHSTONE_INGOT", quantity: 40 }, { itemId: "ASTER_IRON_INGOT", quantity: 45 }, { itemId: "CROWNWOOD_LOG", quantity: 70 }, { itemId: "OATHGLASS_SHARD", quantity: 12 }], output: { itemId: "OATHSTONE_WARDPLATE", quantity: 1 } },
-  { id: "SMITH_OATHSTONE_GAUNTLETS", name: "Oathstone Gauntlets", skillId: "smithing", level: 18, xp: 650, gold: 1580, seconds: 258, inputs: [{ itemId: "OATHSTONE_INGOT", quantity: 25 }, { itemId: "ASTER_IRON_INGOT", quantity: 25 }, { itemId: "OATHGLASS_SHARD", quantity: 7 }], output: { itemId: "OATHSTONE_GAUNTLETS", quantity: 1 } },
-  { id: "SMITH_OATHSTONE_GREAVES", name: "Oathstone Greaves", skillId: "smithing", level: 19, xp: 680, gold: 1640, seconds: 264, inputs: [{ itemId: "OATHSTONE_INGOT", quantity: 27 }, { itemId: "ASTER_IRON_INGOT", quantity: 28 }, { itemId: "OATHGLASS_SHARD", quantity: 7 }], output: { itemId: "OATHSTONE_GREAVES", quantity: 1 } },
-  { id: "SMITH_OATHSTONE_LEGPLATES", name: "Oathstone Legplates", skillId: "smithing", level: 20, xp: 760, gold: 1980, seconds: 300, inputs: [{ itemId: "OATHSTONE_INGOT", quantity: 36 }, { itemId: "ASTER_IRON_INGOT", quantity: 38 }, { itemId: "OATHGLASS_SHARD", quantity: 10 }], output: { itemId: "OATHSTONE_LEGPLATES", quantity: 1 } },
-  { id: "SMITH_OATHSTONE_BLADE", name: "Oathstone Runeblade", skillId: "smithing", level: 20, xp: 780, gold: 2050, seconds: 306, inputs: [{ itemId: "OATHSTONE_INGOT", quantity: 34 }, { itemId: "CROWNWOOD_LOG", quantity: 42 }, { itemId: "OATHGLASS_SHARD", quantity: 11 }], output: { itemId: "OATHSTONE_BLADE", quantity: 1 } },
-  { id: "SMITH_OATHSTONE_TOWER_SHIELD", name: "Oathstone Tower Shield", skillId: "smithing", level: 21, xp: 820, gold: 2180, seconds: 324, inputs: [{ itemId: "OATHSTONE_INGOT", quantity: 40 }, { itemId: "CROWNWOOD_LOG", quantity: 55 }, { itemId: "REINFORCED_FITTING", quantity: 12 }], output: { itemId: "OATHSTONE_TOWER_SHIELD", quantity: 1 } },
-  { id: "SMITH_OATHSTONE_MANTLE", name: "Oathstone Mantle", skillId: "smithing", level: 22, xp: 860, gold: 2280, seconds: 336, inputs: [{ itemId: "OATHSTONE_INGOT", quantity: 24 }, { itemId: "CROWNWOOD_LOG", quantity: 60 }, { itemId: "OATHGLASS_SHARD", quantity: 14 }], output: { itemId: "OATHSTONE_MANTLE", quantity: 1 } },
-  { id: "SMITH_OATHSTONE_AMULET", name: "Oathstone Ward Amulet", skillId: "smithing", level: 23, xp: 900, gold: 2400, seconds: 348, inputs: [{ itemId: "OATHSTONE_INGOT", quantity: 20 }, { itemId: "OATHGLASS_SHARD", quantity: 18 }, { itemId: "REINFORCED_FITTING", quantity: 8 }], output: { itemId: "OATHSTONE_AMULET", quantity: 1 } },
-  { id: "SMITH_OATHSTONE_SIGNET", name: "Oathstone Signet", skillId: "smithing", level: 24, xp: 940, gold: 2550, seconds: 360, inputs: [{ itemId: "OATHSTONE_INGOT", quantity: 18 }, { itemId: "OATHGLASS_SHARD", quantity: 20 }, { itemId: "REINFORCED_FITTING", quantity: 8 }], output: { itemId: "OATHSTONE_SIGNET", quantity: 1 } },
-  { id: "CRAFT_STONEHEART_CHEST", name: "Stoneheart Chest", skillId: "smithing", level: 18, xp: 760, gold: 1900, seconds: 300, inputs: [{ itemId: "OATHSTONE_INGOT", quantity: 34 }, { itemId: "THORN_SAP", quantity: 22 }, { itemId: "TROLL_HIDE", quantity: 12 }], output: { itemId: "STONEHEART_CHEST", quantity: 1 }, classId: "IRONWARDEN" },
-  { id: "CRAFT_STONEHEART_GLOVES", name: "Stoneheart Gloves", skillId: "smithing", level: 19, xp: 700, gold: 1650, seconds: 270, inputs: [{ itemId: "OATHSTONE_INGOT", quantity: 22 }, { itemId: "THORN_SAP", quantity: 16 }, { itemId: "TROLL_HIDE", quantity: 8 }], output: { itemId: "STONEHEART_GLOVES", quantity: 1 }, classId: "IRONWARDEN" },
-  { id: "CRAFT_STONEHEART_CAPE", name: "Stoneheart Cape", skillId: "smithing", level: 20, xp: 820, gold: 2100, seconds: 330, inputs: [{ itemId: "CROWNWOOD_LOG", quantity: 42 }, { itemId: "THORN_SAP", quantity: 28 }, { itemId: "TROLL_HIDE", quantity: 14 }], output: { itemId: "STONEHEART_CAPE", quantity: 1 }, classId: "IRONWARDEN" },
-  { id: "CRAFT_STONEHEART_RING", name: "Stoneheart Ring", skillId: "smithing", level: 22, xp: 900, gold: 2400, seconds: 360, inputs: [{ itemId: "OATHSTONE_INGOT", quantity: 18 }, { itemId: "OATHGLASS_SHARD", quantity: 15 }, { itemId: "THORN_SAP", quantity: 12 }], output: { itemId: "STONEHEART_RING", quantity: 1 }, classId: "IRONWARDEN" },
-  { id: "CRAFT_LASTWALL_CHEST", name: "Lastwall Chestguard", skillId: "smithing", level: 20, xp: 850, gold: 2250, seconds: 330, inputs: [{ itemId: "OATHSTONE_INGOT", quantity: 36 }, { itemId: "LANTERNSTEEL_SHARD", quantity: 5 }, { itemId: "TORN_OATHCLOTH", quantity: 8 }], output: { itemId: "LASTWALL_CHEST", quantity: 1 }, classId: "BASTION", characterLevel: 21 },
-  { id: "CRAFT_LASTWALL_GLOVES", name: "Lastwall Gauntlets", skillId: "smithing", level: 20, xp: 740, gold: 1950, seconds: 300, inputs: [{ itemId: "OATHSTONE_INGOT", quantity: 24 }, { itemId: "LANTERNSTEEL_SHARD", quantity: 4 }, { itemId: "TORN_OATHCLOTH", quantity: 5 }], output: { itemId: "LASTWALL_GLOVES", quantity: 1 }, classId: "BASTION", characterLevel: 21 },
-  { id: "CRAFT_LASTWALL_CAPE", name: "Lastwall Mantle", skillId: "smithing", level: 21, xp: 880, gold: 2350, seconds: 348, inputs: [{ itemId: "OATHSTONE_INGOT", quantity: 20 }, { itemId: "LANTERNSTEEL_SHARD", quantity: 4 }, { itemId: "TORN_OATHCLOTH", quantity: 12 }], output: { itemId: "LASTWALL_CAPE", quantity: 1 }, classId: "BASTION", characterLevel: 21 },
-  { id: "CRAFT_LASTWALL_RING", name: "Lastwall Signet", skillId: "smithing", level: 22, xp: 950, gold: 2650, seconds: 378, inputs: [{ itemId: "OATHSTONE_INGOT", quantity: 16 }, { itemId: "LANTERNSTEEL_SHARD", quantity: 3 }, { itemId: "OATHGLASS_SHARD", quantity: 14 }], output: { itemId: "LASTWALL_RING", quantity: 1 }, classId: "BASTION", characterLevel: 21 },
-  { id: "CRAFT_MOURNCHAIN_CHEST", name: "Mournchain Cuirass", skillId: "smithing", level: 21, xp: 890, gold: 2400, seconds: 348, inputs: [{ itemId: "LANTERNSTEEL_SHARD", quantity: 7 }, { itemId: "FALLEN_RIVET", quantity: 8 }, { itemId: "TORN_OATHCLOTH", quantity: 8 }], output: { itemId: "MOURNCHAIN_CHEST", quantity: 1 }, classId: "DREADGUARD", characterLevel: 21 },
-  { id: "CRAFT_MOURNCHAIN_GLOVES", name: "Mournchain Grips", skillId: "smithing", level: 21, xp: 770, gold: 2100, seconds: 318, inputs: [{ itemId: "LANTERNSTEEL_SHARD", quantity: 5 }, { itemId: "FALLEN_RIVET", quantity: 6 }, { itemId: "TORN_OATHCLOTH", quantity: 5 }], output: { itemId: "MOURNCHAIN_GLOVES", quantity: 1 }, classId: "DREADGUARD", characterLevel: 21 },
-  { id: "CRAFT_MOURNCHAIN_CAPE", name: "Mournchain Shroud", skillId: "smithing", level: 22, xp: 920, gold: 2550, seconds: 366, inputs: [{ itemId: "LANTERNSTEEL_SHARD", quantity: 5 }, { itemId: "FALLEN_RIVET", quantity: 6 }, { itemId: "TORN_OATHCLOTH", quantity: 12 }], output: { itemId: "MOURNCHAIN_CAPE", quantity: 1 }, classId: "DREADGUARD", characterLevel: 21 },
-  { id: "CRAFT_MOURNCHAIN_RING", name: "Mournchain Loop", skillId: "smithing", level: 23, xp: 990, gold: 2820, seconds: 396, inputs: [{ itemId: "LANTERNSTEEL_SHARD", quantity: 4 }, { itemId: "FALLEN_RIVET", quantity: 8 }, { itemId: "OATHGLASS_SHARD", quantity: 12 }], output: { itemId: "MOURNCHAIN_RING", quantity: 1 }, classId: "DREADGUARD", characterLevel: 21 },
-  { id: "CRAFT_QUICKPRAYER_CHEST", name: "Quickprayer Chest", skillId: "smithing", level: 18, xp: 740, gold: 1880, seconds: 294, inputs: [{ itemId: "ASTER_IRON_INGOT", quantity: 28 }, { itemId: "WISP_DUST", quantity: 38 }, { itemId: "OATHGLASS_SHARD", quantity: 10 }], output: { itemId: "QUICKPRAYER_CHEST", quantity: 1 }, classId: "DAWNKEEPER" },
-  { id: "CRAFT_QUICKPRAYER_GLOVES", name: "Quickprayer Gloves", skillId: "smithing", level: 19, xp: 690, gold: 1620, seconds: 264, inputs: [{ itemId: "ASTER_IRON_INGOT", quantity: 18 }, { itemId: "WISP_DUST", quantity: 28 }, { itemId: "OATHGLASS_SHARD", quantity: 7 }], output: { itemId: "QUICKPRAYER_GLOVES", quantity: 1 }, classId: "DAWNKEEPER" },
-  { id: "CRAFT_QUICKPRAYER_CAPE", name: "Quickprayer Cape", skillId: "smithing", level: 20, xp: 810, gold: 2080, seconds: 324, inputs: [{ itemId: "CROWNWOOD_LOG", quantity: 30 }, { itemId: "WISP_DUST", quantity: 42 }, { itemId: "OATHGLASS_SHARD", quantity: 12 }], output: { itemId: "QUICKPRAYER_CAPE", quantity: 1 }, classId: "DAWNKEEPER" },
-  { id: "CRAFT_QUICKPRAYER_RING", name: "Quickprayer Ring", skillId: "smithing", level: 22, xp: 890, gold: 2380, seconds: 354, inputs: [{ itemId: "ASTER_IRON_INGOT", quantity: 14 }, { itemId: "WISP_DUST", quantity: 34 }, { itemId: "OATHGLASS_SHARD", quantity: 16 }], output: { itemId: "QUICKPRAYER_RING", quantity: 1 }, classId: "DAWNKEEPER" },
-  { id: "CRAFT_TRACKER_CHEST", name: "Tracker Chest", skillId: "smithing", level: 25, xp: 1080, gold: 3100, seconds: 420, inputs: [{ itemId: "ECHO_TOUCHED_PELT", quantity: 6 }, { itemId: "TORN_OATHCLOTH", quantity: 8 }, { itemId: "OATHGLASS_SHARD", quantity: 10 }], output: { itemId: "TRACKER_CHEST", quantity: 1 }, classId: "WAYFINDER", characterLevel: 25 },
-  { id: "CRAFT_TRACKER_GLOVES", name: "Tracker Gloves", skillId: "smithing", level: 25, xp: 940, gold: 2750, seconds: 390, inputs: [{ itemId: "ECHO_TOUCHED_PELT", quantity: 4 }, { itemId: "TORN_OATHCLOTH", quantity: 6 }, { itemId: "OATHGLASS_SHARD", quantity: 7 }], output: { itemId: "TRACKER_GLOVES", quantity: 1 }, classId: "WAYFINDER", characterLevel: 25 },
-  { id: "CRAFT_TRACKER_CAPE", name: "Tracker Cape", skillId: "smithing", level: 26, xp: 1120, gold: 3300, seconds: 450, inputs: [{ itemId: "ECHO_TOUCHED_PELT", quantity: 5 }, { itemId: "TORN_OATHCLOTH", quantity: 10 }, { itemId: "OATHGLASS_SHARD", quantity: 11 }], output: { itemId: "TRACKER_CAPE", quantity: 1 }, classId: "WAYFINDER", characterLevel: 25 },
-  { id: "CRAFT_TRACKER_RING", name: "Tracker Ring", skillId: "smithing", level: 27, xp: 1180, gold: 3600, seconds: 480, inputs: [{ itemId: "ECHO_TOUCHED_PELT", quantity: 3 }, { itemId: "TORN_OATHCLOTH", quantity: 5 }, { itemId: "OATHGLASS_SHARD", quantity: 14 }], output: { itemId: "TRACKER_RING", quantity: 1 }, classId: "WAYFINDER", characterLevel: 25 },
-  { id: "CRAFT_BLOODRUSH_CHEST", name: "Bloodrush Chest", skillId: "smithing", level: 21, xp: 900, gold: 2500, seconds: 360, inputs: [{ itemId: "LANTERNSTEEL_SHARD", quantity: 6 }, { itemId: "BANNER_ASH", quantity: 8 }, { itemId: "FALLEN_RIVET", quantity: 6 }], output: { itemId: "BLOODRUSH_CHEST", quantity: 1 }, classId: "RAVAGER", characterLevel: 21 },
-  { id: "CRAFT_BLOODRUSH_GLOVES", name: "Bloodrush Gloves", skillId: "smithing", level: 21, xp: 780, gold: 2200, seconds: 330, inputs: [{ itemId: "LANTERNSTEEL_SHARD", quantity: 4 }, { itemId: "BANNER_ASH", quantity: 6 }, { itemId: "FALLEN_RIVET", quantity: 4 }], output: { itemId: "BLOODRUSH_GLOVES", quantity: 1 }, classId: "RAVAGER", characterLevel: 21 },
-  { id: "CRAFT_BLOODRUSH_CAPE", name: "Bloodrush Cape", skillId: "smithing", level: 22, xp: 940, gold: 2700, seconds: 390, inputs: [{ itemId: "LANTERNSTEEL_SHARD", quantity: 5 }, { itemId: "BANNER_ASH", quantity: 10 }, { itemId: "FALLEN_RIVET", quantity: 5 }], output: { itemId: "BLOODRUSH_CAPE", quantity: 1 }, classId: "RAVAGER", characterLevel: 21 },
-  { id: "CRAFT_BLOODRUSH_RING", name: "Bloodrush Ring", skillId: "smithing", level: 23, xp: 1e3, gold: 2950, seconds: 420, inputs: [{ itemId: "LANTERNSTEEL_SHARD", quantity: 4 }, { itemId: "BANNER_ASH", quantity: 6 }, { itemId: "FALLEN_RIVET", quantity: 8 }], output: { itemId: "BLOODRUSH_RING", quantity: 1 }, classId: "RAVAGER", characterLevel: 21 },
-  { id: "CRAFT_SPELLGLASS_CHEST", name: "Spellglass Chest", skillId: "smithing", level: 22, xp: 920, gold: 2550, seconds: 372, inputs: [{ itemId: "ECHO_QUARTZ", quantity: 7 }, { itemId: "OATHGLASS_FRAGMENT", quantity: 5 }, { itemId: "WISP_DUST", quantity: 10 }], output: { itemId: "SPELLGLASS_CHEST", quantity: 1 }, classId: "HEXWEAVER", characterLevel: 21 },
-  { id: "CRAFT_SPELLGLASS_GLOVES", name: "Spellglass Gloves", skillId: "smithing", level: 22, xp: 800, gold: 2250, seconds: 342, inputs: [{ itemId: "ECHO_QUARTZ", quantity: 5 }, { itemId: "OATHGLASS_FRAGMENT", quantity: 3 }, { itemId: "WISP_DUST", quantity: 8 }], output: { itemId: "SPELLGLASS_GLOVES", quantity: 1 }, classId: "HEXWEAVER", characterLevel: 21 },
-  { id: "CRAFT_SPELLGLASS_CAPE", name: "Spellglass Cape", skillId: "smithing", level: 23, xp: 960, gold: 2750, seconds: 402, inputs: [{ itemId: "ECHO_QUARTZ", quantity: 6 }, { itemId: "OATHGLASS_FRAGMENT", quantity: 5 }, { itemId: "WISP_DUST", quantity: 12 }], output: { itemId: "SPELLGLASS_CAPE", quantity: 1 }, classId: "HEXWEAVER", characterLevel: 21 },
-  { id: "CRAFT_SPELLGLASS_RING", name: "Spellglass Ring", skillId: "smithing", level: 24, xp: 1020, gold: 3050, seconds: 432, inputs: [{ itemId: "ECHO_QUARTZ", quantity: 6 }, { itemId: "OATHGLASS_FRAGMENT", quantity: 6 }, { itemId: "WISP_DUST", quantity: 8 }], output: { itemId: "SPELLGLASS_RING", quantity: 1 }, classId: "HEXWEAVER", characterLevel: 21 },
-  { id: "CRAFT_NIGHTFANG_CHEST", name: "Nightfang Chest", skillId: "smithing", level: 22, xp: 930, gold: 2600, seconds: 378, inputs: [{ itemId: "GLOAM_DUST", quantity: 8 }, { itemId: "LANTERNSTEEL_SHARD", quantity: 5 }, { itemId: "ECHO_QUARTZ", quantity: 4 }], output: { itemId: "NIGHTFANG_CHEST", quantity: 1 }, classId: "KNIFE_DANCER", characterLevel: 21 },
-  { id: "CRAFT_NIGHTFANG_GLOVES", name: "Nightfang Gloves", skillId: "smithing", level: 22, xp: 810, gold: 2280, seconds: 348, inputs: [{ itemId: "GLOAM_DUST", quantity: 6 }, { itemId: "LANTERNSTEEL_SHARD", quantity: 3 }, { itemId: "ECHO_QUARTZ", quantity: 3 }], output: { itemId: "NIGHTFANG_GLOVES", quantity: 1 }, classId: "KNIFE_DANCER", characterLevel: 21 },
-  { id: "CRAFT_NIGHTFANG_CAPE", name: "Nightfang Cape", skillId: "smithing", level: 23, xp: 970, gold: 2800, seconds: 408, inputs: [{ itemId: "GLOAM_DUST", quantity: 10 }, { itemId: "LANTERNSTEEL_SHARD", quantity: 4 }, { itemId: "ECHO_QUARTZ", quantity: 4 }], output: { itemId: "NIGHTFANG_CAPE", quantity: 1 }, classId: "KNIFE_DANCER", characterLevel: 21 },
-  { id: "CRAFT_NIGHTFANG_RING", name: "Nightfang Ring", skillId: "smithing", level: 24, xp: 1030, gold: 3100, seconds: 438, inputs: [{ itemId: "GLOAM_DUST", quantity: 7 }, { itemId: "LANTERNSTEEL_SHARD", quantity: 4 }, { itemId: "ECHO_QUARTZ", quantity: 6 }], output: { itemId: "NIGHTFANG_RING", quantity: 1 }, classId: "KNIFE_DANCER", characterLevel: 21 },
-  { id: "CRAFT_STORMCARVED_CHEST", name: "Stormcarved Chest", skillId: "smithing", level: 21, xp: 910, gold: 2520, seconds: 366, inputs: [{ itemId: "ECHO_QUARTZ", quantity: 7 }, { itemId: "RUNEBOUND_CORE", quantity: 4 }, { itemId: "ECHO_BAT_WING", quantity: 8 }], output: { itemId: "STORMCARVED_CHEST", quantity: 1 }, classId: "STONECALLER", characterLevel: 21 },
-  { id: "CRAFT_STORMCARVED_GLOVES", name: "Stormcarved Gloves", skillId: "smithing", level: 21, xp: 790, gold: 2220, seconds: 336, inputs: [{ itemId: "ECHO_QUARTZ", quantity: 5 }, { itemId: "RUNEBOUND_CORE", quantity: 3 }, { itemId: "ECHO_BAT_WING", quantity: 6 }], output: { itemId: "STORMCARVED_GLOVES", quantity: 1 }, classId: "STONECALLER", characterLevel: 21 },
-  { id: "CRAFT_STORMCARVED_CAPE", name: "Stormcarved Cape", skillId: "smithing", level: 22, xp: 950, gold: 2720, seconds: 396, inputs: [{ itemId: "ECHO_QUARTZ", quantity: 6 }, { itemId: "RUNEBOUND_CORE", quantity: 4 }, { itemId: "ECHO_BAT_WING", quantity: 10 }], output: { itemId: "STORMCARVED_CAPE", quantity: 1 }, classId: "STONECALLER", characterLevel: 21 },
-  { id: "CRAFT_STORMCARVED_RING", name: "Stormcarved Ring", skillId: "smithing", level: 23, xp: 1010, gold: 3020, seconds: 426, inputs: [{ itemId: "ECHO_QUARTZ", quantity: 6 }, { itemId: "RUNEBOUND_CORE", quantity: 5 }, { itemId: "ECHO_BAT_WING", quantity: 6 }], output: { itemId: "STORMCARVED_RING", quantity: 1 }, classId: "STONECALLER", characterLevel: 21 },
-  { id: "CRAFT_SUNSCORED_STONEHEART_CHEST", name: "Sunscored Stoneheart Chest", skillId: "smithing", level: 35, xp: 1660, gold: 5600, seconds: 660, inputs: [{ itemId: "SUNSTONE_ORE", quantity: 12 }, { itemId: "AMBERGLASS", quantity: 5 }, { itemId: "ASTRAL_SCRIPT", quantity: 1 }], output: { itemId: "SUNSCORED_STONEHEART_CHEST", quantity: 1 }, classId: "IRONWARDEN", characterLevel: 38 },
-  { id: "CRAFT_SUNSCORED_STONEHEART_GLOVES", name: "Sunscored Stoneheart Gloves", skillId: "smithing", level: 35, xp: 1380, gold: 4450, seconds: 540, inputs: [{ itemId: "SUNSTONE_ORE", quantity: 6 }, { itemId: "AMBERGLASS", quantity: 2 }, { itemId: "ASTRAL_SCRIPT", quantity: 1 }], output: { itemId: "SUNSCORED_STONEHEART_GLOVES", quantity: 1 }, classId: "IRONWARDEN", characterLevel: 38 },
-  { id: "CRAFT_SUNSCORED_STONEHEART_CAPE", name: "Sunscored Stoneheart Cape", skillId: "smithing", level: 35, xp: 1510, gold: 5e3, seconds: 600, inputs: [{ itemId: "SUNSTONE_ORE", quantity: 7 }, { itemId: "AMBERGLASS", quantity: 3 }, { itemId: "ASTRAL_SCRIPT", quantity: 1 }], output: { itemId: "SUNSCORED_STONEHEART_CAPE", quantity: 1 }, classId: "IRONWARDEN", characterLevel: 38 },
-  { id: "CRAFT_SUNSCORED_STONEHEART_RING", name: "Sunscored Stoneheart Ring", skillId: "smithing", level: 35, xp: 1420, gold: 4700, seconds: 570, inputs: [{ itemId: "SUNSTONE_ORE", quantity: 5 }, { itemId: "AMBERGLASS", quantity: 2 }, { itemId: "ASTRAL_SCRIPT", quantity: 1 }], output: { itemId: "SUNSCORED_STONEHEART_RING", quantity: 1 }, classId: "IRONWARDEN", characterLevel: 38 },
-  { id: "CRAFT_SUNSCORED_LASTWALL_CHEST", name: "Sunscored Lastwall Chestguard", skillId: "smithing", level: 35, xp: 1660, gold: 5650, seconds: 660, inputs: [{ itemId: "SUNSTONE_ORE", quantity: 12 }, { itemId: "AMBERGLASS", quantity: 5 }, { itemId: "ASTRAL_SCRIPT", quantity: 1 }], output: { itemId: "SUNSCORED_LASTWALL_CHEST", quantity: 1 }, classId: "BASTION", characterLevel: 38 },
-  { id: "CRAFT_SUNSCORED_LASTWALL_GLOVES", name: "Sunscored Lastwall Gauntlets", skillId: "smithing", level: 35, xp: 1380, gold: 4480, seconds: 540, inputs: [{ itemId: "SUNSTONE_ORE", quantity: 6 }, { itemId: "AMBERGLASS", quantity: 2 }, { itemId: "ASTRAL_SCRIPT", quantity: 1 }], output: { itemId: "SUNSCORED_LASTWALL_GLOVES", quantity: 1 }, classId: "BASTION", characterLevel: 38 },
-  { id: "CRAFT_SUNSCORED_LASTWALL_CAPE", name: "Sunscored Lastwall Mantle", skillId: "smithing", level: 35, xp: 1510, gold: 5040, seconds: 600, inputs: [{ itemId: "SUNSTONE_ORE", quantity: 7 }, { itemId: "AMBERGLASS", quantity: 3 }, { itemId: "ASTRAL_SCRIPT", quantity: 1 }], output: { itemId: "SUNSCORED_LASTWALL_CAPE", quantity: 1 }, classId: "BASTION", characterLevel: 38 },
-  { id: "CRAFT_SUNSCORED_LASTWALL_RING", name: "Sunscored Lastwall Signet", skillId: "smithing", level: 35, xp: 1420, gold: 4740, seconds: 570, inputs: [{ itemId: "SUNSTONE_ORE", quantity: 5 }, { itemId: "AMBERGLASS", quantity: 2 }, { itemId: "ASTRAL_SCRIPT", quantity: 1 }], output: { itemId: "SUNSCORED_LASTWALL_RING", quantity: 1 }, classId: "BASTION", characterLevel: 38 },
-  { id: "CRAFT_SUNSCORED_MOURNCHAIN_CHEST", name: "Sunscored Mournchain Cuirass", skillId: "smithing", level: 35, xp: 1700, gold: 5750, seconds: 666, inputs: [{ itemId: "SUNSTONE_ORE", quantity: 12 }, { itemId: "AMBERGLASS", quantity: 5 }, { itemId: "ASTRAL_SCRIPT", quantity: 1 }], output: { itemId: "SUNSCORED_MOURNCHAIN_CHEST", quantity: 1 }, classId: "DREADGUARD", characterLevel: 38 },
-  { id: "CRAFT_SUNSCORED_MOURNCHAIN_GLOVES", name: "Sunscored Mournchain Grips", skillId: "smithing", level: 35, xp: 1420, gold: 4580, seconds: 546, inputs: [{ itemId: "SUNSTONE_ORE", quantity: 6 }, { itemId: "AMBERGLASS", quantity: 2 }, { itemId: "ASTRAL_SCRIPT", quantity: 1 }], output: { itemId: "SUNSCORED_MOURNCHAIN_GLOVES", quantity: 1 }, classId: "DREADGUARD", characterLevel: 38 },
-  { id: "CRAFT_SUNSCORED_MOURNCHAIN_CAPE", name: "Sunscored Mournchain Shroud", skillId: "smithing", level: 35, xp: 1550, gold: 5160, seconds: 606, inputs: [{ itemId: "SUNSTONE_ORE", quantity: 7 }, { itemId: "AMBERGLASS", quantity: 3 }, { itemId: "ASTRAL_SCRIPT", quantity: 1 }], output: { itemId: "SUNSCORED_MOURNCHAIN_CAPE", quantity: 1 }, classId: "DREADGUARD", characterLevel: 38 },
-  { id: "CRAFT_SUNSCORED_MOURNCHAIN_RING", name: "Sunscored Mournchain Loop", skillId: "smithing", level: 35, xp: 1460, gold: 4860, seconds: 576, inputs: [{ itemId: "SUNSTONE_ORE", quantity: 5 }, { itemId: "AMBERGLASS", quantity: 2 }, { itemId: "ASTRAL_SCRIPT", quantity: 1 }], output: { itemId: "SUNSCORED_MOURNCHAIN_RING", quantity: 1 }, classId: "DREADGUARD", characterLevel: 38 },
-  { id: "CRAFT_SUNSCORED_QUICKPRAYER_CHEST", name: "Sunscored Quickprayer Chest", skillId: "smithing", level: 35, xp: 1660, gold: 5500, seconds: 648, inputs: [{ itemId: "SUNSTONE_ORE", quantity: 12 }, { itemId: "AMBERGLASS", quantity: 5 }, { itemId: "ASTRAL_SCRIPT", quantity: 1 }], output: { itemId: "SUNSCORED_QUICKPRAYER_CHEST", quantity: 1 }, classId: "DAWNKEEPER", characterLevel: 38 },
-  { id: "CRAFT_SUNSCORED_QUICKPRAYER_GLOVES", name: "Sunscored Quickprayer Gloves", skillId: "smithing", level: 35, xp: 1380, gold: 4380, seconds: 534, inputs: [{ itemId: "SUNSTONE_ORE", quantity: 6 }, { itemId: "AMBERGLASS", quantity: 2 }, { itemId: "ASTRAL_SCRIPT", quantity: 1 }], output: { itemId: "SUNSCORED_QUICKPRAYER_GLOVES", quantity: 1 }, classId: "DAWNKEEPER", characterLevel: 38 },
-  { id: "CRAFT_SUNSCORED_QUICKPRAYER_CAPE", name: "Sunscored Quickprayer Cape", skillId: "smithing", level: 35, xp: 1510, gold: 4920, seconds: 594, inputs: [{ itemId: "SUNSTONE_ORE", quantity: 7 }, { itemId: "AMBERGLASS", quantity: 3 }, { itemId: "ASTRAL_SCRIPT", quantity: 1 }], output: { itemId: "SUNSCORED_QUICKPRAYER_CAPE", quantity: 1 }, classId: "DAWNKEEPER", characterLevel: 38 },
-  { id: "CRAFT_SUNSCORED_QUICKPRAYER_RING", name: "Sunscored Quickprayer Ring", skillId: "smithing", level: 35, xp: 1420, gold: 4620, seconds: 564, inputs: [{ itemId: "SUNSTONE_ORE", quantity: 5 }, { itemId: "AMBERGLASS", quantity: 2 }, { itemId: "ASTRAL_SCRIPT", quantity: 1 }], output: { itemId: "SUNSCORED_QUICKPRAYER_RING", quantity: 1 }, classId: "DAWNKEEPER", characterLevel: 38 },
-  { id: "CRAFT_SUNSCORED_TRACKER_CHEST", name: "Sunscored Tracker Chest", skillId: "smithing", level: 35, xp: 1660, gold: 5700, seconds: 654, inputs: [{ itemId: "SUNSTONE_ORE", quantity: 12 }, { itemId: "AMBERGLASS", quantity: 5 }, { itemId: "ASTRAL_SCRIPT", quantity: 1 }], output: { itemId: "SUNSCORED_TRACKER_CHEST", quantity: 1 }, classId: "WAYFINDER", characterLevel: 38 },
-  { id: "CRAFT_SUNSCORED_TRACKER_GLOVES", name: "Sunscored Tracker Gloves", skillId: "smithing", level: 35, xp: 1380, gold: 4520, seconds: 540, inputs: [{ itemId: "SUNSTONE_ORE", quantity: 6 }, { itemId: "AMBERGLASS", quantity: 2 }, { itemId: "ASTRAL_SCRIPT", quantity: 1 }], output: { itemId: "SUNSCORED_TRACKER_GLOVES", quantity: 1 }, classId: "WAYFINDER", characterLevel: 38 },
-  { id: "CRAFT_SUNSCORED_TRACKER_CAPE", name: "Sunscored Tracker Cape", skillId: "smithing", level: 35, xp: 1510, gold: 5080, seconds: 600, inputs: [{ itemId: "SUNSTONE_ORE", quantity: 7 }, { itemId: "AMBERGLASS", quantity: 3 }, { itemId: "ASTRAL_SCRIPT", quantity: 1 }], output: { itemId: "SUNSCORED_TRACKER_CAPE", quantity: 1 }, classId: "WAYFINDER", characterLevel: 38 },
-  { id: "CRAFT_SUNSCORED_TRACKER_RING", name: "Sunscored Tracker Ring", skillId: "smithing", level: 35, xp: 1420, gold: 4780, seconds: 570, inputs: [{ itemId: "SUNSTONE_ORE", quantity: 5 }, { itemId: "AMBERGLASS", quantity: 2 }, { itemId: "ASTRAL_SCRIPT", quantity: 1 }], output: { itemId: "SUNSCORED_TRACKER_RING", quantity: 1 }, classId: "WAYFINDER", characterLevel: 38 },
-  { id: "CRAFT_SUNSCORED_BLOODRUSH_CHEST", name: "Sunscored Bloodrush Chest", skillId: "smithing", level: 35, xp: 1660, gold: 5800, seconds: 660, inputs: [{ itemId: "SUNSTONE_ORE", quantity: 12 }, { itemId: "AMBERGLASS", quantity: 5 }, { itemId: "ASTRAL_SCRIPT", quantity: 1 }], output: { itemId: "SUNSCORED_BLOODRUSH_CHEST", quantity: 1 }, classId: "RAVAGER", characterLevel: 38 },
-  { id: "CRAFT_SUNSCORED_BLOODRUSH_GLOVES", name: "Sunscored Bloodrush Gloves", skillId: "smithing", level: 35, xp: 1380, gold: 4600, seconds: 546, inputs: [{ itemId: "SUNSTONE_ORE", quantity: 6 }, { itemId: "AMBERGLASS", quantity: 2 }, { itemId: "ASTRAL_SCRIPT", quantity: 1 }], output: { itemId: "SUNSCORED_BLOODRUSH_GLOVES", quantity: 1 }, classId: "RAVAGER", characterLevel: 38 },
-  { id: "CRAFT_SUNSCORED_BLOODRUSH_CAPE", name: "Sunscored Bloodrush Cape", skillId: "smithing", level: 35, xp: 1510, gold: 5160, seconds: 606, inputs: [{ itemId: "SUNSTONE_ORE", quantity: 7 }, { itemId: "AMBERGLASS", quantity: 3 }, { itemId: "ASTRAL_SCRIPT", quantity: 1 }], output: { itemId: "SUNSCORED_BLOODRUSH_CAPE", quantity: 1 }, classId: "RAVAGER", characterLevel: 38 },
-  { id: "CRAFT_SUNSCORED_BLOODRUSH_RING", name: "Sunscored Bloodrush Ring", skillId: "smithing", level: 35, xp: 1420, gold: 4860, seconds: 576, inputs: [{ itemId: "SUNSTONE_ORE", quantity: 5 }, { itemId: "AMBERGLASS", quantity: 2 }, { itemId: "ASTRAL_SCRIPT", quantity: 1 }], output: { itemId: "SUNSCORED_BLOODRUSH_RING", quantity: 1 }, classId: "RAVAGER", characterLevel: 38 },
-  { id: "CRAFT_SUNSCORED_SPELLGLASS_CHEST", name: "Sunscored Spellglass Chest", skillId: "smithing", level: 35, xp: 1660, gold: 5750, seconds: 654, inputs: [{ itemId: "SUNSTONE_ORE", quantity: 12 }, { itemId: "AMBERGLASS", quantity: 5 }, { itemId: "ASTRAL_SCRIPT", quantity: 1 }], output: { itemId: "SUNSCORED_SPELLGLASS_CHEST", quantity: 1 }, classId: "HEXWEAVER", characterLevel: 38 },
-  { id: "CRAFT_SUNSCORED_SPELLGLASS_GLOVES", name: "Sunscored Spellglass Gloves", skillId: "smithing", level: 35, xp: 1380, gold: 4560, seconds: 540, inputs: [{ itemId: "SUNSTONE_ORE", quantity: 6 }, { itemId: "AMBERGLASS", quantity: 2 }, { itemId: "ASTRAL_SCRIPT", quantity: 1 }], output: { itemId: "SUNSCORED_SPELLGLASS_GLOVES", quantity: 1 }, classId: "HEXWEAVER", characterLevel: 38 },
-  { id: "CRAFT_SUNSCORED_SPELLGLASS_CAPE", name: "Sunscored Spellglass Cape", skillId: "smithing", level: 35, xp: 1510, gold: 5120, seconds: 600, inputs: [{ itemId: "SUNSTONE_ORE", quantity: 7 }, { itemId: "AMBERGLASS", quantity: 3 }, { itemId: "ASTRAL_SCRIPT", quantity: 1 }], output: { itemId: "SUNSCORED_SPELLGLASS_CAPE", quantity: 1 }, classId: "HEXWEAVER", characterLevel: 38 },
-  { id: "CRAFT_SUNSCORED_SPELLGLASS_RING", name: "Sunscored Spellglass Ring", skillId: "smithing", level: 35, xp: 1420, gold: 4820, seconds: 570, inputs: [{ itemId: "SUNSTONE_ORE", quantity: 5 }, { itemId: "AMBERGLASS", quantity: 2 }, { itemId: "ASTRAL_SCRIPT", quantity: 1 }], output: { itemId: "SUNSCORED_SPELLGLASS_RING", quantity: 1 }, classId: "HEXWEAVER", characterLevel: 38 },
-  { id: "CRAFT_SUNSCORED_NIGHTFANG_CHEST", name: "Sunscored Nightfang Chest", skillId: "smithing", level: 35, xp: 1660, gold: 5850, seconds: 660, inputs: [{ itemId: "SUNSTONE_ORE", quantity: 12 }, { itemId: "AMBERGLASS", quantity: 5 }, { itemId: "ASTRAL_SCRIPT", quantity: 1 }], output: { itemId: "SUNSCORED_NIGHTFANG_CHEST", quantity: 1 }, classId: "KNIFE_DANCER", characterLevel: 38 },
-  { id: "CRAFT_SUNSCORED_NIGHTFANG_GLOVES", name: "Sunscored Nightfang Gloves", skillId: "smithing", level: 35, xp: 1380, gold: 4640, seconds: 546, inputs: [{ itemId: "SUNSTONE_ORE", quantity: 6 }, { itemId: "AMBERGLASS", quantity: 2 }, { itemId: "ASTRAL_SCRIPT", quantity: 1 }], output: { itemId: "SUNSCORED_NIGHTFANG_GLOVES", quantity: 1 }, classId: "KNIFE_DANCER", characterLevel: 38 },
-  { id: "CRAFT_SUNSCORED_NIGHTFANG_CAPE", name: "Sunscored Nightfang Cape", skillId: "smithing", level: 35, xp: 1510, gold: 5200, seconds: 606, inputs: [{ itemId: "SUNSTONE_ORE", quantity: 7 }, { itemId: "AMBERGLASS", quantity: 3 }, { itemId: "ASTRAL_SCRIPT", quantity: 1 }], output: { itemId: "SUNSCORED_NIGHTFANG_CAPE", quantity: 1 }, classId: "KNIFE_DANCER", characterLevel: 38 },
-  { id: "CRAFT_SUNSCORED_NIGHTFANG_RING", name: "Sunscored Nightfang Ring", skillId: "smithing", level: 35, xp: 1420, gold: 4900, seconds: 576, inputs: [{ itemId: "SUNSTONE_ORE", quantity: 5 }, { itemId: "AMBERGLASS", quantity: 2 }, { itemId: "ASTRAL_SCRIPT", quantity: 1 }], output: { itemId: "SUNSCORED_NIGHTFANG_RING", quantity: 1 }, classId: "KNIFE_DANCER", characterLevel: 38 },
-  { id: "CRAFT_SUNSCORED_STORMCARVED_CHEST", name: "Sunscored Stormcarved Chest", skillId: "smithing", level: 35, xp: 1660, gold: 5700, seconds: 654, inputs: [{ itemId: "SUNSTONE_ORE", quantity: 12 }, { itemId: "AMBERGLASS", quantity: 5 }, { itemId: "ASTRAL_SCRIPT", quantity: 1 }], output: { itemId: "SUNSCORED_STORMCARVED_CHEST", quantity: 1 }, classId: "STONECALLER", characterLevel: 38 },
-  { id: "CRAFT_SUNSCORED_STORMCARVED_GLOVES", name: "Sunscored Stormcarved Gloves", skillId: "smithing", level: 35, xp: 1380, gold: 4520, seconds: 540, inputs: [{ itemId: "SUNSTONE_ORE", quantity: 6 }, { itemId: "AMBERGLASS", quantity: 2 }, { itemId: "ASTRAL_SCRIPT", quantity: 1 }], output: { itemId: "SUNSCORED_STORMCARVED_GLOVES", quantity: 1 }, classId: "STONECALLER", characterLevel: 38 },
-  { id: "CRAFT_SUNSCORED_STORMCARVED_CAPE", name: "Sunscored Stormcarved Cape", skillId: "smithing", level: 35, xp: 1510, gold: 5080, seconds: 600, inputs: [{ itemId: "SUNSTONE_ORE", quantity: 7 }, { itemId: "AMBERGLASS", quantity: 3 }, { itemId: "ASTRAL_SCRIPT", quantity: 1 }], output: { itemId: "SUNSCORED_STORMCARVED_CAPE", quantity: 1 }, classId: "STONECALLER", characterLevel: 38 },
-  { id: "CRAFT_SUNSCORED_STORMCARVED_RING", name: "Sunscored Stormcarved Ring", skillId: "smithing", level: 35, xp: 1420, gold: 4780, seconds: 570, inputs: [{ itemId: "SUNSTONE_ORE", quantity: 5 }, { itemId: "AMBERGLASS", quantity: 2 }, { itemId: "ASTRAL_SCRIPT", quantity: 1 }], output: { itemId: "SUNSCORED_STORMCARVED_RING", quantity: 1 }, classId: "STONECALLER", characterLevel: 38 },
-  { id: "CRAFT_RIMEBOUND_STONEHEART_CHEST", name: "Rimebound Stoneheart Chest", skillId: "smithing", level: 59, xp: 2320, gold: 8920, seconds: 960, inputs: [{ itemId: "FROSTIRON", quantity: 20 }, { itemId: "RIMEGLASS", quantity: 8 }, { itemId: "CHOIR_BLOOM", quantity: 1 }], output: { itemId: "RIMEBOUND_STONEHEART_CHEST", quantity: 1 }, classId: "IRONWARDEN", characterLevel: 62 },
-  { id: "CRAFT_RIMEBOUND_STONEHEART_GLOVES", name: "Rimebound Stoneheart Gloves", skillId: "smithing", level: 59, xp: 1920, gold: 7140, seconds: 780, inputs: [{ itemId: "FROSTIRON", quantity: 10 }, { itemId: "RIMEGLASS", quantity: 4 }, { itemId: "CHOIR_BLOOM", quantity: 1 }], output: { itemId: "RIMEBOUND_STONEHEART_GLOVES", quantity: 1 }, classId: "IRONWARDEN", characterLevel: 62 },
-  { id: "CRAFT_RIMEBOUND_STONEHEART_CAPE", name: "Rimebound Stoneheart Cape", skillId: "smithing", level: 59, xp: 2110, gold: 8060, seconds: 870, inputs: [{ itemId: "FROSTIRON", quantity: 12 }, { itemId: "RIMEGLASS", quantity: 5 }, { itemId: "CHOIR_BLOOM", quantity: 1 }], output: { itemId: "RIMEBOUND_STONEHEART_CAPE", quantity: 1 }, classId: "IRONWARDEN", characterLevel: 62 },
-  { id: "CRAFT_RIMEBOUND_STONEHEART_RING", name: "Rimebound Stoneheart Ring", skillId: "smithing", level: 59, xp: 1990, gold: 7560, seconds: 825, inputs: [{ itemId: "FROSTIRON", quantity: 8 }, { itemId: "RIMEGLASS", quantity: 3 }, { itemId: "CHOIR_BLOOM", quantity: 1 }], output: { itemId: "RIMEBOUND_STONEHEART_RING", quantity: 1 }, classId: "IRONWARDEN", characterLevel: 62 },
-  { id: "COOK_SILVERFIN", name: "Cook Silverfin Batch", skillId: "cooking", level: 1, xp: 100, gold: 50, seconds: 36, repeatableTraining: true, inputs: [{ itemId: "SILVERFIN", quantity: 5 }], output: { itemId: "COOKED_SILVERFIN", quantity: 5 } },
-  { id: "COOK_RIVER_EEL", name: "Sear River Eel Batch", skillId: "cooking", level: 8, xp: 180, gold: 80, seconds: 44, repeatableTraining: true, inputs: [{ itemId: "RIVER_EEL", quantity: 4 }], output: { itemId: "SEARED_RIVER_EEL", quantity: 4 } },
-  { id: "COOK_OATHSCALE", name: "Roast Oathscale Batch", skillId: "cooking", level: 16, xp: 260, gold: 130, seconds: 54, repeatableTraining: true, inputs: [{ itemId: "OATHSCALE_PIKE", quantity: 3 }], output: { itemId: "ROASTED_OATHSCALE", quantity: 3 } },
-  { id: "COOK_IRONWOOD_STEW", name: "Ironwood Hunter Stew", skillId: "cooking", level: 15, xp: 105, gold: 140, seconds: 66, inputs: [{ itemId: "RIVER_EEL", quantity: 2 }, { itemId: "THORN_SAP", quantity: 1 }], output: { itemId: "IRONWOOD_STEW", quantity: 1 } }
-].map((recipe2) => recipe2.skillId === "smithing" && !recipe2.repeatableTraining && !recipe2.noviceSetId && !recipe2.v33SetId ? { ...recipe2, inputs: recipe2.inputs.map((input) => ({ ...input, quantity: input.quantity * 2 })) } : recipe2);
+  { id: "SMELT_SUNSTONE_INGOT", name: "Smelt Sunstone Batch", skillId: "smithing", level: 26, xp: 520, gold: 280, seconds: 180, repeatableTraining: true, inputs: [{ itemId: "SUNSTONE_ORE", quantity: 6 }, { itemId: "DUNEWOOD", quantity: 4 }], output: { itemId: "SUNSTONE_INGOT", quantity: 3 } },
+  { id: "SMELT_FROSTIRON_INGOT", name: "Smelt Frostiron Batch", skillId: "smithing", level: 46, xp: 980, gold: 720, seconds: 420, repeatableTraining: true, inputs: [{ itemId: "FROSTIRON", quantity: 6 }, { itemId: "WHITEPINE_LOG", quantity: 4 }], output: { itemId: "FROSTIRON_INGOT", quantity: 3 } },
+  { id: "SMELT_BLACKGLASS_INGOT", name: "Smelt Blackglass Batch", skillId: "smithing", level: 68, xp: 1850, gold: 1800, seconds: 900, repeatableTraining: true, inputs: [{ itemId: "BLACKGLASS_ORE", quantity: 6 }, { itemId: "CINDERWOOD_LOG", quantity: 4 }], output: { itemId: "BLACKGLASS_INGOT", quantity: 3 } },
+  { id: "ENCHANT_REGIONAL_CATALYST", name: "Synthesize Regional Catalyst", skillId: "enchanting", level: 70, xp: 2400, gold: 12e3, seconds: 1800, repeatableTraining: true, inputs: [{ itemId: "GEM_DUST", quantity: 25 }, { itemId: "FROSTMARCH_BOTANICAL_ESSENCE", quantity: 2 }], output: { itemId: "REGIONAL_CATALYST", quantity: 1 } },
+  { id: "ENCHANT_RADIANT_CATALYST", name: "Synthesize Radiant Catalyst", skillId: "enchanting", level: 90, xp: 5600, gold: 5e4, seconds: 5400, repeatableTraining: true, inputs: [{ itemId: "REGIONAL_CATALYST", quantity: 3 }, { itemId: "GEM_DUST", quantity: 80 }, { itemId: "ASHLANDS_BOTANICAL_ESSENCE", quantity: 2 }], output: { itemId: "RADIANT_CATALYST", quantity: 1 } },
+  { id: "COOK_MEADOW_PERCH", name: "Cook Meadow Perch Batch", skillId: "cooking", level: 1, xp: 80, gold: 35, seconds: 34, repeatableTraining: true, inputs: [{ itemId: "MEADOW_PERCH", quantity: 5 }, { itemId: "GREENWOOD_LOG", quantity: 1 }], output: { itemId: "COOKED_MEADOW_PERCH", quantity: 5 } },
+  { id: "COOK_SILVERFIN", name: "Cook Silverfin Batch", skillId: "cooking", level: 1, xp: 100, gold: 50, seconds: 36, repeatableTraining: true, inputs: [{ itemId: "SILVERFIN", quantity: 5 }, { itemId: "GREENWOOD_LOG", quantity: 1 }], output: { itemId: "COOKED_SILVERFIN", quantity: 5 } },
+  { id: "COOK_ROOTSTREAM_TROUT", name: "Roast Rootstream Trout Batch", skillId: "cooking", level: 7, xp: 145, gold: 65, seconds: 42, repeatableTraining: true, inputs: [{ itemId: "ROOTSTREAM_TROUT", quantity: 4 }, { itemId: "IRONWOOD_LOG", quantity: 1 }], output: { itemId: "ROASTED_ROOTSTREAM_TROUT", quantity: 4 } },
+  { id: "COOK_RIVER_EEL", name: "Sear River Eel Batch", skillId: "cooking", level: 8, xp: 180, gold: 80, seconds: 44, repeatableTraining: true, inputs: [{ itemId: "RIVER_EEL", quantity: 4 }, { itemId: "IRONWOOD_LOG", quantity: 1 }], output: { itemId: "SEARED_RIVER_EEL", quantity: 4 } },
+  { id: "COOK_OATHSCALE", name: "Roast Oathscale Batch", skillId: "cooking", level: 16, xp: 260, gold: 130, seconds: 54, repeatableTraining: true, inputs: [{ itemId: "OATHSCALE_PIKE", quantity: 3 }, { itemId: "CROWNWOOD_LOG", quantity: 1 }], output: { itemId: "ROASTED_OATHSCALE", quantity: 3 } },
+  { id: "COOK_CAVE_LOACH", name: "Bake Cave Loach Batch", skillId: "cooking", level: 16, xp: 245, gold: 120, seconds: 52, repeatableTraining: true, inputs: [{ itemId: "CAVE_LOACH", quantity: 3 }, { itemId: "CROWNWOOD_LOG", quantity: 1 }], output: { itemId: "BAKED_CAVE_LOACH", quantity: 3 } },
+  { id: "COOK_CROWN_CARP", name: "Roast Crown Carp Batch", skillId: "cooking", level: 20, xp: 330, gold: 165, seconds: 70, repeatableTraining: true, inputs: [{ itemId: "CROWN_CARP", quantity: 3 }, { itemId: "CROWNWOOD_LOG", quantity: 1 }], output: { itemId: "ROASTED_CROWN_CARP", quantity: 3 } },
+  { id: "COOK_IRONWOOD_STEW", name: "Ironwood Hunter Stew", skillId: "cooking", level: 15, xp: 105, gold: 140, seconds: 66, inputs: [{ itemId: "RIVER_EEL", quantity: 2 }, { itemId: "THORN_SAP", quantity: 1 }, { itemId: "IRONWOOD_LOG", quantity: 1 }], output: { itemId: "IRONWOOD_STEW", quantity: 1 } },
+  { id: "COOK_ASHLANDS_EMBER_STEW", name: "Ashlands Ember Stew", skillId: "cooking", level: 72, xp: 760, gold: 900, seconds: 110, repeatableTraining: true, inputs: [{ itemId: "ASHEN_MYRRH", quantity: 2 }, { itemId: "CINDER_HEART", quantity: 1 }, { itemId: "CINDERWOOD_LOG", quantity: 1 }], output: { itemId: "ASHLANDS_EMBER_STEW", quantity: 2 } },
+  { id: "COOK_OASIS_CARP", name: "Grill Oasis Carp Batch", skillId: "cooking", level: 26, xp: 420, gold: 220, seconds: 120, repeatableTraining: true, inputs: [{ itemId: "OASIS_CARP", quantity: 4 }, { itemId: "DUNEWOOD", quantity: 1 }], output: { itemId: "GRILLED_OASIS_CARP", quantity: 4 } },
+  { id: "COOK_GLASSFIN_FEAST", name: "Amberglass Glassfin Feast", skillId: "cooking", level: 38, xp: 720, gold: 520, seconds: 210, repeatableTraining: true, inputs: [{ itemId: "GLASSFIN", quantity: 3 }, { itemId: "AMBERGLASS", quantity: 1 }, { itemId: "DUNEWOOD", quantity: 1 }], output: { itemId: "GLASSFIN_FEAST", quantity: 2 } },
+  { id: "COOK_ICEFISH", name: "Frosted Icefin Batch", skillId: "cooking", level: 48, xp: 1100, gold: 900, seconds: 300, repeatableTraining: true, inputs: [{ itemId: "ICEFIN", quantity: 3 }, { itemId: "WINTERMINT", quantity: 1 }, { itemId: "WHITEPINE_LOG", quantity: 1 }], output: { itemId: "FROSTED_ICEFIN", quantity: 3 } },
+  { id: "COOK_EMBERFIN", name: "Char Emberfin Batch", skillId: "cooking", level: 74, xp: 1650, gold: 1200, seconds: 420, repeatableTraining: true, inputs: [{ itemId: "EMBERFIN", quantity: 3 }, { itemId: "ASHEN_MYRRH", quantity: 1 }, { itemId: "CINDERWOOD_LOG", quantity: 1 }], output: { itemId: "CHARRED_EMBERFIN", quantity: 3 } }
+];
 
-// ../apps/mobile/src/content/exploration.ts
+// apps/mobile/src/content/exploration.ts
 var EXPLORATION_ROUTES = [
   { id: "SCOUT_GREENFIELDS", zoneId: "GREENFIELDS", name: "Scout the Greenfields", seconds: 60, xp: 24, unlockMonsterId: "FIELD_WISP", requiredLevel: 1 },
   { id: "SCOUT_SILVERBROOK", zoneId: "SILVERBROOK", name: "Map Silverbrook", seconds: 90, xp: 42, unlockMonsterId: "SILVERFIN_SWARM", requiredLevel: 5 },
   { id: "SCOUT_IRONWOOD", zoneId: "IRONWOOD", name: "Trace Ironwood paths", seconds: 120, xp: 68, unlockMonsterId: "IRONWOOD_WOLF", requiredLevel: 7 },
-  { id: "SCOUT_OLD_MINES", zoneId: "OLD_MINES", name: "Survey the Old Mines", seconds: 150, xp: 96, unlockMonsterId: "CAVE_SKITTER", requiredLevel: 16 },
-  { id: "SCOUT_KINGS_ROAD", zoneId: "KINGS_ROAD", name: "Survey the King's Road", seconds: 180, xp: 130, unlockMonsterId: "LANTERN_WRETCH", requiredLevel: 20 },
-  { id: "SCOUT_SUNSCAR", zoneId: "SUNSCAR", name: "Chart the Sunscar glasslands", seconds: 210, xp: 190, unlockMonsterId: "SUNSCAR_SCORPION", requiredLevel: 26 },
-  { id: "SCOUT_FROSTMARCH", zoneId: "FROSTMARCH", name: "Follow the Frostmarch bells", seconds: 300, xp: 280, unlockMonsterId: "FROSTWOLF", requiredLevel: 46 },
-  { id: "SCOUT_ASHLANDS", zoneId: "ASHLANDS", name: "Read the Ashlands smoke", seconds: 360, xp: 390, unlockMonsterId: "BLACKGLASS_MIRELING", requiredLevel: 71 }
+  { id: "SCOUT_OLD_MINES", zoneId: "OLD_MINES", name: "Survey the Old Mines", seconds: 150, xp: 110, unlockMonsterId: "CAVE_SKITTER", requiredLevel: 16 },
+  { id: "SCOUT_KINGS_ROAD", zoneId: "KINGS_ROAD", name: "Survey the King's Road", seconds: 180, xp: 160, unlockMonsterId: "LANTERN_WRETCH", requiredLevel: 20 },
+  { id: "SCOUT_SUNSCAR", zoneId: "SUNSCAR", name: "Chart the Sunscar glasslands", seconds: 210, xp: 250, unlockMonsterId: "SUNSCAR_SCORPION", requiredLevel: 26 },
+  { id: "SCOUT_FROSTMARCH", zoneId: "FROSTMARCH", name: "Follow the Frostmarch bells", seconds: 300, xp: 430, unlockMonsterId: "FROSTWOLF", requiredLevel: 46 },
+  { id: "SCOUT_ASHLANDS", zoneId: "ASHLANDS", name: "Read the Ashlands smoke", seconds: 360, xp: 720, unlockMonsterId: "BLACKGLASS_MIRELING", requiredLevel: 71 }
 ];
 var explorationRoute = (id) => EXPLORATION_ROUTES.find((route) => route.id === id);
 
-// ../apps/mobile/src/content/quests.ts
+// apps/mobile/src/content/quests.ts
 var QUESTS = [
   { id: "QST_001", name: "A Name in the Ledger", description: "Defeat 5 Moss Rats.", kind: "kills", targetId: "MOSS_RAT", required: 5, rewardGold: 40, rewardItemId: "MOSS_FIBER", rewardItemQty: 5, act: 1, location: "Greenfields", story: "The local ledger has more missing names than living ones. A simple rat cull is hardly heroic, but it is the first chance to prove you can return from the road." },
   { id: "QST_002", name: "First Blood, First Skill", description: "Reach level 2 in any guided gathering skill.", kind: "skillLevel", required: 2, rewardGold: 60, rewardItemId: "COPPER_ORE", rewardItemQty: 4, act: 1, location: "Greenfields Camp", story: "Steel alone will not carry you through Asterfall. The camp quartermaster sends you to learn the land, gather what it gives, and stop depending on supplies brought from safer places." },
@@ -67562,19 +68691,23 @@ var QUESTS = [
   { id: "QST_015", name: "Beyond the Green", description: "Claim victory over the Fallen Knight and reach level 25.", kind: "level", required: 25, rewardGold: 1250, rewardItemId: "OATHGLASS_CAPE", rewardItemQty: 1, act: 3, location: "Eastern Oathgate", story: "With the Knight defeated, the sealed routes beyond Asterfall begin to open. The victory ends one chapter, but the echoes carried on the wind make it clear the broken oath was never confined to the green lands." }
 ];
 
-// ../apps/mobile/src/content/world-map.ts
+// apps/mobile/src/content/world-map.ts
+function worldZoneInDevelopment(zone) {
+  return zone.availability === "inDevelopment";
+}
 var WORLD_ZONES = [
-  { id: "GREENFIELDS", name: "Greenfields", subtitle: "First hunts and a level-20 return encounter", minLevel: 1, maxLevel: 20, x: 0.18, y: 0.76, accent: "#79b88a", symbol: "\u2726" },
-  { id: "SILVERBROOK", name: "Silverbrook", subtitle: "River paths and drowned secrets", minLevel: 5, maxLevel: 22, x: 0.56, y: 0.7, accent: "#6aaed6", symbol: "\u2248" },
-  { id: "IRONWOOD", name: "Ironwood Forest", subtitle: "Deep timber and ancient roots", minLevel: 7, maxLevel: 15, x: 0.28, y: 0.46, accent: "#4f9868", symbol: "\u2660" },
-  { id: "OLD_MINES", name: "Old Mines", subtitle: "Ore veins and runebound tunnels", minLevel: 16, maxLevel: 19, x: 0.68, y: 0.42, accent: "#a68b72", symbol: "\u25C6" },
-  { id: "KINGS_ROAD", name: "King's Road", subtitle: "Oathglass and the Fallen Knight", minLevel: 20, maxLevel: 25, x: 0.73, y: 0.16, accent: "#c69b55", symbol: "\u265B" },
-  { id: "SUNSCAR", name: "Sunscar", subtitle: "Glass deserts, buried observatories, and the road beyond Asterfall", minLevel: 26, maxLevel: 45, x: 0.89, y: 0.31, accent: "#d58b54", symbol: "\u263C" },
-  { id: "FROSTMARCH", name: "Frostmarch", subtitle: "Frozen passes where every bell carries through the ice", minLevel: 45, maxLevel: 70, x: 0.42, y: 0.1, accent: "#91c7dc", symbol: "\u2744" },
-  { id: "ASHLANDS", name: "Ashlands", subtitle: "Blackglass marshes and the crucible at the edge of the known road", minLevel: 71, maxLevel: 90, x: 0.12, y: 0.22, accent: "#a77972", symbol: "\u25C7" }
+  { availability: "released", id: "GREENFIELDS", name: "Greenfields", subtitle: "First hunts and a level-20 return encounter", minLevel: 1, maxLevel: 20, x: 0.18, y: 0.76, accent: "#79b88a", symbol: "\u2726" },
+  { availability: "released", id: "SILVERBROOK", name: "Silverbrook", subtitle: "River paths and drowned secrets", minLevel: 5, maxLevel: 22, x: 0.56, y: 0.7, accent: "#6aaed6", symbol: "\u2248" },
+  { availability: "released", id: "IRONWOOD", name: "Ironwood Forest", subtitle: "Deep timber and ancient roots", minLevel: 7, maxLevel: 15, x: 0.28, y: 0.46, accent: "#4f9868", symbol: "\u2660" },
+  { availability: "released", id: "OLD_MINES", name: "Old Mines", subtitle: "Ore veins and runebound tunnels", minLevel: 16, maxLevel: 19, x: 0.68, y: 0.42, accent: "#a68b72", symbol: "\u25C6" },
+  { availability: "released", id: "KINGS_ROAD", name: "King's Road", subtitle: "Oathglass and the Fallen Knight", minLevel: 20, maxLevel: 25, x: 0.73, y: 0.16, accent: "#c69b55", symbol: "\u265B" },
+  { availability: "released", id: "SUNSCAR", name: "Sunscar", subtitle: "Glass deserts, buried observatories, and the road beyond Asterfall", minLevel: 26, maxLevel: 45, x: 0.89, y: 0.31, accent: "#d58b54", symbol: "\u263C" },
+  { availability: "released", id: "FROSTMARCH", name: "Frostmarch", subtitle: "Frozen passes where every bell carries through the ice", minLevel: 45, maxLevel: 70, x: 0.42, y: 0.1, accent: "#91c7dc", symbol: "\u2744" },
+  { availability: "released", id: "ASHLANDS", name: "Ashlands", subtitle: "Blackglass marshes and the crucible at the edge of the known road", minLevel: 71, maxLevel: 90, x: 0.12, y: 0.22, accent: "#a77972", symbol: "\u25C7" },
+  { availability: "inDevelopment", id: "VEILLANDS", name: "The Veillands", subtitle: "A reality-thin frontier beyond the known road", minLevel: 91, maxLevel: 110, x: 0.82, y: 0.08, accent: "#8a6bc9", symbol: "\u25C8", developmentNote: "The Veillands is a future high-level region. Its travel preview is visible now, while enemies, gathering routes and progression rewards remain in development.", plannedActivities: ["High-level combat", "Regional gathering", "Elite encounters", "Region progression"] }
 ];
 
-// ../apps/mobile/src/core/rng.ts
+// apps/mobile/src/core/rng.ts
 function hash32(input) {
   let h = 2166136261;
   for (let i = 0; i < input.length; i++) {
@@ -67591,7 +68724,7 @@ function random01(seed, index) {
   return (x >>> 0) / 4294967296;
 }
 
-// ../apps/mobile/src/core/monster-mastery.ts
+// apps/mobile/src/core/monster-mastery.ts
 var MASTERY_POINTS_PER_RANK = 25;
 function normalizeMonsterMastery(raw2) {
   const input = raw2 && typeof raw2 === "object" ? raw2 : {};
@@ -67617,7 +68750,7 @@ function recordMonsterMastery(state, id, kills) {
   return { ...next, account: { ...next.account, companionUnlockProgress: counters } };
 }
 
-// ../apps/mobile/src/core/challenge-hunts.ts
+// apps/mobile/src/core/challenge-hunts.ts
 var COMBAT_AFFIX_IDS = ["bloodthirsty", "ironhide", "colossal", "cursed"];
 var COMBAT_AFFIXES = {
   bloodthirsty: { id: "bloodthirsty", name: "Bloodthirsty", description: "Hits harder than the standard challenge profile.", hpMultiplier: 1, attackMultiplier: 1.18, defenseMultiplier: 1, xpMultiplier: 1.06, goldMultiplier: 1.12, dropChanceMultiplier: 1, accent: "#d95763" },
@@ -67733,7 +68866,7 @@ function challengeHuntFirstClearReward(monster, challengeId) {
   return { gold: Math.max(75, level * tier.gold), items: [{ itemId: "TEMPERING_DUST", quantity: tier.dust }, ...tier.cores ? [{ itemId: "TEMPERING_CORE", quantity: tier.cores }] : []], label: `${COMBAT_CHALLENGES[challengeId].name} first clear` };
 }
 
-// ../apps/mobile/src/core/combat-tactics.ts
+// apps/mobile/src/core/combat-tactics.ts
 var COMBAT_TACTIC_IDS = ["assault", "balanced", "guarded"];
 var COMBAT_TACTICS = {
   assault: { id: "assault", name: "Assault", summary: "+12% hunt speed \xB7 +12% damage taken \xB7 -15% post-kill recovery", speedMultiplier: 1.12, damageTakenMultiplier: 1.12, recoveryMultiplier: 0.85 },
@@ -67743,7 +68876,7 @@ var COMBAT_TACTICS = {
 var normalizeCombatTactic = (value) => value === "assault" || value === "guarded" ? value : "balanced";
 var combatTactic = (value) => COMBAT_TACTICS[normalizeCombatTactic(value)];
 
-// ../apps/mobile/src/core/hunt-goals.ts
+// apps/mobile/src/core/hunt-goals.ts
 var HUNT_GOAL_IDS = ["open", "kills_50", "kills_100", "champion_1", "duration_30m"];
 var HUNT_GOALS = {
   open: { id: "open", label: "Open", summary: "Run until you stop it, storage fills, or a safety rule triggers." },
@@ -67776,8 +68909,40 @@ function huntMomentumBonus(basePerKill, existingKills, newKills) {
   return Math.max(0, Math.floor(bonus + 1e-9));
 }
 
-// ../apps/mobile/src/core/activity-queue.ts
-var MAX_ACTIVITY_QUEUE = 3;
+// apps/mobile/src/core/account-entitlements.ts
+function has(state, ...keys) {
+  const entitlements = state.account.entitlements ?? {};
+  return keys.some((key) => entitlements[key] === true);
+}
+function accountEntitlementBenefits(state) {
+  const vipPlus = has(state, "vip_plus", "vipplus", "vip+");
+  const vip = has(state, "vip") || vipPlus;
+  const supporter = has(state, "supporter", "supporter_subscription");
+  return {
+    vip,
+    vipPlus,
+    supporter,
+    afkHours: (vip ? 2 : 0) + (vipPlus ? 2 : 0) + (supporter ? 2 : 0),
+    inventorySlots: (vip ? 5 : 0) + (vipPlus ? 5 : 0),
+    bankSlots: (vip ? 20 : 0) + (vipPlus ? 30 : 0),
+    loadoutSlots: (vip ? 1 : 0) + (vipPlus ? 1 : 0),
+    actionQueueSlots: vipPlus ? 1 : 0,
+    forgeSlots: (vipPlus ? 1 : 0) + (supporter ? 1 : 0),
+    solidRgbNames: vipPlus || supporter,
+    advancedNameStyles: supporter
+  };
+}
+function entitlementStorageCapacity(state, location) {
+  const benefits = accountEntitlementBenefits(state);
+  return state[location].capacity + (location === "inventory" ? benefits.inventorySlots : benefits.bankSlots);
+}
+
+// apps/mobile/src/core/activity-queue.ts
+var BASE_ACTIVITY_QUEUE = 3;
+var MAX_ACTIVITY_QUEUE = 4;
+function activityQueueCapacity(state) {
+  return Math.min(MAX_ACTIVITY_QUEUE, BASE_ACTIVITY_QUEUE + accountEntitlementBenefits(state).actionQueueSlots);
+}
 function normalizeQueuedActivity(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return void 0;
   const row = value, kind = row.kind, targetId = typeof row.targetId === "string" ? row.targetId.trim() : "";
@@ -67788,29 +68953,29 @@ function normalizeQueuedActivity(value) {
   const huntGoalId = HUNT_GOAL_IDS.includes(row.huntGoalId) ? row.huntGoalId : void 0;
   return { kind, targetId, ...combatChallengeId ? { combatChallengeId } : {}, ...combatTacticId ? { combatTacticId } : {}, ...huntGoalId ? { huntGoalId } : {} };
 }
-function normalizeActivityQueue(value) {
+function normalizeActivityQueue(value, limit = BASE_ACTIVITY_QUEUE) {
   if (!Array.isArray(value)) return [];
   return value.flatMap((row) => {
     const normalized = normalizeQueuedActivity(row);
     return normalized ? [normalized] : [];
-  }).slice(0, MAX_ACTIVITY_QUEUE);
+  }).slice(0, Math.max(BASE_ACTIVITY_QUEUE, Math.min(MAX_ACTIVITY_QUEUE, limit)));
 }
 function enqueueActivity(state, activity) {
   if (!state.character) throw new Error("Create a character first.");
-  const queue = normalizeActivityQueue(state.character.activityQueue), next = normalizeQueuedActivity(activity);
+  const capacity = activityQueueCapacity(state), queue = normalizeActivityQueue(state.character.activityQueue, capacity), next = normalizeQueuedActivity(activity);
   if (!next) throw new Error("Invalid queued activity.");
-  if (queue.length >= MAX_ACTIVITY_QUEUE) throw new Error(`Action queue is full (${MAX_ACTIVITY_QUEUE}/${MAX_ACTIVITY_QUEUE}).`);
+  if (queue.length >= capacity) throw new Error(`Action queue is full (${capacity}/${capacity}).`);
   return { ...state, character: { ...state.character, activityQueue: [...queue, next], activityQueuePausedReason: void 0 } };
 }
 function removeQueuedActivity(state, index) {
   if (!state.character) throw new Error("Create a character first.");
-  const queue = normalizeActivityQueue(state.character.activityQueue);
+  const queue = normalizeActivityQueue(state.character.activityQueue, activityQueueCapacity(state));
   if (!Number.isSafeInteger(index) || index < 0 || index >= queue.length) throw new Error("Queued action was not found.");
   return { ...state, character: { ...state.character, activityQueue: queue.filter((_, i) => i !== index), activityQueuePausedReason: void 0 } };
 }
 function moveQueuedActivity(state, index, direction) {
   if (!state.character) throw new Error("Create a character first.");
-  const queue = normalizeActivityQueue(state.character.activityQueue);
+  const queue = normalizeActivityQueue(state.character.activityQueue, activityQueueCapacity(state));
   if (!Number.isSafeInteger(index) || index < 0 || index >= queue.length) throw new Error("Queued action was not found.");
   const target2 = direction === "up" ? index - 1 : index + 1;
   if (target2 < 0 || target2 >= queue.length) return state;
@@ -67823,10 +68988,10 @@ function clearActivityQueue(state) {
   return { ...state, character: { ...state.character, activityQueue: [], activityQueuePausedReason: void 0 } };
 }
 
-// ../apps/mobile/src/core/game.ts
+// apps/mobile/src/core/game.ts
 init_progression();
 
-// ../apps/mobile/src/core/identity-names.ts
+// apps/mobile/src/core/identity-names.ts
 var LATIN_WORD = String.raw`\p{Script=Latin}[\p{Script=Latin}\p{M}]*`;
 var SAFE_IDENTITY_NAME = new RegExp(`^${LATIN_WORD}(?:[ '-]${LATIN_WORD})*$`, "u");
 function normalizeIdentityName(value) {
@@ -67846,7 +69011,7 @@ function characterNameError(value) {
   return identityNameError(value, 2, 20, "character names");
 }
 
-// ../apps/mobile/src/core/class-combat.ts
+// apps/mobile/src/core/class-combat.ts
 var CLASS_COMBAT_STYLES = {
   IRONWARDEN: { name: "Runic Guard", description: "Reduces incoming damage by 12%.", speedMultiplier: 0.98, damageTakenMultiplier: 0.88, recoveryPct: 0.012 },
   BASTION: { name: "Hold the Line", description: "Reduces incoming damage by 16%, but attacks more slowly.", speedMultiplier: 0.94, damageTakenMultiplier: 0.84, recoveryPct: 0.014 },
@@ -67860,7 +69025,7 @@ var CLASS_COMBAT_STYLES = {
 };
 var classCombatStyle = (id) => CLASS_COMBAT_STYLES[id];
 
-// ../apps/mobile/src/core/world-weather.ts
+// apps/mobile/src/core/world-weather.ts
 var SEASON_DEFINITIONS = {
   spring: { name: "Bloomtide", symbol: "\u2740", color: "#8bcf9b", months: "March\u2013May", description: "Renewal increases yields from every gathering discipline.", weather: ["rain", "rain", "mist", "clear", "bloomwind"] },
   summer: { name: "Suncrest", symbol: "\u2600", color: "#e4b65b", months: "June\u2013August", description: "Long daylight shortens every gathering action.", weather: ["clear", "clear", "heatwave", "storm", "mist"] },
@@ -67869,10 +69034,10 @@ var SEASON_DEFINITIONS = {
 };
 var WEATHER_DEFINITIONS = {
   clear: { name: "Clear Skies", symbol: "\u25C7", color: "#d8c58c", description: "Favorable visibility speeds every activity." },
-  rain: { name: "Steady Rain", symbol: "\u2602", color: "#78acd1", description: "Fish rise quickly, while wet ground slows combat." },
-  mist: { name: "Gloam Mist", symbol: "\u224B", color: "#a8b2c2", description: "Hidden paths reveal more combat loot." },
+  rain: { name: "Steady Rain", symbol: "\u2602", color: "#78acd1", description: "Fish rise quickly and herbs grow lush, while wet ground slows combat." },
+  mist: { name: "Gloam Mist", symbol: "\u224B", color: "#a8b2c2", description: "Hidden paths reveal more combat loot and unusual botanicals." },
   storm: { name: "Thunderstorm", symbol: "\u03DF", color: "#b195df", description: "Charged stone yields more ore; dangerous combat grants more XP." },
-  bloomwind: { name: "Bloomwind", symbol: "\u2740", color: "#8fd39a", description: "Living winds carry additional timber from every cut." },
+  bloomwind: { name: "Bloomwind", symbol: "\u2740", color: "#8fd39a", description: "Living winds carry extra timber and expose rare botanical traces." },
   heatwave: { name: "Heatwave", symbol: "\u2600", color: "#e59b54", description: "Dry seams mine quickly, but woodland and river work slow down." },
   harvest_wind: { name: "Harvest Wind", symbol: "\u3030", color: "#d59c65", description: "Steady autumn gusts speed woodcutting." },
   snow: { name: "Snowfall", symbol: "\u2744", color: "#b9d8ee", description: "Slow, difficult hunts grant increased combat experience." },
@@ -67961,14 +69126,22 @@ function weatherEffect(kind, weatherId) {
       effect2.actionTimeMultiplier *= 0.88;
       effect2.itemMultiplier *= 1.1;
       notes.push("+12% fishing speed", "+10% fish");
+    } else if (kind === "herbalism") {
+      effect2.itemMultiplier *= 1.08;
+      notes.push("+8% herbs");
     } else if (kind === "combat") {
       effect2.actionTimeMultiplier *= 1.05;
       notes.push("\u22125% combat speed");
     }
   }
-  if (weatherId === "mist" && kind === "combat") {
-    effect2.dropChanceMultiplier *= 1.12;
-    notes.push("+12% loot chance");
+  if (weatherId === "mist") {
+    if (kind === "combat") {
+      effect2.dropChanceMultiplier *= 1.12;
+      notes.push("+12% loot chance");
+    } else if (kind === "herbalism") {
+      effect2.dropChanceMultiplier *= 1.1;
+      notes.push("+10% rare botanicals");
+    }
   }
   if (weatherId === "storm") {
     if (kind === "mining") {
@@ -67980,9 +69153,14 @@ function weatherEffect(kind, weatherId) {
       notes.push("+10% combat XP", "\u22128% combat speed");
     }
   }
-  if (weatherId === "bloomwind" && kind === "woodcutting") {
-    effect2.itemMultiplier *= 1.12;
-    notes.push("+12% logs");
+  if (weatherId === "bloomwind") {
+    if (kind === "woodcutting") {
+      effect2.itemMultiplier *= 1.12;
+      notes.push("+12% logs");
+    } else if (kind === "herbalism") {
+      effect2.dropChanceMultiplier *= 1.25;
+      notes.push("+25% rare botanicals");
+    }
   }
   if (weatherId === "heatwave") {
     if (kind === "mining") {
@@ -68024,7 +69202,7 @@ function environmentEffectForActivity(activity) {
   return { environment: env, effect: environmentEffect(activity.kind, env) };
 }
 
-// ../apps/mobile/src/core/seasonal-quests.ts
+// apps/mobile/src/core/seasonal-quests.ts
 var QUEST_RARITIES = {
   common: { label: "Common", color: "#93a4ba", multiplier: 1, cache: "Field cache" },
   uncommon: { label: "Uncommon", color: "#7fc59b", multiplier: 1.3, cache: "Explorer cache" },
@@ -68095,12 +69273,12 @@ function seasonalQuestBoard(state, period, date = /* @__PURE__ */ new Date()) {
   });
 }
 
-// ../apps/mobile/src/content/character-skin-sets.ts
+// apps/mobile/src/content/character-skin-sets.ts
 function characterSkinSetsFor(_classId) {
   return [];
 }
 
-// ../apps/mobile/src/core/character-skins.ts
+// apps/mobile/src/core/character-skins.ts
 function equipmentSetSkinId(setId) {
   return `equipment-set:${setId}`;
 }
@@ -68146,1098 +69324,7 @@ function selectCharacterSkin(state, skinId) {
   return { ...state, character: { ...state.character, selectedSkinId: skinId } };
 }
 
-// ../apps/mobile/src/content/event-collectible-metadata.ts
-var EVENT_COLLECTIBLE_METADATA = [
-  {
-    "id": "EVT_PET_001",
-    "name": "Chronicle Wisp",
-    "type": "pet",
-    "event": "turning_of_the_age",
-    "rarity": "Rare",
-    "source": "chronicle_wisp_and_clockwork_tome.png",
-    "buff": "+3% Skill XP",
-    "owned_passive": "+0.50% account-wide owned collectible passive",
-    "role": "",
-    "description": "A floating chronicle spirit orbiting a tiny clockwork tome.",
-    "master_path": "event_extras/turning_of_the_age/pets/masters/EVT_PET_001_Chronicle_Wisp.png",
-    "runtime_path": "event_extras/turning_of_the_age/pets/runtime_96/EVT_PET_001_Chronicle_Wisp.png",
-    "event_name": "Turning of the Age",
-    "event_window": "Dec 29 \u2013 Jan 4 / January event window",
-    "rarity_rank": 3,
-    "implementation_status": "IMPLEMENT_READY",
-    "runtime_canvas": "96x96 transparent PNG",
-    "anchor": "bottom-center",
-    "safe_margin": "4 px minimum",
-    "balance_note": "Pet active bonus; owned passive remains separate."
-  },
-  {
-    "id": "EVT_PET_002",
-    "name": "Gilded Hourling",
-    "type": "pet",
-    "event": "turning_of_the_age",
-    "rarity": "Epic",
-    "source": "gilded_hourling_clockwork_griffin.png",
-    "buff": "+4% Action Speed",
-    "owned_passive": "+0.50% account-wide owned collectible passive",
-    "role": "",
-    "description": "A gilded clockwork hourling with celestial time motifs.",
-    "master_path": "event_extras/turning_of_the_age/pets/masters/EVT_PET_002_Gilded_Hourling.png",
-    "runtime_path": "event_extras/turning_of_the_age/pets/runtime_96/EVT_PET_002_Gilded_Hourling.png",
-    "event_name": "Turning of the Age",
-    "event_window": "Dec 29 \u2013 Jan 4 / January event window",
-    "rarity_rank": 4,
-    "implementation_status": "IMPLEMENT_READY",
-    "runtime_canvas": "96x96 transparent PNG",
-    "anchor": "bottom-center",
-    "safe_margin": "4 px minimum",
-    "balance_note": "Pet active bonus; owned passive remains separate."
-  },
-  {
-    "id": "EVT_UNIT_001",
-    "name": "Keeper of First Dawn",
-    "type": "companion",
-    "event": "turning_of_the_age",
-    "rarity": "Epic",
-    "source": "radiant_pixel_gryphon_guardian.png",
-    "buff": "Periodically grants Haste and a small shield to the most pressured ally.",
-    "owned_passive": "",
-    "role": "Support",
-    "description": "A radiant dawn guardian companion marking the beginning of a new age.",
-    "master_path": "event_extras/turning_of_the_age/companions/masters/EVT_UNIT_001_Keeper_of_First_Dawn.png",
-    "runtime_path": "event_extras/turning_of_the_age/companions/runtime_96/EVT_UNIT_001_Keeper_of_First_Dawn.png",
-    "event_name": "Turning of the Age",
-    "event_window": "Dec 29 \u2013 Jan 4 / January event window",
-    "rarity_rank": 4,
-    "implementation_status": "IMPLEMENT_READY",
-    "runtime_canvas": "96x96 transparent PNG",
-    "anchor": "bottom-center",
-    "safe_margin": "4 px minimum",
-    "balance_note": "Event companion should remain within normal same-rarity combat power bands; value comes from mechanic identity, not raw stat superiority."
-  },
-  {
-    "id": "EVT_PET_003",
-    "name": "Rosebud Bun",
-    "type": "pet",
-    "event": "heartbond_festival",
-    "rarity": "Uncommon",
-    "source": "romantic_rose_bunny_sprite.png",
-    "buff": "+2.5% Cooking Speed",
-    "owned_passive": "+0.50% account-wide owned collectible passive",
-    "role": "",
-    "description": "A soft festival bunny decorated with roses, ribbons and heart charms.",
-    "master_path": "event_extras/heartbond_festival/pets/masters/EVT_PET_003_Rosebud_Bun.png",
-    "runtime_path": "event_extras/heartbond_festival/pets/runtime_96/EVT_PET_003_Rosebud_Bun.png",
-    "event_name": "Heartbond Festival",
-    "event_window": "February",
-    "rarity_rank": 2,
-    "implementation_status": "IMPLEMENT_READY",
-    "runtime_canvas": "96x96 transparent PNG",
-    "anchor": "bottom-center",
-    "safe_margin": "4 px minimum",
-    "balance_note": "Pet active bonus; owned passive remains separate."
-  },
-  {
-    "id": "EVT_PET_004",
-    "name": "Heartwing",
-    "type": "pet",
-    "event": "heartbond_festival",
-    "rarity": "Epic",
-    "source": "chibi_rosegold_heartwing_bird.png",
-    "buff": "+4% Healing Effectiveness",
-    "owned_passive": "+0.50% account-wide owned collectible passive",
-    "role": "",
-    "description": "A rose-gold heart-winged festival bird.",
-    "master_path": "event_extras/heartbond_festival/pets/masters/EVT_PET_004_Heartwing.png",
-    "runtime_path": "event_extras/heartbond_festival/pets/runtime_96/EVT_PET_004_Heartwing.png",
-    "event_name": "Heartbond Festival",
-    "event_window": "February",
-    "rarity_rank": 4,
-    "implementation_status": "IMPLEMENT_READY",
-    "runtime_canvas": "96x96 transparent PNG",
-    "anchor": "bottom-center",
-    "safe_margin": "4 px minimum",
-    "balance_note": "Pet active bonus; owned passive remains separate."
-  },
-  {
-    "id": "EVT_UNIT_002",
-    "name": "Vowbound Cherub",
-    "type": "companion",
-    "event": "heartbond_festival",
-    "rarity": "Mythic",
-    "source": "cherubic_heartbow_companion.png",
-    "buff": "Links to the lowest-HP ally; reduces part of incoming damage and periodically heals the linked ally.",
-    "owned_passive": "",
-    "role": "Support",
-    "description": "A ceremonial heartbow guardian built around protection and vows.",
-    "master_path": "event_extras/heartbond_festival/companions/masters/EVT_UNIT_002_Vowbound_Cherub.png",
-    "runtime_path": "event_extras/heartbond_festival/companions/runtime_96/EVT_UNIT_002_Vowbound_Cherub.png",
-    "event_name": "Heartbond Festival",
-    "event_window": "February",
-    "rarity_rank": 5,
-    "implementation_status": "IMPLEMENT_READY",
-    "runtime_canvas": "96x96 transparent PNG",
-    "anchor": "bottom-center",
-    "safe_margin": "4 px minimum",
-    "balance_note": "Event companion should remain within normal same-rarity combat power bands; value comes from mechanic identity, not raw stat superiority."
-  },
-  {
-    "id": "EVT_PET_005",
-    "name": "Pollenpuff",
-    "type": "pet",
-    "event": "bloomwake",
-    "rarity": "Common",
-    "source": "pollenpuff_the_blooming_forest_sprite.png",
-    "buff": "+2% Herbalism Speed",
-    "owned_passive": "+0.50% account-wide owned collectible passive",
-    "role": "",
-    "description": "A fluffy blossom spirit surrounded by pollen motes.",
-    "master_path": "event_extras/bloomwake/pets/masters/EVT_PET_005_Pollenpuff.png",
-    "runtime_path": "event_extras/bloomwake/pets/runtime_96/EVT_PET_005_Pollenpuff.png",
-    "event_name": "Bloomwake",
-    "event_window": "March / April",
-    "rarity_rank": 1,
-    "implementation_status": "IMPLEMENT_READY",
-    "runtime_canvas": "96x96 transparent PNG",
-    "anchor": "bottom-center",
-    "safe_margin": "4 px minimum",
-    "balance_note": "Pet active bonus; owned passive remains separate."
-  },
-  {
-    "id": "EVT_PET_006",
-    "name": "Verdant Fawn",
-    "type": "pet",
-    "event": "bloomwake",
-    "rarity": "Rare",
-    "source": "botanical_fawn_forest_spirit.png",
-    "buff": "+3% Gathering Yield Chance",
-    "owned_passive": "+0.50% account-wide owned collectible passive",
-    "role": "",
-    "description": "A young fawn wrapped in fresh leaves and spring blossoms.",
-    "master_path": "event_extras/bloomwake/pets/masters/EVT_PET_006_Verdant_Fawn.png",
-    "runtime_path": "event_extras/bloomwake/pets/runtime_96/EVT_PET_006_Verdant_Fawn.png",
-    "event_name": "Bloomwake",
-    "event_window": "March / April",
-    "rarity_rank": 3,
-    "implementation_status": "IMPLEMENT_READY",
-    "runtime_canvas": "96x96 transparent PNG",
-    "anchor": "bottom-center",
-    "safe_margin": "4 px minimum",
-    "balance_note": "Pet active bonus; owned passive remains separate."
-  },
-  {
-    "id": "EVT_UNIT_003",
-    "name": "Bloomwarden",
-    "type": "companion",
-    "event": "bloomwake",
-    "rarity": "Epic",
-    "source": "ancient_forest_guardian_beast.png",
-    "buff": "Builds a stacking bark shield over time and periodically heals nearby allies.",
-    "owned_passive": "",
-    "role": "Tank",
-    "description": "A protective forest guardian grown from old roots and blossoms.",
-    "master_path": "event_extras/bloomwake/companions/masters/EVT_UNIT_003_Bloomwarden.png",
-    "runtime_path": "event_extras/bloomwake/companions/runtime_96/EVT_UNIT_003_Bloomwarden.png",
-    "event_name": "Bloomwake",
-    "event_window": "March / April",
-    "rarity_rank": 4,
-    "implementation_status": "IMPLEMENT_READY",
-    "runtime_canvas": "96x96 transparent PNG",
-    "anchor": "bottom-center",
-    "safe_margin": "4 px minimum",
-    "balance_note": "Event companion should remain within normal same-rarity combat power bands; value comes from mechanic identity, not raw stat superiority."
-  },
-  {
-    "id": "EVT_PET_007",
-    "name": "Laurel Lynx",
-    "type": "pet",
-    "event": "suncrest_games",
-    "rarity": "Rare",
-    "source": "laurel_crowned_lynx_champion.png",
-    "buff": "+3% Combat XP",
-    "owned_passive": "+0.50% account-wide owned collectible passive",
-    "role": "",
-    "description": "A proud festival lynx wearing a champion's laurel.",
-    "master_path": "event_extras/suncrest_games/pets/masters/EVT_PET_007_Laurel_Lynx.png",
-    "runtime_path": "event_extras/suncrest_games/pets/runtime_96/EVT_PET_007_Laurel_Lynx.png",
-    "event_name": "Suncrest Games",
-    "event_window": "June / July",
-    "rarity_rank": 3,
-    "implementation_status": "IMPLEMENT_READY",
-    "runtime_canvas": "96x96 transparent PNG",
-    "anchor": "bottom-center",
-    "safe_margin": "4 px minimum",
-    "balance_note": "Pet active bonus; owned passive remains separate."
-  },
-  {
-    "id": "EVT_PET_008",
-    "name": "Golden Gryphlet",
-    "type": "pet",
-    "event": "suncrest_games",
-    "rarity": "Mythic",
-    "source": "celestial_griffin_guardian_sprite.png",
-    "buff": "+5% Combat Skill XP",
-    "owned_passive": "+0.50% account-wide owned collectible passive",
-    "role": "",
-    "description": "A radiant golden gryphlet representing the prestige of the games.",
-    "master_path": "event_extras/suncrest_games/pets/masters/EVT_PET_008_Golden_Gryphlet.png",
-    "runtime_path": "event_extras/suncrest_games/pets/runtime_96/EVT_PET_008_Golden_Gryphlet.png",
-    "event_name": "Suncrest Games",
-    "event_window": "June / July",
-    "rarity_rank": 5,
-    "implementation_status": "IMPLEMENT_READY",
-    "runtime_canvas": "96x96 transparent PNG",
-    "anchor": "bottom-center",
-    "safe_margin": "4 px minimum",
-    "balance_note": "Pet active bonus; owned passive remains separate."
-  },
-  {
-    "id": "EVT_UNIT_004",
-    "name": "Suncrest Champion",
-    "type": "companion",
-    "event": "suncrest_games",
-    "rarity": "Mythic",
-    "source": "golden_lion_sun_guardian.png",
-    "buff": "Builds Momentum while attacking; at maximum Momentum unleashes a powerful radiant strike.",
-    "owned_passive": "",
-    "role": "Damage",
-    "description": "A solar lion champion in ceremonial tournament armor.",
-    "master_path": "event_extras/suncrest_games/companions/masters/EVT_UNIT_004_Suncrest_Champion.png",
-    "runtime_path": "event_extras/suncrest_games/companions/runtime_96/EVT_UNIT_004_Suncrest_Champion.png",
-    "event_name": "Suncrest Games",
-    "event_window": "June / July",
-    "rarity_rank": 5,
-    "implementation_status": "IMPLEMENT_READY",
-    "runtime_canvas": "96x96 transparent PNG",
-    "anchor": "bottom-center",
-    "safe_margin": "4 px minimum",
-    "balance_note": "Event companion should remain within normal same-rarity combat power bands; value comes from mechanic identity, not raw stat superiority."
-  },
-  {
-    "id": "EVT_PET_009",
-    "name": "Starwhisker",
-    "type": "pet",
-    "event": "starfall_nights",
-    "rarity": "Rare",
-    "source": "celestial_chibi_cat_companion.png",
-    "buff": "+3% Enchanting Speed",
-    "owned_passive": "+0.50% account-wide owned collectible passive",
-    "role": "",
-    "description": "A constellation-marked night cat with a comet-like tail.",
-    "master_path": "event_extras/starfall_nights/pets/masters/EVT_PET_009_Starwhisker.png",
-    "runtime_path": "event_extras/starfall_nights/pets/runtime_96/EVT_PET_009_Starwhisker.png",
-    "event_name": "Starfall Nights",
-    "event_window": "August",
-    "rarity_rank": 3,
-    "implementation_status": "IMPLEMENT_READY",
-    "runtime_canvas": "96x96 transparent PNG",
-    "anchor": "bottom-center",
-    "safe_margin": "4 px minimum",
-    "balance_note": "Pet active bonus; owned passive remains separate."
-  },
-  {
-    "id": "EVT_PET_010",
-    "name": "Comet Moth",
-    "type": "pet",
-    "event": "starfall_nights",
-    "rarity": "Epic",
-    "source": "celestial_comet_moth_companion.png",
-    "buff": "+4% relative Rare-Material Drop Chance",
-    "owned_passive": "+0.50% account-wide owned collectible passive",
-    "role": "",
-    "description": "A luminous moth whose wings resemble a moving night sky.",
-    "master_path": "event_extras/starfall_nights/pets/masters/EVT_PET_010_Comet_Moth.png",
-    "runtime_path": "event_extras/starfall_nights/pets/runtime_96/EVT_PET_010_Comet_Moth.png",
-    "event_name": "Starfall Nights",
-    "event_window": "August",
-    "rarity_rank": 4,
-    "implementation_status": "IMPLEMENT_READY",
-    "runtime_canvas": "96x96 transparent PNG",
-    "anchor": "bottom-center",
-    "safe_margin": "4 px minimum",
-    "balance_note": "Pet active bonus; owned passive remains separate."
-  },
-  {
-    "id": "EVT_UNIT_005",
-    "name": "Astral Wayfarer",
-    "type": "companion",
-    "event": "starfall_nights",
-    "rarity": "Epic",
-    "source": "celestial_wolf_mage_companion.png",
-    "buff": "Attacks build Star Marks; marked targets periodically take an Arcane burst.",
-    "owned_passive": "",
-    "role": "Damage",
-    "description": "A celestial wayfarer carrying a star-focus and astral magic.",
-    "master_path": "event_extras/starfall_nights/companions/masters/EVT_UNIT_005_Astral_Wayfarer.png",
-    "runtime_path": "event_extras/starfall_nights/companions/runtime_96/EVT_UNIT_005_Astral_Wayfarer.png",
-    "event_name": "Starfall Nights",
-    "event_window": "August",
-    "rarity_rank": 4,
-    "implementation_status": "IMPLEMENT_READY",
-    "runtime_canvas": "96x96 transparent PNG",
-    "anchor": "bottom-center",
-    "safe_margin": "4 px minimum",
-    "balance_note": "Event companion should remain within normal same-rarity combat power bands; value comes from mechanic identity, not raw stat superiority."
-  },
-  {
-    "id": "EVT_PET_011",
-    "name": "Pumpkin Piglet",
-    "type": "pet",
-    "event": "harvestwake",
-    "rarity": "Common",
-    "source": "pumpkin_piglet_s_autumn_cheer.png",
-    "buff": "+2% Cooking Speed",
-    "owned_passive": "+0.50% account-wide owned collectible passive",
-    "role": "",
-    "description": "A cheerful piglet dressed for the autumn harvest.",
-    "master_path": "event_extras/harvestwake/pets/masters/EVT_PET_011_Pumpkin_Piglet.png",
-    "runtime_path": "event_extras/harvestwake/pets/runtime_96/EVT_PET_011_Pumpkin_Piglet.png",
-    "event_name": "Harvestwake",
-    "event_window": "September",
-    "rarity_rank": 1,
-    "implementation_status": "IMPLEMENT_READY",
-    "runtime_canvas": "96x96 transparent PNG",
-    "anchor": "bottom-center",
-    "safe_margin": "4 px minimum",
-    "balance_note": "Pet active bonus; owned passive remains separate."
-  },
-  {
-    "id": "EVT_PET_012",
-    "name": "Golden Sheafling",
-    "type": "pet",
-    "event": "harvestwake",
-    "rarity": "Epic",
-    "source": "golden_harvest_spirit_mascot.png",
-    "buff": "+4% Gathering Yield Chance",
-    "owned_passive": "+0.50% account-wide owned collectible passive",
-    "role": "",
-    "description": "A golden harvest spirit formed from grain and autumn leaves.",
-    "master_path": "event_extras/harvestwake/pets/masters/EVT_PET_012_Golden_Sheafling.png",
-    "runtime_path": "event_extras/harvestwake/pets/runtime_96/EVT_PET_012_Golden_Sheafling.png",
-    "event_name": "Harvestwake",
-    "event_window": "September",
-    "rarity_rank": 4,
-    "implementation_status": "IMPLEMENT_READY",
-    "runtime_canvas": "96x96 transparent PNG",
-    "anchor": "bottom-center",
-    "safe_margin": "4 px minimum",
-    "balance_note": "Pet active bonus; owned passive remains separate."
-  },
-  {
-    "id": "EVT_UNIT_006",
-    "name": "Harvest Guardian",
-    "type": "companion",
-    "event": "harvestwake",
-    "rarity": "Epic",
-    "source": "autumn_harvest_guardian_golem.png",
-    "buff": "Stores part of damage received, then converts the stored amount into a temporary barrier.",
-    "owned_passive": "",
-    "role": "Tank",
-    "description": "A sturdy seasonal guardian built from harvest materials and autumn magic.",
-    "master_path": "event_extras/harvestwake/companions/masters/EVT_UNIT_006_Harvest_Guardian.png",
-    "runtime_path": "event_extras/harvestwake/companions/runtime_96/EVT_UNIT_006_Harvest_Guardian.png",
-    "event_name": "Harvestwake",
-    "event_window": "September",
-    "rarity_rank": 4,
-    "implementation_status": "IMPLEMENT_READY",
-    "runtime_canvas": "96x96 transparent PNG",
-    "anchor": "bottom-center",
-    "safe_margin": "4 px minimum",
-    "balance_note": "Event companion should remain within normal same-rarity combat power bands; value comes from mechanic identity, not raw stat superiority."
-  },
-  {
-    "id": "EVT_PET_013",
-    "name": "Gloomkin",
-    "type": "pet",
-    "event": "veilbreak",
-    "rarity": "Rare",
-    "source": "mystical_lantern_void_kitten.png",
-    "buff": "+3% relative Combat Drop Chance",
-    "owned_passive": "+0.50% account-wide owned collectible passive",
-    "role": "",
-    "description": "A playful void kitten carrying a small spectral lantern.",
-    "master_path": "event_extras/veilbreak/pets/masters/EVT_PET_013_Gloomkin.png",
-    "runtime_path": "event_extras/veilbreak/pets/runtime_96/EVT_PET_013_Gloomkin.png",
-    "event_name": "The Veilbreak",
-    "event_window": "October",
-    "rarity_rank": 3,
-    "implementation_status": "IMPLEMENT_READY",
-    "runtime_canvas": "96x96 transparent PNG",
-    "anchor": "bottom-center",
-    "safe_margin": "4 px minimum",
-    "balance_note": "Pet active bonus; owned passive remains separate."
-  },
-  {
-    "id": "EVT_PET_014",
-    "name": "Lantern Mimic",
-    "type": "pet",
-    "event": "veilbreak",
-    "rarity": "Epic",
-    "source": "chibi_lantern_mimic_sprite.png",
-    "buff": "+4% Dungeon Reward Quantity Chance",
-    "owned_passive": "+0.50% account-wide owned collectible passive",
-    "role": "",
-    "description": "A compact mimic filled with ghost-fire and lantern light.",
-    "master_path": "event_extras/veilbreak/pets/masters/EVT_PET_014_Lantern_Mimic.png",
-    "runtime_path": "event_extras/veilbreak/pets/runtime_96/EVT_PET_014_Lantern_Mimic.png",
-    "event_name": "The Veilbreak",
-    "event_window": "October",
-    "rarity_rank": 4,
-    "implementation_status": "IMPLEMENT_READY",
-    "runtime_canvas": "96x96 transparent PNG",
-    "anchor": "bottom-center",
-    "safe_margin": "4 px minimum",
-    "balance_note": "Pet active bonus; owned passive remains separate."
-  },
-  {
-    "id": "EVT_UNIT_007",
-    "name": "Veil Hound",
-    "type": "companion",
-    "event": "veilbreak",
-    "rarity": "Epic",
-    "source": "spectral_purple_rune_hellhound.png",
-    "buff": "Deals bonus Shadow damage against enemies affected by player-applied debuffs.",
-    "owned_passive": "",
-    "role": "Damage",
-    "description": "A spectral rune hound that hunts weakened targets.",
-    "master_path": "event_extras/veilbreak/companions/masters/EVT_UNIT_007_Veil_Hound.png",
-    "runtime_path": "event_extras/veilbreak/companions/runtime_96/EVT_UNIT_007_Veil_Hound.png",
-    "event_name": "The Veilbreak",
-    "event_window": "October",
-    "rarity_rank": 4,
-    "implementation_status": "IMPLEMENT_READY",
-    "runtime_canvas": "96x96 transparent PNG",
-    "anchor": "bottom-center",
-    "safe_margin": "4 px minimum",
-    "balance_note": "Event companion should remain within normal same-rarity combat power bands; value comes from mechanic identity, not raw stat superiority."
-  },
-  {
-    "id": "EVT_UNIT_008",
-    "name": "Hollow Knightling",
-    "type": "companion",
-    "event": "veilbreak",
-    "rarity": "Mythic",
-    "source": "spectral_violet_knightling_sprite.png",
-    "buff": "Gains defensive scaling as HP falls and a once-per-battle spectral barrier at critical HP.",
-    "owned_passive": "",
-    "role": "Tank",
-    "description": "A compact void-forged knightling burning with violet spectral fire.",
-    "master_path": "event_extras/veilbreak/companions/masters/EVT_UNIT_008_Hollow_Knightling.png",
-    "runtime_path": "event_extras/veilbreak/companions/runtime_96/EVT_UNIT_008_Hollow_Knightling.png",
-    "event_name": "The Veilbreak",
-    "event_window": "October",
-    "rarity_rank": 5,
-    "implementation_status": "IMPLEMENT_READY",
-    "runtime_canvas": "96x96 transparent PNG",
-    "anchor": "bottom-center",
-    "safe_margin": "4 px minimum",
-    "balance_note": "Event companion should remain within normal same-rarity combat power bands; value comes from mechanic identity, not raw stat superiority."
-  },
-  {
-    "id": "EVT_PET_015",
-    "name": "Snowbell Pup",
-    "type": "pet",
-    "event": "frostfall_festival",
-    "rarity": "Common",
-    "source": "chibi_winter_puppy_sprite.png",
-    "buff": "+2% Fishing Speed",
-    "owned_passive": "+0.50% account-wide owned collectible passive",
-    "role": "",
-    "description": "A fluffy winter pup with a bell collar and scarf.",
-    "master_path": "event_extras/frostfall_festival/pets/masters/EVT_PET_015_Snowbell_Pup.png",
-    "runtime_path": "event_extras/frostfall_festival/pets/runtime_96/EVT_PET_015_Snowbell_Pup.png",
-    "event_name": "Frostfall Festival",
-    "event_window": "December",
-    "rarity_rank": 1,
-    "implementation_status": "IMPLEMENT_READY",
-    "runtime_canvas": "96x96 transparent PNG",
-    "anchor": "bottom-center",
-    "safe_margin": "4 px minimum",
-    "balance_note": "Pet active bonus; owned passive remains separate."
-  },
-  {
-    "id": "EVT_PET_016",
-    "name": "Gift Mimic",
-    "type": "pet",
-    "event": "frostfall_festival",
-    "rarity": "Rare",
-    "source": "festive_red_gift_mimic_sprite.png",
-    "buff": "+3% Crafting Material Preservation Chance",
-    "owned_passive": "+0.50% account-wide owned collectible passive",
-    "role": "",
-    "description": "A festive present mimic with a ribbon bow and mischievous expression.",
-    "master_path": "event_extras/frostfall_festival/pets/masters/EVT_PET_016_Gift_Mimic.png",
-    "runtime_path": "event_extras/frostfall_festival/pets/runtime_96/EVT_PET_016_Gift_Mimic.png",
-    "event_name": "Frostfall Festival",
-    "event_window": "December",
-    "rarity_rank": 3,
-    "implementation_status": "IMPLEMENT_READY",
-    "runtime_canvas": "96x96 transparent PNG",
-    "anchor": "bottom-center",
-    "safe_margin": "4 px minimum",
-    "balance_note": "Pet active bonus; owned passive remains separate."
-  },
-  {
-    "id": "EVT_PET_017",
-    "name": "Aurora Fox",
-    "type": "pet",
-    "event": "frostfall_festival",
-    "rarity": "Mythic",
-    "source": "aurora_frost_fox_sprite.png",
-    "buff": "+5% Offline Skill XP",
-    "owned_passive": "+0.50% account-wide owned collectible passive",
-    "role": "",
-    "description": "A luminous frost fox wrapped in aurora ribbons and ice crystal ornaments.",
-    "master_path": "event_extras/frostfall_festival/pets/masters/EVT_PET_017_Aurora_Fox.png",
-    "runtime_path": "event_extras/frostfall_festival/pets/runtime_96/EVT_PET_017_Aurora_Fox.png",
-    "event_name": "Frostfall Festival",
-    "event_window": "December",
-    "rarity_rank": 5,
-    "implementation_status": "IMPLEMENT_READY",
-    "runtime_canvas": "96x96 transparent PNG",
-    "anchor": "bottom-center",
-    "safe_margin": "4 px minimum",
-    "balance_note": "Pet active bonus; owned passive remains separate."
-  },
-  {
-    "id": "EVT_UNIT_009",
-    "name": "Frostbell Herald",
-    "type": "companion",
-    "event": "frostfall_festival",
-    "rarity": "Epic",
-    "source": "snowbell_winter_mage_mascot.png",
-    "buff": "Rotates between Haste, Ward, and regeneration bell auras.",
-    "owned_passive": "",
-    "role": "Support",
-    "description": "A tiny frost-bell herald that supports allies through rhythmic winter magic.",
-    "master_path": "event_extras/frostfall_festival/companions/masters/EVT_UNIT_009_Frostbell_Herald.png",
-    "runtime_path": "event_extras/frostfall_festival/companions/runtime_96/EVT_UNIT_009_Frostbell_Herald.png",
-    "event_name": "Frostfall Festival",
-    "event_window": "December",
-    "rarity_rank": 4,
-    "implementation_status": "IMPLEMENT_READY",
-    "runtime_canvas": "96x96 transparent PNG",
-    "anchor": "bottom-center",
-    "safe_margin": "4 px minimum",
-    "balance_note": "Event companion should remain within normal same-rarity combat power bands; value comes from mechanic identity, not raw stat superiority."
-  },
-  {
-    "id": "EVT_PET_018",
-    "name": "Ledger Ferret",
-    "type": "pet",
-    "event": "merchant_guild_festival",
-    "rarity": "Rare",
-    "source": "pixel_merchant_ferret_with_treasure_satchel.png",
-    "buff": "+3% Crafting Speed",
-    "owned_passive": "+0.50% account-wide owned collectible passive",
-    "role": "",
-    "description": "A clever merchant ferret carrying ledgers, seals and coin charms.",
-    "master_path": "event_extras/merchant_guild_festival/pets/masters/EVT_PET_018_Ledger_Ferret.png",
-    "runtime_path": "event_extras/merchant_guild_festival/pets/runtime_96/EVT_PET_018_Ledger_Ferret.png",
-    "event_name": "Merchant / Guild Festival",
-    "event_window": "November",
-    "rarity_rank": 3,
-    "implementation_status": "IMPLEMENT_READY",
-    "runtime_canvas": "96x96 transparent PNG",
-    "anchor": "bottom-center",
-    "safe_margin": "4 px minimum",
-    "balance_note": "Pet active bonus; owned passive remains separate."
-  },
-  {
-    "id": "EVT_PET_019",
-    "name": "Guildcrest Drakelet",
-    "type": "pet",
-    "event": "merchant_guild_festival",
-    "rarity": "Epic",
-    "source": "royal_guild_dragon_sprite.png",
-    "buff": "+4% Guild Project Contribution",
-    "owned_passive": "+0.50% account-wide owned collectible passive",
-    "role": "",
-    "description": "A blue-and-gold guild drakelet wearing civic heraldry.",
-    "master_path": "event_extras/merchant_guild_festival/pets/masters/EVT_PET_019_Guildcrest_Drakelet.png",
-    "runtime_path": "event_extras/merchant_guild_festival/pets/runtime_96/EVT_PET_019_Guildcrest_Drakelet.png",
-    "event_name": "Merchant / Guild Festival",
-    "event_window": "November",
-    "rarity_rank": 4,
-    "implementation_status": "IMPLEMENT_READY",
-    "runtime_canvas": "96x96 transparent PNG",
-    "anchor": "bottom-center",
-    "safe_margin": "4 px minimum",
-    "balance_note": "Pet active bonus; owned passive remains separate."
-  },
-  {
-    "id": "EVT_UNIT_010",
-    "name": "Caravan Sentinel",
-    "type": "companion",
-    "event": "merchant_guild_festival",
-    "rarity": "Epic",
-    "source": "pixel_art_caravan_guardian_beast.png",
-    "buff": "Adaptive Support: the active buff changes according to party composition.",
-    "owned_passive": "",
-    "role": "Flexible",
-    "description": "A heavily equipped caravan guardian built for long expeditions and escort duty.",
-    "master_path": "event_extras/merchant_guild_festival/companions/masters/EVT_UNIT_010_Caravan_Sentinel.png",
-    "runtime_path": "event_extras/merchant_guild_festival/companions/runtime_96/EVT_UNIT_010_Caravan_Sentinel.png",
-    "event_name": "Merchant / Guild Festival",
-    "event_window": "November",
-    "rarity_rank": 4,
-    "implementation_status": "IMPLEMENT_READY",
-    "runtime_canvas": "96x96 transparent PNG",
-    "anchor": "bottom-center",
-    "safe_margin": "4 px minimum",
-    "balance_note": "Event companion should remain within normal same-rarity combat power bands; value comes from mechanic identity, not raw stat superiority."
-  }
-];
-
-// ../apps/mobile/src/content/event-collectible-content.ts
-var targetById = {
-  EVT_PET_001: "skillXp",
-  EVT_PET_002: "actionSpeed",
-  EVT_PET_003: "cookingSpeed",
-  EVT_PET_004: "healingEffectiveness",
-  EVT_PET_005: "herbalismSpeed",
-  EVT_PET_006: "gatheringYield",
-  EVT_PET_007: "characterXp",
-  EVT_PET_008: "skillXp",
-  EVT_PET_009: "craftingSpeed",
-  EVT_PET_010: "dropChance",
-  EVT_PET_011: "cookingSpeed",
-  EVT_PET_012: "gatheringYield",
-  EVT_PET_013: "dropChance",
-  EVT_PET_014: "dungeonReward",
-  EVT_PET_015: "fishingSpeed",
-  EVT_PET_016: "materialPreservation",
-  EVT_PET_017: "skillXp",
-  EVT_PET_018: "craftingSpeed",
-  EVT_PET_019: "guildContribution"
-};
-var activeBps = (buff) => Math.round(Number(buff.match(/\+(\d+(?:\.\d+)?)%/)?.[1] ?? 2) * 100);
-var EVENT_PET_COLLECTIBLES = EVENT_COLLECTIBLE_METADATA.filter((row) => row.type === "pet").map((row) => ({
-  id: row.id,
-  kind: "pet",
-  name: row.name,
-  bonusFamilyId: row.id,
-  target: targetById[row.id] ?? "skillXp",
-  ownedBps: 50,
-  activeBps: activeBps(row.buff),
-  collectionGroup: "event",
-  source: `${row.event_name} \xB7 ${row.event_window}`,
-  event: row.event,
-  rarity: row.rarity,
-  buff: row.buff,
-  description: row.description
-}));
-
-// ../apps/mobile/src/content/core-pets.ts
-var pet = (id, name, region, target2, nativeSize, activeBps2 = 200, source) => ({
-  id,
-  kind: "pet",
-  name,
-  bonusFamilyId: id,
-  target: target2,
-  ownedBps: 50,
-  activeBps: activeBps2,
-  source: source ?? `${region} pet collection`,
-  collectionGroup: "core",
-  region,
-  nativeSize,
-  rarity: nativeSize === 64 ? "Epic" : void 0,
-  description: `A permanent ${region} pet collectible.`
-});
-var CORE_PET_COLLECTIBLES = [
-  pet("PET_001", "Pebblemole", "Asterfall", "gatheringYield", 48, 200, "Rare discovery while mining Copper Veins"),
-  pet("PET_002", "Cinderchip", "Asterfall", "craftingSpeed", 48, 200, "Rare discovery while mining Aster-Iron Veins"),
-  pet("PET_003", "Twiglet", "Asterfall", "gatheringYield", 48, 200, "Rare discovery while cutting Greenwood Trees"),
-  pet("PET_004", "Mossback Pup", "Asterfall", "characterXp", 48, 200, "Rare drop from Ironwood Wolf"),
-  pet("PET_005", "Silverfin", "Asterfall", "fishingSpeed", 48, 200, "Rare discovery while fishing Silverbrook Shoals"),
-  pet("PET_006", "Lantern Carp Fry", "Asterfall", "fishingSpeed", 48, 200, "Rare discovery while fishing Oathscale Pools"),
-  pet("PET_007", "Briarbud", "Asterfall", "herbalismSpeed", 48, 200, "Rare discovery while gathering Ironbloom"),
-  pet("PET_008", "Gloamcap", "Asterfall", "herbalismSpeed", 48, 200, "Rare discovery while gathering Cavelichen"),
-  pet("PET_009", "Tusklet", "Asterfall", "dropChance", 48, 200, "Rare drop from Roadside Boar"),
-  pet("PET_010", "Redfeather Chick", "Asterfall", "cookingSpeed", 48, 200, "Rare discovery while scouting the Greenfields"),
-  pet("PET_011", "Forge Spark", "Asterfall", "craftingSpeed", 48, 200, "Rare discovery while mining Oathstone Seams"),
-  pet("PET_012", "Mini Wretch", "Asterfall", "dropChance", 48, 200, "Rare drop from Lantern Wretch"),
-  pet("PET_013", "Mapwing", "Asterfall", "skillXp", 48, 200, "Rare discovery while surveying the King's Road"),
-  pet("PET_014", "Pack Mimic", "Asterfall", "materialPreservation", 48, 200, "Rare discovery while surveying the Old Mines"),
-  pet("PET_015", "Coinmouse", "Asterfall", "gold", 48, 200, "Rare discovery while mapping Silverbrook"),
-  pet("PET_016", "Echo Wisp", "Asterfall", "actionSpeed", 48, 200, "Rare drop from Echo Bat"),
-  pet("PET_017", "Campfox", "Asterfall", "skillXp", 48, 200, "Rare discovery while tracing Ironwood paths"),
-  pet("PET_018", "Oathling", "Asterfall", "defense", 64, 300, "0.05% drop from Oathglass Revenant"),
-  pet("PET_019", "Duneling", "Sunscar", "gatheringYield", 48, 200, "Rare drop from Sunscar Scorpion"),
-  pet("PET_020", "Mirage Minnow", "Sunscar", "fishingSpeed", 48, 200, "Rare discovery while charting the Sunscar glasslands"),
-  pet("PET_021", "Sunscarab", "Sunscar", "craftingSpeed", 48, 200, "Rare discovery while gathering Sunscale Bloom"),
-  pet("PET_022", "Tiny Sphinx", "Sunscar", "skillXp", 64, 300, "Rare drop from Dune Oracle"),
-  pet("PET_023", "Tyrant Larva", "Sunscar", "characterXp", 64, 300, "0.05% drop from Glassbound Sentinel"),
-  pet("PET_024", "Snowpuff Hare", "Frostmarch", "actionSpeed", 48, 200, "Rare discovery while following the Frostmarch bells"),
-  pet("PET_025", "Rimecap", "Frostmarch", "herbalismSpeed", 48, 200, "Rare discovery while gathering Frostbell Flowers"),
-  pet("PET_026", "Bellfin Fry", "Frostmarch", "fishingSpeed", 48, 200, "Rare drop from Frostwolf"),
-  pet("PET_027", "Choir Pebble", "Frostmarch", "defense", 64, 300, "Rare drop from Bellwraith"),
-  pet("PET_028", "Wyrmling Flake", "Frostmarch", "skillXp", 64, 300, "0.05% drop from Choir Hunter"),
-  pet("PET_029", "Coalbug", "Ashlands", "craftingSpeed", 48, 200, "Rare drop from Blackglass Mireling"),
-  pet("PET_030", "Sootling", "Ashlands", "materialPreservation", 48, 200, "Rare discovery while gathering Ashen Myrrh"),
-  pet("PET_031", "Ember Eel Fry", "Ashlands", "fishingSpeed", 48, 200, "Rare discovery while reading the Ashlands smoke"),
-  pet("PET_032", "Forge Imp", "Ashlands", "craftingSpeed", 64, 300, "Rare drop from Cinder Titan"),
-  pet("PET_033", "Cinder Crownling", "Ashlands", "dropChance", 64, 300, "0.05% drop from Ashen Revenant")
-];
-var CORE_PET_IDS = new Set(CORE_PET_COLLECTIBLES.map((row) => row.id));
-function validateCorePetCatalog(catalog2 = CORE_PET_COLLECTIBLES) {
-  const expected = Array.from({ length: 33 }, (_, index) => `PET_${String(index + 1).padStart(3, "0")}`);
-  const actual = catalog2.map((row) => row.id);
-  if (actual.length !== 33) throw new Error(`Canonical core pet catalog must contain 33 pets, got ${actual.length}.`);
-  if (actual.join("|") !== expected.join("|")) throw new Error("Canonical core pet IDs must remain PET_001 through PET_033 in order.");
-  for (const row of catalog2) {
-    if (row.kind !== "pet" || row.collectionGroup !== "core" || row.ownedBps !== 50 || row.activeBps < 200) throw new Error(`Invalid core pet ${row.id}.`);
-  }
-}
-validateCorePetCatalog();
-
-// ../apps/mobile/src/content/collectibles.ts
-var entry = (id, kind, name, target2, source, activeBps2 = 200, requiredCharacterLevel, collectionGroup = "profile") => ({ id, kind, name, bonusFamilyId: id, target: target2, ownedBps: 50, activeBps: activeBps2, source, requiredCharacterLevel, collectionGroup });
-var LEGACY_PET_COLLECTIBLES = [
-  entry("pet_harvest_fox", "pet", "Harvest Fox", "gold", "Harvestwake reputation milestone", 200, void 0, "legacy"),
-  entry("pet_field_mouse", "pet", "Field Mouse", "skillXp", "Harvestwake event shop", 250, void 0, "legacy"),
-  entry("pet_straw_sparrow", "pet", "Straw Sparrow", "gatheringYield", "Golden Field Feather discovery", 200, void 0, "legacy"),
-  entry("pet_amber_owl", "pet", "Amber Owl", "dropChance", "Harvestwake Amber Pantry", 400, void 0, "legacy"),
-  entry("pet:feral_rat", "pet", "Feral Rat", "attack", "Existing legacy pet unlock", 200, void 0, "legacy"),
-  entry("pet:emberhound", "pet", "Emberhound", "attack", "Existing legacy pet unlock", 300, void 0, "legacy"),
-  entry("pet:forgebound_mooncat", "pet", "Forgebound Mooncat", "attack", "Existing legacy pet unlock", 500, void 0, "legacy")
-];
-var PROFILE_COLLECTIBLES = [
-  entry("ironwood-dawn", "background", "Ironwood Dawn", "skillXp", "Reach character level 10", 200, 10, "profile"),
-  entry("silverbrook-mist", "background", "Silverbrook Mist", "gatheringYield", "Reach character level 20", 200, 20, "profile"),
-  entry("oathglass-hall", "background", "Oathglass Hall", "hp", "Reach character level 25", 200, 25, "profile"),
-  entry("bg_harvestwake", "background", "Golden Fields", "gold", "Harvestwake event shop", 200, void 0, "event"),
-  entry("bg_grand_storehouse", "background", "Grand Storehouse", "gatheringYield", "Harvestwake reputation milestone", 200, void 0, "event"),
-  entry("bg_spirit_storehouse", "background", "Spirit Storehouse", "defense", "Guardian Lantern discovery", 200, void 0, "event"),
-  entry("frame_amber_vine", "border", "Amber Vine", "defense", "Harvestwake reputation milestone", 200, void 0, "event"),
-  entry("frame_wheat_crown", "border", "Wheat Crown", "gold", "Harvestwake event shop", 200, void 0, "event")
-];
-var COLLECTIBLES = [
-  ...CORE_PET_COLLECTIBLES,
-  ...EVENT_PET_COLLECTIBLES,
-  ...LEGACY_PET_COLLECTIBLES,
-  ...PROFILE_COLLECTIBLES
-];
-var COLLECTIBLE_TARGET_LABELS = { hp: "Maximum HP", attack: "Attack", defense: "Defense", skillXp: "Skill XP", characterXp: "Combat XP", gold: "Ordinary combat Gold", gatheringYield: "Ordinary gathered materials", dropChance: "Ordinary drop chance", actionSpeed: "Action speed", cookingSpeed: "Cooking speed", herbalismSpeed: "Herbalism speed", healingEffectiveness: "Healing effectiveness", craftingSpeed: "Crafting speed", dungeonReward: "Dungeon reward quantity", fishingSpeed: "Fishing speed", materialPreservation: "Material preservation", guildContribution: "Guild contribution" };
-function validateCollectibleCatalog(catalog2 = COLLECTIBLES) {
-  const ids2 = /* @__PURE__ */ new Set();
-  for (const row of catalog2) {
-    if (!row.id || ids2.has(row.id) || row.ownedBps !== 50 || row.activeBps < 200 || !COLLECTIBLE_TARGET_LABELS[row.target]) throw new Error(`Invalid collectible ${row.id}`);
-    if (row.kind === "pet" && !row.collectionGroup) throw new Error(`Pet ${row.id} is missing collectionGroup.`);
-    ids2.add(row.id);
-  }
-}
-validateCollectibleCatalog();
-
-// ../apps/mobile/src/content/permanent-boosts.ts
-var SKIN_PERMANENT_BOOSTS = {
-  starting: {
-    id: "starting",
-    name: "Campaign skin",
-    combatSpeedMultiplier: 1,
-    combatPowerMultiplier: 1,
-    gatheringSpeedMultiplier: 1,
-    gatheringYieldMultiplier: 1,
-    characterXpMultiplier: 1,
-    skillXpMultiplier: 1,
-    goldMultiplier: 1,
-    dropChanceMultiplier: 1,
-    incomingDamageMultiplier: 1
-  }
-};
-var petBoostFor = (pet2) => {
-  const amount = 1 + pet2.activeBps / 1e4;
-  const base = { id: pet2.id, name: pet2.name };
-  switch (pet2.target) {
-    case "attack":
-      return { ...base, combatPowerMultiplier: amount };
-    case "defense":
-    case "hp":
-      return { ...base, incomingDamageMultiplier: 2 - amount };
-    case "skillXp":
-      return { ...base, skillXpMultiplier: amount };
-    case "characterXp":
-      return { ...base, characterXpMultiplier: amount };
-    case "gold":
-      return { ...base, goldMultiplier: amount };
-    case "dropChance":
-      return { ...base, dropChanceMultiplier: amount };
-    case "dungeonReward":
-      return { ...base, dungeonRewardMultiplier: amount };
-    case "actionSpeed":
-      return { ...base, combatSpeedMultiplier: amount, gatheringSpeedMultiplier: amount };
-    case "gatheringYield":
-      return { ...base, gatheringYieldMultiplier: amount };
-    case "fishingSpeed":
-      return { ...base, fishingSpeedMultiplier: amount };
-    case "herbalismSpeed":
-      return { ...base, herbalismSpeedMultiplier: amount };
-    case "cookingSpeed":
-      return { ...base, cookingSpeedMultiplier: amount };
-    case "craftingSpeed":
-      return { ...base, craftingSpeedMultiplier: amount };
-    case "materialPreservation":
-      return { ...base, materialPreservationMultiplier: amount };
-    case "healingEffectiveness":
-      return { ...base, healingEffectivenessMultiplier: amount };
-    case "guildContribution":
-      return { ...base, guildContributionMultiplier: amount };
-    default:
-      return base;
-  }
-};
-var PET_PERMANENT_BOOSTS = Object.fromEntries(
-  COLLECTIBLES.filter((row) => row.kind === "pet").map((pet2) => [pet2.id, petBoostFor(pet2)])
-);
-var BUYABLE_PERMANENT_BOOSTS = {
-  "boost:combat_focus": {
-    id: "boost:combat_focus",
-    name: "Combat Focus Sigil",
-    combatSpeedMultiplier: 1.08,
-    combatPowerMultiplier: 1.06,
-    incomingDamageMultiplier: 0.99,
-    skillXpMultiplier: 1,
-    characterXpMultiplier: 1,
-    goldMultiplier: 1.02,
-    dropChanceMultiplier: 1.02
-  },
-  "boost:craftsman_charm": {
-    id: "boost:craftsman_charm",
-    name: "Craftsman Charm",
-    combatSpeedMultiplier: 1,
-    combatPowerMultiplier: 1,
-    gatheringSpeedMultiplier: 1.06,
-    skillXpMultiplier: 1.08,
-    characterXpMultiplier: 1,
-    goldMultiplier: 1.03,
-    dropChanceMultiplier: 1.01,
-    incomingDamageMultiplier: 1
-  },
-  "boost:prospector_ledger": {
-    id: "boost:prospector_ledger",
-    name: "Prospector Ledger",
-    gatheringSpeedMultiplier: 1.08,
-    characterXpMultiplier: 1,
-    skillXpMultiplier: 1.04,
-    goldMultiplier: 1.06,
-    dropChanceMultiplier: 1.05,
-    combatSpeedMultiplier: 1,
-    combatPowerMultiplier: 1,
-    incomingDamageMultiplier: 1
-  },
-  "boost:wardcaller_banner": {
-    id: "boost:wardcaller_banner",
-    name: "Wardcaller Banner",
-    characterXpMultiplier: 1.06,
-    combatSpeedMultiplier: 1.02,
-    combatPowerMultiplier: 1.02,
-    incomingDamageMultiplier: 0.985,
-    gatheringSpeedMultiplier: 1.03,
-    skillXpMultiplier: 1.02,
-    goldMultiplier: 1.025,
-    dropChanceMultiplier: 1.02
-  }
-};
-var PERMANENT_BOOSTS_BASE = {
-  none: { id: "none", name: "No permanent boosts" },
-  ...SKIN_PERMANENT_BOOSTS,
-  ...PET_PERMANENT_BOOSTS,
-  ...BUYABLE_PERMANENT_BOOSTS
-};
-
-// ../apps/mobile/src/core/permanent-boosts.ts
-init_faith2();
-
-// ../apps/mobile/src/core/collectibles.ts
-var ids = (state, kind) => kind === "pet" ? state.account.unlockedCosmeticPetIds ?? [] : kind === "background" ? state.account.unlockedProfileBackgroundIds ?? [] : state.account.unlockedProfileBorderIds ?? [];
-var selected = (state, kind) => kind === "pet" ? state.character?.selectedCosmeticPetId : kind === "background" ? state.character?.profileBackgroundId : state.character?.profileBorderId;
-function unlockCollectible(state, id) {
-  const row = COLLECTIBLES.find((item) => item.id === id);
-  if (!row) throw new Error("Unknown collectible.");
-  const key = row.kind === "pet" ? "unlockedCosmeticPetIds" : row.kind === "background" ? "unlockedProfileBackgroundIds" : "unlockedProfileBorderIds";
-  const owned = state.account[key] ?? [];
-  return owned.includes(id) ? state : { ...state, account: { ...state.account, [key]: [...owned, id] } };
-}
-function collectionBonusBreakdown(state, catalog2 = COLLECTIBLES) {
-  const rows2 = /* @__PURE__ */ new Map();
-  for (const row of catalog2) {
-    const owned = ids(state, row.kind).includes(row.id), active2 = selected(state, row.kind) === row.id;
-    if (!owned) continue;
-    const bucket = rows2.get(row.target) ?? { owned: /* @__PURE__ */ new Set(), active: /* @__PURE__ */ new Set(), ownedRaw: 0, activeRaw: 0 };
-    if (!bucket.owned.has(row.bonusFamilyId)) {
-      bucket.owned.add(row.bonusFamilyId);
-      bucket.ownedRaw += row.ownedBps;
-    }
-    if (active2 && !bucket.active.has(row.bonusFamilyId)) {
-      bucket.active.add(row.bonusFamilyId);
-      bucket.activeRaw += row.activeBps;
-    }
-    rows2.set(row.target, bucket);
-  }
-  return [...rows2].map(([target2, row]) => {
-    const cap = target2 === "hp" || target2 === "attack" || target2 === "defense" ? 500 : 800;
-    const ownedApplied = Math.min(cap, row.ownedRaw), activeApplied = Math.min(cap, row.activeRaw), total = Math.min(target2 === "hp" || target2 === "attack" || target2 === "defense" ? 1e3 : 1500, ownedApplied + activeApplied);
-    return { target: target2, ownedRawBps: row.ownedRaw, ownedAppliedBps: ownedApplied, activeRawBps: row.activeRaw, activeAppliedBps: activeApplied, appliedBps: total, suppressedBps: row.ownedRaw + row.activeRaw - total };
-  });
-}
-
-// ../apps/mobile/src/core/permanent-boosts.ts
-var BASE = {
-  attackMultiplier: 1,
-  combatSpeedMultiplier: 1,
-  combatPowerMultiplier: 1,
-  gatheringSpeedMultiplier: 1,
-  gatheringYieldMultiplier: 1,
-  fishingSpeedMultiplier: 1,
-  herbalismSpeedMultiplier: 1,
-  cookingSpeedMultiplier: 1,
-  craftingSpeedMultiplier: 1,
-  materialPreservationMultiplier: 1,
-  healingEffectivenessMultiplier: 1,
-  dungeonRewardMultiplier: 1,
-  guildContributionMultiplier: 1,
-  incomingDamageMultiplier: 1,
-  skillXpMultiplier: 1,
-  characterXpMultiplier: 1,
-  goldMultiplier: 1,
-  dropChanceMultiplier: 1
-};
-function normalizeMultiplier(value) {
-  if (!Number.isFinite(value)) return 1;
-  if (value < 0.75) return 0.75;
-  if (value > 2) return 2;
-  return value;
-}
-function asMultiplier(value) {
-  return normalizeMultiplier(value ?? 1);
-}
-function multiply(base, value) {
-  return normalizeMultiplier(base * value);
-}
-function readMultipliers(definitionId, map) {
-  if (!definitionId || !map[definitionId]) return BASE;
-  const d = map[definitionId];
-  return {
-    attackMultiplier: asMultiplier(d.combatPowerMultiplier),
-    combatSpeedMultiplier: asMultiplier(d.combatSpeedMultiplier),
-    combatPowerMultiplier: asMultiplier(d.combatPowerMultiplier),
-    gatheringSpeedMultiplier: asMultiplier(d.gatheringSpeedMultiplier),
-    gatheringYieldMultiplier: asMultiplier(d.gatheringYieldMultiplier),
-    fishingSpeedMultiplier: asMultiplier(d.fishingSpeedMultiplier),
-    herbalismSpeedMultiplier: asMultiplier(d.herbalismSpeedMultiplier),
-    cookingSpeedMultiplier: asMultiplier(d.cookingSpeedMultiplier),
-    craftingSpeedMultiplier: asMultiplier(d.craftingSpeedMultiplier),
-    materialPreservationMultiplier: asMultiplier(d.materialPreservationMultiplier),
-    healingEffectivenessMultiplier: asMultiplier(d.healingEffectivenessMultiplier),
-    dungeonRewardMultiplier: asMultiplier(d.dungeonRewardMultiplier),
-    guildContributionMultiplier: asMultiplier(d.guildContributionMultiplier),
-    incomingDamageMultiplier: asMultiplier(d.incomingDamageMultiplier),
-    skillXpMultiplier: asMultiplier(d.skillXpMultiplier),
-    characterXpMultiplier: asMultiplier(d.characterXpMultiplier),
-    goldMultiplier: asMultiplier(d.goldMultiplier),
-    dropChanceMultiplier: asMultiplier(d.dropChanceMultiplier)
-  };
-}
-function merge(base, incoming) {
-  return {
-    attackMultiplier: multiply(base.attackMultiplier, incoming.attackMultiplier),
-    combatSpeedMultiplier: multiply(base.combatSpeedMultiplier, incoming.combatSpeedMultiplier),
-    combatPowerMultiplier: multiply(base.combatPowerMultiplier, incoming.combatPowerMultiplier),
-    gatheringSpeedMultiplier: multiply(base.gatheringSpeedMultiplier, incoming.gatheringSpeedMultiplier),
-    gatheringYieldMultiplier: multiply(base.gatheringYieldMultiplier, incoming.gatheringYieldMultiplier),
-    fishingSpeedMultiplier: multiply(base.fishingSpeedMultiplier, incoming.fishingSpeedMultiplier),
-    herbalismSpeedMultiplier: multiply(base.herbalismSpeedMultiplier, incoming.herbalismSpeedMultiplier),
-    cookingSpeedMultiplier: multiply(base.cookingSpeedMultiplier, incoming.cookingSpeedMultiplier),
-    craftingSpeedMultiplier: multiply(base.craftingSpeedMultiplier, incoming.craftingSpeedMultiplier),
-    materialPreservationMultiplier: multiply(base.materialPreservationMultiplier, incoming.materialPreservationMultiplier),
-    healingEffectivenessMultiplier: multiply(base.healingEffectivenessMultiplier, incoming.healingEffectivenessMultiplier),
-    dungeonRewardMultiplier: multiply(base.dungeonRewardMultiplier, incoming.dungeonRewardMultiplier),
-    guildContributionMultiplier: multiply(base.guildContributionMultiplier, incoming.guildContributionMultiplier),
-    incomingDamageMultiplier: multiply(base.incomingDamageMultiplier, incoming.incomingDamageMultiplier),
-    skillXpMultiplier: multiply(base.skillXpMultiplier, incoming.skillXpMultiplier),
-    characterXpMultiplier: multiply(base.characterXpMultiplier, incoming.characterXpMultiplier),
-    goldMultiplier: multiply(base.goldMultiplier, incoming.goldMultiplier),
-    dropChanceMultiplier: multiply(base.dropChanceMultiplier, incoming.dropChanceMultiplier)
-  };
-}
-function collectibleTargetMultipliers(target2, appliedBps) {
-  const amount = normalizeMultiplier(1 + Math.max(0, appliedBps) / 1e4), out = { ...BASE };
-  switch (target2) {
-    case "attack":
-      out.combatPowerMultiplier = amount;
-      break;
-    case "defense":
-    case "hp":
-      out.incomingDamageMultiplier = normalizeMultiplier(2 - amount);
-      break;
-    case "skillXp":
-      out.skillXpMultiplier = amount;
-      break;
-    case "characterXp":
-      out.characterXpMultiplier = amount;
-      break;
-    case "gold":
-      out.goldMultiplier = amount;
-      break;
-    case "dropChance":
-      out.dropChanceMultiplier = amount;
-      break;
-    case "actionSpeed":
-      out.combatSpeedMultiplier = amount;
-      out.gatheringSpeedMultiplier = amount;
-      break;
-    case "gatheringYield":
-      out.gatheringYieldMultiplier = amount;
-      break;
-    case "fishingSpeed":
-      out.fishingSpeedMultiplier = amount;
-      break;
-    case "herbalismSpeed":
-      out.herbalismSpeedMultiplier = amount;
-      break;
-    case "cookingSpeed":
-      out.cookingSpeedMultiplier = amount;
-      break;
-    case "craftingSpeed":
-      out.craftingSpeedMultiplier = amount;
-      break;
-    case "materialPreservation":
-      out.materialPreservationMultiplier = amount;
-      break;
-    case "healingEffectiveness":
-      out.healingEffectivenessMultiplier = amount;
-      break;
-    case "dungeonReward":
-      out.dungeonRewardMultiplier = amount;
-      break;
-    case "guildContribution":
-      out.guildContributionMultiplier = amount;
-      break;
-  }
-  return out;
-}
-function characterPermanentMultipliers(state) {
-  let result = { ...BASE };
-  const c = state.character;
-  if (!c) return result;
-  const blessing = selectedFaithBlessing(state);
-  if (blessing) {
-    if (blessing.family === "attack") result = merge(result, { ...BASE, attackMultiplier: 1 + blessing.bonus, combatPowerMultiplier: 1 + blessing.bonus });
-    if (blessing.family === "defense") result = merge(result, { ...BASE, incomingDamageMultiplier: 1 - blessing.bonus });
-    if (blessing.family === "hp") result = merge(result, { ...BASE, characterXpMultiplier: 1, combatPowerMultiplier: 1 + blessing.bonus * 0.25 });
-  }
-  for (const skinId of new Set(c.unlockedSkinIds ?? [])) {
-    if (SKIN_PERMANENT_BOOSTS[skinId]) result = merge(result, readMultipliers(skinId, SKIN_PERMANENT_BOOSTS));
-  }
-  for (const row of collectionBonusBreakdown(state)) {
-    if (row.appliedBps > 0) result = merge(result, collectibleTargetMultipliers(row.target, row.appliedBps));
-  }
-  for (const boostId of new Set(c.ownedBoostIds ?? [])) {
-    if (BUYABLE_PERMANENT_BOOSTS[boostId]) result = merge(result, readMultipliers(boostId, BUYABLE_PERMANENT_BOOSTS));
-  }
-  return result;
-}
-
-// ../apps/mobile/src/content/annual-events-v2.ts
+// apps/mobile/src/content/annual-events-v2.ts
 var gifts = [
   { day: 1, rewardCurrency: 100, rewardPrestige: 0 },
   { day: 2, rewardCurrency: 150, rewardPrestige: 0 },
@@ -69394,7 +69481,7 @@ var FROSTFALL_EVENT = {
   ]
 };
 
-// ../apps/mobile/src/content/annual-events-v3.ts
+// apps/mobile/src/content/annual-events-v3.ts
 var gifts2 = [
   { day: 1, rewardCurrency: 100, rewardPrestige: 0 },
   { day: 2, rewardCurrency: 150, rewardPrestige: 0 },
@@ -69617,7 +69704,7 @@ var BLOOMWAKE_EVENT = {
   ]
 };
 
-// ../apps/mobile/src/content/annual-events-v4.ts
+// apps/mobile/src/content/annual-events-v4.ts
 var gifts3 = [
   { day: 1, rewardCurrency: 100, rewardPrestige: 0 },
   { day: 2, rewardCurrency: 150, rewardPrestige: 0 },
@@ -69840,7 +69927,7 @@ var MERCHANT_GUILD_FESTIVAL_EVENT = {
   ]
 };
 
-// ../apps/mobile/src/content/live-events.ts
+// apps/mobile/src/content/live-events.ts
 var harvestSkins = {
   IRONWARDEN: "Harvest Defender",
   BASTION: "Granary Bastion",
@@ -69940,9 +70027,10 @@ function liveEventDef(id) {
   return template ? { ...template, id } : void 0;
 }
 
-// ../apps/mobile/src/core/class-skills.ts
+// apps/mobile/src/core/class-skills.ts
 init_progression();
 var MAX_CLASS_SKILL_XP = totalXpAtLevel(100);
+var CLASS_DRILL_BASE_XP = 24;
 var normalizeTrainingFocus = (v) => v === "primary" || v === "secondary" ? v : "balanced";
 function normalizeClassSkills(id, raw2) {
   const rows2 = Array.isArray(raw2) ? raw2 : [];
@@ -69958,6 +70046,10 @@ function awardCombatClassXp(c, kills, perKill, firstFocus) {
   const first = awardClassSkillXp(c, kills > 0 ? perKill : 0, firstFocus ?? normalizeTrainingFocus(c.trainingFocus));
   const rest = awardClassSkillXp(first.character, Math.max(0, kills - 1) * perKill);
   return { character: rest.character, awards: rest.awards.map((a, i) => ({ ...a, xp: a.xp + first.awards[i].xp })) };
+}
+function normalizeClassDrills(raw2) {
+  if (!raw2 || !Number.isSafeInteger(raw2.lastClaimAtMs) || raw2.lastClaimAtMs < 0) return void 0;
+  return { lastClaimAtMs: raw2.lastClaimAtMs, progressMs: Math.min(59999, Math.max(0, Math.floor(Number(raw2.progressMs) || 0))), focus: normalizeTrainingFocus(raw2.focus), xpPerDrill: Math.max(CLASS_DRILL_BASE_XP, Math.min(120, Number(raw2.xpPerDrill) || CLASS_DRILL_BASE_XP)) };
 }
 function awardClassSkillXp(c, pool, focus = normalizeTrainingFocus(c.trainingFocus)) {
   const shares = focus === "primary" ? [0.75, 0.25] : focus === "secondary" ? [0.25, 0.75] : [0.5, 0.5], remainders = { ...c.classSkillRemainders ?? {} };
@@ -69978,7 +70070,7 @@ function characterClassEffects(c) {
   return tank ? { attack: 1, hp: 1 + 0.12 * a, defense: 1 + 0.1 * b } : support ? { attack: 1 + 0.1 * a, hp: 1 + 0.1 * b, defense: 1 } : { attack: 1 + 0.07 * a + 0.03 * b, hp: 1, defense: 1 + 0.06 * b };
 }
 function settleClassDrills(state, now, capSeconds) {
-  const c = state.character, drill = c?.classTraining;
+  const c = state.character, drill = normalizeClassDrills(c?.classTraining);
   const empty = { xp: 0, gold: 0, kills: 0, items: [], elapsedSeconds: 0 };
   if (!c || !drill || now <= drill.lastClaimAtMs) return { state, reward: empty };
   const elapsed = Math.min(capSeconds * 1e3, now - drill.lastClaimAtMs), total = elapsed + drill.progressMs, actions = Math.floor(total / 6e4);
@@ -70003,7 +70095,7 @@ function settleClassDrills(state, now, capSeconds) {
   return { state: { ...state, character }, reward: { ...empty, elapsedSeconds: Math.floor(elapsed / 1e3), trainingActions: completed, classSkillXp: Object.entries(awards).map(([skillId, xp]) => ({ skillId, xp })) } };
 }
 
-// ../apps/mobile/src/core/combat-companions.ts
+// apps/mobile/src/core/combat-companions.ts
 var CLASS_COMPANION_ROLE = {
   IRONWARDEN: "tank",
   BASTION: "tank",
@@ -70056,11 +70148,11 @@ function nextCompanionAscension(def, progress) {
   if (progress.ascensionTier === 2 && progress.level >= 25 && (def.rarity === "elite" || def.rarity === "prestige")) return 3;
   return void 0;
 }
-function normalizeProgress(def, value, fallback) {
-  const max = companionMaxLevel(def), level = int(value?.level ?? fallback.level, 1, max);
-  const inferred = requiredAscensionTierForLevel(def, level), ascensionTier = Math.max(inferred, int(value?.ascensionTier ?? fallback.ascensionTier, 0, 3));
-  let bondLevel = int(value?.bondLevel ?? fallback.bondLevel, 1, COMPANION_BOND_CONFIG.maxLevel);
-  const rawBondXp = int(value?.bondXp ?? fallback.bondXp), minimumBondXp = COMPANION_BOND_CONFIG.xpThresholds[Math.max(0, bondLevel - 1)] ?? 0;
+function normalizeProgress(def, value, fallback2) {
+  const max = companionMaxLevel(def), level = int(value?.level ?? fallback2.level, 1, max);
+  const inferred = requiredAscensionTierForLevel(def, level), ascensionTier = Math.max(inferred, int(value?.ascensionTier ?? fallback2.ascensionTier, 0, 3));
+  let bondLevel = int(value?.bondLevel ?? fallback2.bondLevel, 1, COMPANION_BOND_CONFIG.maxLevel);
+  const rawBondXp = int(value?.bondXp ?? fallback2.bondXp), minimumBondXp = COMPANION_BOND_CONFIG.xpThresholds[Math.max(0, bondLevel - 1)] ?? 0;
   let normalizedBondXp = bondLevel >= 10 ? COMPANION_BOND_CONFIG.xpThresholds[9] ?? 0 : rawBondXp < minimumBondXp ? minimumBondXp + rawBondXp : rawBondXp;
   while (bondLevel < 10 && normalizedBondXp >= (COMPANION_BOND_CONFIG.xpThresholds[bondLevel] ?? Number.MAX_SAFE_INTEGER)) bondLevel++;
   if (bondLevel >= 10) normalizedBondXp = COMPANION_BOND_CONFIG.xpThresholds[9] ?? normalizedBondXp;
@@ -70068,15 +70160,15 @@ function normalizeProgress(def, value, fallback) {
   const safeLevel2 = Math.min(level, cap, max), nextXp = companionXpToNextLevel(def.rarity, safeLevel2);
   return {
     level: safeLevel2,
-    xp: safeLevel2 >= Math.min(cap, max) ? 0 : Math.min(int(value?.xp ?? fallback.xp), Math.max(0, nextXp - 1)),
+    xp: safeLevel2 >= Math.min(cap, max) ? 0 : Math.min(int(value?.xp ?? fallback2.xp), Math.max(0, nextXp - 1)),
     ascensionTier,
     bondLevel,
     bondXp: normalizedBondXp,
     bondTraitUnlocked: bondLevel >= 10,
     mastered: def.rarity === "prestige" && safeLevel2 === 35 && value?.mastered === true,
-    obtainedAtMs: Number.isFinite(value?.obtainedAtMs) ? value.obtainedAtMs : fallback.obtainedAtMs,
-    originalEventReleaseYear: int(value?.originalEventReleaseYear ?? fallback.originalEventReleaseYear, 0) || void 0,
-    veteranCosmeticEligible: value?.veteranCosmeticEligible === true || fallback.veteranCosmeticEligible === true,
+    obtainedAtMs: Number.isFinite(value?.obtainedAtMs) ? value.obtainedAtMs : fallback2.obtainedAtMs,
+    originalEventReleaseYear: int(value?.originalEventReleaseYear ?? fallback2.originalEventReleaseYear, 0) || void 0,
+    veteranCosmeticEligible: value?.veteranCosmeticEligible === true || fallback2.veteranCosmeticEligible === true,
     selectedTechniqueId: typeof value?.selectedTechniqueId === "string" && value.selectedTechniqueId.startsWith(`${def.id}_`) ? value.selectedTechniqueId : void 0
   };
 }
@@ -70275,15 +70367,30 @@ function masterPrestigeCompanion(state, id) {
   clean2 = consumeMaterial(clean2, cost.materialId, cost.materialQuantity ?? 0);
   return setProgress(clean2, id, { ...p, mastered: true });
 }
+function companionAbilityValue(def, progress) {
+  const scaling = def.activeAbility.scaling, value = scaling.baseValue + scaling.perLevel * Math.max(0, progress.level - 1);
+  return Math.min(scaling.maxValue ?? Number.POSITIVE_INFINITY, value);
+}
 function companionCombatContribution(state) {
   const clean2 = sanitizeCombatCompanionState(state), id = clean2.character?.equippedCombatCompanionId;
-  if (!id) return { outputMultiplier: 1, incomingDamageMultiplier: 1, recoveryMultiplier: 1, contributionPct: 0 };
-  if (clean2.account.companionTrialProgress?.season.activeRun?.teamCompanionIds.includes(id) || (clean2.account.companionAssignments ?? []).some((a) => a.status !== "claimed" && a.status !== "cancelled" && a.companionIds.includes(id))) return { outputMultiplier: 1, incomingDamageMultiplier: 1, recoveryMultiplier: 1, contributionPct: 0 };
+  if (!id) return { outputMultiplier: 1, incomingDamageMultiplier: 1, recoveryMultiplier: 1, directHealingPctPerHour: 0, contributionPct: 0 };
+  if (clean2.account.companionTrialProgress?.season.activeRun?.teamCompanionIds.includes(id) || (clean2.account.companionAssignments ?? []).some((a) => a.status !== "claimed" && a.status !== "cancelled" && a.companionIds.includes(id))) return { outputMultiplier: 1, incomingDamageMultiplier: 1, recoveryMultiplier: 1, directHealingPctPerHour: 0, contributionPct: 0 };
   const def = combatCompanionDef(id), p = progressFor(clean2, id), rarity = COMPANION_RARITY_CONFIG[def.rarity];
   const investment = 0.55 + 0.35 * (p.level / rarity.maxLevel) + 0.1 * (p.bondLevel / 10), base = 0.07, bondResonance = p.bondLevel >= 6 ? 1.015 : 1, contribution = Math.min(0.12, base * rarity.targetPowerMultiplier * investment * bondResonance);
-  if (def.role === "damage") return { outputMultiplier: 1 + contribution, incomingDamageMultiplier: 1, recoveryMultiplier: 1, contributionPct: contribution };
-  if (def.role === "tank") return { outputMultiplier: 1 + contribution * 0.12, incomingDamageMultiplier: 1 - contribution * 0.78, recoveryMultiplier: 1 + contribution * 0.25, contributionPct: contribution };
-  return { outputMultiplier: 1 + contribution * 0.42, incomingDamageMultiplier: 1 - contribution * 0.12, recoveryMultiplier: 1 + contribution * 0.72, contributionPct: contribution };
+  const effects = [def.activeAbility.effect.kind, def.passiveAbility.kind, ...p.bondTraitUnlocked ? [def.bondTrait.effect.kind] : []];
+  const has3 = (...kinds) => effects.some((kind) => kinds.includes(kind));
+  const restorative = has3("heal");
+  const protective = has3("shield", "damage_reduction", "cleanse");
+  const tempo = has3("haste", "resource_restore", "cooldown_reduction", "accuracy");
+  const interrupt = has3("interrupt");
+  const offensive = has3("damage", "defense_shred", "execute", "armor_pierce", "chain_damage");
+  const utility = has3("utility");
+  const roleBase = def.role === "damage" ? { output: 0.62, incoming: 0.02, recovery: 0.01 } : def.role === "tank" ? { output: 0.08, incoming: 0.52, recovery: 0.08 } : { output: 0.12, incoming: 0.04, recovery: 0.02 };
+  const outputWeight = Math.min(1, roleBase.output + (offensive ? 0.26 : 0) + (tempo ? 0.18 : 0) + (interrupt ? 0.1 : 0) + (utility ? 0.12 : 0));
+  const incomingWeight = Math.min(0.82, roleBase.incoming + (protective ? 0.23 : 0) + (interrupt ? 0.1 : 0) + (restorative ? 0.05 : 0) + (utility && def.role === "tank" ? 0.06 : 0));
+  const recoveryWeight = Math.min(0.48, roleBase.recovery + (restorative ? 0.32 : 0) + (protective ? 0.05 : 0));
+  const directHealingPctPerHour = restorative ? Math.min(0.12, companionAbilityValue(def, p) * 1.5) : 0;
+  return { outputMultiplier: 1 + contribution * outputWeight, incomingDamageMultiplier: 1 - contribution * incomingWeight, recoveryMultiplier: 1 + contribution * recoveryWeight, directHealingPctPerHour, contributionPct: contribution };
 }
 function companionSanctuaryUpgradeCost(state, upgrade) {
   const clean2 = sanitizeCombatCompanionState(state), cfg = COMPANION_SANCTUARY_CONFIG[upgrade], level = int(clean2.account.companionSanctuary?.[`${upgrade}Level`], 0, cfg.maxLevel);
@@ -70323,7 +70430,7 @@ function grantBondstones(state, amount) {
   return { ...state, account: { ...state.account, bondstones: (state.account.bondstones ?? 0) + gain } };
 }
 
-// ../apps/mobile/src/core/live-events.ts
+// apps/mobile/src/core/live-events.ts
 function eventLifecycle(state, nowMs = Date.now()) {
   const runtime = state.account.liveEvent;
   if (!runtime?.enabled) return null;
@@ -70438,11 +70545,11 @@ function claimEventDiscovery(state, discoveryId, nowMs = Date.now()) {
   const rewarded = addReward(state, entry2.discovery.reward, nowMs);
   return { ...rewarded, account: { ...rewarded.account, eventDiscoveryClaimIds: [...rewarded.account.eventDiscoveryClaimIds ?? [], entry2.id].slice(-120) } };
 }
-function grantEventActivity(state, source, nowMs = Date.now()) {
-  const event = activeLiveEvent(state, nowMs);
-  if (!event) return state;
-  const quantity4 = eventDropQuantity(state, source, 1, nowMs), withDrops = applyEventDrops(state, [{ eventId: event.definition.id, currencyId: event.definition.currencyId, name: event.definition.currencyName, quantity: quantity4, source, units: 1, recordedAtMs: nowMs }]);
-  return applyEventDiscoveries(withDrops, activityEventDiscoveries(state, source, 1, nowMs));
+function grantEventActivity(state, source, nowMs = Date.now(), units = 1) {
+  const event = activeLiveEvent(state, nowMs), count = Math.max(0, Math.floor(units));
+  if (!event || count <= 0) return state;
+  const quantity4 = eventDropQuantity(state, source, count, nowMs), withDrops = applyEventDrops(state, [{ eventId: event.definition.id, currencyId: event.definition.currencyId, name: event.definition.currencyName, quantity: quantity4, source, units: count, recordedAtMs: nowMs }]);
+  return applyEventDiscoveries(withDrops, activityEventDiscoveries(state, source, count, nowMs));
 }
 function addReward(state, reward2, nowMs = Date.now()) {
   const account = { ...state.account };
@@ -70652,7 +70759,7 @@ function claimEventCommunityMilestone(state, percent, nowMs = Date.now()) {
   return { ...rewarded, account: { ...rewarded.account, eventCommunityClaimIds: [...rewarded.account.eventCommunityClaimIds ?? [], `${event.definition.id}:${percent}`].slice(-80) } };
 }
 
-// ../apps/mobile/src/core/quick-navigation.ts
+// apps/mobile/src/core/quick-navigation.ts
 var QUICK_NAV_DESTINATIONS = [
   "Home",
   "Character",
@@ -70675,7 +70782,41 @@ var QUICK_NAV_DESTINATIONS = [
 var DEFAULT_QUICK_NAV_DESTINATIONS = ["Guild", "Dungeon", "Character", "Quests", "Empty"];
 var allowed = new Set(QUICK_NAV_DESTINATIONS);
 
-// ../apps/mobile/src/core/gathering-tools.ts
+// apps/mobile/src/core/account-roster.ts
+init_progression();
+var CHARACTER_SLOT_THRESHOLDS = [0, 250, 500, 950, 1600];
+var ENABLED_SKILLS = /* @__PURE__ */ new Set(["mining", "woodcutting", "fishing", "smithing", "cooking", "herbalism", "alchemy", "hunting", "exploration", "tailoring", "enchanting", "faith"]);
+var safeLevel = (row) => Number.isFinite(row?.xp) && row.xp >= 0 ? levelFromXp(row.xp) : 1;
+function characterSkillTotal(skills, character) {
+  const ordinary = /* @__PURE__ */ new Set();
+  let total = 0;
+  for (const s of skills) {
+    if (ENABLED_SKILLS.has(s.skillId) && !ordinary.has(s.skillId)) {
+      ordinary.add(s.skillId);
+      total += safeLevel(s);
+    }
+  }
+  if (character) for (const s of character.classSkills ?? []) {
+    if (classSkillsFor(character.classId).some((d) => d.id === s.skillId)) total += safeLevel(s);
+  }
+  return total;
+}
+function accountSkillLevel(state) {
+  if (!state.character) return 0;
+  let total = characterSkillTotal(state.skills, state.character);
+  for (const entry2 of state.otherCharacters ?? []) total += characterSkillTotal(entry2.skills, entry2.character);
+  return total;
+}
+function unlockedCharacterSlots(state) {
+  const earned = Number(state.account.unlockedCharacterSlots ?? 0);
+  const threshold = CHARACTER_SLOT_THRESHOLDS.filter((n) => n <= accountSkillLevel(state)).length;
+  return Math.min(5, Math.max(1, earned, threshold));
+}
+function accountCharacters(state) {
+  return [{ character: state.character }, ...state.otherCharacters ?? []].filter((entry2) => entry2.character);
+}
+
+// apps/mobile/src/core/gathering-tools.ts
 var NO_TOOL_TIME_MULTIPLIER = 1.15;
 function equippedGatheringTool(state, skillId) {
   const id = state.character?.equippedToolIds?.[skillId];
@@ -70693,10 +70834,10 @@ function gatheringPacing(state, activity) {
   return { tool: tool2, recommended, timeMultiplier, atRecommendedTier: (tool2?.tier ?? 0) >= activity.recommendedToolTier };
 }
 
-// ../apps/mobile/src/core/combat-region.ts
+// apps/mobile/src/core/combat-region.ts
 function currentRegionId(state) {
   const level = state.character?.level ?? 1;
-  const usable = (id) => WORLD_ZONES.find((zone) => zone.id === id && level >= zone.minLevel)?.id;
+  const usable = (id) => WORLD_ZONES.find((zone) => zone.id === id && !worldZoneInDevelopment(zone) && level >= zone.minLevel)?.id;
   const saved = usable(state.currentRegionId);
   if (saved) return saved;
   const activityZone = usable(state.activity?.environment?.zoneId);
@@ -70704,7 +70845,7 @@ function currentRegionId(state) {
   return WORLD_ZONES[0].id;
 }
 
-// ../apps/mobile/src/core/item-rarity.ts
+// apps/mobile/src/core/item-rarity.ts
 var GEAR_RARITIES = [
   { id: "common", label: "Common", chance: 0.89, color: "#9aa4b2", lightTextColor: "#52606D", surface: "rgba(154,164,178,.08)", statMultiplier: 1, borderWidth: 1, glowOpacity: 0, symbol: "\u25C6" },
   { id: "uncommon", label: "Uncommon", chance: 0.07, color: "#49c873", lightTextColor: "#1F7A46", surface: "rgba(73,200,115,.10)", statMultiplier: 1.12, borderWidth: 1, glowOpacity: 0.08, symbol: "\u25C6" },
@@ -70725,7 +70866,7 @@ function itemRarity(item) {
 }
 var rarityMeta = (rarity) => GEAR_RARITIES.find((entry2) => entry2.id === rarity);
 
-// ../apps/mobile/src/core/crafted-gear-rarity.ts
+// apps/mobile/src/core/crafted-gear-rarity.ts
 var CRAFTED_MYTHIC_CHANCE = 1e-3;
 var CRAFTED_EPIC_CHANCE = 6e-3;
 var order = ["common", "uncommon", "rare", "epic", "legendary", "mythic"];
@@ -70755,7 +70896,7 @@ function deterministicCraftRarityRoll(seed) {
   return hash3 % 1e6 / 1e6;
 }
 
-// ../apps/mobile/src/core/crafted-gear-instances.ts
+// apps/mobile/src/core/crafted-gear-instances.ts
 var MAX_CRAFTED_GEAR_INSTANCES = 500;
 var emptyEnhancement = () => ({ rank: 0, failures: 0, gemIds: [] });
 function normalizeCraftedGearInstances(raw2) {
@@ -70825,13 +70966,21 @@ function craftedInstanceResult(state, instance) {
   };
 }
 
-// ../apps/mobile/src/core/gem-progression-v1.ts
+// apps/mobile/src/core/gem-progression-v1.ts
+init_progression();
 var GEM_EFFECT_RESONANCE_CAP_V1 = 3;
 var GEM_COMBINE_COSTS_V1 = {
-  1: { to: 2, copies: 3, dust: 0, gold: 1500, seconds: 5 * 60 },
-  2: { to: 3, copies: 3, dust: 5, gold: 5e3, seconds: 15 * 60 },
-  3: { to: 4, copies: 3, dust: 15, gold: 18e3, seconds: 45 * 60, catalystId: "REGIONAL_CATALYST" },
-  4: { to: 5, copies: 3, dust: 40, gold: 6e4, seconds: 2 * 60 * 60, catalystId: "RADIANT_CATALYST" }
+  1: { to: 2, copies: 3, dust: 0, gold: 1500, seconds: 5 * 60, level: 8, xp: 140 },
+  2: { to: 3, copies: 3, dust: 5, gold: 5e3, seconds: 15 * 60, level: 20, xp: 420 },
+  3: { to: 4, copies: 3, dust: 15, gold: 18e3, seconds: 45 * 60, level: 40, xp: 1200, catalystId: "REGIONAL_CATALYST" },
+  4: { to: 5, copies: 3, dust: 40, gold: 6e4, seconds: 2 * 60 * 60, level: 60, xp: 3200, catalystId: "RADIANT_CATALYST" }
+};
+var GEM_REFINE_COSTS_V1 = {
+  1: { level: 1, xp: 90, gold: 75, seconds: 60, reagents: [{ itemId: "WISP_DUST", quantity: 2 }] },
+  2: { level: 12, xp: 240, gold: 300, seconds: 180, reagents: [{ itemId: "WISP_DUST", quantity: 4 }, { itemId: "OATHGLASS_FRAGMENT", quantity: 1 }] },
+  3: { level: 28, xp: 700, gold: 900, seconds: 600, reagents: [{ itemId: "GLOAM_DUST", quantity: 2 }, { itemId: "OATHGLASS_FRAGMENT", quantity: 1 }] },
+  4: { level: 45, xp: 1600, gold: 2600, seconds: 1200, reagents: [{ itemId: "GLOAM_DUST", quantity: 5 }, { itemId: "RIMEGLASS", quantity: 1 }] },
+  5: { level: 62, xp: 3600, gold: 8e3, seconds: 2700, reagents: [{ itemId: "RIMEGLASS", quantity: 2 }, { itemId: "RADIANT_CATALYST", quantity: 1 }] }
 };
 var GEM_DISMANTLE_DUST_V1 = { 1: 1, 2: 3, 3: 8, 4: 22, 5: 60 };
 var GEM_UNSOCKET_COST_V1 = {
@@ -70841,6 +70990,13 @@ var GEM_UNSOCKET_COST_V1 = {
   4: { gold: 1500, dust: 1 },
   5: { gold: 5e3, dust: 3 }
 };
+var GEM_RESEARCH_V1 = { level: 25, dust: 10, gold: 2500, xp: 600 };
+var ENCHANTING_EXTRACTION_THRESHOLDS_V1 = [
+  { level: 30, goldMultiplier: 0.8, dustMode: "base", label: "Apprentice Extraction \xB7 -20% Gold" },
+  { level: 45, goldMultiplier: 0.6, dustMode: "minus_one", label: "Adept Extraction \xB7 -40% Gold \xB7 -1 Dust" },
+  { level: 65, goldMultiplier: 0.4, dustMode: "half", label: "Master Extraction \xB7 -60% Gold \xB7 half Dust" },
+  { level: 80, goldMultiplier: 0.25, dustMode: "free", label: "Perfect Extraction \xB7 -75% Gold \xB7 no Dust" }
+];
 function canonicalGemMetaV1(itemId) {
   let item;
   try {
@@ -70853,9 +71009,15 @@ function canonicalGemMetaV1(itemId) {
   if (!family) return void 0;
   return { familyId: family.familyId, grade: item.gemGrade, kind: family.kind };
 }
-function gemUnsocketCostV1(itemId) {
-  const meta = canonicalGemMetaV1(itemId);
-  return meta ? GEM_UNSOCKET_COST_V1[meta.grade] : { gold: (itemDef(itemId).gemTier ?? 1) * 500, dust: 0 };
+function gemUnsocketCostV1(itemId, enchantingLevel = 1) {
+  const meta = canonicalGemMetaV1(itemId), base = meta ? GEM_UNSOCKET_COST_V1[meta.grade] : { gold: (itemDef(itemId).gemTier ?? 1) * 500, dust: 0 };
+  const threshold = [...ENCHANTING_EXTRACTION_THRESHOLDS_V1].reverse().find((row) => enchantingLevel >= row.level);
+  if (!threshold) return base;
+  const dust = threshold.dustMode === "free" ? 0 : threshold.dustMode === "half" ? Math.ceil(base.dust / 2) : threshold.dustMode === "minus_one" ? Math.max(0, base.dust - 1) : base.dust;
+  return { gold: Math.floor(base.gold * threshold.goldMultiplier), dust };
+}
+function gemUnsocketCostForStateV1(state, itemId) {
+  return gemUnsocketCostV1(itemId, state.skills.find((row) => row.skillId === "enchanting")?.level ?? 1);
 }
 function consumeStackV1(stacks, itemId, amount) {
   let left = amount;
@@ -70919,6 +71081,61 @@ function isGemFamilyRecipeUnlockedV1(state, familyId) {
   const family = mobileGemFamilyV1(familyId);
   return Boolean(family && (family.kind === "stat" || (state.account.unlockedKnowledgeIds ?? []).includes(gemFamilyRecipeIdV1(familyId))));
 }
+function gemRefineRecipeIdV1(familyId, grade) {
+  return "gem_refine:" + familyId + ":g" + grade;
+}
+function parseGemRefineRecipeIdV1(recipeId) {
+  const match = /^gem_refine:(stat_[a-z_]+|effect_[a-z_]+):g([1-5])$/.exec(recipeId);
+  if (!match) return void 0;
+  const familyId = match[1], grade = Number(match[2]);
+  if (!mobileGemFamilyV1(familyId)) return void 0;
+  return { familyId, grade };
+}
+function gemRefineRecipeV1(recipeId) {
+  const parsed = parseGemRefineRecipeIdV1(recipeId);
+  if (!parsed) return void 0;
+  const family = mobileGemFamilyV1(parsed.familyId);
+  const cost = GEM_REFINE_COSTS_V1[parsed.grade];
+  return {
+    id: recipeId,
+    familyId: parsed.familyId,
+    grade: parsed.grade,
+    name: "Refine " + family.name + " Gem \xB7 G" + parsed.grade,
+    skillId: "enchanting",
+    level: cost.level,
+    xp: cost.xp,
+    inputs: [{ itemId: mobileRawGemItemIdV1(parsed.familyId, parsed.grade), quantity: 1 }, ...cost.reagents.map((row) => ({ ...row }))],
+    output: { itemId: mobileGemItemIdV1(parsed.familyId, parsed.grade), quantity: 1 },
+    gold: cost.gold,
+    seconds: cost.seconds
+  };
+}
+function gemResearchStatusV1(state, familyId) {
+  const family = mobileGemFamilyV1(familyId), level = state.skills.find((row) => row.skillId === "enchanting")?.level ?? 1, unlocked = isGemFamilyRecipeUnlockedV1(state, familyId);
+  const raw2 = family ? [1, 2, 3, 4, 5].map((grade) => ({ grade, quantity: combinedGemQuantityV1(state, mobileRawGemItemIdV1(familyId, grade)) })).filter((row) => row.quantity > 0) : [];
+  const dust = combinedGemQuantityV1(state, "GEM_DUST"), gold = state.character?.gold ?? 0;
+  const valid = family?.kind === "effect", ready = Boolean(valid && !unlocked && raw2.length && level >= GEM_RESEARCH_V1.level && dust >= GEM_RESEARCH_V1.dust && gold >= GEM_RESEARCH_V1.gold);
+  return { family, raw: raw2, level, unlocked, dust, gold, valid, ready, reason: !valid ? "Only Effect Gem families require research." : unlocked ? "Recipe already discovered." : !raw2.length ? "Find an unrefined gem from this family first." : level < GEM_RESEARCH_V1.level ? `Requires Enchanting level ${GEM_RESEARCH_V1.level}.` : dust < GEM_RESEARCH_V1.dust ? `Need ${GEM_RESEARCH_V1.dust} Gem Dust.` : gold < GEM_RESEARCH_V1.gold ? `Need ${GEM_RESEARCH_V1.gold} Gold.` : "Ready to research." };
+}
+function gemResearchXpV1(state) {
+  return Math.floor(GEM_RESEARCH_V1.xp * skillAffinityModifiers(state.character?.classId, "enchanting").xpMultiplier + 1e-9);
+}
+function researchEffectGemV1(state, familyId) {
+  const status = gemResearchStatusV1(state, familyId);
+  if (!status.ready) throw new Error(status.reason);
+  const chosen = [...status.raw].sort((a, b) => a.grade - b.grade)[0], rawId = mobileRawGemItemIdV1(familyId, chosen.grade);
+  const rawInv = consumeStackV1(state.inventory.stacks, rawId, 1), rawBank = consumeStackV1(state.bank.stacks, rawId, 1 - rawInv.used);
+  const dustInv = consumeStackV1(rawInv.stacks, "GEM_DUST", GEM_RESEARCH_V1.dust), dustBank = consumeStackV1(rawBank.stacks, "GEM_DUST", GEM_RESEARCH_V1.dust - dustInv.used);
+  const currentXp = state.skills.find((row) => row.skillId === "enchanting")?.xp ?? 0, nextXp = Math.min(totalXpAtLevel(100), currentXp + gemResearchXpV1(state));
+  return {
+    ...state,
+    character: { ...state.character, gold: state.character.gold - GEM_RESEARCH_V1.gold },
+    inventory: { ...state.inventory, stacks: dustInv.stacks },
+    bank: { ...state.bank, stacks: dustBank.stacks },
+    skills: state.skills.map((row) => row.skillId === "enchanting" ? { ...row, xp: nextXp, level: levelFromXp(nextXp) } : row),
+    account: { ...state.account, unlockedKnowledgeIds: [.../* @__PURE__ */ new Set([...state.account.unlockedKnowledgeIds ?? [], gemFamilyRecipeIdV1(familyId)])] }
+  };
+}
 function gemCombineRecipeIdV1(familyId, fromGrade) {
   return "gem_combine:" + familyId + ":g" + fromGrade;
 }
@@ -70937,7 +71154,7 @@ function gemCombineRecipeV1(recipeId) {
   const inputs = [{ itemId: mobileGemItemIdV1(parsed.familyId, parsed.fromGrade), quantity: 3 }];
   if (cost.dust) inputs.push({ itemId: "GEM_DUST", quantity: cost.dust });
   if (cost.catalystId) inputs.push({ itemId: cost.catalystId, quantity: 1 });
-  return { id: recipeId, familyId: parsed.familyId, fromGrade: parsed.fromGrade, toGrade: cost.to, name: GEM_GRADE_LABEL_V1[cost.to] + " " + family.name + " Gem", inputs, output: { itemId: mobileGemItemIdV1(parsed.familyId, cost.to), quantity: 1 }, gold: cost.gold, seconds: cost.seconds };
+  return { id: recipeId, familyId: parsed.familyId, fromGrade: parsed.fromGrade, toGrade: cost.to, name: GEM_GRADE_LABEL_V1[cost.to] + " " + family.name + " Gem", skillId: "enchanting", level: cost.level, xp: cost.xp, inputs, output: { itemId: mobileGemItemIdV1(parsed.familyId, cost.to), quantity: 1 }, gold: cost.gold, seconds: cost.seconds };
 }
 var RESONANCE_CACHE_REQUIRED_LIVE_CLEARS_V1 = 3;
 function resonanceWeekKeyV1(nowMs) {
@@ -70971,14 +71188,14 @@ function claimResonanceCacheV1(state, familyId, nowMs) {
   if (!status.ready) throw new Error("Complete three successful Live co-op clears first");
   if (!status.effectChoices.includes(familyId) || family?.kind !== "effect") throw new Error("Choose one of this week\u2019s offered Effect Gems");
   if (status.dustReward < 25 || status.dustReward > 40 || status.regionalCatalysts < 1) throw new Error("Resonance Cache rewards are not ready");
-  let next = addCacheRewardV1(state, mobileGemItemIdV1(familyId, 3), 1, nowMs);
+  let next = addCacheRewardV1(state, mobileRawGemItemIdV1(familyId, 3), 1, nowMs);
   next = addCacheRewardV1(next, "GEM_DUST", status.dustReward, nowMs);
   next = addCacheRewardV1(next, "REGIONAL_CATALYST", status.regionalCatalysts, nowMs);
   if (status.radiantCatalysts) next = addCacheRewardV1(next, "RADIANT_CATALYST", status.radiantCatalysts, nowMs);
   return { ...next, account: { ...next.account, resonanceCache: { ...raw2, claimed: true } } };
 }
 
-// ../apps/mobile/src/core/equipment-enhancement.ts
+// apps/mobile/src/core/equipment-enhancement.ts
 var MAX_UPGRADE_RANK = 10;
 var UPGRADE_STAT_PER_RANK = 0.03;
 var SUCCESS_BY_TARGET = [0, 1, 0.95, 0.85, 0.7, 0.55, 0.4, 0.28, 0.18, 0.1, 0.05];
@@ -71097,7 +71314,7 @@ function unsocketGem(state, itemId, index) {
   if (index !== 0 && index !== 1) throw new Error("Unknown gem socket");
   const enhancement = gearEnhancement(state, itemId), gemId = index === 0 ? enhancement.statGemId : enhancement.effectGemId;
   if (!gemId) throw new Error(index === 0 ? "The Stat Gem socket is empty" : "The Effect Gem socket is empty");
-  const fee = gemUnsocketCostV1(gemId);
+  const fee = gemUnsocketCostForStateV1(state, gemId);
   if (state.character.gold < fee.gold) throw new Error(`Need ${fee.gold} gold to safely extract this gem`);
   if (fee.dust && combinedQuantity(state, "GEM_DUST") < fee.dust) throw new Error(`Need ${fee.dust} Gem Dust to safely extract this gem`);
   let next = { ...state, character: { ...state.character, gold: state.character.gold - fee.gold } };
@@ -71115,7 +71332,7 @@ function replaceGem(state, itemId, gemId) {
   if (currentId === gemId) throw new Error("That gem is already socketed here");
   if (kind === "effect") assertEffectGemEquipAllowedV1(state, itemId, gemId);
   if (combinedQuantity(state, gemId) < 1) throw new Error("You do not own this gem");
-  const fee = gemUnsocketCostV1(currentId);
+  const fee = gemUnsocketCostForStateV1(state, currentId);
   if (state.character.gold < fee.gold) throw new Error(`Need ${fee.gold} gold to replace this gem`);
   if (fee.dust && combinedQuantity(state, "GEM_DUST") < fee.dust) throw new Error(`Need ${fee.dust} Gem Dust to replace this gem`);
   let next = consumeAcross(state, gemId, 1);
@@ -71162,7 +71379,7 @@ function equippedEffectGemBonuses(state) {
   return result;
 }
 
-// ../apps/mobile/src/content/equipment-sets.ts
+// apps/mobile/src/content/equipment-sets.ts
 var classIdByCatalogName = {
   Ironwarden: "IRONWARDEN",
   Bastion: "BASTION",
@@ -71220,7 +71437,7 @@ function equippedSetPieceCount(equipment, set) {
   return Object.values(equipment).filter((itemId) => itemId && set.itemIds.includes(itemId)).length;
 }
 
-// ../apps/mobile/src/core/equipment-set-runtime.ts
+// apps/mobile/src/core/equipment-set-runtime.ts
 var EMPTY_STATS = {
   maxHp: 0,
   armor: 0,
@@ -71322,7 +71539,7 @@ function equipmentSetCombatModifiers(state, baseCritChance = 0.05, baseAccuracy 
   };
 }
 
-// src/server/expeditions/constants.ts
+// backend/src/server/expeditions/constants.ts
 var EXPEDITION = {
   difficultyIndex: { 1: 1, 2: 1.06, 3: 1.11, 4: 1.19, 5: 1.29 },
   marksMultiplier: { 1: 1, 2: 1.1, 3: 1.25, 4: 1.45, 5: 1.7 },
@@ -71354,7 +71571,7 @@ var COMBAT_LIMITS = {
   unitContributionRaidMax: 0.05
 };
 
-// src/server/combat/calculations.ts
+// backend/src/server/combat/calculations.ts
 var clamp2 = (v, min, max) => Math.max(min, Math.min(max, v));
 function defenseMitigation(defense, mitigationConstant) {
   const raw2 = defense / Math.max(1, defense + mitigationConstant);
@@ -71363,13 +71580,13 @@ function defenseMitigation(defense, mitigationConstant) {
 function hitChance(accuracy, evasion, accuracyScale) {
   return clamp2(0.75 + (accuracy - evasion) / accuracyScale, COMBAT_LIMITS.hitChanceMin, COMBAT_LIMITS.hitChanceMax);
 }
-function damageAfterMitigation(attackPowerValue, abilityCoeff, mitigation, variance, crit = false, critMultiplier = COMBAT_LIMITS.defaultCritMultiplier) {
+function damageAfterMitigation(attackPowerValue, abilityCoeff, mitigation2, variance, crit = false, critMultiplier = COMBAT_LIMITS.defaultCritMultiplier) {
   const varianceClamped = clamp2(variance, COMBAT_LIMITS.damageVarianceMin, COMBAT_LIMITS.damageVarianceMax);
-  const normal = Math.max(1, attackPowerValue * abilityCoeff * varianceClamped * (1 - mitigation));
+  const normal = Math.max(1, attackPowerValue * abilityCoeff * varianceClamped * (1 - mitigation2));
   return crit ? normal * critMultiplier : normal;
 }
 
-// node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/utils.js
+// backend/node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/utils.js
 function isBytes(a) {
   return a instanceof Uint8Array || ArrayBuffer.isView(a) && a.constructor.name === "Uint8Array";
 }
@@ -71450,7 +71667,7 @@ function createHasher(hashCons) {
   return hashC;
 }
 
-// node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/hmac.js
+// backend/node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/hmac.js
 var HMAC = class extends Hash {
   constructor(hash3, _key) {
     super();
@@ -71518,7 +71735,7 @@ var HMAC = class extends Hash {
 var hmac = (hash3, key, message) => new HMAC(hash3, key).update(message).digest();
 hmac.create = (hash3, key) => new HMAC(hash3, key);
 
-// node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/_md.js
+// backend/node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/_md.js
 function setBigUint64(view, byteOffset, value, isLE) {
   if (typeof view.setBigUint64 === "function")
     return view.setBigUint64(byteOffset, value, isLE);
@@ -71558,16 +71775,16 @@ var HashMD = class extends Hash {
     const { view, buffer, blockLen } = this;
     const len = data.length;
     for (let pos = 0; pos < len; ) {
-      const take3 = Math.min(blockLen - this.pos, len - pos);
-      if (take3 === blockLen) {
+      const take4 = Math.min(blockLen - this.pos, len - pos);
+      if (take4 === blockLen) {
         const dataView = createView(data);
         for (; blockLen <= len - pos; pos += blockLen)
           this.process(dataView, pos);
         continue;
       }
-      buffer.set(data.subarray(pos, pos + take3), this.pos);
-      this.pos += take3;
-      pos += take3;
+      buffer.set(data.subarray(pos, pos + take4), this.pos);
+      this.pos += take4;
+      pos += take4;
       if (this.pos === blockLen) {
         this.process(view, 0);
         this.pos = 0;
@@ -71638,7 +71855,7 @@ var SHA256_IV = /* @__PURE__ */ Uint32Array.from([
   1541459225
 ]);
 
-// node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/sha2.js
+// backend/node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/sha2.js
 var SHA256_K = /* @__PURE__ */ Uint32Array.from([
   1116352408,
   1899447441,
@@ -71778,10 +71995,10 @@ var SHA256 = class extends HashMD {
 };
 var sha256 = /* @__PURE__ */ createHasher(() => new SHA256());
 
-// node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/sha256.js
+// backend/node_modules/.pnpm/@noble+hashes@1.8.0/node_modules/@noble/hashes/esm/sha256.js
 var sha2562 = sha256;
 
-// src/server/combat/deterministic-rng.ts
+// backend/src/server/combat/deterministic-rng.ts
 function utf8(value) {
   const bytes = [];
   for (const character of value) {
@@ -71811,7 +72028,7 @@ var CombatRng = class {
   }
 };
 
-// src/server/combat/gem-effects-v1.ts
+// backend/src/server/combat/gem-effects-v1.ts
 var FOREVER = 9e15;
 var directAllowed = (abilityId) => !abilityId.startsWith("COMPANION_") && abilityId !== "COMPANION_REFLECT";
 function gem(state, familyId) {
@@ -71820,7 +72037,7 @@ function gem(state, familyId) {
 function active(state, tag, now, sourceId) {
   return state.modifiers.filter((row) => row.tag === tag && row.expiresAt > now && (!sourceId || row.sourceId === sourceId));
 }
-function has(state, tag, now, sourceId) {
+function has2(state, tag, now, sourceId) {
   return active(state, tag, now, sourceId).length > 0;
 }
 function clear(state, tag, sourceId) {
@@ -71873,13 +72090,13 @@ function gemOutgoingDamageMultiplierV1(source, target2, now, abilityId, periodic
   }
   const predator = gem(source, "effect_predator");
   if (predator && isEliteTarget(target2)) {
-    const boosted = has(source, "gem:predator_boost", now, source.definition.id);
+    const boosted = has2(source, "gem:predator_boost", now, source.definition.id);
     bonus += predator.totalValue * (boosted ? 1.25 : 1);
   }
   const opening = gem(source, "effect_opening_strike");
   if (opening) {
     const window = opening.resonance >= 2 ? 1e4 : 8e3;
-    if (now <= window || has(source, "gem:opening_phase", now, source.definition.id)) bonus += opening.totalValue;
+    if (now <= window || has2(source, "gem:opening_phase", now, source.definition.id)) bonus += opening.totalValue;
   }
   const ruin = gem(source, "effect_ruin");
   if (ruin) {
@@ -71896,11 +72113,11 @@ function gemOutgoingDamageMultiplierV1(source, target2, now, abilityId, periodic
     const momentum = gem(source, "effect_momentum");
     if (momentum) bonus += momentum.totalValue * stackCount(source, "gem:momentum", now, source.definition.id);
     const retaliation = gem(source, "effect_retaliation");
-    if (retaliation && has(source, "gem:retaliation_ready", now, source.definition.id)) bonus += retaliation.totalValue;
+    if (retaliation && has2(source, "gem:retaliation_ready", now, source.definition.id)) bonus += retaliation.totalValue;
     const rhythm = gem(source, "effect_battle_rhythm");
-    if (rhythm && has(source, "gem:battle_offense_ready", now, source.definition.id)) bonus += rhythm.totalValue;
+    if (rhythm && has2(source, "gem:battle_offense_ready", now, source.definition.id)) bonus += rhythm.totalValue;
     const opportunist = gem(source, "effect_opportunist");
-    if (opportunist && has(target2, "gem:opportunist_ready", now, source.definition.id)) bonus += opportunist.totalValue;
+    if (opportunist && has2(target2, "gem:opportunist_ready", now, source.definition.id)) bonus += opportunist.totalValue;
   }
   return Math.max(0.1, 1 + bonus);
 }
@@ -71912,17 +72129,17 @@ function gemHealingMultiplierV1(source, now) {
   const shared = gem(source, "effect_shared_resolve");
   const potency = shared ? stackCount(source, "gem:shared_resolve", now, source.definition.id) * shared.totalValue : 0;
   const benediction = gem(source, "effect_benediction");
-  const charge = benediction && has(source, "gem:benediction_charge", now, source.definition.id) ? benediction.totalValue : 0;
+  const charge = benediction && has2(source, "gem:benediction_charge", now, source.definition.id) ? benediction.totalValue : 0;
   const rhythm = gem(source, "effect_battle_rhythm");
-  const rhythmBonus = rhythm && has(source, "gem:battle_support_ready", now, source.definition.id) ? rhythm.totalValue : 0;
+  const rhythmBonus = rhythm && has2(source, "gem:battle_support_ready", now, source.definition.id) ? rhythm.totalValue : 0;
   return 1 + potency + charge + rhythmBonus;
 }
 function gemShieldMultiplierV1(source, now) {
   const aegis = gem(source, "effect_aegis"), shared = gem(source, "effect_shared_resolve"), benediction = gem(source, "effect_benediction");
   const potency = shared ? stackCount(source, "gem:shared_resolve", now, source.definition.id) * shared.totalValue : 0;
-  const charge = benediction && has(source, "gem:benediction_charge", now, source.definition.id) ? benediction.totalValue : 0;
+  const charge = benediction && has2(source, "gem:benediction_charge", now, source.definition.id) ? benediction.totalValue : 0;
   const rhythm = gem(source, "effect_battle_rhythm");
-  const rhythmBonus = rhythm && has(source, "gem:battle_support_ready", now, source.definition.id) ? rhythm.totalValue : 0;
+  const rhythmBonus = rhythm && has2(source, "gem:battle_support_ready", now, source.definition.id) ? rhythm.totalValue : 0;
   return 1 + (aegis?.totalValue ?? 0) + potency + charge + rhythmBonus;
 }
 function gemOnAbilityUsedV1(now, actor, ability2) {
@@ -71964,7 +72181,7 @@ function gemOnAbilityUsedV1(now, actor, ability2) {
 function gemOnDirectHitV1(now, source, target2, abilityId, crit) {
   if (source.definition.team !== "players" || !directAllowed(abilityId)) return { selfHeal: 0 };
   const momentum = gem(source, "effect_momentum");
-  if (momentum && !has(source, "gem:momentum_cd", now, source.definition.id)) {
+  if (momentum && !has2(source, "gem:momentum_cd", now, source.definition.id)) {
     const cap = momentum.resonance >= 2 ? 6 : 5;
     addStack(source, source.definition.id, "gem:momentum", 1, now + 4e3, now, cap);
     const rows2 = active(source, "gem:momentum", now, source.definition.id).sort((a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0));
@@ -71972,7 +72189,7 @@ function gemOnDirectHitV1(now, source, target2, abilityId, crit) {
     setOne(source, source.definition.id, "gem:momentum_cd", 1, now + 500, now);
   }
   const surge = gem(source, "effect_critical_surge");
-  if (surge && crit && !has(source, "gem:critical_surge_cd", now, source.definition.id)) {
+  if (surge && crit && !has2(source, "gem:critical_surge_cd", now, source.definition.id)) {
     const cap = surge.resonance >= 2 ? 4 : 3, rows2 = active(source, "gem:critical_surge", now, source.definition.id);
     if (rows2.length < cap) addStack(source, source.definition.id, "gem:critical_surge", 1, now + 5e3, now, cap);
     else if (surge.resonance >= 3) {
@@ -71981,38 +72198,38 @@ function gemOnDirectHitV1(now, source, target2, abilityId, crit) {
     setOne(source, source.definition.id, "gem:critical_surge_cd", 1, now + 750, now);
   }
   const predator = gem(source, "effect_predator");
-  if (predator && isEliteTarget(target2) && predator.resonance >= 3 && !has(source, "gem:predator_started:" + target2.definition.id, now, source.definition.id)) {
+  if (predator && isEliteTarget(target2) && predator.resonance >= 3 && !has2(source, "gem:predator_started:" + target2.definition.id, now, source.definition.id)) {
     setOne(source, source.definition.id, "gem:predator_started:" + target2.definition.id, 1, FOREVER, now);
     setOne(source, source.definition.id, "gem:predator_boost", 1, now + 8e3, now);
   }
   const retaliation = gem(source, "effect_retaliation");
   let selfHeal = 0;
-  if (retaliation && has(source, "gem:retaliation_ready", now, source.definition.id)) {
+  if (retaliation && has2(source, "gem:retaliation_ready", now, source.definition.id)) {
     clear(source, "gem:retaliation_ready", source.definition.id);
-    if (retaliation.resonance >= 3 && !has(source, "gem:retaliation_heal_cd", now, source.definition.id)) {
+    if (retaliation.resonance >= 3 && !has2(source, "gem:retaliation_heal_cd", now, source.definition.id)) {
       selfHeal = 0.01;
       setOne(source, source.definition.id, "gem:retaliation_heal_cd", 1, now + 1e4, now);
     }
   }
-  if (has(source, "gem:battle_offense_ready", now, source.definition.id)) clear(source, "gem:battle_offense_ready", source.definition.id);
-  if (has(target2, "gem:opportunist_ready", now, source.definition.id)) clear(target2, "gem:opportunist_ready", source.definition.id);
+  if (has2(source, "gem:battle_offense_ready", now, source.definition.id)) clear(source, "gem:battle_offense_ready", source.definition.id);
+  if (has2(target2, "gem:opportunist_ready", now, source.definition.id)) clear(target2, "gem:opportunist_ready", source.definition.id);
   return { selfHeal };
 }
 function gemOnDamageTakenV1(now, target2, dealt) {
   if (target2.definition.team !== "players" || dealt <= 0) return;
   const maxHp = Math.max(1, target2.definition.stats.maxHp);
   const unyielding = gem(target2, "effect_unyielding");
-  if (unyielding && !has(target2, "gem:unyielding_cd", now, target2.definition.id)) {
+  if (unyielding && !has2(target2, "gem:unyielding_cd", now, target2.definition.id)) {
     addStack(target2, target2.definition.id, "gem:unyielding", 1, now + (unyielding.resonance >= 3 ? 7e3 : 5e3), now, unyielding.resonance >= 2 ? 5 : 4);
     setOne(target2, target2.definition.id, "gem:unyielding_cd", 1, now + 750, now);
   }
   const lastStand = gem(target2, "effect_last_stand");
-  if (lastStand && !has(target2, "gem:last_stand_used", now, target2.definition.id) && target2.hp / maxHp < (lastStand.resonance >= 2 ? 0.35 : 0.3)) {
+  if (lastStand && !has2(target2, "gem:last_stand_used", now, target2.definition.id) && target2.hp / maxHp < (lastStand.resonance >= 2 ? 0.35 : 0.3)) {
     setOne(target2, target2.definition.id, "gem:last_stand_used", 1, FOREVER, now);
     target2.modifiers.push({ sourceId: target2.definition.id, tag: "gem:damage_reduction", value: lastStand.totalValue, expiresAt: now + (lastStand.resonance >= 3 ? 8e3 : 6e3), createdAt: now, kind: "gem" });
   }
   const retaliation = gem(target2, "effect_retaliation");
-  if (retaliation && dealt / maxHp >= (retaliation.resonance >= 2 ? 0.1 : 0.12) && !has(target2, "gem:retaliation_cd", now, target2.definition.id)) {
+  if (retaliation && dealt / maxHp >= (retaliation.resonance >= 2 ? 0.1 : 0.12) && !has2(target2, "gem:retaliation_cd", now, target2.definition.id)) {
     setOne(target2, target2.definition.id, "gem:retaliation_ready", retaliation.totalValue, now + 8e3, now);
     setOne(target2, target2.definition.id, "gem:retaliation_cd", 1, now + 8e3, now);
   }
@@ -72027,7 +72244,7 @@ function gemConsumeSupportChargeV1(now, source) {
       if (benediction.resonance >= 3) setOne(source, source.definition.id, "gem:haste_bonus", 0.02, now + 4e3, now);
     }
   }
-  if (has(source, "gem:battle_support_ready", now, source.definition.id)) clear(source, "gem:battle_support_ready", source.definition.id);
+  if (has2(source, "gem:battle_support_ready", now, source.definition.id)) clear(source, "gem:battle_support_ready", source.definition.id);
 }
 function gemOnDirectHealV1(now, source, target2, attempted, actual) {
   const result = { mercyBarrier: 0, renewalTotal: 0, renewalDuration: 0, renewalMax: 1 };
@@ -72063,13 +72280,13 @@ function gemOnDebuffAppliedV1(now, source, target2) {
   const opportunist = gem(source, "effect_opportunist");
   if (!opportunist) return;
   const cd = opportunist.resonance >= 2 ? 3e3 : 4e3;
-  if (has(target2, "gem:opportunist_cd", now, source.definition.id)) return;
+  if (has2(target2, "gem:opportunist_cd", now, source.definition.id)) return;
   setOne(target2, source.definition.id, "gem:opportunist_ready", opportunist.totalValue, now + 4e3, now);
   setOne(target2, source.definition.id, "gem:opportunist_cd", 1, now + cd, now);
 }
 function gemOnKillV1(now, source, target2) {
   const sustain = gem(source, "effect_sustenance");
-  if (!sustain || has(source, "gem:sustenance_cd", now, source.definition.id)) return;
+  if (!sustain || has2(source, "gem:sustenance_cd", now, source.definition.id)) return;
   const multiplier = sustain.resonance >= 2 && isEliteTarget(target2) ? 3 : 1, amount = source.definition.stats.maxHp * sustain.totalValue * multiplier, missing = source.definition.stats.maxHp - source.hp, healed = Math.min(missing, amount);
   source.hp += healed;
   if (sustain.resonance >= 3 && amount > healed) source.shield = Math.min(source.definition.stats.maxHp * 0.02, source.shield + (amount - healed) * 0.25);
@@ -72078,13 +72295,13 @@ function gemOnKillV1(now, source, target2) {
 function gemOnBossPhaseV1(now, players) {
   for (const player of players) {
     const opening = gem(player, "effect_opening_strike");
-    if (!opening || opening.resonance < 3 || has(player, "gem:opening_phase_used", now, player.definition.id)) continue;
+    if (!opening || opening.resonance < 3 || has2(player, "gem:opening_phase_used", now, player.definition.id)) continue;
     setOne(player, player.definition.id, "gem:opening_phase_used", 1, FOREVER, now);
     setOne(player, player.definition.id, "gem:opening_phase", 1, now + (opening.resonance >= 2 ? 1e4 : 8e3), now);
   }
 }
 
-// src/server/combat/engine.ts
+// backend/src/server/combat/engine.ts
 function init(def, carried) {
   const hp = Math.max(0, Math.min(def.stats.maxHp, carried?.hp ?? def.stats.maxHp));
   const downed = carried?.downed ?? false;
@@ -72099,6 +72316,22 @@ function hpPct(x) {
 function modifier(state, tag, now) {
   return state.modifiers.filter((m) => m.tag === tag && m.expiresAt > now).reduce((s, m) => s + m.value, 0);
 }
+var VISIBLE_GEM_STATE_TAGS = /* @__PURE__ */ new Set([
+  "gem:momentum",
+  "gem:critical_surge",
+  "gem:flow",
+  "gem:unyielding",
+  "gem:predator_boost",
+  "gem:opening_phase",
+  "gem:retaliation_ready",
+  "gem:battle_offense_ready",
+  "gem:battle_support_ready",
+  "gem:damage_reduction",
+  "gem:shared_resolve",
+  "gem:benediction_charge",
+  "gem:haste_bonus",
+  "gem:opportunist_ready"
+]);
 function chooseEnemy(actor, enemies, rng, label) {
   const live = living(enemies);
   if (!live.length) return void 0;
@@ -72108,6 +72341,20 @@ function chooseEnemy(actor, enemies, rng, label) {
     return live.reduce((a, b) => (actor.threat[b.definition.id] || 0) > (actor.threat[a.definition.id] || 0) ? b : a, live[0]);
   }
   return rng.pick(live, label);
+}
+function threatenedAlly(allies, enemies) {
+  const liveAllies = new Map(living(allies).map((ally) => [ally.definition.id, ally]));
+  const candidates = living(enemies).flatMap((enemy2) => {
+    if (!enemy2.casting) return [];
+    const ability2 = enemy2.definition.abilities.find((item) => item.id === enemy2.casting.abilityId);
+    if (!ability2 || ability2.target === "all_enemies" || ability2.target === "all_allies" || ability2.target === "self") return [];
+    const target2 = liveAllies.get(enemy2.casting.targetId);
+    if (!target2) return [];
+    if (!ability2.effects.some((effect2) => effect2.kind === "damage" || effect2.kind === "dot")) return [];
+    return [{ enemy: enemy2, target: target2, completesAt: enemy2.casting.completesAt }];
+  });
+  candidates.sort((a, b) => a.completesAt - b.completesAt || Number(Boolean(b.enemy.definition.boss)) - Number(Boolean(a.enemy.definition.boss)) || a.enemy.definition.id.localeCompare(b.enemy.definition.id));
+  return candidates[0]?.target;
 }
 function targetsFor(rule, actor, allies, enemies, rng, label) {
   switch (rule) {
@@ -72125,6 +72372,18 @@ function targetsFor(rule, actor, allies, enemies, rng, label) {
       const live = living(enemies);
       return live.length ? [rng.pick(live, label)] : [];
     }
+    case "interruptible_casting_enemy": {
+      const live = living(enemies).filter((enemy2) => enemy2.casting && (enemy2.definition.abilities.find((ability2) => ability2.id === enemy2.casting.abilityId)?.interruptible ?? false));
+      if (!live.length) return [];
+      live.sort((a, b) => a.casting.completesAt - b.casting.completesAt || Number(Boolean(b.definition.boss)) - Number(Boolean(a.definition.boss)) || a.definition.id.localeCompare(b.definition.id));
+      return [live[0]];
+    }
+    case "threatened_ally": {
+      const threatened = threatenedAlly(allies, enemies);
+      if (threatened) return [threatened];
+      const live = living(allies);
+      return live.length ? [live.reduce((a, b) => hpPct(b) < hpPct(a) ? b : a)] : [];
+    }
     case "current_target":
     default: {
       const t = chooseEnemy(actor, enemies, rng, label);
@@ -72138,6 +72397,10 @@ function conditionOk(a, actor, allies, enemies) {
       return hpPct(actor) < 0.5;
     case "ally_below_50":
       return living(allies).some((x) => hpPct(x) < 0.5);
+    case "ally_below_80":
+      return living(allies).some((x) => hpPct(x) < 0.8);
+    case "ally_below_80_or_targeted":
+      return Boolean(threatenedAlly(allies, enemies)) || living(allies).some((x) => hpPct(x) < 0.8);
     case "target_casting":
       return living(enemies).some((x) => !!x.casting && (x.definition.abilities.find((z) => z.id === x.casting.abilityId)?.interruptible ?? false));
     case "multiple_enemies":
@@ -72155,13 +72418,37 @@ function simulateCombat(input) {
   const players = input.players.map((def) => init(def, input.initialPlayerState?.[def.id])), enemies = input.enemies.map((def) => init(def)), all = [...players, ...enemies];
   const rng = new CombatRng(input.seed);
   const events = [{ atMs: 0, type: "combat_start" }];
+  let lastGemStateKey = "[]";
+  const visibleGemStates = (now) => {
+    const rows2 = [];
+    for (const state of all) {
+      const grouped = /* @__PURE__ */ new Map();
+      for (const modifier2 of state.modifiers) {
+        if (modifier2.kind !== "gem" || modifier2.expiresAt <= now || !VISIBLE_GEM_STATE_TAGS.has(modifier2.tag)) continue;
+        const expiries = grouped.get(modifier2.tag) ?? [];
+        expiries.push(modifier2.expiresAt);
+        grouped.set(modifier2.tag, expiries);
+      }
+      for (const [tag, expiries] of grouped) rows2.push({ targetId: state.definition.id, tag, expiriesAtMs: expiries.sort((a, b) => a - b) });
+    }
+    return rows2.sort((a, b) => a.targetId.localeCompare(b.targetId) || a.tag.localeCompare(b.tag));
+  };
+  const emitGemState = (now) => {
+    const gemStates = visibleGemStates(now), key = JSON.stringify(gemStates);
+    if (key === lastGemStateKey) return;
+    lastGemStateKey = key;
+    events.push({ atMs: now, type: "gem_state", gemStates });
+  };
   const addThreat = (target2, source, amount) => {
     if (target2.definition.team === "enemies") target2.threat[source.definition.id] = (target2.threat[source.definition.id] || 0) + amount;
   };
   const applyDamage = (now, source, target2, effect2, abilityId, eventType = "damage") => {
     if (!target2.alive) return;
     const hc = hitChance(source.definition.stats.accuracy, target2.definition.stats.evasion, accuracyScale);
-    if (rng.next(`${now}:${source.definition.id}:${abilityId}:hit`) > hc) return;
+    if (rng.next(`${now}:${source.definition.id}:${abilityId}:hit`) > hc) {
+      if (eventType === "damage") events.push({ atMs: now, type: "miss", actorId: source.definition.id, targetId: target2.definition.id, abilityId });
+      return;
+    }
     const mit = effect2.damageType === "true" ? 0 : defenseMitigation(gemEffectiveDefenseV1(target2, now), mitigationConstant);
     const crit = rng.next(`${now}:${source.definition.id}:${abilityId}:crit`) < clamp2(source.definition.stats.critChance + modifier(source, "crit", now), 0, 0.75);
     let raw2 = damageAfterMitigation(source.definition.stats.attackPower, effect2.coeff ?? 0, mit, 0.95 + rng.next(`${now}:${abilityId}:var`) * 0.1, crit, source.definition.stats.critMultiplier) + (effect2.flat ?? 0);
@@ -72177,8 +72464,10 @@ function simulateCombat(input) {
     source.damageDone += dealt;
     target2.damageTaken += dealt;
     gemOnDamageTakenV1(now, target2, dealt);
+    emitGemState(now);
     if (eventType === "damage") {
       const proc = gemOnDirectHitV1(now, source, target2, abilityId, crit);
+      emitGemState(now);
       if (proc.selfHeal > 0 && source.alive) {
         const amount = Math.min(source.definition.stats.maxHp - source.hp, source.definition.stats.maxHp * proc.selfHeal);
         source.hp += amount;
@@ -72186,7 +72475,7 @@ function simulateCombat(input) {
       }
     }
     addThreat(target2, source, dealt * (effect2.threatMultiplier ?? 1));
-    events.push({ atMs: now, type: eventType, actorId: source.definition.id, targetId: target2.definition.id, abilityId, amount: Number(dealt.toFixed(2)) });
+    events.push({ atMs: now, type: eventType, actorId: source.definition.id, targetId: target2.definition.id, abilityId, amount: Number(dealt.toFixed(2)), ...eventType === "damage" ? { critical: crit } : {}, ...absorbed > 0 ? { absorbed: Number(absorbed.toFixed(2)) } : {} });
     let reflectable = absorbed;
     for (const shield of target2.reflectiveShields ?? []) {
       const used = Math.min(reflectable, shield.remaining);
@@ -72202,21 +72491,22 @@ function simulateCombat(input) {
       if (source.hp <= 0) {
         source.alive = false;
         source.downed = source.definition.team === "players";
-        events.push({ atMs: now, type: source.downed ? "down" : "death", targetId: source.definition.id, actorId: owner.definition.id });
+        events.push({ atMs: now, type: source.downed ? "down" : "death", targetId: source.definition.id, actorId: owner.definition.id, abilityId: "COMPANION_REFLECT" });
       }
     }
     if (target2.reflectiveShields) target2.reflectiveShields = target2.reflectiveShields.filter((s) => s.remaining > 0);
     if (target2.hp <= 0 && target2.alive) {
       gemOnKillV1(now, source, target2);
+      emitGemState(now);
       target2.alive = false;
       target2.downed = target2.definition.team === "players";
-      events.push({ atMs: now, type: target2.downed ? "down" : "death", targetId: target2.definition.id, actorId: source.definition.id });
+      events.push({ atMs: now, type: target2.downed ? "down" : "death", targetId: target2.definition.id, actorId: source.definition.id, abilityId });
     }
   };
   const applyHeal = (now, source, target2, effect2, abilityId, eventType = "heal") => {
     if (!target2.alive) return;
-    const direct = eventType === "heal", mult = direct ? gemHealingMultiplierV1(source, now) : 1;
-    const amount = Math.max(0, (source.definition.stats.healingPower * (effect2.coeff ?? 0) + (effect2.flat ?? 0)) * mult);
+    const direct = eventType === "heal", sourceMult = direct ? gemHealingMultiplierV1(source, now) : 1, receivedMult = Math.max(0, 1 + modifier(target2, "healing_received", now));
+    const amount = Math.max(0, (source.definition.stats.healingPower * (effect2.coeff ?? 0) + (effect2.flat ?? 0)) * sourceMult * receivedMult);
     const actual = Math.min(amount, target2.definition.stats.maxHp - target2.hp);
     target2.hp += actual;
     source.healingDone += actual;
@@ -72237,6 +72527,7 @@ function simulateCombat(input) {
         target2.periodic.push({ sourceId: source.definition.id, effectId: "GEM_RENEWAL", kind: "hot", coeff: 0, flat: post.renewalTotal / ticks, nextTickAt: now + tickMs, expiresAt: now + post.renewalDuration, tickMs });
       }
       gemConsumeSupportChargeV1(now, source);
+      emitGemState(now);
     }
     enemies.forEach((e) => {
       if (e.alive) addThreat(e, source, actual * 0.5 * (effect2.threatMultiplier ?? 1));
@@ -72251,20 +72542,23 @@ function simulateCombat(input) {
       if (effect2.shieldReflectPct && amt > 0) (target2.reflectiveShields ??= []).push({ remaining: amt, rate: clamp2(effect2.shieldReflectPct, 0, 0.5), sourceId: source.definition.id });
       gemOnShieldAppliedV1(now, source, target2);
       gemConsumeSupportChargeV1(now, source);
+      emitGemState(now);
       events.push({ atMs: now, type: "shield", actorId: source.definition.id, targetId: target2.definition.id, abilityId, amount: Number(amt.toFixed(2)) });
       return;
     }
     if (effect2.kind === "dot" || effect2.kind === "hot") {
-      target2.periodic.push({ sourceId: source.definition.id, effectId: abilityId, kind: effect2.kind, coeff: effect2.coeff ?? 0, flat: effect2.flat ?? 0, damageType: effect2.damageType, nextTickAt: now + (effect2.tickMs ?? 1e3), expiresAt: now + (effect2.durationMs ?? 3e3), tickMs: effect2.tickMs ?? 1e3 });
+      const expiresAt = now + (effect2.durationMs ?? 3e3);
+      target2.periodic.push({ sourceId: source.definition.id, effectId: abilityId, kind: effect2.kind, coeff: effect2.coeff ?? 0, flat: effect2.flat ?? 0, damageType: effect2.damageType, nextTickAt: now + (effect2.tickMs ?? 1e3), expiresAt, tickMs: effect2.tickMs ?? 1e3 });
+      events.push({ atMs: now, type: "status_apply", actorId: source.definition.id, targetId: target2.definition.id, abilityId, statusKind: effect2.kind, statusTag: effect2.tag ?? effect2.damageType ?? effect2.kind, expiresAtMs: expiresAt });
       return;
     }
     if (effect2.kind === "interrupt") {
       if (target2.casting) {
-        const def = target2.definition.abilities.find((a) => a.id === target2.casting.abilityId);
+        const interruptedAbilityId = target2.casting.abilityId, def = target2.definition.abilities.find((a) => a.id === interruptedAbilityId);
         if (def?.interruptible) {
           target2.casting = void 0;
           source.interrupts++;
-          events.push({ atMs: now, type: "interrupt", actorId: source.definition.id, targetId: target2.definition.id, abilityId });
+          events.push({ atMs: now, type: "interrupt", actorId: source.definition.id, targetId: target2.definition.id, abilityId, interruptedAbilityId });
         }
       }
       return;
@@ -72277,9 +72571,12 @@ function simulateCombat(input) {
       return;
     }
     if (effect2.kind === "buff" || effect2.kind === "debuff") {
-      target2.modifiers.push({ sourceId: source.definition.id, tag: effect2.tag ?? "generic", value: effect2.value ?? 0, expiresAt: now + (effect2.durationMs ?? 5e3), createdAt: now, kind: effect2.kind });
+      const tag = effect2.tag ?? "generic", expiresAt = now + (effect2.durationMs ?? 5e3);
+      target2.modifiers.push({ sourceId: source.definition.id, tag, value: effect2.value ?? 0, expiresAt, createdAt: now, kind: effect2.kind });
+      events.push({ atMs: now, type: "status_apply", actorId: source.definition.id, targetId: target2.definition.id, abilityId, statusKind: effect2.kind, statusTag: tag, expiresAtMs: expiresAt });
       if (effect2.kind === "debuff") gemOnDebuffAppliedV1(now, source, target2);
       else gemOnBuffAppliedV1(now, source, target2);
+      emitGemState(now);
       return;
     }
   };
@@ -72313,6 +72610,7 @@ function simulateCombat(input) {
           boss2.triggeredPhases.push(phase.id);
           events.push({ atMs: now, type: "phase", actorId: boss2.definition.id, abilityId: phase.id, detail: `hp<=${phase.hpPct}` });
           gemOnBossPhaseV1(now, players);
+          emitGemState(now);
           for (const fx of phase.effects) {
             for (const t of targetsFor(phase.target, boss2, enemies, players, rng, `${now}:${phase.id}:phase`)) applyEffect(now, boss2, t, fx, phase.id);
           }
@@ -72329,6 +72627,7 @@ function simulateCombat(input) {
         if (ab2 && target2?.alive) {
           events.push({ atMs: now, type: "cast_complete", actorId: actor.definition.id, targetId: target2.definition.id, abilityId: ab2.id });
           gemOnAbilityUsedV1(now, actor, ab2);
+          emitGemState(now);
           for (const fx of ab2.effects) {
             for (const t of targetsFor(ab2.target, actor, allies, foes, rng, `${now}:${ab2.id}:target`)) applyEffect(now, actor, t, fx, ab2.id);
           }
@@ -72347,6 +72646,7 @@ function simulateCombat(input) {
             events.push({ atMs: now, type: "cast_start", actorId: actor.definition.id, targetId: t.definition.id, abilityId: ab.id });
           } else {
             gemOnAbilityUsedV1(now, actor, ab);
+            emitGemState(now);
             for (const fx of ab.effects) {
               for (const x of targetsFor(ab.target, actor, allies, foes, rng, `${now}:${ab.id}:instant`)) applyEffect(now, actor, x, fx, ab.id);
             }
@@ -72367,7 +72667,48 @@ function simulateCombat(input) {
   return { victory: false, durationMs: maxMs, reason: "timeout", events, players, enemies };
 }
 
-// src/server/companions/content.ts
+// backend/src/shared/companion-affinity-catalog.ts
+var COMPANION_AFFINITY_BY_ID = {
+  UNIT_001: "wild",
+  UNIT_002: "construct",
+  UNIT_003: "arcane",
+  UNIT_004: "primal",
+  UNIT_005: "arcane",
+  UNIT_006: "radiant",
+  UNIT_007: "umbral",
+  UNIT_008: "radiant",
+  UNIT_009: "arcane",
+  UNIT_010: "construct",
+  UNIT_011: "umbral",
+  UNIT_012: "construct",
+  UNIT_013: "wild",
+  UNIT_014: "primal",
+  UNIT_015: "radiant",
+  UNIT_016: "radiant",
+  UNIT_017: "wild",
+  UNIT_018: "arcane",
+  UNIT_019: "construct",
+  UNIT_020: "arcane",
+  UNIT_021: "primal",
+  UNIT_022: "construct",
+  UNIT_023: "primal",
+  UNIT_024: "umbral",
+  EVT_UNIT_001: "radiant",
+  EVT_UNIT_002: "radiant",
+  EVT_UNIT_003: "primal",
+  EVT_UNIT_004: "radiant",
+  EVT_UNIT_005: "arcane",
+  EVT_UNIT_006: "primal",
+  EVT_UNIT_007: "umbral",
+  EVT_UNIT_008: "umbral",
+  EVT_UNIT_009: "arcane",
+  EVT_UNIT_010: "construct"
+};
+function companionAffinityById(id) {
+  return COMPANION_AFFINITY_BY_ID[id] ?? "wild";
+}
+
+// backend/src/server/companions/content.ts
 var raw = [
   ["UNIT_001", "Ironwood Hound", "damage", "standard", "REG_001", 180, 22, 12, 2, "damage", 1],
   ["UNIT_002", "Runebound Sentry", "tank", "standard", "REG_001", 260, 14, 24, 2.6, "shield", 0.06],
@@ -72436,9 +72777,10 @@ var COMPANION_SERVER_DEFINITIONS = raw.map(([id, name, role, rarity, originId, h
   name,
   role,
   rarity,
+  affinity: companionAffinityById(id),
   originId,
   baseStats: { hp, power, defense, attackSpeed },
-  tags: [role, rarity, originId],
+  tags: [role, rarity, originId, companionAffinityById(id), `affinity:${companionAffinityById(id)}`],
   active: { id: `${id}_ACTIVE`, name: COMPANION_IDENTITY_PROFILES[id]?.activeName ?? `${name} Signature`, cooldownMs: cooldown(rarity, role), baseCoeff: coeff, perLevelCoeff: kind === "damage" ? 4e-3 : 6e-4, effectKind: effect(kind), targeting: target(role) },
   identity: COMPANION_IDENTITY_PROFILES[id],
   visual: rarity === "prestige" ? { rarityFrame: "prestige", summonEffect: "prestige_summon", idleEffect: "prestige_idle", profileFrame: "prestige_profile", masteryMarker: "prestige_mastery", nameplateTreatment: "prestige_nameplate", animationRef: `${id}_prestige_entry`, rarityIcon: "\u2605", rarityLabel: "Prestige", accessibilityLabel: "Prestige combat companion. Star rarity icon and ornate structured frame.", reducedMotionFallback: "prestige_static_entry" } : rarity === "elite" ? { rarityFrame: "elite", summonEffect: "elite_summon", masteryMarker: "elite_mastery", rarityIcon: "\u25C6\u25C6\u25C6", rarityLabel: "Elite", accessibilityLabel: "Elite combat companion. Triple-diamond rarity icon and distinct structured frame.", reducedMotionFallback: "elite_static_entry" } : rarity === "rare" ? { rarityFrame: "rare", rarityIcon: "\u25C6\u25C6", rarityLabel: "Rare", accessibilityLabel: "Rare combat companion. Double-diamond rarity icon and enhanced frame." } : { rarityFrame: "standard", rarityIcon: "\u25C6", rarityLabel: "Standard", accessibilityLabel: "Standard combat companion. Single-diamond rarity icon and simple frame." }
@@ -72615,26 +72957,30 @@ var COMPANION_WEEKLY_CHALLENGES = [
   { id: "UNDER_POWER_20", name: "Against the Measure", description: "Clear Floor 20+ with Team Power at or below 3,600.", minimumFloor: 20, restrictions: [{ type: "max_team_power", value: 3600 }], rewards: { companionEssence: 165, bondstones: 0, gold: 3400, materials: { TRIAL_SANCTUARY_MATERIAL: 1 } } },
   { id: "SUNSCAR_PAIR", name: "Sunscar Kin", description: "Clear Floor 10+ with at least two Sunscar companions.", minimumFloor: 10, restrictions: [{ type: "require_origin", originId: "REG_SUNSCAR", count: 2 }], rewards: { companionEssence: 120, bondstones: 0, gold: 2750, materials: { AMBERGLASS: 3 } } },
   { id: "FROSTMARCH_PAIR", name: "Frostmarch Kin", description: "Clear Floor 10+ with at least two Frostmarch companions.", minimumFloor: 10, restrictions: [{ type: "require_origin", originId: "REG_FROSTMARCH", count: 2 }], rewards: { companionEssence: 120, bondstones: 0, gold: 2750, materials: { RIMEGLASS: 3 } } },
-  { id: "ASHLANDS_PAIR", name: "Ashlands Kin", description: "Clear Floor 10+ with at least two Ashlands companions.", minimumFloor: 10, restrictions: [{ type: "require_origin", originId: "REG_ASHLANDS", count: 2 }], rewards: { companionEssence: 120, bondstones: 0, gold: 2750, materials: { BANNER_ASH: 3 } } }
+  { id: "ASHLANDS_PAIR", name: "Ashlands Kin", description: "Clear Floor 10+ with at least two Ashlands companions.", minimumFloor: 10, restrictions: [{ type: "require_origin", originId: "REG_ASHLANDS", count: 2 }], rewards: { companionEssence: 120, bondstones: 0, gold: 2750, materials: { BANNER_ASH: 3 } } },
+  { id: "AFFINITY_TRIAD", name: "Threefold Nature", description: "Clear Floor 10+ with three different Companion Affinities.", minimumFloor: 10, restrictions: [{ type: "affinity_unique" }], rewards: { companionEssence: 145, bondstones: 0, gold: 3e3, materials: { TRIAL_SANCTUARY_MATERIAL: 1 } } },
+  { id: "RADIANT_UMBRAL", name: "Light and Shadow", description: "Clear Floor 15+ with at least one Radiant and one Umbral companion.", minimumFloor: 15, restrictions: [{ type: "require_affinity", affinity: "radiant", count: 1 }, { type: "require_affinity", affinity: "umbral", count: 1 }], rewards: { companionEssence: 150, bondstones: 0, gold: 3150 } },
+  { id: "NO_CONSTRUCT_15", name: "Flesh and Spirit", description: "Clear Floor 15+ without a Construct companion.", minimumFloor: 15, restrictions: [{ type: "prohibit_affinity", affinity: "construct" }], rewards: { companionEssence: 130, bondstones: 0, gold: 2950, materials: { TRIAL_SANCTUARY_MATERIAL: 1 } } },
+  { id: "PRIMAL_WILD_PAIR", name: "Untamed Company", description: "Clear Floor 10+ with at least one Primal and one Wild companion.", minimumFloor: 10, restrictions: [{ type: "require_affinity", affinity: "primal", count: 1 }, { type: "require_affinity", affinity: "wild", count: 1 }], rewards: { companionEssence: 135, bondstones: 0, gold: 2900 } }
 ];
 var COMPANION_MISSIONS = [
-  { id: "MISSION_SCOUT_2H", name: "Asterfall Perimeter Patrol", originId: "REG_001", durationMs: 2 * 36e5, missionVersion: 2, minCompanions: 1, maxCompanions: 2, minimumPenLevel: 1, minimumLevel: 5, recommendedPower: 1050, requirements: [{ type: "min_level", value: 5 }], bonusRequirements: [{ type: "origin_count", originId: "REG_001", count: 1 }], costs: { gold: 300 }, baseRewards: { companionEssence: 3, gold: 280, companionXp: 85, bondXp: 12, materials: { IRONWOOD_FANG: 1 } }, bonusRewards: { companionEssence: 2, materials: { SUPPLIES: 1 } }, bonusRewardChanceByGrade: { B: 0.05, A: 0.1, S: 0.15 } },
-  { id: "MISSION_APPRENTICE_3H", name: "Apprentice Field Survey", originId: "REG_001", durationMs: 3 * 36e5, missionVersion: 1, minCompanions: 2, maxCompanions: 2, minimumPenLevel: 1, minimumLevel: 8, recommendedPower: 1650, requirements: [{ type: "max_rarity", rarity: "rare" }, { type: "min_level", value: 8 }], bonusRequirements: [{ type: "role_count", role: "support", count: 1 }], specialtyBonus: { label: "Mentorship: +15% Companion XP with the bonus team.", companionXpMultiplier: 1.15 }, costs: { gold: 430, materials: { SUPPLIES: 1 } }, baseRewards: { companionEssence: 5, gold: 390, companionXp: 120, bondXp: 16, materials: { WISP_DUST: 1 } }, bonusRewards: { companionEssence: 2, materials: { SUPPLIES: 1 } }, bonusRewardChanceByGrade: { B: 0.04, A: 0.08, S: 0.12 } },
-  { id: "MISSION_SILVERBROOK_4H", name: "Silverbrook Relief Run", originId: "REG_001", durationMs: 4 * 36e5, missionVersion: 1, minCompanions: 2, maxCompanions: 3, minimumPenLevel: 1, minimumLevel: 10, recommendedPower: 2100, requirements: [{ type: "role_count", role: "support", count: 1 }, { type: "min_level", value: 10 }], bonusRequirements: [{ type: "origin_count", originId: "REG_001", count: 2 }], costs: { gold: 600, materials: { SUPPLIES: 1 } }, baseRewards: { companionEssence: 7, gold: 520, companionXp: 155, bondXp: 20, materials: { WISP_DUST: 2 } }, bonusRewards: { companionEssence: 3, materials: { ECHO_QUARTZ: 1 } }, bonusRewardChanceByGrade: { B: 0.04, A: 0.09, S: 0.14 } },
-  { id: "MISSION_SUNSCAR_4H", name: "Sunscar Caravan Guard", originId: "REG_SUNSCAR", durationMs: 4 * 36e5, missionVersion: 2, minCompanions: 2, maxCompanions: 3, minimumPenLevel: 1, minimumLevel: 15, recommendedPower: 2800, requirements: [{ type: "role_count", role: "tank", count: 1 }, { type: "role_count", role: "support", count: 1 }, { type: "min_level", value: 15 }, { type: "origin_count", originId: "REG_SUNSCAR", count: 1 }], bonusRequirements: [{ type: "origin_count", originId: "REG_SUNSCAR", count: 2 }], bonusOriginId: "REG_SUNSCAR", costs: { gold: 650, materials: { SUPPLIES: 2 } }, baseRewards: { companionEssence: 7, gold: 600, companionXp: 160, bondXp: 20, materials: { AMBERGLASS: 1 } }, bonusRewards: { companionEssence: 4, materials: { AMBERGLASS: 1 } }, bonusRewardChanceByGrade: { B: 0.04, A: 0.08, S: 0.14 } },
-  { id: "MISSION_FROST_SCOUT_4H", name: "Frostmarch Whiteout Scout", originId: "REG_FROSTMARCH", durationMs: 4 * 36e5, missionVersion: 1, minCompanions: 2, maxCompanions: 2, minimumPenLevel: 1, minimumLevel: 15, recommendedPower: 2750, requirements: [{ type: "role_count", role: "damage", count: 1 }, { type: "min_level", value: 15 }, { type: "origin_count", originId: "REG_FROSTMARCH", count: 1 }], bonusRequirements: [{ type: "role_count", role: "support", count: 1 }], costs: { gold: 690, materials: { SUPPLIES: 2 } }, baseRewards: { companionEssence: 7, gold: 610, companionXp: 165, bondXp: 21, materials: { FROSTIRON: 1 } }, bonusRewards: { companionEssence: 4, materials: { RIMEGLASS: 1 } }, bonusRewardChanceByGrade: { B: 0.04, A: 0.08, S: 0.13 } },
-  { id: "MISSION_ASTERFALL_SHRINE_8H", name: "Forgotten Asterfall Shrine", originId: "REG_001", durationMs: 8 * 36e5, missionVersion: 1, minCompanions: 3, maxCompanions: 3, minimumPenLevel: 2, minimumBondLevel: 4, recommendedPower: 3e3, requirements: [{ type: "min_bond", value: 4 }, { type: "min_rarity", rarity: "rare", count: 1 }], bonusRequirements: [{ type: "origin_count", originId: "REG_001", count: 3 }], costs: { gold: 1050, materials: { SUPPLIES: 3 } }, baseRewards: { companionEssence: 14, gold: 900, companionXp: 250, bondXp: 30, materials: { IRONWOOD_FANG: 3 } }, bonusRewards: { companionEssence: 7, materials: { TRIAL_SANCTUARY_MATERIAL: 1 } }, bonusRewardChanceByGrade: { A: 0.06, S: 0.14 } },
-  { id: "MISSION_SUNSCAR_RUINS_8H", name: "Sunscar Ruin Survey", originId: "REG_SUNSCAR", durationMs: 8 * 36e5, missionVersion: 1, minCompanions: 3, maxCompanions: 3, minimumPenLevel: 2, minimumLevel: 18, recommendedPower: 3300, requirements: [{ type: "role_count", role: "damage", count: 1 }, { type: "role_count", role: "support", count: 1 }, { type: "origin_count", originId: "REG_SUNSCAR", count: 2 }, { type: "min_level", value: 18 }], bonusRequirements: [{ type: "min_bond", value: 5, count: 2 }], costs: { gold: 1200, materials: { SUPPLIES: 3 } }, baseRewards: { companionEssence: 15, gold: 1025, companionXp: 285, bondXp: 34, materials: { ASTRAL_SCRIPT: 1 } }, bonusRewards: { companionEssence: 7, materials: { SUNSTONE_ORE: 1 } }, bonusRewardChanceByGrade: { A: 0.05, S: 0.12 } },
-  { id: "MISSION_FROST_8H", name: "Frostmarch Bell Route", originId: "REG_FROSTMARCH", durationMs: 8 * 36e5, missionVersion: 2, minCompanions: 2, maxCompanions: 3, minimumPenLevel: 2, minimumLevel: 15, recommendedPower: 3e3, requirements: [{ type: "role_count", role: "support", count: 1 }, { type: "min_level", value: 15 }], bonusRequirements: [{ type: "origin_count", originId: "REG_FROSTMARCH", count: 2 }], bonusOriginId: "REG_FROSTMARCH", costs: { gold: 1100, materials: { SUPPLIES: 3 } }, baseRewards: { companionEssence: 15, gold: 950, companionXp: 270, bondXp: 32, materials: { RIMEGLASS: 1 } }, bonusRewards: { companionEssence: 7, materials: { RIMEGLASS: 1 } }, bonusRewardChanceByGrade: { A: 0.05, S: 0.12 }, bondstoneEligible: true },
-  { id: "MISSION_ASH_RESCUE_8H", name: "Ashlands Furnace Rescue", originId: "REG_ASHLANDS", durationMs: 8 * 36e5, missionVersion: 1, minCompanions: 3, maxCompanions: 3, minimumPenLevel: 2, minimumLevel: 18, recommendedPower: 3500, requirements: [{ type: "role_count", role: "tank", count: 1 }, { type: "role_count", role: "support", count: 1 }, { type: "origin_count", originId: "REG_ASHLANDS", count: 1 }, { type: "min_level", value: 18 }], bonusRequirements: [{ type: "min_ascension", tier: 2, count: 2 }], costs: { gold: 1280, materials: { SUPPLIES: 3 } }, baseRewards: { companionEssence: 15, gold: 1080, companionXp: 300, bondXp: 36, materials: { BANNER_ASH: 1 } }, bonusRewards: { companionEssence: 7, materials: { TRIAL_SANCTUARY_MATERIAL: 1 } }, bonusRewardChanceByGrade: { A: 0.04, S: 0.1 } },
-  { id: "MISSION_ASH_12H", name: "Ashlands Crucible Watch", originId: "REG_ASHLANDS", durationMs: 12 * 36e5, missionVersion: 2, minCompanions: 3, maxCompanions: 3, minimumPenLevel: 3, minimumLevel: 20, recommendedPower: 4e3, requirements: [{ type: "role_count", role: "tank", count: 1 }, { type: "role_count", role: "damage", count: 1 }, { type: "min_level", value: 20 }, { type: "min_ascension", tier: 2, count: 2 }], bonusRequirements: [{ type: "origin_count", originId: "REG_ASHLANDS", count: 2 }], bonusOriginId: "REG_ASHLANDS", costs: { gold: 1600, materials: { SUPPLIES: 4 } }, baseRewards: { companionEssence: 22, gold: 1350, companionXp: 400, bondXp: 44, materials: { BANNER_ASH: 1 } }, bonusRewards: { companionEssence: 10, materials: { TRIAL_SANCTUARY_MATERIAL: 1 } }, bonusRewardChanceByGrade: { A: 0.04, S: 0.1 }, bondstoneEligible: true },
-  { id: "MISSION_GREENFIELDS_FORAGE_2H", name: "Greenfields Forage Run", originId: "REG_001", durationMs: 2 * 36e5, missionVersion: 1, minCompanions: 1, maxCompanions: 2, minimumPenLevel: 1, minimumLevel: 5, recommendedPower: 1e3, requirements: [{ type: "min_level", value: 5 }, { type: "max_rarity", rarity: "rare" }], bonusRequirements: [{ type: "max_rarity", rarity: "standard" }], specialtyBonus: { label: "Low-rarity mentorship: +25% Companion XP with an all-Standard bonus team.", companionXpMultiplier: 1.25 }, costs: { gold: 260 }, baseRewards: { companionEssence: 2, gold: 230, companionXp: 80, bondXp: 10, materials: { WISP_DUST: 1 } }, bonusRewards: { companionEssence: 2, materials: { MOSS_FIBER: 2 } }, bonusRewardChanceByGrade: { B: 0.06, A: 0.1, S: 0.16 } },
-  { id: "MISSION_IRONWOOD_TRACK_4H", name: "Ironwood Tracking Detail", originId: "REG_001", durationMs: 4 * 36e5, missionVersion: 1, minCompanions: 2, maxCompanions: 2, minimumPenLevel: 1, minimumLevel: 10, recommendedPower: 2200, requirements: [{ type: "role_count", role: "damage", count: 1 }, { type: "min_level", value: 10 }, { type: "origin_count", originId: "REG_001", count: 1 }], bonusRequirements: [{ type: "origin_count", originId: "REG_001", count: 2 }], costs: { gold: 520, materials: { SUPPLIES: 1 } }, baseRewards: { companionEssence: 5, gold: 470, companionXp: 150, bondXp: 18, materials: { THORN_SAP: 2 } }, bonusRewards: { companionEssence: 3, materials: { IRONWOOD_FANG: 2 } }, bonusRewardChanceByGrade: { B: 0.05, A: 0.1, S: 0.16 } },
-  { id: "MISSION_SUNSCAR_RELIC_6H", name: "Sunscar Relic Survey", originId: "REG_SUNSCAR", durationMs: 6 * 36e5, missionVersion: 1, minCompanions: 2, maxCompanions: 3, minimumPenLevel: 2, minimumLevel: 18, recommendedPower: 3150, requirements: [{ type: "role_count", role: "support", count: 1 }, { type: "min_bond", value: 4, count: 2 }, { type: "origin_count", originId: "REG_SUNSCAR", count: 1 }], bonusRequirements: [{ type: "origin_count", originId: "REG_SUNSCAR", count: 2 }], specialtyBonus: { label: "Relic recovery: +25% base material yield with the regional bonus team.", materialMultiplier: 1.25 }, costs: { gold: 900, materials: { SUPPLIES: 2 } }, baseRewards: { companionEssence: 7, gold: 760, companionXp: 215, bondXp: 26, materials: { ASTRAL_SCRIPT: 1 } }, bonusRewards: { companionEssence: 5, materials: { SUNSTONE_ORE: 2 } }, bonusRewardChanceByGrade: { A: 0.08, S: 0.15 } },
-  { id: "MISSION_FROST_RESONANCE_6H", name: "Frostmarch Resonance Survey", originId: "REG_FROSTMARCH", durationMs: 6 * 36e5, missionVersion: 1, minCompanions: 2, maxCompanions: 3, minimumPenLevel: 2, minimumLevel: 18, recommendedPower: 3250, requirements: [{ type: "role_count", role: "tank", count: 1 }, { type: "min_bond", value: 5, count: 2 }, { type: "origin_count", originId: "REG_FROSTMARCH", count: 1 }], bonusRequirements: [{ type: "origin_count", originId: "REG_FROSTMARCH", count: 2 }], specialtyBonus: { label: "Resonant bonding: +30% Bond XP with the regional bonus team.", bondXpMultiplier: 1.3 }, costs: { gold: 940, materials: { SUPPLIES: 2 } }, baseRewards: { companionEssence: 8, gold: 800, companionXp: 225, bondXp: 28, materials: { CHOIR_BLOOM: 1 } }, bonusRewards: { companionEssence: 5, materials: { FROSTIRON: 2 } }, bonusRewardChanceByGrade: { A: 0.07, S: 0.14 } },
-  { id: "MISSION_ASHLANDS_SALVAGE_8H", name: "Blackglass Salvage Run", originId: "REG_ASHLANDS", durationMs: 8 * 36e5, missionVersion: 1, minCompanions: 2, maxCompanions: 3, minimumPenLevel: 2, minimumLevel: 20, recommendedPower: 3600, requirements: [{ type: "role_count", role: "damage", count: 1 }, { type: "min_ascension", tier: 1, count: 2 }, { type: "origin_count", originId: "REG_ASHLANDS", count: 1 }], bonusRequirements: [{ type: "origin_count", originId: "REG_ASHLANDS", count: 2 }], specialtyBonus: { label: "Salvage expertise: +30% base material yield with the regional bonus team.", materialMultiplier: 1.3 }, costs: { gold: 1250, materials: { SUPPLIES: 3 } }, baseRewards: { companionEssence: 12, gold: 1050, companionXp: 310, bondXp: 36, materials: { BLACKGLASS_CORE: 1 } }, bonusRewards: { companionEssence: 7, materials: { BANNER_ASH: 2 } }, bonusRewardChanceByGrade: { A: 0.06, S: 0.13 } },
-  { id: "MISSION_OLD_FRIENDS_8H", name: "Old Friends Patrol", originId: "REG_001", durationMs: 8 * 36e5, missionVersion: 1, minCompanions: 3, maxCompanions: 3, minimumPenLevel: 2, minimumBondLevel: 6, recommendedPower: 2850, requirements: [{ type: "max_rarity", rarity: "standard" }, { type: "min_bond", value: 6 }], bonusRequirements: [{ type: "origin_count", originId: "REG_001", count: 3 }], specialtyBonus: { label: "Veteran bond: +35% Bond XP when the full Asterfall Standard trio qualifies.", bondXpMultiplier: 1.35 }, costs: { gold: 950, materials: { SUPPLIES: 2 } }, baseRewards: { companionEssence: 10, gold: 820, companionXp: 280, bondXp: 38, materials: { WISP_DUST: 3 } }, bonusRewards: { companionEssence: 8, materials: { TRIAL_SANCTUARY_MATERIAL: 1 } }, bonusRewardChanceByGrade: { A: 0.08, S: 0.16 } },
-  { id: "MISSION_PRESTIGE_VIGIL_12H", name: "Sanctuary Prestige Vigil", durationMs: 12 * 36e5, missionVersion: 1, minCompanions: 3, maxCompanions: 3, minimumPenLevel: 3, minimumLevel: 20, recommendedPower: 4250, requirements: [{ type: "min_rarity", rarity: "elite", count: 2 }, { type: "min_ascension", tier: 2, count: 3 }, { type: "min_bond", value: 7, count: 3 }], bonusRequirements: [{ type: "min_rarity", rarity: "prestige", count: 1 }], specialtyBonus: { label: "Prestige mentorship: +20% Companion XP and +10% Essence when a Prestige companion joins.", companionXpMultiplier: 1.2, essenceMultiplier: 1.1 }, costs: { gold: 1750, materials: { SUPPLIES: 4 } }, baseRewards: { companionEssence: 18, gold: 1450, companionXp: 420, bondXp: 48, materials: { TRIAL_SANCTUARY_MATERIAL: 1 } }, bonusRewards: { companionEssence: 12, materials: { TRIAL_SANCTUARY_MATERIAL: 1 } }, bonusRewardChanceByGrade: { A: 0.05, S: 0.12 }, bondstoneEligible: true }
+  { id: "MISSION_SCOUT_2H", name: "Asterfall Perimeter Patrol", originId: "REG_001", durationMs: 2 * 36e5, missionVersion: 2, minCompanions: 1, maxCompanions: 2, minimumPenLevel: 1, minimumLevel: 5, recommendedPower: 1050, requirements: [{ type: "min_level", value: 5 }], bonusRequirements: [{ type: "origin_count", originId: "REG_001", count: 1 }, { type: "affinity_count", affinity: "wild", count: 1 }], costs: { gold: 300 }, baseRewards: { companionEssence: 3, gold: 280, companionXp: 85, bondXp: 12, materials: { IRONWOOD_FANG: 1 } }, bonusRewards: { companionEssence: 2, materials: { SUPPLIES: 1 } }, bonusRewardChanceByGrade: { B: 0.05, A: 0.1, S: 0.15 } },
+  { id: "MISSION_APPRENTICE_3H", name: "Apprentice Field Survey", originId: "REG_001", durationMs: 3 * 36e5, missionVersion: 1, minCompanions: 2, maxCompanions: 2, minimumPenLevel: 1, minimumLevel: 8, recommendedPower: 1650, requirements: [{ type: "max_rarity", rarity: "rare" }, { type: "min_level", value: 8 }], bonusRequirements: [{ type: "role_count", role: "support", count: 1 }, { type: "affinity_diversity", count: 2 }], specialtyBonus: { label: "Mentorship: +15% Companion XP with the bonus team.", companionXpMultiplier: 1.15 }, costs: { gold: 430, materials: { SUPPLIES: 1 } }, baseRewards: { companionEssence: 5, gold: 390, companionXp: 120, bondXp: 16, materials: { WISP_DUST: 1 } }, bonusRewards: { companionEssence: 2, materials: { SUPPLIES: 1 } }, bonusRewardChanceByGrade: { B: 0.04, A: 0.08, S: 0.12 } },
+  { id: "MISSION_SILVERBROOK_4H", name: "Silverbrook Relief Run", originId: "REG_001", durationMs: 4 * 36e5, missionVersion: 1, minCompanions: 2, maxCompanions: 3, minimumPenLevel: 1, minimumLevel: 10, recommendedPower: 2100, requirements: [{ type: "role_count", role: "support", count: 1 }, { type: "min_level", value: 10 }], bonusRequirements: [{ type: "origin_count", originId: "REG_001", count: 2 }, { type: "affinity_count", affinity: "arcane", count: 1 }], costs: { gold: 600, materials: { SUPPLIES: 1 } }, baseRewards: { companionEssence: 7, gold: 520, companionXp: 155, bondXp: 20, materials: { WISP_DUST: 2 } }, bonusRewards: { companionEssence: 3, materials: { ECHO_QUARTZ: 1 } }, bonusRewardChanceByGrade: { B: 0.04, A: 0.09, S: 0.14 } },
+  { id: "MISSION_SUNSCAR_4H", name: "Sunscar Caravan Guard", originId: "REG_SUNSCAR", durationMs: 4 * 36e5, missionVersion: 2, minCompanions: 2, maxCompanions: 3, minimumPenLevel: 1, minimumLevel: 15, recommendedPower: 2800, requirements: [{ type: "role_count", role: "tank", count: 1 }, { type: "role_count", role: "support", count: 1 }, { type: "min_level", value: 15 }, { type: "origin_count", originId: "REG_SUNSCAR", count: 1 }, { type: "affinity_diversity", count: 2 }], bonusRequirements: [{ type: "origin_count", originId: "REG_SUNSCAR", count: 2 }], bonusOriginId: "REG_SUNSCAR", costs: { gold: 650, materials: { SUPPLIES: 2 } }, baseRewards: { companionEssence: 7, gold: 600, companionXp: 160, bondXp: 20, materials: { AMBERGLASS: 1 } }, bonusRewards: { companionEssence: 4, materials: { AMBERGLASS: 1 } }, bonusRewardChanceByGrade: { B: 0.04, A: 0.08, S: 0.14 } },
+  { id: "MISSION_FROST_SCOUT_4H", name: "Frostmarch Whiteout Scout", originId: "REG_FROSTMARCH", durationMs: 4 * 36e5, missionVersion: 1, minCompanions: 2, maxCompanions: 2, minimumPenLevel: 1, minimumLevel: 15, recommendedPower: 2750, requirements: [{ type: "role_count", role: "damage", count: 1 }, { type: "min_level", value: 15 }, { type: "origin_count", originId: "REG_FROSTMARCH", count: 1 }], bonusRequirements: [{ type: "role_count", role: "support", count: 1 }, { type: "affinity_diversity", count: 2 }], costs: { gold: 690, materials: { SUPPLIES: 2 } }, baseRewards: { companionEssence: 7, gold: 610, companionXp: 165, bondXp: 21, materials: { FROSTIRON: 1 } }, bonusRewards: { companionEssence: 4, materials: { RIMEGLASS: 1 } }, bonusRewardChanceByGrade: { B: 0.04, A: 0.08, S: 0.13 } },
+  { id: "MISSION_ASTERFALL_SHRINE_8H", name: "Forgotten Asterfall Shrine", originId: "REG_001", durationMs: 8 * 36e5, missionVersion: 1, minCompanions: 3, maxCompanions: 3, minimumPenLevel: 2, minimumBondLevel: 4, recommendedPower: 3e3, requirements: [{ type: "min_bond", value: 4 }, { type: "min_rarity", rarity: "rare", count: 1 }], bonusRequirements: [{ type: "origin_count", originId: "REG_001", count: 3 }, { type: "affinity_unique" }], costs: { gold: 1050, materials: { SUPPLIES: 3 } }, baseRewards: { companionEssence: 14, gold: 900, companionXp: 250, bondXp: 30, materials: { IRONWOOD_FANG: 3 } }, bonusRewards: { companionEssence: 7, materials: { TRIAL_SANCTUARY_MATERIAL: 1 } }, bonusRewardChanceByGrade: { A: 0.06, S: 0.14 } },
+  { id: "MISSION_SUNSCAR_RUINS_8H", name: "Sunscar Ruin Survey", originId: "REG_SUNSCAR", durationMs: 8 * 36e5, missionVersion: 1, minCompanions: 3, maxCompanions: 3, minimumPenLevel: 2, minimumLevel: 18, recommendedPower: 3300, requirements: [{ type: "role_count", role: "damage", count: 1 }, { type: "role_count", role: "support", count: 1 }, { type: "origin_count", originId: "REG_SUNSCAR", count: 2 }, { type: "min_level", value: 18 }, { type: "affinity_diversity", count: 2 }], bonusRequirements: [{ type: "min_bond", value: 5, count: 2 }], costs: { gold: 1200, materials: { SUPPLIES: 3 } }, baseRewards: { companionEssence: 15, gold: 1025, companionXp: 285, bondXp: 34, materials: { ASTRAL_SCRIPT: 1 } }, bonusRewards: { companionEssence: 7, materials: { SUNSTONE_ORE: 1 } }, bonusRewardChanceByGrade: { A: 0.05, S: 0.12 } },
+  { id: "MISSION_FROST_8H", name: "Frostmarch Bell Route", originId: "REG_FROSTMARCH", durationMs: 8 * 36e5, missionVersion: 2, minCompanions: 2, maxCompanions: 3, minimumPenLevel: 2, minimumLevel: 15, recommendedPower: 3e3, requirements: [{ type: "role_count", role: "support", count: 1 }, { type: "min_level", value: 15 }], bonusRequirements: [{ type: "origin_count", originId: "REG_FROSTMARCH", count: 2 }, { type: "affinity_diversity", count: 2 }], bonusOriginId: "REG_FROSTMARCH", costs: { gold: 1100, materials: { SUPPLIES: 3 } }, baseRewards: { companionEssence: 15, gold: 950, companionXp: 270, bondXp: 32, materials: { RIMEGLASS: 1 } }, bonusRewards: { companionEssence: 7, materials: { RIMEGLASS: 1 } }, bonusRewardChanceByGrade: { A: 0.05, S: 0.12 }, bondstoneEligible: true },
+  { id: "MISSION_ASH_RESCUE_8H", name: "Ashlands Furnace Rescue", originId: "REG_ASHLANDS", durationMs: 8 * 36e5, missionVersion: 1, minCompanions: 3, maxCompanions: 3, minimumPenLevel: 2, minimumLevel: 18, recommendedPower: 3500, requirements: [{ type: "role_count", role: "tank", count: 1 }, { type: "role_count", role: "support", count: 1 }, { type: "origin_count", originId: "REG_ASHLANDS", count: 1 }, { type: "min_level", value: 18 }, { type: "affinity_diversity", count: 2 }], bonusRequirements: [{ type: "min_ascension", tier: 2, count: 2 }], costs: { gold: 1280, materials: { SUPPLIES: 3 } }, baseRewards: { companionEssence: 15, gold: 1080, companionXp: 300, bondXp: 36, materials: { BANNER_ASH: 1 } }, bonusRewards: { companionEssence: 7, materials: { TRIAL_SANCTUARY_MATERIAL: 1 } }, bonusRewardChanceByGrade: { A: 0.04, S: 0.1 } },
+  { id: "MISSION_ASH_12H", name: "Ashlands Crucible Watch", originId: "REG_ASHLANDS", durationMs: 12 * 36e5, missionVersion: 2, minCompanions: 3, maxCompanions: 3, minimumPenLevel: 3, minimumLevel: 20, recommendedPower: 4e3, requirements: [{ type: "role_count", role: "tank", count: 1 }, { type: "role_count", role: "damage", count: 1 }, { type: "min_level", value: 20 }, { type: "min_ascension", tier: 2, count: 2 }, { type: "affinity_unique" }], bonusRequirements: [{ type: "origin_count", originId: "REG_ASHLANDS", count: 2 }], bonusOriginId: "REG_ASHLANDS", costs: { gold: 1600, materials: { SUPPLIES: 4 } }, baseRewards: { companionEssence: 22, gold: 1350, companionXp: 400, bondXp: 44, materials: { BANNER_ASH: 1 } }, bonusRewards: { companionEssence: 10, materials: { TRIAL_SANCTUARY_MATERIAL: 1 } }, bonusRewardChanceByGrade: { A: 0.04, S: 0.1 }, bondstoneEligible: true },
+  { id: "MISSION_GREENFIELDS_FORAGE_2H", name: "Greenfields Forage Run", originId: "REG_001", durationMs: 2 * 36e5, missionVersion: 1, minCompanions: 1, maxCompanions: 2, minimumPenLevel: 1, minimumLevel: 5, recommendedPower: 1e3, requirements: [{ type: "min_level", value: 5 }, { type: "max_rarity", rarity: "rare" }], bonusRequirements: [{ type: "max_rarity", rarity: "standard" }, { type: "affinity_count", affinity: "wild", count: 1 }], specialtyBonus: { label: "Low-rarity mentorship: +25% Companion XP with an all-Standard bonus team.", companionXpMultiplier: 1.25 }, costs: { gold: 260 }, baseRewards: { companionEssence: 2, gold: 230, companionXp: 80, bondXp: 10, materials: { WISP_DUST: 1 } }, bonusRewards: { companionEssence: 2, materials: { MOSS_FIBER: 2 } }, bonusRewardChanceByGrade: { B: 0.06, A: 0.1, S: 0.16 } },
+  { id: "MISSION_IRONWOOD_TRACK_4H", name: "Ironwood Tracking Detail", originId: "REG_001", durationMs: 4 * 36e5, missionVersion: 1, minCompanions: 2, maxCompanions: 2, minimumPenLevel: 1, minimumLevel: 10, recommendedPower: 2200, requirements: [{ type: "role_count", role: "damage", count: 1 }, { type: "min_level", value: 10 }, { type: "origin_count", originId: "REG_001", count: 1 }], bonusRequirements: [{ type: "origin_count", originId: "REG_001", count: 2 }, { type: "affinity_count", affinity: "wild", count: 1 }], costs: { gold: 520, materials: { SUPPLIES: 1 } }, baseRewards: { companionEssence: 5, gold: 470, companionXp: 150, bondXp: 18, materials: { THORN_SAP: 2 } }, bonusRewards: { companionEssence: 3, materials: { IRONWOOD_FANG: 2 } }, bonusRewardChanceByGrade: { B: 0.05, A: 0.1, S: 0.16 } },
+  { id: "MISSION_SUNSCAR_RELIC_6H", name: "Sunscar Relic Survey", originId: "REG_SUNSCAR", durationMs: 6 * 36e5, missionVersion: 1, minCompanions: 2, maxCompanions: 3, minimumPenLevel: 2, minimumLevel: 18, recommendedPower: 3150, requirements: [{ type: "role_count", role: "support", count: 1 }, { type: "min_bond", value: 4, count: 2 }, { type: "origin_count", originId: "REG_SUNSCAR", count: 1 }], bonusRequirements: [{ type: "origin_count", originId: "REG_SUNSCAR", count: 2 }, { type: "affinity_count", affinity: "primal", count: 1 }], specialtyBonus: { label: "Relic recovery: +25% base material yield with the regional bonus team.", materialMultiplier: 1.25 }, costs: { gold: 900, materials: { SUPPLIES: 2 } }, baseRewards: { companionEssence: 7, gold: 760, companionXp: 215, bondXp: 26, materials: { ASTRAL_SCRIPT: 1 } }, bonusRewards: { companionEssence: 5, materials: { SUNSTONE_ORE: 2 } }, bonusRewardChanceByGrade: { A: 0.08, S: 0.15 } },
+  { id: "MISSION_FROST_RESONANCE_6H", name: "Frostmarch Resonance Survey", originId: "REG_FROSTMARCH", durationMs: 6 * 36e5, missionVersion: 1, minCompanions: 2, maxCompanions: 3, minimumPenLevel: 2, minimumLevel: 18, recommendedPower: 3250, requirements: [{ type: "role_count", role: "tank", count: 1 }, { type: "min_bond", value: 5, count: 2 }, { type: "origin_count", originId: "REG_FROSTMARCH", count: 1 }], bonusRequirements: [{ type: "origin_count", originId: "REG_FROSTMARCH", count: 2 }, { type: "affinity_count", affinity: "arcane", count: 1 }], specialtyBonus: { label: "Resonant bonding: +30% Bond XP with the regional bonus team.", bondXpMultiplier: 1.3 }, costs: { gold: 940, materials: { SUPPLIES: 2 } }, baseRewards: { companionEssence: 8, gold: 800, companionXp: 225, bondXp: 28, materials: { CHOIR_BLOOM: 1 } }, bonusRewards: { companionEssence: 5, materials: { FROSTIRON: 2 } }, bonusRewardChanceByGrade: { A: 0.07, S: 0.14 } },
+  { id: "MISSION_ASHLANDS_SALVAGE_8H", name: "Blackglass Salvage Run", originId: "REG_ASHLANDS", durationMs: 8 * 36e5, missionVersion: 1, minCompanions: 2, maxCompanions: 3, minimumPenLevel: 2, minimumLevel: 20, recommendedPower: 3600, requirements: [{ type: "role_count", role: "damage", count: 1 }, { type: "min_ascension", tier: 1, count: 2 }, { type: "origin_count", originId: "REG_ASHLANDS", count: 1 }], bonusRequirements: [{ type: "origin_count", originId: "REG_ASHLANDS", count: 2 }, { type: "affinity_count", affinity: "construct", count: 1 }], specialtyBonus: { label: "Salvage expertise: +30% base material yield with the regional bonus team.", materialMultiplier: 1.3 }, costs: { gold: 1250, materials: { SUPPLIES: 3 } }, baseRewards: { companionEssence: 12, gold: 1050, companionXp: 310, bondXp: 36, materials: { BLACKGLASS_CORE: 1 } }, bonusRewards: { companionEssence: 7, materials: { BANNER_ASH: 2 } }, bonusRewardChanceByGrade: { A: 0.06, S: 0.13 } },
+  { id: "MISSION_OLD_FRIENDS_8H", name: "Old Friends Patrol", originId: "REG_001", durationMs: 8 * 36e5, missionVersion: 1, minCompanions: 3, maxCompanions: 3, minimumPenLevel: 2, minimumBondLevel: 6, recommendedPower: 2850, requirements: [{ type: "max_rarity", rarity: "standard" }, { type: "min_bond", value: 6 }], bonusRequirements: [{ type: "origin_count", originId: "REG_001", count: 3 }, { type: "affinity_unique" }], specialtyBonus: { label: "Veteran bond: +35% Bond XP when the full Asterfall Standard trio qualifies.", bondXpMultiplier: 1.35 }, costs: { gold: 950, materials: { SUPPLIES: 2 } }, baseRewards: { companionEssence: 10, gold: 820, companionXp: 280, bondXp: 38, materials: { WISP_DUST: 3 } }, bonusRewards: { companionEssence: 8, materials: { TRIAL_SANCTUARY_MATERIAL: 1 } }, bonusRewardChanceByGrade: { A: 0.08, S: 0.16 } },
+  { id: "MISSION_PRESTIGE_VIGIL_12H", name: "Sanctuary Prestige Vigil", durationMs: 12 * 36e5, missionVersion: 1, minCompanions: 3, maxCompanions: 3, minimumPenLevel: 3, minimumLevel: 20, recommendedPower: 4250, requirements: [{ type: "min_rarity", rarity: "elite", count: 2 }, { type: "min_ascension", tier: 2, count: 3 }, { type: "min_bond", value: 7, count: 3 }], bonusRequirements: [{ type: "min_rarity", rarity: "prestige", count: 1 }, { type: "affinity_diversity", count: 3 }], specialtyBonus: { label: "Prestige mentorship: +20% Companion XP and +10% Essence when a Prestige companion joins.", companionXpMultiplier: 1.2, essenceMultiplier: 1.1 }, costs: { gold: 1750, materials: { SUPPLIES: 4 } }, baseRewards: { companionEssence: 18, gold: 1450, companionXp: 420, bondXp: 48, materials: { TRIAL_SANCTUARY_MATERIAL: 1 } }, bonusRewards: { companionEssence: 12, materials: { TRIAL_SANCTUARY_MATERIAL: 1 } }, bonusRewardChanceByGrade: { A: 0.05, S: 0.12 }, bondstoneEligible: true }
 ];
 var companionMission = (id) => COMPANION_MISSIONS.find((x) => x.id === id);
 var COMPANION_PROVING_GROUNDS = [
@@ -72660,27 +73006,27 @@ var COMPANION_CODEX_MILESTONES = [
   { id: "CODEX_TRIALBOUND", name: "Trialbound", description: "Own 3 companions earned from special Companion challenges.", requirement: { type: "trial_boss_owned", count: 3 }, reward: { companionEssence: 325, rewardIds: ["PROFILE_BORDER_TRIALBOUND"] } }
 ];
 var COMPANION_SPECIAL_CHALLENGES = [
-  { id: "CHALLENGE_OATHGLASS_KNIGHTLING", name: "Oathglass Reflection Trial", bossId: "BOSS_COMPANION_OATHGLASS", rewardCompanionId: "UNIT_012", recommendedTeamPower: 3800, requirements: [
+  { id: "CHALLENGE_OATHGLASS_KNIGHTLING", name: "Oathglass Reflection Trial", bossId: "BOSS_COMPANION_OATHGLASS", rewardCompanionId: "UNIT_012", recommendedTeamPower: 3800, teamRestrictions: [{ type: "affinity_unique" }], requirements: [
     { type: "trial_floor", amount: 20, description: "Reach Companion Trial Floor 20." },
     { type: "boss_clear_count", target: "FALLEN_KNIGHT", amount: 10, description: "Defeat the Fallen Knight 10 times." },
     { type: "companion_owned", target: "UNIT_007", amount: 1, description: "Own Gloamknife Shade." },
     { type: "companion_bond_total", amount: 18, originId: "REG_001", description: "Reach 18 total Bond across Asterfall companions." }
   ] },
-  { id: "CHALLENGE_TYRANTS_HEIR", name: "Tyrant's Heir Trial", bossId: "BOSS_COMPANION_TYRANT_HEIR", rewardCompanionId: "UNIT_016", recommendedTeamPower: 3950, requirements: [
+  { id: "CHALLENGE_TYRANTS_HEIR", name: "Tyrant's Heir Trial", bossId: "BOSS_COMPANION_TYRANT_HEIR", rewardCompanionId: "UNIT_016", recommendedTeamPower: 3950, teamRestrictions: [{ type: "require_affinity", affinity: "primal", count: 1 }, { type: "require_affinity", affinity: "radiant", count: 1 }], requirements: [
     { type: "trial_floor", amount: 20, description: "Reach Companion Trial Floor 20." },
     { type: "companion_owned", target: "UNIT_013", description: "Own Dune Stalker." },
     { type: "companion_owned", target: "UNIT_014", description: "Own Oasis Djinnling." },
     { type: "companion_owned", target: "UNIT_015", description: "Own Solar Scarab." },
     { type: "companion_bond_total", amount: 18, originId: "REG_SUNSCAR", description: "Reach 18 total Bond across Sunscar companions." }
   ] },
-  { id: "CHALLENGE_WYRM_ECHO", name: "Wyrm Echo Trial", bossId: "BOSS_COMPANION_WYRM_ECHO", rewardCompanionId: "UNIT_020", recommendedTeamPower: 4200, requirements: [
+  { id: "CHALLENGE_WYRM_ECHO", name: "Wyrm Echo Trial", bossId: "BOSS_COMPANION_WYRM_ECHO", rewardCompanionId: "UNIT_020", recommendedTeamPower: 4200, teamRestrictions: [{ type: "require_affinity", affinity: "wild", count: 1 }, { type: "require_affinity", affinity: "arcane", count: 1 }], requirements: [
     { type: "trial_floor", amount: 25, description: "Reach Companion Trial Floor 25." },
     { type: "companion_owned", target: "UNIT_017", description: "Own Rime Wolf Pup." },
     { type: "companion_owned", target: "UNIT_018", description: "Own Bell Sprite." },
     { type: "companion_owned", target: "UNIT_019", description: "Own Choir Golem." },
     { type: "companion_bond_total", amount: 18, originId: "REG_FROSTMARCH", description: "Reach 18 total Bond across Frostmarch companions." }
   ] },
-  { id: "CHALLENGE_REGENT_SHADE", name: "Regent Shade Trial", bossId: "BOSS_COMPANION_REGENT_SHADE", rewardCompanionId: "UNIT_024", recommendedTeamPower: 4400, requirements: [
+  { id: "CHALLENGE_REGENT_SHADE", name: "Regent Shade Trial", bossId: "BOSS_COMPANION_REGENT_SHADE", rewardCompanionId: "UNIT_024", recommendedTeamPower: 4400, teamRestrictions: [{ type: "affinity_diversity", count: 3 }], requirements: [
     { type: "trial_floor", amount: 30, description: "Reach Companion Trial Floor 30." },
     { type: "companion_owned", target: "UNIT_021", description: "Own Obsidian Drakelet." },
     { type: "companion_owned", target: "UNIT_022", description: "Own Forge Custodian." },
@@ -72700,18 +73046,30 @@ var utcBounds = (seasonKey) => {
   const endsAt = new Date(Date.UTC(y, m, 1)).toISOString();
   return { startsAt, endsAt };
 };
-var SEASON_OVERRIDES = {
-  "2026-09": { floorSetId: "tower_v1", modifiers: ["armored", "unstable_magic"], rewardSetId: "monthly_v1", specialChallenges: ["NO_PRESTIGE_15", "SUNSCAR_PAIR", "WORLDLY_TRIO"], featuredOrigin: "REG_SUNSCAR", featuredCompanionIds: ["UNIT_013", "UNIT_014", "UNIT_015", "UNIT_016"] },
-  "2026-10": { floorSetId: "tower_v1", modifiers: ["thick_hide", "execution"], rewardSetId: "monthly_v1", specialChallenges: ["STANDARD_BOSS", "FROSTMARCH_PAIR", "FLAWLESS_15"], featuredOrigin: "REG_FROSTMARCH", featuredCompanionIds: ["UNIT_017", "UNIT_018", "UNIT_019", "UNIT_020"] },
-  "2026-11": { floorSetId: "tower_v1", modifiers: ["relentless", "frailty"], rewardSetId: "monthly_v1", specialChallenges: ["RARITY_SPECTRUM", "ASHLANDS_PAIR", "UNDER_POWER_20"], featuredOrigin: "REG_ASHLANDS", featuredCompanionIds: ["UNIT_021", "UNIT_022", "UNIT_023", "UNIT_024"] }
-};
+var COMPANION_TRIAL_ROTATIONS = [
+  { id: "ROTATION_1_GLASS_AND_SAND", name: "Glass & Sand", floorSetId: "tower_v1", modifiers: ["armored", "unstable_magic"], rewardSetId: "monthly_v1", specialChallenges: ["NO_PRESTIGE_15", "SUNSCAR_PAIR", "AFFINITY_TRIAD"], featuredOrigin: "REG_SUNSCAR", featuredCompanionIds: ["UNIT_013", "UNIT_014", "UNIT_015", "UNIT_016"] },
+  { id: "ROTATION_2_BELLS_AND_SHADOW", name: "Bells & Shadow", floorSetId: "tower_v1", modifiers: ["thick_hide", "execution"], rewardSetId: "monthly_v1", specialChallenges: ["STANDARD_BOSS", "FROSTMARCH_PAIR", "RADIANT_UMBRAL"], featuredOrigin: "REG_FROSTMARCH", featuredCompanionIds: ["UNIT_017", "UNIT_018", "UNIT_019", "UNIT_020"] },
+  { id: "ROTATION_3_CRUCIBLE", name: "The Crucible", floorSetId: "tower_v1", modifiers: ["relentless", "frailty"], rewardSetId: "monthly_v1", specialChallenges: ["RARITY_SPECTRUM", "ASHLANDS_PAIR", "NO_CONSTRUCT_15"], featuredOrigin: "REG_ASHLANDS", featuredCompanionIds: ["UNIT_021", "UNIT_022", "UNIT_023", "UNIT_024"] },
+  { id: "ROTATION_4_ROOTS_AND_RUNES", name: "Roots & Runes", floorSetId: "tower_v1", modifiers: ["rushing", "shattering"], rewardSetId: "monthly_v1", specialChallenges: ["ASTERFALL_PAIR", "PRIMAL_WILD_PAIR", "FLAWLESS_15"], featuredOrigin: "REG_001", featuredCompanionIds: ["UNIT_001", "UNIT_002", "UNIT_003", "UNIT_004"] },
+  { id: "ROTATION_5_RIFT_CONVERGENCE", name: "Rift Convergence", floorSetId: "tower_v1", modifiers: ["arcane_storm", "anti_heal"], rewardSetId: "monthly_v1", specialChallenges: ["AFFINITY_TRIAD", "WORLDLY_TRIO", "UNDER_POWER_20"] },
+  { id: "ROTATION_6_ECHO_CROWN", name: "Echo Crown", floorSetId: "tower_v1", modifiers: ["predator", "armored"], rewardSetId: "monthly_v1", specialChallenges: ["RADIANT_UMBRAL", "RARITY_SPECTRUM", "PRIMAL_WILD_PAIR"] }
+];
+var COMPANION_TRIAL_ROTATION_ANCHOR = "2026-09";
+function companionTrialRotationIndex(seasonKey) {
+  const [year, month] = seasonKey.split("-").map(Number), [anchorYear, anchorMonth] = COMPANION_TRIAL_ROTATION_ANCHOR.split("-").map(Number);
+  if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) throw new Error("invalid_companion_trial_season_key");
+  const delta = (year - anchorYear) * 12 + (month - anchorMonth);
+  return (delta % COMPANION_TRIAL_ROTATIONS.length + COMPANION_TRIAL_ROTATIONS.length) % COMPANION_TRIAL_ROTATIONS.length;
+}
+function companionTrialRotation(seasonKey) {
+  return COMPANION_TRIAL_ROTATIONS[companionTrialRotationIndex(seasonKey)];
+}
 function companionTrialSeasonDefinition(seasonKey) {
-  const bounds = utcBounds(seasonKey), rotation = ["2026-09", "2026-10", "2026-11"];
-  const override = SEASON_OVERRIDES[seasonKey] ?? SEASON_OVERRIDES[rotation[Number(seasonKey.slice(5)) % rotation.length]];
-  return { seasonKey, ...bounds, floorSetId: override.floorSetId ?? "tower_v1", modifiers: override.modifiers ?? [], rewardSetId: override.rewardSetId ?? "monthly_v1", specialChallenges: override.specialChallenges ?? [], featuredOrigin: override.featuredOrigin, featuredCompanionIds: override.featuredCompanionIds };
+  const bounds = utcBounds(seasonKey), rotation = companionTrialRotation(seasonKey);
+  return { seasonKey, ...bounds, rotationId: rotation.id, rotationName: rotation.name, floorSetId: rotation.floorSetId, modifiers: [...rotation.modifiers], rewardSetId: rotation.rewardSetId, specialChallenges: [...rotation.specialChallenges], featuredOrigin: "featuredOrigin" in rotation ? rotation.featuredOrigin : void 0, featuredCompanionIds: "featuredCompanionIds" in rotation ? [...rotation.featuredCompanionIds] : void 0 };
 }
 
-// src/server/companions/combat-adapter.ts
+// backend/src/server/companions/combat-adapter.ts
 var COMMON_MAX_INVESTMENT_MULTIPLIER = 1.5;
 var clamp3 = (value, min, max) => Math.max(min, Math.min(max, value));
 var ROLE_ANCHORS = {
@@ -72793,7 +73151,7 @@ function buildOwnedCompanionCombatant(progress, context) {
   return buildCompanionCombatant(def, progress, context);
 }
 
-// src/server/companions/team.ts
+// backend/src/server/companions/team.ts
 function individualCompanionPower(progress) {
   const def = companionServerDefinition(progress.companionId);
   if (!def) throw new Error("unknown_companion");
@@ -72809,7 +73167,7 @@ function companionTeamViews(ids2, owned) {
   return ids2.map((id) => {
     const def = companionServerDefinition(id), p = owned[id];
     if (!def || !p) throw new Error("companion_not_owned");
-    return { companionId: id, role: def.role, rarity: def.rarity, originId: def.originId, power: individualCompanionPower(p) };
+    return { companionId: id, role: def.role, rarity: def.rarity, affinity: def.affinity, originId: def.originId, power: individualCompanionPower(p) };
   });
 }
 function companionTeamPower(ids2, owned) {
@@ -72851,6 +73209,14 @@ function restrictionSatisfied(members, r, teamPower = members.reduce((s, x) => s
       return r.rarities.every((rarity, i) => i === r.rarities.length - 1 && rarity === "elite" ? members.some((x) => x.rarity === "elite" || x.rarity === "prestige") : members.some((x) => x.rarity === rarity));
     case "max_team_power":
       return teamPower <= r.value;
+    case "require_affinity":
+      return members.filter((x) => x.affinity === r.affinity).length >= r.count;
+    case "prohibit_affinity":
+      return members.every((x) => x.affinity !== r.affinity);
+    case "affinity_diversity":
+      return new Set(members.map((x) => x.affinity)).size >= r.count;
+    case "affinity_unique":
+      return new Set(members.map((x) => x.affinity)).size === members.length;
     case "no_defeats":
       return true;
   }
@@ -72870,7 +73236,7 @@ function validateCompanionTrialTeam(input) {
   return { ok: true, members: views, power, synergies: evaluateCompanionSynergies(views) };
 }
 
-// src/server/companions/trial-season.ts
+// backend/src/server/companions/trial-season.ts
 var COMPANION_TRIAL_TIMEZONE = "UTC";
 function companionTrialSeasonKey(nowMs) {
   const d = new Date(nowMs);
@@ -72904,10 +73270,10 @@ function rolloverCompanionTrialSeason(progress, serverNowMs) {
 }
 function companionTrialResetInfo(serverNowMs) {
   const seasonKey = companionTrialSeasonKey(serverNowMs), def = companionTrialSeasonDefinition(seasonKey), endMs = Date.parse(def.endsAt), remainingMs = Math.max(0, endMs - serverNowMs);
-  return { seasonKey, serverNow: new Date(serverNowMs).toISOString(), startsAt: def.startsAt, endsAt: def.endsAt, remainingMs, timezone: COMPANION_TRIAL_TIMEZONE, title: `Companion Trials \u2014 ${new Intl.DateTimeFormat("en", { month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(serverNowMs))}`, notice: "Trial progress resets each month. Companion progression does not." };
+  return { seasonKey, serverNow: new Date(serverNowMs).toISOString(), startsAt: def.startsAt, endsAt: def.endsAt, remainingMs, timezone: COMPANION_TRIAL_TIMEZONE, rotationId: def.rotationId, rotationName: def.rotationName, title: `Companion Trials \u2014 ${def.rotationName} \xB7 ${new Intl.DateTimeFormat("en", { month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(serverNowMs))}`, notice: "One global Trial rotation for all players. Trial progress resets each month; Companion progression does not." };
 }
 
-// src/server/companions/trials.ts
+// backend/src/server/companions/trials.ts
 var TRIAL_THEMES = [
   { id: "asterfall", label: "Asterfall Proving Grounds", bossName: "Runebound Colossus" },
   { id: "sunscar", label: "Sunscar Glass Arena", bossName: "Echo of the Buried Tyrant" },
@@ -73081,7 +73447,7 @@ function claimMonthlyCompanionChallenge(progress, challengeId, serverNowMs) {
   return { progress: { ...current, season: { ...current.season, monthlyChallengeClaims: [...claimed, challengeId] } }, reward: challenge.rewards };
 }
 
-// src/server/companions/assignments.ts
+// backend/src/server/companions/assignments.ts
 var companionExpeditionPenCapacity = (level) => level <= 0 ? 0 : Math.min(3, Math.max(1, Math.floor(level)));
 var COMPANION_EXPEDITION_WEEKLY_COUNT = 6;
 function rotationHash(text2) {
@@ -73185,6 +73551,12 @@ function companionMissionRequirementSatisfied(requirement, ids2, owned) {
       return countMatching(ids2, (id) => companionServerDefinition(id)?.tags.includes(requirement.tag) === true, owned) >= requirement.count;
     case "companion_id":
       return ids2.includes(requirement.companionId);
+    case "affinity_count":
+      return ids2.filter((id) => companionServerDefinition(id)?.affinity === requirement.affinity).length >= requirement.count;
+    case "affinity_diversity":
+      return new Set(ids2.map((id) => companionServerDefinition(id)?.affinity).filter(Boolean)).size >= requirement.count;
+    case "affinity_unique":
+      return new Set(ids2.map((id) => companionServerDefinition(id)?.affinity).filter(Boolean)).size === ids2.length;
   }
 }
 function missionBonusSatisfied(missionId, ids2, owned) {
@@ -73252,7 +73624,7 @@ function claimCompanionAssignment(input) {
   return { assignment: { ...completed, status: "claimed", claimedAt: new Date(input.serverNowMs).toISOString(), performanceGrade: grade, rewardSnapshot: reward2 }, reward: reward2 };
 }
 
-// src/server/companions/policy.ts
+// backend/src/server/companions/policy.ts
 var CLASS_ROLE = { IRONWARDEN: "tank", BASTION: "tank", DREADGUARD: "tank", DAWNKEEPER: "support", STONECALLER: "support", WAYFINDER: "damage", RAVAGER: "damage", HEXWEAVER: "damage", KNIFE_DANCER: "damage" };
 var COMPANION_ROLE = Object.fromEntries(COMPANION_SERVER_DEFINITIONS.map((x) => [x.id, x.role]));
 var COMPANION_RARITY = Object.fromEntries(COMPANION_SERVER_DEFINITIONS.map((x) => [x.id, x.rarity]));
@@ -73283,7 +73655,7 @@ function validateProgressionSnapshot(companionId, input) {
   return { level: Math.max(1, Math.min(cap, RARITY_MAX_LEVEL[rarity], Math.floor(input.level))), xp: Math.max(0, Math.floor(input.xp)), ascensionTier, bondLevel: Math.max(1, Math.min(10, Math.floor(input.bondLevel))), bondXp: Math.max(0, Math.floor(input.bondXp)), selectedTechniqueId: input.selectedTechniqueId };
 }
 
-// src/server/companions/progression-v2.ts
+// backend/src/server/companions/progression-v2.ts
 var XP_MULT = { standard: 1, rare: 1.08, elite: 1.16, prestige: 1.25 };
 var BOND_THRESHOLDS = [0, 90, 210, 370, 580, 840, 1160, 1540, 1990, 2520];
 function companionXpToNextServer(companionId, level) {
@@ -73396,7 +73768,7 @@ function setCompanionShowcase(state, ownedIds, favoriteCompanionId, showcaseComp
   return { ...state, favoriteCompanionId, showcaseCompanionIds: unique2, showcaseSlotsUnlocked: slots2, discoveredCompanionIds: [.../* @__PURE__ */ new Set([...state.discoveredCompanionIds ?? [], ...ownedIds])] };
 }
 
-// src/server/companions/codex.ts
+// backend/src/server/companions/codex.ts
 function companionMasteryRequiredAscension(companionId) {
   const def = companionServerDefinition(companionId);
   if (!def) throw new Error("unknown_companion");
@@ -73459,7 +73831,7 @@ function claimCompanionCodexMilestone(input) {
   return { profile: { ...input.profile, claimedCodexMilestoneIds: [...claimed], codexRewardIds: rewardIds, showcaseSlotsUnlocked }, economy: { ...input.economy, companionEssence: input.economy.companionEssence + (def.reward.companionEssence ?? 0) }, reward: def.reward, summary };
 }
 
-// src/server/companions/proving-grounds.ts
+// backend/src/server/companions/proving-grounds.ts
 var RARITY_ORDER2 = { standard: 0, rare: 1, elite: 2, prestige: 3 };
 var COMPANION_PROVING_GROUND_WEEKLY_COUNT = 3;
 function activeCompanionProvingGroundChallenges(serverNowMs) {
@@ -73519,7 +73891,7 @@ function claimCompanionProvingGroundChallenge(input) {
   return { state: { ...rolled.state, claimedIds: [...rolled.state.claimedIds, definition.id] }, reward: definition.rewards, definition };
 }
 
-// src/server/companions/projection.ts
+// backend/src/server/companions/projection.ts
 function projectCompanionTrial(progress, serverNowMs, teamPower) {
   const rolled = rolloverCompanionTrialSeason(progress, serverNowMs), info = companionTrialResetInfo(serverNowMs), season = rolled.progress.season;
   return { progress: rolled.progress, expiredRunId: rolled.expiredRunId, projection: { seasonKey: season.seasonKey, title: info.title, serverNow: info.serverNow, startsAt: info.startsAt, endsAt: info.endsAt, timezone: "UTC", remainingMs: info.remainingMs, notice: info.notice, currentFloor: season.currentFloor, checkpointFloor: season.checkpointFloor, currentSeasonHighestFloor: season.currentSeasonHighestFloor, lifetimeHighestFloor: rolled.progress.lifetime.lifetimeHighestFloor, activeRunId: season.activeRun?.runId, teamPower } };
@@ -73529,7 +73901,7 @@ function projectCompanionProvingGrounds(state, serverNowMs) {
   return { state: rolled.state, projection: { weekKey: rolled.state.weekKey, serverNow: new Date(serverNowMs).toISOString(), challengeIds: active2.definitions.map((x) => x.id), progress: { ...rolled.state.progress }, completedIds: [...rolled.state.completedIds], claimedIds: [...rolled.state.claimedIds] } };
 }
 
-// src/server/companions/special-challenges.ts
+// backend/src/server/companions/special-challenges.ts
 var companionSpecialChallenge = (id) => COMPANION_SPECIAL_CHALLENGES.find((x) => x.id === id);
 function boss(id, power) {
   const scale = Math.max(0.85, Math.min(1.15, power / 4300));
@@ -73539,7 +73911,7 @@ function validateSpecialCompanionChallenge(input) {
   const c = companionSpecialChallenge(input.challengeId);
   if (!c) return { ok: false, reason: "unknown_companion_special_challenge" };
   if (!companionUnlockRequirementsSatisfied(c.requirements, input.facts)) return { ok: false, reason: "companion_special_requirements_not_met" };
-  const team = validateCompanionTrialTeam({ companionIds: input.teamIds, owned: input.owned, busyCompanionIds: input.busyCompanionIds });
+  const team = validateCompanionTrialTeam({ companionIds: input.teamIds, owned: input.owned, busyCompanionIds: input.busyCompanionIds, restrictions: c.teamRestrictions });
   if (!team.ok) return team;
   if (team.power < c.recommendedTeamPower * 0.7) return { ok: false, reason: "companion_special_team_power_too_low" };
   return { ok: true, challenge: c, team };
@@ -73555,8 +73927,58 @@ function resolveSpecialCompanionChallenge(input, executor) {
   return { result, unlockedCompanionId: target2?.id, completionKey: checked.challenge.id };
 }
 
-// ../apps/mobile/src/core/companion-runtime.ts
-var COMPANION_REMATCH_WEEKLY_BONDSTONE_CAP = 2;
+// apps/mobile/src/core/companion-provisions.ts
+var COMPANION_STAMINA_HP_PER_POINT = 10;
+function companionFoodStamina(itemId) {
+  const item = itemDef(itemId);
+  return item.type === "food" && item.heal ? item.heal / COMPANION_STAMINA_HP_PER_POINT : 0;
+}
+function companionExpeditionStaminaCost(durationHours) {
+  const hours = Math.max(1, Math.min(24, Math.ceil(durationHours)));
+  return Math.min(300, Math.max(50, Math.ceil(hours / 8) * 50));
+}
+
+// apps/mobile/src/core/companion-runtime.ts
+function expeditionFoodArg(value) {
+  if (!Array.isArray(value) || value.length < 1 || value.length > 20) throw new Error("invalid_companion_food");
+  return value.map((row) => {
+    if (!row || typeof row !== "object" || Array.isArray(row)) throw new Error("invalid_companion_food");
+    const r = row;
+    if (typeof r.itemId !== "string" || !Number.isSafeInteger(r.quantity) || Number(r.quantity) < 1 || Number(r.quantity) > 1e4) throw new Error("invalid_companion_food");
+    const item = itemDef(r.itemId);
+    if (item.type !== "food" || !item.heal) throw new Error("invalid_companion_food");
+    return { itemId: r.itemId, quantity: Number(r.quantity) };
+  });
+}
+function spendExpeditionFood(state, food, requiredStamina) {
+  const available = (id) => [...state.inventory.stacks, ...state.bank.stacks].filter((s) => s.itemId === id).reduce((sum, s) => sum + s.quantity, 0);
+  for (const row of food) if (available(row.itemId) < row.quantity) throw new Error("companion_food_missing");
+  const supplied = food.reduce((sum, row) => sum + companionFoodStamina(row.itemId) * row.quantity, 0);
+  if (supplied < requiredStamina) throw new Error("companion_stamina_required");
+  const spend2 = (stacks, id, amount) => stacks.map((s) => s.itemId === id ? { ...s, quantity: s.quantity - amount } : s).filter((s) => s.quantity > 0);
+  let inventory = state.inventory.stacks.map((x) => ({ ...x })), bank = state.bank.stacks.map((x) => ({ ...x }));
+  for (const row of food) {
+    let remaining = row.quantity, take4 = Math.min(remaining, inventory.find((s) => s.itemId === row.itemId)?.quantity ?? 0);
+    if (take4) {
+      inventory = spend2(inventory, row.itemId, take4);
+      remaining -= take4;
+    }
+    if (remaining) bank = spend2(bank, row.itemId, remaining);
+  }
+  return { ...state, inventory: { ...state.inventory, stacks: inventory }, bank: { ...state.bank, stacks: bank }, account: { ...state.account, longTermMetrics: { ...state.account.longTermMetrics ?? {}, "companions.expedition.stamina_supplied": (state.account.longTermMetrics?.["companions.expedition.stamina_supplied"] ?? 0) + Math.floor(supplied) } } };
+}
+var PLAYBACK_EVENT_TYPES = /* @__PURE__ */ new Set(["combat_start", "phase", "cast_start", "cast_complete", "damage", "miss", "heal", "shield", "dot_tick", "hot_tick", "interrupt", "down", "death", "combat_end"]);
+function companionBattlePlayback(result) {
+  if (!("events" in result)) return { durationMs: result.durationMs, units: [], abilityNames: { BASIC: "Basic attack" }, events: [] };
+  const states = [...result.players, ...result.enemies], abilityNames = { BASIC: "Basic attack" };
+  for (const state of states) {
+    for (const ability2 of state.definition.abilities) abilityNames[ability2.id] = ability2.name;
+    for (const phase of state.definition.phases ?? []) abilityNames[phase.id] = phase.name ?? phase.id.replace(/_/g, " ");
+  }
+  const events = result.events.filter((event) => PLAYBACK_EVENT_TYPES.has(event.type)).map((event) => ({ atMs: event.atMs, type: event.type, actorId: event.actorId, targetId: event.targetId, abilityId: event.abilityId, interruptedAbilityId: event.interruptedAbilityId, amount: event.amount, critical: event.critical, absorbed: event.absorbed, detail: event.detail }));
+  return { durationMs: result.durationMs, units: states.map((state) => ({ id: state.definition.id, name: state.definition.name, team: state.definition.team, role: state.definition.role, maxHp: state.definition.stats.maxHp, boss: state.definition.boss === true })), abilityNames, events };
+}
+var COMPANION_REMATCH_WEEKLY_BONDSTONE_CAP = 1;
 function companionRematchBondstoneStatus(state, nowMs) {
   const week = companionTrialWeekKey(nowMs), used = state.account.companionRematchBondstoneWeek === week ? Math.min(COMPANION_REMATCH_WEEKLY_BONDSTONE_CAP, state.account.companionRematchBondstones ?? 0) : 0;
   return { week, used, cap: COMPANION_REMATCH_WEEKLY_BONDSTONE_CAP, remaining: Math.max(0, COMPANION_REMATCH_WEEKLY_BONDSTONE_CAP - used) };
@@ -73685,6 +74107,7 @@ function assertCompanionIdle(state, id) {
   if ((state.account.companionAssignments ?? []).some((a) => a.status !== "claimed" && a.status !== "cancelled" && a.companionIds.includes(id)) || state.account.companionTrialProgress?.season.activeRun?.teamCompanionIds.includes(id)) throw new Error("Companion is busy. Finish or abandon its activity first.");
 }
 function executeCompanionActivity(input, type, a, now) {
+  if (!earlyFeatureUnlocked(input, "companions")) throw new Error("companion_system_locked");
   let state = refreshCompanions(structuredClone(input), now);
   if (!state.character) throw new Error("Create a character first.");
   const owned = companionOwned(state), profile = state.account.companionPhase2Profile ?? { showcaseCompanionIds: [], showcaseSlotsUnlocked: 1 };
@@ -73752,11 +74175,15 @@ function executeCompanionActivity(input, type, a, now) {
         state.account.companionProvingGround = recordCompanionProvingGroundEvent({ state: state.account.companionProvingGround, serverNowMs: now, owned, event: { eventId: `${run.runId}:${run.currentFloor}`, type: run.currentFloor % 5 === 0 ? "trial_boss_clear" : "trial_floor_clear", companionIds: run.teamCompanionIds, trialFloor: run.currentFloor, teamPower: companionTeamPower(run.teamCompanionIds, owned), recommendedPower: companionTrialRecommendedPower(run.currentFloor), noDefeats: r.result.players?.every((p) => p.alive) } }).state;
       }
       state.account.companionBattleReadyAtMs = now + Math.max(1e3, r.result.durationMs);
-      state.account.companionLastBattle = { title: `Trial Floor ${run.currentFloor}`, won: r.result.victory, durationMs: r.result.durationMs, gold: r.reward.gold, essence: r.reward.companionEssence, bondstones: r.reward.bondstones, atMs: now };
+      state.account.companionLastBattle = { title: `Trial Floor ${run.currentFloor}`, won: r.result.victory, durationMs: r.result.durationMs, gold: r.reward.gold, essence: r.reward.companionEssence, bondstones: r.reward.bondstones, atMs: now, playback: companionBattlePlayback(r.result) };
       break;
     }
     case "companion_assignment_start": {
+      const missionDef = companionMission(stringArg(a, "id"));
+      if (!missionDef) throw new Error("unknown_companion_mission");
+      const food = expeditionFoodArg(a.food), requiredStamina = companionExpeditionStaminaCost(missionDef.durationMs / 36e5);
       const r = startCompanionAssignment({ accountId: state.character.id, missionId: stringArg(a, "id"), companionIds: idsArg(a), owned, assignments: assignments.filter((x) => x.status !== "claimed" && x.status !== "cancelled"), equippedCompanionIds: new Set(state.character.equippedCombatCompanionId ? [state.character.equippedCombatCompanionId] : []), lockedTrialCompanionIds: new Set(state.account.companionTrialProgress?.season.activeRun?.teamCompanionIds ?? []), expeditionPensLevel: state.account.companionSanctuary?.expeditionPensLevel ?? 0, economy: companionEconomy(state), serverNowMs: now, requestId: seed });
+      state = spendExpeditionFood(state, food, requiredStamina);
       state = applyEconomy(state, r.economy);
       state.account.companionAssignments = [...assignments.filter((x) => x.status === "claimed" || x.status === "cancelled").slice(-8), ...assignments.filter((x) => x.status !== "claimed" && x.status !== "cancelled"), r.assignment];
       state = companionMetric(state, `companions.expedition.${r.assignment.missionId}.starts`);
@@ -73827,7 +74254,7 @@ function executeCompanionActivity(input, type, a, now) {
         state.account.companionSpecialClears = [...state.account.companionSpecialClears ?? [], id];
       }
       state.account.companionBattleReadyAtMs = now + Math.max(1e3, r.result.durationMs);
-      state.account.companionLastBattle = { title: "Special Companion Challenge", won: r.result.victory, durationMs: r.result.durationMs, gold: 0, essence: 0, bondstones: 0, atMs: now };
+      state.account.companionLastBattle = { title: "Special Companion Challenge", won: r.result.victory, durationMs: r.result.durationMs, gold: 0, essence: 0, bondstones: 0, atMs: now, playback: companionBattlePlayback(r.result) };
       break;
     }
     default:
@@ -73881,11 +74308,11 @@ function recordCompanionActivity(state, source, target2, units, now) {
   return reconcileCombatCompanionUnlocks(next, now);
 }
 
-// ../apps/mobile/src/core/game.ts
+// apps/mobile/src/core/game.ts
 init_faith2();
 init_faith();
 
-// ../apps/mobile/src/core/alchemy.ts
+// apps/mobile/src/core/alchemy.ts
 init_progression();
 function storedQuantity(stacks, itemId) {
   return stacks.filter((stack) => stack.itemId === itemId).reduce((total, stack) => total + stack.quantity, 0);
@@ -73928,7 +74355,7 @@ function startAlchemyBatch(state, recipeId, batches, nowMs) {
     inventory = take(inventory, input.itemId, fromInventory);
     bank = take(bank, input.itemId, input.quantity - fromInventory);
   }
-  const bonuses = characterPermanentMultipliers(state);
+  const bonuses = characterPermanentMultipliers(state), pace = professionActionPace(state, recipe2, "batch");
   const brew = {
     version: 1,
     recipeId,
@@ -73937,15 +74364,15 @@ function startAlchemyBatch(state, recipeId, batches, nowMs) {
     inputsPerBatch: recipe2.inputs.map((input) => ({ ...input })),
     goldPerBatch: recipe2.gold,
     outputPerBatch: { ...recipe2.output },
-    cycleSeconds: recipe2.seconds,
-    xpPerBatch: recipe2.xp * bonuses.skillXpMultiplier
+    cycleSeconds: pace.cycleSeconds,
+    xpPerBatch: pace.xpPerAction
   };
   return {
     ...state,
     character: { ...state.character, gold: state.character.gold - status.gold },
     inventory: { ...state.inventory, stacks: inventory },
     bank: { ...state.bank, stacks: bank },
-    activity: { kind: "alchemy", targetId: recipeId, startedAtMs: nowMs, lastClaimAtMs: nowMs, progressFraction: 0, bonusSnapshot: bonuses, brew }
+    activity: { kind: "alchemy", targetId: recipeId, startedAtMs: nowMs, lastClaimAtMs: nowMs, progressFraction: 0, bonusSnapshot: bonuses, skillAffinity: captureSkillAffinity(state, "alchemy"), brew }
   };
 }
 function previewAlchemyReward(state, elapsed) {
@@ -73954,16 +74381,18 @@ function previewAlchemyReward(state, elapsed) {
   const progress = elapsed / brew.cycleSeconds + (activity.progressFraction ?? 0);
   const actions = Math.min(brew.remainingBatches, Math.max(0, Math.floor(progress + 1e-10)));
   const remaining = brew.remainingBatches - actions, remainders = { ...state.rewardRemainders ?? {} };
-  const xpKey = "xp:alchemy", raw2 = actions * brew.xpPerBatch + (remainders[xpKey] ?? 0), whole = Math.floor(raw2 + 1e-10);
+  const mastery = professionMasteryMultipliers(brew.recipeId, state.account.professionMasteryByAction?.[brew.recipeId]), xpKey = activity.skillAffinity ? affinityXpRemainderKey(state.character.id, "alchemy") : "xp:alchemy", raw2 = actions * brew.xpPerBatch + (remainders[xpKey] ?? 0), whole = Math.floor(raw2 + 1e-10);
   const xp = Math.max(0, Math.min(whole, totalXpAtLevel(100) - (state.skills.find((s) => s.skillId === "alchemy")?.xp ?? 0)));
   remainders[xpKey] = xp < whole ? 0 : Math.max(0, raw2 - whole);
   const first = Math.max(0, (1 - (activity.progressFraction ?? 0)) * brew.cycleSeconds);
   const times = Array.from({ length: actions }, (_, index) => Math.round(activity.lastClaimAtMs + (first + index * brew.cycleSeconds) * 1e3));
   const qualifyingActivitySeconds = remaining ? elapsed : actions ? Math.max(0, Math.min(elapsed, (times[times.length - 1] - activity.lastClaimAtMs) / 1e3)) : 0;
+  const yieldKey = `mastery:alchemy:${brew.recipeId}:yield`, yieldRaw = actions * brew.outputPerBatch.quantity * mastery.yield + (remainders[yieldKey] ?? 0), yieldQuantity = Math.floor(yieldRaw + 1e-10);
+  remainders[yieldKey] = Math.max(0, yieldRaw - yieldQuantity);
   return {
     xp,
     gold: 0,
-    items: actions ? [{ itemId: brew.outputPerBatch.itemId, quantity: brew.outputPerBatch.quantity * actions }] : [],
+    items: actions && yieldQuantity ? [{ itemId: brew.outputPerBatch.itemId, quantity: yieldQuantity }] : [],
     kills: 0,
     craftingActions: actions,
     elapsedSeconds: elapsed,
@@ -73987,19 +74416,104 @@ function spendPreparationEncounter(preparation, itemId) {
   return preparation.remainingEncounters > 1 ? { ...preparation, remainingEncounters: preparation.remainingEncounters - 1 } : void 0;
 }
 
-// ../apps/mobile/src/core/profession-mastery-v40.ts
-var PROFESSION_MASTERY_MAX_RANK = 50;
-function masteryPointsForRank(rank) {
-  const r = Math.max(0, Math.min(PROFESSION_MASTERY_MAX_RANK, Math.floor(rank)));
-  return 10 * r * (r + 1) / 2;
+// apps/mobile/src/core/processing.ts
+init_progression();
+var MAX_PROCESSING_BATCHES = 100;
+function storedQuantity2(stacks, itemId) {
+  return stacks.filter((stack) => stack.itemId === itemId).reduce((total, stack) => total + stack.quantity, 0);
 }
-function grantProfessionMastery(previous, actionId, actions, nowMs) {
-  if (!Number.isSafeInteger(actions) || actions <= 0) throw new Error("invalid_mastery_actions");
-  if (!Number.isFinite(nowMs) || nowMs < 0) throw new Error("invalid_mastery_time");
-  return { actionId, points: Math.min(masteryPointsForRank(PROFESSION_MASTERY_MAX_RANK), (previous?.points ?? 0) + actions), updatedAtMs: nowMs };
+function take2(stacks, itemId, quantity4) {
+  let remaining = quantity4;
+  const next = stacks.map((stack) => {
+    const amount = stack.itemId === itemId ? Math.min(remaining, stack.quantity) : 0;
+    remaining -= amount;
+    return { ...stack, quantity: stack.quantity - amount };
+  }).filter((stack) => stack.quantity > 0);
+  if (remaining > 0) throw new Error("Not enough ingredients.");
+  return next;
+}
+function processingRecipeDef(recipeId) {
+  const recipe2 = RECIPES.find((row) => row.id === recipeId);
+  if (!recipe2 || !recipe2.repeatableTraining || recipe2.skillId === "alchemy" || recipe2.noviceSetId) return void 0;
+  const output = itemDef(recipe2.output.itemId);
+  return output.type === "material" || output.type === "food" ? recipe2 : void 0;
+}
+function isTimedProcessingRecipe(recipeId) {
+  return !!processingRecipeDef(recipeId);
+}
+function processingAvailability(state, recipeId, batches = 1) {
+  const recipe2 = processingRecipeDef(recipeId), countValid = Number.isSafeInteger(batches) && batches >= 1 && batches <= MAX_PROCESSING_BATCHES, count = countValid ? batches : 1;
+  const inputs = (recipe2?.inputs ?? []).map((input) => ({ ...input, quantity: input.quantity * count, inventory: storedQuantity2(state.inventory.stacks, input.itemId), bank: storedQuantity2(state.bank.stacks, input.itemId) }));
+  const gold = (recipe2?.gold ?? 0) * count, skill2 = recipe2 ? state.skills.find((entry2) => entry2.skillId === recipe2.skillId) : void 0;
+  const materialMax = recipe2 && recipe2.inputs.length ? Math.min(...recipe2.inputs.map((input) => Math.floor((storedQuantity2(state.inventory.stacks, input.itemId) + storedQuantity2(state.bank.stacks, input.itemId)) / input.quantity))) : MAX_PROCESSING_BATCHES;
+  const goldMax = recipe2?.gold ? Math.floor((state.character?.gold ?? 0) / recipe2.gold) : MAX_PROCESSING_BATCHES;
+  const maxBatches = Math.max(0, Math.min(MAX_PROCESSING_BATCHES, materialMax, goldMax));
+  const reason = !recipe2 ? "This recipe is not a repeatable processing recipe." : !state.character ? "Create a character first." : !countValid ? `Choose 1\u2013${MAX_PROCESSING_BATCHES} whole batches.` : state.activity ? "Stop the current activity before starting processing." : recipe2.classId && recipe2.classId !== state.character.classId ? "This recipe belongs to another class." : state.character.level < (recipe2.characterLevel ?? 1) ? `Requires character level ${recipe2.characterLevel}.` : (skill2?.level ?? 0) < recipe2.level ? `Requires ${recipe2.skillId} level ${recipe2.level}.` : state.character.gold < gold ? `Requires ${gold} Gold on this character.` : inputs.some((input) => input.inventory + input.bank < input.quantity) ? "Missing ingredients. Inventory and Bank are available; overflow is not." : "Ready to reserve and process.";
+  return { ready: !!recipe2 && !!state.character && countValid && !state.activity && (!recipe2.classId || recipe2.classId === state.character.classId) && state.character.level >= (recipe2.characterLevel ?? 1) && (skill2?.level ?? 0) >= recipe2.level && state.character.gold >= gold && inputs.every((input) => input.inventory + input.bank >= input.quantity), reason, inputs, gold, maxBatches, recipe: recipe2 };
+}
+function startProcessingBatch(state, recipeId, batches, nowMs) {
+  if (!Number.isFinite(nowMs) || nowMs < 0) throw new Error("Invalid processing time.");
+  const status = processingAvailability(state, recipeId, batches);
+  if (!status.ready) throw new Error(status.reason);
+  const recipe2 = status.recipe;
+  let inventory = state.inventory.stacks, bank = state.bank.stacks;
+  for (const input of status.inputs) {
+    const fromInventory = Math.min(storedQuantity2(inventory, input.itemId), input.quantity);
+    inventory = take2(inventory, input.itemId, fromInventory);
+    bank = take2(bank, input.itemId, input.quantity - fromInventory);
+  }
+  const bonuses = characterPermanentMultipliers(state), pace = professionActionPace(state, recipe2, "batch");
+  const processing = {
+    version: 1,
+    recipeId: recipe2.id,
+    skillId: recipe2.skillId,
+    totalBatches: batches,
+    remainingBatches: batches,
+    inputsPerBatch: recipe2.inputs.map((input) => ({ ...input })),
+    goldPerBatch: recipe2.gold,
+    outputPerBatch: { ...recipe2.output },
+    cycleSeconds: pace.cycleSeconds,
+    xpPerBatch: pace.xpPerAction
+  };
+  return {
+    ...state,
+    character: { ...state.character, gold: state.character.gold - status.gold },
+    inventory: { ...state.inventory, stacks: inventory },
+    bank: { ...state.bank, stacks: bank },
+    activity: { kind: "processing", targetId: recipe2.id, startedAtMs: nowMs, lastClaimAtMs: nowMs, progressFraction: 0, bonusSnapshot: bonuses, skillAffinity: captureSkillAffinity(state, recipe2.skillId), processing }
+  };
+}
+function previewProcessingReward(state, elapsed) {
+  const activity = state.activity, processing = activity?.processing;
+  if (activity?.kind !== "processing" || !processing) throw new Error("Missing reserved processing batch.");
+  const progress = elapsed / processing.cycleSeconds + (activity.progressFraction ?? 0), actions = Math.min(processing.remainingBatches, Math.max(0, Math.floor(progress + 1e-10))), remaining = processing.remainingBatches - actions, remainders = { ...state.rewardRemainders ?? {} };
+  const xpKey = activity.skillAffinity ? affinityXpRemainderKey(state.character.id, processing.skillId) : `xp:processing:${processing.skillId}`, rawXp = actions * processing.xpPerBatch + (remainders[xpKey] ?? 0), wholeXp = Math.floor(rawXp + 1e-10), skill2 = state.skills.find((row) => row.skillId === processing.skillId);
+  const xp = Math.max(0, Math.min(wholeXp, totalXpAtLevel(100) - (skill2?.xp ?? 0)));
+  remainders[xpKey] = xp < wholeXp ? 0 : Math.max(0, rawXp - wholeXp);
+  const mastery = professionMasteryMultipliers(processing.recipeId, state.account.professionMasteryByAction?.[processing.recipeId]), yieldKey = `mastery:processing:${processing.recipeId}:yield`, yieldRaw = actions * processing.outputPerBatch.quantity * mastery.yield + (remainders[yieldKey] ?? 0), yieldQuantity = Math.floor(yieldRaw + 1e-10);
+  remainders[yieldKey] = Math.max(0, yieldRaw - yieldQuantity);
+  const first = Math.max(0, (1 - (activity.progressFraction ?? 0)) * processing.cycleSeconds), times = Array.from({ length: actions }, (_, index) => Math.round(activity.lastClaimAtMs + (first + index * processing.cycleSeconds) * 1e3));
+  const qualifyingActivitySeconds = remaining ? elapsed : actions ? Math.max(0, Math.min(elapsed, (times[times.length - 1] - activity.lastClaimAtMs) / 1e3)) : 0;
+  return {
+    xp,
+    gold: 0,
+    items: actions && yieldQuantity ? [{ itemId: processing.outputPerBatch.itemId, quantity: yieldQuantity }] : [],
+    kills: 0,
+    craftingActions: actions,
+    elapsedSeconds: elapsed,
+    qualifyingActivitySeconds,
+    nextProcessingRemaining: remaining,
+    nextProgressFraction: remaining ? Math.max(0, Math.min(1 - Number.EPSILON, progress - actions)) : 0,
+    nextRewardRemainders: remainders,
+    craftingCompletedAtMs: times,
+    stoppedReason: remaining ? void 0 : "Reserved processing batch complete"
+  };
+}
+function processingRefund(processing) {
+  return { items: processing.inputsPerBatch.map((input) => ({ itemId: input.itemId, quantity: input.quantity * processing.remainingBatches })), gold: processing.goldPerBatch * processing.remainingBatches };
 }
 
-// ../apps/mobile/src/core/weekly-orders-v41.ts
+// apps/mobile/src/core/weekly-orders-v41.ts
 var DAY_MS = 864e5;
 var DEFAULT_WEEKLY_ORDER_POLICY = {
   enabled: true,
@@ -74104,7 +74618,7 @@ function claimWeeklyCompletion(state, policy = DEFAULT_WEEKLY_ORDER_POLICY) {
   return { claimKey: `${state.weekKey}:completion`, reward: { ...policy.completionReward }, weekKey: state.weekKey };
 }
 
-// ../apps/mobile/src/core/bestiary-v40.ts
+// apps/mobile/src/core/bestiary-v40.ts
 function masteryTier(points) {
   return points >= 500 ? 5 : points >= 250 ? 4 : points >= 100 ? 3 : points >= 35 ? 2 : points >= 10 ? 1 : 0;
 }
@@ -74131,7 +74645,7 @@ function bestiaryProjection(state) {
   return { entries, zones, discovered, defeated, total, completionPercent: total ? Math.round(discovered / total * 100) : 100 };
 }
 
-// ../apps/mobile/src/core/collection-sets-v45.ts
+// apps/mobile/src/core/collection-sets-v45.ts
 var COLLECTION_SETS_V45 = [
   {
     id: "asterfall_cuisine_runtime",
@@ -74148,24 +74662,13 @@ var COLLECTION_SETS_V45 = [
     reward: { kind: "profile_unlock", ref: "PROFILE_ASTERFALL_GOURMAND", label: "Asterfall Gourmand profile accent" }
   },
   {
-    id: "oathstone_armory_runtime",
-    name: "Oathstone Armory",
-    description: "Collect the complete Oathstone equipment family.",
+    id: "oathbound_rampart_runtime",
+    name: "Oathbound Rampart",
+    description: "Collect all ten pieces of the V33 Oathbound Rampart set.",
     theme: "combat",
     enabled: true,
-    members: [
-      { kind: "item", id: "OATHSTONE_HELM", label: "Oathstone Greathelm" },
-      { kind: "item", id: "OATHSTONE_WARDPLATE", label: "Oathstone Wardplate" },
-      { kind: "item", id: "OATHSTONE_GAUNTLETS", label: "Oathstone Gauntlets" },
-      { kind: "item", id: "OATHSTONE_LEGPLATES", label: "Oathstone Legplates" },
-      { kind: "item", id: "OATHSTONE_GREAVES", label: "Oathstone Greaves" },
-      { kind: "item", id: "OATHSTONE_BLADE", label: "Oathstone Runeblade" },
-      { kind: "item", id: "OATHSTONE_TOWER_SHIELD", label: "Oathstone Tower Shield" },
-      { kind: "item", id: "OATHSTONE_MANTLE", label: "Oathstone Mantle" },
-      { kind: "item", id: "OATHSTONE_AMULET", label: "Oathstone Ward Amulet" },
-      { kind: "item", id: "OATHSTONE_SIGNET", label: "Oathstone Signet" }
-    ],
-    reward: { kind: "cosmetic_unlock", ref: "COSMETIC_OATHSTONE_ARMORY", label: "Oathstone Armory display accent" }
+    members: equipmentSetDef("T1_001").itemIds.map((id) => ({ kind: "item", id, label: itemDef(id).name })),
+    reward: { kind: "cosmetic_unlock", ref: "COSMETIC_OATHBOUND_RAMPART", label: "Oathbound Rampart display accent" }
   }
 ];
 var collectionMemberKey = (ref) => `${ref.kind}:${ref.id}`;
@@ -74190,7 +74693,7 @@ function applyCollectionSetSnapshot(state, snapshot2, nowMs, catalog2 = COLLECTI
   return { newlyCompletedSetIds, grants };
 }
 
-// ../apps/mobile/src/core/cross-skill-discoveries-v45.ts
+// apps/mobile/src/core/cross-skill-discoveries-v45.ts
 var CROSS_SKILL_DISCOVERIES_V45 = [
   { id: "ore_and_flame", category: "production", name: "Ore & Flame", description: "Mining and Smithing knowledge combine into better heat and alloy control.", requirements: [{ skillId: "mining", skillName: "Mining", level: 30 }, { skillId: "smithing", skillName: "Smithing", level: 30 }], reward: { kind: "craft_option_unlock", ref: "CRAFTOPT_ALLOY_TEMPERING", label: "Alloy Tempering" } },
   { id: "river_to_table", category: "production", name: "River to Table", description: "Fishing and Cooking together improve difficult-catch preparation.", requirements: [{ skillId: "fishing", skillName: "Fishing", level: 30 }, { skillId: "cooking", skillName: "Cooking", level: 30 }], reward: { kind: "knowledge_unlock", ref: "KNOWLEDGE_RIVER_TO_TABLE", label: "River-to-Table technique" } },
@@ -74225,7 +74728,7 @@ function applyCrossSkillSnapshot(state, characterId, snapshot2, nowMs) {
   return { newlyUnlockedDiscoveryIds, grants };
 }
 
-// ../apps/mobile/src/core/rare-idle-discoveries-v46.ts
+// apps/mobile/src/core/rare-idle-discoveries-v46.ts
 var MAX_RECENT_RARE_DISCOVERIES = 50;
 var RARE_DISCOVERY_POOLS_V46 = [
   { id: "mining_geode_authoring", name: "Mining Geodes", enabled: false, sourceKind: "mining", opportunitySeconds: 1800, baseChanceBps: 20, pityStartsAfterMisses: 80, pityStepBps: 5, maxChanceBps: 200, candidates: [{ id: "ancient_geode", name: "Ancient Geode", description: "A sealed geode uncovered among ordinary ore.", rarity: "rare", weight: 100, unique: false, reward: { kind: "item_grant", ref: "PENDING_CANONICAL_GEODE", label: "Ancient Geode", quantity: 1 } }] }
@@ -74280,7 +74783,7 @@ function applyRareDiscoverySettlement(state, event, ownedRewardRefs, roll, pools
   return { eventId: event.eventId, finds, grants };
 }
 
-// ../apps/mobile/src/core/launch-readiness-v47.ts
+// apps/mobile/src/core/launch-readiness-v47.ts
 var CURRENT_SKILL_IDS = ["mining", "woodcutting", "fishing", "smithing", "cooking", "herbalism", "alchemy", "hunting", "exploration", "tailoring", "enchanting", "faith"];
 var itemIds = new Set(ITEMS.map((row) => row.id));
 var zoneIds = new Set(WORLD_ZONES.map((row) => row.id));
@@ -74288,6 +74791,10 @@ var skillIds = new Set(CURRENT_SKILL_IDS);
 function weeklyOrderCandidatesFromCurrentContent(state) {
   const level = state.character?.level ?? 1, availableZoneNames = new Set(WORLD_ZONES.filter((zone) => level >= zone.minLevel).map((zone) => zone.name)), availableZoneIds = new Set(WORLD_ZONES.filter((zone) => level >= zone.minLevel).map((zone) => zone.id));
   const hunts = MONSTERS.filter((monster) => !monster.boss).map((monster) => ({ id: `monster:${monster.id}`, kind: "hunt", title: `Defeat ${monster.name}`, monsterId: monster.id, regionId: WORLD_ZONES.find((zone) => zone.name === monster.zone)?.id, activityId: `combat:${monster.id}`, source: { kind: "monster", id: monster.id, label: monster.name, available: level >= monster.unlockLevel && availableZoneNames.has(monster.zone), reason: level < monster.unlockLevel ? `Requires level ${monster.unlockLevel}` : void 0 }, estimatedPerHour: Math.max(1, Math.floor(3600 / Math.max(1, monster.secondsPerKill))), available: level >= monster.unlockLevel && availableZoneNames.has(monster.zone), priority: monster.level <= level ? 20 + Math.abs(level - monster.level) : 80 }));
+  const bossHunts = MONSTERS.filter((monster) => monster.boss).map((monster) => {
+    const storyCleared = state.defeatedBossIds.includes(monster.id), available = storyCleared && level >= monster.unlockLevel && availableZoneNames.has(monster.zone);
+    return { id: `boss:${monster.id}`, kind: "hunt", title: `Oathglass Bounty: ${monster.name}`, brief: "Defeat the Fallen Knight once during the UTC week. A rewarded rematch counts; the one-time story clear does not.", monsterId: monster.id, boss: true, regionId: WORLD_ZONES.find((zone) => zone.name === monster.zone)?.id, activityId: `boss:${monster.id}`, source: { kind: "monster", id: monster.id, label: monster.name, available, reason: storyCleared ? void 0 : "Defeat this boss in the story first" }, estimatedPerHour: 1, available, priority: 0, reward: { rewardRef: "weekly_order_boss_fallen_knight", label: "Oathglass Bounty Cache" } };
+  });
   const gathering = [...GATHERING, ...HERB_NODES].map((action) => ({ id: `gather:${action.id}`, kind: "profession", title: `${action.name}`, actionId: action.id, professionKind: "gathering", regionId: action.zoneId, activityId: action.id, source: { kind: "skill", id: action.skillId, label: action.name, available: availableZoneIds.has(action.zoneId) && (state.skills.find((skill2) => skill2.skillId === action.skillId)?.level ?? 1) >= action.unlockLevel, reason: availableZoneIds.has(action.zoneId) ? void 0 : "Region locked" }, estimatedPerHour: Math.max(1, Math.floor(3600 / Math.max(1, action.seconds))), available: availableZoneIds.has(action.zoneId) && (state.skills.find((skill2) => skill2.skillId === action.skillId)?.level ?? 1) >= action.unlockLevel, priority: 25 }));
   const recipes = RECIPES.filter((recipe2) => recipe2.skillId === "smithing" || recipe2.skillId === "cooking").map((recipe2) => ({ id: `recipe:${recipe2.id}`, kind: "profession", title: recipe2.name, actionId: recipe2.id, professionKind: recipe2.skillId === "cooking" ? "cooking" : "crafting", activityId: recipe2.id, source: { kind: "recipe", id: recipe2.id, label: recipe2.name, available: (state.skills.find((skill2) => skill2.skillId === recipe2.skillId)?.level ?? 1) >= recipe2.level, reason: `Requires ${recipe2.skillId} ${recipe2.level}` }, estimatedPerHour: Math.max(1, Math.floor(3600 / Math.max(1, recipe2.seconds))), available: (state.skills.find((skill2) => skill2.skillId === recipe2.skillId)?.level ?? 1) >= recipe2.level, priority: 35 }));
   const regionalProblemSeeds = {
@@ -74332,10 +74839,10 @@ function weeklyOrderCandidatesFromCurrentContent(state) {
     const challenge = COMBAT_CHALLENGES[challengeId], tuned = challengeHuntStats(monster, challengeId), regionId = WORLD_ZONES.find((zone) => zone.name === monster.zone)?.id;
     return { id: `threat:${monster.id}:${challengeId}`, kind: "threat", title: `${challenge.shortName}: ${monster.name}`, brief: `Defeat ${monster.name} while running its ${challenge.name}. Normal hunts do not count toward this bounty.`, monsterId: monster.id, challengeId, regionId, activityId: `combat:${monster.id}:${challengeId}`, source: { kind: "monster", id: monster.id, label: monster.name, available: true }, estimatedPerHour: Math.max(1, Math.floor(3600 / Math.max(1, tuned.secondsPerKill))), available: true, priority: challengeId === "apex" ? 4 : challengeId === "nemesis" ? 8 : challengeId === "hardened" ? 14 : 20, reward: { rewardRef: `weekly_order_threat_${challengeId}`, label: `${challenge.name} Bounty Cache` } };
   }));
-  return [...hunts, ...gathering, ...recipes, ...regionalProblems, ...threatBounties];
+  return [...bossHunts, ...hunts, ...gathering, ...recipes, ...regionalProblems, ...threatBounties];
 }
 
-// ../apps/mobile/src/core/adventurers-journal-v42.ts
+// apps/mobile/src/core/adventurers-journal-v42.ts
 var TIERS = ["novice", "adventurer", "veteran", "master", "grandmaster"];
 var ladder = (category, key, name, metricKey, targets, descriptions, title2) => targets.map((target2, index) => ({ id: `${key}_${TIERS[index]}`, category, tier: TIERS[index], title: `${name} \u2014 ${TIERS[index][0].toUpperCase()}${TIERS[index].slice(1)}`, description: descriptions[index], metricKey, target: target2, ...index === 4 && title2 ? { rewardTitleId: title2.id } : {} }));
 var JOURNAL_TITLES_V42 = [
@@ -74346,13 +74853,15 @@ var JOURNAL_TITLES_V42 = [
   { id: "deep_delver", name: "Deep Delver", description: "A title for relentless dungeon exploration.", sourceAchievementId: "delver_grandmaster" },
   { id: "companion_sage", name: "Companion Sage", description: "A title earned through an exceptional companion collection.", sourceAchievementId: "keeper_grandmaster" },
   { id: "beast_scholar", name: "Beast Scholar", description: "A title for deep knowledge of Veldryn\u2019s creatures.", sourceAchievementId: "beast_scholar_grandmaster" },
-  { id: "orderbound", name: "Orderbound", description: "A title for long-term consistency on Weekly Orders.", sourceAchievementId: "orderbound_grandmaster" }
+  { id: "orderbound", name: "Orderbound", description: "A title for long-term consistency on Weekly Orders.", sourceAchievementId: "orderbound_grandmaster" },
+  { id: "masterwork_savant", name: "Masterwork Savant", description: "A title for an account that has mastered many distinct profession actions.", sourceAchievementId: "mastery_hall_grandmaster" }
 ];
 var title = (id) => JOURNAL_TITLES_V42.find((row) => row.id === id);
 var JOURNAL_ACHIEVEMENTS_V42 = [
   ...ladder("combat", "combatant", "Combatant", "combat.total_kills", [100, 1e3, 5e3, 25e3, 1e5], ["Defeat 100 enemies.", "Defeat 1,000 enemies.", "Defeat 5,000 enemies.", "Defeat 25,000 enemies.", "Defeat 100,000 enemies."], title("the_unbroken")),
   ...ladder("skills", "well_rounded", "Well-Rounded", "account.combined_skill_levels", [250, 500, 950, 1600, 2500], ["Reach 250 combined account skill levels.", "Reach 500 combined account skill levels.", "Reach 950 combined account skill levels.", "Reach 1,600 combined account skill levels.", "Reach 2,500 combined account skill levels."], title("master_of_many")),
   ...ladder("professions", "artisan", "Artisan", "profession.actions_completed", [250, 2500, 15e3, 75e3, 25e4], ["Complete 250 profession actions.", "Complete 2,500 profession actions.", "Complete 15,000 profession actions.", "Complete 75,000 profession actions.", "Complete 250,000 profession actions."], title("grandmaster_artisan")),
+  ...ladder("professions", "mastery_hall", "Mastery Hall", "profession.mastered_actions", [1, 3, 6, 12, 20], ["Master one profession activity or recipe at Rank 50.", "Master three distinct profession activities or recipes.", "Master six distinct profession activities or recipes.", "Master twelve distinct profession activities or recipes.", "Master twenty distinct profession activities or recipes."], title("masterwork_savant")),
   ...ladder("exploration", "pathfinder", "Pathfinder", "regions.overall_completion_percent", [10, 25, 50, 75, 100], ["Reach 10% overall Region Completion.", "Reach 25% overall Region Completion.", "Reach 50% overall Region Completion.", "Reach 75% overall Region Completion.", "Reach 100% overall Region Completion."], title("explorer_of_veldryn")),
   ...ladder("dungeons", "delver", "Delver", "dungeons.clears", [5, 25, 100, 500, 2e3], ["Clear five dungeons.", "Clear 25 dungeons.", "Clear 100 dungeons.", "Clear 500 dungeons.", "Clear 2,000 dungeons."], title("deep_delver")),
   ...ladder("companions", "keeper", "Companion Keeper", "companions.collection_percent", [10, 25, 50, 75, 100], ["Reach 10% Companion Collection completion.", "Reach 25% Companion Collection completion.", "Reach 50% Companion Collection completion.", "Reach 75% Companion Collection completion.", "Reach 100% Companion Collection completion."], title("companion_sage")),
@@ -74384,7 +74893,7 @@ function applyJournalSnapshot(state, snapshot2, nowMs) {
   return { newlyUnlockedAchievementIds, newlyUnlockedTitleIds };
 }
 
-// ../apps/mobile/src/core/personal-records-v43.ts
+// apps/mobile/src/core/personal-records-v43.ts
 var PERSONAL_RECORDS_V43 = [
   { id: "highest_single_hit", category: "combat", label: "Highest single hit", unit: "number", rule: "max", description: "Largest damage value from one trusted combat hit." },
   { id: "highest_critical_hit", category: "combat", label: "Highest critical hit", unit: "number", rule: "max", description: "Largest critical-hit damage value." },
@@ -74434,7 +74943,7 @@ function applyPersonalRecord(previous, event) {
   return { changed: true, entry: entry2 };
 }
 
-// ../apps/mobile/src/core/balance-telemetry.ts
+// apps/mobile/src/core/balance-telemetry.ts
 var BALANCE_METRIC_KEYS = {
   characterLevel: "balance.character_level",
   campaignClaimed: "balance.campaign_chapters_claimed",
@@ -74537,7 +75046,7 @@ function applyLocalBalanceSnapshot(state, nowMs = Date.now()) {
   return { ...state, account: { ...state.account, longTermMetrics: metrics } };
 }
 
-// ../apps/mobile/src/core/long-term-progression-runtime.ts
+// apps/mobile/src/core/long-term-progression-runtime.ts
 function integerUnits(value) {
   return Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
 }
@@ -74553,9 +75062,17 @@ function trustedEventRegionId(event) {
   return void 0;
 }
 function ensureWeeklyOrders(state, accountId, nowMs) {
-  const window = weeklyOrderWindow(nowMs), existing = state.account.weeklyOrders;
-  if (existing?.schemaVersion === 41 && existing.accountId === accountId && existing.weekKey === window.weekKey) return existing;
-  return generateWeeklyOrders(accountId, nowMs, weeklyOrderCandidatesFromCurrentContent(state));
+  const window = weeklyOrderWindow(nowMs), existing = state.account.weeklyOrders, candidates = weeklyOrderCandidatesFromCurrentContent(state);
+  if (existing?.schemaVersion === 41 && existing.accountId === accountId && existing.weekKey === window.weekKey) {
+    const bossCandidate = candidates.find((candidate) => candidate.kind === "hunt" && candidate.boss && candidate.monsterId === "FALLEN_KNIGHT" && candidate.available && candidate.source.available);
+    if (bossCandidate && !existing.orders.some((order2) => order2.kind === "hunt" && order2.targetId === "FALLEN_KNIGHT")) {
+      const bonusPolicy = { ...DEFAULT_WEEKLY_ORDER_POLICY, huntSlots: 1, professionSlots: 0, regionalSlots: 0, threatSlots: 0 };
+      const bonus = generateWeeklyOrders(accountId, nowMs, [bossCandidate], bonusPolicy).orders[0];
+      if (bonus) existing.orders.push({ ...bonus, slot: existing.orders.length });
+    }
+    return existing;
+  }
+  return generateWeeklyOrders(accountId, nowMs, candidates);
 }
 function weeklyOrderBoardForState(state, nowMs = Date.now()) {
   const accountId = state.account.longTermAccountScopeId ?? `local-account:${state.createdAtMs}`;
@@ -74659,6 +75176,7 @@ function journalMetrics(state) {
   metrics["account.combined_skill_levels"] = combinedAccountSkillLevels(state);
   metrics["bestiary.completion_percent"] = bestiaryProjection(state).completionPercent;
   metrics["companions.collection_percent"] = companionCollectionPercent(state);
+  metrics["profession.mastered_actions"] = Object.values(state.account.professionMasteryByAction ?? {}).filter((row) => professionMasteryRank(row.points) >= 50).length;
   return metrics;
 }
 function updateRecord(journal, event, changed) {
@@ -74707,6 +75225,7 @@ function applyTrustedLongTermProgression(input, events, reward2, nowMs, options)
       mastery[event.contentId] = grantProfessionMastery(mastery[event.contentId], event.contentId, units, nowMs);
     }
     if (event.kind === "combat") applyWeeklyOrderProgress(weekly, { eventId: `${options.eventId}:${event.kind}:${event.contentId}`, characterId: state.character?.id ?? "unknown", kind: "hunt", targetId: event.contentId, amount: units, completedAtMs: nowMs });
+    if (event.kind === "boss" && event.weeklyEligible !== false) applyWeeklyOrderProgress(weekly, { eventId: `${options.eventId}:boss:${event.contentId}`, characterId: state.character?.id ?? "unknown", kind: "hunt", targetId: event.contentId, amount: units, completedAtMs: nowMs });
     if (event.kind === "combat" && event.challengeId) applyWeeklyOrderProgress(weekly, { eventId: `${options.eventId}:threat:${event.contentId}:${event.challengeId}`, characterId: state.character?.id ?? "unknown", kind: "threat", targetId: `${event.contentId}:${event.challengeId}`, amount: units, completedAtMs: nowMs });
     if (event.kind === "gathering" || event.kind === "crafting") applyWeeklyOrderProgress(weekly, { eventId: `${options.eventId}:${event.kind}:${event.contentId}`, characterId: state.character?.id ?? "unknown", kind: "profession", targetId: event.contentId, amount: units, completedAtMs: nowMs });
     const regionId = trustedEventRegionId(event);
@@ -74756,7 +75275,7 @@ function applyTrustedLongTermProgression(input, events, reward2, nowMs, options)
   return { state, weeklyOrderCompletions: weeklyCompleted, journalAchievements: journalResult.newlyUnlockedAchievementIds, journalTitles: journalResult.newlyUnlockedTitleIds, personalRecordUpdates: recordUpdates, crossSkillUnlocks: crossResult.newlyUnlockedDiscoveryIds, collectionSetCompletions: collectionResult.newlyCompletedSetIds, rareDiscoveryGrantRefs: rareGrantRefs };
 }
 
-// ../apps/mobile/src/core/core-pet-drops.ts
+// apps/mobile/src/core/core-pet-drops.ts
 var CORE_PET_SIGNATURE_DROPS = [
   { petId: "PET_018", monsterId: "OATHGLASS_REVENANT", region: "Asterfall", chance: 5e-4 },
   { petId: "PET_023", monsterId: "GLASSBOUND_SENTINEL", region: "Sunscar", chance: 5e-4 },
@@ -74804,7 +75323,7 @@ function ownedPetIds(state) {
   ]);
 }
 function resolveRules(state, rules, attempts, seedBase, roll) {
-  if (attempts <= 0 || !rules.length) return [];
+  if (!earlyFeatureUnlocked(state, "pets") || attempts <= 0 || !rules.length) return [];
   const owned = ownedPetIds(state), found = [];
   const tries = Math.max(0, Math.floor(attempts));
   for (const rule of rules) {
@@ -74850,7 +75369,8 @@ function applyCorePetCombatDrops(state, monsterId, kills, seedBase, roll) {
   return applyPetIds(state, ids2, monsterId);
 }
 
-// ../apps/mobile/src/core/idle-rules-v40.ts
+// apps/mobile/src/core/idle-rules-v40.ts
+var MAX_IDLE_RULE_SETS = 5;
 function reached(c, ctx) {
   if (!c.enabled) return false;
   switch (c.kind) {
@@ -74884,7 +75404,7 @@ function evaluateIdleRuleSet(rules, ctx) {
 var IDLE_KINDS = ["item_quantity", "skill_level", "monster_kills", "session_kills", "champion_defeats", "weekly_order_progress", "food_below", "free_slots_below", "duration_seconds"];
 function normalizeIdleRuleSets(value, characterId) {
   if (!Array.isArray(value) || !characterId) return [];
-  return value.slice(0, 5).flatMap((raw2, index) => {
+  return value.slice(0, MAX_IDLE_RULE_SETS).flatMap((raw2, index) => {
     if (!raw2 || typeof raw2 !== "object") return [];
     const row = raw2;
     const conditions = Array.isArray(row.conditions) ? row.conditions.slice(0, 6).flatMap((input, i) => {
@@ -74900,7 +75420,7 @@ function validateActiveIdleRuleId(rules, value) {
   return typeof value === "string" && rules.some((rule) => rule.id === value) ? value : void 0;
 }
 
-// ../apps/mobile/src/core/hunt-champions.ts
+// apps/mobile/src/core/hunt-champions.ts
 var CHAMPION_ENCOUNTER_CHANCE = 6e-3;
 var CHAMPION_DAMAGE_MULTIPLIER = 1.45;
 var CHAMPION_BONUS_XP_MULTIPLIER = 3;
@@ -74920,7 +75440,7 @@ function championBonus(baseXp, baseGold, count) {
   };
 }
 
-// ../apps/mobile/src/core/daily-supplies.ts
+// apps/mobile/src/core/daily-supplies.ts
 var DAILY_SUPPLY_BONUS = 0.1;
 var DAILY_SUPPLY_CHARGE_SECONDS = 2 * 60 * 60;
 var DAILY_SUPPLY_TRACK_LENGTH = 28;
@@ -75072,12 +75592,308 @@ function dailySupplyActivityMode(activity) {
   if (!activity) return void 0;
   if (activity.kind === "combat") return "combat";
   if (["mining", "woodcutting", "fishing", "herbalism"].includes(activity.kind)) return "gathering";
-  if (activity.kind === "alchemy") return "crafting";
+  if (activity.kind === "alchemy" || activity.kind === "processing") return "crafting";
   return "skill";
 }
 
-// ../apps/mobile/src/core/game.ts
-var beginAlchemyBatch = startAlchemyBatch;
+// apps/mobile/src/core/hunting-progression.ts
+var HUNTING_XP_SHARE = 0.3;
+function huntingXpForKills(kills, monsterXp, environmentXpMultiplier = 1, skillXpMultiplier = 1, challengeXpMultiplier = 1) {
+  const count = Math.max(0, Math.floor(kills));
+  const perKill = Math.max(0, monsterXp) * Math.max(0, environmentXpMultiplier) * Math.max(0, skillXpMultiplier) * Math.max(0, challengeXpMultiplier) * HUNTING_XP_SHARE;
+  return Math.max(0, Math.floor(count * perKill));
+}
+
+// apps/mobile/src/core/encounter-identity.ts
+var PROFILES = {
+  SWARM: { id: "SWARM", archetype: "Swarm", pressure: "attrition", summary: "Many small attacks create steady pressure instead of one heavy blow.", mechanics: ["Rapid pressure", "Low individual durability"], tactic: "Favor faster clears and reliable sustain; long fights give the swarm more chances to wear you down." },
+  ARCANE_FLICKER: { id: "ARCANE_FLICKER", archetype: "Arcane Flicker", pressure: "tempo", summary: "Unstable magic alternates between quiet openings and sudden bursts.", mechanics: ["Burst windows", "Fragile caster"], tactic: "High damage and fast cycles punish the creature before its next magical surge." },
+  CHARGER: { id: "CHARGER", archetype: "Charger", pressure: "burst", summary: "The opening exchange is the dangerous part; surviving it usually stabilizes the hunt.", mechanics: ["Heavy opener", "Momentum fighter"], tactic: "Defense and food readiness matter more here than against an equal-level skirmisher." },
+  VENOM_AMBUSH: { id: "VENOM_AMBUSH", archetype: "Venom Ambush", pressure: "attrition", summary: "Poisonous strikes turn an otherwise manageable fight into sustained health pressure.", mechanics: ["Venom pressure", "Punishes slow kills"], tactic: "Increase kill speed or healing efficiency so repeated hunts do not slowly drain your reserves." },
+  BRAMBLE_GUARD: { id: "BRAMBLE_GUARD", archetype: "Bramble Guard", pressure: "defense", summary: "Thick natural armour makes this enemy slower to bring down than its attack suggests.", mechanics: ["High durability", "Long exchanges"], tactic: "Attack and armour-piercing effects gain extra practical value against this defensive profile." },
+  BRUTE: { id: "BRUTE", archetype: "Siege Brute", pressure: "burst", summary: "Slow, punishing hits reward preparation and make undergeared hunts unsafe.", mechanics: ["Heavy strikes", "High health"], tactic: "Bring enough defense to survive repeated hits; pure speed builds can become food-hungry here." },
+  STALKER: { id: "STALKER", archetype: "Stalker", pressure: "tempo", summary: "A mobile predator pressures weak defenses and rewards decisive kills.", mechanics: ["Fast pressure", "Predatory tempo"], tactic: "Avoid barely meeting the power recommendation; a comfortable margin keeps the hunt efficient." },
+  BULWARK: { id: "BULWARK", archetype: "Bulwark", pressure: "defense", summary: "Armour and disciplined defense turn the encounter into a damage-efficiency check.", mechanics: ["Heavy armour", "Reduced kill tempo"], tactic: "Upgrade weapons, offensive class skills, or damage bonuses before trying to brute-force long sessions." },
+  RUNECASTER: { id: "RUNECASTER", archetype: "Runecaster", pressure: "control", summary: "Telegraphed magical pressure favors balanced builds over one-dimensional defenses.", mechanics: ["Spell pressure", "Timing windows"], tactic: "Keep both offense and survivability healthy; slow kills leave more room for dangerous cast cycles." },
+  OATHBOUND: { id: "OATHBOUND", archetype: "Oathbound Soldier", pressure: "defense", summary: "Disciplined martial enemies mix solid defense with consistent counter-pressure.", mechanics: ["Balanced guard", "Counter pressure"], tactic: "Treat these as gear checks: weak offense makes them slow, while weak defense makes them expensive to farm." },
+  REVENANT: { id: "REVENANT", archetype: "Revenant", pressure: "control", summary: "Echo-touched undead combine stubborn durability with dangerous supernatural pressure.", mechanics: ["Echo resilience", "Escalating pressure"], tactic: "Enter with a clear power advantage and enough food for variance during longer sessions." },
+  FALLEN_KNIGHT: { id: "FALLEN_KNIGHT", archetype: "Oathglass Boss", pressure: "control", summary: "A multi-phase story boss designed to test your complete combat preparation.", mechanics: ["Boss phases", "Oathglass pressure", "Preparation check"], tactic: "Use upgraded gear, food, class progression and a comfortable readiness margin before committing." }
+};
+var PROFILE_BY_MONSTER = {
+  MOSS_RAT: "SWARM",
+  FIELD_WISP: "ARCANE_FLICKER",
+  ROADSIDE_BOAR: "CHARGER",
+  SILVERFIN_SWARM: "SWARM",
+  IRONWOOD_WOLF: "CHARGER",
+  VENOM_WEAVER: "VENOM_AMBUSH",
+  THORNLING: "BRAMBLE_GUARD",
+  BRIAR_HUSK: "BRAMBLE_GUARD",
+  MIRE_HERON: "STALKER",
+  FOREST_TROLL: "BRUTE",
+  ANCIENT_TREANT: "BRAMBLE_GUARD",
+  CAVE_SKITTER: "SWARM",
+  IRONBACK_MOLE: "BULWARK",
+  ECHO_BAT: "ARCANE_FLICKER",
+  RUNEBOUND_MINER: "RUNECASTER",
+  GLOAM_MITE: "SWARM",
+  LANTERN_WRETCH: "ARCANE_FLICKER",
+  DROWNED_PILGRIM: "REVENANT",
+  OATHBOUND_SQUIRE: "OATHBOUND",
+  BANNER_SHADE: "RUNECASTER",
+  FALLEN_SENTINEL: "BULWARK",
+  OATHGLASS_REVENANT: "REVENANT",
+  SUNSCAR_SCORPION: "VENOM_AMBUSH",
+  DUNE_ORACLE: "RUNECASTER",
+  GLASSBOUND_SENTINEL: "BULWARK",
+  FROSTWOLF: "CHARGER",
+  BELLWRAITH: "RUNECASTER",
+  CHOIR_HUNTER: "STALKER",
+  BLACKGLASS_MIRELING: "VENOM_AMBUSH",
+  CINDER_TITAN: "BRUTE",
+  ASHEN_REVENANT: "REVENANT",
+  FALLEN_KNIGHT: "FALLEN_KNIGHT"
+};
+function fallback(monster) {
+  if (monster.boss) return PROFILES.FALLEN_KNIGHT;
+  if (monster.defense >= monster.attack * 0.72) return PROFILES.BULWARK;
+  if (monster.attack >= monster.defense * 1.9) return PROFILES.CHARGER;
+  return PROFILES.OATHBOUND;
+}
+function encounterIdentity(monster) {
+  return PROFILES[PROFILE_BY_MONSTER[monster.id]] ?? fallback(monster);
+}
+
+// apps/mobile/src/core/regional-enemy-stats.ts
+var NEUTRAL2 = { accuracy: 0.87, evasion: 0.04, critChance: 0.05, critMultiplier: 1.5, haste: 0 };
+var BY_PROFILE = {
+  SWARM: { accuracy: 0.83, evasion: 0.05, critChance: 0.03, critMultiplier: 1.4, haste: 0.1 },
+  ARCANE_FLICKER: { accuracy: 0.9, evasion: 0.08, critChance: 0.06, critMultiplier: 1.55, haste: 0.08 },
+  CHARGER: { accuracy: 0.85, evasion: 0.03, critChance: 0.08, critMultiplier: 1.7, haste: -0.03 },
+  VENOM_AMBUSH: { accuracy: 0.89, evasion: 0.07, critChance: 0.05, critMultiplier: 1.5, haste: 0.07 },
+  BRAMBLE_GUARD: { accuracy: 0.84, evasion: 0.02, critChance: 0.03, critMultiplier: 1.45, haste: -0.04 },
+  BRUTE: { accuracy: 0.84, evasion: 0.02, critChance: 0.1, critMultiplier: 1.8, haste: -0.06 },
+  STALKER: { accuracy: 0.91, evasion: 0.1, critChance: 0.08, critMultiplier: 1.65, haste: 0.1 },
+  BULWARK: { accuracy: 0.86, evasion: 0.02, critChance: 0.03, critMultiplier: 1.45, haste: -0.05 },
+  RUNECASTER: { accuracy: 0.93, evasion: 0.06, critChance: 0.06, critMultiplier: 1.55, haste: 0.05 },
+  OATHBOUND: NEUTRAL2,
+  REVENANT: { accuracy: 0.9, evasion: 0.05, critChance: 0.07, critMultiplier: 1.6, haste: 0.03 },
+  FALLEN_KNIGHT: { accuracy: 0.93, evasion: 0.05, critChance: 0.1, critMultiplier: 1.75, haste: 0.05 }
+};
+var clamp5 = (value, min, max) => Math.max(min, Math.min(max, value));
+var expectedCrit = (chance, multiplier) => 1 + clamp5(chance, 0, 0.75) * Math.max(0, multiplier - 1);
+function regionalEnemySecondaryStats(monster) {
+  return BY_PROFILE[encounterIdentity(monster).id] ?? NEUTRAL2;
+}
+function regionalSecondaryExchange(player, monster, basePlayerCritChance = 0.05) {
+  const enemy2 = regionalEnemySecondaryStats(monster);
+  const playerHitChance = clamp5(player.accuracy - enemy2.evasion, 0.55, 0.99);
+  const enemyHitChance = clamp5(enemy2.accuracy - player.evasion, 0.55, 0.99);
+  const baselinePlayerHit = 0.84 - NEUTRAL2.evasion;
+  const baselineEnemyHit = NEUTRAL2.accuracy - 0.04;
+  const playerCritExpected = expectedCrit(player.critChance, player.critMultiplier);
+  const enemyCritExpected = expectedCrit(enemy2.critChance, enemy2.critMultiplier);
+  const baselinePlayerCritExpected = expectedCrit(basePlayerCritChance, 1.5);
+  const baselineEnemyCritExpected = expectedCrit(NEUTRAL2.critChance, NEUTRAL2.critMultiplier);
+  const playerHasteMultiplier = clamp5((1 + player.haste) / 1.05, 0.75, 1.5);
+  return {
+    enemy: enemy2,
+    playerHitChance,
+    enemyHitChance,
+    playerCritExpected,
+    enemyCritExpected,
+    playerOutputMultiplier: clamp5(playerHitChance / baselinePlayerHit * (playerCritExpected / baselinePlayerCritExpected) * playerHasteMultiplier, 0.7, 1.45),
+    incomingPressureMultiplier: clamp5(enemyHitChance / baselineEnemyHit * (enemyCritExpected / baselineEnemyCritExpected) * (1 + enemy2.haste), 0.7, 1.45)
+  };
+}
+
+// apps/mobile/src/core/story-boss.ts
+var clamp6 = (value, min, max) => Math.max(min, Math.min(max, value));
+var FALLEN_KNIGHT_MAX_DURATION_MS = 1e5;
+function mitigation(defense) {
+  return clamp6(defense / Math.max(1, defense + 110), 0, 0.72);
+}
+function simulateFallenKnightStoryBattle(player, seed, mode = "story") {
+  const monster = MONSTERS.find((row) => row.id === "FALLEN_KNIGHT");
+  if (!monster) throw new Error("fallen_knight_missing");
+  const bossSecondary = regionalEnemySecondaryStats(monster);
+  const bossMaxHp = monster.hp, playerMaxHp = Math.max(1, Math.round(player.maxHp));
+  let bossHp = bossMaxHp, playerHp = clamp6(Math.round(player.currentHp || playerMaxHp), 1, playerMaxHp), foodLeft = Math.max(0, Math.floor(player.foodQuantity)), foodConsumed = 0;
+  let phase = 1, phaseWardUntilMs = 0, rngIndex = 0, bossAttackCount = 0;
+  const phasesReached = [1], events = [];
+  const playerHitChance = clamp6(player.accuracy - bossSecondary.evasion, 0.55, 0.99);
+  const playerAttackIntervalMs = clamp6(Math.round(2350 / Math.max(0.65, (1 + player.haste) * player.actionSpeedMultiplier)), 900, 3200);
+  let nextPlayerAt = 650, nextBossAt = 1800;
+  const push = (event) => events.push({ ...event, playerHp: Math.max(0, Math.round(playerHp)), bossHp: Math.max(0, Math.round(bossHp)), phase });
+  push({ atMs: 0, type: "battle_start", label: "The Fallen Knight raises the oathglass blade." });
+  const maybeEat = (atMs) => {
+    const threshold = clamp6(player.autoEatThresholdPct, 10, 90) / 100;
+    if (player.foodHeal <= 0) return;
+    while (playerHp > 0 && playerHp / playerMaxHp <= threshold && foodLeft > 0) {
+      const healed = Math.min(playerMaxHp - playerHp, Math.max(1, Math.round(player.foodHeal)));
+      if (healed <= 0) break;
+      playerHp += healed;
+      foodLeft--;
+      foodConsumed++;
+      push({ atMs: atMs + 40, type: "heal", label: "Auto-eat", amount: healed });
+      if (playerHp / playerMaxHp > threshold) break;
+    }
+  };
+  const enterPhase = (atMs, next) => {
+    phase = next;
+    phasesReached.push(next);
+    if (next === 2) {
+      phaseWardUntilMs = atMs + 7e3;
+      push({ atMs: Math.max(0, atMs - 220), type: "telegraph", label: "Oathglass Ward forming", abilityId: "OATHGLASS_WARD" });
+      push({ atMs: atMs + 30, type: "phase", label: "PHASE II \xB7 Oathglass Ward" });
+    } else {
+      push({ atMs: Math.max(0, atMs - 220), type: "telegraph", label: "The Last Oath ignites", abilityId: "LAST_OATH" });
+      push({ atMs: atMs + 30, type: "phase", label: "PHASE III \xB7 Last Oath" });
+    }
+  };
+  let now = 0;
+  while (now < FALLEN_KNIGHT_MAX_DURATION_MS && bossHp > 0 && playerHp > 0) {
+    if (nextPlayerAt <= nextBossAt) {
+      now = nextPlayerAt;
+      const hit = random01(seed, rngIndex++) <= playerHitChance;
+      if (!hit) {
+        push({ atMs: now, type: "player_miss", label: "Your strike misses.", abilityId: "PLAYER_STRIKE" });
+      } else {
+        const critical = random01(seed, rngIndex++) < clamp6(player.critChance, 0, 0.75);
+        const variance = 0.94 + random01(seed, rngIndex++) * 0.12;
+        const bossWard = now < phaseWardUntilMs ? 0.86 : 1;
+        const base = Math.max(1, player.power * 38 + player.attack * 14 - monster.defense * 15);
+        const rolledAmount = Math.max(1, Math.round(base * variance * player.damageMultiplier * bossWard * (critical ? player.critMultiplier : 1)));
+        let nextBossHp = Math.max(0, bossHp - rolledAmount);
+        if (mode === "story" && phase === 1 && nextBossHp <= bossMaxHp * 0.65) nextBossHp = Math.max(1, Math.ceil(bossMaxHp * 0.65));
+        else if (mode === "story" && phase === 2 && nextBossHp <= bossMaxHp * 0.3) nextBossHp = Math.max(1, Math.ceil(bossMaxHp * 0.3));
+        const amount = Math.max(1, bossHp - nextBossHp);
+        bossHp = nextBossHp;
+        push({ atMs: now, type: "player_hit", label: critical ? "Critical strike!" : "Strike", abilityId: "PLAYER_STRIKE", amount, critical });
+        const hpPct2 = bossHp / bossMaxHp;
+        if (phase === 1 && hpPct2 <= 0.65 && bossHp > 0) enterPhase(now, 2);
+        else if (phase === 2 && hpPct2 <= 0.3 && bossHp > 0) enterPhase(now, 3);
+      }
+      nextPlayerAt += playerAttackIntervalMs;
+      continue;
+    }
+    now = nextBossAt;
+    bossAttackCount++;
+    const phaseHaste = phase === 3 ? 0.18 : phase === 2 ? 0.07 : 0;
+    const attackInterval = clamp6(Math.round(2850 / (1 + bossSecondary.haste + phaseHaste)), 1450, 3400);
+    let abilityId = "FALLEN_SLASH", label = "Fallen Slash", coeff = 1, telegraph = 0;
+    if (bossAttackCount % 6 === 0) {
+      abilityId = "OATHGLASS_COLLAPSE";
+      label = "Oathglass Collapse";
+      coeff = 1.38;
+      telegraph = 1250;
+    } else if (bossAttackCount % 3 === 0) {
+      abilityId = "OATHBREAKER";
+      label = "Oathbreaker";
+      coeff = 1.62;
+      telegraph = 900;
+    }
+    if (telegraph) push({ atMs: Math.max(0, now - telegraph), type: "telegraph", label: `${label} incoming`, abilityId });
+    const bossAccuracy = clamp6(bossSecondary.accuracy + (phase === 3 ? 0.025 : 0), 0.55, 0.99);
+    const bossHitChance = clamp6(bossAccuracy - player.evasion, 0.55, 0.99);
+    if (random01(seed, rngIndex++) > bossHitChance) {
+      push({ atMs: now, type: "boss_miss", label: `${label} misses.`, abilityId });
+    } else {
+      const bossCritChance = clamp6(bossSecondary.critChance + (phase === 3 ? 0.08 : 0), 0, 0.55);
+      const critical = random01(seed, rngIndex++) < bossCritChance;
+      const variance = 0.95 + random01(seed, rngIndex++) * 0.1;
+      const raw2 = monster.attack * 0.29 + monster.level * 0.14;
+      const phaseDamage = phase === 3 ? 1.18 : phase === 2 ? 1.06 : 1;
+      const amount = Math.max(1, Math.round(raw2 * (1 - mitigation(player.defense)) * coeff * phaseDamage * variance * player.incomingDamageMultiplier * (critical ? bossSecondary.critMultiplier : 1)));
+      playerHp = Math.max(0, playerHp - amount);
+      push({ atMs: now, type: "boss_hit", label, abilityId, amount, critical });
+      maybeEat(now);
+    }
+    nextBossAt += attackInterval;
+  }
+  if (bossHp > 0 && playerHp > 0) {
+    now = FALLEN_KNIGHT_MAX_DURATION_MS;
+    push({ atMs: now - 900, type: "telegraph", label: "The oathglass blade overloads.", abilityId: "OATHGLASS_ENRAGE" });
+    const amount = Math.max(playerHp, Math.round(playerMaxHp * 0.75));
+    playerHp = 0;
+    push({ atMs: now, type: "boss_hit", label: "Oathglass Rupture", abilityId: "OATHGLASS_ENRAGE", amount });
+  }
+  const won = bossHp <= 0 && playerHp > 0;
+  push({ atMs: Math.min(FALLEN_KNIGHT_MAX_DURATION_MS, now + 450), type: won ? "victory" : "defeat", label: won ? "The Fallen Knight falls." : "You are forced back from the oathglass road." });
+  events.sort((a, b) => a.atMs - b.atMs || a.type.localeCompare(b.type));
+  return {
+    bossId: "FALLEN_KNIGHT",
+    bossName: "Fallen Knight",
+    won,
+    durationMs: Math.min(FALLEN_KNIGHT_MAX_DURATION_MS, now + 450),
+    bossMaxHp,
+    playerMaxHp,
+    finalBossHp: Math.max(0, Math.round(bossHp)),
+    finalPlayerHp: Math.max(0, Math.round(playerHp)),
+    foodConsumed,
+    phasesReached,
+    events,
+    player: { hitChance: playerHitChance, critChance: clamp6(player.critChance, 0, 0.75), attackIntervalMs: playerAttackIntervalMs },
+    boss: { accuracy: bossSecondary.accuracy, evasion: bossSecondary.evasion, critChance: bossSecondary.critChance, critMultiplier: bossSecondary.critMultiplier, haste: bossSecondary.haste }
+  };
+}
+
+// apps/mobile/src/core/weekly-boss.ts
+var FALLEN_KNIGHT_WEEKLY_REWARD_CAP = 3;
+var FALLEN_KNIGHT_WEEKLY_BOUNTY_TARGET = 1;
+var FALLEN_KNIGHT_CLEAR_REWARD = {
+  gold: 220,
+  xp: 600,
+  essence: 8,
+  items: [
+    { itemId: "OATHGLASS_SHARD", quantity: 2 },
+    { itemId: "GEM_DUST", quantity: 4 }
+  ]
+};
+var FALLEN_KNIGHT_WEEKLY_BOUNTY_REWARD = {
+  gold: 500,
+  xp: 1200,
+  essence: 20,
+  items: [
+    { itemId: "OATHGLASS_FRAGMENT", quantity: 1 },
+    { itemId: "TEMPERING_CORE", quantity: 1 },
+    { itemId: "GEM_DUST", quantity: 10 },
+    { itemId: "REGIONAL_CATALYST", quantity: 1 }
+  ]
+};
+function fallenKnightWeekKey(nowMs) {
+  return companionTrialWeekKey(nowMs);
+}
+function fallenKnightWeeklyStatus(state, nowMs) {
+  const weekKey = fallenKnightWeekKey(nowMs), raw2 = state.account.fallenKnightWeekly;
+  const current = raw2?.weekKey === weekKey ? { weekKey, rewardedClears: Math.max(0, Math.min(FALLEN_KNIGHT_WEEKLY_REWARD_CAP, Math.floor(raw2.rewardedClears ?? 0))), bountyAwarded: raw2.bountyAwarded === true } : { weekKey, rewardedClears: 0, bountyAwarded: false };
+  return {
+    ...current,
+    cap: FALLEN_KNIGHT_WEEKLY_REWARD_CAP,
+    remaining: Math.max(0, FALLEN_KNIGHT_WEEKLY_REWARD_CAP - current.rewardedClears),
+    bountyTarget: FALLEN_KNIGHT_WEEKLY_BOUNTY_TARGET,
+    bountyReady: current.rewardedClears >= FALLEN_KNIGHT_WEEKLY_BOUNTY_TARGET
+  };
+}
+function recordFallenKnightWeeklyVictory(state, nowMs) {
+  const status = fallenKnightWeeklyStatus(state, nowMs);
+  if (status.remaining <= 0) return { state, clearNumber: status.rewardedClears, bountyTriggered: false, status };
+  const rewardedClears = status.rewardedClears + 1;
+  const bountyAwarded = status.bountyAwarded || rewardedClears >= FALLEN_KNIGHT_WEEKLY_BOUNTY_TARGET;
+  return {
+    state: { ...state, account: { ...state.account, fallenKnightWeekly: { weekKey: status.weekKey, rewardedClears, bountyAwarded } } },
+    clearNumber: rewardedClears,
+    bountyTriggered: !status.bountyAwarded && bountyAwarded,
+    status: { ...status, rewardedClears, bountyAwarded, remaining: Math.max(0, status.cap - rewardedClears), bountyReady: rewardedClears >= status.bountyTarget }
+  };
+}
+
+// apps/mobile/src/core/game.ts
+function beginAlchemyBatch(state, recipeId, batches, nowMs) {
+  return startAlchemyBatch(finishClassDrills(state, nowMs), recipeId, batches, nowMs);
+}
+function beginProcessingBatch(state, recipeId, batches, nowMs) {
+  return startProcessingBatch(finishClassDrills(state, nowMs), recipeId, batches, nowMs);
+}
 function longTermAccountScope(state) {
   return state.account.longTermAccountScopeId ?? `local-account:${state.createdAtMs}`;
 }
@@ -75092,30 +75908,45 @@ function withCompanionUnlocks(reward2, before, after) {
   const companionUnlocks = companionUnlocksBetween(before, after);
   return companionUnlocks.length ? { ...reward2, companionUnlocks } : reward2;
 }
-var BASE_OFFLINE_CAP_HOURS = 24;
-var MAX_OFFLINE_CAP_HOURS = 36;
+var BASE_OFFLINE_CAP_HOURS = 8;
+var FREE_OFFLINE_CAP_HOURS = 24;
+var MAX_OFFLINE_CAP_HOURS = 30;
 var OFFLINE_CAP_SECONDS = BASE_OFFLINE_CAP_HOURS * 60 * 60;
 var COMBAT_SPEED_MIN = 0.68;
 var COMBAT_SPEED_MAX = 1.3;
 var COMBAT_TIME_SCALE = 1.16;
 var COMBAT_EXPECTED_SCALE = 1.3;
 var COMBAT_MONSTER_DAMAGE_SCALE = 1.13;
-var GATHER_TIME_SCALE = 1.45;
+var REGIONAL_COMBAT_PRESSURE = { Greenfields: 1, Silverbrook: 1.04, "Ironwood Forest": 1.08, "Old Mines": 1.12, "King's Road": 1.16, Sunscar: 1.2, Frostmarch: 1.25, Ashlands: 1.3 };
+var REGIONAL_MONSTER_PRESSURE_MULTIPLIER = { entry: 0.92, standard: 1, hard: 1.1 };
+var REGIONAL_MIN_ATTRITION_HP_PER_HOUR = { Greenfields: 60, Silverbrook: 80, "Ironwood Forest": 115, "Old Mines": 180, "King's Road": 230, Sunscar: 330, Frostmarch: 520, Ashlands: 620 };
+var GATHER_TIME_SCALE = 1.25;
 function offlineCapBreakdown(state) {
   const setComplete = !!state.character && noviceSetFor(state.character.classId).slots.every((slot) => state.character.craftedNoviceItemIds?.includes(noviceItemId(state.character.classId, slot)));
   const questMilestone = state.quests.some((q2) => q2.questId === "QST_005" && q2.status === "claimed");
+  const unlockedSlots = unlockedCharacterSlots(state);
+  const secondSlot = unlockedSlots >= 2;
+  const thirdSlot = unlockedSlots >= 3;
+  const fourthSlot = unlockedSlots >= 4;
+  const fifthSlot = unlockedSlots >= 5;
+  const guildMember = state.account.guildMember;
+  const firstBoss = state.defeatedBossIds.length > 0;
+  const benefits = accountEntitlementBenefits(state), vip = benefits.vip, vipPlus = benefits.vipPlus, supporter = benefits.supporter;
   const sources = [
-    { id: "class_set", name: "Complete class set", hours: setComplete ? 2 : 0, earned: setComplete },
-    { id: "quest_milestone", name: "Claim chapter 5", hours: questMilestone ? 2 : 0, earned: questMilestone },
-    { id: "second_character", name: "Create second character", hours: state.account.createdCharacterCount >= 2 ? 2 : 0, earned: state.account.createdCharacterCount >= 2 },
-    { id: "third_character", name: "Create third character", hours: state.account.createdCharacterCount >= 3 ? 2 : 0, earned: state.account.createdCharacterCount >= 3 },
-    { id: "guild", name: "Join a guild", hours: state.account.guildMember ? 2 : 0, earned: state.account.guildMember },
-    { id: "first_boss", name: "Defeat first boss", hours: state.defeatedBossIds.length ? 2 : 0, earned: state.defeatedBossIds.length > 0 },
-    { id: "bloom_patron", name: "Bloom Patron", hours: state.account.patronTier === "bloom" || state.account.patronTier === "crown" ? 2 : 0, earned: state.account.patronTier === "bloom" || state.account.patronTier === "crown" },
-    { id: "crown_patron", name: "Crown Patron", hours: state.account.patronTier === "crown" ? 2 : 0, earned: state.account.patronTier === "crown" }
+    { id: "class_set", name: "Complete first class set", category: "progression", hours: setComplete ? 2 : 0, earned: setComplete },
+    { id: "quest_milestone", name: "Claim chapter 5", category: "progression", hours: questMilestone ? 2 : 0, earned: questMilestone },
+    { id: "first_boss", name: "Defeat first boss", category: "progression", hours: firstBoss ? 2 : 0, earned: firstBoss },
+    { id: "character_slot_2", name: "Unlock character slot #2", category: "progression", hours: secondSlot ? 2 : 0, earned: secondSlot },
+    { id: "guild", name: "Join a guild", category: "progression", hours: guildMember ? 2 : 0, earned: guildMember },
+    { id: "character_slot_3", name: "Unlock character slot #3", category: "progression", hours: thirdSlot ? 2 : 0, earned: thirdSlot },
+    { id: "character_slot_4", name: "Unlock character slot #4", category: "progression", hours: fourthSlot ? 2 : 0, earned: fourthSlot },
+    { id: "character_slot_5", name: "Unlock character slot #5", category: "progression", hours: fifthSlot ? 2 : 0, earned: fifthSlot },
+    { id: "vip", name: "VIP", category: "paid", hours: vip ? 2 : 0, earned: vip },
+    { id: "vip_plus", name: "VIP+", category: "paid", hours: vipPlus ? 2 : 0, earned: vipPlus },
+    { id: "supporter", name: "Supporter", category: "paid", hours: supporter ? 2 : 0, earned: supporter }
   ];
   const earnedHours = sources.reduce((sum, source) => sum + source.hours, 0), hours = Math.min(MAX_OFFLINE_CAP_HOURS, BASE_OFFLINE_CAP_HOURS + earnedHours);
-  return { baseHours: BASE_OFFLINE_CAP_HOURS, maxHours: MAX_OFFLINE_CAP_HOURS, hours, sources };
+  return { baseHours: BASE_OFFLINE_CAP_HOURS, freeMaxHours: FREE_OFFLINE_CAP_HOURS, maxHours: MAX_OFFLINE_CAP_HOURS, hours, sources };
 }
 function offlineCapSeconds(state) {
   return offlineCapBreakdown(state).hours * 60 * 60;
@@ -75155,13 +75986,13 @@ function createCharacter(state, classId, name = "Adventurer", bodyPresentation =
   return {
     ...state,
     character: { id: "LOCAL_CHAR_1", name: normalizedName || "Adventurer", classId, bodyPresentation, classSkills: classSkillsFor(classId).map((skill2) => ({ skillId: skill2.id, xp: 0, level: 1 })), trainingFocus: "balanced", profileTitle: "New Adventurer", profileBackgroundId: "asterfall-night", unlockedEventSkinIds: [], unlockedSkinIds: ["starting"], ownedPetIds: [], ownedBoostIds: [], selectedSkinId: "starting", faith: { favoriteBlessingIds: [], hideWeakerBlessings: true }, level: 1, xp: 0, gold: 100, hp: c.hp, currentHp: maxHp, attack: c.attack, defense: c.defense, equipment, equippedFoodId: "TRAVEL_RATION" },
-    inventory: { ...state.inventory, stacks: [{ itemId: "TRAVEL_RATION", quantity: 20 }] },
+    inventory: { ...state.inventory, stacks: [{ itemId: "TRAVEL_RATION", quantity: 8 }] },
     settings: { ...state.settings, seenItemIds: [.../* @__PURE__ */ new Set([...state.settings.seenItemIds ?? [], "TRAVEL_RATION"])] }
   };
 }
 function effectiveStats(state) {
   const c = state.character;
-  if (!c) return { hp: 0, attack: 0, defense: 0, power: 0 };
+  if (!c) return { hp: 0, attack: 0, defense: 0, power: 0, critChance: 0, critMultiplier: 1.5, accuracy: 0.84, evasion: 0.04, haste: 0.05, armor: 0, ward: 0, tenacity: 0, potency: 0, penetration: 0 };
   let hp = c.hp, attack = c.attack, defense = c.defense;
   for (const id of Object.values(c.equipment)) {
     if (!id) continue;
@@ -75225,7 +76056,7 @@ function startCombat(state, monsterId, nowMs, combatChallengeId, combatTacticId 
 function tryStartNextQueuedActivity(state, nowMs, throwOnFailure = false) {
   if (!state.character) throw new Error("Create a character first.");
   if (state.activity) throw new Error("Stop the current activity before starting the queue.");
-  const queue = normalizeActivityQueue(state.character.activityQueue), next = queue[0];
+  const queue = normalizeActivityQueue(state.character.activityQueue, activityQueueCapacity(state)), next = queue[0];
   if (!next) throw new Error("Action queue is empty.");
   try {
     const started = next.kind === "combat" ? startCombat(state, next.targetId, nowMs, next.combatChallengeId, next.combatTacticId ?? "balanced", next.huntGoalId ?? "open") : startGathering(state, next.targetId, nowMs);
@@ -75240,16 +76071,17 @@ function startNextQueuedActivity(state, nowMs) {
   return tryStartNextQueuedActivity(state, nowMs, true);
 }
 function autoAdvanceActivityQueue(state, nowMs) {
-  if (!state.character || !normalizeActivityQueue(state.character.activityQueue).length) return state;
+  if (!state.character || !normalizeActivityQueue(state.character.activityQueue, activityQueueCapacity(state)).length) return state;
   return tryStartNextQueuedActivity(state, nowMs, false);
 }
 function pauseActivityQueue(state, reason) {
-  if (!state.character || !normalizeActivityQueue(state.character.activityQueue).length) return state;
+  if (!state.character || !normalizeActivityQueue(state.character.activityQueue, activityQueueCapacity(state)).length) return state;
   return { ...state, character: { ...state.character, activityQueuePausedReason: reason } };
 }
 function travelToRegion(state, regionId, nowMs) {
   const zone = WORLD_ZONES.find((entry2) => entry2.id === regionId);
   if (!zone) throw new Error("Unknown region");
+  if (worldZoneInDevelopment(zone)) throw new Error(`${zone.name} is still in development`);
   if (!state.character || state.character.level < zone.minLevel) throw new Error(`Reach character level ${zone.minLevel} to travel to ${zone.name}`);
   if (currentRegionId(state) === zone.id) return { state, reward: { xp: 0, gold: 0, items: [], kills: 0, elapsedSeconds: 0 } };
   const settled = claimActivity(state, nowMs);
@@ -75292,8 +76124,8 @@ function addBounded(stacks, capacity, incoming) {
   return { stacks: next, overflow };
 }
 function routeRewards(state, incoming, nowMs) {
-  const inv = addBounded(state.inventory.stacks, state.inventory.capacity, incoming);
-  const bank = addBounded(state.bank.stacks, state.bank.capacity, inv.overflow);
+  const inv = addBounded(state.inventory.stacks, entitlementStorageCapacity(state, "inventory"), incoming);
+  const bank = addBounded(state.bank.stacks, entitlementStorageCapacity(state, "bank"), inv.overflow);
   const overflow = stackItems(state.overflow.stacks, bank.overflow);
   return {
     inventory: { ...state.inventory, stacks: inv.stacks },
@@ -75310,21 +76142,38 @@ function stackQty(stacks, itemId) {
   if (!itemId) return 0;
   return stacks.find((s) => s.itemId === itemId)?.quantity || 0;
 }
-function simulateCombat2(state, monsterId, elapsed) {
-  const c = state.character, baseMonster = MONSTERS.find((x) => x.id === monsterId), challengeId = state.activity?.kind === "combat" ? state.activity.combatChallengeId : void 0, affixId = state.activity?.kind === "combat" ? state.activity.combatAffixId : void 0, m = challengeHuntStats(baseMonster, challengeId, affixId), stats3 = effectiveStats(state);
-  const modifiers = characterPermanentMultipliers(state);
-  const companion = companionCombatContribution(state);
-  const style = classCombatStyle(c.classId), tactic = combatTactic(state.activity?.combatTacticId);
+function regionalMonsterPressureBand(monsterId) {
+  const m = MONSTERS.find((row) => row.id === monsterId);
+  if (!m || m.boss) return "hard";
+  const peers = MONSTERS.filter((row) => !row.boss && row.zone === m.zone).sort((a, b) => a.level - b.level || a.attack - b.attack);
+  if (peers.length <= 1) return "standard";
+  const index = peers.findIndex((row) => row.id === monsterId);
+  if (index <= Math.floor((peers.length - 1) * 0.25)) return "entry";
+  if (index >= Math.ceil((peers.length - 1) * 0.75)) return "hard";
+  return "standard";
+}
+function combatRuntimeDetails(state, monsterId) {
+  const c = state.character, baseMonster = MONSTERS.find((x) => x.id === monsterId);
+  const challengeId = state.activity?.kind === "combat" ? state.activity.combatChallengeId : void 0, affixId = state.activity?.kind === "combat" ? state.activity.combatAffixId : void 0;
+  const m = challengeHuntStats(baseMonster, challengeId, affixId), stats3 = effectiveStats(state), modifiers = characterPermanentMultipliers(state), companion = companionCombatContribution(state);
+  const style = classCombatStyle(c.classId), tactic = combatTactic(state.activity?.kind === "combat" ? state.activity.combatTacticId : void 0);
   const environment = state.activity ? environmentEffectForActivity(state.activity).effect : void 0;
   const effectGems = equippedEffectGemBonuses(state), baseCritChance = CLASSES.find((def) => def.id === c.classId)?.role === "Damage" ? 0.1 : 0.05, setCombat = equipmentSetCombatModifiers(state, baseCritChance, 0.84);
+  const secondary = regionalSecondaryExchange(stats3, m, baseCritChance);
   const boostedDefense = Math.max(1, Math.round(stats3.defense * modifiers.combatPowerMultiplier));
   const bossPowerMultiplier = m.boss ? 1 + effectGems.boss_power : 1;
   const boostedPower = Math.max(1, Math.round(stats3.power * modifiers.combatPowerMultiplier * bossPowerMultiplier));
   const expected = (m.attack * 1.2 + m.defense * 0.8 + m.level * 2.2) * COMBAT_EXPECTED_SCALE;
-  const setOutput = setCombat.accuracyMultiplier * setCombat.critExpectedMultiplier * setCombat.penetrationMultiplier;
-  const speed = Math.max(COMBAT_SPEED_MIN, Math.min(COMBAT_SPEED_MAX, boostedPower / Math.max(1, expected))) * style.speedMultiplier * tactic.speedMultiplier * modifiers.combatSpeedMultiplier * companion.outputMultiplier * (1 + monsterMastery(state, monsterId).damageBonus) * (1 + effectGems.combat_speed) * setCombat.speedMultiplier * setOutput;
+  const setOutput = secondary.playerOutputMultiplier * setCombat.penetrationMultiplier;
+  const speed = Math.max(COMBAT_SPEED_MIN, Math.min(COMBAT_SPEED_MAX, boostedPower / Math.max(1, expected))) * style.speedMultiplier * tactic.speedMultiplier * modifiers.combatSpeedMultiplier * companion.outputMultiplier * (1 + monsterMastery(state, monsterId).damageBonus) * (1 + effectGems.combat_speed) * setOutput;
   const killCycleSeconds = m.secondsPerKill * COMBAT_TIME_SCALE * (environment?.actionTimeMultiplier ?? 1) / speed;
-  const theoreticalKills = Math.floor(elapsed / killCycleSeconds);
+  return { c, m, stats: stats3, modifiers, companion, style, tactic, environment, effectGems, setCombat, secondary, boostedDefense, killCycleSeconds, challengeId, affixId };
+}
+function simulateCombat2(state, monsterId, elapsed) {
+  const { c, m, stats: stats3, modifiers, companion, style, tactic, effectGems, setCombat, secondary, boostedDefense, killCycleSeconds, challengeId } = combatRuntimeDetails(state, monsterId);
+  const carriedSeconds = (state.activity?.kind === "combat" ? state.activity.progressFraction ?? 0 : 0) * killCycleSeconds;
+  const totalCombatSeconds = carriedSeconds + elapsed;
+  const theoreticalKills = Math.floor(totalCombatSeconds / killCycleSeconds);
   const foodId = c.equippedFoodId;
   const food = foodId ? itemDef(foodId) : void 0;
   let foodLeft = stackQty(state.inventory.stacks, foodId), foodConsumed = 0;
@@ -75333,8 +76182,11 @@ function simulateCombat2(state, monsterId, elapsed) {
   for (let i = 0; i < theoreticalKills; i++) {
     const champion = !challengeId && isChampionEncounter(c.id, state.activity?.lastClaimAtMs ?? 0, monsterId, i);
     const raw2 = Math.max(1, Math.round(m.attack * COMBAT_MONSTER_DAMAGE_SCALE - Math.floor(boostedDefense * 0.58)));
-    const damage = Math.max(1, Math.round((raw2 * 0.48 + m.level * 0.16) * style.damageTakenMultiplier * tactic.damageTakenMultiplier * (champion ? CHAMPION_DAMAGE_MULTIPLIER : 1) * modifiers.incomingDamageMultiplier * companion.incomingDamageMultiplier * (1 - effectGems.damage_reduction) * setCombat.incomingDamageMultiplier * (c.preparation ? preparationEffects(c.preparation).damage : 1)));
+    const regionalPressure = (REGIONAL_COMBAT_PRESSURE[m.zone] ?? 1) * REGIONAL_MONSTER_PRESSURE_MULTIPLIER[regionalMonsterPressureBand(m.id)];
+    const damage = Math.max(1, Math.round((raw2 * 0.48 + m.level * 0.16) * regionalPressure * secondary.incomingPressureMultiplier * style.damageTakenMultiplier * tactic.damageTakenMultiplier * (champion ? CHAMPION_DAMAGE_MULTIPLIER : 1) * modifiers.incomingDamageMultiplier * companion.incomingDamageMultiplier * (1 - effectGems.damage_reduction) * Math.max(0.5, 1 - setCombat.stats.ward) * (c.preparation ? preparationEffects(c.preparation).damage : 1)));
     hp -= damage;
+    const directCompanionHealing = stats3.hp * companion.directHealingPctPerHour * killCycleSeconds / 3600;
+    if (hp > 0 && directCompanionHealing > 0) hp = Math.min(stats3.hp, hp + directCompanionHealing);
     while (food && food.heal && foodLeft > 0 && hp > 0 && hp / stats3.hp <= threshold) {
       hp = Math.min(stats3.hp, hp + Math.max(1, Math.ceil(food.heal * modifiers.healingEffectivenessMultiplier)));
       foodLeft--;
@@ -75347,10 +76199,14 @@ function simulateCombat2(state, monsterId, elapsed) {
     }
     kills++;
     if (champion) championKills++;
-    hp = Math.min(stats3.hp, hp + Math.max(1, Math.floor(stats3.hp * style.recoveryPct * tactic.recoveryMultiplier * companion.recoveryMultiplier * (1 + effectGems.recovery) * setCombat.recoveryMultiplier)));
+    const naturalRecovery = Math.max(1, Math.floor(stats3.hp * style.recoveryPct * tactic.recoveryMultiplier * companion.recoveryMultiplier * (1 + effectGems.recovery) * setCombat.recoveryMultiplier));
+    const minimumAttrition = (REGIONAL_MIN_ATTRITION_HP_PER_HOUR[m.zone] ?? 0) * killCycleSeconds / 3600 * (companion.directHealingPctPerHour > 0 ? 0.65 : 1);
+    const allowedRecovery = Math.max(0, damage - directCompanionHealing - minimumAttrition);
+    hp = Math.min(stats3.hp, hp + Math.min(naturalRecovery, allowedRecovery));
   }
-  const qualifyingActivitySeconds = stoppedReason ? Math.min(elapsed, (kills + 1) * killCycleSeconds) : elapsed;
-  return { kills, championKills, foodConsumed, endHp: hp, stoppedReason, qualifyingActivitySeconds };
+  const qualifyingActivitySeconds = stoppedReason ? Math.min(elapsed, Math.max(0, (kills + 1) * killCycleSeconds - carriedSeconds)) : elapsed;
+  const nextProgressFraction = stoppedReason ? 0 : totalCombatSeconds % killCycleSeconds / killCycleSeconds;
+  return { kills, championKills, foodConsumed, endHp: hp, stoppedReason, qualifyingActivitySeconds, nextProgressFraction };
 }
 function previewStandardActivityRewardRaw(state, effectiveNowMs) {
   if (!state.activity || !state.character) return { xp: 0, gold: 0, items: [], kills: 0, elapsedSeconds: 0 };
@@ -75366,34 +76222,59 @@ function previewStandardActivityRewardRaw(state, effectiveNowMs) {
     const g = [...GATHERING, ...HERB_NODES].find((x) => x.id === state.activity.targetId);
     if (!g) return { xp: 0, gold: 0, items: [], kills: 0, elapsedSeconds: elapsed };
     const effect3 = environmentEffectForActivity(state.activity).effect;
-    const pacing = gatheringPacing(state, g);
+    const pacing = gatheringPacing(state, g), mastery2 = professionMasteryMultipliers(g.id, state.account.professionMasteryByAction?.[g.id]), affinity = activeSkillAffinity(state, g.skillId);
+    const herbLevel = state.skills.find((row) => row.skillId === "herbalism")?.level ?? 1, method = g.skillId === "herbalism" ? herbalismMethod(state.activity.herbalismMethodId ?? state.character.herbalismMethodId, herbLevel) : void 0;
     const specialtySpeed = g.skillId === "fishing" ? multipliers.fishingSpeedMultiplier : g.skillId === "herbalism" ? multipliers.herbalismSpeedMultiplier : 1;
-    const effectiveActionSeconds = g.seconds * GATHER_TIME_SCALE * pacing.timeMultiplier * effect3.actionTimeMultiplier / (multipliers.gatheringSpeedMultiplier * specialtySpeed);
+    const effectiveActionSeconds = g.seconds * GATHER_TIME_SCALE * pacing.timeMultiplier * effect3.actionTimeMultiplier * (method?.actionTimeMultiplier ?? 1) / (multipliers.gatheringSpeedMultiplier * specialtySpeed * mastery2.speed * affinity.speedMultiplier);
     const elapsedMs = Math.min(offlineCapSeconds(state) * 1e3, Math.max(0, effectiveNowMs - state.activity.lastClaimAtMs));
     const cycleMs = effectiveActionSeconds * 1e3;
     const totalMs = (state.activity.progressFraction ?? 0) * cycleMs + elapsedMs;
     const actions = Math.floor(totalMs / cycleMs);
-    const quantityFloat = actions * g.min * effect3.itemMultiplier * multipliers.gatheringYieldMultiplier + (state.rewardRemainders?.[g.itemId] ?? 0);
+    const seed = `${state.character.id}:${state.activity.lastClaimAtMs}:${g.id}:yield`;
+    let baseQuantity = 0;
+    for (let i = 0; i < actions; i++) baseQuantity += g.min + Math.floor(random01(seed, i) * (g.max - g.min + 1));
+    const quantityFloat = baseQuantity * effect3.itemMultiplier * (method?.yieldMultiplier ?? 1) * multipliers.gatheringYieldMultiplier * mastery2.yield + (state.rewardRemainders?.[g.itemId] ?? 0);
     const quantity4 = Math.floor(quantityFloat);
     const skill2 = state.skills.find((x) => x.skillId === g.skillId);
-    const rawXp = Math.floor(actions * g.xp * effect3.xpMultiplier * multipliers.skillXpMultiplier);
-    const xp = Math.min(Math.max(0, totalXpAtLevel(100) - (skill2?.xp ?? 0)), rawXp);
-    const reward3 = { xp, gold: 0, items: quantity4 ? [{ itemId: g.itemId, quantity: quantity4 }] : [], kills: actions, elapsedSeconds: elapsed, nextProgressFraction: totalMs % cycleMs / cycleMs, nextRewardRemainders: { ...state.rewardRemainders ?? {}, [g.itemId]: Math.max(0, quantityFloat - quantity4) } };
+    const xpKey = affinityXpRemainderKey(state.character.id, g.skillId);
+    const gain = settleAffinitySkillXp(actions * g.xp * effect3.xpMultiplier * (method?.xpMultiplier ?? 1) * multipliers.skillXpMultiplier * mastery2.xp * affinity.xpMultiplier, state.rewardRemainders?.[xpKey], totalXpAtLevel(100) - (skill2?.xp ?? 0));
+    const xp = gain.xp;
+    const items2 = quantity4 ? [{ itemId: g.itemId, quantity: quantity4 }] : [];
+    if (g.skillId === "herbalism") {
+      const essence = HERBALISM_ESSENCE_BY_ZONE[g.zoneId];
+      if (essence && actions > 0) {
+        const rareChance = Math.min(1, essence.baseChance * (method?.rareFindMultiplier ?? 1) * herbalismInsightMultiplier(herbLevel) * effect3.dropChanceMultiplier * multipliers.dropChanceMultiplier);
+        const rareSeed = `${state.character.id}:${state.activity.lastClaimAtMs}:${g.id}:botanical-essence`;
+        let rareQuantity = 0;
+        for (let i = 0; i < actions; i++) if (random01(rareSeed, i) < rareChance) rareQuantity++;
+        if (rareQuantity) items2.push({ itemId: essence.itemId, quantity: rareQuantity });
+      }
+    }
+    const reward3 = { xp, gold: 0, items: items2, kills: actions, elapsedSeconds: elapsed, nextProgressFraction: totalMs % cycleMs / cycleMs, nextRewardRemainders: { ...state.rewardRemainders ?? {}, [xpKey]: gain.remainder, [g.itemId]: Math.max(0, quantityFloat - quantity4) } };
     return { ...reward3, eventDrops: activityEventDrops(state, reward3, effectiveNowMs), eventDiscoveries: activityEventDiscoveries(state, "gathering", Math.floor(reward3.elapsedSeconds / 60), effectiveNowMs) };
   }
   const m = MONSTERS.find((x) => x.id === state.activity.targetId);
   if (!m) throw new Error("Unknown monster");
   if (m.boss) return { xp: 0, gold: 0, items: [], kills: 0, elapsedSeconds: elapsed };
   const challengeId = state.activity.combatChallengeId, affixId = state.activity.combatAffixId, challengeReward = challengeRewardMultipliers(challengeId, affixId);
-  const sim = simulateCombat2(state, m.id, elapsed);
+  const combatElapsed = Math.min(offlineCapSeconds(state), Math.max(0, (effectiveNowMs - state.activity.lastClaimAtMs) / 1e3)), sim = simulateCombat2(state, m.id, combatElapsed);
   const items = [];
   const effect2 = environmentEffectForActivity(state.activity).effect;
   for (const drop of m.drops) {
-    let qty3 = 0;
+    const dropDef = itemDef(drop.itemId), blueprintKnowledge = dropDef.knowledgeUnlockId;
+    if (blueprintKnowledge && ((state.account.unlockedKnowledgeIds ?? []).includes(blueprintKnowledge) || combinedQty(state, drop.itemId) + (state.overflow.stacks.find((stack) => stack.itemId === drop.itemId)?.quantity ?? 0) > 0)) continue;
+    let qty4 = 0;
     const chance = Math.min(1, drop.chance * effect2.dropChanceMultiplier * multipliers.dropChanceMultiplier * challengeReward.dropChance);
     const seed = `${state.character.id}:${state.activity.lastClaimAtMs}:${m.id}:${drop.itemId}`;
-    for (let i = 0; i < sim.kills; i++) if (random01(seed, i) < chance) qty3 += drop.min + Math.floor(random01(seed, i + 5e4) * (drop.max - drop.min + 1));
-    if (qty3 > 0) items.push({ itemId: drop.itemId, quantity: qty3 });
+    for (let i = 0; i < sim.kills; i++) {
+      if (random01(seed, i) >= chance) continue;
+      qty4 += drop.min + Math.floor(random01(seed, i + 5e4) * (drop.max - drop.min + 1));
+      if (blueprintKnowledge) {
+        qty4 = 1;
+        break;
+      }
+    }
+    if (qty4 > 0) items.push({ itemId: drop.itemId, quantity: qty4 });
   }
   const classGain = awardCombatClassXp(state.character, sim.kills, m.xp * effect2.xpMultiplier * multipliers.skillXpMultiplier * challengeReward.xp, state.activity.classFocus);
   const mastery = monsterMastery(state, m.id), materialRemainders = { ...state.character.masteryMaterialRemainders };
@@ -75406,8 +76287,11 @@ function previewStandardActivityRewardRaw(state, effectiveNowMs) {
   const firstClear = challengeId && sim.kills > 0 && !challengeHuntCleared(state, m.id, challengeId) ? challengeHuntFirstClearReward(m, challengeId) : void 0;
   const rewardItems = firstClear ? stackItems([], items.concat(firstClear.items)) : items, champion = championBonus(Math.floor(m.xp * effect2.xpMultiplier * multipliers.characterXpMultiplier), Math.floor(m.gold * effect2.goldMultiplier * multipliers.goldMultiplier), sim.championKills);
   const baseXpPerKill = m.xp * effect2.xpMultiplier * multipliers.characterXpMultiplier * challengeReward.xp, baseGoldPerKill = m.gold * effect2.goldMultiplier * multipliers.goldMultiplier * challengeReward.gold, sessionKills = state.activity.sessionKills ?? 0;
+  const huntingSkill = state.skills.find((skill2) => skill2.skillId === "hunting");
+  const huntingRaw = huntingXpForKills(sim.kills, m.xp, effect2.xpMultiplier, multipliers.skillXpMultiplier, challengeReward.xp);
+  const huntingXp = Math.min(Math.max(0, totalXpAtLevel(100) - (huntingSkill?.xp ?? 0)), huntingRaw);
   const momentumXp = huntMomentumBonus(baseXpPerKill, sessionKills, sim.kills), momentumGold = huntMomentumBonus(baseGoldPerKill, sessionKills, sim.kills);
-  const reward2 = { classSkillXp: classGain.awards, xp: Math.floor(sim.kills * baseXpPerKill) + momentumXp + champion.xp, gold: Math.floor(sim.kills * baseGoldPerKill) + momentumGold + (firstClear?.gold ?? 0) + champion.gold, items: rewardItems, kills: sim.kills, elapsedSeconds: elapsed, qualifyingActivitySeconds: sim.qualifyingActivitySeconds, foodConsumed: sim.foodConsumed, endHp: sim.endHp, stoppedReason: sim.stoppedReason, ...firstClear && challengeId ? { challengeHuntFirstClear: { key: challengeHuntClearKey(m.id, challengeId), monsterId: m.id, challengeId, label: firstClear.label } } : {}, ...sim.championKills > 0 ? { championEncounters: { count: sim.championKills, bonusXp: champion.xp, bonusGold: champion.gold } } : {} };
+  const reward2 = { classSkillXp: classGain.awards, huntingXp, xp: Math.floor(sim.kills * baseXpPerKill) + momentumXp + champion.xp, gold: Math.floor(sim.kills * baseGoldPerKill) + momentumGold + (firstClear?.gold ?? 0) + champion.gold, items: rewardItems, kills: sim.kills, elapsedSeconds: elapsed, qualifyingActivitySeconds: sim.qualifyingActivitySeconds, foodConsumed: sim.foodConsumed, endHp: sim.endHp, stoppedReason: sim.stoppedReason, nextProgressFraction: sim.nextProgressFraction, ...firstClear && challengeId ? { challengeHuntFirstClear: { key: challengeHuntClearKey(m.id, challengeId), monsterId: m.id, challengeId, label: firstClear.label } } : {}, ...sim.championKills > 0 ? { championEncounters: { count: sim.championKills, bonusXp: champion.xp, bonusGold: champion.gold } } : {} };
   return { ...reward2, masteryMaterialRemainders: materialRemainders, eventDrops: activityEventDrops(state, reward2, effectiveNowMs), eventDiscoveries: activityEventDiscoveries(state, "combat", reward2.kills, effectiveNowMs) };
 }
 function previewStandardActivityRewardWithSupplies(state, effectiveNowMs) {
@@ -75420,10 +76304,10 @@ function activeIdleRuleForState(state) {
   return character.idleRulesV40?.find((rule) => rule.id === character.activeIdleRuleIdV40);
 }
 function projectedStoredQuantities(state, reward2) {
-  const quantities = {};
-  for (const stack of [...state.inventory.stacks, ...state.bank.stacks, ...state.overflow.stacks]) quantities[stack.itemId] = (quantities[stack.itemId] ?? 0) + stack.quantity;
-  for (const stack of reward2.items) quantities[stack.itemId] = (quantities[stack.itemId] ?? 0) + stack.quantity;
-  return quantities;
+  const quantities2 = {};
+  for (const stack of [...state.inventory.stacks, ...state.bank.stacks, ...state.overflow.stacks]) quantities2[stack.itemId] = (quantities2[stack.itemId] ?? 0) + stack.quantity;
+  for (const stack of reward2.items) quantities2[stack.itemId] = (quantities2[stack.itemId] ?? 0) + stack.quantity;
+  return quantities2;
 }
 function projectedIdleContext(state, reward2, settleAtMs) {
   const activity = state.activity;
@@ -75459,7 +76343,7 @@ function projectedIdleContext(state, reward2, settleAtMs) {
     championDefeats: (activity.sessionChampions ?? 0) + (activity.kind === "combat" ? reward2.championEncounters?.count ?? 0 : 0),
     weeklyOrderProgress,
     foodRemaining,
-    freeStorageSlots: Math.max(0, state.inventory.capacity - usedSlots(routed.inventory.stacks)) + Math.max(0, state.bank.capacity - usedSlots(routed.bank.stacks)),
+    freeStorageSlots: Math.max(0, entitlementStorageCapacity(state, "inventory") - usedSlots(routed.inventory.stacks)) + Math.max(0, entitlementStorageCapacity(state, "bank") - usedSlots(routed.bank.stacks)),
     elapsedSeconds: Math.max(0, Math.floor((settleAtMs - activity.startedAtMs) / 1e3)),
     projectedRewardFits: afterOverflow <= beforeOverflow
   };
@@ -75500,6 +76384,10 @@ function previewActivityReward(state, nowMs) {
   }
   if (state.activity?.kind === "alchemy") {
     const elapsed = Math.min(offlineCapSeconds(state), Math.max(0, Math.floor((nowMs - state.activity.lastClaimAtMs) / 1e3))), base = previewAlchemyReward(state, elapsed);
+    return previewDailySupplyTimedReward(state, base, "crafting").reward;
+  }
+  if (state.activity?.kind === "processing") {
+    const elapsed = Math.min(offlineCapSeconds(state), Math.max(0, Math.floor((nowMs - state.activity.lastClaimAtMs) / 1e3))), base = previewProcessingReward(state, elapsed);
     return previewDailySupplyTimedReward(state, base, "crafting").reward;
   }
   if (!state.activity || !state.character) return { xp: 0, gold: 0, items: [], kills: 0, elapsedSeconds: 0 };
@@ -75560,8 +76448,8 @@ function claimActivity(state, nowMs) {
       settled.state.character.faith?.xp ?? 0,
       (state.skills.find((x) => x.skillId === "faith")?.xp ?? 0) + (reward3.faithXp ?? 0)
     ));
-    const skills = state.skills.map((x) => x.skillId === "faith" ? { ...x, xp: faithXp, level: levelFromXp(faithXp) } : x);
-    const nextBase2 = { ...settled.state, ...routed2, skills, character: { ...settled.state.character, faith: { ...faith, xp: faithXp } }, activity: faith?.practice ? { ...state.activity, lastClaimAtMs: nowMs } : null };
+    const skills2 = state.skills.map((x) => x.skillId === "faith" ? { ...x, xp: faithXp, level: levelFromXp(faithXp) } : x);
+    const nextBase2 = { ...settled.state, ...routed2, skills: skills2, character: { ...settled.state.character, faith: { ...faith, xp: faithXp } }, activity: faith?.practice ? { ...state.activity, lastClaimAtMs: nowMs } : null };
     const next2 = commitDailySupplyTimedBoost(nextBase2, boost), reconciled = reconcileCombatCompanionUnlocks(next2, nowMs);
     return { state: reconciled, reward: withCompanionUnlocks(reward3, state, reconciled) };
   }
@@ -75569,19 +76457,33 @@ function claimActivity(state, nowMs) {
     if (nowMs <= state.activity.lastClaimAtMs) return { state, reward: previewActivityReward(state, state.activity.lastClaimAtMs) };
     const elapsed = Math.min(offlineCapSeconds(state), Math.max(0, Math.floor((nowMs - state.activity.lastClaimAtMs) / 1e3))), baseReward = previewAlchemyReward(state, elapsed), boost = previewDailySupplyTimedReward(state, baseReward, "crafting"), reward3 = boost.reward, brew = state.activity.brew;
     const routed2 = routeRewards(state, reward3.items, nowMs);
-    const skills = state.skills.map((x) => x.skillId === "alchemy" ? { ...x, xp: Math.min(totalXpAtLevel(100), x.xp + (reward3.xp ?? 0)), level: levelFromXp(Math.min(totalXpAtLevel(100), x.xp + (reward3.xp ?? 0))) } : x);
-    const nextBase2 = { ...state, ...routed2, skills, rewardRemainders: reward3.nextRewardRemainders, activity: reward3.nextBrewRemaining ? { ...state.activity, lastClaimAtMs: nowMs, progressFraction: reward3.nextProgressFraction, brew: { ...brew, remainingBatches: reward3.nextBrewRemaining } } : null };
-    const next2 = commitDailySupplyTimedBoost(nextBase2, boost);
-    return { state: next2, reward: reward3 };
+    const skills2 = state.skills.map((x) => x.skillId === "alchemy" ? { ...x, xp: Math.min(totalXpAtLevel(100), x.xp + (reward3.xp ?? 0)), level: levelFromXp(Math.min(totalXpAtLevel(100), x.xp + (reward3.xp ?? 0))) } : x);
+    const nextBase2 = { ...state, ...routed2, skills: skills2, rewardRemainders: reward3.nextRewardRemainders, activity: reward3.nextBrewRemaining ? { ...state.activity, lastClaimAtMs: nowMs, progressFraction: reward3.nextProgressFraction, brew: { ...brew, remainingBatches: reward3.nextBrewRemaining } } : null };
+    const next2 = commitDailySupplyTimedBoost(nextBase2, boost), actions = reward3.craftingActions ?? 0;
+    const progressed2 = actions > 0 ? applyTrustedLongTermProgression(next2, [{ kind: "crafting", contentId: brew.recipeId, units: actions, startedAtMs: state.activity.lastClaimAtMs }], reward3, nowMs, { accountId: longTermAccountScope(state), eventId: `alchemy:${state.character?.id ?? "unknown"}:${brew.recipeId}:${state.activity.lastClaimAtMs}:${nowMs}` }).state : next2;
+    return { state: progressed2, reward: reward3 };
+  }
+  if (state.activity?.kind === "processing") {
+    if (nowMs <= state.activity.lastClaimAtMs) return { state, reward: previewActivityReward(state, state.activity.lastClaimAtMs) };
+    const elapsed = Math.min(offlineCapSeconds(state), Math.max(0, Math.floor((nowMs - state.activity.lastClaimAtMs) / 1e3))), baseReward = previewProcessingReward(state, elapsed), boost = previewDailySupplyTimedReward(state, baseReward, "crafting"), reward3 = boost.reward, processing = state.activity.processing;
+    const routed2 = routeRewards(state, reward3.items, nowMs), nextXp = (state.skills.find((x) => x.skillId === processing.skillId)?.xp ?? 0) + (reward3.xp ?? 0);
+    const skills2 = state.skills.map((x) => x.skillId === processing.skillId ? { ...x, xp: Math.min(totalXpAtLevel(100), nextXp), level: levelFromXp(Math.min(totalXpAtLevel(100), nextXp)) } : x);
+    const nextBase2 = { ...state, ...routed2, skills: skills2, rewardRemainders: reward3.nextRewardRemainders, activity: reward3.nextProcessingRemaining ? { ...state.activity, lastClaimAtMs: nowMs, progressFraction: reward3.nextProgressFraction, processing: { ...processing, remainingBatches: reward3.nextProcessingRemaining } } : null };
+    const next2 = commitDailySupplyTimedBoost(nextBase2, boost), actions = reward3.craftingActions ?? 0;
+    let progressed2 = actions > 0 ? applyTrustedLongTermProgression(next2, [{ kind: "crafting", contentId: processing.recipeId, units: actions, startedAtMs: state.activity.lastClaimAtMs }], reward3, nowMs, { accountId: longTermAccountScope(state), eventId: `processing:${state.character?.id ?? "unknown"}:${processing.recipeId}:${state.activity.lastClaimAtMs}:${nowMs}` }).state : next2;
+    if (actions > 0) progressed2 = grantEventActivity(progressed2, "crafting", nowMs, actions);
+    progressed2 = refreshQuests(progressed2);
+    const finalState2 = reconcileCombatCompanionUnlocks(progressed2, nowMs);
+    return { state: finalState2, reward: withCompanionUnlocks(reward3, state, finalState2) };
   }
   const preview = previewActivityReward(state, nowMs);
   if (!state.character || !state.activity) return { state, reward: preview };
   const idleWindow = idleRuleSettlementWindow(state, nowMs), settledAtMs = idleWindow.settleAtMs, idleStopReason = idleWindow.shouldStop ? idleWindow.reason : void 0, supply = previewStandardActivityRewardWithSupplies(state, settledAtMs), boosted = supply.reward;
   const reward2 = idleWindow.shouldStop && !boosted.stoppedReason ? { ...boosted, stoppedReason: idleStopReason } : boosted;
   if (state.activity.kind !== "combat") {
-    const skills = state.skills.map((x) => x.skillId === state.activity.kind ? { ...x, xp: x.xp + reward2.xp, level: levelFromXp(x.xp + reward2.xp) } : x);
+    const skills2 = state.skills.map((x) => x.skillId === state.activity.kind ? { ...x, xp: x.xp + reward2.xp, level: levelFromXp(x.xp + reward2.xp) } : x);
     const routed2 = routeRewards(state, reward2.items, settledAtMs);
-    const nextBase2 = { ...state, skills, ...routed2, rewardRemainders: reward2.nextRewardRemainders, unlockedMonsterIds: [.../* @__PURE__ */ new Set([...state.unlockedMonsterIds, ...reward2.explorationDiscoveries ?? []])], activity: idleWindow.shouldStop ? null : { ...state.activity, lastClaimAtMs: settledAtMs, progressFraction: reward2.nextProgressFraction } };
+    const nextBase2 = { ...state, skills: skills2, ...routed2, rewardRemainders: reward2.nextRewardRemainders, unlockedMonsterIds: [.../* @__PURE__ */ new Set([...state.unlockedMonsterIds, ...reward2.explorationDiscoveries ?? []])], activity: idleWindow.shouldStop ? null : { ...state.activity, lastClaimAtMs: settledAtMs, progressFraction: reward2.nextProgressFraction } };
     const next2 = commitDailySupplyTimedBoost(nextBase2, supply);
     const progression = applyTrustedLongTermProgression(next2, [{ kind: "gathering", contentId: state.activity.targetId, units: reward2.kills, startedAtMs: state.activity.lastClaimAtMs }], reward2, settledAtMs, { accountId: longTermAccountScope(state), eventId: `activity:${state.character.id}:${state.activity.targetId}:${state.activity.lastClaimAtMs}:${settledAtMs}` }).state;
     const eventApplied = refreshQuests(applyEventDiscoveries(applyEventDrops(progression, reward2.eventDrops ?? []), reward2.eventDiscoveries ?? []));
@@ -75602,7 +76504,12 @@ function claimActivity(state, nowMs) {
   const monster = MONSTERS.find((m) => m.id === state.activity.targetId);
   const trained = awardCombatClassXp(state.character, reward2.kills, monster.xp * environmentEffectForActivity(state.activity).effect.xpMultiplier * characterPermanentMultipliers(state).skillXpMultiplier, state.activity.classFocus).character;
   const challengeHuntClearIds = reward2.challengeHuntFirstClear ? [.../* @__PURE__ */ new Set([...state.character.challengeHuntClearIds ?? [], reward2.challengeHuntFirstClear.key])] : state.character.challengeHuntClearIds;
-  const nextBase = { ...state, ...routed, character: { ...state.character, xp, level, gold: state.character.gold + reward2.gold, currentHp: reward2.endHp ?? state.character.currentHp, challengeHuntClearIds }, activity: shouldStop ? null : { ...state.activity, lastClaimAtMs: settledAtMs, sessionKills: (state.activity.sessionKills ?? 0) + reward2.kills, sessionChampions: (state.activity.sessionChampions ?? 0) + (reward2.championEncounters?.count ?? 0) }, unlockedMonsterIds: [.../* @__PURE__ */ new Set([...state.unlockedMonsterIds, ...unlocked])] };
+  const skills = state.skills.map((skill2) => {
+    if (skill2.skillId !== "hunting") return skill2;
+    const nextXp = Math.min(totalXpAtLevel(100), skill2.xp + (reward2.huntingXp ?? 0));
+    return { ...skill2, xp: nextXp, level: levelFromXp(nextXp) };
+  });
+  const nextBase = { ...state, skills, ...routed, character: { ...state.character, xp, level, gold: state.character.gold + reward2.gold, currentHp: reward2.endHp ?? state.character.currentHp, challengeHuntClearIds }, activity: shouldStop ? null : { ...state.activity, lastClaimAtMs: settledAtMs, progressFraction: reward2.nextProgressFraction, sessionKills: (state.activity.sessionKills ?? 0) + reward2.kills, sessionChampions: (state.activity.sessionChampions ?? 0) + (reward2.championEncounters?.count ?? 0) }, unlockedMonsterIds: [.../* @__PURE__ */ new Set([...state.unlockedMonsterIds, ...unlocked])] };
   let next = commitDailySupplyTimedBoost(nextBase, supply);
   next.character = { ...next.character, classSkills: trained.classSkills, classSkillRemainders: trained.classSkillRemainders, masteryMaterialRemainders: reward2.masteryMaterialRemainders };
   if (next.character.preparation && reward2.kills > 0) {
@@ -75631,7 +76538,7 @@ function startClassTraining(state, now) {
   if (!settled.character) throw new Error("Create a character first.");
   if (characterClassSkills(settled.character).every((s) => s.level === 100)) throw new Error("Both class skills are at maximum level.");
   if (settled.character.classTraining) return settled;
-  return { ...settled, activity: null, character: { ...settled.character, classTraining: { lastClaimAtMs: now, progressMs: 0, focus: normalizeTrainingFocus(settled.character.trainingFocus), xpPerDrill: 8 * characterPermanentMultipliers(settled).skillXpMultiplier } } };
+  return { ...settled, activity: null, character: { ...settled.character, classTraining: { lastClaimAtMs: now, progressMs: 0, focus: normalizeTrainingFocus(settled.character.trainingFocus), xpPerDrill: CLASS_DRILL_BASE_XP * characterPermanentMultipliers(settled).skillXpMultiplier } } };
 }
 function stopActivity(state) {
   if (state.activity?.kind === "faith") {
@@ -75645,6 +76552,12 @@ function stopActivity(state) {
     const refund = alchemyRefund(brew), routed = routeRewards(state, refund.items, state.activity.lastClaimAtMs);
     return { ...state, ...routed, character: state.character ? { ...state.character, gold: state.character.gold + refund.gold } : null, activity: null };
   }
+  if (state.activity?.kind === "processing") {
+    const processing = state.activity.processing;
+    if (!processing) return { ...state, activity: null };
+    const refund = processingRefund(processing), routed = routeRewards(state, refund.items, state.activity.lastClaimAtMs);
+    return { ...state, ...routed, character: state.character ? { ...state.character, gold: state.character.gold + refund.gold } : null, activity: null };
+  }
   return { ...state, activity: null, character: state.character ? { ...state.character, classTraining: void 0 } : null };
 }
 function equipItem(state, itemId) {
@@ -75652,6 +76565,7 @@ function equipItem(state, itemId) {
   const d = itemDef(itemId);
   if (d.type !== "gear" || !d.slot) throw new Error("Not gear");
   if (d.classRestriction && d.classRestriction !== state.character.classId) throw new Error("This gear belongs to another class");
+  if (state.character.level < (d.requiredLevel ?? 1)) throw new Error(`Requires character level ${d.requiredLevel}`);
   let stacks = consume2(state.inventory.stacks, itemId, 1);
   const old = state.character.equipment[d.slot];
   if (old) stacks = stackItems(stacks, [{ itemId: old, quantity: 1 }]);
@@ -75706,6 +76620,7 @@ function sellItem(state, itemId, quantity4 = 1) {
   if (itemId === HOLY_WATER_ID) throw new Error("Holy Water cannot be sold.");
   if (state.settings.favoriteItemIds?.includes(itemId)) throw new Error("Favorite item is protected. Remove it from Favorites before selling.");
   const discovered = discoverCharacterSkins(state), d = itemDef(itemId);
+  if (d.knowledgeUnlockId) throw new Error("Blueprints cannot be sold. Learn the recipe by crafting its tool.");
   if (d.type === "gear" && hasEnhancement(discovered, itemId)) throw new Error("Enhanced equipment is protected. Extract its gems before disposal; upgraded ranks cannot be recovered.");
   return { ...discovered, inventory: { ...discovered.inventory, stacks: consume2(discovered.inventory.stacks, itemId, quantity4) }, character: { ...discovered.character, gold: discovered.character.gold + d.value * quantity4 } };
 }
@@ -75721,7 +76636,7 @@ function depositToBank(state, itemId, quantity4) {
   const invQty = stackQty(state.inventory.stacks, itemId);
   if (invQty < quantity4) throw new Error("Not enough items in inventory");
   const removed = consume2(state.inventory.stacks, itemId, quantity4);
-  const added = addBounded(state.bank.stacks, state.bank.capacity, [{ itemId, quantity: quantity4 }]);
+  const added = addBounded(state.bank.stacks, entitlementStorageCapacity(state, "bank"), [{ itemId, quantity: quantity4 }]);
   if (added.overflow.length) throw new Error("Bank is full");
   return { ...state, inventory: { ...state.inventory, stacks: removed }, bank: { ...state.bank, stacks: added.stacks } };
 }
@@ -75730,7 +76645,7 @@ function withdrawFromBank(state, itemId, quantity4) {
   const bankQty = stackQty(state.bank.stacks, itemId);
   if (bankQty < quantity4) throw new Error("Not enough items in Bank");
   const removed = consume2(state.bank.stacks, itemId, quantity4);
-  const added = addBounded(state.inventory.stacks, state.inventory.capacity, [{ itemId, quantity: quantity4 }]);
+  const added = addBounded(state.inventory.stacks, entitlementStorageCapacity(state, "inventory"), [{ itemId, quantity: quantity4 }]);
   if (added.overflow.length) throw new Error("Inventory is full");
   return { ...state, bank: { ...state.bank, stacks: removed }, inventory: { ...state.inventory, stacks: added.stacks } };
 }
@@ -75775,7 +76690,7 @@ function consumeInventoryThenBank(state, itemId, quantity4) {
 }
 function claimOverflowToBank(state) {
   if (!state.overflow.stacks.length) return state;
-  const added = addBounded(state.bank.stacks, state.bank.capacity, state.overflow.stacks);
+  const added = addBounded(state.bank.stacks, entitlementStorageCapacity(state, "bank"), state.overflow.stacks);
   return { ...state, bank: { ...state.bank, stacks: added.stacks }, overflow: { stacks: added.overflow, expiresAtMs: added.overflow.length ? state.overflow.expiresAtMs : null } };
 }
 function startGathering(state, targetId, nowMs) {
@@ -75789,7 +76704,7 @@ function startGathering(state, targetId, nowMs) {
     const zone = WORLD_ZONES.find((entry2) => entry2.id === g.zoneId);
     throw new Error(`Travel to ${zone?.name ?? g.zoneId} before gathering ${g.name}`);
   }
-  return { ...state, character: state.character ? { ...state.character, activityQueuePausedReason: void 0 } : null, activity: { kind: g.skillId, targetId, startedAtMs: nowMs, lastClaimAtMs: nowMs, environment: captureActivityEnvironment(targetId, nowMs) } };
+  return { ...state, character: state.character ? { ...state.character, activityQueuePausedReason: void 0 } : null, activity: { skillAffinity: captureSkillAffinity(state, g.skillId), kind: g.skillId, targetId, startedAtMs: nowMs, lastClaimAtMs: nowMs, environment: captureActivityEnvironment(targetId, nowMs) } };
 }
 function startHerbalism(state, targetId, nowMs) {
   state = finishClassDrills(state, nowMs);
@@ -75799,7 +76714,8 @@ function startHerbalism(state, targetId, nowMs) {
   if (!skill2 || skill2.level < g.unlockLevel) throw new Error("Herbalism level too low");
   if (g.zoneId !== currentRegionId(state)) throw new Error(`Travel to ${g.zoneId} before gathering ${g.name}`);
   if (state.activity) throw new Error("Settle and stop the current activity first");
-  return { ...state, character: state.character ? { ...state.character, activityQueuePausedReason: void 0 } : null, activity: { kind: "herbalism", targetId, startedAtMs: nowMs, lastClaimAtMs: nowMs, environment: captureActivityEnvironment(targetId, nowMs) } };
+  const method = herbalismMethod(state.character?.herbalismMethodId, skill2.level);
+  return { ...state, character: state.character ? { ...state.character, activityQueuePausedReason: void 0 } : null, activity: { skillAffinity: captureSkillAffinity(state, "herbalism"), kind: "herbalism", targetId, startedAtMs: nowMs, lastClaimAtMs: nowMs, environment: captureActivityEnvironment(targetId, nowMs), herbalismMethodId: method.id } };
 }
 function startExploration(state, routeId, nowMs) {
   state = finishClassDrills(state, nowMs);
@@ -75814,6 +76730,7 @@ function equipGatheringTool(state, itemId) {
   if (!state.character) throw new Error("Create a character first");
   const tool2 = gatheringToolDef(itemId);
   if (!tool2) throw new Error("Not a gathering tool");
+  if (state.character.level < tool2.requiredCharacterLevel) throw new Error(`Requires Level ${tool2.requiredCharacterLevel}`);
   const skill2 = state.skills.find((entry2) => entry2.skillId === tool2.skillId);
   if (!skill2 || skill2.level < tool2.unlockLevel) throw new Error(`Requires ${tool2.skillId} level ${tool2.unlockLevel}`);
   const currentId = state.character.equippedToolIds?.[tool2.skillId];
@@ -75830,28 +76747,48 @@ function craftRecipe(state, recipeId, nowMs = Date.now()) {
   if (r.classId && r.classId !== state.character.classId) throw new Error("This recipe belongs to another class");
   if (state.character.level < (r.characterLevel ?? 1)) throw new Error(`Requires character level ${r.characterLevel}`);
   if (r.requiresCraftedItemId && !state.character.craftedNoviceItemIds?.includes(r.requiresCraftedItemId)) throw new Error(`Craft ${itemDef(r.requiresCraftedItemId).name} first`);
+  const tool2 = gatheringToolDef(r.output.itemId);
+  if (tool2) {
+    if (state.character.level < tool2.requiredCharacterLevel) throw new Error(`Requires Level ${tool2.requiredCharacterLevel}`);
+    const gatheringSkill = state.skills.find((x) => x.skillId === tool2.skillId);
+    if (!gatheringSkill || gatheringSkill.level < tool2.unlockLevel) throw new Error(`Requires ${tool2.skillId} level ${tool2.unlockLevel}`);
+  }
+  const knowledgeLearned = !r.requiredKnowledgeId || (state.account.unlockedKnowledgeIds ?? []).includes(r.requiredKnowledgeId);
+  if (!knowledgeLearned) {
+    if (!r.knowledgeItemId) throw new Error("Recipe blueprint is missing");
+    if (combinedQty(state, r.knowledgeItemId) < 1) throw new Error(`Requires ${itemDef(r.knowledgeItemId).name}`);
+  }
   const sk = state.skills.find((x) => x.skillId === r.skillId);
-  if (!sk || sk.level < r.level) throw new Error("Skill level too low");
+  if (!sk || sk.level < r.level) throw new Error(`Requires ${r.skillId} level ${r.level}`);
   if (state.character.gold < r.gold) throw new Error("Not enough gold");
-  const outputDef = itemDef(r.output.itemId), multipliers = characterPermanentMultipliers(state), baseXp = Math.floor(r.xp * multipliers.skillXpMultiplier);
-  const boosted = applyDailySupplyCraft(state, { seconds: r.seconds, outputQuantity: r.output.quantity, xp: baseXp, outputEligible: outputDef.type !== "gear" && outputDef.type !== "tool" }), boostedState = boosted.state;
+  const outputDef = itemDef(r.output.itemId), multipliers = characterPermanentMultipliers(state), mastery = professionMasteryMultipliers(r.id, state.account.professionMasteryByAction?.[r.id]), outputEligible = outputDef.type !== "gear" && outputDef.type !== "tool", affinityXpKey = affinityXpRemainderKey(state.character.id, r.skillId), affinityXpGain = settleAffinitySkillXp(professionActionPace(state, r, "instant").xpPerAction, state.rewardRemainders?.[affinityXpKey], totalXpAtLevel(100) - sk.xp), baseXp = affinityXpGain.xp, masteryKey = `mastery:craft:${r.id}:yield`, masteryRaw = r.output.quantity * (outputEligible ? mastery.yield : 1) + (state.rewardRemainders?.[masteryKey] ?? 0), masteryOutput = outputEligible ? Math.floor(masteryRaw) : r.output.quantity, masteryRemainder = outputEligible ? Math.max(0, masteryRaw - masteryOutput) : 0;
+  const masteryState = { ...state, rewardRemainders: { ...state.rewardRemainders ?? {}, [affinityXpKey]: affinityXpGain.remainder, [masteryKey]: masteryRemainder } };
+  const boosted = applyDailySupplyCraft(masteryState, { seconds: r.seconds, outputQuantity: masteryOutput, xp: baseXp, outputEligible }), boostedState = boosted.state;
   let inv = boostedState.inventory.stacks, bank = boostedState.bank.stacks;
+  let unlockedKnowledgeIds = [...boostedState.account.unlockedKnowledgeIds ?? []];
   let temp = { ...boostedState, inventory: { ...boostedState.inventory, stacks: inv }, bank: { ...boostedState.bank, stacks: bank } };
+  if (!knowledgeLearned && r.requiredKnowledgeId && r.knowledgeItemId) {
+    const learned = consumeInventoryThenBank(temp, r.knowledgeItemId, 1);
+    inv = learned.inventory;
+    bank = learned.bank;
+    unlockedKnowledgeIds = [.../* @__PURE__ */ new Set([...unlockedKnowledgeIds, r.requiredKnowledgeId])];
+    temp = { ...temp, inventory: { ...temp.inventory, stacks: inv }, bank: { ...temp.bank, stacks: bank }, account: { ...temp.account, unlockedKnowledgeIds } };
+  }
   for (const i of r.inputs) {
     const consumed = consumeInventoryThenBank(temp, i.itemId, i.quantity);
     inv = consumed.inventory;
     bank = consumed.bank;
     temp = { ...temp, inventory: { ...temp.inventory, stacks: inv }, bank: { ...temp.bank, stacks: bank } };
   }
-  const output = addBounded(inv, boostedState.inventory.capacity, [{ ...r.output, quantity: boosted.outputQuantity }]);
+  const output = addBounded(inv, entitlementStorageCapacity(boostedState, "inventory"), [{ ...r.output, quantity: boosted.outputQuantity }]);
   inv = output.stacks;
   if (output.overflow.length) {
-    const b = addBounded(bank, boostedState.bank.capacity, output.overflow);
+    const b = addBounded(bank, entitlementStorageCapacity(boostedState, "bank"), output.overflow);
     bank = b.stacks;
     if (b.overflow.length) throw new Error("Inventory and Bank are full");
   }
-  const xp = sk.xp + boosted.xp;
-  const next = { ...boostedState, character: { ...boostedState.character, gold: boostedState.character.gold - r.gold, ...r.noviceSetId ? { craftedNoviceItemIds: [.../* @__PURE__ */ new Set([...boostedState.character.craftedNoviceItemIds ?? [], r.output.itemId])] } : {} }, inventory: { ...boostedState.inventory, stacks: inv }, bank: { ...boostedState.bank, stacks: bank }, skills: boostedState.skills.map((x) => x.skillId === r.skillId ? { ...x, xp, level: levelFromXp(xp) } : x) };
+  const xp = Math.min(totalXpAtLevel(100), sk.xp + boosted.xp);
+  const next = { ...boostedState, character: { ...boostedState.character, gold: boostedState.character.gold - r.gold, ...r.noviceSetId ? { craftedNoviceItemIds: [.../* @__PURE__ */ new Set([...boostedState.character.craftedNoviceItemIds ?? [], r.output.itemId])] } : {} }, inventory: { ...boostedState.inventory, stacks: inv }, bank: { ...boostedState.bank, stacks: bank }, account: { ...boostedState.account, unlockedKnowledgeIds }, skills: boostedState.skills.map((x) => x.skillId === r.skillId ? { ...x, xp, level: levelFromXp(xp) } : x) };
   const progressed = applyTrustedLongTermProgression(next, [{ kind: "crafting", contentId: r.id, units: 1 }], void 0, nowMs, { accountId: longTermAccountScope(boostedState), eventId: `craft:${state.character.id}:${r.id}:${nowMs}` }).state;
   return outputDef.type === "gear" ? recordCompanionActivity(refreshQuests(grantEventActivity(progressed, "crafting", nowMs)), "crafting", r.output.itemId, r.output.quantity, nowMs) : refreshQuests(grantEventActivity(progressed, "crafting", nowMs));
 }
@@ -75875,152 +76812,145 @@ function equipNoviceSet(state) {
       delete equipment[slot];
     }
   }
-  const inv = addBounded(next.inventory.stacks, next.inventory.capacity, replaced);
-  const bank = addBounded(next.bank.stacks, next.bank.capacity, inv.overflow);
+  const inv = addBounded(next.inventory.stacks, entitlementStorageCapacity(next, "inventory"), replaced);
+  const bank = addBounded(next.bank.stacks, entitlementStorageCapacity(next, "bank"), inv.overflow);
   if (bank.overflow.length) throw new Error("Free Inventory or Bank space for replaced equipment");
   next = { ...next, inventory: { ...next.inventory, stacks: inv.stacks }, bank: { ...next.bank, stacks: bank.stacks }, character: { ...state.character, equipment } };
   next.character.currentHp = Math.min(state.character.currentHp, effectiveStats(next).hp);
   return refreshQuests(next);
 }
-function regionalReadiness(state) {
-  if (!state.character) return { total: 0, level: 0, quest: 0, equipment: 0, food: 0, mastery: 0, recommended: false };
-  const level = Math.min(30, Math.floor(state.character.level / 25 * 30));
-  const q14 = state.quests.find((q2) => q2.questId === "QST_014");
-  const quest = q14 && q14.status !== "locked" ? 15 : 0;
-  let equipment = 0;
-  for (const id of Object.values(state.character.equipment)) {
-    if (id) equipment += itemDef(id).readiness || 0;
-  }
-  equipment = Math.min(35, equipment);
-  const foodDef = state.character.equippedFoodId ? itemDef(state.character.equippedFoodId) : void 0;
-  const foodQty = stackQty(state.inventory.stacks, state.character.equippedFoodId);
-  const food = Math.min(10, (foodDef?.readiness || 0) + (foodQty >= 10 ? 3 : foodQty >= 5 ? 2 : foodQty > 0 ? 1 : 0));
-  const get = (id) => state.skills.find((s) => s.skillId === id)?.level || 1;
-  let mastery = 0;
-  if (get("mining") >= 15) mastery += 2;
-  if (get("smithing") >= 18) mastery += 3;
-  if (get("fishing") >= 14) mastery += 2;
-  if (get("cooking") >= 16) mastery += 3;
-  mastery = Math.min(10, mastery);
-  const total = level + quest + equipment + food + mastery;
-  return { total, level, quest, equipment, food, mastery, recommended: total >= 80 };
+function fallenKnightPlayerSnapshot(state) {
+  const character = state.character;
+  if (!character) throw new Error("No character");
+  const stats3 = effectiveStats(state), multipliers = characterPermanentMultipliers(state), companion = companionCombatContribution(state), style = classCombatStyle(character.classId);
+  const effectGems = equippedEffectGemBonuses(state), baseCritChance = CLASSES.find((def) => def.id === character.classId)?.role === "Damage" ? 0.1 : 0.05, setCombat = equipmentSetCombatModifiers(state, baseCritChance, 0.84);
+  const foodId = character.equippedFoodId, food = foodId ? itemDef(foodId) : void 0, foodQuantity = stackQty(state.inventory.stacks, foodId);
+  const prep = character.preparation ? preparationEffects(character.preparation) : void 0;
+  return {
+    name: character.name,
+    classId: character.classId,
+    maxHp: stats3.hp,
+    currentHp: Math.max(1, Math.min(stats3.hp, character.currentHp || stats3.hp)),
+    attack: stats3.attack,
+    defense: stats3.defense,
+    power: stats3.power,
+    accuracy: stats3.accuracy,
+    evasion: stats3.evasion,
+    critChance: stats3.critChance,
+    critMultiplier: stats3.critMultiplier,
+    haste: stats3.haste,
+    damageMultiplier: Math.max(0.7, (1 + effectGems.boss_power) * setCombat.penetrationMultiplier),
+    actionSpeedMultiplier: Math.max(0.65, style.speedMultiplier * multipliers.combatSpeedMultiplier * companion.outputMultiplier * (1 + effectGems.combat_speed) * setCombat.speedMultiplier),
+    incomingDamageMultiplier: Math.max(0.45, style.damageTakenMultiplier * multipliers.incomingDamageMultiplier * companion.incomingDamageMultiplier * (1 - effectGems.damage_reduction) * Math.max(0.5, 1 - setCombat.stats.ward) * (prep?.damage ?? 1)),
+    foodHeal: food?.heal ?? 0,
+    foodQuantity,
+    autoEatThresholdPct: state.settings.autoEatThresholdPct
+  };
 }
-function fallenKnightWinChance(state) {
-  const r = regionalReadiness(state).total;
-  if (r < 50) return 0.1;
-  if (r < 60) return 0.18;
-  if (r < 70) return 0.34;
-  if (r < 80) return 0.48;
-  if (r < 90) return 0.64;
-  if (r < 100) return 0.82;
-  return 0.9;
+function fallenKnightDropRoll(state, seed, includeStorySigil) {
+  const boss2 = MONSTERS.find((row) => row.id === "FALLEN_KNIGHT");
+  if (!boss2 || !state.character) return [];
+  const items = [];
+  boss2.drops.forEach((drop, index) => {
+    if (!includeStorySigil && drop.itemId === "FALLEN_KNIGHT_SIGIL") return;
+    if (random01(seed, index * 2) >= Math.min(1, Math.max(0, drop.chance))) return;
+    const quantity4 = drop.min + Math.floor(random01(seed, index * 2 + 1) * (drop.max - drop.min + 1));
+    if (quantity4 > 0) items.push({ itemId: drop.itemId, quantity: quantity4 });
+  });
+  return stackItems([], items);
+}
+function previewFallenKnightBattle(state, nowMs = Date.now(), mode = "story") {
+  if (!state.character) throw new Error("No character");
+  return simulateFallenKnightStoryBattle(fallenKnightPlayerSnapshot(state), `${state.character.id}:FALLEN_KNIGHT_${mode.toUpperCase()}:${nowMs}`, mode);
 }
 function challengeFallenKnightRematch(state, nowMs) {
   if (!state.character || state.character.level < 25 || !state.defeatedBossIds.includes("FALLEN_KNIGHT")) throw new Error("Defeat the Fallen Knight in the story first.");
-  if (nowMs < (state.account.companionBossRematchReadyAtMs ?? 0)) throw new Error("The next rematch unlocks at 00:00 UTC.");
-  const readyAt = (Math.floor(nowMs / 864e5) + 1) * 864e5, attemptMetrics = { ...state.account.longTermMetrics ?? {} };
+  const weekly = fallenKnightWeeklyStatus(state, nowMs);
+  if (weekly.remaining <= 0) throw new Error("Fallen Knight weekly rematches are complete. Rewards reset with the next UTC week.");
+  const battle = previewFallenKnightBattle(state, nowMs, "rematch"), foodId = state.character.equippedFoodId, stats3 = effectiveStats(state);
+  let inventory = state.inventory.stacks;
+  if (battle.foodConsumed && foodId) inventory = consume2(inventory, foodId, battle.foodConsumed);
+  const postFightCharacter = { ...state.character, currentHp: Math.max(1, Math.min(stats3.hp, battle.finalPlayerHp || 1)) };
+  const attemptMetrics = { ...state.account.longTermMetrics ?? {} };
   attemptMetrics["companions.fallen_knight_rematch_attempts"] = (attemptMetrics["companions.fallen_knight_rematch_attempts"] ?? 0) + 1;
-  let next = { ...state, account: { ...state.account, companionBossRematchReadyAtMs: readyAt, longTermMetrics: attemptMetrics } };
-  const chance = Math.min(0.95, fallenKnightWinChance(state) * companionCombatContribution(state).outputMultiplier);
-  const won = random01(`${state.character.id}:COMPANION_FALLEN_KNIGHT:${Math.floor(nowMs / 864e5)}`, 0) < chance;
-  if (!won) {
-    next.account.companionLastBattle = { title: "Fallen Knight rematch", won: false, durationMs: 0, gold: 0, essence: 0, bondstones: 0, atMs: nowMs };
-    return { state: next, won: false, message: "The Fallen Knight won the rematch. Improve your readiness and try again after 00:00 UTC." };
+  let next = { ...state, inventory: { ...state.inventory, stacks: inventory }, character: postFightCharacter, activity: null, account: { ...state.account, longTermMetrics: attemptMetrics } };
+  if (!battle.won) {
+    next.account.companionLastBattle = { title: "Fallen Knight rematch", won: false, durationMs: battle.durationMs, gold: 0, essence: 0, bondstones: 0, atMs: nowMs };
+    return { state: next, won: false, message: `Fallen Knight rematch lost after ${Math.max(1, Math.round(battle.durationMs / 1e3))}s. No weekly clear was consumed.` };
   }
+  const weeklyRecorded = recordFallenKnightWeeklyVictory(next, nowMs);
+  next = weeklyRecorded.state;
   const stone = awardCompanionRematchBondstone(next, nowMs);
   next = stone.state;
+  const clearReward = FALLEN_KNIGHT_CLEAR_REWARD, bountyReward = weeklyRecorded.bountyTriggered ? FALLEN_KNIGHT_WEEKLY_BOUNTY_REWARD : void 0;
+  const bossDrops = fallenKnightDropRoll(next, `${state.character.id}:FALLEN_KNIGHT_REMATCH:${weeklyRecorded.status.weekKey}:${weeklyRecorded.clearNumber}`, false);
+  const fixedItems = [...clearReward.items.map((row) => ({ ...row })), ...bountyReward?.items.map((row) => ({ ...row })) ?? []];
+  const items = stackItems([], bossDrops.concat(fixedItems));
+  const rewardGold = clearReward.gold + (bountyReward?.gold ?? 0), rewardXp = clearReward.xp + (bountyReward?.xp ?? 0), rewardEssence = clearReward.essence + (bountyReward?.essence ?? 0);
+  const routed = routeRewards(next, items, nowMs), xp = next.character.xp + rewardXp;
+  next = { ...next, ...routed, character: { ...next.character, xp, level: characterLevelFromXp(xp), gold: next.character.gold + rewardGold } };
+  next = grantCompanionEssence(next, rewardEssence);
+  if (stone.reward) next = grantBondstones(next, stone.reward);
   const winMetrics = { ...next.account.longTermMetrics ?? {} };
   winMetrics["companions.fallen_knight_rematch_wins"] = (winMetrics["companions.fallen_knight_rematch_wins"] ?? 0) + 1;
   winMetrics["companions.fallen_knight_rematch_bondstones"] = (winMetrics["companions.fallen_knight_rematch_bondstones"] ?? 0) + stone.reward;
-  next.account = { ...next.account, longTermMetrics: winMetrics, companionLastBattle: { title: "Fallen Knight rematch", won: true, durationMs: 0, gold: 0, essence: 40, bondstones: stone.reward, atMs: nowMs } };
-  next.account.companionBossClears = { ...next.account.companionBossClears, FALLEN_KNIGHT: Math.max(1, next.account.companionBossClears?.FALLEN_KNIGHT ?? 0) };
-  next = recordCompanionActivity(grantBondstones(grantCompanionEssence(next, 40), stone.reward), "boss", "FALLEN_KNIGHT", 1, nowMs);
-  next = applyTrustedLongTermProgression(next, [{ kind: "boss", contentId: "FALLEN_KNIGHT", units: 1 }], void 0, nowMs, { accountId: longTermAccountScope(next), eventId: `boss-rematch:${state.character.id}:FALLEN_KNIGHT:${Math.floor(nowMs / 864e5)}` }).state;
-  const status = companionRematchBondstoneStatus(next, nowMs), stoneText = stone.reward ? "+1 Bondstone." : `Weekly Bondstone cap reached (${status.used}/${status.cap}).`;
-  return { state: next, won: true, message: `Fallen Knight rematch won: +40 Companion Essence, ${stoneText} Companion boss progression recorded.` };
+  next.account = { ...next.account, longTermMetrics: winMetrics, companionLastBattle: { title: "Fallen Knight rematch", won: true, durationMs: battle.durationMs, gold: rewardGold, essence: rewardEssence, bondstones: stone.reward, atMs: nowMs } };
+  next = recordCompanionActivity(grantEventActivity(next, "boss", nowMs), "boss", "FALLEN_KNIGHT", 1, nowMs);
+  next = applyTrustedLongTermProgression(next, [{ kind: "boss", contentId: "FALLEN_KNIGHT", units: 1 }], void 0, nowMs, { accountId: longTermAccountScope(next), eventId: `boss-rematch:${state.character.id}:FALLEN_KNIGHT:${weeklyRecorded.status.weekKey}:${weeklyRecorded.clearNumber}` }).state;
+  next = { ...next, defeatedBossIds: [.../* @__PURE__ */ new Set([...next.defeatedBossIds, "FALLEN_KNIGHT"])] };
+  const strikes = battle.events.filter((event) => event.type === "player_hit").length, stoneText = stone.reward ? "+1 Bondstone" : `Bondstone weekly cap already reached`, dropText = bossDrops.length ? bossDrops.map((row) => `${row.quantity}\xD7 ${itemDef(row.itemId).name}`).join(", ") : "no bonus drop";
+  return { state: next, won: true, message: `Fallen Knight weekly clear ${weeklyRecorded.clearNumber}/${weeklyRecorded.status.cap} won${strikes === 1 ? " in one hit" : ` in ${Math.max(1, Math.round(battle.durationMs / 1e3))}s`}. +${rewardGold} Gold, +${rewardXp} XP, +${rewardEssence} Essence${weeklyRecorded.bountyTriggered ? " \xB7 Oathglass Bounty completed: 1 Oathglass Fragment, 1 Tempering Core, 10 Gem Dust, 1 Regional Catalyst" : ""} \xB7 Boss drops: ${dropText} \xB7 ${stoneText}.` };
 }
 function challengeFallenKnight(state, nowMs = Date.now()) {
   if (!state.character) throw new Error("No character");
   if (state.character.level < 25) return { state, won: false, message: "Reach level 25 first." };
-  if (state.defeatedBossIds.includes("FALLEN_KNIGHT")) return { state, won: true, message: "The Fallen Knight is already defeated." };
+  if (state.defeatedBossIds.includes("FALLEN_KNIGHT")) return challengeFallenKnightRematch(state, nowMs);
   const q14 = state.quests.find((q2) => q2.questId === "QST_014");
   if (q14 && q14.status === "locked") return { state, won: false, message: "Advance the Asterfall questline before challenging the Fallen Knight." };
-  const ready = regionalReadiness(state);
-  const chance = fallenKnightWinChance(state);
-  const roll = random01(`${state.character.id}:FALLEN_KNIGHT:${nowMs}`, 0);
-  const won = roll < chance;
-  if (!won) return { state, won: false, message: `Fallen Knight repelled you. Readiness ${ready.total}/100 (gear ${ready.equipment}/35, food ${ready.food}/10, mastery ${ready.mastery}/10). Recommended: 80+.` };
+  const battle = previewFallenKnightBattle(state, nowMs), foodId = state.character.equippedFoodId;
+  let inventory = state.inventory.stacks;
+  if (battle.foodConsumed && foodId) inventory = consume2(inventory, foodId, battle.foodConsumed);
+  const postFightCharacter = { ...state.character, currentHp: Math.max(1, Math.min(effectiveStats(state).hp, battle.finalPlayerHp || 1)) };
+  if (!battle.won) {
+    const next2 = { ...state, inventory: { ...state.inventory, stacks: inventory }, character: postFightCharacter, activity: null };
+    return { state: next2, won: false, battle, message: `Fallen Knight repelled you after ${Math.max(1, Math.round(battle.durationMs / 1e3))}s. ${battle.foodConsumed ? battle.foodConsumed + " food used. " : ""}Upgrade gear, improve class progression or bring stronger food before the next attempt.` };
+  }
   const xp = state.character.xp + 3e3;
-  let next = { ...state, defeatedBossIds: [...state.defeatedBossIds, "FALLEN_KNIGHT"], character: { ...state.character, gold: state.character.gold + 900, xp, level: characterLevelFromXp(xp), currentHp: effectiveStats(state).hp }, inventory: { ...state.inventory, stacks: stackItems(state.inventory.stacks, [{ itemId: "FALLEN_KNIGHT_SIGIL", quantity: 1 }]) }, activity: null };
+  const storyDrops = fallenKnightDropRoll(state, `${state.character.id}:FALLEN_KNIGHT_STORY_DROP:${nowMs}`, true);
+  const rewardRouted = routeRewards({ ...state, inventory: { ...state.inventory, stacks: inventory } }, storyDrops, nowMs);
+  let next = { ...state, ...rewardRouted, defeatedBossIds: [...state.defeatedBossIds, "FALLEN_KNIGHT"], character: { ...postFightCharacter, gold: state.character.gold + 900, xp, level: characterLevelFromXp(xp) }, activity: null };
   next.character = awardClassSkillXp(next.character, 3e3 * characterPermanentMultipliers(state).skillXpMultiplier).character;
   next = recordCompanionActivity(grantBondstones(grantCompanionEssence(refreshQuests(grantEventActivity(next, "boss", nowMs)), 40), 1), "boss", "FALLEN_KNIGHT", 1, nowMs);
-  next = applyTrustedLongTermProgression(next, [{ kind: "boss", contentId: "FALLEN_KNIGHT", units: 1 }], void 0, nowMs, { accountId: longTermAccountScope(next), eventId: `boss-story:${state.character.id}:FALLEN_KNIGHT` }).state;
-  return { state: next, won: true, message: `Fallen Knight defeated at readiness ${ready.total}/100. +40 Companion Essence, +1 Bondstone. The road toward Sunscar is open.` };
+  next = applyTrustedLongTermProgression(next, [{ kind: "boss", contentId: "FALLEN_KNIGHT", units: 1, weeklyEligible: false }], void 0, nowMs, { accountId: longTermAccountScope(next), eventId: `boss-story:${state.character.id}:FALLEN_KNIGHT` }).state;
+  const storyDropText = storyDrops.length ? storyDrops.map((row) => `${row.quantity}\xD7 ${itemDef(row.itemId).name}`).join(", ") : "no item drops";
+  return { state: next, won: true, battle, message: `Fallen Knight defeated in ${Math.max(1, Math.round(battle.durationMs / 1e3))}s. +900 Gold, +3,000 XP, +40 Companion Essence, +1 Bondstone. Boss drops: ${storyDropText}.` };
 }
 
-// ../apps/mobile/src/core/playability.ts
+// apps/mobile/src/core/playability.ts
 function transitionActivity(state, nowMs, next) {
   const claimed = claimActivity(state, nowMs);
   const updated = next ? next.kind === "combat" ? startCombat(claimed.state, next.id, nowMs, next.challengeId, next.tacticId ?? "balanced", next.goalId ?? "open") : startGathering(claimed.state, next.id, nowMs) : stopActivity(claimed.state);
   return { state: updated, reward: claimed.reward };
 }
 
-// ../apps/mobile/src/i18n/languages.ts
+// apps/mobile/src/i18n/languages.ts
 var SUPPORTED_LANGUAGES = ["en", "de", "es", "nl", "it", "fr"];
 
-// ../apps/mobile/src/core/game-commands.ts
+// apps/mobile/src/core/game-commands.ts
 init_faith2();
 
-// ../apps/mobile/src/core/account-roster.ts
-init_progression();
-var CHARACTER_SLOT_THRESHOLDS = [0, 250, 500, 950, 1600];
-var ENABLED_SKILLS = /* @__PURE__ */ new Set(["mining", "woodcutting", "fishing", "smithing", "cooking", "herbalism", "alchemy", "hunting", "exploration", "tailoring", "enchanting", "faith"]);
-var safeLevel = (row) => Number.isFinite(row?.xp) && row.xp >= 0 ? levelFromXp(row.xp) : 1;
-function characterSkillTotal(skills, character) {
-  const ordinary = /* @__PURE__ */ new Set();
-  let total = 0;
-  for (const s of skills) {
-    if (ENABLED_SKILLS.has(s.skillId) && !ordinary.has(s.skillId)) {
-      ordinary.add(s.skillId);
-      total += safeLevel(s);
-    }
-  }
-  if (character) for (const s of character.classSkills ?? []) {
-    if (classSkillsFor(character.classId).some((d) => d.id === s.skillId)) total += safeLevel(s);
-  }
-  return total;
-}
-function accountSkillLevel(state) {
-  if (!state.character) return 0;
-  let total = characterSkillTotal(state.skills, state.character);
-  for (const entry2 of state.otherCharacters ?? []) total += characterSkillTotal(entry2.skills, entry2.character);
-  return total;
-}
-function unlockedCharacterSlots(state) {
-  const earned = Number(state.account.unlockedCharacterSlots ?? 0);
-  const threshold = CHARACTER_SLOT_THRESHOLDS.filter((n) => n <= accountSkillLevel(state)).length;
-  return Math.min(5, Math.max(1, earned, threshold));
-}
-function accountCharacters(state) {
-  return [{ character: state.character }, ...state.otherCharacters ?? []].filter((entry2) => entry2.character);
-}
-
-// ../apps/mobile/src/core/equipment-crafting-queue.ts
+// apps/mobile/src/core/equipment-crafting-queue.ts
 init_progression();
 var BASE_EQUIPMENT_CRAFT_SLOTS = 3;
-var MAX_EQUIPMENT_CRAFT_SLOTS = 5;
+var MAX_EQUIPMENT_CRAFT_SLOTS = 7;
 var MAX_WAITING_EQUIPMENT_CRAFTS = 5;
 var MAX_READY_EQUIPMENT_CRAFTS = 20;
-function entitlement(state, ...keys) {
-  const entitlements = state.account.entitlements ?? {};
-  return keys.some((key) => entitlements[key] === true);
-}
 function equipmentCraftSlotBreakdown(state) {
   const unlocked = unlockedCharacterSlots(state);
   const sources = [
     { id: "base", label: "Base crafting slots", earned: true, slots: BASE_EQUIPMENT_CRAFT_SLOTS },
-    { id: "supporter", label: "Supporter", earned: entitlement(state, "supporter", "supporter_subscription"), slots: 1 },
-    { id: "vip_plus", label: "VIP+", earned: entitlement(state, "vip_plus", "vipplus", "vip+"), slots: 1 },
+    { id: "supporter", label: "Supporter", earned: accountEntitlementBenefits(state).supporter, slots: 1 },
+    { id: "vip_plus", label: "VIP+", earned: accountEntitlementBenefits(state).vipPlus, slots: 1 },
     { id: "character_2", label: "Unlock character slot #2", earned: unlocked >= 2, slots: 1 },
     { id: "character_4", label: "Unlock character slot #4", earned: unlocked >= 4, slots: 1 }
   ];
@@ -76035,6 +76965,8 @@ function normalizeEquipmentCraftingQueue(raw2) {
     ownerCharacterId: String(row.ownerCharacterId).slice(0, 120),
     startedAtMs: Math.max(0, Math.floor(Number(row.startedAtMs) || 0)),
     completesAtMs: Math.max(0, Math.floor(Number(row.completesAtMs) || 0)),
+    xpPerCraft: typeof row.xpPerCraft === "number" && Number.isFinite(row.xpPerCraft) && row.xpPerCraft >= 0 && row.xpPerCraft <= 1e6 ? row.xpPerCraft : void 0,
+    skillAffinity: normalizeSkillAffinitySnapshot(row.skillAffinity),
     reservedGold: Number.isFinite(Number(row.reservedGold)) ? Math.max(0, Math.floor(Number(row.reservedGold))) : void 0,
     reservedInputs: Array.isArray(row.reservedInputs) ? row.reservedInputs.filter((stack) => stack && typeof stack.itemId === "string" && Number.isFinite(Number(stack.quantity)) && Number(stack.quantity) > 0).map((stack) => ({ itemId: String(stack.itemId).slice(0, 120), quantity: Math.max(1, Math.floor(Number(stack.quantity))) })).slice(0, 12) : void 0
   })).filter((row) => row.completesAtMs >= row.startedAtMs).slice(-(MAX_READY_EQUIPMENT_CRAFTS + MAX_EQUIPMENT_CRAFT_SLOTS + MAX_WAITING_EQUIPMENT_CRAFTS));
@@ -76087,6 +77019,18 @@ function validateGemCombineStart(state, recipeId) {
   const recipe2 = gemCombineRecipeV1(recipeId);
   if (!recipe2) throw new Error("Unknown gem combination");
   if (!isGemFamilyRecipeUnlockedV1(state, recipe2.familyId)) throw new Error("Discover this Effect Gem recipe first");
+  const skill2 = state.skills.find((row) => row.skillId === "enchanting");
+  if (!skill2 || skill2.level < recipe2.level) throw new Error(`Requires enchanting level ${recipe2.level}`);
+  if (state.character.gold < recipe2.gold) throw new Error(`Need ${recipe2.gold} gold`);
+  for (const input of recipe2.inputs) if (combinedQuantity2(state, input.itemId) < input.quantity) throw new Error(`Need ${input.quantity} ${itemDef(input.itemId).name}`);
+  return recipe2;
+}
+function validateGemRefineStart(state, recipeId) {
+  if (!state.character) throw new Error("Create a character first");
+  const recipe2 = gemRefineRecipeV1(recipeId);
+  if (!recipe2) throw new Error("Unknown gem refinement");
+  const skill2 = state.skills.find((row) => row.skillId === "enchanting");
+  if (!skill2 || skill2.level < recipe2.level) throw new Error(`Requires enchanting level ${recipe2.level}`);
   if (state.character.gold < recipe2.gold) throw new Error(`Need ${recipe2.gold} gold`);
   for (const input of recipe2.inputs) if (combinedQuantity2(state, input.itemId) < input.quantity) throw new Error(`Need ${input.quantity} ${itemDef(input.itemId).name}`);
   return recipe2;
@@ -76123,8 +77067,7 @@ function withProjectedQueue(state, nowMs) {
 function equipmentCraftDurationSeconds(state, recipeId) {
   const recipe2 = timedEquipmentRecipe(recipeId);
   if (!recipe2) throw new Error("Unknown timed equipment recipe");
-  const speed = Math.max(0.1, characterPermanentMultipliers(state).craftingSpeedMultiplier);
-  return Math.max(1, Math.ceil(recipe2.seconds / speed));
+  return professionActionPace(state, recipe2, "forge").cycleSeconds;
 }
 function startEquipmentCraft(state, recipeId, nowMs) {
   const recipe2 = timedEquipmentRecipe(recipeId);
@@ -76147,7 +77090,9 @@ function startEquipmentCraft(state, recipeId, nowMs) {
     startedAtMs: startsNow ? nowMs : nowMs + 1,
     completesAtMs: (startsNow ? nowMs : nowMs + 1) + durationMs,
     reservedGold: recipe2.gold,
-    reservedInputs: recipe2.inputs.map((input) => ({ ...input }))
+    reservedInputs: recipe2.inputs.map((input) => ({ ...input })),
+    xpPerCraft: professionActionPace(projected, recipe2, "forge").xpPerAction,
+    skillAffinity: captureSkillAffinity(projected, recipe2.skillId)
   };
   const scheduled = scheduleWaiting([...existingQueue, job], slots2.capacity, nowMs);
   projected = { ...projected, account: { ...projected.account, equipmentCraftingQueue: scheduled } };
@@ -76163,7 +77108,7 @@ function startGemCombine(state, recipeId, nowMs) {
   if (active2.length >= slots2.capacity && waiting.length >= MAX_WAITING_EQUIPMENT_CRAFTS) throw new Error(`Forge backlog is full (${MAX_WAITING_EQUIPMENT_CRAFTS}/${MAX_WAITING_EQUIPMENT_CRAFTS})`);
   projected = { ...projected, character: { ...projected.character, gold: projected.character.gold - recipe2.gold } };
   for (const input of recipe2.inputs) projected = consumeAcross2(projected, input.itemId, input.quantity);
-  const speed = Math.max(0.1, characterPermanentMultipliers(projected).craftingSpeedMultiplier), seconds = Math.max(1, Math.ceil(recipe2.seconds / speed)), durationMs = seconds * 1e3;
+  const seconds = professionActionPace(projected, recipe2, "forge").cycleSeconds, durationMs = seconds * 1e3;
   const existingQueue = equipmentCraftingQueue(projected), startsNow = active2.length < slots2.capacity && waiting.length === 0;
   const job = {
     id: `gemcraft:${projected.character.id}:${recipeId}:${nowMs}:${existingQueue.length}`,
@@ -76172,7 +77117,36 @@ function startGemCombine(state, recipeId, nowMs) {
     startedAtMs: startsNow ? nowMs : nowMs + 1,
     completesAtMs: (startsNow ? nowMs : nowMs + 1) + durationMs,
     reservedGold: recipe2.gold,
-    reservedInputs: recipe2.inputs.map((input) => ({ ...input }))
+    reservedInputs: recipe2.inputs.map((input) => ({ ...input })),
+    xpPerCraft: professionActionPace(projected, recipe2, "forge").xpPerAction,
+    skillAffinity: captureSkillAffinity(projected, recipe2.skillId)
+  };
+  const scheduled = scheduleWaiting([...existingQueue, job], slots2.capacity, nowMs);
+  projected = { ...projected, account: { ...projected.account, equipmentCraftingQueue: scheduled } };
+  const finalJob = scheduled.find((row) => row.id === job.id);
+  return { state: projected, job: finalJob, seconds, waiting: finalJob.startedAtMs > nowMs, recipe: recipe2 };
+}
+function startGemRefinement(state, recipeId, nowMs) {
+  let projected = withProjectedQueue(state, nowMs);
+  const recipe2 = validateGemRefineStart(projected, recipeId);
+  const slots2 = equipmentCraftSlotBreakdown(projected), queue = equipmentCraftingQueue(projected);
+  const active2 = queue.filter((job2) => isActive(job2, nowMs)), waiting = queue.filter((job2) => isWaiting(job2, nowMs)), ready = queue.filter((job2) => isReady(job2, nowMs));
+  if (ready.length >= MAX_READY_EQUIPMENT_CRAFTS) throw new Error("Claim finished forge jobs before starting more crafts");
+  if (active2.length >= slots2.capacity && waiting.length >= MAX_WAITING_EQUIPMENT_CRAFTS) throw new Error(`Forge backlog is full (${MAX_WAITING_EQUIPMENT_CRAFTS}/${MAX_WAITING_EQUIPMENT_CRAFTS})`);
+  projected = { ...projected, character: { ...projected.character, gold: projected.character.gold - recipe2.gold } };
+  for (const input of recipe2.inputs) projected = consumeAcross2(projected, input.itemId, input.quantity);
+  const seconds = professionActionPace(projected, recipe2, "forge").cycleSeconds, durationMs = seconds * 1e3;
+  const existingQueue = equipmentCraftingQueue(projected), startsNow = active2.length < slots2.capacity && waiting.length === 0;
+  const job = {
+    id: `gemrefine:${projected.character.id}:${recipeId}:${nowMs}:${existingQueue.length}`,
+    recipeId,
+    ownerCharacterId: projected.character.id,
+    startedAtMs: startsNow ? nowMs : nowMs + 1,
+    completesAtMs: (startsNow ? nowMs : nowMs + 1) + durationMs,
+    reservedGold: recipe2.gold,
+    reservedInputs: recipe2.inputs.map((input) => ({ ...input })),
+    xpPerCraft: professionActionPace(projected, recipe2, "forge").xpPerAction,
+    skillAffinity: captureSkillAffinity(projected, recipe2.skillId)
   };
   const scheduled = scheduleWaiting([...existingQueue, job], slots2.capacity, nowMs);
   projected = { ...projected, account: { ...projected.account, equipmentCraftingQueue: scheduled } };
@@ -76198,31 +77172,42 @@ function grantCraftOutput(state, recipe2, ownerCharacterId) {
   if (bank.remaining > 0) throw new Error("Inventory and Bank are full");
   return { ...state, inventory: { ...state.inventory, stacks: inv.stacks }, bank: { ...state.bank, stacks: bank.stacks } };
 }
-function awardOwnerSkillXp(state, ownerCharacterId, recipe2) {
+function awardOwnerSkillXp(state, ownerCharacterId, recipe2, job) {
+  const ownerSkills = state.character?.id === ownerCharacterId ? state.skills : state.otherCharacters?.find((entry2) => entry2.character.id === ownerCharacterId)?.skills;
+  if (!ownerSkills) throw new Error("Crafting owner is no longer available");
+  const skill2 = ownerSkills.find((row) => row.skillId === recipe2.skillId);
+  if (!skill2) throw new Error("Crafting owner skill is missing");
+  const mastery = professionMasteryMultipliers(recipe2.id, state.account.professionMasteryByAction?.[recipe2.id]);
+  const rawXp = job.xpPerCraft ?? Math.max(1, Math.floor(recipe2.xp * mastery.xp));
+  const key = affinityXpRemainderKey(ownerCharacterId, recipe2.skillId), gain = settleAffinitySkillXp(rawXp, state.rewardRemainders?.[key], totalXpAtLevel(100) - skill2.xp);
+  const next = { ...state, rewardRemainders: { ...state.rewardRemainders ?? {}, [key]: gain.remainder } };
   const award = (skills) => skills.map((row) => {
     if (row.skillId !== recipe2.skillId) return row;
-    const xp = row.xp + recipe2.xp;
+    const xp = row.xp + gain.xp;
     return { ...row, xp, level: levelFromXp(xp) };
   });
-  if (state.character?.id === ownerCharacterId) return { ...state, skills: award(state.skills) };
-  return { ...state, otherCharacters: (state.otherCharacters ?? []).map((entry2) => entry2.character.id === ownerCharacterId ? { ...entry2, skills: award(entry2.skills) } : entry2) };
+  if (state.character?.id === ownerCharacterId) return { ...next, skills: award(state.skills) };
+  return { ...next, otherCharacters: (state.otherCharacters ?? []).map((entry2) => entry2.character.id === ownerCharacterId ? { ...entry2, skills: award(entry2.skills) } : entry2) };
 }
 function claimForgeJob(state, jobId, nowMs, rarityRoll = Math.random()) {
   const projected = withProjectedQueue(state, nowMs), queue = equipmentCraftingQueue(projected), job = queue.find((row) => row.id === jobId);
   if (!job) throw new Error("Crafting job not found");
   if (job.completesAtMs > nowMs) throw new Error(job.startedAtMs > nowMs ? "This forge job is still waiting for a slot" : "This forge job is still in progress");
-  const equipmentRecipe = timedEquipmentRecipe(job.recipeId), gemRecipe = gemCombineRecipeV1(job.recipeId), recipe2 = equipmentRecipe ?? gemRecipe;
+  const equipmentRecipe = timedEquipmentRecipe(job.recipeId), gemCombineRecipe = gemCombineRecipeV1(job.recipeId), gemRefineRecipe = gemRefineRecipeV1(job.recipeId), gemRecipe = gemCombineRecipe ?? gemRefineRecipe, recipe2 = equipmentRecipe ?? gemRecipe;
   if (!recipe2) throw new Error("Crafting recipe is no longer available");
   let next = grantCraftOutput(projected, recipe2, job.ownerCharacterId);
   if (equipmentRecipe) {
-    next = awardOwnerSkillXp(next, job.ownerCharacterId, equipmentRecipe);
+    next = awardOwnerSkillXp(next, job.ownerCharacterId, equipmentRecipe, job);
     const created = createCraftedGearInstance(next, { itemId: equipmentRecipe.output.itemId, ownerCharacterId: job.ownerCharacterId, jobId: job.id, createdAtMs: nowMs, roll: rarityRoll });
     next = created.state;
     next = { ...next, account: { ...next.account, equipmentCraftingQueue: queue.filter((row) => row.id !== jobId) } };
+    next = applyTrustedLongTermProgression(next, [{ kind: "crafting", contentId: equipmentRecipe.id, units: 1, startedAtMs: job.startedAtMs }], void 0, nowMs, { accountId: next.account.longTermAccountScopeId ?? `local-account:${next.createdAtMs}`, eventId: `forge:${job.id}:${nowMs}` }).state;
     return { state: next, recipe: equipmentRecipe, job, kind: "equipment", instance: created.instance, result: craftedInstanceResult(next, created.instance) };
   }
+  next = awardOwnerSkillXp(next, job.ownerCharacterId, gemRecipe, job);
   next = { ...next, account: { ...next.account, equipmentCraftingQueue: queue.filter((row) => row.id !== jobId) } };
-  return { state: next, recipe: gemRecipe, job, kind: "gem" };
+  next = applyTrustedLongTermProgression(next, [{ kind: "crafting", contentId: gemRecipe.id, units: 1, startedAtMs: job.startedAtMs }], void 0, nowMs, { accountId: next.account.longTermAccountScopeId ?? `local-account:${next.createdAtMs}`, eventId: `forge:${job.id}:${nowMs}` }).state;
+  return { state: next, recipe: gemRecipe, job, kind: "gem", gemAction: gemRefineRecipe ? "refine" : "combine" };
 }
 function claimAllReadyEquipmentCrafts(state, nowMs, trustedRoll = Math.random()) {
   let next = withProjectedQueue(state, nowMs), claimed = [], results = [], gemClaims = 0;
@@ -76275,7 +77260,7 @@ function cancelEquipmentCraft(state, jobId, nowMs) {
   const projected = withProjectedQueue(state, nowMs), queue = equipmentCraftingQueue(projected), job = queue.find((row) => row.id === jobId);
   if (!job) throw new Error("Crafting job not found");
   if (job.completesAtMs <= nowMs) throw new Error("Finished equipment must be claimed instead of cancelled");
-  const recipe2 = timedEquipmentRecipe(job.recipeId) ?? gemCombineRecipeV1(job.recipeId);
+  const recipe2 = timedEquipmentRecipe(job.recipeId) ?? gemCombineRecipeV1(job.recipeId) ?? gemRefineRecipeV1(job.recipeId);
   if (!recipe2) throw new Error("Crafting recipe is no longer available");
   const reservedInputs = job.reservedInputs?.length ? job.reservedInputs : recipe2.inputs, reservedGold = job.reservedGold ?? recipe2.gold;
   const waiting = job.startedAtMs > nowMs, refundRate = waiting ? 1 : EQUIPMENT_CRAFT_CANCEL_GOLD_REFUND;
@@ -76299,7 +77284,7 @@ function moveWaitingEquipmentCraft(state, jobId, direction, nowMs) {
   return { ...projected, account: { ...projected.account, equipmentCraftingQueue: scheduled } };
 }
 
-// ../apps/mobile/src/core/account-actions.ts
+// apps/mobile/src/core/account-actions.ts
 function snapshot(state) {
   return { character: structuredClone(state.character), inventory: structuredClone(state.inventory), overflow: structuredClone(state.overflow), activity: structuredClone(state.activity), skills: structuredClone(state.skills), quests: structuredClone(state.quests), currentRegionId: state.currentRegionId };
 }
@@ -76430,9 +77415,9 @@ function deleteAccountCharacter(state, id, confirmation, now) {
   return { ...state, character: null, inventory: fresh.inventory, overflow: recovery.overflow, activity: null, skills: fresh.skills, quests: fresh.quests, currentRegionId: fresh.currentRegionId, bank: recovery.bank, otherCharacters: [], account };
 }
 
-// ../apps/mobile/src/core/loadout-storage.ts
+// apps/mobile/src/core/loadout-storage.ts
 var qty2 = (stacks, id) => stacks.find((entry2) => entry2.itemId === id)?.quantity ?? 0;
-var take2 = (stacks, id) => {
+var take3 = (stacks, id) => {
   if (qty2(stacks, id) < 1) throw new Error(`MISSING:${id}`);
   return stacks.map((entry2) => entry2.itemId === id ? { ...entry2, quantity: entry2.quantity - 1 } : { ...entry2 }).filter((entry2) => entry2.quantity > 0);
 };
@@ -76452,8 +77437,8 @@ function planLoadoutStorage(input) {
   for (const slot of slots2) {
     const wanted = input.desiredEquipment[slot], equipped = input.currentEquipment[slot];
     if (!wanted || wanted === equipped) continue;
-    if (qty2(inventory, wanted) > 0) inventory = take2(inventory, wanted);
-    else if (qty2(bank, wanted) > 0) bank = take2(bank, wanted);
+    if (qty2(inventory, wanted) > 0) inventory = take3(inventory, wanted);
+    else if (qty2(bank, wanted) > 0) bank = take3(bank, wanted);
     else throw new Error(`MISSING:${wanted}`);
   }
   for (const slot of slots2) {
@@ -76469,17 +77454,21 @@ function planLoadoutStorage(input) {
   return { inventory, bank };
 }
 
-// ../apps/mobile/src/core/character-loadouts.ts
+// apps/mobile/src/core/character-loadouts.ts
 var CHARACTER_LOADOUT_SLOT_COUNT = 3;
+var MAX_CHARACTER_LOADOUT_SLOTS = 5;
+function characterLoadoutSlotCount(state) {
+  return Math.min(MAX_CHARACTER_LOADOUT_SLOTS, CHARACTER_LOADOUT_SLOT_COUNT + accountEntitlementBenefits(state).loadoutSlots);
+}
 var slots = ["weapon", "offhand", "helmet", "chest", "legs", "boots", "gloves", "cape", "amulet", "ring"];
-var cleanName = (value, fallback) => typeof value === "string" && value.trim() ? value.trim().slice(0, 28) : fallback;
-function normalizeCharacterLoadouts(value, classId) {
+var cleanName = (value, fallback2) => typeof value === "string" && value.trim() ? value.trim().slice(0, 28) : fallback2;
+function normalizeCharacterLoadouts(value, classId, slotCount = CHARACTER_LOADOUT_SLOT_COUNT) {
   if (!Array.isArray(value)) return [];
-  const bySlot = /* @__PURE__ */ new Map();
+  const limit = Math.max(CHARACTER_LOADOUT_SLOT_COUNT, Math.min(MAX_CHARACTER_LOADOUT_SLOTS, slotCount)), bySlot = /* @__PURE__ */ new Map();
   value.slice(0, 12).forEach((raw2, index) => {
     if (!raw2 || typeof raw2 !== "object" || raw2.classId !== classId) return;
-    const slotIndex = Number.isInteger(raw2.slotIndex) && raw2.slotIndex >= 0 && raw2.slotIndex < CHARACTER_LOADOUT_SLOT_COUNT ? raw2.slotIndex : index;
-    if (slotIndex < 0 || slotIndex >= CHARACTER_LOADOUT_SLOT_COUNT || bySlot.has(slotIndex)) return;
+    const slotIndex = Number.isInteger(raw2.slotIndex) && raw2.slotIndex >= 0 && raw2.slotIndex < limit ? raw2.slotIndex : index;
+    if (slotIndex < 0 || slotIndex >= limit || bySlot.has(slotIndex)) return;
     const equipment = {};
     for (const slot of slots) {
       const id = raw2.equipment?.[slot];
@@ -76494,17 +77483,18 @@ function normalizeCharacterLoadouts(value, classId) {
 }
 function saveCharacterLoadout(state, index, name, nowMs = Date.now()) {
   if (!state.character) throw new Error("Create a character first.");
-  if (index < 0 || index >= CHARACTER_LOADOUT_SLOT_COUNT) throw new Error("Invalid loadout slot.");
-  const current = normalizeCharacterLoadouts(state.character.savedLoadouts, state.character.classId), existing = current.find((entry2) => entry2.slotIndex === index), preset = { id: existing?.id ?? `loadout-${index + 1}`, slotIndex: index, name: cleanName(name, existing?.name ?? `Loadout ${index + 1}`), classId: state.character.classId, equipment: { ...state.character.equipment }, foodId: state.character.equippedFoodId, companionId: state.character.equippedCombatCompanionId, createdAtMs: existing?.createdAtMs ?? nowMs, updatedAtMs: nowMs };
+  const capacity = characterLoadoutSlotCount(state);
+  if (index < 0 || index >= capacity) throw new Error("Invalid loadout slot.");
+  const current = normalizeCharacterLoadouts(state.character.savedLoadouts, state.character.classId, capacity), existing = current.find((entry2) => entry2.slotIndex === index), preset = { id: existing?.id ?? `loadout-${index + 1}`, slotIndex: index, name: cleanName(name, existing?.name ?? `Loadout ${index + 1}`), classId: state.character.classId, equipment: { ...state.character.equipment }, foodId: state.character.equippedFoodId, companionId: state.character.equippedCombatCompanionId, createdAtMs: existing?.createdAtMs ?? nowMs, updatedAtMs: nowMs };
   return { ...state, character: { ...state.character, savedLoadouts: [...current.filter((entry2) => entry2.slotIndex !== index), preset].sort((a, b) => a.slotIndex - b.slotIndex) } };
 }
 function deleteCharacterLoadout(state, id) {
-  return !state.character ? state : { ...state, character: { ...state.character, savedLoadouts: normalizeCharacterLoadouts(state.character.savedLoadouts, state.character.classId).filter((entry2) => entry2.id !== id) } };
+  return !state.character ? state : { ...state, character: { ...state.character, savedLoadouts: normalizeCharacterLoadouts(state.character.savedLoadouts, state.character.classId, characterLoadoutSlotCount(state)).filter((entry2) => entry2.id !== id) } };
 }
 function applyCharacterLoadout(state, id) {
   if (!state.character) throw new Error("Create a character first.");
   if (state.activity?.kind === "combat") throw new Error("Stop combat before changing loadouts.");
-  const preset = normalizeCharacterLoadouts(state.character.savedLoadouts, state.character.classId).find((entry2) => entry2.id === id);
+  const preset = normalizeCharacterLoadouts(state.character.savedLoadouts, state.character.classId, characterLoadoutSlotCount(state)).find((entry2) => entry2.id === id);
   if (!preset) throw new Error("Loadout not found.");
   for (const slot of slots) {
     const wanted = preset.equipment[slot];
@@ -76514,7 +77504,7 @@ function applyCharacterLoadout(state, id) {
   }
   let planned;
   try {
-    planned = planLoadoutStorage({ inventory: state.inventory.stacks, bank: state.bank.stacks, inventoryCapacity: state.inventory.capacity, bankCapacity: state.bank.capacity, currentEquipment: state.character.equipment, desiredEquipment: preset.equipment });
+    planned = planLoadoutStorage({ inventory: state.inventory.stacks, bank: state.bank.stacks, inventoryCapacity: entitlementStorageCapacity(state, "inventory"), bankCapacity: entitlementStorageCapacity(state, "bank"), currentEquipment: state.character.equipment, desiredEquipment: preset.equipment });
   } catch (error) {
     if (error instanceof Error && error.message.startsWith("MISSING:")) throw new Error(`${itemDef(error.message.slice(8)).name} is not equipped, in Inventory, or in Bank.`);
     throw error;
@@ -76526,7 +77516,32 @@ function applyCharacterLoadout(state, id) {
   return next;
 }
 
-// ../apps/mobile/src/core/progression-goals-v40.ts
+// apps/mobile/src/core/arena-squad.ts
+var ARENA_SQUAD_SIZE = 3;
+function arenaSquadIds(state) {
+  const owned = new Set(accountCharacters(state).map((entry2) => entry2.character.id));
+  const saved = state.account.arenaSquadCharacterIds ?? [];
+  const seen = /* @__PURE__ */ new Set();
+  return Array.from({ length: ARENA_SQUAD_SIZE }, (_, index) => {
+    const id = typeof saved[index] === "string" ? saved[index] : "";
+    if (!id || !owned.has(id) || seen.has(id)) return "";
+    seen.add(id);
+    return id;
+  });
+}
+function setArenaSquadSlot(state, slot, characterId) {
+  const owned = accountCharacters(state).map((entry2) => entry2.character.id);
+  if (characterId && !owned.includes(characterId)) throw new Error("That character does not belong to this account.");
+  const ids2 = arenaSquadIds(state);
+  if (characterId) {
+    const duplicate = ids2.findIndex((id, index) => index !== slot && id === characterId);
+    if (duplicate >= 0) ids2[duplicate] = "";
+  }
+  ids2[slot] = characterId ?? "";
+  return { ...state, account: { ...state.account, arenaSquadCharacterIds: ids2 } };
+}
+
+// apps/mobile/src/core/progression-goals-v40.ts
 var MAX_PINNED_GOALS = 3;
 function validateProgressionGoals(goals, characterId) {
   if (goals.length > MAX_PINNED_GOALS) throw new Error("too_many_pinned_goals");
@@ -76539,7 +77554,7 @@ function validateProgressionGoals(goals, characterId) {
   }
   return goals;
 }
-var GOAL_KINDS = ["skill_level", "item_quantity", "recipe", "monster_kills", "pet_hunt", "equipment_set", "dungeon_clears", "mastery_rank", "weekly_order"];
+var GOAL_KINDS = ["skill_level", "item_quantity", "recipe", "recipe_preparation", "monster_kills", "pet_hunt", "equipment_set", "dungeon_clears", "mastery_rank", "weekly_order"];
 function normalizeProgressionGoals(value, characterId) {
   if (!Array.isArray(value) || !characterId) return [];
   const out = [];
@@ -76557,7 +77572,10 @@ function normalizeProgressionGoals(value, characterId) {
     if (kind === "skill_level" && typeof row.skillId === "string" && positive("targetLevel")) goal = { ...base, kind, skillId: row.skillId, targetLevel: positive("targetLevel") };
     else if (kind === "item_quantity" && typeof row.itemId === "string" && positive("targetQuantity")) goal = { ...base, kind, itemId: row.itemId, targetQuantity: positive("targetQuantity") };
     else if (kind === "recipe" && typeof row.recipeId === "string" && positive("targetQuantity")) goal = { ...base, kind, recipeId: row.recipeId, targetQuantity: positive("targetQuantity") };
-    else if (kind === "monster_kills" && typeof row.monsterId === "string" && positive("targetKills")) goal = { ...base, kind, monsterId: row.monsterId, targetKills: positive("targetKills") };
+    else if (kind === "recipe_preparation" && typeof row.recipeId === "string" && typeof row.outputItemId === "string" && positive("batches") && positive("initialStepCount") && Number.isFinite(Number(row.baselineOutputQuantity)) && positive("targetOutputQuantity")) {
+      const baselineOutputQuantity = Math.max(0, Math.floor(Number(row.baselineOutputQuantity))), targetOutputQuantity = Math.max(baselineOutputQuantity + 1, positive("targetOutputQuantity"));
+      goal = { ...base, kind, recipeId: row.recipeId, batches: Math.min(100, positive("batches")), outputItemId: row.outputItemId, initialStepCount: Math.min(99, positive("initialStepCount")), baselineOutputQuantity, targetOutputQuantity };
+    } else if (kind === "monster_kills" && typeof row.monsterId === "string" && positive("targetKills")) goal = { ...base, kind, monsterId: row.monsterId, targetKills: positive("targetKills") };
     else if (kind === "pet_hunt" && typeof row.petId === "string" && (row.sourceKind === "monster" || row.sourceKind === "dungeon") && typeof row.sourceId === "string") goal = { ...base, kind, petId: row.petId, sourceKind: row.sourceKind, sourceId: row.sourceId };
     else if (kind === "equipment_set" && typeof row.setId === "string" && positive("targetPieces")) goal = { ...base, kind, setId: row.setId, targetPieces: positive("targetPieces") };
     else if (kind === "dungeon_clears" && typeof row.dungeonId === "string" && positive("targetClears")) goal = { ...base, kind, dungeonId: row.dungeonId, targetClears: positive("targetClears") };
@@ -76568,8 +77586,564 @@ function normalizeProgressionGoals(value, characterId) {
   return validateProgressionGoals(out, characterId);
 }
 
-// ../apps/mobile/src/core/inventory-bulk.ts
+// apps/mobile/src/core/inventory-bulk.ts
 init_faith();
+
+// apps/mobile/src/core/profession-mastery-presentation.ts
+function professionMasteryActiveBonusText(state, actionId, options = {}) {
+  const view = professionMasteryView(actionId, state.account.professionMasteryByAction?.[actionId]), parts = [], yieldRelevant = options.yieldRelevant !== false, speedRelevant = options.speedRelevant !== false;
+  if (view.xpBonusBps) parts.push("+" + (view.xpBonusBps / 100).toFixed(0) + "% XP");
+  if (view.yieldBonusBps && yieldRelevant) parts.push("+" + (view.yieldBonusBps / 100).toFixed(0) + "% yield");
+  if (view.speedBonusBps && speedRelevant) parts.push("+" + (view.speedBonusBps / 100).toFixed(0) + "% speed");
+  return parts.length ? parts.join(" \xB7 ") : "No active mastery bonus yet";
+}
+
+// apps/mobile/src/core/balance-projection.ts
+init_progression();
+
+// apps/mobile/src/content/dungeon-material-sources.ts
+var DUNGEON_MATERIAL_SOURCES = [
+  { itemId: "REGIONAL_CATALYST", dungeonId: "COP_004", dungeonName: "Caravan of Glass", minLevel: 30, expectedMinutes: 18, chance: 0.15 },
+  { itemId: "REGIONAL_CATALYST", dungeonId: "COP_005", dungeonName: "Mirage Well", minLevel: 36, expectedMinutes: 20, chance: 0.15 },
+  { itemId: "REGIONAL_CATALYST", dungeonId: "COP_006", dungeonName: "Buried Observatory", minLevel: 40, expectedMinutes: 23, chance: 0.15 },
+  { itemId: "REGIONAL_CATALYST", dungeonId: "COP_007", dungeonName: "Whitepine Hunt", minLevel: 52, expectedMinutes: 19, chance: 0.15 },
+  { itemId: "REGIONAL_CATALYST", dungeonId: "COP_008", dungeonName: "Shiverlake Descent", minLevel: 58, expectedMinutes: 21, chance: 0.15 },
+  { itemId: "REGIONAL_CATALYST", dungeonId: "COP_009", dungeonName: "Choir Caverns", minLevel: 64, expectedMinutes: 23, chance: 0.15 }
+];
+function dungeonMaterialSourcesForItem(itemId) {
+  return DUNGEON_MATERIAL_SOURCES.filter((source) => source.itemId === itemId);
+}
+function dungeonMaterialSourceById(dungeonId) {
+  return DUNGEON_MATERIAL_SOURCES.find((source) => source.dungeonId === dungeonId);
+}
+
+// apps/mobile/src/core/balance-projection.ts
+var safeEta = (remainingXp, xpPerHour) => xpPerHour > 0 && remainingXp > 0 ? remainingXp / xpPerHour * 3600 : remainingXp <= 0 ? 0 : void 0;
+function formatBalanceDuration(seconds) {
+  if (seconds === void 0 || !Number.isFinite(seconds)) return "\u2014";
+  const value = Math.max(0, Math.round(seconds));
+  if (value < 60) return "<1m";
+  if (value < 3600) return Math.max(1, Math.ceil(value / 60)) + "m";
+  if (value < 86400) {
+    const hours2 = Math.floor(value / 3600), minutes = Math.ceil(value % 3600 / 60);
+    return minutes ? hours2 + "h " + minutes + "m" : hours2 + "h";
+  }
+  const days = Math.floor(value / 86400), hours = Math.floor(value % 86400 / 3600);
+  return hours ? days + "d " + hours + "h" : days + "d";
+}
+function skillLevelPace(state, skillId, xpPerHour) {
+  const skill2 = state.skills.find((row) => row.skillId === skillId), level = skill2?.level ?? 1, totalXp = skill2?.xp ?? 0, within = progressWithinLevel(totalXp, level), remainingXp = Math.max(0, within.need - within.current);
+  return { label: skillId.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()), level, nextLevel: Math.min(100, level + 1), current: within.current, need: within.need, remainingXp, progress: within.need > 0 ? Math.max(0, Math.min(1, within.current / within.need)) : 1, xpPerHour, etaSeconds: safeEta(remainingXp, xpPerHour) };
+}
+function gatheringBalanceProjection(state, activity, offlineHours) {
+  const affinity = skillAffinityModifiers(state.character?.classId, activity.skillId);
+  const environment = environmentForZone(activity.zoneId), effect2 = environmentEffect(activity.skillId, environment), pacing = gatheringPacing(state, activity), permanent = characterPermanentMultipliers(state), mastery = professionMasteryMultipliers(activity.id, state.account.professionMasteryByAction?.[activity.id]), rank = professionMasteryRankProgress(activity.id, state.account.professionMasteryByAction?.[activity.id]);
+  const herbLevel = state.skills.find((row) => row.skillId === "herbalism")?.level ?? 1, method = activity.skillId === "herbalism" ? herbalismMethod(state.character?.herbalismMethodId, herbLevel) : void 0;
+  const specialtySpeed = activity.skillId === "fishing" ? permanent.fishingSpeedMultiplier : activity.skillId === "herbalism" ? permanent.herbalismSpeedMultiplier : 1;
+  const cycleSeconds = activity.seconds * GATHER_TIME_SCALE * pacing.timeMultiplier * effect2.actionTimeMultiplier * (method?.actionTimeMultiplier ?? 1) / (permanent.gatheringSpeedMultiplier * specialtySpeed * mastery.speed * affinity.speedMultiplier), actionsPerHour = 3600 / Math.max(0.1, cycleSeconds);
+  const meanItems = (activity.min + activity.max) / 2;
+  const runtimeItemsPerHour = actionsPerHour * meanItems * effect2.itemMultiplier * (method?.yieldMultiplier ?? 1) * permanent.gatheringYieldMultiplier * mastery.yield;
+  const authoredMeanItemsPerHour = runtimeItemsPerHour;
+  const xpPerHour = actionsPerHour * activity.xp * effect2.xpMultiplier * (method?.xpMultiplier ?? 1) * permanent.skillXpMultiplier * mastery.xp * affinity.xpMultiplier, capActions = Math.floor(Math.max(0, offlineHours) * 3600 / cycleSeconds);
+  const essence = activity.skillId === "herbalism" ? HERBALISM_ESSENCE_BY_ZONE[activity.zoneId] : void 0, rareItemsPerHour = essence ? actionsPerHour * Math.min(1, essence.baseChance * (method?.rareFindMultiplier ?? 1) * herbalismInsightMultiplier(herbLevel) * effect2.dropChanceMultiplier * permanent.dropChanceMultiplier) : void 0;
+  return { cycleSeconds, actionsPerHour, runtimeItemsPerHour, authoredMeanItemsPerHour, xpPerHour, capActions, capItems: Math.floor(capActions * meanItems * effect2.itemMultiplier * (method?.yieldMultiplier ?? 1) * permanent.gatheringYieldMultiplier * mastery.yield), capXp: Math.floor(capActions * activity.xp * effect2.xpMultiplier * (method?.xpMultiplier ?? 1) * permanent.skillXpMultiplier * mastery.xp * affinity.xpMultiplier), pacing, mastery, rank, masteryBonus: professionMasteryActiveBonusText(state, activity.id), levelPace: skillLevelPace(state, activity.skillId, xpPerHour), herbalismMethod: method, rareItemId: essence?.itemId, rareItemsPerHour };
+}
+function combatBaselineProjection(monster) {
+  const cycleSeconds = Math.max(0.1, monster.secondsPerKill * COMBAT_TIME_SCALE), killsPerHour = 3600 / cycleSeconds;
+  return { cycleSeconds, killsPerHour, xpPerHour: killsPerHour * monster.xp, goldPerHour: killsPerHour * monster.gold };
+}
+function dropExpectation(chance, min, max, killsPerHour) {
+  const normalizedChance = Math.max(0, Math.min(1, chance)), oneIn = normalizedChance > 0 ? 1 / normalizedChance : Number.POSITIVE_INFINITY, meanQuantity = (Math.max(0, min) + Math.max(min, max)) / 2, findsPerHour = killsPerHour * normalizedChance;
+  return { chance: normalizedChance, oneIn, expectedQuantityPerHour: findsPerHour * meanQuantity, averageFindSeconds: findsPerHour > 0 ? 3600 / findsPerHour : Number.POSITIVE_INFINITY };
+}
+function acquisitionProjectionForDestination(state, itemId, quantity4, destination) {
+  const needed = Math.max(0, quantity4);
+  if (!needed) return void 0;
+  if (destination.kind === "skills" && destination.actionId) {
+    const activity = [...GATHERING, ...HERB_NODES].find((row) => row.id === destination.actionId);
+    if (!activity) return void 0;
+    const pace = gatheringBalanceProjection(state, activity, 1);
+    const rate = activity.itemId === itemId ? pace.runtimeItemsPerHour : pace.rareItemId === itemId ? pace.rareItemsPerHour ?? 0 : 0;
+    return rate > 0 ? { sourceKind: "gathering", sourceId: activity.id, quantityPerHour: rate, etaSeconds: needed / rate * 3600, basis: "current" } : void 0;
+  }
+  if (destination.kind === "combat") {
+    const monster = MONSTERS.find((row) => row.id === destination.monsterId), drop = monster?.drops.find((row) => row.itemId === itemId);
+    if (!monster || !drop) return void 0;
+    const combat = combatBaselineProjection(monster), expectation = dropExpectation(drop.chance, drop.min, drop.max, combat.killsPerHour), rate = expectation.expectedQuantityPerHour;
+    return rate > 0 ? { sourceKind: "combat", sourceId: monster.id, quantityPerHour: rate, etaSeconds: needed / rate * 3600, basis: "base", chance: expectation.chance, oneIn: expectation.oneIn } : void 0;
+  }
+  if (destination.kind === "dungeon" && destination.dungeonId) {
+    const source = dungeonMaterialSourcesForItem(itemId).find((row) => row.dungeonId === destination.dungeonId);
+    if (!source || source.expectedMinutes <= 0 || source.chance <= 0) return void 0;
+    const clearsPerHour = 60 / source.expectedMinutes, rate = clearsPerHour * source.chance;
+    return { sourceKind: "dungeon", sourceId: source.dungeonId, quantityPerHour: rate, etaSeconds: needed / rate * 3600, basis: "average", chance: source.chance, oneIn: 1 / source.chance };
+  }
+  return void 0;
+}
+
+// apps/mobile/src/core/working-toward.ts
+var gatherDefs = [...GATHERING, ...HERB_NODES];
+var skillLabel = (id) => id.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+var regionForZoneName = (name) => WORLD_ZONES.find((zone) => zone.name === name);
+var skillLevel = (state, id) => state.skills.find((row) => row.skillId === id)?.level ?? 1;
+var sourceChanceLabel = (chance) => chance >= 0.1 ? `${Math.round(chance * 100)}%` : `${(chance * 100).toFixed(chance < 0.01 ? 2 : 1)}%`;
+function quantities(state) {
+  const out = {};
+  for (const stack of [...state.inventory.stacks, ...state.bank.stacks]) out[stack.itemId] = (out[stack.itemId] ?? 0) + stack.quantity;
+  return out;
+}
+function workingTowardSourceAvailability(state, source) {
+  if (source.kind === "combat") {
+    const monster = MONSTERS.find((row) => row.id === source.monsterId);
+    const available = !!monster && (state.unlockedMonsterIds.includes(monster.id) || state.character.level >= monster.unlockLevel);
+    return { kind: "monster", id: source.monsterId, label: monster?.name ?? source.monsterId, available, reason: available ? void 0 : `Requires Level ${monster?.unlockLevel ?? "?"}.` };
+  }
+  if (source.kind === "skills") {
+    if (source.recipeId) {
+      const recipe2 = RECIPES.find((row) => row.id === source.recipeId), owned = quantities(state), tool2 = recipe2 ? gatheringToolDef(recipe2.output.itemId) : void 0;
+      const skillReady = !!recipe2 && skillLevel(state, recipe2.skillId) >= recipe2.level;
+      const characterReady = !!recipe2 && (recipe2.characterLevel === void 0 || (state.character?.level ?? 1) >= recipe2.characterLevel);
+      const toolSkillReady = !tool2 || skillLevel(state, tool2.skillId) >= tool2.unlockLevel;
+      const knowledgeReady = !recipe2?.requiredKnowledgeId || (state.account.unlockedKnowledgeIds ?? []).includes(recipe2.requiredKnowledgeId) || !!recipe2.knowledgeItemId && (owned[recipe2.knowledgeItemId] ?? 0) > 0;
+      const available = !!recipe2 && skillReady && characterReady && toolSkillReady && knowledgeReady;
+      const reason = !recipe2 ? "Recipe is not in the current catalog." : !characterReady ? `Requires Level ${recipe2.characterLevel}.` : !toolSkillReady && tool2 ? `Requires ${skillLabel(tool2.skillId)} ${tool2.unlockLevel}.` : !skillReady ? `Requires ${skillLabel(recipe2.skillId)} ${recipe2.level}.` : !knowledgeReady && recipe2.knowledgeItemId ? `Find ${ITEMS.find((item) => item.id === recipe2.knowledgeItemId)?.name ?? "the required blueprint"} first.` : void 0;
+      return { kind: "recipe", id: source.recipeId, label: recipe2?.name ?? source.recipeId, available, reason };
+    }
+    if (source.actionId) {
+      const gather = gatherDefs.find((row) => row.id === source.actionId);
+      if (gather) {
+        const available = skillLevel(state, gather.skillId) >= gather.unlockLevel;
+        return { kind: "skill", id: gather.skillId, label: gather.name, available, reason: available ? void 0 : `Requires ${skillLabel(gather.skillId)} ${gather.unlockLevel}.` };
+      }
+    }
+    return { kind: "skill", id: source.skillId ?? "skills", label: source.skillId ? skillLabel(source.skillId) : "Skills", available: true };
+  }
+  if (source.kind === "contracts") return { kind: "weekly_order", id: "contract-board", label: "Contract Board", available: true };
+  if (source.kind === "dungeon") {
+    const dungeon = source.dungeonId ? dungeonMaterialSourceById(source.dungeonId) : void 0, required = dungeon?.minLevel ?? 1, available = (state.character?.level ?? 1) >= required;
+    return { kind: "dungeon", id: source.dungeonId ?? "dungeon", label: dungeon?.dungeonName ?? "Dungeon", available, reason: available ? void 0 : `Requires Level ${required}.` };
+  }
+  if (source.kind === "world") return { kind: "region", id: source.regionId, label: WORLD_ZONES.find((row) => row.id === source.regionId)?.name ?? source.regionId, available: state.character.level >= (WORLD_ZONES.find((row) => row.id === source.regionId)?.minLevel ?? 1) };
+  if (source.kind === "inventory") return { kind: "item", id: "inventory", label: "Inventory & Bank", available: true };
+  return void 0;
+}
+function workingTowardDestinationAvailability(state, source) {
+  const base = workingTowardSourceAvailability(state, source);
+  if (source.kind === "info") return { status: "info", label: "INFO", detail: source.detail, canNavigate: false };
+  if (source.kind === "inventory" || source.kind === "contracts") return { status: "ready", label: "READY", detail: "Available now.", canNavigate: true };
+  if (source.kind === "dungeon") {
+    if (base && !base.available) return { status: "locked", label: "LOCKED", detail: base.reason ?? "This dungeon is not available yet.", canNavigate: true };
+    return { status: "ready", label: "READY", detail: "Dungeon available now.", canNavigate: true };
+  }
+  const regionId = "regionId" in source ? source.regionId : void 0, region = regionId ? WORLD_ZONES.find((row) => row.id === regionId) : void 0;
+  if (region && state.character.level < region.minLevel) return { status: "locked", label: "LOCKED", detail: `Region unlocks at Level ${region.minLevel}.`, canNavigate: true };
+  if (base && !base.available) return { status: "locked", label: "LOCKED", detail: base.reason ?? "This source is not available yet.", canNavigate: true };
+  if (regionId && regionId !== state.currentRegionId) return { status: "travel", label: "TRAVEL", detail: `Travel to ${region?.name ?? regionId} first.`, canNavigate: true };
+  const recipeSource = source.kind === "skills" && !!source.recipeId;
+  return { status: "ready", label: recipeSource ? "AVAILABLE" : "READY", detail: recipeSource ? "Recipe unlocked." : "Available now.", canNavigate: true };
+}
+var sourceStatusPriority = { ready: 0, travel: 1, locked: 2, info: 3 };
+function workingTowardItemSourceEntries(state, itemId) {
+  const candidates = [];
+  for (const gather of gatherDefs.filter((row) => row.itemId === itemId)) {
+    const zone = WORLD_ZONES.find((row) => row.id === gather.zoneId), yieldText = gather.min === gather.max ? `${gather.min}/action` : `${gather.min}\u2013${gather.max}/action`, destination = { kind: "skills", skillId: gather.skillId, mode: "gathering", actionId: gather.id, regionId: gather.zoneId, button: `Gather ${gather.name}`, detail: `${gather.name} in ${zone?.name ?? gather.zoneId} \xB7 ${yieldText}.` };
+    candidates.push({ type: "gathering", typeLabel: "Gathering", title: gather.name, destination, availability: workingTowardDestinationAvailability(state, destination), typePriority: 0, progressionLevel: gather.unlockLevel });
+  }
+  for (const [zoneId, essence] of Object.entries(HERBALISM_ESSENCE_BY_ZONE).filter(([, source]) => source.itemId === itemId)) {
+    const zone = WORLD_ZONES.find((row) => row.id === zoneId);
+    for (const herb of HERB_NODES.filter((row) => row.zoneId === zoneId)) {
+      const destination = { kind: "skills", skillId: "herbalism", mode: "gathering", actionId: herb.id, regionId: zoneId, button: `Harvest ${herb.name}`, detail: `${itemId.replaceAll("_", " ").replace(/\b\w/g, (c) => c.toUpperCase())} is a rare secondary find from Herbalism in ${zone?.name ?? zoneId}. Careful Harvest improves the chance.` };
+      candidates.push({ type: "gathering", typeLabel: "Gathering", title: herb.name, destination, availability: workingTowardDestinationAvailability(state, destination), typePriority: 0, progressionLevel: herb.unlockLevel });
+    }
+  }
+  for (const recipe2 of RECIPES.filter((row) => row.output.itemId === itemId)) {
+    const destination = { kind: "skills", skillId: recipe2.skillId, mode: "crafting", recipeId: recipe2.id, button: `Craft ${recipe2.name}`, detail: `${recipe2.name} \xB7 makes ${recipe2.output.quantity} per craft \xB7 ${skillLabel(recipe2.skillId)} Lv ${recipe2.level}.` };
+    candidates.push({ type: "crafting", typeLabel: "Crafting", title: recipe2.name, destination, availability: workingTowardDestinationAvailability(state, destination), typePriority: 1, progressionLevel: recipe2.level });
+  }
+  for (const monster of MONSTERS.filter((row) => row.drops.some((drop) => drop.itemId === itemId))) {
+    const drop = monster.drops.find((row) => row.itemId === itemId), region = regionForZoneName(monster.zone), quantity4 = drop.min === drop.max ? `${drop.min}` : `${drop.min}\u2013${drop.max}`, destination = { kind: "combat", monsterId: monster.id, zoneName: monster.zone, regionId: region?.id, button: `Hunt ${monster.name}`, detail: `${monster.name} in ${monster.zone} \xB7 ${sourceChanceLabel(drop.chance)} drop \xB7 ${quantity4} on hit.` };
+    candidates.push({ type: "monster_drop", typeLabel: "Monster Drop", title: monster.name, destination, availability: workingTowardDestinationAvailability(state, destination), typePriority: 2, progressionLevel: monster.unlockLevel });
+  }
+  for (const dungeon of dungeonMaterialSourcesForItem(itemId)) {
+    const chance = Math.round(dungeon.chance * 100), destination = { kind: "dungeon", dungeonId: dungeon.dungeonId, button: `Open ${dungeon.dungeonName}`, detail: `${dungeon.dungeonName} \xB7 ${chance}% boss reward chance.` };
+    candidates.push({ type: "dungeon", typeLabel: "Dungeon", title: dungeon.dungeonName, destination, availability: workingTowardDestinationAvailability(state, destination), typePriority: 3, progressionLevel: dungeon.minLevel });
+  }
+  return candidates.sort((a, b) => sourceStatusPriority[a.availability.status] - sourceStatusPriority[b.availability.status] || a.typePriority - b.typePriority || a.progressionLevel - b.progressionLevel || a.destination.button.localeCompare(b.destination.button)).map(({ typePriority, ...row }) => row);
+}
+
+// apps/mobile/src/core/material-acquisition-plan.ts
+function stockLedger(state) {
+  const ledger = /* @__PURE__ */ new Map();
+  for (const stack of [...state.inventory.stacks, ...state.bank.stacks]) {
+    ledger.set(stack.itemId, (ledger.get(stack.itemId) ?? 0) + stack.quantity);
+  }
+  return ledger;
+}
+function consumeOwned(ledger, itemId, quantity4) {
+  const have = Math.max(0, ledger.get(itemId) ?? 0), used = Math.min(have, Math.max(0, quantity4));
+  ledger.set(itemId, have - used);
+  return used;
+}
+function addOwned(ledger, itemId, quantity4) {
+  if (quantity4 <= 0) return;
+  ledger.set(itemId, (ledger.get(itemId) ?? 0) + quantity4);
+}
+function recipeForDestination(itemId, destination) {
+  if (destination.kind !== "skills" || !destination.recipeId) return void 0;
+  return RECIPES.find((recipe2) => recipe2.id === destination.recipeId && recipe2.output.itemId === itemId);
+}
+function outputForBatches(state, recipe2, batches) {
+  const output = itemDef(recipe2.output.itemId), eligible = output.type !== "gear" && output.type !== "tool";
+  const mastery = professionMasteryMultipliers(recipe2.id, state.account.professionMasteryByAction?.[recipe2.id]);
+  const processing = isTimedProcessingRecipe(recipe2.id);
+  const remainderKey = `mastery:${processing ? "processing" : "craft"}:${recipe2.id}:yield`;
+  const remainder = Math.max(0, state.rewardRemainders?.[remainderKey] ?? 0);
+  return eligible ? Math.floor(batches * recipe2.output.quantity * mastery.yield + remainder + 1e-10) : batches * recipe2.output.quantity;
+}
+function batchesForQuantity(state, recipe2, quantity4) {
+  const target2 = Math.max(1, Math.ceil(quantity4));
+  const mastery = professionMasteryMultipliers(recipe2.id, state.account.professionMasteryByAction?.[recipe2.id]);
+  const approximate = Math.max(1, Math.ceil(target2 / Math.max(1e-4, recipe2.output.quantity * mastery.yield)));
+  let batches = approximate;
+  while (outputForBatches(state, recipe2, batches) < target2 && batches < 1e4) batches++;
+  return batches;
+}
+function craftSeconds(state, recipe2, batches) {
+  if (!isTimedProcessingRecipe(recipe2.id)) return 0;
+  const mastery = professionMasteryMultipliers(recipe2.id, state.account.professionMasteryByAction?.[recipe2.id]);
+  return professionActionPace(state, recipe2, "batch").cycleSeconds * batches;
+}
+function ownedPlan(itemId, requested, ownedUsed) {
+  return {
+    itemId,
+    name: itemDef(itemId).name,
+    requested,
+    ownedUsed,
+    remaining: 0,
+    sourceTypeLabel: "Owned",
+    sourceTitle: "Inventory & Bank",
+    complete: true,
+    etaSeconds: 0,
+    knownEtaSeconds: 0,
+    totalGold: 0,
+    goldShortfall: 0,
+    craftSteps: 0,
+    depth: 0,
+    children: [],
+    leafNeeds: [],
+    blockedReasons: []
+  };
+}
+function unknownPlan(itemId, requested, ownedUsed, remaining, reason) {
+  return {
+    itemId,
+    name: itemDef(itemId).name,
+    requested,
+    ownedUsed,
+    remaining,
+    sourceTypeLabel: "Unknown",
+    sourceTitle: "No modeled source",
+    complete: false,
+    knownEtaSeconds: 0,
+    totalGold: 0,
+    goldShortfall: 0,
+    craftSteps: 0,
+    depth: 0,
+    children: [],
+    leafNeeds: [],
+    blockedReasons: [reason]
+  };
+}
+function planInternal(state, itemId, requested, preferredDestination, ledger, consumeStock, visitedRecipes) {
+  const target2 = Math.max(0, requested), ownedUsed = consumeStock ? consumeOwned(ledger, itemId, target2) : 0, remaining = Math.max(0, target2 - ownedUsed);
+  if (remaining <= 0) return ownedPlan(itemId, target2, ownedUsed);
+  const entries = workingTowardItemSourceEntries(state, itemId);
+  const entry2 = preferredDestination ? entries.find((row) => row.destination.kind === preferredDestination.kind && (row.destination.kind === "skills" && preferredDestination.kind === "skills" ? row.destination.recipeId === preferredDestination.recipeId && row.destination.actionId === preferredDestination.actionId : row.destination.kind === "combat" && preferredDestination.kind === "combat" ? row.destination.monsterId === preferredDestination.monsterId : row.destination.kind === "dungeon" && preferredDestination.kind === "dungeon" ? row.destination.dungeonId === preferredDestination.dungeonId : true)) : entries[0];
+  const destination = preferredDestination ?? entry2?.destination;
+  if (!destination) return unknownPlan(itemId, target2, ownedUsed, remaining, "No direct or craftable source is currently modeled.");
+  const availability = entry2?.availability ?? workingTowardDestinationAvailability(state, destination);
+  const sourceTypeLabel = entry2?.typeLabel ?? (destination.kind === "combat" ? "Monster Drop" : destination.kind === "dungeon" ? "Dungeon" : destination.kind === "skills" && destination.recipeId ? "Crafting" : destination.kind === "skills" ? "Gathering" : "Source");
+  const sourceTitle = entry2?.title ?? destination.button;
+  const recipe2 = recipeForDestination(itemId, destination);
+  if (!recipe2) {
+    const projection2 = acquisitionProjectionForDestination(state, itemId, remaining, destination);
+    const navigable = availability.status !== "locked" && availability.status !== "info";
+    const complete2 = Boolean(projection2) && navigable;
+    const etaSeconds = complete2 ? projection2.etaSeconds : void 0;
+    const blockedReasons2 = [
+      ...!projection2 ? ["This source does not have a trustworthy acquisition-rate model yet."] : [],
+      ...!navigable ? [availability.detail] : []
+    ];
+    const leaf = {
+      itemId,
+      name: itemDef(itemId).name,
+      quantity: remaining,
+      sourceTypeLabel,
+      sourceTitle,
+      destination,
+      availability,
+      ...projection2 ? { etaSeconds: projection2.etaSeconds } : {}
+    };
+    return {
+      itemId,
+      name: itemDef(itemId).name,
+      requested: target2,
+      ownedUsed,
+      remaining,
+      sourceTypeLabel,
+      sourceTitle,
+      destination,
+      availability,
+      complete: complete2,
+      etaSeconds,
+      knownEtaSeconds: projection2?.etaSeconds ?? 0,
+      totalGold: 0,
+      goldShortfall: 0,
+      craftSteps: 0,
+      depth: 0,
+      children: [],
+      leafNeeds: [leaf],
+      blockedReasons: blockedReasons2
+    };
+  }
+  if (visitedRecipes.has(recipe2.id)) {
+    return {
+      ...unknownPlan(itemId, target2, ownedUsed, remaining, `Recipe loop detected at ${recipe2.name}.`),
+      sourceTypeLabel: "Crafting",
+      sourceTitle: recipe2.name,
+      destination,
+      availability
+    };
+  }
+  const nextVisited = new Set(visitedRecipes);
+  nextVisited.add(recipe2.id);
+  const batches = batchesForQuantity(state, recipe2, remaining), produced = outputForBatches(state, recipe2, batches), excess = Math.max(0, produced - remaining);
+  const knowledgeLearned = !recipe2.requiredKnowledgeId || (state.account.unlockedKnowledgeIds ?? []).includes(recipe2.requiredKnowledgeId);
+  const knowledgeChildren = !knowledgeLearned && recipe2.knowledgeItemId ? [planInternal(state, recipe2.knowledgeItemId, 1, void 0, ledger, true, nextVisited)] : [];
+  const children = [...knowledgeChildren, ...recipe2.inputs.map((input) => planInternal(state, input.itemId, input.quantity * batches, void 0, ledger, true, nextVisited))];
+  addOwned(ledger, itemId, excess);
+  const ownCraftSeconds = craftSeconds(state, recipe2, batches), knownEtaSeconds = ownCraftSeconds + children.reduce((sum, child) => sum + child.knownEtaSeconds, 0);
+  const totalGold = recipe2.gold * batches + children.reduce((sum, child) => sum + child.totalGold, 0);
+  const recipeUnlocked = availability.status !== "locked" && availability.status !== "info";
+  const prerequisiteReady = !recipe2.requiresCraftedItemId || !!state.character?.craftedNoviceItemIds?.includes(recipe2.requiresCraftedItemId);
+  const childrenComplete = children.every((child) => child.complete);
+  const complete = recipeUnlocked && prerequisiteReady && childrenComplete;
+  const blockedReasons = [
+    ...!recipeUnlocked ? [availability.detail] : [],
+    ...!prerequisiteReady ? [`Craft ${itemDef(recipe2.requiresCraftedItemId).name} first.`] : [],
+    ...children.flatMap((child) => child.blockedReasons)
+  ];
+  const depth = 1 + Math.max(0, ...children.map((child) => child.depth)), craftSteps = 1 + children.reduce((sum, child) => sum + child.craftSteps, 0);
+  return {
+    itemId,
+    name: itemDef(itemId).name,
+    requested: target2,
+    ownedUsed,
+    remaining,
+    sourceTypeLabel: "Crafting",
+    sourceTitle: recipe2.name,
+    destination,
+    availability,
+    complete,
+    etaSeconds: complete ? knownEtaSeconds : void 0,
+    knownEtaSeconds,
+    totalGold,
+    goldShortfall: 0,
+    craft: { recipeId: recipe2.id, recipeName: recipe2.name, batches, outputPerBatch: recipe2.output.quantity, produced, excess, craftSeconds: ownCraftSeconds, gold: recipe2.gold * batches },
+    craftSteps,
+    depth,
+    children,
+    leafNeeds: children.flatMap((child) => child.leafNeeds),
+    blockedReasons
+  };
+}
+function stepState(availability, after = false) {
+  if (!availability) return { state: "info", stateLabel: "INFO" };
+  if (availability.status === "locked") return { state: "locked", stateLabel: "LOCKED" };
+  if (availability.status === "info") return { state: "info", stateLabel: "INFO" };
+  if (after) return { state: "after", stateLabel: "AFTER" };
+  if (availability.status === "travel") return { state: "travel", stateLabel: "TRAVEL" };
+  return { state: "ready", stateLabel: "READY" };
+}
+function directStepKind(plan) {
+  if (plan.destination?.kind === "combat") return "monster_drop";
+  if (plan.destination?.kind === "dungeon") return "dungeon";
+  if (plan.destination?.kind === "skills" && plan.destination.mode === "gathering") return "gathering";
+  return "info";
+}
+function directStepLabel(plan) {
+  const quantity4 = Math.ceil(plan.remaining);
+  if (plan.sourceTypeLabel === "Gathering") return `Gather ${quantity4}\xD7 ${plan.name}`;
+  if (plan.sourceTypeLabel === "Monster Drop") return `Hunt for ${quantity4}\xD7 ${plan.name}`;
+  if (plan.sourceTypeLabel === "Dungeon") return `Run for ${quantity4}\xD7 ${plan.name}`;
+  return `Acquire ${quantity4}\xD7 ${plan.name}`;
+}
+function planPreparationSteps(plan, path) {
+  if (plan.remaining <= 0) return [];
+  const children = plan.children.flatMap((child, index) => planPreparationSteps(child, `${path}.${index}`));
+  if (plan.craft) {
+    const timing = plan.craft.craftSeconds > 0 ? ` \xB7 ${formatBalanceDuration(plan.craft.craftSeconds)}` : "";
+    const state = stepState(plan.availability, children.length > 0);
+    return [...children, {
+      id: `${path}:craft:${plan.craft.recipeId}`,
+      kind: "crafting",
+      ...state,
+      label: `${plan.craft.recipeName} \xD7${plan.craft.batches}`,
+      detail: `Produces ${plan.craft.produced}\xD7 ${plan.name} \xB7 ${plan.craft.gold.toLocaleString()} Gold${timing}`,
+      destination: plan.destination,
+      availability: plan.availability,
+      ...plan.craft.craftSeconds > 0 ? { etaSeconds: plan.craft.craftSeconds } : {}
+    }];
+  }
+  if (plan.destination) {
+    const state = stepState(plan.availability), eta = plan.knownEtaSeconds > 0 ? ` \xB7 ~${formatBalanceDuration(plan.knownEtaSeconds)}` : "";
+    return [{
+      id: `${path}:source:${plan.itemId}`,
+      kind: directStepKind(plan),
+      ...state,
+      label: directStepLabel(plan),
+      detail: `${plan.sourceTitle}${eta}`,
+      destination: plan.destination,
+      availability: plan.availability,
+      ...plan.knownEtaSeconds > 0 ? { etaSeconds: plan.knownEtaSeconds } : {}
+    }];
+  }
+  return [{
+    id: `${path}:info:${plan.itemId}`,
+    kind: "info",
+    state: "info",
+    stateLabel: "INFO",
+    label: `Resolve ${Math.ceil(plan.remaining)}\xD7 ${plan.name}`,
+    detail: plan.blockedReasons[0] ?? "No actionable source is currently modeled."
+  }];
+}
+function finalRecipeSeconds(state, recipe2, batches) {
+  const mastery = professionMasteryMultipliers(recipe2.id, state.account.professionMasteryByAction?.[recipe2.id]);
+  if (recipe2.skillId === "alchemy" || isTimedProcessingRecipe(recipe2.id)) return professionActionPace(state, recipe2, "batch").cycleSeconds * batches;
+  const output = itemDef(recipe2.output.itemId);
+  if (output.type === "gear" && !recipe2.noviceSetId) {
+    return professionActionPace(state, recipe2, "forge").cycleSeconds * batches;
+  }
+  return 0;
+}
+function recipeDestination(recipe2) {
+  return { kind: "skills", skillId: recipe2.skillId, mode: "crafting", recipeId: recipe2.id, button: `Open ${recipe2.name}`, detail: `Open ${recipe2.name}.` };
+}
+function representativePlanChain(plan) {
+  if (plan.remaining <= 0) return { labels: [], depth: 0, knownEtaSeconds: 0 };
+  if (!plan.craft) return { labels: [plan.name], depth: 1, knownEtaSeconds: plan.knownEtaSeconds };
+  const children = plan.children.map(representativePlanChain).filter((chain) => chain.labels.length).sort((a, b) => b.depth - a.depth || b.knownEtaSeconds - a.knownEtaSeconds);
+  const child = children[0];
+  return { labels: [...child?.labels ?? [], plan.name], depth: (child?.depth ?? 0) + 1, knownEtaSeconds: plan.knownEtaSeconds };
+}
+function preparationChainLabel(plans, finalOutputName) {
+  const active2 = plans.filter((plan) => plan.remaining > 0), chains = active2.map(representativePlanChain).filter((chain) => chain.labels.length).sort((a, b) => b.depth - a.depth || b.knownEtaSeconds - a.knownEtaSeconds);
+  const labels2 = [...chains[0]?.labels ?? [], finalOutputName].filter((label, index, array) => index === 0 || label !== array[index - 1]);
+  const extra = Math.max(0, active2.length - 1), suffix = extra > 0 ? ` (+${extra} other input${extra === 1 ? "" : "s"})` : "";
+  return labels2.join(" \u2192 ") + suffix;
+}
+function preparationBottleneck(steps) {
+  const blocked = steps.find((step2) => step2.state === "locked" || step2.state === "info");
+  const timed = [...steps].filter((step2) => (step2.etaSeconds ?? 0) > 0).sort((a, b) => (b.etaSeconds ?? 0) - (a.etaSeconds ?? 0));
+  const step = blocked ?? timed[0] ?? steps[0];
+  if (!step) return void 0;
+  return { stepId: step.id, label: step.label, state: step.state, stateLabel: step.stateLabel, ...step.etaSeconds !== void 0 ? { etaSeconds: step.etaSeconds } : {} };
+}
+function reservedItemsFromPlans(plans) {
+  const rows2 = /* @__PURE__ */ new Map();
+  const visit = (plan) => {
+    if (plan.ownedUsed > 0) {
+      const existing = rows2.get(plan.itemId);
+      rows2.set(plan.itemId, { itemId: plan.itemId, name: plan.name, quantity: (existing?.quantity ?? 0) + plan.ownedUsed });
+    }
+    for (const child of plan.children) visit(child);
+  };
+  for (const plan of plans) visit(plan);
+  return [...rows2.values()].sort((a, b) => b.quantity - a.quantity || a.name.localeCompare(b.name));
+}
+function recipePreparationRoute(state, recipe2, batches = 1) {
+  const count = Math.max(1, Math.floor(batches)), ledger = stockLedger(state), plans = [];
+  if (recipe2.requiresCraftedItemId && !state.character?.craftedNoviceItemIds?.includes(recipe2.requiresCraftedItemId)) {
+    const prerequisiteSource = workingTowardItemSourceEntries(state, recipe2.requiresCraftedItemId).find((source) => source.type === "crafting");
+    plans.push(prerequisiteSource ? planInternal(state, recipe2.requiresCraftedItemId, 1, prerequisiteSource.destination, ledger, false, /* @__PURE__ */ new Set()) : unknownPlan(recipe2.requiresCraftedItemId, 1, 0, 1, `Craft ${itemDef(recipe2.requiresCraftedItemId).name} first.`));
+  }
+  const knowledgeLearned = !recipe2.requiredKnowledgeId || (state.account.unlockedKnowledgeIds ?? []).includes(recipe2.requiredKnowledgeId);
+  if (!knowledgeLearned && recipe2.knowledgeItemId) plans.push(planInternal(state, recipe2.knowledgeItemId, 1, void 0, ledger, true, /* @__PURE__ */ new Set()));
+  for (const input of recipe2.inputs) plans.push(planInternal(state, input.itemId, input.quantity * count, void 0, ledger, true, /* @__PURE__ */ new Set()));
+  const preparationSteps = plans.flatMap((plan, index) => planPreparationSteps(plan, `input:${index}`)), reservedItems = reservedItemsFromPlans(plans);
+  const destination = recipeDestination(recipe2), availability = workingTowardDestinationAvailability(state, destination), finalSeconds = finalRecipeSeconds(state, recipe2, count);
+  const finalOutputName = itemDef(recipe2.output.itemId).name, chainLabel = preparationChainLabel(plans, finalOutputName);
+  const totalGold = recipe2.gold * count + plans.reduce((sum, plan) => sum + plan.totalGold, 0), goldShortfall = Math.max(0, totalGold - (state.character?.gold ?? 0));
+  const finalUnlocked = availability.status !== "locked" && availability.status !== "info", plansComplete = plans.every((plan) => plan.complete);
+  const complete = finalUnlocked && plansComplete && goldShortfall === 0;
+  const knownPreparationEtaSeconds = plans.reduce((sum, plan) => sum + plan.knownEtaSeconds, 0), preparationEtaSeconds = plansComplete ? knownPreparationEtaSeconds : void 0;
+  const knownEtaSeconds = finalSeconds + knownPreparationEtaSeconds, bottleneck = preparationBottleneck(preparationSteps);
+  const blockers = [
+    ...plans.flatMap((plan) => plan.blockedReasons),
+    ...!finalUnlocked ? [availability.detail] : [],
+    ...goldShortfall > 0 ? [`Need ${goldShortfall.toLocaleString()} more Gold for the full route.`] : []
+  ];
+  const finalState = availability.status === "locked" || availability.status === "info" ? stepState(availability) : preparationSteps.length ? { state: "final", stateLabel: "FINAL" } : stepState(availability);
+  const finalTiming = finalSeconds > 0 ? ` \xB7 ${formatBalanceDuration(finalSeconds)}` : "";
+  const finalStep = {
+    id: `final:${recipe2.id}`,
+    kind: "final_craft",
+    ...finalState,
+    label: `${recipe2.name}${count > 1 ? ` \xD7${count}` : ""}`,
+    detail: `Produces ${recipe2.output.quantity * count}\xD7 ${itemDef(recipe2.output.itemId).name} \xB7 ${(recipe2.gold * count).toLocaleString()} Gold${finalTiming}`,
+    destination,
+    availability,
+    ...finalSeconds > 0 ? { etaSeconds: finalSeconds } : {}
+  };
+  return {
+    recipeId: recipe2.id,
+    steps: [...preparationSteps, finalStep],
+    acquisitionSteps: preparationSteps.filter((step) => step.kind === "gathering" || step.kind === "monster_drop" || step.kind === "dungeon").length,
+    craftSteps: preparationSteps.filter((step) => step.kind === "crafting").length + 1,
+    chainLabel,
+    totalGold,
+    goldShortfall,
+    knownPreparationEtaSeconds,
+    ...preparationEtaSeconds !== void 0 ? { preparationEtaSeconds } : {},
+    knownEtaSeconds,
+    ...complete ? { etaSeconds: knownEtaSeconds } : {},
+    ...bottleneck ? { bottleneck } : {},
+    reservedItems,
+    complete,
+    blockedReasons: [...new Set(blockers)]
+  };
+}
+
+// apps/mobile/src/core/working-toward-inventory.ts
+function addProtection(rows2, itemId, goalId, goalTitle, quantity4, kind) {
+  const current = rows2.get(itemId) ?? { itemId, goalIds: [], goalTitles: [], reservedQuantity: 0, kinds: [] };
+  if (!current.goalIds.includes(goalId)) current.goalIds.push(goalId);
+  if (!current.goalTitles.includes(goalTitle)) current.goalTitles.push(goalTitle);
+  if (!current.kinds.includes(kind)) current.kinds.push(kind);
+  current.reservedQuantity += Math.max(0, quantity4);
+  rows2.set(itemId, current);
+}
+function workingTowardInventoryProtections(state) {
+  const rows2 = /* @__PURE__ */ new Map();
+  for (const goal of state.character?.progressionGoals ?? []) {
+    if (goal.kind === "item_quantity") {
+      addProtection(rows2, goal.itemId, goal.id, goal.title, goal.targetQuantity, "item_goal");
+      continue;
+    }
+    if (goal.kind !== "recipe_preparation") continue;
+    const recipe2 = RECIPES.find((row) => row.id === goal.recipeId);
+    if (!recipe2) continue;
+    const route = recipePreparationRoute(state, recipe2, goal.batches);
+    for (const reserved of route.reservedItems) addProtection(rows2, reserved.itemId, goal.id, goal.title, reserved.quantity, "preparation_input");
+    addProtection(rows2, goal.outputItemId, goal.id, goal.title, goal.targetOutputQuantity, "preparation_output");
+  }
+  return [...rows2.values()].sort((a, b) => a.itemId.localeCompare(b.itemId));
+}
+function workingTowardInventoryProtectionMap(state) {
+  return new Map(workingTowardInventoryProtections(state).map((row) => [row.itemId, row]));
+}
+
+// apps/mobile/src/core/inventory-bulk.ts
 function uniqueIds(itemIds2) {
   return [...new Set(itemIds2.filter(Boolean))].slice(0, 100);
 }
@@ -76577,24 +78151,26 @@ function selectedStacks(state, itemIds2, location) {
   const ids2 = new Set(uniqueIds(itemIds2));
   return state[location].stacks.filter((stack) => stack.quantity > 0 && ids2.has(stack.itemId));
 }
-function protectedFromDisposal(state, itemId) {
+function protectedFromDisposal(state, itemId, goalProtectedIds) {
   const item = itemDef(itemId);
-  return !!state.settings.favoriteItemIds?.includes(itemId) || item.type === "gear" && hasEnhancement(state, itemId);
+  return goalProtectedIds.has(itemId) || !!state.settings.favoriteItemIds?.includes(itemId) || item.type === "gear" && hasEnhancement(state, itemId);
 }
 function bulkSelectionSummary(state, itemIds2, location) {
-  const stacks = selectedStacks(state, itemIds2, location), autoEatId = state.character?.equippedFoodId;
+  const stacks = selectedStacks(state, itemIds2, location), autoEatId = state.character?.equippedFoodId, goalProtection = workingTowardInventoryProtectionMap(state), goalProtectedIds = new Set(goalProtection.keys());
+  const goalProtected = stacks.filter((stack) => goalProtectedIds.has(stack.itemId));
   const transferable = stacks.filter((stack) => location === "bank" || stack.itemId !== autoEatId);
   const sellable = location === "inventory" ? stacks.filter((stack) => {
     const item = itemDef(stack.itemId);
-    return stack.itemId !== autoEatId && stack.itemId !== HOLY_WATER_ID && item.value > 0 && !protectedFromDisposal(state, stack.itemId);
+    return stack.itemId !== autoEatId && stack.itemId !== HOLY_WATER_ID && item.value > 0 && !protectedFromDisposal(state, stack.itemId, goalProtectedIds);
   }) : [];
   const salvageable = location === "inventory" ? stacks.filter((stack) => {
     const item = itemDef(stack.itemId);
-    return item.type === "gear" && !!item.salvage && !protectedFromDisposal(state, stack.itemId);
+    return item.type === "gear" && !!item.salvage && !protectedFromDisposal(state, stack.itemId, goalProtectedIds);
   }) : [];
   return {
     selectedStackCount: stacks.length,
     selectedUnitCount: stacks.reduce((sum, stack) => sum + stack.quantity, 0),
+    goalProtectedCount: goalProtected.length,
     transferableIds: transferable.map((stack) => stack.itemId),
     transferableStackCount: transferable.length,
     transferableUnitCount: transferable.reduce((sum, stack) => sum + stack.quantity, 0),
@@ -76624,7 +78200,7 @@ function bulkTransferSelected(state, itemIds2, from) {
 }
 function bulkSellSelected(state, itemIds2) {
   const summary = bulkSelectionSummary(state, itemIds2, "inventory");
-  if (!summary.sellableIds.length) throw new Error("No selected items can be sold. Favorites, enhanced gear, auto-eat food, Holy Water and zero-value items stay protected.");
+  if (!summary.sellableIds.length) throw new Error("No selected items can be sold. Working Toward items, favorites, enhanced gear, auto-eat food, Holy Water and zero-value items stay protected.");
   let next = state;
   for (const itemId of summary.sellableIds) {
     const quantity4 = next.inventory.stacks.find((stack) => stack.itemId === itemId)?.quantity ?? 0;
@@ -76634,7 +78210,7 @@ function bulkSellSelected(state, itemIds2) {
 }
 function bulkSalvageSelected(state, itemIds2) {
   const summary = bulkSelectionSummary(state, itemIds2, "inventory");
-  if (!summary.salvageableIds.length) throw new Error("No selected equipment can be salvaged. Favorites and enhanced gear stay protected.");
+  if (!summary.salvageableIds.length) throw new Error("No selected equipment can be salvaged. Working Toward items, favorites and enhanced gear stay protected.");
   let next = state;
   for (const itemId of summary.salvageableIds) {
     const quantity4 = next.inventory.stacks.find((stack) => stack.itemId === itemId)?.quantity ?? 0;
@@ -76643,7 +78219,7 @@ function bulkSalvageSelected(state, itemIds2) {
   return next;
 }
 
-// ../apps/mobile/src/features/chat-pilot/data/emotes.json
+// apps/mobile/src/features/chat-pilot/data/emotes.json
 var emotes_default = [
   {
     id: "male_01",
@@ -77479,7 +79055,7 @@ var emotes_default = [
   }
 ];
 
-// ../apps/mobile/src/core/chat-emotes.ts
+// apps/mobile/src/core/chat-emotes.ts
 var CHAT_EMOTE_TRAY_SIZE = 8;
 var rows = emotes_default;
 var catalog = new Map(rows.map((row) => [row.id, row]));
@@ -77489,7 +79065,7 @@ function normalizeChatEmoteTrayIds(value) {
   return [...new Set(value.filter((id) => typeof id === "string" && known.has(id)))].slice(0, CHAT_EMOTE_TRAY_SIZE);
 }
 
-// ../apps/mobile/src/core/equipment-crafting-prerequisites.ts
+// apps/mobile/src/core/equipment-crafting-prerequisites.ts
 function quantity3(state, itemId) {
   return (state.inventory.stacks.find((row) => row.itemId === itemId)?.quantity ?? 0) + (state.bank.stacks.find((row) => row.itemId === itemId)?.quantity ?? 0);
 }
@@ -77533,7 +79109,7 @@ function craftEquipmentPrerequisites(state, equipmentRecipeId, nowMs) {
   return { state: next, equipmentRecipeId, crafted: [...craftedByRecipe.values()] };
 }
 
-// ../apps/mobile/src/dev/debug-tools.ts
+// apps/mobile/src/dev/debug-tools.ts
 init_progression();
 function requireCharacter(state) {
   if (!state.character) throw new Error("Debug action requires a character");
@@ -77606,7 +79182,7 @@ function debugPrepareFullQaSandbox(state) {
   return next;
 }
 
-// ../apps/mobile/src/dev/admin-qa-profile.ts
+// apps/mobile/src/dev/admin-qa-profile.ts
 function freshQaCharacter(classId, bodyPresentation, nowMs) {
   return createCharacter(newGame(nowMs), classId, "Veldryn Admin", bodyPresentation);
 }
@@ -77621,21 +79197,104 @@ function refillAdminQaResources(state) {
   return debugPrepareFullQaSandbox(state);
 }
 
-// ../apps/mobile/src/core/game-commands.ts
+// apps/mobile/src/core/skill-progression-navigation.ts
+var gatheringDefs = [...GATHERING, ...HERB_NODES];
+
+// apps/mobile/src/core/working-toward-execution.ts
+var gatherDefs2 = [...GATHERING, ...HERB_NODES];
+function workingTowardGeneratedRuleId(goalId) {
+  return ("goal-rule:" + goalId).slice(0, 80);
+}
+function stopCondition(goal) {
+  const id = ("goal-stop:" + goal.id).slice(0, 80);
+  if (goal.kind === "item_quantity") return { id, kind: "item_quantity", targetId: goal.itemId, value: goal.targetQuantity, enabled: true };
+  if (goal.kind === "skill_level") return { id, kind: "skill_level", targetId: goal.skillId, value: goal.targetLevel, enabled: true };
+  if (goal.kind === "monster_kills") return { id, kind: "monster_kills", targetId: goal.monsterId, value: goal.targetKills, enabled: true };
+  if (goal.kind === "weekly_order") return { id, kind: "weekly_order_progress", targetId: goal.orderId, value: goal.targetProgress, enabled: true };
+  return void 0;
+}
+function workingTowardStopRule(goal, characterId) {
+  const condition = stopCondition(goal);
+  if (!condition) return void 0;
+  return {
+    id: workingTowardGeneratedRuleId(goal.id),
+    characterId,
+    name: ("Goal \xB7 " + goal.title).slice(0, 40),
+    conditions: [condition],
+    stopIfOutOfFood: true,
+    stopIfRewardsWouldOverflow: true,
+    finishCurrentCycle: true
+  };
+}
+function reconcileWorkingTowardGeneratedRules(state) {
+  if (!state.character) return state;
+  const valid = new Set((state.character.progressionGoals ?? []).map((goal) => workingTowardStopRule(goal, state.character.id)?.id).filter((id) => !!id));
+  const rules = state.character.idleRulesV40 ?? [];
+  const nextRules = rules.filter((rule) => !rule.id.startsWith("goal-rule:") || valid.has(rule.id));
+  if (nextRules.length === rules.length) return state;
+  const active2 = state.character.activeIdleRuleIdV40, activeIdleRuleIdV40 = active2 && nextRules.some((rule) => rule.id === active2) ? active2 : void 0;
+  return { ...state, character: { ...state.character, idleRulesV40: nextRules, activeIdleRuleIdV40 } };
+}
+
+// apps/mobile/src/core/companion-housing.ts
+var COMPANION_HOUSING_UPGRADES = [
+  { tier: 1, gold: 12e3, inputs: [{ itemId: "IRONWOOD_LOG", quantity: 80 }, { itemId: "ASTER_IRON_INGOT", quantity: 30 }, { itemId: "REINFORCED_FITTING", quantity: 8 }] },
+  { tier: 2, gold: 45e3, inputs: [{ itemId: "CROWNWOOD_LOG", quantity: 120 }, { itemId: "OATHSTONE_INGOT", quantity: 45 }, { itemId: "REINFORCED_FITTING", quantity: 16 }, { itemId: "OATHGLASS_SHARD", quantity: 10 }] },
+  { tier: 3, gold: 14e4, inputs: [{ itemId: "WHITEPINE_LOG", quantity: 150 }, { itemId: "FROSTIRON_INGOT", quantity: 60 }, { itemId: "RIMEGLASS", quantity: 18 }, { itemId: "CHOIR_BLOOM", quantity: 6 }] }
+];
+function companionHousingTier(companionId, tiers) {
+  return Math.max(0, Math.min(3, Math.floor(tiers?.[companionId] ?? 0)));
+}
+function qty3(stacks, id) {
+  return stacks.find((s) => s.itemId === id)?.quantity ?? 0;
+}
+function companionHousingUpgradeCost(companionId, tiers) {
+  const next = companionHousingTier(companionId, tiers) + 1;
+  return COMPANION_HOUSING_UPGRADES.find((row) => row.tier === next);
+}
+function companionHousingUpgradeAffordability(state, companionId) {
+  const cost = companionHousingUpgradeCost(companionId, state.account.companionHousingTiers);
+  if (!cost) return { ready: false, cost: void 0, materials: [] };
+  const all = [...state.inventory.stacks, ...state.bank.stacks], materials = cost.inputs.map((input) => ({ ...input, owned: qty3(all, input.itemId) }));
+  return { ready: (state.character?.gold ?? 0) >= cost.gold && materials.every((x) => x.owned >= x.quantity), cost, materials };
+}
+function upgradeCompanionHousing(state, companionId) {
+  if (!state.character) throw new Error("character_required");
+  const check = companionHousingUpgradeAffordability(state, companionId);
+  if (!check.cost) throw new Error("companion_housing_max");
+  if (!check.ready) throw new Error("companion_housing_resources");
+  const spend2 = (stacks, id, amount) => stacks.map((s) => s.itemId === id ? { ...s, quantity: s.quantity - amount } : s).filter((s) => s.quantity > 0);
+  let inventory = state.inventory.stacks.map((x) => ({ ...x })), bank = state.bank.stacks.map((x) => ({ ...x }));
+  for (const input of check.cost.inputs) {
+    let remaining = input.quantity, have = qty3(inventory, input.itemId), take4 = Math.min(have, remaining);
+    if (take4) {
+      inventory = spend2(inventory, input.itemId, take4);
+      remaining -= take4;
+    }
+    if (remaining) bank = spend2(bank, input.itemId, remaining);
+  }
+  const tier = companionHousingTier(companionId, state.account.companionHousingTiers) + 1;
+  return { ...state, character: { ...state.character, gold: state.character.gold - check.cost.gold }, inventory: { ...state.inventory, stacks: inventory }, bank: { ...state.bank, stacks: bank }, account: { ...state.account, companionHousingTiers: { ...state.account.companionHousingTiers ?? {}, [companionId]: tier } } };
+}
+
+// apps/mobile/src/core/game-commands.ts
 var fields = {
   class_training: [],
   class_focus: ["focus"],
+  herbalism_method: ["method"],
   faith_practice: ["tierId", "count"],
   faith_blessing: ["id"],
   faith_favorite: ["id", "enabled"],
   faith_hide: ["enabled"],
   alchemy_start: ["id", "batches"],
+  processing_start: ["id", "batches"],
   companion_monthly: ["id"],
   companion_supplies: [],
   companion_bond_reward: ["id", "level"],
   companion_boss_rematch: [],
   companion_equip: ["id"],
   companion_unequip: [],
+  companion_housing_upgrade: ["id"],
   companion_level: ["id"],
   companion_ascend: ["id"],
   companion_master: ["id"],
@@ -77645,7 +79304,7 @@ var fields = {
   companion_trial_start: ["ids", "floor"],
   companion_trial_floor: ["id", "floor"],
   companion_trial_abandon: ["id"],
-  companion_assignment_start: ["id", "ids"],
+  companion_assignment_start: ["id", "ids", "food"],
   companion_assignment_claim: ["id"],
   companion_technique: ["id", "technique"],
   companion_codex: ["id"],
@@ -77696,12 +79355,15 @@ var fields = {
   replace_socket: ["id", "gemId"],
   unsocket: ["id", "index"],
   gem_combine: ["familyId", "grade"],
+  gem_refine: ["familyId", "grade"],
+  gem_research: ["familyId"],
   gem_dismantle: ["gemId", "quantity"],
   resonance_cache_claim: ["familyId"],
   skin: ["id"],
   loadout_save: ["index", "name"],
   loadout_apply: ["id"],
   loadout_delete: ["id"],
+  arena_slot: ["index", "characterId"],
   goals_set: ["goals"],
   idle_rules_set: ["rules", "activeId"],
   daily_supplies_claim: ["characterId"],
@@ -77810,7 +79472,7 @@ function validateGameSettings(value) {
 }
 function executeGameCommand(previous, value, now, options = {}) {
   const command = validateGameCommand(value), a = command.args ?? {}, activity = previous.activity, contributions = [];
-  let state = structuredClone(previous), reward2, message, won, upgrade, forgeResults;
+  let state = structuredClone(previous), reward2, message, won, storyBossBattle, upgrade, forgeResults;
   if (!Number.isSafeInteger(now) || now < previous.createdAtMs) throw new Error("invalid_server_clock");
   const credit = (source, earned) => {
     if (!source || earned.kills <= 0) return;
@@ -77826,6 +79488,11 @@ function executeGameCommand(previous, value, now, options = {}) {
   const settlementFreeCommand = command.type === "queue_add" || command.type === "queue_remove" || command.type === "queue_move" || command.type === "queue_clear" || command.type === "queue_start" || command.type === "daily_supplies_claim" || command.type === "roster_delete" || command.type.startsWith("qa_");
   if (state.character && command.type !== "create" && !settlementFreeCommand) settle();
   state = refreshCompanions(state, now);
+  if (command.type.startsWith("companion_") && !earlyFeatureUnlocked(state, "companions")) throw new Error("companion_system_locked");
+  if ((command.type === "daily_supplies_claim" || command.type === "daily_supplies_activate") && !earlyFeatureUnlocked(state, "dailySupplies")) throw new Error("daily_supplies_locked");
+  if ((command.type === "goals_set" || command.type === "idle_rules_set") && !earlyFeatureUnlocked(state, "workingToward")) throw new Error("working_toward_locked");
+  if (command.type === "seasonal" && !earlyFeatureUnlocked(state, "contracts")) throw new Error("contract_board_locked");
+  if (command.type.startsWith("event_") && !earlyFeatureUnlocked(state, "events")) throw new Error("events_locked");
   const companionMetricBefore = command.type.startsWith("companion_") ? companionCommandEconomySnapshot(state) : void 0;
   if (["companion_equip", "companion_level", "companion_ascend", "companion_master"].includes(command.type)) assertCompanionIdle(state, text(a, "id"));
   switch (command.type) {
@@ -77850,6 +79517,16 @@ function executeGameCommand(previous, value, now, options = {}) {
     case "class_training":
       state = startClassTraining(state, now);
       break;
+    case "herbalism_method": {
+      if (!state.character) throw new Error("character_required");
+      const method = oneOf(a.method, ["balanced", "quick", "careful", "bountiful"]);
+      const level = state.skills.find((row) => row.skillId === "herbalism")?.level ?? 1;
+      const unlock = { balanced: 1, quick: 20, careful: 45, bountiful: 70 }[method];
+      if (level < unlock) throw new Error(`Requires Herbalism level ${unlock}`);
+      state = { ...state, character: { ...state.character, herbalismMethodId: method } };
+      message = "Herbalism method set to " + method;
+      break;
+    }
     case "faith_practice":
       state = reserveFaithPractice(state, text(a, "tierId"), integer(a, "count", 1, 1e3), now);
       break;
@@ -77865,6 +79542,9 @@ function executeGameCommand(previous, value, now, options = {}) {
     case "alchemy_start":
       state = beginAlchemyBatch(state, text(a, "id"), integer(a, "batches", 1, 100), now);
       break;
+    case "processing_start":
+      state = beginProcessingBatch(state, text(a, "id"), integer(a, "batches", 1, 100), now);
+      break;
     case "class_focus": {
       const focus = oneOf(a.focus, ["balanced", "primary", "secondary"]);
       if (!state.character) throw new Error("character_required");
@@ -77878,6 +79558,7 @@ function executeGameCommand(previous, value, now, options = {}) {
       state = result.state;
       message = result.message;
       won = result.won;
+      if (won) contributions.push({ kind: "boss", contentId: "FALLEN_KNIGHT", units: 1 });
       break;
     }
     case "companion_monthly":
@@ -77890,6 +79571,10 @@ function executeGameCommand(previous, value, now, options = {}) {
       break;
     case "companion_unequip":
       state = unequipCombatCompanion(state);
+      break;
+    case "companion_housing_upgrade":
+      state = upgradeCompanionHousing(state, text(a, "id"));
+      message = "Companion quarters upgraded";
       break;
     case "companion_level":
       state = purchaseCompanionLevel(state, text(a, "id"));
@@ -77942,6 +79627,11 @@ function executeGameCommand(previous, value, now, options = {}) {
     case "roster_delete":
       state = deleteAccountCharacter(state, text(a, "id"), text(a, "confirmation", 80), now);
       break;
+    case "arena_slot": {
+      const index = integer(a, "index", 0, 2);
+      state = setArenaSquadSlot(state, index, a.characterId === void 0 ? void 0 : text(a, "characterId", 80));
+      break;
+    }
     case "claim":
       break;
     case "queue_add": {
@@ -77950,10 +79640,10 @@ function executeGameCommand(previous, value, now, options = {}) {
       break;
     }
     case "queue_remove":
-      state = removeQueuedActivity(state, integer(a, "index", 0, 2));
+      state = removeQueuedActivity(state, integer(a, "index", 0, activityQueueCapacity(state) - 1));
       break;
     case "queue_move":
-      state = moveQueuedActivity(state, integer(a, "index", 0, 2), oneOf(a.direction, ["up", "down"]));
+      state = moveQueuedActivity(state, integer(a, "index", 0, activityQueueCapacity(state) - 1), oneOf(a.direction, ["up", "down"]));
       break;
     case "queue_clear":
       state = clearActivityQueue(state);
@@ -77981,11 +79671,13 @@ function executeGameCommand(previous, value, now, options = {}) {
       state = result.state;
       message = result.message;
       won = result.won;
+      storyBossBattle = result.battle;
       if (won) contributions.push({ kind: "boss", contentId: "FALLEN_KNIGHT", units: 1 });
       break;
     }
     case "craft": {
       const id = text(a, "id"), timed = timedEquipmentRecipe(id);
+      if (isTimedProcessingRecipe(id)) throw new Error("Repeatable processing must be started as a timed batch.");
       if (timed) {
         const started = startEquipmentCraft(state, id, now);
         state = started.state;
@@ -78114,6 +79806,19 @@ function executeGameCommand(previous, value, now, options = {}) {
       message = result.waiting ? "Gem combination added to forge backlog" : "Gem combination started";
       break;
     }
+    case "gem_refine": {
+      const familyId = text(a, "familyId", 80), grade = integer(a, "grade", 1, 5);
+      const result = startGemRefinement(state, gemRefineRecipeIdV1(familyId, grade), now);
+      state = result.state;
+      message = result.waiting ? "Gem refinement added to forge backlog" : "Gem refinement started";
+      break;
+    }
+    case "gem_research": {
+      const familyId = text(a, "familyId", 80);
+      state = researchEffectGemV1(state, familyId);
+      message = "Effect Gem recipe researched";
+      break;
+    }
     case "gem_dismantle": {
       const gemId = text(a, "gemId", 120), quantity4 = integer(a, "quantity", 1, 999);
       state = dismantleGemV1(state, gemId, quantity4);
@@ -78129,7 +79834,7 @@ function executeGameCommand(previous, value, now, options = {}) {
       state = selectCharacterSkin(state, text(a, "id"));
       break;
     case "loadout_save":
-      state = saveCharacterLoadout(state, integer(a, "index", 0, 2), typeof a.name === "string" ? a.name : void 0, now);
+      state = saveCharacterLoadout(state, integer(a, "index", 0, characterLoadoutSlotCount(state) - 1), typeof a.name === "string" ? a.name : void 0, now);
       break;
     case "loadout_apply":
       state = applyCharacterLoadout(state, text(a, "id"));
@@ -78139,7 +79844,7 @@ function executeGameCommand(previous, value, now, options = {}) {
       break;
     case "goals_set": {
       if (!state.character) throw new Error("character_required");
-      state = { ...state, character: { ...state.character, progressionGoals: normalizeProgressionGoals(a.goals, state.character.id) } };
+      state = reconcileWorkingTowardGeneratedRules({ ...state, character: { ...state.character, progressionGoals: normalizeProgressionGoals(a.goals, state.character.id) } });
       break;
     }
     case "idle_rules_set": {
@@ -78224,10 +79929,10 @@ function executeGameCommand(previous, value, now, options = {}) {
   }
   if (companionMetricBefore) state = recordCompanionCommandMetrics(state, command.type, companionMetricBefore);
   if (state.character && (!Number.isSafeInteger(state.character.gold) || state.character.gold < 0)) throw new Error("invalid_wallet");
-  return { state: discoverCharacterSkins(state), reward: reward2, activity, message, won, upgrade, forgeResults, contributions };
+  return { state: discoverCharacterSkins(state), reward: reward2, activity, message, won, storyBossBattle, upgrade, forgeResults, contributions };
 }
 
-// online/gameplay.ts
+// backend/online/gameplay.ts
 var GameplayError = class extends Error {
   constructor(message, status = 400) {
     super(message);
@@ -78317,11 +80022,12 @@ function gameplayHandler(services2) {
           const target2 = [...GATHERING, ...HERB_NODES].find((row) => row.id === event.contentId);
           if (!target2) throw new Error("unknown_gathering");
           metric = "verified_weighted_gather_actions";
-          units *= target2.seconds / 22;
+          return { ...event, metric, units: units * target2.seconds / 22, skillId: target2.skillId, questUnits: event.units };
         } else if (event.kind === "crafting") {
           metric = "verified_weighted_crafts";
           const recipe2 = RECIPES.find((row) => row.id === event.contentId);
           if (!recipe2) throw new Error("unknown_recipe");
+          return { ...event, metric, units, skillId: recipe2.skillId, questUnits: event.units };
         } else if (event.kind === "boss") metric = "verified_regional_boss_kills";
         else {
           const monster = MONSTERS.find((row) => row.id === event.contentId);
@@ -78330,9 +80036,13 @@ function gameplayHandler(services2) {
         }
         return { ...event, metric, units };
       });
-      const response = { state: result.state, version: loaded.version + 1, serverNow: loaded.serverNow, accountId, reward: result.reward, activity: result.activity, message: result.message, won: result.won, upgrade: result.upgrade, forgeResults: result.forgeResults };
+      const response = { state: result.state, version: loaded.version + 1, serverNow: loaded.serverNow, accountId, reward: result.reward, activity: result.activity, message: result.message, won: result.won, storyBossBattle: result.storyBossBattle, upgrade: result.upgrade, forgeResults: result.forgeResults };
       const commitRpc = command.type === "roster_delete" ? "commit_online_game_server_v2" : "commit_online_game_server_v1";
       const committed = await services2.rpc(commitRpc, { p_account_id: accountId, p_expected_version: loaded.version, p_expected_gold: loaded.walletGold, p_request_id: body.requestId, p_request_hash: requestHash, p_response: response, p_contributions: contributions, ...command.type === "roster_delete" ? { p_deleted_character_id: command.args.id } : {} });
+      try {
+        await services2.rpc("guild_quest_record_contributions_v1", { p_account_id: accountId, p_contributions: contributions.map((e) => ({ ...e, units: e.questUnits ?? e.units })) });
+      } catch {
+      }
       return json(committed);
     } catch (error) {
       const message = error instanceof Error ? error.message : "server_error";
@@ -78343,10 +80053,10 @@ function gameplayHandler(services2) {
   };
 }
 
-// src/server/combat/regional-combat-runtime-v1.ts
+// backend/src/server/combat/regional-combat-runtime-v1.ts
 import { createHash } from "node:crypto";
 
-// src/server/companions/character-assist.ts
+// backend/src/server/companions/character-assist.ts
 function applyCharacterCompanionAssist(owner, progress) {
   if (!progress) return owner;
   const policy = validateCompanionLoadout({ classId: owner.classId, companionId: progress.companionId, ownedCompanionIds: [progress.companionId] });
@@ -78363,7 +80073,7 @@ function applyCharacterCompanionAssist(owner, progress) {
   return { ...owner, abilities: [...owner.abilities, ability2], tags: [...owner.tags ?? [], `companion:${def.id}`] };
 }
 
-// src/server/combat/snapshot-adapter.ts
+// backend/src/server/combat/snapshot-adapter.ts
 function combatantFromVerifiedSnapshot(s, abilities) {
   if (!Number.isInteger(s.level) || s.level < 1 || s.level > 100) throw new Error("invalid_snapshot_level");
   if ([s.maxHp, s.attackPower, s.healingPower, s.defense, s.accuracy, s.evasion, s.critChance, s.haste].some((value) => !Number.isFinite(value)) || s.maxHp <= 0 || [s.attackPower, s.healingPower, s.defense, s.accuracy, s.evasion].some((value) => value < 0)) throw new Error("invalid_snapshot_stats");
@@ -78383,7 +80093,7 @@ function combatantFromVerifiedSnapshot(s, abilities) {
   }, s.combatCompanion);
 }
 
-// src/server/content/combat-stat-contract-v20.ts
+// backend/src/server/content/combat-stat-contract-v20.ts
 var COMBAT_STAT_LIMITS_V20 = {
   critChance: { min: 0, max: 0.5 },
   critDamage: { min: 1, max: 2.5 },
@@ -78411,7 +80121,7 @@ function mechanicDamagePolicyV20(input) {
   return { canCrit, telegraphedMechanic: input.telegraphed, avoidable: input.avoidable, notes: input.telegraphed ? "Telegraphed pass/fail damage is deterministic by default." : void 0 };
 }
 
-// src/server/content/sunscar-region-v20.ts
+// backend/src/server/content/sunscar-region-v20.ts
 var stats = (v) => {
   const errors = validateCombatStatsV20(v);
   if (errors.length) throw new Error(`invalid_sunscar_stats:${errors.join(",")}`);
@@ -78449,7 +80159,7 @@ for (const boss2 of SUNSCAR_BOSSES_V20) {
   if (validateCombatStatsV20(boss2.stats).length) throw new Error(`invalid_boss:${boss2.id}`);
 }
 
-// src/server/equipment/gems/gem-catalog-v1.ts
+// backend/src/server/equipment/gems/gem-catalog-v1.ts
 var vals2 = (a, b, c, d, e) => ({ 1: a, 2: b, 3: c, 4: d, 5: e });
 var STAT_GEMS_V1 = [
   { familyId: "stat_might", name: "Might", stat: "power", unit: "percent", values: vals2(4e-3, 5e-3, 65e-4, 8e-3, 0.01) },
@@ -78488,7 +80198,7 @@ var EFFECT_GEMS_V1 = [
   { familyId: "effect_opportunist", name: "Opportunist", category: "hybrid", values: vals2(7e-3, 9e-3, 0.011, 0.013, 0.015), maxEquippedCopies: 3, baseDescription: "Applying a new Mark/debuff/exposed/control state empowers the next direct hit within 4s.", resonance2: "Per-target cooldown becomes 3s.", resonance3: "A critical empowered hit extends the triggering effect by 1s once.", triggerCooldownMs: 4e3 }
 ];
 
-// src/server/equipment/gems/gem-acquisition-v1.ts
+// backend/src/server/equipment/gems/gem-acquisition-v1.ts
 var GEM_SOURCE_POOLS_V1 = [
   { id: "ZONE_006", kind: "enemy", regionId: "REG_002", families: ["stat_might", "stat_vitality", "effect_opening_strike", "effect_sustenance"], grade: 1, chance: 75e-4 },
   { id: "ZONE_007", kind: "elite", regionId: "REG_002", families: ["stat_iron", "stat_piercing", "effect_predator", "effect_retaliation"], grade: 2, chance: 0.015, pityAt: 60 },
@@ -78508,7 +80218,7 @@ function gemPoolForSourceV1(sourceId) {
   return GEM_SOURCE_POOLS_V1.find((v) => v.id === sourceId);
 }
 
-// src/server/equipment/gems/regional-gem-settlement-v1.ts
+// backend/src/server/equipment/gems/regional-gem-settlement-v1.ts
 function regionalGemSourceForEncounterV1(zoneId, kind) {
   const pool = gemPoolForSourceV1(zoneId);
   if (!pool || !["enemy", "elite", "regional_boss"].includes(pool.kind) || pool.kind !== kind) return void 0;
@@ -78526,7 +80236,7 @@ async function settleVerifiedRegionalGemEncounterV1(services2, encounter) {
   });
 }
 
-// src/server/combat/regional-combat-runtime-v1.ts
+// backend/src/server/combat/regional-combat-runtime-v1.ts
 var SUNSCAR_REGIONAL_COMBAT_CATALOG_V1 = [
   { encounterId: "REGCOM_SUN_006_STANDARD", zoneId: "ZONE_006", kind: "standard", contentId: "SUNMON_001", name: "Saffron Gate Patrol", level: 25 },
   { encounterId: "REGCOM_SUN_007_ELITE", zoneId: "ZONE_007", kind: "elite", contentId: "SUNMON_005", name: "Sunspine Elite", level: 32 },
@@ -78613,6 +80323,25 @@ function gemKind(kind) {
 function resultDigest(result) {
   return createHash("sha256").update(JSON.stringify(result.events)).digest().toString("hex");
 }
+function regionalReplayCuesV1(result) {
+  const defs = [...result.players, ...result.enemies].map((row) => row.definition), names = new Map(defs.map((row) => [row.id, row.name])), abilities = /* @__PURE__ */ new Map();
+  for (const def of defs) for (const ability2 of def.abilities) abilities.set(ability2.id, ability2.name);
+  for (const def of defs) for (const phase of def.phases ?? []) abilities.set(phase.id, phase.name ?? phase.id.replace(/_/g, " "));
+  const important = [], actions = [];
+  for (const event of result.events) {
+    const base = { atMs: event.atMs, actorName: event.actorId ? names.get(event.actorId) : void 0, targetName: event.targetId ? names.get(event.targetId) : void 0, abilityName: event.abilityId ? abilities.get(event.abilityId) ?? (event.abilityId === "BASIC" ? "Basic Attack" : event.abilityId) : void 0 };
+    if (event.type === "phase") important.push({ ...base, type: "phase" });
+    else if (event.type === "cast_start") important.push({ ...base, type: "cast" });
+    else if (event.type === "interrupt") important.push({ ...base, type: "interrupt" });
+    else if (event.type === "down" || event.type === "death") important.push({ ...base, type: "down" });
+    else if (event.type === "damage" && event.amount !== void 0 && (event.critical || event.abilityId !== "BASIC")) actions.push({ ...base, type: "damage", amount: Number(event.amount.toFixed(2)), ...event.critical ? { critical: true } : {}, ...event.absorbed ? { absorbed: Number(event.absorbed.toFixed(2)) } : {} });
+    else if (event.type === "heal" && event.amount !== void 0) actions.push({ ...base, type: "heal", amount: Number(event.amount.toFixed(2)) });
+    else if (event.type === "shield" && event.amount !== void 0) actions.push({ ...base, type: "shield", amount: Number(event.amount.toFixed(2)) });
+    else if (event.type === "combat_end") important.push({ atMs: event.atMs, type: result.reason });
+  }
+  const sampled = actions.length <= 14 ? actions : Array.from({ length: 14 }, (_, i) => actions[Math.min(actions.length - 1, Math.floor(i * actions.length / 14))]);
+  return [...important, ...sampled].sort((a, b) => a.atMs - b.atMs).slice(0, 24);
+}
 async function startRegionalCombatV1(deps, input) {
   if (!/^[a-zA-Z0-9_-]{8,128}$/.test(input.requestId)) throw new Error("invalid_request");
   const encounter = regionalCombatCatalogEntryV1(input.encounterId);
@@ -78661,17 +80390,22 @@ async function resolveRegionalCombatV1(deps, input) {
     damageDone: Number(combat.players[0].damageDone.toFixed(2)),
     healingDone: Number(combat.players[0].healingDone.toFixed(2)),
     playerHp: Number(combat.players[0].hp.toFixed(2)),
-    enemyHp: Number(combat.enemies[0].hp.toFixed(2))
+    playerMaxHp: Number(combat.players[0].definition.stats.maxHp.toFixed(2)),
+    playerName: combat.players[0].definition.name,
+    enemyHp: Number(combat.enemies[0].hp.toFixed(2)),
+    enemyMaxHp: Number(combat.enemies[0].definition.stats.maxHp.toFixed(2)),
+    enemyName: combat.enemies[0].definition.name,
+    replayCues: regionalReplayCuesV1(combat)
   };
   const committed = await deps.store.commitResult(stored);
   const reward2 = committed.result.victory ? await settleVerifiedRegionalGemEncounterV1(deps.rewards, { accountId: input.accountId, receiptKey: "regional:" + reservation.receiptId, zoneId: reservation.zoneId, kind: gemKind(reservation.kind), victory: true }) : void 0;
   return { result: committed.result, reward: reward2, duplicate: committed.duplicate };
 }
 
-// online/coop-loadout.ts
+// backend/online/coop-loadout.ts
 import { createHash as createHash2 } from "node:crypto";
 
-// src/server/combat/content/launch-combat.ts
+// backend/src/server/combat/content/launch-combat.ts
 var stats2 = (maxHp, attackPower, healingPower, defense, accuracy, evasion, critChance = 0.08, haste = 0.05) => ({ maxHp, attackPower, healingPower, defense, accuracy, evasion, critChance, critMultiplier: 1.5, haste });
 var dmg = (id, name, coeff, cooldownMs, priority, extra = {}) => ({ id, name, cooldownMs, castTimeMs: 0, target: "current_target", priority, effects: [{ kind: "damage", coeff, damageType: "physical" }], ...extra });
 function launchPlayer(classId, level = 25) {
@@ -78683,7 +80417,7 @@ function launchPlayer(classId, level = 25) {
       return make("Ironwarden", "tank", stats2(5200 * scale, 420 * scale, 180 * scale, 1500 * scale, 680, 180, 0.05, 0.03), [
         { id: "IW_TAUNT", name: "Rune Challenge", cooldownMs: 9e3, castTimeMs: 0, target: "current_target", priority: 95, effects: [{ kind: "taunt", value: 500 }, { kind: "damage", coeff: 0.55, threatMultiplier: 4 }] },
         { id: "IW_WARD", name: "Oathwall", cooldownMs: 12e3, castTimeMs: 0, target: "self", priority: 90, aiCondition: "self_below_50", effects: [{ kind: "shield", coeff: 2.4 }] },
-        dmg("IW_BASH", "Rune Bash", 1.05, 6500, 70, { effects: [{ kind: "damage", coeff: 1.05, threatMultiplier: 2.2 }, { kind: "interrupt" }], aiCondition: "target_casting" })
+        dmg("IW_BASH", "Rune Bash", 1.05, 6500, 70, { target: "interruptible_casting_enemy", effects: [{ kind: "damage", coeff: 1.05, threatMultiplier: 2.2 }, { kind: "interrupt" }], aiCondition: "target_casting" })
       ]);
     // Newer solo tanks retain their relative base HP/ATK/DEF budgets against
     // Ironwarden (164/155,14/15,20/19 and 150/155,17/15,17/19).
@@ -78691,23 +80425,23 @@ function launchPlayer(classId, level = 25) {
       return make("Bastion", "tank", stats2(5200 * 164 / 155 * scale, 420 * 14 / 15 * scale, 180 * scale, 1500 * 20 / 19 * scale, 680, 180, 0.05, 0.03), [
         { id: "BT_CHALLENGE", name: "Bastion Challenge", cooldownMs: 9e3, castTimeMs: 0, target: "current_target", priority: 95, effects: [{ kind: "taunt", value: 500 }, { kind: "damage", coeff: 0.45, threatMultiplier: 4 }] },
         { id: "BT_FORTRESS", name: "Layered Fortress", cooldownMs: 12e3, castTimeMs: 0, target: "self", priority: 90, aiCondition: "self_below_50", effects: [{ kind: "shield", coeff: 2.7 }] },
-        dmg("BT_REBUFF", "Fortress Rebuff", 0.8, 7500, 70, { effects: [{ kind: "damage", coeff: 0.8, threatMultiplier: 2.2 }, { kind: "interrupt" }], aiCondition: "target_casting" })
+        dmg("BT_REBUFF", "Fortress Rebuff", 0.8, 7500, 70, { target: "interruptible_casting_enemy", effects: [{ kind: "damage", coeff: 0.8, threatMultiplier: 2.2 }, { kind: "interrupt" }], aiCondition: "target_casting" })
       ]);
     case "Dreadguard":
       return make("Dreadguard", "tank", stats2(5200 * 150 / 155 * scale, 420 * 17 / 15 * scale, 180 * scale, 1500 * 17 / 19 * scale, 680, 180, 0.05, 0.03), [
         { id: "DG_CHALLENGE", name: "Dread Challenge", cooldownMs: 9e3, castTimeMs: 0, target: "current_target", priority: 95, effects: [{ kind: "taunt", value: 500 }, { kind: "damage", coeff: 0.75, threatMultiplier: 4 }] },
         { id: "DG_SUSTAIN", name: "Grim Resolve", cooldownMs: 6500, castTimeMs: 0, target: "self", priority: 90, aiCondition: "self_below_50", effects: [{ kind: "heal", coeff: 3 }] },
-        dmg("DG_BIND", "Binding Chain", 0.95, 6500, 70, { effects: [{ kind: "damage", coeff: 0.95, threatMultiplier: 2.2 }, { kind: "interrupt" }], aiCondition: "target_casting" })
+        dmg("DG_BIND", "Binding Chain", 0.95, 6500, 70, { target: "interruptible_casting_enemy", effects: [{ kind: "damage", coeff: 0.95, threatMultiplier: 2.2 }, { kind: "interrupt" }], aiCondition: "target_casting" })
       ]);
     case "Dawnkeeper":
       return make("Dawnkeeper", "support", stats2(3600 * scale, 300 * scale, 720 * scale, 820 * scale, 720, 230, 0.07, 0.08), [
         { id: "DK_HEAL", name: "Dawn Mend", cooldownMs: 4200, castTimeMs: 500, target: "lowest_hp_ally", priority: 100, aiCondition: "ally_below_50", effects: [{ kind: "heal", coeff: 1.25 }] },
-        { id: "DK_HOT", name: "Sunthread", cooldownMs: 8e3, castTimeMs: 0, target: "lowest_hp_ally", priority: 80, effects: [{ kind: "hot", coeff: 0.34, durationMs: 6e3, tickMs: 2e3 }] },
+        { id: "DK_HOT", name: "Sunthread", cooldownMs: 8e3, castTimeMs: 0, target: "threatened_ally", priority: 80, aiCondition: "ally_below_80_or_targeted", effects: [{ kind: "hot", coeff: 0.34, durationMs: 6e3, tickMs: 2e3 }] },
         dmg("DK_SMITE", "Sun Smite", 0.75, 5500, 40)
       ]);
     case "Stonecaller":
       return make("Stonecaller", "support", stats2(4100 * scale, 340 * scale, 570 * scale, 1050 * scale, 690, 190, 0.06, 0.04), [
-        { id: "SC_SHIELD", name: "Resonant Armor", cooldownMs: 7e3, castTimeMs: 0, target: "lowest_hp_ally", priority: 90, effects: [{ kind: "shield", coeff: 1.1 }] },
+        { id: "SC_SHIELD", name: "Resonant Armor", cooldownMs: 7e3, castTimeMs: 0, target: "threatened_ally", priority: 90, aiCondition: "ally_below_80_or_targeted", effects: [{ kind: "shield", coeff: 1.1 }] },
         { id: "SC_HEAL", name: "River Stone", cooldownMs: 6500, castTimeMs: 0, target: "lowest_hp_ally", priority: 85, aiCondition: "ally_below_50", effects: [{ kind: "heal", coeff: 0.8 }] },
         dmg("SC_THUNDER", "Thunder Totem", 0.95, 6e3, 55, { effects: [{ kind: "damage", coeff: 0.95, damageType: "nature" }, { kind: "debuff", tag: "damage_taken", value: 0.05, durationMs: 4e3 }] })
       ]);
@@ -78718,7 +80452,7 @@ function launchPlayer(classId, level = 25) {
     case "Hexweaver":
       return make("Hexweaver", "damage", stats2(3e3 * scale, 620 * scale, 120, 620 * scale, 790, 250, 0.13, 0.09), [
         { id: "HX_CURSE", name: "Black Thread", cooldownMs: 6500, castTimeMs: 600, target: "current_target", priority: 90, effects: [{ kind: "damage", coeff: 0.65, damageType: "shadow" }, { kind: "dot", coeff: 0.3, damageType: "shadow", durationMs: 6e3, tickMs: 2e3 }] },
-        dmg("HX_NULL", "Null Script", 1.25, 7e3, 80, { effects: [{ kind: "damage", coeff: 1.25, damageType: "arcane" }, { kind: "interrupt" }], aiCondition: "target_casting" })
+        dmg("HX_NULL", "Null Script", 1.25, 7e3, 80, { target: "interruptible_casting_enemy", effects: [{ kind: "damage", coeff: 1.25, damageType: "arcane" }, { kind: "interrupt" }], aiCondition: "target_casting" })
       ]);
     case "Knife Dancer":
       return make("Knife Dancer", "damage", stats2(3150 * scale, 640 * scale, 70, 660 * scale, 800, 330, 0.18, 0.14), [dmg("KD_LOOP", "Scarlet Loop", 1.35, 5e3, 85), dmg("KD_FEINT", "Feintstep", 1, 3800, 75)]);
@@ -78727,7 +80461,7 @@ function launchPlayer(classId, level = 25) {
   }
 }
 
-// src/server/coop/role-readiness.ts
+// backend/src/server/coop/role-readiness.ts
 var CLASS_ROLES = Object.freeze({
   IRONWARDEN: "tank",
   BASTION: "tank",
@@ -78745,7 +80479,7 @@ function deriveRole(classId) {
   return role;
 }
 
-// src/server/coop/normalization.ts
+// backend/src/server/coop/normalization.ts
 var COOP_NORMALIZATION_V1 = Object.freeze({
   version: "coop-normalization-v1",
   softThreshold: 1.15,
@@ -78764,7 +80498,7 @@ var ROOTBOUND_ROLE_REFERENCES = Object.freeze({
   support: { level: 25, maxHp: 3800, attackPower: 330, healingPower: 650, defense: 900, accuracy: 700, evasion: 210 }
 });
 
-// online/coop-loadout.ts
+// backend/online/coop-loadout.ts
 function referenceStats(classId) {
   const reference = createCharacter(newGame(0), classId, "Calibration");
   reference.character.equipment = Object.fromEntries(noviceSetFor(classId).slots.map((slot) => [slot, noviceItemId(classId, slot)]));
@@ -78820,7 +80554,7 @@ function deriveOnlineCoopLoadout(accountId, state, version) {
   };
 }
 
-// online/regional-combat.ts
+// backend/online/regional-combat.ts
 var RpcRegionalCombatStore = class {
   constructor(services2, accountId) {
     this.services = services2;
@@ -78891,6 +80625,14 @@ var OnlineRegionalCombatRuntimeV1 = class {
     }, { accountId, characterId: request.characterId, encounterId: request.encounterId, requestId: request.requestId });
     return projection(reservation);
   }
+  async cadence(accountId) {
+    const game = await this.services.rpc("load_online_game_server_v1", { p_account_id: accountId });
+    const encounters = await Promise.all(SUNSCAR_REGIONAL_COMBAT_CATALOG_V1.map(async (encounter) => {
+      const row = await this.services.rpc("regional_combat_cadence_server_v1", { p_account_id: accountId, p_encounter_id: encounter.encounterId, p_encounter_kind: encounter.kind });
+      return { encounterId: encounter.encounterId, cooldownSeconds: row.cooldownSeconds, readyAtMs: row.readyAtMs ?? null, dailyWins: Math.max(0, Math.floor(row.dailyWins ?? 0)), dailyCap: row.dailyCap ?? null, dailyResetAtMs: row.dailyResetAtMs ?? null };
+    }));
+    return { serverNow: game.serverNow, encounters };
+  }
   async resolve(accountId, receiptId) {
     const store = new RpcRegionalCombatStore(this.services, accountId);
     const resolution = await resolveRegionalCombatV1({
@@ -78920,7 +80662,12 @@ function regionalCombatHandlerV1(services2) {
       if (!bearer) return json2({ error: "auth_required" }, 401);
       const accountId = await services2.authenticate(bearer);
       if (!accountId) return json2({ error: "invalid_session" }, 401);
-      const path = new URL(request.url).pathname, match = path.match(/\/regional-combat\/([0-9a-fA-F-]+)$/);
+      const path = new URL(request.url).pathname;
+      if (path.endsWith("/regional-combat/status")) {
+        if (request.method !== "GET") return json2({ error: "method_not_allowed" }, 405);
+        return json2(await runtime.cadence(accountId));
+      }
+      const match = path.match(/\/regional-combat\/([0-9a-fA-F-]+)$/);
       if (match) {
         if (!uuid.test(match[1])) return json2({ error: "invalid_request" }, 400);
         if (request.method !== "POST") return json2({ error: "method_not_allowed" }, 405);
@@ -78942,13 +80689,13 @@ function regionalCombatHandlerV1(services2) {
       return json2(await runtime.start(accountId, row));
     } catch (error) {
       const message = error instanceof Error ? error.message : "server_error";
-      const status = error instanceof GameplayError ? error.status : /owner_mismatch|not_owned/.test(message) ? 403 : /invalid_|unknown_|locked|below_level|not_active/.test(message) ? 400 : 503;
+      const status = error instanceof GameplayError ? error.status : /owner_mismatch|not_owned/.test(message) ? 403 : /cooldown|daily_cap/.test(message) ? 429 : /invalid_|unknown_|locked|below_level|not_active/.test(message) ? 400 : 503;
       return json2({ error: status === 503 ? "Server temporarily unavailable. Retry the pending action." : message }, status);
     }
   };
 }
 
-// online/edge.ts
+// backend/online/edge.ts
 var url = Deno.env.get("SUPABASE_URL");
 var serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 var anonKey = Deno.env.get("SUPABASE_ANON_KEY");

@@ -264,6 +264,20 @@ function combatRuntimeDetails(state:GameState,monsterId:string){
   return {c,m,stats,modifiers,companion,style,tactic,environment,effectGems,setCombat,secondary,boostedDefense,killCycleSeconds,challengeId,affixId};
 }
 
+export function combatSustainProjection(state:GameState,monsterId:string,hours=1){
+ if(!state.character)return undefined;
+ const runtime=combatRuntimeDetails(state,monsterId),foodId=state.character.equippedFoodId,food=foodId?itemDef(foodId):undefined;
+ const raw=Math.max(1,Math.round((runtime.m.attack*COMBAT_MONSTER_DAMAGE_SCALE)-Math.floor(runtime.boostedDefense*.58)));
+ const regionalPressure=REGIONAL_COMBAT_PRESSURE[runtime.m.zone]??1;
+ const damagePerKill=Math.max(1,Math.round((raw*.48+runtime.m.level*.16)*regionalPressure*runtime.secondary.incomingPressureMultiplier*runtime.style.damageTakenMultiplier*runtime.tactic.damageTakenMultiplier*runtime.modifiers.incomingDamageMultiplier*runtime.companion.incomingDamageMultiplier*(1-runtime.effectGems.damage_reduction)*Math.max(.5,1-runtime.setCombat.stats.ward)*(state.character.preparation?preparationEffects(state.character.preparation).damage:1)));
+ const recoveryPerKill=Math.max(1,Math.floor(runtime.stats.hp*runtime.style.recoveryPct*runtime.tactic.recoveryMultiplier*runtime.companion.recoveryMultiplier*(1+runtime.effectGems.recovery)*runtime.setCombat.recoveryMultiplier));
+ const netDamagePerKill=Math.max(0,damagePerKill-recoveryPerKill),killsPerHour=3600/Math.max(.1,runtime.killCycleSeconds);
+ const healingPerFood=Math.max(1,Math.ceil((food?.heal??0)*runtime.modifiers.healingEffectivenessMultiplier));
+ const foodPerHour=healingPerFood>0?netDamagePerKill*killsPerHour/healingPerFood:netDamagePerKill>0?Infinity:0;
+ const target=REGIONAL_FOOD_SUSTAIN_TARGETS[runtime.m.zone];
+ return {monsterId,region:runtime.m.zone,killCycleSeconds:runtime.killCycleSeconds,killsPerHour,damagePerKill,recoveryPerKill,netDamagePerKill,foodId,healingPerFood,foodPerHour,projectedFood:foodPerHour*hours,target};
+}
+
 export function activeCombatRuntimeProjection(state:GameState){
   if(!state.character||state.activity?.kind!=='combat')return undefined;
   const runtime=combatRuntimeDetails(state,state.activity.targetId);

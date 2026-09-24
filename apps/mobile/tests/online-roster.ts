@@ -23,4 +23,15 @@ equal(state.character?.id,firstId,'switched active character');
 equal(state.otherCharacters?.[0].character.id,secondId,'switched character retained');
 equal(state.character?.gold,100,'active wallet retained');
 equal(state.otherCharacters?.[0].character.gold,100,'inactive wallet retained');
-console.log('PASS online roster create and switch commands preserve independent character state');
+const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
+const eas=JSON.parse(fs.readFileSync('eas.json','utf8')) as {build:Record<string,{env?:Record<string,string>} >};
+for(const profile of ['preview','production']){
+ const env=eas.build[profile]?.env??{};
+ equal(env.EXPO_PUBLIC_SERVER_GAMEPLAY,'true',profile+' must enable server-owned gameplay');
+ equal(env.EXPO_PUBLIC_COOP_ROGUELITE_V1,'true',profile+' must enable online co-op');
+ equal(env.EXPO_PUBLIC_COOP_API_URL,'https://nyjwigipamnvpdvpauuv.supabase.co/functions/v1/coop',profile+' must target the deployed co-op Edge Function');
+ equal(env.EXPO_PUBLIC_SUPABASE_URL,'https://nyjwigipamnvpdvpauuv.supabase.co',profile+' must target production Supabase');
+ equal(env.EXPO_PUBLIC_COOP_LIVE_READY_V1,'false',profile+' keeps experimental Live Ready UI gated');
+ if(!env.EXPO_PUBLIC_SUPABASE_ANON_KEY?.startsWith('sb_publishable_'))throw new Error(profile+' must use the Supabase publishable client key');
+}
+console.log('PASS online roster commands and Preview/Production online runtime configuration');

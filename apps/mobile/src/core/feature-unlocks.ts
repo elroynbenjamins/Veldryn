@@ -14,7 +14,7 @@ export const EARLY_FEATURE_UNLOCKS={
  social:{questId:'QST_005',title:'Social & Parties',requirement:'Complete Into Ironwood',description:'Party recruitment and cooperative social systems unlock after the core solo loop is understood.'},
  contracts:{questId:'QST_005',title:'Contract Board',requirement:'Complete Into Ironwood',description:'Weekly and cooperative contract planning unlocks with deeper regional progression.'},
  masteryHall:{questId:'QST_005',title:'Mastery Hall',requirement:'Complete Into Ironwood',description:'Long-term profession mastery records appear once the player has enough skill actions to make the system meaningful.'},
- guild:{questId:'QST_011',title:'Guilds',requirement:'Complete Place Among Guilds',description:'Guild membership unlocks when the campaign explicitly recognizes the player among Asterfall guilds.'},
+ guild:{questId:'QST_005',title:'Guilds',requirement:'Reach Level 10 and complete Into Ironwood',description:'Guilds unlock at Level 10, once the core solo loop is established and social progression becomes useful.'},
  rankings:{questId:'QST_011',title:'Rankings',requirement:'Complete Place Among Guilds',description:'Prestige rankings unlock alongside Guild recognition at Level 20.'},
 } as const;
 
@@ -34,7 +34,7 @@ export interface EarlyFeatureUnlockMoment{
  description:string;
  bullets:string[];
  actionLabel:string;
- destination:'Collections'|'Companions';
+ destination:'Collections'|'Companions'|'Guild';
 }
 export function newlyUnlockedEarlyFeatures(before:GameState|null|undefined,after:GameState|null|undefined):EarlyFeatureUnlockMoment[]{
  if(!before||!after)return [];
@@ -50,6 +50,12 @@ export function newlyUnlockedEarlyFeatures(before:GameState|null|undefined,after
   description:'Build a broader roster for combat assistance, Expeditions and the global monthly Companion Trial.',
   bullets:['Companions use Tank, Damage or Support roles plus an Affinity.','Train, raise Bond and improve Housing to unlock higher level caps.','Expeditions consume food-based Stamina; Trials rotate globally every month.'],
   actionLabel:'Open Companion Sanctuary',destination:'Companions',
+ });
+ if(!earlyFeatureUnlocked(before,'guild')&&earlyFeatureUnlocked(after,'guild'))out.push({
+  id:'guild',eyebrow:'NEW SOCIAL SYSTEM',title:'Guilds Unlocked',
+  description:'You can now join other adventurers, browse recruiting guilds, or create a guild when you are ready.',
+  bullets:['Browse guilds and find one that matches how you play.','Guild Projects are asynchronous, so you do not need to be online at fixed times.','Guild chat, progression and cooperative PvE grow alongside your character.'],
+  actionLabel:'Browse Guilds',destination:'Guild',
  });
  return out;
 }

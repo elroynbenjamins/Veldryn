@@ -1,4 +1,8 @@
-import type {CompanionAffinity,CompanionDefinition} from './combat-companion-types';
+import type {CompanionDefinition} from './combat-companion-types';
+import {COMPANION_AFFINITY_BY_ID,companionAffinityById,type CompanionAffinity} from '../../../../backend/src/shared/companion-affinity-catalog';
+
+export type {CompanionAffinity};
+export {COMPANION_AFFINITY_BY_ID};
 
 export const COMPANION_AFFINITIES:Record<CompanionAffinity,{label:string;glyph:string;description:string}>={
  wild:{label:'Wild',glyph:'❧',description:'Beasts, natural hunters and untamed creatures.'},
@@ -8,14 +12,5 @@ export const COMPANION_AFFINITIES:Record<CompanionAffinity,{label:string;glyph:s
  primal:{label:'Primal',glyph:'▲',description:'Elemental, ancient and raw regional forces.'},
  construct:{label:'Construct',glyph:'⬡',description:'Forged, bound and artificial companions.'},
 };
-export function companionAffinity(def:CompanionDefinition):CompanionAffinity{
- if(def.affinity)return def.affinity;
- const text=(def.name+' '+def.archetype+' '+def.origin.name).toLowerCase();
- if(/automaton|sentry|knightling|construct|forge|runebound/.test(text))return 'construct';
- if(/dawn|faith|wing|light|page|oathbound/.test(text))return 'radiant';
- if(/gloam|shade|shadow|wraith|memory/.test(text))return 'umbral';
- if(/sprite|echo|wisp|rune|arcane|glass/.test(text))return 'arcane';
- if(/sunscar|frost|ash|titan|treant|briar|element/.test(text))return 'primal';
- return 'wild';
-}
+export function companionAffinity(def:CompanionDefinition):CompanionAffinity{return def.affinity??companionAffinityById(def.id);}
 export function companionAffinityDiversity(defs:CompanionDefinition[]){return new Set(defs.map(companionAffinity)).size;}

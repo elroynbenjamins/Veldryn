@@ -82,6 +82,11 @@ ok(account.includes('IN DEVELOPMENT'),'Account hub must label disabled future de
 const guildFuture=read('src/screens/GuildScreen.tsx');
 ok(guildFuture.includes("'Guild vs Guild'")&&guildFuture.includes("'Guild Raids'")&&guildFuture.includes("'Guild Trials'")&&guildFuture.includes("'Guild Expeditions'")&&guildFuture.includes("'Guild Legacy'"),'Guild must expose the approved future-content previews');
 ok(guildFuture.includes("onlineSection==='Future'?<GuildFutureContent/>"),'Guild future content must have a dedicated destination');
+ok(guildFuture.includes("(['Home','Members','Activities','Hall','Chat','Manage','Future'] as const)"),'Online Guild navigation must use the consolidated seven-destination hierarchy');
+ok(guildFuture.includes("onlineSection==='Home'?<GuildOnlineHome"),'Online Guild must expose a dedicated overview home');
+ok(guildFuture.includes("onlineSection==='Activities'?<View style={s.sectionStack}")&&guildFuture.includes('<OnlineGuildMusterPanel/>')&&guildFuture.includes('{onlineProjects}')&&guildFuture.includes('{onlinePve}'),'Guild activities must group Muster, Projects and PvE together');
+ok(guildFuture.includes("onlineSection==='Manage'?<View style={s.sectionStack}")&&guildFuture.includes('{onlineDirectory}')&&guildFuture.includes('{onlineCustomize}'),'Guild management must group recruitment/creation and identity customization');
+ok(guildFuture.includes("homeGrid:{flexDirection:'row',flexWrap:'wrap'"),'Guild Home destination cards must wrap on narrow layouts');
 const guildHall=read('src/components/OnlineGuildHallPanel.tsx');
 ok(guildHall.includes('Future Guild Legacy will preserve major trophies and season records permanently.'),'Guild Hall Trophy Room must explain its future Guild Legacy relationship');
 

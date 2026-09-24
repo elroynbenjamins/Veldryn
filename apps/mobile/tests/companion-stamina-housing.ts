@@ -1,4 +1,4 @@
-import {strict as assert} from 'node:assert';
+import {assert} from './test-assert';
 import {companionFoodNeededForStamina,companionFoodStamina,COMPANION_EXPEDITION_STAMINA} from '../src/core/companion-provisions';
 import {COMPANION_HOUSING_MILESTONES,COMPANION_HOUSING_UPGRADES,COMPANION_HOUSING_UNLIMITED,companionHousingLevelCap,companionHousingTier} from '../src/core/companion-housing';
 

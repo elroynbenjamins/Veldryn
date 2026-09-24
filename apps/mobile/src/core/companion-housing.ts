@@ -18,3 +18,11 @@ export function companionHousingTier(companionId:string,tiers?:CompanionHousingT
 export function companionHousingLevelCap(housingTier:number){const tier=Math.max(0,Math.min(3,Math.floor(housingTier)));return COMPANION_HOUSING_MILESTONES[tier].levelCap;}
 export function companionHousingRequiredTier(progress:OwnedCompanionProgress){if(progress.level<10)return 0;if(progress.level<20)return 1;if(progress.level<25)return 2;return 3;}
 export function companionCanLevelWithHousing(companionId:string,progress:OwnedCompanionProgress,tiers?:CompanionHousingTiers){return progress.level<companionHousingLevelCap(companionHousingTier(companionId,tiers));}
+
+export const COMPANION_HOUSING_VISUALS=[
+ {tier:0,label:'Basic Quarters',borderColor:'#59636f',borderWidth:1,surface:'rgba(89,99,111,0.08)',accent:'BASIC'},
+ {tier:1,label:'Reinforced Quarters',borderColor:'#8b6f47',borderWidth:2,surface:'rgba(139,111,71,0.10)',accent:'REINFORCED'},
+ {tier:2,label:'Veteran Quarters',borderColor:'#7894a8',borderWidth:2,surface:'rgba(120,148,168,0.12)',accent:'VETERAN'},
+ {tier:3,label:'Master Quarters',borderColor:'#d0ad63',borderWidth:3,surface:'rgba(208,173,99,0.13)',accent:'MASTER'},
+] as const;
+export function companionHousingVisual(companionId:string,tiers?:CompanionHousingTiers){return COMPANION_HOUSING_VISUALS[companionHousingTier(companionId,tiers)];}

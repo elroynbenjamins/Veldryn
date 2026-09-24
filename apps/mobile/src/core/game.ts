@@ -80,6 +80,8 @@ const COMBAT_EXPECTED_SCALE=1.3;
 const COMBAT_MONSTER_DAMAGE_SCALE=1.13;
 /** Ordinary regional combat should consume some food for a reasonably prepared player. */
 export const REGIONAL_COMBAT_PRESSURE:Readonly<Record<string,number>>={Greenfields:1.00,Silverbrook:1.04,'Ironwood Forest':1.08,'Old Mines':1.12,"King's Road":1.16,Sunscar:1.20,Frostmarch:1.25,Ashlands:1.30};
+export type RegionalMonsterPressureBand='entry'|'standard'|'hard';
+export const REGIONAL_MONSTER_PRESSURE_MULTIPLIER:Readonly<Record<RegionalMonsterPressureBand,number>>={entry:.92,standard:1,hard:1.10};
 export const REGIONAL_FOOD_SUSTAIN_TARGETS:Readonly<Record<string,{foodPerHourMin:number;foodPerHourMax:number}>>={Greenfields:{foodPerHourMin:0,foodPerHourMax:3},Silverbrook:{foodPerHourMin:1,foodPerHourMax:4},'Ironwood Forest':{foodPerHourMin:2,foodPerHourMax:6},'Old Mines':{foodPerHourMin:3,foodPerHourMax:7},"King's Road":{foodPerHourMin:4,foodPerHourMax:8},Sunscar:{foodPerHourMin:5,foodPerHourMax:10},Frostmarch:{foodPerHourMin:6,foodPerHourMax:12},Ashlands:{foodPerHourMin:7,foodPerHourMax:14}};
 export const GATHER_TIME_SCALE=1.25;
 
@@ -246,6 +248,16 @@ function routeRewards(state:GameState,incoming:ItemStack[],nowMs:number){
 function consume(stacks:ItemStack[],itemId:string,quantity:number){const f=stacks.find(s=>s.itemId===itemId);if(!f||f.quantity<quantity)throw new Error('Not enough items');return stacks.map(s=>s.itemId===itemId?{...s,quantity:s.quantity-quantity}:s).filter(s=>s.quantity>0)}
 function stackQty(stacks:ItemStack[],itemId?:string){if(!itemId)return 0;return stacks.find(s=>s.itemId===itemId)?.quantity||0;}
 
+export function regionalMonsterPressureBand(monsterId:string):RegionalMonsterPressureBand{
+ const m=MONSTERS.find(row=>row.id===monsterId);if(!m||m.boss)return 'hard';
+ const peers=MONSTERS.filter(row=>!row.boss&&row.zone===m.zone).sort((a,b)=>a.level-b.level||a.attack-b.attack);
+ if(peers.length<=1)return 'standard';
+ const index=peers.findIndex(row=>row.id===monsterId);
+ if(index<=Math.floor((peers.length-1)*.25))return 'entry';
+ if(index>=Math.ceil((peers.length-1)*.75))return 'hard';
+ return 'standard';
+}
+
 function combatRuntimeDetails(state:GameState,monsterId:string){
   const c=state.character!,baseMonster=MONSTERS.find(x=>x.id===monsterId)!;
   const challengeId=state.activity?.kind==='combat'?state.activity.combatChallengeId:undefined,affixId=state.activity?.kind==='combat'?state.activity.combatAffixId:undefined;
@@ -268,7 +280,7 @@ export function combatSustainProjection(state:GameState,monsterId:string,hours=1
  if(!state.character)return undefined;
  const runtime=combatRuntimeDetails(state,monsterId),foodId=state.character.equippedFoodId,food=foodId?itemDef(foodId):undefined;
  const raw=Math.max(1,Math.round((runtime.m.attack*COMBAT_MONSTER_DAMAGE_SCALE)-Math.floor(runtime.boostedDefense*.58)));
- const regionalPressure=REGIONAL_COMBAT_PRESSURE[runtime.m.zone]??1;
+ const regionalPressure=(REGIONAL_COMBAT_PRESSURE[runtime.m.zone]??1)*REGIONAL_MONSTER_PRESSURE_MULTIPLIER[regionalMonsterPressureBand(runtime.m.id)];
  const damagePerKill=Math.max(1,Math.round((raw*.48+runtime.m.level*.16)*regionalPressure*runtime.secondary.incomingPressureMultiplier*runtime.style.damageTakenMultiplier*runtime.tactic.damageTakenMultiplier*runtime.modifiers.incomingDamageMultiplier*runtime.companion.incomingDamageMultiplier*(1-runtime.effectGems.damage_reduction)*Math.max(.5,1-runtime.setCombat.stats.ward)*(state.character.preparation?preparationEffects(state.character.preparation).damage:1)));
  const recoveryPerKill=Math.max(1,Math.floor(runtime.stats.hp*runtime.style.recoveryPct*runtime.tactic.recoveryMultiplier*runtime.companion.recoveryMultiplier*(1+runtime.effectGems.recovery)*runtime.setCombat.recoveryMultiplier));
  const netDamagePerKill=Math.max(0,damagePerKill-recoveryPerKill),killsPerHour=3600/Math.max(.1,runtime.killCycleSeconds);
@@ -311,7 +323,7 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number){
   for(let i=0;i<theoreticalKills;i++){
     const champion=!challengeId&&isChampionEncounter(c.id,state.activity?.lastClaimAtMs??0,monsterId,i);
     const raw=Math.max(1,Math.round((m.attack*COMBAT_MONSTER_DAMAGE_SCALE)-Math.floor(boostedDefense*.58)));
-    const regionalPressure=REGIONAL_COMBAT_PRESSURE[m.zone]??1;
+    const regionalPressure=(REGIONAL_COMBAT_PRESSURE[m.zone]??1)*REGIONAL_MONSTER_PRESSURE_MULTIPLIER[regionalMonsterPressureBand(m.id)];
     const damage=Math.max(1,Math.round((raw*.48 + m.level*.16)*regionalPressure*secondary.incomingPressureMultiplier*style.damageTakenMultiplier*tactic.damageTakenMultiplier*(champion?CHAMPION_DAMAGE_MULTIPLIER:1)*modifiers.incomingDamageMultiplier*companion.incomingDamageMultiplier*(1-effectGems.damage_reduction)*Math.max(.5,1-setCombat.stats.ward)*(c.preparation?preparationEffects(c.preparation).damage:1)));
     hp-=damage;
     while(food && food.heal && foodLeft>0 && hp>0 && hp/stats.hp<=threshold){

@@ -9,6 +9,8 @@ import {recipePreparationTrackingView,recipePreparationTransitionNotices} from '
 import {workingTowardExecutionOverview,workingTowardExecutionPlan,workingTowardStopRule} from '../src/core/working-toward-execution';
 import {activityQueueCapacity} from '../src/core/activity-queue';
 import {executeGameCommand} from '../src/core/game-commands';
+import {workingTowardInventoryProtectionMap} from '../src/core/working-toward-inventory';
+import {bulkSelectionSummary} from '../src/core/inventory-bulk';
 
 function fail(message:string):never{throw new Error(message)}
 function ok(value:unknown,message:string){if(!value)fail(message)}
@@ -60,6 +62,8 @@ const itemGoal:ProgressionGoal={id:'goal-item',characterId,kind:'item_quantity',
 const itemDestination=progressionGoalDestination(state,itemGoal);
 equal(itemDestination.kind,'skills','gathered item goal routes to Skills');
 if(itemDestination.kind==='skills'){equal(itemDestination.actionId,'COPPER_VEIN','item goal deep-links its gathering source');equal(itemDestination.regionId,'OLD_MINES','item source carries its region');}
+const itemGoalProtection=workingTowardInventoryProtectionMap({...state,character:{...state.character!,progressionGoals:[itemGoal]}});
+ok(itemGoalProtection.has('COPPER_ORE'),'Pinned item-quantity goals protect their tracked stack from bulk disposal');
 
 const copperLockedExecution=workingTowardExecutionPlan(state,itemGoal);
 equal(copperLockedExecution.executionState,'blocked','off-region gathered item goal reports the region level gate before offering travel');
@@ -129,6 +133,12 @@ equal(finalPrepView.current,Math.max(0,preparationGoal.initialStepCount-1),'Owni
 ok(finalPrepView.nextLabel.includes('Reinforced Fitting')&&finalPrepView.destination.kind==='skills','Preparation tracking automatically advances to the final craft');
 equal(finalPrepView.stepNumber,finalPrepView.target,'Final tracked craft is presented as the last authored preparation step');
 equal(finalPrepView.stepLabel,`Step ${finalPrepView.target}/${finalPrepView.target}`,'Final craft step keeps exact Step X/Y wording');
+const finalReadyProtection=workingTowardInventoryProtectionMap(finalReadyState);
+ok(finalReadyProtection.has('ASTER_IRON_INGOT')&&finalReadyProtection.has('IRONWOOD_LOG'),'Owned inputs reserved by tracked preparation are marked as Working Toward items');
+const finalReadyBulk=bulkSelectionSummary(finalReadyState,['ASTER_IRON_INGOT','IRONWOOD_LOG'],'inventory');
+equal(finalReadyBulk.goalProtectedCount,2,'Bulk selection reports tracked preparation stacks separately');
+equal(finalReadyBulk.sellableStackCount,0,'Bulk sell cannot dispose of materials reserved by a tracked preparation goal');
+equal(finalReadyBulk.transferableStackCount,2,'Tracked materials can still move safely between Inventory and Bank');
 const advancedNotices=recipePreparationTransitionNotices(initialTrackedState,finalReadyState);
 equal(advancedNotices[0]?.kind,'advanced','Completing tracked prerequisite steps emits one preparation-advanced notice');
 ok(advancedNotices[0]?.message.includes('Next:')&&advancedNotices[0]?.message.includes('Reinforced Fitting'),'Advance notice names the newly active preparation step');
@@ -151,6 +161,7 @@ prepState={...prepState,inventory:{...prepState.inventory,stacks:[...prepState.i
 const completedState=prepState,completedPrepView=recipePreparationTrackingView(prepState,preparationGoal);
 ok(completedPrepView.status==='complete'&&completedPrepView.progress===1,'Preparation goal completes only after the tracked output is actually produced');
 equal(completedPrepView.stepLabel,`Step ${completedPrepView.target}/${completedPrepView.target}`,'Completed preparation preserves its final step label');
+ok(workingTowardInventoryProtectionMap(completedState).has('REINFORCED_FITTING'),'Completed tracked output remains protected until the player clears the goal');
 equal(workingTowardReadyCount(prepState),1,'Completed preparation goal contributes to Home Working Toward ready count');
 const completionNotices=recipePreparationTransitionNotices(finalReadyState,completedState);
 equal(completionNotices[0]?.kind,'complete','Producing the tracked final output emits a completion notice');

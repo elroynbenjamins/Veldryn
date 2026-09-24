@@ -256,12 +256,18 @@ ok(itemQuickInspect.includes('Other sources ·')&&itemQuickInspect.includes("'Mo
 ok(!itemQuickInspect.includes('model.sources.slice(0,4)'),'Item quick inspect must not silently hide known sources behind a fixed four-row cap');
 
 const inventory=read('src/screens/InventoryScreen.tsx');
+const itemCard=read('src/components/ItemCard.tsx');
+const inventoryBulk=read('src/core/inventory-bulk.ts');
 ok(inventory.includes("root:{padding:spacing.md,gap:10}"),'Inventory should keep compact screen padding');
 ok(inventory.includes("storageChip:{flex:1,minWidth:0,minHeight:48"),'Inventory storage selector should remain compact');
 ok(inventory.includes("utilityChip:{flex:1,minWidth:0,minHeight:44"),'Inventory quick controls must retain accessible touch height');
 ok(inventory.includes('visible={filterOpen}'),'Inventory categories must open in a compact filter sheet');
 ok(inventory.includes('filterOption:{minHeight:44'),'Inventory filter rows must retain accessible touch height');
 ok(!inventory.includes('contentContainerStyle={s.controlStrip}'),'Inventory must not regress to the long horizontal category strip');
+ok(inventory.includes('workingTowardInventoryProtectionMap(state)')&&inventory.includes('goalProtected={!!goalMeta}'),'Inventory must project Working Toward protection into visible item cards');
+ok(itemCard.includes('>GOAL</Text>')&&itemCard.includes('protected from bulk selling and salvage'),'Tracked goal items must visibly explain their bulk-disposal protection');
+ok(inventory.includes('Working Toward is using this item for')&&inventory.includes('goalProtectedCount'),'Manual disposal must warn while bulk management reports protected goal stacks');
+ok(inventoryBulk.includes('workingTowardInventoryProtectionMap(state)')&&inventoryBulk.includes('goalProtectedIds.has(itemId)'),'Bulk sell and salvage must enforce Working Toward protection in core logic, not only presentation');
 
 const dungeonDeepLinkApp=read('App.tsx');
 const dungeonDeepLinkScreen=read('src/screens/CoopExpeditionScreen.tsx');

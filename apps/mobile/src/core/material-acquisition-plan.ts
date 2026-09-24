@@ -297,6 +297,11 @@ export interface RecipePreparationBottleneck{
   stateLabel:string;
   etaSeconds?:number;
 }
+export interface RecipePreparationReservedItem{
+  itemId:string;
+  name:string;
+  quantity:number;
+}
 export interface RecipePreparationRoute{
   recipeId:string;
   steps:RecipePreparationStep[];
@@ -310,6 +315,7 @@ export interface RecipePreparationRoute{
   knownEtaSeconds:number;
   etaSeconds?:number;
   bottleneck?:RecipePreparationBottleneck;
+  reservedItems:RecipePreparationReservedItem[];
   complete:boolean;
   blockedReasons:string[];
 }
@@ -416,6 +422,19 @@ function preparationBottleneck(steps:RecipePreparationStep[]):RecipePreparationB
   return {stepId:step.id,label:step.label,state:step.state,stateLabel:step.stateLabel,...(step.etaSeconds!==undefined?{etaSeconds:step.etaSeconds}:{})};
 }
 
+function reservedItemsFromPlans(plans:MaterialAcquisitionPlan[]):RecipePreparationReservedItem[]{
+  const rows=new Map<string,RecipePreparationReservedItem>();
+  const visit=(plan:MaterialAcquisitionPlan)=>{
+    if(plan.ownedUsed>0){
+      const existing=rows.get(plan.itemId);
+      rows.set(plan.itemId,{itemId:plan.itemId,name:plan.name,quantity:(existing?.quantity??0)+plan.ownedUsed});
+    }
+    for(const child of plan.children)visit(child);
+  };
+  for(const plan of plans)visit(plan);
+  return [...rows.values()].sort((a,b)=>b.quantity-a.quantity||a.name.localeCompare(b.name));
+}
+
 export function recipePreparationRoute(state:GameState,recipe:Recipe,batches=1):RecipePreparationRoute{
   const count=Math.max(1,Math.floor(batches)),ledger=stockLedger(state),plans:MaterialAcquisitionPlan[]=[];
   if(recipe.requiresCraftedItemId&&!state.character?.craftedNoviceItemIds?.includes(recipe.requiresCraftedItemId)){
@@ -426,7 +445,7 @@ export function recipePreparationRoute(state:GameState,recipe:Recipe,batches=1):
   }
   for(const input of recipe.inputs)plans.push(planInternal(state,input.itemId,input.quantity*count,undefined,ledger,true,new Set()));
 
-  const preparationSteps=plans.flatMap((plan,index)=>planPreparationSteps(plan,`input:${index}`));
+  const preparationSteps=plans.flatMap((plan,index)=>planPreparationSteps(plan,`input:${index}`)),reservedItems=reservedItemsFromPlans(plans);
   const destination=recipeDestination(recipe),availability=workingTowardDestinationAvailability(state,destination),finalSeconds=finalRecipeSeconds(state,recipe,count);
   const finalOutputName=itemDef(recipe.output.itemId).name,chainLabel=preparationChainLabel(plans,finalOutputName);
   const totalGold=recipe.gold*count+plans.reduce((sum,plan)=>sum+plan.totalGold,0),goldShortfall=Math.max(0,totalGold-(state.character?.gold??0));
@@ -461,6 +480,7 @@ export function recipePreparationRoute(state:GameState,recipe:Recipe,batches=1):
     knownEtaSeconds,
     ...(complete?{etaSeconds:knownEtaSeconds}:{}),
     ...(bottleneck?{bottleneck}:{}),
+    reservedItems,
     complete,
     blockedReasons:[...new Set(blockers)],
   };

@@ -4,6 +4,8 @@ import type {CompanionTrialLifetimeStats,CompanionTrialProgress,CompanionTrialSe
 export const COMPANION_TRIAL_TIMEZONE='UTC' as const;
 export function companionTrialSeasonKey(nowMs:number){const d=new Date(nowMs);if(!Number.isFinite(d.getTime()))throw new Error('invalid_server_time');return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}`;}
 export function companionTrialSeasonBounds(seasonKey:string){const def=companionTrialSeasonDefinition(seasonKey);return {startsAt:def.startsAt,endsAt:def.endsAt};}
+export function companionTrialNextSeasonKey(seasonKey:string){const [year,month]=seasonKey.split('-').map(Number);if(!Number.isInteger(year)||!Number.isInteger(month)||month<1||month>12)throw new Error('invalid_companion_trial_season_key');const d=new Date(Date.UTC(year,month,1));return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}`;}
+export function companionTrialRotationPreview(serverNowMs:number){const currentKey=companionTrialSeasonKey(serverNowMs),nextKey=companionTrialNextSeasonKey(currentKey);return {current:companionTrialSeasonDefinition(currentKey),next:companionTrialSeasonDefinition(nextKey)};}
 export function companionTrialWeekKey(nowMs:number){
  const d=new Date(nowMs),day=(d.getUTCDay()+6)%7;const monday=Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate()-day);const md=new Date(monday);return `${md.getUTCFullYear()}-${String(md.getUTCMonth()+1).padStart(2,'0')}-${String(md.getUTCDate()).padStart(2,'0')}`;
 }

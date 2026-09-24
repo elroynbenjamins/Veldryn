@@ -15,7 +15,7 @@ const companions={...pets,quests:pets.quests.map(q=>q.questId==='QST_005'?{...q,
 const companionMoments=newlyUnlockedEarlyFeatures(pets,companions);
 assert.deepEqual(companionMoments.map(x=>x.id),['companions','guild'],'Level 10 milestone should introduce Companions then Guilds');
 assert.equal(companionMoments[1]?.destination,'Guild','Guild unlock moment opens Guild browsing directly');
-assert.equal(companionMoments.length,1);
+assert.equal(companionMoments.length,2);
 assert.equal(companionMoments[0].id,'companions');
 assert.equal(companionMoments[0].destination,'Companions');
 assert.ok(companionMoments[0].bullets.some(line=>line.includes('Housing')));

@@ -9,16 +9,23 @@ export const GATHERING:GatherDef[]=([
 {id:'ASTER_IRON_VEIN',skillId:'mining',name:'Aster-Iron Vein',unlockLevel:8,seconds:24,xp:18,itemId:'ASTER_IRON_ORE',min:1,max:2,zoneId:'OLD_MINES'},
 {id:'OATHSTONE_SEAM',skillId:'mining',name:'Oathstone Seam',unlockLevel:16,seconds:36,xp:29,itemId:'OATHSTONE_ORE',min:1,max:1,zoneId:'OLD_MINES'},
 {id:'ECHO_QUARTZ_GEODE',skillId:'mining',name:'Echo Quartz Geode',unlockLevel:20,seconds:38,xp:42,itemId:'ECHO_QUARTZ',min:1,max:1,zoneId:'OLD_MINES'},
+{id:'SUNSTONE_OUTCROP',skillId:'mining',name:'Sunstone Outcrop',unlockLevel:26,seconds:48,xp:92,itemId:'SUNSTONE_ORE',min:1,max:1,zoneId:'SUNSCAR'},
+{id:'FROSTIRON_VEIN',skillId:'mining',name:'Frostiron Vein',unlockLevel:46,seconds:62,xp:180,itemId:'FROSTIRON',min:1,max:1,zoneId:'FROSTMARCH'},
 {id:'BLACKGLASS_VEIN',skillId:'mining',name:'Blackglass Vein',unlockLevel:68,seconds:78,xp:310,itemId:'BLACKGLASS_ORE',min:1,max:1,zoneId:'ASHLANDS'},
 
 {id:'GREENWOOD_TREE',skillId:'woodcutting',name:'Greenwood Tree',unlockLevel:1,seconds:14,xp:8,itemId:'GREENWOOD_LOG',min:1,max:2,zoneId:'GREENFIELDS'},
 {id:'IRONWOOD_TREE',skillId:'woodcutting',name:'Ironwood Tree',unlockLevel:7,seconds:24,xp:17,itemId:'IRONWOOD_LOG',min:1,max:2,zoneId:'IRONWOOD'},
 {id:'CROWNWOOD_TREE',skillId:'woodcutting',name:'Crownwood Tree',unlockLevel:15,seconds:36,xp:27,itemId:'CROWNWOOD_LOG',min:1,max:1,zoneId:'IRONWOOD'},
+{id:'DUNEWOOD_TREE',skillId:'woodcutting',name:'Dunewood Tree',unlockLevel:26,seconds:46,xp:88,itemId:'DUNEWOOD',min:1,max:1,zoneId:'SUNSCAR'},
+{id:'WHITEPINE_TREE',skillId:'woodcutting',name:'Whitepine Tree',unlockLevel:46,seconds:60,xp:172,itemId:'WHITEPINE_LOG',min:1,max:1,zoneId:'FROSTMARCH'},
 {id:'CINDERWOOD_TREE',skillId:'woodcutting',name:'Cinderwood Tree',unlockLevel:68,seconds:76,xp:300,itemId:'CINDERWOOD_LOG',min:1,max:1,zoneId:'ASHLANDS'},
 
 {id:'SILVERBROOK_SHOAL',skillId:'fishing',name:'Silverbrook Shoal',unlockLevel:1,seconds:17,xp:9,itemId:'SILVERFIN',min:1,max:2,zoneId:'SILVERBROOK'},
 {id:'RIVER_EEL_POOL',skillId:'fishing',name:'River Eel Pool',unlockLevel:8,seconds:29,xp:18,itemId:'RIVER_EEL',min:1,max:1,zoneId:'SILVERBROOK'},
 {id:'OATHSCALE_POOL',skillId:'fishing',name:'Oathscale Pool',unlockLevel:16,seconds:41,xp:28,itemId:'OATHSCALE_PIKE',min:1,max:1,zoneId:'SILVERBROOK'},
+{id:'OASIS_CARP_POOL',skillId:'fishing',name:'Oasis Carp Pool',unlockLevel:26,seconds:50,xp:94,itemId:'OASIS_CARP',min:1,max:1,zoneId:'SUNSCAR'},
+{id:'GLASSFIN_POOL',skillId:'fishing',name:'Glassfin Pool',unlockLevel:36,seconds:56,xp:128,itemId:'GLASSFIN',min:1,max:1,zoneId:'SUNSCAR'},
+{id:'ICEFISH_POOL',skillId:'fishing',name:'Icefin Pool',unlockLevel:46,seconds:66,xp:188,itemId:'ICEFIN',min:1,max:1,zoneId:'FROSTMARCH'},
 // The 24-hour AFK window is generous; each gathering cycle is therefore
 // stretched by a noticeable amount to avoid rapid early skill acceleration.
 ] as Omit<GatherDef,'difficultyMultiplier'|'recommendedToolTier'>[]).map(activity=>{
@@ -38,6 +45,8 @@ export const RECIPES:Recipe[]=[
 {id:'SMELT_ASTER_IRON_INGOT',name:'Smelt Aster-Iron Batch',skillId:'smithing',level:8,xp:140,gold:50,seconds:42,repeatableTraining:true,inputs:[{itemId:'ASTER_IRON_ORE',quantity:8}],output:{itemId:'ASTER_IRON_INGOT',quantity:4}},
 {id:'FORGE_REINFORCED_FITTING',name:'Forge Reinforced Fitting',skillId:'smithing',level:12,xp:180,gold:50,seconds:48,repeatableTraining:true,inputs:[{itemId:'ASTER_IRON_INGOT',quantity:2},{itemId:'IRONWOOD_LOG',quantity:2}],output:{itemId:'REINFORCED_FITTING',quantity:1}},
 {id:'SMELT_OATHSTONE_INGOT',name:'Smelt Oathstone Batch',skillId:'smithing',level:16,xp:230,gold:80,seconds:54,repeatableTraining:true,inputs:[{itemId:'OATHSTONE_ORE',quantity:6}],output:{itemId:'OATHSTONE_INGOT',quantity:3}},
+{id:'SMELT_SUNSTONE_INGOT',name:'Smelt Sunstone Batch',skillId:'smithing',level:26,xp:520,gold:280,seconds:180,repeatableTraining:true,inputs:[{itemId:'SUNSTONE_ORE',quantity:6},{itemId:'DUNEWOOD',quantity:4}],output:{itemId:'SUNSTONE_INGOT',quantity:3}},
+{id:'SMELT_FROSTIRON_INGOT',name:'Smelt Frostiron Batch',skillId:'smithing',level:46,xp:980,gold:720,seconds:420,repeatableTraining:true,inputs:[{itemId:'FROSTIRON',quantity:6},{itemId:'WHITEPINE_LOG',quantity:4}],output:{itemId:'FROSTIRON_INGOT',quantity:3}},
 {id:'SMELT_BLACKGLASS_INGOT',name:'Smelt Blackglass Batch',skillId:'smithing',level:68,xp:1850,gold:1800,seconds:900,repeatableTraining:true,inputs:[{itemId:'BLACKGLASS_ORE',quantity:6},{itemId:'CINDERWOOD_LOG',quantity:4}],output:{itemId:'BLACKGLASS_INGOT',quantity:3}},
 
 
@@ -48,4 +57,7 @@ export const RECIPES:Recipe[]=[
 {id:'COOK_RIVER_EEL',name:'Sear River Eel Batch',skillId:'cooking',level:8,xp:180,gold:80,seconds:44,repeatableTraining:true,inputs:[{itemId:'RIVER_EEL',quantity:4}],output:{itemId:'SEARED_RIVER_EEL',quantity:4}},
 {id:'COOK_OATHSCALE',name:'Roast Oathscale Batch',skillId:'cooking',level:16,xp:260,gold:130,seconds:54,repeatableTraining:true,inputs:[{itemId:'OATHSCALE_PIKE',quantity:3}],output:{itemId:'ROASTED_OATHSCALE',quantity:3}},
 {id:'COOK_IRONWOOD_STEW',name:'Ironwood Hunter Stew',skillId:'cooking',level:15,xp:105,gold:140,seconds:66,inputs:[{itemId:'RIVER_EEL',quantity:2},{itemId:'THORN_SAP',quantity:1}],output:{itemId:'IRONWOOD_STEW',quantity:1}},
+{id:'COOK_OASIS_CARP',name:'Grill Oasis Carp Batch',skillId:'cooking',level:26,xp:420,gold:220,seconds:120,repeatableTraining:true,inputs:[{itemId:'OASIS_CARP',quantity:4}],output:{itemId:'GRILLED_OASIS_CARP',quantity:4}},
+{id:'COOK_GLASSFIN_FEAST',name:'Amberglass Glassfin Feast',skillId:'cooking',level:38,xp:720,gold:520,seconds:210,repeatableTraining:true,inputs:[{itemId:'GLASSFIN',quantity:3},{itemId:'AMBERGLASS',quantity:1}],output:{itemId:'GLASSFIN_FEAST',quantity:2}},
+{id:'COOK_ICEFISH',name:'Frosted Icefin Batch',skillId:'cooking',level:48,xp:1100,gold:900,seconds:300,repeatableTraining:true,inputs:[{itemId:'ICEFIN',quantity:3},{itemId:'WINTERMINT',quantity:1}],output:{itemId:'FROSTED_ICEFIN',quantity:3}},
 ];

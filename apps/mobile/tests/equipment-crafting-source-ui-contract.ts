@@ -27,7 +27,7 @@ ok(novice.includes('EQUIPMENT_CRAFT_SKILL_BY_CLASS[set.classId]'),'Novice equipm
 ok(path.includes('workingTowardItemSource'),'Equipment crafting planner must reuse shared source navigation');
 ok(path.includes("kind:'material'"),'Missing materials must become explicit blockers');
 ok(path.includes("mode:'crafting'")&&path.includes('Train '),'Skill blockers must route to profession training');
-ok(path.includes('craftTimeLabel:formatQueueTimeV31'),'Craft planner must show meaningful craft duration');
+ok(path.includes("craftTimeLabel:recipe.noviceSetId?'Instant':formatQueueTimeV31(professionActionPace(state,recipe,'forge').cycleSeconds)"),'Craft planner must show meaningful affinity-aware craft duration while preserving instant novice recipes');
 
 ok(inspect.includes('CRAFTING PATH'),'Quick Inspect must expose the equipment crafting plan');
 ok(inspect.includes("ingredient.missing+' missing"),'Quick Inspect must show exact missing material quantities');

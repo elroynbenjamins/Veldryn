@@ -76383,11 +76383,11 @@ function previewActivityReward(state, nowMs) {
     return previewDailySupplyTimedReward(state, settled.reward, "skill").reward;
   }
   if (state.activity?.kind === "alchemy") {
-    const elapsed = Math.min(offlineCapSeconds(state), Math.max(0, Math.floor((nowMs - state.activity.lastClaimAtMs) / 1e3))), base = previewAlchemyReward(state, elapsed);
+    const elapsed = Math.min(offlineCapSeconds(state), Math.max(0, (nowMs - state.activity.lastClaimAtMs) / 1e3)), base = previewAlchemyReward(state, elapsed);
     return previewDailySupplyTimedReward(state, base, "crafting").reward;
   }
   if (state.activity?.kind === "processing") {
-    const elapsed = Math.min(offlineCapSeconds(state), Math.max(0, Math.floor((nowMs - state.activity.lastClaimAtMs) / 1e3))), base = previewProcessingReward(state, elapsed);
+    const elapsed = Math.min(offlineCapSeconds(state), Math.max(0, (nowMs - state.activity.lastClaimAtMs) / 1e3)), base = previewProcessingReward(state, elapsed);
     return previewDailySupplyTimedReward(state, base, "crafting").reward;
   }
   if (!state.activity || !state.character) return { xp: 0, gold: 0, items: [], kills: 0, elapsedSeconds: 0 };
@@ -76455,7 +76455,7 @@ function claimActivity(state, nowMs) {
   }
   if (state.activity?.kind === "alchemy") {
     if (nowMs <= state.activity.lastClaimAtMs) return { state, reward: previewActivityReward(state, state.activity.lastClaimAtMs) };
-    const elapsed = Math.min(offlineCapSeconds(state), Math.max(0, Math.floor((nowMs - state.activity.lastClaimAtMs) / 1e3))), baseReward = previewAlchemyReward(state, elapsed), boost = previewDailySupplyTimedReward(state, baseReward, "crafting"), reward3 = boost.reward, brew = state.activity.brew;
+    const elapsed = Math.min(offlineCapSeconds(state), Math.max(0, (nowMs - state.activity.lastClaimAtMs) / 1e3)), baseReward = previewAlchemyReward(state, elapsed), boost = previewDailySupplyTimedReward(state, baseReward, "crafting"), reward3 = boost.reward, brew = state.activity.brew;
     const routed2 = routeRewards(state, reward3.items, nowMs);
     const skills2 = state.skills.map((x) => x.skillId === "alchemy" ? { ...x, xp: Math.min(totalXpAtLevel(100), x.xp + (reward3.xp ?? 0)), level: levelFromXp(Math.min(totalXpAtLevel(100), x.xp + (reward3.xp ?? 0))) } : x);
     const nextBase2 = { ...state, ...routed2, skills: skills2, rewardRemainders: reward3.nextRewardRemainders, activity: reward3.nextBrewRemaining ? { ...state.activity, lastClaimAtMs: nowMs, progressFraction: reward3.nextProgressFraction, brew: { ...brew, remainingBatches: reward3.nextBrewRemaining } } : null };
@@ -76465,7 +76465,7 @@ function claimActivity(state, nowMs) {
   }
   if (state.activity?.kind === "processing") {
     if (nowMs <= state.activity.lastClaimAtMs) return { state, reward: previewActivityReward(state, state.activity.lastClaimAtMs) };
-    const elapsed = Math.min(offlineCapSeconds(state), Math.max(0, Math.floor((nowMs - state.activity.lastClaimAtMs) / 1e3))), baseReward = previewProcessingReward(state, elapsed), boost = previewDailySupplyTimedReward(state, baseReward, "crafting"), reward3 = boost.reward, processing = state.activity.processing;
+    const elapsed = Math.min(offlineCapSeconds(state), Math.max(0, (nowMs - state.activity.lastClaimAtMs) / 1e3)), baseReward = previewProcessingReward(state, elapsed), boost = previewDailySupplyTimedReward(state, baseReward, "crafting"), reward3 = boost.reward, processing = state.activity.processing;
     const routed2 = routeRewards(state, reward3.items, nowMs), nextXp = (state.skills.find((x) => x.skillId === processing.skillId)?.xp ?? 0) + (reward3.xp ?? 0);
     const skills2 = state.skills.map((x) => x.skillId === processing.skillId ? { ...x, xp: Math.min(totalXpAtLevel(100), nextXp), level: levelFromXp(Math.min(totalXpAtLevel(100), nextXp)) } : x);
     const nextBase2 = { ...state, ...routed2, skills: skills2, rewardRemainders: reward3.nextRewardRemainders, activity: reward3.nextProcessingRemaining ? { ...state.activity, lastClaimAtMs: nowMs, progressFraction: reward3.nextProgressFraction, processing: { ...processing, remainingBatches: reward3.nextProcessingRemaining } } : null };

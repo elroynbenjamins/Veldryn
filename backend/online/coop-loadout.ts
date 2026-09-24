@@ -10,8 +10,10 @@ import {deriveRole,evaluateRoleReadiness,type CapabilityTag} from '../src/server
 import {normalizeCombatInput,ROOTBOUND_ROLE_REFERENCES} from '../src/server/coop/normalization';
 import {companionOwned,assertCompanionIdle} from '../../apps/mobile/src/core/companion-runtime';
 import {validateCompanionLoadout} from '../src/server/companions/policy';
+import {dungeonConsumablePolicy} from '../src/server/coop/consumable-policy';
 
 export const ONLINE_COOP_BALANCE_VERSION='online-coop-loadout-v1';
+export function onlineCoopConsumablePolicy(tier:number){return dungeonConsumablePolicy(tier);}
 /** Converts the two existing stat units without changing solo gameplay. A complete,
  * unenhanced class novice outfit is the existing co-op kit's level-25 reference.
  * Actual equipped gear (including enhancements/gems) scales each matching stat.

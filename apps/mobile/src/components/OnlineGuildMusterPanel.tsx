@@ -22,7 +22,7 @@ export function OnlineGuildMusterPanel(){
  if(error&&!state)return <Panel><Text style={s.title}>Guild Muster</Text><Text style={s.error}>{error}</Text><GameButton compact title="Retry" tone="secondary" onPress={()=>void load()}/></Panel>;
  if(!state)return <Panel><Text style={s.title}>Guild Muster</Text><Text style={s.copy}>Join a Guild to take part in daily Muster and the shared weekly Rally.</Text></Panel>;
 
- const dailyPct=guildMusterDailyPercent(state.dailyPoints),rallyPct=guildMusterRallyPercent(state.rallyMarks,state.rallyTarget),hallBonus=state.hallBonusBps/100,activityBonuses=guildActivityBonuses(rallyPct),nextActivity=guildActivityNextMilestone(rallyPct);
+ const dailyPct=guildMusterDailyPercent(state.dailyPoints),rallyPct=guildMusterRallyPercent(state.rallyMarks,state.rallyTarget),hallBonus=state.hallBonusBps/100,activityPct=state.activityPercent,activityBonuses=guildActivityBonuses(activityPct),nextActivity=guildActivityNextMilestone(activityPct);
  const visibleMembers=members.slice(0,6);
  return <View style={s.root}>
   <Panel>
@@ -48,7 +48,7 @@ export function OnlineGuildMusterPanel(){
 
   <Panel>
    <View style={s.head}><View style={s.flex}><Text style={s.kicker}>WEEKLY GUILD RALLY</Text><Text style={s.sectionTitle}>{state.rallyMarks}/{state.rallyTarget} Rally Marks</Text></View><StatusPill label={tierLabel(state.rallyTier)} tone={state.rallyTier>0?'good':'muted'}/></View>
-   <Progress value={rallyPct} C={C}/>
+   <Progress value={activityPct} C={C}/>
    <View style={s.metrics}>
     <Metric label="CHECKED IN" value={state.checkedInMembersToday+'/'+state.memberCount} C={C}/>
     <Metric label="MARK TODAY" value={String(state.qualifiedMembersToday)} C={C}/>
@@ -59,12 +59,12 @@ export function OnlineGuildMusterPanel(){
   </Panel>
 
   <Panel>
-   <View style={s.head}><View style={s.flex}><Text style={s.kicker}>ACTIVE GUILD</Text><Text style={s.sectionTitle}>{rallyPct}% Guild Activity</Text></View><StatusPill label={rallyPct>=100?'MAX ACTIVITY':nextActivity?nextActivity.threshold+'% NEXT':'ACTIVE'} tone={rallyPct>=60?'good':'info'}/></View>
-   <Progress value={rallyPct} C={C}/>
-   <Text style={s.copy}>Guild Activity is designed to be sustained through Guild Quests and other verified cooperative objectives. The requirement scales with Guild size, so larger rosters need proportionally more contribution.</Text>
-   <View style={s.activityMilestones}>{GUILD_ACTIVITY_MILESTONE_DEFS.map(row=><View key={row.threshold} style={[s.activityMilestone,rallyPct>=row.threshold&&s.activityMilestoneOn]}><Text style={[s.activityPct,rallyPct>=row.threshold&&s.activityPctOn]}>{row.threshold}%</Text><View style={s.flex}><Text style={s.activityName}>{row.name}</Text><Text style={s.note}>{row.description}</Text></View></View>)}</View>
-   <Text style={s.note}>Recommended persistence model: no hard weekly wipe. Activity loses {GUILD_ACTIVITY_DAILY_DECAY_PERCENT} percentage points per inactive day, preserving momentum while still rewarding consistent Guild participation.</Text>
-   <Text style={s.note}>Current unlocked effects: +{activityBonuses.gatheringSpeedBps/100}% gathering · +{activityBonuses.productionSpeedBps/100}% production · +{activityBonuses.skillXpBps/100}% Skill XP · +{activityBonuses.masteryXpBps/100}% Mastery XP · +{activityBonuses.rareMaterialChanceRelativeBps/100}% relative rare materials.</Text>
+   <View style={s.head}><View style={s.flex}><Text style={s.kicker}>ACTIVE GUILD</Text><Text style={s.sectionTitle}>{activityPct}% Guild Activity</Text></View><StatusPill label={activityPct>=100?'MAX ACTIVITY':nextActivity?nextActivity.threshold+'% NEXT':'ACTIVE'} tone={activityPct>=60?'good':'info'}/></View>
+   <Progress value={activityPct} C={C}/>
+   <Text style={s.copy}>Guild Activity is sustained through Guild Quests and other verified cooperative objectives. The current activity requirement scales with Guild size, so larger rosters need proportionally more contribution.</Text>
+   <View style={s.activityMilestones}>{GUILD_ACTIVITY_MILESTONE_DEFS.map(row=><View key={row.threshold} style={[s.activityMilestone,activityPct>=row.threshold&&s.activityMilestoneOn]}><Text style={[s.activityPct,activityPct>=row.threshold&&s.activityPctOn]}>{row.threshold}%</Text><View style={s.flex}><Text style={s.activityName}>{row.name}</Text><Text style={s.note}>{row.description}</Text></View></View>)}</View>
+   <Text style={s.note}>Activity does not hard-reset each week. It loses {state.activityDailyDecayPercent||GUILD_ACTIVITY_DAILY_DECAY_PERCENT} percentage points per inactive UTC day, preserving momentum while still rewarding consistent Guild participation.</Text>
+   <Text style={s.note}>Current unlocked effects: +{state.gatheringSpeedBps/100}% gathering · +{state.productionSpeedBps/100}% production · +{state.activitySkillXpBps/100}% Skill XP · +{state.masteryXpBps/100}% Mastery XP · +{state.rareMaterialRelativeBps/100}% relative rare materials.</Text>
   </Panel>
 
   <Panel>

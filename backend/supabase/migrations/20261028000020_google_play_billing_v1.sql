@@ -251,23 +251,23 @@ end $$;
 create or replace function public.google_play_rtdn_processed_v1(p_message_id text)
 returns boolean
 language sql stable security definer set search_path=''
-as $
+as $$
   select exists(
     select 1 from private.google_play_rtdn_events_v1 e
     where e.message_id=p_message_id
   );
-$;
+$$;
 
 create or replace function public.google_play_mark_rtdn_processed_v1(p_message_id text)
 returns void
 language plpgsql security definer set search_path=''
-as $
+as $$
 begin
   if nullif(trim(p_message_id),'') is null then return;end if;
   insert into private.google_play_rtdn_events_v1(message_id,processed_at)
   values(p_message_id,now())
   on conflict(message_id) do nothing;
-end $;
+end $$;
 
 revoke all on function private.google_play_recompute_entitlements_v1(uuid) from public,anon,authenticated;
 revoke all on function public.google_play_register_account_link_v1(uuid,text) from public,anon,authenticated;

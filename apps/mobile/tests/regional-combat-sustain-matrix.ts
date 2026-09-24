@@ -3,6 +3,7 @@ import {combatSustainProjection} from '../src/core/game';
 import {itemDef} from '../src/content/items';
 import type {GameState} from '../src/core/types';
 import {REGIONAL_COMBAT_FIXTURES,regionalCombatFixture} from '../src/core/regional-combat-fixtures';
+import {equipCombatCompanion,unlockCombatCompanion} from '../src/core/combat-companions';
 
 const durations=[1,4,8,24] as const,report:Array<Record<string,unknown>>=[];
 let previousHeal=0;
@@ -31,5 +32,14 @@ const noFoodProjection=combatSustainProjection(noFood,greenfields.monsterId);
 assert.ok(noFoodProjection,'no-food sustain projection must still resolve');
 assert.equal(noFoodProjection!.healingPerFood,0,'no equipped food must provide zero healing');
 assert.equal(noFoodProjection!.foodPerHour,Infinity,'no-food long-hunt projection must report unsustainable food demand');
+
+let healerState=regionalCombatFixture(greenfields,'prepared');
+healerState=unlockCombatCompanion(healerState,'UNIT_003',0);
+healerState=equipCombatCompanion(healerState,'UNIT_003');
+const healerProjection=combatSustainProjection(healerState,greenfields.monsterId)!;
+const baselineProjection=combatSustainProjection(regionalCombatFixture(greenfields,'prepared'),greenfields.monsterId)!;
+assert.ok(healerProjection.companionHealingPerHour>0,'restorative Support companion must contribute real long-hunt healing');
+assert.ok(healerProjection.foodPerHour<baselineProjection.foodPerHour,'restorative Support healing must reduce food burn');
+assert.ok(healerProjection.foodPerHour>0,'Support healing must not remove the long-hunt food requirement');
 
 console.log(JSON.stringify({status:'PASS',report},null,2));

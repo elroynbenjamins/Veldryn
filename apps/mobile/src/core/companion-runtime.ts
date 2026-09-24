@@ -41,7 +41,7 @@ const PLAYBACK_EVENT_TYPES=new Set<CombatEvent['type']>(['combat_start','phase',
 export function companionBattlePlayback(result:CombatResult):CompanionBattlePlaybackSnapshot{
  const states=[...result.players,...result.enemies],abilityNames:Record<string,string>={BASIC:'Basic attack'};
  for(const state of states){for(const ability of state.definition.abilities)abilityNames[ability.id]=ability.name;for(const phase of state.definition.phases??[])abilityNames[phase.id]=phase.name??phase.id.replace(/_/g,' ');}
- const events=result.events.filter(event=>PLAYBACK_EVENT_TYPES.has(event.type)).map(event=>({atMs:event.atMs,type:event.type,actorId:event.actorId,targetId:event.targetId,abilityId:event.abilityId,interruptedAbilityId:event.interruptedAbilityId,amount:event.amount,critical:event.critical,absorbed:event.absorbed,detail:event.detail})).slice(0,420);
+ const events=result.events.filter(event=>PLAYBACK_EVENT_TYPES.has(event.type)).map(event=>({atMs:event.atMs,type:event.type,actorId:event.actorId,targetId:event.targetId,abilityId:event.abilityId,interruptedAbilityId:event.interruptedAbilityId,amount:event.amount,critical:event.critical,absorbed:event.absorbed,detail:event.detail}));
  return {durationMs:result.durationMs,units:states.map(state=>({id:state.definition.id,name:state.definition.name,team:state.definition.team,role:state.definition.role,maxHp:state.definition.stats.maxHp,boss:state.definition.boss===true})),abilityNames,events};
 }
 

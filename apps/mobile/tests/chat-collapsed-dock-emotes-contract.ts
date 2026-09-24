@@ -60,6 +60,8 @@ ok(picker.includes('CHAT_EMOTE_TRAY_SIZE'),'Production picker must use the canon
 ok(picker.includes('usedCount>=CHAT_MAX_EMOTES_PER_MESSAGE'),'Quick emote insertion must disable after two emotes are already in the draft');
 ok(picker.includes('availableChatEmotes(unlockedIds)'),'Tray editing must include default plus account-unlocked emotes');
 ok(picker.includes('chatEmoteArtwork'),'Tray slots must show the actual emote PNGs');
+ok(picker.includes('useWindowDimensions')&&picker.includes("stackControls=width<360||fontScale>=1.25"),'Emote tray controls must adapt to narrow phones and large text');
+ok(picker.includes('headingRowStack')&&picker.includes('actionsStack')&&picker.includes("actionStack:{flex:0,width:'100%'}"),'Emote editing header and save actions must stack instead of squeezing');
 
 const message=read('src/components/ChatMessageText.tsx');
 ok(message.includes('chatEmoteArtwork')&&message.includes('<Image key={index}'),'Chat messages must render custom emote artwork inline');

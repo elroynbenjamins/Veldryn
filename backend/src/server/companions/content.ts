@@ -1,4 +1,5 @@
 import type {CompanionRarity,CompanionRole} from './policy';
+import {companionAffinityById} from '../../shared/companion-affinity-catalog';
 import type {CompanionCodexMilestoneDefinition,CompanionIdentityProfile,CompanionMissionDefinition,CompanionProvingGroundChallengeDefinition,CompanionServerDefinition,CompanionSpecialChallengeDefinition,CompanionTechniqueDefinition,CompanionTrialSeasonDefinition,CompanionWeeklyChallengeDefinition} from './domain';
 
 const raw:Array<[string,string,CompanionRole,CompanionRarity,string,number,number,number,number,string,number]>= [
@@ -48,7 +49,7 @@ const cooldown=(rarity:CompanionRarity,role:CompanionRole)=>1000*(role==='damage
 const target=(role:CompanionRole)=>role==='damage'?{assistTarget:'current_target' as const,standaloneTarget:'current_target' as const}:role==='tank'?{assistTarget:'owner' as const,standaloneTarget:'self' as const}:{assistTarget:'owner' as const,standaloneTarget:'lowest_hp_ally' as const};
 const effect=(kind:string):CompanionServerDefinition['active']['effectKind']=>kind==='damage'?'damage':kind==='shield'?'shield':kind==='interrupt'?'interrupt':kind==='heal'?'heal':kind==='mitigation'?'mitigation':'utility';
 export const COMPANION_SERVER_DEFINITIONS:CompanionServerDefinition[]=raw.map(([id,name,role,rarity,originId,hp,power,defense,attackSpeed,kind,coeff])=>({
- id,name,role,rarity,originId,baseStats:{hp,power,defense,attackSpeed},tags:[role,rarity,originId],
+ id,name,role,rarity,affinity:companionAffinityById(id),originId,baseStats:{hp,power,defense,attackSpeed},tags:[role,rarity,originId,companionAffinityById(id),`affinity:${companionAffinityById(id)}`],
  active:{id:`${id}_ACTIVE`,name:COMPANION_IDENTITY_PROFILES[id]?.activeName??`${name} Signature`,cooldownMs:cooldown(rarity,role),baseCoeff:coeff,perLevelCoeff:kind==='damage'?.004:.0006,effectKind:effect(kind),targeting:target(role)},
  identity:COMPANION_IDENTITY_PROFILES[id],
  visual:rarity==='prestige'?{rarityFrame:'prestige',summonEffect:'prestige_summon',idleEffect:'prestige_idle',profileFrame:'prestige_profile',masteryMarker:'prestige_mastery',nameplateTreatment:'prestige_nameplate',animationRef:`${id}_prestige_entry`,rarityIcon:'★',rarityLabel:'Prestige',accessibilityLabel:'Prestige combat companion. Star rarity icon and ornate structured frame.',reducedMotionFallback:'prestige_static_entry'}:rarity==='elite'?{rarityFrame:'elite',summonEffect:'elite_summon',masteryMarker:'elite_mastery',rarityIcon:'◆◆◆',rarityLabel:'Elite',accessibilityLabel:'Elite combat companion. Triple-diamond rarity icon and distinct structured frame.',reducedMotionFallback:'elite_static_entry'}:rarity==='rare'?{rarityFrame:'rare',rarityIcon:'◆◆',rarityLabel:'Rare',accessibilityLabel:'Rare combat companion. Double-diamond rarity icon and enhanced frame.'}:{rarityFrame:'standard',rarityIcon:'◆',rarityLabel:'Standard',accessibilityLabel:'Standard combat companion. Single-diamond rarity icon and simple frame.'},

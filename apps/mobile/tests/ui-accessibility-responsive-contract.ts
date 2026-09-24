@@ -35,6 +35,15 @@ const chatOverlay=read('src/components/ChatOverlay.tsx');
 ok(chatOverlay.includes('useWindowDimensions')&&chatOverlay.includes("expandWindow=width<360||fontScale>=1.25"),'Expanded chat must use more vertical space on narrow phones and large text');
 ok(chatOverlay.includes('reduceMotion={state.settings.reduceMotion}'),'Expanded chat must propagate reduced-motion preference into live channel identity rendering');
 
+const chatLog=read('src/components/ChatLog.tsx');
+ok(chatLog.includes("jump:{position:'absolute',right:8,bottom:8,minHeight:44"),'Chat jump-to-latest control must retain a 44px touch target');
+const mentions=read('src/components/ChatMentionSuggestions.tsx');
+ok(mentions.includes('chip:{minHeight:44'),'Chat mention suggestions must retain a 44px touch target');
+for(const path of ['src/components/OnlineWorldChat.tsx','src/components/OnlinePartyChat.tsx','src/components/GuildChat.tsx']){
+ const source=read(path);
+ ok(source.includes('nameButton')&&source.includes('minHeight:44'),'Chat player-name profile actions must retain a 44px touch target: '+path);
+}
+
 const chatPlayer=read('src/components/ChatPlayerSheet.tsx');
 ok(chatPlayer.includes('useWindowDimensions')&&chatPlayer.includes("stackActions=width<360||fontScale>=1.25"),'Chat player actions must adapt to narrow phones and large text');
 ok(chatPlayer.includes('actionsStack')&&chatPlayer.includes("actionStack:{flex:0,width:'100%',minWidth:0}"),'Chat player actions must stack full-width instead of squeezing');

@@ -43,6 +43,9 @@ export function companionMissionRequirementSatisfied(requirement:CompanionMissio
   case 'min_ascension':return countMatching(ids,(_id,p)=>p.ascensionTier>=requirement.tier,owned)>=countOrAll(requirement.count);
   case 'tag_count':return countMatching(ids,id=>companionServerDefinition(id)?.tags.includes(requirement.tag)===true,owned)>=requirement.count;
   case 'companion_id':return ids.includes(requirement.companionId);
+  case 'affinity_count':return ids.filter(id=>companionServerDefinition(id)?.affinity===requirement.affinity).length>=requirement.count;
+  case 'affinity_diversity':return new Set(ids.map(id=>companionServerDefinition(id)?.affinity).filter(Boolean)).size>=requirement.count;
+  case 'affinity_unique':return new Set(ids.map(id=>companionServerDefinition(id)?.affinity).filter(Boolean)).size===ids.length;
  }
 }
 function missionBonusSatisfied(missionId:string,ids:readonly string[],owned:Record<string,OwnedCompanionSnapshot>){const mission=companionMission(missionId);if(!mission)return false;if(mission.bonusRequirements?.length)return mission.bonusRequirements.every(r=>companionMissionRequirementSatisfied(r,ids,owned));return !!mission.bonusOriginId&&ids.some(id=>companionServerDefinition(id)?.originId===mission.bonusOriginId);}

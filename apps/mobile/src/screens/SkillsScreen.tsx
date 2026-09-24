@@ -1,3 +1,4 @@
+import {ClassSkillAffinityNote} from '../components/ClassSkillAffinityNote';
 import {RecipeCard} from '../components/RecipeCard';
 import {SearchField} from '../components/SearchField';
 import {ActivityArtwork} from '../components/ActivityArtwork';
@@ -76,6 +77,7 @@ export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueu
   return <ScrollView contentContainerStyle={s.root} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
     <DetailBack onPress={onBackToHub}/>
     <SkillHero state={state} skillId={initialSkill} kind={detailKind}/>
+    <ClassSkillAffinityNote classId={state.character?.classId} skillId={initialSkill}/>
     <SkillMilestoneStrip state={state} skillId={initialSkill as SkillId} onNavigate={onNavigateCraftingSource}/>
     <ProfessionMasteryPanel state={state} skillId={initialSkill as SkillId} preferredActionId={initialActionId??initialRecipeId} onNavigate={onNavigateCraftingSource} onTrackMastery={trackMasteryGoal}/>
     {goalAction?<View style={s.goalTarget}><Text style={s.goalTargetLabel}>WORKING TOWARD TARGET</Text><Text style={s.goalTargetName}>{goalAction.name}</Text><Text style={s.sub}>{initialRecipe?'The recipe list is filtered to this target.':'The target activity is shown first in this skill.'}</Text></View>:null}

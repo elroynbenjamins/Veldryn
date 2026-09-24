@@ -1,3 +1,5 @@
+import {captureSkillAffinity,affinityXpRemainderKey} from './class-skill-affinities';
+import {professionActionPace} from './profession-action-pace';
 import {RECIPES,type Recipe} from '../content/skills';
 import {itemDef} from '../content/items';
 import type {GameState,ItemStack,RewardBundle,SkillId} from './types';
@@ -61,19 +63,19 @@ export function startProcessingBatch(state:GameState,recipeId:string,batches:num
     const fromInventory=Math.min(storedQuantity(inventory,input.itemId),input.quantity);
     inventory=take(inventory,input.itemId,fromInventory);bank=take(bank,input.itemId,input.quantity-fromInventory);
   }
-  const bonuses=characterPermanentMultipliers(state),mastery=professionMasteryMultipliers(recipe.id,state.account.professionMasteryByAction?.[recipe.id]);
+  const bonuses=characterPermanentMultipliers(state),pace=professionActionPace(state,recipe,'batch');
   const processing:ProcessingBatchState={version:1,recipeId:recipe.id,skillId:recipe.skillId as ProcessingSkillId,totalBatches:batches,remainingBatches:batches,
     inputsPerBatch:recipe.inputs.map(input=>({...input})),goldPerBatch:recipe.gold,outputPerBatch:{...recipe.output},
-    cycleSeconds:Math.max(1,recipe.seconds/mastery.speed),xpPerBatch:recipe.xp*bonuses.skillXpMultiplier*mastery.xp};
+    cycleSeconds:pace.cycleSeconds,xpPerBatch:pace.xpPerAction};
   return {...state,character:{...state.character!,gold:state.character!.gold-status.gold},inventory:{...state.inventory,stacks:inventory},bank:{...state.bank,stacks:bank},
-    activity:{kind:'processing',targetId:recipe.id,startedAtMs:nowMs,lastClaimAtMs:nowMs,progressFraction:0,bonusSnapshot:bonuses,processing}};
+    activity:{kind:'processing',targetId:recipe.id,startedAtMs:nowMs,lastClaimAtMs:nowMs,progressFraction:0,bonusSnapshot:bonuses,skillAffinity:captureSkillAffinity(state,recipe.skillId),processing}};
 }
 
 export function previewProcessingReward(state:GameState,elapsed:number):RewardBundle{
   const activity=state.activity,processing=activity?.processing;
   if(activity?.kind!=='processing'||!processing)throw new Error('Missing reserved processing batch.');
   const progress=elapsed/processing.cycleSeconds+(activity.progressFraction??0),actions=Math.min(processing.remainingBatches,Math.max(0,Math.floor(progress+1e-10))),remaining=processing.remainingBatches-actions,remainders={...(state.rewardRemainders??{})};
-  const xpKey=`xp:processing:${processing.skillId}`,rawXp=actions*processing.xpPerBatch+(remainders[xpKey]??0),wholeXp=Math.floor(rawXp+1e-10),skill=state.skills.find(row=>row.skillId===processing.skillId);
+  const xpKey=activity.skillAffinity?affinityXpRemainderKey(state.character!.id,processing.skillId):`xp:processing:${processing.skillId}`,rawXp=actions*processing.xpPerBatch+(remainders[xpKey]??0),wholeXp=Math.floor(rawXp+1e-10),skill=state.skills.find(row=>row.skillId===processing.skillId);
   const xp=Math.max(0,Math.min(wholeXp,totalXpAtLevel(100)-(skill?.xp??0)));remainders[xpKey]=xp<wholeXp?0:Math.max(0,rawXp-wholeXp);
   const mastery=professionMasteryMultipliers(processing.recipeId,state.account.professionMasteryByAction?.[processing.recipeId]),yieldKey=`mastery:processing:${processing.recipeId}:yield`,yieldRaw=actions*processing.outputPerBatch.quantity*mastery.yield+(remainders[yieldKey]??0),yieldQuantity=Math.floor(yieldRaw+1e-10);
   remainders[yieldKey]=Math.max(0,yieldRaw-yieldQuantity);

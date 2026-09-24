@@ -13,9 +13,10 @@ const sql=read('../../backend/supabase/migrations/20260921113500_guild_notice_bo
 ok(app.includes("import {OnlineGuildNoticeBoardPanel}"),'App must import the online Guild Notice Board');
 ok(app.includes('onlineBoard={<OnlineGuildNoticeBoardPanel/>}'),'App must wire the Notice Board into the Guild screen');
 
-ok(screen.includes("'Board'"),'Online Guild sections must include Board');
-ok(screen.includes("onlineSection==='Board'?onlineBoard:null"),'Board tab must render member Notice Board content');
-ok(screen.includes('the member Notice Board'),'Guild hub description must acknowledge the Notice Board');
+ok(screen.includes("'Home'"),'Consolidated online Guild sections must include Home');
+ok(screen.includes('<GuildOnlineHome onNavigate={setOnlineSection} board={onlineBoard}/>'),'Guild Home must render the member Notice Board content');
+ok(screen.includes('{board}'),'Guild Home dashboard must keep the Notice Board visible before deeper Guild routes');
+ok(screen.includes('GUILD HOME'),'Guild Home must provide clear dashboard context around the Notice Board');
 
 ok(board.includes('MEMBER NOTICE BOARD'),'Notice Board must have clear Guild-member context');
 ok(board.includes('<StatusPill label="MEMBERS ONLY" tone="good"/>'),'Notice Board must clearly communicate its private audience');

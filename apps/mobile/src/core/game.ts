@@ -287,7 +287,7 @@ export function combatSustainProjection(state:GameState,monsterId:string,hours=1
  const recoveryPerKill=Math.max(1,Math.floor(runtime.stats.hp*runtime.style.recoveryPct*runtime.tactic.recoveryMultiplier*runtime.companion.recoveryMultiplier*(1+runtime.effectGems.recovery)*runtime.setCombat.recoveryMultiplier));
  const killsPerHour=3600/Math.max(.1,runtime.killCycleSeconds),minimumAttrition=(REGIONAL_MIN_ATTRITION_HP_PER_HOUR[runtime.m.zone]??0)/killsPerHour;
  const netDamagePerKill=Math.max(minimumAttrition,damagePerKill-recoveryPerKill);
- const healingPerFood=Math.max(1,Math.ceil((food?.heal??0)*runtime.modifiers.healingEffectivenessMultiplier));
+ const healingPerFood=food?.heal?Math.max(1,Math.ceil(food.heal*runtime.modifiers.healingEffectivenessMultiplier)):0;
  const foodPerHour=healingPerFood>0?netDamagePerKill*killsPerHour/healingPerFood:netDamagePerKill>0?Infinity:0;
  const target=REGIONAL_FOOD_SUSTAIN_TARGETS[runtime.m.zone];
  return {monsterId,region:runtime.m.zone,killCycleSeconds:runtime.killCycleSeconds,killsPerHour,damagePerKill,recoveryPerKill,netDamagePerKill,foodId,healingPerFood,foodPerHour,projectedFood:foodPerHour*hours,target};

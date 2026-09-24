@@ -40,8 +40,8 @@ for(const chain of [
 }
 const mossUse=v33EquipmentMaterialUse('MOSS_FIBER')!;
 ok(mossUse.tiers.includes('T1')&&mossUse.recipeCount>0,'Starter monster materials must identify their V33 equipment use');
-const frostUse=v33EquipmentMaterialUse('FROSTIRON')!;
-ok(frostUse.tiers.some(tier=>['T7','T8','T9'].includes(tier)),'Frostmarch combat materials must feed later V33 tiers');
+const frostUse=v33EquipmentMaterialUse('FROSTIRON_INGOT')!;
+ok(frostUse.tiers.some(tier=>['T7','T8','T9'].includes(tier)),'Processed Frostmarch metal must feed later V33 tiers');
 
 
 const timerRanges:Record<string,[number,number]>={T1:[60,180],T2:[180,360],T3:[300,600],T4:[480,900],T5:[720,1200],T6:[900,1500],T7:[1200,1800],T8:[1500,2400],T9:[1800,2700]};

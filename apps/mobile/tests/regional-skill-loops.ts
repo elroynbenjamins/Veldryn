@@ -26,19 +26,20 @@ ok(gather('ICEFISH_POOL')?.zoneId==='FROSTMARCH','Frostmarch Fishing must have r
 ok(recipe('COOK_OASIS_CARP')?.inputs.some(x=>x.itemId==='OASIS_CARP'),'Sunscar Fishing must feed Cooking');
 ok(recipe('COOK_GLASSFIN_FEAST')?.inputs.some(x=>x.itemId==='GLASSFIN'),'Sunscar advanced Fishing must feed Cooking');
 ok(recipe('COOK_ICEFISH')?.inputs.some(x=>x.itemId==='ICEFIN')&&recipe('COOK_ICEFISH')?.inputs.some(x=>x.itemId==='WINTERMINT'),'Frostmarch Cooking must combine Fishing and Herbalism');
-for(const [region,fish,cook] of [
- ['GREENFIELDS','MEADOW_PERCH','COOK_MEADOW_PERCH'],
- ['SILVERBROOK','SILVERFIN','COOK_SILVERFIN'],
- ['IRONWOOD','ROOTSTREAM_TROUT','COOK_ROOTSTREAM_TROUT'],
- ['OLD_MINES','CAVE_LOACH','COOK_CAVE_LOACH'],
- ['KINGS_ROAD','CROWN_CARP','COOK_CROWN_CARP'],
- ['SUNSCAR','OASIS_CARP','COOK_OASIS_CARP'],
- ['FROSTMARCH','ICEFIN','COOK_ICEFISH'],
- ['ASHLANDS','EMBERFIN','COOK_EMBERFIN'],
+for(const [region,fish,cook,fuel] of [
+ ['GREENFIELDS','MEADOW_PERCH','COOK_MEADOW_PERCH','GREENWOOD_LOG'],
+ ['SILVERBROOK','SILVERFIN','COOK_SILVERFIN','GREENWOOD_LOG'],
+ ['IRONWOOD','ROOTSTREAM_TROUT','COOK_ROOTSTREAM_TROUT','IRONWOOD_LOG'],
+ ['OLD_MINES','CAVE_LOACH','COOK_CAVE_LOACH','CROWNWOOD_LOG'],
+ ['KINGS_ROAD','CROWN_CARP','COOK_CROWN_CARP','CROWNWOOD_LOG'],
+ ['SUNSCAR','OASIS_CARP','COOK_OASIS_CARP','DUNEWOOD'],
+ ['FROSTMARCH','ICEFIN','COOK_ICEFISH','WHITEPINE_LOG'],
+ ['ASHLANDS','EMBERFIN','COOK_EMBERFIN','CINDERWOOD_LOG'],
 ] as const){
  ok(GATHERING.some(x=>x.skillId==='fishing'&&x.zoneId===region&&x.itemId===fish),region+' must have a local Fishing sustain source');
  const cooking=recipe(cook);
  ok(cooking?.inputs.some(x=>x.itemId===fish),region+' local fish must feed Cooking');
+ ok(cooking?.inputs.some(x=>x.itemId===fuel),region+' Cooking must consume appropriate Woodcutting fuel');
  ok(cooking?.repeatableTraining,region+' fish recipe must be repeatable timed Cooking');
  ok(itemDef(cooking!.output.itemId).type==='food',region+' fish recipe must output equippable combat food');
  ok(processingRecipeDef(cook)?.skillId==='cooking',region+' fish recipe must be executable through timed Cooking processing');

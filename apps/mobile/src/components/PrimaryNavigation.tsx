@@ -8,8 +8,8 @@ export type NavigationBadge=number|'dot';
 export function PrimaryNavigation<T extends PrimaryNavigationDestination>({destinations,active,labelFor,onNavigate,badges}:{destinations:readonly T[];active?:T;labelFor:(destination:T)=>string;onNavigate:(destination:T)=>void;badges?:Partial<Record<T,NavigationBadge>>}){
  const C=useGameTheme();
  const {bottom}=useSafeAreaInsets();
- // iOS is already inside the root SafeAreaView. Android needs its real navigation/gesture inset here.
- const bottomInset=Platform.OS==='android'?Math.max(bottom,8):4;
+ // The app shell leaves the bottom edge to persistent navigation on both platforms.
+ const bottomInset=Math.max(bottom,Platform.OS==='android'?8:4);
  return <View accessibilityRole="tablist" style={[s.nav,{paddingBottom:bottomInset,backgroundColor:C.navBg,borderColor:C.line}]}>{destinations.map(item=>{const selected=active===item,label=labelFor(item),badge=badges?.[item],badgeLabel=badge==='dot'?'new activity':typeof badge==='number'&&badge>0?`${badge} notification${badge===1?'':'s'}`:'';return <Pressable key={item} accessibilityRole="tab" accessibilityState={{selected}} accessibilityLabel={badgeLabel?`${label}, ${badgeLabel}`:label} onPress={()=>onNavigate(item)} style={({pressed})=>[s.item,pressed&&s.pressed]}>
   {selected&&<View pointerEvents="none" style={[s.mark,{backgroundColor:C.accentSoft}]}/>}<View style={[s.iconShell,selected&&{backgroundColor:C.selection}]}><PrimaryNavigationIcon destination={item} active={selected}/>{badge!==undefined&&badge!==0?<View style={[s.badge,{borderColor:C.navBg,backgroundColor:C.notification},badge==='dot'&&s.dotBadge]}><Text style={[s.badgeText,{color:C.notificationText}]}>{badge==='dot'?'':typeof badge==='number'?(badge>99?'99+':badge):''}</Text></View>:null}</View>
   <Text numberOfLines={2} textBreakStrategy="balanced" android_hyphenationFrequency="normal" style={[s.label,{color:selected?C.accent:C.muted}]}>{label}</Text>

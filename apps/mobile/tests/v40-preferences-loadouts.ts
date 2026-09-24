@@ -6,6 +6,7 @@ function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 function eq(actual:unknown,expected:unknown,message:string){if(actual!==expected)throw new Error(`${message}: expected ${String(expected)}, got ${String(actual)}`)}
 
 let state=createCharacter(newGame(1000),'IRONWARDEN','Planner','male');
+state={...state,quests:state.quests.map(row=>row.questId==='QST_002'?{...row,status:'claimed' as const,progress:2}:row)};
 const characterId=state.character!.id;
 let result=executeGameCommand(state,{type:'goals_set',args:{goals:[{id:'skill-mining',characterId,kind:'skill_level',title:'Mining 10',createdAtMs:1000,pinnedAtMs:1000,skillId:'mining',targetLevel:10}]}},2000,{accountId:'acct',eventId:'goal'});
 state=result.state;

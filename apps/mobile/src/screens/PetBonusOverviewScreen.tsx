@@ -9,6 +9,7 @@ import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {GameModalHeader,GameModalSurface} from '../components/GameModalSurface';
 import {petArtSource} from '../theme/pet-art';
+import {earlyFeatureUnlockProgress} from '../core/feature-unlocks';
 
 const PETS=COLLECTIBLES.filter(row=>row.kind==='pet');
 const pct=(bps:number)=>(bps/100).toFixed(2)+'%';
@@ -20,6 +21,8 @@ type RegionFilter=typeof regionOptions[number];
 export function PetBonusOverviewScreen({state,onChange}:{state:GameState;onChange:(next:GameState)=>void}){
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),singleColumn=width<360||fontScale>=1.25;
  const [pickerOpen,setPickerOpen]=useState(false),[viewFilter,setViewFilter]=useState<ViewFilter>('All'),[regionFilter,setRegionFilter]=useState<RegionFilter>('All regions'),[filterOpen,setFilterOpen]=useState<'view'|'region'|null>(null),[showBonusHelp,setShowBonusHelp]=useState(false);
+ const unlock=earlyFeatureUnlockProgress(state,'pets');
+ if(!unlock.unlocked)return <ScrollView contentContainerStyle={s.root}><Text style={s.kicker}>ACCOUNT BONUSES</Text><Text accessibilityRole="header" style={s.heading}>Pet Bonus Overview</Text><Panel><View style={s.lockedBox}><Text style={s.lockGlyph}>◆</Text><Text style={s.title}>Pet system locked</Text><Text style={s.sub}>Pets are introduced after the early combat and gathering loop so the opening game stays focused.</Text><Text style={s.lockRequirement}>UNLOCK · {unlock.requirement}</Text><Text style={s.sub}>{unlock.description}</Text></View></Panel></ScrollView>;
  const journal=collectibleJournal(state,PETS),owned=journal.filter(row=>row.owned),active=journal.find(row=>row.selected),breakdown=collectionBonusBreakdown(state,PETS);
  const corePets=journal.filter(row=>row.collectionGroup==='core'),eventPets=journal.filter(row=>row.collectionGroup==='event'),legacyPets=journal.filter(row=>row.collectionGroup==='legacy');
  const visiblePets=journal.filter(row=>{
@@ -48,7 +51,7 @@ export function PetBonusOverviewScreen({state,onChange}:{state:GameState;onChang
  </>;
 }
 function makeStyles(C:ThemeColors){return StyleSheet.create({
- root:{padding:spacing.lg,gap:spacing.md,paddingBottom:110},kicker:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:1.1},heading:{...typography.hero,color:C.text},title:{...typography.title,color:C.text},sub:{...typography.body,color:C.muted},
+ root:{padding:spacing.lg,gap:spacing.md,paddingBottom:110},lockedBox:{alignItems:'center',gap:7,padding:14},lockGlyph:{fontSize:28,color:C.muted},lockRequirement:{fontSize:9,color:C.accent,fontWeight:'900',letterSpacing:.7,textAlign:'center'},kicker:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:1.1},heading:{...typography.hero,color:C.text},title:{...typography.title,color:C.text},sub:{...typography.body,color:C.muted},
  columns:{gap:spacing.md},columnsStack:{gap:spacing.sm},
  helpDisclosure:{minHeight:52,flexDirection:'row',alignItems:'center',gap:8,paddingHorizontal:12,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel},helpDisclosureOpen:{borderColor:C.info,backgroundColor:C.infoSurface},helpDisclosureTitle:{...typography.caption,color:C.info,fontWeight:'900',letterSpacing:.8},helpDisclosureText:{...typography.caption,color:C.muted},helpDisclosureMark:{width:28,color:C.info,fontSize:24,textAlign:'center',fontWeight:'700'},
  bonusRow:{minHeight:44,flexDirection:'row',alignItems:'center',justifyContent:'space-between',borderBottomWidth:1,borderBottomColor:C.line},bonusLabel:{color:C.text,fontWeight:'800'},passive:{color:C.info,fontWeight:'900'},

@@ -1,5 +1,7 @@
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {BackHandler,View,Text} from 'react-native';
+import {earlyFeatureUnlocked} from '../core/feature-unlocks';
+import {FeatureLockedPanel} from '../components/FeatureLockedPanel';
 import {CoopDungeonDetails,CoopDungeonList,CoopEventExpeditionDetails} from '../components/coop/CoopDungeonBrowser';
 import {CoopLoadoutSelection} from '../components/coop/CoopLoadoutSelection';
 import {CoopRunOverview} from '../components/coop/CoopRunOverview';
@@ -20,7 +22,7 @@ import {clt} from '../i18n';
 import {presentEventExpeditionRun,validateCoopEventExpeditionPreview,type CoopEventExpeditionPreview,type CoopEventRunServerProjection} from '../core/coop-event-expeditions';
 
 export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoopEntrySource,initialDungeonId,onInitialDungeonHandled,initialEventLiveId,onInitialEventHandled,onRewardsChanged}:{onClose:()=>void;language:Language;state:GameState;entrySource?:CoopEntrySource;initialDungeonId?:string;onInitialDungeonHandled?:()=>void;initialEventLiveId?:string;onInitialEventHandled?:()=>void;onRewardsChanged?:()=>void|Promise<void>}){
-  const C=useGameTheme();
+  const C=useGameTheme(),unlocked=earlyFeatureUnlocked(state,'dungeons');
   const [entry,setEntry]=useState<CoopEntryData>();
   const [selected,setSelected]=useState<CoopDungeonView>();
   const [selectedEvent,setSelectedEvent]=useState<CoopEventExpeditionPreview>();
@@ -53,9 +55,10 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
   },[]);
   const action=async(work:()=>Promise<void>)=>{if(busy)return;setBusy(true);setNotice('');try{await work();}catch(reason){setNotice(reason instanceof Error?reason.message:String(reason));}finally{setBusy(false);if(entrySource.kind==='real')setPending(await coopClient.hasPending().catch(()=>false));}};
   const load=useCallback(async()=>{
+    if(!unlocked){setLoading(false);setEntry(undefined);setError('');return;}
     setLoading(true);setError('');
     try{const next=await entrySource.load();next.dungeons.forEach(source=>validateCoopDungeonView(presentCoopDungeon(source)));next.eventExpeditions?.forEach(validateCoopEventExpeditionPreview);setEntry(next)}catch(reason){setEntry(undefined);setError(reason instanceof Error?reason.message:String(reason))}finally{setLoading(false)}
-  },[entrySource]);
+  },[entrySource,unlocked]);
   useEffect(()=>{void load()},[load]);
   useEffect(()=>{
     if(initialEventHandled.current||!initialEventLiveId||!entry)return;
@@ -64,14 +67,14 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
     if(expedition){setSelectedEvent(expedition);setSelected(undefined);setShowLoadouts(false);setNotice('');return;}
     setNotice('This active event does not currently offer a launchable seasonal expedition.');
   },[entry,initialEventLiveId,onInitialEventHandled]);
-  useEffect(()=>{let cancelled=false;if(coopLiveReadyEnabled&&entrySource.kind==='real')void coopClient.liveQueue().then(value=>{if(!cancelled&&value.ticket&&['queued','reserved'].includes(value.ticket.status))setShowLive(true);}).catch(()=>{});return()=>{cancelled=true;};},[entrySource]);
-  useEffect(()=>{if(entrySource.kind==='real')void coopClient.hasPending().then(setPending).catch(()=>{});},[entrySource]);
+  useEffect(()=>{let cancelled=false;if(unlocked&&coopLiveReadyEnabled&&entrySource.kind==='real')void coopClient.liveQueue().then(value=>{if(!cancelled&&value.ticket&&['queued','reserved'].includes(value.ticket.status))setShowLive(true);}).catch(()=>{});return()=>{cancelled=true;};},[entrySource]);
+  useEffect(()=>{if(unlocked&&entrySource.kind==='real')void coopClient.hasPending().then(setPending).catch(()=>{});},[entrySource,unlocked]);
   useEffect(()=>{
-    if(!coopLiveReadyEnabled||entrySource.kind!=='real'||showLive||showLoadouts||selected||selectedEvent||run||eventRun)return;
+    if(!unlocked||!coopLiveReadyEnabled||entrySource.kind!=='real'||showLive||showLoadouts||selected||selectedEvent||run||eventRun)return;
     let stopped=false,inFlight=false;
     const refreshBoard=async()=>{if(stopped||inFlight)return;inFlight=true;try{const posts=await coopClient.liveRecruitment();if(!stopped)setEntry(current=>current?{...current,liveRecruitment:posts}:current);}catch{}finally{inFlight=false;}};
     const timer=setInterval(()=>void refreshBoard(),15_000);return()=>{stopped=true;clearInterval(timer);};
-  },[entrySource.kind,showLive,showLoadouts,selected,selectedEvent,run,eventRun]);
+  },[unlocked,entrySource.kind,showLive,showLoadouts,selected,selectedEvent,run,eventRun]);
   useEffect(()=>{
     const id=run?.runId;if(!id||entrySource.kind!=='real')return;
     let stopped=false,inFlight=false;
@@ -97,7 +100,8 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
     if(dungeon){setSelectedEvent(undefined);setEventRun(undefined);setRun(undefined);setSelected(dungeon);setTier(dungeon.difficulties[0]);setShowLoadouts(false);setNotice('');return;}
     setNotice('That dungeon source is not currently available in the dungeon catalog.');
   },[dungeons,entry,initialDungeonId,onInitialDungeonHandled]);
-  const verifiedLoadout=()=>entry?.loadouts.find(item=>item.id==='current'&&item.status==='verified'&&item.ready)??entry?.loadouts.find(item=>item.status==='verified'&&item.ready);
+  if(!unlocked)return <View style={{flex:1,padding:12,gap:10}}><FeatureLockedPanel state={state} featureId="dungeons"/><GameButton title="Back" tone="secondary" onPress={onClose}/></View>;
+    const verifiedLoadout=()=>entry?.loadouts.find(item=>item.id==='current'&&item.status==='verified'&&item.ready)??entry?.loadouts.find(item=>item.status==='verified'&&item.ready);
   const refreshLiveRecruitment=async()=>{const posts=await coopClient.liveRecruitment();setEntry(current=>current?{...current,liveRecruitment:posts}:current);};
   function joinRecruitmentSearch(dungeonId:string){const dungeon=dungeons.find(item=>item.id===dungeonId);if(!dungeon?.available){setNotice('That dungeon is no longer available for this character.');return;}setMode('live');chooseDungeon(dungeon);}
   function chooseDungeon(dungeon:CoopDungeonView){setSelectedEvent(undefined);setEventRun(undefined);setSelected(dungeon);setTier(dungeon.difficulties[0]);setNotice('')}

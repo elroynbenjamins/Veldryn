@@ -27,7 +27,7 @@ ok(screen.includes("onlineSection==='Members'?onlineManagement:null"),'Members t
 ok(screen.includes("onlineSection==='Hall'?onlineHall:null"),'Hall tab must render Hall content');
 ok(screen.includes("onlineSection==='Activities'?<View")&&screen.includes('<OnlineGuildMusterPanel/>')&&screen.includes('{onlinePve}'),'Activities must preserve Muster and Guild PvE behind the consolidated destination');
 ok(screen.includes("onlineSection==='Manage'?<View")&&screen.includes('{onlineDirectory}')&&screen.includes('{onlineCustomize}'),'Manage must preserve Guild directory/creation and appearance customization');
-ok(screen.includes("title="Guild Appearance"")&&screen.includes("title="Directory & Creation""),'Manage must keep clear recruitment and identity hierarchy');
+ok(screen.includes('title="Guild Appearance"')&&screen.includes('title="Directory & Creation"'),'Manage must keep clear recruitment and identity hierarchy');
 ok(screen.includes("root:{padding:spacing.md,gap:10"),'Online Guild shell must remain compact');
 
 ok(customization.includes('appearanceDirty='),'Guild customization must track unsaved appearance changes');

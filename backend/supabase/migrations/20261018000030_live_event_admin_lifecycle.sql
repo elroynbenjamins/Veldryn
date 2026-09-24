@@ -14,7 +14,7 @@ create or replace function public.enforce_single_visible_live_event()
 returns trigger
 language plpgsql
 set search_path=public
-as $
+as $$
 declare
   v_visible_end timestamptz;
   v_conflict text;
@@ -58,7 +58,7 @@ begin
   end if;
 
   return new;
-end $;
+end $$;
 
 drop trigger if exists live_events_single_visible_guard on public.live_events;
 create trigger live_events_single_visible_guard

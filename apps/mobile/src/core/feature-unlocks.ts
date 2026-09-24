@@ -26,29 +26,48 @@ export function earlyFeatureUnlockProgress(state:GameState,id:EarlyFeatureId){
  return {id,unlocked:earlyFeatureUnlocked(state,id),questId:rule.questId,title:rule.title,requirement:rule.requirement,description:rule.description,status:quest?.status??'locked',progress:quest?.progress??0};
 }
 
+export type EarlyFeatureUnlockMomentId=EarlyFeatureId|'dungeons';
 export interface EarlyFeatureUnlockMoment{
- id:EarlyFeatureId;
+ id:EarlyFeatureUnlockMomentId;
  title:string;
  eyebrow:string;
  description:string;
  bullets:string[];
  actionLabel:string;
- destination:'Collections'|'Companions';
+ destination:'Progression'|'Collections'|'Companions'|'Coop'|'Guild';
 }
 export function newlyUnlockedEarlyFeatures(before:GameState|null|undefined,after:GameState|null|undefined):EarlyFeatureUnlockMoment[]{
  if(!before||!after)return [];
  const out:EarlyFeatureUnlockMoment[]=[];
+ if(!earlyFeatureUnlocked(before,'workingToward')&&earlyFeatureUnlocked(after,'workingToward'))out.push({
+  id:'workingToward',eyebrow:'NEW SYSTEMS',title:'Planning & Daily Systems Unlocked',
+  description:'The first guided skill milestone opens a few supporting systems without changing your core combat and skilling loop.',
+  bullets:['Working Toward can pin personal goals and show concrete next steps.','Daily Supplies adds the account-wide claim track and temporary activity boost.','Live Events are now visible when seasonal content is active.'],
+  actionLabel:'Open Working Toward',destination:'Progression',
+ });
  if(!earlyFeatureUnlocked(before,'pets')&&earlyFeatureUnlocked(after,'pets'))out.push({
   id:'pets',eyebrow:'NEW SYSTEM',title:'Pets Unlocked',
   description:'Rare pets can now appear from eligible combat, gathering and exploration activities.',
-  bullets:['Owned pets add small account-wide passive bonuses.','Choose one owned pet for its stronger active bonus.','Pet drops begin now; nothing was silently missed while the system was locked.'],
+  bullets:['Owned pets add small account-wide passive bonuses; choose one owned pet for its stronger active bonus.','Account Bonuses is now available so you can review permanent and temporary modifiers.','Friends is now available, and Pet drops begin only from this point onward.'],
   actionLabel:'Open Pet Collection',destination:'Collections',
  });
  if(!earlyFeatureUnlocked(before,'companions')&&earlyFeatureUnlocked(after,'companions'))out.push({
   id:'companions',eyebrow:'NEW SYSTEM',title:'Companion Sanctuary Unlocked',
   description:'Build a broader roster for combat assistance, Expeditions and the global monthly Companion Trial.',
-  bullets:['Companions use Tank, Damage or Support roles plus an Affinity.','Train, raise Bond and improve Housing to unlock higher level caps.','Expeditions consume food-based Stamina; Trials rotate globally every month.'],
+  bullets:['Companions use Tank, Damage or Support roles plus an Affinity; Housing raises their level caps.','Expeditions consume food-based Stamina, while the same monthly Trial rotation is shared globally.','Social & Parties, the Contract Board and Mastery Hall are now available from the Account hub.'],
   actionLabel:'Open Companion Sanctuary',destination:'Companions',
+ });
+ if(!dungeonFeatureUnlocked(before)&&dungeonFeatureUnlocked(after))out.push({
+  id:'dungeons',eyebrow:'NEW MODE',title:'Co-op Dungeons Unlocked',
+  description:'Live co-op dungeons are now available for characters at Level 15 and above.',
+  bullets:['Dungeon groups use 1 Tank, 2 Damage and 1 Support.','Runs branch across several nodes before the final boss.','Ready checks and route votes keep live groups moving without requiring identical quest progress.'],
+  actionLabel:'Open Dungeons',destination:'Coop',
+ });
+ if(!earlyFeatureUnlocked(before,'guild')&&earlyFeatureUnlocked(after,'guild'))out.push({
+  id:'guild',eyebrow:'NEW SOCIAL SYSTEM',title:'Guilds & Rankings Unlocked',
+  description:'The campaign now recognizes you among Asterfall Guilds.',
+  bullets:['Join or create a Guild for chat, Projects and asynchronous PvE.','Guild identity includes a unique tag, emblem, border and configurable colors.','Prestige Rankings are now available alongside Guild recognition.'],
+  actionLabel:'Open Guilds',destination:'Guild',
  });
  return out;
 }

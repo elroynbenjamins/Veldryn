@@ -2,6 +2,7 @@ import {CORE_PET_COLLECTIBLES} from '../content/core-pets';
 import {unlockCollectible} from './collectibles';
 import {random01} from './rng';
 import type {GameState} from './types';
+import {earlyFeatureUnlocked} from './early-feature-gates';
 
 export interface CorePetSignatureDrop{
   petId:string;
@@ -114,6 +115,7 @@ export function resolveCorePetActivityDrops(
   seedBase:string,
   roll:CorePetDropRoll=random01,
 ){
+  if(!earlyFeatureUnlocked(state,'pets'))return [];
   return resolveRules(state,corePetActivityDropsForSource(sourceType,sourceId),attempts,`${seedBase}:${sourceType}:${sourceId}`,roll);
 }
 
@@ -124,6 +126,7 @@ export function resolveCorePetCombatDrops(
   seedBase:string,
   roll:CorePetDropRoll=random01,
 ):string[]{
+  if(!earlyFeatureUnlocked(state,'pets'))return [];
   const regular=corePetActivityDropsForSource('combat',monsterId);
   const signature=CORE_PET_SIGNATURE_DROPS.filter(row=>row.monsterId===monsterId);
   return resolveRules(state,[...regular,...signature],kills,`${seedBase}:combat:${monsterId}`,roll);

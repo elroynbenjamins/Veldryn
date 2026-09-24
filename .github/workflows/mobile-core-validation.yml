@@ -46,6 +46,8 @@ jobs:
         run: pnpm typecheck
       - name: Run core tests
         run: pnpm test:core
+      - name: Run onboarding lock tests
+        run: pnpm test:onboarding-locks
       - name: Run co-op LFG TTL validation
         run: node .core-build/apps/mobile/tests/coop-live-recruitment.js
       - name: Run collectible tests

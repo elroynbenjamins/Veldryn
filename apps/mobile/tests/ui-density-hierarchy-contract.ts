@@ -17,7 +17,7 @@ const sessionOverview=read('src/components/HomeSessionOverview.tsx');
 ok(home.includes('<HomeSessionOverview'),'Home must expose one compact session-priority surface');
 ok(home.indexOf('<HomeSessionOverview')<home.indexOf("s.guide,guide.priority"),'Session ready-now must precede Next Step progression guidance on Home');
 ok(home.indexOf('<HomeSessionOverview')<home.indexOf('ASTERFALL CAMPAIGN'),'Session priorities must appear before broader campaign/planning detail');
-ok(home.includes('showProgress&&<View style={s.expanded}><WorkingTowardSummary')&&home.includes('<SkillDashboard state={state}'),'Full goals, weekly, daily and skill snapshots must move behind the secondary progress disclosure');
+ok(home.includes('showProgress&&<View style={s.expanded}>')&&home.includes('goalsUnlocked?<WorkingTowardSummary')&&home.includes('contractsUnlocked?<ContractBoardSummary')&&home.includes('dailyUnlocked?<DailySuppliesSummary')&&home.includes('<SkillDashboard state={state}'),'Full goals, weekly, daily and skill snapshots must stay behind the secondary progress disclosure and respect staged unlocks');
 ok((home.match(/<SkillDashboard/g)??[]).length===1,'Home must not duplicate the full skill snapshot outside its secondary progress area');
 ok(home.includes('Goals, daily & skill progress')&&home.includes('Working Toward · Contract Board · Daily Supplies · skill snapshot'),'Home secondary disclosure must clearly describe the systems it contains');
 ok(sessionOverview.includes('SESSION OVERVIEW')&&sessionOverview.includes('label="READY"')&&sessionOverview.includes('label="GOALS"')&&sessionOverview.includes('label="WEEKLY"')&&sessionOverview.includes('label="NEW"'),'Home session overview must preserve the four compact action categories');

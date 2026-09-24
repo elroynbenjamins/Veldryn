@@ -13,11 +13,12 @@ import {PartyChatGate} from './PartyChatGate';
 import {usePartySocial} from '../online/PartySocialProvider';
 import {ChatDock} from './ChatDock';
 import {myGuild} from '../online/social';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 type Channel='world'|'guild'|'party';
 
 export function ChatOverlay({state,visible,onOpen,onClose,onEmoteTrayChange,guildUnread=0,guildMentions=0,guildFirstUnreadMessageId,partyUnread=0,partyMentions=0,partyFirstUnreadMessageId,onChatRead}:{state:GameState;visible:boolean;onOpen:()=>void;onClose:()=>void;onEmoteTrayChange?:(ids:string[])=>void|Promise<void>;guildUnread?:number;guildMentions?:number;guildFirstUnreadMessageId?:string;partyUnread?:number;partyMentions?:number;partyFirstUnreadMessageId?:string;onChatRead?:()=>void}){
-  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
+  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),insets=useSafeAreaInsets(),bottomOffset=72+(Platform.OS==='android'?Math.max(insets.bottom,8):Math.max(insets.bottom,4));
   const [channel,setChannel]=useState<Channel>('world');
   const [onlineGuildAvailable,setOnlineGuildAvailable]=useState(state.account.guildMember);
   const {party,accountId,refresh}=usePartySocial();
@@ -30,9 +31,9 @@ export function ChatOverlay({state,visible,onOpen,onClose,onEmoteTrayChange,guil
   return <>
     {!visible&&<ChatDock enabled={onlineConfigured} onOpen={onOpen} lines={state.settings.chatDockLines??1} unreadCount={guildUnread+partyUnread} mentionCount={guildMentions+partyMentions}/>}
     <Modal visible={visible} transparent statusBarTranslucent animationType={state.settings.reduceMotion?'none':'fade'} onRequestClose={closeChat}>
-      <View style={s.modalRoot}>
+      <View style={[s.modalRoot,{paddingTop:Math.max(insets.top,8),paddingBottom:bottomOffset}]}>
         <Pressable accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" onPress={closeChat} style={StyleSheet.absoluteFill}/>
-        <KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':'height'} style={s.keyboard}><View accessibilityViewIsModal onAccessibilityEscape={closeChat} style={s.window}>
+        <KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':'height'} keyboardVerticalOffset={insets.top} style={s.keyboard}><View accessibilityViewIsModal onAccessibilityEscape={closeChat} style={s.window}>
           <View style={s.header}>
             <View><Text style={s.eyebrow}>LIVE CHAT</Text><Text style={s.title}>{channel==='world'?'World':channel==='party'?'Party':'Guild'}</Text></View>
             <Pressable accessibilityRole="button" accessibilityLabel="Close chat" onPress={closeChat} style={s.close}><UiIcon name="close" size={24}/></Pressable>
@@ -53,5 +54,5 @@ function TabAttention({unread,mentions}:{unread:number;mentions:number}){const C
 
 function makeStyles(C:ThemeColors){return StyleSheet.create({
   pressed:{opacity:.68,transform:[{translateY:1}]},
-  modalRoot:{flex:1,justifyContent:'flex-end',alignItems:'flex-start',paddingBottom:Platform.OS==='android'?76:88,backgroundColor:C.overlay},keyboard:{width:'100%',maxWidth:480},window:{width:'100%',maxWidth:480,maxHeight:'70%',backgroundColor:C.panel,borderTopWidth:StyleSheet.hairlineWidth,borderTopColor:C.line,borderTopLeftRadius:20,borderTopRightRadius:20,overflow:'hidden'},header:{minHeight:58,flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingLeft:16,paddingRight:4,borderBottomWidth:StyleSheet.hairlineWidth,borderBottomColor:C.line},eyebrow:{color:C.info,fontSize:9,fontWeight:'900',letterSpacing:1.2},title:{color:C.text,fontSize:18,fontWeight:'800'},close:{width:52,height:52,alignItems:'center',justifyContent:'center'},closeText:{color:C.muted,fontSize:30,lineHeight:32},tabs:{flexDirection:'row',paddingHorizontal:10,paddingTop:8,paddingBottom:8,gap:6},tab:{minHeight:44,flex:1,alignItems:'center',justifyContent:'center',borderRadius:99,borderWidth:1,borderColor:C.line,backgroundColor:C.bg},tabActive:{backgroundColor:C.selection,borderColor:C.selectionLine},tabMention:{borderColor:C.warning},tabDisabled:{opacity:.35},tabText:{color:C.muted,fontSize:11,fontWeight:'800',letterSpacing:.7},tabTextActive:{color:C.text},tabAttention:{position:'absolute',right:4,top:3,flexDirection:'row',alignItems:'center',gap:2},tabMentionText:{fontSize:7,color:C.warning,fontWeight:'900'},tabUnreadText:{minWidth:14,height:14,paddingHorizontal:3,borderRadius:7,overflow:'hidden',textAlign:'center',fontSize:7,lineHeight:14,color:C.notificationText,fontWeight:'900',backgroundColor:C.notification},content:{paddingHorizontal:10,paddingBottom:10},
+  modalRoot:{flex:1,justifyContent:'flex-end',alignItems:'flex-start',backgroundColor:C.overlay},keyboard:{width:'100%',maxWidth:480,maxHeight:'100%'},window:{width:'100%',maxWidth:480,maxHeight:'70%',backgroundColor:C.panel,borderTopWidth:StyleSheet.hairlineWidth,borderTopColor:C.line,borderTopLeftRadius:20,borderTopRightRadius:20,overflow:'hidden'},header:{minHeight:58,flexDirection:'row',alignItems:'center',justifyContent:'space-between',paddingLeft:16,paddingRight:4,borderBottomWidth:StyleSheet.hairlineWidth,borderBottomColor:C.line},eyebrow:{color:C.info,fontSize:9,fontWeight:'900',letterSpacing:1.2},title:{color:C.text,fontSize:18,fontWeight:'800'},close:{width:52,height:52,alignItems:'center',justifyContent:'center'},closeText:{color:C.muted,fontSize:30,lineHeight:32},tabs:{flexDirection:'row',paddingHorizontal:10,paddingTop:8,paddingBottom:8,gap:6},tab:{minHeight:44,flex:1,alignItems:'center',justifyContent:'center',borderRadius:99,borderWidth:1,borderColor:C.line,backgroundColor:C.bg},tabActive:{backgroundColor:C.selection,borderColor:C.selectionLine},tabMention:{borderColor:C.warning},tabDisabled:{opacity:.35},tabText:{color:C.muted,fontSize:11,fontWeight:'800',letterSpacing:.7},tabTextActive:{color:C.text},tabAttention:{position:'absolute',right:4,top:3,flexDirection:'row',alignItems:'center',gap:2},tabMentionText:{fontSize:7,color:C.warning,fontWeight:'900'},tabUnreadText:{minWidth:14,height:14,paddingHorizontal:3,borderRadius:7,overflow:'hidden',textAlign:'center',fontSize:7,lineHeight:14,color:C.notificationText,fontWeight:'900',backgroundColor:C.notification},content:{paddingHorizontal:10,paddingBottom:10},
 });}

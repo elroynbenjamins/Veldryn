@@ -33,12 +33,11 @@ for(const id of ['pets','accountBonuses','friends'] as const)assert.equal(earlyF
 assert.equal(earlyFeatureUnlocked(state,'companions'),false);
 
 state=claimQuest(state,'QST_005',10);
-for(const id of ['companions','social','contracts','masteryHall'] as const)assert.equal(earlyFeatureUnlocked(state,id),true,id+' should unlock at QST_005');
-assert.equal(earlyFeatureUnlocked(state,'guild'),false);
-assert.ok(earlyFeatureLockReason(state,'Guild').includes('Place Among Guilds'));
+for(const id of ['companions','social','contracts','masteryHall','guild'] as const)assert.equal(earlyFeatureUnlocked(state,id),true,id+' should unlock at QST_005');
+assert.equal(earlyFeatureLockReason(state,'Guild'),'');
+assert.equal(earlyFeatureUnlocked(state,'rankings'),false,'Rankings should remain a later progression unlock');
 
 state=claimQuest(state,'QST_011',20);
-for(const id of ['guild','rankings'] as const)assert.equal(earlyFeatureUnlocked(state,id),true,id+' should unlock at QST_011');
-assert.equal(earlyFeatureLockReason(state,'Guild'),'');
+assert.equal(earlyFeatureUnlocked(state,'rankings'),true,'Rankings should unlock at QST_011');
 assert.equal(earlyFeatureLockReason(state,'Rankings'),'');
 console.log('PASS staged first-session feature exposure ladder');

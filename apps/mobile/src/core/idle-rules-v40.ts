@@ -3,6 +3,7 @@ export interface IdleStopCondition{id:string;kind:IdleStopKind;targetId?:string;
 export interface IdleRuleSet{id:string;characterId:string;name:string;conditions:IdleStopCondition[];stopIfOutOfFood:boolean;stopIfRewardsWouldOverflow:boolean;finishCurrentCycle:boolean}
 export interface IdleEvaluationContext{itemQuantities:Record<string,number>;skillLevels:Record<string,number>;monsterKills:Record<string,number>;sessionKills?:number;championDefeats?:number;weeklyOrderProgress?:Record<string,number>;foodRemaining:number;freeStorageSlots:number;elapsedSeconds:number;projectedRewardFits:boolean}
 export interface IdleEvaluation{shouldStop:boolean;reason?:string;conditionId?:string;safety:boolean}
+export const MAX_IDLE_RULE_SETS=5;
 function reached(c:IdleStopCondition,ctx:IdleEvaluationContext){if(!c.enabled)return false;switch(c.kind){case'item_quantity':return(ctx.itemQuantities[c.targetId??'']??0)>=c.value;case'skill_level':return(ctx.skillLevels[c.targetId??'']??0)>=c.value;case'monster_kills':return(ctx.monsterKills[c.targetId??'']??0)>=c.value;case'session_kills':return(ctx.sessionKills??0)>=c.value;case'champion_defeats':return(ctx.championDefeats??0)>=c.value;case'weekly_order_progress':return(ctx.weeklyOrderProgress?.[c.targetId??'']??0)>=c.value;case'food_below':return ctx.foodRemaining<=c.value;case'free_slots_below':return ctx.freeStorageSlots<=c.value;case'duration_seconds':return ctx.elapsedSeconds>=c.value}}
 export function evaluateIdleRuleSet(rules:IdleRuleSet,ctx:IdleEvaluationContext):IdleEvaluation{
  if(rules.conditions.length>6)throw new Error('too_many_idle_conditions');
@@ -19,7 +20,7 @@ export const IDLE_RULES_CAN_ADVANCE_ACTION_QUEUE=true;
 const IDLE_KINDS:IdleStopKind[]=['item_quantity','skill_level','monster_kills','session_kills','champion_defeats','weekly_order_progress','food_below','free_slots_below','duration_seconds'];
 export function normalizeIdleRuleSets(value:unknown,characterId:string):IdleRuleSet[]{
  if(!Array.isArray(value)||!characterId)return [];
- return value.slice(0,5).flatMap((raw,index)=>{
+ return value.slice(0,MAX_IDLE_RULE_SETS).flatMap((raw,index)=>{
   if(!raw||typeof raw!=='object')return [];const row=raw as Record<string,unknown>;
   const conditions=Array.isArray(row.conditions)?row.conditions.slice(0,6).flatMap((input,i)=>{
    if(!input||typeof input!=='object')return [];const c=input as Record<string,unknown>,kind=c.kind as IdleStopKind,value=Number(c.value);
@@ -30,6 +31,12 @@ export function normalizeIdleRuleSets(value:unknown,characterId:string):IdleRule
  });
 }
 export function validateActiveIdleRuleId(rules:IdleRuleSet[],value:unknown){return typeof value==='string'&&rules.some(rule=>rule.id===value)?value:undefined}
+export function upsertIdleRuleSet(rules:IdleRuleSet[],rule:IdleRuleSet){
+ const index=rules.findIndex(row=>row.id===rule.id);
+ if(index>=0)return rules.map((row,i)=>i===index?rule:row);
+ if(rules.length>=MAX_IDLE_RULE_SETS)throw new Error('idle_rule_limit_reached');
+ return [...rules,rule];
+}
 
 export function idleRuleDurationWindow(rules:IdleRuleSet[]|undefined,activeRuleId:string|undefined,activityStartedAtMs:number,lastClaimAtMs:number,nowMs:number){
  const rule=rules?.find(row=>row.id===activeRuleId);if(!rule)return {settleAtMs:nowMs,shouldStop:false as const};

@@ -12,9 +12,9 @@ const win:CompanionCombatExecutor={simulate(input){ok(input.players.length===3,'
 const lose:CompanionCombatExecutor={simulate(input){return {victory:false,durationMs:60000,reason:'wipe',players:input.players.map((x,i)=>({definition:{id:x.id},alive:i===0}))};}};
 const sep=Date.UTC(2026,8,11,12),oct=Date.UTC(2026,9,1,0,0,1);
 const monthlySets:Record<string,string[]>={
- '2026-09':['NO_PRESTIGE_15','SUNSCAR_PAIR','WORLDLY_TRIO'],
- '2026-10':['STANDARD_BOSS','FROSTMARCH_PAIR','FLAWLESS_15'],
- '2026-11':['RARITY_SPECTRUM','ASHLANDS_PAIR','UNDER_POWER_20'],
+ '2026-09':['SUNSCAR_PAIR','AFFINITY_TRIAD','WORLDLY_TRIO'],
+ '2026-10':['FROSTMARCH_PAIR','RADIANT_UMBRAL','FLAWLESS_15'],
+ '2026-11':['RARITY_SPECTRUM','ASHLANDS_PAIR','NO_CONSTRUCT_15'],
 };
 for(const [seasonKey,expected] of Object.entries(monthlySets)){
  const season=companionTrialSeasonDefinition(seasonKey);eq(season.specialChallenges.join(','),expected.join(','),`${seasonKey} monthly challenge rotation`);

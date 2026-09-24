@@ -13,6 +13,14 @@ const first=dashboardRecommendation(state);
 equal(first.destination,'World','first kill quest routes to World');
 equal(first.zoneId,'GREENFIELDS','first hunt recommendation carries canonical region id');
 ok(first.title.includes('A Name in the Ledger'),'first quest is named in Home guidance');
+const lowFood={...createCharacter(newGame(1),'IRONWARDEN','Low Food'),inventory:{...state.inventory,stacks:[]}};
+const lowFoodGuide=dashboardRecommendation(lowFood);
+equal(lowFoodGuide.destination,'Skills','no carried or banked food routes to Fishing/Cooking');
+ok(lowFoodGuide.title.includes('Restock combat sustain')&&lowFoodGuide.detail.includes('Healing companions help'),'low-food guidance teaches sustain loop and healer relationship');
+const bankedFood={...lowFood,bank:{...lowFood.bank,stacks:[{itemId:'COOKED_MEADOW_PERCH',quantity:12}]}};
+const bankedGuide=dashboardRecommendation(bankedFood);
+equal(bankedGuide.destination,'Inventory','banked food routes to Inventory withdrawal');
+ok(bankedGuide.button.includes('Withdraw'),'banked-food guidance exposes withdrawal action');
 
 const firstSession=homeSessionSummary(state,Date.UTC(2026,8,22,12));
 ok(firstSession.dailyReady,'Fresh session exposes the Daily Supplies claim in Home session priorities');

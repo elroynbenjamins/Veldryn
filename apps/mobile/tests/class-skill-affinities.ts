@@ -175,5 +175,23 @@ check('Hexweaver armor crafting does not gain an Enchanting bonus',()=>{
  const r=RECIPES.find(row=>row.classId==='HEXWEAVER'&&isTimedEquipmentRecipe(row))!;assert.ok(r);assert.notEqual(r.skillId,'enchanting');
  const s=funded('HEXWEAVER',r.inputs),result=startEquipmentCraft(s,r.id,NOW),pace=professionActionPace(s,r,'forge');assert.equal(result.job.skillAffinity,undefined);near(pace.affinity.xpMultiplier,1);near(pace.affinity.speedMultiplier,1);near(result.job.xpPerCraft!,pace.xpPerAction);
 });
+check('processing preserves sub-second claims exactly like one claim',()=>{
+ let state=startProcessingBatch(funded('IRONWARDEN',smelt.inputs),smelt.id,5,NOW);
+ const once=claimActivity(state,NOW+60000).state;
+ for(let i=1;i<=120;i++)state=claimActivity(state,NOW+i*500).state;
+ assert.equal(state.skills.find(row=>row.skillId==='smithing')!.xp,once.skills.find(row=>row.skillId==='smithing')!.xp);
+ assert.equal(state.activity!.processing!.remainingBatches,once.activity!.processing!.remainingBatches);
+ near(state.activity!.progressFraction!,once.activity!.progressFraction!);
+ assert.deepEqual(state.inventory.stacks,once.inventory.stacks);
+});
+check('brewing preserves sub-second claims exactly like one claim',()=>{
+ const r=ALCHEMY_RECIPES[0];let state=startAlchemyBatch(funded('DREADGUARD',r.inputs),r.id,5,NOW);
+ const once=claimActivity(state,NOW+60000).state;
+ for(let i=1;i<=120;i++)state=claimActivity(state,NOW+i*500).state;
+ assert.equal(state.skills.find(row=>row.skillId==='alchemy')!.xp,once.skills.find(row=>row.skillId==='alchemy')!.xp);
+ assert.equal(state.activity!.brew!.remainingBatches,once.activity!.brew!.remainingBatches);
+ near(state.activity!.progressFraction!,once.activity!.progressFraction!);
+ assert.deepEqual(state.inventory.stacks,once.inventory.stacks);
+});
 console.log(`Class affinity checks: ${passes} passed, ${failures.length} failed`);
 if(failures.length)throw new Error(failures.join('\n'));

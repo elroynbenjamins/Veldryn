@@ -487,11 +487,11 @@ export function previewActivityReward(state:GameState,nowMs:number):RewardBundle
     return previewDailySupplyTimedReward(state,settled.reward,'skill').reward;
   }
   if(state.activity?.kind==='alchemy'){
-    const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,Math.floor((nowMs-state.activity.lastClaimAtMs)/1000))),base=previewAlchemyReward(state,elapsed);
+    const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,(nowMs-state.activity.lastClaimAtMs)/1000)),base=previewAlchemyReward(state,elapsed);
     return previewDailySupplyTimedReward(state,base,'crafting').reward;
   }
   if(state.activity?.kind==='processing'){
-    const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,Math.floor((nowMs-state.activity.lastClaimAtMs)/1000))),base=previewProcessingReward(state,elapsed);
+    const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,(nowMs-state.activity.lastClaimAtMs)/1000)),base=previewProcessingReward(state,elapsed);
     return previewDailySupplyTimedReward(state,base,'crafting').reward;
   }
   if(!state.activity||!state.character)return {xp:0,gold:0,items:[],kills:0,elapsedSeconds:0};
@@ -551,7 +551,7 @@ export function claimActivity(state:GameState,nowMs:number){
   }
   if(state.activity?.kind==='alchemy'){
     if(nowMs<=state.activity.lastClaimAtMs)return {state,reward:previewActivityReward(state,state.activity.lastClaimAtMs)};
-    const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,Math.floor((nowMs-state.activity.lastClaimAtMs)/1000))),baseReward=previewAlchemyReward(state,elapsed),boost=previewDailySupplyTimedReward(state,baseReward,'crafting'),reward=boost.reward,brew=state.activity.brew!;
+    const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,(nowMs-state.activity.lastClaimAtMs)/1000)),baseReward=previewAlchemyReward(state,elapsed),boost=previewDailySupplyTimedReward(state,baseReward,'crafting'),reward=boost.reward,brew=state.activity.brew!;
     const routed=routeRewards(state,reward.items,nowMs);
     const skills=state.skills.map(x=>x.skillId==='alchemy'?{...x,xp:Math.min(totalXpAtLevel(100),x.xp+(reward.xp??0)),level:levelFromXp(Math.min(totalXpAtLevel(100),x.xp+(reward.xp??0)))}:x);
     const nextBase={...state,...routed,skills,rewardRemainders:reward.nextRewardRemainders,activity:reward.nextBrewRemaining?{...state.activity,lastClaimAtMs:nowMs,progressFraction:reward.nextProgressFraction,brew:{...brew,remainingBatches:reward.nextBrewRemaining}}:null} as GameState;
@@ -561,7 +561,7 @@ export function claimActivity(state:GameState,nowMs:number){
   }
   if(state.activity?.kind==='processing'){
     if(nowMs<=state.activity.lastClaimAtMs)return {state,reward:previewActivityReward(state,state.activity.lastClaimAtMs)};
-    const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,Math.floor((nowMs-state.activity.lastClaimAtMs)/1000))),baseReward=previewProcessingReward(state,elapsed),boost=previewDailySupplyTimedReward(state,baseReward,'crafting'),reward=boost.reward,processing=state.activity.processing!;
+    const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,(nowMs-state.activity.lastClaimAtMs)/1000)),baseReward=previewProcessingReward(state,elapsed),boost=previewDailySupplyTimedReward(state,baseReward,'crafting'),reward=boost.reward,processing=state.activity.processing!;
     const routed=routeRewards(state,reward.items,nowMs),nextXp=(state.skills.find(x=>x.skillId===processing.skillId)?.xp??0)+(reward.xp??0);
     const skills=state.skills.map(x=>x.skillId===processing.skillId?{...x,xp:Math.min(totalXpAtLevel(100),nextXp),level:levelFromXp(Math.min(totalXpAtLevel(100),nextXp))}:x);
     const nextBase={...state,...routed,skills,rewardRemainders:reward.nextRewardRemainders,activity:reward.nextProcessingRemaining?{...state.activity,lastClaimAtMs:nowMs,progressFraction:reward.nextProgressFraction,processing:{...processing,remainingBatches:reward.nextProcessingRemaining}}:null} as GameState;

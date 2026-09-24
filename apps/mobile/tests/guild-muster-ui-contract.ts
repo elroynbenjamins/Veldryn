@@ -10,7 +10,7 @@ const core=read('src/core/guild-muster.ts');
 const sql=read('../../backend/supabase/migrations/20261018000155_guild_muster_v1.sql');
 
 ok(screen.includes("'Muster'"),'Online Guild sections must include Muster');
-ok(screen.includes("onlineSection==='Muster'?<OnlineGuildMusterPanel/>:null"),'Guild Muster must be reachable from the online Guild hub');
+ok(screen.includes("onlineSection==='Activities'?<View")&&screen.includes('<OnlineGuildMusterPanel/>'),'Guild Muster must remain reachable inside the consolidated Activities tab');
 ok(screen.includes('Muster, the member Notice Board'),'Guild hub description must explain the Muster alongside existing systems');
 
 ok(panel.includes('GUILD MUSTER'),'Muster must have a clear player-facing identity');

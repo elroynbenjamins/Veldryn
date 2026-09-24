@@ -37,6 +37,8 @@ export function companionMaterialSourceTargets(id:string):CompanionMaterialSourc
  return sources;
 }
 
+export function companionHousingMaterialSource(id:string){return companionMaterialSourceTargets(id)[0];}
+
 export function companionMaterialSources(id:string):string[]{return companionMaterialSourceTargets(id).map(source=>source.label);}
 export function companionRequirementProgress(state:GameState,req:CompanionDefinition['unlockRequirements'][number]){
  const target=req.target??req.description,total=Math.max(1,req.amount??1);

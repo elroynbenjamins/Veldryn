@@ -2,7 +2,7 @@ import {accountCharacters,projectCharacter} from './account-roster';
 import {activityQueueCapacity,activityQueueHandoffStatus,activityQueueLabel,normalizeActivityQueue,queuedActivityReadiness} from './activity-queue';
 import type {ActiveActivity,CharacterState,GameState} from './types';
 
-export type CharacterQueueState='none'|'armed'|'waiting'|'ready'|'blocked'|'paused';
+export type CharacterQueueState='none'|'armed'|'will_pause'|'waiting'|'ready'|'blocked'|'paused';
 
 export interface CharacterActivityOverviewRow{
   character:CharacterState;
@@ -22,6 +22,7 @@ export interface CharacterActivityOverviewRow{
 
 function queueStateLabel(state:CharacterQueueState){
   if(state==='armed')return 'AUTO HANDOFF';
+  if(state==='will_pause')return 'WILL PAUSE';
   if(state==='waiting')return 'WAITING FOR STOP';
   if(state==='ready')return 'READY';
   if(state==='blocked')return 'BLOCKED';
@@ -36,7 +37,7 @@ export function characterActivityOverview(state:GameState,characterId:string):Ch
   let queueState:CharacterQueueState='none';
   if(queue.length){
     if(pausedReason)queueState='paused';
-    else if(projected.activity&&handoff.armed)queueState='armed';
+    else if(projected.activity&&handoff.armed)queueState=readiness.ready?'armed':'will_pause';
     else if(projected.activity)queueState='waiting';
     else queueState=readiness.ready?'ready':'blocked';
   }

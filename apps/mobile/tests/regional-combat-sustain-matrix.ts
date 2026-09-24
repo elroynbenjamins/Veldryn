@@ -1,4 +1,4 @@
-import {strict as assert} from 'node:assert';
+import {assert} from './test-assert';
 import {combatSustainProjection,createCharacter,newGame} from '../src/core/game';
 import type {GameState} from '../src/core/types';
 

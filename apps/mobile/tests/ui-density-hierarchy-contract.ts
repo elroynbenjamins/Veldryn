@@ -326,6 +326,9 @@ const collections=read('src/screens/CollectionsScreen.tsx');
 ok(collections.includes("petCard:{width:'48%',minWidth:0"),'Collections pet grid must keep two-column cards viable on narrow phones');
 ok((collections.match(/<GameButton compact title=\{row\.selected\?/g)??[]).length>=2,'Collections repeated item actions must remain compact');
 
+const petBonusOverview=read('src/screens/PetBonusOverviewScreen.tsx');
+ok(petBonusOverview.includes('accessibilityState={{expanded:showBonusHelp}}')&&petBonusOverview.includes('HOW PET BONUSES WORK'),'Pet Bonus explanation must use progressive disclosure so collection controls remain closer to the top');
+
 const achievements=read('src/screens/AchievementsScreen.tsx');
 ok(achievements.includes('<GameButton compact title="Save showcase"'),'Achievements showcase action must not dominate the screen');
 ok(achievements.includes("<GameButton compact title={entry.claimed?'Claimed':entry.completed?'Claim':'Locked'}"),'Achievement row actions must remain compact');
@@ -337,6 +340,7 @@ ok(activityOverview.includes('faithTone:{color:C.special}'),'Character Activity 
 const dailySupplies=read('src/screens/DailySuppliesScreen.tsx');
 ok(dailySupplies.includes("cell:{width:'12.5%',minWidth:31,maxWidth:40,height:32"),'Daily Supplies track must fit seven compact columns on narrow phones');
 ok(dailySupplies.includes('boostRow:{minHeight:56'),'Daily Supplies banked boost rows must remain compact');
+ok(dailySupplies.includes('accessibilityState={{expanded:showRules}}')&&dailySupplies.includes('WHAT COUNTS'),'Daily Supplies reference rules must stay collapsed until requested instead of lengthening the main claim/boost workflow');
 
 const accountBonuses=read('src/screens/AccountBonusesScreen.tsx');
 ok(accountBonuses.includes('row:{minHeight:48'),'Account bonus totals must remain dense and scannable');

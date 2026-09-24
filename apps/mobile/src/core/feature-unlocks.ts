@@ -18,9 +18,17 @@ export const EARLY_FEATURE_UNLOCKS={
  rankings:{questId:'QST_011',title:'Rankings',requirement:'Reach Level 20 and complete Place Among Guilds',description:'Prestige rankings unlock later at Level 20, after the player has had time to establish their character and social identity.'},
 } as const;
 
+function accountQuestClaimed(state:GameState,questId:string){
+ if(state.quests.some(row=>row.questId===questId&&row.status==='claimed'))return true;
+ return (state.otherCharacters??[]).some(entry=>entry.quests.some(row=>row.questId===questId&&row.status==='claimed'));
+}
 export function earlyFeatureUnlocked(state:GameState,id:EarlyFeatureId){
  const rule=EARLY_FEATURE_UNLOCKS[id];
- return state.quests.some(row=>row.questId===rule.questId&&row.status==='claimed');
+ // Onboarding is learned once per account. New characters should not re-hide
+ // Daily Supplies, social systems, Pets/Companions or Guilds after the player
+ // has already reached the relevant milestone on another character.
+ if(id==='guild'&&state.account.guildMember)return true;
+ return accountQuestClaimed(state,rule.questId);
 }
 export function earlyFeatureUnlockProgress(state:GameState,id:EarlyFeatureId){
  const rule=EARLY_FEATURE_UNLOCKS[id],quest=state.quests.find(row=>row.questId===rule.questId);

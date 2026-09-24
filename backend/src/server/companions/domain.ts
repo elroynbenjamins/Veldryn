@@ -1,4 +1,5 @@
 import type {CompanionRarity,CompanionRole} from './policy';
+import type {CombatResult} from '../combat/types';
 import type {CompanionAffinity} from '../../shared/companion-affinity-catalog';
 
 export type CompanionCombatContext='character_assist'|'companion_trial'|'companion_roguelite'|'companion_arena';
@@ -53,7 +54,7 @@ export interface CompanionCombatantDefinition{
   stats:{maxHp:number;attackPower:number;healingPower:number;defense:number;accuracy:number;evasion:number;critChance:number;critMultiplier:number;haste:number};
   basicAttackMs:number;basicAttackCoeff:number;abilities:EngineAbilityDefinition[];boss?:boolean;phases?:EngineBossPhaseDefinition[];tags?:string[];
 }
-export interface CompanionCombatResult{victory:boolean;durationMs:number;reason:'victory'|'wipe'|'timeout';players?:Array<{definition:{id:string};alive:boolean}>;}
+export type CompanionCombatResult=CombatResult;
 export interface CompanionCombatExecutor{simulate(input:{seed:string;players:CompanionCombatantDefinition[];enemies:CompanionCombatantDefinition[];mitigationConstant?:number}):CompanionCombatResult;}
 
 export interface CompanionTeamSelection{companionIds:[string,string,string];}

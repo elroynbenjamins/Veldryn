@@ -661,7 +661,7 @@ export function eatFood(state:GameState,itemId?:string):GameState{if(!state.char
 export function usePotion(state:GameState,itemId:string):GameState{if(!state.character)throw new Error('Create a character first.');const potion=potionDef(itemId);if(!potion)throw new Error('Unknown potion.');if(state.activity?.kind==='combat')throw new Error('Potions cannot be used during a hunt.');const stacks=consume(state.inventory.stacks,itemId,1);if(potion.effect.kind==='healing'){const max=effectiveStats(state).hp,healing=characterPermanentMultipliers(state).healingEffectivenessMultiplier;return {...state,inventory:{...state.inventory,stacks},character:{...state.character,currentHp:Math.min(max,state.character.currentHp+Math.ceil(max*potion.effect.maxHpFraction*healing))}};}return {...state,inventory:{...state.inventory,stacks},character:{...state.character,preparation:{itemId,remainingEncounters:potion.effect.encounters}}};}
 export function discardPreparation(state:GameState):GameState{return state.character?.preparation?{...state,character:{...state.character,preparation:undefined}}:state;}
 export function unequipItem(state:GameState,slot:GearSlot):GameState{if(!state.character)return state;const old=state.character.equipment[slot];if(!old)return state;const eq={...state.character.equipment};delete eq[slot];const next={...state,inventory:{...state.inventory,stacks:stackItems(state.inventory.stacks,[{itemId:old,quantity:1}])},character:{...state.character,equipment:eq}} as GameState;next.character!.currentHp=Math.min(effectiveStats(next).hp,next.character!.currentHp);return next}
-export function sellItem(state:GameState,itemId:string,quantity=1):GameState{if(!state.character||quantity<=0)return state;if(itemId===HOLY_WATER_ID)throw new Error('Holy Water cannot be sold.');if(state.settings.favoriteItemIds?.includes(itemId))throw new Error('Favorite item is protected. Remove it from Favorites before selling.');const discovered=discoverCharacterSkins(state),d=itemDef(itemId);if(d.type==='gear'&&hasEnhancement(discovered,itemId))throw new Error('Enhanced equipment is protected. Extract its gems before disposal; upgraded ranks cannot be recovered.');return {...discovered,inventory:{...discovered.inventory,stacks:consume(discovered.inventory.stacks,itemId,quantity)},character:{...discovered.character!,gold:discovered.character!.gold+d.value*quantity}}}
+export function sellItem(state:GameState,itemId:string,quantity=1):GameState{if(!state.character||quantity<=0)return state;if(itemId===HOLY_WATER_ID)throw new Error('Holy Water cannot be sold.');if(state.settings.favoriteItemIds?.includes(itemId))throw new Error('Favorite item is protected. Remove it from Favorites before selling.');const discovered=discoverCharacterSkins(state),d=itemDef(itemId);if(d.knowledgeUnlockId)throw new Error('Blueprints cannot be sold. Learn the recipe by crafting its tool.');if(d.type==='gear'&&hasEnhancement(discovered,itemId))throw new Error('Enhanced equipment is protected. Extract its gems before disposal; upgraded ranks cannot be recovered.');return {...discovered,inventory:{...discovered.inventory,stacks:consume(discovered.inventory.stacks,itemId,quantity)},character:{...discovered.character!,gold:discovered.character!.gold+d.value*quantity}}}
 export function salvageItem(state:GameState,itemId:string):GameState{if(state.settings.favoriteItemIds?.includes(itemId))throw new Error('Favorite item is protected. Remove it from Favorites before salvaging.');const discovered=discoverCharacterSkins(state),d=itemDef(itemId);if(d.type!=='gear'||!d.salvage)throw new Error('Cannot salvage');if(hasEnhancement(discovered,itemId))throw new Error('Enhanced equipment is protected. Extract its gems before disposal; upgraded ranks cannot be recovered.');return {...discovered,inventory:{...discovered.inventory,stacks:stackItems(consume(discovered.inventory.stacks,itemId,1),[d.salvage])}}}
 
 export function depositToBank(state:GameState,itemId:string,quantity:number):GameState{
@@ -722,6 +722,7 @@ export function startExploration(state:GameState,routeId:string,nowMs:number):Ga
 export function equipGatheringTool(state:GameState,itemId:string):GameState{
   if(!state.character)throw new Error('Create a character first');
   const tool=gatheringToolDef(itemId);if(!tool)throw new Error('Not a gathering tool');
+  if(state.character.level<tool.requiredCharacterLevel)throw new Error(`Requires Level ${tool.requiredCharacterLevel}`);
   const skill=state.skills.find(entry=>entry.skillId===tool.skillId);if(!skill||skill.level<tool.unlockLevel)throw new Error(`Requires ${tool.skillId} level ${tool.unlockLevel}`);
   const currentId=state.character.equippedToolIds?.[tool.skillId];if(currentId===itemId)return state;
   let stacks=consume(state.inventory.stacks,itemId,1);
@@ -740,15 +741,33 @@ export function craftRecipe(state:GameState,recipeId:string,nowMs=Date.now()):Ga
   if(recipeId.startsWith('BREW_'))throw new Error('Timed alchemy recipes must be started as a batch.');
   const r=RECIPES.find(x=>x.id===recipeId);if(!r)throw new Error('Unknown recipe');
   if(r.classId&&r.classId!==state.character.classId)throw new Error('This recipe belongs to another class');
-  if(state.character.level<(r.characterLevel??1))throw new Error(`Requires character level ${r.characterLevel}`);
+  if(state.character.level<(r.characterLevel??1))throw new Error(`Requires Level ${r.characterLevel}`);
   if(r.requiresCraftedItemId&&!state.character.craftedNoviceItemIds?.includes(r.requiresCraftedItemId))throw new Error(`Craft ${itemDef(r.requiresCraftedItemId).name} first`);
-  const sk=state.skills.find(x=>x.skillId===r.skillId);if(!sk||sk.level<r.level)throw new Error('Skill level too low');
+  const tool=gatheringToolDef(r.output.itemId);
+  if(tool){
+    if(state.character.level<tool.requiredCharacterLevel)throw new Error(`Requires Level ${tool.requiredCharacterLevel}`);
+    const gatheringSkill=state.skills.find(x=>x.skillId===tool.skillId);
+    if(!gatheringSkill||gatheringSkill.level<tool.unlockLevel)throw new Error(`Requires ${tool.skillId} level ${tool.unlockLevel}`);
+  }
+  const knowledgeLearned=!r.requiredKnowledgeId||(state.account.unlockedKnowledgeIds??[]).includes(r.requiredKnowledgeId);
+  if(!knowledgeLearned){
+    if(!r.knowledgeItemId)throw new Error('Recipe blueprint is missing');
+    if(combinedQty(state,r.knowledgeItemId)<1)throw new Error(`Requires ${itemDef(r.knowledgeItemId).name}`);
+  }
+  const sk=state.skills.find(x=>x.skillId===r.skillId);if(!sk||sk.level<r.level)throw new Error(`Requires ${r.skillId} level ${r.level}`);
   if(state.character.gold<r.gold)throw new Error('Not enough gold');
   const outputDef=itemDef(r.output.itemId),multipliers=characterPermanentMultipliers(state),mastery=professionMasteryMultipliers(r.id,state.account.professionMasteryByAction?.[r.id]),outputEligible=outputDef.type!=='gear'&&outputDef.type!=='tool',baseXp=Math.floor(r.xp*multipliers.skillXpMultiplier*mastery.xp),masteryKey=`mastery:craft:${r.id}:yield`,masteryRaw=r.output.quantity*(outputEligible?mastery.yield:1)+(state.rewardRemainders?.[masteryKey]??0),masteryOutput=outputEligible?Math.floor(masteryRaw):r.output.quantity,masteryRemainder=outputEligible?Math.max(0,masteryRaw-masteryOutput):0;
   const masteryState={...state,rewardRemainders:{...(state.rewardRemainders??{}),[masteryKey]:masteryRemainder}} as GameState;
   const boosted=applyDailySupplyCraft(masteryState,{seconds:r.seconds,outputQuantity:masteryOutput,xp:baseXp,outputEligible}),boostedState=boosted.state;
   let inv=boostedState.inventory.stacks,bank=boostedState.bank.stacks;
+  let unlockedKnowledgeIds=[...(boostedState.account.unlockedKnowledgeIds??[])];
   let temp={...boostedState,inventory:{...boostedState.inventory,stacks:inv},bank:{...boostedState.bank,stacks:bank}} as GameState;
+  if(!knowledgeLearned&&r.requiredKnowledgeId&&r.knowledgeItemId){
+    const learned=consumeInventoryThenBank(temp,r.knowledgeItemId,1);
+    inv=learned.inventory;bank=learned.bank;
+    unlockedKnowledgeIds=[...new Set([...unlockedKnowledgeIds,r.requiredKnowledgeId])];
+    temp={...temp,inventory:{...temp.inventory,stacks:inv},bank:{...temp.bank,stacks:bank},account:{...temp.account,unlockedKnowledgeIds}};
+  }
   for(const i of r.inputs){
     const consumed=consumeInventoryThenBank(temp,i.itemId,i.quantity);
     inv=consumed.inventory;bank=consumed.bank;
@@ -761,7 +780,7 @@ export function craftRecipe(state:GameState,recipeId:string,nowMs=Date.now()):Ga
     if(b.overflow.length)throw new Error('Inventory and Bank are full');
   }
   const xp=sk.xp+boosted.xp;
-  const next={...boostedState,character:{...boostedState.character!,gold:boostedState.character!.gold-r.gold,...(r.noviceSetId?{craftedNoviceItemIds:[...new Set([...(boostedState.character!.craftedNoviceItemIds??[]),r.output.itemId])]}:{})},inventory:{...boostedState.inventory,stacks:inv},bank:{...boostedState.bank,stacks:bank},skills:boostedState.skills.map(x=>x.skillId===r.skillId?{...x,xp,level:levelFromXp(xp)}:x)} as GameState;
+  const next={...boostedState,character:{...boostedState.character!,gold:boostedState.character!.gold-r.gold,...(r.noviceSetId?{craftedNoviceItemIds:[...new Set([...(boostedState.character!.craftedNoviceItemIds??[]),r.output.itemId])]}:{})},inventory:{...boostedState.inventory,stacks:inv},bank:{...boostedState.bank,stacks:bank},account:{...boostedState.account,unlockedKnowledgeIds},skills:boostedState.skills.map(x=>x.skillId===r.skillId?{...x,xp,level:levelFromXp(xp)}:x)} as GameState;
   const progressed=applyTrustedLongTermProgression(next,[{kind:'crafting',contentId:r.id,units:1}],undefined,nowMs,{accountId:longTermAccountScope(boostedState),eventId:`craft:${state.character.id}:${r.id}:${nowMs}`}).state;
   return outputDef.type==='gear'?recordCompanionActivity(refreshQuests(grantEventActivity(progressed,'crafting',nowMs)),'crafting',r.output.itemId,r.output.quantity,nowMs):refreshQuests(grantEventActivity(progressed,'crafting',nowMs))
 }

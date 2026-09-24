@@ -136,6 +136,11 @@ ok(rankings.includes('chip:{minHeight:44'),'Ranking filters must retain a 44px t
 ok(rankings.includes('stackRows=width<360||fontScale>=1.25'),'Ranking rows must adapt to narrow phones and large text');
 ok(rankings.includes("goldStack:{width:'100%',marginLeft:54,textAlign:'left'}"),'Ranking values must wrap below identity content when space is constrained');
 
+const eventResponsive=read('src/screens/EventScreen.tsx');
+ok(eventResponsive.includes('useWindowDimensions')&&eventResponsive.includes("stackEvent=width<360||fontScale>=1.25"),'Events must adapt dense navigation/actions to narrow phones and large text');
+ok(eventResponsive.includes('tabsStack')&&eventResponsive.includes("tabStack:{flexGrow:0,flexBasis:'50%'}"),'Event main navigation must become a readable two-by-two grid when constrained');
+ok(eventResponsive.includes('buttonRowStack')&&eventResponsive.includes('rewardStack')&&eventResponsive.includes("claimStack:{width:'100%'}"),'Event paired actions and reward claim rows must stack instead of squeezing on constrained layouts');
+
 const top=read('src/components/GameTopBar.tsx');
 ok(top.includes('accessible accessibilityRole="text" style={styles.hpBlock}'),'Top-bar health must be exposed as one readable accessibility element');
 ok(top.includes('gold`} style={styles.goldBlock}'),'Top-bar Gold must be exposed as one readable accessibility element');

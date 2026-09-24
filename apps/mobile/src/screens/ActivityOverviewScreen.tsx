@@ -1,6 +1,7 @@
 import {useMemo,useState} from 'react';
-import {ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
+import {ScrollView,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from '../components/GameButton';
+import {GameTextInput} from '../components/GameTextInput';
 import {GameModalHeader,GameModalSurface} from '../components/GameModalSurface';
 import {Panel} from '../components/Panel';
 import {GATHERING} from '../content/skills';
@@ -61,17 +62,17 @@ export function ActivityOverviewScreen({state,now,onSwitch,onCreate,onDelete}:{s
   </ScrollView>
   <GameModalSurface visible={!!target} presentation="dialog" reduceMotion={state.settings.reduceMotion} onClose={close} backdropLabel="Close character management">
    <GameModalHeader eyebrow="CHARACTER MANAGEMENT" title={target?.character.name??'Character'} onClose={close} closeDisabled={busy}/>
-   {target?<View style={s.modalBody}>
+   {target?<ScrollView style={s.modalScroll} contentContainerStyle={s.modalBody} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
     <View style={s.warning}><Text style={s.warningTitle}>Permanent character deletion</Text><Text style={s.warningText}>Levels, XP, Gold, skills, quests, class progress, saved loadouts and character-bound appearance progress are removed. Equipment enhancement/temper ranks and pity progress are also removed; recovered gear returns as its base item. Inventory, overflow items, equipped gear, gathering tools and socketed gems are recovered to the shared Bank, then Overflow if needed.</Text></View>
     <View style={s.preserved}><Text style={s.preservedTitle}>ACCOUNT PROGRESS STAYS</Text><Text style={s.preservedText}>Earned character slots, premium currency, companions, Guild membership and account collectibles are preserved.</Text></View>
     {blockReason?<View style={s.block}><Text accessibilityRole="alert" style={s.blockTitle}>Finish before deleting</Text><Text style={s.blockText}>{blockReason}</Text>{craftCount>0?<Text style={s.blockText}>{craftCount} equipment craft{craftCount===1?' is':'s are'} still linked to this character.</Text>:null}</View>:null}
     <Text style={s.confirmLabel}>Type <Text style={s.confirmCode}>{required}</Text> to unlock the delete actions.</Text>
-    <TextInput accessibilityLabel="Character deletion confirmation" autoCapitalize="characters" autoCorrect={false} editable={!busy&&!blockReason} value={confirmation} onChangeText={value=>{setConfirmation(value);setError('')}} placeholder={required} placeholderTextColor={C.muted} style={s.input}/>
+    <GameTextInput accessibilityLabel="Character deletion confirmation" autoCapitalize="characters" autoCorrect={false} editable={!busy&&!blockReason} value={confirmation} onChangeText={value=>{setConfirmation(value);setError('')}} placeholder={required}/>
     {!!error&&<Text accessibilityRole="alert" style={s.error}>{error}</Text>}
     <GameButton title={busy?'Deleting…':'Delete & choose new class'} loading={busy} disabled={!onDelete||!confirmed||!!blockReason||busy} tone="danger" onPress={()=>void remove(true)}/>
     {entries.length>1?<GameButton title="Delete character only" disabled={!onDelete||!confirmed||!!blockReason||busy} tone="secondary" onPress={()=>void remove(false)}/>:null}
     <Text style={s.footnote}>{entries.length===1?'This is your only character. After deletion you return to class creation.':'Choosing a new class deletes this character first, frees the slot, and then opens class creation. Plain delete keeps you on the remaining roster.'}</Text>
-   </View>:null}
+   </ScrollView>:null}
   </GameModalSurface>
  </>;
 }
@@ -83,8 +84,8 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
  summary:{flexDirection:'row',gap:spacing.lg,flexWrap:'wrap'},summaryCell:{minWidth:72},summaryLabel:{...typography.caption,color:equipmentColors.goldSoft,fontWeight:'900',letterSpacing:1},summaryValue:{...typography.title,color:C.text},slotHint:{...typography.caption,color:C.muted,marginTop:spacing.sm},
  row:{flexDirection:'row',alignItems:'center',gap:spacing.sm},nameRow:{flexDirection:'row',alignItems:'center',flexWrap:'wrap',gap:spacing.sm},copy:{flex:1,minWidth:0},actions:{flexDirection:'row',alignItems:'center',justifyContent:'flex-end',gap:spacing.xs,flexWrap:'wrap'},name:{...typography.title,color:C.text},active:{...typography.caption,color:equipmentColors.selectedLine,fontWeight:'900',letterSpacing:.7},meta:{...typography.caption,color:C.muted,marginTop:2},
  activityRow:{flexDirection:'row',alignItems:'center',gap:spacing.sm,marginTop:spacing.md,paddingTop:spacing.md,borderTopWidth:1,borderColor:C.line},dot:{width:10,height:10,borderRadius:5},dotOn:{backgroundColor:C.good},dotIdle:{backgroundColor:C.disabled},activity:{...typography.bodyStrong,color:C.good},combatTone:{color:C.bad},gatheringTone:{color:equipmentColors.goldSoft},trainingTone:{color:C.info},faithTone:{color:C.special},idle:{...typography.bodyStrong,color:C.muted},target:{...typography.bodyStrong,color:equipmentColors.goldSoft,marginTop:2},
- modalBody:{gap:spacing.md,paddingBottom:spacing.sm},warning:{borderWidth:1,borderColor:C.bad,backgroundColor:C.warningSurface,padding:spacing.md,borderRadius:10,gap:4},warningTitle:{...typography.bodyStrong,color:C.bad},warningText:{...typography.caption,color:C.text,lineHeight:18},
+ modalScroll:{maxHeight:'78%'},modalBody:{gap:spacing.md,paddingBottom:spacing.sm},warning:{borderWidth:1,borderColor:C.bad,backgroundColor:C.warningSurface,padding:spacing.md,borderRadius:10,gap:4},warningTitle:{...typography.bodyStrong,color:C.bad},warningText:{...typography.caption,color:C.text,lineHeight:18},
  preserved:{borderWidth:1,borderColor:C.good,backgroundColor:C.goodSurface,padding:spacing.md,borderRadius:10,gap:4},preservedTitle:{...typography.caption,color:C.good,fontWeight:'900',letterSpacing:.7},preservedText:{...typography.caption,color:C.text,lineHeight:18},
  block:{borderWidth:1,borderColor:C.warning,backgroundColor:C.warningSurface,padding:spacing.md,borderRadius:10,gap:4},blockTitle:{...typography.bodyStrong,color:C.warning},blockText:{...typography.caption,color:C.text,lineHeight:18},
- confirmLabel:{...typography.body,color:C.text},confirmCode:{fontWeight:'900',color:C.bad},input:{minHeight:48,borderWidth:1,borderColor:C.lineStrong,borderRadius:8,paddingHorizontal:spacing.md,color:C.text,backgroundColor:C.panel2,...typography.body},error:{...typography.caption,color:C.bad},footnote:{...typography.caption,color:C.muted,lineHeight:18}
+ confirmLabel:{...typography.body,color:C.text},confirmCode:{fontWeight:'900',color:C.bad},error:{...typography.caption,color:C.bad},footnote:{...typography.caption,color:C.muted,lineHeight:18}
 });}

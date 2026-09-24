@@ -1,11 +1,12 @@
 import type {GameState} from './types';
 import {professionMasteryRank} from './profession-mastery-v40';
 
-export type EarlyFeatureId='dailySupplies'|'pets'|'accountBonuses'|'events'|'companions'|'contracts'|'classChallenges'|'masteryHall'|'guild';
+export type EarlyFeatureId='dailySupplies'|'pets'|'accountBonuses'|'events'|'companions'|'contracts'|'classChallenges'|'masteryHall'|'dungeons'|'guild';
 
 type QuestUnlockRule={kind:'quest';questId:string;title:string;requirement:string;description:string;order:number};
 type MasteryUnlockRule={kind:'mastery';rank:number;title:string;requirement:string;description:string;order:number};
-export type EarlyFeatureUnlockRule=QuestUnlockRule|MasteryUnlockRule;
+type CharacterLevelUnlockRule={kind:'character_level';level:number;title:string;requirement:string;description:string;order:number};
+export type EarlyFeatureUnlockRule=QuestUnlockRule|MasteryUnlockRule|CharacterLevelUnlockRule;
 
 export const EARLY_FEATURE_UNLOCKS:Record<EarlyFeatureId,EarlyFeatureUnlockRule>={
  dailySupplies:{kind:'quest',questId:'QST_002',title:'Daily Supplies',requirement:'Complete First Blood, First Skill',description:'Daily Supplies appear after you have completed your first guided skill milestone.',order:2},
@@ -16,6 +17,7 @@ export const EARLY_FEATURE_UNLOCKS:Record<EarlyFeatureId,EarlyFeatureUnlockRule>
  contracts:{kind:'quest',questId:'QST_006',title:'Contract Board',requirement:'Complete Thorn Beneath',description:'Weekly Contracts unlock after the core campaign, combat and Companion introductions are established.',order:6},
  classChallenges:{kind:'quest',questId:'QST_007',title:'Class Challenges',requirement:'Complete Silver on the Water',description:'Personal daily, weekly and monthly Class Challenges arrive after the first regional gathering loop.',order:7},
  masteryHall:{kind:'mastery',rank:10,title:'Mastery Hall',requirement:'Reach Rank 10 in any profession activity',description:'The Mastery Hall appears once you have a profession record worth comparing and pursuing.',order:8},
+ dungeons:{kind:'character_level',level:15,title:'Dungeons',requirement:'Reach character level 15',description:'Co-op Dungeons unlock once your character is ready for the first Asterfall dungeon tier and role-based group combat.',order:9},
  guild:{kind:'quest',questId:'QST_011',title:'Guilds',requirement:'Complete Place Among Guilds',description:'Guilds unlock at the campaign milestone where Asterfall formally recognizes your adventurer.',order:11},
 };
 
@@ -26,7 +28,9 @@ function bestProfessionMasteryRank(state:GameState){return Math.max(0,...Object.
 
 export function earlyFeatureUnlocked(state:GameState,id:EarlyFeatureId){
  const rule=EARLY_FEATURE_UNLOCKS[id];
- return rule.kind==='quest'?questClaimed(state,rule.questId):bestProfessionMasteryRank(state)>=rule.rank;
+ if(rule.kind==='quest')return questClaimed(state,rule.questId);
+ if(rule.kind==='mastery')return bestProfessionMasteryRank(state)>=rule.rank;
+ return (state.character?.level??0)>=rule.level;
 }
 export function earlyFeatureUnlockProgress(state:GameState,id:EarlyFeatureId){
  const rule=EARLY_FEATURE_UNLOCKS[id];
@@ -34,8 +38,8 @@ export function earlyFeatureUnlockProgress(state:GameState,id:EarlyFeatureId){
   const quest=state.quests.find(row=>row.questId===rule.questId);
   return {id,unlocked:earlyFeatureUnlocked(state,id),questId:rule.questId,title:rule.title,requirement:rule.requirement,description:rule.description,status:quest?.status??'locked',progress:quest?.progress??0,order:rule.order};
  }
- const rank=bestProfessionMasteryRank(state);
- return {id,unlocked:rank>=rule.rank,questId:undefined,title:rule.title,requirement:rule.requirement,description:rule.description,status:rank>=rule.rank?'claimed':'active',progress:rank,order:rule.order};
+ if(rule.kind==='mastery'){const rank=bestProfessionMasteryRank(state);return {id,unlocked:rank>=rule.rank,questId:undefined,title:rule.title,requirement:rule.requirement,description:rule.description,status:rank>=rule.rank?'claimed':'active',progress:rank,order:rule.order};}
+ const level=state.character?.level??0;return {id,unlocked:level>=rule.level,questId:undefined,title:rule.title,requirement:rule.requirement,description:rule.description,status:level>=rule.level?'claimed':'active',progress:level,order:rule.order};
 }
 
 export interface EarlyFeatureUnlockMoment{

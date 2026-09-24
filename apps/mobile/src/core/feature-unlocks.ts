@@ -1,6 +1,7 @@
 import type {GameState} from './types';
 
 export type EarlyFeatureId='workingToward'|'dailySupplies'|'events'|'pets'|'accountBonuses'|'friends'|'companions'|'social'|'contracts'|'masteryHall'|'guild'|'rankings';
+export const EARLY_FEATURE_DESTINATION_ORDER=['Progression','DailySupplies','Events','AccountBonuses','Friends','Companions','Social','MasteryHall','Guild','Rankings'] as const;
 
 export const EARLY_FEATURE_UNLOCKS={
  workingToward:{questId:'QST_002',title:'Working Toward',requirement:'Complete First Blood, First Skill',description:'Goal planning appears after the player has completed the first guided skill milestone.'},

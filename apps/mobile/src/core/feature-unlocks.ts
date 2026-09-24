@@ -1,10 +1,20 @@
 import type {GameState} from './types';
 
-export type EarlyFeatureId='pets'|'companions';
+export type EarlyFeatureId='workingToward'|'dailySupplies'|'events'|'pets'|'accountBonuses'|'friends'|'companions'|'social'|'contracts'|'masteryHall'|'guild'|'rankings';
 
 export const EARLY_FEATURE_UNLOCKS={
+ workingToward:{questId:'QST_002',title:'Working Toward',requirement:'Complete First Blood, First Skill',description:'Goal planning appears after the player has completed the first guided skill milestone.'},
+ dailySupplies:{questId:'QST_002',title:'Daily Supplies',requirement:'Complete First Blood, First Skill',description:'The daily reward track appears after the player understands basic skilling.'},
+ events:{questId:'QST_002',title:'Events',requirement:'Complete First Blood, First Skill',description:'Live events appear early enough that new players do not miss limited-time content.'},
  pets:{questId:'QST_003',title:'Pets',requirement:'Complete A Hound\'s Trail',description:'Pets unlock after you have learned the basics of combat, gathering and early regional progression.'},
+ accountBonuses:{questId:'QST_003',title:'Account Bonuses',requirement:'Complete A Hound\'s Trail',description:'Account-wide bonus summaries appear alongside the first collectible system.'},
+ friends:{questId:'QST_003',title:'Friends',requirement:'Complete A Hound\'s Trail',description:'Friends unlock once the first regional combat loop has been completed.'},
  companions:{questId:'QST_005',title:'Companions',requirement:'Complete Into Ironwood',description:'The Companion Sanctuary unlocks after reaching Level 10 and entering deeper Ironwood progression.'},
+ social:{questId:'QST_005',title:'Social & Parties',requirement:'Complete Into Ironwood',description:'Party recruitment and cooperative social systems unlock after the core solo loop is understood.'},
+ contracts:{questId:'QST_005',title:'Contract Board',requirement:'Complete Into Ironwood',description:'Weekly and cooperative contract planning unlocks with deeper regional progression.'},
+ masteryHall:{questId:'QST_005',title:'Mastery Hall',requirement:'Complete Into Ironwood',description:'Long-term profession mastery records appear once the player has enough skill actions to make the system meaningful.'},
+ guild:{questId:'QST_011',title:'Guilds',requirement:'Complete Place Among Guilds',description:'Guild membership unlocks when the campaign explicitly recognizes the player among Asterfall guilds.'},
+ rankings:{questId:'QST_011',title:'Rankings',requirement:'Complete Place Among Guilds',description:'Prestige rankings unlock alongside Guild recognition at Level 20.'},
 } as const;
 
 export function earlyFeatureUnlocked(state:GameState,id:EarlyFeatureId){

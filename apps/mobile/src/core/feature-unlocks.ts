@@ -56,13 +56,19 @@ export function newlyUnlockedEarlyFeatures(before:GameState|null|undefined,after
 export function earlyFeatureForDestination(destination:string):EarlyFeatureId|undefined{
  const map:Record<string,EarlyFeatureId>={
   Progression:'workingToward',DailySupplies:'dailySupplies',AccountBonuses:'accountBonuses',
-  Companions:'companions',Events:'events',Friends:'friends',Social:'social',MasteryHall:'masteryHall',
+  Companions:'companions',Events:'events',Friends:'friends',Social:'social',Party:'social',MasteryHall:'masteryHall',
   Guild:'guild',Rankings:'rankings',
  };
  return map[destination];
 }
 
+export const DUNGEON_UNLOCK_LEVEL=15;
+export function dungeonFeatureUnlocked(state:GameState){
+ return Math.max(0,Math.floor(Number(state.character?.level)||0))>=DUNGEON_UNLOCK_LEVEL;
+}
+
 export function earlyFeatureLockReason(state:GameState,destination:string){
+ if(destination==='Dungeon'||destination==='Coop')return dungeonFeatureUnlocked(state)?'':`Reach character level ${DUNGEON_UNLOCK_LEVEL} to unlock Dungeons.`;
  const id=earlyFeatureForDestination(destination);if(!id||earlyFeatureUnlocked(state,id))return '';
  return EARLY_FEATURE_UNLOCKS[id].requirement+'.';
 }

@@ -8,10 +8,10 @@ import {t} from '../i18n';
 import {GameState} from '../core/types';
 import {earlyFeatureUnlocked,earlyFeatureUnlockProgress,type EarlyFeatureId} from '../core/feature-unlocks';
 
-export type MoreDestination='Home'|'Social'|'Activity'|'Progression'|'DailySupplies'|'AccountBonuses'|'Quests'|'Companions'|'Skills'|'Events'|'Friends'|'Guild'|'Settings'|'Arena'|'Rankings'|'Collections'|'Profile'|'Achievements'|'MasteryHall';
+export type MoreDestination='Home'|'Social'|'Activity'|'Progression'|'DailySupplies'|'AccountBonuses'|'Quests'|'Companions'|'Dungeon'|'Skills'|'Events'|'Friends'|'Guild'|'Settings'|'Arena'|'Rankings'|'Collections'|'Profile'|'Achievements'|'MasteryHall';
 
 const sections:Array<{label:string;items:MoreDestination[]}>= [
-  {label:'PLAY & PROGRESSION',items:['Home','Progression','Quests','Companions','DailySupplies','AccountBonuses']},
+  {label:'PLAY & PROGRESSION',items:['Home','Progression','Quests','Companions','Dungeon','DailySupplies','AccountBonuses']},
   {label:'SOCIAL & COMPETITION',items:['Social','Friends','Guild','Events','Arena','Rankings']},
   {label:'IDENTITY & ACCOUNT',items:['Activity','Profile','MasteryHall','Collections','Achievements','Settings']},
 ];
@@ -21,6 +21,7 @@ function iconForDestination(id:MoreDestination):keyof typeof navigationIcons{
   if(id==='Progression')return 'World';
   if(id==='DailySupplies'||id==='Rankings')return 'Events';
   if(id==='Arena')return 'Party';
+  if(id==='Dungeon')return 'Dungeon';
   if(id==='Collections')return 'Inventory';
   if(id==='Achievements')return 'Quests';
   if(id==='MasteryHall')return 'Skills';
@@ -36,6 +37,7 @@ function itemMeta(language:GameState['settings']['language'],id:MoreDestination)
     case 'AccountBonuses':return {title:'Account Bonuses',description:'Permanent and temporary modifiers'};
     case 'Quests':return {title:t(language,'more.quests'),description:t(language,'more.questsDescription')};
     case 'Companions':return {title:'Companions',description:'Train, equip and master your roster'};
+    case 'Dungeon':return {title:'Dungeons',description:'Role-based co-op routes, bosses and rewards'};
     case 'Skills':return {title:t(language,'more.skills'),description:t(language,'more.skillsDescription')};
     case 'Events':return {title:t(language,'more.events'),description:t(language,'more.eventsDescription')};
     case 'Friends':return {title:t(language,'more.friends'),description:t(language,'more.friendsDescription')};
@@ -50,7 +52,7 @@ function itemMeta(language:GameState['settings']['language'],id:MoreDestination)
   }
 }
 
-const DESTINATION_FEATURE:Partial<Record<MoreDestination,EarlyFeatureId>>={DailySupplies:'dailySupplies',AccountBonuses:'accountBonuses',Companions:'companions',Events:'events',Guild:'guild',MasteryHall:'masteryHall'};
+const DESTINATION_FEATURE:Partial<Record<MoreDestination,EarlyFeatureId>>={DailySupplies:'dailySupplies',AccountBonuses:'accountBonuses',Companions:'companions',Dungeon:'dungeons',Events:'events',Guild:'guild',MasteryHall:'masteryHall'};
 
 export function MoreScreen({state,language,onNavigate,onOpenChatPilot,onOpenAdminQa,companionAttention=false,workingTowardAttention=false,dailySuppliesAttention=false,eventAttention=false,friendRequestCount=0,guildAttentionCount=0,socialAttentionCount=0,profileAttention=false}:{state:GameState;language:GameState['settings']['language'];onNavigate:(destination:MoreDestination)=>void;onOpenChatPilot?:()=>void;onOpenAdminQa?:()=>void;companionAttention?:boolean;workingTowardAttention?:boolean;dailySuppliesAttention?:boolean;eventAttention?:boolean;friendRequestCount?:number;guildAttentionCount?:number;socialAttentionCount?:number;profileAttention?:boolean}){
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),singleColumn=width<350||fontScale>=1.25;

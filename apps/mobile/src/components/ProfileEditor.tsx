@@ -22,6 +22,7 @@ import {SavedLoadoutsPanel} from './SavedLoadoutsPanel';
 import {JOURNAL_TITLES_V42} from '../core/adventurers-journal-v42';
 import {normalizeHexColor,normalizePlayerNameStyle,playerNameStyleEntitlements,savePlayerNameStyle,SUPPORTER_NAME_PRESETS,type PlayerNameStylePreference} from '../core/player-name-style';
 import {PlayerStyledName} from './PlayerStyledName';
+import {earlyFeatureGate} from '../core/early-feature-gates';
 
 type Tab='Backgrounds'|'Borders'|'Titles'|'Pets'|'Name Style';
 function CosmeticTile({name,status,detail,selected,onPress,children}:{name:string;status:string;detail?:string;selected:boolean;onPress:()=>void;children:ReactNode}){
@@ -39,7 +40,7 @@ export function ProfileEditor({state,onChange,onCommand,showLoadouts=true,onNavi
  const [nameStyle,setNameStyle]=useState<PlayerNameStylePreference>(normalizePlayerNameStyle(state.account.playerNameStyle));
  const [solidHex,setSolidHex]=useState(normalizeHexColor(state.account.vipPlusNameColor??state.account.playerNameStyle?.solidColor));
  const [gradientA,setGradientA]=useState('#55E6D1'),[gradientB,setGradientB]=useState('#8F7CFF'),[gradientC,setGradientC]=useState('#FF79C6');
- const nameEntitlements=playerNameStyleEntitlements(state);
+ const nameEntitlements=playerNameStyleEntitlements(state),petGate=earlyFeatureGate(state,'pets');
  const rewards=[...new Map(LIVE_EVENT_CATALOG.flatMap(event=>[...event.milestones(character.classId).map(m=>m.reward),...event.shop.map(o=>o.reward)]).map(r=>[r.id,r])).values()],journalTitles=JOURNAL_TITLES_V42.filter(def=>state.account.journalState?.unlockedTitles?.[def.id]!==undefined),petRows=collectibleJournal(state).filter(row=>row.kind==='pet'&&row.owned).sort((a,b)=>Number(b.selected)-Number(a.selected)||a.name.localeCompare(b.name));
  const rewardName=(id:string)=>rewards.find(r=>r.id===id)?.name??id.replace(/^frame_|^pet_/,'').replaceAll('_',' ');
  const preview={...state,account:{...state.account,playerNameStyle:nameStyle},character:{...character,profileTitle:title,profileBackgroundId:background,profileBorderId:border||undefined,selectedCosmeticPetId:pet||undefined}};
@@ -57,8 +58,8 @@ export function ProfileEditor({state,onChange,onCommand,showLoadouts=true,onNavi
   <Text style={s.sub}>Preview backgrounds, borders, titles and Pets before applying them. Locked cosmetics can be inspected without being equipped.</Text>
   <ProfileScenePreview state={preview} backgroundId={background}/>
   {previewing?<GameButton compact title="Reset preview" tone="secondary" onPress={resetPreview}/>:null}
-  {tab==='Pets'&&<Text style={s.sub}>Cosmetic Pets are separate from Combat Companions. This gallery only shows owned Pets you can equip now; browse Collections to discover locked Pets and their sources.</Text>}
-  <ScrollView horizontal keyboardShouldPersistTaps="handled" showsHorizontalScrollIndicator={false} contentContainerStyle={s.tabs}>{(['Backgrounds','Borders','Titles','Pets','Name Style'] as Tab[]).map(value=><Pressable key={value} accessibilityRole="tab" accessibilityState={{selected:tab===value}} onPress={()=>setTab(value)} style={[s.tab,tab===value&&s.tabOn]}><Text style={[s.tabText,tab===value&&s.selectedText]}>{value}</Text>{tab===value?<View style={s.tabIndicator}/>:null}</Pressable>)}</ScrollView>
+  {!petGate.unlocked?<Text style={s.sub}>Pets unlock after {petGate.requirement.replace('Complete ','')}. Until then, focus on your first combat and gathering loops.</Text>:tab==='Pets'?<Text style={s.sub}>Cosmetic Pets are separate from Combat Companions. This gallery only shows owned Pets you can equip now; browse Collections to discover locked Pets and their sources.</Text>:null}
+  <ScrollView horizontal keyboardShouldPersistTaps="handled" showsHorizontalScrollIndicator={false} contentContainerStyle={s.tabs}>{(['Backgrounds','Borders','Titles','Pets','Name Style'] as Tab[]).map(value=>{const locked=value==='Pets'&&!petGate.unlocked;return <Pressable key={value} accessibilityRole="tab" accessibilityState={{selected:tab===value,disabled:locked}} disabled={locked} onPress={()=>setTab(value)} style={[s.tab,tab===value&&s.tabOn,locked&&s.tabLocked]}><Text style={[s.tabText,tab===value&&s.selectedText]}>{locked?'🔒 Pets':value}</Text>{tab===value?<View style={s.tabIndicator}/>:null}</Pressable>})}</ScrollView>
   {tab==='Backgrounds'&&<ScrollView horizontal keyboardShouldPersistTaps="handled" showsHorizontalScrollIndicator={false} contentContainerStyle={s.gallery}>
    {BASE_PROFILE_BACKGROUNDS.map(item=><CosmeticTile key={item.id} name={item.name} status="Available" selected={background===item.id} onPress={()=>setBackground(item.id)}><View style={s.sceneThumb}><RegionArtwork regionId={item.region}/></View></CosmeticTile>)}
    {PROFILE_BACKGROUND_PREVIEWS.map(item=>{const unlocked=canUseProfileCosmetic(state,'background',item.id),reward=rewards.some(r=>r.id===item.id),source=profileRewardSource(state,'background',item.id);return <CosmeticTile key={item.id} name={item.name} status={unlocked?'Unlocked':reward?'Event reward':'Locked'} detail={unlocked?'Owned profile background':source.label+' · '+source.detail} selected={background===item.id} onPress={()=>setBackground(item.id)}><Image source={item.source} style={s.sceneThumb} resizeMode="cover"/></CosmeticTile>})}

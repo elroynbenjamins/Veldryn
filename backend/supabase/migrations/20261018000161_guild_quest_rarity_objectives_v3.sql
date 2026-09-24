@@ -55,7 +55,7 @@ returns integer language sql immutable as $$ select case r when 'common' then 5 
 create or replace function public.guild_quest_rarity_reward_v3(r text)
 returns integer language sql immutable as $$ select case r when 'common' then 80 when 'uncommon' then 180 when 'rare' then 400 when 'epic' then 850 else 1500 end $$;
 create or replace function public.guild_quest_rarity_actions_v3(r text)
-returns integer language sql immutable as $$ select case r when 'common' then 25 when 'uncommon' then 75 when 'rare' then 225 when 'epic' then 600 else 1200 end $$;
+returns integer language sql immutable as $$ select case r when 'common' then 10 when 'uncommon' then 30 when 'rare' then 90 when 'epic' then 240 else 480 end $$;
 
 create or replace function public.guild_quest_special_pool_v3(p_guild_id uuid,p_week date)
 returns table(quest_key text,title text,category text,description text,theme text,rarity text,estimated_minutes integer,objective_json jsonb,activity_reward integer,sort_order integer)

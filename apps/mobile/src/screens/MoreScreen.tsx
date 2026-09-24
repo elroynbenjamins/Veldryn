@@ -40,7 +40,7 @@ function itemMeta(language:GameState['settings']['language'],id:MoreDestination)
     case 'Friends':return {title:t(language,'more.friends'),description:t(language,'more.friendsDescription')};
     case 'Guild':return {title:t(language,'more.guild'),description:t(language,'more.guildDescription')};
     case 'Settings':return {title:t(language,'more.settings'),description:t(language,'more.settingsDescription')};
-    case 'Arena':return {title:'Arena',description:'Three-character ranked squad'};
+    case 'Arena':return {title:'Arena',description:'Three-character squad mode · In Development'};
     case 'Rankings':return {title:'Rankings',description:'Server-calculated prestige boards'};
     case 'Collections':return {title:'Collections',description:'Collectibles and account bonuses'};
     case 'Profile':return {title:'Profile',description:'Identity, showcase and customization'};
@@ -81,9 +81,9 @@ export function MoreScreen({language,onNavigate,onOpenChatPilot,onOpenAdminQa,co
     {attentionDestinations.length?<View style={s.attentionRail}><View style={s.attentionRailHead}><Text style={s.sectionLabel}>NEEDS ATTENTION</Text><Text style={s.attentionRailMeta}>{attentionDestinations.length} destination{attentionDestinations.length===1?'':'s'}</Text></View><View style={s.attentionQuickRow}>{attentionDestinations.slice(0,3).map(id=>{const meta=itemMeta(language,id),alert=attentionLabel(id);return <Pressable key={id} accessibilityRole="button" accessibilityLabel={meta.title+', '+alert} onPress={()=>onNavigate(id)} style={({pressed})=>[s.attentionQuick,singleColumn&&s.attentionQuickWide,pressed&&s.pressed]}><View style={s.quickIconFrame}><Image accessible={false} source={navigationIcons[iconForDestination(id)]} resizeMode="contain" style={s.quickIcon}/></View><View style={s.quickCopy}><Text numberOfLines={1} style={s.quickTitle}>{meta.title}</Text><Text numberOfLines={1} style={s.quickDetail}>{alert}</Text></View><UiIcon name="next" size={16}/></Pressable>})}</View>{attentionDestinations.length>3?<Text style={s.attentionMore}>+{attentionDestinations.length-3} more highlighted below</Text>:null}</View>:null}
     {sections.map(section=><View key={section.label} style={s.section}>
       <Text style={s.sectionLabel}>{section.label}</Text>
-      <View style={s.grid}>{section.items.map(id=>{const meta=itemMeta(language,id);const alert=attentionLabel(id);return <Pressable key={id} accessibilityRole="button" accessibilityLabel={alert?`${meta.title}, ${alert}`:meta.title} accessibilityHint={meta.description} onPress={()=>onNavigate(id)} style={({pressed})=>[s.tile,alert&&s.tileAttention,singleColumn&&s.tileWide,pressed&&s.pressed]}>
+      <View style={s.grid}>{section.items.map(id=>{const meta=itemMeta(language,id),alert=attentionLabel(id),inDevelopment=id==='Arena';return <Pressable key={id} accessibilityRole="button" accessibilityState={{disabled:inDevelopment}} accessibilityLabel={inDevelopment?`${meta.title}, In Development`:alert?`${meta.title}, ${alert}`:meta.title} accessibilityHint={meta.description} disabled={inDevelopment} onPress={()=>onNavigate(id)} style={({pressed})=>[s.tile,alert&&s.tileAttention,inDevelopment&&s.tileDisabled,singleColumn&&s.tileWide,pressed&&!inDevelopment&&s.pressed]}>
         <View style={s.tileTop}><View style={[s.iconFrame,alert&&s.iconFrameAttention]}><Image accessible={false} source={navigationIcons[iconForDestination(id)]} resizeMode="contain" style={s.icon}/></View><View style={s.attentionSlot}>{attention(id)}</View><UiIcon name="next" size={18}/></View>
-        <Text numberOfLines={singleColumn?2:1} style={s.title}>{meta.title}</Text>
+        <View style={s.titleRow}><Text numberOfLines={singleColumn?2:1} style={s.title}>{meta.title}</Text>{inDevelopment?<View style={s.developmentPill}><Text style={s.developmentPillText}>IN DEVELOPMENT</Text></View>:null}</View>
         <Text numberOfLines={singleColumn?2:1} style={s.description}>{meta.description}</Text>
       </Pressable>})}</View>
     </View>)}
@@ -110,12 +110,16 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
   grid:{flexDirection:'row',flexWrap:'wrap',gap:7},
   tile:{flexGrow:1,flexBasis:'47%',minWidth:138,minHeight:86,gap:3,padding:8,borderWidth:StyleSheet.hairlineWidth,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel},
   tileAttention:{borderWidth:1,borderColor:C.selectionLine,backgroundColor:C.panelRaised},
+  tileDisabled:{opacity:.62,borderStyle:'dashed'},
   tileWide:{flexBasis:'100%',minWidth:0},tileTop:{minHeight:30,flexDirection:'row',alignItems:'center',gap:6},
   iconFrame:{width:30,height:30,alignItems:'center',justifyContent:'center',borderWidth:StyleSheet.hairlineWidth,borderColor:C.line,borderRadius:10,backgroundColor:C.panel2},
   iconFrameAttention:{borderColor:C.selectionLine,backgroundColor:C.selection},
   icon:{width:24,height:24},
   attentionSlot:{flex:1,alignItems:'flex-start'},
+  titleRow:{flexDirection:'row',alignItems:'center',flexWrap:'wrap',gap:5},
   title:{...typography.bodyStrong,color:C.text,fontSize:13},
+  developmentPill:{paddingHorizontal:5,paddingVertical:2,borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.panel2},
+  developmentPillText:{fontSize:6.5,color:C.muted,fontWeight:'900',letterSpacing:.45},
   description:{...typography.caption,color:C.muted,fontSize:10,lineHeight:13},
   pressed:{opacity:.72,transform:[{translateY:1}]},
   attentionDot:{width:10,height:10,borderRadius:5,backgroundColor:C.notification,borderWidth:1,borderColor:C.notificationText},

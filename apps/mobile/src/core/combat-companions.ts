@@ -302,18 +302,22 @@ export function companionCombatContribution(state:CombatCompanionStateHost):Comp
   const def=combatCompanionDef(id)!,p=progressFor(clean,id),rarity=COMPANION_RARITY_CONFIG[def.rarity];
   // Rarity target is deliberately applied exactly once here. Level/Bond only move toward that budget.
   const investment=.55+.35*(p.level/rarity.maxLevel)+.10*(p.bondLevel/10),base=.07,bondResonance=p.bondLevel>=6?1.015:1,contribution=Math.min(.12,base*rarity.targetPowerMultiplier*investment*bondResonance);
-  if(def.role==='damage')return {outputMultiplier:1+contribution,incomingDamageMultiplier:1,recoveryMultiplier:1,directHealingPctPerHour:0,contributionPct:contribution};
-  if(def.role==='tank')return {outputMultiplier:1+contribution*.12,incomingDamageMultiplier:1-contribution*.78,recoveryMultiplier:1+contribution*.25,directHealingPctPerHour:0,contributionPct:contribution};
   const effects=[def.activeAbility.effect.kind,def.passiveAbility.kind,...(p.bondTraitUnlocked?[def.bondTrait.effect.kind]:[])] as const;
   const has=(...kinds:CompanionEffectKind[])=>effects.some(kind=>kinds.includes(kind));
   const restorative=has('heal');
   const protective=has('shield','damage_reduction','cleanse');
   const tempo=has('haste','resource_restore','cooldown_reduction','accuracy');
-  const offensive=has('damage','defense_shred','interrupt','execute','armor_pierce','chain_damage');
+  const interrupt=has('interrupt');
+  const offensive=has('damage','defense_shred','execute','armor_pierce','chain_damage');
   const utility=has('utility');
-  const outputWeight=Math.min(.90,.12+(tempo?.48:0)+(offensive?.42:0)+(utility?.24:0));
-  const incomingWeight=Math.min(.78,.04+(protective?.66:0)+(has('interrupt')?.18:0)+(restorative?.08:0));
-  const recoveryWeight=restorative?.38:protective?.08:.02;
+  const roleBase=def.role==='damage'
+    ?{output:.62,incoming:.02,recovery:.01}
+    :def.role==='tank'
+      ?{output:.08,incoming:.52,recovery:.08}
+      :{output:.12,incoming:.04,recovery:.02};
+  const outputWeight=Math.min(1,roleBase.output+(offensive?.26:0)+(tempo?.18:0)+(interrupt?.10:0)+(utility?.12:0));
+  const incomingWeight=Math.min(.82,roleBase.incoming+(protective?.23:0)+(interrupt?.10:0)+(restorative?.05:0)+(utility&&def.role==='tank'?.06:0));
+  const recoveryWeight=Math.min(.48,roleBase.recovery+(restorative?.32:0)+(protective?.05:0));
   const directHealingPctPerHour=restorative?Math.min(.12,companionAbilityValue(def,p)*1.5):0;
   return {outputMultiplier:1+contribution*outputWeight,incomingDamageMultiplier:1-contribution*incomingWeight,recoveryMultiplier:1+contribution*recoveryWeight,directHealingPctPerHour,contributionPct:contribution};
 }

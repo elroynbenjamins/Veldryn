@@ -8,6 +8,7 @@ function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 function equal(actual:unknown,expected:unknown,message:string){if(actual!==expected)throw new Error(message+': expected '+String(expected)+', got '+String(actual))}
 function rejects(fn:()=>unknown,message:string){let caught=false;try{fn()}catch{caught=true}ok(caught,message)}
 function qty(state:any,itemId:string){return [...state.inventory.stacks,...state.bank.stacks].filter((row:any)=>row.itemId===itemId).reduce((sum:number,row:any)=>sum+row.quantity,0)}
+function unlockDailySupplies(state:any){return {...state,quests:state.quests.map((row:any)=>row.questId==='QST_002'?{...row,status:'claimed' as const,progress:Math.max(2,row.progress??0)}:row)}}
 const DAY=86_400_000,t0=Date.UTC(2026,8,20,12,0,0);
 
 let state=createCharacter(newGame(t0),'WAYFINDER','Supply Tester');
@@ -96,7 +97,7 @@ const blockedOutput=applyDailySupplyCraft(noGearDup,{seconds:300,outputQuantity:
 equal(blockedOutput.outputQuantity,1,'Crafting Output must never duplicate ineligible equipment/tool output');
 equal(blockedOutput.state.character?.activeDailySupplyBoost?.remainingSeconds,7200,'Ineligible equipment crafting should not burn Crafting Output time');
 
-let boundary=createCharacter(newGame(t0),'WAYFINDER','Boundary');
+let boundary=unlockDailySupplies(createCharacter(newGame(t0),'WAYFINDER','Boundary'));
 boundary={...boundary,character:{...boundary.character!,dailySupplyBoostBank:{skill_xp:1}}};
 boundary=startGathering(boundary,'GREENWOOD_TREE',t0);
 const beforeActivation=previewActivityReward(boundary,t0+3600_000);
@@ -104,7 +105,7 @@ const activated=executeGameCommand(boundary,{type:'daily_supplies_activate',args
 equal(activated.reward?.xp,beforeActivation.xp,'Activation must settle earlier activity without retroactive +10% XP');
 equal(activated.state.character?.activeDailySupplyBoost?.remainingSeconds,7200,'Freshly activated boost should start with the full two-hour charge after settlement');
 
-let claimWhileActive=createCharacter(newGame(t0),'WAYFINDER','Claim Boundary');
+let claimWhileActive=unlockDailySupplies(createCharacter(newGame(t0),'WAYFINDER','Claim Boundary'));
 claimWhileActive=startGathering(claimWhileActive,'GREENWOOD_TREE',t0);
 const originalClaimAt=claimWhileActive.activity!.lastClaimAtMs;
 const claimedCommand=executeGameCommand(claimWhileActive,{type:'daily_supplies_claim',args:{characterId:claimWhileActive.character!.id}},t0+1800_000);

@@ -23,9 +23,12 @@ equal(bankedGuide.destination,'Inventory','banked food routes to Inventory withd
 ok(bankedGuide.button.includes('Withdraw'),'banked-food guidance exposes withdrawal action');
 
 const firstSession=homeSessionSummary(state,Date.UTC(2026,8,22,12));
-ok(firstSession.dailyReady,'Fresh session exposes the Daily Supplies claim in Home session priorities');
-equal(firstSession.primaryReady?.kind,'daily','Daily Supplies becomes the primary ready action when no story reward is waiting');
+equal(firstSession.dailyReady,false,'Fresh session should keep Daily Supplies hidden until the guided skill milestone');
 ok(firstSession.goalTotal===0&&firstSession.goalReady===0,'Home session priorities do not invent Working Toward progress');
+const dailyUnlockedState={...state,quests:state.quests.map(row=>row.questId==='QST_002'?{...row,status:'claimed' as const,progress:2}:row)};
+const dailyUnlockedSession=homeSessionSummary(dailyUnlockedState,Date.UTC(2026,8,22,12));
+ok(dailyUnlockedSession.dailyReady,'Completing QST_002 should expose the Daily Supplies claim immediately');
+equal(dailyUnlockedSession.primaryReady?.kind,'daily','Daily Supplies becomes the primary ready action after its onboarding unlock when no story reward is waiting');
 const prepBase=createCharacter(newGame(2),'IRONWARDEN','Home Preparation');
 const prepState={...prepBase,character:{...prepBase.character!,level:20,gold:100000},skills:prepBase.skills.map(skill=>skill.skillId==='smithing'?{...skill,level:12}:skill.skillId==='mining'?{...skill,level:8}:skill.skillId==='woodcutting'?{...skill,level:7}:skill)};
 const prepRecipe=RECIPES.find(row=>row.id==='FORGE_REINFORCED_FITTING')!,prepRoute=recipePreparationRoute(prepState,prepRecipe,1),prepGoal=recipePreparationGoalForRecipe({state:prepState,recipe:prepRecipe,batches:1,initialStepCount:prepRoute.steps.length,nowMs:10});

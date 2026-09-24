@@ -1,3 +1,5 @@
+import {professionActionPace} from './profession-action-pace';
+import {captureSkillAffinity,activeSkillAffinity,affinityXpRemainderKey,settleAffinitySkillXp} from './class-skill-affinities';
 import {CLASSES} from '../content/classes';
 import {COMBAT_COMPANIONS} from '../content/combat-companions';
 import {classSkillsFor} from '../content/class-skills';
@@ -363,10 +365,10 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
     }
     const g=[...GATHERING,...HERB_NODES].find(x=>x.id===state.activity!.targetId);if(!g)return {xp:0,gold:0,items:[],kills:0,elapsedSeconds:elapsed};
     const effect=environmentEffectForActivity(state.activity).effect;
-    const pacing=gatheringPacing(state,g),mastery=professionMasteryMultipliers(g.id,state.account.professionMasteryByAction?.[g.id]);
+    const pacing=gatheringPacing(state,g),mastery=professionMasteryMultipliers(g.id,state.account.professionMasteryByAction?.[g.id]),affinity=activeSkillAffinity(state,g.skillId);
     const herbLevel=state.skills.find(row=>row.skillId==='herbalism')?.level??1,method=g.skillId==='herbalism'?herbalismMethod(state.activity.herbalismMethodId??state.character.herbalismMethodId,herbLevel):undefined;
     const specialtySpeed=g.skillId==='fishing'?multipliers.fishingSpeedMultiplier:g.skillId==='herbalism'?multipliers.herbalismSpeedMultiplier:1;
-    const effectiveActionSeconds=g.seconds*GATHER_TIME_SCALE*pacing.timeMultiplier*effect.actionTimeMultiplier*(method?.actionTimeMultiplier??1)/(multipliers.gatheringSpeedMultiplier*specialtySpeed*mastery.speed);
+    const effectiveActionSeconds=g.seconds*GATHER_TIME_SCALE*pacing.timeMultiplier*effect.actionTimeMultiplier*(method?.actionTimeMultiplier??1)/(multipliers.gatheringSpeedMultiplier*specialtySpeed*mastery.speed*affinity.speedMultiplier);
     const elapsedMs=Math.min(offlineCapSeconds(state)*1000,Math.max(0,effectiveNowMs-state.activity.lastClaimAtMs));
     const cycleMs=effectiveActionSeconds*1000;
     const totalMs=(state.activity.progressFraction??0)*cycleMs+elapsedMs;
@@ -377,8 +379,9 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
     const quantityFloat=baseQuantity*effect.itemMultiplier*(method?.yieldMultiplier??1)*multipliers.gatheringYieldMultiplier*mastery.yield+(state.rewardRemainders?.[g.itemId]??0);
     const quantity=Math.floor(quantityFloat);
     const skill=state.skills.find(x=>x.skillId===g.skillId);
-    const rawXp=Math.floor(actions*g.xp*effect.xpMultiplier*(method?.xpMultiplier??1)*multipliers.skillXpMultiplier*mastery.xp);
-    const xp=Math.min(Math.max(0,totalXpAtLevel(100)-(skill?.xp??0)),rawXp);
+    const xpKey=affinityXpRemainderKey(state.character.id,g.skillId);
+    const gain=settleAffinitySkillXp(actions*g.xp*effect.xpMultiplier*(method?.xpMultiplier??1)*multipliers.skillXpMultiplier*mastery.xp*affinity.xpMultiplier,state.rewardRemainders?.[xpKey],totalXpAtLevel(100)-(skill?.xp??0));
+    const xp=gain.xp;
     const items:ItemStack[]=quantity?[{itemId:g.itemId,quantity}]:[];
     if(g.skillId==='herbalism'){
       const essence=HERBALISM_ESSENCE_BY_ZONE[g.zoneId];
@@ -389,7 +392,7 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
         if(rareQuantity)items.push({itemId:essence.itemId,quantity:rareQuantity});
       }
     }
-    const reward:RewardBundle={xp,gold:0,items,kills:actions,elapsedSeconds:elapsed,nextProgressFraction:(totalMs%cycleMs)/cycleMs,nextRewardRemainders:{...(state.rewardRemainders??{}),[g.itemId]:Math.max(0,quantityFloat-quantity)}};
+    const reward:RewardBundle={xp,gold:0,items,kills:actions,elapsedSeconds:elapsed,nextProgressFraction:(totalMs%cycleMs)/cycleMs,nextRewardRemainders:{...(state.rewardRemainders??{}),[xpKey]:gain.remainder,[g.itemId]:Math.max(0,quantityFloat-quantity)}};
     return {...reward,eventDrops:activityEventDrops(state,reward,effectiveNowMs),eventDiscoveries:activityEventDiscoveries(state,'gathering',Math.floor(reward.elapsedSeconds/60),effectiveNowMs)};
   }
   const m=MONSTERS.find(x=>x.id===state.activity!.targetId);if(!m)throw new Error('Unknown monster');
@@ -484,11 +487,11 @@ export function previewActivityReward(state:GameState,nowMs:number):RewardBundle
     return previewDailySupplyTimedReward(state,settled.reward,'skill').reward;
   }
   if(state.activity?.kind==='alchemy'){
-    const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,Math.floor((nowMs-state.activity.lastClaimAtMs)/1000))),base=previewAlchemyReward(state,elapsed);
+    const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,(nowMs-state.activity.lastClaimAtMs)/1000)),base=previewAlchemyReward(state,elapsed);
     return previewDailySupplyTimedReward(state,base,'crafting').reward;
   }
   if(state.activity?.kind==='processing'){
-    const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,Math.floor((nowMs-state.activity.lastClaimAtMs)/1000))),base=previewProcessingReward(state,elapsed);
+    const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,(nowMs-state.activity.lastClaimAtMs)/1000)),base=previewProcessingReward(state,elapsed);
     return previewDailySupplyTimedReward(state,base,'crafting').reward;
   }
   if(!state.activity||!state.character)return {xp:0,gold:0,items:[],kills:0,elapsedSeconds:0};
@@ -548,7 +551,7 @@ export function claimActivity(state:GameState,nowMs:number){
   }
   if(state.activity?.kind==='alchemy'){
     if(nowMs<=state.activity.lastClaimAtMs)return {state,reward:previewActivityReward(state,state.activity.lastClaimAtMs)};
-    const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,Math.floor((nowMs-state.activity.lastClaimAtMs)/1000))),baseReward=previewAlchemyReward(state,elapsed),boost=previewDailySupplyTimedReward(state,baseReward,'crafting'),reward=boost.reward,brew=state.activity.brew!;
+    const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,(nowMs-state.activity.lastClaimAtMs)/1000)),baseReward=previewAlchemyReward(state,elapsed),boost=previewDailySupplyTimedReward(state,baseReward,'crafting'),reward=boost.reward,brew=state.activity.brew!;
     const routed=routeRewards(state,reward.items,nowMs);
     const skills=state.skills.map(x=>x.skillId==='alchemy'?{...x,xp:Math.min(totalXpAtLevel(100),x.xp+(reward.xp??0)),level:levelFromXp(Math.min(totalXpAtLevel(100),x.xp+(reward.xp??0)))}:x);
     const nextBase={...state,...routed,skills,rewardRemainders:reward.nextRewardRemainders,activity:reward.nextBrewRemaining?{...state.activity,lastClaimAtMs:nowMs,progressFraction:reward.nextProgressFraction,brew:{...brew,remainingBatches:reward.nextBrewRemaining}}:null} as GameState;
@@ -558,7 +561,7 @@ export function claimActivity(state:GameState,nowMs:number){
   }
   if(state.activity?.kind==='processing'){
     if(nowMs<=state.activity.lastClaimAtMs)return {state,reward:previewActivityReward(state,state.activity.lastClaimAtMs)};
-    const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,Math.floor((nowMs-state.activity.lastClaimAtMs)/1000))),baseReward=previewProcessingReward(state,elapsed),boost=previewDailySupplyTimedReward(state,baseReward,'crafting'),reward=boost.reward,processing=state.activity.processing!;
+    const elapsed=Math.min(offlineCapSeconds(state),Math.max(0,(nowMs-state.activity.lastClaimAtMs)/1000)),baseReward=previewProcessingReward(state,elapsed),boost=previewDailySupplyTimedReward(state,baseReward,'crafting'),reward=boost.reward,processing=state.activity.processing!;
     const routed=routeRewards(state,reward.items,nowMs),nextXp=(state.skills.find(x=>x.skillId===processing.skillId)?.xp??0)+(reward.xp??0);
     const skills=state.skills.map(x=>x.skillId===processing.skillId?{...x,xp:Math.min(totalXpAtLevel(100),nextXp),level:levelFromXp(Math.min(totalXpAtLevel(100),nextXp))}:x);
     const nextBase={...state,...routed,skills,rewardRemainders:reward.nextRewardRemainders,activity:reward.nextProcessingRemaining?{...state.activity,lastClaimAtMs:nowMs,progressFraction:reward.nextProgressFraction,processing:{...processing,remainingBatches:reward.nextProcessingRemaining}}:null} as GameState;
@@ -716,8 +719,8 @@ export function claimOverflowToBank(state:GameState):GameState{
   return {...state,bank:{...state.bank,stacks:added.stacks},overflow:{stacks:added.overflow,expiresAtMs:added.overflow.length?state.overflow.expiresAtMs:null}};
 }
 
-export function startGathering(state:GameState,targetId:string,nowMs:number):GameState{if(HERB_NODES.some(x=>x.id===targetId))return startHerbalism(state,targetId,nowMs);state=finishClassDrills(state,nowMs);const g=GATHERING.find(x=>x.id===targetId);if(!g)throw new Error('Unknown gathering target');const skill=state.skills.find(x=>x.skillId===g.skillId);if(!skill||skill.level<g.unlockLevel)throw new Error('Skill level too low');if(g.zoneId!==currentRegionId(state)){const zone=WORLD_ZONES.find(entry=>entry.id===g.zoneId);throw new Error(`Travel to ${zone?.name??g.zoneId} before gathering ${g.name}`)}return {...state,character:state.character?{...state.character,activityQueuePausedReason:undefined}:null,activity:{kind:g.skillId,targetId,startedAtMs:nowMs,lastClaimAtMs:nowMs,environment:captureActivityEnvironment(targetId,nowMs)}}}
-export function startHerbalism(state:GameState,targetId:string,nowMs:number):GameState{state=finishClassDrills(state,nowMs);const g=HERB_NODES.find(x=>x.id===targetId);if(!g)throw new Error('Unknown herbalism node');const skill=state.skills.find(x=>x.skillId==='herbalism');if(!skill||skill.level<g.unlockLevel)throw new Error('Herbalism level too low');if(g.zoneId!==currentRegionId(state))throw new Error(`Travel to ${g.zoneId} before gathering ${g.name}`);if(state.activity)throw new Error('Settle and stop the current activity first');const method=herbalismMethod(state.character?.herbalismMethodId,skill.level);return {...state,character:state.character?{...state.character,activityQueuePausedReason:undefined}:null,activity:{kind:'herbalism',targetId,startedAtMs:nowMs,lastClaimAtMs:nowMs,environment:captureActivityEnvironment(targetId,nowMs),herbalismMethodId:method.id}}}
+export function startGathering(state:GameState,targetId:string,nowMs:number):GameState{if(HERB_NODES.some(x=>x.id===targetId))return startHerbalism(state,targetId,nowMs);state=finishClassDrills(state,nowMs);const g=GATHERING.find(x=>x.id===targetId);if(!g)throw new Error('Unknown gathering target');const skill=state.skills.find(x=>x.skillId===g.skillId);if(!skill||skill.level<g.unlockLevel)throw new Error('Skill level too low');if(g.zoneId!==currentRegionId(state)){const zone=WORLD_ZONES.find(entry=>entry.id===g.zoneId);throw new Error(`Travel to ${zone?.name??g.zoneId} before gathering ${g.name}`)}return {...state,character:state.character?{...state.character,activityQueuePausedReason:undefined}:null,activity:{skillAffinity:captureSkillAffinity(state,g.skillId),kind:g.skillId,targetId,startedAtMs:nowMs,lastClaimAtMs:nowMs,environment:captureActivityEnvironment(targetId,nowMs)}}}
+export function startHerbalism(state:GameState,targetId:string,nowMs:number):GameState{state=finishClassDrills(state,nowMs);const g=HERB_NODES.find(x=>x.id===targetId);if(!g)throw new Error('Unknown herbalism node');const skill=state.skills.find(x=>x.skillId==='herbalism');if(!skill||skill.level<g.unlockLevel)throw new Error('Herbalism level too low');if(g.zoneId!==currentRegionId(state))throw new Error(`Travel to ${g.zoneId} before gathering ${g.name}`);if(state.activity)throw new Error('Settle and stop the current activity first');const method=herbalismMethod(state.character?.herbalismMethodId,skill.level);return {...state,character:state.character?{...state.character,activityQueuePausedReason:undefined}:null,activity:{skillAffinity:captureSkillAffinity(state,'herbalism'),kind:'herbalism',targetId,startedAtMs:nowMs,lastClaimAtMs:nowMs,environment:captureActivityEnvironment(targetId,nowMs),herbalismMethodId:method.id}}}
 export function startExploration(state:GameState,routeId:string,nowMs:number):GameState{state=finishClassDrills(state,nowMs);const route=explorationRoute(routeId);if(!route)throw new Error('Unknown exploration route');if(!state.character||state.character.level<route.requiredLevel)throw new Error(`Reach character level ${route.requiredLevel} to explore this route`);if(route.zoneId!==currentRegionId(state))throw new Error(`Travel to ${route.zoneId} before exploring`);if(state.activity)throw new Error('Settle and stop the current activity first');return {...state,activity:{kind:'exploration',targetId:routeId,startedAtMs:nowMs,lastClaimAtMs:nowMs,environment:captureActivityEnvironment(routeId,nowMs)}}}
 export function equipGatheringTool(state:GameState,itemId:string):GameState{
   if(!state.character)throw new Error('Create a character first');
@@ -756,8 +759,8 @@ export function craftRecipe(state:GameState,recipeId:string,nowMs=Date.now()):Ga
   }
   const sk=state.skills.find(x=>x.skillId===r.skillId);if(!sk||sk.level<r.level)throw new Error(`Requires ${r.skillId} level ${r.level}`);
   if(state.character.gold<r.gold)throw new Error('Not enough gold');
-  const outputDef=itemDef(r.output.itemId),multipliers=characterPermanentMultipliers(state),mastery=professionMasteryMultipliers(r.id,state.account.professionMasteryByAction?.[r.id]),outputEligible=outputDef.type!=='gear'&&outputDef.type!=='tool',baseXp=Math.floor(r.xp*multipliers.skillXpMultiplier*mastery.xp),masteryKey=`mastery:craft:${r.id}:yield`,masteryRaw=r.output.quantity*(outputEligible?mastery.yield:1)+(state.rewardRemainders?.[masteryKey]??0),masteryOutput=outputEligible?Math.floor(masteryRaw):r.output.quantity,masteryRemainder=outputEligible?Math.max(0,masteryRaw-masteryOutput):0;
-  const masteryState={...state,rewardRemainders:{...(state.rewardRemainders??{}),[masteryKey]:masteryRemainder}} as GameState;
+  const outputDef=itemDef(r.output.itemId),multipliers=characterPermanentMultipliers(state),mastery=professionMasteryMultipliers(r.id,state.account.professionMasteryByAction?.[r.id]),outputEligible=outputDef.type!=='gear'&&outputDef.type!=='tool',affinityXpKey=affinityXpRemainderKey(state.character.id,r.skillId),affinityXpGain=settleAffinitySkillXp(professionActionPace(state,r,'instant').xpPerAction,state.rewardRemainders?.[affinityXpKey],totalXpAtLevel(100)-sk.xp),baseXp=affinityXpGain.xp,masteryKey=`mastery:craft:${r.id}:yield`,masteryRaw=r.output.quantity*(outputEligible?mastery.yield:1)+(state.rewardRemainders?.[masteryKey]??0),masteryOutput=outputEligible?Math.floor(masteryRaw):r.output.quantity,masteryRemainder=outputEligible?Math.max(0,masteryRaw-masteryOutput):0;
+  const masteryState={...state,rewardRemainders:{...(state.rewardRemainders??{}),[affinityXpKey]:affinityXpGain.remainder,[masteryKey]:masteryRemainder}} as GameState;
   const boosted=applyDailySupplyCraft(masteryState,{seconds:r.seconds,outputQuantity:masteryOutput,xp:baseXp,outputEligible}),boostedState=boosted.state;
   let inv=boostedState.inventory.stacks,bank=boostedState.bank.stacks;
   let unlockedKnowledgeIds=[...(boostedState.account.unlockedKnowledgeIds??[])];
@@ -779,7 +782,7 @@ export function craftRecipe(state:GameState,recipeId:string,nowMs=Date.now()):Ga
     const b=addBounded(bank,entitlementStorageCapacity(boostedState,'bank'),output.overflow);bank=b.stacks;
     if(b.overflow.length)throw new Error('Inventory and Bank are full');
   }
-  const xp=sk.xp+boosted.xp;
+  const xp=Math.min(totalXpAtLevel(100),sk.xp+boosted.xp);
   const next={...boostedState,character:{...boostedState.character!,gold:boostedState.character!.gold-r.gold,...(r.noviceSetId?{craftedNoviceItemIds:[...new Set([...(boostedState.character!.craftedNoviceItemIds??[]),r.output.itemId])]}:{})},inventory:{...boostedState.inventory,stacks:inv},bank:{...boostedState.bank,stacks:bank},account:{...boostedState.account,unlockedKnowledgeIds},skills:boostedState.skills.map(x=>x.skillId===r.skillId?{...x,xp,level:levelFromXp(xp)}:x)} as GameState;
   const progressed=applyTrustedLongTermProgression(next,[{kind:'crafting',contentId:r.id,units:1}],undefined,nowMs,{accountId:longTermAccountScope(boostedState),eventId:`craft:${state.character.id}:${r.id}:${nowMs}`}).state;
   return outputDef.type==='gear'?recordCompanionActivity(refreshQuests(grantEventActivity(progressed,'crafting',nowMs)),'crafting',r.output.itemId,r.output.quantity,nowMs):refreshQuests(grantEventActivity(progressed,'crafting',nowMs))

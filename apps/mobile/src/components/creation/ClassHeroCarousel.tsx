@@ -1,3 +1,4 @@
+import {ClassSkillAffinityNote} from '../ClassSkillAffinityNote';
 import {UiIcon} from '../UiIcon';
 import {useEffect,useRef,useState} from 'react';
 import {AccessibilityInfo,Animated,Image,Platform,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions,type GestureResponderHandlers} from 'react-native';
@@ -29,6 +30,7 @@ export function ClassHeroCarousel({selected,classes,index,body,onBody,onChange,o
     <View style={s.browseMeta}><Text style={s.hint}>{index+1} / {classes.length} · Swipe or select a crest</Text><View style={s.presentation}>{(['male','female'] as const).map(value=><Pressable key={value} accessibilityRole="button" accessibilityLabel={`Preview ${value} presentation`} accessibilityState={{selected:body===value}} onPress={()=>onBody(value)} style={[s.bodyChoice,body===value&&s.bodySelected]}><Text style={[s.bodyLabel,body===value&&s.bodyLabelSelected]}>{value==='male'?'Male':'Female'}</Text></Pressable>)}</View></View>
     <ScrollView ref={strip} horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.strip}>{classes.map((item,i)=><Pressable key={item.id} accessibilityRole="button" accessibilityLabel={`Select ${item.name}`} accessibilityState={{selected:item.id===selected.id}} onPress={()=>onIndex(i)} style={[s.thumb,item.id===selected.id&&s.thumbSelected]}><Image accessible={false} source={classEmblemIconArtwork[item.id]} style={s.thumbArt}/><View style={[s.thumbMark,item.id===selected.id&&s.thumbMarkSelected]}/></Pressable>)}</ScrollView>
     <Text style={s.description}>{selected.description}</Text>
+    <ClassSkillAffinityNote classId={selected.id} compact/>
     <View accessibilityLabel={`${selected.name} role ratings`} style={s.stats}>{([['TANK',selected.roleRatings.tank,'#8BAFC2'],['DAMAGE',selected.roleRatings.damage,'#D58B72'],['SUPPORT',selected.roleRatings.support,'#C9A7E8']] as const).map(([label,value,color])=><View key={label} style={s.stat}><Text style={s.statLabel}>{label}</Text><Text accessibilityLabel={`${label} ${value} out of 5`} style={[s.gems,{color}]}>{'◆'.repeat(value)}<Text style={s.gemEmpty}>{'◇'.repeat(5-value)}</Text></Text></View>)}</View>
   </View>;
 }

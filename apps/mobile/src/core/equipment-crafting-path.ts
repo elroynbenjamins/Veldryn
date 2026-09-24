@@ -1,3 +1,4 @@
+import {professionActionPace} from './profession-action-pace';
 import {RECIPES,type Recipe} from '../content/skills';
 import {itemDef} from '../content/items';
 import type {GameState,SkillId} from './types';
@@ -69,7 +70,7 @@ export function equipmentCraftingPath(state:GameState,itemId:string):EquipmentCr
   for(const ingredient of ingredients.filter(row=>row.missing>0))blockers.push({kind:'material',label:ingredient.name,detail:`Need ${ingredient.missing} more · ${ingredient.owned}/${ingredient.required} owned.`,destination:ingredient.source,availability:ingredient.availability});
   return {
     itemId,recipe,tier:recipe.v33EquipmentTier,region:recipe.v33Region,setId:recipe.v33SetId,path:recipe.v33Path,
-    craftTimeLabel:formatQueueTimeV31(recipe.seconds),skillLabel:`${label(recipe.skillId)} Lv ${recipe.level}`,
+    craftTimeLabel:recipe.noviceSetId?'Instant':formatQueueTimeV31(professionActionPace(state,recipe,'forge').cycleSeconds),skillLabel:`${label(recipe.skillId)} Lv ${recipe.level}`,
     characterLevel,gold:recipe.gold,ingredients,blockers,canCraftNow:blockers.length===0,
   };
 }

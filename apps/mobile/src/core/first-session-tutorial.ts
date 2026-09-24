@@ -1,37 +1,45 @@
-import type {GameState} from './types';
-
-export type FirstSessionTutorialId='first_hunt'|'first_skill'|'ironwood_hunt'|'gear_check'|'level_ten'|'core_loop_complete';
-export type FirstSessionTutorialDestination='World'|'Skills'|'Inventory'|'More';
-
+/** Minimal read-only projection: navigation guidance never grants progress or completes quests. */
+export interface FirstSessionTutorialHost{
+ character:{level:number}|null;
+ quests:readonly {questId:string;status:'locked'|'active'|'complete'|'claimed';progress:number}[];
+ activity?:{kind:string;targetId:string}|null;
+}
+export type FirstSessionTutorialId='first_hunt'|'first_hunt_collect'|'first_skill'|'first_skill_collect'|'ironwood_prepare'|'ironwood_hunt'|'gear_check'|'level_ten'|'core_loop_complete'|'claim_qst001'|'claim_qst002'|'claim_qst003'|'claim_qst004'|'claim_qst005';
+export type FirstSessionTutorialDestination='World'|'Skills'|'Inventory'|'More'|'Home'|'Quests';
 export interface FirstSessionTutorialStep{
- id:FirstSessionTutorialId;
- questId:string;
- eyebrow:string;
- title:string;
- body:string;
- hint:string;
- actionLabel:string;
+ id:FirstSessionTutorialId;questId:string;eyebrow:string;title:string;body:string;hint:string;actionLabel:string;
  destination:FirstSessionTutorialDestination;
- highlightPrimary:FirstSessionTutorialDestination;
+ // Do not highlight Account when the real target is Home or the Quests shortcut.
+ highlightPrimary?:'World'|'Skills'|'Inventory'|'More';
 }
-
 const STEPS:readonly FirstSessionTutorialStep[]=[
- {id:'first_hunt',questId:'QST_001',eyebrow:'FIRST STEP',title:'Start with one hunt',body:'Your first story task is simple: defeat 5 Moss Rats. We will introduce the rest of VELDRYN as you need it.',hint:'Open World, then choose combat in Greenfields.',actionLabel:'Show World',destination:'World',highlightPrimary:'World'},
- {id:'first_skill',questId:'QST_002',eyebrow:'NEXT: SKILLING',title:'Learn one gathering skill',body:'Combat is only part of progression. Your next story task asks you to reach level 2 in any guided gathering skill.',hint:'Open Skills and choose Mining, Woodcutting or Fishing.',actionLabel:'Show Skills',destination:'Skills',highlightPrimary:'Skills'},
- {id:'ironwood_hunt',questId:'QST_003',eyebrow:'BACK TO COMBAT',title:'Follow the hound trail',body:'You have seen gathering. Now return to the road and defeat 6 Ironwood Wolves.',hint:'Open World and follow the available route toward Ironwood Verge.',actionLabel:'Show World',destination:'World',highlightPrimary:'World'},
- {id:'gear_check',questId:'QST_004',eyebrow:'GEAR BASICS',title:'Equip what you have earned',body:'Before the road gets harder, equip at least 2 pieces of gear. You do not need to learn upgrades, gems or sets yet.',hint:'Open Inventory and equip two useful pieces.',actionLabel:'Show Inventory',destination:'Inventory',highlightPrimary:'Inventory'},
- {id:'level_ten',questId:'QST_005',eyebrow:'BUILD YOUR FOUNDATION',title:'Reach Level 10',body:'You know the basic loop now: fight, gather, improve your gear and keep progressing. Reach character Level 10 to enter deeper Ironwood.',hint:'Use World for combat or Skills for training. There is no need to learn every system yet.',actionLabel:'Show World',destination:'World',highlightPrimary:'World'},
- {id:'core_loop_complete',questId:'QST_005',eyebrow:'CORE LOOP COMPLETE',title:'More systems are opening',body:'You have finished the guided first-session path. New systems will now explain themselves when they unlock instead of being introduced all at once.',hint:'Companions, social features and Contracts are now available from Account when relevant.',actionLabel:'Show Account',destination:'More',highlightPrimary:'More'},
+ {id:'first_hunt',questId:'QST_001',eyebrow:'FIRST HUNT',title:'Make the road safer',body:'Start with 5 Moss Rats. Your character handles the fight once you start the hunt.',hint:'In World, open Combat in Greenfields. Choose Moss Rat, then start the hunt.',actionLabel:'Show World',destination:'World',highlightPrimary:'World'},
+ {id:'first_hunt_collect',questId:'QST_001',eyebrow:'YOUR HUNT IS RUNNING',title:'Collect your progress',body:'Hunt rewards update your XP, items and quest progress when collected.',hint:'Use Collect on the activity screen when rewards are available. Keep hunting until all 5 rats are counted.',actionLabel:'Show activity',destination:'Home'},
+ {id:'first_skill',questId:'QST_002',eyebrow:'ONE GATHERING SKILL',title:'Learn from the land',body:'Reach level 2 in an available guided gathering skill.',hint:'Open Skills, choose an available gathering activity and start it. Collect its rewards to gain skill XP.',actionLabel:'Show Skills',destination:'Skills',highlightPrimary:'Skills'},
+ {id:'first_skill_collect',questId:'QST_002',eyebrow:'GATHERING IS RUNNING',title:'Turn rewards into skill XP',body:'The activity can continue while you explore other screens.',hint:'Collect gathering rewards on the activity screen to update your skill level.',actionLabel:'Show activity',destination:'Home'},
+ {id:'ironwood_prepare',questId:'QST_003',eyebrow:'BEFORE IRONWOOD',title:'Prepare for the wolves',body:'Ironwood Wolves require character Level 7. Your gathering skill level is separate.',hint:'Hunt enemies you can safely fight and collect combat rewards to raise your character level.',actionLabel:'Show World',destination:'World',highlightPrimary:'World'},
+ {id:'ironwood_hunt',questId:'QST_003',eyebrow:'THE NEXT HUNT',title:'Follow the hound trail',body:'Your next task is to defeat 6 Ironwood Wolves.',hint:'Travel to Ironwood Forest in World, then open Combat. Collect the hunt rewards to count your kills.',actionLabel:'Show World',destination:'World',highlightPrimary:'World'},
+ {id:'gear_check',questId:'QST_004',eyebrow:'EQUIPMENT',title:'Add to your starting kit',body:'Equip at least 2 gear pieces in total. Your starting weapon already counts as one.',hint:'Equip an owned piece from Inventory; withdraw it first if it is in Bank. Craft missing armor through Skills when needed.',actionLabel:'Show Inventory',destination:'Inventory',highlightPrimary:'Inventory'},
+ {id:'level_ten',questId:'QST_005',eyebrow:'YOUR NEXT MILESTONE',title:'Reach character Level 10',body:'This objective uses your character level, not the total of your skill levels.',hint:'Continue safe hunts and collect combat rewards. Better equipment and food help you keep going.',actionLabel:'Show World',destination:'World',highlightPrimary:'World'},
+ ...(['QST_001','QST_002','QST_003','QST_004','QST_005'] as const).map((questId,index):FirstSessionTutorialStep=>({id:`claim_qst00${index+1}` as FirstSessionTutorialId,questId,eyebrow:'OBJECTIVE COMPLETE',title:'Claim your story reward',body:'You have finished this objective. Claim its reward to continue the story.',hint:'Open Quests and claim the completed story quest.',actionLabel:'Show Quests',destination:'Quests'})),
 ];
-
-function questClaimed(state:GameState,id:string){return state.quests.some(row=>row.questId===id&&row.status==='claimed');}
-
-export function firstSessionTutorialStep(state:GameState,completed:readonly string[]=[]):FirstSessionTutorialStep|undefined{
- const done=new Set(completed);
- const q1=questClaimed(state,'QST_001'),q2=questClaimed(state,'QST_002'),q3=questClaimed(state,'QST_003'),q4=questClaimed(state,'QST_004'),q5=questClaimed(state,'QST_005');
- const id:FirstSessionTutorialId=!q1?'first_hunt':!q2?'first_skill':!q3?'ironwood_hunt':!q4?'gear_check':!q5?'level_ten':'core_loop_complete';
- const step=STEPS.find(row=>row.id===id);
- return step&&!done.has(step.id)?step:undefined;
+const IDS=new Set<string>([...STEPS.map(row=>row.id),'core_loop_complete']);
+export function normalizeFirstSessionTutorialCompleted(value:unknown):FirstSessionTutorialId[]{
+ return Array.isArray(value)?[...new Set(value.filter((id):id is FirstSessionTutorialId=>typeof id==='string'&&IDS.has(id)))]:[];
 }
-
+export function firstSessionTutorialStep(state:FirstSessionTutorialHost,completed:readonly string[]=[]):FirstSessionTutorialStep|undefined{
+ if(!state.character)return undefined;
+ const sequence=['QST_001','QST_002','QST_003','QST_004','QST_005'];
+ const questId=sequence.find(id=>state.quests.find(row=>row.questId===id)?.status!=='claimed');
+ if(!questId)return undefined; // No extra Account tour on top of the QST_005 feature unlocks.
+ const quest=state.quests.find(row=>row.questId===questId);
+ if(!quest||quest.status==='locked')return undefined;
+ let id:FirstSessionTutorialId;
+ if(quest.status==='complete')id=`claim_qst00${sequence.indexOf(questId)+1}` as FirstSessionTutorialId;
+ else if(questId==='QST_001')id=state.activity?.kind==='combat'&&state.activity.targetId==='MOSS_RAT'?'first_hunt_collect':'first_hunt';
+ else if(questId==='QST_002')id=state.activity&&['mining','woodcutting','fishing','herbalism'].includes(state.activity.kind)?'first_skill_collect':'first_skill';
+ else if(questId==='QST_003')id=state.character.level<7?'ironwood_prepare':'ironwood_hunt';
+ else id=questId==='QST_004'?'gear_check':'level_ten';
+ return completed.includes(id)?undefined:STEPS.find(row=>row.id===id);
+}
 export function firstSessionTutorialSteps(){return STEPS;}

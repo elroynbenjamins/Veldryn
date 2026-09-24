@@ -313,9 +313,11 @@ const packageJson=read('package.json');
 ok(primaryNavigation.includes('useSafeAreaInsets'),'Bottom navigation must use real safe-area metrics');
 ok(primaryNavigation.includes('active?:T'),'Bottom navigation must support a neutral selection state for the session Home dashboard');
 ok(appShell.includes("tab==='Home'?undefined"),'Home must not falsely select Account or another persistent bottom destination');
-ok(primaryNavigation.includes("Platform.OS==='android'?Math.max(bottom,8):4"),'Android bottom navigation must apply the native bottom inset without reducing touch safety');
+ok(primaryNavigation.includes("Math.max(bottom,Platform.OS==='android'?8:4)"),'Bottom navigation must own the native bottom inset on both Android and iOS without reducing touch safety');
 ok(!primaryNavigation.includes("Dimensions.get('screen')")&&!primaryNavigation.includes('StatusBar.currentHeight'),'Bottom navigation must not regress to screen-height/status-bar heuristics');
 ok(appShell.includes('<SafeAreaProvider>'),'App root must provide safe-area metrics');
+ok(appShell.includes("import {SafeAreaProvider,SafeAreaView} from 'react-native-safe-area-context';"),'App shell must use cross-platform safe-area handling instead of React Native core SafeAreaView');
+ok(appShell.includes("edges={['top','left','right']}"),'Main app shell must leave the bottom inset to persistent navigation instead of double-padding it');
 ok(appShell.includes('buildQuickNavigationBadges')&&appShell.includes("row.kind!=='reward_ready'&&row.kind!=='weekly_order_complete'"),'Primary nav must avoid misleading Home/Contract claim dots while quick navigation routes those notices exactly');
 ok(packageJson.includes('"react-native-safe-area-context": "5.4.0"'),'Expo 53 safe-area dependency must remain pinned');
 

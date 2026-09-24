@@ -38,7 +38,8 @@ ok(customization.includes('backgroundColor:C.warningSurface'),'Permanent tag war
 ok(customization.includes('backgroundColor:C.selection'),'Selected Guild cosmetics must be theme-safe');
 
 ok(identity.includes("C.dark?'rgba(12,23,40,.8)':'rgba(255,255,255,.84)'"),'Special Guild nameplates must remain readable in dark and light themes');
-ok(hall.includes('GUILD HALL')&&hall.includes('Current Hall Benefits'),'Guild Hall must preserve progression and benefit hierarchy');
+ok(hall.includes('GUILD HALL')&&hall.includes('Guild Skill Trees')&&hall.includes('Permanent bonuses are chosen through three Guild Skill Trees'),'Guild Hall must preserve current progression and separate visual facilities from Guild Skill power');
+ok(hall.includes("<Text style={s.levelMax}>/10</Text>")&&hall.includes('Launch Hall level cap reached.'),'Guild Hall UI must expose the current 10-level launch cap');
 ok(hall.includes('backgroundColor:C.warningSurface'),'Guild Hall level badge must remain light-theme safe');
 ok(pve.includes('WEEKLY PROJECT')&&pve.includes('GUILD BOSS'),'Guild PvE must keep distinct project/boss hierarchy');
 ok(pve.includes('backgroundColor:C.badSurface'),'Guild boss status must use semantic danger surface');

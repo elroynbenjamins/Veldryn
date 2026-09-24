@@ -14,6 +14,7 @@ export const GATHERING:GatherDef[]=([
 {id:'GREENWOOD_TREE',skillId:'woodcutting',name:'Greenwood Tree',unlockLevel:1,seconds:14,xp:8,itemId:'GREENWOOD_LOG',min:1,max:2,zoneId:'GREENFIELDS'},
 {id:'IRONWOOD_TREE',skillId:'woodcutting',name:'Ironwood Tree',unlockLevel:7,seconds:24,xp:17,itemId:'IRONWOOD_LOG',min:1,max:2,zoneId:'IRONWOOD'},
 {id:'CROWNWOOD_TREE',skillId:'woodcutting',name:'Crownwood Tree',unlockLevel:15,seconds:36,xp:27,itemId:'CROWNWOOD_LOG',min:1,max:1,zoneId:'IRONWOOD'},
+{id:'CINDERWOOD_TREE',skillId:'woodcutting',name:'Cinderwood Tree',unlockLevel:68,seconds:76,xp:300,itemId:'CINDERWOOD_LOG',min:1,max:1,zoneId:'ASHLANDS'},
 
 {id:'SILVERBROOK_SHOAL',skillId:'fishing',name:'Silverbrook Shoal',unlockLevel:1,seconds:17,xp:9,itemId:'SILVERFIN',min:1,max:2,zoneId:'SILVERBROOK'},
 {id:'RIVER_EEL_POOL',skillId:'fishing',name:'River Eel Pool',unlockLevel:8,seconds:29,xp:18,itemId:'RIVER_EEL',min:1,max:1,zoneId:'SILVERBROOK'},
@@ -37,6 +38,7 @@ export const RECIPES:Recipe[]=[
 {id:'SMELT_ASTER_IRON_INGOT',name:'Smelt Aster-Iron Batch',skillId:'smithing',level:8,xp:140,gold:50,seconds:42,repeatableTraining:true,inputs:[{itemId:'ASTER_IRON_ORE',quantity:8}],output:{itemId:'ASTER_IRON_INGOT',quantity:4}},
 {id:'FORGE_REINFORCED_FITTING',name:'Forge Reinforced Fitting',skillId:'smithing',level:12,xp:180,gold:50,seconds:48,repeatableTraining:true,inputs:[{itemId:'ASTER_IRON_INGOT',quantity:2},{itemId:'IRONWOOD_LOG',quantity:2}],output:{itemId:'REINFORCED_FITTING',quantity:1}},
 {id:'SMELT_OATHSTONE_INGOT',name:'Smelt Oathstone Batch',skillId:'smithing',level:16,xp:230,gold:80,seconds:54,repeatableTraining:true,inputs:[{itemId:'OATHSTONE_ORE',quantity:6}],output:{itemId:'OATHSTONE_INGOT',quantity:3}},
+{id:'SMELT_BLACKGLASS_INGOT',name:'Smelt Blackglass Batch',skillId:'smithing',level:68,xp:1850,gold:1800,seconds:900,repeatableTraining:true,inputs:[{itemId:'BLACKGLASS_ORE',quantity:6},{itemId:'CINDERWOOD_LOG',quantity:4}],output:{itemId:'BLACKGLASS_INGOT',quantity:3}},
 
 
 {id:'ENCHANT_REGIONAL_CATALYST',name:'Synthesize Regional Catalyst',skillId:'enchanting',level:70,xp:2400,gold:12000,seconds:1800,repeatableTraining:true,inputs:[{itemId:'GEM_DUST',quantity:25},{itemId:'FROSTMARCH_BOTANICAL_ESSENCE',quantity:2}],output:{itemId:'REGIONAL_CATALYST',quantity:1}},

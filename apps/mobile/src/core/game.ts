@@ -344,7 +344,7 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number){
     kills++;if(champion)championKills++;
     const naturalRecovery=Math.max(1,Math.floor(stats.hp*style.recoveryPct*tactic.recoveryMultiplier*companion.recoveryMultiplier*(1+effectGems.recovery)*setCombat.recoveryMultiplier));
     const minimumAttrition=(REGIONAL_MIN_ATTRITION_HP_PER_HOUR[m.zone]??0)*killCycleSeconds/3600*(companion.directHealingPctPerHour>0?.65:1);
-    const allowedRecovery=Math.max(0,damage-minimumAttrition);
+    const allowedRecovery=Math.max(0,damage-directCompanionHealing-minimumAttrition);
     hp=Math.min(stats.hp,hp+Math.min(naturalRecovery,allowedRecovery));
   }
   const qualifyingActivitySeconds=stoppedReason?Math.min(elapsed,Math.max(0,(kills+1)*killCycleSeconds-carriedSeconds)):elapsed;

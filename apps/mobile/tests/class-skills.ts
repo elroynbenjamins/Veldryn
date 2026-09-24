@@ -28,4 +28,14 @@ const legacyDrill=normalizeClassDrills({lastClaimAtMs:now,progressMs:0,focus:'ba
 const a=awardClassSkillXp(fresh().character!,14,'primary');const b=awardClassSkillXp(a.character,14,'primary');ok(b.character.classSkills![0].xp===21&&b.character.classSkills![1].xp===7,'fractional focus XP retained');
 rejects(()=>validateGameCommand({type:'class_focus',args:{focus:'primary',xp:1000}}),'forged XP rejected');rejects(()=>executeGameCommand(fresh(),{type:'class_focus',args:{focus:'fake'}},now),'invalid focus rejected');
 const nearCap=fresh();nearCap.character!.classSkills=classSkillsFor('IRONWARDEN').map(d=>({skillId:d.id,xp:MAX_CLASS_SKILL_XP-1,level:99}));const capClaim=claimActivity(startClassTraining(nearCap,now),now+3600000);ok(capClaim.reward.trainingActions===1,'stop counting drills when both skills cap');
+// Each displayed ratio preserves class skill order and survives a save/load.
+for(const [focus,primary,secondary] of [['secondary',25,75],['balanced',50,50],['primary',75,25]] as const){
+ const selected=executeGameCommand(fresh(),{type:'class_focus',args:{focus}},now).state;
+ const restored=parseSaveBackup(createSaveBackup(selected));
+ ok(restored.character!.trainingFocus===focus,'XP split persists: '+focus);
+ const earned=awardClassSkillXp(restored.character!,100);
+ ok(earned.awards[0].xp===primary&&earned.awards[1].xp===secondary,'Skill-order XP split: '+primary+'/'+secondary);
+ const hunting=startCombat(restored,'MOSS_RAT',now);
+ ok(hunting.activity!.classFocus===focus,'New fight snapshots the selected XP split: '+focus);
+}
 console.log(`PASS class skills: ${checks} checks`);

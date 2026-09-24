@@ -94,9 +94,7 @@ ok(stage.includes('if(!reduceMotion&&cues.length>1)setPaused(true)'),'Inspecting
 for(const enemy of ['The Hollow Regent','The Coinbound Captain','The Rimebell Colossus','Veilshade Stalker','Ledger Hexer','Bellfrost Spirit'])ok(enemyArt.toLowerCase().includes(enemy.toLowerCase()),enemy+' must have registered encounter artwork');
 ok(enemyArt.includes("require('../../assets/dungeon-enemies-v1/"),'Enemy artwork must be bundled as static Metro assets');
 
-for(const classId of ['IRONWARDEN','BASTION','DREADGUARD','WAYFINDER','RAVAGER','HEXWEAVER','KNIFE_DANCER','DAWNKEEPER','STONECALLER']){
- ok(art.includes(classId+':'),classId+' needs a canonical dungeon combat skin');
-}
+ok(art.includes('startingCharacterArtwork[body].front'),'Dungeon combat must use the neutral base character until replacement skins are ready');
 ok(!art.includes('selectedSkinId'),'Dungeon combat art must remain class-locked rather than use player cosmetic skin selection');
 ok(art.includes("body:BodyPresentation='male'"),'Combat art must preserve male/female presentation when available');
 

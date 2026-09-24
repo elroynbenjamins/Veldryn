@@ -44,6 +44,12 @@ const paletteByTier:Record<string,{accent:string;surface:string}>={
   T7:{accent:'#7bb8e8',surface:'#17273a'},T8:{accent:'#d9b75f',surface:'#2b2414'},T9:{accent:'#e18b59',surface:'#2c1b16'},
 };
 
+const approvedAppearanceBySetId:Record<string,string>={
+  T1_001:'equipment-set:T1_001',
+  T1_002:'equipment-set:T1_002',
+  T1_003:'equipment-set:T1_003',
+};
+
 const piecesBySet=new Map<string,string[]>();
 for(const piece of catalog.pieces as Array<Record<string,string|number>>){
   const setId=String(piece['Set ID']);
@@ -60,6 +66,7 @@ export const EQUIPMENT_SETS:EquipmentSetDef[]=(catalog.sets as Array<Record<stri
     sixPiece:String(set['6pc Bonus v33']),eightPiece:String(set['8pc Bonus v33']),tenPiece:String(set['10pc Bonus v33']),
     source:`${String(set.Region)} · ${String(set['Build Focus'])}`,accent:palette.accent,surface:palette.surface,
     tier:String(set.Tier),region:String(set.Region),path:String(set.Path),requiredLevel:Number(set['Set Unlock Level']),
+    appearanceId:approvedAppearanceBySetId[String(set['Set ID'])],
   };
 });
 

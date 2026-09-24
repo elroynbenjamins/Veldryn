@@ -87,10 +87,10 @@ export function validateGameSettings(value:unknown):GameState['settings']{
  if(!value||typeof value!=='object'||Array.isArray(value))throw new Error('invalid_settings');const row=value as Record<string,unknown>;
  const keys=Object.keys(game.newGame(0).settings);if(Object.keys(row).some(key=>!keys.includes(key)))throw new Error('invalid_settings');
  const defaults=game.newGame(0).settings,result={...defaults,...row} as GameState['settings'];
- oneOf(result.language,SUPPORTED_LANGUAGES);oneOf(result.numberMode,['abbreviated','exact']);oneOf(result.uiTheme??'veldryn',['veldryn','obsidian','ivory']);
+ oneOf(result.language,SUPPORTED_LANGUAGES);oneOf(result.numberMode,['abbreviated','exact']);oneOf(result.uiTheme??'obsidian',['obsidian','ivory']);
  if(![1,1.15,1.3,1.5].includes(result.textScale)||!Number.isFinite(result.autoEatThresholdPct)||result.autoEatThresholdPct<0||result.autoEatThresholdPct>100)throw new Error('invalid_settings');
  for(const key of ['reduceMotion','stopCombatWhenOutOfFood','autoJoinWorldChat'] as const)if(typeof result[key]!=='boolean')throw new Error('invalid_settings');
- if(![1,2,3,4].includes(result.defaultWorldChat??0)||![1,2,3].includes(result.chatDockLines??0)||!Array.isArray(result.quickNavDestinations)||result.quickNavDestinations.length>8||result.quickNavDestinations.some(id=>!QUICK_NAV_DESTINATIONS.includes(id)))throw new Error('invalid_settings');
+ if(![1,2,3,4].includes(result.defaultWorldChat??0)||![1,2,3].includes(result.chatDockLines??0)||!Array.isArray(result.quickNavDestinations)||result.quickNavDestinations.length>8||result.quickNavDestinations.some(id=>!QUICK_NAV_DESTINATIONS.some(destination=>destination===id)))throw new Error('invalid_settings');
  const favoriteItemIds=result.favoriteItemIds,seenItemIds=result.seenItemIds,chatEmoteTrayIds=result.chatEmoteTrayIds;
  if(!Array.isArray(chatEmoteTrayIds)||(chatEmoteTrayIds.length!==0&&chatEmoteTrayIds.length!==CHAT_EMOTE_TRAY_SIZE)||normalizeChatEmoteTrayIds(chatEmoteTrayIds).length!==chatEmoteTrayIds.length)throw new Error('invalid_settings');
  if(!Array.isArray(favoriteItemIds)||favoriteItemIds.length>100||favoriteItemIds.some(id=>typeof id!=='string'||!id||id.length>120))throw new Error('invalid_settings');

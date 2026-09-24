@@ -4,12 +4,9 @@ const read=(path:string)=>fs.readFileSync(path,'utf8');
 function ok(value:boolean,message:string){if(!value)throw new Error(message)}
 
 import {CHAT_EMOTE_TRAY_SIZE,CHAT_MAX_EMOTES_PER_MESSAGE,chatEmoteCount,defaultChatEmoteTray,normalizeChatEmoteTrayIds} from '../src/core/chat-emotes';
-import {TRAY_SIZE as PILOT_TRAY_SIZE,MAX_EMOTES as PILOT_MAX_EMOTES} from '../src/features/chat-pilot/src/core/chat';
 
 ok(CHAT_EMOTE_TRAY_SIZE===8,'Production chat tray must have exactly eight quick slots');
 ok(CHAT_MAX_EMOTES_PER_MESSAGE===2,'Production chat must allow at most two emotes per message');
-ok(PILOT_TRAY_SIZE===8,'Chat Pilot tray size must match production at eight');
-ok(PILOT_MAX_EMOTES===2,'Chat Pilot message emote cap must match production at two');
 ok(defaultChatEmoteTray('male').length===8&&defaultChatEmoteTray('female').length===8,'Both body presentations must resolve an eight-emote default tray');
 ok(normalizeChatEmoteTrayIds([...defaultChatEmoteTray('male'),'male_01']).length===8,'Tray normalization must de-duplicate and cap at eight');
 ok(chatEmoteCount(':male_01: hello :female_01:')===2,'Emote counting must recognize two valid shortcodes');
@@ -29,7 +26,7 @@ ok(commands.includes("chatEmoteTrayIds.length!==0&&chatEmoteTrayIds.length!==CHA
 const settings=read('src/screens/SettingsScreen.tsx');
 ok(settings.includes('Collapsed chat preview'),'Settings must expose collapsed chat preview size');
 ok(settings.includes("([1,2,3] as const).map(lines=>"),'Settings must offer one, two and three collapsed lines');
-ok(settings.includes('Emote Tray · 8 slots'),'Development Chat Pilot entry must match the production eight-slot rule');
+ok(settings.includes('<ChatEmotePicker settingsMode'),'Settings must expose the production eight-slot emote editor');
 
 const dock=read('src/components/ChatDock.tsx');
 ok(dock.includes('lines?:1|2|3'),'Chat dock must support the persisted 1/2/3-line preference');
@@ -47,7 +44,19 @@ ok(overlay.includes('useSafeAreaInsets')&&overlay.includes('bottomOffset=72+'),'
 ok(overlay.includes('keyboardVerticalOffset={insets.top}'),'Expanded chat must account for the top inset during keyboard avoidance');
 ok(!overlay.includes("paddingBottom:Platform.OS==='android'?76:88"),'Expanded chat must not regress to fixed device-specific bottom offsets');
 ok(overlay.includes('useWindowDimensions')&&overlay.includes("expandWindow=width<360||fontScale>=1.25"),'Expanded chat must adapt its available height on narrow phones and large text');
-ok(overlay.includes('windowExpanded')&&overlay.includes("maxHeight:'82%'"),'Expanded chat must expose more vertical space when constrained');
+ok(overlay.includes('keyboard:{width:\'100%\',maxWidth:480,flex:1,justifyContent:\'flex-end\'}'),'Expanded chat must stay anchored above the keyboard while it resizes');
+ok(overlay.includes('windowExpanded')&&overlay.includes("maxHeight:'94%'"),'Expanded chat must expose more vertical space when constrained');
+ok(overlay.includes('primaryTabs')&&overlay.includes('worldTabs'),'Expanded chat must keep channel choice visible as primary tabs with scoped world shards');
+ok(!overlay.includes('choosingChannel')&&!overlay.includes('channelMenu'),'Expanded chat must not hide channel selection behind a filter dropdown');
+ok(overlay.includes('<SystemNoticeLog state={state}/>'),'The System channel must render live notices instead of a placeholder');
+ok(!overlay.includes('System notices are not available yet.'),'The System channel must not regress to the unavailable placeholder');
+
+const systemNotices=read('src/core/system-notifications.ts');
+ok(systemNotices.includes('equipmentCraftingQueue(state)')&&systemNotices.includes('weeklyOrderPendingRewards'),'System notices must cover completed forge jobs and claimable weekly rewards');
+ok(systemNotices.includes('state.overflow.stacks')&&systemNotices.includes('eventLifecycle(state,nowMs)'),'System notices must cover storage attention and event lifecycle updates');
+const systemLog=read('src/components/SystemNoticeLog.tsx');
+ok(systemLog.includes('systemNotifications(state,now)')&&systemLog.includes('No system notices right now.'),'The read-only System feed must render actionable state notices and an honest empty state');
+ok(systemLog.includes('worldMilestoneFeedV43(20)')&&systemLog.includes("id:'world:'+row.feed_id"),'System chat must include recent opted-in player milestones from the authenticated world feed');
 
 const app=read('App.tsx');
 ok(app.includes('onEmoteTrayChange={ids=>commit('),'Global chat tray edits must persist through normal settings save flow');
@@ -82,10 +91,6 @@ ok(offline.includes('CHAT_MAX_EMOTES_PER_MESSAGE')&&offline.includes('Use at mos
 ok(offline.includes('trayIds={trayIds}')&&offline.includes('usedCount={chatEmoteCount(text)}'),'Offline/local picker must mirror the eight-slot production tray');
 ok(offline.includes('useWindowDimensions')&&offline.includes("stackCompose=width<360||fontScale>=1.25"),'Offline/local chat compose must adapt to narrow phones and large text');
 ok(offline.includes('composeStack')&&offline.includes('composeActionsStack'),'Offline/local chat input and actions must stack instead of squeezing');
-
-const pilot=read('src/features/chat-pilot/src/native/ChatScreen.tsx');
-ok(!pilot.includes('20 emotes')&&!pilot.includes('Save 20'),'Chat Pilot UI must not retain obsolete 20-slot copy');
-ok(pilot.includes('Your 8 emotes')&&pilot.includes('Save 8'),'Chat Pilot UI must present the same eight-slot tray');
 
 const migration=read('../../backend/supabase/migrations/20261018000180_chat_emote_limit_v1.sql');
 ok(migration.includes('before insert or update of body on public.chat_messages'),'Server emote policy must guard every chat_messages write path');

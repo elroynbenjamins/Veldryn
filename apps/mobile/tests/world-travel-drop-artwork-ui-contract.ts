@@ -4,20 +4,18 @@ function ok(value:boolean,message:string){if(!value)throw new Error(message)}
 const read=(path:string)=>fs.readFileSync(path,'utf8');
 
 const worldMap=read('src/content/world-map.ts');
-const modal=read('src/components/TravelRegionModal.tsx');
 const world=read('src/screens/WorldScreen.tsx');
 const scenes=read('src/components/ZoneSceneArtwork.tsx');
 const monsters=read('src/content/monsters.ts');
 
 ok(worldMap.includes("availability:'inDevelopment'")&&worldMap.includes("id:'VEILLANDS'"),'Future region must remain represented as In Development');
-ok(modal.includes("title={inDevelopment?\"In Development\":locked?\"Locked\":\"Travel\"}"),'Travel action must distinguish Available, Locked and In Development');
-ok(modal.includes('Travel is instant.'),'Travel modal must explicitly communicate instant travel');
+ok(world.includes("title={unlocked?'Travel':inDevelopment?'In development':'Locked'}"),'Travel cards must distinguish Available, Locked and In Development');
+ok(!world.includes('TravelRegionModal'),'World travel must not render a destination modal');
 ok(world.includes("inDevelopment?'IN DEVELOPMENT'"),'World destination cards must visibly label future regions');
-ok(scenes.includes("world-zone-scenes-v1.jpg"),'Travel modal must use the dedicated world-zone scene atlas');
-ok(modal.includes('MonsterPortraitFrame')&&modal.includes('COMMON ENEMIES'),'Released-region travel previews must render enemy portraits');
-ok(modal.includes('ItemArtwork itemId={drop.itemId}'),'Travel preview notable drops must use real item artwork');
+ok(scenes.includes("world-zone-scenes-v1.jpg"),'Travel cards must use the dedicated world-zone scene atlas');
 
 const coverageFiles=[
+ 'src/theme/resource-assets.ts',
  'src/theme/misc-item-assets.ts',
  'src/theme/asterfall-ingredient-assets.ts',
  'src/theme/asterfall-ore-assets.ts',

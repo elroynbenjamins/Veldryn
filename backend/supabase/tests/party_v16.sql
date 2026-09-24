@@ -12,7 +12,7 @@ declare
 begin
  for i in 1..5 loop
   insert into auth.users(id,email) values(a[i],'v16-'||a[i]||'@example.invalid');
-  insert into public.characters(id,account_id,name,class_id) values(c[i],a[i],'V16 Test '||i,'WAYFINDER');
+  insert into public.characters(id,account_id,name,class_id) values(c[i],a[i],'Party Test '||chr(64+i),'WAYFINDER');
  end loop;
  perform set_config('request.jwt.claim.sub',a[1]::text,true);
  set local role authenticated;
@@ -110,7 +110,7 @@ begin
  post:=public.refresh_recruitment_post(post.id,1);
  perform pg_temp.assert_v16(post.expires_at=post.refreshed_at+interval '1 day','refresh window');
  reset role;
- insert into public.guilds(id,name,owner_account_id) values(g,'V16-'||g,a[1]);
+ insert into public.guilds(id,name,owner_account_id) values(g,'Party Test Guild',a[1]);
  insert into public.guild_members(guild_id,account_id,role) values(g,a[1],'leader'),(g,a[2],'officer'),(g,a[5],'member');
  perform pg_temp.assert_v16((select status='closed' from public.recruitment_posts where id=post.id),'seeker closes on joining Guild');
  set local role authenticated;

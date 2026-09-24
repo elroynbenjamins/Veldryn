@@ -24,4 +24,4 @@ ok(profile.includes('C.goodSurface')&&profile.includes('C.warningSurface'),'Prof
 ok(publicScene.includes("C.dark?'rgba(8,15,24,.82)':'rgba(255,255,255,.88)'"),'Public showcase identity plate must remain legible in dark and light themes');
 ok(preview.includes("'Pet preview'")&&!preview.includes("'Companion preview'"),'Cosmetic profile preview must call the cosmetic a Pet');
 
-console.log('PASS: profile customization is theme-aware across Veldryn, Obsidian and Ivory Steel');
+console.log('PASS: profile customization is theme-aware across Obsidian and Ivory Steel');

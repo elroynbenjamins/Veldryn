@@ -1,5 +1,6 @@
 import {EVENT_PET_COLLECTIBLES} from './event-collectible-content';
 import {CORE_PET_COLLECTIBLES} from './core-pets';
+import {EVENTS_RELEASED} from '../core/release-flags';
 
 export type CollectibleKind='pet'|'background'|'border';
 export type CollectibleTarget='hp'|'attack'|'defense'|'skillXp'|'characterXp'|'gold'|'gatheringYield'|'dropChance'|'actionSpeed'|'cookingSpeed'|'herbalismSpeed'|'healingEffectiveness'|'craftingSpeed'|'dungeonReward'|'fishingSpeed'|'materialPreservation'|'guildContribution';
@@ -25,10 +26,10 @@ export interface CollectibleDefinition{
 const entry=(id:string,kind:CollectibleKind,name:string,target:CollectibleTarget,source:string,activeBps=200,requiredCharacterLevel?:number,collectionGroup:CollectibleGroup='profile'):CollectibleDefinition=>({id,kind,name,bonusFamilyId:id,target,ownedBps:50,activeBps:activeBps as number,source,requiredCharacterLevel,collectionGroup});
 
 export const LEGACY_PET_COLLECTIBLES:readonly CollectibleDefinition[]=[
-  entry('pet_harvest_fox','pet','Harvest Fox','gold','Harvestwake reputation milestone',200,undefined,'legacy'),
-  entry('pet_field_mouse','pet','Field Mouse','skillXp','Harvestwake event shop',250,undefined,'legacy'),
-  entry('pet_straw_sparrow','pet','Straw Sparrow','gatheringYield','Golden Field Feather discovery',200,undefined,'legacy'),
-  entry('pet_amber_owl','pet','Amber Owl','dropChance','Harvestwake Amber Pantry',400,undefined,'legacy'),
+  entry('pet_harvest_fox','pet','Harvest Fox','gold','Harvestwake reputation milestone',200,undefined,'event'),
+  entry('pet_field_mouse','pet','Field Mouse','skillXp','Harvestwake event shop',250,undefined,'event'),
+  entry('pet_straw_sparrow','pet','Straw Sparrow','gatheringYield','Golden Field Feather discovery',200,undefined,'event'),
+  entry('pet_amber_owl','pet','Amber Owl','dropChance','Harvestwake Amber Pantry',400,undefined,'event'),
   entry('pet:feral_rat','pet','Feral Rat','attack','Existing legacy pet unlock',200,undefined,'legacy'),
   entry('pet:emberhound','pet','Emberhound','attack','Existing legacy pet unlock',300,undefined,'legacy'),
   entry('pet:forgebound_mooncat','pet','Forgebound Mooncat','attack','Existing legacy pet unlock',500,undefined,'legacy'),
@@ -47,9 +48,9 @@ export const PROFILE_COLLECTIBLES:readonly CollectibleDefinition[]=[
 
 export const COLLECTIBLES:readonly CollectibleDefinition[]=[
   ...CORE_PET_COLLECTIBLES,
-  ...EVENT_PET_COLLECTIBLES,
-  ...LEGACY_PET_COLLECTIBLES,
-  ...PROFILE_COLLECTIBLES,
+  ...(EVENTS_RELEASED?EVENT_PET_COLLECTIBLES:[]),
+  ...LEGACY_PET_COLLECTIBLES.filter(row=>EVENTS_RELEASED||row.collectionGroup!=='event'),
+  ...PROFILE_COLLECTIBLES.filter(row=>EVENTS_RELEASED||row.collectionGroup!=='event'),
 ];
 
 export const COLLECTIBLE_TARGET_LABELS:Record<CollectibleTarget,string>={hp:'Maximum HP',attack:'Attack',defense:'Defense',skillXp:'Skill XP',characterXp:'Combat XP',gold:'Ordinary combat Gold',gatheringYield:'Ordinary gathered materials',dropChance:'Ordinary drop chance',actionSpeed:'Action speed',cookingSpeed:'Cooking speed',herbalismSpeed:'Herbalism speed',healingEffectiveness:'Healing effectiveness',craftingSpeed:'Crafting speed',dungeonReward:'Dungeon reward quantity',fishingSpeed:'Fishing speed',materialPreservation:'Material preservation',guildContribution:'Guild contribution'};

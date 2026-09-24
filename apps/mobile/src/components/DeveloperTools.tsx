@@ -10,14 +10,13 @@ import {GameState} from '../core/types';
 import {C} from '../theme/theme';
 import {debugCombatBalanceProbe} from '../dev/debug-tools';
 import {activeLiveEvent,applyEventDrops,eventLifecycle,setLocalEventEnabled} from '../core/live-events';
-export function DeveloperTools({state,onChange,onOpenChatPilot,onOpenCoopUiGallery}:{state:GameState;onChange:(next:GameState)=>void;onOpenChatPilot?:()=>void;onOpenCoopUiGallery?:()=>void}){
+export function DeveloperTools({state,onChange,onOpenCoopUiGallery}:{state:GameState;onChange:(next:GameState)=>void;onOpenCoopUiGallery?:()=>void}){
  const [notice,setNotice]=useState('');
  const liveEvent=eventLifecycle(state);
  const simulate=(seconds:number)=>{try{const samples=debugCombatBalanceProbe(state,seconds);console.log('[combat-balance]',JSON.stringify(samples,null,2));setNotice(`Logged ${samples.length} combat simulation rows`);}catch(e){setNotice(e instanceof Error?e.message:'Action failed')}}
  const run=(label:string,fn:(s:GameState)=>GameState)=>{try{onChange(fn(state));setNotice(`${label} applied`)}catch(e){setNotice(e instanceof Error?e.message:'Action failed')}};
  const grantSet=()=>{if(!state.character)return;let next=state;for(const slot of noviceSetFor(state.character.classId).slots)next=debugAddItem(next,noviceItemId(state.character.classId,slot));onChange(next);setNotice('Complete novice set added');};
  return <Panel><Text style={s.title}>Developer / testing</Text><Text style={s.warn}>Offline prototype only. These shortcuts persist to the local save and are not available to normal players or future server sessions.</Text><View style={s.grid}>
-  {__DEV__&&onOpenChatPilot?<GameButton title="Open Chat Pilot" onPress={onOpenChatPilot}/>:null}
   {__DEV__&&onOpenCoopUiGallery?<GameButton title="Open Co-op UI Lab" onPress={onOpenCoopUiGallery}/>:null}
   <GameButton title="Prepare full QA access" onPress={()=>run('Full QA access',debugPrepareFullQaSandbox)}/>
   <GameButton title="Prepare equipment crafting lab" onPress={()=>run('Equipment lab',debugPrepareEquipmentLab)}/>

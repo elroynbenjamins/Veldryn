@@ -7,8 +7,8 @@ const read=(path:string)=>fs.readFileSync(path,'utf8');
 const theme=read('src/theme/theme.ts');
 ok(theme.includes('accentSurface:string'),'Theme colors must expose a semantic accent surface');
 ok(theme.includes('special:string')&&theme.includes('specialSurface:string'),'Theme colors must expose a theme-safe special/discovery accent');
-for(const token of ["accentSurface:'#2B2417'","accentSurface:'#332A12'","accentSurface:'#FFF2D0'","special:'#C79AF3'","special:'#D3A7FF'","special:'#6F3F8F'","specialSurface:'#261A33'","specialSurface:'#2A1B39'","specialSurface:'#F0E4F7'"]){
-  ok(theme.includes(token),'All three themes must define '+token);
+for(const token of ["accentSurface:'#302719'","accentSurface:'#FFF2D0'","special:'#C8ABEC'","special:'#6F3F8F'","specialSurface:'#2B243B'","specialSurface:'#F0E4F7'"]){
+  ok(theme.includes(token),'All supported themes must define '+token);
 }
 
 const checks:Array<[string,string[],string[]]>= [
@@ -43,4 +43,4 @@ for(const [path,required,forbidden] of checks){
   for(const token of required)ok(source.includes(token),path+' must keep semantic theme token '+token);
   for(const token of forbidden)ok(!source.includes(token),path+' must not regress to dark-only UI literal '+token);
 }
-console.log('PASS: shared UI surfaces remain compatible with Veldryn, Obsidian Contrast, and Ivory Steel');
+console.log('PASS: shared UI surfaces remain compatible with Obsidian Tide and Ivory Steel');

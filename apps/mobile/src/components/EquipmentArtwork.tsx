@@ -1,47 +1,27 @@
-import {equipmentFallbackSetByItemId} from '../theme/equipment-fallback-art';
-import {Image,StyleSheet,View} from 'react-native';
+import {Image,StyleSheet,Text,View} from 'react-native';
 import {ItemDef} from '../content/items';
-import {GearSlot} from '../core/types';
 import {C,radii} from '../theme/theme';
 import {itemRarity,rarityMeta} from '../core/item-rarity';
 import {equipmentArtworkSetByItemId,equipmentSheetBySet} from '../theme/equipment-assets';
 
-const SHEET_WIDTH=1536,SHEET_HEIGHT=1024,CELL_WIDTH=SHEET_WIDTH/5,CELL_HEIGHT=SHEET_HEIGHT/2;
-const cell=(column:number,row:number)=>({x:column*CELL_WIDTH,y:row*CELL_HEIGHT,width:CELL_WIDTH,height:CELL_HEIGHT});
-const crop:Partial<Record<GearSlot,{x:number;y:number;width:number;height:number}>>={
-  helmet:cell(0,0),chest:cell(1,0),gloves:cell(2,0),legs:cell(3,0),boots:cell(4,0),
-  weapon:cell(0,1),offhand:cell(1,1),cape:cell(2,1),amulet:cell(3,1),ring:cell(4,1),
-};
-const WIDE_SHEET_WIDTH=2000,WIDE_SHEET_HEIGHT=800;
-const beginnerSetSheets=new Set(['ironwarden_recruit','wallkeeper_initiate','chainwatch_novice','sunlamp_acolyte','trailbow_scout','breaksteel_marauder','runespark_adept','twinstep_initiate','earthseal_disciple']);
-const wideFullSetSheets=new Set(['harvestwake-harvest-defender','harvestwake-granary-bastion','harvestwake-autumn-warden','harvestwake-hearthkeeper','harvestwake-field-ranger','harvestwake-reapers-guard','harvestwake-amber-brewer','harvestwake-harvest-blade','harvestwake-granary-keeper','echo-surge','gatherers-week','guild-rally','monster-hunt','coop-festival','market-fair','anniversary-of-veldryn','winters-bell']);
-const wideCell=(column:number,row:number)=>({x:column*WIDE_SHEET_WIDTH/5,y:row*WIDE_SHEET_HEIGHT/2,width:WIDE_SHEET_WIDTH/5,height:WIDE_SHEET_HEIGHT/2});
-const wideCrop:Partial<Record<GearSlot,{x:number;y:number;width:number;height:number}>>={
-  helmet:wideCell(0,0),chest:wideCell(1,0),gloves:wideCell(2,0),legs:wideCell(3,0),boots:wideCell(4,0),
-  weapon:wideCell(0,1),offhand:wideCell(1,1),cape:wideCell(2,1),amulet:wideCell(3,1),ring:wideCell(4,1),
-};
-const beginnerCell=(column:number,row:number)=>({x:column*400,y:row*500,width:400,height:500});
-const beginnerCrop:Partial<Record<GearSlot,{x:number;y:number;width:number;height:number}>>={
-  helmet:beginnerCell(0,0),chest:beginnerCell(1,0),gloves:beginnerCell(2,0),legs:beginnerCell(3,0),boots:beginnerCell(4,0),
-  weapon:beginnerCell(0,1),offhand:beginnerCell(1,1),cape:beginnerCell(2,1),amulet:beginnerCell(3,1),ring:beginnerCell(4,1),
-};
-const SCALE=.16,FRAME=64;
+const slots=['helmet','chest','gloves','legs','boots','weapon','offhand','cape','amulet','ring'] as const;
+const cellAspect=(1774/5)/(887/2);
 
-function artworkSetId(item:ItemDef){return item.noviceSetId??equipmentArtworkSetByItemId[item.id]??equipmentFallbackSetByItemId[item.id]}
-function artworkCrop(setId:string|undefined,slot:GearSlot|undefined){return slot?(beginnerSetSheets.has(setId??'')?beginnerCrop[slot]:wideFullSetSheets.has(setId??'')?wideCrop[slot]:crop[slot]):undefined}
-export function hasEquipmentArtwork(item:ItemDef){const setId=artworkSetId(item);return Boolean(setId&&item.slot&&equipmentSheetBySet[setId]&&artworkCrop(setId,item.id==='basic_tower_shield'?'offhand':item.slot))}
-
-export function EquipmentArtwork({item,compact=false,framed=true}:{item:ItemDef;compact?:boolean;framed?:boolean}){
-  const setId=artworkSetId(item),source=setId?equipmentSheetBySet[setId]:undefined;
-  const area=artworkCrop(setId,item.id==='basic_tower_shield'?'offhand':item.slot);
-  if(!source||!area)return null;
-  const meta=rarityMeta(itemRarity(item));
-  const size=compact?48:FRAME,ratio=size/FRAME,beginner=beginnerSetSheets.has(setId??''),scale=beginner ? .128 : SCALE;
-  const wide=wideFullSetSheets.has(setId??''),sheetWidth=(wide||beginner?WIDE_SHEET_WIDTH:SHEET_WIDTH)*scale*ratio,sheetHeight=(beginner?1000:wide?WIDE_SHEET_HEIGHT:SHEET_HEIGHT)*scale*ratio;
-  const visualWidth=area.width*scale*ratio,visualHeight=area.height*scale*ratio;
-  return <View accessibilityLabel={`${item.name} artwork`} style={[s.frame,!framed&&{borderWidth:0,backgroundColor:'transparent'},{width:size,height:size,borderColor:meta.color,borderWidth:framed?meta.borderWidth:0,backgroundColor:framed?meta.surface:'transparent',shadowColor:meta.color,shadowOpacity:framed?meta.glowOpacity:0,shadowRadius:framed?6:0,shadowOffset:{width:0,height:0},elevation:framed&&meta.glowOpacity>0?2:0}]}>
-    <View style={{width:visualWidth,height:visualHeight,overflow:'hidden'}}><Image source={source} resizeMode="stretch" style={{position:'absolute',width:sheetWidth,height:sheetHeight,left:-area.x*scale*ratio,top:-area.y*scale*ratio}}/></View>
-  </View>;
+export function hasEquipmentArtwork(item:ItemDef){
+  const setId=equipmentArtworkSetByItemId[item.id];
+  return Boolean(setId&&equipmentSheetBySet[setId]&&item.slot&&slots.includes(item.slot as typeof slots[number]));
 }
 
-const s=StyleSheet.create({frame:{overflow:'hidden',alignItems:'center',justifyContent:'center',backgroundColor:C.bg,borderWidth:1,borderColor:C.line,borderRadius:radii.sm}});
+export function EquipmentArtwork({item,compact=false,framed=true}:{item:ItemDef;compact?:boolean;framed?:boolean}){
+  const meta=rarityMeta(itemRarity(item)),size=compact?48:64;
+  const setId=equipmentArtworkSetByItemId[item.id],sheet=setId?equipmentSheetBySet[setId]:undefined;
+  const slotIndex=item.slot?slots.indexOf(item.slot as typeof slots[number]):-1;
+  const frameStyle={width:size,height:size,borderColor:meta.color,borderWidth:framed?meta.borderWidth:0,backgroundColor:framed?meta.surface:'transparent'};
+  if(sheet&&slotIndex>=0){
+    const cellWidth=size*cellAspect;
+    return <View accessibilityLabel={`${item.name} equipment artwork`} style={[s.frame,frameStyle]}><View style={{width:cellWidth,height:size,overflow:'hidden'}}><Image source={sheet} resizeMode="stretch" style={{position:'absolute',width:cellWidth*5,height:size*2,left:-(slotIndex%5)*cellWidth,top:-Math.floor(slotIndex/5)*size}}/></View></View>;
+  }
+  return <View accessibilityLabel={`${item.name} equipment marker`} style={[s.frame,frameStyle]}><Text style={[s.marker,{color:meta.color}]}>◇</Text></View>;
+}
+
+const s=StyleSheet.create({frame:{overflow:'hidden',alignItems:'center',justifyContent:'center',backgroundColor:C.bg,borderWidth:1,borderColor:C.line,borderRadius:radii.sm},marker:{fontSize:28,lineHeight:32,fontWeight:'700'}});

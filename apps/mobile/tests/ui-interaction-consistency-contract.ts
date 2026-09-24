@@ -56,9 +56,19 @@ ok(top.includes('GameModalSurface')&&!top.includes('<Modal'),'Quick navigation m
 ok(top.includes('loading={saving}')&&top.includes('GameButton title="Save five"'),'Quick navigation save must use shared loading/button behavior');
 
 const combat=read('src/screens/CombatScreen.tsx');
-ok(combat.includes('HUNT PLAN')&&combat.includes('accessibilityState={{expanded:showPlan}}'),'Combat must collapse tactic and stop-goal setup behind one accessible Hunt Plan disclosure');
-ok(combat.includes('huntGoalIdFromSnapshot(activeCombat?.huntGoal)')&&combat.includes('HUNT_GOALS[activeGoalId].label.toUpperCase()'),'Combat must restore and display the actual saved active hunt goal instead of resetting its presentation to Open');
-ok(combat.includes("planSummary:{minHeight:76")&&combat.includes('planSummaryOpen:{borderColor:C.info,backgroundColor:C.infoSurface}'),'Hunt Plan must remain a compact theme-semantic setup control');
+ok(!combat.includes('HUNT PLAN')&&!combat.includes('showPlan')&&!combat.includes('STOP GOAL'),'Combat must not expose the removed Hunt Plan controls');
+ok(combat.includes('<CombatXpSplit state={state} onCommand={onCommand}/>'),'Combat must expose the saved skill XP split');
+ok(combat.indexOf('<CombatXpSplit')<combat.indexOf('<StatBar'),'XP split controls must appear at the top of Combat');
+const split=read('src/components/CombatXpSplit.tsx');
+ok(split.includes("type:'class_focus'")&&split.includes('normalizeTrainingFocus'),'XP split must use the existing authoritative character setting');
+ok(split.includes('accessibilityRole="radiogroup"')&&split.includes('accessibilityRole="radio"')&&split.includes('minHeight:44'),'XP ratios must be accessible single-choice controls');
+const skills=read('src/screens/SkillsScreen.tsx');
+ok(skills.includes("section('COMBAT SKILLS',combat,true)")&&skills.includes('accessibilityLabel="Open Combat"')&&skills.includes('onPress={onCombat}'),'Skills must group both combat skills with a direct Combat action');
+for(const path of ['src/screens/HomeScreen.tsx','src/screens/WorldScreen.tsx','src/screens/CombatScreen.tsx','src/components/HerbalismMethodPanel.tsx','src/components/TravelRegionModal.tsx','src/components/RewardPopup.tsx','src/components/FrostmarchRegionPanel.tsx']){
+ const source=read(path);
+ ok(!source.includes('EnvironmentBanner')&&!source.includes('EnvironmentDetailsModal')&&!source.includes('weatherName'),'Weather detail panels must stay out of '+path);
+}
+ok(top.includes('<EnvironmentDetailsModal')&&top.includes('onPress={()=>setEnvironmentOpen(true)}'),'The top-left bar must remain the weather details entry');
 
 const inventory=read('src/screens/InventoryScreen.tsx');
 ok(inventory.includes('GameModalSurface')&&!inventory.includes('<Modal'),'Inventory filter must use the shared modal shell');

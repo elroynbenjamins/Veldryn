@@ -2,7 +2,7 @@ import {useEffect,useMemo,useRef,useState} from 'react';
 import {Image,Keyboard,KeyboardAvoidingView,PanResponder,Platform,Pressable,ScrollView,StyleSheet,Text,TextInput,View,useWindowDimensions} from 'react-native';
 import {ConfirmModal} from '../components/ConfirmModal';
 import {FixedCharacterPortrait} from '../components/CharacterVisual';
-import {CLASSES,ClassDef} from '../content/classes';
+import {CLASSES} from '../content/classes';
 import {itemDef} from '../content/items';
 import {BodyPresentation,ClassId,GameState} from '../core/types';
 import {carouselIndex,characterNameError,normalizeCharacterName} from '../core/character-creation';
@@ -14,7 +14,6 @@ import {CreationAction} from '../components/creation/CreationChrome';
 import {LANGUAGE_NAMES,SUPPORTED_LANGUAGES,t} from '../i18n';
 
 type Step='class'|'identity'|'review';
-type RoleFilter='All'|ClassDef['role'];
 const STEPS:readonly Step[]=['class','identity','review'];
 const nameIdeas=['Aelric','Branna','Caelan','Eira','Fenric','Isolde','Orin','Sable'];
 // Explain the selected class, not just its shared party role. These are descriptions, not bonuses.
@@ -40,23 +39,17 @@ export function ClassSelectScreen({language='en',onLanguage,onSelect,onCancel,ca
  const [step,setStep]=useState<Step>('class');
  const [index,setIndex]=useState(0),[name,setName]=useState('Adventurer'),[confirming,setConfirming]=useState(false);
  const [body,setBody]=useState<BodyPresentation>('male');
- const [nameFocused,setNameFocused]=useState(false),[role,setRole]=useState<RoleFilter>('All');
- const filtered=useMemo(()=>role==='All'?CLASSES:CLASSES.filter(item=>item.role===role),[role]);
- const selected=filtered[index]??filtered[0];
+ const [nameFocused,setNameFocused]=useState(false);
+ const selected=CLASSES[index]??CLASSES[0];
  const safeName=normalizeCharacterName(name),nameError=characterNameError(name);
  const starter=itemDef(selected.starterEquipment.weapon);
  const roleColor={Tank:C.info,Support:C.good,Damage:C.warning};
  useEffect(()=>{scroll.current?.scrollTo({y:0,animated:false});setShowNameIdeas(false)},[step]);
- const change=(direction:number)=>{if(!submitting.current)setIndex(current=>carouselIndex(current,direction,filtered.length))};
+ const change=(direction:number)=>{if(!submitting.current)setIndex(current=>carouselIndex(current,direction,CLASSES.length))};
  const swipe=useMemo(()=>PanResponder.create({
   onMoveShouldSetPanResponder:(_,gesture)=>!submitting.current&&Math.abs(gesture.dx)>18&&Math.abs(gesture.dx)>Math.abs(gesture.dy)*1.5,
-  onPanResponderRelease:(_,gesture)=>{if(!submitting.current&&Math.abs(gesture.dx)>40)setIndex(current=>carouselIndex(current,gesture.dx<0?1:-1,filtered.length))},
- }),[filtered.length]);
- const chooseRole=(next:RoleFilter)=>{
-  if(submitting.current)return;
-  const nextClasses=next==='All'?CLASSES:CLASSES.filter(item=>item.role===next);
-  setRole(next);setIndex(Math.max(0,nextClasses.findIndex(item=>item.id===selected.id)));
- };
+  onPanResponderRelease:(_,gesture)=>{if(!submitting.current&&Math.abs(gesture.dx)>40)setIndex(current=>carouselIndex(current,gesture.dx<0?1:-1,CLASSES.length))},
+ }),[]);
  const stepLabel=(value:Step)=>t(language,value==='class'?'onboarding.stepClass':value==='identity'?'onboarding.stepIdentity':'onboarding.stepReview');
  const next=()=>{
   if(submitting.current)return;
@@ -86,11 +79,10 @@ export function ClassSelectScreen({language='en',onLanguage,onSelect,onCancel,ca
     <View accessibilityRole="progressbar" accessibilityLabel="Character creation" accessibilityValue={{min:1,max:STEPS.length,now:STEPS.indexOf(step)+1,text:stepLabel(step)}} style={s.stepRow}>{STEPS.map((item,i)=><View key={item} style={s.stepWrap}><View style={[s.stepDot,STEPS.indexOf(step)>=i&&s.stepDotActive]}><Text style={[s.stepNumber,STEPS.indexOf(step)>=i&&s.stepNumberActive]}>{i+1}</Text></View><Text style={[s.stepLabel,item===step&&s.stepLabelActive]}>{stepLabel(item)}</Text></View>)}</View>
     {step==='class'&&<View style={s.section}>
      <Text accessibilityRole="header" style={s.heading}>{t(language,'onboarding.chooseCalling')}</Text>
-     <View style={s.filterRow}>{(['All','Tank','Damage','Support'] as const).map(value=><Pressable accessibilityRole="button" accessibilityState={{selected:role===value,disabled:saving}} disabled={saving} key={value} onPress={()=>chooseRole(value)} style={[s.filter,role===value&&s.selected]}><Text style={[s.filterText,role===value&&s.filterTextActive]}>{value}</Text></Pressable>)}</View>
-     <ClassHeroCarousel selected={selected} classes={filtered} index={index} body={body} onBody={value=>{if(!submitting.current)setBody(value)}} onChange={change} onIndex={value=>{if(!submitting.current)setIndex(value)}} panHandlers={swipe.panHandlers}/>
+     <ClassHeroCarousel selected={selected} classes={CLASSES} index={index} onChange={change} onIndex={value=>{if(!submitting.current)setIndex(value)}} panHandlers={swipe.panHandlers}/>
      <View style={s.playStyleCard}><Text style={s.label}>PLAY STYLE</Text><Text style={[s.playStyleText,{color:roleColor[selected.role]}]}>{playStyle[selected.id]}</Text></View>
      <View style={s.loadout}><View style={s.flex}><Text style={s.label}>STARTING WEAPON</Text><Text style={s.gearName}>{starter.name}</Text></View><Text style={s.weaponTag}>LV. 1</Text></View>
-     <Text style={s.note}>Class artwork is a preview. You start with this weapon and a simple, non-stat outfit.</Text>
+     <Text style={s.note}>Choose your character presentation in the next step. You start with this weapon and a simple, non-stat outfit.</Text>
     </View>}
     {step==='identity'&&<View style={s.section}>
      <Text accessibilityRole="header" style={s.heading}>{t(language,'onboarding.whoEnters')}</Text>
@@ -124,9 +116,9 @@ export function ClassSelectScreen({language='en',onLanguage,onSelect,onCancel,ca
 
 function makeStyles(C:ThemeColors){const E=equipmentTheme(C);return StyleSheet.create({
  screen:{flex:1,backgroundColor:C.bg},scroll:{flex:1},root:{width:'100%',maxWidth:520,alignSelf:'center',padding:16,paddingTop:12,paddingBottom:20},brandRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},wordmark:{flex:1,maxWidth:184,height:62},kicker:{fontSize:10,lineHeight:14,color:C.muted,fontWeight:'800',letterSpacing:2,textAlign:'center',marginVertical:8},languageToggle:{minHeight:44,paddingHorizontal:8,flexDirection:'row',alignItems:'center',gap:8},languageCurrent:{fontSize:12,color:C.text,fontWeight:'700',flexShrink:1},languageMark:{fontSize:22,color:C.accent},languageGrid:{flexDirection:'row',flexWrap:'wrap',gap:8,marginVertical:8},languageChip:{minWidth:96,minHeight:44,justifyContent:'center',padding:10,borderWidth:1,borderColor:C.line,borderRadius:16},
- stepRow:{flexDirection:'row',paddingVertical:12,marginBottom:8,gap:6},stepWrap:{flexDirection:'row',flex:1,alignItems:'center',justifyContent:'center',gap:5,flexWrap:'wrap'},stepDot:{width:24,height:24,borderRadius:12,alignItems:'center',justifyContent:'center'},stepDotActive:{backgroundColor:C.selection},stepNumber:{fontSize:12,color:C.muted,fontWeight:'900'},stepNumberActive:{color:C.text},stepLabel:{fontSize:11,color:C.muted,fontWeight:'700',flexShrink:1},stepLabelActive:{color:C.accentSoft},section:{gap:12},heading:{fontFamily:Platform.OS==='ios'?'Georgia':'serif',fontSize:25,lineHeight:32,fontWeight:'500',color:C.accentSoft,textAlign:'center'},
+ stepRow:{flexDirection:'row',paddingVertical:12,marginBottom:8,gap:6},stepWrap:{flexDirection:'row',flex:1,alignItems:'center',justifyContent:'center',gap:5,flexWrap:'wrap'},stepDot:{width:24,height:24,borderRadius:12,alignItems:'center',justifyContent:'center'},stepDotActive:{backgroundColor:C.selection},stepNumber:{fontSize:12,color:C.muted,fontWeight:'900'},stepNumberActive:{color:C.text},stepLabel:{fontSize:12,color:C.muted,fontWeight:'800',flexShrink:1},stepLabelActive:{color:C.accentSoft,fontWeight:'900'},section:{gap:12},heading:{fontFamily:Platform.OS==='ios'?'Georgia':'serif',fontSize:29,lineHeight:37,fontWeight:'600',color:C.accentSoft,textAlign:'center'},
  identityPreview:{alignItems:'center',backgroundColor:C.stage,borderRadius:24,padding:12,gap:6},creationPortrait:{width:148,height:178},compactPortrait:{width:104,height:126},nameBlock:{gap:6},nameField:{borderWidth:1,borderColor:C.line,borderRadius:14,backgroundColor:C.inputBg,paddingHorizontal:16,paddingVertical:12},nameFieldFocused:{borderColor:C.selectionLine},nameFieldError:{borderColor:C.bad},label:{fontSize:10,lineHeight:16,color:C.muted,fontWeight:'800',letterSpacing:1},input:{minHeight:28,color:C.text,padding:0,fontSize:17,fontWeight:'600',textAlignVertical:'center',includeFontPadding:false},inputMeta:{flexDirection:'row',justifyContent:'space-between',gap:8},error:{fontSize:12,lineHeight:18,color:C.bad,flexShrink:1},counter:{fontSize:12,lineHeight:18,color:C.muted},ideasToggle:{minHeight:44,justifyContent:'center',alignSelf:'flex-start',paddingHorizontal:4},ideasText:{fontSize:12,lineHeight:18,color:C.muted,fontWeight:'700'},chips:{gap:8},chip:{minHeight:44,paddingHorizontal:14,borderRadius:18,justifyContent:'center',backgroundColor:C.panel2},chipText:{fontSize:14,fontWeight:'600',color:C.accentSoft},choiceRow:{flexDirection:'row',gap:8},flex:{flex:1},note:{fontSize:12,lineHeight:18,color:C.muted,textAlign:'center'},
- filterRow:{flexDirection:'row',gap:6},filter:{flex:1,minHeight:44,paddingHorizontal:6,borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.bg,justifyContent:'center',alignItems:'center'},selected:{borderColor:E.selectedLine,backgroundColor:E.selected},filterText:{fontSize:12,fontWeight:'700',color:C.muted,flexShrink:1},filterTextActive:{color:C.text},playStyleCard:{alignItems:'center',gap:4,paddingVertical:4},playStyleText:{fontSize:13,lineHeight:19,fontWeight:'700',textAlign:'center'},loadout:{borderTopWidth:1,borderColor:C.line,paddingVertical:12,paddingHorizontal:8,flexDirection:'row',alignItems:'center',gap:12},gearName:{fontSize:15,lineHeight:21,color:C.accentSoft,fontWeight:'700'},weaponTag:{fontSize:11,fontWeight:'800',color:C.info},
+ selected:{borderColor:E.selectedLine,backgroundColor:E.selected},playStyleCard:{alignItems:'center',gap:4,paddingVertical:4},playStyleText:{fontSize:16,lineHeight:23,fontWeight:'900',textAlign:'center'},loadout:{borderTopWidth:1,borderColor:C.line,paddingVertical:12,paddingHorizontal:8,flexDirection:'row',alignItems:'center',gap:12},gearName:{fontSize:17,lineHeight:23,color:C.accentSoft,fontWeight:'800'},weaponTag:{fontSize:12,fontWeight:'900',color:C.info},
  reviewCard:{backgroundColor:C.panel,borderRadius:20,padding:16,flexDirection:'row',alignItems:'center',gap:12},reviewCardStacked:{flexDirection:'column',alignItems:'stretch'},reviewCopy:{flexShrink:1,gap:5},reviewName:{fontSize:20,lineHeight:26,color:C.accentSoft,fontWeight:'900'},reviewRole:{fontSize:14,lineHeight:20,fontWeight:'700'},reviewLine:{fontSize:13,lineHeight:19,color:C.muted},firstStep:{borderWidth:1,borderColor:C.line,borderRadius:14,backgroundColor:C.panel2,padding:14,gap:4},firstStepLabel:{fontSize:10,lineHeight:15,color:C.accent,fontWeight:'900',letterSpacing:1.1},firstStepText:{fontSize:13,lineHeight:19,color:C.text},
  footer:{backgroundColor:C.bg,borderTopWidth:1,borderColor:C.line,paddingHorizontal:16,paddingTop:10,paddingBottom:12,gap:8},navigation:{width:'100%',maxWidth:488,alignSelf:'center',flexDirection:'row',gap:8},secondaryAction:{flex:1},primaryAction:{flex:2},saveErrorCard:{width:'100%',maxWidth:488,alignSelf:'center',gap:4,padding:10,borderWidth:1,borderColor:C.bad,borderRadius:12,backgroundColor:C.badSurface},saveErrorLabel:{fontSize:10,lineHeight:14,color:C.bad,fontWeight:'900',letterSpacing:1},
 });}

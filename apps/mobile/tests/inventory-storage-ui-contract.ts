@@ -25,12 +25,12 @@ ok(screenSource.includes("{id:'new',label:'New'}")&&screenSource.includes("{id:'
 ok(card.includes('newBadge')&&card.includes('NEW'),'New stored items must show a compact NEW badge');
 ok(screenSource.includes('Mark all seen')&&screenSource.includes('onAcknowledgeItem'),'New item acknowledgement controls must remain available');
 ok(screenSource.includes('BULK MANAGEMENT')&&screenSource.includes('Select shown')&&screenSource.includes('onBulkAction'),'Bulk management must stay temporary and player-invoked');
-ok(card.includes('selectionMode')&&card.includes('accessibilityRole="checkbox"'),'Item cards must expose accessible selection controls only in selection mode');
+ok(screenSource.includes("accessibilityRole={selectMode?'checkbox':'button'}")&&screenSource.includes('itemSelectedOn'),'Inventory grid tiles must expose accessible selection controls only in selection mode');
 ok(bulk.includes('bulkTransferSelected')&&bulk.includes('bulkSellSelected')&&bulk.includes('bulkSalvageSelected'),'Bulk actions must use shared core helpers');
 ok(bulk.includes("state.settings.favoriteItemIds")&&bulk.includes('hasEnhancement')&&bulk.includes('equippedFoodId'),'Bulk disposal must protect favorites, enhanced gear, and auto-eat food');
 ok(commands.includes("bulk_transfer:['location','ids']")&&commands.includes("bulk_sell:['ids']")&&commands.includes("bulk_salvage:['ids']"),'Online commands must expose atomic bulk actions');
-ok(card.includes('onLongPress={inspect}')&&card.includes('delayLongPress={350}'),'Item cards must open Quick Inspect on a deliberate hold');
-ok(screenSource.includes('ItemQuickInspect')&&screenSource.includes('Hold an item for Quick Inspect'),'Inventory must expose and explain Quick Inspect without replacing normal tap actions');
+ok(screenSource.includes('ItemArtwork itemId={item.id} size={iconSize}')&&screenSource.includes('gridColumns=width>=720?8:width>=480?6:4')&&screenSource.includes('itemGrid:{flexDirection'), 'Inventory must show a compact artwork-only grid that adapts to available width');
+ok(screenSource.includes("onPress={()=>selectMode?toggleSelection(item.id):setInspectId(item.id)}")&&screenSource.includes('Tap an item to view its details, sources, crafting uses and actions.'),'Tapping an inventory tile must open Quick Inspect directly');
 ok(inspect.includes('HOW TO GET')&&inspect.includes('USED IN CRAFTING')&&inspect.includes('UPGRADE'),'Quick Inspect sheet must show sources, crafting uses and equipment upgrade information');
 ok(inspectModel.includes('RECIPES')&&inspectModel.includes('MONSTERS')&&inspectModel.includes('GATHERING')&&inspectModel.includes('upgradeQuote'),'Quick Inspect must derive information from authoritative content data');
 ok(inspect.includes('OPEN ›')&&inspect.includes('onNavigate(source.navigation')&&inspect.includes('onNavigate(recipe.navigation)'),'Quick Inspect source and recipe rows must be actionable');
@@ -45,7 +45,7 @@ ok(inspect.includes('2/4/8/10 always-on V33 bonuses are live')&&inspect.includes
 ok(inspectModel.includes('previewEquipment')&&inspectModel.includes('effectiveStats')&&inspectModel.includes('gearStatsAtRank'),'Gear Check must use real preview/effective-stat and enhancement math');
 ok(inspectModel.includes('equippedSetPieceCount')&&inspectModel.includes('MAX_UPGRADE_RANK'),'Gear Check must derive set movement and max-rank potential from authoritative systems');
 ok(screenSource.includes('StorageChip')&&screenSource.includes('storageCapacityStatus'),'Inventory and Bank must show compact capacity feedback');
-ok(screenSource.includes('onToggleFavorite')&&card.includes('favoriteButton'),'Item cards must expose one-tap favorite controls');
+ok(screenSource.includes('onToggleFavorite')&&screenSource.includes("title={favoriteSet.has(inspected.id)?'Remove favorite':'Favorite'}"),'Quick Inspect must expose favorite controls without cluttering inventory tiles');
 ok(card.includes('protected from selling and salvage'),'Favorite items must explain disposal protection');
 ok(appSource.includes('toggleInventoryFavorite')&&appSource.includes('onToggleFavorite'),'Favorites must persist through the app settings path');
 ok(normalization.includes('favoriteItemIds:stringList')&&commands.includes('result.favoriteItemIds'),'Favorites must survive save normalization and online settings validation');

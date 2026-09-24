@@ -43,10 +43,6 @@ ok(account.includes("if(id==='Collections')return 'Inventory'")&&account.include
 ok(!account.includes("items:['Home','Progression','Quests','Skills'"),'Account must not duplicate the persistent Skills bottom-navigation destination');
 ok(account.includes("singleColumn=width<350||fontScale>=1.25")&&account.includes('attentionQuickWide'),'Account hub and attention rail must preserve narrow-phone / large-text responsiveness');
 
-const classSkillsPanel=read('src/components/ClassSkillsPanel.tsx');
-ok(classSkillsPanel.includes('CLASS_DRILL_BASE_XP')&&classSkillsPanel.includes('Balanced: ~')&&classSkillsPanel.includes('Focused: ~'),'Class safe training must show the authoritative drill baseline and hourly split');
-ok(classSkillsPanel.includes('One drill per minute'),'Class safe training cadence must stay explicit');
-
 const craftingProfessionBrowser=read('src/components/CraftingRecipeBrowser.tsx');
 ok(craftingProfessionBrowser.includes("'tailoring'|'enchanting'")&&craftingProfessionBrowser.includes('TAILORING BENCH')&&craftingProfessionBrowser.includes('ENCHANTING TABLE'),'Tailoring and Enchanting must use the shared recipe browser and distinct workshop identity');
 
@@ -62,25 +58,9 @@ ok(skills.includes('TRAINING FOCUS · RECOMMENDED')&&skills.includes('skillTrain
 ok(skills.includes('NEXT LV {milestone.nextLevel}')&&skills.includes('skillMilestoneOverview(state,skillRow.skillId)'),'Skill cards must preview their next meaningful authored unlock instead of showing XP progress alone');
 ok(skills.includes('focusCard:{minHeight:82')&&skills.includes('backgroundColor:C.infoSurface'),'Skills training focus must remain compact and theme-semantic');
 
-const skillMilestones=read('src/components/SkillMilestoneStrip.tsx');
-ok(skillMilestones.includes('SKILL MILESTONES')&&skillMilestones.includes("slice(0,2)"),'Skill detail milestones must remain compact and capped');
-ok(skillMilestones.includes("'JUST REACHED':'LATEST'")&&skillMilestones.includes('NEXT · LV'),'Skill detail milestones must show recent and next unlock states');
-ok(skillMilestones.includes('useGameTheme'),'Skill milestone strip must use the active UI theme');
-ok(skillMilestones.includes('if(row.destination&&onNavigate)onNavigate(row.destination)'),'Milestone rows must remain actionable when a destination exists');
-ok(skills.includes('<SkillMilestoneStrip'),'Skills detail screens must include the persistent milestone strip');
+ok(!skills.includes('<SkillMilestoneStrip'),'Skill detail screens must stay focused without milestone panels');
 
-const masteryPanel=read('src/components/ProfessionMasteryPanel.tsx');
-ok(masteryPanel.includes('PROFESSION MASTERY')&&masteryPanel.includes('BEST ACTION BONUS ROADMAP'),'Skill details must explain long-term action mastery and its bonus roadmap');
-ok(masteryPanel.includes("slice(0,3)"),'Profession Mastery must remain compact by showing only three priority actions');
-ok(masteryPanel.includes("action:{minHeight:62"),'Profession Mastery action rows must stay compact');
-ok(masteryPanel.includes('Yield requires stackable output')&&masteryPanel.includes('speed requires a timed cycle'),'Mastery UI must explain bonus applicability instead of implying every bonus affects every action');
-ok(masteryPanel.includes('MASTERED RECORDS')&&masteryPanel.includes('Permanent R50 record'),'R50 action mastery must have a permanent compact completion treatment');
-ok(masteryPanel.includes('TRACK R')&&masteryPanel.includes('TRACKED R'),'Mastery rows must support one-tap Working Toward tracking without a separate modal');
-ok(masteryPanel.includes('minHeight:30'),'Mastery tracking controls must remain compact secondary actions');
-ok(masteryPanel.includes("const [expanded,setExpanded]=useState(!!preferredActionId)")&&masteryPanel.includes('MASTERY DETAILS'),'Profession Mastery must stay summary-first instead of making every skill detail screen excessively tall');
-ok(masteryPanel.includes('accessibilityState={{expanded}}')&&masteryPanel.includes("if(preferredActionId)setExpanded(true)"),'Profession Mastery disclosure must remain accessible and auto-open exact deep-linked mastery targets');
-ok(skills.includes('<ProfessionMasteryPanel'),'Trainable skill details must expose Profession Mastery');
-ok(skills.includes('masteryGoalForAction')&&skills.includes("type:'goals_set'"),'Skill mastery tracking must use the authoritative Working Toward goal command');
+ok(!skills.includes('<ProfessionMasteryPanel')&&!skills.includes('masteryGoalForAction'),'Skill detail screens must stay focused without profession mastery panels');
 ok(skills.includes('skillIdentity')&&skills.includes('identityColor'),'Skill headers must preserve distinct semantic identities without larger typography');
 
 const masteryDiscovery=read('src/components/MasteryDiscoveryPanel.tsx');
@@ -105,14 +85,11 @@ const masteryCore=read('src/core/profession-mastery-v40.ts');
 ok(masteryCore.includes("{rank:10,kind:'xp'")&&masteryCore.includes("{rank:20,kind:'yield'")&&masteryCore.includes("{rank:30,kind:'speed'")&&masteryCore.includes("{rank:40,kind:'yield'")&&masteryCore.includes("{rank:50,kind:'speed'"),'Profession Mastery bonus ranks must remain explicit and reviewable');
 
 const gatheringSkills=read('src/components/GatheringActivityList.tsx');
-ok(gatheringSkills.includes('FASTEST XP HERE'),'Gathering details must identify the fastest local XP option');
-ok(gatheringSkills.includes('EST. YIELD / HR')&&gatheringSkills.includes('SKILL XP / HR'),'Gathering cards must surface compact settlement-aligned resource and XP hourly rates');
-ok(gatheringSkills.includes("/action · every {view.cycleSeconds.toFixed(1)}s"),'Gathering cards must expose authored yield per action beside effective cycle time');
-ok(gatheringSkills.includes('NEXT SKILL UNLOCK'),'Gathering details must preview the next skill unlock');
-ok(gatheringSkills.includes("targetTag:{fontSize:9"),'Working Toward gathering targets must remain visible without adding a large banner');
-ok(gatheringSkills.includes('gatheringProgressionAction')&&gatheringSkills.includes('bestGatheringTrainingDestination'),'Gathering locked/empty states must route to useful training actions');
-ok(gatheringSkills.includes("title={'Train to Lv '"),'Locked gathering nodes must offer a direct train-prerequisite action');
-ok(gatheringSkills.includes('gatheringBalanceProjection')&&gatheringSkills.includes('MASTERY'),'Gathering cards must show mastery from the shared action-rate projection');
+ok(gatheringSkills.includes('Tap a resource to begin gathering.'),'Normal gathering skills must state their direct-tap interaction');
+ok(gatheringSkills.includes('accessibilityRole="button"')&&gatheringSkills.includes('onPress={start}'),'Each gathering resource must begin directly from its row');
+ok(gatheringSkills.includes('Have: ${formatGameNumber(available')&&gatheringSkills.includes('view.cycleSeconds.toFixed(1)'),'Gathering rows must show stored resource count and action duration');
+ok(gatheringSkills.includes('gatheringProgressionAction'),'Locked gathering rows must still route to the useful training destination');
+ok(gatheringSkills.includes('gatheringBalanceProjection'),'Gathering duration must continue using the shared rate projection');
 const balanceProjection=read('src/core/balance-projection.ts');
 ok(balanceProjection.includes('professionMasteryMultipliers')&&balanceProjection.includes('mastery.speed')&&balanceProjection.includes('mastery.xp')&&balanceProjection.includes('mastery.yield'),'Shared gathering balance projection must apply action-specific mastery to speed, XP and yield');
 
@@ -267,7 +244,7 @@ ok(inventory.includes("utilityChip:{flex:1,minWidth:0,minHeight:44"),'Inventory 
 ok(inventory.includes('visible={filterOpen}'),'Inventory categories must open in a compact filter sheet');
 ok(inventory.includes('filterOption:{minHeight:44'),'Inventory filter rows must retain accessible touch height');
 ok(!inventory.includes('contentContainerStyle={s.controlStrip}'),'Inventory must not regress to the long horizontal category strip');
-ok(inventory.includes('workingTowardInventoryProtectionMap(state)')&&inventory.includes('goalProtected={!!goalMeta}'),'Inventory must project Working Toward protection into visible item cards');
+ok(inventory.includes('workingTowardInventoryProtectionMap(state)')&&inventory.includes('goalProtected=goalProtection.has(item.id)'),'Inventory grid tiles must project Working Toward protection');
 ok(itemCard.includes('>GOAL</Text>')&&itemCard.includes('protected from bulk selling and salvage'),'Tracked goal items must visibly explain their bulk-disposal protection');
 ok(inventory.includes('Working Toward is using this item for')&&inventory.includes('goalProtectedCount'),'Manual disposal must warn while bulk management reports protected goal stacks');
 ok(inventoryBulk.includes('workingTowardInventoryProtectionMap(state)')&&inventoryBulk.includes('goalProtectedIds.has(itemId)'),'Bulk sell and salvage must enforce Working Toward protection in core logic, not only presentation');
@@ -279,11 +256,10 @@ ok(dungeonDeepLinkScreen.includes('dungeons.find(item=>item.id===initialDungeonI
 ok(dungeonDeepLinkScreen.includes('That dungeon source is not currently available in the dungeon catalog.'),'Invalid or stale dungeon deep links must fail visibly instead of silently dropping the player on a generic list');
 
 const world=read('src/screens/WorldScreen.tsx');
-ok(world.includes('currentCard:{minHeight:150'),'World current-region card must remain compact');
+ok(world.includes('currentCard:{minHeight:184')&&world.includes("current-region-hero-v1.png"),'World current-region card must use the dedicated wide hero artwork');
 ok(world.includes('destination:{minHeight:92'),'World destination cards must remain compact');
-ok(world.includes('CURRENT REGION CONTENT')&&world.includes('What can I do in {current.name}?'),'World must behave as a current-region hub before presenting travel-away choices');
+ok(!world.includes('CURRENT REGION CONTENT')&&!world.includes('What can I do in {current.name}?'),'World must not show the redundant current-region action panel');
 ok(world.indexOf('{sunscar&&')<world.indexOf('TRAVEL ELSEWHERE')&&world.indexOf('{frostmarch&&')<world.indexOf('TRAVEL ELSEWHERE'),'Region-specific Sunscar/Frostmarch content must appear before the travel-away list');
-ok(world.includes('<RegionStat label="HUNTS"')&&world.includes('<RegionStat label="GATHER"')&&world.includes('<RegionStat label="BOSSES"'),'Current region hub must expose compact real-content readiness counts');
 ok(world.includes('NEXT REGION UNLOCK')&&world.includes("unlockTrack:{height:5"),'World travel section must show compact next-region level progress');
 ok(world.includes('orderedTravelRegions(state,current.id,goalRegionId)'),'World travel ordering must reuse the core goal-aware unlocked-first ordering helper');
 ok(world.includes('OBJECTIVE ROUTE')&&world.includes('Your current objective continues in'),'World route guidance must remain truthful for both Working Toward and Journal region deep links');
@@ -362,7 +338,7 @@ ok(event.includes("claim:{width:96}"),'Event repeated reward actions must remain
 ok(event.includes("type JournalSection='Discoveries'|'Collection'|'Milestones'")&&event.includes("journalSection==='Discoveries'")&&event.includes("journalSection==='Collection'")&&event.includes("journalSection==='Milestones'"),'Event Journal must split discoveries, collection and milestones into separate mobile workloads instead of one long feed');
 ok(event.includes('EVENT DETAILS · {definition.signature.label}')&&event.includes('accessibilityState={{expanded:showEventDetails}}'),'Secondary event identity detail must use progressive disclosure while the active event actions stay visible');
 ok(event.includes('journalTabs:{flexDirection:\'row\'')&&event.includes('journalTab:{flex:1,minHeight:44'),'Event Journal sub-navigation must remain compact and touch-accessible');
-ok(event.includes('history.slice(0,showEventArchive?history.length:6)')&&event.includes('Show older events · ${history.length-6}'),'Inactive Event archive must cap the initial history instead of growing indefinitely year over year');
+ok(event.includes('history.slice(0,showEventArchive?history.length:6)')&&event.includes('Show older festivals · ${history.length-6}'),'Inactive Event archive must cap the initial history instead of growing indefinitely year over year');
 ok(event.includes('accessibilityState={{expanded:showProjectDetails}}')&&event.includes("(!projectId||showProjectDetails)?<View style={s.choiceList}"),'Locked event project alternatives must collapse after selection while the contribution controls remain on the main Commons surface');
 
 const quests=read('src/screens/QuestScreen.tsx');

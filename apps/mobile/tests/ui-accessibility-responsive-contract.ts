@@ -78,14 +78,13 @@ ok(companionTrainingTouch.includes('tab:{flex:1,minHeight:44')&&companionTrainin
 const account=read('src/screens/MoreScreen.tsx');
 ok(account.includes('useWindowDimensions')&&account.includes('singleColumn=width<350||fontScale>=1.25'),'Account hub must stack on narrow phones or large text');
 ok(account.includes("tileWide:{flexBasis:'100%',minWidth:0}"),'Account tiles must support a full-width responsive mode');
-ok(account.includes('accessibilityHint={meta.description}'),'Account tiles must expose descriptions without depending on truncated visual copy');
+ok(account.includes('accessibilityHint={locked?reason:meta.description}'),'Account tiles must expose their description or lock reason without depending on truncated visual copy');
 ok(account.includes('attentionLabel=(id:MoreDestination)'),'Account attention must be announced on the parent navigation tile');
 
 const world=read('src/screens/WorldScreen.tsx');
-ok(world.includes("title:'Combat World Boss'")&&world.includes("title:'Mining World Boss'")&&world.includes("title:'Fishing World Boss'")&&world.includes("title:'Woodcutting World Boss'"),'World must expose all four planned World Boss previews');
-ok(world.includes('IN DEVELOPMENT')&&world.includes("futureGrid:{flexDirection:'row',flexWrap:'wrap'"),'World Boss previews must be clearly disabled and responsive');
+ok(!world.includes('WORLD BOSSES')&&!world.includes('WORLD_BOSS_PREVIEWS'),'World must not show inactive World Boss preview cards');
 
-ok(account.includes("inDevelopment=id==='Arena'")&&account.includes('disabled={inDevelopment}'),'Arena entry must remain visibly disabled while the mode is in development');
+ok(account.includes("inDevelopment=id==='Arena'")&&account.includes('disabled={inDevelopment||locked}'),'Arena entry must remain visibly disabled while the mode is in development');
 ok(account.includes('IN DEVELOPMENT'),'Account hub must label disabled future destinations');
 
 const guildFuture=read('src/screens/GuildScreen.tsx');

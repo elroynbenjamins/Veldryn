@@ -29,6 +29,20 @@
         "EXPO_PUBLIC_COOP_API_URL": "https://nyjwigipamnvpdvpauuv.supabase.co/functions/v1/coop",
         "EXPO_PUBLIC_COOP_LIVE_READY_V1": "false"
       }
+    },
+    "staging": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://iqfmmpvwanvvmxcftfxw.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_HaIHb8qe4wN3Ir4Vd7bGQg_9ec854Ta",
+        "EXPO_PUBLIC_SERVER_GAMEPLAY": "true",
+        "EXPO_PUBLIC_COOP_ROGUELITE_V1": "true",
+        "EXPO_PUBLIC_COOP_API_URL": "https://iqfmmpvwanvvmxcftfxw.supabase.co/functions/v1/coop",
+        "EXPO_PUBLIC_COOP_LIVE_READY_V1": "false"
+      }
     }
   },
   "submit": {

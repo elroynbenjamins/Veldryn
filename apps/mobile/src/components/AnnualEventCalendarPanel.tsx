@@ -16,9 +16,8 @@ export function AnnualEventCalendarPanel({state,highlightEventId,highlightLabel}
       return <View key={row.eventId} style={[s.card,{borderLeftColor:row.definition.accent},highlighted&&s.highlight]}>
         <View style={s.identityRow}><EventIdentityBadge event={row.name} visualKey={row.definition.visualKey} accent={row.definition.accent} size={34}/><View style={s.flex}><View style={s.row}><Text numberOfLines={1} style={s.name}>{row.name}</Text>{highlighted?<Text style={s.badge}>{highlightLabel??'CURRENT'}</Text>:null}</View><Text numberOfLines={1} style={[s.signature,{color:row.definition.accent}]}>{row.definition.signature.title}</Text></View></View>
         <Text style={s.window}>{row.windowLabel}</Text>
-        <Text style={s.meta}>Collection {row.collectionOwned}/{row.collectionTotal} · {row.collectionPercent}%</Text>
-        <View style={s.track}><View style={[s.fill,{width:`${Math.max(row.collectionPercent?3:0,row.collectionPercent)}%`,backgroundColor:row.definition.accent}]}/></View>
-        <Text style={s.history}>{row.hasHistory?`${row.lifetimeReputation.toLocaleString()} lifetime reputation`:'Not yet participated'}</Text>
+        <Text style={s.meta}>Annual festival · schedule subject to Live-Ops</Text>
+        <Text style={s.history}>{row.hasHistory?'Previously attended':'No festival history yet'}</Text>
       </View>;
     })}</View>
     <Text style={s.note}>May remains open for smaller regional activities rather than a permanent annual festival.</Text>
@@ -42,8 +41,6 @@ const s=StyleSheet.create({
   badge:{fontSize:8,color:C.good,fontWeight:'900',letterSpacing:.6},
   window:{fontSize:10,color:C.accent,fontWeight:'800'},
   meta:{fontSize:9,color:C.muted},
-  track:{height:5,borderRadius:3,overflow:'hidden',backgroundColor:C.bg},
-  fill:{height:'100%'},
   history:{fontSize:9,color:C.info},
   note:{...typography.caption,color:C.muted,marginTop:spacing.sm},
 });

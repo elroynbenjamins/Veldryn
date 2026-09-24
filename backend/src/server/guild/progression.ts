@@ -50,7 +50,9 @@ export const GUILD_TREE_TIER_REQUIREMENTS:readonly GuildTreeTierRequirement[]=[
 ] as const;
 
 
-const SMALL_RANK_COSTS=[1,1,2,2,3] as const;
+const PROFESSION_COSTS=[1,1,1,2,2,3] as const;
+const FELLOWSHIP_COSTS=[2,2,3,4] as const;
+const VANGUARD_COSTS=[1,2,2,3,3,4] as const;
 export const GUILD_TREE_DEVELOPMENT_UNLOCKS=Object.freeze({
  professionsTier2:'guild.tree.professions.tier2',
  professionsTier3:'guild.tree.professions.tier3',

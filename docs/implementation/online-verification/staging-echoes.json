@@ -1,0 +1,70 @@
+{
+  "project": "iqfmmpvwanvvmxcftfxw",
+  "createdAt": "2026-09-24T21:08:47.858Z",
+  "echoes": [
+    {
+      "accountId": "58f5feca-5e73-44b9-b5a3-9b8f957478dc",
+      "classId": "IRONWARDEN",
+      "characterId": "9526fa56-707d-417e-ac7f-8b9abf738e2b",
+      "echoProfileId": "65d1db13-3ece-44fa-9e75-29e85bcf5ed2",
+      "level": 100
+    },
+    {
+      "accountId": "503b1ead-3d55-4039-9553-7f3b6260f01c",
+      "classId": "BASTION",
+      "characterId": "cdc19400-5610-4503-a504-183587c4a3b6",
+      "echoProfileId": "3aeae284-3a84-452e-b0a7-cb1d926c7d32",
+      "level": 100
+    },
+    {
+      "accountId": "c3fde251-5719-4301-bc7e-ee81ece29abe",
+      "classId": "DREADGUARD",
+      "characterId": "2f11510b-5f0f-4b3a-bef1-29cc24aac98c",
+      "echoProfileId": "4f289f16-c4e4-4bee-83b5-5e7668243ce6",
+      "level": 100
+    },
+    {
+      "accountId": "5d13e1da-3edf-4c25-8cf5-9626e97585b2",
+      "classId": "DAWNKEEPER",
+      "characterId": "9f137c22-f4f5-4b4d-9c11-5e2960aa856e",
+      "echoProfileId": "d9ad8296-a39b-4e7e-a108-a27f0b94a5bd",
+      "level": 100
+    },
+    {
+      "accountId": "2a28d267-72d3-44d4-b477-499784addfde",
+      "classId": "STONECALLER",
+      "characterId": "7588a1d4-2843-4c04-96cb-0acead5924d0",
+      "echoProfileId": "98706bda-544d-4789-b00a-432e83f2861d",
+      "level": 100
+    },
+    {
+      "accountId": "c4dba1ed-86b1-413d-8b0e-54f617b2af9d",
+      "classId": "WAYFINDER",
+      "characterId": "50347257-5047-432e-a89b-6a6a590ea827",
+      "echoProfileId": "db901363-b103-4086-bf1c-2c522751dbb7",
+      "level": 100
+    },
+    {
+      "accountId": "139f27e7-d66a-4c4f-9a1b-3944ea997c47",
+      "classId": "RAVAGER",
+      "characterId": "d2e899a9-0534-4e64-824f-32b8e4a9b499",
+      "echoProfileId": "adb05ac3-7b20-4d11-aec1-a2ed93af11d1",
+      "level": 100
+    },
+    {
+      "accountId": "c47d1ab5-41a4-42a6-81f8-09cc1f5bd43c",
+      "classId": "HEXWEAVER",
+      "characterId": "29672847-810c-4371-98e6-7f439996ccf6",
+      "echoProfileId": "5f3791ff-b40e-4106-8518-d6a809feb7ca",
+      "level": 100
+    },
+    {
+      "accountId": "4bd4513b-fe2a-427d-bd2e-05eac32b348a",
+      "classId": "KNIFE_DANCER",
+      "characterId": "29dba3ef-c308-4e23-ab80-7951f97e5b6f",
+      "echoProfileId": "8bdbe773-ff65-44c2-9eac-1dcd5977449e",
+      "level": 100
+    }
+  ],
+  "refreshedAt": "2026-09-24T21:26:53.245Z"
+}

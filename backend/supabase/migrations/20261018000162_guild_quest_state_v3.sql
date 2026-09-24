@@ -2,6 +2,8 @@ begin;
 
 alter table public.guild_quest_completions drop constraint if exists guild_quest_completions_quest_key_check;
 
+-- PostgreSQL cannot replace a TABLE return signature; restore grants below.
+drop function if exists public.guild_quest_state_v1();
 create or replace function public.guild_quest_state_v1()
 returns table(
  guild_id uuid,week_key date,week_ends_at timestamptz,active_members integer,

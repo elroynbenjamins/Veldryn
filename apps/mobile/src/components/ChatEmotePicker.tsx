@@ -6,7 +6,7 @@ import {useGameTheme} from '../theme/ThemeContext';
 import {chatEmoteArtwork} from '../theme/chat-emote-assets';
 import {availableChatEmotes,CHAT_EMOTE_TRAY_SIZE,CHAT_MAX_EMOTES_PER_MESSAGE,defaultChatEmoteTray,resolvedChatEmoteTray,type ChatEmoteDef} from '../core/chat-emotes';
 
-export function ChatEmotePicker({onPick,unlockedIds=[],trayIds=[],bodyPresentation='male',usedCount=0,onTrayChange}:{onPick:(token:string)=>void;unlockedIds?:readonly string[];trayIds?:readonly string[];bodyPresentation?:'male'|'female';usedCount?:number;onTrayChange?:(ids:string[])=>void|Promise<void>}){
+export function ChatEmotePicker({onPick,unlockedIds=[],trayIds=[],bodyPresentation='male',usedCount=0,onTrayChange,settingsMode=false}:{onPick:(token:string)=>void;unlockedIds?:readonly string[];trayIds?:readonly string[];bodyPresentation?:'male'|'female';usedCount?:number;onTrayChange?:(ids:string[])=>void|Promise<void>;settingsMode?:boolean}){
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),stackControls=width<360||fontScale>=1.25;
  const [open,setOpen]=useState(false),[editing,setEditing]=useState(false),[draft,setDraft]=useState<string[]>([]);
  const available=useMemo(()=>availableChatEmotes(unlockedIds),[unlockedIds]);
@@ -18,7 +18,7 @@ export function ChatEmotePicker({onPick,unlockedIds=[],trayIds=[],bodyPresentati
  const reset=()=>setDraft(defaultChatEmoteTray(bodyPresentation));
  const save=async()=>{if(draft.length!==CHAT_EMOTE_TRAY_SIZE)return;await onTrayChange?.(draft);setEditing(false);};
  return <View>
-  <Pressable accessibilityRole="button" accessibilityLabel="Open emote tray" accessibilityState={{expanded:open}} onPress={()=>{setOpen(value=>!value);setEditing(false)}} style={({pressed})=>[s.toggle,pressed&&s.pressed]}><Text style={s.toggleText}>☺ Emotes</Text></Pressable>
+  <Pressable accessibilityRole="button" accessibilityLabel="Open emote tray" accessibilityState={{expanded:open}} onPress={()=>{setOpen(value=>!value);setEditing(settingsMode)}} style={({pressed})=>[s.toggle,settingsMode&&s.settingsToggle,pressed&&s.pressed]}><Text style={s.toggleText}>{settingsMode?'Edit emote tray':'☺ Emotes'}</Text><Text style={s.toggleMeta}>{settingsMode?resolved.length+'/8 selected':'⌄'}</Text></Pressable>
   {open&&<View style={s.picker}>
     <View style={[s.headingRow,stackControls&&s.headingRowStack]}><View><Text style={s.heading}>{editing?'Choose your 8 emotes':'Quick emotes'}</Text><Text style={s.count}>{editing?draft.length+'/'+CHAT_EMOTE_TRAY_SIZE+' selected':'8 slots · '+Math.min(usedCount,CHAT_MAX_EMOTES_PER_MESSAGE)+'/'+CHAT_MAX_EMOTES_PER_MESSAGE+' used'}</Text></View><Pressable accessibilityRole="button" accessibilityLabel={editing?'Cancel emote tray editing':'Edit emote tray'} onPress={()=>{setDraft(resolved);setEditing(value=>!value)}} style={[s.editButton,stackControls&&s.editButtonStack]}><Text style={s.editText}>{editing?'Cancel':'Edit 8'}</Text></Pressable></View>
     {!editing?<View style={s.quickGrid}>{selected.map(id=><EmoteButton key={id} emote={byId.get(id)} id={id} disabled={usedCount>=CHAT_MAX_EMOTES_PER_MESSAGE} onPress={()=>{onPick(`:${id}:`);setOpen(false)}} selected={false}/>)}</View>:<>
@@ -37,17 +37,18 @@ function EmoteButton({emote,id,onPress,selected=false,disabled=false,labelPrefix
 }
 
 function makeStyles(C:ThemeColors){return StyleSheet.create({
- toggle:{minHeight:44,paddingHorizontal:10,justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel},
+ toggle:{minHeight:44,paddingHorizontal:10,flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel},settingsToggle:{minHeight:52,paddingHorizontal:12,borderColor:C.selectionLine,backgroundColor:C.selection},
  toggleText:{...typography.caption,color:C.accent,fontWeight:'800'},
- picker:{marginTop:spacing.xs,padding:spacing.sm,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.bg,gap:spacing.xs},
+ toggleMeta:{...typography.caption,color:C.info,fontWeight:'900'},
+ picker:{marginTop:spacing.xs,padding:spacing.sm,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2,gap:spacing.xs},
  headingRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},headingRowStack:{alignItems:'stretch',flexDirection:'column'},
  heading:{...typography.caption,color:C.text,fontWeight:'900'},
  count:{fontSize:9,color:C.muted,fontWeight:'800',marginTop:2},
- editButton:{minHeight:44,minWidth:62,alignItems:'center',justifyContent:'center',paddingHorizontal:8,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel},editButtonStack:{width:'100%'},
+ editButton:{minHeight:44,minWidth:62,alignItems:'center',justifyContent:'center',paddingHorizontal:8,borderWidth:1,borderColor:C.selectionLine,borderRadius:radii.md,backgroundColor:C.selection},editButtonStack:{width:'100%'},
  editText:{...typography.caption,color:C.info,fontWeight:'900'},
  quickGrid:{flexDirection:'row',flexWrap:'wrap',gap:5},
  catalog:{gap:spacing.xs,paddingVertical:4},
- item:{width:58,minHeight:58,alignItems:'center',justifyContent:'center',padding:3,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel},
+ item:{width:58,minHeight:58,alignItems:'center',justifyContent:'center',padding:3,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panelRaised},
  itemSelected:{borderColor:C.selectionLine,backgroundColor:C.selection},
  art:{width:36,height:36},
  face:{fontSize:22,color:C.accent},

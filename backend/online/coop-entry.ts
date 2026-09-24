@@ -20,7 +20,6 @@ export function coopEntryHandler(services:Services){return async(request:Request
   const token=request.headers.get('authorization')?.match(/^Bearer (\S+)$/i)?.[1];
   if(!token)return json({error:'auth_required'},401);
   const accountId=await services.authenticate(token);if(!accountId)return json({error:'invalid_session'},401);
-  try{await services.rpc('record_player_activity_server_v1',{p_account_id:accountId,p_kind:'coop_action'});}catch{/* Analytics are best-effort and must never block co-op entry. */}
   const path=new URL(request.url).pathname;
   const entry=path.endsWith('/coop/entry'),echo=path.endsWith('/coop/echo');
   if(!entry&&!echo)return json({error:'not_found'},404);
@@ -34,6 +33,7 @@ export function coopEntryHandler(services:Services){return async(request:Request
    if(Object.keys(row).some(key=>!['requestId','expectedVersion','share'].includes(key))||typeof row.requestId!=='string'||!/^[a-zA-Z0-9_-]{8,128}$/.test(row.requestId)||!Number.isSafeInteger(row.expectedVersion)||(row.expectedVersion as number)<1||typeof row.share!=='boolean')throw new GameplayError('invalid_request');
    body=row as typeof body;
   }
+  try{await services.rpc('record_player_activity_server_v1',{p_account_id:accountId,p_kind:'coop_action'});}catch{/* Analytics are best-effort and must never block co-op entry. */}
   const loaded=await services.rpc<Loaded>('load_online_game_server_v1',{p_account_id:accountId});
   if(!loaded.state?.character)throw new GameplayError('character_required');
   const record=deriveOnlineCoopLoadout(accountId,loaded.state,loaded.version),{normalized,readiness}=assessOnlineCoopLoadout(record);

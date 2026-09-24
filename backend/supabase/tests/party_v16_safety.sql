@@ -5,7 +5,7 @@ declare a uuid[]:=array[gen_random_uuid(),gen_random_uuid(),gen_random_uuid(),ge
 begin
  for i in 1..4 loop
   insert into auth.users(id,email) values(a[i],'v16-safety-'||a[i]||'@example.invalid');
-  insert into public.characters(id,account_id,name,class_id) values(c[i],a[i],'V16 Safety '||i,'IRONWARDEN');
+  insert into public.characters(id,account_id,name,class_id) values(c[i],a[i],'Safety Test '||chr(64+i),'IRONWARDEN');
  end loop;
  perform set_config('request.jwt.claim.sub',a[1]::text,true);
  p:=public.create_persistent_party_v16(c[1],'tank','mixed','safety-create-001');

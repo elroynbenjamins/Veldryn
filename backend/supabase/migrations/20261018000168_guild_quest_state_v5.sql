@@ -1,6 +1,8 @@
 begin;
 
 -- State v5 projects only the curated weekly board.
+-- PostgreSQL cannot replace a TABLE return signature; restore grants below.
+drop function if exists public.guild_quest_state_v1();
 create or replace function public.guild_quest_state_v1()
 returns table(
  guild_id uuid,week_key date,week_ends_at timestamptz,active_members integer,

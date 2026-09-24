@@ -38,12 +38,12 @@ for(const [prefix,names,type] of [
 
 function boss(id:string,name:string,type:'fire'|'arcane',attackPower=3_900):CombatantDefinition[]{
  const hex=name==='The Veiled Sphinx',archetype:PveArchetype=hex?'hexer':'guardian',mechanics:PveMechanicId[]=hex?['vulnerability','interrupt','aoe','focus']:['heavy_hit','interrupt','aoe','barrier'];
- const lance=hex?pveFocusStrike(`${id}_LANCE`,'Sphinx Pursuit',type,1.22,7000):strike(`${id}_LANCE`,'Solar Lance',1.38,type);
+ const lance=hex?pveFocusStrike(`${id}_LANCE`,'Sphinx Pursuit',type,1.13,7000):strike(`${id}_LANCE`,'Solar Lance',1.38,type);
  const abilities:AbilityDefinition[]=[lance,{...strike(`${id}_NOVA`,'Radiant Collapse',1.0,type,'all_enemies',1450),cooldownMs:10500,interruptible:true}];
- if(hex)abilities.push(pveHex(`${id}_HEX`,'Veiled Verdict',type,.6,9000));else abilities.push(pveBarrier(`${id}_WARD`,'Amberglass Ward',5200,16000));
+ if(hex)abilities.push(pveHex(`${id}_HEX`,'Veiled Verdict',type,.53,9000));else abilities.push(pveBarrier(`${id}_WARD`,'Amberglass Ward',5200,16000));
  const definition:CombatantDefinition={id,name,team:'enemies',role:'enemy',level:45,boss:true,stats:stats(68_000,attackPower,1_650,940,180),basicAttackMs:2600,basicAttackCoeff:.78,abilities,phases:[{id:`${id}_PHASE_50`,hpPct:.5,target:'all_enemies',effects:[{kind:'damage',coeff:.62,damageType:type},{kind:'debuff',tag:'damage_taken',value:.06,durationMs:7000}]}]};
  return[withPveIdentity(definition,archetype,mechanics)];
 }
 
 SUNSCAR_ENCOUNTERS.BOSS_EXP_SOLAR=()=>boss('BOSS_EXP_SOLAR','The Buried Heliarch','fire',4_000);
-SUNSCAR_ENCOUNTERS.BOSS_EXP_SPHINX=()=>boss('BOSS_EXP_SPHINX','The Veiled Sphinx','arcane');
+SUNSCAR_ENCOUNTERS.BOSS_EXP_SPHINX=()=>boss('BOSS_EXP_SPHINX','The Veiled Sphinx','arcane',3_635);

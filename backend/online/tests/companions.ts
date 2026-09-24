@@ -8,6 +8,7 @@ import {combatantFromVerifiedSnapshot} from '../../src/server/combat/snapshot-ad
 import type {GameState} from '../../../apps/mobile/src/core/types';
 async function main(){
  let state=createCharacter(newGame(0),'IRONWARDEN','Companion Hero');state=unlockCombatCompanion(state,'UNIT_001',0);state.character!.gold=100000;state.account.companionEssence=10000;
+ state.quests=state.quests.map(q=>q.questId==='QST_005'?{...q,status:'claimed'}:q);
  let version=1,commits=0,lost=false;const receipts=new Map<string,{response:unknown;requestHash:string}>();
  let serverNow=Date.UTC(2026,8,13);
  const services:GameplayServices={authenticate:async token=>token==='alice'?'alice':null,randomId:()=> 'character-a',randomRoll:()=>.5,rpc:async<T>(name:string,a:Record<string,unknown>):Promise<T>=>{

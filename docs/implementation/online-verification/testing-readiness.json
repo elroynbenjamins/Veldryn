@@ -1,0 +1,1700 @@
+{
+  "checkedAt": "2026-09-24T20:00:10.682Z",
+  "baseCommit": "268bbb3e",
+  "scope": [
+    "online solo",
+    "Q-Mode"
+  ],
+  "liveEnabled": false,
+  "stagingProject": "iqfmmpvwanvvmxcftfxw",
+  "stagingMigrationCount": 164,
+  "mainMobileChecks": 171,
+  "mainMobileStatus": "PASS",
+  "fullBackendTypecheck": "FAIL: missing guild rank-cost constants",
+  "qmodeClear": {
+    "checkedAt": "2026-09-24T19:52:16.289Z",
+    "project": "iqfmmpvwanvvmxcftfxw",
+    "checks": [
+      {
+        "check": "deployed handler authentication and client-authority rejection",
+        "status": "PASS"
+      },
+      {
+        "check": "concurrent starts return one persisted run",
+        "status": "PASS"
+      },
+      {
+        "check": "start conflicts, active reservation and Echo-owner access denial",
+        "status": "PASS"
+      },
+      {
+        "check": "raw route/loadout privacy with authorized sanitized snapshot",
+        "status": "PASS"
+      },
+      {
+        "check": "real-time pg_cron completion while controller makes no gameplay requests",
+        "status": "PASS"
+      },
+      {
+        "check": "persisted choices, database-clock pacing, offline worker and concurrent node finalization",
+        "status": "PASS"
+      },
+      {
+        "check": "one entitlement and ledger credit under concurrent reward claims",
+        "status": "PASS"
+      },
+      {
+        "check": "terminal run releases the controller reservation",
+        "status": "PASS"
+      }
+    ],
+    "status": "PASS",
+    "controllerCharacter": "005385c6-eae7-4338-8a18-94b56071bc33",
+    "transport": "deployed authenticated HTTP",
+    "terminalPhase": "completed"
+  },
+  "qmodeDefeat": {
+    "checkedAt": "2026-09-24T19:49:12.252Z",
+    "project": "iqfmmpvwanvvmxcftfxw",
+    "checks": [
+      {
+        "check": "deployed handler authentication and client-authority rejection",
+        "status": "PASS"
+      },
+      {
+        "check": "concurrent starts return one persisted run",
+        "status": "PASS"
+      },
+      {
+        "check": "start conflicts, active reservation and Echo-owner access denial",
+        "status": "PASS"
+      },
+      {
+        "check": "raw route/loadout privacy with authorized sanitized snapshot",
+        "status": "PASS"
+      },
+      {
+        "check": "real-time pg_cron completion while controller makes no gameplay requests",
+        "status": "PASS"
+      },
+      {
+        "check": "persisted choices, database-clock pacing, offline worker and concurrent node finalization",
+        "status": "PASS"
+      },
+      {
+        "check": "one entitlement and ledger credit under concurrent reward claims",
+        "status": "PASS"
+      },
+      {
+        "check": "terminal run releases the controller reservation",
+        "status": "PASS"
+      }
+    ],
+    "status": "PASS",
+    "controllerCharacter": "78197db9-9948-43b2-809a-ce09912830e2",
+    "transport": "deployed authenticated HTTP",
+    "terminalPhase": "failed"
+  },
+  "baselineAudits": {
+    "mobile": [
+      {
+        "name": "account-bonuses.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "account-collectibles.js",
+        "status": "FAIL",
+        "exitCode": 1
+      },
+      {
+        "name": "account-progression.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "account-test-helpers.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "achievement-claim-game-feel.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "activity-queue.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "admin-qa-sandbox.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "annual-event-calendar.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "annual-events-v2.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "annual-events-v3.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "annual-events-v4.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "arena-squad.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "assertions.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "asterfall-companion-unlocks.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "asterfall-ingredient-artwork-ui-contract.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "asterfall-ore-artwork-ui-contract.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "balance-projection-ui-contract.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "balance-projection.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "balance-telemetry.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "challenge-hunts.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "character-creation-onboarding.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "character-delete-management.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "character-foundation.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "character-management-ui-contract.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "character-skins.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "chat-collapsed-dock-emotes-contract.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "chat-mentions.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "class-combat.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "class-skill-affinities.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "class-skills.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "collectible-catalog-v2.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "collectible-runtime-parity.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "combat-presentation.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "combat-region.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "combat-sustain-economy.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "combat-tactics.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "companion-affinities.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "companion-bondstone-cadence.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "companion-economy-targets.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "companion-expedition-affinities.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "companion-housing-card-ui.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "companion-housing-upgrade.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "companion-integration.js",
+        "status": "FAIL",
+        "exitCode": 1
+      },
+      {
+        "name": "companion-stamina-authority.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "companion-stamina-housing.js",
+        "status": "FAIL",
+        "exitCode": 1
+      },
+      {
+        "name": "companion-stamina-selection.js",
+        "status": "FAIL",
+        "exitCode": 1
+      },
+      {
+        "name": "companion-trial-affinities.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "companion-trial-month-preview.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "companion-trial-playback.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "companion-trial-rotation.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "companion-unlock-presentation.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "completion-reward-game-feel.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "consumable-artwork-ui-contract.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "contract-board-v58.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "coop-dungeon-browsing.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "coop-live-lobby.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "coop-live-recruitment.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "coop-loadout-presentation.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "coop-online-runtime.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "coop-presentation.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "coop-pve-intel-ui-contract.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "coop-qmode.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "coop-shared-run.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "coop-ui-contract.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "core-material-artwork-ui-contract.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "core-pet-drops.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "core-pets.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "crafting-professions.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "daily-supplies.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "dashboard-guidance.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "dashboard.js",
+        "status": "FAIL",
+        "exitCode": 1
+      },
+      {
+        "name": "dungeon-combat-avatars.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "dungeon-combat-fx.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "dungeon-combat-layout.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "dungeon-combat-outcome-feedback.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "dungeon-combat-playback.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "dungeon-combat-profile-card-ui-contract.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "early-onboarding-exposure.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "equipment-crafted-instance-results.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "equipment-crafted-instance-ui-contract.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "equipment-crafting-source-ui-contract.js",
+        "status": "FAIL",
+        "exitCode": 1
+      },
+      {
+        "name": "equipment-crafting-source-v33.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "equipment-decision-ui-contract.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "equipment-decision.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "equipment-enhancement.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "equipment-forge-backlog-ui-contract.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "equipment-forge-backlog.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "equipment-forge-management-ui-contract.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "equipment-forge-management.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "equipment-gem-migration.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "equipment-items-v33.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "equipment-progression-v2.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "equipment-screen.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "equipment-set-progress-v33.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "equipment-set-runtime-ui-contract.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "equipment-set-runtime.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "equipment-swap-game-feel.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "equipment-timed-crafting-queue.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "equipment-timed-crafting-ui-contract.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "equipment-two-slot-gems-ui-contract.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "equipment-upgrade-game-feel.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "equipment-visual-policy-v33.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "exploration-balance.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "faith.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "final-unified-item-tools-artwork-ui-contract.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "first-session-tutorial.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "forge-reward-game-feel.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "fresh-start-v33.js",
+        "status": "FAIL",
+        "exitCode": 1
+      },
+      {
+        "name": "gathering-tools.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "gem-artwork-integration-ui-contract.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "gem-artwork-v1.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "gem-progression-v1.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "gem-socket-game-feel.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "guild-chat-projects-ui-contract.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "guild-customization.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "guild-management-ui-contract.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "guild-muster-ui-contract.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "guild-muster.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "guild-notice-board-ui-contract.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "guild-tags-v53.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "herbalism-alchemy.js",
+        "status": "FAIL",
+        "exitCode": 1
+      },
+      {
+        "name": "hunt-champions.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "hunt-momentum.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "hunt-session-goals.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "hunting-progression.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "identity-names.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "inventory-action-game-feel.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "inventory-storage-ui-contract.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "inventory-view.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "item-rarity-v2.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "legacy-gem-artwork-ui-contract.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "live-event-catalog.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "live-events.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "localization.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "long-term-progression-runtime.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "loot-levelup-game-feel.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "misc-item-artwork-ui-contract.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "monster-drop-artwork-coverage-ui-contract.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "monster-drop-artwork-ui-contract.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "monster-mastery.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "monster-portrait-fallback-ui-contract.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "navigation-notifications-v51.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "novice-sets.js",
+        "status": "FAIL",
+        "exitCode": 1
+      },
+      {
+        "name": "offline-cap.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "offline-smoke.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "onboarding-guide-v1.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "online-gameplay.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "online-roster.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "party-liveops-v17.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "party-social-v16.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "pet-companion-onboarding-locks.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "pet-companion-unlock-moments.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "playability.js",
+        "status": "FAIL",
+        "exitCode": 1
+      },
+      {
+        "name": "pre-codex-smoke.js",
+        "status": "FAIL",
+        "exitCode": 1
+      },
+      {
+        "name": "profile-attention.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "profile-customization-flow-contract.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "profile-customization-polish.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "profile-presentation-ui-contract.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "profile-showcase-prestige.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "profile-social-identity.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "profile-theme-ui-contract.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "progress-anticipation-game-feel.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "progression-balance.js",
+        "status": "FAIL",
+        "exitCode": 1
+      },
+      {
+        "name": "progression-level-gates.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "progression-reachability.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "progression-v6.js",
+        "status": "FAIL",
+        "exitCode": 1
+      },
+      {
+        "name": "quest-journal.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "quick-navigation.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "rankings.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "region-content-v21.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "regional-combat-preparation-matrix.js",
+        "status": "FAIL",
+        "exitCode": 1
+      },
+      {
+        "name": "regional-combat-sustain-matrix.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "regional-combat-v1.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "regional-companion-unlocks.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "regional-food-pressure.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "regional-monster-pressure-bands.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "regional-resource-artwork-ui-contract.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "regional-skill-loops.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "regional-story-leads.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "reward-next-action-game-feel.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "runtime-item-artwork-completion-ui-contract.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "save-transfer.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "search-loadouts-v1.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "seasonal-quests.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "set-bonuses.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "skill-late-game-coverage.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "skill-unlock-density.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "social-identity-presentation.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "social-identity.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "social-invitation-ui-contract.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "social-member-management.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "social-player-card-ui-contract.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "social-recruitment-ui-contract.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "startup-summary.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "storage-bank.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "test-assert.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "theme-polish-ui-contract.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "timed-processing.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "travel-region-modal-ui-contract.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "ui-accessibility-responsive-contract.js",
+        "status": "FAIL",
+        "exitCode": 1
+      },
+      {
+        "name": "ui-density-hierarchy-contract.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "ui-feedback-microinteraction-contract.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "ui-interaction-consistency-contract.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "v40-idle-rule-boundaries.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "v40-preferences-loadouts.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "v40-v41-reconciliation.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "v42-v43-journal-profile.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "v43-personal-records.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "v44-guild-hall.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "v45-v46-reconciliation.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "v47-launch-readiness.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "v50-event-framework.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "v52-long-term-single-path.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "vip-supporter-entitlements.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "visual-polish.js",
+        "status": "FAIL",
+        "exitCode": 1
+      },
+      {
+        "name": "working-toward-v2.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "world-travel-drop-artwork-ui-contract.js",
+        "status": "FAIL",
+        "exitCode": 1
+      },
+      {
+        "name": "world-travel-preview-ui-contract.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "world-weather.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "world-zone-scene-artwork-ui-contract.js",
+        "status": "PASS",
+        "exitCode": 0
+      }
+    ],
+    "backend": [
+      {
+        "name": "achievements\\__tests__\\achievement-application.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "api\\contracts-v33.test.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "balance\\__tests__\\combat-balance-contracts.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "balance\\__tests__\\v48-reconciliation.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "combat\\__tests__\\combat-smoke.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "combat\\__tests__\\gem-effects-v1.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "combat\\__tests__\\party-matrix.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "combat\\__tests__\\portable-rng.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "combat\\__tests__\\pve-balance-batch.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "combat\\__tests__\\pve-encounter-identity.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "combat\\__tests__\\pve-simulation-telemetry.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "combat\\__tests__\\regional-combat-runtime-v1.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "combat\\__tests__\\service-smoke.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "companions\\__tests__\\application-smoke.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "companions\\__tests__\\phase2-application-smoke.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "companions\\__tests__\\phase2-assignments.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "companions\\__tests__\\phase2-special-codex.js",
+        "status": "FAIL",
+        "exitCode": 1
+      },
+      {
+        "name": "companions\\__tests__\\phase2-team-combat.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "companions\\__tests__\\phase2-techniques-economy.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "companions\\__tests__\\phase2-trials-monthly.js",
+        "status": "FAIL",
+        "exitCode": 1
+      },
+      {
+        "name": "companions\\__tests__\\phase3-codex-prestige.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "companions\\__tests__\\phase3-expeditions.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "companions\\__tests__\\phase3-proving-grounds.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "companions\\__tests__\\phase3-techniques.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "companions\\__tests__\\phase4-balance.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "companions\\__tests__\\policy-smoke.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "companions\\__tests__\\technique-combat-effects.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "content\\frostmarch-equipment-v33.test.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "content\\region-v21.test.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "content\\sunscar-v20.test.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "coop\\__tests__\\phase1-invariants.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "coop\\__tests__\\phase10-chat.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "coop\\__tests__\\phase11-rewards.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "coop\\__tests__\\phase12-balance.js",
+        "status": "FAIL",
+        "exitCode": null,
+        "error": "spawnSync C:\\Program Files\\nodejs\\node.exe ETIMEDOUT"
+      },
+      {
+        "name": "coop\\__tests__\\phase13-regional-content.js",
+        "status": "FAIL",
+        "exitCode": 1
+      },
+      {
+        "name": "coop\\__tests__\\phase2-api-contracts.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "coop\\__tests__\\phase2-lifecycle.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "coop\\__tests__\\phase2-runtime-adapter.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "coop\\__tests__\\phase3-normalization.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "coop\\__tests__\\phase3-roster-commit.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "coop\\__tests__\\phase4-routes.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "coop\\__tests__\\phase5-stateful-run.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "coop\\__tests__\\phase6-public-projection.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "coop\\__tests__\\phase6-qmode.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "coop\\__tests__\\phase7-matchmaking.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "coop\\__tests__\\phase7-runtime-adapter.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "coop\\__tests__\\phase8-ready-recovery.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "coop\\__tests__\\phase9-voting.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "coop\\__tests__\\qa-echo-fixtures.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "coop\\__tests__\\regional-gates.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "coop\\__tests__\\rootbound-calibration.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "equipment\\equipment-api-contract-v33.test.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "equipment\\equipment-settlement-v33.test.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "equipment\\equipment-v22.test.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "equipment\\equipment-v23.test.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "equipment\\equipment-v24.test.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "equipment\\equipment-v25.test.js",
+        "status": "FAIL",
+        "exitCode": 1
+      },
+      {
+        "name": "equipment\\equipment-v26.test.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "equipment\\equipment-v27.test.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "equipment\\equipment-v28.test.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "equipment\\equipment-v29.test.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "equipment\\equipment-v30.test.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "equipment\\equipment-v31.test.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "equipment\\equipment-v32.test.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "equipment\\equipment-v33-boundary.test.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "equipment\\equipment-v33-mobile-api.test.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "equipment\\equipment-v33-recipe-materials.test.js",
+        "status": "FAIL",
+        "exitCode": 1
+      },
+      {
+        "name": "equipment\\equipment-v33.test.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "equipment\\gems\\gem-v1.test.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "equipment\\gems\\regional-gem-settlement-v1.test.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "expeditions\\content\\__tests__\\event-expeditions-entry-contract.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "expeditions\\content\\__tests__\\event-expeditions.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "expeditions\\__tests__\\event-service.js",
+        "status": "FAIL",
+        "exitCode": 1
+      },
+      {
+        "name": "expeditions\\__tests__\\merchant.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "expeditions\\__tests__\\smoke.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "guild\\guild-project-service-v18.test.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "guild\\guild-projects-v18.test.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "guild\\__tests__\\guild-completion.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "guild\\__tests__\\progression-smoke.js",
+        "status": "FAIL",
+        "exitCode": 1
+      },
+      {
+        "name": "guild\\__tests__\\tags-v53-smoke.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "live-dungeon\\live-dungeon-v20.test.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "liveops\\__tests__\\finalization-rewards-v17.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "liveops\\__tests__\\outbox-v17.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "liveops\\__tests__\\party-event-service-v17.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "liveops\\__tests__\\party-events-v17.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "party\\__tests__\\party-v16.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "profiles\\__tests__\\profile-application.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "rankings\\__tests__\\ranking-application.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "shared-world\\shared-world-v19.test.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "social\\guild-recruitment-v17.test.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "social\\recruitment.test.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "squads\\__tests__\\arena-http-application.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "squads\\__tests__\\arena-persistence.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "squads\\__tests__\\arena-snapshots.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "squads\\__tests__\\squad-smoke.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "__tests__\\backend-pass-smoke.js",
+        "status": "PASS",
+        "exitCode": 0
+      },
+      {
+        "name": "__tests__\\production-smoke.js",
+        "status": "FAIL",
+        "exitCode": 1
+      }
+    ]
+  },
+  "bundleSha256": {
+    "gameplay": "51321673b8a9c2827b9e06032157a3c0b70d9d56386e2c3227cf3d2963eb653a",
+    "coop": "251d29d7c91f6250cde306a0083f7ee39ca269d6b84310fa2ec8f5eba515a904"
+  },
+  "notes": [
+    "Baseline audits include failures later fixed; TESTING_READINESS.md distinguishes retests.",
+    "Staging bootstrap required out-of-order prerequisites; canonical fresh migration ordering remains open.",
+    "Concurrent shared-workspace UI/artwork edits need validation on the final release commit.",
+    "No native APK was built in this pass."
+  ]
+}

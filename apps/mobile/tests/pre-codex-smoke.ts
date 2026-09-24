@@ -6,7 +6,8 @@ function ok(value: boolean, message: string){ if(!value) throw new Error(message
 const now=10_000;
 let state=createCharacter(newGame(now),'IRONWARDEN','CodexTest');
 const migrated=migrateSave(JSON.parse(JSON.stringify(state)));
-ok(migrated.version===SAVE_SCHEMA_VERSION,'Current save should migrate/load unchanged');
+ok(migrated.version===state.version,'Legacy-compatible fresh save keeps its supported schema');
+ok(migrateSave({...state,otherCharacters:[]}).version===SAVE_SCHEMA_VERSION,'Roster saves promote to the current schema');
 let futureRejected=false;
 try { migrateSave({...state,version:999}); } catch { futureRejected=true; }
 ok(futureRejected,'Future save versions must be rejected safely');

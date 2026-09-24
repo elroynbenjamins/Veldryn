@@ -1,6 +1,6 @@
 {
-  "checkedAt": "2026-09-12T21:35:04.059Z",
-  "project": "byxmmiobxaphcozutotq",
+  "checkedAt": "2026-09-24T20:42:19.225Z",
+  "project": "iqfmmpvwanvvmxcftfxw",
   "checks": [
     {
       "check": "deployed handler authentication and client-authority rejection",
@@ -36,7 +36,7 @@
     }
   ],
   "status": "PASS",
-  "controllerCharacter": "57299b5e-889e-4200-887e-1c863bc33367",
+  "controllerCharacter": "8d668723-555b-40fb-9a26-034b376a7acf",
   "transport": "deployed authenticated HTTP",
   "terminalPhase": "completed"
 }

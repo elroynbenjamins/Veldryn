@@ -5,9 +5,8 @@ const read=(path:string)=>fs.readFileSync(path,'utf8');
 
 const gathering=read('src/components/GatheringActivityList.tsx');
 ok(gathering.includes('gatheringBalanceProjection'),'Gathering UI must use the shared balance projection instead of duplicating rate math');
-ok(gathering.includes('EST. YIELD / HR')&&gathering.includes('SKILL XP / HR'),'Gathering cards must show current yield and XP pace');
-ok(gathering.includes('next level ~')&&gathering.includes('formatBalanceDuration'),'Gathering guidance must expose next-level ETA');
-ok(gathering.includes('levelProgress:{')&&gathering.includes('XP remaining at current pace'),'Gathering cards must show compact level-progress feedback');
+ok(gathering.includes('Have: ${formatGameNumber(available')&&gathering.includes('view.cycleSeconds.toFixed(1)'),'Simple gathering rows must show resource count and current action duration');
+ok(gathering.includes('onPress={start}')&&gathering.includes('onGather(activity.id)'),'Gathering rows must start the selected resource directly');
 
 const activity=read('src/components/ActivityCard.tsx');
 ok(activity.includes('levelPace?:LevelPaceProjection'),'Active activity card must accept a progression pace projection');

@@ -12,6 +12,7 @@ import {typography,UI_THEMES,equipmentTheme,type ThemeColors,type UiThemeId} fro
 import {useGameTheme} from '../theme/ThemeContext';
 import {LANGUAGE_NAMES,SUPPORTED_LANGUAGES,t} from '../i18n';
 import {GameGuidePanel} from '../components/GameGuidePanel';
+import {ChatEmotePicker} from '../components/ChatEmotePicker';
 import {GuideTopicModal} from '../components/GuideTopicModal';
 import {acknowledgeGameGuide,guideDefinition} from '../core/onboarding';
 import {offlineCapBreakdown} from '../core/game';
@@ -25,8 +26,6 @@ type Props={
   onChange:(next:GameState)=>void;
   onExport:()=>Promise<void>;
   onImport:(raw:string)=>Promise<void>;
-  onOpenChatPilot?:()=>void;
-  onOpenChatEmotes?:()=>void;
   onOpenCoopUiGallery?:()=>void;
 };
 type SettingsSection='gameplay'|'appearance'|'accessibility'|'account'|'data'|'guide'|'developer';
@@ -34,9 +33,9 @@ const DISCORD_INVITE_URL='https://discord.gg/Db83APvP5y';
 const PRIVACY_POLICY_URL='https://elroynbenjamins.github.io/veldryn/privacy/';
 const openExternal=(url:string)=>{void Linking.openURL(url)};
 function SettingChip({label,selected,onPress}:{label:string;selected:boolean;onPress:()=>void}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);return <Pressable accessibilityRole="button" accessibilityState={{selected}} onPress={onPress} style={({pressed})=>[s.chip,selected&&s.chipSelected,pressed&&s.pressed]}><Text style={[s.chipText,selected&&s.chipTextSelected]}>{selected?'✓ ':''}{label}</Text></Pressable>}
-function ThemeChoice({id,selected,onPress}:{id:UiThemeId;selected:boolean;onPress:()=>void}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),p=UI_THEMES[id];return <Pressable accessibilityRole="button" accessibilityState={{selected}} onPress={onPress} style={({pressed})=>[s.themeChoice,{backgroundColor:p.panel,borderColor:selected?p.selectionLine:p.line},pressed&&s.pressed]}><View style={s.themeChoiceHead}><View style={s.flex}><Text style={[s.themeChoiceName,{color:p.text}]}>{p.name}</Text><Text style={[s.themeChoiceSub,{color:p.muted}]}>{id==='veldryn'?'Recommended VELDRYN look':id==='obsidian'?'Dark high contrast':'Light high contrast'}</Text></View>{selected?<Text style={[s.themeCheck,{color:p.selectionLine}]}>✓</Text>:null}</View><View style={s.swatches}>{[p.bg,p.panelRaised,p.accent,p.selectionLine,p.good,p.bad].map((color,index)=><View key={index} style={[s.swatch,{backgroundColor:color,borderColor:p.line}]}/>)}</View></Pressable>}
+function ThemeChoice({id,selected,onPress}:{id:UiThemeId;selected:boolean;onPress:()=>void}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),p=UI_THEMES[id];return <Pressable accessibilityRole="button" accessibilityState={{selected}} onPress={onPress} style={({pressed})=>[s.themeChoice,{backgroundColor:p.panel,borderColor:selected?p.selectionLine:p.line},pressed&&s.pressed]}><View style={s.themeChoiceHead}><View style={s.flex}><Text style={[s.themeChoiceName,{color:p.text}]}>{p.name}</Text><Text style={[s.themeChoiceSub,{color:p.muted}]}>{id==='obsidian'?'Charcoal slate · teal accents':'Light high contrast'}</Text></View>{selected?<Text style={[s.themeCheck,{color:p.selectionLine}]}>✓</Text>:null}</View><View style={s.swatches}>{[p.bg,p.panelRaised,p.accent,p.selectionLine,p.good,p.bad].map((color,index)=><View key={index} style={[s.swatch,{backgroundColor:color,borderColor:p.line}]}/>)}</View></Pressable>}
 
-export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImport,onOpenChatPilot,onOpenChatEmotes,onOpenCoopUiGallery,online=false}:Props){
+export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImport,onOpenCoopUiGallery,online=false}:Props){
   const theme=useGameTheme(),s=useMemo(()=>makeStyles(theme),[theme]);
   const [section,setSection]=useState<SettingsSection>('gameplay');
   const [guideId,setGuideId]=useState<GameGuideId>();
@@ -50,7 +49,7 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImp
     <Panel><View style={s.communityRow}><View style={s.flex}><Text style={[s.communityLabel,{color:theme.accent}]}>COMMUNITY</Text><Text style={[s.communityText,{color:theme.muted}]}>News, feedback, help and other VELDRYN players.</Text></View><GameButton compact title="Join Discord" tone="secondary" onPress={()=>openExternal(DISCORD_INVITE_URL)}/></View></Panel>
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.tabs}>{(['gameplay','appearance','accessibility','account','data','guide',...(__DEV__&&!online?['developer' as const]:[])] as SettingsSection[]).map(value=><SettingChip key={value} label={value==='guide'?'Help & Guide':value.charAt(0).toUpperCase()+value.slice(1)} selected={section===value} onPress={()=>setSection(value)}/>)}</ScrollView><Text style={[s.sectionHint,{color:theme.info}]}>{section==='gameplay'?'Tune combat, number display, and auto-eat behavior.':section==='appearance'?'Choose a complete UI theme. Gameplay colors keep the same meaning in every theme.':section==='accessibility'?'Make text, motion, and language fit your play style.':section==='account'?'Manage your connected account and profile preferences.':section==='data'?'Export, import, or recover your local progress.':section==='guide'?'Browse the interactive VELDRYN help guide.':'Development tools and visual QA controls.'}</Text>
 
-    {section==='appearance'&&<><Panel><Text style={[s.title,{color:theme.text}]}>Interface theme</Text><Text style={[s.sub,{color:theme.muted}]}>Switch the full interface while keeping progression, danger, success, rarity and event colors semantically consistent.</Text><View style={s.themeList}>{(['veldryn','obsidian','ivory'] as const).map(id=><ThemeChoice key={id} id={id} selected={(state.settings.uiTheme??'veldryn')===id} onPress={()=>update({uiTheme:id})}/>)}</View></Panel><Panel><Text style={[s.title,{color:theme.text}]}>Color roles</Text><Text style={[s.sub,{color:theme.muted}]}>Gold or bronze marks value and progression. Cyan or blue marks actions and selection. Green means success, amber caution, and red danger.</Text></Panel></>}
+    {section==='appearance'&&<><Panel><Text style={[s.title,{color:theme.text}]}>Interface theme</Text><Text style={[s.sub,{color:theme.muted}]}>Switch the full interface while keeping progression, danger, success, rarity and event colors semantically consistent.</Text><View style={s.themeList}>{(['obsidian','ivory'] as const).map(id=><ThemeChoice key={id} id={id} selected={(state.settings.uiTheme??'obsidian')===id} onPress={()=>update({uiTheme:id})}/>)}</View></Panel><Panel><Text style={[s.title,{color:theme.text}]}>Color roles</Text><Text style={[s.sub,{color:theme.muted}]}>Gold or bronze marks value and progression. Teal or blue marks actions and selection. Green means success, amber caution, and red danger.</Text></Panel></>}
     {section==='guide'&&<GameGuidePanel state={state} onOpen={id=>{onChange(acknowledgeGameGuide(state,id,true));setGuideId(id)}}/>}
     {section==='account'&&<><Panel>
       <Text style={[s.title,{color:theme.text}]}>{t(state.settings.language,'settings.account')}</Text>
@@ -69,11 +68,11 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImp
       <Text style={[s.settingLabel,{color:theme.text}]}>Collapsed chat preview</Text><Text style={[s.sub,{color:theme.muted}]}>Choose how many recent World chat messages stay visible in the translucent bar above navigation. Tap the bar to open full chat.</Text><View style={s.choices}>{([1,2,3] as const).map(lines=><SettingChip key={lines} label={lines===1?'1 line · compact':`${lines} lines`} selected={(state.settings.chatDockLines??1)===lines} onPress={()=>update({chatDockLines:lines})}/>)}</View>
       <GameButton compact title="Restore gameplay defaults" tone="secondary" onPress={restoreDefaults}/>
     </Panel>
-    {__DEV__&&onOpenChatEmotes?<Panel>
-      <Text style={[s.title,{color:theme.text}]}>Chat</Text>
-      <Text style={[s.sub,{color:theme.muted}]}>Development review only. Emote choices use the same account-scoped preference store as the Chat Pilot.</Text>
-      <GameButton title="Emote Tray · 8 slots" tone="secondary" onPress={onOpenChatEmotes}/>
-    </Panel>:null}</>}
+    <Panel>
+      <Text style={[s.title,{color:theme.text}]}>Chat emotes</Text>
+      <Text style={[s.sub,{color:theme.muted}]}>Choose the eight emotes available from the chat composer.</Text>
+      <ChatEmotePicker settingsMode unlockedIds={state.account.unlockedEmoteIds} trayIds={state.settings.chatEmoteTrayIds} bodyPresentation={state.character?.bodyPresentation} onPick={()=>{}} onTrayChange={chatEmoteTrayIds=>update({chatEmoteTrayIds})}/>
+    </Panel></>}
     {section==='accessibility'&&<><Panel>
       <Text style={[s.title,{color:theme.text}]}>{t(state.settings.language,'settings.notifications')}</Text>
       <Text style={[s.sub,{color:theme.muted}]}>Completion, inventory-full and quest-reset reminders.</Text>
@@ -102,7 +101,7 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImp
       <Text style={[s.sub,{color:theme.muted}]}>{online?'Your account and gameplay progress are stored on VELDRYN servers. Your older local save stays on this device.':'Offline progress remains on this device. Local progress cannot be uploaded as online rewards.'}</Text>
       {!online&&<GameButton title="Delete local save" tone="danger" onPress={onReset}/>}
     </Panel></>}
-    {section==='developer'&&__DEV__&&!online&&<DeveloperTools state={state} onChange={onChange} onOpenChatPilot={onOpenChatPilot} onOpenCoopUiGallery={onOpenCoopUiGallery}/>}
+    {section==='developer'&&__DEV__&&!online&&<DeveloperTools state={state} onChange={onChange} onOpenCoopUiGallery={onOpenCoopUiGallery}/>}
     <View style={s.footerLinks}><GameButton compact title="Privacy Policy" tone="secondary" onPress={()=>openExternal(PRIVACY_POLICY_URL)}/></View>
   </ScrollView><GuideTopicModal definition={guideId?guideDefinition(guideId):undefined} visible={!!guideId} onClose={()=>setGuideId(undefined)}/></>;
 }

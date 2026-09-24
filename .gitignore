@@ -10,6 +10,7 @@ coverage/
 *.log
 
 .core-build/
+.readiness-export/
 .companions-build/
 .companion-export/
 .android/

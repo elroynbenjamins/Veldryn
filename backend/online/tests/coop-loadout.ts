@@ -13,6 +13,12 @@ for(const definition of CLASSES){
  assert.ok(full.stats.maxHp>=weak.stats.maxHp);assert.ok(full.stats.attackPower>=weak.stats.attackPower);assert.ok(full.stats.defense>=weak.stats.defense);
  const frozen=resolveAndFreezeLoadout({accountId:'owner',characterId:full.characterId,loadoutId:'current',expectedRevision:2,minLevel:15,syncLevel:25,repository:{getOwnedLoadout:()=>full}});
  assert.equal(frozen.readiness.ready,true);assert.equal(full.legalEquipment,true);
+ state.character!.level=100;
+ const veteran=deriveOnlineCoopLoadout('owner',state,3);
+ const earlyDungeonEcho=resolveAndFreezeLoadout({accountId:'owner',characterId:veteran.characterId,loadoutId:'current',expectedRevision:3,minLevel:15,syncLevel:25,repository:{getOwnedLoadout:()=>veteran}});
+ assert.equal(earlyDungeonEcho.normalized.before.level,100,'the published Echo may qualify for every dungeon');
+ assert.equal(earlyDungeonEcho.normalized.effectiveLevel,25,'early dungeons down-sync a level-100 Echo');
+ assert.equal(earlyDungeonEcho.normalized.snapshot.level,25,'combat receives the dungeon sync level');
  if(definition.role==='Tank')assert.equal(frozen.normalized.abilities[0].effects[0].value,500,'threat amounts are not percentage buffs');
  assert.ok(onlineCoopLoadoutHash(full)!==onlineCoopLoadoutHash(weak));
  const reordered={...Object.fromEntries(Object.entries(full).reverse()),stats:Object.fromEntries(Object.entries(full.stats).reverse())} as typeof full;
@@ -20,4 +26,4 @@ for(const definition of CLASSES){
  state.character!.equipment.weapon=noviceItemId(definition.id,'boots');
  assert.equal(deriveOnlineCoopLoadout('owner',state,3).legalEquipment,false,'wrong-slot gear cannot publish an eligible loadout');
 }
-console.log('online co-op loadout derivation PASS: nine distinct kits, owned equipment, no grants, revision hashes, slot validation');
+console.log('online co-op loadout derivation PASS: nine distinct kits, owned equipment, early-dungeon Echo down-sync, no grants, revision hashes, slot validation');

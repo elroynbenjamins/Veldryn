@@ -5,9 +5,6 @@ import type {GameState} from '../core/types';
 import {WORLD_ZONES} from '../content/world-map';
 import {currentRegionId} from '../core/combat-region';
 import {nextRegionUnlock,orderedTravelRegions,regionActivitySummary,regionTravelAvailability} from '../core/world-navigation';
-import {environmentForZone} from '../core/world-weather';
-import {EnvironmentBanner} from '../components/EnvironmentBanner';
-import {Panel} from '../components/Panel';
 import {GameButton} from '../components/GameButton';
 import {radii,spacing,typography,equipmentTheme,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -16,19 +13,9 @@ import {SunscarRegionPanel} from '../components/SunscarRegionPanel';
 import {RegionalCombatPanel} from '../components/RegionalCombatPanel';
 import {RegionalJournalPanel} from '../components/RegionalJournalPanel';
 import {RegionalStoryLeadsPanel} from '../components/RegionalStoryLeadsPanel';
-import {TravelRegionModal} from '../components/TravelRegionModal';
-import {RegionalContractFocus} from '../components/RegionalContractFocus';
 import type {WeeklyOrder} from '../core/weekly-orders-v41';
 import {frostmarchCardsV21,frostmarchProgressFromState,type RegionProgressV21} from '../core/region-content-v21';
 import {loadActiveFrostmarchContentVersionV21,loadFrostmarchProgressV21} from '../online/regional-content-v21';
-import {earlyFeatureUnlocked} from '../core/feature-unlocks';
-
-const WORLD_BOSS_PREVIEWS=[
-  {id:'combat',title:'Combat World Boss',label:'COMBAT',icon:require('../../assets/activity-icons-v1/combat.png'),description:'A shared combat threat with limited personal attempts and account-safe contribution.'},
-  {id:'mining',title:'Mining World Boss',label:'MINING',icon:require('../../assets/activity-icons-v1/mining.png'),description:'A server-wide mining encounter where efficient extraction and mastery drive contribution.'},
-  {id:'fishing',title:'Fishing World Boss',label:'FISHING',icon:require('../../assets/activity-icons-v1/fishing.png'),description:'A cooperative fishing challenge built around catches, mastery and event-specific objectives.'},
-  {id:'woodcutting',title:'Woodcutting World Boss',label:'WOODCUTTING',icon:require('../../assets/activity-icons-v1/woodcutting.png'),description:'A shared woodcutting encounter where chopping progress contributes to the global objective.'},
-] as const;
 
 type Props={
   state:GameState;
@@ -46,15 +33,13 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop,onR
   const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
   const level=state.character!.level,currentId=currentRegionId(state);
   const current=WORLD_ZONES.find(zone=>zone.id===currentId)??WORLD_ZONES[0];
-  const environment=environmentForZone(current.id);
   const next=nextRegionUnlock(level);
   const storyRegion=currentId==='SUNSCAR'||currentId==='FROSTMARCH'||currentId==='ASHLANDS'?currentId:undefined;
   const currentSummary=regionActivitySummary(state,current.id),travelRegions=orderedTravelRegions(state,current.id,goalRegionId);
-  const nextUnlockProgress=next?Math.max(3,Math.min(100,level/Math.max(1,next.minLevel)*100)):100,contractsUnlocked=earlyFeatureUnlocked(state,'contracts');
+  const nextUnlockProgress=next?Math.max(3,Math.min(100,level/Math.max(1,next.minLevel)*100)):100;
 
   const sunscar=current.id==='SUNSCAR',frostmarch=current.id==='FROSTMARCH';
   const [serverFrostmarchProgress,setServerFrostmarchProgress]=useState<RegionProgressV21|null>(null);
-  const [travelTargetId,setTravelTargetId]=useState<string|undefined>();
   const [activeFrostmarchVersion,setActiveFrostmarchVersion]=useState<string|null>(null);
   useEffect(()=>{
     let mounted=true;
@@ -71,76 +56,43 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop,onR
   ] as const;
   const frostmarchCards=frostmarchCardsV21(level),frostmarchZones=frostmarchCards.zones,frostmarchDungeons=frostmarchCards.dungeons;
   const frostmarchProgress=serverFrostmarchProgress??frostmarchProgressFromState(state);
-  const travelTarget=WORLD_ZONES.find(zone=>zone.id===travelTargetId);
   return <ScrollView contentContainerStyle={s.root}>
     <Text style={s.kicker}>TRAVEL</Text>
     <Text accessibilityRole="header" style={s.h}>World Regions</Text>
     <Text style={s.sub}>Your location controls which enemies and gathering activities are available.</Text>
 
-    <View style={[s.currentCard,{borderColor:current.accent}]}><ZoneSceneArtwork regionId={current.id}/><View style={s.heroShade}/>
+    <View style={[s.currentCard,{borderColor:current.accent}]}><Image accessible={false} source={require('../../assets/world/current-region-hero-v1.png')} resizeMode="cover" style={StyleSheet.absoluteFill}/><View pointerEvents="none" style={s.currentScene}><ZoneSceneArtwork regionId={current.id}/></View><View style={[s.regionTint,{backgroundColor:current.accent}]}/><View style={s.heroShade}/>
 
       <View style={s.flex}><Text style={s.overline}>CURRENT REGION</Text><Text style={s.currentName}>{current.name}</Text><Text style={s.sub}>{current.subtitle}</Text></View>
     </View>
-    <EnvironmentBanner environment={environmentForZone(current.id)}/>
-
-    <Panel accentColor={current.accent}>
-      <View style={s.regionHubHead}><View style={s.flex}><Text style={s.section}>CURRENT REGION CONTENT</Text><Text style={s.title}>What can I do in {current.name}?</Text></View><Text style={s.regionLevel}>Lv {current.minLevel}–{current.maxLevel}</Text></View>
-      <View style={s.regionStats}>
-        <RegionStat label="HUNTS" value={currentSummary.combatReady+'/'+currentSummary.combatTotal}/>
-        <RegionStat label="GATHER" value={currentSummary.gatheringReady+'/'+currentSummary.gatheringTotal}/>
-        <RegionStat label="BOSSES" value={currentSummary.bossesReady+'/'+currentSummary.bossesTotal}/>
-      </View>
-      <Text style={s.sub}>{currentSummary.gatheringSkills.length?'Gathering: '+currentSummary.gatheringSkills.join(', '):'No gathering nodes in this region yet.'}</Text>
-      {contractsUnlocked?<RegionalContractFocus state={state} regionId={current.id} onOpenOrder={onOpenWeeklyOrder} onOpenBoard={onOpenContracts}/>:null}
-      <View style={s.actions}><View style={s.flex}><GameButton compact title="Combat" onPress={onOpenCombat}/></View><View style={s.flex}><GameButton compact title="Skills" tone="secondary" onPress={onOpenSkills}/></View>{onCoop?<View style={s.flex}><GameButton compact title="Co-op" tone="secondary" onPress={onCoop}/></View>:null}</View>
-    </Panel>
 
     {goalRegionId&&goalRegionId!==current.id?<View style={s.goalRoute}><Text style={s.goalRouteLabel}>OBJECTIVE ROUTE</Text><Text style={s.sub}>Your current objective continues in {WORLD_ZONES.find(zone=>zone.id===goalRegionId)?.name??goalRegionId}. That region is promoted to the top of Travel Elsewhere below.</Text></View>:null}
 
     {storyRegion&&<RegionalStoryLeadsPanel state={state} regionId={storyRegion} onOpenCombat={()=>onOpenCombat()}/>}
     {sunscar&&<><SunscarRegionPanel zones={sunscarZones}/>{onRegionalRewardsChanged?<RegionalCombatPanel state={state} onRewardsChanged={onRegionalRewardsChanged}/>:null}</>}
     {frostmarch&&<>
-      <FrostmarchRegionPanel zones={frostmarchZones} progress={frostmarchProgress} contentVersion={activeFrostmarchVersion??undefined} weather={{name:environment.weatherName,endsInSeconds:Math.max(0,Math.floor((environment.changesAtMs-Date.now())/1000)),summary:environment.weatherName+' remains readable through the server-backed Season/Weather system.'}} dungeons={frostmarchDungeons} onZone={zoneId=>onOpenCombat(zoneId)} onDungeon={onCoop}/>
+      <FrostmarchRegionPanel zones={frostmarchZones} progress={frostmarchProgress} contentVersion={activeFrostmarchVersion??undefined} dungeons={frostmarchDungeons} onZone={zoneId=>onOpenCombat(zoneId)} onDungeon={onCoop}/>
       <RegionalJournalPanel name="Frostmarch" progress={frostmarchProgress}/>
     </>}
-
-    <Text style={s.section}>WORLD BOSSES</Text>
-    <Text style={s.sub}>Future shared encounters. These previews are visible now, but participation remains disabled until the authoritative World Boss services are ready.</Text>
-    <View style={s.futureGrid}>{WORLD_BOSS_PREVIEWS.map(preview=><View key={preview.id} accessible accessibilityRole="summary" accessibilityLabel={preview.title+', In Development'} style={s.futureCard}>
-      <View style={s.futureArt}><ZoneSceneArtwork regionId={current.id} muted/><View style={s.futureShade}/><Image accessible={false} source={preview.icon} resizeMode="contain" style={s.futureIcon}/><View style={s.futureBadge}><Text style={s.futureBadgeText}>IN DEVELOPMENT</Text></View></View>
-      <Text style={s.futureLabel}>{preview.label} · WORLD BOSS</Text>
-      <Text style={s.futureTitle}>{preview.title}</Text>
-      <Text style={s.futureCopy}>{preview.description}</Text>
-      <View style={s.futureDisabled}><Text style={s.futureDisabledText}>In Development</Text></View>
-    </View>)}</View>
 
     <Text style={s.section}>TRAVEL ELSEWHERE</Text>
     <View style={s.unlockCard}><View style={s.unlockHead}><View style={s.flex}><Text style={s.unlockLabel}>{next?'NEXT REGION UNLOCK':'REGION PROGRESSION'}</Text><Text style={s.unlockTitle}>{next?next.name:'All authored regions unlocked'}</Text></View>{next?<Text style={s.unlockLevel}>Lv {level}/{next.minLevel}</Text>:<Text style={s.unlockDone}>COMPLETE</Text>}</View>{next?<><View style={s.unlockTrack}><View style={[s.unlockFill,{width:(nextUnlockProgress+'%') as any}]}/></View><Text style={s.unlockMeta}>{Math.max(0,next.minLevel-level)} level{next.minLevel-level===1?'':'s'} until travel unlock.</Text></>:<Text style={s.unlockMeta}>Every currently authored region can be travelled to.</Text>}</View>
     {travelRegions.map(zone=>{
-      const availability=regionTravelAvailability(state,zone),unlocked=availability==='available',inDevelopment=availability==='inDevelopment',environment=environmentForZone(zone.id),summary=regionActivitySummary(state,zone.id),goalTarget=goalRegionId===zone.id;
+      const availability=regionTravelAvailability(state,zone),unlocked=availability==='available',inDevelopment=availability==='inDevelopment',summary=regionActivitySummary(state,zone.id),goalTarget=goalRegionId===zone.id;
       const content=inDevelopment?'Preview planned regional content':unlocked?'Hunts '+summary.combatReady+'/'+summary.combatTotal+' · Gather '+summary.gatheringReady+'/'+summary.gatheringTotal+(summary.bossesTotal?' · Boss '+summary.bossesReady+'/'+summary.bossesTotal:''):(summary.combatTotal+' hunts · '+summary.gatheringTotal+' gathering'+(summary.bossesTotal?' · '+summary.bossesTotal+' boss':''));
       return <View key={zone.id} style={[s.destination,goalTarget&&s.goalDestination,inDevelopment&&s.developmentDestination]}>
         <View style={s.thumbnail}><ZoneSceneArtwork regionId={zone.id} muted={!unlocked}/>{!unlocked&&<View style={[s.lockedTag,inDevelopment&&s.developmentTag]}><Text style={s.lockedText}>{inDevelopment?'IN DEVELOPMENT':`Lv. ${zone.minLevel}`}</Text></View>}</View>
         <View style={s.flex}>
           <View style={s.destinationHead}><Text style={[s.destinationName,inDevelopment&&s.developmentText]}>{zone.name}</Text>{goalTarget?<Text style={s.goalBadge}>GOAL</Text>:null}</View>
-          <Text style={s.destinationMeta}>{inDevelopment?'In Development':unlocked?`Levels ${zone.minLevel}–${zone.maxLevel} · ${environment.weatherSymbol} ${environment.weatherName}`:`Unlocks at level ${zone.minLevel}`}</Text>
+          <Text style={s.destinationMeta}>{inDevelopment?'In Development':unlocked?`Levels ${zone.minLevel}–${zone.maxLevel}`:`Unlocks at level ${zone.minLevel}`}</Text>
           <Text numberOfLines={1} style={s.destinationContent}>{content}</Text>
           <Text numberOfLines={2} style={s.destinationSub}>{zone.subtitle}</Text>
-          <View style={s.travelButton}><GameButton compact title={unlocked?'Travel':'Preview'} tone="secondary" onPress={()=>setTravelTargetId(zone.id)}/></View>
         </View>
+        <View style={s.travelButton}><GameButton compact title={unlocked?'Travel':inDevelopment?'In development':'Locked'} tone="secondary" disabled={!unlocked} onPress={()=>onTravel(zone.id)}/></View>
       </View>;
     })}
-    <TravelRegionModal
-      visible={Boolean(travelTarget)}
-      state={state}
-      zone={travelTarget}
-      onClose={()=>setTravelTargetId(undefined)}
-      onTravel={regionId=>{setTravelTargetId(undefined);onTravel(regionId);}}
-    />
   </ScrollView>;
 }
-
-function RegionStat({label,value}:{label:string;value:string}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);return <View style={s.regionStat}><Text style={s.regionStatLabel}>{label}</Text><Text style={s.regionStatValue}>{value}</Text></View>}
 
 function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);return StyleSheet.create({
   root:{padding:spacing.md,gap:10,paddingBottom:spacing.xl},
@@ -149,14 +101,13 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
   title:{...typography.title,color:C.text},
   sub:{...typography.body,color:C.muted},
   flex:{flex:1,minWidth:0},
-  heroShade:{...StyleSheet.absoluteFillObject,backgroundColor:C.dark?'rgba(5,12,20,.64)':'rgba(255,255,255,.68)'},thumbnail:{width:68,height:76,borderRadius:12,overflow:'hidden'},lockedTag:{position:'absolute',bottom:0,left:0,right:0,padding:4,backgroundColor:C.dark?'rgba(8,17,29,.80)':'rgba(255,255,255,.90)'},lockedText:{color:C.muted,textAlign:'center',fontSize:11},currentCard:{minHeight:150,overflow:'hidden',flexDirection:'row',alignItems:'center',gap:spacing.md,padding:spacing.md,backgroundColor:equipmentColors.panel,borderWidth:1,borderRadius:radii.lg},
+  currentScene:{...StyleSheet.absoluteFillObject,opacity:.34},regionTint:{...StyleSheet.absoluteFillObject,opacity:.2},heroShade:{...StyleSheet.absoluteFillObject,backgroundColor:C.dark?'rgba(5,12,20,.64)':'rgba(255,255,255,.68)'},thumbnail:{width:68,height:76,borderRadius:12,overflow:'hidden'},lockedTag:{position:'absolute',bottom:0,left:0,right:0,padding:4,backgroundColor:C.dark?'rgba(8,17,29,.80)':'rgba(255,255,255,.90)'},lockedText:{color:C.muted,textAlign:'center',fontSize:11},currentCard:{minHeight:184,overflow:'hidden',flexDirection:'row',alignItems:'flex-end',gap:spacing.md,padding:spacing.lg,backgroundColor:equipmentColors.panel,borderWidth:1,borderRadius:radii.lg},
   regionSymbol:{width:64,height:64,alignItems:'center',justifyContent:'center',borderWidth:1,borderRadius:32,backgroundColor:equipmentColors.stage},
   symbol:{fontSize:31,fontWeight:'700'},
   overline:{...typography.caption,color:equipmentColors.goldSoft,fontWeight:'700',letterSpacing:1},
   currentName:{...typography.title,color:C.text,fontSize:22},
   actions:{flexDirection:'row',gap:spacing.sm,marginTop:6},
   section:{...typography.caption,color:equipmentColors.goldSoft,fontWeight:'700',letterSpacing:1},
-  regionHubHead:{flexDirection:'row',alignItems:'center',gap:8},regionLevel:{...typography.caption,color:C.info,fontWeight:'900'},regionStats:{flexDirection:'row',gap:6},regionStat:{flex:1,minWidth:0,padding:7,borderWidth:1,borderColor:C.line,borderRadius:8,backgroundColor:C.panel2},regionStatLabel:{fontSize:8,color:C.muted,fontWeight:'900',letterSpacing:.55},regionStatValue:{...typography.bodyStrong,color:C.text,fontWeight:'900'},
   unlockCard:{gap:5,padding:spacing.sm,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel},unlockHead:{flexDirection:'row',alignItems:'center',gap:8},unlockLabel:{fontSize:8.5,color:C.muted,fontWeight:'900',letterSpacing:.7},unlockTitle:{...typography.bodyStrong,color:C.text},unlockLevel:{...typography.bodyStrong,color:C.info,fontWeight:'900'},unlockDone:{fontSize:9,color:C.good,fontWeight:'900'},unlockTrack:{height:5,borderRadius:3,overflow:'hidden',backgroundColor:C.bg},unlockFill:{height:'100%',borderRadius:3,backgroundColor:C.accent},unlockMeta:{...typography.caption,color:C.muted},
   destination:{minHeight:92,flexDirection:'row',alignItems:'center',gap:spacing.sm,padding:spacing.sm,backgroundColor:equipmentColors.panel,borderWidth:1,borderColor:C.line,borderRadius:radii.lg},developmentDestination:{opacity:.72,borderStyle:'dashed'},developmentTag:{backgroundColor:C.dark?'rgba(65,69,76,.90)':'rgba(220,223,228,.94)'},developmentText:{color:C.muted},
   smallSymbol:{width:44,height:44,alignItems:'center',justifyContent:'center',borderWidth:1,borderRadius:22,backgroundColor:equipmentColors.stage},
@@ -170,18 +121,6 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
   destinationMeta:{...typography.caption,color:C.info,fontWeight:'600'},
   destinationContent:{fontSize:10,lineHeight:14,color:C.text,fontWeight:'800'},
   destinationSub:{fontSize:12,lineHeight:17,color:C.muted},
-  travelButton:{alignSelf:'flex-start',minWidth:88,marginTop:5},
-  futureGrid:{flexDirection:'row',flexWrap:'wrap',gap:8},
-  futureCard:{flexGrow:1,flexBasis:'47%',minWidth:148,gap:4,padding:8,borderWidth:1,borderStyle:'dashed',borderColor:C.line,borderRadius:radii.lg,backgroundColor:equipmentColors.panel,opacity:.82},
-  futureArt:{height:82,borderRadius:radii.md,overflow:'hidden',alignItems:'center',justifyContent:'center'},
-  futureShade:{...StyleSheet.absoluteFillObject,backgroundColor:C.dark?'rgba(5,12,20,.54)':'rgba(255,255,255,.52)'},
-  futureIcon:{width:44,height:44,opacity:.92},
-  futureBadge:{position:'absolute',left:6,bottom:6,paddingHorizontal:6,paddingVertical:3,borderRadius:99,borderWidth:1,borderColor:C.lineStrong,backgroundColor:C.dark?'rgba(8,17,29,.88)':'rgba(255,255,255,.92)'},
-  futureBadgeText:{fontSize:7.5,color:C.muted,fontWeight:'900',letterSpacing:.55},
-  futureLabel:{fontSize:8,color:C.accentSoft,fontWeight:'900',letterSpacing:.65},
-  futureTitle:{...typography.bodyStrong,color:C.text},
-  futureCopy:{fontSize:10,lineHeight:14,color:C.muted},
-  futureDisabled:{minHeight:36,alignItems:'center',justifyContent:'center',marginTop:3,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2},
-  futureDisabledText:{fontSize:9,color:C.muted,fontWeight:'900',letterSpacing:.4},
+  travelButton:{alignSelf:'center',minWidth:88},
   progress:{...typography.caption,color:C.muted,textAlign:'center'},
 });}

@@ -1,7 +1,7 @@
 export const QUICK_NAV_DESTINATIONS=[
-  'Home','Character','Skills','World','Inventory','Account','More','Guild','Dungeon','Quests','Companions','Events','Friends','Settings','Social','Party','Empty',
+  'Home','Character','Skills','World','Inventory','Account','More','Guild','Dungeon','Quests','Companions','Friends','Settings','Social','Party','Empty',
 ] as const;
-export type QuickNavDestination=typeof QUICK_NAV_DESTINATIONS[number];
+export type QuickNavDestination=typeof QUICK_NAV_DESTINATIONS[number]|'Events';
 export const DEFAULT_QUICK_NAV_DESTINATIONS:QuickNavDestination[]=['Guild','Dungeon','Character','Quests','Empty'];
 const allowed=new Set<string>(QUICK_NAV_DESTINATIONS);
 export function normalizeQuickNavDestinations(value:unknown):QuickNavDestination[]{

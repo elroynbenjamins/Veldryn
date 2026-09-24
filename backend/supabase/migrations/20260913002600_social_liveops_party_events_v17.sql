@@ -369,7 +369,11 @@ do $$ begin
   end if;
   if not exists (select 1 from pg_policies where schemaname='public' and tablename='liveops_event_party_member_progress' and policyname='party reads event member progress') then
     create policy "party reads event member progress" on public.liveops_event_party_member_progress for select using(
-      exists(select 1 from public.party_members pm where pm.party_id=liveops_event_party_member_progress.party_id and pm.account_id=auth.uid())
+      -- Fresh installs still have character-scoped membership at this point.
+      -- Resolve ownership through characters until the v16 account column arrives.
+      exists(select 1 from public.party_members pm join public.characters c on c.id=pm.character_id
+        where pm.party_id=liveops_event_party_member_progress.party_id and c.account_id=auth.uid()
+          and (to_jsonb(pm)->>'left_at') is null)
       or account_id=auth.uid()
     );
   end if;

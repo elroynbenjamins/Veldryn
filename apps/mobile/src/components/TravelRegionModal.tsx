@@ -4,7 +4,6 @@ import type {GameState} from '../core/types';
 import type {WorldZoneDef} from '../content/world-map';
 import {MONSTERS} from '../content/monsters';
 import {regionActivitySummary,regionTravelAvailability,regionTravelPreview} from '../core/world-navigation';
-import {environmentForZone} from '../core/world-weather';
 import {equipmentTheme,radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {GameButton} from './GameButton';
@@ -16,7 +15,7 @@ import {MonsterPortraitFrame} from './MonsterPortraitFrame';
 export function TravelRegionModal({visible,state,zone,onClose,onTravel}:{visible:boolean;state:GameState;zone?:WorldZoneDef;onClose:()=>void;onTravel:(regionId:string)=>void}){
   const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),stackLayout=width<360||fontScale>=1.25;
   if(!zone)return null;
-  const summary=regionActivitySummary(state,zone.id),environment=environmentForZone(zone.id),availability=regionTravelAvailability(state,zone),preview=regionTravelPreview(state,zone.id);
+  const summary=regionActivitySummary(state,zone.id),availability=regionTravelAvailability(state,zone),preview=regionTravelPreview(state,zone.id);
   const inDevelopment=availability==='inDevelopment',locked=availability==='locked',unlocked=availability==='available';
   const combat=`${summary.combatReady}/${summary.combatTotal} hunts`;
   const gathering=`${summary.gatheringReady}/${summary.gatheringTotal} gather`;
@@ -36,7 +35,6 @@ export function TravelRegionModal({visible,state,zone,onClose,onTravel}:{visible
       </View>
 
       <View style={[s.metaRow,stackLayout&&s.metaRowStack]}>
-        <View style={s.metaCard}><Text style={s.metaLabel}>{inDevelopment?'STATUS':'CONDITIONS'}</Text><Text style={s.metaValue}>{inDevelopment?'Preview only':`${environment.weatherSymbol} ${environment.weatherName}`}</Text></View>
         <View style={s.metaCard}><Text style={s.metaLabel}>{inDevelopment?'PLANNED CONTENT':'CONTENT'}</Text><Text style={s.metaValue}>{inDevelopment?(preview.activities.slice(0,2).join(' · ')||'Coming later'):(contentSummary||'Region activities')}</Text></View>
       </View>
 

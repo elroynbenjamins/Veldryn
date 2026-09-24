@@ -10,6 +10,7 @@ async function main(){
  let publicationError:string|undefined;
  const handler=coopEntryHandler({authenticate:async token=>token==='valid'?'owned-account':null,rpc:async<T>(name:string,args:Record<string,unknown>):Promise<T>=>{
   calls.push({name,args});
+  if(name==='record_player_activity_server_v1')return null as T;
   if(name==='load_online_game_server_v1')return {state,version:7,serverNow:1000,liveEvent:{eventId:'EVT_ANNUAL_006_2026',enabled:true,startsAtMs:0,endsAtMs:10_000}} as T;
   if(name==='online_coop_entry_state_server_v1')return {activeRunProjection:null,echoSharing:false} as T;
   if(name==='browse_online_coop_lfg_server_v1')return [] as T;
@@ -25,11 +26,11 @@ async function main(){
  assert.equal(projection.dungeons[0].available,true);assert.equal(projection.dungeons[4].available,false);
  const suncrest=projection.eventExpeditions.find((item:{id:string})=>item.id==='EVENT_SUNCREST_SHATTERED_ISLES'),starfall=projection.eventExpeditions.find((item:{id:string})=>item.id==='EVENT_STARFALL_ASTRAL_RIFT');
  assert.equal(suncrest.status,'available');assert.equal(suncrest.liveEventId,'EVT_ANNUAL_006_2026');assert.equal(starfall.status,'preview');
- assert.equal(calls.length,3);assert.equal(calls[0].args.p_account_id,'owned-account');assert.deepEqual(projection.liveRecruitment,[]);
+ assert.equal(calls.length,4);assert.equal(calls[0].name,'record_player_activity_server_v1');assert.equal(calls[0].args.p_account_id,'owned-account');assert.deepEqual(projection.liveRecruitment,[]);
  for(const extra of [{accountId:'someone-else'},{stats:{attackPower:999999}},{role:'damage'},{now:999999}]){
   assert.equal((await handler(request('echo',{requestId:'echo-test-01',expectedVersion:7,share:true,...extra}))).status,400);
  }
- assert.equal(calls.length,3);
+ assert.equal(calls.length,4);
  assert.equal((await handler(request('echo',{requestId:'echo-test-01',expectedVersion:7,share:'true'}))).status,400);
  assert.equal((await handler(request('echo',{requestId:'echo-test-01',expectedVersion:7,share:false}))).status,200);
  const write=calls[calls.length-1];assert.equal(write.name,'publish_online_coop_loadout_server_v1');

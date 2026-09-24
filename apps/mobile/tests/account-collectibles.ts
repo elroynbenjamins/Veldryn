@@ -26,6 +26,7 @@ equal(coreIds[32],'PET_033','last core pet id');
 equal(new Set(coreIds).size,33,'core pet ids are unique');
 
 let state=unlockCollectible(createCharacter(newGame(1),'IRONWARDEN','Mira'),'PET_001');
+state.quests=state.quests.map(q=>q.questId==='QST_003'?{...q,status:'claimed'}:q);
 if(collectionBonusBreakdown(state).find(row=>row.target==='gatheringYield')?.ownedAppliedBps!==50)fail('owned core pet bonus');
 state=selectCollectible(state,'pet','PET_001');
 equal(state.character?.selectedCosmeticPetId,'PET_001','canonical pet selection');

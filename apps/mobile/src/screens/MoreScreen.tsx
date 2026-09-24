@@ -11,8 +11,8 @@ import {EARLY_FEATURE_DESTINATION_ORDER} from '../core/feature-unlocks';
 export type MoreDestination='Home'|'Social'|'Activity'|'Progression'|'DailySupplies'|'AccountBonuses'|'Quests'|'Companions'|'Skills'|'Events'|'Friends'|'Guild'|'Settings'|'Arena'|'Rankings'|'Collections'|'Profile'|'Achievements'|'MasteryHall';
 
 const sections:Array<{label:string;items:MoreDestination[]}>= [
-  {label:'PLAY & PROGRESSION',items:['Home','Progression','Quests','Companions','DailySupplies','AccountBonuses']},
-  {label:'SOCIAL & COMPETITION',items:['Social','Friends','Guild','Events','Arena','Rankings']},
+  {label:'PLAY & PROGRESSION',items:['Home','Progression','Quests','Companions','DailySupplies','Events','AccountBonuses']},
+  {label:'SOCIAL & COMPETITION',items:['Social','Friends','Guild','Arena','Rankings']},
   {label:'IDENTITY & ACCOUNT',items:['Activity','Profile','MasteryHall','Collections','Achievements','Settings']},
 ];
 
@@ -37,7 +37,7 @@ function itemMeta(language:GameState['settings']['language'],id:MoreDestination)
     case 'Quests':return {title:t(language,'more.quests'),description:t(language,'more.questsDescription')};
     case 'Companions':return {title:'Companions',description:'Train, equip and master your roster'};
     case 'Skills':return {title:t(language,'more.skills'),description:t(language,'more.skillsDescription')};
-    case 'Events':return {title:t(language,'more.events'),description:t(language,'more.eventsDescription')};
+    case 'Events':return {title:'Event hub',description:'Annual festival calendar and past event history'};
     case 'Friends':return {title:t(language,'more.friends'),description:t(language,'more.friendsDescription')};
     case 'Guild':return {title:t(language,'more.guild'),description:t(language,'more.guildDescription')};
     case 'Settings':return {title:t(language,'more.settings'),description:t(language,'more.settingsDescription')};
@@ -50,7 +50,7 @@ function itemMeta(language:GameState['settings']['language'],id:MoreDestination)
   }
 }
 
-export function MoreScreen({language,onNavigate,onOpenChatPilot,onOpenAdminQa,companionAttention=false,companionUnlocked=true,lockedDestinations={},workingTowardAttention=false,dailySuppliesAttention=false,eventAttention=false,friendRequestCount=0,guildAttentionCount=0,socialAttentionCount=0,profileAttention=false}:{language:GameState['settings']['language'];onNavigate:(destination:MoreDestination)=>void;onOpenChatPilot?:()=>void;onOpenAdminQa?:()=>void;companionAttention?:boolean;companionUnlocked?:boolean;lockedDestinations?:Partial<Record<MoreDestination,string>>;workingTowardAttention?:boolean;dailySuppliesAttention?:boolean;eventAttention?:boolean;friendRequestCount?:number;guildAttentionCount?:number;socialAttentionCount?:number;profileAttention?:boolean}){
+export function MoreScreen({language,onNavigate,onOpenAdminQa,companionAttention=false,companionUnlocked=true,lockedDestinations={},workingTowardAttention=false,dailySuppliesAttention=false,friendRequestCount=0,guildAttentionCount=0,socialAttentionCount=0,profileAttention=false}:{language:GameState['settings']['language'];onNavigate:(destination:MoreDestination)=>void;onOpenAdminQa?:()=>void;companionAttention?:boolean;companionUnlocked?:boolean;lockedDestinations?:Partial<Record<MoreDestination,string>>;workingTowardAttention?:boolean;dailySuppliesAttention?:boolean;friendRequestCount?:number;guildAttentionCount?:number;socialAttentionCount?:number;profileAttention?:boolean}){
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),singleColumn=width<350||fontScale>=1.25;
   const lockedReason=(id:MoreDestination)=>lockedDestinations[id]??(id==='Companions'&&!companionUnlocked?'Complete Into Ironwood (Level 10).':'');
   const attentionLabel=(id:MoreDestination)=>{
@@ -61,7 +61,6 @@ export function MoreScreen({language,onNavigate,onOpenChatPilot,onOpenAdminQa,co
     if(id==='Companions'&&companionUnlocked&&companionAttention)return 'companion actions ready';
     if(id==='Progression'&&workingTowardAttention)return 'Working Toward goal complete';
     if(id==='DailySupplies'&&dailySuppliesAttention)return 'Daily Supplies ready';
-    if(id==='Events'&&eventAttention)return 'event rewards ready';
     if(id==='Profile'&&profileAttention)return 'new profile customization available';
     return '';
   };
@@ -73,15 +72,14 @@ export function MoreScreen({language,onNavigate,onOpenChatPilot,onOpenAdminQa,co
     if(id==='Companions'&&companionUnlocked&&companionAttention)return <AttentionDot label="Companion actions ready"/>;
     if(id==='Progression'&&workingTowardAttention)return <AttentionDot label="Working Toward goal complete"/>;
     if(id==='DailySupplies'&&dailySuppliesAttention)return <AttentionDot label="Daily Supplies ready"/>;
-    if(id==='Events'&&eventAttention)return <AttentionDot label="Event rewards ready"/>;
     if(id==='Profile'&&profileAttention)return <AttentionDot label="New profile customization available"/>;
     return null;
   };
-  const attentionPriority:MoreDestination[]=['DailySupplies','Events','Progression','Companions','Social','Friends','Guild','Profile'];
+  const attentionPriority:MoreDestination[]=['DailySupplies','Progression','Companions','Social','Friends','Guild','Profile'];
   const lockedItems=EARLY_FEATURE_DESTINATION_ORDER.filter(id=>!!lockedReason(id)) as MoreDestination[];
   const upcomingLocked=lockedItems.slice(0,4);
   const attentionDestinations=attentionPriority.filter(id=>!!attentionLabel(id));
-  const attentionTotal=(lockedReason('Social')?0:socialAttentionCount)+(lockedReason('Friends')?0:friendRequestCount)+(lockedReason('Guild')?0:guildAttentionCount)+Number(!lockedReason('Companions')&&companionAttention)+Number(!lockedReason('Progression')&&workingTowardAttention)+Number(!lockedReason('DailySupplies')&&dailySuppliesAttention)+Number(!lockedReason('Events')&&eventAttention)+Number(profileAttention);
+  const attentionTotal=(lockedReason('Social')?0:socialAttentionCount)+(lockedReason('Friends')?0:friendRequestCount)+(lockedReason('Guild')?0:guildAttentionCount)+Number(!lockedReason('Companions')&&companionAttention)+Number(!lockedReason('Progression')&&workingTowardAttention)+Number(!lockedReason('DailySupplies')&&dailySuppliesAttention)+Number(profileAttention);
   return <ScrollView contentContainerStyle={s.root}>
     <View style={s.header}><View style={s.flex}><Text style={s.kicker}>ACCOUNT HUB</Text><Text accessibilityRole="header" style={s.heading}>Account</Text><Text style={s.sub}>{t(language,'more.intro')}</Text></View>{attentionTotal>0?<View style={s.headerAttention}><Text style={s.headerAttentionValue}>{attentionTotal>99?'99+':attentionTotal}</Text><Text style={s.headerAttentionLabel}>NEEDS ATTENTION</Text></View>:<View style={s.headerClear}><Text style={s.headerClearText}>CAUGHT UP</Text></View>}</View>
     {attentionDestinations.length?<View style={s.attentionRail}><View style={s.attentionRailHead}><Text style={s.sectionLabel}>NEEDS ATTENTION</Text><Text style={s.attentionRailMeta}>{attentionDestinations.length} destination{attentionDestinations.length===1?'':'s'}</Text></View><View style={s.attentionQuickRow}>{attentionDestinations.slice(0,3).map(id=>{const meta=itemMeta(language,id),alert=attentionLabel(id);return <Pressable key={id} accessibilityRole="button" accessibilityLabel={meta.title+', '+alert} onPress={()=>onNavigate(id)} style={({pressed})=>[s.attentionQuick,singleColumn&&s.attentionQuickWide,pressed&&s.pressed]}><View style={s.quickIconFrame}><Image accessible={false} source={navigationIcons[iconForDestination(id)]} resizeMode="contain" style={s.quickIcon}/></View><View style={s.quickCopy}><Text numberOfLines={1} style={s.quickTitle}>{meta.title}</Text><Text numberOfLines={1} style={s.quickDetail}>{alert}</Text></View><UiIcon name="next" size={16}/></Pressable>})}</View>{attentionDestinations.length>3?<Text style={s.attentionMore}>+{attentionDestinations.length-3} more highlighted below</Text>:null}</View>:null}
@@ -94,7 +92,7 @@ export function MoreScreen({language,onNavigate,onOpenChatPilot,onOpenAdminQa,co
       </Pressable>})}</View>
     </View>)}
     {upcomingLocked.length?<View style={s.unlockAhead}><View style={s.unlockAheadHead}><View style={s.flex}><Text style={s.sectionLabel}>UNLOCKS AHEAD</Text><Text style={s.unlockAheadMeta}>More systems appear as the campaign teaches their prerequisites.</Text></View><View style={s.lockCount}><Text style={s.lockCountText}>{lockedItems.length}</Text></View></View>{upcomingLocked.map(id=>{const meta=itemMeta(language,id),reason=lockedReason(id);return <View key={id} style={s.unlockRow}><View style={s.unlockIcon}><Image accessible={false} source={navigationIcons[iconForDestination(id)]} resizeMode="contain" style={s.quickIcon}/></View><View style={s.flex}><Text style={s.unlockTitle}>{meta.title}</Text><Text style={s.unlockReason}>{reason}</Text></View><Text style={s.unlockMark}>◆</Text></View>})}{lockedItems.length>upcomingLocked.length?<Text style={s.unlockMore}>+{lockedItems.length-upcomingLocked.length} later systems stay hidden for now</Text>:null}</View>:null}
-    {onOpenChatPilot||onOpenAdminQa?<View style={s.section}><Text style={s.sectionLabel}>DEVELOPER</Text>{onOpenAdminQa?<Pressable accessibilityRole="button" accessibilityLabel="Open Admin QA Console" onPress={onOpenAdminQa} style={({pressed})=>[s.devCard,pressed&&s.pressed]}><Image source={navigationIcons.Character} resizeMode="contain" style={s.icon}/><View style={s.devCopy}><Text style={s.title}>Admin QA Console</Text><Text style={s.description}>Full-content, crafting and dungeon test profile</Text></View><UiIcon name="next" size={18}/></Pressable>:null}{onOpenChatPilot?<Pressable accessibilityRole="button" accessibilityLabel="Open Chat Pilot development screen" onPress={onOpenChatPilot} style={({pressed})=>[s.devCard,pressed&&s.pressed]}><Image source={navigationIcons.Social} resizeMode="contain" style={s.icon}/><View style={s.devCopy}><Text style={s.title}>Chat Pilot</Text><Text style={s.description}>Development-only interactive chat review</Text></View><UiIcon name="next" size={18}/></Pressable>:null}</View>:null}
+    {onOpenAdminQa?<View style={s.section}><Text style={s.sectionLabel}>DEVELOPER</Text><Pressable accessibilityRole="button" accessibilityLabel="Open Admin QA Console" onPress={onOpenAdminQa} style={({pressed})=>[s.devCard,pressed&&s.pressed]}><Image source={navigationIcons.Character} resizeMode="contain" style={s.icon}/><View style={s.devCopy}><Text style={s.title}>Admin QA Console</Text><Text style={s.description}>Full-content, crafting and dungeon test profile</Text></View><UiIcon name="next" size={18}/></Pressable></View>:null}
   </ScrollView>;
 }
 

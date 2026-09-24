@@ -1,5 +1,6 @@
 import type {CombatCompanionRarity,CompanionAbilityDefinition,CompanionDefinition,CompanionEffectDefinition,CompanionSanctuaryUpgrade} from '../core/combat-companion-types';
 import {EVENT_COMPANIONS} from './event-companions-v2';
+import {EVENTS_RELEASED} from '../core/release-flags';
 
 /**
  * Rarity is a TOTAL companion power budget, never a second stat multiplier.
@@ -141,5 +142,5 @@ const REGIONAL_COMPANIONS:CompanionDefinition[]=[
   regional('UNIT_024','Regent Shade','prestige','support',[req('event_challenge','Defeat the Regent Shade companion challenge','CHALLENGE_REGENT_SHADE',1)],'Champion / tactical utility',ASH,'BANNER_ASH','utility'),
 ];
 
-export const COMBAT_COMPANIONS:CompanionDefinition[]=[...ASTERFALL_COMPANIONS,...REGIONAL_COMPANIONS,...EVENT_COMPANIONS];
+export const COMBAT_COMPANIONS:CompanionDefinition[]=[...ASTERFALL_COMPANIONS,...REGIONAL_COMPANIONS,...(EVENTS_RELEASED?EVENT_COMPANIONS:[])];
 export const combatCompanionDef=(id:string)=>COMBAT_COMPANIONS.find(entry=>entry.id===id);

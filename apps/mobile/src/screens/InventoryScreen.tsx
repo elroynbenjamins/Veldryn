@@ -1,12 +1,12 @@
 import {SearchField} from '../components/SearchField';
 import {useEffect,useMemo,useRef,useState} from 'react';
-import {Animated,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {Animated,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {GameState,ItemStack} from '../core/types';
 import {ItemDef,itemDef} from '../content/items';
 import {InventoryFilter,InventorySort,inventoryFavoriteIds,inventoryNewItemIds,recoveryAmount,storageCapacityStatus,transferAmount,transferError,visibleStacks} from '../core/inventory-view';
 import {entitlementStorageCapacity} from '../core/account-entitlements';
 import {claimOverflowToBank,effectiveStats,StorageLocation,storageUpgradePreview} from '../core/game';
-import {ItemCard} from '../components/ItemCard';
+import {ItemArtwork} from '../components/ItemArtwork';
 import {ConfirmModal} from '../components/ConfirmModal';
 import {GameModalHeader,GameModalSurface} from '../components/GameModalSurface';
 import {EmptyState} from '../components/EmptyState';
@@ -20,7 +20,7 @@ import {ItemQuickInspect} from '../components/ItemQuickInspect';
 import {previewEquipment} from '../core/equipment-preview';
 import {formatGameNumber} from '../core/number-format';
 import {ot} from '../i18n';
-import {enhancedGearStats,gearEnhancement,gemSocketCapacity,hasEnhancement} from '../core/equipment-enhancement';
+import {itemRarity,rarityMeta} from '../core/item-rarity';
 import {effectiveOwnedGearRarity} from '../core/crafted-gear-instances';
 import {bulkSelectionSummary,type BulkStorageLocation} from '../core/inventory-bulk';
 import type {WorkingTowardDestination} from '../core/working-toward';
@@ -50,11 +50,11 @@ function EquipmentSwapMoment({moment,reduceMotion,onDismiss}:{moment:EquipmentCh
 }
 export function InventoryScreen({state,onEquip,onFood,onEat,onSell,onSalvage,onDeposit,onDepositMaterials,onUpgradeStorage,onWithdraw,onOverflow,onToggleFavorite,onAcknowledgeItem,onAcknowledgeAll,onBulkAction,onNavigateInspect}:{state:GameState;onEquip:(id:string)=>void;onFood:(id:string)=>void;onEat:(id:string)=>void;onSell:(id:string)=>void;onSalvage:(id:string)=>void;onDeposit:(id:string,quantity:number)=>void;onDepositMaterials:()=>void;onUpgradeStorage:(location:StorageLocation)=>void;onWithdraw:(id:string,quantity:number)=>void;onOverflow:()=>void;onToggleFavorite:(id:string)=>void;onAcknowledgeItem:(id:string)=>void;onAcknowledgeAll:()=>void;onBulkAction:(kind:BulkAction,location:BulkStorageLocation,ids:string[])=>void;onNavigateInspect:(destination:WorkingTowardDestination)=>void}){
   const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
+  const {width}=useWindowDimensions(),gridColumns=width>=720?8:width>=480?6:4,tileSize=Math.floor(Math.min(88,(width-24-(gridColumns-1)*8)/gridColumns)),iconSize=Math.min(56,tileSize-16);
   const [pending,setPending]=useState<Pending>(null),[location,setLocation]=useState<'inventory'|'bank'>('inventory');
   const [query,setQuery]=useState(''),[filter,setFilter]=useState<InventoryFilter>('all'),[sort,setSort]=useState<InventorySort>('name');
   const [quantity,setQuantity]=useState<1|10|'all'>(1);
   const [error,setError]=useState('');
-  const [expandedItem,setExpandedItem]=useState<string|null>(null);
   const [previewId,setPreviewId]=useState<string|null>(null);
   const [inspectId,setInspectId]=useState<string|null>(null);
   const [showStorage,setShowStorage]=useState(false),[filterOpen,setFilterOpen]=useState(false);
@@ -74,21 +74,23 @@ export function InventoryScreen({state,onEquip,onFood,onEat,onSell,onSalvage,onD
   const stacks=visibleStacks(state[location].stacks,query,filter,sort,favorites,newItemIds);
   const selectedSet=new Set(selectedIds),selectionSummary=bulkSelectionSummary(state,selectedIds,location);
   const exitSelection=()=>{setSelectMode(false);setSelectedIds([]);setBulkPending(null)};
-  const changeLocation=(value:BulkStorageLocation)=>{if(value===location)return;exitSelection();setExpandedItem(null);setLocation(value)};
+  const changeLocation=(value:BulkStorageLocation)=>{if(value===location)return;exitSelection();setLocation(value)};
   const toggleSelection=(itemId:string)=>{setSelectedIds(current=>{if(current.includes(itemId))return current.filter(id=>id!==itemId);if(current.length>=100){setError('Select up to 100 item stacks at once.');return current;}setError('');return [...current,itemId]})};
   const selectShown=()=>{const ids=[...new Set(stacks.map(stack=>stack.itemId))].slice(0,100);setSelectedIds(ids);setError(stacks.length>100?'Selected the first 100 matching stacks.':'')};
-  const beginSelection=()=>{setSelectMode(true);setSelectedIds([]);setExpandedItem(null);setPreviewId(null);setInspectId(null);setError('')};
+  const beginSelection=()=>{setSelectMode(true);setSelectedIds([]);setPreviewId(null);setInspectId(null);setError('')};
   const beginBulk=(kind:BulkAction)=>{const ids=kind==='transfer'?selectionSummary.transferableIds:kind==='sell'?selectionSummary.sellableIds:selectionSummary.salvageableIds;if(ids.length)setBulkPending({kind,ids})};
   const closeInspect=()=>{if(inspectId&&newItemSet.has(inspectId))run(()=>onAcknowledgeItem(inspectId));setInspectId(null)};
-  const toggleItem=(itemId:string,newItem:boolean)=>{const key=location+':'+itemId,closing=expandedItem===key;if(closing&&newItem)run(()=>onAcknowledgeItem(itemId));else if(!closing&&expandedItem){const previousId=expandedItem.slice(expandedItem.indexOf(':')+1);if(newItemSet.has(previousId))run(()=>onAcknowledgeItem(previousId));}setExpandedItem(closing?null:key)};
   const renderStack=(stack:ItemStack)=>{
-    const item=itemDef(stack.itemId),equippedId=item.slot?state.character?.equipment[item.slot]:undefined,carried=location==='inventory',favorite=favoriteSet.has(item.id),newItem=newItemSet.has(item.id),goalMeta=goalProtection.get(item.id),goalLabel=goalMeta?.goalTitles.length?`${goalMeta.goalTitles[0]}${goalMeta.goalTitles.length>1?` +${goalMeta.goalTitles.length-1} more`:''}`:undefined;
-    const amount=transferAmount(stack.quantity,quantity),selectedFood=state.character?.equippedFoodId===item.id,enhancement=item.type==='gear'?gearEnhancement(state,item.id):undefined,enhancementProtected=item.type==='gear'&&hasEnhancement(state,item.id);
-    return <ItemCard favorite={favorite} newItem={newItem} selectionMode={selectMode} selected={selectedSet.has(item.id)} onSelect={()=>toggleSelection(item.id)} onInspect={!selectMode?()=>setInspectId(item.id):undefined} onToggleFavorite={()=>run(()=>onToggleFavorite(item.id))} expanded={!selectMode&&expandedItem===location+':'+item.id} onToggle={()=>toggleItem(item.id,newItem)} key={`${location}:${item.id}`} item={item} quantity={stack.quantity} equipped={equippedId?itemDef(equippedId):undefined} rarityOverride={item.type==='gear'?effectiveOwnedGearRarity(state,item.id):undefined} upgradeRank={enhancement?.rank} socketed={enhancement?.gemIds.length} socketCapacity={item.type==='gear'?gemSocketCapacity(item.id):0} enhancementProtected={enhancementProtected} goalProtected={!!goalMeta} goalProtectionLabel={goalLabel} displayStats={item.type==='gear'?enhancedGearStats(state,item.id):undefined} equippedDisplayStats={equippedId?enhancedGearStats(state,equippedId):undefined} selectedFood={selectedFood} healAmount={recoveryAmount(state,item.id)} transferQuantity={amount} transferIssue={transferError(state,item.id,amount,location)} numberMode={state.settings.numberMode}
-      onPreview={item.type==='gear'?()=>run(()=>{previewEquipment(state,item.id);setPreviewId(item.id)}):undefined}
-      onEquip={carried&&item.type==='gear'?()=>run(()=>onEquip(item.id)):undefined} onSelectFood={carried&&item.type==='food'?()=>run(()=>onFood(item.id)):undefined} onEat={carried&&item.type==='food'?()=>run(()=>onEat(item.id)):undefined}
-      onSell={carried&&item.value>0&&!enhancementProtected&&!favorite?()=>setPending({kind:'sell',item,quantity:1}):undefined} onSalvage={carried&&item.salvage&&!enhancementProtected&&!favorite?()=>setPending({kind:'salvage',item,quantity:1}):undefined}
-      onDeposit={carried?()=>selectedFood?setPending({kind:'deposit',item,quantity:amount}):runInventory({kind:'deposit',itemId:item.id,quantity:amount},()=>onDeposit(item.id,amount)):undefined} onWithdraw={!carried?()=>runInventory({kind:'withdraw',itemId:item.id,quantity:amount},()=>onWithdraw(item.id,amount)):undefined}/>;
+    const item=itemDef(stack.itemId),favorite=favoriteSet.has(item.id),newItem=newItemSet.has(item.id),selected=selectedSet.has(item.id),autoEat=state.character?.equippedFoodId===item.id,rarity=rarityMeta(item.type==='gear'?effectiveOwnedGearRarity(state,item.id):itemRarity(item)),goalProtected=goalProtection.has(item.id);
+    const label=`${item.name}, ${formatGameNumber(stack.quantity,state.settings.numberMode)} owned${favorite?', favorite':''}${newItem?', new':''}${goalProtected?', needed for Working Toward':''}`;
+    return <Pressable key={`${location}:${item.id}`} accessibilityRole={selectMode?'checkbox':'button'} accessibilityLabel={selectMode?(selected?'Deselect ':'Select ')+label:label} accessibilityHint={selectMode?'Select this stack for bulk management':'Open item details, sources and crafting uses'} accessibilityState={selectMode?{checked:selected}:undefined} onPress={()=>selectMode?toggleSelection(item.id):setInspectId(item.id)} style={({pressed})=>[s.itemTile,{width:tileSize,height:tileSize,borderColor:selected?C.selectionLine:goalProtected||autoEat?C.good:rarity.color,backgroundColor:selected?C.selection:rarity.surface},pressed&&s.pressed]}>
+      <ItemArtwork itemId={item.id} size={iconSize}/>
+      <Text accessible={false} style={[s.itemQuantity,{color:rarity.color}]}>×{formatGameNumber(stack.quantity,state.settings.numberMode)}</Text>
+      {newItem?<View accessible={false} style={s.itemNew}><Text style={s.itemNewText}>NEW</Text></View>:null}
+      {favorite?<Text accessible={false} style={s.itemFavorite}>★</Text>:null}
+      {autoEat&&!selectMode?<Text accessible={false} style={s.itemAuto}>EAT</Text>:null}
+      {selectMode?<View accessible={false} style={[s.itemSelected,selected&&s.itemSelectedOn]}><Text style={s.itemSelectedText}>{selected?'✓':'○'}</Text></View>:null}
+    </Pressable>;
   };
   const foodWarning=pending?.item.id===state.character?.equippedFoodId?' This is your selected auto-eat food. Only food carried in Inventory can be consumed in combat.':'';
   const goalWarning=pending&&pending.kind!=='deposit'?goalProtection.get(pending.item.id):undefined,goalWarningText=goalWarning?` Working Toward is using this item for ${goalWarning.goalTitles[0]}${goalWarning.goalTitles.length>1?` and ${goalWarning.goalTitles.length-1} more goal${goalWarning.goalTitles.length===2?'':'s'}`:''}.`:'';
@@ -104,7 +106,18 @@ export function InventoryScreen({state,onEquip,onFood,onEat,onSell,onSalvage,onD
   const remaining=claimOverflowToBank(state).overflow.stacks.reduce((sum,item)=>sum+item.quantity,0);
   const overflowCount=state.overflow.stacks.reduce((sum,item)=>sum+item.quantity,0);
   const inventoryUpgrade=storageUpgradePreview(state,'inventory'),bankUpgrade=storageUpgradePreview(state,'bank');
-  return <><EquipmentPreview state={state} itemId={previewId} onClose={()=>setPreviewId(null)}/><ItemQuickInspect state={state} itemId={inspectId} onClose={closeInspect} onNavigate={destination=>{closeInspect();onNavigateInspect(destination)}}/><ScrollView contentContainerStyle={s.root} keyboardShouldPersistTaps="handled">
+  const inspected=inspectId?itemDef(inspectId):undefined,carried=location==='inventory';
+  const inspectActions=inspected?<View style={s.inspectActions}>
+    {carried&&inspected.type==='gear'?<GameButton compact title="Compare stats" tone="secondary" onPress={()=>{setPreviewId(inspected.id);closeInspect()}}/>:null}
+    {carried&&inspected.type==='gear'?<GameButton compact title={`Equip ${inspected.slot}`} onPress={()=>{run(()=>onEquip(inspected.id));closeInspect()}}/>:null}
+    {carried&&inspected.type==='food'?<GameButton compact title={state.character?.equippedFoodId===inspected.id?'Auto-eat selected':'Use for auto-eat'} disabled={state.character?.equippedFoodId===inspected.id} onPress={()=>{run(()=>onFood(inspected.id));closeInspect()}}/>:null}
+    {carried&&inspected.type==='food'?<GameButton compact title={recoveryAmount(state,inspected.id)===0?'Health full':`Eat 1 · +${formatGameNumber(recoveryAmount(state,inspected.id),state.settings.numberMode)} HP`} disabled={recoveryAmount(state,inspected.id)===0} tone="secondary" onPress={()=>{run(()=>onEat(inspected.id));closeInspect()}}/>:null}
+    <GameButton compact title={favoriteSet.has(inspected.id)?'Remove favorite':'Favorite'} tone="secondary" onPress={()=>{run(()=>onToggleFavorite(inspected.id));closeInspect()}}/>
+    {carried?<GameButton compact title={`Deposit ${formatGameNumber(transferAmount(state.inventory.stacks.find(stack=>stack.itemId===inspected.id)?.quantity??0,quantity),state.settings.numberMode)}`} tone="secondary" onPress={()=>{const amount=transferAmount(state.inventory.stacks.find(stack=>stack.itemId===inspected.id)?.quantity??0,quantity);if(state.character?.equippedFoodId===inspected.id)setPending({kind:'deposit',item:inspected,quantity:amount});else runInventory({kind:'deposit',itemId:inspected.id,quantity:amount},()=>onDeposit(inspected.id,amount));closeInspect()}}/>:<GameButton compact title={`Withdraw ${formatGameNumber(transferAmount(state.bank.stacks.find(stack=>stack.itemId===inspected.id)?.quantity??0,quantity),state.settings.numberMode)}`} tone="secondary" onPress={()=>{const amount=transferAmount(state.bank.stacks.find(stack=>stack.itemId===inspected.id)?.quantity??0,quantity);runInventory({kind:'withdraw',itemId:inspected.id,quantity:amount},()=>onWithdraw(inspected.id,amount));closeInspect()}}/>}
+    {carried&&inspected.value>0&&!favoriteSet.has(inspected.id)?<GameButton compact title={`Sell 1 · ${formatGameNumber(inspected.value,state.settings.numberMode)}g`} tone="secondary" onPress={()=>{setPending({kind:'sell',item:inspected,quantity:1});closeInspect()}}/>:null}
+    {carried&&inspected.salvage&&!favoriteSet.has(inspected.id)?<GameButton compact title="Salvage 1" tone="danger" onPress={()=>{setPending({kind:'salvage',item:inspected,quantity:1});closeInspect()}}/>:null}
+  </View>:null;
+  return <><EquipmentPreview state={state} itemId={previewId} onClose={()=>setPreviewId(null)}/><ItemQuickInspect state={state} itemId={inspectId} onClose={closeInspect} onNavigate={destination=>{closeInspect();onNavigateInspect(destination)}} actions={inspectActions}/><ScrollView contentContainerStyle={s.root} keyboardShouldPersistTaps="handled">
     <Text accessibilityRole="header" style={s.h}>Inventory</Text>
     <View style={s.recovery}><Text style={s.label}>COMBAT SUSTAIN</Text><Text style={s.sub}>Health {state.character!.currentHp}/{effectiveStats(state).hp} · Auto-eat provision: {state.character?.equippedFoodId?itemDef(state.character.equippedFoodId).name:'None'}</Text><Text style={s.sub}>Carried sustain portions: {state.inventory.stacks.find(item=>item.itemId===state.character?.equippedFoodId)?.quantity??0}</Text></View>
     <View style={s.storageRow}>{(['inventory','bank'] as const).map(value=><StorageChip key={value} label={value==='inventory'?'Inventory':'Bank'} selected={location===value} status={value==='inventory'?inventoryCapacity:bankCapacity} onPress={()=>changeLocation(value)}/>)}</View>
@@ -118,13 +131,13 @@ export function InventoryScreen({state,onEquip,onFood,onEat,onSell,onSalvage,onD
       <UtilityChip label={`↕ Sort · ${SORT_OPTIONS.find(option=>option.id===sort)?.label??'Name'}`} accessibilityLabel={`Sort items. Current sort: ${sort}`} onPress={()=>setSort(value=>nextSort(value))}/>
       <UtilityChip label={`⇄ Move · ${quantity==='all'?'All':quantity}`} accessibilityLabel={`Transfer quantity. Current amount: ${quantity}`} onPress={()=>setQuantity(value=>nextQuantity(value))}/>
     </View>}
-    {!selectMode&&<Text style={s.inspectHint}>Hold an item for Quick Inspect · sources, uses, stats & upgrades</Text>}
+    {!selectMode&&<Text style={s.inspectHint}>Tap an item to view its details, sources, crafting uses and actions.</Text>}
     {!!error&&<Text accessibilityRole="alert" style={s.errorText}>{error}</Text>}
     {inventoryFeedback&&<ActionFeedback message={inventoryFeedback.message} tone={inventoryFeedback.tone} reduceMotion={state.settings.reduceMotion} compact/>}
     {equipMoment&&<EquipmentSwapMoment moment={equipMoment} reduceMotion={state.settings.reduceMotion} onDismiss={()=>setEquipMoment(null)}/>}
     <View style={s.resultRow}><Text style={[s.sub,s.resultSummary]}>{selectMode?`${selectedIds.length} selected · ${stacks.length} matching stacks`:`${stacks.length} matching stacks · ${activeCapacity.free} free slots${favorites.length?` · ${favorites.length} favorites`:``}${newItemIds.length?` · ${newItemIds.length} new`:``}`}</Text><View style={s.resultActions}>{!selectMode&&newItemIds.length>0&&<Pressable accessibilityRole="button" accessibilityLabel="Mark all new items as seen" onPress={()=>run(onAcknowledgeAll)} style={({pressed})=>[s.markSeen,pressed&&s.pressed]}><Text style={s.markSeenText}>Mark all seen</Text></Pressable>}{stacks.length>0&&<Pressable accessibilityRole="button" accessibilityLabel={selectMode?`Finish selecting items`:`Select multiple items`} onPress={selectMode?exitSelection:beginSelection} style={({pressed})=>[s.selectModeButton,selectMode&&s.selectModeButtonActive,pressed&&s.pressed]}><Text style={[s.selectModeText,selectMode&&s.selectModeTextActive]}>{selectMode?`Done`:`Select`}</Text></Pressable>}</View></View>
     {selectMode&&<Panel><View style={s.selectionHead}><View style={s.resultSummary}><Text style={s.selectionTitle}>BULK MANAGEMENT · {selectedIds.length} SELECTED</Text><Text style={s.sub}>Whole stacks only · up to 100 stacks per action</Text></View><View style={s.selectionQuick}><Pressable accessibilityRole="button" onPress={selectShown} style={({pressed})=>[s.selectionQuickButton,pressed&&s.pressed]}><Text style={s.selectionQuickText}>Select shown</Text></Pressable><Pressable accessibilityRole="button" disabled={!selectedIds.length} onPress={()=>setSelectedIds([])} style={({pressed})=>[s.selectionQuickButton,!selectedIds.length&&s.selectionQuickDisabled,pressed&&selectedIds.length>0&&s.pressed]}><Text style={s.selectionQuickText}>Clear</Text></Pressable></View></View><Text style={s.sub}>{location==='inventory'?'Working Toward items, favorites and enhanced gear are automatically excluded from bulk disposal. Your selected auto-eat food also stays in Inventory.':'Withdraw selected moves complete Bank stacks back to this character.'}</Text><View style={s.bulkActions}><GameButton compact title={`${location==='inventory'?'Deposit':'Withdraw'} · ${selectionSummary.transferableStackCount}`} disabled={!selectionSummary.transferableStackCount} tone="secondary" onPress={()=>beginBulk('transfer')}/>{location==='inventory'&&<GameButton compact title={`Sell · ${selectionSummary.sellableStackCount} · ${formatGameNumber(selectionSummary.sellGold,state.settings.numberMode)}g`} disabled={!selectionSummary.sellableStackCount} tone="secondary" onPress={()=>beginBulk('sell')}/>} {location==='inventory'&&<GameButton compact title={`Salvage · ${selectionSummary.salvageableStackCount}`} disabled={!selectionSummary.salvageableStackCount} tone="danger" onPress={()=>beginBulk('salvage')}/>}</View>{selectedIds.length>0&&location==='inventory'&&(selectionSummary.sellProtectedCount>0||selectionSummary.transferProtectedCount>0||selectionSummary.goalProtectedCount>0)&&<Text style={s.selectionNote}>{selectionSummary.sellProtectedCount} selected stacks excluded from bulk sell{selectionSummary.goalProtectedCount?` · ${selectionSummary.goalProtectedCount} Working Toward stack${selectionSummary.goalProtectedCount===1?'':'s'} protected from disposal`:``}{selectionSummary.transferProtectedCount?` · ${selectionSummary.transferProtectedCount} auto-eat stack protected from deposit`:``}.</Text>}</Panel>}
-    {stacks.length?stacks.map(renderStack):<><EmptyState title="No items to show" message="Try another storage tab or clear the search and category filter."/><GameButton title="Clear filters" tone="secondary" onPress={()=>{setQuery('');setFilter('all')}}/></>}
+    {stacks.length?<><View style={s.gridHead}><Text style={s.gridLabel}>ITEMS</Text><Text style={s.gridMeta}>{selectMode?'Choose stacks for bulk actions':'Tap an icon for details'}</Text></View><View style={s.itemGrid}>{stacks.map(renderStack)}</View></>:<><EmptyState title="No items to show" message="Try another storage tab or clear the search and category filter."/><GameButton title="Clear filters" tone="secondary" onPress={()=>{setQuery('');setFilter('all')}}/></>}
     {overflowCount>0&&<Panel><Text style={s.title}>{ot(state.settings.language,'overflow.title')} · {overflowCount}</Text><Text style={s.warning}>{ot(state.settings.language,'overflow.body')}</Text>{state.overflow.stacks.map((stack,index)=><Text key={`${stack.itemId}:${index}`} style={s.sub}>{stack.quantity}× {itemDef(stack.itemId).name}</Text>)}{state.overflow.expiresAtMs!==null&&<Text style={s.warning}>Recorded expiry: {new Date(state.overflow.expiresAtMs).toLocaleString()}</Text>}<GameButton title={ot(state.settings.language,'overflow.move',{count:overflowCount-remaining})} disabled={remaining===overflowCount} onPress={()=>run(onOverflow)}/>{remaining>0&&<Text style={s.sub}>{ot(state.settings.language,'overflow.remain',{count:remaining})}</Text>}</Panel>}
   </ScrollView>
   <GameModalSurface visible={filterOpen} reduceMotion={state.settings.reduceMotion} onClose={()=>setFilterOpen(false)} backdropLabel="Close inventory filters" surfaceStyle={s.filterSheet}>
@@ -192,6 +205,15 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
   selectionNote:{...typography.caption,color:C.warning},
   utilityRow:{flexDirection:'row',gap:6},
   inspectHint:{...typography.caption,color:C.muted,textAlign:'center'},
+  gridHead:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8,paddingTop:2},gridLabel:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.8},gridMeta:{...typography.caption,color:C.muted},
+  itemGrid:{flexDirection:'row',flexWrap:'wrap',gap:8},
+  itemTile:{position:'relative',alignItems:'center',justifyContent:'center',borderWidth:1,borderRadius:10},
+  itemQuantity:{position:'absolute',right:3,bottom:3,paddingHorizontal:4,borderRadius:7,overflow:'hidden',fontSize:9,lineHeight:14,fontWeight:'900',backgroundColor:C.panel},
+  itemNew:{position:'absolute',left:3,top:3,paddingHorizontal:3,paddingVertical:1,borderRadius:3,backgroundColor:C.info},itemNewText:{fontSize:6,color:C.panel,fontWeight:'900',letterSpacing:.3},
+  itemFavorite:{position:'absolute',right:4,top:1,fontSize:12,color:C.accent},
+  itemAuto:{position:'absolute',left:3,bottom:3,paddingHorizontal:3,paddingVertical:1,borderRadius:3,overflow:'hidden',fontSize:6,lineHeight:8,color:C.panel,fontWeight:'900',letterSpacing:.35,backgroundColor:C.good},
+  itemSelected:{position:'absolute',left:3,bottom:3,width:17,height:17,alignItems:'center',justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:9,backgroundColor:C.panel},itemSelectedOn:{borderColor:C.selectionLine,backgroundColor:C.selection},itemSelectedText:{fontSize:10,color:C.text,fontWeight:'900'},
+  inspectActions:{gap:spacing.xs},
   utilityChip:{flex:1,minWidth:0,minHeight:44,alignItems:'center',justifyContent:'center',paddingHorizontal:8,borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.panel2},
   utilityChipActive:{borderColor:C.selectionLine,backgroundColor:C.selection},
   utilityChipText:{fontSize:11,color:C.text,fontWeight:'800'},

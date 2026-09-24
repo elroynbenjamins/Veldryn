@@ -16,7 +16,7 @@ const before={itemId:'basic_sword',rank:6,failures:0,gemIds:[] as string[]};
 assert(enhancementFeedback(before,before)===null,'No success on unchanged state');
 assert(enhancementFeedback(before,{...before,itemId:'another',rank:7})===null,'Selection changes are not upgrades');
 assert(enhancementFeedback(before,{...before,rank:7})?.tone==='success','Confirmed upgrade announces success');
-assert(enhancementFeedback(before,{...before,failures:1})?.tone==='info','Failed tempering never claims success');
+assert(enhancementFeedback(before,{...before,failures:1})?.tone==='warning','Failed tempering warns without claiming success');
 assert(enhancementFeedback(before,{...before,gemIds:['gem']})?.message==='Gem sockets updated.','Confirmed socket updates announced');
 assert(newlyConfirmedIds(['q1'],['q1']).length===0,'Pending/replayed claim produces no success');
 assert(newlyConfirmedIds(['q1'],['q1','q2','q2']).join(',')==='q2','Only newly confirmed claims announced');

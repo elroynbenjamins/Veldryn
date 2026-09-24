@@ -2,7 +2,7 @@ import {COMBAT_COMPANIONS,COMPANION_ASCENSION_BASE_COST,COMPANION_BOND_CONFIG,CO
 import {normalizeClassSkills} from './class-skills';
 import {normalizeMonsterMastery} from './monster-mastery';
 import {companionHousingLevelCap,companionHousingTier} from './companion-housing';
-import type {CombatCompanionRole,CompanionAscensionCost,CompanionBondSource,CompanionCombatContribution,CompanionDefinition,CompanionLevelCost,CompanionSanctuaryState,CompanionSanctuaryUpgrade,OwnedCompanionProgress,VeldrynClassId} from './combat-companion-types';
+import type {CombatCompanionRole,CompanionAscensionCost,CompanionBondSource,CompanionCombatContribution,CompanionDefinition,CompanionEffectKind,CompanionLevelCost,CompanionSanctuaryState,CompanionSanctuaryUpgrade,OwnedCompanionProgress,VeldrynClassId} from './combat-companion-types';
 
 interface HostItemStack{itemId:string;quantity:number;}
 interface HostCharacter{id:string;classId:VeldrynClassId;gold:number;equippedCombatCompanionId?:string;classSkills?:unknown;monsterMasteryPoints?:Record<string,number>;}
@@ -304,9 +304,18 @@ export function companionCombatContribution(state:CombatCompanionStateHost):Comp
   const investment=.55+.35*(p.level/rarity.maxLevel)+.10*(p.bondLevel/10),base=.07,bondResonance=p.bondLevel>=6?1.015:1,contribution=Math.min(.12,base*rarity.targetPowerMultiplier*investment*bondResonance);
   if(def.role==='damage')return {outputMultiplier:1+contribution,incomingDamageMultiplier:1,recoveryMultiplier:1,directHealingPctPerHour:0,contributionPct:contribution};
   if(def.role==='tank')return {outputMultiplier:1+contribution*.12,incomingDamageMultiplier:1-contribution*.78,recoveryMultiplier:1+contribution*.25,directHealingPctPerHour:0,contributionPct:contribution};
-  const restorative=def.activeAbility.effect.kind==='heal';
+  const effects=[def.activeAbility.effect.kind,def.passiveAbility.kind,...(p.bondTraitUnlocked?[def.bondTrait.effect.kind]:[])] as const;
+  const has=(...kinds:CompanionEffectKind[])=>effects.some(kind=>kinds.includes(kind));
+  const restorative=has('heal');
+  const protective=has('shield','damage_reduction','cleanse');
+  const tempo=has('haste','resource_restore','cooldown_reduction','accuracy');
+  const offensive=has('damage','defense_shred','interrupt','execute','armor_pierce','chain_damage');
+  const utility=has('utility');
+  const outputWeight=Math.min(.90,.12+(tempo?.48:0)+(offensive?.42:0)+(utility?.24:0));
+  const incomingWeight=Math.min(.78,.04+(protective?.66:0)+(has('interrupt')?.18:0)+(restorative?.08:0));
+  const recoveryWeight=restorative?.38:protective?.08:.02;
   const directHealingPctPerHour=restorative?Math.min(.12,companionAbilityValue(def,p)*1.5):0;
-  return {outputMultiplier:1+contribution*.42,incomingDamageMultiplier:1-contribution*.12,recoveryMultiplier:1+contribution*.72,directHealingPctPerHour,contributionPct:contribution};
+  return {outputMultiplier:1+contribution*outputWeight,incomingDamageMultiplier:1-contribution*incomingWeight,recoveryMultiplier:1+contribution*recoveryWeight,directHealingPctPerHour,contributionPct:contribution};
 }
 
 export function companionSanctuaryUpgradeCost(state:CombatCompanionStateHost,upgrade:CompanionSanctuaryUpgrade){const clean=sanitizeCombatCompanionState(state),cfg=COMPANION_SANCTUARY_CONFIG[upgrade],level=int(clean.account.companionSanctuary?.[`${upgrade}Level` as keyof CompanionSanctuaryState],0,cfg.maxLevel);if(level>=cfg.maxLevel)return undefined;return {gold:cfg.goldCosts[level],companionEssence:cfg.essenceCosts[level],materialId:cfg.materialId,materialQuantity:cfg.materialCosts?.[level]??0};}

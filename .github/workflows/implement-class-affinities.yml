@@ -31,7 +31,7 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add apps/mobile/src apps/mobile/tests apps/mobile/package.json docs/CLASS_SKILL_AFFINITIES.md
           if ! git diff --cached --quiet; then
-            git commit -m 'Align remaining profession timer previews with class affinities'
+            git commit -m 'Preserve precise reserved activity progress with class affinities'
             git push origin HEAD:refs/heads/feature/class-skill-affinities
           fi
           echo "Validated source commit: $(git rev-parse HEAD)"
@@ -44,25 +44,27 @@ jobs:
       - name: Typecheck mobile UI
         run: pnpm --dir apps/mobile typecheck
       - name: Test class affinities
+        id: affinities
         run: pnpm --dir apps/mobile test:class-affinities
       - name: Rebuild shared online gameplay bundle
         run: |
           node tools/build-online.mjs
           git add backend/supabase/functions/gameplay/index.ts
           if ! git diff --cached --quiet; then
-            git commit -m 'Rebuild authoritative gameplay bundle with class affinities'
+            git commit -m 'Rebuild authoritative gameplay bundle with precise profession timing'
             git push origin HEAD:refs/heads/feature/class-skill-affinities
           fi
           echo "Source and bundle commit: $(git rev-parse HEAD)"
       - name: Run related regression suites
         working-directory: apps/mobile
         run: |
-          node .affinity-build/apps/mobile/tests/online-gameplay.js
-          node .affinity-build/apps/mobile/tests/timed-processing.js
-          node .affinity-build/apps/mobile/tests/equipment-timed-crafting-queue.js
-          node .affinity-build/apps/mobile/tests/equipment-forge-backlog.js
-          node .affinity-build/apps/mobile/tests/equipment-forge-management.js
-          node .affinity-build/apps/mobile/tests/gem-progression-v1.js
-          node .affinity-build/apps/mobile/tests/save-transfer.js
+          status=0
+          for suite in online-gameplay timed-processing equipment-timed-crafting-queue equipment-forge-backlog equipment-forge-management gem-progression-v1 save-transfer; do
+            echo "::group::$suite"
+            node ".affinity-build/apps/mobile/tests/$suite.js" || status=1
+            echo '::endgroup::'
+          done
+          exit "$status"
       - name: Run full mobile core tests
+        if: ${{ !cancelled() && steps.affinities.outcome == 'success' }}
         run: pnpm --dir apps/mobile test:core

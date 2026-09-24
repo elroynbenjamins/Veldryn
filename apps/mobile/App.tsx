@@ -104,6 +104,7 @@ import {onlineConfigured} from './src/online/supabase';
 import {newlyUnlockedProfileRewards} from './src/core/profile-customization';
 import {mergeProfileAttentionKeys} from './src/core/profile-attention';
 import {addProfileAttentionKeys,clearProfileAttentionKeys,loadProfileAttentionKeys} from './src/storage/profile-attention';
+import {earlyFeatureUnlocked} from './src/core/early-feature-gates';
 
 type Tab=QuickNavDestination|'Activity'|'Progression'|'DailySupplies'|'AccountBonuses'|'MasteryHall'|'Arena'|'Rankings'|'Collections'|'Profile'|'ProfileCustomize'|'Achievements'|'Combat'|'Coop';
 type PrimaryTab='Skills'|'World'|'Character'|'Inventory'|'More';
@@ -371,6 +372,7 @@ const next=discoverCharacterSkins(candidate);queuePreparationNotices(current,nex
   const theme=resolveTheme(state.settings.uiTheme);
   const preview=previewActivityReward(state,now);
   const eventClaims=eventReadyClaimCount(state,now);
+  const companionsUnlocked=earlyFeatureUnlocked(state,'companions'),petsUnlocked=earlyFeatureUnlocked(state,'pets');
   const companionAttention=companionAttentionSummary(state,now);
   const workingTowardReady=workingTowardReadyCount(state);
   const dailySuppliesReady=dailySuppliesStatus(state,now).canClaim;
@@ -378,7 +380,7 @@ const next=discoverCharacterSkins(candidate);queuePreparationNotices(current,nex
   const equipmentForge=equipmentCraftQueueModel(state,now);
   const navigationNotifications:NavigationNotification[]=[
     {key:'activity-reward-ready',kind:'reward_ready',unread:rewardHasProgress(preview)},
-    {key:'companion-attention',kind:'companion_attention',unread:companionAttention.hasAttention},
+    {key:'companion-attention',kind:'companion_attention',unread:companionsUnlocked&&companionAttention.hasAttention},
     {key:'working-toward-ready',kind:'account_action',unread:workingTowardReady>0},
     {key:'daily-supplies-ready',kind:'account_action',unread:dailySuppliesReady},
     {key:'equipment-crafts-ready',kind:'equipment_craft_ready',count:equipmentForge.ready,unread:equipmentForge.ready>0},
@@ -426,7 +428,7 @@ const next=discoverCharacterSkins(candidate);queuePreparationNotices(current,nex
     {tab==='Events'&&<EventScreen state={state} onChange={commit} onCommand={serverGameplayEnabled?command=>perform(command).then(Boolean):undefined} onOpenSeasonalExpedition={coopOnlineConfigured?liveEventId=>{setPendingEventLiveId(liveEventId);setTab('Coop')}:undefined}/>}
     {tab==='Guild'&&<GuildScreen online={serverGameplayEnabled} state={state} onChange={commit} onlineDirectory={<OnlineGuildBrowser/>} onlineManagement={<OnlineGuildManagement onApplicationsChanged={()=>void refreshSocialNotifications()}/>} onlineBoard={<OnlineGuildNoticeBoardPanel/>} onlineProjects={<OnlineGuildProjectsPanel/>} onlinePve={<OnlineGuildPve authoritative={serverGameplayEnabled} numberMode={state.settings.numberMode}/>} onlineChat={<GuildChat language={state.settings.language} currentPlayerName={state.character?.name} unlockedEmoteIds={state.account.unlockedEmoteIds} trayIds={state.settings.chatEmoteTrayIds} bodyPresentation={state.character?.bodyPresentation} onTrayChange={ids=>commit({...state,settings:{...state.settings,chatEmoteTrayIds:ids}})} firstUnreadMessageId={notificationCounts.guildFirstUnreadMessageId} onRead={()=>void refreshSocialNotifications()}/>} onlineChatUnread={notificationCounts.guildChatUnread} onlineChatMentions={notificationCounts.guildChatMentions} onlineHall={<OnlineGuildHallPanel/>} onlineCustomize={<OnlineGuildCustomizationPanel/>}/>} 
     {tab==='Settings'&&<SettingsScreen online={serverGameplayEnabled} state={state} onChange={commit} onExport={exportSave} onImport={importSave} onOpenChatPilot={__DEV__?()=>{setChatPilotInitialPanel('chat');setShowChatPilot(true)}:undefined} onOpenChatEmotes={__DEV__?()=>{setChatPilotInitialPanel('emotes');setShowChatPilot(true)}:undefined} onOpenCoopUiGallery={__DEV__?()=>setShowCoopUiGallery(true):undefined} onLanguage={language=>commit({...state,settings:{...state.settings,language}})} onReset={()=>serverGameplayEnabled?Alert.alert('Online save','Your online character is saved on the server.'):Alert.alert('Reset local save?','This deletes prototype progress only.',[{text:'Cancel'},{text:'Reset',style:'destructive',onPress:async()=>{await repo.reset();setState(newGame(Date.now()));setCurrentTab('Home');setTabHistory([])}}])}/>}
-    {tab==='More'&&<MoreScreen language={state.settings.language} onNavigate={destination=>destination==='Quests'?openQuestMode('story'):setTab(destination)} companionAttention={companionAttention.hasAttention} workingTowardAttention={workingTowardReady>0} dailySuppliesAttention={dailySuppliesReady} eventAttention={eventClaims>0||notificationCounts.events>0} friendRequestCount={notificationCounts.friendRequests} guildAttentionCount={notificationCounts.guild} socialAttentionCount={notificationCounts.partyInvites+notificationCounts.chatUnread} profileAttention={profileAttentionKeys.length>0} onOpenChatPilot={__DEV__?()=>{setChatPilotInitialPanel('chat');setShowChatPilot(true)}:undefined} onOpenAdminQa={adminQa||(__DEV__&&!serverGameplayEnabled)?()=>setShowAdminQa(true):undefined}/>}
+    {tab==='More'&&<MoreScreen language={state.settings.language} onNavigate={destination=>destination==='Quests'?openQuestMode('story'):setTab(destination)} companionAttention={companionsUnlocked&&companionAttention.hasAttention} companionsUnlocked={companionsUnlocked} petsUnlocked={petsUnlocked} workingTowardAttention={workingTowardReady>0} dailySuppliesAttention={dailySuppliesReady} eventAttention={eventClaims>0||notificationCounts.events>0} friendRequestCount={notificationCounts.friendRequests} guildAttentionCount={notificationCounts.guild} socialAttentionCount={notificationCounts.partyInvites+notificationCounts.chatUnread} profileAttention={profileAttentionKeys.length>0} onOpenChatPilot={__DEV__?()=>{setChatPilotInitialPanel('chat');setShowChatPilot(true)}:undefined} onOpenAdminQa={adminQa||(__DEV__&&!serverGameplayEnabled)?()=>setShowAdminQa(true):undefined}/>}
     {tab==='Arena'&&<ArenaScreen state={state} onChange={candidate=>void commit(candidate)} onCommand={serverGameplayEnabled?command=>void perform(command):undefined}/>}
     {tab==='Rankings'&&<RankingsScreen/>}
     {tab==='Collections'&&<CollectionsScreen state={state} onChange={candidate=>void commit(candidate)}/>}

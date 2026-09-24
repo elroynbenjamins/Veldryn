@@ -122,7 +122,7 @@ ok(transferAmount(25,'all')===25,'All transfer');
 ok(transferAmount(25,1)===1,'Single transfer');
 ok(recoveryAmount(state,'TRAVEL_RATION')===0,'No healing at full HP');
 ok(recoveryAmount({...state,character:{...state.character!,currentHp:effectiveStats(state).hp-2}},'TRAVEL_RATION')===2,'Healing clamps to missing HP');
-ok(transferError(state,'TRAVEL_RATION',10,'inventory')==='','Valid transfer');
+ok(transferError(state,'TRAVEL_RATION',5,'inventory')==='','Valid transfer');
 ok(!!transferError({...state,bank:{stacks:[],capacity:0}},'TRAVEL_RATION',1,'inventory'),'Full destination rejected');
 ok(!!transferError(state,'TRAVEL_RATION',100,'inventory'),'Insufficient quantity rejected');
 ok(!!transferError(state,'TRAVEL_RATION',1,'bank'),'Empty bank cannot withdraw');

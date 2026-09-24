@@ -20,12 +20,12 @@ export function OnlineGuildHallPanel(){
  const {state,level,stage,benefits}=projection;
  const nextThreshold=DEFAULT_GUILD_HALL_POLICY.hallLevelThresholds[level]??DEFAULT_GUILD_HALL_POLICY.hallLevelThresholds[DEFAULT_GUILD_HALL_POLICY.hallLevelThresholds.length-1];
  const prev=DEFAULT_GUILD_HALL_POLICY.hallLevelThresholds[Math.max(0,level-1)]??0;
- const pct=level>=20?100:Math.max(0,Math.min(100,(state.hallProgress-prev)/Math.max(1,nextThreshold-prev)*100));
+ const pct=level>=10?100:Math.max(0,Math.min(100,(state.hallProgress-prev)/Math.max(1,nextThreshold-prev)*100));
  return <View style={s.root}>
   <Panel>
-   <View style={s.between}><View style={s.flex}><Text style={s.kicker}>GUILD HALL</Text><Text style={s.title}>{stage}</Text><Text style={s.sub}>{state.hallProgress.toLocaleString()} Hall Progress · {state.lifetimeProjectsCompleted} completed projects</Text></View><View style={s.levelBadge}><Text style={s.level}>Lv {level}</Text><Text style={s.levelMax}>/20</Text></View></View>
+   <View style={s.between}><View style={s.flex}><Text style={s.kicker}>GUILD HALL</Text><Text style={s.title}>{stage}</Text><Text style={s.sub}>{state.hallProgress.toLocaleString()} Hall Progress · {state.lifetimeProjectsCompleted} completed projects</Text></View><View style={s.levelBadge}><Text style={s.level}>Lv {level}</Text><Text style={s.levelMax}>/10</Text></View></View>
    <View accessibilityRole="progressbar" accessibilityValue={{min:0,max:100,now:pct}} style={s.track}><View style={[s.fill,{width:(pct+'%') as any}]}/></View>
-   <Text style={s.note}>{level<20?Math.max(0,nextThreshold-state.hallProgress).toLocaleString()+' Hall Progress to level '+(level+1):'Maximum Hall level reached.'}</Text>
+   <Text style={s.note}>{level<10?Math.max(0,nextThreshold-state.hallProgress).toLocaleString()+' Hall Progress to level '+(level+1):'Launch Hall level cap reached.'}</Text>
   </Panel>
   <Panel>
    <View style={s.sectionHead}><Text style={s.title}>Facilities</Text><Text style={s.sectionMeta}>Automatic progression</Text></View>
@@ -33,9 +33,12 @@ export function OnlineGuildHallPanel(){
    {GUILD_HALL_FACILITIES.map(def=>{const facility=state.facilities[def.id];return <View key={def.id} style={s.facility}><View style={s.flex}><Text style={s.facilityName}>{def.name}</Text><Text style={s.note}>{def.description}</Text></View><View style={s.tier}><Text style={s.tierText}>T{facility.tier}/5</Text></View></View>})}
   </Panel>
   <Panel>
-   <View style={s.sectionHead}><Text style={s.title}>Current Hall Benefits</Text><Text style={s.sectionMeta}>Account-safe power</Text></View>
-   <View style={s.benefits}><View style={s.benefit}><Text style={s.value}>+{(benefits.skillXpBonusBps/100).toFixed(2)}%</Text><Text style={s.note}>Skill XP</Text></View><View style={s.benefit}><Text style={s.value}>+{(benefits.craftingProcessingSpeedBps/100).toFixed(2)}%</Text><Text style={s.note}>Crafting / processing</Text></View><View style={s.benefit}><Text style={s.value}>+{benefits.extraProjectDraftChoices}</Text><Text style={s.note}>Project choices</Text></View></View>
-   <Text style={s.cap}>Caps: +0.50% XP, +0.50% crafting/processing speed, +2 project choices.</Text>
+   <View style={s.sectionHead}><Text style={s.title}>Guild Skill Trees</Text><Text style={s.sectionMeta}>Launch cap · Lv 10</Text></View>
+   <Text style={s.sub}>Hall facilities now represent progression visually. Permanent bonuses are chosen through three Guild Skill Trees instead of stacking automatically from Hall tiers.</Text>
+   <View style={s.skillTree}><Text style={s.skillTreeTitle}>PROFESSIONS</Text><Text style={s.note}>Non-combat only · Skilling XP, gathering speed and production speed · up to +6% per line.</Text></View>
+   <View style={s.skillTree}><Text style={s.skillTreeTitle}>FELLOWSHIP</Text><Text style={s.note}>Member capacity, Guild Quests, Project options and cooperative-system unlocks.</Text></View>
+   <View style={s.skillTree}><Text style={s.skillTreeTitle}>VANGUARD</Text><Text style={s.note}>Guild-content-only combat damage, defence, support and boss/raid contribution.</Text></View>
+   <Text style={s.cap}>Ranks use Guild Skill Points. Higher tree tiers require communal Development Projects and resources.</Text>
   </Panel>
   <Panel>
    <View style={s.sectionHead}><Text style={s.title}>Trophy Room</Text><Text style={s.sectionMeta}>{state.trophies.length} recorded</Text></View>
@@ -56,6 +59,6 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  track:{height:8,borderRadius:4,overflow:'hidden',backgroundColor:C.panel2,marginTop:8},fill:{height:'100%',backgroundColor:C.accent},
  facility:{minHeight:54,flexDirection:'row',alignItems:'center',gap:8,borderTopWidth:1,borderTopColor:C.line,paddingVertical:7},facilityName:{fontSize:10.5,color:C.text,fontWeight:'900'},
  tier:{minWidth:50,height:28,borderRadius:radii.sm,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2,alignItems:'center',justifyContent:'center'},tierText:{fontSize:9,color:C.accent,fontWeight:'900'},
- benefits:{flexDirection:'row',gap:5,marginTop:7},benefit:{flex:1,minWidth:0,padding:7,borderRadius:radii.sm,borderWidth:1,borderColor:C.line,backgroundColor:C.panel2},value:{color:C.good,fontSize:14,fontWeight:'900'},cap:{fontSize:8.5,lineHeight:12,color:C.muted,marginTop:6},
+ skillTree:{gap:2,padding:8,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2,marginTop:6},skillTreeTitle:{fontSize:9,color:C.accent,fontWeight:'900',letterSpacing:.65},cap:{fontSize:8.5,lineHeight:12,color:C.muted,marginTop:6},
  trophy:{paddingVertical:7,borderTopWidth:1,borderTopColor:C.line},empty:{minHeight:64,alignItems:'center',justifyContent:'center',gap:2,borderWidth:1,borderStyle:'dashed',borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2},emptyTitle:{fontSize:10.5,color:C.text,fontWeight:'900'},error:{color:C.bad},
 });}

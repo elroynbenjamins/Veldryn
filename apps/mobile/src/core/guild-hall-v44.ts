@@ -6,17 +6,17 @@ export interface GuildHallState{schemaVersion:44;guildId:string;revision:number;
 export interface GuildHallPolicy{enabled:boolean;hallLevelThresholds:number[];facilityProgressThresholds:number[];maxStoredTrophies:number;baseDisplayedTrophies:number;trainingXpBpsPerTier:number;workshopSpeedBpsPerTier:number;maxTrainingXpBps:number;maxWorkshopSpeedBps:number;maxExtraProjectDraftChoices:number}
 
 export const DEFAULT_GUILD_HALL_POLICY:GuildHallPolicy={
- enabled:true,hallLevelThresholds:[0,200,500,900,1400,2000,2700,3500,4400,5400,6500,7700,9000,10400,11900,13500,15200,17000,18900,20900],
+ enabled:true,hallLevelThresholds:[0,500,1300,2500,4200,6500,9500,13200,17700,23000],
  facilityProgressThresholds:[250,850,1850,3350,5450],maxStoredTrophies:100,baseDisplayedTrophies:2,
- trainingXpBpsPerTier:10,workshopSpeedBpsPerTier:10,maxTrainingXpBps:50,maxWorkshopSpeedBps:50,maxExtraProjectDraftChoices:2
+ trainingXpBpsPerTier:0,workshopSpeedBpsPerTier:0,maxTrainingXpBps:0,maxWorkshopSpeedBps:0,maxExtraProjectDraftChoices:2
 };
 export const GUILD_HALL_FACILITIES:GuildHallFacilityDefinition[]=[
- {id:'banner_gallery',name:'Banner Gallery',description:'Unlocks guild-banner presentation options.',tierHallLevels:[1,4,8,12,16]},
- {id:'trophy_room',name:'Trophy Room',description:'Archives accomplishments and expands visible trophy slots.',tierHallLevels:[3,6,10,14,18]},
- {id:'training_room',name:'Training Room',description:'Tiny skill-XP convenience bonus for members.',tierHallLevels:[5,8,11,14,17]},
- {id:'workshop',name:'Guild Workshop',description:'Tiny crafting/processing speed convenience bonus.',tierHallLevels:[7,10,13,16,19]},
- {id:'expedition_board',name:'Expedition Board',description:'Adds Guild Project draft choices, never active-project or reward limits.',tierHallLevels:[9,12,15,18,20]},
- {id:'raid_memorial',name:'Raid Memorial',description:'Permanent raid history and presentation progression.',tierHallLevels:[12,14,16,18,20]},
+ {id:'banner_gallery',name:'Banner Gallery',description:'Unlocks guild-banner presentation options.',tierHallLevels:[1,3,5,7,10]},
+ {id:'trophy_room',name:'Trophy Room',description:'Archives accomplishments and expands visible trophy slots.',tierHallLevels:[2,4,6,8,10]},
+ {id:'training_room',name:'Training Room',description:'Represents the Professions tree; stat bonuses are allocated through Guild Skills.',tierHallLevels:[3,5,7,9,10]},
+ {id:'workshop',name:'Guild Workshop',description:'Represents production progression; bonuses come from Guild Skills, not Hall tiers.',tierHallLevels:[4,6,8,9,10]},
+ {id:'expedition_board',name:'Expedition Board',description:'Expands Project presentation and future cooperative modes.',tierHallLevels:[5,7,8,9,10]},
+ {id:'raid_memorial',name:'Raid Memorial',description:'Permanent raid history and presentation progression for future Guild content.',tierHallLevels:[6,7,8,9,10]},
 ];
 const defs=new Map(GUILD_HALL_FACILITIES.map(row=>[row.id,row]));
 export function newGuildHallState(guildId:string,nowMs:number):GuildHallState{const facilities={} as Record<GuildHallFacilityId,GuildHallFacilityState>;for(const d of GUILD_HALL_FACILITIES)facilities[d.id]={facilityId:d.id,progress:0,tier:0,updatedAtMs:nowMs};return {schemaVersion:44,guildId,revision:0,hallProgress:0,lifetimeProjectsCompleted:0,facilities,trophies:[],createdAtMs:nowMs,updatedAtMs:nowMs}}
@@ -32,4 +32,4 @@ export function applyGuildHallProjectCompletion(state:GuildHallState,event:{even
  return {beforeLevel,afterLevel:guildHallLevel(state.hallProgress,policy),upgradedFacilities:GUILD_HALL_FACILITIES.filter(d=>state.facilities[d.id].tier>before[d.id]).map(d=>({facilityId:d.id,fromTier:before[d.id],toTier:state.facilities[d.id].tier}))};
 }
 export function guildHallBenefits(state:GuildHallState,policy=DEFAULT_GUILD_HALL_POLICY){return {skillXpBonusBps:Math.min(policy.maxTrainingXpBps,state.facilities.training_room.tier*policy.trainingXpBpsPerTier),craftingProcessingSpeedBps:Math.min(policy.maxWorkshopSpeedBps,state.facilities.workshop.tier*policy.workshopSpeedBpsPerTier),extraProjectDraftChoices:Math.min(policy.maxExtraProjectDraftChoices,state.facilities.expedition_board.tier>=4?2:state.facilities.expedition_board.tier>=2?1:0)}}
-export function guildHallVisualStage(level:number){return level>=20?'Legendary Hall':level>=15?'Great Hall':level>=10?'Grand Hall':level>=5?'Established Hall':'Foundations'}
+export function guildHallVisualStage(level:number){return level>=10?'Grand Hall':level>=7?'Great Hall':level>=5?'Established Hall':level>=3?'Rising Hall':'Foundations'}

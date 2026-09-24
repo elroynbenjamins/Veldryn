@@ -39,7 +39,7 @@ function pick(
 }
 
 export function buildGuildWeeklyProjectBoard(guildId: string, guildLevel: number, date = new Date()): GuildProjectBoardCandidate[] {
-  if (guildLevel < 10) return [];
+  if (guildLevel < 3) return [];
   const cycleKey = guildProjectWeekKey(date);
   const focuses = ['combat','skilling','mixed'] as const;
   return focuses.map((focus) => {

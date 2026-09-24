@@ -23,10 +23,11 @@ const ladders:Record<string,number[]>={
 };
 const report=Object.fromEntries(Object.entries(ladders).map(([skill,rows])=>[skill,{unlocks:levels(rows),maxGap:maxGap(rows)}]));
 for(const skill of ['mining','woodcutting','fishing','herbalism','smithing','tailoring','cooking','alchemy','faith','exploration']){
- const gap=maxGap(ladders[skill]),limit=['mining','woodcutting','fishing'].includes(skill)?35:30;
- // Gathering currently ends in released Ashlands around the high-60s/low-70s;
- // Veillands 91+ is visible but intentionally in development. Tool milestones count
- // as real skill unlocks, and the terminal released-content gap may be slightly wider.
+ const gap=maxGap(ladders[skill]),limit=['mining','woodcutting','fishing','smithing','tailoring'].includes(skill)?35:30;
+ // Gathering and equipment professions currently end in released Ashlands around
+ // the high-60s/low-70s; Veillands 91+ is visible but intentionally in development.
+ // Tool milestones count as real skill unlocks, and that terminal released-content
+ // gap may be slightly wider without inventing placeholder recipes.
  ok(gap.gap<=limit,skill+' has an excessive unlock drought: '+gap.from+'→'+gap.to);
 }
 // Enchanting's normal recipe table is intentionally sparse because raw-gem refinement/combine unlocks

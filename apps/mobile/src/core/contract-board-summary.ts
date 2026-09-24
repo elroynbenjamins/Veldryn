@@ -2,6 +2,7 @@
 import type {GameState} from './types';
 import type {WeeklyOrder} from './weekly-orders-v41';
 import {weeklyOrderBoardForState} from './long-term-progression-runtime';
+import {earlyFeatureUnlocked} from './feature-unlocks';
 
 export interface ContractBoardSummary{
  weekKey:string;
@@ -16,6 +17,7 @@ export interface ContractBoardSummary{
 function progressRatio(order:WeeklyOrder){return order.target>0?Math.max(0,Math.min(1,order.progress/order.target)):1}
 
 export function contractBoardSummary(state:GameState,nowMs=Date.now()):ContractBoardSummary{
+ if(!earlyFeatureUnlocked(state,'contracts'))return {weekKey:'locked',endsAtMs:0,total:0,complete:0,pendingRewards:0,completionRewardQueued:false};
  const board=weeklyOrderBoardForState(state,nowMs);
  const pending=(state.account.weeklyOrderPendingRewards??[]).filter(row=>row.weekKey===board.weekKey);
  const incomplete=board.orders.filter(order=>order.progress<order.target);
@@ -44,6 +46,7 @@ export interface ContractBoardRegionFocus{
 
 /** Contextual Contract Board projection for the World screen current-region hub. */
 export function contractBoardRegionFocus(state:GameState,regionId:string,nowMs=Date.now()):ContractBoardRegionFocus{
+ if(!earlyFeatureUnlocked(state,'contracts'))return {regionId,total:0,complete:0};
  const board=weeklyOrderBoardForState(state,nowMs);
  const local=board.orders.filter(order=>order.regionId===regionId);
  const incomplete=local.filter(order=>order.progress<order.target);

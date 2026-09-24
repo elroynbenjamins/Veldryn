@@ -66,6 +66,13 @@ ok(friends.includes('keyboardDismissMode="on-drag"'),'Friends search must dismis
 const guild=read('src/screens/GuildScreen.tsx');
 ok(guild.includes('tabChip:{minHeight:44'),'Guild tabs must retain a 44px touch target');
 ok(guild.includes('accessibilityLabel={badgeLabel?'),'Guild tab badges must be included in the tab accessibility label');
+ok((guild.match(/keyboardShouldPersistTaps="handled"/g)??[]).length>=3&&guild.includes('keyboardDismissMode="on-drag"'),'Guild directory, chat and customization controls must remain tappable while their child fields have the keyboard open');
+
+const social=read('src/screens/SocialScreen.tsx');
+ok(social.includes('keyboardShouldPersistTaps="handled"')&&social.includes('keyboardDismissMode="on-drag"'),'Social recruitment filters must not consume the first tap while search/tag fields are focused');
+
+const profileCustomize=read('src/screens/ProfileCustomizeScreen.tsx');
+ok(profileCustomize.includes('keyboardShouldPersistTaps="handled"')&&profileCustomize.includes('keyboardDismissMode="on-drag"'),'Profile customization must keep preview, preset and save controls responsive with the keyboard open');
 
 const achievements=read('src/screens/AchievementsScreen.tsx');
 ok(achievements.includes('filter:{minHeight:44'),'Achievement filters must retain a 44px touch target');

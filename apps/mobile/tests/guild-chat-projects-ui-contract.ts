@@ -29,8 +29,9 @@ ok(app.includes('onlineChatUnread={notificationCounts.guildChatUnread}'),'Guild 
 ok(app.includes('onlineChatMentions={notificationCounts.guildChatMentions}'),'Guild Chat tab must reuse durable mention state');
 ok(app.includes('firstUnreadMessageId={notificationCounts.guildFirstUnreadMessageId}'),'Direct Guild Chat must preserve unread divider state');
 
-for(const label of ['My Guild','Projects','PvE','Chat','Hall','Directory','Customize'])ok(guildScreen.includes("'"+label+"'"),'Online Guild tabs must include '+label);
-ok(guildScreen.includes("onlineSection==='Projects'?onlineProjects:null"),'Projects tab must render live Project content');
+for(const label of ['Home','Members','Activities','Hall','Chat','Manage','Future'])ok(guildScreen.includes("'"+label+"'"),'Online Guild tabs must include '+label);
+ok(guildScreen.includes("onlineSection==='Activities'?<View")&&guildScreen.includes('{onlineProjects}')&&guildScreen.includes('{onlinePve}'),'Activities tab must render live Projects and PvE in the consolidated activity surface');
+ok(guildScreen.includes("onlineSection==='Manage'?<View")&&guildScreen.includes('{onlineDirectory}')&&guildScreen.includes('{onlineCustomize}'),'Manage tab must group Directory and customization');
 ok(guildScreen.includes("onlineSection==='Chat'?onlineChat:null"),'Chat tab must render Guild Chat');
 ok(guildScreen.includes("badge={value==='Chat'?Math.max(onlineChatUnread,onlineChatMentions):0}"),'Guild Chat tab must surface unread/mention attention');
 ok(guildScreen.includes('tabBadgeWarning:{backgroundColor:C.warning}'),'Guild Chat mentions must have warning emphasis');

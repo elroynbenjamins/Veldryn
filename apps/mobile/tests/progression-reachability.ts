@@ -3,6 +3,7 @@ import {GATHERING,RECIPES} from '../src/content/skills';
 import {HERB_NODES,HERBALISM_ESSENCE_BY_ZONE} from '../src/content/herbalism';
 import {MONSTERS} from '../src/content/monsters';
 import {DUNGEON_MATERIAL_SOURCES} from '../src/content/dungeon-material-sources';
+import {GEM_DISMANTLE_DUST_V1} from '../src/core/gem-progression-v1';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 const itemIds=new Set(ITEMS.map(row=>row.id));
@@ -11,6 +12,9 @@ for(const row of [...GATHERING,...HERB_NODES])direct.add(row.itemId);
 for(const row of Object.values(HERBALISM_ESSENCE_BY_ZONE))direct.add(row.itemId);
 for(const monster of MONSTERS)for(const drop of monster.drops)direct.add(drop.itemId);
 for(const source of DUNGEON_MATERIAL_SOURCES)direct.add(source.itemId);
+// Gem Dust is intentionally recycled from socketable canonical gems rather than dropped directly.
+// Grade-I raw gems drop in Asterfall, refine into canonical gems, and any canonical grade can be dismantled.
+if(Object.values(GEM_DISMANTLE_DUST_V1).some(value=>value>0)&&MONSTERS.some(monster=>monster.drops.some(drop=>drop.itemId.startsWith('raw_gem:'))))direct.add('GEM_DUST');
 
 // A recipe output is reachable only after every input is reachable. Iterate to a fixed point
 // so multi-step processing chains (ore -> ingot -> fitting -> tool/equipment) are validated.

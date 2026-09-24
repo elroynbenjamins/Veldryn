@@ -300,13 +300,23 @@ export const COMPANION_SPECIAL_CHALLENGES:CompanionSpecialChallengeDefinition[]=
 ];
 
 const utcBounds=(seasonKey:string)=>{const [y,m]=seasonKey.split('-').map(Number);const startsAt=new Date(Date.UTC(y,m-1,1)).toISOString();const endsAt=new Date(Date.UTC(y,m,1)).toISOString();return{startsAt,endsAt};};
-const SEASON_OVERRIDES:Record<string,Partial<Omit<CompanionTrialSeasonDefinition,'seasonKey'|'startsAt'|'endsAt'>>>={
- '2026-09':{floorSetId:'tower_v1',modifiers:['armored','unstable_magic'],rewardSetId:'monthly_v1',specialChallenges:['NO_PRESTIGE_15','SUNSCAR_PAIR','AFFINITY_TRIAD'],featuredOrigin:'REG_SUNSCAR',featuredCompanionIds:['UNIT_013','UNIT_014','UNIT_015','UNIT_016']},
- '2026-10':{floorSetId:'tower_v1',modifiers:['thick_hide','execution'],rewardSetId:'monthly_v1',specialChallenges:['STANDARD_BOSS','FROSTMARCH_PAIR','RADIANT_UMBRAL'],featuredOrigin:'REG_FROSTMARCH',featuredCompanionIds:['UNIT_017','UNIT_018','UNIT_019','UNIT_020']},
- '2026-11':{floorSetId:'tower_v1',modifiers:['relentless','frailty'],rewardSetId:'monthly_v1',specialChallenges:['RARITY_SPECTRUM','ASHLANDS_PAIR','NO_CONSTRUCT_15'],featuredOrigin:'REG_ASHLANDS',featuredCompanionIds:['UNIT_021','UNIT_022','UNIT_023','UNIT_024']},
-};
+export const COMPANION_TRIAL_ROTATIONS=[
+ {id:'ROTATION_1_GLASS_AND_SAND',name:'Glass & Sand',floorSetId:'tower_v1',modifiers:['armored','unstable_magic'],rewardSetId:'monthly_v1',specialChallenges:['NO_PRESTIGE_15','SUNSCAR_PAIR','AFFINITY_TRIAD'],featuredOrigin:'REG_SUNSCAR',featuredCompanionIds:['UNIT_013','UNIT_014','UNIT_015','UNIT_016']},
+ {id:'ROTATION_2_BELLS_AND_SHADOW',name:'Bells & Shadow',floorSetId:'tower_v1',modifiers:['thick_hide','execution'],rewardSetId:'monthly_v1',specialChallenges:['STANDARD_BOSS','FROSTMARCH_PAIR','RADIANT_UMBRAL'],featuredOrigin:'REG_FROSTMARCH',featuredCompanionIds:['UNIT_017','UNIT_018','UNIT_019','UNIT_020']},
+ {id:'ROTATION_3_CRUCIBLE',name:'The Crucible',floorSetId:'tower_v1',modifiers:['relentless','frailty'],rewardSetId:'monthly_v1',specialChallenges:['RARITY_SPECTRUM','ASHLANDS_PAIR','NO_CONSTRUCT_15'],featuredOrigin:'REG_ASHLANDS',featuredCompanionIds:['UNIT_021','UNIT_022','UNIT_023','UNIT_024']},
+ {id:'ROTATION_4_ROOTS_AND_RUNES',name:'Roots & Runes',floorSetId:'tower_v1',modifiers:['rushing','shattering'],rewardSetId:'monthly_v1',specialChallenges:['ASTERFALL_PAIR','PRIMAL_WILD_PAIR','FLAWLESS_15'],featuredOrigin:'REG_001',featuredCompanionIds:['UNIT_001','UNIT_002','UNIT_003','UNIT_004']},
+ {id:'ROTATION_5_RIFT_CONVERGENCE',name:'Rift Convergence',floorSetId:'tower_v1',modifiers:['arcane_storm','anti_heal'],rewardSetId:'monthly_v1',specialChallenges:['AFFINITY_TRIAD','WORLDLY_TRIO','UNDER_POWER_20']},
+ {id:'ROTATION_6_ECHO_CROWN',name:'Echo Crown',floorSetId:'tower_v1',modifiers:['predator','armored'],rewardSetId:'monthly_v1',specialChallenges:['RADIANT_UMBRAL','RARITY_SPECTRUM','PRIMAL_WILD_PAIR']},
+] as const;
+export const COMPANION_TRIAL_ROTATION_ANCHOR='2026-09';
+export function companionTrialRotationIndex(seasonKey:string){
+ const [year,month]=seasonKey.split('-').map(Number),[anchorYear,anchorMonth]=COMPANION_TRIAL_ROTATION_ANCHOR.split('-').map(Number);
+ if(!Number.isInteger(year)||!Number.isInteger(month)||month<1||month>12)throw new Error('invalid_companion_trial_season_key');
+ const delta=(year-anchorYear)*12+(month-anchorMonth);
+ return ((delta%COMPANION_TRIAL_ROTATIONS.length)+COMPANION_TRIAL_ROTATIONS.length)%COMPANION_TRIAL_ROTATIONS.length;
+}
+export function companionTrialRotation(seasonKey:string){return COMPANION_TRIAL_ROTATIONS[companionTrialRotationIndex(seasonKey)];}
 export function companionTrialSeasonDefinition(seasonKey:string):CompanionTrialSeasonDefinition{
- const bounds=utcBounds(seasonKey),rotation=['2026-09','2026-10','2026-11'];
- const override=SEASON_OVERRIDES[seasonKey]??SEASON_OVERRIDES[rotation[Number(seasonKey.slice(5))%rotation.length]];
- return {seasonKey,...bounds,floorSetId:override.floorSetId??'tower_v1',modifiers:override.modifiers??[],rewardSetId:override.rewardSetId??'monthly_v1',specialChallenges:override.specialChallenges??[],featuredOrigin:override.featuredOrigin,featuredCompanionIds:override.featuredCompanionIds};
+ const bounds=utcBounds(seasonKey),rotation=companionTrialRotation(seasonKey);
+ return {seasonKey,...bounds,rotationId:rotation.id,rotationName:rotation.name,floorSetId:rotation.floorSetId,modifiers:[...rotation.modifiers],rewardSetId:rotation.rewardSetId,specialChallenges:[...rotation.specialChallenges],featuredOrigin:'featuredOrigin' in rotation?rotation.featuredOrigin:undefined,featuredCompanionIds:'featuredCompanionIds' in rotation?[...rotation.featuredCompanionIds]:undefined};
 }

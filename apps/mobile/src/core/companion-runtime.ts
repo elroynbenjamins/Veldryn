@@ -14,8 +14,8 @@ import {claimCompanionCodexMilestone} from '../../../../backend/src/server/compa
 import {projectCompanionCodex,projectCompanionTrial,projectCompanionProvingGrounds} from '../../../../backend/src/server/companions/projection';
 import {claimCompanionProvingGroundChallenge,recordCompanionProvingGroundEvent,activeCompanionProvingGroundChallenges,provingGroundEventMatches} from '../../../../backend/src/server/companions/proving-grounds';
 import {companionTrialWeekKey} from '../../../../backend/src/server/companions/trial-season';
-import {companionTeamPower} from '../../../../backend/src/server/companions/team';
-import {COMPANION_SPECIAL_CHALLENGES,companionMission,companionTrialRecommendedPower,companionServerDefinition} from '../../../../backend/src/server/companions/content';
+import {companionTeamPower,validateCompanionTrialTeam} from '../../../../backend/src/server/companions/team';
+import {COMPANION_SPECIAL_CHALLENGES,COMPANION_WEEKLY_CHALLENGES,companionMission,companionTrialRecommendedPower,companionServerDefinition,companionTrialSeasonDefinition} from '../../../../backend/src/server/companions/content';
 import {resolveSpecialCompanionChallenge} from '../../../../backend/src/server/companions/special-challenges';
 import {companionExpeditionStaminaCost,companionFoodStamina} from './companion-provisions';
 import {itemDef} from '../content/items';
@@ -148,18 +148,30 @@ export function companionAvailability(state:GameState,id:string):{status:Compani
   if(state.character?.equippedCombatCompanionId===id)return {status:'equipped',label:'Equipped'};
   return {status:'available',label:'Available'};
 }
-export function recommendedCompanionTrialTeam(state:GameState){
+export function recommendedCompanionTrialTeam(state:GameState,now=Date.now()){
   const owned=companionOwned(state),roles:CombatCompanionRole[]=['tank','damage','support'];
   const candidates=Object.keys(owned).filter(id=>{const status=companionAvailability(state,id).status;return status==='available'||status==='equipped';});
   const byRole=Object.fromEntries(roles.map(role=>[role,candidates.filter(id=>companionServerDefinition(id)?.role===role)])) as Record<CombatCompanionRole,string[]>;
   const missingRoles=roles.filter(role=>byRole[role].length===0);
-  if(missingRoles.length)return {ids:[] as string[],power:0,ready:false,missingRoles};
-  let best:string[]=[];let bestPower=-1;
-  for(const tank of byRole.tank)for(const damage of byRole.damage)for(const support of byRole.support){
-    const ids=[tank,damage,support],power=companionTeamPower(ids,owned);
-    if(power>bestPower){best=ids;bestPower=power;}
-  }
-  return {ids:best,power:Math.max(0,bestPower),ready:best.length===3,missingRoles:[] as CombatCompanionRole[]};
+  if(missingRoles.length)return {ids:[] as string[],power:0,ready:false,missingRoles,targetChallenge:undefined,targetMet:false,missingAffinities:[] as string[],reason:'Missing a required Trial role.'};
+  const projected=projectCompanionTrial(state.account.companionTrialProgress,now).progress,season=companionTrialSeasonDefinition(projected.season.seasonKey);
+  const affinityTypes=new Set(['require_affinity','prohibit_affinity','affinity_diversity','affinity_unique']);
+  const targetChallenge=season.specialChallenges.map(id=>COMPANION_WEEKLY_CHALLENGES.find(c=>c.id===id)).find(c=>c?.restrictions.some(r=>affinityTypes.has(r.type)));
+  const choose=(restrictions:NonNullable<typeof targetChallenge>['restrictions']|undefined)=>{
+    let best:string[]=[];let bestPower=-1;
+    for(const tank of byRole.tank)for(const damage of byRole.damage)for(const support of byRole.support){
+      const ids=[tank,damage,support],check=validateCompanionTrialTeam({companionIds:ids,owned,busyCompanionIds:new Set(),restrictions});
+      if(!check.ok)continue;
+      const power=check.power;if(power>bestPower){best=ids;bestPower=power;}
+    }
+    return {ids:best,power:Math.max(0,bestPower)};
+  };
+  const targeted=targetChallenge?choose(targetChallenge.restrictions):{ids:[] as string[],power:0};
+  if(targeted.ids.length)return {...targeted,ready:true,missingRoles:[] as CombatCompanionRole[],targetChallenge:{id:targetChallenge!.id,name:targetChallenge!.name,description:targetChallenge!.description},targetMet:true,missingAffinities:[] as string[],reason:undefined};
+  const fallback=choose(undefined);
+  const affinityCounts=new Map<string,number>();for(const id of candidates){const affinity=companionServerDefinition(id)?.affinity;if(affinity)affinityCounts.set(affinity,(affinityCounts.get(affinity)??0)+1);}
+  const missingAffinities=targetChallenge?.restrictions.flatMap(r=>r.type==='require_affinity'&&(affinityCounts.get(r.affinity)??0)<r.count?[r.affinity]:[])??[];
+  return {...fallback,ready:fallback.ids.length===3,missingRoles:[] as CombatCompanionRole[],targetChallenge:targetChallenge?{id:targetChallenge.id,name:targetChallenge.name,description:targetChallenge.description}:undefined,targetMet:!targetChallenge,missingAffinities,reason:targetChallenge?'No available Tank / Damage / Support trio currently meets the monthly Affinity rule.':undefined};
 }
 export function recommendedCompanionMissionTeam(state:GameState,missionId:string,now:number){
   const mission=companionMission(missionId),owned=companionOwned(state);

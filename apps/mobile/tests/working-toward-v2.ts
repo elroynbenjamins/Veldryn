@@ -17,6 +17,7 @@ function ok(value:unknown,message:string){if(!value)fail(message)}
 function equal(actual:unknown,expected:unknown,message:string){if(actual!==expected)fail(message+': expected '+String(expected)+', got '+String(actual))}
 
 let state=createCharacter(newGame(0),'IRONWARDEN','Planner Test');
+state={...state,quests:state.quests.map(row=>row.questId==='QST_002'?{...row,status:'claimed' as const,progress:2}:row)};
 const characterId=state.character!.id;
 
 const skillGoal:ProgressionGoal={id:'goal-skill',characterId,kind:'skill_level',title:'Mining 10',createdAtMs:0,pinnedAtMs:0,skillId:'mining',targetLevel:10};

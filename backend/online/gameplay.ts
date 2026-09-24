@@ -61,8 +61,8 @@ export function gameplayHandler(services:GameplayServices){return async(request:
   // Translate verified actions using the same current content as the simulation, never client weights.
   const contributions=(adminQa?[]:result.contributions).map(event=>{
    let metric='',units=event.units;
-   if(event.kind==='gathering'){const target=[...GATHERING,...HERB_NODES].find(row=>row.id===event.contentId);if(!target)throw new Error('unknown_gathering');metric='verified_weighted_gather_actions';units*=target.seconds/22;}
-   else if(event.kind==='crafting'){metric='verified_weighted_crafts';const recipe=RECIPES.find(row=>row.id===event.contentId);if(!recipe)throw new Error('unknown_recipe');}
+   if(event.kind==='gathering'){const target=[...GATHERING,...HERB_NODES].find(row=>row.id===event.contentId);if(!target)throw new Error('unknown_gathering');metric='verified_weighted_gather_actions';return {...event,metric,units:units*target.seconds/22,skillId:target.skillId,questUnits:event.units};}
+   else if(event.kind==='crafting'){metric='verified_weighted_crafts';const recipe=RECIPES.find(row=>row.id===event.contentId);if(!recipe)throw new Error('unknown_recipe');return {...event,metric,units,skillId:recipe.skillId,questUnits:event.units};}
    else if(event.kind==='boss')metric='verified_regional_boss_kills';
    else {const monster=MONSTERS.find(row=>row.id===event.contentId);if(!monster)throw new Error('unknown_monster');metric=monster.boss?'verified_regional_boss_kills':'verified_standard_enemy_kills';}
    return {...event,metric,units};
@@ -70,6 +70,7 @@ export function gameplayHandler(services:GameplayServices){return async(request:
   const response={state:result.state,version:loaded.version+1,serverNow:loaded.serverNow,accountId,reward:result.reward,activity:result.activity,message:result.message,won:result.won,storyBossBattle:result.storyBossBattle,upgrade:result.upgrade,forgeResults:result.forgeResults};
   const commitRpc=command.type==='roster_delete'?'commit_online_game_server_v2':'commit_online_game_server_v1';
   const committed=await services.rpc(commitRpc,{p_account_id:accountId,p_expected_version:loaded.version,p_expected_gold:loaded.walletGold,p_request_id:body.requestId,p_request_hash:requestHash,p_response:response,p_contributions:contributions,...(command.type==='roster_delete'?{p_deleted_character_id:(command.args as {id:string}).id}: {})});
+  try{await services.rpc('guild_quest_record_contributions_v1',{p_account_id:accountId,p_contributions:contributions.map(e=>({...e,units:(e as typeof e&{questUnits?:number}).questUnits??e.units}))});}catch{/* Quest telemetry must not invalidate an already committed gameplay action. */}
   return json(committed);
  }catch(error){const message=error instanceof Error?error.message:'server_error';const conflict=/stale_state|idempotency_key_conflict/.test(message);const status=conflict?409:error instanceof GameplayError?error.status:503;return json({error:status===503?'Server temporarily unavailable. Retry the pending action.':message},status);}
 };}

@@ -338,7 +338,7 @@ const next=discoverCharacterSkins(candidate);queuePreparationNotices(current,nex
     }
     if(destination.kind==='contracts'){openQuestMode('contracts');return;}
     if(destination.kind==='inventory'){setTab('Inventory');return;}
-    if(destination.kind==='dungeon'){const reason=earlyFeatureLockReason(state,'Coop');if(reason){Alert.alert('Dungeons locked',reason);return;}setGoalDungeonId(destination.dungeonId);setTab('Coop');return;}
+    if(destination.kind==='dungeon'){const current=stateRef.current;if(!current){Alert.alert('Dungeons unavailable','Load your character first.');return;}const reason=earlyFeatureLockReason(current,'Coop');if(reason){Alert.alert('Dungeons locked',reason);return;}setGoalDungeonId(destination.dungeonId);setTab('Coop');return;}
     if(destination.kind==='world'){setGoalRegionId(destination.regionId);setTab('World');}
   }
   function openWorkingTowardDestination(destination:WorkingTowardDestination){

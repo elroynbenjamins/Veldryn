@@ -61,7 +61,7 @@ export function skillMilestones(state:GameState,skillId:SkillId):SkillMilestone[
    const blueprintSource=tool.blueprint?MONSTERS.find(monster=>monster.id===tool.blueprint!.sourceMonsterId):undefined;
    rows.push({
     id:'tool:'+tool.id,kind:'tool',level:tool.unlockLevel,title:tool.name,category:'TOOL TIER',
-    detail:'Tier '+tool.tier+' · Level '+tool.requiredCharacterLevel+' + '+pretty(skillId)+' '+tool.unlockLevel+' · Smithing '+tool.recipe.level+(tool.blueprint?' · blueprint: '+(blueprintSource?.name??tool.blueprint.sourceMonsterId):' · recipe known'),
+    detail:'Tier '+tool.tier+' · Level '+tool.requiredCharacterLevel+' + '+pretty(skillId)+' '+tool.unlockLevel+' · Smithing '+tool.recipe.level+(tool.blueprint?' · blueprint: '+(blueprintSource?.name??tool.blueprint.sourceMonsterId)+' · '+Math.round(tool.blueprint.dropChance*100)+'% drop':' · recipe known'),
     destination:{kind:'skills',skillId:'smithing',mode:'crafting',recipeId:'CRAFT_'+tool.id,button:'Craft '+tool.name,detail:'Open the Smithing recipe for '+tool.name+'.'},
    });
   }

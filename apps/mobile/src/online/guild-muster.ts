@@ -122,7 +122,7 @@ export async function loadOnlineGuildMuster():Promise<{state:OnlineGuildMusterSt
     activityTargetUnits:num(activityRow?.target_units)||100,
     activityDailyDecayPercent:num(activityRow?.inactive_decay_percent)||10,
     activityPartialDecayPercent:num(activityRow?.partial_decay_percent)||5,
-    activityDecayMode:(activityRow?.decay_mode==='protected'||activityRow?.decay_mode==='partial'?activityRow.decay_mode:'inactive') as 'protected'|'partial'|'inactive',
+    activityDecayMode:(activityRow?.decay_mode==='protected'||activityRow?.decay_mode==='partial'?String(activityRow?.decay_mode):'inactive') as 'protected'|'partial'|'inactive',
     activityTodayUnits:num(activityRow?.activity_today_units),
     activityActiveMemberCount:num(activityRow?.active_member_count)||1,
     gatheringSpeedBps:num(activityRow?.gathering_speed_bps),

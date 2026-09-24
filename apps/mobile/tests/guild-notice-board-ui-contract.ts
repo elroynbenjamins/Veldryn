@@ -14,7 +14,7 @@ ok(app.includes("import {OnlineGuildNoticeBoardPanel}"),'App must import the onl
 ok(app.includes('onlineBoard={<OnlineGuildNoticeBoardPanel/>}'),'App must wire the Notice Board into the Guild screen');
 
 ok(screen.includes("'Board'"),'Online Guild sections must include Board');
-ok(screen.includes("onlineSection==='Board'?onlineBoard:null"),'Board tab must render member Notice Board content');
+ok(screen.includes("onlineSection==='Home'?<GuildOnlineHome")&&screen.includes('board={onlineBoard}'),'Guild Home must render the member Notice Board content');
 ok(screen.includes('the member Notice Board'),'Guild hub description must acknowledge the Notice Board');
 
 ok(board.includes('MEMBER NOTICE BOARD'),'Notice Board must have clear Guild-member context');

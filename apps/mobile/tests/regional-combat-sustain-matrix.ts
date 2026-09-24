@@ -4,20 +4,10 @@ import {itemDef} from '../src/content/items';
 import type {GameState} from '../src/core/types';
 import {REGIONAL_COMBAT_FIXTURES,regionalCombatFixture} from '../src/core/regional-combat-fixtures';
 
-const localFoodByRegion:Readonly<Record<string,string>>={
- Greenfields:'COOKED_MEADOW_PERCH',
- Silverbrook:'COOKED_SILVERFIN',
- 'Ironwood Forest':'ROASTED_ROOTSTREAM_TROUT',
- 'Old Mines':'BAKED_CAVE_LOACH',
- "King's Road":'ROASTED_CROWN_CARP',
- Sunscar:'GLASSFIN_FEAST',
- Frostmarch:'FROSTED_ICEFIN',
- Ashlands:'CHARRED_EMBERFIN',
-};
 const durations=[1,4,8,24] as const,report:Array<Record<string,unknown>>=[];
 let previousHeal=0;
 for(const def of REGIONAL_COMBAT_FIXTURES){
- const foodId=localFoodByRegion[def.regionName];assert.ok(foodId,def.regionName+' must have a local cooked-fish sustain item');
+ const foodId=def.foodId;assert.ok(foodId,def.regionName+' must have a local cooked-fish sustain item');
  const prepared=regionalCombatFixture(def,'prepared');
  const state={...prepared,character:{...prepared.character!,equippedFoodId:foodId}} as GameState;
  const food=itemDef(foodId);assert.equal(food.type,'food',def.regionName+' sustain item must be real food');

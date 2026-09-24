@@ -26,6 +26,9 @@ for(const id of ['workingToward','dailySupplies','events'] as const)assert.equal
 assert.equal(earlyFeatureUnlocked(state,'pets'),false);
 assert.equal(earlyFeatureLockReason(state,'Progression'),'');
 assert.ok(earlyFeatureLockReason(state,'Friends').includes("A Hound's Trail"));
+assert.ok(earlyFeatureLockReason(state,'Party').includes('Into Ironwood'));
+assert.ok(earlyFeatureLockReason(state,'Dungeon').includes('level 15'));
+assert.ok(earlyFeatureLockReason(state,'Coop').includes('level 15'));
 
 state=claimQuest(state,'QST_003',6);
 for(const id of ['pets','accountBonuses','friends'] as const)assert.equal(earlyFeatureUnlocked(state,id),true,id+' should unlock at QST_003');
@@ -34,7 +37,13 @@ assert.equal(earlyFeatureUnlocked(state,'companions'),false);
 state=claimQuest(state,'QST_005',10);
 for(const id of ['companions','social','contracts','masteryHall'] as const)assert.equal(earlyFeatureUnlocked(state,id),true,id+' should unlock at QST_005');
 assert.equal(earlyFeatureUnlocked(state,'guild'),false);
+assert.equal(earlyFeatureLockReason(state,'Party'),'');
 assert.ok(earlyFeatureLockReason(state,'Guild').includes('Place Among Guilds'));
+assert.ok(earlyFeatureLockReason(state,'Dungeon').includes('level 15'));
+
+state={...state,character:{...state.character!,level:15}};
+assert.equal(earlyFeatureLockReason(state,'Dungeon'),'');
+assert.equal(earlyFeatureLockReason(state,'Coop'),'');
 
 state=claimQuest(state,'QST_011',20);
 for(const id of ['guild','rankings'] as const)assert.equal(earlyFeatureUnlocked(state,id),true,id+' should unlock at QST_011');

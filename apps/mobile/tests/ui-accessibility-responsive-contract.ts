@@ -31,6 +31,10 @@ ok(reward.includes('useSafeAreaInsets')&&reward.includes('statusBarTranslucent')
 ok(reward.includes('useWindowDimensions')&&reward.includes('rewardActionsStack'),'Reward follow-up actions must stack on narrow phones or large text');
 ok(reward.includes('accessibilityViewIsModal')&&reward.includes('onAccessibilityEscape={onClose}'),'Reward results must expose modal accessibility semantics');
 
+const chatOverlay=read('src/components/ChatOverlay.tsx');
+ok(chatOverlay.includes('useWindowDimensions')&&chatOverlay.includes("expandWindow=width<360||fontScale>=1.25"),'Expanded chat must use more vertical space on narrow phones and large text');
+ok(chatOverlay.includes('reduceMotion={state.settings.reduceMotion}'),'Expanded chat must propagate reduced-motion preference into live channel identity rendering');
+
 const chatPlayer=read('src/components/ChatPlayerSheet.tsx');
 ok(chatPlayer.includes('useWindowDimensions')&&chatPlayer.includes("stackActions=width<360||fontScale>=1.25"),'Chat player actions must adapt to narrow phones and large text');
 ok(chatPlayer.includes('actionsStack')&&chatPlayer.includes("actionStack:{flex:0,width:'100%',minWidth:0}"),'Chat player actions must stack full-width instead of squeezing');

@@ -1,5 +1,5 @@
 import {createCharacter,newGame,startCombat} from '../src/core/game';
-import {progressionGoalContext,progressionGoalDestination,workingTowardItemSourceEntries,workingTowardReadyCount,workingTowardTrackableItems} from '../src/core/working-toward';
+import {progressionGoalContext,progressionGoalDestination,workingTowardDestinationAvailability,workingTowardItemSourceEntries,workingTowardReadyCount,workingTowardTrackableItems} from '../src/core/working-toward';
 import {MASTERY_GOAL_RANKS,masteryGoalForAction,nextMasteryGoalRank,normalizeProgressionGoals,progressionGoalView,type ProgressionGoal} from '../src/core/progression-goals-v40';
 import {RECIPES} from '../src/content/skills';
 import {totalXpAtLevel} from '../src/core/progression';
@@ -93,6 +93,18 @@ ok(catalystDungeons.every(source=>source.typeLabel==='Dungeon'),'Dungeon materia
 ok(catalystDungeons.every(source=>source.availability.status==='locked'),'Fresh characters see level-gated dungeon material sources as locked rather than falsely ready');
 ok(catalystDungeons.every(source=>source.destination.detail.includes('% boss reward chance')),'Dungeon material source detail exposes the canonical boss reward chance');
 ok(catalystCrafting[0]?.destination.detail.includes('Enchanting Lv 70'),'Catalyst synthesis source must expose its Enchanting level gate');
+
+const toolRecipe=RECIPES.find(row=>row.id==='CRAFT_ASTER_IRON_HATCHET')!;
+const toolRecipeDestination={kind:'skills' as const,skillId:'smithing' as const,mode:'crafting' as const,recipeId:toolRecipe.id,button:'Craft Aster-Iron Hatchet',detail:'Open tool recipe.'};
+const toolGateState={...state,character:{...state.character!,level:16},skills:state.skills.map(skill=>skill.skillId==='woodcutting'?{...skill,level:10,xp:totalXpAtLevel(10)}:skill.skillId==='smithing'?{...skill,level:12,xp:totalXpAtLevel(12)}:skill)};
+const missingBlueprintAvailability=workingTowardDestinationAvailability(toolGateState,toolRecipeDestination);
+equal(missingBlueprintAvailability.status,'locked','Tool recipe source stays locked while its first-craft blueprint is missing');
+ok(missingBlueprintAvailability.detail.includes('Blueprint'),'Tool recipe blocker names the missing blueprint rather than claiming the recipe is available');
+const blueprintOwnedState={...toolGateState,inventory:{...toolGateState.inventory,stacks:[...toolGateState.inventory.stacks,{itemId:'BP_ASTER_IRON_HATCHET',quantity:1}]}};
+equal(workingTowardDestinationAvailability(blueprintOwnedState,toolRecipeDestination).status,'ready','Owning the blueprint makes the tool recipe source available');
+const blueprintLearnedState={...toolGateState,account:{...toolGateState.account,unlockedKnowledgeIds:['tool_recipe:ASTER_IRON_HATCHET']}};
+equal(workingTowardDestinationAvailability(blueprintLearnedState,toolRecipeDestination).status,'ready','Permanently learned tool recipe stays available without another blueprint');
+
 
 const weeklyGoal:ProgressionGoal={id:'goal-weekly',characterId,kind:'weekly_order',title:'Weekly job',createdAtMs:0,pinnedAtMs:0,orderId:'example',targetProgress:10};
 equal(progressionGoalDestination(state,weeklyGoal).kind,'contracts','weekly goal routes to Contract Board');

@@ -1,4 +1,4 @@
-import {strict as assert} from 'node:assert';
+import {assert} from './test-assert';
 import {COMPANION_SPECIAL_CHALLENGES,COMPANION_WEEKLY_CHALLENGES,companionTrialSeasonDefinition} from '../../../backend/src/server/companions/content';
 import {validateCompanionTrialTeam,restrictionSatisfied,companionTeamViews} from '../../../backend/src/server/companions/team';
 import type {OwnedCompanionSnapshot} from '../../../backend/src/server/companions/domain';

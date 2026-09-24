@@ -10,6 +10,8 @@ import {GameState} from '../core/types';
 import {spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {formatGameNumber} from '../core/number-format';
+import {earlyFeatureUnlocked} from '../core/feature-unlocks';
+import {FeatureLockedPanel} from '../components/FeatureLockedPanel';
 
 const ROSTER=[['Elowen','Dawnkeeper',28,'Leader'],['Brann','Ironwarden',24,'Officer'],['Mira','Wayfinder',21,'Member'],['Tovan','Ravager',19,'Member'],['Sera','Hexweaver',17,'Member']];
 type GuildSection='Overview'|'PvE'|'Roster';
@@ -17,7 +19,8 @@ type OnlineGuildSection='Home'|'Members'|'Activities'|'Hall'|'Chat'|'Manage'|'Fu
 
 export function GuildScreen({state,onChange,onlineDirectory,onlineManagement,onlineBoard,onlineProjects,onlinePve,onlineHall,onlineChat,onlineCustomize,onlineChatUnread=0,onlineChatMentions=0,online=false}:{online?:boolean;state:GameState;onChange:(next:GameState)=>void;onlineDirectory?:ReactNode;onlineManagement?:ReactNode;onlineBoard?:ReactNode;onlineProjects?:ReactNode;onlinePve?:ReactNode;onlineHall?:ReactNode;onlineChat?:ReactNode;onlineCustomize?:ReactNode;onlineChatUnread?:number;onlineChatMentions?:number}){
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
-  const [section,setSection]=useState<GuildSection>('Overview'),[onlineSection,setOnlineSection]=useState<OnlineGuildSection>('Home');
+  const [section,setSection]=useState<GuildSection>('Overview'),[onlineSection,setOnlineSection]=useState<OnlineGuildSection>('Home'),unlocked=earlyFeatureUnlocked(state,'guild');
+  if(!unlocked)return <ScrollView contentContainerStyle={s.root}><Text style={s.kicker}>GUILD NETWORK</Text><Text accessibilityRole="header" style={s.h}>Guild</Text><FeatureLockedPanel state={state} featureId="guild"/></ScrollView>;
   if(online)return <ScrollView contentContainerStyle={s.root} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
     <View style={s.onlineHead}><View style={s.flex}><Text style={s.kicker}>GUILD NETWORK</Text><Text accessibilityRole="header" style={s.h}>Guild</Text><Text style={s.sub}>One home for membership, shared activities, Hall progression, chat and Guild identity.</Text></View></View>
     <ScrollView horizontal keyboardShouldPersistTaps="handled" showsHorizontalScrollIndicator={false} contentContainerStyle={s.onlineTabs}>{(['Home','Members','Activities','Hall','Chat','Manage','Future'] as const).map(value=><TabChip key={value} label={value} badge={value==='Chat'?Math.max(onlineChatUnread,onlineChatMentions):0} warningBadge={value==='Chat'&&onlineChatMentions>0} selected={onlineSection===value} onPress={()=>setOnlineSection(value)}/>)}</ScrollView>

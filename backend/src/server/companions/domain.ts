@@ -57,7 +57,7 @@ export interface CompanionCombatResult{victory:boolean;durationMs:number;reason:
 export interface CompanionCombatExecutor{simulate(input:{seed:string;players:CompanionCombatantDefinition[];enemies:CompanionCombatantDefinition[];mitigationConstant?:number}):CompanionCombatResult;}
 
 export interface CompanionTeamSelection{companionIds:[string,string,string];}
-export interface CompanionTeamMemberView{companionId:string;role:CompanionRole;rarity:CompanionRarity;originId:string;power:number;}
+export interface CompanionTeamMemberView{companionId:string;role:CompanionRole;rarity:CompanionRarity;affinity:CompanionAffinity;originId:string;power:number;}
 export interface CompanionSynergy{key:string;combatMultiplier:number;hasteBonus:number;rewardEssenceMultiplier:number;description:string;}
 
 export type CompanionTrialRestriction=
@@ -68,6 +68,10 @@ export type CompanionTrialRestriction=
   |{type:'different_origins';count:number}
   |{type:'rarity_mix';rarities:CompanionRarity[]}
   |{type:'max_team_power';value:number}
+  |{type:'require_affinity';affinity:CompanionAffinity;count:number}
+  |{type:'prohibit_affinity';affinity:CompanionAffinity}
+  |{type:'affinity_diversity';count:number}
+  |{type:'affinity_unique'}
   |{type:'no_defeats'};
 export interface CompanionWeeklyChallengeDefinition{id:string;name:string;description:string;minimumFloor:number;restrictions:CompanionTrialRestriction[];rewards:{companionEssence:number;bondstones:number;gold:number;materials?:Record<string,number>};}
 export interface CompanionTrialSeasonDefinition{
@@ -131,7 +135,7 @@ export interface CompanionProvingGroundState{weekKey:string;progress:Record<stri
 
 export type CompanionUnlockRequirementType='trial_floor'|'special_boss_clear'|'boss_clear_count'|'region_completion'|'event_completion'|'companion_owned'|'companion_role_owned'|'companion_bond_total'|'companion_level_total'|'achievement'|'currency_cost'|'mastery'|'reputation'|'event_challenge';
 export interface CompanionAdvancedUnlockRequirement{type:CompanionUnlockRequirementType;target?:string;amount?:number;value?:string|number|boolean;originId?:string;description:string;}
-export interface CompanionSpecialChallengeDefinition{id:string;name:string;bossId:string;rewardCompanionId:string;requirements:CompanionAdvancedUnlockRequirement[];recommendedTeamPower:number;}
+export interface CompanionSpecialChallengeDefinition{id:string;name:string;bossId:string;rewardCompanionId:string;requirements:CompanionAdvancedUnlockRequirement[];recommendedTeamPower:number;teamRestrictions?:CompanionTrialRestriction[];}
 export interface CompanionUnlockFacts{
   highestTrialFloor:number;specialBossClears:Set<string>;bossClearCounts:Record<string,number>;regionCompletion:Set<string>;eventCompletion:Set<string>;ownedCompanionIds:Set<string>;
   ownedByRole:Record<CompanionRole,number>;bondTotal:number;levelTotal:number;bondTotalByOrigin?:Record<string,number>;levelTotalByOrigin?:Record<string,number>;achievements:Set<string>;mastery:Record<string,number>;reputation:Record<string,number>;eventChallenges:Set<string>;companionEssence:number;

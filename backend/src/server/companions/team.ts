@@ -18,7 +18,7 @@ export function individualCompanionPower(progress:OwnedCompanionSnapshot){
  // progression budget and keeps role/ability identity to a narrow ±few-percent band.
  return Math.max(1,Math.round(950*levelMultiplier*rarityMultiplier*ascensionMultiplier*bondMultiplier*traitMultiplier*techniqueMultiplier*statIdentity*activeIdentity));
 }
-export function companionTeamViews(ids:readonly string[],owned:Record<string,OwnedCompanionSnapshot>):CompanionTeamMemberView[]{return ids.map(id=>{const def=companionServerDefinition(id),p=owned[id];if(!def||!p)throw new Error('companion_not_owned');return {companionId:id,role:def.role,rarity:def.rarity,originId:def.originId,power:individualCompanionPower(p)};});}
+export function companionTeamViews(ids:readonly string[],owned:Record<string,OwnedCompanionSnapshot>):CompanionTeamMemberView[]{return ids.map(id=>{const def=companionServerDefinition(id),p=owned[id];if(!def||!p)throw new Error('companion_not_owned');return {companionId:id,role:def.role,rarity:def.rarity,affinity:def.affinity,originId:def.originId,power:individualCompanionPower(p)};});}
 export function companionTeamPower(ids:readonly string[],owned:Record<string,OwnedCompanionSnapshot>){const views=companionTeamViews(ids,owned);return Math.round(views.reduce((sum,x)=>sum+x.power,0));}
 export function evaluateCompanionSynergies(members:CompanionTeamMemberView[]):CompanionSynergy[]{
  if(members.length!==3)throw new Error('requires_3_companions');const out:CompanionSynergy[]=[];
@@ -41,6 +41,10 @@ export function restrictionSatisfied(members:CompanionTeamMemberView[],r:Compani
   case 'different_origins':return new Set(members.map(x=>x.originId)).size>=r.count;
   case 'rarity_mix':return r.rarities.every((rarity,i)=>i===r.rarities.length-1&&rarity==='elite'?members.some(x=>x.rarity==='elite'||x.rarity==='prestige'):members.some(x=>x.rarity===rarity));
   case 'max_team_power':return teamPower<=r.value;
+  case 'require_affinity':return members.filter(x=>x.affinity===r.affinity).length>=r.count;
+  case 'prohibit_affinity':return members.every(x=>x.affinity!==r.affinity);
+  case 'affinity_diversity':return new Set(members.map(x=>x.affinity)).size>=r.count;
+  case 'affinity_unique':return new Set(members.map(x=>x.affinity)).size===members.length;
   case 'no_defeats':return true; // evaluated from combat result after the clear.
  }
 }

@@ -20,6 +20,7 @@ for(const path of [
  'src/components/EquipmentEnhancementModal.tsx',
  'src/components/IdleRulesEditorV40.tsx',
  'src/components/ProfileAudiencePreviewModal.tsx',
+ 'src/components/OnlineProfileExtensionPanel.tsx',
  'src/components/CustomizationUnlockPopup.tsx',
  'src/components/StoryBossBattleModal.tsx',
  'src/components/ChatPlayerSheet.tsx',
@@ -68,10 +69,21 @@ ok(daily.includes('GameModalHeader')&&daily.includes('accessibilityRole="radio"'
 const planner=read('src/screens/ProgressionPlannerScreen.tsx');
 ok(planner.includes('GameModalHeader')&&planner.includes('GameModalSurface'),'Working Toward goal creation must use the shared interaction shell');
 ok(planner.includes('backgroundColor:C.selection'),'Working Toward selected options must use semantic selection styling');
+ok(planner.includes('sheetScroll')&&planner.includes('keyboardShouldPersistTaps="handled"')&&planner.includes('keyboardDismissMode="on-drag"'),'Working Toward goal authoring must keep actions reachable and tappable while the number keyboard is open');
 const idleRules=read('src/components/IdleRulesEditorV40.tsx');
 ok(idleRules.includes('GameModalHeader')&&idleRules.includes('reduceMotion={state.settings.reduceMotion}'),'Advanced Idle Rules must use the shared motion-safe sheet/header interaction');
 ok(idleRules.includes('quickBlocked')&&idleRules.includes('idle_rule_limit_reached'),'Quick Idle Rule presets must surface and enforce the five-rule safety boundary');
 ok(idleRules.includes('useWindowDimensions')&&idleRules.includes('footerStack'),'Advanced Idle Rules must preserve tappable modal actions on narrow or large-font layouts');
+
+const profileExtension=read('src/components/OnlineProfileExtensionPanel.tsx');
+ok(profileExtension.includes('GameModalHeader')&&profileExtension.includes('reduceMotion={state.settings.reduceMotion}'),'Social profile pickers must use the shared motion-safe sheet/header');
+ok(profileExtension.includes('Keyboard.dismiss()')&&profileExtension.includes('keyboardShouldPersistTaps="handled"'),'Social profile pickers must dismiss the biography keyboard before opening and keep picker taps actionable');
+ok(!profileExtension.includes('<Modal'),'Social profile pickers must not reintroduce a bespoke React Native Modal');
+
+const profileCustomize=read('src/screens/ProfileCustomizeScreen.tsx');
+ok(profileCustomize.includes('keyboardShouldPersistTaps="handled"')&&profileCustomize.includes('keyboardDismissMode="on-drag"'),'Profile customization must preserve actions while its child editors have the keyboard open');
+const profileEditor=read('src/components/ProfileEditor.tsx');
+ok((profileEditor.match(/keyboardShouldPersistTaps="handled"/g)??[]).length>=5,'Profile horizontal tabs, galleries and name presets must remain tappable with a color/title keyboard open');
 
 const profile=read('src/components/ProfileAudiencePreviewModal.tsx');
 ok(profile.includes('GameModalHeader')&&profile.includes('trailing={<View'),'Profile audience preview must use shared header with visibility state');

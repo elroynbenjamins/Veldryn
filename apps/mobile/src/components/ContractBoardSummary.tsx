@@ -5,6 +5,7 @@ import {contractBoardSummary} from '../core/contract-board-summary';
 import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {GameButton} from './GameButton';
+import {earlyFeatureUnlocked} from '../core/feature-unlocks';
 
 function remainingLabel(endsAtMs:number,nowMs:number){
  const seconds=Math.max(0,Math.ceil((endsAtMs-nowMs)/1000));
@@ -14,6 +15,7 @@ function remainingLabel(endsAtMs:number,nowMs:number){
 
 export function ContractBoardSummary({state,nowMs,onOpen,onContinue}:{state:GameState;nowMs:number;onOpen:()=>void;onContinue?:(order:NonNullable<ReturnType<typeof contractBoardSummary>['nextOrder']>)=>void}){
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
+ if(!earlyFeatureUnlocked(state,'contracts'))return null;
  const summary=contractBoardSummary(state,nowMs),next=summary.nextOrder,progress=`${Math.max(3,Math.min(100,summary.total?summary.complete/summary.total*100:0))}%` as `${number}%`;
  if(!summary.total)return null;
  return <View style={[s.card,summary.pendingRewards>0&&s.ready]}>

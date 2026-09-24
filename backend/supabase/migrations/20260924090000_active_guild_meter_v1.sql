@@ -199,6 +199,40 @@ end $$;
 revoke all on function public.guild_activity_state_v1() from public,anon;
 grant execute on function public.guild_activity_state_v1() to authenticated,service_role;
 
+create or replace function public.guild_activity_from_muster_v1()
+returns trigger
+language plpgsql
+security definer
+set search_path=public
+as $
+declare
+  v_before_qualified boolean:=false;
+  v_after_qualified boolean:=false;
+  v_source_id text;
+begin
+  v_before_qualified:=coalesce(old.contribution_points,0)>=25;
+  v_after_qualified:=coalesce(new.contribution_points,0)>=25;
+  if v_before_qualified or not v_after_qualified then return new; end if;
+
+  v_source_id:=new.account_id::text||':'||new.activity_date::text;
+  perform * from public.guild_activity_award_v1(
+    new.guild_id,
+    'muster_day',
+    v_source_id,
+    25,
+    coalesce(new.last_contribution_at,clock_timestamp())
+  );
+  return new;
+end $;
+
+drop trigger if exists trg_guild_activity_from_muster_v1 on public.guild_muster_daily;
+create trigger trg_guild_activity_from_muster_v1
+after update of contribution_points on public.guild_muster_daily
+for each row execute function public.guild_activity_from_muster_v1();
+
+revoke all on function public.guild_activity_from_muster_v1() from public,anon,authenticated;
+grant execute on function public.guild_activity_from_muster_v1() to service_role;
+
 comment on table public.guild_activity_state is 'Persistent Active Guild meter. No weekly hard reset; decays 10 percentage points per UTC day.';
 comment on function public.guild_activity_award_v1(uuid,text,text,integer,timestamptz) is 'Server-only idempotent award path intended primarily for completed Guild Quests and verified cooperative objectives.';
 

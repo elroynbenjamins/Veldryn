@@ -1,6 +1,7 @@
 import {GATHERING,RECIPES,type Recipe} from '../content/skills';
 import {HERB_NODES,HERBALISM_METHODS} from '../content/herbalism';
 import {GATHERING_TOOLS} from '../content/gathering-tools';
+import {MONSTERS} from '../content/monsters';
 import {FAITH_BLESSINGS,FAITH_TIERS} from '../content/faith';
 import {CROSS_SKILL_DISCOVERIES_V45,crossSkillViews,newCrossSkillState} from './cross-skill-discoveries-v45';
 import {faithLevel} from './faith';
@@ -56,11 +57,14 @@ export function skillMilestones(state:GameState,skillId:SkillId):SkillMilestone[
    detail:'New '+pretty(skillId)+' activity · '+node.zoneId.replace(/_/g,' '),
    destination:{kind:'skills',skillId,mode:'gathering',actionId:node.id,regionId:node.zoneId,button:'Open '+node.name,detail:'Train at '+node.name+'.'},
   });
-  for(const tool of GATHERING_TOOLS.filter(row=>row.skillId===skillId))rows.push({
-   id:'tool:'+tool.id,kind:'tool',level:tool.unlockLevel,title:tool.name,category:'TOOL TIER',
-   detail:'Tier '+tool.tier+' tool can now be equipped · craft at Smithing '+tool.recipe.level,
-   destination:{kind:'skills',skillId:'smithing',mode:'crafting',recipeId:'CRAFT_'+tool.id,button:'Craft '+tool.name,detail:'Open the Smithing recipe for '+tool.name+'.'},
-  });
+  for(const tool of GATHERING_TOOLS.filter(row=>row.skillId===skillId)){
+   const blueprintSource=tool.blueprint?MONSTERS.find(monster=>monster.id===tool.blueprint!.sourceMonsterId):undefined;
+   rows.push({
+    id:'tool:'+tool.id,kind:'tool',level:tool.unlockLevel,title:tool.name,category:'TOOL TIER',
+    detail:'Tier '+tool.tier+' · Level '+tool.requiredCharacterLevel+' + '+pretty(skillId)+' '+tool.unlockLevel+' · Smithing '+tool.recipe.level+(tool.blueprint?' · blueprint: '+(blueprintSource?.name??tool.blueprint.sourceMonsterId):' · recipe known'),
+    destination:{kind:'skills',skillId:'smithing',mode:'crafting',recipeId:'CRAFT_'+tool.id,button:'Craft '+tool.name,detail:'Open the Smithing recipe for '+tool.name+'.'},
+   });
+  }
  }
  if(skillId==='herbalism'){
   for(const method of HERBALISM_METHODS.filter(row=>row.id!=='balanced'))rows.push({

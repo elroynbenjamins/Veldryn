@@ -21,6 +21,7 @@ function activityLabel(activity:ActiveActivity|null){if(!activity)return 'Idle';
 function queueDetail(entry:CharacterActivityOverviewRow){
  if(entry.queueState==='paused')return entry.pausedReason??'The queue paused before starting the next action.';
  if(entry.queueState==='blocked')return entry.nextBlocker??'The next queued action needs attention before it can start.';
+ if(entry.queueState==='will_pause')return `${entry.handoffSourceLabel?`Stops at ${entry.handoffSourceLabel}, then pauses.`:'The planned stop will pause the queue.'} ${entry.nextBlocker??'The next action needs attention.'}`;
  if(entry.queueState==='armed')return `${entry.handoffSourceLabel?`Stops at ${entry.handoffSourceLabel}, then continues.`:'A planned stop will hand off to the next action.'}${entry.safetyEnabled?' Safety checks stay active.':''}`;
  if(entry.queueState==='waiting')return entry.nextReady?'Current activity has no automatic stop armed. The queue waits until you stop or reach a planned rule.':`Current activity is running. Next action also needs: ${entry.nextBlocker??'attention'}`;
  if(entry.queueState==='ready')return 'Character is idle and the next queued action is ready to start.';
@@ -63,7 +64,7 @@ export function ActivityOverviewScreen({state,now,onSwitch,onCreate,onDelete,onO
     </View>
     {nextThreshold!==undefined?<Text style={s.slotHint}>Next character slot unlocks at {nextThreshold} combined account skill levels.</Text>:<Text style={s.slotHint}>All 5 character slots are permanently unlocked.</Text>}
    </Panel>
-   {entries.map(entry=>{const {character,activity,current:active}=entry,classDef=classLabel(character.classId),queueAttention=entry.queueState==='paused'||entry.queueState==='blocked';return <Panel key={character.id} accentColor={active?equipmentColors.selectedLine:undefined}>
+   {entries.map(entry=>{const {character,activity,current:active}=entry,classDef=classLabel(character.classId),queueAttention=entry.queueState==='paused'||entry.queueState==='blocked'||entry.queueState==='will_pause';return <Panel key={character.id} accentColor={active?equipmentColors.selectedLine:undefined}>
     <View style={s.row}>
      <View style={s.copy}><View style={s.nameRow}><Text style={s.name}>{character.name}</Text>{active&&<Text style={s.active}>ACTIVE CHARACTER</Text>}</View><Text style={s.meta}>{classDef?.name??character.classId} · {classDef?.role??'Adventurer'} · Level {character.level}</Text></View>
      <View style={s.actions}>{!active&&<GameButton compact title="Switch" tone="secondary" onPress={()=>onSwitch(character.id)}/>}<GameButton compact title="Manage" tone="secondary" onPress={()=>open(character.id)}/></View>

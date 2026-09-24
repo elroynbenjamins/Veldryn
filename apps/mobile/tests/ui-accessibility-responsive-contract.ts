@@ -6,6 +6,12 @@ const read=(path:string)=>fs.readFileSync(path,'utf8');
 const button=read('src/components/GameButton.tsx');
 ok(button.includes('touchTargetMin')&&button.includes('compact:{minHeight:touchTargetMin'),'Compact buttons must retain the 44px minimum touch target');
 
+const feedback=read('src/components/ActionFeedback.tsx');
+ok(feedback.includes("action:{minHeight:44"),'Actionable feedback must retain a 44px action touch target');
+ok(feedback.includes('useWindowDimensions')&&feedback.includes("stackAction=!!actionLabel&&!!onAction&&(width<360||fontScale>=1.25)"),'Actionable feedback must adapt to narrow phones and large text');
+ok(feedback.includes('rootStack')&&feedback.includes("actionStack:{width:'100%'}"),'Actionable feedback must stack its action instead of squeezing the message');
+ok(feedback.includes('accessibilityHint="Continues from this feedback"'),'Actionable feedback must explain the continuation action to assistive technology');
+
 const modal=read('src/components/GameModalSurface.tsx');
 ok(modal.includes('KeyboardAvoidingView'),'Shared modals must protect focused fields from the iOS keyboard');
 ok(modal.includes('onAccessibilityEscape={onClose}'),'Shared modals must support the accessibility escape gesture');

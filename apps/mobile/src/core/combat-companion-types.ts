@@ -6,6 +6,7 @@
  */
 export type CombatCompanionRole='damage'|'tank'|'support';
 export type CombatCompanionRarity='standard'|'rare'|'elite'|'prestige';
+export type CompanionAffinity='wild'|'arcane'|'radiant'|'umbral'|'primal'|'construct';
 export type CompanionOriginType='region'|'story'|'achievement'|'event'|'raid'|'meta';
 export type CompanionUnlockRequirementType='quest'|'achievement'|'boss_kills'|'dungeon_clears'|'monster_mastery'|'skill_level'|'reputation'|'collection'|'event_currency'|'event_challenge'|'meta';
 export type CompanionEffectKind='damage'|'damage_reduction'|'shield'|'haste'|'resource_restore'|'defense_shred'|'interrupt'|'execute'|'accuracy'|'cleanse'|'cooldown_reduction'|'armor_pierce'|'chain_damage'|'utility';
@@ -77,6 +78,7 @@ export interface CompanionDefinition{
   description:string;
   archetype:string;
   role:CombatCompanionRole;
+  affinity?:CompanionAffinity;
   rarity:CombatCompanionRarity;
   origin:CompanionOrigin;
   unlockRequirements:CompanionUnlockRequirement[];

@@ -5,6 +5,7 @@ import {SettingToggle} from '../components/SettingToggle';
 import {Panel} from '../components/Panel';
 import {DeveloperTools} from '../components/DeveloperTools';
 import {OnlineAccountPanel} from '../components/OnlineAccountPanel';
+import {GooglePlayCommercePanel} from '../components/GooglePlayCommercePanel';
 import {SaveTransferPanel} from '../components/SaveTransferPanel';
 import {GameState} from '../core/types';
 import {typography,UI_THEMES,equipmentTheme,type ThemeColors,type UiThemeId} from '../theme/theme';
@@ -56,7 +57,8 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImp
       <Text style={[s.sub,{color:theme.muted}]}>Character: {state.character?.name??'Not created yet'} · {online?'Online save':'Local save'}</Text>
       <Text style={[s.muted,{color:theme.muted}]}>{online?'Your progress is saved after every successful action.':'Local progress is kept separately from online characters.'}</Text>
     </Panel>
-    <OnlineAccountPanel state={state}/></>}
+    <OnlineAccountPanel state={state}/>
+    <GooglePlayCommercePanel state={state} onChange={onChange}/></>}
     {section==='gameplay'&&<><Panel>
       <Text style={[s.title,{color:theme.text}]}>{t(state.settings.language,'settings.gameplay')}</Text>
       <Text style={[s.sub,{color:theme.muted}]}>Activities continue while closed up to your current AFK reserve.</Text>

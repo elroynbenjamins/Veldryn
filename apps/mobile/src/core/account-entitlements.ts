@@ -14,6 +14,13 @@ export interface AccountEntitlementBenefits{
   advancedNameStyles:boolean;
 }
 
+export interface ServerCommerceEntitlements{
+  vip:boolean;
+  vipPlus:boolean;
+  supporter:boolean;
+  supporterExpiresAt:string|null;
+}
+
 function has(state:GameState,...keys:string[]){
   const entitlements=state.account.entitlements??{};
   return keys.some(key=>entitlements[key]===true);
@@ -36,6 +43,20 @@ export function accountEntitlementBenefits(state:GameState):AccountEntitlementBe
     solidRgbNames:vipPlus||supporter,
     advancedNameStyles:supporter,
   };
+}
+
+/**
+ * Mirrors server-authoritative paid entitlements into the local GameState cache.
+ * Legacy aliases are explicitly cleared so a cancelled Supporter subscription
+ * cannot remain active because an older save still contains an alias flag.
+ */
+export function withServerCommerceEntitlements(state:GameState,server:ServerCommerceEntitlements):GameState{
+  const entitlements={...(state.account.entitlements??{})};
+  for(const key of ['vip','vip_plus','vipplus','vip+','supporter','supporter_subscription'])entitlements[key]=false;
+  entitlements.vip=server.vip;
+  entitlements.vip_plus=server.vipPlus;
+  entitlements.supporter=server.supporter;
+  return {...state,account:{...state.account,entitlements}};
 }
 
 export function entitlementStorageCapacity(state:GameState,location:'inventory'|'bank'){

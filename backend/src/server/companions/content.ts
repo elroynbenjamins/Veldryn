@@ -318,5 +318,5 @@ export function companionTrialRotationIndex(seasonKey:string){
 export function companionTrialRotation(seasonKey:string){return COMPANION_TRIAL_ROTATIONS[companionTrialRotationIndex(seasonKey)];}
 export function companionTrialSeasonDefinition(seasonKey:string):CompanionTrialSeasonDefinition{
  const bounds=utcBounds(seasonKey),rotation=companionTrialRotation(seasonKey);
- return {seasonKey,...bounds,floorSetId:rotation.floorSetId,modifiers:[...rotation.modifiers],rewardSetId:rotation.rewardSetId,specialChallenges:[...rotation.specialChallenges],featuredOrigin:rotation.featuredOrigin,featuredCompanionIds:rotation.featuredCompanionIds?[...rotation.featuredCompanionIds]:undefined};
+ return {seasonKey,...bounds,rotationId:rotation.id,rotationName:rotation.name,floorSetId:rotation.floorSetId,modifiers:[...rotation.modifiers],rewardSetId:rotation.rewardSetId,specialChallenges:[...rotation.specialChallenges],featuredOrigin:'featuredOrigin' in rotation?rotation.featuredOrigin:undefined,featuredCompanionIds:'featuredCompanionIds' in rotation?[...rotation.featuredCompanionIds]:undefined};
 }

@@ -9,10 +9,26 @@
       "distribution": "internal"
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://nyjwigipamnvpdvpauuv.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_EBP2NTN1cNnwDFFg3idkwg_DiNu5zRo",
+        "EXPO_PUBLIC_SERVER_GAMEPLAY": "true",
+        "EXPO_PUBLIC_COOP_ROGUELITE_V1": "true",
+        "EXPO_PUBLIC_COOP_API_URL": "https://nyjwigipamnvpdvpauuv.supabase.co/functions/v1/coop",
+        "EXPO_PUBLIC_COOP_LIVE_READY_V1": "false"
+      }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://nyjwigipamnvpdvpauuv.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_EBP2NTN1cNnwDFFg3idkwg_DiNu5zRo",
+        "EXPO_PUBLIC_SERVER_GAMEPLAY": "true",
+        "EXPO_PUBLIC_COOP_ROGUELITE_V1": "true",
+        "EXPO_PUBLIC_COOP_API_URL": "https://nyjwigipamnvpdvpauuv.supabase.co/functions/v1/coop",
+        "EXPO_PUBLIC_COOP_LIVE_READY_V1": "false"
+      }
     }
   },
   "submit": {

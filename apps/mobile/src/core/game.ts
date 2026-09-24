@@ -741,7 +741,7 @@ export function craftRecipe(state:GameState,recipeId:string,nowMs=Date.now()):Ga
   if(recipeId.startsWith('BREW_'))throw new Error('Timed alchemy recipes must be started as a batch.');
   const r=RECIPES.find(x=>x.id===recipeId);if(!r)throw new Error('Unknown recipe');
   if(r.classId&&r.classId!==state.character.classId)throw new Error('This recipe belongs to another class');
-  if(state.character.level<(r.characterLevel??1))throw new Error(`Requires Level ${r.characterLevel}`);
+  if(state.character.level<(r.characterLevel??1))throw new Error(`Requires character level ${r.characterLevel}`);
   if(r.requiresCraftedItemId&&!state.character.craftedNoviceItemIds?.includes(r.requiresCraftedItemId))throw new Error(`Craft ${itemDef(r.requiresCraftedItemId).name} first`);
   const tool=gatheringToolDef(r.output.itemId);
   if(tool){

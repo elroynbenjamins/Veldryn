@@ -1,6 +1,7 @@
 import React,{useEffect,useState} from 'react';
 import {Pressable,StyleSheet,Text,TextInput,View} from 'react-native';
 import type {GameState} from '../core/types';
+import type {GameCommand} from '../core/game-commands';
 import {applyCharacterLoadout,characterLoadoutSlotCount,deleteCharacterLoadout,normalizeCharacterLoadouts,saveCharacterLoadout} from '../core/character-loadouts';
 import {itemDef} from '../content/items';
 import {COMBAT_COMPANIONS} from '../content/combat-companions';
@@ -8,18 +9,18 @@ import {GameButton} from './GameButton';
 import {Panel} from './Panel';
 import {C,equipmentColors,spacing,typography} from '../theme/theme';
 
-export function SavedLoadoutsPanel({state,onChange}:{state:GameState;onChange:(next:GameState)=>void|Promise<void>}){
+export function SavedLoadoutsPanel({state,onChange,onCommand}:{state:GameState;onChange:(next:GameState)=>void|Promise<void>;onCommand?:(command:GameCommand)=>void|Promise<void>}){
   const character=state.character!,slotCount=characterLoadoutSlotCount(state),loadouts=normalizeCharacterLoadouts(character.savedLoadouts,character.classId,slotCount);
   const [slot,setSlot]=useState(0),[name,setName]=useState(loadouts[0]?.name??'Loadout 1'),[message,setMessage]=useState(''),[busy,setBusy]=useState(false);
   const selected=loadouts.find(entry=>entry.slotIndex===slot);
   useEffect(()=>setName(selected?.name??`Loadout ${slot+1}`),[slot,selected?.name]);
-  const run=async(action:()=>GameState,success:string)=>{setBusy(true);setMessage('');try{await onChange(action());setMessage(success)}catch(error){setMessage(error instanceof Error?error.message:'Loadout action failed.')}finally{setBusy(false)}};
+  const run=async(action:()=>GameState,command:GameCommand,success:string)=>{setBusy(true);setMessage('');try{if(onCommand)await onCommand(command);else await onChange(action());setMessage(success)}catch(error){setMessage(error instanceof Error?error.message:'Loadout action failed.')}finally{setBusy(false)}};
   const equipmentNames=selected?Object.values(selected.equipment).map(id=>itemDef(id).name):[];
   const companion=selected?.companionId?COMBAT_COMPANIONS.find(def=>def.id===selected.companionId):undefined;
   return <Panel><Text style={s.title}>SAVED LOADOUTS</Text><Text style={s.note}>Character-specific presets remember gear, auto-eat food and the active Combat Companion. Recommended Build Guides remain separate.</Text>
     <View accessibilityRole="tablist" style={s.tabs}>{Array.from({length:slotCount},(_,index)=>{const preset=loadouts.find(entry=>entry.slotIndex===index);return <LoadoutChip key={index} label={`${index+1} · ${preset?.name??'Empty'}`} selected={slot===index} onPress={()=>setSlot(index)}/>})}</View>
     <TextInput accessibilityLabel="Loadout name" style={s.input} value={name} maxLength={28} placeholder={`Loadout ${slot+1}`} placeholderTextColor={C.muted} onChangeText={setName}/>
-    {selected?<><Text style={s.summary}>{equipmentNames.length}/10 gear slots · {selected.foodId?itemDef(selected.foodId).name:'No auto-eat food'} · {companion?.name??'No Combat Companion'}</Text><Text numberOfLines={2} style={s.note}>{equipmentNames.length?equipmentNames.join(' · '):'This preset has no equipped gear.'}</Text><View style={s.actions}><View style={s.flex}><GameButton title="Apply" disabled={busy} onPress={()=>void run(()=>applyCharacterLoadout(state,selected.id),`${selected.name} applied.`)}/></View><View style={s.flex}><GameButton title="Overwrite" disabled={busy} tone="secondary" onPress={()=>void run(()=>saveCharacterLoadout(state,slot,name),`${name||`Loadout ${slot+1}`} saved.`)}/></View><View style={s.flex}><GameButton title="Delete" disabled={busy} tone="danger" onPress={()=>void run(()=>deleteCharacterLoadout(state,selected.id),'Loadout deleted.')}/></View></View></>:<GameButton title="Save current setup" disabled={busy} onPress={()=>void run(()=>saveCharacterLoadout(state,slot,name),`${name||`Loadout ${slot+1}`} saved.`)}/>} {!!message&&<View accessibilityLiveRegion="polite" style={s.messageCard}><Text style={s.messageLabel}>LOADOUT UPDATE</Text><Text style={s.message}>{message}</Text></View>}
+    {selected?<><Text style={s.summary}>{equipmentNames.length}/10 gear slots · {selected.foodId?itemDef(selected.foodId).name:'No auto-eat food'} · {companion?.name??'No Combat Companion'}</Text><Text numberOfLines={2} style={s.note}>{equipmentNames.length?equipmentNames.join(' · '):'This preset has no equipped gear.'}</Text><View style={s.actions}><View style={s.flex}><GameButton title="Apply" disabled={busy} onPress={()=>void run(()=>applyCharacterLoadout(state,selected.id),{type:'loadout_apply',args:{id:selected.id}},`${selected.name} applied.`)}/></View><View style={s.flex}><GameButton title="Overwrite" disabled={busy} tone="secondary" onPress={()=>void run(()=>saveCharacterLoadout(state,slot,name),{type:'loadout_save',args:{index:slot,name}},`${name||`Loadout ${slot+1}`} saved.`)}/></View><View style={s.flex}><GameButton title="Delete" disabled={busy} tone="danger" onPress={()=>void run(()=>deleteCharacterLoadout(state,selected.id),{type:'loadout_delete',args:{id:selected.id}},'Loadout deleted.')}/></View></View></>:<GameButton title="Save current setup" disabled={busy} onPress={()=>void run(()=>saveCharacterLoadout(state,slot,name),{type:'loadout_save',args:{index:slot,name}},`${name||`Loadout ${slot+1}`} saved.`)}/>} {!!message&&<View accessibilityLiveRegion="polite" style={s.messageCard}><Text style={s.messageLabel}>LOADOUT UPDATE</Text><Text style={s.message}>{message}</Text></View>}
   </Panel>;
 }
 function LoadoutChip({label,selected,onPress}:{label:string;selected:boolean;onPress:()=>void}){return <Pressable accessibilityRole="tab" accessibilityState={{selected}} onPress={onPress} style={({pressed})=>[s.chip,selected&&s.chipSelected,pressed&&s.pressed]}><Text numberOfLines={1} style={[s.chipText,selected&&s.chipTextSelected]}>{label}</Text></Pressable>}

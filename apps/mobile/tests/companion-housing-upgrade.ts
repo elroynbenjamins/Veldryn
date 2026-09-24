@@ -1,4 +1,4 @@
-import {strict as assert} from 'node:assert';
+import {assert} from './test-assert';
 import {createCharacter,newGame} from '../src/core/game';
 import {companionHousingUpgradeAffordability,upgradeCompanionHousing,companionHousingTier} from '../src/core/companion-housing';
 

@@ -5,7 +5,7 @@ import {LoadingState} from './LoadingState';
 import {Panel} from './Panel';
 import {StatusPill} from './StatusPill';
 import {guildMusterDailyPercent,guildMusterRallyPercent} from '../core/guild-muster';
-import {GUILD_ACTIVITY_DAILY_DECAY_PERCENT,GUILD_ACTIVITY_MILESTONE_DEFS,guildActivityBonuses,guildActivityNextMilestone} from '../core/guild-activity';
+import {GUILD_ACTIVITY_DAILY_DECAY_PERCENT,GUILD_ACTIVITY_MILESTONE_DEFS,guildActivityNextMilestone} from '../core/guild-activity';
 import {loadOnlineGuildMuster,type OnlineGuildMusterMember,type OnlineGuildMusterState} from '../online/guild-muster';
 import {radii,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -22,7 +22,7 @@ export function OnlineGuildMusterPanel(){
  if(error&&!state)return <Panel><Text style={s.title}>Guild Muster</Text><Text style={s.error}>{error}</Text><GameButton compact title="Retry" tone="secondary" onPress={()=>void load()}/></Panel>;
  if(!state)return <Panel><Text style={s.title}>Guild Muster</Text><Text style={s.copy}>Join a Guild to take part in daily Muster and the shared weekly Rally.</Text></Panel>;
 
- const dailyPct=guildMusterDailyPercent(state.dailyPoints),rallyPct=guildMusterRallyPercent(state.rallyMarks,state.rallyTarget),hallBonus=state.hallBonusBps/100,activityPct=state.activityPercent,activityBonuses=guildActivityBonuses(activityPct),nextActivity=guildActivityNextMilestone(activityPct);
+ const dailyPct=guildMusterDailyPercent(state.dailyPoints),rallyPct=guildMusterRallyPercent(state.rallyMarks,state.rallyTarget),hallBonus=state.hallBonusBps/100,activityPct=state.activityPercent,nextActivity=guildActivityNextMilestone(activityPct);
  const visibleMembers=members.slice(0,6);
  return <View style={s.root}>
   <Panel>

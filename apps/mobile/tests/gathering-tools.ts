@@ -46,8 +46,13 @@ state=startGathering(state,'OATHSTONE_SEAM',0);
 ok(Math.abs(activityCycleSeconds(state)-oathstone.seconds*GATHER_TIME_SCALE*.75)<.001,'Dashboard cycle must use the same fast recommended-tool pacing as reward settlement');
 const reward=previewActivityReward(state,Math.ceil(oathstone.seconds*GATHER_TIME_SCALE*.75)*1000);
 ok(reward.kills>=1,'A recommended tool should complete the normalized late-resource cycle');
+let earlyTool=createCharacter(newGame(0),'IRONWARDEN','Early Tool Smith');
+earlyTool={...earlyTool,character:{...earlyTool.character!,level:3,gold:1000},skills:earlyTool.skills.map(skill=>skill.skillId==='woodcutting'?{...skill,level:3,xp:totalXpAtLevel(3)}:skill),inventory:{...earlyTool.inventory,stacks:[{itemId:'GREENWOOD_LOG',quantity:24},{itemId:'MOSS_FIBER',quantity:12}]}};
+earlyTool=craftRecipe(earlyTool,'CRAFT_GREENWOOD_HATCHET');
+ok(earlyTool.inventory.stacks.some(stack=>stack.itemId==='GREENWOOD_HATCHET'),'Level-3 Greenwood Hatchet must be craftable from genuinely early Greenfields materials');
+
 let blueprintCraft=createCharacter(newGame(0),'IRONWARDEN','Blueprint Smith');
-blueprintCraft={...blueprintCraft,character:{...blueprintCraft.character!,level:10,gold:100000},skills:blueprintCraft.skills.map(skill=>skill.skillId==='woodcutting'?{...skill,level:10,xp:totalXpAtLevel(10)}:skill.skillId==='smithing'?{...skill,level:12,xp:totalXpAtLevel(12)}:skill),inventory:{...blueprintCraft.inventory,stacks:[{itemId:'BP_ASTER_IRON_HATCHET',quantity:1},{itemId:'ASTER_IRON_INGOT',quantity:15},{itemId:'IRONWOOD_LOG',quantity:30},{itemId:'REINFORCED_FITTING',quantity:3}]}};
+blueprintCraft={...blueprintCraft,character:{...blueprintCraft.character!,level:16,gold:100000},skills:blueprintCraft.skills.map(skill=>skill.skillId==='woodcutting'?{...skill,level:10,xp:totalXpAtLevel(10)}:skill.skillId==='smithing'?{...skill,level:12,xp:totalXpAtLevel(12)}:skill),inventory:{...blueprintCraft.inventory,stacks:[{itemId:'BP_ASTER_IRON_HATCHET',quantity:1},{itemId:'ASTER_IRON_INGOT',quantity:15},{itemId:'IRONWOOD_LOG',quantity:30},{itemId:'REINFORCED_FITTING',quantity:3}]}};
 const noBlueprint={...blueprintCraft,inventory:{...blueprintCraft.inventory,stacks:blueprintCraft.inventory.stacks.filter(stack=>stack.itemId!=='BP_ASTER_IRON_HATCHET')}};
 let blueprintBlocked=false;try{craftRecipe(noBlueprint,'CRAFT_ASTER_IRON_HATCHET')}catch(error){blueprintBlocked=error instanceof Error&&error.message.includes('Blueprint')}
 ok(blueprintBlocked,'Tier 2 tool craft must require its blueprint before the recipe is learned');

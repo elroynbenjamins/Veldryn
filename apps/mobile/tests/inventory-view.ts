@@ -98,7 +98,7 @@ ok(copperUse?.availability.status==='ready'&&copperUse.availability.label==='AVA
 const gatedRecipe=V33_EQUIPMENT_RECIPES.find(row=>row.classId==='IRONWARDEN'&&row.characterLevel>20)!;
 const smithingReadyCharLocked={...state,character:{...state.character!,level:gatedRecipe.characterLevel-1},skills:state.skills.map(row=>row.skillId==='smithing'?{...row,level:100}:row)};
 const characterGate=workingTowardDestinationAvailability(smithingReadyCharLocked,{kind:'skills',skillId:'smithing',mode:'crafting',recipeId:gatedRecipe.id,button:'Open recipe',detail:'Open V33 recipe.'});
-ok(characterGate.status==='locked'&&characterGate.detail.includes('character level'),'V33 recipe availability reports character-level blockers accurately');
+ok(characterGate.status==='locked'&&characterGate.detail.includes('Level'),'V33 recipe availability reports Level blockers accurately');
 const ironwardenWeapon=V33_EQUIPMENT_RECIPES.find(row=>row.classId==='IRONWARDEN'&&row.v33EquipmentTier==='T1'&&itemDef(row.output.itemId).slot==='weapon')!;
 const gearReadyState={...state,character:{...state.character!,level:Math.max(state.character!.level,itemDef(ironwardenWeapon.output.itemId).requiredLevel??1)}};
 const v33Gear=itemInspectModel(gearReadyState,ironwardenWeapon.output.itemId);

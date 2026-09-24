@@ -102,6 +102,10 @@ ok(chatPlayer.indexOf('{isSelf?')>chatPlayer.indexOf('<ScrollView')&&chatPlayer.
 ok(chatPlayer.includes('reduceMotion={reduceMotion}'),'Chat player profile presentation must respect reduced motion');
 
 
+const characterManage=read('src/screens/ActivityOverviewScreen.tsx');
+ok(characterManage.includes('<GameModalSurface')&&characterManage.includes('<ScrollView style={s.modalScroll}'),'Character management must keep long destructive-flow content inside reachable scroll content');
+ok(characterManage.includes('keyboardShouldPersistTaps="handled"')&&characterManage.includes('keyboardDismissMode="on-drag"'),'Character management actions must stay tappable with the confirmation keyboard open');
+
 const settings=read('src/screens/SettingsScreen.tsx');
 ok(settings.includes("DISCORD_INVITE_URL='https://discord.gg/Db83APvP5y'")&&settings.includes('title="Join Discord"'),'Settings must expose the official Discord invite near the top');
 ok(settings.includes("PRIVACY_POLICY_URL='https://elroynbenjamins.github.io/veldryn/privacy/'")&&settings.includes('title="Privacy Policy"'),'Settings must expose the VELDRYN privacy policy as a bottom action');

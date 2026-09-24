@@ -23,6 +23,7 @@ import {firstTrackedRecipePreparation} from './recipe-preparation-tracking';
 import type {WorkingTowardDestination} from './working-toward';
 import {equipmentCraftQueueModel} from './equipment-crafting-queue';
 import {companionAttentionSummary} from './companion-attention';
+import {earlyFeatureUnlocked} from './feature-unlocks';
 const COMBAT_SPEED_MIN=.68;
 const COMBAT_SPEED_MAX=1.3;
 const COMBAT_TIME_SCALE=1.16;
@@ -53,10 +54,11 @@ export interface HomeSessionSummary{
 }
 export function homeSessionSummary(state:GameState,nowMs=Date.now()):HomeSessionSummary{
  const storyRewards=state.quests.filter(row=>row.status==='complete').length;
- const dailyReady=dailySuppliesHomeSummary(state,nowMs).canClaim;
- const eventRewards=eventReadyClaimCount(state,nowMs);
- const goalReady=workingTowardReadyCount(state),goalTotal=state.character?.progressionGoals?.length??0;
- const weekly=contractBoardSummary(state,nowMs),weeklyRewards=weekly.pendingRewards,forgeReady=equipmentCraftQueueModel(state,nowMs).ready,companionSummary=companionAttentionSummary(state,nowMs),companionAttention=companionSummary.expeditionClaims+companionSummary.bondRewards+companionSummary.ascensions+companionSummary.sanctuaryClaims+companionSummary.codexClaims+companionSummary.monthlyTrialClaims,newUnlocks=newlyUnlockedGameGuide(state).length,trackedPreparation=firstTrackedRecipePreparation(state),goalNext=trackedPreparation?.status==='complete'?undefined:trackedPreparation?.nextLabel,goalNextStep=trackedPreparation?.status==='complete'?undefined:trackedPreparation?.stepLabel,goalNextBlocked=trackedPreparation?.status==='blocked',goalNextDestination=trackedPreparation?.status==='complete'?undefined:trackedPreparation?.destination;
+ const dailyUnlocked=earlyFeatureUnlocked(state,'dailySupplies'),eventUnlocked=earlyFeatureUnlocked(state,'events'),goalsUnlocked=earlyFeatureUnlocked(state,'workingToward'),contractsUnlocked=earlyFeatureUnlocked(state,'contracts'),companionsUnlocked=earlyFeatureUnlocked(state,'companions');
+ const dailyReady=dailyUnlocked&&dailySuppliesHomeSummary(state,nowMs).canClaim;
+ const eventRewards=eventUnlocked?eventReadyClaimCount(state,nowMs):0;
+ const goalReady=goalsUnlocked?workingTowardReadyCount(state):0,goalTotal=goalsUnlocked?(state.character?.progressionGoals?.length??0):0;
+ const weekly=contractsUnlocked?contractBoardSummary(state,nowMs):{complete:0,total:0,pendingRewards:0} as ReturnType<typeof contractBoardSummary>,weeklyRewards=weekly.pendingRewards,forgeReady=equipmentCraftQueueModel(state,nowMs).ready,companionSummary=companionsUnlocked?companionAttentionSummary(state,nowMs):undefined,companionAttention=companionSummary?companionSummary.expeditionClaims+companionSummary.bondRewards+companionSummary.ascensions+companionSummary.sanctuaryClaims+companionSummary.codexClaims+companionSummary.monthlyTrialClaims:0,newUnlocks=newlyUnlockedGameGuide(state).length,trackedPreparation=firstTrackedRecipePreparation(state),goalNext=trackedPreparation?.status==='complete'?undefined:trackedPreparation?.nextLabel,goalNextStep=trackedPreparation?.status==='complete'?undefined:trackedPreparation?.stepLabel,goalNextBlocked=trackedPreparation?.status==='blocked',goalNextDestination=trackedPreparation?.status==='complete'?undefined:trackedPreparation?.destination;
  const readyTotal=storyRewards+(dailyReady?1:0)+eventRewards+goalReady+forgeReady+weeklyRewards+companionAttention;
  const primaryReady:HomeSessionReadyAction|undefined=forgeReady
   ?{kind:'forge',title:forgeReady===1?'Forge craft ready':forgeReady+' Forge crafts ready',detail:'Completed Forge jobs are waiting to be claimed and may be occupying ready capacity.',button:'Open Forge'}

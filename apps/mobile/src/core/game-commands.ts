@@ -113,6 +113,10 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
  if(state.character&&command.type!=='create'&&!settlementFreeCommand)settle();
  state=refreshCompanions(state,now);
  if(command.type.startsWith('companion_')&&!earlyFeatureUnlocked(state,'companions'))throw new Error('companion_system_locked');
+ if((command.type==='daily_supplies_claim'||command.type==='daily_supplies_activate')&&!earlyFeatureUnlocked(state,'dailySupplies'))throw new Error('daily_supplies_locked');
+ if((command.type==='goals_set'||command.type==='idle_rules_set')&&!earlyFeatureUnlocked(state,'workingToward'))throw new Error('working_toward_locked');
+ if(command.type==='seasonal'&&!earlyFeatureUnlocked(state,'contracts'))throw new Error('contract_board_locked');
+ if(command.type.startsWith('event_')&&!earlyFeatureUnlocked(state,'events'))throw new Error('events_locked');
  const companionMetricBefore=command.type.startsWith('companion_')?companionCommandEconomySnapshot(state):undefined;
  if(['companion_equip','companion_level','companion_ascend','companion_master'].includes(command.type))assertCompanionIdle(state,text(a,'id'));
  switch(command.type){

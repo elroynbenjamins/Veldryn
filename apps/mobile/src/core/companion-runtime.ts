@@ -153,7 +153,7 @@ export function recommendedCompanionTrialTeam(state:GameState,now=Date.now()){
   const candidates=Object.keys(owned).filter(id=>{const status=companionAvailability(state,id).status;return status==='available'||status==='equipped';});
   const byRole=Object.fromEntries(roles.map(role=>[role,candidates.filter(id=>companionServerDefinition(id)?.role===role)])) as Record<CombatCompanionRole,string[]>;
   const missingRoles=roles.filter(role=>byRole[role].length===0);
-  if(missingRoles.length)return {ids:[] as string[],power:0,ready:false,missingRoles,targetChallenge:undefined,targetMet:false,reason:'Missing a required Trial role.'};
+  if(missingRoles.length)return {ids:[] as string[],power:0,ready:false,missingRoles,targetChallenge:undefined,targetMet:false,missingAffinities:[] as string[],reason:'Missing a required Trial role.'};
   const projected=projectCompanionTrial(state.account.companionTrialProgress,now).progress,season=companionTrialSeasonDefinition(projected.season.seasonKey);
   const affinityTypes=new Set(['require_affinity','prohibit_affinity','affinity_diversity','affinity_unique']);
   const targetChallenge=season.specialChallenges.map(id=>COMPANION_WEEKLY_CHALLENGES.find(c=>c.id===id)).find(c=>c?.restrictions.some(r=>affinityTypes.has(r.type)));
@@ -167,7 +167,7 @@ export function recommendedCompanionTrialTeam(state:GameState,now=Date.now()){
     return {ids:best,power:Math.max(0,bestPower)};
   };
   const targeted=targetChallenge?choose(targetChallenge.restrictions):{ids:[] as string[],power:0};
-  if(targeted.ids.length)return {...targeted,ready:true,missingRoles:[] as CombatCompanionRole[],targetChallenge:{id:targetChallenge!.id,name:targetChallenge!.name,description:targetChallenge!.description},targetMet:true,reason:undefined};
+  if(targeted.ids.length)return {...targeted,ready:true,missingRoles:[] as CombatCompanionRole[],targetChallenge:{id:targetChallenge!.id,name:targetChallenge!.name,description:targetChallenge!.description},targetMet:true,missingAffinities:[] as string[],reason:undefined};
   const fallback=choose(undefined);
   const affinityCounts=new Map<string,number>();for(const id of candidates){const affinity=companionServerDefinition(id)?.affinity;if(affinity)affinityCounts.set(affinity,(affinityCounts.get(affinity)??0)+1);}
   const missingAffinities=targetChallenge?.restrictions.flatMap(r=>r.type==='require_affinity'&&(affinityCounts.get(r.affinity)??0)<r.count?[r.affinity]:[])??[];

@@ -1,4 +1,5 @@
 import type {CompanionRarity,CompanionRole} from './policy';
+import type {CompanionAffinity} from '../../shared/companion-affinity-catalog';
 
 export type CompanionCombatContext='character_assist'|'companion_trial'|'companion_roguelite'|'companion_arena';
 export type CompanionOriginId='REG_001'|'REG_SUNSCAR'|'REG_FROSTMARCH'|'REG_ASHLANDS'|string;
@@ -21,7 +22,7 @@ export interface CompanionIdentityModifiers{
 }
 export interface CompanionIdentityProfile extends CompanionIdentityModifiers{activeName?:string;bond?:CompanionIdentityModifiers;}
 export interface CompanionServerDefinition{
-  id:string;name:string;role:CompanionRole;rarity:CompanionRarity;originId:CompanionOriginId;
+  id:string;name:string;role:CompanionRole;rarity:CompanionRarity;affinity:CompanionAffinity;originId:CompanionOriginId;
   baseStats:{hp:number;power:number;defense:number;attackSpeed:number};
   active:CompanionCombatAbilityDefinition;
   tags:string[];
@@ -96,7 +97,10 @@ export type CompanionMissionRequirement=
   |{type:'min_team_power';value:number}
   |{type:'min_ascension';tier:0|1|2|3;count?:number}
   |{type:'tag_count';tag:string;count:number}
-  |{type:'companion_id';companionId:string};
+  |{type:'companion_id';companionId:string}
+  |{type:'affinity_count';affinity:CompanionAffinity;count:number}
+  |{type:'affinity_diversity';count:number}
+  |{type:'affinity_unique'};
 export interface CompanionMissionDefinition{
   id:string;name:string;originId?:string;durationMs:number;missionVersion:number;requiredRoles?:Partial<Record<CompanionRole,number>>;minCompanions:number;maxCompanions:number;minimumLevel?:number;recommendedPower:number;
   requiredRarities?:CompanionRarity[];requiredOriginId?:string;minimumBondLevel?:number;bonusOriginId?:string;

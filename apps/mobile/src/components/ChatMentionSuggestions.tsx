@@ -11,4 +11,4 @@ export function ChatMentionSuggestions({value,names,currentName,onChange}:{value
   {suggestions.map(name=><Pressable key={name.toLocaleLowerCase()} accessibilityRole="button" accessibilityLabel={'Mention '+name} onPress={()=>onChange(applyChatMentionSuggestion(value,name))} style={({pressed})=>[s.chip,{backgroundColor:C.panel2,borderColor:C.line},pressed&&s.pressed]}><Text numberOfLines={1} style={[s.text,{color:C.info}]}>@{name}</Text></Pressable>)}
  </ScrollView>;
 }
-const s=StyleSheet.create({row:{gap:6,paddingVertical:2},chip:{minHeight:32,maxWidth:150,justifyContent:'center',paddingHorizontal:9,borderWidth:1,borderRadius:16},text:{fontSize:10,fontWeight:'900'},pressed:{opacity:.68}});
+const s=StyleSheet.create({row:{gap:6,paddingVertical:2},chip:{minHeight:44,maxWidth:150,justifyContent:'center',paddingHorizontal:9,borderWidth:1,borderRadius:16},text:{fontSize:10,fontWeight:'900'},pressed:{opacity:.68}});

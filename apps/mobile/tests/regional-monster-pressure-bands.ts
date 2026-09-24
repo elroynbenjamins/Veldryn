@@ -1,4 +1,4 @@
-import {strict as assert} from 'node:assert';
+import {assert} from './test-assert';
 import {MONSTERS} from '../src/content/monsters';
 import {REGIONAL_MONSTER_PRESSURE_MULTIPLIER,regionalMonsterPressureBand} from '../src/core/game';
 

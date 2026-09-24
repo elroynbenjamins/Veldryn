@@ -33,4 +33,10 @@ for(const [region,monsterId,level,foodId] of cases){
  }
  report.push({region,monsterId,foodId,heal,foodPerHour:Number(row.foodPerHour.toFixed(2)),foodNeeded:Object.fromEntries(rows.map((projection,index)=>[durations[index]+'h',Number(projection.projectedFood.toFixed(1))]))});
 }
+const noFood={...base,character:{...base.character!,equippedFoodId:undefined}} as GameState;
+const noFoodProjection=combatSustainProjection(noFood,'MOSS_RAT');
+assert.ok(noFoodProjection,'no-food sustain projection must still resolve');
+assert.equal(noFoodProjection!.healingPerFood,0,'no equipped food must provide zero healing');
+assert.equal(noFoodProjection!.foodPerHour,Infinity,'no-food long-hunt projection must report unsustainable food demand');
+
 console.log(JSON.stringify({status:'PASS',report},null,2));

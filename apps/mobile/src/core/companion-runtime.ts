@@ -19,6 +19,7 @@ import {COMPANION_SPECIAL_CHALLENGES,COMPANION_WEEKLY_CHALLENGES,companionMissio
 import {resolveSpecialCompanionChallenge} from '../../../../backend/src/server/companions/special-challenges';
 import {companionExpeditionStaminaCost,companionFoodStamina} from './companion-provisions';
 import {itemDef} from '../content/items';
+import {earlyFeatureUnlocked} from './feature-unlocks';
 import type {CompanionAssignment,CompanionTrialProgress,CompanionProvingGroundState,CompanionOverflowState,OwnedCompanionSnapshot,CompanionEconomyState,CompanionCombatExecutor,CompanionCombatResult,CompanionUnlockFacts,CompanionProvingGroundEvent} from '../../../../backend/src/server/companions/domain';
 import type {CombatEvent,CombatResult} from '../../../../backend/src/server/combat/types';
 
@@ -216,6 +217,7 @@ export function assertCompanionIdle(state:GameState,id:string){
 }
 /** Synchronous domain entry point called only inside the existing trusted game transaction online. */
 export function executeCompanionActivity(input:GameState,type:string,a:Record<string,unknown>,now:number):GameState {
+  if(!earlyFeatureUnlocked(input,'companions'))throw new Error('companion_system_locked');
   let state=refreshCompanions(structuredClone(input),now);if(!state.character)throw new Error('Create a character first.');
   const owned=companionOwned(state),profile=state.account.companionPhase2Profile??{showcaseCompanionIds:[],showcaseSlotsUnlocked:1};
   const assignments=state.account.companionAssignments??[];

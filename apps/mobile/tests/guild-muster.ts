@@ -12,8 +12,10 @@ import {
 } from '../src/core/guild-muster';
 import {
  GUILD_ACTIVITY_DAILY_DECAY_PERCENT,
+ GUILD_ACTIVITY_PARTIAL_DECAY_PERCENT,
  GUILD_ACTIVITY_MILESTONES,
  guildActivityAfterDecay,
+ guildActivityDecayForDay,
  guildActivityBonuses,
  guildActivityPercent,
  guildActivityTargetForMembers,
@@ -40,8 +42,12 @@ equal(guildMusterDailyPercent(150),100,'Guild Muster balance assertion');
 equal(guildMusterRallyPercent(16,32),50,'Guild Muster balance assertion');
 equal(GUILD_ACTIVITY_DAILY_DECAY_PERCENT,10,'Active Guild decay should be 10 percentage points per day');
 equal(GUILD_ACTIVITY_MILESTONES.join(','),'20,40,60,80,100','Active Guild milestones should be every 20%');
-equal(guildActivityTargetForMembers(20),1200,'Active Guild target should scale around 60% of roster');
+equal(guildActivityTargetForMembers(20),1200,'Active Guild target should scale around 60% of recently active members');
 equal(guildActivityPercent(600,1200),50,'Active Guild percent should normalize contribution to roster-scaled target');
+equal(GUILD_ACTIVITY_PARTIAL_DECAY_PERCENT,5,'Partially active Guild day should decay only five percentage points');
+equal(guildActivityDecayForDay(300,1200),0,'At least 25% of daily target should protect Guild Activity from decay');
+equal(guildActivityDecayForDay(1,1200),5,'Some Guild activity should reduce daily decay to five percentage points');
+equal(guildActivityDecayForDay(0,1200),10,'Inactive Guild day should decay ten percentage points');
 equal(guildActivityAfterDecay(100,1),90,'Active Guild meter should preserve momentum instead of weekly hard reset');
 equal(guildActivityAfterDecay(35,4),0,'Active Guild decay must floor at zero');
 equal(guildActivityBonuses(19).gatheringSpeedBps,0,'First bonus should remain locked below 20%');

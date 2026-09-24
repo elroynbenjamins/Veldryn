@@ -4,6 +4,7 @@ import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from '../components/GameButton';
 import {Panel} from '../components/Panel';
 import {OnlineGuildMusterPanel} from '../components/OnlineGuildMusterPanel';
+import {GuildActivitySummaryPanel} from '../components/GuildActivitySummaryPanel';
 import {GameState} from '../core/types';
 import {spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -53,7 +54,8 @@ function GuildOnlineHome({onNavigate,board}:{onNavigate:(section:OnlineGuildSect
   ['Chat','GUILD CHAT','Member chat with Guild tags, roles and player profiles.'],
  ] as const;
  return <View style={s.homeStack}>
-  <Panel><Text style={s.kicker}>GUILD HOME</Text><Text style={s.title}>Guild Overview</Text><Text style={s.sub}>Start with what needs attention, then move into the deeper Guild systems only when you need them.</Text></Panel>
+  <Panel><Text style={s.kicker}>GUILD HOME</Text><Text style={s.title}>Guild Overview</Text><Text style={s.sub}>Keep Guild Activity high through Guild Quests, Muster and shared Projects to maintain cumulative non-combat bonuses.</Text></Panel>
+  <GuildActivitySummaryPanel compact/>
   {board}
   <View style={s.homeGrid}>{destinations.map(([section,label,copy])=><Pressable key={section} accessibilityRole="button" accessibilityLabel={'Open Guild '+section} onPress={()=>onNavigate(section)} style={({pressed})=>[s.homeCard,pressed&&s.pressed]}><Text style={s.homeLabel}>{label}</Text><Text style={s.homeTitle}>{section}</Text><Text style={s.homeCopy}>{copy}</Text><Text style={s.homeOpen}>OPEN ›</Text></Pressable>)}</View>
   <View style={s.homeSecondary}><GameButton compact title="Manage Guild" tone="secondary" onPress={()=>onNavigate('Manage')}/><GameButton compact title="Future Content" tone="secondary" onPress={()=>onNavigate('Future')}/></View>

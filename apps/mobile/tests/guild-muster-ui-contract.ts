@@ -9,6 +9,8 @@ const client=read('src/online/guild-muster.ts');
 const core=read('src/core/guild-muster.ts');
 const sql=read('../../backend/supabase/migrations/20261018000155_guild_muster_v1.sql');
 const activitySql=read('../../backend/supabase/migrations/20261018000156_active_guild_meter_v1.sql');
+const activitySqlV2=read('../../backend/supabase/migrations/20261018000157_active_guild_meter_v2.sql');
+const activitySummary=read('src/components/GuildActivitySummaryPanel.tsx');
 const activityCore=read('src/core/guild-activity.ts');
 
 ok(screen.includes("'Activities'"),'Consolidated online Guild sections must include Activities');
@@ -23,13 +25,13 @@ ok(panel.includes('+5% / +10% / +15% Hall Progress'),'Rally rewards must stay ti
 ok(panel.includes('there is no manual point button to spam'),'Muster must explain that contribution is automatic and verified');
 ok(panel.includes('Refresh Muster'),'Muster needs explicit refresh feedback');
 ok(panel.includes('ACTIVE GUILD')&&panel.includes('Guild Activity'),'Guild Activities must surface the persistent Active Guild meter');
-ok(panel.includes('Guild Quests and other verified cooperative objectives'),'Active Guild meter must explain its intended cooperative source');
+ok(panel.includes('Guild Quests, Muster and completed shared Projects'),'Active Guild meter must explain its cooperative sources');
 ok(panel.includes('does not hard-reset each week'),'Active Guild meter must explain the non-punitive persistence model');
 ok(panel.includes('relative rare materials'),'100% activity reward must be visible');
 
 ok(client.includes("db.rpc('guild_muster_state_v1')"),'Muster summary must come from a membership-gated server RPC');
 ok(client.includes("db.rpc('guild_muster_roster_v1')"),'Muster roster must come from a membership-gated server RPC');
-ok(client.includes("db.rpc('guild_activity_state_v1')"),'Active Guild meter must come from an authoritative server RPC');
+ok(client.includes("db.rpc('guild_activity_state_v2')"),'Active Guild meter must come from the v2 authoritative server RPC');
 ok(core.includes('GUILD_MUSTER_DAILY_CAP=100'),'Daily contribution must be capped');
 ok(core.includes('GUILD_MUSTER_PERSONAL_WEEKLY_GOAL=4'),'Personal weekly cadence must be four meaningful days');
 ok(core.includes('GUILD_MUSTER_RALLY_ACTIVE_SHARE=0.60'),'Shared target must scale around sixty percent roster participation');
@@ -49,10 +51,18 @@ ok(sql.includes('guild_muster_member_read_v1'),'Muster daily rows must have memb
 ok(sql.includes('if v_gid is null then return; end if;'),'Muster RPCs must return no Guild data for non-members');
 ok(activityCore.includes('GUILD_ACTIVITY_MILESTONES=[20,40,60,80,100]'),'Active Guild rewards must unlock every 20%');
 ok(activityCore.includes('GUILD_ACTIVITY_DAILY_DECAY_PERCENT=10'),'Active Guild must decay 10 percentage points per inactive day');
-ok(activitySql.includes('meter_bps')&&activitySql.includes('greatest(0,meter_bps-v_days*1000)'),'Active Guild decay must be persisted server-side');
+ok(activitySql.includes('meter_bps'),'Active Guild v1 must establish persisted meter state');
+ok(activitySqlV2.includes("return 0")&&activitySqlV2.includes("return 500")&&activitySqlV2.includes("return 1000"),'Active Guild v2 must support protected, partial and inactive day decay');
+ok(activitySqlV2.includes('player_activity_daily')&&activitySqlV2.includes('p_date-13'),'Active Guild target must use a trailing 14-day active-member snapshot');
+ok(activitySqlV2.includes("source_kind<>'muster_day'"),'Activity-day accounting must avoid double-counting Muster receipts');
+ok(activitySqlV2.includes("'guild_project'"),'Completed Guild Projects must feed Guild Activity');
+ok(activitySqlV2.includes('guild_activity_state_v2'),'Client-facing Activity state must use the v2 projection');
 ok(activitySql.includes('guild_activity_award_v1'),'Active Guild awards must use one server-owned idempotent path');
 ok(activitySql.includes('private.guild_activity_receipts'),'Active Guild awards must be protected from duplicate source settlement');
 ok(activitySql.includes("'muster_day'"),'Verified Muster qualification must temporarily sustain activity before Guild Quests ship');
 ok(activitySql.includes('grant execute on function public.guild_activity_award_v1')&&activitySql.includes('to service_role'),'Clients must not directly award Guild Activity');
+ok(screen.includes('<GuildActivitySummaryPanel compact/>'),'Guild Home must surface the Active Guild meter');
+ok(activitySummary.includes('20%')&&activitySummary.includes('Guild Activity'),'Guild Home Activity card must expose milestone progress');
+ok(activitySummary.includes('Protected today')&&activitySummary.includes('if inactive'),'Guild Home must explain current decay protection state');
 
 console.log('PASS: Guild Muster is automatic, verified, capped, member-only, forgiving and tied to Hall progression');

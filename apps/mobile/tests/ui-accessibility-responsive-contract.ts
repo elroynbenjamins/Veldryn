@@ -67,8 +67,10 @@ ok(account.includes("inDevelopment=id==='Arena'")&&account.includes('disabled={i
 ok(account.includes('IN DEVELOPMENT'),'Account hub must label disabled future destinations');
 
 const guildFuture=read('src/screens/GuildScreen.tsx');
-ok(guildFuture.includes("'Guild vs Guild'")&&guildFuture.includes("'Guild Raids'")&&guildFuture.includes("'Guild Trials'")&&guildFuture.includes("'Guild Expeditions'"),'Guild must expose the approved future-content previews');
+ok(guildFuture.includes("'Guild vs Guild'")&&guildFuture.includes("'Guild Raids'")&&guildFuture.includes("'Guild Trials'")&&guildFuture.includes("'Guild Expeditions'")&&guildFuture.includes("'Guild Legacy'"),'Guild must expose the approved future-content previews');
 ok(guildFuture.includes("onlineSection==='Future'?<GuildFutureContent/>"),'Guild future content must have a dedicated destination');
+const guildHall=read('src/components/OnlineGuildHallPanel.tsx');
+ok(guildHall.includes('Future Guild Legacy will preserve major trophies and season records permanently.'),'Guild Hall Trophy Room must explain its future Guild Legacy relationship');
 
 const skills=read('src/screens/SkillsScreen.tsx');
 ok(skills.includes('useWindowDimensions')&&skills.includes('stackCards=width<350||fontScale>=1.25'),'Skills hub must stack on narrow phones or large text');

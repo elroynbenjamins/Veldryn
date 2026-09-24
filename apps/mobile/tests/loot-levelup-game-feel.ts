@@ -19,9 +19,13 @@ equal(character?.afterLevel,11,'character level-up must expose the new committed
 equal(mining?.beforeLevel,7,'skill level-up must retain prior level');
 equal(mining?.afterLevel,8,'skill level-up must expose new level');
 ok(mining?.unlocks.includes('Aster-Iron Vein'),'Mining level 8 must explain the newly unlocked Aster-Iron activity');
-ok(mining?.unlocks.includes('Aster-Iron Pickaxe'),'Mining level 8 must also explain the newly equippable tool tier');
-ok(mining?.unlockGroups?.some(group=>group.category==='GATHERING')&&mining.unlockGroups.some(group=>group.category==='TOOL TIER'),'Skill level-up unlocks must be grouped by milestone type');
-equal(mining?.nextMilestone?.level,16,'Mining level 8 should preview the next configured milestone level');
+ok(!mining?.unlocks.includes('Aster-Iron Pickaxe'),'Mining level 8 should not prematurely award the Tier-2 tool milestone');
+ok(mining?.unlockGroups?.some(group=>group.category==='GATHERING'),'Mining level 8 should explain the newly unlocked gathering node');
+equal(mining?.nextMilestone?.level,10,'Mining level 8 should preview the Tier-2 tool milestone at level 10');
+const toolBefore={...before,skills:before.skills.map(skill=>skill.skillId==='mining'?{...skill,level:9}:skill)},toolAfter={...after,skills:after.skills.map(skill=>skill.skillId==='mining'?{...skill,level:10}:skill)};
+const toolMoment=rewardProgressionMoments(toolBefore,toolAfter).find(row=>row.id==='mining');
+ok(toolMoment?.unlocks.includes('Aster-Iron Pickaxe'),'Mining level 10 must explain the Tier-2 tool milestone');
+ok(toolMoment?.unlockGroups?.some(group=>group.category==='TOOL TIER'),'Tool milestone should remain grouped separately from gathering nodes');
 ok((smithing?.unlocks.length??0)>0,'Smithing level-up must surface newly unlocked recipes when content crosses the level');
 
 const masteryBefore={...before,account:{...before.account,professionMasteryByAction:{GREENWOOD_TREE:{actionId:'GREENWOOD_TREE',points:masteryPointsForRank(9),updatedAtMs:1}}}};

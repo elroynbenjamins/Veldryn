@@ -39,7 +39,7 @@ const oathToolState={...state,character:{...state.character!,equippedToolIds:{wo
 const ironwood=GATHERING.find(row=>row.id==='IRONWOOD_TREE')!,crownwood=GATHERING.find(row=>row.id==='CROWNWOOD_TREE')!;
 const starterPace=gatheringBalanceProjection(starterToolState,greenwood,24),midPace=gatheringBalanceProjection(ironToolState,ironwood,24),crownTier2Pace=gatheringBalanceProjection(ironToolState,crownwood,24),highPace=gatheringBalanceProjection(oathToolState,crownwood,24);
 ok(midPace.xpPerHour>starterPace.xpPerHour,'Recommended tier-2 gathering must improve XP/hour over starter gathering');
-ok(crownTier2Pace.xpPerHour>midPace.xpPerHour,'Higher Asterfall nodes should continue improving XP/hour while Tier 2 remains recommended');
+ok(crownTier2Pace.xpPerHour>=midPace.xpPerHour*.80,'Crownwood may trade some XP/hour for harder regional yield, but should not create a severe Tier-2 progression cliff');
 ok(highPace.xpPerHour>crownTier2Pace.xpPerHour,'Unlocking Tier 3 at Woodcutting 20 must provide a real efficiency upgrade on existing Crownwood');
 ok(crownwood.recommendedToolTier===2,'Level-15 Crownwood must recommend Tier 2 until the Tier-3 skill gate at 20');
 ok((starterPace.levelPace.etaSeconds??Infinity)>=8*60&&(starterPace.levelPace.etaSeconds??Infinity)<=25*60,'A properly equipped starter skill should gain its first level in roughly 8–25 minutes');

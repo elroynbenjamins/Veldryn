@@ -1,4 +1,4 @@
-import {strict as assert} from 'node:assert';
+import {assert} from './test-assert';
 import {createCharacter,newGame} from '../src/core/game';
 import {companionAutoStaminaSelection,companionStaminaSelectionTotal} from '../src/core/companion-stamina-selection';
 

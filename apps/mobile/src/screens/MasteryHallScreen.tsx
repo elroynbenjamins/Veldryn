@@ -11,10 +11,13 @@ import {GameButton} from '../components/GameButton';
 import {MasteryDiscoveryPanel} from '../components/MasteryDiscoveryPanel';
 import {equipmentTheme,radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
+import {earlyFeatureUnlocked} from '../core/feature-unlocks';
+import {FeatureLockedPanel} from '../components/FeatureLockedPanel';
 
 const tierLabel=(value:string)=>value.charAt(0).toUpperCase()+value.slice(1);
 export function MasteryHallScreen({state,onOpenSkill,onNavigate,onAchievements,onProfile}:{state:GameState;onOpenSkill?:(skillId:SkillId)=>void;onNavigate?:(destination:WorkingTowardDestination)=>void;onAchievements?:()=>void;onProfile?:()=>void}){
  const C=useGameTheme(),E=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]),summary=professionMasteryHallSummary(state),records=professionMasteryMasteredRecords(state);
+ if(!earlyFeatureUnlocked(state,'masteryHall'))return <ScrollView contentContainerStyle={s.root}><View style={s.headingRow}><View style={s.flex}><Text style={s.kicker}>ACCOUNT PRESTIGE</Text><Text accessibilityRole="header" style={s.heading}>Mastery Hall</Text></View></View><FeatureLockedPanel state={state} featureId="masteryHall"/></ScrollView>;
  const ladder=JOURNAL_ACHIEVEMENTS_V42.filter(row=>row.id.startsWith('mastery_hall_')),journal=state.account.journalState,masterwork=JOURNAL_TITLES_V42.find(row=>row.id==='masterwork_savant'),titleUnlocked=!!journal?.unlockedTitles?.masterwork_savant,prestige=profileMasteryPrestige();
  const next=ladder.find(row=>summary.mastered<row.target),skills=summary.skills;
  return <ScrollView contentContainerStyle={s.root}>

@@ -65,6 +65,7 @@ ok(planner.includes('backgroundColor:C.selection'),'Working Toward selected opti
 const idleRules=read('src/components/IdleRulesEditorV40.tsx');
 ok(idleRules.includes('GameModalHeader')&&idleRules.includes('reduceMotion={state.settings.reduceMotion}'),'Advanced Idle Rules must use the shared motion-safe sheet/header interaction');
 ok(idleRules.includes('quickBlocked')&&idleRules.includes('idle_rule_limit_reached'),'Quick Idle Rule presets must surface and enforce the five-rule safety boundary');
+ok(idleRules.includes('useWindowDimensions')&&idleRules.includes('footerStack'),'Advanced Idle Rules must preserve tappable modal actions on narrow or large-font layouts');
 
 const profile=read('src/components/ProfileAudiencePreviewModal.tsx');
 ok(profile.includes('GameModalHeader')&&profile.includes('trailing={<View'),'Profile audience preview must use shared header with visibility state');
@@ -75,6 +76,10 @@ ok(settings.includes("DISCORD_INVITE_URL='https://discord.gg/Db83APvP5y'")&&sett
 ok(settings.includes("PRIVACY_POLICY_URL='https://elroynbenjamins.github.io/veldryn/privacy/'")&&settings.includes('title="Privacy Policy"'),'Settings must expose the VELDRYN privacy policy as a bottom action');
 ok(settings.includes('Linking.openURL')&&settings.includes('offlineCapBreakdown(state)'),'Settings external links and AFK reserve summary must be runtime-backed');
 ok(settings.includes('{afk.baseHours}h base · up to {afk.freeMaxHours}h through progression · {afk.maxHours}h maximum')&&settings.includes('VIP +2h · VIP+ +2h extra · Supporter +2h'),'Settings must explain the runtime-backed 8→24→30 hour AFK reserve progression');
+
+const actionQueue=read('src/components/ActionQueuePanel.tsx');
+ok(actionQueue.includes('accessibilityState={{disabled:index===0}}')&&actionQueue.includes('accessibilityState={{disabled:index===queue.length-1}}'),'Action Queue move buttons must expose disabled state instead of looking tappable when unavailable');
+ok(actionQueue.includes('useWindowDimensions')&&actionQueue.includes('controlsStack'),'Action Queue interaction controls must remain reachable on narrow or large-font layouts');
 
 const button=read('src/components/GameButton.tsx');
 ok(button.includes('selectedStyle')&&button.includes('C.selectionLine'),'Shared buttons must render selected state, not accessibility state only');

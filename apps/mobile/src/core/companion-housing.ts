@@ -1,4 +1,5 @@
 import type {OwnedCompanionProgress} from './combat-companion-types';
+import type {GameState} from './types';
 
 /** Every owned companion gets Basic Quarters automatically. Housing never limits collection or use. */
 export const COMPANION_HOUSING_UNLIMITED=true;
@@ -36,7 +37,7 @@ export function companionHousingUpgradeAffordability(state:{character:{gold:numb
  const all=[...state.inventory.stacks,...state.bank.stacks],materials=cost.inputs.map(input=>({...input,owned:qty(all,input.itemId)}));
  return {ready:(state.character?.gold??0)>=cost.gold&&materials.every(x=>x.owned>=x.quantity),cost,materials};
 }
-export function upgradeCompanionHousing<T extends {character:{gold:number}|null;inventory:{stacks:{itemId:string;quantity:number}[]};bank:{stacks:{itemId:string;quantity:number}[]};account:{companionHousingTiers?:CompanionHousingTiers}}>(state:T,companionId:string):T{
+export function upgradeCompanionHousing(state:GameState,companionId:string):GameState{
  if(!state.character)throw new Error('character_required');
  const check=companionHousingUpgradeAffordability(state,companionId);if(!check.cost)throw new Error('companion_housing_max');if(!check.ready)throw new Error('companion_housing_resources');
  const spend=(stacks:{itemId:string;quantity:number}[],id:string,amount:number)=>stacks.map(s=>s.itemId===id?{...s,quantity:s.quantity-amount}:s).filter(s=>s.quantity>0);

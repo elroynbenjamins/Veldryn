@@ -112,6 +112,9 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
  const settlementFreeCommand=command.type==='queue_add'||command.type==='queue_remove'||command.type==='queue_move'||command.type==='queue_clear'||command.type==='queue_start'||command.type==='daily_supplies_claim'||command.type==='roster_delete'||command.type.startsWith('qa_');
  if(state.character&&command.type!=='create'&&!settlementFreeCommand)settle();
  state=refreshCompanions(state,now);
+ if(command.type.startsWith('daily_supplies_')&&!earlyFeatureUnlocked(state,'dailySupplies'))throw new Error('daily_supplies_locked');
+ if(command.type.startsWith('event_')&&!earlyFeatureUnlocked(state,'events'))throw new Error('event_system_locked');
+ if(command.type==='seasonal'&&!earlyFeatureUnlocked(state,'classChallenges'))throw new Error('class_challenges_locked');
  if(command.type.startsWith('companion_')&&!earlyFeatureUnlocked(state,'companions'))throw new Error('companion_system_locked');
  const companionMetricBefore=command.type.startsWith('companion_')?companionCommandEconomySnapshot(state):undefined;
  if(['companion_equip','companion_level','companion_ascend','companion_master'].includes(command.type))assertCompanionIdle(state,text(a,'id'));

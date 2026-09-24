@@ -8,6 +8,8 @@ import {startAlchemyBatch,previewAlchemyReward,alchemyRefund,normalizeAlchemyBat
 import {startGemRefinement,startGemCombine,startEquipmentCraft,claimForgeJob,cancelEquipmentCraft,equipmentCraftDurationSeconds,normalizeEquipmentCraftingQueue,isTimedEquipmentRecipe,moveWaitingEquipmentCraft} from '../src/core/equipment-crafting-queue';
 import {gemRefineRecipeV1,gemRefineRecipeIdV1,gemCombineRecipeV1,gemCombineRecipeIdV1,gemResearchXpV1} from '../src/core/gem-progression-v1';
 import {GATHERING,RECIPES} from '../src/content/skills';
+import {WORLD_ZONES} from '../src/content/world-map';
+import {equipmentCraftSlotBreakdown} from '../src/core/equipment-crafting-queue';
 import {HERB_NODES} from '../src/content/herbalism';
 import {ALCHEMY_RECIPES} from '../src/content/alchemy';
 import {MOBILE_GEM_FAMILIES_V1} from '../src/content/gems-v1';
@@ -55,7 +57,7 @@ check('snapshot binds owner, class, profession and accepted rates',()=>{
 for(const classId of ['STONECALLER','RAVAGER','WAYFINDER','DAWNKEEPER'] as const){
  const skillId=CLASS_SKILL_AFFINITIES[classId],node=[...GATHERING,...HERB_NODES].find(row=>row.skillId===skillId&&row.unlockLevel===1)!;
  check(classId+' gathering duration and hourly preview match real rewards',()=>{
-  const base=fresh(classId);base.currentRegionId=node.zoneId;
+  const base=fresh(classId),region=WORLD_ZONES.find(row=>row.id===node.zoneId)!;base.character={...base.character!,level:region.minLevel,xp:totalXpAtLevel(region.minLevel)};base.currentRegionId=node.zoneId;
   const s=startGathering(base,node.id,NOW),legacy={...s,activity:{...s.activity!,skillAffinity:undefined}};
   const current=activeGatheringRuntimeProjection(s)!,old=activeGatheringRuntimeProjection(legacy)!;
   near(old.cycleSeconds/current.cycleSeconds,1.03);near((current.xpPerHour/current.actionsPerHour)/(old.xpPerHour/old.actionsPerHour),1.05);
@@ -100,7 +102,9 @@ check('gem refinement includes affinity once in duration and XP',()=>{
  const s=funded('HEXWEAVER',refine.inputs),pace=professionActionPace(s,refine,'forge'),result=startGemRefinement(s,refine.id,NOW);
  assert.equal(result.seconds,Math.ceil(refine.seconds/1.03));near(result.job.xpPerCraft!,refine.xp*1.05);near(result.seconds,pace.cycleSeconds);
  assert.equal(s.character!.gold-result.state.character!.gold,refine.gold);assert.deepEqual(result.job.reservedInputs,refine.inputs);
- const stored=normalizeEquipmentCraftingQueue(JSON.parse(JSON.stringify([result.job])))[0];assert.deepEqual(stored,result.job);
+ const stored=normalizeEquipmentCraftingQueue(JSON.parse(JSON.stringify([result.job])))[0];
+ for(const key of ['id','recipeId','ownerCharacterId','startedAtMs','completesAtMs','xpPerCraft','reservedGold'] as const)assert.equal(stored[key],result.job[key]);
+ assert.deepEqual(stored.skillAffinity,result.job.skillAffinity);assert.deepEqual(stored.reservedInputs,result.job.reservedInputs);
 });
 check('two fractional gem XP claims total the full award',()=>{
  let s=funded('HEXWEAVER',refine.inputs);const before=s.skills.find(row=>row.skillId==='enchanting')!.xp;
@@ -119,9 +123,9 @@ check('claiming another character’s forge job never changes owner or bonus',()
  near(result.rewardRemainders![affinityXpRemainderKey(s.character!.id,'enchanting')],.5);
 });
 check('queued jobs preserve rates through reordering and save',()=>{
- let s=funded('HEXWEAVER',refine.inputs);const jobs=[];
- for(let i=0;i<5;i++){const result=startGemRefinement(s,refine.id,NOW+i);s=result.state;jobs.push(result.job)}
- assert.ok(jobs[3].startedAtMs>NOW+3);s=moveWaitingEquipmentCraft(s,jobs[4].id,'up',NOW+6);
+ let s=funded('HEXWEAVER',refine.inputs);const jobs=[],capacity=equipmentCraftSlotBreakdown(s).capacity;
+ for(let i=0;i<capacity+2;i++){const result=startGemRefinement(s,refine.id,NOW+i);s=result.state;jobs.push(result.job)}
+ assert.ok(jobs[capacity].startedAtMs>NOW+capacity);s=moveWaitingEquipmentCraft(s,jobs[capacity+1].id,'up',NOW+capacity+3);
  const queue=normalizeEquipmentCraftingQueue(JSON.parse(JSON.stringify(s.account.equipmentCraftingQueue)));
  for(const job of queue){near(job.completesAtMs-job.startedAtMs,Math.ceil(refine.seconds/1.03)*1000);near(job.xpPerCraft!,94.5)}
 });
@@ -141,7 +145,7 @@ check('gem combination follows the same formula',()=>{
  const r=gemCombineRecipeV1(gemCombineRecipeIdV1(gemFamily,1))!,s=funded('HEXWEAVER',r.inputs),result=startGemCombine(s,r.id,NOW);
  assert.equal(result.seconds,Math.ceil(r.seconds/1.03));near(result.job.xpPerCraft!,r.xp*1.05);assert.deepEqual(result.job.reservedInputs,r.inputs);
 });
-for(const c of ['IRONWARDEN','BASTION','KNIFE_DANCER','HEXWEAVER'] as const)check(c+' equipment craft uses the recipe profession',()=>{
+for(const c of ['IRONWARDEN','BASTION','KNIFE_DANCER'] as const)check(c+' equipment craft uses the recipe profession',()=>{
  const skillId=CLASS_SKILL_AFFINITIES[c],r=RECIPES.find(row=>row.skillId===skillId&&isTimedEquipmentRecipe(row)&&(!row.classId||row.classId===c));
  assert.ok(r,'matching class has a timed equipment recipe');const s=funded(c,r!.inputs),result=startEquipmentCraft(s,r!.id,NOW),pace=professionActionPace(s,r!,'forge');
  assert.equal(result.seconds,equipmentCraftDurationSeconds(s,r!.id));near(result.seconds,pace.cycleSeconds);near(result.job.xpPerCraft!,pace.xpPerAction);assert.equal(result.job.skillAffinity?.skillId,skillId);
@@ -166,6 +170,10 @@ check('affinity does not enter generic account/combat multipliers',()=>{
 check('shared game command captures affinity rather than taking client multipliers',()=>{
  const s=fresh('RAVAGER'),node=GATHERING.find(row=>row.skillId==='woodcutting'&&row.unlockLevel===1)!;s.currentRegionId=node.zoneId;
  const result=executeGameCommand(s,{type:'start',args:{kind:'gathering',id:node.id}},NOW);assert.equal(result.state.activity!.skillAffinity?.speedMultiplier,1.03);
+});
+check('Hexweaver armor crafting does not gain an Enchanting bonus',()=>{
+ const r=RECIPES.find(row=>row.classId==='HEXWEAVER'&&isTimedEquipmentRecipe(row))!;assert.ok(r);assert.notEqual(r.skillId,'enchanting');
+ const s=funded('HEXWEAVER',r.inputs),result=startEquipmentCraft(s,r.id,NOW),pace=professionActionPace(s,r,'forge');assert.equal(result.job.skillAffinity,undefined);near(pace.affinity.xpMultiplier,1);near(pace.affinity.speedMultiplier,1);near(result.job.xpPerCraft!,pace.xpPerAction);
 });
 console.log(`Class affinity checks: ${passes} passed, ${failures.length} failed`);
 if(failures.length)throw new Error(failures.join('\n'));

@@ -64,7 +64,7 @@ ok(earlyClaimBlocked,'Equipment cannot be claimed before its timer ends');
 const smithBefore=baseActiveState.skills.find(row=>row.skillId==='smithing')!.xp;
 const claimed=claimEquipmentCraft(baseActiveState,equipmentCraftingQueue(baseActiveState)[0].id,doneAt);
 ok(claimed.state.inventory.stacks.some(row=>row.itemId===recipe.output.itemId),'Claiming a finished craft must grant the equipment');
-ok(claimed.state.skills.find(row=>row.skillId==='smithing')!.xp===smithBefore+recipe.xp,'Smithing XP must be awarded on completion, not on reservation');
+ok(claimed.state.skills.find(row=>row.skillId==='smithing')!.xp===smithBefore+Math.floor(recipe.xp*1.05+1e-9),'Ironwarden Smithing XP, including its 5% affinity, must be awarded on completion, not on reservation');
 
 ok(validateGameCommand({type:'craft_claim',args:{id:'job'}}).type==='craft_claim','Online command validator must accept equipment craft claims');
 ok(validateGameCommand({type:'craft_claim_all'}).type==='craft_claim_all','Online command validator must accept claim-all');

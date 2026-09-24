@@ -1,5 +1,5 @@
 import {useEffect,useMemo,useRef} from 'react';
-import {Animated,StyleSheet,Text,View} from 'react-native';
+import {Animated,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {itemDef} from '../content/items';
 import type {ForgeCraftResult} from '../core/game-commands';
 import {rarityMeta,rarityNameColor,type ItemRarity} from '../core/item-rarity';
@@ -26,7 +26,7 @@ export function ForgeClaimBanner({results,reduceMotion,onDismiss}:{results:reado
 }
 
 export function ForgeRarityRevealModal({results,reduceMotion,onClose,onInventory}:{results:readonly ForgeCraftResult[];reduceMotion:boolean;onClose:()=>void;onInventory:()=>void}){
-  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),scale=useRef(new Animated.Value(1)).current;
+  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),stackActions=width<360||fontScale>=1.25,scale=useRef(new Animated.Value(1)).current;
   const procs=results.filter(row=>row.qualityProc),best=procs.length?highest(procs):undefined,bestMeta=best?rarityMeta(best.rarity):undefined;
   useEffect(()=>{scale.stopAnimation();scale.setValue(1);if(!procs.length||reduceMotion)return;Animated.sequence([Animated.spring(scale,{toValue:1.035,damping:8,stiffness:210,mass:.65,useNativeDriver:true}),Animated.spring(scale,{toValue:1,damping:15,stiffness:190,mass:.8,useNativeDriver:true})]).start();return()=>scale.stopAnimation()},[best?.instanceId,procs.length,reduceMotion,scale]);
   if(!procs.length)return null;
@@ -42,10 +42,10 @@ export function ForgeRarityRevealModal({results,reduceMotion,onClose,onInventory
       <View style={[s.rarityBadge,{borderColor:meta.color}]}><Text style={[s.rarityText,{color:meta.color}]}>{meta.label.toUpperCase()}</Text></View>
     </View>})}</View>
     {results.length>procs.length?<Text style={s.normal}>{results.length-procs.length} additional normal craft{results.length-procs.length===1?'':'s'} claimed at the same time.</Text>:null}
-    <View style={s.actions}><View style={s.action}><GameButton title="Continue forging" tone="secondary" onPress={onClose}/></View><View style={s.action}><GameButton title="View inventory" onPress={onInventory}/></View></View>
+    <View style={[s.actions,stackActions&&s.actionsStack]}><View style={[s.action,stackActions&&s.actionStack]}><GameButton title="Continue forging" tone="secondary" onPress={onClose}/></View><View style={[s.action,stackActions&&s.actionStack]}><GameButton title="View inventory" onPress={onInventory}/></View></View>
   </GameModalSurface>;
 }
 
 function makeStyles(C:ThemeColors){const E=equipmentTheme(C);return StyleSheet.create({
- dialog:{gap:spacing.md,borderWidth:2,backgroundColor:E.panel},reveal:{alignItems:'center',gap:4,padding:spacing.md,borderWidth:1,borderColor:E.line,backgroundColor:E.stage,borderRadius:radii.md},revealMark:{...typography.title,fontWeight:'900',letterSpacing:1},revealCopy:{...typography.caption,color:C.muted,textAlign:'center'},results:{gap:spacing.sm},result:{minHeight:78,flexDirection:'row',alignItems:'center',gap:spacing.sm,borderWidth:1,borderRadius:radii.md,padding:spacing.sm},artFrame:{width:56,height:56,alignItems:'center',justifyContent:'center',borderWidth:2,borderRadius:radii.sm,backgroundColor:C.stage},flex:{flex:1,minWidth:0},itemName:{...typography.bodyStrong,fontWeight:'900'},meta:{...typography.caption,color:C.muted},bonus:{...typography.caption,fontWeight:'900'},copy:{fontSize:9,lineHeight:12,color:C.muted},rarityBadge:{paddingHorizontal:7,paddingVertical:4,borderWidth:1,borderRadius:99},rarityText:{fontSize:8,fontWeight:'900',letterSpacing:.5},normal:{...typography.caption,color:C.muted,textAlign:'center'},actions:{flexDirection:'row',gap:spacing.sm},action:{flex:1},
+ dialog:{gap:spacing.md,borderWidth:2,backgroundColor:E.panel},reveal:{alignItems:'center',gap:4,padding:spacing.md,borderWidth:1,borderColor:E.line,backgroundColor:E.stage,borderRadius:radii.md},revealMark:{...typography.title,fontWeight:'900',letterSpacing:1},revealCopy:{...typography.caption,color:C.muted,textAlign:'center'},results:{gap:spacing.sm},result:{minHeight:78,flexDirection:'row',alignItems:'center',gap:spacing.sm,borderWidth:1,borderRadius:radii.md,padding:spacing.sm},artFrame:{width:56,height:56,alignItems:'center',justifyContent:'center',borderWidth:2,borderRadius:radii.sm,backgroundColor:C.stage},flex:{flex:1,minWidth:0},itemName:{...typography.bodyStrong,fontWeight:'900'},meta:{...typography.caption,color:C.muted},bonus:{...typography.caption,fontWeight:'900'},copy:{fontSize:9,lineHeight:12,color:C.muted},rarityBadge:{paddingHorizontal:7,paddingVertical:4,borderWidth:1,borderRadius:99},rarityText:{fontSize:8,fontWeight:'900',letterSpacing:.5},normal:{...typography.caption,color:C.muted,textAlign:'center'},actions:{flexDirection:'row',gap:spacing.sm},actionsStack:{flexDirection:'column'},action:{flex:1},actionStack:{flex:0,width:'100%'},
  });}

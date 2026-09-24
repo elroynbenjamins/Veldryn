@@ -33,6 +33,10 @@ ok(forgeResult.includes('useWindowDimensions')&&forgeResult.includes('actionsSta
 const travelModal=read('src/components/TravelRegionModal.tsx');
 ok(travelModal.includes('useWindowDimensions')&&travelModal.includes('actionsStack'),'Travel actions must remain reachable on narrow or large-text layouts');
 
+const gemCodex=read('src/components/GemCodexModal.tsx');
+ok(gemCodex.includes("filter:{minHeight:44"),'Gem Codex type filter must retain the 44px touch minimum');
+ok(gemCodex.includes('accessibilityHint="Cycles between all, Stat and Effect Gems"'),'Gem Codex filter must explain its cycling behavior to assistive technology');
+
 const nav=read('src/components/PrimaryNavigation.tsx');
 ok(nav.includes("badgeLabel=badge==='dot'?'new activity'"),'Primary navigation must announce dot badges');
 ok(nav.includes('notification'),'Primary navigation must announce numeric badge counts');

@@ -15,7 +15,7 @@ export function GuildQuestPanel(){
  if(loading)return <Panel><Text style={s.kicker}>GUILD QUESTS</Text><Text style={s.copy}>Loading this week’s objectives…</Text></Panel>;
  if(error)return <Panel><Text style={s.kicker}>GUILD QUESTS</Text><Text style={s.copy}>{error}</Text><Pressable accessibilityRole="button" onPress={()=>void refresh()} style={s.retry}><Text style={s.retryText}>TRY AGAIN</Text></Pressable></Panel>;
  if(!quests.length)return null;
- const transition=quests.find(q=>q.newlyCompleted&&q.activityBeforePercent!=null&&q.activityAfterPercent!=null),completed=quests.filter(q=>q.completed).length,totalActivity=quests.filter(q=>q.completed).reduce((sum,q)=>sum+q.activityReward,0),ends=new Date(quests[0].weekEndsAt),remaining=Math.max(0,Math.ceil((ends.getTime()-Date.now())/86400000));
+ const transition=quests.find(q=>q.newlyCompleted&&q.activityBeforePercent!=null&&q.activityAfterPercent!=null),nextQuest=[...quests].filter(q=>!q.completed).sort((a,b)=>(b.progress/b.target)-(a.progress/a.target))[0],completed=quests.filter(q=>q.completed).length,totalActivity=quests.filter(q=>q.completed).reduce((sum,q)=>sum+q.activityReward,0),ends=new Date(quests[0].weekEndsAt),remaining=Math.max(0,Math.ceil((ends.getTime()-Date.now())/86400000));
  return <Panel>
   <View style={s.head}><View style={s.flex}><Text style={s.kicker}>WEEKLY GUILD QUESTS</Text><Text style={s.title}>{completed}/{quests.length} completed</Text></View><StatusPill label={remaining<=1?'ENDS SOON':remaining+'D LEFT'} tone={remaining<=1?'warning':'info'}/></View>
   <Text style={s.copy}>Five quests are fixed for the week: two approachable objectives, two varied objectives and one featured challenge. Completed quests remain visible until the weekly reset; there are no rerolls.</Text>

@@ -136,6 +136,11 @@ ok(rankings.includes('chip:{minHeight:44'),'Ranking filters must retain a 44px t
 ok(rankings.includes('stackRows=width<360||fontScale>=1.25'),'Ranking rows must adapt to narrow phones and large text');
 ok(rankings.includes("goldStack:{width:'100%',marginLeft:54,textAlign:'left'}"),'Ranking values must wrap below identity content when space is constrained');
 
+const petBonus=read('src/screens/PetBonusOverviewScreen.tsx');
+ok(petBonus.includes('useWindowDimensions')&&petBonus.includes("singleColumn=width<360||fontScale>=1.25"),'Pet Bonus Overview must adapt filters and cards for narrow phones and large text');
+ok(petBonus.includes("filterButton:{minHeight:44")&&petBonus.includes("filterOption:{minHeight:44"),'Pet Bonus filters and menu options must retain 44px touch targets');
+ok(petBonus.includes('filterWrapStack')&&petBonus.includes('petCardStack'),'Pet Bonus filters and pet cards must become full-width when constrained');
+
 const eventResponsive=read('src/screens/EventScreen.tsx');
 ok(eventResponsive.includes('useWindowDimensions')&&eventResponsive.includes("stackEvent=width<360||fontScale>=1.25"),'Events must adapt dense navigation/actions to narrow phones and large text');
 ok(eventResponsive.includes('tabsStack')&&eventResponsive.includes("tabStack:{flexGrow:0,flexBasis:'50%'}"),'Event main navigation must become a readable two-by-two grid when constrained');

@@ -38,7 +38,7 @@ export type CompanionBattlePlaybackEvent=Pick<CombatEvent,'atMs'|'type'|'actorId
 export interface CompanionBattlePlaybackUnit{id:string;name:string;team:'players'|'enemies';role:string;maxHp:number;boss:boolean;}
 export interface CompanionBattlePlaybackSnapshot{durationMs:number;units:CompanionBattlePlaybackUnit[];abilityNames:Record<string,string>;events:CompanionBattlePlaybackEvent[];}
 const PLAYBACK_EVENT_TYPES=new Set<CombatEvent['type']>(['combat_start','phase','cast_start','cast_complete','damage','miss','heal','shield','dot_tick','hot_tick','interrupt','down','death','combat_end']);
-function companionBattlePlayback(result:CombatResult):CompanionBattlePlaybackSnapshot{
+export function companionBattlePlayback(result:CombatResult):CompanionBattlePlaybackSnapshot{
  const states=[...result.players,...result.enemies],abilityNames:Record<string,string>={BASIC:'Basic attack'};
  for(const state of states){for(const ability of state.definition.abilities)abilityNames[ability.id]=ability.name;for(const phase of state.definition.phases??[])abilityNames[phase.id]=phase.name??phase.id.replace(/_/g,' ');}
  const events=result.events.filter(event=>PLAYBACK_EVENT_TYPES.has(event.type)).map(event=>({atMs:event.atMs,type:event.type,actorId:event.actorId,targetId:event.targetId,abilityId:event.abilityId,interruptedAbilityId:event.interruptedAbilityId,amount:event.amount,critical:event.critical,absorbed:event.absorbed,detail:event.detail})).slice(0,420);

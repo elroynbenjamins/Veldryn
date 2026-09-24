@@ -16,4 +16,16 @@ if(collisions.length){
   for(const [version,rows] of collisions)console.error('  '+version+': '+rows.join(', '));
   process.exit(1);
 }
-console.log('PASS: Supabase migration versions are unique ('+files.length+' migrations checked)');
+const malformedDollarQuotes=[];
+for(const name of files){
+  const sql=fs.readFileSync(path.join(root,name),'utf8');
+  const badOpen=[...sql.matchAll(/(?:as|is)\s+\$(?!\$|[A-Za-z_])/g)].map(match=>match.index);
+  const badClose=[...sql.matchAll(/end\s+\$;/g)].map(match=>match.index);
+  if(badOpen.length||badClose.length)malformedDollarQuotes.push({name,count:badOpen.length+badClose.length});
+}
+if(malformedDollarQuotes.length){
+  console.error('Malformed PostgreSQL dollar-quote delimiters detected:');
+  for(const row of malformedDollarQuotes)console.error('  '+row.name+': '+row.count+' suspicious delimiter(s)');
+  process.exit(1);
+}
+console.log('PASS: Supabase migration versions are unique and SQL dollar-quotes are sane ('+files.length+' migrations checked)');

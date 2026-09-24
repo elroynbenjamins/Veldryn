@@ -21,6 +21,7 @@ import {RegionalContractFocus} from '../components/RegionalContractFocus';
 import type {WeeklyOrder} from '../core/weekly-orders-v41';
 import {frostmarchCardsV21,frostmarchProgressFromState,type RegionProgressV21} from '../core/region-content-v21';
 import {loadActiveFrostmarchContentVersionV21,loadFrostmarchProgressV21} from '../online/regional-content-v21';
+import {earlyFeatureUnlocked} from '../core/feature-unlocks';
 
 const WORLD_BOSS_PREVIEWS=[
   {id:'combat',title:'Combat World Boss',label:'COMBAT',icon:require('../../assets/activity-icons-v1/combat.png'),description:'A shared combat threat with limited personal attempts and account-safe contribution.'},
@@ -49,7 +50,7 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop,onR
   const next=nextRegionUnlock(level);
   const storyRegion=currentId==='SUNSCAR'||currentId==='FROSTMARCH'||currentId==='ASHLANDS'?currentId:undefined;
   const currentSummary=regionActivitySummary(state,current.id),travelRegions=orderedTravelRegions(state,current.id,goalRegionId);
-  const nextUnlockProgress=next?Math.max(3,Math.min(100,level/Math.max(1,next.minLevel)*100)):100;
+  const nextUnlockProgress=next?Math.max(3,Math.min(100,level/Math.max(1,next.minLevel)*100)):100,contractsUnlocked=earlyFeatureUnlocked(state,'contracts');
 
   const sunscar=current.id==='SUNSCAR',frostmarch=current.id==='FROSTMARCH';
   const [serverFrostmarchProgress,setServerFrostmarchProgress]=useState<RegionProgressV21|null>(null);
@@ -90,7 +91,7 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop,onR
         <RegionStat label="BOSSES" value={currentSummary.bossesReady+'/'+currentSummary.bossesTotal}/>
       </View>
       <Text style={s.sub}>{currentSummary.gatheringSkills.length?'Gathering: '+currentSummary.gatheringSkills.join(', '):'No gathering nodes in this region yet.'}</Text>
-      <RegionalContractFocus state={state} regionId={current.id} onOpenOrder={onOpenWeeklyOrder} onOpenBoard={onOpenContracts}/>
+      {contractsUnlocked?<RegionalContractFocus state={state} regionId={current.id} onOpenOrder={onOpenWeeklyOrder} onOpenBoard={onOpenContracts}/>:null}
       <View style={s.actions}><View style={s.flex}><GameButton compact title="Combat" onPress={onOpenCombat}/></View><View style={s.flex}><GameButton compact title="Skills" tone="secondary" onPress={onOpenSkills}/></View>{onCoop?<View style={s.flex}><GameButton compact title="Co-op" tone="secondary" onPress={onCoop}/></View>:null}</View>
     </Panel>
 

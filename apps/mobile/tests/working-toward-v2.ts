@@ -104,6 +104,12 @@ const blueprintOwnedState={...toolGateState,inventory:{...toolGateState.inventor
 equal(workingTowardDestinationAvailability(blueprintOwnedState,toolRecipeDestination).status,'ready','Owning the blueprint makes the tool recipe source available');
 const blueprintLearnedState={...toolGateState,account:{...toolGateState.account,unlockedKnowledgeIds:['tool_recipe:ASTER_IRON_HATCHET']}};
 equal(workingTowardDestinationAvailability(blueprintLearnedState,toolRecipeDestination).status,'ready','Permanently learned tool recipe stays available without another blueprint');
+const toolPrepRoute=recipePreparationRoute(toolGateState,toolRecipe,1);
+ok(toolPrepRoute.steps.some(step=>step.kind==='monster_drop'&&step.label.includes('Aster-Iron Hatchet Blueprint')),'Tool preparation route must include the missing blueprint as a real monster-drop step');
+ok(toolPrepRoute.chainLabel.includes('Aster-Iron Hatchet Blueprint')||toolPrepRoute.steps.some(step=>step.detail.includes('Thornling')),'Tool preparation route must preserve the blueprint acquisition chain');
+const learnedToolPrepRoute=recipePreparationRoute(blueprintLearnedState,toolRecipe,1);
+ok(!learnedToolPrepRoute.steps.some(step=>step.label.includes('Blueprint')),'Learned tool recipe must remove the blueprint acquisition step from future preparation routes');
+
 
 
 const weeklyGoal:ProgressionGoal={id:'goal-weekly',characterId,kind:'weekly_order',title:'Weekly job',createdAtMs:0,pinnedAtMs:0,orderId:'example',targetProgress:10};

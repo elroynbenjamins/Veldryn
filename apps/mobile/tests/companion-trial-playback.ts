@@ -16,6 +16,7 @@ const enemy:CombatantDefinition={
 };
 const result=simulateCombat({seed:'companion-playback-test',players:[player],enemies:[enemy],maxDurationMs:5000,tickMs:100,mitigationConstant:100});
 const playback=companionBattlePlayback(result);
+if(!playback)throw new Error('Full combat result did not produce playback transcript');
 assert.equal(playback.durationMs,result.durationMs);
 assert.equal(playback.units.length,2);
 assert.equal(playback.units.find(x=>x.id==='UNIT_TEST')?.maxHp,400);

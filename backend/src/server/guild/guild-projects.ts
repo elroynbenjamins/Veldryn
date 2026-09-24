@@ -94,9 +94,9 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 export function guildProjectSlotCap(guildLevel: number): number {
-  if (guildLevel < 5) return 0;
+  if (guildLevel < 3) return 0;
   if (guildLevel < 10) return 1;
-  if (guildLevel < 25) return 2;
+  if (guildLevel < 20) return 2;
   return 3;
 }
 
@@ -195,15 +195,15 @@ export function reachedGuildMilestones(points: number, targetPoints: number): nu
 }
 
 export const GUILD_WEEKLY_PROJECT_POOL: readonly GuildProjectDefinition[] = [
-  { id:'guild_weekly_borderwatch',version:1,name:'Borderwatch Offensive',description:'Defeat hostile forces, elites and bosses through normal eligible combat.',kind:'weekly_campaign',focus:'combat',minGuildLevel:10,rewardTier:'standard',guildXpReward:1800,repeatable:true,estimatedDays:7 },
-  { id:'guild_weekly_warden_call',version:1,name:"Warden's Call",description:'Push dangerous combat content. Challenge weighting rewards difficult encounters without requiring one exact enemy.',kind:'weekly_campaign',focus:'combat',minGuildLevel:20,rewardTier:'enhanced',guildXpReward:2200,repeatable:true,estimatedDays:7 },
-  { id:'guild_weekly_elite_suppression',version:1,name:'Elite Suppression',description:'Support regional security through meaningful combat, with elites and bosses naturally scoring more effort.',kind:'weekly_campaign',focus:'combat',minGuildLevel:20,rewardTier:'enhanced',guildXpReward:2400,repeatable:true,estimatedDays:7 },
-  { id:'guild_weekly_road_relief',version:1,name:"King's Road Relief",description:'Gather, process and craft supplies across eligible skills. Slower/higher-tier actions earn proportional effort points.',kind:'weekly_campaign',focus:'skilling',minGuildLevel:10,rewardTier:'standard',guildXpReward:1800,repeatable:true,estimatedDays:7 },
-  { id:'guild_weekly_makers_drive',version:1,name:"Makers' Supply Drive",description:'A broad skilling campaign for gathering, processing, crafting, fishing, hunting and alchemy.',kind:'weekly_campaign',focus:'skilling',minGuildLevel:20,rewardTier:'enhanced',guildXpReward:2200,repeatable:true,estimatedDays:7 },
-  { id:'guild_weekly_reconstruction',version:1,name:'Asterfall Reconstruction',description:'Contribute productive effort to reconstruction without forcing every member into the same profession.',kind:'weekly_campaign',focus:'skilling',minGuildLevel:20,rewardTier:'enhanced',guildXpReward:2400,repeatable:true,estimatedDays:7 },
-  { id:'guild_weekly_rift_containment',version:1,name:'Rift Containment',description:'Balance combat response with supply work. Combat and Skilling must each provide at least 30% of the target.',kind:'weekly_campaign',focus:'mixed',minGuildLevel:10,rewardTier:'enhanced',mixedMinimumFraction:0.30,guildXpReward:2200,repeatable:true,estimatedDays:7 },
-  { id:'guild_weekly_frontier_relief',version:1,name:'Frontier Relief',description:'Fight threats and support the region through a balanced mix of Combat and Skilling contribution.',kind:'weekly_campaign',focus:'mixed',minGuildLevel:20,rewardTier:'enhanced',mixedMinimumFraction:0.30,guildXpReward:2400,repeatable:true,estimatedDays:7 },
-  { id:'guild_weekly_watchtower',version:1,name:'Watchtower Renewal',description:'Protect the work crews while rebuilding the frontier. Neither Combat nor Skilling can carry the project alone.',kind:'weekly_campaign',focus:'mixed',minGuildLevel:20,rewardTier:'prestige',mixedMinimumFraction:0.30,guildXpReward:2600,repeatable:true,estimatedDays:7 },
+  { id:'guild_weekly_borderwatch',version:1,name:'Borderwatch Offensive',description:'Defeat hostile forces, elites and bosses through normal eligible combat.',kind:'weekly_campaign',focus:'combat',minGuildLevel:3,rewardTier:'standard',guildXpReward:1800,repeatable:true,estimatedDays:7 },
+  { id:'guild_weekly_warden_call',version:1,name:"Warden's Call",description:'Push dangerous combat content. Challenge weighting rewards difficult encounters without requiring one exact enemy.',kind:'weekly_campaign',focus:'combat',minGuildLevel:6,rewardTier:'enhanced',guildXpReward:2200,repeatable:true,estimatedDays:7 },
+  { id:'guild_weekly_elite_suppression',version:1,name:'Elite Suppression',description:'Support regional security through meaningful combat, with elites and bosses naturally scoring more effort.',kind:'weekly_campaign',focus:'combat',minGuildLevel:8,rewardTier:'enhanced',guildXpReward:2400,repeatable:true,estimatedDays:7 },
+  { id:'guild_weekly_road_relief',version:1,name:"King's Road Relief",description:'Gather, process and craft supplies across eligible skills. Slower/higher-tier actions earn proportional effort points.',kind:'weekly_campaign',focus:'skilling',minGuildLevel:3,rewardTier:'standard',guildXpReward:1800,repeatable:true,estimatedDays:7 },
+  { id:'guild_weekly_makers_drive',version:1,name:"Makers' Supply Drive",description:'A broad skilling campaign for gathering, processing, crafting, fishing, hunting and alchemy.',kind:'weekly_campaign',focus:'skilling',minGuildLevel:6,rewardTier:'enhanced',guildXpReward:2200,repeatable:true,estimatedDays:7 },
+  { id:'guild_weekly_reconstruction',version:1,name:'Asterfall Reconstruction',description:'Contribute productive effort to reconstruction without forcing every member into the same profession.',kind:'weekly_campaign',focus:'skilling',minGuildLevel:8,rewardTier:'enhanced',guildXpReward:2400,repeatable:true,estimatedDays:7 },
+  { id:'guild_weekly_rift_containment',version:1,name:'Rift Containment',description:'Balance combat response with supply work. Combat and Skilling must each provide at least 30% of the target.',kind:'weekly_campaign',focus:'mixed',minGuildLevel:3,rewardTier:'enhanced',mixedMinimumFraction:0.30,guildXpReward:2200,repeatable:true,estimatedDays:7 },
+  { id:'guild_weekly_frontier_relief',version:1,name:'Frontier Relief',description:'Fight threats and support the region through a balanced mix of Combat and Skilling contribution.',kind:'weekly_campaign',focus:'mixed',minGuildLevel:6,rewardTier:'enhanced',mixedMinimumFraction:0.30,guildXpReward:2400,repeatable:true,estimatedDays:7 },
+  { id:'guild_weekly_watchtower',version:1,name:'Watchtower Renewal',description:'Protect the work crews while rebuilding the frontier. Neither Combat nor Skilling can carry the project alone.',kind:'weekly_campaign',focus:'mixed',minGuildLevel:10,rewardTier:'prestige',mixedMinimumFraction:0.30,guildXpReward:2600,repeatable:true,estimatedDays:7 },
 ] as const;
 
 /**

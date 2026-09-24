@@ -11,6 +11,7 @@ function qty(state:any,itemId:string){return [...state.inventory.stacks,...state
 const DAY=86_400_000,t0=Date.UTC(2026,8,20,12,0,0);
 
 let state=createCharacter(newGame(t0),'WAYFINDER','Supply Tester');
+const unlockDaily=<T extends typeof state>(value:T):T=>({...value,quests:value.quests.map(q=>q.questId==='QST_002'?{...q,status:'claimed' as const,progress:2}:q)}) as T;
 let home=dailySuppliesHomeSummary(state,t0);
 ok(home.visible&&home.canClaim&&!!home.claimLabel,'Home should surface a ready Daily Supplies claim');
 const first=claimDailySupplies(state,state.character!.id,t0);
@@ -96,7 +97,7 @@ const blockedOutput=applyDailySupplyCraft(noGearDup,{seconds:300,outputQuantity:
 equal(blockedOutput.outputQuantity,1,'Crafting Output must never duplicate ineligible equipment/tool output');
 equal(blockedOutput.state.character?.activeDailySupplyBoost?.remainingSeconds,7200,'Ineligible equipment crafting should not burn Crafting Output time');
 
-let boundary=createCharacter(newGame(t0),'WAYFINDER','Boundary');
+let boundary=unlockDaily(createCharacter(newGame(t0),'WAYFINDER','Boundary'));
 boundary={...boundary,character:{...boundary.character!,dailySupplyBoostBank:{skill_xp:1}}};
 boundary=startGathering(boundary,'GREENWOOD_TREE',t0);
 const beforeActivation=previewActivityReward(boundary,t0+3600_000);
@@ -104,7 +105,7 @@ const activated=executeGameCommand(boundary,{type:'daily_supplies_activate',args
 equal(activated.reward?.xp,beforeActivation.xp,'Activation must settle earlier activity without retroactive +10% XP');
 equal(activated.state.character?.activeDailySupplyBoost?.remainingSeconds,7200,'Freshly activated boost should start with the full two-hour charge after settlement');
 
-let claimWhileActive=createCharacter(newGame(t0),'WAYFINDER','Claim Boundary');
+let claimWhileActive=unlockDaily(createCharacter(newGame(t0),'WAYFINDER','Claim Boundary'));
 claimWhileActive=startGathering(claimWhileActive,'GREENWOOD_TREE',t0);
 const originalClaimAt=claimWhileActive.activity!.lastClaimAtMs;
 const claimedCommand=executeGameCommand(claimWhileActive,{type:'daily_supplies_claim',args:{characterId:claimWhileActive.character!.id}},t0+1800_000);

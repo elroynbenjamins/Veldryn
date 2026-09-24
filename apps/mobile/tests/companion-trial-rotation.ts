@@ -1,4 +1,4 @@
-import {strict as assert} from 'node:assert';
+import {assert} from './test-assert';
 import {COMPANION_TRIAL_ROTATIONS,COMPANION_WEEKLY_CHALLENGES,companionTrialRotation,companionTrialSeasonDefinition} from '../../../backend/src/server/companions/content';
 import {companionTrialSeasonKey} from '../../../backend/src/server/companions/trial-season';
 

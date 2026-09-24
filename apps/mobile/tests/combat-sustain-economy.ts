@@ -1,5 +1,5 @@
 import {assert} from './test-assert';
-import {dungeonConsumablePolicy} from '../../../backend/src/server/coop/consumable-policy';
+import {dungeonConsumablePolicy} from '../../../../backend/src/server/coop/consumable-policy';
 import {companionExpeditionProvisionPolicy} from '../src/core/companion-provisions';
 
 for(let tier=1;tier<=5;tier++){

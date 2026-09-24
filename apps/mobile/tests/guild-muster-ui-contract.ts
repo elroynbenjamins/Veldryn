@@ -7,7 +7,7 @@ const screen=read('src/screens/GuildScreen.tsx');
 const panel=read('src/components/OnlineGuildMusterPanel.tsx');
 const client=read('src/online/guild-muster.ts');
 const core=read('src/core/guild-muster.ts');
-const sql=read('../../backend/supabase/migrations/20261018000150_guild_muster_v1.sql');
+const sql=read('../../backend/supabase/migrations/20261018000155_guild_muster_v1.sql');
 
 ok(screen.includes("'Muster'"),'Online Guild sections must include Muster');
 ok(screen.includes("onlineSection==='Muster'?<OnlineGuildMusterPanel/>:null"),'Guild Muster must be reachable from the online Guild hub');

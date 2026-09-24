@@ -2,8 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const root=path.resolve(process.cwd(),'../..');
-const migrationPath=path.join(root,'backend/supabase/migrations/20261018000100_social_direct_invitations.sql');
-const managementMigrationPath=path.join(root,'backend/supabase/migrations/20261018000110_social_member_management.sql');
+const migrationPath=path.join(root,'backend/supabase/migrations/20261018000105_social_direct_invitations.sql');
+const managementMigrationPath=path.join(root,'backend/supabase/migrations/20261018000115_social_member_management.sql');
 const successionMigrationPath=path.join(root,'backend/supabase/migrations/20261018000120_social_departure_succession.sql');
 const clientPath=path.join(root,'apps/mobile/src/online/social.ts');
 const partyClientPath=path.join(root,'apps/mobile/src/online/party-social.ts');

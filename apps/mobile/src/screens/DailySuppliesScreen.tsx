@@ -11,6 +11,8 @@ import {StatusPill} from '../components/StatusPill';
 import {GameModalHeader,GameModalSurface} from '../components/GameModalSurface';
 import {radii,spacing,typography,equipmentTheme,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
+import {earlyFeatureUnlocked} from '../core/feature-unlocks';
+import {FeatureLockedPanel} from '../components/FeatureLockedPanel';
 
 const milestonePremium:Record<number,number>={7:10,14:20,21:30,28:40};
 function duration(seconds:number){const h=Math.floor(seconds/3600),m=Math.floor((seconds%3600)/60);return h?(m?h+'h '+m+'m':h+'h'):Math.max(1,m)+'m';}
@@ -21,9 +23,10 @@ export function DailySuppliesScreen({state,nowMs=Date.now(),onCommand}:{state:Ga
  const status=dailySuppliesStatus(state,nowMs),characters=accountCharacters(state),activeCharacter=state.character!,active=dailySupplyActiveLabel(activeCharacter),bank=dailySupplyBank(activeCharacter);
  const claimedInCycle=(state.account.dailySupplies?.totalClaims??0)%28;
  const [selectedId,setSelectedId]=useState(activeCharacter.id),[pickerOpen,setPickerOpen]=useState(false),[busy,setBusy]=useState(false),[feedback,setFeedback]=useState<{message:string;tone:FeedbackTone}|null>(null),[showRules,setShowRules]=useState(false);
- const selected=characters.find(entry=>entry.character.id===selectedId)?.character??activeCharacter;
+ const selected=characters.find(entry=>entry.character.id===selectedId)?.character??activeCharacter,unlocked=earlyFeatureUnlocked(state,'dailySupplies');
  const cells=useMemo(()=>Array.from({length:28},(_,i)=>i+1),[]);
  async function run(command:GameCommand,success:string){setBusy(true);setFeedback(null);try{await onCommand(command);setFeedback({message:success,tone:'success'})}catch(error){setFeedback({message:error instanceof Error?error.message:'Daily Supplies action failed.',tone:'error'})}finally{setBusy(false)}}
+ if(!unlocked)return <ScrollView contentContainerStyle={s.root}><Text style={s.kicker}>ACCOUNT-WIDE DAILY TRACK</Text><Text accessibilityRole="header" style={s.heading}>Daily Supplies</Text><FeatureLockedPanel state={state} featureId="dailySupplies"/></ScrollView>;
  const rewardText=status.reward.kind==='premium'
   ?'Milestone reward · +'+status.reward.amount+' premium currency'
   :'+2h banked · +'+Math.round(DAILY_SUPPLY_BONUS*100)+'% '+dailySupplyBoostLabel(status.reward.type);

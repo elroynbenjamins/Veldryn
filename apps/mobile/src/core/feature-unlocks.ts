@@ -61,3 +61,8 @@ export function earlyFeatureForDestination(destination:string):EarlyFeatureId|un
  };
  return map[destination];
 }
+
+export function earlyFeatureLockReason(state:GameState,destination:string){
+ const id=earlyFeatureForDestination(destination);if(!id||earlyFeatureUnlocked(state,id))return '';
+ return EARLY_FEATURE_UNLOCKS[id].requirement+'.';
+}

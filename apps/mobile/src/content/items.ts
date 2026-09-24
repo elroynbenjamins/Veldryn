@@ -91,6 +91,7 @@ const BASE_ITEMS:ItemDef[]=[
 {id:'GRILLED_OASIS_CARP',name:'Grilled Oasis Carp',type:'food',heal:230,readiness:10,value:145,rarity:'uncommon'},
 {id:'GLASSFIN_FEAST',name:'Amberglass Glassfin Feast',type:'food',heal:310,readiness:12,value:230,rarity:'rare'},
 {id:'FROSTED_ICEFIN',name:'Frosted Icefin',type:'food',heal:390,readiness:14,value:340,rarity:'rare'},
+{id:'ASHLANDS_EMBER_STEW',name:'Ashlands Ember Stew',type:'food',heal:500,readiness:17,value:520,rarity:'epic'},
 {id:'OASIS_CARP',name:'Oasis Carp',type:'material',value:100,rarity:'uncommon'},
 {id:'GLASSFIN',name:'Glassfin',type:'material',value:170,rarity:'rare'},
 {id:'SCORPION_VENOM',name:'Scorpion Venom',type:'material',value:130,rarity:'uncommon'},

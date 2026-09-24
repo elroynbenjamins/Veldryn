@@ -1,6 +1,6 @@
 import {useEffect,useState,useMemo} from 'react';
 import {ZoneSceneArtwork} from '../components/ZoneSceneArtwork';
-import {ScrollView,StyleSheet,Text,View} from 'react-native';
+import {Image,ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
 import {WORLD_ZONES} from '../content/world-map';
 import {currentRegionId} from '../core/combat-region';
@@ -21,6 +21,13 @@ import {RegionalContractFocus} from '../components/RegionalContractFocus';
 import type {WeeklyOrder} from '../core/weekly-orders-v41';
 import {frostmarchCardsV21,frostmarchProgressFromState,type RegionProgressV21} from '../core/region-content-v21';
 import {loadActiveFrostmarchContentVersionV21,loadFrostmarchProgressV21} from '../online/regional-content-v21';
+
+const WORLD_BOSS_PREVIEWS=[
+  {id:'combat',title:'Combat World Boss',label:'COMBAT',icon:require('../../assets/activity-icons-v1/combat.png'),description:'A shared combat threat with limited personal attempts and account-safe contribution.'},
+  {id:'mining',title:'Mining World Boss',label:'MINING',icon:require('../../assets/activity-icons-v1/mining.png'),description:'A server-wide mining encounter where efficient extraction and mastery drive contribution.'},
+  {id:'fishing',title:'Fishing World Boss',label:'FISHING',icon:require('../../assets/activity-icons-v1/fishing.png'),description:'A cooperative fishing challenge built around catches, mastery and event-specific objectives.'},
+  {id:'woodcutting',title:'Woodcutting World Boss',label:'WOODCUTTING',icon:require('../../assets/activity-icons-v1/woodcutting.png'),description:'A shared woodcutting encounter where chopping progress contributes to the global objective.'},
+] as const;
 
 type Props={
   state:GameState;
@@ -96,6 +103,16 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop,onR
       <RegionalJournalPanel name="Frostmarch" progress={frostmarchProgress}/>
     </>}
 
+    <Text style={s.section}>WORLD BOSSES</Text>
+    <Text style={s.sub}>Future shared encounters. These previews are visible now, but participation remains disabled until the authoritative World Boss services are ready.</Text>
+    <View style={s.futureGrid}>{WORLD_BOSS_PREVIEWS.map(preview=><View key={preview.id} accessible accessibilityRole="summary" accessibilityLabel={preview.title+', In Development'} style={s.futureCard}>
+      <View style={s.futureArt}><ZoneSceneArtwork regionId={current.id} muted/><View style={s.futureShade}/><Image accessible={false} source={preview.icon} resizeMode="contain" style={s.futureIcon}/><View style={s.futureBadge}><Text style={s.futureBadgeText}>IN DEVELOPMENT</Text></View></View>
+      <Text style={s.futureLabel}>{preview.label} · WORLD BOSS</Text>
+      <Text style={s.futureTitle}>{preview.title}</Text>
+      <Text style={s.futureCopy}>{preview.description}</Text>
+      <View style={s.futureDisabled}><Text style={s.futureDisabledText}>In Development</Text></View>
+    </View>)}</View>
+
     <Text style={s.section}>TRAVEL ELSEWHERE</Text>
     <View style={s.unlockCard}><View style={s.unlockHead}><View style={s.flex}><Text style={s.unlockLabel}>{next?'NEXT REGION UNLOCK':'REGION PROGRESSION'}</Text><Text style={s.unlockTitle}>{next?next.name:'All authored regions unlocked'}</Text></View>{next?<Text style={s.unlockLevel}>Lv {level}/{next.minLevel}</Text>:<Text style={s.unlockDone}>COMPLETE</Text>}</View>{next?<><View style={s.unlockTrack}><View style={[s.unlockFill,{width:(nextUnlockProgress+'%') as any}]}/></View><Text style={s.unlockMeta}>{Math.max(0,next.minLevel-level)} level{next.minLevel-level===1?'':'s'} until travel unlock.</Text></>:<Text style={s.unlockMeta}>Every currently authored region can be travelled to.</Text>}</View>
     {travelRegions.map(zone=>{
@@ -153,5 +170,17 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
   destinationContent:{fontSize:10,lineHeight:14,color:C.text,fontWeight:'800'},
   destinationSub:{fontSize:12,lineHeight:17,color:C.muted},
   travelButton:{alignSelf:'flex-start',minWidth:88,marginTop:5},
+  futureGrid:{flexDirection:'row',flexWrap:'wrap',gap:8},
+  futureCard:{flexGrow:1,flexBasis:'47%',minWidth:148,gap:4,padding:8,borderWidth:1,borderStyle:'dashed',borderColor:C.line,borderRadius:radii.lg,backgroundColor:equipmentColors.panel,opacity:.82},
+  futureArt:{height:82,borderRadius:radii.md,overflow:'hidden',alignItems:'center',justifyContent:'center'},
+  futureShade:{...StyleSheet.absoluteFillObject,backgroundColor:C.dark?'rgba(5,12,20,.54)':'rgba(255,255,255,.52)'},
+  futureIcon:{width:44,height:44,opacity:.92},
+  futureBadge:{position:'absolute',left:6,bottom:6,paddingHorizontal:6,paddingVertical:3,borderRadius:99,borderWidth:1,borderColor:C.lineStrong,backgroundColor:C.dark?'rgba(8,17,29,.88)':'rgba(255,255,255,.92)'},
+  futureBadgeText:{fontSize:7.5,color:C.muted,fontWeight:'900',letterSpacing:.55},
+  futureLabel:{fontSize:8,color:C.accentSoft,fontWeight:'900',letterSpacing:.65},
+  futureTitle:{...typography.bodyStrong,color:C.text},
+  futureCopy:{fontSize:10,lineHeight:14,color:C.muted},
+  futureDisabled:{minHeight:36,alignItems:'center',justifyContent:'center',marginTop:3,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel2},
+  futureDisabledText:{fontSize:9,color:C.muted,fontWeight:'900',letterSpacing:.4},
   progress:{...typography.caption,color:C.muted,textAlign:'center'},
 });}

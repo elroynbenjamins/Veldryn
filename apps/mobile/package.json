@@ -24,7 +24,8 @@
     "test:onboarding": "node -e \"require('fs').rmSync('.onboarding-build',{recursive:true,force:true})\" && tsc -p tsconfig.onboarding.json && node .onboarding-build/apps/mobile/tests/onboarding-guide-v1.js",
     "test:gems-v1": "node -e \"require('fs').rmSync('.core-build',{recursive:true,force:true})\" && tsc -p tsconfig.core.json --outDir .core-build && node .core-build/apps/mobile/tests/gem-progression-v1.js && node .core-build/apps/mobile/tests/gem-artwork-v1.js && node .core-build/apps/mobile/tests/gem-artwork-integration-ui-contract.js",
     "test:companion-trial-rotation": "node -e \"require('fs').rmSync('.core-build',{recursive:true,force:true})\" && tsc -p tsconfig.core.json --outDir .core-build && node .core-build/apps/mobile/tests/companion-affinities.js && node .core-build/apps/mobile/tests/companion-expedition-affinities.js && node .core-build/apps/mobile/tests/companion-trial-affinities.js && node .core-build/apps/mobile/tests/companion-trial-rotation.js && node .core-build/apps/mobile/tests/companion-trial-month-preview.js",
-    "test:companion-trial-playback": "node -e \"require('fs').rmSync('.core-build',{recursive:true,force:true})\" && tsc -p tsconfig.core.json --outDir .core-build && node .core-build/apps/mobile/tests/companion-trial-playback.js"
+    "test:companion-trial-playback": "node -e \"require('fs').rmSync('.core-build',{recursive:true,force:true})\" && tsc -p tsconfig.core.json --outDir .core-build && node .core-build/apps/mobile/tests/companion-trial-playback.js",
+    "test:onboarding-locks": "node -e \"require('fs').rmSync('.core-build',{recursive:true,force:true})\" && tsc -p tsconfig.core.json --outDir .core-build && node .core-build/apps/mobile/tests/pet-companion-onboarding-locks.js"
   },
   "dependencies": {
     "@noble/hashes": "1.8.0",

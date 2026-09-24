@@ -1,4 +1,4 @@
-import {strict as assert} from 'node:assert';
+import {assert} from './test-assert';
 import {companionTrialNextSeasonKey,companionTrialRotationPreview} from '../../../backend/src/server/companions/trial-season';
 
 assert.equal(companionTrialNextSeasonKey('2026-09'),'2026-10');

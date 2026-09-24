@@ -40,7 +40,7 @@ export const GATHERING:GatherDef[]=([
   return {...activity,seconds:Math.ceil(activity.seconds*2),xp:Math.round(activity.xp*xpMultiplier),difficultyMultiplier,recommendedToolTier};
 });
 
-export interface Recipe{id:string;name:string;skillId:'smithing'|'cooking'|'alchemy'|'tailoring'|'enchanting';level:number;xp:number;gold:number;seconds:number;repeatableTraining?:boolean;inputs:{itemId:string;quantity:number}[];output:{itemId:string;quantity:number};classId?:ClassId;noviceSetId?:string;characterLevel?:number;requiresCraftedItemId?:string;v33EquipmentTier?:string;v33Region?:string;v33SetId?:string;v33Path?:string;}
+export interface Recipe{id:string;name:string;skillId:'smithing'|'cooking'|'alchemy'|'tailoring'|'enchanting';level:number;xp:number;gold:number;seconds:number;repeatableTraining?:boolean;inputs:{itemId:string;quantity:number}[];output:{itemId:string;quantity:number};classId?:ClassId;noviceSetId?:string;characterLevel?:number;requiresCraftedItemId?:string;requiredKnowledgeId?:string;knowledgeItemId?:string;v33EquipmentTier?:string;v33Region?:string;v33SetId?:string;v33Path?:string;}
 export const RECIPES:Recipe[]=[
 ...ALCHEMY_RECIPES as Recipe[],
 ...NOVICE_RECIPES,

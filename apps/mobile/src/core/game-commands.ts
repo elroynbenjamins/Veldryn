@@ -30,6 +30,7 @@ import {buildAdminQaState,refillAdminQaResources} from '../dev/admin-qa-profile'
 import {isTimedProcessingRecipe} from './processing';
 import type {FallenKnightBattleResult} from './story-boss';
 import {reconcileWorkingTowardGeneratedRules} from './working-toward-execution';
+import {earlyFeatureUnlocked} from './early-feature-gates';
 import {upgradeCompanionHousing} from './companion-housing';
 
 /** Commands express intent. Neither a client save nor a client reward is accepted. */
@@ -103,6 +104,7 @@ export function validateGameSettings(value:unknown):GameState['settings']{
 /** The caller provides a trusted clock, character ID and random roll on the server. */
 export function executeGameCommand(previous:GameState,value:unknown,now:number,options:{characterId?:string;randomRoll?:number;accountId?:string;eventId?:string;adminQa?:boolean}={}):GameCommandResult{
  const command=validateGameCommand(value),a=command.args??{},activity=previous.activity,contributions:VerifiedActivity[]=[];
+ if(command.type.startsWith('companion_')&&!earlyFeatureUnlocked(previous,'companions'))throw new Error('companions_locked_complete_into_ironwood');
  let state=structuredClone(previous),reward:RewardBundle|undefined,message:string|undefined,won:boolean|undefined,storyBossBattle:FallenKnightBattleResult|undefined,upgrade:GameCommandResult['upgrade'],forgeResults:ForgeCraftResult[]|undefined;
  if(!Number.isSafeInteger(now)||now<previous.createdAtMs)throw new Error('invalid_server_clock');
  const credit=(source:GameState['activity'],earned:RewardBundle)=>{if(!source||earned.kills<=0)return;if(source.kind==='combat')contributions.push({kind:'combat',contentId:source.targetId,units:earned.kills,startedAtMs:Math.max(source.lastClaimAtMs,now-earned.elapsedSeconds*1000),...(source.combatChallengeId?{challengeId:source.combatChallengeId}: {})});else if(['mining','woodcutting','fishing','herbalism'].includes(source.kind))contributions.push({kind:'gathering',contentId:source.targetId,units:earned.kills,startedAtMs:Math.max(source.lastClaimAtMs,now-earned.elapsedSeconds*1000)});};

@@ -75,7 +75,7 @@ export type CompanionTrialRestriction=
   |{type:'no_defeats'};
 export interface CompanionWeeklyChallengeDefinition{id:string;name:string;description:string;minimumFloor:number;restrictions:CompanionTrialRestriction[];rewards:{companionEssence:number;bondstones:number;gold:number;materials?:Record<string,number>};}
 export interface CompanionTrialSeasonDefinition{
-  seasonKey:string;startsAt:string;endsAt:string;floorSetId:string;modifiers:string[];rewardSetId:string;specialChallenges:string[];featuredOrigin?:string;featuredCompanionIds?:string[];
+  seasonKey:string;startsAt:string;endsAt:string;rotationId:string;rotationName:string;floorSetId:string;modifiers:string[];rewardSetId:string;specialChallenges:string[];featuredOrigin?:string;featuredCompanionIds?:string[];
 }
 export interface CompanionTrialRun{
   runId:string;seasonKey:string;teamCompanionIds:[string,string,string];startedAt:string;contentVersion:string;currentFloor:number;startFloor:number;seed:string;restrictionIds:string[];

@@ -192,7 +192,11 @@ function planInternal(
 
   const nextVisited=new Set(visitedRecipes);nextVisited.add(recipe.id);
   const batches=batchesForQuantity(state,recipe,remaining),produced=outputForBatches(state,recipe,batches),excess=Math.max(0,produced-remaining);
-  const children=recipe.inputs.map(input=>planInternal(state,input.itemId,input.quantity*batches,undefined,ledger,true,nextVisited));
+  const knowledgeLearned=!recipe.requiredKnowledgeId||(state.account.unlockedKnowledgeIds??[]).includes(recipe.requiredKnowledgeId);
+  const knowledgeChildren=!knowledgeLearned&&recipe.knowledgeItemId
+    ?[planInternal(state,recipe.knowledgeItemId,1,undefined,ledger,true,nextVisited)]
+    :[];
+  const children=[...knowledgeChildren,...recipe.inputs.map(input=>planInternal(state,input.itemId,input.quantity*batches,undefined,ledger,true,nextVisited))];
   addOwned(ledger,itemId,excess);
 
   const ownCraftSeconds=craftSeconds(state,recipe,batches),knownEtaSeconds=ownCraftSeconds+children.reduce((sum,child)=>sum+child.knownEtaSeconds,0);
@@ -443,6 +447,8 @@ export function recipePreparationRoute(state:GameState,recipe:Recipe,batches=1):
       ?planInternal(state,recipe.requiresCraftedItemId,1,prerequisiteSource.destination,ledger,false,new Set())
       :unknownPlan(recipe.requiresCraftedItemId,1,0,1,`Craft ${itemDef(recipe.requiresCraftedItemId).name} first.`));
   }
+  const knowledgeLearned=!recipe.requiredKnowledgeId||(state.account.unlockedKnowledgeIds??[]).includes(recipe.requiredKnowledgeId);
+  if(!knowledgeLearned&&recipe.knowledgeItemId)plans.push(planInternal(state,recipe.knowledgeItemId,1,undefined,ledger,true,new Set()));
   for(const input of recipe.inputs)plans.push(planInternal(state,input.itemId,input.quantity*count,undefined,ledger,true,new Set()));
 
   const preparationSteps=plans.flatMap((plan,index)=>planPreparationSteps(plan,`input:${index}`)),reservedItems=reservedItemsFromPlans(plans);

@@ -1,4 +1,4 @@
-import {strict as assert} from 'node:assert';
+import {assert} from './test-assert';
 import {COMPANION_SERVER_DEFINITIONS,COMPANION_MISSIONS,companionMission} from '../../../backend/src/server/companions/content';
 import {companionMissionRequirementSatisfied,activeCompanionMissions} from '../../../backend/src/server/companions/assignments';
 import {COMPANION_AFFINITY_BY_ID,COMPANION_AFFINITY_IDS} from '../../../backend/src/shared/companion-affinity-catalog';

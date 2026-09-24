@@ -5,6 +5,7 @@ import {LoadingState} from './LoadingState';
 import {Panel} from './Panel';
 import {StatusPill} from './StatusPill';
 import {guildMusterDailyPercent,guildMusterRallyPercent} from '../core/guild-muster';
+import {GUILD_ACTIVITY_DAILY_DECAY_PERCENT,GUILD_ACTIVITY_MILESTONE_DEFS,guildActivityNextMilestone} from '../core/guild-activity';
 import {loadOnlineGuildMuster,type OnlineGuildMusterMember,type OnlineGuildMusterState} from '../online/guild-muster';
 import {radii,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -21,7 +22,7 @@ export function OnlineGuildMusterPanel(){
  if(error&&!state)return <Panel><Text style={s.title}>Guild Muster</Text><Text style={s.error}>{error}</Text><GameButton compact title="Retry" tone="secondary" onPress={()=>void load()}/></Panel>;
  if(!state)return <Panel><Text style={s.title}>Guild Muster</Text><Text style={s.copy}>Join a Guild to take part in daily Muster and the shared weekly Rally.</Text></Panel>;
 
- const dailyPct=guildMusterDailyPercent(state.dailyPoints),rallyPct=guildMusterRallyPercent(state.rallyMarks,state.rallyTarget),hallBonus=state.hallBonusBps/100;
+ const dailyPct=guildMusterDailyPercent(state.dailyPoints),rallyPct=guildMusterRallyPercent(state.rallyMarks,state.rallyTarget),hallBonus=state.hallBonusBps/100,activityPct=state.activityPercent,nextActivity=guildActivityNextMilestone(activityPct);
  const visibleMembers=members.slice(0,6);
  return <View style={s.root}>
   <Panel>
@@ -47,7 +48,7 @@ export function OnlineGuildMusterPanel(){
 
   <Panel>
    <View style={s.head}><View style={s.flex}><Text style={s.kicker}>WEEKLY GUILD RALLY</Text><Text style={s.sectionTitle}>{state.rallyMarks}/{state.rallyTarget} Rally Marks</Text></View><StatusPill label={tierLabel(state.rallyTier)} tone={state.rallyTier>0?'good':'muted'}/></View>
-   <Progress value={rallyPct} C={C}/>
+   <Progress value={activityPct} C={C}/>
    <View style={s.metrics}>
     <Metric label="CHECKED IN" value={state.checkedInMembersToday+'/'+state.memberCount} C={C}/>
     <Metric label="MARK TODAY" value={String(state.qualifiedMembersToday)} C={C}/>
@@ -55,6 +56,15 @@ export function OnlineGuildMusterPanel(){
    </View>
    <Text style={s.copy}>Rally I / II / III unlock at 35% / 70% / 100% of the weekly target. They add +5% / +10% / +15% Hall Progress when a Guild Project completes that week. No new currency, no loot race, and no single member can carry the Rally alone.</Text>
    <Text style={s.note}>The target scales to roughly 60% of the current roster completing four meaningful days, so launch-size Guilds are not balanced around a full 20-player roster.</Text>
+  </Panel>
+
+  <Panel>
+   <View style={s.head}><View style={s.flex}><Text style={s.kicker}>ACTIVE GUILD</Text><Text style={s.sectionTitle}>{activityPct}% Guild Activity</Text></View><StatusPill label={activityPct>=100?'MAX ACTIVITY':nextActivity?nextActivity.threshold+'% NEXT':'ACTIVE'} tone={activityPct>=60?'good':'info'}/></View>
+   <Progress value={activityPct} C={C}/>
+   <Text style={s.copy}>Guild Activity is sustained through Guild Quests and other verified cooperative objectives. The current activity requirement scales with Guild size, so larger rosters need proportionally more contribution.</Text>
+   <View style={s.activityMilestones}>{GUILD_ACTIVITY_MILESTONE_DEFS.map(row=><View key={row.threshold} style={[s.activityMilestone,activityPct>=row.threshold&&s.activityMilestoneOn]}><Text style={[s.activityPct,activityPct>=row.threshold&&s.activityPctOn]}>{row.threshold}%</Text><View style={s.flex}><Text style={s.activityName}>{row.name}</Text><Text style={s.note}>{row.description}</Text></View></View>)}</View>
+   <Text style={s.note}>Activity does not hard-reset each week. It loses {state.activityDailyDecayPercent||GUILD_ACTIVITY_DAILY_DECAY_PERCENT} percentage points per inactive UTC day, preserving momentum while still rewarding consistent Guild participation.</Text>
+   <Text style={s.note}>Current unlocked effects: +{state.gatheringSpeedBps/100}% gathering · +{state.productionSpeedBps/100}% production · +{state.activitySkillXpBps/100}% Skill XP · +{state.masteryXpBps/100}% Mastery XP · +{state.rareMaterialRelativeBps/100}% relative rare materials.</Text>
   </Panel>
 
   <Panel>
@@ -77,5 +87,5 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  root:{gap:10},flex:{flex:1,minWidth:0},head:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:8},kicker:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.8},title:{...typography.title,color:C.text},sectionTitle:{fontSize:12,color:C.text,fontWeight:'900'},copy:{fontSize:9.5,lineHeight:14,color:C.muted},meta:{fontSize:8.5,lineHeight:12,color:C.muted,fontWeight:'700'},note:{fontSize:8.5,lineHeight:12,color:C.muted},
  track:{height:8,borderRadius:4,overflow:'hidden',backgroundColor:C.panel2,marginVertical:8},fill:{height:'100%',backgroundColor:C.accent},
  metrics:{flexDirection:'row',gap:6},metric:{flex:1,minWidth:0,padding:7,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2,alignItems:'center'},metricValue:{fontSize:11,color:C.text,fontWeight:'900'},metricLabel:{fontSize:7,color:C.muted,fontWeight:'900',letterSpacing:.45,textAlign:'center'},
- member:{minHeight:44,flexDirection:'row',alignItems:'center',gap:8,paddingVertical:6,borderBottomWidth:StyleSheet.hairlineWidth,borderBottomColor:C.line},rank:{width:24,fontSize:8.5,color:C.muted,fontWeight:'900'},memberName:{fontSize:10,color:C.text,fontWeight:'900'},memberNumbers:{alignItems:'flex-end'},memberPoints:{fontSize:10,color:C.accent,fontWeight:'900'},memberToday:{fontSize:7.5,color:C.muted,fontWeight:'700'},error:{fontSize:9.5,color:C.bad},
+ activityMilestones:{gap:5,marginTop:7},activityMilestone:{minHeight:46,flexDirection:'row',alignItems:'center',gap:8,padding:7,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2,opacity:.62},activityMilestoneOn:{opacity:1,borderColor:C.good,backgroundColor:C.goodSurface},activityPct:{width:36,fontSize:10,color:C.muted,fontWeight:'900'},activityPctOn:{color:C.good},activityName:{fontSize:9.5,color:C.text,fontWeight:'900'},member:{minHeight:44,flexDirection:'row',alignItems:'center',gap:8,paddingVertical:6,borderBottomWidth:StyleSheet.hairlineWidth,borderBottomColor:C.line},rank:{width:24,fontSize:8.5,color:C.muted,fontWeight:'900'},memberName:{fontSize:10,color:C.text,fontWeight:'900'},memberNumbers:{alignItems:'flex-end'},memberPoints:{fontSize:10,color:C.accent,fontWeight:'900'},memberToday:{fontSize:7.5,color:C.muted,fontWeight:'700'},error:{fontSize:9.5,color:C.bad},
 });}

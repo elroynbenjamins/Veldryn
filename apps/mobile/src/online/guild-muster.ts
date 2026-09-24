@@ -24,6 +24,14 @@ export interface OnlineGuildMusterState{
   rallyTier:0|1|2|3;
   hallBonusBps:number;
   guildWeeklyPoints:number;
+  activityPercent:number;
+  activityTargetUnits:number;
+  activityDailyDecayPercent:number;
+  gatheringSpeedBps:number;
+  productionSpeedBps:number;
+  activitySkillXpBps:number;
+  masteryXpBps:number;
+  rareMaterialRelativeBps:number;
 }
 
 export interface OnlineGuildMusterMember{
@@ -41,13 +49,16 @@ function num(value:unknown){const parsed=Number(value);return Number.isFinite(pa
 
 export async function loadOnlineGuildMuster():Promise<{state:OnlineGuildMusterState;members:OnlineGuildMusterMember[]}|null>{
   const db=client();
-  const [{data:stateData,error:stateError},{data:rosterData,error:rosterError}]=await Promise.all([
+  const [{data:stateData,error:stateError},{data:rosterData,error:rosterError},{data:activityData,error:activityError}]=await Promise.all([
     db.rpc('guild_muster_state_v1'),
     db.rpc('guild_muster_roster_v1'),
+    db.rpc('guild_activity_state_v1'),
   ]);
   if(stateError)throw stateError;
   if(rosterError)throw rosterError;
+  if(activityError)throw activityError;
   const row=stateData?.[0] as Record<string,unknown>|undefined;
+  const activityRow=activityData?.[0] as Record<string,unknown>|undefined;
   if(!row)return null;
   const state:OnlineGuildMusterState={
     guildId:String(row.guild_id),
@@ -73,6 +84,14 @@ export async function loadOnlineGuildMuster():Promise<{state:OnlineGuildMusterSt
     rallyTier:Math.max(0,Math.min(3,num(row.rally_tier))) as 0|1|2|3,
     hallBonusBps:num(row.hall_bonus_bps),
     guildWeeklyPoints:num(row.guild_weekly_points),
+    activityPercent:num(activityRow?.activity_percent),
+    activityTargetUnits:num(activityRow?.target_units)||100,
+    activityDailyDecayPercent:num(activityRow?.daily_decay_percent)||10,
+    gatheringSpeedBps:num(activityRow?.gathering_speed_bps),
+    productionSpeedBps:num(activityRow?.production_speed_bps),
+    activitySkillXpBps:num(activityRow?.skill_xp_bps),
+    masteryXpBps:num(activityRow?.mastery_xp_bps),
+    rareMaterialRelativeBps:num(activityRow?.rare_material_relative_bps),
   };
   const members=((rosterData??[]) as Record<string,unknown>[]).map((member):OnlineGuildMusterMember=>({
     accountId:String(member.account_id),

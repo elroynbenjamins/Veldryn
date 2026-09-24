@@ -46,8 +46,11 @@ ok(TIER_CHARACTER_LEVEL_FLOOR.T9>=ashlands.minLevel,'T9 must begin in the Ashlan
 ok(TIER_CRAFTING_LEVEL_FLOOR.T9>=65,'T9 crafting must remain a late-game profession gate');
 const t9=equipment.filter(recipe=>recipe.v33EquipmentTier==='T9');
 ok(t9.every(recipe=>recipe.v33Region==='Ashlands'),'Every T9 set must be authored as Ashlands equipment');
-ok(t9.filter(recipe=>recipe.skillId==='smithing').every(recipe=>recipe.inputs.some(input=>input.itemId==='BLACKGLASS_ORE')&&recipe.inputs.some(input=>input.itemId==='BLACKGLASS_CORE')&&recipe.inputs.some(input=>input.itemId==='CINDER_HEART')),'T9 Smithing must use Ashlands gathered and combat materials');
+ok(t9.filter(recipe=>recipe.skillId==='smithing').every(recipe=>recipe.inputs.some(input=>input.itemId==='BLACKGLASS_INGOT')&&recipe.inputs.some(input=>input.itemId==='BLACKGLASS_CORE')&&recipe.inputs.some(input=>input.itemId==='CINDER_HEART')),'T9 Smithing must use Ashlands processed Blackglass and combat materials');
 ok(t9.filter(recipe=>recipe.skillId==='tailoring').every(recipe=>recipe.inputs.some(input=>input.itemId==='ASHEN_MYRRH')&&recipe.inputs.some(input=>input.itemId==='BLACKGLASS_CORE')&&recipe.inputs.some(input=>input.itemId==='CINDER_HEART')),'T9 Tailoring must use Ashlands herbal and combat materials');
+const blackglass=RECIPES.find(recipe=>recipe.id==='SMELT_BLACKGLASS_INGOT');
+ok(blackglass?.level===68&&blackglass.inputs.some(input=>input.itemId==='BLACKGLASS_ORE')&&blackglass.inputs.some(input=>input.itemId==='CINDERWOOD_LOG'),'Blackglass processing must bind Ashlands Mining and Woodcutting together');
+ok(GATHERING.some(action=>action.id==='BLACKGLASS_VEIN'&&action.zoneId==='ASHLANDS')&&GATHERING.some(action=>action.id==='CINDERWOOD_TREE'&&action.zoneId==='ASHLANDS'),'Ashlands must expose both Blackglass Mining and Cinderwood Woodcutting');
 for(let i=1;i<released.length;i++)ok(released[i].minLevel>=released[i-1].minLevel,'Released region minimum levels must not move backwards');
 
 console.log(JSON.stringify({status:'PASS',releasedRegions:released.length,monsters:MONSTERS.length,gatheringNodes:GATHERING.length+HERB_NODES.length,equipmentRecipes:equipment.length,equipmentTiers:9},null,2));

@@ -3,6 +3,7 @@ import {activityQueueCapacity,activityQueueHandoffStatus,enqueueActivity,moveQue
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
 import {normalizeSave} from '../src/core/save-normalization';
 import {weeklyOrderBoardForState} from '../src/core/long-term-progression-runtime';
+import {accountActivityOverview} from '../src/core/character-activity-overview';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 function rejects(fn:()=>unknown,message:string){let caught=false;try{fn()}catch{caught=true}ok(caught,message)}
@@ -54,6 +55,8 @@ planned={...planned,unlockedMonsterIds:['MOSS_RAT','FIELD_WISP']};
 planned=startCombat(planned,'MOSS_RAT',now,undefined,'balanced','kills_50');
 planned=enqueueActivity(planned,{kind:'combat',targetId:'FIELD_WISP',combatTacticId:'guarded',huntGoalId:'kills_50'});
 const huntHandoff=activityQueueHandoffStatus(planned);ok(huntHandoff.armed&&huntHandoff.nextReady&&huntHandoff.sourceLabel==='50 kills'&&huntHandoff.nextLabel?.includes('Field Wisp'),'Queue panel status should expose the armed, startable Hunt Goal handoff');
+const plannedOverview=accountActivityOverview(planned)[0];
+ok(plannedOverview.queueState==='armed'&&plannedOverview.queueStateLabel==='AUTO HANDOFF'&&plannedOverview.nextLabel?.includes('Field Wisp'),'Character overview should mirror the authoritative armed queue handoff');
 const advanced=claimActivity(planned,now+4*60*60*1000);
 ok(advanced.reward.kills===50,'First queued transition should settle exactly at the Hunt Goal');
 ok(advanced.state.activity?.targetId==='FIELD_WISP','Planned Hunt Goal stop should start the next queued hunt');
@@ -91,11 +94,15 @@ const queuedRowReadiness=queuedActivityReadiness(wrongRegion,wrongRegion.charact
 ok(!queuedRowReadiness.ready&&(queuedRowReadiness.blocker??'').includes('Travel to Silverbrook'),'Each queued row should expose its own travel blocker before becoming next');
 const blockedPreview=activityQueueHandoffStatus(wrongRegion);
 ok(blockedPreview.armed&&!blockedPreview.nextReady,'Cross-region queued hunt should predict that an armed stop will pause rather than advance');
+const blockedOverview=accountActivityOverview(wrongRegion)[0];
+ok(blockedOverview.queueState==='will_pause'&&blockedOverview.queueStateLabel==='WILL PAUSE'&&(blockedOverview.nextBlocker??'').includes('Travel to Silverbrook'),'Character overview must not present a blocked planned handoff as if it will auto-continue');
 ok((blockedPreview.nextBlocker??'').includes('Travel to Silverbrook'),'Cross-region handoff preview should explain the required travel before settlement');
 const paused=claimActivity(wrongRegion,now+4*60*60*1000);
 ok(!paused.state.activity,'Queue must not auto-travel into another region');
 ok(paused.state.character?.activityQueue?.[0]?.targetId==='SILVERFIN_SWARM','Blocked entry should remain at the front of the queue');
 ok((paused.state.character?.activityQueuePausedReason??'').includes('Travel'),'Wrong-region transition should explain why the queue paused');
+const pausedOverview=accountActivityOverview(paused.state)[0];
+ok(pausedOverview.queueState==='paused'&&(pausedOverview.pausedReason??'').includes('Travel'),'Character overview should preserve the authoritative post-stop queue pause reason');
 
 let manual=createCharacter(newGame(now),'WAYFINDER','Manual Queue');
 manual=startCombat(manual,'MOSS_RAT',now);
@@ -105,6 +112,8 @@ ok(manual.character?.activityQueue?.length===1,'Manual stop should pause rather 
 
 let startNext=createCharacter(newGame(now),'WAYFINDER','Start Next');
 startNext=enqueueActivity(startNext,{kind:'combat',targetId:'MOSS_RAT',huntGoalId:'kills_50'});
+const readyOverview=accountActivityOverview(startNext)[0];
+ok(readyOverview.queueState==='ready'&&readyOverview.nextReady&&readyOverview.nextLabel?.includes('Moss Rat'),'Idle character overview should show a startable next queued action as READY');
 startNext=executeGameCommand(startNext,{type:'queue_start'},now).state;
 ok(startNext.activity?.targetId==='MOSS_RAT'&&!startNext.character?.activityQueue?.length,'Start-next command should consume and start the first valid queued action');
 let blockedStart=createCharacter(newGame(now),'WAYFINDER','Blocked Start');
@@ -112,5 +121,12 @@ blockedStart={...blockedStart,unlockedMonsterIds:['MOSS_RAT','SILVERFIN_SWARM']}
 blockedStart=enqueueActivity(blockedStart,{kind:'combat',targetId:'SILVERFIN_SWARM'});
 const blockedStartStatus=activityQueueHandoffStatus(blockedStart);
 ok(!blockedStartStatus.nextReady&&(blockedStartStatus.nextBlocker??'').includes('Travel to Silverbrook'),'Idle queue preflight should block a known cross-region manual start before the command is sent');
+
+const rosterFirst='11111111-1111-4111-8111-111111111111',rosterSecond='22222222-2222-4222-8222-222222222222';
+let roster=executeGameCommand(newGame(now),{type:'create',args:{classId:'IRONWARDEN',name:'First',body:'male'}},now,{characterId:rosterFirst}).state;
+roster={...roster,account:{...roster.account,unlockedCharacterSlots:2}};
+roster=executeGameCommand(roster,{type:'roster_create',args:{classId:'BASTION',name:'Second',body:'female'}},now+1,{characterId:rosterSecond}).state;
+const rosterOverview=accountActivityOverview(roster);
+ok(rosterOverview.length===2&&rosterOverview[0]?.current&&rosterOverview[0]?.character.id===rosterSecond,'Multi-character activity overview should keep the current character first');
 
 console.log(JSON.stringify({status:'PASS',plannedNext:advanced.state.activity?.targetId,safetyReason:safetyStop.state.character?.activityQueuePausedReason,regionReason:paused.state.character?.activityQueuePausedReason}));

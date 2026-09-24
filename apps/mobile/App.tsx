@@ -41,6 +41,7 @@ import {OnlineGuildNoticeBoardPanel} from './src/components/OnlineGuildNoticeBoa
 import {ProfileEditor} from './src/components/ProfileEditor';
 import {RewardPopup} from './src/components/RewardPopup';
 import {CustomizationUnlockPopup,type CustomizationUnlockEntry} from './src/components/CustomizationUnlockPopup';
+import {FeatureUnlockPopup} from './src/components/FeatureUnlockPopup';
 import {ForgeRarityRevealModal} from './src/components/ForgeResultFeedback';
 import {StoryBossBattleModal} from './src/components/StoryBossBattleModal';
 import type {FallenKnightBattleResult} from './src/core/story-boss';
@@ -92,7 +93,7 @@ import type {GameCommand} from './src/core/game-commands';
 import {buildNavigationBadges,buildQuickNavigationBadges,type NavigationNotification} from './src/core/navigation-notifications';
 import {eventReadyClaimCount} from './src/core/live-events';
 import {companionAttentionSummary} from './src/core/companion-attention';
-import {earlyFeatureUnlocked} from './src/core/feature-unlocks';
+import {earlyFeatureUnlocked,newlyUnlockedEarlyFeatures,type EarlyFeatureUnlockMoment} from './src/core/feature-unlocks';
 import {workingTowardReadyCount,type WorkingTowardDestination} from './src/core/working-toward';
 import {recipePreparationTransitionNotices,type RecipePreparationTransitionNotice} from './src/core/recipe-preparation-tracking';
 import {dailySuppliesStatus} from './src/core/daily-supplies';
@@ -150,6 +151,7 @@ function VeldrynApp(){
   const [now,setNow]=useState(Date.now());
   const [collected,setCollected]=useState<{reward:RewardBundle;activity:ActiveActivity|null;welcomeBack?:boolean;progressionMoments?:RewardProgressionMoment[]}|null>(null);
   const [customizationUnlocks,setCustomizationUnlocks]=useState<CustomizationUnlockEntry[]>([]);
+  const [featureUnlockMoments,setFeatureUnlockMoments]=useState<EarlyFeatureUnlockMoment[]>([]);
   const [forgeResults,setForgeResults]=useState<ForgeCraftResult[]|null>(null);
   const [storyBossBattle,setStoryBossBattle]=useState<{battle:FallenKnightBattleResult;message:string}|null>(null);
   const [masteryNotices,setMasteryNotices]=useState<RewardProgressionMoment[]>([]);
@@ -224,6 +226,10 @@ function VeldrynApp(){
   const coopEntrySource=useMemo(()=>__DEV__&&!serverGameplayEnabled&&!coopOnlineConfigured?createCoopDungeonFixtureSource(state?.settings.language??recoveryLanguage,state?.character):realCoopEntrySource,[state?.settings.language,state?.character,recoveryLanguage]);
   function queueMasteryNotice(before:GameState|null|undefined,after:GameState|null|undefined){const moments=masteryRankProgressionMoments(before,after);if(moments.length)setMasteryNotices(moments);}
   function queuePreparationNotices(before:GameState|null|undefined,after:GameState|null|undefined){const notices=recipePreparationTransitionNotices(before,after);if(!notices.length)return;setPreparationNotices(current=>{const seen=new Set(current.map(row=>row.goalId+':'+row.kind+':'+row.message)),next=[...current];for(const notice of notices){const key=notice.goalId+':'+notice.kind+':'+notice.message;if(!seen.has(key)){seen.add(key);next.push(notice);}}return next.slice(-6);});}
+  function queueFeatureUnlockMoments(before:GameState|null|undefined,next:GameState|null|undefined){
+    const moments=newlyUnlockedEarlyFeatures(before,next);if(!moments.length)return;
+    setFeatureUnlockMoments(current=>{const seen=new Set(current.map(row=>row.id)),out=[...current];for(const moment of moments)if(!seen.has(moment.id)){seen.add(moment.id);out.push(moment);}return out;});
+  }
   function queueCustomizationUnlocks(before:GameState|null,next:GameState){
     if(!before)return;
     const profile=newlyUnlockedProfileRewards(before,next).map(row=>({key:row.kind+':'+row.id,kind:row.kind,name:row.name,detail:row.source?row.source.label+' · '+row.source.detail:undefined} satisfies CustomizationUnlockEntry));
@@ -240,7 +246,7 @@ function VeldrynApp(){
       void addProfileAttentionKeys(scope,keys);
     }
   }
-  async function perform(command?:GameCommand){try{const before=stateRef.current,result=await online.execute(command);queuePreparationNotices(before,result.state);stateRef.current=result.state;setState(result.state);queueCustomizationUnlocks(before,result.state);if(result.reward)presentCollected(result.reward,result.activity??null,before,result.state);else queueMasteryNotice(before,result.state);return result;}catch(error){Alert.alert('Online action',error instanceof Error?error.message:'Please retry.');return null;}}
+  async function perform(command?:GameCommand){try{const before=stateRef.current,result=await online.execute(command);queuePreparationNotices(before,result.state);stateRef.current=result.state;setState(result.state);queueCustomizationUnlocks(before,result.state);if(command?.type==='quest')queueFeatureUnlockMoments(before,result.state);if(result.reward)presentCollected(result.reward,result.activity??null,before,result.state);else queueMasteryNotice(before,result.state);return result;}catch(error){Alert.alert('Online action',error instanceof Error?error.message:'Please retry.');return null;}}
   async function applyOnlineAdminQa(classId:ClassId){const result=await perform({type:'qa_prepare',args:{classId}});if(!result)throw new Error('Admin QA profile was not confirmed by the server.');}
   async function refillOnlineAdminQa(){const result=await perform({type:'qa_refill'});if(!result)throw new Error('Admin QA refill was not confirmed by the server.');}
   async function runCompanionCommand(command:GameCommand){
@@ -271,7 +277,7 @@ function VeldrynApp(){
         const settled=claimActivity(current,Date.now());candidate={...settled.state,character:{...settled.state.character!,...patch}};presentCollected(settled.reward,current.activity,current,settled.state);
       }
     }
-const next=discoverCharacterSkins(candidate);queuePreparationNotices(current,next);stateRef.current=next;setState(next);queueCustomizationUnlocks(current,next);try{await repo.save(next)}catch{Alert.alert('Local save failed','Progress is still in memory. Keep the app open and try another action to save again.')}}
+const next=discoverCharacterSkins(candidate);queuePreparationNotices(current,next);stateRef.current=next;setState(next);queueCustomizationUnlocks(current,next);queueFeatureUnlockMoments(current,next);try{await repo.save(next)}catch{Alert.alert('Local save failed','Progress is still in memory. Keep the app open and try another action to save again.')}}
   async function exportSave(){if(!state){Alert.alert('Export unavailable','No save is loaded.');return;}try{await Share.share({title:'VELDRYN save backup',message:createSaveBackup(state)})}catch(error){Alert.alert('Export failed',error instanceof Error?error.message:'The share sheet could not be opened.')}}
   async function importSave(raw:string){if(serverGameplayEnabled)throw new Error("Local backups cannot replace server-owned progress.");const next=discoverCharacterSkins(parseSaveBackup(raw));await repo.save(next);setState(next);setCurrentTab('Home');setTabHistory([]);Alert.alert('Save imported','The validated backup is now stored on this device.');}
   function presentCollected(reward:RewardBundle,activity:ActiveActivity|null,before?:GameState|null,after?:GameState|null){const progressionMoments=rewardProgressionMoments(before,after);if(rewardHasProgress(reward)||progressionMoments.length)setCollected({reward,activity,progressionMoments})}
@@ -439,6 +445,7 @@ const next=discoverCharacterSkins(candidate);queuePreparationNotices(current,nex
   {!collected&&!forgeResults?.some(row=>row.qualityProc)&&preparationNotices.length?<View style={s.masteryNotice}><ActionFeedback message={preparationNotices[0].message} tone={preparationNotices[0].tone} reduceMotion={state.settings.reduceMotion} compact actionLabel={preparationNotices[0].actionLabel} onAction={()=>openPreparationNotice(preparationNotices[0])}/></View>:!collected&&!forgeResults?.some(row=>row.qualityProc)&&masteryNotices.length?<View style={s.masteryNotice}><ActionFeedback message={masteryRankNoticeMessage(masteryNotices)} tone={masteryNotices.some(moment=>moment.mastered)?'success':'info'} reduceMotion={state.settings.reduceMotion} compact/></View>:null}
     <PrimaryNavigation destinations={primaryTabs} active={activePrimary} labelFor={item=>tabLabel(state.settings.language,item)} onNavigate={setTab} badges={primaryBadges}/>
   <RewardPopup reward={collected?.reward??null} activity={collected?.activity??null} welcomeBack={!!collected?.welcomeBack} progressionMoments={collected?.progressionMoments??[]} reduceMotion={state.settings.reduceMotion} numberMode={state.settings.numberMode} onClose={()=>setCollected(null)} onInventory={()=>setTab('Inventory')} onCollections={()=>setTab('Collections')} onCompanions={()=>setTab('Companions')} onSkill={id=>{const skillId=id as SkillId;setSelectedSkill(skillId);setSkillsMode(id==='faith'?'faith':['mining','woodcutting','fishing','herbalism'].includes(id)?'gathering':'crafting');setTab('Skills')}}/>
+  <FeatureUnlockPopup moment={!collected&&!customizationUnlocks.length?featureUnlockMoments[0]:undefined} reduceMotion={state.settings.reduceMotion} onLater={()=>setFeatureUnlockMoments(current=>current.slice(1))} onOpen={()=>{const moment=featureUnlockMoments[0];setFeatureUnlockMoments(current=>current.slice(1));if(moment)setTab(moment.destination);}}/>
   <CustomizationUnlockPopup entries={collected?[]:customizationUnlocks} reduceMotion={state.settings.reduceMotion} onClose={()=>setCustomizationUnlocks([])} onProfile={()=>{setCustomizationUnlocks([]);setTab('ProfileCustomize')}} onCharacter={()=>{setCustomizationUnlocks([]);setTab('Character')}}/>
   <ForgeRarityRevealModal results={forgeResults??[]} reduceMotion={state.settings.reduceMotion} onClose={()=>setForgeResults(null)} onInventory={()=>{setForgeResults(null);setTab('Inventory')}}/>
   {storyBossBattle&&<StoryBossBattleModal state={state} battle={storyBossBattle.battle} message={storyBossBattle.message} onClose={()=>setStoryBossBattle(null)}/>}

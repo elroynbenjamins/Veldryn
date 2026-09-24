@@ -23,7 +23,7 @@ export function GuildQuestPanel(){
 function Quest({quest:q}:{quest:OnlineGuildQuest}){
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]),pct=Math.min(100,Math.floor(q.progress/q.target*100));
  return <View style={[s.quest,q.completed&&s.done]}>
-  <View style={s.head}><View style={s.flex}><Text style={s.category}>{q.category.toUpperCase()}</Text><Text style={s.questTitle}>{q.title}</Text></View><StatusPill label={q.completed?'COMPLETE':pct+'%'} tone={q.completed?'good':'neutral'}/></View>
+  <View style={s.head}><View style={s.flex}><Text style={s.category}>{q.category.toUpperCase()} · {q.theme.toUpperCase()}</Text><Text style={s.questTitle}>{q.title}</Text></View><StatusPill label={q.completed?'COMPLETE':pct+'%'} tone={q.completed?'good':'neutral'}/></View>
   <Text style={s.questCopy}>{q.description}</Text>
   <View accessibilityRole="progressbar" accessibilityValue={{min:0,max:q.target,now:Math.min(q.target,q.progress)}} style={s.track}><View style={[s.fill,{width:(pct+'%') as any}]}/></View>
   <View style={s.meta}><Text style={s.metaText}>{Math.min(q.progress,q.target).toLocaleString()} / {q.target.toLocaleString()}</Text><Text style={s.reward}>+{q.activityReward} Activity units</Text></View>

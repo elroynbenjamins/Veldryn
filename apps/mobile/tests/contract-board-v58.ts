@@ -9,6 +9,7 @@ import type {GameState} from '../src/core/types';
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 const now=Date.UTC(2026,8,21,12,0,0),accountId='contract-board-test';
 let state=createCharacter(newGame(now),'WAYFINDER','Contract Tester');
+state={...state,quests:state.quests.map(q=>q.questId==='QST_006'?{...q,status:'claimed' as const,progress:8}:q)};
 const candidates=weeklyOrderCandidatesFromCurrentContent(state);
 ok(candidates.some(row=>row.kind==='hunt'),'Contract Board needs Hunt Order candidates');
 ok(candidates.some(row=>row.kind==='profession'),'Contract Board needs Work Order candidates');

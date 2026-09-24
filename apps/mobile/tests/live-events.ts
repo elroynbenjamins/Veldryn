@@ -5,6 +5,7 @@ import {acceptEventContract,activeLiveEvent,applyEventDiscoveries,applyEventDrop
 function ok(condition:boolean,message:string){if(!condition)throw new Error(message);}
 const t0=2_000_000;
 let state=createCharacter(newGame(t0),'IRONWARDEN','EventTester');
+state={...state,quests:state.quests.map(q=>q.questId==='QST_004'?{...q,status:'claimed' as const,progress:2}:q)};
 state=startCombat(state,'MOSS_RAT',t0);
 ok(!activeLiveEvent(state,t0),'Events must be inactive by default');
 ok((previewActivityReward(state,t0+3_600_000).eventDrops?.length??0)===0,'Inactive events cannot add drops');

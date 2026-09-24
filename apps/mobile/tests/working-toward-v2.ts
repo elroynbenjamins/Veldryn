@@ -25,7 +25,7 @@ equal(skillDestination.kind,'skills','skill goal routes to Skills');
 if(skillDestination.kind==='skills'){equal(skillDestination.mode,'gathering','Mining routes to gathering mode');equal(skillDestination.skillId,'mining','Mining remains selected');}
 const skillExecution=workingTowardExecutionPlan(state,skillGoal);
 equal(skillExecution.executionState,'blocked','gathering skill goal reports its region progression gate when no authored node is character-accessible yet');
-ok(skillExecution.queueBlocker?.includes('character level 16'),'skill execution blocker exposes the Old Mines character-level gate');
+ok(skillExecution.queueBlocker?.includes('Level 16'),'skill execution blocker exposes the Old Mines Level gate');
 const travelSkillState={...state,character:{...state.character!,level:20}};
 const travelSkillExecution=workingTowardExecutionPlan(travelSkillState,skillGoal);
 equal(travelSkillExecution.executionState,'travel','gathering skill goal switches to travel once the region is unlocked but not current');
@@ -67,7 +67,7 @@ ok(itemGoalProtection.has('COPPER_ORE'),'Pinned item-quantity goals protect thei
 
 const copperLockedExecution=workingTowardExecutionPlan(state,itemGoal);
 equal(copperLockedExecution.executionState,'blocked','off-region gathered item goal reports the region level gate before offering travel');
-ok(copperLockedExecution.queueBlocker?.includes('character level 16'),'locked item-source execution exposes the Old Mines level gate');
+ok(copperLockedExecution.queueBlocker?.includes('Level 16'),'locked item-source execution exposes the Old Mines Level gate');
 const copperTravelState={...state,character:{...state.character!,level:20}};
 const copperTravelExecution=workingTowardExecutionPlan(copperTravelState,itemGoal);
 equal(copperTravelExecution.executionState,'travel','unlocked off-region item source requires explicit travel before queueing');

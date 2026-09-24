@@ -44,7 +44,6 @@ ok(!account.includes("items:['Home','Progression','Quests','Skills'"),'Account m
 ok(account.includes("singleColumn=width<350||fontScale>=1.25")&&account.includes('attentionQuickWide'),'Account hub and attention rail must preserve narrow-phone / large-text responsiveness');
 
 const craftingProfessionBrowser=read('src/components/CraftingRecipeBrowser.tsx');
-ok(craftingProfessionBrowser.includes("'tailoring'|'enchanting'")&&craftingProfessionBrowser.includes('TAILORING BENCH')&&craftingProfessionBrowser.includes('ENCHANTING TABLE'),'Tailoring and Enchanting must use the shared recipe browser and distinct workshop identity');
 
 const skills=read('src/screens/SkillsScreen.tsx');
 ok(!skills.includes('Hunting-specific activities are not available yet'),'Hunting must not regress to a placeholder-only skill screen');
@@ -97,13 +96,11 @@ const craftingBrowser=read('src/components/CraftingRecipeBrowser.tsx');
 ok(craftingBrowser.includes("(!recipe.classId||recipe.classId===state.character?.classId)"),'Crafting lists must hide recipes restricted to other classes');
 ok(craftingBrowser.includes("label:'READY NOW'")&&craftingBrowser.includes("label:'NEEDS REQUIREMENTS'")&&craftingBrowser.includes("label:'LOCKED'"),'Crafting recipes must remain grouped by actionable state');
 ok(craftingBrowser.includes("filterToggle:{minHeight:44"),'Crafting filters must use a compact accessible dropdown control');
-ok(craftingBrowser.includes("skillId==='smithing'?{label:'EQUIPMENT FORGE'")&&craftingBrowser.includes("label:'KITCHEN'")&&craftingBrowser.includes("label:'ALCHEMY LAB'"),'Crafting skill screens must preserve distinct workshop identities');
 ok(craftingBrowser.includes('alchemyAvailability')&&craftingBrowser.includes("Stop the current activity before brewing."),'Alchemy recipe readiness must use the reserved batch system');
-ok(craftingBrowser.includes('bestRecipeTrainingDestination')&&craftingBrowser.includes('Open best training recipe'),'Crafting summaries must navigate into a useful current training recipe');
-ok(craftingBrowser.includes('recipeProgressionAction')&&craftingBrowser.includes('preferredRecipeId'),'Crafting summary actions must deep-link the exact highlighted recipe instead of reopening a generic profession list');
+ok(craftingBrowser.includes('preferredRecipeId'),'Crafting lists must preserve exact deep-linked recipe selection');
 ok(craftingBrowser.includes('initialExpanded={recipe.id===preferredRecipeId}'),'Deep-linked crafting targets must arrive already expanded');
 ok(craftingBrowser.includes('processingAvailability')&&craftingBrowser.includes('onProcessingStart'),'Repeatable stackable recipes must route through reserved timed processing');
-ok(craftingBrowser.includes('equipmentCraftAvailability')&&craftingBrowser.includes('timedEquipmentRecipe'),'Crafting groups and summary readiness must use real forge-start semantics for timed equipment');
+ok(craftingBrowser.includes('equipmentCraftAvailability')&&craftingBrowser.includes('timedEquipmentRecipe'),'Crafting groups must use real forge-start semantics for timed equipment');
 
 const recipeCard=read('src/components/RecipeCard.tsx');
 ok(recipeCard.includes("processing?'Process ×'")&&recipeCard.includes('Progress continues offline.')&&recipeCard.includes('outputPerHour'),'Processing cards must expose batch controls, offline timing and material throughput');

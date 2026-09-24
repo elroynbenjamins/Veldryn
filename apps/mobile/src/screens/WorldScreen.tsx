@@ -81,7 +81,7 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop,onR
       const availability=regionTravelAvailability(state,zone),unlocked=availability==='available',inDevelopment=availability==='inDevelopment',summary=regionActivitySummary(state,zone.id),goalTarget=goalRegionId===zone.id;
       const content=inDevelopment?'Preview planned regional content':unlocked?'Hunts '+summary.combatReady+'/'+summary.combatTotal+' · Gather '+summary.gatheringReady+'/'+summary.gatheringTotal+(summary.bossesTotal?' · Boss '+summary.bossesReady+'/'+summary.bossesTotal:''):(summary.combatTotal+' hunts · '+summary.gatheringTotal+' gathering'+(summary.bossesTotal?' · '+summary.bossesTotal+' boss':''));
       return <View key={zone.id} style={[s.destination,goalTarget&&s.goalDestination,inDevelopment&&s.developmentDestination]}>
-        <View style={s.thumbnail}><ZoneSceneArtwork regionId={zone.id} muted={!unlocked}/>{!unlocked&&<View style={[s.lockedTag,inDevelopment&&s.developmentTag]}><Text style={s.lockedText}>{inDevelopment?'IN DEVELOPMENT':`Lv. ${zone.minLevel}`}</Text></View>}</View>
+        <View style={s.thumbnail}><ZoneSceneArtwork regionId={zone.id} muted={!unlocked}/>{!unlocked&&!inDevelopment&&<View style={s.lockedTag}><Text style={s.lockedText}>{`Lv. ${zone.minLevel}`}</Text></View>}</View>
         <View style={s.flex}>
           <View style={s.destinationHead}><Text style={[s.destinationName,inDevelopment&&s.developmentText]}>{zone.name}</Text>{goalTarget?<Text style={s.goalBadge}>GOAL</Text>:null}</View>
           <Text style={s.destinationMeta}>{inDevelopment?'In Development':unlocked?`Levels ${zone.minLevel}–${zone.maxLevel}`:`Unlocks at level ${zone.minLevel}`}</Text>

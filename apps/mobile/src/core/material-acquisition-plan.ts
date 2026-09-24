@@ -1,3 +1,4 @@
+import {professionActionPace} from './profession-action-pace';
 import {RECIPES,type Recipe} from '../content/skills';
 import {itemDef} from '../content/items';
 import type {GameState} from './types';
@@ -110,7 +111,7 @@ function batchesForQuantity(state:GameState,recipe:Recipe,quantity:number){
 function craftSeconds(state:GameState,recipe:Recipe,batches:number){
   if(!isTimedProcessingRecipe(recipe.id))return 0;
   const mastery=professionMasteryMultipliers(recipe.id,state.account.professionMasteryByAction?.[recipe.id]);
-  return Math.max(1,recipe.seconds/mastery.speed)*batches;
+  return professionActionPace(state,recipe,'batch').cycleSeconds*batches;
 }
 
 function ownedPlan(itemId:string,requested:number,ownedUsed:number):MaterialAcquisitionPlan{
@@ -390,11 +391,10 @@ function planPreparationSteps(plan:MaterialAcquisitionPlan,path:string):RecipePr
 
 function finalRecipeSeconds(state:GameState,recipe:Recipe,batches:number){
   const mastery=professionMasteryMultipliers(recipe.id,state.account.professionMasteryByAction?.[recipe.id]);
-  if(recipe.skillId==='alchemy'||isTimedProcessingRecipe(recipe.id))return Math.max(1,recipe.seconds/mastery.speed)*batches;
+  if(recipe.skillId==='alchemy'||isTimedProcessingRecipe(recipe.id))return professionActionPace(state,recipe,'batch').cycleSeconds*batches;
   const output=itemDef(recipe.output.itemId);
   if(output.type==='gear'&&!recipe.noviceSetId){
-    const permanent=characterPermanentMultipliers(state),speed=Math.max(.1,permanent.craftingSpeedMultiplier*mastery.speed);
-    return Math.max(1,Math.ceil(recipe.seconds/speed))*batches;
+    return professionActionPace(state,recipe,'forge').cycleSeconds*batches;
   }
   return 0;
 }

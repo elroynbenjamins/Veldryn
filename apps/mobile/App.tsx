@@ -42,6 +42,7 @@ import {ProfileEditor} from './src/components/ProfileEditor';
 import {RewardPopup} from './src/components/RewardPopup';
 import {CustomizationUnlockPopup,type CustomizationUnlockEntry} from './src/components/CustomizationUnlockPopup';
 import {FeatureUnlockPopup} from './src/components/FeatureUnlockPopup';
+import {FirstSessionTutorialPopup} from './src/components/FirstSessionTutorialPopup';
 import {ForgeRarityRevealModal} from './src/components/ForgeResultFeedback';
 import {StoryBossBattleModal} from './src/components/StoryBossBattleModal';
 import type {FallenKnightBattleResult} from './src/core/story-boss';
@@ -106,6 +107,8 @@ import {onlineConfigured} from './src/online/supabase';
 import {newlyUnlockedProfileRewards} from './src/core/profile-customization';
 import {mergeProfileAttentionKeys} from './src/core/profile-attention';
 import {addProfileAttentionKeys,clearProfileAttentionKeys,loadProfileAttentionKeys} from './src/storage/profile-attention';
+import {firstSessionTutorialStep,type FirstSessionTutorialId} from './src/core/first-session-tutorial';
+import {completeFirstSessionTutorialStep,loadFirstSessionTutorialCompleted} from './src/storage/first-session-tutorial';
 
 type Tab=QuickNavDestination|'Activity'|'Progression'|'DailySupplies'|'AccountBonuses'|'MasteryHall'|'Arena'|'Rankings'|'Collections'|'Profile'|'ProfileCustomize'|'Achievements'|'Combat'|'Coop';
 type PrimaryTab='Skills'|'World'|'Character'|'Inventory'|'More';
@@ -159,6 +162,8 @@ function VeldrynApp(){
   const [profileAttentionKeys,setProfileAttentionKeys]=useState<string[]>([]);
   const [profileCustomizeDirty,setProfileCustomizeDirty]=useState(false);
   const [profileCustomizeSection,setProfileCustomizeSection]=useState<'Appearance'|'Identity'>('Appearance');
+  const [tutorialCompleted,setTutorialCompleted]=useState<FirstSessionTutorialId[]>([]);
+  const [tutorialDismissedId,setTutorialDismissedId]=useState<FirstSessionTutorialId|undefined>();
   const stateRef=useRef<GameState|null>(null);
   const appStateRef=useRef(AppState.currentState);
   const settlingRef=useRef(false);
@@ -213,6 +218,9 @@ function VeldrynApp(){
   useEffect(()=>{if(!serverGameplayEnabled)void loadGame()},[loadGame]);
   useEffect(()=>{if(!serverGameplayEnabled)return;const next=online.snapshot?.state??null,before=stateRef.current;queuePreparationNotices(before,next);stateRef.current=next;setState(next);setReady(!online.loading);setLoadError('');},[online.snapshot,online.loading]);
   useEffect(()=>{stateRef.current=state},[state]);
+  useEffect(()=>{const characterId=state?.character?.id;if(!characterId){setTutorialCompleted([]);setTutorialDismissedId(undefined);return;}let active=true;void loadFirstSessionTutorialCompleted(characterId).then(ids=>{if(active)setTutorialCompleted(ids)});return()=>{active=false};},[state?.character?.id]);
+  const tutorialStep=useMemo(()=>state?.character?firstSessionTutorialStep(state,tutorialCompleted):undefined,[state,tutorialCompleted]);
+  const visibleTutorialStep=tutorialStep?.id===tutorialDismissedId?undefined:tutorialStep;
   useEffect(()=>{if(!state)return;let active=true;void loadProfileAttentionKeys(profileAttentionScope).then(keys=>{if(active)setProfileAttentionKeys(keys)});return()=>{active=false};},[profileAttentionScope,!!state]);
   useEffect(()=>{if(tab!=='ProfileCustomize'||!profileAttentionKeys.length)return;setProfileAttentionKeys([]);void clearProfileAttentionKeys(profileAttentionScope);},[tab,profileAttentionScope,profileAttentionKeys.length]);
   const syncLiveEventRuntime=useCallback(async()=>{if(!onlineConfigured)return;try{const runtime=await fetchActiveEventRuntime();const current=stateRef.current;if(!current)return;const before=current.account.liveEvent??null,nextRuntime=runtime??null;if(JSON.stringify(before)===JSON.stringify(nextRuntime))return;const next={...current,account:{...current.account,liveEvent:runtime}};stateRef.current=next;setState(next);}catch{/* Event registry sync is best-effort; gameplay refresh remains authoritative. */}},[]);
@@ -447,8 +455,9 @@ const next=discoverCharacterSkins(candidate);queuePreparationNotices(current,nex
   </View>
   <ChatOverlay state={state} visible={showChatOverlay} onOpen={()=>setShowChatOverlay(true)} onClose={()=>setShowChatOverlay(false)} onEmoteTrayChange={ids=>commit({...state,settings:{...state.settings,chatEmoteTrayIds:ids}})} guildUnread={notificationCounts.guildChatUnread} guildMentions={notificationCounts.guildChatMentions} guildFirstUnreadMessageId={notificationCounts.guildFirstUnreadMessageId} partyUnread={notificationCounts.partyChatUnread} partyMentions={notificationCounts.partyChatMentions} partyFirstUnreadMessageId={notificationCounts.partyFirstUnreadMessageId} onChatRead={()=>void refreshSocialNotifications()}/>
   {!collected&&!forgeResults?.some(row=>row.qualityProc)&&preparationNotices.length?<View style={s.masteryNotice}><ActionFeedback message={preparationNotices[0].message} tone={preparationNotices[0].tone} reduceMotion={state.settings.reduceMotion} compact actionLabel={preparationNotices[0].actionLabel} onAction={()=>openPreparationNotice(preparationNotices[0])}/></View>:!collected&&!forgeResults?.some(row=>row.qualityProc)&&masteryNotices.length?<View style={s.masteryNotice}><ActionFeedback message={masteryRankNoticeMessage(masteryNotices)} tone={masteryNotices.some(moment=>moment.mastered)?'success':'info'} reduceMotion={state.settings.reduceMotion} compact/></View>:null}
-    <PrimaryNavigation destinations={primaryTabs} active={activePrimary} labelFor={item=>tabLabel(state.settings.language,item)} onNavigate={setTab} badges={primaryBadges}/>
+    <PrimaryNavigation destinations={primaryTabs} active={activePrimary} labelFor={item=>tabLabel(state.settings.language,item)} onNavigate={setTab} badges={primaryBadges} guidedDestination={visibleTutorialStep?.highlightPrimary as PrimaryTab|undefined}/>
   <RewardPopup reward={collected?.reward??null} activity={collected?.activity??null} welcomeBack={!!collected?.welcomeBack} progressionMoments={collected?.progressionMoments??[]} reduceMotion={state.settings.reduceMotion} numberMode={state.settings.numberMode} onClose={()=>setCollected(null)} onInventory={()=>setTab('Inventory')} onCollections={()=>setTab('Collections')} onCompanions={()=>setTab('Companions')} onSkill={id=>{const skillId=id as SkillId;setSelectedSkill(skillId);setSkillsMode(id==='faith'?'faith':['mining','woodcutting','fishing','herbalism'].includes(id)?'gathering':'crafting');setTab('Skills')}}/>
+  <FirstSessionTutorialPopup step={!collected&&!customizationUnlocks.length&&!featureUnlockMoments.length?visibleTutorialStep:undefined} onLater={()=>{if(visibleTutorialStep)setTutorialDismissedId(visibleTutorialStep.id)}} onOpen={()=>{const step=visibleTutorialStep;if(!step||!state.character)return;void completeFirstSessionTutorialStep(state.character.id,step.id).then(ids=>setTutorialCompleted(ids));setTutorialDismissedId(undefined);setTab(step.destination)}}/>
   <FeatureUnlockPopup moment={!collected&&!customizationUnlocks.length?featureUnlockMoments[0]:undefined} reduceMotion={state.settings.reduceMotion} onLater={()=>setFeatureUnlockMoments(current=>current.slice(1))} onOpen={()=>{const moment=featureUnlockMoments[0];setFeatureUnlockMoments(current=>current.slice(1));if(moment)setTab(moment.destination);}}/>
   <CustomizationUnlockPopup entries={collected?[]:customizationUnlocks} reduceMotion={state.settings.reduceMotion} onClose={()=>setCustomizationUnlocks([])} onProfile={()=>{setCustomizationUnlocks([]);setTab('ProfileCustomize')}} onCharacter={()=>{setCustomizationUnlocks([]);setTab('Character')}}/>
   <ForgeRarityRevealModal results={forgeResults??[]} reduceMotion={state.settings.reduceMotion} onClose={()=>setForgeResults(null)} onInventory={()=>{setForgeResults(null);setTab('Inventory')}}/>

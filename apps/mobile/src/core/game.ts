@@ -82,9 +82,9 @@ const COMBAT_MONSTER_DAMAGE_SCALE=1.13;
 export const REGIONAL_COMBAT_PRESSURE:Readonly<Record<string,number>>={Greenfields:1.00,Silverbrook:1.04,'Ironwood Forest':1.08,'Old Mines':1.12,"King's Road":1.16,Sunscar:1.20,Frostmarch:1.25,Ashlands:1.30};
 export type RegionalMonsterPressureBand='entry'|'standard'|'hard';
 export const REGIONAL_MONSTER_PRESSURE_MULTIPLIER:Readonly<Record<RegionalMonsterPressureBand,number>>={entry:.92,standard:1,hard:1.10};
-export const REGIONAL_FOOD_SUSTAIN_TARGETS:Readonly<Record<string,{foodPerHourMin:number;foodPerHourMax:number}>>={Greenfields:{foodPerHourMin:.8,foodPerHourMax:2},Silverbrook:{foodPerHourMin:1,foodPerHourMax:3},'Ironwood Forest':{foodPerHourMin:.8,foodPerHourMax:2.5},'Old Mines':{foodPerHourMin:.8,foodPerHourMax:3},"King's Road":{foodPerHourMin:.8,foodPerHourMax:3},Sunscar:{foodPerHourMin:.8,foodPerHourMax:3},Frostmarch:{foodPerHourMin:.75,foodPerHourMax:3},Ashlands:{foodPerHourMin:2.5,foodPerHourMax:6}};
+export const REGIONAL_FOOD_SUSTAIN_TARGETS:Readonly<Record<string,{foodPerHourMin:number;foodPerHourMax:number}>>={Greenfields:{foodPerHourMin:2,foodPerHourMax:4},Silverbrook:{foodPerHourMin:3,foodPerHourMax:5},'Ironwood Forest':{foodPerHourMin:2,foodPerHourMax:4},'Old Mines':{foodPerHourMin:2,foodPerHourMax:5},"King's Road":{foodPerHourMin:2,foodPerHourMax:5},Sunscar:{foodPerHourMin:2,foodPerHourMax:5},Frostmarch:{foodPerHourMin:1.75,foodPerHourMax:5},Ashlands:{foodPerHourMin:4,foodPerHourMax:8}};
 /** Minimum unavoidable hourly attrition keeps long idle hunts from becoming permanently food-free without punishing fast early enemies. */
-export const REGIONAL_MIN_ATTRITION_HP_PER_HOUR:Readonly<Record<string,number>>={Greenfields:45,Silverbrook:55,'Ironwood Forest':80,'Old Mines':130,"King's Road":165,Sunscar:230,Frostmarch:390,Ashlands:470};
+export const REGIONAL_MIN_ATTRITION_HP_PER_HOUR:Readonly<Record<string,number>>={Greenfields:60,Silverbrook:80,'Ironwood Forest':115,'Old Mines':180,"King's Road":230,Sunscar:330,Frostmarch:520,Ashlands:620};
 export const GATHER_TIME_SCALE=1.25;
 
 export function offlineCapBreakdown(state:GameState){
@@ -136,7 +136,7 @@ export function createCharacter(state:GameState,classId:ClassId,name='Adventurer
   let maxHp=c.hp;
   for(const id of Object.values(equipment) as string[]){const d=itemDef(id);maxHp+=d.hp||0;}
   return {...state,character:{id:'LOCAL_CHAR_1',name:normalizedName||'Adventurer',classId,bodyPresentation,classSkills:classSkillsFor(classId).map(skill=>({skillId:skill.id,xp:0,level:1})),trainingFocus:'balanced',profileTitle:'New Adventurer',profileBackgroundId:'asterfall-night',unlockedEventSkinIds:[],unlockedSkinIds:['starting'],ownedPetIds:[],ownedBoostIds:[],selectedSkinId:'starting',faith:{favoriteBlessingIds:[],hideWeakerBlessings:true},level:1,xp:0,gold:100,hp:c.hp,currentHp:maxHp,attack:c.attack,defense:c.defense,equipment,equippedFoodId:'TRAVEL_RATION'},
-    inventory:{...state.inventory,stacks:[{itemId:'TRAVEL_RATION',quantity:20}]},settings:{...state.settings,seenItemIds:[...new Set([...(state.settings.seenItemIds??[]),'TRAVEL_RATION'])]}}
+    inventory:{...state.inventory,stacks:[{itemId:'TRAVEL_RATION',quantity:8}]},settings:{...state.settings,seenItemIds:[...new Set([...(state.settings.seenItemIds??[]),'TRAVEL_RATION'])]}}
 }
 
 export function effectiveStats(state:GameState){
@@ -285,12 +285,14 @@ export function combatSustainProjection(state:GameState,monsterId:string,hours=1
  const regionalPressure=(REGIONAL_COMBAT_PRESSURE[runtime.m.zone]??1)*REGIONAL_MONSTER_PRESSURE_MULTIPLIER[regionalMonsterPressureBand(runtime.m.id)];
  const damagePerKill=Math.max(1,Math.round((raw*.48+runtime.m.level*.16)*regionalPressure*runtime.secondary.incomingPressureMultiplier*runtime.style.damageTakenMultiplier*runtime.tactic.damageTakenMultiplier*runtime.modifiers.incomingDamageMultiplier*runtime.companion.incomingDamageMultiplier*(1-runtime.effectGems.damage_reduction)*Math.max(.5,1-runtime.setCombat.stats.ward)*(state.character.preparation?preparationEffects(state.character.preparation).damage:1)));
  const recoveryPerKill=Math.max(1,Math.floor(runtime.stats.hp*runtime.style.recoveryPct*runtime.tactic.recoveryMultiplier*runtime.companion.recoveryMultiplier*(1+runtime.effectGems.recovery)*runtime.setCombat.recoveryMultiplier));
- const killsPerHour=3600/Math.max(.1,runtime.killCycleSeconds),minimumAttrition=(REGIONAL_MIN_ATTRITION_HP_PER_HOUR[runtime.m.zone]??0)/killsPerHour;
- const netDamagePerKill=Math.max(minimumAttrition,damagePerKill-recoveryPerKill);
+ const killsPerHour=3600/Math.max(.1,runtime.killCycleSeconds),baseMinimumAttrition=(REGIONAL_MIN_ATTRITION_HP_PER_HOUR[runtime.m.zone]??0)/killsPerHour;
+ const companionHealingPerHour=runtime.stats.hp*runtime.companion.directHealingPctPerHour,companionHealingPerKill=companionHealingPerHour/killsPerHour;
+ const minimumAttrition=baseMinimumAttrition*(runtime.companion.directHealingPctPerHour>0?.65:1);
+ const netDamagePerKill=Math.max(minimumAttrition,damagePerKill-recoveryPerKill-companionHealingPerKill);
  const healingPerFood=food?.heal?Math.max(1,Math.ceil(food.heal*runtime.modifiers.healingEffectivenessMultiplier)):0;
  const foodPerHour=healingPerFood>0?netDamagePerKill*killsPerHour/healingPerFood:netDamagePerKill>0?Infinity:0;
  const target=REGIONAL_FOOD_SUSTAIN_TARGETS[runtime.m.zone];
- return {monsterId,region:runtime.m.zone,killCycleSeconds:runtime.killCycleSeconds,killsPerHour,damagePerKill,recoveryPerKill,netDamagePerKill,foodId,healingPerFood,foodPerHour,projectedFood:foodPerHour*hours,target};
+ return {monsterId,region:runtime.m.zone,killCycleSeconds:runtime.killCycleSeconds,killsPerHour,damagePerKill,recoveryPerKill,companionHealingPerHour,netDamagePerKill,foodId,healingPerFood,foodPerHour,projectedFood:foodPerHour*hours,target};
 }
 
 export function activeCombatRuntimeProjection(state:GameState){
@@ -329,6 +331,8 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number){
     const regionalPressure=(REGIONAL_COMBAT_PRESSURE[m.zone]??1)*REGIONAL_MONSTER_PRESSURE_MULTIPLIER[regionalMonsterPressureBand(m.id)];
     const damage=Math.max(1,Math.round((raw*.48 + m.level*.16)*regionalPressure*secondary.incomingPressureMultiplier*style.damageTakenMultiplier*tactic.damageTakenMultiplier*(champion?CHAMPION_DAMAGE_MULTIPLIER:1)*modifiers.incomingDamageMultiplier*companion.incomingDamageMultiplier*(1-effectGems.damage_reduction)*Math.max(.5,1-setCombat.stats.ward)*(c.preparation?preparationEffects(c.preparation).damage:1)));
     hp-=damage;
+    const directCompanionHealing=stats.hp*companion.directHealingPctPerHour*killCycleSeconds/3600;
+    if(hp>0&&directCompanionHealing>0)hp=Math.min(stats.hp,hp+directCompanionHealing);
     while(food && food.heal && foodLeft>0 && hp>0 && hp/stats.hp<=threshold){
       hp=Math.min(stats.hp,hp+Math.max(1,Math.ceil(food.heal*modifiers.healingEffectivenessMultiplier)));foodLeft--;foodConsumed++;
     }
@@ -339,7 +343,7 @@ function simulateCombat(state:GameState,monsterId:string,elapsed:number){
     }
     kills++;if(champion)championKills++;
     const naturalRecovery=Math.max(1,Math.floor(stats.hp*style.recoveryPct*tactic.recoveryMultiplier*companion.recoveryMultiplier*(1+effectGems.recovery)*setCombat.recoveryMultiplier));
-    const minimumAttrition=(REGIONAL_MIN_ATTRITION_HP_PER_HOUR[m.zone]??0)*killCycleSeconds/3600;
+    const minimumAttrition=(REGIONAL_MIN_ATTRITION_HP_PER_HOUR[m.zone]??0)*killCycleSeconds/3600*(companion.directHealingPctPerHour>0?.65:1);
     const allowedRecovery=Math.max(0,damage-minimumAttrition);
     hp=Math.min(stats.hp,hp+Math.min(naturalRecovery,allowedRecovery));
   }

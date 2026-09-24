@@ -1,3 +1,4 @@
+import {skillAffinityModifiers} from './class-skill-affinities';
 import {itemDef} from '../content/items';
 import {GEM_GRADE_LABEL_V1,MOBILE_GEM_FAMILIES_V1,mobileGemFamilyV1,mobileGemItemIdV1,mobileRawGemItemIdV1,type MobileGemGradeV1} from '../content/gems-v1';
 import type {ClassId,GameState,ItemStack} from './types';
@@ -153,12 +154,13 @@ export function gemResearchStatusV1(state:GameState,familyId:string){
 export function availableGemResearchV1(state:GameState){
  return MOBILE_GEM_FAMILIES_V1.filter(family=>family.kind==='effect').map(family=>gemResearchStatusV1(state,family.familyId)).filter(row=>row.raw.length>0&&!row.unlocked);
 }
+export function gemResearchXpV1(state:GameState){return Math.floor(GEM_RESEARCH_V1.xp*skillAffinityModifiers(state.character?.classId,'enchanting').xpMultiplier+1e-9);}
 export function researchEffectGemV1(state:GameState,familyId:string){
  const status=gemResearchStatusV1(state,familyId);if(!status.ready)throw new Error(status.reason);
  const chosen=[...status.raw].sort((a,b)=>a.grade-b.grade)[0],rawId=mobileRawGemItemIdV1(familyId,chosen.grade);
  const rawInv=consumeStackV1(state.inventory.stacks,rawId,1),rawBank=consumeStackV1(state.bank.stacks,rawId,1-rawInv.used);
  const dustInv=consumeStackV1(rawInv.stacks,'GEM_DUST',GEM_RESEARCH_V1.dust),dustBank=consumeStackV1(rawBank.stacks,'GEM_DUST',GEM_RESEARCH_V1.dust-dustInv.used);
- const currentXp=state.skills.find(row=>row.skillId==='enchanting')?.xp??0,nextXp=Math.min(totalXpAtLevel(100),currentXp+GEM_RESEARCH_V1.xp);
+ const currentXp=state.skills.find(row=>row.skillId==='enchanting')?.xp??0,nextXp=Math.min(totalXpAtLevel(100),currentXp+gemResearchXpV1(state));
  return {...state,character:{...state.character!,gold:state.character!.gold-GEM_RESEARCH_V1.gold},inventory:{...state.inventory,stacks:dustInv.stacks},bank:{...state.bank,stacks:dustBank.stacks},
    skills:state.skills.map(row=>row.skillId==='enchanting'?{...row,xp:nextXp,level:levelFromXp(nextXp)}:row),
    account:{...state.account,unlockedKnowledgeIds:[...new Set([...(state.account.unlockedKnowledgeIds??[]),gemFamilyRecipeIdV1(familyId)])]}} as GameState;

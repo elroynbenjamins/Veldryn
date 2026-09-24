@@ -27,6 +27,17 @@ export const resourceIconSourceById:Readonly<Partial<Record<string,ImageSourcePr
   SILVERFIN:require('../../assets/items/resources/silverfin.png'),
   RIVER_EEL:require('../../assets/items/resources/river_eel.png'),
   OATHSCALE_PIKE:require('../../assets/items/resources/oathscale_pike.png'),
+  // Gathering tool blueprints use the existing parchment/script pixel art until
+  // a dedicated blueprint sheet is produced. Rarity treatment stays item-driven.
+  BP_ASTER_IRON_PICKAXE:require('../../assets/ingredient-icons-v1/astral_script.png'),
+  BP_ASTER_IRON_HATCHET:require('../../assets/ingredient-icons-v1/astral_script.png'),
+  BP_IRONWOOD_ROD:require('../../assets/ingredient-icons-v1/astral_script.png'),
+  BP_OATHSTONE_PICKAXE:require('../../assets/ingredient-icons-v1/astral_script.png'),
+  BP_OATHSTONE_HATCHET:require('../../assets/ingredient-icons-v1/astral_script.png'),
+  BP_OATHSCALE_ROD:require('../../assets/ingredient-icons-v1/astral_script.png'),
+  BP_FROSTIRON_PICKAXE:require('../../assets/ingredient-icons-v1/astral_script.png'),
+  BP_FROSTIRON_HATCHET:require('../../assets/ingredient-icons-v1/astral_script.png'),
+  BP_RIMEGLASS_ROD:require('../../assets/ingredient-icons-v1/astral_script.png'),
 };
 
 export function resourceIconSource(itemId:string){return resourceIconSourceById[itemId];}

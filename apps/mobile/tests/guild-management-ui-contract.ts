@@ -22,9 +22,12 @@ ok(app.includes("import {OnlineGuildCustomizationPanel}"),'App must wire server-
 ok(app.includes('onlineHall={<OnlineGuildHallPanel/>}'),'Guild screen must receive Guild Hall content');
 ok(app.includes('onlineCustomize={<OnlineGuildCustomizationPanel/>}'),'Guild screen must receive Guild customization content');
 
-for(const label of ['My Guild','Directory','PvE','Hall','Customize'])ok(screen.includes("'"+label+"'"),'Online Guild tabs must include '+label);
+for(const label of ['Home','Members','Activities','Hall','Chat','Manage','Future'])ok(screen.includes("'"+label+"'"),'Consolidated online Guild tabs must include '+label);
+ok(screen.includes("onlineSection==='Members'?onlineManagement:null"),'Members tab must render authoritative Guild management');
 ok(screen.includes("onlineSection==='Hall'?onlineHall:null"),'Hall tab must render Hall content');
-ok(screen.includes("onlineSection==='Customize'?onlineCustomize:null"),'Customize tab must render customization content');
+ok(screen.includes("onlineSection==='Activities'?<View")&&screen.includes('<OnlineGuildMusterPanel/>')&&screen.includes('{onlinePve}'),'Activities must preserve Muster and Guild PvE behind the consolidated destination');
+ok(screen.includes("onlineSection==='Manage'?<View")&&screen.includes('{onlineDirectory}')&&screen.includes('{onlineCustomize}'),'Manage must preserve Guild directory/creation and appearance customization');
+ok(screen.includes('title="Guild Appearance"')&&screen.includes('title="Directory & Creation"'),'Manage must keep clear recruitment and identity hierarchy');
 ok(screen.includes("root:{padding:spacing.md,gap:10"),'Online Guild shell must remain compact');
 
 ok(customization.includes('appearanceDirty='),'Guild customization must track unsaved appearance changes');

@@ -9,9 +9,10 @@ const client=read('src/online/guild-muster.ts');
 const core=read('src/core/guild-muster.ts');
 const sql=read('../../backend/supabase/migrations/20261018000155_guild_muster_v1.sql');
 
-ok(screen.includes("'Muster'"),'Online Guild sections must include Muster');
-ok(screen.includes("onlineSection==='Muster'?<OnlineGuildMusterPanel/>:null"),'Guild Muster must be reachable from the online Guild hub');
-ok(screen.includes('Muster, the member Notice Board'),'Guild hub description must explain the Muster alongside existing systems');
+ok(screen.includes("'Activities'"),'Consolidated online Guild sections must include Activities');
+ok(screen.includes("onlineSection==='Activities'?<View")&&screen.includes('<OnlineGuildMusterPanel/>'),'Guild Muster must remain reachable inside the Activities destination');
+ok(screen.includes('title="Muster & Rally"')&&screen.includes('Daily participation rolls into the shared weekly Rally'),'Activities must explain Muster and Rally clearly after consolidation');
+ok(screen.includes('<GuildOnlineHome onNavigate={setOnlineSection} board={onlineBoard}/>'),'Guild Home must keep the member Notice Board reachable');
 
 ok(panel.includes('GUILD MUSTER'),'Muster must have a clear player-facing identity');
 ok(panel.includes('not a consecutive login streak'),'Muster must explicitly avoid punitive consecutive streaks');

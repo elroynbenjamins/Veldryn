@@ -12,6 +12,14 @@ ok(feedback.includes('useWindowDimensions')&&feedback.includes("stackAction=!!ac
 ok(feedback.includes('rootStack')&&feedback.includes("actionStack:{width:'100%'}"),'Actionable feedback must stack its action instead of squeezing the message');
 ok(feedback.includes('accessibilityHint="Continues from this feedback"'),'Actionable feedback must explain the continuation action to assistive technology');
 
+const confirm=read('src/components/ConfirmModal.tsx');
+ok(confirm.includes('useWindowDimensions')&&confirm.includes("stackActions=width<360||fontScale>=1.25"),'Confirm dialogs must adapt actions for narrow phones and large text');
+ok(confirm.includes('actionsStack')&&confirm.includes("actionStack:{flex:0,width:'100%'}"),'Confirm dialog actions must stack full-width instead of squeezing');
+
+const profilePreview=read('src/components/ProfileAudiencePreviewModal.tsx');
+ok(profilePreview.includes('useWindowDimensions')&&profilePreview.includes("stackLayout=width<360||fontScale>=1.25"),'Profile audience preview must adapt tabs and rows for narrow phones and large text');
+ok(profilePreview.includes('audiencesStack')&&profilePreview.includes('rowValueStack'),'Profile audience tabs and highlight rows must stack when constrained');
+
 const modal=read('src/components/GameModalSurface.tsx');
 ok(modal.includes('KeyboardAvoidingView'),'Shared modals must protect focused fields from the iOS keyboard');
 ok(modal.includes('onAccessibilityEscape={onClose}'),'Shared modals must support the accessibility escape gesture');

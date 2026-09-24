@@ -1,5 +1,5 @@
 import {useEffect,useMemo,useState} from 'react';
-import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import type {GameState} from '../core/types';
 import {profileAudienceCanView,type ProfilePreviewAudience} from '../core/profile-customization';
 import {profileAchievementLabel,profileCollectionLabel,profileRecordLabel} from '../core/profile-presentation';
@@ -22,7 +22,7 @@ const visibilityLabel={public:'Public',guild:'Guild only',private:'Private'} as 
 const words=(value?:string|null)=>value?value.replace(/[_:-]+/g,' ').replace(/\b\w/g,c=>c.toUpperCase()):'Not selected';
 
 export function ProfileAudiencePreviewModal({visible,state,identityDraft,onClose}:{visible:boolean;state:GameState;identityDraft:ProfileExtensionSelfV43|null;onClose:()=>void}){
- const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
+ const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),stackLayout=width<360||fontScale>=1.25;
  const [audience,setAudience]=useState<ProfilePreviewAudience>('public');
  useEffect(()=>{if(visible)setAudience(identityDraft?'public':'self')},[visible,!!identityDraft]);
  const characters=[...(state.character?[state.character]:[]),...(state.otherCharacters??[]).map(row=>row.character)];
@@ -63,19 +63,19 @@ export function ProfileAudiencePreviewModal({visible,state,identityDraft,onClose
  return <GameModalSurface visible={visible} onClose={onClose} backdropLabel="Close profile preview" surfaceStyle={s.sheet}>
     <GameModalHeader eyebrow="AUDIENCE PREVIEW" title="As other players see you" onClose={onClose} trailing={<View style={[s.visibilityPill,!identityDraft&&s.localPill]}><Text style={[s.visibilityText,!identityDraft&&s.localText]}>{identityDraft?visibilityLabel[visibility].toUpperCase():'LOCAL ONLY'}</Text></View>}/>
     <Text style={s.copy}>Switch audiences to test profile visibility. This preview never publishes or saves changes.</Text>
-    <View accessibilityRole="tablist" style={s.audiences}>{audienceRows.map(row=><Pressable key={row.id} accessibilityRole="tab" accessibilityState={{selected:audience===row.id}} onPress={()=>setAudience(row.id)} style={({pressed})=>[s.audience,audience===row.id&&s.audienceOn,pressed&&s.pressed]}><Text style={[s.audienceLabel,audience===row.id&&s.audienceLabelOn]}>{row.label}</Text><Text numberOfLines={2} style={s.audienceDetail}>{row.detail}</Text></Pressable>)}</View>
+    <View accessibilityRole="tablist" style={[s.audiences,stackLayout&&s.audiencesStack]}>{audienceRows.map(row=><Pressable key={row.id} accessibilityRole="tab" accessibilityState={{selected:audience===row.id}} onPress={()=>setAudience(row.id)} style={({pressed})=>[s.audience,stackLayout&&s.audienceStack,audience===row.id&&s.audienceOn,pressed&&s.pressed]}><Text style={[s.audienceLabel,audience===row.id&&s.audienceLabelOn]}>{row.label}</Text><Text numberOfLines={2} style={s.audienceDetail}>{row.detail}</Text></Pressable>)}</View>
     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
      {!canView?<View style={s.hiddenCard}><Text style={s.hiddenMark}>◇</Text><Text style={s.hiddenTitle}>Profile hidden from this viewer</Text><Text style={s.hiddenCopy}>{hiddenReason}</Text></View>:<>
       <PublicProfileScene profile={profile} reduceMotion={state.settings.reduceMotion}/>
       {profile.bio?<View style={s.bioCard}><Text style={s.section}>BIOGRAPHY</Text><Text style={s.bio}>{profile.bio}</Text></View>:<View style={s.bioCard}><Text style={s.section}>BIOGRAPHY</Text><Text style={s.muted}>No biography selected.</Text></View>}
       <View style={s.card}>
        <Text style={s.section}>PROFILE HIGHLIGHTS</Text>
-       <PreviewRow label="Favorite skill" value={words(profile.favoriteSkillId)}/>
-       <PreviewRow label="Favorite companion" value={companion??'Not selected'}/>
-       <PreviewRow label="Achievements" value={achievements.length?achievements.join(' · '):'No featured achievements'}/>
-       <PreviewRow label="Personal records" value={records.length?records.join(' · '):'No featured records'}/>
-       <PreviewRow label="Collection" value={collections.length?collections.join(' · '):'No featured collectibles'}/>
-       <PreviewRow label="Mastery" value={masteries.length?masteries.join(' · '):'No featured R50 masteries'}/>
+       <PreviewRow stack={stackLayout} label="Favorite skill" value={words(profile.favoriteSkillId)}/>
+       <PreviewRow stack={stackLayout} label="Favorite companion" value={companion??'Not selected'}/>
+       <PreviewRow stack={stackLayout} label="Achievements" value={achievements.length?achievements.join(' · '):'No featured achievements'}/>
+       <PreviewRow stack={stackLayout} label="Personal records" value={records.length?records.join(' · '):'No featured records'}/>
+       <PreviewRow stack={stackLayout} label="Collection" value={collections.length?collections.join(' · '):'No featured collectibles'}/>
+       <PreviewRow stack={stackLayout} label="Mastery" value={masteries.length?masteries.join(' · '):'No featured R50 masteries'}/>
       </View>
       {identityDraft?.worldFeedOptOut?<View style={s.feedNote}><Text style={s.feedNoteTitle}>WORLD MILESTONES HIDDEN</Text><Text style={s.copy}>Your profile remains viewable to the selected audience, but your recent milestone cards stay out of the World feed.</Text></View>:null}
       <Text style={s.footnote}>Guild tag and guild-name styling come from your live guild identity and are not changed by this preview.</Text>
@@ -84,9 +84,9 @@ export function ProfileAudiencePreviewModal({visible,state,identityDraft,onClose
  </GameModalSurface>;
 }
 
-function PreviewRow({label,value}:{label:string;value:string}){
+function PreviewRow({label,value,stack=false}:{label:string;value:string;stack?:boolean}){
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
- return <View style={s.row}><Text style={s.rowLabel}>{label}</Text><Text numberOfLines={2} style={s.rowValue}>{value}</Text></View>;
+ return <View style={[s.row,stack&&s.rowStack]}><Text style={[s.rowLabel,stack&&s.rowLabelStack]}>{label}</Text><Text numberOfLines={stack?4:2} style={[s.rowValue,stack&&s.rowValueStack]}>{value}</Text></View>;
 }
 
 function makeStyles(C:ThemeColors){return StyleSheet.create({
@@ -97,8 +97,8 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  visibilityText:{fontSize:8,color:C.info,fontWeight:'900',letterSpacing:.65},
  localPill:{borderColor:C.line,backgroundColor:C.panel2},
  localText:{color:C.muted},
- audiences:{flexDirection:'row',gap:5,padding:4,borderWidth:1,borderColor:C.line,borderRadius:radii.lg,backgroundColor:C.panel},
- audience:{flex:1,minHeight:58,justifyContent:'center',paddingHorizontal:7,paddingVertical:6,borderWidth:1,borderColor:'transparent',borderRadius:radii.md},
+ audiences:{flexDirection:'row',gap:5,padding:4,borderWidth:1,borderColor:C.line,borderRadius:radii.lg,backgroundColor:C.panel},audiencesStack:{flexDirection:'column'},
+ audience:{flex:1,minHeight:58,justifyContent:'center',paddingHorizontal:7,paddingVertical:6,borderWidth:1,borderColor:'transparent',borderRadius:radii.md},audienceStack:{flex:0,width:'100%',minHeight:52},
  audienceOn:{borderColor:C.selectionLine,backgroundColor:C.selection},
  audienceLabel:{fontSize:10,color:C.muted,fontWeight:'900'},
  audienceLabelOn:{color:C.text},
@@ -114,9 +114,9 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  bio:{...typography.body,color:C.text,lineHeight:20},
  muted:{...typography.body,color:C.muted},
  card:{padding:10,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2},
- row:{minHeight:38,flexDirection:'row',alignItems:'center',gap:8,borderTopWidth:StyleSheet.hairlineWidth,borderTopColor:C.line},
- rowLabel:{width:110,...typography.caption,color:C.muted},
- rowValue:{flex:1,...typography.bodyStrong,color:C.text,textAlign:'right'},
+ row:{minHeight:38,flexDirection:'row',alignItems:'center',gap:8,borderTopWidth:StyleSheet.hairlineWidth,borderTopColor:C.line},rowStack:{alignItems:'stretch',flexDirection:'column',gap:3,paddingVertical:7},
+ rowLabel:{width:110,...typography.caption,color:C.muted},rowLabelStack:{width:'100%'},
+ rowValue:{flex:1,...typography.bodyStrong,color:C.text,textAlign:'right'},rowValueStack:{flex:0,width:'100%',textAlign:'left'},
  feedNote:{gap:3,padding:9,borderWidth:1,borderColor:C.info,borderRadius:radii.md,backgroundColor:C.infoSurface},
  feedNoteTitle:{fontSize:8,color:C.info,fontWeight:'900',letterSpacing:.7},
  footnote:{fontSize:9,lineHeight:13,color:C.disabled,textAlign:'center'},

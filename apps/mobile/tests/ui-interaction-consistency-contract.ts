@@ -47,8 +47,8 @@ ok(save.includes('loading={exportBusy}')&&save.includes('loading={busy}'),'Save 
 ok(save.includes('accessibilityLiveRegion="polite"'),'Save import errors must remain announced');
 
 const confirm=read('src/components/ConfirmModal.tsx');
-ok(confirm.includes("actions:{flexDirection:'row'"),'Confirm dialog actions must stay in one consistent action row');
 ok(confirm.includes('presentation="dialog"'),'Confirmations must use centered dialog presentation');
+ok(confirm.includes('useWindowDimensions')&&confirm.includes('actionsStack'),'Confirm actions must remain reachable when width or text scale is constrained');
 
 const top=read('src/components/GameTopBar.tsx');
 ok(top.includes('GameModalSurface')&&!top.includes('<Modal'),'Quick navigation must use the shared modal shell');
@@ -87,6 +87,7 @@ ok((profileEditor.match(/keyboardShouldPersistTaps="handled"/g)??[]).length>=5,'
 
 const profile=read('src/components/ProfileAudiencePreviewModal.tsx');
 ok(profile.includes('GameModalHeader')&&profile.includes('trailing={<View'),'Profile audience preview must use shared header with visibility state');
+ok(profile.includes('audiencesStack')&&profile.includes('rowStack'),'Profile audience controls and highlight rows must remain readable on constrained layouts');
 
 const customization=read('src/components/CustomizationUnlockPopup.tsx');
 ok(customization.includes('useGameTheme')&&customization.includes('equipmentTheme(C)'),'Customization rewards must use the active theme');

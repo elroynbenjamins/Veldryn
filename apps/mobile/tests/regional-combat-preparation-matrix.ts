@@ -1,4 +1,4 @@
-import {strict as assert} from 'node:assert';
+import {assert} from './test-assert';
 import {combatSustainProjection,REGIONAL_FOOD_SUSTAIN_TARGETS} from '../src/core/game';
 import {REGIONAL_COMBAT_FIXTURES,regionalCombatFixture} from '../src/core/regional-combat-fixtures';
 

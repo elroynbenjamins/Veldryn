@@ -45,7 +45,7 @@ export function GameTopBar({state,nowMs,labelForDestination,onNavigate,onChangeD
   const selected=new Set(draft);
   const canSave=draft.length===5&&!saving;
   const orderedChoices=useMemo(()=>[...draft,...QUICK_NAV_DESTINATIONS.filter(item=>!draft.includes(item))],[draft]);
-  const attentionDestinations=QUICK_NAV_DESTINATIONS.filter(destination=>destination!=='Empty'&&!active.includes(destination)&&attention[destination]?.dot).sort((a,b)=>(attention[b]?.count??0)-(attention[a]?.count??0)||a.localeCompare(b));
+  const attentionDestinations=QUICK_NAV_DESTINATIONS.filter(destination=>destination!=='Empty'&&!active.includes(destination)&&!lockedDestinations[destination]&&attention[destination]?.dot).sort((a,b)=>(attention[b]?.count??0)-(attention[a]?.count??0)||a.localeCompare(b));
   const attentionRows=attentionDestinations.slice(0,3),hiddenAttentionCount=Math.max(0,attentionDestinations.length-attentionRows.length);
   const activeAttention=active.reduce((sum,destination)=>sum+(attention[destination]?.count??(attention[destination]?.dot?1:0)),0);
   const otherAttention=attentionDestinations.reduce((sum,destination)=>sum+(attention[destination]?.count??1),0);

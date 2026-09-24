@@ -377,27 +377,28 @@ const next=discoverCharacterSkins(candidate);queuePreparationNotices(current,nex
   if(__DEV__&&showCoopUiGallery)return <SafeAreaView style={s.safe} {...backSwipe.panHandlers}><StatusBar style="light"/><CoopUiGalleryScreen language={state.settings.language} onClose={()=>setShowCoopUiGallery(false)}/></SafeAreaView>;
   const theme=resolveTheme(state.settings.uiTheme);
   const preview=previewActivityReward(state,now);
-  const eventClaims=eventReadyClaimCount(state,now);
+  const eventUnlocked=earlyFeatureUnlocked(state,'events'),companionUnlocked=earlyFeatureUnlocked(state,'companions'),dailyUnlocked=earlyFeatureUnlocked(state,'dailySupplies'),contractsUnlocked=earlyFeatureUnlocked(state,'contracts'),guildUnlocked=earlyFeatureUnlocked(state,'guild');
+  const eventClaims=eventUnlocked?eventReadyClaimCount(state,now):0;
   const companionAttention=companionAttentionSummary(state,now);
   const workingTowardReady=workingTowardReadyCount(state);
-  const dailySuppliesReady=dailySuppliesStatus(state,now).canClaim;
+  const dailySuppliesReady=dailyUnlocked&&dailySuppliesStatus(state,now).canClaim;
   const contractBoard=contractBoardSummary(state,now);
   const equipmentForge=equipmentCraftQueueModel(state,now);
   const navigationNotifications:NavigationNotification[]=[
     {key:'activity-reward-ready',kind:'reward_ready',unread:rewardHasProgress(preview)},
-    {key:'companion-attention',kind:'companion_attention',unread:companionAttention.hasAttention},
+    {key:'companion-attention',kind:'companion_attention',unread:companionUnlocked&&companionAttention.hasAttention},
     {key:'working-toward-ready',kind:'account_action',unread:workingTowardReady>0},
     {key:'daily-supplies-ready',kind:'account_action',unread:dailySuppliesReady},
     {key:'equipment-crafts-ready',kind:'equipment_craft_ready',count:equipmentForge.ready,unread:equipmentForge.ready>0},
-    {key:'weekly-order-rewards',kind:'weekly_order_complete',count:contractBoard.pendingRewards,unread:contractBoard.pendingRewards>0},
+    {key:'weekly-order-rewards',kind:'weekly_order_complete',count:contractsUnlocked?contractBoard.pendingRewards:0,unread:contractsUnlocked&&contractBoard.pendingRewards>0},
     {key:'event-rewards-ready',kind:'event_reward_ready',count:eventClaims,unread:eventClaims>0},
     {key:'incoming-friend-requests',kind:'friend_request',count:notificationCounts.friendRequests,unread:notificationCounts.friendRequests>0},
     {key:'profile-customization-review',kind:'profile_customization',unread:profileAttentionKeys.length>0},
     {key:'unread-social-chat',kind:'chat_unread',count:notificationCounts.chatUnread,unread:notificationCounts.chatUnread>0},
-    {key:'pending-guild-applications',kind:'guild_application',count:notificationCounts.guildApplications,unread:notificationCounts.guildApplications>0},
-    {key:'pending-guild-invites',kind:'guild_invite',count:notificationCounts.guildInvites,unread:notificationCounts.guildInvites>0},
+    {key:'pending-guild-applications',kind:'guild_application',count:guildUnlocked?notificationCounts.guildApplications:0,unread:guildUnlocked&&notificationCounts.guildApplications>0},
+    {key:'pending-guild-invites',kind:'guild_invite',count:guildUnlocked?notificationCounts.guildInvites:0,unread:guildUnlocked&&notificationCounts.guildInvites>0},
     {key:'pending-party-invites',kind:'party_invite',count:notificationCounts.partyInvites,unread:notificationCounts.partyInvites>0},
-    {key:'online-event-attention',kind:'event_reward_ready',count:notificationCounts.events,unread:notificationCounts.events>0},
+    {key:'online-event-attention',kind:'event_reward_ready',count:eventUnlocked?notificationCounts.events:0,unread:eventUnlocked&&notificationCounts.events>0},
   ];
   const primaryNavigationNotifications=navigationNotifications.filter(row=>row.kind!=='reward_ready'&&row.kind!=='weekly_order_complete');
   const navigationBadgeModel=buildNavigationBadges(primaryNavigationNotifications);
@@ -433,7 +434,7 @@ const next=discoverCharacterSkins(candidate);queuePreparationNotices(current,nex
     {tab==='Events'&&<EventScreen state={state} onChange={commit} onCommand={serverGameplayEnabled?command=>perform(command).then(Boolean):undefined} onOpenSeasonalExpedition={coopOnlineConfigured?liveEventId=>{setPendingEventLiveId(liveEventId);setTab('Coop')}:undefined}/>}
     {tab==='Guild'&&<GuildScreen online={serverGameplayEnabled} state={state} onChange={commit} onlineDirectory={<OnlineGuildBrowser/>} onlineManagement={<OnlineGuildManagement onApplicationsChanged={()=>void refreshSocialNotifications()}/>} onlineBoard={<OnlineGuildNoticeBoardPanel/>} onlineProjects={<OnlineGuildProjectsPanel/>} onlinePve={<OnlineGuildPve authoritative={serverGameplayEnabled} numberMode={state.settings.numberMode}/>} onlineChat={<GuildChat language={state.settings.language} currentPlayerName={state.character?.name} unlockedEmoteIds={state.account.unlockedEmoteIds} trayIds={state.settings.chatEmoteTrayIds} bodyPresentation={state.character?.bodyPresentation} onTrayChange={ids=>commit({...state,settings:{...state.settings,chatEmoteTrayIds:ids}})} firstUnreadMessageId={notificationCounts.guildFirstUnreadMessageId} onRead={()=>void refreshSocialNotifications()}/>} onlineChatUnread={notificationCounts.guildChatUnread} onlineChatMentions={notificationCounts.guildChatMentions} onlineHall={<OnlineGuildHallPanel/>} onlineCustomize={<OnlineGuildCustomizationPanel/>}/>} 
     {tab==='Settings'&&<SettingsScreen online={serverGameplayEnabled} state={state} onChange={commit} onExport={exportSave} onImport={importSave} onOpenChatPilot={__DEV__?()=>{setChatPilotInitialPanel('chat');setShowChatPilot(true)}:undefined} onOpenChatEmotes={__DEV__?()=>{setChatPilotInitialPanel('emotes');setShowChatPilot(true)}:undefined} onOpenCoopUiGallery={__DEV__?()=>setShowCoopUiGallery(true):undefined} onLanguage={language=>commit({...state,settings:{...state.settings,language}})} onReset={()=>serverGameplayEnabled?Alert.alert('Online save','Your online character is saved on the server.'):Alert.alert('Reset local save?','This deletes prototype progress only.',[{text:'Cancel'},{text:'Reset',style:'destructive',onPress:async()=>{await repo.reset();setState(newGame(Date.now()));setCurrentTab('Home');setTabHistory([])}}])}/>}
-    {tab==='More'&&<MoreScreen language={state.settings.language} onNavigate={destination=>destination==='Quests'?openQuestMode('story'):setTab(destination)} companionUnlocked={earlyFeatureUnlocked(state,'companions')} companionAttention={earlyFeatureUnlocked(state,'companions')&&companionAttention.hasAttention} workingTowardAttention={workingTowardReady>0} dailySuppliesAttention={dailySuppliesReady} eventAttention={eventClaims>0||notificationCounts.events>0} friendRequestCount={notificationCounts.friendRequests} guildAttentionCount={notificationCounts.guild} socialAttentionCount={notificationCounts.partyInvites+notificationCounts.chatUnread} profileAttention={profileAttentionKeys.length>0} onOpenChatPilot={__DEV__?()=>{setChatPilotInitialPanel('chat');setShowChatPilot(true)}:undefined} onOpenAdminQa={adminQa||(__DEV__&&!serverGameplayEnabled)?()=>setShowAdminQa(true):undefined}/>}
+    {tab==='More'&&<MoreScreen state={state} language={state.settings.language} onNavigate={destination=>destination==='Quests'?openQuestMode('story'):setTab(destination)} companionAttention={companionUnlocked&&companionAttention.hasAttention} workingTowardAttention={workingTowardReady>0} dailySuppliesAttention={dailySuppliesReady} eventAttention={eventUnlocked&&(eventClaims>0||notificationCounts.events>0)} friendRequestCount={notificationCounts.friendRequests} guildAttentionCount={guildUnlocked?notificationCounts.guild:0} socialAttentionCount={notificationCounts.partyInvites+notificationCounts.chatUnread} profileAttention={profileAttentionKeys.length>0} onOpenChatPilot={__DEV__?()=>{setChatPilotInitialPanel('chat');setShowChatPilot(true)}:undefined} onOpenAdminQa={adminQa||(__DEV__&&!serverGameplayEnabled)?()=>setShowAdminQa(true):undefined}/>}
     {tab==='Arena'&&<ArenaScreen state={state} onChange={candidate=>void commit(candidate)} onCommand={serverGameplayEnabled?command=>void perform(command):undefined}/>}
     {tab==='Rankings'&&<RankingsScreen/>}
     {tab==='Collections'&&<CollectionsScreen state={state} onChange={candidate=>void commit(candidate)}/>}

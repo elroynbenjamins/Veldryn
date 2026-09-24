@@ -1,5 +1,5 @@
 import {useEffect,useMemo,useRef,useState} from 'react';
-import {Alert,Pressable,StyleSheet,Text,View} from 'react-native';
+import {Alert,Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {GameTextInput as TextInput} from './GameTextInput';
 import {GameButton} from './GameButton';
 import {ChatEmotePicker} from './ChatEmotePicker';
@@ -16,7 +16,7 @@ import {CHAT_MAX_EMOTES_PER_MESSAGE,chatEmoteCount,chatUnavailableEmoteIds} from
 import {guildChatCommandKey,guildChatState,guildRoster,markSocialChatRead,sendGuildChat,type GuildChatMessage,type GuildChatState} from '../online/social';
 
 export function GuildChat({language,currentPlayerName,unlockedEmoteIds=[],trayIds=[],bodyPresentation='male',onTrayChange,firstUnreadMessageId,onRead,reduceMotion=false}:{language:Language;currentPlayerName?:string;unlockedEmoteIds?:readonly string[];trayIds?:readonly string[];bodyPresentation?:'male'|'female';onTrayChange?:(ids:string[])=>void|Promise<void>;firstUnreadMessageId?:string;onRead?:()=>void;reduceMotion?:boolean}){
- const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
+ const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),stackCompose=width<360||fontScale>=1.25;
  const [snapshot,setSnapshot]=useState<GuildChatState|null>(null),[selected,setSelected]=useState<GuildChatMessage|null>(null),[body,setBody]=useState(''),[mentionNames,setMentionNames]=useState<string[]>([]),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const pending=useRef<{body:string;key:string}|null>(null);
  const active=useRef(true),onReadRef=useRef(onRead);onReadRef.current=onRead;
@@ -46,7 +46,7 @@ export function GuildChat({language,currentPlayerName,unlockedEmoteIds=[],trayId
    </View>}/>
   {!!error&&<View accessibilityRole="alert" style={s.errorCard}><Text style={s.errorLabel}>GUILD CHAT UNAVAILABLE</Text><Text style={s.error}>{error}</Text><GameButton compact title="Retry" tone="secondary" disabled={busy} onPress={()=>void load()}/></View>}
   <ChatMentionSuggestions value={body} names={mentionNames} currentName={currentPlayerName} onChange={setBody}/>
-  <View style={s.compose}><TextInput accessibilityLabel="Guild message" value={body} onChangeText={setBody} onSubmitEditing={()=>void send()} maxLength={300} placeholder={ot(language,'chat.placeholder')} style={s.input}/><ChatEmotePicker unlockedIds={unlockedEmoteIds} trayIds={trayIds} bodyPresentation={bodyPresentation} usedCount={chatEmoteCount(body)} onTrayChange={onTrayChange} onPick={token=>setBody(value=>(value+token).slice(0,300))}/><View style={s.send}><GameButton compact title={busy?'…':ot(language,'chat.send')} disabled={busy||!body.trim()||!guild} onPress={()=>void send()}/></View></View>
+  <View style={[s.compose,stackCompose&&s.composeStack]}><TextInput accessibilityLabel="Guild message" value={body} onChangeText={setBody} onSubmitEditing={()=>void send()} maxLength={300} placeholder={ot(language,'chat.placeholder')} style={s.input}/><View style={[s.composeActions,stackCompose&&s.composeActionsStack]}><ChatEmotePicker unlockedIds={unlockedEmoteIds} trayIds={trayIds} bodyPresentation={bodyPresentation} usedCount={chatEmoteCount(body)} onTrayChange={onTrayChange} onPick={token=>setBody(value=>(value+token).slice(0,300))}/><View style={s.send}><GameButton compact title={busy?'…':ot(language,'chat.send')} disabled={busy||!body.trim()||!guild} onPress={()=>void send()}/></View></View></View>
   <ChatPlayerSheet reduceMotion={reduceMotion} message={selected?{...selected,message_id:selected.id}:null} onClose={()=>setSelected(null)} onBlocked={blockedId=>setSnapshot(current=>current?{...current,messages:current.messages.filter(message=>message.account_id!==blockedId)}:current)}/>
  </View>;
 }
@@ -56,5 +56,5 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  header:{minHeight:40,flexDirection:'row',alignItems:'center',gap:8},grow:{flex:1,minWidth:0},eyebrow:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.8},title:{...typography.title,color:C.text},securePill:{paddingHorizontal:6,paddingVertical:3,borderWidth:1,borderColor:C.good,borderRadius:99,backgroundColor:C.goodSurface},secure:{fontSize:7,color:C.good,fontWeight:'900',letterSpacing:.6},
  note:{...typography.body,color:C.muted,lineHeight:18},message:{paddingVertical:7,borderBottomWidth:StyleSheet.hairlineWidth,borderBottomColor:C.line},messageHead:{minHeight:24,flexDirection:'row',alignItems:'center',gap:6},nameButton:{flex:1,minWidth:0,alignSelf:'flex-start',flexDirection:'row',alignItems:'center',gap:4},name:{color:C.info,fontWeight:'800'},profileMark:{fontSize:16,lineHeight:18,color:C.info,fontWeight:'900'},rolePill:{paddingHorizontal:5,paddingVertical:2,borderWidth:1,borderRadius:99},roleLeader:{borderColor:C.lineStrong,backgroundColor:C.warningSurface},roleOfficer:{borderColor:C.info,backgroundColor:C.infoSurface},roleMember:{borderColor:C.line,backgroundColor:C.panel2},role:{fontSize:6.5,fontWeight:'900',letterSpacing:.45},roleTextLeader:{color:C.accent},roleTextOfficer:{color:C.info},roleTextMember:{color:C.muted},time:{fontSize:8.5,color:C.muted},
 errorCard:{gap:5,padding:spacing.sm,borderWidth:1,borderColor:C.bad,borderRadius:radii.md,backgroundColor:C.badSurface},errorLabel:{...typography.caption,color:C.bad,fontWeight:'900',letterSpacing:1},error:{...typography.caption,color:C.text},
- compose:{flexDirection:'row',alignItems:'center',gap:spacing.sm},input:{flex:1},send:{minWidth:72}
+ compose:{flexDirection:'row',alignItems:'center',gap:spacing.sm},composeStack:{flexDirection:'column',alignItems:'stretch'},composeActions:{flexDirection:'row',alignItems:'center',gap:spacing.sm},composeActionsStack:{width:'100%',justifyContent:'flex-end'},input:{flex:1},send:{minWidth:72}
 });}

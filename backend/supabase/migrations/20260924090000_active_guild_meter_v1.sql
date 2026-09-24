@@ -210,7 +210,7 @@ declare
   v_after_qualified boolean:=false;
   v_source_id text;
 begin
-  v_before_qualified:=coalesce(old.contribution_points,0)>=25;
+  v_before_qualified:=case when tg_op='INSERT' then false else coalesce(old.contribution_points,0)>=25 end;
   v_after_qualified:=coalesce(new.contribution_points,0)>=25;
   if v_before_qualified or not v_after_qualified then return new; end if;
 
@@ -227,7 +227,7 @@ end $;
 
 drop trigger if exists trg_guild_activity_from_muster_v1 on public.guild_muster_daily;
 create trigger trg_guild_activity_from_muster_v1
-after update of contribution_points on public.guild_muster_daily
+after insert or update of contribution_points on public.guild_muster_daily
 for each row execute function public.guild_activity_from_muster_v1();
 
 revoke all on function public.guild_activity_from_muster_v1() from public,anon,authenticated;

@@ -9,6 +9,7 @@ for(const def of REGIONAL_COMBAT_FIXTURES){
  const target=REGIONAL_FOOD_SUSTAIN_TARGETS[def.regionName];
  assert.ok(target,def.regionName+' must have a sustain target');
  assert.ok(Number.isFinite(prepared.foodPerHour)&&prepared.killsPerHour>0);
+ assert.ok(prepared.foodPerHour>=target.foodPerHourMin&&prepared.foodPerHour<=target.foodPerHourMax,def.regionName+' prepared local-food sustain is outside its authored band: '+prepared.foodPerHour.toFixed(2)+'/hr');
  // Better preparation should not materially worsen sustain.
  assert.ok(optimized.foodPerHour<=prepared.foodPerHour*1.15+0.25,def.regionName+' optimized sustain regressed');
  // Underprepared farming should not be substantially cheaper than prepared farming.

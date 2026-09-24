@@ -5,6 +5,7 @@ import {dailySuppliesHomeSummary} from '../core/daily-supplies-home';
 import {GameButton} from './GameButton';
 import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
+import {earlyFeatureUnlocked} from '../core/feature-unlocks';
 
 function duration(seconds:number){
  const hours=Math.floor(seconds/3600),minutes=Math.floor((seconds%3600)/60);
@@ -13,6 +14,7 @@ function duration(seconds:number){
 
 export function DailySuppliesSummary({state,nowMs,onOpen}:{state:GameState;nowMs:number;onOpen:()=>void}){
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
+ if(!earlyFeatureUnlocked(state,'dailySupplies'))return null;
  const summary=dailySuppliesHomeSummary(state,nowMs);
  if(!summary.visible)return null;
  return <View style={[s.card,summary.canClaim&&s.ready]}>

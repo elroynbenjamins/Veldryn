@@ -46,6 +46,8 @@ ok(overlay.includes('onTrayChange={onEmoteTrayChange}'),'All overlay chat channe
 ok(overlay.includes('useSafeAreaInsets')&&overlay.includes('bottomOffset=72+'),'Expanded chat must use real safe-area offsets above navigation');
 ok(overlay.includes('keyboardVerticalOffset={insets.top}'),'Expanded chat must account for the top inset during keyboard avoidance');
 ok(!overlay.includes("paddingBottom:Platform.OS==='android'?76:88"),'Expanded chat must not regress to fixed device-specific bottom offsets');
+ok(overlay.includes('useWindowDimensions')&&overlay.includes("expandWindow=width<360||fontScale>=1.25"),'Expanded chat must adapt its available height on narrow phones and large text');
+ok(overlay.includes('windowExpanded')&&overlay.includes("maxHeight:'82%'"),'Expanded chat must expose more vertical space when constrained');
 
 const app=read('App.tsx');
 ok(app.includes('onEmoteTrayChange={ids=>commit('),'Global chat tray edits must persist through normal settings save flow');
@@ -72,10 +74,14 @@ for(const path of ['src/components/OnlineWorldChat.tsx','src/components/GuildCha
  ok(source.includes('Use at most 2 emotes in one message.'),'Live channel must explain the two-emote cap: '+path);
  ok(source.includes('usedCount={chatEmoteCount('),'Live picker must know how many emotes are already in the draft: '+path);
  ok(source.includes('trayIds={trayIds}')&&source.includes('onTrayChange={onTrayChange}'),'Live channel must use the persisted editable tray: '+path);
+ ok(source.includes('useWindowDimensions')&&source.includes("stackCompose=width<360||fontScale>=1.25"),'Live chat compose must adapt to narrow phones and large text: '+path);
+ ok(source.includes('composeStack')&&source.includes('composeActionsStack'),'Live chat input and action row must stack instead of squeezing: '+path);
 }
 const offline=read('src/components/WorldChat.tsx');
 ok(offline.includes('CHAT_MAX_EMOTES_PER_MESSAGE')&&offline.includes('Use at most 2 emotes in one message.'),'Offline/local chat must mirror the two-emote production rule');
 ok(offline.includes('trayIds={trayIds}')&&offline.includes('usedCount={chatEmoteCount(text)}'),'Offline/local picker must mirror the eight-slot production tray');
+ok(offline.includes('useWindowDimensions')&&offline.includes("stackCompose=width<360||fontScale>=1.25"),'Offline/local chat compose must adapt to narrow phones and large text');
+ok(offline.includes('composeStack')&&offline.includes('composeActionsStack'),'Offline/local chat input and actions must stack instead of squeezing');
 
 const pilot=read('src/features/chat-pilot/src/native/ChatScreen.tsx');
 ok(!pilot.includes('20 emotes')&&!pilot.includes('Save 20'),'Chat Pilot UI must not retain obsolete 20-slot copy');

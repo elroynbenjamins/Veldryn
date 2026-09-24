@@ -4,6 +4,7 @@ function ok(value:boolean,message:string){if(!value)throw new Error(message)}
 const read=(path:string)=>fs.readFileSync(path,'utf8');
 
 const screen=read('src/screens/ActivityOverviewScreen.tsx');
+const overview=read('src/core/character-activity-overview.ts');
 const commands=read('src/core/game-commands.ts');
 const actions=read('src/core/account-actions.ts');
 const app=read('App.tsx');
@@ -25,5 +26,10 @@ ok(commands.includes("command.type==='roster_delete'"),'Character deletion must 
 ok(app.includes("type:'roster_delete'"),'App must route character deletion through authoritative gameplay');
 ok(app.includes("case 'Activity':return 'Characters'"),'Character management route must have a clear Account-facing label');
 ok(account.includes("title:'Characters'")&&account.includes('Switch, reroll or safely delete characters'),'Account navigation must advertise character management rather than a hidden destructive action');
+ok(screen.includes('accountActivityOverview(state)')&&screen.includes('ACTION QUEUE ·'),'Characters must show authoritative queue status instead of only running/idle state');
+ok(screen.includes("'WILL PAUSE'")||screen.includes("queueState==='will_pause'"),'Characters must distinguish a blocked planned handoff from a successful auto-handoff');
+ok(screen.includes('onOpenQueue')&&screen.includes('Open queue'),'Current-character queue status must expose a direct management action');
+ok(app.includes("onOpenQueue={()=>setTab('Home')}"),'Character queue management must return to the canonical Home Action Queue');
+ok(overview.includes('projectCharacter(state,characterId)')&&overview.includes('activityQueueHandoffStatus(projected)')&&overview.includes('queuedActivityReadiness(projected,next)'),'Per-character queue summaries must reuse authoritative projected state, handoff and readiness logic');
 
 console.log('PASS character management UI exposes explicit, guarded reroll/delete flow');

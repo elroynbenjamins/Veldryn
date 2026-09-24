@@ -36,6 +36,24 @@ export const GUILD_TREE_DEVELOPMENT_UNLOCKS=Object.freeze({
  vanguardTier3:'guild.tree.vanguard.tier3',
 } as const);
 
+export interface GuildTreeDevelopmentGate{
+ unlockKey:string;branch:GuildSkillBranch;tier:2|3;requiredGuildLevel:number;
+ baseGold:number;goldPerActiveMember:number;baseWeightedResources:number;weightedResourcesPerActiveMember:number;
+ expectedDays:number;resourceThemes:string[];
+}
+export const GUILD_TREE_DEVELOPMENT_GATES:readonly GuildTreeDevelopmentGate[]=[
+ {unlockKey:GUILD_TREE_DEVELOPMENT_UNLOCKS.professionsTier2,branch:'professions',tier:2,requiredGuildLevel:5,baseGold:75000,goldPerActiveMember:7500,baseWeightedResources:4500,weightedResourcesPerActiveMember:450,expectedDays:4,resourceThemes:['ore','logs','fish','herbs','processed materials']},
+ {unlockKey:GUILD_TREE_DEVELOPMENT_UNLOCKS.professionsTier3,branch:'professions',tier:3,requiredGuildLevel:9,baseGold:200000,goldPerActiveMember:15000,baseWeightedResources:12000,weightedResourcesPerActiveMember:900,expectedDays:7,resourceThemes:['regional resources','refined materials','crafted components']},
+ {unlockKey:GUILD_TREE_DEVELOPMENT_UNLOCKS.fellowshipTier2,branch:'fellowship',tier:2,requiredGuildLevel:5,baseGold:90000,goldPerActiveMember:8000,baseWeightedResources:4000,weightedResourcesPerActiveMember:400,expectedDays:4,resourceThemes:['logs','food','cloth/leather','construction materials']},
+ {unlockKey:GUILD_TREE_DEVELOPMENT_UNLOCKS.fellowshipTier3,branch:'fellowship',tier:3,requiredGuildLevel:9,baseGold:225000,goldPerActiveMember:16000,baseWeightedResources:11000,weightedResourcesPerActiveMember:850,expectedDays:7,resourceThemes:['regional supplies','crafted components','rare construction materials']},
+ {unlockKey:GUILD_TREE_DEVELOPMENT_UNLOCKS.vanguardTier2,branch:'vanguard',tier:2,requiredGuildLevel:6,baseGold:100000,goldPerActiveMember:9000,baseWeightedResources:4500,weightedResourcesPerActiveMember:450,expectedDays:4,resourceThemes:['ingots','hides','monster drops','combat supplies']},
+ {unlockKey:GUILD_TREE_DEVELOPMENT_UNLOCKS.vanguardTier3,branch:'vanguard',tier:3,requiredGuildLevel:10,baseGold:250000,goldPerActiveMember:18000,baseWeightedResources:13000,weightedResourcesPerActiveMember:1000,expectedDays:7,resourceThemes:['regional combat drops','refined metals','rare monster materials']},
+];
+export function guildTreeDevelopmentCost(gate:GuildTreeDevelopmentGate,activeMembers:number){
+ const members=Math.max(2,Math.min(20,Math.floor(activeMembers||0)));
+ return {gold:gate.baseGold+gate.goldPerActiveMember*members,weightedResources:gate.baseWeightedResources+gate.weightedResourcesPerActiveMember*members};
+}
+
 export const GUILD_SKILLS:readonly GuildSkill[]=[
  {id:'professions_training',branch:'professions',name:'Skilling Mentorship',description:'Improves non-combat Skill XP for Guild members.',maxRank:5,costPerRank:[...SMALL_RANK_COSTS],effectKey:'skillXpBps',effectPerRank:120,requiredGuildLevelByRank:[2,3,5,7,9],requiredDevelopmentUnlockByRank:[null,null,GUILD_TREE_DEVELOPMENT_UNLOCKS.professionsTier2,GUILD_TREE_DEVELOPMENT_UNLOCKS.professionsTier2,GUILD_TREE_DEVELOPMENT_UNLOCKS.professionsTier3],scope:'all_skilling'},
  {id:'professions_gathering',branch:'professions',name:"Gatherer's Network",description:'Improves gathering action speed. No combat effect.',maxRank:5,costPerRank:[...SMALL_RANK_COSTS],effectKey:'gatheringSpeedBps',effectPerRank:120,requiredGuildLevelByRank:[2,4,5,7,10],requiredDevelopmentUnlockByRank:[null,null,GUILD_TREE_DEVELOPMENT_UNLOCKS.professionsTier2,GUILD_TREE_DEVELOPMENT_UNLOCKS.professionsTier2,GUILD_TREE_DEVELOPMENT_UNLOCKS.professionsTier3],scope:'all_skilling'},

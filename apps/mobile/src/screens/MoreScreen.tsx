@@ -6,6 +6,7 @@ import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {t} from '../i18n';
 import {GameState} from '../core/types';
+import {EARLY_FEATURE_DESTINATION_ORDER} from '../core/feature-unlocks';
 
 export type MoreDestination='Home'|'Social'|'Activity'|'Progression'|'DailySupplies'|'AccountBonuses'|'Quests'|'Companions'|'Skills'|'Events'|'Friends'|'Guild'|'Settings'|'Arena'|'Rankings'|'Collections'|'Profile'|'Achievements'|'MasteryHall';
 
@@ -77,8 +78,7 @@ export function MoreScreen({language,onNavigate,onOpenChatPilot,onOpenAdminQa,co
     return null;
   };
   const attentionPriority:MoreDestination[]=['DailySupplies','Events','Progression','Companions','Social','Friends','Guild','Profile'];
-  const unlockOrder:MoreDestination[]=['Progression','DailySupplies','Events','AccountBonuses','Friends','Companions','Social','MasteryHall','Guild','Rankings'];
-  const lockedItems=unlockOrder.filter(id=>!!lockedReason(id));
+  const lockedItems=EARLY_FEATURE_DESTINATION_ORDER.filter(id=>!!lockedReason(id)) as MoreDestination[];
   const upcomingLocked=lockedItems.slice(0,4);
   const attentionDestinations=attentionPriority.filter(id=>!!attentionLabel(id));
   const attentionTotal=(lockedReason('Social')?0:socialAttentionCount)+(lockedReason('Friends')?0:friendRequestCount)+(lockedReason('Guild')?0:guildAttentionCount)+Number(!lockedReason('Companions')&&companionAttention)+Number(!lockedReason('Progression')&&workingTowardAttention)+Number(!lockedReason('DailySupplies')&&dailySuppliesAttention)+Number(!lockedReason('Events')&&eventAttention)+Number(profileAttention);

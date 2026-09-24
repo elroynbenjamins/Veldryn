@@ -29,6 +29,8 @@ for(const c of CLASSES){
     ok(character.equipment.weapon===c.starterEquipment.weapon,'Preview and equipped weapon agree');
     ok(itemDef(character.equipment.weapon!).slot==='weapon','Primary item occupies weapon slot');
     ok(character.currentHp===effectiveStats(state).hp,'Starting health matches equipment');
+    ok(character.equippedFoodId==='TRAVEL_RATION','Starter provision is selected for auto-eat');
+    ok(state.inventory.stacks.find(stack=>stack.itemId==='TRAVEL_RATION')?.quantity===8,'New characters start with a small stack of 8 travel rations');
     const loaded=migrateSave(JSON.parse(JSON.stringify(state)));
     ok(loaded.character?.bodyPresentation===body,'Presentation survives save/load');
     let rejected=false;

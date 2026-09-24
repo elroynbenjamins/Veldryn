@@ -5,6 +5,8 @@ import {accountBonusOverview} from '../core/account-bonuses';
 import {Panel} from '../components/Panel';
 import {radii,spacing,typography,equipmentTheme,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
+import {earlyFeatureUnlocked} from '../core/feature-unlocks';
+import {FeatureLockedPanel} from '../components/FeatureLockedPanel';
 
 function duration(seconds:number){
  const s=Math.max(0,Math.floor(seconds)),h=Math.floor(s/3600),m=Math.floor((s%3600)/60);
@@ -14,6 +16,7 @@ function pct(value:number){return value.toFixed(value>=10?0:2)+'%'}
 
 export function AccountBonusesScreen({state}:{state:GameState}){
   const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
+ if(!earlyFeatureUnlocked(state,'accountBonuses'))return <ScrollView contentContainerStyle={s.root}><Text style={s.kicker}>ACCOUNT & CHARACTER</Text><Text accessibilityRole="header" style={s.heading}>Bonuses</Text><FeatureLockedPanel state={state} featureId="accountBonuses"/></ScrollView>;
  const overview=accountBonusOverview(state);
  const permanentSources=overview.sources.filter(row=>row.scope!=='temporary');
  return <ScrollView contentContainerStyle={s.root}>

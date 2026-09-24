@@ -20,6 +20,7 @@ import {resolveSpecialCompanionChallenge} from '../../../../backend/src/server/c
 import {companionExpeditionStaminaCost,companionFoodStamina} from './companion-provisions';
 import {itemDef} from '../content/items';
 import type {CompanionAssignment,CompanionTrialProgress,CompanionProvingGroundState,CompanionOverflowState,OwnedCompanionSnapshot,CompanionEconomyState,CompanionCombatExecutor,CompanionUnlockFacts,CompanionProvingGroundEvent} from '../../../../backend/src/server/companions/domain';
+import type {CombatEvent,CombatResult} from '../../../../backend/src/server/combat/types';
 
 function expeditionFoodArg(value:unknown){if(!Array.isArray(value)||value.length<1||value.length>20)throw new Error('invalid_companion_food');return value.map(row=>{if(!row||typeof row!=='object'||Array.isArray(row))throw new Error('invalid_companion_food');const r=row as Record<string,unknown>;if(typeof r.itemId!=='string'||!Number.isSafeInteger(r.quantity)||Number(r.quantity)<1||Number(r.quantity)>10000)throw new Error('invalid_companion_food');const item=itemDef(r.itemId);if(item.type!=='food'||!item.heal)throw new Error('invalid_companion_food');return {itemId:r.itemId,quantity:Number(r.quantity)};});}
 function spendExpeditionFood(state:GameState,food:{itemId:string;quantity:number}[],requiredStamina:number){
@@ -33,6 +34,17 @@ function spendExpeditionFood(state:GameState,food:{itemId:string;quantity:number
 }
 
 /** Additive account schema; game schema 6 and the existing atomic online store remain compatible. */
+export type CompanionBattlePlaybackEvent=Pick<CombatEvent,'atMs'|'type'|'actorId'|'targetId'|'abilityId'|'interruptedAbilityId'|'amount'|'critical'|'absorbed'|'detail'>;
+export interface CompanionBattlePlaybackUnit{id:string;name:string;team:'players'|'enemies';role:string;maxHp:number;boss:boolean;}
+export interface CompanionBattlePlaybackSnapshot{durationMs:number;units:CompanionBattlePlaybackUnit[];abilityNames:Record<string,string>;events:CompanionBattlePlaybackEvent[];}
+const PLAYBACK_EVENT_TYPES=new Set<CombatEvent['type']>(['combat_start','phase','cast_start','cast_complete','damage','miss','heal','shield','dot_tick','hot_tick','interrupt','down','death','combat_end']);
+function companionBattlePlayback(result:CombatResult):CompanionBattlePlaybackSnapshot{
+ const states=[...result.players,...result.enemies],abilityNames:Record<string,string>={BASIC:'Basic attack'};
+ for(const state of states){for(const ability of state.definition.abilities)abilityNames[ability.id]=ability.name;for(const phase of state.definition.phases??[])abilityNames[phase.id]=phase.name??phase.id.replace(/_/g,' ');}
+ const events=result.events.filter(event=>PLAYBACK_EVENT_TYPES.has(event.type)).map(event=>({atMs:event.atMs,type:event.type,actorId:event.actorId,targetId:event.targetId,abilityId:event.abilityId,interruptedAbilityId:event.interruptedAbilityId,amount:event.amount,critical:event.critical,absorbed:event.absorbed,detail:event.detail})).slice(0,420);
+ return {durationMs:result.durationMs,units:states.map(state=>({id:state.definition.id,name:state.definition.name,team:state.definition.team,role:state.definition.role,maxHp:state.definition.stats.maxHp,boss:state.definition.boss===true})),abilityNames,events};
+}
+
 export interface CompanionAccountState {
   guideState?:import('./onboarding').OnboardingGuideState;
   collectionPreferences?:import('./collection-preferences').CollectionPreferences;
@@ -61,7 +73,7 @@ export interface CompanionAccountState {
   companionBondRewardClaims?:string[];
   companionBattleReadyAtMs?:number;
   companionBossRematchReadyAtMs?:number;
-  companionLastBattle?:{title:string;won:boolean;durationMs:number;gold:number;essence:number;bondstones:number;atMs:number};
+  companionLastBattle?:{title:string;won:boolean;durationMs:number;gold:number;essence:number;bondstones:number;atMs:number;playback?:CompanionBattlePlaybackSnapshot};
 }
 export const COMPANION_REMATCH_WEEKLY_BONDSTONE_CAP=1;
 export function companionRematchBondstoneStatus(state:GameState,nowMs:number){
@@ -247,7 +259,7 @@ export function executeCompanionActivity(input:GameState,type:string,a:Record<st
       if(floor%5===0)state=companionMetric(state,`companions.trial.boss.${floor}.${r.result.victory?'wins':'losses'}`);
       if(r.result.victory){state=awardUse(state,run.teamCompanionIds,12+run.currentFloor*2,8+(run.currentFloor%5===0?18:0),now);state.account.companionProvingGround=recordCompanionProvingGroundEvent({state:state.account.companionProvingGround,serverNowMs:now,owned,event:{eventId:`${run.runId}:${run.currentFloor}`,type:run.currentFloor%5===0?'trial_boss_clear':'trial_floor_clear',companionIds:run.teamCompanionIds,trialFloor:run.currentFloor,teamPower:companionTeamPower(run.teamCompanionIds,owned),recommendedPower:companionTrialRecommendedPower(run.currentFloor),noDefeats:r.result.players?.every(p=>p.alive)}}).state;}
       state.account.companionBattleReadyAtMs=now+Math.max(1000,r.result.durationMs);
-      state.account.companionLastBattle={title:`Trial Floor ${run.currentFloor}`,won:r.result.victory,durationMs:r.result.durationMs,gold:r.reward.gold,essence:r.reward.companionEssence,bondstones:r.reward.bondstones,atMs:now};break;
+      state.account.companionLastBattle={title:`Trial Floor ${run.currentFloor}`,won:r.result.victory,durationMs:r.result.durationMs,gold:r.reward.gold,essence:r.reward.companionEssence,bondstones:r.reward.bondstones,atMs:now,playback:companionBattlePlayback(r.result)};break;
     }
     case 'companion_assignment_start':{
       const missionDef=companionMission(stringArg(a,'id'));if(!missionDef)throw new Error('unknown_companion_mission');const food=expeditionFoodArg(a.food),requiredStamina=companionExpeditionStaminaCost(missionDef.durationMs/3600000);
@@ -284,7 +296,7 @@ export function executeCompanionActivity(input:GameState,type:string,a:Record<st
       state=companionMetricMany(state,{[`companions.special.${id}.attempts`]:1,[`companions.special.${id}.${r.result.victory?'wins':'losses'}`]:1,[`companions.special.${id}.duration_ms_total`]:r.result.durationMs});
       if(r.unlockedCompanionId){const granted=grantCombatCompanionOrConvertDuplicate({companionId:r.unlockedCompanionId,owned,companionEssence:state.account.companionEssence??0});state=setOwned(state,granted.owned);state.account.companionEssence=granted.companionEssence;state.account.companionSpecialClears=[...(state.account.companionSpecialClears??[]),id];}
       state.account.companionBattleReadyAtMs=now+Math.max(1000,r.result.durationMs);
-      state.account.companionLastBattle={title:'Special Companion Challenge',won:r.result.victory,durationMs:r.result.durationMs,gold:0,essence:0,bondstones:0,atMs:now};break;
+      state.account.companionLastBattle={title:'Special Companion Challenge',won:r.result.victory,durationMs:r.result.durationMs,gold:0,essence:0,bondstones:0,atMs:now,playback:companionBattlePlayback(r.result)};break;
     }
     default:throw new Error('Unknown companion activity.');
   }

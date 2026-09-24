@@ -88,7 +88,8 @@ function projectedFarmHours(recipe:typeof t8){
   return recipe.inputs.reduce((hours,input)=>hours+materialFarmHours(state,input.itemId,input.quantity),0);
 }
 const highTierBands:Record<string,[number,number]>={
-  T5:[.75,3.5],T6:[1.0,4.5],T7:[1.2,4.5],T8:[1.5,6.5],T9:[2.5,8.0],
+  // Regional ore -> ingot processing now includes its local wood fuel, so the ceiling includes that intentional cross-skill preparation time.
+  T5:[.75,4.5],T6:[1.0,5.5],T7:[1.2,5.5],T8:[1.5,7.5],T9:[2.5,9.0],
 };
 for(const tier of Object.keys(highTierBands)){
   const rows=V33_EQUIPMENT_RECIPES.filter(row=>row.v33EquipmentTier===tier);

@@ -55,7 +55,9 @@ const BASE_ITEMS:ItemDef[]=[
 {id:'basic_staff',name:'Basic Staff',type:'gear',slot:'weapon',attack:4,hp:5,readiness:1,value:10},
 
 {id:'TRAVEL_RATION',name:'Travel Ration',type:'food',heal:35,readiness:1,value:5},
+{id:'COOKED_MEADOW_PERCH',name:'Cooked Meadow Perch',type:'food',heal:45,readiness:2,value:10},
 {id:'COOKED_SILVERFIN',name:'Cooked Silverfin',type:'food',heal:55,readiness:3,value:15},
+{id:'ROASTED_ROOTSTREAM_TROUT',name:'Roasted Rootstream Trout',type:'food',heal:80,readiness:4,value:25},
 {id:'SEARED_RIVER_EEL',name:'Seared River Eel',type:'food',heal:95,readiness:5,value:34},
 {id:'IRONWOOD_STEW',name:'Ironwood Hunter Stew',type:'food',heal:145,readiness:7,value:62},
 
@@ -68,6 +70,8 @@ const BASE_ITEMS:ItemDef[]=[
 {id:'ASTER_IRON_INGOT',name:'Aster-Iron Ingot',type:'material',value:64},
 {id:'OATHSTONE_INGOT',name:'Oathstone Ingot',type:'material',value:145},
 {id:'REINFORCED_FITTING',name:'Reinforced Fitting',type:'material',value:155},
+{id:'BAKED_CAVE_LOACH',name:'Baked Cave Loach',type:'food',heal:130,readiness:6,value:58},
+{id:'ROASTED_CROWN_CARP',name:'Roasted Crown Carp',type:'food',heal:165,readiness:8,value:82},
 {id:'ROASTED_OATHSCALE',name:'Roasted Oathscale Pike',type:'food',heal:175,readiness:8,value:90},
 
 
@@ -91,6 +95,7 @@ const BASE_ITEMS:ItemDef[]=[
 {id:'GRILLED_OASIS_CARP',name:'Grilled Oasis Carp',type:'food',heal:230,readiness:10,value:145,rarity:'uncommon'},
 {id:'GLASSFIN_FEAST',name:'Amberglass Glassfin Feast',type:'food',heal:310,readiness:12,value:230,rarity:'rare'},
 {id:'FROSTED_ICEFIN',name:'Frosted Icefin',type:'food',heal:390,readiness:14,value:340,rarity:'rare'},
+{id:'CHARRED_EMBERFIN',name:'Charred Emberfin',type:'food',heal:470,readiness:16,value:455,rarity:'rare'},
 {id:'ASHLANDS_EMBER_STEW',name:'Ashlands Ember Stew',type:'food',heal:500,readiness:17,value:520,rarity:'epic'},
 {id:'OASIS_CARP',name:'Oasis Carp',type:'material',value:100,rarity:'uncommon'},
 {id:'GLASSFIN',name:'Glassfin',type:'material',value:170,rarity:'rare'},
@@ -106,6 +111,11 @@ const BASE_ITEMS:ItemDef[]=[
 {id:'FROZEN_HEART',name:'Frozen Heart',type:'material',value:900,rarity:'legendary'},
 {id:'GREENWOOD_LOG',name:'Greenwood Log',type:'material',value:4},
 {id:'IRONWOOD_LOG',name:'Ironwood Log',type:'material',value:13},
+{id:'MEADOW_PERCH',name:'Meadow Perch',type:'material',value:4},
+{id:'ROOTSTREAM_TROUT',name:'Rootstream Trout',type:'material',value:11},
+{id:'CAVE_LOACH',name:'Cave Loach',type:'material',value:24},
+{id:'CROWN_CARP',name:'Crown Carp',type:'material',value:40},
+{id:'EMBERFIN',name:'Emberfin',type:'material',value:250,rarity:'rare'},
 {id:'SILVERFIN',name:'Silverfin',type:'material',value:6},
 {id:'RIVER_EEL',name:'River Eel',type:'material',value:15},
 

@@ -24,6 +24,19 @@ ok(gather('ICEFISH_POOL')?.zoneId==='FROSTMARCH','Frostmarch Fishing must have r
 ok(recipe('COOK_OASIS_CARP')?.inputs.some(x=>x.itemId==='OASIS_CARP'),'Sunscar Fishing must feed Cooking');
 ok(recipe('COOK_GLASSFIN_FEAST')?.inputs.some(x=>x.itemId==='GLASSFIN'),'Sunscar advanced Fishing must feed Cooking');
 ok(recipe('COOK_ICEFISH')?.inputs.some(x=>x.itemId==='ICEFIN')&&recipe('COOK_ICEFISH')?.inputs.some(x=>x.itemId==='WINTERMINT'),'Frostmarch Cooking must combine Fishing and Herbalism');
+for(const [region,fish,cook] of [
+ ['GREENFIELDS','MEADOW_PERCH','COOK_MEADOW_PERCH'],
+ ['SILVERBROOK','SILVERFIN','COOK_SILVERFIN'],
+ ['IRONWOOD','ROOTSTREAM_TROUT','COOK_ROOTSTREAM_TROUT'],
+ ['OLD_MINES','CAVE_LOACH','COOK_CAVE_LOACH'],
+ ['KINGS_ROAD','CROWN_CARP','COOK_CROWN_CARP'],
+ ['SUNSCAR','OASIS_CARP','COOK_OASIS_CARP'],
+ ['FROSTMARCH','ICEFIN','COOK_ICEFISH'],
+ ['ASHLANDS','EMBERFIN','COOK_EMBERFIN'],
+] as const){
+ ok(GATHERING.some(x=>x.skillId==='fishing'&&x.zoneId===region&&x.itemId===fish),region+' must have a local Fishing sustain source');
+ ok(recipe(cook)?.inputs.some(x=>x.itemId===fish),region+' local fish must feed Cooking');
+}
 ok(HERB_NODES.some(x=>x.id==='WINTERMINT_PATCH'&&x.zoneId==='FROSTMARCH'),'Wintermint must have a Frostmarch Herbalism source');
 
 for(const region of ['SUNSCAR','FROSTMARCH','ASHLANDS'])ok(EXPLORATION_ROUTES.some(x=>x.zoneId===region),region+' must have Exploration progression');

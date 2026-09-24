@@ -6,14 +6,14 @@ export type RegionalPreparation='underprepared'|'prepared'|'optimized';
 export interface RegionalCombatFixtureDef{regionId:string;regionName:string;monsterId:string;level:number;tier:string;foodId:string;}
 
 export const REGIONAL_COMBAT_FIXTURES:readonly RegionalCombatFixtureDef[]=[
- {regionId:'GREENFIELDS',regionName:'Greenfields',monsterId:'ROADSIDE_BOAR',level:4,tier:'T1',foodId:'TRAVEL_RATION'},
- {regionId:'SILVERBROOK',regionName:'Silverbrook',monsterId:'DROWNED_PILGRIM',level:22,tier:'T3',foodId:'SEARED_RIVER_EEL'},
- {regionId:'IRONWOOD',regionName:'Ironwood Forest',monsterId:'ANCIENT_TREANT',level:15,tier:'T3',foodId:'IRONWOOD_STEW'},
- {regionId:'OLD_MINES',regionName:'Old Mines',monsterId:'RUNEBOUND_MINER',level:19,tier:'T4',foodId:'IRONWOOD_STEW'},
- {regionId:'KINGS_ROAD',regionName:"King's Road",monsterId:'OATHGLASS_REVENANT',level:25,tier:'T4',foodId:'ROASTED_OATHSCALE'},
+ {regionId:'GREENFIELDS',regionName:'Greenfields',monsterId:'ROADSIDE_BOAR',level:4,tier:'T1',foodId:'COOKED_MEADOW_PERCH'},
+ {regionId:'SILVERBROOK',regionName:'Silverbrook',monsterId:'DROWNED_PILGRIM',level:22,tier:'T3',foodId:'COOKED_SILVERFIN'},
+ {regionId:'IRONWOOD',regionName:'Ironwood Forest',monsterId:'ANCIENT_TREANT',level:15,tier:'T3',foodId:'ROASTED_ROOTSTREAM_TROUT'},
+ {regionId:'OLD_MINES',regionName:'Old Mines',monsterId:'RUNEBOUND_MINER',level:19,tier:'T4',foodId:'BAKED_CAVE_LOACH'},
+ {regionId:'KINGS_ROAD',regionName:"King's Road",monsterId:'OATHGLASS_REVENANT',level:25,tier:'T4',foodId:'ROASTED_CROWN_CARP'},
  {regionId:'SUNSCAR',regionName:'Sunscar',monsterId:'GLASSBOUND_SENTINEL',level:40,tier:'T6',foodId:'GLASSFIN_FEAST'},
  {regionId:'FROSTMARCH',regionName:'Frostmarch',monsterId:'CHOIR_HUNTER',level:66,tier:'T8',foodId:'FROSTED_ICEFIN'},
- {regionId:'ASHLANDS',regionName:'Ashlands',monsterId:'ASHEN_REVENANT',level:88,tier:'T9',foodId:'ASHLANDS_EMBER_STEW'},
+ {regionId:'ASHLANDS',regionName:'Ashlands',monsterId:'ASHEN_REVENANT',level:88,tier:'T9',foodId:'CHARRED_EMBERFIN'},
 ] as const;
 
 function tierNumber(tier:string){return Number(tier.slice(1))||1;}

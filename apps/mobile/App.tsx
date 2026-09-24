@@ -93,7 +93,7 @@ import type {GameCommand} from './src/core/game-commands';
 import {buildNavigationBadges,buildQuickNavigationBadges,type NavigationNotification} from './src/core/navigation-notifications';
 import {eventReadyClaimCount} from './src/core/live-events';
 import {companionAttentionSummary} from './src/core/companion-attention';
-import {earlyFeatureUnlocked,newlyUnlockedEarlyFeatures,type EarlyFeatureUnlockMoment} from './src/core/feature-unlocks';
+import {earlyFeatureLockReason,earlyFeatureUnlocked,newlyUnlockedEarlyFeatures,type EarlyFeatureUnlockMoment} from './src/core/feature-unlocks';
 import {workingTowardReadyCount,type WorkingTowardDestination} from './src/core/working-toward';
 import {recipePreparationTransitionNotices,type RecipePreparationTransitionNotice} from './src/core/recipe-preparation-tracking';
 import {dailySuppliesStatus} from './src/core/daily-supplies';

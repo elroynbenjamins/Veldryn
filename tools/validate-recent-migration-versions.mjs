@@ -21,7 +21,8 @@ for(const name of files){
   const sql=fs.readFileSync(path.join(root,name),'utf8');
   const badOpen=[...sql.matchAll(/(?:as|is)\s+\$(?!\$|[A-Za-z_])/g)].map(match=>match.index);
   const badClose=[...sql.matchAll(/end\s+\$;/g)].map(match=>match.index);
-  if(badOpen.length||badClose.length)malformedDollarQuotes.push({name,count:badOpen.length+badClose.length});
+  const ambiguousTaggedClose=[...sql.matchAll(/\$\$[A-Za-z_][A-Za-z0-9_]*\$/g)].map(match=>match.index);
+  if(badOpen.length||badClose.length||ambiguousTaggedClose.length)malformedDollarQuotes.push({name,count:badOpen.length+badClose.length+ambiguousTaggedClose.length});
 }
 if(malformedDollarQuotes.length){
   console.error('Malformed PostgreSQL dollar-quote delimiters detected:');

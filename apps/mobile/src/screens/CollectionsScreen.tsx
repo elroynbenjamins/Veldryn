@@ -8,12 +8,13 @@ import type {GameState} from '../core/types';
 import {petArtSource} from '../theme/pet-art';
 import {radii,spacing,typography,equipmentTheme,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
+import {earlyFeatureUnlockProgress} from '../core/feature-unlocks';
 
 const pct=(bps:number)=>(bps/100).toFixed(2)+'%';
 
 export function CollectionsScreen({state,onChange}:{state:GameState;onChange:(next:GameState)=>void}){
   const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
-  const journal=collectibleJournal(state),breakdown=collectionBonusBreakdown(state),owned=journal.filter(row=>row.owned).length;
+  const journal=collectibleJournal(state),breakdown=collectionBonusBreakdown(state),owned=journal.filter(row=>row.owned).length,petUnlock=earlyFeatureUnlockProgress(state,'pets');
   const rows=(kind:CollectibleKind)=>journal.filter(row=>row.kind===kind);
 
   return <ScrollView contentContainerStyle={s.root}>
@@ -40,7 +41,7 @@ export function CollectionsScreen({state,onChange}:{state:GameState;onChange:(ne
       const entries=rows(kind);
       return <Panel key={kind}>
         <Text style={s.section}>{kind.toUpperCase()} · {entries.filter(row=>row.owned).length}/{entries.length}</Text>
-        {kind==='pet'?<View style={s.petGrid}>{entries.map(row=>{
+        {kind==='pet'&&!petUnlock.unlocked?<View style={s.petLocked}><Text style={s.petLockTitle}>Pet collection locked</Text><Text style={s.copy}>Unlock after {petUnlock.requirement}. Pet drops begin only after this milestone.</Text></View>:kind==='pet'?<View style={s.petGrid}>{entries.map(row=>{
           const art=petArtSource(row.id);
           return <View key={row.id} style={[s.petCard,row.selected&&s.selectedCard,!row.owned&&s.lockedCard]}>
             <View style={s.petPortrait}>{art?<Image source={art} resizeMode="contain" style={s.petImage}/>:<Text style={s.petFallback}>{row.owned?'◆':'?'}</Text>}</View>
@@ -83,6 +84,7 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
   bonusValue:{...typography.bodyStrong,color:C.good},
   row:{flexDirection:'row',alignItems:'center',gap:spacing.sm,paddingVertical:spacing.sm,borderBottomWidth:1,borderBottomColor:C.line,opacity:.52},
   owned:{opacity:1},
+  petLocked:{padding:12,borderWidth:1,borderStyle:'dashed',borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2},petLockTitle:{...typography.bodyStrong,color:C.text,marginBottom:3},
   petGrid:{flexDirection:'row',flexWrap:'wrap',gap:8,marginTop:spacing.sm},
   petCard:{width:'48%',minWidth:0,gap:5,padding:8,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2},
   selectedCard:{borderColor:C.accent,backgroundColor:C.accentSurface},

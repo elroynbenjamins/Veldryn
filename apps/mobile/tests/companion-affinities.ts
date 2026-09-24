@@ -1,4 +1,4 @@
-import {strict as assert} from 'node:assert';
+import {assert} from './test-assert';
 import {COMBAT_COMPANIONS} from '../src/content/combat-companions';
 import {COMPANION_AFFINITIES,companionAffinity,companionAffinityDiversity} from '../src/core/companion-affinities';
 

@@ -1,3 +1,4 @@
+import {skillAffinityModifiers} from '../src/core/class-skill-affinities';
 import {EQUIPMENT_CRAFT_SKILL_BY_CLASS,TIER_CHARACTER_LEVEL_FLOOR,TIER_CRAFTING_LEVEL_FLOOR,V33_EQUIPMENT_RECIPES,v33EquipmentRecipeForItem} from '../src/content/equipment-recipes-v33';
 import {GATHERING,RECIPES} from '../src/content/skills';
 import {itemDef} from '../src/content/items';
@@ -75,7 +76,13 @@ const materialSourceMonster:Record<string,string>={
 function materialFarmHours(state:ReturnType<typeof createCharacter>,itemId:string,quantity:number,depth=0):number{
   if(depth>4)return 0;
   const gather=[...GATHERING,...HERB_NODES].find(row=>row.itemId===itemId);
-  if(gather){const pace=gatheringBalanceProjection(state,gather,24);return quantity/Math.max(.0001,pace.runtimeItemsPerHour);}
+  if(gather){
+    const pace=gatheringBalanceProjection(state,gather,24),affinity=skillAffinityModifiers(state.character?.classId,gather.skillId);
+    // This test guards authored material quantities at baseline, not specialist completion times.
+    // Affinity runtime speed and unchanged per-action yields are tested separately across all classes.
+    const baselineItemsPerHour=pace.runtimeItemsPerHour/affinity.speedMultiplier;
+    return quantity/Math.max(.0001,baselineItemsPerHour);
+  }
   const monsterId=materialSourceMonster[itemId];
   if(monsterId){const monster=MONSTERS.find(row=>row.id===monsterId)!;const drop=monster.drops.find(row=>row.itemId===itemId)!;const pace=combatBaselineProjection(monster),expectation=dropExpectation(drop.chance,drop.min,drop.max,pace.killsPerHour);return quantity/Math.max(.0001,expectation.expectedQuantityPerHour);}
   const processing=RECIPES.find(row=>row.repeatableTraining&&row.output.itemId===itemId);

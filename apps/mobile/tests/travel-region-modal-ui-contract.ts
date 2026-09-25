@@ -10,7 +10,7 @@ const navigation=read('src/core/world-navigation.ts');
 
 ok(!world.includes('TravelRegionModal')&&!world.includes('travelTargetId'),'World screen must not stage a travel-preview sheet');
 ok(world.includes("onPress={()=>onTravel(zone.id)}"),'Available destination cards must travel directly');
-ok(world.includes("inDevelopment?'IN DEVELOPMENT'"),'World destinations must expose an In Development state');
+ok(world.includes("inDevelopment?'In Development'")&&world.includes('inDevelopment&&s.developmentDestination'),'World destinations must expose a distinct In Development state');
 ok(world.includes("title={unlocked?'Travel':inDevelopment?'In development':'Locked'}")&&world.includes('disabled={!unlocked}'),'Unavailable destinations must stay visibly unavailable without opening a preview sheet');
 ok(world.includes("<ZoneSceneArtwork regionId={current.id}/>"),'Current region must use the scenic artwork entrypoint');
 ok(world.includes("<ZoneSceneArtwork regionId={zone.id} muted={!unlocked}/>"),'Travel cards must use scenic art and dim unavailable regions');

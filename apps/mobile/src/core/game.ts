@@ -49,10 +49,11 @@ import {huntGoalSnapshot,huntMomentumBonus,normalizeHuntGoalId,type HuntGoalId} 
 import {CHAMPION_DAMAGE_MULTIPLIER,championBonus,isChampionEncounter} from './hunt-champions';
 import {applyDailySupplyCraft,commitDailySupplyTimedBoost,dailySupplyActivityMode,previewDailySupplyTimedReward} from './daily-supplies';
 import {professionMasteryMultipliers} from './profession-mastery-v40';
-import {huntingXpForKills} from './hunting-progression';
 import {regionalSecondaryExchange} from './regional-enemy-stats';
 import {simulateFallenKnightStoryBattle,type FallenKnightBattleResult,type FallenKnightPlayerSnapshot} from './story-boss';
 import {FALLEN_KNIGHT_CLEAR_REWARD,FALLEN_KNIGHT_WEEKLY_BOUNTY_REWARD,fallenKnightWeeklyStatus,recordFallenKnightWeeklyVictory} from './weekly-boss';
+import {explorationXpForCombatKills} from './exploration-progression';
+import {regionTravelLockReason} from './world-navigation';
 export function beginAlchemyBatch(state:GameState,recipeId:string,batches:number,nowMs:number){return startAlchemyBatch(finishClassDrills(state,nowMs),recipeId,batches,nowMs);}
 export function beginProcessingBatch(state:GameState,recipeId:string,batches:number,nowMs:number){return startProcessingBatch(finishClassDrills(state,nowMs),recipeId,batches,nowMs);}
 
@@ -122,7 +123,7 @@ export function newGame(nowMs:number):GameState{return {
   version:6,createdAtMs:nowMs,character:null,inventory:{stacks:[],capacity:30},bank:{stacks:[],capacity:120},overflow:{stacks:[],expiresAtMs:null},activity:null,currentRegionId:'GREENFIELDS',
   quests:QUESTS.map((q,i)=>({questId:q.id,status:i===0?'active':'locked',progress:0 as number})) as any,
   unlockedMonsterIds:['MOSS_RAT'],defeatedBossIds:[],
-  skills:['mining','woodcutting','fishing','smithing','cooking','herbalism','alchemy','hunting','exploration','tailoring','enchanting','faith'].map(skillId=>({skillId:skillId as any,xp:0,level:1})),
+  skills:['mining','woodcutting','fishing','smithing','cooking','herbalism','alchemy','exploration','tailoring','enchanting','faith'].map(skillId=>({skillId:skillId as any,xp:0,level:1})),
   account:{createdCharacterCount:1,unlockedCharacterSlots:1,guildMember:false,patronTier:'none',guildBannerId:'world_tree_green',guildProfileFrameId:'classic',guildNameplateId:'classic',guildMotto:'Stronger together.',guildContribution:0,guildProjectProgress:0,guildBossHp:100000,guildProjectClaimed:false,guildJoinPolicy:'open',guildMinimumLevel:10,guildApplicationStatus:'none',seasonalContractClaimIds:[]},
   settings:{language:'en',uiTheme:'obsidian',numberMode:'abbreviated',reduceMotion:false,textScale:1,autoEatThresholdPct:40,stopCombatWhenOutOfFood:true,autoJoinWorldChat:true,defaultWorldChat:1,chatDockLines:1,chatEmoteTrayIds:[],quickNavDestinations:[...DEFAULT_QUICK_NAV_DESTINATIONS],favoriteItemIds:[],seenItemIds:[]}
 }}
@@ -137,7 +138,7 @@ export function createCharacter(state:GameState,classId:ClassId,name='Adventurer
   const equipment={weapon:c.starterEquipment.weapon};
   let maxHp=c.hp;
   for(const id of Object.values(equipment) as string[]){const d=itemDef(id);maxHp+=d.hp||0;}
-  return {...state,character:{id:'LOCAL_CHAR_1',name:normalizedName||'Adventurer',classId,bodyPresentation,classSkills:classSkillsFor(classId).map(skill=>({skillId:skill.id,xp:0,level:1})),trainingFocus:'balanced',profileTitle:'New Adventurer',profileBackgroundId:'asterfall-night',unlockedEventSkinIds:[],unlockedSkinIds:['starting'],ownedPetIds:[],ownedBoostIds:[],selectedSkinId:'starting',faith:{favoriteBlessingIds:[],hideWeakerBlessings:true},level:1,xp:0,gold:100,hp:c.hp,currentHp:maxHp,attack:c.attack,defense:c.defense,equipment,equippedFoodId:'TRAVEL_RATION'},
+  return {...state,character:{id:'LOCAL_CHAR_1',name:normalizedName||'Adventurer',classId,bodyPresentation,classSkills:classSkillsFor(classId).map(skill=>({skillId:skill.id,xp:0,level:1})),trainingFocus:'balanced',profileTitle:'New Adventurer',profileBackgroundId:'asterfall-night',completedExplorationRouteIds:[],unlockedEventSkinIds:[],unlockedSkinIds:['starting'],ownedPetIds:[],ownedBoostIds:[],selectedSkinId:'starting',faith:{favoriteBlessingIds:[],hideWeakerBlessings:true},level:1,xp:0,gold:100,hp:c.hp,currentHp:maxHp,attack:c.attack,defense:c.defense,equipment,equippedFoodId:'TRAVEL_RATION'},
     inventory:{...state.inventory,stacks:[{itemId:'TRAVEL_RATION',quantity:8}]},settings:{...state.settings,seenItemIds:[...new Set([...(state.settings.seenItemIds??[]),'TRAVEL_RATION'])]}}
 }
 
@@ -210,7 +211,8 @@ export function travelToRegion(state:GameState,regionId:string,nowMs:number){
   const zone=WORLD_ZONES.find(entry=>entry.id===regionId);
   if(!zone)throw new Error('Unknown region');
   if(worldZoneInDevelopment(zone))throw new Error(`${zone.name} is still in development`);
-  if(!state.character||state.character.level<zone.minLevel)throw new Error(`Reach character level ${zone.minLevel} to travel to ${zone.name}`);
+  if(!state.character)throw new Error('Create a character first');
+  const travelLock=regionTravelLockReason(state,zone);if(travelLock)throw new Error(`${travelLock} to travel to ${zone.name}`);
   if(currentRegionId(state)===zone.id)return {state,reward:{xp:0,gold:0,items:[],kills:0,elapsedSeconds:0} as RewardBundle};
   const settled=claimActivity(state,nowMs);
   return {state:{...settled.state,currentRegionId:zone.id,activity:null},reward:settled.reward};
@@ -304,13 +306,13 @@ export function activeCombatRuntimeProjection(state:GameState){
   const killsPerHour=3600/Math.max(.1,runtime.killCycleSeconds);
   const xpPerKill=runtime.m.xp*(effect?.xpMultiplier??1)*runtime.modifiers.characterXpMultiplier*challengeReward.xp;
   const goldPerKill=runtime.m.gold*(effect?.goldMultiplier??1)*runtime.modifiers.goldMultiplier*challengeReward.gold;
-  const huntingXpPerKill=huntingXpForKills(1,runtime.m.xp,effect?.xpMultiplier??1,runtime.modifiers.skillXpMultiplier,challengeReward.xp);
+  const explorationXpPerKill=explorationXpForCombatKills(1,runtime.m.xp,effect?.xpMultiplier??1,runtime.modifiers.skillXpMultiplier);
   return {
     killCycleSeconds:runtime.killCycleSeconds,
     killsPerHour,
     xpPerHour:killsPerHour*xpPerKill,
     goldPerHour:killsPerHour*goldPerKill,
-    huntingXpPerHour:killsPerHour*huntingXpPerKill,
+    explorationXpPerHour:killsPerHour*explorationXpPerKill,
     enemySecondary:runtime.secondary.enemy,
     playerHitChance:runtime.secondary.playerHitChance,
     enemyHitChance:runtime.secondary.enemyHitChance,
@@ -361,7 +363,7 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
   if(state.activity.kind!=='combat'){
     if(state.activity.kind==='exploration'){
       const route=explorationRoute(state.activity.targetId);if(!route)return {xp:0,gold:0,items:[],kills:0,elapsedSeconds:elapsed};
-      const actions=Math.floor(elapsed/route.seconds);return {xp:Math.floor(actions*route.xp*characterPermanentMultipliers(state).skillXpMultiplier),gold:0,items:[],kills:actions,elapsedSeconds:elapsed,explorationDiscoveries:actions&&route.unlockMonsterId?[route.unlockMonsterId]:[]};
+      const actions=Math.floor(elapsed/route.seconds);return {xp:Math.floor(actions*route.xp*characterPermanentMultipliers(state).skillXpMultiplier),gold:0,items:[],kills:actions,elapsedSeconds:elapsed,explorationDiscoveries:actions&&route.unlockMonsterId?[route.unlockMonsterId]:[],explorationRouteCompletions:actions?[route.id]:[]};
     }
     const g=[...GATHERING,...HERB_NODES].find(x=>x.id===state.activity!.targetId);if(!g)return {xp:0,gold:0,items:[],kills:0,elapsedSeconds:elapsed};
     const effect=environmentEffectForActivity(state.activity).effect;
@@ -407,11 +409,11 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
   const firstClear=challengeId&&sim.kills>0&&!challengeHuntCleared(state,m.id,challengeId)?challengeHuntFirstClearReward(m,challengeId):undefined;
   const rewardItems=firstClear?stackItems([],items.concat(firstClear.items)):items,champion=championBonus(Math.floor(m.xp*effect.xpMultiplier*multipliers.characterXpMultiplier),Math.floor(m.gold*effect.goldMultiplier*multipliers.goldMultiplier),sim.championKills);
   const baseXpPerKill=m.xp*effect.xpMultiplier*multipliers.characterXpMultiplier*challengeReward.xp,baseGoldPerKill=m.gold*effect.goldMultiplier*multipliers.goldMultiplier*challengeReward.gold,sessionKills=state.activity.sessionKills??0;
-  const huntingSkill=state.skills.find(skill=>skill.skillId==='hunting');
-  const huntingRaw=huntingXpForKills(sim.kills,m.xp,effect.xpMultiplier,multipliers.skillXpMultiplier,challengeReward.xp);
-  const huntingXp=Math.min(Math.max(0,totalXpAtLevel(100)-(huntingSkill?.xp??0)),huntingRaw);
+  const explorationSkill=state.skills.find(skill=>skill.skillId==='exploration');
+  const explorationRaw=explorationXpForCombatKills(sim.kills,m.xp,effect.xpMultiplier,multipliers.skillXpMultiplier);
+  const explorationXp=Math.min(Math.max(0,totalXpAtLevel(100)-(explorationSkill?.xp??0)),explorationRaw);
   const momentumXp=huntMomentumBonus(baseXpPerKill,sessionKills,sim.kills),momentumGold=huntMomentumBonus(baseGoldPerKill,sessionKills,sim.kills);
-  const reward:RewardBundle={classSkillXp:classGain.awards,huntingXp,xp:Math.floor(sim.kills*baseXpPerKill)+momentumXp+champion.xp,gold:Math.floor(sim.kills*baseGoldPerKill)+momentumGold+(firstClear?.gold??0)+champion.gold,items:rewardItems,kills:sim.kills,elapsedSeconds:elapsed,qualifyingActivitySeconds:sim.qualifyingActivitySeconds,foodConsumed:sim.foodConsumed,endHp:sim.endHp,stoppedReason:sim.stoppedReason,nextProgressFraction:sim.nextProgressFraction,...(firstClear&&challengeId?{challengeHuntFirstClear:{key:challengeHuntClearKey(m.id,challengeId),monsterId:m.id,challengeId,label:firstClear.label}}:{}),...(sim.championKills>0?{championEncounters:{count:sim.championKills,bonusXp:champion.xp,bonusGold:champion.gold}}:{})};
+  const reward:RewardBundle={classSkillXp:classGain.awards,explorationXp,xp:Math.floor(sim.kills*baseXpPerKill)+momentumXp+champion.xp,gold:Math.floor(sim.kills*baseGoldPerKill)+momentumGold+(firstClear?.gold??0)+champion.gold,items:rewardItems,kills:sim.kills,elapsedSeconds:elapsed,qualifyingActivitySeconds:sim.qualifyingActivitySeconds,foodConsumed:sim.foodConsumed,endHp:sim.endHp,stoppedReason:sim.stoppedReason,nextProgressFraction:sim.nextProgressFraction,...(firstClear&&challengeId?{challengeHuntFirstClear:{key:challengeHuntClearKey(m.id,challengeId),monsterId:m.id,challengeId,label:firstClear.label}}:{}),...(sim.championKills>0?{championEncounters:{count:sim.championKills,bonusXp:champion.xp,bonusGold:champion.gold}}:{})};
   return {...reward,masteryMaterialRemainders:materialRemainders,eventDrops:activityEventDrops(state,reward,effectiveNowMs),eventDiscoveries:activityEventDiscoveries(state,'combat',reward.kills,effectiveNowMs)};
 }
 function previewStandardActivityRewardWithSupplies(state:GameState,effectiveNowMs:number){
@@ -578,7 +580,7 @@ export function claimActivity(state:GameState,nowMs:number){
   if(state.activity.kind!=='combat'){
     const skills=state.skills.map(x=>x.skillId===state.activity!.kind?{...x,xp:x.xp+reward.xp,level:levelFromXp(x.xp+reward.xp)}:x);
     const routed=routeRewards(state,reward.items,settledAtMs);
-    const nextBase={...state,skills,...routed,rewardRemainders:reward.nextRewardRemainders,unlockedMonsterIds:[...new Set([...state.unlockedMonsterIds,...(reward.explorationDiscoveries??[])])],activity:idleWindow.shouldStop?null:{...state.activity,lastClaimAtMs:settledAtMs,progressFraction:reward.nextProgressFraction}} as GameState;
+    const nextBase={...state,skills,...routed,character:{...state.character,completedExplorationRouteIds:[...new Set([...(state.character.completedExplorationRouteIds??[]),...(reward.explorationRouteCompletions??[])])]},rewardRemainders:reward.nextRewardRemainders,unlockedMonsterIds:[...new Set([...state.unlockedMonsterIds,...(reward.explorationDiscoveries??[])])],activity:idleWindow.shouldStop?null:{...state.activity,lastClaimAtMs:settledAtMs,progressFraction:reward.nextProgressFraction}} as GameState;
     const next=commitDailySupplyTimedBoost(nextBase,supply);
     const progression=applyTrustedLongTermProgression(next,[{kind:'gathering',contentId:state.activity.targetId,units:reward.kills,startedAtMs:state.activity.lastClaimAtMs}],reward,settledAtMs,{accountId:longTermAccountScope(state),eventId:`activity:${state.character.id}:${state.activity.targetId}:${state.activity.lastClaimAtMs}:${settledAtMs}`}).state;
     const eventApplied=refreshQuests(applyEventDiscoveries(applyEventDrops(progression,reward.eventDrops??[]),reward.eventDiscoveries??[]));
@@ -600,8 +602,8 @@ export function claimActivity(state:GameState,nowMs:number){
   const trained=awardCombatClassXp(state.character,reward.kills,monster.xp*environmentEffectForActivity(state.activity).effect.xpMultiplier*characterPermanentMultipliers(state).skillXpMultiplier,state.activity.classFocus).character;
   const challengeHuntClearIds=reward.challengeHuntFirstClear?[...new Set([...(state.character.challengeHuntClearIds??[]),reward.challengeHuntFirstClear.key])]:state.character.challengeHuntClearIds;
   const skills=state.skills.map(skill=>{
-    if(skill.skillId!=='hunting')return skill;
-    const nextXp=Math.min(totalXpAtLevel(100),skill.xp+(reward.huntingXp??0));
+    if(skill.skillId!=='exploration')return skill;
+    const nextXp=Math.min(totalXpAtLevel(100),skill.xp+(reward.explorationXp??0));
     return {...skill,xp:nextXp,level:levelFromXp(nextXp)};
   });
   const nextBase={...state,skills,...routed,character:{...state.character,xp,level,gold:state.character.gold+reward.gold,currentHp:reward.endHp??state.character.currentHp,challengeHuntClearIds},activity:shouldStop?null:{...state.activity,lastClaimAtMs:settledAtMs,progressFraction:reward.nextProgressFraction,sessionKills:(state.activity.sessionKills??0)+reward.kills,sessionChampions:(state.activity.sessionChampions??0)+(reward.championEncounters?.count??0)},unlockedMonsterIds:[...new Set([...state.unlockedMonsterIds,...unlocked])]} as GameState;
@@ -721,7 +723,7 @@ export function claimOverflowToBank(state:GameState):GameState{
 
 export function startGathering(state:GameState,targetId:string,nowMs:number):GameState{if(HERB_NODES.some(x=>x.id===targetId))return startHerbalism(state,targetId,nowMs);state=finishClassDrills(state,nowMs);const g=GATHERING.find(x=>x.id===targetId);if(!g)throw new Error('Unknown gathering target');const skill=state.skills.find(x=>x.skillId===g.skillId);if(!skill||skill.level<g.unlockLevel)throw new Error('Skill level too low');if(g.zoneId!==currentRegionId(state)){const zone=WORLD_ZONES.find(entry=>entry.id===g.zoneId);throw new Error(`Travel to ${zone?.name??g.zoneId} before gathering ${g.name}`)}return {...state,character:state.character?{...state.character,activityQueuePausedReason:undefined}:null,activity:{skillAffinity:captureSkillAffinity(state,g.skillId),kind:g.skillId,targetId,startedAtMs:nowMs,lastClaimAtMs:nowMs,environment:captureActivityEnvironment(targetId,nowMs)}}}
 export function startHerbalism(state:GameState,targetId:string,nowMs:number):GameState{state=finishClassDrills(state,nowMs);const g=HERB_NODES.find(x=>x.id===targetId);if(!g)throw new Error('Unknown herbalism node');const skill=state.skills.find(x=>x.skillId==='herbalism');if(!skill||skill.level<g.unlockLevel)throw new Error('Herbalism level too low');if(g.zoneId!==currentRegionId(state))throw new Error(`Travel to ${g.zoneId} before gathering ${g.name}`);if(state.activity)throw new Error('Settle and stop the current activity first');const method=herbalismMethod(state.character?.herbalismMethodId,skill.level);return {...state,character:state.character?{...state.character,activityQueuePausedReason:undefined}:null,activity:{skillAffinity:captureSkillAffinity(state,'herbalism'),kind:'herbalism',targetId,startedAtMs:nowMs,lastClaimAtMs:nowMs,environment:captureActivityEnvironment(targetId,nowMs),herbalismMethodId:method.id}}}
-export function startExploration(state:GameState,routeId:string,nowMs:number):GameState{state=finishClassDrills(state,nowMs);const route=explorationRoute(routeId);if(!route)throw new Error('Unknown exploration route');if(!state.character||state.character.level<route.requiredLevel)throw new Error(`Reach character level ${route.requiredLevel} to explore this route`);if(route.zoneId!==currentRegionId(state))throw new Error(`Travel to ${route.zoneId} before exploring`);if(state.activity)throw new Error('Settle and stop the current activity first');return {...state,activity:{kind:'exploration',targetId:routeId,startedAtMs:nowMs,lastClaimAtMs:nowMs,environment:captureActivityEnvironment(routeId,nowMs)}}}
+export function startExploration(state:GameState,routeId:string,nowMs:number):GameState{state=finishClassDrills(state,nowMs);const route=explorationRoute(routeId);if(!route)throw new Error('Unknown exploration route');if(!state.character||state.character.level<route.requiredLevel)throw new Error(`Reach character level ${route.requiredLevel} to explore this route`);const exploration=state.skills.find(skill=>skill.skillId==='exploration');if(!exploration||exploration.level<route.requiredExplorationLevel)throw new Error(`Reach Exploration level ${route.requiredExplorationLevel} to explore this route`);if(route.zoneId!==currentRegionId(state))throw new Error(`Travel to ${route.zoneId} before exploring`);if(state.activity)throw new Error('Settle and stop the current activity first');return {...state,activity:{kind:'exploration',targetId:routeId,startedAtMs:nowMs,lastClaimAtMs:nowMs,environment:captureActivityEnvironment(routeId,nowMs)}}}
 export function equipGatheringTool(state:GameState,itemId:string):GameState{
   if(!state.character)throw new Error('Create a character first');
   const tool=gatheringToolDef(itemId);if(!tool)throw new Error('Not a gathering tool');

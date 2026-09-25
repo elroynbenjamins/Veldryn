@@ -10,7 +10,16 @@ let rejected=false;
 try{startGathering(beginner,'COPPER_VEIN',1)}catch{rejected=true}
 ok(rejected,'Gathering outside the current region must be rejected by core game logic');
 
-const veteran={...beginner,character:{...beginner.character!,level:20}};
+let levelOnly={...beginner,character:{...beginner.character!,level:5}};
+rejected=false;
+try{travelToRegion(levelOnly,'SILVERBROOK',2)}catch{rejected=true}
+ok(rejected,'Character level alone must not bypass Exploration route discovery');
+const greenScout=startExploration(levelOnly,'SCOUT_GREENFIELDS',3);
+const greenMapped=claimActivity(greenScout,63_003).state;
+ok((greenMapped.discoveredRegionIds??[]).includes('SILVERBROOK'),'Greenfields scouting must discover Silverbrook');
+ok(currentRegionId(travelToRegion(greenMapped,'SILVERBROOK',63_004).state)==='SILVERBROOK','A discovered region must become travelable once its level gate is met');
+
+const veteran={...beginner,character:{...beginner.character!,level:20},discoveredRegionIds:['GREENFIELDS','SILVERBROOK','IRONWOOD','OLD_MINES']};
 const travelled=travelToRegion(veteran,'OLD_MINES',2);
 ok(currentRegionId(travelled.state)==='OLD_MINES','Travel must persist the new current region');
 ok(startGathering(travelled.state,'COPPER_VEIN',3).activity?.targetId==='COPPER_VEIN','Gathering in the current region must be allowed');
@@ -28,7 +37,7 @@ rejected=false;
 try{travelToRegion(beginner,'KINGS_ROAD',6)}catch{rejected=true}
 ok(rejected,'Locked regions must reject travel');
 
-const later={...beginner,character:{...beginner.character!,level:30}};
+const later={...beginner,character:{...beginner.character!,level:30},discoveredRegionIds:['GREENFIELDS','SILVERBROOK','IRONWOOD','OLD_MINES','KINGS_ROAD','SUNSCAR']};
 const sunscar=travelToRegion(later,'SUNSCAR',7).state;
 ok(currentRegionId(sunscar)==='SUNSCAR','Later-region travel must persist Sunscar');
 const sunscarScout=startExploration(sunscar,'SCOUT_SUNSCAR',8);
@@ -38,7 +47,7 @@ const sunscarCombat=startCombat(sunscarMapped,'SUNSCAR_SCORPION',218009);
 ok(sunscarCombat.activity?.targetId==='SUNSCAR_SCORPION','Sunscar encounters must use the normal combat activity lane');
 ok(!claimActivity(sunscarCombat,338009).state.unlockedMonsterIds.includes('BLACKGLASS_MIRELING'),'Sunscar combat must not bypass Ashlands scouting');
 
-const frost={...beginner,character:{...beginner.character!,level:50}};
+const frost={...beginner,character:{...beginner.character!,level:50},discoveredRegionIds:['GREENFIELDS','SILVERBROOK','IRONWOOD','OLD_MINES','KINGS_ROAD','SUNSCAR','FROSTMARCH']};
 const frostmarch=travelToRegion(frost,'FROSTMARCH',9).state;
 const frostScout=startExploration(frostmarch,'SCOUT_FROSTMARCH',10);
 const frostMapped=claimActivity(frostScout,310010).state;
@@ -47,7 +56,7 @@ rejected=false;
 try{travelToRegion(later,'FROSTMARCH',11)}catch{rejected=true}
 ok(rejected,'Frostmarch must remain locked below its level gate');
 
-const ash={...beginner,character:{...beginner.character!,level:75}};
+const ash={...beginner,character:{...beginner.character!,level:75},discoveredRegionIds:['GREENFIELDS','SILVERBROOK','IRONWOOD','OLD_MINES','KINGS_ROAD','SUNSCAR','FROSTMARCH','ASHLANDS']};
 const ashlands=travelToRegion(ash,'ASHLANDS',12).state;
 const ashScout=startExploration(ashlands,'SCOUT_ASHLANDS',13);
 const ashMapped=claimActivity(ashScout,373013).state;
@@ -67,10 +76,10 @@ ok(ordered[0]?.id==='FROSTMARCH','Pinned Working Toward destination must be prom
 const orderedNoGoal=orderedTravelRegions(later,'SUNSCAR');
 ok(orderedNoGoal[0]?.id==='KINGS_ROAD'&&orderedNoGoal.findIndex(zone=>zone.id==='FROSTMARCH')>orderedNoGoal.findIndex(zone=>zone.id==='GREENFIELDS'),'Travel ordering must show unlocked regions first and future locked regions after them');
 
-const future={...beginner,character:{...beginner.character!,level:120},currentRegionId:'VEILLANDS'};
+const future={...beginner,character:{...beginner.character!,level:120},discoveredRegionIds:['GREENFIELDS','SILVERBROOK','IRONWOOD','OLD_MINES','KINGS_ROAD','SUNSCAR','FROSTMARCH','ASHLANDS'],currentRegionId:'VEILLANDS'};
 ok(currentRegionId(future)==='GREENFIELDS','In-development regions must never become the active persisted location');
 rejected=false;
 try{travelToRegion(future,'VEILLANDS',15)}catch(error){rejected=String(error).toLowerCase().includes('development')}
 ok(rejected,'Core travel must reject in-development regions even above their level band');
 
-console.log('PASS: travel persists location and region gates combat and gathering');
+console.log('PASS: travel persists location and requires both level and Exploration route discovery');

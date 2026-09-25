@@ -49,7 +49,6 @@ import {huntGoalSnapshot,huntMomentumBonus,normalizeHuntGoalId,type HuntGoalId} 
 import {CHAMPION_DAMAGE_MULTIPLIER,championBonus,isChampionEncounter} from './hunt-champions';
 import {applyDailySupplyCraft,commitDailySupplyTimedBoost,dailySupplyActivityMode,previewDailySupplyTimedReward} from './daily-supplies';
 import {professionMasteryMultipliers} from './profession-mastery-v40';
-import {huntingXpForKills} from './hunting-progression';
 import {regionalSecondaryExchange} from './regional-enemy-stats';
 import {simulateFallenKnightStoryBattle,type FallenKnightBattleResult,type FallenKnightPlayerSnapshot} from './story-boss';
 import {FALLEN_KNIGHT_CLEAR_REWARD,FALLEN_KNIGHT_WEEKLY_BOUNTY_REWARD,fallenKnightWeeklyStatus,recordFallenKnightWeeklyVictory} from './weekly-boss';
@@ -122,7 +121,7 @@ export function newGame(nowMs:number):GameState{return {
   version:6,createdAtMs:nowMs,character:null,inventory:{stacks:[],capacity:30},bank:{stacks:[],capacity:120},overflow:{stacks:[],expiresAtMs:null},activity:null,currentRegionId:'GREENFIELDS',
   quests:QUESTS.map((q,i)=>({questId:q.id,status:i===0?'active':'locked',progress:0 as number})) as any,
   unlockedMonsterIds:['MOSS_RAT'],defeatedBossIds:[],
-  skills:['mining','woodcutting','fishing','smithing','cooking','herbalism','alchemy','hunting','exploration','tailoring','enchanting','faith'].map(skillId=>({skillId:skillId as any,xp:0,level:1})),
+  skills:['mining','woodcutting','fishing','smithing','cooking','herbalism','alchemy','exploration','tailoring','enchanting','faith'].map(skillId=>({skillId:skillId as any,xp:0,level:1})),
   account:{createdCharacterCount:1,unlockedCharacterSlots:1,guildMember:false,patronTier:'none',guildBannerId:'world_tree_green',guildProfileFrameId:'classic',guildNameplateId:'classic',guildMotto:'Stronger together.',guildContribution:0,guildProjectProgress:0,guildBossHp:100000,guildProjectClaimed:false,guildJoinPolicy:'open',guildMinimumLevel:10,guildApplicationStatus:'none',seasonalContractClaimIds:[]},
   settings:{language:'en',uiTheme:'obsidian',numberMode:'abbreviated',reduceMotion:false,textScale:1,autoEatThresholdPct:40,stopCombatWhenOutOfFood:true,autoJoinWorldChat:true,defaultWorldChat:1,chatDockLines:1,chatEmoteTrayIds:[],quickNavDestinations:[...DEFAULT_QUICK_NAV_DESTINATIONS],favoriteItemIds:[],seenItemIds:[]}
 }}
@@ -304,13 +303,11 @@ export function activeCombatRuntimeProjection(state:GameState){
   const killsPerHour=3600/Math.max(.1,runtime.killCycleSeconds);
   const xpPerKill=runtime.m.xp*(effect?.xpMultiplier??1)*runtime.modifiers.characterXpMultiplier*challengeReward.xp;
   const goldPerKill=runtime.m.gold*(effect?.goldMultiplier??1)*runtime.modifiers.goldMultiplier*challengeReward.gold;
-  const huntingXpPerKill=huntingXpForKills(1,runtime.m.xp,effect?.xpMultiplier??1,runtime.modifiers.skillXpMultiplier,challengeReward.xp);
   return {
     killCycleSeconds:runtime.killCycleSeconds,
     killsPerHour,
     xpPerHour:killsPerHour*xpPerKill,
     goldPerHour:killsPerHour*goldPerKill,
-    huntingXpPerHour:killsPerHour*huntingXpPerKill,
     enemySecondary:runtime.secondary.enemy,
     playerHitChance:runtime.secondary.playerHitChance,
     enemyHitChance:runtime.secondary.enemyHitChance,
@@ -407,11 +404,8 @@ function previewStandardActivityRewardRaw(state:GameState,effectiveNowMs:number)
   const firstClear=challengeId&&sim.kills>0&&!challengeHuntCleared(state,m.id,challengeId)?challengeHuntFirstClearReward(m,challengeId):undefined;
   const rewardItems=firstClear?stackItems([],items.concat(firstClear.items)):items,champion=championBonus(Math.floor(m.xp*effect.xpMultiplier*multipliers.characterXpMultiplier),Math.floor(m.gold*effect.goldMultiplier*multipliers.goldMultiplier),sim.championKills);
   const baseXpPerKill=m.xp*effect.xpMultiplier*multipliers.characterXpMultiplier*challengeReward.xp,baseGoldPerKill=m.gold*effect.goldMultiplier*multipliers.goldMultiplier*challengeReward.gold,sessionKills=state.activity.sessionKills??0;
-  const huntingSkill=state.skills.find(skill=>skill.skillId==='hunting');
-  const huntingRaw=huntingXpForKills(sim.kills,m.xp,effect.xpMultiplier,multipliers.skillXpMultiplier,challengeReward.xp);
-  const huntingXp=Math.min(Math.max(0,totalXpAtLevel(100)-(huntingSkill?.xp??0)),huntingRaw);
   const momentumXp=huntMomentumBonus(baseXpPerKill,sessionKills,sim.kills),momentumGold=huntMomentumBonus(baseGoldPerKill,sessionKills,sim.kills);
-  const reward:RewardBundle={classSkillXp:classGain.awards,huntingXp,xp:Math.floor(sim.kills*baseXpPerKill)+momentumXp+champion.xp,gold:Math.floor(sim.kills*baseGoldPerKill)+momentumGold+(firstClear?.gold??0)+champion.gold,items:rewardItems,kills:sim.kills,elapsedSeconds:elapsed,qualifyingActivitySeconds:sim.qualifyingActivitySeconds,foodConsumed:sim.foodConsumed,endHp:sim.endHp,stoppedReason:sim.stoppedReason,nextProgressFraction:sim.nextProgressFraction,...(firstClear&&challengeId?{challengeHuntFirstClear:{key:challengeHuntClearKey(m.id,challengeId),monsterId:m.id,challengeId,label:firstClear.label}}:{}),...(sim.championKills>0?{championEncounters:{count:sim.championKills,bonusXp:champion.xp,bonusGold:champion.gold}}:{})};
+  const reward:RewardBundle={classSkillXp:classGain.awards,xp:Math.floor(sim.kills*baseXpPerKill)+momentumXp+champion.xp,gold:Math.floor(sim.kills*baseGoldPerKill)+momentumGold+(firstClear?.gold??0)+champion.gold,items:rewardItems,kills:sim.kills,elapsedSeconds:elapsed,qualifyingActivitySeconds:sim.qualifyingActivitySeconds,foodConsumed:sim.foodConsumed,endHp:sim.endHp,stoppedReason:sim.stoppedReason,nextProgressFraction:sim.nextProgressFraction,...(firstClear&&challengeId?{challengeHuntFirstClear:{key:challengeHuntClearKey(m.id,challengeId),monsterId:m.id,challengeId,label:firstClear.label}}:{}),...(sim.championKills>0?{championEncounters:{count:sim.championKills,bonusXp:champion.xp,bonusGold:champion.gold}}:{})};
   return {...reward,masteryMaterialRemainders:materialRemainders,eventDrops:activityEventDrops(state,reward,effectiveNowMs),eventDiscoveries:activityEventDiscoveries(state,'combat',reward.kills,effectiveNowMs)};
 }
 function previewStandardActivityRewardWithSupplies(state:GameState,effectiveNowMs:number){
@@ -599,12 +593,7 @@ export function claimActivity(state:GameState,nowMs:number){
   const monster=MONSTERS.find(m=>m.id===state.activity!.targetId)!;
   const trained=awardCombatClassXp(state.character,reward.kills,monster.xp*environmentEffectForActivity(state.activity).effect.xpMultiplier*characterPermanentMultipliers(state).skillXpMultiplier,state.activity.classFocus).character;
   const challengeHuntClearIds=reward.challengeHuntFirstClear?[...new Set([...(state.character.challengeHuntClearIds??[]),reward.challengeHuntFirstClear.key])]:state.character.challengeHuntClearIds;
-  const skills=state.skills.map(skill=>{
-    if(skill.skillId!=='hunting')return skill;
-    const nextXp=Math.min(totalXpAtLevel(100),skill.xp+(reward.huntingXp??0));
-    return {...skill,xp:nextXp,level:levelFromXp(nextXp)};
-  });
-  const nextBase={...state,skills,...routed,character:{...state.character,xp,level,gold:state.character.gold+reward.gold,currentHp:reward.endHp??state.character.currentHp,challengeHuntClearIds},activity:shouldStop?null:{...state.activity,lastClaimAtMs:settledAtMs,progressFraction:reward.nextProgressFraction,sessionKills:(state.activity.sessionKills??0)+reward.kills,sessionChampions:(state.activity.sessionChampions??0)+(reward.championEncounters?.count??0)},unlockedMonsterIds:[...new Set([...state.unlockedMonsterIds,...unlocked])]} as GameState;
+  const nextBase={...state,...routed,character:{...state.character,xp,level,gold:state.character.gold+reward.gold,currentHp:reward.endHp??state.character.currentHp,challengeHuntClearIds},activity:shouldStop?null:{...state.activity,lastClaimAtMs:settledAtMs,progressFraction:reward.nextProgressFraction,sessionKills:(state.activity.sessionKills??0)+reward.kills,sessionChampions:(state.activity.sessionChampions??0)+(reward.championEncounters?.count??0)},unlockedMonsterIds:[...new Set([...state.unlockedMonsterIds,...unlocked])]} as GameState;
   let next=commitDailySupplyTimedBoost(nextBase,supply);
   next.character={...next.character!,classSkills:trained.classSkills,classSkillRemainders:trained.classSkillRemainders,masteryMaterialRemainders:reward.masteryMaterialRemainders};
   if(next.character.preparation&&reward.kills>0){let prep=next.character.preparation;for(let i=0;i<reward.kills;i++)prep=spendPreparationEncounter(prep,prep?.itemId) as typeof prep;next.character={...next.character,preparation:prep};}

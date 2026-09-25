@@ -21,6 +21,15 @@ using (true);
 revoke insert, update, delete on public.app_release_policy from anon, authenticated;
 grant select on public.app_release_policy to anon, authenticated;
 
-insert into public.app_release_policy(platform,latest_version,minimum_version)
-values ('android','0.1.0','0.1.0'),('other','0.1.0','0.1.0')
-on conflict (platform) do nothing;
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema='public' and table_name='app_release_policy' and column_name='platform'
+  ) then
+    insert into public.app_release_policy(platform,latest_version,minimum_version)
+    values ('android','0.1.0','0.1.0'),('other','0.1.0','0.1.0')
+    on conflict (platform) do nothing;
+  end if;
+end
+$$;

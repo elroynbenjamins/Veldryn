@@ -30,7 +30,7 @@ const silverbrook=WORLD_ZONES.find(row=>row.id==='SILVERBROOK')!;
 let gateState={...base,character:{...base.character!,level:5}};
 ok(regionTravelAvailability(gateState,silverbrook)==='locked','Silverbrook should require the Greenfields scout route even after the level requirement');
 gateState={...gateState,unlockedMonsterIds:[...gateState.unlockedMonsterIds,'FIELD_WISP']};
-ok(EXPLORATION_REGION_GATES.SILVERBROOK==='SCOUT_GREENFIELDS','Silverbrook route gate should come from Greenfields exploration');
+ok(EXPLORATION_REGION_GATES.SILVERBROOK==='SCOUT_GREENFIELDS'&&EXPLORATION_REGION_GATES.IRONWOOD==='SCOUT_GREENFIELDS','The first Greenfields scout should reveal both early roads');
 ok(regionTravelAvailability(gateState,silverbrook)==='available','Completing the prior scout route should reveal Silverbrook');
 
 const frostRoute=EXPLORATION_ROUTES.find(row=>row.id==='SCOUT_FROSTMARCH')!,ashRoute=EXPLORATION_ROUTES.find(row=>row.id==='SCOUT_ASHLANDS')!;

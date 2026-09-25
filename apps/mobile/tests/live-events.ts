@@ -1,5 +1,6 @@
 import {createCharacter,newGame,previewActivityReward,startCombat} from '../src/core/game';
 import {liveEventDef} from '../src/content/live-events';
+import {EVENTS_RELEASED} from '../src/core/release-flags';
 import {acceptEventContract,activeLiveEvent,applyEventDiscoveries,applyEventDrops,availableEventRepeatCaches,chooseEventProject,claimAllEventMilestones,claimEventCommunityMilestone,claimEventDailyGift,claimEventDiscovery,claimEventObjective,claimEventRepeatCache,claimEventReward,claimEventWeeklyObjective,contributeEventCurrency,eventCollectionJournal,eventCommunityMilestones,eventContractBoard,eventCurrencyBalance,eventDailyGift,eventDiscoveryBoard,eventLifecycle,eventShopOffers,eventObjectiveClaimed,eventOfferPurchaseCount,eventPrestigeBalance,eventProgress,eventRewardClaimed,eventWeeklyBoard,grantEventActivity,purchaseEventOffer,setLocalEventEnabled} from '../src/core/live-events';
 
 function ok(condition:boolean,message:string){if(!condition)throw new Error(message);}
@@ -8,6 +9,11 @@ let state=createCharacter(newGame(t0),'IRONWARDEN','EventTester');
 state=startCombat(state,'MOSS_RAT',t0);
 ok(!activeLiveEvent(state,t0),'Events must be inactive by default');
 ok((previewActivityReward(state,t0+3_600_000).eventDrops?.length??0)===0,'Inactive events cannot add drops');
+if(!EVENTS_RELEASED){
+ const scheduled={...state,account:{...state.account,liveEvent:{eventId:'EVT_ANNUAL_009_2026',enabled:true,startsAtMs:t0+86400_000,endsAtMs:t0+8*86400_000}}};
+ ok(eventLifecycle(scheduled,t0)===null,'Configured events must remain unavailable while event content is unreleased');
+ console.log('PASS: event content remains inactive until its explicit release');
+}else{
 let scheduled={...state,account:{...state.account,liveEvent:{eventId:'EVT_ANNUAL_009_2026',enabled:true,startsAtMs:t0+86400_000,endsAtMs:t0+8*86400_000}}};
 ok(eventLifecycle(scheduled,t0)?.phase==='upcoming','Scheduled events should be visible before they begin');
 
@@ -109,3 +115,5 @@ ok(eventLifecycle(state,explicitGraceEnd)===null,'Explicit server grace should o
 state=setLocalEventEnabled(state,false,t0+3);
 ok(!activeLiveEvent(state,t0+3),'Developer switch should fully disable event drops and claims');
 console.log(JSON.stringify({status:'PASS',afterCombat,finalProgress:eventProgress(state,'EVT_ANNUAL_009_2026')},null,2));
+
+}

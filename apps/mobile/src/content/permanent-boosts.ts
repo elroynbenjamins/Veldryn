@@ -1,4 +1,4 @@
-import {COLLECTIBLES} from './collectibles';
+import {RUNTIME_COLLECTIBLES} from './collectibles';
 
 export interface PermanentBoostDefinition {
   id: string;
@@ -67,7 +67,7 @@ const petBoostFor=(pet:{id:string;name:string;target:string;activeBps:number}):P
  * the active value.
  */
 export const PET_PERMANENT_BOOSTS:Record<SourceBoostId,PermanentBoostDefinition>=Object.fromEntries(
-  COLLECTIBLES.filter(row=>row.kind==='pet').map(pet=>[pet.id,petBoostFor(pet)])
+  RUNTIME_COLLECTIBLES.filter(row=>row.kind==='pet').map(pet=>[pet.id,petBoostFor(pet)])
 );
 
 export const BUYABLE_PERMANENT_BOOSTS: Record<SourceBoostId, PermanentBoostDefinition> = {

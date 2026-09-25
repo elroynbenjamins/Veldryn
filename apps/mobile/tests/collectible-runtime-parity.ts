@@ -3,9 +3,7 @@ import {CORE_PET_COLLECTIBLES} from '../src/content/core-pets';
 import {MASTER_PET_COLLECTIBLES} from '../src/content/master-pet-content';
 import {AUTHORED_EVENT_PET_PERMANENT_BOOSTS,PET_PERMANENT_BOOSTS} from '../src/content/permanent-boosts';
 import {characterPermanentMultipliers} from '../src/core/permanent-boosts';
-import {createCharacter,eatFood,newGame,previewActivityReward,startGathering} from '../src/core/game';
-import {recoveryAmount} from '../src/core/inventory-view';
-import {itemDef} from '../src/content/items';
+import {createCharacter,newGame,previewActivityReward,startGathering} from '../src/core/game';
 
 function fail(message:string):never{throw new Error(message)}
 function ok(value:unknown,message:string){if(!value)fail(message)}
@@ -32,6 +30,7 @@ near(authoredCooking.cookingSpeedMultiplier??1,1.025,'Heartbond cooking pet keep
 const authoredDrop=AUTHORED_EVENT_PET_PERMANENT_BOOSTS.EVT_PET_010;
 near(authoredDrop.dropChanceMultiplier??1,1.04,'Epic event drop pet keeps its authored +4.00% selected bonus');
 
+const baseline=startGathering(createCharacter(newGame(0),'IRONWARDEN','Baseline Gatherer'),'GREENWOOD_TREE',0);
 let boosted=startGathering(createCharacter(newGame(0),'IRONWARDEN','Boosted Gatherer'),'GREENWOOD_TREE',0);
 boosted={...boosted,account:{...boosted.account,unlockedCosmeticPetIds:['PET_001']},character:{...boosted.character!,ownedPetIds:['PET_001'],selectedCosmeticPetId:'PET_001'}};
 const baselineReward=previewActivityReward(baseline,3_600_000),boostedReward=previewActivityReward(boosted,3_600_000);

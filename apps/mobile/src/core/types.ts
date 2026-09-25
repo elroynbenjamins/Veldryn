@@ -11,7 +11,7 @@ export type GemStat = 'attack'|'defense'|'hp';
 export type GemSocketKind='stat'|'effect';
 export type GemEffectId='combat_speed'|'boss_power'|'damage_reduction'|'recovery';
 export interface GearEnhancementState { rank:number; failures:number; statGemId?:string; effectGemId?:string; /** Legacy/read-model compatibility; normalized from named slots. */ gemIds:string[]; }
-export type ActivityKind = 'combat' | 'mining' | 'woodcutting' | 'fishing' | 'herbalism' | 'alchemy' | 'processing' | 'faith' | 'training' | 'hunting' | 'exploration';
+export type ActivityKind = 'combat' | 'mining' | 'woodcutting' | 'fishing' | 'herbalism' | 'alchemy' | 'processing' | 'faith' | 'training' | 'exploration';
 export type CombatChallengeId='ferocious'|'hardened'|'nemesis'|'apex';
 export type CombatAffixId='bloodthirsty'|'ironhide'|'colossal'|'cursed';
 export type CombatTacticId='assault'|'balanced'|'guarded';
@@ -19,7 +19,7 @@ export interface QueuedActivity {kind:'combat'|'gathering';targetId:string;comba
 export type GatheringSkillId='mining'|'woodcutting'|'fishing'|'herbalism';
 export type SeasonId='spring'|'summer'|'autumn'|'winter';
 export type WeatherId='clear'|'rain'|'mist'|'storm'|'bloomwind'|'heatwave'|'harvest_wind'|'snow'|'frost';
-export type SkillId=GatheringSkillId|'smithing'|'cooking'|'alchemy'|'hunting'|'exploration'|'tailoring'|'enchanting'|'faith';
+export type SkillId=GatheringSkillId|'smithing'|'cooking'|'alchemy'|'exploration'|'tailoring'|'enchanting'|'faith';
 export interface SkillState{skillId:SkillId;xp:number;level:number;}
 export interface CharacterState {
   classSkillRemainders?:Record<string,number>;
@@ -106,7 +106,7 @@ export interface GameState {
   currentRegionId:string;
   /** Optional server/read-model projection for versioned regional journals. */
   regionalProgressById?:Record<string,RegionalProgressState>;
-  quests:QuestState[]; unlockedMonsterIds:string[]; defeatedBossIds:string[]; skills:SkillState[];
+  quests:QuestState[]; unlockedMonsterIds:string[]; discoveredRegionIds?:string[]; defeatedBossIds:string[]; skills:SkillState[];
   account:CompanionAccountState & {longTermAccountScopeId?:string;entitlements?:Record<string,boolean>;playerNameStyle?:import('./player-name-style').PlayerNameStylePreference;vipPlusNameColor?:string;equipmentCraftingQueue?:EquipmentCraftJob[];craftedGearInstances?:CraftedGearInstance[];unlockedCharacterSlots?:number;premiumCurrencyBalance?:number;ownedBoostIds?:string[];eventCommunityProgressById?:Record<string,number>;createdCharacterCount:number;guildMember:boolean;patronTier:'none'|'bloom'|'crown';guildBannerId?:import('./guild-customization').GuildBannerId;guildProfileFrameId?:import('./guild-customization').GuildFrameId;guildNameplateId?:import('./guild-customization').GuildNameplateId;guildMotto?:string;
   professionMasteryByAction?:Record<string,import('./profession-mastery-v40').ProfessionMasteryRecord>;
   weeklyOrders?:import('./weekly-orders-v41').WeeklyOrdersState;
@@ -127,11 +127,10 @@ export interface GameState {
   settings:{language:Language;uiTheme?:UiThemeId;numberMode:'abbreviated'|'exact';reduceMotion:boolean;textScale:1|1.15|1.3|1.5;autoEatThresholdPct:number;stopCombatWhenOutOfFood:boolean;autoJoinWorldChat?:boolean;defaultWorldChat?:1|2|3|4;chatDockLines?:1|2|3;chatEmoteTrayIds?:string[];quickNavDestinations?:QuickNavDestination[];favoriteItemIds?:string[];seenItemIds?:string[];};
 }
 export interface RewardBundle {
-  explorationDiscoveries?:string[];
+  explorationDiscoveries?:string[]; explorationRegionUnlocks?:string[]; explorationXp?:number;
   craftingActions?:number; nextBrewRemaining?:number; nextProcessingRemaining?:number; craftingCompletedAtMs?:number[]; faithActions?:number; faithXp?:number; holyWaterConsumed?:number; faithWaterRefund?:number; nextFaithRemaining?:number; nextProgressFraction?:number; nextRewardRemainders?:Record<string,number>;
   masteryMaterialRemainders?:Record<string,number>;
   classSkillXp?:Array<{skillId:string;xp:number}>;
-  huntingXp?:number;
   trainingActions?:number;
   xp:number; gold:number; items:ItemStack[]; kills:number; elapsedSeconds:number; qualifyingActivitySeconds?:number;
   foodConsumed?:number; endHp?:number; stoppedReason?:string;

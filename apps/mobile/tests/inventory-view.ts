@@ -86,12 +86,15 @@ ok(ingotCraftSource?.navigation?.kind==='skills'&&ingotCraftSource.navigation.re
 const copperUse=copperInspect.usedIn.find(recipe=>recipe.name==='Smelt Copper Batch');
 ok(copperUse?.navigation.kind==='skills'&&copperUse.navigation.recipeId==='SMELT_COPPER_INGOT','Crafting-use row opens the recipe that consumes the item');
 ok(copperGatherSource?.availability?.status==='locked'&&copperGatherSource.availability.detail.includes('Level 16'),'Quick Inspect shows a locked region requirement before navigation');
-const travelReadyState={...state,character:{...state.character!,level:20},skills:state.skills.map(row=>row.skillId==='mining'?{...row,level:20}:row),currentRegionId:'GREENFIELDS'};
+const levelReadyState={...state,character:{...state.character!,level:20},skills:state.skills.map(row=>row.skillId==='mining'?{...row,level:20}:row),currentRegionId:'GREENFIELDS'};
+const explorationLockedCopper=itemInspectModel(levelReadyState,'COPPER_ORE').sources.find(source=>source.title==='Copper Vein');
+ok(explorationLockedCopper?.availability?.status==='locked'&&explorationLockedCopper.availability.detail.includes('Trace Ironwood paths'),'Level-ready Quick Inspect still shows the missing Exploration route');
+const travelReadyState={...levelReadyState,unlockedMonsterIds:[...levelReadyState.unlockedMonsterIds,'IRONWOOD_WOLF']};
 const travelCopper=itemInspectModel(travelReadyState,'COPPER_ORE').sources.find(source=>source.title==='Copper Vein');
 ok(travelCopper?.availability?.status==='travel'&&travelCopper.availability.detail.includes('Old Mines'),'Unlocked off-region gathering source is marked TRAVEL');
 const localCopper=itemInspectModel({...travelReadyState,currentRegionId:'OLD_MINES'},'COPPER_ORE').sources.find(source=>source.title==='Copper Vein');
 ok(localCopper?.availability?.status==='ready'&&localCopper.availability.label==='READY','Unlocked local gathering source is marked READY');
-const lowMiningState={...state,character:{...state.character!,level:20},currentRegionId:'OLD_MINES'};
+const lowMiningState={...state,character:{...state.character!,level:20},currentRegionId:'OLD_MINES',unlockedMonsterIds:[...state.unlockedMonsterIds,'IRONWOOD_WOLF']};
 const oathstoneSource=itemInspectModel(lowMiningState,'OATHSTONE_ORE').sources.find(source=>source.title==='Oathstone Seam');
 ok(oathstoneSource?.availability?.status==='locked'&&oathstoneSource.availability.detail.includes('Mining 16'),'Gathering source shows the actual skill-level blocker');
 ok(copperUse?.availability.status==='ready'&&copperUse.availability.label==='AVAILABLE','Unlocked crafting use is labeled AVAILABLE');

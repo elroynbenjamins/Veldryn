@@ -12,7 +12,7 @@ let state=createCharacter(newGame(now),'WAYFINDER','Contract Tester');
 const candidates=weeklyOrderCandidatesFromCurrentContent(state);
 ok(candidates.some(row=>row.kind==='hunt'),'Contract Board needs Hunt Order candidates');
 ok(candidates.some(row=>row.kind==='profession'),'Contract Board needs Work Order candidates');
-const postStory={...state,character:{...state.character!,level:25},defeatedBossIds:['FALLEN_KNIGHT'],currentRegionId:'KINGS_ROAD'};
+const postStory={...state,character:{...state.character!,level:25},defeatedBossIds:['FALLEN_KNIGHT'],unlockedMonsterIds:[...state.unlockedMonsterIds,'CAVE_SKITTER'],currentRegionId:'KINGS_ROAD'};
 const postStoryCandidates=weeklyOrderCandidatesFromCurrentContent(postStory),bossBountyCandidate=postStoryCandidates.find(row=>row.kind==='hunt'&&row.boss&&row.monsterId==='FALLEN_KNIGHT');
 ok(!!bossBountyCandidate&&bossBountyCandidate.reward?.label==='Oathglass Bounty Cache','Defeating the story boss should unlock the weekly Contract Board boss bounty');
 const regionalCandidates=candidates.filter(row=>row.kind==='regional');

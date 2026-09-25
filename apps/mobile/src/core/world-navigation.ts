@@ -4,14 +4,26 @@ import {GATHERING} from '../content/skills';
 import {HERB_NODES} from '../content/herbalism';
 import {GameState} from './types';
 import {ITEMS} from '../content/items';
+import {explorationRegionGateRoute} from '../content/exploration';
 
 export type RegionTravelAvailability='available'|'locked'|'inDevelopment';
+export function regionTravelLockReason(state:GameState,zone:WorldZoneDef){
+  if(worldZoneInDevelopment(zone))return 'In Development';
+  const level=state.character?.level??1;
+  if(level<zone.minLevel)return `Reach Level ${zone.minLevel}`;
+  const gate=explorationRegionGateRoute(zone.id);
+  if(gate?.unlockMonsterId&&!state.unlockedMonsterIds.includes(gate.unlockMonsterId))return `Complete ${gate.name} to discover the route`;
+  return '';
+}
 export function regionTravelAvailability(state:GameState,zone:WorldZoneDef):RegionTravelAvailability{
   if(worldZoneInDevelopment(zone))return 'inDevelopment';
-  return (state.character?.level??1)>=zone.minLevel?'available':'locked';
+  return regionTravelLockReason(state,zone)?'locked':'available';
 }
 export function nextRegionUnlock(level:number){
   return WORLD_ZONES.filter(zone=>!worldZoneInDevelopment(zone)&&zone.minLevel>level).sort((a,b)=>a.minLevel-b.minLevel)[0];
+}
+export function nextRegionUnlockForState(state:GameState){
+  return WORLD_ZONES.filter(zone=>!worldZoneInDevelopment(zone)&&regionTravelAvailability(state,zone)!=='available').sort((a,b)=>a.minLevel-b.minLevel)[0];
 }
 export function regionEncounters(state:GameState,zoneName:string,query:string,availableOnly:boolean){
   const search=query.trim().toLowerCase();

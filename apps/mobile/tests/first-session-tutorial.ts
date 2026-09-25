@@ -1,7 +1,10 @@
 import {assert} from './test-assert';
 import {firstSessionTutorialStep as step,firstSessionTutorialSteps,normalizeFirstSessionTutorialCompleted as normalize,type FirstSessionTutorialHost} from '../src/core/first-session-tutorial';
 const questIds=['QST_001','QST_002','QST_003','QST_004','QST_005'];
-function at(index:number,level=1):FirstSessionTutorialHost{return {character:{level},activity:null,quests:questIds.map((questId,i)=>({questId,status:i<index?'claimed':i===index?'active':'locked',progress:0}))};}
+function at(index:number,level=1):FirstSessionTutorialHost{return {character:{level},activity:null,currentRegionId:'GREENFIELDS',unlockedMonsterIds:['MOSS_RAT'],quests:questIds.map((questId,i)=>({questId,status:i<index?'claimed':i===index?'active':'locked',progress:0}))};}
+function scouted(state:FirstSessionTutorialHost){return {...state,unlockedMonsterIds:[...(state.unlockedMonsterIds??[]),'FIELD_WISP']};}
+function inIronwood(state:FirstSessionTutorialHost){return {...state,currentRegionId:'IRONWOOD'};}
+function wolvesFound(state:FirstSessionTutorialHost){return {...state,unlockedMonsterIds:[...(state.unlockedMonsterIds??[]),'IRONWOOD_WOLF']};}
 let checks=0;
 function check(name:string,run:()=>void){run();checks++;console.log('PASS '+name)}
 check('no tutorial before character creation',()=>assert.equal(step({...at(0),character:null}),undefined));
@@ -14,9 +17,14 @@ for(let i=0;i<questIds.length;i++)check(`${questIds[i]} complete means claim, no
 check('gathering follows first quest claim',()=>assert.equal(step(at(1))?.id,'first_skill'));
 check('running guided gathering explains skill XP collection',()=>{const s=at(1);s.activity={kind:'fishing',targetId:'MEADOW_PERCH_POOL'};assert.equal(step(s)?.id,'first_skill_collect')});
 check('processing is not a gathering tutorial objective',()=>{const s=at(1);s.activity={kind:'processing',targetId:'SMELT_COPPER_INGOT'};assert.equal(step(s)?.id,'first_skill')});
-check('level 6 gets a bridge before Ironwood Wolves',()=>assert.equal(step(at(2,6))?.id,'ironwood_prepare'));
-check('level 7 gets the wolf objective',()=>{assert.equal(step(at(2,7))?.id,'ironwood_hunt');assert.ok(step(at(2,7))?.hint.includes('Ironwood Forest'))});
-check('old acknowledged wolf guide does not suppress new prerequisite hint',()=>assert.equal(step(at(2,6),['ironwood_hunt'])?.id,'ironwood_prepare'));
+check('QST_003 first teaches the Greenfields scouting route',()=>{assert.equal(step(at(2,6))?.id,'ironwood_scout');assert.equal(step(at(2,6))?.destination,'Skills')});
+check('running Greenfields scouting points back to collection',()=>{const s=at(2,6);s.activity={kind:'exploration',targetId:'SCOUT_GREENFIELDS'};assert.equal(step(s)?.id,'ironwood_scout_collect');assert.equal(step(s)?.destination,'Home')});
+check('level 6 gets a combat bridge after scouting',()=>assert.equal(step(scouted(at(2,6)))?.id,'ironwood_prepare'));
+check('level 7 is sent to Ironwood after the road is discovered',()=>assert.equal(step(scouted(at(2,7)))?.id,'ironwood_travel'));
+check('arriving in Ironwood teaches local encounter scouting',()=>assert.equal(step(inIronwood(scouted(at(2,7))))?.id,'ironwood_reveal'));
+check('running Ironwood scouting points back to collection',()=>{const s=inIronwood(scouted(at(2,7)));s.activity={kind:'exploration',targetId:'SCOUT_IRONWOOD'};assert.equal(step(s)?.id,'ironwood_reveal_collect')});
+check('the wolf objective appears only after its encounter is discovered',()=>{const s=wolvesFound(inIronwood(scouted(at(2,7))));assert.equal(step(s)?.id,'ironwood_hunt');assert.ok(step(s)?.hint.includes('Ironwood Wolf'))});
+check('old acknowledged wolf guide does not suppress scouting prerequisite',()=>assert.equal(step(at(2,6),['ironwood_hunt'])?.id,'ironwood_scout'));
 check('equipment goal counts the starter weapon',()=>{assert.equal(step(at(3))?.destination,'Inventory');assert.ok(step(at(3))?.body.includes('already counts as one'))});
 check('level 10 objective distinguishes character and skill levels',()=>{assert.equal(step(at(4))?.id,'level_ten');assert.ok(step(at(4))?.body.includes('not the total'));assert.ok(step(at(4))?.hint.includes('combat rewards'))});
 check('no extra Account tour after QST_005',()=>assert.equal(step(at(5,10)),undefined));

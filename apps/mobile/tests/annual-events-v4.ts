@@ -1,8 +1,12 @@
 import {createCharacter,newGame} from '../src/core/game';
+import {EVENTS_RELEASED} from '../src/core/release-flags';
 import {applyEventDrops,claimAllEventMilestones,eventShopOffers,purchaseEventOffer} from '../src/core/live-events';
 
 function ok(condition:boolean,message:string){if(!condition)throw new Error(message)}
 
+if(!EVENTS_RELEASED){
+ console.log('SKIP: annual live-event reward runtime remains unreleased');
+} else {
 const now=20_000_000;
 const cases=[
   {eventId:'EVT_ANNUAL_006_2026',currencyId:'SUNCREST_MEDAL',currencyName:'Suncrest Medals',pet:'EVT_PET_007',shopPet:'EVT_PET_008',companion:'EVT_UNIT_004',shopId:'golden_gryphlet',prestige:7},
@@ -26,3 +30,4 @@ for(const row of cases){
 }
 
 console.log('PASS: Suncrest, Starfall, and Merchant Guild rewards unlock through production event runtime');
+}

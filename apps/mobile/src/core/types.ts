@@ -19,7 +19,7 @@ export interface QueuedActivity {kind:'combat'|'gathering';targetId:string;comba
 export type GatheringSkillId='mining'|'woodcutting'|'fishing'|'herbalism';
 export type SeasonId='spring'|'summer'|'autumn'|'winter';
 export type WeatherId='clear'|'rain'|'mist'|'storm'|'bloomwind'|'heatwave'|'harvest_wind'|'snow'|'frost';
-export type SkillId=GatheringSkillId|'smithing'|'cooking'|'alchemy'|'hunting'|'exploration'|'tailoring'|'enchanting'|'faith';
+export type SkillId=GatheringSkillId|'smithing'|'cooking'|'alchemy'|'exploration'|'tailoring'|'enchanting'|'faith';
 export interface SkillState{skillId:SkillId;xp:number;level:number;}
 export interface CharacterState {
   classSkillRemainders?:Record<string,number>;
@@ -131,7 +131,7 @@ export interface RewardBundle {
   craftingActions?:number; nextBrewRemaining?:number; nextProcessingRemaining?:number; craftingCompletedAtMs?:number[]; faithActions?:number; faithXp?:number; holyWaterConsumed?:number; faithWaterRefund?:number; nextFaithRemaining?:number; nextProgressFraction?:number; nextRewardRemainders?:Record<string,number>;
   masteryMaterialRemainders?:Record<string,number>;
   classSkillXp?:Array<{skillId:string;xp:number}>;
-  huntingXp?:number;
+  explorationXp?:number;
   trainingActions?:number;
   xp:number; gold:number; items:ItemStack[]; kills:number; elapsedSeconds:number; qualifyingActivitySeconds?:number;
   foodConsumed?:number; endHp?:number; stoppedReason?:string;

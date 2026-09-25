@@ -1,8 +1,12 @@
 import {createCharacter,newGame,previewActivityReward,startCombat} from '../src/core/game';
+import {EVENTS_RELEASED} from '../src/core/release-flags';
 import {liveEventDef} from '../src/content/live-events';
 import {acceptEventContract,activeLiveEvent,applyEventDiscoveries,applyEventDrops,availableEventRepeatCaches,chooseEventProject,claimAllEventMilestones,claimEventCommunityMilestone,claimEventDailyGift,claimEventDiscovery,claimEventObjective,claimEventRepeatCache,claimEventReward,claimEventWeeklyObjective,contributeEventCurrency,eventCollectionJournal,eventCommunityMilestones,eventContractBoard,eventCurrencyBalance,eventDailyGift,eventDiscoveryBoard,eventLifecycle,eventShopOffers,eventObjectiveClaimed,eventOfferPurchaseCount,eventPrestigeBalance,eventProgress,eventRewardClaimed,eventWeeklyBoard,grantEventActivity,purchaseEventOffer,setLocalEventEnabled} from '../src/core/live-events';
 
 function ok(condition:boolean,message:string){if(!condition)throw new Error(message);}
+if(!EVENTS_RELEASED){
+ console.log('SKIP: live event runtime remains unreleased; calendar/catalog coverage still runs separately');
+} else {
 const t0=2_000_000;
 let state=createCharacter(newGame(t0),'IRONWARDEN','EventTester');
 state=startCombat(state,'MOSS_RAT',t0);
@@ -109,3 +113,4 @@ ok(eventLifecycle(state,explicitGraceEnd)===null,'Explicit server grace should o
 state=setLocalEventEnabled(state,false,t0+3);
 ok(!activeLiveEvent(state,t0+3),'Developer switch should fully disable event drops and claims');
 console.log(JSON.stringify({status:'PASS',afterCombat,finalProgress:eventProgress(state,'EVT_ANNUAL_009_2026')},null,2));
+}

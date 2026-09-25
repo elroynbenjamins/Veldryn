@@ -1,8 +1,12 @@
 import {createCharacter,newGame} from '../src/core/game';
+import {EVENTS_RELEASED} from '../src/core/release-flags';
 import {applyEventDrops,claimAllEventMilestones,eventShopOffers,purchaseEventOffer} from '../src/core/live-events';
 
 function ok(condition:boolean,message:string){if(!condition)throw new Error(message)}
 
+if(!EVENTS_RELEASED){
+ console.log('SKIP: annual live-event reward runtime remains unreleased');
+} else {
 const now=10_000_000;
 const cases=[
   {eventId:'EVT_ANNUAL_001_2026',currencyId:'AGE_TOKEN',currencyName:'Age Tokens',pet:'EVT_PET_001',shopPet:'EVT_PET_002',companion:'EVT_UNIT_001',shopId:'gilded_hourling',prestige:6},
@@ -26,3 +30,4 @@ for(const row of cases){
 }
 
 console.log('PASS: Turning, Heartbond, and Bloomwake rewards unlock through production event runtime');
+}

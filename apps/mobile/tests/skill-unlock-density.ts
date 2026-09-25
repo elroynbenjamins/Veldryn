@@ -23,11 +23,13 @@ const ladders:Record<string,number[]>={
 };
 const report=Object.fromEntries(Object.entries(ladders).map(([skill,rows])=>[skill,{unlocks:levels(rows),maxGap:maxGap(rows)}]));
 for(const skill of ['mining','woodcutting','fishing','herbalism','smithing','tailoring','cooking','alchemy','faith','exploration']){
- const gap=maxGap(ladders[skill]),limit=['mining','woodcutting','fishing','smithing','tailoring'].includes(skill)?35:30;
+ const gap=maxGap(ladders[skill]),limit=skill==='exploration'?50:['mining','woodcutting','fishing','smithing','tailoring'].includes(skill)?35:30;
  // Gathering and equipment professions currently end in released Ashlands around
  // the high-60s/low-70s; Veillands 91+ is visible but intentionally in development.
  // Tool milestones count as real skill unlocks, and that terminal released-content
  // gap may be slightly wider without inventing placeholder recipes.
+ // Exploration currently ends its released regional route ladder at Ashlands (Lv 50); later
+ // Exploration rewards can fill 51–100 when post-Ashlands regions are authored.
  ok(gap.gap<=limit,skill+' has an excessive unlock drought: '+gap.from+'→'+gap.to);
 }
 // Enchanting's normal recipe table is intentionally sparse because raw-gem refinement/combine unlocks

@@ -27,9 +27,13 @@ if(skillDestination.kind==='skills'){equal(skillDestination.mode,'gathering','Mi
 const skillExecution=workingTowardExecutionPlan(state,skillGoal);
 equal(skillExecution.executionState,'blocked','gathering skill goal reports its region progression gate when no authored node is character-accessible yet');
 ok(skillExecution.queueBlocker?.includes('Level 16'),'skill execution blocker exposes the Old Mines Level gate');
-const travelSkillState={...state,character:{...state.character!,level:20}};
+const levelReadySkillState={...state,character:{...state.character!,level:20}};
+const explorationBlockedSkillExecution=workingTowardExecutionPlan(levelReadySkillState,skillGoal);
+equal(explorationBlockedSkillExecution.executionState,'blocked','gathering skill goal remains blocked until the Old Mines route is discovered');
+ok(explorationBlockedSkillExecution.queueBlocker?.includes('Trace Ironwood paths'),'skill execution names the missing Exploration route');
+const travelSkillState={...levelReadySkillState,unlockedMonsterIds:[...levelReadySkillState.unlockedMonsterIds,'IRONWOOD_WOLF']};
 const travelSkillExecution=workingTowardExecutionPlan(travelSkillState,skillGoal);
-equal(travelSkillExecution.executionState,'travel','gathering skill goal switches to travel once the region is unlocked but not current');
+equal(travelSkillExecution.executionState,'travel','gathering skill goal switches to travel after both level and Exploration gates are met');
 ok(travelSkillExecution.queueBlocker?.includes('Old Mines'),'skill execution travel state names the destination region');
 
 const huntGoal:ProgressionGoal={id:'goal-hunt',characterId,kind:'monster_kills',title:'Moss Rat kills',createdAtMs:0,pinnedAtMs:0,monsterId:'MOSS_RAT',targetKills:50};
@@ -69,9 +73,13 @@ ok(itemGoalProtection.has('COPPER_ORE'),'Pinned item-quantity goals protect thei
 const copperLockedExecution=workingTowardExecutionPlan(state,itemGoal);
 equal(copperLockedExecution.executionState,'blocked','off-region gathered item goal reports the region level gate before offering travel');
 ok(copperLockedExecution.queueBlocker?.includes('Level 16'),'locked item-source execution exposes the Old Mines Level gate');
-const copperTravelState={...state,character:{...state.character!,level:20}};
+const copperLevelReadyState={...state,character:{...state.character!,level:20}};
+const copperExplorationBlocked=workingTowardExecutionPlan(copperLevelReadyState,itemGoal);
+equal(copperExplorationBlocked.executionState,'blocked','level-ready item source remains blocked until its regional route is explored');
+ok(copperExplorationBlocked.queueBlocker?.includes('Trace Ironwood paths'),'item-source blocker names the required Exploration route');
+const copperTravelState={...copperLevelReadyState,unlockedMonsterIds:[...copperLevelReadyState.unlockedMonsterIds,'IRONWOOD_WOLF']};
 const copperTravelExecution=workingTowardExecutionPlan(copperTravelState,itemGoal);
-equal(copperTravelExecution.executionState,'travel','unlocked off-region item source requires explicit travel before queueing');
+equal(copperTravelExecution.executionState,'travel','explored off-region item source requires explicit travel before queueing');
 ok(copperTravelExecution.queueBlocker?.includes('Old Mines'),'travel-blocked execution names the required region');
 const copperReadyState={...copperTravelState,currentRegionId:'OLD_MINES',skills:copperTravelState.skills.map(skill=>skill.skillId==='mining'?{...skill,level:20,xp:totalXpAtLevel(20)}:skill)};
 const copperReadyExecution=workingTowardExecutionPlan(copperReadyState,itemGoal);

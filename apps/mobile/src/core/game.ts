@@ -576,7 +576,7 @@ export function claimActivity(state:GameState,nowMs:number){
   if(state.activity.kind!=='combat'){
     const skills=state.skills.map(x=>x.skillId===state.activity!.kind?{...x,xp:x.xp+reward.xp,level:levelFromXp(x.xp+reward.xp)}:x);
     const routed=routeRewards(state,reward.items,settledAtMs);
-    const exploredRouteIds=state.activity.kind==='exploration'&&reward.kills>0?[...new Set([...state.exploredRouteIds,state.activity.targetId])]:state.exploredRouteIds;
+    const exploredRouteIds=state.activity.kind==='exploration'&&reward.kills>0?[...new Set([...(state.exploredRouteIds??[]),state.activity.targetId])]:(state.exploredRouteIds??[]);
     const nextBase={...state,skills,...routed,rewardRemainders:reward.nextRewardRemainders,unlockedMonsterIds:[...new Set([...state.unlockedMonsterIds,...(reward.explorationDiscoveries??[])])],exploredRouteIds,activity:idleWindow.shouldStop?null:{...state.activity,lastClaimAtMs:settledAtMs,progressFraction:reward.nextProgressFraction}} as GameState;
     const next=commitDailySupplyTimedBoost(nextBase,supply);
     const progression=applyTrustedLongTermProgression(next,[{kind:'gathering',contentId:state.activity.targetId,units:reward.kills,startedAtMs:state.activity.lastClaimAtMs}],reward,settledAtMs,{accountId:longTermAccountScope(state),eventId:`activity:${state.character.id}:${state.activity.targetId}:${state.activity.lastClaimAtMs}:${settledAtMs}`}).state;

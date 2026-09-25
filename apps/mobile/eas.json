@@ -12,6 +12,7 @@
       "distribution": "internal",
       "env": {
         "EXPO_PUBLIC_APP_VERSION": "0.1.0",
+        "EXPO_PUBLIC_RELEASE_CHANNEL": "preview",
         "EXPO_PUBLIC_SUPABASE_URL": "https://nyjwigipamnvpdvpauuv.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_EBP2NTN1cNnwDFFg3idkwg_DiNu5zRo",
         "EXPO_PUBLIC_SERVER_GAMEPLAY": "true",
@@ -24,6 +25,7 @@
       "autoIncrement": true,
       "env": {
         "EXPO_PUBLIC_APP_VERSION": "0.1.0",
+        "EXPO_PUBLIC_RELEASE_CHANNEL": "production",
         "EXPO_PUBLIC_SUPABASE_URL": "https://nyjwigipamnvpdvpauuv.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_EBP2NTN1cNnwDFFg3idkwg_DiNu5zRo",
         "EXPO_PUBLIC_SERVER_GAMEPLAY": "true",
@@ -39,6 +41,7 @@
       },
       "env": {
         "EXPO_PUBLIC_APP_VERSION": "0.1.0",
+        "EXPO_PUBLIC_RELEASE_CHANNEL": "staging",
         "EXPO_PUBLIC_SUPABASE_URL": "https://iqfmmpvwanvvmxcftfxw.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_HaIHb8qe4wN3Ir4Vd7bGQg_9ec854Ta",
         "EXPO_PUBLIC_SERVER_GAMEPLAY": "true",

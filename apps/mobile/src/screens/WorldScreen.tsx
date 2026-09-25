@@ -4,7 +4,7 @@ import {Image,ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
 import {WORLD_ZONES} from '../content/world-map';
 import {currentRegionId} from '../core/combat-region';
-import {nextRegionUnlock,orderedTravelRegions,regionActivitySummary,regionTravelAvailability} from '../core/world-navigation';
+import {nextRegionUnlock,orderedTravelRegions,regionActivitySummary,regionTravelAvailability,regionTravelLockReason} from '../core/world-navigation';
 import {GameButton} from '../components/GameButton';
 import {radii,spacing,typography,equipmentTheme,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -78,13 +78,14 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop,onR
     <Text style={s.section}>TRAVEL ELSEWHERE</Text>
     <View style={s.unlockCard}><View style={s.unlockHead}><View style={s.flex}><Text style={s.unlockLabel}>{next?'NEXT REGION UNLOCK':'REGION PROGRESSION'}</Text><Text style={s.unlockTitle}>{next?next.name:'All authored regions unlocked'}</Text></View>{next?<Text style={s.unlockLevel}>Lv {level}/{next.minLevel}</Text>:<Text style={s.unlockDone}>COMPLETE</Text>}</View>{next?<><View style={s.unlockTrack}><View style={[s.unlockFill,{width:(nextUnlockProgress+'%') as any}]}/></View><Text style={s.unlockMeta}>{Math.max(0,next.minLevel-level)} level{next.minLevel-level===1?'':'s'} until travel unlock.</Text></>:<Text style={s.unlockMeta}>Every currently authored region can be travelled to.</Text>}</View>
     {travelRegions.map(zone=>{
-      const availability=regionTravelAvailability(state,zone),unlocked=availability==='available',inDevelopment=availability==='inDevelopment',summary=regionActivitySummary(state,zone.id),goalTarget=goalRegionId===zone.id;
+      const availability=regionTravelAvailability(state,zone),unlocked=availability==='available',inDevelopment=availability==='inDevelopment',summary=regionActivitySummary(state,zone.id),goalTarget=goalRegionId===zone.id,lockReason=regionTravelLockReason(state,zone),levelMet=level>=zone.minLevel;
       const content=inDevelopment?'Preview planned regional content':unlocked?'Hunts '+summary.combatReady+'/'+summary.combatTotal+' · Gather '+summary.gatheringReady+'/'+summary.gatheringTotal+(summary.bossesTotal?' · Boss '+summary.bossesReady+'/'+summary.bossesTotal:''):(summary.combatTotal+' hunts · '+summary.gatheringTotal+' gathering'+(summary.bossesTotal?' · '+summary.bossesTotal+' boss':''));
       return <View key={zone.id} style={[s.destination,goalTarget&&s.goalDestination,inDevelopment&&s.developmentDestination]}>
-        <View style={s.thumbnail}><ZoneSceneArtwork regionId={zone.id} muted={!unlocked}/>{!unlocked&&!inDevelopment&&<View style={s.lockedTag}><Text style={s.lockedText}>{`Lv. ${zone.minLevel}`}</Text></View>}</View>
+        <View style={s.thumbnail}><ZoneSceneArtwork regionId={zone.id} muted={!unlocked}/>{!unlocked&&!inDevelopment&&<View style={s.lockedTag}><Text style={s.lockedText}>{levelMet?'SCOUT':`Lv. ${zone.minLevel}`}</Text></View>}</View>
         <View style={s.flex}>
           <View style={s.destinationHead}><Text style={[s.destinationName,inDevelopment&&s.developmentText]}>{zone.name}</Text>{goalTarget?<Text style={s.goalBadge}>GOAL</Text>:null}</View>
-          <Text style={s.destinationMeta}>{inDevelopment?'In Development':unlocked?`Levels ${zone.minLevel}–${zone.maxLevel}`:`Unlocks at level ${zone.minLevel}`}</Text>
+          <Text style={s.destinationMeta}>{inDevelopment?'In Development':unlocked?`Levels ${zone.minLevel}–${zone.maxLevel}`:levelMet?'Route not discovered yet':`Unlocks at level ${zone.minLevel}`}</Text>
+          {!unlocked&&!inDevelopment&&levelMet&&lockReason?<Text numberOfLines={2} style={s.destinationContent}>{lockReason}</Text>:null}
           <Text numberOfLines={1} style={s.destinationContent}>{content}</Text>
           <Text numberOfLines={2} style={s.destinationSub}>{zone.subtitle}</Text>
         </View>

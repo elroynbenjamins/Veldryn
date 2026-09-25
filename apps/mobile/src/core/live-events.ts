@@ -1,11 +1,10 @@
 import {liveEventDef,type EventActivitySource,type EventMilestone,type EventReward} from '../content/live-events';
 import {random01} from './rng';
 import type {GameState,LiveEventRuntime,RewardBundle} from './types';
-import {unlockCombatCompanion} from './combat-companions';
-import {EVENTS_RELEASED} from './release-flags';
+import {unlockAuthoredCombatCompanion} from './combat-companions';
 
 export type EventPhase='upcoming'|'active'|'claiming';
-export function eventLifecycle(state:GameState,nowMs=Date.now()){if(!EVENTS_RELEASED)return null;const runtime=state.account.liveEvent;if(!runtime?.enabled)return null;const definition=liveEventDef(runtime.eventId);if(!definition)return null;const claimEndsAtMs=runtime.graceEndsAtMs??runtime.endsAtMs+definition.claimGraceDays*86400_000;if(nowMs<runtime.startsAtMs)return {runtime,definition,phase:'upcoming' as const,claimEndsAtMs};if(nowMs<runtime.endsAtMs)return {runtime,definition,phase:'active' as const,claimEndsAtMs};if(nowMs<claimEndsAtMs)return {runtime,definition,phase:'claiming' as const,claimEndsAtMs};return null;}
+export function eventLifecycle(state:GameState,nowMs=Date.now()){const runtime=state.account.liveEvent;if(!runtime?.enabled)return null;const definition=liveEventDef(runtime.eventId);if(!definition)return null;const claimEndsAtMs=runtime.graceEndsAtMs??runtime.endsAtMs+definition.claimGraceDays*86400_000;if(nowMs<runtime.startsAtMs)return {runtime,definition,phase:'upcoming' as const,claimEndsAtMs};if(nowMs<runtime.endsAtMs)return {runtime,definition,phase:'active' as const,claimEndsAtMs};if(nowMs<claimEndsAtMs)return {runtime,definition,phase:'claiming' as const,claimEndsAtMs};return null;}
 export function activeLiveEvent(state:GameState,nowMs=Date.now()){const event=eventLifecycle(state,nowMs);return event?.phase==='active'?event:null;}
 export function claimableLiveEvent(state:GameState,nowMs=Date.now()){const event=eventLifecycle(state,nowMs);return event?.phase==='active'||event?.phase==='claiming'?event:null;}
 function eventBoardTime(state:GameState,nowMs:number){const event=eventLifecycle(state,nowMs);return event?.phase==='claiming'?event.runtime.endsAtMs-1:nowMs;}
@@ -41,7 +40,7 @@ function addReward(state:GameState,reward:EventReward,nowMs=Date.now()):GameStat
       const high=reward.rarity==='mythic'||reward.rarity==='legendary',essence=high?300:180,bondbloom=high?3:2;
       return {...state,account:{...state.account,companionEssence:(state.account.companionEssence??0)+essence,companionMaterials:{...(state.account.companionMaterials??{}),EVENT_BONDBLOOM:(state.account.companionMaterials?.EVENT_BONDBLOOM??0)+bondbloom},longTermMetrics:{...(state.account.longTermMetrics??{}),'companions.event_duplicates_converted':(state.account.longTermMetrics?.['companions.event_duplicates_converted']??0)+1,'companions.event_duplicate_essence':(state.account.longTermMetrics?.['companions.event_duplicate_essence']??0)+essence}}};
     }
-    const unlocked=unlockCombatCompanion(state,reward.id,nowMs);
+    const unlocked=unlockAuthoredCombatCompanion(state,reward.id,nowMs);
     const materials={...(unlocked.account.companionMaterials??{})};materials.EVENT_BONDBLOOM=(materials.EVENT_BONDBLOOM??0)+(reward.rarity==='mythic'||reward.rarity==='legendary'?8:6);
     return {...unlocked,account:{...unlocked.account,companionMaterials:materials}};
   }

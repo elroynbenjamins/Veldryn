@@ -17,7 +17,6 @@ const IDENTITIES:Partial<Record<SkillId,SkillIdentity>>={
  smithing:{label:'FORGECRAFT',descriptor:'Processing, tools and equipment forging',tone:'accent'},
  cooking:{label:'PROVISIONING',descriptor:'Food batches and restorative preparation',tone:'warning'},
  alchemy:{label:'BREWCRAFT',descriptor:'Reserved batches and combat preparations',tone:'special'},
- hunting:{label:'HUNTSMANSHIP',descriptor:'Combat-linked field mastery',tone:'bad'},
  exploration:{label:'DISCOVERY',descriptor:'Regional routes and encounter discovery',tone:'info'},
  tailoring:{label:'TEXTILECRAFT',descriptor:'Clothwork and cross-skill techniques',tone:'accent'},
  enchanting:{label:'ARCANA',descriptor:'Gem-setting and magical craft knowledge',tone:'special'},

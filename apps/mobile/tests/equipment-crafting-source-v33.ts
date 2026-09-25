@@ -73,11 +73,12 @@ const materialSourceMonster:Record<string,string>={
   SUNSTONE_ORE:'GLASSBOUND_SENTINEL',AMBERGLASS:'GLASSBOUND_SENTINEL',ASTRAL_SCRIPT:'GLASSBOUND_SENTINEL',
   FROSTIRON:'CHOIR_HUNTER',RIMEGLASS:'CHOIR_HUNTER',CHOIR_BLOOM:'CHOIR_HUNTER',
 };
+const BASELINE_ENVIRONMENT_AT_MS=Date.UTC(2026,8,24,12);
 function materialFarmHours(state:ReturnType<typeof createCharacter>,itemId:string,quantity:number,depth=0):number{
   if(depth>4)return 0;
   const gather=[...GATHERING,...HERB_NODES].find(row=>row.itemId===itemId);
   if(gather){
-    const pace=gatheringBalanceProjection(state,gather,24),affinity=skillAffinityModifiers(state.character?.classId,gather.skillId);
+    const pace=gatheringBalanceProjection(state,gather,24,BASELINE_ENVIRONMENT_AT_MS),affinity=skillAffinityModifiers(state.character?.classId,gather.skillId);
     // This test guards authored material quantities at baseline, not specialist completion times.
     // Affinity runtime speed and unchanged per-action yields are tested separately across all classes.
     const baselineItemsPerHour=pace.runtimeItemsPerHour/affinity.speedMultiplier;

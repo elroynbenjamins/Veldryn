@@ -63,7 +63,7 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop,onR
 
     <View style={[s.currentCard,{borderColor:current.accent}]}><Image accessible={false} source={require('../../assets/world/current-region-hero-v1.png')} resizeMode="cover" style={StyleSheet.absoluteFill}/><View pointerEvents="none" style={s.currentScene}><ZoneSceneArtwork regionId={current.id}/></View><View style={[s.regionTint,{backgroundColor:current.accent}]}/><View style={s.heroShade}/>
 
-      <View style={s.flex}><Text style={s.overline}>CURRENT REGION</Text><Text style={s.currentName}>{current.name}</Text><Text style={s.sub}>{current.subtitle}</Text></View>
+      <View style={s.flex}><Text style={s.overline}>CURRENT REGION</Text><Text style={s.currentName}>{current.name}</Text><Text style={s.sub}>{current.subtitle}</Text></View><View style={s.currentAction}><GameButton compact title="Explore" tone="secondary" onPress={onOpenSkills}/></View>
     </View>
 
     {goalRegionId&&goalRegionId!==current.id?<View style={s.goalRoute}><Text style={s.goalRouteLabel}>OBJECTIVE ROUTE</Text><Text style={s.sub}>Your current objective continues in {WORLD_ZONES.find(zone=>zone.id===goalRegionId)?.name??goalRegionId}. That region is promoted to the top of Travel Elsewhere below.</Text></View>:null}
@@ -101,7 +101,7 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
   title:{...typography.title,color:C.text},
   sub:{...typography.body,color:C.muted},
   flex:{flex:1,minWidth:0},
-  currentScene:{...StyleSheet.absoluteFillObject,opacity:.34},regionTint:{...StyleSheet.absoluteFillObject,opacity:.2},heroShade:{...StyleSheet.absoluteFillObject,backgroundColor:C.dark?'rgba(5,12,20,.64)':'rgba(255,255,255,.68)'},thumbnail:{width:68,height:76,borderRadius:12,overflow:'hidden'},lockedTag:{position:'absolute',bottom:0,left:0,right:0,padding:4,backgroundColor:C.dark?'rgba(8,17,29,.80)':'rgba(255,255,255,.90)'},lockedText:{color:C.muted,textAlign:'center',fontSize:11},currentCard:{minHeight:184,overflow:'hidden',flexDirection:'row',alignItems:'flex-end',gap:spacing.md,padding:spacing.lg,backgroundColor:equipmentColors.panel,borderWidth:1,borderRadius:radii.lg},
+  currentAction:{width:92,alignSelf:'flex-end'},currentScene:{...StyleSheet.absoluteFillObject,opacity:.34},regionTint:{...StyleSheet.absoluteFillObject,opacity:.2},heroShade:{...StyleSheet.absoluteFillObject,backgroundColor:C.dark?'rgba(5,12,20,.64)':'rgba(255,255,255,.68)'},thumbnail:{width:68,height:76,borderRadius:12,overflow:'hidden'},lockedTag:{position:'absolute',bottom:0,left:0,right:0,padding:4,backgroundColor:C.dark?'rgba(8,17,29,.80)':'rgba(255,255,255,.90)'},lockedText:{color:C.muted,textAlign:'center',fontSize:11},currentCard:{minHeight:184,overflow:'hidden',flexDirection:'row',alignItems:'flex-end',gap:spacing.md,padding:spacing.lg,backgroundColor:equipmentColors.panel,borderWidth:1,borderRadius:radii.lg},
   regionSymbol:{width:64,height:64,alignItems:'center',justifyContent:'center',borderWidth:1,borderRadius:32,backgroundColor:equipmentColors.stage},
   symbol:{fontSize:31,fontWeight:'700'},
   overline:{...typography.caption,color:equipmentColors.goldSoft,fontWeight:'700',letterSpacing:1},

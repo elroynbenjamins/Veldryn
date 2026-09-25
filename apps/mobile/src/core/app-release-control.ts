@@ -1,3 +1,5 @@
+import appConfig from '../../app.json';
+
 declare const process:{env:Record<string,string|undefined>};
 
 export interface AppReleaseControl{
@@ -19,7 +21,7 @@ export interface AppReleaseDecision{
   control:AppReleaseControl|null;
 }
 
-export const currentAppVersion=process.env.EXPO_PUBLIC_APP_VERSION?.trim()||'0.1.0';
+export const currentAppVersion=String(appConfig.expo.version||'0.0.0').trim();
 const releaseControlUrl=process.env.EXPO_PUBLIC_RELEASE_CONTROL_URL?.trim()||'';
 
 function parts(version:string){

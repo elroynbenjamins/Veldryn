@@ -89,6 +89,9 @@ import {AuthSessionProvider,useAuthSession} from './src/online/AuthSessionProvid
 import {useOnlineGame} from './src/online/useOnlineGame';
 import {serverGameplayEnabled} from './src/online/gameplay';
 import {OnlineAccountPanel} from './src/components/OnlineAccountPanel';
+import {UpdateRequiredScreen} from './src/components/UpdateRequiredScreen';
+import {signInAsGuest,signOut} from './src/online/account';
+import {fetchAppVersionGate,openStoreListing,type VersionGateResult} from './src/online/app-version-gate';
 import {GameButton} from './src/components/GameButton';
 import type {GameCommand} from './src/core/game-commands';
 import {buildNavigationBadges,buildQuickNavigationBadges,type NavigationNotification} from './src/core/navigation-notifications';
@@ -170,9 +173,26 @@ function VeldrynApp(){
   const [showAdminQa,setShowAdminQa]=useState(false);
   const [creatingRoster,setCreatingRoster]=useState(false);
   const [creationWelcome,setCreationWelcome]=useState<{name:string;classId:ClassId}|null>(null);
+  const [guestBooting,setGuestBooting]=useState(serverGameplayEnabled);
+  const [versionGate,setVersionGate]=useState<VersionGateResult|null>(null);
+  const [versionGateChecked,setVersionGateChecked]=useState(!serverGameplayEnabled);
+  const guestBootstrapRef=useRef(false);
   const [showChatOverlay,setShowChatOverlay]=useState(false);
   const [showCoopUiGallery,setShowCoopUiGallery]=useState(false);
   const [pendingEventLiveId,setPendingEventLiveId]=useState<string|undefined>();
+  useEffect(()=>{let alive=true;
+    const check=async()=>{try{const result=await Promise.race([fetchAppVersionGate(),new Promise<null>(resolve=>setTimeout(()=>resolve(null),2500))]);if(alive&&result)setVersionGate(result);}finally{if(alive)setVersionGateChecked(true);}};
+    void check();
+    const listener=AppState.addEventListener('change',next=>{if(next==='active')void check();});
+    return()=>{alive=false;listener.remove();};
+  },[]);
+  useEffect(()=>{
+    if(!serverGameplayEnabled||auth.loading||auth.recovering)return;
+    if(auth.session){setGuestBooting(false);return;}
+    if(guestBootstrapRef.current){setGuestBooting(false);return;}
+    guestBootstrapRef.current=true;setGuestBooting(true);
+    void signInAsGuest().catch(()=>setGuestBooting(false));
+  },[auth.loading,auth.session,auth.recovering]);
   const profileAttentionScope=auth.session?.user.id?`account:${auth.session.user.id}`:state?`local:${state.createdAtMs}`:'local:pending';
   const confirmProfileCustomizeExit=useCallback((action:()=>void)=>{
     if(tab!=='ProfileCustomize'||!profileCustomizeDirty){action();return;}
@@ -373,12 +393,15 @@ const next=discoverCharacterSkins(candidate);queuePreparationNotices(current,nex
     setSkillsMode(activity.kind==='faith'?'faith':activity.kind==='alchemy'?'crafting':'gathering');
     setTab('Skills');
   }
-  if(serverGameplayEnabled&&(auth.loading||online.loading))return <StartupScreen scene={startupScene} language={recoveryLanguage}/>;
+  if(!versionGateChecked)return <StartupScreen scene={startupScene} language={recoveryLanguage}/>;
+  if(versionGate?.maintenanceMode&&versionGate.policy)return <UpdateRequiredScreen maintenance title="VELDRYN maintenance" message={versionGate.policy.maintenanceMessage} currentVersion={versionGate.currentVersion} onUpdate={()=>{}}/>;
+  if(versionGate?.updateRequired&&versionGate.policy)return <UpdateRequiredScreen title={versionGate.policy.title} message={versionGate.policy.message} currentVersion={versionGate.currentVersion} minimumVersion={versionGate.policy.minimumVersion} onUpdate={()=>void openStoreListing()}/>;
+  if(serverGameplayEnabled&&(auth.loading||online.loading||guestBooting&&!auth.session))return <StartupScreen scene={startupScene} language={recoveryLanguage}/>;
   if(serverGameplayEnabled&&(!auth.session||auth.recovering))return <AccountWelcomeScreen scene={startupScene}><OnlineAccountPanel state={state??newGame(Date.now())}/></AccountWelcomeScreen>;
   if(serverGameplayEnabled&&!online.snapshot)return <SafeAreaView style={s.center}><Text style={s.txt}>{online.error||'Connecting…'}</Text><GameButton title="Retry connection" onPress={()=>void online.refresh()}/><OnlineAccountPanel state={newGame(Date.now())}/></SafeAreaView>;
   if(!ready)return <StartupScreen scene={startupScene} language={recoveryLanguage}/>;
   if(loadError||!state)return <SafeAreaView style={s.safe}><StatusBar style="light"/><SaveRecoveryScreen language={recoveryLanguage} message={loadError||'No readable save state was returned.'} onRetry={()=>void loadGame()} onStartFresh={()=>Alert.alert('Delete unreadable local save?','This permanently removes the existing local data and starts a new game.',[{text:'Cancel'},{text:'Start fresh',style:'destructive',onPress:async()=>{await repo.reset();setState(newGame(Date.now()));setLoadError('');setCurrentTab('Home');setTabHistory([])}}])}/></SafeAreaView>;
-  if(!state.character){const theme=resolveTheme(state.settings.uiTheme);if(serverGameplayEnabled&&adminQa)return <GameThemeProvider themeId={state.settings.uiTheme}><SafeAreaView style={[s.safe,{backgroundColor:theme.bg}]}><StatusBar style={theme.dark?'light':'dark'}/><AdminQaScreen state={state} onApplyQa={applyOnlineAdminQa} onRefillQa={refillOnlineAdminQa} onClose={()=>{}} onOpenDungeon={()=>{}}/></SafeAreaView></GameThemeProvider>;return <GameThemeProvider themeId={state.settings.uiTheme}><SafeAreaView style={[s.safe,{backgroundColor:theme.bg}]}><StatusBar style={theme.dark?'light':'dark'}/><ClassSelectScreen language={state.settings.language} onLanguage={language=>commit({...state,settings:{...state.settings,language}})} onSelect={async(id,name,body)=>{if(serverGameplayEnabled){const result=await perform({type:'create',args:{classId:id,name,body}});if(result)setCreationWelcome({name,classId:id});return;}const next=createCharacter(state,id,name,body);await repo.save(next);setState(next);setCreationWelcome({name,classId:id})}}/></SafeAreaView></GameThemeProvider>;}
+  if(!state.character){const theme=resolveTheme(state.settings.uiTheme);if(serverGameplayEnabled&&adminQa)return <GameThemeProvider themeId={state.settings.uiTheme}><SafeAreaView style={[s.safe,{backgroundColor:theme.bg}]}><StatusBar style={theme.dark?'light':'dark'}/><AdminQaScreen state={state} onApplyQa={applyOnlineAdminQa} onRefillQa={refillOnlineAdminQa} onClose={()=>{}} onOpenDungeon={()=>{}}/></SafeAreaView></GameThemeProvider>;return <GameThemeProvider themeId={state.settings.uiTheme}><SafeAreaView style={[s.safe,{backgroundColor:theme.bg}]}><StatusBar style={theme.dark?'light':'dark'}/><ClassSelectScreen language={state.settings.language} onLanguage={language=>commit({...state,settings:{...state.settings,language}})} onSignInExisting={serverGameplayEnabled&&auth.session?.user.is_anonymous?()=>{setGuestBooting(false);void signOut()}:undefined} onSelect={async(id,name,body)=>{if(serverGameplayEnabled){const result=await perform({type:'create',args:{classId:id,name,body}});if(result)setCreationWelcome({name,classId:id});return;}const next=createCharacter(state,id,name,body);await repo.save(next);setState(next);setCreationWelcome({name,classId:id})}}/></SafeAreaView></GameThemeProvider>;}
   if(creatingRoster){const theme=resolveTheme(state.settings.uiTheme);return <GameThemeProvider themeId={state.settings.uiTheme}><SafeAreaView style={[s.safe,{backgroundColor:theme.bg}]}><StatusBar style={theme.dark?'light':'dark'}/><ClassSelectScreen language={state.settings.language} cancelLabel={t(state.settings.language,'roster.cancel')} onCancel={()=>setCreatingRoster(false)} onSelect={async(id,name,body)=>{if(serverGameplayEnabled){const result=await perform({type:'roster_create',args:{classId:id,name,body}});if(result)setCreatingRoster(false);return;}const result=executeGameCommand(state,{type:'roster_create',args:{classId:id,name,body}},Date.now());await commit(result.state);setCreatingRoster(false)}}/></SafeAreaView></GameThemeProvider>;}
   if(showAdminQa&&(adminQa||(__DEV__&&!serverGameplayEnabled)))return <SafeAreaView style={s.safe} {...backSwipe.panHandlers}><StatusBar style="light"/><AdminQaScreen state={state} onChange={!serverGameplayEnabled?commit:undefined} onApplyQa={serverGameplayEnabled&&adminQa?applyOnlineAdminQa:undefined} onRefillQa={serverGameplayEnabled&&adminQa?refillOnlineAdminQa:undefined} onClose={()=>setShowAdminQa(false)} onOpenDungeon={()=>{setShowAdminQa(false);setTab('Coop')}}/></SafeAreaView>;
   if(__DEV__&&showCoopUiGallery)return <SafeAreaView style={s.safe} {...backSwipe.panHandlers}><StatusBar style="light"/><CoopUiGalleryScreen language={state.settings.language} onClose={()=>setShowCoopUiGallery(false)}/></SafeAreaView>;

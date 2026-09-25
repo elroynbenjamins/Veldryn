@@ -82,6 +82,7 @@
   ".core-build/apps/mobile/tests/core-pets.js",
   ".core-build/apps/mobile/tests/core-pet-drops.js",
   ".core-build/apps/mobile/tests/gathering-tools.js",
+  ".core-build/apps/mobile/tests/app-release-control.js",
   ".core-build/apps/mobile/tests/startup-summary.js",
   ".core-build/apps/mobile/tests/dashboard-guidance.js",
   ".core-build/apps/mobile/tests/balance-projection.js",

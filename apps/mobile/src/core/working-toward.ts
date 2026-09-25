@@ -9,6 +9,7 @@ import {ITEMS} from '../content/items';
 import {DUNGEON_MATERIAL_SOURCES,dungeonMaterialSourceById,dungeonMaterialSourcesForItem} from '../content/dungeon-material-sources';
 import {recipeOutputOwnedQuantity} from './recipe-preparation-goals';
 import {gatheringToolDef} from '../content/gathering-tools';
+import {encounterUnlocked,regionTravelAvailability,regionTravelLockReason} from './world-navigation';
 
 export type WorkingTowardDestination=
  |{kind:'combat';monsterId:string;zoneName:string;regionId?:string;button:string;detail:string}
@@ -34,8 +35,9 @@ function quantities(state:GameState){
 export function workingTowardSourceAvailability(state:GameState,source:WorkingTowardDestination):GoalSource|undefined{
  if(source.kind==='combat'){
   const monster=MONSTERS.find(row=>row.id===source.monsterId);
-  const available=!!monster&&(state.unlockedMonsterIds.includes(monster.id)||state.character!.level>=monster.unlockLevel);
-  return {kind:'monster',id:source.monsterId,label:monster?.name??source.monsterId,available,reason:available?undefined:`Requires Level ${monster?.unlockLevel??'?'}.`};
+  const region=monster?regionForZoneName(monster.zone):undefined,available=!!monster&&encounterUnlocked(state,monster)&&(!region||regionTravelAvailability(state,region)==='available');
+  const reason=!monster?'Encounter is not in the current catalog.':region&&regionTravelAvailability(state,region)!=='available'?regionTravelLockReason(state,region)+'.':!encounterUnlocked(state,monster)?`Discover ${monster.name} through regional Exploration first.`:undefined;
+  return {kind:'monster',id:source.monsterId,label:monster?.name??source.monsterId,available,reason};
  }
  if(source.kind==='skills'){
   if(source.recipeId){
@@ -64,7 +66,7 @@ export function workingTowardSourceAvailability(state:GameState,source:WorkingTo
   const dungeon=source.dungeonId?dungeonMaterialSourceById(source.dungeonId):undefined,required=dungeon?.minLevel??1,available=(state.character?.level??1)>=required;
   return {kind:'dungeon',id:source.dungeonId??'dungeon',label:dungeon?.dungeonName??'Dungeon',available,reason:available?undefined:`Requires Level ${required}.`};
  }
- if(source.kind==='world')return {kind:'region',id:source.regionId,label:WORLD_ZONES.find(row=>row.id===source.regionId)?.name??source.regionId,available:state.character!.level>=(WORLD_ZONES.find(row=>row.id===source.regionId)?.minLevel??1)};
+ if(source.kind==='world'){const region=WORLD_ZONES.find(row=>row.id===source.regionId),available=!!region&&regionTravelAvailability(state,region)==='available';return {kind:'region',id:source.regionId,label:region?.name??source.regionId,available,reason:region&&!available?regionTravelLockReason(state,region)+'.':undefined};}
  if(source.kind==='inventory')return {kind:'item',id:'inventory',label:'Inventory & Bank',available:true};
  return undefined;
 }
@@ -81,7 +83,7 @@ export function workingTowardDestinationAvailability(state:GameState,source:Work
   return {status:'ready',label:'READY',detail:'Dungeon available now.',canNavigate:true};
  }
  const regionId='regionId' in source?source.regionId:undefined,region=regionId?WORLD_ZONES.find(row=>row.id===regionId):undefined;
- if(region&&state.character!.level<region.minLevel)return {status:'locked',label:'LOCKED',detail:`Region unlocks at Level ${region.minLevel}.`,canNavigate:true};
+ if(region&&regionTravelAvailability(state,region)!=='available')return {status:'locked',label:'LOCKED',detail:regionTravelLockReason(state,region)+'.',canNavigate:true};
  if(base&&!base.available)return {status:'locked',label:'LOCKED',detail:base.reason??'This source is not available yet.',canNavigate:true};
  if(regionId&&regionId!==state.currentRegionId)return {status:'travel',label:'TRAVEL',detail:`Travel to ${region?.name??regionId} first.`,canNavigate:true};
  const recipeSource=source.kind==='skills'&&!!source.recipeId;

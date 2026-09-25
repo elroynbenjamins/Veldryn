@@ -8,7 +8,9 @@ import {ITEMS} from '../content/items';
 export type RegionTravelAvailability='available'|'locked'|'inDevelopment';
 export function regionTravelAvailability(state:GameState,zone:WorldZoneDef):RegionTravelAvailability{
   if(worldZoneInDevelopment(zone))return 'inDevelopment';
-  return (state.character?.level??1)>=zone.minLevel?'available':'locked';
+  const level=state.character?.level??1;
+  const discovered=state.discoveredRegionIds??WORLD_ZONES.filter(candidate=>!worldZoneInDevelopment(candidate)&&candidate.minLevel<=level).map(candidate=>candidate.id);
+  return level>=zone.minLevel&&(zone.id==='GREENFIELDS'||discovered.includes(zone.id))?'available':'locked';
 }
 export function nextRegionUnlock(level:number){
   return WORLD_ZONES.filter(zone=>!worldZoneInDevelopment(zone)&&zone.minLevel>level).sort((a,b)=>a.minLevel-b.minLevel)[0];

@@ -19,7 +19,7 @@ const ladders:Record<string,number[]>={
  alchemy:ALCHEMY_RECIPES.map(x=>x.level),
  enchanting:RECIPES.filter(x=>x.skillId==='enchanting').map(x=>x.level),
  faith:[...FAITH_TIERS.map(x=>x.level),...FAITH_BLESSINGS.map(x=>x.level)],
- exploration:EXPLORATION_ROUTES.map(x=>x.requiredLevel),
+ exploration:EXPLORATION_ROUTES.map(x=>x.requiredExplorationLevel),
 };
 const report=Object.fromEntries(Object.entries(ladders).map(([skill,rows])=>[skill,{unlocks:levels(rows),maxGap:maxGap(rows)}]));
 for(const skill of ['mining','woodcutting','fishing','herbalism','smithing','tailoring','cooking','alchemy','faith','exploration']){

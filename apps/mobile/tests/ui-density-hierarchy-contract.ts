@@ -46,9 +46,10 @@ ok(account.includes("singleColumn=width<350||fontScale>=1.25")&&account.includes
 const craftingProfessionBrowser=read('src/components/CraftingRecipeBrowser.tsx');
 
 const skills=read('src/screens/SkillsScreen.tsx');
-ok(!skills.includes('Hunting-specific activities are not available yet'),'Hunting must not regress to a placeholder-only skill screen');
+ok(!skills.includes("'hunting'")&&!skills.includes('Hunting XP'),'Hunting must be fully removed from the Skills surface');
 ok(!skills.includes('this workshop has no trainable recipes available yet'),'Tailoring and Enchanting must not regress to placeholder-only skill screens');
-ok(skills.includes('Train Hunting through monster hunts')&&skills.includes('HUNTING_XP_SHARE')&&skills.includes('Hunting XP/hr'),'Hunting detail must explain its combat-linked progression and current-region pace');
+const explorationPanel=read('src/components/ExplorationPanel.tsx');
+ok(explorationPanel.includes('REGIONAL EXPLORATION')&&explorationPanel.includes('requiredExplorationLevel')&&explorationPanel.includes('Road to {nextRegion.name}'),'Exploration must surface its current regional route, skill gate and next-region discovery reward');
 
 ok(skills.includes("minHeight:112"),'Skills hub cards must remain compact');
 ok(skills.includes('skillTop:'),'Skills hub cards must keep the compact icon/copy row');
@@ -208,8 +209,8 @@ ok(activity.includes('backgroundColor:C.warningSurface'),'Activity warnings must
 ok(activity.includes('backgroundColor:C.infoSurface'),'Activity goal state must use semantic theme surfaces');
 ok(activity.includes('activityProgressFeedback')&&activity.includes('phaseText'),'Active activities must show truthful phase text tied to real cycle progress');
 ok(activity.includes('levelPace')&&activity.includes('XP remaining')&&activity.includes('XP/hr'),'Active activities must expose level progress, remaining XP and effective XP/hour');
-ok(activity.includes('preview.huntingXp')&&activity.includes('Hunting XP'),'Combat reward cards must surface Hunting XP separately from character XP');
-ok(activity.includes("kind:ActivityKind")&&activity.includes("alchemy:'ALCHEMY'")&&activity.includes("faith:'FAITH'")&&activity.includes("exploration:'EXPLORATION'"),'Active activity card must preserve activity-specific headers rather than collapsing everything into Gathering');
+ok(!activity.includes('huntingXp')&&!activity.includes("hunting:'HUNTING'"),'Active activity rewards must not retain the removed Hunting skill');
+ok(activity.includes("kind:ActivityKind")&&activity.includes("combat:'COMBAT'")&&activity.includes("alchemy:'ALCHEMY'")&&activity.includes("faith:'FAITH'")&&activity.includes("exploration:'EXPLORATION'"),'Active activity card must preserve activity-specific headers rather than collapsing everything into Gathering');
 ok(activity.includes("alchemy:'brews ready'")&&activity.includes("faith:'practices ready'")&&activity.includes("exploration:'routes ready'"),'Active activity reward counts must use activity-specific units');
 ok(activity.includes("preview.craftingActions??0")&&activity.includes("preview.faithActions??0"),'Alchemy and Faith must count their real settled actions instead of showing zero ready rewards');
 
@@ -256,8 +257,9 @@ const world=read('src/screens/WorldScreen.tsx');
 ok(world.includes('currentCard:{minHeight:184')&&world.includes("current-region-hero-v1.png"),'World current-region card must use the dedicated wide hero artwork');
 ok(world.includes('destination:{minHeight:92'),'World destination cards must remain compact');
 ok(!world.includes('CURRENT REGION CONTENT')&&!world.includes('What can I do in {current.name}?'),'World must not show the redundant current-region action panel');
+ok(world.includes('compact title="Explore"')&&world.includes('onPress={onOpenSkills}'),'World must keep one compact current-region Exploration deep link without restoring the old action panel');
 ok(world.indexOf('{sunscar&&')<world.indexOf('TRAVEL ELSEWHERE')&&world.indexOf('{frostmarch&&')<world.indexOf('TRAVEL ELSEWHERE'),'Region-specific Sunscar/Frostmarch content must appear before the travel-away list');
-ok(world.includes('NEXT REGION UNLOCK')&&world.includes("unlockTrack:{height:5"),'World travel section must show compact next-region level progress');
+ok(world.includes('NEXT REGION UNLOCK')&&world.includes("unlockTrack:{height:5")&&world.includes('regionTravelLockReason(state,next)'),'World travel section must show compact next-region progress and the real level/scouting blocker');
 ok(world.includes('orderedTravelRegions(state,current.id,goalRegionId)'),'World travel ordering must reuse the core goal-aware unlocked-first ordering helper');
 ok(world.includes('OBJECTIVE ROUTE')&&world.includes('Your current objective continues in'),'World route guidance must remain truthful for both Working Toward and Journal region deep links');
 ok(world.includes("destinationContent:{fontSize:10"),'Travel destinations must preview authored content without making cards excessively tall');

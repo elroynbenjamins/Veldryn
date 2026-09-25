@@ -4,7 +4,7 @@ import {Image,ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
 import {WORLD_ZONES} from '../content/world-map';
 import {currentRegionId} from '../core/combat-region';
-import {nextRegionUnlock,orderedTravelRegions,regionActivitySummary,regionTravelAvailability} from '../core/world-navigation';
+import {orderedTravelRegions,regionActivitySummary,regionTravelAvailability,regionTravelLockReason} from '../core/world-navigation';
 import {GameButton} from '../components/GameButton';
 import {radii,spacing,typography,equipmentTheme,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
@@ -33,10 +33,10 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop,onR
   const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
   const level=state.character!.level,currentId=currentRegionId(state);
   const current=WORLD_ZONES.find(zone=>zone.id===currentId)??WORLD_ZONES[0];
-  const next=nextRegionUnlock(level);
+  const next=WORLD_ZONES.filter(zone=>regionTravelAvailability(state,zone)==='locked').sort((a,b)=>a.minLevel-b.minLevel)[0];
   const storyRegion=currentId==='SUNSCAR'||currentId==='FROSTMARCH'||currentId==='ASHLANDS'?currentId:undefined;
   const currentSummary=regionActivitySummary(state,current.id),travelRegions=orderedTravelRegions(state,current.id,goalRegionId);
-  const nextUnlockProgress=next?Math.max(3,Math.min(100,level/Math.max(1,next.minLevel)*100)):100;
+  const nextUnlockProgress=next?Math.max(3,Math.min(100,level/Math.max(1,next.minLevel)*100)):100,nextLockReason=next?regionTravelLockReason(state,next):'';
 
   const sunscar=current.id==='SUNSCAR',frostmarch=current.id==='FROSTMARCH';
   const [serverFrostmarchProgress,setServerFrostmarchProgress]=useState<RegionProgressV21|null>(null);
@@ -59,11 +59,11 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop,onR
   return <ScrollView contentContainerStyle={s.root}>
     <Text style={s.kicker}>TRAVEL</Text>
     <Text accessibilityRole="header" style={s.h}>World Regions</Text>
-    <Text style={s.sub}>Your location controls which enemies and gathering activities are available.</Text>
+    <Text style={s.sub}>Your location controls available activities. Exploration charts roads forward and reveals hidden encounters.</Text>
 
     <View style={[s.currentCard,{borderColor:current.accent}]}><Image accessible={false} source={require('../../assets/world/current-region-hero-v1.png')} resizeMode="cover" style={StyleSheet.absoluteFill}/><View pointerEvents="none" style={s.currentScene}><ZoneSceneArtwork regionId={current.id}/></View><View style={[s.regionTint,{backgroundColor:current.accent}]}/><View style={s.heroShade}/>
 
-      <View style={s.flex}><Text style={s.overline}>CURRENT REGION</Text><Text style={s.currentName}>{current.name}</Text><Text style={s.sub}>{current.subtitle}</Text></View>
+      <View style={s.flex}><Text style={s.overline}>CURRENT REGION</Text><Text style={s.currentName}>{current.name}</Text><Text style={s.sub}>{current.subtitle}</Text></View><View style={s.currentAction}><GameButton compact title="Explore" tone="secondary" onPress={onOpenSkills}/></View>
     </View>
 
     {goalRegionId&&goalRegionId!==current.id?<View style={s.goalRoute}><Text style={s.goalRouteLabel}>OBJECTIVE ROUTE</Text><Text style={s.sub}>Your current objective continues in {WORLD_ZONES.find(zone=>zone.id===goalRegionId)?.name??goalRegionId}. That region is promoted to the top of Travel Elsewhere below.</Text></View>:null}
@@ -76,15 +76,15 @@ export function WorldScreen({state,onTravel,onOpenCombat,onOpenSkills,onCoop,onR
     </>}
 
     <Text style={s.section}>TRAVEL ELSEWHERE</Text>
-    <View style={s.unlockCard}><View style={s.unlockHead}><View style={s.flex}><Text style={s.unlockLabel}>{next?'NEXT REGION UNLOCK':'REGION PROGRESSION'}</Text><Text style={s.unlockTitle}>{next?next.name:'All authored regions unlocked'}</Text></View>{next?<Text style={s.unlockLevel}>Lv {level}/{next.minLevel}</Text>:<Text style={s.unlockDone}>COMPLETE</Text>}</View>{next?<><View style={s.unlockTrack}><View style={[s.unlockFill,{width:(nextUnlockProgress+'%') as any}]}/></View><Text style={s.unlockMeta}>{Math.max(0,next.minLevel-level)} level{next.minLevel-level===1?'':'s'} until travel unlock.</Text></>:<Text style={s.unlockMeta}>Every currently authored region can be travelled to.</Text>}</View>
+    <View style={s.unlockCard}><View style={s.unlockHead}><View style={s.flex}><Text style={s.unlockLabel}>{next?'NEXT REGION UNLOCK':'REGION PROGRESSION'}</Text><Text style={s.unlockTitle}>{next?next.name:'All authored regions unlocked'}</Text></View>{next?<Text style={s.unlockLevel}>{level<next.minLevel?`Lv ${level}/${next.minLevel}`:'SCOUT'}</Text>:<Text style={s.unlockDone}>COMPLETE</Text>}</View>{next?<><View style={s.unlockTrack}><View style={[s.unlockFill,{width:(nextUnlockProgress+'%') as any}]}/></View><Text style={s.unlockMeta}>{nextLockReason}</Text></>:<Text style={s.unlockMeta}>Every currently authored released region can be travelled to.</Text>}</View>
     {travelRegions.map(zone=>{
-      const availability=regionTravelAvailability(state,zone),unlocked=availability==='available',inDevelopment=availability==='inDevelopment',summary=regionActivitySummary(state,zone.id),goalTarget=goalRegionId===zone.id;
+      const availability=regionTravelAvailability(state,zone),unlocked=availability==='available',inDevelopment=availability==='inDevelopment',summary=regionActivitySummary(state,zone.id),goalTarget=goalRegionId===zone.id,lockReason=!unlocked&&!inDevelopment?regionTravelLockReason(state,zone):'';
       const content=inDevelopment?'Preview planned regional content':unlocked?'Hunts '+summary.combatReady+'/'+summary.combatTotal+' · Gather '+summary.gatheringReady+'/'+summary.gatheringTotal+(summary.bossesTotal?' · Boss '+summary.bossesReady+'/'+summary.bossesTotal:''):(summary.combatTotal+' hunts · '+summary.gatheringTotal+' gathering'+(summary.bossesTotal?' · '+summary.bossesTotal+' boss':''));
       return <View key={zone.id} style={[s.destination,goalTarget&&s.goalDestination,inDevelopment&&s.developmentDestination]}>
-        <View style={s.thumbnail}><ZoneSceneArtwork regionId={zone.id} muted={!unlocked}/>{!unlocked&&!inDevelopment&&<View style={s.lockedTag}><Text style={s.lockedText}>{`Lv. ${zone.minLevel}`}</Text></View>}</View>
+        <View style={s.thumbnail}><ZoneSceneArtwork regionId={zone.id} muted={!unlocked}/>{!unlocked&&!inDevelopment&&<View style={s.lockedTag}><Text style={s.lockedText}>{level<zone.minLevel?`Lv. ${zone.minLevel}`:'SCOUT'}</Text></View>}</View>
         <View style={s.flex}>
           <View style={s.destinationHead}><Text style={[s.destinationName,inDevelopment&&s.developmentText]}>{zone.name}</Text>{goalTarget?<Text style={s.goalBadge}>GOAL</Text>:null}</View>
-          <Text style={s.destinationMeta}>{inDevelopment?'In Development':unlocked?`Levels ${zone.minLevel}–${zone.maxLevel}`:`Unlocks at level ${zone.minLevel}`}</Text>
+          <Text style={s.destinationMeta}>{inDevelopment?'In Development':unlocked?`Levels ${zone.minLevel}–${zone.maxLevel}`:lockReason}</Text>
           <Text numberOfLines={1} style={s.destinationContent}>{content}</Text>
           <Text numberOfLines={2} style={s.destinationSub}>{zone.subtitle}</Text>
         </View>
@@ -101,7 +101,7 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
   title:{...typography.title,color:C.text},
   sub:{...typography.body,color:C.muted},
   flex:{flex:1,minWidth:0},
-  currentScene:{...StyleSheet.absoluteFillObject,opacity:.34},regionTint:{...StyleSheet.absoluteFillObject,opacity:.2},heroShade:{...StyleSheet.absoluteFillObject,backgroundColor:C.dark?'rgba(5,12,20,.64)':'rgba(255,255,255,.68)'},thumbnail:{width:68,height:76,borderRadius:12,overflow:'hidden'},lockedTag:{position:'absolute',bottom:0,left:0,right:0,padding:4,backgroundColor:C.dark?'rgba(8,17,29,.80)':'rgba(255,255,255,.90)'},lockedText:{color:C.muted,textAlign:'center',fontSize:11},currentCard:{minHeight:184,overflow:'hidden',flexDirection:'row',alignItems:'flex-end',gap:spacing.md,padding:spacing.lg,backgroundColor:equipmentColors.panel,borderWidth:1,borderRadius:radii.lg},
+  currentAction:{width:92,alignSelf:'flex-end'},currentScene:{...StyleSheet.absoluteFillObject,opacity:.34},regionTint:{...StyleSheet.absoluteFillObject,opacity:.2},heroShade:{...StyleSheet.absoluteFillObject,backgroundColor:C.dark?'rgba(5,12,20,.64)':'rgba(255,255,255,.68)'},thumbnail:{width:68,height:76,borderRadius:12,overflow:'hidden'},lockedTag:{position:'absolute',bottom:0,left:0,right:0,padding:4,backgroundColor:C.dark?'rgba(8,17,29,.80)':'rgba(255,255,255,.90)'},lockedText:{color:C.muted,textAlign:'center',fontSize:11},currentCard:{minHeight:184,overflow:'hidden',flexDirection:'row',alignItems:'flex-end',gap:spacing.md,padding:spacing.lg,backgroundColor:equipmentColors.panel,borderWidth:1,borderRadius:radii.lg},
   regionSymbol:{width:64,height:64,alignItems:'center',justifyContent:'center',borderWidth:1,borderRadius:32,backgroundColor:equipmentColors.stage},
   symbol:{fontSize:31,fontWeight:'700'},
   overline:{...typography.caption,color:equipmentColors.goldSoft,fontWeight:'700',letterSpacing:1},

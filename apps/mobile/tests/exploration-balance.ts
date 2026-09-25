@@ -1,4 +1,4 @@
-import {createCharacter,newGame} from '../src/core/game';
+import {claimActivity,createCharacter,newGame,previewActivityReward,startCombat} from '../src/core/game';
 import {EXPLORATION_ROUTES} from '../src/content/exploration';
 import {skillLevelPace} from '../src/core/balance-projection';
 import {totalXpAtLevel} from '../src/core/progression';
@@ -21,7 +21,20 @@ ok((level20.etaSeconds??Infinity)<=4*3600,'King\'s Road Exploration should remai
 ok((level46.etaSeconds??Infinity)<=7.5*3600,'Frostmarch Exploration should stay under roughly 7.5 baseline hours per level');
 ok((level71.etaSeconds??Infinity)<=10*3600,'Ashlands Exploration should stay under roughly 10 baseline hours per level');
 
+const progressionLevels=EXPLORATION_ROUTES.map(row=>row.requiredExplorationLevel);
+ok(progressionLevels.every((value,index)=>index===0||value>=progressionLevels[index-1]),'Exploration route requirements must rise with world progression');
+ok(EXPLORATION_ROUTES.find(row=>row.id==='SCOUT_IRONWOOD')?.unlockZoneId==='OLD_MINES','Ironwood scouting should discover the first Exploration-gated region');
+
+let combat=createCharacter(newGame(1000),'IRONWARDEN','Field Explorer');
+combat=startCombat(combat,'MOSS_RAT',1000);
+const combatPreview=previewActivityReward(combat,61_000);
+ok((combatPreview.explorationXp??0)>0,'Normal combat should grant a small amount of passive Exploration XP');
+ok((combatPreview.explorationXp??0)<combatPreview.xp,'Passive Exploration XP should remain secondary to normal combat XP');
+const explorationBefore=combat.skills.find(row=>row.skillId==='exploration')!.xp;
+const combatClaim=claimActivity(combat,61_000);
+ok(combatClaim.state.skills.find(row=>row.skillId==='exploration')!.xp===explorationBefore+(combatClaim.reward.explorationXp??0),'Combat Exploration XP must settle into the Exploration skill');
+
 const frostRoute=EXPLORATION_ROUTES.find(row=>row.id==='SCOUT_FROSTMARCH')!,ashRoute=EXPLORATION_ROUTES.find(row=>row.id==='SCOUT_ASHLANDS')!;
 ok(frostRoute.seconds===300&&ashRoute.seconds===360,'Exploration acceleration must not increase route completion frequency or pet/discovery roll cadence');
 
-console.log('PASS: Exploration keeps fast skill progression without increasing route-roll frequency');
+console.log('PASS: Exploration combines active scouting, passive combat familiarity, encounter discovery and later-region route gates');

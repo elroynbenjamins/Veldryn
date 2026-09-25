@@ -10,7 +10,7 @@ let rejected=false;
 try{startGathering(beginner,'COPPER_VEIN',1)}catch{rejected=true}
 ok(rejected,'Gathering outside the current region must be rejected by core game logic');
 
-const veteran={...beginner,character:{...beginner.character!,level:20}};
+const veteran={...beginner,character:{...beginner.character!,level:20},exploredRouteIds:['SCOUT_IRONWOOD']};
 const travelled=travelToRegion(veteran,'OLD_MINES',2);
 ok(currentRegionId(travelled.state)==='OLD_MINES','Travel must persist the new current region');
 ok(startGathering(travelled.state,'COPPER_VEIN',3).activity?.targetId==='COPPER_VEIN','Gathering in the current region must be allowed');
@@ -27,8 +27,11 @@ ok(returned.reward.elapsedSeconds>0,'Travel must preserve rewards earned before 
 rejected=false;
 try{travelToRegion(beginner,'KINGS_ROAD',6)}catch{rejected=true}
 ok(rejected,'Locked regions must reject travel');
+const levelReadyButUnscouted={...beginner,character:{...beginner.character!,level:20}};
+rejected=false;try{travelToRegion(levelReadyButUnscouted,'OLD_MINES',6)}catch(error){rejected=String(error).toLowerCase().includes('scouting')}
+ok(rejected,'Later regions must require the prior scouting route even after the character level gate is met');
 
-const later={...beginner,character:{...beginner.character!,level:30}};
+const later={...beginner,character:{...beginner.character!,level:30},exploredRouteIds:['SCOUT_IRONWOOD','SCOUT_OLD_MINES','SCOUT_KINGS_ROAD'],skills:beginner.skills.map(skill=>skill.skillId==='exploration'?{...skill,level:18}:skill)};
 const sunscar=travelToRegion(later,'SUNSCAR',7).state;
 ok(currentRegionId(sunscar)==='SUNSCAR','Later-region travel must persist Sunscar');
 const sunscarScout=startExploration(sunscar,'SCOUT_SUNSCAR',8);
@@ -38,7 +41,7 @@ const sunscarCombat=startCombat(sunscarMapped,'SUNSCAR_SCORPION',218009);
 ok(sunscarCombat.activity?.targetId==='SUNSCAR_SCORPION','Sunscar encounters must use the normal combat activity lane');
 ok(!claimActivity(sunscarCombat,338009).state.unlockedMonsterIds.includes('BLACKGLASS_MIRELING'),'Sunscar combat must not bypass Ashlands scouting');
 
-const frost={...beginner,character:{...beginner.character!,level:50}};
+const frost={...beginner,character:{...beginner.character!,level:50},exploredRouteIds:['SCOUT_IRONWOOD','SCOUT_OLD_MINES','SCOUT_KINGS_ROAD','SCOUT_SUNSCAR'],skills:beginner.skills.map(skill=>skill.skillId==='exploration'?{...skill,level:28}:skill)};
 const frostmarch=travelToRegion(frost,'FROSTMARCH',9).state;
 const frostScout=startExploration(frostmarch,'SCOUT_FROSTMARCH',10);
 const frostMapped=claimActivity(frostScout,310010).state;
@@ -47,7 +50,7 @@ rejected=false;
 try{travelToRegion(later,'FROSTMARCH',11)}catch{rejected=true}
 ok(rejected,'Frostmarch must remain locked below its level gate');
 
-const ash={...beginner,character:{...beginner.character!,level:75}};
+const ash={...beginner,character:{...beginner.character!,level:75},exploredRouteIds:['SCOUT_IRONWOOD','SCOUT_OLD_MINES','SCOUT_KINGS_ROAD','SCOUT_SUNSCAR','SCOUT_FROSTMARCH'],skills:beginner.skills.map(skill=>skill.skillId==='exploration'?{...skill,level:40}:skill)};
 const ashlands=travelToRegion(ash,'ASHLANDS',12).state;
 const ashScout=startExploration(ashlands,'SCOUT_ASHLANDS',13);
 const ashMapped=claimActivity(ashScout,373013).state;

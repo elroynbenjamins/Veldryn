@@ -4,6 +4,7 @@ import {GATHERING} from '../content/skills';
 import {HERB_NODES} from '../content/herbalism';
 import {GameState} from './types';
 import {ITEMS} from '../content/items';
+import {EXPLORATION_ROUTES} from '../content/exploration';
 
 export type RegionTravelAvailability='available'|'locked'|'inDevelopment';
 export function regionTravelAvailability(state:GameState,zone:WorldZoneDef):RegionTravelAvailability{
@@ -14,6 +15,18 @@ export function regionTravelAvailability(state:GameState,zone:WorldZoneDef):Regi
 }
 export function nextRegionUnlock(level:number){
   return WORLD_ZONES.filter(zone=>!worldZoneInDevelopment(zone)&&zone.minLevel>level).sort((a,b)=>a.minLevel-b.minLevel)[0];
+}
+export function regionTravelLockReason(state:GameState,zone:WorldZoneDef){
+  if(worldZoneInDevelopment(zone))return 'In Development';
+  if(regionTravelAvailability(state,zone)==='available')return '';
+  const level=state.character?.level??1,route=EXPLORATION_ROUTES.find(candidate=>candidate.unlockRegionId===zone.id);
+  if(level<zone.minLevel&&route)return `Reach Level ${zone.minLevel} and discover the route through Exploration`;
+  if(level<zone.minLevel)return `Reach Level ${zone.minLevel}`;
+  if(route)return `Discover the route through ${route.name}`;
+  return 'Continue world progression';
+}
+export function nextRegionUnlockForState(state:GameState){
+  return WORLD_ZONES.filter(zone=>zone.id!=='GREENFIELDS'&&!worldZoneInDevelopment(zone)&&regionTravelAvailability(state,zone)!=='available').sort((a,b)=>a.minLevel-b.minLevel)[0];
 }
 export function regionEncounters(state:GameState,zoneName:string,query:string,availableOnly:boolean){
   const search=query.trim().toLowerCase();

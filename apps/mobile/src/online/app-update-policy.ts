@@ -32,7 +32,7 @@ export async function fetchAppUpdatePolicy():Promise<AppUpdatePolicy>{
   let config:Record<string,unknown>={};
   if(supabase){
     try{
-      const {data,error}=await supabase.rpc('get_client_safe_remote_config');
+      const {data,error}=await supabase.rpc('get_mobile_update_config');
       if(error)throw error;
       if(data&&typeof data==='object'&&!Array.isArray(data))config=data as Record<string,unknown>;
     }catch{

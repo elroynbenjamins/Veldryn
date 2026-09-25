@@ -95,7 +95,7 @@ close(dungeonAcquisition?.etaSeconds??0,2*3600,1,'Caravan of Glass catalyst esti
 ok(acquisitionEstimateLabel(dungeonAcquisition!).includes('average clears'),'Dungeon source estimates must clearly identify their average-clear basis');
 
 const chainBase=createCharacter(newGame(2),'IRONWARDEN','Chain Planner');
-const chainState={...chainBase,character:{...chainBase.character!,level:20,gold:100000},skills:chainBase.skills.map(skill=>skill.skillId==='smithing'?{...skill,level:12,xp:totalXpAtLevel(12)}:skill.skillId==='mining'?{...skill,level:8,xp:totalXpAtLevel(8)}:skill.skillId==='woodcutting'?{...skill,level:7,xp:totalXpAtLevel(7)}:skill)};
+const chainState={...chainBase,exploredRouteIds:[...(chainBase.exploredRouteIds??[]),'SCOUT_IRONWOOD'],character:{...chainBase.character!,level:20,gold:100000},skills:chainBase.skills.map(skill=>skill.skillId==='smithing'?{...skill,level:12,xp:totalXpAtLevel(12)}:skill.skillId==='mining'?{...skill,level:8,xp:totalXpAtLevel(8)}:skill.skillId==='woodcutting'?{...skill,level:7,xp:totalXpAtLevel(7)}:skill)};
 const fittingDestination={kind:'skills' as const,skillId:'smithing' as const,mode:'crafting' as const,recipeId:'FORGE_REINFORCED_FITTING',button:'Craft Reinforced Fitting',detail:''};
 const fittingPlan=materialAcquisitionPlanForDestination(chainState,'REINFORCED_FITTING',1,fittingDestination),fittingChain=materialAcquisitionChainLabel(fittingPlan),fittingSummary=materialAcquisitionPlanSummary(fittingPlan);
 ok(fittingPlan.complete&&fittingPlan.craftSteps===2&&fittingPlan.depth===2&&(fittingPlan.etaSeconds??0)>0,'Recursive planner must resolve Reinforced Fitting through its crafted ingot dependency to direct raw sources');

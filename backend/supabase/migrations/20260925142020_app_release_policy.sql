@@ -5,6 +5,8 @@ create table if not exists public.app_release_policy(
   channel text primary key,
   latest_version text not null,
   minimum_version text not null,
+  latest_build bigint,
+  minimum_build bigint,
   force_after timestamptz,
   update_title text not null default 'VELDRYN has been updated',
   update_message text not null default 'A newer version is required to continue your adventure. Update VELDRYN through your app store.',

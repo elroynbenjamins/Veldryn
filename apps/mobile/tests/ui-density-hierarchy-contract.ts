@@ -257,6 +257,7 @@ const world=read('src/screens/WorldScreen.tsx');
 ok(world.includes('currentCard:{minHeight:184')&&world.includes("current-region-hero-v1.png"),'World current-region card must use the dedicated wide hero artwork');
 ok(world.includes('destination:{minHeight:92'),'World destination cards must remain compact');
 ok(!world.includes('CURRENT REGION CONTENT')&&!world.includes('What can I do in {current.name}?'),'World must not show the redundant current-region action panel');
+ok(world.includes('compact title="Explore"')&&world.includes('onPress={onOpenSkills}'),'World must keep one compact current-region Exploration deep link without restoring the old action panel');
 ok(world.indexOf('{sunscar&&')<world.indexOf('TRAVEL ELSEWHERE')&&world.indexOf('{frostmarch&&')<world.indexOf('TRAVEL ELSEWHERE'),'Region-specific Sunscar/Frostmarch content must appear before the travel-away list');
 ok(world.includes('NEXT REGION UNLOCK')&&world.includes("unlockTrack:{height:5")&&world.includes('regionTravelLockReason(state,next)'),'World travel section must show compact next-region progress and the real level/scouting blocker');
 ok(world.includes('orderedTravelRegions(state,current.id,goalRegionId)'),'World travel ordering must reuse the core goal-aware unlocked-first ordering helper');

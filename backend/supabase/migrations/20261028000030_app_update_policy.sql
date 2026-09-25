@@ -12,7 +12,7 @@ insert into public.ops_remote_config(
 ('app.mobile.android_store_url','Mobile','Google Play URL','Store destination used by the Android required-update button.','string','"https://play.google.com/store/apps/details?id=com.elroybenjamins.veldryn"','"https://play.google.com/store/apps/details?id=com.elroybenjamins.veldryn"','client_safe','low',true,'{}','Public Google Play listing URL.')
 on conflict(config_key) do nothing;
 
-create or replace function public.get_client_safe_remote_config()
+create or replace function public.get_mobile_update_config()
 returns jsonb
 language sql
 stable
@@ -32,8 +32,8 @@ as $$
     '{}'::jsonb
   )
   from public.ops_remote_config
-  where exposure='client_safe';
+  where exposure='client_safe' and config_key like 'app.mobile.%';
 $$;
 
-revoke all on function public.get_client_safe_remote_config() from public;
-grant execute on function public.get_client_safe_remote_config() to anon, authenticated;
+revoke all on function public.get_mobile_update_config() from public;
+grant execute on function public.get_mobile_update_config() to anon, authenticated;

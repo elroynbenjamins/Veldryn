@@ -109,7 +109,7 @@ ok(storyBoss.includes('dismissOnBackdrop={false}')&&storyBoss.includes('<ScrollV
 
 const chatPlayer=read('src/components/ChatPlayerSheet.tsx');
 ok(chatPlayer.includes('GameModalHeader')&&chatPlayer.includes('presentation="sheet"'),'Chat player profiles must use the shared safe sheet/header');
-ok(chatPlayer.indexOf('{isSelf?')>chatPlayer.indexOf('<ScrollView')&&chatPlayer.indexOf('{isSelf?')<chatPlayer.lastIndexOf('</ScrollView>'),'Chat player social actions must stay inside reachable scroll content');
+ok(chatPlayer.indexOf('{socialActions}')>chatPlayer.indexOf('<ScrollView')&&chatPlayer.indexOf('{socialActions}')<chatPlayer.lastIndexOf('</ScrollView>')&&chatPlayer.includes('{!profile&&socialActions}'),'Chat player social actions must stay inside reachable scroll content for full and limited profiles');
 ok(chatPlayer.includes('reduceMotion={reduceMotion}'),'Chat player profile presentation must respect reduced motion');
 
 

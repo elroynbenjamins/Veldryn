@@ -9,7 +9,7 @@ state=startCombat(state,'MOSS_RAT',t0);
 ok(!activeLiveEvent(state,t0),'Events must be inactive by default');
 ok((previewActivityReward(state,t0+3_600_000).eventDrops?.length??0)===0,'Inactive events cannot add drops');
 let scheduled={...state,account:{...state.account,liveEvent:{eventId:'EVT_ANNUAL_009_2026',enabled:true,startsAtMs:t0+86400_000,endsAtMs:t0+8*86400_000}}};
-ok(eventLifecycle(scheduled,t0)?.phase==='upcoming','Scheduled events should be visible before they begin');
+ok(eventLifecycle(scheduled,t0,true)?.phase==='upcoming','Scheduled events should be visible before they begin');
 
 ok(liveEventDef('EVT_ANNUAL_009_2027')?.id==='EVT_ANNUAL_009_2027','A future annual season should reuse the matching content template under its own runtime ID');
 ok(liveEventDef('EVT_ANNUAL_009_2027')?.name==='Harvestwake','Seasonal runtime IDs should preserve the event template identity');
@@ -97,15 +97,15 @@ ok(availableEventRepeatCaches(state,'EVT_ANNUAL_009_2026')===cachesBeforeThresho
 const prestigeBeforeCache=eventPrestigeBalance(state,'EVT_ANNUAL_009_2026');state=claimEventRepeatCache(state,t0+2);
 ok(eventPrestigeBalance(state,'EVT_ANNUAL_009_2026')===prestigeBeforeCache+1,'Repeat cache should grant prestige currency');
 const eventEnd=state.account.liveEvent!.endsAtMs,graceTime=eventEnd+60_000;
-ok(eventLifecycle(state,graceTime)?.phase==='claiming','Ended events should enter their reward-claim grace period');
+ok(eventLifecycle(state,graceTime,true)?.phase==='claiming','Ended events should enter their reward-claim grace period');
 ok(!activeLiveEvent(state,graceTime),'Claim-period events must not generate new activity drops');
 ok(eventShopOffers(state,graceTime).map(offer=>offer.id).join(',')===eventShopOffers(state,eventEnd-1).map(offer=>offer.id).join(','),'Event Shop stock should freeze to the final event-day rotation during grace');
 let graceContributionRejected=false;try{contributeEventCurrency(state,100,graceTime)}catch{graceContributionRejected=true}ok(graceContributionRejected,'Community contributions remain unavailable during the claim period');
-ok(eventLifecycle(state,eventEnd+8*86400_000)===null,'Event should archive after the seven-day claim period');
+ok(eventLifecycle(state,eventEnd+8*86400_000,true)===null,'Event should archive after the seven-day claim period');
 const explicitGraceEnd=eventEnd+2*86400_000;
 state={...state,account:{...state.account,liveEvent:{...state.account.liveEvent!,graceEndsAtMs:explicitGraceEnd}}};
-ok(eventLifecycle(state,explicitGraceEnd-1)?.phase==='claiming','Explicit server grace should keep claims open until its exact boundary');
-ok(eventLifecycle(state,explicitGraceEnd)===null,'Explicit server grace should override the definition fallback boundary');
+ok(eventLifecycle(state,explicitGraceEnd-1,true)?.phase==='claiming','Explicit server grace should keep claims open until its exact boundary');
+ok(eventLifecycle(state,explicitGraceEnd,true)===null,'Explicit server grace should override the definition fallback boundary');
 state=setLocalEventEnabled(state,false,t0+3);
 ok(!activeLiveEvent(state,t0+3),'Developer switch should fully disable event drops and claims');
 console.log(JSON.stringify({status:'PASS',afterCombat,finalProgress:eventProgress(state,'EVT_ANNUAL_009_2026')},null,2));

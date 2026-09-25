@@ -17,7 +17,6 @@
         "EXPO_PUBLIC_COOP_ROGUELITE_V1": "true",
         "EXPO_PUBLIC_COOP_API_URL": "https://nyjwigipamnvpdvpauuv.supabase.co/functions/v1/coop",
         "EXPO_PUBLIC_COOP_LIVE_READY_V1": "false",
-        "EXPO_PUBLIC_APP_VERSION": "0.1.0",
         "EXPO_PUBLIC_RELEASE_CONTROL_URL": "https://raw.githubusercontent.com/elroynbenjamins/Veldryn/main/liveops/app-release.json"
       }
     },
@@ -30,7 +29,6 @@
         "EXPO_PUBLIC_COOP_ROGUELITE_V1": "true",
         "EXPO_PUBLIC_COOP_API_URL": "https://nyjwigipamnvpdvpauuv.supabase.co/functions/v1/coop",
         "EXPO_PUBLIC_COOP_LIVE_READY_V1": "false",
-        "EXPO_PUBLIC_APP_VERSION": "0.1.0",
         "EXPO_PUBLIC_RELEASE_CONTROL_URL": "https://raw.githubusercontent.com/elroynbenjamins/Veldryn/main/liveops/app-release.json"
       }
     },
@@ -46,7 +44,6 @@
         "EXPO_PUBLIC_COOP_ROGUELITE_V1": "true",
         "EXPO_PUBLIC_COOP_API_URL": "https://iqfmmpvwanvvmxcftfxw.supabase.co/functions/v1/coop",
         "EXPO_PUBLIC_COOP_LIVE_READY_V1": "false",
-        "EXPO_PUBLIC_APP_VERSION": "0.1.0",
         "EXPO_PUBLIC_RELEASE_CONTROL_URL": "https://raw.githubusercontent.com/elroynbenjamins/Veldryn/main/liveops/app-release.json"
       }
     }

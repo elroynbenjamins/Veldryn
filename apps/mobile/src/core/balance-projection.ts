@@ -110,9 +110,9 @@ export function characterTargetEta(state:GameState,targetLevel:number,xpPerHour:
   return {targetLevel:goal,remainingXp,xpPerHour,etaSeconds:safeEta(remainingXp,xpPerHour)};
 }
 
-export function gatheringBalanceProjection(state:GameState,activity:GatherDef,offlineHours:number):GatheringBalanceProjection{
+export function gatheringBalanceProjection(state:GameState,activity:GatherDef,offlineHours:number,atMs=Date.now()):GatheringBalanceProjection{
   const affinity=skillAffinityModifiers(state.character?.classId,activity.skillId);
-  const environment=environmentForZone(activity.zoneId),effect=environmentEffect(activity.skillId,environment),pacing=gatheringPacing(state,activity),permanent=characterPermanentMultipliers(state),mastery=professionMasteryMultipliers(activity.id,state.account.professionMasteryByAction?.[activity.id]),rank=professionMasteryRankProgress(activity.id,state.account.professionMasteryByAction?.[activity.id]);
+  const environment=environmentForZone(activity.zoneId,atMs),effect=environmentEffect(activity.skillId,environment),pacing=gatheringPacing(state,activity),permanent=characterPermanentMultipliers(state),mastery=professionMasteryMultipliers(activity.id,state.account.professionMasteryByAction?.[activity.id]),rank=professionMasteryRankProgress(activity.id,state.account.professionMasteryByAction?.[activity.id]);
   const herbLevel=state.skills.find(row=>row.skillId==='herbalism')?.level??1,method=activity.skillId==='herbalism'?herbalismMethod(state.character?.herbalismMethodId,herbLevel):undefined;
   const specialtySpeed=activity.skillId==='fishing'?permanent.fishingSpeedMultiplier:activity.skillId==='herbalism'?permanent.herbalismSpeedMultiplier:1;
   const cycleSeconds=activity.seconds*GATHER_TIME_SCALE*pacing.timeMultiplier*effect.actionTimeMultiplier*(method?.actionTimeMultiplier??1)/(permanent.gatheringSpeedMultiplier*specialtySpeed*mastery.speed*affinity.speedMultiplier),actionsPerHour=3600/Math.max(.1,cycleSeconds);

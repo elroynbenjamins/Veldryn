@@ -5,7 +5,7 @@ import {annualEventCalendar,type AnnualEventCalendarEntry} from '../content/annu
 import {annualEventSeriesId} from '../content/live-events';
 import {Panel} from './Panel';
 import {EventIdentityBadge} from './EventIdentityBadge';
-import {C,radii,spacing,typography} from '../theme/theme';
+import {C,equipmentColors,radii,spacing,typography} from '../theme/theme';
 
 const MONTHS=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'] as const;
 const monthLabel=(month:number)=>MONTHS[Math.max(0,Math.min(11,month-1))]??'—';
@@ -66,7 +66,7 @@ const s=StyleSheet.create({
   kicker:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:1},title:{...typography.title,color:C.text},count:{...typography.caption,color:C.muted,fontWeight:'800'},
   body:{...typography.body,color:C.muted,lineHeight:19,marginTop:spacing.xs},
   monthStrip:{gap:7,paddingVertical:spacing.md,paddingRight:spacing.sm},monthChip:{width:52,minHeight:56,alignItems:'center',justifyContent:'center',gap:6,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2},
-  monthChipSelected:{borderColor:C.accent,backgroundColor:C.selection},monthChipActive:{borderColor:C.good},monthText:{fontSize:10,fontWeight:'900',color:C.muted,letterSpacing:.8},monthTextSelected:{color:C.text},
+  monthChipSelected:{borderColor:C.accent,backgroundColor:equipmentColors.selected},monthChipActive:{borderColor:C.good},monthText:{fontSize:10,fontWeight:'900',color:C.muted,letterSpacing:.8},monthTextSelected:{color:C.text},
   monthSignals:{height:10,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:4},monthDot:{width:6,height:6,borderRadius:3,backgroundColor:C.accent},monthDotActive:{backgroundColor:C.good},monthDotEmpty:{width:6,height:6,borderRadius:3,borderWidth:1,borderColor:C.line},monthVisited:{fontSize:8,color:C.good,fontWeight:'900'},
   featureWrap:{gap:8},featureHeading:{flexDirection:'row',alignItems:'baseline',justifyContent:'space-between',gap:8},featureMonth:{fontSize:12,color:C.accent,fontWeight:'900',letterSpacing:1.2},featureHint:{fontSize:10,color:C.muted,fontWeight:'700'},
   featureCard:{gap:9,padding:12,borderWidth:1,borderLeftWidth:4,borderRadius:radii.md,backgroundColor:C.panel2},featureActive:{backgroundColor:'#272417'},identityRow:{flexDirection:'row',alignItems:'center',gap:10},

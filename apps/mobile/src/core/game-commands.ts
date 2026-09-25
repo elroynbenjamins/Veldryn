@@ -32,6 +32,7 @@ import type {FallenKnightBattleResult} from './story-boss';
 import {reconcileWorkingTowardGeneratedRules} from './working-toward-execution';
 import {earlyFeatureUnlocked} from './feature-unlocks';
 import {upgradeCompanionHousing} from './companion-housing';
+import {EVENTS_RELEASED} from './release-flags';
 
 /** Commands express intent. Neither a client save nor a client reward is accepted. */
 export interface GameCommand {type:string;args?:Record<string,unknown>}
@@ -116,6 +117,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
  if((command.type==='daily_supplies_claim'||command.type==='daily_supplies_activate')&&!earlyFeatureUnlocked(state,'dailySupplies'))throw new Error('daily_supplies_locked');
  if((command.type==='goals_set'||command.type==='idle_rules_set')&&!earlyFeatureUnlocked(state,'workingToward'))throw new Error('working_toward_locked');
  if(command.type==='seasonal'&&!earlyFeatureUnlocked(state,'contracts'))throw new Error('contract_board_locked');
+ if(command.type.startsWith('event_')&&!EVENTS_RELEASED)throw new Error('events_unreleased');
  if(command.type.startsWith('event_')&&!earlyFeatureUnlocked(state,'events'))throw new Error('events_locked');
  const companionMetricBefore=command.type.startsWith('companion_')?companionCommandEconomySnapshot(state):undefined;
  if(['companion_equip','companion_level','companion_ascend','companion_master'].includes(command.type))assertCompanionIdle(state,text(a,'id'));

@@ -1,4 +1,5 @@
 import {COLLECTIBLES} from './collectibles';
+import {EVENT_PET_COLLECTIBLES} from './event-collectible-content';
 
 export interface PermanentBoostDefinition {
   id: string;
@@ -68,6 +69,10 @@ const petBoostFor=(pet:{id:string;name:string;target:string;activeBps:number}):P
  */
 export const PET_PERMANENT_BOOSTS:Record<SourceBoostId,PermanentBoostDefinition>=Object.fromEntries(
   COLLECTIBLES.filter(row=>row.kind==='pet').map(pet=>[pet.id,petBoostFor(pet)])
+);
+/** Authored event-pet bonus definitions remain testable before those pets enter the released runtime catalog. */
+export const AUTHORED_EVENT_PET_PERMANENT_BOOSTS:Record<SourceBoostId,PermanentBoostDefinition>=Object.fromEntries(
+  EVENT_PET_COLLECTIBLES.map(pet=>[pet.id,petBoostFor(pet)])
 );
 
 export const BUYABLE_PERMANENT_BOOSTS: Record<SourceBoostId, PermanentBoostDefinition> = {

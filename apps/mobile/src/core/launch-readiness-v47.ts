@@ -12,7 +12,7 @@ import {RARE_DISCOVERY_POOLS_V46} from './rare-idle-discoveries-v46';
 import {BASE_OFFLINE_CAP_HOURS,FREE_OFFLINE_CAP_HOURS,MAX_OFFLINE_CAP_HOURS} from './game';
 import {COMBAT_CHALLENGE_IDS,COMBAT_CHALLENGES,challengeHuntStats,challengeHuntUnlocked} from './challenge-hunts';
 
-export const CURRENT_SKILL_IDS:readonly SkillId[]=['mining','woodcutting','fishing','smithing','cooking','herbalism','alchemy','hunting','exploration','tailoring','enchanting','faith'];
+export const CURRENT_SKILL_IDS:readonly SkillId[]=['mining','woodcutting','fishing','smithing','cooking','herbalism','alchemy','exploration','tailoring','enchanting','faith'];
 
 export interface LaunchReadinessIssue{severity:'blocker'|'warning';code:string;message:string;ref?:string}
 export interface LaunchReadinessReport{ok:boolean;issues:LaunchReadinessIssue[];counts:{classes:number;regions:number;items:number;monsters:number;bosses:number;gatheringActions:number;recipes:number;weeklyOrderCandidates:number;crossSkillDiscoveries:number;collectionSets:number;enabledRareDiscoveryPools:number}}

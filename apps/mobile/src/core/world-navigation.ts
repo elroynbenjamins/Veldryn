@@ -4,14 +4,25 @@ import {GATHERING} from '../content/skills';
 import {HERB_NODES} from '../content/herbalism';
 import {GameState} from './types';
 import {ITEMS} from '../content/items';
+import {explorationRouteUnlockingRegion} from '../content/exploration';
+import {explorationRouteCompleted} from './exploration-progression';
 
 export type RegionTravelAvailability='available'|'locked'|'inDevelopment';
+export function regionTravelLockReason(state:GameState,zone:WorldZoneDef){
+  if(worldZoneInDevelopment(zone))return zone.developmentNote??`${zone.name} is still in development`;
+  const level=state.character?.level??1;
+  if(level<zone.minLevel)return `Reach Level ${zone.minLevel}`;
+  const route=explorationRouteUnlockingRegion(zone.id);
+  if(route&&!explorationRouteCompleted(state,route.id))return `Complete ${route.name}`;
+  return '';
+}
 export function regionTravelAvailability(state:GameState,zone:WorldZoneDef):RegionTravelAvailability{
   if(worldZoneInDevelopment(zone))return 'inDevelopment';
-  return (state.character?.level??1)>=zone.minLevel?'available':'locked';
+  return regionTravelLockReason(state,zone)?'locked':'available';
 }
-export function nextRegionUnlock(level:number){
-  return WORLD_ZONES.filter(zone=>!worldZoneInDevelopment(zone)&&zone.minLevel>level).sort((a,b)=>a.minLevel-b.minLevel)[0];
+export function nextRegionUnlock(input:number|GameState){
+  if(typeof input==='number')return WORLD_ZONES.filter(zone=>!worldZoneInDevelopment(zone)&&zone.minLevel>input).sort((a,b)=>a.minLevel-b.minLevel)[0];
+  return WORLD_ZONES.filter(zone=>!worldZoneInDevelopment(zone)&&regionTravelAvailability(input,zone)!=='available').sort((a,b)=>a.minLevel-b.minLevel)[0];
 }
 export function regionEncounters(state:GameState,zoneName:string,query:string,availableOnly:boolean){
   const search=query.trim().toLowerCase();

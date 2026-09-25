@@ -2,7 +2,7 @@ import type {GameState,CharacterState,SkillState} from './types';
 import {classSkillsFor} from '../content/class-skills';
 import {levelFromXp} from './progression';
 export const CHARACTER_SLOT_THRESHOLDS=[0,250,500,950,1600] as const;
-const ENABLED_SKILLS=new Set(['mining','woodcutting','fishing','smithing','cooking','herbalism','alchemy','hunting','exploration','tailoring','enchanting','faith']);
+const ENABLED_SKILLS=new Set(['mining','woodcutting','fishing','smithing','cooking','herbalism','alchemy','exploration','tailoring','enchanting','faith']);
 const safeLevel=(row:any)=>Number.isFinite(row?.xp)&&row.xp>=0?levelFromXp(row.xp):1;
 export function characterSkillTotal(skills:SkillState[],character?:CharacterState|null){
  const ordinary=new Set<string>();let total=0;

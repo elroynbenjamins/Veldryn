@@ -51,6 +51,6 @@ for(const monsterId of HOLY_WATER_SOURCES.map(x=>x.monsterId))ok(MONSTERS.some(x
 ok(HOLY_WATER_SOURCES.some(x=>MONSTERS.find(m=>m.id===x.monsterId)?.zone==='Sunscar'),'Faith must have a Sunscar source');
 ok(HOLY_WATER_SOURCES.some(x=>MONSTERS.find(m=>m.id===x.monsterId)?.zone==='Frostmarch'),'Faith must have a Frostmarch source');
 ok(HOLY_WATER_SOURCES.some(x=>MONSTERS.find(m=>m.id===x.monsterId)?.zone==='Ashlands'),'Faith must have an Ashlands source');
-ok(MONSTERS.some(x=>x.zone==='Sunscar')&&MONSTERS.some(x=>x.zone==='Frostmarch')&&MONSTERS.some(x=>x.zone==='Ashlands'),'Hunting must retain combat targets through every released late region');
+ok(MONSTERS.some(x=>x.zone==='Sunscar')&&MONSTERS.some(x=>x.zone==='Frostmarch')&&MONSTERS.some(x=>x.zone==='Ashlands'),'Combat must retain targets through every released late region');
 
 console.log(JSON.stringify({status:'PASS',regionalGathering:GATHERING.length,herbalismNodes:HERB_NODES.length,recipes:RECIPES.length,explorationRoutes:EXPLORATION_ROUTES.length,faithSources:HOLY_WATER_SOURCES.length},null,2));

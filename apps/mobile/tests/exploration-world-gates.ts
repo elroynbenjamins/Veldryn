@@ -1,4 +1,4 @@
-import {claimActivity,createCharacter,newGame,startExploration,travelToRegion} from '../src/core/game';
+import {claimActivity,createCharacter,newGame,startCombat,startExploration,travelToRegion} from '../src/core/game';
 import {MONSTERS} from '../src/content/monsters';
 import {WORLD_ZONES} from '../src/content/world-map';
 import {totalXpAtLevel} from '../src/core/progression';
@@ -24,6 +24,9 @@ state=startExploration(state,'SCOUT_SILVERBROOK',t0+2_000);
 state=claimActivity(state,t0+92_001).state;
 ok(state.unlockedMonsterIds.includes('MIRE_HERON'),'Silverbrook scouting must reveal Mire Heron');
 ok(!encounterUnlocked(state,mireHeron),'Discovery must not bypass Mire Heron combat-level readiness');
+let earlyCombatRejected=false;
+try{startCombat(state,'MIRE_HERON',t0+92_500)}catch(error){earlyCombatRejected=String(error).includes('character level 12')}
+ok(earlyCombatRejected,'Core combat authority must reject a discovered encounter before its combat level');
 
 state={...state,character:{...state.character!,level:7}};
 ok(regionTravelAvailability(state,ironwood)==='available','Ironwood must remain a normal level-gated onboarding region');

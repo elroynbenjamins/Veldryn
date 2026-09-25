@@ -28,6 +28,7 @@ import {gatheringPacing} from './gathering-tools';
 import {gatheringToolDef} from '../content/gathering-tools';
 import {currentRegionId} from './combat-region';
 import {WORLD_ZONES,worldZoneInDevelopment} from '../content/world-map';
+import {regionTravelAvailability,regionTravelLockReason} from './world-navigation';
 import {enhancedGearStats,equippedEffectGemBonuses,equippedGemBonuses,hasEnhancement} from './equipment-enhancement';
 import {activeEquipmentSetRuntime,equipmentSetCombatModifiers} from './equipment-set-runtime';
 import {companionCombatContribution,reconcileCombatCompanionUnlocks,grantCompanionEssence,grantBondstones} from './combat-companions';
@@ -209,7 +210,8 @@ export function travelToRegion(state:GameState,regionId:string,nowMs:number){
   const zone=WORLD_ZONES.find(entry=>entry.id===regionId);
   if(!zone)throw new Error('Unknown region');
   if(worldZoneInDevelopment(zone))throw new Error(`${zone.name} is still in development`);
-  if(!state.character||state.character.level<zone.minLevel)throw new Error(`Reach character level ${zone.minLevel} to travel to ${zone.name}`);
+  if(!state.character)throw new Error('Create a character first');
+  if(regionTravelAvailability(state,zone)!=='available')throw new Error(regionTravelLockReason(state,zone));
   if(currentRegionId(state)===zone.id)return {state,reward:{xp:0,gold:0,items:[],kills:0,elapsedSeconds:0} as RewardBundle};
   const settled=claimActivity(state,nowMs);
   return {state:{...settled.state,currentRegionId:zone.id,activity:null},reward:settled.reward};

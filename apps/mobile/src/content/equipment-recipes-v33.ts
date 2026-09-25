@@ -73,7 +73,7 @@ function ingredients(tier:string,path:string,multiplier:number,skillId:'smithing
       case 'T5':return [{itemId:'SUNSCALE',quantity:q(25,multiplier)},{itemId:'AMBERGLASS',quantity:q(8,multiplier)}];
       case 'T6':return [{itemId:'SUNSCALE',quantity:q(30,multiplier)},{itemId:'AMBERGLASS',quantity:q(10,multiplier)},{itemId:'ASTRAL_SCRIPT',quantity:q(1,multiplier)}];
       case 'T7':return [{itemId:'FROSTBLOOM',quantity:q(32,multiplier)},{itemId:'RIMEGLASS',quantity:q(8,multiplier)}];
-      case 'T8':return [{itemId:'FROSTBLOOM',quantity:q(34,multiplier)},{itemId:'RIMEGLASS',quantity:q(10,multiplier)},{itemId:'CHOIR_BLOOM',quantity:q(1,multiplier)}];
+      case 'T8':return [{itemId:'FROSTBLOOM',quantity:q(33,multiplier)},{itemId:'RIMEGLASS',quantity:q(9,multiplier)},{itemId:'CHOIR_BLOOM',quantity:q(1,multiplier)}];
       case 'T9':return [{itemId:'ASHEN_MYRRH',quantity:q(40,multiplier)},{itemId:'BLACKGLASS_CORE',quantity:q(10,multiplier)},{itemId:'CINDER_HEART',quantity:q(3,multiplier)}];
       default:return [];
     }
@@ -87,7 +87,7 @@ function ingredients(tier:string,path:string,multiplier:number,skillId:'smithing
     case 'T5':return [{itemId:'SUNSTONE_INGOT',quantity:q(11,multiplier)},{itemId:'AMBERGLASS',quantity:q(7,multiplier)}];
     case 'T6':return [{itemId:'SUNSTONE_INGOT',quantity:q(15,multiplier)},{itemId:'AMBERGLASS',quantity:q(10,multiplier)},{itemId:'ASTRAL_SCRIPT',quantity:q(1,multiplier)}];
     case 'T7':return [{itemId:'FROSTIRON_INGOT',quantity:q(15,multiplier)},{itemId:'RIMEGLASS',quantity:q(8,multiplier)}];
-    case 'T8':return [{itemId:'FROSTIRON_INGOT',quantity:q(17,multiplier)},{itemId:'RIMEGLASS',quantity:q(10,multiplier)},{itemId:'CHOIR_BLOOM',quantity:q(1,multiplier)}];
+    case 'T8':return [{itemId:'FROSTIRON_INGOT',quantity:q(16,multiplier)},{itemId:'RIMEGLASS',quantity:q(9,multiplier)},{itemId:'CHOIR_BLOOM',quantity:q(1,multiplier)}];
     case 'T9':return [{itemId:'BLACKGLASS_INGOT',quantity:q(20,multiplier)},{itemId:'BLACKGLASS_CORE',quantity:q(10,multiplier)},{itemId:'CINDER_HEART',quantity:q(3,multiplier)}];
     default:return [];
   }

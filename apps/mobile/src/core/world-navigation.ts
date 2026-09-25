@@ -18,7 +18,7 @@ export function regionTravelLockReason(state:GameState,zone:WorldZoneDef){
   const level=state.character?.level??1;
   if(level<zone.minLevel)return `Reach character level ${zone.minLevel} to travel to ${zone.name}`;
   const routeId=REGION_SCOUT_REQUIREMENTS[zone.id];
-  if(routeId&&!state.exploredRouteIds.includes(routeId)){
+  if(routeId&&!(state.exploredRouteIds??[]).includes(routeId)){
     const source=routeId.replace(/^SCOUT_/,'').replace(/_/g,' ').toLowerCase().replace(/\b\w/g,char=>char.toUpperCase());
     return `Complete ${source} scouting to discover the route to ${zone.name}`;
   }

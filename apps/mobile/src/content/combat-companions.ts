@@ -142,5 +142,8 @@ const REGIONAL_COMPANIONS:CompanionDefinition[]=[
   regional('UNIT_024','Regent Shade','prestige','support',[req('event_challenge','Defeat the Regent Shade companion challenge','CHALLENGE_REGENT_SHADE',1)],'Champion / tactical utility',ASH,'BANNER_ASH','utility'),
 ];
 
-export const COMBAT_COMPANIONS:CompanionDefinition[]=[...ASTERFALL_COMPANIONS,...REGIONAL_COMPANIONS,...(EVENTS_RELEASED?EVENT_COMPANIONS:[])];
-export const combatCompanionDef=(id:string)=>COMBAT_COMPANIONS.find(entry=>entry.id===id);
+/** Complete authored catalog for event-engine validation and admin QA. */
+export const ALL_COMBAT_COMPANIONS:CompanionDefinition[]=[...ASTERFALL_COMPANIONS,...REGIONAL_COMPANIONS,...EVENT_COMPANIONS];
+/** Player-facing roster excludes event companions until live events are released. */
+export const COMBAT_COMPANIONS:CompanionDefinition[]=EVENTS_RELEASED?ALL_COMBAT_COMPANIONS:[...ASTERFALL_COMPANIONS,...REGIONAL_COMPANIONS];
+export const combatCompanionDef=(id:string)=>ALL_COMBAT_COMPANIONS.find(entry=>entry.id===id);

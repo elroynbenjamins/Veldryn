@@ -77,7 +77,7 @@ function materialFarmHours(state:ReturnType<typeof createCharacter>,itemId:strin
   if(depth>4)return 0;
   const gather=[...GATHERING,...HERB_NODES].find(row=>row.itemId===itemId);
   if(gather){
-    const pace=gatheringBalanceProjection(state,gather,24),affinity=skillAffinityModifiers(state.character?.classId,gather.skillId);
+    const pace=gatheringBalanceProjection(state,gather,24,Date.UTC(2025,0,6)),affinity=skillAffinityModifiers(state.character?.classId,gather.skillId);
     // This test guards authored material quantities at baseline, not specialist completion times.
     // Affinity runtime speed and unchanged per-action yields are tested separately across all classes.
     const baselineItemsPerHour=pace.runtimeItemsPerHour/affinity.speedMultiplier;

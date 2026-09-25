@@ -172,6 +172,7 @@ export function startCombat(state:GameState,monsterId:string,nowMs:number,combat
   if(!state.character)throw new Error('Create a character first');
   const m=MONSTERS.find(x=>x.id===monsterId);if(!m)throw new Error('Unknown monster');
   if(!state.unlockedMonsterIds.includes(monsterId))throw new Error('Monster not unlocked');
+  if(state.character.level<m.unlockLevel)throw new Error(`Reach character level ${m.unlockLevel} before fighting ${m.name}`);
   if(m.boss)throw new Error('Bosses use challengeFallenKnight');
   if(zoneIdForTarget(monsterId)!==currentRegionId(state))throw new Error(`Travel to ${m.zone} before fighting ${m.name}`);
   if(combatChallengeId&&!challengeHuntUnlocked(state,monsterId,combatChallengeId))throw new Error('Raise this monster\'s Mastery to unlock that Challenge Hunt.');

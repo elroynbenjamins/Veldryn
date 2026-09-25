@@ -6,9 +6,27 @@ import {GameState} from './types';
 import {ITEMS} from '../content/items';
 
 export type RegionTravelAvailability='available'|'locked'|'inDevelopment';
+const REGION_SCOUT_REQUIREMENTS:Partial<Record<string,string>>={
+ OLD_MINES:'SCOUT_IRONWOOD',
+ KINGS_ROAD:'SCOUT_OLD_MINES',
+ SUNSCAR:'SCOUT_KINGS_ROAD',
+ FROSTMARCH:'SCOUT_SUNSCAR',
+ ASHLANDS:'SCOUT_FROSTMARCH',
+};
+export function regionTravelLockReason(state:GameState,zone:WorldZoneDef){
+  if(worldZoneInDevelopment(zone))return zone.name+' is still in development';
+  const level=state.character?.level??1;
+  if(level<zone.minLevel)return `Reach character level ${zone.minLevel} to travel to ${zone.name}`;
+  const routeId=REGION_SCOUT_REQUIREMENTS[zone.id];
+  if(routeId&&!state.exploredRouteIds.includes(routeId)){
+    const source=routeId.replace(/^SCOUT_/,'').replace(/_/g,' ').toLowerCase().replace(/\b\w/g,char=>char.toUpperCase());
+    return `Complete ${source} scouting to discover the route to ${zone.name}`;
+  }
+  return undefined;
+}
 export function regionTravelAvailability(state:GameState,zone:WorldZoneDef):RegionTravelAvailability{
   if(worldZoneInDevelopment(zone))return 'inDevelopment';
-  return (state.character?.level??1)>=zone.minLevel?'available':'locked';
+  return regionTravelLockReason(state,zone)?'locked':'available';
 }
 export function nextRegionUnlock(level:number){
   return WORLD_ZONES.filter(zone=>!worldZoneInDevelopment(zone)&&zone.minLevel>level).sort((a,b)=>a.minLevel-b.minLevel)[0];

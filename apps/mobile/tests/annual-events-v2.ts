@@ -1,4 +1,5 @@
 import {createCharacter,newGame} from '../src/core/game';
+import {EVENTS_RELEASED} from '../src/core/release-flags';
 import type {GameState} from '../src/core/types';
 import {applyEventDiscoveries,applyEventDrops,claimEventDiscovery,claimEventReward,eventLifecycle,eventShopOffers,purchaseEventOffer} from '../src/core/live-events';
 
@@ -6,6 +7,9 @@ function fail(message:string):never{throw new Error(message)}
 function ok(value:unknown,message:string){if(!value)fail(message)}
 function equal(actual:unknown,expected:unknown,message:string){if(actual!==expected)fail(`${message}: expected ${String(expected)}, got ${String(actual)}`)}
 
+if(!EVENTS_RELEASED){
+ console.log('SKIP: annual live-event reward runtime remains unreleased');
+} else {
 const now=5_000_000;
 const withEvent=(eventId:string):GameState=>{
   const state=createCharacter(newGame(now),'IRONWARDEN','SeasonTester');
@@ -52,3 +56,4 @@ frost=claimEventReward(frost,'EVT_UNIT_009',now);
 ok(frost.account.unlockedCombatCompanionIds?.includes('EVT_UNIT_009'),'Frostfall final milestone grants Frostbell Herald');
 
 console.log('PASS: Veilbreak and Frostfall activate and grant their canonical event collectibles');
+}

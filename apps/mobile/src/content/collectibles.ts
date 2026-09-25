@@ -46,6 +46,16 @@ export const PROFILE_COLLECTIBLES:readonly CollectibleDefinition[]=[
   entry('frame_wheat_crown','border','Wheat Crown','gold','Harvestwake event shop',200,undefined,'event'),
 ];
 
+/** Full authored catalog used by runtime compatibility and diagnostics.
+ * Release flags still control what can be surfaced or newly acquired.
+ */
+export const RUNTIME_COLLECTIBLES:readonly CollectibleDefinition[]=[
+  ...CORE_PET_COLLECTIBLES,
+  ...EVENT_PET_COLLECTIBLES,
+  ...LEGACY_PET_COLLECTIBLES,
+  ...PROFILE_COLLECTIBLES,
+];
+
 export const COLLECTIBLES:readonly CollectibleDefinition[]=[
   ...CORE_PET_COLLECTIBLES,
   ...(EVENTS_RELEASED?EVENT_PET_COLLECTIBLES:[]),

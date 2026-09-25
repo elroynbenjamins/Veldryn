@@ -1,2 +1,2 @@
-/** Event systems remain authored but stay out of the released game until the first live event launches. */
-export const EVENTS_RELEASED=false;
+/** Event framework is production-ready; the server event registry decides whether any event is actually active. */
+export const EVENTS_RELEASED=true;

@@ -106,7 +106,7 @@ export interface GameState {
   currentRegionId:string;
   /** Optional server/read-model projection for versioned regional journals. */
   regionalProgressById?:Record<string,RegionalProgressState>;
-  quests:QuestState[]; unlockedMonsterIds:string[]; exploredRouteIds:string[]; defeatedBossIds:string[]; skills:SkillState[];
+  quests:QuestState[]; unlockedMonsterIds:string[]; exploredRouteIds?:string[]; defeatedBossIds:string[]; skills:SkillState[];
   account:CompanionAccountState & {longTermAccountScopeId?:string;entitlements?:Record<string,boolean>;playerNameStyle?:import('./player-name-style').PlayerNameStylePreference;vipPlusNameColor?:string;equipmentCraftingQueue?:EquipmentCraftJob[];craftedGearInstances?:CraftedGearInstance[];unlockedCharacterSlots?:number;premiumCurrencyBalance?:number;ownedBoostIds?:string[];eventCommunityProgressById?:Record<string,number>;createdCharacterCount:number;guildMember:boolean;patronTier:'none'|'bloom'|'crown';guildBannerId?:import('./guild-customization').GuildBannerId;guildProfileFrameId?:import('./guild-customization').GuildFrameId;guildNameplateId?:import('./guild-customization').GuildNameplateId;guildMotto?:string;
   professionMasteryByAction?:Record<string,import('./profession-mastery-v40').ProfessionMasteryRecord>;
   weeklyOrders?:import('./weekly-orders-v41').WeeklyOrdersState;

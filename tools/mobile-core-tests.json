@@ -74,6 +74,7 @@
   ".core-build/apps/mobile/tests/live-events.js",
   ".core-build/apps/mobile/tests/live-event-catalog.js",
   ".core-build/apps/mobile/tests/annual-event-calendar.js",
+  ".core-build/apps/mobile/tests/app-release-policy.js",
   ".core-build/apps/mobile/tests/annual-events-v3.js",
   ".core-build/apps/mobile/tests/annual-events-v4.js",
   ".core-build/apps/mobile/tests/annual-events-v2.js",

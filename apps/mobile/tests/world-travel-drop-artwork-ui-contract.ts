@@ -11,7 +11,7 @@ const monsters=read('src/content/monsters.ts');
 ok(worldMap.includes("availability:'inDevelopment'")&&worldMap.includes("id:'VEILLANDS'"),'Future region must remain represented as In Development');
 ok(world.includes("title={unlocked?'Travel':inDevelopment?'In development':'Locked'}"),'Travel cards must distinguish Available, Locked and In Development');
 ok(!world.includes('TravelRegionModal'),'World travel must not render a destination modal');
-ok(world.includes("inDevelopment?'IN DEVELOPMENT'"),'World destination cards must visibly label future regions');
+ok(world.includes("inDevelopment?'In Development'")&&world.includes('inDevelopment&&s.developmentDestination'),'World destination cards must visibly label future regions');
 ok(scenes.includes("world-zone-scenes-v1.jpg"),'Travel cards must use the dedicated world-zone scene atlas');
 
 const coverageFiles=[

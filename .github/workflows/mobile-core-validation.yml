@@ -17,6 +17,10 @@ on:
       - '.github/workflows/mobile-core-validation.yml'
   workflow_dispatch:
 
+concurrency:
+  group: mobile-core-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   mobile-core:
     runs-on: ubuntu-latest

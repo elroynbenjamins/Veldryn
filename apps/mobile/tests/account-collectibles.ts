@@ -5,6 +5,7 @@ import {collectionBonusBreakdown,selectCollectible,unlockCollectible} from '../s
 import {normalizeOwnedPetIds,normalizeSelectedPetId} from '../src/core/pet-collection';
 import {createCharacter,newGame} from '../src/core/game';
 import {migrateSave} from '../src/core/save-migrations';
+import {EVENTS_RELEASED} from '../src/core/release-flags';
 
 const fail=(message:string)=>{throw new Error(message)};
 const equal=(actual:unknown,expected:unknown,message:string)=>{if(actual!==expected)fail(`${message}: expected ${String(expected)}, got ${String(actual)}`)};
@@ -14,10 +15,12 @@ validateCorePetCatalog();
 
 equal(CORE_PET_COLLECTIBLES.length,33,'canonical core pet count');
 equal(EVENT_PET_COLLECTIBLES.length,19,'event pet count');
+const releasedLegacy=LEGACY_PET_COLLECTIBLES.filter(row=>EVENTS_RELEASED||row.collectionGroup!=='event');
+const releasedProfile=PROFILE_COLLECTIBLES.filter(row=>EVENTS_RELEASED||row.collectionGroup!=='event');
 equal(
   COLLECTIBLES.length,
-  CORE_PET_COLLECTIBLES.length+EVENT_PET_COLLECTIBLES.length+LEGACY_PET_COLLECTIBLES.length+PROFILE_COLLECTIBLES.length,
-  'combined collectible catalog count',
+  CORE_PET_COLLECTIBLES.length+(EVENTS_RELEASED?EVENT_PET_COLLECTIBLES.length:0)+releasedLegacy.length+releasedProfile.length,
+  'combined collectible catalog count respects event release state',
 );
 
 const coreIds=CORE_PET_COLLECTIBLES.map(row=>row.id);

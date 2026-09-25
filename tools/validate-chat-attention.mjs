@@ -40,7 +40,9 @@ for(const [needle,label] of [
 ])need(hook,needle,label);
 
 for(const [needle,label] of [
- ['TabAttention','per-channel tab attention'],
+ ['function RailTab','per-channel RailTab attention'],
+ ['const attention=mentions>0','mention-first tab attention'],
+ ['s.mentionBadge','mention badge styling'],
  ['guildUnread','Guild tab unread'],
  ['partyUnread','Party tab unread'],
  ['guildMentions','Guild tab mentions'],

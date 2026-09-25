@@ -27,7 +27,7 @@ if(skillDestination.kind==='skills'){equal(skillDestination.mode,'gathering','Mi
 const skillExecution=workingTowardExecutionPlan(state,skillGoal);
 equal(skillExecution.executionState,'blocked','gathering skill goal reports its region progression gate when no authored node is character-accessible yet');
 ok(skillExecution.queueBlocker?.includes('Level 16'),'skill execution blocker exposes the Old Mines Level gate');
-const travelSkillState={...state,character:{...state.character!,level:20}};
+const travelSkillState={...state,exploredRouteIds:[...(state.exploredRouteIds??[]),'SCOUT_IRONWOOD'],character:{...state.character!,level:20}};
 const travelSkillExecution=workingTowardExecutionPlan(travelSkillState,skillGoal);
 equal(travelSkillExecution.executionState,'travel','gathering skill goal switches to travel once the region is unlocked but not current');
 ok(travelSkillExecution.queueBlocker?.includes('Old Mines'),'skill execution travel state names the destination region');
@@ -137,7 +137,7 @@ equal(view.status,'complete','completed goal is detected by the shared planner c
 equal(workingTowardReadyCount(state),1,'Home/Account attention detects a completed pinned goal');
 
 let prepState=createCharacter(newGame(500),'IRONWARDEN','Preparation Tracker');
-prepState={...prepState,character:{...prepState.character!,level:20,gold:100000},skills:prepState.skills.map(skill=>skill.skillId==='smithing'?{...skill,level:12,xp:totalXpAtLevel(12)}:skill.skillId==='mining'?{...skill,level:8,xp:totalXpAtLevel(8)}:skill.skillId==='woodcutting'?{...skill,level:7,xp:totalXpAtLevel(7)}:skill)};
+prepState={...prepState,exploredRouteIds:[...(prepState.exploredRouteIds??[]),'SCOUT_IRONWOOD'],character:{...prepState.character!,level:20,gold:100000},skills:prepState.skills.map(skill=>skill.skillId==='smithing'?{...skill,level:12,xp:totalXpAtLevel(12)}:skill.skillId==='mining'?{...skill,level:8,xp:totalXpAtLevel(8)}:skill.skillId==='woodcutting'?{...skill,level:7,xp:totalXpAtLevel(7)}:skill)};
 const fittingRecipe=RECIPES.find(row=>row.id==='FORGE_REINFORCED_FITTING')!,initialRoute=recipePreparationRoute(prepState,fittingRecipe,1);
 const preparationGoal=recipePreparationGoalForRecipe({state:prepState,recipe:fittingRecipe,batches:1,initialStepCount:initialRoute.steps.length,nowMs:600});
 const normalizedPreparation=normalizeProgressionGoals([preparationGoal],prepState.character!.id)[0];

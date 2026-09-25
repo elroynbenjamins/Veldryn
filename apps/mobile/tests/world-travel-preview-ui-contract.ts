@@ -13,7 +13,7 @@ ok(navigation.includes('!worldZoneInDevelopment(zone)&&zone.minLevel>level'),'In
 ok(navigation.includes('const released=!worldZoneInDevelopment(region)'),'In-development regions must never become active just from level');
 ok(world.includes('<ZoneSceneArtwork regionId={current.id}/>'),'Current-region card must use scenic zone artwork');
 ok(world.includes('<ZoneSceneArtwork regionId={zone.id} muted={!unlocked}/>'),'Travel cards must use scenic artwork and dim unavailable regions');
-ok(world.includes("inDevelopment?'IN DEVELOPMENT'"),'Future-region cards need a clear In Development state');
+ok(world.includes("inDevelopment?'In Development'")&&world.includes('inDevelopment&&s.developmentDestination'),'Future-region cards need a clear In Development state');
 ok(!world.includes('TravelRegionModal'),'World travel must not open a preview modal');
 ok(world.includes("title={unlocked?'Travel':inDevelopment?'In development':'Locked'}")&&world.includes('disabled={!unlocked}'),'Unavailable regions must show their state and remain disabled');
 console.log('PASS: world travel is direct and unavailable regions remain clearly disabled');

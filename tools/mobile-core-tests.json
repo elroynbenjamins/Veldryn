@@ -71,6 +71,7 @@
   ".core-build/apps/mobile/tests/coop-qmode.js",
   ".core-build/apps/mobile/tests/save-transfer.js",
   ".core-build/apps/mobile/tests/localization.js",
+  ".core-build/apps/mobile/tests/event-release-gating.js",
   ".core-build/apps/mobile/tests/live-events.js",
   ".core-build/apps/mobile/tests/live-event-catalog.js",
   ".core-build/apps/mobile/tests/annual-event-calendar.js",

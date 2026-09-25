@@ -199,7 +199,7 @@ export function dropPaceBand(averageFindSeconds:number):{band:DropPaceBand;label
   return {band:'frequent',label:'FREQUENT'};
 }
 
-export type ActivityProgressKind='combat'|'gathering'|'crafting'|'training'|'exploration'|'faith'|'hunting';
+export type ActivityProgressKind='combat'|'gathering'|'crafting'|'training'|'exploration'|'faith';
 export function activityProgressFeedback(kind:ActivityProgressKind,progress:number){
  const p=Math.max(0,Math.min(1,progress));
  if(kind==='combat')return p<.25?'Tracking the target…':p<.65?'Trading blows…':p<.92?'Pressing the advantage…':'Finishing the encounter…';
@@ -207,7 +207,6 @@ export function activityProgressFeedback(kind:ActivityProgressKind,progress:numb
  if(kind==='training')return p<.25?'Warming up…':p<.7?'Practicing technique…':p<.95?'Refining form…':'Completing the drill…';
  if(kind==='exploration')return p<.25?'Setting out…':p<.7?'Surveying the route…':p<.95?'Following the trail…':'Completing the route…';
  if(kind==='faith')return p<.25?'Beginning practice…':p<.7?'Maintaining focus…':p<.95?'Deepening devotion…':'Completing the practice…';
- if(kind==='hunting')return p<.25?'Reading tracks…':p<.7?'Following signs…':p<.95?'Closing in…':'Completing the hunt…';
  return p<.25?'Preparing tools…':p<.7?'Working the resource…':p<.95?'Finishing the action…':'Packing the yield…';
 }
 
@@ -216,6 +215,6 @@ export function activeActivityLevelPace(state:GameState,xpPerHour:number):LevelP
   if(activity.kind==='combat')return characterLevelPace(state,xpPerHour);
   const gather=[...GATHERING,...HERB_NODES].find(row=>row.id===activity.targetId);
   if(gather)return skillLevelPace(state,gather.skillId as GatheringSkillId,xpPerHour);
-  if(activity.kind==='alchemy'||activity.kind==='exploration'||activity.kind==='faith'||activity.kind==='hunting')return skillLevelPace(state,activity.kind as SkillId,xpPerHour);
+  if(activity.kind==='alchemy'||activity.kind==='exploration'||activity.kind==='faith')return skillLevelPace(state,activity.kind as SkillId,xpPerHour);
   return undefined;
 }

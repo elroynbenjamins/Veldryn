@@ -1,2 +1,3 @@
-/** Event systems remain authored but stay out of the released game until the first live event launches. */
+/** Live event gameplay remains disabled until the first scheduled season launches.
+ * The Event Hub calendar/history stays visible while this is false. */
 export const EVENTS_RELEASED=false;

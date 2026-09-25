@@ -31,7 +31,7 @@ export interface RewardLootHighlight{
 
 const SKILL_LABELS:Record<SkillId,string>={
  mining:'Mining',woodcutting:'Woodcutting',fishing:'Fishing',herbalism:'Herbalism',
- smithing:'Smithing',cooking:'Cooking',alchemy:'Alchemy',hunting:'Hunting',
+ smithing:'Smithing',cooking:'Cooking',alchemy:'Alchemy',
  exploration:'Exploration',tailoring:'Tailoring',enchanting:'Enchanting',faith:'Faith',
 };
 const RARITY_ORDER:ItemRarity[]=['common','uncommon','rare','epic','legendary','mythic'];

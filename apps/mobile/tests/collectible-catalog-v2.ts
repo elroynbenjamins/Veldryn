@@ -1,7 +1,7 @@
 import {COLLECTIBLES,validateCollectibleCatalog} from '../src/content/collectibles';
 import {CORE_PET_COLLECTIBLES,validateCorePetCatalog} from '../src/content/core-pets';
 import {EVENT_PET_COLLECTIBLES} from '../src/content/event-collectible-content';
-import {COMBAT_COMPANIONS} from '../src/content/combat-companions';
+import {AUTHORED_COMBAT_COMPANIONS} from '../src/content/combat-companions';
 
 function fail(message:string):never{throw new Error(message)}
 function equal(actual:unknown,expected:unknown,message:string){if(actual!==expected)fail(`${message}: expected ${String(expected)}, got ${String(actual)}`)}
@@ -13,7 +13,7 @@ validateCorePetCatalog();
 equal(CORE_PET_COLLECTIBLES.length,33,'core pet count');
 equal(EVENT_PET_COLLECTIBLES.length,19,'event pet count');
 
-const eventCompanions=COMBAT_COMPANIONS.filter(row=>row.id.startsWith('EVT_UNIT_'));
+const eventCompanions=AUTHORED_COMBAT_COMPANIONS.filter(row=>row.id.startsWith('EVT_UNIT_'));
 equal(eventCompanions.length,10,'event companion count');
 
 const allPetIds=COLLECTIBLES.filter(row=>row.kind==='pet').map(row=>row.id);

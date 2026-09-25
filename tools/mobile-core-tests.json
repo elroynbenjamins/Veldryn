@@ -86,6 +86,7 @@
   ".core-build/apps/mobile/tests/dashboard-guidance.js",
   ".core-build/apps/mobile/tests/balance-projection.js",
   ".core-build/apps/mobile/tests/exploration-balance.js",
+  ".core-build/apps/mobile/tests/exploration-world-gates.js",
   ".core-build/apps/mobile/tests/faith.js",
   ".core-build/apps/mobile/tests/class-skills.js",
   ".core-build/apps/mobile/tests/crafting-professions.js",

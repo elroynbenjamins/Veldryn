@@ -4,11 +4,26 @@ import {GATHERING} from '../content/skills';
 import {HERB_NODES} from '../content/herbalism';
 import {GameState} from './types';
 import {ITEMS} from '../content/items';
+import {EXPLORATION_GATED_MONSTER_IDS,explorationRouteForRegion,explorationRouteForRegionUnlock} from '../content/exploration';
 
 export type RegionTravelAvailability='available'|'locked'|'inDevelopment';
+export function explorationRouteCompleted(state:GameState,route=explorationRouteForRegionUnlock('')){
+  if(!route)return true;
+  return !!route.unlockMonsterId&&state.unlockedMonsterIds.includes(route.unlockMonsterId);
+}
+export function regionTravelLockReason(state:GameState,zone:WorldZoneDef){
+  if(worldZoneInDevelopment(zone))return zone.developmentNote??(zone.name+' is still in development.');
+  if((state.character?.level??1)<zone.minLevel)return `Reach character level ${zone.minLevel} to travel to ${zone.name}.`;
+  const route=explorationRouteForRegionUnlock(zone.id);
+  if(route&&!explorationRouteCompleted(state,route)){
+    const source=WORLD_ZONES.find(candidate=>candidate.id===route.zoneId);
+    return `Complete ${route.name} in ${source?.name??route.zoneId} to discover the road to ${zone.name}.`;
+  }
+  return '';
+}
 export function regionTravelAvailability(state:GameState,zone:WorldZoneDef):RegionTravelAvailability{
   if(worldZoneInDevelopment(zone))return 'inDevelopment';
-  return (state.character?.level??1)>=zone.minLevel?'available':'locked';
+  return regionTravelLockReason(state,zone)?'locked':'available';
 }
 export function nextRegionUnlock(level:number){
   return WORLD_ZONES.filter(zone=>!worldZoneInDevelopment(zone)&&zone.minLevel>level).sort((a,b)=>a.minLevel-b.minLevel)[0];
@@ -19,9 +34,14 @@ export function regionEncounters(state:GameState,zoneName:string,query:string,av
 }
 export function encounterUnlocked(state:GameState,monster:MonsterDef){
   const region=WORLD_ZONES.find(zone=>zone.name===monster.zone);
-  if(!state.character||state.character.level<(region?.minLevel??1))return false;
-  if(monster.boss)return state.character.level>=monster.unlockLevel&&state.quests.find(q=>q.questId==='QST_014')?.status!=='locked';
+  if(!state.character||state.character.level<(region?.minLevel??1)||state.character.level<monster.unlockLevel)return false;
+  if(monster.boss)return state.quests.find(q=>q.questId==='QST_014')?.status!=='locked';
   return state.unlockedMonsterIds.includes(monster.id);
+}
+export function regionEntryMonsterId(regionId:string){
+  const region=WORLD_ZONES.find(zone=>zone.id===regionId);
+  if(!region)return undefined;
+  return MONSTERS.filter(monster=>monster.zone===region.name&&!monster.boss&&!EXPLORATION_GATED_MONSTER_IDS.has(monster.id)).sort((a,b)=>a.unlockLevel-b.unlockLevel||a.level-b.level)[0]?.id;
 }
 export interface RegionActivitySummary{
   regionId:string;
@@ -78,7 +98,8 @@ export function regionTravelPreview(state:GameState,regionId:string):RegionTrave
   const region=WORLD_ZONES.find(zone=>zone.id===regionId);
   if(!region)throw new Error('unknown_region');
   const monsters=MONSTERS.filter(monster=>monster.zone===region.name);
-  const enemies=monsters.slice().sort((a,b)=>Number(a.boss)-Number(b.boss)||a.level-b.level).slice(0,4).map(monster=>({id:monster.id,name:monster.name,boss:!!monster.boss}));
+  const visibleMonsters=monsters.filter(monster=>monster.boss||!EXPLORATION_GATED_MONSTER_IDS.has(monster.id)||state.unlockedMonsterIds.includes(monster.id));
+  const enemies=visibleMonsters.slice().sort((a,b)=>Number(a.boss)-Number(b.boss)||a.level-b.level).slice(0,4).map(monster=>({id:monster.id,name:monster.name,boss:!!monster.boss}));
   const drops=[] as RegionTravelPreview['drops'];
   const seen=new Set<string>();
   for(const monster of monsters){
@@ -94,6 +115,6 @@ export function regionTravelPreview(state:GameState,regionId:string):RegionTrave
   const summary=regionActivitySummary(state,regionId);
   const activities=worldZoneInDevelopment(region)
     ?(region.plannedActivities??['Regional content'])
-    :['Combat',...summary.gatheringSkills.map(skill=>skill.replace(/_/g,' ').replace(/\b\w/g,letter=>letter.toUpperCase()))];
+    :['Combat',...(explorationRouteForRegion(region.id)?['Exploration']:[]),...summary.gatheringSkills.map(skill=>skill.replace(/_/g,' ').replace(/\b\w/g,letter=>letter.toUpperCase()))];
   return {enemies,drops,activities:[...new Set(activities)]};
 }

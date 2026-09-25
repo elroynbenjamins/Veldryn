@@ -1,4 +1,4 @@
-import {COMBAT_COMPANIONS,COMPANION_ASCENSION_BASE_COST,COMPANION_BOND_CONFIG,COMPANION_LEVEL_CURVE,COMPANION_RARITY_CONFIG,COMPANION_SANCTUARY_BOND_BONUS,COMPANION_SANCTUARY_CONFIG,COMPANION_SANCTUARY_TRAINING_XP_PER_DAY,COMPANION_SANCTUARY_WEEKLY_ESSENCE,COMPANION_STAGE_CAPS,combatCompanionDef} from '../content/combat-companions';
+import {COMBAT_COMPANIONS,COMPANION_ASCENSION_BASE_COST,COMPANION_BOND_CONFIG,COMPANION_LEVEL_CURVE,COMPANION_RARITY_CONFIG,COMPANION_SANCTUARY_BOND_BONUS,COMPANION_SANCTUARY_CONFIG,COMPANION_SANCTUARY_TRAINING_XP_PER_DAY,COMPANION_SANCTUARY_WEEKLY_ESSENCE,COMPANION_STAGE_CAPS,authoredCombatCompanionDef,combatCompanionDef} from '../content/combat-companions';
 import {normalizeClassSkills} from './class-skills';
 import {normalizeMonsterMastery} from './monster-mastery';
 import {companionHousingLevelCap,companionHousingTier} from './companion-housing';
@@ -200,6 +200,13 @@ export function reconcileCombatCompanionUnlocks<T extends CombatCompanionStateHo
 }
 export function unlockCombatCompanion<T extends CombatCompanionStateHost>(state:T,id:string,nowMs=Date.now()):T{
   const def=combatCompanionDef(id);if(!def)throw new Error('Unknown combat companion.');
+  const clean=sanitizeCombatCompanionState(state),owned=clean.account.unlockedCombatCompanionIds??[];
+  if(owned.includes(id))return clean;
+  return {...clean,account:{...clean.account,unlockedCombatCompanionIds:[...owned,id],combatCompanionProgress:{...(clean.account.combatCompanionProgress??{}),[id]:{...defaultOwnedCompanionProgress(nowMs),originalEventReleaseYear:def.availability?.originalReleaseYear,veteranCosmeticEligible:def.availability?.veteranCosmeticEligibility}}}} as T;
+}
+/** Event reward settlement may validate authored rewards before their production release flag is enabled. */
+export function unlockAuthoredCombatCompanion<T extends CombatCompanionStateHost>(state:T,id:string,nowMs=Date.now()):T{
+  const def=authoredCombatCompanionDef(id);if(!def)throw new Error('Unknown authored combat companion.');
   const clean=sanitizeCombatCompanionState(state),owned=clean.account.unlockedCombatCompanionIds??[];
   if(owned.includes(id))return clean;
   return {...clean,account:{...clean.account,unlockedCombatCompanionIds:[...owned,id],combatCompanionProgress:{...(clean.account.combatCompanionProgress??{}),[id]:{...defaultOwnedCompanionProgress(nowMs),originalEventReleaseYear:def.availability?.originalReleaseYear,veteranCosmeticEligible:def.availability?.veteranCosmeticEligibility}}}} as T;

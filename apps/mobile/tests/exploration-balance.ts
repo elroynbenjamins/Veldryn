@@ -13,7 +13,9 @@ ok(green===1440,'Starter Exploration pace should remain unchanged');
 ok(oldMines>green&&sunscar>oldMines&&frost>sunscar&&ash>frost,'Exploration XP/hour should rise with later routes');
 const explorationGates=EXPLORATION_ROUTES.map(route=>route.requiredExplorationLevel);
 ok(explorationGates.every((level,index)=>index===0||level>=explorationGates[index-1]),'Exploration skill requirements must never move backwards');
-ok(EXPLORATION_ROUTES.every(route=>!!route.unlockMonsterId&&!!route.unlockRegionId),'Every released Exploration route must reveal an encounter and chart the next road');
+ok(EXPLORATION_ROUTES.every(route=>!!route.unlockMonsterId),'Every Exploration route must reveal a hidden regional encounter');
+const roadRoutes=EXPLORATION_ROUTES.filter(route=>!!route.unlockRegionId);
+ok(roadRoutes.length===6&&roadRoutes[0]?.zoneId==='IRONWOOD','Exploration road gating must begin after the early Greenfields/Silverbrook onboarding regions');
 
 const at=(level:number,xpPerHour:number)=>{
  const state={...base,skills:base.skills.map(row=>row.skillId==='exploration'?{...row,level,xp:totalXpAtLevel(level)}:row)};

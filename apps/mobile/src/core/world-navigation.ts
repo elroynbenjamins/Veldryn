@@ -7,7 +7,7 @@ import {ITEMS} from '../content/items';
 import {EXPLORATION_GATED_MONSTER_IDS,explorationRouteForRegion,explorationRouteForRegionUnlock} from '../content/exploration';
 
 export type RegionTravelAvailability='available'|'locked'|'inDevelopment';
-export function explorationRouteCompleted(state:GameState,route=explorationRouteForRegionUnlock('')){
+export function explorationRouteCompleted(state:GameState,route:ReturnType<typeof explorationRouteForRegionUnlock>){
   if(!route)return true;
   return !!route.unlockMonsterId&&state.unlockedMonsterIds.includes(route.unlockMonsterId);
 }

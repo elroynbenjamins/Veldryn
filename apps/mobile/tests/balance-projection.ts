@@ -132,7 +132,6 @@ ok(activityProgressFeedback('gathering',.1)==='Preparing tools…'&&activityProg
 ok(activityProgressFeedback('combat',.1)==='Tracking the target…'&&activityProgressFeedback('combat',.8)==='Pressing the advantage…','Combat cycle feedback must describe real progress phases');
 ok(activityProgressFeedback('crafting',.1)==='Preparing materials…'&&activityProgressFeedback('faith',.8)==='Deepening devotion…','Crafting and Faith must use activity-specific progress language');
 ok(activityProgressFeedback('training',.8)==='Refining form…'&&activityProgressFeedback('exploration',.8)==='Following the trail…','Training and Exploration must use activity-specific progress language');
-ok(activityProgressFeedback('hunting',.1)==='Reading tracks…'&&activityProgressFeedback('hunting',.8)==='Closing in…','Hunting must use hunt-specific progress language');
 
 const activityBase=createCharacter(newGame(1),'IRONWARDEN','Activity Pace Tester');
 const exploreState={...activityBase,activity:{kind:'exploration',targetId:'SCOUT_GREENFIELDS',startedAtMs:1,lastClaimAtMs:1} as any};

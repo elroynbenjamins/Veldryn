@@ -1,0 +1,10 @@
+{
+  "latestVersion": "0.1.0",
+  "minimumVersion": "0.1.0",
+  "forceAfter": null,
+  "storeUrl": "https://play.google.com/store/apps/details?id=com.elroybenjamins.veldryn",
+  "updateTitle": "VELDRYN has been updated",
+  "updateMessage": "This version is no longer supported. Update to continue your adventure.",
+  "maintenanceMode": false,
+  "maintenanceMessage": "VELDRYN is temporarily unavailable while maintenance is completed."
+}

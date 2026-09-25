@@ -1,5 +1,5 @@
 import {BUYABLE_PERMANENT_BOOSTS,SKIN_PERMANENT_BOOSTS,type PermanentBoostDefinition} from '../content/permanent-boosts';
-import type {CollectibleTarget} from '../content/collectibles';
+import {RUNTIME_COLLECTIBLES,type CollectibleTarget} from '../content/collectibles';
 import {GameState} from './types';
 import {selectedFaithBlessing} from './faith';
 import {collectionBonusBreakdown} from './collectibles';
@@ -151,7 +151,7 @@ export function characterPermanentMultipliers(state:GameState):PermanentMultipli
 
   // One source of truth for pets/backgrounds/borders. This is the same capped
   // +0.50% owned passive + selected active math shown by the collection UI.
-  for(const row of collectionBonusBreakdown(state)){
+  for(const row of collectionBonusBreakdown(state,RUNTIME_COLLECTIBLES)){
     if(row.appliedBps>0)result=merge(result,collectibleTargetMultipliers(row.target,row.appliedBps));
   }
 

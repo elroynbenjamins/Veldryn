@@ -74,7 +74,7 @@ const s=StyleSheet.create({
   badge:{fontSize:8,color:C.good,fontWeight:'900',letterSpacing:.6},featureMeta:{flexDirection:'row',justifyContent:'space-between',gap:8,flexWrap:'wrap'},meta:{fontSize:10,color:C.muted,lineHeight:15},
   regionalCard:{padding:12,borderWidth:1,borderStyle:'dashed',borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2,gap:4},regionalTitle:{...typography.bodyStrong,color:C.text},
   timelineHeader:{marginTop:spacing.lg,flexDirection:'row',justifyContent:'space-between',alignItems:'baseline',gap:8},timelineHint:{fontSize:9,color:C.muted},
-  timeline:{marginTop:8},timelineRow:{minHeight:58,flexDirection:'row',alignItems:'center',gap:8,paddingRight:6,borderRadius:radii.sm},timelineRowActive:{backgroundColor:C.selection},
+  timeline:{marginTop:8},timelineRow:{minHeight:58,flexDirection:'row',alignItems:'center',gap:8,paddingRight:6,borderRadius:radii.sm},timelineRowActive:{backgroundColor:equipmentColors.selected},
   rail:{alignSelf:'stretch',width:14,alignItems:'center'},railDot:{width:10,height:10,borderRadius:5,borderWidth:2,backgroundColor:C.bg,marginTop:22,zIndex:2},railLine:{width:2,flex:1,backgroundColor:C.line,marginTop:-1},
   timelineMonth:{width:46},timelineMonthText:{fontSize:9,color:C.accent,fontWeight:'900',textAlign:'center'},name:{...typography.bodyStrong,color:C.text,flex:1,fontSize:12},timelineWindow:{fontSize:9,color:C.muted,marginTop:2},
 });

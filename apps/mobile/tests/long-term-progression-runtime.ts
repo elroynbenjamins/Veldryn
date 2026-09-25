@@ -12,7 +12,7 @@ function equal(actual:unknown,expected:unknown,message:string){if(actual!==expec
 let state=createCharacter(newGame(Date.UTC(2026,8,14)),'IRONWARDEN','ProgressionTester','male');
 // The Contract Board fills only from genuinely available content.
 // At this level it has 2 Hunt + 2 Work + 1 Regional Problem; Threat Bounties appear only after Challenge Hunt mastery.
-state={...state,character:{...state.character!,level:10}};
+state={...state,character:{...state.character!,level:10},unlockedMonsterIds:[...state.unlockedMonsterIds,'FIELD_WISP','IRONWOOD_WOLF']};
 let first=applyTrustedLongTermProgression(state,[],undefined,Date.UTC(2026,8,14,0,1),{accountId:'acct-runtime',eventId:'setup'});
 state=first.state;
 ok(state.account.weeklyOrders?.orders.length===5,'Trusted runtime creates 2 Hunt + 2 Work + 1 Regional Problem when no Threat Bounty is unlocked');

@@ -2,6 +2,8 @@ export interface AppReleasePolicy{
   channel:string;
   latestVersion:string;
   minimumVersion:string;
+  latestBuild?:number;
+  minimumBuild?:number;
   forceAfterMs?:number;
   updateTitle:string;
   updateMessage:string;
@@ -19,7 +21,10 @@ export interface AppReleaseDecision{
   installedVersion:string;
   latestVersion:string;
   minimumVersion:string;
-  reason?:'below_minimum'|'force_after';
+  installedBuild?:number;
+  latestBuild?:number;
+  minimumBuild?:number;
+  reason?:'below_minimum'|'below_minimum_build'|'force_after';
 }
 
 function versionParts(version:string){
@@ -39,12 +44,15 @@ export function compareAppVersions(left:string,right:string){
   return 0;
 }
 
-export function evaluateAppRelease(policy:AppReleasePolicy|undefined,installedVersion:string,nowMs=Date.now()):AppReleaseDecision{
-  if(!policy)return {status:'ok',installedVersion,latestVersion:installedVersion,minimumVersion:installedVersion};
-  const base={installedVersion,latestVersion:policy.latestVersion,minimumVersion:policy.minimumVersion};
+export function evaluateAppRelease(policy:AppReleasePolicy|undefined,installedVersion:string,nowMs=Date.now(),installedBuild?:number):AppReleaseDecision{
+  if(!policy)return {status:'ok',installedVersion,latestVersion:installedVersion,minimumVersion:installedVersion,...(installedBuild!==undefined?{installedBuild}:{})};
+  const base={installedVersion,latestVersion:policy.latestVersion,minimumVersion:policy.minimumVersion,...(installedBuild!==undefined?{installedBuild}:{}),...(policy.latestBuild!==undefined?{latestBuild:policy.latestBuild}:{}),...(policy.minimumBuild!==undefined?{minimumBuild:policy.minimumBuild}:{})};
   if(policy.maintenanceMode)return {status:'maintenance',...base};
+  if(policy.minimumBuild!==undefined&&installedBuild!==undefined&&installedBuild<policy.minimumBuild)return {status:'required',...base,reason:'below_minimum_build'};
   if(compareAppVersions(installedVersion,policy.minimumVersion)<0)return {status:'required',...base,reason:'below_minimum'};
-  if(policy.forceAfterMs!==undefined&&nowMs>=policy.forceAfterMs&&compareAppVersions(installedVersion,policy.latestVersion)<0)return {status:'required',...base,reason:'force_after'};
-  if(compareAppVersions(installedVersion,policy.latestVersion)<0)return {status:'optional',...base};
+  const behindLatestBuild=policy.latestBuild!==undefined&&installedBuild!==undefined&&installedBuild<policy.latestBuild;
+  const behindLatestVersion=compareAppVersions(installedVersion,policy.latestVersion)<0;
+  if(policy.forceAfterMs!==undefined&&nowMs>=policy.forceAfterMs&&(behindLatestBuild||behindLatestVersion))return {status:'required',...base,reason:'force_after'};
+  if(behindLatestBuild||behindLatestVersion)return {status:'optional',...base};
   return {status:'ok',...base};
 }

@@ -167,8 +167,11 @@ function planInternal(
   if(!recipe){
     const projection=acquisitionProjectionForDestination(state,itemId,remaining,destination);
     const navigable=availability.status!=='locked'&&availability.status!=='info';
-    const complete=Boolean(projection)&&navigable;
-    const etaSeconds=complete?projection!.etaSeconds:undefined;
+    // "complete" means the acquisition chain is fully modeled, not that every
+    // source is immediately unlocked. Availability remains a separate blocker
+    // so planning/ETA survives travel or progression locks.
+    const complete=Boolean(projection);
+    const etaSeconds=projection?.etaSeconds;
     const blockedReasons=[
       ...(!projection?['This source does not have a trustworthy acquisition-rate model yet.']:[]),
       ...(!navigable?[availability.detail]:[]),

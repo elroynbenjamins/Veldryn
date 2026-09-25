@@ -1,4 +1,5 @@
 import {COLLECTIBLES} from './collectibles';
+import {EVENT_PET_COLLECTIBLES} from './event-collectible-content';
 
 export interface PermanentBoostDefinition {
   id: string;
@@ -66,8 +67,9 @@ const petBoostFor=(pet:{id:string;name:string;target:string;activeBps:number}):P
  * owned passive plus its authored selected bonus rather than a percentage of
  * the active value.
  */
+const PET_METADATA_CATALOG=[...COLLECTIBLES.filter(row=>row.kind==='pet'),...EVENT_PET_COLLECTIBLES.filter(eventPet=>!COLLECTIBLES.some(row=>row.id===eventPet.id))];
 export const PET_PERMANENT_BOOSTS:Record<SourceBoostId,PermanentBoostDefinition>=Object.fromEntries(
-  COLLECTIBLES.filter(row=>row.kind==='pet').map(pet=>[pet.id,petBoostFor(pet)])
+  PET_METADATA_CATALOG.map(pet=>[pet.id,petBoostFor(pet)])
 );
 
 export const BUYABLE_PERMANENT_BOOSTS: Record<SourceBoostId, PermanentBoostDefinition> = {

@@ -1,4 +1,5 @@
 import {COLLECTIBLES} from '../src/content/collectibles';
+import {EVENT_PET_COLLECTIBLES} from '../src/content/event-collectible-content';
 import {CORE_PET_COLLECTIBLES} from '../src/content/core-pets';
 import {MASTER_PET_COLLECTIBLES} from '../src/content/master-pet-content';
 import {PET_PERMANENT_BOOSTS} from '../src/content/permanent-boosts';
@@ -13,7 +14,8 @@ function equal(actual:unknown,expected:unknown,message:string){if(actual!==expec
 const near=(actual:number,expected:number,message:string)=>{if(Math.abs(actual-expected)>1e-10)fail(`${message}: expected ${expected}, got ${actual}`)};
 
 equal(MASTER_PET_COLLECTIBLES,CORE_PET_COLLECTIBLES,'master roster metadata aliases the canonical core pet array');
-equal(Object.keys(PET_PERMANENT_BOOSTS).length,COLLECTIBLES.filter(row=>row.kind==='pet').length,'boost diagnostics cover every core, event, and legacy pet');
+const authoredPetIds=new Set([...COLLECTIBLES.filter(row=>row.kind==='pet').map(row=>row.id),...EVENT_PET_COLLECTIBLES.map(row=>row.id)]);
+equal(Object.keys(PET_PERMANENT_BOOSTS).length,authoredPetIds.size,'boost diagnostics cover every core, event, and legacy pet');
 ok(!!PET_PERMANENT_BOOSTS.EVT_PET_004,'event pets are present in runtime boost metadata');
 
 let state=createCharacter(newGame(0),'IRONWARDEN','Collectible Tester');

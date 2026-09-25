@@ -1,5 +1,6 @@
 import { ITEMS,itemDef } from '../content/items';
 import { MONSTERS } from '../content/monsters';
+import { EXPLORATION_ROUTES } from '../content/exploration';
 import { GameState, ItemStack } from '../core/types';
 import { characterLevelFromXp, characterTotalXpAtLevel,totalXpAtLevel } from '../core/progression';
 import { stackItems, previewActivityReward } from '../core/game';
@@ -121,6 +122,7 @@ export function debugPrepareFullQaSandbox(state:GameState):GameState{
   let next=debugPrepareEquipmentLab(debugPrepareDungeonLab(state));
   next={
     ...next,
+    character:next.character?{...next.character,completedExplorationRouteIds:EXPLORATION_ROUTES.map(route=>route.id)}:null,
     quests:next.quests.map(quest=>({...quest,status:'claimed' as const,progress:Number.MAX_SAFE_INTEGER})),
     unlockedMonsterIds:MONSTERS.map(monster=>monster.id),
     defeatedBossIds:[...new Set([...next.defeatedBossIds,...MONSTERS.filter(monster=>monster.boss).map(monster=>monster.id)])],

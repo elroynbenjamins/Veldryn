@@ -69,9 +69,13 @@ ok(itemGoalProtection.has('COPPER_ORE'),'Pinned item-quantity goals protect thei
 const copperLockedExecution=workingTowardExecutionPlan(state,itemGoal);
 equal(copperLockedExecution.executionState,'blocked','off-region gathered item goal reports the region level gate before offering travel');
 ok(copperLockedExecution.queueBlocker?.includes('Level 16'),'locked item-source execution exposes the Old Mines Level gate');
-const copperTravelState={...state,character:{...state.character!,level:20}};
+const copperLevelReadyState={...state,character:{...state.character!,level:20}};
+const copperScoutBlocked=workingTowardExecutionPlan(copperLevelReadyState,itemGoal);
+equal(copperScoutBlocked.executionState,'blocked','level-ready later-region goals stay blocked until the route is discovered');
+ok(copperScoutBlocked.queueBlocker?.toLowerCase().includes('scouting'),'Exploration route blocker should be explained in Working Toward');
+const copperTravelState={...copperLevelReadyState,exploredRouteIds:['SCOUT_IRONWOOD']};
 const copperTravelExecution=workingTowardExecutionPlan(copperTravelState,itemGoal);
-equal(copperTravelExecution.executionState,'travel','unlocked off-region item source requires explicit travel before queueing');
+equal(copperTravelExecution.executionState,'travel','discovered off-region item source requires explicit travel before queueing');
 ok(copperTravelExecution.queueBlocker?.includes('Old Mines'),'travel-blocked execution names the required region');
 const copperReadyState={...copperTravelState,currentRegionId:'OLD_MINES',skills:copperTravelState.skills.map(skill=>skill.skillId==='mining'?{...skill,level:20,xp:totalXpAtLevel(20)}:skill)};
 const copperReadyExecution=workingTowardExecutionPlan(copperReadyState,itemGoal);

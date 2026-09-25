@@ -27,7 +27,7 @@ if(skillDestination.kind==='skills'){equal(skillDestination.mode,'gathering','Mi
 const skillExecution=workingTowardExecutionPlan(state,skillGoal);
 equal(skillExecution.executionState,'blocked','gathering skill goal reports its region progression gate when no authored node is character-accessible yet');
 ok(skillExecution.queueBlocker?.includes('Level 16'),'skill execution blocker exposes the Old Mines Level gate');
-const travelSkillState={...state,character:{...state.character!,level:20}};
+const travelSkillState={...state,exploredRouteIds:[...(state.exploredRouteIds??[]),'SCOUT_IRONWOOD'],character:{...state.character!,level:20}};
 const travelSkillExecution=workingTowardExecutionPlan(travelSkillState,skillGoal);
 equal(travelSkillExecution.executionState,'travel','gathering skill goal switches to travel once the region is unlocked but not current');
 ok(travelSkillExecution.queueBlocker?.includes('Old Mines'),'skill execution travel state names the destination region');

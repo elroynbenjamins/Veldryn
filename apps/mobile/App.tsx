@@ -91,7 +91,7 @@ import {serverGameplayEnabled} from './src/online/gameplay';
 import {OnlineAccountPanel} from './src/components/OnlineAccountPanel';
 import {RequiredUpdateScreen} from './src/components/RequiredUpdateScreen';
 import {signInAsGuest,signOut} from './src/online/account';
-import {currentAppVersion,fetchAppReleasePolicy} from './src/online/app-release';
+import {currentAppBuild,currentAppVersion,fetchAppReleasePolicy} from './src/online/app-release';
 import {evaluateAppRelease,type AppReleasePolicy} from './src/core/app-release';
 import {GameButton} from './src/components/GameButton';
 import type {GameCommand} from './src/core/game-commands';
@@ -180,7 +180,8 @@ function VeldrynApp(){
   const [autoGuestBusy,setAutoGuestBusy]=useState(false);
   const autoGuestAttemptedRef=useRef(false);
   const installedVersion=currentAppVersion();
-  const releaseDecision=evaluateAppRelease(releasePolicy,installedVersion);
+  const installedBuild=currentAppBuild();
+  const releaseDecision=evaluateAppRelease(releasePolicy,installedVersion,Date.now(),installedBuild);
   const [showChatOverlay,setShowChatOverlay]=useState(false);
   const [showCoopUiGallery,setShowCoopUiGallery]=useState(false);
   const [pendingEventLiveId,setPendingEventLiveId]=useState<string|undefined>();

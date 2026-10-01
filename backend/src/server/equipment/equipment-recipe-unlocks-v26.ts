@@ -16,4 +16,4 @@ export const CHASE_RECIPE_RULES_V26:readonly ChaseRecipeRuleV26[]=[
  {tier:'T6',dropChance:.025,fragmentTarget:24,description:'Sand Tyrant / Observatory hard-route optional masterwork variant'},
  {tier:'T9',dropChance:.02,fragmentTarget:30,description:'Frost Wyrm / Wyrmspine mastery optional masterwork variant'}
 ];
-export const CHASE_RECIPE_POLICY_V26={requiredForProgression:false,requiredForSevenPieceSkin:false,sameTierBudget:true,fragmentFallbackGuaranteed:true} as const;
+export const CHASE_RECIPE_POLICY_V26={requiredForProgression:false,sameTierBudget:true,fragmentFallbackGuaranteed:true} as const;

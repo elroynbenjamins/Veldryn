@@ -145,7 +145,8 @@ function currentLine<T extends {productId?:string;expiryTime?:string}>(lines:T[]
 }
 
 function activeSubscriptionState(state:string,expiresAt:string|null){
-  if(!expiresAt||Date.parse(expiresAt)<=Date.now())return false;
+  const expiry=Date.parse(expiresAt??'');
+  if(!Number.isFinite(expiry)||expiry<=Date.now())return false;
   return state==='SUBSCRIPTION_STATE_ACTIVE'
     ||state==='SUBSCRIPTION_STATE_IN_GRACE_PERIOD'
     ||state==='SUBSCRIPTION_STATE_CANCELED';

@@ -1,0 +1,21 @@
+revoke execute on function public.guild_activity_active_members_for_date_v2(uuid, date) from public;
+revoke execute on function public.guild_activity_day_units_v2(uuid, date) from public;
+revoke execute on function public.guild_activity_decay_bps_for_day_v2(uuid, date) from public;
+revoke execute on function public.guild_activity_from_project_completion_v2() from public;
+revoke execute on function public.guild_activity_target_units_for_date_v2(uuid, date) from public;
+revoke execute on function public.guild_quest_action_progress_v3(uuid, date, jsonb) from public;
+revoke execute on function public.guild_quest_completion_meta_v6(uuid, date, text) from public;
+revoke execute on function public.guild_quest_personal_objective_progress_v6(uuid, uuid, date, jsonb) from public;
+revoke execute on function public.guild_quest_progress_v1(uuid, date) from public;
+revoke execute on function public.guild_quest_targets_v1(uuid, date) from public;
+
+grant execute on function public.guild_activity_active_members_for_date_v2(uuid, date) to authenticated;
+grant execute on function public.guild_activity_day_units_v2(uuid, date) to authenticated;
+grant execute on function public.guild_activity_decay_bps_for_day_v2(uuid, date) to authenticated;
+grant execute on function public.guild_activity_from_project_completion_v2() to authenticated;
+grant execute on function public.guild_activity_target_units_for_date_v2(uuid, date) to authenticated;
+grant execute on function public.guild_quest_action_progress_v3(uuid, date, jsonb) to authenticated;
+grant execute on function public.guild_quest_completion_meta_v6(uuid, date, text) to authenticated;
+grant execute on function public.guild_quest_personal_objective_progress_v6(uuid, uuid, date, jsonb) to authenticated;
+grant execute on function public.guild_quest_progress_v1(uuid, date) to authenticated;
+grant execute on function public.guild_quest_targets_v1(uuid, date) to authenticated;

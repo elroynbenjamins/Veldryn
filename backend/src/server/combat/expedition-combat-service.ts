@@ -4,6 +4,7 @@ import type { CombatantDefinition, CombatResult, EncounterBossTuning, Persistent
 import { EXPEDITION_ENCOUNTERS } from './content/expedition-encounters';
 import {pveEncounterPreview,type PveEncounterPreview} from './pve-encounter-identity';
 import {buildPveSimulationTelemetry,type PveSimulationTelemetry} from './pve-simulation-telemetry';
+import {pveBossTelegraph,type PveBossTelegraph} from './pve-encounter-identity';
 
 export interface BuildExpeditionEncounterInput {
   encounterId:string;
@@ -17,6 +18,9 @@ export interface ResolveExpeditionCombatInput extends BuildExpeditionEncounterIn
   nodeIndex:number;
   serverSeed:string;
   players:CombatantDefinition[];
+  /** Server-classified disconnected players. Their client actions are replaced
+   * by deterministic basic attacks plus safe defensive abilities. */
+  safetyAiPlayerIds?:readonly string[];
   maxDurationMs?:number;
   initialPlayerState?:Record<string,PersistentActorState>;
 }
@@ -53,6 +57,9 @@ export interface ExpeditionCombatCommitPayload {
 export function expeditionEncounterPreview(encounterId:string):PveEncounterPreview|undefined{
   const factory=EXPEDITION_ENCOUNTERS[encounterId];
   return factory?pveEncounterPreview(factory()):undefined;
+}
+export function expeditionBossTelegraph(encounterId:string):PveBossTelegraph|undefined{
+ const factory=EXPEDITION_ENCOUNTERS[encounterId];return factory?pveBossTelegraph(factory()):undefined;
 }
 
 export function buildExpeditionEncounter(input:BuildExpeditionEncounterInput):CombatantDefinition[] {
@@ -166,7 +173,13 @@ function publicReplay(result:CombatResult,initialPlayerState?:Record<string,Pers
 
 export function resolveExpeditionCombat(input:ResolveExpeditionCombatInput, includeDebugTrace=false):ExpeditionCombatCommitPayload {
   const enemies=buildExpeditionEncounter(input);
-  const result=simulateCombat({seed:`${input.serverSeed}:${input.runId}:${input.nodeIndex}:${input.encounterId}`,players:input.players,enemies,initialPlayerState:input.initialPlayerState,maxDurationMs:input.maxDurationMs??180000});
+  const safetyAiIds=new Set(input.safetyAiPlayerIds??[]);
+  const players=input.players.map(player=>{
+    if(!safetyAiIds.has(player.id))return player;
+    const defensiveAbilities=player.abilities.filter(ability=>ability.effects.length>0&&ability.effects.every(effect=>effect.kind==='heal'||effect.kind==='shield'));
+    return {...player,stats:{...player.stats,attackPower:player.stats.attackPower*.70,healingPower:player.stats.healingPower*.70},abilities:defensiveAbilities};
+  });
+  const result=simulateCombat({seed:`${input.serverSeed}:${input.runId}:${input.nodeIndex}:${input.encounterId}`,players,enemies,initialPlayerState:input.initialPlayerState,maxDurationMs:input.maxDurationMs??180000});
   const eventDigest=createHash('sha256').update(JSON.stringify(result.events)).digest().toString('hex');
   const rec=(xs:CombatResult['players'],pick:(x:CombatResult['players'][number])=>number)=>Object.fromEntries(xs.map(x=>[x.definition.id,Number(pick(x).toFixed(2))]));
   const bossIds=new Set(result.enemies.filter(enemy=>enemy.definition.boss).map(enemy=>enemy.definition.id));
@@ -174,5 +187,5 @@ export function resolveExpeditionCombat(input:ResolveExpeditionCombatInput, incl
   const bossPhaseIds=unique(result.events.filter(event=>event.type==='phase'&&event.actorId&&bossIds.has(event.actorId)).map(event=>event.abilityId));
   const bossCastAbilityIds=unique(result.events.filter(event=>event.type==='cast_start'&&event.actorId&&bossIds.has(event.actorId)).map(event=>event.abilityId));
   const replay=publicReplay(result,input.initialPlayerState),encounterIdentity=pveEncounterPreview(enemies),pveTelemetry=buildPveSimulationTelemetry(result,input.encounterId);
-  return {success:result.victory,resultJson:{reason:result.reason,durationMs:result.durationMs,downs:result.players.filter(p=>p.downed).map(p=>p.definition.id),playerHp:rec(result.players,x=>x.hp),enemyHp:rec(result.enemies,x=>x.hp),damage:rec(result.players,x=>x.damageDone),healing:rec(result.players,x=>x.healingDone),damageTaken:rec(result.players,x=>x.damageTaken),interrupts:rec(result.players,x=>x.interrupts),eventDigest,eventCount:result.events.length,bossPhaseIds,bossCastAbilityIds,...(encounterIdentity?{encounterIdentity}:{}),pveTelemetry,replayCombatants:replay.combatants,replayStatuses:replay.statuses,replayGemStates:replay.gemStates,replayCues:replay.cues},endingPlayerState:persistentPlayerState(result),...(includeDebugTrace?{debugEvents:result.events}:{})};
+  return {success:result.victory,resultJson:{reason:result.reason,durationMs:result.durationMs,downs:result.players.filter(p=>p.downed).map(p=>p.definition.id),playerHp:rec(result.players,x=>x.hp),enemyHp:rec(result.enemies,x=>x.hp),damage:rec(result.players,x=>x.damageDone),healing:rec(result.players,x=>x.healingDone),damageTaken:rec(result.players,x=>x.damageTaken),interrupts:rec(result.players,x=>x.interrupts),eventDigest,eventCount:result.events.length,bossPhaseIds,bossCastAbilityIds,...(safetyAiIds.size?{safetyAiPlayerIds:[...safetyAiIds],safetyAiPolicy:{outputMultiplier:.70,allowedActions:['basic_attack','basic_defensive']}}:{}),...(encounterIdentity?{encounterIdentity}:{}),pveTelemetry,replayCombatants:replay.combatants,replayStatuses:replay.statuses,replayGemStates:replay.gemStates,replayCues:replay.cues},endingPlayerState:persistentPlayerState(result),...(includeDebugTrace?{debugEvents:result.events}:{})};
 }

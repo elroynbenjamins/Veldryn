@@ -2,6 +2,7 @@ import {coopEntryHandler} from './coop-entry';
 import {OnlineQModeRuntime} from './qmode-runtime';
 import {OnlineLiveQueue} from './live-queue';
 import {OnlineLiveReady} from './live-ready';
+import {OnlineLiveRuntime} from './live-runtime';
 import {OnlineCoopLfg} from './coop-lfg';
 import {OnlineEventExpeditionRuntime,type OnlineEventExpeditionStartRequest} from './event-expedition-runtime';
 import {GameplayError,type GameplayServices} from './gameplay';
@@ -12,7 +13,7 @@ const json=(value:unknown,status=200)=>new Response(JSON.stringify(value),{statu
 const uuid='[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}';
 
 export function coopHandler(services:GameplayServices){
- const entry=coopEntryHandler(services),runtime=new OnlineQModeRuntime(services),eventRuntime=new OnlineEventExpeditionRuntime(services),queue=new OnlineLiveQueue(services),lfg=new OnlineCoopLfg(services);
+ const entry=coopEntryHandler(services),runtime=new OnlineQModeRuntime(services),liveRuntime=new OnlineLiveRuntime(services),eventRuntime=new OnlineEventExpeditionRuntime(services),queue=new OnlineLiveQueue(services),lfg=new OnlineCoopLfg(services);
  return async(request:Request):Promise<Response>=>{
   if(request.method==='OPTIONS')return new Response(null,{status:204,headers});
   const path=new URL(request.url).pathname;
@@ -41,13 +42,19 @@ export function coopHandler(services:GameplayServices){
    const ready=path.match(new RegExp('/coop/ready/('+uuid+')$'));
    if(ready){
     const service=new OnlineLiveReady(services);
-    if(request.method==='GET')return json(await service.load(accountId,ready[1]));
+    if(request.method==='GET'){
+     const state=await service.load(accountId,ready[1]) as {status:string;runId?:string};
+     if(state.status==='committed'&&!state.runId)state.runId=await liveRuntime.startFromReady(accountId,ready[1]);
+     return json(state);
+    }
     if(request.method!=='POST')return json({error:'method_not_allowed'},405);
     const raw=await request.text();if(raw.length>2048)return json({error:'request_too_large'},413);
     let body:unknown;try{body=JSON.parse(raw);}catch{throw new GameplayError('invalid_json');}
     if(!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).some(key=>!['requestId','rosterRevision','accept'].includes(key)))throw new GameplayError('invalid_request');
     const command=parseCoopReadyCommand(body);if(!/^[a-zA-Z0-9_-]{8,128}$/.test(command.requestId))throw new GameplayError('invalid_request');
-    return json(await service.respond(accountId,ready[1],command));
+    const state=await service.respond(accountId,ready[1],command) as {status:string;runId?:string};
+    if(state.status==='committed'&&!state.runId)state.runId=await liveRuntime.startFromReady(accountId,ready[1]);
+    return json(state);
    }
 
    const queueRoot=path.endsWith('/coop/queue'),quickQueue=path.endsWith('/coop/quick-queue'),queueCommand=path.match(new RegExp('/coop/queue/('+uuid+')/(heartbeat|cancel)$'));
@@ -86,18 +93,34 @@ export function coopHandler(services:GameplayServices){
     return json(await eventRuntime.claim(accountId,eventRun![1],row.requestId));
    }
 
-   const start=path.endsWith('/coop/qmode'),run=path.match(new RegExp('/coop/runs/('+uuid+')(?:/(choose))?$'));
+   const chat=path.match(new RegExp('/coop/runs/('+uuid+')/chat$'));
+   if(chat){
+    if(request.method==='GET')return json(await liveRuntime.chat(accountId,chat[1],services.randomId()));
+    if(request.method!=='POST')return json({error:'method_not_allowed'},405);
+    const raw=await request.text();if(raw.length>4096)return json({error:'request_too_large'},413);
+    let body:unknown;try{body=JSON.parse(raw);}catch{throw new GameplayError('invalid_json');}
+    if(!body||typeof body!=='object'||Array.isArray(body))throw new GameplayError('invalid_request');
+    const row=body as Record<string,unknown>;
+    if(Object.keys(row).some(key=>!['requestId','text'].includes(key))||typeof row.requestId!=='string'||!/^[a-zA-Z0-9_-]{8,128}$/.test(row.requestId)||typeof row.text!=='string')throw new GameplayError('invalid_request');
+    return json(await liveRuntime.chat(accountId,chat[1],row.requestId,row.text));
+   }
+
+   const start=path.endsWith('/coop/qmode'),run=path.match(new RegExp('/coop/runs/('+uuid+')(?:/(choose|vote))?$'));
    if(!start&&!run)return json({error:'not_found'},404);
    const mutation=start||Boolean(run?.[2]);
    if(request.method!==(mutation?'POST':'GET'))return json({error:'method_not_allowed'},405);
-   if(!mutation)return json(await runtime.load(accountId,run![1]));
+   if(!mutation){
+    try{return json(await liveRuntime.load(accountId,run![1]));}
+    catch(error){if(error instanceof GameplayError&&error.message==='not_live_run')return json(await runtime.load(accountId,run![1]));throw error;}
+   }
    const raw=await request.text();if(raw.length>4096)return json({error:'request_too_large'},413);
    let body:unknown;try{body=JSON.parse(raw);}catch{throw new GameplayError('invalid_json');}
    if(!body||typeof body!=='object'||Array.isArray(body))throw new GameplayError('invalid_request');
    const allowed=start?['requestId','dungeonId','tier','characterId','loadoutId','loadoutRevision']:['requestId','decisionId','decisionRevision','optionId'];
    if(Object.keys(body).some(key=>!allowed.includes(key)))throw new GameplayError('invalid_request');
    if(start)return json(await runtime.start(accountId,parseCoopRunRequest(body,'qmode')));
-   return json(await runtime.choose(accountId,run![1],parseCoopDecisionCommand(body)));
+   try{return json(run?.[2]==='vote'?await liveRuntime.vote(accountId,run![1],parseCoopDecisionCommand(body)):await liveRuntime.choose(accountId,run![1],parseCoopDecisionCommand(body)));}
+   catch(error){if(error instanceof GameplayError&&error.message==='not_live_run')return json(await runtime.choose(accountId,run![1],parseCoopDecisionCommand(body)));throw error;}
   }catch(error){
    const message=error instanceof Error?error.message:'server_error',code=message.toLowerCase();
    const status=/^(stale_|idempotency_|node_resolving|account_already_participating|echo_no_longer_eligible|ticket_not_queued|ready_check_closed|loadout_changed_since_queue|reservation_conflict|event_not_live|event_claim_closed)/.test(code)?409:

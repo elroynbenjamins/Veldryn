@@ -11,7 +11,7 @@ export function equipmentSetDetailPayloadV33(setId:string,craftedPieceIds:readon
   if(!set)throw new Error('unknown_set');
   const crafted=new Set(craftedPieceIds);
   const pieces=EQUIPMENT_PIECES_V33.filter(piece=>piece.setId===setId).map(piece=>({...piece,crafted:crafted.has(piece.id)}));
-  return {set,pieces,slotOrder:catalog.slotOrder,setThresholds:catalog.setThresholds,skinRule:'Craft all 10 distinct pieces once on this character.'};
+  return {set,pieces,slotOrder:catalog.slotOrder,setThresholds:catalog.setThresholds};
 }
 
 export function craftingScreenPayloadV33(pieceId:string){

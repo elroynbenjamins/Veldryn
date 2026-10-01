@@ -1,4 +1,5 @@
 import {createClient,type SupabaseClient} from 'npm:@supabase/supabase-js@2.115.0';
+import {orderCommercePurchases,purchaseEligibilityError} from '../_shared/commerce-policy.ts';
 import {
   GooglePlayApiError,
   acknowledgeGooglePlayPurchase,
@@ -142,7 +143,9 @@ async function refreshKnownPurchases(admin:SupabaseClient,accountId:string,obfus
   if(error)throw error;
   const rows=(Array.isArray(data)?data:[]) as Array<{purchase_token:string;product_id:string;product_type:string}>;
   const verifiedIds:string[]=[];
-  for(const row of rows){
+  const activeProductIds:string[]=[];
+  const ordered=orderCommercePurchases(rows.map(row=>({...row,productId:row.product_id})));
+  for(const row of ordered){
     if(!isGooglePlayProductId(row.product_id)||row.product_type!==expectedGooglePlayType(row.product_id))continue;
     try{
       const verified=await verifyAndRecord(admin,accountId,obfuscatedAccountId,{
@@ -151,7 +154,11 @@ async function refreshKnownPurchases(admin:SupabaseClient,accountId:string,obfus
         productType:row.product_type,
       },'status');
       verifiedIds.push(verified.productId);
+      if(verified.entitlementActive)activeProductIds.push(verified.productId);
     }catch(error){
+      // A refunded VIP invalidates its dependent upgrade. The VIP record above
+      // already recomputed access; do not make the whole status refresh fail.
+      if(row.product_id==='vip_plus_upgrade'&&(error as {message?:string})?.message==='VIP_REQUIRED_FOR_UPGRADE')continue;
       if(error instanceof GooglePlayApiError&&(error.status===404||error.status===410)){
         await record(admin,accountId,{
           purchaseToken:row.purchase_token,
@@ -164,10 +171,10 @@ async function refreshKnownPurchases(admin:SupabaseClient,accountId:string,obfus
           obfuscatedAccountId,
           isTest:false,regionCode:null,basePlanId:null,offerId:null,
         },'status_not_found');
-      }
+      }else throw error;
     }
   }
-  return [...new Set(verifiedIds)];
+  return {verifiedProductIds:[...new Set(verifiedIds)],activeProductIds};
 }
 
 Deno.serve(async(req)=>{
@@ -178,10 +185,19 @@ Deno.serve(async(req)=>{
     const admin=adminClient();
     const obfuscatedAccountId=await googlePlayObfuscatedAccountId(user.id);
     await registerAccount(admin,user.id,obfuscatedAccountId);
-    const body=await req.json() as {action?:string;purchase?:unknown;purchases?:unknown[]};
+    const body=await req.json() as {action?:string;productId?:string;purchase?:unknown;purchases?:unknown[]};
 
     if(body.action==='context'){
       return json({obfuscatedAccountId,entitlements:await entitlements(client)});
+    }
+
+    if(body.action==='prepare'){
+      if(typeof body.productId!=='string'||!isGooglePlayProductId(body.productId))throw new Error('UNKNOWN_GOOGLE_PLAY_PRODUCT');
+      const refreshed=await refreshKnownPurchases(admin,user.id,obfuscatedAccountId);
+      const owned=await entitlements(client);
+      const issue=purchaseEligibilityError(body.productId,owned,refreshed.activeProductIds.includes('vip'));
+      if(issue)throw new Error(issue);
+      return json({obfuscatedAccountId,entitlements:owned});
     }
 
     if(body.action==='verify'){
@@ -193,10 +209,10 @@ Deno.serve(async(req)=>{
       const rows=Array.isArray(body.purchases)?body.purchases:[];
       if(rows.length>16)throw new Error('TOO_MANY_RESTORE_PURCHASES');
       const verifiedIds:string[]=[];
-      for(const raw of rows){
+      for(const row of orderCommercePurchases(rows.map(evidence))){
         try{
-          const verified=await verifyAndRecord(admin,user.id,obfuscatedAccountId,evidence(raw),'restore');
-          verifiedIds.push(verified.productId);
+          const verified=await verifyAndRecord(admin,user.id,obfuscatedAccountId,row,'restore');
+          if(verified.entitlementActive)verifiedIds.push(verified.productId);
         }catch(error){
           if(error instanceof GooglePlayApiError&&(error.status===404||error.status===410))continue;
           throw error;
@@ -206,13 +222,13 @@ Deno.serve(async(req)=>{
     }
 
     if(body.action==='status'){
-      const verifiedProductIds=await refreshKnownPurchases(admin,user.id,obfuscatedAccountId);
+      const {verifiedProductIds}=await refreshKnownPurchases(admin,user.id,obfuscatedAccountId);
       return json({entitlements:await entitlements(client),verifiedProductIds});
     }
 
     return json({error:'UNKNOWN_ACTION'},400);
   }catch(error){
-    const message=error instanceof Error?error.message:'GOOGLE_PLAY_BILLING_FAILED';
+    const message=error&&typeof error==='object'&&'message' in error&&typeof error.message==='string'?error.message:'GOOGLE_PLAY_BILLING_FAILED';
     const status=message==='AUTH_REQUIRED'?401:message==='RECOVERABLE_ACCOUNT_REQUIRED'?403:message.includes('MISMATCH')?409:400;
     return json({error:message},status);
   }

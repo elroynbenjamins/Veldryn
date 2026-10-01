@@ -15,7 +15,7 @@ async function main(){
   assert.equal(a.p_account_id,'alice');
   if(name==='read_online_game_receipt_server_v1')return (receipts.get(a.p_request_id as string)??null) as T;
   if(name==='load_online_game_server_v1')return {state:structuredClone(state),version,serverNow,characterId:state.character!.id,walletGold:state.character!.gold,guildMember:false,communityProgress:{}} as T;
-  if(name==='commit_online_game_server_v1'){if(a.p_expected_version!==version)throw new GameplayError('stale_state');const r=a.p_response as {state:GameState;version:number};state=r.state;version=r.version;commits++;receipts.set(a.p_request_id as string,{response:r,requestHash:a.p_request_hash as string});if(lost){lost=false;throw new Error('lost response');}return r as T;}
+  if(name==='commit_online_game_guild_pve_v1'){if(a.p_expected_version!==version)throw new GameplayError('stale_state');const r=a.p_response as {state:GameState;version:number};state=r.state;version=r.version;commits++;receipts.set(a.p_request_id as string,{response:r,requestHash:a.p_request_hash as string});if(lost){lost=false;throw new Error('lost response');}return r as T;}
   throw new Error(name);
  }};
  const handle=gameplayHandler(services),request=(command:unknown,id:string,v=version)=>handle(new Request('https://example.invalid/gameplay',{method:'POST',headers:{Authorization:'Bearer alice'},body:JSON.stringify({command,requestId:id,expectedVersion:v})}));

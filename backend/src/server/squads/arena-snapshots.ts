@@ -4,6 +4,7 @@ import type {VerifiedCombatSnapshot} from '../combat/snapshot-adapter';
 import type {AuthoritativeLoadoutRecord} from '../coop/loadout-snapshots';
 import {normalizeCombatInput,ROOTBOUND_ROLE_REFERENCES} from '../coop/normalization';
 import {deriveRole} from '../coop/role-readiness';
+import {individualCompanionPower} from '../companions/team';
 import type {ArenaPosition,ArenaSquadSnapshot} from './arena';
 
 export const ARENA_MIN_LEVEL=15;
@@ -23,7 +24,10 @@ function freezeFighter(accountId:string,selection:ArenaCharacterSelection,reposi
   const reference=ROOTBOUND_ROLE_REFERENCES[role],scale=normalized.snapshot.level/reference.level;
   const snapshot={...normalized.snapshot,maxHp:converge(normalized.snapshot.maxHp,reference.maxHp*scale,.35),attackPower:converge(normalized.snapshot.attackPower,reference.attackPower*scale,.30),healingPower:converge(normalized.snapshot.healingPower,reference.healingPower*scale,.30),defense:converge(normalized.snapshot.defense,reference.defense*scale,.35),accuracy:converge(normalized.snapshot.accuracy,reference.accuracy*scale,.5,.9,1.1),evasion:converge(normalized.snapshot.evasion,reference.evasion*scale,.5,.9,1.1)};
   const normalizedPower=Math.max(1,Math.round(snapshot.maxHp*.08+snapshot.attackPower*1.7+snapshot.healingPower*.9+snapshot.defense*.9+snapshot.accuracy*.15+snapshot.evasion*.15));
-  return {characterId:record.characterId,classId:record.classId,displayName:record.stats.displayName,position:selection.position,role,normalizedPower,stats:snapshot,abilities:structuredClone(normalized.abilities as AbilityDefinition[])};
+  const combatCompanion=record.stats.combatCompanion?structuredClone(record.stats.combatCompanion):undefined;
+  // The character remains the primary Arena fighter; the frozen companion snapshot adds a bounded assist budget.
+  const companionNormalizedPower=combatCompanion?Math.max(1,Math.round(individualCompanionPower(combatCompanion)*.08)):undefined;
+  return {characterId:record.characterId,classId:record.classId,displayName:record.stats.displayName,position:selection.position,role,normalizedPower,stats:snapshot,abilities:structuredClone(normalized.abilities as AbilityDefinition[]),...(combatCompanion?{combatCompanion,companionNormalizedPower}: {})};
 }
 export function freezeArenaSquad(input:{accountId:string;squadVersion:number;formationVersion:number;rating:number;selections:readonly ArenaCharacterSelection[];repository:ArenaLoadoutRepository;}):ArenaSquadSnapshot{
   if(input.selections.length!==3)throw new Error('arena_requires_exactly_3_characters');
@@ -34,4 +38,4 @@ export function freezeArenaSquad(input:{accountId:string;squadVersion:number;for
   const snapshotHash=Buffer.from(createHash('sha256').update(canonical({...bare,normalizationVersion:ARENA_NORMALIZATION_VERSION})).digest()).toString('hex');
   return {...bare,snapshotHash};
 }
-export function arenaPowerBand(snapshot:ArenaSquadSnapshot){if(snapshot.fighters.length!==3||snapshot.fighters.some(fighter=>!Number.isFinite(fighter.normalizedPower)||fighter.normalizedPower<=0))throw new Error('arena_invalid_power_band');return Math.max(1,Math.round(snapshot.fighters.reduce((sum,fighter)=>sum+fighter.normalizedPower,0)/snapshot.fighters.length/500));}
+export function arenaPowerBand(snapshot:ArenaSquadSnapshot){if(snapshot.fighters.length!==3||snapshot.fighters.some(fighter=>!Number.isFinite(fighter.normalizedPower)||fighter.normalizedPower<=0))throw new Error('arena_invalid_power_band');return Math.max(1,Math.round(snapshot.fighters.reduce((sum,fighter)=>sum+fighter.normalizedPower+(fighter.companionNormalizedPower??0),0)/snapshot.fighters.length/500));}

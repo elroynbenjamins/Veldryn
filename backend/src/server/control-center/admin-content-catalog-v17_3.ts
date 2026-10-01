@@ -10,7 +10,7 @@ export interface VeldrynContentSources {
   pets?:Array<{id:string;name:string;enabled?:boolean}>;
   profileBackgrounds?:Array<{id:string;name:string;enabled?:boolean}>;
   profileBorders?:Array<{id:string;name:string;enabled?:boolean}>;
-  skins?:Array<{id:string;name:string;classId?:string;enabled?:boolean}>;
+  profileIcons?:Array<{id:string;name:string;classId?:string;enabled?:boolean}>;
   achievements?:Array<{id:string;name:string;enabled?:boolean}>;
   titles?:Array<{id:string;name:string;enabled?:boolean}>;
   sourceVersion:string;
@@ -27,7 +27,7 @@ export async function syncAdminContentCatalog(sink:CatalogSink,src:VeldrynConten
   await sink.replaceType('pet',map('pet',(src.pets??[]) as never[],src.sourceVersion));
   await sink.replaceType('profile_background',map('profile_background',(src.profileBackgrounds??[]) as never[],src.sourceVersion));
   await sink.replaceType('profile_border',map('profile_border',(src.profileBorders??[]) as never[],src.sourceVersion));
-  await sink.replaceType('skin',map('skin',(src.skins??[]) as never[],src.sourceVersion));
+  await sink.replaceType('profile_icon',map('profile_icon',(src.profileIcons??[]) as never[],src.sourceVersion));
   await sink.replaceType('achievement',map('achievement',(src.achievements??[]) as never[],src.sourceVersion));
   await sink.replaceType('title',map('title',(src.titles??[]) as never[],src.sourceVersion));
 }

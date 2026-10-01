@@ -9,6 +9,12 @@ export interface PveEncounterPreview{
   mechanics:PveMechanicPresentation[];
   summary:string;
 }
+export interface PveBossTelegraph{
+ bossName:string;
+ phases:Array<{id:string;label:string;hpPct:number;objectiveSensitive:false}>;
+ castAbilities:Array<{id:string;label:string;castMs:number;cooldownMs:number;interruptible:boolean;objectiveSensitive:false}>;
+ suppressedAbilities:Array<{id:string;label:string}>;
+}
 
 const ARCHETYPE_LABEL:Readonly<Record<PveArchetype,string>>=Object.freeze({
   bruiser:'Bruiser',assassin:'Assassin',caster:'Caster',swarm:'Swarm',guardian:'Guardian',hexer:'Hexer',executioner:'Executioner',support:'Support',
@@ -88,4 +94,18 @@ export function pveEncounterPreview(definitions:readonly CombatantDefinition[]):
   const mechanics=mechanicIds.map(id=>MECHANICS[id]);
   const labels=[...archetypes.map(id=>ARCHETYPE_LABEL[id]),...mechanics.slice(0,2).map(item=>item.label)];
   return{archetypes:archetypes.map(id=>({id,label:ARCHETYPE_LABEL[id]})),mechanics,summary:labels.join(' · ')};
+}
+
+/** Presentation-safe boss plan for standard dungeons. Numeric combat stats and
+ * effect coefficients stay server-side; only readable counterplay information
+ * is exposed to the route/combat UI. */
+export function pveBossTelegraph(definitions:readonly CombatantDefinition[]):PveBossTelegraph|undefined{
+ const boss=definitions.find(definition=>definition.team==='enemies'&&definition.boss);if(!boss)return undefined;
+ const readable=(value:string)=>value.replace(/[_:-]+/g,' ').replace(/\b\w/g,char=>char.toUpperCase());
+ return {
+  bossName:boss.name,
+  phases:(boss.phases??[]).map(phase=>({id:phase.id,label:phase.name?.trim()||readable(phase.id),hpPct:Math.round(phase.hpPct*100),objectiveSensitive:false as const})),
+  castAbilities:boss.abilities.filter(ability=>ability.castTimeMs>0||ability.interruptible===true).map(ability=>({id:ability.id,label:ability.name,castMs:ability.castTimeMs,cooldownMs:ability.cooldownMs,interruptible:ability.interruptible===true,objectiveSensitive:false as const})),
+  suppressedAbilities:[],
+ };
 }

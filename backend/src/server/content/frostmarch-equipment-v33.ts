@@ -7,7 +7,7 @@ export const FROSTMARCH_EQUIPMENT_POLICY_V33={
   regionalArmorAuthored:true,
   slotCount:10,
   thresholds:[2,4,6,8,10] as const,
-  skinCompletionPieces:10,
+  setCompletionPieces:10,
   catalogSetCount:EQUIPMENT_SETS_V33.length,
   catalogPieceCount:EQUIPMENT_PIECES_V33.length,
   visualPolicy:'fresh-generation-male-female-only',

@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {gameplayHandler,GameplayError,type GameplayServices} from '../gameplay';
+import {totalXpAtLevel} from '../../../apps/mobile/src/core/progression';
 import type {GameState} from '../../../apps/mobile/src/core/types';
 async function main(){
  let state:GameState|null=null,version=0,commits=0,clock=1700000000000,transportFailure=false,generatedIds=0,blockedDeleteCharacterId:string|null=null,deletedCommitCharacterId:string|null=null;
@@ -9,10 +10,10 @@ async function main(){
    if(name==='read_online_game_receipt_server_v1')return (receipts.get(args.p_request_id as string)??null) as T;
    if(name==='load_online_game_server_v1')return {state:structuredClone(state),version,serverNow:clock,characterId:state?.character?.id??null,walletGold:state?.character?.gold??null,guildMember:false,communityProgress:{}} as T;
    if(name==='character_delete_coop_guard_server_v1')return {blocked:args.p_character_id===blockedDeleteCharacterId,reason:'Leave the Live co-op queue or ready check before deleting this character.'} as T;
-   if(name==='commit_online_game_server_v1'||name==='commit_online_game_server_v2'){
+   if(name==='commit_online_game_guild_pve_v1'){
     if(args.p_expected_version!==version)throw new GameplayError('stale_state');
     const response=args.p_response as {state:GameState;version:number};state=response.state;version=response.version;commits++;
-    if(name==='commit_online_game_server_v2')deletedCommitCharacterId=args.p_deleted_character_id as string;
+    if(args.p_deleted_character_id)deletedCommitCharacterId=args.p_deleted_character_id as string;
     receipts.set(args.p_request_id as string,{response,requestHash:args.p_request_hash as string});
     if(transportFailure){transportFailure=false;throw new Error('lost response after commit');}return response as T;
    }throw new Error('unexpected RPC');
@@ -29,14 +30,21 @@ async function main(){
  assert.equal((await request({type:'stop'},'faith-stop-01',2)).status,200,'Faith refund persists through online command');
  assert.equal((await request({type:'start',args:{kind:'gathering',id:'DEWLEAF_PATCH'}},'herb-start-01',3)).status,200,'Herbalism activity starts online');
  clock+=60000;
- const herbClaim=await request({type:'claim'},'herb-claim-01',4);assert.equal(herbClaim.status,200,'Herbalism settlement persists online');
+ const herbClaim=await request({type:'claim'},'herb-claim-01',4);assert.equal(herbClaim.status,200,'Herbalism settlement persists online');const herbPayload=await herbClaim.json();assert.equal(herbPayload.guildProjectEffort[0].kind,'skilling');assert.equal(herbPayload.guildProjectEffort[0].endsAtMs-herbPayload.guildProjectEffort[0].startsAtMs,60000);assert.deepEqual(herbPayload.guildPveEffort,[],'Gathering does not damage bosses');
  state={...state!,inventory:{...state!.inventory,stacks:state!.inventory.stacks.map(stack=>stack.itemId==='DEWLEAF'?{...stack,quantity:2}:stack)}};
  assert.equal((await request({type:'stop'},'herb-stop-01',5)).status,200,'Herbalism activity stops online');
  assert.equal((await request({type:'alchemy_start',args:{id:'BREW_DEWLEAF_DRAUGHT',batches:1}},'brew-start-01',6)).status,200,'Alchemy reservation persists online');
  clock+=60000;
  const brewClaim=await request({type:'claim'},'brew-claim-01',7);assert.equal(brewClaim.status,200,'Alchemy settlement persists online');
  const persisted=await brewClaim.json();assert.equal(persisted.state.activity,null,'Completed alchemy batch is cleared');
- state={...state!,character:{...state!.character!,level:30},skills:state!.skills.map(skill=>skill.skillId==='herbalism'?{...skill,xp:999999,level:26}:skill.skillId==='alchemy'?{...skill,xp:999999,level:35}:skill),inventory:{...state!.inventory,stacks:[...state!.inventory.stacks,{itemId:'SUNSCALE',quantity:2},{itemId:'RIVER_MINT',quantity:2}]}};
+ state={...state!,character:{...state!.character!,level:30,xp:totalXpAtLevel(30)},skills:state!.skills.map(skill=>skill.skillId==='herbalism'?{...skill,xp:totalXpAtLevel(26),level:26}:skill.skillId==='alchemy'?{...skill,xp:totalXpAtLevel(35),level:35}:skill.skillId==='exploration'?{...skill,xp:totalXpAtLevel(6),level:6}:skill),inventory:{...state!.inventory,stacks:[...state!.inventory.stacks,{itemId:'SUNSCALE',quantity:2},{itemId:'RIVER_MINT',quantity:2}]}};
+ // This later-region fixture must satisfy the same scouting gates as a real character.
+ const beforeLockedTravel=commits;
+ const lockedTravel=await request({type:'travel',args:{id:'SUNSCAR'}},'sunscar-locked-01',8);
+ assert.equal(lockedTravel.status,400,'Character level alone cannot bypass scouting');
+ assert.match((await lockedTravel.json()).error,/Kings Road scouting/);
+ assert.equal(commits,beforeLockedTravel,'Rejected travel cannot commit progress');
+ state={...state!,exploredRouteIds:['SCOUT_IRONWOOD','SCOUT_OLD_MINES','SCOUT_KINGS_ROAD']};
  assert.equal((await request({type:'travel',args:{id:'SUNSCAR'}},'sunscar-travel-01',8)).status,200,'Later-region travel persists online');
  assert.equal((await request({type:'explore',args:{id:'SCOUT_SUNSCAR'}},'sunscar-scout-01',9)).status,200,'Later-region scouting starts online');
  clock+=210000;
@@ -54,7 +62,7 @@ async function main(){
  clock+=120000;transportFailure=true;
  assert.equal((await request({type:'claim'},'claim-00001',17)).status,503,'uncertain commit is retryable');
  const count=commits;const retried=await request({type:'claim'},'claim-00001',17);assert.equal(retried.status,200);assert.equal(commits,count,'no second commit on retry');
- const result=await retried.json();assert.ok(result.reward.kills>0);assert.ok(result.state.character.xp>0);assert.ok(!result.state.unlockedMonsterIds.includes('BLACKGLASS_MIRELING'),'Sunscar combat cannot bypass Ashlands scouting online');
+ const result=await retried.json();assert.ok(result.reward.kills>0);assert.deepEqual(result.guildProjectEffort,[{kind:'combat',...result.reward.combatEffort}]);assert.ok(result.guildPveEffort.length>0,'Verified combat intervals reach the atomic guild commit');assert.deepEqual(result.guildPveEffort[0].combatEffort,result.reward.combatEffort);assert.ok(result.state.character.xp>0);assert.ok(!result.state.unlockedMonsterIds.includes('BLACKGLASS_MIRELING'),'Sunscar combat cannot bypass Ashlands scouting online');
  let receiptReads=0;
  const raced=gameplayHandler({...services,rpc:async<T>(name:string,args:Record<string,unknown>):Promise<T>=>{
   if(name==='read_online_game_receipt_server_v1'&&receiptReads++===0)return null as T;
@@ -79,6 +87,9 @@ async function main(){
  const qaRequest=(command:unknown,requestId:string,expectedVersion:number)=>qaHandle(new Request('https://example.invalid/gameplay',{method:'POST',headers:{Authorization:'Bearer qa-token'},body:JSON.stringify({command,requestId,expectedVersion})}));
  const qaPrepared=await qaRequest({type:'qa_prepare',args:{classId:'STONECALLER'}},'qa-prepare-001',21);assert.equal(qaPrepared.status,200,'trusted Admin QA account can prepare a server-owned QA profile');
  const qaPayload=await qaPrepared.json();assert.equal(qaPayload.state.character.classId,'STONECALLER');assert.equal(qaPayload.state.character.level,100);assert.equal(qaPayload.state.character.classSkills.every((skill:any)=>skill.level===100),true,'Admin QA class disciplines are maxed');assert.equal(qaPayload.state.skills.every((skill:any)=>skill.level===100),true,'Admin QA professions are maxed');
+ state={...state!,activity:{kind:'combat',targetId:'MOSS_RAT',startedAtMs:clock-60000,lastClaimAtMs:clock-60000}};
+ const qaCombat=await qaRequest({type:'claim'},'qa-combat-effort-01',22);assert.equal(qaCombat.status,200);
+ const qaCombatPayload=await qaCombat.json();assert.ok(qaCombatPayload.reward.combatEffort,'QA fixture actually contains combat effort');assert.deepEqual(qaCombatPayload.guildProjectEffort,[]);assert.deepEqual(qaCombatPayload.guildPveEffort,[],'Admin QA must never credit live guild PvE');
  console.log('PASS authenticated gameplay HTTP, input authority, Admin QA authorization, canonical replay, stale version and lost-response recovery');
 }
 void main().catch(error=>{console.error(error);process.exitCode=1;});

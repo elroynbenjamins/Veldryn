@@ -107,7 +107,7 @@ export const EVENT_ENCOUNTERS:Record<string,()=>CombatantDefinition[]>={
  EVENT_FROSTFALL_BATTLE_01:()=>encounter('EVENT_FROSTFALL_BATTLE_01','Rimefang Marauder',35,1.02,'ice','Rimefang','Snowblind Howl'),
  EVENT_FROSTFALL_BATTLE_02:()=>encounter('EVENT_FROSTFALL_BATTLE_02','Bellfrost Spirit',35,1.06,'ice','Chime Shard','Winter Peal'),
  EVENT_FROSTFALL_BATTLE_03:()=>encounter('EVENT_FROSTFALL_BATTLE_03','Giftwork Colossus',35,1.1,'ice','Wrapped Fist','Toybox Avalanche'),
- EVENT_VEILBREAK_BOSS:()=>boss('EVENT_VEILBREAK_BOSS','The Hollow Regent',35,1.05,'shadow','Regent’s Grasp','Lantern Extinction'),
+ EVENT_VEILBREAK_BOSS:()=>boss('EVENT_VEILBREAK_BOSS','The Hollow Regent',35,1.14,'shadow','Regent’s Grasp','Lantern Extinction'),
  EVENT_MERCHANT_BOSS:()=>boss('EVENT_MERCHANT_BOSS','The Coinbound Captain',35,1.03,'physical','Golden Cleaver','Caravan Breaker'),
  EVENT_FROSTFALL_BOSS:()=>boss('EVENT_FROSTFALL_BOSS','The Rimebell Colossus',35,1.07,'ice','Rimebell Hammer','Aurora Shatter'),
 };

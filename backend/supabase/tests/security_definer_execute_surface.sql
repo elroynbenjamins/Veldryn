@@ -13,6 +13,7 @@ declare
   allowed regprocedure[] := array[
     'public.active_live_events()'::regprocedure,
     'public.visible_live_events()'::regprocedure,
+    'public.public_event_calendar()'::regprocedure,
     'public.is_active_party_member_v16(uuid,uuid)'::regprocedure
   ];
   f regprocedure;
@@ -49,6 +50,7 @@ end $$;
 set local role authenticated;
 select count(*) >= 0 from public.active_live_events();
 select count(*) >= 0 from public.visible_live_events();
+select count(*) >= 0 from public.public_event_calendar();
 select public.is_active_party_member_v16(
  '00000000-0000-0000-0000-000000000001'::uuid,
  '00000000-0000-0000-0000-000000000002'::uuid

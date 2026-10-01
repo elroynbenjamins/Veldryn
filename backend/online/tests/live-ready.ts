@@ -21,7 +21,7 @@ async function main(){
  assert.equal(chooseBoundedCoopMatch([...tickets,replacement],1000,8,['replacement'])!.ticketIds.includes('replacement'),true);
  assert.equal(chooseBoundedCoopMatch(tickets,1000,8,['missing']),null);
  assert.equal(chooseBoundedCoopMatch(tickets,1000,8,[],()=>false),null);
- const checkId='11111111-1111-4111-8111-111111111111',calls:Array<{name:string;args:Record<string,unknown>}>=[];
+ const runId='22222222-2222-4222-8222-222222222222',checkId='11111111-1111-4111-8111-111111111111',calls:Array<{name:string;args:Record<string,unknown>}>=[];
  let prior:{requestHash:string;response:unknown}|null=null,sourceFailsAfterCommit=false;
  const services={randomId:()=>checkId,randomRoll:()=>0,authenticate:async(token:string)=>token==='valid'?members[0].accountId:null,
   rpc:async<T>(name:string,args:Record<string,unknown>):Promise<T>=>{
@@ -34,6 +34,7 @@ async function main(){
     return {dungeonId:'EXP_001',tier:1,members} as T;
    }
    if(name==='respond_online_live_ready_server_v1')return {status:'open'} as T;
+   if(name==='online_live_committed_sources_server_v1')return {runId} as T;
    if(name==='online_live_ready_state_server_v1')return {status:'open'} as T;
    throw new Error('unexpected_rpc:'+name);
   }};
@@ -50,7 +51,12 @@ async function main(){
  const handler=coopHandler(services),request=(body:unknown,token='valid')=>new Request('https://test.invalid/coop/ready/'+checkId,{method:'POST',headers:{authorization:'Bearer '+token},body:JSON.stringify(body)});
  assert.equal((await handler(request(command,'bad'))).status,401);
  assert.equal((await handler(request({...command,stats:{}}))).status,400);
- assert.equal((await handler(request(command))).status,200);
+ const accepted=await handler(request(command));
+ assert.equal(accepted.status,200);
+ assert.deepEqual(await accepted.json(),{status:'committed',runId},'Committed ready check reconnects to its existing run');
+ const handoff=calls.find(row=>row.name==='online_live_committed_sources_server_v1')!;
+ assert.deepEqual(handoff.args,{p_account_id:members[0].accountId,p_check_id:checkId},'Run lookup uses authenticated membership');
+ assert.equal(calls.some(row=>row.name==='start_online_live_server_v1'),false,'Existing run is not created again on receipt replay');
  console.log('PASS Live ready bounded retained-roster matching, authoritative four-player freeze, stale gear, concurrent receipt recovery and authenticated strict HTTP');
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});

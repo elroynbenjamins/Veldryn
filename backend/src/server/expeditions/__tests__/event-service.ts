@@ -32,7 +32,7 @@ for(const definition of EVENT_EXPEDITIONS){
  if(objective.effect==='boss_defense_down')assert.ok(objective.bossDefenseMultiplier<1);
  if(objective.effect==='reward_bonus')assert.ok(objective.rewardBonus>0);
  if(objective.effect==='preboss_heal')assert.ok(objective.preBossHealPct>0);
- const bossProfile=eventBossMechanicProjection(run);assert.ok(bossProfile?.label.trim());assert.ok(bossProfile?.summary.trim());assert.ok(bossProfile?.telegraph.bossName.trim());assert.ok(bossProfile?.telegraph.phases.some(phase=>phase.label==='Pressure Break'));assert.ok(bossProfile?.telegraph.castAbilities.some(ability=>ability.label.trim()));
+ const bossProfile=eventBossMechanicProjection(run);assert.ok(bossProfile?.label.trim());assert.ok(bossProfile?.summary.trim());assert.ok(bossProfile?.telegraph.bossName.trim());assert.ok((bossProfile?.telegraph.phases.length??0)>0);assert.ok(bossProfile?.telegraph.phases.every(phase=>phase.label.trim()));assert.ok(bossProfile?.telegraph.castAbilities.some(ability=>ability.label.trim()));
  const altCount=definition.objective.startCount===definition.objective.maxCount?0:definition.objective.maxCount;
  const alternate=eventBossMechanicProjection({...run,objective:{id:definition.objective.id,count:altCount}});assert.ok(alternate);assert.notEqual(alternate!.profileId,bossProfile!.profileId);
 }

@@ -67,8 +67,12 @@ export function gameplayHandler(services:GameplayServices){return async(request:
    else {const monster=MONSTERS.find(row=>row.id===event.contentId);if(!monster)throw new Error('unknown_monster');metric=monster.boss?'verified_regional_boss_kills':'verified_standard_enemy_kills';}
    return {...event,metric,units};
   });
-  const response={state:result.state,version:loaded.version+1,serverNow:loaded.serverNow,accountId,reward:result.reward,activity:result.activity,message:result.message,won:result.won,storyBossBattle:result.storyBossBattle,upgrade:result.upgrade,forgeResults:result.forgeResults};
-  const commitRpc=command.type==='roster_delete'?'commit_online_game_server_v2':'commit_online_game_server_v1';
+  // Private simulation intervals travel through the service-only commit; QA never contributes.
+  const guildPveEffort=adminQa?[]:(result.reward?.activityResults?.map(segment=>segment.reward)??[result.reward]).flatMap(earned=>earned?.combatEffort?[{kind:'combat',combatEffort:earned.combatEffort}]:[]);
+  const projectSegments=result.reward?.activityResults??(result.reward&&state.activity?[{activity:state.activity,reward:result.reward}]:[]);
+  const guildProjectEffort=adminQa?[]:projectSegments.flatMap(({activity,reward:earned})=>earned.combatEffort?[{kind:'combat',...earned.combatEffort}]:['mining','woodcutting','fishing','herbalism'].includes(activity.kind)&&earned.elapsedSeconds>0?[{kind:'skilling',startsAtMs:activity.lastClaimAtMs,endsAtMs:activity.lastClaimAtMs+earned.elapsedSeconds*1000}]:[]);
+  const response={guildProjectEffort,guildPveEffort,state:result.state,version:loaded.version+1,serverNow:loaded.serverNow,accountId,reward:result.reward,activity:result.activity,message:result.message,won:result.won,storyBossBattle:result.storyBossBattle,upgrade:result.upgrade,forgeResults:result.forgeResults};
+  const commitRpc='commit_online_game_guild_pve_v1';
   const committed=await services.rpc(commitRpc,{p_account_id:accountId,p_expected_version:loaded.version,p_expected_gold:loaded.walletGold,p_request_id:body.requestId,p_request_hash:requestHash,p_response:response,p_contributions:contributions,...(command.type==='roster_delete'?{p_deleted_character_id:(command.args as {id:string}).id}: {})});
   try{await services.rpc('guild_quest_record_contributions_v1',{p_account_id:accountId,p_contributions:contributions.map(e=>({...e,units:(e as typeof e&{questUnits?:number}).questUnits??e.units}))});}catch{/* Quest telemetry must not invalidate an already committed gameplay action. */}
   return json(committed);

@@ -36,16 +36,23 @@ export class QModeService{
   validateCoopRoster([{accountId:input.controllerAccountId,characterId:input.controllerSnapshot.characterId,role:input.controllerSnapshot.readiness.role},...echoes.map(echo=>({accountId:echo.sourceAccountId,characterId:echo.snapshot.characterId,role:echo.snapshot.readiness.role}))]);
   validateUniqueDamageClasses([input.controllerSnapshot,...echoes.map(echo=>echo.snapshot)].map(snapshot=>({role:snapshot.readiness.role,classId:snapshot.classId})));
   const players=[combatant(input.controllerSnapshot),...echoes.map(echo=>combatant(echo.snapshot))];
-  const graph=generateCoopRouteGraph(this.serverSecret,input.expeditionId,input.runId,input.contentVersion,input.balanceVersion);
-  const run:QModeRun={id:input.runId,requestId:input.requestId,controllerAccountId:input.controllerAccountId,expeditionId:input.expeditionId,tier:input.tier,graph,currentNodeId:graph.entryNodeId,phase:'awaiting_choice',players,persistentState:initialPersistentRunState(players),echoSourceAccountIds:echoes.map(echo=>echo.sourceAccountId)};
-  this.repository.save(run);return structuredClone(run);
+  return this.createRun({requestId:input.requestId,runId:input.runId,controllerAccountId:input.controllerAccountId,expeditionId:input.expeditionId,tier:input.tier,contentVersion:input.contentVersion,balanceVersion:input.balanceVersion,players,echoSourceAccountIds:echoes.map(echo=>echo.sourceAccountId)});
+ }
+ createLive(input:{requestId:string;runId:string;controllerAccountId:string;expeditionId:string;tier:1|2|3|4|5;contentVersion:string;balanceVersion:string;snapshots:readonly FrozenLoadoutSnapshot[]}):QModeRun{
+  const definition=EXPEDITIONS[input.expeditionId];if(!definition)throw new Error('unknown_expedition');if(!definition.coopImplemented)throw new Error('expedition_not_implemented');
+  if(input.snapshots.length!==4)throw new Error('invalid_live_roster');
+  const requiredLevel=coopRequiredLevel(definition.minLevel,input.tier);
+  for(const snapshot of input.snapshots)if(snapshot.normalized.before.level<requiredLevel)throw new Error(`character_below_tier_level:${snapshot.characterId}`);
+  validateCoopRoster(input.snapshots.map(snapshot=>({accountId:snapshot.accountId,characterId:snapshot.characterId,role:snapshot.readiness.role})));
+  validateUniqueDamageClasses(input.snapshots.map(snapshot=>({role:snapshot.readiness.role,classId:snapshot.classId})));
+  return this.createRun({requestId:input.requestId,runId:input.runId,controllerAccountId:input.controllerAccountId,expeditionId:input.expeditionId,tier:input.tier,contentVersion:input.contentVersion,balanceVersion:input.balanceVersion,players:input.snapshots.map(combatant),echoSourceAccountIds:[]});
  }
  getAuthorized(runId:string,accountId:string):QModeRun{const run=this.repository.get(runId);if(!run)throw new Error('run_not_found');if(run.controllerAccountId!==accountId)throw new Error('not_participant');return run;}
- choose(input:{runId:string;controllerAccountId:string;optionNodeId:string}):QModeRun{
+ choose(input:{runId:string;controllerAccountId:string;optionNodeId:string;safetyAiPlayerIds?:readonly string[]}):QModeRun{
   const run=this.getAuthorized(input.runId,input.controllerAccountId);if(run.phase!=='awaiting_choice')throw new Error('run_not_awaiting_choice');
   const current=run.graph.nodes.find(node=>node.nodeId===run.currentNodeId);if(!current||!current.nextNodeIds.includes(input.optionNodeId))throw new Error('invalid_option');
   const selected=run.graph.nodes.find(node=>node.nodeId===input.optionNodeId);if(!selected)throw new Error('invalid_option');
-  const result=resolveCoopNode({runId:run.id,serverSecret:this.serverSecret,node:selected,players:run.players,state:run.persistentState});
+  const result=resolveCoopNode({runId:run.id,serverSecret:this.serverSecret,node:selected,players:run.players,state:run.persistentState,safetyAiPlayerIds:input.safetyAiPlayerIds});
   run.lastResolution={nodeId:selected.nodeId,result:structuredClone(result)};
   run.persistentState=result.state;run.currentNodeId=selected.nodeId;
   if(!result.success)run.phase='failed';
@@ -59,5 +66,10 @@ export class QModeService{
   const node=run.graph.nodes.find(item=>item.nodeId===run.currentNodeId);if(!node)throw new Error('run_node_not_found');
   const result=purchaseMerchantOffer({runId:run.id,node,actorId:input.actorId,offerId:input.offerId,state:run.persistentState,players:run.players});
   run.lastResolution={nodeId:node.nodeId,result:structuredClone(result)};run.persistentState=result.state;this.repository.save(run);return structuredClone(run);
+ }
+ private createRun(input:{requestId:string;runId:string;controllerAccountId:string;expeditionId:string;tier:1|2|3|4|5;contentVersion:string;balanceVersion:string;players:CombatantDefinition[];echoSourceAccountIds:string[]}):QModeRun{
+  const graph=generateCoopRouteGraph(this.serverSecret,input.expeditionId,input.runId,input.contentVersion,input.balanceVersion);
+  const run:QModeRun={id:input.runId,requestId:input.requestId,controllerAccountId:input.controllerAccountId,expeditionId:input.expeditionId,tier:input.tier,graph,currentNodeId:graph.entryNodeId,phase:'awaiting_choice',players:input.players,persistentState:initialPersistentRunState(input.players),echoSourceAccountIds:input.echoSourceAccountIds};
+  this.repository.save(run);return structuredClone(run);
  }
 }

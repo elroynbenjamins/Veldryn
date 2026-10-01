@@ -39,15 +39,16 @@ for(const message of captureMessages){message.guild_tag='BLM';message.guild_tag_
 function fixture(){
  let state=debugSetLevel(debugPrepareDungeonLab(createCharacter(newGame(now),'IRONWARDEN','Aster','female')),28);
  state={...state,currentRegionId:'IRONWOOD',exploredRouteIds:['SCOUT_IRONWOOD','SCOUT_OLD_MINES','SCOUT_KINGS_ROAD'],settings:{...state.settings,language:'en',reduceMotion:true},
-  character:{...state.character!,gold:6840,equippedToolIds:{mining:'OATHSTONE_PICKAXE'}},
+  character:{...state.character!,gold:6840,profileIconId:'starter:armored-sentinel',equippedToolIds:{mining:'OATHSTONE_PICKAXE'}},
   inventory:{capacity:2000,stacks:ITEMS.filter(i=>i.type==='material').map((i,n)=>({itemId:i.id,quantity:48+n%70}))},
   skills:state.skills.map((s,n)=>({...s,level:24+n%9,xp:totalXpAtLevel(24+n%9)+6800})),
   quests:state.quests.map(q=>({...q,status:'claimed' as const,progress:1})),
  };
  const gear=EQUIPMENT_SETS.find(set=>set.id==='T1_003')!;
  state.character!.equipment=Object.fromEntries(gear.itemIds.map(id=>[itemDef(id).slot!,id]));
- state=state;
+
  for(const id of ['UNIT_001','UNIT_002','UNIT_003','UNIT_004','UNIT_005','UNIT_008'])state=unlockCombatCompanion(state,id,now-86400000*14);
+ state.account.combatCompanionProgress=Object.fromEntries(Object.entries(state.account.combatCompanionProgress??{}).map(([id,p])=>[id,{...p,level:8,bondLevel:4}]));
  state=equipCombatCompanion(state,'UNIT_001');
  return state;
 }
@@ -67,7 +68,7 @@ export default function StoreCaptureReview(){
   {screen==='profile-identity'&&<ProfileIdentityReview state={state}/>}
   {screen==='social'&&<View style={{padding:16,gap:16}}>
    <View nativeID="store-guild" style={{gap:10}}>
-    <GuildIdentitySummary {...captureGuild} level={12} bannerId="world_tree_green" frameId="silver_fellowship" nameColorId="name_emerald" motto="Stronger together."/>
+    <GuildIdentitySummary {...captureGuild} level={12} bannerId="world_tree_green" frameId="silver_fellowship" nameColorId="name_ivory" motto="Stronger together."/>
     <GuildMemberRosterPanel members={captureMessages.slice(0,2).map((message,i)=>({accountId:message.account_id,displayName:message.sender_name,role:message.guild_role!,contributionThisWeek:1480-i*360,onlineState:'online',joinedAt:'2026-09-01T12:00:00Z'}))}/>
    </View>
    <View nativeID="store-chat" style={{padding:12,borderWidth:1,borderColor:C.line,borderRadius:12,backgroundColor:C.panel}}>

@@ -10,6 +10,10 @@ coverage/
 *.log
 
 .core-build/
+**/.core-build*/
+**/.combat-*/
+**/.expo-export-*/
+apps/mobile/.codex-tmp-*
 .readiness-export/
 .companions-build/
 .companion-export/
@@ -28,3 +32,21 @@ output/
 
 .combat-balance-build/
 .combat-online-build/
+
+# Generated local QA/build artifacts.
+.codex-remote-attachments/
+.codex/
+**/.bot-readiness-build/
+**/.codex-aab-build/
+**/.codex-aab-export/
+**/.codex-v33-test-build/
+**/.profile-*-build/
+**/.onboarding-build/
+**/.pet-test-build/
+**/.search-loadouts-build/
+**/.affinity-build/
+**/.visual-polish-*/
+**/.wrangler/
+**/.web-pet-preview/
+supabase/.temp/
+*.profile-*-check.txt

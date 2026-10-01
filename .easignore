@@ -1,0 +1,33 @@
+# EAS builds the mobile app from this monorepo. Keep the mobile workspace,
+# exclude server/source archives and local generated material.
+backend/
+control-center/
+docs/
+marketing/
+tools/
+supabase/
+output/
+artifacts/
+.codex/
+.codex-*/
+.codex-upstream/
+.codex-v21-reference/
+.pnpm-store/
+VELDRYN_v17_SocialLiveOpsPartyEvents/
+VELDRYN_v21_SunscarFrostmarch/
+
+apps/mobile/node_modules/
+apps/mobile/.expo/
+apps/mobile/.expo-*/
+apps/mobile/.codex-*/
+apps/mobile/.core-build/
+apps/mobile/.onboarding-build/
+apps/mobile/.pet-test-build/
+apps/mobile/.search-loadouts-build/
+apps/mobile/.affinity-build/
+apps/mobile/.profile-core-build/
+apps/mobile/.combat-*/
+apps/mobile/*-export/
+apps/mobile/art-review/
+apps/mobile/tests/
+apps/mobile/*.log

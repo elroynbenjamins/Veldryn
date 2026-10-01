@@ -1,0 +1,30 @@
+# Dependencies are installed by EAS.
+node_modules/
+
+# Local Expo/build output and generated previews.
+.expo/
+.expo-*/
+.codex-*/
+.core-build/
+.onboarding-build/
+.pet-test-build/
+.search-loadouts-build/
+.affinity-build/
+.profile-core-build/
+.combat-*/
+.readiness-export/
+.next-pass-export/
+.herbalism-export/
+.faith-export/
+.roster-export/
+.companion-export/
+.exploration-export/
+.web-pet-preview/
+
+# Review-only material is not part of the app bundle.
+art-review/
+
+# Test sources and local logs are not needed by the release build.
+tests/
+*.log
+.codex-tmp-*

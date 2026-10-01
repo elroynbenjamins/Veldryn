@@ -48,5 +48,7 @@ output/
 **/.visual-polish-*/
 **/.wrangler/
 **/.web-pet-preview/
+**/.welcome-preview/
 supabase/.temp/
-*.profile-*-check.txt
+.*-check.txt
+.codex-challenge-references.txt

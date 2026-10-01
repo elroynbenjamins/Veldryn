@@ -27,6 +27,13 @@ export const resourceIconSourceById:Readonly<Partial<Record<string,ImageSourcePr
   SILVERFIN:require('../../assets/items/resources/silverfin.png'),
   RIVER_EEL:require('../../assets/items/resources/river_eel.png'),
   OATHSCALE_PIKE:require('../../assets/items/resources/oathscale_pike.png'),
+  WHITEPINE_LOG:require('../../assets/items/resources/whitepine_log.png'),
+  ICEFIN:require('../../assets/items/resources/icefin.png'),
+  MEADOW_PERCH:require('../../assets/items/resources/meadow_perch.png'),
+  ROOTSTREAM_TROUT:require('../../assets/items/resources/rootstream_trout.png'),
+  CAVE_LOACH:require('../../assets/items/resources/cave_loach.png'),
+  CROWN_CARP:require('../../assets/items/resources/crown_carp.png'),
+  EMBERFIN:require('../../assets/items/resources/emberfin.png'),
   // Gathering tool blueprints use the existing parchment/script pixel art until
   // a dedicated blueprint sheet is produced. Rarity treatment stays item-driven.
   BP_ASTER_IRON_PICKAXE:require('../../assets/ingredient-icons-v1/astral_script.png'),

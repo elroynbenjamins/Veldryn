@@ -18,7 +18,7 @@ export const VEILBREAK_EVENT:LiveEventDef={
   currencyName:'Veil Shards',
   prestigeCurrencyId:'LANTERN_EMBER',
   prestigeCurrencyName:'Lantern Embers',
-  accent:'#9c6ade',
+  accent:'#f47a36',
   progressionName:'Veil Reputation',
   maxProgress:10000,
   claimGraceDays:7,
@@ -39,11 +39,17 @@ export const VEILBREAK_EVENT:LiveEventDef={
   },
   dropRates:{combat:.20,gathering:1.0,crafting:28,boss:260},
   milestones:()=>[
+    {points:250,reward:{kind:'candy',id:'EVT_ANNUAL_010_2026:candy:skill',name:'Gloam Candy',rarity:'common',quantity:2}},
     {points:400,reward:{kind:'title',id:'title_veil_watcher',name:'Veil Watcher',rarity:'rare'}},
+    {points:750,reward:{kind:'candy',id:'EVT_ANNUAL_010_2026:candy:combat',name:'Gloam Candy · Battle',rarity:'common',quantity:2}},
     {points:1000,reward:{kind:'emote',id:'emote_lantern_watch',name:'Lantern Watch',rarity:'rare'}},
-    {points:2250,reward:{kind:'pet',id:'EVT_PET_013',name:'Gloomkin',rarity:'rare'}},
-    {points:4000,reward:{kind:'title',id:'title_lantern_keeper',name:'Lantern Keeper',rarity:'epic'}},
+    {points:1500,reward:{kind:'candy',id:'EVT_ANNUAL_010_2026:candy:companion',name:'Gloam Candy · Bond',rarity:'common',quantity:2}},
+    {points:2500,reward:{kind:'guild_name_color',id:'name_halloween_orange',name:'Halloworange',rarity:'epic'}},
+    {points:4000,reward:{kind:'pet',id:'EVT_PET_013',name:'Gloomkin',rarity:'rare'}},
+    {points:5500,reward:{kind:'guild_frame',id:'border_halloween_veil',name:'Veil Masquerade',rarity:'epic'}},
     {points:6500,reward:{kind:'title',id:'title_veilbound',name:'Veilbound',rarity:'epic'}},
+    {points:7000,reward:{kind:'guild_banner',id:'halloween_pumpkin_lantern',name:'Pumpkin Lantern Flag',rarity:'rare'}},
+    {points:8500,reward:{kind:'guild_banner',id:'halloween_bat_moon',name:'Bat Moon Flag',rarity:'epic'}},
     {points:10000,reward:{kind:'companion',id:'EVT_UNIT_007',name:'Veil Hound',rarity:'epic'}},
   ],
   objectives:[
@@ -61,7 +67,7 @@ export const VEILBREAK_EVENT:LiveEventDef={
     {id:'veil_salute',reward:{kind:'emote',id:'emote_veil_salute',name:'Veil Salute',rarity:'rare'},currency:'common',cost:900,limit:1},
     {id:'candlewarden_title',reward:{kind:'title',id:'title_candlewarden',name:'Candlewarden',rarity:'epic'},currency:'common',cost:1800,limit:1},
     {id:'night_patrol_title',reward:{kind:'title',id:'title_night_patrol',name:'Night Patrol',rarity:'rare'},currency:'common',cost:1200,limit:1},
-    {id:'veil_hollow_knightling',reward:{kind:'companion',id:'EVT_UNIT_008',name:'Hollow Knightling',rarity:'mythic'},currency:'prestige',cost:8,limit:1},
+    {id:'veil_lantern_mimic',reward:{kind:'pet',id:'EVT_PET_014',name:'Lantern Mimic',rarity:'epic'},currency:'prestige',cost:10,limit:1},
   ],
   choices:[
     {id:'lantern_patrols',name:'Lantern Patrols',description:'Walk the roads and hunt creatures drawn through the veil.',bonusLabel:'+20% Veil Shards from combat',dropMultipliers:{combat:1.2}},
@@ -75,7 +81,6 @@ export const VEILBREAK_EVENT:LiveEventDef={
   communityMilestones:[],
   discoveries:[
     {id:'gloam_cinder',name:'Gloam Cinder',description:'A cold ember sometimes left behind after ordinary combat.',source:'combat',chance:.003,required:5,reward:{kind:'title',id:'title_gloam_touched',name:'Gloam-Touched',rarity:'rare'}},
-    {id:'lantern_mimic_key',name:'Crooked Lantern Key',description:'A tiny brass key found among gathered ward supplies.',source:'gathering',chance:.015,required:5,reward:{kind:'pet',id:'EVT_PET_014',name:'Lantern Mimic',rarity:'epic'}},
     {id:'waxen_sigil',name:'Waxen Sigil',description:'A binding mark occasionally left after crafting.',source:'crafting',chance:.06,required:3,reward:{kind:'emote',id:'emote_candle_circle',name:'Candle Circle',rarity:'rare'}},
     {id:'breach_fragment',name:'Breach Fragment',description:'A shard of condensed veil carried by eligible bosses.',source:'boss',chance:.25,required:1,reward:{kind:'title',id:'title_breach_sealer',name:'Breach Sealer',rarity:'epic'}},
   ],
@@ -89,7 +94,7 @@ export const FROSTFALL_EVENT:LiveEventDef={
   currencyName:'Frostbell Tokens',
   prestigeCurrencyId:'AURORA_CHIME',
   prestigeCurrencyName:'Aurora Chimes',
-  accent:'#72c9e8',
+  accent:'#9be7ff',
   progressionName:'Frostfall Reputation',
   maxProgress:10000,
   claimGraceDays:7,
@@ -112,8 +117,7 @@ export const FROSTFALL_EVENT:LiveEventDef={
   milestones:()=>[
     {points:400,reward:{kind:'title',id:'title_frostfall_guest',name:'Frostfall Guest',rarity:'common'}},
     {points:1000,reward:{kind:'emote',id:'emote_snowbell_ring',name:'Snowbell Ring',rarity:'rare'}},
-    {points:2250,reward:{kind:'pet',id:'EVT_PET_015',name:'Snowbell Pup',rarity:'common'}},
-    {points:4000,reward:{kind:'title',id:'title_hearth_friend',name:'Friend of the Hearth',rarity:'rare'}},
+    {points:4000,reward:{kind:'pet',id:'EVT_PET_015',name:'Snowbell Pup',rarity:'common'}},
     {points:6500,reward:{kind:'title',id:'title_winter_light',name:'Winter Light',rarity:'epic'}},
     {points:10000,reward:{kind:'companion',id:'EVT_UNIT_009',name:'Frostbell Herald',rarity:'epic'}},
   ],
@@ -132,8 +136,8 @@ export const FROSTFALL_EVENT:LiveEventDef={
     {id:'frostfall_wave',reward:{kind:'emote',id:'emote_frostfall_wave',name:'Frostfall Wave',rarity:'rare'},currency:'common',cost:900,limit:1},
     {id:'hearth_guest_title',reward:{kind:'title',id:'title_hearth_guest',name:'Hearth Guest',rarity:'rare'},currency:'common',cost:1200,limit:1},
     {id:'bellringer_title',reward:{kind:'title',id:'title_bellringer',name:'Bellringer',rarity:'epic'},currency:'common',cost:1800,limit:1},
-    {id:'aurora_walker_title',reward:{kind:'title',id:'title_aurora_walker',name:'Aurora Walker',rarity:'epic'},currency:'prestige',cost:3,limit:1},
-    {id:'frostfall_aurora_fox',reward:{kind:'pet',id:'EVT_PET_017',name:'Aurora Fox',rarity:'mythic'},currency:'prestige',cost:6,limit:1},
+    {id:'aurora_walker_title',reward:{kind:'title',id:'title_aurora_walker',name:'Aurora Walker',rarity:'epic'},currency:'prestige',cost:4,limit:1},
+    {id:'frostfall_aurora_fox',reward:{kind:'pet',id:'EVT_PET_017',name:'Aurora Fox',rarity:'mythic'},currency:'prestige',cost:12,limit:1},
   ],
   choices:[
     {id:'snow_patrols',name:'Snow Patrols',description:'Keep roads clear and defend travelers during the festival.',bonusLabel:'+20% Frostbell Tokens from combat',dropMultipliers:{combat:1.2}},
@@ -153,7 +157,6 @@ export const FROSTFALL_EVENT:LiveEventDef={
   discoveries:[
     {id:'snowbell_fragment',name:'Snowbell Fragment',description:'A tiny frozen bell-clapper found after ordinary combat.',source:'combat',chance:.003,required:5,reward:{kind:'title',id:'title_snowbell_seeker',name:'Snowbell Seeker',rarity:'rare'}},
     {id:'gift_ribbon_scrap',name:'Enchanted Ribbon Scrap',description:'A festive ribbon hidden among gathered supplies.',source:'gathering',chance:.015,required:5,reward:{kind:'title',id:'title_ribbon_finder',name:'Ribbon Finder',rarity:'rare'}},
-    {id:'living_gift_tag',name:'Living Gift Tag',description:'A suspicious tag occasionally appears after crafting.',source:'crafting',chance:.06,required:3,reward:{kind:'pet',id:'EVT_PET_016',name:'Gift Mimic',rarity:'rare'}},
     {id:'aurora_bell_shard',name:'Aurora Bell Shard',description:'A resonant shard carried by eligible event bosses.',source:'boss',chance:.25,required:1,reward:{kind:'emote',id:'emote_aurora_chime',name:'Aurora Chime',rarity:'epic'}},
   ],
 };

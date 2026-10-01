@@ -5,7 +5,7 @@ function at(index:number,level=1):FirstSessionTutorialHost{return {character:{le
 let checks=0;
 function check(name:string,run:()=>void){run();checks++;console.log('PASS '+name)}
 check('no tutorial before character creation',()=>assert.equal(step({...at(0),character:null}),undefined));
-check('fresh character sees World only',()=>{assert.equal(step(at(0))?.id,'first_hunt');assert.equal(step(at(0))?.highlightPrimary,'World')});
+check('fresh character opens Combat for the first hunt',()=>{assert.equal(step(at(0))?.id,'first_hunt');assert.equal(step(at(0))?.destination,'Combat');assert.equal(step(at(0))?.highlightPrimary,undefined)});
 check('acknowledged start is not nagged',()=>assert.equal(step(at(0),['first_hunt']),undefined));
 check('running Moss Rat hunt explains Collect',()=>{const s=at(0);s.activity={kind:'combat',targetId:'MOSS_RAT'};assert.equal(step(s,['first_hunt'])?.id,'first_hunt_collect');assert.equal(step(s)?.destination,'Home');assert.equal(step(s)?.highlightPrimary,undefined)});
 check('unrelated hunt does not imply Moss Rat progress',()=>{const s=at(0);s.activity={kind:'combat',targetId:'FIELD_WISP'};assert.equal(step(s)?.id,'first_hunt')});
@@ -50,3 +50,4 @@ async function preferenceChecks(){
  console.log(`PASS ${tested} tutorial preference scenarios`);
 }
 void preferenceChecks().catch(error=>{throw error});
+

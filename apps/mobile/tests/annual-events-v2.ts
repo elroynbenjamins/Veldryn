@@ -1,3 +1,7 @@
+import {LIVE_EVENT_CATALOG} from '../src/content/live-events';
+import {VEILBREAK_EVENT,FROSTFALL_EVENT} from '../src/content/annual-events-v2';
+// Simulate a future event release in this isolated test, without enabling it in production.
+LIVE_EVENT_CATALOG.push(VEILBREAK_EVENT,FROSTFALL_EVENT);
 import {createCharacter,newGame} from '../src/core/game';
 import type {GameState} from '../src/core/types';
 import {applyEventDiscoveries,applyEventDrops,claimEventDiscovery,claimEventReward,eventLifecycle,eventShopOffers,purchaseEventOffer} from '../src/core/live-events';
@@ -14,40 +18,28 @@ const withEvent=(eventId:string):GameState=>{
 
 let veil=withEvent('EVT_ANNUAL_010_2026');
 equal(eventLifecycle(veil,now)?.definition.name,'The Veilbreak','Veilbreak runtime resolves');
-veil=applyEventDrops(veil,[{eventId:'EVT_ANNUAL_010_2026',currencyId:'VEIL_SHARD',name:'Veil Shards',quantity:2250}]);
+veil=applyEventDrops(veil,[{eventId:'EVT_ANNUAL_010_2026',currencyId:'VEIL_SHARD',name:'Veil Shards',quantity:4000}]);
 veil=claimEventReward(veil,'EVT_PET_013',now);
 ok(veil.account.unlockedCosmeticPetIds?.includes('EVT_PET_013'),'Veilbreak milestone grants Gloomkin');
-veil=applyEventDiscoveries(veil,[{eventId:'EVT_ANNUAL_010_2026',discoveryId:'lantern_mimic_key',name:'Crooked Lantern Key',quantity:5}]);
-veil=claimEventDiscovery(veil,'lantern_mimic_key',now);
-ok(veil.account.unlockedCosmeticPetIds?.includes('EVT_PET_014'),'Veilbreak discovery grants Lantern Mimic');
-veil={...veil,account:{...veil.account,eventPrestigeBalanceById:{...(veil.account.eventPrestigeBalanceById??{}),EVT_ANNUAL_010_2026:8}}};
-ok(eventShopOffers(veil,now).some(offer=>offer.id==='veil_hollow_knightling'),'Hollow Knightling is always in Veilbreak prestige stock');
-veil=purchaseEventOffer(veil,'veil_hollow_knightling',now);
-ok(veil.account.unlockedCombatCompanionIds?.includes('EVT_UNIT_008'),'Veilbreak prestige purchase grants Hollow Knightling');
-let duplicateVeil=withEvent('EVT_ANNUAL_010_2026');
-duplicateVeil={...duplicateVeil,account:{...duplicateVeil.account,unlockedCombatCompanionIds:['EVT_UNIT_008'],companionEssence:10,companionMaterials:{EVENT_BONDBLOOM:1},eventPrestigeBalanceById:{EVT_ANNUAL_010_2026:8}}};
-duplicateVeil=purchaseEventOffer(duplicateVeil,'veil_hollow_knightling',now);
-equal(duplicateVeil.account.companionEssence,310,'Duplicate Mythic event companion converts to 300 Essence');
-equal(duplicateVeil.account.companionMaterials?.EVENT_BONDBLOOM,4,'Duplicate Mythic event companion converts to 3 Bondbloom');
-equal(duplicateVeil.account.longTermMetrics?.['companions.event_duplicates_converted'],1,'Duplicate event companion conversion telemetry');
+veil={...veil,account:{...veil.account,eventPrestigeBalanceById:{...(veil.account.eventPrestigeBalanceById??{}),EVT_ANNUAL_010_2026:10}}};
+ok(eventShopOffers(veil,now).some(offer=>offer.id==='veil_lantern_mimic'),'Lantern Mimic is always in Veilbreak prestige stock');
+veil=purchaseEventOffer(veil,'veil_lantern_mimic',now);
+ok(veil.account.unlockedCosmeticPetIds?.includes('EVT_PET_014'),'Veilbreak prestige purchase grants Lantern Mimic');
 
-veil=applyEventDrops(veil,[{eventId:'EVT_ANNUAL_010_2026',currencyId:'VEIL_SHARD',name:'Veil Shards',quantity:7750}]);
+veil=applyEventDrops(veil,[{eventId:'EVT_ANNUAL_010_2026',currencyId:'VEIL_SHARD',name:'Veil Shards',quantity:6000}]);
 veil=claimEventReward(veil,'EVT_UNIT_007',now);
 ok(veil.account.unlockedCombatCompanionIds?.includes('EVT_UNIT_007'),'Veilbreak final milestone grants Veil Hound');
 
 let frost=withEvent('EVT_ANNUAL_012_2026');
 equal(eventLifecycle(frost,now)?.definition.name,'Frostfall Festival','Frostfall runtime resolves');
-frost=applyEventDrops(frost,[{eventId:'EVT_ANNUAL_012_2026',currencyId:'FROSTBELL_TOKEN',name:'Frostbell Tokens',quantity:2250}]);
+frost=applyEventDrops(frost,[{eventId:'EVT_ANNUAL_012_2026',currencyId:'FROSTBELL_TOKEN',name:'Frostbell Tokens',quantity:4000}]);
 frost=claimEventReward(frost,'EVT_PET_015',now);
 ok(frost.account.unlockedCosmeticPetIds?.includes('EVT_PET_015'),'Frostfall milestone grants Snowbell Pup');
-frost=applyEventDiscoveries(frost,[{eventId:'EVT_ANNUAL_012_2026',discoveryId:'living_gift_tag',name:'Living Gift Tag',quantity:3}]);
-frost=claimEventDiscovery(frost,'living_gift_tag',now);
-ok(frost.account.unlockedCosmeticPetIds?.includes('EVT_PET_016'),'Frostfall discovery grants Gift Mimic');
-frost={...frost,account:{...frost.account,eventPrestigeBalanceById:{...(frost.account.eventPrestigeBalanceById??{}),EVT_ANNUAL_012_2026:6}}};
+frost={...frost,account:{...frost.account,eventPrestigeBalanceById:{...(frost.account.eventPrestigeBalanceById??{}),EVT_ANNUAL_012_2026:12}}};
 ok(eventShopOffers(frost,now).some(offer=>offer.id==='frostfall_aurora_fox'),'Aurora Fox is always in Frostfall prestige stock');
 frost=purchaseEventOffer(frost,'frostfall_aurora_fox',now);
 ok(frost.account.unlockedCosmeticPetIds?.includes('EVT_PET_017'),'Frostfall prestige purchase grants Aurora Fox');
-frost=applyEventDrops(frost,[{eventId:'EVT_ANNUAL_012_2026',currencyId:'FROSTBELL_TOKEN',name:'Frostbell Tokens',quantity:7750}]);
+frost=applyEventDrops(frost,[{eventId:'EVT_ANNUAL_012_2026',currencyId:'FROSTBELL_TOKEN',name:'FROSTBELL_TOKEN',quantity:6000}]);
 frost=claimEventReward(frost,'EVT_UNIT_009',now);
 ok(frost.account.unlockedCombatCompanionIds?.includes('EVT_UNIT_009'),'Frostfall final milestone grants Frostbell Herald');
 

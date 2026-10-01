@@ -9,7 +9,7 @@ export function AccountWelcomeScreen({scene,children}:{scene:StartupScene;childr
   <Image source={scene.source} accessible={false} resizeMode="cover" fadeDuration={0} style={[StyleSheet.absoluteFill,{width:'100%',height:'100%'}]}/>
   <View pointerEvents="none" style={s.shade}/>
   <SafeAreaView style={s.safe}><KeyboardAvoidingView style={s.flex} behavior={Platform.OS==='ios'?'padding':'height'}>
-   <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={s.content}>
+   <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={s.content} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
     <View style={s.column}><Image source={startupWordmark} accessibilityLabel="VELDRYN" resizeMode="contain" fadeDuration={0} style={s.logo}/>{children}</View>
    </ScrollView>
   </KeyboardAvoidingView></SafeAreaView>

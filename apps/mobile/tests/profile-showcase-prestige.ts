@@ -57,7 +57,7 @@ ok(hallScreen.includes('Masterwork Savant')||hallScreen.includes("masterwork_sav
 ok(hallScreen.includes('PRESTIGE, NOT POWER')&&hallScreen.includes('do not add another damage, yield, speed or account-wide multiplier'),'Mastery Hall must explicitly remain recognition-only');
 ok(hallScreen.includes('Choose Profile Mastery Showcase'),'Mastery Hall must hand off R50 records to Profile showcase selection');
 ok(hallPanel.includes('Open Mastery Hall'),'Compact Profile Hall panel must link to the full account Hall');
-ok(more.includes("'MasteryHall'")&&more.includes("title:'Mastery Hall'"),'Account navigation must expose the Mastery Hall directly');
+ok(more.includes("'MasteryHall'")&&more.includes('title:a("Mastery Hall")'),'Account navigation must expose the localized Mastery Hall directly');
 ok(app.includes("tab==='MasteryHall'")&&app.includes("setProfileCustomizeSection('Identity')"),'App must route Mastery Hall to profession, achievements and identity showcase destinations');
 ok(profileCustomize.includes("initialSection='Appearance'")&&profileCustomize.includes('setSection(initialSection)'),'Profile customization must support direct Identity & Showcases entry without changing its normal Appearance default');
 

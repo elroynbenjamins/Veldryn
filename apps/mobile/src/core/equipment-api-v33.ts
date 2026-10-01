@@ -2,7 +2,7 @@ import type {EquipmentSetDef} from '../content/equipment-sets';
 import type {GearSlot} from './types';
 
 export interface EquipmentPiecePayloadV33{id:string;setId:string;slot:GearSlot;name:string;requiredLevel:number;crafted?:boolean;}
-export interface EquipmentSetPayloadV33{set:EquipmentSetDef;pieces:readonly EquipmentPiecePayloadV33[];slotOrder:readonly string[];setThresholds:readonly number[];skinRule:string;}
+export interface EquipmentSetPayloadV33{set:EquipmentSetDef;pieces:readonly EquipmentPiecePayloadV33[];slotOrder:readonly string[];setThresholds:readonly number[];}
 export interface EquipmentApiEnvelopeV33<T>{requestId:string;serverTime:string;contentVersion:string;data:T;}
 
 export function equipmentSetPayloadV33(value:unknown):EquipmentSetPayloadV33{

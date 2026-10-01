@@ -4,9 +4,9 @@ import {executeGameCommand,validateGameCommand} from '../src/core/game-commands'
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 function rejects(fn:()=>unknown,message:string){let caught=false;try{fn()}catch{caught=true}ok(caught,message)}
 const now=1_000_000,base=createCharacter(newGame(now),'WAYFINDER','Tactics Tester');
-const balanced=startCombat(base,'MOSS_RAT',now,undefined,'balanced');
-const assault=startCombat(base,'MOSS_RAT',now,undefined,'assault');
-const guarded=startCombat(base,'MOSS_RAT',now,undefined,'guarded');
+const balanced=startCombat(base,'MOSS_RAT',now,'balanced');
+const assault=startCombat(base,'MOSS_RAT',now,'assault');
+const guarded=startCombat(base,'MOSS_RAT',now,'guarded');
 const at=now+15*60_000,b=previewActivityReward(balanced,at),a=previewActivityReward(assault,at),g=previewActivityReward(guarded,at);
 ok(a.kills>b.kills,'Assault should produce more kills than Balanced over a long hunt');
 ok(g.kills<b.kills,'Guarded should trade hunt speed for safety');

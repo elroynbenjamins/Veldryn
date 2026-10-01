@@ -5,8 +5,11 @@ import {companionArtSource} from './companion-art';
 import {profileBackgroundPreviewById} from './profile-background-assets';
 import {profileBorderSourceById} from './profile-border-assets';
 import {craftedItemIcons} from './crafted-item-assets';
+import {profileIconArtwork} from './profile-icon-assets';
+import {uiIcons} from './ui-icons';
 
 export function profileShowcaseArt(ref:ProfileCollectionRefV43):ImageSourcePropType|undefined{
+ if(ref.kind==='profile_icon')return profileIconArtwork(ref.id)??uiIcons.account;
  if(ref.kind==='pet')return petArtSource(ref.id);
  if(ref.kind==='companion')return companionArtSource(ref.id);
  if(ref.kind==='background')return profileBackgroundPreviewById.get(ref.id)?.source;

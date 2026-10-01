@@ -12,5 +12,5 @@ ok(mapping.includes("data:image/png;base64,"),'Asterfall ore atlas must be embed
 ok(resolver.includes('hasAsterfallOreArtwork(itemId)'),'Shared resolver must recognize Asterfall ore artwork');
 const oreIndex=artwork.indexOf('const asterfallOre=asterfallOreCell(itemId)');
 const sourceIndex=artwork.indexOf('const source=resourceIconSource(itemId)');
-ok(oreIndex>=0&&sourceIndex>oreIndex,'Unified ore artwork must override old standalone resource PNGs');
+ok(sourceIndex>=0&&oreIndex>sourceIndex,'Bundled resource PNGs must render first, with ore atlas fallback');
 console.log('PASS: unified Asterfall ore visuals override older standalone resource artwork');

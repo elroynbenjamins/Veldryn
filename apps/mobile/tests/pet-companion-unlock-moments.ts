@@ -24,3 +24,8 @@ assert.equal(newlyUnlockedEarlyFeatures(companions,companions).length,0,'already
 const both={...base,quests:base.quests.map(q=>q.questId==='QST_003'||q.questId==='QST_005'?{...q,status:'claimed' as const,progress:q.questId==='QST_003'?6:10}:q)};
 assert.deepEqual(newlyUnlockedEarlyFeatures(base,both).map(x=>x.id),['pets','companions','guild']);
 console.log('PASS one-time Pet, Companion and Guild feature unlock moments');
+
+const planning={...base,quests:base.quests.map(q=>q.questId==='QST_002'?{...q,status:'claimed' as const}:q)};
+assert.deepEqual(newlyUnlockedEarlyFeatures(base,planning).map(row=>row.id),['workingToward']);
+assert.equal(newlyUnlockedEarlyFeatures(base,planning)[0].destination,'Progression');
+assert.equal(newlyUnlockedEarlyFeatures(planning,planning).length,0,'planning introduction is not repeated');

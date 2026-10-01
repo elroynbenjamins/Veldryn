@@ -1,3 +1,4 @@
+import {accountText} from '../i18n/account';
 import {useMemo} from 'react';
 import {Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import type {GameState} from '../core/types';
@@ -9,27 +10,30 @@ import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 
 export function HomeSessionOverview({state,nowMs,onQuests,onDaily,onEvents,onGoals,onWeekly,onForge,onCompanions,onNew,onGoalNext}:{state:GameState;nowMs:number;onQuests:()=>void;onDaily:()=>void;onEvents:()=>void;onGoals:()=>void;onWeekly:()=>void;onForge:()=>void;onCompanions:()=>void;onNew:()=>void;onGoalNext:(destination:WorkingTowardDestination)=>void}){
+ const language=state.settings.language;
+ const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params);
+
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),summary=homeSessionSummary(state,nowMs),{width,fontScale}=useWindowDimensions(),stackCells=width<350||fontScale>=1.25,goalsUnlocked=earlyFeatureUnlocked(state,'workingToward'),weeklyUnlocked=earlyFeatureUnlocked(state,'contracts');
  const openReady=(kind:HomeReadyKind)=>{if(kind==='quests')onQuests();else if(kind==='daily')onDaily();else if(kind==='events')onEvents();else if(kind==='weekly')onWeekly();else if(kind==='forge')onForge();else if(kind==='companions')onCompanions();else onGoals()};
  const parts:string[]=[];
- if(summary.storyRewards)parts.push(summary.storyRewards+' story');
- if(summary.dailyReady)parts.push('daily claim');
- if(summary.eventRewards)parts.push(summary.eventRewards+' event');
- if(summary.goalReady)parts.push(summary.goalReady+' goal');
- if(summary.forgeReady)parts.push(summary.forgeReady+' forge');
- if(summary.weeklyRewards)parts.push(summary.weeklyRewards+' contract');
- if(summary.companionAttention)parts.push(summary.companionAttention+' companion');
+ if(summary.storyRewards)parts.push(a('{count} story',{count:summary.storyRewards}));
+ if(summary.dailyReady)parts.push(a('daily claim'));
+ if(summary.eventRewards)parts.push(a('{count} event',{count:summary.eventRewards}));
+ if(summary.goalReady)parts.push(a('{count} goal',{count:summary.goalReady}));
+ if(summary.forgeReady)parts.push(a('{count} forge',{count:summary.forgeReady}));
+ if(summary.weeklyRewards)parts.push(a('{count} contract',{count:summary.weeklyRewards}));
+ if(summary.companionAttention)parts.push(a('{count} companion',{count:summary.companionAttention}));
  const visibleParts=parts.slice(0,4),hiddenPartCount=Math.max(0,parts.length-visibleParts.length),readyDisplay=summary.readyTotal>99?'99+':String(summary.readyTotal);
  return <View style={[s.root,summary.readyTotal>0&&s.readyRoot]}>
-  <View style={s.head}><View style={s.flex}><Text style={s.kicker}>SESSION OVERVIEW</Text><Text style={s.title}>{summary.primaryReady?.title??'No immediate claims'}</Text><Text style={s.meta}>{summary.primaryReady?.detail??(summary.goalNext?'Tracked preparation · '+(summary.goalNextStep?summary.goalNextStep+' · ':'')+summary.goalNext:(goalsUnlocked||weeklyUnlocked?'Your next progression step is shown above. Use this row to jump into unlocked planning and weekly progress.':'Keep following the campaign to unlock planning and weekly systems.'))}</Text></View>{summary.readyTotal>0?<Text style={s.readyBadge}>{readyDisplay} READY</Text>:<Text style={s.clearBadge}>CLEAR</Text>}</View>
+  <View style={s.head}><View style={s.flex}><Text style={s.kicker}>{a('SESSION OVERVIEW')}</Text><Text style={s.title}>{a(summary.primaryReady?.title??'No immediate claims')}</Text><Text style={s.meta}>{summary.primaryReady?a(summary.primaryReady.detail):summary.goalNext?a('Tracked preparation · {step}{next}',{step:summary.goalNextStep?a(summary.goalNextStep)+' · ':'',next:a(summary.goalNext)}):a(goalsUnlocked||weeklyUnlocked?'Your next progression step is shown above. Use this row to jump into unlocked planning and weekly progress.':'Keep following the campaign to unlock planning and weekly systems.')}</Text></View>{summary.readyTotal>0?<Text style={s.readyBadge}>{a('{count} READY',{count:readyDisplay})}</Text>:<Text style={s.clearBadge}>{a('CLEAR')}</Text>}</View>
   <View style={s.cells}>
-   <SessionCell label="READY" value={readyDisplay} tone={summary.readyTotal?'good':'muted'} emphasized={summary.readyTotal>0} stack={stackCells} onPress={summary.primaryReady?()=>openReady(summary.primaryReady!.kind):undefined}/>
-   <SessionCell label="GOALS" value={goalsUnlocked?summary.goalReady+'/'+summary.goalTotal:'LOCKED'} tone={goalsUnlocked?(summary.goalReady?'good':'info'):'muted'} emphasized={goalsUnlocked&&summary.goalReady>0} stack={stackCells} onPress={goalsUnlocked?onGoals:undefined}/>
-   <SessionCell label="WEEKLY" value={weeklyUnlocked?(summary.weeklyRewards?summary.weeklyRewards+' ready':summary.weeklyComplete+'/'+summary.weeklyTotal):'LOCKED'} tone={weeklyUnlocked?(summary.weeklyRewards?'good':summary.weeklyTotal&&summary.weeklyComplete===summary.weeklyTotal?'good':'accent'):'muted'} emphasized={weeklyUnlocked&&(summary.weeklyRewards>0||summary.weeklyTotal>0)} stack={stackCells} onPress={weeklyUnlocked?onWeekly:undefined}/>
-   <SessionCell label="NEW" value={String(summary.newUnlocks)} tone={summary.newUnlocks?'special':'muted'} emphasized={summary.newUnlocks>0} stack={stackCells} onPress={onNew}/>
+   <SessionCell label={a("READY")} value={readyDisplay} tone={summary.readyTotal?'good':'muted'} emphasized={summary.readyTotal>0} stack={stackCells} onPress={summary.primaryReady?()=>openReady(summary.primaryReady!.kind):undefined}/>
+   <SessionCell label={a('GOALS')} value={goalsUnlocked?summary.goalReady+'/'+summary.goalTotal:a("LOCKED")} tone={goalsUnlocked?(summary.goalReady?'good':'info'):'muted'} emphasized={goalsUnlocked&&summary.goalReady>0} stack={stackCells} onPress={goalsUnlocked?onGoals:undefined}/>
+   <SessionCell label={a('WEEKLY')} value={weeklyUnlocked?(summary.weeklyRewards?a('{count} ready',{count:summary.weeklyRewards}):summary.weeklyComplete+'/'+summary.weeklyTotal):a("LOCKED")} tone={weeklyUnlocked?(summary.weeklyRewards?'good':summary.weeklyTotal&&summary.weeklyComplete===summary.weeklyTotal?'good':'accent'):'muted'} emphasized={weeklyUnlocked&&(summary.weeklyRewards>0||summary.weeklyTotal>0)} stack={stackCells} onPress={weeklyUnlocked?onWeekly:undefined}/>
+   <SessionCell label={a('NEW')} value={String(summary.newUnlocks)} tone={summary.newUnlocks?'special':'muted'} emphasized={summary.newUnlocks>0} stack={stackCells} onPress={onNew}/>
   </View>
-  {visibleParts.length?<Text style={s.breakdown}>Ready now · {visibleParts.join(' · ')}{hiddenPartCount?' · +'+hiddenPartCount+' more':''}</Text>:null}
-  {summary.primaryReady?<GameButton compact title={summary.primaryReady.button} onPress={()=>openReady(summary.primaryReady!.kind)}/>:summary.goalNext&&summary.goalNextDestination?<GameButton compact title={summary.goalNextBlocked?'Review preparation':'Continue preparation'} tone="secondary" onPress={()=>onGoalNext(summary.goalNextDestination!)}/>:null}
+  {visibleParts.length?<Text style={s.breakdown}>{a('Ready now · {items}{more}',{items:visibleParts.join(' · '),more:hiddenPartCount?a(' · +{count} more',{count:hiddenPartCount}):''})}</Text>:null}
+  {summary.primaryReady?<GameButton compact title={a(summary.primaryReady.button)} onPress={()=>openReady(summary.primaryReady!.kind)}/>:summary.goalNext&&summary.goalNextDestination?<GameButton compact title={a(summary.goalNextBlocked?'Review preparation':'Continue preparation')} tone="secondary" onPress={()=>onGoalNext(summary.goalNextDestination!)}/>:null}
  </View>;
 }
 

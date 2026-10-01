@@ -23,18 +23,18 @@ for(const [name,source] of [['GuildChat',chat],['OnlineGuildProjectsPanel',onlin
 
 ok(app.includes("import {OnlineGuildProjectsPanel}"),'App must wire the live Guild Projects panel');
 ok(app.includes("import {GuildChat}"),'App must wire direct Guild Chat');
-ok(app.includes('onlineProjects={<OnlineGuildProjectsPanel/>}'),'Guild screen must receive live Projects');
+ok(app.includes('onlineProjects={<OnlineGuildProjectsPanel onRewardsChanged='),"Guild screen must receive live Projects");
 ok(app.includes('onlineChat={<GuildChat'),'Guild screen must receive direct Guild Chat');
 ok(app.includes('onlineChatUnread={notificationCounts.guildChatUnread}'),'Guild Chat tab must reuse durable unread state');
 ok(app.includes('onlineChatMentions={notificationCounts.guildChatMentions}'),'Guild Chat tab must reuse durable mention state');
 ok(app.includes('firstUnreadMessageId={notificationCounts.guildFirstUnreadMessageId}'),'Direct Guild Chat must preserve unread divider state');
 
-for(const label of ['Home','Members','Activities','Hall','Chat','Manage','Future'])ok(guildScreen.includes("'"+label+"'"),'Consolidated online Guild tabs must include '+label);
-ok(guildScreen.includes("onlineSection==='Activities'?<View")&&guildScreen.includes('{onlineProjects}')&&guildScreen.includes('{onlinePve}'),'Activities must render live Projects and Guild PvE together');
-ok(guildScreen.includes('title="Guild Projects"')&&guildScreen.includes('title="Guild Boss"'),'Activities must keep Projects and PvE visibly separated inside the consolidated destination');
+for(const label of ['Home','PvE','Roster','Activities','Hall','Chat','Manage'])ok(guildScreen.includes("'"+label+"'"),'Consolidated online Guild tabs must include '+label);
+ok(guildScreen.includes('{onlineProjects}')&&guildScreen.includes("onlineSection==='PvE'?onlinePve:null"),"Guild navigation must expose live Projects and dedicated PvE");
+ok(guildScreen.includes('title={st("Guild Projects")}')&&guildScreen.includes("onlineSection==='PvE'?onlinePve:null"),"Activities must label Projects and keep PvE in its dedicated destination");
 ok(guildScreen.includes("onlineSection==='Chat'?onlineChat:null"),'Chat tab must render Guild Chat');
 ok(guildScreen.includes("onlineSection==='Manage'?<View")&&guildScreen.includes('{onlineDirectory}')&&guildScreen.includes('{onlineCustomize}'),'Manage must preserve Directory and Customize capabilities');
-ok(guildScreen.includes('<GuildOnlineHome onNavigate={setOnlineSection} board={onlineBoard}/>'),'Guild Home must preserve the member Notice Board');
+ok(guildScreen.includes('<GuildOnlineHome onNavigate={setOnlineSection} board={onlineBoard} chatUnread={onlineChatUnread}/>'),'Guild Home must preserve the member Notice Board');
 ok(guildScreen.includes("badge={value==='Chat'?Math.max(onlineChatUnread,onlineChatMentions):0}"),'Guild Chat tab must surface unread/mention attention');
 ok(guildScreen.includes('tabBadgeWarning:{backgroundColor:C.warning}'),'Guild Chat mentions must have warning emphasis');
 
@@ -43,17 +43,17 @@ ok(projectClient.includes("from('guild_project_member_progress')"),'Guild Projec
 ok(projectClient.includes("from('guild_project_resource_progress')"),'Guild Project client must read development resource progress');
 ok(projectClient.includes("from('guild_activity_feed')"),'Guild Project client must read the protected Guild activity feed');
 ok(!projectClient.includes('.insert(')&&!projectClient.includes('.update(')&&!projectClient.includes('.delete('),'Guild Project mobile client must never mutate Project tables directly');
-ok(projectClient.includes("db.rpc('guild_project_board_state_v1')"),'Guild Project board must load through protected transport');
+ok(projectClient.includes("db.rpc('prepare_guild_projects_v2')"),"Guild Project board must load through protected transport");
 ok(projectClient.includes("db.rpc('guild_project_vote_v1'"),'Member voting must use a server-authoritative RPC');
 ok(projectClient.includes("db.rpc('guild_project_start_v1'"),'Project starting must use a server-authoritative RPC');
 ok(!projectClient.includes('guild_project_donate_v1')&&!projectClient.includes('guild_project_claim_v1'),'Donation/reward settlement must stay unavailable until atomic authoritative transport exists');
 
-ok(onlineProjects.includes('Members can vote on the weekly board'),'Live Projects UI must expose supported member voting');
-ok(onlineProjects.includes('Resource donations and completion rewards stay server-owned'),'Unsafe donation/reward actions must keep an explicit authority boundary');
+ok(onlineProjects.includes('One weekly project starts automatically, from Guild Level 1.'),"Live Projects must explain automatic weekly progression");
+ok(projectClient.includes("client().rpc('claim_guild_project_reward_v2'")&&onlineProjects.includes('onRewardsChanged'),"Unsafe donation/reward actions must keep an explicit authority boundary");
 ok(onlineProjects.includes('Start Project'),'Authorized roles must get the supported server-validated start action');
 ok(onlineProjects.includes("import {LoadingState} from './LoadingState'"),'Live Projects must use the shared loading state');
 ok(onlineProjects.includes("import {StatusPill} from './StatusPill'"),'Live Projects must use shared semantic status pills');
-ok(onlineProjects.includes('<StatusPill label="LIVE" tone="good"/>'),'Live Projects must expose a semantic live status');
+ok(onlineProjects.includes('<StatusPill label={st("LIVE")} tone="good"/>'),'Live Projects must expose a localized semantic live status');
 ok(onlineProjects.includes('YOUR CONTRIBUTION'),'Live Projects must surface personal contribution');
 ok(onlineProjects.includes('meaningful contributors'),'Live Projects must surface anti-leech contributor progress');
 ok(onlineProjects.includes('<GuildActivityFeedPanel entries={snapshot.activity}/>'),'Live Projects must surface recent Guild activity');
@@ -65,7 +65,7 @@ ok(projectTransport.includes('GUILD_WEEKLY_PROJECT_ALREADY_ACTIVE'),'Server must
 
 ok(chat.includes('MEMBERS ONLY'),'Guild Chat must keep member-only context');
 ok(chat.includes('GuildTaggedPlayerName name={guild.name}'),'Guild Chat header must use the shared Guild identity treatment');
-ok(chat.includes('rolePill'),'Guild Chat roles must use compact semantic role pills');
+ok(chat.includes('<ChatMessageRow')&&read('src/components/ChatMessageRow.tsx').includes('rolePill'),"Guild Chat roles must use compact semantic role pills");
 ok(chat.includes('<GameButton compact title={busy?'),'Guild Chat send action must remain compact');
 
 ok(activity.includes('kindGood')&&activity.includes('kindWarning')&&activity.includes('kindInfo'),'Guild activity kinds must use semantic status surfaces');

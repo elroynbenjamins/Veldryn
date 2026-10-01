@@ -53,11 +53,11 @@ equal(copper?.spotlight,false,'ordinary materials must stay lightweight');
 
 const popup=fs.readFileSync('src/components/RewardPopup.tsx','utf8');
 const app=fs.readFileSync('App.tsx','utf8');
-ok(popup.includes('✦ LEVEL UP')&&popup.includes("{mastery?'R':'Lv '}{moment.beforeLevel}")&&popup.includes("{mastery?'R':''}{moment.afterLevel}"),'Reward popup must clearly show committed level and mastery-rank transitions');
+ok(popup.includes('✦ LEVEL UP')&&popup.includes("{mastery?'R':gt('Lv')+' '}{moment.beforeLevel}")&&popup.includes("{mastery?'R':''}{moment.afterLevel}"),'Reward popup must clearly show committed level and mastery-rank transitions');
 ok(popup.includes('NEWLY UNLOCKED'),'Level-up moment must explain newly unlocked content when available');
 ok(popup.includes('ACTION MASTERED')&&popup.includes('MASTERY RANK UP'),'Reward feedback must distinguish ordinary mastery ranks from R50 completion');
-ok(popup.includes("mastery?'BONUS UNLOCKED':'NEWLY UNLOCKED'"),'Mastery reward moments must label bonus unlocks accurately');
-ok(popup.includes('moment.unlockGroups')&&popup.includes("moment.kind==='mastery_rank'?'R':'LV '"),'Progression moments must group unlock types and preview skill/mastery milestones compactly');
+ok(popup.includes('mastery?gt("BONUS UNLOCKED"):gt("NEWLY UNLOCKED")'),'Mastery reward moments must label bonus unlocks accurately');
+ok(popup.includes('moment.unlockGroups')&&popup.includes("moment.kind==='mastery_rank'?'R'+moment.nextMilestone.level:gt('Level {value}',{value:moment.nextMilestone.level})"),'Progression moments must group unlock types and preview skill/mastery milestones compactly');
 ok(popup.includes('✦ EXCEPTIONAL LOOT'),'Epic+ drops must receive a stronger reward moment');
 ok(popup.includes('rarityTag')&&popup.includes('rarityNameColor'),'Reward breakdown must remain rarity-legible without over-celebrating normal loot');
 ok(popup.includes('EquipmentArtwork'),'equipment drops must reuse the actual equipment artwork when available');

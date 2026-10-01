@@ -21,7 +21,7 @@ for(const forbidden of ['#172c3c','#20384A','#101B27','#132737','#332515','#101b
 ok(editor.includes('C.infoSurface')&&editor.includes('C.selection'),'Appearance editor must use semantic info/selection surfaces');
 ok(online.includes('C.warningSurface')&&online.includes('GameModalSurface')&&modalShell.includes('C.overlay'),'Social profile settings must keep semantic warning surfaces and delegate overlay rendering to the shared modal shell');
 ok(profile.includes('C.goodSurface')&&profile.includes('C.warningSurface'),'Profile status badges must use semantic success/warning surfaces');
-ok(publicScene.includes("C.dark?'rgba(8,15,24,.82)':'rgba(255,255,255,.88)'"),'Public showcase identity plate must remain legible in dark and light themes');
-ok(preview.includes("'Pet preview'")&&!preview.includes("'Companion preview'"),'Cosmetic profile preview must call the cosmetic a Pet');
+ok(publicScene.includes("C.dark?'rgba(3,4,5,.72)':'rgba(255,255,255,.68)'"),"Public showcase identity plate must remain legible in dark and light themes");
+ok(preview.includes('profileT(language,"Pet preview")')&&!preview.includes("'Companion preview'"),'Cosmetic profile preview must call the cosmetic a Pet');
 
 console.log('PASS: profile customization is theme-aware across Obsidian and Ivory Steel');

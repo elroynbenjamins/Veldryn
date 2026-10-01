@@ -37,7 +37,7 @@ ok(!rankings.includes('ActivityIndicator'),'Rankings must not regress to a bare 
 
 const friends=read('src/screens/FriendsScreen.tsx');
 ok(friends.includes('LoadingState')&&friends.includes('ActionFeedback')&&friends.includes('EmptyState'),'Friends must use shared loading/error/empty feedback');
-ok(friends.includes('label="Updating friends"'),'Friends must explain the shared network lock instead of silently disabling actions');
+ok(friends.includes('{busy&&<LoadingState compact label={st("Updating friends")}')&&friends.includes('disabled={busy}'),'Friends must explain the shared network lock with localized feedback while disabling actions');
 ok(!friends.includes('ActivityIndicator'),'Friends must not regress to a bare spinner');
 ok(!friends.includes('errorCard:{'),'Friends errors must not regress to a one-off error card');
 
@@ -49,12 +49,12 @@ const quest=read('src/screens/QuestScreen.tsx');
 ok(quest.includes('EmptyState')&&quest.includes('No matching chapters'),'Quest Journal no-results state must use the shared empty-state pattern');
 ok(quest.includes('Break the Last Oath')&&quest.includes('WEEKLY BOSS'),'Quest Journal must surface the Fallen Knight weekly bounty after the story clear');
 
-const encounters=read('src/components/RegionEncounterList.tsx');
-ok(encounters.includes('WEEKLY REMATCH')&&encounters.includes('OATHGLASS BOUNTY'),'Fallen Knight card must show weekly rematch and bounty progress');
-ok(encounters.includes('Rematch Fallen Knight')&&encounters.includes('Weekly rematches complete'),'Fallen Knight card must expose remaining weekly clears and cap state');
+const companionCombat=read('src/components/CombatCompanionPanel.tsx');
+ok(quest.includes('Oathglass Bounty')&&quest.includes('fallenKnightWeekly.rewardedClears'),"Quest Journal must show Fallen Knight bounty progress");
+ok(quest.includes('fallenKnightWeekly.remaining')&&quest.includes('fallenKnightWeekly.cap')&&quest.includes('onPress={onOpenWeeklyBoss}'),"Quest Journal must expose weekly boss clears, cap, and navigation");
 
 const storyBoss=read('src/components/StoryBossBattleModal.tsx');
-ok(storyBoss.includes('FALLEN KNIGHT')&&storyBoss.includes('PHASE {phase}'),'Story boss playback must surface boss identity and live phases');
+ok(storyBoss.includes('FALLEN KNIGHT')&&storyBoss.includes('{gt("PHASE")} {phase}'),'Story boss playback must surface boss identity and localized live phases');
 ok(storyBoss.includes('bossMaxHp')&&storyBoss.includes('playerMaxHp'),'Story boss playback must keep both HP bars');
 ok(storyBoss.includes('TELEGRAPH')&&storyBoss.includes('Skip fight'),'Story boss playback must surface telegraphs and remain skippable');
 ok(storyBoss.includes('slashA')&&storyBoss.includes('spark'),'Story boss playback must retain satisfying slash and particle impact feedback');
@@ -62,7 +62,7 @@ const app=read('App.tsx');
 ok(app.includes('StoryBossBattleModal')&&app.includes('result.storyBossBattle'),'Fallen Knight action must open the returned battle playback instead of reverting to alert-only resolution');
 
 const rewards=read('src/components/RewardPopup.tsx');
-ok(rewards.includes('StatusPill label="NEW" tone="special"'),'Reward discoveries must use the shared special NEW badge');
-ok(rewards.includes('StatusPill label="COMPLETE" tone="good"'),'Reward completion moments must use the shared success badge');
+ok(rewards.includes('StatusPill label={gt("New").toLocaleUpperCase(language)} tone="special"'),'Reward discoveries must use the shared localized special NEW badge');
+ok(rewards.includes('StatusPill label={gt("COMPLETE")} tone="good"'),'Reward completion moments must use the shared localized success badge');
 
 console.log('PASS: feedback, loading, empty states and micro-status badges use one theme-aware VELDRYN feedback system');

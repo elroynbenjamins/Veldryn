@@ -1,3 +1,5 @@
+import {profileT,profileText,profileSourceText} from '../i18n/profile';
+import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {useMemo} from 'react';
 import {ScrollView,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from './GameButton';
@@ -5,30 +7,30 @@ import {equipmentTheme,radii,spacing,typography,type ThemeColors} from '../theme
 import {useGameTheme} from '../theme/ThemeContext';
 import {GameModalSurface} from './GameModalSurface';
 
-export type CustomizationUnlockKind='background'|'border'|'title'|'skin';
+export type CustomizationUnlockKind='background'|'border'|'title'|'profile_icon';
 export interface CustomizationUnlockEntry{key:string;kind:CustomizationUnlockKind;name:string;detail?:string;}
 
 const kindLabel:Record<CustomizationUnlockKind,string>={
- background:'PROFILE BACKGROUND',border:'PROFILE BORDER',title:'TITLE',skin:'CHARACTER SKIN',
+ background:'PROFILE BACKGROUND',border:'PROFILE BORDER',title:'TITLE',profile_icon:'PROFILE ICON',
 };
 
 export function CustomizationUnlockPopup({entries,reduceMotion=false,onClose,onProfile,onCharacter}:{entries:CustomizationUnlockEntry[];reduceMotion?:boolean;onClose:()=>void;onProfile:()=>void;onCharacter:()=>void}){
+ const language=useGameLanguage();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
- const hasProfile=entries.some(row=>row.kind!=='skin'),hasSkin=entries.some(row=>row.kind==='skin');
- return <GameModalSurface visible={entries.length>0} presentation="dialog" reduceMotion={reduceMotion} onClose={onClose} backdropLabel="Close customization rewards" surfaceStyle={s.card}>
-  <ScrollView style={s.scroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+ const hasProfile=entries.length>0;
+ return <GameModalSurface visible={entries.length>0} presentation="dialog" reduceMotion={reduceMotion} onClose={onClose} backdropLabel={profileT(language,"Close customization rewards")} surfaceStyle={s.card}>
+  <ScrollView style={s.scroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
    <View style={s.badge}><Text style={s.badgeMark}>✦</Text></View>
-   <Text style={s.kicker}>NEW CUSTOMIZATION</Text>
-   <Text accessibilityRole="header" style={s.heading}>{entries.length===1?'Reward unlocked':'Rewards unlocked'}</Text>
-   <Text style={s.copy}>Your new customization is permanently available. Preview it before deciding whether to equip it.</Text>
+   <Text style={s.kicker}>{profileT(language,"NEW CUSTOMIZATION")}</Text>
+   <Text accessibilityRole="header" style={s.heading}>{entries.length===1?profileT(language,"Reward unlocked"):profileT(language,"Rewards unlocked")}</Text>
+   <Text style={s.copy}>{profileT(language,"Your new customization is permanently available. Preview it before deciding whether to equip it.")}</Text>
    <View style={s.list}>
-    {entries.slice(0,4).map(row=><View key={row.key} style={s.row}><View style={s.rowIcon}><Text style={s.rowMark}>◆</Text></View><View style={s.rowCopy}><Text style={s.kind}>{kindLabel[row.kind]}</Text><Text style={s.name}>{row.name}</Text>{row.detail?<Text numberOfLines={2} style={s.detail}>{row.detail}</Text>:null}</View></View>)}
-    {entries.length>4?<Text style={s.more}>+{entries.length-4} more customization rewards</Text>:null}
+    {entries.slice(0,4).map(row=><View key={row.key} style={s.row}><View style={s.rowIcon}><Text style={s.rowMark}>◆</Text></View><View style={s.rowCopy}><Text style={s.kind}>{profileText(language,kindLabel[row.kind])}</Text><Text style={s.name}>{row.name}</Text>{row.detail?<Text style={s.detail}>{profileSourceText(language,row.detail)}</Text>:null}</View></View>)}
+    {entries.length>4?<Text style={s.more}>{profileT(language,'+{count} more customization rewards',{count:entries.length-4})}</Text>:null}
    </View>
    <View style={s.actions}>
-    {hasProfile?<GameButton title="Customize Profile" onPress={onProfile}/>:null}
-    {hasSkin?<GameButton title="View Character" tone={hasProfile?'secondary':undefined} onPress={onCharacter}/>:null}
-    <GameButton title="Later" tone="secondary" onPress={onClose}/>
+    {hasProfile?<GameButton title={profileT(language,"Customize Profile")} onPress={onProfile}/>:null}
+    <GameButton title={profileT(language,"Later")} tone="secondary" onPress={onClose}/>
    </View>
   </ScrollView>
  </GameModalSurface>;

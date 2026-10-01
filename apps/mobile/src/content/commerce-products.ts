@@ -17,7 +17,8 @@ export const PLAY_BILLING_PACKAGE_NAME='com.elroybenjamins.veldryn';
 
 export const COMMERCE_PRODUCTS:readonly CommerceProductDefinition[]=[
  {id:'vip',name:'VIP',billing:'one_time',playProductId:'vip',playProductType:'in-app',grants:'vip',description:'Permanent QoL: +2h AFK, +5 Inventory, +20 Bank and +1 saved loadout.'},
- {id:'vip_plus',name:'VIP+',billing:'one_time',playProductId:'vip_plus',playProductType:'in-app',grants:'vip_plus',description:'Includes VIP plus +2h AFK, +5 Inventory, +30 Bank, +1 loadout, +1 Action Queue, +1 Forge slot and solid RGB names.'},
+ // Retain the existing full-tier SKU so previous purchases remain restorable.
+ {id:'vip_plus',name:'VIP + VIP+',billing:'one_time',playProductId:'vip_plus',playProductType:'in-app',grants:'vip_plus',description:'Both permanent tiers in one purchase. Includes all VIP and VIP+ bonuses.'},
  {id:'vip_plus_upgrade',name:'VIP+ Upgrade',billing:'one_time',playProductId:'vip_plus_upgrade',playProductType:'in-app',requires:'vip',grants:'vip_plus',description:'Upgrades an existing VIP purchase to VIP+ without repurchasing VIP.'},
  {id:'supporter_monthly',name:'Supporter',billing:'subscription',playProductId:'supporter_monthly',playProductType:'subs',preferredBasePlanId:'monthly',grants:'supporter',description:'Stacks with VIP/VIP+: +2h AFK, +1 active Forge slot and advanced gradient/animated name styles while active.'},
 ] as const;
@@ -26,6 +27,13 @@ export const GOOGLE_PLAY_ONE_TIME_PRODUCT_IDS=COMMERCE_PRODUCTS.filter(row=>row.
 export const GOOGLE_PLAY_SUBSCRIPTION_PRODUCT_IDS=COMMERCE_PRODUCTS.filter(row=>row.playProductType==='subs').map(row=>row.playProductId);
 
 export function commerceProduct(id:string){return COMMERCE_PRODUCTS.find(row=>row.playProductId===id)}
+
+export const COMMERCE_PRODUCT_BONUSES:Record<CommerceProductId,{note:string;items:readonly string[]}>= {
+ vip:{note:'Permanent bonuses.',items:['+2 hours offline reserve','+5 inventory slots','+20 bank slots','+1 saved loadout']},
+ vip_plus:{note:'Permanent totals, including VIP.',items:['+4 hours offline reserve','+10 inventory slots','+50 bank slots','+2 saved loadouts','+1 waiting activity slot (3 total)','+1 active Forge slot','Custom solid RGB / HEX name colors']},
+ vip_plus_upgrade:{note:'Additional bonuses on top of your existing VIP.',items:['+2 hours offline reserve','+5 inventory slots','+30 bank slots','+1 saved loadout','+1 waiting activity slot (3 total)','+1 active Forge slot','Custom solid RGB / HEX name colors']},
+ supporter_monthly:{note:'Active while subscribed. Stacks with VIP or VIP+.',items:['+2 hours offline reserve','+1 active Forge slot','Custom solid name colors','Gradient and animated name styles','Optional Supporter badge']},
+};
 
 export const COMMERCE_GUARDRAILS={
  ads:false,

@@ -1,4 +1,5 @@
-import type {CombatChallengeId,GameState,RewardBundle} from './types';
+import {profileIconCollection} from './profile-icons';
+import type {GameState,RewardBundle} from './types';
 import {grantProfessionMastery,professionMasteryRank,type ProfessionMasteryRecord} from './profession-mastery-v40';
 import {DEFAULT_WEEKLY_ORDER_POLICY,applyWeeklyOrderProgress,claimWeeklyCompletion,claimWeeklyOrder,generateWeeklyOrders,weeklyOrderWindow,type WeeklyOrdersState} from './weekly-orders-v41';
 import {weeklyOrderCandidatesFromCurrentContent} from './launch-readiness-v47';
@@ -15,8 +16,10 @@ import {HERB_NODES} from '../content/herbalism';
 import {WORLD_ZONES} from '../content/world-map';
 import {random01} from './rng';
 import {applyLocalBalanceSnapshot} from './balance-telemetry';
+import {recordSeasonalActivity} from './seasonal-quests';
+import {explorationRoute} from '../content/exploration';
 
-export interface TrustedProgressionActivity{kind:'combat'|'gathering'|'crafting'|'boss';contentId:string;units:number;startedAtMs?:number;challengeId?:CombatChallengeId;weeklyEligible?:boolean}
+export interface TrustedProgressionActivity{kind:'combat'|'gathering'|'crafting'|'boss';contentId:string;units:number;startedAtMs?:number;weeklyEligible?:boolean}
 export interface TrustedProgressionOptions{accountId:string;eventId:string}
 export interface TrustedProgressionResult{
  state:GameState;
@@ -41,7 +44,7 @@ function ensureWeeklyOrders(state:GameState,accountId:string,nowMs:number):Weekl
  if(existing?.schemaVersion===41&&existing.accountId===accountId&&existing.weekKey===window.weekKey){
   const bossCandidate=candidates.find(candidate=>candidate.kind==='hunt'&&candidate.boss&&candidate.monsterId==='FALLEN_KNIGHT'&&candidate.available&&candidate.source.available);
   if(bossCandidate&&!existing.orders.some(order=>order.kind==='hunt'&&order.targetId==='FALLEN_KNIGHT')){
-   const bonusPolicy={...DEFAULT_WEEKLY_ORDER_POLICY,huntSlots:1,professionSlots:0,regionalSlots:0,threatSlots:0};
+   const bonusPolicy={...DEFAULT_WEEKLY_ORDER_POLICY,huntSlots:1,professionSlots:0,regionalSlots:0};
    const bonus=generateWeeklyOrders(accountId,nowMs,[bossCandidate],bonusPolicy).orders[0];
    if(bonus)existing.orders.push({...bonus,slot:existing.orders.length});
   }
@@ -122,10 +125,10 @@ function itemOwnershipKeys(state:GameState){
 }
 export function collectionOwnershipSnapshotFromGameState(state:GameState):CollectionOwnershipSnapshot{
  const keys=itemOwnershipKeys(state);
- const add=(kind:'pet'|'companion'|'skin'|'background'|'border'|'bestiary',ids:readonly string[]|undefined)=>{for(const id of ids??[])keys.add(collectionMemberKey({kind,id}))};
+ const add=(kind:'pet'|'companion'|'profile_icon'|'background'|'border'|'bestiary',ids:readonly string[]|undefined)=>{for(const id of ids??[])keys.add(collectionMemberKey({kind,id}))};
  add('pet',unique([...(state.account.unlockedCosmeticPetIds??[]),...(state.character?.ownedPetIds??[]),...(state.otherCharacters??[]).flatMap(row=>row.character.ownedPetIds??[])]));
  add('companion',state.account.unlockedCombatCompanionIds);
- add('skin',unique([...(state.account.unlockedEventSkinIds??[]),...(state.character?.unlockedSkinIds??[]),...(state.otherCharacters??[]).flatMap(row=>row.character.unlockedSkinIds??[])]));
+ add('profile_icon',profileIconCollection(state).filter(row=>row.unlocked).map(icon=>icon.id));
  add('background',state.account.unlockedProfileBackgroundIds);add('border',state.account.unlockedProfileBorderIds);
  add('bestiary',bestiaryProjection(state).entries.filter(row=>row.status!=='unknown').map(row=>row.id));
  return {ownedKeys:Object.fromEntries([...keys].map(key=>[key,true]))};
@@ -168,11 +171,11 @@ export function applyTrustedLongTermProgression(input:GameState,events:TrustedPr
  const weekly=ensureWeeklyOrders(state,options.accountId,nowMs),weeklyCompleted:string[]=[],pending=[...(state.account.weeklyOrderPendingRewards??[])],pendingKeys=new Set(pending.map(row=>row.claimKey));
  const wasComplete=new Set(weekly.orders.filter(row=>row.progress>=row.target).map(row=>row.id));
  for(const event of events){const units=integerUnits(event.units);if(!units)continue;
+  state=recordSeasonalActivity(state,event.kind==='gathering'&&explorationRoute(event.contentId)?'exploration':event.kind,units,nowMs);
   if(event.kind==='combat'||event.kind==='boss')metrics['combat.total_kills']=(metrics['combat.total_kills']??0)+units;
   if(event.kind==='gathering'||event.kind==='crafting'){metrics['profession.actions_completed']=(metrics['profession.actions_completed']??0)+units;mastery[event.contentId]=grantProfessionMastery(mastery[event.contentId] as ProfessionMasteryRecord|undefined,event.contentId,units,nowMs)}
   if(event.kind==='combat')applyWeeklyOrderProgress(weekly,{eventId:`${options.eventId}:${event.kind}:${event.contentId}`,characterId:state.character?.id??'unknown',kind:'hunt',targetId:event.contentId,amount:units,completedAtMs:nowMs});
   if(event.kind==='boss'&&event.weeklyEligible!==false)applyWeeklyOrderProgress(weekly,{eventId:`${options.eventId}:boss:${event.contentId}`,characterId:state.character?.id??'unknown',kind:'hunt',targetId:event.contentId,amount:units,completedAtMs:nowMs});
-  if(event.kind==='combat'&&event.challengeId)applyWeeklyOrderProgress(weekly,{eventId:`${options.eventId}:threat:${event.contentId}:${event.challengeId}`,characterId:state.character?.id??'unknown',kind:'threat',targetId:`${event.contentId}:${event.challengeId}`,amount:units,completedAtMs:nowMs});
   if(event.kind==='gathering'||event.kind==='crafting')applyWeeklyOrderProgress(weekly,{eventId:`${options.eventId}:${event.kind}:${event.contentId}`,characterId:state.character?.id??'unknown',kind:'profession',targetId:event.contentId,amount:units,completedAtMs:nowMs});
   const regionId=trustedEventRegionId(event);if(regionId)applyWeeklyOrderProgress(weekly,{eventId:`${options.eventId}:regional:${regionId}:${event.kind}:${event.contentId}`,characterId:state.character?.id??'unknown',kind:'regional',targetId:regionId,amount:units,completedAtMs:nowMs});
  }

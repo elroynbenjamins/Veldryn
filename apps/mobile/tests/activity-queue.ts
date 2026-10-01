@@ -1,5 +1,5 @@
 import {claimActivity,createCharacter,newGame,startCombat,stopActivity} from '../src/core/game';
-import {activityQueueCapacity,activityQueueHandoffStatus,enqueueActivity,moveQueuedActivity,queuedActivityReadiness} from '../src/core/activity-queue';
+import {activityQueueCapacity,activityQueueHandoffStatus,enqueueActivity,moveQueuedActivity,queuedActivityReadiness,queueSkillReadiness} from '../src/core/activity-queue';
 import {executeGameCommand,validateGameCommand} from '../src/core/game-commands';
 import {normalizeSave} from '../src/core/save-normalization';
 import {weeklyOrderBoardForState} from '../src/core/long-term-progression-runtime';
@@ -10,22 +10,32 @@ const now=1_000_000;
 
 let capped=createCharacter(newGame(now),'WAYFINDER','Queue Cap');
 for(let i=0;i<activityQueueCapacity(capped);i++)capped=enqueueActivity(capped,{kind:'combat',targetId:'MOSS_RAT',huntGoalId:'kills_50'});
-ok(capped.character?.activityQueue?.length===3,'Action Queue should accept three entries');
-rejects(()=>enqueueActivity(capped,{kind:'combat',targetId:'MOSS_RAT'}),'Action Queue should reject a fourth entry');
+ok(capped.character?.activityQueue?.length===2,'Action Queue should accept two waiting entries');
+rejects(()=>enqueueActivity(capped,{kind:'combat',targetId:'MOSS_RAT'}),'Action Queue should reject a third waiting entry');
 let vipQueue=createCharacter(newGame(now),'WAYFINDER','VIP Queue');
 vipQueue={...vipQueue,account:{...vipQueue.account,entitlements:{vip_plus:true}}};
-ok(activityQueueCapacity(vipQueue)===4,'VIP+ should add one permanent Action Queue slot');
-for(let i=0;i<4;i++)vipQueue=enqueueActivity(vipQueue,{kind:'combat',targetId:'MOSS_RAT'});
-ok(vipQueue.character?.activityQueue?.length===4,'VIP+ should retain four queued actions');
+ok(activityQueueCapacity(vipQueue)===3,'VIP+ should add one permanent Action Queue slot');
+for(let i=0;i<3;i++)vipQueue=enqueueActivity(vipQueue,{kind:'combat',targetId:'MOSS_RAT'});
+ok(vipQueue.character?.activityQueue?.length===3,'VIP+ should retain three queued actions');
+rejects(()=>enqueueActivity(vipQueue,{kind:'combat',targetId:'MOSS_RAT'}),'VIP+ should reject a fourth waiting entry');
+ok(normalizeSave(structuredClone(vipQueue)).character?.activityQueue?.length===3,'VIP+ third slot survives save loading');
+ok(activityQueueCapacity({...capped,account:{...capped.account,entitlements:{vip:true}}})===2,'VIP without plus retains two waiting slots');
+ok(queueSkillReadiness(capped,'woodcutting').ready,'Local unlocked woodcutting is available');
+ok(!queueSkillReadiness(capped,'mining').ready&&queueSkillReadiness(capped,'mining').blocker?.includes('Not available in Greenfields'),'Unavailable regional skill explains the region');
+const frost={...capped,currentRegionId:'FROSTMARCH'};
+ok(!queueSkillReadiness(frost,'woodcutting').ready&&queueSkillReadiness(frost,'woodcutting').blocker?.includes('level 46'),'Local locked skill explains minimum level');
+ok(queueSkillReadiness({...frost,skills:frost.skills.map(row=>row.skillId==='woodcutting'?{...row,level:46}:row)},'woodcutting').ready,'Meeting local minimum unlocks skill choice');
+ok(!queueSkillReadiness({...capped,unlockedMonsterIds:[]},'combat').ready,'Combat requires an unlocked local enemy');
 
 const dirty:any=structuredClone(capped);
 dirty.character.activityQueue=[...dirty.character.activityQueue,{kind:'combat',targetId:''},{kind:'gathering',targetId:'EXTRA'}];
 dirty.character.activityQueuePausedReason='x'.repeat(400);
 const normalized=normalizeSave(dirty);
-ok(normalized.character?.activityQueue?.length===3,'Save normalization should keep only three valid queued actions');
+ok(normalized.character?.activityQueue?.length===2,'Save normalization should keep only two valid queued actions');
 ok((normalized.character?.activityQueuePausedReason?.length??0)<=180,'Save normalization should bound the queue pause message');
 
 let reordered=createCharacter(newGame(now),'WAYFINDER','Queue Reorder');
+reordered={...reordered,account:{...reordered.account,entitlements:{vip_plus:true}}};
 reordered=enqueueActivity(reordered,{kind:'combat',targetId:'MOSS_RAT'});
 reordered=enqueueActivity(reordered,{kind:'combat',targetId:'FIELD_WISP'});
 reordered=enqueueActivity(reordered,{kind:'combat',targetId:'ROADSIDE_BOAR'});
@@ -51,22 +61,22 @@ rejects(()=>validateGameCommand({type:'queue_add',args:{kind:'gathering',id:'X',
 
 let planned=createCharacter(newGame(now),'WAYFINDER','Planned Queue');
 planned={...planned,unlockedMonsterIds:['MOSS_RAT','FIELD_WISP']};
-planned=startCombat(planned,'MOSS_RAT',now,undefined,'balanced','kills_50');
+planned=startCombat(planned,'MOSS_RAT',now,'balanced','kills_50');
 planned=enqueueActivity(planned,{kind:'combat',targetId:'FIELD_WISP',combatTacticId:'guarded',huntGoalId:'kills_50'});
 const huntHandoff=activityQueueHandoffStatus(planned);ok(huntHandoff.armed&&huntHandoff.nextReady&&huntHandoff.sourceLabel==='50 kills'&&huntHandoff.nextLabel?.includes('Field Wisp'),'Queue panel status should expose the armed, startable Hunt Goal handoff');
 const advanced=claimActivity(planned,now+4*60*60*1000);
-ok(advanced.reward.kills===50,'First queued transition should settle exactly at the Hunt Goal');
-ok(advanced.state.activity?.targetId==='FIELD_WISP','Planned Hunt Goal stop should start the next queued hunt');
-ok(advanced.state.activity?.combatTacticId==='guarded','Queued hunt should start with its saved tactic');
+ok(advanced.reward.activityResults?.[0]?.reward.kills===50,'First queued transition should settle exactly at the Hunt Goal');
+ok(advanced.reward.activityResults?.[1]?.activity.targetId==='FIELD_WISP','Planned Hunt Goal stop should start the next queued hunt');
+ok(advanced.reward.activityResults?.[1]?.activity.combatTacticId==='guarded','Queued hunt should start with its saved tactic');
 ok((advanced.state.character?.activityQueue?.length??0)===0,'Successful transition should consume exactly one queue entry');
-ok((advanced.state.activity?.startedAtMs??0)<now+4*60*60*1000,'Queued hunt should begin at the planned stop boundary, not login time');
+ok((advanced.reward.activityResults?.[1]?.activity.startedAtMs??Infinity)<now+4*60*60*1000,'Queued hunt should begin at the planned stop boundary, not login time');
 
 let unsafe=createCharacter(newGame(now),'WAYFINDER','Safety Queue');
 unsafe={...unsafe,unlockedMonsterIds:['MOSS_RAT','FIELD_WISP'],inventory:{...unsafe.inventory,stacks:[]},character:{...(unsafe.character!),currentHp:1}};
-unsafe=startCombat(unsafe,'MOSS_RAT',now,undefined,'balanced','open');
+unsafe=startCombat(unsafe,'MOSS_RAT',now,'balanced','open');
 unsafe=enqueueActivity(unsafe,{kind:'combat',targetId:'FIELD_WISP'});
 const waitingHandoff=activityQueueHandoffStatus(unsafe);ok(!waitingHandoff.armed&&waitingHandoff.nextReady&&waitingHandoff.nextLabel?.includes('Field Wisp'),'Queue without a planned stop should report waiting even when the next action itself is startable');
-const safetyStop=claimActivity(unsafe,now+60_000);
+const safetyStop=claimActivity(unsafe,now+180_000);
 ok(!safetyStop.state.activity,'Injury stop should end the current hunt');
 ok(safetyStop.state.character?.activityQueue?.length===1,'Safety stop must preserve the queued action');
 ok(!!safetyStop.state.character?.activityQueuePausedReason,'Safety stop should expose a visible queue pause reason');
@@ -85,7 +95,7 @@ const futureHandoff=activityQueueHandoffStatus(futureRuled);ok(!futureHandoff.ar
 
 let wrongRegion=createCharacter(newGame(now),'WAYFINDER','Region Queue');
 wrongRegion={...wrongRegion,unlockedMonsterIds:['MOSS_RAT','SILVERFIN_SWARM']};
-wrongRegion=startCombat(wrongRegion,'MOSS_RAT',now,undefined,'balanced','kills_50');
+wrongRegion=startCombat(wrongRegion,'MOSS_RAT',now,'balanced','kills_50');
 wrongRegion=enqueueActivity(wrongRegion,{kind:'combat',targetId:'SILVERFIN_SWARM'});
 const queuedRowReadiness=queuedActivityReadiness(wrongRegion,wrongRegion.character!.activityQueue![0]);
 ok(!queuedRowReadiness.ready&&(queuedRowReadiness.blocker??'').includes('Travel to Silverbrook'),'Each queued row should expose its own travel blocker before becoming next');

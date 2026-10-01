@@ -1,3 +1,4 @@
+import {useSocialText} from '../i18n/social';
 import {useMemo} from 'react';
 import {StyleSheet,Text,View} from 'react-native';
 import {GameButton} from './GameButton';
@@ -8,12 +9,13 @@ import {spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 
 export function GuildSeekerPanel({seekers,nowMs,onOpen,onPostMyAd}:{seekers:RecruitmentCardView[];nowMs:number;onOpen?:(id:string)=>void;onPostMyAd?:()=>void}){
+ const st=useSocialText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const visible=seekers.filter(item=>item.postType==='looking_for_guild'&&item.expiresAtMs>nowMs&&(!item.status||item.status==='active'));
  return <View style={s.content}>
-  <View style={s.header}><GuildCrest size={40}/><View style={s.copy}><Text accessibilityRole="header" style={s.title}>Guild seekers</Text><Text style={s.sub}>{visible.length?visible.length+' active seeker'+(visible.length===1?'':'s'):'Players looking for their next Guild.'}</Text></View>{onPostMyAd?<View style={s.action}><GameButton compact title="Post mine" tone="secondary" onPress={onPostMyAd}/></View>:null}</View>
+  <View style={s.header}><GuildCrest size={40}/><View style={s.copy}><Text accessibilityRole="header" style={s.title}>{st("Guild seekers")}</Text><Text style={s.sub}>{visible.length?visible.length+' active seeker'+(visible.length===1?'':'s'):'Players looking for their next Guild.'}</Text></View>{onPostMyAd?<View style={s.action}><GameButton compact title={st("Post mine")} tone="secondary" onPress={onPostMyAd}/></View>:null}</View>
   {visible.map(card=><RecruitmentListing key={card.id} card={card} nowMs={nowMs} onPress={()=>onOpen?.(card.id)}/>)}
-  {!visible.length?<View style={s.emptyCard}><Text style={s.emptyTitle}>No fresh Guild seekers</Text><Text style={s.empty}>Adjust filters or post your own Guild-seeker advert. Expired posts disappear automatically.</Text></View>:null}
+  {!visible.length?<View style={s.emptyCard}><Text style={s.emptyTitle}>{st("No fresh Guild seekers")}</Text><Text style={s.empty}>Adjust filters or post your own Guild-seeker advert. Expired posts disappear automatically.</Text></View>:null}
  </View>;
 }
 function makeStyles(C:ThemeColors){return StyleSheet.create({

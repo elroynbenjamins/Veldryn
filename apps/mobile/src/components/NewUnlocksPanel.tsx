@@ -1,3 +1,4 @@
+import {accountText} from '../i18n/account';
 import {useMemo} from 'react';
 import {Text,View,StyleSheet} from 'react-native';
 import type {GameState} from '../core/types';
@@ -8,9 +9,12 @@ import {spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 
 export function NewUnlocksPanel({state,onOpen}:{state:GameState;onOpen:()=>void}){
+ const language=state.settings.language;
+ const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params);
+
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
   const entries=newlyUnlockedGameGuide(state),entry=entries[0];
   if(!entry)return null;
-  return <Panel><Text style={s.kicker}>NEWLY UNLOCKED</Text><View style={s.header}><View style={s.copy}><Text accessibilityRole="header" style={s.title}>{entry.title}</Text><Text style={s.body}>{entry.summary}</Text></View>{entries.length>1?<Text style={s.count}>+{entries.length-1}</Text>:null}</View><GameButton compact title="Open Help & Game Guide" onPress={onOpen}/><Text style={s.note}>Topics stay replayable from Settings → Help & Guide.</Text></Panel>;
+  return <Panel><Text style={s.kicker}>{a("NEWLY UNLOCKED")}</Text><View style={s.header}><View style={s.copy}><Text accessibilityRole="header" style={s.title}>{a(entry.title)}</Text><Text style={s.body}>{a(entry.summary)}</Text></View>{entries.length>1?<Text style={s.count}>+{entries.length-1}</Text>:null}</View><GameButton compact title={a("Open Help & Game Guide")} onPress={onOpen}/><Text style={s.note}>{a("Topics stay replayable from Settings → Help & Guide.")}</Text></Panel>;
 }
 function makeStyles(C:ThemeColors){return StyleSheet.create({kicker:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:1},header:{flexDirection:'row',gap:spacing.sm,alignItems:'flex-start'},copy:{flex:1},title:{...typography.bodyStrong,color:C.text},body:{...typography.caption,color:C.muted,lineHeight:17},count:{minWidth:34,textAlign:'center',color:C.accent,fontWeight:'900',fontSize:15},note:{...typography.caption,color:C.muted,opacity:.82,lineHeight:17}});}

@@ -1,3 +1,5 @@
+import {profileT,profileText} from '../i18n/profile';
+import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {useEffect,useMemo,useState} from 'react';
 import {Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import type {GameState} from '../core/types';
@@ -11,6 +13,7 @@ import {useGameTheme} from '../theme/ThemeContext';
 import {GameModalHeader,GameModalSurface} from './GameModalSurface';
 import {PublicProfileScene} from './PublicProfileScene';
 import {effectivePlayerNameStyle} from '../core/player-name-style';
+import {useSelfProfileGuild} from '../online/useSelfProfileGuild';
 
 const audienceRows:ReadonlyArray<{id:ProfilePreviewAudience;label:string;detail:string}>=[
  {id:'public',label:'Public viewer',detail:'Signed-in player outside your guild'},
@@ -22,6 +25,8 @@ const visibilityLabel={public:'Public',guild:'Guild only',private:'Private'} as 
 const words=(value?:string|null)=>value?value.replace(/[_:-]+/g,' ').replace(/\b\w/g,c=>c.toUpperCase()):'Not selected';
 
 export function ProfileAudiencePreviewModal({visible,state,identityDraft,onClose}:{visible:boolean;state:GameState;identityDraft:ProfileExtensionSelfV43|null;onClose:()=>void}){
+ const guild=useSelfProfileGuild(state,visible);
+ const language=useGameLanguage();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),stackLayout=width<360||fontScale>=1.25;
  const [audience,setAudience]=useState<ProfilePreviewAudience>('public');
  useEffect(()=>{if(visible)setAudience(identityDraft?'public':'self')},[visible,!!identityDraft]);
@@ -32,11 +37,12 @@ export function ProfileAudiencePreviewModal({visible,state,identityDraft,onClose
  const visibility=identityDraft?.visibility??'private';
  const canView=profileAudienceCanView(visibility,audience);
  const profile:PublicPlayerProfileV43={
+  guild,
   accountId:identityDraft?.accountId??'preview',
   displayName:character.name,
   visibility,
   nameStyle:effectivePlayerNameStyle(state),
-  character:{id:character.id,name:character.name,classId:character.classId,level:character.level,bodyPresentation:character.bodyPresentation??'male',selectedSkinId:character.selectedSkinId??''},
+  character:{id:character.id,name:character.name,classId:character.classId,level:character.level,bodyPresentation:character.bodyPresentation??'male',profileIconId:character.profileIconId??''},
   title:character.profileTitle??'New Adventurer',
   backgroundId:character.profileBackgroundId??'asterfall-night',
   borderId:character.profileBorderId??null,
@@ -52,39 +58,40 @@ export function ProfileAudiencePreviewModal({visible,state,identityDraft,onClose
  };
  const companion=profile.favoriteCompanionId?COMBAT_COMPANIONS.find(row=>row.id===profile.favoriteCompanionId)?.name:undefined;
  const achievements=profile.achievementShowcaseIds.map(profileAchievementLabel);
- const records=profile.recordShowcaseIds.map(profileRecordLabel);
+ const records=profile.recordShowcaseIds.map(id=>profileText(language,profileRecordLabel(id)));
  const collections=profile.collectionShowcase.map(profileCollectionLabel);
- const masteries=profile.masteryShowcaseActionIds.flatMap(id=>{const row=professionMasteryActionDefinition(id);return row?[row.name+' · '+skillIdentity(row.skillId).label]:[]});
+ const masteries=profile.masteryShowcaseActionIds.flatMap(id=>{const row=professionMasteryActionDefinition(id);return row?[row.name+' · '+profileText(language,skillIdentity(row.skillId).label)]:[]});
  const hiddenReason=visibility==='private'
   ?'Private profiles are visible only to you.'
   :visibility==='guild'&&audience==='public'
    ?'Guild-only profiles are hidden from players outside your guild.'
    :'This viewer cannot open the profile with the current privacy setting.';
- return <GameModalSurface visible={visible} onClose={onClose} backdropLabel="Close profile preview" surfaceStyle={s.sheet}>
-    <GameModalHeader eyebrow="AUDIENCE PREVIEW" title="As other players see you" onClose={onClose} trailing={<View style={[s.visibilityPill,!identityDraft&&s.localPill]}><Text style={[s.visibilityText,!identityDraft&&s.localText]}>{identityDraft?visibilityLabel[visibility].toUpperCase():'LOCAL ONLY'}</Text></View>}/>
-    <Text style={s.copy}>Switch audiences to test profile visibility. This preview never publishes or saves changes.</Text>
-    <View accessibilityRole="tablist" style={[s.audiences,stackLayout&&s.audiencesStack]}>{audienceRows.map(row=><Pressable key={row.id} accessibilityRole="tab" accessibilityState={{selected:audience===row.id}} onPress={()=>setAudience(row.id)} style={({pressed})=>[s.audience,stackLayout&&s.audienceStack,audience===row.id&&s.audienceOn,pressed&&s.pressed]}><Text style={[s.audienceLabel,audience===row.id&&s.audienceLabelOn]}>{row.label}</Text><Text numberOfLines={2} style={s.audienceDetail}>{row.detail}</Text></Pressable>)}</View>
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
-     {!canView?<View style={s.hiddenCard}><Text style={s.hiddenMark}>◇</Text><Text style={s.hiddenTitle}>Profile hidden from this viewer</Text><Text style={s.hiddenCopy}>{hiddenReason}</Text></View>:<>
+ return <GameModalSurface visible={visible} onClose={onClose} backdropLabel={profileT(language,"Close profile preview")} surfaceStyle={s.sheet}>
+    <GameModalHeader eyebrow={profileT(language,"AUDIENCE PREVIEW")} title={profileT(language,"As other players see you")} onClose={onClose} trailing={<View style={[s.visibilityPill,!identityDraft&&s.localPill]}><Text style={[s.visibilityText,!identityDraft&&s.localText]}>{identityDraft?profileText(language,visibilityLabel[visibility]).toUpperCase():profileT(language,"LOCAL ONLY")}</Text></View>}/>
+    <Text style={s.copy}>{profileT(language,"Switch audiences to test profile visibility. This preview never publishes or saves changes.")}</Text>
+    <View accessibilityRole="tablist" style={[s.audiences,stackLayout&&s.audiencesStack]}>{audienceRows.map(row=><Pressable key={row.id} accessibilityRole="tab" accessibilityState={{selected:audience===row.id}} onPress={()=>setAudience(row.id)} style={({pressed})=>[s.audience,stackLayout&&s.audienceStack,audience===row.id&&s.audienceOn,pressed&&s.pressed]}><Text style={[s.audienceLabel,audience===row.id&&s.audienceLabelOn]}>{profileText(language,row.label)}</Text><Text style={s.audienceDetail}>{profileText(language,row.detail)}</Text></Pressable>)}</View>
+    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll} showsHorizontalScrollIndicator={false}>
+     {!canView?<View style={s.hiddenCard}><Text style={s.hiddenMark}>◇</Text><Text style={s.hiddenTitle}>{profileT(language,"Profile hidden from this viewer")}</Text><Text style={s.hiddenCopy}>{profileText(language,hiddenReason)}</Text></View>:<>
       <PublicProfileScene profile={profile} reduceMotion={state.settings.reduceMotion}/>
-      {profile.bio?<View style={s.bioCard}><Text style={s.section}>BIOGRAPHY</Text><Text style={s.bio}>{profile.bio}</Text></View>:<View style={s.bioCard}><Text style={s.section}>BIOGRAPHY</Text><Text style={s.muted}>No biography selected.</Text></View>}
+      {profile.bio?<View style={s.bioCard}><Text style={s.section}>{profileT(language,"BIOGRAPHY")}</Text><Text style={s.bio}>{profile.bio}</Text></View>:<View style={s.bioCard}><Text style={s.section}>{profileT(language,"BIOGRAPHY")}</Text><Text style={s.muted}>{profileT(language,"No biography selected.")}</Text></View>}
       <View style={s.card}>
-       <Text style={s.section}>PROFILE HIGHLIGHTS</Text>
-       <PreviewRow stack={stackLayout} label="Favorite skill" value={words(profile.favoriteSkillId)}/>
-       <PreviewRow stack={stackLayout} label="Favorite companion" value={companion??'Not selected'}/>
-       <PreviewRow stack={stackLayout} label="Achievements" value={achievements.length?achievements.join(' · '):'No featured achievements'}/>
-       <PreviewRow stack={stackLayout} label="Personal records" value={records.length?records.join(' · '):'No featured records'}/>
-       <PreviewRow stack={stackLayout} label="Collection" value={collections.length?collections.join(' · '):'No featured collectibles'}/>
-       <PreviewRow stack={stackLayout} label="Mastery" value={masteries.length?masteries.join(' · '):'No featured R50 masteries'}/>
+       <Text style={s.section}>{profileT(language,"PROFILE HIGHLIGHTS")}</Text>
+       <PreviewRow stack={stackLayout} label={profileT(language,"Favorite skill")} value={profileText(language,words(profile.favoriteSkillId))}/>
+       <PreviewRow stack={stackLayout} label={profileT(language,"Favorite companion")} value={companion??'Not selected'}/>
+       <PreviewRow stack={stackLayout} label={profileT(language,"Achievements")} value={achievements.length?achievements.join(' · '):'No featured achievements'}/>
+       <PreviewRow stack={stackLayout} label={profileT(language,"Personal records")} value={records.length?records.join(' · '):'No featured records'}/>
+       <PreviewRow stack={stackLayout} label={profileT(language,"Collection")} value={collections.length?collections.join(' · '):'No featured collectibles'}/>
+       <PreviewRow stack={stackLayout} label={profileT(language,"Mastery")} value={masteries.length?masteries.join(' · '):'No featured R50 masteries'}/>
       </View>
-      {identityDraft?.worldFeedOptOut?<View style={s.feedNote}><Text style={s.feedNoteTitle}>WORLD MILESTONES HIDDEN</Text><Text style={s.copy}>Your profile remains viewable to the selected audience, but your recent milestone cards stay out of the World feed.</Text></View>:null}
-      <Text style={s.footnote}>Guild tag and guild-name styling come from your live guild identity and are not changed by this preview.</Text>
+      {identityDraft?.worldFeedOptOut?<View style={s.feedNote}><Text style={s.feedNoteTitle}>{profileT(language,"WORLD MILESTONES HIDDEN")}</Text><Text style={s.copy}>{profileT(language,"Your profile remains viewable to the selected audience, but your recent milestone cards stay out of the World feed.")}</Text></View>:null}
+      <Text style={s.footnote}>{profileT(language,"Guild tag and guild-name styling come from your live guild identity and are not changed by this preview.")}</Text>
      </>}
     </ScrollView>
  </GameModalSurface>;
 }
 
 function PreviewRow({label,value,stack=false}:{label:string;value:string;stack?:boolean}){
+ const language=useGameLanguage();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  return <View style={[s.row,stack&&s.rowStack]}><Text style={[s.rowLabel,stack&&s.rowLabelStack]}>{label}</Text><Text numberOfLines={stack?4:2} style={[s.rowValue,stack&&s.rowValueStack]}>{value}</Text></View>;
 }

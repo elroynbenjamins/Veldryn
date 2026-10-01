@@ -1,3 +1,4 @@
+import {accountText,accountError,accountDuration} from '../i18n/account';
 import {useMemo,useState} from 'react';
 import {ScrollView,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from '../components/GameButton';
@@ -18,6 +19,9 @@ function activityName(activity:ActiveActivity){if(activity.kind==='combat')retur
 function activityLabel(activity:ActiveActivity|null){if(!activity)return 'Idle';return activity.kind==='combat'?'Combat':activity.kind==='training'?'Training':activity.kind==='faith'?'Faith practice':activity.kind.charAt(0).toUpperCase()+activity.kind.slice(1)}
 
 export function ActivityOverviewScreen({state,now,onSwitch,onCreate,onDelete}:{state:GameState;now:number;onSwitch:(id:string)=>void;onCreate?:()=>void;onDelete?:(id:string,confirmation:string)=>Promise<void>|void}){
+ const language=state.settings.language;
+ const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params);
+
  const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
  const entries=accountCharacters(state).map(entry=>({character:entry.character,activity:entry.character.id===state.character?.id?state.activity:(state.otherCharacters??[]).find(other=>other.character.id===entry.character.id)?.activity??null})).sort((a,b)=>Number(Boolean(b.activity))-Number(Boolean(a.activity)));
  const slots=unlockedCharacterSlots(state),skillTotal=accountSkillLevel(state),nextThreshold=slots<5?CHARACTER_SLOT_THRESHOLDS[slots]:undefined;
@@ -36,42 +40,42 @@ export function ActivityOverviewScreen({state,now,onSwitch,onCreate,onDelete}:{s
    await onDelete(target.character.id,confirmation);
    setManagingId(undefined);setConfirmation('');
    if(recreate)onCreate?.();
-  }catch(e){setError(e instanceof Error?e.message:'Character could not be deleted.');}
+  }catch(e){setError(e instanceof Error?e.message:"Character could not be deleted.");}
   finally{setBusy(false);}
  };
  return <>
-  <ScrollView contentContainerStyle={s.root}>
-   <Text accessibilityRole="header" style={s.heading}>Characters</Text>
-   <Text style={s.intro}>Switch characters, review their current activity, or safely free a slot when you want to choose another class.</Text>
+  <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
+   <Text accessibilityRole="header" style={s.heading}>{a("Characters")}</Text>
+   <Text style={s.intro}>{a("Switch characters, review their current activity, or safely free a slot when you want to choose another class.")}</Text>
    <Panel>
     <View style={s.summary}>
-     <View style={s.summaryCell}><Text style={s.summaryLabel}>ROSTER</Text><Text style={s.summaryValue}>{entries.length}/{slots}</Text></View>
-     <View style={s.summaryCell}><Text style={s.summaryLabel}>ACTIVE</Text><Text style={s.summaryValue}>{entries.filter(entry=>entry.activity).length}</Text></View>
-     <View style={s.summaryCell}><Text style={s.summaryLabel}>ACCOUNT SKILL</Text><Text style={s.summaryValue}>{skillTotal}</Text></View>
+     <View style={s.summaryCell}><Text style={s.summaryLabel}>{a("ROSTER")}</Text><Text style={s.summaryValue}>{entries.length}/{slots}</Text></View>
+     <View style={s.summaryCell}><Text style={s.summaryLabel}>{a("ACTIVE")}</Text><Text style={s.summaryValue}>{entries.filter(entry=>entry.activity).length}</Text></View>
+     <View style={s.summaryCell}><Text style={s.summaryLabel}>{a("ACCOUNT SKILL")}</Text><Text style={s.summaryValue}>{skillTotal}</Text></View>
     </View>
-    {nextThreshold!==undefined?<Text style={s.slotHint}>Next character slot unlocks at {nextThreshold} combined account skill levels.</Text>:<Text style={s.slotHint}>All 5 character slots are permanently unlocked.</Text>}
+    {nextThreshold!==undefined?<Text style={s.slotHint}>{a('Next character slot unlocks at {count} combined account skill levels.',{count:nextThreshold})}</Text>:<Text style={s.slotHint}>{a("All 5 character slots are permanently unlocked.")}</Text>}
    </Panel>
    {entries.map(({character,activity})=>{const active=character.id===state.character?.id;return <Panel key={character.id} accentColor={active?equipmentColors.selectedLine:undefined}>
     <View style={s.row}>
-     <View style={s.copy}><View style={s.nameRow}><Text style={s.name}>{character.name}</Text>{active&&<Text style={s.active}>ACTIVE CHARACTER</Text>}</View><Text style={s.meta}>{character.classId} · Level {character.level}</Text></View>
-     <View style={s.actions}>{!active&&<GameButton compact title="Switch" tone="secondary" onPress={()=>onSwitch(character.id)}/>}<GameButton compact title="Manage" tone="secondary" onPress={()=>open(character.id)}/></View>
+     <View style={s.copy}><View style={s.nameRow}><Text style={s.name}>{character.name}</Text>{active&&<Text style={s.active}>{a("ACTIVE CHARACTER")}</Text>}</View><Text style={s.meta}>{a('{className} · Level {level}',{className:character.classId,level:character.level})}</Text></View>
+     <View style={s.actions}>{!active&&<GameButton compact title={a("Switch")} tone="secondary" onPress={()=>onSwitch(character.id)}/>}<GameButton compact title={a("Manage")} tone="secondary" onPress={()=>open(character.id)}/></View>
     </View>
-    <View style={s.activityRow}><View style={[s.dot,activity?s.dotOn:s.dotIdle]}/><View style={s.copy}><Text style={activity?[s.activity,activityTone(activity.kind,s)]:s.idle}>{activity?activityLabel(activity):'Idle'}</Text>{activity?<><Text style={s.target}>{activityName(activity)}</Text><Text style={s.meta}>Running for {elapsed(activity.startedAtMs,now)}</Text></>:<Text style={s.meta}>No activity is currently running.</Text>}</View></View>
+    <View style={s.activityRow}><View style={[s.dot,activity?s.dotOn:s.dotIdle]}/><View style={s.copy}><Text style={activity?[s.activity,activityTone(activity.kind,s)]:s.idle}>{activity?a(activityLabel(activity)):a("Idle")}</Text>{activity?<><Text style={s.target}>{activityName(activity)}</Text><Text style={s.meta}>{a('Running for {time}',{time:accountDuration(language,(now-activity.startedAtMs)/1000)})}</Text></>:<Text style={s.meta}>{a("No activity is currently running.")}</Text>}</View></View>
    </Panel>})}
-   {onCreate&&entries.length<slots?<GameButton title="Create another character" tone="secondary" onPress={onCreate}/>:null}
+   {onCreate&&entries.length<slots?<GameButton title={a("Create another character")} tone="secondary" onPress={onCreate}/>:null}
   </ScrollView>
-  <GameModalSurface visible={!!target} presentation="dialog" reduceMotion={state.settings.reduceMotion} onClose={close} backdropLabel="Close character management">
-   <GameModalHeader eyebrow="CHARACTER MANAGEMENT" title={target?.character.name??'Character'} onClose={close} closeDisabled={busy}/>
-   {target?<ScrollView style={s.modalScroll} contentContainerStyle={s.modalBody} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
-    <View style={s.warning}><Text style={s.warningTitle}>Permanent character deletion</Text><Text style={s.warningText}>Levels, XP, Gold, skills, quests, class progress, saved loadouts and character-bound appearance progress are removed. Equipment enhancement/temper ranks and pity progress are also removed; recovered gear returns as its base item. Inventory, overflow items, equipped gear, gathering tools and socketed gems are recovered to the shared Bank, then Overflow if needed.</Text></View>
-    <View style={s.preserved}><Text style={s.preservedTitle}>ACCOUNT PROGRESS STAYS</Text><Text style={s.preservedText}>Earned character slots, premium currency, companions, Guild membership and account collectibles are preserved.</Text></View>
-    {blockReason?<View style={s.block}><Text accessibilityRole="alert" style={s.blockTitle}>Finish before deleting</Text><Text style={s.blockText}>{blockReason}</Text>{craftCount>0?<Text style={s.blockText}>{craftCount} equipment craft{craftCount===1?' is':'s are'} still linked to this character.</Text>:null}</View>:null}
-    <Text style={s.confirmLabel}>Type <Text style={s.confirmCode}>{required}</Text> to unlock the delete actions.</Text>
-    <GameTextInput accessibilityLabel="Character deletion confirmation" autoCapitalize="characters" autoCorrect={false} editable={!busy&&!blockReason} value={confirmation} onChangeText={value=>{setConfirmation(value);setError('')}} placeholder={required}/>
-    {!!error&&<Text accessibilityRole="alert" style={s.error}>{error}</Text>}
-    <GameButton title={busy?'Deleting…':'Delete & choose new class'} loading={busy} disabled={!onDelete||!confirmed||!!blockReason||busy} tone="danger" onPress={()=>void remove(true)}/>
-    {entries.length>1?<GameButton title="Delete character only" disabled={!onDelete||!confirmed||!!blockReason||busy} tone="secondary" onPress={()=>void remove(false)}/>:null}
-    <Text style={s.footnote}>{entries.length===1?'This is your only character. After deletion you return to class creation.':'Choosing a new class deletes this character first, frees the slot, and then opens class creation. Plain delete keeps you on the remaining roster.'}</Text>
+  <GameModalSurface visible={!!target} presentation="dialog" reduceMotion={state.settings.reduceMotion} onClose={close} backdropLabel={a("Close character management")}>
+   <GameModalHeader eyebrow={a("CHARACTER MANAGEMENT")} title={target?.character.name??'Character'} onClose={close} closeDisabled={busy}/>
+   {target?<ScrollView style={s.modalScroll} contentContainerStyle={s.modalBody} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
+    <View style={s.warning}><Text style={s.warningTitle}>{a("Permanent character deletion")}</Text><Text style={s.warningText}>{a("Levels, XP, Gold, skills, quests, class progress, saved loadouts and character-bound appearance progress are removed. Equipment enhancement/temper ranks and pity progress are also removed; recovered gear returns as its base item. Inventory, overflow items, equipped gear, gathering tools and socketed gems are recovered to the shared Bank, then Overflow if needed.")}</Text></View>
+    <View style={s.preserved}><Text style={s.preservedTitle}>{a("ACCOUNT PROGRESS STAYS")}</Text><Text style={s.preservedText}>{a("Earned character slots, premium currency, companions, Guild membership and account collectibles are preserved.")}</Text></View>
+    {blockReason?<View style={s.block}><Text accessibilityRole="alert" style={s.blockTitle}>{a("Finish before deleting")}</Text><Text style={s.blockText}>{a(blockReason)}</Text>{craftCount>0?<Text style={s.blockText}>{a('{count} equipment crafts are still linked to this character.',{count:craftCount})}</Text>:null}</View>:null}
+    <Text style={s.confirmLabel}>{a('Type {confirmation} to unlock the delete actions.',{confirmation:required})}</Text>
+    <GameTextInput accessibilityLabel={a("Character deletion confirmation")} autoCapitalize="characters" autoCorrect={false} editable={!busy&&!blockReason} value={confirmation} onChangeText={value=>{setConfirmation(value);setError('')}} placeholder={required}/>
+    {!!error&&<Text accessibilityRole="alert" style={s.error}>{accountError(language,error)}</Text>}
+    <GameButton title={busy?a("Deleting…"):a("Delete & choose new class")} loading={busy} disabled={!onDelete||!confirmed||!!blockReason||busy} tone="danger" onPress={()=>void remove(true)}/>
+    {entries.length>1?<GameButton title={a("Delete character only")} disabled={!onDelete||!confirmed||!!blockReason||busy} tone="secondary" onPress={()=>void remove(false)}/>:null}
+    <Text style={s.footnote}>{entries.length===1?a("This is your only character. After deletion you return to class creation."):a("Choosing a new class deletes this character first, frees the slot, and then opens class creation. Plain delete keeps you on the remaining roster.")}</Text>
    </ScrollView>:null}
   </GameModalSurface>
  </>;

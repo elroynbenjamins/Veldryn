@@ -1,3 +1,5 @@
+import {useGameLanguage} from '../i18n/GameLanguageProvider';
+import {companionContent,companionMessage,companionTranslator,companionLabel,companionError} from '../i18n/companions';
 import React,{useState} from 'react';
 import {Text,View,StyleSheet} from 'react-native';
 import type {GameState} from '../core/types';
@@ -12,22 +14,23 @@ import {v33EquipmentMaterialLabel} from '../core/equipment-loot-v33';
 import {C,equipmentColors,radii,spacing,typography} from '../theme/theme';
 
 export function MonsterMasteryPanel({state}:{state:GameState}){
+ const language=useGameLanguage(),t=companionTranslator(language),label=(value:string)=>companionLabel(language,value);
+
  const [open,setOpen]=useState(false);
  const available=MONSTERS.filter(m=>!m.boss&&(state.unlockedMonsterIds.includes(m.id)||(state.character?.monsterMasteryPoints?.[m.id]??0)>0));
  const summary=masterySummary(state,available.map(monster=>monster.id));
  return <Panel>
-  <Text style={s.title}>Monster mastery</Text>
-  <Text style={s.body}>Each kill gives one species mastery point. Mastery now gates Challenge Hunts as well as combat bonuses, drop knowledge and badges.</Text>
-  <View style={s.summary}><Summary label="TRACKED" value={summary.species}/><Summary label="RANKS" value={summary.totalRanks}/><Summary label="CLEARS" value={summary.challengeClears}/><Summary label="CONQUERED" value={summary.conqueredSpecies}/></View>
-  <GameButton title={open?'Hide mastery':'View species mastery'} onPress={()=>setOpen(!open)}/>
-  {open&&<><View style={s.ladder}><Text style={s.ladderTitle}>MASTERY LADDER</Text>{MONSTER_MASTERY_MILESTONES.map(row=><Text key={row.rank+row.label} style={s.ladderRow}>Rank {row.rank} · {row.label}</Text>)}</View>
+  <Text style={s.title}>{t("Monster mastery")}</Text>
+  <Text style={s.body}>{t("Each kill gives one species mastery point. Mastery improves combat bonuses, drop knowledge and badges.")}</Text>
+  <View style={s.summary}><Summary label={t("TRACKED")} value={summary.species}/><Summary label={t("RANKS")} value={summary.totalRanks}/><Summary label={t("RANK 10+")} value={summary.rank10}/><Summary label={t("MASTERED")} value={summary.masteredSpecies}/></View>
+  <GameButton title={open ? t("Hide mastery") : t("View species mastery")} onPress={()=>setOpen(!open)}/>
+  {open&&<><View style={s.ladder}><Text style={s.ladderTitle}>{t("MASTERY LADDER")}</Text>{MONSTER_MASTERY_MILESTONES.map(row=><Text key={row.rank+row.label} style={s.ladderRow}>{t("Rank {value0} · {value1}", {value0: row.rank, value1: companionContent(language,row.label)})}</Text>)}</View>
    {available.map(m=>{const p=monsterMasteryGuidance(state,m.id),rankProgress=p.rank>=30?25:p.points%25;return <View key={m.id} style={s.entry}>
-    <View style={s.head}><View style={s.flex}><Text style={s.name}>{p.badgeUnlocked?'◆ ':''}{m.name}</Text><Text style={s.rank}>Rank {p.rank}/30 · {p.points} mastery points</Text></View>{p.clearSummary.conquered?<Text style={s.conquered}>CONQUERED</Text>:p.rank>=30?<Text style={s.max}>MAX</Text>:null}</View>
-    <StatBar reduceMotion={state.settings.reduceMotion} label={p.rank>=30?'Mastery complete':`${p.killsToNextRank} kills to Rank ${p.rank+1}`} current={rankProgress} max={25}/>
-    <Text style={s.body}>+{Math.round(p.damageBonus*100)}% damage · +{Math.round(p.materialBonus*100)}% normal materials</Text>
-    <View style={s.challengeRow}>{p.challengeUnlocks.map(challenge=><View key={challenge.id} style={[s.challenge,challenge.cleared?s.challengeCleared:challenge.unlocked?s.challengeOn:s.challengeOff]}><Text style={[s.challengeText,challenge.cleared?s.challengeTextCleared:challenge.unlocked?s.challengeTextOn:s.challengeTextOff]}>{challenge.cleared?'✓':challenge.unlocked?'◇':'○'} {challenge.def.shortName} · {challenge.cleared?'CLEAR':challenge.unlocked?'READY':`R${challenge.def.masteryRank}`}</Text></View>)}</View><Text style={p.clearSummary.conquered?s.complete:s.body}>Challenge Conquest · {p.clearSummary.cleared}/{p.clearSummary.total}{p.clearSummary.conquered?' · All four tiers defeated':''}</Text>
-    {p.next?<View style={s.next}><Text style={s.nextLabel}>NEXT MILESTONE · RANK {p.next.rank}</Text><Text style={s.nextTitle}>{p.next.label}</Text><Text style={s.body}>{p.next.detail}</Text><Text style={s.nextKills}>{p.killsToNextMilestone} kills remaining</Text></View>:<Text style={s.complete}>All species mastery milestones unlocked.</Text>}
-    {p.dropKnowledge?<><Text style={s.dropTitle}>KNOWN DROPS</Text><View style={s.dropList}>{m.drops.map(d=>{const item=itemDef(d.itemId),gearMaterial=v33EquipmentMaterialLabel(d.itemId);return <View key={d.itemId} style={s.dropRow}><ItemArtwork itemId={d.itemId} size={34}/><View style={s.flex}><Text style={s.dropName}>{item.name}</Text><Text style={s.dropMeta}>{(d.chance*100).toFixed(2)}% · {d.min}–{d.max}{gearMaterial?' · '+gearMaterial:''}</Text></View></View>})}</View></>:<Text style={s.locked}>Reach Rank 10 to reveal the full base drop table.</Text>}
+    <View style={s.head}><View style={s.flex}><Text style={s.name}>{p.badgeUnlocked ? '◆ ' : ''}{m.name}</Text><Text style={s.rank}>{t("Rank {value0}/30 · {value1} mastery points", {value0: p.rank, value1: p.points})}</Text></View>{p.rank>=30?<Text style={s.max}>{t("MAX")}</Text>:null}</View>
+    <StatBar reduceMotion={state.settings.reduceMotion} label={p.rank>=30 ? t("Mastery complete") : t("{value0} kills to Rank {value1}", {value0: p.killsToNextRank, value1: p.rank+1})} current={rankProgress} max={25}/>
+    <Text style={s.body}>{t("+{value0}% damage · +{value1}% normal materials", {value0: Math.round(p.damageBonus*100), value1: Math.round(p.materialBonus*100)})}</Text>
+    {p.next?<View style={s.next}><Text style={s.nextLabel}>{t("NEXT MILESTONE · RANK {value0}", {value0: p.next.rank})}</Text><Text style={s.nextTitle}>{companionContent(language,p.next.label)}</Text><Text style={s.body}>{companionContent(language,p.next.detail)}</Text><Text style={s.nextKills}>{t("{value0} kills remaining", {value0: p.killsToNextMilestone})}</Text></View>:<Text style={s.complete}>{t("All species mastery milestones unlocked.")}</Text>}
+    {p.dropKnowledge?<><Text style={s.dropTitle}>{t("KNOWN DROPS")}</Text><View style={s.dropList}>{m.drops.map(d=>{const item=itemDef(d.itemId),gearMaterial=v33EquipmentMaterialLabel(d.itemId);return <View key={d.itemId} style={s.dropRow}><ItemArtwork itemId={d.itemId} size={34}/><View style={s.flex}><Text style={s.dropName}>{item.name}</Text><Text style={s.dropMeta}>{(d.chance*100).toFixed(2)}% · {d.min}–{d.max}{gearMaterial ? ' · '+label(gearMaterial) : ''}</Text></View></View>})}</View></>:<Text style={s.locked}>{t("Reach Rank 10 to reveal the full base drop table.")}</Text>}
    </View>})}
   </>}
  </Panel>;

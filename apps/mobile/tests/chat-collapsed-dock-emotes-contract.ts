@@ -5,15 +5,15 @@ function ok(value:boolean,message:string){if(!value)throw new Error(message)}
 
 import {CHAT_EMOTE_TRAY_SIZE,CHAT_MAX_EMOTES_PER_MESSAGE,chatEmoteCount,defaultChatEmoteTray,normalizeChatEmoteTrayIds} from '../src/core/chat-emotes';
 
-ok(CHAT_EMOTE_TRAY_SIZE===8,'Production chat tray must have exactly eight quick slots');
+ok(CHAT_EMOTE_TRAY_SIZE===5,'Production chat tray must have exactly five quick slots');
 ok(CHAT_MAX_EMOTES_PER_MESSAGE===2,'Production chat must allow at most two emotes per message');
-ok(defaultChatEmoteTray('male').length===8&&defaultChatEmoteTray('female').length===8,'Both body presentations must resolve an eight-emote default tray');
-ok(normalizeChatEmoteTrayIds([...defaultChatEmoteTray('male'),'male_01']).length===8,'Tray normalization must de-duplicate and cap at eight');
+ok(defaultChatEmoteTray('male').length===5&&defaultChatEmoteTray('female').length===5,'Both body presentations must resolve a five-emote default tray');
+ok(normalizeChatEmoteTrayIds([...defaultChatEmoteTray('male'),'male_01']).length===5,'Tray normalization must de-duplicate and cap at five');
 ok(chatEmoteCount(':male_01: hello :female_01:')===2,'Emote counting must recognize two valid shortcodes');
 
 const types=read('src/core/types.ts');
 ok(types.includes('chatDockLines?:1|2|3'),'Game settings must persist a 1/2/3-line collapsed chat preference');
-ok(types.includes('chatEmoteTrayIds?:string[]'),'Game settings must persist the selected eight-slot emote tray');
+ok(types.includes('chatEmoteTrayIds?:string[]'),'Game settings must persist the selected five-slot emote tray');
 const game=read('src/core/game.ts');
 ok(game.includes('chatDockLines:1'),'New saves must default to the thin one-line chat dock');
 ok(game.includes('chatEmoteTrayIds:[]'),'New saves must allow the body-specific default tray until the player saves custom slots');
@@ -21,12 +21,12 @@ const normalization=read('src/core/save-normalization.ts');
 ok(normalization.includes('normalizeChatEmoteTrayIds(input.settings?.chatEmoteTrayIds)'),'Legacy saves must normalize the emote tray preference');
 const commands=read('src/core/game-commands.ts');
 ok(commands.includes('CHAT_EMOTE_TRAY_SIZE'),'Server-owned settings validation must know the canonical tray size');
-ok(commands.includes("chatEmoteTrayIds.length!==0&&chatEmoteTrayIds.length!==CHAT_EMOTE_TRAY_SIZE"),'Saved trays must be either legacy-empty or exactly eight slots');
+ok(commands.includes("chatEmoteTrayIds.length!==0&&chatEmoteTrayIds.length!==CHAT_EMOTE_TRAY_SIZE"),'Saved trays must be either legacy-empty or exactly five slots');
 
 const settings=read('src/screens/SettingsScreen.tsx');
 ok(settings.includes('Collapsed chat preview'),'Settings must expose collapsed chat preview size');
 ok(settings.includes("([1,2,3] as const).map(lines=>"),'Settings must offer one, two and three collapsed lines');
-ok(settings.includes('<ChatEmotePicker settingsMode'),'Settings must expose the production eight-slot emote editor');
+ok(settings.includes('<ChatEmotePicker settingsMode'),'Settings must expose the production five-slot emote editor');
 
 const dock=read('src/components/ChatDock.tsx');
 ok(dock.includes('lines?:1|2|3'),'Chat dock must support the persisted 1/2/3-line preference');
@@ -66,11 +66,11 @@ ok(app.includes('onTrayChange={ids=>commit('),'Direct Guild Chat tray edits must
 const emoteAssets=read('src/theme/chat-emote-assets.ts');
 ok(emoteAssets.includes("art['emotes/'+id]"),'Live chat must resolve prepared custom emote artwork');
 const picker=read('src/components/ChatEmotePicker.tsx');
-ok(picker.includes('Choose your 8 emotes'),'Production picker must expose eight-slot editing');
-ok(picker.includes('Save 8'),'Production tray editor must save exactly eight slots');
+ok(picker.includes('Choose your 5 emotes'),'Production picker must expose five-slot editing');
+ok(picker.includes('Save 5'),'Production tray editor must save exactly five slots');
 ok(picker.includes('CHAT_EMOTE_TRAY_SIZE'),'Production picker must use the canonical tray size');
 ok(picker.includes('usedCount>=CHAT_MAX_EMOTES_PER_MESSAGE'),'Quick emote insertion must disable after two emotes are already in the draft');
-ok(picker.includes('availableChatEmotes(unlockedIds)'),'Tray editing must include default plus account-unlocked emotes');
+ok(picker.includes('availableChatEmotes(unlockedIds,bodyPresentation)'),'Tray editing must show only the presentation-matched starter emotes for now');
 ok(picker.includes('chatEmoteArtwork'),'Tray slots must show the actual emote PNGs');
 ok(picker.includes('useWindowDimensions')&&picker.includes("stackControls=width<360||fontScale>=1.25"),'Emote tray controls must adapt to narrow phones and large text');
 ok(picker.includes('headingRowStack')&&picker.includes('actionsStack')&&picker.includes("actionStack:{flex:0,width:'100%'}"),'Emote editing header and save actions must stack instead of squeezing');
@@ -89,7 +89,7 @@ for(const path of ['src/components/OnlineWorldChat.tsx','src/components/GuildCha
 }
 const offline=read('src/components/WorldChat.tsx');
 ok(offline.includes('CHAT_MAX_EMOTES_PER_MESSAGE')&&offline.includes('Use at most 2 emotes in one message.'),'Offline/local chat must mirror the two-emote production rule');
-ok(offline.includes('trayIds={trayIds}')&&offline.includes('usedCount={chatEmoteCount(text)}'),'Offline/local picker must mirror the eight-slot production tray');
+ok(offline.includes('trayIds={trayIds}')&&offline.includes('usedCount={chatEmoteCount(text)}'),'Offline/local picker must mirror the five-slot production tray');
 ok(offline.includes('useWindowDimensions')&&offline.includes("stackCompose=width<360||fontScale>=1.25"),'Offline/local chat compose must adapt to narrow phones and large text');
 ok(offline.includes('composeStack')&&offline.includes('composeActionsStack'),'Offline/local chat input and actions must stack instead of squeezing');
 
@@ -99,4 +99,4 @@ ok(migration.includes("regexp_matches(coalesce(new.body,''), ':[a-z0-9_]+:', 'g'
 ok(migration.includes('if v_emote_count>2 then'),'Server must reject messages containing a third emote');
 ok(migration.includes("raise exception 'CHAT_EMOTE_LIMIT'"),'Server must expose a stable emote-limit rejection');
 
-console.log('PASS: collapsed chat, eight-slot trays and the two-emote policy are aligned client/server');
+console.log('PASS: collapsed chat, five-slot trays and the two-emote policy are aligned client/server');

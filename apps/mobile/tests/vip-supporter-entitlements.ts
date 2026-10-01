@@ -4,7 +4,7 @@ import {activityQueueCapacity} from '../src/core/activity-queue';
 import {characterLoadoutSlotCount} from '../src/core/character-loadouts';
 import {equipmentCraftSlotBreakdown} from '../src/core/equipment-crafting-queue';
 import {effectivePlayerNameStyle,normalizeHexColor,playerNameCharacterColors,savePlayerNameStyle,SUPPORTER_NAME_PRESETS} from '../src/core/player-name-style';
-import {COMMERCE_GUARDRAILS,COMMERCE_PRODUCTS,GOOGLE_PLAY_ONE_TIME_PRODUCT_IDS,GOOGLE_PLAY_SUBSCRIPTION_PRODUCT_IDS,PLAY_BILLING_PACKAGE_NAME} from '../src/content/commerce-products';
+import {COMMERCE_GUARDRAILS,COMMERCE_PRODUCTS,COMMERCE_PRODUCT_BONUSES,GOOGLE_PLAY_ONE_TIME_PRODUCT_IDS,GOOGLE_PLAY_SUBSCRIPTION_PRODUCT_IDS,PLAY_BILLING_PACKAGE_NAME} from '../src/content/commerce-products';
 
 function ok(value:unknown,message:string){if(!value)throw new Error(message)}
 function eq(actual:unknown,expected:unknown,message:string){if(actual!==expected)throw new Error(`${message}: expected ${String(expected)}, got ${String(actual)}`)}
@@ -23,7 +23,7 @@ ok(b.vip&&b.vipPlus,'VIP+ should inherit VIP');eq(b.inventorySlots,10,'VIP+ tota
 b=accountEntitlementBenefits(supporter);
 ok(b.supporter&&!b.vipPlus,'Supporter should stack independently');eq(b.forgeSlots,1,'Supporter Forge slot');eq(b.inventorySlots,0,'Supporter must not grant temporary storage');
 eq(entitlementStorageCapacity(vipPlus,'inventory'),40,'VIP+ effective starter Inventory');eq(entitlementStorageCapacity(vipPlus,'bank'),170,'VIP+ effective starter Bank');
-eq(characterLoadoutSlotCount(vipPlus),5,'VIP+ loadout capacity');eq(activityQueueCapacity(vipPlus),4,'VIP+ queue capacity');
+eq(characterLoadoutSlotCount(vipPlus),5,'VIP+ loadout capacity');eq(activityQueueCapacity(vipPlus),3,'VIP+ queue capacity');
 eq(equipmentCraftSlotBreakdown(stacked).capacity,7,'Fully stacked Forge capacity should reach seven');
 eq(offlineCapBreakdown(stacked).maxHours,30,'Paid entitlements must never push AFK reserve above 30h');
 
@@ -44,6 +44,20 @@ eq(vipProduct.playProductId,'vip','VIP Google Play product id');eq(vipPlusProduc
 eq(sub.preferredBasePlanId,'monthly','Supporter should use monthly Play base plan');eq(PLAY_BILLING_PACKAGE_NAME,'com.elroybenjamins.veldryn','Google Play package');
 ok(GOOGLE_PLAY_ONE_TIME_PRODUCT_IDS.length===3&&GOOGLE_PLAY_SUBSCRIPTION_PRODUCT_IDS.length===1,'Google Play catalog should split one-time products and subscription');
 ok(COMMERCE_PRODUCTS.every(row=>!('priceEur' in row)),'Prices must not be hardcoded in the app; Google Play supplies localized prices');
+for(const [id,state] of [['vip',vip],['vip_plus',vipPlus],['supporter_monthly',supporter]] as const){
+ const actual=accountEntitlementBenefits(state),items=COMMERCE_PRODUCT_BONUSES[id].items;
+ for(const [value,label] of [[actual.afkHours,'hours offline reserve'],[actual.inventorySlots,'inventory slots'],[actual.bankSlots,'bank slots'],[actual.loadoutSlots,'saved loadout'],[actual.forgeSlots,'active Forge slot']] as const){
+  if(value)ok(items.some(item=>item.startsWith(`+${value} ${label}`)),`${id} bonus display matches ${label}`);
+ }
+}
+ok(COMMERCE_PRODUCT_BONUSES.vip_plus.items.includes('+1 waiting activity slot (3 total)'),'VIP+ disclosure includes the third waiting slot');
+ok(COMMERCE_PRODUCT_BONUSES.vip_plus_upgrade.note.includes('existing VIP'),'Upgrade is clearly incremental');
+ok(COMMERCE_PRODUCT_BONUSES.supporter_monthly.note.includes('while subscribed'),'Supporter bonuses disclose their duration');
+const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
+const rowSource=fs.readFileSync('src/components/CommerceProductRow.tsx','utf8');
+ok(rowSource.includes('useState(false)')&&rowSource.includes('accessibilityState={{expanded}}'),'Product bonuses start collapsed and expose expansion state');
+ok(rowSource.includes('{expanded?<View')&&rowSource.includes('setExpanded(value=>!value)'),'Bonus content mounts only when expanded and can be collapsed');
+ok(rowSource.includes('width:44,height:44')&&rowSource.includes('title:label'),'Small plus retains a touch target and web tooltip');
 ok(COMMERCE_GUARDRAILS.pricesManagedByPlayConsole&&!COMMERCE_GUARDRAILS.ads,'Play Console pricing should be authoritative and ads disabled');
 
 const stale={...base,account:{...base.account,entitlements:{vipplus:true,supporter_subscription:true,unrelated:true}}};

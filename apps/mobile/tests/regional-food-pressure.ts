@@ -14,5 +14,5 @@ ok(REGIONAL_COMBAT_PRESSURE.Ashlands>=1.25,'Ashlands must carry late-game pressu
 ok(REGIONAL_FOOD_SUSTAIN_TARGETS.Greenfields.foodPerHourMin>0,'even starter long hunts should eventually need food');
 for(const region of regions)ok((REGIONAL_MIN_ATTRITION_HP_PER_HOUR[region]??0)>0,region+' must accumulate long-hunt hourly attrition');
 ok(REGIONAL_FOOD_SUSTAIN_TARGETS["King's Road"].foodPerHourMin>0,'established regional farming should need food');
-ok(REGIONAL_FOOD_SUSTAIN_TARGETS.Ashlands.foodPerHourMin>REGIONAL_FOOD_SUSTAIN_TARGETS.Sunscar.foodPerHourMin,'late-region food demand must increase');
+ok(REGIONAL_MIN_ATTRITION_HP_PER_HOUR.Ashlands>REGIONAL_MIN_ATTRITION_HP_PER_HOUR.Sunscar,'late-region HP pressure must increase even when stronger food reduces portions consumed');
 console.log('PASS regional combat pressure and food sustain targets');

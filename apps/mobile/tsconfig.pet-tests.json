@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "strict": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "outDir": ".pet-test-build"
+  },
+  "include": [
+    "src/content/core-pets.ts",
+    "src/content/collectibles.ts",
+    "src/core/core-pet-drops.ts",
+    "src/core/collectibles.ts",
+    "src/core/feature-unlocks.ts",
+    "src/core/rng.ts",
+    "src/core/types.ts",
+    "tests/core-pets.ts",
+    "tests/core-pet-drops.ts"
+  ]
+}

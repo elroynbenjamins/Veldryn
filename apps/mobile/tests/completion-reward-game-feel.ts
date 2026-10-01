@@ -9,8 +9,8 @@ const coop=read('src/screens/CoopExpeditionScreen.tsx');
 
 ok(quests.includes('CHAPTER COMPLETE'),'claimed story chapters need a clear completion moment');
 ok(quests.includes("rarity.label.toUpperCase()+' CACHE CLAIMED'"),'personal contracts must identify the rarity of the claimed cache');
-ok(quests.includes('label="Rewards secured"'),'quest completion feedback must repeat the exact secured reward bundle');
-ok(quests.includes("detail:'Rewards secured · the next available story beat is now ready.'"),'chapter claim must explain the next-step handoff');
+ok(quests.includes('label={t("Rewards secured")}')&&quests.includes('gold={moment.gold} xp={moment.xp} itemId={moment.itemId} quantity={moment.quantity??1}'),'quest completion feedback must localize the label and repeat the exact secured reward bundle');
+ok(quests.includes('detail:t("Rewards secured · the next available story beat is now ready.")'),'chapter claim must localize the next-step handoff');
 ok(quests.includes('newlyConfirmedIds'),'claim celebration must derive from committed claim state rather than the button press');
 ok(quests.includes('Animated.sequence')&&quests.includes('reduceMotion'),'quest completion motion must be brief and respect Reduce Motion');
 
@@ -18,7 +18,7 @@ ok(run.includes('✦ EXPEDITION CLEARED'),'completed dungeons need an explicit v
 ok(run.includes("rewardsSecured?'REWARDS SECURED':'VICTORY'"),'dungeon completion must distinguish victory from fully secured rewards');
 ok(run.includes('Collect the expedition reward below.'),'victory screen must point directly at the next primary action');
 ok(run.includes("rewardSurfaceReady=rewards.length>0||Boolean(terminalAction)"),'dungeon completion must wait for a real reward surface before declaring rewards secured');
-ok(run.includes("title={rewardsSecured?'Return to dungeon list':'Leave expedition'}"),'terminal runs need an explicit return action after reward handling');
+ok(run.includes('title={rewardsSecured?st("Return to dungeon list"):st("Leave expedition")}'),'terminal runs need an explicit localized return action after reward handling');
 ok(run.includes('Animated.sequence')&&run.includes('reduceMotion'),'dungeon victory motion must respect Reduce Motion');
 ok(coop.includes('reduceMotion={state.settings.reduceMotion}'),'co-op screen must pass the player motion preference into terminal feedback');
 

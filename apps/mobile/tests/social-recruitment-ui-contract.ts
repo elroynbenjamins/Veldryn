@@ -25,7 +25,7 @@ ok(listing.includes('backgroundColor:C.panel')&&!listing.includes("backgroundCol
 ok(filters.includes("Hide filters")&&filters.includes("Filters"),'Recruitment filters must remain a compact disclosure');
 ok(filters.includes('Open Party spots only'),'Open-spot filter must remain player-readable');
 ok(filters.includes('trackColor={{false:C.line,true:C.selectionLine}}'),'Recruitment switch must be theme-aware');
-ok(filters.includes('Clear {count}'),'Active filters must be clearable without a large permanent filter panel');
+ok(filters.includes('{st("Clear")} {count}')&&filters.includes('onPress={()=>onChange({...EMPTY_RECRUITMENT_FILTERS,query:value.query})}'),'Active filters must show a localized clear label/count and clear filter state while preserving the search query');
 
 ok(composer.includes('NEW RECRUITMENT POST'),'Recruitment composer must have clear creation hierarchy');
 ok(composer.includes('AUTO-EXPIRES'),'Recruitment composer must explain automatic expiry');
@@ -42,6 +42,6 @@ ok(guilds.includes('Tag reserved permanently'),'Guild creation must keep permane
 
 ok(social.includes('<RecruitmentListing card={item}'),'Owned adverts must reuse the shared recruitment card');
 ok(social.includes('recruitmentPostTypePresentation(selected.postType)'),'Selected recruitment details must use canonical post-type presentation');
-ok(social.includes('recruitmentContextLabels(selected)'),'Selected recruitment details must preserve compact requirement context');
+ok(social.includes('selected.activityLevel')&&social.includes('selected.language')&&social.includes('selected.region')&&social.includes("st('Combat {level}+',{level:Math.max(0,Math.floor(selected.minCombatLevel))})")&&social.includes("st('Total {level}+',{level:Math.max(0,Math.floor(selected.minTotalLevel))})")&&social.includes('context.map(item=>'),'Selected recruitment details must preserve pace/language/region and localized numeric requirements in compact context pills');
 
 console.log('PASS: Recruitment, LFG/LFM, Guild seekers and Guild directory share compact theme-aware presentation');

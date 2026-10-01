@@ -42,6 +42,12 @@ function AtlasCell({source,column,row,cell,sheetWidth,sheetHeight,size}:{source:
 }
 
 export function ResourceArtwork({itemId,size=58,framed=true}:{itemId:string;size?:number;framed?:boolean}){
+  // Prefer the direct PNG fallback before generated atlas/data-URI artwork.
+  // This is more reliable in the hosted web renderer, where atlas sources can
+  // be present but fail to paint while leaving the layout space intact.
+  const source=resourceIconSource(itemId);
+  if(source)return <View style={[s.art,{width:size,height:size},framed&&s.frame]}><Image source={source} resizeMode="contain" fadeDuration={0} style={s.image}/></View>;
+
   const consumable=consumableArtworkCell(itemId);
   if(consumable)return <View style={[s.art,{width:size,height:size},framed&&s.frame]}><AtlasCell source={consumableArtworkSheet(consumable.sheet)} column={consumable.column} row={consumable.row} cell={CONSUMABLE_ART_CELL} sheetWidth={CONSUMABLE_ART_SHEET_SIZE} sheetHeight={CONSUMABLE_ART_SHEET_SIZE} size={size}/></View>;
 
@@ -69,8 +75,7 @@ export function ResourceArtwork({itemId,size=58,framed=true}:{itemId:string;size
   const arcaneMaterial=arcaneMaterialCell(itemId);
   if(arcaneMaterial)return <View style={[s.art,{width:size,height:size},framed&&s.frame]}><AtlasCell source={arcaneMaterialSheet} column={arcaneMaterial.column} row={arcaneMaterial.row} cell={ARCANE_MATERIAL_CELL} sheetWidth={ARCANE_MATERIAL_SHEET_WIDTH} sheetHeight={ARCANE_MATERIAL_SHEET_HEIGHT} size={size}/></View>;
 
-  const source=resourceIconSource(itemId);if(!source)return null;
-  return <View style={[s.art,{width:size,height:size},framed&&s.frame]}><Image source={source} resizeMode="contain" fadeDuration={0} style={s.image}/></View>;
+  return null;
 }
 
 const s=StyleSheet.create({

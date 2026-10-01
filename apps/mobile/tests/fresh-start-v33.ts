@@ -9,8 +9,6 @@ const raw:any=JSON.parse(JSON.stringify(state));
 raw.character.equipment.chest='STONEHEART_CHEST';
 raw.character.equipment.weapon='WORN_BLADE';
 raw.character.savedLoadouts=[{id:'old',slotIndex:0,name:'Old',classId:'IRONWARDEN',equipment:{chest:'STONEHEART_CHEST',weapon:'WORN_BLADE'},createdAtMs:1,updatedAtMs:1}];
-raw.character.unlockedSkinIds=['skin:old-set'];
-raw.character.selectedSkinId='skin:old-set';
 raw.inventory.stacks=[
   {itemId:'STONEHEART_CHEST',quantity:1},
   {itemId:'T1P_001',quantity:1},
@@ -26,17 +24,16 @@ ok(!isLegacyEquipmentSetItemId('WORN_BLADE'),'starter gear preserved');
 const migrated=migrateSave(raw);
 ok(migrated.character!.equipment.weapon==='WORN_BLADE','starter equipment preserved');
 ok(!migrated.character!.equipment.chest,'legacy equipped set piece removed');
-ok(migrated.character!.selectedSkinId==='starting'&&migrated.character!.unlockedSkinIds?.length===1,'legacy skin state reset');
 ok(migrated.inventory.stacks.some(stack=>stack.itemId==='T1P_001'),'v33 piece preserved');
 ok(!migrated.inventory.stacks.some(stack=>stack.itemId==='STONEHEART_CHEST'),'legacy inventory gear removed');
 ok(migrated.inventory.stacks.some(stack=>stack.itemId==='COPPER_ORE'),'materials preserved');
 ok(!migrated.bank.stacks.some(stack=>stack.itemId==='STONEHEART_CHEST')&&!migrated.overflow.stacks.some(stack=>stack.itemId==='STONEHEART_CHEST'),'all storage scopes cleaned');
 ok(migrated.character!.savedLoadouts?.[0].equipment.weapon==='WORN_BLADE'&&!migrated.character!.savedLoadouts?.[0].equipment.chest,'legacy loadout reference removed');
 const rosterRaw:any=JSON.parse(JSON.stringify(state));
-rosterRaw.otherCharacters=[{character:{...rosterRaw.character,id:'ALT',equipment:{chest:'STONEHEART_CHEST'},unlockedSkinIds:['old'],selectedSkinId:'old'},inventory:rosterRaw.inventory,bank:rosterRaw.bank,overflow:rosterRaw.overflow,activity:null,skills:[],quests:[],currentRegionId:'GREENFIELDS'}];
+rosterRaw.otherCharacters=[{character:{...rosterRaw.character,id:'ALT',equipment:{chest:'STONEHEART_CHEST'}},inventory:rosterRaw.inventory,bank:rosterRaw.bank,overflow:rosterRaw.overflow,activity:null,skills:[],quests:[],currentRegionId:'GREENFIELDS'}];
 const roster=migrateSave(rosterRaw);
-ok(!roster.otherCharacters?.[0].character.equipment.chest&&roster.otherCharacters?.[0].character.selectedSkinId==='starting','inactive roster is cleaned too');
+ok(!roster.otherCharacters?.[0].character.equipment.chest,'inactive roster equipment is cleaned too');
 const malformed:any=JSON.parse(JSON.stringify(state));malformed.inventory.stacks=[{itemId:'T9P_999',quantity:1}];
 ok(invalidV33EquipmentIds(malformed).join(',')==='T9P_999','invalid v33 save IDs detected');
 let rejected=false;try{migrateSave(malformed);}catch{rejected=true;}ok(rejected,'invalid v33 save rejected');
-console.log('PASS: v33 fresh-start migration preserves v33 pieces/materials and removes legacy set gear/skin references');
+console.log('PASS: v33 fresh-start migration preserves v33 pieces/materials and removes legacy set gear references');

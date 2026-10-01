@@ -46,7 +46,7 @@ export interface CoopCombatReplayView{
  contributions?:CoopCombatReplayContributionView[];
  cues:CoopCombatReplayCueView[];
 }
-export interface CoopRunView {runId:string;mode:CoopMode;modeLabel?:string;phase:string;syncedLevel:number;roleSlots:Array<{memberId?:string;role:'tank'|'damage'|'support';name:string;echo:boolean;classId?:string;bodyPresentation?:'male'|'female';companionId?:string;currentHp?:number;maximumHp?:number;ready?:boolean}>;options:CoopRouteOptionView[];mechanic?:CoopRunMechanicView;objective?:CoopRunObjectiveView;bossMechanic?:CoopRunBossMechanicView;bossRecap?:CoopRunBossRecapView;lastCombat?:CoopCombatReplayView;rewardText?:string;stateVersion?:number;decisionId?:string;decisionRevision?:number;resolvesAtMs?:number;}
+export interface CoopRunView {runId:string;mode:CoopMode;modeLabel?:string;phase:string;syncedLevel:number;roleSlots:Array<{memberId?:string;role:'tank'|'damage'|'support';name:string;echo:boolean;classId?:string;bodyPresentation?:'male'|'female';companionId?:string;currentHp?:number;maximumHp?:number;ready?:boolean}>;options:CoopRouteOptionView[];presenceSummary?:{connectedCount:number;safetyAiCount:number;activeCount:number;safetyAiCharacterIds:string[]};mechanic?:CoopRunMechanicView;objective?:CoopRunObjectiveView;bossMechanic?:CoopRunBossMechanicView;bossRecap?:CoopRunBossRecapView;lastCombat?:CoopCombatReplayView;rewardText?:string;stateVersion?:number;decisionId?:string;decisionRevision?:number;resolvesAtMs?:number;}
 export function parseCoopEncounterPreview(value:unknown):CoopEncounterPreviewView|undefined{
  if(value===undefined||value===null)return undefined;
  if(!value||typeof value!=='object')throw new Error('invalid_encounter_preview');
@@ -67,6 +67,7 @@ export function validateCoopRunView(view:CoopRunView):void{
  if(view.roleSlots.some(slot=>slot.memberId!==undefined&&!slot.memberId.trim()))throw new Error('invalid_member_ids');
  if(view.roleSlots.some(slot=>slot.bodyPresentation!==undefined&&slot.bodyPresentation!=='male'&&slot.bodyPresentation!=='female'))throw new Error('invalid_body_presentation');
  if(view.roleSlots.some(slot=>slot.companionId!==undefined&&!slot.companionId.trim()))throw new Error('invalid_companion_assist');
+ if(view.presenceSummary&&(!Number.isInteger(view.presenceSummary.connectedCount)||view.presenceSummary.connectedCount<0||!Number.isInteger(view.presenceSummary.safetyAiCount)||view.presenceSummary.safetyAiCount<0||!Number.isInteger(view.presenceSummary.activeCount)||view.presenceSummary.activeCount<1||view.presenceSummary.connectedCount+view.presenceSummary.safetyAiCount>view.presenceSummary.activeCount||view.presenceSummary.safetyAiCharacterIds.some(id=>!id.trim())))throw new Error('invalid_live_presence');
  if(view.roleSlots.some(slot=>slot.currentHp!==undefined&&(!Number.isFinite(slot.currentHp)||slot.currentHp<0)||slot.maximumHp!==undefined&&(!Number.isFinite(slot.maximumHp)||slot.maximumHp<=0)||slot.currentHp!==undefined&&slot.maximumHp!==undefined&&slot.currentHp>slot.maximumHp))throw new Error('invalid_party_health');
  const damageClasses=view.roleSlots.filter(slot=>slot.role==='damage'&&slot.classId?.trim()).map(slot=>slot.classId!.trim().toUpperCase());
  if(damageClasses.length===2&&new Set(damageClasses).size!==2)throw new Error('duplicate_damage_class');

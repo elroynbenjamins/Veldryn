@@ -1,7 +1,8 @@
-import {createCharacter,newGame,startCombat,startGathering,previewActivityReward,craftRecipe} from '../src/core/game';
+import {createCharacter,newGame,startCombat,startGathering,previewActivityReward,craftRecipe,offlineCapSeconds} from '../src/core/game';
 import {transitionActivity,recipeAvailability} from '../src/core/playability';
 import {encounterUnlocked,nextRegionUnlock,regionEncounters} from '../src/core/world-navigation';
 import {MONSTERS} from '../src/content/monsters';
+import {WORLD_ZONES,worldZoneInDevelopment} from '../src/content/world-map';
 function ok(value:boolean,message:string){if(!value)throw new Error(message)}
 const initial=createCharacter(newGame(1000),'IRONWARDEN');
 const combat=startCombat(initial,'MOSS_RAT',1000);
@@ -31,7 +32,7 @@ for(const item of expected.items){
   ok(after===before+item.quantity,'Stop preserves loot');
 }
 const capped=transitionActivity(combat,30*3600*1000);
-ok(capped.reward.elapsedSeconds===24*3600,'Transition respects offline cap');
+ok(capped.reward.elapsedSeconds===offlineCapSeconds(combat),'Transition respects the account offline cap');
 ok(!recipeAvailability(initial,'SMELT_COPPER_INGOT').ready,'Missing materials disables recipe');
 const supplied={...initial,bank:{...initial.bank,stacks:[{itemId:'COPPER_ORE',quantity:10}]}};
 ok(recipeAvailability(supplied,'SMELT_COPPER_INGOT').ready,'Bank-only materials work');
@@ -40,7 +41,8 @@ ok(craftRecipe(supplied,'SMELT_COPPER_INGOT').inventory.stacks.some(s=>s.itemId=
 ok(!recipeAvailability({...supplied,character:{...supplied.character!,gold:0}},'SMELT_COPPER_INGOT').ready,'Gold gate');
 ok(!recipeAvailability({...supplied,inventory:{stacks:[],capacity:0},bank:{stacks:[{itemId:'COPPER_ORE',quantity:20}],capacity:1}},'SMELT_COPPER_INGOT').ready,'Output storage gate');
 ok(nextRegionUnlock(1)?.minLevel===5,'Next region sorted by level');
-ok(nextRegionUnlock(25)===undefined,'All regions unlocked');
+const highestReleasedRegionLevel=Math.max(...WORLD_ZONES.filter(zone=>!worldZoneInDevelopment(zone)).map(zone=>zone.minLevel));
+ok(nextRegionUnlock(highestReleasedRegionLevel)===undefined,'No level unlock remains after the highest released region');
 ok(regionEncounters(initial,'Greenfields',' MOSS ',true).length===1,'Search trims and ignores case');
 ok(regionEncounters(initial,'Greenfields','impossible',false).length===0,'Empty search results');
 const boss=MONSTERS.find(m=>m.boss)!;

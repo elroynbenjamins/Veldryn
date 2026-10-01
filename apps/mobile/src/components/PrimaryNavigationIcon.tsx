@@ -1,6 +1,5 @@
-import {Image,Platform,type ImageStyle} from 'react-native';
-import {navigationIcons} from '../theme/ui-icons';
+import {ThemedNavigationIcon} from './ThemedNavigationIcon';
 export type PrimaryNavigationDestination='Home'|'Skills'|'Character'|'World'|'Inventory'|'Account'|'More';
 export function PrimaryNavigationIcon({destination,active}:{destination:PrimaryNavigationDestination;active:boolean}){
-  return <Image accessible={false} source={navigationIcons[destination]} resizeMode="contain" style={[{width:32,height:32,opacity:active?1:.82},Platform.OS==='web'?{imageRendering:'pixelated'} as ImageStyle:undefined]}/>;
+  return <ThemedNavigationIcon destination={destination} size={32} muted={!active}/>;
 }

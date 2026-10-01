@@ -2,8 +2,7 @@ import {normalizeSkillAffinitySnapshot} from './class-skill-affinities';
 import {QUESTS} from '../content/quests';
 import {GameState} from './types';
 import {CLASSES} from '../content/classes';
-import {characterSkinSetsFor} from '../content/character-skin-sets';
-import {discoverCharacterSkins,equipmentSetSkinId} from './character-skins';
+import {normalizeProfileIcon} from './profile-icons';
 import {isSupportedLanguage} from '../i18n/languages';
 import {normalizeQuickNavDestinations} from './quick-navigation';
 import {WORLD_ZONES} from '../content/world-map';
@@ -20,14 +19,15 @@ import {normalizeCharacterLoadouts} from './character-loadouts';
 import {normalizeOnboardingGuideState} from './onboarding';
 import {normalizeProgressionGoals} from './progression-goals-v40';
 import {normalizeIdleRuleSets,validateActiveIdleRuleId} from './idle-rules-v40';
-import {normalizeGuildBannerId,normalizeGuildFrameId,normalizeGuildMotto,normalizeGuildNameplateId} from './guild-customization';
+import {normalizeGuildBackgroundId,normalizeGuildBannerId,normalizeGuildFrameId,normalizeGuildMotto,normalizeGuildNameplateId} from './guild-customization';
 import {normalizeOwnedPetIds,normalizeSelectedPetId} from './pet-collection';
-import {normalizeActivityQueue} from './activity-queue';
+import {activityQueueCapacity,normalizeActivityQueue,normalizeActivityQueueGoal,normalizeQueueCombatRecovery} from './activity-queue';
 import {normalizeActiveDailySupplyBoost,normalizeDailySuppliesTrack,normalizeDailySupplyBank} from './daily-supplies';
 import {normalizeChatEmoteTrayIds} from './chat-emotes';
 import {normalizeEquipmentCraftingQueue} from './equipment-crafting-queue';
 import {normalizeEnhancementGemSlots} from './equipment-enhancement';
 import {normalizeCraftedGearInstances} from './crafted-gear-instances';
+import {normalizeSeasonalProgress} from './seasonal-quests';
 
 function normalizeGearEnhancements(raw:unknown){
   const gearIds=new Set(ITEMS.filter(item=>item.type==='gear').map(item=>item.id));
@@ -83,13 +83,9 @@ export function normalizeSave(input:any):GameState{
     && ((input.character?.ownedPetIds?.length??0)>0 || (input.character?.ownedBoostIds?.length??0)>0);
   const character=input.character?(()=>{
     const {customization:_legacyCustomization,profileAppearanceMode:_legacyProfileMode,profileEquipmentSnapshot:_legacyEquipmentSnapshot,...savedCharacter}=input.character;
-    const classSkinSets=characterSkinSetsFor(input.character.classId);
-    const validSkinIds=new Set(['starting',...classSkinSets.map(set=>equipmentSetSkinId(set.id))]);
-    const eventSkinIds=new Set(Array.isArray(input.account?.unlockedEventSkinIds)?input.account.unlockedEventSkinIds.filter((id:unknown)=>typeof id==='string'):[]);
-    const earnedEventSetIds=classSkinSets.filter(set=>set.unlockEventSkinId&&eventSkinIds.has(set.unlockEventSkinId)).map(set=>equipmentSetSkinId(set.id));
-    const unlockedSkinIds=['starting',...(Array.isArray(input.character.unlockedSkinIds)?input.character.unlockedSkinIds.filter((id:unknown)=>typeof id==='string'&&validSkinIds.has(id)):[]),...earnedEventSetIds];
     const ownedPetIds=normalizeOwnedPetIds(input.character.ownedPetIds,legacyCosmeticPets);
     const gearEnhancements=normalizeGearEnhancements(input.character.gearEnhancements) as any;
+    const activityQueue=normalizeActivityQueue(input.character.activityQueue,activityQueueCapacity({...input,account:input.account??{}}));
     return {
     ...savedCharacter,
     monsterMasteryPoints:normalizeMonsterMastery(savedCharacter.monsterMasteryPoints),
@@ -101,10 +97,6 @@ export function normalizeSave(input:any):GameState{
     classTraining:input.activity?undefined:normalizeClassDrills(savedCharacter.classTraining),
     classSkillRemainders:Object.fromEntries(Object.entries(savedCharacter.classSkillRemainders??{}).filter(([id,v])=>normalizeClassSkills(savedCharacter.classId,[]).some(s=>s.skillId===id)&&typeof v==='number'&&Number.isFinite(v)&&v>=0&&v<1)),
     bodyPresentation:input.character.bodyPresentation==='female'?'female':'male',
-    unlockedEventSkinIds:[...new Set([
-      ...(Array.isArray(input.character.unlockedEventSkinIds)?input.character.unlockedEventSkinIds:[]),
-      ...eventSkinIds,
-    ].filter((id:unknown)=>typeof id==='string'))],
     craftedNoviceItemIds:Array.isArray(input.character.craftedNoviceItemIds)?[...new Set(input.character.craftedNoviceItemIds.filter((id:unknown)=>typeof id==='string'))]:[],
     ownedPetIds:legacyPetOwnership?undefined:ownedPetIds,
     ownedBoostIds:legacyPetOwnership?undefined:Array.isArray(input.character.ownedBoostIds)?[...new Set(input.character.ownedBoostIds.filter((id:unknown)=>typeof id==='string'))]:[],
@@ -115,16 +107,18 @@ export function normalizeSave(input:any):GameState{
     ,profileBackgroundId:typeof input.character.profileBackgroundId==='string'&&input.character.profileBackgroundId.trim()?input.character.profileBackgroundId:'asterfall-night'
     ,profileBorderId:typeof input.character.profileBorderId==='string'&&input.character.profileBorderId.trim()?input.character.profileBorderId:undefined
     ,selectedCosmeticPetId:normalizeSelectedPetId(input.character.selectedCosmeticPetId,legacyCosmeticPets)
-    ,unlockedSkinIds:[...new Set(unlockedSkinIds)]
-    ,selectedSkinId:classSkinSets.some(set=>set.appearanceId&&equipmentSetSkinId(set.id)===input.character.selectedSkinId)&&unlockedSkinIds.includes(input.character.selectedSkinId)?input.character.selectedSkinId:'starting'
+    ,profileIconId:typeof input.character.profileIconId==='string'?input.character.profileIconId:'class:'+input.character.classId
     ,savedLoadouts:normalizeCharacterLoadouts(input.character.savedLoadouts,input.character.classId)
     ,progressionGoals:normalizeProgressionGoals(input.character.progressionGoals,String(input.character.id))
     ,idleRulesV40:normalizeIdleRuleSets(input.character.idleRulesV40,String(input.character.id))
     ,activeIdleRuleIdV40:validateActiveIdleRuleId(normalizeIdleRuleSets(input.character.idleRulesV40,String(input.character.id)),input.character.activeIdleRuleIdV40)
-    ,activityQueue:normalizeActivityQueue(input.character.activityQueue)
-    ,activityQueuePausedReason:normalizeActivityQueue(input.character.activityQueue).length&&typeof input.character.activityQueuePausedReason==='string'?input.character.activityQueuePausedReason.slice(0,180):undefined
+    ,activityQueue
+    ,activityQueuePausedReason:activityQueue.length&&typeof input.character.activityQueuePausedReason==='string'?input.character.activityQueuePausedReason.slice(0,180):undefined
+    ,activityQueueCombatRecovery:normalizeQueueCombatRecovery(input.character.activityQueueCombatRecovery)
     ,dailySupplyBoostBank:normalizeDailySupplyBank(input.character.dailySupplyBoostBank)
     ,activeDailySupplyBoost:normalizeActiveDailySupplyBoost(input.character.activeDailySupplyBoost)
+    ,activeEventCandy:(input.character.activeEventCandy&&typeof input.character.activeEventCandy==='object'&&typeof input.character.activeEventCandy.eventId==='string'&&typeof input.character.activeEventCandy.itemId==='string'&&Number.isFinite(Number(input.character.activeEventCandy.remainingSeconds))&&Number(input.character.activeEventCandy.remainingSeconds)>0?{eventId:input.character.activeEventCandy.eventId,itemId:input.character.activeEventCandy.itemId,remainingSeconds:Math.min(36000,Math.max(1,Math.floor(Number(input.character.activeEventCandy.remainingSeconds)))),lastUpdatedAtMs:Math.max(0,Math.floor(Number(input.character.activeEventCandy.lastUpdatedAtMs??0)))}:undefined)
+    ,activeEventCandies:input.character.activeEventCandies
   };})():null;
   const seasonIds=['spring','summer','autumn','winter'],weatherIds=['clear','rain','mist','storm','bloomwind','heatwave','harvest_wind','snow','frost'];
   const rawEnvironment=input.activity?.environment;
@@ -135,6 +129,11 @@ export function normalizeSave(input:any):GameState{
   const environment=rawEnvironment&&seasonIds.includes(rawEnvironment.seasonId)&&weatherIds.includes(rawEnvironment.weatherId)&&typeof rawEnvironment.zoneId==='string'&&Number.isFinite(rawEnvironment.capturedAtMs)?{seasonId:rawEnvironment.seasonId,weatherId:rawEnvironment.weatherId,zoneId:rawEnvironment.zoneId,capturedAtMs:rawEnvironment.capturedAtMs}:undefined;
   const activityHerbalismMethod=input.activity?.kind==='herbalism'&&['balanced','quick','careful','bountiful'].includes(input.activity.herbalismMethodId)?input.activity.herbalismMethodId:input.activity?.kind==='herbalism'?'balanced':undefined;
   const activity=input.activity?{...input.activity,skillAffinity:normalizeSkillAffinitySnapshot(input.activity.skillAffinity),environment,herbalismMethodId:activityHerbalismMethod,brew:input.activity.kind==='alchemy'?normalizeAlchemyBatch(input.activity.brew,input.activity.targetId):undefined,processing:input.activity.kind==='processing'?normalizeProcessingBatch(input.activity.processing,input.activity.targetId):undefined}:null;
+  if(activity){
+    activity.queueManaged=activity.queueManaged===true;
+    activity.queueGoal=activity.queueManaged?normalizeActivityQueueGoal(activity.queueGoal):undefined;
+    activity.queueGoalCompletedAtMs=activity.queueManaged&&Number.isSafeInteger(activity.queueGoalCompletedAtMs)&&activity.queueGoalCompletedAtMs<=activity.lastClaimAtMs?activity.queueGoalCompletedAtMs:undefined;
+  }
   const savedRegionId=typeof input.currentRegionId==='string'?input.currentRegionId:environment?.zoneId;
   const currentRegionId=WORLD_ZONES.some(zone=>zone.id===savedRegionId&&(character?.level??1)>=zone.minLevel)?savedRegionId:'GREENFIELDS';
   const rawLiveEvent=input.account?.liveEvent;
@@ -185,10 +184,10 @@ export function normalizeSave(input:any):GameState{
     unlockedMonsterIds:Array.isArray(input.unlockedMonsterIds)?input.unlockedMonsterIds:['MOSS_RAT'],
     exploredRouteIds:Array.isArray(input.exploredRouteIds)?[...new Set(input.exploredRouteIds.filter((id:unknown)=>typeof id==='string'))].slice(-32) as string[]:[],
     defeatedBossIds:Array.isArray(input.defeatedBossIds)?input.defeatedBossIds:[],
-    account:{createdCharacterCount:Math.max(1,Number(input.account?.createdCharacterCount??1)),entitlements:booleanRecord(input.account?.entitlements),equipmentCraftingQueue:normalizeEquipmentCraftingQueue(input.account?.equipmentCraftingQueue),craftedGearInstances:normalizeCraftedGearInstances(input.account?.craftedGearInstances),premiumCurrencyBalance:Math.max(0,Math.floor(Number(input.account?.premiumCurrencyBalance??0))),guildMember:!!input.account?.guildMember,patronTier:['bloom','crown'].includes(input.account?.patronTier)?input.account.patronTier:'none',guildBannerId:normalizeGuildBannerId(input.account?.guildBannerId),guildProfileFrameId:normalizeGuildFrameId(input.account?.guildProfileFrameId),guildNameplateId:normalizeGuildNameplateId(input.account?.guildNameplateId),guildMotto:normalizeGuildMotto(input.account?.guildMotto),professionMasteryByAction,weeklyOrders,weeklyOrderPendingRewards,crossSkillState,collectionSetState,rareDiscoveryState,journalState,longTermMetrics,dailySupplies,unlockedKnowledgeIds:stringList(input.account?.unlockedKnowledgeIds,160),unlockedCollectionRewardIds:stringList(input.account?.unlockedCollectionRewardIds,160),guildContribution:Math.max(0,Number(input.account?.guildContribution??0)),guildProjectProgress:Math.max(0,Number(input.account?.guildProjectProgress??0)),guildBossHp:Math.max(0,Number(input.account?.guildBossHp??100000)),guildProjectClaimed:!!input.account?.guildProjectClaimed,guildJoinPolicy:['open','apply','invite'].includes(input.account?.guildJoinPolicy)?input.account.guildJoinPolicy:'open',guildMinimumLevel:Math.max(1,Number(input.account?.guildMinimumLevel??10)),guildApplicationStatus:['pending','accepted','declined'].includes(input.account?.guildApplicationStatus)?input.account.guildApplicationStatus:'none',seasonalContractClaimIds:stringList(input.account?.seasonalContractClaimIds,120),liveEvent,eventProgressById,eventCurrencyBalanceById,eventPrestigeBalanceById:numberRecord(input.account?.eventPrestigeBalanceById,12),eventRepeatCacheClaimsById:numberRecord(input.account?.eventRepeatCacheClaimsById,12),eventActivityById,eventPeriodActivityById,eventAcceptedContractIds:stringList(input.account?.eventAcceptedContractIds,240),eventContractBaselines:numberRecord(input.account?.eventContractBaselines,240),eventObjectiveClaimIds:stringList(input.account?.eventObjectiveClaimIds,240),eventWeeklyClaimIds:stringList(input.account?.eventWeeklyClaimIds,160),eventDailyGiftClaimIds:stringList(input.account?.eventDailyGiftClaimIds,180),eventCommunityClaimIds:stringList(input.account?.eventCommunityClaimIds,80),eventDiscoveryCounts:numberRecord(input.account?.eventDiscoveryCounts,120),eventDiscoveryClaimIds:stringList(input.account?.eventDiscoveryClaimIds,120),eventShopPurchaseCounts:numberRecord(input.account?.eventShopPurchaseCounts),eventChoiceById:stringRecord(input.account?.eventChoiceById),eventContributionById:numberRecord(input.account?.eventContributionById,12),eventRewardClaimIds:stringList(input.account?.eventRewardClaimIds),unlockedEventSkinIds:legacyPetOwnership?[]:stringList(input.account?.unlockedEventSkinIds),unlockedCosmeticPetIds:legacyCosmeticPets,ownedBoostIds:legacyOwnedBoostIds,unlockedProfileBackgroundIds:stringList(input.account?.unlockedProfileBackgroundIds),unlockedProfileBorderIds:stringList(input.account?.unlockedProfileBorderIds),unlockedEmoteIds:stringList(input.account?.unlockedEmoteIds),unlockedTitleIds:stringList(input.account?.unlockedTitleIds)},
+    account:{createdCharacterCount:Math.max(1,Number(input.account?.createdCharacterCount??1)),entitlements:booleanRecord(input.account?.entitlements),equipmentCraftingQueue:normalizeEquipmentCraftingQueue(input.account?.equipmentCraftingQueue),craftedGearInstances:normalizeCraftedGearInstances(input.account?.craftedGearInstances),premiumCurrencyBalance:Math.max(0,Math.floor(Number(input.account?.premiumCurrencyBalance??0))),guildMember:!!input.account?.guildMember,patronTier:['bloom','crown'].includes(input.account?.patronTier)?input.account.patronTier:'none',guildBackgroundId:normalizeGuildBackgroundId(input.account?.guildBackgroundId),guildBannerId:normalizeGuildBannerId(input.account?.guildBannerId),guildProfileFrameId:normalizeGuildFrameId(input.account?.guildProfileFrameId),guildNameplateId:normalizeGuildNameplateId(input.account?.guildNameplateId),guildMotto:normalizeGuildMotto(input.account?.guildMotto),professionMasteryByAction,weeklyOrders,weeklyOrderPendingRewards,crossSkillState,collectionSetState,rareDiscoveryState,journalState,longTermMetrics,dailySupplies,unlockedKnowledgeIds:stringList(input.account?.unlockedKnowledgeIds,160),unlockedCollectionRewardIds:stringList(input.account?.unlockedCollectionRewardIds,160),guildContribution:Math.max(0,Number(input.account?.guildContribution??0)),guildProjectProgress:Math.max(0,Number(input.account?.guildProjectProgress??0)),guildBossHp:Math.max(0,Number(input.account?.guildBossHp??100000)),guildProjectClaimed:!!input.account?.guildProjectClaimed,guildJoinPolicy:['open','apply','invite'].includes(input.account?.guildJoinPolicy)?input.account.guildJoinPolicy:'open',guildMinimumLevel:Math.max(1,Number(input.account?.guildMinimumLevel??10)),guildApplicationStatus:['pending','accepted','declined'].includes(input.account?.guildApplicationStatus)?input.account.guildApplicationStatus:'none',seasonalContractClaimIds:stringList(input.account?.seasonalContractClaimIds,120),liveEvent,eventProgressById,eventCurrencyBalanceById,eventPrestigeBalanceById:numberRecord(input.account?.eventPrestigeBalanceById,12),eventRepeatCacheClaimsById:numberRecord(input.account?.eventRepeatCacheClaimsById,12),eventActivityById,eventPeriodActivityById,eventAcceptedContractIds:stringList(input.account?.eventAcceptedContractIds,240),eventContractBaselines:numberRecord(input.account?.eventContractBaselines,240),eventObjectiveClaimIds:stringList(input.account?.eventObjectiveClaimIds,240),eventWeeklyClaimIds:stringList(input.account?.eventWeeklyClaimIds,160),eventDailyGiftClaimIds:stringList(input.account?.eventDailyGiftClaimIds,180),eventCommunityClaimIds:stringList(input.account?.eventCommunityClaimIds,80),eventDiscoveryCounts:numberRecord(input.account?.eventDiscoveryCounts,120),eventDiscoveryClaimIds:stringList(input.account?.eventDiscoveryClaimIds,120),eventShopPurchaseCounts:numberRecord(input.account?.eventShopPurchaseCounts),eventChoiceById:stringRecord(input.account?.eventChoiceById),eventContributionById:numberRecord(input.account?.eventContributionById,12),eventRewardClaimIds:stringList(input.account?.eventRewardClaimIds),unlockedProfileIconIds:legacyPetOwnership?[]:stringList(input.account?.unlockedProfileIconIds),unlockedCosmeticPetIds:legacyCosmeticPets,ownedBoostIds:legacyOwnedBoostIds,unlockedProfileBackgroundIds:stringList(input.account?.unlockedProfileBackgroundIds),unlockedProfileBorderIds:stringList(input.account?.unlockedProfileBorderIds),unlockedEmoteIds:stringList(input.account?.unlockedEmoteIds),unlockedTitleIds:stringList(input.account?.unlockedTitleIds)},
     settings:{
       language:isSupportedLanguage(input.settings?.language)?input.settings.language:'en',
-      uiTheme:input.settings?.uiTheme==='ivory'?'ivory':'obsidian',
+      uiTheme:input.settings?.uiTheme==='ivory'?'ivory':input.settings?.uiTheme==='ember'?'ember':'obsidian',
       numberMode:input.settings?.numberMode||'abbreviated',
       reduceMotion:!!input.settings?.reduceMotion,
       textScale:input.settings?.textScale||1,
@@ -205,16 +204,20 @@ export function normalizeSave(input:any):GameState{
   } as GameState;
   normalized.account={...normalized.account,...migrateLegacyCombatCompanionAccount(input),...normalizeCompanionRuntimeSave(input.account)} as GameState['account'];
   normalized.account.collectionPreferences=normalizeCollectionPreferences(input.account?.collectionPreferences);
+  normalized.account.unlockedGuildCosmeticIds=Array.isArray(input.account?.unlockedGuildCosmeticIds)
+    ? [...new Set(input.account.unlockedGuildCosmeticIds.filter((id:unknown)=>typeof id==='string'))].slice(-32) as string[]
+    : [];
   normalized.account.guideState=normalizeOnboardingGuideState(input.account?.guideState);
+  normalized.account.seasonalContractProgress=normalizeSeasonalProgress(input.account?.seasonalContractProgress);
   normalized.account.arenaSquadCharacterIds=Array.isArray(input.account?.arenaSquadCharacterIds)
     ? [...new Set(input.account.arenaSquadCharacterIds.filter((id:unknown)=>typeof id==='string'))].slice(0,3) as string[]
     : undefined;
   if(input.otherCharacters!==undefined&&!Array.isArray(input.otherCharacters))throw new Error('Invalid account roster.');
   if(Array.isArray(input.otherCharacters)&&input.otherCharacters.length>4)throw new Error('Account roster exceeds the five-character limit.');
   const rosterIds=new Set<string>();
-  const roster=Array.isArray(input.otherCharacters)?input.otherCharacters.filter((entry:any)=>entry?.character?.id).map((entry:any)=>{const id=String(entry.character.id);if(rosterIds.has(id))throw new Error('Duplicate account character.');rosterIds.add(id);return {...entry,character:{...entry.character,gearEnhancements:normalizeGearEnhancements(entry.character.gearEnhancements),dailySupplyBoostBank:normalizeDailySupplyBank(entry.character.dailySupplyBoostBank),activeDailySupplyBoost:normalizeActiveDailySupplyBoost(entry.character.activeDailySupplyBoost)}};}):[];
+  const roster=Array.isArray(input.otherCharacters)?input.otherCharacters.filter((entry:any)=>entry?.character?.id).map((entry:any)=>{const id=String(entry.character.id);if(rosterIds.has(id))throw new Error('Duplicate account character.');rosterIds.add(id);const candy=entry.character.activeEventCandy;return {...entry,character:{...entry.character,gearEnhancements:normalizeGearEnhancements(entry.character.gearEnhancements),dailySupplyBoostBank:normalizeDailySupplyBank(entry.character.dailySupplyBoostBank),activeDailySupplyBoost:normalizeActiveDailySupplyBoost(entry.character.activeDailySupplyBoost),activeEventCandy:candy&&typeof candy.eventId==='string'&&typeof candy.itemId==='string'&&Number.isFinite(Number(candy.remainingSeconds))&&Number(candy.remainingSeconds)>0?{eventId:candy.eventId,itemId:candy.itemId,remainingSeconds:Math.min(36000,Math.max(1,Math.floor(Number(candy.remainingSeconds)))),lastUpdatedAtMs:Math.max(0,Math.floor(Number(candy.lastUpdatedAtMs??0)))}:undefined,activeEventCandies:entry.character.activeEventCandies}};}):[];
   if(character?.id&&rosterIds.has(character.id))throw new Error('Duplicate active account character.');
   normalized.otherCharacters=roster as GameState['otherCharacters'];
   normalized.account.unlockedCharacterSlots=Math.max(1,Math.min(5,Number(input.account?.unlockedCharacterSlots??1)));
-  return discoverCharacterSkins(reconcileCombatCompanionUnlocks(normalized,normalized.createdAtMs));
+  return normalizeProfileIcon(reconcileCombatCompanionUnlocks(normalized,normalized.createdAtMs));
 }

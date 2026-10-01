@@ -3,9 +3,12 @@ import {KeyboardAvoidingView,Modal,Platform,Pressable,StyleSheet,Text,View,type 
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
+import {useGameLanguage} from '../i18n/GameLanguageProvider';
+import {sharedText} from '../i18n/shared';
 
 type Presentation='sheet'|'dialog';
-export function GameModalSurface({visible,onClose,reduceMotion=false,presentation='sheet',children,surfaceStyle,backdropLabel='Close dialog',dismissOnBackdrop=true}:PropsWithChildren<{visible:boolean;onClose:()=>void;reduceMotion?:boolean;presentation?:Presentation;surfaceStyle?:StyleProp<ViewStyle>;backdropLabel?:string;dismissOnBackdrop?:boolean}>){
+export function GameModalSurface({visible,onClose,reduceMotion=false,presentation='sheet',children,surfaceStyle,backdropLabel:providedBackdropLabel,dismissOnBackdrop=true}:PropsWithChildren<{visible:boolean;onClose:()=>void;reduceMotion?:boolean;presentation?:Presentation;surfaceStyle?:StyleProp<ViewStyle>;backdropLabel?:string;dismissOnBackdrop?:boolean}>){
+  const language=useGameLanguage(),backdropLabel=providedBackdropLabel??sharedText(language,'Close dialog');
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),insets=useSafeAreaInsets(),sheet=presentation==='sheet';
   return <Modal visible={visible} transparent statusBarTranslucent animationType={reduceMotion?'none':'fade'} onRequestClose={onClose}>
     <View style={[s.backdrop,!sheet&&s.center,{paddingTop:Math.max(spacing.sm,insets.top)},!sheet&&{paddingBottom:Math.max(spacing.lg,insets.bottom+spacing.sm)}]}>
@@ -21,12 +24,13 @@ export function GameModalSurface({visible,onClose,reduceMotion=false,presentatio
 }
 
 export function GameModalHeader({eyebrow,title,onClose,closeDisabled=false,leading,trailing}:{eyebrow?:string;title:string;onClose:()=>void;closeDisabled?:boolean;leading?:ReactNode;trailing?:ReactNode}){
+  const language=useGameLanguage();
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
   return <View style={s.header}>
     {leading}
     <View style={s.headerCopy}>{eyebrow?<Text style={s.eyebrow}>{eyebrow}</Text>:null}<Text accessibilityRole="header" style={s.title}>{title}</Text></View>
     {trailing}
-    <Pressable accessibilityRole="button" accessibilityLabel="Close" accessibilityState={{disabled:closeDisabled}} disabled={closeDisabled} onPress={onClose} style={({pressed})=>[s.close,pressed&&!closeDisabled&&s.pressed,closeDisabled&&s.disabled]}>
+    <Pressable accessibilityRole="button" accessibilityLabel={sharedText(language,'Close')} accessibilityState={{disabled:closeDisabled}} disabled={closeDisabled} onPress={onClose} style={({pressed})=>[s.close,pressed&&!closeDisabled&&s.pressed,closeDisabled&&s.disabled]}>
       <Text style={s.closeText}>×</Text>
     </Pressable>
   </View>;

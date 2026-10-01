@@ -7,6 +7,12 @@ export type PartyFocus = 'combat' | 'skilling' | 'mixed';
 export type RecruitmentFocus = PartyFocus | 'any';
 export type RecruitmentPostType = 'looking_for_guild' | 'guild_recruiting' | 'looking_for_party' | 'party_recruiting';
 export type RecruitmentActivityLevel = 'casual' | 'regular' | 'active' | 'hardcore';
+export type RecruitmentActivityKind = 'dungeon' | 'boss' | 'quest' | 'skilling' | 'exploration' | 'pvp' | 'party_event' | 'other';
+export type RecruitmentGoal = 'learn' | 'clear' | 'farm' | 'speedrun' | 'achievement' | 'casual';
+export type RecruitmentStartMode = 'now' | 'next_hour' | 'scheduled' | 'recurring';
+export type RecruitmentVoiceMode = 'none' | 'preferred' | 'required';
+export type RecruitmentExperience = 'any' | 'new_players' | 'welcome' | 'experienced' | 'expert';
+export type RecruitmentRoleCounts = Partial<Record<PartyRole, number>>;
 
 export type LiveOpsEventStatus = 'scheduled' | 'active' | 'settling' | 'finalized' | 'archived';
 export type LiveOpsActivityKind = 'combat' | 'gathering' | 'processing' | 'crafting' | 'fishing' | 'hunting' | 'alchemy' | 'delivery';
@@ -24,6 +30,7 @@ export function nextUnreachedMilestone(current: number, milestones: readonly Liv
 export function milestoneProgressPercent(current: number, target: number): number { return target <= 0 ? 100 : Math.max(0, Math.min(100, Math.round((current / target) * 100))); }
 
 export interface PartyMemberSummary {
+  playerBadges?:import('./player-badges').PlayerBadgeIdentity;
   accountId: string;
   characterId: string;
   characterName: string;
@@ -145,6 +152,7 @@ export function recruitmentPostTypePresentation(type:RecruitmentPostType){
 }
 
 export interface RecruitmentCardView {
+  playerBadges?:import('./player-badges').PlayerBadgeIdentity;
   id: string;
   ownerAccountId?: string;
   partyId?: string;
@@ -172,10 +180,48 @@ export interface RecruitmentCardView {
   minCombatLevel?: number;
   minTotalLevel?: number;
   expiresAtMs: number;
+  activityKind?: RecruitmentActivityKind;
+  goal?: RecruitmentGoal;
+  startMode?: RecruitmentStartMode;
+  sessionMinutes?: number;
+  voiceMode?: RecruitmentVoiceMode;
+  experience?: RecruitmentExperience;
+  flexibleRoles?: boolean;
+  scheduledAt?: string;
+  requiredRoleCounts?: RecruitmentRoleCounts;
 }
+
+const encoded = (tags: readonly string[], prefix: string) => tags.find(tag => tag.startsWith(prefix))?.slice(prefix.length);
+export function recruitmentStructuredTags(card: Pick<RecruitmentCardView,'activityTags'|'availabilityTags'|'playstyleTags'>) {
+ const session = encoded(card.availabilityTags, 'session:');
+  const scheduled = encoded(card.availabilityTags, 'at:');
+  const roleCounts: RecruitmentRoleCounts = {};
+  for (const role of ['tank','damage','support'] as const) { const value=encoded(card.playstyleTags,`need:${role}:`); if(value) roleCounts[role]=Number(value)||0; }
+  return {
+  activityKind: encoded(card.activityTags,'kind:') as RecruitmentActivityKind|undefined,
+  goal: encoded(card.activityTags,'goal:') as RecruitmentGoal|undefined,
+  startMode: encoded(card.availabilityTags,'start:') as RecruitmentStartMode|undefined,
+  sessionMinutes: session ? Number(session)||undefined : undefined,
+  voiceMode: encoded(card.playstyleTags,'voice:') as RecruitmentVoiceMode|undefined,
+  experience: encoded(card.playstyleTags,'experience:') as RecruitmentExperience|undefined,
+  flexibleRoles: card.playstyleTags.includes('roles:flexible'),
+    scheduledAt: scheduled,
+    requiredRoleCounts: roleCounts,
+ };
+}
+export function recruitmentVisibleTags(tags: readonly string[]) { return tags.filter(tag => !/^(kind|goal|start|session|at|voice|experience|roles|need:):/.test(tag)); }
 
 export function recruitmentContextLabels(card:RecruitmentCardView){
  const labels:string[]=[];
+ const structured=recruitmentStructuredTags(card);
+ if(structured.activityKind)labels.push(structured.activityKind.replace('_',' '));
+ if(structured.goal)labels.push(structured.goal);
+ if(structured.startMode)labels.push(structured.startMode==='now'?'Now':structured.startMode==='next_hour'?'Next hour':structured.startMode==='scheduled'?'Scheduled':'Recurring');
+ if(structured.sessionMinutes)labels.push(`${structured.sessionMinutes}m`);
+ if(structured.scheduledAt){ const time=Date.parse(structured.scheduledAt); labels.push(Number.isFinite(time)?`Starts ${new Date(time).toLocaleString([], {dateStyle:'short',timeStyle:'short'})}`:'Scheduled time set'); }
+ for(const role of ['tank','damage','support'] as const){ const count=structured.requiredRoleCounts[role]; if(count)labels.push(`${count} ${role}`); }
+ if(structured.voiceMode==='required')labels.push('Voice required');else if(structured.voiceMode==='preferred')labels.push('Voice preferred');
+ if(structured.experience&&structured.experience!=='any')labels.push(structured.experience.replace('_',' '));
  if(card.activityLevel)labels.push(card.activityLevel.charAt(0).toUpperCase()+card.activityLevel.slice(1));
  if(card.language)labels.push(card.language);
  if(card.region)labels.push(card.region.toUpperCase());

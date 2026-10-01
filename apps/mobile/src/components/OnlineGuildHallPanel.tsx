@@ -1,3 +1,4 @@
+import {useSocialText} from '../i18n/social';
 import {useEffect,useMemo,useState} from 'react';
 import {ActivityIndicator,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from './GameButton';
@@ -10,42 +11,43 @@ import {useGameTheme} from '../theme/ThemeContext';
 type Projection=Awaited<ReturnType<typeof loadOnlineGuildHallV44>>;
 
 export function OnlineGuildHallPanel(){
+ const st=useSocialText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [projection,setProjection]=useState<Projection>(null),[loading,setLoading]=useState(true),[error,setError]=useState('');
- const load=async()=>{setLoading(true);setError('');try{setProjection(await loadOnlineGuildHallV44())}catch(reason){setError(reason instanceof Error?reason.message:'Unable to load Guild Hall.')}finally{setLoading(false)}};
+ const load=async()=>{setLoading(true);setError('');try{setProjection(await loadOnlineGuildHallV44())}catch(reason){setError(reason instanceof Error?reason.message:st("Unable to load Guild Hall."))}finally{setLoading(false)}};
  useEffect(()=>{void load()},[]);
- if(loading&&!projection)return <Panel><Text style={s.title}>Guild Hall</Text><ActivityIndicator color={C.accent}/></Panel>;
- if(error&&!projection)return <Panel><Text style={s.title}>Guild Hall</Text><Text style={s.error}>{error}</Text><GameButton title="Retry" tone="secondary" onPress={()=>void load()}/></Panel>;
- if(!projection)return <Panel><Text style={s.title}>Guild Hall</Text><Text style={s.sub}>Join a Guild to unlock long-term Guild Hall progression.</Text></Panel>;
+ if(loading&&!projection)return <Panel><Text style={s.title}>{st("Guild Hall")}</Text><ActivityIndicator color={C.accent}/></Panel>;
+ if(error&&!projection)return <Panel><Text style={s.title}>{st("Guild Hall")}</Text><Text style={s.error}>{error}</Text><GameButton title={st("Retry")} tone="secondary" onPress={()=>void load()}/></Panel>;
+ if(!projection)return <Panel><Text style={s.title}>{st("Guild Hall")}</Text><Text style={s.sub}>{st("Join a Guild to unlock long-term Guild Hall progression.")}</Text></Panel>;
  const {state,level,stage,benefits}=projection;
  const nextThreshold=DEFAULT_GUILD_HALL_POLICY.hallLevelThresholds[level]??DEFAULT_GUILD_HALL_POLICY.hallLevelThresholds[DEFAULT_GUILD_HALL_POLICY.hallLevelThresholds.length-1];
  const prev=DEFAULT_GUILD_HALL_POLICY.hallLevelThresholds[Math.max(0,level-1)]??0;
  const pct=level>=10?100:Math.max(0,Math.min(100,(state.hallProgress-prev)/Math.max(1,nextThreshold-prev)*100));
  return <View style={s.root}>
   <Panel>
-   <View style={s.between}><View style={s.flex}><Text style={s.kicker}>GUILD HALL</Text><Text style={s.title}>{stage}</Text><Text style={s.sub}>{state.hallProgress.toLocaleString()} Hall Progress · {state.lifetimeProjectsCompleted} completed projects</Text></View><View style={s.levelBadge}><Text style={s.level}>Lv {level}</Text><Text style={s.levelMax}>/10</Text></View></View>
+   <View style={s.between}><View style={s.flex}><Text style={s.kicker}>{st("GUILD HALL")}</Text><Text style={s.title}>{stage}</Text><Text style={s.sub}>{state.hallProgress.toLocaleString()} Hall Progress · {state.lifetimeProjectsCompleted} completed projects</Text></View><View style={s.levelBadge}><Text style={s.level}>Lv {level}</Text><Text style={s.levelMax}>/10</Text></View></View>
    <View accessibilityRole="progressbar" accessibilityValue={{min:0,max:100,now:pct}} style={s.track}><View style={[s.fill,{width:(pct+'%') as any}]}/></View>
    <Text style={s.note}>{level<10?Math.max(0,nextThreshold-state.hallProgress).toLocaleString()+' Hall Progress to level '+(level+1):'Launch Hall level cap reached.'}</Text>
   </Panel>
   <Panel>
-   <View style={s.sectionHead}><Text style={s.title}>Facilities</Text><Text style={s.sectionMeta}>Automatic progression</Text></View>
+   <View style={s.sectionHead}><Text style={s.title}>{st("Facilities")}</Text><Text style={s.sectionMeta}>{st("Automatic progression")}</Text></View>
    <Text style={s.sub}>Facilities improve through authored Guild Projects. Hall Progress is never spent.</Text>
    {GUILD_HALL_FACILITIES.map(def=>{const facility=state.facilities[def.id];return <View key={def.id} style={s.facility}><View style={s.flex}><Text style={s.facilityName}>{def.name}</Text><Text style={s.note}>{def.description}</Text></View><View style={s.tier}><Text style={s.tierText}>T{facility.tier}/5</Text></View></View>})}
   </Panel>
   <Panel>
-   <View style={s.sectionHead}><Text style={s.title}>Guild Skill Trees</Text><Text style={s.sectionMeta}>Launch cap · Lv 10</Text></View>
+   <View style={s.sectionHead}><Text style={s.title}>{st("Guild Skill Trees")}</Text><Text style={s.sectionMeta}>Launch cap · Lv 10</Text></View>
    <Text style={s.sub}>Hall facilities now represent progression visually. Permanent bonuses are chosen through three Guild Skill Trees instead of stacking automatically from Hall tiers.</Text>
-   <View style={s.skillTree}><Text style={s.skillTreeTitle}>PROFESSIONS</Text><Text style={s.note}>Non-combat only · Skilling XP, gathering speed and production speed · up to +6% per line.</Text></View>
-   <View style={s.skillTree}><Text style={s.skillTreeTitle}>FELLOWSHIP</Text><Text style={s.note}>Member capacity, Guild Quests, Project options and cooperative-system unlocks.</Text></View>
-   <View style={s.skillTree}><Text style={s.skillTreeTitle}>VANGUARD</Text><Text style={s.note}>Guild-content-only combat damage, defence, support and boss/raid contribution.</Text></View>
+   <View style={s.skillTree}><Text style={s.skillTreeTitle}>{st("PROFESSIONS")}</Text><Text style={s.note}>Non-combat only · Skilling XP, gathering speed and production speed · up to +6% per line.</Text></View>
+   <View style={s.skillTree}><Text style={s.skillTreeTitle}>{st("FELLOWSHIP")}</Text><Text style={s.note}>Member capacity, Guild Quests, Project options and cooperative-system unlocks.</Text></View>
+   <View style={s.skillTree}><Text style={s.skillTreeTitle}>{st("VANGUARD")}</Text><Text style={s.note}>Guild-content-only combat damage, defence, support and boss/raid contribution.</Text></View>
    <Text style={s.cap}>Ranks use Guild Skill Points. Higher tree tiers require communal Development Projects and resources.</Text>
   </Panel>
   <Panel>
-   <View style={s.sectionHead}><Text style={s.title}>Trophy Room</Text><Text style={s.sectionMeta}>{state.trophies.length} recorded</Text></View>
+   <View style={s.sectionHead}><Text style={s.title}>{st("Trophy Room")}</Text><Text style={s.sectionMeta}>{state.trophies.length} recorded</Text></View>
    {state.trophies.slice(0,5).map(trophy=><View key={trophy.trophyKey} style={s.trophy}><Text style={s.facilityName}>{trophy.label}</Text><Text style={s.note}>{trophy.description||trophy.sourceKind} · {new Date(trophy.earnedAtMs).toLocaleDateString()}</Text></View>)}
-   {!state.trophies.length?<View style={s.empty}><Text style={s.emptyTitle}>No trophies yet</Text><Text style={s.note}>Completed eligible Guild Projects and raids will appear here. Future Guild Legacy will preserve major trophies and season records permanently.</Text></View>:null}
+   {!state.trophies.length?<View style={s.empty}><Text style={s.emptyTitle}>{st("No trophies yet")}</Text><Text style={s.note}>Completed eligible Guild Projects and raids will appear here. Future Guild Legacy will preserve major trophies and season records permanently.</Text></View>:null}
   </Panel>
-  <GameButton compact title={loading?'Refreshing…':'Refresh Guild Hall'} tone="secondary" disabled={loading} onPress={()=>void load()}/>
+  <GameButton compact title={loading?st("Refreshing…"):st("Refresh Guild Hall")} tone="secondary" disabled={loading} onPress={()=>void load()}/>
   {!!error&&<Text style={s.error}>{error}</Text>}
  </View>;
 }

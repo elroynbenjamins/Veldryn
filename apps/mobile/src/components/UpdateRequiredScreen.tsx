@@ -1,13 +1,16 @@
 import {ActivityIndicator,SafeAreaView,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from './GameButton';
 import {C} from '../theme/theme';
+import {useGameLanguage} from '../i18n/GameLanguageProvider';
+import {sharedText} from '../i18n/shared';
 
 export function UpdateRequiredScreen({title,message,currentVersion,minimumVersion,onUpdate,maintenance=false}:{title:string;message:string;currentVersion:string;minimumVersion?:string;onUpdate:()=>void;maintenance?:boolean}){
+  const language=useGameLanguage();
   return <SafeAreaView style={s.root}><View style={s.card}>
-    <Text style={s.kicker}>{maintenance?'SERVICE STATUS':'UPDATE REQUIRED'}</Text>
+    <Text style={s.kicker}>{sharedText(language,maintenance?'SERVICE STATUS':'UPDATE REQUIRED')}</Text>
     <Text accessibilityRole="header" style={s.title}>{title}</Text>
     <Text style={s.message}>{message}</Text>
-    {!maintenance?<><View style={s.versionRow}><Text style={s.versionLabel}>Installed</Text><Text style={s.versionValue}>{currentVersion}</Text></View>{minimumVersion?<View style={s.versionRow}><Text style={s.versionLabel}>Required</Text><Text style={s.versionValue}>{minimumVersion}+</Text></View>:null}<GameButton title="Update VELDRYN" onPress={onUpdate}/><Text style={s.note}>The game will continue normally after the supported version is installed.</Text></>:<><ActivityIndicator color={C.accent}/><Text style={s.note}>Try again after maintenance has finished.</Text></>}
+    {!maintenance?<><View style={s.versionRow}><Text style={s.versionLabel}>{sharedText(language,'Installed')}</Text><Text style={s.versionValue}>{currentVersion}</Text></View>{minimumVersion?<View style={s.versionRow}><Text style={s.versionLabel}>{sharedText(language,'Required')}</Text><Text style={s.versionValue}>{minimumVersion}+</Text></View>:null}<GameButton title={sharedText(language,'Update VELDRYN')} onPress={onUpdate}/><Text style={s.note}>{sharedText(language,'The game will continue normally after the supported version is installed.')}</Text></>:<><ActivityIndicator color={C.accent}/><Text style={s.note}>{sharedText(language,'Try again after maintenance has finished.')}</Text></>}
   </View></SafeAreaView>;
 }
 const s=StyleSheet.create({

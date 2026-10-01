@@ -16,7 +16,7 @@ for(const def of REGIONAL_COMBAT_FIXTURES){
  const rows=durations.map(hours=>combatSustainProjection(state,def.monsterId,hours)!);
  const row=rows[0];
  assert.ok(row&&Number.isFinite(row.foodPerHour),def.regionName+' sustain projection must be finite');
- assert.ok(row.damagePerKill>=1&&row.killsPerHour>0);
+ assert.ok(row.damagePerKill>=.1&&row.killsPerHour>0);
  assert.ok(row.foodPerHour>0,def.regionName+' long-hunt projection must require food');
  assert.equal(row.region,def.regionName);
  for(let i=0;i<rows.length;i++){

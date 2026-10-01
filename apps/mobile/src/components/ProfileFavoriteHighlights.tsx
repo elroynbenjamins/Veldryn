@@ -1,3 +1,5 @@
+import {profileT,profileText} from '../i18n/profile';
+import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {useMemo} from 'react';
 import {Image,StyleSheet,Text,View} from 'react-native';
 import type {ImageSourcePropType} from 'react-native';
@@ -15,23 +17,24 @@ function skillIcon(id?:string):ImageSourcePropType|undefined{
 }
 
 export function ProfileFavoriteHighlights({favoriteSkillId,favoriteSkillDetail,favoriteCompanionId}:{favoriteSkillId?:string|null;favoriteSkillDetail?:string;favoriteCompanionId?:string|null}){
+ const language=useGameLanguage();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const companion=favoriteCompanionId?COMBAT_COMPANIONS.find(row=>row.id===favoriteCompanionId):undefined;
  const companionArt=favoriteCompanionId?companionArtSource(favoriteCompanionId):undefined;
  const skillArt=skillIcon(favoriteSkillId??undefined);
  return <View style={s.row}>
   <View style={s.card}>
-   <View style={s.cardHead}>{skillArt?<View style={s.iconShell}><Image source={skillArt} resizeMode="contain" style={s.skillIcon}/></View>:<View style={s.iconShell}><Text style={s.fallback}>◆</Text></View>}<View style={s.flex}><Text style={s.eyebrow}>FAVORITE SKILL</Text><Text numberOfLines={1} style={s.value}>{label(favoriteSkillId??undefined)}</Text><Text numberOfLines={1} style={s.meta}>{favoriteSkillDetail??(favoriteSkillId?'Showcased by player':'No favorite selected')}</Text></View></View>
+   <View style={s.cardHead}>{skillArt?<View style={s.iconShell}><Image source={skillArt} resizeMode="contain" style={s.skillIcon}/></View>:<View style={s.iconShell}><Text style={s.fallback}>◆</Text></View>}<View style={s.flex}><Text style={s.eyebrow}>{profileT(language,"FAVORITE SKILL")}</Text><Text style={s.value}>{profileText(language,label(favoriteSkillId??undefined))}</Text><Text style={s.meta}>{favoriteSkillDetail??(favoriteSkillId?'Showcased by player':'No favorite selected')}</Text></View></View>
   </View>
   <View style={[s.card,companion?.rarity==='prestige'&&s.prestigeCard,companion?.rarity==='elite'&&s.eliteCard,companion?.rarity==='rare'&&s.rareCard]}>
-   <View style={s.cardHead}>{companionArt?<View style={s.companionShell}><Image source={companionArt} resizeMode="contain" style={s.companionArt}/></View>:<View style={s.iconShell}><Text style={s.fallback}>◇</Text></View>}<View style={s.flex}><Text style={s.eyebrow}>FAVORITE COMPANION</Text><Text numberOfLines={1} style={s.value}>{companion?.name??'Not selected'}</Text><View style={s.metaRow}><Text numberOfLines={1} style={s.meta}>{companion?label(companion.role):'Choose a companion'}</Text>{companion?<View style={[s.rarity,companion.rarity==='prestige'&&s.rarityPrestige,companion.rarity==='elite'&&s.rarityElite,companion.rarity==='rare'&&s.rarityRare]}><Text style={[s.rarityText,companion.rarity==='prestige'&&s.rarityTextPrestige,companion.rarity==='elite'&&s.rarityTextElite,companion.rarity==='rare'&&s.rarityTextRare]}>{companion.rarity.toUpperCase()}</Text></View>:null}</View></View></View>
+   <View style={s.cardHead}>{companionArt?<View style={s.companionShell}><Image source={companionArt} resizeMode="contain" style={s.companionArt}/></View>:<View style={s.iconShell}><Text style={s.fallback}>◇</Text></View>}<View style={s.flex}><Text style={s.eyebrow}>{profileT(language,"FAVORITE COMPANION")}</Text><Text style={s.value}>{companion?.name??profileT(language,"Not selected")}</Text><View style={s.metaRow}><Text style={s.meta}>{companion?profileText(language,label(companion.role)):profileT(language,"Choose a companion")}</Text>{companion?<View style={[s.rarity,companion.rarity==='prestige'&&s.rarityPrestige,companion.rarity==='elite'&&s.rarityElite,companion.rarity==='rare'&&s.rarityRare]}><Text style={[s.rarityText,companion.rarity==='prestige'&&s.rarityTextPrestige,companion.rarity==='elite'&&s.rarityTextElite,companion.rarity==='rare'&&s.rarityTextRare]}>{profileText(language,companion.rarity).toUpperCase()}</Text></View>:null}</View></View></View>
   </View>
  </View>;
 }
 
 function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C),elite=C.dark?'#A485CF':'#6D47A6',eliteSurface=C.dark?'#211D2B':'#F2ECF8';return StyleSheet.create({
- row:{flexDirection:'row',gap:6},
- card:{flex:1,minWidth:0,minHeight:78,padding:8,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2,justifyContent:'center'},
+ row:{flexDirection:'row',flexWrap:'wrap',gap:6},
+ card:{flex:1,minWidth:220,minHeight:78,padding:8,borderWidth:1,borderColor:C.line,borderRadius:radii.md,backgroundColor:C.panel2,justifyContent:'center'},
  rareCard:{borderColor:C.selectionLine,backgroundColor:C.selection},
  eliteCard:{borderColor:elite,backgroundColor:eliteSurface},
  prestigeCard:{borderColor:C.lineStrong,backgroundColor:C.warningSurface},
@@ -44,7 +47,7 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C),elite
  fallback:{fontSize:16,color:C.accent,fontWeight:'900'},
  eyebrow:{fontSize:7.5,color:C.muted,fontWeight:'900',letterSpacing:.65},
  value:{...typography.bodyStrong,color:C.text,marginTop:1},
- metaRow:{flexDirection:'row',alignItems:'center',gap:4,marginTop:1},
+ metaRow:{flexWrap:'wrap',flexDirection:'row',alignItems:'center',gap:4,marginTop:1},
  meta:{flex:1,minWidth:0,fontSize:8.5,lineHeight:11,color:C.info},
  rarity:{paddingHorizontal:4,paddingVertical:1,borderRadius:99,borderWidth:1,borderColor:C.line,backgroundColor:C.panel},
  rarityRare:{borderColor:C.selectionLine,backgroundColor:C.selection},

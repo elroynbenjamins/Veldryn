@@ -1,0 +1,24 @@
+import {normalizePlayerBadges,playerBadgeIds,type PlayerBadgeIdentity} from '../src/core/player-badges';
+function ok(value:unknown,message:string){if(!value)throw new Error(message);}
+const now=1000;
+const snapshot=(staff:PlayerBadgeIdentity['staff'],supporter:boolean):PlayerBadgeIdentity=>({staff,supporter,validUntilMs:2000});
+ok(playerBadgeIds(snapshot('admin',true),now).join(',')==='admin,supporter','staff and Supporter coexist');
+ok(playerBadgeIds(snapshot('moderator',false),now).join(',')==='moderator','hidden Supporter leaves staff visible');
+ok(playerBadgeIds(snapshot(null,true),now).join(',')==='supporter','Supporter is not a staff role');
+ok(playerBadgeIds(snapshot(null,false),now).length===0,'ordinary player has no badge');
+ok(playerBadgeIds(snapshot('admin',true),2000).length===0,'expired cache fails closed');
+ok(playerBadgeIds(normalizePlayerBadges({staff:'owner',supporter:'true',validUntilMs:2000}),now).length===0,'unknown roles and loose booleans are rejected');
+for(const value of [null,[],{staff:'admin'},{staff:'admin',validUntilMs:NaN},{validUntilMs:Infinity},{validUntilMs:'2000'}])ok(!normalizePlayerBadges(value),'malformed snapshots are rejected');
+const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
+const read=(path:string)=>fs.readFileSync(path,'utf8');
+const sql=read('../../backend/supabase/migrations/20260927131912_player_identity_badges.sql');
+ok(!sql.includes('raw_user_meta_data')&&!sql.includes('user_metadata'),'server badges never trust user-editable metadata');
+ok(sql.includes("role='owner'")&&sql.includes('private.commerce_entitlements_v1(p_account_id)'),'roles and paid access are server-derived');
+ok(sql.includes('v_until:=least(v_until,v_exp)')&&sql.includes('interval \'120 seconds\''),'cache lifetime is bounded by both TTL and subscription expiry');
+ok(sql.includes('account_id=v_uid')&&sql.includes('values(v_uid,p_show_supporter)'),'preference ownership comes from auth.uid');
+for(const path of ['OnlineWorldChat','OnlinePartyChat','GuildChat','ChatDock','PublicProfileScene','CompactPlayerIdentity','OnlineGuildManagement','PartyHubPanel','RecruitmentListing'])ok(read(`src/components/${path}.tsx`).includes('badges='),'badge projection reaches '+path);
+for(const path of ['FriendsScreen','RankingsScreen'])ok(read(`src/screens/${path}.tsx`).includes('badges='),'badge projection reaches '+path);
+ok(read('src/components/ProfileEditor.tsx').includes('<PlayerBadgeSettings/>'),'profile exposes the visibility preference');
+ok(read('src/online/social.ts').includes("rpc('guild_identities_v2'"),'chat and social identities load server badges');
+for(const id of ['supporter','admin','moderator'])ok(read('src/components/PlayerBadges.tsx').includes(`player-badges-v1/${id}.png`),'generated asset wired for '+id);
+console.log('PASS: player badge validation, expiration, identity wiring and server authority contracts');

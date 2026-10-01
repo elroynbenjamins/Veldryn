@@ -1,3 +1,4 @@
+import {useSocialText} from '../i18n/social';
 import {useCallback,useEffect,useMemo,useState} from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {Panel} from './Panel';
@@ -9,39 +10,42 @@ import {radii,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 
 export function GuildQuestPanel(){
+ const st=useSocialText();
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]),[quests,setQuests]=useState<OnlineGuildQuest[]>([]),[loading,setLoading]=useState(true),[error,setError]=useState('');
- const refresh=useCallback(async()=>{setLoading(true);setError('');try{setQuests(await loadOnlineGuildQuests())}catch(e){setError(e instanceof Error?e.message:'Could not load Guild Quests.')}finally{setLoading(false)}},[]);
+ const refresh=useCallback(async()=>{setLoading(true);setError('');try{setQuests(await loadOnlineGuildQuests())}catch(e){setError(e instanceof Error?e.message:st("Could not load Guild Quests."))}finally{setLoading(false)}},[]);
  useEffect(()=>{void refresh()},[refresh]);
- if(loading)return <Panel><Text style={s.kicker}>GUILD QUESTS</Text><Text style={s.copy}>Loading this week’s objectives…</Text></Panel>;
- if(error)return <Panel><Text style={s.kicker}>GUILD QUESTS</Text><Text style={s.copy}>{error}</Text><Pressable accessibilityRole="button" onPress={()=>void refresh()} style={s.retry}><Text style={s.retryText}>TRY AGAIN</Text></Pressable></Panel>;
+ if(loading)return <Panel><Text style={s.kicker}>{st("GUILD QUESTS")}</Text><Text style={s.copy}>{st("Loading this week’s objectives…")}</Text></Panel>;
+ if(error)return <Panel><Text style={s.kicker}>{st("GUILD QUESTS")}</Text><Text style={s.copy}>{error}</Text><Pressable accessibilityRole="button" onPress={()=>void refresh()} style={s.retry}><Text style={s.retryText}>{st("TRY AGAIN")}</Text></Pressable></Panel>;
  if(!quests.length)return null;
  const transition=quests.find(q=>q.newlyCompleted&&q.activityBeforePercent!=null&&q.activityAfterPercent!=null),nextQuest=[...quests].filter(q=>!q.completed).sort((a,b)=>(b.progress/b.target)-(a.progress/a.target))[0],completed=quests.filter(q=>q.completed).length,totalActivity=quests.filter(q=>q.completed).reduce((sum,q)=>sum+q.activityReward,0),ends=new Date(quests[0].weekEndsAt),remaining=Math.max(0,Math.ceil((ends.getTime()-Date.now())/86400000));
  return <Panel>
-  <View style={s.head}><View style={s.flex}><Text style={s.kicker}>WEEKLY GUILD QUESTS</Text><Text style={s.title}>{completed}/{quests.length} completed</Text></View><StatusPill label={remaining<=1?'ENDS SOON':remaining+'D LEFT'} tone={remaining<=1?'warning':'info'}/></View>
+  <View style={s.head}><View style={s.flex}><Text style={s.kicker}>{st("WEEKLY GUILD QUESTS")}</Text><Text style={s.title}>{completed}/{quests.length} completed</Text></View><StatusPill label={remaining<=1?st("ENDS SOON"):remaining+'D LEFT'} tone={remaining<=1?'warning':'info'}/></View>
   <Text style={s.copy}>Five quests are fixed for the week: two approachable objectives, two varied objectives and one featured challenge. Completed quests remain visible until the weekly reset; there are no rerolls.</Text>
   {transition?<ActivityTransition quest={transition}/>:null}
-  <View style={s.summary}><View><Text style={s.summaryValue}>{completed}/5</Text><Text style={s.summaryLabel}>QUESTS COMPLETE</Text></View><View><Text style={s.summaryValue}>+{totalActivity}</Text><Text style={s.summaryLabel}>ACTIVITY EARNED</Text></View><View><Text style={s.summaryValue}>{completed===5?'DONE':5-completed}</Text><Text style={s.summaryLabel}>{completed===5?'BOARD CLEARED':'REMAINING'}</Text></View></View>
-  {nextQuest?<View style={s.nextUp}><Text style={s.nextUpLabel}>CLOSEST TO COMPLETION</Text><Text style={s.nextUpText}>{nextQuest.title} · {Math.floor(nextQuest.progress/nextQuest.target*100)}%</Text></View>:null}
+  <View style={s.summary}><View><Text style={s.summaryValue}>{completed}/5</Text><Text style={s.summaryLabel}>{st("QUESTS COMPLETE")}</Text></View><View><Text style={s.summaryValue}>+{totalActivity}</Text><Text style={s.summaryLabel}>{st("ACTIVITY EARNED")}</Text></View><View><Text style={s.summaryValue}>{completed===5?st("DONE"):5-completed}</Text><Text style={s.summaryLabel}>{completed===5?st("BOARD CLEARED"):st("REMAINING")}</Text></View></View>
+  {nextQuest?<View style={s.nextUp}><Text style={s.nextUpLabel}>{st("CLOSEST TO COMPLETION")}</Text><Text style={s.nextUpText}>{nextQuest.title} · {Math.floor(nextQuest.progress/nextQuest.target*100)}%</Text></View>:null}
   <View style={s.stack}>{quests.map(q=><Quest key={`${q.boardSlot}:${q.questKey}`} quest={q}/>)}</View>
  </Panel>;
 }
 function ActivityTransition({quest:q}:{quest:OnlineGuildQuest}){
+ const st=useSocialText();
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]),before=q.activityBeforePercent??0,after=q.activityAfterPercent??before;
  const crossed=GUILD_ACTIVITY_MILESTONE_DEFS.filter(m=>before<m.threshold&&after>=m.threshold);
  const reserve=after>100?` · Reserve ${after-100}/10%`:'';
- return <View accessibilityRole="alert" style={s.transition}><Text style={s.transitionTitle}>Guild Activity increased</Text><Text style={s.transitionValue}>{before}% → {after}%{reserve}</Text><Text style={s.transitionCopy}>{q.title} completed · +{q.activityReward} Activity units.</Text>{crossed.map(m=><Text key={m.threshold} style={s.transitionUnlock}>✓ {m.name} active · {m.description}</Text>)}</View>;
+ return <View accessibilityRole="alert" style={s.transition}><Text style={s.transitionTitle}>{st("Guild Activity increased")}</Text><Text style={s.transitionValue}>{before}% → {after}%{reserve}</Text><Text style={s.transitionCopy}>{q.title} completed · +{q.activityReward} Activity units.</Text>{crossed.map(m=><Text key={m.threshold} style={s.transitionUnlock}>✓ {m.name} active · {m.description}</Text>)}</View>;
 }
 function Quest({quest:q}:{quest:OnlineGuildQuest}){
+ const st=useSocialText();
  const C=useGameTheme(),s=useMemo(()=>styles(C),[C]),pct=Math.min(100,Math.floor(q.progress/q.target*100)),rarity=rarityMeta(q.rarity);
  const duration=q.estimatedMinutes>=60?`${q.estimatedMinutes/60}h`:`${q.estimatedMinutes}m`;
  return <View style={[s.quest,{borderColor:rarity.color,borderWidth:rarity.borderWidth,backgroundColor:q.completed?C.goodSurface:rarity.surface}]}>
-  <View style={s.head}><View style={s.flex}><Text style={[s.category,{color:rarity.color}]}>{q.featured?'FEATURED · ':''}{rarity.label.toUpperCase()} · {q.category.toUpperCase()} · ~{duration}</Text><Text style={s.questTitle}>{q.title}</Text></View><StatusPill label={q.completed?'COMPLETE':pct+'%'} tone={q.completed?'good':'muted'}/></View>
+  <View style={s.head}><View style={s.flex}><Text style={[s.category,{color:rarity.color}]}>{q.featured?'FEATURED · ':''}{rarity.label.toUpperCase()} · {q.category.toUpperCase()} · ~{duration}</Text><Text style={s.questTitle}>{q.title}</Text></View><StatusPill label={q.completed?st("COMPLETE"):pct+'%'} tone={q.completed?'good':'muted'}/></View>
   <Text style={s.questCopy}>{q.description}</Text>
-  {q.personalProgress.length?<View style={s.personal}><Text style={s.personalLabel}>YOUR CONTRIBUTION</Text>{q.personalProgress.map(o=><Text key={o.key} style={s.personalText}>{o.key.replace(/_/g,' ').replace(/\b\w/g,m=>m.toUpperCase())}: {Math.min(o.progress,o.target).toLocaleString()} / {o.target.toLocaleString()}</Text>)}</View>:null}
+  {q.personalProgress.length?<View style={s.personal}><Text style={s.personalLabel}>{st("YOUR CONTRIBUTION")}</Text>{q.personalProgress.map(o=><Text key={o.key} style={s.personalText}>{o.key.replace(/_/g,' ').replace(/\b\w/g,m=>m.toUpperCase())}: {Math.min(o.progress,o.target).toLocaleString()} / {o.target.toLocaleString()}</Text>)}</View>:null}
   {q.objectiveProgress.length?<View style={s.objectives}>{q.objectiveProgress.map(o=><Text key={o.key} style={s.objective}>{o.key.replace(/_/g,' ').replace(/\b\w/g,m=>m.toUpperCase())}: {Math.min(o.progress,o.target).toLocaleString()} / {o.target.toLocaleString()}</Text>)}</View>:null}
   <View accessibilityRole="progressbar" accessibilityValue={{min:0,max:q.target,now:Math.min(q.target,q.progress)}} style={s.track}><View style={[s.fill,{width:(pct+'%') as any}]}/></View>
   <View style={s.meta}><Text style={s.metaText}>{Math.min(q.progress,q.target).toLocaleString()} / {q.target.toLocaleString()}</Text><Text style={s.reward}>+{q.activityReward} Activity units</Text></View>
-  {q.completed?<View style={s.completeBox}><Text style={s.completeTitle}>✓ Guild Quest complete</Text><Text style={s.completeCopy}>+{q.activityReward} Guild Activity secured for the Guild.</Text></View>:null}
+  {q.completed?<View style={s.completeBox}><Text style={s.completeTitle}>{st("✓ Guild Quest complete")}</Text><Text style={s.completeCopy}>+{q.activityReward} Guild Activity secured for the Guild.</Text></View>:null}
   <Text style={s.foot}>{q.contributorCount} contributor{q.contributorCount===1?'':'s'} this week · personal daily credit is capped</Text>
  </View>;
 }

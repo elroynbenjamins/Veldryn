@@ -1,19 +1,25 @@
+import {useGameLanguage} from '../i18n/GameLanguageProvider';
+import {progressionT,progressionText,type ProgressionKey} from '../i18n/progression';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { eventActivityLabel, type EventContributionBreakdownView } from '../core/party-social';
 
 export function EventContributionBreakdownPanel({ breakdown }: { breakdown: EventContributionBreakdownView }) {
+  const contextLanguage=useGameLanguage(),language=contextLanguage;
+  const t=(key:ProgressionKey,params?:Record<string,string|number>)=>progressionT(language,key,params);
+  const p=(text:string)=>progressionText(language,text);
+
   return (
     <View style={styles.panel}>
-      <Text style={styles.eyebrow}>YOUR CONTRIBUTION</Text>
-      <Text style={styles.total}>{breakdown.totalPoints.toLocaleString()} pts</Text>
+      <Text style={styles.eyebrow}>{t("YOUR CONTRIBUTION")}</Text>
+      <Text style={styles.total}>{breakdown.totalPoints.toLocaleString()}  {t("pts")}</Text>
       {breakdown.byActivity.map((row) => (
         <View key={row.activityKind} style={styles.row}>
           <Text style={styles.label}>{eventActivityLabel[row.activityKind]}</Text>
           <Text style={styles.points}>{row.points.toLocaleString()}</Text>
         </View>
       ))}
-      {breakdown.topDetails.length > 0 && <Text style={styles.subhead}>Top sources</Text>}
+      {breakdown.topDetails.length > 0 && <Text style={styles.subhead}>{t("Top sources")}</Text>}
       {breakdown.topDetails.slice(0, 8).map((row) => (
         <View key={`${row.activityKind}:${row.contentId}`} style={styles.detailRow}>
           <Text numberOfLines={1} style={styles.detailLabel}>{row.contentId.replace(/_/g, ' ')}</Text>

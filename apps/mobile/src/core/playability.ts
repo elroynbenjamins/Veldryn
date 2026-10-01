@@ -1,19 +1,20 @@
 import {RECIPES} from '../content/skills';
-import {ActiveActivity,CombatChallengeId,CombatTacticId,GameState,RewardBundle} from './types';
+import {ActiveActivity,CombatTacticId,GameState,RewardBundle} from './types';
 import type {HuntGoalId} from './hunt-goals';
 import {claimActivity,craftRecipe,startCombat,startGathering,startHerbalism,stopActivity} from './game';
 import {gatheringToolDef} from '../content/gathering-tools';
 
 /** Settle earned rewards before replacing or stopping an activity. Pure and atomic. */
-export function transitionActivity(state:GameState,nowMs:number,next?:{kind:'combat'|'gathering';id:string;challengeId?:CombatChallengeId;tacticId?:CombatTacticId;goalId?:HuntGoalId}){
+export function transitionActivity(state:GameState,nowMs:number,next?:{kind:'combat'|'gathering';id:string;tacticId?:CombatTacticId;goalId?:HuntGoalId}){
   const claimed=claimActivity(state,nowMs);
   const updated=next
-    ?next.kind==='combat'?startCombat(claimed.state,next.id,nowMs,next.challengeId,next.tacticId??'balanced',next.goalId??'open'):startGathering(claimed.state,next.id,nowMs)
-    :stopActivity(claimed.state);
+    ?next.kind==='combat'?startCombat(claimed.state,next.id,nowMs,next.tacticId??'balanced',next.goalId??'open'):startGathering(claimed.state,next.id,nowMs)
+    :stopActivity(claimed.state,nowMs);
   return {state:updated,reward:claimed.reward};
 }
 
 export function rewardHasProgress(reward:RewardBundle){
+  if(reward.goalReached||reward.queuePausedReason||reward.activityResults?.some(row=>row.goalReached))return true;
   return !!reward.classSkillXp?.some(s=>s.xp>0)||reward.kills>0||reward.xp>0||reward.gold>0||reward.items.some(item=>item.quantity>0)||!!reward.stoppedReason||!!reward.eventDrops?.some(drop=>drop.quantity>0)||!!reward.eventDiscoveries?.some(entry=>entry.quantity>0)||!!reward.petDrops?.length||!!reward.companionUnlocks?.length;
 }
 

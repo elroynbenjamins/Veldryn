@@ -1,0 +1,65 @@
+import {createCharacter,newGame,startGathering,startCombat,claimActivity,previewActivityReward,offlineCapSeconds} from '../src/core/game';
+import {settleStartupActivity} from '../src/core/playability';
+import {startProcessingBatch} from '../src/core/processing';
+import {startAlchemyBatch} from '../src/core/alchemy';
+import {ALCHEMY_RECIPES} from '../src/content/alchemy';
+import {timedEventRewards,eventEffectiveDropRate} from '../src/core/live-events';
+import {eventDropTotals,combineActivityRewards} from '../src/core/activity-rewards';
+import type {GameState,RewardBundle} from '../src/core/types';
+import {equal} from './assertions';
+const T=Date.UTC(2026,9,15,12),H=3600000,ID='EVT_ANNUAL_009_2026';
+const fresh=()=>createCharacter(newGame(T),'IRONWARDEN','Event settlement');
+const event=(state:GameState,start=T-H,end=T+4*H):GameState=>({...state,account:{...state.account,liveEvent:{eventId:ID,enabled:true,startsAtMs:start,endsAtMs:end}}});
+const gather=()=>startGathering(fresh(),'GREENWOOD_TREE',T);
+const total=(reward:RewardBundle|null)=>eventDropTotals(reward?.eventDrops).reduce((sum,row)=>sum+row.quantity,0);
+const units=(reward:RewardBundle|null)=>(reward?.eventDrops??[]).reduce((sum,row)=>sum+(row.units??0),0);
+const balance=(state:GameState)=>state.account.eventCurrencyBalanceById?.[ID]??0;
+function verify(state:GameState,at:number,expectedUnits:number,label:string){
+ const preview=previewActivityReward(state,at),settled=settleStartupActivity(state,at);
+ equal(units(settled.reward),expectedUnits,label+' eligible units');
+ equal(total(preview),total(settled.reward),label+' preview matches settlement');
+ equal(balance(settled.state)-balance(state),total(settled.reward),label+' popup matches wallet');
+ const repeat=settleStartupActivity(settled.state,at);
+ equal(total(repeat.reward),0,label+' repeated startup does not award again');
+ equal(balance(repeat.state),balance(settled.state),label+' repeated startup preserves wallet');
+ return settled;
+}
+verify(event(gather()),T+H,60,'fully active gathering');
+verify(event(gather(),T+H/2),T+H,30,'event begins during offline time');
+verify(event(gather(),T-H,T+H/2),T+H,30,'event ends during offline time');
+verify(event(gather(),T+H,T+2*H),T+3*H,60,'entire event while offline');
+verify(event(gather(),T+2*H,T+3*H),T+H,0,'event has not begun');
+verify(event(gather(),T-2*H,T-H),T+H,0,'event ended before activity');
+verify(event(gather(),T+9*H,T+11*H),T+12*H,0,'event starts after offline cap');
+const capped=event(gather(),T-H,T+48*H);verify(capped,T+24*H,offlineCapSeconds(capped)/60,'offline cap');
+let short=event(gather());short=claimActivity(short,T+30000).state;
+verify(short,T+60000,1,'two partial minutes preserve gathering credit');
+// Completed kills are filtered by their actual simulation time, not prorated over idle time after injury.
+const combat=event(startCombat(fresh(),'MOSS_RAT',T));combat.character!.currentHp=10;combat.character!.equippedFoodId=undefined;combat.inventory.stacks=[];const all=previewActivityReward(combat,T+H);
+equal(all.kills>0,true,'combat earns kills');
+equal(units(all),all.kills,'all eligible kills count');
+const late=event(combat,T+H/2,T+2*H),lateReward=previewActivityReward(late,T+H);
+equal(all.stoppedReason?.includes('injured'),true,'combat fixture stops from injury');
+equal(units(lateReward),0,'kills before the event do not earn currency even when return is later');
+verify(combat,T+H,all.kills,'combat wallet parity');
+// Crafting outputs have exact completion timestamps, including partially completed batches.
+let processing=fresh();processing.character!.gold=10000;processing.inventory.stacks=[{itemId:'COPPER_ORE',quantity:100}];
+processing=startProcessingBatch(processing,'SMELT_COPPER_INGOT',5,T);
+const cycle=processing.activity!.processing!.cycleSeconds*1000;
+verify(event(processing,T+cycle*1.5,T+cycle*4.5),T+cycle*6,3,'processing across event boundaries');
+const crafted=verify(event(processing),T+cycle*6,5,'processing wallet parity');
+equal(total(crafted.reward)>0,true,'processing is visible in popup');
+let brew=fresh();brew.character!.gold=10000;const recipe=ALCHEMY_RECIPES.find(row=>row.level===1)!;brew.inventory.stacks=recipe.inputs.map(row=>({...row,quantity:row.quantity*3}));
+brew=startAlchemyBatch(brew,recipe.id,3,T);const brewCycle=brew.activity!.brew!.cycleSeconds*1000;
+verify(event(brew,T+brewCycle*1.5,T+brewCycle*2.5),T+brewCycle*4,1,'alchemy across event boundaries');
+// Split at midnight for bonuses and meters, but show one currency total.
+const midnight=Date.UTC(2026,9,16),across=event(fresh(),T-H,T+48*H);
+const daily=timedEventRewards(across,'crafting',[midnight-1,midnight,midnight+1]);
+equal(daily.eventDrops?.length,2,'earning days stay separate');
+equal(daily.eventDrops?.[0].units,1,'previous day units');equal(daily.eventDrops?.[1].units,2,'next day units');
+for(const row of daily.eventDrops??[])equal(Math.abs(row.quantity-row.units!*eventEffectiveDropRate(across,ID,'crafting',row.recordedAtMs!))<1,true,'correct daily bonus');
+equal(eventDropTotals(daily.eventDrops).length,1,'popup merges daily currency rows');
+const empty:RewardBundle={xp:0,gold:0,items:[],kills:0,elapsedSeconds:1};
+const combined=combineActivityRewards([{activity:processing.activity!,goalReached:false,reward:crafted.reward!},{activity:processing.activity!,reward:{...empty,...daily}}] as NonNullable<RewardBundle['activityResults']>);
+equal(total(combined),total(crafted.reward)+total({...empty,...daily}),'queued activities preserve total');
+console.log('PASS offline event boundaries, caps, partial claims, combat, processing, alchemy, daily bonuses, popup totals and replay safety');

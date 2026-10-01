@@ -8,12 +8,12 @@ const scene=read('src/components/ZoneSceneArtwork.tsx');
 const world=read('src/screens/WorldScreen.tsx');
 
 const ids=['GREENFIELDS','SILVERBROOK','IRONWOOD','OLD_MINES','KINGS_ROAD','SUNSCAR','FROSTMARCH','ASHLANDS'];
-for(const id of ids)ok(scene.includes(id+':{column:'),'Missing scenic zone artwork mapping for '+id);
-ok(scene.includes("require('../../assets/world/world-zone-scenes-v1.jpg')"),'World scene atlas must be bundled');
-ok(scene.includes("const future=regionId==='VEILLANDS'"),'Future-zone scene fallback must recognize Veillands explicitly');
-ok(scene.includes('<RegionArtwork regionId={regionId} muted={muted}/>'),'Future zones must keep the world-map fallback');
-ok(scene.includes('futureWash')&&scene.includes('futureHaze'),'Future-zone previews must receive a distinct muted concept-art treatment');
-ok(scene.includes('Math.max(size.width/ZONE_SCENE_CELL_WIDTH,size.height/ZONE_SCENE_CELL_HEIGHT)'),'Scene atlas must crop responsively without stretching its cell');
+const upgraded=read('src/theme/upgraded-artwork.ts');
+for(const id of ids)ok(upgraded.includes(id+':require('),'Missing dedicated panorama for '+id);
+ok(scene.includes('regionScenes[regionId]'),'Scenes must use upgraded panoramas');
+ok(scene.includes(':<RegionArtwork regionId={regionId}/>'),'Unmapped future zones must keep map artwork fallback');
+ok(scene.includes('muted&&s.muted'),'Unavailable regions must retain muted treatment');
+ok(scene.includes('resizeMode="cover"'),'Panoramas must fill cards without stretching');
 ok(world.includes('<ZoneSceneArtwork regionId={current.id}/>'),'Current region card must use scenic artwork');
 ok(world.includes('<ZoneSceneArtwork regionId={zone.id} muted={!unlocked}/>'),'Travel destinations must use scenic artwork');
 ok(ids.every(id=>worldMap.includes("id:'"+id+"'")),'Scenic atlas must cover every current travel-region id');

@@ -14,12 +14,12 @@ ok(app.includes("import {OnlineGuildNoticeBoardPanel}"),'App must import the onl
 ok(app.includes('onlineBoard={<OnlineGuildNoticeBoardPanel/>}'),'App must wire the Notice Board into the Guild screen');
 
 ok(screen.includes("'Home'"),'Consolidated online Guild sections must include Home');
-ok(screen.includes('<GuildOnlineHome onNavigate={setOnlineSection} board={onlineBoard}/>'),'Guild Home must render the member Notice Board content');
+ok(screen.includes('<GuildOnlineHome onNavigate={setOnlineSection} board={onlineBoard} chatUnread={onlineChatUnread}/>'),'Guild Home must render the member Notice Board content');
 ok(screen.includes('{board}'),'Guild Home dashboard must keep the Notice Board visible before deeper Guild routes');
-ok(screen.includes('GUILD HOME'),'Guild Home must provide clear dashboard context around the Notice Board');
+ok(screen.includes('<GuildOnlineHome')&&screen.includes('CURRENT PRIORITY')&&screen.includes('{board}</View>'),"Guild Home must provide clear dashboard context around the Notice Board");
 
 ok(board.includes('MEMBER NOTICE BOARD'),'Notice Board must have clear Guild-member context');
-ok(board.includes('<StatusPill label="MEMBERS ONLY" tone="good"/>'),'Notice Board must clearly communicate its private audience');
+ok(board.includes('<StatusPill label={st("MEMBERS ONLY")} tone="good"/>'),'Notice Board must clearly communicate its private audience with localized text');
 ok(board.includes('maxLength={280}'),'Notice Board editor must enforce the 280-character UI cap');
 ok(board.includes('blank text clears the notice'),'Notice Board editor must explain clear behavior');
 ok(board.includes("board.canEdit&&!editing"),'Only server-authorized Guild roles may see edit controls');

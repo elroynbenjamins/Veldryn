@@ -1,3 +1,4 @@
+import {useSocialText} from '../i18n/social';
 import {useEffect,useMemo,useState} from 'react';
 import {Alert,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from './GameButton';
@@ -17,25 +18,26 @@ function updatedLabel(value?:string|null){
 }
 
 export function OnlineGuildNoticeBoardPanel(){
+ const st=useSocialText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [board,setBoard]=useState<GuildNoticeBoardState|null>(null),[draft,setDraft]=useState(''),[editing,setEditing]=useState(false),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false),[error,setError]=useState('');
- const load=async()=>{setLoading(true);setError('');try{const next=await guildNoticeBoardState();setBoard(next);setDraft(next?.body??'');setEditing(false)}catch(reason){setError(reason instanceof Error?reason.message:'Unable to load the Guild Notice Board.')}finally{setLoading(false)}};
+ const load=async()=>{setLoading(true);setError('');try{const next=await guildNoticeBoardState();setBoard(next);setDraft(next?.body??'');setEditing(false)}catch(reason){setError(reason instanceof Error?reason.message:st("Unable to load the Guild Notice Board."))}finally{setLoading(false)}};
  useEffect(()=>{void load()},[]);
  const clean=normalized(draft),dirty=clean!==(board?.body??'');
- const save=async()=>{if(!board?.canEdit||busy||!dirty)return;setBusy(true);setError('');try{const next=await updateGuildNoticeBoard(clean);setBoard(next);setDraft(next.body);setEditing(false)}catch(reason){const message=reason instanceof Error?reason.message:'Unable to update the Guild Notice Board.';setError(message);Alert.alert('Guild Notice Board',message)}finally{setBusy(false)}};
+ const save=async()=>{if(!board?.canEdit||busy||!dirty)return;setBusy(true);setError('');try{const next=await updateGuildNoticeBoard(clean);setBoard(next);setDraft(next.body);setEditing(false)}catch(reason){const message=reason instanceof Error?reason.message:st("Unable to update the Guild Notice Board.");setError(message);Alert.alert(st("Guild Notice Board"),message)}finally{setBusy(false)}};
 
- if(loading&&!board)return <LoadingState label="Loading Guild Notice Board…" detail="Syncing the private member bulletin." compact/>;
- if(!board)return <Panel><Text style={s.title}>Guild Notice Board</Text><Text style={s.copy}>{error||'Join a Guild to view its member-only Notice Board.'}</Text><GameButton compact title="Retry" tone="secondary" onPress={()=>void load()}/></Panel>;
+ if(loading&&!board)return <LoadingState label={st("Loading Guild Notice Board…")} detail={st("Syncing the private member bulletin.")} compact/>;
+ if(!board)return <Panel><Text style={s.title}>{st("Guild Notice Board")}</Text><Text style={s.copy}>{error||'Join a Guild to view its member-only Notice Board.'}</Text><GameButton compact title={st("Retry")} tone="secondary" onPress={()=>void load()}/></Panel>;
 
  return <Panel>
-  <View style={s.head}><View style={s.flex}><Text style={s.kicker}>MEMBER NOTICE BOARD</Text><Text style={s.title}>Guild Notice Board</Text><Text style={s.meta}>{updatedLabel(board.updatedAt)}</Text></View><StatusPill label="MEMBERS ONLY" tone="good"/></View>
-  {!editing?<View style={[s.notice,!board.body&&s.noticeEmpty]}>{board.body?<Text style={s.noticeText}>{board.body}</Text>:<><Text style={s.emptyTitle}>No notice posted</Text><Text style={s.copy}>Guild leadership can post a short member-only notice here.</Text></>}</View>:<View style={s.editor}>
-   <GameTextInput accessibilityLabel="Guild Notice Board text" multiline value={draft} onChangeText={value=>setDraft(value.slice(0,280))} maxLength={280} placeholder="Raid notes, weekly priorities, Guild reminders…" placeholderTextColor={C.muted} style={s.input}/>
-   <View style={s.editorMeta}><Text style={s.hint}>Visible to Guild members only · blank text clears the notice.</Text><Text style={[s.counter,draft.length>=260&&s.counterWarn]}>{draft.length}/280</Text></View>
-   <View style={s.actions}><View style={s.flex}><GameButton compact title={busy?'Saving…':dirty?'Save Notice':'No Changes'} disabled={busy||!dirty} onPress={()=>void save()}/></View><View style={s.cancel}><GameButton compact title="Cancel" tone="secondary" disabled={busy} onPress={()=>{setDraft(board.body);setEditing(false)}}/></View></View>
+  <View style={s.head}><View style={s.flex}><Text style={s.kicker}>{st("MEMBER NOTICE BOARD")}</Text><Text style={s.title}>{st("Guild Notice Board")}</Text><Text style={s.meta}>{updatedLabel(board.updatedAt)}</Text></View><StatusPill label={st("MEMBERS ONLY")} tone="good"/></View>
+  {!editing?<View style={[s.notice,!board.body&&s.noticeEmpty]}>{board.body?<Text style={s.noticeText}>{board.body}</Text>:<><Text style={s.emptyTitle}>{st("No notice posted")}</Text><Text style={s.copy}>{st("Guild leadership can post a short member-only notice here.")}</Text></>}</View>:<View style={s.editor}>
+   <GameTextInput accessibilityLabel={st("Guild Notice Board text")} multiline value={draft} onChangeText={value=>setDraft(value.slice(0,280))} maxLength={280} placeholder={st("Raid notes, weekly priorities, Guild reminders…")} placeholderTextColor={C.muted} style={s.input}/>
+   <View style={s.editorMeta}><Text style={s.hint}>{st("Visible to Guild members only · blank text clears the notice.")}</Text><Text style={[s.counter,draft.length>=260&&s.counterWarn]}>{draft.length}/280</Text></View>
+   <View style={s.actions}><View style={s.flex}><GameButton compact title={busy?st("Saving…"):dirty?st("Save Notice"):st("No Changes")} disabled={busy||!dirty} onPress={()=>void save()}/></View><View style={s.cancel}><GameButton compact title={st("Cancel")} tone="secondary" disabled={busy} onPress={()=>{setDraft(board.body);setEditing(false)}}/></View></View>
   </View>}
-  {board.canEdit&&!editing?<GameButton compact title={board.body?'Edit Notice':'Post Notice'} tone="secondary" onPress={()=>setEditing(true)}/>:null}
-  {!board.canEdit?<Text style={s.readOnly}>Read-only · Your Guild role cannot edit the Notice Board.</Text>:null}
+  {board.canEdit&&!editing?<GameButton compact title={board.body?st("Edit Notice"):st("Post Notice")} tone="secondary" onPress={()=>setEditing(true)}/>:null}
+  {!board.canEdit?<Text style={s.readOnly}>{st("Read-only · Your Guild role cannot edit the Notice Board.")}</Text>:null}
   {!!error&&<View accessibilityRole="alert" style={s.errorCard}><Text style={s.error}>{error}</Text></View>}
  </Panel>;
 }

@@ -34,7 +34,7 @@ const timerRange:Record<string,{base:number;min:number;max:number}>={
   T4:{base:660,min:480,max:900},T5:{base:900,min:720,max:1200},T6:{base:1200,min:900,max:1500},
   T7:{base:1500,min:1200,max:1800},T8:{base:1950,min:1500,max:2400},T9:{base:2250,min:1800,max:2700},
 };
-const tierGold:Record<string,number>={T1:120,T2:420,T3:900,T4:1800,T5:3500,T6:6000,T7:9000,T8:14000,T9:20000};
+const tierGold:Record<string,number>={T1:120,T2:420,T3:900,T4:1800,T5:3500,T6:10000,T7:18000,T8:30000,T9:50000};
 const tierXp:Record<string,number>={T1:120,T2:250,T3:450,T4:700,T5:1100,T6:1600,T7:2200,T8:2900,T9:3800};
 export const TIER_CHARACTER_LEVEL_FLOOR:Record<string,number>={T1:2,T2:6,T3:13,T4:19,T5:26,T6:36,T7:46,T8:58,T9:71};
 export const TIER_CRAFTING_LEVEL_FLOOR:Record<string,number>={T1:1,T2:3,T3:10,T4:16,T5:23,T6:33,T7:43,T8:55,T9:68};
@@ -72,9 +72,9 @@ function ingredients(tier:string,path:string,multiplier:number,skillId:'smithing
       case 'T4':return mergeInputs([{itemId:'TORN_OATHCLOTH',quantity:q(18,multiplier)},{itemId:'ECHO_TOUCHED_PELT',quantity:q(7,multiplier)},{itemId:accent??'OATHGLASS_SHARD',quantity:q(5,multiplier)}]);
       case 'T5':return [{itemId:'SUNSCALE',quantity:q(25,multiplier)},{itemId:'AMBERGLASS',quantity:q(8,multiplier)}];
       case 'T6':return [{itemId:'SUNSCALE',quantity:q(30,multiplier)},{itemId:'AMBERGLASS',quantity:q(10,multiplier)},{itemId:'ASTRAL_SCRIPT',quantity:q(1,multiplier)}];
-      case 'T7':return [{itemId:'FROSTBLOOM',quantity:q(32,multiplier)},{itemId:'RIMEGLASS',quantity:q(8,multiplier)}];
+      case 'T7':return [{itemId:'FROSTBLOOM',quantity:q(32,multiplier)},{itemId:'RIMEGLASS',quantity:Math.max(5,q(8,multiplier))}];
       case 'T8':return [{itemId:'FROSTBLOOM',quantity:q(36,multiplier)},{itemId:'RIMEGLASS',quantity:q(11,multiplier)},{itemId:'CHOIR_BLOOM',quantity:q(1,multiplier)}];
-      case 'T9':return [{itemId:'ASHEN_MYRRH',quantity:q(40,multiplier)},{itemId:'BLACKGLASS_CORE',quantity:q(10,multiplier)},{itemId:'CINDER_HEART',quantity:q(3,multiplier)}];
+      case 'T9':return [{itemId:'ASHEN_MYRRH',quantity:Math.max(23,q(40,multiplier))},{itemId:'BLACKGLASS_CORE',quantity:q(10,multiplier)},{itemId:'CINDER_HEART',quantity:Math.max(3,q(3,multiplier))}];
       default:return [];
     }
   }
@@ -86,9 +86,9 @@ function ingredients(tier:string,path:string,multiplier:number,skillId:'smithing
     case 'T4':return [{itemId:'OATHSTONE_INGOT',quantity:q(18,multiplier)},{itemId:'OATHGLASS_SHARD',quantity:q(7,multiplier)},{itemId:pathItem??'TORN_OATHCLOTH',quantity:q(5,multiplier)}];
     case 'T5':return [{itemId:'SUNSTONE_INGOT',quantity:q(11,multiplier)},{itemId:'AMBERGLASS',quantity:q(7,multiplier)}];
     case 'T6':return [{itemId:'SUNSTONE_INGOT',quantity:q(15,multiplier)},{itemId:'AMBERGLASS',quantity:q(10,multiplier)},{itemId:'ASTRAL_SCRIPT',quantity:q(1,multiplier)}];
-    case 'T7':return [{itemId:'FROSTIRON_INGOT',quantity:q(16,multiplier)},{itemId:'RIMEGLASS',quantity:q(8,multiplier)}];
+    case 'T7':return [{itemId:'FROSTIRON_INGOT',quantity:q(16,multiplier)},{itemId:'RIMEGLASS',quantity:Math.max(5,q(8,multiplier))}];
     case 'T8':return [{itemId:'FROSTIRON_INGOT',quantity:q(18,multiplier)},{itemId:'RIMEGLASS',quantity:q(11,multiplier)},{itemId:'CHOIR_BLOOM',quantity:q(1,multiplier)}];
-    case 'T9':return [{itemId:'BLACKGLASS_INGOT',quantity:q(20,multiplier)},{itemId:'BLACKGLASS_CORE',quantity:q(10,multiplier)},{itemId:'CINDER_HEART',quantity:q(3,multiplier)}];
+    case 'T9':return [{itemId:'BLACKGLASS_INGOT',quantity:q(20,multiplier)},{itemId:'BLACKGLASS_CORE',quantity:q(10,multiplier)},{itemId:'CINDER_HEART',quantity:Math.max(3,q(3,multiplier))}];
     default:return [];
   }
 }

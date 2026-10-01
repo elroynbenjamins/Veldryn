@@ -89,7 +89,7 @@ export function dashboardRecommendation(state:GameState):DashboardRecommendation
   if(carriedFood<=2){
     const bankedFood=state.bank.stacks.filter(stack=>itemDef(stack.itemId).type==='food').reduce((sum,stack)=>sum+stack.quantity,0);
     if(bankedFood>0)return {title:'Restock combat sustain',detail:`Only ${carriedFood} carried food portion${carriedFood===1?' remains':'s remain'}. Withdraw cooked food before a long hunt; auto-eat only uses Inventory.`,button:'Withdraw food',destination:'Inventory',priority:'upgrade'};
-    return {title:'Restock combat sustain',detail:'Catch local fish, gather cooking fuel, and cook more food before a long hunt. Healing companions help, but long combat still consumes provisions.',button:'Open Fishing & Cooking',destination:'Skills',priority:'upgrade'};
+    return {title:'Restock combat sustain',detail:'Catch local fish, gather cooking fuel, and cook more food before a long hunt. Healing companions help, but tougher hunts still need provisions.',button:'Open Fishing & Cooking',destination:'Skills',priority:'upgrade'};
   }
   const active=state.quests.find(q=>q.status==='active'),def=QUESTS.find(q=>q.id===active?.questId);
   if(def?.kind==='kills'&&def.targetId){const monster=MONSTERS.find(m=>m.id===def.targetId);if(monster&&state.unlockedMonsterIds.includes(monster.id)){const zoneId=WORLD_ZONES.find(zone=>zone.name===monster.zone)?.id;return {title:`Continue: ${def.name}`,detail:`Hunt ${monster.name} in ${monster.zone} · ${Math.max(0,def.required-(active?.progress??0))} remaining.`,button:'Open hunting ground',destination:'World',zoneId,priority:'progress'}}}

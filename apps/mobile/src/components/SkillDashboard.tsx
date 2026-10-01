@@ -1,3 +1,4 @@
+import {useGameplayText} from '../i18n/gameplay';
 import {useMemo} from 'react';
 import {Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import type {GameState,SkillId} from '../core/types';
@@ -12,18 +13,19 @@ const skillMeta:Partial<Record<SkillId,{label:string;category:string}>>={
  fishing:{label:'Fishing',category:'Gathering'},smithing:{label:'Smithing',category:'Crafting'},cooking:{label:'Cooking',category:'Crafting'},
 };
 export function SkillDashboard({state,onCombat,onSkill}:{state:GameState;onCombat:()=>void;onSkill:(skillId:SkillId)=>void}){
+ const {gt,gl,language}=useGameplayText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const character=state.character!,combat=characterProgressWithinLevel(character.xp,character.level),{width,fontScale}=useWindowDimensions();
  const cardWidth=width<360&&fontScale>1.25?'100%':width>=430&&fontScale<=1.15?'31%':'48%';
  const totalLevel=character.level+state.skills.reduce((sum,skill)=>sum+skill.level,0),shownSkills=[...state.skills].sort((a,b)=>b.level-a.level||a.skillId.localeCompare(b.skillId)).slice(0,5);
- const card=(id:ActivityIconId,label:string,category:string,level:number,current:number,need:number,onPress:()=>void)=><Pressable key={id} accessibilityRole="button" accessibilityLabel={`${label}, level ${level}`} accessibilityHint={`Open ${label}`} onPress={onPress} style={({pressed})=>[s.card,{width:cardWidth},pressed&&s.pressed]}>
+ const card=(id:ActivityIconId,label:string,category:string,level:number,current:number,need:number,onPress:()=>void)=><Pressable key={id} accessibilityRole="button" accessibilityLabel={gt('{skill}, level {level}',{skill:gl(label),level})} accessibilityHint={gt('Open {name}',{name:gl(label)})} onPress={onPress} style={({pressed})=>[s.card,{width:cardWidth},pressed&&s.pressed]}>
   <View style={s.cardTop}><ActivityArtwork id={id}/><Text style={s.level}>{level}</Text></View>
-  <Text style={s.label}>{label}</Text><Text style={s.category}>{category}</Text>
+  <Text style={s.label}>{gl(label)}</Text><Text style={s.category}>{gl(category)}</Text>
   <StatBar label="XP" current={current} max={need} reduceMotion={state.settings.reduceMotion}/>
  </Pressable>;
- return <View style={s.root}><View style={s.heading}><Text accessibilityRole="header" style={s.title}>Skill snapshot</Text><Text style={s.total}>Top skills · total {totalLevel}</Text></View><View style={s.grid}>
-  {card('combat','Combat','Fighting',character.level,combat.current,combat.need,onCombat)}
-  {shownSkills.map(skill=>{const meta=skillMeta[skill.skillId]??{label:skill.skillId,category:'Progression'},p=progressWithinLevel(skill.xp,skill.level);return card(skill.skillId,meta.label,meta.category,skill.level,p.current,p.need,()=>onSkill(skill.skillId))})}
+ return <View style={s.root}><View style={s.heading}><Text accessibilityRole="header" style={s.title}>{gt("Skill snapshot")}</Text><Text style={s.total}>{gt("Top skills · total")} {totalLevel}</Text></View><View style={s.grid}>
+  {card('combat',gt("Combat"),gt("Fighting"),character.level,combat.current,combat.need,onCombat)}
+  {shownSkills.map(skill=>{const meta=skillMeta[skill.skillId]??{label:skill.skillId,category:gt("Progression")},p=progressWithinLevel(skill.xp,skill.level);return card(skill.skillId,meta.label,meta.category,skill.level,p.current,p.need,()=>onSkill(skill.skillId))})}
  </View></View>;
 }
 function makeStyles(C:ThemeColors){return StyleSheet.create({root:{gap:8},heading:{flexDirection:'row',flexWrap:'wrap',alignItems:'baseline',justifyContent:'space-between',gap:8},title:{...typography.title,color:C.text},total:{...typography.caption,color:C.muted},grid:{flexDirection:'row',flexWrap:'wrap',justifyContent:'space-between',gap:8},card:{minHeight:116,padding:10,gap:4,backgroundColor:C.panel,borderWidth:1,borderColor:C.line,borderRadius:radii.md},cardTop:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:8},pressed:{opacity:.76},label:{...typography.bodyStrong,color:C.text},category:{...typography.caption,color:C.muted},level:{...typography.title,color:C.accent}});}

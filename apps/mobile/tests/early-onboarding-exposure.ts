@@ -9,6 +9,7 @@ function expectLocked(state:any,command:any,message:string){let actual='';try{ex
 
 assert.deepEqual([...EARLY_FEATURE_DESTINATION_ORDER],['Progression','DailySupplies','Events','AccountBonuses','Friends','Companions','Social','MasteryHall','Guild','Rankings']);
 let state=createCharacter(newGame(0),'IRONWARDEN','Onboarding Audit');
+assert.equal(earlyFeatureLockReason(state,'Events'),'','festival calendar should be visible before live event gameplay unlocks');
 for(const id of Object.keys(EARLY_FEATURE_UNLOCKS) as Array<keyof typeof EARLY_FEATURE_UNLOCKS>)assert.equal(earlyFeatureUnlocked(state,id),false,id+' should begin locked');
 const fresh=homeSessionSummary(state,1);
 assert.equal(fresh.dailyReady,false);

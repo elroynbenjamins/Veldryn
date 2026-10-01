@@ -4,7 +4,7 @@ import {DUNGEON_COMBAT_AVATARS,DUNGEON_COMBAT_FORMATION,DUNGEON_COMPANION_PRESEN
 function assert(condition:unknown,message:string):asserts condition{if(!condition)throw new Error(message);}
 const avatars=Object.values(DUNGEON_COMBAT_AVATARS);
 assert(avatars.length===9,'all nine classes need canonical dungeon combat avatars');
-assert(new Set(avatars.map(avatar=>avatar.canonicalSkinId)).size===9,'canonical combat skin IDs must be unique');
+assert(new Set(avatars.map(avatar=>avatar.canonicalIconId)).size===9,'canonical combat icon IDs must be unique');
 assert(avatars.every(avatar=>avatar.canvas.width===512&&avatar.canvas.height===640),'combat avatars must share a 512x640 canvas');
 assert(avatars.every(avatar=>avatar.cosmeticPolicy==='class_locked'),'dungeon combat must use class-locked canonical visuals');
 assert(avatars.every(avatar=>avatar.facing==='three_quarter_right'),'combat avatars must share one facing convention');

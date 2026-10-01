@@ -1,3 +1,4 @@
+import {useSocialText} from '../../i18n/social';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import type {PlaybackCombatStatus} from '../../core/dungeon-combat-playback';
 import {combatCompanionDef} from '../../content/combat-companions';
@@ -45,26 +46,27 @@ function remaining(value:number){
 }
 
 export function CombatantInspectPanel({target,onClose}:{target:CombatantInspectTarget;onClose:()=>void}){
+ const st=useSocialText();
  const C=useGameTheme(),s=makeStyles(C),avatar=target.classId?dungeonCombatAvatar(target.classId):undefined,companion=target.companionId?combatCompanionDef(target.companionId):undefined;
  const subtitle=target.kind==='enemy'?(target.boss?'Final Boss':'Dungeon Enemy'):[roleLabel(target.role),avatar?.label??target.classId].filter(Boolean).join(' · ');
  const hpKnown=target.currentHp!==undefined&&target.maximumHp!==undefined&&target.maximumHp>0;
  return <View style={s.panel} accessibilityLabel={`Combat details for ${target.name}`}>
   <View style={s.header}>
-   <View style={s.headerCopy}><Text style={s.kicker}>COMBAT INSPECT</Text><Text numberOfLines={1} style={s.name}>{target.name}</Text>{subtitle?<Text numberOfLines={1} style={s.subtitle}>{subtitle}</Text>:null}</View>
-   <Pressable accessibilityRole="button" accessibilityLabel="Close combat details" onPress={onClose} style={({pressed})=>[s.close,pressed&&s.pressed]}><Text style={s.closeText}>×</Text></Pressable>
+   <View style={s.headerCopy}><Text style={s.kicker}>{st("COMBAT INSPECT")}</Text><Text numberOfLines={1} style={s.name}>{target.name}</Text>{subtitle?<Text numberOfLines={1} style={s.subtitle}>{subtitle}</Text>:null}</View>
+   <Pressable accessibilityRole="button" accessibilityLabel={st("Close combat details")} onPress={onClose} style={({pressed})=>[s.close,pressed&&s.pressed]}><Text style={s.closeText}>×</Text></Pressable>
   </View>
   <View style={s.summaryRow}>
-   {hpKnown?<View style={s.summaryItem}><Text style={s.summaryLabel}>HP</Text><Text style={s.summaryValue}>{Math.max(0,Math.round(target.currentHp!))}/{Math.max(1,Math.round(target.maximumHp!))}</Text></View>:null}
-   {(target.shield??0)>0?<View style={s.summaryItem}><Text style={s.summaryLabel}>BARRIER</Text><Text style={[s.summaryValue,{color:C.info}]}>+{Math.round(target.shield!)}</Text></View>:null}
-   {target.phaseLabel?<View style={s.summaryItemWide}><Text style={s.summaryLabel}>PHASE</Text><Text numberOfLines={1} style={s.summaryValue}>{target.phaseLabel}</Text></View>:null}
-   {companion?<View style={s.summaryItemWide}><Text style={s.summaryLabel}>COMPANION</Text><Text numberOfLines={1} style={s.summaryValue}>{companion.name}</Text></View>:null}
+   {hpKnown?<View style={s.summaryItem}><Text style={s.summaryLabel}>{st("HP")}</Text><Text style={s.summaryValue}>{Math.max(0,Math.round(target.currentHp!))}/{Math.max(1,Math.round(target.maximumHp!))}</Text></View>:null}
+   {(target.shield??0)>0?<View style={s.summaryItem}><Text style={s.summaryLabel}>{st("BARRIER")}</Text><Text style={[s.summaryValue,{color:C.info}]}>+{Math.round(target.shield!)}</Text></View>:null}
+   {target.phaseLabel?<View style={s.summaryItemWide}><Text style={s.summaryLabel}>{st("PHASE")}</Text><Text numberOfLines={1} style={s.summaryValue}>{target.phaseLabel}</Text></View>:null}
+   {companion?<View style={s.summaryItemWide}><Text style={s.summaryLabel}>{st("COMPANION")}</Text><Text numberOfLines={1} style={s.summaryValue}>{companion.name}</Text></View>:null}
   </View>
-  {target.cast?<View style={[s.castBox,target.cast.interruptible&&s.castInterruptible]}><View style={s.castHead}><Text style={[s.castLabel,target.cast.interruptible&&{color:C.info}]}>{target.cast.interruptible?'INTERRUPTIBLE CAST':'ACTIVE CAST'}</Text><Text style={s.castTime}>{(Math.max(0,target.cast.durationMs)/1000).toFixed(1)}s</Text></View><Text style={s.castName}>{target.cast.label}</Text>{target.cast.targetLabel?<Text style={s.castTarget}>Focus → {target.cast.targetLabel}</Text>:null}</View>:null}
-  <View style={s.effectsHead}><Text style={s.effectsTitle}>ACTIVE EFFECTS</Text><Text style={s.effectsCount}>{target.statuses.length}</Text></View>
+  {target.cast?<View style={[s.castBox,target.cast.interruptible&&s.castInterruptible]}><View style={s.castHead}><Text style={[s.castLabel,target.cast.interruptible&&{color:C.info}]}>{target.cast.interruptible?st("INTERRUPTIBLE CAST"):st("ACTIVE CAST")}</Text><Text style={s.castTime}>{(Math.max(0,target.cast.durationMs)/1000).toFixed(1)}s</Text></View><Text style={s.castName}>{target.cast.label}</Text>{target.cast.targetLabel?<Text style={s.castTarget}>Focus → {target.cast.targetLabel}</Text>:null}</View>:null}
+  <View style={s.effectsHead}><Text style={s.effectsTitle}>{st("ACTIVE EFFECTS")}</Text><Text style={s.effectsCount}>{target.statuses.length}</Text></View>
   {target.statuses.length?<View style={s.effects}>{target.statuses.slice(0,8).map((status,index)=>{const harmful=status.kind==='dot'||status.kind==='debuff',gem=status.source==='gem';return <View key={`${status.kind}:${status.tag}:${status.abilityId??status.label}:${index}`} style={s.effectRow}>
     <View style={[s.effectDot,{backgroundColor:harmful?C.bad:gem?C.special:C.good}]}/>
     <View style={s.effectCopy}><Text numberOfLines={1} style={s.effectName}>{status.label}{status.stacks>1?` ×${status.stacks}`:''}</Text><Text numberOfLines={1} style={s.effectMeta}>{effectKind(status)} · {remaining(status.remainingMs)}</Text></View>
-   </View>})}{target.statuses.length>8?<Text style={s.moreEffects}>+{target.statuses.length-8} more active effects</Text>:null}</View>:<Text style={s.empty}>No active timed effects at this replay moment.</Text>}
+   </View>})}{target.statuses.length>8?<Text style={s.moreEffects}>+{target.statuses.length-8} more active effects</Text>:null}</View>:<Text style={s.empty}>{st("No active timed effects at this replay moment.")}</Text>}
  </View>;
 }
 

@@ -1,3 +1,4 @@
+import {useSocialText} from '../i18n/social';
 import {ChatChannelIcon} from './ChatChannelIcon';
 import {useEffect,useMemo,useState} from 'react';
 import {KeyboardAvoidingView,Modal,Platform,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
@@ -19,6 +20,7 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 type Channel='world'|'guild'|'party'|'system';
 
 export function ChatOverlay({state,visible,onOpen,onClose,onEmoteTrayChange,guildUnread=0,guildMentions=0,guildFirstUnreadMessageId,partyUnread=0,partyMentions=0,partyFirstUnreadMessageId,onChatRead}:{state:GameState;visible:boolean;onOpen:()=>void;onClose:()=>void;onEmoteTrayChange?:(ids:string[])=>void|Promise<void>;guildUnread?:number;guildMentions?:number;guildFirstUnreadMessageId?:string;partyUnread?:number;partyMentions?:number;partyFirstUnreadMessageId?:string;onChatRead?:()=>void}){
+ const st=useSocialText();
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),insets=useSafeAreaInsets(),{width,fontScale}=useWindowDimensions(),expandWindow=width<360||fontScale>=1.25,bottomOffset=72+(Platform.OS==='android'?Math.max(insets.bottom,8):Math.max(insets.bottom,4));
   const [channel,setChannel]=useState<Channel>('world');
   const [worldChannel,setWorldChannel]=useState((state.settings.defaultWorldChat??1)-1);
@@ -40,19 +42,19 @@ export function ChatOverlay({state,visible,onOpen,onClose,onEmoteTrayChange,guil
         <KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':'height'} keyboardVerticalOffset={insets.top} style={s.keyboard}><View accessibilityViewIsModal onAccessibilityEscape={closeChat} style={[s.window,expandWindow&&s.windowExpanded]}>
           <View style={s.chatLayout}>
             <View accessibilityRole="tablist" style={s.rail}>
-              <RailTab channel="world" label="World" selected={channel==='world'} onPress={()=>setChannel('world')}/>
-              <RailTab channel="guild" label="Guild" selected={channel==='guild'} disabled={!guildAvailable} unread={guildUnread} mentions={guildMentions} onPress={()=>setChannel('guild')}/>
-              <PartyChatGate party={party} accountId={accountId}><RailTab channel="party" label="Party" selected={channel==='party'} unread={partyUnread} mentions={partyMentions} onPress={()=>setChannel('party')}/></PartyChatGate>
-              <RailTab channel="system" label="System" selected={channel==='system'} onPress={()=>setChannel('system')}/>
+              <RailTab channel="world" label={st("World")} selected={channel==='world'} onPress={()=>setChannel('world')}/>
+              <RailTab channel="guild" label={st("Guild")} selected={channel==='guild'} disabled={!guildAvailable} unread={guildUnread} mentions={guildMentions} onPress={()=>setChannel('guild')}/>
+              <PartyChatGate party={party} accountId={accountId}><RailTab channel="party" label={st("Party")} selected={channel==='party'} unread={partyUnread} mentions={partyMentions} onPress={()=>setChannel('party')}/></PartyChatGate>
+              <RailTab channel="system" label={st("System")} selected={channel==='system'} onPress={()=>setChannel('system')}/>
             </View>
             <View style={s.conversation}>
               <View style={s.header}>
-                <Text accessibilityRole="header" style={s.title}>{channel==='world'?'World':channel==='guild'?'Guild':channel==='party'?'Party':'System'}</Text>
-                {channel==='world'&&<Pressable accessibilityRole="button" accessibilityLabel={'World language: '+WORLD_CHANNELS[worldChannel].name} accessibilityState={{expanded:languageMenuOpen}} onPress={()=>setLanguageMenuOpen(value=>!value)} style={({pressed})=>[s.languageButton,pressed&&s.pressed]}><Text style={s.languageText}>{WORLD_CHANNELS[worldChannel].name}</Text><Text style={s.chevron}>{languageMenuOpen?'⌃':'⌄'}</Text></Pressable>}
-                <Pressable accessibilityRole="button" accessibilityLabel="Close chat" onPress={closeChat} style={({pressed})=>[s.close,pressed&&s.pressed]}><Text style={s.closeText}>×</Text></Pressable>
+                <Text accessibilityRole="header" style={s.title}>{channel==='world'?st("World"):channel==='guild'?st("Guild"):channel==='party'?st("Party"):st("System")}</Text>{onlineConfigured&&<View style={s.onlinePill}><View style={s.onlineDot}/><Text style={s.onlineText}>ONLINE</Text></View>}
+                {channel==='world'&&<Pressable accessibilityRole="button" accessibilityLabel={st('World language: {language}',{language:WORLD_CHANNELS[worldChannel].name})} accessibilityState={{expanded:languageMenuOpen}} onPress={()=>setLanguageMenuOpen(value=>!value)} style={({pressed})=>[s.languageButton,pressed&&s.pressed]}><Text style={s.languageText}>{WORLD_CHANNELS[worldChannel].name}</Text></Pressable>}
+                <Pressable accessibilityRole="button" accessibilityLabel={st("Close chat")} onPress={closeChat} style={({pressed})=>[s.close,pressed&&s.pressed]}><Text style={s.closeText}>×</Text></Pressable>
               </View>
               {languageMenuOpen&&channel==='world'&&<View style={s.languagePopover}>
-                <ScrollView keyboardShouldPersistTaps="handled" style={s.languageOptions}>{WORLD_CHANNELS.map((item,index)=><Pressable key={item.id} accessibilityRole="button" accessibilityState={{selected:worldChannel===index}} onPress={()=>{setWorldChannel(index);setLanguageMenuOpen(false);}} style={({pressed})=>[s.languageOption,worldChannel===index&&s.languageOptionSelected,pressed&&s.pressed]}><Text style={s.languageOptionText}>{item.name}</Text>{worldChannel===index&&<Text style={s.languageCheck}>✓</Text>}</Pressable>)}</ScrollView>
+                <ScrollView keyboardShouldPersistTaps="handled" style={s.languageOptions} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>{WORLD_CHANNELS.map((item,index)=><Pressable key={item.id} accessibilityRole="button" accessibilityState={{selected:worldChannel===index}} onPress={()=>{setWorldChannel(index);setLanguageMenuOpen(false);}} style={({pressed})=>[s.languageOption,worldChannel===index&&s.languageOptionSelected,pressed&&s.pressed]}><Text style={s.languageOptionText}>{item.name}</Text>{worldChannel===index&&<Text style={s.languageCheck}>✓</Text>}</Pressable>)}</ScrollView>
               </View>}
           <View style={s.content}>{channel==='system'?<SystemNoticeLog state={state}/>:channel==='party'?<OnlinePartyChat reduceMotion={state.settings.reduceMotion} unlockedEmoteIds={state.account.unlockedEmoteIds} trayIds={state.settings.chatEmoteTrayIds} bodyPresentation={state.character?.bodyPresentation} onTrayChange={onEmoteTrayChange} firstUnreadMessageId={partyFirstUnreadMessageId} onRead={onChatRead}/>:channel==='guild'&&guildAvailable?<GuildChat reduceMotion={state.settings.reduceMotion} language={state.settings.language} currentPlayerName={state.character?.name} unlockedEmoteIds={state.account.unlockedEmoteIds} trayIds={state.settings.chatEmoteTrayIds} bodyPresentation={state.character?.bodyPresentation} onTrayChange={onEmoteTrayChange} firstUnreadMessageId={guildFirstUnreadMessageId} onRead={onChatRead}/>:onlineConfigured?<OnlineWorldChat key={worldChannel} selectedChannel={worldChannel} reduceMotion={state.settings.reduceMotion} playerName={state.character!.name} language={state.settings.language} unlockedEmoteIds={state.account.unlockedEmoteIds} trayIds={state.settings.chatEmoteTrayIds} bodyPresentation={state.character?.bodyPresentation} onTrayChange={onEmoteTrayChange} embedded/>:<WorldChat selectedChannel={worldChannel} language={state.settings.language} unlockedEmoteIds={state.account.unlockedEmoteIds} trayIds={state.settings.chatEmoteTrayIds} bodyPresentation={state.character?.bodyPresentation} onTrayChange={onEmoteTrayChange} embedded/>}</View>
             </View>
@@ -83,10 +85,11 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  badge:{position:'absolute',top:1,right:0,minWidth:15,height:15,borderRadius:8,paddingHorizontal:3,alignItems:'center',justifyContent:'center',backgroundColor:C.notification},
  mentionBadge:{backgroundColor:C.warning},badgeText:{fontSize:9,lineHeight:13,color:C.notificationText,fontWeight:'800'},
  conversation:{flex:1,minWidth:0,minHeight:0,flexShrink:1,position:'relative'},
- header:{minHeight:46,flexDirection:'row',flexWrap:'wrap',alignItems:'center',paddingLeft:12,paddingRight:2,gap:2,borderBottomWidth:StyleSheet.hairlineWidth,borderBottomColor:C.line},
+ header:{minHeight:46,flexDirection:'row',flexWrap:'wrap',alignItems:'center',paddingLeft:12,paddingRight:2,gap:6,borderBottomWidth:StyleSheet.hairlineWidth,borderBottomColor:C.line},
  title:{flexGrow:1,flexShrink:1,color:C.text,fontSize:14,fontWeight:'700'},
- languageButton:{minHeight:44,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:5,paddingHorizontal:7,flexShrink:1},
- languageText:{fontSize:12,color:C.muted,flexShrink:1},chevron:{fontSize:16,color:C.muted},
+ onlinePill:{flexDirection:'row',alignItems:'center',gap:4,paddingHorizontal:6,paddingVertical:3,borderWidth:1,borderColor:C.good,borderRadius:99,backgroundColor:C.goodSurface},onlineDot:{width:6,height:6,borderRadius:3,backgroundColor:C.good},onlineText:{fontSize:7,color:C.good,fontWeight:'900',letterSpacing:.6},
+ languageButton:{minHeight:32,alignItems:'center',justifyContent:'center',paddingHorizontal:10,flexShrink:1,borderWidth:1,borderColor:C.line,borderRadius:8,backgroundColor:C.panelRaised},
+ languageText:{fontSize:12,color:C.text,fontWeight:'700',flexShrink:1},
  close:{width:44,height:44,alignItems:'center',justifyContent:'center'},closeText:{fontSize:25,color:C.muted,fontWeight:'400'},
  languagePopover:{position:'absolute',zIndex:50,elevation:16,top:46,right:8,left:8,padding:6,borderWidth:1,borderColor:C.line,borderRadius:12,backgroundColor:C.panel2,shadowColor:'#000',shadowOpacity:.25,shadowRadius:12,shadowOffset:{width:0,height:6}},
  languageOptions:{maxHeight:196},languageOption:{minHeight:44,flexDirection:'row',alignItems:'center',gap:8,paddingHorizontal:12,paddingVertical:8,borderRadius:8},

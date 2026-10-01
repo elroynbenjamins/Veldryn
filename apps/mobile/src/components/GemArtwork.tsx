@@ -1,3 +1,5 @@
+import {useGameLanguage} from '../i18n/GameLanguageProvider';
+import {visualText} from '../i18n/visuals';
 import {Image,StyleSheet,View} from 'react-native';
 import {C,radii} from '../theme/theme';
 import {
@@ -8,11 +10,12 @@ import {
 } from '../theme/gem-assets';
 
 export function GemArtwork({itemId,size=58,framed=true}:{itemId:string;size?:number;framed?:boolean}){
+ const language=useGameLanguage(),tr=(source:string,params?:Record<string,string|number>)=>visualText(language,source,params);
   const cell=gemArtworkCellV1(itemId);
   if(!cell)return null;
   const scale=size/GEM_SPRITE_V1_CELL;
   const sheetSize=GEM_SPRITE_V1_SIZE*scale;
-  return <View accessibilityLabel="Gem artwork" style={[s.art,{width:size,height:size},framed&&s.frame]}>
+  return <View accessibilityLabel={tr('Gem artwork')} style={[s.art,{width:size,height:size},framed&&s.frame]}>
     <View style={{width:size,height:size,overflow:'hidden'}}>
       <Image
         source={gemSpriteSourceV1}

@@ -55,7 +55,7 @@ function withRule(state:GameState,condition:IdleStopCondition,options?:Partial<P
 {
  let state=base();
  const candidate:WeeklyOrderCandidate={id:'moss-weekly',kind:'hunt',title:'Moss Rat Order',monsterId:'MOSS_RAT',regionId:'GREENFIELDS',activityId:'MOSS_RAT',source:{kind:'monster',id:'MOSS_RAT',label:'Moss Rat',available:true},estimatedPerHour:60,available:true,priority:1};
- const weekly=generateWeeklyOrders('account-test',T0,[candidate],{...DEFAULT_WEEKLY_ORDER_POLICY,huntSlots:1,professionSlots:0,regionalSlots:0,threatSlots:0,huntTargetMinutes:1,minimumHuntTarget:1,defaultHuntReward:{rewardRef:'hunt',label:'Hunt'},completionReward:{rewardRef:'completion',label:'Completion'}});
+const weekly=generateWeeklyOrders('account-test',T0,[candidate],{...DEFAULT_WEEKLY_ORDER_POLICY,huntSlots:1,professionSlots:0,regionalSlots:0,huntTargetMinutes:1,minimumHuntTarget:1,defaultHuntReward:{rewardRef:'hunt',label:'Hunt'},completionReward:{rewardRef:'completion',label:'Completion'}});
  const order=weekly.orders[0];order.target=1;
  state={...state,account:{...state.account,weeklyOrders:weekly}};
  state=withRule(state,{id:'weekly',kind:'weekly_order_progress',targetId:order.id,value:1,enabled:true});

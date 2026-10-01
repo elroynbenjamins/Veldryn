@@ -15,7 +15,7 @@ export interface OnlineGuildProjectResourceGoal{resourceKind:'gold'|'item';resou
 export interface OnlineGuildProjectSummary{
  id:string;name:string;description:string;kind:GuildProjectKind;focus:GuildProjectFocus;slotIndex:number;status:'active'|'completed'|'expired'|'cancelled';
  targetPoints:number;completionPoints:number;combatPoints:number;skillingPoints:number;meaningfulContributors:number;minimumMeaningfulContributors:number;
- personalPoints:number;personalRewardThreshold:number;endsAt?:string;startedAt:string;resourceGoals:OnlineGuildProjectResourceGoal[];
+ completionRewardClaimed?:boolean;launchWeekly?:boolean;personalPoints:number;personalRewardThreshold:number;endsAt?:string;startedAt:string;resourceGoals:OnlineGuildProjectResourceGoal[];
 }
 export interface OnlineGuildProjectCandidate{id:string;cycleKey:string;templateId:string;name:string;description:string;focus:'combat'|'skilling'|'mixed';expiresAt:string;voteCount:number;myVote:boolean;canStart:boolean}
 export interface OnlineGuildProjectsSnapshot{guildId:string;projects:OnlineGuildProjectSummary[];candidates:OnlineGuildProjectCandidate[];activity:GuildActivityView[]}
@@ -35,11 +35,12 @@ function resourceLabel(snapshot:Record<string,unknown>|null,resourceId:string,ki
 export async function loadOnlineGuildProjectsV18():Promise<OnlineGuildProjectsSnapshot|null>{
  const membership=await myGuild();if(!membership)return null;
  const db=client();
+ const prepared=await db.rpc('prepare_guild_projects_v2');if(prepared.error)throw prepared.error;
  const [projectResult,candidateResult]=await Promise.all([
   db.from('guild_project_instances')
    .select('id,guild_id,template_id,definition_snapshot,kind,focus,slot_index,status,target_points,completion_points,combat_points,skilling_points,meaningful_contributors,minimum_meaningful_contributors,personal_reward_threshold,ends_at,started_at')
    .eq('guild_id',membership.guild_id).in('status',['active','completed']).order('started_at',{ascending:false}).limit(12),
-  db.rpc('guild_project_board_state_v1'),
+  Promise.resolve({data:[],error:null}),
  ]);
  if(projectResult.error)throw projectResult.error;if(candidateResult.error)throw candidateResult.error;
  const projectData=projectResult.data,candidateData=candidateResult.data;
@@ -55,11 +56,13 @@ export async function loadOnlineGuildProjectsV18():Promise<OnlineGuildProjectsSn
  }
  const {data:activityData,error:activityError}=await db.from('guild_activity_feed').select('id,kind,title,body,created_at').eq('guild_id',membership.guild_id).order('created_at',{ascending:false}).limit(30);
  if(activityError)throw activityError;
+ const claims=await db.from('guild_project_reward_claims').select('project_instance_id').eq('account_id',membership.account_id).eq('reward_key','completion');if(claims.error)throw claims.error;
+ const claimed=new Set((claims.data??[]).map(row=>row.project_instance_id));
  const progressByProject=new Map(progress.map(row=>[row.project_instance_id,row]));
  const projects=rows.map(row=>{
   const snapshot=row.definition_snapshot??{},personal=progressByProject.get(row.id);
   return {
-   id:row.id,
+   id:row.id,launchWeekly:row.template_id==='guild_weekly_shared_effort',completionRewardClaimed:claimed.has(row.id),
    name:definitionText(snapshot,'name',humanize(row.template_id)),
    description:definitionText(snapshot,'description','Shared Guild project.'),
    kind:row.kind,focus:row.focus,slotIndex:row.slot_index,status:row.status,
@@ -77,3 +80,5 @@ export async function loadOnlineGuildProjectsV18():Promise<OnlineGuildProjectsSn
 
 export async function voteOnlineGuildProjectCandidate(candidateId:string){const db=client();const {data,error}=await db.rpc('guild_project_vote_v1',{p_candidate_id:candidateId});if(error)throw error;return data as string;}
 export async function startOnlineGuildProjectCandidate(candidateId:string){const db=client();const {data,error}=await db.rpc('guild_project_start_v1',{p_candidate_id:candidateId});if(error)throw error;return data as string;}
+
+export async function claimOnlineGuildProjectReward(id:string){const {data,error}=await client().rpc('claim_guild_project_reward_v2',{p_project:id});if(error)throw error;return data;}

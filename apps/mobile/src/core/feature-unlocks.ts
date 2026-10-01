@@ -18,11 +18,12 @@ export const EARLY_FEATURE_UNLOCKS={
  rankings:{questId:'QST_011',title:'Rankings',requirement:'Reach Level 20 and complete Place Among Guilds',description:'Prestige rankings unlock later at Level 20, after the player has had time to establish their character and social identity.'},
 } as const;
 
-function accountQuestClaimed(state:GameState,questId:string){
- if(state.quests.some(row=>row.questId===questId&&row.status==='claimed'))return true;
+export interface FeatureUnlockHost{quests?:readonly {questId:string;status:string}[];otherCharacters?:readonly {quests:readonly {questId:string;status:string}[]}[];account:{guildMember?:boolean};}
+export function accountQuestClaimed(state:FeatureUnlockHost,questId:string){
+ if(state.quests?.some(row=>row.questId===questId&&row.status==='claimed'))return true;
  return (state.otherCharacters??[]).some(entry=>entry.quests.some(row=>row.questId===questId&&row.status==='claimed'));
 }
-export function earlyFeatureUnlocked(state:GameState,id:EarlyFeatureId){
+export function earlyFeatureUnlocked(state:FeatureUnlockHost,id:EarlyFeatureId){
  const rule=EARLY_FEATURE_UNLOCKS[id];
  // Onboarding is learned once per account. New characters should not re-hide
  // Daily Supplies, social systems, Pets/Companions or Guilds after the player
@@ -42,11 +43,17 @@ export interface EarlyFeatureUnlockMoment{
  description:string;
  bullets:string[];
  actionLabel:string;
- destination:'Collections'|'Companions'|'Guild';
+ destination:'Collections'|'Companions'|'Guild'|'Progression';
 }
 export function newlyUnlockedEarlyFeatures(before:GameState|null|undefined,after:GameState|null|undefined):EarlyFeatureUnlockMoment[]{
  if(!before||!after)return [];
  const out:EarlyFeatureUnlockMoment[]=[];
+ if(!earlyFeatureUnlocked(before,'workingToward')&&earlyFeatureUnlocked(after,'workingToward'))out.push({
+  id:'workingToward',eyebrow:'NEW SYSTEM',title:'Plan your next goal',
+  description:'Working Toward and Daily Supplies are now available.',
+  bullets:['Choose a goal to see the materials and steps you need.','Open Daily Supplies from Home to collect your daily reward.'],
+  actionLabel:'Choose a goal',destination:'Progression',
+ });
  if(!earlyFeatureUnlocked(before,'pets')&&earlyFeatureUnlocked(after,'pets'))out.push({
   id:'pets',eyebrow:'NEW SYSTEM',title:'Pets Unlocked',
   description:'Rare pets can now appear from eligible combat, gathering and exploration activities.',
@@ -71,7 +78,7 @@ export function newlyUnlockedEarlyFeatures(before:GameState|null|undefined,after
 export function earlyFeatureForDestination(destination:string):EarlyFeatureId|undefined{
  const map:Record<string,EarlyFeatureId>={
   Progression:'workingToward',DailySupplies:'dailySupplies',AccountBonuses:'accountBonuses',
-  Companions:'companions',Events:'events',Friends:'friends',Social:'social',MasteryHall:'masteryHall',
+  Companions:'companions',Friends:'friends',Social:'social',MasteryHall:'masteryHall',
   Guild:'guild',Rankings:'rankings',
  };
  return map[destination];

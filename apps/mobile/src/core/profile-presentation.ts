@@ -5,6 +5,8 @@ import {personalRecordDefinition} from './personal-records-v43';
 import {COMBAT_COMPANIONS} from '../content/combat-companions';
 import {ITEMS} from '../content/items';
 import {COLLECTIBLES} from '../content/collectibles';
+import {CLASSES} from '../content/classes';
+import {profileIconCollection,PROFILE_ICON_CATALOG} from './profile-icons';
 
 const words=(value:string)=>value.replace(/^pet_|^bg_|^frame_/,'').replace(/[_:-]+/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
 
@@ -19,6 +21,8 @@ export function formatProfileRecordValue(id:string,value:number){
 }
 
 export function profileCollectionLabel(ref:ProfileCollectionRefV43){
+ if(ref.kind==='profile_icon'&&ref.id.startsWith('class:'))return (CLASSES.find(row=>row.id===ref.id.slice(6))?.name??words(ref.id.slice(6)))+' icon';
+ if(ref.kind==='profile_icon')return PROFILE_ICON_CATALOG.find(row=>row.id===ref.id)?.name??words(ref.id);
  if(ref.kind==='companion')return COMBAT_COMPANIONS.find(row=>row.id===ref.id)?.name??words(ref.id);
  if(ref.kind==='item')return ITEMS.find(row=>row.id===ref.id)?.name??words(ref.id);
  if(ref.kind==='pet'||ref.kind==='background'||ref.kind==='border')return COLLECTIBLES.find(row=>row.id===ref.id)?.name??words(ref.id);
@@ -32,7 +36,7 @@ export function localProfileSummary(state:GameState){
  const skills=[...state.skills].sort((a,b)=>b.level-a.level||a.skillId.localeCompare(b.skillId));
  const achievements=Object.entries(state.account.journalState?.unlockedAchievements??{}).sort((a,b)=>b[1]-a[1]);
  const records=Object.entries(state.account.journalState?.records??{}).sort((a,b)=>b[1].achievedAtMs-a[1].achievedAtMs);
- const collectionOwned=(state.account.unlockedCosmeticPetIds?.length??0)+(state.account.unlockedProfileBackgroundIds?.length??0)+(state.account.unlockedProfileBorderIds?.length??0);
+ const collectionOwned=profileIconCollection(state).filter(row=>row.unlocked).length+(state.account.unlockedCosmeticPetIds?.length??0)+(state.account.unlockedProfileBackgroundIds?.length??0)+(state.account.unlockedProfileBorderIds?.length??0);
  const totalKills=state.account.longTermMetrics?.['combat.total_kills']??Object.values(state.character?.monsterMasteryPoints??{}).reduce((sum,value)=>sum+value,0);
  return {
   combinedSkillLevels:state.skills.reduce((sum,row)=>sum+row.level,0),
@@ -63,6 +67,7 @@ export function profileCollectionShowcase(state:GameState,profile?:PublicPlayerP
  const rows:ProfileCollectionRefV43[]=[];
  const add=(kind:ProfileCollectionRefV43['kind'],id?:string)=>{if(id&&!rows.some(row=>row.kind===kind&&row.id===id))rows.push({kind,id})};
  add('pet',state.character?.selectedCosmeticPetId);
+ add('profile_icon',state.character?.profileIconId);
  add('background',state.character?.profileBackgroundId);
  add('border',state.character?.profileBorderId);
  for(const id of state.account.unlockedCombatCompanionIds??[]){add('companion',id);if(rows.length>=3)break;}

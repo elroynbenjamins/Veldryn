@@ -1,3 +1,4 @@
+import {useGameplayText} from '../i18n/gameplay';
 import React,{useMemo,useState} from 'react';
 import {Pressable,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import type {GameState} from '../core/types';
@@ -13,6 +14,7 @@ import {useGameTheme} from '../theme/ThemeContext';
 const familyLabel=(family:string)=>family.charAt(0).toUpperCase()+family.slice(1);
 
 export function FaithPanel({state,onCommand}:{state:GameState;onCommand:(c:GameCommand)=>Promise<void>}){
+ const {gt,gl,language}=useGameplayText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions();
  const [busy,setBusy]=useState(false),[error,setError]=useState('');
  const c=state.character;if(!c)return null;
@@ -23,27 +25,27 @@ export function FaithPanel({state,onCommand}:{state:GameState;onCommand:(c:GameC
  const activeTier=FAITH_TIERS.find(row=>row.id===activeTierId),active=!!activeTier&&activeRemaining>0;
  const selected=FAITH_BLESSINGS.find(row=>row.id===faith.selectedBlessingId);
  const visibleBlessings=blessingRows(state),stackActions=width<370||fontScale>=1.2;
- const run=async(command:GameCommand)=>{if(busy)return;setBusy(true);setError('');try{await onCommand(command);}catch(e){setError(e instanceof Error?e.message:'Action failed.');}finally{setBusy(false);}};
+ const run=async(command:GameCommand)=>{if(busy)return;setBusy(true);setError('');try{await onCommand(command);}catch(e){setError(e instanceof Error?e.message:gt("Action failed."));}finally{setBusy(false);}};
  return <>
   <Panel accentColor={C.special}>
-   <View style={s.heroRow}><View style={s.flex}><Text style={s.eyebrow}>FAITH PRACTICE</Text><Text style={s.title}>Devotion</Text><Text style={s.body}>Holy Water is reserved when a practice starts. Unused Water is refunded when you stop or mastery ends the session.</Text></View><View style={s.waterBadge}><Text style={s.waterValue}>{water.toLocaleString()}</Text><Text style={s.waterLabel}>HOLY WATER</Text></View></View>
-   <View style={s.progressMeta}><Text style={s.progressText}>{level>=100?'Faith mastered':`${progress.current.toLocaleString()} / ${progress.need.toLocaleString()} XP to next level`}</Text><Text style={s.level}>Lv {level}</Text></View>
+   <View style={s.heroRow}><View style={s.flex}><Text style={s.eyebrow}>{gt("FAITH PRACTICE")}</Text><Text style={s.title}>{gt("Devotion")}</Text><Text style={s.body}>{gt("Holy Water is reserved when a practice starts. Unused Water is refunded when you stop or mastery ends the session.")}</Text></View><View style={s.waterBadge}><Text style={s.waterValue}>{water.toLocaleString()}</Text><Text style={s.waterLabel}>{gt("HOLY WATER")}</Text></View></View>
+   <View style={s.progressMeta}><Text style={s.progressText}>{level>=100?gt("Faith mastered"):`${progress.current.toLocaleString()} / ${progress.need.toLocaleString()} XP to next level`}</Text><Text style={s.level}>Lv {level}</Text></View>
    <View style={s.track}><View style={[s.fill,{width:`${Math.max(level>=100?100:3,progressRatio*100)}%`}]}/></View>
-   {active&&activeTier?<View style={s.activeCard}><View style={s.between}><View style={s.flex}><Text style={s.activeLabel}>PRACTICE IN PROGRESS</Text><Text style={s.activeName}>{activeTier.name}</Text><Text style={s.body}>{activeRemaining} remaining · {activeTier.water} Holy Water each · {activeTier.seconds}s each</Text></View><Text style={s.activeCount}>{activeRemaining}</Text></View><GameButton compact title="Stop & refund unused" tone="secondary" disabled={busy} onPress={()=>void run({type:'stop'})}/></View>:null}
+   {active&&activeTier?<View style={s.activeCard}><View style={s.between}><View style={s.flex}><Text style={s.activeLabel}>{gt("Practice in progress").toLocaleUpperCase(language)}</Text><Text style={s.activeName}>{activeTier.name}</Text><Text style={s.body}>{activeRemaining} remaining · {activeTier.water} Holy Water each · {activeTier.seconds}s each</Text></View><Text style={s.activeCount}>{activeRemaining}</Text></View><GameButton compact title={gt("Stop & refund unused")} tone="secondary" disabled={busy} onPress={()=>void run({type:'stop'})}/></View>:null}
   </Panel>
   <View style={s.practiceList}>
-   <Text style={s.practiceInstruction}>Tap a resource to begin practicing.</Text>
+   <Text style={s.practiceInstruction}>{gt("Tap a resource to begin practicing.")}</Text>
    {FAITH_TIERS.map(tier=>{const locked=tier.level>level,availability=faithPracticeAvailability(state,tier.id,1),selectedTier=activeTierId===tier.id,disabled=busy||active||locked||!availability.ready||level>=100;return <Pressable key={tier.id} accessibilityRole="button" accessibilityLabel={active&&selectedTier?`${tier.name} practice in progress`:locked?`${tier.name} requires Faith level ${tier.level}`:availability.ready?`Practice ${tier.name}`:`Need ${tier.water} Holy Water for ${tier.name}`} accessibilityState={{disabled,selected:selectedTier}} disabled={disabled} onPress={()=>void run({type:'faith_practice',args:{tierId:tier.id,count:1}})} style={({pressed})=>[s.practiceCard,selectedTier&&s.practiceCardActive,(locked||!availability.ready)&&s.practiceCardLocked,pressed&&!disabled&&s.pressed]}>
-    <View style={s.flex}><View style={s.inline}><Text style={s.practiceName}>{tier.name}</Text>{selectedTier?<Text style={s.activeTag}>ACTIVE</Text>:locked?<Text style={s.lockTag}>LV {tier.level}</Text>:null}</View><Text style={selectedTier?s.practiceActiveMeta:s.practiceMeta}>{selectedTier?'Practice in progress':locked?`Unlocks at Faith level ${tier.level}`:`Have: ${water.toLocaleString()}/${tier.water.toLocaleString()} Holy Water · ${tier.seconds}s`}</Text></View><Text style={s.practiceXp}>+{tier.xp.toLocaleString()} XP</Text>
+    <View style={s.flex}><View style={s.inline}><Text style={s.practiceName}>{tier.name}</Text>{selectedTier?<Text style={s.activeTag}>{gt("ACTIVE")}</Text>:locked?<Text style={s.lockTag}>LV {tier.level}</Text>:null}</View><Text style={selectedTier?s.practiceActiveMeta:s.practiceMeta}>{selectedTier?gt("Practice in progress"):locked?`Unlocks at Faith level ${tier.level}`:`Have: ${water.toLocaleString()}/${tier.water.toLocaleString()} Holy Water · ${tier.seconds}s`}</Text></View><Text style={s.practiceXp}>+{tier.xp.toLocaleString()} XP</Text>
    </Pressable>})}
   </View>
   <Panel>
-   <View style={s.sectionHeading}><View style={s.flex}><Text style={s.sectionLabel}>ACTIVE BLESSING</Text><Text style={s.selectedBlessing}>{selected?`${selected.name} · +${Math.round(selected.bonus*100)}% ${familyLabel(selected.family)}`:'No blessing selected'}</Text></View><View style={s.hideButton}><GameButton compact title={faith.hideWeakerBlessings?'Show all':'Hide weaker'} tone="secondary" disabled={busy} onPress={()=>void run({type:'faith_hide',args:{enabled:!faith.hideWeakerBlessings}})}/></View></View>
-   <Text style={s.body}>Equip one blessing at a time. Star useful alternatives so they remain visible when weaker blessings are hidden.</Text>
+   <View style={s.sectionHeading}><View style={s.flex}><Text style={s.sectionLabel}>{gt("ACTIVE BLESSING")}</Text><Text style={s.selectedBlessing}>{selected?`${selected.name} · +${Math.round(selected.bonus*100)}% ${familyLabel(selected.family)}`:gt("No blessing selected")}</Text></View><View style={s.hideButton}><GameButton compact title={faith.hideWeakerBlessings?gt("Show all"):gt("Hide weaker")} tone="secondary" disabled={busy} onPress={()=>void run({type:'faith_hide',args:{enabled:!faith.hideWeakerBlessings}})}/></View></View>
+   <Text style={s.body}>{gt("Equip one blessing at a time. Star useful alternatives so they remain visible when weaker blessings are hidden.")}</Text>
    {visibleBlessings.map(blessing=>{const locked=blessing.level>level,favorite=faith.favoriteBlessingIds.includes(blessing.id),equipped=faith.selectedBlessingId===blessing.id;return <View key={blessing.id} style={[s.blessingRow,equipped&&s.blessingEquipped,locked&&s.blessingLocked]}>
     <Pressable accessibilityRole="button" accessibilityLabel={favorite?`Remove ${blessing.name} from favorites`:`Favorite ${blessing.name}`} accessibilityState={{selected:favorite,disabled:busy}} disabled={busy} onPress={()=>void run({type:'faith_favorite',args:{id:blessing.id,enabled:!favorite}})} style={({pressed})=>[s.starButton,pressed&&s.pressed]}><Text style={[s.star,favorite&&s.starActive]}>{favorite?'★':'☆'}</Text></Pressable>
-    <View style={s.flex}><View style={s.inline}><Text style={s.blessingName}>{blessing.name}</Text>{equipped?<Text style={s.activeTag}>EQUIPPED</Text>:locked?<Text style={s.lockTag}>LV {blessing.level}</Text>:null}</View><Text style={s.blessingMeta}>+{Math.round(blessing.bonus*100)}% {familyLabel(blessing.family)} · unlocks at Faith {blessing.level}</Text></View>
-    <View style={[s.blessingAction,stackActions&&s.blessingActionStack]}><GameButton compact title={equipped?'Active':locked?`Lv ${blessing.level}`:'Equip'} selected={equipped} disabled={busy||locked||equipped} tone={equipped?'primary':'secondary'} onPress={()=>void run({type:'faith_blessing',args:{id:blessing.id}})}/></View>
+    <View style={s.flex}><View style={s.inline}><Text style={s.blessingName}>{blessing.name}</Text>{equipped?<Text style={s.activeTag}>{gt("Equipped").toLocaleUpperCase(language)}</Text>:locked?<Text style={s.lockTag}>LV {blessing.level}</Text>:null}</View><Text style={s.blessingMeta}>+{Math.round(blessing.bonus*100)}% {familyLabel(blessing.family)} · unlocks at Faith {blessing.level}</Text></View>
+    <View style={[s.blessingAction,stackActions&&s.blessingActionStack]}><GameButton compact title={equipped?'Active':locked?`Lv ${blessing.level}`:gt("Equip")} selected={equipped} disabled={busy||locked||equipped} tone={equipped?'primary':'secondary'} onPress={()=>void run({type:'faith_blessing',args:{id:blessing.id}})}/></View>
    </View>})}
    {error?<Text accessibilityLiveRegion="polite" style={s.error}>{error}</Text>:null}
   </Panel>

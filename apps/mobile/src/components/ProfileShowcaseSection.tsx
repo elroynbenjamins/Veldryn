@@ -1,3 +1,5 @@
+import {profileT,profileText} from '../i18n/profile';
+import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {useMemo} from 'react';
 import {Image,StyleSheet,Text,View} from 'react-native';
 import type {ImageResizeMode,ImageSourcePropType} from 'react-native';
@@ -7,7 +9,8 @@ import type {ProfilePrestigeTone} from '../core/profile-prestige';
 
 export interface ProfileShowcaseEntry{key:string;label:string;meta?:string;value?:string;art?:ImageSourcePropType;artMode?:ImageResizeMode;prestige?:ProfilePrestigeTone;badge?:string}
 
-export function ProfileShowcaseSection({title,entries,emptyLabel='Nothing featured yet',subtitle='Selected by player'}:{title:string;entries:ProfileShowcaseEntry[];emptyLabel?:string;subtitle?:string}){
+export function ProfileShowcaseSection({title,entries,emptyLabel,subtitle}:{title:string;entries:ProfileShowcaseEntry[];emptyLabel?:string;subtitle?:string}){
+ const language=useGameLanguage();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const slots:Array<ProfileShowcaseEntry|undefined>=[entries[0],entries[1],entries[2]];
  const toneStyles=(tone:ProfilePrestigeTone|undefined)=>{
@@ -19,19 +22,19 @@ export function ProfileShowcaseSection({title,entries,emptyLabel='Nothing featur
   return {slot:undefined,bar:s.barStandard,badge:s.badgeStandard,badgeText:s.badgeTextStandard};
  };
  return <View style={s.block}>
-  <View style={s.head}><View style={s.headCopy}><Text style={s.title}>{title}</Text><Text style={s.subtitle}>{subtitle}</Text></View><View style={s.countPill}><Text style={s.count}>{Math.min(3,entries.length)}/3</Text></View></View>
+  <View style={s.head}><View style={s.headCopy}><Text style={s.title}>{title}</Text><Text style={s.subtitle}>{subtitle??profileT(language,'Selected by player')}</Text></View><View style={s.countPill}><Text style={s.count}>{Math.min(3,entries.length)}/3</Text></View></View>
   {!entries.length
-   ?<View style={s.emptySummary}><View style={s.emptyIcon}><Text style={s.emptyMark}>◇</Text></View><View style={s.emptyCopy}><Text style={s.emptyTitle}>No selections yet</Text><Text style={[s.emptyText,s.emptySummaryText]}>{emptyLabel} · choose up to 3 from Customize Profile.</Text></View></View>
+   ?<View style={s.emptySummary}><View style={s.emptyIcon}><Text style={s.emptyMark}>◇</Text></View><View style={s.emptyCopy}><Text style={s.emptyTitle}>{profileT(language,"No selections yet")}</Text><Text style={[s.emptyText,s.emptySummaryText]}>{profileT(language,'{label} · choose up to 3 from Customize Profile.',{label:emptyLabel??profileT(language,'Nothing featured yet')})}</Text></View></View>
    :<View style={s.grid}>{slots.map((entry,index)=>{
-    if(!entry)return <View key={'empty-'+index} style={[s.slot,s.emptySlot]}><Text style={s.slotNumber}>SLOT {index+1}</Text><Text style={s.openLabel}>OPEN</Text><Text numberOfLines={2} style={s.emptyText}>{emptyLabel}</Text></View>;
+    if(!entry)return <View key={'empty-'+index} style={[s.slot,s.emptySlot]}><Text style={s.slotNumber}>{profileT(language,'SLOT {number}',{number:index+1})}</Text><Text style={s.openLabel}>{profileT(language,"OPEN")}</Text><Text style={s.emptyText}>{emptyLabel??profileT(language,'Nothing featured yet')}</Text></View>;
     const tone=toneStyles(entry.prestige);
     return <View key={entry.key} style={[s.slot,tone.slot]}>
      <View style={[s.topBar,tone.bar]}/>
-     <View style={s.slotTop}><Text style={s.slotNumber}>SLOT {index+1}</Text>{entry.badge?<View style={[s.badge,tone.badge]}><Text numberOfLines={1} style={[s.badgeText,tone.badgeText]}>{entry.badge}</Text></View>:null}</View>
+     <View style={s.slotTop}><Text style={s.slotNumber}>{profileT(language,'SLOT {number}',{number:index+1})}</Text>{entry.badge?<View style={[s.badge,tone.badge]}><Text style={[s.badgeText,tone.badgeText]}>{entry.badge}</Text></View>:null}</View>
      {entry.art?<View style={s.artShell}><Image source={entry.art} resizeMode={entry.artMode??'contain'} style={entry.artMode==='cover'?s.artCover:s.art}/></View>:<View style={s.symbolShell}><Text style={[s.symbol,entry.prestige==='prestige'&&s.symbolPrestige]}>◆</Text></View>}
-     <Text numberOfLines={2} style={s.name}>{entry.label}</Text>
-     {entry.value?<Text numberOfLines={1} style={[s.value,entry.prestige==='prestige'&&s.valuePrestige]}>{entry.value}</Text>:null}
-     {entry.meta?<Text numberOfLines={2} style={s.meta}>{entry.meta}</Text>:null}
+     <Text style={s.name}>{entry.label}</Text>
+     {entry.value?<Text style={[s.value,entry.prestige==='prestige'&&s.valuePrestige]}>{entry.value}</Text>:null}
+     {entry.meta?<Text style={s.meta}>{entry.meta}</Text>:null}
     </View>;
    })}</View>}
  </View>;
@@ -45,8 +48,8 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C),elite
  subtitle:{fontSize:8,lineHeight:11,color:C.muted,marginTop:1},
  countPill:{minWidth:34,alignItems:'center',justifyContent:'center',paddingHorizontal:7,paddingVertical:3,borderRadius:99,borderWidth:1,borderColor:C.line,backgroundColor:C.panel},
  count:{fontSize:9,color:C.text,fontWeight:'900'},
- grid:{flexDirection:'row',gap:6},
- slot:{position:'relative',flex:1,minWidth:0,minHeight:112,padding:7,paddingTop:9,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel,justifyContent:'flex-start',gap:3,overflow:'hidden'},
+ grid:{flexDirection:'row',flexWrap:'wrap',gap:6},
+ slot:{position:'relative',flex:1,minWidth:120,minHeight:112,padding:7,paddingTop:9,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panel,justifyContent:'flex-start',gap:3,overflow:'hidden'},
  topBar:{position:'absolute',left:0,right:0,top:0,height:3},
  barStandard:{backgroundColor:C.line},barNotable:{backgroundColor:C.info},barRare:{backgroundColor:C.selectionLine},barElite:{backgroundColor:eliteBorder},barPrestige:{backgroundColor:equipmentColors.goldSoft},barRecord:{backgroundColor:C.good},
  notable:{borderColor:C.info,backgroundColor:C.infoSurface},rare:{borderColor:C.selectionLine,backgroundColor:C.selection},elite:{borderColor:eliteBorder,backgroundColor:eliteSurface},prestige:{borderColor:C.lineStrong,backgroundColor:C.warningSurface},record:{borderColor:C.good,backgroundColor:C.goodSurface},

@@ -1,3 +1,4 @@
+import {useGameplayText} from '../i18n/gameplay';
 import {useMemo} from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import type {GameState,SkillId} from '../core/types';
@@ -8,18 +9,20 @@ import {spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 
 function MilestoneRow({row,tone,onNavigate}:{row:SkillMilestone;tone:'latest'|'next';onNavigate?:(destination:WorkingTowardDestination)=>void}){
+ const {gt,gl,language}=useGameplayText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),canOpen=!!row.destination&&!!onNavigate;
- const body=<><View style={s.rowTop}><Text style={[s.category,tone==='latest'?s.categoryLatest:s.categoryNext]}>{row.category}</Text><Text style={s.rowLevel}>LV {row.level}</Text></View><Text numberOfLines={1} style={s.name}>{row.title}</Text><Text numberOfLines={2} style={s.detail}>{row.detail}{canOpen?' · Open ›':''}</Text></>;
- return canOpen?<Pressable accessibilityRole="button" accessibilityLabel={'Open '+row.title} onPress={()=>{if(row.destination&&onNavigate)onNavigate(row.destination)}} style={({pressed})=>[s.row,pressed&&s.pressed]}>{body}</Pressable>:<View style={s.row}>{body}</View>;
+ const body=<><View style={s.rowTop}><Text style={[s.category,tone==='latest'?s.categoryLatest:s.categoryNext]}>{gl(row.category)}</Text><Text style={s.rowLevel}>LV {row.level}</Text></View><Text numberOfLines={1} style={s.name}>{row.title}</Text><Text numberOfLines={2} style={s.detail}>{gl(row.detail)}{canOpen?' · '+gt('Open ›'):''}</Text></>;
+ return canOpen?<Pressable accessibilityRole="button" accessibilityLabel={gt('Open {name}',{name:row.title})} onPress={()=>{if(row.destination&&onNavigate)onNavigate(row.destination)}} style={({pressed})=>[s.row,pressed&&s.pressed]}>{body}</Pressable>:<View style={s.row}>{body}</View>;
 }
 export function SkillMilestoneStrip({state,skillId,onNavigate}:{state:GameState;skillId:SkillId;onNavigate?:(destination:WorkingTowardDestination)=>void}){
+ const {gt,gl,language}=useGameplayText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),view=skillMilestoneOverview(state,skillId);
  if(!view.latest.length&&!view.next.length)return null;
  const latest=view.latest.slice(0,2),next=view.next.slice(0,2);
  return <Panel>
-  <View style={s.header}><View style={s.flex}><Text style={s.kicker}>SKILL MILESTONES</Text><Text style={s.summary}>{view.nextLevel?'Next unlocks at level '+view.nextLevel:'All configured milestones reached'}</Text></View><Text style={s.current}>LV {view.currentLevel}</Text></View>
-  {latest.length?<View style={s.section}><Text style={s.sectionLabel}>{view.latestLevel===view.currentLevel?'JUST REACHED':'LATEST'} · LV {view.latestLevel}</Text>{latest.map(row=><MilestoneRow key={row.id} row={row} tone="latest" onNavigate={onNavigate}/>)}{view.latest.length>latest.length?<Text style={s.more}>+{view.latest.length-latest.length} more at this level</Text>:null}</View>:null}
-  {next.length?<View style={s.section}><Text style={s.sectionLabel}>NEXT · LV {view.nextLevel}</Text>{next.map(row=><MilestoneRow key={row.id} row={row} tone="next" onNavigate={onNavigate}/>)}{view.next.length>next.length?<Text style={s.more}>+{view.next.length-next.length} more at level {view.nextLevel}</Text>:null}</View>:null}
+  <View style={s.header}><View style={s.flex}><Text style={s.kicker}>{gt("SKILL MILESTONES")}</Text><Text style={s.summary}>{view.nextLevel?gt('Next unlocks at level {level}',{level:view.nextLevel}):gt("All configured milestones reached")}</Text></View><Text style={s.current}>LV {view.currentLevel}</Text></View>
+  {latest.length?<View style={s.section}><Text style={s.sectionLabel}>{view.latestLevel===view.currentLevel?gt("JUST REACHED"):gt("LATEST")} · LV {view.latestLevel}</Text>{latest.map(row=><MilestoneRow key={row.id} row={row} tone="latest" onNavigate={onNavigate}/>)}{view.latest.length>latest.length?<Text style={s.more}>{gt('+{count} more at level {level}',{count:view.latest.length-latest.length,level:view.latestLevel??view.currentLevel})}</Text>:null}</View>:null}
+  {next.length?<View style={s.section}><Text style={s.sectionLabel}>NEXT · LV {view.nextLevel}</Text>{next.map(row=><MilestoneRow key={row.id} row={row} tone="next" onNavigate={onNavigate}/>)}{view.next.length>next.length?<Text style={s.more}>{gt('+{count} more at level {level}',{count:view.next.length-next.length,level:view.nextLevel??view.currentLevel})}</Text>:null}</View>:null}
  </Panel>;
 }
 function makeStyles(C:ThemeColors){return StyleSheet.create({

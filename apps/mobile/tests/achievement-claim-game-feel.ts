@@ -11,8 +11,8 @@ ok(types.includes('idempotentReplay:boolean'),'achievement claim result must ret
 ok(types.includes('titleName?:string'),'achievement reward projection must expose earned profile titles');
 
 ok(screen.includes('✦ ACHIEVEMENT CLAIMED'),'successful claims need a clear achievement reward moment');
-ok(screen.includes("moment.idempotentReplay?'ACHIEVEMENT SYNCED'"),'idempotent claim retries must not fake a second reward celebration');
-ok(screen.includes('Reward secured · score {moment.scoreBefore} → {moment.scoreAfter}.'),'claim feedback must show the committed score change');
+ok(screen.includes('moment.idempotentReplay?t("ACHIEVEMENT SYNCED"):t("✦ ACHIEVEMENT CLAIMED")')&&screen.includes('if(reduceMotion||moment.idempotentReplay)return'),'idempotent claim retries must localize the synced state without a second reward celebration');
+ok(screen.includes('t("Reward secured · score {before} → {after}.",{before:moment.scoreBefore,after:moment.scoreAfter})'),'localized claim feedback must interpolate the committed score change');
 ok(screen.includes('NEW PROFILE TITLE')&&screen.includes('Customize profile'),'title rewards must explain the unlock and provide a useful next action');
 ok(screen.includes('moment.payout.gold'),'claim feedback must show the authoritative Gold payout');
 ok(screen.includes('result.snapshot.score'),'claim feedback must use the committed server snapshot score');

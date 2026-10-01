@@ -10,7 +10,7 @@ export function OnboardingModalShell({children,footer,onClose,reduceMotion=true}
  return <Modal transparent visible animationType={reduceMotion?'none':'fade'} onRequestClose={onClose}>
   <View style={[s.backdrop,{paddingTop:insets.top+16,paddingBottom:insets.bottom+16}]}>
    <View accessibilityViewIsModal style={[s.card,{maxHeight,backgroundColor:C.panel,borderColor:C.accentSoft}]}>
-    <ScrollView style={s.scroll} contentContainerStyle={s.content} bounces={false}>{children}</ScrollView>
+    <ScrollView style={s.scroll} contentContainerStyle={s.content} bounces={false} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>{children}</ScrollView>
     <View style={[s.footer,{borderColor:C.line}]}>{footer}</View>
    </View>
   </View>

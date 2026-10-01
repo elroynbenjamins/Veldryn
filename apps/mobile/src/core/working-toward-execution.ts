@@ -63,7 +63,7 @@ function queueActivityForGoal(state:GameState,goal:ProgressionGoal,destination:W
 
 function isActiveGoalActivity(state:GameState,activity:QueuedActivity|undefined){
  if(!activity||!state.activity||state.activity.targetId!==activity.targetId)return false;
- if(activity.kind==='combat')return state.activity.kind==='combat'&&(!activity.combatChallengeId||state.activity.combatChallengeId===activity.combatChallengeId);
+ if(activity.kind==='combat')return state.activity.kind==='combat';
  return ['mining','woodcutting','fishing','herbalism'].includes(state.activity.kind);
 }
 
@@ -101,7 +101,7 @@ export function workingTowardExecutionPlan(state:GameState,goal:ProgressionGoal)
  const queueActivity=queueActivityForGoal(state,goal,destination);
  const capacity=activityQueueCapacity(state),queue=normalizeActivityQueue(state.character?.activityQueue,capacity);
  const activeNow=isActiveGoalActivity(state,queueActivity);
- const alreadyQueued=!!queueActivity&&queue.some(row=>row.kind===queueActivity.kind&&row.targetId===queueActivity.targetId&&row.combatChallengeId===queueActivity.combatChallengeId);
+ const alreadyQueued=!!queueActivity&&queue.some(row=>row.kind===queueActivity.kind&&row.targetId===queueActivity.targetId);
  const queueFull=queue.length>=capacity;
  const readiness=queueActivity?queuedActivityReadiness(state,queueActivity):undefined;
  let executionState:WorkingTowardExecutionState='unsupported',executionLabel='Open next step',queueBlocker:string|undefined;

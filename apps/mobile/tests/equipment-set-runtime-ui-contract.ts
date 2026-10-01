@@ -31,10 +31,10 @@ ok(game.includes('secondary.incomingPressureMultiplier')&&game.includes('1-setCo
 ok(game.includes('setCombat.recoveryMultiplier'),'Potency must reach the simulator recovery lane');
 
 ok(character.includes('ACTIVE SET STATS'),'Character stats must surface live set-only combat stats');
-ok(character.includes('label="Haste"'),'Character stats must surface Haste');
-ok(character.includes('label="Armor"')&&character.includes('label="Ward"')&&character.includes('label="Tenacity"'),'Character stats must surface V33 defensive set stats');
+ok(character.includes('label={profileT(language,"Haste")}'),'Character stats must surface Haste');
+ok(character.includes('label={profileT(language,"Armor")}')&&character.includes('label={profileT(language,"Ward")}')&&character.includes('label={profileT(language,"Tenacity")}'),'Character stats must surface V33 defensive set stats');
 
-ok(inspect.includes("row.runtime==='live'?'LIVE':'HOOK'"),'Item inspect must distinguish live thresholds from conditional hooks');
+ok(inspect.includes("row.runtime==='live'?gt(\"LIVE\"):it('HOOK')"),'Item inspect must distinguish live thresholds from conditional hooks');
 ok(inspect.includes('2/4/8/10 always-on V33 bonuses are live'),'Item inspect must accurately explain runtime coverage');
 ok(setPanel.includes('2/4/8/10 always-on bonuses are live'),'Set progress copy must not claim the 6pc condition is simulated');
 

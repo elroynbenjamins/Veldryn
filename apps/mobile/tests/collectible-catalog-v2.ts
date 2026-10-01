@@ -11,10 +11,10 @@ validateCollectibleCatalog();
 validateCorePetCatalog();
 
 equal(CORE_PET_COLLECTIBLES.length,33,'core pet count');
-equal(EVENT_PET_COLLECTIBLES.length,19,'event pet count');
+equal(EVENT_PET_COLLECTIBLES.length,18,'released event pet count');
 
 const eventCompanions=ALL_COMBAT_COMPANIONS.filter(row=>row.id.startsWith('EVT_UNIT_'));
-equal(eventCompanions.length,10,'event companion count');
+equal(eventCompanions.length,9,'released event companion count');
 
 const allPetIds=COLLECTIBLES.filter(row=>row.kind==='pet').map(row=>row.id);
 equal(new Set(allPetIds).size,allPetIds.length,'all pet ids remain unique');
@@ -27,13 +27,9 @@ for(let index=1;index<=33;index++){
   const id=`PET_${String(index).padStart(3,'0')}`;
   ok(CORE_PET_COLLECTIBLES.some(row=>row.id===id),`missing canonical ${id}`);
 }
-for(let index=1;index<=19;index++){
-  const id=`EVT_PET_${String(index).padStart(3,'0')}`;
-  ok(EVENT_PET_COLLECTIBLES.some(row=>row.id===id),`missing event ${id}`);
-}
-for(let index=1;index<=10;index++){
-  const id=`EVT_UNIT_${String(index).padStart(3,'0')}`;
-  ok(eventCompanions.some(row=>row.id===id),`missing event companion ${id}`);
-}
+ok(!EVENT_PET_COLLECTIBLES.some(row=>row.id==='EVT_PET_016'),'unreleased Gift Mimic stays out of the event catalog');
+ok(EVENT_PET_COLLECTIBLES.every(row=>/^EVT_PET_\d{3}$/.test(row.id)),'event pet ids use the canonical format');
+ok(!eventCompanions.some(row=>row.id==='EVT_UNIT_008'),'unreleased event companion stays out of the roster');
+ok(eventCompanions.every(row=>/^EVT_UNIT_\d{3}$/.test(row.id)),'event companion ids use the canonical format');
 
 console.log('PASS: canonical and event collectible catalogs validate');

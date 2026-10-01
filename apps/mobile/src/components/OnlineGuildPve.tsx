@@ -1,41 +1,26 @@
-import {useEffect,useMemo,useState} from 'react';
-import {Alert,StyleSheet,Text,View} from 'react-native';
+import {useEffect,useRef,useState} from 'react';
+import {AppState,Image,StyleSheet,Text,View} from 'react-native';
+import {useSocialText} from '../i18n/social';
+import {useGameLanguage} from '../i18n/GameLanguageProvider';
+import {useGameTheme} from '../theme/ThemeContext';
 import {GameButton} from './GameButton';
 import {Panel} from './Panel';
-import {radii,typography,type ThemeColors} from '../theme/theme';
-import {useGameTheme} from '../theme/ThemeContext';
 import {onlineConfigured} from '../online/supabase';
-import {guildContribute,guildWeeklyState,type GuildWeeklyState} from '../online/social';
+import {guildPveBoard,claimGuildPve} from '../online/social';
+import {guildPveView,type GuildPveEncounter} from '../core/guild-pve-encounters';
 import {formatGameNumber} from '../core/number-format';
 
-export function OnlineGuildPve({numberMode='abbreviated',authoritative=false}:{numberMode?:'abbreviated'|'exact';authoritative?:boolean}){
- const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
- const [state,setState]=useState<GuildWeeklyState|null>(null),[busy,setBusy]=useState(false);
- const load=async()=>{if(!onlineConfigured)return;setBusy(true);try{setState(await guildWeeklyState())}catch(error){Alert.alert('Guild PvE',error instanceof Error?error.message:'Unable to load weekly Guild state.')}finally{setBusy(false)}};
- useEffect(()=>{void load()},[]);
- if(!onlineConfigured)return null;
- if(!state)return <Panel><Text style={s.title}>Weekly Guild PvE</Text><Text style={s.sub}>{busy?'Loading Guild PvE…':'Join a Guild to participate in weekly projects and the Guild boss.'}</Text>{!busy?<GameButton compact title="Refresh" tone="secondary" onPress={()=>void load()}/>:null}</Panel>;
- const doContribution=async(kind:'project'|'boss',amount:number)=>{setBusy(true);try{await guildContribute(kind,amount);await load()}catch(error){Alert.alert('Guild PvE',error instanceof Error?error.message:'Unable to record contribution.')}finally{setBusy(false)}};
- const projectPct=Math.min(100,state.project_goal>0?state.project_progress/state.project_goal*100:0),bossPct=Math.max(0,state.boss_max_hp>0?state.boss_hp/state.boss_max_hp*100:0);
- return <View style={s.root}>
-  <Panel>
-   <View style={s.head}><View style={s.flex}><Text style={s.kicker}>WEEKLY PROJECT</Text><Text style={s.title}>Guild Project</Text><Text style={s.sub}>{formatGameNumber(state.project_progress,numberMode)} / {formatGameNumber(state.project_goal,numberMode)} progress</Text></View><View style={s.percentPill}><Text style={s.percent}>{Math.round(projectPct)}%</Text></View></View>
-   <View style={s.track}><View style={[s.fill,{width:(projectPct+'%') as any}]}/></View>
-   {authoritative?<Text style={s.note}>Verified gathering and crafting advance the shared project automatically.</Text>:<GameButton compact title="Contribute 100 points" disabled={busy} onPress={()=>void doContribution('project',100)}/>}
-  </Panel>
-  <Panel>
-   <View style={s.head}><View style={s.flex}><Text style={s.kicker}>GUILD BOSS</Text><Text style={s.title}>Weekly Boss</Text><Text style={s.sub}>{formatGameNumber(state.boss_hp,numberMode)} / {formatGameNumber(state.boss_max_hp,numberMode)} HP remaining</Text></View><View style={[s.percentPill,s.bossPill]}><Text style={[s.percent,s.bossPercent]}>{Math.round(bossPct)}%</Text></View></View>
-   <View style={s.track}><View style={[s.boss,{width:(bossPct+'%') as any}]}/></View>
-   {authoritative?<Text style={s.note}>Verified combat contributes within your weekly allowance.</Text>:<GameButton compact title="Deal 1,000 boss damage" disabled={busy||state.boss_hp===0} onPress={()=>void doContribution('boss',1000)}/>}
-  </Panel>
-  <GameButton compact title={busy?'Refreshing…':'Refresh weekly PvE'} tone="secondary" disabled={busy} onPress={()=>void load()}/>
- </View>;
+export function OnlineGuildPve({numberMode='abbreviated',authoritative=false,onCombat,onRewardsChanged}:{numberMode?:'abbreviated'|'exact';authoritative?:boolean;onCombat?:()=>void;onRewardsChanged?:()=>void|Promise<unknown>}){
+ const st=useSocialText(),C=useGameTheme();const [rows,setRows]=useState<GuildPveEncounter[]>([]),[busy,setBusy]=useState(false),[error,setError]=useState('');const pending=useRef(false),mounted=useRef(true);
+ const load=async()=>{if(!onlineConfigured||!authoritative||pending.current)return;pending.current=true;setBusy(true);try{const next=await guildPveBoard();if(mounted.current){setRows(next);setError('')}}catch{if(mounted.current)setError(st('Guild PvE is unavailable. Please try again.'))}finally{pending.current=false;if(mounted.current)setBusy(false)}};
+ useEffect(()=>{mounted.current=true;void load();const subscription=AppState.addEventListener('change',status=>{if(status==='active')void load()});const timer=setInterval(()=>{if(AppState.currentState!=='background')void load()},30000);return()=>{mounted.current=false;subscription.remove();clearInterval(timer)}},[authoritative]);
+ const claim=async(id:string,percent:number)=>{if(pending.current)return;pending.current=true;setBusy(true);try{await claimGuildPve(id,percent);await onRewardsChanged?.();const next=await guildPveBoard();if(mounted.current){setRows(next);setError('')}}catch{if(mounted.current)setError(st('Unable to claim. Refresh and try again.'))}finally{pending.current=false;if(mounted.current)setBusy(false)}};
+ if(!onlineConfigured||!authoritative)return <Panel><Text style={{color:C.text,fontSize:18,fontWeight:'800'}}>{st('Guild PvE')}</Text><Text style={{color:C.muted,lineHeight:21}}>{st('Connect to your online guild to fight shared bosses and claim rewards.')}</Text></Panel>;
+ return <View style={{gap:12}}>{error?<Text accessibilityRole="alert" style={{color:C.bad}}>{error}</Text>:null}{!rows.length&&!error?<Panel><Text style={{color:C.muted}}>{busy?st('Loading Guild PvE…'):st('Join a guild to unlock shared encounters.')}</Text></Panel>:null}{rows.map(row=><GuildPveEncounterCard key={row.id} row={row} numberMode={numberMode} busy={busy} onClaim={percent=>void claim(row.id,percent)} onCombat={onCombat}/>)}{rows.length>0&&!rows.some(row=>row.kind==='event')?<Text style={{color:C.muted,lineHeight:20}}>{st('Event bosses appear here during active festivals.')}</Text>:null}<GameButton title={st('Refresh')} tone="secondary" disabled={busy} onPress={()=>void load()}/></View>;
 }
-
-function makeStyles(C:ThemeColors){return StyleSheet.create({
- root:{gap:10},head:{flexDirection:'row',alignItems:'center',gap:8},flex:{flex:1,minWidth:0},
- kicker:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.8},title:{...typography.title,color:C.text},sub:{fontSize:10,lineHeight:14,color:C.muted,marginTop:1},note:{fontSize:9,lineHeight:13,color:C.muted,marginTop:6},
- percentPill:{minWidth:48,alignItems:'center',justifyContent:'center',paddingHorizontal:7,paddingVertical:5,borderWidth:1,borderColor:C.info,borderRadius:99,backgroundColor:C.infoSurface},
- percent:{fontSize:10,color:C.info,fontWeight:'900'},bossPill:{borderColor:C.bad,backgroundColor:C.badSurface},bossPercent:{color:C.bad},
- track:{height:8,backgroundColor:C.panel2,borderRadius:4,overflow:'hidden',marginTop:8},fill:{height:'100%',backgroundColor:C.accent},boss:{height:'100%',backgroundColor:C.bad},
-});}
+export function GuildPveEncounterCard({row,numberMode='abbreviated',busy=false,onClaim,onCombat}:{row:GuildPveEncounter;numberMode?:'abbreviated'|'exact';busy?:boolean;onClaim:(percent:number)=>void;onCombat?:()=>void}){
+ const st=useSocialText(),language=useGameLanguage(),C=useGameTheme(),view=guildPveView(row),n=(value:number)=>formatGameNumber(value,numberMode,language);
+ const endDate=new Date(view.open?row.endsAt:row.claimEndsAt).toLocaleDateString(language,{day:'numeric',month:'short'});
+ return <Panel><View style={s.hero}><Image accessible={false} source={row.kind==='weekly'?require('../../assets/monsters/ancient_treant.png'):require('../../assets/monsters/oathglass_revenant.png')} resizeMode="contain" style={s.art}/><View style={s.copy}><Text style={[s.kicker,{color:row.kind==='event'?C.special:C.accent}]}>{st(row.kind==='event'?'EVENT BOSS':'WEEKLY BOSS')}</Text><Text accessibilityRole="header" style={[s.title,{color:C.text}]}>{row.kind==='weekly'?st('Rootbound Colossus'):row.name}</Text><Text style={{color:C.muted}}>{st(view.status)} · {st(view.open?'Ends {date}':'Claim by {date}',{date:endDate})}</Text></View></View><View accessibilityRole="progressbar" accessibilityLabel={st('Guild progress')} accessibilityValue={{min:0,max:100,now:Math.round(view.percent)}} style={[s.track,{backgroundColor:C.panel2}]}><View style={{height:'100%',width:`${view.percent}%`,backgroundColor:row.kind==='event'?C.special:C.accent}}/></View><Text style={[s.detail,{color:C.muted}]}>{n(view.remaining)} / {n(row.maxHp)} HP · {row.contributors} {st('Contributors')}</Text><View style={[s.personal,{backgroundColor:C.panel2}]}><View><Text style={{color:C.muted}}>{st('Your contribution')}</Text><Text style={[s.value,{color:C.text}]}>{n(row.personalDamage)}</Text></View><View><Text style={{color:C.muted}}>{st("Today's allowance")}</Text><Text style={[s.value,{color:C.text}]}>{n(view.dailyAllowance)}</Text></View></View><Text style={[s.detail,{color:C.muted}]}>{st('Combat earns 200 contribution per minute, up to {daily} per UTC day. Contribute 1,000 to qualify for rewards.',{daily:n(row.dailyCap)})}</Text><Text style={[s.detail,{color:C.muted}]}>{st('Encounter allowance remaining: {amount}',{amount:n(view.allowance)})} · {st('Difficulty: {count}-member bracket',{count:row.rosterSize})}</Text><Text style={[s.detail,{color:C.muted}]}>{st('Offline combat counts on the day it happened. Collect before the claim deadline.')}</Text>{!row.eligible?<Text style={[s.detail,{color:C.muted}]}>{st('This encounter has a fixed roster. New members join the next encounter.')}</Text>:row.damage>=row.maxHp&&view.open&&row.personalDamage<1000?<Text style={[s.detail,{color:C.accent}]}>{st('Boss defeated! You can still contribute before the battle deadline to qualify for rewards.')}</Text>:null}{view.canContribute&&(view.active||row.personalDamage<1000)&&onCombat?<GameButton title={st('Go hunting')} onPress={onCombat}/>:null}<Text style={[s.kicker,{color:C.accent}]}>{st('MILESTONE REWARDS')}</Text>{view.milestones.map(m=><View key={m.percent} style={[s.reward,{borderColor:C.line}]}><View style={s.copy}><Text style={{color:C.text,fontWeight:'700'}}>{m.percent}% · {n(m.gold)} {st('Gold')}</Text>{m.eventCurrency>0?<Text style={{color:C.special}}>{n(m.eventCurrency)} {st('Event currency')} · {m.candy} {st(m.candyKind)} {st('Candy')}</Text>:null}<Text style={{color:C.muted}}>{m.claimed?st('Claimed'):view.percent<m.percent?st('Guild progress needed'):row.personalDamage<1000?st('Contribution needed'):st('Reward unlocked')}</Text></View><GameButton compact title={m.claimed?st('Claimed'):st('Claim')} disabled={busy||!m.ready} onPress={()=>onClaim(m.percent)}/></View>)}</Panel>;
+}
+const s=StyleSheet.create({hero:{minHeight:136,flexDirection:'row',alignItems:'center',gap:12},art:{width:112,height:136},copy:{flex:1,minWidth:0},kicker:{fontSize:11,fontWeight:'900',letterSpacing:1,marginTop:8},title:{fontSize:22,fontWeight:'900',lineHeight:27},track:{height:10,borderRadius:5,overflow:'hidden',marginVertical:8},detail:{fontSize:13,lineHeight:19,marginBottom:8},personal:{flexDirection:'row',justifyContent:'space-between',gap:12,padding:12,borderRadius:12,marginBottom:8},value:{fontSize:20,fontWeight:'800',marginTop:4},reward:{flexDirection:'row',alignItems:'center',gap:10,borderTopWidth:1,paddingVertical:10}});

@@ -19,6 +19,9 @@ equal(characterNameError('A'),'Use at least 2 characters.','Character minimum le
 ok(characterNameError('A'.repeat(21)),'Character maximum length');
 
 for(const name of ['Silver Wardens','L’Égide','Dawn-Keepers'])equal(guildNameError(name),'','Valid Guild name: '+name);
+equal(guildNameError('Wardens of the Silver'),'','21 characters including spaces fit');
+equal(guildNameError('Wardens of the Silvers'),'Use no more than 21 characters.','22 characters rejected');
+equal(guildNameError('  Wardens  of the Silver  '),'','Limit applies after normalization');
 for(const name of ['GG','Raiders🔥','Guild_One','Guild123','騎士団','Raiders & Co'])ok(guildNameError(name),'Reject unsafe Guild name: '+name);
 
 console.log('PASS: normalized Latin-only character and Guild identity names');

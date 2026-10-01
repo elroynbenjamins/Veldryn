@@ -1,3 +1,4 @@
+import {useGameplayText} from '../i18n/gameplay';
 import {useMemo} from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import type {GameState,GatheringSkillId} from '../core/types';
@@ -16,18 +17,19 @@ import {gatheringBalanceProjection} from '../core/balance-projection';
 
 /** A normal gathering skill is deliberately one tap: select a resource and begin. */
 export function GatheringActivityList({state,skillId,skillLevel,preferredActionId,onGather,onNavigate}:{state:GameState;skillId:GatheringSkillId;skillLevel:number;preferredActionId?:string;onGather:(id:string)=>void;onNavigate?:(destination:WorkingTowardDestination)=>void}){
+ const {gt,gl,language}=useGameplayText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const regionId=currentRegionId(state),region=WORLD_ZONES.find(row=>row.id===regionId)??WORLD_ZONES[0];
  const nodes=[...GATHERING,...HERB_NODES].filter(row=>row.skillId===skillId).sort((a,b)=>Number(b.zoneId===region.id)-Number(a.zoneId===region.id)||Number(b.id===preferredActionId)-Number(a.id===preferredActionId)||a.unlockLevel-b.unlockLevel);
  const stock=(itemId:string)=>[...state.inventory.stacks,...state.bank.stacks].filter(row=>row.itemId===itemId).reduce((total,row)=>total+row.quantity,0);
  return <View style={s.root}>
-  <Text style={s.instruction}>Tap a resource to begin gathering.</Text>
+  <Text style={s.instruction}>{gt("Tap a resource to begin gathering.")}</Text>
   {nodes.map(activity=>{
    const active=state.activity?.targetId===activity.id,inCurrentRegion=activity.zoneId===region.id,unlocked=skillLevel>=activity.unlockLevel,resource=itemDef(activity.itemId),nodeRegion=WORLD_ZONES.find(row=>row.id===activity.zoneId),view=gatheringBalanceProjection(state,activity,0),available=stock(activity.itemId);
    const start=()=>{if(active||!inCurrentRegion)return;if(unlocked)onGather(activity.id);else onNavigate?.(gatheringProgressionAction(state,activity).destination);};
    return <Pressable key={activity.id} accessibilityRole="button" accessibilityLabel={active?`${activity.name} is currently gathering`:!inCurrentRegion?`${activity.name} is in ${nodeRegion?.name??activity.zoneId}`:unlocked?`Gather ${activity.name}`:`Train to gather ${activity.name}`} accessibilityState={{disabled:active||!inCurrentRegion,selected:active||inCurrentRegion}} disabled={active||!inCurrentRegion||(!unlocked&&!onNavigate)} onPress={start} style={({pressed})=>[s.card,inCurrentRegion&&s.cardCurrent,active&&s.cardActive,(!unlocked||!inCurrentRegion)&&s.cardLocked,pressed&&!active&&inCurrentRegion&&s.pressed]}>
     <ResourceArtwork itemId={activity.itemId} size={34}/>
-    <View style={s.copy}><View style={s.topLine}><View style={s.nameLine}><Text style={s.name}>{activity.name}</Text>{inCurrentRegion&&<Text style={s.regionTag}>HERE</Text>}</View><Text style={s.xp}>+{formatGameNumber(Math.round(activity.xp),state.settings.numberMode)} XP</Text></View><Text style={active?s.activeMeta:s.meta}>{active?'Gathering now':!inCurrentRegion?`Region: ${nodeRegion?.name??activity.zoneId}`:unlocked?`Have: ${formatGameNumber(available,state.settings.numberMode)} ${resource.name} · ${view.cycleSeconds.toFixed(1)}s`:`Unlocks at ${skillId} level ${activity.unlockLevel}`}</Text></View>
+    <View style={s.copy}><View style={s.topLine}><View style={s.nameLine}><Text style={s.name}>{activity.name}</Text>{inCurrentRegion&&<Text style={s.regionTag}>{gt("HERE")}</Text>}</View><Text style={s.xp}>+{formatGameNumber(Math.round(activity.xp),state.settings.numberMode,state.settings.language)} XP</Text></View><Text style={active?s.activeMeta:s.meta}>{active?gt("Gathering now"):!inCurrentRegion?`Region: ${nodeRegion?.name??activity.zoneId}`:unlocked?`Have: ${formatGameNumber(available,state.settings.numberMode,state.settings.language)} ${resource.name} · ${view.cycleSeconds.toFixed(1)}s`:`Unlocks at ${skillId} level ${activity.unlockLevel}`}</Text></View>
    </Pressable>;
   })}
   {!nodes.length&&<Text style={s.empty}>No {skillId} resources are configured.</Text>}

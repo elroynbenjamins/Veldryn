@@ -50,8 +50,6 @@ function cleanCharacter(character:CharacterState):CharacterState{
     equipment,
     gearEnhancements,
     savedLoadouts,
-    unlockedSkinIds:['starting'],
-    selectedSkinId:'starting',
   };
 }
 

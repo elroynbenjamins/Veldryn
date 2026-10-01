@@ -40,7 +40,7 @@ export function ExpeditionScreenShell({eyebrow,title,onBack,backLabel='Back',ban
   return <View testID={testID} style={s.shell}>
     <View style={s.shellHeader}>{onBack?<Pressable accessibilityRole="button" accessibilityLabel={backLabel} hitSlop={8} onPress={onBack} style={({pressed})=>[s.back,pressed&&s.backPressed]}><Text style={s.backText}>‹ {backLabel}</Text></Pressable>:null}<View style={s.heading}><Text style={s.eyebrow}>{eyebrow}</Text><Text style={s.title}>{title}</Text></View></View>
     {banner?<View style={s.banner}>{banner}</View>:null}
-    <ScrollView style={s.scroll} contentContainerStyle={[s.content,stickyAction?s.contentWithAction:undefined]} keyboardShouldPersistTaps="handled">{children}</ScrollView>
+    <ScrollView style={s.scroll} contentContainerStyle={[s.content,stickyAction?s.contentWithAction:undefined]} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>{children}</ScrollView>
     {stickyAction?<View style={s.sticky}>{stickyAction}</View>:null}
   </View>;
 }

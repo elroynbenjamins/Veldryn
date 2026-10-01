@@ -1,6 +1,6 @@
-import {navigationIcons as destinationIcons} from '../theme/ui-icons';
+import {ThemedNavigationIcon} from './ThemedNavigationIcon';
 import {useEffect,useMemo,useState} from 'react';
-import {Image,Platform,Pressable,ScrollView,StatusBar as NativeStatusBar,StyleSheet,Text,View} from 'react-native';
+import {Platform,Pressable,ScrollView,StatusBar as NativeStatusBar,StyleSheet,Text,View} from 'react-native';
 import {effectiveStats} from '../core/game';
 import {formatGameNumber} from '../core/number-format';
 import {normalizeQuickNavDestinations,QUICK_NAV_DESTINATIONS,QuickNavDestination} from '../core/quick-navigation';
@@ -16,6 +16,8 @@ import {GameButton} from './GameButton';
 import {GameModalHeader,GameModalSurface} from './GameModalSurface';
 import type {NavigationBadge} from '../core/navigation-notifications';
 import {onlineConfigured} from '../online/supabase';
+import {navigationText} from '../i18n/navigation';
+import {progressionEnvironmentText} from '../i18n/progression';
 
 
 
@@ -31,6 +33,7 @@ type Props={
 };
 
 export function GameTopBar({state,nowMs,labelForDestination,onNavigate,onChangeDestinations,onOpenActivity,attention={},online=onlineConfigured}:Props){
+  const tr=(text:string,params?:Record<string,string|number>)=>navigationText(state.settings.language,text,params);
   const C=useGameTheme(),equipmentColors=equipmentTheme(C),styles=useMemo(()=>makeStyles(C),[C]);
   const active=normalizeQuickNavDestinations(state.settings.quickNavDestinations);
   const [open,setOpen]=useState(false);
@@ -58,34 +61,34 @@ export function GameTopBar({state,nowMs,labelForDestination,onNavigate,onChangeD
   async function save(){if(!canSave)return;setSaving(true);try{await onChangeDestinations(draft);setCustomizing(false)}finally{setSaving(false)}}
   return <>
     <View style={styles.shell}>
-      <Pressable accessibilityRole="button" accessibilityState={{expanded:environmentOpen}} accessibilityLabel={`${environment.seasonName}, ${environment.weatherName}`} accessibilityHint="Shows season, weather, and activity effects" onPress={()=>setEnvironmentOpen(true)} style={({pressed})=>[styles.environmentButton,{borderColor:environment.weatherColor},pressed&&styles.pressed]}>
+      <Pressable accessibilityRole="button" accessibilityState={{expanded:environmentOpen}} accessibilityLabel={`${progressionEnvironmentText(state.settings.language,environment.seasonName)}, ${progressionEnvironmentText(state.settings.language,environment.weatherName)}`} accessibilityHint={tr("Shows season, weather, and activity effects")} onPress={()=>setEnvironmentOpen(true)} style={({pressed})=>[styles.environmentButton,{borderColor:environment.weatherColor},pressed&&styles.pressed]}>
         <EnvironmentArtwork type="season" id={environment.seasonId} size={24}/><View style={styles.environmentDivider}/><EnvironmentArtwork type="weather" id={environment.weatherId} size={24}/><View style={[styles.seasonStrip,{backgroundColor:environment.seasonColor}]}/>{activity&&<View style={styles.lockedDot}/>} 
       </Pressable>
-      <View accessible accessibilityRole="text" style={styles.hpBlock} accessibilityLabel={`${Math.floor(currentHp)} of ${Math.floor(maxHp)} health`}>
-        <View style={styles.hpHeading}><Text style={styles.hpLabel}>HP</Text><Text style={styles.hpValue}>{Math.floor(currentHp)}/{Math.floor(maxHp)}</Text></View>
+      <View accessible accessibilityRole="text" style={styles.hpBlock} accessibilityLabel={tr('{current} of {max} health',{current:Math.floor(currentHp),max:Math.floor(maxHp)})}>
+        <View style={styles.hpHeading}><Text style={styles.hpLabel}>{tr("HP")}</Text><Text style={styles.hpValue}>{Math.floor(currentHp)}/{Math.floor(maxHp)}</Text></View>
         <View style={styles.hpTrack}><View style={[styles.hpFill,{width:hpPercent}]}/></View>
       </View>
-      <View accessible accessibilityRole="text" accessibilityLabel={`${online?'Online · ':''}${formatGameNumber(state.character?.gold??0,state.settings.numberMode)} gold`} style={styles.goldBlock}><Text style={styles.goldLabel}>GOLD</Text><View style={styles.goldValueRow}>{online?<View accessible={false} style={styles.onlineDot}/>:null}<Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={.78} style={styles.goldValue}>{formatGameNumber(state.character?.gold??0,state.settings.numberMode)}</Text></View></View>
-      <Pressable accessibilityRole="button" accessibilityLabel={attentionTotal?'Open quick navigation, '+attentionTotal+' item'+(attentionTotal===1?'':'s')+' need attention':'Open quick navigation'} accessibilityHint="Opens five customizable navigation shortcuts" onPress={()=>setOpen(true)} style={({pressed})=>[styles.menuButton,pressed&&styles.pressed]}>
+      <View accessible accessibilityRole="text" accessibilityLabel={(online?tr('Online')+' · ':'')+tr('{amount} gold',{amount:formatGameNumber(state.character?.gold??0,state.settings.numberMode,state.settings.language)})} style={styles.goldBlock}><Text style={styles.goldLabel}>{tr("GOLD")}</Text><View style={styles.goldValueRow}>{online?<View accessible={false} style={styles.onlineDot}/>:null}<Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={.78} style={styles.goldValue}>{formatGameNumber(state.character?.gold??0,state.settings.numberMode,state.settings.language)}</Text></View></View>
+      <Pressable accessibilityRole="button" accessibilityLabel={attentionTotal?tr('Open quick navigation, {count} need attention',{count:attentionTotal}):tr('Open quick navigation')} accessibilityHint={tr("Opens five customizable navigation shortcuts")} onPress={()=>setOpen(true)} style={({pressed})=>[styles.menuButton,pressed&&styles.pressed]}>
         <View style={styles.menuLine}/><View style={styles.menuLine}/><View style={styles.menuLine}/>{attentionTotal>0?<View style={styles.menuBadge}><Text style={styles.menuBadgeText}>{attentionTotal>9?'9+':attentionTotal}</Text></View>:null}
       </Pressable>
     </View>
     <ActiveActivityBar state={state} nowMs={nowMs} onOpen={onOpenActivity}/>
     <EnvironmentDetailsModal visible={environmentOpen} environment={environment} nowMs={nowMs} locked={!!activity} activityKind={activity?.kind} reduceMotion={state.settings.reduceMotion} onClose={()=>setEnvironmentOpen(false)}/>
-    <GameModalSurface visible={open} reduceMotion={state.settings.reduceMotion} onClose={close} backdropLabel="Close quick navigation" surfaceStyle={styles.sheet}>
-          <GameModalHeader eyebrow="PLAYER SHORTCUTS" title={customizing?'Choose five destinations':'Quick navigation'} onClose={close} closeDisabled={saving}/>
+    <GameModalSurface visible={open} reduceMotion={state.settings.reduceMotion} onClose={close} backdropLabel={tr("Close quick navigation")} surfaceStyle={styles.sheet}>
+          <GameModalHeader eyebrow={tr("PLAYER SHORTCUTS")} title={customizing?tr("Choose five destinations"):tr("Quick navigation")} onClose={close} closeDisabled={saving}/>
           {customizing?<>
-            <Text style={styles.helper}>{draft.length}/5 selected · Tap selected entries to remove them.</Text>
-            <ScrollView style={styles.choiceScroll} contentContainerStyle={styles.choiceList}>
+            <Text style={styles.helper}>{tr('{count}/5 selected',{count:draft.length})}</Text>
+            <ScrollView style={styles.choiceScroll} contentContainerStyle={styles.choiceList} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
               {orderedChoices.map(destination=>{const isSelected=selected.has(destination),blocked=!isSelected&&draft.length>=5;return <Pressable key={destination} accessibilityRole="checkbox" accessibilityState={{checked:isSelected,disabled:blocked}} onPress={()=>toggle(destination)} disabled={blocked} style={({pressed})=>[styles.choice,isSelected&&styles.choiceSelected,blocked&&styles.choiceBlocked,pressed&&styles.pressed]}>
-                <Image source={destinationIcons[destination]} style={[styles.choiceIcon,!isSelected&&styles.choiceIconDim]} resizeMode="contain"/><Text style={styles.choiceText}>{labelForDestination(destination)}</Text><View style={[styles.check,isSelected&&styles.checkSelected]}><Text style={styles.checkText}>{isSelected?'✓':''}</Text></View>
+                <ThemedNavigationIcon destination={destination} size={25} muted={!isSelected}/><Text style={styles.choiceText}>{labelForDestination(destination)}</Text><View style={[styles.check,isSelected&&styles.checkSelected]}><Text style={styles.checkText}>{isSelected?'✓':''}</Text></View>
               </Pressable>})}
             </ScrollView>
-            <View style={styles.actions}><View style={styles.action}><GameButton title="Cancel" tone="secondary" disabled={saving} onPress={()=>{setDraft(active);setCustomizing(false)}}/></View><View style={styles.action}><GameButton title="Save five" loading={saving} disabled={draft.length!==5} onPress={()=>void save()}/></View></View>
+            <View style={styles.actions}><View style={styles.action}><GameButton title={tr("Cancel")} tone="secondary" disabled={saving} onPress={()=>{setDraft(active);setCustomizing(false)}}/></View><View style={styles.action}><GameButton title={tr("Save five")} loading={saving} disabled={draft.length!==5} onPress={()=>void save()}/></View></View>
           </>:<>
-            <View style={styles.shortcutList}>{active.map((destination,index)=>{const badge=attention[destination];return <Pressable key={destination} accessibilityRole="button" accessibilityLabel={badge?.dot?labelForDestination(destination)+', needs attention':labelForDestination(destination)} onPress={()=>{close();onNavigate(destination)}} style={({pressed})=>[styles.shortcut,pressed&&styles.pressed]}><View style={styles.shortcutNumber}><Text style={styles.shortcutNumberText}>{index+1}</Text></View><Image source={destinationIcons[destination]} style={styles.shortcutIcon} resizeMode="contain"/><Text style={styles.shortcutText}>{labelForDestination(destination)}</Text>{badge?.dot?<View style={styles.shortcutBadge}><Text style={styles.shortcutBadgeText}>{badge.display??'•'}</Text></View>:null}<Text style={styles.chevron}>›</Text></Pressable>})}</View>
-            {attentionRows.length?<View style={styles.attentionSection}><Text style={styles.attentionLabel}>NEEDS ATTENTION</Text>{attentionRows.map(destination=>{const badge=attention[destination]!;return <Pressable key={'attention:'+destination} accessibilityRole="button" accessibilityLabel={labelForDestination(destination)+', needs attention'} onPress={()=>{close();onNavigate(destination)}} style={({pressed})=>[styles.attentionRow,pressed&&styles.pressed]}><Image source={destinationIcons[destination]} style={styles.attentionIcon} resizeMode="contain"/><Text style={styles.attentionText}>{labelForDestination(destination)}</Text><View style={styles.shortcutBadge}><Text style={styles.shortcutBadgeText}>{badge.display??'•'}</Text></View><Text style={styles.chevron}>›</Text></Pressable>})}{hiddenAttentionCount?<Text style={styles.attentionMore}>+{hiddenAttentionCount} more attention destination{hiddenAttentionCount===1?'':'s'} · customize shortcuts to keep them closer.</Text>:null}</View>:null}
-            <View style={styles.customizeButton}><GameButton title="⚙ Customize these five" tone="secondary" onPress={()=>{setDraft(active);setCustomizing(true)}}/></View>
+            <View style={styles.shortcutList}>{active.map((destination,index)=>{const badge=attention[destination];return <Pressable key={destination} accessibilityRole="button" accessibilityLabel={badge?.dot?tr('{name}, needs attention',{name:labelForDestination(destination)}):labelForDestination(destination)} onPress={()=>{close();onNavigate(destination)}} style={({pressed})=>[styles.shortcut,pressed&&styles.pressed]}><View style={styles.shortcutNumber}><Text style={styles.shortcutNumberText}>{index+1}</Text></View><ThemedNavigationIcon destination={destination} size={28}/><Text style={styles.shortcutText}>{labelForDestination(destination)}</Text>{badge?.dot?<View style={styles.shortcutBadge}><Text style={styles.shortcutBadgeText}>{badge.display??'•'}</Text></View>:null}<Text style={styles.chevron}>›</Text></Pressable>})}</View>
+            {attentionRows.length?<View style={styles.attentionSection}><Text style={styles.attentionLabel}>{tr("NEEDS ATTENTION")}</Text>{attentionRows.map(destination=>{const badge=attention[destination]!;return <Pressable key={'attention:'+destination} accessibilityRole="button" accessibilityLabel={tr('{name}, needs attention',{name:labelForDestination(destination)})} onPress={()=>{close();onNavigate(destination)}} style={({pressed})=>[styles.attentionRow,pressed&&styles.pressed]}><ThemedNavigationIcon destination={destination} size={24} muted/><Text style={styles.attentionText}>{labelForDestination(destination)}</Text><View style={styles.shortcutBadge}><Text style={styles.shortcutBadgeText}>{badge.display??'•'}</Text></View><Text style={styles.chevron}>›</Text></Pressable>})}{hiddenAttentionCount?<Text style={styles.attentionMore}>{tr('More destinations needing attention: {count}',{count:hiddenAttentionCount})}</Text>:null}</View>:null}
+            <View style={styles.customizeButton}><GameButton title={tr('Customize shortcuts')} tone="secondary" onPress={()=>{setDraft(active);setCustomizing(true)}}/></View>
           </>}
     </GameModalSurface>
   </>;

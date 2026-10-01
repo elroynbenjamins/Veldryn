@@ -26,7 +26,7 @@ ok(actions.includes('statGemId')&&actions.includes('effectGemId'),'Socketed gems
 ok(commands.includes("roster_delete:['id','confirmation']"),'Character deletion must be a validated gameplay command');
 ok(commands.includes("command.type==='roster_delete'"),'Character deletion must not auto-settle unrelated activity before safety validation');
 ok(app.includes("type:'roster_delete'"),'App must route character deletion through authoritative gameplay');
-ok(app.includes("case 'Activity':return 'Characters'"),'Character management route must have a clear Account-facing label');
-ok(account.includes("title:'Characters'")&&account.includes('Switch, reroll or safely delete characters'),'Account navigation must advertise character management rather than a hidden destructive action');
+ok(app.includes("case 'Activity':return appText(language,'Characters')"),'Character management route must have a clear Account-facing label');
+ok(account.includes('case \'Activity\':return {title:a("Characters"),description:a("Switch, reroll or safely delete characters")}'),'Account navigation must advertise character management rather than a hidden destructive action');
 
 console.log('PASS character management UI exposes explicit, guarded reroll/delete flow');

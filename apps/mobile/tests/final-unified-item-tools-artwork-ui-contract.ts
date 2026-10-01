@@ -33,7 +33,7 @@ ok(resolver.includes('hasArcaneMaterialArtwork(itemId)'),'Shared resolver must r
 const fallbackIndex=resourceArtwork.indexOf('const source=resourceIconSource(itemId)');
 for(const needle of ['const asterfallGathering=asterfallGatheringCell(itemId)','const asterfallCrafted=asterfallCraftedCell(itemId)','const arcaneMaterial=arcaneMaterialCell(itemId)']){
   const index=resourceArtwork.indexOf(needle);
-  ok(index>=0&&fallbackIndex>index,needle+' must take priority over legacy standalone PNG fallback');
+  ok(fallbackIndex>=0&&index>fallbackIndex,needle+' must remain available after the bundled PNG path');
 }
 
 ok(toolArtwork.includes('GATHERING_TOOL_SHEET_WIDTH')&&toolArtwork.includes('GATHERING_TOOL_SHEET_HEIGHT'),'Tool artwork must use explicit v2 atlas dimensions');

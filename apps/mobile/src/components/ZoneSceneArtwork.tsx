@@ -1,59 +1,13 @@
-import {useState} from 'react';
 import {Image,StyleSheet,View} from 'react-native';
 import {RegionArtwork} from './RegionArtwork';
+import {regionScenes} from '../theme/upgraded-artwork';
 
-const ZONE_SCENE_CELL_WIDTH=128;
-const ZONE_SCENE_CELL_HEIGHT=64;
-const ZONE_SCENE_SHEET_WIDTH=256;
-const ZONE_SCENE_SHEET_HEIGHT=256;
-const zoneSceneSheet=require('../../assets/world/world-zone-scenes-v1.jpg');
-
-interface ZoneSceneCell{column:0|1;row:0|1|2|3;}
-const zoneSceneCellById:Readonly<Record<string,ZoneSceneCell>>={
-  GREENFIELDS:{column:0,row:0},
-  SILVERBROOK:{column:1,row:0},
-  IRONWOOD:{column:0,row:1},
-  OLD_MINES:{column:1,row:1},
-  KINGS_ROAD:{column:0,row:2},
-  SUNSCAR:{column:1,row:2},
-  FROSTMARCH:{column:0,row:3},
-  ASHLANDS:{column:1,row:3},
-};
-
-/**
- * Scenic travel/world artwork. Every current travel region has a dedicated
- * scene cell. Falls back to the approved world-map crop for unknown future
- * regions, keeping preview support safe while new scenes are rolled out.
- */
-export function ZoneSceneArtwork({regionId,muted=false,blurRadius=1}:{regionId:string;muted?:boolean;blurRadius?:number}){
-  const cell=zoneSceneCellById[regionId];
-  const [size,setSize]=useState({width:0,height:0});
-  if(!cell){
-    const future=regionId==='VEILLANDS';
-    return <View pointerEvents="none" accessible={false} style={[StyleSheet.absoluteFill,s.crop,muted&&s.muted]}>
-      <RegionArtwork regionId={regionId} muted={muted}/>
-      {future?<><View style={s.futureWash}/><View style={s.futureHaze}/></>:null}
-    </View>;
-  }
-  const scale=size.width&&size.height?Math.max(size.width/ZONE_SCENE_CELL_WIDTH,size.height/ZONE_SCENE_CELL_HEIGHT):1;
-  const cellWidth=ZONE_SCENE_CELL_WIDTH*scale,cellHeight=ZONE_SCENE_CELL_HEIGHT*scale;
-  const sheetWidth=ZONE_SCENE_SHEET_WIDTH*scale,sheetHeight=ZONE_SCENE_SHEET_HEIGHT*scale;
-  const left=-cell.column*cellWidth+(size.width-cellWidth)/2;
-  const top=-cell.row*cellHeight+(size.height-cellHeight)/2;
-  return <View
-    pointerEvents="none"
-    accessible={false}
-    onLayout={event=>{const {width,height}=event.nativeEvent.layout;setSize(old=>old.width===width&&old.height===height?old:{width,height});}}
-    style={[StyleSheet.absoluteFill,s.crop,muted&&s.muted]}
-  >
-    {size.width>0&&<Image
-      source={zoneSceneSheet}
-      resizeMode="stretch"
-      blurRadius={blurRadius}
-      fadeDuration={0}
-      style={{position:'absolute',width:sheetWidth,height:sheetHeight,left,top}}
-    />}
+/** Dedicated panoramas replace enlarged 128px atlas cells. */
+export function ZoneSceneArtwork({regionId,muted=false,blurRadius=0}:{regionId:string;muted?:boolean;blurRadius?:number}){
+  const source=regionScenes[regionId];
+  return <View pointerEvents="none" accessible={false} style={[StyleSheet.absoluteFill,s.crop,muted&&s.muted]}>
+    {source?<Image accessible={false} source={source} resizeMode="cover" blurRadius={blurRadius} fadeDuration={0} style={[StyleSheet.absoluteFill,{width:'100%',height:'100%'}]}/>:<RegionArtwork regionId={regionId}/>}
   </View>;
 }
 
-const s=StyleSheet.create({crop:{overflow:'hidden',backgroundColor:'#101a24'},muted:{opacity:.52},futureWash:{...StyleSheet.absoluteFillObject,backgroundColor:'rgba(55,38,88,.52)'},futureHaze:{position:'absolute',left:0,right:0,bottom:0,height:'48%',backgroundColor:'rgba(13,10,22,.46)'}});
+const s=StyleSheet.create({crop:{overflow:'hidden'},muted:{opacity:.52}});

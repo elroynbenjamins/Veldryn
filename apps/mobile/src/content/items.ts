@@ -57,7 +57,7 @@ const BASE_ITEMS:ItemDef[]=[
 
 {id:'TRAVEL_RATION',name:'Travel Ration',type:'food',heal:18,readiness:1,value:5},
 {id:'COOKED_MEADOW_PERCH',name:'Cooked Meadow Perch',type:'food',heal:24,readiness:2,value:10},
-{id:'COOKED_SILVERFIN',name:'Cooked Silverfin',type:'food',heal:30,readiness:3,value:15},
+{id:'COOKED_SILVERFIN',name:'Cooked Silverfin',type:'food',heal:26,readiness:3,value:15},
 {id:'ROASTED_ROOTSTREAM_TROUT',name:'Roasted Rootstream Trout',type:'food',heal:40,readiness:4,value:25},
 {id:'SEARED_RIVER_EEL',name:'Seared River Eel',type:'food',heal:52,readiness:5,value:34},
 {id:'IRONWOOD_STEW',name:'Ironwood Hunter Stew',type:'food',heal:90,readiness:7,value:62},

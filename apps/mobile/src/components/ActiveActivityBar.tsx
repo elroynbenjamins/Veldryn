@@ -1,3 +1,4 @@
+import {useGameplayText} from '../i18n/gameplay';
 import {useEffect,useMemo,useRef} from 'react';
 import {Animated,Easing,Pressable,StyleSheet,Text,View} from 'react-native';
 import {MONSTERS} from '../content/monsters';
@@ -8,7 +9,6 @@ import {typography,equipmentTheme,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {ActivityArtwork} from './ActivityArtwork';
 import {MonsterPortraitFrame} from './MonsterPortraitFrame';
-import {challengeHuntLabel} from '../core/challenge-hunts';
 import {activeGatheringRuntimeProjection,activityProgressFeedback} from '../core/balance-projection';
 import {activeCombatRuntimeProjection} from '../core/game';
 import {combatPresentation} from '../core/combat-presentation';
@@ -16,7 +16,13 @@ import {combatPresentation} from '../core/combat-presentation';
 const labels:Record<string,string>={combat:'HUNTING',mining:'MINING',woodcutting:'WOODCUTTING',fishing:'FISHING',herbalism:'HERBALISM',alchemy:'ALCHEMY',processing:'PROCESSING',faith:'FAITH',training:'TRAINING',hunting:'HUNTING',exploration:'EXPLORATION'};
 function elapsed(startedAtMs:number,nowMs:number){const total=Math.max(0,Math.floor((nowMs-startedAtMs)/1000)),hours=Math.floor(total/3600),minutes=Math.floor(total%3600/60),seconds=total%60;return hours?`${hours}h ${minutes}m`:minutes?`${minutes}m ${seconds}s`:`${seconds}s`;}
 
-export function ActiveActivityBar({state,nowMs,onOpen}:{state:GameState;nowMs:number;onOpen:()=>void}){
+type ActiveActivityBarProps={state:GameState;nowMs:number;onOpen:()=>void};
+export function ActiveActivityBar(props:ActiveActivityBarProps){
+ // Mount animation hooks only for an active session; starting/stopping cannot change hook order.
+ return props.state.activity?<RunningActivityBar {...props}/>:null;
+}
+function RunningActivityBar({state,nowMs,onOpen}:ActiveActivityBarProps){
+ const {gt,gl,language}=useGameplayText();
  const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
  const activity=state.activity;
  if(!activity)return null;
@@ -24,14 +30,14 @@ export function ActiveActivityBar({state,nowMs,onOpen}:{state:GameState;nowMs:nu
  const monster=combat?MONSTERS.find(entry=>entry.id===activity.targetId):undefined;
  const gathering=!combat?[...GATHERING,...HERB_NODES].find(entry=>entry.id===activity.targetId):undefined,crafting=activity.kind==='processing'||activity.kind==='alchemy'?RECIPES.find(entry=>entry.id===activity.targetId):undefined;
  const combatRuntime=combat?activeCombatRuntimeProjection(state):undefined,gatherRuntime=!combat?activeGatheringRuntimeProjection(state):undefined;
- const name=monster?challengeHuntLabel(activity.combatChallengeId,monster.name,activity.combatAffixId):crafting?.name??gathering?.name??activity.targetId;
+ const name=monster?monster.name:crafting?.name??gathering?.name??activity.targetId;
  const cycleSeconds=Math.max(1,combatRuntime?.killCycleSeconds??gatherRuntime?.cycleSeconds??activity.processing?.cycleSeconds??activity.brew?.cycleSeconds??gathering?.seconds??crafting?.seconds??1);
  const cycleElapsedSeconds=Math.max(0,(nowMs-activity.lastClaimAtMs)/1000),cycleProgressSeconds=(activity.progressFraction??0)*cycleSeconds+cycleElapsedSeconds;
  const completedCycles=Math.floor(cycleProgressSeconds/cycleSeconds),progressPct=Math.round((cycleProgressSeconds%cycleSeconds)/cycleSeconds*100),progress=`${progressPct}%` as `${number}%`;
  const progressKind=combat?'combat':activity.kind==='alchemy'||activity.kind==='processing'?'crafting':activity.kind==='faith'?'faith':activity.kind==='training'?'training':activity.kind==='exploration'?'exploration':'gathering',phase=activityProgressFeedback(progressKind,progressPct/100),cycleRemaining=Math.max(1,Math.ceil(cycleSeconds-(cycleProgressSeconds%cycleSeconds)));
  const sessionKills=combat?(activity.sessionKills??0)+completedCycles:0;
  const combatView=combat&&monster?combatPresentation(state,monster,cycleProgressSeconds,cycleSeconds):undefined;
- const cycleCopy=combat?`NEXT KILL · ${cycleRemaining}s`:`${phase.replace('…','').toUpperCase()} · ${cycleRemaining}s`;
+ const cycleCopy=combat?gt('NEXT KILL · {seconds}s',{seconds:cycleRemaining}):`${gl(phase).replace('…','').toLocaleUpperCase(language)} · ${cycleRemaining}s`;
  const hitEffect=useRef(new Animated.Value(0)).current;
  useEffect(()=>{
   hitEffect.stopAnimation();hitEffect.setValue(0);
@@ -41,9 +47,9 @@ export function ActiveActivityBar({state,nowMs,onOpen}:{state:GameState;nowMs:nu
   animation.start();return()=>animation.stop();
  },[combat,cycleSeconds,hitEffect,state.settings.reduceMotion]);
  const slashOpacity=hitEffect.interpolate({inputRange:[0,.12,.58,1],outputRange:[0,1,.55,0]}),slashScale=hitEffect.interpolate({inputRange:[0,.16,1],outputRange:[.2,1,1.22]});
- return <Pressable accessibilityRole="button" accessibilityLabel={`${labels[activity.kind]} ${name}, active for ${elapsed(activity.startedAtMs,nowMs)}`} accessibilityHint="Opens the active activity" onPress={onOpen} style={({pressed})=>[s.root,combat?s.combat:s.skilling,pressed&&s.pressed]}>
+ return <Pressable accessibilityRole="button" accessibilityLabel={gt('{kind} {name}, active for {duration}',{kind:gl(labels[activity.kind]),name,duration:elapsed(activity.startedAtMs,nowMs)})} accessibilityHint={gt("Opens the active activity")} onPress={onOpen} style={({pressed})=>[s.root,combat?s.combat:s.skilling,pressed&&s.pressed]}>
   <View style={s.art}>{monster?<MonsterPortraitFrame monster={monster} size={38} active reduceMotion={state.settings.reduceMotion} framed={false}/>:<ActivityArtwork id={(crafting?.skillId??activity.kind) as any} size={36}/>}</View>
-  <View style={s.copy}><View style={s.line}><Text numberOfLines={1} style={s.name}>{name}</Text><Text style={s.time}>{elapsed(activity.startedAtMs,nowMs)}</Text></View><View style={s.meta}><Text style={[s.kind,combat?s.combatText:s.skillText]}>{labels[activity.kind]}</Text><Text numberOfLines={1} style={s.cycle}>{cycleCopy}</Text></View>{combat?<><View style={s.combatStats}><Text style={s.hpText}>HP {combatView?.enemyHp??monster?.hp??0}/{combatView?.enemyMaxHp??monster?.hp??0}</Text><Text style={s.damageText}>−{combatView?.playerHit??0}</Text><Text style={s.takenText}>KILL #{sessionKills+1} · ~{Math.round(combatRuntime?.killsPerHour??0)}/hr</Text><Animated.View pointerEvents="none" style={[s.hitSlash,s.hitSlashBright,{opacity:slashOpacity,transform:[{rotate:'-28deg'},{scaleX:slashScale}]}]}/><Animated.View pointerEvents="none" style={[s.hitSlash,s.hitSlashSoft,{opacity:slashOpacity,transform:[{rotate:'30deg'},{scaleX:slashScale}]}]}/></View><View style={s.track}><View style={[s.fill,s.combatFill,{width:`${Math.max(2,Math.round(((combatView?.enemyHp??1)/Math.max(1,combatView?.enemyMaxHp??1))*100))}%` as `${number}%`}]}/></View></>:<View style={s.track}><View style={[s.fill,s.skillFill,{width:progress}]}/></View>}</View>
+  <View style={s.copy}><View style={s.line}><Text numberOfLines={1} style={s.name}>{name}</Text><Text style={s.time}>{elapsed(activity.startedAtMs,nowMs)}</Text></View><View style={s.meta}><Text style={[s.kind,combat?s.combatText:s.skillText]}>{gl(labels[activity.kind])}</Text><Text numberOfLines={1} style={s.cycle}>{cycleCopy}</Text></View>{combat?<><View style={s.combatStats}><Text style={s.hpText}>HP {combatView?.enemyHp??monster?.hp??0}/{combatView?.enemyMaxHp??monster?.hp??0}</Text><Text style={s.damageText}>−{combatView?.playerHit??0}</Text><Text style={s.takenText}>{gt("KILL #")}{sessionKills+1} · ~{Math.round(combatRuntime?.killsPerHour??0)}/hr</Text><Animated.View pointerEvents="none" style={[s.hitSlash,s.hitSlashBright,{opacity:slashOpacity,transform:[{rotate:'-28deg'},{scaleX:slashScale}]}]}/><Animated.View pointerEvents="none" style={[s.hitSlash,s.hitSlashSoft,{opacity:slashOpacity,transform:[{rotate:'30deg'},{scaleX:slashScale}]}]}/></View><View style={s.track}><View style={[s.fill,s.combatFill,{width:`${Math.max(2,Math.round(((combatView?.enemyHp??1)/Math.max(1,combatView?.enemyMaxHp??1))*100))}%` as `${number}%`}]}/></View></>:<View style={s.track}><View style={[s.fill,s.skillFill,{width:progress}]}/></View>}</View>
   <Text style={s.chevron}>›</Text>
  </Pressable>;
 }

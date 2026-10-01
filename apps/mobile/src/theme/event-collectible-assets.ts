@@ -1,3 +1,4 @@
+/** Source-only archive for future event collectible art. Use event-collectible-assets-active.ts in production. */
 import type {ImageSourcePropType} from 'react-native';
 
 export const eventPetSourceById=new Map<string,ImageSourcePropType>([
@@ -16,7 +17,6 @@ export const eventPetSourceById=new Map<string,ImageSourcePropType>([
   ['EVT_PET_013',require('../../assets/event_collectibles/veilbreak/pets/EVT_PET_013_Gloomkin.png')],
   ['EVT_PET_014',require('../../assets/event_collectibles/veilbreak/pets/EVT_PET_014_Lantern_Mimic.png')],
   ['EVT_PET_015',require('../../assets/event_collectibles/frostfall_festival/pets/EVT_PET_015_Snowbell_Pup.png')],
-  ['EVT_PET_016',require('../../assets/event_collectibles/frostfall_festival/pets/EVT_PET_016_Gift_Mimic.png')],
   ['EVT_PET_017',require('../../assets/event_collectibles/frostfall_festival/pets/EVT_PET_017_Aurora_Fox.png')],
   ['EVT_PET_018',require('../../assets/event_collectibles/merchant_guild_festival/pets/EVT_PET_018_Ledger_Ferret.png')],
   ['EVT_PET_019',require('../../assets/event_collectibles/merchant_guild_festival/pets/EVT_PET_019_Guildcrest_Drakelet.png')],
@@ -30,7 +30,6 @@ export const eventCompanionSourceById=new Map<string,ImageSourcePropType>([
   ['EVT_UNIT_005',require('../../assets/event_collectibles/starfall_nights/companions/EVT_UNIT_005_Astral_Wayfarer.png')],
   ['EVT_UNIT_006',require('../../assets/event_collectibles/harvestwake/companions/EVT_UNIT_006_Harvest_Guardian.png')],
   ['EVT_UNIT_007',require('../../assets/event_collectibles/veilbreak/companions/EVT_UNIT_007_Veil_Hound.png')],
-  ['EVT_UNIT_008',require('../../assets/event_collectibles/veilbreak/companions/EVT_UNIT_008_Hollow_Knightling.png')],
   ['EVT_UNIT_009',require('../../assets/event_collectibles/frostfall_festival/companions/EVT_UNIT_009_Frostbell_Herald.png')],
   ['EVT_UNIT_010',require('../../assets/event_collectibles/merchant_guild_festival/companions/EVT_UNIT_010_Caravan_Sentinel.png')],
 ]);

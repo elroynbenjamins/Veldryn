@@ -41,8 +41,7 @@ export const SUNCREST_GAMES_EVENT:LiveEventDef={
   milestones:()=>[
     {points:400,reward:{kind:'title',id:'title_suncrest_contender',name:'Suncrest Contender',rarity:'common'}},
     {points:1000,reward:{kind:'emote',id:'emote_laurel_salute',name:'Laurel Salute',rarity:'rare'}},
-    {points:2250,reward:{kind:'pet',id:'EVT_PET_007',name:'Laurel Lynx',rarity:'rare'}},
-    {points:4000,reward:{kind:'title',id:'title_games_finalist',name:'Games Finalist',rarity:'rare'}},
+    {points:4000,reward:{kind:'pet',id:'EVT_PET_007',name:'Laurel Lynx',rarity:'rare'}},
     {points:6500,reward:{kind:'title',id:'title_suncrest_victor',name:'Suncrest Victor',rarity:'epic'}},
     {points:10000,reward:{kind:'companion',id:'EVT_UNIT_004',name:'Suncrest Champion',rarity:'mythic'}},
   ],
@@ -60,7 +59,7 @@ export const SUNCREST_GAMES_EVENT:LiveEventDef={
   shop:[
     {id:'suncrest_cheer',reward:{kind:'emote',id:'emote_suncrest_cheer',name:'Suncrest Cheer',rarity:'rare'},currency:'common',cost:900,limit:1},
     {id:'laurel_bearer',reward:{kind:'title',id:'title_laurel_bearer',name:'Laurel Bearer',rarity:'epic'},currency:'common',cost:1800,limit:1},
-    {id:'golden_gryphlet',reward:{kind:'pet',id:'EVT_PET_008',name:'Golden Gryphlet',rarity:'mythic'},currency:'prestige',cost:7,limit:1},
+    {id:'golden_gryphlet',reward:{kind:'pet',id:'EVT_PET_008',name:'Golden Gryphlet',rarity:'mythic'},currency:'prestige',cost:12,limit:1},
   ],
   choices:[
     {id:'combat_events',name:'Combat Events',description:'Prioritize combat trials and competitive drills.',bonusLabel:'+20% Suncrest Medals from combat',dropMultipliers:{combat:1.2}},
@@ -111,8 +110,7 @@ export const STARFALL_NIGHTS_EVENT:LiveEventDef={
   milestones:()=>[
     {points:400,reward:{kind:'title',id:'title_starwatcher',name:'Starwatcher',rarity:'common'}},
     {points:1000,reward:{kind:'emote',id:'emote_starfall_gaze',name:'Starfall Gaze',rarity:'rare'}},
-    {points:2250,reward:{kind:'pet',id:'EVT_PET_009',name:'Starwhisker',rarity:'rare'}},
-    {points:4000,reward:{kind:'title',id:'title_comet_seeker',name:'Comet Seeker',rarity:'rare'}},
+    {points:4000,reward:{kind:'pet',id:'EVT_PET_009',name:'Starwhisker',rarity:'rare'}},
     {points:6500,reward:{kind:'title',id:'title_astral_walker',name:'Astral Walker',rarity:'epic'}},
     {points:10000,reward:{kind:'companion',id:'EVT_UNIT_005',name:'Astral Wayfarer',rarity:'epic'}},
   ],
@@ -130,7 +128,7 @@ export const STARFALL_NIGHTS_EVENT:LiveEventDef={
   shop:[
     {id:'starfall_wave',reward:{kind:'emote',id:'emote_starfall_wave',name:'Starfall Wave',rarity:'rare'},currency:'common',cost:900,limit:1},
     {id:'astral_observer',reward:{kind:'title',id:'title_astral_observer',name:'Astral Observer',rarity:'epic'},currency:'common',cost:1800,limit:1},
-    {id:'comet_moth',reward:{kind:'pet',id:'EVT_PET_010',name:'Comet Moth',rarity:'epic'},currency:'prestige',cost:6,limit:1},
+    {id:'comet_moth',reward:{kind:'pet',id:'EVT_PET_010',name:'Comet Moth',rarity:'epic'},currency:'prestige',cost:10,limit:1},
   ],
   choices:[
     {id:'night_patrols',name:'Night Patrols',description:'Protect roads and camps during starfall activity.',bonusLabel:'+20% Star Shards from combat',dropMultipliers:{combat:1.2}},
@@ -181,8 +179,7 @@ export const MERCHANT_GUILD_FESTIVAL_EVENT:LiveEventDef={
   milestones:()=>[
     {points:400,reward:{kind:'title',id:'title_caravan_helper',name:'Caravan Helper',rarity:'common'}},
     {points:1000,reward:{kind:'emote',id:'emote_guild_greeting',name:'Guild Greeting',rarity:'rare'}},
-    {points:2250,reward:{kind:'pet',id:'EVT_PET_018',name:'Ledger Ferret',rarity:'rare'}},
-    {points:4000,reward:{kind:'title',id:'title_guild_factor',name:'Guild Factor',rarity:'rare'}},
+    {points:4000,reward:{kind:'pet',id:'EVT_PET_018',name:'Ledger Ferret',rarity:'rare'}},
     {points:6500,reward:{kind:'title',id:'title_caravan_master',name:'Caravan Master',rarity:'epic'}},
     {points:10000,reward:{kind:'companion',id:'EVT_UNIT_010',name:'Caravan Sentinel',rarity:'epic'}},
   ],
@@ -200,7 +197,7 @@ export const MERCHANT_GUILD_FESTIVAL_EVENT:LiveEventDef={
   shop:[
     {id:'guild_salute',reward:{kind:'emote',id:'emote_guild_salute',name:'Guild Salute',rarity:'rare'},currency:'common',cost:900,limit:1},
     {id:'master_merchant',reward:{kind:'title',id:'title_master_merchant',name:'Master Merchant',rarity:'epic'},currency:'common',cost:1800,limit:1},
-    {id:'guildcrest_drakelet',reward:{kind:'pet',id:'EVT_PET_019',name:'Guildcrest Drakelet',rarity:'epic'},currency:'prestige',cost:6,limit:1},
+    {id:'guildcrest_drakelet',reward:{kind:'pet',id:'EVT_PET_019',name:'Guildcrest Drakelet',rarity:'epic'},currency:'prestige',cost:10,limit:1},
   ],
   choices:[
     {id:'caravan_guards',name:'Caravan Guards',description:'Protect merchants and guild couriers on the road.',bonusLabel:'+20% Guild Scrip from combat',dropMultipliers:{combat:1.2}},

@@ -1,3 +1,4 @@
+import {useGameplayText} from '../i18n/gameplay';
 import {useEffect,useMemo,useState} from 'react';
 import {StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
@@ -39,6 +40,7 @@ function rewardText(result:RegionalCombatResultV1){
 }
 
 export function RegionalCombatPanel({state,onRewardsChanged}:{state:GameState;onRewardsChanged?:()=>Promise<void>|void}){
+ const {gt,gl,language}=useGameplayText();
  const C=useGameTheme(),E=equipmentTheme(C),s=useMemo(()=>styles(C),[C]);
  const [busy,setBusy]=useState(''),[notice,setNotice]=useState(''),[last,setLast]=useState<{encounterId:string;result:RegionalCombatResultV1}|null>(null);
  const [cadence,setCadence]=useState<{projection:RegionalCombatCadenceProjectionV1;receivedAtMs:number}|null>(null),[tick,setTick]=useState(Date.now());
@@ -51,34 +53,34 @@ export function RegionalCombatPanel({state,onRewardsChanged}:{state:GameState;on
   try{
    const result=await runRegionalCombatV1(state.character.id,encounterId);setLast({encounterId,result});setNotice(rewardText(result));
    await onRewardsChanged?.();await refreshCadence();
-  }catch(error){setNotice(error instanceof Error?error.message:'Regional encounter failed. Please retry.');await refreshCadence();}
+  }catch(error){setNotice(error instanceof Error?error.message:gt("Regional encounter failed. Please retry."));await refreshCadence();}
   finally{setBusy('');}
  };
  return <Panel accentSurface={E.panel}>
-  <View style={s.head}><View style={s.flex}><Text style={s.eyebrow}>SERVER-VERIFIED · SUNSCAR</Text><Text style={s.title}>Regional Encounters</Text></View><Text style={s.level}>LV {level}</Text></View>
-  <Text style={s.copy}>These are active combat encounters, not idle hunts. Your current equipment, companion and Effect Gems are frozen server-side when the fight starts.</Text>
+  <View style={s.head}><View style={s.flex}><Text style={s.eyebrow}>{gt("SERVER-VERIFIED · SUNSCAR")}</Text><Text style={s.title}>{gt("Regional Encounters")}</Text></View><Text style={s.level}>LV {level}</Text></View>
+  <Text style={s.copy}>{gt("These are active combat encounters, not idle hunts. Your current equipment, companion and Effect Gems are frozen server-side when the fight starts.")}</Text>
   <View style={s.list}>{SUNSCAR_REGIONAL_ENCOUNTERS_V1.map(encounter=>{
    const locked=level<encounter.level,active=busy===encounter.id,recent=last?.encounterId===encounter.id,intel=regionalGemIntelV1(encounter,state.account.gemPityBySource);
    const projectedNow=cadence?cadence.projection.serverNow+(tick-cadence.receivedAtMs):tick,cadenceRow=cadence?.projection.encounters.find(row=>row.encounterId===encounter.id),availability=regionalCombatAvailabilityV1(encounter,cadenceRow,projectedNow),cadenceLocked=availability.coolingDown||availability.dailyCapped;
-   const statusText=locked?'LV '+encounter.level:availability.dailyCapped?'DAILY CAP':availability.coolingDown?'READY IN '+compactDuration(availability.readyInMs):'READY';
+   const statusText=locked?'LV '+encounter.level:availability.dailyCapped?gt("DAILY CAP"):availability.coolingDown?'READY IN '+compactDuration(availability.readyInMs):gt("Ready").toLocaleUpperCase(language);
    const chance=(intel.chance*100).toFixed(intel.chance<.01?2:1)+'%';
    return <View key={encounter.id} style={[s.card,recent&&s.recent]}>
-    <View style={s.row}><View style={s.flex}><Text style={s.kind}>{encounter.kind==='regional_boss'?'REGIONAL BOSS':encounter.kind.toUpperCase()} · ZONE {encounter.zoneId.slice(-3)}</Text><Text style={s.name}>{encounter.name}</Text></View><Text style={locked||cadenceLocked?s.locked:s.ready}>{statusText}</Text></View>
-    <Text style={s.description}>{encounter.summary}</Text>
-    <View style={s.rewardIntel}><View style={s.row}><Text style={s.rewardLabel}>GEM · GRADE {gradeRoman[intel.grade]} · {chance}</Text>{intel.pityAt?<Text style={s.pityValue}>PITY {intel.misses}/{intel.pityAt}</Text>:<Text style={s.pityValue}>NO PITY</Text>}</View>
-    {intel.pityAt?<><View accessibilityLabel={`Gem pity ${intel.misses} of ${intel.pityAt}; guaranteed within ${intel.remaining} eligible victories`} style={s.pityTrack}><View style={[s.pityFill,{width:(Math.max(3,intel.progress*100)+'%') as any}]}/></View><Text style={s.pityMeta}>Guaranteed in ≤{intel.remaining} eligible {intel.remaining===1?'victory':'victories'}{intel.recipeChance?' · Recipe '+Math.round(intel.recipeChance*100)+'%':''}{intel.catalystChance?' · Catalyst '+Math.round(intel.catalystChance*100)+'%':''}</Text></>:<Text style={s.pityMeta}>Each verified victory rolls independently.</Text>}<Text style={s.pityMeta}>Cadence · {encounter.cooldownSeconds>=60?Math.round(encounter.cooldownSeconds/60)+'m':encounter.cooldownSeconds+'s'} between starts{availability.dailyRemaining!==undefined?' · '+availability.dailyRemaining+'/'+(cadenceRow?.dailyCap??encounter.dailyVictoryCap)+' boss clears remaining':''}{availability.dailyCapped&&availability.resetInMs!==undefined?' · resets in '+compactDuration(availability.resetInMs):''}</Text></View>
+    <View style={s.row}><View style={s.flex}><Text style={s.kind}>{encounter.kind==='regional_boss'?gt("REGIONAL BOSS"):encounter.kind.toUpperCase()} · ZONE {encounter.zoneId.slice(-3)}</Text><Text style={s.name}>{encounter.name}</Text></View><Text style={locked||cadenceLocked?s.locked:s.ready}>{statusText}</Text></View>
+    <Text style={s.description}>{gl(encounter.summary)}</Text>
+    <View style={s.rewardIntel}><View style={s.row}><Text style={s.rewardLabel}>GEM · GRADE {gradeRoman[intel.grade]} · {chance}</Text>{intel.pityAt?<Text style={s.pityValue}>{gt("Pity").toLocaleUpperCase(language)} {intel.misses}/{intel.pityAt}</Text>:<Text style={s.pityValue}>{gt("NO PITY")}</Text>}</View>
+    {intel.pityAt?<><View accessibilityLabel={`Gem pity ${intel.misses} of ${intel.pityAt}; guaranteed within ${intel.remaining} eligible victories`} style={s.pityTrack}><View style={[s.pityFill,{width:(Math.max(3,intel.progress*100)+'%') as any}]}/></View><Text style={s.pityMeta}>Guaranteed in ≤{intel.remaining} eligible {intel.remaining===1?'victory':'victories'}{intel.recipeChance?' · Recipe '+Math.round(intel.recipeChance*100)+'%':''}{intel.catalystChance?' · Catalyst '+Math.round(intel.catalystChance*100)+'%':''}</Text></>:<Text style={s.pityMeta}>{gt("Each verified victory rolls independently.")}</Text>}<Text style={s.pityMeta}>Cadence · {encounter.cooldownSeconds>=60?Math.round(encounter.cooldownSeconds/60)+'m':encounter.cooldownSeconds+'s'} between starts{availability.dailyRemaining!==undefined?' · '+availability.dailyRemaining+'/'+(cadenceRow?.dailyCap??encounter.dailyVictoryCap)+' boss clears remaining':''}{availability.dailyCapped&&availability.resetInMs!==undefined?' · resets in '+compactDuration(availability.resetInMs):''}</Text></View>
     {recent&&last?<View style={s.resultCard}>
-      <View style={s.row}><Text style={last.result.result.victory?s.victory:s.defeat}>{last.result.result.victory?'VICTORY':'DEFEAT'} · {Math.max(1,Math.round(last.result.result.durationMs/1000))}s</Text><Text style={s.resultMetric}>{Math.round(last.result.result.damageDone).toLocaleString()} DMG</Text></View>
+      <View style={s.row}><Text style={last.result.result.victory?s.victory:s.defeat}>{last.result.result.victory?gt("VICTORY"):gt("DEFEAT")} · {Math.max(1,Math.round(last.result.result.durationMs/1000))}s</Text><Text style={s.resultMetric}>{Math.round(last.result.result.damageDone).toLocaleString()} DMG</Text></View>
       <View style={s.combatants}><View style={s.combatant}><Text style={s.combatantName}>{last.result.result.playerName}</Text><View style={s.hpTrack}><View style={[s.hpFill,{width:(Math.max(0,Math.min(100,last.result.result.playerHp/Math.max(1,last.result.result.playerMaxHp)*100))+'%') as any}]}/></View><Text style={s.hpText}>{Math.round(last.result.result.playerHp).toLocaleString()} / {Math.round(last.result.result.playerMaxHp).toLocaleString()} HP</Text></View>
       <View style={s.combatant}><Text style={s.combatantName}>{last.result.result.enemyName}</Text><View style={s.hpTrack}><View style={[s.hpFill,{width:(Math.max(0,Math.min(100,last.result.result.enemyHp/Math.max(1,last.result.result.enemyMaxHp)*100))+'%') as any}]}/></View><Text style={s.hpText}>{Math.round(last.result.result.enemyHp).toLocaleString()} / {Math.round(last.result.result.enemyMaxHp).toLocaleString()} HP</Text></View></View>
-      {!!last.result.result.replayCues.length&&<View style={s.timeline}><Text style={s.timelineTitle}>KEY MOMENTS</Text>{last.result.result.replayCues.slice(-6).map((cue,index)=><Text key={cue.atMs+':'+cue.type+':'+index} style={s.timelineRow}>{cueText(cue)}</Text>)}</View>}
-      <View style={s.rewardReveal}><Text style={s.timelineTitle}>REWARD</Text><Text style={s.rewardResult}>{rewardText(last.result)}</Text></View>
+      {!!last.result.result.replayCues.length&&<View style={s.timeline}><Text style={s.timelineTitle}>{gt("KEY MOMENTS")}</Text>{last.result.result.replayCues.slice(-6).map((cue,index)=><Text key={cue.atMs+':'+cue.type+':'+index} style={s.timelineRow}>{cueText(cue)}</Text>)}</View>}
+      <View style={s.rewardReveal}><Text style={s.timelineTitle}>{gt("REWARD")}</Text><Text style={s.rewardResult}>{rewardText(last.result)}</Text></View>
     </View>:null}
-    <GameButton compact disabled={locked||cadenceLocked||Boolean(busy)} loading={active} title={active?'Resolving…':availability.dailyCapped?'Daily cap reached':availability.coolingDown?'Ready in '+compactDuration(availability.readyInMs):encounter.kind==='regional_boss'?'Challenge boss':'Challenge'} tone={encounter.kind==='regional_boss'?'primary':'secondary'} onPress={()=>void run(encounter.id)}/>
+    <GameButton compact disabled={locked||cadenceLocked||Boolean(busy)} loading={active} title={active?gt("Resolving…"):availability.dailyCapped?gt("Daily cap reached"):availability.coolingDown?'Ready in '+compactDuration(availability.readyInMs):encounter.kind==='regional_boss'?gt("Challenge boss"):gt("Challenge")} tone={encounter.kind==='regional_boss'?'primary':'secondary'} onPress={()=>void run(encounter.id)}/>
    </View>;
   })}</View>
-  {!!notice&&<View accessibilityRole="alert" style={s.notice}><Text style={s.noticeText}>{notice}</Text></View>}
-  <Text style={s.foot}>Gem rolls, pity, recipes and catalysts are settled by the server after a verified victory. Failed fights do not advance Gem pity.</Text>
+  {!!notice&&<View accessibilityRole="alert" style={s.notice}><Text style={s.noticeText}>{gl(notice)}</Text></View>}
+  <Text style={s.foot}>{gt("Gem rolls, pity, recipes and catalysts are settled by the server after a verified victory. Failed fights do not advance Gem pity.")}</Text>
  </Panel>;
 }
 function styles(C:ThemeColors){const E=equipmentTheme(C);return StyleSheet.create({

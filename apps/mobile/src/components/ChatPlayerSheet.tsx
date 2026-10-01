@@ -1,3 +1,4 @@
+import {useSocialText} from '../i18n/social';
 import {useEffect,useMemo,useState} from 'react';
 import {ActivityIndicator,Alert,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {
@@ -20,7 +21,7 @@ import {profileAchievementPrestige,profileCollectionPrestige,profileRecordPresti
 import {friendRelationshipActionPresentation} from '../core/social-identity';
 import {GameModalHeader,GameModalSurface} from './GameModalSurface';
 
-export type ChatPlayerIdentity={id?:string;message_id?:string;account_id:string;sender_name:string;guild_tag?:string|null;guild_tag_color_id?:string|null;relationship?:FriendRelationship};
+export type ChatPlayerIdentity={player_badges?:import('../core/player-badges').PlayerBadgeIdentity;id?:string;message_id?:string;account_id:string;sender_name:string;guild_tag?:string|null;guild_tag_color_id?:string|null;relationship?:FriendRelationship};
 
 export function ChatPlayerSheet({
  message,onClose,onBlocked,onRelationshipChanged,reduceMotion=false,
@@ -28,6 +29,7 @@ export function ChatPlayerSheet({
  message:ChatPlayerIdentity|null;onClose:()=>void;onBlocked:(accountId:string)=>void;reduceMotion?:boolean;
  onRelationshipChanged?:(accountId:string,relationship:FriendRelationship)=>void;
 }){
+ const st=useSocialText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),stackActions=width<360||fontScale>=1.25;
  const {session}=useAuthSession();
  const [profile,setProfile]=useState<PublicPlayerProfileV43|null>(null),[loading,setLoading]=useState(false),[busy,setBusy]=useState(false),[unavailable,setUnavailable]=useState(false),[loadError,setLoadError]=useState('');
@@ -36,32 +38,32 @@ export function ChatPlayerSheet({
 
  const isSelf=!!session?.user.id&&!!message&&message.account_id===session.user.id;
  const setRelationshipAndNotify=(next:{relationship:FriendRelationship;requestId?:string})=>{setRelationship(next);if(message)onRelationshipChanged?.(message.account_id,next.relationship);};
- async function loadProfile(){if(!message)return;setLoading(true);setUnavailable(false);setLoadError('');try{const row=await publicPlayerProfileV43(message.account_id);setProfile(row);setUnavailable(!row);}catch(error){setProfile(null);setLoadError(error instanceof Error?error.message:'Unable to load this player profile.');}finally{setLoading(false)}}
+ async function loadProfile(){if(!message)return;setLoading(true);setUnavailable(false);setLoadError('');try{const row=await publicPlayerProfileV43(message.account_id);setProfile(row);setUnavailable(!row);}catch(error){setProfile(null);setLoadError(error instanceof Error?error.message:st("Unable to load this player profile."));}finally{setLoading(false)}}
  async function loadRelationship(){
   if(!message||isSelf){setRelationship({relationship:'none'});setRelationshipError('');return;}
   setRelationshipLoading(true);setRelationshipError('');
   try{setRelationshipAndNotify(await friendRelationshipState(message.account_id))}
-  catch(error){setRelationship({relationship:message.relationship??'none'});setRelationshipError(error instanceof Error?error.message:'Friend status could not refresh.')}
+  catch(error){setRelationship({relationship:message.relationship??'none'});setRelationshipError(error instanceof Error?error.message:st("Friend status could not refresh."))}
   finally{setRelationshipLoading(false)}
  }
  async function loadInviteCapabilities(){
   if(!message||isSelf){setInviteCapabilities(null);setInviteError('');return;}
   setInviteLoading(true);setInviteError('');
   try{setInviteCapabilities(await socialInviteCapabilities(message.account_id))}
-  catch(error){setInviteCapabilities(null);setInviteError(error instanceof Error?error.message:'Invitation actions are unavailable.')}
+  catch(error){setInviteCapabilities(null);setInviteError(error instanceof Error?error.message:st("Invitation actions are unavailable."))}
   finally{setInviteLoading(false)}
  }
  useEffect(()=>{
   let active=true;
   if(!message){setProfile(null);setUnavailable(false);setLoadError('');setRelationship({relationship:'none'});setRelationshipError('');setInviteCapabilities(null);setInviteError('');return;}
   setLoading(true);setUnavailable(false);setLoadError('');
-  void publicPlayerProfileV43(message.account_id).then(row=>{if(!active)return;setProfile(row);setUnavailable(!row)}).catch(error=>{if(active){setProfile(null);setLoadError(error instanceof Error?error.message:'Unable to load this player profile.')}}).finally(()=>{if(active)setLoading(false)});
+  void publicPlayerProfileV43(message.account_id).then(row=>{if(!active)return;setProfile(row);setUnavailable(!row)}).catch(error=>{if(active){setProfile(null);setLoadError(error instanceof Error?error.message:st("Unable to load this player profile."))}}).finally(()=>{if(active)setLoading(false)});
   if(message.account_id===session?.user.id){setRelationship({relationship:'none'});setRelationshipError('');setInviteCapabilities(null);setInviteError('');}
   else{
    setRelationshipLoading(true);setRelationshipError('');
-   void friendRelationshipState(message.account_id).then(next=>{if(active){setRelationship(next);onRelationshipChanged?.(message.account_id,next.relationship)}}).catch(error=>{if(active){setRelationship({relationship:message.relationship??'none'});setRelationshipError(error instanceof Error?error.message:'Friend status could not refresh.')}}).finally(()=>{if(active)setRelationshipLoading(false)});
+   void friendRelationshipState(message.account_id).then(next=>{if(active){setRelationship(next);onRelationshipChanged?.(message.account_id,next.relationship)}}).catch(error=>{if(active){setRelationship({relationship:message.relationship??'none'});setRelationshipError(error instanceof Error?error.message:st("Friend status could not refresh."))}}).finally(()=>{if(active)setRelationshipLoading(false)});
    setInviteLoading(true);setInviteError('');
-   void socialInviteCapabilities(message.account_id).then(next=>{if(active)setInviteCapabilities(next)}).catch(error=>{if(active){setInviteCapabilities(null);setInviteError(error instanceof Error?error.message:'Invitation actions are unavailable.')}}).finally(()=>{if(active)setInviteLoading(false)});
+   void socialInviteCapabilities(message.account_id).then(next=>{if(active)setInviteCapabilities(next)}).catch(error=>{if(active){setInviteCapabilities(null);setInviteError(error instanceof Error?error.message:st("Invitation actions are unavailable."))}}).finally(()=>{if(active)setInviteLoading(false)});
   }
   return()=>{active=false};
  },[message?.id,message?.account_id,session?.user.id]);
@@ -69,17 +71,17 @@ export function ChatPlayerSheet({
  if(!message)return null;
  const target=message;
 
- async function runRelationship(action:()=>Promise<void>){if(busy)return;setBusy(true);try{await action()}catch(error){Alert.alert('Friends',error instanceof Error?error.message:'Unable to update this friendship.')}finally{setBusy(false)}}
+ async function runRelationship(action:()=>Promise<void>){if(busy)return;setBusy(true);try{await action()}catch(error){Alert.alert(st("Friends"),error instanceof Error?error.message:st("Unable to update this friendship."))}finally{setBusy(false)}}
  async function addFriend(){await runRelationship(async()=>{const result=await sendFriendRequest(target.account_id);if(result==='sent'||result==='already_pending')setRelationshipAndNotify({relationship:'outgoing_pending'});else if(result==='already_friends')setRelationshipAndNotify({relationship:'friend'});else await loadRelationship();});}
- function confirmRemoveFriend(){Alert.alert('Remove '+target.sender_name+'?','They will be removed from your Friends list. You can send a new request later.',[{text:'Cancel',style:'cancel'},{text:'Remove friend',style:'destructive',onPress:()=>void runRelationship(async()=>{await removeFriend(target.account_id);setRelationshipAndNotify({relationship:'none'});})}]);}
+ function confirmRemoveFriend(){Alert.alert(st('Remove {name}?',{name:target.sender_name}),st("They will be removed from your Friends list. You can send a new request later."),[{text:st("Cancel"),style:'cancel'},{text:st("Remove friend"),style:'destructive',onPress:()=>void runRelationship(async()=>{await removeFriend(target.account_id);setRelationshipAndNotify({relationship:'none'});})}]);}
  async function cancelRequest(){if(!relationship.requestId){await loadRelationship();return;}await runRelationship(async()=>{await cancelFriendRequest(relationship.requestId!);setRelationshipAndNotify({relationship:'none'});});}
  async function acceptRequest(){if(!relationship.requestId){await loadRelationship();return;}await runRelationship(async()=>{await respondFriendRequest(relationship.requestId!,true);setRelationshipAndNotify({relationship:'friend'});});}
  async function declineRequest(){if(!relationship.requestId){await loadRelationship();return;}await runRelationship(async()=>{await respondFriendRequest(relationship.requestId!,false);setRelationshipAndNotify({relationship:'none'});});}
- function confirmBlock(){Alert.alert('Block '+target.sender_name+'?','Their messages will be hidden and they will be removed from your social lists.',[{text:'Cancel',style:'cancel'},{text:'Block',style:'destructive',onPress:async()=>{setBusy(true);try{await setPlayerBlocked(target.account_id,true);setRelationshipAndNotify({relationship:'none'});onBlocked(target.account_id);onClose();}catch(error){Alert.alert('Block player',error instanceof Error?error.message:'Unable to block player.');}finally{setBusy(false)}}}]);}
- async function submitReport(reason:SocialReportReason){if(busy)return;setBusy(true);try{const result=await reportSocialPlayer(target.account_id,reason,reason==='harassment_spam'?target.message_id:undefined);Alert.alert('Report player',result==='already_reported'?'You already submitted this report recently.':'Report submitted for review. Blocking is separate and remains your choice.')}catch(error){Alert.alert('Report player',error instanceof Error?error.message:'Unable to submit this report.')}finally{setBusy(false)}}
- function reportPlayer(){Alert.alert('Report '+target.sender_name,'Choose what needs review.',[{text:'Cancel',style:'cancel'},{text:'Name / profile',onPress:()=>void submitReport('identity')},{text:'Harassment / spam',style:'destructive',onPress:()=>void submitReport('harassment_spam')}]);}
- async function inviteToParty(){if(busy)return;setBusy(true);try{const result=await sendPartyInvitation(target.account_id);Alert.alert('Party invitation',result.status==='already_pending'?'A Party invitation is already pending.':'Party invitation sent for 24 hours.');await loadInviteCapabilities()}catch(error){Alert.alert('Party invitation',error instanceof Error?error.message:'Unable to send Party invitation.')}finally{setBusy(false)}}
- async function inviteToGuild(){if(busy)return;setBusy(true);try{const result=await sendGuildInvitation(target.account_id);Alert.alert('Guild invitation',result.status==='already_pending'?'A Guild invitation is already pending.':'Guild invitation sent for 24 hours.');await loadInviteCapabilities()}catch(error){Alert.alert('Guild invitation',error instanceof Error?error.message:'Unable to send Guild invitation.')}finally{setBusy(false)}}
+ function confirmBlock(){Alert.alert(st('Block {name}?',{name:target.sender_name}),st("Their messages will be hidden and they will be removed from your social lists."),[{text:st("Cancel"),style:'cancel'},{text:st("Block"),style:'destructive',onPress:async()=>{setBusy(true);try{await setPlayerBlocked(target.account_id,true);setRelationshipAndNotify({relationship:'none'});onBlocked(target.account_id);onClose();}catch(error){Alert.alert(st("Block player"),error instanceof Error?error.message:st("Unable to block player."));}finally{setBusy(false)}}}]);}
+ async function submitReport(reason:SocialReportReason){if(busy)return;setBusy(true);try{const result=await reportSocialPlayer(target.account_id,reason,reason==='harassment_spam'?target.message_id:undefined);Alert.alert(st("Report player"),result==='already_reported'?st("You already submitted this report recently."):st("Report submitted for review. Blocking is separate and remains your choice."))}catch(error){Alert.alert(st("Report player"),error instanceof Error?error.message:st("Unable to submit this report."))}finally{setBusy(false)}}
+ function reportPlayer(){Alert.alert(st('Report {name}',{name:target.sender_name}),st("Choose what needs review."),[{text:st("Cancel"),style:'cancel'},{text:st("Name / profile"),onPress:()=>void submitReport('identity')},{text:st("Harassment / spam"),style:'destructive',onPress:()=>void submitReport('harassment_spam')}]);}
+ async function inviteToParty(){if(busy)return;setBusy(true);try{const result=await sendPartyInvitation(target.account_id);Alert.alert(st("Party invitation"),result.status==='already_pending'?st("A Party invitation is already pending."):st("Party invitation sent for 24 hours."));await loadInviteCapabilities()}catch(error){Alert.alert(st("Party invitation"),error instanceof Error?error.message:st("Unable to send Party invitation."))}finally{setBusy(false)}}
+ async function inviteToGuild(){if(busy)return;setBusy(true);try{const result=await sendGuildInvitation(target.account_id);Alert.alert(st("Guild invitation"),result.status==='already_pending'?st("A Guild invitation is already pending."):st("Guild invitation sent for 24 hours."));await loadInviteCapabilities()}catch(error){Alert.alert(st("Guild invitation"),error instanceof Error?error.message:st("Unable to send Guild invitation."))}finally{setBusy(false)}}
 
  const achievementEntries=profile?.achievementShowcaseIds.map(id=>{const prestige=profileAchievementPrestige(id);return {key:id,label:profileAchievementLabel(id),prestige:prestige.tone,badge:prestige.badge}})??[];
  const recordPrestige=profileRecordPrestige();
@@ -87,33 +89,33 @@ export function ChatPlayerSheet({
  const collectionEntries=profile?.collectionShowcase.map(ref=>{const prestige=profileCollectionPrestige(ref);return {key:ref.kind+':'+ref.id,label:profileCollectionLabel(ref),meta:ref.kind.replace(/_/g,' '),art:profileShowcaseArt(ref),artMode:ref.kind==='background'?'cover' as const:'contain' as const,prestige:prestige.tone,badge:prestige.badge}})??[];
  const relationshipPresentation=friendRelationshipActionPresentation(relationship.relationship);
  const showInviteActions=!!inviteCapabilities&&(inviteCapabilities.party.available||inviteCapabilities.party.pending||inviteCapabilities.guild.available||inviteCapabilities.guild.pending);
- const socialActions=isSelf?<View style={s.selfNotice}><Text style={s.selfNoticeLabel}>THIS IS YOUR PROFILE</Text><Text style={s.selfNoticeText}>Edit your biography, favorites, privacy and showcases from Account → Profile.</Text></View>:<View style={s.actionArea}>
-  <View style={s.actionHead}><Text style={s.hint}>PLAYER ACTIONS</Text><View style={[s.relationshipPill,relationshipPresentation.tone==='friend'&&s.relationshipFriend]}>{relationshipLoading?<ActivityIndicator size="small" color={C.info}/>:<Text style={[s.relationshipText,relationshipPresentation.tone==='friend'&&s.relationshipFriendText]}>{relationshipPresentation.status}</Text>}</View></View>
-  {relationshipError?<Text style={s.relationshipError}>Friend status could not refresh; showing the last known state.</Text>:null}
+ const socialActions=isSelf?<View style={s.selfNotice}><Text style={s.selfNoticeLabel}>{st("THIS IS YOUR PROFILE")}</Text><Text style={s.selfNoticeText}>{st("Edit your biography, favorites, privacy and showcases from Account → Profile.")}</Text></View>:<View style={s.actionArea}>
+  <View style={s.actionHead}><Text style={s.hint}>{st("PLAYER ACTIONS")}</Text><View style={[s.relationshipPill,relationshipPresentation.tone==='friend'&&s.relationshipFriend]}>{relationshipLoading?<ActivityIndicator size="small" color={C.info}/>:<Text style={[s.relationshipText,relationshipPresentation.tone==='friend'&&s.relationshipFriendText]}>{relationshipPresentation.status}</Text>}</View></View>
+  {relationshipError?<Text style={s.relationshipError}>{st("Friend status could not refresh; showing the last known state.")}</Text>:null}
   <View style={[s.actions,stackActions&&s.actionsStack]}>
-   {relationship.relationship==='none'?<View style={[s.primaryAction,stackActions&&s.actionStack]}><GameButton title="Add friend" disabled={busy||relationshipLoading} onPress={()=>void addFriend()}/></View>:null}
-   {relationship.relationship==='friend'?<View style={[s.primaryAction,stackActions&&s.actionStack]}><GameButton title="Remove friend" tone="secondary" disabled={busy||relationshipLoading} onPress={confirmRemoveFriend}/></View>:null}
-   {relationship.relationship==='outgoing_pending'?<View style={[s.primaryAction,stackActions&&s.actionStack]}><GameButton title={relationship.requestId?'Cancel request':'Refresh request'} tone="secondary" disabled={busy||relationshipLoading} onPress={()=>void cancelRequest()}/></View>:null}
-   {relationship.relationship==='incoming_pending'?<><View style={[s.primaryAction,stackActions&&s.actionStack]}><GameButton title={relationship.requestId?'Accept request':'Refresh request'} disabled={busy||relationshipLoading} onPress={()=>void acceptRequest()}/></View><View style={[s.secondaryAction,stackActions&&s.actionStack]}><GameButton title="Decline" tone="secondary" disabled={busy||relationshipLoading||!relationship.requestId} onPress={()=>void declineRequest()}/></View></>:null}
-   <Pressable accessibilityRole="button" disabled={busy} onPress={confirmBlock} style={({pressed})=>[s.blockButton,stackActions&&s.actionStack,(pressed||busy)&&s.pressed]}><Text style={s.blockText}>Block</Text></Pressable>
-   <Pressable accessibilityRole="button" disabled={busy} onPress={reportPlayer} style={({pressed})=>[s.reportButton,stackActions&&s.actionStack,(pressed||busy)&&s.pressed]}><Text style={s.reportText}>Report</Text></Pressable>
+   {relationship.relationship==='none'?<View style={[s.primaryAction,stackActions&&s.actionStack]}><GameButton title={st("Add friend")} disabled={busy||relationshipLoading} onPress={()=>void addFriend()}/></View>:null}
+   {relationship.relationship==='friend'?<View style={[s.primaryAction,stackActions&&s.actionStack]}><GameButton title={st("Remove friend")} tone="secondary" disabled={busy||relationshipLoading} onPress={confirmRemoveFriend}/></View>:null}
+   {relationship.relationship==='outgoing_pending'?<View style={[s.primaryAction,stackActions&&s.actionStack]}><GameButton title={relationship.requestId?st("Cancel request"):st("Refresh request")} tone="secondary" disabled={busy||relationshipLoading} onPress={()=>void cancelRequest()}/></View>:null}
+   {relationship.relationship==='incoming_pending'?<><View style={[s.primaryAction,stackActions&&s.actionStack]}><GameButton title={relationship.requestId?st("Accept request"):st("Refresh request")} disabled={busy||relationshipLoading} onPress={()=>void acceptRequest()}/></View><View style={[s.secondaryAction,stackActions&&s.actionStack]}><GameButton title={st("Decline")} tone="secondary" disabled={busy||relationshipLoading||!relationship.requestId} onPress={()=>void declineRequest()}/></View></>:null}
+   <Pressable accessibilityRole="button" disabled={busy} onPress={confirmBlock} style={({pressed})=>[s.blockButton,stackActions&&s.actionStack,(pressed||busy)&&s.pressed]}><Text style={s.blockText}>{st("Block")}</Text></Pressable>
+   <Pressable accessibilityRole="button" disabled={busy} onPress={reportPlayer} style={({pressed})=>[s.reportButton,stackActions&&s.actionStack,(pressed||busy)&&s.pressed]}><Text style={s.reportText}>{st("Report")}</Text></Pressable>
   </View>
-  {showInviteActions?<><View style={s.inviteHead}><Text style={s.hint}>DIRECT INVITATIONS</Text>{inviteLoading?<ActivityIndicator size="small" color={C.info}/>:null}</View><View style={[s.actions,stackActions&&s.actionsStack]}>
-   {inviteCapabilities?.party.available?<View style={[s.primaryAction,stackActions&&s.actionStack]}><GameButton title="Invite to Party" tone="secondary" disabled={busy||inviteLoading} onPress={()=>void inviteToParty()}/></View>:inviteCapabilities?.party.pending?<View style={[s.primaryAction,stackActions&&s.actionStack]}><GameButton title="Party invite sent" tone="secondary" disabled onPress={()=>{}}/></View>:null}
-   {inviteCapabilities?.guild.available?<View style={[s.primaryAction,stackActions&&s.actionStack]}><GameButton title="Invite to Guild" tone="secondary" disabled={busy||inviteLoading} onPress={()=>void inviteToGuild()}/></View>:inviteCapabilities?.guild.pending?<View style={[s.primaryAction,stackActions&&s.actionStack]}><GameButton title="Guild invite sent" tone="secondary" disabled onPress={()=>{}}/></View>:null}
-  </View></>:inviteError?<Text style={s.inviteError}>Direct invitations are temporarily unavailable.</Text>:null}
+  {showInviteActions?<><View style={s.inviteHead}><Text style={s.hint}>{st("DIRECT INVITATIONS")}</Text>{inviteLoading?<ActivityIndicator size="small" color={C.info}/>:null}</View><View style={[s.actions,stackActions&&s.actionsStack]}>
+   {inviteCapabilities?.party.available?<View style={[s.primaryAction,stackActions&&s.actionStack]}><GameButton title={st("Invite to Party")} tone="secondary" disabled={busy||inviteLoading} onPress={()=>void inviteToParty()}/></View>:inviteCapabilities?.party.pending?<View style={[s.primaryAction,stackActions&&s.actionStack]}><GameButton title={st("Party invite sent")} tone="secondary" disabled onPress={()=>{}}/></View>:null}
+   {inviteCapabilities?.guild.available?<View style={[s.primaryAction,stackActions&&s.actionStack]}><GameButton title={st("Invite to Guild")} tone="secondary" disabled={busy||inviteLoading} onPress={()=>void inviteToGuild()}/></View>:inviteCapabilities?.guild.pending?<View style={[s.primaryAction,stackActions&&s.actionStack]}><GameButton title={st("Guild invite sent")} tone="secondary" disabled onPress={()=>{}}/></View>:null}
+  </View></>:inviteError?<Text style={s.inviteError}>{st("Direct invitations are temporarily unavailable.")}</Text>:null}
  </View>;
 
  return <GameModalSurface visible presentation="sheet" reduceMotion={reduceMotion} onClose={onClose} backdropLabel="Close player profile" surfaceStyle={s.sheet}>
-  <GameModalHeader eyebrow="PLAYER PROFILE" title={target.sender_name} onClose={onClose}/>
-  <ScrollView style={s.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
-    {loading?<View style={s.limitedCard}><CompactPlayerIdentity name={message.sender_name} guildTag={message.guild_tag} guildTagColorId={message.guild_tag_color_id} status="LOADING PROFILE"/><ActivityIndicator color={C.accent}/></View>:profile?<><PublicProfileScene profile={profile}/>{socialActions}
-    {profile.bio?<View style={s.bioCard}><Text style={s.bioLabel}>PROFILE BIO</Text><Text style={s.bio}>{profile.bio}</Text></View>:null}
+  <GameModalHeader eyebrow={st("PLAYER PROFILE")} title={target.sender_name} onClose={onClose}/>
+  <ScrollView style={s.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll} showsHorizontalScrollIndicator={false}>
+    {loading?<View style={s.limitedCard}><CompactPlayerIdentity accountId={message.account_id} badges={message.player_badges} name={message.sender_name} guildTag={message.guild_tag} guildTagColorId={message.guild_tag_color_id} status={st("LOADING PROFILE")}/><ActivityIndicator color={C.accent}/></View>:profile?<><PublicProfileScene profile={profile}/>{socialActions}
+    {profile.bio?<View style={s.bioCard}><Text style={s.bioLabel}>{st("PROFILE BIO")}</Text><Text style={s.bio}>{profile.bio}</Text></View>:null}
     {(profile.favoriteSkillId||profile.favoriteCompanionId)?<ProfileFavoriteHighlights favoriteSkillId={profile.favoriteSkillId} favoriteCompanionId={profile.favoriteCompanionId}/>:null}
-    <ProfileShowcaseSection title="ACHIEVEMENT SHOWCASE" entries={achievementEntries} emptyLabel="No achievement selected"/>
-    <ProfileShowcaseSection title="PERSONAL RECORDS" entries={recordEntries} emptyLabel="No record selected"/>
-    <ProfileShowcaseSection title="COLLECTION SHOWCASE" entries={collectionEntries} emptyLabel="No collectible selected"/>
-   </>:<View style={s.limitedCard}><CompactPlayerIdentity name={message.sender_name} guildTag={message.guild_tag} guildTagColorId={message.guild_tag_color_id} status={loadError?'PROFILE ERROR':'LIMITED PROFILE'}/><View style={s.limitedCopy}><Text style={s.privateTitle}>{loadError?'Public profile could not load':unavailable?'Full profile unavailable':'No published profile'}</Text><Text style={s.limitedText}>{loadError?'The profile service did not respond successfully. The player identity and social actions below are still available.':'This player may use Private or Guild visibility, may not have published a social profile yet, or may be hidden by a relationship rule.'}</Text></View>{loadError?<GameButton title="Retry profile" tone="secondary" onPress={()=>void loadProfile()}/>:null}</View>}
+    <ProfileShowcaseSection title={st("ACHIEVEMENT SHOWCASE")} entries={achievementEntries} emptyLabel="No achievement selected"/>
+    <ProfileShowcaseSection title={st("PERSONAL RECORDS")} entries={recordEntries} emptyLabel="No record selected"/>
+    <ProfileShowcaseSection title={st("COLLECTION SHOWCASE")} entries={collectionEntries} emptyLabel="No collectible selected"/>
+   </>:<View style={s.limitedCard}><CompactPlayerIdentity accountId={message.account_id} badges={message.player_badges} name={message.sender_name} guildTag={message.guild_tag} guildTagColorId={message.guild_tag_color_id} status={loadError?'PROFILE ERROR':'LIMITED PROFILE'}/><View style={s.limitedCopy}><Text style={s.privateTitle}>{loadError?st("Public profile could not load"):unavailable?st("Full profile unavailable"):st("No published profile")}</Text><Text style={s.limitedText}>{loadError?st("The profile service did not respond successfully. The player identity and social actions below are still available."):st("This player may use Private or Guild visibility, may not have published a social profile yet, or may be hidden by a relationship rule.")}</Text></View>{loadError?<GameButton title={st("Retry profile")} tone="secondary" onPress={()=>void loadProfile()}/>:null}</View>}
    {!profile&&socialActions}
   </ScrollView>
  </GameModalSurface>;

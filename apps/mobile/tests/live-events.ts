@@ -1,6 +1,6 @@
 import {createCharacter,newGame,previewActivityReward,startCombat} from '../src/core/game';
 import {liveEventDef} from '../src/content/live-events';
-import {acceptEventContract,activeLiveEvent,applyEventDiscoveries,applyEventDrops,availableEventRepeatCaches,chooseEventProject,claimAllEventMilestones,claimEventCommunityMilestone,claimEventDailyGift,claimEventDiscovery,claimEventObjective,claimEventRepeatCache,claimEventReward,claimEventWeeklyObjective,contributeEventCurrency,eventCollectionJournal,eventCommunityMilestones,eventContractBoard,eventCurrencyBalance,eventDailyGift,eventDiscoveryBoard,eventLifecycle,eventShopOffers,eventObjectiveClaimed,eventOfferPurchaseCount,eventPrestigeBalance,eventProgress,eventRewardClaimed,eventWeeklyBoard,grantEventActivity,purchaseEventOffer,setLocalEventEnabled} from '../src/core/live-events';
+import {acceptEventContract,activeLiveEvent,applyEventDiscoveries,applyEventDrops,availableEventRepeatCaches,chooseEventProject,claimAllEventMilestones,claimEventCommunityMilestone,claimEventDailyGift,claimEventDiscovery,claimEventObjective,claimEventRepeatCache,claimEventReward,claimEventWeeklyObjective,consumeEventCandy,contributeEventCurrency,eventCandyStatus,eventCollectionJournal,eventCommunityMilestones,eventContractBoard,eventCurrencyBalance,eventDailyFestivalBlessing,eventDailyGift,eventDiscoveryBoard,eventEffectiveDropRate,eventLifecycle,eventShopOffers,eventObjectiveClaimed,eventOfferPurchaseCount,eventPrestigeBalance,eventProgress,eventRewardClaimed,eventWeeklyBoard,grantEventActivity,purchaseEventOffer,setLocalEventEnabled} from '../src/core/live-events';
 
 function ok(condition:boolean,message:string){if(!condition)throw new Error(message);}
 const t0=2_000_000;
@@ -21,14 +21,26 @@ ok(eventProgress(seasonalState,'EVT_ANNUAL_009_2027')===30,'New-season activity 
 ok(eventProgress(seasonalState,'EVT_ANNUAL_009_2026')===777,'New-season activity must not change the prior season progress');
 state=setLocalEventEnabled(state,true,t0);
 ok(activeLiveEvent(state,t0)?.definition.name==='Harvestwake','Developer switch should enable Harvestwake');
+ok(eventDailyFestivalBlessing(state,t0)?.source==='gathering','Day one should automatically bless gathering');
+ok(eventDailyFestivalBlessing(state,t0+86400_000)?.source==='combat','The daily blessing should rotate to combat on day two');
+ok(eventEffectiveDropRate(state,'EVT_ANNUAL_009_2026','gathering',t0)>eventEffectiveDropRate(state,'EVT_ANNUAL_009_2026','combat',t0),'The blessed source should receive the ten percent currency bonus');
+ok(eventCandyStatus(state,t0).candy?.name==='Harvest Taffy','Each event should expose its reusable themed candy');
+let emptyCandyRejected=false;try{consumeEventCandy(state,t0)}catch{emptyCandyRejected=true}ok(emptyCandyRejected,'Candy requires earned charges');
+state={...state,account:{...state.account,eventCandyChargesById:{'EVT_ANNUAL_009_2026:candy:skill':2}}};
+state=consumeEventCandy(state,t0);ok(state.account.eventCandyChargesById?.['EVT_ANNUAL_009_2026:candy:skill']===1,'Candy consumes one charge');
+ok(eventCandyStatus(state,t0).remainingSeconds===7200,'Candy should add a two-hour non-combat utility timer');
+state=consumeEventCandy(state,t0+1000);
+ok(Math.floor(eventCandyStatus(state,t0+1000).remainingSeconds)===14399,'Candy should stack time up to the reusable duration cap');
+ok(state.account.eventCandyChargesById?.['EVT_ANNUAL_009_2026:candy:skill']===0,'Second use consumes final charge');
 const gift=eventDailyGift(state,t0)!;const giftProgressBefore=eventProgress(state,'EVT_ANNUAL_009_2026');state=claimEventDailyGift(state,t0);
 ok(eventProgress(state,'EVT_ANNUAL_009_2026')===giftProgressBefore+gift.gift.rewardCurrency,'Daily festival gift should grant reputation and spendable currency');
+ok(state.account.eventCandyChargesById?.['EVT_ANNUAL_009_2026:candy:skill']===1&&state.account.eventCandyChargesById?.['EVT_ANNUAL_009_2026:candy:combat']===1&&state.account.eventCandyChargesById?.['EVT_ANNUAL_009_2026:candy:companion']===1,'Daily gift supplies all three candy tracks');
 let duplicateGiftRejected=false;try{claimEventDailyGift(state,t0)}catch{duplicateGiftRejected=true}ok(duplicateGiftRejected,'Festival gift can only be claimed once per UTC day');
 ok(eventDailyGift(state,t0+86400_000)?.claimed===false,'The next UTC day should offer a fresh festival gift');
 state=applyEventDiscoveries(state,[{eventId:'EVT_ANNUAL_009_2026',discoveryId:'golden_field_feather',name:'Golden Field Feather',quantity:5}]);
 ok(eventDiscoveryBoard(state,t0).find(entry=>entry.discovery.id==='golden_field_feather')?.ready===true,'Discovery fragments should accumulate to their collection target');
 state=claimEventDiscovery(state,'golden_field_feather',t0);
-ok(state.account.unlockedCosmeticPetIds?.includes('EVT_PET_012')===true,'Golden Field Feather discovery should grant Golden Sheafling');
+ok(state.account.unlockedTitleIds?.includes('title_golden_field')===true,'Golden Field Feather discovery should grant Golden Field Keeper');
 let duplicateDiscoveryRejected=false;try{claimEventDiscovery(state,'golden_field_feather',t0)}catch{duplicateDiscoveryRejected=true}ok(duplicateDiscoveryRejected,'Discovery rewards cannot be claimed twice');
 state=applyEventDrops(state,[{eventId:'EVT_ANNUAL_009_2026',currencyId:'HARVEST_MARK',name:'Harvest Marks',quantity:0,source:'combat',units:3,recordedAtMs:t0}]);
 ok(state.account.eventActivityById?.EVT_ANNUAL_009_2026?.combat===3,'Activity must count even when its currency roll awards zero');
@@ -45,8 +57,8 @@ state=claimEventReward(state,'emote_harvest_cheer',t0+2);
 ok(state.account.unlockedEmoteIds?.includes('emote_harvest_cheer')===true,'Claimed emote should enter the account collection');
 ok(eventRewardClaimed(state,'EVT_ANNUAL_009_2026','emote_harvest_cheer'),'Claim receipt should persist');
 let duplicateRejected=false;try{claimEventReward(state,'emote_harvest_cheer',t0+2)}catch{duplicateRejected=true}ok(duplicateRejected,'A milestone cannot be claimed twice');
-state=claimEventReward(state,'skin_harvestwake_ironwarden',t0+2);
-ok(state.account.unlockedEventSkinIds?.includes('skin_harvestwake_ironwarden')===true,'Class event skin should unlock permanently');
+state=claimEventReward(state,'event:spirit-lantern',t0+2);
+ok(state.account.unlockedProfileIconIds?.includes('event:spirit-lantern')===true,'Spirit Lantern event profile icon should unlock permanently');
 state=claimAllEventMilestones(state,t0+2);
 ok(state.account.unlockedCosmeticPetIds?.includes('EVT_PET_011')===true,'Claim all should collect Pumpkin Piglet from the Harvestwake milestone');
 const weekly=eventWeeklyBoard(state,t0+2)[0];state=applyEventDrops(state,[{eventId:'EVT_ANNUAL_009_2026',currencyId:'HARVEST_MARK',name:'Harvest Marks',quantity:0,source:weekly.objective.source,units:weekly.objective.required,recordedAtMs:t0+2}]);
@@ -63,16 +75,15 @@ const remainingContracts=eventContractBoard(state,t0+2).slice(1);state=acceptEve
 let thirdRejected=false;try{acceptEventContract(state,remainingContracts[1].objective.id,t0+2)}catch{thirdRejected=true}ok(thirdRejected,'Daily board must enforce its two-contract acceptance limit');
 ok(eventContractBoard(state,t0+86400_000+2).every(contract=>!contract.accepted),'A new UTC day should provide fresh contract acceptance slots');
 const progressBeforePurchase=eventProgress(state,'EVT_ANNUAL_009_2026');
-const market=eventShopOffers(state,t0+2),prestigeOfferCount=market.filter(offer=>offer.currency==='prestige').length;ok(market.filter(offer=>offer.currency==='common').length===2,'Event Shop should show exactly two rotating common offers');ok(prestigeOfferCount===2,'Harvestwake should expose both prestige offers');const purchaseOffer=market.find(offer=>offer.currency==='common')!;
+const market=eventShopOffers(state,t0+2),prestigeOfferCount=market.filter(offer=>offer.currency==='prestige').length;ok(market.filter(offer=>offer.currency==='common').length===2,'Event Shop should show exactly two rotating common offers');ok(prestigeOfferCount===1,'Harvestwake should expose one shop pet offer');const purchaseOffer=market.find(offer=>offer.currency==='common')!;
 state=purchaseEventOffer(state,purchaseOffer.id,t0+2);
 ok(eventOfferPurchaseCount(state,'EVT_ANNUAL_009_2026',purchaseOffer.id)===1,'Event Shop purchase limit should persist');
 const cosmeticIds=[...(state.account.unlockedProfileBackgroundIds??[]),...(state.account.unlockedProfileBorderIds??[]),...(state.account.unlockedCosmeticPetIds??[])];ok(cosmeticIds.includes(purchaseOffer.reward.id),'Event Shop reward should enter the matching cosmetic collection');
 ok(eventProgress(state,'EVT_ANNUAL_009_2026')===progressBeforePurchase,'Spending currency must not reduce reputation');
-state={...state,account:{...state.account,eventPrestigeBalanceById:{...(state.account.eventPrestigeBalanceById??{}),EVT_ANNUAL_009_2026:8}}};
-const guardianOffer=eventShopOffers(state,t0+2).find(offer=>offer.id==='pantry_harvest_guardian');ok(!!guardianOffer,'Harvest Guardian should be available from Harvestwake prestige stock');
-state=purchaseEventOffer(state,'pantry_harvest_guardian',t0+2);
-ok(state.account.unlockedCombatCompanionIds?.includes('EVT_UNIT_006')===true,'Event companion purchase should unlock the combat companion');
-ok(!!state.account.combatCompanionProgress?.EVT_UNIT_006,'Event companion purchase should initialize companion progression');
+state={...state,account:{...state.account,eventPrestigeBalanceById:{...(state.account.eventPrestigeBalanceById??{}),EVT_ANNUAL_009_2026:10}}};
+const sheaflingOffer=eventShopOffers(state,t0+2).find(offer=>offer.id==='market_golden_sheafling');ok(!!sheaflingOffer,'Golden Sheafling should be available from Harvestwake prestige stock');
+state=purchaseEventOffer(state,'market_golden_sheafling',t0+2);
+ok(state.account.unlockedCosmeticPetIds?.includes('EVT_PET_012')===true,'Harvestwake shop purchase should unlock Golden Sheafling');
 
 let bonusState=chooseEventProject(state,'guild_pantry',t0+2);const bonusProgressBefore=eventProgress(bonusState,'EVT_ANNUAL_009_2026');bonusState=grantEventActivity(bonusState,'boss',t0+3);
 ok(eventProgress(bonusState,'EVT_ANNUAL_009_2026')===bonusProgressBefore+300,'Guild Pantry should apply its 20% boss-currency bonus');
@@ -83,7 +94,7 @@ ok(eventCurrencyBalance(bonusState,'EVT_ANNUAL_009_2026')===contributionBalance-
 ok(bonusState.account.eventContributionById?.EVT_ANNUAL_009_2026===125,'Guild Pantry should turn 100 spent Marks into 125 verified contribution value');
 state=chooseEventProject(state,'preserved_supplies',t0+2);
 let choiceLocked=false;try{chooseEventProject(state,'guild_pantry',t0+2)}catch{choiceLocked=true}ok(choiceLocked,'Winter project choice should lock for the event');
-state={...state,account:{...state.account,liveEvent:{eventId:'EVT_ANNUAL_009_2026',enabled:true,startsAtMs:t0-10*86400_000,endsAtMs:t0+3600_000},eventCommunityProgressById:{...(state.account.eventCommunityProgressById??{}),EVT_ANNUAL_009_2026:100}}};
+state={...state,account:{...state.account,liveEvent:{eventId:'EVT_ANNUAL_009_2026',enabled:true,startsAtMs:t0-10*86400_000,endsAtMs:t0+3600_000},eventCommunityProgressById:{...(state.account.eventCommunityProgressById??{}),EVT_ANNUAL_009_2026:100},eventContributionById:{...(state.account.eventContributionById??{}),EVT_ANNUAL_009_2026:100}}};
 ok(eventCommunityMilestones(state,t0+2).length===4,'Harvestwake should expose four shared Storehouse milestones');
 ok(eventCommunityMilestones(state,t0+2).find(entry=>entry.milestone.percent===100)?.ready===true,'Verified 100% community progress should unlock the final Storehouse milestone');
 ok(eventCollectionJournal(state,t0+2).some(entry=>entry.reward.id==='title_storehouse_builder'),'Community cosmetic should appear in the active Harvestwake collection journal');

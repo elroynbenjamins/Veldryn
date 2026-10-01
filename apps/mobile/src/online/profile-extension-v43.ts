@@ -1,18 +1,21 @@
 import {supabase} from './supabase';
-import {guildIdentities} from './social';
+import type {PlayerBadgeIdentity} from '../core/player-badges';
+import {guildIdentities,profileGuildByTag} from './social';
+import type {ProfileGuildIdentity} from '../core/profile-guild';
 import type {PlayerNameStylePreference} from '../core/player-name-style';
 
 export type ProfileVisibilityV43='public'|'guild'|'private';
-export type ProfileCollectionKindV43='item'|'pet'|'companion'|'skin'|'background'|'border';
+export type ProfileCollectionKindV43='item'|'pet'|'companion'|'profile_icon'|'background'|'border';
 export interface ProfileCollectionRefV43{kind:ProfileCollectionKindV43;id:string}
 export interface ProfileExtensionSelfV43{
  accountId:string;visibility:ProfileVisibilityV43;worldFeedOptOut:boolean;selectedCharacterId?:string|null;bio:string;
  favoriteSkillId?:string|null;favoriteCompanionId?:string|null;achievementShowcaseIds:string[];collectionShowcase:ProfileCollectionRefV43[];recordShowcaseIds:string[];masteryShowcaseActionIds:string[];revision:number;updatedAt?:string;
 }
 export interface PublicPlayerProfileV43{
+ guild?:ProfileGuildIdentity|null;
  accountId:string;displayName:string;visibility:ProfileVisibilityV43;
- guildTag?:string|null;guildTagColorId?:string|null;nameStyle?:PlayerNameStylePreference|null;
- character:{id:string;name:string;classId:string;level:number;bodyPresentation:'male'|'female';selectedSkinId:string};
+ guildTag?:string|null;guildTagColorId?:string|null;nameStyle?:PlayerNameStylePreference|null;playerBadges?:PlayerBadgeIdentity;
+ character:{id:string;name:string;classId:string;level:number;bodyPresentation:'male'|'female';profileIconId:string};
  title:string;backgroundId:string;borderId?:string|null;petId?:string|null;bio:string;favoriteSkillId?:string|null;favoriteCompanionId?:string|null;
  achievementShowcaseIds:string[];collectionShowcase:ProfileCollectionRefV43[];recordShowcaseIds:string[];masteryShowcaseActionIds:string[];recordEntries?:Record<string,{recordId:string;value:number;achievedAtMs:number;characterId?:string;contextLabel?:string}>;revision:number;
 }
@@ -34,5 +37,7 @@ export async function publicPlayerProfileV43(accountId:string){
  const {data,error}=await client().rpc('profile_public_v43',{p_target_account_id:accountId});if(error)throw error;
  const profile=(data??null) as PublicPlayerProfileV43|null;if(!profile)return null;
  const identity=(await guildIdentities([accountId])).get(accountId);
- return {...profile,masteryShowcaseActionIds:Array.isArray(profile.masteryShowcaseActionIds)?profile.masteryShowcaseActionIds:[],guildTag:identity?.guild_tag??null,guildTagColorId:identity?.guild_tag_color_id??null,nameStyle:identity?.player_name_style??null};
+ const knownGuild=identity?.guild_tag?{tag:identity.guild_tag,tagColorId:identity.guild_tag_color_id}:null;
+ const guild=knownGuild?await profileGuildByTag(knownGuild.tag).catch(()=>knownGuild):null;
+ return {...profile,guild,masteryShowcaseActionIds:Array.isArray(profile.masteryShowcaseActionIds)?profile.masteryShowcaseActionIds:[],guildTag:identity?.guild_tag??null,guildTagColorId:identity?.guild_tag_color_id??null,nameStyle:identity?.player_name_style??null,playerBadges:identity?.player_badges};
 }

@@ -1,9 +1,11 @@
+/** Source-only archive. Keep future event art here until its event is released. */
 import type {LiveEventVisualKey} from '../content/live-event-visual-keys';
 export interface LiveEventVisualBundle{
   heroBackground:number;
   badgeIcon?:number;
   commonCurrencyIcon?:number;
   prestigeCurrencyIcon?:number;
+  candyIcon?:number;
   discoveryArt:Readonly<Record<string,number>>;
   rewardArt:Readonly<Record<string,number>>;
 }
@@ -20,9 +22,10 @@ type AnnualEventVisualBundle=LiveEventVisualBundle&{badgeIcon:number};
 export const LIVE_EVENT_VISUALS:Readonly<Record<LiveEventVisualKey,AnnualEventVisualBundle>>={
   harvestwake:{
     heroBackground:require('../../assets/profile-backgrounds/bg_harvestwake.png'),
-    badgeIcon:require('../../assets/events-startup-v1/badges/badge_harvestwake.png'),
+    badgeIcon:require('../../assets/events/harvestwake/badge.png'),
     commonCurrencyIcon:require('../../assets/events/harvestwake/currency_harvest_mark.png'),
     prestigeCurrencyIcon:require('../../assets/events/harvestwake/currency_amber_seed.png'),
+    candyIcon:require('../../assets/events/harvestwake/candy_harvest_taffy.png'),
     discoveryArt:{
       whispering_husk:require('../../assets/events/harvestwake/discovery_whispering_husk.png'),
       golden_field_feather:require('../../assets/events/harvestwake/discovery_golden_field_feather.png'),
@@ -39,6 +42,9 @@ export const LIVE_EVENT_VISUALS:Readonly<Record<LiveEventVisualKey,AnnualEventVi
       pet_amber_owl:require('../../assets/events/harvestwake/pet_amber_owl.png'),
       emote_harvest_cheer:require('../../assets/events/harvestwake/emote_harvest_cheer.png'),
       emote_scarecrow_salute:require('../../assets/events/harvestwake/emote_scarecrow_salute.png'),
+      bg_grand_storehouse:require('../../assets/profile-backgrounds/bg_harvestwake.png'),
+      bg_harvestwake:require('../../assets/profile-backgrounds/bg_harvestwake.png'),
+      bg_spirit_storehouse:require('../../assets/profile-backgrounds/bg_harvestwake.png'),
       frame_amber_vine:require('../../assets/profile-borders/frame_amber_vine.png'),
       frame_wheat_crown:require('../../assets/profile-borders/frame_wheat_crown.png'),
     },
@@ -69,7 +75,9 @@ export const LIVE_EVENT_VISUALS:Readonly<Record<LiveEventVisualKey,AnnualEventVi
   },
   bloomwake:{
     heroBackground:require('../../assets/profile-backgrounds/bg_bloomwake.png'),
-    badgeIcon:require('../../assets/events/bloomwake/badge.png'),
+    // The legacy badge PNG is malformed (its artwork is confined to the top strip).
+    // Use the centered Bloomwake token until a dedicated badge is supplied.
+    badgeIcon:require('../../assets/events/bloomwake/currency_bloom_token.png'),
     commonCurrencyIcon:require('../../assets/events/bloomwake/currency_bloom_token.png'),
     prestigeCurrencyIcon:require('../../assets/events/bloomwake/currency_verdant_seed.png'),
     discoveryArt:EMPTY_ART,
@@ -104,7 +112,7 @@ export const LIVE_EVENT_VISUALS:Readonly<Record<LiveEventVisualKey,AnnualEventVi
     },
   },
   merchant_guild:{
-    heroBackground:require('../../assets/profile-backgrounds/bg_kingdom_approach.png'),
+    heroBackground:require('../../assets/profile-backgrounds/bg_merchant_guild.png'),
     badgeIcon:require('../../assets/events/merchant_guild/badge.png'),
     commonCurrencyIcon:require('../../assets/events/merchant_guild/currency_guild_scrip.png'),
     prestigeCurrencyIcon:require('../../assets/events/merchant_guild/currency_caravan_seal.png'),
@@ -120,12 +128,12 @@ export const LIVE_EVENT_VISUALS:Readonly<Record<LiveEventVisualKey,AnnualEventVi
     badgeIcon:require('../../assets/events/veilbreak/badge.png'),
     commonCurrencyIcon:require('../../assets/events/veilbreak/currency_veil_shard.png'),
     prestigeCurrencyIcon:require('../../assets/events/veilbreak/currency_lantern_ember.png'),
+    candyIcon:require('../../assets/events/veilbreak/candy_gloam.png'),
     discoveryArt:EMPTY_ART,
     rewardArt:{
       EVT_PET_013:require('../../assets/event_collectibles/veilbreak/pets/EVT_PET_013_Gloomkin.png'),
-      EVT_PET_014:require('../../assets/event_collectibles_v1/EVT_PET_014.png'),
+      EVT_PET_014:require('../../assets/event_collectibles/veilbreak/pets/EVT_PET_014_Lantern_Mimic.png'),
       EVT_UNIT_007:require('../../assets/event_collectibles/veilbreak/companions/EVT_UNIT_007_Veil_Hound.png'),
-      EVT_UNIT_008:require('../../assets/event_collectibles_v1/EVT_UNIT_008.png'),
     },
   },
   frostfall:{
@@ -133,12 +141,12 @@ export const LIVE_EVENT_VISUALS:Readonly<Record<LiveEventVisualKey,AnnualEventVi
     badgeIcon:require('../../assets/events/frostfall/badge.png'),
     commonCurrencyIcon:require('../../assets/events/frostfall/currency_frostbell_token.png'),
     prestigeCurrencyIcon:require('../../assets/events/frostfall/currency_aurora_chime.png'),
+    candyIcon:require('../../assets/events/frostfall/candy_frostmint.png'),
     discoveryArt:EMPTY_ART,
     rewardArt:{
-      EVT_PET_015:require('../../assets/event_collectibles_v1/EVT_PET_015.png'),
-      EVT_PET_016:require('../../assets/event_collectibles_v1/EVT_PET_016.png'),
-      EVT_PET_017:require('../../assets/event_collectibles_v1/EVT_PET_017.png'),
-      EVT_UNIT_009:require('../../assets/event_collectibles_v1/EVT_UNIT_009.png'),
+      EVT_PET_015:require('../../assets/event_collectibles/frostfall_festival/pets/EVT_PET_015_Snowbell_Pup.png'),
+      EVT_PET_017:require('../../assets/event_collectibles/frostfall_festival/pets/EVT_PET_017_Aurora_Fox.png'),
+      EVT_UNIT_009:require('../../assets/event_collectibles/frostfall_festival/companions/EVT_UNIT_009_Frostbell_Herald.png'),
     },
   },
 };

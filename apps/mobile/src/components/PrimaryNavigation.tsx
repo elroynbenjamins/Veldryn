@@ -2,15 +2,18 @@ import {Platform,Pressable,StyleSheet,Text,View} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {PrimaryNavigationIcon,type PrimaryNavigationDestination} from './PrimaryNavigationIcon';
 import {useGameTheme} from '../theme/ThemeContext';
+import {useGameLanguage} from '../i18n/GameLanguageProvider';
+import {navigationText} from '../i18n/navigation';
 
 export type NavigationBadge=number|'dot';
 
 export function PrimaryNavigation<T extends PrimaryNavigationDestination>({destinations,active,labelFor,onNavigate,badges,guidedDestination}:{destinations:readonly T[];active?:T;labelFor:(destination:T)=>string;onNavigate:(destination:T)=>void;badges?:Partial<Record<T,NavigationBadge>>;guidedDestination?:T}){
+ const language=useGameLanguage();
  const C=useGameTheme();
  const {bottom}=useSafeAreaInsets();
  // The app shell leaves the bottom edge to persistent navigation on both platforms.
  const bottomInset=Math.max(bottom,Platform.OS==='android'?8:4);
- return <View accessibilityRole="tablist" style={[s.nav,{paddingBottom:bottomInset,backgroundColor:C.navBg,borderColor:C.line}]}>{destinations.map(item=>{const selected=active===item,guided=guidedDestination===item,label=labelFor(item),badge=badges?.[item],badgeLabel=badge==='dot'?'new activity':typeof badge==='number'&&badge>0?`${badge} notification${badge===1?'':'s'}`:'';return <Pressable key={item} accessibilityRole="tab" accessibilityState={{selected}} accessibilityLabel={badgeLabel?`${label}, ${badgeLabel}`:label} onPress={()=>onNavigate(item)} style={({pressed})=>[s.item,selected&&{backgroundColor:C.selection},guided&&[s.guided,{borderColor:C.accent}],pressed&&s.pressed]}>
+ return <View accessibilityRole="tablist" style={[s.nav,{paddingBottom:bottomInset,backgroundColor:C.navBg,borderColor:C.line}]}>{destinations.map(item=>{const selected=active===item,guided=guidedDestination===item,label=labelFor(item),badge=badges?.[item],badgeLabel=badge==='dot'?navigationText(language,'new activity'):typeof badge==='number'&&badge>0?navigationText(language,'{count} notifications',{count:badge}):'';return <Pressable key={item} accessibilityRole="tab" accessibilityState={{selected}} accessibilityLabel={badgeLabel?`${label}, ${badgeLabel}`:label} onPress={()=>onNavigate(item)} style={({pressed})=>[s.item,selected&&{backgroundColor:C.selection},guided&&[s.guided,{borderColor:C.accent}],pressed&&s.pressed]}>
   {selected&&<View pointerEvents="none" style={[s.mark,{backgroundColor:C.selectionLine}]}/>}<View style={s.iconShell}><PrimaryNavigationIcon destination={item} active={selected}/>{badge!==undefined&&badge!==0?<View style={[s.badge,{borderColor:C.navBg,backgroundColor:C.notification},badge==='dot'&&s.dotBadge]}><Text style={[s.badgeText,{color:C.notificationText}]}>{badge==='dot'?'':typeof badge==='number'?(badge>99?'99+':badge):''}</Text></View>:null}</View>
   <Text numberOfLines={2} textBreakStrategy="balanced" android_hyphenationFrequency="normal" style={[s.label,{color:selected?C.selectionLine:C.muted}]}>{label}</Text>
  </Pressable>})}</View>;

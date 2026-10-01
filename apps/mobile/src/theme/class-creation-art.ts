@@ -1,7 +1,7 @@
 import type {ClassId} from '../core/types';
-import {startingCharacterArtwork} from './character-assets';
+import {classIconArtwork} from './character-assets';
 
-/** Approved class illustrations for selection; these do not grant equipment or skins. */
+/** Approved class illustrations for selection; these do not grant equipment. */
 export const classCreationPresentation = {
   IRONWARDEN:{accent:'#70BDFA',traits:'Guard · Threat · Counterplay'},
   BASTION:{accent:'#C98342',traits:'Barriers · Fortification · Protection'},
@@ -16,5 +16,5 @@ export const classCreationPresentation = {
 
 export function classCreationArt(id:ClassId){
   void id;
-  return startingCharacterArtwork;
+  return {male:{front:classIconArtwork[id],back:classIconArtwork[id]},female:{front:classIconArtwork[id],back:classIconArtwork[id]}};
 }

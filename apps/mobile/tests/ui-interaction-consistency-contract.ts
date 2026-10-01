@@ -41,7 +41,7 @@ for(const forbidden of ["rgba(0,0,0,.78)","rgba(67,189,242,.07)","rgba(4,10,17,.
 ok(enhancement.includes('loading={busy}'),'Upgrade action must expose a real loading state');
 
 const guide=read('src/components/GuideTopicModal.tsx');
-ok(guide.includes('GameModalHeader')&&guide.includes('compact title="Close"'),'Help modal must use shared header and compact close action');
+ok(guide.includes('<GameModalHeader eyebrow={a("GAME GUIDE")} title={a(definition.title)} onClose={onClose}')&&guide.includes('<GameButton compact title={a("Close")} tone="secondary" onPress={onClose}'),"Help modal must use shared header and compact close action");
 
 const save=read('src/components/SaveTransferPanel.tsx');
 ok(save.includes('loading={exportBusy}')&&save.includes('loading={busy}'),'Save transfer must expose loading state for export and import');
@@ -53,17 +53,18 @@ ok(confirm.includes('useWindowDimensions')&&confirm.includes('actionsStack'),'Co
 
 const top=read('src/components/GameTopBar.tsx');
 ok(top.includes('GameModalSurface')&&!top.includes('<Modal'),'Quick navigation must use the shared modal shell');
-ok(top.includes('loading={saving}')&&top.includes('GameButton title="Save five"'),'Quick navigation save must use shared loading/button behavior');
+ok(top.includes('loading={saving}')&&top.includes('GameButton title={tr("Save five")}'),"Quick navigation save must use shared loading/button behavior");
 
 const combat=read('src/screens/CombatScreen.tsx');
 ok(!combat.includes('HUNT PLAN')&&!combat.includes('showPlan')&&!combat.includes('STOP GOAL'),'Combat must not expose the removed Hunt Plan controls');
 ok(combat.includes('<CombatXpSplit state={state} onCommand={onCommand}/>'),'Combat must expose the saved skill XP split');
-ok(combat.indexOf('<CombatXpSplit')<combat.indexOf('<StatBar'),'XP split controls must appear at the top of Combat');
+ok(combat.includes('accessibilityState={{expanded:showTraining}}')&&combat.includes('{showTraining?<CombatXpSplit'),'XP split controls must remain available through the training disclosure');
+ok(combat.indexOf('<CombatXpSplit')<combat.indexOf('<RegionEncounterList'),'XP split controls must remain above the enemy list');
 const split=read('src/components/CombatXpSplit.tsx');
 ok(split.includes("type:'class_focus'")&&split.includes('normalizeTrainingFocus'),'XP split must use the existing authoritative character setting');
 ok(split.includes('accessibilityRole="radiogroup"')&&split.includes('accessibilityRole="radio"')&&split.includes('minHeight:44'),'XP ratios must be accessible single-choice controls');
 const skills=read('src/screens/SkillsScreen.tsx');
-ok(skills.includes("section('COMBAT SKILLS',combat,true)")&&skills.includes('accessibilityLabel="Open Combat"')&&skills.includes('onPress={onCombat}'),'Skills must group both combat skills with a direct Combat action');
+ok(skills.includes('section(gt("COMBAT SKILLS"),combat,true)')&&skills.includes('accessibilityLabel={gt("Open Combat")}')&&skills.includes('onPress={onCombat}'),"Skills must group both combat skills with a direct Combat action");
 for(const path of ['src/screens/HomeScreen.tsx','src/screens/WorldScreen.tsx','src/screens/CombatScreen.tsx','src/components/HerbalismMethodPanel.tsx','src/components/TravelRegionModal.tsx','src/components/RewardPopup.tsx','src/components/FrostmarchRegionPanel.tsx']){
  const source=read(path);
  ok(!source.includes('EnvironmentBanner')&&!source.includes('EnvironmentDetailsModal')&&!source.includes('weatherName'),'Weather detail panels must stay out of '+path);
@@ -109,7 +110,8 @@ ok(storyBoss.includes('dismissOnBackdrop={false}')&&storyBoss.includes('<ScrollV
 
 const chatPlayer=read('src/components/ChatPlayerSheet.tsx');
 ok(chatPlayer.includes('GameModalHeader')&&chatPlayer.includes('presentation="sheet"'),'Chat player profiles must use the shared safe sheet/header');
-ok(chatPlayer.indexOf('{isSelf?')>chatPlayer.indexOf('<ScrollView')&&chatPlayer.indexOf('{isSelf?')<chatPlayer.lastIndexOf('</ScrollView>'),'Chat player social actions must stay inside reachable scroll content');
+const socialActionPlacements=[chatPlayer.indexOf('{socialActions}'),chatPlayer.indexOf('{!profile&&socialActions}')];
+ok(chatPlayer.includes('const socialActions=isSelf?')&&socialActionPlacements.every(index=>index>chatPlayer.indexOf('<ScrollView')&&index<chatPlayer.lastIndexOf('</ScrollView>')),'Chat player social actions must stay inside reachable scroll content for full and limited profiles');
 ok(chatPlayer.includes('reduceMotion={reduceMotion}'),'Chat player profile presentation must respect reduced motion');
 
 
@@ -124,10 +126,10 @@ ok(characterManage.includes('<GameModalSurface')&&characterManage.includes('<Scr
 ok(characterManage.includes('keyboardShouldPersistTaps="handled"')&&characterManage.includes('keyboardDismissMode="on-drag"'),'Character management actions must stay tappable with the confirmation keyboard open');
 
 const settings=read('src/screens/SettingsScreen.tsx');
-ok(settings.includes("DISCORD_INVITE_URL='https://discord.gg/Db83APvP5y'")&&settings.includes('title="Join Discord"'),'Settings must expose the official Discord invite near the top');
-ok(settings.includes("PRIVACY_POLICY_URL='https://elroynbenjamins.github.io/veldryn/privacy/'")&&settings.includes('title="Privacy Policy"'),'Settings must expose the VELDRYN privacy policy as a bottom action');
+ok(settings.includes("DISCORD_INVITE_URL='https://discord.gg/Db83APvP5y'")&&settings.includes('DiscordButton label={a("Join Discord")}')&&settings.includes('onPress={()=>openExternal(DISCORD_INVITE_URL)}'),"Settings must expose the official Discord invite near the top");
+ok(settings.includes("PRIVACY_POLICY_URL='https://elroynbenjamins.github.io/veldryn/privacy/'")&&settings.includes('title={a("Privacy Policy")}')&&settings.includes('onPress={()=>openExternal(PRIVACY_POLICY_URL)}'),"Settings must expose the VELDRYN privacy policy as a bottom action");
 ok(settings.includes('Linking.openURL')&&settings.includes('offlineCapBreakdown(state)'),'Settings external links and AFK reserve summary must be runtime-backed');
-ok(settings.includes('{afk.baseHours}h base · up to {afk.freeMaxHours}h through progression · {afk.maxHours}h maximum')&&settings.includes('VIP +2h · VIP+ +2h extra · Supporter +2h'),'Settings must explain the runtime-backed 8→24→30 hour AFK reserve progression');
+ok(settings.includes("a('{base}h base · up to {free}h through progression · {max}h maximum',{base:afk.baseHours,free:afk.freeMaxHours,max:afk.maxHours})")&&settings.includes('a("Final +6h: VIP +2h · VIP+ +2h extra · Supporter +2h")'),"Settings must explain the runtime-backed 8→24→30 hour AFK reserve progression");
 
 const actionQueue=read('src/components/ActionQueuePanel.tsx');
 ok(actionQueue.includes('accessibilityState={{disabled:index===0}}')&&actionQueue.includes('accessibilityState={{disabled:index===queue.length-1}}'),'Action Queue move buttons must expose disabled state instead of looking tappable when unavailable');

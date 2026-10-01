@@ -30,9 +30,9 @@ if(replacementId){
 equal(equipmentChangeFeedback(before,{...after,characterId:'different'}),null,'switching character must never emit a false equipment moment');
 
 const inventory=fs.readFileSync('src/screens/InventoryScreen.tsx','utf8');
-ok(inventory.includes('GEAR SWAPPED')&&inventory.includes('EQUIPPED')&&inventory.includes('UNEQUIPPED'),'Inventory must distinguish equip result types');
+ok(inventory.includes('gt("GEAR SWAPPED")')&&inventory.includes('gt("Equipped").toLocaleUpperCase(language)')&&inventory.includes('gt("UNEQUIPPED")'),'Inventory must distinguish equip result types');
 ok(inventory.includes('returned to Inventory.'),'gear replacement must explain where the old item went');
-ok(inventory.includes('POWER')&&inventory.includes('ATK')&&inventory.includes('DEF')&&inventory.includes('HP'),'gear swap feedback must expose meaningful stat deltas');
+ok(inventory.includes('gt("Power").toLocaleUpperCase(language),moment.delta.power')&&inventory.includes("['ATK',moment.delta.attack]")&&inventory.includes("['DEF',moment.delta.defense]")&&inventory.includes("['HP',moment.delta.hp]"),'gear swap feedback must expose meaningful stat deltas');
 ok(inventory.includes('SET BONUS ACTIVATED')&&inventory.includes('SET BONUS LOST'),'gear swap feedback must announce crossed set thresholds');
 ok(inventory.includes('equipmentChangeFeedback(previous,next)'),'feedback must derive from committed state transitions');
 ok(inventory.includes('setTimeout(()=>dismissRef.current(),5000)'),'equipment result moment should clear itself without blocking inventory use');

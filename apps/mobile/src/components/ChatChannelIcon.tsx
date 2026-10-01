@@ -1,6 +1,6 @@
 import {StyleSheet,View} from 'react-native';
 
-/** Small outline symbols keep chat navigation quiet at mobile sizes. */
+/** Quiet outline symbols for the compact chat rail. */
 export function ChatChannelIcon({channel,color}:{channel:'world'|'guild'|'party'|'system';color:string}){
  const stroke={borderColor:color};
  return <View accessible={false} pointerEvents="none" style={s.icon}>

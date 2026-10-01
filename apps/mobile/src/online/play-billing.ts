@@ -1,7 +1,7 @@
 import type {Purchase} from 'expo-iap';
 import type {GameState} from '../core/types';
 import {withServerCommerceEntitlements,type ServerCommerceEntitlements} from '../core/account-entitlements';
-import {commerceProduct,type PlayBillingProductType} from '../content/commerce-products';
+import {commerceProduct,type CommerceProductId,type PlayBillingProductType} from '../content/commerce-products';
 import {supabase} from './supabase';
 
 export interface GooglePlayBillingContext{
@@ -39,7 +39,14 @@ async function invokeBilling<T>(body:Record<string,unknown>):Promise<T>{
   const client=requireBillingClient();
   await requireRecoverableSession();
   const {data,error}=await client.functions.invoke('play-billing',{body});
-  if(error)throw error;
+  if(error){
+    // Supabase wraps non-2xx function responses; retain the actionable server error.
+    if(error.context instanceof Response){
+      const payload=await error.context.clone().json().catch(()=>null) as {error?:unknown}|null;
+      if(typeof payload?.error==='string')throw new Error(payload.error);
+    }
+    throw error;
+  }
   if(!data||typeof data!=='object')throw new Error('Google Play billing returned an invalid response.');
   if('error' in data&&typeof data.error==='string')throw new Error(data.error);
   return data as T;
@@ -56,6 +63,10 @@ export function googlePlayPurchaseEvidence(purchase:Purchase):GooglePlayPurchase
 
 export async function loadGooglePlayBillingContext():Promise<GooglePlayBillingContext>{
   return invokeBilling<GooglePlayBillingContext>({action:'context'});
+}
+
+export async function prepareGooglePlayPurchase(productId:CommerceProductId):Promise<GooglePlayBillingContext>{
+  return invokeBilling<GooglePlayBillingContext>({action:'prepare',productId});
 }
 
 export async function verifyGooglePlayPurchase(purchase:Purchase):Promise<GooglePlayVerificationResult>{

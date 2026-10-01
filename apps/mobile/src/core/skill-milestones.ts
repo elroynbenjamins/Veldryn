@@ -137,6 +137,7 @@ export function newlyUnlockedCrossSkillNames(before:GameState,after:GameState,sk
 
 
 export interface SkillTrainingFocus{
+ tutorial?:boolean;
  skillId:SkillId;
  skillName:string;
  currentLevel:number;
@@ -148,6 +149,12 @@ export interface SkillTrainingFocus{
 }
 
 export function skillTrainingFocus(state:GameState):SkillTrainingFocus|undefined{
+ // Keep the first gathering lesson ahead of long-term crafting milestones.
+ const gatheringQuest=state.quests.find(row=>row.questId==='QST_002');
+ if(gatheringQuest?.status==='active'){
+  const skill=state.skills.filter(row=>['mining','woodcutting','fishing'].includes(row.skillId)&&row.level<2).sort((a,b)=>b.xp-a.xp)[0];
+  if(skill){const progress=progressWithinLevel(skill.xp,skill.level);return {skillId:skill.skillId,skillName:pretty(skill.skillId),currentLevel:skill.level,nextLevel:2,levelsAway:1,currentLevelProgressPct:Math.round(Math.min(1,progress.current/Math.max(1,progress.need))*100),milestoneCount:1,milestoneTitles:['First Blood, First Skill'],tutorial:true};}
+ }
  const candidates=state.skills.flatMap(skill=>{
   if(skill.level>=100)return [];
   const overview=skillMilestoneOverview(state,skill.skillId);

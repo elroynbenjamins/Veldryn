@@ -29,10 +29,9 @@ ok(battleStage.includes('synchronized presentation estimates'),'Combat preview m
 
 const encounters=read('src/components/RegionEncounterList.tsx');
 ok(encounters.includes('combatBaselineProjection(monster)'),'Encounter details must use the shared corrected combat baseline');
-ok(encounters.includes('dropExpectation(drop.chance'),'Drop rows must derive odds/time from the shared drop projection');
-ok(encounters.includes('BASELINE PACE')&&encounters.includes('kills/hr'),'Combat details must show corrected baseline hunt pace');
-ok(encounters.includes('formatRegionalEnemySecondaryStats(monster)'),'Ordinary enemy cards must expose the secondary stats that affect regional hunt math');
-ok(encounters.includes('~1/')&&encounters.includes('avg '),'Drop rows must show one-in-N odds and average base find time');
+ok((encounters.includes('BASELINE PACE')||encounters.includes('t("BASELINE REWARDS")'))&&encounters.includes('pace.killsPerHour'),'Combat details must show corrected baseline hunt pace');
+ok(encounters.includes('combatReadiness(state,monster'),'Combat details must derive readiness from the shared combat presentation');
+ok(encounters.includes('t("DROP TABLE")')&&encounters.includes('(drop.chance*100).toFixed(1)'),'Drop rows must retain a compact per-item chance view without speculative find-time math');
 
 const recipe=read('src/components/RecipeCard.tsx');
 const skillNavigation=read('src/core/skill-progression-navigation.ts');
@@ -53,7 +52,7 @@ ok(!skillNavigation.includes('prepareSteps?:MaterialPreparationStep[]')&&!skillN
 ok(recipe.includes('recipePreparationRoute(state,recipe,multiplier)')&&recipe.includes('preparationRoute.steps.length>1'),'Recipe cards must build one batch-aware Prepare Materials route and hide it when no preparation work remains');
 ok(recipe.includes('Prepare materials')&&recipe.includes('route.chainLabel')&&recipe.includes('recipePreparationRouteLabel(route)')&&recipe.includes('numberOfLines={1}'),'Collapsed Prepare Materials must show a compact source chain plus bounded prep metadata');
 ok(recipe.includes('route.steps.map')&&recipe.includes('onNavigate(step.destination!)')&&recipe.includes("step.kind!=='final_craft'"),'Expanded preparation must render one ordered actionable dependency sequence while keeping the final craft in place');
-ok(recipe.includes('BOTTLENECK')&&recipe.includes("'FINAL · HERE'"),'Expanded route rows must surface the authoritative bottleneck and mark the current recipe as FINAL / HERE');
+ok(recipe.includes('BOTTLENECK')&&recipe.includes('gt("FINAL · HERE")'),'Expanded route rows must surface the authoritative bottleneck and mark the current recipe as FINAL / HERE');
 ok(recipe.includes('NEXT STEP')&&recipe.includes('next=prepSteps[0]')&&recipe.includes('nextStepCard'),'Prepare Materials must keep one prominent next-step recommendation from the ordered route');
 ok(recipe.includes('route.totalGold.toLocaleString()')&&recipe.includes('route.goldShortfall'),'Expanded route must preserve full-chain Gold accounting and shortfall visibility');
 ok(!recipe.includes('row.prepareSteps')&&!recipe.includes('openPlans'),'Recipe UI must not keep the superseded nested per-source Prepare Materials disclosure');

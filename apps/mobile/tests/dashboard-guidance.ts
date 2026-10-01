@@ -30,7 +30,7 @@ const dailyUnlockedSession=homeSessionSummary(dailyUnlockedState,Date.UTC(2026,8
 ok(dailyUnlockedSession.dailyReady,'Completing QST_002 should expose the Daily Supplies claim immediately');
 equal(dailyUnlockedSession.primaryReady?.kind,'daily','Daily Supplies becomes the primary ready action after its onboarding unlock when no story reward is waiting');
 const prepBase=createCharacter(newGame(2),'IRONWARDEN','Home Preparation');
-const prepState={...prepBase,character:{...prepBase.character!,level:20,gold:100000},quests:prepBase.quests.map(row=>row.questId==='QST_002'?{...row,status:'claimed' as const,progress:2}:row),skills:prepBase.skills.map(skill=>skill.skillId==='smithing'?{...skill,level:12}:skill.skillId==='mining'?{...skill,level:8}:skill.skillId==='woodcutting'?{...skill,level:7}:skill)};
+const prepState={...prepBase,exploredRouteIds:['SCOUT_IRONWOOD'],character:{...prepBase.character!,level:20,gold:100000},quests:prepBase.quests.map(row=>row.questId==='QST_002'?{...row,status:'claimed' as const,progress:2}:row),skills:prepBase.skills.map(skill=>skill.skillId==='smithing'?{...skill,level:12}:skill.skillId==='mining'?{...skill,level:8}:skill.skillId==='woodcutting'?{...skill,level:7}:skill)};
 const prepRecipe=RECIPES.find(row=>row.id==='FORGE_REINFORCED_FITTING')!,prepRoute=recipePreparationRoute(prepState,prepRecipe,1),prepGoal=recipePreparationGoalForRecipe({state:prepState,recipe:prepRecipe,batches:1,initialStepCount:prepRoute.steps.length,nowMs:10});
 const trackedHomeState={...prepState,character:{...prepState.character!,progressionGoals:[prepGoal]}};
 const prepSession=homeSessionSummary(trackedHomeState,Date.UTC(2026,8,22,12));

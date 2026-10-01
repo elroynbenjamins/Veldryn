@@ -21,4 +21,5 @@ function identityNameError(value:string,min:number,max:number,label:string){
 export function normalizeCharacterName(value:string){return normalizeIdentityName(value)}
 export function characterNameError(value:string){return identityNameError(value,2,20,'character names')}
 export function normalizeGuildName(value:string){return normalizeIdentityName(value)}
-export function guildNameError(value:string){return identityNameError(value,3,24,'Guild names')}
+export const GUILD_NAME_MAX_LENGTH=21;
+export function guildNameError(value:string){return identityNameError(value,3,GUILD_NAME_MAX_LENGTH,'Guild names')}

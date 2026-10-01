@@ -1,3 +1,5 @@
+import {creationT,creationText} from '../i18n/creation';
+import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {useMemo} from 'react';
 import {ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {EarlyFeatureUnlockMoment} from '../core/feature-unlocks';
@@ -7,15 +9,16 @@ import {equipmentTheme,radii,spacing,typography,type ThemeColors} from '../theme
 import {useGameTheme} from '../theme/ThemeContext';
 
 export function FeatureUnlockPopup({moment,reduceMotion=false,onOpen,onLater}:{moment?:EarlyFeatureUnlockMoment;reduceMotion?:boolean;onOpen:()=>void;onLater:()=>void}){
+ const language=useGameLanguage();
  const C=useGameTheme(),E=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
- return <GameModalSurface visible={!!moment} presentation="dialog" reduceMotion={reduceMotion} onClose={onLater} backdropLabel="Close feature unlock" surfaceStyle={s.card}>
-  {moment?<ScrollView style={s.scroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+ return <GameModalSurface visible={!!moment} presentation="dialog" reduceMotion={reduceMotion} onClose={onLater} backdropLabel={creationT(language,"Close feature unlock")} surfaceStyle={s.card}>
+  {moment?<ScrollView style={s.scroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
    <View style={[s.badge,{borderColor:E.goldSoft}]}><Text style={[s.badgeMark,{color:E.goldSoft}]}>✦</Text></View>
-   <Text style={[s.eyebrow,{color:E.goldSoft}]}>{moment.eyebrow}</Text>
-   <Text accessibilityRole="header" style={s.heading}>{moment.title}</Text>
-   <Text style={s.copy}>{moment.description}</Text>
-   <View style={s.points}>{moment.bullets.map((bullet,index)=><View key={index} style={s.point}><Text style={s.pointMark}>◆</Text><Text style={s.pointText}>{bullet}</Text></View>)}</View>
-   <View style={s.actions}><GameButton title={moment.actionLabel} onPress={onOpen}/><GameButton title="Later" tone="secondary" onPress={onLater}/></View>
+   <Text style={[s.eyebrow,{color:E.goldSoft}]}>{creationText(language,moment.eyebrow)}</Text>
+   <Text accessibilityRole="header" style={s.heading}>{creationText(language,moment.title)}</Text>
+   <Text style={s.copy}>{creationText(language,moment.description)}</Text>
+   <View style={s.points}>{moment.bullets.map((bullet,index)=><View key={index} style={s.point}><Text style={s.pointMark}>◆</Text><Text style={s.pointText}>{creationText(language,bullet)}</Text></View>)}</View>
+   <View style={s.actions}><GameButton title={creationText(language,moment.actionLabel)} onPress={onOpen}/><GameButton title={creationT(language,"Later")} tone="secondary" onPress={onLater}/></View>
   </ScrollView>:null}
  </GameModalSurface>;
 }

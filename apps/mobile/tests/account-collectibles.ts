@@ -1,10 +1,11 @@
-import {COLLECTIBLES,LEGACY_PET_COLLECTIBLES,PROFILE_COLLECTIBLES,validateCollectibleCatalog} from '../src/content/collectibles';
+import {COLLECTIBLES,PROFILE_COLLECTIBLES,validateCollectibleCatalog} from '../src/content/collectibles';
 import {CORE_PET_COLLECTIBLES,validateCorePetCatalog} from '../src/content/core-pets';
 import {EVENT_PET_COLLECTIBLES} from '../src/content/event-collectible-content';
 import {collectionBonusBreakdown,selectCollectible,unlockCollectible} from '../src/core/collectibles';
 import {normalizeOwnedPetIds,normalizeSelectedPetId} from '../src/core/pet-collection';
 import {createCharacter,newGame} from '../src/core/game';
 import {migrateSave} from '../src/core/save-migrations';
+import {EVENTS_RELEASED} from '../src/core/release-flags';
 
 const fail=(message:string)=>{throw new Error(message)};
 const equal=(actual:unknown,expected:unknown,message:string)=>{if(actual!==expected)fail(`${message}: expected ${String(expected)}, got ${String(actual)}`)};
@@ -13,10 +14,10 @@ validateCollectibleCatalog();
 validateCorePetCatalog();
 
 equal(CORE_PET_COLLECTIBLES.length,33,'canonical core pet count');
-equal(EVENT_PET_COLLECTIBLES.length,19,'event pet count');
+equal(EVENT_PET_COLLECTIBLES.length,18,'active event pet count');
 equal(
   COLLECTIBLES.length,
-  CORE_PET_COLLECTIBLES.length+EVENT_PET_COLLECTIBLES.length+LEGACY_PET_COLLECTIBLES.length+PROFILE_COLLECTIBLES.length,
+  CORE_PET_COLLECTIBLES.length+(EVENTS_RELEASED?EVENT_PET_COLLECTIBLES.length:0)+PROFILE_COLLECTIBLES.filter(row=>EVENTS_RELEASED||row.collectionGroup!=='event').length,
   'combined collectible catalog count',
 );
 

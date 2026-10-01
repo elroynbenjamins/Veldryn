@@ -1,3 +1,6 @@
+import {VEILBREAK_EVENT,FROSTFALL_EVENT} from './annual-events-v2';
+import {TURNING_OF_THE_AGE_EVENT,HEARTBOND_EVENT,BLOOMWAKE_EVENT} from './annual-events-v3';
+import {SUNCREST_GAMES_EVENT,STARFALL_NIGHTS_EVENT,MERCHANT_GUILD_FESTIVAL_EVENT} from './annual-events-v4';
 import {annualEventSeriesId,LIVE_EVENT_CATALOG,type LiveEventDef} from './live-events';
 import {eventRewardOwned} from '../core/live-events';
 import type {ClassId,GameState} from '../core/types';
@@ -22,9 +25,9 @@ const WINDOWS:Record<string,{windowLabel:string;order:number}>={
   EVT_ANNUAL_006_2026:{windowLabel:'June / July',order:6},
   EVT_ANNUAL_008_2026:{windowLabel:'August',order:8},
   EVT_ANNUAL_009_2026:{windowLabel:'September',order:9},
-  EVT_ANNUAL_010_2026:{windowLabel:'October',order:10},
-  EVT_ANNUAL_011_2026:{windowLabel:'November',order:11},
-  EVT_ANNUAL_012_2026:{windowLabel:'December',order:12},
+  EVT_ANNUAL_010_2026:{windowLabel:'Oct 10 – Nov 2',order:10},
+  EVT_ANNUAL_011_2026:{windowLabel:'Nov 6 – Nov 29',order:11},
+  EVT_ANNUAL_012_2026:{windowLabel:'Dec 1 – Dec 29',order:12},
 };
 
 function rewards(definition:LiveEventDef,classId:ClassId){
@@ -43,7 +46,9 @@ function rewards(definition:LiveEventDef,classId:ClassId){
 
 export function annualEventCalendar(state:GameState):AnnualEventCalendarEntry[]{
   const classId=state.character?.classId??'IRONWARDEN';
-  return LIVE_EVENT_CATALOG.map(definition=>{
+  // Planning-only definitions never register a playable event or enable rewards.
+  const calendarCatalog=[...new Map([TURNING_OF_THE_AGE_EVENT,HEARTBOND_EVENT,BLOOMWAKE_EVENT,SUNCREST_GAMES_EVENT,STARFALL_NIGHTS_EVENT,VEILBREAK_EVENT,MERCHANT_GUILD_FESTIVAL_EVENT,FROSTFALL_EVENT,...LIVE_EVENT_CATALOG].map(event=>[event.id,event])).values()];
+  return calendarCatalog.map(definition=>{
     const schedule=WINDOWS[definition.id]??{windowLabel:'Seasonal',order:99};
     const collection=rewards(definition,classId);
     const collectionOwned=collection.filter(reward=>eventRewardOwned(state,reward)).length;
@@ -62,4 +67,11 @@ export function annualEventCalendar(state:GameState):AnnualEventCalendarEntry[]{
       hasHistory:lifetimeReputation>0||collectionOwned>0,
     };
   }).sort((a,b)=>a.order-b.order||a.name.localeCompare(b.name));
+}
+
+/** Calendar starts at launch, retaining twelve months including the current month. */
+export function annualCalendarMonths(nowMs=Date.now()){
+  const now=new Date(nowMs),launch=2026*12+9,current=Math.max(launch,now.getUTCFullYear()*12+now.getUTCMonth());
+  const first=Math.max(launch,current-11),last=(Math.floor(current/12)+2)*12-1;
+  return Array.from({length:last-first+1},(_,index)=>{const value=first+index;return {year:Math.floor(value/12),month:value%12+1};});
 }

@@ -1,22 +1,10 @@
 import type {ImageSourcePropType} from 'react-native';
-import herbs0 from './generated/herbs-v1-data-0';
-import herbs1 from './generated/herbs-v1-data-1';
-import herbs2 from './generated/herbs-v1-data-2';
-import herbs3 from './generated/herbs-v1-data-3';
-import potions0 from './generated/potions-v1-data-0';
-import potions1 from './generated/potions-v1-data-1';
-import potions2 from './generated/potions-v1-data-2';
-import potions3 from './generated/potions-v1-data-3';
 
 export const CONSUMABLE_ART_CELL=48;
 export const CONSUMABLE_ART_SHEET_SIZE=144;
 
-export const herbArtworkSheet:ImageSourcePropType={
-  uri:'data:image/png;base64,'+herbs0+herbs1+herbs2+herbs3,
-};
-export const potionArtworkSheet:ImageSourcePropType={
-  uri:'data:image/png;base64,'+potions0+potions1+potions2+potions3,
-};
+export const herbArtworkSheet:ImageSourcePropType=require('../../assets/consumables-herb-v2.png');
+export const potionArtworkSheet:ImageSourcePropType=require('../../assets/consumables-potion-v2.png');
 
 export type ConsumableArtworkSheet='herb'|'potion';
 export interface ConsumableArtworkCell{sheet:ConsumableArtworkSheet;column:number;row:number;}

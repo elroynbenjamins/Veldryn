@@ -1,3 +1,4 @@
+import {accountText,accountDuration} from '../i18n/account';
 import {useMemo} from 'react';
 import {ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
@@ -13,32 +14,35 @@ function duration(seconds:number){
 function pct(value:number){return value.toFixed(value>=10?0:2)+'%'}
 
 export function AccountBonusesScreen({state}:{state:GameState}){
+ const language=state.settings.language;
+ const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params);
+
   const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
  const overview=accountBonusOverview(state);
  const permanentSources=overview.sources.filter(row=>row.scope!=='temporary');
- return <ScrollView contentContainerStyle={s.root}>
-  <Text style={s.kicker}>ACCOUNT & CHARACTER</Text>
-  <Text accessibilityRole="header" style={s.heading}>Bonuses</Text>
-  <Text style={s.copy}>A single view of modifiers that are actually active in gameplay right now. Collection ownership is account-wide; selected Faith and permanent boost sources follow the active character.</Text>
+ return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
+  <Text style={s.kicker}>{a("ACCOUNT & CHARACTER")}</Text>
+  <Text accessibilityRole="header" style={s.heading}>{a("Bonuses")}</Text>
+  <Text style={s.copy}>{a("A single view of modifiers that are actually active in gameplay right now. Collection ownership is account-wide; selected Faith and permanent boost sources follow the active character.")}</Text>
 
   {overview.temporary?<Panel>
-   <View style={s.headRow}><View style={s.flex}><Text style={s.section}>TEMPORARY BOOST</Text><Text style={s.title}>{overview.temporary.label}</Text></View><Text style={s.temporary}>+{pct(overview.temporary.percent)}</Text></View>
-   <Text style={s.copy}>{duration(overview.temporary.remainingSeconds)} qualifying activity time remaining. The timer only consumes time from eligible activities.</Text>
+   <View style={s.headRow}><View style={s.flex}><Text style={s.section}>{a("TEMPORARY BOOST")}</Text><Text style={s.title}>{a(overview.temporary.label)}</Text></View><Text style={s.temporary}>+{pct(overview.temporary.percent)}</Text></View>
+   <Text style={s.copy}>{a('{time} qualifying activity time remaining. The timer only consumes time from eligible activities.',{time:accountDuration(language,overview.temporary.remainingSeconds)})}</Text>
   </Panel>:null}
 
   <Panel>
-   <Text style={s.section}>EFFECTIVE PERMANENT MODIFIERS</Text>
-   {overview.modifiers.length?overview.modifiers.map(row=><View key={row.id} style={s.row}><View style={s.flex}><Text style={s.name}>{row.label}</Text><Text style={s.meta}>{row.direction==='reduction'?'Less taken / consumed':'Effective increase'}</Text></View><Text style={row.direction==='reduction'?s.reduction:s.value}>{row.direction==='reduction'?'−':'+'}{pct(row.percent)}</Text></View>):<Text style={s.empty}>No permanent gameplay modifiers are active on this character yet.</Text>}
+   <Text style={s.section}>{a("EFFECTIVE PERMANENT MODIFIERS")}</Text>
+   {overview.modifiers.length?overview.modifiers.map(row=><View key={row.id} style={s.row}><View style={s.flex}><Text style={s.name}>{a(row.label)}</Text><Text style={s.meta}>{row.direction==='reduction'?a("Less taken / consumed"):a("Effective increase")}</Text></View><Text style={row.direction==='reduction'?s.reduction:s.value}>{row.direction==='reduction'?'−':'+'}{pct(row.percent)}</Text></View>):<Text style={s.empty}>{a("No permanent gameplay modifiers are active on this character yet.")}</Text>}
   </Panel>
 
   <Panel>
-   <Text style={s.section}>ACTIVE SOURCES</Text>
-   {permanentSources.length?permanentSources.map(row=><View key={row.id} style={s.source}><View style={s.flex}><Text style={s.name}>{row.label}</Text><Text style={s.copy}>{row.detail}</Text></View><View style={[s.scope,row.scope==='account'?s.accountScope:s.characterScope]}><Text style={s.scopeText}>{row.scope==='account'?'ACCOUNT':'CHARACTER'}</Text></View></View>):<Text style={s.empty}>No permanent source is contributing a bonus yet.</Text>}
+   <Text style={s.section}>{a("ACTIVE SOURCES")}</Text>
+   {permanentSources.length?permanentSources.map(row=><View key={row.id} style={s.source}><View style={s.flex}><Text style={s.name}>{a(row.label)}</Text><Text style={s.copy}>{a(row.detail)}</Text></View><View style={[s.scope,row.scope==='account'?s.accountScope:s.characterScope]}><Text style={s.scopeText}>{row.scope==='account'?a("ACCOUNT"):a("CHARACTER")}</Text></View></View>):<Text style={s.empty}>{a("No permanent source is contributing a bonus yet.")}</Text>}
   </Panel>
 
   <Panel>
-   <Text style={s.section}>WHAT COUNTS HERE</Text>
-   <Text style={s.copy}>This screen reflects the same runtime multiplier calculation used by combat, skilling, rewards and other supported systems. Locked collectibles and inactive entitlements are not counted. Collection caps are already applied before the totals are shown.</Text>
+   <Text style={s.section}>{a("WHAT COUNTS HERE")}</Text>
+   <Text style={s.copy}>{a("This screen reflects the same runtime multiplier calculation used by combat, skilling, rewards and other supported systems. Locked collectibles and inactive entitlements are not counted. Collection caps are already applied before the totals are shown.")}</Text>
   </Panel>
  </ScrollView>;
 }

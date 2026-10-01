@@ -1,3 +1,4 @@
+import {useGameplayText} from '../i18n/gameplay';
 import {useEffect,useMemo,useRef} from 'react';
 import {Animated,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {itemDef} from '../content/items';
@@ -26,23 +27,24 @@ export function ForgeClaimBanner({results,reduceMotion,onDismiss}:{results:reado
 }
 
 export function ForgeRarityRevealModal({results,reduceMotion,onClose,onInventory}:{results:readonly ForgeCraftResult[];reduceMotion:boolean;onClose:()=>void;onInventory:()=>void}){
+ const {gt,gl,language}=useGameplayText();
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),stackActions=width<360||fontScale>=1.25,scale=useRef(new Animated.Value(1)).current;
   const procs=results.filter(row=>row.qualityProc),best=procs.length?highest(procs):undefined,bestMeta=best?rarityMeta(best.rarity):undefined;
   useEffect(()=>{scale.stopAnimation();scale.setValue(1);if(!procs.length||reduceMotion)return;Animated.sequence([Animated.spring(scale,{toValue:1.035,damping:8,stiffness:210,mass:.65,useNativeDriver:true}),Animated.spring(scale,{toValue:1,damping:15,stiffness:190,mass:.8,useNativeDriver:true})]).start();return()=>scale.stopAnimation()},[best?.instanceId,procs.length,reduceMotion,scale]);
   if(!procs.length)return null;
-  return <GameModalSurface visible presentation="dialog" reduceMotion={reduceMotion} onClose={onClose} backdropLabel="Close Forge result" surfaceStyle={[s.dialog,bestMeta&&{borderColor:bestMeta.color}]}>
-    <GameModalHeader eyebrow="EXCEPTIONAL FORGE RESULT" title={procs.length===1?`${bestMeta!.label} quality proc`:`${procs.length} quality procs`} onClose={onClose}/>
+  return <GameModalSurface visible presentation="dialog" reduceMotion={reduceMotion} onClose={onClose} backdropLabel={gt("Close Forge result")} surfaceStyle={[s.dialog,bestMeta&&{borderColor:bestMeta.color}]}>
+    <GameModalHeader eyebrow={gt("EXCEPTIONAL FORGE RESULT")} title={procs.length===1?`${bestMeta!.label} quality proc`:`${procs.length} quality procs`} onClose={onClose}/>
     <Animated.View style={[s.reveal,{transform:[{scale}]}]}>
       <Text style={[s.revealMark,{color:bestMeta?.color}]}>{bestMeta?.symbol} {bestMeta?.label.toUpperCase()} {bestMeta?.symbol}</Text>
-      <Text style={s.revealCopy}>{procs.length===1?'The Forge produced a rarer crafted copy.':'Multiple finished crafts produced rarer copies.'}</Text>
+      <Text style={s.revealCopy}>{procs.length===1?gt("The Forge produced a rarer crafted copy."):gt("Multiple finished crafts produced rarer copies.")}</Text>
     </Animated.View>
     <View style={s.results}>{procs.map(result=>{const item=itemDef(result.itemId),meta=rarityMeta(result.rarity),base=rarityMeta(result.baseRarity),bonus=Math.max(0,Math.round((result.statMultiplier-1)*100));return <View key={result.instanceId} style={[s.result,{borderColor:meta.color,backgroundColor:meta.surface}]}>
       <View style={[s.artFrame,{borderColor:meta.color}]}><EquipmentArtwork item={item} compact framed={false}/></View>
-      <View style={s.flex}><Text style={[s.itemName,{color:rarityNameColor(result.rarity,C.dark,C.text)}]}>{item.name}</Text><Text style={s.meta}>{base.label} base → {meta.label} crafted copy</Text><Text style={[s.bonus,{color:meta.color}]}>+{bonus}% equipment stats vs this item's base rarity</Text>{result.duplicateCount>0?<Text style={s.copy}>Crafted copy #{result.duplicateCount+1} owned</Text>:<Text style={s.copy}>First crafted copy owned</Text>}</View>
+      <View style={s.flex}><Text style={[s.itemName,{color:rarityNameColor(result.rarity,C.dark,C.text)}]}>{item.name}</Text><Text style={s.meta}>{base.label} base → {meta.label} crafted copy</Text><Text style={[s.bonus,{color:meta.color}]}>+{bonus}% equipment stats vs this item's base rarity</Text>{result.duplicateCount>0?<Text style={s.copy}>Crafted copy #{result.duplicateCount+1} owned</Text>:<Text style={s.copy}>{gt("First crafted copy owned")}</Text>}</View>
       <View style={[s.rarityBadge,{borderColor:meta.color}]}><Text style={[s.rarityText,{color:meta.color}]}>{meta.label.toUpperCase()}</Text></View>
     </View>})}</View>
     {results.length>procs.length?<Text style={s.normal}>{results.length-procs.length} additional normal craft{results.length-procs.length===1?'':'s'} claimed at the same time.</Text>:null}
-    <View style={[s.actions,stackActions&&s.actionsStack]}><View style={[s.action,stackActions&&s.actionStack]}><GameButton title="Continue forging" tone="secondary" onPress={onClose}/></View><View style={[s.action,stackActions&&s.actionStack]}><GameButton title="View inventory" onPress={onInventory}/></View></View>
+    <View style={[s.actions,stackActions&&s.actionsStack]}><View style={[s.action,stackActions&&s.actionStack]}><GameButton title={gt("Continue forging")} tone="secondary" onPress={onClose}/></View><View style={[s.action,stackActions&&s.actionStack]}><GameButton title={gt("View inventory")} onPress={onInventory}/></View></View>
   </GameModalSurface>;
 }
 

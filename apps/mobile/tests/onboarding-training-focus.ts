@@ -1,0 +1,13 @@
+import {equal} from './assertions';
+import {createCharacter,newGame} from '../src/core/game';
+import {skillTrainingFocus} from '../src/core/skill-milestones';
+const state=createCharacter(newGame(1),'IRONWARDEN','Learner');
+state.quests=state.quests.map(row=>row.questId==='QST_001'?{...row,status:'claimed'}:row.questId==='QST_002'?{...row,status:'active'}:row);
+const before=JSON.stringify(state),focus=skillTrainingFocus(state)!;
+equal(['mining','woodcutting','fishing'].includes(focus.skillId),true,'gathering quest recommends gathering');
+equal(focus.nextLevel,2,'recommendation targets quest level');
+equal(focus.tutorial,true,'quest recommendation uses tutorial copy');
+equal(JSON.stringify(state),before,'recommendations do not mutate progress');
+state.quests=state.quests.map(row=>row.questId==='QST_002'?{...row,status:'claimed'}:row);
+equal(skillTrainingFocus(state)?.tutorial===true,false,'normal milestones return after the quest');
+console.log('onboarding training focus passed');

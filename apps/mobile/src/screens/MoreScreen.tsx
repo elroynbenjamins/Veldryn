@@ -1,12 +1,15 @@
+import {RANKINGS_RELEASED} from '../core/release-flags';
+import {accountText} from '../i18n/account';
 import {useMemo} from 'react';
 import {UiIcon} from '../components/UiIcon';
-import {navigationIcons} from '../theme/ui-icons';
-import {Image,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
+import {ThemedNavigationIcon} from '../components/ThemedNavigationIcon';
+import {Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {radii,spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {t} from '../i18n';
 import {GameState} from '../core/types';
 import {EARLY_FEATURE_DESTINATION_ORDER} from '../core/feature-unlocks';
+import type {QuickNavDestination} from '../core/quick-navigation';
 
 export type MoreDestination='Home'|'Social'|'Activity'|'Progression'|'DailySupplies'|'AccountBonuses'|'Quests'|'Companions'|'Skills'|'Events'|'Friends'|'Guild'|'Settings'|'Arena'|'Rankings'|'Collections'|'Profile'|'Achievements'|'MasteryHall';
 
@@ -16,7 +19,7 @@ const sections:Array<{label:string;items:MoreDestination[]}>= [
   {label:'IDENTITY & ACCOUNT',items:['Activity','Profile','MasteryHall','Collections','Achievements','Settings']},
 ];
 
-function iconForDestination(id:MoreDestination):keyof typeof navigationIcons{
+function iconForDestination(id:MoreDestination):QuickNavDestination{
   if(id==='Activity'||id==='Profile'||id==='AccountBonuses')return 'Character';
   if(id==='Progression')return 'World';
   if(id==='DailySupplies'||id==='Rankings')return 'Events';
@@ -27,72 +30,76 @@ function iconForDestination(id:MoreDestination):keyof typeof navigationIcons{
   return id;
 }
 function itemMeta(language:GameState['settings']['language'],id:MoreDestination){
+ const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params);
+
   switch(id){
-    case 'Home':return {title:'Home',description:'Current activity and account overview'};
-    case 'Social':return {title:'Social',description:'Party, contracts, recruitment and chat'};
-    case 'Activity':return {title:'Characters',description:'Switch, reroll or safely delete characters'};
-    case 'Progression':return {title:'Working Toward',description:'Goals, sources and safe idle rules'};
-    case 'DailySupplies':return {title:'Daily Supplies',description:'28-claim track and +10% activity boosts'};
-    case 'AccountBonuses':return {title:'Account Bonuses',description:'Permanent and temporary modifiers'};
+    case 'Home':return {title:a("Home"),description:a("Current activity and account overview")};
+    case 'Social':return {title:a("Social"),description:a("Party, contracts, recruitment and chat")};
+    case 'Activity':return {title:a("Characters"),description:a("Switch, reroll or safely delete characters")};
+    case 'Progression':return {title:a("Working Toward"),description:a("Goals, sources and safe idle rules")};
+    case 'DailySupplies':return {title:a("Daily Supplies"),description:a("28-claim track and +10% activity boosts")};
+    case 'AccountBonuses':return {title:a("Account Bonuses"),description:a("Permanent and temporary modifiers")};
     case 'Quests':return {title:t(language,'more.quests'),description:t(language,'more.questsDescription')};
-    case 'Companions':return {title:'Companions',description:'Train, equip and master your roster'};
+    case 'Companions':return {title:a("Companions"),description:a("Train, equip and master your roster")};
     case 'Skills':return {title:t(language,'more.skills'),description:t(language,'more.skillsDescription')};
-    case 'Events':return {title:'Event hub',description:'Annual festival calendar and past event history'};
+    case 'Events':return {title:a("Event hub"),description:a("Annual festival calendar and past event history")};
     case 'Friends':return {title:t(language,'more.friends'),description:t(language,'more.friendsDescription')};
     case 'Guild':return {title:t(language,'more.guild'),description:t(language,'more.guildDescription')};
     case 'Settings':return {title:t(language,'more.settings'),description:t(language,'more.settingsDescription')};
-    case 'Arena':return {title:'Arena',description:'Three-character squad mode · In Development'};
-    case 'Rankings':return {title:'Rankings',description:'Server-calculated prestige boards'};
-    case 'Collections':return {title:'Collections',description:'Collectibles and account bonuses'};
-    case 'Profile':return {title:'Profile',description:'Identity, showcase and customization'};
-    case 'Achievements':return {title:'Achievements',description:'Prestige milestones and rewards'};
-    case 'MasteryHall':return {title:'Mastery Hall',description:'Account-wide R50 profession records and prestige'};
+    case 'Arena':return {title:a("Arena"),description:a("Three-character squad mode · In Development")};
+    case 'Rankings':return {title:a("Rankings"),description:a("Server-calculated prestige boards")};
+    case 'Collections':return {title:a("Collections"),description:a("Collectibles and account bonuses")};
+    case 'Profile':return {title:a("Profile"),description:a("Identity, showcase and customization")};
+    case 'Achievements':return {title:a("Achievements"),description:a("Prestige milestones and rewards")};
+    case 'MasteryHall':return {title:a("Mastery Hall"),description:a("Account-wide R50 profession records and prestige")};
   }
 }
 
 export function MoreScreen({language,onNavigate,onOpenAdminQa,companionAttention=false,companionUnlocked=true,lockedDestinations={},workingTowardAttention=false,dailySuppliesAttention=false,friendRequestCount=0,guildAttentionCount=0,socialAttentionCount=0,profileAttention=false}:{language:GameState['settings']['language'];onNavigate:(destination:MoreDestination)=>void;onOpenAdminQa?:()=>void;companionAttention?:boolean;companionUnlocked?:boolean;lockedDestinations?:Partial<Record<MoreDestination,string>>;workingTowardAttention?:boolean;dailySuppliesAttention?:boolean;friendRequestCount?:number;guildAttentionCount?:number;socialAttentionCount?:number;profileAttention?:boolean}){
+ const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params);
+
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),singleColumn=width<350||fontScale>=1.25;
-  const lockedReason=(id:MoreDestination)=>lockedDestinations[id]??(id==='Companions'&&!companionUnlocked?'Complete Into Ironwood (Level 10).':'');
+  const lockedReason=(id:MoreDestination)=>(lockedDestinations[id]?a(lockedDestinations[id]!):undefined)??(id==='Companions'&&!companionUnlocked?a("Complete Into Ironwood (Level 10)."):'');
   const attentionLabel=(id:MoreDestination)=>{
     if(lockedReason(id))return '';
-    if(id==='Social'&&socialAttentionCount>0)return `${socialAttentionCount} social update${socialAttentionCount===1?'':'s'}`;
-    if(id==='Friends'&&friendRequestCount>0)return `${friendRequestCount} incoming friend request${friendRequestCount===1?'':'s'}`;
-    if(id==='Guild'&&guildAttentionCount>0)return `${guildAttentionCount} guild update${guildAttentionCount===1?'':'s'}`;
-    if(id==='Companions'&&companionUnlocked&&companionAttention)return 'companion actions ready';
-    if(id==='Progression'&&workingTowardAttention)return 'Working Toward goal complete';
-    if(id==='DailySupplies'&&dailySuppliesAttention)return 'Daily Supplies ready';
-    if(id==='Profile'&&profileAttention)return 'new profile customization available';
+    if(id==='Social'&&socialAttentionCount>0)return a('{count} social updates',{count:socialAttentionCount});
+    if(id==='Friends'&&friendRequestCount>0)return a('{count} incoming friend requests',{count:friendRequestCount});
+    if(id==='Guild'&&guildAttentionCount>0)return a('{count} guild updates',{count:guildAttentionCount});
+    if(id==='Companions'&&companionUnlocked&&companionAttention)return a("companion actions ready");
+    if(id==='Progression'&&workingTowardAttention)return a("Working Toward goal complete");
+    if(id==='DailySupplies'&&dailySuppliesAttention)return a("Daily Supplies ready");
+    if(id==='Profile'&&profileAttention)return a("new profile customization available");
     return '';
   };
   const attention=(id:MoreDestination)=>{
     if(lockedReason(id))return null;
-    if(id==='Social'&&socialAttentionCount>0)return <AttentionCount count={socialAttentionCount} label="Social updates"/>;
-    if(id==='Friends'&&friendRequestCount>0)return <AttentionCount count={friendRequestCount} label="Incoming friend requests"/>;
-    if(id==='Guild'&&guildAttentionCount>0)return <AttentionCount count={guildAttentionCount} label="Guild updates"/>;
-    if(id==='Companions'&&companionUnlocked&&companionAttention)return <AttentionDot label="Companion actions ready"/>;
-    if(id==='Progression'&&workingTowardAttention)return <AttentionDot label="Working Toward goal complete"/>;
-    if(id==='DailySupplies'&&dailySuppliesAttention)return <AttentionDot label="Daily Supplies ready"/>;
-    if(id==='Profile'&&profileAttention)return <AttentionDot label="New profile customization available"/>;
+    if(id==='Social'&&socialAttentionCount>0)return <AttentionCount count={socialAttentionCount} label={a("Social updates")}/>;
+    if(id==='Friends'&&friendRequestCount>0)return <AttentionCount count={friendRequestCount} label={a("Incoming friend requests")}/>;
+    if(id==='Guild'&&guildAttentionCount>0)return <AttentionCount count={guildAttentionCount} label={a("Guild updates")}/>;
+    if(id==='Companions'&&companionUnlocked&&companionAttention)return <AttentionDot label={a("Companion actions ready")}/>;
+    if(id==='Progression'&&workingTowardAttention)return <AttentionDot label={a("Working Toward goal complete")}/>;
+    if(id==='DailySupplies'&&dailySuppliesAttention)return <AttentionDot label={a("Daily Supplies ready")}/>;
+    if(id==='Profile'&&profileAttention)return <AttentionDot label={a("New profile customization available")}/>;
     return null;
   };
   const attentionPriority:MoreDestination[]=['DailySupplies','Progression','Companions','Social','Friends','Guild','Profile'];
-  const lockedItems=EARLY_FEATURE_DESTINATION_ORDER.filter(id=>!!lockedReason(id)) as MoreDestination[];
+  const lockedItems=EARLY_FEATURE_DESTINATION_ORDER.filter(id=>(id!=='Rankings'||RANKINGS_RELEASED)&&!!lockedReason(id)) as MoreDestination[];
   const upcomingLocked=lockedItems.slice(0,4);
   const attentionDestinations=attentionPriority.filter(id=>!!attentionLabel(id));
   const attentionTotal=(lockedReason('Social')?0:socialAttentionCount)+(lockedReason('Friends')?0:friendRequestCount)+(lockedReason('Guild')?0:guildAttentionCount)+Number(!lockedReason('Companions')&&companionAttention)+Number(!lockedReason('Progression')&&workingTowardAttention)+Number(!lockedReason('DailySupplies')&&dailySuppliesAttention)+Number(profileAttention);
-  return <ScrollView contentContainerStyle={s.root}>
-    <View style={s.header}><View style={s.flex}><Text style={s.kicker}>ACCOUNT HUB</Text><Text accessibilityRole="header" style={s.heading}>Account</Text><Text style={s.sub}>{t(language,'more.intro')}</Text></View>{attentionTotal>0?<View style={s.headerAttention}><Text style={s.headerAttentionValue}>{attentionTotal>99?'99+':attentionTotal}</Text><Text style={s.headerAttentionLabel}>NEEDS ATTENTION</Text></View>:<View style={s.headerClear}><Text style={s.headerClearText}>CAUGHT UP</Text></View>}</View>
-    {attentionDestinations.length?<View style={s.attentionRail}><View style={s.attentionRailHead}><Text style={s.sectionLabel}>NEEDS ATTENTION</Text><Text style={s.attentionRailMeta}>{attentionDestinations.length} destination{attentionDestinations.length===1?'':'s'}</Text></View><View style={s.attentionQuickRow}>{attentionDestinations.slice(0,3).map(id=>{const meta=itemMeta(language,id),alert=attentionLabel(id);return <Pressable key={id} accessibilityRole="button" accessibilityLabel={meta.title+', '+alert} onPress={()=>onNavigate(id)} style={({pressed})=>[s.attentionQuick,singleColumn&&s.attentionQuickWide,pressed&&s.pressed]}><View style={s.quickIconFrame}><Image accessible={false} source={navigationIcons[iconForDestination(id)]} resizeMode="contain" style={s.quickIcon}/></View><View style={s.quickCopy}><Text numberOfLines={1} style={s.quickTitle}>{meta.title}</Text><Text numberOfLines={1} style={s.quickDetail}>{alert}</Text></View><UiIcon name="next" size={16}/></Pressable>})}</View>{attentionDestinations.length>3?<Text style={s.attentionMore}>+{attentionDestinations.length-3} more highlighted below</Text>:null}</View>:null}
-    {sections.map(section=><View key={section.label} style={s.section}>
-      <Text style={s.sectionLabel}>{section.label}</Text>
-      <View style={s.grid}>{section.items.filter(id=>!lockedReason(id)).map(id=>{const meta=itemMeta(language,id),alert=attentionLabel(id),reason=lockedReason(id),locked=!!reason,inDevelopment=id==='Arena';return <Pressable key={id} accessibilityRole="button" accessibilityState={{disabled:inDevelopment||locked}} accessibilityLabel={inDevelopment?`${meta.title}, In Development`:locked?`${meta.title}, Locked`:alert?`${meta.title}, ${alert}`:meta.title} accessibilityHint={locked?reason:meta.description} disabled={inDevelopment||locked} onPress={()=>onNavigate(id)} style={({pressed})=>[s.tile,alert&&s.tileAttention,(inDevelopment||locked)&&s.tileDisabled,singleColumn&&s.tileWide,pressed&&!inDevelopment&&!locked&&s.pressed]}>
-        <View style={s.tileTop}><View style={[s.iconFrame,alert&&s.iconFrameAttention]}><Image accessible={false} source={navigationIcons[iconForDestination(id)]} resizeMode="contain" style={s.icon}/></View><View style={s.attentionSlot}>{attention(id)}</View><UiIcon name="next" size={18}/></View>
-        <View style={s.titleRow}><Text numberOfLines={singleColumn?2:1} style={s.title}>{meta.title}</Text>{locked?<View style={s.lockPill}><Text style={s.lockPillText}>LOCKED</Text></View>:inDevelopment?<View style={s.developmentPill}><Text style={s.developmentPillText}>IN DEVELOPMENT</Text></View>:null}</View>
+  return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
+    <View style={s.header}><View style={s.flex}><Text style={s.kicker}>{a("ACCOUNT HUB")}</Text><Text accessibilityRole="header" style={s.heading}>{a("Account")}</Text><Text style={s.sub}>{t(language,'more.intro')}</Text></View>{attentionTotal>0?<View style={s.headerAttention}><Text style={s.headerAttentionValue}>{attentionTotal>99?'99+':attentionTotal}</Text><Text style={s.headerAttentionLabel}>{a("NEEDS ATTENTION")}</Text></View>:<View style={s.headerClear}><Text style={s.headerClearText}>{a("CAUGHT UP")}</Text></View>}</View>
+    {attentionDestinations.length?<View style={s.attentionRail}><View style={s.attentionRailHead}><Text style={s.sectionLabel}>{a("NEEDS ATTENTION")}</Text><Text style={s.attentionRailMeta}>{a('{count} destinations',{count:attentionDestinations.length})}</Text></View><View style={s.attentionQuickRow}>{attentionDestinations.slice(0,3).map(id=>{const meta=itemMeta(language,id),alert=attentionLabel(id);return <Pressable key={id} accessibilityRole="button" accessibilityLabel={meta.title+', '+alert} onPress={()=>onNavigate(id)} style={({pressed})=>[s.attentionQuick,singleColumn&&s.attentionQuickWide,pressed&&s.pressed]}><View style={s.quickIconFrame}><ThemedNavigationIcon destination={iconForDestination(id)} size={25}/></View><View style={s.quickCopy}><Text numberOfLines={1} style={s.quickTitle}>{meta.title}</Text><Text numberOfLines={1} style={s.quickDetail}>{alert}</Text></View><UiIcon name="next" size={16}/></Pressable>})}</View>{attentionDestinations.length>3?<Text style={s.attentionMore}>{a('+{count} more highlighted below',{count:attentionDestinations.length-3})}</Text>:null}</View>:null}
+    {sections.map(section=><View key={a(section.label)} style={s.section}>
+      <Text style={s.sectionLabel}>{a(section.label)}</Text>
+      <View style={s.grid}>{section.items.filter(id=>(id!=='Rankings'||RANKINGS_RELEASED)&&!lockedReason(id)).map(id=>{const meta=itemMeta(language,id),alert=attentionLabel(id),reason=lockedReason(id),locked=!!reason,inDevelopment=id==='Arena';return <Pressable key={id} accessibilityRole="button" accessibilityState={{disabled:inDevelopment||locked}} accessibilityLabel={inDevelopment?a('{title}, In Development',{title:meta.title}):locked?a('{title}, Locked',{title:meta.title}):alert?`${meta.title}, ${alert}`:meta.title} accessibilityHint={locked?reason:meta.description} disabled={inDevelopment||locked} onPress={()=>onNavigate(id)} style={({pressed})=>[s.tile,alert&&s.tileAttention,(inDevelopment||locked)&&s.tileDisabled,singleColumn&&s.tileWide,pressed&&!inDevelopment&&!locked&&s.pressed]}>
+        <View style={s.tileTop}><View style={[s.iconFrame,alert&&s.iconFrameAttention]}><ThemedNavigationIcon destination={iconForDestination(id)} size={32}/></View><View style={s.attentionSlot}>{attention(id)}</View><UiIcon name="next" size={18}/></View>
+        <View style={s.titleRow}><Text numberOfLines={singleColumn?2:1} style={s.title}>{meta.title}</Text>{locked?<View style={s.lockPill}><Text style={s.lockPillText}>{a("LOCKED")}</Text></View>:inDevelopment?<View style={s.developmentPill}><Text style={s.developmentPillText}>{a("IN DEVELOPMENT")}</Text></View>:null}</View>
         <Text numberOfLines={singleColumn?2:1} style={s.description}>{locked?reason:meta.description}</Text>
       </Pressable>})}</View>
     </View>)}
-    {upcomingLocked.length?<View style={s.unlockAhead}><View style={s.unlockAheadHead}><View style={s.flex}><Text style={s.sectionLabel}>UNLOCKS AHEAD</Text><Text style={s.unlockAheadMeta}>More systems appear as the campaign teaches their prerequisites.</Text></View><View style={s.lockCount}><Text style={s.lockCountText}>{lockedItems.length}</Text></View></View>{upcomingLocked.map(id=>{const meta=itemMeta(language,id),reason=lockedReason(id);return <View key={id} style={s.unlockRow}><View style={s.unlockIcon}><Image accessible={false} source={navigationIcons[iconForDestination(id)]} resizeMode="contain" style={s.quickIcon}/></View><View style={s.flex}><Text style={s.unlockTitle}>{meta.title}</Text><Text style={s.unlockReason}>{reason}</Text></View><Text style={s.unlockMark}>◆</Text></View>})}{lockedItems.length>upcomingLocked.length?<Text style={s.unlockMore}>+{lockedItems.length-upcomingLocked.length} later systems stay hidden for now</Text>:null}</View>:null}
-    {onOpenAdminQa?<View style={s.section}><Text style={s.sectionLabel}>DEVELOPER</Text><Pressable accessibilityRole="button" accessibilityLabel="Open Admin QA Console" onPress={onOpenAdminQa} style={({pressed})=>[s.devCard,pressed&&s.pressed]}><Image source={navigationIcons.Character} resizeMode="contain" style={s.icon}/><View style={s.devCopy}><Text style={s.title}>Admin QA Console</Text><Text style={s.description}>Full-content, crafting and dungeon test profile</Text></View><UiIcon name="next" size={18}/></Pressable></View>:null}
+    {upcomingLocked.length?<View style={s.unlockAhead}><View style={s.unlockAheadHead}><View style={s.flex}><Text style={s.sectionLabel}>{a("UNLOCKS AHEAD")}</Text><Text style={s.unlockAheadMeta}>{a("More systems appear as the campaign teaches their prerequisites.")}</Text></View><View style={s.lockCount}><Text style={s.lockCountText}>{lockedItems.length}</Text></View></View>{upcomingLocked.map(id=>{const meta=itemMeta(language,id),reason=lockedReason(id);return <View key={id} style={s.unlockRow}><View style={s.unlockIcon}><ThemedNavigationIcon destination={iconForDestination(id)} size={25} muted/></View><View style={s.flex}><Text style={s.unlockTitle}>{meta.title}</Text><Text style={s.unlockReason}>{reason}</Text></View><Text style={s.unlockMark}>◆</Text></View>})}{lockedItems.length>upcomingLocked.length?<Text style={s.unlockMore}>{a('+{count} later systems stay hidden for now',{count:lockedItems.length-upcomingLocked.length})}</Text>:null}</View>:null}
+    {onOpenAdminQa?<View style={s.section}><Text style={s.sectionLabel}>{a("DEVELOPER")}</Text><Pressable accessibilityRole="button" accessibilityLabel={a("Open Admin QA Console")} onPress={onOpenAdminQa} style={({pressed})=>[s.devCard,pressed&&s.pressed]}><ThemedNavigationIcon destination="Character" size={32}/><View style={s.devCopy}><Text style={s.title}>{a("Admin QA Console")}</Text><Text style={s.description}>{a("Full-content, crafting and dungeon test profile")}</Text></View><UiIcon name="next" size={18}/></Pressable></View>:null}
   </ScrollView>;
 }
 

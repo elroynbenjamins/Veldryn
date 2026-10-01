@@ -2,13 +2,14 @@ import {StyleSheet,Text,View} from 'react-native';
 import {GameButton} from './GameButton';
 import {C,spacing,typography} from '../theme/theme';
 import {Language,ot} from '../i18n';
+import {appText} from '../i18n/app-shell';
 
 export function SaveRecoveryScreen({message,onRetry,onStartFresh,language='en'}:{message:string;onRetry:()=>void;onStartFresh:()=>void;language?:Language}){
   return <View style={s.root} accessibilityLiveRegion="polite">
     <Text style={s.kicker}>{ot(language,'save.recoveryKicker')}</Text>
     <Text style={s.title}>{ot(language,'save.recoveryTitle')}</Text>
     <Text style={s.body}>{ot(language,'save.recoveryBody')}</Text>
-    <View style={s.detail}><Text style={s.detailText}>{message}</Text></View>
+    <View style={s.detail}><Text style={s.detailText}>{appText(language,message)}</Text></View>
     <GameButton title={ot(language,'save.retry')} onPress={onRetry}/>
     <GameButton title={ot(language,'save.startFresh')} tone="danger" onPress={onStartFresh}/>
   </View>;

@@ -2,6 +2,7 @@ import {COLLECTIBLES} from '../src/content/collectibles';
 import {CORE_PET_COLLECTIBLES} from '../src/content/core-pets';
 import {MASTER_PET_COLLECTIBLES} from '../src/content/master-pet-content';
 import {PET_PERMANENT_BOOSTS} from '../src/content/permanent-boosts';
+import {EVENTS_RELEASED} from '../src/core/release-flags';
 import {characterPermanentMultipliers} from '../src/core/permanent-boosts';
 import {createCharacter,eatFood,newGame,previewActivityReward,startGathering} from '../src/core/game';
 import {recoveryAmount} from '../src/core/inventory-view';
@@ -13,8 +14,8 @@ function equal(actual:unknown,expected:unknown,message:string){if(actual!==expec
 const near=(actual:number,expected:number,message:string)=>{if(Math.abs(actual-expected)>1e-10)fail(`${message}: expected ${expected}, got ${actual}`)};
 
 equal(MASTER_PET_COLLECTIBLES,CORE_PET_COLLECTIBLES,'master roster metadata aliases the canonical core pet array');
-equal(Object.keys(PET_PERMANENT_BOOSTS).length,COLLECTIBLES.filter(row=>row.kind==='pet').length,'boost diagnostics cover every core, event, and legacy pet');
-ok(!!PET_PERMANENT_BOOSTS.EVT_PET_004,'event pets are present in runtime boost metadata');
+equal(Object.keys(PET_PERMANENT_BOOSTS).length,COLLECTIBLES.filter(row=>row.kind==='pet').length,'boost diagnostics cover every released pet');
+equal(!!PET_PERMANENT_BOOSTS.EVT_PET_004,EVENTS_RELEASED,'event pet diagnostics follow the release gate');
 
 let state=createCharacter(newGame(0),'IRONWARDEN','Collectible Tester');
 state={...state,account:{...state.account,unlockedCosmeticPetIds:['PET_001','PET_003']},character:{...state.character!,ownedPetIds:['PET_001','PET_003']}};
@@ -29,12 +30,12 @@ near(multipliers.gatheringYieldMultiplier,1.03,'selected core pet adds +2.00% ac
 let cooking=createCharacter(newGame(0),'IRONWARDEN','Cooking Pet');
 cooking={...cooking,account:{...cooking.account,unlockedCosmeticPetIds:['EVT_PET_003']},character:{...cooking.character!,selectedCosmeticPetId:'EVT_PET_003'}};
 multipliers=characterPermanentMultipliers(cooking);
-near(multipliers.cookingSpeedMultiplier,1.03,'Heartbond cooking pet applies +0.50% passive plus +2.50% active');
+near(multipliers.cookingSpeedMultiplier,EVENTS_RELEASED?1.03:1,'event pet bonuses only activate after events are released');
 near(multipliers.gatheringSpeedMultiplier,1,'cooking speed does not bleed into gathering speed');
 
 let eventDrop=createCharacter(newGame(0),'IRONWARDEN','Drop Pet');
 eventDrop={...eventDrop,account:{...eventDrop.account,unlockedCosmeticPetIds:['EVT_PET_010']},character:{...eventDrop.character!,selectedCosmeticPetId:'EVT_PET_010'}};
-near(characterPermanentMultipliers(eventDrop).dropChanceMultiplier,1.045,'Epic event drop pet applies fixed +0.50% passive plus +4.00% active');
+near(characterPermanentMultipliers(eventDrop).dropChanceMultiplier,EVENTS_RELEASED?1.045:1,'event pet bonuses only activate after events are released');
 
 const baseline=startGathering(createCharacter(newGame(0),'IRONWARDEN','Baseline Gatherer'),'GREENWOOD_TREE',0);
 let boosted=startGathering(createCharacter(newGame(0),'IRONWARDEN','Boosted Gatherer'),'GREENWOOD_TREE',0);
@@ -47,7 +48,7 @@ let healing=createCharacter(newGame(0),'IRONWARDEN','Healing Pet');
 healing={...healing,account:{...healing.account,unlockedCosmeticPetIds:['EVT_PET_004']},character:{...healing.character!,selectedCosmeticPetId:'EVT_PET_004',currentHp:1}};
 const food=itemDef('TRAVEL_RATION');
 const healMultiplier=characterPermanentMultipliers(healing).healingEffectivenessMultiplier;
-near(healMultiplier,1.045,'Heartwing applies +0.50% passive plus +4.00% active healing effectiveness');
+near(healMultiplier,EVENTS_RELEASED?1.045:1,'event pet healing bonus only activates after events are released');
 const expectedHeal=Math.ceil((food.heal??0)*healMultiplier);
 equal(recoveryAmount(healing,'TRAVEL_RATION'),expectedHeal,'Inventory healing preview includes collectible healing effectiveness');
 const afterEat=eatFood(healing,'TRAVEL_RATION');

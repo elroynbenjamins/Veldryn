@@ -1,8 +1,12 @@
+import {CharacterReview} from './CharacterReview';
+import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {QuestScreen} from '../screens/QuestScreen';
 import {SettingsScreen} from '../screens/SettingsScreen';
 import {EventScreen} from '../screens/EventScreen';
 import {setLocalEventEnabled} from '../core/live-events';
 import {ProfileEditor} from '../components/ProfileEditor';
+import {CollectionsScreen} from '../screens/CollectionsScreen';
+import {InventoryReview} from './InventoryReview';
 import {ItemCard} from '../components/ItemCard';
 import {itemDef} from '../content/items';
 import {IngredientList} from '../components/IngredientList';
@@ -52,30 +56,33 @@ const party:PersistentPartySummary={id:'qa-party',maxMembers:4,focus:'mixed',mem
  {accountId:'qa3',characterId:'qa3',characterName:'Wandering Wayfinder',className:'Wayfinder',role:'damage',isLeader:false}
 ]};
 const post:RecruitmentCardView={id:'qa-post',postType:'party_recruiting',ownerName:'Aster Nightfall',title:'Preparing for the Fallen Knight',body:'A relaxed party for hunting, gathering, and the next Asterfall challenge.',roles:['damage','support'],focus:'mixed',activityTags:['Bosses'],playstyleTags:['Relaxed'],availabilityTags:[],guildInterestTags:[],currentObjective:'The Fallen Knight',openSpots:1,expiresAtMs:now+3600000};
-const sections=['Home','WorkingToward','Skills','Crafting','Combat','Social','Guild','Login','Ingredients','Settings','Journal','Contracts','Challenges','Events','Profile'] as const;
+const sections=['Home','WorkingToward','Skills','Crafting','Combat','Social','Guild','Login','Ingredients','Settings','Journal','Contracts','Challenges','Events','EventsLive','Profile','Collections','Inventory','Character'] as const;
 type Section=typeof sections[number];
 const destinations=['Character','Skills','World','Inventory','More'] as const;
 export default function NativeVisualReview(){
  const [section,setSection]=useState<Section>(sections.find(name=>name.toLowerCase()===process.env.EXPO_PUBLIC_VISUAL_QA_SCREEN)??'Home'),[state,setState]=useState(fixture),[active,setActive]=useState<typeof destinations[number]>('Character');
  const noop=()=>{};
- return <SafeAreaView style={s.root}><View style={s.qa}><Text style={s.qaLabel}>NATIVE QA · MEMORY FIXTURES</Text><ScrollView horizontal contentContainerStyle={s.selector}>{sections.map(name=><Pressable key={name} accessibilityRole="button" accessibilityLabel={'QA '+name} onPress={()=>setSection(name)} style={s.pick}><Text style={{color:section===name?C.accent:C.text}}>{name}</Text></Pressable>)}</ScrollView></View>
+ return <SafeAreaProvider><SafeAreaView style={s.root}><View style={s.qa}><Text style={s.qaLabel}>NATIVE QA · MEMORY FIXTURES</Text><ScrollView horizontal contentContainerStyle={s.selector} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>{sections.map(name=><Pressable key={name} accessibilityRole="button" accessibilityLabel={'QA '+name} onPress={()=>{if(name==='EventsLive')setState(s=>setLocalEventEnabled(s,true,Date.now()));setSection(name)}} style={s.pick}><Text style={{color:section===name?C.accent:C.text}}>{name}</Text></Pressable>)}</ScrollView></View>
  <View style={s.flex}>
  {section==='Login'?<AccountWelcomeScreen scene={STARTUP_SCENES[0]}><OnlineAccountPanel state={newGame(now)}/></AccountWelcomeScreen>:<>
  <GameTopBar state={state} nowMs={now} labelForDestination={x=>x} onNavigate={noop} onChangeDestinations={noop} onOpenActivity={()=>setSection(state.activity?.kind==='combat'?'Combat':'Skills')}/>
  {section==='WorkingToward'&&<ProgressionPlannerScreen state={state} onChange={setState} onNavigateGoal={noop}/>} 
  {section==='Home'&&<HomeScreen state={state} preview={previewActivityReward(state,now)} nowMs={now} onClaim={()=>setState(s=>claimActivity(s,now).state)} onStop={()=>setState(stopActivity)} onQueueRemove={noop} onQueueMove={noop} onQueueClear={noop} onQueueStart={noop} onNavigate={noop} onOpenPlanner={noop} onOpenContracts={noop} onNavigateGoal={noop} onOpenCombat={()=>setSection('Combat')} onOpenSkill={()=>setSection('Skills')}/>} 
  {(section==='Journal'||section==='Contracts'||section==='Challenges')&&<QuestScreen state={state} mode={section==='Contracts'?'contracts':section==='Challenges'?'challenges':'story'} onModeChange={noop} onClaim={noop} onClaimContract={noop} onNavigate={noop} onOpenWeeklyBoss={noop} onOpenWeeklyOrder={noop} onPinWeeklyOrder={noop} onQueueWeeklyOrder={noop} onStopWeeklyOrder={noop}/>} 
- {section==='Events'&&<EventScreen state={state} onChange={setState}/>} 
- {section==='Profile'&&<ScrollView contentContainerStyle={s.content}><ProfileEditor state={state} onChange={setState}/></ScrollView>} 
+ {(section==='Events'||section==='EventsLive')&&<EventScreen state={state} onChange={setState}/>} 
+ {section==='Profile'&&<ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}><ProfileEditor state={state} onChange={setState}/></ScrollView>} 
  {section==='Settings'&&<SettingsScreen state={state} onLanguage={language=>setState(s=>({...s,settings:{...s.settings,language}}))} onReset={noop} onChange={setState} onExport={async()=>{}} onImport={async()=>{}}/>}
- {section==='Ingredients'&&<ScrollView contentContainerStyle={s.content}><Text style={{color:C.text,fontSize:22}}>Crafting ingredient artwork</Text><IngredientList inputs={Object.keys(ingredientIcons).map((itemId,index)=>({itemId,quantity:5,inventory:index%3===0?2:12,bank:1}))} showStorage/><Text style={{color:C.text,fontSize:22}}>Inventory card preview</Text><ItemCard item={itemDef('ASTRAL_SCRIPT')} quantity={12} onSell={noop}/></ScrollView>}
- {section==='Skills'&&<ScrollView contentContainerStyle={s.content}><SkillDashboard state={state} onCombat={()=>setSection('Combat')} onSkill={noop}/></ScrollView>}
+ {section==='Ingredients'&&<ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}><Text style={{color:C.text,fontSize:22}}>Crafting ingredient artwork</Text><IngredientList inputs={Object.keys(ingredientIcons).map((itemId,index)=>({itemId,quantity:5,inventory:index%3===0?2:12,bank:1}))} showStorage/><Text style={{color:C.text,fontSize:22}}>Inventory card preview</Text><ItemCard item={itemDef('ASTRAL_SCRIPT')} quantity={12} onSell={noop}/></ScrollView>}
+ {section==='Skills'&&<ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}><SkillDashboard state={state} onCombat={()=>setSection('Combat')} onSkill={noop}/></ScrollView>}
  {section==='Crafting'&&<SkillsScreen state={state} initialMode="crafting" onCraft={id=>setState(s=>craftRecipe(s,id,now))} onClaimCraft={noop} onClaimAllCrafts={noop} onCancelCraft={noop} onMoveCraftWaiting={noop} onCraftPrerequisites={noop} onGather={noop} onQueueGather={noop} onQueueRemove={noop} onQueueMove={noop} onQueueClear={noop} onQueueStart={noop} onEquipTool={noop} onCharacter={noop} onInventory={noop} onViewToolRecipes={noop}/>} 
- {section==='Combat'&&<ScrollView contentContainerStyle={s.content}><BattleStage state={state} monster={MONSTERS.find(m=>m.id==='MOSS_RAT')!} elapsedSeconds={7} cycleSeconds={12}/><BossEncounterIntro monster={MONSTERS.find(m=>m.id==='FALLEN_KNIGHT')!}/></ScrollView>}
- {section==='Social'&&<ScrollView contentContainerStyle={s.content}><PartyHubPanel accountId="qa" party={party} contracts={[]} recruitment={[post]} nowMs={now} onOpenPartyChat={noop} onLeaveParty={noop} onCreateRecruitmentPost={noop}/></ScrollView>}
- {section==='Guild'&&<ScrollView contentContainerStyle={s.content}><RecruitmentListing card={{...post,postType:'guild_recruiting',guildName:'The Lanterns of Asterfall',title:'A home for wandering adventurers',guildInterestTags:['Weekly contracts']}} nowMs={now} onPress={noop}/></ScrollView>}
+ {section==='Combat'&&<ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}><BattleStage state={state} monster={MONSTERS.find(m=>m.id==='MOSS_RAT')!} elapsedSeconds={7} cycleSeconds={12}/><BossEncounterIntro monster={MONSTERS.find(m=>m.id==='FALLEN_KNIGHT')!}/></ScrollView>}
+ {section==='Social'&&<ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}><PartyHubPanel accountId="qa" party={party} contracts={[]} recruitment={[post]} nowMs={now} onOpenPartyChat={noop} onLeaveParty={noop} onCreateRecruitmentPost={noop}/></ScrollView>}
+ {section==='Guild'&&<ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}><RecruitmentListing card={{...post,postType:'guild_recruiting',guildName:'The Lanterns of Asterfall',title:'A home for wandering adventurers',guildInterestTags:['Weekly contracts']}} nowMs={now} onPress={noop}/></ScrollView>}
+ {section==='Collections'&&<CollectionsScreen state={state} onChange={setState}/>}
+ {section==='Inventory'&&<InventoryReview/>}
+ {section==='Character'&&<CharacterReview/>}
  <PrimaryNavigation destinations={destinations} active={active} labelFor={x=>x} onNavigate={setActive}/>
  </>}
- </View></SafeAreaView>;
+ </View></SafeAreaView></SafeAreaProvider>;
 }
 const s=StyleSheet.create({root:{flex:1,backgroundColor:C.bg,paddingTop:Platform.OS==='android'?StatusBar.currentHeight??24:0},flex:{flex:1},qa:{backgroundColor:'#26334a'},qaLabel:{color:'#fff',fontSize:10,paddingHorizontal:10},selector:{gap:4,padding:4},pick:{minHeight:36,paddingHorizontal:12,justifyContent:'center'},content:{padding:16,gap:16}});

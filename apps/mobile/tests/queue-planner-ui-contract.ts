@@ -1,0 +1,22 @@
+export {};
+const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
+function ok(value:boolean,message:string){if(!value)throw new Error(message);}
+const read=(path:string)=>fs.readFileSync(path,'utf8');
+const skills=read('src/screens/SkillsScreen.tsx');
+const hubReturn=skills.split('\n').find(line=>line.includes('if(!initialSkill)return'))??'';
+ok(hubReturn.includes('<ActivityQueuePlanner'),'Queue planning belongs on the main Skills screen');
+ok(skills.split('<ActivityQueuePlanner').length===2&&!skills.includes('<ActionQueuePanel'),'Individual skill screens must not contain queue controls');
+const planner=read('src/components/ActivityQueuePlanner.tsx');
+for(const label of ['Choose queue skill','Choose queued activity','Resource quantity','Skill level','Duration','Enemies defeated'])ok(planner.includes(label),'Planner exposes '+label);
+ok(planner.includes('<GameModalSurface')&&planner.includes('<ScrollView'),'Queue planning uses a scrollable shared popup');
+ok(planner.includes('queue_set_goal')&&planner.includes('queue_add'),'Planner can configure the current activity and add future activities');
+ok(planner.includes('activityQueueCapacity(state)')&&planner.includes('queuedActivityReadiness'),'Planner respects capacity and activity availability');
+ok(planner.includes('queueSkillReadiness(state,skill.id)')&&planner.includes('disabled={disabled}')&&planner.includes('{gl(availability.blocker)}'),'Unavailable skills are disabled with a localized visible reason');
+const popup=read('src/components/RewardPopup.tsx');
+const queue=read('src/components/ActionQueuePanel.tsx');
+ok(queue.includes('stackRows=width<480||fontScale>=1.25'),'Phone queue controls must stack below the activity details');
+ok(queue.includes('<Text style={s.name}>{label}</Text>')&&queue.includes('<Text style={readiness.ready?s.readyMeta:s.blockedMeta}>'),'Queue activity names, goals and blocking reasons must wrap rather than truncate');
+ok(!popup.includes('LOOT TYPES')&&!popup.includes('Effective pace')&&!popup.includes('actionsPerHour'),'Irrelevant summary metrics remain removed');
+const footer=popup.indexOf('</ScrollView><View'),continueButton=popup.indexOf('title={gt("Continue")}');
+ok(popup.includes('<ActivityQueueResults')&&footer>=0&&continueButton>footer,'Localized Continue remains outside the scrollable rewards');
+console.log('PASS: central Skills queue planner, goal selection, safeguards and summary controls');

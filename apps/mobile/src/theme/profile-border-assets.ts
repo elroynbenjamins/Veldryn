@@ -1,5 +1,5 @@
 import type {ImageSourcePropType} from 'react-native';
-import {EVENT_DECORATIONS} from './event-decoration-assets';
+import {EVENT_DECORATIONS} from './event-decoration-assets-active';
 
 export const profileBorderSourceById=new Map<string,ImageSourcePropType>([
   ['frame_amber_vine',require('../../assets/profile-borders/frame_amber_vine.png')],

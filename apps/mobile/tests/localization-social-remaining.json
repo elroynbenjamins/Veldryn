@@ -1,0 +1,1455 @@
+{
+  "note": "QA handoff snapshot; candidates are occurrences, not unique strings. This inventory excludes intentional proper names (The Bloomwardens, Rootbound Colossus, Echo/ECHO), VS, and numeric-only templates. It does not prove completeness for runtime data or labels returned by helpers.",
+  "catalogKeys": 910,
+  "languages": [
+    "en",
+    "de",
+    "es",
+    "nl",
+    "it",
+    "fr"
+  ],
+  "auditedFiles": 62,
+  "rawCandidates": 257,
+  "remainingDirectCandidates": 230,
+  "screenCoverage": "No remaining direct UI literals in FriendsScreen, GuildScreen, SocialScreen, RankingsScreen, ArenaScreen, CoopExpeditionScreen. Proper names/numeric templates excluded. Existing coop translators remain unchanged.",
+  "verification": [
+    "node apps/mobile/tests/localization-social.mjs: PASS",
+    "node apps/mobile/node_modules/typescript/lib/tsc.js -p apps/mobile/tsconfig.json --noEmit --pretty false: PASS"
+  ],
+  "additionalRuntimeGaps": [
+    "Raw Error.message strings and server validation results remain as supplied; localized fallback errors are covered.",
+    "Rankings snapshot self.reason, entries[].subtitle/detail remain server-driven.",
+    "Guild project/quest/decree/facility/trophy names, descriptions, effects, statuses, roster summaries and activity-feed text from content/server helpers are not comprehensively localized.",
+    "Party contract/event names, objectives, reward qualification explanations, recruitment tags/context/expiry helpers in flat components remain partly English. SocialScreen itself localizes its expiry and known labels.",
+    "Co-op projections still supply English node titles, risk/reward summaries, phase labels, encounter intel, boss telegraphs and recaps, reward text, effects/status names, lock reasons and event descriptions.",
+    "Chat relationship presentation labels and profile record/collection/achievement metadata, emote labels from definitions, and fixed offline sample-message/profile prose remain partly English.",
+    "Dynamic accessibility templates listed below still need localization in some flat/co-op components.",
+    "Player chat, guild names, notices, recruitment titles/body, usernames and IDs must remain verbatim. Proper names remain English."
+  ],
+  "files": {
+    "src/components/ArenaBattleStage.tsx": 2,
+    "src/components/coop/CombatantInspectPanel.tsx": 3,
+    "src/components/coop/CombatantProfileCard.tsx": 6,
+    "src/components/coop/CoopDungeonBrowser.tsx": 4,
+    "src/components/coop/CoopLiveLobby.tsx": 3,
+    "src/components/coop/CoopLiveRecruitmentBoard.tsx": 6,
+    "src/components/coop/CoopRunOverview.tsx": 5,
+    "src/components/coop/DungeonCombatStage.tsx": 6,
+    "src/components/coop/SeasonalBossTelegraphPanel.tsx": 7,
+    "src/components/GuildActivitySummaryPanel.tsx": 7,
+    "src/components/GuildChat.tsx": 2,
+    "src/components/GuildCustomizationPanel.tsx": 1,
+    "src/components/GuildDecreePanel.tsx": 3,
+    "src/components/GuildHubPanel.tsx": 7,
+    "src/components/GuildIdentitySummary.tsx": 1,
+    "src/components/GuildMemberRosterPanel.tsx": 1,
+    "src/components/GuildProjectDetailPanel.tsx": 5,
+    "src/components/GuildProjectsPanel.tsx": 5,
+    "src/components/GuildQuestPanel.tsx": 11,
+    "src/components/GuildSeekerPanel.tsx": 3,
+    "src/components/LiveDungeonQueuePanel.tsx": 1,
+    "src/components/LiveDungeonReadyCheck.tsx": 3,
+    "src/components/LiveDungeonRunPanel.tsx": 5,
+    "src/components/OnlineGuildBrowser.tsx": 5,
+    "src/components/OnlineGuildCustomizationPanel.tsx": 2,
+    "src/components/OnlineGuildHallPanel.tsx": 14,
+    "src/components/OnlineGuildManagement.tsx": 16,
+    "src/components/OnlineGuildMusterPanel.tsx": 31,
+    "src/components/OnlineGuildNoticeBoardPanel.tsx": 1,
+    "src/components/OnlineGuildProjectsPanel.tsx": 13,
+    "src/components/OnlineGuildPve.tsx": 5,
+    "src/components/OnlinePartyChat.tsx": 1,
+    "src/components/OnlineWorldChat.tsx": 1,
+    "src/components/PartyEventHubPanel.tsx": 11,
+    "src/components/PartyEventLeaderboardPanel.tsx": 3,
+    "src/components/PartyHubPanel.tsx": 11,
+    "src/components/RecruitmentBoardPanel.tsx": 7,
+    "src/components/RecruitmentComposer.tsx": 4,
+    "src/components/RecruitmentFiltersPanel.tsx": 1,
+    "src/components/RecruitmentListing.tsx": 2,
+    "src/components/SharedWorldHubPanel.tsx": 5
+  },
+  "remaining": [
+    {
+      "file": "src/components/ArenaBattleStage.tsx",
+      "line": 36,
+      "kind": "jsx",
+      "text": "Training preview only. Ranked combat will replace the top row with the server-frozen opponent snapshot when the authenticated Arena service is enabled."
+    },
+    {
+      "file": "src/components/ArenaBattleStage.tsx",
+      "line": 50,
+      "kind": "jsx",
+      "text": "· Lv"
+    },
+    {
+      "file": "src/components/coop/CombatantInspectPanel.tsx",
+      "line": 53,
+      "kind": "template",
+      "text": "Combat details for {expression}"
+    },
+    {
+      "file": "src/components/coop/CombatantInspectPanel.tsx",
+      "line": 64,
+      "kind": "jsx",
+      "text": "Focus →"
+    },
+    {
+      "file": "src/components/coop/CombatantInspectPanel.tsx",
+      "line": 69,
+      "kind": "jsx",
+      "text": "more active effects"
+    },
+    {
+      "file": "src/components/coop/CombatantProfileCard.tsx",
+      "line": 72,
+      "kind": "template",
+      "text": "{expression}, {expression}, {expression}, {expression} percent health"
+    },
+    {
+      "file": "src/components/coop/CombatantProfileCard.tsx",
+      "line": 86,
+      "kind": "jsx",
+      "text": "BARRIER +"
+    },
+    {
+      "file": "src/components/coop/CombatantProfileCard.tsx",
+      "line": 90,
+      "kind": "template",
+      "text": "Inspect {expression} combat details"
+    },
+    {
+      "file": "src/components/coop/CombatantProfileCard.tsx",
+      "line": 100,
+      "kind": "jsx",
+      "text": "BARRIER +"
+    },
+    {
+      "file": "src/components/coop/CombatantProfileCard.tsx",
+      "line": 103,
+      "kind": "jsx",
+      "text": "FOCUS →"
+    },
+    {
+      "file": "src/components/coop/CombatantProfileCard.tsx",
+      "line": 105,
+      "kind": "template",
+      "text": "Inspect {expression} combat details"
+    },
+    {
+      "file": "src/components/coop/CoopDungeonBrowser.tsx",
+      "line": 40,
+      "kind": "jsx",
+      "text": "Level"
+    },
+    {
+      "file": "src/components/coop/CoopDungeonBrowser.tsx",
+      "line": 40,
+      "kind": "jsx",
+      "text": "event currency on clear"
+    },
+    {
+      "file": "src/components/coop/CoopDungeonBrowser.tsx",
+      "line": 40,
+      "kind": "jsx",
+      "text": "· starts at"
+    },
+    {
+      "file": "src/components/coop/CoopDungeonBrowser.tsx",
+      "line": 51,
+      "kind": "literal",
+      "text": "This seasonal expedition is only launchable while its LiveOps event is active."
+    },
+    {
+      "file": "src/components/coop/CoopLiveLobby.tsx",
+      "line": 45,
+      "kind": "jsx",
+      "text": "Auto Tier up to"
+    },
+    {
+      "file": "src/components/coop/CoopLiveLobby.tsx",
+      "line": 45,
+      "kind": "jsx",
+      "text": "· role:"
+    },
+    {
+      "file": "src/components/coop/CoopLiveLobby.tsx",
+      "line": 47,
+      "kind": "template",
+      "text": "TIER {expression}"
+    },
+    {
+      "file": "src/components/coop/CoopLiveRecruitmentBoard.tsx",
+      "line": 21,
+      "kind": "jsx",
+      "text": "Uses your verified role and sends you to the eligible dungeon where your role helps matchmaking most. The matched party still uses Auto Tier."
+    },
+    {
+      "file": "src/components/coop/CoopLiveRecruitmentBoard.tsx",
+      "line": 25,
+      "kind": "literal",
+      "text": "LIVE"
+    },
+    {
+      "file": "src/components/coop/CoopLiveRecruitmentBoard.tsx",
+      "line": 26,
+      "kind": "jsx",
+      "text": "Short-lived dungeon adverts only. Posts disappear after 30 minutes and never create a second Party system."
+    },
+    {
+      "file": "src/components/coop/CoopLiveRecruitmentBoard.tsx",
+      "line": 29,
+      "kind": "jsx",
+      "text": "/140 · expires 30 minutes after posting"
+    },
+    {
+      "file": "src/components/coop/CoopLiveRecruitmentBoard.tsx",
+      "line": 30,
+      "kind": "jsx",
+      "text": "Your post ·"
+    },
+    {
+      "file": "src/components/coop/CoopLiveRecruitmentBoard.tsx",
+      "line": 31,
+      "kind": "jsx",
+      "text": "Auto Tier ≤"
+    },
+    {
+      "file": "src/components/coop/CoopRunOverview.tsx",
+      "line": 38,
+      "kind": "template",
+      "text": "Lv. {expression}"
+    },
+    {
+      "file": "src/components/coop/CoopRunOverview.tsx",
+      "line": 41,
+      "kind": "jsx",
+      "text": "connected · server presence is authoritative"
+    },
+    {
+      "file": "src/components/coop/CoopRunOverview.tsx",
+      "line": 41,
+      "kind": "jsx",
+      "text": "A disconnected party member is being piloted with basic attacks and safe defensive abilities while reconnect is available."
+    },
+    {
+      "file": "src/components/coop/CoopRunOverview.tsx",
+      "line": 44,
+      "kind": "jsx",
+      "text": "Final Boss Reaction ·"
+    },
+    {
+      "file": "src/components/coop/CoopRunOverview.tsx",
+      "line": 55,
+      "kind": "literal",
+      "text": "Seasonal expedition reward collected."
+    },
+    {
+      "file": "src/components/coop/DungeonCombatStage.tsx",
+      "line": 134,
+      "kind": "template",
+      "text": "{expression} ASSIST{expression}"
+    },
+    {
+      "file": "src/components/coop/DungeonCombatStage.tsx",
+      "line": 150,
+      "kind": "template",
+      "text": "Combat replay speed {expression} times"
+    },
+    {
+      "file": "src/components/coop/DungeonCombatStage.tsx",
+      "line": 151,
+      "kind": "jsx",
+      "text": "cues"
+    },
+    {
+      "file": "src/components/coop/DungeonCombatStage.tsx",
+      "line": 154,
+      "kind": "template",
+      "text": "{expression} recent ▼"
+    },
+    {
+      "file": "src/components/coop/DungeonCombatStage.tsx",
+      "line": 155,
+      "kind": "jsx",
+      "text": "The authoritative result has no detailed replay cues for this older encounter."
+    },
+    {
+      "file": "src/components/coop/DungeonCombatStage.tsx",
+      "line": 157,
+      "kind": "jsx",
+      "text": "Combat uses one fixed class avatar per class plus lightweight motion/VFX. Companions stay attached to their owner and only pop in when their real assist procs."
+    },
+    {
+      "file": "src/components/coop/SeasonalBossTelegraphPanel.tsx",
+      "line": 13,
+      "kind": "template",
+      "text": "{expression} PHASE{expression}"
+    },
+    {
+      "file": "src/components/coop/SeasonalBossTelegraphPanel.tsx",
+      "line": 16,
+      "kind": "jsx",
+      "text": "s cast ·"
+    },
+    {
+      "file": "src/components/coop/SeasonalBossTelegraphPanel.tsx",
+      "line": 16,
+      "kind": "jsx",
+      "text": "s cooldown"
+    },
+    {
+      "file": "src/components/coop/SeasonalBossTelegraphPanel.tsx",
+      "line": 16,
+      "kind": "literal",
+      "text": "· objective-sensitive"
+    },
+    {
+      "file": "src/components/coop/SeasonalBossTelegraphPanel.tsx",
+      "line": 17,
+      "kind": "template",
+      "text": "{expression} · SUPPRESSED"
+    },
+    {
+      "file": "src/components/coop/SeasonalBossTelegraphPanel.tsx",
+      "line": 19,
+      "kind": "jsx",
+      "text": "s encounter"
+    },
+    {
+      "file": "src/components/coop/SeasonalBossTelegraphPanel.tsx",
+      "line": 19,
+      "kind": "template",
+      "text": "{expression} DOWN{expression}"
+    },
+    {
+      "file": "src/components/GuildActivitySummaryPanel.tsx",
+      "line": 20,
+      "kind": "jsx",
+      "text": "% Guild Activity"
+    },
+    {
+      "file": "src/components/GuildActivitySummaryPanel.tsx",
+      "line": 22,
+      "kind": "jsx",
+      "text": "recently active member"
+    },
+    {
+      "file": "src/components/GuildActivitySummaryPanel.tsx",
+      "line": 22,
+      "kind": "jsx",
+      "text": "· target"
+    },
+    {
+      "file": "src/components/GuildActivitySummaryPanel.tsx",
+      "line": 22,
+      "kind": "jsx",
+      "text": "units"
+    },
+    {
+      "file": "src/components/GuildActivitySummaryPanel.tsx",
+      "line": 23,
+      "kind": "jsx",
+      "text": "/10% · bonuses remain capped at 100%; reserve absorbs future decay."
+    },
+    {
+      "file": "src/components/GuildActivitySummaryPanel.tsx",
+      "line": 24,
+      "kind": "jsx",
+      "text": "% until"
+    },
+    {
+      "file": "src/components/GuildActivitySummaryPanel.tsx",
+      "line": 25,
+      "kind": "jsx",
+      "text": "/5 milestones active · Guild Quests, Muster and completed Projects sustain this meter."
+    },
+    {
+      "file": "src/components/GuildChat.tsx",
+      "line": 47,
+      "kind": "literal",
+      "text": "Open"
+    },
+    {
+      "file": "src/components/GuildChat.tsx",
+      "line": 47,
+      "kind": "literal",
+      "text": "'s player profile"
+    },
+    {
+      "file": "src/components/GuildCustomizationPanel.tsx",
+      "line": 38,
+      "kind": "jsx",
+      "text": "Choose the heraldry shown on your guild profile, recruitment posts and guild cards."
+    },
+    {
+      "file": "src/components/GuildDecreePanel.tsx",
+      "line": 13,
+      "kind": "jsx",
+      "text": "Completing the weekly Guild Project opens a decree choice. Only one Guild Decree is active at once and all bonuses remain under existing Guild/global caps."
+    },
+    {
+      "file": "src/components/GuildDecreePanel.tsx",
+      "line": 14,
+      "kind": "literal",
+      "text": "· until"
+    },
+    {
+      "file": "src/components/GuildDecreePanel.tsx",
+      "line": 15,
+      "kind": "jsx",
+      "text": "A completed eligible weekly Project can open the next decree window."
+    },
+    {
+      "file": "src/components/GuildHubPanel.tsx",
+      "line": 19,
+      "kind": "jsx",
+      "text": "GUILD · LEVEL"
+    },
+    {
+      "file": "src/components/GuildHubPanel.tsx",
+      "line": 19,
+      "kind": "jsx",
+      "text": "members ·"
+    },
+    {
+      "file": "src/components/GuildHubPanel.tsx",
+      "line": 19,
+      "kind": "jsx",
+      "text": "Project slot"
+    },
+    {
+      "file": "src/components/GuildHubPanel.tsx",
+      "line": 20,
+      "kind": "literal",
+      "text": "No bulletin posted."
+    },
+    {
+      "file": "src/components/GuildHubPanel.tsx",
+      "line": 22,
+      "kind": "jsx",
+      "text": "active"
+    },
+    {
+      "file": "src/components/GuildHubPanel.tsx",
+      "line": 22,
+      "kind": "jsx",
+      "text": "No active Guild Projects. Open Projects to review the next shared goal."
+    },
+    {
+      "file": "src/components/GuildHubPanel.tsx",
+      "line": 22,
+      "kind": "literal",
+      "text": "effort points"
+    },
+    {
+      "file": "src/components/GuildIdentitySummary.tsx",
+      "line": 33,
+      "kind": "jsx",
+      "text": "GUILD LV."
+    },
+    {
+      "file": "src/components/GuildMemberRosterPanel.tsx",
+      "line": 15,
+      "kind": "jsx",
+      "text": "weekly contribution"
+    },
+    {
+      "file": "src/components/GuildProjectDetailPanel.tsx",
+      "line": 14,
+      "kind": "jsx",
+      "text": "GUILD PROJECT ·"
+    },
+    {
+      "file": "src/components/GuildProjectDetailPanel.tsx",
+      "line": 16,
+      "kind": "jsx",
+      "text": "meaningful contributors"
+    },
+    {
+      "file": "src/components/GuildProjectDetailPanel.tsx",
+      "line": 17,
+      "kind": "jsx",
+      "text": "· Today"
+    },
+    {
+      "file": "src/components/GuildProjectDetailPanel.tsx",
+      "line": 19,
+      "kind": "jsx",
+      "text": "tracked"
+    },
+    {
+      "file": "src/components/GuildProjectDetailPanel.tsx",
+      "line": 20,
+      "kind": "literal",
+      "text": "· reward eligible"
+    },
+    {
+      "file": "src/components/GuildProjectsPanel.tsx",
+      "line": 13,
+      "kind": "jsx",
+      "text": "slots"
+    },
+    {
+      "file": "src/components/GuildProjectsPanel.tsx",
+      "line": 15,
+      "kind": "jsx",
+      "text": "· Slot"
+    },
+    {
+      "file": "src/components/GuildProjectsPanel.tsx",
+      "line": 16,
+      "kind": "jsx",
+      "text": "choices"
+    },
+    {
+      "file": "src/components/GuildProjectsPanel.tsx",
+      "line": 17,
+      "kind": "jsx",
+      "text": "Members recommend a Project. An authorized Guild role can start one; the server may auto-start the top-voted option if leadership is inactive."
+    },
+    {
+      "file": "src/components/GuildProjectsPanel.tsx",
+      "line": 18,
+      "kind": "jsx",
+      "text": "vote"
+    },
+    {
+      "file": "src/components/GuildQuestPanel.tsx",
+      "line": 22,
+      "kind": "jsx",
+      "text": "completed"
+    },
+    {
+      "file": "src/components/GuildQuestPanel.tsx",
+      "line": 22,
+      "kind": "literal",
+      "text": "D LEFT"
+    },
+    {
+      "file": "src/components/GuildQuestPanel.tsx",
+      "line": 23,
+      "kind": "jsx",
+      "text": "Five quests are fixed for the week: two approachable objectives, two varied objectives and one featured challenge. Completed quests remain visible until the weekly reset; there are no rerolls."
+    },
+    {
+      "file": "src/components/GuildQuestPanel.tsx",
+      "line": 35,
+      "kind": "jsx",
+      "text": "completed · +"
+    },
+    {
+      "file": "src/components/GuildQuestPanel.tsx",
+      "line": 35,
+      "kind": "jsx",
+      "text": "Activity units."
+    },
+    {
+      "file": "src/components/GuildQuestPanel.tsx",
+      "line": 35,
+      "kind": "jsx",
+      "text": "active ·"
+    },
+    {
+      "file": "src/components/GuildQuestPanel.tsx",
+      "line": 42,
+      "kind": "literal",
+      "text": "FEATURED ·"
+    },
+    {
+      "file": "src/components/GuildQuestPanel.tsx",
+      "line": 47,
+      "kind": "jsx",
+      "text": "Activity units"
+    },
+    {
+      "file": "src/components/GuildQuestPanel.tsx",
+      "line": 48,
+      "kind": "jsx",
+      "text": "Guild Activity secured for the Guild."
+    },
+    {
+      "file": "src/components/GuildQuestPanel.tsx",
+      "line": 49,
+      "kind": "jsx",
+      "text": "contributor"
+    },
+    {
+      "file": "src/components/GuildQuestPanel.tsx",
+      "line": 49,
+      "kind": "jsx",
+      "text": "this week · personal daily credit is capped"
+    },
+    {
+      "file": "src/components/GuildSeekerPanel.tsx",
+      "line": 16,
+      "kind": "literal",
+      "text": "active seeker"
+    },
+    {
+      "file": "src/components/GuildSeekerPanel.tsx",
+      "line": 16,
+      "kind": "literal",
+      "text": "Players looking for their next Guild."
+    },
+    {
+      "file": "src/components/GuildSeekerPanel.tsx",
+      "line": 18,
+      "kind": "jsx",
+      "text": "Adjust filters or post your own Guild-seeker advert. Expired posts disappear automatically."
+    },
+    {
+      "file": "src/components/LiveDungeonQueuePanel.tsx",
+      "line": 8,
+      "kind": "jsx",
+      "text": "Requires exactly 1 Tank · 2 Damage · 1 Support. Your loadout is frozen when the ready check begins."
+    },
+    {
+      "file": "src/components/LiveDungeonReadyCheck.tsx",
+      "line": 8,
+      "kind": "jsx",
+      "text": "READY CHECK ·"
+    },
+    {
+      "file": "src/components/LiveDungeonReadyCheck.tsx",
+      "line": 8,
+      "kind": "jsx",
+      "text": "/ 4 ready"
+    },
+    {
+      "file": "src/components/LiveDungeonReadyCheck.tsx",
+      "line": 8,
+      "kind": "literal",
+      "text": "· YOU"
+    },
+    {
+      "file": "src/components/LiveDungeonRunPanel.tsx",
+      "line": 7,
+      "kind": "jsx",
+      "text": "LIVE EXPEDITION · NODE"
+    },
+    {
+      "file": "src/components/LiveDungeonRunPanel.tsx",
+      "line": 7,
+      "kind": "jsx",
+      "text": "CHOOSE NEXT ROUTE ·"
+    },
+    {
+      "file": "src/components/LiveDungeonRunPanel.tsx",
+      "line": 7,
+      "kind": "jsx",
+      "text": "risk ·"
+    },
+    {
+      "file": "src/components/LiveDungeonRunPanel.tsx",
+      "line": 7,
+      "kind": "jsx",
+      "text": "If all four players choose the same route it resolves immediately. Otherwise the most votes wins when the timer ends."
+    },
+    {
+      "file": "src/components/LiveDungeonRunPanel.tsx",
+      "line": 7,
+      "kind": "jsx",
+      "text": "Run state is checkpointed between nodes so a server restart can recover the party from the last committed room."
+    },
+    {
+      "file": "src/components/OnlineGuildBrowser.tsx",
+      "line": 34,
+      "kind": "literal",
+      "text": "Latin letters, spaces, apostrophes and hyphens only."
+    },
+    {
+      "file": "src/components/OnlineGuildBrowser.tsx",
+      "line": 36,
+      "kind": "literal",
+      "text": "Exactly three letters. A claimed tag can never be reused."
+    },
+    {
+      "file": "src/components/OnlineGuildBrowser.tsx",
+      "line": 42,
+      "kind": "jsx",
+      "text": "shown"
+    },
+    {
+      "file": "src/components/OnlineGuildBrowser.tsx",
+      "line": 51,
+      "kind": "jsx",
+      "text": "LV."
+    },
+    {
+      "file": "src/components/OnlineGuildBrowser.tsx",
+      "line": 51,
+      "kind": "jsx",
+      "text": "cap · Min Lv."
+    },
+    {
+      "file": "src/components/OnlineGuildCustomizationPanel.tsx",
+      "line": 25,
+      "kind": "literal",
+      "text": "Open this panel to load your guild."
+    },
+    {
+      "file": "src/components/OnlineGuildCustomizationPanel.tsx",
+      "line": 36,
+      "kind": "template",
+      "text": "Guild Level {expression}"
+    },
+    {
+      "file": "src/components/OnlineGuildHallPanel.tsx",
+      "line": 28,
+      "kind": "jsx",
+      "text": "Hall Progress ·"
+    },
+    {
+      "file": "src/components/OnlineGuildHallPanel.tsx",
+      "line": 28,
+      "kind": "jsx",
+      "text": "completed projects"
+    },
+    {
+      "file": "src/components/OnlineGuildHallPanel.tsx",
+      "line": 28,
+      "kind": "jsx",
+      "text": "Lv"
+    },
+    {
+      "file": "src/components/OnlineGuildHallPanel.tsx",
+      "line": 30,
+      "kind": "literal",
+      "text": "Hall Progress to level"
+    },
+    {
+      "file": "src/components/OnlineGuildHallPanel.tsx",
+      "line": 30,
+      "kind": "literal",
+      "text": "Launch Hall level cap reached."
+    },
+    {
+      "file": "src/components/OnlineGuildHallPanel.tsx",
+      "line": 34,
+      "kind": "jsx",
+      "text": "Facilities improve through authored Guild Projects. Hall Progress is never spent."
+    },
+    {
+      "file": "src/components/OnlineGuildHallPanel.tsx",
+      "line": 38,
+      "kind": "jsx",
+      "text": "Launch cap · Lv 10"
+    },
+    {
+      "file": "src/components/OnlineGuildHallPanel.tsx",
+      "line": 39,
+      "kind": "jsx",
+      "text": "Hall facilities now represent progression visually. Permanent bonuses are chosen through three Guild Skill Trees instead of stacking automatically from Hall tiers."
+    },
+    {
+      "file": "src/components/OnlineGuildHallPanel.tsx",
+      "line": 40,
+      "kind": "jsx",
+      "text": "Non-combat only · Skilling XP, gathering speed and production speed · up to +6% per line."
+    },
+    {
+      "file": "src/components/OnlineGuildHallPanel.tsx",
+      "line": 41,
+      "kind": "jsx",
+      "text": "Member capacity, Guild Quests, Project options and cooperative-system unlocks."
+    },
+    {
+      "file": "src/components/OnlineGuildHallPanel.tsx",
+      "line": 42,
+      "kind": "jsx",
+      "text": "Guild-content-only combat damage, defence, support and boss/raid contribution."
+    },
+    {
+      "file": "src/components/OnlineGuildHallPanel.tsx",
+      "line": 43,
+      "kind": "jsx",
+      "text": "Ranks use Guild Skill Points. Higher tree tiers require communal Development Projects and resources."
+    },
+    {
+      "file": "src/components/OnlineGuildHallPanel.tsx",
+      "line": 46,
+      "kind": "jsx",
+      "text": "recorded"
+    },
+    {
+      "file": "src/components/OnlineGuildHallPanel.tsx",
+      "line": 48,
+      "kind": "jsx",
+      "text": "Completed eligible Guild Projects and raids will appear here. Future Guild Legacy will preserve major trophies and season records permanently."
+    },
+    {
+      "file": "src/components/OnlineGuildManagement.tsx",
+      "line": 51,
+      "kind": "jsx",
+      "text": "pending"
+    },
+    {
+      "file": "src/components/OnlineGuildManagement.tsx",
+      "line": 80,
+      "kind": "jsx",
+      "text": "LEADERSHIP SAFETY ·"
+    },
+    {
+      "file": "src/components/OnlineGuildManagement.tsx",
+      "line": 80,
+      "kind": "jsx",
+      "text": "DAYS"
+    },
+    {
+      "file": "src/components/OnlineGuildManagement.tsx",
+      "line": 81,
+      "kind": "literal",
+      "text": "Guild Leader"
+    },
+    {
+      "file": "src/components/OnlineGuildManagement.tsx",
+      "line": 81,
+      "kind": "literal",
+      "text": "inactive"
+    },
+    {
+      "file": "src/components/OnlineGuildManagement.tsx",
+      "line": 81,
+      "kind": "literal",
+      "text": "active recently"
+    },
+    {
+      "file": "src/components/OnlineGuildManagement.tsx",
+      "line": 82,
+      "kind": "jsx",
+      "text": "If inactivity reaches"
+    },
+    {
+      "file": "src/components/OnlineGuildManagement.tsx",
+      "line": 82,
+      "kind": "jsx",
+      "text": "days, leadership passes to"
+    },
+    {
+      "file": "src/components/OnlineGuildManagement.tsx",
+      "line": 82,
+      "kind": "jsx",
+      "text": "No active successor is currently eligible. Leadership stays in place until an Officer or Member has been active within the last"
+    },
+    {
+      "file": "src/components/OnlineGuildManagement.tsx",
+      "line": 82,
+      "kind": "jsx",
+      "text": "days."
+    },
+    {
+      "file": "src/components/OnlineGuildManagement.tsx",
+      "line": 84,
+      "kind": "jsx",
+      "text": "ROSTER ·"
+    },
+    {
+      "file": "src/components/OnlineGuildManagement.tsx",
+      "line": 86,
+      "kind": "template",
+      "text": "Open {expression}'s profile"
+    },
+    {
+      "file": "src/components/OnlineGuildManagement.tsx",
+      "line": 89,
+      "kind": "jsx",
+      "text": "waiting"
+    },
+    {
+      "file": "src/components/OnlineGuildManagement.tsx",
+      "line": 90,
+      "kind": "jsx",
+      "text": "pending"
+    },
+    {
+      "file": "src/components/OnlineGuildManagement.tsx",
+      "line": 91,
+      "kind": "jsx",
+      "text": "Transfer leadership to another member before leaving, or disband the Guild for everyone."
+    },
+    {
+      "file": "src/components/OnlineGuildManagement.tsx",
+      "line": 91,
+      "kind": "jsx",
+      "text": "Leaving removes access to Guild projects, chat and member benefits until you join another Guild."
+    },
+    {
+      "file": "src/components/OnlineGuildMusterPanel.tsx",
+      "line": 25,
+      "kind": "jsx",
+      "text": "Join a Guild to take part in daily Muster and the shared weekly Rally."
+    },
+    {
+      "file": "src/components/OnlineGuildMusterPanel.tsx",
+      "line": 32,
+      "kind": "jsx",
+      "text": "Your first authenticated session records today’s attendance. Verified Combat and Skilling then add capped Muster contribution automatically—there is no manual point button to spam."
+    },
+    {
+      "file": "src/components/OnlineGuildMusterPanel.tsx",
+      "line": 36,
+      "kind": "jsx",
+      "text": "contribution"
+    },
+    {
+      "file": "src/components/OnlineGuildMusterPanel.tsx",
+      "line": 43,
+      "kind": "jsx",
+      "text": "Reach"
+    },
+    {
+      "file": "src/components/OnlineGuildMusterPanel.tsx",
+      "line": 43,
+      "kind": "jsx",
+      "text": "today to earn one Rally Mark. Extra play can fill your daily contribution, but never creates more than one Mark per day."
+    },
+    {
+      "file": "src/components/OnlineGuildMusterPanel.tsx",
+      "line": 47,
+      "kind": "jsx",
+      "text": "Rally days ·"
+    },
+    {
+      "file": "src/components/OnlineGuildMusterPanel.tsx",
+      "line": 47,
+      "kind": "jsx",
+      "text": "points"
+    },
+    {
+      "file": "src/components/OnlineGuildMusterPanel.tsx",
+      "line": 48,
+      "kind": "jsx",
+      "text": "This is intentionally not a consecutive login streak. Four meaningful days in a week is enough, so missing a day does not reset anything."
+    },
+    {
+      "file": "src/components/OnlineGuildMusterPanel.tsx",
+      "line": 59,
+      "kind": "jsx",
+      "text": "Rally I / II / III unlock at 35% / 70% / 100% of the weekly target. They add +5% / +10% / +15% Hall Progress when a Guild Project completes that week. No new currency, no loot race, and no single member can carry the Rally alone."
+    },
+    {
+      "file": "src/components/OnlineGuildMusterPanel.tsx",
+      "line": 60,
+      "kind": "jsx",
+      "text": "The target scales to roughly 60% of the current roster completing four meaningful days, so launch-size Guilds are not balanced around a full 20-player roster."
+    },
+    {
+      "file": "src/components/OnlineGuildMusterPanel.tsx",
+      "line": 64,
+      "kind": "jsx",
+      "text": "% Guild Activity"
+    },
+    {
+      "file": "src/components/OnlineGuildMusterPanel.tsx",
+      "line": 64,
+      "kind": "literal",
+      "text": "% NEXT"
+    },
+    {
+      "file": "src/components/OnlineGuildMusterPanel.tsx",
+      "line": 66,
+      "kind": "jsx",
+      "text": "Guild Activity is sustained through Guild Quests, Muster and completed shared Projects. Its requirement scales from members active in the trailing 14 days, so dormant roster slots do not permanently inflate the target."
+    },
+    {
+      "file": "src/components/OnlineGuildMusterPanel.tsx",
+      "line": 68,
+      "kind": "literal",
+      "text": "Today is protected: enough Guild activity has been recorded to avoid decay."
+    },
+    {
+      "file": "src/components/OnlineGuildMusterPanel.tsx",
+      "line": 68,
+      "kind": "literal",
+      "text": "Some activity is recorded today: if the day ends here, the meter loses only"
+    },
+    {
+      "file": "src/components/OnlineGuildMusterPanel.tsx",
+      "line": 68,
+      "kind": "literal",
+      "text": "percentage points."
+    },
+    {
+      "file": "src/components/OnlineGuildMusterPanel.tsx",
+      "line": 68,
+      "kind": "literal",
+      "text": "No meaningful Guild activity is recorded today yet: an inactive day loses"
+    },
+    {
+      "file": "src/components/OnlineGuildMusterPanel.tsx",
+      "line": 68,
+      "kind": "literal",
+      "text": "percentage points."
+    },
+    {
+      "file": "src/components/OnlineGuildMusterPanel.tsx",
+      "line": 68,
+      "kind": "jsx",
+      "text": "There is no weekly hard reset."
+    },
+    {
+      "file": "src/components/OnlineGuildMusterPanel.tsx",
+      "line": 69,
+      "kind": "jsx",
+      "text": "Current unlocked effects: +"
+    },
+    {
+      "file": "src/components/OnlineGuildMusterPanel.tsx",
+      "line": 69,
+      "kind": "jsx",
+      "text": "% gathering · +"
+    },
+    {
+      "file": "src/components/OnlineGuildMusterPanel.tsx",
+      "line": 69,
+      "kind": "jsx",
+      "text": "% production · +"
+    },
+    {
+      "file": "src/components/OnlineGuildMusterPanel.tsx",
+      "line": 69,
+      "kind": "jsx",
+      "text": "% Skill XP · +"
+    },
+    {
+      "file": "src/components/OnlineGuildMusterPanel.tsx",
+      "line": 69,
+      "kind": "jsx",
+      "text": "% Mastery XP · +"
+    },
+    {
+      "file": "src/components/OnlineGuildMusterPanel.tsx",
+      "line": 69,
+      "kind": "jsx",
+      "text": "% relative rare materials. Today:"
+    },
+    {
+      "file": "src/components/OnlineGuildMusterPanel.tsx",
+      "line": 69,
+      "kind": "jsx",
+      "text": "activity units from"
+    },
+    {
+      "file": "src/components/OnlineGuildMusterPanel.tsx",
+      "line": 69,
+      "kind": "jsx",
+      "text": "recently active member"
+    },
+    {
+      "file": "src/components/OnlineGuildMusterPanel.tsx",
+      "line": 73,
+      "kind": "jsx",
+      "text": "members"
+    },
+    {
+      "file": "src/components/OnlineGuildMusterPanel.tsx",
+      "line": 75,
+      "kind": "jsx",
+      "text": "Rally days"
+    },
+    {
+      "file": "src/components/OnlineGuildMusterPanel.tsx",
+      "line": 76,
+      "kind": "jsx",
+      "text": "today"
+    },
+    {
+      "file": "src/components/OnlineGuildMusterPanel.tsx",
+      "line": 78,
+      "kind": "jsx",
+      "text": "more members contribute to the Rally."
+    },
+    {
+      "file": "src/components/OnlineGuildNoticeBoardPanel.tsx",
+      "line": 30,
+      "kind": "literal",
+      "text": "Join a Guild to view its member-only Notice Board."
+    },
+    {
+      "file": "src/components/OnlineGuildProjectsPanel.tsx",
+      "line": 39,
+      "kind": "jsx",
+      "text": "Verified gameplay updates active Projects automatically. Members can vote on the weekly board; authorized Guild roles can start the selected Project through server-validated actions."
+    },
+    {
+      "file": "src/components/OnlineGuildProjectsPanel.tsx",
+      "line": 41,
+      "kind": "jsx",
+      "text": "The next authored Project will appear here when the Guild starts one."
+    },
+    {
+      "file": "src/components/OnlineGuildProjectsPanel.tsx",
+      "line": 43,
+      "kind": "jsx",
+      "text": "shown"
+    },
+    {
+      "file": "src/components/OnlineGuildProjectsPanel.tsx",
+      "line": 45,
+      "kind": "jsx",
+      "text": "recent"
+    },
+    {
+      "file": "src/components/OnlineGuildProjectsPanel.tsx",
+      "line": 49,
+      "kind": "jsx",
+      "text": "Resource donations and completion rewards stay server-owned until their Gold/inventory settlement is atomic with authoritative gameplay."
+    },
+    {
+      "file": "src/components/OnlineGuildProjectsPanel.tsx",
+      "line": 58,
+      "kind": "jsx",
+      "text": "vote"
+    },
+    {
+      "file": "src/components/OnlineGuildProjectsPanel.tsx",
+      "line": 60,
+      "kind": "jsx",
+      "text": "Board closes"
+    },
+    {
+      "file": "src/components/OnlineGuildProjectsPanel.tsx",
+      "line": 70,
+      "kind": "jsx",
+      "text": "· Slot"
+    },
+    {
+      "file": "src/components/OnlineGuildProjectsPanel.tsx",
+      "line": 72,
+      "kind": "jsx",
+      "text": "effort ·"
+    },
+    {
+      "file": "src/components/OnlineGuildProjectsPanel.tsx",
+      "line": 72,
+      "kind": "jsx",
+      "text": "meaningful contributors"
+    },
+    {
+      "file": "src/components/OnlineGuildProjectsPanel.tsx",
+      "line": 72,
+      "kind": "jsx",
+      "text": "resource goal"
+    },
+    {
+      "file": "src/components/OnlineGuildProjectsPanel.tsx",
+      "line": 73,
+      "kind": "literal",
+      "text": "threshold"
+    },
+    {
+      "file": "src/components/OnlineGuildProjectsPanel.tsx",
+      "line": 77,
+      "kind": "jsx",
+      "text": "Ends"
+    },
+    {
+      "file": "src/components/OnlineGuildPve.tsx",
+      "line": 19,
+      "kind": "literal",
+      "text": "Join a Guild to participate in weekly projects and the Guild boss."
+    },
+    {
+      "file": "src/components/OnlineGuildPve.tsx",
+      "line": 24,
+      "kind": "jsx",
+      "text": "progress"
+    },
+    {
+      "file": "src/components/OnlineGuildPve.tsx",
+      "line": 26,
+      "kind": "jsx",
+      "text": "Verified gathering and crafting advance the shared project automatically."
+    },
+    {
+      "file": "src/components/OnlineGuildPve.tsx",
+      "line": 29,
+      "kind": "jsx",
+      "text": "HP remaining"
+    },
+    {
+      "file": "src/components/OnlineGuildPve.tsx",
+      "line": 31,
+      "kind": "jsx",
+      "text": "Verified combat contributes within your weekly allowance."
+    },
+    {
+      "file": "src/components/OnlinePartyChat.tsx",
+      "line": 39,
+      "kind": "template",
+      "text": "Open {expression}'s player profile"
+    },
+    {
+      "file": "src/components/OnlineWorldChat.tsx",
+      "line": 35,
+      "kind": "template",
+      "text": "Open {expression}'s player profile"
+    },
+    {
+      "file": "src/components/PartyEventHubPanel.tsx",
+      "line": 25,
+      "kind": "jsx",
+      "text": "Temporary Party Events appear here when a live-ops window is active. Weekly Party Contracts continue normally."
+    },
+    {
+      "file": "src/components/PartyEventHubPanel.tsx",
+      "line": 27,
+      "kind": "jsx",
+      "text": "LIVE PARTY EVENT ·"
+    },
+    {
+      "file": "src/components/PartyEventHubPanel.tsx",
+      "line": 32,
+      "kind": "jsx",
+      "text": "Next personal milestone ·"
+    },
+    {
+      "file": "src/components/PartyEventHubPanel.tsx",
+      "line": 33,
+      "kind": "jsx",
+      "text": "Next Party milestone ·"
+    },
+    {
+      "file": "src/components/PartyEventHubPanel.tsx",
+      "line": 34,
+      "kind": "jsx",
+      "text": "Today:"
+    },
+    {
+      "file": "src/components/PartyEventHubPanel.tsx",
+      "line": 34,
+      "kind": "jsx",
+      "text": "credited points"
+    },
+    {
+      "file": "src/components/PartyEventHubPanel.tsx",
+      "line": 37,
+      "kind": "jsx",
+      "text": "Party ranking qualification:"
+    },
+    {
+      "file": "src/components/PartyEventHubPanel.tsx",
+      "line": 40,
+      "kind": "jsx",
+      "text": "points"
+    },
+    {
+      "file": "src/components/PartyEventHubPanel.tsx",
+      "line": 44,
+      "kind": "literal",
+      "text": "Current Party"
+    },
+    {
+      "file": "src/components/PartyEventHubPanel.tsx",
+      "line": 44,
+      "kind": "literal",
+      "text": "· Meaningful contributor"
+    },
+    {
+      "file": "src/components/PartyEventHubPanel.tsx",
+      "line": 44,
+      "kind": "jsx",
+      "text": "Once you reach the event binding threshold for a Party, switching Parties cannot move your ranking contribution to a second Party during the same event."
+    },
+    {
+      "file": "src/components/PartyEventLeaderboardPanel.tsx",
+      "line": 23,
+      "kind": "jsx",
+      "text": "Your Party · #"
+    },
+    {
+      "file": "src/components/PartyEventLeaderboardPanel.tsx",
+      "line": 28,
+      "kind": "jsx",
+      "text": "contributors · top"
+    },
+    {
+      "file": "src/components/PartyEventLeaderboardPanel.tsx",
+      "line": 33,
+      "kind": "jsx",
+      "text": "Rank rewards are prestige-heavy. Friends and Guild views preserve the same global rank instead of creating easier private reward ladders."
+    },
+    {
+      "file": "src/components/PartyHubPanel.tsx",
+      "line": 58,
+      "kind": "template",
+      "text": "Party • {expression}/4"
+    },
+    {
+      "file": "src/components/PartyHubPanel.tsx",
+      "line": 59,
+      "kind": "template",
+      "text": "{expression} open spot{expression} • {expression}"
+    },
+    {
+      "file": "src/components/PartyHubPanel.tsx",
+      "line": 59,
+      "kind": "literal",
+      "text": "Create a persistent Party or find people without needing the same quest."
+    },
+    {
+      "file": "src/components/PartyHubPanel.tsx",
+      "line": 72,
+      "kind": "template",
+      "text": "Open {expression}'s profile"
+    },
+    {
+      "file": "src/components/PartyHubPanel.tsx",
+      "line": 82,
+      "kind": "template",
+      "text": "Claim {expression} Gold"
+    },
+    {
+      "file": "src/components/PartyHubPanel.tsx",
+      "line": 88,
+      "kind": "literal",
+      "text": "Browse players advertising themselves for a Party."
+    },
+    {
+      "file": "src/components/PartyHubPanel.tsx",
+      "line": 88,
+      "kind": "literal",
+      "text": "Browse persistent Parties that still have open member slots."
+    },
+    {
+      "file": "src/components/PartyHubPanel.tsx",
+      "line": 108,
+      "kind": "jsx",
+      "text": "h left"
+    },
+    {
+      "file": "src/components/PartyHubPanel.tsx",
+      "line": 110,
+      "kind": "jsx",
+      "text": "normalized pts"
+    },
+    {
+      "file": "src/components/PartyHubPanel.tsx",
+      "line": 111,
+      "kind": "jsx",
+      "text": "Your contribution:"
+    },
+    {
+      "file": "src/components/PartyHubPanel.tsx",
+      "line": 111,
+      "kind": "jsx",
+      "text": "minimum"
+    },
+    {
+      "file": "src/components/RecruitmentBoardPanel.tsx",
+      "line": 39,
+      "kind": "jsx",
+      "text": "Match on broad play interests so parties can rotate between"
+    },
+    {
+      "file": "src/components/RecruitmentBoardPanel.tsx",
+      "line": 39,
+      "kind": "jsx",
+      "text": "contracts"
+    },
+    {
+      "file": "src/components/RecruitmentBoardPanel.tsx",
+      "line": 39,
+      "kind": "jsx",
+      "text": "and"
+    },
+    {
+      "file": "src/components/RecruitmentBoardPanel.tsx",
+      "line": 39,
+      "kind": "jsx",
+      "text": "events"
+    },
+    {
+      "file": "src/components/RecruitmentBoardPanel.tsx",
+      "line": 42,
+      "kind": "jsx",
+      "text": "% match"
+    },
+    {
+      "file": "src/components/RecruitmentBoardPanel.tsx",
+      "line": 46,
+      "kind": "literal",
+      "text": "Adventurer"
+    },
+    {
+      "file": "src/components/RecruitmentBoardPanel.tsx",
+      "line": 46,
+      "kind": "template",
+      "text": "· Lv {expression}"
+    },
+    {
+      "file": "src/components/RecruitmentComposer.tsx",
+      "line": 31,
+      "kind": "literal",
+      "text": "· comma separated"
+    },
+    {
+      "file": "src/components/RecruitmentComposer.tsx",
+      "line": 35,
+      "kind": "attribute",
+      "text": "currentObjective"
+    },
+    {
+      "file": "src/components/RecruitmentComposer.tsx",
+      "line": 37,
+      "kind": "jsx",
+      "text": "day"
+    },
+    {
+      "file": "src/components/RecruitmentComposer.tsx",
+      "line": 37,
+      "kind": "jsx",
+      "text": "· stale posts disappear automatically"
+    },
+    {
+      "file": "src/components/RecruitmentFiltersPanel.tsx",
+      "line": 29,
+      "kind": "literal",
+      "text": "· comma separated"
+    },
+    {
+      "file": "src/components/RecruitmentListing.tsx",
+      "line": 19,
+      "kind": "template",
+      "text": "{expression}, {expression}, posted by {expression}, {expression}"
+    },
+    {
+      "file": "src/components/RecruitmentListing.tsx",
+      "line": 23,
+      "kind": "jsx",
+      "text": "Current ·"
+    },
+    {
+      "file": "src/components/SharedWorldHubPanel.tsx",
+      "line": 11,
+      "kind": "jsx",
+      "text": "REGIONAL CRISIS ·"
+    },
+    {
+      "file": "src/components/SharedWorldHubPanel.tsx",
+      "line": 11,
+      "kind": "jsx",
+      "text": "% secured"
+    },
+    {
+      "file": "src/components/SharedWorldHubPanel.tsx",
+      "line": 12,
+      "kind": "jsx",
+      "text": "WORLD BOSS ·"
+    },
+    {
+      "file": "src/components/SharedWorldHubPanel.tsx",
+      "line": 12,
+      "kind": "jsx",
+      "text": "% HP remaining"
+    },
+    {
+      "file": "src/components/SharedWorldHubPanel.tsx",
+      "line": 12,
+      "kind": "jsx",
+      "text": "fights"
+    }
+  ]
+}

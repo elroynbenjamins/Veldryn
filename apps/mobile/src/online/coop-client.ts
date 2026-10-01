@@ -12,7 +12,8 @@ declare const process:{env:Record<string,string|undefined>};
 const apiBase=process.env.EXPO_PUBLIC_COOP_API_URL?.replace(/\/$/,'');
 export const coopRogueliteEnabled=process.env.EXPO_PUBLIC_COOP_ROGUELITE_V1==='true';
 export const coopOnlineConfigured=Boolean(coopRogueliteEnabled&&apiBase&&supabase);
-// Internal lobby validation only; keep off until Live run/recovery gates pass.
+// Release profiles enable Live after the backend migration and hosted ready-
+// check smoke test are deployed alongside the client.
 export const coopLiveReadyEnabled=process.env.EXPO_PUBLIC_COOP_LIVE_READY_V1==='true';
 export interface CoopEntryData {dungeons:CoopDungeonProjection[];eventExpeditions?:CoopEventExpeditionPreview[];loadouts:CoopLoadoutProjection[];liveRecruitment?:CoopLiveRecruitmentPost[];liveFellowshipRemaining?:number;serverNow?:number;activeRun?:CoopRunView;activeRunProjection?:CoopQModeServerProjection;activeEventRunProjection?:CoopEventRunServerProjection;echoSharing?:boolean;gameVersion?:number;}
 export interface CoopStartBody {requestId:string;dungeonId:string;tier:1|2|3|4|5;characterId:string;loadoutId:string;loadoutRevision:number;}
@@ -21,6 +22,8 @@ export interface CoopLfgPublishBody {requestId:string;dungeonId:string;note?:str
 export interface CoopEventStartBody {requestId:string;eventExpeditionId:string;characterId:string;loadoutId:string;loadoutRevision:number;}
 export interface CoopDecisionBody {requestId:string;decisionId:string;decisionRevision:number;optionId:string;}
 export interface CoopReadyBody {requestId:string;rosterRevision:number;accept:boolean;}
+export interface CoopChatMessage {id:string;senderName:string;body:string;createdAt:number;}
+export interface CoopChatResponse {sent:boolean;messageId?:string;messages:CoopChatMessage[];}
 async function request<T>(path:string,method='GET',body?:unknown,expectedAccount?:string):Promise<T>{
  if(!supabase||!apiBase||!coopOnlineConfigured)throw new Error('Co-op server is not configured.');
  const session=(await supabase.auth.getSession()).data.session;if(!session)throw new Error('Sign in to use co-op expeditions.');
@@ -58,9 +61,10 @@ export const coopClient={
  choose:(runId:string,body:CoopDecisionBody)=>mutate<CoopQModeServerProjection>(`/coop/runs/${runId}/choose`,body),
  chooseEvent:(runId:string,body:CoopDecisionBody)=>mutate<CoopEventRunServerProjection>(`/coop/event-runs/${runId}/choose`,body),
  claimEvent:(runId:string)=>mutate<CoopEventRunServerProjection>(`/coop/event-runs/${runId}/claim`,{requestId:coopRequestId()}),
- vote:(runId:string,body:CoopDecisionBody)=>mutate<CoopRunView>(`/coop/runs/${runId}/vote`,body),
+ vote:(runId:string,body:CoopDecisionBody)=>mutate<CoopQModeServerProjection>(`/coop/runs/${runId}/vote`,body),
  ready:(checkId:string,body:CoopReadyBody)=>mutate<LiveReadyView>(`/coop/ready/${checkId}`,body),
- chat:(partyId:string,text:string)=>request<{ok:boolean;body?:string}>(`/coop/parties/${partyId}/chat`,'POST',{requestId:`chat-${Date.now()}`,text}),
+ chat:(runId:string,text:string)=>request<CoopChatResponse>(`/coop/runs/${runId}/chat`,'POST',{requestId:coopRequestId(),text}),
+ partyChat:(runId:string)=>request<CoopChatResponse>(`/coop/runs/${runId}/chat`),
  hasPending:async()=>(await journal()).pending(),
  retryPending:async()=>(await journal()).execute(),
  shareEcho:(expectedVersion:number,share:boolean)=>mutate<{sharing:boolean}>('/coop/echo',{requestId:coopRequestId(),expectedVersion,share}),

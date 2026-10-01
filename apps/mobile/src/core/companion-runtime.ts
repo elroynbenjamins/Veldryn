@@ -134,6 +134,10 @@ function awardUse(state:GameState,ids:string[],xp:number,bond:number,now:number)
   for(const id of ids){if(!owned[id])continue;const r=awardCompanionXpServer({progress:owned[id],amount:xp,companionEssence:essence,overflow,serverNowMs:now});essence=r.companionEssence;overflow=r.overflow;owned[id]=awardCompanionBondXpServer(r.progress,earnedBond);}
   return {...setOwned(state,owned),account:{...setOwned(state,owned).account,companionEssence:essence,companionOverflow:overflow}};
 }
+export function awardCompanionCandyXp(state:GameState,companionId:string,xp:number,now:number):GameState{
+  if(!state.account.unlockedCombatCompanionIds?.includes(companionId))throw new Error('Companion is locked.');
+  return awardUse(state,[companionId],Math.max(0,Math.floor(xp)),0,now);
+}
 export function reconcileCompanionDiscoveries(state:GameState):GameState{
   const current=state.account.companionPhase2Profile??{showcaseCompanionIds:[],showcaseSlotsUnlocked:1},discovered=new Set(current.discoveredCompanionIds??[]),facts=companionUnlockFacts(state);
   for(const id of state.account.unlockedCombatCompanionIds??[])discovered.add(id);

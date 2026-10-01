@@ -1,7 +1,4 @@
 import type {ImageSourcePropType} from 'react-native';
-import sprite0 from './generated/gem-sprite-v1-data-0';
-import sprite1 from './generated/gem-sprite-v1-data-1';
-import sprite2 from './generated/gem-sprite-v1-data-2';
 
 export const GEM_SPRITE_V1_SIZE=768;
 export const GEM_SPRITE_V1_COLUMNS=6;
@@ -13,9 +10,10 @@ export const GEM_SPRITE_V1_CELL=128;
  * progression materials. The atlas is embedded as data so Expo/Metro can use
  * it without adding a native asset pipeline dependency.
  */
-export const gemSpriteSourceV1:ImageSourcePropType={
-  uri:'data:image/png;base64,'+sprite0+sprite1+sprite2,
-};
+export const gemSpriteSourceV1=require('../../assets/gem-sprite-v2.png') as ImageSourcePropType;
+export const rawGemSpriteSourceV1=require('../../assets/unrefined-gem.png') as ImageSourcePropType;
+
+export function hasRawGemArtworkV1(itemId:string){return itemId.startsWith('raw_gem:');}
 
 export interface GemArtworkCellV1{column:number;row:number;}
 export const GEM_ARTWORK_CELL_BY_KEY_V1:Readonly<Record<string,GemArtworkCellV1>>={

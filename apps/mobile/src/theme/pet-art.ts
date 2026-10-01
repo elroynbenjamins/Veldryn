@@ -1,7 +1,6 @@
 import type {ImageSourcePropType} from 'react-native';
 import {masterPetSourceById} from './master-roster-assets';
-import {eventPetSourceById} from './event-collectible-assets';
-import {eventPetV1SourceById} from './event-collectible-v1-assets';
+import {eventPetSourceById} from './event-collectible-assets-active';
 
 /**
  * Canonical pet-art resolver used by collection surfaces.
@@ -11,6 +10,5 @@ import {eventPetV1SourceById} from './event-collectible-v1-assets';
  */
 export function petArtSource(id:string):ImageSourcePropType|undefined{
   return masterPetSourceById.get(id)
-    ??eventPetSourceById.get(id)
-    ??eventPetV1SourceById.get(id);
+    ??eventPetSourceById.get(id);
 }

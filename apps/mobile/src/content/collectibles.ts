@@ -1,4 +1,4 @@
-import {EVENT_PET_COLLECTIBLES} from './event-collectible-content';
+import {EVENT_PET_COLLECTIBLES} from './event-collectible-content-active';
 import {CORE_PET_COLLECTIBLES} from './core-pets';
 import {EVENTS_RELEASED} from '../core/release-flags';
 
@@ -25,16 +25,6 @@ export interface CollectibleDefinition{
 }
 const entry=(id:string,kind:CollectibleKind,name:string,target:CollectibleTarget,source:string,activeBps=200,requiredCharacterLevel?:number,collectionGroup:CollectibleGroup='profile'):CollectibleDefinition=>({id,kind,name,bonusFamilyId:id,target,ownedBps:50,activeBps:activeBps as number,source,requiredCharacterLevel,collectionGroup});
 
-export const LEGACY_PET_COLLECTIBLES:readonly CollectibleDefinition[]=[
-  entry('pet_harvest_fox','pet','Harvest Fox','gold','Harvestwake reputation milestone',200,undefined,'event'),
-  entry('pet_field_mouse','pet','Field Mouse','skillXp','Harvestwake event shop',250,undefined,'event'),
-  entry('pet_straw_sparrow','pet','Straw Sparrow','gatheringYield','Golden Field Feather discovery',200,undefined,'event'),
-  entry('pet_amber_owl','pet','Amber Owl','dropChance','Harvestwake Amber Pantry',400,undefined,'event'),
-  entry('pet:feral_rat','pet','Feral Rat','attack','Existing legacy pet unlock',200,undefined,'legacy'),
-  entry('pet:emberhound','pet','Emberhound','attack','Existing legacy pet unlock',300,undefined,'legacy'),
-  entry('pet:forgebound_mooncat','pet','Forgebound Mooncat','attack','Existing legacy pet unlock',500,undefined,'legacy'),
-];
-
 export const PROFILE_COLLECTIBLES:readonly CollectibleDefinition[]=[
   entry('ironwood-dawn','background','Ironwood Dawn','skillXp','Reach character level 10',200,10,'profile'),
   entry('silverbrook-mist','background','Silverbrook Mist','gatheringYield','Reach character level 20',200,20,'profile'),
@@ -49,7 +39,6 @@ export const PROFILE_COLLECTIBLES:readonly CollectibleDefinition[]=[
 export const COLLECTIBLES:readonly CollectibleDefinition[]=[
   ...CORE_PET_COLLECTIBLES,
   ...(EVENTS_RELEASED?EVENT_PET_COLLECTIBLES:[]),
-  ...LEGACY_PET_COLLECTIBLES.filter(row=>EVENTS_RELEASED||row.collectionGroup!=='event'),
   ...PROFILE_COLLECTIBLES.filter(row=>EVENTS_RELEASED||row.collectionGroup!=='event'),
 ];
 

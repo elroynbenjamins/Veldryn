@@ -1,11 +1,13 @@
+import {useSocialText} from '../i18n/social';
 import React from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import type {CrisisSummary,WorldBossSummary} from '../core/shared-world-v19';
 import {formatCompact,fraction} from '../core/shared-world-v19';
 
 export function SharedWorldHubPanel({crises,bosses,onOpenCrisis,onOpenBoss}:{crises:CrisisSummary[];bosses:WorldBossSummary[];onOpenCrisis?:(id:string)=>void;onOpenBoss?:(id:string)=>void}){
+ const st=useSocialText();
  if(!crises.length&&!bosses.length)return null;
- return <View style={s.wrap}><Text style={s.heading}>SHARED WORLD</Text>
+ return <View style={s.wrap}><Text style={s.heading}>{st("SHARED WORLD")}</Text>
   {crises.map(c=><Pressable key={c.instanceId} style={s.card} onPress={()=>onOpenCrisis?.(c.instanceId)}><View style={{flex:1}}><Text style={s.type}>REGIONAL CRISIS · {c.regionId.toUpperCase()}</Text><Text style={s.title}>{c.name}</Text><Text style={s.copy}>{c.currentStageName} · {Math.round(fraction(c.creditedPoints,c.targetPoints)*100)}% secured</Text></View><Text style={s.number}>{formatCompact(c.yourPoints)}</Text></Pressable>)}
   {bosses.map(b=><Pressable key={b.instanceId} style={[s.card,s.boss]} onPress={()=>onOpenBoss?.(b.instanceId)}><View style={{flex:1}}><Text style={s.type}>WORLD BOSS · {b.regionId.toUpperCase()}</Text><Text style={s.title}>{b.name}</Text><Text style={s.copy}>{b.phaseName} · {Math.round(fraction(b.remainingHp,b.maxHp)*100)}% HP remaining</Text></View><Text style={s.number}>{Math.max(0,b.dailyAttemptCap-b.attemptsToday)} fights</Text></Pressable>)}
  </View>

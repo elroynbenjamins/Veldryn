@@ -1,3 +1,7 @@
+import {LIVE_EVENT_CATALOG} from '../src/content/live-events';
+import {SUNCREST_GAMES_EVENT,STARFALL_NIGHTS_EVENT,MERCHANT_GUILD_FESTIVAL_EVENT} from '../src/content/annual-events-v4';
+// Simulate a future event release in this isolated test, without enabling it in production.
+LIVE_EVENT_CATALOG.push(SUNCREST_GAMES_EVENT,STARFALL_NIGHTS_EVENT,MERCHANT_GUILD_FESTIVAL_EVENT);
 import {createCharacter,newGame} from '../src/core/game';
 import {applyEventDrops,claimAllEventMilestones,eventShopOffers,purchaseEventOffer} from '../src/core/live-events';
 
@@ -5,9 +9,9 @@ function ok(condition:boolean,message:string){if(!condition)throw new Error(mess
 
 const now=20_000_000;
 const cases=[
-  {eventId:'EVT_ANNUAL_006_2026',currencyId:'SUNCREST_MEDAL',currencyName:'Suncrest Medals',pet:'EVT_PET_007',shopPet:'EVT_PET_008',companion:'EVT_UNIT_004',shopId:'golden_gryphlet',prestige:7},
-  {eventId:'EVT_ANNUAL_008_2026',currencyId:'STAR_SHARD',currencyName:'Star Shards',pet:'EVT_PET_009',shopPet:'EVT_PET_010',companion:'EVT_UNIT_005',shopId:'comet_moth',prestige:6},
-  {eventId:'EVT_ANNUAL_011_2026',currencyId:'GUILD_SCRIP',currencyName:'Guild Scrip',pet:'EVT_PET_018',shopPet:'EVT_PET_019',companion:'EVT_UNIT_010',shopId:'guildcrest_drakelet',prestige:6},
+  {eventId:'EVT_ANNUAL_006_2026',currencyId:'SUNCREST_MEDAL',currencyName:'Suncrest Medals',pet:'EVT_PET_007',shopPet:'EVT_PET_008',companion:'EVT_UNIT_004',shopId:'golden_gryphlet',prestige:12},
+  {eventId:'EVT_ANNUAL_008_2026',currencyId:'STAR_SHARD',currencyName:'Star Shards',pet:'EVT_PET_009',shopPet:'EVT_PET_010',companion:'EVT_UNIT_005',shopId:'comet_moth',prestige:10},
+  {eventId:'EVT_ANNUAL_011_2026',currencyId:'GUILD_SCRIP',currencyName:'Guild Scrip',pet:'EVT_PET_018',shopPet:'EVT_PET_019',companion:'EVT_UNIT_010',shopId:'guildcrest_drakelet',prestige:10},
 ] as const;
 
 for(const row of cases){

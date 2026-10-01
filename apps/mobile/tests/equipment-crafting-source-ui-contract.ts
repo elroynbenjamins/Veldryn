@@ -30,7 +30,7 @@ ok(path.includes("mode:'crafting'")&&path.includes('Train '),'Skill blockers mus
 ok(path.includes("craftTimeLabel:recipe.noviceSetId?'Instant':formatQueueTimeV31(professionActionPace(state,recipe,'forge').cycleSeconds)"),'Craft planner must show meaningful affinity-aware craft duration while preserving instant novice recipes');
 
 ok(inspect.includes('CRAFTING PATH'),'Quick Inspect must expose the equipment crafting plan');
-ok(inspect.includes("ingredient.missing+' missing"),'Quick Inspect must show exact missing material quantities');
+ok(inspect.includes("it('{count} missing · {source}'"),'Quick Inspect must show exact missing material quantities');
 ok(inspect.includes('onNavigate(ingredient.source)'),'Quick Inspect material blockers must be actionable');
 ok(recipeCard.includes('MISSING SOURCES'),'Expanded recipe cards must surface missing material and prerequisite sources');
 ok(!recipeCard.includes('craft time'),'Recipe cards must not imply a live timer before the timed crafting queue runtime exists');

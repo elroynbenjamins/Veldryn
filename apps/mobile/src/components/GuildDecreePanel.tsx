@@ -1,3 +1,4 @@
+import {useSocialText} from '../i18n/social';
 import React from 'react';
 import {StyleSheet,Text,View} from 'react-native';
 import {GameButton} from './GameButton';
@@ -6,11 +7,12 @@ import {radii,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 
 export function GuildDecreePanel({decrees,onVote}:{decrees:GuildDecreeView[];onVote?:Function}){
+ const st=useSocialText();
  const C=useGameTheme(),s=React.useMemo(()=>makeStyles(C),[C]);
  return <View style={s.panel}>
   <Text style={s.copy}>Completing the weekly Guild Project opens a decree choice. Only one Guild Decree is active at once and all bonuses remain under existing Guild/global caps.</Text>
-  {decrees.map(decree=><View key={decree.id} style={[s.card,decree.active&&s.active]}><View style={s.row}><View style={s.flex}><Text style={s.title}>{decree.name}</Text><Text style={s.desc}>{decree.description}</Text></View><View style={s.votePill}><Text style={s.votes}>{decree.votes}</Text></View></View>{!decree.active?<GameButton compact title={decree.myVote?'Voted':'Vote'} tone="secondary" selected={decree.myVote} disabled={!onVote} onPress={()=>onVote?.(decree.id)}/>:<View style={s.liveBadge}><Text style={s.live}>ACTIVE{decree.endsAt?' · until '+new Date(decree.endsAt).toLocaleDateString():''}</Text></View>}</View>)}
-  {!decrees.length?<View style={s.empty}><Text style={s.emptyTitle}>No decree choice active</Text><Text style={s.copy}>A completed eligible weekly Project can open the next decree window.</Text></View>:null}
+  {decrees.map(decree=><View key={decree.id} style={[s.card,decree.active&&s.active]}><View style={s.row}><View style={s.flex}><Text style={s.title}>{decree.name}</Text><Text style={s.desc}>{decree.description}</Text></View><View style={s.votePill}><Text style={s.votes}>{decree.votes}</Text></View></View>{!decree.active?<GameButton compact title={decree.myVote?st("Voted"):st("Vote")} tone="secondary" selected={decree.myVote} disabled={!onVote} onPress={()=>onVote?.(decree.id)}/>:<View style={s.liveBadge}><Text style={s.live}>{st("ACTIVE")}{decree.endsAt?' · until '+new Date(decree.endsAt).toLocaleDateString():''}</Text></View>}</View>)}
+  {!decrees.length?<View style={s.empty}><Text style={s.emptyTitle}>{st("No decree choice active")}</Text><Text style={s.copy}>A completed eligible weekly Project can open the next decree window.</Text></View>:null}
  </View>;
 }
 function makeStyles(C:ThemeColors){return StyleSheet.create({

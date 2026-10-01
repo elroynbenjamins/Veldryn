@@ -140,6 +140,6 @@ export function gemEffectDescription(gemId:string){
     case 'combat_speed':return `+${pct}% combat speed`;
     case 'boss_power':return `+${pct}% combat power against bosses`;
     case 'damage_reduction':return `-${pct}% incoming combat damage`;
-    case 'recovery':return `+${pct}% between-kill recovery`;
+    case 'recovery':return `+${pct}% out-of-combat recovery`;
   }
 }

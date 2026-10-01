@@ -10,8 +10,8 @@ const navigation=read('src/core/world-navigation.ts');
 
 ok(!world.includes('TravelRegionModal')&&!world.includes('travelTargetId'),'World screen must not stage a travel-preview sheet');
 ok(world.includes("onPress={()=>onTravel(zone.id)}"),'Available destination cards must travel directly');
-ok(world.includes("inDevelopment?'IN DEVELOPMENT'"),'World destinations must expose an In Development state');
-ok(world.includes("title={unlocked?'Travel':inDevelopment?'In development':'Locked'}")&&world.includes('disabled={!unlocked}'),'Unavailable destinations must stay visibly unavailable without opening a preview sheet');
+ok(world.includes('inDevelopment?t("In Development")'),'World destinations must expose a localized In Development state');
+ok(world.includes('title={unlocked?t("Travel"):inDevelopment?t("In development"):t("Locked")}')&&world.includes('disabled={!unlocked}'),'Unavailable destinations must stay visibly unavailable without opening a preview sheet');
 ok(world.includes("<ZoneSceneArtwork regionId={current.id}/>"),'Current region must use the scenic artwork entrypoint');
 ok(world.includes("<ZoneSceneArtwork regionId={zone.id} muted={!unlocked}/>"),'Travel cards must use scenic art and dim unavailable regions');
 
@@ -28,6 +28,6 @@ ok(navigation.includes("!worldZoneInDevelopment(zone)&&zone.minLevel>level"),'In
 ok(navigation.includes("const released=!worldZoneInDevelopment(region)"),'In-development zones must never become active from level alone');
 
 
-ok(scene.includes('Falls back to the approved world-map crop'),'Zone scene artwork must have a safe map fallback while dedicated scene art is rolled out');
+ok(scene.includes('source?<Image')&&scene.includes(':<RegionArtwork regionId={regionId}/>'),"Zone scene artwork must have a safe map fallback while dedicated scene art is rolled out");
 
 console.log('PASS: world travel is direct, while locked and in-development regions remain clear and unavailable');

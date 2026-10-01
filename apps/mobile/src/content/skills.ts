@@ -12,6 +12,7 @@ export const GATHERING:GatherDef[]=([
 {id:'SUNSTONE_OUTCROP',skillId:'mining',name:'Sunstone Outcrop',unlockLevel:26,seconds:48,xp:92,itemId:'SUNSTONE_ORE',min:1,max:1,zoneId:'SUNSCAR'},
 {id:'FROSTIRON_VEIN',skillId:'mining',name:'Frostiron Vein',unlockLevel:46,seconds:62,xp:180,itemId:'FROSTIRON',min:1,max:1,zoneId:'FROSTMARCH'},
 {id:'BLACKGLASS_VEIN',skillId:'mining',name:'Blackglass Vein',unlockLevel:68,seconds:78,xp:310,itemId:'BLACKGLASS_ORE',min:1,max:1,zoneId:'ASHLANDS'},
+{id:'DEEP_BLACKGLASS_VEIN',skillId:'mining',name:'Deep Blackglass Vein',unlockLevel:86,seconds:92,xp:430,itemId:'BLACKGLASS_ORE',min:1,max:1,zoneId:'ASHLANDS'},
 
 {id:'GREENWOOD_TREE',skillId:'woodcutting',name:'Greenwood Tree',unlockLevel:1,seconds:14,xp:8,itemId:'GREENWOOD_LOG',min:1,max:2,zoneId:'GREENFIELDS'},
 {id:'IRONWOOD_TREE',skillId:'woodcutting',name:'Ironwood Tree',unlockLevel:7,seconds:24,xp:17,itemId:'IRONWOOD_LOG',min:1,max:2,zoneId:'IRONWOOD'},
@@ -19,6 +20,7 @@ export const GATHERING:GatherDef[]=([
 {id:'DUNEWOOD_TREE',skillId:'woodcutting',name:'Dunewood Tree',unlockLevel:26,seconds:46,xp:88,itemId:'DUNEWOOD',min:1,max:1,zoneId:'SUNSCAR'},
 {id:'WHITEPINE_TREE',skillId:'woodcutting',name:'Whitepine Tree',unlockLevel:46,seconds:60,xp:172,itemId:'WHITEPINE_LOG',min:1,max:1,zoneId:'FROSTMARCH'},
 {id:'CINDERWOOD_TREE',skillId:'woodcutting',name:'Cinderwood Tree',unlockLevel:68,seconds:76,xp:300,itemId:'CINDERWOOD_LOG',min:1,max:1,zoneId:'ASHLANDS'},
+{id:'HEARTFIRE_CINDERWOOD',skillId:'woodcutting',name:'Heartfire Cinderwood',unlockLevel:86,seconds:90,xp:420,itemId:'CINDERWOOD_LOG',min:1,max:1,zoneId:'ASHLANDS'},
 
 {id:'MEADOW_PERCH_POOL',skillId:'fishing',name:'Meadow Perch Pool',unlockLevel:1,seconds:16,xp:8,itemId:'MEADOW_PERCH',min:1,max:2,zoneId:'GREENFIELDS'},
 {id:'SILVERBROOK_SHOAL',skillId:'fishing',name:'Silverbrook Shoal',unlockLevel:1,seconds:17,xp:9,itemId:'SILVERFIN',min:1,max:2,zoneId:'SILVERBROOK'},
@@ -31,6 +33,7 @@ export const GATHERING:GatherDef[]=([
 {id:'GLASSFIN_POOL',skillId:'fishing',name:'Glassfin Pool',unlockLevel:36,seconds:56,xp:128,itemId:'GLASSFIN',min:1,max:1,zoneId:'SUNSCAR'},
 {id:'ICEFISH_POOL',skillId:'fishing',name:'Icefin Pool',unlockLevel:46,seconds:66,xp:188,itemId:'ICEFIN',min:1,max:1,zoneId:'FROSTMARCH'},
 {id:'EMBERFIN_POOL',skillId:'fishing',name:'Emberfin Mire',unlockLevel:72,seconds:84,xp:340,itemId:'EMBERFIN',min:1,max:1,zoneId:'ASHLANDS'},
+{id:'EMBERFIN_DEEPWATER',skillId:'fishing',name:'Emberfin Deepwater',unlockLevel:86,seconds:98,xp:470,itemId:'EMBERFIN',min:1,max:1,zoneId:'ASHLANDS'},
 // The 24-hour AFK window is generous; each gathering cycle is therefore
 // stretched by a noticeable amount to avoid rapid early skill acceleration.
 ] as Omit<GatherDef,'difficultyMultiplier'|'recommendedToolTier'>[]).map(activity=>{

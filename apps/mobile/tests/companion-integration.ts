@@ -6,7 +6,7 @@ import {migrateSave} from '../src/core/save-migrations';
 import {createSaveBackup,parseSaveBackup} from '../src/core/save-transfer';
 import {characterPermanentMultipliers} from '../src/core/permanent-boosts';
 import {PET_PERMANENT_BOOSTS} from '../src/content/permanent-boosts';
-import {COMBAT_COMPANIONS} from '../src/content/combat-companions';
+import {ALL_COMBAT_COMPANIONS,COMBAT_COMPANIONS} from '../src/content/combat-companions';
 import {companionAssignmentStatusLabel,companionMaterialSources,companionNextMasteryTargets,companionNextUnlockTargets,companionRewardLabel} from '../src/core/companion-presentation';
 import {COMPANION_SPECIAL_CHALLENGES,COMPANION_TECHNIQUE_SWITCH_COST,companionServerDefinition,companionTechniques} from '../../../backend/src/server/companions/content';
 import {companionUnlockRequirementProgress} from '../../../backend/src/server/companions/progression-v2';
@@ -18,15 +18,23 @@ import {characterTotalXpAtLevel} from '../src/core/progression';
 let checks=0;function ok(v:unknown,label:string){checks++;if(!v)throw new Error(label);}
 function rejects(f:()=>unknown,label:string){let caught=false;try{f();}catch{caught=true;}ok(caught,label);}
 const now=Date.UTC(2026,8,13),ids=['UNIT_001','UNIT_002','UNIT_003'];
-function fixture(){let s=createCharacter(newGame(now),'IRONWARDEN','Companion Test');for(const id of ids)s=unlockCombatCompanion(s,id,now);s.character!.gold=100000;s.account.companionEssence=10000;s.account.bondstones=100;s.account.companionMaterials={IRONWOOD_FANG:100,RUNEBOUND_CORE:100,WISP_DUST:100,ASTER_IRON_INGOT:100,ECHO_QUARTZ:100,OATHGLASS_SHARD:100,OATHGLASS_FRAGMENT:100};return refreshCompanions(s,now);}
-const command=(s:GameState,type:string,args?:Record<string,unknown>,time=now)=>executeGameCommand(s,{type,args},time).state;
+function fixture(){let s=createCharacter(newGame(now),'IRONWARDEN','Companion Test');s.quests=s.quests.map(q=>q.questId==='QST_005'?{...q,status:'claimed'}:q);for(const id of ids)s=unlockCombatCompanion(s,id,now);s.character!.gold=100000;s.account.companionEssence=10000;s.account.bondstones=100;s.account.companionMaterials={IRONWOOD_FANG:100,RUNEBOUND_CORE:100,WISP_DUST:100,ASTER_IRON_INGOT:100,ECHO_QUARTZ:100,OATHGLASS_SHARD:100,OATHGLASS_FRAGMENT:100};return refreshCompanions(s,now);}
+const command=(s:GameState,type:string,args?:Record<string,unknown>,time=now)=>{
+  // MISSION_SCOUT_2H costs 50 stamina. Travel Rations provide 1.8 stamina
+  // each, so the fixture must supply the rounded-up 28-ration requirement.
+  const normalizedArgs=type==='companion_assignment_start'&&args?.food===undefined?{...args,food:[{itemId:'TRAVEL_RATION',quantity:28}]}:args;
+ const prepared=type==='companion_assignment_start'?{...s,inventory:{...s.inventory,stacks:[...s.inventory.stacks,{itemId:'TRAVEL_RATION',quantity:40}]}}:s;
+ return executeGameCommand(prepared,{type,args:normalizedArgs},time).state;
+};
 const specialRequirement=COMPANION_SPECIAL_CHALLENGES.find(row=>row.id==='CHALLENGE_OATHGLASS_KNIGHTLING')!.requirements[0],specialRequirementProgress=companionUnlockRequirementProgress(specialRequirement,companionUnlockFacts(fixture()));ok(specialRequirementProgress.current===0&&specialRequirementProgress.total===20&&!specialRequirementProgress.complete,'special challenge requirement progress exposes current and target values');
 const suggestedTrialTeam=recommendedCompanionTrialTeam(fixture());ok(suggestedTrialTeam.ready&&suggestedTrialTeam.ids.length===3&&suggestedTrialTeam.power>0,'Trial guidance builds a complete available role team');ok(new Set(suggestedTrialTeam.ids.map(id=>companionServerDefinition(id)?.role)).size===3,'Trial guidance always covers Tank Damage Support');ok(companionAvailability(fixture(),'UNIT_001').status==='available','idle owned companion reports available');
 let expeditionGuide=fixture();for(const id of ids)expeditionGuide.account.combatCompanionProgress![id]={...expeditionGuide.account.combatCompanionProgress![id],level:5};expeditionGuide.account.companionSanctuary!.expeditionPensLevel=1;const suggestedExpedition=recommendedCompanionMissionTeam(expeditionGuide,'MISSION_SCOUT_2H',now);ok(suggestedExpedition.ready&&suggestedExpedition.ids.length>=1&&suggestedExpedition.ids.length<=2&&!!suggestedExpedition.grade,'Expedition guidance finds a valid mission team');ok(suggestedExpedition.bonusRequirementMet,'Expedition guidance prefers a valid bonus-condition team');expeditionGuide=command(expeditionGuide,'companion_equip',{id:'UNIT_001'});const equippedExcluded=recommendedCompanionMissionTeam(expeditionGuide,'MISSION_SCOUT_2H',now);ok(equippedExcluded.ready&&!equippedExcluded.ids.includes('UNIT_001'),'Expedition guidance excludes the currently equipped companion');
-const permanentCompanions=COMBAT_COMPANIONS.filter(def=>def.origin.type!=='event'),eventCompanions=COMBAT_COMPANIONS.filter(def=>def.origin.type==='event');
-ok(COMBAT_COMPANIONS.length===34,'roster contains 24 permanent and 10 event companions');
+const permanentCompanions=ALL_COMBAT_COMPANIONS.filter(def=>def.origin.type!=='event'),eventCompanions=ALL_COMBAT_COMPANIONS.filter(def=>def.origin.type==='event');
+ok(ALL_COMBAT_COMPANIONS.length===34,'full roster contains 24 permanent and 10 event companions');
 ok(permanentCompanions.length===24,'permanent companion count remains 24');
 ok(eventCompanions.length===10,'event companion count is 10');
+ok(COMBAT_COMPANIONS.length===24,'unreleased event companions stay out of the active catalog');
+ok(COMBAT_COMPANIONS.every(def=>def.origin.type!=='event'),'active catalog contains no unreleased event companions');
 ok(new Set(COMBAT_COMPANIONS.map(def=>def.id)).size===COMBAT_COMPANIONS.length,'companion ids are unique');
 ok(eventCompanions.map(def=>def.id).join(',')===Array.from({length:10},(_,index)=>`EVT_UNIT_${String(index+1).padStart(3,'0')}`).join(','),'event companion ids remain EVT_UNIT_001 through EVT_UNIT_010');
 ok(companionRewardLabel('COMPANION_PORTRAIT_UNIT_001').includes('Ironwood Hound'),'companion portrait entitlement has readable Codex copy');ok(companionRewardLabel('PROFILE_BORDER_MASTER_HANDLER').includes('Profile border'),'profile reward entitlement has readable Codex copy');ok(companionView(fixture(),now).codex.milestones[0].reward.companionEssence===120,'Codex projection exposes milestone reward details');
@@ -135,8 +143,8 @@ let bondLadder=fixture();bondLadder.account.combatCompanionProgress!.UNIT_001=ap
 ok(companionTechniques('UNIT_013').some(t=>t.name==='Venom Ambush')&&companionTechniques('UNIT_017').some(t=>t.name==='Shatterfang'),'regional companions have authored techniques');
 ok(companionTechniques('EVT_UNIT_003').some(t=>t.name==='Root Bastion')&&companionTechniques('EVT_UNIT_009').some(t=>t.name==='Grand Bell'),'event companions have authored techniques');
 ok(COMBAT_COMPANIONS.find(d=>d.id==='UNIT_013')?.activeAbility.name==='Venom Pounce'&&COMBAT_COMPANIONS.find(d=>d.id==='UNIT_015')?.activeAbility.name==='Solar Carapace','regional companion authored ability copy is visible');
-ok(COMBAT_COMPANIONS.find(d=>d.id==='EVT_UNIT_003')?.activeAbility.name==='Living Bastion'&&COMBAT_COMPANIONS.find(d=>d.id==='EVT_UNIT_009')?.activeAbility.name==='Frostbell Cycle','event companion authored ability copy is visible');
-const tyrantDef=COMBAT_COMPANIONS.find(d=>d.id==='UNIT_016')!,regentDef=COMBAT_COMPANIONS.find(d=>d.id==='UNIT_024')!,heartbondDef=COMBAT_COMPANIONS.find(d=>d.id==='EVT_UNIT_002')!;
+ok(ALL_COMBAT_COMPANIONS.find(d=>d.id==='EVT_UNIT_003')?.activeAbility.name==='Living Bastion'&&ALL_COMBAT_COMPANIONS.find(d=>d.id==='EVT_UNIT_009')?.activeAbility.name==='Frostbell Cycle','event companion authored ability copy is visible');
+const tyrantDef=COMBAT_COMPANIONS.find(d=>d.id==='UNIT_016')!,regentDef=COMBAT_COMPANIONS.find(d=>d.id==='UNIT_024')!,heartbondDef=ALL_COMBAT_COMPANIONS.find(d=>d.id==='EVT_UNIT_002')!;
 ok(companionAscensionCost(tyrantDef,3).materialId==='ASTRAL_SCRIPT'&&companionAscensionCost(tyrantDef,'mastery').materialId==='TRIAL_SANCTUARY_MATERIAL','Sunscar Prestige ascension uses tiered materials');
 ok(companionAscensionCost(regentDef,2).materialId==='BLACKGLASS_CORE'&&companionAscensionCost(regentDef,'mastery').materialId==='REGENT_SIGIL','Ashlands Prestige ascension uses regional catalysts');
 ok(companionAscensionCost(heartbondDef,3).materialId==='TRIAL_SANCTUARY_MATERIAL'&&companionAscensionCost(heartbondDef,'mastery').materialQuantity===10,'event Prestige progression remains available through Trial materials');

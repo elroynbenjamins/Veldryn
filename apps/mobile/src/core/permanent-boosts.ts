@@ -1,4 +1,4 @@
-import {BUYABLE_PERMANENT_BOOSTS,SKIN_PERMANENT_BOOSTS,type PermanentBoostDefinition} from '../content/permanent-boosts';
+import {BUYABLE_PERMANENT_BOOSTS,type PermanentBoostDefinition} from '../content/permanent-boosts';
 import type {CollectibleTarget} from '../content/collectibles';
 import {GameState} from './types';
 import {selectedFaithBlessing} from './faith';
@@ -145,9 +145,7 @@ export function characterPermanentMultipliers(state:GameState):PermanentMultipli
     if(blessing.family==='hp')result=merge(result,{...BASE,characterXpMultiplier:1,combatPowerMultiplier:1+blessing.bonus*.25});
   }
 
-  for(const skinId of new Set(c.unlockedSkinIds??[])){
-    if(SKIN_PERMANENT_BOOSTS[skinId])result=merge(result,readMultipliers(skinId,SKIN_PERMANENT_BOOSTS));
-  }
+
 
   // One source of truth for pets/backgrounds/borders. This is the same capped
   // +0.50% owned passive + selected active math shown by the collection UI.

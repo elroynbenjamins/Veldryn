@@ -23,7 +23,7 @@ ok(screen.includes('Preview as others see me')&&screen.includes('ProfileAudience
 ok(appearance.includes('onDirtyChange?:(dirty:boolean)=>void')&&appearance.includes('onPreviewStateChange?:(preview:GameState)=>void'),'Appearance editor must expose draft/dirty callbacks');
 ok(appearance.includes('JOURNAL_TITLES_V42')&&appearance.includes("journalTitles.map"),'Earned Adventurer\'s Journal titles must be selectable from Profile customization');
 ok(identity.includes('onDirtyChange?:(dirty:boolean)=>void')&&identity.includes('onDraftChange?:(draft:ProfileExtensionSelfV43|null)=>void'),'Social profile editor must expose draft/dirty callbacks');
-ok(identity.includes("picker==='mastery'")&&identity.includes("title={'Mastery '+value.masteryShowcaseActionIds.length+'/3 ▾'}"),'Social profile editor must expose a three-slot R50 mastery showcase picker');
+ok(identity.includes("picker==='mastery'")&&identity.includes("label:profileT(language,'Mastery'),count:value.masteryShowcaseActionIds.length")&&identity.includes("profileT(language,'{label} {count}/3 ▾'"),'Social profile editor must expose a three-slot R50 mastery showcase picker');
 ok(identity.includes('professionMasteryMasteredRecords(state)'),'Mastery showcase choices must be derived only from R50-owned profession records');
 ok(identity.includes('masteryShowcaseActionIds:value.masteryShowcaseActionIds'),'Mastery showcase selections must participate in dirty/save state');
 

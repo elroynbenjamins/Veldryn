@@ -34,7 +34,7 @@ export const ALCHEMY_RECIPES:readonly AlchemyRecipe[]=[
   recipe('OATH_VIGOR_TONIC',75,165,1550,90,[{itemId:'CAVELICHEN',quantity:3},{itemId:'OATHBLOSSOM',quantity:3}]),
   recipe('OATH_WARD_TONIC',85,180,2000,120,[{itemId:'CROWN_SAGE',quantity:3},{itemId:'OATHBLOSSOM',quantity:3}]),
   recipe('GREATER_VIGOR_TONIC',35,132,550,32,[{itemId:'SUNSCALE',quantity:2},{itemId:'RIVER_MINT',quantity:2}],'_SUNSCAR'),
-  recipe('OATH_VIGOR_TONIC',75,174,1700,98,[{itemId:'FROSTBLOOM',quantity:2},{itemId:'OATHBLOSSOM',quantity:2}],'_FROSTMARCH'),
+  recipe('OATH_VIGOR_TONIC',75,174,1700,98,[{itemId:'WINTERMINT',quantity:2},{itemId:'OATHBLOSSOM',quantity:2}],'_FROSTMARCH'),
   recipe('OATH_WARD_TONIC',85,190,2150,128,[{itemId:'ASHEN_MYRRH',quantity:2},{itemId:'FROSTBLOOM',quantity:2}],'_ASHLANDS'),
 ];
 export const POTION_ITEMS:ItemDef[]=POTIONS.map(potion=>({id:potion.id,name:potion.name,type:'potion',

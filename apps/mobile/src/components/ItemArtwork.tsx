@@ -1,4 +1,4 @@
-import {View} from 'react-native';
+import {Image,View} from 'react-native';
 import {itemDef} from '../content/items';
 import {EquipmentArtwork,hasEquipmentArtwork} from './EquipmentArtwork';
 import {GatheringToolArtwork} from './GatheringToolArtwork';
@@ -7,10 +7,11 @@ import {ResourceArtwork} from './ResourceArtwork';
 import {hasResourceArtwork} from '../theme/resource-assets';
 import {UiIcon} from './UiIcon';
 import {GemArtwork} from './GemArtwork';
-import {hasGemArtworkV1} from '../theme/gem-assets';
+import {hasGemArtworkV1,hasRawGemArtworkV1,rawGemSpriteSourceV1} from '../theme/gem-assets';
 /** Known items use their artwork. Uncatalogued materials retain a neutral bag marker and a text name. */
 export function ItemArtwork({itemId,size=40}:{itemId:string;size?:number}){
  const item=itemDef(itemId);
+ if(hasRawGemArtworkV1(itemId))return <View style={{width:size,height:size,alignItems:'center',justifyContent:'center'}}><Image source={rawGemSpriteSourceV1} resizeMode="contain" style={{width:size,height:size}}/></View>;
  if(hasGemArtworkV1(itemId))return <GemArtwork itemId={itemId} size={size} framed={false}/>;
  if(hasResourceArtwork(itemId))return <ResourceArtwork itemId={itemId} size={size} framed={false}/>;
  if(item.type==='tool'&&gatheringToolCells[itemId])return <GatheringToolArtwork itemId={itemId} size={size} framed={false}/>;

@@ -1,3 +1,4 @@
+import {useSocialText} from '../i18n/social';
 import React from 'react';
 import {StyleSheet,Text,View} from 'react-native';
 import type {GuildActivityView} from '../core/guild-projects-v18';
@@ -8,8 +9,9 @@ function tone(kind:string){const value=kind.toLowerCase();if(value.includes('pro
 function kindLabel(kind:string){return kind.replace(/[_:-]+/g,' ').replace(/\b\w/g,c=>c.toUpperCase())}
 
 export function GuildActivityFeedPanel({entries}:{entries:GuildActivityView[]}){
+ const st=useSocialText();
  const C=useGameTheme(),s=React.useMemo(()=>makeStyles(C),[C]);
- return <View style={s.panel}>{entries.length===0?<View style={s.emptyCard}><Text style={s.emptyTitle}>No recent Guild activity</Text><Text style={s.empty}>Project completions, member milestones and Guild events will appear here.</Text></View>:entries.map(e=>{const t=tone(e.kind);return <View key={e.id} style={s.row}><View style={s.rowHead}><View style={[s.kind,t==='good'?s.kindGood:t==='warning'?s.kindWarning:t==='info'?s.kindInfo:s.kindMuted]}><Text style={[s.kindText,t==='good'?s.kindTextGood:t==='warning'?s.kindTextWarning:t==='info'?s.kindTextInfo:s.kindTextMuted]}>{kindLabel(e.kind)}</Text></View><Text style={s.time}>{new Date(e.createdAt).toLocaleString()}</Text></View><Text style={s.title}>{e.title}</Text>{e.body?<Text style={s.body}>{e.body}</Text>:null}</View>})}</View>;
+ return <View style={s.panel}>{entries.length===0?<View style={s.emptyCard}><Text style={s.emptyTitle}>{st("No recent Guild activity")}</Text><Text style={s.empty}>{st("Project completions, member milestones and Guild events will appear here.")}</Text></View>:entries.map(e=>{const t=tone(e.kind);return <View key={e.id} style={s.row}><View style={s.rowHead}><View style={[s.kind,t==='good'?s.kindGood:t==='warning'?s.kindWarning:t==='info'?s.kindInfo:s.kindMuted]}><Text style={[s.kindText,t==='good'?s.kindTextGood:t==='warning'?s.kindTextWarning:t==='info'?s.kindTextInfo:s.kindTextMuted]}>{kindLabel(e.kind)}</Text></View><Text style={s.time}>{new Date(e.createdAt).toLocaleString()}</Text></View><Text style={s.title}>{e.title}</Text>{e.body?<Text style={s.body}>{e.body}</Text>:null}</View>})}</View>;
 }
 function makeStyles(C:ThemeColors){return StyleSheet.create({
  panel:{gap:0},

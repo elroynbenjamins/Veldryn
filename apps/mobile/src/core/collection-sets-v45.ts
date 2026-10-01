@@ -1,8 +1,9 @@
+import {profileIconCollection} from './profile-icons';
 import type {GameState} from './types';
 import {bestiaryProjection} from './bestiary-v40';
 import {equipmentSetDef} from '../content/equipment-sets';
 import {itemDef} from '../content/items';
-export type CollectionMemberKind='item'|'pet'|'companion'|'skin'|'background'|'border'|'bestiary'|'fish'|'lore'|'boss_drop'|'seasonal';
+export type CollectionMemberKind='item'|'pet'|'companion'|'profile_icon'|'background'|'border'|'bestiary'|'fish'|'lore'|'boss_drop'|'seasonal';
 export interface CollectionMember{kind:CollectionMemberKind;id:string;label:string}
 export interface CollectionSetDefinition{id:string;name:string;description:string;theme:'region'|'profession'|'combat'|'seasonal'|'collection';enabled:boolean;members:CollectionMember[];reward:{kind:'profile_unlock'|'cosmetic_unlock'|'recipe_unlock'|'title_unlock'|'item_bundle';ref:string;label:string}}
 export interface CollectionSetState{schemaVersion:45;accountId:string;revision:number;completedSets:Record<string,number>}
@@ -31,7 +32,7 @@ export function collectionOwnershipSnapshotFromGameState(state:GameState):Collec
  for(const row of state.otherCharacters??[]){for(const stack of [...row.inventory.stacks,...row.overflow.stacks])if(stack.quantity>0)add('item',stack.itemId);for(const id of Object.values(row.character.equipment??{}))add('item',id)}
  for(const id of [...(state.account.unlockedCosmeticPetIds??[]),...(state.character?.ownedPetIds??[]),...(state.otherCharacters??[]).flatMap(row=>row.character.ownedPetIds??[])])add('pet',id);
  for(const id of state.account.unlockedCombatCompanionIds??[])add('companion',id);
- for(const id of [...(state.account.unlockedEventSkinIds??[]),...(state.character?.unlockedSkinIds??[]),...(state.otherCharacters??[]).flatMap(row=>row.character.unlockedSkinIds??[])])add('skin',id);
+ for(const icon of profileIconCollection(state).filter(row=>row.unlocked))add('profile_icon',icon.id);
  for(const id of state.account.unlockedProfileBackgroundIds??[])add('background',id);
  for(const id of state.account.unlockedProfileBorderIds??[])add('border',id);
  for(const entry of bestiaryProjection(state).entries)if(entry.status!=='unknown')add('bestiary',entry.id);

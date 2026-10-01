@@ -1,3 +1,4 @@
+import {useSocialText} from '../i18n/social';
 import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { PartyEventLeaderboardView } from '../core/party-social';
@@ -9,17 +10,18 @@ export interface PartyEventLeaderboardPanelProps {
 }
 
 export function PartyEventLeaderboardPanel({ boards, onAudienceChange }: PartyEventLeaderboardPanelProps) {
+ const st=useSocialText();
   const [audience, setAudience] = useState<Audience>('global');
   const board = boards[audience] ?? boards.global;
   const select = (next: Audience) => { setAudience(next); onAudienceChange?.(next); };
   return (
     <View style={styles.panel}>
-      <Text style={styles.eyebrow}>PARTY LEADERBOARD</Text>
+      <Text style={styles.eyebrow}>{st("PARTY LEADERBOARD")}</Text>
       <View style={styles.tabs}>
         {(['global','friends','guild'] as Audience[]).map((item) => <Pressable key={item} style={[styles.tab,audience===item&&styles.active]} onPress={()=>select(item)}><Text style={styles.tabText}>{item}</Text></Pressable>)}
       </View>
       {board?.ownParty && <View style={styles.own}><Text style={styles.ownText}>Your Party · #{board.ownParty.rank}</Text><Text style={styles.ownScore}>{board.ownParty.score.toLocaleString()}</Text></View>}
-      <ScrollView style={styles.list} nestedScrollEnabled>
+      <ScrollView style={styles.list} nestedScrollEnabled showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
         {(board?.entries ?? []).map((entry) => (
           <View key={entry.partyId} style={[styles.row,entry.isOwnParty&&styles.ownRow]}>
             <Text style={styles.rank}>#{entry.rank}</Text>

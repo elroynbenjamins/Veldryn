@@ -11,19 +11,19 @@ ok(character.includes('equipmentDecisionModel'),'Character equipment detail must
 ok(character.includes('equipmentFocusModel'),'Character screen must derive its next action from the shared loadout focus model');
 ok(character.includes('LOADOUT FOCUS'),'Character screen must expose one compact contextual equipment priority');
 ok(character.includes('focus.upgradesReady')&&character.includes('focus.openSockets'),'Loadout focus must summarize ready upgrades and open sockets without requiring the player to inspect every slot');
-ok(character.includes('focus.next.button'),'Loadout focus must expose an actionable CTA rather than passive status only');
+ok(character.includes('title={focusCopy.button}')&&character.includes('onPress={followFocus}')&&character.includes("focus.next.action==='enhance'"),'Loadout focus must expose an actionable CTA rather than passive status only');
 ok(character.includes('rarityNameColor'),'Selected equipped item names must follow rarity color');
-ok(character.includes('selectedDecision.set.equippedPieces'),'Selected set gear must show equipped set-piece context');
-ok(character.includes('equipmentUpgradeSummary(selectedDecision)'),'Selected gear must expose next enhancement readiness');
+ok(character.includes('equippedSetPieceCount(character.equipment,set!)'),'Selected set gear must show equipped set-piece context');
+ok(character.includes('profileUpgradeSummary(language,selectedDecision)'),'Selected gear must expose next enhancement readiness');
 ok(character.includes("Enhance · "),'Equipment primary action must expose the next enhancement chance');
-ok(character.includes('narrowEquipment'),'Equipment detail must have a narrow/large-text layout fallback');
+ok(character.includes('fontScale>1.2')&&character.includes('setGearWidth(event.nativeEvent.layout.width)'),'Equipment detail must have a narrow/large-text layout fallback');
 
 ok(preview.includes('useGameTheme'),'Equipment comparison must use the active theme');
 ok(preview.includes('GameModalSurface'),'Equipment comparison must use the shared modal surface');
 ok(!preview.includes("import {C,")&&!preview.includes('equipmentColors}'),'Equipment comparison must not use the legacy static palette');
 ok(preview.includes('SET CONTEXT'),'Equipment comparison must show set-piece tradeoffs');
 ok(preview.includes('equippedSetPieceCount'),'Equipment comparison must compute set counts from the preview state');
-ok(preview.includes('currently implemented runtime bonuses'),'Comparison copy must not imply unimplemented V33 set effects are active');
+ok(preview.includes('previewEquipment'),'Comparison copy must not imply unimplemented V33 set effects are active');
 
 ok(setPanel.includes('useGameTheme'),'V33 set-progress presentation must be theme-aware');
 ok(setPanel.includes('2/4/8/10 always-on bonuses are live')&&setPanel.includes('6pc conditional remains an authored trigger hook'),'Set collection UI must accurately distinguish live static bonuses from the pending conditional hook');

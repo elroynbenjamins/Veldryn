@@ -17,7 +17,7 @@ if(start.playerHit<1||start.enemyHit<1)throw new Error('Presented damage must re
 const assaultReadiness=combatReadiness(state,monster,undefined,undefined,'assault'),balancedReadiness=combatReadiness(state,monster,undefined,undefined,'balanced'),guardedReadiness=combatReadiness(state,monster,undefined,undefined,'guarded');
 if(!(assaultReadiness.recommendedPower>balancedReadiness.recommendedPower&&guardedReadiness.recommendedPower<balancedReadiness.recommendedPower))throw new Error('Combat tactics should visibly trade safety');
 if(COMBAT_TACTICS.assault.speedMultiplier<=1||COMBAT_TACTICS.guarded.damageTakenMultiplier>=1)throw new Error('Combat tactic identities drifted');
-const assaultState=startCombat(state,'MOSS_RAT',1000,undefined,'assault');if(assaultState.activity?.combatTacticId!=='assault')throw new Error('Combat tactic must snapshot on hunt start');
+const assaultState=startCombat(state,'MOSS_RAT',1000,'assault');if(assaultState.activity?.combatTacticId!=='assault')throw new Error('Combat tactic must snapshot on hunt start');
 const motion=combatMotionProfile(monster.secondsPerKill,false),reduced=combatMotionProfile(monster.secondsPerKill,true),fast=combatMotionProfile(.2,false),slow=combatMotionProfile(99,false);
 if(!motion.enabled||motion.playerAttackAtMs>=motion.enemyAttackAtMs||motion.enemyAttackAtMs>=motion.cycleMs)throw new Error('Combat motion timing order invalid');
 if(reduced.enabled||reduced.playerLungePx!==0||reduced.shakePx!==0)throw new Error('Reduced motion must disable combat transforms');

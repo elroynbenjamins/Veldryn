@@ -1,3 +1,4 @@
+import {useSocialText} from '../../i18n/social';
 import {useEffect,useMemo,useRef} from 'react';
 import {Animated,Image,Pressable,StyleSheet,Text,View} from 'react-native';
 import type {CoopBossPhaseView,CoopCombatReplayCueView,CoopRunView} from '../../core/coop-presentation';
@@ -10,6 +11,7 @@ import {dungeonCombatPortraitSource} from '../../theme/dungeon-combat-art';
 import {dungeonEnemyPortraitSource} from '../../theme/dungeon-enemy-art';
 import {equipmentTheme,radii,type ThemeColors} from '../../theme/theme';
 import {useGameTheme} from '../../theme/ThemeContext';
+import {coopColors,coopRadii} from '../../theme/coop-ui-theme';
 import {IdentityArtwork} from '../SocialIdentity';
 
 type Slot=CoopRunView['roleSlots'][number];
@@ -28,6 +30,15 @@ const GEM_STATUS_CODES:Readonly<Record<string,string>>=Object.freeze({
  'gem:battle_offense_ready':'OFF','gem:battle_support_ready':'SUP','gem:damage_reduction':'GUARD',
  'gem:shared_resolve':'RES','gem:benediction_charge':'BENE','gem:haste_bonus':'HASTE','gem:opportunist_ready':'OPP',
 });
+const coopSurface=StyleSheet.create({
+ card:{backgroundColor:coopColors.surface,borderColor:coopColors.goldDim,borderRadius:coopRadii.panel},
+ scene:{backgroundColor:coopColors.background},
+ combatInfo:{backgroundColor:coopColors.surfaceRaised},
+ identityPlate:{borderColor:coopColors.goldDim,backgroundColor:'rgba(7,24,39,.9)'},
+ enemyCard:{backgroundColor:coopColors.surface,borderColor:coopColors.danger,borderRadius:coopRadii.panel},
+ enemyScene:{backgroundColor:coopColors.background},
+ enemyPlate:{borderColor:coopColors.goldDim,backgroundColor:'rgba(7,24,39,.9)'},
+});
 function statusCode(status:PlaybackCombatStatus){
  if(status.source==='gem')return GEM_STATUS_CODES[status.tag]??'GEM';
  if(status.kind==='dot')return 'DOT';
@@ -39,11 +50,12 @@ function statusCode(status:PlaybackCombatStatus){
  return 'BUFF';
 }
 function CombatStatusStrip({statuses,gemProc=false,styles,limit=3}:{statuses?:PlaybackCombatStatus[];gemProc?:boolean;styles:ReturnType<typeof makeStyles>;limit?:number}){
+ const st=useSocialText();
  const visibleLimit=Math.max(1,gemProc?limit-1:limit),combined=(statuses??[]).slice(0,visibleLimit),overflow=Math.max(0,(statuses?.length??0)-combined.length);
  if(!combined.length&&!gemProc)return null;
  return <View style={styles.statusStrip} accessibilityLabel={[...combined.map(status=>`${status.label}${status.stacks>1?`, ${status.stacks} stacks`:''}`),gemProc?'Effect Gem proc':undefined,overflow?`${overflow} more effects`:undefined].filter(Boolean).join(', ')}>
   {combined.map((status,index)=>{const harmful=status.kind==='dot'||status.kind==='debuff',gem=status.source==='gem';return <View key={`${status.kind}:${status.tag}:${status.abilityId??status.label}:${index}`} style={[styles.statusPill,harmful?styles.statusHarmful:gem?styles.statusGem:styles.statusHelpful]}><Text style={[styles.statusPillText,harmful?styles.statusHarmfulText:gem?styles.statusGemText:styles.statusHelpfulText]}>{statusCode(status)}{status.stacks>1?`×${status.stacks}`:''}</Text></View>})}
-  {gemProc?<View style={[styles.statusPill,styles.statusGem]}><Text style={[styles.statusPillText,styles.statusGemText]}>GEM</Text></View>:null}
+  {gemProc?<View style={[styles.statusPill,styles.statusGem]}><Text style={[styles.statusPillText,styles.statusGemText]}>{st("GEM")}</Text></View>:null}
   {overflow?<View style={[styles.statusPill,styles.statusOverflow]}><Text style={[styles.statusPillText,styles.statusOverflowText]}>+{overflow}</Text></View>:null}
  </View>;
 }
@@ -63,40 +75,42 @@ function floatingValue(cue:CoopCombatReplayCueView|undefined,targetId:string|und
 }
 
 export function CombatantProfileCard({slot,active=false,targeted=false,assistProc=false,motionStyle,feedbackStyle,currentCue,combatShield=0,statuses,gemProcActive=false,animateHealth=true,layout,onPress,selectedForInspect=false}:{slot:Slot;active?:boolean;targeted?:boolean;assistProc?:boolean;motionStyle?:any;feedbackStyle?:any;currentCue?:CoopCombatReplayCueView;combatShield?:number;statuses?:PlaybackCombatStatus[];gemProcActive?:boolean;animateHealth?:boolean;layout?:DungeonCombatLayout;onPress?:()=>void;selectedForInspect?:boolean}){
+ const st=useSocialText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),equipment=equipmentTheme(C),avatar=dungeonCombatAvatar(slot.classId);
  const portrait=dungeonCombatPortraitSource(slot.classId,slot.bodyPresentation??'male'),pct=hpPercent(slot),shieldPct=slot.maximumHp&&slot.maximumHp>0?Math.max(0,Math.min(1,combatShield/slot.maximumHp)):0,companion=slot.companionId?combatCompanionDef(slot.companionId):undefined,companionArt=slot.companionId?companionArtSource(slot.companionId):undefined;
- const accent=slot.role==='tank'?equipment.goldSoft:slot.role==='support'?C.good:C.bad,float=floatingValue(currentCue,slot.memberId);
- return <Animated.View accessible={!onPress} accessibilityLabel={`${slot.name}, ${avatar?.label??slot.classId??slot.role}, ${roleLabel(slot.role)}, ${Math.round(pct*100)} percent health`} style={[s.card,layout&&{minHeight:layout.cardMinHeight},{borderColor:accent},targeted&&s.targeted,active&&s.active,selectedForInspect&&s.inspectSelected,slot.ready===false&&s.down,motionStyle]}>
-  <View style={[s.scene,layout&&{height:layout.sceneHeight}]}>
+ const accent=slot.role==='tank'?coopColors.gold:slot.role==='support'?coopColors.success:coopColors.danger,float=floatingValue(currentCue,slot.memberId);
+ return <Animated.View accessible={!onPress} accessibilityLabel={`${slot.name}, ${avatar?.label??slot.classId??slot.role}, ${roleLabel(slot.role)}, ${Math.round(pct*100)} percent health`} style={[s.card,coopSurface.card,layout&&{minHeight:layout.cardMinHeight},{borderColor:accent},targeted&&s.targeted,active&&s.active,selectedForInspect&&s.inspectSelected,slot.ready===false&&s.down,motionStyle]}>
+  <View style={[s.scene,coopSurface.scene,layout&&{height:layout.sceneHeight}]}>
    <View style={[StyleSheet.absoluteFill,s.sceneBg]}/>
    <View style={s.shade}/>
    {portrait?<Image source={portrait} resizeMode="contain" fadeDuration={0} style={[s.portrait,layout&&{width:layout.portraitWidth,height:layout.portraitHeight}]}/>:<View style={s.fallback}><IdentityArtwork name={slot.name} className={slot.classId} size={48}/></View>}
    <View style={[s.rolePill,{borderColor:accent}]}><Text style={[s.roleText,{color:accent}]}>{roleLabel(slot.role)}</Text></View>
    {slot.echo?<View style={s.echoPill}><Text style={s.echoText}>ECHO</Text></View>:null}
-   {slot.ready===false?<View style={s.downPill}><Text style={s.downText}>DOWN</Text></View>:null}
+   {slot.ready===false?<View style={s.downPill}><Text style={s.downText}>{st("DOWN")}</Text></View>:null}
    {float?<><Animated.View style={[s.floatPill,float.kind==='damage'?s.floatDamage:float.kind==='heal'?s.floatHeal:float.kind==='shield'?s.floatShield:s.floatMiss,feedbackStyle]}><Text style={[s.floatText,float.kind==='damage'?s.floatDamageText:float.kind==='heal'?s.floatHealText:float.kind==='shield'?s.floatShieldText:s.floatMissText]}>{float.label}</Text></Animated.View>{float.outcome?<Animated.View style={[s.outcomePill,float.outcome==='CRIT'?s.outcomeCrit:float.outcome==='DODGE'?s.outcomeMiss:float.outcome.startsWith('BARRIER')?s.outcomeBarrier:s.outcomeGem,feedbackStyle]}><Text style={s.outcomeText}>{float.outcome}</Text></Animated.View>:null}</>:null}
-   <View style={s.identityPlate}><Text numberOfLines={1} style={s.name}>{slot.name}</Text><Text numberOfLines={1} style={s.className}>{avatar?.label??slot.classId??slot.role}</Text></View>
+   <View style={[s.identityPlate,coopSurface.identityPlate]}><Text numberOfLines={1} style={s.name}>{slot.name}</Text><Text numberOfLines={1} style={s.className}>{avatar?.label??slot.classId??slot.role}</Text></View>
   </View>
-  <View style={s.combatInfo}>
-   <View style={s.hpHead}><View style={s.hpLabelRow}><Text style={s.hpLabel}>HP</Text>{pct<=.25&&slot.ready!==false?<Text style={s.criticalInline}>LOW</Text>:null}</View><Text style={s.hpValue}>{slot.currentHp!==undefined&&slot.maximumHp!==undefined?`${Math.max(0,Math.round(slot.currentHp))}/${Math.max(1,Math.round(slot.maximumHp))}`:`${Math.round(pct*100)}%`}</Text></View>
+  <View style={[s.combatInfo,coopSurface.combatInfo]}>
+   <View style={s.hpHead}><View style={s.hpLabelRow}><Text style={s.hpLabel}>{st("HP")}</Text>{pct<=.25&&slot.ready!==false?<Text style={s.criticalInline}>{st("LOW")}</Text>:null}</View><Text style={s.hpValue}>{slot.currentHp!==undefined&&slot.maximumHp!==undefined?`${Math.max(0,Math.round(slot.currentHp))}/${Math.max(1,Math.round(slot.maximumHp))}`:`${Math.round(pct*100)}%`}</Text></View>
    <AnimatedHealthBar pct={pct} color={pct<=.25?C.bad:pct<=.55?C.warning:C.good} trackStyle={s.hpTrack} fillStyle={s.hpFill} animate={animateHealth}/>
    {combatShield>0?<View style={s.barrierRow}><Text style={s.barrierLabel}>BARRIER +{Math.round(combatShield)}</Text><AnimatedHealthBar pct={shieldPct} color={C.info} trackStyle={s.barrierTrack} fillStyle={s.barrierFill} animate={animateHealth}/></View>:null}
    <CombatStatusStrip statuses={statuses} gemProc={gemProcActive} styles={s} limit={layout?.statusLimit??3}/>
-   {companion?<View style={[s.assistRow,assistProc&&s.assistActive]}>{companionArt?<Image source={companionArt} resizeMode="contain" style={s.assistArt}/>:<View style={s.assistFallback}><Text style={s.assistFallbackText}>◇</Text></View>}<View style={s.assistCopy}><Text style={[s.assistKicker,assistProc&&s.assistKickerActive]}>{assistProc?'ASSIST PROC':'COMPANION'}</Text><Text numberOfLines={1} style={s.assistName}>{companion.name}</Text></View></View>:null}
+   {companion?<View style={[s.assistRow,assistProc&&s.assistActive]}>{companionArt?<Image source={companionArt} resizeMode="contain" style={s.assistArt}/>:<View style={s.assistFallback}><Text style={s.assistFallbackText}>◇</Text></View>}<View style={s.assistCopy}><Text style={[s.assistKicker,assistProc&&s.assistKickerActive]}>{assistProc?st("ASSIST PROC"):st("COMPANION")}</Text><Text numberOfLines={1} style={s.assistName}>{companion.name}</Text></View></View>:null}
   </View>
   {onPress?<Pressable accessibilityRole="button" accessibilityLabel={`Inspect ${slot.name} combat details`} accessibilityState={{selected:selectedForInspect}} onPress={onPress} style={({pressed})=>[s.inspectHitbox,pressed&&s.inspectPressed]}/>:null}
  </Animated.View>;
 }
 
 export function EnemyCombatProfileCard({name,combatantId,boss=false,compact=false,active=false,targeted=false,motionStyle,feedbackStyle,currentCue,bossPhaseLabel,bossPhases,bossCast,currentHp,maximumHp,combatShield=0,statuses,statusLimit=3,animateHealth=true,onPress,selectedForInspect=false}:{name:string;combatantId?:string;boss?:boolean;compact?:boolean;active?:boolean;targeted?:boolean;motionStyle?:any;feedbackStyle?:any;currentCue?:CoopCombatReplayCueView;bossPhaseLabel?:string;bossPhases?:CoopBossPhaseView[];bossCast?:BossCombatCastState;currentHp?:number;maximumHp?:number;combatShield?:number;statuses?:PlaybackCombatStatus[];statusLimit?:number;animateHealth?:boolean;onPress?:()=>void;selectedForInspect?:boolean}){
+ const st=useSocialText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),enemyArt=dungeonEnemyPortraitSource(name),enemyPct=currentHp!==undefined&&maximumHp!==undefined&&maximumHp>0?Math.max(0,Math.min(1,currentHp/maximumHp)):undefined,enemyShieldPct=maximumHp&&maximumHp>0?Math.max(0,Math.min(1,combatShield/maximumHp)):0,float=currentCue?.type==='action'&&(combatantId?currentCue.targetId===combatantId:currentCue.targetName===name)?{label:currentCue.outcome==='miss'?'MISS':`${currentCue.actionKind==='heal'?'+':'-'}${Math.round(currentCue.amount??0)}`,heal:currentCue.actionKind==='heal',miss:currentCue.outcome==='miss',outcome:currentCue.outcome==='critical'?'CRIT':currentCue.outcome==='miss'?'DODGE':currentCue.absorbed&&currentCue.absorbed>0?`BARRIER -${Math.round(currentCue.absorbed)}`:currentCue.gemProc?'GEM PROC':undefined}:undefined;
- return <Animated.View accessible={!onPress} accessibilityLabel={`${boss?'Boss':'Dungeon enemy'} ${name}`} style={[s.enemyCard,boss&&s.enemyBoss,targeted&&s.targeted,active&&s.enemyActive,selectedForInspect&&s.inspectSelected,motionStyle]}>
-  <View style={[s.enemyScene,compact&&s.enemySceneCompact]}><View style={[StyleSheet.absoluteFill,s.enemyWash]}/>{enemyArt?<Image source={enemyArt} resizeMode="contain" fadeDuration={0} style={[s.enemyPortrait,boss&&s.enemyBossPortrait,compact&&s.enemyPortraitCompact]}/>:<Text style={[s.enemyMark,boss&&s.enemyBossMark]}>{boss?'♛':'◆'}</Text>}{float?<><Animated.View style={[s.floatPill,float.miss?s.floatMiss:float.heal?s.floatHeal:s.floatDamage,feedbackStyle]}><Text style={[s.floatText,float.miss?s.floatMissText:float.heal?s.floatHealText:s.floatDamageText]}>{float.label}</Text></Animated.View>{float.outcome?<Animated.View style={[s.outcomePill,float.outcome==='CRIT'?s.outcomeCrit:float.outcome==='DODGE'?s.outcomeMiss:float.outcome.startsWith('BARRIER')?s.outcomeBarrier:s.outcomeGem,feedbackStyle]}><Text style={s.outcomeText}>{float.outcome}</Text></Animated.View>:null}</>:null}<View style={s.enemyPlate}><Text style={s.enemyKicker}>{boss?'FINAL BOSS':'ENCOUNTER'}</Text><Text numberOfLines={2} style={s.enemyName}>{name}</Text></View></View>
+ return <Animated.View accessible={!onPress} accessibilityLabel={`${boss?'Boss':'Dungeon enemy'} ${name}`} style={[s.enemyCard,coopSurface.enemyCard,boss&&s.enemyBoss,targeted&&s.targeted,active&&s.enemyActive,selectedForInspect&&s.inspectSelected,motionStyle]}>
+  <View style={[s.enemyScene,coopSurface.enemyScene,compact&&s.enemySceneCompact]}><View style={[StyleSheet.absoluteFill,s.enemyWash]}/>{enemyArt?<Image source={enemyArt} resizeMode="contain" fadeDuration={0} style={[s.enemyPortrait,boss&&s.enemyBossPortrait,compact&&s.enemyPortraitCompact]}/>:<Text style={[s.enemyMark,boss&&s.enemyBossMark]}>{boss?'♛':'◆'}</Text>}{float?<><Animated.View style={[s.floatPill,float.miss?s.floatMiss:float.heal?s.floatHeal:s.floatDamage,feedbackStyle]}><Text style={[s.floatText,float.miss?s.floatMissText:float.heal?s.floatHealText:s.floatDamageText]}>{float.label}</Text></Animated.View>{float.outcome?<Animated.View style={[s.outcomePill,float.outcome==='CRIT'?s.outcomeCrit:float.outcome==='DODGE'?s.outcomeMiss:float.outcome.startsWith('BARRIER')?s.outcomeBarrier:s.outcomeGem,feedbackStyle]}><Text style={s.outcomeText}>{float.outcome}</Text></Animated.View>:null}</>:null}<View style={[s.enemyPlate,coopSurface.enemyPlate]}><Text style={s.enemyKicker}>{boss?st("FINAL BOSS"):st("ENCOUNTER")}</Text><Text numberOfLines={2} style={s.enemyName}>{name}</Text></View></View>
   <View style={[s.enemyInfo,bossCast&&s.enemyInfoCasting]}>
-   {enemyPct!==undefined?<><View style={s.enemyHpHead}><Text style={s.enemyHpLabel}>{boss?'BOSS HP':'HP'}</Text><Text style={s.enemyHpValue}>{Math.max(0,Math.round(currentHp??0))}/{Math.max(1,Math.round(maximumHp??1))}</Text></View><View style={s.enemyHpWrap}><AnimatedHealthBar pct={enemyPct} color={enemyPct<=.25?C.bad:enemyPct<=.55?C.warning:C.good} trackStyle={s.enemyHpTrack} fillStyle={s.enemyHpFill} animate={animateHealth}/>{boss?(bossPhases??[]).map(phase=>{const reached=enemyPct<=phase.hpPct/100;return <View key={phase.id} pointerEvents="none" style={[s.phaseThreshold,{left:`${phase.hpPct}%` as `${number}%`},reached&&s.phaseThresholdReached]}><View style={[s.phaseThresholdLine,reached&&s.phaseThresholdLineReached]}/><Text style={[s.phaseThresholdText,reached&&s.phaseThresholdTextReached]}>{phase.hpPct}</Text></View>}):null}</View>{combatShield>0?<View style={s.enemyBarrierRow}><Text style={s.enemyBarrierLabel}>BARRIER +{Math.round(combatShield)}</Text><AnimatedHealthBar pct={enemyShieldPct} color={C.info} trackStyle={s.enemyBarrierTrack} fillStyle={s.enemyBarrierFill} animate={animateHealth}/></View>:null}</>:null}
+   {enemyPct!==undefined?<><View style={s.enemyHpHead}><Text style={s.enemyHpLabel}>{boss?st("BOSS HP"):st("HP")}</Text><Text style={s.enemyHpValue}>{Math.max(0,Math.round(currentHp??0))}/{Math.max(1,Math.round(maximumHp??1))}</Text></View><View style={s.enemyHpWrap}><AnimatedHealthBar pct={enemyPct} color={enemyPct<=.25?C.bad:enemyPct<=.55?C.warning:C.good} trackStyle={s.enemyHpTrack} fillStyle={s.enemyHpFill} animate={animateHealth}/>{boss?(bossPhases??[]).map(phase=>{const reached=enemyPct<=phase.hpPct/100;return <View key={phase.id} pointerEvents="none" style={[s.phaseThreshold,{left:`${phase.hpPct}%` as `${number}%`},reached&&s.phaseThresholdReached]}><View style={[s.phaseThresholdLine,reached&&s.phaseThresholdLineReached]}/><Text style={[s.phaseThresholdText,reached&&s.phaseThresholdTextReached]}>{phase.hpPct}</Text></View>}):null}</View>{combatShield>0?<View style={s.enemyBarrierRow}><Text style={s.enemyBarrierLabel}>BARRIER +{Math.round(combatShield)}</Text><AnimatedHealthBar pct={enemyShieldPct} color={C.info} trackStyle={s.enemyBarrierTrack} fillStyle={s.enemyBarrierFill} animate={animateHealth}/></View>:null}</>:null}
    <CombatStatusStrip statuses={statuses} styles={s} limit={statusLimit}/>
-   {bossPhaseLabel?<View style={s.bossPhaseRow}><Text style={s.bossPhaseKicker}>PHASE</Text><Text numberOfLines={1} style={s.bossPhaseName}>{bossPhaseLabel}</Text></View>:null}
-   {bossCast?<View style={[s.castPanel,bossCast.interruptible&&s.castPanelInterruptible]}><View style={s.castHead}><Text style={[s.castKicker,bossCast.interruptible&&s.castKickerInterruptible]}>{bossCast.interruptible?'INTERRUPT NOW':'BOSS CAST'}</Text><Text style={s.castTime}>{(bossCast.durationMs/1000).toFixed(1)}s</Text></View><Text numberOfLines={1} style={s.castName}>{bossCast.label}</Text>{bossCast.targetLabel?<Text numberOfLines={1} style={s.castTarget}>FOCUS → {bossCast.targetLabel}</Text>:null}<View style={s.castTrack}><Animated.View style={[s.castFill,bossCast.interruptible&&s.castFillInterruptible,bossCast.progressStyle]}/></View></View>:<Text style={s.enemyHint}>{active?'ACTING':targeted?'TARGETED':boss?'Boss profile':'Enemy profile'}</Text>}
+   {bossPhaseLabel?<View style={s.bossPhaseRow}><Text style={s.bossPhaseKicker}>{st("PHASE")}</Text><Text numberOfLines={1} style={s.bossPhaseName}>{bossPhaseLabel}</Text></View>:null}
+   {bossCast?<View style={[s.castPanel,bossCast.interruptible&&s.castPanelInterruptible]}><View style={s.castHead}><Text style={[s.castKicker,bossCast.interruptible&&s.castKickerInterruptible]}>{bossCast.interruptible?st("INTERRUPT NOW"):st("BOSS CAST")}</Text><Text style={s.castTime}>{(bossCast.durationMs/1000).toFixed(1)}s</Text></View><Text numberOfLines={1} style={s.castName}>{bossCast.label}</Text>{bossCast.targetLabel?<Text numberOfLines={1} style={s.castTarget}>FOCUS → {bossCast.targetLabel}</Text>:null}<View style={s.castTrack}><Animated.View style={[s.castFill,bossCast.interruptible&&s.castFillInterruptible,bossCast.progressStyle]}/></View></View>:<Text style={s.enemyHint}>{active?st("ACTING"):targeted?st("TARGETED"):boss?st("Boss profile"):st("Enemy profile")}</Text>}
   </View>
   {onPress?<Pressable accessibilityRole="button" accessibilityLabel={`Inspect ${name} combat details`} accessibilityState={{selected:selectedForInspect}} onPress={onPress} style={({pressed})=>[s.inspectHitbox,pressed&&s.inspectPressed]}/>:null}
  </Animated.View>;

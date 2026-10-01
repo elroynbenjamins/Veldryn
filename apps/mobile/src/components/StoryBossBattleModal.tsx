@@ -1,3 +1,4 @@
+import {useGameplayText} from '../i18n/gameplay';
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {Animated,Easing,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {MONSTERS} from '../content/monsters';
@@ -16,6 +17,7 @@ function pct(current:number,max:number){return Math.max(0,Math.min(100,max>0?cur
 function timeLabel(ms:number){return `${(Math.max(0,ms)/1000).toFixed(1)}s`;}
 
 export function StoryBossBattleModal({state,battle,message,onClose}:{state:GameState;battle:FallenKnightBattleResult;message:string;onClose:()=>void}){
+ const {gt,gl,language}=useGameplayText();
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),monster=MONSTERS.find(row=>row.id==='FALLEN_KNIGHT')!,region=WORLD_ZONES.find(row=>row.name==="King's Road");
   const reduceMotion=state.settings.reduceMotion;
   const playbackRealMs=Math.min(38_000,Math.max(12_000,battle.durationMs));
@@ -67,17 +69,17 @@ export function StoryBossBattleModal({state,battle,message,onClose}:{state:GameS
     return event.label;
   };
 
-  return <GameModalSurface visible presentation="dialog" reduceMotion={reduceMotion} onClose={finished?onClose:skip} dismissOnBackdrop={false} backdropLabel="Story boss battle" surfaceStyle={s.modal}>
-      <ScrollView style={s.scroll} contentContainerStyle={s.modalContent} showsVerticalScrollIndicator={false}>
+  return <GameModalSurface visible presentation="dialog" reduceMotion={reduceMotion} onClose={finished?onClose:skip} dismissOnBackdrop={false} backdropLabel={gt("Story boss battle")} surfaceStyle={s.modal}>
+      <ScrollView style={s.scroll} contentContainerStyle={s.modalContent} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
         <View style={s.top}>
-          <View><Text style={s.kicker}>ASTERFALL STORY BOSS</Text><Text accessibilityRole="header" style={s.title}>The Fallen Knight</Text></View>
-          <View style={[s.phaseBadge,phase===3&&s.phaseDanger]}><Text style={s.phaseText}>PHASE {phase}</Text></View>
+          <View><Text style={s.kicker}>{gt("ASTERFALL STORY BOSS")}</Text><Text accessibilityRole="header" style={s.title}>The Fallen Knight</Text></View>
+          <View style={[s.phaseBadge,phase===3&&s.phaseDanger]}><Text style={s.phaseText}>{gt("PHASE")} {phase}</Text></View>
         </View>
 
         <Animated.View style={[s.arena,{transform:[{translateX:shake},{scale:phaseScale}]}]}>
           <RegionArtwork regionId={region?.id??'KINGS_ROAD'}/>
           <View style={s.shade}/>
-          {telegraph&&<View style={s.telegraph}><Text style={s.telegraphLabel}>⚠ TELEGRAPH</Text><Text style={s.telegraphText}>{telegraph.label}</Text></View>}
+          {telegraph&&<View style={s.telegraph}><Text style={s.telegraphLabel}>{gt("⚠ TELEGRAPH")}</Text><Text style={s.telegraphText}>{gl(telegraph.label)}</Text></View>}
           <View style={s.combatants}>
             <View style={s.side}>
               <View style={s.portrait}>
@@ -85,7 +87,7 @@ export function StoryBossBattleModal({state,battle,message,onClose}:{state:GameS
                 <Animated.View pointerEvents="none" style={[s.impactFlash,{opacity:flash(playerImpact)}]}/>
                 {damageEvent?.type==='boss_hit'&&<Animated.View pointerEvents="none" style={[s.floatWrap,{opacity:playerImpact,transform:[{translateY:floatY(playerImpact)}]}]}><Text style={s.damageTaken}>{damageEvent.critical?'CRIT ':''}−{damageEvent.amount?.toLocaleString()}</Text></Animated.View>}
               </View>
-              <Text numberOfLines={1} style={s.name}>{state.character?.name??'Adventurer'}</Text>
+              <Text numberOfLines={1} style={s.name}>{state.character?.name??gt("Adventurer")}</Text>
               <Text style={s.sub}>ACC {Math.round(battle.player.hitChance*100)}% · CRIT {Math.round(battle.player.critChance*100)}%</Text>
             </View>
 
@@ -108,17 +110,17 @@ export function StoryBossBattleModal({state,battle,message,onClose}:{state:GameS
 
         <View style={s.bars}>
           <View style={s.barBlock}><View style={s.barHead}><Text style={s.barLabel}>FALLEN KNIGHT</Text><Text style={s.barValue}>{Math.round(bossHp).toLocaleString()} / {battle.bossMaxHp.toLocaleString()}</Text></View><View style={s.track}><View style={[s.bossFill,{width:`${pct(bossHp,battle.bossMaxHp)}%` as `${number}%`}]}/></View></View>
-          <View style={s.barBlock}><View style={s.barHead}><Text style={s.barLabel}>{state.character?.name?.toUpperCase()??'PLAYER'}</Text><Text style={s.barValue}>{Math.round(playerHp).toLocaleString()} / {battle.playerMaxHp.toLocaleString()}</Text></View><View style={s.track}><View style={[s.playerFill,{width:`${pct(playerHp,battle.playerMaxHp)}%` as `${number}%`}]}/></View></View>
+          <View style={s.barBlock}><View style={s.barHead}><Text style={s.barLabel}>{state.character?.name?.toUpperCase()??gt("PLAYER")}</Text><Text style={s.barValue}>{Math.round(playerHp).toLocaleString()} / {battle.playerMaxHp.toLocaleString()}</Text></View><View style={s.track}><View style={[s.playerFill,{width:`${pct(playerHp,battle.playerMaxHp)}%` as `${number}%`}]}/></View></View>
         </View>
 
         <View style={s.log}>
-          <View style={s.logHead}><Text style={s.logTitle}>COMBAT FEED</Text><Text style={s.logMeta}>{battle.foodConsumed} food used · {battle.phasesReached.length}/3 phases</Text></View>
-          {recent.length?recent.map((event,index)=><View key={event.atMs+':'+event.type+':'+index} style={s.logRow}><Text style={s.logTime}>{timeLabel(event.atMs)}</Text><Text numberOfLines={1} style={[s.logText,event.type==='telegraph'&&s.warn,event.type==='phase'&&s.phaseLog,event.critical&&s.critLog]}>{eventText(event)}</Text></View>):<Text style={s.sub}>The duel begins…</Text>}
+          <View style={s.logHead}><Text style={s.logTitle}>{gt("COMBAT FEED")}</Text><Text style={s.logMeta}>{battle.foodConsumed} food used · {battle.phasesReached.length}/3 phases</Text></View>
+          {recent.length?recent.map((event,index)=><View key={event.atMs+':'+event.type+':'+index} style={s.logRow}><Text style={s.logTime}>{timeLabel(event.atMs)}</Text><Text numberOfLines={1} style={[s.logText,event.type==='telegraph'&&s.warn,event.type==='phase'&&s.phaseLog,event.critical&&s.critLog]}>{gl(eventText(event))}</Text></View>):<Text style={s.sub}>{gt("The duel begins…")}</Text>}
         </View>
 
-        {finished?<View style={[s.result,battle.won?s.win:s.loss]}><Text style={s.resultTitle}>{battle.won?'VICTORY':'DEFEAT'}</Text><Text style={s.resultCopy}>{message}</Text>{battle.won&&<Text style={s.reward}>+900 Gold · +3,000 XP · +40 Essence · +1 Bondstone · boss drop table rolled</Text>}</View>:<Text style={s.note}>Boss outcome is already resolved by the deterministic combat simulation. Playback can be skipped.</Text>}
+        {finished?<View style={[s.result,battle.won?s.win:s.loss]}><Text style={s.resultTitle}>{battle.won?gt("VICTORY"):gt("DEFEAT")}</Text><Text style={s.resultCopy}>{gl(message)}</Text>{battle.won&&<Text style={s.reward}>+900 Gold · +3,000 XP · +40 Essence · +1 Bondstone · boss drop table rolled</Text>}</View>:<Text style={s.note}>{gt("Boss outcome is already resolved by the deterministic combat simulation. Playback can be skipped.")}</Text>}
 
-        <View style={s.actions}>{finished?<GameButton title="Continue" onPress={onClose}/>:<><View style={s.actionFlex}><GameButton title="Skip fight" tone="secondary" onPress={skip}/></View><Text style={s.live}>LIVE</Text></>}</View>
+        <View style={s.actions}>{finished?<GameButton title={gt("Continue")} onPress={onClose}/>:<><View style={s.actionFlex}><GameButton title={gt("Skip fight")} tone="secondary" onPress={skip}/></View><Text style={s.live}>{gt("LIVE")}</Text></>}</View>
       </ScrollView>
   </GameModalSurface>;
 }

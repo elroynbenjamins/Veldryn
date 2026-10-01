@@ -2,7 +2,7 @@ import type {BodyPresentation,ClassId,GameState,GearSlot,RewardBundle} from './t
 import * as game from './game';
 import * as events from './live-events';
 import {attemptEquipmentUpgrade,replaceGem,socketGem,unsocketGem} from './equipment-enhancement';
-import {discoverCharacterSkins,selectCharacterSkin} from './character-skins';
+import {selectProfileIcon,canUseProfileIcon} from './profile-icons';
 import {transitionActivity} from './playability';
 import {SUPPORTED_LANGUAGES} from '../i18n/languages';
 import {QUICK_NAV_DESTINATIONS} from './quick-navigation';
@@ -16,10 +16,9 @@ import {applyCharacterLoadout,characterLoadoutSlotCount,deleteCharacterLoadout,s
 import {setArenaSquadSlot} from './arena-squad';
 import {normalizeProgressionGoals} from './progression-goals-v40';
 import {normalizeIdleRuleSets,validateActiveIdleRuleId} from './idle-rules-v40';
-import {COMBAT_CHALLENGE_IDS} from './challenge-hunts';
 import {COMBAT_TACTIC_IDS} from './combat-tactics';
 import {HUNT_GOAL_IDS} from './hunt-goals';
-import {activityQueueCapacity,clearActivityQueue,enqueueActivity,moveQueuedActivity,removeQueuedActivity} from './activity-queue';
+import {activityQueueCapacity,clearActivityQueue,enqueueActivity,moveQueuedActivity,removeQueuedActivity,normalizeActivityQueueGoal} from './activity-queue';
 import {activateDailySupplyBoost,claimDailySupplies,DAILY_SUPPLY_BOOST_TYPES,dailySupplyBoostLabel} from './daily-supplies';
 import {bulkSalvageSelected,bulkSellSelected,bulkTransferSelected} from './inventory-bulk';
 import {normalizeChatEmoteTrayIds,CHAT_EMOTE_TRAY_SIZE} from './chat-emotes';
@@ -35,7 +34,7 @@ import {upgradeCompanionHousing} from './companion-housing';
 
 /** Commands express intent. Neither a client save nor a client reward is accepted. */
 export interface GameCommand {type:string;args?:Record<string,unknown>}
-export interface VerifiedActivity {kind:'combat'|'gathering'|'crafting'|'boss';contentId:string;units:number;startedAtMs?:number;challengeId?:import('./types').CombatChallengeId}
+export interface VerifiedActivity {kind:'combat'|'gathering'|'crafting'|'boss';contentId:string;units:number;startedAtMs?:number}
 export type ForgeCraftResult=ReturnType<typeof claimEquipmentCraft>['result'];
 export interface GameCommandResult {state:GameState;reward?:RewardBundle;activity:GameState['activity'];message?:string;won?:boolean;storyBossBattle?:FallenKnightBattleResult;upgrade?:ReturnType<typeof attemptEquipmentUpgrade>['result'];forgeResults?:ForgeCraftResult[];contributions:VerifiedActivity[]}
 const fields:Record<string,readonly string[]>={
@@ -43,15 +42,15 @@ const fields:Record<string,readonly string[]>={
  companion_monthly:['id'],companion_supplies:[],companion_bond_reward:['id','level'],companion_boss_rematch:[],
  companion_equip:['id'],companion_unequip:[],companion_housing_upgrade:['id'],companion_level:['id'],companion_ascend:['id'],companion_master:['id'],companion_upgrade:['id'],companion_training:[],companion_essence:[],
  companion_trial_start:['ids','floor'],companion_trial_floor:['id','floor'],companion_trial_abandon:['id'],companion_assignment_start:['id','ids','food'],companion_assignment_claim:['id'],companion_technique:['id','technique'],companion_codex:['id'],companion_showcase:['id','ids'],companion_weekly:['id'],companion_special:['id','ids'],
- create:['classId','name','body'],claim:[],start:['kind','id','challengeId','tacticId','goalId'],queue_add:['kind','id','challengeId','tacticId','goalId'],queue_remove:['index'],queue_move:['index','direction'],queue_clear:[],queue_start:[],explore:['id'],stop:[],travel:['id'],boss:[],craft:['id'],craft_claim:['id'],craft_claim_all:[],craft_cancel:['id'],craft_move:['id','direction'],craft_prerequisites:['id'],use_potion:['id'],discard_preparation:[],
+ create:['classId','name','body'],claim:[],start:['kind','id','tacticId','goalId'],queue_add:['kind','id','tacticId','goalId','goal'],queue_set_goal:['id','goal'],queue_remove:['index'],queue_move:['index','direction'],queue_clear:[],queue_start:[],explore:['id'],stop:[],travel:['id'],boss:[],craft:['id'],craft_claim:['id'],craft_claim_all:[],craft_cancel:['id'],craft_move:['id','direction'],craft_prerequisites:['id'],use_potion:['id'],discard_preparation:[],
  roster_create:['classId','name','body'],roster_switch:['id'],roster_delete:['id','confirmation'],
  equip:['id'],unequip:['slot'],food:['id'],eat:['id'],sell:['id','quantity'],salvage:['id'],
  deposit:['id','quantity'],withdraw:['id','quantity'],deposit_materials:[],bulk_transfer:['location','ids'],bulk_sell:['ids'],bulk_salvage:['ids'],storage:['location'],overflow:[],
- equip_tool:['id'],equip_set:[],upgrade:['id'],socket:['id','gemId'],replace_socket:['id','gemId'],unsocket:['id','index'],gem_combine:['familyId','grade'],gem_refine:['familyId','grade'],gem_research:['familyId'],gem_dismantle:['gemId','quantity'],resonance_cache_claim:['familyId'],skin:['id'],
+ equip_tool:['id'],equip_set:[],upgrade:['id'],socket:['id','gemId'],replace_socket:['id','gemId'],unsocket:['id','index'],gem_combine:['familyId','grade'],gem_refine:['familyId','grade'],gem_research:['familyId'],gem_dismantle:['gemId','quantity'],resonance_cache_claim:['familyId'],profile_icon:['id'],
  loadout_save:['index','name'],loadout_apply:['id'],loadout_delete:['id'],arena_slot:['index','characterId'],goals_set:['goals'],idle_rules_set:['rules','activeId'],daily_supplies_claim:['characterId'],daily_supplies_activate:['type'],
- quest:['id'],seasonal:['period','id'],settings:['settings'],profile:['profileTitle','profileBackgroundId','profileBorderId','selectedCosmeticPetId'],
+ quest:['id'],seasonal:['period','id'],settings:['settings'],profile:['profileIconId','profileTitle','profileBackgroundId','profileBorderId','selectedCosmeticPetId'],
  event_daily:[],event_cache:[],event_milestones:[],event_discovery:['id'],event_reward:['id'],event_accept:['id'],
- event_objective:['id'],event_weekly:['id'],event_project:['id'],event_contribute:['quantity'],event_community:['percent'],event_purchase:['id'],
+ event_objective:['id'],event_weekly:['id'],event_project:['id'],event_contribute:['quantity'],event_community:['percent'],event_purchase:['id'],event_candy:['kind'],
  qa_prepare:['classId'],qa_refill:[],qa_switch_class:['classId'],
 };
 export function validateGameCommand(value:unknown):GameCommand{
@@ -66,7 +65,7 @@ export function validateGameCommand(value:unknown):GameCommand{
  }
  if((row.type==='roster_switch'||row.type==='roster_delete')&&typeof (args as Record<string,unknown>).id!=='string')throw new Error('invalid_id');
  if(row.type==='roster_delete'&&typeof (args as Record<string,unknown>).confirmation!=='string')throw new Error('invalid_confirmation');
- if(row.type==='start'||row.type==='queue_add'){const start=args as Record<string,unknown>;oneOf(start.kind,['combat','gathering']);if(start.challengeId!==undefined)oneOf(start.challengeId,COMBAT_CHALLENGE_IDS);if(start.tacticId!==undefined)oneOf(start.tacticId,COMBAT_TACTIC_IDS);if(start.goalId!==undefined)oneOf(start.goalId,HUNT_GOAL_IDS);if(start.kind!=='combat'&&(start.challengeId!==undefined||start.tacticId!==undefined||start.goalId!==undefined))throw new Error('invalid_combat_activity_option');}
+ if(row.type==='start'||row.type==='queue_add'){const start=args as Record<string,unknown>;oneOf(start.kind,['combat','gathering']);if(start.tacticId!==undefined)oneOf(start.tacticId,COMBAT_TACTIC_IDS);if(start.goalId!==undefined)oneOf(start.goalId,HUNT_GOAL_IDS);if(start.kind!=='combat'&&(start.tacticId!==undefined||start.goalId!==undefined))throw new Error('invalid_combat_activity_option');}
  if(row.type==='bulk_transfer'){const bulk=args as Record<string,unknown>;oneOf(bulk.location,['inventory','bank']);stringArray(bulk,'ids');}
  if(row.type==='bulk_sell'||row.type==='bulk_salvage')stringArray(args as Record<string,unknown>,'ids');
  return {type:row.type,args:args as Record<string,unknown>};
@@ -87,7 +86,7 @@ export function validateGameSettings(value:unknown):GameState['settings']{
  if(!value||typeof value!=='object'||Array.isArray(value))throw new Error('invalid_settings');const row=value as Record<string,unknown>;
  const keys=Object.keys(game.newGame(0).settings);if(Object.keys(row).some(key=>!keys.includes(key)))throw new Error('invalid_settings');
  const defaults=game.newGame(0).settings,result={...defaults,...row} as GameState['settings'];
- oneOf(result.language,SUPPORTED_LANGUAGES);oneOf(result.numberMode,['abbreviated','exact']);oneOf(result.uiTheme??'obsidian',['obsidian','ivory']);
+ oneOf(result.language,SUPPORTED_LANGUAGES);oneOf(result.numberMode,['abbreviated','exact']);oneOf(result.uiTheme??'obsidian',['obsidian','ember','ivory']);
  if(![1,1.15,1.3,1.5].includes(result.textScale)||!Number.isFinite(result.autoEatThresholdPct)||result.autoEatThresholdPct<0||result.autoEatThresholdPct>100)throw new Error('invalid_settings');
  for(const key of ['reduceMotion','stopCombatWhenOutOfFood','autoJoinWorldChat'] as const)if(typeof result[key]!=='boolean')throw new Error('invalid_settings');
  if(![1,2,3,4].includes(result.defaultWorldChat??0)||![1,2,3].includes(result.chatDockLines??0)||!Array.isArray(result.quickNavDestinations)||result.quickNavDestinations.length>8||result.quickNavDestinations.some(id=>!QUICK_NAV_DESTINATIONS.some(destination=>destination===id)))throw new Error('invalid_settings');
@@ -106,8 +105,8 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
  const command=validateGameCommand(value),a=command.args??{},activity=previous.activity,contributions:VerifiedActivity[]=[];
  let state=structuredClone(previous),reward:RewardBundle|undefined,message:string|undefined,won:boolean|undefined,storyBossBattle:FallenKnightBattleResult|undefined,upgrade:GameCommandResult['upgrade'],forgeResults:ForgeCraftResult[]|undefined;
  if(!Number.isSafeInteger(now)||now<previous.createdAtMs)throw new Error('invalid_server_clock');
- const credit=(source:GameState['activity'],earned:RewardBundle)=>{if(!source||earned.kills<=0)return;if(source.kind==='combat')contributions.push({kind:'combat',contentId:source.targetId,units:earned.kills,startedAtMs:Math.max(source.lastClaimAtMs,now-earned.elapsedSeconds*1000),...(source.combatChallengeId?{challengeId:source.combatChallengeId}: {})});else if(['mining','woodcutting','fishing','herbalism'].includes(source.kind))contributions.push({kind:'gathering',contentId:source.targetId,units:earned.kills,startedAtMs:Math.max(source.lastClaimAtMs,now-earned.elapsedSeconds*1000)});};
- const settle=()=>{const source=state.activity,result=game.claimActivity(state,now);state=result.state;reward=result.reward;credit(source,result.reward);};
+ const credit=(source:GameState['activity'],earned:RewardBundle)=>{if(!source||earned.kills<=0)return;if(source.kind==='combat')contributions.push({kind:'combat',contentId:source.targetId,units:earned.kills,startedAtMs:Math.max(source.lastClaimAtMs,now-earned.elapsedSeconds*1000)});else if(['mining','woodcutting','fishing','herbalism'].includes(source.kind))contributions.push({kind:'gathering',contentId:source.targetId,units:earned.kills,startedAtMs:Math.max(source.lastClaimAtMs,now-earned.elapsedSeconds*1000)});};
+ const settle=()=>{const source=state.activity,result=game.claimActivity(state,now);state=result.state;reward=result.reward;if(result.reward.activityResults){for(const segment of result.reward.activityResults){const {activity,reward:earned}=segment;if(earned.kills>0&&(activity.kind==='combat'||['mining','woodcutting','fishing','herbalism'].includes(activity.kind)))contributions.push({kind:activity.kind==='combat'?'combat':'gathering',contentId:activity.targetId,units:earned.kills,startedAtMs:activity.lastClaimAtMs});}}else credit(source,result.reward);};
  // Settle before any mutation that can alter past activity rates, food, gear or inventory.
  const settlementFreeCommand=command.type==='queue_add'||command.type==='queue_remove'||command.type==='queue_move'||command.type==='queue_clear'||command.type==='queue_start'||command.type==='daily_supplies_claim'||command.type==='roster_delete'||command.type.startsWith('qa_');
  if(state.character&&command.type!=='create'&&!settlementFreeCommand)settle();
@@ -119,6 +118,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
  if(command.type.startsWith('event_')&&!earlyFeatureUnlocked(state,'events'))throw new Error('events_locked');
  const companionMetricBefore=command.type.startsWith('companion_')?companionCommandEconomySnapshot(state):undefined;
  if(['companion_equip','companion_level','companion_ascend','companion_master'].includes(command.type))assertCompanionIdle(state,text(a,'id'));
+ if(command.type==='event_candy')oneOf(a.kind,['skill','combat','companion']);
  switch(command.type){
   case 'qa_prepare':case 'qa_switch_class':{
    if(!options.adminQa)throw new Error('admin_qa_required');
@@ -190,12 +190,20 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'roster_delete':state=deleteAccountCharacter(state,text(a,'id'),text(a,'confirmation',80),now);break;
   case 'arena_slot':{const index=integer(a,'index',0,2) as 0|1|2;state=setArenaSquadSlot(state,index,a.characterId===undefined?undefined:text(a,'characterId',80));break;}
   case 'claim':break;
-  case 'queue_add':{const kind=oneOf(a.kind,['combat','gathering']),combatChallengeId=a.challengeId===undefined?undefined:oneOf(a.challengeId,COMBAT_CHALLENGE_IDS),combatTacticId=a.tacticId===undefined?undefined:oneOf(a.tacticId,COMBAT_TACTIC_IDS),huntGoalId=a.goalId===undefined?undefined:oneOf(a.goalId,HUNT_GOAL_IDS);state=enqueueActivity(state,{kind,targetId:text(a,'id'),...(combatChallengeId?{combatChallengeId}:{}),...(combatTacticId?{combatTacticId}:{}),...(huntGoalId?{huntGoalId}:{})});break;}
+  case 'queue_add':{const kind=oneOf(a.kind,['combat','gathering']),combatTacticId=a.tacticId===undefined?undefined:oneOf(a.tacticId,COMBAT_TACTIC_IDS),huntGoalId=a.goalId===undefined?undefined:oneOf(a.goalId,HUNT_GOAL_IDS),goal=normalizeActivityQueueGoal(a.goal);if(a.goal!==undefined&&!goal)throw new Error('invalid_queue_goal');state=enqueueActivity(state,{kind,targetId:text(a,'id'),...(combatTacticId?{combatTacticId}:{}),...(huntGoalId?{huntGoalId}:{}),...(goal?{goal}:{})});break;}
+  case 'queue_set_goal':{
+   const goal=normalizeActivityQueueGoal(a.goal),id=text(a,'id');
+   if(!goal)throw new Error('invalid_queue_goal');
+   if(!state.activity||state.activity.targetId!==id||!['mining','woodcutting','fishing','herbalism','combat'].includes(state.activity.kind))throw new Error('Activity changed. Select its goal again.');
+   if(state.activity.kind==='combat'&&!['duration_seconds','session_kills'].includes(goal.kind)||state.activity.kind!=='combat'&&goal.kind==='session_kills')throw new Error('invalid_combat_activity_option');
+   state={...state,activity:{...state.activity,queueManaged:true,queueGoal:goal,queueGoalCompletedAtMs:undefined,startedAtMs:now,...(state.activity.kind==='combat'?{sessionKills:0,sessionChampions:0}: {})}};
+   break;
+  }
   case 'queue_remove':state=removeQueuedActivity(state,integer(a,'index',0,activityQueueCapacity(state)-1));break;
   case 'queue_move':state=moveQueuedActivity(state,integer(a,'index',0,activityQueueCapacity(state)-1),oneOf(a.direction,['up','down']));break;
   case 'queue_clear':state=clearActivityQueue(state);break;
-  case 'queue_start':state=game.startNextQueuedActivity(state,now);break;
-  case 'start':{const kind=oneOf(a.kind,['combat','gathering']),challengeId=a.challengeId===undefined?undefined:oneOf(a.challengeId,COMBAT_CHALLENGE_IDS),tacticId=a.tacticId===undefined?undefined:oneOf(a.tacticId,COMBAT_TACTIC_IDS),goalId=a.goalId===undefined?undefined:oneOf(a.goalId,HUNT_GOAL_IDS);if(kind!=='combat'&&(challengeId||tacticId||goalId))throw new Error('invalid_combat_activity_option');state=transitionActivity(state,now,{kind,id:text(a,'id'),...(challengeId?{challengeId}: {}),...(tacticId?{tacticId}: {}),...(goalId?{goalId}: {})}).state;break;}
+  case 'queue_start':if(state.activity)settle();state=game.startNextQueuedActivity(state,now);break;
+  case 'start':{const kind=oneOf(a.kind,['combat','gathering']),tacticId=a.tacticId===undefined?undefined:oneOf(a.tacticId,COMBAT_TACTIC_IDS),goalId=a.goalId===undefined?undefined:oneOf(a.goalId,HUNT_GOAL_IDS);if(kind!=='combat'&&(tacticId||goalId))throw new Error('invalid_combat_activity_option');state=transitionActivity(state,now,{kind,id:text(a,'id'),...(tacticId?{tacticId}: {}),...(goalId?{goalId}: {})}).state;break;}
   case 'explore':state=game.startExploration(state,text(a,'id'),now);break;
   case 'stop':state=game.stopActivity(state);break;
   case 'travel':state=game.travelToRegion(state,text(a,'id'),now).state;break;
@@ -250,7 +258,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'bulk_salvage':state=bulkSalvageSelected(state,stringArray(a,'ids'));break;
   case 'storage':state=game.upgradeStorage(state,oneOf(a.location,['inventory','bank']));break;
   case 'overflow':state=game.claimOverflowToBank(state);break;
-  case 'equip_tool':state=game.equipGatheringTool(state,text(a,'id'));break;
+  case 'equip_tool':state=game.equipGatheringTool(state,text(a,'id'),now);break;
   case 'equip_set':state=game.equipNoviceSet(state);break;
   case 'upgrade':{if(options.randomRoll===undefined)throw new Error('trusted_random_required');const result=attemptEquipmentUpgrade(state,text(a,'id'),options.randomRoll);state=result.state;upgrade=result.result;break;}
   case 'socket':state=socketGem(state,text(a,'id'),text(a,'gemId'));break;
@@ -277,7 +285,7 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'resonance_cache_claim':{
    state=claimResonanceCacheV1(state,text(a,'familyId',80),now);message='Resonance Cache claimed';break;
   }
-  case 'skin':state=selectCharacterSkin(state,text(a,'id'));break;
+  case 'profile_icon':state=selectProfileIcon(state,text(a,'id'));break;
   case 'loadout_save':state=saveCharacterLoadout(state,integer(a,'index',0,characterLoadoutSlotCount(state)-1),typeof a.name==='string'?a.name:undefined,now);break;
   case 'loadout_apply':state=applyCharacterLoadout(state,text(a,'id'));break;
   case 'loadout_delete':state=deleteCharacterLoadout(state,text(a,'id'));break;
@@ -301,13 +309,14 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
    const type=oneOf(a.type,DAILY_SUPPLY_BOOST_TYPES);state=activateDailySupplyBoost(state,type);message=`+10% ${dailySupplyBoostLabel(type)} active for 2 hours of qualifying activity.`;break;
   }
   case 'quest':state=game.claimQuest(state,text(a,'id'));break;
-  case 'seasonal':state=game.claimSeasonalContract(state,oneOf(a.period,['daily','weekly']),text(a,'id'),now);break;
+  case 'seasonal':state=game.claimSeasonalContract(state,oneOf(a.period,['daily','weekly','monthly']),text(a,'id'),now);break;
   case 'settings':state={...state,settings:validateGameSettings(a.settings)};break;
   case 'profile':{
    if(!state.character)throw new Error('character_required');
    const patch:Record<string,string|undefined>={};
    for(const [key,input] of Object.entries(a)){if(input!==null&&(typeof input!=='string'||input.length>80))throw new Error('invalid_profile');patch[key]=input===null?undefined:input as string;}
    if(patch.profileTitle!==undefined&&patch.profileTitle.length>32)throw new Error('invalid_profile_title');
+   if(patch.profileIconId&&!canUseProfileIcon(state,patch.profileIconId))throw new Error('cosmetic_not_owned');
    if(patch.profileBackgroundId&&!['asterfall-night','ironwood-dawn','silverbrook-mist','oathglass-hall',...(state.account.unlockedProfileBackgroundIds??[])].includes(patch.profileBackgroundId))throw new Error('cosmetic_not_owned');
    if(patch.profileBorderId&&!state.account.unlockedProfileBorderIds?.includes(patch.profileBorderId))throw new Error('cosmetic_not_owned');
    if(patch.selectedCosmeticPetId&&!state.account.unlockedCosmeticPetIds?.includes(patch.selectedCosmeticPetId))throw new Error('cosmetic_not_owned');
@@ -325,9 +334,10 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'event_contribute':state=events.contributeEventCurrency(state,integer(a,'quantity'),now);break;
   case 'event_community':state=events.claimEventCommunityMilestone(state,integer(a,'percent',1,100),now);break;
   case 'event_purchase':state=events.purchaseEventOffer(state,text(a,'id'),now);break;
+  case 'event_candy':state=events.consumeEventCandy(state,now,oneOf(a.kind,['skill','combat','companion']) as import('../content/live-events').EventCandyKind);break;
   default:throw new Error('invalid_command');
  }
  if(companionMetricBefore)state=recordCompanionCommandMetrics(state,command.type,companionMetricBefore);
  if(state.character&&(!Number.isSafeInteger(state.character.gold)||state.character.gold<0))throw new Error('invalid_wallet');
- return {state:discoverCharacterSkins(state),reward,activity,message,won,storyBossBattle,upgrade,forgeResults,contributions};
+ return {state,reward,activity,message,won,storyBossBattle,upgrade,forgeResults,contributions};
 }

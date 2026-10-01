@@ -13,11 +13,11 @@ ok(profile.includes('FAVORITES'),'Profile favorites must remain a distinct compa
 ok(profile.includes('ABOUT'),'Profile biography/actions must remain grouped under About');
 ok(profile.includes("root:{padding:spacing.md,gap:10"),'Profile screen must retain compact density');
 ok(profile.includes("minHeight:50"),'Career stat cells must remain compact');
-ok(profile.includes('title="Customize"')&&profile.includes('title="Collections"')&&profile.includes('title="Achievements"')&&profile.includes('title="Rankings"'),'Profile actions must remain directly accessible');
+ok(profile.includes('title={profileT(language,"Customize")}')&&profile.includes('title={profileT(language,"Collections")}')&&profile.includes('title={profileT(language,"Achievements")}')&&profile.includes('title={profileT(language,"Rankings")}'),'Profile actions must remain directly accessible');
 ok(!profile.includes('identityHead')&&!profile.includes('IdentityRow'),'Profile must not reintroduce the redundant second identity block');
-ok(profile.includes('label="BOSSES"')&&profile.includes('label="COLLECTIBLES"'),'Career snapshot must cover boss and collection progression');
+ok(profile.includes('label={profileT(language,"BOSSES")}')&&profile.includes('label={profileT(language,"COLLECTIBLES")}'),'Career snapshot must cover boss and collection progression');
 ok(profile.includes('<MasteryHallPanel state={state}')&&profile.includes("onNavigate?.('MasteryHall')"),'Profile must expose the account-wide Mastery Hall summary and link to the full Hall');
-ok(profile.includes('title="MASTERY SHOWCASE"')&&profile.includes("value:'R50'"),'Profile must show compact R50 mastery showcase slots');
+ok(profile.includes('title={profileT(language,"MASTERY SHOWCASE")}')&&profile.includes("value:'R50'"),'Profile must show compact R50 mastery showcase slots');
 const masteryHall=read('src/components/MasteryHallPanel.tsx');
 ok(masteryHall.includes('ACCOUNT MASTERY HALL')&&masteryHall.includes('prestige, achievements and profile showcase options—not more power'),'Mastery Hall must frame R50 as recognition rather than another power layer');
 ok(masteryHall.includes('STRONGEST PROFESSIONS')&&masteryHall.includes('MASTERY HALL ACHIEVEMENTS'),'Mastery Hall must summarize profession prestige and Journal progression');

@@ -2,6 +2,9 @@ import type {LiveEventRuntime} from '../core/types';
 import {supabase} from './supabase';
 
 type ActiveEventRow={event_id:string;starts_at:string|null;ends_at:string|null;grace_ends_at?:string|null;priority?:number|null;modules?:string[]|null};
+type CalendarEventRow={event_id:string;name:string;starts_at:string|null;ends_at:string|null;grace_ends_at:string|null;priority:number|null};
+
+export type PublicEventSchedule={eventId:string;name:string;startsAtMs?:number;endsAtMs?:number;graceEndsAtMs?:number;priority:number};
 
 /** Reads only the server's public active-event window; reward settlement remains server-authoritative online. */
 export async function fetchActiveEventRuntime(nowMs=Date.now()):Promise<LiveEventRuntime|undefined>{
@@ -11,4 +14,19 @@ export async function fetchActiveEventRuntime(nowMs=Date.now()):Promise<LiveEven
   const row=(data as ActiveEventRow[]|null)?.[0];
   if(!row)return undefined;
   return {eventId:row.event_id,enabled:true,startsAtMs:row.starts_at?Date.parse(row.starts_at):nowMs-60_000,endsAtMs:row.ends_at?Date.parse(row.ends_at):nowMs+86400_000,...(row.grace_ends_at?{graceEndsAtMs:Date.parse(row.grace_ends_at)}:{}),...(row.priority!==null&&row.priority!==undefined?{priority:row.priority}:{}),...(row.modules?.length?{modules:row.modules}:{})};
+}
+
+/** Public planning dates include disabled festivals; activation remains server-controlled. */
+export async function fetchPublicEventCalendar():Promise<PublicEventSchedule[]>{
+  if(!supabase)return [];
+  const {data,error}=await supabase.rpc('public_event_calendar');
+  if(error)throw error;
+  return ((data as CalendarEventRow[]|null)??[]).map(row=>({
+    eventId:row.event_id,
+    name:row.name,
+    ...(row.starts_at?{startsAtMs:Date.parse(row.starts_at)}:{}),
+    ...(row.ends_at?{endsAtMs:Date.parse(row.ends_at)}:{}),
+    ...(row.grace_ends_at?{graceEndsAtMs:Date.parse(row.grace_ends_at)}:{}),
+    priority:row.priority??0,
+  }));
 }

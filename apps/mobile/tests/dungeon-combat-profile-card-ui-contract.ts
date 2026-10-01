@@ -31,7 +31,7 @@ ok(stage.includes('playbackAdvanceDelayMs')&&stage.includes('playbackCastDisplay
 ok(stage.includes('bossPhaseLabel')&&stage.includes('bossCast={boss?bossCast:undefined}'),'Vertical battlefield must feed phase and cast state into the boss card');
 ok(card.includes('AnimatedHealthBar')&&card.includes('animateHealth'),'Combat HP bars must animate between authoritative replay states and honor reduced motion');
 ok(card.includes('BARRIER +')&&card.includes('barrierTrack'),'Party combat cards must show active replay-time barriers');
-ok(card.includes("boss?'BOSS HP':'HP'")&&card.includes('enemyHpTrack'),'Enemy and boss cards must show replay-time HP');
+ok(card.includes('boss?st("BOSS HP"):st("HP")')&&card.includes('enemyHpTrack'),'Enemy and boss cards must show localized replay-time HP');
 ok(stage.includes('playbackCombatantState')&&stage.includes('currentHp={state?.hp}')&&stage.includes('combatShield={state?.shield??0}'),'Battlefield must drive each replay enemy HP and shield from authoritative snapshots');
 ok(stage.includes('ready:state.hp>0')&&stage.includes('currentHp:state.hp'),'Party downed and HP state must follow the current replay cue rather than final run state');
 ok(card.includes('LOW')&&card.includes('criticalInline'),'Party cards must call out critical health inline without adding another card row');
@@ -40,13 +40,13 @@ ok(stage.includes('bossPhases={boss?run.bossMechanic?.telegraph?.phases:undefine
 ok(card.includes('CombatStatusStrip')&&card.includes('statusStrip'),'Combat cards must render a compact status-effect strip');
 ok(card.includes("return 'DOT'")&&card.includes("return 'HOT'")&&card.includes("'VULN'")&&card.includes("'HEAL↓'")&&card.includes("'HASTE'"),'Status pills must distinguish damage, healing-pressure, healing and common buff states');
 ok(card.includes('visibleLimit=Math.max(1,gemProc?limit-1:limit)')&&card.includes('statusOverflow'),'Status strips must cap visible pills by responsive layout budget and show overflow rather than expand the card');
-ok(card.includes('Effect Gem proc')&&card.includes('>GEM<'),'Current Effect Gem procs must receive compact card feedback without becoming persistent fake buffs');
+ok(card.includes('Effect Gem proc')&&card.includes('{st("GEM")}'),'Current Effect Gem procs must receive localized compact card feedback without becoming persistent fake buffs');
 ok(stage.includes('playbackCombatantStatuses')&&stage.includes('statuses={statuses}'),'Battlefield must resolve status windows independently for enemy and party cards');
 ok(card.includes('GEM_STATUS_CODES')&&card.includes("'gem:momentum':'MOM'")&&card.includes("'gem:flow':'FLOW'")&&card.includes("'gem:unyielding':'UNY'"),'Persistent Effect Gem stacks need compact named combat codes');
 ok(card.includes("'gem:retaliation_ready':'RETAL'")&&card.includes("'gem:benediction_charge':'BENE'")&&card.includes("'gem:opportunist_ready':'OPP'"),'Ready, charge and harmful Effect Gem states need distinct compact codes');
 ok(card.includes("status.source==='gem'")&&card.includes('styles.statusGem'),'Persistent beneficial Effect Gem states must use the gem visual treatment while harmful marks remain harmful');
 ok(stage.includes('DUNGEON_PLAYBACK_SPEEDS')&&stage.includes('playbackSpeed')&&stage.includes('1×')===false,'Dungeon replay must use shared 1x/2x/4x speed controls rather than hard-coded timing labels');
-ok(stage.includes('accessibilityLabel="Skip combat replay to result"')&&stage.includes('setCueIndex(Math.max(0,cues.length-1))'),'Dungeon replay must offer a direct skip-to-result control');
+ok(stage.includes('accessibilityLabel={st("Skip combat replay to result")}')&&stage.includes('setCueIndex(Math.max(0,cues.length-1))'),'Dungeon replay must offer a localized direct skip-to-result control');
 ok(stage.includes('playbackAdvanceDelayMs(current,next,playbackSpeed)')&&stage.includes('playbackCastDisplayMs(currentBossCast,playbackSpeed)'),'Replay speed must scale both cue and boss-cast timing');
 ok(stage.includes('playbackVisualDurationMs')&&stage.includes('fxDuration'),'Replay speed must scale combat VFX presentation too');
 ok(card.includes('FOCUS →')&&card.includes('bossCast.targetLabel'),'Boss cast card must show the authoritative focus target when available');
@@ -54,9 +54,9 @@ ok(stage.includes('targetLabel:currentBossCast.targetName?.trim()'),'Battlefield
 ok(stage.includes('PARTY CONTRIBUTION')&&stage.includes('authoritative totals'),'Completed combat replay must show a compact factual contribution recap');
 ok(stage.includes("role==='tank'")&&stage.includes('TAKEN')&&stage.includes("role==='support'")&&stage.includes('HEAL'),'Contribution recap must emphasize role-relevant factual metrics');
 ok(stage.includes('DMG')&&stage.includes('INT')&&!stage.includes('MVP'),'Contribution recap must show damage and interrupts without ranking players');
-ok(stage.includes("accessibilityLabel={paused?'Resume combat replay':'Pause combat replay'}")&&stage.includes('paused||cueIndex>=cues.length-1'),'Replay must support pause/resume by stopping automatic cue advance');
-ok(stage.includes("complete?'ENCOUNTER RECAP':paused?'PAUSED':'NOW PLAYING'")&&stage.includes("paused?'▶ Resume':'Ⅱ Pause'"),'Paused replay state must be visibly explicit');
-ok(stage.includes("accessibilityLabel={showLog?'Hide combat battle log':'Show combat battle log'}")&&stage.includes("recent.length&&(!complete||showLog)"),'Completed replay must collapse the detailed battle log by default');
+ok(stage.includes('accessibilityLabel={paused?st("Resume combat replay"):st("Pause combat replay")}')&&stage.includes('paused||cueIndex>=cues.length-1'),'Replay must support localized pause/resume by stopping automatic cue advance');
+ok(stage.includes('complete?st("ENCOUNTER RECAP"):paused?st("PAUSED"):st("NOW PLAYING")')&&stage.includes('paused?st("▶ Resume"):st("Ⅱ Pause")'),'Paused replay state must be visibly explicit and localized');
+ok(stage.includes('accessibilityLabel={showLog?st("Hide combat battle log"):st("Show combat battle log")}')&&stage.includes("recent.length&&(!complete||showLog)"),'Completed replay must collapse the detailed battle log by default');
 ok(stage.includes('setPaused(false);setShowLog(false);setCueIndex(0)'),'Replay encounter must reset pause and collapsed-log state');
 ok(!stage.includes('member:{minHeight:126')&&!stage.includes('avatarFrame:{height:44')&&!stage.includes('castWarning:{minHeight:34'),'Dungeon stage must not retain obsolete pre-profile-card combat styles');
 ok(!card.includes('No companion assist')&&!card.includes('noAssist:'),'Party cards must not spend vertical space on empty companion placeholders');
@@ -87,15 +87,15 @@ ok(inspect.includes('BARRIER')&&inspect.includes('COMPANION')&&inspect.includes(
 ok(inspect.includes('INTERRUPTIBLE CAST')&&inspect.includes('Focus →'),'Boss inspection must retain cast interruptibility and authoritative focus target context');
 // Paused inspection stepping stays bounded to the authoritative replay cue list.
 ok(stage.includes('stepReplay=(delta:-1|1)')&&stage.includes('setCueIndex(value=>Math.max(0,Math.min(cues.length-1,value+delta)))'),'Paused combat inspection must step safely between authoritative replay cues');
-ok(stage.includes('accessibilityLabel="Previous combat event"')&&stage.includes('accessibilityLabel="Next combat event"'),'Paused replay must expose accessible previous/next event controls');
+ok(stage.includes('accessibilityLabel={st("Previous combat event")}')&&stage.includes('accessibilityLabel={st("Next combat event")}'),'Paused replay must expose localized accessible previous/next event controls');
 ok(stage.includes('disabled={cueIndex<=0}')&&stage.includes('disabled={cueIndex>=cues.length-1}'),'Event-step controls must clamp at replay boundaries');
 ok(stage.includes('(!complete||paused)&&!reduceMotion&&cues.length>1'),'Paused inspection must retain controls even when manually stepped onto the final cue');
 ok(stage.includes('if(!reduceMotion&&cues.length>1)setPaused(true)'),'Inspecting any replay moment, including the final result, must enter a step-capable paused state');
 for(const enemy of ['The Hollow Regent','The Coinbound Captain','The Rimebell Colossus','Veilshade Stalker','Ledger Hexer','Bellfrost Spirit'])ok(enemyArt.toLowerCase().includes(enemy.toLowerCase()),enemy+' must have registered encounter artwork');
 ok(enemyArt.includes("require('../../assets/dungeon-enemies-v1/"),'Enemy artwork must be bundled as static Metro assets');
 
-ok(art.includes('startingCharacterArtwork[body].front'),'Dungeon combat must use the neutral base character until replacement skins are ready');
-ok(!art.includes('selectedSkinId'),'Dungeon combat art must remain class-locked rather than use player cosmetic skin selection');
+ok(art.includes('classIconArtwork[classId as ClassId]'),'Dungeon combat uses class profile icons');
+ok(!art.includes('profileIconId'),'Dungeon combat art must remain class-locked rather than use player cosmetic icon selection');
 ok(art.includes("body:BodyPresentation='male'"),'Combat art must preserve male/female presentation when available');
 
 console.log('PASS: dungeon combat uses compact profile-derived cards with fixed class artwork and combat-first information');

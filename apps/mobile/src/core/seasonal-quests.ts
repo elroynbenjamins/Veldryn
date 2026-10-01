@@ -1,9 +1,39 @@
 import {CLASSES} from '../content/classes';
-import {GameState} from './types';
+import type {GameState} from './types';
 import {hash32} from './rng';
 
 export type SeasonalPeriod='daily'|'weekly'|'monthly';
 export type ContractTag='combat'|'gathering'|'crafting'|'exploration'|'equipment'|'boss';
+export type SeasonalActivity=Exclude<ContractTag,'equipment'>;
+export type SeasonalProgress=Partial<Record<SeasonalPeriod,{key:string;counts:Partial<Record<SeasonalActivity,number>>}>>;
+const periods:SeasonalPeriod[]=['daily','weekly','monthly'];
+const activityTags:SeasonalActivity[]=['combat','gathering','crafting','exploration','boss'];
+
+/** Additive save field: legacy saves start at zero rather than inheriting lifetime XP. */
+export function normalizeSeasonalProgress(raw:unknown):SeasonalProgress{
+ const result:SeasonalProgress={};
+ if(!raw||typeof raw!=='object')return result;
+ for(const period of periods){
+  const row=(raw as Record<string,any>)[period];
+  if(!row||typeof row.key!=='string'||row.key.length>32)continue;
+  const counts:Partial<Record<SeasonalActivity,number>>={};
+  for(const tag of activityTags){const value=row.counts?.[tag];if(typeof value==='number'&&Number.isFinite(value)&&value>=0)counts[tag]=Math.min(Number.MAX_SAFE_INTEGER,Math.floor(value));}
+  result[period]={key:row.key,counts};
+ }
+ return result;
+}
+
+/** Credit completed actions on settlement, matching the game's reward-claim timing. */
+export function recordSeasonalActivity(state:GameState,tag:SeasonalActivity,units:number,nowMs:number):GameState{
+ if(!state.character||!Number.isFinite(units)||units<1)return state;
+ const progress=normalizeSeasonalProgress(state.account.seasonalContractProgress),date=new Date(nowMs);
+ for(const period of periods){
+  const key=periodKey(period,date),old=progress[period],counts=old?.key===key?{...old.counts}:{};
+  counts[tag]=Math.min(Number.MAX_SAFE_INTEGER,(counts[tag]??0)+Math.floor(units));
+  progress[period]={key,counts};
+ }
+ return {...state,account:{...state.account,seasonalContractProgress:progress}};
+}
 export type QuestRarity='common'|'uncommon'|'rare'|'epic'|'legendary';
 export const QUEST_RARITIES:Record<QuestRarity,{label:string;color:string;multiplier:number;cache:string}>={
   common:{label:'Common',color:'#93a4ba',multiplier:1,cache:'Field cache'},uncommon:{label:'Uncommon',color:'#7fc59b',multiplier:1.3,cache:'Explorer cache'},rare:{label:'Rare',color:'#7bb7df',multiplier:1.7,cache:'Aster cache'},epic:{label:'Epic',color:'#c79cff',multiplier:2.25,cache:'Oathbound cache'},legendary:{label:'Legendary',color:'#f0a24b',multiplier:3,cache:'Crown cache'},
@@ -32,21 +62,18 @@ function rarityFor(period:SeasonalPeriod,key:string,index:number,classId:string)
  return roll<48?'rare':roll<88?'epic':'legendary';
 }
 function cacheFor(rarity:QuestRarity){return rarity==='common'?['MOSS_FIBER',4] as const:rarity==='uncommon'?['COPPER_ORE',5] as const:rarity==='rare'?['ASTER_IRON_ORE',4] as const:rarity==='epic'?['OATHGLASS_SHARD',3] as const:['OATHGLASS_SHARD',7] as const}
-function contractProgress(state:GameState,tag:ContractTag){
- const character=state.character!;
- if(tag==='combat')return Math.floor(character.xp/80);
- if(tag==='gathering')return Math.floor(state.skills.reduce((sum,skill)=>sum+skill.xp,0)/40);
- if(tag==='crafting')return Object.values(character.equipment).filter(Boolean).length+(character.craftedNoviceItemIds??[]).length;
- if(tag==='equipment')return Object.values(character.equipment).filter(Boolean).length;
- if(tag==='exploration')return state.unlockedMonsterIds.length;
- return state.defeatedBossIds.length;
+function contractProgress(state:GameState,tag:ContractTag,period:SeasonalPeriod,key:string){
+ if(tag==='equipment')return Object.values(state.character!.equipment).filter(Boolean).length;
+ const progress=state.account.seasonalContractProgress?.[period];
+ return progress?.key===key?progress.counts[tag]??0:0;
 }
 export function seasonalQuestBoard(state:GameState,period:SeasonalPeriod,date=new Date()):SeasonalQuest[]{
  const character=state.character;if(!character)return [];
  const classDef=CLASSES.find(item=>item.id===character.classId)!;const key=periodKey(period,date),count=period==='daily'?2:period==='weekly'?3:4;
  const role=roleTemplates[classDef.role],specific=classTemplates[character.classId];const rows=[specific,...Array.from({length:count},(_,index)=>pick(role,key,index))].slice(0,count);
  const volume=period==='daily'?.45:period==='weekly'?1:2;
- return rows.map((row,index)=>{const [name,description,base,tag]=row,rarity=rarityFor(period,key,index,character.classId),meta=QUEST_RARITIES[rarity],required=Math.max(1,Math.round(base*volume)),progress=Math.min(required,contractProgress(state,tag)),[rewardItemId,baseQty]=cacheFor(rarity);
+ return rows.map((row,index)=>{const [name,templateDescription,base,tag]=row,rarity=rarityFor(period,key,index,character.classId),meta=QUEST_RARITIES[rarity],required=Math.min(tag==='equipment'?10:Infinity,Math.max(1,Math.round(base*volume))),progress=Math.min(required,contractProgress(state,tag,period,key)),[rewardItemId,baseQty]=cacheFor(rarity);
+   const description=tag==='combat'?'Defeat {n} monsters this period.':tag==='gathering'?'Complete {n} gathering actions this period.':tag==='crafting'?'Complete {n} crafts this period.':tag==='exploration'?'Complete {n} exploration route actions this period.':templateDescription;
    const baseGold=period==='daily'?Math.max(20,base*2):period==='weekly'?base*8:Math.max(300,base*20),baseXp=period==='daily'?Math.max(40,base*4):period==='weekly'?base*15:Math.max(600,base*40);
    return {id:`${period.toUpperCase()}_${key}_${index}`,period,name:name.replace('{n}',String(required)),description:description.replace('{n}',String(required)),required,progress,rewardGold:Math.round(baseGold*meta.multiplier),rewardXp:Math.round(baseXp*meta.multiplier),rewardItemId,rewardItemQty:Math.max(1,Math.round(baseQty*meta.multiplier)),className:classDef.name,tag,rarity};
  });

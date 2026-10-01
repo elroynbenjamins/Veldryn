@@ -8,8 +8,16 @@ import type {
   RecruitmentFocus,
   RecruitmentPostType,
   PartyEventView,
+  RecruitmentActivityKind,
+  RecruitmentGoal,
+  RecruitmentStartMode,
+  RecruitmentVoiceMode,
+  RecruitmentExperience,
+  RecruitmentRoleCounts,
 } from '../core/party-social';
+import {recruitmentStructuredTags} from '../core/party-social';
 import {supabase} from './supabase';
+import type {PlayerBadgeIdentity} from '../core/player-badges';
 import {guildIdentities} from './social';
 import type {PlayerNameStylePreference} from '../core/player-name-style';
 
@@ -34,6 +42,15 @@ export interface PublishRecruitmentInput {
   partyId?: string;
   guildId?: string;
   ownerCharacterId?: string;
+  activityKind?: RecruitmentActivityKind;
+  goal?: RecruitmentGoal;
+  startMode?: RecruitmentStartMode;
+  sessionMinutes?: number;
+  voiceMode?: RecruitmentVoiceMode;
+  experience?: RecruitmentExperience;
+  flexibleRoles?: boolean;
+  scheduledAt?: string;
+  requiredRoleCounts?: RecruitmentRoleCounts;
 }
 
 export interface PartySocialRepository {
@@ -60,10 +77,10 @@ export interface PartyRanking {event_key:string;name:string;party_id:string;norm
 function client(){if(!supabase)throw new Error('Online services are not configured.');return supabase;}
 async function rpc<T>(name:string,args:Record<string,unknown>={}):Promise<T>{const {data,error}=await client().rpc(name,args);if(error)throw new Error(error.message);return data as T;}
 export function partyCommandKey(){return `party-${Date.now()}-${Math.random().toString(36).slice(2,14)}`;}
-export const partySocialSnapshot=()=>rpc<PartySocialSnapshot>('party_social_state_v16');
+export async function partySocialSnapshot(){const snapshot=await rpc<PartySocialSnapshot>('party_social_state_v16');if(!snapshot.party)return snapshot;const identities=await guildIdentities(snapshot.party.members.map(member=>member.accountId));return {...snapshot,party:{...snapshot.party,members:snapshot.party.members.map(member=>({...member,playerBadges:identities.get(member.accountId)?.player_badges}))}};}
 type RecruitmentRow={id:string;post_type:RecruitmentCardView['postType'];owner_account_id:string;owner_name?:string;party_id?:string;guild_id?:string;guild_name?:string;title:string;body:string;roles:PartyRole[];focus:RecruitmentFocus;activity_tags:string[];playstyle_tags:string[];availability_tags:string[];guild_interest_tags:string[];activity_level?:RecruitmentCardView['activityLevel'];current_objective?:string;open_spots?:number;actual_open_spots?:number;language?:string;region?:string;min_combat_level?:number;min_total_level?:number;expires_at:string;status:RecruitmentCardView['status']};
-function card(row:RecruitmentRow):RecruitmentCardView{return {id:row.id,postType:row.post_type,ownerAccountId:row.owner_account_id,ownerName:row.owner_name??'Your advert',partyId:row.party_id??undefined,guildId:row.guild_id??undefined,guildName:row.guild_name??undefined,title:row.title,body:row.body,roles:row.roles,focus:row.focus,activityTags:row.activity_tags,playstyleTags:row.playstyle_tags,availabilityTags:row.availability_tags,guildInterestTags:row.guild_interest_tags,activityLevel:row.activity_level??undefined,currentObjective:row.current_objective??undefined,openSpots:row.actual_open_spots??row.open_spots??undefined,language:row.language??undefined,region:row.region??undefined,minCombatLevel:row.min_combat_level??undefined,minTotalLevel:row.min_total_level??undefined,expiresAtMs:Date.parse(row.expires_at),status:row.status};}
-async function cardsWithGuildIdentity(rows:RecruitmentRow[]){const identities=await guildIdentities(rows.map(row=>row.owner_account_id));return rows.map(row=>{const view=card(row),identity=identities.get(row.owner_account_id);return {...view,guildTag:identity?.guild_tag??null,guildTagColorId:identity?.guild_tag_color_id??null};});}
+function card(row:RecruitmentRow):RecruitmentCardView{const tags=recruitmentStructuredTags({activityTags:row.activity_tags,availabilityTags:row.availability_tags,playstyleTags:row.playstyle_tags});return {id:row.id,postType:row.post_type,ownerAccountId:row.owner_account_id,ownerName:row.owner_name??'Your advert',partyId:row.party_id??undefined,guildId:row.guild_id??undefined,guildName:row.guild_name??undefined,title:row.title,body:row.body,roles:row.roles,focus:row.focus,activityTags:row.activity_tags,playstyleTags:row.playstyle_tags,availabilityTags:row.availability_tags,guildInterestTags:row.guild_interest_tags,activityLevel:row.activity_level??undefined,currentObjective:row.current_objective??undefined,openSpots:row.actual_open_spots??row.open_spots??undefined,language:row.language??undefined,region:row.region??undefined,minCombatLevel:row.min_combat_level??undefined,minTotalLevel:row.min_total_level??undefined,expiresAtMs:Date.parse(row.expires_at),status:row.status,...tags};}
+async function cardsWithGuildIdentity(rows:RecruitmentRow[]){const identities=await guildIdentities(rows.map(row=>row.owner_account_id));return rows.map(row=>{const view=card(row),identity=identities.get(row.owner_account_id);return {...view,guildTag:identity?.guild_tag??null,guildTagColorId:identity?.guild_tag_color_id??null,playerBadges:identity?.player_badges};});}
 export const partySocialRepository:PartySocialRepository={
  getMyParty:async()=>(await partySocialSnapshot()).party,
  createParty:async input=>{await rpc('create_persistent_party_v16',{p_leader_character_id:input.characterId,p_role:input.role,p_focus:input.focus,p_idempotency_key:input.idempotencyKey});const state=await partySocialSnapshot();if(!state.party)throw new Error('Party no longer active.');return state.party;},
@@ -72,7 +89,7 @@ export const partySocialRepository:PartySocialRepository={
  getPartyContracts:async partyId=>{const state=await partySocialSnapshot();return state.party?.id===partyId?state.contracts:[];},
  browseRecruitment:async filters=>cardsWithGuildIdentity(await rpc<RecruitmentRow[]>('browse_recruitment_v16',{p_filters:filters})),
  publishRecruitment:async input=>(await cardsWithGuildIdentity([await rpc<RecruitmentRow>('publish_recruitment_post_v16',{
-  p_post_type:input.postType,p_title:input.title,p_body:input.body,p_duration_days:input.durationDays??null,p_owner_character_id:input.ownerCharacterId??null,p_guild_id:input.guildId??null,p_party_id:input.partyId??null,p_roles:input.roles??[],p_focus:input.focus??'any',p_activity_tags:input.activityTags??[],p_playstyle_tags:input.playstyleTags??[],p_availability_tags:input.availabilityTags??[],p_guild_interest_tags:input.guildInterestTags??[],p_activity_level:input.activityLevel??null,p_current_objective:input.currentObjective??null,p_open_spots:input.openSpots??null,p_language:input.language??null,p_region:input.region??null,p_min_combat_level:input.minCombatLevel??null,p_min_total_level:input.minTotalLevel??null})]))[0],
+  p_post_type:input.postType,p_title:input.title,p_body:input.body,p_duration_days:input.durationDays??null,p_owner_character_id:input.ownerCharacterId??null,p_guild_id:input.guildId??null,p_party_id:input.partyId??null,p_roles:input.roles??[],p_focus:input.focus??'any',p_activity_tags:[...(input.activityTags??[]),...(input.activityKind?[`kind:${input.activityKind}`]:[]),...(input.goal?[`goal:${input.goal}`]:[])],p_playstyle_tags:[...(input.playstyleTags??[]),...(input.voiceMode&&input.voiceMode!=='none'?[`voice:${input.voiceMode}`]:[]),...(input.experience&&input.experience!=='any'?[`experience:${input.experience}`]:[]),...(input.flexibleRoles?['roles:flexible']:[]),...Object.entries(input.requiredRoleCounts??{}).filter(([,count])=>Number(count)>0).map(([role,count])=>`need:${role}:${count}`)],p_availability_tags:[...(input.availabilityTags??[]),...(input.startMode?[`start:${input.startMode}`]:[]),...(input.sessionMinutes?[`session:${input.sessionMinutes}`]:[]),...(input.scheduledAt?[`at:${input.scheduledAt}`]:[])],p_guild_interest_tags:input.guildInterestTags??[],p_activity_level:input.activityLevel??null,p_current_objective:input.currentObjective??null,p_open_spots:input.openSpots??null,p_language:input.language??null,p_region:input.region??null,p_min_combat_level:input.minCombatLevel??null,p_min_total_level:input.minTotalLevel??null})]))[0],
  refreshRecruitment:async(id,days)=>card(await rpc<RecruitmentRow>('refresh_recruitment_post',{p_post_id:id,p_duration_days:days??null})),
  closeRecruitment:async id=>{await rpc('close_recruitment_post_v16',{p_post_id:id});},
 };
@@ -87,8 +104,12 @@ export const transferPartyLeadership=(partyId:string,targetAccountId:string)=>rp
 export const removePartyMember=(partyId:string,targetAccountId:string)=>rpc<'removed'>('remove_party_member_v1',{p_party_id:partyId,p_target_account_id:targetAccountId});
 export const cancelPartyInvitation=(invitationId:string)=>rpc<'cancelled'>('cancel_party_invitation_v1',{p_invitation_id:invitationId});
 export const disbandParty=(partyId:string)=>rpc<'disbanded'>('disband_party_v1',{p_party_id:partyId});
+export type RecruitmentMatchAlert={id:string;post_type:RecruitmentPostType;title:string;body:string;created_at:string;owner_name?:string;actual_open_spots?:number;roles:PartyRole[];focus:RecruitmentFocus};
+export const setRecruitmentAlertSubscription=(filters:RecruitmentClientFilters,enabled:boolean)=>rpc('set_recruitment_alert_subscription_v1',{p_filters:filters,p_enabled:enabled});
+export const recruitmentMatchAlerts=()=>rpc<RecruitmentMatchAlert[]>('recruitment_match_alerts_v1',{p_limit:20});
+export const ackRecruitmentMatchAlerts=()=>rpc('ack_recruitment_match_alerts_v1');
 export const sendPartyChat=(id:string,body:string,key:string)=>rpc('send_persistent_party_chat_v16',{p_party_id:id,p_body:body,p_idempotency_key:key});
-export type PartyChatMessage={id:string;account_id:string;sender_name:string;body:string;created_at:string;guild_tag?:string|null;guild_tag_color_id?:string|null;player_name_style?:PlayerNameStylePreference|null};
+export type PartyChatMessage={id:string;account_id:string;sender_name:string;body:string;created_at:string;guild_tag?:string|null;guild_tag_color_id?:string|null;player_name_style?:PlayerNameStylePreference|null;player_badges?:PlayerBadgeIdentity};
 export async function partyChatMessages(id:string){const {data,error}=await client().from('chat_messages').select('id,account_id,sender_name,body,created_at').eq('channel_type','party').eq('channel_id',id).order('created_at',{ascending:false}).limit(50);if(error)throw error;const rows=(data??[]).reverse() as PartyChatMessage[],identities=await guildIdentities(rows.map(row=>row.account_id));return rows.map(row=>({...row,...identities.get(row.account_id)}));}
 
 export async function activePartyEvent(): Promise<PartyEventView|null>{

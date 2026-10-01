@@ -1,5 +1,5 @@
 export type ExtendedProfileVisibility='public'|'guild'|'private';
-export type ProfileCollectionKind='item'|'pet'|'companion'|'skin'|'background'|'border';
+export type ProfileCollectionKind='item'|'pet'|'companion'|'profile_icon'|'background'|'border';
 export interface ProfileCollectionRef{kind:ProfileCollectionKind;id:string}
 export interface ProfileExtensionState{schemaVersion:43;accountId:string;revision:number;visibility:ExtendedProfileVisibility;worldFeedOptOut:boolean;selectedCharacterId?:string;bio:string;favoriteSkillId?:string;backgroundId?:string;borderId?:string;activePetId?:string;favoriteCompanionId?:string;achievementShowcaseIds:string[];collectionShowcase:ProfileCollectionRef[];recordShowcaseIds:string[];masteryShowcaseActionIds:string[];updatedAtMs:number}
 export interface ProfileOwnershipSnapshot{characterIds:string[];skillIds:string[];backgroundIds:string[];borderIds:string[];petIds:string[];companionIds:string[];unlockedAchievementIds:string[];personalRecordIds:string[];masteredProfessionActionIds:string[];ownedCollectionRefs:ProfileCollectionRef[]}

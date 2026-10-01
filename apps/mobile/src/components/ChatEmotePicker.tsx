@@ -1,3 +1,4 @@
+import {useSocialText} from '../i18n/social';
 import {useEffect,useMemo,useState} from 'react';
 import {Image,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {GameButton} from './GameButton';
@@ -7,9 +8,10 @@ import {chatEmoteArtwork} from '../theme/chat-emote-assets';
 import {availableChatEmotes,CHAT_EMOTE_TRAY_SIZE,CHAT_MAX_EMOTES_PER_MESSAGE,defaultChatEmoteTray,resolvedChatEmoteTray,type ChatEmoteDef} from '../core/chat-emotes';
 
 export function ChatEmotePicker({onPick,unlockedIds=[],trayIds=[],bodyPresentation='male',usedCount=0,onTrayChange,settingsMode=false}:{onPick:(token:string)=>void;unlockedIds?:readonly string[];trayIds?:readonly string[];bodyPresentation?:'male'|'female';usedCount?:number;onTrayChange?:(ids:string[])=>void|Promise<void>;settingsMode?:boolean}){
+ const st=useSocialText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),stackControls=width<360||fontScale>=1.25;
  const [open,setOpen]=useState(false),[editing,setEditing]=useState(false),[draft,setDraft]=useState<string[]>([]);
- const available=useMemo(()=>availableChatEmotes(unlockedIds),[unlockedIds]);
+ const available=useMemo(()=>availableChatEmotes(unlockedIds,bodyPresentation),[unlockedIds,bodyPresentation]);
  const byId=useMemo(()=>new Map(available.map(row=>[row.id,row])),[available]);
  const resolved=useMemo(()=>resolvedChatEmoteTray(trayIds,unlockedIds,bodyPresentation),[trayIds,unlockedIds,bodyPresentation]);
  useEffect(()=>{if(!editing)setDraft(resolved)},[editing,resolved.join('|')]);
@@ -18,14 +20,14 @@ export function ChatEmotePicker({onPick,unlockedIds=[],trayIds=[],bodyPresentati
  const reset=()=>setDraft(defaultChatEmoteTray(bodyPresentation));
  const save=async()=>{if(draft.length!==CHAT_EMOTE_TRAY_SIZE)return;await onTrayChange?.(draft);setEditing(false);};
  return <View>
-  <Pressable accessibilityRole="button" accessibilityLabel="Open emote tray" accessibilityState={{expanded:open}} onPress={()=>{setOpen(value=>!value);setEditing(settingsMode)}} style={({pressed})=>[s.toggle,settingsMode&&s.settingsToggle,pressed&&s.pressed]}><Text style={s.toggleText}>{settingsMode?'Edit emote tray':'☺ Emotes'}</Text><Text style={s.toggleMeta}>{settingsMode?resolved.length+'/8 selected':'⌄'}</Text></Pressable>
+  <Pressable accessibilityRole="button" accessibilityLabel={st("Open emote tray")} accessibilityState={{expanded:open}} onPress={()=>{setOpen(value=>!value);setEditing(settingsMode)}} style={({pressed})=>[s.toggle,settingsMode&&s.settingsToggle,pressed&&s.pressed]}><Text style={s.toggleText}>{settingsMode?st("Edit emote tray"):st("☺ Emotes")}</Text>{settingsMode&&<Text style={s.toggleMeta}>{st('{count}/{total} selected',{count:resolved.length,total:8})}</Text>}</Pressable>
   {open&&<View style={s.picker}>
-    <View style={[s.headingRow,stackControls&&s.headingRowStack]}><View><Text style={s.heading}>{editing?'Choose your 8 emotes':'Quick emotes'}</Text><Text style={s.count}>{editing?draft.length+'/'+CHAT_EMOTE_TRAY_SIZE+' selected':'8 slots · '+Math.min(usedCount,CHAT_MAX_EMOTES_PER_MESSAGE)+'/'+CHAT_MAX_EMOTES_PER_MESSAGE+' used'}</Text></View><Pressable accessibilityRole="button" accessibilityLabel={editing?'Cancel emote tray editing':'Edit emote tray'} onPress={()=>{setDraft(resolved);setEditing(value=>!value)}} style={[s.editButton,stackControls&&s.editButtonStack]}><Text style={s.editText}>{editing?'Cancel':'Edit 8'}</Text></Pressable></View>
+    <View style={[s.headingRow,stackControls&&s.headingRowStack]}><View><Text style={s.heading}>{editing?st("Choose your 5 emotes"):st("Quick emotes")}</Text><Text style={s.count}>{editing?st('{count}/{total} selected',{count:draft.length,total:CHAT_EMOTE_TRAY_SIZE}):st('5 slots · {count}/{total} used',{count:Math.min(usedCount,CHAT_MAX_EMOTES_PER_MESSAGE),total:CHAT_MAX_EMOTES_PER_MESSAGE})}</Text></View><Pressable accessibilityRole="button" accessibilityLabel={editing?st("Cancel emote tray editing"):st("Edit emote tray")} onPress={()=>{setDraft(resolved);setEditing(value=>!value)}} style={[s.editButton,stackControls&&s.editButtonStack]}><Text style={s.editText}>{editing?st("Cancel"):st("Edit 5")}</Text></Pressable></View>
     {!editing?<View style={s.quickGrid}>{selected.map(id=><EmoteButton key={id} emote={byId.get(id)} id={id} disabled={usedCount>=CHAT_MAX_EMOTES_PER_MESSAGE} onPress={()=>{onPick(`:${id}:`);setOpen(false)}} selected={false}/>)}</View>:<>
-      <View style={s.quickGrid}>{draft.map((id,index)=><EmoteButton key={id} emote={byId.get(id)} id={id} labelPrefix={'Slot '+(index+1)+': '} selected onPress={()=>toggle(id)}/>)}</View>
-      <Text style={s.help}>Tap selected emotes to remove them, then choose replacements below. Save becomes available when all 8 slots are filled.</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.catalog}>{available.map(emote=><EmoteButton key={emote.id} emote={emote} id={emote.id} selected={draft.includes(emote.id)} disabled={!draft.includes(emote.id)&&draft.length>=CHAT_EMOTE_TRAY_SIZE} onPress={()=>toggle(emote.id)}/>)}</ScrollView>
-      <View style={[s.actions,stackControls&&s.actionsStack]}><View style={[s.action,stackControls&&s.actionStack]}><GameButton compact title="Reset" tone="secondary" onPress={reset}/></View><View style={[s.action,stackControls&&s.actionStack]}><GameButton compact title="Save 8" disabled={draft.length!==CHAT_EMOTE_TRAY_SIZE} onPress={()=>void save()}/></View></View>
+      <View style={s.quickGrid}>{draft.map((id,index)=><EmoteButton key={id} emote={byId.get(id)} id={id} labelPrefix={st('Slot {slot}: ',{slot:index+1})} selected onPress={()=>toggle(id)}/>)}</View>
+      <Text style={s.help}>{st("Tap selected emotes to remove them, then choose replacements below. Save becomes available when all 5 slots are filled.")}</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.catalog} showsVerticalScrollIndicator={false}>{available.map(emote=><EmoteButton key={emote.id} emote={emote} id={emote.id} selected={draft.includes(emote.id)} disabled={!draft.includes(emote.id)&&draft.length>=CHAT_EMOTE_TRAY_SIZE} onPress={()=>toggle(emote.id)}/>)}</ScrollView>
+      <View style={[s.actions,stackControls&&s.actionsStack]}><View style={[s.action,stackControls&&s.actionStack]}><GameButton compact title={st("Reset")} tone="secondary" onPress={reset}/></View><View style={[s.action,stackControls&&s.actionStack]}><GameButton compact title={st("Save 5")} disabled={draft.length!==CHAT_EMOTE_TRAY_SIZE} onPress={()=>void save()}/></View></View>
     </>}
   </View>}
  </View>;

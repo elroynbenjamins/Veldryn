@@ -1,3 +1,5 @@
+import {useGameLanguage} from '../i18n/GameLanguageProvider';
+import {companionContent,companionMessage,companionTranslator,companionLabel,companionError} from '../i18n/companions';
 import {useEffect,useMemo,useRef} from 'react';
 import {Animated,StyleSheet,Text,View} from 'react-native';
 import {C,radii,spacing,typography} from '../theme/theme';
@@ -23,6 +25,8 @@ function presentation(message:string){
 }
 
 export function CompanionProgressMoment({message,reduceMotion=false}:{message:string;reduceMotion?:boolean}){
+ const language=useGameLanguage(),t=companionTranslator(language),label=(value:string)=>companionLabel(language,value);
+
  const value=useRef(new Animated.Value(1)).current,copy=useMemo(()=>presentation(message),[message]);
  useEffect(()=>{
   value.stopAnimation();
@@ -33,7 +37,7 @@ export function CompanionProgressMoment({message,reduceMotion=false}:{message:st
  },[message,reduceMotion,value]);
  return <Animated.View accessibilityLiveRegion="polite" style={[s.card,{opacity:value,transform:[{scale:value}]}]}>
   <View style={s.iconShell}><Text style={s.icon}>{copy.icon}</Text></View>
-  <View style={s.flex}><Text style={s.heading}>{copy.heading}</Text><Text style={s.detail}>{copy.detail||'Progress saved.'}</Text></View>
+  <View style={s.flex}><Text style={s.heading}>{label(copy.heading)}</Text><Text style={s.detail}>{companionMessage(language,copy.detail)||t('Progress saved.')}</Text></View>
  </Animated.View>;
 }
 

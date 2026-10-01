@@ -31,7 +31,7 @@ for(const profile of ['preview','production']){
  equal(env.EXPO_PUBLIC_COOP_ROGUELITE_V1,'true',profile+' must enable online co-op');
  equal(env.EXPO_PUBLIC_COOP_API_URL,'https://nyjwigipamnvpdvpauuv.supabase.co/functions/v1/coop',profile+' must target the deployed co-op Edge Function');
  equal(env.EXPO_PUBLIC_SUPABASE_URL,'https://nyjwigipamnvpdvpauuv.supabase.co',profile+' must target production Supabase');
- equal(env.EXPO_PUBLIC_COOP_LIVE_READY_V1,'false',profile+' keeps experimental Live Ready UI gated');
+ equal(env.EXPO_PUBLIC_COOP_LIVE_READY_V1,'true',profile+' exposes the Live matchmaking/ready flow');
  if(!env.EXPO_PUBLIC_SUPABASE_ANON_KEY?.startsWith('sb_publishable_'))throw new Error(profile+' must use the Supabase publishable client key');
 }
 console.log('PASS online roster commands and Preview/Production online runtime configuration');

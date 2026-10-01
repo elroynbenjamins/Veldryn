@@ -1,10 +1,16 @@
+import {accountText} from '../i18n/account';
+import type {Language} from '../i18n/languages';
+import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {useState,useMemo} from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {radii,typography,equipmentTheme,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 
 /** One accessible switch target; the decorative track never captures a second tap. */
-export function SettingToggle({label,description,value,onValueChange,disabled=false}:{label:string;description?:string;value:boolean;onValueChange:(value:boolean)=>void;disabled?:boolean}){
+export function SettingToggle({language:languageOverride,label,description,value,onValueChange,disabled=false}:{language?:Language;label:string;description?:string;value:boolean;onValueChange:(value:boolean)=>void;disabled?:boolean}){
+ const contextLanguage=useGameLanguage(),language=languageOverride??contextLanguage;
+ const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params);
+
  const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
   const [focused,setFocused]=useState(false);
   return <Pressable accessibilityRole="switch" accessibilityLabel={label} accessibilityHint={description} accessibilityState={{checked:value,disabled}}
@@ -13,7 +19,7 @@ export function SettingToggle({label,description,value,onValueChange,disabled=fa
     <View style={s.copy}><Text style={s.label}>{label}</Text>{description&&<Text style={s.description}>{description}</Text>}</View>
     <View accessible={false} importantForAccessibility="no-hide-descendants" style={s.control}>
       <View style={[s.track,value&&s.trackOn]}><View style={[s.thumb,value&&s.thumbOn]}/></View>
-      <Text style={[s.state,value&&s.stateOn]}>{value?'On':'Off'}</Text>
+      <Text style={[s.state,value&&s.stateOn]}>{value?a("On"):a("Off")}</Text>
     </View>
   </Pressable>;
 }

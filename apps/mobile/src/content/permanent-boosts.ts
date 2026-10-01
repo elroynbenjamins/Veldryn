@@ -24,17 +24,6 @@ export interface PermanentBoostDefinition {
 
 type SourceBoostId = string;
 
-// V33 skins start as fresh full-character renders. No equipment skin is
-// gameplay-active until its male and female mannequin variants are approved.
-export const SKIN_PERMANENT_BOOSTS: Record<SourceBoostId, PermanentBoostDefinition> = {
-  starting: {
-    id: 'starting', name: 'Campaign skin', combatSpeedMultiplier: 1,
-    combatPowerMultiplier: 1, gatheringSpeedMultiplier: 1, gatheringYieldMultiplier:1,
-    characterXpMultiplier: 1, skillXpMultiplier: 1, goldMultiplier: 1,
-    dropChanceMultiplier: 1, incomingDamageMultiplier: 1,
-  },
-};
-
 const petBoostFor=(pet:{id:string;name:string;target:string;activeBps:number}):PermanentBoostDefinition=>{
   const amount=1+pet.activeBps/10000;
   const base={id:pet.id,name:pet.name};
@@ -122,7 +111,6 @@ export const BUYABLE_PERMANENT_BOOSTS: Record<SourceBoostId, PermanentBoostDefin
 
 export const PERMANENT_BOOSTS_BASE: Record<string, PermanentBoostDefinition> = {
   none: {id: 'none', name: 'No permanent boosts'},
-  ...SKIN_PERMANENT_BOOSTS,
   ...PET_PERMANENT_BOOSTS,
   ...BUYABLE_PERMANENT_BOOSTS,
 };

@@ -9,10 +9,10 @@ const scenes=read('src/components/ZoneSceneArtwork.tsx');
 const monsters=read('src/content/monsters.ts');
 
 ok(worldMap.includes("availability:'inDevelopment'")&&worldMap.includes("id:'VEILLANDS'"),'Future region must remain represented as In Development');
-ok(world.includes("title={unlocked?'Travel':inDevelopment?'In development':'Locked'}"),'Travel cards must distinguish Available, Locked and In Development');
+ok(world.includes('title={unlocked?t("Travel"):inDevelopment?t("In development"):t("Locked")}'),'Travel cards must distinguish localized Available, Locked and In Development states');
 ok(!world.includes('TravelRegionModal'),'World travel must not render a destination modal');
-ok(world.includes("inDevelopment?'IN DEVELOPMENT'"),'World destination cards must visibly label future regions');
-ok(scenes.includes("world-zone-scenes-v1.jpg"),'Travel cards must use the dedicated world-zone scene atlas');
+ok(world.includes('inDevelopment?t("In Development")'),'World destination cards must visibly label future regions in the selected language');
+ok(scenes.includes('regionScenes[regionId]')&&scenes.includes('resizeMode="cover"'),"Travel cards must use dedicated full-card panoramas");
 
 const coverageFiles=[
  'src/theme/resource-assets.ts',

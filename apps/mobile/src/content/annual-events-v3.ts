@@ -41,8 +41,7 @@ export const TURNING_OF_THE_AGE_EVENT:LiveEventDef={
   milestones:()=>[
     {points:400,reward:{kind:'title',id:'title_age_witness',name:'Witness of the Turning',rarity:'rare'}},
     {points:1000,reward:{kind:'emote',id:'emote_first_dawn',name:'First Dawn',rarity:'rare'}},
-    {points:2250,reward:{kind:'pet',id:'EVT_PET_001',name:'Chronicle Wisp',rarity:'rare'}},
-    {points:4000,reward:{kind:'title',id:'title_chronicle_keeper',name:'Chronicle Keeper',rarity:'epic'}},
+    {points:4000,reward:{kind:'pet',id:'EVT_PET_001',name:'Chronicle Wisp',rarity:'rare'}},
     {points:6500,reward:{kind:'title',id:'title_agebound',name:'Agebound',rarity:'epic'}},
     {points:10000,reward:{kind:'companion',id:'EVT_UNIT_001',name:'Keeper of First Dawn',rarity:'epic'}},
   ],
@@ -60,7 +59,7 @@ export const TURNING_OF_THE_AGE_EVENT:LiveEventDef={
   shop:[
     {id:'turning_wave',reward:{kind:'emote',id:'emote_turning_wave',name:'Turning Wave',rarity:'rare'},currency:'common',cost:900,limit:1},
     {id:'new_age_title',reward:{kind:'title',id:'title_new_age',name:'Child of the New Age',rarity:'epic'},currency:'common',cost:1800,limit:1},
-    {id:'gilded_hourling',reward:{kind:'pet',id:'EVT_PET_002',name:'Gilded Hourling',rarity:'epic'},currency:'prestige',cost:6,limit:1},
+    {id:'gilded_hourling',reward:{kind:'pet',id:'EVT_PET_002',name:'Gilded Hourling',rarity:'epic'},currency:'prestige',cost:10,limit:1},
   ],
   choices:[
     {id:'chronicle_hunts',name:'Chronicle Hunts',description:'Record creatures and victories from the closing age.',bonusLabel:'+20% Age Tokens from combat',dropMultipliers:{combat:1.2}},
@@ -111,8 +110,7 @@ export const HEARTBOND_EVENT:LiveEventDef={
   milestones:()=>[
     {points:400,reward:{kind:'title',id:'title_heartbond_guest',name:'Heartbond Guest',rarity:'common'}},
     {points:1000,reward:{kind:'emote',id:'emote_heart_greeting',name:'Heart Greeting',rarity:'rare'}},
-    {points:2250,reward:{kind:'pet',id:'EVT_PET_003',name:'Rosebud Bun',rarity:'uncommon'}},
-    {points:4000,reward:{kind:'title',id:'title_vow_friend',name:'Friend of the Vow',rarity:'rare'}},
+    {points:4000,reward:{kind:'pet',id:'EVT_PET_003',name:'Rosebud Bun',rarity:'uncommon'}},
     {points:6500,reward:{kind:'title',id:'title_heartbound',name:'Heartbound',rarity:'epic'}},
     {points:10000,reward:{kind:'companion',id:'EVT_UNIT_002',name:'Vowbound Cherub',rarity:'mythic'}},
   ],
@@ -130,7 +128,7 @@ export const HEARTBOND_EVENT:LiveEventDef={
   shop:[
     {id:'heartbond_wave',reward:{kind:'emote',id:'emote_heartbond_wave',name:'Heartbond Wave',rarity:'rare'},currency:'common',cost:900,limit:1},
     {id:'vowkeeper_title',reward:{kind:'title',id:'title_vowkeeper',name:'Vowkeeper',rarity:'epic'},currency:'common',cost:1800,limit:1},
-    {id:'heartwing',reward:{kind:'pet',id:'EVT_PET_004',name:'Heartwing',rarity:'epic'},currency:'prestige',cost:6,limit:1},
+    {id:'heartwing',reward:{kind:'pet',id:'EVT_PET_004',name:'Heartwing',rarity:'epic'},currency:'prestige',cost:10,limit:1},
   ],
   choices:[
     {id:'escort_routes',name:'Escort Routes',description:'Protect travelers and deliveries during the festival.',bonusLabel:'+20% Heart Tokens from combat',dropMultipliers:{combat:1.2}},
@@ -181,8 +179,7 @@ export const BLOOMWAKE_EVENT:LiveEventDef={
   milestones:()=>[
     {points:400,reward:{kind:'title',id:'title_bloomwake_guest',name:'Bloomwake Guest',rarity:'common'}},
     {points:1000,reward:{kind:'emote',id:'emote_bloomwave',name:'Bloomwave',rarity:'rare'}},
-    {points:2250,reward:{kind:'pet',id:'EVT_PET_005',name:'Pollenpuff',rarity:'common'}},
-    {points:4000,reward:{kind:'title',id:'title_grove_friend',name:'Friend of the Grove',rarity:'rare'}},
+    {points:4000,reward:{kind:'pet',id:'EVT_PET_005',name:'Pollenpuff',rarity:'common'}},
     {points:6500,reward:{kind:'title',id:'title_verdant_hand',name:'Verdant Hand',rarity:'epic'}},
     {points:10000,reward:{kind:'companion',id:'EVT_UNIT_003',name:'Bloomwarden',rarity:'epic'}},
   ],
@@ -200,7 +197,7 @@ export const BLOOMWAKE_EVENT:LiveEventDef={
   shop:[
     {id:'bloomwake_wave',reward:{kind:'emote',id:'emote_bloomwake_wave',name:'Bloomwake Wave',rarity:'rare'},currency:'common',cost:900,limit:1},
     {id:'springkeeper_title',reward:{kind:'title',id:'title_springkeeper',name:'Springkeeper',rarity:'epic'},currency:'common',cost:1800,limit:1},
-    {id:'verdant_fawn',reward:{kind:'pet',id:'EVT_PET_006',name:'Verdant Fawn',rarity:'rare'},currency:'prestige',cost:5,limit:1},
+    {id:'verdant_fawn',reward:{kind:'pet',id:'EVT_PET_006',name:'Verdant Fawn',rarity:'rare'},currency:'prestige',cost:10,limit:1},
   ],
   choices:[
     {id:'grove_patrols',name:'Grove Patrols',description:'Protect the new growth from hostile creatures.',bonusLabel:'+20% Bloom Tokens from combat',dropMultipliers:{combat:1.2}},

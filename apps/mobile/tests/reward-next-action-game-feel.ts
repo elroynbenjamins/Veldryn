@@ -28,7 +28,7 @@ ok(popup.includes("candidate.kind==='pet'&&onCollections"),'new pets must route 
 ok(popup.includes("candidate.kind==='inventory'&&onInventory"),'exceptional gear/gems must route to Inventory when supported');
 ok(popup.includes("candidate.kind==='skill'&&candidate.skillId&&onSkill"),'new skill unlocks must route to the exact skill when supported');
 ok(popup.includes('onClose();nextAction.action();'),'reward popup must close before navigating to the follow-up surface');
-ok(popup.includes("title={nextAction.label}")&&popup.includes('title="Continue" tone="secondary"'),'meaningful rewards need one obvious primary follow-up while retaining Continue');
+ok(popup.includes("title={gl(nextAction.label)}")&&popup.includes('title={gt("Continue")} tone="secondary" onPress={onClose}'),'meaningful rewards need one obvious primary follow-up while retaining Continue');
 
 ok(app.includes("onInventory={()=>setTab('Inventory')}"),'App must wire reward gear follow-up to Inventory');
 ok(app.includes("onCollections={()=>setTab('Collections')}"),'App must wire pet follow-up to Collections');

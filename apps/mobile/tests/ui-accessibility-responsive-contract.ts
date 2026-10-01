@@ -10,7 +10,7 @@ const feedback=read('src/components/ActionFeedback.tsx');
 ok(feedback.includes("action:{minHeight:44"),'Actionable feedback must retain a 44px action touch target');
 ok(feedback.includes('useWindowDimensions')&&feedback.includes("stackAction=!!actionLabel&&!!onAction&&(width<360||fontScale>=1.25)"),'Actionable feedback must adapt to narrow phones and large text');
 ok(feedback.includes('rootStack')&&feedback.includes("actionStack:{width:'100%'}"),'Actionable feedback must stack its action instead of squeezing the message');
-ok(feedback.includes('accessibilityHint="Continues from this feedback"'),'Actionable feedback must explain the continuation action to assistive technology');
+ok(feedback.includes('accessibilityHint={tr("Continues from this feedback")}'),'Actionable feedback must explain the continuation action in the selected language');
 
 const confirm=read('src/components/ConfirmModal.tsx');
 ok(confirm.includes('useWindowDimensions')&&confirm.includes("stackActions=width<360||fontScale>=1.25"),'Confirm dialogs must adapt actions for narrow phones and large text');
@@ -41,7 +41,8 @@ const mentions=read('src/components/ChatMentionSuggestions.tsx');
 ok(mentions.includes('chip:{minHeight:44'),'Chat mention suggestions must retain a 44px touch target');
 for(const path of ['src/components/OnlineWorldChat.tsx','src/components/OnlinePartyChat.tsx','src/components/GuildChat.tsx']){
  const source=read(path);
- ok(source.includes('nameButton')&&source.includes('minHeight:44'),'Chat player-name profile actions must retain a 44px touch target: '+path);
+ const row=source.includes('<ChatMessageRow')?read('src/components/ChatMessageRow.tsx'):source;
+ ok(row.includes('nameButton')&&row.includes('minHeight:44'),'Chat player-name profile actions must retain a 44px touch target: '+path);
 }
 
 const chatPlayer=read('src/components/ChatPlayerSheet.tsx');
@@ -56,10 +57,10 @@ ok(travelModal.includes('useWindowDimensions')&&travelModal.includes('actionsSta
 
 const gemCodex=read('src/components/GemCodexModal.tsx');
 ok(gemCodex.includes("filter:{minHeight:44"),'Gem Codex type filter must retain the 44px touch minimum');
-ok(gemCodex.includes('accessibilityHint="Cycles between all, Stat and Effect Gems"'),'Gem Codex filter must explain its cycling behavior to assistive technology');
+ok(gemCodex.includes('accessibilityHint={gt("Cycles between all, Stat and Effect Gems")}'),'Gem Codex filter must explain its cycling behavior in the selected language');
 
 const nav=read('src/components/PrimaryNavigation.tsx');
-ok(nav.includes("badgeLabel=badge==='dot'?'new activity'"),'Primary navigation must announce dot badges');
+ok(nav.includes("badgeLabel=badge==='dot'?navigationText(language,'new activity')"),'Primary navigation must announce localized dot badges');
 ok(nav.includes('notification'),'Primary navigation must announce numeric badge counts');
 
 const input=read('src/components/GameTextInput.tsx');
@@ -90,9 +91,9 @@ ok(account.includes('IN DEVELOPMENT'),'Account hub must label disabled future de
 const guildFuture=read('src/screens/GuildScreen.tsx');
 ok(guildFuture.includes("'Guild vs Guild'")&&guildFuture.includes("'Guild Raids'")&&guildFuture.includes("'Guild Trials'")&&guildFuture.includes("'Guild Expeditions'")&&guildFuture.includes("'Guild Legacy'"),'Guild must expose the approved future-content previews');
 ok(guildFuture.includes("onlineSection==='Future'?<GuildFutureContent/>"),'Guild future content must have a dedicated destination');
-ok(guildFuture.includes("(['Home','Members','Activities','Hall','Chat','Manage','Future'] as const)"),'Online Guild navigation must use the consolidated seven-destination hierarchy');
+ok(guildFuture.includes("(['Home','PvE','Roster','Activities','Hall','Chat','Manage'] as const)"),'Online Guild navigation must use the consolidated seven-destination hierarchy');
 ok(guildFuture.includes("onlineSection==='Home'?<GuildOnlineHome"),'Online Guild must expose a dedicated overview home');
-ok(guildFuture.includes("onlineSection==='Activities'?<View style={s.sectionStack}")&&guildFuture.includes('<OnlineGuildMusterPanel/>')&&guildFuture.includes('{onlineProjects}')&&guildFuture.includes('{onlinePve}'),'Guild activities must group Muster, Projects and PvE together');
+ok(guildFuture.includes('<OnlineGuildMusterPanel/>')&&guildFuture.includes('{onlineProjects}')&&guildFuture.includes("onlineSection==='PvE'?onlinePve:null"),"Guild navigation must keep Muster and Projects in Activities and PvE separate");
 ok(guildFuture.includes("onlineSection==='Manage'?<View style={s.sectionStack}")&&guildFuture.includes('{onlineDirectory}')&&guildFuture.includes('{onlineCustomize}'),'Guild management must group recruitment/creation and identity customization');
 ok(guildFuture.includes("homeGrid:{flexDirection:'row',flexWrap:'wrap'"),'Guild Home destination cards must wrap on narrow layouts');
 const guildHall=read('src/components/OnlineGuildHallPanel.tsx');
@@ -133,7 +134,7 @@ ok(achievements.includes("rowStack:{flexDirection:'column'"),'Achievement action
 const rankings=read('src/screens/RankingsScreen.tsx');
 ok(rankings.includes('chip:{minHeight:44'),'Ranking filters must retain a 44px touch target');
 ok(rankings.includes('stackRows=width<360||fontScale>=1.25'),'Ranking rows must adapt to narrow phones and large text');
-ok(rankings.includes("goldStack:{width:'100%',marginLeft:54,textAlign:'left'}"),'Ranking values must wrap below identity content when space is constrained');
+ok(rankings.includes("scoreValueStack:{width:'100%',marginLeft:54,textAlign:'left'}"),'Ranking values must wrap below identity content when space is constrained');
 
 const petBonus=read('src/screens/PetBonusOverviewScreen.tsx');
 ok(petBonus.includes('useWindowDimensions')&&petBonus.includes("singleColumn=width<360||fontScale>=1.25"),'Pet Bonus Overview must adapt filters and cards for narrow phones and large text');
@@ -147,6 +148,8 @@ ok(eventResponsive.includes('buttonRowStack')&&eventResponsive.includes('rewardS
 
 const top=read('src/components/GameTopBar.tsx');
 ok(top.includes('accessible accessibilityRole="text" style={styles.hpBlock}'),'Top-bar health must be exposed as one readable accessibility element');
-ok(top.includes('gold`} style={styles.goldBlock}'),'Top-bar Gold must be exposed as one readable accessibility element');
+ok(top.includes("tr('{amount} gold'")&&top.includes('style={styles.goldBlock}')&&top.includes('<View accessible accessibilityRole="text" accessibilityLabel='),'Top-bar Gold must be exposed as one localized readable accessibility element');
 
 console.log('PASS: responsive layouts, touch targets, keyboard behavior and screen-reader semantics remain accessible');
+
+ok(/nameButton:\{[^}]*minHeight:(?:4[4-9]|[5-9][0-9])/.test(read('src/components/ChatMessageRow.tsx')),'The actual chat profile pressable must meet the minimum touch height');

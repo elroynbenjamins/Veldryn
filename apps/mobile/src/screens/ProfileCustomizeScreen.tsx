@@ -1,3 +1,5 @@
+import {profileT,profileText} from '../i18n/profile';
+import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {useEffect,useMemo,useState} from 'react';
 import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from '../components/GameButton';
@@ -14,6 +16,7 @@ import {useGameTheme} from '../theme/ThemeContext';
 type Section='Appearance'|'Identity';
 
 export function ProfileCustomizeScreen({state,onChange,onNavigateSource,onDirtyChange,initialSection='Appearance'}:{state:GameState;onChange:(next:GameState)=>void;onNavigateSource?:(destination:ProfileCustomizationDestination)=>void;onDirtyChange?:(dirty:boolean)=>void;initialSection?:Section}){
+ const language=useGameLanguage();
  const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
  const [section,setSection]=useState<Section>(initialSection);
  useEffect(()=>{setSection(initialSection)},[initialSection]);
@@ -24,22 +27,22 @@ export function ProfileCustomizeScreen({state,onChange,onNavigateSource,onDirtyC
  useEffect(()=>{onDirtyChange?.(dirty)},[dirty,onDirtyChange]);
  useEffect(()=>()=>onDirtyChange?.(false),[onDirtyChange]);
 
- return <><ScrollView contentContainerStyle={s.root} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+ return <><ScrollView contentContainerStyle={s.root} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
   <View style={s.headingRow}>
-   <View style={s.flex}><Text style={s.kicker}>PROFILE CUSTOMIZATION</Text><Text accessibilityRole="header" style={s.heading}>Customize Profile</Text></View>
-   <View style={[s.liveBadge,dirty&&s.liveBadgeDirty]}><Text style={[s.liveBadgeText,dirty&&s.liveBadgeTextDirty]}>{dirty?'UNSAVED CHANGES':section==='Appearance'?'LIVE PREVIEW':'PROFILE SETTINGS'}</Text></View>
+   <View style={s.flex}><Text style={s.kicker}>{profileT(language,"PROFILE CUSTOMIZATION")}</Text><Text accessibilityRole="header" style={s.heading}>{profileT(language,"Customize Profile")}</Text></View>
+   <View style={[s.liveBadge,dirty&&s.liveBadgeDirty]}><Text style={[s.liveBadgeText,dirty&&s.liveBadgeTextDirty]}>{dirty?profileT(language,"UNSAVED CHANGES"):section==='Appearance'?profileT(language,"LIVE PREVIEW"):profileT(language,"PROFILE SETTINGS")}</Text></View>
   </View>
-  <Text style={s.intro}>Shape the identity other players see. Appearance is saved per character; player-name styling and social details belong to your account profile.</Text>
-  <View style={s.previewAction}><GameButton compact title="Preview as others see me" tone="secondary" onPress={()=>setPreviewOpen(true)}/></View>
+  <Text style={s.intro}>{profileT(language,"Shape the identity other players see. Appearance is saved per character; player-name styling and social details belong to your account profile.")}</Text>
+  <View style={s.previewAction}><GameButton compact title={profileT(language,"Preview as others see me")} tone="secondary" onPress={()=>setPreviewOpen(true)}/></View>
 
   <View accessibilityRole="tablist" style={s.tabs}>
    <Pressable accessibilityRole="tab" accessibilityState={{selected:section==='Appearance'}} onPress={()=>setSection('Appearance')} style={({pressed})=>[s.tab,section==='Appearance'&&s.tabOn,pressed&&s.pressed]}>
-    <Text style={[s.tabTitle,section==='Appearance'&&s.tabTitleOn]}>Appearance</Text>
-    <Text style={s.tabMeta}>Background · border · title · Pet · name style</Text>
+    <Text style={[s.tabTitle,section==='Appearance'&&s.tabTitleOn]}>{profileT(language,"Appearance")}</Text>
+    <Text style={s.tabMeta}>{profileText(language,"Icon · background · border · title · Pet")}</Text>
    </Pressable>
    <Pressable accessibilityRole="tab" accessibilityState={{selected:section==='Identity'}} onPress={()=>setSection('Identity')} style={({pressed})=>[s.tab,section==='Identity'&&s.tabOn,pressed&&s.pressed]}>
-    <Text style={[s.tabTitle,section==='Identity'&&s.tabTitleOn]}>Identity & Showcases</Text>
-    <Text style={s.tabMeta}>Bio · privacy · favorites · featured slots</Text>
+    <Text style={[s.tabTitle,section==='Identity'&&s.tabTitleOn]}>{profileT(language,"Identity & Showcases")}</Text>
+    <Text style={s.tabMeta}>{profileT(language,"Bio · privacy · favorites · featured slots")}</Text>
    </Pressable>
   </View>
 
@@ -57,18 +60,18 @@ export function ProfileCustomizeScreen({state,onChange,onNavigateSource,onDirtyC
 
 function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);return StyleSheet.create({
  root:{padding:spacing.lg,gap:spacing.md,paddingBottom:110},
- headingRow:{flexDirection:'row',alignItems:'center',gap:spacing.sm},
+ headingRow:{flexWrap:'wrap',flexDirection:'row',alignItems:'center',gap:spacing.sm},
  flex:{flex:1,minWidth:0},
  kicker:{...typography.caption,color:equipmentColors.goldSoft,fontWeight:'900',letterSpacing:1},
  heading:{...typography.hero,color:C.text},
  intro:{...typography.body,color:C.muted,lineHeight:20},
- previewAction:{alignSelf:'flex-start',minWidth:190},
- liveBadge:{paddingHorizontal:8,paddingVertical:5,borderWidth:1,borderColor:C.good,borderRadius:99,backgroundColor:C.goodSurface},
+ previewAction:{alignSelf:'stretch',maxWidth:'100%'},
+ liveBadge:{maxWidth:'100%',paddingHorizontal:8,paddingVertical:5,borderWidth:1,borderColor:C.good,borderRadius:99,backgroundColor:C.goodSurface},
  liveBadgeDirty:{borderColor:C.warning,backgroundColor:C.warningSurface},
  liveBadgeText:{fontSize:9,color:C.good,fontWeight:'900',letterSpacing:.65},
  liveBadgeTextDirty:{color:C.warning},
  tabs:{flexDirection:'row',gap:6,padding:4,borderWidth:1,borderColor:C.line,borderRadius:radii.lg,backgroundColor:C.bg},
- tab:{flex:1,minHeight:64,justifyContent:'center',paddingHorizontal:10,paddingVertical:8,borderRadius:radii.md,borderWidth:1,borderColor:'transparent'},
+ tab:{minWidth:0,flex:1,minHeight:64,justifyContent:'center',paddingHorizontal:10,paddingVertical:8,borderRadius:radii.md,borderWidth:1,borderColor:'transparent'},
  tabOn:{backgroundColor:C.selection,borderColor:C.selectionLine},
  pressed:{opacity:.72},
  tabTitle:{...typography.bodyStrong,color:C.muted},

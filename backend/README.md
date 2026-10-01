@@ -35,3 +35,20 @@ pnpm run supabase:env
 Local ports are API `54321`, PostgreSQL `54322`, Studio `54323`, and mail `54324`. `supabase:reset` recreates the database and applies all migrations in timestamp order. Stop the stack with `pnpm run supabase:stop`.
 
 Before changing a hosted project, inspect linked migration status, run a linked dry run, and lint the database. Mobile clients may use only public/anonymous credentials; service-role credentials belong exclusively in trusted server environments.
+
+## Discord announcements
+
+`src/server/discord` contains the official VELDRYN announcement publisher. It posts branded embeds for event start/end, patch notices, maintenance, and new content. The publisher is idempotent in-process, disables mass mentions by default, and supports separate channels per announcement type.
+
+Copy `discord-bot.env.example` into the deployment secret store and set the bot token plus channel IDs. The bot only needs `View Channel` and `Send Messages`/`Embed Links` in the configured channels.
+
+Examples after compiling with `pnpm exec tsc --outDir dist-discord`:
+
+```powershell
+node dist-discord/server/discord/discord-cli.js event-start --id harvestwake-2026 --name Harvestwake --summary "Harvestwake is now live." --starts 2026-10-01T12:00:00Z --ends 2026-10-31T23:59:59Z --details "Earn Candy|Unlock guild cosmetics"
+node dist-discord/server/discord/discord-cli.js patch --id mobile-0.1.0-v9 --version 0.1.0 --summary "Co-op and event improvements are now available."
+node dist-discord/server/discord/discord-cli.js maintenance --id maintenance-2026-10-01 --title "Scheduled maintenance" --summary "Servers will be briefly unavailable." --starts 2026-10-01T22:00:00Z
+node dist-discord/server/discord/discord-cli.js content --id sunscar-frostmarch --name "Sunscar Frostmarch" --summary "A new region and dungeon are now available."
+```
+
+Use `DISCORD_DRY_RUN=true` in CI preview jobs. Real credentials must never be committed or exposed to the mobile app.

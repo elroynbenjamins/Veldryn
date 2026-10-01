@@ -1,6 +1,17 @@
 # EAS builds the mobile app from this monorepo. Keep the mobile workspace,
 # exclude server/source archives and local generated material.
-backend/
+# Metro bundles the shared runtime from backend/src. Exclude backend build/data
+# material while keeping the source and package metadata available remotely.
+backend/*
+!backend/src/
+!backend/src/**
+!backend/package.json
+!backend/pnpm-lock.yaml
+!backend/tsconfig.json
+backend/node_modules/
+backend/.codex-*/
+backend/data/
+backend/dist/
 control-center/
 docs/
 marketing/

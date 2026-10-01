@@ -52,3 +52,5 @@ output/
 supabase/.temp/
 .*-check.txt
 .codex-challenge-references.txt
+.profile*.txt
+artifacts/

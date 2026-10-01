@@ -39,6 +39,9 @@ apps/mobile/.affinity-build/
 apps/mobile/.profile-core-build/
 apps/mobile/.combat-*/
 apps/mobile/*-export/
+apps/mobile/.*-export*/
+apps/mobile/.expo-export*/
+apps/mobile/dist/
 apps/mobile/art-review/
 apps/mobile/tests/
 apps/mobile/*.log

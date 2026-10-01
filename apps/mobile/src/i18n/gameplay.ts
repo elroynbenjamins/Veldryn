@@ -6,6 +6,9 @@ import {battleText} from './battle';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
+'{count} enemies':['{count} enemies','{count} Gegner','{count} enemigos','{count} vijanden','{count} nemici','{count} ennemis'],
+'Training XP':['Training XP','Trainings-EP','EXP de entrenamiento','Training-XP','PE allenamento','EXP d’entraînement'],
+'Loot & encounter details':['Loot & encounter details','Beute & Begegnungsdetails','Botín y detalles del encuentro','Buit & ontmoetingsdetails','Bottino e dettagli incontro','Butin et détails du combat'],
 'Gather and collect rewards to reach skill level 2.':['Gather and collect rewards to reach skill level 2.','Sammle Ressourcen und hole Belohnungen ab, um Fertigkeitsstufe 2 zu erreichen.','Recolecta recursos y reclama recompensas para alcanzar el nivel 2 de habilidad.','Verzamel grondstoffen en haal beloningen op om vaardigheidsniveau 2 te bereiken.','Raccogli risorse e ricompense per raggiungere il livello abilità 2.','Récoltez et récupérez les récompenses pour atteindre le niveau de compétence 2.'],
   'Set {number} / {total}':['Set {number} / {total}','Set {number} / {total}','Conjunto {number} / {total}','Set {number} / {total}','Set {number} / {total}','Ensemble {number} / {total}'],
   'pieces owned':['pieces owned','Teile im Besitz','piezas en propiedad','onderdelen in bezit','pezzi posseduti','pièces possédées'],

@@ -24,10 +24,10 @@ type Entry={id:string;kind:Category;name:string;source:string;group:string;owned
 const categories:ReadonlyArray<{id:Category;label:string}>=[{id:'profile_icon',label:'Icons'},{id:'pet',label:'Pets'},{id:'background',label:'Backgrounds'},{id:'border',label:'Borders'}];
 const pct=(bps:number)=>(bps/100).toFixed(2)+'%';
 
-export function CollectionsScreen({state,onChange}:{state:GameState;onChange:(next:GameState)=>void}){
+export function CollectionsScreen({state,onChange,initialCategory='profile_icon'}:{state:GameState;onChange:(next:GameState)=>void;initialCategory?:Category}){
  const language=useGameLanguage(),C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
  const text=(value:string)=>companionContent(language,value);
- const [category,setCategory]=useState<Category>('profile_icon'),[filter,setFilter]=useState<'all'|'owned'|'locked'>('all'),[query,setQuery]=useState(''),[source,setSource]=useState('All sources');
+ const [category,setCategory]=useState<Category>(initialCategory),[filter,setFilter]=useState<'all'|'owned'|'locked'>('all'),[query,setQuery]=useState(''),[source,setSource]=useState('All sources');
  const [detailId,setDetailId]=useState<string|null>(null),[width,setWidth]=useState(360),[showBonuses,setShowBonuses]=useState(false);
  const petUnlock=earlyFeatureUnlockProgress(state,'pets'),petLocked=category==='pet'&&!petUnlock.unlocked;
  const rows:Entry[]=category==='profile_icon'?profileIconCollection(state).map(row=>({...row,kind:'profile_icon',owned:row.unlocked})):collectibleJournal(state).filter(row=>row.kind===category).map(row=>({

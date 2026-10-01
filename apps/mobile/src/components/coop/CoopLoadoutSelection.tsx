@@ -1,3 +1,4 @@
+import {useCoopStyles} from '../../theme/useCoopStyles';
 import {useMemo,useState} from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {CharacterPortrait} from '../CharacterVisual';
@@ -5,7 +6,7 @@ import type {GameState} from '../../core/types';
 import {buildCoopLoadoutIntent,presentCoopLoadout,type CoopEffectiveStats,type CoopLoadoutIntent,type CoopLoadoutProjection} from '../../core/coop-loadout-presentation';
 import type {CoopMode} from '../../core/coop-presentation';
 import {clt,t,type CoopLoadoutMessageKey,type Language} from '../../i18n';
-import {coopColors,coopSpacing,coopTypography} from '../../theme/coop-ui-theme';
+import {type CoopColors,coopSpacing,coopTypography} from '../../theme/coop-ui-theme';
 import {ExpeditionScreenShell,FantasyPanel,PrimaryAction,RoleBadge,StateChip} from './CoopVisualKit';
 
 type Props={state:GameState;language:Language;dungeonId:string;dungeonName:string;tier:1|2|3|4|5;mode:CoopMode;loadouts:CoopLoadoutProjection[];onBack:()=>void;onIntent:(intent:CoopLoadoutIntent)=>void;onRefresh:()=>void;refreshing?:boolean;notice?:string};
@@ -18,6 +19,7 @@ function status(loadout:ReturnType<typeof presentCoopLoadout>,language:Language)
   return {label:clt(language,'ineligible'),tone:'danger' as const};
 }
 export function CoopLoadoutSelection({state,language,dungeonId,dungeonName,tier,mode,loadouts,onBack,onIntent,onRefresh,refreshing=false,notice}:Props){
+ const {styles:s}=useCoopStyles(makeStyles);
   const views=useMemo(()=>loadouts.map(loadout=>presentCoopLoadout(loadout,state.character!.id)),[loadouts,state.character]);
   const [selectedId,setSelectedId]=useState(views.find(loadout=>loadout.selectable)?.id??views[0]?.id);
   const [showDetails,setShowDetails]=useState(false);
@@ -36,5 +38,6 @@ export function CoopLoadoutSelection({state,language,dungeonId,dungeonName,tier,
     </>:null}
   </ExpeditionScreenShell>;
 }
-function Summary({title,values,empty}:{title:string;values:string[];empty:string}){return <FantasyPanel><Text style={s.section}>{title}</Text><Text style={s.copy}>{values.length?values.join(' · '):empty}</Text></FantasyPanel>}
-const s=StyleSheet.create({copy:{...coopTypography.body,color:coopColors.textSecondary},hero:{flexDirection:'row',gap:coopSpacing.md,alignItems:'center'},portrait:{width:88,height:110},heroCopy:{flex:1,minWidth:0,gap:coopSpacing.xs},character:{...coopTypography.section,color:coopColors.text},section:{...coopTypography.section,color:coopColors.gold,flex:1},loadout:{...coopTypography.section,color:coopColors.text},cardHead:{flexDirection:'row',gap:coopSpacing.sm,alignItems:'center'},grow:{flex:1,minWidth:0},failure:{...coopTypography.body,color:coopColors.danger},statHeader:{flexDirection:'row',gap:coopSpacing.sm,paddingVertical:coopSpacing.xs,borderBottomWidth:1,borderColor:coopColors.goldDim},statLabel:{...coopTypography.meta,color:coopColors.textSecondary,flex:1},statValue:{...coopTypography.meta,color:coopColors.text,textAlign:'right',width:76,fontWeight:'800'},sticky:{gap:coopSpacing.xs},notice:{...coopTypography.meta,color:coopColors.gold,textAlign:'center'},pressed:{opacity:.72}});
+function Summary({title,values,empty}:{title:string;values:string[];empty:string}){
+ const {styles:s}=useCoopStyles(makeStyles);return <FantasyPanel><Text style={s.section}>{title}</Text><Text style={s.copy}>{values.length?values.join(' · '):empty}</Text></FantasyPanel>}
+const makeStyles=(coopColors:CoopColors)=>StyleSheet.create({copy:{...coopTypography.body,color:coopColors.textSecondary},hero:{flexDirection:'row',gap:coopSpacing.md,alignItems:'center'},portrait:{width:88,height:110},heroCopy:{flex:1,minWidth:0,gap:coopSpacing.xs},character:{...coopTypography.section,color:coopColors.text},section:{...coopTypography.section,color:coopColors.gold,flex:1},loadout:{...coopTypography.section,color:coopColors.text},cardHead:{flexDirection:'row',gap:coopSpacing.sm,alignItems:'center'},grow:{flex:1,minWidth:0},failure:{...coopTypography.body,color:coopColors.danger},statHeader:{flexDirection:'row',gap:coopSpacing.sm,paddingVertical:coopSpacing.xs,borderBottomWidth:1,borderColor:coopColors.goldDim},statLabel:{...coopTypography.meta,color:coopColors.textSecondary,flex:1},statValue:{...coopTypography.meta,color:coopColors.text,textAlign:'right',width:76,fontWeight:'800'},sticky:{gap:coopSpacing.xs},notice:{...coopTypography.meta,color:coopColors.gold,textAlign:'center'},pressed:{opacity:.72}});

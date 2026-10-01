@@ -1,10 +1,18 @@
-/** Co-op presentation tokens mapped onto the existing VELDRYN dark equipment surfaces. */
-export const coopColors={
-  background:'#020C17',surface:'#071827',surfaceRaised:'#0C2539',
-  gold:'#D5AD61',goldDim:'#866537',cyan:'#35C8FF',blue:'#07549C',
-  text:'#F4ECDD',textSecondary:'#C0D2E3',textMuted:'#9AAFBE',
-  success:'#7DE597',danger:'#FF8990',violet:'#D899FF',
-};
+import {resolveTheme,type ThemeColors} from './theme';
+
+/** Legacy accent names are aliases for the selected game theme, not a separate palette. */
+export function coopTheme(C:ThemeColors){return {
+  background:C.bg,surface:C.panel,surfaceRaised:C.panelRaised,
+  gold:C.accent,goldDim:C.line,cyan:C.selectionLine,blue:C.primaryButton,
+  text:C.text,textSecondary:C.text,textMuted:C.muted,
+  success:C.good,danger:C.bad,violet:C.special,warning:C.warning,
+  line:C.line,lineStrong:C.lineStrong,selection:C.selection,
+  primaryButton:C.primaryButton,primaryButtonBorder:C.primaryButtonBorder,primaryButtonText:C.primaryButtonText,
+  secondaryButton:C.secondaryButton,secondaryButtonBorder:C.secondaryButtonBorder,secondaryButtonText:C.secondaryButtonText,
+  dangerButton:C.dangerButton,dangerButtonBorder:C.dangerButtonBorder,dangerButtonText:C.dangerButtonText,
+};}
+export type CoopColors=ReturnType<typeof coopTheme>;
+export const coopColors=coopTheme(resolveTheme());
 
 export const coopSpacing={xs:4,sm:8,md:12,lg:16,xl:20,xxl:24,hero:32};
 export const coopRadii={panel:16,button:14,tile:10};

@@ -1,3 +1,4 @@
+import {profileIconSource} from '../components/ProfileIcon';
 import {useSocialText} from '../i18n/social';
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {BackHandler,Pressable,View,Text} from 'react-native';
@@ -117,7 +118,7 @@ export function CoopExpeditionScreen({onClose,language,state,entrySource=realCoo
     onPublish={(dungeonId,note)=>void action(async()=>{await coopClient.publishLiveRecruitment({requestId:coopRequestId(),dungeonId,note});await refreshLiveRecruitment();setNotice(st("Live LFG posted for 30 minutes."));})}
     onCloseMine={()=>void action(async()=>{await coopClient.closeLiveRecruitment();await refreshLiveRecruitment();setNotice(st("Live LFG removed."));})}
     onRefresh={()=>void action(refreshLiveRecruitment)}/>:undefined;
-  if(showLive)return <CoopLiveLobby onBack={()=>setShowLive(false)} onRunReady={runId=>{setShowLive(false);void action(async()=>{const projection=await coopClient.run(runId);if(!('team' in projection))throw new Error(st("Invalid Live run response."));acceptRun(projection);});}}/>;
+  if(showLive)return <CoopLiveLobby dungeons={dungeons} selfPortrait={state.character?profileIconSource(state.character.profileIconId,state.character.classId):undefined} onBack={()=>setShowLive(false)} onRunReady={runId=>{setShowLive(false);void action(async()=>{const projection=await coopClient.run(runId);if(!('team' in projection))throw new Error(st("Invalid Live run response."));acceptRun(projection);});}}/>;
   if(eventRun){
     const view=presentEventExpeditionRun(eventRun),marks=eventRun.settlement.rewardMarks??0;
     return <View style={{flex:1}}>{retry}<CoopRunOverview language={language} run={view} notice={notice} busy={busy} reduceMotion={state.settings.reduceMotion} onBack={()=>{setEventRun(undefined);void load();}} onRefresh={()=>void action(()=>refreshEventRun(eventRun.runId))} onChoose={nodeId=>void action(async()=>{if(!eventRun.decisionId||eventRun.decisionRevision===undefined)throw new Error(st("Refresh this run before choosing."));acceptEventRun(await coopClient.chooseEvent(eventRun.runId,{requestId:coopRequestId(),decisionId:eventRun.decisionId,decisionRevision:eventRun.decisionRevision,optionId:nodeId}));})} terminalAction={eventRun.phase==='completed'?{label:st('Collect {marks} event currency',{marks}),claimed:eventRun.settlement.status==='claimed',completeText:st('{marks} event currency collected.',{marks}),onPress:()=>void action(async()=>{acceptEventRun(await coopClient.claimEvent(eventRun.runId));setNotice(st('{marks} event currency and reputation collected.',{marks}));await onRewardsChanged?.();})}:undefined}/></View>;

@@ -1,0 +1,454 @@
+{
+  "created": "2026-10-01T17:38:53.972Z",
+  "source": "Current React Native web UI; isolated sample progress. Uniformly scaled editorial crops, not continuous phone screens.",
+  "screenshots": [
+    {
+      "file": "01-adventure.png",
+      "category": "COMBAT & LOOT",
+      "headline": [
+        "Adventure at",
+        "your own pace."
+      ],
+      "scene": "ironwood-forest-pixel-v1.jpg",
+      "accent": "#EBC98A",
+      "panels": [
+        {
+          "source": "battle",
+          "crop": [
+            30,
+            30,
+            1020,
+            670
+          ],
+          "sourceFile": "captures/battle.jpg",
+          "box": [
+            81.70535627015931,
+            354,
+            916.5892874596814,
+            602.0733554882221
+          ]
+        },
+        {
+          "source": "combat-loot",
+          "crop": [
+            40,
+            5,
+            1000,
+            458
+          ],
+          "sourceFile": "captures/combat-loot.jpg",
+          "box": [
+            81.70535627015931,
+            978.0733554882221,
+            916.5892874596814,
+            419.7978936565341
+          ]
+        },
+        {
+          "source": "combat-enemies",
+          "crop": [
+            40,
+            5,
+            1000,
+            490
+          ],
+          "sourceFile": "captures/combat-enemies.jpg",
+          "box": [
+            81.70535627015931,
+            1419.8712491447561,
+            916.5892874596814,
+            449.1287508552439
+          ]
+        }
+      ],
+      "width": 1080,
+      "height": 1920,
+      "channels": 3,
+      "alt": "COMBAT & LOOT: Adventure at your own pace."
+    },
+    {
+      "file": "02-companions-and-pets.png",
+      "category": "PETS & COMPANIONS",
+      "headline": [
+        "Never adventure",
+        "alone."
+      ],
+      "scene": "silverbrook-pixel-v1.jpg",
+      "accent": "#9CDAD1",
+      "panels": [
+        {
+          "source": "companions-row2",
+          "crop": [
+            30,
+            3,
+            1020,
+            570
+          ],
+          "sourceFile": "captures/companions-row2.jpg",
+          "box": [
+            72.61438397129189,
+            354,
+            934.7712320574162,
+            522.3721590909091
+          ]
+        },
+        {
+          "source": "companions-row3",
+          "crop": [
+            30,
+            3,
+            1020,
+            570
+          ],
+          "sourceFile": "captures/companions-row3.jpg",
+          "box": [
+            72.61438397129189,
+            898.3721590909091,
+            934.7712320574162,
+            522.3721590909091
+          ]
+        },
+        {
+          "source": "pets-row",
+          "crop": [
+            40,
+            7,
+            1000,
+            456
+          ],
+          "sourceFile": "captures/pets-row.jpg",
+          "box": [
+            72.61438397129189,
+            1442.7443181818182,
+            934.7712320574162,
+            426.2556818181818
+          ]
+        }
+      ],
+      "width": 1080,
+      "height": 1920,
+      "channels": 3,
+      "alt": "PETS & COMPANIONS: Never adventure alone."
+    },
+    {
+      "file": "03-guild-community.png",
+      "category": "GUILDS & CHAT",
+      "headline": [
+        "Find your guild.",
+        "Share the journey."
+      ],
+      "scene": "ironwood-forest-pixel-v1.jpg",
+      "accent": "#9CDAB3",
+      "panels": [
+        {
+          "source": "social-top",
+          "crop": [
+            40,
+            40,
+            1000,
+            440
+          ],
+          "sourceFile": "captures/social-top.jpg",
+          "box": [
+            50,
+            407.15,
+            980,
+            431.2
+          ]
+        },
+        {
+          "source": "guild-chat-full",
+          "crop": [
+            40,
+            3,
+            1000,
+            975
+          ],
+          "sourceFile": "captures/guild-chat-full.png",
+          "box": [
+            50,
+            860.3499999999999,
+            980,
+            955.5
+          ]
+        }
+      ],
+      "width": 1080,
+      "height": 1920,
+      "channels": 3,
+      "alt": "GUILDS & CHAT: Find your guild. Share the journey."
+    },
+    {
+      "file": "04-dungeon-party.png",
+      "category": "DUNGEON MATCHMAKING",
+      "headline": [
+        "Find your party.",
+        "Brave the depths."
+      ],
+      "scene": "old-mines-pixel-v1.jpg",
+      "accent": "#89D5EE",
+      "panels": [
+        {
+          "source": "dungeon",
+          "crop": [
+            40,
+            322,
+            1000,
+            335
+          ],
+          "sourceFile": "captures/dungeon.jpg",
+          "box": [
+            50,
+            421.85,
+            980,
+            328.3
+          ]
+        },
+        {
+          "source": "match-full",
+          "crop": [
+            40,
+            3,
+            1000,
+            1050
+          ],
+          "sourceFile": "captures/match-full.png",
+          "box": [
+            50,
+            772.1500000000001,
+            980,
+            1029
+          ]
+        }
+      ],
+      "width": 1080,
+      "height": 1920,
+      "channels": 3,
+      "alt": "DUNGEON MATCHMAKING: Find your party. Brave the depths."
+    },
+    {
+      "file": "05-master-skills.png",
+      "category": "GATHERING & CRAFTING",
+      "headline": [
+        "Become a",
+        "master skiller."
+      ],
+      "scene": "greenfields-pixel-v2.jpg",
+      "accent": "#BBD991",
+      "panels": [
+        {
+          "source": "skills-gather",
+          "crop": [
+            30,
+            0,
+            1020,
+            734
+          ],
+          "sourceFile": "captures/skills-gather.jpg",
+          "box": [
+            50,
+            393.3627450980392,
+            980,
+            705.2156862745098
+          ]
+        },
+        {
+          "source": "skills-craft-top",
+          "crop": [
+            30,
+            0,
+            1020,
+            738
+          ],
+          "sourceFile": "captures/skills-craft-top.jpg",
+          "box": [
+            50,
+            1120.578431372549,
+            980,
+            709.0588235294117
+          ]
+        }
+      ],
+      "width": 1080,
+      "height": 1920,
+      "channels": 3,
+      "alt": "GATHERING & CRAFTING: Become a master skiller."
+    },
+    {
+      "file": "06-your-build.png",
+      "category": "GEAR & PROGRESSION",
+      "headline": [
+        "Your build.",
+        "Your legend."
+      ],
+      "scene": "kings-road-pixel-v1.jpg",
+      "accent": "#EBC98A",
+      "panels": [
+        {
+          "source": "hero-top",
+          "crop": [
+            40,
+            40,
+            1000,
+            269
+          ],
+          "sourceFile": "captures/hero-top.jpg",
+          "box": [
+            50,
+            354.9899999999999,
+            980,
+            263.62
+          ]
+        },
+        {
+          "source": "hero-gear",
+          "crop": [
+            40,
+            0,
+            1000,
+            590
+          ],
+          "sourceFile": "captures/hero-gear.jpg",
+          "box": [
+            50,
+            640.6099999999999,
+            980,
+            578.2
+          ]
+        },
+        {
+          "source": "hero-enhance",
+          "crop": [
+            40,
+            0,
+            1000,
+            640
+          ],
+          "sourceFile": "captures/hero-enhance.jpg",
+          "box": [
+            50,
+            1240.81,
+            980,
+            627.2
+          ]
+        }
+      ],
+      "width": 1080,
+      "height": 1920,
+      "channels": 3,
+      "alt": "GEAR & PROGRESSION: Your build. Your legend."
+    },
+    {
+      "file": "07-explore.png",
+      "category": "WORLD EXPLORATION",
+      "headline": [
+        "A world worth",
+        "exploring."
+      ],
+      "scene": "sunscar-pixel-v1.jpg",
+      "accent": "#F0C594",
+      "panels": [
+        {
+          "source": "world-hero",
+          "crop": [
+            30,
+            0,
+            1020,
+            605
+          ],
+          "sourceFile": "captures/world-hero.jpg",
+          "box": [
+            50,
+            427.9509803921569,
+            980,
+            581.2745098039215
+          ]
+        },
+        {
+          "source": "world-regions",
+          "crop": [
+            30,
+            0,
+            1020,
+            795
+          ],
+          "sourceFile": "captures/world-regions.jpg",
+          "box": [
+            50,
+            1031.2254901960785,
+            980,
+            763.8235294117648
+          ]
+        }
+      ],
+      "width": 1080,
+      "height": 1920,
+      "channels": 3,
+      "alt": "WORLD EXPLORATION: A world worth exploring."
+    },
+    {
+      "file": "08-seasonal-events.png",
+      "category": "SEASONAL EVENTS",
+      "headline": [
+        "Every season,",
+        "something to earn."
+      ],
+      "scene": "greenfields-pixel-v2.jpg",
+      "accent": "#EAB66E",
+      "panels": [
+        {
+          "source": "event-hero",
+          "crop": [
+            40,
+            40,
+            1000,
+            440
+          ],
+          "sourceFile": "captures/event-hero.jpg",
+          "box": [
+            99.52701051087757,
+            354,
+            880.9459789782449,
+            387.61623075042775
+          ]
+        },
+        {
+          "source": "event-rewards",
+          "crop": [
+            72,
+            8,
+            980,
+            431
+          ],
+          "sourceFile": "captures/event-rewards.jpg",
+          "box": [
+            99.52701051087757,
+            763.6162307504278,
+            880.9459789782449,
+            387.4364458567587
+          ]
+        },
+        {
+          "source": "event-activity",
+          "crop": [
+            40,
+            0,
+            1000,
+            790
+          ],
+          "sourceFile": "captures/event-activity.jpg",
+          "box": [
+            99.52701051087757,
+            1173.0526766071866,
+            880.9459789782449,
+            695.9473233928135
+          ]
+        }
+      ],
+      "width": 1080,
+      "height": 1920,
+      "channels": 3,
+      "alt": "SEASONAL EVENTS: Every season, something to earn."
+    }
+  ]
+}

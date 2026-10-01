@@ -1,14 +1,16 @@
+import {useCoopStyles} from '../theme/useCoopStyles';
 import {StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import {COOP_PRIMARY_TABS} from '../core/coop-ui-contract';
 import {Language,t} from '../i18n';
 import {CoopImageSlot,ExpeditionScreenShell,FantasyPanel,PrimaryAction,RoleBadge,StateChip} from '../components/coop/CoopVisualKit';
-import {coopColors,coopSpacing,coopTypography} from '../theme/coop-ui-theme';
+import {type CoopColors,coopSpacing,coopTypography} from '../theme/coop-ui-theme';
 import {CoopSharedRunGallery} from '../components/coop/CoopSharedRunGallery';
 import {CoopQModeTeamGallery} from '../components/coop/CoopQModeTeamGallery';
 
 const tabKey={Home:'nav.home',Character:'nav.character',World:'nav.world',Inventory:'nav.inventory',More:'nav.more'} as const;
 
 export function CoopUiGalleryScreen({language,onClose}:{language:Language;onClose:()=>void}){
+ const {styles:s}=useCoopStyles(makeStyles);
   const {width}=useWindowDimensions(),narrow=width<360;
   return <ExpeditionScreenShell testID="coop-ui-gallery" eyebrow={t(language,'coopUi.galleryKicker')} title={t(language,'coopUi.galleryTitle')} backLabel={t(language,'common.back')} onBack={onClose} banner={<Text style={s.banner}>{t(language,'coopUi.galleryIntro')}</Text>}>
     <Text style={s.section}>{t(language,'coopUi.actions')}</Text>
@@ -44,6 +46,6 @@ export function CoopUiGalleryScreen({language,onClose}:{language:Language;onClos
   </ExpeditionScreenShell>;
 }
 
-const s=StyleSheet.create({
+const makeStyles=(coopColors:CoopColors)=>StyleSheet.create({
   banner:{...coopTypography.meta,color:coopColors.textSecondary},section:{...coopTypography.section,color:coopColors.gold,marginTop:coopSpacing.sm},stack:{gap:coopSpacing.sm},panelGrid:{flexDirection:'row',flexWrap:'wrap',gap:coopSpacing.sm},panelTitle:{...coopTypography.section,color:coopColors.text},copy:{...coopTypography.body,color:coopColors.textSecondary},error:{...coopTypography.body,color:coopColors.danger,fontWeight:'900'},roleGrid:{flexDirection:'row',flexWrap:'wrap',gap:coopSpacing.sm},chips:{flexDirection:'row',flexWrap:'wrap',gap:coopSpacing.sm},images:{flexDirection:'row',alignItems:'center',flexWrap:'wrap',gap:coopSpacing.md},tabs:{flexDirection:'row',minHeight:68,borderWidth:1,borderColor:coopColors.goldDim,backgroundColor:coopColors.surface},tab:{flex:1,minWidth:0,alignItems:'center',justifyContent:'center',paddingHorizontal:2,borderTopWidth:2,borderTopColor:'transparent'},tabSelected:{backgroundColor:coopColors.surfaceRaised,borderTopColor:coopColors.cyan},tabText:{fontSize:11,lineHeight:15,color:coopColors.textMuted,fontWeight:'800',textAlign:'center',flexShrink:1},tabTextSelected:{color:coopColors.cyan},
 });

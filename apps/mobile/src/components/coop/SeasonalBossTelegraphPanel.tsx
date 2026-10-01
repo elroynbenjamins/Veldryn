@@ -1,10 +1,12 @@
+import {useCoopStyles} from '../../theme/useCoopStyles';
 import {useSocialText} from '../../i18n/social';
 import {StyleSheet,Text,View} from 'react-native';
 import type {CoopRunBossMechanicView,CoopRunBossRecapView} from '../../core/coop-presentation';
-import {coopColors,coopSpacing,coopTypography} from '../../theme/coop-ui-theme';
+import {type CoopColors,coopSpacing,coopTypography} from '../../theme/coop-ui-theme';
 import {FantasyPanel,StateChip} from './CoopVisualKit';
 
 export function SeasonalBossTelegraphPanel({mechanic,recap,showPlan}:{mechanic?:CoopRunBossMechanicView;recap?:CoopRunBossRecapView;showPlan:boolean}){
+ const {styles:s}=useCoopStyles(makeStyles);
  const st=useSocialText();
  const telegraph=mechanic?.telegraph;
  if(!telegraph&&!recap)return null;
@@ -23,7 +25,7 @@ export function SeasonalBossTelegraphPanel({mechanic,recap,showPlan}:{mechanic?:
  </View>;
 }
 
-const s=StyleSheet.create({
+const makeStyles=(coopColors:CoopColors)=>StyleSheet.create({
  stack:{gap:coopSpacing.sm},
  head:{flexDirection:'row',alignItems:'flex-start',gap:coopSpacing.sm},
  grow:{flex:1,minWidth:0},

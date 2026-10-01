@@ -1,0 +1,32 @@
+{
+  "file": "04-dungeon-party.png",
+  "category": "DUNGEON MATCHMAKING",
+  "headline": [
+    "Find your party.",
+    "Brave the depths."
+  ],
+  "scene": "old-mines-pixel-v1.jpg",
+  "accent": "#89D5EE",
+  "panels": [
+    {
+      "source": "gate-current-full",
+      "crop": [
+        0,
+        0,
+        1080,
+        2110
+      ],
+      "sourceFile": "captures/gate-current-full.png",
+      "box": [
+        152.2748815165877,
+        354,
+        775.4502369668246,
+        1515
+      ]
+    }
+  ],
+  "width": 1080,
+  "height": 1920,
+  "channels": 3,
+  "alt": "DUNGEON MATCHMAKING: Find your party. Brave the depths."
+}

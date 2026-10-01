@@ -1,0 +1,303 @@
+{
+  "created": "2026-09-28",
+  "renderMode": "deterministic canvas, original gameplay pixels",
+  "screenshots": [
+    {
+      "file": "01-forge-your-legend.png",
+      "width": 1080,
+      "height": 1920,
+      "source": "Real React Native web screen crops; in-memory test progress",
+      "panels": [
+        {
+          "source": "hero",
+          "crop": [
+            30,
+            1004,
+            1020,
+            1022
+          ],
+          "box": [
+            80,
+            365,
+            920,
+            922
+          ]
+        },
+        {
+          "source": "hero",
+          "crop": [
+            60,
+            2178,
+            960,
+            540
+          ],
+          "box": [
+            80,
+            1318,
+            920,
+            518
+          ]
+        }
+      ]
+    },
+    {
+      "file": "02-hunt-and-loot.png",
+      "width": 1080,
+      "height": 1920,
+      "source": "Real React Native web screen crops; in-memory test progress",
+      "panels": [
+        {
+          "source": "battle",
+          "crop": [
+            30,
+            30,
+            1020,
+            670
+          ],
+          "box": [
+            90,
+            365,
+            900,
+            591
+          ]
+        },
+        {
+          "source": "combat",
+          "crop": [
+            72,
+            1736,
+            936,
+            442
+          ],
+          "box": [
+            90,
+            982,
+            900,
+            425
+          ]
+        },
+        {
+          "source": "combat",
+          "crop": [
+            40,
+            2212,
+            1000,
+            472
+          ],
+          "box": [
+            90,
+            1433,
+            900,
+            425
+          ]
+        }
+      ]
+    },
+    {
+      "file": "03-master-your-skills.png",
+      "width": 1080,
+      "height": 1920,
+      "source": "Real React Native web screen crops; in-memory test progress",
+      "panels": [
+        {
+          "source": "skills",
+          "crop": [
+            40,
+            40,
+            1000,
+            384
+          ],
+          "box": [
+            50,
+            365,
+            980,
+            377
+          ]
+        },
+        {
+          "source": "skills",
+          "crop": [
+            40,
+            688,
+            1000,
+            1055
+          ],
+          "box": [
+            50,
+            772,
+            980,
+            1034
+          ]
+        }
+      ]
+    },
+    {
+      "file": "04-craft-your-gear.png",
+      "width": 1080,
+      "height": 1920,
+      "source": "Real React Native web screen crops; in-memory test progress",
+      "panels": [
+        {
+          "source": "crafting",
+          "crop": [
+            40,
+            40,
+            1000,
+            384
+          ],
+          "box": [
+            50,
+            365,
+            980,
+            377
+          ]
+        },
+        {
+          "source": "crafting",
+          "crop": [
+            40,
+            1402,
+            1000,
+            1114
+          ],
+          "box": [
+            50,
+            772,
+            980,
+            1092
+          ]
+        }
+      ]
+    },
+    {
+      "file": "05-build-your-roster.png",
+      "width": 1080,
+      "height": 1920,
+      "source": "Real React Native web screen crops; in-memory test progress",
+      "panels": [
+        {
+          "source": "companions",
+          "crop": [
+            63,
+            1433,
+            955,
+            100
+          ],
+          "box": [
+            50,
+            365,
+            980,
+            103
+          ]
+        },
+        {
+          "source": "companions",
+          "crop": [
+            62,
+            1567,
+            896,
+            539
+          ],
+          "box": [
+            50,
+            496,
+            980,
+            590
+          ]
+        },
+        {
+          "source": "companions",
+          "crop": [
+            63,
+            2140,
+            955,
+            298
+          ],
+          "box": [
+            50,
+            1116,
+            980,
+            306
+          ]
+        }
+      ]
+    },
+    {
+      "file": "06-explore-asterfall.png",
+      "width": 1080,
+      "height": 1920,
+      "source": "Real React Native web screen crops; in-memory test progress",
+      "panels": [
+        {
+          "source": "world",
+          "crop": [
+            30,
+            462,
+            1020,
+            462
+          ],
+          "box": [
+            50,
+            365,
+            980,
+            444
+          ]
+        },
+        {
+          "source": "world",
+          "crop": [
+            30,
+            1240,
+            1020,
+            1028
+          ],
+          "box": [
+            50,
+            840,
+            980,
+            988
+          ]
+        }
+      ]
+    },
+    {
+      "file": "07-online-community.png",
+      "width": 1080,
+      "height": 1920,
+      "source": "Real React Native web screen crops; in-memory test progress",
+      "panels": [
+        {
+          "source": "social",
+          "crop": [
+            40,
+            88,
+            1000,
+            450
+          ],
+          "box": [
+            50,
+            365,
+            980,
+            441
+          ],
+          "bare": true
+        },
+        {
+          "source": "social",
+          "crop": [
+            40,
+            993,
+            1000,
+            930
+          ],
+          "box": [
+            50,
+            856,
+            980,
+            911
+          ]
+        }
+      ]
+    }
+  ]
+}

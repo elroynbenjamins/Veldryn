@@ -1,0 +1,269 @@
+[
+  {
+    "file": "01-adventure",
+    "category": "COMBAT & LOOT",
+    "headline": [
+      "Adventure at",
+      "your own pace."
+    ],
+    "scene": "ironwood-forest-pixel-v1.jpg",
+    "accent": "#EBC98A",
+    "panels": [
+      {
+        "source": "battle",
+        "crop": [
+          30,
+          30,
+          1020,
+          670
+        ]
+      },
+      {
+        "source": "combat-loot",
+        "crop": [
+          40,
+          5,
+          1000,
+          458
+        ]
+      },
+      {
+        "source": "combat-enemies",
+        "crop": [
+          40,
+          5,
+          1000,
+          490
+        ]
+      }
+    ]
+  },
+  {
+    "file": "02-companions-and-pets",
+    "category": "PETS & COMPANIONS",
+    "headline": [
+      "Never adventure",
+      "alone."
+    ],
+    "scene": "silverbrook-pixel-v1.jpg",
+    "accent": "#9CDAD1",
+    "panels": [
+      {
+        "source": "companions-row2",
+        "crop": [
+          30,
+          3,
+          1020,
+          570
+        ]
+      },
+      {
+        "source": "companions-row3",
+        "crop": [
+          30,
+          3,
+          1020,
+          570
+        ]
+      },
+      {
+        "source": "pets-row",
+        "crop": [
+          40,
+          7,
+          1000,
+          456
+        ]
+      }
+    ]
+  },
+  {
+    "file": "03-guild-community",
+    "category": "GUILDS & CHAT",
+    "headline": [
+      "Find your guild.",
+      "Share the journey."
+    ],
+    "scene": "ironwood-forest-pixel-v1.jpg",
+    "accent": "#9CDAB3",
+    "panels": [
+      {
+        "source": "social-top",
+        "crop": [
+          40,
+          40,
+          1000,
+          440
+        ]
+      },
+      {
+        "source": "guild-chat-full",
+        "crop": [
+          40,
+          3,
+          1000,
+          975
+        ]
+      }
+    ]
+  },
+  {
+    "file": "04-dungeon-party",
+    "category": "DUNGEON MATCHMAKING",
+    "headline": [
+      "Find your party.",
+      "Brave the depths."
+    ],
+    "scene": "old-mines-pixel-v1.jpg",
+    "accent": "#89D5EE",
+    "panels": [
+      {
+        "source": "gate-current-full",
+        "crop": [
+          0,
+          0,
+          1080,
+          2110
+        ]
+      }
+    ]
+  },
+  {
+    "file": "05-master-skills",
+    "category": "GATHERING & CRAFTING",
+    "headline": [
+      "Become a",
+      "master skiller."
+    ],
+    "scene": "greenfields-pixel-v2.jpg",
+    "accent": "#BBD991",
+    "panels": [
+      {
+        "source": "skills-gather",
+        "crop": [
+          30,
+          0,
+          1020,
+          734
+        ]
+      },
+      {
+        "source": "skills-craft-top",
+        "crop": [
+          30,
+          0,
+          1020,
+          738
+        ]
+      }
+    ]
+  },
+  {
+    "file": "06-your-build",
+    "category": "GEAR & PROGRESSION",
+    "headline": [
+      "Your build.",
+      "Your legend."
+    ],
+    "scene": "kings-road-pixel-v1.jpg",
+    "accent": "#EBC98A",
+    "panels": [
+      {
+        "source": "hero-top",
+        "crop": [
+          40,
+          40,
+          1000,
+          269
+        ]
+      },
+      {
+        "source": "hero-gear",
+        "crop": [
+          40,
+          0,
+          1000,
+          590
+        ]
+      },
+      {
+        "source": "hero-enhance",
+        "crop": [
+          40,
+          0,
+          1000,
+          640
+        ]
+      }
+    ]
+  },
+  {
+    "file": "07-explore",
+    "category": "WORLD EXPLORATION",
+    "headline": [
+      "A world worth",
+      "exploring."
+    ],
+    "scene": "sunscar-pixel-v1.jpg",
+    "accent": "#F0C594",
+    "panels": [
+      {
+        "source": "world-hero",
+        "crop": [
+          30,
+          0,
+          1020,
+          605
+        ]
+      },
+      {
+        "source": "world-regions",
+        "crop": [
+          30,
+          0,
+          1020,
+          795
+        ]
+      }
+    ]
+  },
+  {
+    "file": "08-seasonal-events",
+    "category": "SEASONAL EVENTS",
+    "headline": [
+      "Every season,",
+      "something to earn."
+    ],
+    "scene": "greenfields-pixel-v2.jpg",
+    "accent": "#EAB66E",
+    "panels": [
+      {
+        "source": "event-hero",
+        "crop": [
+          40,
+          40,
+          1000,
+          440
+        ]
+      },
+      {
+        "source": "event-rewards",
+        "crop": [
+          72,
+          8,
+          980,
+          431
+        ]
+      },
+      {
+        "source": "event-activity",
+        "crop": [
+          40,
+          0,
+          1000,
+          790
+        ]
+      }
+    ]
+  }
+]

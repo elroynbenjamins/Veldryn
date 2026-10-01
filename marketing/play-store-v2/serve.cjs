@@ -1,0 +1,4 @@
+// Local read-only asset review server. No external access or writes.
+const http=require('node:http'),fs=require('node:fs'),path=require('node:path');
+const root=path.resolve(__dirname,'../..');
+http.createServer((req,res)=>{const pathname=decodeURIComponent(new URL(req.url,'http://localhost').pathname);const file=path.resolve(root,'.'+pathname);if(!file.startsWith(root+path.sep)){res.writeHead(403).end();return}fs.readFile(file,(err,data)=>{if(err){res.writeHead(404).end();return}const ext=path.extname(file);res.setHeader('Content-Type',({'.html':'text/html','.png':'image/png','.jpg':'image/jpeg','.css':'text/css','.js':'text/javascript'})[ext]||'application/octet-stream');res.end(data)})}).listen(8113,'127.0.0.1',()=>console.log('Review: http://localhost:8113/marketing/play-store-v2/capture.html'));

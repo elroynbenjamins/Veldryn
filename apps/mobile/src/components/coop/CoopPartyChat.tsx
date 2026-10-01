@@ -1,12 +1,14 @@
+import {useCoopStyles} from '../../theme/useCoopStyles';
 import {useSocialText} from '../../i18n/social';
 import {useState} from 'react';
 import {StyleSheet,Text,TextInput,View} from 'react-native';
 import {GameButton} from '../GameButton';
-import {coopColors,coopSpacing,coopTypography} from '../../theme/coop-ui-theme';
+import {type CoopColors,coopSpacing,coopTypography} from '../../theme/coop-ui-theme';
 import {FantasyPanel} from './CoopVisualKit';
 import type {CoopChatMessage} from '../../online/coop-client';
 
 export function CoopPartyChat({messages,busy,onSend}:{messages:CoopChatMessage[];busy?:boolean;onSend:(text:string)=>Promise<void>} ){
+ const {colors:coopColors,styles:s}=useCoopStyles(makeStyles);
  const st=useSocialText();
  const [text,setText]=useState('');
  const send=async()=>{const value=text.trim();if(!value||busy)return;await onSend(value);setText('');};
@@ -17,4 +19,4 @@ export function CoopPartyChat({messages,busy,onSend}:{messages:CoopChatMessage[]
  </FantasyPanel>;
 }
 
-const s=StyleSheet.create({title:{...coopTypography.section,color:coopColors.text},copy:{...coopTypography.body,color:coopColors.textSecondary},messages:{gap:coopSpacing.xs,maxHeight:160},message:{...coopTypography.body,color:coopColors.text},sender:{color:coopColors.cyan,fontWeight:'900'},input:{minHeight:44,borderWidth:1,borderColor:coopColors.goldDim,color:coopColors.text,backgroundColor:coopColors.surfaceRaised,paddingHorizontal:coopSpacing.sm,paddingVertical:coopSpacing.xs}});
+const makeStyles=(coopColors:CoopColors)=>StyleSheet.create({title:{...coopTypography.section,color:coopColors.text},copy:{...coopTypography.body,color:coopColors.textSecondary},messages:{gap:coopSpacing.xs,maxHeight:160},message:{...coopTypography.body,color:coopColors.text},sender:{color:coopColors.cyan,fontWeight:'900'},input:{minHeight:44,borderWidth:1,borderColor:coopColors.goldDim,color:coopColors.text,backgroundColor:coopColors.surfaceRaised,paddingHorizontal:coopSpacing.sm,paddingVertical:coopSpacing.xs}});

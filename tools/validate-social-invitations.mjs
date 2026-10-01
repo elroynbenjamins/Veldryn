@@ -1,7 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import {fileURLToPath} from 'node:url';
 
-const root=path.resolve(process.cwd(),'../..');
+const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const migrationPath=path.join(root,'backend/supabase/migrations/20261018000105_social_direct_invitations.sql');
 const managementMigrationPath=path.join(root,'backend/supabase/migrations/20261018000115_social_member_management.sql');
 const successionMigrationPath=path.join(root,'backend/supabase/migrations/20261018000120_social_departure_succession.sql');

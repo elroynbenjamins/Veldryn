@@ -1,6 +1,6 @@
 # Live matching and ready checks — 13 September 2026
 
-Automatic matching, persistent ready checks and the internal mobile lobby are implemented. Production co-op remains disabled. A committed ready roster is not yet a running Live dungeon: run creation, voting, combat progression, recovery and run chat still need integration.
+Automatic matching, persistent ready checks and the internal mobile lobby are implemented. Staging, preview and production mobile profiles expose this flow; the matching backend deployment and hosted smoke test remain release prerequisites. A committed ready roster is not yet a running Live dungeon: run creation, voting, combat progression, recovery and run chat still need integration.
 
 ## Behavior
 
@@ -9,9 +9,9 @@ Automatic matching, persistent ready checks and the internal mobile lobby are im
 - Ready checks last 20 seconds. Acceptance is per account and roster revision, with persistent request receipts. Decline releases the declining player; accepted players wait up to 60 seconds for replacements. A replacement roster starts a new acceptance round.
 - The final acceptance freezes four current server-derived loadouts. The transaction rechecks source revisions, role/hash evidence, blocks and the deadline after taking locks. Concurrent acceptance retries return their saved responses.
 - A service-only database worker expires unattended checks every 10 seconds. It retains accepted players, then requeues them if refill expires. Hosted testing waited for an actual 20-second deadline using only read-only database polling.
-- Mobile now has saved-queue recovery, foreground heartbeat, acceptance/decline, cancellation, countdowns based on database time and durable mutation retry. This is behind `EXPO_PUBLIC_COOP_LIVE_READY_V1`, which remains unset/off, in addition to the existing co-op gate. Back/background stops heartbeats; server expiry remains authoritative.
+- Mobile now has saved-queue recovery, foreground heartbeat, acceptance/decline, cancellation, countdowns based on database time and durable mutation retry. Staging, preview and production set `EXPO_PUBLIC_COOP_LIVE_READY_V1=true`; backend deployment and hosted smoke testing remain the release prerequisite. Back/background stops heartbeats; server expiry remains authoritative.
 
-The internal lobby stops at the committed-ready state. It must not be enabled for players before committed rosters can enter and recover a Live run. The current ready operations use a shared advisory lock to serialize their short database transitions; high-volume performance has not been established.
+The staging lobby now hands a committed roster into a persistent four-human Live run and the existing route/combat snapshot screen. The current Live route action is a server-authorized progression step; shared voting, reconnect grace, recovery jobs and run chat are implemented in the current backend/client path, but still require a hosted smoke test before release. The current ready operations use a shared advisory lock to serialize their short database transitions; high-volume performance has not been established.
 
 ## Exact files from this continuation
 

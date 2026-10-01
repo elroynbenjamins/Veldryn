@@ -1,7 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import {fileURLToPath} from 'node:url';
 
-const root=path.resolve(process.cwd(),'../..');
+const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const migration=fs.readFileSync(path.join(root,'backend/supabase/migrations/20261018000170_identity_name_safety.sql'),'utf8');
 const names=fs.readFileSync(path.join(root,'apps/mobile/src/core/identity-names.ts'),'utf8');
 const game=fs.readFileSync(path.join(root,'apps/mobile/src/core/game.ts'),'utf8');

@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-const root=path.resolve(process.cwd(),'../..');
+const root=path.resolve(import.meta.dirname,'..');
 const migration=fs.readFileSync(path.join(root,'backend/supabase/migrations/20261018000140_guild_chat_online.sql'),'utf8');
 const client=fs.readFileSync(path.join(root,'apps/mobile/src/online/social.ts'),'utf8');
 const component=fs.readFileSync(path.join(root,'apps/mobile/src/components/GuildChat.tsx'),'utf8');
@@ -33,7 +33,7 @@ for(const [needle,label] of [
  ['chatEmoteCount','client emote limit'],
  ['guildChatCommandKey','idempotent send key'],
  ['setInterval(()=>void load(),5000)','Guild chat refresh'],
-])need(component,needle,label);
+])need(component+fs.readFileSync(path.join(root,'apps/mobile/src/components/ChatMessageRow.tsx'),'utf8'),needle,label);
 
 reject(component,'Elowen','hard-coded preview player');
 reject(component,'Brann','hard-coded preview player');

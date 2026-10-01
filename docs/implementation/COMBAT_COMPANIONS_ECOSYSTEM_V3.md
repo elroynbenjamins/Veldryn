@@ -130,10 +130,10 @@ Codex/profile reward IDs are persisted as entitlements. The real profile adapter
 ### Full native build / DB chain
 The recovered affected-file tree still omits unchanged project files such as `apps/mobile/tsconfig.core.json` and the backend root `tsconfig.json`. Focused Companion graphs are executable here; full Expo/Android and real Supabase migration reset/apply remain required in the complete repository.
 
-## Future hooks only — not implemented modes
+## Arena integration and future hooks
 
+- Arena remains the existing character 3v3 mode, but is explicitly release-gated like World Bosses. Each future frozen Arena fighter may carry a server-validated companion progression snapshot and a bounded companion assist power contribution for both attack and defense; the companion data is included in the squad snapshot hash. There is no separate companion-only Arena mode. Matchmaking, ranked persistence, rewards, and the combat replay UI remain future authenticated-service work.
 - Companion roguelite matchmaking/run lifecycle: **not implemented**. Existing companion combat adapter/filter hooks remain compatible with later reuse of the VELDRYN expedition engine.
-- Companion Arena matchmaking/rank/reward lifecycle: **not implemented**. Existing frozen companion snapshot hooks remain architecture only.
 
 ## Acceptance coverage
 

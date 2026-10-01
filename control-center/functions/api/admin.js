@@ -9,8 +9,26 @@ const MUTATING_ACTIONS = new Set([
   'publishDraft','scheduleDefinition','rescheduleInstance','cancelInstance','archiveInstance','clonePlayerEventSeason','applySeasonalCalendarPreset','schedulePlayerEvent','setPlayerEventEnabled','goLivePlayerEvent','endPlayerEventNow','saveReward','retryDeadLetter',
   'saveRemoteConfig','updateAlert','saveResetDefinition','retryResetRun','createSupportCase','updateSupportCase','addSupportNote',
   'queueAdminCommand','approveAdminCommand','cancelAdminCommand','retryAdminCommand','reverseAdminCommand','saveAnnouncement','cancelAnnouncement','saveAdminUser',
-  'createRedeemCode','setRedeemCodeEnabled'
+  'createRedeemCode','setRedeemCodeEnabled','createCommerceRedeemCode','setCommerceRedeemCodeEnabled'
 ]);
+
+const COMMERCE_GRANT_LABELS = {
+  vip: 'VIP',
+  vip_plus: 'VIP Plus',
+  supporter_1m: 'Supporter 1 month',
+  supporter_3m: 'Supporter 3 months',
+  supporter_6m: 'Supporter 6 months',
+  supporter_lifetime: 'Supporter lifetime',
+};
+
+const COMMERCE_GRANT_PREFIXES = {
+  vip: 'VIP',
+  vip_plus: 'VIPPLUS',
+  supporter_1m: 'SUP1M',
+  supporter_3m: 'SUP3M',
+  supporter_6m: 'SUP6M',
+  supporter_lifetime: 'LIFE',
+};
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -33,6 +51,22 @@ function envConfig(env) {
   };
   if (!config.url || !config.anon || !config.service) throw new Error('server_not_configured');
   return config;
+}
+
+function randomCommerceCodeSegment(length = 6) {
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const bytes = new Uint8Array(length);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (byte) => alphabet[byte % alphabet.length]).join('');
+}
+
+function normalizeCommerceRedeemCode(value) {
+  return String(value || '').trim().toUpperCase().replace(/\s+/g, '-');
+}
+
+function generateCommerceRedeemCode(grantKind) {
+  const grantPrefix = COMMERCE_GRANT_PREFIXES[grantKind] || 'TEST';
+  return `VEL-TEST-${grantPrefix}-${randomCommerceCodeSegment(6)}`;
 }
 
 function assertOrigin(request, env) {
@@ -1231,11 +1265,12 @@ async function contentCatalog(env){
 }
 
 async function listRedeemCodes(env){
-  const [codes,claims]=await Promise.all([
+  const [codes,claims,commerceCodes]=await Promise.all([
     list(env,'ops_redeem_codes','select=id,code_hint,label,reward_bundle_id,max_total_claims,max_claims_per_account,claims_count,starts_at,ends_at,enabled,created_by,updated_by,created_at,updated_at&order=created_at.desc&limit=500'),
     list(env,'ops_redeem_code_claims','select=id,code_id,account_id,claim_sequence,reward_bundle_id,status,error_text,created_at,granted_at&order=created_at.desc&limit=250'),
+    supabaseFetch(env,'/rest/v1/rpc/admin_list_commerce_redeem_codes_v1',{method:'POST',body:{}}).catch(()=>[]),
   ]);
-  return {codes:codes??[],claims:claims??[]};
+  return {codes:codes??[],claims:claims??[],commerceCodes:commerceCodes??[]};
 }
 
 async function createRedeemCode(env,actor,payload){
@@ -1268,6 +1303,42 @@ async function setRedeemCodeEnabled(env,actor,payload){
   const enabled=payload.enabled===true; const rows=await supabaseFetch(env,'/rest/v1/ops_redeem_codes',{method:'PATCH',query:`id=eq.${encodeEq(id)}`,body:{enabled,updated_by:actor.user.id,updated_at:new Date().toISOString()},prefer:'return=representation'});
   await audit(env,actor,enabled?'redeem_code.enable':'redeem_code.disable','redeem_code',id,{reason,label:row.label,codeHint:row.code_hint,rewardBundleId:row.reward_bundle_id,claimsCount:row.claims_count});
   return rows?.[0];
+}
+
+async function createCommerceRedeemCode(env,actor,payload){
+  requireRole(actor,'owner');
+  const label=String(payload.label||'').trim().slice(0,120); if(label.length<3) throw new Error('commerce_redeem_label_too_short');
+  const grantKind=String(payload.grantKind||'').trim();
+  if(!Object.prototype.hasOwnProperty.call(COMMERCE_GRANT_LABELS,grantKind)) throw new Error('commerce_grant_kind_invalid');
+  const custom=normalizeCommerceRedeemCode(payload.customCode);
+  const plaintext=custom||generateCommerceRedeemCode(grantKind);
+  if(!/^VEL-[A-Z0-9][A-Z0-9-]{10,46}[A-Z0-9]$/.test(plaintext)) throw new Error('commerce_redeem_code_invalid');
+  const maxTotalRaw=payload.maxTotalClaims===null||payload.maxTotalClaims===''||payload.maxTotalClaims===undefined?null:Number(payload.maxTotalClaims);
+  const maxPer=Number(payload.maxClaimsPerAccount??20);
+  if(maxTotalRaw!==null&&(!Number.isInteger(maxTotalRaw)||maxTotalRaw<1||maxTotalRaw>1000000)) throw new Error('commerce_redeem_max_total_invalid');
+  if(!Number.isInteger(maxPer)||maxPer<1||maxPer>1000) throw new Error('commerce_redeem_max_per_account_invalid');
+  const rows=await supabaseFetch(env,'/rest/v1/rpc/admin_create_commerce_redeem_code_v1',{method:'POST',body:{
+    p_plaintext_code:plaintext,
+    p_grant_kind:grantKind,
+    p_label:label,
+    p_max_total_claims:maxTotalRaw,
+    p_max_claims_per_account:maxPer,
+  }});
+  const row=Array.isArray(rows)?rows[0]:rows;
+  await audit(env,actor,'commerce_redeem_code.create','commerce_redeem_code',row?.code_hash?.slice(0,12),{label,grantKind,codeHint:row?.code_hint,maxTotalClaims:maxTotalRaw,maxClaimsPerAccount:maxPer});
+  return {row,plaintextCode:plaintext};
+}
+
+async function setCommerceRedeemCodeEnabled(env,actor,payload){
+  requireRole(actor,'owner');
+  const codeHash=String(payload.codeHash||'').trim().toLowerCase();
+  if(!/^[0-9a-f]{64}$/.test(codeHash)) throw new Error('commerce_redeem_code_hash_invalid');
+  const reason=String(payload.reason||'').trim(); if(reason.length<10) throw new Error('commerce_redeem_code_change_reason_too_short');
+  const enabled=payload.enabled===true;
+  const rows=await supabaseFetch(env,'/rest/v1/rpc/admin_set_commerce_redeem_code_enabled_v1',{method:'POST',body:{p_code_hash:codeHash,p_enabled:enabled}});
+  const row=Array.isArray(rows)?rows[0]:rows;
+  await audit(env,actor,enabled?'commerce_redeem_code.enable':'commerce_redeem_code.disable','commerce_redeem_code',codeHash.slice(0,12),{reason,grantKind:row?.grant_kind,redeemedAt:row?.redeemed_at??null});
+  return row;
 }
 
 
@@ -1366,6 +1437,8 @@ async function routeAction(env, actor, action, payload) {
     case 'listRedeemCodes': return await listRedeemCodes(env);
     case 'createRedeemCode': return await createRedeemCode(env, actor, payload);
     case 'setRedeemCodeEnabled': return await setRedeemCodeEnabled(env, actor, payload);
+    case 'createCommerceRedeemCode': return await createCommerceRedeemCode(env, actor, payload);
+    case 'setCommerceRedeemCodeEnabled': return await setCommerceRedeemCodeEnabled(env, actor, payload);
     case 'commandTimeline': return await commandTimeline(env, payload);
     case 'queueAdminCommand': return await queueAdminCommand(env, actor, payload);
     case 'approveAdminCommand': return await approveAdminCommand(env, actor, payload);

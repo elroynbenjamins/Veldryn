@@ -25,3 +25,6 @@ apps/mobile/tests/*.js
 output/
 
 output/
+
+.combat-balance-build/
+.combat-online-build/

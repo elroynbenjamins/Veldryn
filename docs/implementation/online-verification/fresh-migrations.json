@@ -292,6 +292,21 @@
       "file": "20261016000000_online_live_ready.sql",
       "sha256": "c9736010ec3ff97644357bc4946ea58e35fb2003794b1f4149982f617703b33c",
       "status": "PASS"
+    },
+    {
+      "file": "20261018000105_social_direct_invitations.sql",
+      "sha256": "85a74c06da9dea7d1d355cfff78ec842406cced46c48b109334108fa0d372a10",
+      "status": "PASS"
+    },
+    {
+      "file": "20261018000115_social_member_management.sql",
+      "sha256": "629cfd9abe5137e2a8a367b261340a441469c465956edb6c1dcb3c160a4af8a8",
+      "status": "PASS"
+    },
+    {
+      "file": "20261018000120_social_departure_succession.sql",
+      "sha256": "fa693a58113c0cfdd94ea185e4615e83c2539768e38db2a4aedbacc98cff5373",
+      "status": "PASS"
     }
   ],
   "checks": [

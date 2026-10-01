@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-const root=path.resolve(process.cwd(),'../..');
+const root=path.resolve(import.meta.dirname,'..');
 const migration=fs.readFileSync(path.join(root,'backend/supabase/migrations/20261018000150_chat_unread_mentions.sql'),'utf8');
 const client=fs.readFileSync(path.join(root,'apps/mobile/src/online/social.ts'),'utf8');
 const hook=fs.readFileSync(path.join(root,'apps/mobile/src/online/useSocialNotificationCounts.ts'),'utf8');
@@ -40,7 +40,7 @@ for(const [needle,label] of [
 ])need(hook,needle,label);
 
 for(const [needle,label] of [
- ['TabAttention','per-channel tab attention'],
+ ['RailTab','per-channel tab attention'],
  ['guildUnread','Guild tab unread'],
  ['partyUnread','Party tab unread'],
  ['guildMentions','Guild tab mentions'],

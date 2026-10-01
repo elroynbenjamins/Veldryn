@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-const root=path.resolve(process.cwd(),'../..');
+const root=path.resolve(import.meta.dirname,'..');
 const migration=fs.readFileSync(path.join(root,'backend/supabase/migrations/20261018000160_chat_usability.sql'),'utf8');
 const log=fs.readFileSync(path.join(root,'apps/mobile/src/components/ChatLog.tsx'),'utf8');
 const mention=fs.readFileSync(path.join(root,'apps/mobile/src/components/ChatMentionSuggestions.tsx'),'utf8');

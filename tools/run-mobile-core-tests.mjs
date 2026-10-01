@@ -17,6 +17,8 @@ function run(args) {
 // Separate processes avoid Windows' shell command-length limit while preserving
 // the existing test order, clean compilation, and fail-fast behavior.
 rmSync(build, {recursive: true, force: true});
-run([path.join(app, 'node_modules/typescript/bin/tsc'), '-p', 'tsconfig.core.json', '--outDir', build]);
+// Use TypeScript's JS entrypoint so this runner works without relying on a
+// shell to execute the extensionless bin/tsc launcher on Windows.
+run([path.join(app, 'node_modules/typescript/lib/tsc.js'), '-p', 'tsconfig.core.json', '--outDir', build]);
 for (const test of tests) run([path.resolve(app, test)]);
 console.log(`PASS: all ${tests.length} mobile core checks`);

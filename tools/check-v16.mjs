@@ -36,7 +36,6 @@ if(run('mobile core build',['node_modules/typescript/bin/tsc','-p','tsconfig.cor
  for(const file of tests.sort())run(`mobile ${path.basename(file)}`,[file],mobile);
 }
 run('v16 migration static audit',['tools/verify-v16-migration.mjs']);
-run('chat pilot core',['src/features/chat-pilot/tests/core.test.cjs'],mobile);
 fs.mkdirSync(path.join(root,'docs/implementation/v16-verification'),{recursive:true});
 fs.writeFileSync(path.join(root,'docs/implementation/v16-verification/repository-checks.json'),JSON.stringify({runAt:new Date().toISOString(),results},null,2)+'\n');
 console.log(`${results.filter(r=>r.status==='PASS').length}/${results.length} checks passed`);

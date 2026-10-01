@@ -1,5 +1,0 @@
-ChatScreen.tsx syntax OK
-DemoApp.tsx syntax OK
-assets.ts syntax OK
-asyncStorageSettings.ts syntax OK
-Scope: syntax transpilation only. Native full typecheck/device build still required.

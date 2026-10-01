@@ -1,0 +1,200 @@
+{
+  "version": 1,
+  "style": "Fantasy pixel art",
+  "background": "Transparent alpha",
+  "runtimeStatus": "All 24 icons connected to profiles, social avatars and collections. Starter, companion, combat and Harvestwake unlock rules active.",
+  "icons": [
+    {
+      "id": "ironwarden",
+      "name": "Ironwarden",
+      "category": "Class emblems",
+      "file": "ironwarden.png",
+      "generator": "built-in image_gen",
+      "prompt": "Use case: style-transfer. Asset: Veldryn Ironwarden player profile icon, square high resolution PNG with genuine transparent alpha. Reference is the existing class emblem; preserve exactly its recognizable silver kite shield, vivid cobalt blue inset, central ivory silver cross, four small pointed metal rivets and tapered base. Redraw as exceptionally clean premium hand-pixelled fantasy RPG pixel art suitable for a 96–160px player showcase and 40px social avatar. Large intentional square pixel clusters on an approximately 128x128 logical pixel grid, crisp nearest-neighbor-like edges, restrained dithering, luminous silver highlights, strong readable silhouette. Center the entire emblem with 10% transparent padding, no clipped tips. No backdrop, no square tile, no enclosing avatar frame, no text, no floor shadow, no blur, no painted smooth gradients, no glow outside the silhouette. Preserve actual transparency around and through negative spaces. One emblem only."
+    },
+    {
+      "id": "bastion",
+      "name": "Bastion",
+      "category": "Class emblems",
+      "file": "bastion.png",
+      "generator": "built-in image_gen",
+      "prompt": "Use case: style-transfer. Asset: Veldryn bastion class emblem profile icon. The input is the existing emblem; preserve its distinctive symbol, exact dominant color family, composition and silhouette. Redraw it as premium crisp fantasy RPG pixel art, high resolution square PNG, genuine transparent alpha background. Hand-placed square pixel clusters on approximately a 128x128 logical grid; consistent pixel size, carefully shaded metal, gems and materials, restrained dithering. Highly readable at 40px and sharp in a 160px player showcase. Enlarge the meaningful symbol rather than adding tiny details. Entire emblem centered with 10% empty transparent padding. No background tile, no extra avatar border, no text, no floor shadow, no scenery, no blurry gradients or anti-aliased painting. Keep transparency in all negative spaces. Exactly one emblem."
+    },
+    {
+      "id": "dreadguard",
+      "name": "Dreadguard",
+      "category": "Class emblems",
+      "file": "dreadguard.png",
+      "generator": "built-in image_gen",
+      "prompt": "Use case: style-transfer. Asset: Veldryn dreadguard class emblem profile icon. The input is the existing emblem; preserve its distinctive symbol, exact dominant color family, composition and silhouette. Redraw it as premium crisp fantasy RPG pixel art, high resolution square PNG, genuine transparent alpha background. Hand-placed square pixel clusters on approximately a 128x128 logical grid; consistent pixel size, carefully shaded metal, gems and materials, restrained dithering. Highly readable at 40px and sharp in a 160px player showcase. Enlarge the meaningful symbol rather than adding tiny details. Entire emblem centered with 10% empty transparent padding. No background tile, no extra avatar border, no text, no floor shadow, no scenery, no blurry gradients or anti-aliased painting. Keep transparency in all negative spaces. Exactly one emblem."
+    },
+    {
+      "id": "dawnkeeper",
+      "name": "Dawnkeeper",
+      "category": "Class emblems",
+      "file": "dawnkeeper.png",
+      "generator": "built-in image_gen",
+      "prompt": "Use case: style-transfer. Asset: Veldryn dawnkeeper class emblem profile icon. The input is the existing emblem; preserve its distinctive symbol, exact dominant color family, composition and silhouette. Redraw it as premium crisp fantasy RPG pixel art, high resolution square PNG, genuine transparent alpha background. Hand-placed square pixel clusters on approximately a 128x128 logical grid; consistent pixel size, carefully shaded metal, gems and materials, restrained dithering. Highly readable at 40px and sharp in a 160px player showcase. Enlarge the meaningful symbol rather than adding tiny details. Entire emblem centered with 10% empty transparent padding. No background tile, no extra avatar border, no text, no floor shadow, no scenery, no blurry gradients or anti-aliased painting. Keep transparency in all negative spaces. Exactly one emblem."
+    },
+    {
+      "id": "wayfinder",
+      "name": "Wayfinder",
+      "category": "Class emblems",
+      "file": "wayfinder.png",
+      "generator": "built-in image_gen",
+      "prompt": "Use case: style-transfer. Asset: Veldryn wayfinder class emblem, enhanced for player showcase. Preserve the reference's exact dominant colors, distinctive central symbol and overall silhouette. Redraw as high-quality hand-pixelled fantasy RPG pixel art at high resolution with genuine transparent alpha. Crisp deliberate square pixel clusters, approximately 128x128 logical grid, strong material highlights and clean readable shapes. No smooth painting, blur or vector look. One centered emblem occupying 80% of square canvas, 10% transparent padding, all tips intact. No background, no tile, no extra avatar frame, no text, no floor shadow. Transparent negative spaces. Remain legible at both 40px and 160px display sizes."
+    },
+    {
+      "id": "ravager",
+      "name": "Ravager",
+      "category": "Class emblems",
+      "file": "ravager.png",
+      "generator": "built-in image_gen",
+      "prompt": "Use case: style-transfer. Asset: Veldryn ravager class emblem, enhanced for player showcase. Preserve the reference's exact dominant colors, distinctive central symbol and overall silhouette. Redraw as high-quality hand-pixelled fantasy RPG pixel art at high resolution with genuine transparent alpha. Crisp deliberate square pixel clusters, approximately 128x128 logical grid, strong material highlights and clean readable shapes. No smooth painting, blur or vector look. One centered emblem occupying 80% of square canvas, 10% transparent padding, all tips intact. No background, no tile, no extra avatar frame, no text, no floor shadow. Transparent negative spaces. Remain legible at both 40px and 160px display sizes."
+    },
+    {
+      "id": "hexweaver",
+      "name": "Hexweaver",
+      "category": "Class emblems",
+      "file": "hexweaver.png",
+      "generator": "built-in image_gen",
+      "prompt": "Use case: style-transfer. Asset: Veldryn hexweaver class emblem, enhanced for player showcase. Preserve the reference's exact dominant colors, distinctive central symbol and overall silhouette. Redraw as high-quality hand-pixelled fantasy RPG pixel art at high resolution with genuine transparent alpha. Crisp deliberate square pixel clusters, approximately 128x128 logical grid, strong material highlights and clean readable shapes. No smooth painting, blur or vector look. One centered emblem occupying 80% of square canvas, 10% transparent padding, all tips intact. No background, no tile, no extra avatar frame, no text, no floor shadow. Transparent negative spaces. Remain legible at both 40px and 160px display sizes."
+    },
+    {
+      "id": "knife_dancer",
+      "name": "Knife Dancer",
+      "category": "Class emblems",
+      "file": "knife_dancer.png",
+      "generator": "built-in image_gen",
+      "prompt": "Use case: style-transfer. Asset: Veldryn knife_dancer class emblem, enhanced for player showcase. Preserve the reference's exact dominant colors, distinctive central symbol and overall silhouette. Redraw as high-quality hand-pixelled fantasy RPG pixel art at high resolution with genuine transparent alpha. Crisp deliberate square pixel clusters, approximately 128x128 logical grid, strong material highlights and clean readable shapes. No smooth painting, blur or vector look. One centered emblem occupying 80% of square canvas, 10% transparent padding, all tips intact. No background, no tile, no extra avatar frame, no text, no floor shadow. Transparent negative spaces. Remain legible at both 40px and 160px display sizes."
+    },
+    {
+      "id": "stonecaller",
+      "name": "Stonecaller",
+      "category": "Class emblems",
+      "file": "stonecaller.png",
+      "generator": "built-in image_gen",
+      "prompt": "Use case: style-transfer. Asset: Veldryn stonecaller class emblem, enhanced for player showcase. Preserve the reference's exact dominant colors, distinctive central symbol and overall silhouette. Redraw as high-quality hand-pixelled fantasy RPG pixel art at high resolution with genuine transparent alpha. Crisp deliberate square pixel clusters, approximately 128x128 logical grid, strong material highlights and clean readable shapes. No smooth painting, blur or vector look. One centered emblem occupying 80% of square canvas, 10% transparent padding, all tips intact. No background, no tile, no extra avatar frame, no text, no floor shadow. Transparent negative spaces. Remain legible at both 40px and 160px display sizes."
+    },
+    {
+      "id": "hooded-ranger",
+      "name": "Hooded Ranger",
+      "category": "Adventurers",
+      "file": "hooded-ranger.png",
+      "generator": "built-in image_gen",
+      "prompt": "Use case: stylized-concept. Asset: one Veldryn fantasy RPG player profile icon. Square high resolution transparent PNG with genuine alpha; empty background, no scene, no square tile, no enclosing frame, no lettering or watermark. Premium hand-pixelled fantasy game art with large intentional square pixel clusters on approximately a 128x128 logical pixel grid, crisp stepped edges, restrained dithering and a limited rich palette. Cohesive with detailed medieval fantasy pixel art and near-black/silver game UI. Readable at 40px and beautifully sharp at 160px. Centered close-up silhouette occupies about 80% of canvas, 10% safe transparent padding; complete head/helmet and shoulders for portraits, no full body. Clear facial or object focal point, upper-left highlights, clean shaded pixel clusters. No blurry edges, no photorealism, no smooth vector rendering, no backdrop glow. Subject: An adult woman forest ranger with warm brown skin, a deep forest-green hood, alert amber eyes, subtle auburn hair, a weathered leather shoulder cloak and small bronze leaf clasp. Composed capable expression, head and shoulders three-quarter view. Rich moss green, leather brown, warm gold."
+    },
+    {
+      "id": "armored-sentinel",
+      "name": "Armored Sentinel",
+      "category": "Adventurers",
+      "file": "armored-sentinel.png",
+      "generator": "built-in image_gen",
+      "prompt": "Use case: stylized-concept. Asset: one Veldryn fantasy RPG player profile icon. Square high resolution transparent PNG with genuine alpha; empty background, no scene, no square tile, no enclosing frame, no lettering or watermark. Premium hand-pixelled fantasy game art with large intentional square pixel clusters on approximately a 128x128 logical pixel grid, crisp stepped edges, restrained dithering and a limited rich palette. Cohesive with detailed medieval fantasy pixel art and near-black/silver game UI. Readable at 40px and beautifully sharp at 160px. Centered close-up silhouette occupies about 80% of canvas, 10% safe transparent padding; complete head/helmet and shoulders for portraits, no full body. Clear facial or object focal point, upper-left highlights, clean shaded pixel clusters. No blurry edges, no photorealism, no smooth vector rendering, no backdrop glow. Subject: An armored knight bust wearing a closed steel greathelm with a narrow blue-lit visor slit, silver riveted pauldrons, a cobalt cloak and a small ivory cross motif. Stoic bold silhouette. No shield surrounding portrait."
+    },
+    {
+      "id": "masked-spellcaster",
+      "name": "Masked Spellcaster",
+      "category": "Adventurers",
+      "file": "masked-spellcaster.png",
+      "generator": "built-in image_gen",
+      "prompt": "Use case: stylized-concept. Asset: one Veldryn fantasy RPG player profile icon. Square high resolution transparent PNG with genuine alpha; empty background, no scene, no square tile, no enclosing frame, no lettering or watermark. Premium hand-pixelled fantasy game art with large intentional square pixel clusters on approximately a 128x128 logical pixel grid, crisp stepped edges, restrained dithering and a limited rich palette. Cohesive with detailed medieval fantasy pixel art and near-black/silver game UI. Readable at 40px and beautifully sharp at 160px. Centered close-up silhouette occupies about 80% of canvas, 10% safe transparent padding; complete head/helmet and shoulders for portraits, no full body. Clear facial or object focal point, upper-left highlights, clean shaded pixel clusters. No blurry edges, no photorealism, no smooth vector rendering, no backdrop glow. Subject: An enigmatic spellcaster bust with a dark violet cowl, angular pale ivory half-mask covering the face, two restrained purple eye lights, silver embroidered collar, one small amethyst clasp. Noble mysterious fantasy character, not horror."
+    },
+    {
+      "id": "traveling-alchemist",
+      "name": "Traveling Alchemist",
+      "category": "Adventurers",
+      "file": "traveling-alchemist.png",
+      "generator": "built-in image_gen",
+      "prompt": "Use case: stylized-concept. Asset: one Veldryn fantasy RPG player profile icon. Square high resolution transparent PNG with genuine alpha; empty background, no scene, no square tile, no enclosing frame, no lettering or watermark. Premium hand-pixelled fantasy game art with large intentional square pixel clusters on approximately a 128x128 logical pixel grid, crisp stepped edges, restrained dithering and a limited rich palette. Cohesive with detailed medieval fantasy pixel art and near-black/silver game UI. Readable at 40px and beautifully sharp at 160px. Centered close-up silhouette occupies about 80% of canvas, 10% safe transparent padding; complete head/helmet and shoulders for portraits, no full body. Clear facial or object focal point, upper-left highlights, clean shaded pixel clusters. No blurry edges, no photorealism, no smooth vector rendering, no backdrop glow. Subject: An adult male traveling alchemist bust with tan skin, short dark hair, round brass goggles resting on forehead, warm inquisitive eyes, teal scarf, worn brown leather collar and one tiny amber potion vial at shoulder. Welcoming expression."
+    },
+    {
+      "id": "dawn-priestess",
+      "name": "Dawn Priestess",
+      "category": "Adventurers",
+      "file": "dawn-priestess.png",
+      "generator": "built-in image_gen",
+      "prompt": "Use case: stylized-concept. Asset: one Veldryn fantasy RPG player profile icon. Square high resolution transparent PNG with genuine alpha; empty background, no scene, no square tile, no enclosing frame, no lettering or watermark. Premium hand-pixelled fantasy game art with large intentional square pixel clusters on approximately a 128x128 logical pixel grid, crisp stepped edges, restrained dithering and a limited rich palette. Cohesive with detailed medieval fantasy pixel art and near-black/silver game UI. Readable at 40px and beautifully sharp at 160px. Centered close-up silhouette occupies about 80% of canvas, 10% safe transparent padding; complete head/helmet and shoulders for portraits, no full body. Clear facial or object focal point, upper-left highlights, clean shaded pixel clusters. No blurry edges, no photorealism, no smooth vector rendering, no backdrop glow. Subject: An adult woman healer bust, deep brown skin, short white curls, delicate gold sun diadem, warm brown eyes, ivory robes and golden shoulder trim. Serene and confident. No halo disk behind head."
+    },
+    {
+      "id": "stonebound-explorer",
+      "name": "Stonebound Explorer",
+      "category": "Adventurers",
+      "file": "stonebound-explorer.png",
+      "generator": "built-in image_gen",
+      "prompt": "Use case: stylized-concept. Asset: one Veldryn fantasy RPG player profile icon. Square high resolution transparent PNG with genuine alpha; empty background, no scene, no square tile, no enclosing frame, no lettering or watermark. Premium hand-pixelled fantasy game art with large intentional square pixel clusters on approximately a 128x128 logical pixel grid, crisp stepped edges, restrained dithering and a limited rich palette. Cohesive with detailed medieval fantasy pixel art and near-black/silver game UI. Readable at 40px and beautifully sharp at 160px. Centered close-up silhouette occupies about 80% of canvas, 10% safe transparent padding; complete head/helmet and shoulders for portraits, no full body. Clear facial or object focal point, upper-left highlights, clean shaded pixel clusters. No blurry edges, no photorealism, no smooth vector rendering, no backdrop glow. Subject: An adult stocky male mountain explorer bust with braided auburn beard, weathered fair skin, thick eyebrows, slate-blue hood pushed back, a small teal crystal clasp and rugged copper-trimmed shoulder armor. Friendly resolute expression."
+    },
+    {
+      "id": "moss-rat",
+      "name": "Moss Rat",
+      "category": "Creatures & bosses",
+      "file": "moss-rat.png",
+      "generator": "built-in image_gen",
+      "prompt": "Use case: stylized-concept. Asset: one Veldryn fantasy RPG player profile icon. Square high resolution transparent PNG with genuine alpha; empty background, no scene, no square tile, no enclosing frame, no lettering or watermark. Premium hand-pixelled fantasy game art with large intentional square pixel clusters on approximately a 128x128 logical pixel grid, crisp stepped edges, restrained dithering and a limited rich palette. Cohesive with detailed medieval fantasy pixel art and near-black/silver game UI. Readable at 40px and beautifully sharp at 160px. Centered close-up silhouette occupies about 80% of canvas, 10% safe transparent padding; complete head/helmet and shoulders for portraits, no full body. Clear facial or object focal point, upper-left highlights, clean shaded pixel clusters. No blurry edges, no photorealism, no smooth vector rendering, no backdrop glow. Subject: Close-up head and shoulder portrait of the Moss Rat. Preserve brown fur, oversized pink inner ears, small copper eyes, whiskers and green moss growing along its head. Charming scrappy woodland creature. Reference image is identity reference only: keep the creature recognizable but frame it as a large avatar portrait, not the original full-body sprite."
+    },
+    {
+      "id": "ironwood-wolf",
+      "name": "Ironwood Wolf",
+      "category": "Creatures & bosses",
+      "file": "ironwood-wolf.png",
+      "generator": "built-in image_gen",
+      "prompt": "Use case: stylized-concept. Asset: one Veldryn fantasy RPG player profile icon. Square high resolution transparent PNG with genuine alpha; empty background, no scene, no square tile, no enclosing frame, no lettering or watermark. Premium hand-pixelled fantasy game art with large intentional square pixel clusters on approximately a 128x128 logical pixel grid, crisp stepped edges, restrained dithering and a limited rich palette. Cohesive with detailed medieval fantasy pixel art and near-black/silver game UI. Readable at 40px and beautifully sharp at 160px. Centered close-up silhouette occupies about 80% of canvas, 10% safe transparent padding; complete head/helmet and shoulders for portraits, no full body. Clear facial or object focal point, upper-left highlights, clean shaded pixel clusters. No blurry edges, no photorealism, no smooth vector rendering, no backdrop glow. Subject: Close-up head and shoulder portrait of the Ironwood Wolf. Preserve its dark brown bark-like fur, leafy green mane, pointed ears, golden eyes and alert wolf muzzle. Fierce but not snarling excessively. Reference image is identity reference only: keep the creature recognizable but frame it as a large avatar portrait, not the original full-body sprite."
+    },
+    {
+      "id": "fallen-knight",
+      "name": "Fallen Knight",
+      "category": "Creatures & bosses",
+      "file": "fallen-knight.png",
+      "generator": "built-in image_gen",
+      "prompt": "Use case: stylized-concept. Asset: one Veldryn fantasy RPG player profile icon. Square high resolution transparent PNG with genuine alpha; empty background, no scene, no square tile, no enclosing frame, no lettering or watermark. Premium hand-pixelled fantasy game art with large intentional square pixel clusters on approximately a 128x128 logical pixel grid, crisp stepped edges, restrained dithering and a limited rich palette. Cohesive with detailed medieval fantasy pixel art and near-black/silver game UI. Readable at 40px and beautifully sharp at 160px. Centered close-up silhouette occupies about 80% of canvas, 10% safe transparent padding; complete head/helmet and shoulders for portraits, no full body. Clear facial or object focal point, upper-left highlights, clean shaded pixel clusters. No blurry edges, no photorealism, no smooth vector rendering, no backdrop glow. Subject: Close-up helmet and shoulder portrait of the Fallen Knight boss. Preserve ancient blackened steel, aged brass trims, jagged crown-like helmet tips, dark narrow visor, worn dark red cape, spiked shoulders. Majestic readable silhouette, no gore. Reference image is identity reference only: keep the creature recognizable but frame it as a large avatar portrait, not the original full-body sprite."
+    },
+    {
+      "id": "ironwood-hound",
+      "name": "Ironwood Hound",
+      "category": "Creatures & bosses",
+      "file": "ironwood-hound.png",
+      "generator": "built-in image_gen",
+      "prompt": "Use case: identity-preserve. Asset: transparent pixel-style player profile icon for Veldryn. The reference is the CURRENT approved Ironwood Hound companion artwork. Reframe this exact creature as a close head-and-shoulders portrait, keeping its recognizable identity, shapes, materials and palette. Preserve its angular wooden canine muzzle, amber eyes, pointed bark ears, layered brown bark armor, twisting vines and fresh green leaf mane. No ordinary furry dog. Match detailed fantasy pixel art of the profile icon set: deliberate square pixel clusters, crisp stepped edges, rich but controlled shading, readable at 40px and detailed at 160px. Square canvas, centered head and upper chest filling roughly 80 percent, keep all crest and shoulder tips inside with transparent margins. Real transparent alpha background including negative spaces. No full body, scenery, tile, frame, text, watermark or background glow. No smooth painted rendering. One icon only."
+    },
+    {
+      "id": "runebound-sentry",
+      "name": "Runebound Sentry",
+      "category": "Creatures & bosses",
+      "file": "runebound-sentry.png",
+      "generator": "built-in image_gen",
+      "prompt": "Use case: identity-preserve. Asset: transparent pixel-style player profile icon for Veldryn. The reference is the CURRENT approved Runebound Sentry companion artwork. Reframe this exact creature as a close head-and-shoulders portrait, keeping its recognizable identity, shapes, materials and palette. Preserve its faceless tall jagged stone crest/head, massive weathered stone shoulders, moss and vines, bronze-gold trim and central brilliant emerald diamond rune. No invented human face, no helmet eyes. Include the upper chest rune as the focal point. Match detailed fantasy pixel art of the profile icon set: deliberate square pixel clusters, crisp stepped edges, rich but controlled shading, readable at 40px and detailed at 160px. Square canvas, centered head and upper chest filling roughly 80 percent, keep all crest and shoulder tips inside with transparent margins. Real transparent alpha background including negative spaces. No full body, scenery, tile, frame, text, watermark or background glow. No smooth painted rendering. One icon only."
+    },
+    {
+      "id": "dawnwing",
+      "name": "Dawnwing",
+      "category": "Creatures & bosses",
+      "file": "dawnwing.png",
+      "generator": "built-in image_gen",
+      "prompt": "Use case: identity-preserve. Asset: transparent pixel-style player profile icon for Veldryn. The reference is the CURRENT approved Dawnwing companion artwork. Reframe this exact creature as a close head-and-shoulders portrait, keeping its recognizable identity, shapes, materials and palette. Preserve its avian eagle-like head and curved beak, amber eye, swept pointed golden crest, layered ivory/gold feathers and elegant curling golden plumage. Include upper breast and hints of lifted wings framing the bird. It is a majestic golden feathered bird, not a humanoid harpy, owl or mammal. Match detailed fantasy pixel art of the profile icon set: deliberate square pixel clusters, crisp stepped edges, rich but controlled shading, readable at 40px and detailed at 160px. Square canvas, centered head and upper chest filling roughly 80 percent, keep all crest and shoulder tips inside with transparent margins. Real transparent alpha background including negative spaces. No full body, scenery, tile, frame, text, watermark or background glow. No smooth painted rendering. One icon only."
+    },
+    {
+      "id": "pumpkin-piglet",
+      "name": "Pumpkin Piglet",
+      "category": "Harvestwake",
+      "file": "pumpkin-piglet.png",
+      "generator": "built-in image_gen",
+      "prompt": "Use case: stylized-concept. Asset: one Veldryn fantasy RPG player profile icon. Square high resolution transparent PNG with genuine alpha; empty background, no scene, no square tile, no enclosing frame, no lettering or watermark. Premium hand-pixelled fantasy game art with large intentional square pixel clusters on approximately a 128x128 logical pixel grid, crisp stepped edges, restrained dithering and a limited rich palette. Cohesive with detailed medieval fantasy pixel art and near-black/silver game UI. Readable at 40px and beautifully sharp at 160px. Centered close-up silhouette occupies about 80% of canvas, 10% safe transparent padding; complete head/helmet and shoulders for portraits, no full body. Clear facial or object focal point, upper-left highlights, clean shaded pixel clusters. No blurry edges, no photorealism, no smooth vector rendering, no backdrop glow. Subject: Close-up head and shoulders of the reference Pumpkin Piglet companion pet. Preserve its rosy pink snout, friendly eyes, floppy ears, orange pumpkin cap with green curled stem and small autumn leaves. Cozy harvest palette, adorable but consistent with detailed medieval fantasy pixel art."
+    },
+    {
+      "id": "harvest-guardian",
+      "name": "Harvest Guardian",
+      "category": "Harvestwake",
+      "file": "harvest-guardian.png",
+      "generator": "built-in image_gen",
+      "prompt": "Use case: stylized-concept. Asset: one Veldryn fantasy RPG player profile icon. Square high resolution transparent PNG with genuine alpha; empty background, no scene, no square tile, no enclosing frame, no lettering or watermark. Premium hand-pixelled fantasy game art with large intentional square pixel clusters on approximately a 128x128 logical pixel grid, crisp stepped edges, restrained dithering and a limited rich palette. Cohesive with detailed medieval fantasy pixel art and near-black/silver game UI. Readable at 40px and beautifully sharp at 160px. Centered close-up silhouette occupies about 80% of canvas, 10% safe transparent padding; complete head/helmet and shoulders for portraits, no full body. Clear facial or object focal point, upper-left highlights, clean shaded pixel clusters. No blurry edges, no photorealism, no smooth vector rendering, no backdrop glow. Subject: A scarecrow guardian head and shoulders. Weathered warm burlap face, two softly amber-lit eyes, a stitched friendly knowing smile, battered autumn-brown broad-brim hat with one wheat sprig, rust-orange neck scarf and short straw tufts. Mysterious welcoming Harvestwake festival guardian, not horror, no pumpkin head."
+    },
+    {
+      "id": "spirit-lantern",
+      "name": "Spirit Lantern",
+      "category": "Harvestwake",
+      "file": "spirit-lantern.png",
+      "generator": "built-in image_gen",
+      "prompt": "Use case: stylized-concept. Asset: one Veldryn fantasy RPG player profile icon. Square high resolution transparent PNG with genuine alpha; empty background, no scene, no square tile, no enclosing frame, no lettering or watermark. Premium hand-pixelled fantasy game art with large intentional square pixel clusters on approximately a 128x128 logical pixel grid, crisp stepped edges, restrained dithering and a limited rich palette. Cohesive with detailed medieval fantasy pixel art and near-black/silver game UI. Readable at 40px and beautifully sharp at 160px. Centered close-up silhouette occupies about 80% of canvas, 10% safe transparent padding; complete head/helmet and shoulders for portraits, no full body. Clear facial or object focal point, upper-left highlights, clean shaded pixel clusters. No blurry edges, no photorealism, no smooth vector rendering, no backdrop glow. Subject: A single prestigious Harvestwake spirit lantern: antique dark bronze and gold metalwork shaped around a warm amber glass chamber, with an elegant small curling leaf on the handle and a tiny friendly golden spirit flame inside. Large simple silhouette, amber-orange-gold glass facets, a few teal patina pixels, no diffuse glow outside the object, no face outside lantern."
+    }
+  ]
+}

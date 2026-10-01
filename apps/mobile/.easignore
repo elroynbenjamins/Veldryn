@@ -4,6 +4,10 @@ node_modules/
 # Local Expo/build output and generated previews.
 .expo/
 .expo-*/
+dist/
+.expo-export*/
+.readiness-export/
+.codex-tmp/
 .codex-*/
 .core-build/
 .onboarding-build/

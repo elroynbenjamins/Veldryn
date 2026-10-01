@@ -42,6 +42,8 @@ apps/mobile/*-export/
 apps/mobile/.*-export*/
 apps/mobile/.expo-export*/
 apps/mobile/dist/
+apps/mobile/.web-pet-preview/
+apps/mobile/.codex-tmp/
 apps/mobile/art-review/
 apps/mobile/tests/
 apps/mobile/*.log

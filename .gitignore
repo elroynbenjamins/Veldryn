@@ -54,3 +54,18 @@ supabase/.temp/
 .codex-challenge-references.txt
 .profile*.txt
 artifacts/
+
+# Local backend verification outputs and generated marketing bundles.
+backend/.arena-build/
+backend/.bot-readiness-backend/
+backend/.bot-readiness-online/
+backend/.companions-online-build/
+backend/.dungeon-online-build/
+backend/.online-all-expeditions-build/
+backend/.online-check/
+backend/.online-release-build/
+backend/.online-target-build/
+backend/.readiness-build/
+backend/.readiness-online/
+backend/dist-coop-composition/
+marketing/**/veldryn-play-store-*.zip

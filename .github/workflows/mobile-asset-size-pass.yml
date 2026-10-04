@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/mobile-asset-size-pass.yml"
+      - "tools/optimize-mobile-assets.py"
 
 permissions:
   contents: write

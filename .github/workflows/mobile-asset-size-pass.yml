@@ -1,0 +1,104 @@
+name: Mobile asset size pass
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/mobile-asset-size-pass.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  optimize-lossless-assets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install tooling
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y webp
+          npm install --global pnpm@9
+
+      - name: Install backend dependencies used by Metro
+        working-directory: backend
+        run: pnpm install --frozen-lockfile
+
+      - name: Install mobile dependencies
+        working-directory: apps/mobile
+        run: pnpm install --frozen-lockfile
+
+      - name: Measure current Android export
+        working-directory: apps/mobile
+        run: |
+          pnpm exec expo export --platform android --output-dir .asset-size-before-export --clear
+          BEFORE_ASSETS=$(du -sb .asset-size-before-export/assets | cut -f1)
+          BEFORE_TOTAL=$(du -sb .asset-size-before-export | cut -f1)
+          echo "BEFORE_ASSETS=$BEFORE_ASSETS" >> "$GITHUB_ENV"
+          echo "BEFORE_TOTAL=$BEFORE_TOTAL" >> "$GITHUB_ENV"
+
+      - name: Create optimization branch
+        run: git switch -C optimize/android-size-assets
+
+      - name: Convert referenced PNG families to lossless WebP
+        run: python3 tools/optimize-mobile-assets.py
+
+      - name: Validate optimized Android export
+        working-directory: apps/mobile
+        run: |
+          pnpm exec expo export --platform android --output-dir .asset-size-after-export --clear
+          AFTER_ASSETS=$(du -sb .asset-size-after-export/assets | cut -f1)
+          AFTER_TOTAL=$(du -sb .asset-size-after-export | cut -f1)
+          echo "AFTER_ASSETS=$AFTER_ASSETS" >> "$GITHUB_ENV"
+          echo "AFTER_TOTAL=$AFTER_TOTAL" >> "$GITHUB_ENV"
+          if [ "$AFTER_ASSETS" -ge "$BEFORE_ASSETS" ]; then
+            echo "Optimized assets are not smaller; refusing to commit." >&2
+            exit 1
+          fi
+
+      - name: Remove measurement exports
+        run: |
+          rm -rf apps/mobile/.asset-size-before-export
+          rm -rf apps/mobile/.asset-size-after-export
+
+      - name: Commit optimized assets
+        run: |
+          git config user.name "veldryn-size-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/mobile docs/mobile-asset-size-pass.json
+          git commit -m "perf(mobile): losslessly compress runtime assets with WebP"
+          git push --force-with-lease origin HEAD:refs/heads/optimize/android-size-assets
+
+      - name: Publish size summary
+        run: |
+          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import os
+          before_assets=int(os.environ["BEFORE_ASSETS"])
+          after_assets=int(os.environ["AFTER_ASSETS"])
+          before_total=int(os.environ["BEFORE_TOTAL"])
+          after_total=int(os.environ["AFTER_TOTAL"])
+          saved=before_assets-after_assets
+          pct=(saved/before_assets*100) if before_assets else 0
+          print("## Mobile asset size optimization")
+          print()
+          print("- Branch: optimize/android-size-assets")
+          print(f"- Android export assets before: **{before_assets/1024/1024:.1f} MiB**")
+          print(f"- Android export assets after: **{after_assets/1024/1024:.1f} MiB**")
+          print(f"- Asset saving: **{saved/1024/1024:.1f} MiB ({pct:.1f}%)**")
+          print(f"- Full export before: **{before_total/1024/1024:.1f} MiB**")
+          print(f"- Full export after: **{after_total/1024/1024:.1f} MiB**")
+          print()
+          print("All converted images use lossless WebP with transparent-pixel preservation.")
+          print("The workflow only commits when the rebuilt Android export is smaller.")
+          PY

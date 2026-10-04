@@ -31,9 +31,8 @@ jobs:
           sudo apt-get install -y webp
           npm install --global pnpm@9
 
-      - name: Install backend dependencies used by Metro
-        working-directory: backend
-        run: pnpm install --frozen-lockfile
+      - name: Install backend runtime dependencies used by Metro
+        run: npm install --prefix backend --omit=dev --no-package-lock --no-audit --no-fund
 
       - name: Install mobile dependencies
         working-directory: apps/mobile

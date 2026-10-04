@@ -1,18 +1,20 @@
 import {useSocialText} from '../i18n/social';
-import {useEffect,useMemo,useState} from 'react';
+import {useMemo} from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import {WORLD_CHANNELS,worldMessages,type WorldMessage} from '../online/social';
+import {useChatFeed} from '../online/useChatFeed';
 import {typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {ChatMessageText} from './ChatMessageText';
 import {GuildTaggedPlayerName} from './GuildTaggedPlayerName';
 import {ThemedIcon} from './ThemedNavigationIcon';
 
-export function ChatDock({enabled,onOpen,lines=1,unreadCount=0,mentionCount=0}:{enabled:boolean;onOpen:()=>void;lines?:1|2|3;unreadCount?:number;mentionCount?:number}){
+export function ChatDock({enabled,onOpen,lines=1,unreadCount=0,mentionCount=0,active=true}:{enabled:boolean;onOpen:()=>void;lines?:1|2|3;unreadCount?:number;mentionCount?:number;active?:boolean}){
  const st=useSocialText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
- const [rows,setRows]=useState<WorldMessage[]>([]);
- useEffect(()=>{if(!enabled){setRows([]);return;}let active=true;const load=()=>void worldMessages(WORLD_CHANNELS[0].id).then(next=>{if(active)setRows(next.slice(-3));}).catch(()=>{});load();const timer=setInterval(load,8000);return()=>{active=false;clearInterval(timer)};},[enabled]);
+ const channelId=WORLD_CHANNELS[0].id;
+ const {value:history}=useChatFeed<WorldMessage[]>({key:`world:${channelId}`,read:()=>worldMessages(channelId),initial:[],active:enabled&&active,channelType:'world',channelId});
+ const rows=enabled?history:[];
  const shown=rows.slice(-lines),latest=shown[shown.length-1],height=lines===1?48:lines===2?68:88;
  const attention=[mentionCount>0?st('{count} mentions',{count:mentionCount}):null,unreadCount>0?st('{count} unread',{count:unreadCount}):null].filter(Boolean).join(', ');
  const label=latest?st('Open chat. Latest World message from {name}: {message}',{name:latest.sender_name,message:latest.body})+(attention?'. '+attention:''):st('Open chat')+(attention?'. '+attention:'');

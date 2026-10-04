@@ -1,8 +1,12 @@
+export function isAuthCallbackUrl(raw:string,redirectTo:string){
+ try{const url=new URL(raw),allowed=new URL(redirectTo);return url.protocol===allowed.protocol&&url.host===allowed.host&&url.pathname.replace(/\/$/,'')===allowed.pathname.replace(/\/$/,'')&&!url.username&&!url.password;}catch{return false;}
+}
 export function authCallbackCode(raw:string,redirectTo:string):string|null{
- const url=new URL(raw),allowed=new URL(redirectTo);
- if(url.protocol!==allowed.protocol||url.host!==allowed.host||url.pathname.replace(/\/$/,'')!==allowed.pathname.replace(/\/$/,''))return null;
- const failure=url.searchParams.has('error')?url.searchParams:new URLSearchParams(url.hash.replace(/^#/,''));
- if(failure.has('error'))throw new Error(failure.get('error_description')??'The account link could not be verified.');
+ if(!isAuthCallbackUrl(raw,redirectTo))return null;
+ const url=new URL(raw);
+ const hasError=(params:URLSearchParams)=>params.has('error')||params.has('error_code')||params.has('error_description');
+ const failure=hasError(url.searchParams)?url.searchParams:new URLSearchParams(url.hash.replace(/^#/,''));
+ if(hasError(failure))throw new Error(failure.get('error_description')??'The account link could not be verified.');
  const code=url.searchParams.get('code');return code&&code.length<=2048?code:null;
 }
 export function accountEmail(value:string){const clean=value.trim().toLowerCase();if(clean.length>254||!/^\S+@\S+\.\S+$/.test(clean))throw new Error('Enter a valid email address.');return clean;}

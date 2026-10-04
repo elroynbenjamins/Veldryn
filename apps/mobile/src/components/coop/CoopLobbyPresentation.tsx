@@ -29,7 +29,7 @@ export function CoopLiveLobbyView({dungeons=[],selfPortrait,queue,ready,notice='
  const tier=ready?.tier??queue?.ticket?.maxTier??queue?.ticket?.tier;
  const roster=queued||open||refilling||committed;
  return <View style={s.screen}>
-  <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+  <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled">
    <View style={[s.hero,{height:Math.max(190,Math.min(280,height*.30))}]}>
     {art?<Image source={art} resizeMode="cover" style={[StyleSheet.absoluteFillObject,{width:'100%',height:'100%'}]}/>:null}
     <Image source={require('../../../assets/coop-ui/illustrations/hero-shade.png')} resizeMode="stretch" style={[StyleSheet.absoluteFillObject,{width:'100%',height:'100%'}]}/>

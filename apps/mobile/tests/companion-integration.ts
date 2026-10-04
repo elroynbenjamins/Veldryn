@@ -8,7 +8,7 @@ import {characterPermanentMultipliers} from '../src/core/permanent-boosts';
 import {PET_PERMANENT_BOOSTS} from '../src/content/permanent-boosts';
 import {ALL_COMBAT_COMPANIONS,COMBAT_COMPANIONS} from '../src/content/combat-companions';
 import {companionAssignmentStatusLabel,companionMaterialSources,companionNextMasteryTargets,companionNextUnlockTargets,companionRewardLabel} from '../src/core/companion-presentation';
-import {COMPANION_SPECIAL_CHALLENGES,COMPANION_TECHNIQUE_SWITCH_COST,companionServerDefinition,companionTechniques} from '../../../backend/src/server/companions/content';
+import {COMPANION_SERVER_DEFINITIONS,COMPANION_SPECIAL_CHALLENGES,COMPANION_TECHNIQUE_SWITCH_COST,companionServerDefinition,companionTechniques} from '../../../backend/src/server/companions/content';
 import {companionUnlockRequirementProgress} from '../../../backend/src/server/companions/progression-v2';
 import {buildOwnedCompanionCombatant} from '../../../backend/src/server/companions/combat-adapter';
 import {buildCompanionTrialEncounter} from '../../../backend/src/server/companions/trials';
@@ -30,18 +30,26 @@ const specialRequirement=COMPANION_SPECIAL_CHALLENGES.find(row=>row.id==='CHALLE
 const suggestedTrialTeam=recommendedCompanionTrialTeam(fixture());ok(suggestedTrialTeam.ready&&suggestedTrialTeam.ids.length===3&&suggestedTrialTeam.power>0,'Trial guidance builds a complete available role team');ok(new Set(suggestedTrialTeam.ids.map(id=>companionServerDefinition(id)?.role)).size===3,'Trial guidance always covers Tank Damage Support');ok(companionAvailability(fixture(),'UNIT_001').status==='available','idle owned companion reports available');
 let expeditionGuide=fixture();for(const id of ids)expeditionGuide.account.combatCompanionProgress![id]={...expeditionGuide.account.combatCompanionProgress![id],level:5};expeditionGuide.account.companionSanctuary!.expeditionPensLevel=1;const suggestedExpedition=recommendedCompanionMissionTeam(expeditionGuide,'MISSION_SCOUT_2H',now);ok(suggestedExpedition.ready&&suggestedExpedition.ids.length>=1&&suggestedExpedition.ids.length<=2&&!!suggestedExpedition.grade,'Expedition guidance finds a valid mission team');ok(suggestedExpedition.bonusRequirementMet,'Expedition guidance prefers a valid bonus-condition team');expeditionGuide=command(expeditionGuide,'companion_equip',{id:'UNIT_001'});const equippedExcluded=recommendedCompanionMissionTeam(expeditionGuide,'MISSION_SCOUT_2H',now);ok(equippedExcluded.ready&&!equippedExcluded.ids.includes('UNIT_001'),'Expedition guidance excludes the currently equipped companion');
 const permanentCompanions=ALL_COMBAT_COMPANIONS.filter(def=>def.origin.type!=='event'),eventCompanions=ALL_COMBAT_COMPANIONS.filter(def=>def.origin.type==='event');
-ok(ALL_COMBAT_COMPANIONS.length===34,'full roster contains 24 permanent and 10 event companions');
+// Hollow Knightling was intentionally withheld from Veilbreak in the October 1
+// content pass. Its backend identity remains reserved; released IDs are never
+// renumbered to close that gap (see validate-companion-art-coverage.mjs).
+const expectedPermanentIds=Array.from({length:24},(_,index)=>`UNIT_${String(index+1).padStart(3,'0')}`);
+const expectedEventIds=['EVT_UNIT_001','EVT_UNIT_002','EVT_UNIT_003','EVT_UNIT_004','EVT_UNIT_005','EVT_UNIT_006','EVT_UNIT_007','EVT_UNIT_009','EVT_UNIT_010'];
+ok(ALL_COMBAT_COMPANIONS.length===33,'authored roster contains 24 permanent and 9 event companions');
 ok(permanentCompanions.length===24,'permanent companion count remains 24');
-ok(eventCompanions.length===10,'event companion count is 10');
+ok(permanentCompanions.map(def=>def.id).sort().join(',')===expectedPermanentIds.join(','),'permanent companion ids remain UNIT_001 through UNIT_024');
+ok(eventCompanions.length===9,'event roster contains the 9 authored companion rewards');
 ok(COMBAT_COMPANIONS.length===24,'unreleased event companions stay out of the active catalog');
 ok(COMBAT_COMPANIONS.every(def=>def.origin.type!=='event'),'active catalog contains no unreleased event companions');
-ok(new Set(COMBAT_COMPANIONS.map(def=>def.id)).size===COMBAT_COMPANIONS.length,'companion ids are unique');
-ok(eventCompanions.map(def=>def.id).join(',')===Array.from({length:10},(_,index)=>`EVT_UNIT_${String(index+1).padStart(3,'0')}`).join(','),'event companion ids remain EVT_UNIT_001 through EVT_UNIT_010');
+ok(new Set(ALL_COMBAT_COMPANIONS.map(def=>def.id)).size===ALL_COMBAT_COMPANIONS.length,'permanent and event companion ids are unique');
+ok(eventCompanions.map(def=>def.id).sort().join(',')===expectedEventIds.join(','),'event companion ids preserve the intentional EVT_UNIT_008 gap');
+const mobileIds=new Set(ALL_COMBAT_COMPANIONS.map(def=>def.id));
+ok(COMPANION_SERVER_DEFINITIONS.filter(def=>!mobileIds.has(def.id)).map(def=>def.id).join(',')==='EVT_UNIT_008','Hollow Knightling is the only backend-only reserved companion');
 ok(companionRewardLabel('COMPANION_PORTRAIT_UNIT_001').includes('Ironwood Hound'),'companion portrait entitlement has readable Codex copy');ok(companionRewardLabel('PROFILE_BORDER_MASTER_HANDLER').includes('Profile border'),'profile reward entitlement has readable Codex copy');ok(companionView(fixture(),now).codex.milestones[0].reward.companionEssence===120,'Codex projection exposes milestone reward details');
 const hiddenPrestige=companionView(fixture(),now).codex.entries.find(entry=>entry.companionId==='UNIT_012');ok(hiddenPrestige?.state==='unknown'&&hiddenPrestige.name==='Unknown Companion','unrevealed Prestige companion stays hidden in Codex');let discovery=fixture();discovery=unlockCombatCompanion(discovery,'UNIT_007',now);for(const id of ['UNIT_001','UNIT_002','UNIT_003','UNIT_007'])discovery.account.combatCompanionProgress![id]={...discovery.account.combatCompanionProgress![id],bondLevel:5,bondXp:580};discovery.account.companionBossClears={...discovery.account.companionBossClears,FALLEN_KNIGHT:10};discovery.account.companionTrialProgress!.lifetime.lifetimeHighestFloor=20;discovery=refreshCompanions(discovery,now);const revealed=companionView(discovery,now).codex.entries.find(entry=>entry.companionId==='UNIT_012');ok(revealed?.state==='discovered'&&revealed.name==='Oathglass Knightling','Prestige identity is revealed when its Special Challenge becomes available');const discoveryReload=parseSaveBackup(createSaveBackup(discovery));ok(discoveryReload.account.companionPhase2Profile?.discoveredCompanionIds?.includes('UNIT_012'),'discovered Prestige identity persists through save reload');
 const unlockGuidance=companionNextUnlockTargets(fixture(),3);ok(unlockGuidance.length>0&&unlockGuidance.every(entry=>!ids.includes(entry.def.id)&&entry.def.origin.type!=='event'),'Codex guidance prioritizes locked permanent companion unlocks');ok(unlockGuidance.every(entry=>entry.progress.ratio>=0&&entry.progress.ratio<=1),'unlock guidance progress remains normalized');const masteryGuidance=companionNextMasteryTargets(fixture(),3);ok(masteryGuidance.length===3&&masteryGuidance.every(entry=>entry.nextStep.startsWith('Train')),'Codex mastery guidance gives concrete next training steps');
 let s=fixture();
-for(const d of COMBAT_COMPANIONS){ok(companionServerDefinition(d.id)?.role===d.role,`${d.id} role agrees`);ok(companionServerDefinition(d.id)?.rarity===d.rarity,`${d.id} rarity agrees`);}
+for(const d of ALL_COMBAT_COMPANIONS){const server=companionServerDefinition(d.id);ok(server?.name===d.name,`${d.id} identity agrees`);ok(server?.role===d.role,`${d.id} role agrees`);ok(server?.rarity===d.rarity,`${d.id} rarity agrees`);ok(server?.originId===d.origin.id,`${d.id} origin agrees`);}
 rejects(()=>command(s,'companion_equip',{id:'UNIT_002'}),'same role rejected');
 rejects(()=>command(s,'companion_equip',{id:'UNIT_024'}),'unowned rejected');
 s=command(s,'companion_equip',{id:'UNIT_001'});ok(s.character!.equippedCombatCompanionId==='UNIT_001','equip persists');

@@ -1,5 +1,5 @@
-import {useEffect,useMemo,useState} from 'react';
-import {StyleSheet,Text,View} from 'react-native';
+import {useEffect,useMemo,useRef,useState} from 'react';
+import {AppState,StyleSheet,Text,View} from 'react-native';
 import type {GameState} from '../core/types';
 import {systemNotifications,type SystemNotice} from '../core/system-notifications';
 import {type ThemeColors} from '../theme/theme';
@@ -11,12 +11,30 @@ import {navigationText} from '../i18n/navigation';
 import {progressionText} from '../i18n/progression';
 import type {Language} from '../i18n/languages';
 
-export function SystemNoticeLog({state,now=Date.now()}:{state:GameState;now?:number}){
+export function SystemNoticeLog({state,now:providedNow,active=true}:{state:GameState;now?:number;active?:boolean}){
  const tr=(text:string)=>navigationText(state.settings.language,text);
- const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),[worldRows,setWorldRows]=useState<WorldMilestoneFeedRow[]>([]);
- useEffect(()=>{if(!onlineConfigured){setWorldRows([]);return;}let active=true;const load=()=>void worldMilestoneFeedV43(20).then(rows=>{if(active)setWorldRows(rows);}).catch(()=>{});load();const timer=setInterval(load,30000);return()=>{active=false;clearInterval(timer)};},[]);
- const items=[...systemNotifications(state,now),...worldRows.slice().reverse().map(row=>worldNotice(row,state.settings.language))];
- return <ChatLog channelKey="system" items={items} emptyText={tr("No system notices right now.")} renderItem={item=><NoticeRow item={item}/>}/>;
+ const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),[worldRows,setWorldRows]=useState<WorldMilestoneFeedRow[]>([]),[clock,setClock]=useState(Date.now);
+ const lastLoadedAt=useRef(0),inFlight=useRef(false),mounted=useRef(true),now=providedNow??clock;
+ useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;};},[]);
+ useEffect(()=>{
+  if(!active)return;
+  let alive=true;
+  const load=async()=>{
+   if(!alive||AppState.currentState!=='active')return;
+   if(Date.now()-lastLoadedAt.current<30000)return;
+   setClock(Date.now());
+   if(!onlineConfigured||inFlight.current)return;
+   inFlight.current=true;
+   try{const rows=await worldMilestoneFeedV43(20);if(mounted.current){setWorldRows(rows);lastLoadedAt.current=Date.now();}}
+   catch{/* Retain the visible feed while reconnecting. */}
+   finally{inFlight.current=false;}
+  };
+  void load();const timer=setInterval(()=>void load(),30000);
+  const foreground=AppState.addEventListener('change',next=>{if(next==='active')void load();});
+  return()=>{alive=false;clearInterval(timer);foreground.remove();};
+ },[active]);
+ const items=useMemo(()=>[...systemNotifications(state,now),...worldRows.slice().reverse().map(row=>worldNotice(row,state.settings.language))],[state,now,worldRows]);
+ return <ChatLog active={active} channelKey="system" items={items} emptyText={tr("No system notices right now.")} renderItem={item=><NoticeRow item={item}/>}/>;
 }
 
 function worldNotice(row:WorldMilestoneFeedRow,language:Language):SystemNotice{return {id:'world:'+row.feed_id,title:`${row.display_name} · ${progressionText(language,kindLabel(row.kind))}`,body:`${row.subject_name}${row.detail?' · '+row.detail:''}`,tone:'info'};}

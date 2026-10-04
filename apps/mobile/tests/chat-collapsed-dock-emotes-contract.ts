@@ -49,7 +49,7 @@ ok(overlay.includes('windowExpanded')&&overlay.includes("maxHeight:'94%'"),'Expa
 ok(overlay.includes('<RailTab channel="world"')&&overlay.includes('<RailTab channel="system"'),'Expanded chat must expose channels in the compact icon rail');
 ok(overlay.includes('languageMenuOpen')&&overlay.includes('languagePopover'),'World languages must be available from the compact header');
 ok(!overlay.includes('choosingChannel')&&!overlay.includes('channelMenu'),'Expanded chat must not hide channel selection behind a filter dropdown');
-ok(overlay.includes('<SystemNoticeLog state={state}/>'),'The System channel must render live notices instead of a placeholder');
+ok(overlay.includes("<SystemNoticeLog state={state} active={visible&&channel==='system'}/>"),'The System channel must render live notices instead of a placeholder');
 ok(!overlay.includes('System notices are not available yet.'),'The System channel must not regress to the unavailable placeholder');
 
 const systemNotices=read('src/core/system-notifications.ts');

@@ -22,6 +22,7 @@ const {SUPPORTED_LANGUAGES}=load('languages');
 const {GameLanguageProvider}=load('GameLanguageProvider');
 const keys=Object.keys(socialTranslationRows).sort();
 const placeholders=text=>[...text.matchAll(/\{([a-zA-Z][a-zA-Z0-9_]*)\}/g)].map(match=>match[1]).sort();
+const bossNames={en:'Rootbound Colossus',de:'Wurzelkoloss',es:'Coloso arraigado',nl:'Wortelkolos',it:'Colosso radicato',fr:'Colosse enraciné'};
 for(const language of SUPPORTED_LANGUAGES){
  assert.deepEqual(Object.keys(socialCatalogs[language]).sort(),keys);
  for(const key of keys){
@@ -35,7 +36,9 @@ for(const language of SUPPORTED_LANGUAGES){
  const name='Friends $& {count}',message='Guild {marks}';
  const rendered=socialText(language,'Open chat. Latest World message from {name}: {message}',{name,message});
  assert.ok(rendered.includes(name));assert.ok(rendered.includes(message));
- assert.equal(socialLabel(language,'Rootbound Colossus'),'Rootbound Colossus');
+ // Authored content labels use the catalog; unknown labels retain their spelling.
+ assert.equal(socialLabel(language,'Rootbound Colossus'),bossNames[language]);
+ assert.equal(socialLabel(language,'Uncatalogued boss $& {count}'),'Uncatalogued boss $& {count}');
  assert.equal(socialExpiry(language,0,1).urgency,'expired');
  assert.equal(socialExpiry(language,6*3_600_000,0).urgency,'soon');
  assert.equal(socialExpiry(language,7*3_600_000,0).urgency,'normal');

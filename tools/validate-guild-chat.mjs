@@ -32,7 +32,7 @@ for(const [needle,label] of [
  ['ChatMessageText','emote-aware message rendering'],
  ['chatEmoteCount','client emote limit'],
  ['guildChatCommandKey','idempotent send key'],
- ['setInterval(()=>void load(),5000)','Guild chat refresh'],
+ ['useChatFeed<GuildChatState|null>','shared, foreground-only Guild chat refresh'],
 ])need(component+fs.readFileSync(path.join(root,'apps/mobile/src/components/ChatMessageRow.tsx'),'utf8'),needle,label);
 
 reject(component,'Elowen','hard-coded preview player');

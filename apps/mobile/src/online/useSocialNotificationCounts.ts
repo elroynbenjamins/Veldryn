@@ -1,4 +1,4 @@
-import {useCallback,useEffect,useState} from 'react';
+import {useCallback,useEffect,useRef,useState} from 'react';
 import {AppState} from 'react-native';
 import {friendRequests,guildApplications,myGuild,socialChatAttention,socialInvitations} from './social';
 import {useAuthSession} from './AuthSessionProvider';
@@ -27,8 +27,11 @@ const ZERO:SocialNotificationCounts={friendRequests:0,chatUnread:0,chatMentions:
 export function useSocialNotificationCounts(){
   const {session}=useAuthSession();
   const [counts,setCounts]=useState<SocialNotificationCounts>(ZERO);
+  const inFlight=useRef(false);
   const refresh=useCallback(async()=>{
     if(!session){setCounts(ZERO);return;}
+    if(inFlight.current)return;
+    inFlight.current=true;
     try{
       const requests=await friendRequests();
       const incoming=requests.filter(request=>request.direction==='incoming').length;
@@ -58,8 +61,10 @@ export function useSocialNotificationCounts(){
       });
     }catch{
       // Notification polling must never interrupt gameplay or sign-in.
+    }finally{
+      inFlight.current=false;
     }
   },[session?.user.id]);
-  useEffect(()=>{void refresh();const id=setInterval(()=>void refresh(),15000);const sub=AppState.addEventListener('change',status=>{if(status==='active')void refresh();});return()=>{clearInterval(id);sub.remove();}},[refresh]);
+  useEffect(()=>{void refresh();const id=setInterval(()=>{if(AppState.currentState==='active')void refresh();},30000);const sub=AppState.addEventListener('change',status=>{if(status==='active')void refresh();});return()=>{clearInterval(id);sub.remove();}},[refresh]);
   return {counts,refresh};
 }

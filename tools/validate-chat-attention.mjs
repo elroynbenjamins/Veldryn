@@ -36,7 +36,11 @@ for(const [needle,label] of [
  ['guildChatMentions','Guild mention projection'],
  ['partyChatUnread','Party unread projection'],
  ['partyChatMentions','Party mention projection'],
- ['setInterval(()=>void refresh(),15000)','social attention polling'],
+ // Unread badges refresh every 30s while foregrounded, with immediate catch-up
+ // on resume. Channel changes reuse the same account-scoped polling lifecycle.
+ ["setInterval(()=>{if(AppState.currentState==='active')void refresh(false);},30000)",'foreground-only social attention polling'],
+ ["const resumed=previous!=='active'&&status==='active'",'social attention catch-up on resume'],
+ ['if(resumed)void refresh()','immediate social attention resume refresh'],
 ])need(hook,needle,label);
 
 for(const [needle,label] of [

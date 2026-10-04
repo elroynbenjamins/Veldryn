@@ -183,5 +183,9 @@
   "../../tools/validate-scroll-indicators.mjs",
   ".core-build/apps/mobile/tests/class-skill-presentation.js",
   ".core-build/apps/mobile/tests/combat-buff-boundaries.js",
-  ".core-build/apps/mobile/tests/combat-attrition.js"
+  ".core-build/apps/mobile/tests/combat-attrition.js",
+  ".core-build/apps/mobile/tests/chat-feed-cache.js",
+  "../../tools/validate-chat-transport.mjs",
+  "tests/auth-account-link.cjs",
+  "../../tools/validate-chat-lifecycle.cjs"
 ]

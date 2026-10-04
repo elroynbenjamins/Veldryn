@@ -18,7 +18,7 @@ import type {
 import {recruitmentStructuredTags} from '../core/party-social';
 import {supabase} from './supabase';
 import type {PlayerBadgeIdentity} from '../core/player-badges';
-import {guildIdentities} from './social';
+import {guildIdentities,withChatIdentities} from './social';
 import type {PlayerNameStylePreference} from '../core/player-name-style';
 
 export interface PublishRecruitmentInput {
@@ -93,8 +93,9 @@ export const partySocialRepository:PartySocialRepository={
  refreshRecruitment:async(id,days)=>card(await rpc<RecruitmentRow>('refresh_recruitment_post',{p_post_id:id,p_duration_days:days??null})),
  closeRecruitment:async id=>{await rpc('close_recruitment_post_v16',{p_post_id:id});},
 };
-export async function partySocialIdentity(){const c=client();const {data:{user},error}=await c.auth.getUser();if(error)throw error;if(!user)return null;
+export async function partySocialIdentity(){const c=client();const {data:{session},error}=await c.auth.getSession();if(error)throw error;const user=session?.user;if(!user)return null;
  const profile=await c.from('player_profiles').select('active_character_id').eq('account_id',user.id).maybeSingle();if(profile.error)throw profile.error;
+ if(profile.data?.active_character_id)return {accountId:user.id,characterId:profile.data.active_character_id as string};
  const characters=await c.from('characters').select('id').eq('account_id',user.id).order('created_at').limit(1);if(characters.error)throw characters.error;
  return {accountId:user.id,characterId:(profile.data?.active_character_id??characters.data?.[0]?.id??null) as string|null};}
 export async function ownRecruitmentPosts(){const identity=await partySocialIdentity();if(!identity)return [];const {data,error}=await client().from('recruitment_posts').select('*').eq('owner_account_id',identity.accountId).order('created_at',{ascending:false}).limit(20);if(error)throw error;return cardsWithGuildIdentity(data as RecruitmentRow[]);}
@@ -110,7 +111,7 @@ export const recruitmentMatchAlerts=()=>rpc<RecruitmentMatchAlert[]>('recruitmen
 export const ackRecruitmentMatchAlerts=()=>rpc('ack_recruitment_match_alerts_v1');
 export const sendPartyChat=(id:string,body:string,key:string)=>rpc('send_persistent_party_chat_v16',{p_party_id:id,p_body:body,p_idempotency_key:key});
 export type PartyChatMessage={id:string;account_id:string;sender_name:string;body:string;created_at:string;guild_tag?:string|null;guild_tag_color_id?:string|null;player_name_style?:PlayerNameStylePreference|null;player_badges?:PlayerBadgeIdentity};
-export async function partyChatMessages(id:string){const {data,error}=await client().from('chat_messages').select('id,account_id,sender_name,body,created_at').eq('channel_type','party').eq('channel_id',id).order('created_at',{ascending:false}).limit(50);if(error)throw error;const rows=(data??[]).reverse() as PartyChatMessage[],identities=await guildIdentities(rows.map(row=>row.account_id));return rows.map(row=>({...row,...identities.get(row.account_id)}));}
+export async function partyChatMessages(id:string){const {data,error}=await client().from('chat_messages').select('id,account_id,sender_name,body,created_at').eq('channel_type','party').eq('channel_id',id).order('created_at',{ascending:false}).order('id',{ascending:false}).limit(50);if(error)throw error;return withChatIdentities(((data??[]) as PartyChatMessage[]).reverse());}
 
 export async function activePartyEvent(): Promise<PartyEventView|null>{
  const identity=await partySocialIdentity(); if(!identity)return null;

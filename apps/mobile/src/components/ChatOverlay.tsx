@@ -1,7 +1,7 @@
 import {useSocialText} from '../i18n/social';
 import {ChatChannelIcon} from './ChatChannelIcon';
-import {useEffect,useMemo,useState} from 'react';
-import {KeyboardAvoidingView,Modal,Platform,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
+import {useEffect,useMemo,useRef,useState} from 'react';
+import {AppState,KeyboardAvoidingView,Modal,Platform,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import type {GameState} from '../core/types';
 import {onlineConfigured} from '../online/supabase';
 import {type ThemeColors} from '../theme/theme';
@@ -16,21 +16,48 @@ import {ChatDock} from './ChatDock';
 import {SystemNoticeLog} from './SystemNoticeLog';
 import {myGuild,WORLD_CHANNELS} from '../online/social';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {useAuthSession} from '../online/AuthSessionProvider';
 
 type Channel='world'|'guild'|'party'|'system';
+type ChatOverlayProps={state:GameState;visible:boolean;onOpen:()=>void;onClose:()=>void;onEmoteTrayChange?:(ids:string[])=>void|Promise<void>;guildUnread?:number;guildMentions?:number;guildFirstUnreadMessageId?:string;partyUnread?:number;partyMentions?:number;partyFirstUnreadMessageId?:string;onChatRead?:()=>void};
 
-export function ChatOverlay({state,visible,onOpen,onClose,onEmoteTrayChange,guildUnread=0,guildMentions=0,guildFirstUnreadMessageId,partyUnread=0,partyMentions=0,partyFirstUnreadMessageId,onChatRead}:{state:GameState;visible:boolean;onOpen:()=>void;onClose:()=>void;onEmoteTrayChange?:(ids:string[])=>void|Promise<void>;guildUnread?:number;guildMentions?:number;guildFirstUnreadMessageId?:string;partyUnread?:number;partyMentions?:number;partyFirstUnreadMessageId?:string;onChatRead?:()=>void}){
+export function ChatOverlay(props:ChatOverlayProps){
+ const {session}=useAuthSession();
+ // Channel views belong to an account, not to a token refresh or tab selection.
+ return <AccountChatOverlay key={session?.user.id??`local:${props.state.createdAtMs}`} {...props}/>;
+}
+
+function AccountChatOverlay({state,visible,onOpen,onClose,onEmoteTrayChange,guildUnread=0,guildMentions=0,guildFirstUnreadMessageId,partyUnread=0,partyMentions=0,partyFirstUnreadMessageId,onChatRead}:ChatOverlayProps){
  const st=useSocialText();
   const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),insets=useSafeAreaInsets(),{width,fontScale}=useWindowDimensions(),expandWindow=width<360||fontScale>=1.25,bottomOffset=72+(Platform.OS==='android'?Math.max(insets.bottom,8):Math.max(insets.bottom,4));
   const [channel,setChannel]=useState<Channel>('world');
-  const [worldChannel,setWorldChannel]=useState((state.settings.defaultWorldChat??1)-1);
+  const [visitedChannels,setVisitedChannels]=useState<Channel[]>(['world']);
+  const selectChannel=(next:Channel)=>{setChannel(next);setVisitedChannels(current=>current.includes(next)?current:[...current,next]);};
+  const [worldChannel,setWorldChannel]=useState(Math.max(0,Math.min(WORLD_CHANNELS.length-1,(state.settings.defaultWorldChat??1)-1)));
   const [languageMenuOpen,setLanguageMenuOpen]=useState(false);
   useEffect(()=>{setLanguageMenuOpen(false);},[visible,channel]);
   const [onlineGuildAvailable,setOnlineGuildAvailable]=useState(state.account.guildMember);
+  const guildCheckedAt=useRef(0),guildLoading=useRef(false),mounted=useRef(true);
+  useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;};},[]);
   const {party,accountId,refresh}=usePartySocial();
   useEffect(()=>{if(!party&&channel==='party')setChannel('world');},[party,channel]);
   useEffect(()=>{if(visible)void refresh();},[visible,refresh]);
-  useEffect(()=>{if(!onlineConfigured){setOnlineGuildAvailable(state.account.guildMember);return;}let active=true;const load=async()=>{try{const guild=await myGuild();if(active)setOnlineGuildAvailable(!!guild)}catch{if(active)setOnlineGuildAvailable(state.account.guildMember)}};void load();if(!visible)return()=>{active=false};const timer=setInterval(()=>void load(),30000);return()=>{active=false;clearInterval(timer)};},[visible,state.account.guildMember]);
+  useEffect(()=>{guildCheckedAt.current=0;},[state.account.guildMember]);
+  useEffect(()=>{
+    if(!onlineConfigured){setOnlineGuildAvailable(state.account.guildMember);return;}
+    if(!visible)return;
+    let active=true;
+    const load=async()=>{
+      if(!active||AppState.currentState!=='active'||guildLoading.current||Date.now()-guildCheckedAt.current<30000)return;
+      guildLoading.current=true;
+      try{const guild=await myGuild();if(mounted.current){setOnlineGuildAvailable(!!guild);guildCheckedAt.current=Date.now();}}
+      catch{/* Keep the last confirmed membership during a temporary connection failure. */}
+      finally{guildLoading.current=false;}
+    };
+    void load();const timer=setInterval(()=>void load(),30000);
+    const foreground=AppState.addEventListener('change',next=>{if(next==='active')void load();});
+    return()=>{active=false;clearInterval(timer);foreground.remove();};
+  },[visible,state.account.guildMember]);
   const guildAvailable=onlineConfigured?onlineGuildAvailable:state.account.guildMember;
   useEffect(()=>{if(!guildAvailable&&channel==='guild')setChannel('world');},[guildAvailable,channel]);
   const closeChat=()=>{onChatRead?.();onClose();};
@@ -42,10 +69,10 @@ export function ChatOverlay({state,visible,onOpen,onClose,onEmoteTrayChange,guil
         <KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':'height'} keyboardVerticalOffset={insets.top} style={s.keyboard}><View accessibilityViewIsModal onAccessibilityEscape={closeChat} style={[s.window,expandWindow&&s.windowExpanded]}>
           <View style={s.chatLayout}>
             <View accessibilityRole="tablist" style={s.rail}>
-              <RailTab channel="world" label={st("World")} selected={channel==='world'} onPress={()=>setChannel('world')}/>
-              <RailTab channel="guild" label={st("Guild")} selected={channel==='guild'} disabled={!guildAvailable} unread={guildUnread} mentions={guildMentions} onPress={()=>setChannel('guild')}/>
-              <PartyChatGate party={party} accountId={accountId}><RailTab channel="party" label={st("Party")} selected={channel==='party'} unread={partyUnread} mentions={partyMentions} onPress={()=>setChannel('party')}/></PartyChatGate>
-              <RailTab channel="system" label={st("System")} selected={channel==='system'} onPress={()=>setChannel('system')}/>
+              <RailTab channel="world" label={st("World")} selected={channel==='world'} onPress={()=>selectChannel('world')}/>
+              <RailTab channel="guild" label={st("Guild")} selected={channel==='guild'} disabled={!guildAvailable} unread={guildUnread} mentions={guildMentions} onPress={()=>selectChannel('guild')}/>
+              <PartyChatGate party={party} accountId={accountId}><RailTab channel="party" label={st("Party")} selected={channel==='party'} unread={partyUnread} mentions={partyMentions} onPress={()=>selectChannel('party')}/></PartyChatGate>
+              <RailTab channel="system" label={st("System")} selected={channel==='system'} onPress={()=>selectChannel('system')}/>
             </View>
             <View style={s.conversation}>
               <View style={s.header}>
@@ -56,7 +83,18 @@ export function ChatOverlay({state,visible,onOpen,onClose,onEmoteTrayChange,guil
               {languageMenuOpen&&channel==='world'&&<View style={s.languagePopover}>
                 <ScrollView keyboardShouldPersistTaps="handled" style={s.languageOptions} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>{WORLD_CHANNELS.map((item,index)=><Pressable key={item.id} accessibilityRole="button" accessibilityState={{selected:worldChannel===index}} onPress={()=>{setWorldChannel(index);setLanguageMenuOpen(false);}} style={({pressed})=>[s.languageOption,worldChannel===index&&s.languageOptionSelected,pressed&&s.pressed]}><Text style={s.languageOptionText}>{item.name}</Text>{worldChannel===index&&<Text style={s.languageCheck}>✓</Text>}</Pressable>)}</ScrollView>
               </View>}
-          <View style={s.content}>{channel==='system'?<SystemNoticeLog state={state}/>:channel==='party'?<OnlinePartyChat reduceMotion={state.settings.reduceMotion} unlockedEmoteIds={state.account.unlockedEmoteIds} trayIds={state.settings.chatEmoteTrayIds} bodyPresentation={state.character?.bodyPresentation} onTrayChange={onEmoteTrayChange} firstUnreadMessageId={partyFirstUnreadMessageId} onRead={onChatRead}/>:channel==='guild'&&guildAvailable?<GuildChat reduceMotion={state.settings.reduceMotion} language={state.settings.language} currentPlayerName={state.character?.name} unlockedEmoteIds={state.account.unlockedEmoteIds} trayIds={state.settings.chatEmoteTrayIds} bodyPresentation={state.character?.bodyPresentation} onTrayChange={onEmoteTrayChange} firstUnreadMessageId={guildFirstUnreadMessageId} onRead={onChatRead}/>:onlineConfigured?<OnlineWorldChat key={worldChannel} selectedChannel={worldChannel} reduceMotion={state.settings.reduceMotion} playerName={state.character!.name} language={state.settings.language} unlockedEmoteIds={state.account.unlockedEmoteIds} trayIds={state.settings.chatEmoteTrayIds} bodyPresentation={state.character?.bodyPresentation} onTrayChange={onEmoteTrayChange} embedded/>:<WorldChat selectedChannel={worldChannel} language={state.settings.language} unlockedEmoteIds={state.account.unlockedEmoteIds} trayIds={state.settings.chatEmoteTrayIds} bodyPresentation={state.character?.bodyPresentation} onTrayChange={onEmoteTrayChange} embedded/>}</View>
+          <View style={s.content}>
+            <View style={channel!=='world'?s.hiddenPanel:undefined} accessibilityElementsHidden={channel!=='world'} importantForAccessibility={channel==='world'?'auto':'no-hide-descendants'}>
+              {onlineConfigured?<OnlineWorldChat active={visible&&channel==='world'} selectedChannel={worldChannel} reduceMotion={state.settings.reduceMotion} playerName={state.character?.name??''} language={state.settings.language} unlockedEmoteIds={state.account.unlockedEmoteIds} trayIds={state.settings.chatEmoteTrayIds} bodyPresentation={state.character?.bodyPresentation} onTrayChange={onEmoteTrayChange} embedded/>:<WorldChat selectedChannel={worldChannel} language={state.settings.language} unlockedEmoteIds={state.account.unlockedEmoteIds} trayIds={state.settings.chatEmoteTrayIds} bodyPresentation={state.character?.bodyPresentation} onTrayChange={onEmoteTrayChange} embedded/>}
+            </View>
+            {visitedChannels.includes('guild')&&guildAvailable&&<View style={channel!=='guild'?s.hiddenPanel:undefined} accessibilityElementsHidden={channel!=='guild'} importantForAccessibility={channel==='guild'?'auto':'no-hide-descendants'}>
+              <GuildChat active={visible&&channel==='guild'} reduceMotion={state.settings.reduceMotion} language={state.settings.language} currentPlayerName={state.character?.name} unlockedEmoteIds={state.account.unlockedEmoteIds} trayIds={state.settings.chatEmoteTrayIds} bodyPresentation={state.character?.bodyPresentation} onTrayChange={onEmoteTrayChange} firstUnreadMessageId={guildFirstUnreadMessageId} onRead={onChatRead}/>
+            </View>}
+            {visitedChannels.includes('party')&&party&&<View style={channel!=='party'?s.hiddenPanel:undefined} accessibilityElementsHidden={channel!=='party'} importantForAccessibility={channel==='party'?'auto':'no-hide-descendants'}>
+              <OnlinePartyChat active={visible&&channel==='party'} reduceMotion={state.settings.reduceMotion} unlockedEmoteIds={state.account.unlockedEmoteIds} trayIds={state.settings.chatEmoteTrayIds} bodyPresentation={state.character?.bodyPresentation} onTrayChange={onEmoteTrayChange} firstUnreadMessageId={partyFirstUnreadMessageId} onRead={onChatRead}/>
+            </View>}
+            {visitedChannels.includes('system')&&<View style={channel!=='system'?s.hiddenPanel:undefined} accessibilityElementsHidden={channel!=='system'} importantForAccessibility={channel==='system'?'auto':'no-hide-descendants'}><SystemNoticeLog state={state} active={visible&&channel==='system'}/></View>}
+          </View>
             </View>
           </View>
         </View></KeyboardAvoidingView>
@@ -75,6 +113,7 @@ function RailTab({channel,label,selected,disabled=false,unread=0,mentions=0,onPr
 }
 
 function makeStyles(C:ThemeColors){return StyleSheet.create({
+ hiddenPanel:{display:'none'},
  pressed:{opacity:.7},modalRoot:{flex:1,justifyContent:'flex-end',alignItems:'flex-start',backgroundColor:C.overlay,paddingHorizontal:8},
  keyboard:{width:'100%',maxWidth:480,flex:1,justifyContent:'flex-end'},
  window:{width:'100%',maxWidth:480,maxHeight:'88%',flexShrink:1,backgroundColor:C.panel,borderWidth:1,borderColor:C.line,borderRadius:16,overflow:'hidden',elevation:12,shadowColor:'#000',shadowOpacity:.25,shadowRadius:16,shadowOffset:{width:0,height:6}},

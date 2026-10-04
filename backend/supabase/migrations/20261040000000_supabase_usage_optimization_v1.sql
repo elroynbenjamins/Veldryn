@@ -188,3 +188,45 @@ end
 $$;
 
 revoke all on function private.cleanup_cron_job_run_details_v1(interval,integer) from public, anon, authenticated;
+
+
+-- Production-safe scheduler default. Staging overrides online cadence/retention after deployment.
+do $$
+declare
+  v_name text;
+begin
+  if exists(select 1 from pg_available_extensions where name='pg_cron') then
+    create extension if not exists pg_cron;
+
+    foreach v_name in array array[
+      'veldryn-online-qmode',
+      'veldryn-online-live-ready',
+      'veldryn-online-live',
+      'veldryn-online-live-presence',
+      'veldryn-liveops-v17',
+      'veldryn-online-coop-lfg-cleanup'
+    ]
+    loop
+      if exists(select 1 from cron.job where jobname=v_name) then
+        perform cron.unschedule(v_name);
+      end if;
+    end loop;
+
+    perform cron.schedule(
+      'veldryn-online-tick',
+      '10 seconds',
+      'select public.process_online_tick_server_v1(16);'
+    );
+    perform cron.schedule(
+      'veldryn-minute-maintenance-v18',
+      '* * * * *',
+      'select public.maintain_minute_tick_v18();'
+    );
+    perform cron.schedule(
+      'veldryn-cron-history-retention',
+      '23 3 * * *',
+      $cron$select private.cleanup_cron_job_run_details_v1(interval '7 days',100000);$cron$
+    );
+  end if;
+end
+$$;

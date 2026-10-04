@@ -39,14 +39,16 @@ ok(favorites.includes('backgroundColor:C.warningSurface'),'Prestige favorite car
 ok(favorites.includes('backgroundColor:C.selection'),'Rare favorite cards must use the active selection surface');
 
 const customize=read('src/screens/ProfileCustomizeScreen.tsx');
+const profileEditor=read('src/components/ProfileEditor.tsx');
 const nameEditor=read('src/components/PlayerNameStyleEditor.tsx');
 const publicScene=read('src/components/PublicProfileScene.tsx');
 const audiencePreview=read('src/components/ProfileAudiencePreviewModal.tsx');
 const profileOnline=read('src/online/profile-extension-v43.ts');
-ok(customize.includes('<PlayerNameStyleEditor state={state} onChange={onChange}/>'),'Profile customization must expose the paid cosmetic name-style editor');
+ok(profileEditor.includes('<PlayerNameStyleEditor ')&&customize.includes('onSaveNameStyle={onSaveNameStyle}'),'Name Style must expose the shared editor with its explicit account save action');
+ok(!customize.includes('<PlayerNameStyleEditor '),'Profile customization must not render a second competing name-style editor');
 ok(nameEditor.includes('VIP+ · SOLID RGB')&&nameEditor.includes('SUPPORTER · ADVANCED STYLES'),'Name-style editor must distinguish permanent VIP+ solid color from Supporter advanced styles');
-ok(nameEditor.includes('updateOnlinePlayerNameStyle')&&nameEditor.includes('savePlayerNameStyle'),'Saving a name style must update both authoritative online projection and local game state');
-ok(nameEditor.includes('reduceMotion={state.settings.reduceMotion}'),'Name-style preview must respect Reduced Motion');
+ok(nameEditor.includes('await onSaveNameStyle(draft)')&&!nameEditor.includes('updateOnlinePlayerNameStyle'),'Name-style success must await the repository save and confirmed refresh');
+ok(nameEditor.includes('reduceMotion={state.settings.reduceMotion||!active}'),'Name-style preview must respect Reduced Motion and pause while its tab is hidden');
 ok(publicScene.includes('nameStyle={profile.nameStyle??undefined}')&&publicScene.includes('reduceMotion={reduceMotion}'),'Public profile scenes must render the authoritative projected name style');
 ok(audiencePreview.includes('nameStyle:effectivePlayerNameStyle(state)')&&audiencePreview.includes('reduceMotion={state.settings.reduceMotion}'),'Audience preview must show the same effective local style with Reduced Motion semantics');
 ok(profileOnline.includes('nameStyle?:PlayerNameStylePreference|null')&&profileOnline.includes('identity?.player_name_style??null'),'Public profile transport must carry the server-gated style from guild identity authority');

@@ -19,7 +19,10 @@ ok(!card.includes('profileTitle')&&!card.includes('guildTag'),'Combat cards must
 ok(stage.includes("import {CombatantProfileCard,EnemyCombatProfileCard} from './CombatantProfileCard'"),'Dungeon stage must use profile-derived combat cards');
 ok(stage.includes('<CombatantProfileCard')&&stage.includes('<EnemyCombatProfileCard'),'Both party and enemy sides must use the combat profile-card language');
 ok(stage.indexOf('<EnemyCombatProfileCard')<stage.indexOf('<CombatantProfileCard'),'Enemy/boss card must render above the party cards on the mobile battlefield');
-ok(stage.includes("partyField:{width:'100%',flexDirection:'row'")&&stage.includes("formationSlot:{flex:1,minWidth:0}"),'Four party combat cards must share one compact bottom row');
+// The October profile-art refresh deliberately changed the old four-card strip
+// to a readable two-column formation. Preserve that scene while testing the
+// replay behavior that the visual refresh accidentally removed.
+ok(stage.includes("partyField:{width:'100%',flexDirection:'row',flexWrap:'wrap'")&&stage.includes("formationSlot:{width:'48%',flexGrow:1,minWidth:0}"),'Four party combat cards must retain the modern two-column formation');
 ok(stage.includes('layout.bossWidthPctFinal')&&stage.includes('layout.bossWidthPct'),'Boss encounter card must retain stronger centered emphasis through the responsive width contract');
 ok(!stage.includes('<ClassAvatar'),'Dungeon stage must not regress to the generic initial/weapon combat box');
 ok(card.includes('dungeonEnemyPortraitSource(name)'),'Named bosses/enemies must resolve real artwork in the encounter card');
@@ -51,7 +54,7 @@ ok(stage.includes('playbackAdvanceDelayMs(current,next,playbackSpeed)')&&stage.i
 ok(stage.includes('playbackVisualDurationMs')&&stage.includes('fxDuration'),'Replay speed must scale combat VFX presentation too');
 ok(card.includes('FOCUS →')&&card.includes('bossCast.targetLabel'),'Boss cast card must show the authoritative focus target when available');
 ok(stage.includes('targetLabel:currentBossCast.targetName?.trim()'),'Battlefield must feed the cast cue target into the boss focus label');
-ok(stage.includes('PARTY CONTRIBUTION')&&stage.includes('authoritative totals'),'Completed combat replay must show a compact factual contribution recap');
+ok(stage.includes('PARTY CONTRIBUTION')&&stage.includes('Encounter totals')&&stage.includes('replay.contributions??[]'),'Completed combat replay must show factual contribution totals from its authoritative replay');
 ok(stage.includes("role==='tank'")&&stage.includes('TAKEN')&&stage.includes("role==='support'")&&stage.includes('HEAL'),'Contribution recap must emphasize role-relevant factual metrics');
 ok(stage.includes('DMG')&&stage.includes('INT')&&!stage.includes('MVP'),'Contribution recap must show damage and interrupts without ranking players');
 ok(stage.includes('accessibilityLabel={paused?st("Resume combat replay"):st("Pause combat replay")}')&&stage.includes('paused||cueIndex>=cues.length-1'),'Replay must support localized pause/resume by stopping automatic cue advance');
@@ -60,7 +63,8 @@ ok(stage.includes('accessibilityLabel={showLog?st("Hide combat battle log"):st("
 ok(stage.includes('setPaused(false);setShowLog(false);setCueIndex(0)'),'Replay encounter must reset pause and collapsed-log state');
 ok(!stage.includes('member:{minHeight:126')&&!stage.includes('avatarFrame:{height:44')&&!stage.includes('castWarning:{minHeight:34'),'Dungeon stage must not retain obsolete pre-profile-card combat styles');
 ok(!card.includes('No companion assist')&&!card.includes('noAssist:'),'Party cards must not spend vertical space on empty companion placeholders');
-ok(card.includes('card:{minHeight:136')&&card.includes('combatInfo:{padding:4,gap:2'),'Party combat cards must keep the compact mobile density budget');
+ok(card.includes('card:{flex:1,minHeight:116')&&card.includes('combatInfo:{padding:10,paddingTop:0,gap:4')&&card.includes('layout&&{minHeight:layout.cardMinHeight}'),'Party combat cards must keep the modern compact density while honoring narrower-phone sizes');
+ok(card.includes('hollow-courtyard-v1.jpg')&&card.includes('surface-fade-dark.png')&&card.includes('surface-fade-light.png')&&card.includes('emblemRing'),'Restoring replay controls must preserve the courtyard artwork, theme fades and circular party portraits');
 ok(stage.includes("{assists?<StateChip")&&!stage.includes("'NO ASSISTS'"),'Combat header must only show companion-assist summary when assists actually exist');
 ok(stage.includes('useWindowDimensions')&&stage.includes('dungeonCombatLayout(windowWidth)'),'Dungeon battlefield must select a tested layout from the current phone width');
 ok(stage.includes('padding:layout.arenaPadding')&&stage.includes('gap:layout.partyGap'),'Small-phone layout must reclaim arena padding and party-card gap');
@@ -74,6 +78,12 @@ ok(stage.includes('layout={layout}')&&card.includes('layout?:DungeonCombatLayout
 ok(card.includes('layout.cardMinHeight')&&card.includes('layout.sceneHeight')&&card.includes('layout.portraitWidth'),'Responsive combat cards must adapt height, portrait window and scene height without changing formation');
 ok(card.includes('limit={layout?.statusLimit??3}'),'Narrow phones must reduce visible status-pill count rather than widen cards');
 ok(stage.includes('layout.controlsWrap&&s.playbackControlsWrap')&&stage.includes("playbackControlsWrap:{flexWrap:'wrap'"),'Replay controls must wrap safely on narrow phones');
+for(const control of ['speedButton','pauseButton','stepButton','skipButton','replayButton']){
+ const style=stage.match(new RegExp(control+':\\{([^}]+)\\}'))?.[1]??'';
+ ok(/minHeight:touchTargetMin/.test(style),'Replay control '+control+' must use the minimum touch-target token');
+}
+ok(read('src/theme/theme.ts').includes('touchTargetMin=44'),'The shared minimum touch target must stay at least 44px');
+ok(stage.includes("controlActions:{flexDirection:'row',flexWrap:'wrap'")&&stage.includes('layout.controlsWrap&&s.controlActionsWrap'),'Replay action buttons must reflow within their row on small phones');
 ok(stage.includes('layout.contributionIdentityMinWidth')&&stage.includes('layout.contributionIdentityWidthPct'),'Contribution recap identity width must adapt on narrow phones');
 ok(card.includes('selectedForInspect')&&card.includes('Inspect ${slot.name} combat details'),'Party combat cards must expose tap-to-inspect interaction without adding a permanent button row');
 ok(card.includes('Inspect ${name} combat details')&&card.includes('inspectSelected'),'Boss/enemy combat cards must support the same inspect interaction and selected state');
@@ -81,6 +91,7 @@ ok(stage.includes('inspectKey')&&stage.includes('enemyInspectKey(enemy.id)')&&st
 ok(stage.includes('if(!reduceMotion&&cues.length>1)setPaused(true)'),'Opening combat inspection must enter a step-capable paused replay state when replay cues are available');
 ok(stage.includes('<CombatantInspectPanel')&&stage.includes('onClose={()=>setInspectKey(undefined)}'),'Selected combatant must render a closable compact inspection panel');
 ok(inspect.includes('COMBAT INSPECT')&&inspect.includes('ACTIVE EFFECTS'),'Inspection panel must clearly separate combat identity and effect details');
+ok(inspect.includes('close:{minWidth:touchTargetMin,minHeight:touchTargetMin'),'Combat inspection must have a full-size close touch target');
 ok(inspect.includes('status.label')&&inspect.includes('status.stacks>1')&&inspect.includes('remaining(status.remainingMs)'),'Inspection panel must show full effect name, stacks and remaining duration rather than only compact codes');
 ok(inspect.includes("status.source==='gem'")&&inspect.includes("return 'Effect Gem'")&&inspect.includes("return 'Damage over time'")&&inspect.includes("return 'Healing over time'"),'Inspection panel must explain Effect Gem and timed-effect sources in player-facing terms');
 ok(inspect.includes('BARRIER')&&inspect.includes('COMPANION')&&inspect.includes('PHASE'),'Inspection panel must surface combat barrier, companion and boss phase context when available');

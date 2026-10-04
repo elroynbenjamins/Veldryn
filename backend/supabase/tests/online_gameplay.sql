@@ -1,6 +1,6 @@
 begin;
 do $$
-declare a uuid:=gen_random_uuid();b uuid:=gen_random_uuid();c uuid:=gen_random_uuid();loaded jsonb;response jsonb;replay jsonb;s jsonb;
+declare a uuid:=gen_random_uuid();b uuid:=gen_random_uuid();c uuid:=gen_random_uuid();loaded jsonb;response jsonb;expected jsonb;replay jsonb;s jsonb;
 begin
  insert into auth.users(id,email) values(a,'online-test-'||a||'@example.invalid'),(b,'online-test-'||b||'@example.invalid');
  loaded:=public.load_online_game_server_v1(a);
@@ -8,9 +8,16 @@ begin
  s:=jsonb_build_object('version',6,'character',jsonb_build_object('id',c,'name','Online Test','classId','IRONWARDEN','bodyPresentation','male','level',1,'xp',0,'gold',100,'hp',100,'currentHp',100,'attack',10,'defense',10,'equipment','{}'::jsonb),'account','{}'::jsonb);
  response:=jsonb_build_object('state',s,'version',1,'accountId',a,'serverNow',loaded->'serverNow');
  replay:=public.commit_online_game_server_v1(a,0,null,'online-create-001',repeat('a',64),response,'[]');
- if replay<>response or (select gold from public.character_wallets where character_id=c)<>100 then raise exception 'create persistence';end if;
+ expected:=jsonb_set(response,'{state}',private.project_online_game_commerce_v1(a,s));
+ -- Commerce metadata is projected by the server. Everything else must still
+ -- match the original response, independently of the projection helper.
+ if (replay #- '{state,account,entitlements}' #- '{state,account,playerNameStyle}' #- '{state,account,vipPlusNameColor}')
+    is distinct from
+    (response #- '{state,account,entitlements}' #- '{state,account,playerNameStyle}' #- '{state,account,vipPlusNameColor}')
+    then raise exception 'create progress changed by commerce projection';end if;
+ if replay is distinct from expected or (select gold from public.character_wallets where character_id=c)<>100 then raise exception 'create persistence';end if;
  replay:=public.commit_online_game_server_v1(a,0,null,'online-create-001',repeat('a',64),response,'[]');
- if replay<>response or (select revision from public.online_game_states where account_id=a)<>1 then raise exception 'create replay';end if;
+ if replay is distinct from expected or (select revision from public.online_game_states where account_id=a)<>1 then raise exception 'create replay';end if;
  begin perform public.commit_online_game_server_v1(a,1,100,'online-create-001',repeat('b',64),response,'[]');raise exception 'key conflict accepted';exception when raise_exception then if sqlerrm<>'idempotency_key_conflict' then raise;end if;end;
  begin perform public.commit_online_game_server_v1(a,0,100,'online-stale-001',repeat('b',64),response,'[]');raise exception 'stale accepted';exception when raise_exception then if sqlerrm<>'stale_state' then raise;end if;end;
  update public.character_wallets set gold=150 where character_id=c;

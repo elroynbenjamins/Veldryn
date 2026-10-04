@@ -58,8 +58,38 @@ ok(top.includes('loading={saving}')&&top.includes('GameButton title={tr("Save fi
 const combat=read('src/screens/CombatScreen.tsx');
 ok(!combat.includes('HUNT PLAN')&&!combat.includes('showPlan')&&!combat.includes('STOP GOAL'),'Combat must not expose the removed Hunt Plan controls');
 ok(combat.includes('<CombatXpSplit state={state} onCommand={onCommand}/>'),'Combat must expose the saved skill XP split');
-ok(combat.includes('accessibilityState={{expanded:showTraining}}')&&combat.includes('{showTraining?<CombatXpSplit'),'XP split controls must remain available through the training disclosure');
-ok(combat.indexOf('<CombatXpSplit')<combat.indexOf('<RegionEncounterList'),'XP split controls must remain above the enemy list');
+// Training is a bounded disclosure in the persistent bottom dock. Check its
+// actual JSX hierarchy so scroll wrappers and formatting do not hide regressions.
+const ts=require('typescript') as typeof import('typescript');
+type UiNode=import('typescript').Node;
+const combatTree=ts.createSourceFile('CombatScreen.tsx',combat,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
+function findUiNode(node:UiNode|undefined,predicate:(node:UiNode)=>boolean):UiNode|undefined{
+ if(!node)return undefined;
+ if(predicate(node))return node;
+ let found:UiNode|undefined;
+ ts.forEachChild(node,child=>{if(!found)found=findUiNode(child,predicate);});
+ return found;
+}
+function jsxName(node:UiNode|undefined){
+ return node&&ts.isJsxElement(node)?node.openingElement.tagName.getText():node&&ts.isJsxSelfClosingElement(node)?node.tagName.getText():undefined;
+}
+function jsxValue(node:UiNode|undefined,name:string){
+ const attributes=node&&ts.isJsxElement(node)?node.openingElement.attributes:node&&ts.isJsxSelfClosingElement(node)?node.attributes:undefined;
+ const attribute=attributes?.properties.find(value=>ts.isJsxAttribute(value)&&value.name.getText()===name);
+ if(!attribute||!ts.isJsxAttribute(attribute))return undefined;
+ if(!attribute.initializer)return 'true';
+ return ts.isJsxExpression(attribute.initializer)?attribute.initializer.expression?.getText().replace(/\s+/g,''):ts.isStringLiteral(attribute.initializer)?attribute.initializer.text:undefined;
+}
+const trainingDisclosure=findUiNode(combatTree,node=>ts.isConditionalExpression(node)&&node.condition.getText(combatTree)==='showTraining'&&jsxName(node.whenTrue)==='ScrollView') as import('typescript').ConditionalExpression|undefined;
+const trainingScroll=trainingDisclosure?.whenTrue,trainingDock=trainingDisclosure?.parent.parent;
+const trainingSplit=findUiNode(trainingScroll,node=>jsxName(node)==='CombatXpSplit');
+const trainingToggle=findUiNode(trainingDock,node=>jsxName(node)==='Pressable'&&jsxValue(node,'accessibilityState')==='{expanded:showTraining}');
+ok(jsxValue(trainingToggle,'accessibilityRole')==='button'&&Boolean(jsxValue(trainingToggle,'onPress')?.includes('setShowTraining(value=>!value)')),'Training disclosure must expose expanded state and a working accessible toggle');
+ok(Boolean(trainingDisclosure&&trainingDisclosure.whenFalse.kind===ts.SyntaxKind.NullKeyword)&&jsxValue(trainingSplit,'state')==='state'&&jsxValue(trainingSplit,'onCommand')==='onCommand','Expanded training disclosure must contain the saved XP split and its authoritative command callback');
+ok(jsxValue(trainingScroll,'nestedScrollEnabled')==='true'&&Boolean(jsxValue(trainingScroll,'style')?.match(/maxHeight:height\*(?:0?\.\d+)/)),'Expanded training controls must remain scrollable within a bounded fraction of the screen height');
+const combatRoot=trainingDock?.parent;
+const combatContent=combatRoot&&ts.isJsxElement(combatRoot)?combatRoot.children.find(node=>jsxName(node)==='ScrollView'):undefined;
+ok(jsxName(trainingDock)==='View'&&jsxValue(trainingDock,'style')==='s.dock'&&Boolean(combatContent&&trainingDock&&combatContent.end<trainingDock.pos&&findUiNode(combatContent,node=>jsxName(node)==='RegionEncounterList')),'Training disclosure must remain in the persistent dock outside the enemy-list scroller');
 const split=read('src/components/CombatXpSplit.tsx');
 ok(split.includes("type:'class_focus'")&&split.includes('normalizeTrainingFocus'),'XP split must use the existing authoritative character setting');
 ok(split.includes('accessibilityRole="radiogroup"')&&split.includes('accessibilityRole="radio"')&&split.includes('minHeight:44'),'XP ratios must be accessible single-choice controls');
@@ -95,7 +125,18 @@ ok(!profileExtension.includes('<Modal'),'Social profile pickers must not reintro
 const profileCustomize=read('src/screens/ProfileCustomizeScreen.tsx');
 ok(profileCustomize.includes('keyboardShouldPersistTaps="handled"')&&profileCustomize.includes('keyboardDismissMode="on-drag"'),'Profile customization must preserve actions while its child editors have the keyboard open');
 const profileEditor=read('src/components/ProfileEditor.tsx');
-ok((profileEditor.match(/keyboardShouldPersistTaps="handled"/g)??[]).length>=5,'Profile horizontal tabs, galleries and name presets must remain tappable with a color/title keyboard open');
+const profileEditorTree=ts.createSourceFile('ProfileEditor.tsx',profileEditor,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
+const nameEditorTree=ts.createSourceFile('PlayerNameStyleEditor.tsx',read('src/components/PlayerNameStyleEditor.tsx'),ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
+ok(Boolean(findUiNode(profileEditorTree,node=>jsxName(node)==='PlayerNameStyleEditor')),'Profile appearance must include the dedicated name-style editor');
+for(const tree of [profileEditorTree,nameEditorTree]){
+ findUiNode(tree,node=>{
+  if(jsxName(node)==='ScrollView')ok(jsxValue(node,'keyboardShouldPersistTaps')==='handled',`${tree.fileName} scroll surface must forward taps while the color/title keyboard is open`);
+  return false;
+ });
+}
+ok(Boolean(findUiNode(profileEditorTree,node=>jsxName(node)==='ScrollView'&&jsxValue(node,'contentContainerStyle')==='s.tabs'))&&Boolean(findUiNode(profileEditorTree,node=>jsxName(node)==='ScrollView'&&jsxValue(node,'contentContainerStyle')==='s.gallery')),'Profile tabs and cosmetic galleries must retain their scrollable browsing surfaces');
+const namePresets=findUiNode(nameEditorTree,node=>jsxName(node)==='View'&&jsxValue(node,'style')==='s.presets');
+ok(Boolean(findUiNode(namePresets,node=>jsxName(node)==='Pressable'&&jsxValue(node,'accessibilityRole')==='button'&&jsxValue(node,'onPress')==='()=>choosePreset(preset)')),'Name-style presets must remain accessible tappable choices within the keyboard-safe profile editor');
 
 const profile=read('src/components/ProfileAudiencePreviewModal.tsx');
 ok(profile.includes('GameModalHeader')&&profile.includes('trailing={<View'),'Profile audience preview must use shared header with visibility state');

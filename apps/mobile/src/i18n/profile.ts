@@ -149,6 +149,8 @@ export const profileTranslationRows = {
   "Borders": ["Rahmen","Bordes","Randen","Bordi","Bordures"],
   "Titles": ["Titel","Títulos","Titels","Titoli","Titres"],
   "Pets": ["Begleittiere","Mascotas","Huisdieren","Animali","Familiers"],
+  "Preview your color changes before saving.": ["Sieh dir deine Farbänderungen vor dem Speichern in der Vorschau an.","Previsualiza los cambios de color antes de guardarlos.","Bekijk eerst het voorbeeld van je kleurwijzigingen voordat je opslaat.","Visualizza l'anteprima dei cambiamenti di colore prima di salvarli.","Prévisualisez vos changements de couleur avant de les enregistrer."],
+  "Your name style was saved, but your profile has not refreshed yet. Please retry.": ["Dein Namensstil wurde gespeichert, aber dein Profil wurde noch nicht aktualisiert. Bitte versuche es erneut.","Tu estilo de nombre se guardó, pero tu perfil aún no se ha actualizado. Inténtalo de nuevo.","Je naamstijl is opgeslagen, maar je profiel is nog niet vernieuwd. Probeer het opnieuw.","Il tuo stile del nome è stato salvato, ma il profilo non è ancora stato aggiornato. Riprova.","Votre style de nom a été enregistré, mais votre profil n'a pas encore été actualisé. Réessayez."],
   "Name Style": ["Namensstil","Estilo de nombre","Naamstijl","Stile nome","Style du nom"],
   "Available": ["Verfügbar","Disponible","Beschikbaar","Disponibile","Disponible"],
   "Unlocked": ["Freigeschaltet","Desbloqueado","Ontgrendeld","Sbloccato","Débloqué"],
@@ -791,6 +793,5 @@ export function profileSourceText(language:Language,source:string):string{
   const parts=source.split(/( · | \/ | — )/);
   return parts.length>1?parts.map((part,index)=>index%2?part:profileSourceText(language,part)).join(''):source;
 }
-
 
 

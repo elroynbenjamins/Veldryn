@@ -43,7 +43,13 @@ const client={
   throw new Error(`Unexpected RPC: ${name}`);
  },
 };
-const social=load('apps/mobile/src/online/social.ts',{'./supabase':{supabase:client},'../core/player-badges':{normalizePlayerBadges:value=>value},'../core/identity-names':{}});
+// The shared social adapter also exports account-bound name-style writes. Load
+// that pure dependency chain unchanged so this chat fixture follows the current
+// production module without stubbing out its account-isolation behavior.
+const entitlementHelpers=load('apps/mobile/src/core/account-entitlements.ts',{});
+const nameStyleHelpers=load('apps/mobile/src/core/player-name-style.ts',{'./account-entitlements':entitlementHelpers});
+const nameStyleSave=load('apps/mobile/src/core/player-name-style-save.ts',{'./player-name-style':nameStyleHelpers});
+const social=load('apps/mobile/src/online/social.ts',{'./supabase':{supabase:client},'../core/player-badges':{normalizePlayerBadges:value=>value},'../core/identity-names':{},'../core/player-name-style-save':nameStyleSave});
 const party=load('apps/mobile/src/online/party-social.ts',{'./supabase':{supabase:client},'./social':social,'../core/party-social':{}});
 
 const initial=await social.worldMessages('world-1');

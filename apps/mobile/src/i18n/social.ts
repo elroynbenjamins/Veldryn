@@ -6,6 +6,11 @@ import {createTranslator,type TranslationParams} from './translator';
 
 // Columns are German, Spanish, Dutch, Italian and French; keys are the English catalog.
 export const socialTranslationRows = {
+"PARTY FORMATION":["GRUPPENFORMATION","FORMACIÓN DEL GRUPO","GROEPSFORMATIE","FORMAZIONE DEL GRUPPO","FORMATION DU GROUPE"],
+"{count} companion assists":["{count} Begleiterhilfen","{count} ayudas de compañeros","{count} metgezelondersteuningen","{count} aiuti dei compagni","{count} aides de compagnons"],
+"Combat replay speed {speed} times":["Kampfwiederholung mit {speed}-facher Geschwindigkeit","Velocidad de repetición del combate: {speed} veces","Snelheid gevechtsherhaling: {speed} keer","Velocità della riproduzione del combattimento: {speed} volte","Vitesse de lecture du combat : {speed} fois"],
+"Encounter totals":["Gesamtwerte des Kampfes","Totales del combate","Gevechtstotalen","Totali dello scontro","Totaux du combat"],
+"No event details were saved for this encounter.":["Für diesen Kampf wurden keine Ereignisdetails gespeichert.","No se guardaron detalles de eventos para este combate.","Voor dit gevecht zijn geen gebeurtenisdetails opgeslagen.","Non sono stati salvati dettagli degli eventi per questo scontro.","Aucun détail des événements n’a été enregistré pour ce combat."],
 "Tank":["Tank","Tanque","Tank","Tank","Tank"],
 "Damage":["Schaden","Daño","Schade","Danni","Dégâts"],
 "Support":["Unterstützung","Apoyo","Ondersteuning","Supporto","Soutien"],
@@ -6481,4 +6486,3 @@ export function socialExpiry(language:Language,expiresAtMs:number,nowMs:number){
  const remaining=expiresAtMs-nowMs,hours=Math.ceil(remaining/3_600_000);
  return {text:remaining<=0?socialText(language,'Expired'):hours<24?socialText(language,'{count}h left',{count:hours}):socialText(language,'{count}d left',{count:Math.ceil(hours/24)}),urgency:remaining<=0?'expired' as const:hours<=6?'soon' as const:'normal' as const};
 }
-

@@ -6,8 +6,8 @@ import {GameButton} from '../components/GameButton';
 import {OnlineProfileExtensionPanel} from '../components/OnlineProfileExtensionPanel';
 import {ProfileAudiencePreviewModal} from '../components/ProfileAudiencePreviewModal';
 import {ProfileEditor} from '../components/ProfileEditor';
-import {PlayerNameStyleEditor} from '../components/PlayerNameStyleEditor';
 import type {GameState} from '../core/types';
+import type {SavePlayerNameStyle} from '../core/player-name-style-save';
 import type {ProfileCustomizationDestination} from '../core/profile-customization';
 import type {ProfileExtensionSelfV43} from '../online/profile-extension-v43';
 import {radii,spacing,typography,equipmentTheme,type ThemeColors} from '../theme/theme';
@@ -15,7 +15,7 @@ import {useGameTheme} from '../theme/ThemeContext';
 
 type Section='Appearance'|'Identity';
 
-export function ProfileCustomizeScreen({state,onChange,onNavigateSource,onDirtyChange,initialSection='Appearance'}:{state:GameState;onChange:(next:GameState)=>void;onNavigateSource?:(destination:ProfileCustomizationDestination)=>void;onDirtyChange?:(dirty:boolean)=>void;initialSection?:Section}){
+export function ProfileCustomizeScreen({state,onChange,onSaveNameStyle,onNavigateSource,onDirtyChange,initialSection='Appearance'}:{state:GameState;onChange:(next:GameState)=>void|Promise<void>;onSaveNameStyle:SavePlayerNameStyle;onNavigateSource?:(destination:ProfileCustomizationDestination)=>void;onDirtyChange?:(dirty:boolean)=>void;initialSection?:Section}){
  const language=useGameLanguage();
  const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
  const [section,setSection]=useState<Section>(initialSection);
@@ -47,8 +47,7 @@ export function ProfileCustomizeScreen({state,onChange,onNavigateSource,onDirtyC
   </View>
 
   <View style={section==='Appearance'?s.sectionShown:s.sectionHidden} pointerEvents={section==='Appearance'?'auto':'none'}>
-   <ProfileEditor state={state} onChange={onChange} showLoadouts={false} onNavigateSource={onNavigateSource} onDirtyChange={setAppearanceDirty} onPreviewStateChange={setAppearancePreview}/>
-   <PlayerNameStyleEditor state={state} onChange={onChange}/>
+   <ProfileEditor state={state} onChange={onChange} onSaveNameStyle={onSaveNameStyle} active={section==='Appearance'} showLoadouts={false} onNavigateSource={onNavigateSource} onDirtyChange={setAppearanceDirty} onPreviewStateChange={setAppearancePreview}/>
   </View>
   <View style={section==='Identity'?s.sectionShown:s.sectionHidden} pointerEvents={section==='Identity'?'auto':'none'}>
    <OnlineProfileExtensionPanel state={state} onDirtyChange={setIdentityDirty} onDraftChange={setIdentityDraft}/>

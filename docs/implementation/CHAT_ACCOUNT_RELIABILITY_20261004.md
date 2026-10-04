@@ -68,35 +68,58 @@ Verified:
 
 The SQL test uses a temporary request identity in a read-only transaction. It creates no users, auth sessions, or chat messages. Staging remains paused.
 
+## Follow-up: validation recovery
+
+The requested follow-up resolves the existing combat/UI validation failures and the downstream companion-roster expectation. It incorporates main commit `83d1f4eeefb5916beb21b28f8c7e834bb559ef07` (PR #546), including its paid name-style entitlements and confirmed-save behavior.
+
+| Area | Correction |
+| --- | --- |
+| Combat replay | Restore pause/resume, shared 1x/2x/4x timing, skip, replay, bounded event stepping, pause-on-inspect, contribution totals, and the collapsible completed battle log. Preserve the courtyard artwork, circular portraits, and intentional two-column party formation. |
+| Responsive combat cards | Apply the tested card, scene, and portrait dimensions at 320, 360, and 390 pixels. Restored controls wrap on phones and use the shared 44-pixel minimum touch target. Selected speed has a visible checkmark. |
+| UI interaction | Keep the current bounded training disclosure in its bottom dock, verify its real XP command callback and accessible toggle, and forward keyboard-open taps in the profile icon filters and gallery. Source contracts now check JSX structure rather than retired tag adjacency or a fixed prop count. |
+| Scroll indicators | Supply the missing horizontal-indicator properties on combat and co-op lobby scroll surfaces. The validator passes for all 131 native scroll surfaces. |
+| Companion roster | Assert the intended 24 permanent and 9 authored event companions, including the reserved `EVT_UNIT_008` gap. Check exact IDs, uniqueness, and all authored companions' name, role, rarity, and origin against the server definitions. Content and balance remain unchanged. |
+| Account localization | Complete four missing guide/reward-track rows in all six languages. |
+| Social localization | Validate the existing six-language controlled boss names and separately protect unknown/player-authored labels. The obsolete English-only expectation is corrected without changing the authored names. |
+| Profile/chat integration | Load the real name-style helper dependency chain in the chat transport fixture after incorporating PR #546. Its existing chat assertions are retained. |
+
+`tools/validate-dungeon-combat-lifecycle.cjs` adds four actual React suites covering playback timing, inspection and bounded stepping, reduced-motion/cleanup behavior, and rendered responsive card/control properties. The runner uses deterministic timers, native-view mocks, and the real replay helpers; it is part of the regular core manifest. These checks establish component behavior and rendered properties, not native screenshot validation.
+
 ## Validation
 
-The four new runners are registered in `tools/mobile-core-tests.json`. React lifecycle tests use the pinned development dependency `react-test-renderer@19.0.0`; their native views and backend services are mocked, and they perform no network requests or runtime installs.
+The four chat/account runners and the combat lifecycle runner are registered in `tools/mobile-core-tests.json`. React lifecycle tests use the pinned development dependency `react-test-renderer@19.0.0`; their native views and backend services are mocked, and they perform no network requests or runtime installs.
 
 | Command/check | Result |
 | --- | --- |
 | Mobile `pnpm install --frozen-lockfile --ignore-scripts` | PASS; existing dependency resolutions retained |
 | Mobile `pnpm run typecheck` | PASS |
 | Mobile `pnpm run typecheck:core` | PASS |
+| Mobile `pnpm run test:core` | PASS — all 191 manifest entries, including PR #546's name-style save tests |
 | Mobile `pnpm run test:pre-codex` | PASS — offline smoke, equipment, navigation, pre-Codex smoke |
+| Mobile `pnpm run test:onboarding-locks` | PASS |
+| Compiled `coop-live-recruitment.js` | PASS |
+| Mobile `pnpm run test:collectibles` | PASS |
+| Mobile `pnpm run test:companions` | PASS — companion integration 277 checks, class skills 86, monster mastery 21 |
 | `node apps/mobile/tests/auth-account-link.cjs` | PASS — 22 behavior groups |
 | `node tools/validate-chat-lifecycle.cjs` | PASS — 10 React lifecycle suites |
+| `node tools/validate-dungeon-combat-lifecycle.cjs` | PASS — 4 React lifecycle suites |
 | `node tools/validate-chat-transport.mjs` | PASS — actual transport queries against a 55-row fixture, deterministic tie ordering, acknowledged sends, cosmetic failures, identity lookup economy |
 | Compiled `chat-feed-cache.js` | PASS — shared requests, pending invalidations, cache reuse, block race, reconnect and account disposal |
 | Chat usability, Guild chat, and collapsed dock/emote contracts | PASS |
-| `node tools/validate-recent-migration-versions.mjs` | PASS — 209 migrations |
+| `node tools/validate-recent-migration-versions.mjs` | PASS — 210 migrations |
+| `node tools/validate-regional-combat-cadence.mjs` | PASS |
+| `node apps/mobile/tests/account-localization.cjs` | PASS — 1,324 keys across 6 languages, 12 guides, 33 records, 20 owned files, 453 display calls |
+| `node tools/validate-localization-catalogs.mjs` | PASS — 6,069 catalog rows, nonempty translations and matching placeholders |
+| `node apps/mobile/tests/localization-social.mjs` | PASS — 995 keys across 6 languages, authored interpolation, provider, expiry, and 64 owned files |
 | Backend `pnpm run typecheck` and `pnpm run build` | PASS |
+| Backend `pnpm test:gems`, `pnpm test:coop-rewards`, `pnpm test:coop-live-social`, `pnpm test:coop-composition` | PASS |
+| Backend `pnpm test:event-expedition-online` and compiled `online/tests/gameplay.js` | PASS |
 | Production `chat_realtime.sql` | PASS |
 | `git diff --check` | PASS |
 
-The complete 189-check mobile core manifest was attempted, including continuation after its first failure: 186 checks passed across the initial run, continuation, and focused rerun of the updated attention contract. Three existing failures remain in unchanged source at base commit `d881f5c7395c561c4a61e6048038c215d9c46f26`:
+The initial 189-entry run found three baseline failures at `d881f5c7395c561c4a61e6048038c215d9c46f26`; the first was also present in [main CI run 37228569900](https://github.com/elroynbenjamins/Veldryn/actions/runs/37228569900). Those failures are resolved by the follow-up above. The current 191-entry manifest passes in a single clean compile-and-run invocation. The original chat-attention polling assertion now validates the foreground-only, 30-second, account-scoped lifecycle, with behavioral coverage of post-read refreshes.
 
-- `dungeon-combat-profile-card-ui-contract`: combat literals and layout shapes no longer match the current combat screen. Its first failure was already present in [main CI run 37228569900](https://github.com/elroynbenjamins/Veldryn/actions/runs/37228569900).
-- `ui-interaction-consistency-contract`: the current `CombatScreen.tsx` training disclosure differs from the asserted shape.
-- `validate-scroll-indicators.mjs`: existing scroll views in `CoopLobbyPresentation.tsx` and `CombatScreen.tsx` omit `showsHorizontalScrollIndicator`.
-
-The old chat-attention polling assertion was adapted to the new foreground-only, 30-second, account-scoped lifecycle. Behavioral lifecycle coverage checks the replacement, including explicit post-read refreshes. This pass does not rewrite unrelated combat screens, remove failing tests, or claim a green full-suite result.
-
-The optional account-localization runner also has an existing missing tutorial hint (`Complete First Blood, First Skill`). New account-flow strings were checked across all six supported languages; the broader tutorial catalog was not rewritten.
+The table records local validation and the earlier production SQL verification. Hosted validation and merge status are recorded on [PR #545](https://github.com/elroynbenjamins/Veldryn/pull/545) and its [checks](https://github.com/elroynbenjamins/Veldryn/pull/545/checks). The required CI workflow remains unchanged.
 
 ## Release verification still required
 

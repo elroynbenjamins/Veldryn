@@ -27,6 +27,13 @@ TEXT_FILES = [
     *MOBILE.joinpath("src").rglob("*.tsx"),
     *MOBILE.joinpath("src").rglob("*.js"),
     *MOBILE.joinpath("src").rglob("*.jsx"),
+    *MOBILE.joinpath("tests").rglob("*.ts"),
+    *MOBILE.joinpath("tests").rglob("*.tsx"),
+    *MOBILE.joinpath("tests").rglob("*.js"),
+    *MOBILE.joinpath("tests").rglob("*.jsx"),
+    *ROOT.joinpath("tools").glob("*.mjs"),
+    *ROOT.joinpath("tools").glob("*.js"),
+    *ROOT.joinpath("tools").glob("*.ts"),
     MOBILE / "App.tsx",
     MOBILE / "index.js",
 ]

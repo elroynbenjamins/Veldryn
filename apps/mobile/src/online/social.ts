@@ -4,6 +4,7 @@ import {guildNameError,normalizeGuildName} from '../core/identity-names';
 import type {GuildAppearanceEntitlements,GuildBackgroundId,GuildBannerId,GuildFrameId,GuildNameColorId,GuildNameplateId} from '../core/guild-customization';
 import type {GuildTagAvailability,GuildTagColorId} from '../core/guild-tags';
 import type {PlayerNameStylePreference} from '../core/player-name-style';
+import {writePlayerNameStyleForAccount} from '../core/player-name-style-save';
 import type {ProfileGuildIdentity} from '../core/profile-guild';
 
 export const WORLD_CHANNELS=[
@@ -133,6 +134,15 @@ export async function disbandGuild(){const client=requireClient();const {data,er
 export async function reportSocialPlayer(accountId:string,reason:SocialReportReason,messageId?:string){const client=requireClient();const {data,error}=await client.rpc('report_social_player_v1',{p_target_account_id:accountId,p_reason:reason,p_message_id:messageId??null});if(error)throw error;return data as 'submitted'|'already_reported';}
 
 
-export async function updateOnlinePlayerNameStyle(style:PlayerNameStylePreference){const client=requireClient();const {data,error}=await client.rpc('update_player_name_style_v1',{p_mode:style.mode,p_solid_color:style.solidColor??null,p_gradient_colors:style.gradientColors??[],p_animation:style.animation??'none'});if(error)throw error;return data as PlayerNameStylePreference;}
+export async function updateOnlinePlayerNameStyle(style:PlayerNameStylePreference,accountId:string){
+ const client=requireClient();
+ return writePlayerNameStyleForAccount(accountId,style,{
+  session:async()=>{const {data:{session},error}=await client.auth.getSession();if(error)throw error;return session?{accountId:session.user.id,accessToken:session.access_token}:null;},
+  write:async(preference,accessToken)=>{
+   const {data,error}=await client.rpc('update_player_name_style_v1',{p_mode:preference.mode,p_solid_color:preference.solidColor??null,p_gradient_colors:preference.gradientColors??[],p_animation:preference.animation??'none'}).setHeader('Authorization',`Bearer ${accessToken}`);
+   if(error)throw error;return data as PlayerNameStylePreference;
+  },
+ });
+}
 export async function guildPveBoard(){const {data,error}=await requireClient().rpc('guild_pve_board_v1');if(error)throw error;return (data??[]) as import('../core/guild-pve-encounters').GuildPveEncounter[];}
 export async function claimGuildPve(encounterId:string,milestone:number){const {data,error}=await requireClient().rpc('claim_guild_pve_v1',{p_encounter:encounterId,p_milestone:milestone});if(error)throw error;return data as {alreadyClaimed:boolean;gold?:number};}

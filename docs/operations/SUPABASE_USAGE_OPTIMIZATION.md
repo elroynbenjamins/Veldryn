@@ -18,7 +18,7 @@ Baseline measured on 2026-10-04:
 - production `guild_members` recursion: about 1,020 database errors/24h and about
   1,025 REST 500 responses
 
-The database migration `20261040000000_supabase_usage_optimization_v1.sql` consolidates
+The database migration `20261040990000_supabase_usage_optimization_v1.sql` consolidates
 the online workers, fixes recursive guild-member RLS, adds targeted worker indexes, and adds
 bounded cron-history cleanup.
 

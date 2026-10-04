@@ -40,23 +40,11 @@ Staging target:
 - temporarily change the online tick to 10 seconds only while testing timing-sensitive
   matchmaking/live-coop behavior
 
-After applying migrations to staging, override the production-safe defaults with:
+Cron schedules are environment-specific and deliberately are not created by the schema
+migration. Apply the matching operations script after database migrations:
 
-```sql
-select cron.unschedule('veldryn-online-tick');
-select cron.schedule(
-  'veldryn-online-tick',
-  '30 seconds',
-  'select public.process_online_tick_server_v1(16);'
-);
-
-select cron.unschedule('veldryn-cron-history-retention');
-select cron.schedule(
-  'veldryn-cron-history-retention',
-  '17 3 * * *',
-  $select private.cleanup_cron_job_run_details_v1(interval '2 days',100000);$
-);
-```
+- production: `backend/supabase/ops/configure_usage_cron_production.sql`
+- staging: `backend/supabase/ops/configure_usage_cron_staging.sql`
 
 For a timing-sensitive staging test, reschedule only `veldryn-online-tick` back to
 `10 seconds`, then restore `30 seconds` afterwards.

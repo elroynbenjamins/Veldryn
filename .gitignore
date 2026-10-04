@@ -69,3 +69,7 @@ backend/.readiness-build/
 backend/.readiness-online/
 backend/dist-coop-composition/
 marketing/**/veldryn-play-store-*.zip
+
+# Generated mobile snapshots/exports should never be committed.
+apps/mobile/.*-export*/
+apps/mobile/.*-build*/

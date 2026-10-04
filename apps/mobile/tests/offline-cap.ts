@@ -29,9 +29,12 @@ for(const id of ['character_slot_3','character_slot_4','character_slot_5']){
 
 const vipPlusState={...state,account:{...state.account,entitlements:{vip_plus:true}}};
 const vipPlus=offlineCapBreakdown(vipPlusState);
-if(vipPlus.hours!==28)throw new Error(`VIP+ must include the VIP +2h and its own +2h after earned progression, got ${vipPlus.hours}`);
+if(vipPlus.hours!==26)throw new Error(`VIP+ must grant its own +2h after earned progression, got ${vipPlus.hours}`);
+if(vipPlus.sources.find(row=>row.id==='vip')?.earned)throw new Error('VIP+ alone must not unlock the independent VIP reserve source');
+const both=offlineCapBreakdown({...state,account:{...state.account,entitlements:{vip:true,vip_plus:true}}});
+if(both.hours!==28)throw new Error(`Both permanent tiers must add +4h after earned progression, got ${both.hours}`);
 
-state={...state,account:{...state.account,entitlements:{vip_plus:true,supporter:true}}};
+state={...state,account:{...state.account,entitlements:{vip:true,vip_plus:true,supporter:true}}};
 const full=offlineCapBreakdown(state);
 if(full.hours!==30||offlineCapSeconds(state)!==30*60*60)throw new Error(`Paid AFK upgrades must reach the 30h cap, got ${full.hours}`);
 for(const id of ['vip','vip_plus','supporter']){

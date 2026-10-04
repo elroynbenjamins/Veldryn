@@ -13,17 +13,27 @@ const base=createCharacter(newGame(0),'IRONWARDEN','Entitlement Tester');
 const vip={...base,account:{...base.account,entitlements:{vip:true}}};
 const vipPlus={...base,account:{...base.account,entitlements:{vip_plus:true}}};
 const supporter={...base,account:{...base.account,entitlements:{supporter:true}}};
-const stacked={...base,account:{...base.account,entitlements:{vip_plus:true,supporter:true},unlockedCharacterSlots:4}};
+const both={...base,account:{...base.account,entitlements:{vip:true,vip_plus:true}}};
+const plusSupporter={...base,account:{...base.account,entitlements:{vip_plus:true,supporter:true}}};
+const stacked={...base,account:{...base.account,entitlements:{vip:true,vip_plus:true,supporter:true},unlockedCharacterSlots:4}};
 
 let b=accountEntitlementBenefits(vip);
 ok(b.vip&&!b.vipPlus&&!b.supporter,'VIP entitlement should remain distinct');
 eq(b.inventorySlots,5,'VIP Inventory slots');eq(b.bankSlots,20,'VIP Bank slots');eq(b.loadoutSlots,1,'VIP loadout slots');
 b=accountEntitlementBenefits(vipPlus);
-ok(b.vip&&b.vipPlus,'VIP+ should inherit VIP');eq(b.inventorySlots,10,'VIP+ total Inventory slots');eq(b.bankSlots,50,'VIP+ total Bank slots');eq(b.loadoutSlots,2,'VIP+ total loadouts');eq(b.actionQueueSlots,1,'VIP+ Action Queue slot');eq(b.forgeSlots,1,'VIP+ Forge slot');
+ok(!b.vip&&b.vipPlus,'VIP+ alone must not grant VIP');eq(b.afkHours,2,'VIP+ independent offline hours');eq(b.inventorySlots,5,'VIP+ independent Inventory slots');eq(b.bankSlots,30,'VIP+ independent Bank slots');eq(b.loadoutSlots,1,'VIP+ independent loadouts');eq(b.actionQueueSlots,1,'VIP+ Action Queue slot');eq(b.forgeSlots,1,'VIP+ Forge slot');
+b=accountEntitlementBenefits(both);
+ok(b.vip&&b.vipPlus&&!b.supporter,'Both permanent tiers stay active independently');eq(b.afkHours,4,'Both tiers offline hours');eq(b.inventorySlots,10,'Both tiers Inventory slots');eq(b.bankSlots,50,'Both tiers Bank slots');eq(b.loadoutSlots,2,'Both tiers loadouts');
 b=accountEntitlementBenefits(supporter);
-ok(b.supporter&&!b.vipPlus,'Supporter should stack independently');eq(b.forgeSlots,1,'Supporter Forge slot');eq(b.inventorySlots,0,'Supporter must not grant temporary storage');
-eq(entitlementStorageCapacity(vipPlus,'inventory'),40,'VIP+ effective starter Inventory');eq(entitlementStorageCapacity(vipPlus,'bank'),170,'VIP+ effective starter Bank');
-eq(characterLoadoutSlotCount(vipPlus),5,'VIP+ loadout capacity');eq(activityQueueCapacity(vipPlus),3,'VIP+ queue capacity');
+ok(b.supporter&&!b.vip&&!b.vipPlus,'Supporter should stack independently');eq(b.forgeSlots,1,'Supporter Forge slot');eq(b.inventorySlots,0,'Supporter must not grant temporary storage');
+b=accountEntitlementBenefits(plusSupporter);
+ok(!b.vip&&b.vipPlus&&b.supporter,'Supporter plus VIP+ must not imply VIP');eq(b.afkHours,4,'VIP+ and Supporter offline hours');eq(b.forgeSlots,2,'VIP+ and Supporter Forge slots add together');
+eq(accountEntitlementBenefits(stacked).afkHours,6,'All three entitlements grant six paid offline hours');
+eq(entitlementStorageCapacity(vipPlus,'inventory'),35,'VIP+ effective starter Inventory');eq(entitlementStorageCapacity(vipPlus,'bank'),150,'VIP+ effective starter Bank');
+eq(entitlementStorageCapacity(both,'inventory'),40,'Both tiers effective starter Inventory');eq(entitlementStorageCapacity(both,'bank'),170,'Both tiers effective starter Bank');
+eq(characterLoadoutSlotCount(vipPlus),4,'VIP+ independent loadout capacity');eq(characterLoadoutSlotCount(both),5,'Both tiers loadout capacity');eq(activityQueueCapacity(vipPlus),3,'VIP+ queue capacity');
+eq(offlineCapBreakdown(vipPlus).hours-offlineCapBreakdown(base).hours,2,'Offline runtime gives VIP+ only its own reserve grant');
+eq(offlineCapBreakdown(both).hours-offlineCapBreakdown(base).hours,4,'Offline runtime stacks both permanent tiers');
 eq(equipmentCraftSlotBreakdown(stacked).capacity,7,'Fully stacked Forge capacity should reach seven');
 eq(offlineCapBreakdown(stacked).maxHours,30,'Paid entitlements must never push AFK reserve above 30h');
 
@@ -39,10 +49,10 @@ ok(effectivePlayerNameStyle(expiredFallback).mode==='solid','Expired Supporter s
 ok(playerNameCharacterColors('Veldryn',effectivePlayerNameStyle(gradient)).length===7,'Gradient should resolve one color per character');
 ok(SUPPORTER_NAME_PRESETS.some(row=>row.id==='prismatic'),'Supporter should include Prismatic preset');
 
-const vipProduct=COMMERCE_PRODUCTS.find(row=>row.id==='vip')!,vipPlusProduct=COMMERCE_PRODUCTS.find(row=>row.id==='vip_plus')!,upgrade=COMMERCE_PRODUCTS.find(row=>row.id==='vip_plus_upgrade')!,sub=COMMERCE_PRODUCTS.find(row=>row.id==='supporter_monthly')!;
-eq(vipProduct.playProductId,'vip','VIP Google Play product id');eq(vipPlusProduct.playProductId,'vip_plus','VIP+ Google Play product id');eq(upgrade.playProductId,'vip_plus_upgrade','VIP+ upgrade Google Play product id');eq(sub.playProductId,'supporter_monthly','Supporter Google Play product id');
+const vipProduct=COMMERCE_PRODUCTS.find(row=>row.id==='vip')!,vipPlusProduct=COMMERCE_PRODUCTS.find(row=>row.id==='vip_plus')!,sub=COMMERCE_PRODUCTS.find(row=>row.id==='supporter_monthly')!;
+eq(vipProduct.playProductId,'vip','VIP Google Play product id');eq(vipPlusProduct.playProductId,'vip_plus','VIP+ Google Play product id');eq(vipPlusProduct.name,'VIP+','VIP+ remains a separate permanent purchase');eq(sub.playProductId,'supporter_monthly','Supporter Google Play product id');
 eq(sub.preferredBasePlanId,'monthly','Supporter should use monthly Play base plan');eq(PLAY_BILLING_PACKAGE_NAME,'com.elroybenjamins.veldryn','Google Play package');
-ok(GOOGLE_PLAY_ONE_TIME_PRODUCT_IDS.length===3&&GOOGLE_PLAY_SUBSCRIPTION_PRODUCT_IDS.length===1,'Google Play catalog should split one-time products and subscription');
+eq(GOOGLE_PLAY_ONE_TIME_PRODUCT_IDS.join(','),'vip,vip_plus','Only independent VIP and VIP+ products belong in the one-time Play catalog');eq(GOOGLE_PLAY_SUBSCRIPTION_PRODUCT_IDS.join(','),'supporter_monthly','Supporter remains the single subscription');
 ok(COMMERCE_PRODUCTS.every(row=>!('priceEur' in row)),'Prices must not be hardcoded in the app; Google Play supplies localized prices');
 for(const [id,state] of [['vip',vip],['vip_plus',vipPlus],['supporter_monthly',supporter]] as const){
  const actual=accountEntitlementBenefits(state),items=COMMERCE_PRODUCT_BONUSES[id].items;
@@ -51,7 +61,7 @@ for(const [id,state] of [['vip',vip],['vip_plus',vipPlus],['supporter_monthly',s
  }
 }
 ok(COMMERCE_PRODUCT_BONUSES.vip_plus.items.includes('+1 waiting activity slot (3 total)'),'VIP+ disclosure includes the third waiting slot');
-ok(COMMERCE_PRODUCT_BONUSES.vip_plus_upgrade.note.includes('existing VIP'),'Upgrade is clearly incremental');
+ok(COMMERCE_PRODUCT_BONUSES.vip_plus.note.includes('Stacks with VIP'),'VIP+ disclosure makes independent stacking clear');
 ok(COMMERCE_PRODUCT_BONUSES.supporter_monthly.note.includes('while subscribed'),'Supporter bonuses disclose their duration');
 const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
 const rowSource=fs.readFileSync('src/components/CommerceProductRow.tsx','utf8');
@@ -65,6 +75,9 @@ const synced=withServerCommerceEntitlements(stale,{vip:true,vipPlus:false,suppor
 b=accountEntitlementBenefits(synced);
 ok(b.vip&&!b.vipPlus&&!b.supporter,'Server sync must clear stale commerce aliases');
 ok(synced.account.entitlements?.unrelated===true,'Server commerce sync must preserve unrelated account entitlements');
+const syncedPlus=withServerCommerceEntitlements(stale,{vip:false,vipPlus:true,supporter:false,supporterExpiresAt:null});
+b=accountEntitlementBenefits(syncedPlus);
+ok(!b.vip&&b.vipPlus&&!b.supporter,'Server VIP+ access must not synthesize a VIP grant');
 
 ok(!COMMERCE_GUARDRAILS.paidPremiumCurrency&&!COMMERCE_GUARDRAILS.paidPvpPower&&!COMMERCE_GUARDRAILS.paidRankingStrength,'Commerce guardrails must keep paid currency/PvP power/ranking strength disabled');
 

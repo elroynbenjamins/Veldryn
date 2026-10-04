@@ -2,7 +2,6 @@ export const GOOGLE_PLAY_PACKAGE_NAME=Deno.env.get('GOOGLE_PLAY_PACKAGE_NAME')??
 export const GOOGLE_PLAY_PRODUCTS={
   vip:'in-app',
   vip_plus:'in-app',
-  vip_plus_upgrade:'in-app',
   supporter_monthly:'subs',
 } as const;
 
@@ -22,6 +21,8 @@ export interface VerifiedGooglePlayPurchase{
   acknowledgementState:string|null;
   linkedPurchaseToken:string|null;
   obfuscatedAccountId:string|null;
+  expiredPurchaseToken:string|null;
+  expiredObfuscatedAccountId:string|null;
   isTest:boolean;
   regionCode:string|null;
   basePlanId:string|null;
@@ -72,11 +73,43 @@ function pkcs8Bytes(pem:string){
   return Uint8Array.from(raw,char=>char.charCodeAt(0));
 }
 
-async function serviceAccount(){
-  const raw=requiredEnv('GOOGLE_PLAY_SERVICE_ACCOUNT_JSON');
-  const parsed=JSON.parse(raw) as Partial<ServiceAccount>;
-  if(!parsed.client_email||!parsed.private_key)throw new Error('GOOGLE_PLAY_SERVICE_ACCOUNT_JSON is missing client_email/private_key');
-  return parsed as ServiceAccount;
+function serviceAccount():ServiceAccount{
+  const raw=Deno.env.get('GOOGLE_PLAY_SERVICE_ACCOUNT_JSON')?.trim();
+  try{
+    const parsed=JSON.parse(raw??'null') as Partial<ServiceAccount>|null;
+    if(!parsed||typeof parsed.client_email!=='string'||!parsed.client_email.trim()
+      ||typeof parsed.private_key!=='string'||!parsed.private_key.includes('-----BEGIN PRIVATE KEY-----')
+      ||!parsed.private_key.includes('-----END PRIVATE KEY-----')
+      ||(parsed.token_uri!==undefined&&(typeof parsed.token_uri!=='string'||!parsed.token_uri.trim())))throw new Error();
+    return {client_email:parsed.client_email,private_key:parsed.private_key,token_uri:parsed.token_uri};
+  }catch{
+    // JSON parse errors can include fragments of the credential. Never return them.
+    throw new Error('GOOGLE_PLAY_BILLING_NOT_CONFIGURED');
+  }
+}
+
+/** Configuration presence only. This never sends credentials or contacts Google. */
+export function googlePlayBillingConfigured(){
+  try{serviceAccount();return true}catch{return false}
+}
+
+/** Validate signing/OAuth before letting a new purchase open the native payment sheet. */
+export async function assertGooglePlayBillingReady(){
+  serviceAccount();
+  try{await googleAccessToken()}catch(error){
+    if(error instanceof GooglePlayApiError&&error.status>=500)throw new Error('GOOGLE_PLAY_SERVICE_UNAVAILABLE');
+    if(error instanceof TypeError)throw new Error('GOOGLE_PLAY_SERVICE_UNAVAILABLE');
+    throw new Error('GOOGLE_PLAY_BILLING_NOT_CONFIGURED');
+  }
+}
+
+export function warnGooglePlayConfiguration(functionName:'play-billing'|'play-billing-rtdn'){
+  const missing:string[]=[];
+  if(!googlePlayBillingConfigured())missing.push('GOOGLE_PLAY_SERVICE_ACCOUNT_JSON');
+  if(functionName==='play-billing-rtdn'){
+    for(const name of ['GOOGLE_PLAY_RTDN_AUDIENCE','GOOGLE_PLAY_RTDN_PUSH_SERVICE_ACCOUNT_EMAIL'])if(!Deno.env.get(name)?.trim())missing.push(name);
+  }
+  if(missing.length)console.warn('['+functionName+'] Missing or invalid configuration keys: '+missing.join(', '));
 }
 
 async function googleAccessToken(){
@@ -192,6 +225,8 @@ export async function verifyGooglePlayPurchase(
       acknowledgementState:payload.acknowledgementState??null,
       linkedPurchaseToken:null,
       obfuscatedAccountId:payload.obfuscatedExternalAccountId??null,
+      expiredPurchaseToken:null,
+      expiredObfuscatedAccountId:null,
       isTest:Boolean(payload.testPurchaseContext),
       regionCode:payload.regionCode??null,
       basePlanId:null,
@@ -209,6 +244,10 @@ export async function verifyGooglePlayPurchase(
     testPurchase?:unknown;
     acknowledgementState?:string;
     externalAccountIdentifiers?:{obfuscatedExternalAccountId?:string};
+    outOfAppPurchaseContext?:{
+      expiredPurchaseToken?:string;
+      expiredExternalAccountIdentifiers?:{obfuscatedExternalAccountId?:string};
+    };
     lineItems?:Array<{
       productId?:string;
       expiryTime?:string;
@@ -236,6 +275,8 @@ export async function verifyGooglePlayPurchase(
     acknowledgementState:payload.acknowledgementState??null,
     linkedPurchaseToken:payload.linkedPurchaseToken??null,
     obfuscatedAccountId:payload.externalAccountIdentifiers?.obfuscatedExternalAccountId??null,
+    expiredPurchaseToken:payload.outOfAppPurchaseContext?.expiredPurchaseToken??null,
+    expiredObfuscatedAccountId:payload.outOfAppPurchaseContext?.expiredExternalAccountIdentifiers?.obfuscatedExternalAccountId??null,
     isTest:Boolean(payload.testPurchase),
     regionCode:payload.regionCode??null,
     basePlanId:line?.offerDetails?.basePlanId??null,
@@ -260,6 +301,30 @@ export async function googlePlayObfuscatedAccountId(accountId:string){
   return Array.from(digest,byte=>byte.toString(16).padStart(2,'0')).join('');
 }
 
+/** Resolve only Google-verified identifiers against server-owned account links. */
+export async function resolveGooglePlayPurchaseOwner(
+  purchase:VerifiedGooglePlayPurchase,
+  lookup:{
+    byPurchaseToken:(token:string)=>Promise<string|null>;
+    byObfuscatedAccountId:(id:string)=>Promise<string|null>;
+  },
+):Promise<{accountId:string;obfuscatedAccountId:string}|null>{
+  const ids=[purchase.obfuscatedAccountId,purchase.expiredObfuscatedAccountId].filter((id):id is string=>id!==null);
+  if(ids.some(id=>!(/^[0-9a-f]{64}$/).test(id))||new Set(ids).size>1)throw new Error('GOOGLE_PLAY_ACCOUNT_MISMATCH');
+  const tokens=[...new Set([purchase.purchaseToken,purchase.linkedPurchaseToken,purchase.expiredPurchaseToken].filter((token):token is string=>Boolean(token)))];
+  const owners=await Promise.all([
+    ...tokens.map(token=>lookup.byPurchaseToken(token)),
+    ...[...new Set(ids)].map(id=>lookup.byObfuscatedAccountId(id)),
+  ]);
+  const accounts=[...new Set(owners.filter((id):id is string=>Boolean(id)))];
+  if(accounts.length>1)throw new Error('GOOGLE_PLAY_ACCOUNT_MISMATCH');
+  if(!accounts.length)return null;
+  const accountId=accounts[0];
+  const obfuscatedAccountId=await googlePlayObfuscatedAccountId(accountId);
+  if(ids.some(id=>id!==obfuscatedAccountId))throw new Error('GOOGLE_PLAY_ACCOUNT_MISMATCH');
+  return {accountId,obfuscatedAccountId};
+}
+
 function parseJwtPart<T>(part:string):T{
   return JSON.parse(new TextDecoder().decode(decodeBase64Url(part))) as T;
 }
@@ -274,6 +339,9 @@ async function googleJwks(){
 }
 
 export async function verifyGooglePubSubOidc(req:Request){
+  // An unconfigured webhook rejects before downloading keys or touching commerce data.
+  const expectedAudience=requiredEnv('GOOGLE_PLAY_RTDN_AUDIENCE');
+  const expectedServiceAccount=requiredEnv('GOOGLE_PLAY_RTDN_PUSH_SERVICE_ACCOUNT_EMAIL');
   const authorization=req.headers.get('authorization')??'';
   const token=authorization.startsWith('Bearer ')?authorization.slice(7):'';
   const parts=token.split('.');
@@ -289,7 +357,7 @@ export async function verifyGooglePubSubOidc(req:Request){
   const now=Math.floor(Date.now()/1000);
   if(claims.iss!=='https://accounts.google.com'&&claims.iss!=='accounts.google.com')throw new Error('Invalid Pub/Sub OIDC issuer');
   if(!claims.exp||claims.exp<now-30||(claims.nbf&&claims.nbf>now+30))throw new Error('Expired Pub/Sub OIDC token');
-  if(claims.aud!==requiredEnv('GOOGLE_PLAY_RTDN_AUDIENCE'))throw new Error('Invalid Pub/Sub OIDC audience');
-  if(claims.email!==requiredEnv('GOOGLE_PLAY_RTDN_PUSH_SERVICE_ACCOUNT_EMAIL')||claims.email_verified!==true)throw new Error('Invalid Pub/Sub OIDC service account');
+  if(claims.aud!==expectedAudience)throw new Error('Invalid Pub/Sub OIDC audience');
+  if(claims.email!==expectedServiceAccount||claims.email_verified!==true)throw new Error('Invalid Pub/Sub OIDC service account');
   return claims;
 }

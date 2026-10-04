@@ -45,9 +45,15 @@ const vipPlusState={...state,account:{...state.account,entitlements:{vip_plus:tr
 const {characterLoadoutSlotCount}=require('../src/core/character-loadouts') as typeof import('../src/core/character-loadouts');
 eq(characterLoadoutSlotCount(state),3,'Base accounts keep three loadout slots');
 eq(characterLoadoutSlotCount({...state,account:{...state.account,entitlements:{vip:true}}}),4,'VIP adds one permanent loadout slot');
-eq(characterLoadoutSlotCount(vipPlusState),5,'VIP+ inherits VIP and adds a second permanent loadout slot');
-const fifth=saveCharacterLoadout(vipPlusState,4,'VIP+ Fifth');
-eq(fifth.character?.savedLoadouts?.some(row=>row.slotIndex===4),true,'VIP+ can save into fifth loadout slot');
+eq(characterLoadoutSlotCount(vipPlusState),4,'VIP+ independently adds one permanent loadout slot');
+const fourth=saveCharacterLoadout(vipPlusState,3,'VIP+ Fourth');
+eq(fourth.character?.savedLoadouts?.some(row=>row.slotIndex===3),true,'VIP+ can save into fourth loadout slot');
+let fifthRejected=false;try{saveCharacterLoadout(vipPlusState,4,'Locked Fifth')}catch{fifthRejected=true}
+ok(fifthRejected,'VIP+ alone cannot use the fifth slot reserved for both permanent tiers');
+const both={...vipPlusState,account:{...vipPlusState.account,entitlements:{vip:true,vip_plus:true}}};
+eq(characterLoadoutSlotCount(both),5,'Both permanent tiers add two loadout slots');
+const fifth=saveCharacterLoadout(both,4,'Both Tiers Fifth');
+eq(fifth.character?.savedLoadouts?.some(row=>row.slotIndex===4),true,'Owning both tiers can save into fifth loadout slot');
 const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
 const savedLoadoutUi=fs.readFileSync('src/components/SavedLoadoutsPanel.tsx','utf8');
 const profileEditorUi=fs.readFileSync('src/components/ProfileEditor.tsx','utf8');

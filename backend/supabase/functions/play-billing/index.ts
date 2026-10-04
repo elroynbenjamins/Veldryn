@@ -3,10 +3,14 @@ import {orderCommercePurchases,purchaseEligibilityError} from '../_shared/commer
 import {
   GooglePlayApiError,
   acknowledgeGooglePlayPurchase,
+  assertGooglePlayBillingReady,
   expectedGooglePlayType,
+  googlePlayBillingConfigured,
   googlePlayObfuscatedAccountId,
   isGooglePlayProductId,
+  resolveGooglePlayPurchaseOwner,
   verifyGooglePlayPurchase,
+  warnGooglePlayConfiguration,
   type GooglePlayProductId,
   type GooglePlayProductType,
   type VerifiedGooglePlayPurchase,
@@ -16,6 +20,7 @@ type PurchaseEvidence={purchaseToken:string;productId:string;productType:string}
 type Entitlements={vip:boolean;vipPlus:boolean;supporter:boolean;supporterExpiresAt:string|null};
 
 const JSON_HEADERS={'content-type':'application/json','cache-control':'no-store'};
+warnGooglePlayConfiguration('play-billing');
 
 function json(body:unknown,status=200){return new Response(JSON.stringify(body),{status,headers:JSON_HEADERS})}
 
@@ -93,6 +98,12 @@ async function registerAccount(admin:SupabaseClient,accountId:string,obfuscatedA
   if(error)throw error;
 }
 
+async function accountLookup(admin:SupabaseClient,name:string,args:Record<string,string>){
+  const {data,error}=await admin.rpc(name,args);
+  if(error)throw error;
+  return typeof data==='string'&&data?data:null;
+}
+
 async function record(admin:SupabaseClient,accountId:string,purchase:VerifiedGooglePlayPurchase,source:string){
   const {error}=await admin.rpc('google_play_record_purchase_v1',{
     p_account_id:accountId,
@@ -127,9 +138,16 @@ async function verifyAndRecord(
   const productId=row.productId as GooglePlayProductId;
   const productType=row.productType as GooglePlayProductType;
   let verified=await verifyGooglePlayPurchase(row.purchaseToken,productType,productId);
-  if(!verified.obfuscatedAccountId||verified.obfuscatedAccountId!==obfuscatedAccountId){
+  const owner=await resolveGooglePlayPurchaseOwner(verified,{
+    byPurchaseToken:token=>accountLookup(admin,'google_play_purchase_owner_v1',{p_purchase_token:token}),
+    byObfuscatedAccountId:id=>accountLookup(admin,'google_play_account_from_obfuscated_v1',{p_obfuscated_account_id:id}),
+  });
+  if(!owner||owner.accountId!==accountId||owner.obfuscatedAccountId!==obfuscatedAccountId){
     throw new Error('GOOGLE_PLAY_ACCOUNT_MISMATCH');
   }
+  // Google removes outOfAppPurchaseContext after acknowledgement. Keep the
+  // resolved account link in our ledger before that context disappears.
+  verified={...verified,obfuscatedAccountId:owner.obfuscatedAccountId};
   await record(admin,accountId,verified,source);
   if(verified.entitlementActive&&verified.acknowledgementState!=='ACKNOWLEDGEMENT_STATE_ACKNOWLEDGED'){
     verified=await acknowledgeGooglePlayPurchase(verified);
@@ -143,7 +161,6 @@ async function refreshKnownPurchases(admin:SupabaseClient,accountId:string,obfus
   if(error)throw error;
   const rows=(Array.isArray(data)?data:[]) as Array<{purchase_token:string;product_id:string;product_type:string}>;
   const verifiedIds:string[]=[];
-  const activeProductIds:string[]=[];
   const ordered=orderCommercePurchases(rows.map(row=>({...row,productId:row.product_id})));
   for(const row of ordered){
     if(!isGooglePlayProductId(row.product_id)||row.product_type!==expectedGooglePlayType(row.product_id))continue;
@@ -154,11 +171,7 @@ async function refreshKnownPurchases(admin:SupabaseClient,accountId:string,obfus
         productType:row.product_type,
       },'status');
       verifiedIds.push(verified.productId);
-      if(verified.entitlementActive)activeProductIds.push(verified.productId);
     }catch(error){
-      // A refunded VIP invalidates its dependent upgrade. The VIP record above
-      // already recomputed access; do not make the whole status refresh fail.
-      if(row.product_id==='vip_plus_upgrade'&&(error as {message?:string})?.message==='VIP_REQUIRED_FOR_UPGRADE')continue;
       if(error instanceof GooglePlayApiError&&(error.status===404||error.status===410)){
         await record(admin,accountId,{
           purchaseToken:row.purchase_token,
@@ -169,12 +182,13 @@ async function refreshKnownPurchases(admin:SupabaseClient,accountId:string,obfus
           orderId:null,purchasedAt:null,expiresAt:null,autoRenewing:null,
           acknowledgementState:null,linkedPurchaseToken:null,
           obfuscatedAccountId,
+          expiredPurchaseToken:null,expiredObfuscatedAccountId:null,
           isTest:false,regionCode:null,basePlanId:null,offerId:null,
         },'status_not_found');
       }else throw error;
     }
   }
-  return {verifiedProductIds:[...new Set(verifiedIds)],activeProductIds};
+  return {verifiedProductIds:[...new Set(verifiedIds)]};
 }
 
 Deno.serve(async(req)=>{
@@ -188,16 +202,17 @@ Deno.serve(async(req)=>{
     const body=await req.json() as {action?:string;productId?:string;purchase?:unknown;purchases?:unknown[]};
 
     if(body.action==='context'){
-      return json({obfuscatedAccountId,entitlements:await entitlements(client)});
+      return json({obfuscatedAccountId,entitlements:await entitlements(client),checkoutAvailable:googlePlayBillingConfigured()});
     }
 
     if(body.action==='prepare'){
       if(typeof body.productId!=='string'||!isGooglePlayProductId(body.productId))throw new Error('UNKNOWN_GOOGLE_PLAY_PRODUCT');
-      const refreshed=await refreshKnownPurchases(admin,user.id,obfuscatedAccountId);
+      await assertGooglePlayBillingReady();
+      await refreshKnownPurchases(admin,user.id,obfuscatedAccountId);
       const owned=await entitlements(client);
-      const issue=purchaseEligibilityError(body.productId,owned,refreshed.activeProductIds.includes('vip'));
+      const issue=purchaseEligibilityError(body.productId,owned);
       if(issue)throw new Error(issue);
-      return json({obfuscatedAccountId,entitlements:owned});
+      return json({obfuscatedAccountId,entitlements:owned,checkoutAvailable:true});
     }
 
     if(body.action==='verify'){

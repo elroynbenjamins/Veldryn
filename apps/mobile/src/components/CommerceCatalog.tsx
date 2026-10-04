@@ -8,8 +8,8 @@ import type {ServerCommerceEntitlements} from '../core/account-entitlements';
 import {premiumProductRows} from '../core/commerce-presentation';
 import {spacing} from '../theme/theme';
 
-export function CommerceCatalog({language:languageOverride,owned,ready,price,available,onBuy}:{language?:Language;
-  owned:ServerCommerceEntitlements;ready:boolean;
+export function CommerceCatalog({language:languageOverride,owned,checking=false,ready,price,available,onBuy}:{language?:Language;
+  owned:ServerCommerceEntitlements|undefined;checking?:boolean;ready:boolean;
   price:(id:CommerceProductId)=>string;
   available:(id:CommerceProductId)=>boolean;
   onBuy:(id:CommerceProductId)=>void;
@@ -18,12 +18,12 @@ export function CommerceCatalog({language:languageOverride,owned,ready,price,ava
  const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params);
 
   return <View style={{gap:spacing.sm,marginVertical:spacing.sm}}>
-    {premiumProductRows(owned).map(row=><CommerceProductRow
+    {premiumProductRows(owned,checking).map(row=><CommerceProductRow
       key={row.id} language={language} productId={row.id}
-      title={a(row.id==='supporter_monthly'?'{name} · monthly':'{name} · permanent',{name:row.title})}
-      price={row.owned?(row.id==='supporter_monthly'?supporterExpiry(owned.supporterExpiresAt,language):a("Permanent access")):a(price(row.id))}
+      title={row.id==='supporter_monthly'&&row.owned?row.title:a(row.id==='supporter_monthly'?'{name} · monthly':'{name} · permanent',{name:row.title})}
+      price={row.owned?(row.id==='supporter_monthly'?supporterExpiry(owned?.supporterExpiresAt,language):a("Permanent access")):a(price(row.id))}
       status={row.status?a(row.status):undefined} action={a(row.action)}
-      disabled={!ready||row.owned||!available(row.id)}
+      owned={row.owned} disabled={!ready||!row.confirmed||row.owned||!available(row.id)}
       onPress={()=>onBuy(row.id)}
     />)}
   </View>;

@@ -30,6 +30,7 @@ type Props={
   onLanguage:(language:GameState['settings']['language'])=>void;
   onReset:()=>void;
   onChange:(next:GameState)=>void;
+  onRefreshCommerce?:(expectedAccountId:string)=>Promise<void>;
   onExport:()=>Promise<void>;
   onImport:(raw:string)=>Promise<void>;
   onRedeemCode?:(code:string)=>Promise<string|void>|string|void;
@@ -56,7 +57,7 @@ function RedeemCodePanel({language,onRedeemCode}:{language:Language;onRedeemCode
  return <Panel><Text style={[s.title,{color:C.text}]}>{a('Redeem code')}</Text><Text style={[s.sub,{color:C.muted}]}>{a('Enter a promotional code from an official VELDRYN announcement or event.')}</Text><View style={s.redeemRow}><TextInput accessibilityLabel={a('Redeem code')} autoCapitalize="characters" autoCorrect={false} value={code} onChangeText={value=>{setCode(value.replace(/\s/g,''));setStatus('')}} placeholder={a('ENTER CODE')} placeholderTextColor={C.muted} style={[s.codeInput,{color:C.text,borderColor:C.line,backgroundColor:C.inputBg}]}/><GameButton compact title={busy?a('Checking…'):a('Redeem')} disabled={!code.trim()||busy} onPress={()=>void redeem()}/></View>{status?<Text accessibilityLiveRegion="polite" style={[s.redeemStatus,{color:onRedeemCode?C.info:C.muted}]}>{status}</Text>:null}</Panel>;
 }
 
-export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImport,onRedeemCode,onOpenCoopUiGallery,initialSection,onNavigateGuide,online=false}:Props){
+export function SettingsScreen({state,onLanguage,onReset,onChange,onRefreshCommerce,onExport,onImport,onRedeemCode,onOpenCoopUiGallery,initialSection,onNavigateGuide,online=false}:Props){
  const language=state.settings.language;
  const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params);
 
@@ -98,7 +99,7 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onExport,onImp
       <Text style={[s.muted,{color:theme.muted}]}>{online?a("Your progress is saved after every successful action."):a("Local progress is kept separately from online characters.")}</Text>
     </Panel>
     <OnlineAccountPanel state={state}/>
-    <GooglePlayCommercePanel state={state} onChange={onChange}/><RedeemCodePanel language={language} onRedeemCode={onRedeemCode}/></>}
+    <GooglePlayCommercePanel state={state} online={online} onChange={onChange} onRefreshCommerce={onRefreshCommerce}/><RedeemCodePanel language={language} onRedeemCode={onRedeemCode}/></>}
     {section==='gameplay'&&<><Panel>
       <Text style={[s.title,{color:theme.text}]}>{t(state.settings.language,'settings.gameplay')}</Text>
       <Text style={[s.sub,{color:theme.muted}]}>{a("Activities continue while closed up to your current AFK reserve.")}</Text>

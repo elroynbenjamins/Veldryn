@@ -15,6 +15,17 @@ export function useOnlineGame(){
  const nameStyleSaving=useRef<typeof repo>(null);
  const [snapshot,setSnapshot]=useState<OnlineSnapshot|null>(null),[loading,setLoading]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[pending,setPending]=useState(false);
  const refresh=useCallback(async()=>{if(!repo)return;try{const next=await repo.refresh();if(active.current===repo){setSnapshot(next);setPending(await repo.hasPending());setError('');}}catch(e){if(active.current===repo)setError(e instanceof Error?e.message:'Online service unavailable.');}},[repo]);
+ const refreshCommerce=useCallback(async(expectedAccountId:string)=>{
+  const current=()=>Boolean(repo&&active.current===repo&&repo.accountId===expectedAccountId);
+  if(!repo||!current())throw new Error('Account changed while refreshing purchases.');
+  try{
+   const next=await repo.refresh();
+   if(!current()||next.accountId!==expectedAccountId)throw new Error('Account changed while refreshing purchases.');
+   const hasPending=await repo.hasPending();
+   if(!current())throw new Error('Account changed while refreshing purchases.');
+   setSnapshot(repo.snapshot??next);setPending(hasPending);setError('');
+  }catch(e){if(current())setError(e instanceof Error?e.message:'Unable to refresh your account benefits.');throw e;}
+ },[repo]);
  useEffect(()=>{setSnapshot(null);setError('');setPending(false);setBusy(false);setLoading(Boolean(repo));if(!repo)return;void refresh().finally(()=>{if(active.current===repo)setLoading(false);});},[repo,refresh]);
  useEffect(()=>{const sub=AppState.addEventListener('change',next=>{if(next==='active')void refresh();});return()=>sub.remove();},[refresh]);
  useEffect(()=>{
@@ -38,5 +49,5 @@ export function useOnlineGame(){
   catch(e){if(active.current===repo)setError(e instanceof Error?e.message:'Could not save name style.');throw e;}
   finally{if(nameStyleSaving.current===repo)nameStyleSaving.current=null;if(active.current===repo)setBusy(false);}
  };
- return {snapshot:snapshot?.accountId===accountId?snapshot:null,loading,busy,error,pending,refresh,execute,saveNameStyle};
+ return {snapshot:snapshot?.accountId===accountId?snapshot:null,loading,busy,error,pending,refresh,refreshCommerce,execute,saveNameStyle};
 }

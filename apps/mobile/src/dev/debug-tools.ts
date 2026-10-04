@@ -93,7 +93,7 @@ export function debugPrepareEquipmentLab(state:GameState):GameState{
       ...state.account,
       createdCharacterCount:Math.max(state.account.createdCharacterCount,4),
       unlockedCharacterSlots:5,
-      entitlements:{...(state.account.entitlements??{}),supporter:true,vip_plus:true},
+      entitlements:{...(state.account.entitlements??{}),vip:true,supporter:true,vip_plus:true},
     },
   };
   next=debugAddQaSupplies(next);

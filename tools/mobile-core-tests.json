@@ -19,6 +19,7 @@
   ".core-build/apps/mobile/tests/inventory-action-game-feel.js",
   ".core-build/apps/mobile/tests/forge-reward-game-feel.js",
   ".core-build/apps/mobile/tests/loot-levelup-game-feel.js",
+  ".core-build/apps/mobile/tests/command-progress-feedback.js",
   ".core-build/apps/mobile/tests/completion-reward-game-feel.js",
   ".core-build/apps/mobile/tests/achievement-claim-game-feel.js",
   ".core-build/apps/mobile/tests/reward-next-action-game-feel.js",

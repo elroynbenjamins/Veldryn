@@ -8,7 +8,7 @@ import {useGameTheme} from '../theme/ThemeContext';
 import {spacing,typography,type ThemeColors} from '../theme/theme';
 import {GameButton} from './GameButton';
 
-export function CommerceProductRow({language:languageOverride,productId,title,price,status,action,disabled,onPress}:{language?:Language;productId:CommerceProductId;title:string;price:string;status?:string;action:string;disabled:boolean;onPress:()=>void}){
+export function CommerceProductRow({language:languageOverride,productId,title,price,status,action,owned=false,disabled,onPress}:{language?:Language;productId:CommerceProductId;title:string;price:string;status?:string;action:string;owned?:boolean;disabled:boolean;onPress:()=>void}){
  const contextLanguage=useGameLanguage(),language=languageOverride??contextLanguage;
  const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params);
 
@@ -18,7 +18,7 @@ export function CommerceProductRow({language:languageOverride,productId,title,pr
  return <View style={s.row}>
   <View style={s.summary}>
    <View style={s.copy}><View style={s.heading}><Text style={s.title}>{title}</Text>{status?<Text style={s.status}>{status}</Text>:null}</View><Text style={s.price}>{price}</Text></View>
-   <GameButton compact title={action} disabled={disabled} onPress={onPress}/>
+   <GameButton compact title={action} tone={owned?'secondary':'primary'} selected={owned} disabled={disabled} onPress={onPress}/>
   </View>
   <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityState={{expanded}} {...(Platform.OS==='web'?{title:label}:{})} onPress={()=>setExpanded(value=>!value)} style={({pressed})=>[s.toggle,pressed&&s.pressed]}>
    <Text aria-hidden style={s.symbol}>{expanded?'\u2212':'+'}</Text>

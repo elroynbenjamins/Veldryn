@@ -5,12 +5,16 @@ import {
   acknowledgeGooglePlayPurchase,
   expectedGooglePlayType,
   isGooglePlayProductId,
+  resolveGooglePlayPurchaseOwner,
   verifyGooglePlayPurchase,
   verifyGooglePubSubOidc,
+  warnGooglePlayConfiguration,
   type GooglePlayProductId,
   type GooglePlayProductType,
   type VerifiedGooglePlayPurchase,
 } from '../_shared/google-play.ts';
+
+warnGooglePlayConfiguration('play-billing-rtdn');
 
 type RtdnPayload={
   packageName?:string;
@@ -46,6 +50,12 @@ async function ownerByToken(admin:SupabaseClient,token:string){
 async function ownerByObfuscated(admin:SupabaseClient,id:string){
   return scalar(admin,'google_play_account_from_obfuscated_v1',{p_obfuscated_account_id:id});
 }
+async function resolveOwner(admin:SupabaseClient,purchase:VerifiedGooglePlayPurchase,knownOwner:string|null){
+  return resolveGooglePlayPurchaseOwner(purchase,{
+    byPurchaseToken:token=>token===purchase.purchaseToken?Promise.resolve(knownOwner):ownerByToken(admin,token),
+    byObfuscatedAccountId:id=>ownerByObfuscated(admin,id),
+  });
+}
 async function record(admin:SupabaseClient,accountId:string,purchase:VerifiedGooglePlayPurchase,source:string){
   const {error}=await admin.rpc('google_play_record_purchase_v1',{
     p_account_id:accountId,p_purchase_token:purchase.purchaseToken,p_product_id:purchase.productId,
@@ -78,6 +88,7 @@ async function markKnownTokenInactive(admin:SupabaseClient,accountId:string,purc
     purchaseToken,productId:row.product_id,productType:row.product_type as GooglePlayProductType,
     googleState:'NOT_FOUND',entitlementActive:false,orderId:null,purchasedAt:null,expiresAt:null,
     autoRenewing:null,acknowledgementState:null,linkedPurchaseToken:null,obfuscatedAccountId:null,
+    expiredPurchaseToken:null,expiredObfuscatedAccountId:null,
     isTest:false,regionCode:null,basePlanId:null,offerId:null,
   },'rtdn_not_found');
 }
@@ -107,6 +118,9 @@ Deno.serve(async(req)=>{
         if(voided.productType===1){
           try{
             let verified=await verifyGooglePlayPurchase(token,'subs');
+            const resolved=await resolveOwner(admin,verified,owner);
+            if(!resolved||resolved.accountId!==owner)throw new Error('GOOGLE_PLAY_ACCOUNT_MISMATCH');
+            verified={...verified,obfuscatedAccountId:resolved.obfuscatedAccountId};
             await record(admin,owner,verified,'rtdn_voided');
             if(verified.entitlementActive&&verified.acknowledgementState!=='ACKNOWLEDGEMENT_STATE_ACKNOWLEDGED'){
               verified=await acknowledgeGooglePlayPurchase(verified);
@@ -131,22 +145,23 @@ Deno.serve(async(req)=>{
     const productType:GooglePlayProductType=sub?'subs':'in-app';
     const expectedProductId=one?.sku&&isGooglePlayProductId(one.sku)?one.sku:undefined;
 
-    let accountId=await ownerByToken(admin,purchaseToken);
+    const knownOwner=await ownerByToken(admin,purchaseToken);
     let verified:VerifiedGooglePlayPurchase;
     try{
       verified=await verifyGooglePlayPurchase(purchaseToken,productType,expectedProductId);
     }catch(error){
-      if(accountId&&error instanceof GooglePlayApiError&&(error.status===404||error.status===410)){
-        await markKnownTokenInactive(admin,accountId,purchaseToken);
+      if(knownOwner&&error instanceof GooglePlayApiError&&(error.status===404||error.status===410)){
+        await markKnownTokenInactive(admin,knownOwner,purchaseToken);
         await markRtdnProcessed(admin,messageId);
         return new Response(null,{status:204});
       }
       throw error;
     }
 
-    if(!accountId&&verified.linkedPurchaseToken)accountId=await ownerByToken(admin,verified.linkedPurchaseToken);
-    if(!accountId&&verified.obfuscatedAccountId)accountId=await ownerByObfuscated(admin,verified.obfuscatedAccountId);
-    if(!accountId)return new Response('purchase owner not linked yet',{status:503,headers:{'retry-after':'30'}});
+    const owner=await resolveOwner(admin,verified,knownOwner);
+    if(!owner)return new Response('purchase owner not linked yet',{status:503,headers:{'retry-after':'30'}});
+    const accountId=owner.accountId;
+    verified={...verified,obfuscatedAccountId:owner.obfuscatedAccountId};
 
     await record(admin,accountId,verified,'rtdn');
     if(verified.entitlementActive&&verified.acknowledgementState!=='ACKNOWLEDGEMENT_STATE_ACKNOWLEDGED'){

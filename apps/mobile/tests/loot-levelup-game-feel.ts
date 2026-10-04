@@ -62,7 +62,7 @@ ok(popup.includes('✦ EXCEPTIONAL LOOT'),'Epic+ drops must receive a stronger r
 ok(popup.includes('rarityTag')&&popup.includes('rarityNameColor'),'Reward breakdown must remain rarity-legible without over-celebrating normal loot');
 ok(popup.includes('EquipmentArtwork'),'equipment drops must reuse the actual equipment artwork when available');
 ok(popup.includes('reduceMotion'),'reward celebration motion must respect Reduce Motion');
-ok(app.includes('presentCollected(result.reward,result.activity??null,before,result.state)'),'online reward presentation must pass committed before/after server state');
+ok(app.includes('commandProgressFeedback(result.executedCommand,before,result)'),'online reward presentation must use committed before/after state and the executed command intent');
 ok(app.includes('rewardProgressionMoments(before,after)'),'reward presentation must derive level-up moments centrally from its committed before/after states');
 ok(app.includes('rewardProgressionMoments(current,settled.state)'),'offline returned rewards must derive level-ups from committed states');
 ok(app.includes('progressionMoments={collected?.progressionMoments??[]}'),'App must feed derived progression moments into the reward surface');

@@ -24,7 +24,10 @@ ok(overview.sources.some(row=>row.scope==='temporary'&&row.label.includes('Daily
 
 state={...state,account:{...state.account,entitlements:{vip_plus:true,supporter:true}}};
 overview=accountBonusOverview(state);
-ok(overview.sources.some(row=>row.id==='entitlement:vip'&&row.detail.includes('+20 Bank')),'VIP inheritance should expose permanent storage/loadout QoL');
+ok(!overview.sources.some(row=>row.id==='entitlement:vip'),'VIP+ alone should not display an unowned VIP source');
 ok(overview.sources.some(row=>row.id==='entitlement:vip_plus'&&row.detail.includes('RGB names')),'VIP+ should expose advanced permanent QoL');
 ok(overview.sources.some(row=>row.id==='entitlement:supporter'&&row.detail.includes('Forge')),'Supporter should expose active Forge/name-style QoL');
+state={...state,account:{...state.account,entitlements:{...state.account.entitlements,vip:true}}};
+overview=accountBonusOverview(state);
+ok(overview.sources.some(row=>row.id==='entitlement:vip'&&row.detail.includes('+20 Bank')),'Owned VIP should expose its separate permanent storage/loadout QoL');
 console.log(JSON.stringify({status:'PASS',combatPowerPct:combat?.percent,sourceCount:overview.sources.length,temporary:overview.temporary},null,2));

@@ -28,7 +28,8 @@ function has(state:GameState,...keys:string[]){
 
 export function accountEntitlementBenefits(state:GameState):AccountEntitlementBenefits{
   const vipPlus=has(state,'vip_plus','vipplus','vip+');
-  const vip=has(state,'vip')||vipPlus;
+  // Permanent tiers are independent grants; owning both adds both sets of benefits.
+  const vip=has(state,'vip');
   const supporter=has(state,'supporter','supporter_subscription');
   return {
     vip,

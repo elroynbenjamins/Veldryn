@@ -44,6 +44,10 @@ jobs:
         run: pnpm typecheck:core
       - name: Typecheck mobile app
         run: pnpm typecheck
+      - name: Validate Google Play billing
+        run: |
+          node ../../tools/test-play-billing.mjs
+          node ../../tools/test-play-billing-transport.mjs
       - name: Run core tests
         run: pnpm test:core
       - name: Run onboarding lock tests

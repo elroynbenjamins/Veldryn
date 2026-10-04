@@ -434,8 +434,9 @@ entrypoint = "./functions/coop/index.ts"
 
 [functions.play-billing]
 enabled = true
-# Authenticated players invoke purchase verification and restore.
-verify_jwt = true
+# The handler validates every player's JWT with Supabase Auth.getUser and
+# rejects anonymous accounts before any privileged billing work.
+verify_jwt = false
 entrypoint = "./functions/play-billing/index.ts"
 
 [functions.play-billing-rtdn]

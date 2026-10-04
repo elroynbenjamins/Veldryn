@@ -13,6 +13,7 @@ equal(equipment.skills.every(skill=>skill.level===100),true);
 ok((equipment.character?.gold??0)>=50_000_000);
 equal(equipment.account.unlockedCharacterSlots,5);
 equal(equipment.account.entitlements?.supporter,true);
+equal(equipment.account.entitlements?.vip,true);
 equal(equipment.account.entitlements?.vip_plus,true);
 ok((equipment.inventory.stacks.find(row=>row.itemId==='TEMPERING_DUST')?.quantity??0)>=9999);
 

@@ -54,6 +54,7 @@ import {GameLanguageProvider} from './src/i18n/GameLanguageProvider';
 import {appText} from './src/i18n/app-shell';
 import {rewardHasProgress,settleStartupActivity,transitionActivity} from './src/core/playability';
 import {masteryRankNoticeMessage,masteryRankProgressionMoments,rewardProgressionMoments,type RewardProgressionMoment} from './src/core/reward-game-feel';
+import {commandProgressFeedback} from './src/core/command-progress-feedback';
 import {ActionFeedback} from './src/components/ActionFeedback';
 import {ThemedIcon} from './src/components/ThemedNavigationIcon';
 import {LoadingState} from './src/components/LoadingState';
@@ -298,7 +299,14 @@ function VeldrynApp(){
       void addProfileAttentionKeys(scope,keys);
     }
   }
-  async function perform(command?:GameCommand){try{const before=stateRef.current,result=await online.execute(command);queuePreparationNotices(before,result.state);stateRef.current=result.state;setState(result.state);queueCustomizationUnlocks(before,result.state);if(command?.type==='quest')queueFeatureUnlockMoments(before,result.state);if(result.reward)presentCollected(result.reward,result.activity??null,before,result.state);else queueMasteryNotice(before,result.state);return result;}catch(error){showAlert('Online action',error instanceof Error?error.message:'Please retry.');return null;}}
+  async function perform(command?:GameCommand){try{
+    const before=stateRef.current,result=await online.execute(command);
+    queuePreparationNotices(before,result.state);stateRef.current=result.state;setState(result.state);queueCustomizationUnlocks(before,result.state);
+    if(result.executedCommand.type==='quest')queueFeatureUnlockMoments(before,result.state);
+    const feedback=commandProgressFeedback(result.executedCommand,before,result);
+    if(feedback.collected)setCollected(feedback.collected);else if(feedback.masteryNotices.length)setMasteryNotices(feedback.masteryNotices);
+    return result;
+  }catch(error){showAlert('Online action',error instanceof Error?error.message:'Please retry.');return null;}}
   async function applyOnlineAdminQa(classId:ClassId){const result=await perform({type:'qa_prepare',args:{classId}});if(!result)throw new Error('Admin QA profile was not confirmed by the server.');}
   async function refillOnlineAdminQa(){const result=await perform({type:'qa_refill'});if(!result)throw new Error('Admin QA refill was not confirmed by the server.');}
   async function saveNameStyle(style:PlayerNameStylePreference){
@@ -315,12 +323,17 @@ function VeldrynApp(){
     }
     const current=stateRef.current;if(!current)throw new Error('Load your character first.');
     const result=executeGameCommand(current,command,Date.now());
-    await commit(result.state);if(result.reward)presentCollected(result.reward,result.activity??null,current,result.state);else queueMasteryNotice(current,result.state);
+    await commit(result.state);
+    const feedback=commandProgressFeedback(command,current,result);
+    if(feedback.collected)setCollected(feedback.collected);else if(feedback.masteryNotices.length)setMasteryNotices(feedback.masteryNotices);
     if(command.type==='companion_boss_rematch'&&result.won===false)throw new Error(result.message??'Fallen Knight rematch lost.');
   }
   async function commit(candidate:GameState){
+    const current=stateRef.current;
     if(serverGameplayEnabled){
-      const current=stateRef.current;if(!current)return;
+      if(!current)return;
+      // Ignore already-applied appearances before classifying settings or profile commands.
+      if(JSON.stringify(candidate)===JSON.stringify(current))return;
       if(JSON.stringify(candidate)===JSON.stringify({...current,settings:candidate.settings})){await perform({type:'settings',args:{settings:candidate.settings}});return;}
       if(candidate.activity===null&&JSON.stringify(candidate)===JSON.stringify({...current,activity:null})){await perform({type:'stop'});return;}
       const profileKeys=['profileIconId','profileTitle','profileBackgroundId','profileBorderId','selectedCosmeticPetId'] as const;
@@ -328,11 +341,11 @@ function VeldrynApp(){
         if(JSON.stringify(candidate)===JSON.stringify({...current,character:{...current.character,...patch}})){await perform({type:'profile',args:Object.fromEntries(Object.entries(patch).map(([key,value])=>[key,value??null]))});return;}}
       showAlert('Server-owned progress','This change requires an online gameplay action.');return;
     }
-    const current=stateRef.current;
     if(current?.character&&candidate.character&&current.character.selectedCosmeticPetId!==candidate.character.selectedCosmeticPetId){
       const patch={selectedCosmeticPetId:candidate.character.selectedCosmeticPetId};
       if(JSON.stringify(candidate)===JSON.stringify({...current,character:{...current.character,...patch}})){
-        const settled=claimActivity(current,Date.now());candidate={...settled.state,character:{...settled.state.character!,...patch}};presentCollected(settled.reward,current.activity,current,settled.state);
+        // Settle the previous Pet's activity bonus without interrupting appearance editing.
+        const settled=claimActivity(current,Date.now());candidate={...settled.state,character:{...settled.state.character!,...patch}};
       }
     }
 const next=normalizeProfileIcon(candidate);queuePreparationNotices(current,next);stateRef.current=next;setState(next);queueCustomizationUnlocks(current,next);queueFeatureUnlockMoments(current,next);try{await repo.save(next)}catch{showAlert('Local save failed','Progress is still in memory. Keep the app open and try another action to save again.')}}
@@ -495,7 +508,7 @@ const next=normalizeProfileIcon(candidate);queuePreparationNotices(current,next)
     {(tab==='Social'||tab==='Party')&&<SocialScreen onGuild={()=>setTab('Guild')} onFriends={()=>setTab('Friends')} onAccount={()=>setTab('Settings')} onInvitationsChanged={()=>void refreshSocialNotifications()}/>} 
     {tab==='Events'&&<EventScreen state={state} onChange={commit} onCommand={serverGameplayEnabled?command=>perform(command).then(Boolean):undefined} onOpenSeasonalExpedition={coopOnlineConfigured?liveEventId=>{setPendingEventLiveId(liveEventId);setTab('Coop')}:undefined}/>}
     {tab==='Guild'&&<GuildScreen online={serverGameplayEnabled} state={state} onChange={commit} onlineDirectory={<OnlineGuildBrowser/>} onlineManagement={<OnlineGuildManagement onApplicationsChanged={()=>void refreshSocialNotifications()}/>} onlineBoard={<OnlineGuildNoticeBoardPanel/>} onlineProjects={<OnlineGuildProjectsPanel onRewardsChanged={()=>online.refresh()}/>} onlinePve={<OnlineGuildPve onCombat={()=>setTab('Combat')} onRewardsChanged={()=>online.refresh()} authoritative={serverGameplayEnabled} numberMode={state.settings.numberMode}/>} onlineChat={<GuildChat language={state.settings.language} currentPlayerName={state.character?.name} unlockedEmoteIds={state.account.unlockedEmoteIds} trayIds={state.settings.chatEmoteTrayIds} bodyPresentation={state.character?.bodyPresentation} onTrayChange={ids=>commit({...state,settings:{...state.settings,chatEmoteTrayIds:ids}})} firstUnreadMessageId={notificationCounts.guildFirstUnreadMessageId} onRead={()=>void refreshSocialNotifications()}/>} onlineChatUnread={notificationCounts.guildChatUnread} onlineChatMentions={notificationCounts.guildChatMentions} onlineHall={<OnlineGuildHallPanel/>} onlineCustomize={<OnlineGuildCustomizationPanel/>}/>}
-    {tab==='Settings'&&<SettingsScreen initialSection={settingsGuide?'guide':undefined} onNavigateGuide={destination=>{if(destination==='Skills')setSelectedSkill(undefined);setTab(destination)}} online={serverGameplayEnabled} state={state} onChange={commit} onExport={exportSave} onImport={importSave} onOpenCoopUiGallery={__DEV__?()=>setShowCoopUiGallery(true):undefined} onLanguage={language=>commit({...state,settings:{...state.settings,language}})} onReset={()=>serverGameplayEnabled?showAlert('Online save','Your online character is saved on the server.'):showAlert('Reset local save?','This deletes prototype progress only.',[{text:'Cancel'},{text:'Reset',style:'destructive',onPress:async()=>{await repo.reset();setState(newGame(Date.now()));setCurrentTab('Home');setTabHistory([])}}])}/>}
+    {tab==='Settings'&&<SettingsScreen initialSection={settingsGuide?'guide':undefined} onNavigateGuide={destination=>{if(destination==='Skills')setSelectedSkill(undefined);setTab(destination)}} online={serverGameplayEnabled} state={state} onChange={commit} onRefreshCommerce={serverGameplayEnabled?online.refreshCommerce:undefined} onExport={exportSave} onImport={importSave} onOpenCoopUiGallery={__DEV__?()=>setShowCoopUiGallery(true):undefined} onLanguage={language=>commit({...state,settings:{...state.settings,language}})} onReset={()=>serverGameplayEnabled?showAlert('Online save','Your online character is saved on the server.'):showAlert('Reset local save?','This deletes prototype progress only.',[{text:'Cancel'},{text:'Reset',style:'destructive',onPress:async()=>{await repo.reset();setState(newGame(Date.now()));setCurrentTab('Home');setTabHistory([])}}])}/>}
     {tab==='More'&&<MoreScreen language={state.settings.language} onNavigate={destination=>destination==='Quests'?openQuestMode('story'):setTab(destination)} lockedDestinations={lockedAccountDestinations} companionUnlocked={companionsUnlocked} companionAttention={earlyFeatureUnlocked(state,'companions')&&companionAttention.hasAttention} workingTowardAttention={workingTowardReady>0} dailySuppliesAttention={dailySuppliesReady} friendRequestCount={notificationCounts.friendRequests} guildAttentionCount={notificationCounts.guild} socialAttentionCount={notificationCounts.partyInvites+notificationCounts.chatUnread} profileAttention={profileAttentionKeys.length>0} onOpenAdminQa={adminQa||(__DEV__&&!serverGameplayEnabled)?()=>setShowAdminQa(true):undefined}/>}
     {tab==='Arena'&&<ArenaScreen state={state} onChange={candidate=>void commit(candidate)} onCommand={serverGameplayEnabled?command=>void perform(command):undefined}/>}
     {RANKINGS_RELEASED&&tab==='Rankings'&&<RankingsScreen/>}

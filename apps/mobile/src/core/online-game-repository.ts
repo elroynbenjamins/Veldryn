@@ -2,6 +2,10 @@ import type {GameRepository} from './repository';
 import type {GameState,RewardBundle} from './types';
 import type {GameCommand,GameCommandResult} from './game-commands';
 export interface OnlineSnapshot {accountId:string;state:GameState;version:number;serverNow:number;reward?:RewardBundle;activity?:GameState['activity'];message?:string;won?:boolean;storyBossBattle?:GameCommandResult['storyBossBattle'];upgrade?:GameCommandResult['upgrade'];forgeResults?:GameCommandResult['forgeResults']}
+/** Local command context for presentation, including a retry loaded from storage.
+ * It is never sent to the server, persisted in a save, or added to a receipt.
+ */
+export interface ExecutedOnlineCommand extends OnlineSnapshot {executedCommand:GameCommand}
 export interface PendingGameCommand {requestId:string;expectedVersion:number;command:GameCommand}
 export interface OnlineTransport {read():Promise<OnlineSnapshot>;send(command:PendingGameCommand):Promise<OnlineSnapshot>}
 export interface PendingStore {read():Promise<PendingGameCommand|null>;write(value:PendingGameCommand|null):Promise<void>}
@@ -20,14 +24,15 @@ export class OnlineGameRepository implements GameRepository{
  async save(_state:GameState):Promise<void>{throw new Error('Online saves require a gameplay command.');}
  async reset():Promise<void>{throw new Error('Online characters cannot be reset from a local save action.');}
  async hasPending(){return Boolean(await this.pending.read());}
- async execute(command?:GameCommand):Promise<OnlineSnapshot>{
+ async execute(command?:GameCommand):Promise<ExecutedOnlineCommand>{
   if(this.running)throw new Error('A gameplay action is already being saved.');this.running=true;
   try{
    let request=await this.pending.read();
    if(request&&command)throw new Error('Retry the pending action before starting another one.');
    if(!request){if(!command)throw new Error('No pending action.');if(!this.snapshot)await this.refresh();request={requestId:this.key(),expectedVersion:this.snapshot!.version,command};await this.pending.write(request);}
    try{const result=await this.transport.send(request);if(result.accountId!==this.accountId)throw new Error('account_mismatch');await this.pending.write(null);
-    if(this.snapshot&&result.version<this.snapshot.version)return this.refresh();return this.accept(result);
+    const confirmed=this.snapshot&&result.version<this.snapshot.version?await this.refresh():this.accept(result);
+    return {...confirmed,executedCommand:request.command};
    }catch(error){if(error instanceof OnlineCommandError&&error.definitive){await this.pending.write(null);await this.refresh();}throw error;}
   }finally{this.running=false;}
  }

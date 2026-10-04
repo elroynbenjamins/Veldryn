@@ -34,6 +34,7 @@ if(group==='mobile'){
 }else if(group==='database'){
  for(const name of ['guild-pve-db','guild-pve-balance-db','guild-project-rewards-db','guild-event-name-colors-db','guild-event-color-visibility-db','guild-background-db','guild-name-limit-db','profile-icons-db'])await run(name,['tools/test-'+name+'.mjs']);
  await run('billing-handler',['tools/test-play-billing.mjs']);
+ await run('billing-transport',['tools/test-play-billing-transport.mjs']);
  for(const name of ['recent-migration-versions','event-release-graph','master-roster-assets','companion-art-coverage','localization-catalogs','localization-boundaries','identity-safety','social-invitations','guild-chat','chat-usability','chat-attention'])await run(name,['tools/validate-'+name+'.mjs']);
 }else if(group==='backend'){
  if(await run('backend-compile',[tsc,'-p','backend/tsconfig.json','--outDir','backend/.bot-readiness-backend'])){

@@ -32,3 +32,19 @@ art-review/
 tests/
 *.log
 .codex-tmp-*
+
+# Catch-all for generated review/build/export snapshots.
+# These folders can contain complete copies of the app and hundreds of MB of generated assets.
+.*-export*/
+.*-build*/
+*-export/
+*-build/
+.expo-helmet-check/
+
+# Source/archive files are never required by the runtime bundle.
+*.zip
+*.psd
+*.psb
+*.ai
+*.xcf
+*.kra

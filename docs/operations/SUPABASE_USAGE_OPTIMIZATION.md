@@ -9,6 +9,15 @@ Veldryn previously ran four independent online `pg_cron` jobs every 10 seconds. 
 of the project's Postgres logs and hundreds of thousands of rows in
 `cron.job_run_details`.
 
+Baseline measured on 2026-10-04:
+
+- production: about 75k Postgres log events/24h, about 73k cron-related
+- staging: about 75k Postgres log events/24h, about 75k cron-related
+- production cron history: about 364k rows / 67 MB
+- staging cron history: about 315k rows / 58 MB
+- production `guild_members` recursion: about 1,020 database errors/24h and about
+  1,025 REST 500 responses
+
 The database migration `20261040000000_supabase_usage_optimization_v1.sql` consolidates
 the online workers, fixes recursive guild-member RLS, adds targeted worker indexes, and adds
 bounded cron-history cleanup.
@@ -30,6 +39,27 @@ Staging target:
 - cron run history retains 2 days
 - temporarily change the online tick to 10 seconds only while testing timing-sensitive
   matchmaking/live-coop behavior
+
+After applying migrations to staging, override the production-safe defaults with:
+
+```sql
+select cron.unschedule('veldryn-online-tick');
+select cron.schedule(
+  'veldryn-online-tick',
+  '30 seconds',
+  'select public.process_online_tick_server_v1(16);'
+);
+
+select cron.unschedule('veldryn-cron-history-retention');
+select cron.schedule(
+  'veldryn-cron-history-retention',
+  '17 3 * * *',
+  $select private.cleanup_cron_job_run_details_v1(interval '2 days',100000);$
+);
+```
+
+For a timing-sensitive staging test, reschedule only `veldryn-online-tick` back to
+`10 seconds`, then restore `30 seconds` afterwards.
 
 Do not add a separate 5/10-second cron job for a new subsystem by default. Prefer adding a
 small, fault-isolated worker call to the existing online tick.

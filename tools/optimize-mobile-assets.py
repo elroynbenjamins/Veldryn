@@ -116,6 +116,12 @@ def convert_family(family: tuple[Path, ...]) -> tuple[bool, int, int]:
             tmp.replace(final)
             png.unlink()
         return True, before, after
+    except subprocess.CalledProcessError as exc:
+        for _, tmp in outputs:
+            tmp.unlink(missing_ok=True)
+        names = ", ".join(str(p.relative_to(ROOT)) for p in family)
+        print(f"WARNING: skipping unreadable PNG family: {names} ({exc})")
+        return False, before, before
     except Exception:
         for _, tmp in outputs:
             tmp.unlink(missing_ok=True)

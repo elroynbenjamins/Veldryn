@@ -182,6 +182,97 @@ async function plainVisiblePolling() {
   }finally{if(tree)await act(async()=>tree.unmount());h.restore();}
 }
 
+async function delayedPollingCadence() {
+  for(const mode of [
+    {name:'Guild RPC-only',key:'guild',interval:15000},
+    {name:'World fallback',key:'world:en',interval:15000,channelType:'world',channelId:'en'},
+    {name:'Party subscribed watchdog',key:'party:p1',interval:60000,channelType:'party',channelId:'p1',subscribed:true},
+  ]) {
+    const h=makeHarness();let tree;
+    try {
+      const {useChatFeed}=h.load(path.join(app,'src/online/useChatFeed'));
+      const starts=[];let concurrent=0,maxConcurrent=0,fail=false,view;
+      const read=()=>{starts.push(Date.now());concurrent++;maxConcurrent=Math.max(maxConcurrent,concurrent);return new Promise((resolve,reject)=>setTimeout(()=>{concurrent--;if(fail)reject(new Error('Temporary read failure'));else resolve(['accepted']);},100));};
+      function Probe(){view=useChatFeed({...mode,read,initial:[]});return null;}
+      await act(async()=>{tree=create(React.createElement(Probe));});
+      assert.equal(starts.length,1,`${mode.name}: initial history starts once`);
+      await h.tick(100);
+      if(mode.subscribed){await act(async()=>{h.channels[0].status('SUBSCRIBED');});await h.tick(100);}
+      for(let cycle=0;cycle<4;cycle++) {
+        const settledAt=Date.now(),before=starts.length;
+        await h.tick(mode.interval-1);
+        assert.equal(starts.length,before,`${mode.name}: fresh history waits until its due time`);
+        await h.tick(1);
+        assert.equal(starts.length,before+1,`${mode.name}: 100 ms response latency must not skip every other scheduled history read`);
+        assert.equal(starts.at(-1),settledAt+mode.interval,`${mode.name}: polling is timed from the last settled request`);
+        await h.tick(100);
+      }
+      fail=true;await h.tick(mode.interval);await h.tick(100);
+      assert.equal(view.error,'Temporary read failure');
+      assert.deepEqual(view.value,['accepted'],'a failed scheduled request retains accepted history');
+      const afterFailure=starts.length;
+      await h.tick(mode.interval-1);
+      assert.equal(starts.length,afterFailure,`${mode.name}: failures cannot create a zero-delay retry loop`);
+      fail=false;await h.tick(1);await h.tick(100);
+      assert.equal(starts.length,afterFailure+1,`${mode.name}: the next due request recovers after a failure`);
+      assert.equal(view.error,'');
+      if(mode.subscribed) {
+        await act(async()=>{h.channels[0].status('TIMED_OUT');});
+        const disconnectedReads=starts.length;
+        await h.tick(14999);assert.equal(starts.length,disconnectedReads);
+        await h.tick(1);assert.equal(starts.length,disconnectedReads+1,'a dropped live subscription returns to the 15 s fallback');
+        await h.tick(100);
+        await act(async()=>{h.channels[0].status('SUBSCRIBED');});
+        assert.equal(starts.length,disconnectedReads+2,'reconnection catches up history immediately');
+        await h.tick(100);
+        await h.tick(59999);assert.equal(starts.length,disconnectedReads+2,'reconnected history waits for its 60 s watchdog');
+        await h.tick(1);assert.equal(starts.length,disconnectedReads+3);
+        await h.tick(100);
+      }
+      assert.equal(maxConcurrent,1,'latency, fallback and subscription changes never overlap history requests');
+      await act(async()=>{tree.unmount();});tree=null;
+      assert.equal(h.timers.size,0);assert.equal(h.appListeners.size,0);
+    } finally {if(tree)await act(async()=>tree.unmount());h.restore();}
+  }
+  console.log('PASS delayed polling: real 100 ms reads retain 15 s fallback/60 s watchdog cadence, back off failures, recover subscriptions and remain singleflight');
+}
+
+async function pendingPollingLifecycle() {
+  const h=makeHarness();let tree;
+  try {
+    const {useChatFeed}=h.load(path.join(app,'src/online/useChatFeed'));
+    const requests=[];let reads=0,concurrent=0,maxConcurrent=0;
+    const read=()=>{reads++;concurrent++;maxConcurrent=Math.max(maxConcurrent,concurrent);const request=deferred();requests.push(request);return request.promise.finally(()=>concurrent--);};
+    function Probe({active}){useChatFeed({key:'guild',read,initial:[],active});return null;}
+    const render=active=>React.createElement(Probe,{active});
+    await act(async()=>{tree=create(render(true));});
+    await h.tick(100);await act(async()=>{requests.shift().resolve(['first']);});
+    await h.tick(15000);assert.equal(reads,2);
+    await h.tick(45000);
+    assert.equal(reads,2,'scheduled deadlines join one slow request rather than start parallel reads');
+    await act(async()=>{requests.shift().resolve(['second']);});
+    assert.equal(reads,2,'elapsed scheduled deadlines do not queue a redundant immediate follow-up');
+    await h.tick(14999);assert.equal(reads,2);
+    await h.tick(1);assert.equal(reads,3,'slow request settlement starts one new polling period');
+    await h.state('background');
+    await act(async()=>{requests.shift().resolve(['background completion']);});
+    assert.equal(h.timers.size,0,'a request that finishes in the background cannot resurrect its polling timer');
+    await h.tick(60000);assert.equal(reads,3);
+    await h.state('active');assert.equal(reads,4,'foreground loads history missed while suspended');
+    await act(async()=>{tree.update(render(false));});
+    await act(async()=>{requests.shift().resolve(['hidden completion']);});
+    assert.equal(h.timers.size,0,'a request that finishes after the last panel closes cannot restart polling');
+    assert.equal(h.appListeners.size,0);
+    await h.tick(60000);assert.equal(reads,4);
+    await act(async()=>{tree.update(render(true));});assert.equal(reads,5);
+    await act(async()=>{tree.unmount();});tree=null;
+    await act(async()=>{requests.shift().resolve(['unmounted completion']);});
+    assert.equal(h.timers.size,0,'a request that finishes after unmount cannot restart polling');
+    assert.equal(maxConcurrent,1);
+    console.log('PASS slow polling: joined in-flight reads, one period after settlement, background/hidden/unmount completion cancellation and foreground catch-up');
+  } finally {if(tree)await act(async()=>tree.unmount());h.restore();}
+}
+
 async function mountedCacheEviction() {
   const h=makeHarness();let tree;
   try {
@@ -267,6 +358,7 @@ async function sharedComposerLifecycle() {
     const sends=[];
     h.mocks.set(path.join(app,'src/online/social'),{
       WORLD_CHANNELS:[{id:'en',name:'English'}],worldMessages:async()=>[],
+      worldChatCommandKey:()=> 'world-composer-command',
       postWorldMessage:async(_channel,value)=>{sends.push(value);}
     });
     const {OnlineWorldChat}=h.load(path.join(app,'src/components/OnlineWorldChat'));
@@ -349,6 +441,7 @@ async function worldDraftLifecycle() {
     const rows=id=>[{id:id+':1',account_id:'other',sender_name:'Other player',body:'Existing history',created_at:'2026-10-04T22:00:00Z'}];
     h.mocks.set(path.join(app,'src/online/social'),{
       WORLD_CHANNELS:[{id:'en',name:'English'},{id:'nl',name:'Nederlands'}],
+      worldChatCommandKey:()=> 'world-draft-command',
       worldMessages:async id=>{reads++;if(failRead)throw new Error('History temporarily unavailable');return rows(id);},
       postWorldMessage:(id,body)=>{sends.push({id,body});const request=deferred();pending.push(request);return request.promise;}
     });
@@ -405,6 +498,111 @@ async function worldDraftLifecycle() {
   } finally {if(tree)await act(async()=>tree.unmount());cleanUi();h.restore();}
 }
 
+async function worldRetryLifecycle() {
+  const h=makeHarness(),cleanUi=uiMocks(h);chatViewMocks(h);let tree;
+  try {
+    const sends=[],pending=[];let nextKey=0;
+    h.mocks.set(path.join(app,'src/online/social'),{
+      WORLD_CHANNELS:[{id:'en',name:'English'},{id:'nl',name:'Nederlands'}],worldMessages:async()=>[],
+      worldChatCommandKey:()=>`world-command-${++nextKey}`,
+      postWorldMessage:(id,body,sender,key)=>{const request=deferred();sends.push({account:h.auth.session.user.id,id,body,sender,key});pending.push(request);return request.promise;}
+    });
+    const {OnlineWorldChat}=h.load(path.join(app,'src/components/OnlineWorldChat'));
+    const render=selectedChannel=>React.createElement(OnlineWorldChat,{selectedChannel,active:true,embedded:true,playerName:'Player',language:'en'});
+    const input=()=>tree.root.findByType('TextInput');
+    const enter=async value=>{await act(async()=>{input().props.onChangeText(value);});};
+    const fail=async()=>{await act(async()=>{pending.shift().reject(new Error('Server response lost'));});};
+    const accept=async()=>{await act(async()=>{pending.shift().resolve('accepted-message');});};
+    await act(async()=>{tree=create(render(0));});
+    await enter('  Hello from this channel  ');await pressChatButton(tree);
+    assert.ok(sends[0].key,'World sends carry a retry identity');
+    assert.equal(sends[0].body,'Hello from this channel');
+    await fail();
+    assert.equal(input().props.value,'  Hello from this channel  ','a lost acknowledgement keeps the draft available for retry');
+
+    await act(async()=>{tree.update(render(1));});
+    await enter('Hello from this channel');await pressChatButton(tree);await fail();
+    assert.notEqual(sends[1].key,sends[0].key,'the same words in another channel are a distinct send');
+    await act(async()=>{tree.update(render(0));});
+    await pressChatButton(tree);
+    assert.equal(sends[2].key,sends[0].key,'returning to an unconfirmed draft reuses its original request ID even after sending in another channel');
+    assert.equal(sends[2].id,'en');assert.equal(sends[2].body,sends[0].body);
+    await accept();assert.equal(input().props.value,'','a confirmed retry clears only its submitted draft');
+
+    await enter('Hello from this channel');await pressChatButton(tree);
+    assert.notEqual(sends[3].key,sends[0].key,'sending identical words after confirmation creates a new message identity');
+    await enter('New wording typed during the request');await accept();
+    assert.equal(input().props.value,'New wording typed during the request','the acknowledged older send cannot erase text edited while it was pending');
+    await pressChatButton(tree);await fail();
+    const failedEditedKey=sends.at(-1).key;
+    await enter('Revised wording after the failure');await pressChatButton(tree);
+    assert.notEqual(sends.at(-1).key,failedEditedKey,'editing an unconfirmed body creates a new identity instead of a server replay conflict');
+    await accept();
+
+    await act(async()=>{tree.update(render(1));});await pressChatButton(tree);
+    assert.equal(sends.at(-1).key,sends[1].key,'another channel still retains its own failed-send identity');
+    await accept();
+    await act(async()=>{tree.update(render(0));});await enter('Alpha pending message');await pressChatButton(tree);
+    const alphaKey=sends.at(-1).key;
+    await act(async()=>{h.auth.session={user:{id:'bravo'}};tree.update(render(0));});
+    assert.equal(input().props.value,'','another account cannot inherit the previous account draft');
+    await enter('Bravo draft while alpha finishes');await accept();
+    assert.equal(input().props.value,'Bravo draft while alpha finishes','old account acknowledgement cannot clear a new account draft');
+    await pressChatButton(tree);
+    assert.notEqual(sends.at(-1).key,alphaKey,'another account uses a fresh send identity');
+    assert.equal(sends.at(-1).account,'bravo');
+    await accept();
+    await act(async()=>{tree.unmount();});tree=null;
+    assert.equal(h.timers.size,0);assert.equal(h.appListeners.size,0);
+    console.log('PASS World retry lifecycle: retained per-account/channel IDs after lost ACK, new IDs for edited or confirmed drafts, independent channel retries and stale-send draft isolation');
+  } finally {if(tree)await act(async()=>tree.unmount());cleanUi();h.restore();}
+}
+
+async function staleSendScopeLifecycle() {
+  for(const kind of ['world','guild','party']) {
+    const h=makeHarness(),cleanUi=uiMocks(h);chatViewMocks(h);let tree;
+    try {
+      const requests=[],pending=[],alerts=[];let nextKey=0;
+      const account=()=>h.auth.session.user.id,commandKey=()=>`${kind}-command-${++nextKey}`;
+      const send=(...args)=>{const request=deferred();requests.push({account:account(),args});pending.push(request);return request.promise;};
+      const messages=[{id:'message-1',account_id:'other',sender_name:'Other player',body:'Existing history',created_at:'2026-10-05T06:00:00Z'}];
+      h.mocks.get('react-native').Alert.alert=(...args)=>alerts.push(args);
+      h.mocks.set(path.join(app,'src/online/PartySocialProvider'),{usePartySocial:()=>({party:{id:'party-a',members:[{accountId:account(),characterName:'Player'}]},accountId:account(),refresh:async()=>{}})});
+      h.mocks.set(path.join(app,'src/online/social'),{
+        WORLD_CHANNELS:[{id:'en',name:'English'}],worldMessages:async()=>messages,worldChatCommandKey:commandKey,postWorldMessage:send,
+        guildChatState:async()=>({guild:{id:'guild-a',name:'Guild'},messages}),guildRoster:async()=>[],guildChatCommandKey:commandKey,sendGuildChat:send,
+      });
+      h.mocks.set(path.join(app,'src/online/party-social'),{partyChatMessages:async()=>messages,partyCommandKey:commandKey,sendPartyChat:send});
+      const name={world:'OnlineWorldChat',guild:'GuildChat',party:'OnlinePartyChat'}[kind],Component=h.load(path.join(app,'src/components',name))[name];
+      const render=()=>React.createElement(Component,{active:true,embedded:true,selectedChannel:0,playerName:'Player',currentPlayerName:'Player',language:'en'});
+      const input=()=>tree.root.findByType('TextInput');
+      const enter=async value=>{await act(async()=>{input().props.onChangeText(value);});};
+      const switchAwayAndBack=async()=>{for(const id of ['bravo','alpha'])await act(async()=>{h.auth.session={user:{id}};tree.update(render());});};
+      await act(async()=>{tree=create(render());});
+      await enter('Same words');await pressChatButton(tree);
+      await switchAwayAndBack();await enter('Same words');
+      assert.equal(chatButton(tree).props.disabled,true,`${kind}: scope changes do not allow a parallel send before the old operation finishes`);
+      await act(async()=>{chatButton(tree).props.onPress();input().props.onSubmitEditing();});
+      assert.equal(requests.length,1);
+      await act(async()=>{pending.shift().resolve('accepted-original');});
+      assert.equal(input().props.value,'Same words',`${kind}: an old A → B → A completion cannot erase newly entered identical words`);
+      assert.equal(chatButton(tree).props.disabled,false);
+      await pressChatButton(tree);
+      assert.notEqual(requests[1].args.at(-1),requests[0].args.at(-1),`${kind}: returning to the account starts a fresh request identity`);
+      await switchAwayAndBack();await enter('Current draft after returning');
+      await act(async()=>{pending.shift().reject(new Error('OLD_SEND_FAILURE'));});
+      assert.equal(input().props.value,'Current draft after returning',`${kind}: an invalidated older failure preserves the current draft`);
+      assert.deepEqual(alerts,[],`${kind}: an invalidated older request cannot show an alert on the returned scope`);
+      assert.ok(!tree.root.findAllByType('Text').some(node=>node.children.some(child=>typeof child==='string'&&child.includes('OLD_SEND_FAILURE'))),`${kind}: an invalidated older request cannot populate the returned scope's inline error`);
+      await pressChatButton(tree);await act(async()=>{pending.shift().resolve('accepted-current');});
+      assert.equal(input().props.value,'',`${kind}: a current request still acknowledges and clears normally`);
+      await act(async()=>{tree.unmount();});tree=null;
+      assert.equal(h.timers.size,0);assert.equal(h.appListeners.size,0);
+    } finally {if(tree)await act(async()=>tree.unmount());cleanUi();h.restore();}
+  }
+  console.log('PASS stale send ownership: actual World/Guild/Party A → B → A transitions preserve fresh drafts, suppress stale failures, retain singleflight guards and accept current sends');
+}
+
 async function privateChannelVisibility() {
   for(const kind of ['guild','party']) {
     const h=makeHarness(),cleanUi=uiMocks(h);chatViewMocks(h);let tree;
@@ -418,7 +616,7 @@ async function privateChannelVisibility() {
         guildChatState:async()=>{reads++;return{guild:{id:'guild1',name:'Guild'},messages};},
         guildRoster:async()=>{rosterReads++;return[];},
         guildChatCommandKey:()=> 'command',sendGuildChat:send,
-        markSocialChatRead:async channel=>{assert.equal(channel,kind);marks++;}
+        markSocialChatRead:async(channel,channelId,messageId)=>{assert.equal(channel,kind);assert.equal(channelId,`${kind}1`);assert.equal(messageId,'m1');marks++;}
       });
       h.mocks.set(path.join(app,'src/online/party-social'),{partyChatMessages:async()=>{reads++;return messages;},sendPartyChat:send,partyCommandKey:()=> 'command'});
       const name=kind==='guild'?'GuildChat':'OnlinePartyChat';
@@ -440,11 +638,11 @@ async function privateChannelVisibility() {
       await act(async()=>{pendingSend.resolve();});
       assert.equal(input().props.value,'',`${kind} acknowledgement clears the submitted draft`);
       const loadedReads=reads;
-      await act(async()=>{tree.root.findByType('ChatLog').props.onCaughtUp();});
+      await act(async()=>{await tree.root.findByType('ChatLog').props.onCaughtUp('m1');});
       assert.equal(marks,1);assert.equal(onRead,1);
       await act(async()=>{tree.update(render(false));});
       assert.equal(tree.root.findByType('ChatLog').props.active,false,'hidden wrapper passes inactive to actual log');
-      await act(async()=>{tree.root.findByType('ChatLog').props.onCaughtUp();});
+      await act(async()=>{await assert.rejects(()=>tree.root.findByType('ChatLog').props.onCaughtUp('m1'),/Chat scope changed/);});
       assert.equal(marks,1,'stale hidden callbacks do not mark private messages read');
       const pausedRosterReads=rosterReads;await h.tick(60000);
       assert.equal(reads,loadedReads,'hidden private conversation does not poll history');
@@ -538,6 +736,151 @@ async function realChatLogVisibility() {
     assert.equal(h.appListeners.size,0,'unmount removes visibility observer');
     console.log('PASS ChatLog: hidden/background late-result catch-up, read deduplication, preserved manual scroll, unmount frame cancellation');
   }finally{if(tree)await act(async()=>tree.unmount());cleanUi();h.restore();}
+}
+
+async function realReadAcknowledgementLifecycle() {
+  const h=makeHarness(),cleanUi=uiMocks(h);let tree;
+  try {
+    const {ChatLog}=h.load(path.join(app,'src/components/ChatLog'));
+    const requests=[],pending=[];
+    const rows=(...ids)=>ids.map(id=>({id,created_at:'2026-10-05T06:00:00Z'}));
+    const render=(scope,active,items)=>React.createElement(ChatLog,{channelKey:scope,active,items,emptyText:'empty',renderItem:item=>React.createElement('row',{id:item.id}),onCaughtUp:messageId=>{const request=deferred();requests.push({scope,messageId});pending.push(request);return request.promise;}});
+    const initialize=async()=>{await act(async()=>{tree.root.findByType('ScrollView').props.onContentSizeChange(300,100);});await h.tick(0);};
+    await act(async()=>{tree=create(render('alpha:guild-a',true,rows('1')));});await initialize();
+    assert.deepEqual(requests,[{scope:'alpha:guild-a',messageId:'1'}],'the read callback receives the latest actually displayed ID');
+    for(let i=0;i<3;i++){await act(async()=>{tree.update(render('alpha:guild-a',true,rows('1')));});await h.tick(0);}
+    assert.equal(requests.length,1,'rerendering the same visible cursor cannot duplicate a pending acknowledgement');
+    await act(async()=>{pending.shift().reject(new Error('Lost read acknowledgement'));});
+    assert.equal(requests.length,1,'a failed acknowledgement is not retried in a tight loop');
+    await act(async()=>{tree.update(render('alpha:guild-a',false,rows('1')));});await h.tick(0);
+    assert.equal(h.timers.size,0,'hidden read-acknowledgement retries are suspended');
+    await act(async()=>{tree.update(render('alpha:guild-a',true,rows('1')));});await h.tick(0);
+    assert.deepEqual(requests.at(-1),{scope:'alpha:guild-a',messageId:'1'});
+    assert.equal(requests.length,2,'reopening the retained same-message history retries an unconfirmed read');
+    await act(async()=>{pending.shift().resolve();});
+    for(let i=0;i<3;i++){await act(async()=>{tree.update(render('alpha:guild-a',false,rows('1')));});await act(async()=>{tree.update(render('alpha:guild-a',true,rows('1')));});await h.tick(0);}
+    assert.equal(requests.length,2,'a server-confirmed cursor is not rewritten on visibility toggles or new array instances');
+
+    await act(async()=>{tree.update(render('alpha:guild-a',true,rows('1','2')));});await h.tick(0);
+    assert.deepEqual(requests.at(-1),{scope:'alpha:guild-a',messageId:'2'},'equal message timestamps still advance the displayed ID cursor');
+    await act(async()=>{pending.shift().reject(new Error('Still offline'));});
+    await h.tick(14999);assert.equal(requests.length,3,'visible failed acknowledgements use a bounded retry delay');
+    await h.tick(1);assert.equal(requests.length,4,'a visible failed cursor is retried without requiring another message');
+    await act(async()=>{pending.shift().resolve();});
+
+    await act(async()=>{tree.update(render('alpha:guild-a',true,rows('1','2','3')));});await h.tick(0);
+    await act(async()=>{pending.shift().reject(new Error('Disconnected'));});
+    await h.state('background');await h.tick(60000);
+    assert.equal(requests.length,5,'backgrounding cancels the read acknowledgement retry timer');
+    await h.state('active');await h.tick(0);
+    assert.equal(requests.length,6,'foreground resumes a failed cursor even when no newer history arrived');
+    await act(async()=>{pending.shift().resolve();});
+
+    await act(async()=>{tree.update(render('alpha:guild-a',true,rows('1','2','3','4')));});await h.tick(0);
+    const oldOwnerRequest=pending.shift();
+    await act(async()=>{tree.update(render('bravo:guild-a',true,rows('1','2','3','4')));});await h.tick(0);
+    assert.deepEqual(requests.at(-1),{scope:'bravo:guild-a',messageId:'4'},'another account independently acknowledges same-height visible history without waiting for a new native content-size event');
+    await act(async()=>{pending.shift().reject(new Error('New owner temporarily offline'));oldOwnerRequest.resolve();});
+    await act(async()=>{tree.update(render('bravo:guild-a',false,rows('4')));});
+    await act(async()=>{tree.update(render('bravo:guild-a',true,rows('4')));});await h.tick(0);
+    assert.equal(requests.length,9,'an old account success cannot confirm the new account cursor or cancel its retry');
+    assert.deepEqual(requests.at(-1),{scope:'bravo:guild-a',messageId:'4'});
+    await act(async()=>{pending.shift().resolve();});
+
+    const beforeFrameSwitch=requests.length;
+    await act(async()=>{tree.update(render('bravo:guild-a',true,rows('4','5')));});
+    await act(async()=>{tree.update(render('bravo:party-b',true,rows('5')));});
+    await act(async()=>{tree.update(render('bravo:guild-a',true,rows('4')));});await initialize();
+    assert.deepEqual(requests.slice(beforeFrameSwitch),[{scope:'bravo:guild-a',messageId:'4'}],'an old queued scroll frame cannot acknowledge after switching A → B → A, even when the channel key matches again');
+    const lastRequest=pending.shift();
+    await act(async()=>{tree.unmount();});tree=null;
+    await act(async()=>{lastRequest.reject(new Error('Late failure after unmount'));});
+    await h.tick(60000);
+    assert.equal(requests.length,beforeFrameSwitch+1,'an unmounted read failure cannot schedule another write');
+    assert.equal(h.timers.size,0);assert.equal(h.appListeners.size,0);
+    console.log('PASS real read acknowledgements: explicit displayed cursor, confirmed-only deduplication, same-ID reopen/timed/foreground retries, owner/channel isolation and stale-frame/unmount cancellation');
+  } finally {if(tree)await act(async()=>tree.unmount());cleanUi();h.restore();}
+}
+
+async function privateReadAcknowledgementLifecycle() {
+  for(const kind of ['guild','party']) {
+    const h=makeHarness(),cleanUi=uiMocks(h);chatViewMocks(h);let tree;
+    try {
+      h.mocks.delete(path.join(app,'src/components/ChatLog'));
+      const requests=[],pending=[],notices=[];
+      const channelId=`${kind}-a`;
+      let messages=[{id:'cursor-1',account_id:'other',sender_name:'Other player',body:'First message',created_at:'2026-10-05T06:00:00Z'}];
+      const account=()=>h.auth.session?.user.id;
+      h.mocks.set(path.join(app,'src/online/PartySocialProvider'),{usePartySocial:()=>({party:{id:channelId,members:[{accountId:account(),characterName:'Player'}]},accountId:account(),refresh:async()=>{}})});
+      h.mocks.set(path.join(app,'src/online/social'),{
+        guildChatState:async()=>({guild:{id:channelId,name:'Guild'},messages}),guildRoster:async()=>[],
+        markSocialChatRead:(channel,id,messageId)=>{const request=deferred();requests.push({account:account(),channel,id,messageId});pending.push(request);return request.promise;}
+      });
+      h.mocks.set(path.join(app,'src/online/party-social'),{partyChatMessages:async()=>messages});
+      const {ChatLog}=h.load(path.join(app,'src/components/ChatLog'));
+      const name=kind==='guild'?'GuildChat':'OnlinePartyChat',Component=h.load(path.join(app,'src/components',name))[name];
+      const render=active=>React.createElement(Component,{active,language:'en',currentPlayerName:'Player',onRead:()=>notices.push(account())});
+      const initialize=async()=>{await act(async()=>{tree.root.findByType('ScrollView').props.onContentSizeChange(300,100);});await h.tick(0);};
+      await act(async()=>{tree=create(render(true));});await initialize();
+      assert.deepEqual(requests,[{account:'alpha',channel:kind,id:channelId,messageId:'cursor-1'}],`${kind}: actual wrapper sends the displayed cursor and exact conversation`);
+      await act(async()=>{pending.shift().reject(new Error('Offline'));});
+      assert.deepEqual(notices,[],`${kind}: a failed read cannot clear app notification badges`);
+      await act(async()=>{tree.update(render(false));});
+      await act(async()=>{tree.update(render(true));});await h.tick(0);
+      assert.equal(requests.length,2,`${kind}: wrapper propagates rejection so the actual log retries the same cursor on reopen`);
+      assert.deepEqual(requests[1],requests[0]);
+      await act(async()=>{pending.shift().resolve();});
+      assert.deepEqual(notices,['alpha'],`${kind}: badge refresh occurs only after confirmed read`);
+      await act(async()=>{tree.update(render(true));});await h.tick(0);
+      assert.equal(requests.length,2,`${kind}: unchanged renders do not write duplicate receipts`);
+
+      messages=[...messages,{...messages[0],id:'cursor-2',body:'Another message with the same timestamp'}];
+      await h.tick(15000);await h.tick(0);
+      assert.equal(requests.length,3,`${kind}: new displayed cursor triggers one receipt even with a tied timestamp`);
+      assert.equal(requests.at(-1).messageId,'cursor-2');
+      const oldRequest=pending.shift(),oldCallback=tree.root.findByType(ChatLog).props.onCaughtUp;
+      await act(async()=>{h.auth.session={user:{id:'bravo'}};tree.update(render(true));});await initialize();
+      assert.equal(requests.length,4,`${kind}: another account independently marks the same visible history`);
+      const newRequest=pending.shift();
+      await act(async()=>{await assert.rejects(()=>oldCallback('cursor-2'),/Chat scope changed/);oldRequest.resolve();});
+      assert.equal(requests.length,4,`${kind}: retained old-account callbacks cannot start a new read write`);
+      assert.deepEqual(notices,['alpha'],`${kind}: a stale old-account completion cannot refresh the new account's badges`);
+      await act(async()=>{newRequest.resolve();});
+      assert.deepEqual(notices,['alpha','bravo']);
+      await act(async()=>{tree.unmount();});tree=null;
+      assert.equal(h.timers.size,0);assert.equal(h.appListeners.size,0);
+    } finally {if(tree)await act(async()=>tree.unmount());cleanUi();h.restore();}
+  }
+  console.log('PASS Guild/Party read integration: actual wrappers + log, scoped displayed cursors, failed ACK propagation/retry, confirmed notifications and old-account callback/completion isolation');
+}
+
+async function pendingReadAcknowledgements() {
+  const h=makeHarness(),cleanUi=uiMocks(h);let tree;
+  try {
+    const {ChatLog}=h.load(path.join(app,'src/components/ChatLog'));
+    const requests=[],pending=[];
+    const render=(ids,active=true)=>React.createElement(ChatLog,{channelKey:'alpha:party-a',active,items:ids.map(id=>({id})),emptyText:'empty',renderItem:item=>React.createElement('row',{id:item.id}),onCaughtUp:messageId=>{const request=deferred();requests.push(messageId);pending.push(request);return request.promise;}});
+    const scroll=y=>tree.root.findByType('ScrollView').props.onScroll({nativeEvent:{contentOffset:{y},contentSize:{height:1000},layoutMeasurement:{height:100}}});
+    await act(async()=>{tree=create(render(['1']));});
+    await act(async()=>{tree.root.findByType('ScrollView').props.onContentSizeChange(300,100);});await h.tick(0);
+    await act(async()=>{tree.update(render(['1','2']));});await h.tick(0);
+    await act(async()=>{tree.update(render(['1','2','3']));});await h.tick(0);
+    assert.deepEqual(requests,['1'],'newly displayed messages join a pending acknowledgement without parallel writes');
+    await act(async()=>{pending.shift().resolve();});
+    assert.deepEqual(requests,['1','3'],'the confirmed older cursor is followed by one acknowledgement of the newest displayed cursor');
+    await act(async()=>{tree.update(render(['1','2','3']));scroll(0);});
+    await act(async()=>{tree.update(render(['1','2','3','4']));});await h.tick(0);
+    await act(async()=>{pending.shift().resolve();});
+    assert.deepEqual(requests,['1','3'],'a pending success cannot acknowledge a newer message that arrived while scrolled up');
+    await act(async()=>{tree.update(render(['1','2','3','4'],false));});
+    await act(async()=>{tree.update(render(['1','2','3','4'],true));});await h.tick(0);
+    assert.deepEqual(requests,['1','3'],'hiding and showing a manually scrolled log preserves its unread cursor');
+    await act(async()=>{scroll(900);});
+    assert.deepEqual(requests,['1','3','4'],'reaching the actual bottom acknowledges the remaining displayed message');
+    await act(async()=>{pending.shift().resolve();tree.unmount();});tree=null;
+    assert.equal(h.timers.size,0);assert.equal(h.appListeners.size,0);
+    console.log('PASS pending read acknowledgements: serial latest-cursor coalescing, confirmed older results, and manually scrolled new-message protection');
+  } finally {if(tree)await act(async()=>tree.unmount());cleanUi();h.restore();}
 }
 
 
@@ -688,10 +1031,17 @@ async function main() {
   await feedLifecycle();
   await initialNullState();
   await plainVisiblePolling();
+  await delayedPollingCadence();
+  await pendingPollingLifecycle();
   await mountedCacheEviction();
   await overlayLifecycle();
   await realChatLogVisibility();
+  await realReadAcknowledgementLifecycle();
+  await pendingReadAcknowledgements();
+  await privateReadAcknowledgementLifecycle();
   await worldDraftLifecycle();
+  await worldRetryLifecycle();
+  await staleSendScopeLifecycle();
   await sharedComposerLifecycle();
   await privateChannelVisibility();
   await partyLifecycle();

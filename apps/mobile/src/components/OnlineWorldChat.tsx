@@ -8,7 +8,7 @@ import {spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {onlineConfigured} from '../online/supabase';
 import {useChatFeed} from '../online/useChatFeed';
-import {postWorldMessage,WORLD_CHANNELS,worldMessages,type WorldMessage} from '../online/social';
+import {postWorldMessage,worldChatCommandKey,WORLD_CHANNELS,worldMessages,type WorldMessage} from '../online/social';
 import {Language,ot} from '../i18n';
 import {ChatComposer} from './ChatComposer';
 import {CHAT_MAX_EMOTES_PER_MESSAGE,chatEmoteCount,chatUnavailableEmoteIds} from '../core/chat-emotes';
@@ -22,9 +22,9 @@ export function OnlineWorldChat({playerName,language,unlockedEmoteIds=[],trayIds
  const [open,setOpen]=useState(embedded),[localChannel,setChannel]=useState(0),[drafts,setDrafts]=useState<Record<string,string>>({}),[selected,setSelected]=useState<WorldMessage|null>(null),[busy,setBusy]=useState(false);
  const channel=Math.max(0,Math.min(WORLD_CHANNELS.length-1,selectedChannel??localChannel)),channelId=WORLD_CHANNELS[channel].id;
  const {value:rows,error,accountId,refresh,setValue:setRows}=useChatFeed<WorldMessage[]>({key:`world:${channelId}`,read:()=>worldMessages(channelId),initial:[],active:active&&(open||embedded),channelType:'world',channelId});
- const draftKey=`${accountId}:${channelId}`,text=drafts[draftKey]??'',currentAccount=useRef(accountId),sending=useRef(false);currentAccount.current=accountId;
+ const draftKey=`${accountId}:${channelId}`,text=drafts[draftKey]??'',currentAccount=useRef(accountId),sending=useRef(false),pending=useRef(new Map<string,{body:string;key:string}>());currentAccount.current=accountId;
  const setText=(update:string|((previous:string)=>string))=>setDrafts(previous=>({...previous,[draftKey]:typeof update==='function'?update(previous[draftKey]??''):update}));
- useEffect(()=>{setDrafts({});setSelected(null);},[accountId]);
+ useEffect(()=>{setDrafts({});setSelected(null);pending.current.clear();},[accountId]);
  useEffect(()=>setSelected(null),[channelId]);
  if(!onlineConfigured)return null;
  if(!open&&!embedded)return <Panel><Text style={s.title}>{ot(language,'chat.world')}</Text><Text style={s.note}>{ot(language,'chat.closed')}</Text><GameButton title={ot(language,'chat.open')} onPress={()=>setOpen(true)}/></Panel>;
@@ -32,21 +32,24 @@ export function OnlineWorldChat({playerName,language,unlockedEmoteIds=[],trayIds
   const body=text.trim();if(!body||sending.current||!accountId)return;
   if(chatEmoteCount(body)>CHAT_MAX_EMOTES_PER_MESSAGE){Alert.alert(st("World chat"),st("Use at most 2 emotes in one message."));return}
   if(chatUnavailableEmoteIds(body,unlockedEmoteIds).length){Alert.alert(st("World chat"),st("One or more emotes in this message are still locked."));return}
+  let request=pending.current.get(draftKey);
+  if(!request||request.body!==body){request={body,key:worldChatCommandKey()};pending.current.set(draftKey,request);}
   sending.current=true;setBusy(true);
   try{
-   await postWorldMessage(channelId,body,playerName);
-   if(currentAccount.current!==accountId)return;
+   await postWorldMessage(channelId,body,playerName,request.key);
+   if(currentAccount.current!==accountId||pending.current.get(draftKey)!==request)return;
+   pending.current.delete(draftKey);
    // Clear only the draft actually acknowledged by the server. Switching
    // channels or editing while sending must not erase a different draft.
    setDrafts(previous=>previous[draftKey]?.trim()===body?{...previous,[draftKey]:''}:previous);
    await refresh();
-  }catch(reason){if(currentAccount.current===accountId)Alert.alert(st("World chat"),reason instanceof Error?reason.message:st("Unable to send message."));}
+  }catch(reason){if(currentAccount.current===accountId&&pending.current.get(draftKey)===request)Alert.alert(st("World chat"),reason instanceof Error?reason.message:st("Unable to send message."));}
   finally{sending.current=false;setBusy(false);}
  };
  const mentionNames=[...new Map(rows.map(row=>[row.sender_name.toLocaleLowerCase(),row.sender_name])).values()];
  const content=<View style={s.root}>
   {selectedChannel===undefined&&<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.channels} showsVerticalScrollIndicator={false}>{WORLD_CHANNELS.map((item,index)=><Pressable key={item.id} accessibilityRole="tab" accessibilityState={{selected:channel===index}} onPress={()=>setChannel(index)} style={[s.channel,channel===index&&s.channelActive]}><Text style={[s.channelText,channel===index&&s.channelTextActive]}>{item.name}</Text><Text style={s.language}>{item.language}</Text></Pressable>)}</ScrollView>}
-  <ChatLog active={active&&(open||embedded)} channelKey={WORLD_CHANNELS[channel].id} items={rows} emptyText={ot(language,'chat.none')} renderItem={row=><ChatMessageRow accountId={row.account_id} name={row.sender_name} body={row.body} createdAt={row.created_at} guildTag={row.guild_tag} tagColorId={row.guild_tag_color_id} nameStyle={row.player_name_style} badges={row.player_badges} mentionName={playerName} onPress={()=>setSelected(row)} reduceMotion={reduceMotion}/>} />
+  <ChatLog active={active&&(open||embedded)} channelKey={draftKey} items={rows} emptyText={ot(language,'chat.none')} renderItem={row=><ChatMessageRow accountId={row.account_id} name={row.sender_name} body={row.body} createdAt={row.created_at} guildTag={row.guild_tag} tagColorId={row.guild_tag_color_id} nameStyle={row.player_name_style} badges={row.player_badges} mentionName={playerName} onPress={()=>setSelected(row)} reduceMotion={reduceMotion}/>} />
   {!!error&&<View accessibilityRole="alert" style={s.errorCard}><Text style={s.errorLabel}>{st("CHAT UNAVAILABLE")}</Text><Text style={s.error}>{error}</Text><GameButton compact title={st("Retry")} tone="secondary" onPress={()=>void refresh()}/></View>}
   <ChatMentionSuggestions value={text} names={mentionNames} currentName={playerName} onChange={setText}/>
   <ChatComposer accessibilityLabel={st("World chat message")} value={text} onChangeText={setText} onSend={()=>void send()} placeholder={ot(language,'chat.placeholder')} busy={busy} disabled={!accountId} emotes={{unlockedIds:unlockedEmoteIds,trayIds,bodyPresentation,onTrayChange,onPick:token=>setText(value=>(value+token).slice(0,300))}}/>

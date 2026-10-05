@@ -9,6 +9,7 @@ export class ChatFeedCache<T>{
  private disposed=false;
  private localRevision=0;
  private loadedAt:number|null=null;
+ private settledAt:number|null=null;
 
  constructor(private readonly read:()=>Promise<T>,initial:T,private readonly now:()=>number=Date.now){
   this.snapshot={value:initial,error:''};
@@ -16,6 +17,8 @@ export class ChatFeedCache<T>{
 
  getSnapshot=()=>this.snapshot;
  get hasSubscribers(){return this.listeners.size>0;}
+ /** A watcher may start before a read finishes or share a newer socket read. */
+ nextRefreshIn=(maxAgeMs=15000)=>this.settledAt===null?maxAgeMs:Math.max(0,maxAgeMs-(this.now()-this.settledAt));
  subscribe=(listener:()=>void)=>{this.listeners.add(listener);return()=>{this.listeners.delete(listener);};};
  private publish(next:ChatFeedSnapshot<T>){this.snapshot=next;for(const listener of this.listeners)listener();}
  setValue=(update:T|((previous:T)=>T))=>{
@@ -48,6 +51,10 @@ export class ChatFeedCache<T>{
      // acknowledged send into a failed send that the player sends again.
      const message=reason instanceof Error?reason.message:typeof (reason as {message?:unknown})?.message==='string'?String((reason as {message:string}).message):'Unable to load chat.';
      this.publish({...this.snapshot,error:message});
+    }finally{
+     // Failed requests also wait a full interval before the next scheduled
+     // attempt. A stale successful value must never cause a tight retry loop.
+     this.settledAt=this.now();
     }
    }while(this.refreshAgain&&!this.disposed);
   })().finally(()=>{this.inFlight=null;});

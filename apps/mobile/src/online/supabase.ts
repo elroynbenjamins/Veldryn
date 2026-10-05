@@ -1,5 +1,5 @@
 import * as SecureStore from 'expo-secure-store';
-import {createClient, type SupabaseClient} from '@supabase/supabase-js';
+import {createClient,processLock,type SupabaseClient} from '@supabase/supabase-js';
 import {Platform} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {chunkedAuthStorage} from '../core/auth-callback';
@@ -17,7 +17,10 @@ const secureStorage={
 
 /** Undefined until the public Expo environment variables have been supplied. */
 export const supabase:SupabaseClient|undefined=url&&key?createClient(url,key,{
-  auth:{storage:Platform.OS==='web'?AsyncStorage:chunkedAuthStorage(secureStorage),flowType:'pkce',autoRefreshToken:true,persistSession:true,detectSessionInUrl:false},
+  // In the pinned v2 SDK, updateUser can overwrite tokens from an overlapping
+  // automatic refresh. This lock protects SDK-internal session writes; account.ts
+  // also orders explicit auth intents, including sign-in paths that bypass it.
+  auth:{storage:Platform.OS==='web'?AsyncStorage:chunkedAuthStorage(secureStorage),flowType:'pkce',autoRefreshToken:true,persistSession:true,detectSessionInUrl:false,lock:processLock},
 }):undefined;
 
 export const onlineConfigured=Boolean(supabase);

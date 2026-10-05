@@ -1,7 +1,6 @@
 import {Linking,Platform} from 'react-native';
 import {supabase} from './supabase';
-
-declare const process:{env:Record<string,string|undefined>};
+import {APP_BUILD_INFO} from '../app-build';
 
 export type AppVersionPolicy={
   latestVersion:string;
@@ -21,8 +20,8 @@ export type VersionGateResult={
   maintenanceMode:boolean;
 };
 
-const CURRENT_APP_VERSION=process.env.EXPO_PUBLIC_APP_VERSION?.trim()||'0.1.0';
-const RELEASE_CHANNEL=process.env.EXPO_PUBLIC_RELEASE_CHANNEL?.trim()||'production';
+const CURRENT_APP_VERSION=APP_BUILD_INFO.version;
+const RELEASE_CHANNEL=APP_BUILD_INFO.releaseChannel;
 const DEFAULT_TITLE='VELDRYN has been updated';
 const DEFAULT_MESSAGE='This version is no longer supported. Update to continue your adventure.';
 const DEFAULT_MAINTENANCE='VELDRYN is temporarily unavailable while maintenance is completed.';

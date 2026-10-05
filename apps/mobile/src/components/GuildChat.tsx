@@ -30,30 +30,32 @@ export function GuildChat({language,currentPlayerName,unlockedEmoteIds=[],trayId
  const send=async()=>{
   const clean=body.trim();if(!clean||sending.current||!guild)return;
   if(chatEmoteCount(clean)>CHAT_MAX_EMOTES_PER_MESSAGE){Alert.alert(st("Guild chat"),st("Use at most 2 emotes in one message."));return}const locked=chatUnavailableEmoteIds(clean,unlockedEmoteIds);if(locked.length){Alert.alert(st("Guild chat"),st("One or more emotes in this message are still locked."));return}
-  if(pending.current?.body!==clean)pending.current={body:clean,key:guildChatCommandKey()};
+  if(!pending.current||pending.current.body!==clean)pending.current={body:clean,key:guildChatCommandKey()};
+  const request=pending.current;
   sending.current=true;setBusy(true);setError('');
-  try{await sendGuildChat(clean,pending.current.key);if(currentScope.current!==scope)return;setBody(previous=>previous.trim()===clean?'':previous);pending.current=null;await load();}
-  catch(reason){if(currentScope.current===scope)setError(reason instanceof Error?reason.message:st("Message failed. Try again."))}
+  try{await sendGuildChat(clean,request.key);if(currentScope.current!==scope||pending.current!==request)return;setBody(previous=>previous.trim()===clean?'':previous);pending.current=null;await load();}
+  catch(reason){if(currentScope.current===scope&&pending.current===request)setError(reason instanceof Error?reason.message:st("Message failed. Try again."))}
   finally{sending.current=false;setBusy(false)}
  };
 
  if(snapshot&&!guild)return <View style={s.unavailable}><Text style={s.title}>{ot(language,'chat.guild')}</Text><Text style={s.note}>{st("Join an online Guild to use Guild Chat.")}</Text></View>;
 
- return <><GuildChatView active={active} language={language} currentPlayerName={currentPlayerName} unlockedEmoteIds={unlockedEmoteIds} trayIds={trayIds} bodyPresentation={bodyPresentation} onTrayChange={onTrayChange} firstUnreadMessageId={firstUnreadMessageId} reduceMotion={reduceMotion} guild={guild} messages={messages} body={body} onBodyChange={setBody} mentionNames={mentionNames} busy={busy} error={error} onSend={()=>void send()} onRetry={()=>{setError('');void load();}} onSelectMessage={setSelected} onCaughtUp={()=>{if(activeRef.current)void markSocialChatRead('guild').then(()=>onReadRef.current?.()).catch(()=>{});}}/>
+ const caughtUp=async(messageId:string)=>{if(!activeRef.current||currentScope.current!==scope||!guild)throw new Error('Chat scope changed.');await markSocialChatRead('guild',guild.id,messageId);if(activeRef.current&&currentScope.current===scope)onReadRef.current?.();};
+ return <><GuildChatView active={active} channelKey={scope} language={language} currentPlayerName={currentPlayerName} unlockedEmoteIds={unlockedEmoteIds} trayIds={trayIds} bodyPresentation={bodyPresentation} onTrayChange={onTrayChange} firstUnreadMessageId={firstUnreadMessageId} reduceMotion={reduceMotion} guild={guild} messages={messages} body={body} onBodyChange={setBody} mentionNames={mentionNames} busy={busy} error={error} onSend={()=>void send()} onRetry={()=>{setError('');void load();}} onSelectMessage={setSelected} onCaughtUp={caughtUp}/>
   <ChatPlayerSheet reduceMotion={reduceMotion} message={selected?{...selected,message_id:selected.id}:null} onClose={()=>setSelected(null)} onBlocked={blockedId=>setSnapshot(current=>current?{...current,messages:current.messages.filter(message=>message.account_id!==blockedId)}:current)}/>
  </>;
 }
 
 /** Shared presentation only: the live wrapper above owns network and account actions. */
-export function GuildChatView({active=true,language,currentPlayerName,unlockedEmoteIds=[],trayIds=[],bodyPresentation='male',onTrayChange,firstUnreadMessageId,reduceMotion=false,guild,messages,body,onBodyChange,mentionNames=[],busy=false,error='',onSend,onRetry=()=>{},onSelectMessage,onCaughtUp}:{
- active?:boolean;language:Language;currentPlayerName?:string;unlockedEmoteIds?:readonly string[];trayIds?:readonly string[];bodyPresentation?:'male'|'female';onTrayChange?:(ids:string[])=>void|Promise<void>;firstUnreadMessageId?:string;reduceMotion?:boolean;
- guild:GuildChatState['guild'];messages:readonly GuildChatMessage[];body:string;onBodyChange:(value:string)=>void;mentionNames?:string[];busy?:boolean;error?:string;onSend:()=>void;onRetry?:()=>void;onSelectMessage?:(message:GuildChatMessage)=>void;onCaughtUp?:()=>void;
+export function GuildChatView({active=true,channelKey,language,currentPlayerName,unlockedEmoteIds=[],trayIds=[],bodyPresentation='male',onTrayChange,firstUnreadMessageId,reduceMotion=false,guild,messages,body,onBodyChange,mentionNames=[],busy=false,error='',onSend,onRetry=()=>{},onSelectMessage,onCaughtUp}:{
+ active?:boolean;channelKey?:string;language:Language;currentPlayerName?:string;unlockedEmoteIds?:readonly string[];trayIds?:readonly string[];bodyPresentation?:'male'|'female';onTrayChange?:(ids:string[])=>void|Promise<void>;firstUnreadMessageId?:string;reduceMotion?:boolean;
+ guild:GuildChatState['guild'];messages:readonly GuildChatMessage[];body:string;onBodyChange:(value:string)=>void;mentionNames?:string[];busy?:boolean;error?:string;onSend:()=>void;onRetry?:()=>void;onSelectMessage?:(message:GuildChatMessage)=>void;onCaughtUp?:(messageId:string)=>void|Promise<void>;
 }){
  const st=useSocialText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  return <View style={s.root}>
   <View style={s.header}><View style={s.grow}><Text style={s.eyebrow}>{st("GUILD CHANNEL")}</Text>{guild?<GuildTaggedPlayerName name={guild.name} guildTag={guild.tag} tagColorId={guild.tagColorId} style={s.title}/>:<Text numberOfLines={1} style={s.title}>{ot(language,'chat.guild')}</Text>}</View><View style={s.securePill}><Text style={s.secure}>{st("MEMBERS ONLY")}</Text></View></View>
-  <ChatLog active={active} channelKey={guild?.id??'guild:none'} items={messages} firstUnreadMessageId={firstUnreadMessageId} emptyText={st("No Guild messages yet. Start the conversation.")} onCaughtUp={onCaughtUp} renderItem={message=><ChatMessageRow accountId={message.account_id} name={message.sender_name} body={message.body} createdAt={message.created_at} guildTag={message.guild_tag} tagColorId={message.guild_tag_color_id} nameStyle={message.player_name_style} badges={message.player_badges} role={message.guild_role} mentionName={currentPlayerName} onPress={()=>onSelectMessage?.(message)} reduceMotion={reduceMotion}/>} />
+  <ChatLog active={active} channelKey={channelKey??guild?.id??'guild:none'} items={messages} firstUnreadMessageId={firstUnreadMessageId} emptyText={st("No Guild messages yet. Start the conversation.")} onCaughtUp={onCaughtUp} renderItem={message=><ChatMessageRow accountId={message.account_id} name={message.sender_name} body={message.body} createdAt={message.created_at} guildTag={message.guild_tag} tagColorId={message.guild_tag_color_id} nameStyle={message.player_name_style} badges={message.player_badges} role={message.guild_role} mentionName={currentPlayerName} onPress={()=>onSelectMessage?.(message)} reduceMotion={reduceMotion}/>} />
   {!!error&&<View accessibilityRole="alert" style={s.errorCard}><Text style={s.errorLabel}>{st("GUILD CHAT UNAVAILABLE")}</Text><Text style={s.error}>{error}</Text><GameButton compact title={st("Retry")} tone="secondary" disabled={busy} onPress={onRetry}/></View>}
   <ChatMentionSuggestions value={body} names={mentionNames} currentName={currentPlayerName} onChange={onBodyChange}/>
   <ChatComposer accessibilityLabel={st("Guild message")} value={body} onChangeText={onBodyChange} onSend={onSend} placeholder={st("Guild message")} busy={busy} disabled={!guild} emotes={{unlockedIds:unlockedEmoteIds,trayIds,bodyPresentation,onTrayChange,onPick:token=>onBodyChange((body+token).slice(0,300))}}/>

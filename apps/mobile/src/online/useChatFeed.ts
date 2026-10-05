@@ -20,7 +20,10 @@ function watchFeed<T>(entry:FeedEntry<T>,options:FeedOptions<T>){
   if(timer)clearTimeout(timer);
   if(closed||!foreground)return;
   const interval=subscribed?CHAT_WATCHDOG_MS:CHAT_FALLBACK_MS;
-  timer=setTimeout(()=>{void entry.cache.refresh(false,interval);schedule();},interval);
+  // Start the next deadline from the completed read, not from socket startup.
+  // Otherwise normal request latency makes every other timer look too early
+  // to the cache. Joining an in-flight request must not queue another read.
+  timer=setTimeout(()=>{timer=undefined;void entry.cache.refresh(false,interval).finally(schedule);},entry.cache.nextRefreshIn(interval));
  };
  const disconnect=()=>{
   foreground=false;subscribed=false;connection++;clearTimers();
@@ -29,7 +32,7 @@ function watchFeed<T>(entry:FeedEntry<T>,options:FeedOptions<T>){
  const connect=()=>{
   if(closed||foreground)return;
   foreground=true;const current=++connection;
-  void entry.cache.refresh();
+  void entry.cache.refresh().finally(schedule);
   if(supabase&&options.channelType&&options.channelId){
    channel=supabase.channel(`chat:${entry.accountId}:${options.key}:${++channelSequence}`)
     .on('postgres_changes',{event:'INSERT',schema:'public',table:'chat_messages',filter:`channel_id=eq.${options.channelId}`},payload=>{

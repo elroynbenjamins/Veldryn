@@ -1,54 +1,76 @@
 import {useSocialText} from '../i18n/social';
-import {useEffect,useRef,useState,type ReactNode} from 'react';
+import {useEffect,useMemo,useRef,useState,type ReactNode} from 'react';
 import {AppState,Pressable,ScrollView,StyleSheet,Text,View,type LayoutChangeEvent,type NativeScrollEvent,type NativeSyntheticEvent} from 'react-native';
 import {useGameTheme} from '../theme/ThemeContext';
+import {ChatReadAcknowledgement} from '../core/chat-read-ack';
 
 export interface ChatLogItem{id:string}
 
-export function ChatLog<T extends ChatLogItem>({channelKey,items,firstUnreadMessageId,emptyText,renderItem,onCaughtUp,active=true}:{channelKey:string;items:readonly T[];firstUnreadMessageId?:string;emptyText:string;renderItem:(item:T)=>ReactNode;onCaughtUp?:()=>void;active?:boolean}){
+export function ChatLog<T extends ChatLogItem>({channelKey,items,firstUnreadMessageId,emptyText,renderItem,onCaughtUp,active=true}:{channelKey:string;items:readonly T[];firstUnreadMessageId?:string;emptyText:string;renderItem:(item:T)=>ReactNode;onCaughtUp?:(messageId:string)=>void|Promise<void>;active?:boolean}){
  const st=useSocialText();
- const C=useGameTheme(),scrollRef=useRef<ScrollView>(null),nearBottomRef=useRef(!firstUnreadMessageId),initializedRef=useRef(false),previousIdsRef=useRef<Set<string>>(new Set()),caughtUpIdRef=useRef<string|undefined>(undefined),viewportHeightRef=useRef(0),contentHeightRef=useRef(0),activeRef=useRef(active);
+ const C=useGameTheme(),scrollRef=useRef<ScrollView>(null),nearBottomRef=useRef(!firstUnreadMessageId),initializedRef=useRef(false),previousIdsRef=useRef<Set<string>>(new Set()),viewportHeightRef=useRef(0),contentHeightRef=useRef(0),activeRef=useRef(active),readAckRef=useRef<ChatReadAcknowledgement|null>(null),onCaughtUpRef=useRef(onCaughtUp);
  const [dividerId,setDividerId]=useState(firstUnreadMessageId),[dividerCleared,setDividerCleared]=useState(false),[pendingNew,setPendingNew]=useState(0),[foreground,setForeground]=useState(()=>AppState.currentState==='active'||AppState.currentState===null);
- activeRef.current=active&&foreground;
- const latestId=items.length?items[items.length-1].id:undefined;
+ activeRef.current=active&&foreground;onCaughtUpRef.current=onCaughtUp;
+ const hasMessages=items.length>0,latestId=hasMessages?items[items.length-1].id:undefined;
+ const readAck=useMemo(()=>{
+  const owner:ChatReadAcknowledgement=new ChatReadAcknowledgement(messageId=>{
+   if(!activeRef.current||readAckRef.current!==owner)throw new Error('Chat is no longer visible.');
+   return onCaughtUpRef.current?.(messageId);
+  });
+  return owner;
+ },[channelKey]);
+ readAckRef.current=readAck;
+ const visible=()=>activeRef.current&&readAckRef.current===readAck;
 
  useEffect(()=>{
-  const update=(next:string|null)=>{const visible=next==='active'||next===null;activeRef.current=active&&visible;setForeground(visible);};
+  const update=(next:string|null)=>{const visible=next==='active'||next===null;activeRef.current=active&&visible;readAck.setActive(activeRef.current&&hasMessages);setForeground(visible);};
   update(AppState.currentState);
   const listener=active?AppState.addEventListener('change',update):undefined;
-  return()=>{activeRef.current=false;listener?.remove();};
- },[active]);
+  return()=>{activeRef.current=false;readAck.setActive(false);listener?.remove();};
+ },[active,readAck,hasMessages]);
 
  // A hidden panel can still receive an in-flight history result. Do not consume
  // its caught-up message ID until the player can actually see the conversation.
- const caughtUp=()=>{if(!activeRef.current)return;setPendingNew(0);if(!latestId||caughtUpIdRef.current===latestId)return;caughtUpIdRef.current=latestId;onCaughtUp?.();};
- useEffect(()=>{nearBottomRef.current=!firstUnreadMessageId;initializedRef.current=false;previousIdsRef.current=new Set();caughtUpIdRef.current=undefined;setDividerId(firstUnreadMessageId);setDividerCleared(false);setPendingNew(0);},[channelKey]);
+ const caughtUp=()=>{if(!visible())return;setPendingNew(0);if(latestId)readAck.caughtUp(latestId);};
+ useEffect(()=>{nearBottomRef.current=!firstUnreadMessageId;initializedRef.current=false;previousIdsRef.current=new Set();setDividerId(firstUnreadMessageId);setDividerCleared(false);setPendingNew(0);},[channelKey]);
  useEffect(()=>{if(!initializedRef.current&&!dividerId&&firstUnreadMessageId){nearBottomRef.current=false;setDividerId(firstUnreadMessageId)}},[firstUnreadMessageId,dividerId]);
  useEffect(()=>{if(!initializedRef.current&&dividerId&&items.length&&!items.some(item=>item.id===dividerId))setDividerId(items[0].id);},[items,dividerId]);
+ useEffect(()=>{
+  // Native content-size events need not fire when another account/channel has
+  // the same layout. Reuse the measured log after the new rows have committed.
+  if(!visible()||initializedRef.current||!items.length||contentHeightRef.current<=0||firstUnreadMessageId||(!dividerCleared&&dividerId))return;
+  let cancelled=false;
+  requestAnimationFrame(()=>{
+   if(cancelled||!visible()||initializedRef.current)return;
+   initializedRef.current=true;nearBottomRef.current=true;previousIdsRef.current=new Set(items.map(item=>item.id));
+   scrollRef.current?.scrollToEnd({animated:false});caughtUp();
+  });
+  return()=>{cancelled=true;};
+ },[channelKey,items,active,foreground,firstUnreadMessageId,dividerId,dividerCleared]);
  useEffect(()=>{
   const ids=new Set(items.map(item=>item.id));
   if(!initializedRef.current){previousIdsRef.current=ids;return;}
   let added=0;for(const id of ids)if(!previousIdsRef.current.has(id))added++;
   previousIdsRef.current=ids;
   if(!added)return;
-  if(nearBottomRef.current){if(activeRef.current)requestAnimationFrame(()=>{if(!activeRef.current)return;scrollRef.current?.scrollToEnd({animated:true});caughtUp();});}
+  if(nearBottomRef.current){if(visible())requestAnimationFrame(()=>{if(!visible())return;scrollRef.current?.scrollToEnd({animated:true});caughtUp();});}
   else setPendingNew(current=>current+added);
  },[items]);
  useEffect(()=>{
-  if(activeRef.current&&initializedRef.current&&nearBottomRef.current)requestAnimationFrame(()=>{if(!activeRef.current)return;scrollRef.current?.scrollToEnd({animated:false});caughtUp();});
+  if(visible()&&initializedRef.current&&nearBottomRef.current)requestAnimationFrame(()=>{if(!visible())return;scrollRef.current?.scrollToEnd({animated:false});caughtUp();});
  },[active,foreground]);
 
  const onDividerLayout=(event:LayoutChangeEvent)=>{
   if(initializedRef.current||dividerCleared)return;
   initializedRef.current=true;previousIdsRef.current=new Set(items.map(item=>item.id));nearBottomRef.current=false;
-  requestAnimationFrame(()=>{if(!activeRef.current)return;scrollRef.current?.scrollTo({y:Math.max(0,event.nativeEvent.layout.y-10),animated:false});if(contentHeightRef.current<=viewportHeightRef.current+44){nearBottomRef.current=true;caughtUp();}});
+  requestAnimationFrame(()=>{if(!visible())return;scrollRef.current?.scrollTo({y:Math.max(0,event.nativeEvent.layout.y-10),animated:false});if(contentHeightRef.current<=viewportHeightRef.current+44){nearBottomRef.current=true;caughtUp();}});
  };
  const onContentSizeChange=(_width:number,height:number)=>{
   contentHeightRef.current=height;
   if(initializedRef.current)return;
   if(dividerId&&!dividerCleared)return;
   initializedRef.current=true;previousIdsRef.current=new Set(items.map(item=>item.id));nearBottomRef.current=true;
-  requestAnimationFrame(()=>{if(!activeRef.current)return;scrollRef.current?.scrollToEnd({animated:false});caughtUp();});
+  requestAnimationFrame(()=>{if(!visible())return;scrollRef.current?.scrollToEnd({animated:false});caughtUp();});
  };
  const onScroll=(event:NativeSyntheticEvent<NativeScrollEvent>)=>{
   const {contentOffset,contentSize,layoutMeasurement}=event.nativeEvent;

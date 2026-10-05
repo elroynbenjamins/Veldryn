@@ -8,21 +8,20 @@ function check(value:unknown,message:string):asserts value{if(!value)throw new E
 function rejects(fn:()=>unknown){let rejected=false;try{fn()}catch{rejected=true}check(rejected,'unowned icon must be rejected');}
 const state=createCharacter(newGame(1000),'IRONWARDEN','Aster');
 check(state.character!.profileIconId==='class:IRONWARDEN','default class icon');
-check(profileIconCollection(state).length===24,'all 24 icons discoverable');
+check(profileIconCollection(state).length===19,'pet and companion portraits are temporarily excluded');
 check(profileIconCollection(state).filter(row=>row.unlocked).length===15,'nine emblems and six starter portraits available');
 check(canUseProfileIcon(state,'starter:hooded-ranger'),'starter portrait available');
 rejects(()=>selectProfileIcon(state,'companion:UNIT_008'));
 rejects(()=>selectProfileIcon(state,'creature:MOSS_RAT'));
 const recruited={...state,account:{...state.account,unlockedCombatCompanionIds:['UNIT_008']}};
-check(canUseProfileIcon(recruited,'companion:UNIT_008'),'companion ownership unlocks portrait');
-check(newlyUnlockedProfileIcons(state,recruited).map(row=>row.id).join()==='companion:UNIT_008','only newly earned portrait announced');
-check(newlyUnlockedProfileIcons(recruited,recruited).length===0,'no repeated unlock notification');
+check(!canUseProfileIcon(recruited,'companion:UNIT_008'),'companion portraits stay unavailable while temporarily removed');
+check(newlyUnlockedProfileIcons(state,recruited).length===0,'companion unlock does not announce a removed portrait');
 check(!collectionOwnershipSnapshotFromGameState(state).ownedKeys['profile_icon:companion:UNIT_008'],'locked icons excluded from ownership');
 for(const points of [9,10])check(canUseProfileIcon({...state,character:{...state.character!,monsterMasteryPoints:{MOSS_RAT:points}}},'creature:MOSS_RAT')===(points===10),'mastery threshold');
 check(canUseProfileIcon({...state,defeatedBossIds:['FALLEN_KNIGHT']},'creature:FALLEN_KNIGHT'),'boss defeat unlocks portrait');
-check(canUseProfileIcon({...state,account:{...state.account,unlockedCosmeticPetIds:['EVT_PET_011']}},'event:pumpkin-piglet'),'festival pet unlocks portrait');
-check(canUseProfileIcon({...state,account:{...state.account,unlockedCombatCompanionIds:['EVT_UNIT_006']}},'event:harvest-guardian'),'festival companion unlocks portrait');
-check(normalizeSave(selectProfileIcon(recruited,'companion:UNIT_008')).character!.profileIconId==='companion:UNIT_008','companion portrait persists through normalization');
+check(!canUseProfileIcon({...state,account:{...state.account,unlockedCosmeticPetIds:['EVT_PET_011']}},'event:pumpkin-piglet'),'festival pet portrait stays unavailable while removed');
+check(!canUseProfileIcon({...state,account:{...state.account,unlockedCombatCompanionIds:['EVT_UNIT_006']}},'event:harvest-guardian'),'festival companion portrait stays unavailable while removed');
+check(normalizeProfileIcon({...recruited,character:{...recruited.character!,profileIconId:'companion:UNIT_008'}}).character!.profileIconId==='class:IRONWARDEN','removed companion portrait falls back to class icon');
 const before=JSON.stringify(effectiveStats(state));
 const selected=selectProfileIcon(state,'class:DAWNKEEPER');
 check(selected.character!.profileIconId==='class:DAWNKEEPER','selected icon persists');

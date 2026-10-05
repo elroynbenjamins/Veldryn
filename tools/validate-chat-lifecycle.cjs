@@ -1,5 +1,5 @@
 // Focused offline React lifecycle regressions. Native views and service calls are
-// mocked; the actual chat hooks, cache, overlay, log and party provider run on
+// mocked; the actual chat hooks, cache, overlay, composer/picker, log and party provider run on
 // React 19. No user accounts, network access or timers beyond the fake clock.
 // Run after npm ci in apps/mobile: node tools/validate-chat-lifecycle.cjs
 const assert = require('node:assert/strict');
@@ -46,6 +46,8 @@ function makeHarness(initialState = 'active') {
   function load(file) {
     file = path.resolve(file);
     if (mocks.has(file)) return mocks.get(file);
+    if (/\.(?:png|jpe?g|webp)$/.test(file)) return {uri: file};
+    if (file.endsWith('.json')) return JSON.parse(fs.readFileSync(file, 'utf8'));
     if (!path.extname(file)) file += fs.existsSync(file + '.tsx') ? '.tsx' : '.ts';
     if (loaded.has(file)) return loaded.get(file).exports;
     const mod = {exports: {}}; loaded.set(file, mod);
@@ -213,27 +215,129 @@ async function mountedCacheEviction() {
 }
 
 
+function flattenStyle(style) {
+  if (!style) return {};
+  if (Array.isArray(style)) return Object.assign({}, ...style.map(flattenStyle));
+  return style;
+}
+
+function renderedStyle(node) {
+  return flattenStyle(typeof node.props.style==='function'?node.props.style({pressed:false}):node.props.style);
+}
+
+function chatButton(tree,label='Send message') {
+  const buttons=tree.root.findAllByType('Pressable').filter(node=>node.props.accessibilityLabel===label);
+  assert.equal(buttons.length,1,`expected one rendered chat control: ${label}`);
+  return buttons[0];
+}
+
+async function pressChatButton(tree,label) {
+  const button=chatButton(tree,label);
+  assert.ok(!button.props.disabled,`${label??'Send message'} must be enabled`);
+  await act(async()=>{button.props.onPress();});
+}
+
+function containsNode(parent,node) {
+  for(let current=node;current;current=current.parent)if(current===parent)return true;
+  return false;
+}
+
+function inlineComposerRow(tree) {
+  const input=tree.root.findByType('TextInput'),emote=chatButton(tree,'Open emote tray'),send=chatButton(tree);
+  let row=input.parent;
+  while(row&&(row.type!=='View'||!containsNode(row,emote)||!containsNode(row,send)))row=row.parent;
+  assert.ok(row,'input, emote trigger and Send share a native row');
+  assert.equal(renderedStyle(row).flexDirection,'row','composer stays horizontal at narrow widths and enlarged text');
+  assert.equal(renderedStyle(row).flexWrap??'nowrap','nowrap','Send cannot wrap onto a separate input row');
+  const controls=row.findAll(node=>node.type==='TextInput'||node.type==='Pressable'&&['Open emote tray','Send message'].includes(node.props.accessibilityLabel));
+  assert.deepEqual(controls,[input,emote,send],'input → emote → Send order is preserved in the rendered row');
+  assert.equal(renderedStyle(input).minWidth,0,'input can shrink to leave room for its actions');
+  for(const [name,action] of [['emote',emote],['Send',send]]) {
+    const style=renderedStyle(action);
+    assert.ok((style.minWidth??style.width??0)>=44,`${name} has a full-width touch target`);
+    assert.ok((style.minHeight??style.height??0)>=44,`${name} has a full-height touch target`);
+    assert.equal(style.flexShrink??0,0,`${name} cannot shrink below its touch target`);
+  }
+  return row;
+}
+
+async function sharedComposerLifecycle() {
+  const h=makeHarness(),cleanUi=uiMocks(h);chatViewMocks(h);let tree;
+  try {
+    const sends=[];
+    h.mocks.set(path.join(app,'src/online/social'),{
+      WORLD_CHANNELS:[{id:'en',name:'English'}],worldMessages:async()=>[],
+      postWorldMessage:async(_channel,value)=>{sends.push(value);}
+    });
+    const {OnlineWorldChat}=h.load(path.join(app,'src/components/OnlineWorldChat'));
+    const {ChatComposer}=h.load(path.join(app,'src/components/ChatComposer'));
+    const emote=h.load(path.join(app,'src/core/chat-emotes')).availableChatEmotes([],'male')[0];
+    function Probe({busy=false,disabled=false,editable=true}) {
+      const [value,onChangeText]=React.useState('');
+      return React.createElement(ChatComposer,{value,onChangeText,onSend:()=>sends.push(value),busy,disabled,editable,accessibilityLabel:'Test chat message',placeholder:'Message',maxLength:300});
+    }
+    const render=props=>React.createElement(Probe,props),renderWorld=()=>React.createElement(OnlineWorldChat,{playerName:'Player',language:'en',embedded:true,selectedChannel:0}),input=()=>tree.root.findByType('TextInput');
+    await act(async()=>{tree=create(renderWorld());});
+    for(const width of [320,360,390])for(const fontScale of [1,1.5]) {
+      Object.assign(h.dimensions,{width,fontScale});
+      await act(async()=>{tree.update(renderWorld());input().props.onChangeText(`Draft ${width}/${fontScale} `);});
+      await act(async()=>{tree.root.findAllByType('View')[0].props.onLayout?.({nativeEvent:{layout:{width,height:300}}});});
+      const draft=input().props.value,retainedInput=input(),row=inlineComposerRow(tree),rowStyle=renderedStyle(row);
+      await pressChatButton(tree,'Open emote tray');
+      assert.equal(chatButton(tree,'Open emote tray').props.accessibilityState.expanded,true);
+      assert.strictEqual(input(),retainedInput,'opening the emote tray retains the native input instance');
+      assert.strictEqual(inlineComposerRow(tree),row,'opening the emote tray retains the same input/action row');
+      assert.deepEqual(renderedStyle(row),rowStyle,'tray expansion does not change the input row sizing');
+      const trayHeading=tree.root.findAllByType('Text').find(node=>node.children.includes('Quick emotes'));
+      assert.ok(trayHeading,'real picker renders its emote tray');
+      assert.equal(containsNode(row,trayHeading),false,'expanded tray lives outside the input/action row');
+      assert.equal(input().props.value,draft,'opening the picker does not erase the draft');
+      await pressChatButton(tree,emote.label);
+      assert.equal(input().props.value,`${draft}:${emote.id}:`,'picking a real emote appends its token without replacing existing text');
+      assert.equal(chatButton(tree,'Open emote tray').props.accessibilityState.expanded,false,'picking closes the tray');
+      assert.equal(sends.length,0,'opening and picking emotes cannot submit a message');
+    }
+    await act(async()=>{tree.unmount();});tree=null;
+    await act(async()=>{tree=create(render({}));});
+    for(const blocked of [{value:'   '},{value:'Busy draft',busy:true},{value:'Unavailable channel draft',disabled:true},{value:'Read-only draft',editable:false}]) {
+      await act(async()=>{tree.update(render(blocked));});
+      await act(async()=>{input().props.onChangeText(blocked.value);});
+      assert.equal(chatButton(tree).props.disabled,true,'blank, busy and unavailable/read-only composers disable Send');
+      assert.equal(chatButton(tree).props.accessibilityState.disabled,true);
+      await act(async()=>{chatButton(tree).props.onPress();input().props.onSubmitEditing();});
+      assert.equal(sends.length,0,'the same send guard applies to button handlers and keyboard return');
+      assert.equal(input().props.value,blocked.value,'blocked submit preserves the draft');
+    }
+    await act(async()=>{tree.update(render({}));});
+    await act(async()=>{input().props.onChangeText('Ready to send');});
+    assert.equal(chatButton(tree).props.disabled,false);
+    await pressChatButton(tree);
+    await act(async()=>{input().props.onSubmitEditing();});
+    assert.deepEqual(sends,['Ready to send','Ready to send'],'enabled button and keyboard each submit through the real shared composer');
+    await act(async()=>{tree.unmount();});tree=null;
+    assert.equal(h.timers.size,0);
+    console.log('PASS shared composer: real picker/input, inline input-emote-Send at 320/360/390 and font 1/1.5, 44px actions, separate tray, draft/token preservation, button/keyboard guards');
+  } finally {if(tree)await act(async()=>tree.unmount());cleanUi();h.restore();}
+}
+
 function uiMocks(h) {
   const theme=new Proxy({}, {get:()=> '#4488cc'});
   const tr=(text,params)=>text.replace(/\{([^}]+)\}/g,(_,key)=>String(params?.[key]??key));
   const originalRAF=global.requestAnimationFrame;
   global.requestAnimationFrame=fn=>setTimeout(fn,0);
-  h.mocks.set('react-native',{...h.mocks.get('react-native'),Alert:{alert(){}},KeyboardAvoidingView:'KeyboardAvoidingView',Modal:'Modal',Platform:{OS:'android'},Pressable:'Pressable',ScrollView:'ScrollView',StyleSheet:{create:styles=>styles,hairlineWidth:1,absoluteFill:{}},Text:'Text',View:'View',useWindowDimensions:()=>({width:420,fontScale:1})});
+  h.dimensions={width:420,height:844,fontScale:1,scale:1};
+  h.mocks.set('react-native',{...h.mocks.get('react-native'),Alert:{alert(){}},ActivityIndicator:'ActivityIndicator',Image:'Image',KeyboardAvoidingView:'KeyboardAvoidingView',Modal:'Modal',Platform:{OS:'android',select:options=>options.android??options.default},Pressable:'Pressable',ScrollView:'ScrollView',StyleSheet:{create:styles=>styles,flatten:flattenStyle,hairlineWidth:1,absoluteFill:{}},Text:'Text',TextInput:'TextInput',View:'View',useWindowDimensions:()=>h.dimensions});
   h.mocks.set('react-native-safe-area-context',{useSafeAreaInsets:()=>({top:0,bottom:0,left:0,right:0})});
   h.mocks.set(path.join(app,'src/i18n/social'),{useSocialText:()=>tr});
   h.mocks.set(path.join(app,'src/i18n'),{ot:(_language,text)=>text});
   h.mocks.set(path.join(app,'src/theme/ThemeContext'),{useGameTheme:()=>theme});
-  h.mocks.set(path.join(app,'src/theme/theme'),{typography:{},radii:{},spacing:{}});
   return()=>{global.requestAnimationFrame=originalRAF;};
 }
 
 function chatViewMocks(h) {
-  for (const name of ['GameButton','Panel','ChatPlayerSheet','UiIcon','ChatEmotePicker','ChatMessageRow','ChatLog','ChatMentionSuggestions','GuildTaggedPlayerName']) {
+  for (const name of ['Panel','ChatPlayerSheet','UiIcon','ChatMessageRow','ChatLog','ChatMentionSuggestions','GuildTaggedPlayerName']) {
     h.mocks.set(path.join(app,'src/components',name),{[name]:name});
   }
-  h.mocks.set(path.join(app,'src/components/GameTextInput'),{GameTextInput:'TextInput'});
-  h.mocks.set(path.join(app,'src/components/PartyChatGate'),{PartyChatGate:({children})=>children});
-  h.mocks.set(path.join(app,'src/core/chat-emotes'),{CHAT_MAX_EMOTES_PER_MESSAGE:2,chatEmoteCount:()=>0,chatUnavailableEmoteIds:()=>[]});
 }
 
 async function worldDraftLifecycle() {
@@ -253,14 +357,20 @@ async function worldDraftLifecycle() {
     const input=()=>tree.root.findByType('TextInput');
     await act(async()=>{tree=create(render(0));});
     assert.equal(tree.root.findByType('ChatLog').props.active,true,'visible World wrapper activates its log');
+    assert.equal(chatButton(tree).props.disabled,true,'blank World draft disables Send');
+    await act(async()=>{chatButton(tree).props.onPress();input().props.onSubmitEditing();});
+    assert.equal(sends.length,0,'blank button/keyboard submission does not post a message');
     await act(async()=>{input().props.onChangeText('English draft');});
     await act(async()=>{tree.update(render(1));});
     assert.equal(input().props.value,'','another language starts with its own draft');
     await act(async()=>{input().props.onChangeText('Dutch draft');});
     await act(async()=>{tree.update(render(0));});
     assert.equal(input().props.value,'English draft','switching back retains the previous language draft');
-    await act(async()=>{tree.root.findAllByType('Pressable').find(x=>x.props.accessibilityLabel==='Send message').props.onPress();});
+    await pressChatButton(tree);
     assert.deepEqual(sends,[{id:'en',body:'English draft'}]);
+    assert.equal(chatButton(tree).props.disabled,true,'pending World send disables its button');
+    await act(async()=>{chatButton(tree).props.onPress();input().props.onSubmitEditing();});
+    assert.equal(sends.length,1,'busy button/keyboard submission cannot duplicate an in-flight message');
     await act(async()=>{tree.update(render(1));});
     await act(async()=>{input().props.onChangeText('Dutch draft edited while sending');});
     failRead=true;
@@ -271,6 +381,13 @@ async function worldDraftLifecycle() {
     assert.equal(input().props.value,'','only the acknowledged channel draft is cleared');
     assert.deepEqual(tree.root.findByType('ChatLog').props.items,rows('en'),'failed post-send refresh retains visible history');
     await act(async()=>{input().props.onChangeText('Private alpha draft');});
+    const retainedInput=input(),retainedRows=tree.root.findByType('ChatLog').props.items,readsBeforeHide=reads;
+    await act(async()=>{tree.update(render(0,false));});
+    await act(async()=>{tree.update(render(0,true));});
+    assert.strictEqual(input(),retainedInput,'hiding and showing World keeps the actual composer input mounted');
+    assert.equal(input().props.value,'Private alpha draft','hiding and showing World preserves the draft');
+    assert.strictEqual(tree.root.findByType('ChatLog').props.items,retainedRows,'hiding and showing World preserves cached history');
+    assert.equal(reads,readsBeforeHide,'rapid visibility changes do not reinitialize loaded history');
     await act(async()=>{h.auth.session={user:{id:'bravo'}};tree.update(render(0));});
     assert.equal(input().props.value,'','account change clears previous composer draft');
     assert.deepEqual(tree.root.findByType('ChatLog').props.items,[],'account change cannot display previous cached messages');
@@ -278,8 +395,13 @@ async function worldDraftLifecycle() {
     assert.equal(tree.root.findByType('ChatLog').props.active,false,'hidden World wrapper deactivates its log');
     const pausedReads=reads;await h.tick(60000);
     assert.equal(reads,pausedReads,'inactive world component stops history polling');
+    await act(async()=>{h.auth.session=null;tree.update(render(0));});
+    await act(async()=>{input().props.onChangeText('Signed-out draft');});
+    assert.equal(chatButton(tree).props.disabled,true,'missing account disables the World composer');
+    await act(async()=>{chatButton(tree).props.onPress();input().props.onSubmitEditing();});
+    assert.equal(sends.length,1,'signed-out keyboard/button submission cannot post a message');
     await act(async()=>{tree.unmount();});tree=null;
-    console.log('PASS World composer: per-language drafts, switched pending-send isolation, acknowledged-send/history-error distinction, account reset, inactive polling');
+    console.log('PASS World composer: per-language drafts, blank/busy/account send guards, pending-send isolation, cached hide/show, acknowledged-send/history-error distinction, account reset, inactive polling');
   } finally {if(tree)await act(async()=>tree.unmount());cleanUi();h.restore();}
 }
 
@@ -288,22 +410,36 @@ async function privateChannelVisibility() {
     const h=makeHarness(),cleanUi=uiMocks(h);chatViewMocks(h);let tree;
     try {
       let reads=0,rosterReads=0,marks=0,onRead=0;
+      const sends=[],pendingSend=deferred(),send=(...args)=>{sends.push(args);return pendingSend.promise;};
       const messages=[{id:'m1',account_id:'other',sender_name:'Other player',body:'Private message',created_at:'2026-10-04T22:00:00Z'}];
       const party={id:'party1',members:[{accountId:'alpha',characterName:'Player'}]};
       h.mocks.set(path.join(app,'src/online/PartySocialProvider'),{usePartySocial:()=>({party,accountId:'alpha',refresh:async()=>{}})});
       h.mocks.set(path.join(app,'src/online/social'),{
         guildChatState:async()=>{reads++;return{guild:{id:'guild1',name:'Guild'},messages};},
         guildRoster:async()=>{rosterReads++;return[];},
-        guildChatCommandKey:()=> 'command',sendGuildChat:async()=>{},
+        guildChatCommandKey:()=> 'command',sendGuildChat:send,
         markSocialChatRead:async channel=>{assert.equal(channel,kind);marks++;}
       });
-      h.mocks.set(path.join(app,'src/online/party-social'),{partyChatMessages:async()=>{reads++;return messages;},sendPartyChat:async()=>{},partyCommandKey:()=> 'command'});
+      h.mocks.set(path.join(app,'src/online/party-social'),{partyChatMessages:async()=>{reads++;return messages;},sendPartyChat:send,partyCommandKey:()=> 'command'});
       const name=kind==='guild'?'GuildChat':'OnlinePartyChat';
       const Component=h.load(path.join(app,'src/components',name))[name];
       const render=active=>React.createElement(Component,{active,language:'en',currentPlayerName:'Player',onRead:()=>{onRead++;}});
       await act(async()=>{tree=create(render(true));});
       assert.equal(reads,1);
       assert.equal(tree.root.findByType('ChatLog').props.active,true,'live wrapper passes active to actual log');
+      const input=()=>tree.root.findByType('TextInput');
+      assert.equal(chatButton(tree).props.disabled,true,`${kind} blank draft disables Send`);
+      await act(async()=>{chatButton(tree).props.onPress();input().props.onSubmitEditing();});
+      assert.equal(sends.length,0,`${kind} blank button and keyboard cannot send`);
+      await act(async()=>{input().props.onChangeText('Private draft');});
+      await pressChatButton(tree);
+      assert.equal(sends.length,1);
+      assert.equal(chatButton(tree).props.disabled,true,`${kind} pending send disables its composer`);
+      await act(async()=>{chatButton(tree).props.onPress();input().props.onSubmitEditing();});
+      assert.equal(sends.length,1,`${kind} keyboard/button cannot duplicate a pending send`);
+      await act(async()=>{pendingSend.resolve();});
+      assert.equal(input().props.value,'',`${kind} acknowledgement clears the submitted draft`);
+      const loadedReads=reads;
       await act(async()=>{tree.root.findByType('ChatLog').props.onCaughtUp();});
       assert.equal(marks,1);assert.equal(onRead,1);
       await act(async()=>{tree.update(render(false));});
@@ -311,14 +447,14 @@ async function privateChannelVisibility() {
       await act(async()=>{tree.root.findByType('ChatLog').props.onCaughtUp();});
       assert.equal(marks,1,'stale hidden callbacks do not mark private messages read');
       const pausedRosterReads=rosterReads;await h.tick(60000);
-      assert.equal(reads,1,'hidden private conversation does not poll history');
+      assert.equal(reads,loadedReads,'hidden private conversation does not poll history');
       assert.equal(rosterReads,pausedRosterReads,'hidden guild conversation does not poll mention roster');
       assert.equal(onRead,1,'hidden callbacks do not trigger app notification refresh');
       await act(async()=>{tree.unmount();});tree=null;
       assert.equal(h.timers.size,0);assert.equal(h.appListeners.size,0);
     } finally {if(tree)await act(async()=>tree.unmount());cleanUi();h.restore();}
   }
-  console.log('PASS Guild/Party actual wrappers: log visibility wiring, hidden read suppression, paused histories/roster, no hidden app refresh');
+  console.log('PASS Guild/Party actual wrappers: shared composer blank/busy guards, acknowledged drafts, log visibility wiring, hidden read suppression, paused histories/roster, no hidden app refresh');
 }
 
 async function overlayLifecycle() {
@@ -556,6 +692,7 @@ async function main() {
   await overlayLifecycle();
   await realChatLogVisibility();
   await worldDraftLifecycle();
+  await sharedComposerLifecycle();
   await privateChannelVisibility();
   await partyLifecycle();
   await notificationLifecycle();

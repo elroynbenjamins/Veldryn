@@ -17,6 +17,7 @@ import type {
 } from '../core/party-social';
 import {recruitmentStructuredTags} from '../core/party-social';
 import {supabase} from './supabase';
+import {CHAT_RECENT_MESSAGE_LIMIT} from './chat-history';
 import type {PlayerBadgeIdentity} from '../core/player-badges';
 import {guildIdentities,withChatIdentities} from './social';
 import type {PlayerNameStylePreference} from '../core/player-name-style';
@@ -111,7 +112,7 @@ export const recruitmentMatchAlerts=()=>rpc<RecruitmentMatchAlert[]>('recruitmen
 export const ackRecruitmentMatchAlerts=()=>rpc('ack_recruitment_match_alerts_v1');
 export const sendPartyChat=(id:string,body:string,key:string)=>rpc('send_persistent_party_chat_v16',{p_party_id:id,p_body:body,p_idempotency_key:key});
 export type PartyChatMessage={id:string;account_id:string;sender_name:string;body:string;created_at:string;guild_tag?:string|null;guild_tag_color_id?:string|null;player_name_style?:PlayerNameStylePreference|null;player_badges?:PlayerBadgeIdentity};
-export async function partyChatMessages(id:string){const {data,error}=await client().from('chat_messages').select('id,account_id,sender_name,body,created_at').eq('channel_type','party').eq('channel_id',id).order('created_at',{ascending:false}).order('id',{ascending:false}).limit(50);if(error)throw error;return withChatIdentities(((data??[]) as PartyChatMessage[]).reverse());}
+export async function partyChatMessages(id:string){const {data,error}=await client().from('chat_messages').select('id,account_id,sender_name,body,created_at').eq('channel_type','party').eq('channel_id',id).order('created_at',{ascending:false}).order('id',{ascending:false}).limit(CHAT_RECENT_MESSAGE_LIMIT);if(error)throw error;return withChatIdentities(((data??[]) as PartyChatMessage[]).reverse());}
 
 export async function activePartyEvent(): Promise<PartyEventView|null>{
  const identity=await partySocialIdentity(); if(!identity)return null;

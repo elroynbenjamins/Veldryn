@@ -1,4 +1,5 @@
 import {supabase} from './supabase';
+import {CHAT_RECENT_MESSAGE_LIMIT} from './chat-history';
 import {normalizePlayerBadges,type PlayerBadgeIdentity} from '../core/player-badges';
 import {guildNameError,normalizeGuildName} from '../core/identity-names';
 import type {GuildAppearanceEntitlements,GuildBackgroundId,GuildBannerId,GuildFrameId,GuildNameColorId,GuildNameplateId} from '../core/guild-customization';
@@ -58,7 +59,7 @@ export async function guildIdentities(accountIds:readonly string[]):Promise<Map<
 async function withGuildIdentities<T extends {account_id:string}>(rows:T[]){const identities=await guildIdentities(rows.map(row=>row.account_id));return rows.map(row=>({...row,...identities.get(row.account_id)}));}
 /** Cosmetic identity lookup failure must not hide already-authorized messages. */
 export async function withChatIdentities<T extends {account_id:string}>(rows:T[]):Promise<T[]>{try{return await withGuildIdentities(rows);}catch{return rows;}}
-export async function worldMessages(channelId:string){const client=requireClient();const {data,error}=await client.from('chat_messages').select('id,account_id,sender_name,body,created_at').eq('channel_type','world').eq('channel_id',channelId).order('created_at',{ascending:false}).order('id',{ascending:false}).limit(50);if(error)throw error;return withChatIdentities(((data??[]) as WorldMessage[]).reverse());}
+export async function worldMessages(channelId:string){const client=requireClient();const {data,error}=await client.from('chat_messages').select('id,account_id,sender_name,body,created_at').eq('channel_type','world').eq('channel_id',channelId).order('created_at',{ascending:false}).order('id',{ascending:false}).limit(CHAT_RECENT_MESSAGE_LIMIT);if(error)throw error;return withChatIdentities(((data??[]) as WorldMessage[]).reverse());}
 export async function postWorldMessage(channelId:string,body:string,senderName:string){const client=requireClient();const clean=body.trim();if(!clean)throw new Error('Write a message first.');const {data,error}=await client.rpc('send_world_chat',{p_channel_id:channelId,p_body:clean,p_sender_name:senderName.slice(0,20)||'Adventurer'});if(error)throw error;return data as string;}
 const guildFields='id,name,tag,tag_color_id,level,member_cap,minimum_level,join_policy,banner_id,profile_frame_id,name_color_id,nameplate_id,motto';
 async function readGuildProjection(guildId?:string){
@@ -121,7 +122,7 @@ export async function cancelGuildInvitation(invitationId:string){const client=re
 export async function updateGuildMemberRole(accountId:string,role:'officer'|'member'){const client=requireClient();const {data,error}=await client.rpc('update_guild_member_role_v1',{p_target_account_id:accountId,p_role:role});if(error)throw error;return data as 'officer'|'member';}
 export async function removeGuildMember(accountId:string){const client=requireClient();const {data,error}=await client.rpc('remove_guild_member_v1',{p_target_account_id:accountId});if(error)throw error;return data as 'removed';}
 export function guildChatCommandKey(){return `guild-chat-${Date.now()}-${Math.random().toString(36).slice(2,14)}`;}
-export async function guildChatState(limit=50){const client=requireClient();const {data,error}=await client.rpc('guild_chat_state_v1',{p_limit:limit});if(error)throw error;const state=data as GuildChatState;if(!state?.messages?.length)return state;return {...state,messages:await withChatIdentities(state.messages)};}
+export async function guildChatState(limit=CHAT_RECENT_MESSAGE_LIMIT){const client=requireClient();const {data,error}=await client.rpc('guild_chat_state_v1',{p_limit:limit});if(error)throw error;const state=data as GuildChatState;if(!state?.messages?.length)return state;return {...state,messages:await withChatIdentities(state.messages)};}
 export async function sendGuildChat(body:string,idempotencyKey:string){const client=requireClient();const {data,error}=await client.rpc('send_guild_chat_v1',{p_body:body,p_idempotency_key:idempotencyKey});if(error)throw error;return data as string;}
 export async function socialChatAttention(){const client=requireClient();const {data,error}=await client.rpc('social_chat_attention_state_v1');if(error)throw error;return data as SocialChatAttentionState;}
 export async function markSocialChatRead(channelType:'guild'|'party'){const client=requireClient();const {data,error}=await client.rpc('mark_social_chat_read_v1',{p_channel_type:channelType});if(error)throw error;return data as {channelType:'guild'|'party';channelId:string;readAt:string};}

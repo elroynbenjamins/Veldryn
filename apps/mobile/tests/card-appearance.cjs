@@ -21,11 +21,12 @@ const {GUILD_BACKGROUNDS,normalizeGuildBackgroundId,isGuildCosmeticUnlocked}=loa
 assert.equal(normalizeGuildBackgroundId('not-real'),'plain');assert.equal(normalizeGuildBackgroundId('forest_sanctum'),'forest_sanctum');
 for(const row of GUILD_BACKGROUNDS){assert.equal(isGuildCosmeticUnlocked(row.unlock,{guildLevel:1,bannerGalleryTier:0,pveAchievementIds:[]}),row.id!=='forest_sanctum');assert.ok(isGuildCosmeticUnlocked(row.unlock,{guildLevel:10,bannerGalleryTier:0,pveAchievementIds:[]}))}
 const assets=read('src/theme/card-background-assets.ts');
+const MIN_FULL_CARD_SHORT_EDGE=800;
 for(const id of ['guild_plaza','forest_sanctum']){
  const file=id+'_square.webp',size=imageSize('assets/card-backgrounds/'+file);assert.equal(size.w,size.h);assert.ok(assets.includes(file));
  for(const variant of ['wide_v2','portrait']){
   const variantFile=id+'_'+variant+'.webp',size=imageSize('assets/card-backgrounds/'+variantFile),w=size.w,h=size.h;
-  assert.ok(Math.min(w,h)>=900,'Full-card art must not use the 320px thumbnail');
+  assert.ok(Math.min(w,h)>=MIN_FULL_CARD_SHORT_EDGE,'Full-card art must keep at least an 800px short edge and never use the 320px thumbnail');
   assert.ok(variant==='portrait'?w/h<.8:w/h>1.6);
   assert.ok(assets.includes(variantFile));
  }
@@ -34,7 +35,7 @@ const personalVariants=read('src/theme/card-background-assets.ts');
 for(const id of ['harvestwake','grand_storehouse','kingdom_approach']){
  for(const variant of ['wide_v2','square_v2','portrait']){
   const file=id+'_'+variant+'.webp',size=imageSize('assets/card-backgrounds/'+file),w=size.w,h=size.h;
-  assert.ok(Math.min(w,h)>=900,'Every profile background variant must be high resolution: '+file);
+  assert.ok(Math.min(w,h)>=MIN_FULL_CARD_SHORT_EDGE,'Every profile background variant must keep at least an 800px short edge: '+file);
   assert.ok(variant==='portrait'?w/h<.8:variant==='square_v2'?Math.abs(w/h-1)<.01:w/h>1.6);
   assert.ok(personalVariants.includes(file),'Variant must be registered: '+file);
  }

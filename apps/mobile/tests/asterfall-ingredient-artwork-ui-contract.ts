@@ -11,7 +11,6 @@ ok(mapping.includes("data:image/png;base64,"),'Asterfall ingredient atlas must b
 ok(resolver.includes('hasAsterfallIngredientArtwork(itemId)'),'Shared resolver must recognize Asterfall ingredient atlas');
 const miscIndex=artwork.indexOf('const misc=miscItemCell(itemId)');
 const ingredientIndex=artwork.indexOf('const asterfallIngredient=asterfallIngredientCell(itemId)');
-const runtimeIndex=artwork.indexOf('const runtime=runtimeItemCell(itemId)');
 ok(miscIndex>=0&&ingredientIndex>miscIndex,'Latest misc hide/fang art must keep priority over duplicate ingredient cells');
-ok(runtimeIndex>ingredientIndex,'Unified Asterfall ingredient art must override legacy runtime fallbacks');
-console.log('PASS: unified Asterfall ingredient art replaces older mixed-style ingredient assets safely');
+ok(!artwork.includes('runtimeItemCell(itemId)'),'Legacy runtime atlas fallback must stay removed');
+console.log('PASS: unified Asterfall ingredient art is retained with no legacy runtime atlas fallback');

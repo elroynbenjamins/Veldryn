@@ -1,0 +1,741 @@
+{
+  "file_count": 39,
+  "total_bytes": 94460770,
+  "counts_by_kind": {
+    "wide": 13,
+    "square": 13,
+    "portrait": 13,
+    "other": 0
+  },
+  "bytes_by_kind": {
+    "wide": 31638946,
+    "square": 31499382,
+    "portrait": 31322442,
+    "other": 0
+  },
+  "dimension_counts": {
+    "1024x1536": 13,
+    "1254x1254": 13,
+    "1672x941": 13
+  },
+  "largest_files": [
+    {
+      "path": "apps/mobile/assets/card-backgrounds/forest_sanctum_wide_v2.webp",
+      "name": "forest_sanctum_wide_v2.webp",
+      "kind": "wide",
+      "width": 1672,
+      "height": 941,
+      "aspect": 1.7768,
+      "mode": "RGB",
+      "bytes": 2742464
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/forest_sanctum_square.webp",
+      "name": "forest_sanctum_square.webp",
+      "kind": "square",
+      "width": 1254,
+      "height": 1254,
+      "aspect": 1.0,
+      "mode": "RGB",
+      "bytes": 2665410
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/cosmic_gate_square_v2.webp",
+      "name": "cosmic_gate_square_v2.webp",
+      "kind": "square",
+      "width": 1254,
+      "height": 1254,
+      "aspect": 1.0,
+      "mode": "RGB",
+      "bytes": 2616412
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/bloomwake_portrait.webp",
+      "name": "bloomwake_portrait.webp",
+      "kind": "portrait",
+      "width": 1024,
+      "height": 1536,
+      "aspect": 0.6667,
+      "mode": "RGB",
+      "bytes": 2606016
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/forest_sanctum_portrait.webp",
+      "name": "forest_sanctum_portrait.webp",
+      "kind": "portrait",
+      "width": 1024,
+      "height": 1536,
+      "aspect": 0.6667,
+      "mode": "RGB",
+      "bytes": 2603642
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/kingdom_approach_wide_v2.webp",
+      "name": "kingdom_approach_wide_v2.webp",
+      "kind": "wide",
+      "width": 1672,
+      "height": 941,
+      "aspect": 1.7768,
+      "mode": "RGB",
+      "bytes": 2574570
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/aurora_citadel_square_v2.webp",
+      "name": "aurora_citadel_square_v2.webp",
+      "kind": "square",
+      "width": 1254,
+      "height": 1254,
+      "aspect": 1.0,
+      "mode": "RGB",
+      "bytes": 2553230
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/heartbond_wide_v2.webp",
+      "name": "heartbond_wide_v2.webp",
+      "kind": "wide",
+      "width": 1672,
+      "height": 941,
+      "aspect": 1.7768,
+      "mode": "RGB",
+      "bytes": 2549006
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/cosmic_gate_portrait.webp",
+      "name": "cosmic_gate_portrait.webp",
+      "kind": "portrait",
+      "width": 1024,
+      "height": 1536,
+      "aspect": 0.6667,
+      "mode": "RGB",
+      "bytes": 2536514
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/cosmic_gate_wide_v2.webp",
+      "name": "cosmic_gate_wide_v2.webp",
+      "kind": "wide",
+      "width": 1672,
+      "height": 941,
+      "aspect": 1.7768,
+      "mode": "RGB",
+      "bytes": 2531144
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/kingdom_approach_square_v2.webp",
+      "name": "kingdom_approach_square_v2.webp",
+      "kind": "square",
+      "width": 1254,
+      "height": 1254,
+      "aspect": 1.0,
+      "mode": "RGB",
+      "bytes": 2529668
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/kingdom_approach_portrait.webp",
+      "name": "kingdom_approach_portrait.webp",
+      "kind": "portrait",
+      "width": 1024,
+      "height": 1536,
+      "aspect": 0.6667,
+      "mode": "RGB",
+      "bytes": 2508968
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/aurora_citadel_wide_v2.webp",
+      "name": "aurora_citadel_wide_v2.webp",
+      "kind": "wide",
+      "width": 1672,
+      "height": 941,
+      "aspect": 1.7768,
+      "mode": "RGB",
+      "bytes": 2501904
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/heartbond_portrait.webp",
+      "name": "heartbond_portrait.webp",
+      "kind": "portrait",
+      "width": 1024,
+      "height": 1536,
+      "aspect": 0.6667,
+      "mode": "RGB",
+      "bytes": 2499140
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/bloomwake_square_v2.webp",
+      "name": "bloomwake_square_v2.webp",
+      "kind": "square",
+      "width": 1254,
+      "height": 1254,
+      "aspect": 1.0,
+      "mode": "RGB",
+      "bytes": 2498204
+    }
+  ],
+  "files": [
+    {
+      "path": "apps/mobile/assets/card-backgrounds/aurora_citadel_portrait.webp",
+      "name": "aurora_citadel_portrait.webp",
+      "kind": "portrait",
+      "width": 1024,
+      "height": 1536,
+      "aspect": 0.6667,
+      "mode": "RGB",
+      "bytes": 2445548
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/aurora_citadel_square_v2.webp",
+      "name": "aurora_citadel_square_v2.webp",
+      "kind": "square",
+      "width": 1254,
+      "height": 1254,
+      "aspect": 1.0,
+      "mode": "RGB",
+      "bytes": 2553230
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/aurora_citadel_wide_v2.webp",
+      "name": "aurora_citadel_wide_v2.webp",
+      "kind": "wide",
+      "width": 1672,
+      "height": 941,
+      "aspect": 1.7768,
+      "mode": "RGB",
+      "bytes": 2501904
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/bloomwake_portrait.webp",
+      "name": "bloomwake_portrait.webp",
+      "kind": "portrait",
+      "width": 1024,
+      "height": 1536,
+      "aspect": 0.6667,
+      "mode": "RGB",
+      "bytes": 2606016
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/bloomwake_square_v2.webp",
+      "name": "bloomwake_square_v2.webp",
+      "kind": "square",
+      "width": 1254,
+      "height": 1254,
+      "aspect": 1.0,
+      "mode": "RGB",
+      "bytes": 2498204
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/bloomwake_wide_v2.webp",
+      "name": "bloomwake_wide_v2.webp",
+      "kind": "wide",
+      "width": 1672,
+      "height": 941,
+      "aspect": 1.7768,
+      "mode": "RGB",
+      "bytes": 2391860
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/cosmic_gate_portrait.webp",
+      "name": "cosmic_gate_portrait.webp",
+      "kind": "portrait",
+      "width": 1024,
+      "height": 1536,
+      "aspect": 0.6667,
+      "mode": "RGB",
+      "bytes": 2536514
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/cosmic_gate_square_v2.webp",
+      "name": "cosmic_gate_square_v2.webp",
+      "kind": "square",
+      "width": 1254,
+      "height": 1254,
+      "aspect": 1.0,
+      "mode": "RGB",
+      "bytes": 2616412
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/cosmic_gate_wide_v2.webp",
+      "name": "cosmic_gate_wide_v2.webp",
+      "kind": "wide",
+      "width": 1672,
+      "height": 941,
+      "aspect": 1.7768,
+      "mode": "RGB",
+      "bytes": 2531144
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/forest_sanctum_portrait.webp",
+      "name": "forest_sanctum_portrait.webp",
+      "kind": "portrait",
+      "width": 1024,
+      "height": 1536,
+      "aspect": 0.6667,
+      "mode": "RGB",
+      "bytes": 2603642
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/forest_sanctum_square.webp",
+      "name": "forest_sanctum_square.webp",
+      "kind": "square",
+      "width": 1254,
+      "height": 1254,
+      "aspect": 1.0,
+      "mode": "RGB",
+      "bytes": 2665410
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/forest_sanctum_wide_v2.webp",
+      "name": "forest_sanctum_wide_v2.webp",
+      "kind": "wide",
+      "width": 1672,
+      "height": 941,
+      "aspect": 1.7768,
+      "mode": "RGB",
+      "bytes": 2742464
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/frostfall_portrait.webp",
+      "name": "frostfall_portrait.webp",
+      "kind": "portrait",
+      "width": 1024,
+      "height": 1536,
+      "aspect": 0.6667,
+      "mode": "RGB",
+      "bytes": 2347184
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/frostfall_square_v2.webp",
+      "name": "frostfall_square_v2.webp",
+      "kind": "square",
+      "width": 1254,
+      "height": 1254,
+      "aspect": 1.0,
+      "mode": "RGB",
+      "bytes": 2398496
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/frostfall_wide_v2.webp",
+      "name": "frostfall_wide_v2.webp",
+      "kind": "wide",
+      "width": 1672,
+      "height": 941,
+      "aspect": 1.7768,
+      "mode": "RGB",
+      "bytes": 2496358
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/grand_storehouse_portrait.webp",
+      "name": "grand_storehouse_portrait.webp",
+      "kind": "portrait",
+      "width": 1024,
+      "height": 1536,
+      "aspect": 0.6667,
+      "mode": "RGB",
+      "bytes": 2381886
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/grand_storehouse_square_v2.webp",
+      "name": "grand_storehouse_square_v2.webp",
+      "kind": "square",
+      "width": 1254,
+      "height": 1254,
+      "aspect": 1.0,
+      "mode": "RGB",
+      "bytes": 2435582
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/grand_storehouse_wide_v2.webp",
+      "name": "grand_storehouse_wide_v2.webp",
+      "kind": "wide",
+      "width": 1672,
+      "height": 941,
+      "aspect": 1.7768,
+      "mode": "RGB",
+      "bytes": 2408142
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/guild_plaza_portrait.webp",
+      "name": "guild_plaza_portrait.webp",
+      "kind": "portrait",
+      "width": 1024,
+      "height": 1536,
+      "aspect": 0.6667,
+      "mode": "RGB",
+      "bytes": 2407706
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/guild_plaza_square.webp",
+      "name": "guild_plaza_square.webp",
+      "kind": "square",
+      "width": 1254,
+      "height": 1254,
+      "aspect": 1.0,
+      "mode": "RGB",
+      "bytes": 2340492
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/guild_plaza_wide_v2.webp",
+      "name": "guild_plaza_wide_v2.webp",
+      "kind": "wide",
+      "width": 1672,
+      "height": 941,
+      "aspect": 1.7768,
+      "mode": "RGB",
+      "bytes": 2466162
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/harvestwake_portrait.webp",
+      "name": "harvestwake_portrait.webp",
+      "kind": "portrait",
+      "width": 1024,
+      "height": 1536,
+      "aspect": 0.6667,
+      "mode": "RGB",
+      "bytes": 2427856
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/harvestwake_square_v2.webp",
+      "name": "harvestwake_square_v2.webp",
+      "kind": "square",
+      "width": 1254,
+      "height": 1254,
+      "aspect": 1.0,
+      "mode": "RGB",
+      "bytes": 2390618
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/harvestwake_wide_v2.webp",
+      "name": "harvestwake_wide_v2.webp",
+      "kind": "wide",
+      "width": 1672,
+      "height": 941,
+      "aspect": 1.7768,
+      "mode": "RGB",
+      "bytes": 2483436
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/heartbond_portrait.webp",
+      "name": "heartbond_portrait.webp",
+      "kind": "portrait",
+      "width": 1024,
+      "height": 1536,
+      "aspect": 0.6667,
+      "mode": "RGB",
+      "bytes": 2499140
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/heartbond_square_v2.webp",
+      "name": "heartbond_square_v2.webp",
+      "kind": "square",
+      "width": 1254,
+      "height": 1254,
+      "aspect": 1.0,
+      "mode": "RGB",
+      "bytes": 2445666
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/heartbond_wide_v2.webp",
+      "name": "heartbond_wide_v2.webp",
+      "kind": "wide",
+      "width": 1672,
+      "height": 941,
+      "aspect": 1.7768,
+      "mode": "RGB",
+      "bytes": 2549006
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/kingdom_approach_portrait.webp",
+      "name": "kingdom_approach_portrait.webp",
+      "kind": "portrait",
+      "width": 1024,
+      "height": 1536,
+      "aspect": 0.6667,
+      "mode": "RGB",
+      "bytes": 2508968
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/kingdom_approach_square_v2.webp",
+      "name": "kingdom_approach_square_v2.webp",
+      "kind": "square",
+      "width": 1254,
+      "height": 1254,
+      "aspect": 1.0,
+      "mode": "RGB",
+      "bytes": 2529668
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/kingdom_approach_wide_v2.webp",
+      "name": "kingdom_approach_wide_v2.webp",
+      "kind": "wide",
+      "width": 1672,
+      "height": 941,
+      "aspect": 1.7768,
+      "mode": "RGB",
+      "bytes": 2574570
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/starfall_portrait.webp",
+      "name": "starfall_portrait.webp",
+      "kind": "portrait",
+      "width": 1024,
+      "height": 1536,
+      "aspect": 0.6667,
+      "mode": "RGB",
+      "bytes": 2155492
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/starfall_square_v2.webp",
+      "name": "starfall_square_v2.webp",
+      "kind": "square",
+      "width": 1254,
+      "height": 1254,
+      "aspect": 1.0,
+      "mode": "RGB",
+      "bytes": 2284586
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/starfall_wide_v2.webp",
+      "name": "starfall_wide_v2.webp",
+      "kind": "wide",
+      "width": 1672,
+      "height": 941,
+      "aspect": 1.7768,
+      "mode": "RGB",
+      "bytes": 2188158
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/veilbreak_portrait.webp",
+      "name": "veilbreak_portrait.webp",
+      "kind": "portrait",
+      "width": 1024,
+      "height": 1536,
+      "aspect": 0.6667,
+      "mode": "RGB",
+      "bytes": 2101058
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/veilbreak_square_v2.webp",
+      "name": "veilbreak_square_v2.webp",
+      "kind": "square",
+      "width": 1254,
+      "height": 1254,
+      "aspect": 1.0,
+      "mode": "RGB",
+      "bytes": 2104026
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/veilbreak_wide_v2.webp",
+      "name": "veilbreak_wide_v2.webp",
+      "kind": "wide",
+      "width": 1672,
+      "height": 941,
+      "aspect": 1.7768,
+      "mode": "RGB",
+      "bytes": 2072656
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/volcanic_stronghold_portrait.webp",
+      "name": "volcanic_stronghold_portrait.webp",
+      "kind": "portrait",
+      "width": 1024,
+      "height": 1536,
+      "aspect": 0.6667,
+      "mode": "RGB",
+      "bytes": 2301432
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/volcanic_stronghold_square_v2.webp",
+      "name": "volcanic_stronghold_square_v2.webp",
+      "kind": "square",
+      "width": 1254,
+      "height": 1254,
+      "aspect": 1.0,
+      "mode": "RGB",
+      "bytes": 2236992
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/volcanic_stronghold_wide_v2.webp",
+      "name": "volcanic_stronghold_wide_v2.webp",
+      "kind": "wide",
+      "width": 1672,
+      "height": 941,
+      "aspect": 1.7768,
+      "mode": "RGB",
+      "bytes": 2233086
+    }
+  ],
+  "render_surface_source_evidence": [
+    {
+      "path": "apps/mobile/src/components/ProfileScenePreview.tsx",
+      "snippets": [
+        {
+          "line": 21,
+          "text": "import {CardBackground} from './CardBackground';"
+        },
+        {
+          "line": 37,
+          "text": "{background?<CardBackground sources={personalBackgroundVariants.get(backgroundId)??{wide:background.source,square:background.source}}/>:<RegionArtwork regionId={base!.region}/>}"
+        },
+        {
+          "line": 53,
+          "text": "frame:{width:'100%',maxWidth:480,alignSelf:'center',position:'relative'},"
+        },
+        {
+          "line": 56,
+          "text": "scene:{width:'100%',minHeight:190,alignItems:'center',overflow:'hidden',backgroundColor:C.stage},"
+        },
+        {
+          "line": 57,
+          "text": "character:{position:'absolute',left:20,top:24,width:96,height:96,zIndex:2},"
+        },
+        {
+          "line": 58,
+          "text": "petBadge:{position:'absolute',right:22,bottom:20,zIndex:3},petImage:{width:56,height:56},"
+        }
+      ]
+    },
+    {
+      "path": "apps/mobile/src/components/GuildBackgroundPicker.tsx",
+      "snippets": [
+        {
+          "line": 4,
+          "text": "import {CardBackground} from './CardBackground';"
+        },
+        {
+          "line": 13,
+          "text": "<View style={[s.art,{backgroundColor:C.stage}]}>{sources?<CardBackground sources={sources}/>:null}</View>"
+        },
+        {
+          "line": 19,
+          "text": "const s=StyleSheet.create({grid:{flexDirection:'row',flexWrap:'wrap',gap:8},choice:{minWidth:120,flexBasis:120,flexGrow:1,padding:6,borderWidth:1,borderRadius:8,gap:4},art:{width:'100%',aspectRatio:16/9,overflow:'hidden',borderRadius:4},name:{fontSize:11,fontWeight:'800'},meta:{fontSize:10}});"
+        }
+      ]
+    },
+    {
+      "path": "apps/mobile/src/components/GuildHeraldry.tsx",
+      "snippets": [
+        {
+          "line": 10,
+          "text": "import {CardBackground} from './CardBackground';"
+        },
+        {
+          "line": 17,
+          "text": "return <View accessibilityLabel={visualText(language,'{banner} guild banner',{banner:banner.name})} style={{width:height*.75,height,flexShrink:0,alignItems:'center',justifyContent:'center'}}>"
+        },
+        {
+          "line": 25,
+          "text": "const [size,setSize]=useState({width:0,height:0});"
+        },
+        {
+          "line": 30,
+          "text": "return <View style={s.profile} onLayout={({nativeEvent:{layout}})=>setSize(previous=>previous.width===layout.width&&previous.height===layout.height?previous:{width:layout.width,height:layout.height})}>"
+        },
+        {
+          "line": 31,
+          "text": "<View pointerEvents=\"none\" style={[s.surface,{backgroundColor:C.panel2},!source&&{borderWidth:1,borderColor:frame.accent}]}>{background?<CardBackground sources={background} shade={.64}/>:null}</View>"
+        },
+        {
+          "line": 34,
+          "text": "{segments.map(segment=><View key={segment.key} style={{position:'absolute',overflow:'hidden',left:segment.x,top:segment.y,width:segment.width,height:segment.height}}>"
+        },
+        {
+          "line": 35,
+          "text": "<Image accessible={false} source={source} resizeMode=\"stretch\" style={{position:'absolute',left:segment.imageLeft,top:segment.imageTop,width:segment.imageWidth,height:segment.imageHeight}}/>"
+        },
+        {
+          "line": 45,
+          "text": "return <View style={{width:size,height:size}}>{source?<Image accessible={false} source={source} resizeMode=\"contain\" style={s.fullImage}/>:null}</View>;"
+        },
+        {
+          "line": 48,
+          "text": "fullImage:{...StyleSheet.absoluteFillObject,width:'100%',height:'100%'},"
+        }
+      ]
+    },
+    {
+      "path": "apps/mobile/src/components/CardBackground.tsx",
+      "snippets": [
+        {
+          "line": 3,
+          "text": "import type {CardBackgroundSources} from '../theme/card-background-assets';"
+        },
+        {
+          "line": 4,
+          "text": "import {cardBackgroundVariant,type CardBackgroundVariant} from '../core/card-background-layout';"
+        },
+        {
+          "line": 7,
+          "text": "export function CardBackground({sources,shade=0}:{sources:CardBackgroundSources;shade?:number}){"
+        },
+        {
+          "line": 8,
+          "text": "const [variant,setVariant]=useState<CardBackgroundVariant>('wide');"
+        },
+        {
+          "line": 14,
+          "text": "const styles=StyleSheet.create({fill:{...StyleSheet.absoluteFillObject,width:'100%',height:'100%'}});"
+        }
+      ]
+    },
+    {
+      "path": "apps/mobile/src/components/PublicProfileScene.tsx",
+      "snippets": [
+        {
+          "line": 18,
+          "text": "import {CardBackground} from './CardBackground';"
+        },
+        {
+          "line": 34,
+          "text": "{background?<CardBackground sources={personalBackgroundVariants.get(profile.backgroundId)??{wide:background.source,square:background.source}}/>:base?<RegionArtwork regionId={base.region}/>:null}"
+        },
+        {
+          "line": 52,
+          "text": "card:{width:'100%',maxWidth:480,alignSelf:'center',position:'relative'},"
+        },
+        {
+          "line": 57,
+          "text": "guildAnchor:{position:'absolute',left:22,bottom:20,maxWidth:'58%',zIndex:4},"
+        },
+        {
+          "line": 58,
+          "text": "character:{position:'absolute',left:20,top:24,width:96,height:96,zIndex:2},"
+        },
+        {
+          "line": 59,
+          "text": "pet:{position:'absolute',right:22,bottom:20,width:58,height:58,zIndex:3},"
+        }
+      ]
+    },
+    {
+      "path": "apps/mobile/src/dev/ProfileIdentityReview.tsx",
+      "snippets": [
+        {
+          "line": 8,
+          "text": "import {CardBackground} from '../components/CardBackground';"
+        },
+        {
+          "line": 24,
+          "text": "{!showFormats?<View style={{width:'100%',flexDirection:'row',flexWrap:'wrap',justifyContent:'center',gap:20}}>"
+        },
+        {
+          "line": 25,
+          "text": "<View style={{width,maxWidth:'100%',gap:12}}><Text style={{color:C.accent,fontWeight:'900',textAlign:'center'}}>PERSONAL PROFILE</Text><ProfileScenePreview state={personal} backgroundId=\"bg_forest_sanctum\"/></View>"
+        },
+        {
+          "line": 26,
+          "text": "<View style={{width,maxWidth:'100%',gap:12}}><Text style={{color:C.accent,fontWeight:'900',textAlign:'center'}}>PUBLIC PROFILE</Text><PublicProfileScene profile={{guild,accountId:'preview',displayName:'Aster',visibility:'public',character:{id:'preview',name:'Aster',classId:'IRONWARDEN',level:28,body"
+        },
+        {
+          "line": 28,
+          "text": "{showFormats?<View style={{gap:16,width:'100%'}}>"
+        },
+        {
+          "line": 32,
+          "text": "{([{name:'Landscape',width:240,height:135},{name:'Square',width:180,height:180},{name:'Portrait',width:160,height:240}]).map(shape=><View key={shape.name} style={{gap:6}}>"
+        },
+        {
+          "line": 34,
+          "text": "<View accessibilityLabel={id+' '+shape.name+' background'} style={{width:shape.width,height:shape.height,overflow:'hidden',borderRadius:8}}><CardBackground sources={guildBackgroundSources.get(id)!}/></View>"
+        }
+      ]
+    }
+  ]
+}

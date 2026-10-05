@@ -5,7 +5,6 @@ import {MISC_ITEM_CELL,MISC_ITEM_SHEET_HEIGHT,MISC_ITEM_SHEET_WIDTH,miscItemCell
 import {ASTERFALL_INGREDIENT_CELL,ASTERFALL_INGREDIENT_SHEET_SIZE,asterfallIngredientCell,asterfallIngredientSheet} from '../theme/asterfall-ingredient-assets';
 import {ASTERFALL_ORE_CELL,ASTERFALL_ORE_SHEET_HEIGHT,ASTERFALL_ORE_SHEET_WIDTH,asterfallOreCell,asterfallOreSheet} from '../theme/asterfall-ore-assets';
 import {ASTERFALL_GATHERING_CELL,ASTERFALL_GATHERING_SHEET_HEIGHT,ASTERFALL_GATHERING_SHEET_WIDTH,asterfallGatheringCell,asterfallGatheringSheet} from '../theme/asterfall-gathering-assets';
-import {ASTERFALL_CRAFTED_CELL,ASTERFALL_CRAFTED_SHEET_HEIGHT,ASTERFALL_CRAFTED_SHEET_WIDTH,asterfallCraftedCell,asterfallCraftedSheet} from '../theme/asterfall-crafted-assets';
 import {ARCANE_MATERIAL_CELL,ARCANE_MATERIAL_SHEET_HEIGHT,ARCANE_MATERIAL_SHEET_WIDTH,arcaneMaterialCell,arcaneMaterialSheet} from '../theme/arcane-material-assets';
 import {
   REGIONAL_RESOURCE_CELL,
@@ -69,8 +68,6 @@ export function ResourceArtwork({itemId,size=58,framed=true}:{itemId:string;size
   const asterfallGathering=asterfallGatheringCell(itemId);
   if(asterfallGathering)return <View style={[s.art,{width:size,height:size},framed&&s.frame]}><AtlasCell source={asterfallGatheringSheet} column={asterfallGathering.column} row={asterfallGathering.row} cell={ASTERFALL_GATHERING_CELL} sheetWidth={ASTERFALL_GATHERING_SHEET_WIDTH} sheetHeight={ASTERFALL_GATHERING_SHEET_HEIGHT} size={size}/></View>;
 
-  const asterfallCrafted=asterfallCraftedCell(itemId);
-  if(asterfallCrafted)return <View style={[s.art,{width:size,height:size},framed&&s.frame]}><AtlasCell source={asterfallCraftedSheet} column={asterfallCrafted.column} row={asterfallCrafted.row} cell={ASTERFALL_CRAFTED_CELL} sheetWidth={ASTERFALL_CRAFTED_SHEET_WIDTH} sheetHeight={ASTERFALL_CRAFTED_SHEET_HEIGHT} size={size}/></View>;
 
   const arcaneMaterial=arcaneMaterialCell(itemId);
   if(arcaneMaterial)return <View style={[s.art,{width:size,height:size},framed&&s.frame]}><AtlasCell source={arcaneMaterialSheet} column={arcaneMaterial.column} row={arcaneMaterial.row} cell={ARCANE_MATERIAL_CELL} sheetWidth={ARCANE_MATERIAL_SHEET_WIDTH} sheetHeight={ARCANE_MATERIAL_SHEET_HEIGHT} size={size}/></View>;

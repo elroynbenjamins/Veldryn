@@ -28,8 +28,8 @@ ok(classSkillBonusLabel(7/99)==='+0.07%','Small early-level gains stay visible')
 const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string;existsSync:(path:string)=>boolean};
 const assets=fs.readFileSync('src/theme/class-skill-assets.ts','utf8');
 for(const id of new Set(Object.values(CLASS_SKILLS).flat().map(row=>row.id))){
- ok(assets.includes(`${id}:require('../../assets/class-skill-icons-v1/${id}.png')`),'Dedicated registry entry for '+id);
- ok(fs.existsSync(`assets/class-skill-icons-v1/${id}.png`),'Runtime icon exists for '+id);
+ ok(assets.includes(`${id}:require('../../assets/class-skill-icons-v1/${id}.webp')`),'Dedicated registry entry for '+id);
+ ok(fs.existsSync(`assets/class-skill-icons-v1/${id}.webp`),'Runtime icon exists for '+id);
 }
 const screen=fs.readFileSync('src/screens/SkillsScreen.tsx','utf8');
 ok(screen.includes('classSkillIcon(card.id.slice(6))')&&!screen.includes('classEmblemIconArtwork'),'Skills cards use individual skill art, not duplicate class emblems');

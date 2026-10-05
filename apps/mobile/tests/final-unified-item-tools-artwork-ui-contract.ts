@@ -21,10 +21,10 @@ for(const id of craftedIds)ok(crafted.includes(id+':require('),'Missing direct c
 for(const id of arcaneIds)ok(arcane.includes(id+':'),'Missing unified arcane artwork mapping for '+id);
 for(const id of toolIds)ok(tools.includes(id+':'),'Missing regenerated gathering tool mapping for '+id);
 
-ok(gathering.includes("require('../../assets/asterfall-logs-fish-v1.png')"),'Logs/fish atlas must be bundled');
-ok(crafted.includes("require('../../assets/crafted-items-v1/"),'Crafted items must use direct production PNGs');
+ok(gathering.includes("require('../../assets/asterfall-logs-fish-v1.webp')"),'Logs/fish atlas must be bundled');
+ok(crafted.includes("require('../../assets/crafted-items-v1/"),'Crafted items must use direct production image assets');
 ok(arcane.includes("require('../../assets/arcane-materials-v1.png')"),'Arcane atlas must be bundled');
-ok(tools.includes("require('../../assets/tools/gathering-tools-v2.png')"),'Gathering tools must use v2 regenerated atlas');
+ok(tools.includes("require('../../assets/tools/gathering-tools-v2.webp')"),'Gathering tools must use v2 regenerated atlas');
 
 ok(resolver.includes('hasAsterfallGatheringArtwork(itemId)'),'Shared resolver must recognize logs/fish atlas');
 ok(resolver.includes('hasArcaneMaterialArtwork(itemId)'),'Shared resolver must recognize arcane atlas');
@@ -32,10 +32,10 @@ ok(resolver.includes('hasArcaneMaterialArtwork(itemId)'),'Shared resolver must r
 const fallbackIndex=resourceArtwork.indexOf('const source=resourceIconSource(itemId)');
 for(const needle of ['const asterfallGathering=asterfallGatheringCell(itemId)','const arcaneMaterial=arcaneMaterialCell(itemId)']){
   const index=resourceArtwork.indexOf(needle);
-  ok(fallbackIndex>=0&&index>fallbackIndex,needle+' must remain available after the bundled PNG path');
+  ok(fallbackIndex>=0&&index>fallbackIndex,needle+' must remain available after the bundled image path');
 }
 
 ok(toolArtwork.includes('GATHERING_TOOL_SHEET_WIDTH')&&toolArtwork.includes('GATHERING_TOOL_SHEET_HEIGHT'),'Tool artwork must use explicit v2 atlas dimensions');
 ok(!toolArtwork.includes('ATLAS_ASPECT'),'Old gathering-tool atlas aspect workaround must be removed');
 
-console.log('PASS: Asterfall resources and arcane materials use atlases; crafted items use direct production PNGs; gathering tools use unified artwork');
+console.log('PASS: Asterfall resources and arcane materials use atlases; crafted items use direct production image assets; gathering tools use unified artwork');

@@ -12,5 +12,5 @@ const potions=['DEWLEAF_DRAUGHT','RIVERHEART_DRAUGHT','OATHBLOOM_DRAUGHT','VIGOR
 for(const id of [...herbs,...potions])ok(map.includes(id+':'),'Missing consumable artwork mapping for '+id);
 ok(resolver.includes('hasConsumableArtwork(itemId)'),'Shared resource resolver must recognize herb/potion artwork');
 ok(artwork.includes('consumableArtworkCell(itemId)'),'ResourceArtwork must crop consumable atlas cells');
-ok(map.includes("require('../../assets/consumables-herb-v2.png')")&&map.includes("require('../../assets/consumables-potion-v2.png')"),'Generated herb/potion atlases must be bundled as runtime image sources');
+ok(map.includes("require('../../assets/consumables-herb-v2.webp')")&&map.includes("require('../../assets/consumables-potion-v2.webp')"),'Generated herb/potion atlases must be bundled as runtime image sources');
 console.log('PASS: unified herb and potion artwork is mapped through shared item UI');

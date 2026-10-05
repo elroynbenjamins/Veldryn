@@ -29,6 +29,7 @@ jobs:
         shell: bash
         run: |
           python - <<'PY'
+          from collections import Counter
           from pathlib import Path
           from PIL import Image
           import json
@@ -38,11 +39,12 @@ jobs:
           if len(files) != 60:
               raise SystemExit(f"Expected 60 equipment atlases, found {len(files)}")
 
-          target = (1420, 710)
-          expected_source = (1774, 887)
+          scale = 0.80
           report_files = []
           before_total = 0
           after_total = 0
+          source_dimensions = Counter()
+          target_dimensions = Counter()
 
           for path in files:
               before_bytes = path.stat().st_size
@@ -50,12 +52,18 @@ jobs:
 
               with Image.open(path) as image:
                   image.load()
-                  if image.size != expected_source:
-                      raise SystemExit(f"{path}: expected {expected_source}, found {image.size}")
+                  source_size = image.size
+                  source_dimensions[f"{source_size[0]}x{source_size[1]}"] += 1
+                  target = (
+                      max(1, round(source_size[0] * scale)),
+                      max(1, round(source_size[1] * scale)),
+                  )
+                  target_dimensions[f"{target[0]}x{target[1]}"] += 1
+
                   if image.mode not in ("RGB", "RGBA"):
                       image = image.convert("RGBA")
-                  resized = image.resize(target, Image.Resampling.LANCZOS)
 
+                  resized = image.resize(target, Image.Resampling.LANCZOS)
                   tmp = path.with_suffix(".tmp.webp")
                   save_args = dict(format="WEBP", lossless=True, quality=100, method=6)
                   if image.info.get("icc_profile"):
@@ -65,7 +73,7 @@ jobs:
               with Image.open(tmp) as check:
                   check.load()
                   if check.size != target:
-                      raise SystemExit(f"{path}: output dimension mismatch {check.size}")
+                      raise SystemExit(f"{path}: output dimension mismatch {check.size}, expected {target}")
                   if check.mode not in ("RGB", "RGBA"):
                       raise SystemExit(f"{path}: unexpected output mode {check.mode}")
 
@@ -73,9 +81,10 @@ jobs:
               after_bytes = path.stat().st_size
               after_total += after_bytes
               saved = before_bytes - after_bytes
+
               report_files.append({
                   "path": str(path),
-                  "before_dimensions": list(expected_source),
+                  "before_dimensions": list(source_size),
                   "after_dimensions": list(target),
                   "before_bytes": before_bytes,
                   "after_bytes": after_bytes,
@@ -87,11 +96,12 @@ jobs:
               raise SystemExit("Downscale did not reduce total equipment atlas bytes")
 
           report = {
-              "strategy": "80.05% linear downscale of 5x2 equipment atlases; lossless WebP retained",
+              "strategy": "80% linear downscale per existing equipment atlas; original aspect ratio preserved; lossless WebP retained",
               "filter": "Pillow LANCZOS",
-              "source_dimensions": list(expected_source),
-              "target_dimensions": list(target),
+              "scale": scale,
               "atlas_count": len(files),
+              "source_dimension_counts": dict(sorted(source_dimensions.items())),
+              "target_dimension_counts": dict(sorted(target_dimensions.items())),
               "before_bytes": before_total,
               "after_bytes": after_total,
               "saved_bytes": before_total - after_total,
@@ -103,9 +113,14 @@ jobs:
               json.dumps(report, indent=2) + "\n",
               encoding="utf-8",
           )
-          print(json.dumps({k: report[k] for k in (
-              "atlas_count", "before_bytes", "after_bytes", "saved_bytes", "saved_percent"
-          )}, indent=2))
+          print(json.dumps({
+              "atlas_count": report["atlas_count"],
+              "source_dimension_counts": report["source_dimension_counts"],
+              "before_bytes": report["before_bytes"],
+              "after_bytes": report["after_bytes"],
+              "saved_bytes": report["saved_bytes"],
+              "saved_percent": report["saved_percent"],
+          }, indent=2))
           PY
 
       - name: Verify source references and diff

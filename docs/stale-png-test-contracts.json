@@ -1,0 +1,47 @@
+{
+  "count": 6,
+  "hits": [
+    {
+      "path": "apps/mobile/tests/regional-resource-artwork-ui-contract.ts",
+      "line": 16,
+      "png_literal": "../../assets/regional-resources-v1.png",
+      "webp_candidate": "../../assets/regional-resources-v1.webp",
+      "source_line": "ok(mapping.includes(\"require('../../assets/regional-resources-v1.png')\"),'Regional resource atlas must be a real bundled asset');"
+    },
+    {
+      "path": "apps/mobile/tests/consumable-artwork-ui-contract.ts",
+      "line": 15,
+      "png_literal": "../../assets/consumables-herb-v2.png",
+      "webp_candidate": "../../assets/consumables-herb-v2.webp",
+      "source_line": "ok(map.includes(\"require('../../assets/consumables-herb-v2.png')\")&&map.includes(\"require('../../assets/consumables-potion-v2.png')\"),'Generated herb/potion atlases must be bundled as runtime image sources');"
+    },
+    {
+      "path": "apps/mobile/tests/consumable-artwork-ui-contract.ts",
+      "line": 15,
+      "png_literal": "../../assets/consumables-potion-v2.png",
+      "webp_candidate": "../../assets/consumables-potion-v2.webp",
+      "source_line": "ok(map.includes(\"require('../../assets/consumables-herb-v2.png')\")&&map.includes(\"require('../../assets/consumables-potion-v2.png')\"),'Generated herb/potion atlases must be bundled as runtime image sources');"
+    },
+    {
+      "path": "apps/mobile/tests/final-unified-item-tools-artwork-ui-contract.ts",
+      "line": 24,
+      "png_literal": "../../assets/asterfall-logs-fish-v1.png",
+      "webp_candidate": "../../assets/asterfall-logs-fish-v1.webp",
+      "source_line": "ok(gathering.includes(\"require('../../assets/asterfall-logs-fish-v1.png')\"),'Logs/fish atlas must be bundled');"
+    },
+    {
+      "path": "apps/mobile/tests/final-unified-item-tools-artwork-ui-contract.ts",
+      "line": 27,
+      "png_literal": "../../assets/tools/gathering-tools-v2.png",
+      "webp_candidate": "../../assets/tools/gathering-tools-v2.webp",
+      "source_line": "ok(tools.includes(\"require('../../assets/tools/gathering-tools-v2.png')\"),'Gathering tools must use v2 regenerated atlas');"
+    },
+    {
+      "path": "apps/mobile/tests/monster-portrait-fallback-ui-contract.ts",
+      "line": 14,
+      "png_literal": "../../assets/monsters/regional-monsters-v1.png",
+      "webp_candidate": "../../assets/monsters/regional-monsters-v1.webp",
+      "source_line": "ok(assets.includes(\"require('../../assets/monsters/regional-monsters-v1.png')\"),'Regional monster atlas must be bundled');"
+    }
+  ]
+}

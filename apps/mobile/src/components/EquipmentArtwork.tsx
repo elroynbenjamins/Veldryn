@@ -1,6 +1,6 @@
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {visualText} from '../i18n/visuals';
-import {Image,StyleSheet,Text,View} from 'react-native';
+import {Image,StyleSheet,Text,View,type ImageSourcePropType} from 'react-native';
 import {ItemDef} from '../content/items';
 import {C,radii} from '../theme/theme';
 import {itemRarity,rarityMeta} from '../core/item-rarity';
@@ -8,7 +8,12 @@ import {equipmentArtworkSetByItemId,equipmentSheetBySet} from '../theme/equipmen
 import {hasStarterWeaponArtwork,StarterWeaponArtwork} from './StarterWeaponArtwork';
 
 const slots=['helmet','chest','gloves','legs','boots','weapon','offhand','cape','amulet','ring'] as const;
-const cellAspect=(1774/5)/(887/2);
+const fallbackCellAspect=(1774/5)/(887/2);
+
+export function equipmentSheetCellAspect(sheet:ImageSourcePropType){
+  const resolved=Image.resolveAssetSource(sheet);
+  return resolved?.width>0&&resolved?.height>0?(resolved.width/5)/(resolved.height/2):fallbackCellAspect;
+}
 
 export function hasEquipmentArtwork(item:ItemDef){
   const setId=equipmentArtworkSetByItemId[item.id];
@@ -23,7 +28,7 @@ export function EquipmentArtwork({item,compact=false,framed=true,size:requestedS
   const frameStyle={width:size,height:size,borderColor:meta.color,borderWidth:framed?meta.borderWidth:0,backgroundColor:framed?meta.surface:'transparent'};
   if(hasStarterWeaponArtwork(item.id))return <View accessibilityLabel={tr('{name} equipment artwork',{name:item.name})} style={[s.frame,frameStyle]}><StarterWeaponArtwork itemId={item.id} size={size}/></View>;
   if(sheet&&slotIndex>=0){
-    const cellWidth=size*cellAspect;
+    const cellWidth=size*equipmentSheetCellAspect(sheet);
     return <View accessibilityLabel={tr('{name} equipment artwork',{name:item.name})} style={[s.frame,frameStyle]}><View style={{width:cellWidth,height:size,overflow:'hidden'}}><Image source={sheet} resizeMode="stretch" style={{position:'absolute',width:cellWidth*5,height:size*2,left:-(slotIndex%5)*cellWidth,top:-Math.floor(slotIndex/5)*size}}/></View></View>;
   }
   return <View accessibilityLabel={tr('{name} equipment marker',{name:item.name})} style={[s.frame,frameStyle]}><Text style={[s.marker,{color:meta.color}]}>◇</Text></View>;

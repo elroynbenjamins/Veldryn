@@ -7,6 +7,7 @@ import {coopUiAssets} from '../../theme/coop-ui-assets';
 import {useCoopStyles} from '../../theme/useCoopStyles';
 import type {CoopColors} from '../../theme/coop-ui-theme';
 import {FantasyPanel,PrimaryAction} from './CoopVisualKit';
+import {IdentityArtwork} from '../SocialIdentity';
 
 export type LobbyIdentity={dungeons?:CoopDungeonView[];selfPortrait?:ImageSourcePropType};
 type Props=LobbyIdentity&{queue?:LiveQueueView;ready?:LiveReadyView;notice?:string;busy?:boolean;pending?:boolean;loading?:boolean;onBack:()=>void;onRetry:()=>void;onRetryPending:()=>void;onCancel:()=>void;onAccept:()=>void;onDecline:()=>void};
@@ -42,9 +43,13 @@ export function CoopLiveLobbyView({dungeons=[],selfPortrait,queue,ready,notice='
     {pending?<FantasyPanel><Text style={s.copy}>{st('Your last action is saved. Retry to continue.')}</Text><PrimaryAction label={st('Retry pending action')} disabled={busy} loading={busy} onPress={onRetryPending}/></FantasyPanel>:null}
     {roster?<View style={s.grid}>{liveLobbySlots(queue,ready).map(slot=>{
      const waiting=!slot.member&&!slot.self;
+     const ownPortrait=slot.self&&selfPortrait,memberIcon=!!(slot.member?.profileIconId||slot.member?.iconClassId),hasProfilePortrait=!!ownPortrait||memberIcon;
      const label=slot.accepted?'Accepted':slot.self&&queued?'Queued':slot.member?(slot.self?'Your response needed':'Waiting for response'):'Searching…';
      return <View key={slot.key} style={[s.card,slot.self&&s.selfCard]}>
-      <View style={[s.portrait,waiting&&s.placeholder]}><Image source={slot.self&&selfPortrait?selfPortrait:roleArt[slot.role]} resizeMode="contain" style={s.portraitImage}/>{slot.self&&selfPortrait?<View style={s.roleBadge}><Image source={roleArt[slot.role]} resizeMode="contain" style={s.roleIcon}/></View>:null}</View>
+      <View style={[s.portrait,waiting&&s.placeholder]}>
+       {ownPortrait?<Image source={ownPortrait} resizeMode="contain" style={s.portraitImage}/>:memberIcon?<IdentityArtwork name={slot.self?st('You'):st(roles[slot.role])} profileIconId={slot.member?.profileIconId} className={slot.member?.iconClassId} size={62}/>:<Image source={roleArt[slot.role]} resizeMode="contain" style={s.portraitImage}/>}
+       {hasProfilePortrait?<View style={s.roleBadge}><Image source={roleArt[slot.role]} resizeMode="contain" style={s.roleIcon}/></View>:null}
+      </View>
       <Text style={s.memberName}>{slot.self?st('You'):st(roles[slot.role])}</Text>{slot.self?<Text style={s.muted}>{st(roles[slot.role])}</Text>:null}
       <Text style={[s.memberStatus,slot.accepted?s.accepted:slot.self&&open?s.attention:null]}>{slot.accepted?'✓ ':''}{st(label)}</Text>
      </View>;

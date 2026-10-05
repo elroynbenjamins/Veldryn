@@ -5,6 +5,7 @@ import {combatCompanionDef} from '../../content/combat-companions';
 import {dungeonCombatAvatar} from '../../core/dungeon-combat-avatars';
 import {radii,touchTargetMin,type ThemeColors} from '../../theme/theme';
 import {useGameTheme} from '../../theme/ThemeContext';
+import {IdentityArtwork} from '../SocialIdentity';
 
 export interface CombatantInspectCast{
  label:string;
@@ -19,6 +20,8 @@ export interface CombatantInspectTarget{
  boss?:boolean;
  role?:'tank'|'damage'|'support';
  classId?:string;
+ profileIconId?:string|null;
+ iconClassId?:string|null;
  companionId?:string;
  currentHp?:number;
  maximumHp?:number;
@@ -52,6 +55,7 @@ export function CombatantInspectPanel({target,onClose}:{target:CombatantInspectT
  const hpKnown=target.currentHp!==undefined&&target.maximumHp!==undefined&&target.maximumHp>0;
  return <View style={s.panel} accessibilityLabel={`Combat details for ${target.name}`}>
   <View style={s.header}>
+   {target.kind==='party'?<IdentityArtwork name={target.name} profileIconId={target.profileIconId} className={target.iconClassId??target.classId} size={40}/>:null}
    <View style={s.headerCopy}><Text style={s.kicker}>{st("COMBAT INSPECT")}</Text><Text numberOfLines={1} style={s.name}>{target.name}</Text>{subtitle?<Text numberOfLines={1} style={s.subtitle}>{subtitle}</Text>:null}</View>
    <Pressable accessibilityRole="button" accessibilityLabel={st("Close combat details")} onPress={onClose} style={({pressed})=>[s.close,pressed&&s.pressed]}><Text style={s.closeText}>×</Text></Pressable>
   </View>

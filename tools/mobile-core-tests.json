@@ -190,5 +190,6 @@
   ".core-build/apps/mobile/tests/chat-feed-cache.js",
   "../../tools/validate-chat-transport.mjs",
   "tests/auth-account-link.cjs",
-  "../../tools/validate-chat-lifecycle.cjs"
+  "../../tools/validate-chat-lifecycle.cjs",
+  "../../tools/validate-coop-profile-icons.cjs"
 ]

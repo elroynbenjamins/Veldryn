@@ -24,10 +24,10 @@ const assets=read('src/theme/card-background-assets.ts');
 for(const id of ['guild_plaza','forest_sanctum']){
  const file=id+'_square.webp',size=imageSize('assets/card-backgrounds/'+file);assert.equal(size.w,size.h);assert.ok(assets.includes(file));
  for(const variant of ['wide_v2','portrait']){
-  const bytes=fs.readFileSync(path.join(root,'assets/card-backgrounds',id+'_'+variant+'.png')),w=bytes.readUInt32BE(16),h=bytes.readUInt32BE(20);
+  const variantFile=id+'_'+variant+'.webp',size=imageSize('assets/card-backgrounds/'+variantFile),w=size.w,h=size.h;
   assert.ok(Math.min(w,h)>=900,'Full-card art must not use the 320px thumbnail');
   assert.ok(variant==='portrait'?w/h<.8:w/h>1.6);
-  assert.ok(assets.includes(file));
+  assert.ok(assets.includes(variantFile));
  }
 }
 const personalVariants=read('src/theme/card-background-assets.ts');

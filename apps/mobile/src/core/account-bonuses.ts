@@ -41,7 +41,7 @@ const multiplierLabels:ReadonlyArray<[keyof ReturnType<typeof characterPermanent
  ['dungeonRewardMultiplier','Dungeon rewards','increase'],
  ['guildContributionMultiplier','Guild contribution','increase'],
  ['skillXpMultiplier','Skill XP','increase'],
- ['characterXpMultiplier','Character XP','increase'],
+ ['characterXpMultiplier','Combat XP','increase'],
  ['goldMultiplier','Gold','increase'],
  ['dropChanceMultiplier','Drop chance','increase'],
 ];

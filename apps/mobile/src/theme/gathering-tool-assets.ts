@@ -3,7 +3,7 @@ import type {ImageSourcePropType} from 'react-native';
 export const GATHERING_TOOL_CELL=64;
 export const GATHERING_TOOL_SHEET_WIDTH=256;
 export const GATHERING_TOOL_SHEET_HEIGHT=192;
-export const gatheringToolAtlas:ImageSourcePropType=require('../../assets/tools/gathering-tools-v2.png');
+export const gatheringToolAtlas:ImageSourcePropType=require('../../assets/tools/gathering-tools-v2.webp');
 
 export interface GatheringToolCell{column:0|1|2|3;row:0|1|2}
 export const gatheringToolCells:Record<string,GatheringToolCell>={

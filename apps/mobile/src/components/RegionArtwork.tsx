@@ -10,7 +10,7 @@ export function RegionArtwork({regionId,muted=false}:{regionId:string;muted?:boo
   const left=Math.min(0,Math.max(size.width-width,size.width/2-zone.x*width));
   const top=Math.min(0,Math.max(size.height-height,size.height/2-zone.y*height));
   return <View accessible={false} pointerEvents="none" onLayout={event=>{const {width,height}=event.nativeEvent.layout;setSize(old=>old.width===width&&old.height===height?old:{width,height});}} style={[StyleSheet.absoluteFill,s.crop,muted&&{opacity:.4}]}>
-    {size.width>0&&<Image source={require('../../assets/world/asterfall-map-v1.png')} resizeMode="stretch" fadeDuration={0} style={{position:'absolute',width,height,left,top}}/>}
+    {size.width>0&&<Image source={require('../../assets/world/asterfall-map-v1.webp')} resizeMode="stretch" fadeDuration={0} style={{position:'absolute',width,height,left,top}}/>}
   </View>;
 }
 const s=StyleSheet.create({crop:{overflow:'hidden',backgroundColor:'#101a24'}});

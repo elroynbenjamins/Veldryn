@@ -3,8 +3,8 @@ import type {ImageSourcePropType} from 'react-native';
 export const CONSUMABLE_ART_CELL=48;
 export const CONSUMABLE_ART_SHEET_SIZE=144;
 
-export const herbArtworkSheet:ImageSourcePropType=require('../../assets/consumables-herb-v2.png');
-export const potionArtworkSheet:ImageSourcePropType=require('../../assets/consumables-potion-v2.png');
+export const herbArtworkSheet:ImageSourcePropType=require('../../assets/consumables-herb-v2.webp');
+export const potionArtworkSheet:ImageSourcePropType=require('../../assets/consumables-potion-v2.webp');
 
 export type ConsumableArtworkSheet='herb'|'potion';
 export interface ConsumableArtworkCell{sheet:ConsumableArtworkSheet;column:number;row:number;}

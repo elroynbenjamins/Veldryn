@@ -32,7 +32,7 @@ export function CoopLiveLobbyView({dungeons=[],selfPortrait,queue,ready,notice='
   <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled">
    <View style={[s.hero,{height:Math.max(190,Math.min(280,height*.30))}]}>
     {art?<Image source={art} resizeMode="cover" style={[StyleSheet.absoluteFillObject,{width:'100%',height:'100%'}]}/>:null}
-    <Image source={require('../../../assets/coop-ui/illustrations/hero-shade.png')} resizeMode="stretch" style={[StyleSheet.absoluteFillObject,{width:'100%',height:'100%'}]}/>
+    <Image source={require('../../../assets/coop-ui/illustrations/hero-shade.webp')} resizeMode="stretch" style={[StyleSheet.absoluteFillObject,{width:'100%',height:'100%'}]}/>
     <Pressable accessibilityRole="button" accessibilityLabel={st('Back to expeditions')} onPress={onBack} style={({pressed})=>[s.back,pressed&&s.pressed]}><Text style={s.backText}>‹ {st('Expeditions')}</Text></Pressable>
     <View style={s.heroTitle}><Text accessibilityRole="header" style={s.dungeonTitle}>{dungeon?.name??st('Live expedition')}</Text><Text style={s.location}>{[dungeon?.region,tier?`${st(queued?'Auto Tier up to':'Tier')} ${tier}`:st('Live party')].filter(Boolean).join(' · ')}</Text></View>
    </View>

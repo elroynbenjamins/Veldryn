@@ -7,7 +7,7 @@ export function DiscordButton({label,onPress}:{label:string;onPress:()=>void}){
   return <Pressable accessibilityRole="link" accessibilityLabel={label} onPress={onPress}
     onFocus={()=>setFocused(true)} onBlur={()=>setFocused(false)}
     style={({pressed})=>[s.button,pressed&&s.pressed,focused&&s.focused]}>
-    <Image source={require('../../assets/brands/discord-symbol-white.png')} accessible={false} resizeMode="contain" style={s.logo}/>
+    <Image source={require('../../assets/brands/discord-symbol-white.webp')} accessible={false} resizeMode="contain" style={s.logo}/>
     <Text style={s.label}>{label}</Text>
   </Pressable>;
 }

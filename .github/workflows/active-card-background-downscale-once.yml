@@ -1,0 +1,107 @@
+name: One-time active card background downscale
+
+on:
+  push:
+    branches:
+      - optimize/active-card-backgrounds
+
+permissions:
+  contents: write
+
+jobs:
+  downscale:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: optimize/active-card-backgrounds
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Pillow
+        run: python -m pip install --disable-pip-version-check pillow
+      - name: Downscale active card backgrounds
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+          import json
+
+          active={
+              "guild_plaza",
+              "forest_sanctum",
+              "harvestwake",
+              "grand_storehouse",
+              "kingdom_approach",
+          }
+          scale=.85
+          root=Path("apps/mobile/assets/card-backgrounds")
+          files=[]
+          for p in sorted(root.glob("*.webp")):
+              if any(p.name.startswith(stem+"_") for stem in active):
+                  files.append(p)
+          if len(files)!=15:
+              raise SystemExit(f"Expected 15 active card backgrounds, found {len(files)}")
+
+          rows=[]
+          before_total=after_total=0
+          for p in files:
+              before=p.stat().st_size
+              before_total+=before
+              with Image.open(p) as im:
+                  im.load()
+                  source=im.size
+                  target=(max(1,round(source[0]*scale)),max(1,round(source[1]*scale)))
+                  resized=im.resize(target,Image.Resampling.LANCZOS)
+                  tmp=p.with_suffix(".tmp.webp")
+                  resized.save(tmp,format="WEBP",lossless=True,quality=100,method=6)
+              with Image.open(tmp) as check:
+                  check.load()
+                  if check.size!=target:
+                      raise SystemExit(f"{p}: output dimension mismatch {check.size} != {target}")
+                  if check.mode not in ("RGB","RGBA"):
+                      raise SystemExit(f"{p}: unexpected output mode {check.mode}")
+              tmp.replace(p)
+              after=p.stat().st_size
+              after_total+=after
+              rows.append({
+                  "path":str(p),
+                  "before_dimensions":list(source),
+                  "after_dimensions":list(target),
+                  "before_bytes":before,
+                  "after_bytes":after,
+                  "saved_bytes":before-after,
+                  "saved_percent":round((before-after)/before*100,2),
+              })
+
+          if after_total>=before_total:
+              raise SystemExit("Active background downscale did not reduce bytes")
+
+          report={
+              "strategy":"85% linear downscale of active live card-background variants; lossless WebP retained",
+              "scale":scale,
+              "active_theme_count":len(active),
+              "file_count":len(files),
+              "before_bytes":before_total,
+              "after_bytes":after_total,
+              "saved_bytes":before_total-after_total,
+              "saved_percent":round((before_total-after_total)/before_total*100,2),
+              "largest_after":sorted(rows,key=lambda r:r["after_bytes"],reverse=True)[:10],
+              "files":rows,
+          }
+          Path("docs/active-card-background-downscale-report.json").write_text(json.dumps(report,indent=2)+"\n",encoding="utf-8")
+          print(json.dumps({k:report[k] for k in ("file_count","before_bytes","after_bytes","saved_bytes","saved_percent")},indent=2))
+          PY
+      - name: Verify active background references and diff
+        run: |
+          grep -q "guild_plaza_wide_v2.webp" apps/mobile/src/theme/card-background-assets.ts
+          grep -q "kingdom_approach_portrait.webp" apps/mobile/src/theme/card-background-assets.ts
+          git diff --check
+      - name: Commit optimized backgrounds
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/mobile/assets/card-backgrounds docs/active-card-background-downscale-report.json
+          git commit -m "perf(mobile): reduce active card background resolution"
+          git push origin HEAD:optimize/active-card-backgrounds

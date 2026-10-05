@@ -430,6 +430,16 @@ async function dungeonRosterIdentityRendering() {
     assert.deepEqual(tree.root.findAllByType('IdentityArtwork').map(node => node.props.profileIconId), ['starter:hooded-ranger'], 'only an actual disclosed ready member receives the remote icon');
     assert.equal(tree.root.findAllByType('Image').filter(node => node.props.source?.kind === 'self').length, 1, 'local selected portrait remains visible');
     assert.equal(tree.root.findAllByType('Image').filter(node => node.props.source?.kind === 'role').length, 4, 'self/remote role badges and both empty-role placeholders remain');
+    await h.tick(1500);
+    assert.ok(text(tree).includes('29s'), 'ready countdown advances from the server clock');
+    const refreshedReady = {...ready, members: ready.members.map(member => member.self ? member : {...member, profileIconId: 'creature:IRONWOOD_WOLF'})};
+    await act(async () => { tree.update(React.createElement(CoopLiveLobbyView, {...callbacks, ready: refreshedReady, selfPortrait: {kind: 'self'}})); });
+    assert.ok(text(tree).includes('29s'), 'an icon-only refresh cannot rewind the ready countdown');
+    await h.tick(1000);
+    await act(async () => { tree.update(React.createElement(CoopLiveLobbyView, {...callbacks, ready: {...refreshedReady}, busy: true, notice: 'Checking party', selfPortrait: {kind: 'self'}})); });
+    assert.ok(text(tree).includes('28s'), 'unrelated screen changes retain elapsed ready time');
+    await act(async () => { tree.update(React.createElement(CoopLiveLobbyView, {...callbacks, ready: {...refreshedReady, serverNow: 10000}, selfPortrait: {kind: 'self'}})); });
+    assert.ok(text(tree).includes('20s'), 'a new authoritative server clock rebases the countdown');
     await act(async () => { tree.update(React.createElement(CoopLiveLobbyView, {...callbacks, ready: {...ready, status: 'refilling'}, selfPortrait: {kind: 'self'}})); });
     assert.equal(tree.root.findAllByType('IdentityArtwork').length, 0, 'a departed member icon does not remain on a waiting refill slot');
     await act(async () => { tree.unmount(); }); tree = null;

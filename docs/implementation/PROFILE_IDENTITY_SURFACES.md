@@ -77,6 +77,8 @@ Account/scope/roster changes, backgrounding, errors, explicit nulls, and missing
 rows clear previous metadata. Late responses cannot cross these boundaries.
 An initial unknown native AppState permits the first read; offline fixtures and
 disabled consumers do not send requests.
+The Live ready countdown is anchored to authoritative clock/deadline fields;
+cosmetic-only roster updates and unrelated busy/notice renders cannot rewind it.
 
 ## Verification for this change
 
@@ -88,6 +90,7 @@ disabled consumers do not send requests.
   in `tools/mobile-core-tests.json` for the complete CI suite.
 - `node tools/validate-dungeon-combat-lifecycle.cjs` passed all five suites,
   including ready/LFG/overview/inspection rendering, same-replay icon refresh,
+  ready-countdown continuity across icon refreshes and server-clock updates,
   and actual combat-card layout contracts at 320/360/390px with 100% and 150%
   text. The legacy source contract accepts the optional scene-layout lookup;
   runtime assertions verify the resulting scene and portrait dimensions.

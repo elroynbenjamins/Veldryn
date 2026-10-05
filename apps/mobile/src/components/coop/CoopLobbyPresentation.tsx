@@ -18,7 +18,8 @@ const roleArt={tank:coopUiAssets.role_tank,damage:coopUiAssets.role_damage,suppo
 export function CoopLiveLobbyView({dungeons=[],selfPortrait,queue,ready,notice='',busy=false,pending=false,loading=false,onBack,onRetry,onRetryPending,onCancel,onAccept,onDecline}:Props){
  const {colors:C,styles:s}=useCoopStyles(makeStyles),st=useSocialText(),{height}=useWindowDimensions();
  const [elapsed,setElapsed]=useState(0);
- useEffect(()=>{setElapsed(0);if(!ready||!['open','refilling'].includes(ready.status))return;const received=Date.now();const timer=setInterval(()=>setElapsed(Math.max(0,Date.now()-received)),250);return()=>clearInterval(timer);},[ready]);
+ // Cosmetic refreshes may replace the roster view without advancing server time.
+ useEffect(()=>{setElapsed(0);if(!ready||!['open','refilling'].includes(ready.status))return;const received=Date.now();const timer=setInterval(()=>setElapsed(Math.max(0,Date.now()-received)),250);return()=>clearInterval(timer);},[ready?.readyCheckId,ready?.status,ready?.serverNow,ready?.closesAtMs,ready?.refillEndsAtMs]);
  const seconds=ready?readySecondsRemaining({...ready,serverNow:ready.serverNow+elapsed}):0;
  const status=ready?.status??queue?.ticket?.status;
  const ended=!!status&&['expired','cancelled','requeued'].includes(status);

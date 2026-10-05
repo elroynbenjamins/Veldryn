@@ -17,6 +17,10 @@ const env={SUPABASE_URL:'https://test.invalid',SUPABASE_ANON_KEY:'public-test',S
   GOOGLE_PLAY_SERVICE_ACCOUNT_JSON:JSON.stringify({client_email:'test@example.invalid',private_key:privateKey.export({type:'pkcs8',format:'pem'})})};
 const purchases=new Map(),googleResponses=new Map(),historicalOwners=new Map(),accountLinks=new Map(),processedMessages=new Set();
 let handler,anonymous=false,authValid=true;
+let rtdnLookupFailure=null;
+const runtimeLogs=[];
+const captureLog=level=>(...args)=>runtimeLogs.push({level,args});
+const runtimeConsole={...console,log:captureLog('log'),warn:captureLog('warn'),error:captureLog('error')};
 let acknowledgements=0,oauthRequests=0,recordCalls=0,rpcCalls=0,networkCalls=0,jwksRequests=0;
 const accountId='test-account';
 let signedInAccount=accountId;
@@ -35,7 +39,10 @@ const client={
     if(name==='google_play_register_account_link_v1'){accountLinks.set(args.p_obfuscated_account_id,args.p_account_id);return {data:null,error:null};}
     if(name==='google_play_purchase_owner_v1')return {data:purchases.get(args.p_purchase_token)?.p_account_id??historicalOwners.get(args.p_purchase_token)??null,error:null};
     if(name==='google_play_account_from_obfuscated_v1')return {data:accountLinks.get(args.p_obfuscated_account_id)??null,error:null};
-    if(name==='google_play_rtdn_processed_v1')return {data:processedMessages.has(args.p_message_id),error:null};
+    if(name==='google_play_rtdn_processed_v1'){
+      if(rtdnLookupFailure)throw rtdnLookupFailure;
+      return {data:processedMessages.has(args.p_message_id),error:null};
+    }
     if(name==='google_play_mark_rtdn_processed_v1'){processedMessages.add(args.p_message_id);return {data:null,error:null};}
     if(name==='commerce_entitlements_self_v1')return {data:entitlements(),error:null};
     if(name==='google_play_tokens_for_account_v1')return {data:[...purchases.values()].filter(row=>row.p_account_id===args.p_account_id).map(row=>({purchase_token:row.p_purchase_token,product_id:row.p_product_id,product_type:row.p_product_type})),error:null};
@@ -50,7 +57,7 @@ const client={
     throw new Error('Unexpected RPC '+name);
   },
 };
-const context=vm.createContext({console,Response,Request,URL,URLSearchParams,TextEncoder,TextDecoder,Uint8Array,Date,Error,atob,btoa,crypto:webcrypto,
+const context=vm.createContext({console:runtimeConsole,Response,Request,URL,URLSearchParams,TextEncoder,TextDecoder,Uint8Array,Date,Error,atob,btoa,crypto:webcrypto,
   Deno:{env:{get:name=>env[name]},serve:fn=>{handler=fn;}},
   fetch:async(url,init)=>{
     networkCalls++;
@@ -175,9 +182,9 @@ const rtdnHandler=handler;
 const issuedAt=Math.floor(Date.now()/1000);
 const jwtPart=value=>Buffer.from(JSON.stringify(value)).toString('base64url');
 const defaultAudience='https://test.invalid/functions/v1/play-billing-rtdn';
-function signedOidc(overrides={}){
+function signedOidc(overrides={},headerOverrides={}){
   const claims={iss:'https://accounts.google.com',aud:defaultAudience,email:'pubsub@example.invalid',email_verified:true,iat:issuedAt,exp:issuedAt+3600,...overrides};
-  const unsigned=jwtPart({alg:'RS256',kid:oidcKey.kid})+'.'+jwtPart(claims);
+  const unsigned=jwtPart({alg:'RS256',kid:oidcKey.kid,...headerOverrides})+'.'+jwtPart(claims);
   return unsigned+'.'+sign('RSA-SHA256',Buffer.from(unsigned),privateKey).toString('base64url');
 }
 let nextMessage=0;
@@ -237,6 +244,50 @@ for(const [claims,pattern] of [
 const badSignature=signedOidc().split('.'),signatureBytes=Buffer.from(badSignature[2],'base64url');
 signatureBytes[0]^=0xff;badSignature[2]=signatureBytes.toString('base64url');
 await rejectedNotification(badSignature.join('.'),/Invalid Pub\/Sub OIDC signature/);
+
+// Log only allowlisted reason codes. The existing response and database gates
+// remain unchanged, including when an arbitrary error resembles an auth error.
+for(const [token,message,reason] of [
+  ['', 'Missing Pub/Sub OIDC bearer token','missing_bearer'],
+  [signedOidc({}, {alg:'HS256'}),'Invalid Pub/Sub OIDC algorithm','invalid_algorithm'],
+  [signedOidc({}, {kid:'unknown-fixture-key'}),'Unknown Pub/Sub OIDC signing key','unknown_signing_key'],
+  [badSignature.join('.'),'Invalid Pub/Sub OIDC signature','invalid_signature'],
+  [signedOidc({iss:'https://private-issuer.invalid'}),'Invalid Pub/Sub OIDC issuer','invalid_issuer'],
+  [signedOidc({exp:issuedAt-60}),'Expired Pub/Sub OIDC token','invalid_time'],
+  [signedOidc({aud:'https://private-audience.invalid/secret'}),'Invalid Pub/Sub OIDC audience','audience_mismatch'],
+  [signedOidc({email:'private-sender@example.invalid'}),'Invalid Pub/Sub OIDC service account','service_account_mismatch'],
+]){
+  const beforeLogs=runtimeLogs.length,beforeRpc=rpcCalls,beforeRecords=recordCalls,beforeJournal=processedMessages.size;
+  const response=await rtdnHandler(notificationRequest(token));
+  assert.equal(response.status,401,'Diagnostics must preserve authentication rejection');
+  assert.equal(await response.text(),message,'Diagnostics must preserve the existing response body');
+  assert.deepEqual(runtimeLogs.slice(beforeLogs),[{level:'warn',args:['[play-billing-rtdn] Authentication rejected: '+reason]}],'Each rejection logs exactly one static reason code');
+  assert.equal(rpcCalls,beforeRpc,'Rejected authentication must not reach the database');
+  assert.equal(recordCalls,beforeRecords);assert.equal(processedMessages.size,beforeJournal,'Rejected authentication must not write to the notification journal');
+}
+const privateError='Invalid Pub/Sub OIDC audience private-error-token private-sender@example.invalid';
+const beforeUnknownLogs=runtimeLogs.length,beforeUnknownRecords=recordCalls,beforeUnknownJournal=processedMessages.size;
+rtdnLookupFailure=new Error(privateError);
+const unknownErrorResponse=await rtdnHandler(notificationRequest());
+rtdnLookupFailure=null;
+assert.equal(unknownErrorResponse.status,401,'Existing error classification is unchanged');
+assert.equal(await unknownErrorResponse.text(),privateError,'Existing arbitrary-error response is unchanged');
+assert.equal(runtimeLogs.length,beforeUnknownLogs,'A partial message match must never log arbitrary errors');
+assert.equal(recordCalls,beforeUnknownRecords);assert.equal(processedMessages.size,beforeUnknownJournal);
+
+const beforeAcceptedLogs=runtimeLogs.length;
+const acceptedRequest=notificationRequest(),duplicateRequest=acceptedRequest.clone();
+assert.equal((await rtdnHandler(acceptedRequest)).status,204);
+assert.deepEqual(runtimeLogs.slice(beforeAcceptedLogs),[{level:'log',args:['[play-billing-rtdn] Test notification accepted']}],'Accepted tests have a static diagnostic after successful journal recording');
+const afterAcceptedLogs=runtimeLogs.length,afterAcceptedJournal=processedMessages.size;
+assert.equal((await rtdnHandler(duplicateRequest)).status,204);
+assert.equal(runtimeLogs.length,afterAcceptedLogs,'Duplicates retain their early return without a second acceptance marker');
+assert.equal(processedMessages.size,afterAcceptedJournal);
+const pendingRefundData=Buffer.from(JSON.stringify({packageName:'com.elroybenjamins.veldryn',pendingRefundReviewNotification:{}})).toString('base64');
+const pendingRefundRequest=new Request(defaultAudience,{method:'POST',headers:{authorization:'Bearer '+signedOidc(),'content-type':'application/json'},body:JSON.stringify({message:{data:pendingRefundData,messageId:'isolated-pending-refund-review'}})});
+assert.equal((await rtdnHandler(pendingRefundRequest)).status,204);
+assert.equal(runtimeLogs.length,afterAcceptedLogs,'Pending refund review does not emit a test-acceptance marker');
+assert.ok(processedMessages.has('isolated-pending-refund-review'),'Pending refund review retains normal journal processing');
 
 // Google omits linkedPurchaseToken for re-subscriptions bought in the Play Store
 // after expiry. Its owner hints disappear after acknowledgement, so exercise the
@@ -314,4 +365,4 @@ assert.equal((await rtdn(pendingResubscribe.purchaseToken)).status,204);
 assert.equal(purchases.get(pendingResubscribe.purchaseToken).p_entitlement_active,false,'Resolving a known owner never grants pending access');
 assert.equal(acknowledgements,beforePendingAck,'Pending re-subscriptions remain unacknowledged');
 
-console.log('PASS: real billing and RTDN handlers + Google parser, mocked transports: default/explicit RTDN audiences, server-origin validation, signed OIDC rejection and routing-header isolation, credential readiness, independent tiers, retired products, pending/acknowledgement, refunds/outages, 9 subscription states, authenticated Play Store re-subscription, ownership persistence after acknowledgement, conflicting owner rejection and unknown-owner retries');
+console.log('PASS: real billing and RTDN handlers + Google parser, mocked transports: allowlisted auth diagnostics and static test acceptance, default/explicit RTDN audiences, server-origin validation, signed OIDC rejection and routing-header isolation, credential readiness, independent tiers, retired products, pending/acknowledgement, refunds/outages, 9 subscription states, authenticated Play Store re-subscription, ownership persistence after acknowledgement, conflicting owner rejection and unknown-owner retries');

@@ -60,13 +60,14 @@ Both entries in `backend/supabase/config.toml` use `verify_jwt = false` because 
 3. Grant the billing permissions documented by Google: **View financial data, orders, and cancellation survey responses** and **Manage orders and subscriptions**.
 4. Create a JSON key and store it only as the Supabase secret `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`. Do not put it in Git, the mobile app, screenshots or diagnostic output.
 
-Server configuration:
+Required server configuration:
 
 ```text
 GOOGLE_PLAY_SERVICE_ACCOUNT_JSON=<complete service-account JSON>
-GOOGLE_PLAY_RTDN_AUDIENCE=https://nyjwigipamnvpdvpauuv.supabase.co/functions/v1/play-billing-rtdn
 GOOGLE_PLAY_RTDN_PUSH_SERVICE_ACCOUNT_EMAIL=<Pub/Sub push service-account email>
 ```
+
+`GOOGLE_PLAY_RTDN_AUDIENCE` is optional for the standard endpoint. If absent or blank, the handler derives its single expected audience from the trusted `SUPABASE_URL` origin plus `/functions/v1/play-billing-rtdn`. The base must be an HTTPS origin with no credentials, path, query or fragment; a normal trailing slash is accepted. No request URL, header or token claim can change the expected audience. A nonblank explicit override takes precedence and must exactly match the Pub/Sub subscription's audience, including any custom domain or path.
 
 `GOOGLE_PLAY_PACKAGE_NAME` is optional and defaults to `com.elroybenjamins.veldryn`; any override must match the actual Play package. The Supabase runtime must also supply `SUPABASE_URL`, the normal service-role/secret key, and public/publishable key. Privileged keys stay on the server.
 
@@ -80,7 +81,7 @@ Configure Google Play RTDN to publish **subscriptions and one-time products** to
 https://nyjwigipamnvpdvpauuv.supabase.co/functions/v1/play-billing-rtdn
 ```
 
-Enable OIDC delivery with a dedicated push service account. Set its audience exactly to the URL above, and set `GOOGLE_PLAY_RTDN_PUSH_SERVICE_ACCOUNT_EMAIL` to that account's email. The notification sender and Google Play Developer API service account have different responsibilities; configure each explicitly.
+Enable OIDC delivery with a dedicated push service account. Use the URL above as its audience, or leave the Pub/Sub audience unset so Google uses that push endpoint URL by default. Set `GOOGLE_PLAY_RTDN_PUSH_SERVICE_ACCOUNT_EMAIL` to the push account's email; it remains required. For a custom audience, also set the matching `GOOGLE_PLAY_RTDN_AUDIENCE` override in Supabase. The notification sender and Google Play Developer API service account have different responsibilities; configure each explicitly.
 
 The handler supports subscription, one-time product, voided-purchase and Play test notifications. Ordinary purchase/subscription notifications trigger Google verification; their payload is not accepted as proof of active access. Successful Pub/Sub message IDs are retained to suppress duplicate work. Voided purchases revoke or re-fetch the affected purchase. Configure the topic's Google Play publisher permission and test authenticated push delivery using Google's documented procedure.
 
@@ -126,13 +127,23 @@ Production deployment to `nyjwigipamnvpdvpauuv` on 2026-10-04:
 
 The production database already had the billing RPCs and independent product constraints. Neither billing Edge Function was deployed before this repair. No migration replay was needed. A read-back confirmed that the tested redeemed account still has VIP, VIP+ and Supporter. The security-advisor comparison added no findings.
 
-**Remaining production configuration:** set `GOOGLE_PLAY_RTDN_AUDIENCE` to the notification endpoint documented above, configure the authenticated Pub/Sub sender, and verify the Google service-account configuration and Play Console permissions. The audience is confirmed missing; the available read-back does not establish whether the other Google settings are present or valid. Do not interpret deployment or an unauthenticated probe as a successful paid-purchase or notification-delivery test.
+The initial deployment was blocked by the missing audience setting. The 2026-10-05 follow-up below supersedes that configuration finding. Do not interpret deployment or an unauthenticated probe as a successful paid-purchase or notification-delivery test.
 
 Full mobile typecheck, the `test:pre-codex` smoke gate, backend typecheck/build and online typecheck passed. The focused ownership, entitlement, appearance feedback and name-style persistence tests passed. Both billing suites are registered in mobile CI, and the new command-progress test is registered in the core manifest. CI results are reported on the change's pull request.
 
 The focused tests do not prove live Google credentials, Play app permissions, RTDN delivery, native checkout or real billing success. No real payment was made and no Play Console price was changed by these tests.
 
 Useful integrated client checks include `commerce-purchase-readiness`, `vip-supporter-entitlements` and `command-progress-feedback` through `tools/run-mobile-tests.mjs`, plus the full mobile typecheck. Keep the test claims separate from any outstanding CI or device checks.
+
+## RTDN audience follow-up — 2026-10-05
+
+Deployed `play-billing-rtdn` version 2 to `nyjwigipamnvpdvpauuv`. Both deployed files match the reviewed source; the handler entrypoint is unchanged. The shared Google implementation now derives the standard audience when no override is set, while preserving the exact audience, Google signature, issuer, expiry and configured sender checks.
+
+The shared module passed strict TypeScript validation. The extended `node tools/test-play-billing.mjs` suite passed default/explicit audience, invalid origin, missing sender, signed-token rejection and request-header isolation cases, alongside the existing billing/ownership tests. Configuration failures were verified to occur before network or database access.
+
+The production probe at **2026-10-05 07:58:12 UTC** passed audience resolution and returned `Missing server secret: GOOGLE_PLAY_RTDN_PUSH_SERVICE_ACCOUNT_EMAIL`. Startup diagnostics from that same version reported `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` and `GOOGLE_PLAY_RTDN_PUSH_SERVICE_ACCOUNT_EMAIL` as missing or invalid, without logging their values. The JSON diagnostic means the credential is absent or fails basic parsing/shape validation; it does not distinguish those cases.
+
+**Remaining production setup:** configure the actual authenticated Pub/Sub sender email and supply a valid Google Play service-account JSON credential through Supabase Secrets, then verify the Play permissions and real notification delivery. The normal endpoint no longer requires `GOOGLE_PLAY_RTDN_AUDIENCE`. No mobile/AAB change is needed for this server repair.
 
 ## Required Play test pass
 
@@ -165,5 +176,6 @@ Google Play handles payments and localized prices/currencies. VELDRYN stores the
 - [Subscription purchase API and out-of-app context](https://developers.google.com/android-publisher/api-ref/rest/v3/purchases.subscriptionsv2#OutOfAppPurchaseContext)
 - [Real-time Developer Notifications](https://developer.android.com/google/play/billing/rtdn-reference)
 - [Pub/Sub authenticated push](https://cloud.google.com/pubsub/docs/authenticate-push-subscriptions)
+- [Pub/Sub OIDC audience default](https://docs.cloud.google.com/pubsub/docs/reference/rest/v1/projects.subscriptions#OidcToken)
 - [Supabase Edge Function authentication](https://supabase.com/docs/guides/functions/auth)
 - [OpenIAP purchase request contract](https://openiap.dev/docs/apis/request-purchase)

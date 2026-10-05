@@ -17,7 +17,7 @@ const env={SUPABASE_URL:'https://test.invalid',SUPABASE_ANON_KEY:'public-test',S
   GOOGLE_PLAY_SERVICE_ACCOUNT_JSON:JSON.stringify({client_email:'test@example.invalid',private_key:privateKey.export({type:'pkcs8',format:'pem'})})};
 const purchases=new Map(),googleResponses=new Map(),historicalOwners=new Map(),accountLinks=new Map(),processedMessages=new Set();
 let handler,anonymous=false,authValid=true;
-let acknowledgements=0,oauthRequests=0,recordCalls=0,rpcCalls=0;
+let acknowledgements=0,oauthRequests=0,recordCalls=0,rpcCalls=0,networkCalls=0,jwksRequests=0;
 const accountId='test-account';
 let signedInAccount=accountId;
 const obfuscated=Buffer.from(await webcrypto.subtle.digest('SHA-256',new TextEncoder().encode('veldryn:'+accountId))).toString('hex');
@@ -50,11 +50,12 @@ const client={
     throw new Error('Unexpected RPC '+name);
   },
 };
-const context=vm.createContext({console,Response,Request,URLSearchParams,TextEncoder,TextDecoder,Uint8Array,Date,Error,atob,btoa,crypto:webcrypto,
+const context=vm.createContext({console,Response,Request,URL,URLSearchParams,TextEncoder,TextDecoder,Uint8Array,Date,Error,atob,btoa,crypto:webcrypto,
   Deno:{env:{get:name=>env[name]},serve:fn=>{handler=fn;}},
   fetch:async(url,init)=>{
+    networkCalls++;
     if(url==='https://oauth2.googleapis.com/token'){oauthRequests++;return Response.json({access_token:'test-token',expires_in:3600});}
-    if(url==='https://www.googleapis.com/oauth2/v3/certs')return Response.json({keys:[oidcKey]});
+    if(url==='https://www.googleapis.com/oauth2/v3/certs'){jwksRequests++;return Response.json({keys:[oidcKey]});}
     assert.ok(url.startsWith('https://androidpublisher.googleapis.com/'),'Unexpected external request');
     if(url.endsWith(':acknowledge')){
       const token=decodeURIComponent(url.split('/tokens/')[1].slice(0,-':acknowledge'.length));
@@ -110,7 +111,7 @@ env.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON=JSON.stringify({client_email:'fixture@examp
 assert.equal((await call({action:'prepare',productId:'vip'})).body.error,'GOOGLE_PLAY_BILLING_NOT_CONFIGURED','Invalid signing keys block checkout before payment');
 env.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON=configuredCredentials;
 assert.equal((await call({action:'context'})).body.checkoutAvailable,true,'Configured checkout is declared separately from owned benefits');
-await assert.rejects(()=>google.verifyGooglePubSubOidc(new Request('https://test.invalid/play-billing-rtdn')),/GOOGLE_PLAY_RTDN_AUDIENCE/,'Missing webhook authentication fails closed');
+await assert.rejects(()=>google.verifyGooglePubSubOidc(new Request('https://test.invalid/play-billing-rtdn')),/GOOGLE_PLAY_RTDN_PUSH_SERVICE_ACCOUNT_EMAIL/,'Default audience never removes the required notification sender');
 
 const vip=oneTime('vip-token','vip'),plus=oneTime('plus-token','vip_plus');
 assert.equal((await call({action:'prepare',productId:'vip_plus'})).status,200);
@@ -167,18 +168,81 @@ for(const [state,expiry,active] of [
   assert.equal(parsed.entitlementActive,active,state+' with '+expiry);
 }
 
-// Google omits linkedPurchaseToken for re-subscriptions bought in the Play Store
-// after expiry. Its owner hints disappear after acknowledgement, so exercise the
-// actual webhook and client handler before and after that transition.
-env.GOOGLE_PLAY_RTDN_AUDIENCE='https://test.invalid/play-billing-rtdn';
+// Verify the configured project audience without trusting the incoming URL/Host.
 env.GOOGLE_PLAY_RTDN_PUSH_SERVICE_ACCOUNT_EMAIL='pubsub@example.invalid';
 load(path.join(root,'backend/supabase/functions/play-billing-rtdn/index.ts'));
 const rtdnHandler=handler;
 const issuedAt=Math.floor(Date.now()/1000);
 const jwtPart=value=>Buffer.from(JSON.stringify(value)).toString('base64url');
-const unsigned=jwtPart({alg:'RS256',kid:oidcKey.kid})+'.'+jwtPart({iss:'https://accounts.google.com',aud:env.GOOGLE_PLAY_RTDN_AUDIENCE,email:env.GOOGLE_PLAY_RTDN_PUSH_SERVICE_ACCOUNT_EMAIL,email_verified:true,iat:issuedAt,exp:issuedAt+3600});
-const oidcToken=unsigned+'.'+sign('RSA-SHA256',Buffer.from(unsigned),privateKey).toString('base64url');
+const defaultAudience='https://test.invalid/functions/v1/play-billing-rtdn';
+function signedOidc(overrides={}){
+  const claims={iss:'https://accounts.google.com',aud:defaultAudience,email:'pubsub@example.invalid',email_verified:true,iat:issuedAt,exp:issuedAt+3600,...overrides};
+  const unsigned=jwtPart({alg:'RS256',kid:oidcKey.kid})+'.'+jwtPart(claims);
+  return unsigned+'.'+sign('RSA-SHA256',Buffer.from(unsigned),privateKey).toString('base64url');
+}
 let nextMessage=0;
+const testNotification=Buffer.from(JSON.stringify({packageName:'com.elroybenjamins.veldryn',testNotification:{version:'1.0'}})).toString('base64');
+function notificationRequest(token=signedOidc(),url=defaultAudience,headers={}){
+  return new Request(url,{method:'POST',headers:{authorization:'Bearer '+token,'content-type':'application/json',...headers},body:JSON.stringify({message:{data:testNotification,messageId:'audience-message-'+(++nextMessage)}})});
+}
+async function rejectedNotification(token,pattern,status=401,url=defaultAudience,headers={},beforeNetwork=false){
+  const beforeRpc=rpcCalls,beforeFetch=networkCalls;
+  await assert.rejects(()=>google.verifyGooglePubSubOidc(notificationRequest(token,url,headers)),pattern);
+  const response=await rtdnHandler(notificationRequest(token,url,headers));
+  assert.equal(response.status,status,'Invalid audience/authentication must not reach notification processing');
+  assert.match(await response.text(),pattern);
+  assert.equal(rpcCalls,beforeRpc,'Rejected notification must never reach the database');
+  if(beforeNetwork)assert.equal(networkCalls,beforeFetch,'Invalid server configuration must fail before any network request');
+}
+const configuredBase=env.SUPABASE_URL;
+assert.equal(jwksRequests,0,'Configuration rejection cases run before the first signing-key request');
+for(const invalidBase of [undefined,'','   ','not-a-url','http://test.invalid','https://user@test.invalid','https://:password@test.invalid','https://user:password@test.invalid','https://test.invalid/nested','https://test.invalid?query=value','https://test.invalid?','https://test.invalid#fragment','https://test.invalid#']){
+  if(invalidBase===undefined)delete env.SUPABASE_URL;else env.SUPABASE_URL=invalidBase;
+  const pattern=!invalidBase?.trim()?/Missing server secret: SUPABASE_URL/:/Invalid server configuration: SUPABASE_URL must be an HTTPS origin/;
+  await rejectedNotification(signedOidc(),pattern,500,defaultAudience,{},true);
+}
+env.SUPABASE_URL=configuredBase;
+for(const missingSender of [undefined,'   ']){
+  if(missingSender===undefined)delete env.GOOGLE_PLAY_RTDN_PUSH_SERVICE_ACCOUNT_EMAIL;else env.GOOGLE_PLAY_RTDN_PUSH_SERVICE_ACCOUNT_EMAIL=missingSender;
+  await rejectedNotification(signedOidc(),/GOOGLE_PLAY_RTDN_PUSH_SERVICE_ACCOUNT_EMAIL/,500,defaultAudience,{},true);
+}
+env.GOOGLE_PLAY_RTDN_PUSH_SERVICE_ACCOUNT_EMAIL='pubsub@example.invalid';
+assert.equal(jwksRequests,0,'Missing base/sender never requests Google keys');
+for(const [audienceSetting,base] of [[undefined,'https://test.invalid'],['   ','https://test.invalid/'],[undefined,' https://test.invalid/ ']]){
+  if(audienceSetting===undefined)delete env.GOOGLE_PLAY_RTDN_AUDIENCE;else env.GOOGLE_PLAY_RTDN_AUDIENCE=audienceSetting;
+  env.SUPABASE_URL=base;
+  assert.equal((await google.verifyGooglePubSubOidc(notificationRequest())).aud,defaultAudience,'Unset/blank audience derives the canonical project endpoint');
+  assert.equal((await rtdnHandler(notificationRequest())).status,204,'Default audience accepts an authenticated Play test notification');
+}
+const explicitAudience='https://custom.invalid/approved-push-endpoint';
+env.GOOGLE_PLAY_RTDN_AUDIENCE='  '+explicitAudience+'  ';
+env.SUPABASE_URL='not-an-origin';
+assert.equal((await google.verifyGooglePubSubOidc(notificationRequest(signedOidc({aud:explicitAudience})))).aud,explicitAudience,'Trimmed explicit audience takes precedence over base URL');
+env.SUPABASE_URL=configuredBase;
+assert.equal((await rtdnHandler(notificationRequest(signedOidc({aud:explicitAudience})))).status,204,'Handler honors explicit audience');
+await rejectedNotification(signedOidc(),/Invalid Pub\/Sub OIDC audience/);
+delete env.GOOGLE_PLAY_RTDN_AUDIENCE;
+const spoofHeaders={host:'host-spoof.invalid',forwarded:'proto=https;host=forwarded.invalid','x-forwarded-host':'forwarded.invalid','x-forwarded-proto':'https'};
+const spoofUrl='https://request-spoof.invalid/arbitrary-route';
+assert.equal((await google.verifyGooglePubSubOidc(notificationRequest(signedOidc(),spoofUrl,spoofHeaders))).aud,defaultAudience,'Host/forwarded headers and request URL do not replace the configured project');
+assert.equal((await rtdnHandler(notificationRequest(signedOidc(),spoofUrl,spoofHeaders))).status,204,'Handler authenticates against server configuration, not routing headers');
+for(const aud of [spoofUrl,'https://host-spoof.invalid/functions/v1/play-billing-rtdn','https://forwarded.invalid/functions/v1/play-billing-rtdn'])await rejectedNotification(signedOidc({aud}),/Invalid Pub\/Sub OIDC audience/,401,spoofUrl,spoofHeaders);
+for(const [claims,pattern] of [
+  [{aud:'https://wrong.invalid'},/Invalid Pub\/Sub OIDC audience/],
+  [{email:'other@example.invalid'},/Invalid Pub\/Sub OIDC service account/],
+  [{iss:'https://wrong-issuer.invalid'},/Invalid Pub\/Sub OIDC issuer/],
+  [{exp:issuedAt-60},/Expired Pub\/Sub OIDC token/],
+  [{email_verified:false},/Invalid Pub\/Sub OIDC service account/],
+])await rejectedNotification(signedOidc(claims),pattern);
+const badSignature=signedOidc().split('.'),signatureBytes=Buffer.from(badSignature[2],'base64url');
+signatureBytes[0]^=0xff;badSignature[2]=signatureBytes.toString('base64url');
+await rejectedNotification(badSignature.join('.'),/Invalid Pub\/Sub OIDC signature/);
+
+// Google omits linkedPurchaseToken for re-subscriptions bought in the Play Store
+// after expiry. Its owner hints disappear after acknowledgement, so exercise the
+// actual webhook and client handler before and after that transition.
+env.GOOGLE_PLAY_RTDN_AUDIENCE='https://test.invalid/play-billing-rtdn';
+const oidcToken=signedOidc({aud:env.GOOGLE_PLAY_RTDN_AUDIENCE});
 async function rtdn(token,authorization='Bearer '+oidcToken){
   const data=Buffer.from(JSON.stringify({packageName:'com.elroybenjamins.veldryn',subscriptionNotification:{notificationType:4,purchaseToken:token}})).toString('base64');
   const response=await rtdnHandler(new Request('https://test.invalid/play-billing-rtdn',{method:'POST',headers:{authorization,'content-type':'application/json'},body:JSON.stringify({message:{data,messageId:'isolated-message-'+(++nextMessage)}})}));
@@ -250,4 +314,4 @@ assert.equal((await rtdn(pendingResubscribe.purchaseToken)).status,204);
 assert.equal(purchases.get(pendingResubscribe.purchaseToken).p_entitlement_active,false,'Resolving a known owner never grants pending access');
 assert.equal(acknowledgements,beforePendingAck,'Pending re-subscriptions remain unacknowledged');
 
-console.log('PASS: real billing and RTDN handlers + Google parser, mocked transports: credential readiness, independent tiers, retired products, pending/acknowledgement, refunds/outages, 9 subscription states, authenticated Play Store re-subscription, ownership persistence after acknowledgement, conflicting owner rejection and unknown-owner retries');
+console.log('PASS: real billing and RTDN handlers + Google parser, mocked transports: default/explicit RTDN audiences, server-origin validation, signed OIDC rejection and routing-header isolation, credential readiness, independent tiers, retired products, pending/acknowledgement, refunds/outages, 9 subscription states, authenticated Play Store re-subscription, ownership persistence after acknowledgement, conflicting owner rejection and unknown-owner retries');

@@ -78,20 +78,28 @@ ok(picker.includes('headingRowStack')&&picker.includes('actionsStack')&&picker.i
 const message=read('src/components/ChatMessageText.tsx');
 ok(message.includes('chatEmoteArtwork')&&message.includes('<Image key={index}'),'Chat messages must render custom emote artwork inline');
 
+// The requested compact composer keeps input, emote, and Send on one row.
+// Actual narrow/large-text layout properties and controls are also exercised
+// through the production components in validate-chat-lifecycle.cjs.
+const composer=read('src/components/ChatComposer.tsx');
+ok(composer.includes("flexDirection:'row',flexWrap:'nowrap'")&&composer.includes('input:{flex:1,minWidth:0}'),'Shared composer must keep its actions inline while allowing the input to shrink');
+ok(composer.includes('send:{width:touchTargetPreferred,minHeight:touchTargetPreferred,flexShrink:0'),'Inline Send must retain the preferred touch target instead of shrinking with the input');
+ok(picker.includes('compactToggle:{width:touchTargetPreferred,minHeight:touchTargetPreferred,flexShrink:0'),'Compact emote trigger must retain its preferred touch target');
+ok(composer.includes('usedCount={chatEmoteCount(value)}')&&composer.includes('renderTrigger={row}'),'Shared composer must count draft emotes and put its trigger in the input row');
+ok(picker.includes('{renderTrigger?renderTrigger(trigger):trigger}')&&picker.includes("root:{width:'100%',minWidth:0}"),'Expanded emote tray must stay in its full-width container outside the input row');
+
 for(const path of ['src/components/OnlineWorldChat.tsx','src/components/GuildChat.tsx','src/components/OnlinePartyChat.tsx']){
  const source=read(path);
  ok(source.includes('CHAT_MAX_EMOTES_PER_MESSAGE'),'Live channel must use the canonical two-emote limit: '+path);
  ok(source.includes('Use at most 2 emotes in one message.'),'Live channel must explain the two-emote cap: '+path);
- ok(source.includes('usedCount={chatEmoteCount('),'Live picker must know how many emotes are already in the draft: '+path);
- ok(source.includes('trayIds={trayIds}')&&source.includes('onTrayChange={onTrayChange}'),'Live channel must use the persisted editable tray: '+path);
- ok(source.includes('useWindowDimensions')&&source.includes("stackCompose=width<360||fontScale>=1.25"),'Live chat compose must adapt to narrow phones and large text: '+path);
- ok(source.includes('composeStack')&&source.includes('composeActionsStack'),'Live chat input and action row must stack instead of squeezing: '+path);
+ ok(source.includes('<ChatComposer')&&source.includes('emotes={{'),'Live channels must use the shared inline composer and emote configuration: '+path);
+ ok(source.includes('trayIds')&&source.includes('onTrayChange')&&source.includes('onPick:'),'Live channel must supply the persisted tray and its draft insertion callback: '+path);
+ ok(!source.includes('composeStack')&&!source.includes('composeActionsStack'),'Live channels must keep Send beside the emote trigger rather than reintroducing stacked actions: '+path);
 }
 const offline=read('src/components/WorldChat.tsx');
 ok(offline.includes('CHAT_MAX_EMOTES_PER_MESSAGE')&&offline.includes('Use at most 2 emotes in one message.'),'Offline/local chat must mirror the two-emote production rule');
-ok(offline.includes('trayIds={trayIds}')&&offline.includes('usedCount={chatEmoteCount(text)}'),'Offline/local picker must mirror the five-slot production tray');
-ok(offline.includes('useWindowDimensions')&&offline.includes("stackCompose=width<360||fontScale>=1.25"),'Offline/local chat compose must adapt to narrow phones and large text');
-ok(offline.includes('composeStack')&&offline.includes('composeActionsStack'),'Offline/local chat input and actions must stack instead of squeezing');
+ok(offline.includes('<ChatComposer')&&offline.includes('emotes={{')&&offline.includes('onPick:'),'Offline/local chat must use the same inline composer and editable tray');
+ok(!offline.includes('composeStack')&&!offline.includes('composeActionsStack'),'Offline/local chat must keep the same inline action arrangement');
 
 const migration=read('../../backend/supabase/migrations/20261018000180_chat_emote_limit_v1.sql');
 ok(migration.includes('before insert or update of body on public.chat_messages'),'Server emote policy must guard every chat_messages write path');

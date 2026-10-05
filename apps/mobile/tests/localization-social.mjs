@@ -48,7 +48,7 @@ for(const language of SUPPORTED_LANGUAGES){
 }
 
 const screens=['FriendsScreen','GuildScreen','SocialScreen','RankingsScreen','ArenaScreen','CoopExpeditionScreen'];
-const flat=fs.readdirSync(path.join(root,'src/components')).filter(name=>name.endsWith('.tsx')&&((/^(Guild|OnlineGuild|Party|OnlineParty|Social|Recruitment|LiveDungeon)/.test(name)&&name!=='SocialIdentity.tsx')||['ChatDock.tsx','ChatOverlay.tsx','ChatPlayerSheet.tsx','ChatEmotePicker.tsx','ChatMentionSuggestions.tsx','OnlineWorldChat.tsx','WorldChat.tsx','SharedWorldHubPanel.tsx','ArenaBattleStage.tsx','ChatLog.tsx'].includes(name)));
+const flat=fs.readdirSync(path.join(root,'src/components')).filter(name=>name.endsWith('.tsx')&&((/^(Guild|OnlineGuild|Party|OnlineParty|Social|Recruitment|LiveDungeon)/.test(name)&&name!=='SocialIdentity.tsx')||['ChatComposer.tsx','ChatDock.tsx','ChatOverlay.tsx','ChatPlayerSheet.tsx','ChatEmotePicker.tsx','ChatMentionSuggestions.tsx','OnlineWorldChat.tsx','WorldChat.tsx','SharedWorldHubPanel.tsx','ArenaBattleStage.tsx','ChatLog.tsx'].includes(name)));
 const files=[...screens.map(name=>'src/screens/'+name+'.tsx'),...flat.map(name=>'src/components/'+name),...fs.readdirSync(path.join(root,'src/components/coop')).filter(name=>name.endsWith('.tsx')&&!name.includes('Gallery')).map(name=>'src/components/coop/'+name)];
 const technical=new Set(['type','kind','mode','icon','id','key','testID','tone','accessibilityRole','keyboardType','autoCapitalize','resizeMode','pointerEvents','statusTone']);
 function hasTranslation(node){

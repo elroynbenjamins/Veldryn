@@ -6,6 +6,7 @@ const read=(path:string)=>fs.readFileSync(path,'utf8');
 const app=read('App.tsx');
 const guildScreen=read('src/screens/GuildScreen.tsx');
 const chat=read('src/components/GuildChat.tsx');
+const composer=read('src/components/ChatComposer.tsx');
 const onlineProjects=read('src/components/OnlineGuildProjectsPanel.tsx');
 const projectClient=read('src/online/guild-projects-v18.ts');
 const projectTransport=read('../../backend/supabase/migrations/20261018000165_guild_project_interactions_v1.sql');
@@ -66,7 +67,8 @@ ok(projectTransport.includes('GUILD_WEEKLY_PROJECT_ALREADY_ACTIVE'),'Server must
 ok(chat.includes('MEMBERS ONLY'),'Guild Chat must keep member-only context');
 ok(chat.includes('GuildTaggedPlayerName name={guild.name}'),'Guild Chat header must use the shared Guild identity treatment');
 ok(chat.includes('<ChatMessageRow')&&read('src/components/ChatMessageRow.tsx').includes('rolePill'),"Guild Chat roles must use compact semantic role pills");
-ok(chat.includes('<GameButton compact title={busy?'),'Guild Chat send action must remain compact');
+ok(chat.includes('<ChatComposer')&&chat.includes('busy={busy}')&&chat.includes('onSend={onSend}'),'Guild Chat must use the shared composer with its existing send and busy state');
+ok(composer.includes('width:touchTargetPreferred')&&composer.includes('minHeight:touchTargetPreferred')&&composer.includes('flexShrink:0'),'Guild Chat send action must retain a compact, accessible touch target');
 
 ok(activity.includes('kindGood')&&activity.includes('kindWarning')&&activity.includes('kindInfo'),'Guild activity kinds must use semantic status surfaces');
 ok(activity.includes('No recent Guild activity'),'Guild activity feed must have a useful empty state');

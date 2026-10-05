@@ -1,9 +1,8 @@
 import {useSocialText} from '../i18n/social';
 import {useEffect,useMemo,useRef,useState} from 'react';
-import {Alert,AppState,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
-import {GameTextInput as TextInput} from './GameTextInput';
+import {Alert,AppState,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from './GameButton';
-import {ChatEmotePicker} from './ChatEmotePicker';
+import {ChatComposer} from './ChatComposer';
 import {ChatMessageRow} from './ChatMessageRow';
 import {ChatPlayerSheet} from './ChatPlayerSheet';
 import {GuildTaggedPlayerName} from './GuildTaggedPlayerName';
@@ -51,14 +50,13 @@ export function GuildChatView({active=true,language,currentPlayerName,unlockedEm
  guild:GuildChatState['guild'];messages:readonly GuildChatMessage[];body:string;onBodyChange:(value:string)=>void;mentionNames?:string[];busy?:boolean;error?:string;onSend:()=>void;onRetry?:()=>void;onSelectMessage?:(message:GuildChatMessage)=>void;onCaughtUp?:()=>void;
 }){
  const st=useSocialText();
- const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width:windowWidth,fontScale}=useWindowDimensions();
- const [width,setContentWidth]=useState(windowWidth),stackCompose=width<360||fontScale>=1.25;
- return <View style={s.root} onLayout={event=>setContentWidth(event.nativeEvent.layout.width)}>
+ const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
+ return <View style={s.root}>
   <View style={s.header}><View style={s.grow}><Text style={s.eyebrow}>{st("GUILD CHANNEL")}</Text>{guild?<GuildTaggedPlayerName name={guild.name} guildTag={guild.tag} tagColorId={guild.tagColorId} style={s.title}/>:<Text numberOfLines={1} style={s.title}>{ot(language,'chat.guild')}</Text>}</View><View style={s.securePill}><Text style={s.secure}>{st("MEMBERS ONLY")}</Text></View></View>
   <ChatLog active={active} channelKey={guild?.id??'guild:none'} items={messages} firstUnreadMessageId={firstUnreadMessageId} emptyText={st("No Guild messages yet. Start the conversation.")} onCaughtUp={onCaughtUp} renderItem={message=><ChatMessageRow accountId={message.account_id} name={message.sender_name} body={message.body} createdAt={message.created_at} guildTag={message.guild_tag} tagColorId={message.guild_tag_color_id} nameStyle={message.player_name_style} badges={message.player_badges} role={message.guild_role} mentionName={currentPlayerName} onPress={()=>onSelectMessage?.(message)} reduceMotion={reduceMotion}/>} />
   {!!error&&<View accessibilityRole="alert" style={s.errorCard}><Text style={s.errorLabel}>{st("GUILD CHAT UNAVAILABLE")}</Text><Text style={s.error}>{error}</Text><GameButton compact title={st("Retry")} tone="secondary" disabled={busy} onPress={onRetry}/></View>}
   <ChatMentionSuggestions value={body} names={mentionNames} currentName={currentPlayerName} onChange={onBodyChange}/>
-  <View style={[s.compose,stackCompose&&s.composeStack]}><TextInput accessibilityLabel={st("Guild message")} value={body} onChangeText={onBodyChange} onSubmitEditing={onSend} maxLength={300} placeholder={st("Guild message")} style={s.input}/><View style={[s.composeActions,stackCompose&&s.composeActionsStack]}><ChatEmotePicker unlockedIds={unlockedEmoteIds} trayIds={trayIds} bodyPresentation={bodyPresentation} usedCount={chatEmoteCount(body)} onTrayChange={onTrayChange} onPick={token=>onBodyChange((body+token).slice(0,300))}/><View style={s.send}><GameButton compact title={busy?'…':ot(language,'chat.send')} disabled={busy||!body.trim()||!guild} onPress={onSend}/></View></View></View>
+  <ChatComposer accessibilityLabel={st("Guild message")} value={body} onChangeText={onBodyChange} onSend={onSend} placeholder={st("Guild message")} busy={busy} disabled={!guild} emotes={{unlockedIds:unlockedEmoteIds,trayIds,bodyPresentation,onTrayChange,onPick:token=>onBodyChange((body+token).slice(0,300))}}/>
  </View>;
 }
 
@@ -67,5 +65,4 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  header:{minHeight:40,flexDirection:'row',alignItems:'center',gap:8},grow:{flex:1,minWidth:0},eyebrow:{...typography.caption,color:C.accent,fontWeight:'900',letterSpacing:.8},title:{...typography.title,color:C.text},securePill:{paddingHorizontal:6,paddingVertical:3,borderWidth:1,borderColor:C.good,borderRadius:99,backgroundColor:C.goodSurface},secure:{fontSize:7,color:C.good,fontWeight:'900',letterSpacing:.6},
  note:{...typography.body,color:C.muted,lineHeight:18},
 errorCard:{gap:5,padding:spacing.sm,borderWidth:1,borderColor:C.bad,borderRadius:radii.md,backgroundColor:C.badSurface},errorLabel:{...typography.caption,color:C.bad,fontWeight:'900',letterSpacing:1},error:{...typography.caption,color:C.text},
- compose:{flexDirection:'row',alignItems:'center',gap:spacing.sm},composeStack:{flexDirection:'column',alignItems:'stretch'},composeActions:{flexDirection:'row',alignItems:'center',gap:spacing.sm},composeActionsStack:{width:'100%',justifyContent:'flex-end'},input:{flex:1},send:{minWidth:72}
 });}

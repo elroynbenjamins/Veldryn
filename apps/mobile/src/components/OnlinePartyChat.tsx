@@ -1,7 +1,6 @@
 import {useSocialText} from '../i18n/social';
-import {GameTextInput as TextInput} from './GameTextInput';
 import {useEffect,useMemo,useRef,useState} from 'react';
-import {Text,View,StyleSheet,useWindowDimensions} from 'react-native';
+import {Text,View,StyleSheet} from 'react-native';
 import {usePartySocial} from '../online/PartySocialProvider';
 import {partyChatMessages,sendPartyChat,partyCommandKey} from '../online/party-social';
 import {markSocialChatRead} from '../online/social';
@@ -12,15 +11,14 @@ import {spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {ChatPlayerSheet} from './ChatPlayerSheet';
 import type {PartyChatMessage} from '../online/party-social';
-import {ChatEmotePicker} from './ChatEmotePicker';
+import {ChatComposer} from './ChatComposer';
 import {ChatMessageRow} from './ChatMessageRow';
 import {ChatLog} from './ChatLog';
 import {ChatMentionSuggestions} from './ChatMentionSuggestions';
 import {CHAT_MAX_EMOTES_PER_MESSAGE,chatEmoteCount,chatUnavailableEmoteIds} from '../core/chat-emotes';
 export function OnlinePartyChat({unlockedEmoteIds=[],trayIds=[],bodyPresentation='male',onTrayChange,firstUnreadMessageId,onRead,reduceMotion=false,active=true}:{unlockedEmoteIds?:readonly string[];trayIds?:readonly string[];bodyPresentation?:'male'|'female';onTrayChange?:(ids:string[])=>void|Promise<void>;firstUnreadMessageId?:string;onRead?:()=>void;reduceMotion?:boolean;active?:boolean}={}){
  const st=useSocialText();
- const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{width:windowWidth,fontScale}=useWindowDimensions();
- const [width,setContentWidth]=useState(windowWidth),stackCompose=width<360||fontScale>=1.25;
+ const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const {party,accountId,refresh}=usePartySocial();const id=party?.id;
  const {value:messages,error:loadError,refresh:load,setValue:setMessages}=useChatFeed<PartyChatMessage[]>({key:`party:${id??'none'}`,read:()=>partyChatMessages(id!),initial:[],active:active&&Boolean(id),channelType:'party',channelId:id});
  const scope=`${accountId}:${id??''}`,activeId=useRef(scope),activeRef=useRef(active),onReadRef=useRef(onRead);activeId.current=scope;activeRef.current=active;onReadRef.current=onRead;
@@ -34,7 +32,7 @@ export function OnlinePartyChat({unlockedEmoteIds=[],trayIds=[],bodyPresentation
  };
  const mentionName=party?.members.find(member=>member.accountId===accountId)?.characterName??'',mentionNames=party?.members.map(member=>member.characterName)??[];
  const caughtUp=async()=>{if(!activeRef.current)return;try{await markSocialChatRead('party');onReadRef.current?.()}catch{}};
- return <PartyChatGate party={party} accountId={accountId}><View style={s.root} onLayout={event=>setContentWidth(event.nativeEvent.layout.width)}><ChatLog active={active} channelKey={id??'party:none'} items={messages} firstUnreadMessageId={firstUnreadMessageId} emptyText={st("Party Chat is quiet.")} onCaughtUp={()=>void caughtUp()} renderItem={message=><ChatMessageRow accountId={message.account_id} name={message.sender_name} body={message.body} createdAt={message.created_at} guildTag={message.guild_tag} tagColorId={message.guild_tag_color_id} nameStyle={message.player_name_style} badges={message.player_badges} mentionName={mentionName} onPress={()=>setSelected(message)} reduceMotion={reduceMotion}/>} />
- {!!error&&<View accessibilityRole="alert" style={s.errorCard}><Text style={s.errorLabel}>{st("CHAT UNAVAILABLE")}</Text><Text style={s.error}>{error}</Text><GameButton compact title={st("Retry")} tone="secondary" onPress={()=>{setError('');void load();}}/></View>}<ChatMentionSuggestions value={body} names={mentionNames} currentName={mentionName} onChange={setBody}/><View style={[s.compose,stackCompose&&s.composeStack]}><TextInput accessibilityLabel={st("Party message")} value={body} onChangeText={setBody} maxLength={300} placeholder={st("Message your Party")} placeholderTextColor={C.muted} style={s.input}/><View style={[s.composeActions,stackCompose&&s.composeActionsStack]}><ChatEmotePicker unlockedIds={unlockedEmoteIds} trayIds={trayIds} bodyPresentation={bodyPresentation} usedCount={chatEmoteCount(body)} onTrayChange={onTrayChange} onPick={token=>setBody(value=>(value+token).slice(0,300))}/><View style={s.send}><GameButton title={busy?'…':st("Send")} disabled={busy||!body.trim()} onPress={()=>void send()}/></View></View></View><ChatPlayerSheet reduceMotion={reduceMotion} message={selected?{...selected,message_id:selected.id}:null} onClose={()=>setSelected(null)} onBlocked={blockedId=>setMessages(current=>current.filter(message=>message.account_id!==blockedId))}/></View></PartyChatGate>;
+ return <PartyChatGate party={party} accountId={accountId}><View style={s.root}><ChatLog active={active} channelKey={id??'party:none'} items={messages} firstUnreadMessageId={firstUnreadMessageId} emptyText={st("Party Chat is quiet.")} onCaughtUp={()=>void caughtUp()} renderItem={message=><ChatMessageRow accountId={message.account_id} name={message.sender_name} body={message.body} createdAt={message.created_at} guildTag={message.guild_tag} tagColorId={message.guild_tag_color_id} nameStyle={message.player_name_style} badges={message.player_badges} mentionName={mentionName} onPress={()=>setSelected(message)} reduceMotion={reduceMotion}/>} />
+ {!!error&&<View accessibilityRole="alert" style={s.errorCard}><Text style={s.errorLabel}>{st("CHAT UNAVAILABLE")}</Text><Text style={s.error}>{error}</Text><GameButton compact title={st("Retry")} tone="secondary" onPress={()=>{setError('');void load();}}/></View>}<ChatMentionSuggestions value={body} names={mentionNames} currentName={mentionName} onChange={setBody}/><ChatComposer accessibilityLabel={st("Party message")} value={body} onChangeText={setBody} onSend={()=>void send()} placeholder={st("Message your Party")} busy={busy} disabled={!id||!accountId} emotes={{unlockedIds:unlockedEmoteIds,trayIds,bodyPresentation,onTrayChange,onPick:token=>setBody(value=>(value+token).slice(0,300))}}/><ChatPlayerSheet reduceMotion={reduceMotion} message={selected?{...selected,message_id:selected.id}:null} onClose={()=>setSelected(null)} onBlocked={blockedId=>setMessages(current=>current.filter(message=>message.account_id!==blockedId))}/></View></PartyChatGate>;
 }
-function makeStyles(C:ThemeColors){return StyleSheet.create({root:{gap:spacing.sm},errorCard:{gap:4,padding:spacing.sm,borderWidth:1,borderColor:C.bad,borderRadius:8,backgroundColor:C.badSurface},errorLabel:{...typography.caption,color:C.bad,fontWeight:'900',letterSpacing:1},error:{color:C.text},compose:{flexDirection:'row',alignItems:'center',gap:spacing.sm},composeStack:{flexDirection:'column',alignItems:'stretch'},composeActions:{flexDirection:'row',alignItems:'center',gap:spacing.sm},composeActionsStack:{width:'100%',justifyContent:'flex-end'},input:{flex:1},send:{minWidth:72}});}
+function makeStyles(C:ThemeColors){return StyleSheet.create({root:{gap:spacing.sm},errorCard:{gap:4,padding:spacing.sm,borderWidth:1,borderColor:C.bad,borderRadius:8,backgroundColor:C.badSurface},errorLabel:{...typography.caption,color:C.bad,fontWeight:'900',letterSpacing:1},error:{color:C.text}});}

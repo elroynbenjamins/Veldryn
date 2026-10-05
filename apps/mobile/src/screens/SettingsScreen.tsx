@@ -1,4 +1,6 @@
 import {accountText,accountDuration} from '../i18n/account';
+import {appBuildText} from '../i18n/app-build';
+import {APP_BUILD_INFO} from '../app-build';
 import type {Language} from '../i18n/languages';
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {BackHandler,Linking,Pressable,ScrollView,StyleSheet,Text,TextInput,View,useWindowDimensions} from 'react-native';
@@ -83,7 +85,7 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onRefreshComme
   const restoreDefaults=()=>update({numberMode:'abbreviated',autoEatThresholdPct:40,stopCombatWhenOutOfFood:true,chatDockLines:1});
   return <View style={navigationStyles.screen}>
     {phone&&section&&<Pressable accessibilityRole="button" accessibilityLabel={a('Back to settings')} onPress={()=>setSection(null)} style={({pressed})=>[navigationStyles.back,pressed&&s.pressed]}><UiIcon name="back" size={24}/><Text style={navigationStyles.backText}>{t(language,'settings.title')}</Text></Pressable>}
-    <ScrollView key={pageKey} ref={scrollRef} onContentSizeChange={restoreScroll} onScroll={event=>{if(restoredPage.current===pageKey)scrollPositions.current[pageKey]=event.nativeEvent.contentOffset.y;}} scrollEventThrottle={16} contentContainerStyle={[s.root,{backgroundColor:theme.bg}]} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
+    <ScrollView key={pageKey} ref={scrollRef} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" onContentSizeChange={restoreScroll} onScroll={event=>{if(restoredPage.current===pageKey)scrollPositions.current[pageKey]=event.nativeEvent.contentOffset.y;}} scrollEventThrottle={16} contentContainerStyle={[s.root,{backgroundColor:theme.bg}]} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
     <Text accessibilityRole="header" style={[s.h,{color:theme.text}]}>{phone&&section?sectionLabel(section):t(language,'settings.title')}</Text>
     {(!phone||!section)&&<Text style={[s.sub,{color:theme.muted}]}>{t(language,'settings.intro')}</Text>}
     {phone&&!section&&<View>{sections.map(value=><Pressable key={value} accessibilityRole="button" accessibilityLabel={sectionLabel(value)} accessibilityHint={sectionDescription(value)} onPress={()=>setSection(value)} style={({pressed})=>[navigationStyles.category,pressed&&navigationStyles.categoryPressed]}><View style={navigationStyles.categoryCopy}><Text style={navigationStyles.categoryText}>{sectionLabel(value)}</Text><Text numberOfLines={2} style={navigationStyles.categoryDescription}>{sectionDescription(value)}</Text></View><UiIcon name="next" size={24}/></Pressable>)}</View>}
@@ -144,6 +146,10 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onRefreshComme
     </Panel></>}
     {section==='developer'&&__DEV__&&!online&&<DeveloperTools state={state} onChange={onChange} onOpenCoopUiGallery={onOpenCoopUiGallery}/>}
     <View style={s.footerLinks}><GameButton compact title={a("Privacy Policy")} tone="secondary" onPress={()=>openExternal(PRIVACY_POLICY_URL)}/></View>
+    <View>
+      <Text selectable style={s.sub}>{appBuildText(language,'version',{version:APP_BUILD_INFO.version})}{APP_BUILD_INFO.buildNumber?` · ${appBuildText(language,'build',{build:APP_BUILD_INFO.buildNumber})}`:''}</Text>
+      <Text selectable style={s.sub}>{appBuildText(language,'channel',{channel:APP_BUILD_INFO.releaseChannel})}</Text>
+    </View>
   </ScrollView><GuideTopicModal onOpen={onNavigateGuide?destination=>{setGuideId(undefined);onNavigateGuide(destination)}:undefined} language={language} definition={guideId?guideDefinition(guideId):undefined} visible={!!guideId} onClose={()=>setGuideId(undefined)}/></View>;
 }
 

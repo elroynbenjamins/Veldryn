@@ -30,7 +30,9 @@ for(const [needle,label] of [
  ["pm.left_at is null and p.status<>'disbanded'",'active persistent Party scope'],
 ])need(migration,needle,label);
 
-for(const rpc of ['social_chat_attention_state_v1','mark_social_chat_read_v1'])need(client,"rpc('"+rpc+"'","mobile RPC "+rpc);
+for(const rpc of ['social_chat_attention_state_v1','mark_social_chat_read_v2'])need(client,"rpc('"+rpc+"'","mobile RPC "+rpc);
+need(client,'p_channel_id:channelId,p_message_id:messageId','displayed message and explicit conversation acknowledgement');
+reject(client,"rpc('mark_social_chat_read_v1'",'server-clock read acknowledgement in updated clients');
 for(const [needle,label] of [
  ['guildChatUnread','Guild unread projection'],
  ['guildChatMentions','Guild mention projection'],
@@ -55,8 +57,9 @@ reject(overlay,'visiblePartyUnread','eager Party unread suppression before catch
 
 need(dock,'mentionCount','dock mention attention');
 need(dock,'unreadCount','dock unread attention');
-need(guild,"markSocialChatRead('guild')",'Guild catch-up read marker');
-need(party,"markSocialChatRead('party')",'Party catch-up read marker');
+need(guild,"await markSocialChatRead('guild',guild.id,messageId)",'Guild displayed-message catch-up read marker');
+need(party,"await markSocialChatRead('party',id,messageId)",'Party displayed-message catch-up read marker');
+for(const [component,label] of [[guild,'Guild'],[party,'Party']])need(component,'onCaughtUp={caughtUp}',label+' awaited read-result propagation');
 need(message,'chatMentionSegments','message mention highlighting');
 need(message,'selfMention','self-mention styling');
 need(nav,"chat_unread:{primary:'account',subroute:'social.chat',mode:'count'}",'canonical chat notification route');

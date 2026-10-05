@@ -73,6 +73,7 @@
     "pve-balance": "tsc -p tsconfig.gems.json && node dist-gems/server/combat/pve-balance-cli.js"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
     "@types/node": "^22.0.0",
     "esbuild": "^0.28.2",
     "supabase": "2.117.0",

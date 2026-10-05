@@ -31,7 +31,7 @@ const summary=localProfileSummary(state);
 equal(summary.totalKills,1234,'profile summary uses authoritative lifetime kill metric');
 equal(summary.bossesDefeated,1,'profile summary counts defeated bosses');
 equal(summary.companionOwned,1,'profile summary counts owned combat companions');
-equal(summary.collectionOwned,20,'profile summary counts 15 starter/class icons, earned companion and boss icons, and three owned profile collectibles');
+equal(summary.collectionOwned,19,'profile summary counts 15 starter/class icons, the earned boss icon, and three owned profile collectibles after companion profile icons were removed');
 equal(summary.achievementCount,2,'profile summary counts journal achievements');
 equal(summary.recordCount,2,'profile summary counts personal records');
 

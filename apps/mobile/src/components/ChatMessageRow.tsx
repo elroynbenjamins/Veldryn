@@ -11,7 +11,7 @@ import type {PlayerBadgeIdentity} from '../core/player-badges';
 export function ChatMessageRow({accountId,name,body,createdAt,guildTag,tagColorId,nameStyle,badges,role,mentionName,onPress,reduceMotion=false,avatar=true}:{accountId?:string;name:string;body:string;createdAt?:string;guildTag?:string|null;tagColorId?:string|null;nameStyle?:PlayerNameStylePreference|null;badges?:PlayerBadgeIdentity;role?:'leader'|'officer'|'member'|null;mentionName?:string;onPress?:()=>void;reduceMotion?:boolean;avatar?:boolean}){
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  return <View style={s.row}>
-  {avatar?<IdentityArtwork name={name} size={36}/>:null}
+  {avatar?<IdentityArtwork name={name} accountId={accountId} size={36}/>:null}
   <View style={s.content}>
    <View style={s.head}>
     <Pressable accessibilityRole="button" accessibilityLabel={`Open ${name}'s player profile`} onPress={onPress} disabled={!onPress} style={s.nameButton}>

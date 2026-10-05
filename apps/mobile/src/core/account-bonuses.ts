@@ -81,8 +81,8 @@ export function accountBonusOverview(state:GameState):AccountBonusOverview{
  }
 
  const entitlements=accountEntitlementBenefits(state);
- if(entitlements.vip)sources.push({id:'entitlement:vip',label:'VIP',detail:'+2h AFK · +5 Inventory · +20 Bank · +1 saved loadout',scope:'account'});
- if(entitlements.vipPlus)sources.push({id:'entitlement:vip_plus',label:'VIP+',detail:'+2h AFK extra · +5 Inventory · +30 Bank · +1 loadout · +1 action queue · RGB names',scope:'account'});
+ if(entitlements.vip)sources.push({id:'entitlement:vip',label:'VIP',detail:'+2h AFK · +10 Inventory · +20 Bank · +1 saved loadout · +5% Gathering speed · +5% Combat XP',scope:'account'});
+ if(entitlements.vipPlus)sources.push({id:'entitlement:vip_plus',label:'VIP+',detail:'+2h AFK extra · +10 Inventory · +30 Bank · +1 loadout · +1 action queue · +1 Forge · +5% drops · +10% Crafting speed · RGB names',scope:'account'});
  if(entitlements.supporter)sources.push({id:'entitlement:supporter',label:'Supporter',detail:'+2h AFK · +1 active Forge slot · advanced name styles',scope:'account'});
 
  const craftSlots=equipmentCraftSlotBreakdown(state);

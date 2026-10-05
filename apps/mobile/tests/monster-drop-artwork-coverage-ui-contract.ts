@@ -7,13 +7,11 @@ const monsters=read('src/content/monsters.ts');
 const items=read('src/content/items.ts');
 const artSources=[
   read('src/theme/resource-assets.ts'),
-  read('src/theme/runtime-item-assets.ts'),
   read('src/theme/regional-resource-assets.ts'),
   read('src/theme/misc-item-assets.ts'),
   read('src/theme/asterfall-ingredient-assets.ts'),
   read('src/theme/asterfall-ore-assets.ts'),
   read('src/theme/asterfall-gathering-assets.ts'),
-  read('src/theme/asterfall-crafted-assets.ts'),
   read('src/theme/arcane-material-assets.ts'),
   read('src/theme/consumable-assets.ts'),
   read('src/theme/core-material-assets.ts'),

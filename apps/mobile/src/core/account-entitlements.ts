@@ -12,6 +12,10 @@ export interface AccountEntitlementBenefits{
   forgeSlots:number;
   solidRgbNames:boolean;
   advancedNameStyles:boolean;
+  gatheringSpeedMultiplier:number;
+  combatXpMultiplier:number;
+  dropChanceMultiplier:number;
+  craftingSpeedMultiplier:number;
 }
 
 export interface ServerCommerceEntitlements{
@@ -36,13 +40,17 @@ export function accountEntitlementBenefits(state:GameState):AccountEntitlementBe
     vipPlus,
     supporter,
     afkHours:(vip?2:0)+(vipPlus?2:0)+(supporter?2:0),
-    inventorySlots:(vip?5:0)+(vipPlus?5:0),
+    inventorySlots:(vip?10:0)+(vipPlus?10:0),
     bankSlots:(vip?20:0)+(vipPlus?30:0),
     loadoutSlots:(vip?1:0)+(vipPlus?1:0),
     actionQueueSlots:vipPlus?1:0,
     forgeSlots:(vipPlus?1:0)+(supporter?1:0),
     solidRgbNames:vipPlus||supporter,
     advancedNameStyles:supporter,
+    gatheringSpeedMultiplier:vip?1.05:1,
+    combatXpMultiplier:vip?1.05:1,
+    dropChanceMultiplier:vipPlus?1.05:1,
+    craftingSpeedMultiplier:vipPlus?1.10:1,
   };
 }
 

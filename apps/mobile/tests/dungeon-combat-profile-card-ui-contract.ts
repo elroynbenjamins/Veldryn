@@ -75,7 +75,7 @@ ok(stage.includes('enemyGroup')&&stage.includes('enemySlot')&&stage.includes('co
 ok(card.includes('combatantId?currentCue.targetId===combatantId:currentCue.targetName===name'),'Enemy damage feedback must bind to combatant id so duplicate enemy names do not mirror feedback');
 ok(stage.includes('combatantId={enemy.id}')&&stage.includes('selectedForInspect={inspectKey===key}'),'Each enemy card must bind replay state and inspection to its authoritative combatant id');
 ok(stage.includes('layout={layout}')&&card.includes('layout?:DungeonCombatLayout'),'Party combat cards must receive the responsive density contract');
-ok(card.includes('layout.cardMinHeight')&&card.includes('layout.sceneHeight')&&card.includes('layout.portraitWidth'),'Responsive combat cards must adapt height, portrait window and scene height without changing formation');
+ok(card.includes('layout.cardMinHeight')&&/layout\??\.sceneHeight/.test(card)&&card.includes('layout.portraitWidth'),'Responsive combat cards must adapt height, portrait window and scene height without changing formation');
 ok(card.includes('limit={layout?.statusLimit??3}'),'Narrow phones must reduce visible status-pill count rather than widen cards');
 ok(stage.includes('layout.controlsWrap&&s.playbackControlsWrap')&&stage.includes("playbackControlsWrap:{flexWrap:'wrap'"),'Replay controls must wrap safely on narrow phones');
 for(const control of ['speedButton','pauseButton','stepButton','skipButton','replayButton']){

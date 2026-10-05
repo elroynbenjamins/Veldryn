@@ -15,6 +15,7 @@ This folder contains active contracts and current system notes. Superseded phase
 - `V16_IMPLEMENTATION_REPORT.md` — exact v16 merge inventory, applied migrations, verification results and remaining limits.
 - `ONLINE_GAMEPLAY_STATUS.md` — deployed server-owned gameplay, account flow, hosted verification and remaining release work.
 - `CHAT_ACCOUNT_RELIABILITY_20261004.md` — chat delivery, retained channel state, guest verification, inline composer and 25-message history, combat/UI validation recovery, production migration evidence, and remaining device checks.
+- `PROFILE_IDENTITY_SURFACES.md` — selected profile icons across social, Guild, Live and Echo dungeon identities, including the cosmetic projection and privacy/lifecycle contract.
 - `COOP_CURRENT_STATUS.md` — consolidated co-op functionality, acceptance evidence, release boundaries, and next passes.
 - `SEASONS_AND_WEATHER.md` — authoritative mobile season/weather behavior.
 - `NOVICE_CHARACTER_SYSTEM.md` — novice crafting and class-set progression.

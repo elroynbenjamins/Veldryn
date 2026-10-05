@@ -4,6 +4,8 @@ export interface CoopLiveRecruitmentPost{
   id:string;
   dungeonId:string;
   ownerName:string;
+  profileIconId?:string|null;
+  iconClassId?:string|null;
   role:CoopLiveRole;
   maxTier:number;
   note:string;

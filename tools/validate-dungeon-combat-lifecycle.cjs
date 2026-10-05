@@ -239,6 +239,7 @@ async function inspectionAndStepping() {
   const h = makeHarness(); let tree;
   try {
     const run = makeRun(), cues = run.lastCombat.cues;
+    run.roleSlots[0] = {...run.roleSlots[0], profileIconId: 'starter:armored-sentinel', iconClassId: 'RAVAGER'};
     h.mocks.delete(path.join(app, 'src/components/coop/CombatantInspectPanel'));
     const {CombatantInspectPanel} = h.load(path.join(app, 'src/components/coop/CombatantInspectPanel'));
     const {DungeonCombatStage} = h.load(path.join(app, 'src/components/coop/DungeonCombatStage'));
@@ -246,6 +247,9 @@ async function inspectionAndStepping() {
     await act(async () => { partyCard(tree, 'p0').props.onPress(); });
     assert.equal(h.timers.size, 0, 'opening inspection pauses automatic replay');
     assert.equal(tree.root.findByType(CombatantInspectPanel).props.target.name, 'Tank');
+    assert.equal(tree.root.findByType('IdentityArtwork').props.profileIconId, 'starter:armored-sentinel');
+    assert.equal(tree.root.findByType('IdentityArtwork').props.className, 'RAVAGER');
+    assert.equal(tree.root.findByType(CombatantInspectPanel).props.target.classId, 'IRONWARDEN', 'profile class never replaces the run snapshot class');
     const close = findButton(tree, 'Close combat details'), closeStyle = flattenStyle(close.props.style({pressed: false}));
     assert.ok(closeStyle.minHeight >= 44 && closeStyle.minWidth >= 44, 'inspection close retains a full-size touch target');
     assert.equal(findButton(tree, 'Previous combat event').props.disabled, true);
@@ -256,10 +260,17 @@ async function inspectionAndStepping() {
     assert.strictEqual(currentCue(tree), cues[1]);
     let target = tree.root.findByType(CombatantInspectPanel).props.target;
     assert.equal(target.shield, 160); assert.equal(target.statuses[0].label, 'Dawn Renewal'); assert.equal(target.statuses[0].remainingMs, 5000);
+    const refreshedIdentity = {...run, roleSlots: run.roleSlots.map(slot => slot.memberId === 'p0' ? {...slot, profileIconId: 'creature:IRONWOOD_WOLF'} : slot)};
+    await act(async () => { tree.update(React.createElement(DungeonCombatStage, {run: refreshedIdentity, boss: true})); });
+    assert.strictEqual(currentCue(tree), cues[1], 'refreshing cosmetic identity keeps the current replay event');
+    assert.equal(h.timers.size, 0, 'refreshing cosmetics cannot resume paused playback');
+    assert.equal(tree.root.findByType('IdentityArtwork').props.profileIconId, 'creature:IRONWOOD_WOLF', 'open inspection receives the refreshed icon');
+    assert.equal(tree.root.findByType(CombatantInspectPanel).props.target.shield, 160, 'cosmetic refresh keeps replay-time combat details');
     await press(tree, 'Next combat event');
     await act(async () => { enemy(tree).props.onPress(); });
     target = tree.root.findByType(CombatantInspectPanel).props.target;
     assert.equal(target.kind, 'enemy'); assert.equal(target.currentHp, 3800);
+    assert.equal(tree.root.findAllByType('IdentityArtwork').length, 0, 'enemy inspection never reuses the selected player icon');
     assert.equal(target.cast.targetLabel, 'Tank'); assert.equal(target.cast.interruptible, true);
     assert.equal(target.statuses[0].label, 'Hex Curse'); assert.equal(target.statuses[0].remainingMs, 3000);
     for (let index = 3; index <= 5; index++) await press(tree, 'Next combat event');
@@ -340,6 +351,7 @@ async function responsiveCardContract() {
   const h = makeHarness(); let tree;
   try {
     const run = makeRun();
+    run.roleSlots[1] = {...run.roleSlots[1], profileIconId: 'creature:IRONWOOD_WOLF', iconClassId: 'HEXWEAVER'};
     const {DungeonCombatStage} = h.load(path.join(app, 'src/components/coop/DungeonCombatStage'));
     const {dungeonCombatLayout} = h.load(path.join(app, 'src/core/dungeon-combat-layout'));
     await act(async () => { tree = create(React.createElement(DungeonCombatStage, {run, boss: true})); });
@@ -368,6 +380,7 @@ async function responsiveCardContract() {
     h.mocks.delete(path.join(app, 'src/components/coop/CombatantProfileCard'));
     const {CombatantProfileCard} = h.load(path.join(app, 'src/components/coop/CombatantProfileCard'));
     for (const width of [320, 360, 390]) {
+      h.size.width = width; h.size.fontScale = 1;
       const layout = dungeonCombatLayout(width);
       await act(async () => { tree = create(React.createElement(CombatantProfileCard, {slot: run.roleSlots[1], layout, animateHealth: false})); });
       const cardRoot = tree.root.findAllByType('Animated.View')[0], portrait = tree.root.findAllByType('Image').find(node => node.props.source?.kind === 'portrait');
@@ -375,12 +388,81 @@ async function responsiveCardContract() {
       assert.equal(flattenStyle(portrait.props.style).width, layout.portraitWidth, 'actual portrait uses responsive width');
       assert.equal(flattenStyle(portrait.props.style).height, layout.portraitHeight, 'actual portrait uses responsive height');
       assert.equal(flattenStyle(portrait.parent.props.style).height, layout.sceneHeight, 'actual scene uses responsive height');
+      assert.equal(portrait.props.source.classId, 'WAYFINDER', 'selected cosmetics never replace the canonical combat class artwork');
+      assert.equal(tree.root.findByType('IdentityArtwork').props.profileIconId, 'creature:IRONWOOD_WOLF');
+      assert.equal(tree.root.findByType('IdentityArtwork').props.className, 'HEXWEAVER');
       assert.ok(!text(tree).includes('ASSIST PROC'), 'idle companion badge does not claim an assist proc');
       await act(async () => { tree.update(React.createElement(CombatantProfileCard, {slot: run.roleSlots[1], layout, animateHealth: false, assistProc: true})); });
       assert.ok(text(tree).includes('ASSIST PROC'), 'actual card renders readable companion proc feedback');
+      h.size.fontScale = 1.5;
+      await act(async () => { tree.update(React.createElement(CombatantProfileCard, {slot: run.roleSlots[1], layout, animateHealth: false})); });
+      const identity = tree.root.findByType('IdentityArtwork'), head = flattenStyle(identity.parent.props.style), plate = flattenStyle(identity.parent.parent.props.style);
+      const namedText = label => tree.root.findAllByType('Text').find(node => node.children.join('') === label);
+      const role = namedText('DAMAGE'), name = namedText('Wayfinder'), className = namedText('WAYFINDER'), echo = namedText('ECHO');
+      const identityBottom = plate.top + identity.props.size + head.gap + flattenStyle(role.props.style).lineHeight * 1.5 + plate.gap * 2 + (flattenStyle(name.props.style).lineHeight + flattenStyle(className.props.style).lineHeight) * 1.5;
+      assert.equal(head.flexDirection, 'column', 'enlarged role text has the full identity-column width');
+      assert.ok(identityBottom <= flattenStyle(portrait.parent.props.style).height, '150% identity text fits inside the scene at every phone width');
+      assert.equal(name.parent, identity.parent.parent, 'the player name keeps the full identity-column width');
+      assert.ok(!portrait.parent.findAllByType('Text').includes(echo), 'Echo label is outside the companion/portrait scene');
+      assert.equal(flattenStyle(echo.props.style).fontSize, 10, 'Echo label retains its readable size');
+      assert.equal(flattenStyle(echo.parent.parent.props.style).flexWrap, 'wrap', 'Echo/level metadata wraps with enlarged text');
+      assert.equal(tree.root.findAllByType('Image').find(node => node.props.source?.kind === 'companion').props.source.id, 'UNIT_005');
       await act(async () => { tree.unmount(); }); tree = null;
     }
-    console.log('PASS dungeon responsive rendering: 320/360/390 layouts reach actual card dimensions and preserve intentional two-column formation');
+    console.log('PASS dungeon responsive rendering: 320/360/390 widths, 100%/150% text, separate selected identity and class artwork, readable Echo/companion presentation');
+  } finally { if (tree) await act(async () => tree.unmount()); h.restore(); }
+}
+
+async function dungeonRosterIdentityRendering() {
+  const h = makeHarness(); let tree;
+  try {
+    h.native.ScrollView = 'ScrollView'; h.native.ActivityIndicator = 'ActivityIndicator';
+    h.mocks.set(path.join(app, 'src/theme/coop-ui-theme'), {...h.mocks.get(path.join(app, 'src/theme/coop-ui-theme')), coopSpacing: {xs: 4, sm: 8, md: 12, lg: 16}, coopTypography: {meta: {}, section: {}, body: {}}});
+    h.mocks.set(path.join(app, 'src/theme/coop-ui-assets'), {coopUiAssets: {role_tank: {kind: 'role', role: 'tank'}, role_damage: {kind: 'role', role: 'damage'}, role_support: {kind: 'role', role: 'support'}}});
+    h.mocks.set(path.join(app, 'src/components/coop/CoopVisualKit'), {FantasyPanel: 'FantasyPanel', StateChip: 'StateChip', PrimaryAction: 'PrimaryAction', RoleBadge: 'RoleBadge', ExpeditionScreenShell: 'ExpeditionScreenShell', CoopImageSlot: 'CoopImageSlot'});
+    h.mocks.set(path.join(app, 'src/i18n'), {ct: (_language, key) => key, t: (_language, key) => key});
+    for (const name of ['GameButton', 'GameTextInput']) h.mocks.set(path.join(app, 'src/components', name), {[name]: name});
+    for (const name of ['CoopPartyChat', 'SeasonalBossTelegraphPanel', 'DungeonCombatStage']) h.mocks.set(path.join(app, 'src/components/coop', name), {[name]: name});
+    const {CoopLiveLobbyView} = h.load(path.join(app, 'src/components/coop/CoopLobbyPresentation'));
+    const noop = () => {}, callbacks = {onBack: noop, onRetry: noop, onRetryPending: noop, onCancel: noop, onAccept: noop, onDecline: noop};
+    const ready = {readyCheckId: 'ready', rosterRevision: 1, status: 'open', closesAtMs: 30000, refillEndsAtMs: 60000, serverNow: 0, members: [{characterId: 'self', role: 'tank', self: true, accepted: true}, {characterId: 'other', role: 'damage', self: false, accepted: false, profileIconId: 'starter:hooded-ranger', iconClassId: 'WAYFINDER'}]};
+    await act(async () => { tree = create(React.createElement(CoopLiveLobbyView, {...callbacks, ready, selfPortrait: {kind: 'self'}})); });
+    assert.deepEqual(tree.root.findAllByType('IdentityArtwork').map(node => node.props.profileIconId), ['starter:hooded-ranger'], 'only an actual disclosed ready member receives the remote icon');
+    assert.equal(tree.root.findAllByType('Image').filter(node => node.props.source?.kind === 'self').length, 1, 'local selected portrait remains visible');
+    assert.equal(tree.root.findAllByType('Image').filter(node => node.props.source?.kind === 'role').length, 4, 'self/remote role badges and both empty-role placeholders remain');
+    await h.tick(1500);
+    assert.ok(text(tree).includes('29s'), 'ready countdown advances from the server clock');
+    const refreshedReady = {...ready, members: ready.members.map(member => member.self ? member : {...member, profileIconId: 'creature:IRONWOOD_WOLF'})};
+    await act(async () => { tree.update(React.createElement(CoopLiveLobbyView, {...callbacks, ready: refreshedReady, selfPortrait: {kind: 'self'}})); });
+    assert.ok(text(tree).includes('29s'), 'an icon-only refresh cannot rewind the ready countdown');
+    await h.tick(1000);
+    await act(async () => { tree.update(React.createElement(CoopLiveLobbyView, {...callbacks, ready: {...refreshedReady}, busy: true, notice: 'Checking party', selfPortrait: {kind: 'self'}})); });
+    assert.ok(text(tree).includes('28s'), 'unrelated screen changes retain elapsed ready time');
+    await act(async () => { tree.update(React.createElement(CoopLiveLobbyView, {...callbacks, ready: {...refreshedReady, serverNow: 10000}, selfPortrait: {kind: 'self'}})); });
+    assert.ok(text(tree).includes('20s'), 'a new authoritative server clock rebases the countdown');
+    await act(async () => { tree.update(React.createElement(CoopLiveLobbyView, {...callbacks, ready: {...ready, status: 'refilling'}, selfPortrait: {kind: 'self'}})); });
+    assert.equal(tree.root.findAllByType('IdentityArtwork').length, 0, 'a departed member icon does not remain on a waiting refill slot');
+    await act(async () => { tree.unmount(); }); tree = null;
+
+    const {CoopLiveRecruitmentBoard} = h.load(path.join(app, 'src/components/coop/CoopLiveRecruitmentBoard'));
+    const post = {id: 'post', dungeonId: 'EXP_001', ownerName: 'Public owner', role: 'support', maxTier: 2, note: '', createdAtMs: 0, expiresAtMs: 60000, mine: false, profileIconId: 'starter:dawn-priestess', iconClassId: 'DAWNKEEPER'};
+    await act(async () => { tree = create(React.createElement(CoopLiveRecruitmentBoard, {posts: [post], dungeons: [], nowMs: 0, onQuickMatch: noop, onJoin: noop, onPublish: noop, onCloseMine: noop, onRefresh: noop})); });
+    assert.equal(tree.root.findByType('IdentityArtwork').props.name, post.ownerName);
+    assert.equal(tree.root.findByType('IdentityArtwork').props.profileIconId, post.profileIconId);
+    await act(async () => { tree.unmount(); }); tree = null;
+
+    const {CoopRunOverview} = h.load(path.join(app, 'src/components/coop/CoopRunOverview'));
+    const run = makeRun(); run.phase = 'awaiting_choice'; delete run.lastCombat; delete run.bossMechanic;
+    run.roleSlots[1] = {...run.roleSlots[1], profileIconId: 'creature:IRONWOOD_WOLF', iconClassId: 'HEXWEAVER'};
+    await act(async () => { tree = create(React.createElement(CoopRunOverview, {language: 'en', run, onBack: noop})); });
+    const identities = tree.root.findAllByType('IdentityArtwork');
+    assert.deepEqual(identities.map(node => node.props.name), run.roleSlots.map(slot => slot.name), 'the noncombat roster keeps each selected icon with its own player');
+    assert.equal(identities[1].props.profileIconId, 'creature:IRONWOOD_WOLF');
+    assert.equal(identities[1].props.className, 'HEXWEAVER');
+    assert.ok(text(tree).includes('WAYFINDER'), 'roster class text still comes from the frozen run loadout');
+    await act(async () => { tree.unmount(); }); tree = null;
+    assert.equal(h.timers.size, 0);
+    console.log('PASS dungeon roster identities: ready members, waiting/refill placeholders, local portrait, LFG owner and Echo run overview');
   } finally { if (tree) await act(async () => tree.unmount()); h.restore(); }
 }
 
@@ -389,5 +471,6 @@ async function main() {
   await inspectionAndStepping();
   await reducedMotionAndUnmount();
   await responsiveCardContract();
+  await dungeonRosterIdentityRendering();
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

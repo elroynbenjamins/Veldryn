@@ -5,13 +5,13 @@ import {radii,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 
 export function SocialInvitationCard({
- name,guildTag,guild=false,status,statusTone='info',detail,expiry,warning,actions,
+ name,accountId,guildTag,guild=false,status,statusTone='info',detail,expiry,warning,actions,
 }:{
- name:string;guildTag?:string|null;guild?:boolean;status:string;statusTone?:CompactIdentityStatusTone;detail:string;expiry?:string;warning?:string;actions?:ReactNode;
+ name:string;accountId?:string;guildTag?:string|null;guild?:boolean;status:string;statusTone?:CompactIdentityStatusTone;detail:string;expiry?:string;warning?:string;actions?:ReactNode;
 }){
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  return <View style={s.card}>
-  <CompactPlayerIdentity name={name} guildTag={guildTag} guild={guild} avatarSize={40} status={status} statusTone={statusTone}/>
+  <CompactPlayerIdentity name={name} accountId={accountId} guildTag={guildTag} guild={guild} avatarSize={40} status={status} statusTone={statusTone}/>
   <View style={s.detailRow}><Text numberOfLines={2} style={s.detail}>{detail}</Text>{expiry?<Text style={s.expiry}>{expiry}</Text>:null}</View>
   {warning?<View style={s.warning}><Text style={s.warningText}>{warning}</Text></View>:null}
   {actions?<View style={s.actions}>{actions}</View>:null}

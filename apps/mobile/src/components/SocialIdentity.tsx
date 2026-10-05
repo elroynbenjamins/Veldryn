@@ -1,5 +1,6 @@
 import {useIdentityIcon} from '../online/PlayerBadgeProvider';
 import {profileIconSource} from './ProfileIcon';
+import {profileIconArtwork} from '../theme/profile-icon-assets';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {visualText} from '../i18n/visuals';
 import {useMemo} from 'react';
@@ -15,12 +16,13 @@ import {useGameTheme} from '../theme/ThemeContext';
 import type {GuildBannerId,GuildFrameId} from '../core/guild-customization';
 import {GuildBannerArtwork} from './GuildHeraldry';
 
-/** A real portrait can be supplied. Without one, show a class emblem or neutral account marker. */
-export function IdentityArtwork({name,accountId,className,portrait,size=44,guild=false}:{name:string;accountId?:string;className?:string|null;portrait?:ImageSourcePropType;size?:number;guild?:boolean}){
+/** Use the selected public icon, then a class emblem or neutral account marker. */
+export function IdentityArtwork({name,accountId,profileIconId,className,portrait,size=44,guild=false}:{name:string;accountId?:string;profileIconId?:string|null;className?:string|null;portrait?:ImageSourcePropType;size?:number;guild?:boolean}){
  const language=useGameLanguage(),tr=(source:string,params?:Record<string,string|number>)=>visualText(language,source,params);
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
- const identity=useIdentityIcon(guild?undefined:accountId),classId=resolveIdentityClass(identity?.class_id??className);
- const source=portrait??(guild?uiIcons.guild:classId?profileIconSource(identity?.profile_icon_id??undefined,classId):uiIcons.account);
+ const identity=useIdentityIcon(guild||profileIconId!==undefined?undefined:accountId),classId=resolveIdentityClass(identity?.class_id??className);
+ const selectedIcon=profileIconArtwork((profileIconId!==undefined?profileIconId:identity?.profile_icon_id)??undefined);
+ const source=portrait??(guild?uiIcons.guild:selectedIcon??(classId?profileIconSource(undefined,classId):uiIcons.account));
  return <View accessibilityLabel={tr('{name} identity icon',{name})} style={[s.avatar,{width:size,height:size,borderRadius:Math.max(radii.sm,Math.round(size*.24))}]}><Image accessible={false} source={source} resizeMode="contain" style={{width:size-6,height:size-6}}/></View>;
 }
 export function RoleBadge({role}:{role:PartyRole}){

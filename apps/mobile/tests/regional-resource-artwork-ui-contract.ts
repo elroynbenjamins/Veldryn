@@ -13,7 +13,7 @@ const required=[
  'FROZEN_HEART','FROSTIRON','RIMEGLASS','CHOIR_BLOOM',
 ];
 for(const id of required)ok(mapping.includes(id+':'),'Missing unified regional artwork mapping for '+id);
-ok(mapping.includes("require('../../assets/regional-resources-v1.png')"),'Regional resource atlas must be a real bundled asset');
+ok(mapping.includes("require('../../assets/regional-resources-v1.webp')"),'Regional resource atlas must be a real bundled asset');
 ok(resolver.includes('hasRegionalResourceArtwork(itemId)'), 'Shared resource resolver must recognize regional atlas artwork');
 ok(artwork.includes('regionalResourceCell(itemId)')&&artwork.includes('AtlasCell')&&artwork.includes('column*size')&&artwork.includes('row*size'),'ResourceArtwork must crop the correct atlas cell');
 console.log('PASS: unified Sunscar/Frostmarch resource artwork is mapped into shared item UI');

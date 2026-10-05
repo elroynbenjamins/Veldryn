@@ -21,10 +21,10 @@ for(const id of craftedIds)ok(crafted.includes(id+':require('),'Missing direct c
 for(const id of arcaneIds)ok(arcane.includes(id+':'),'Missing unified arcane artwork mapping for '+id);
 for(const id of toolIds)ok(tools.includes(id+':'),'Missing regenerated gathering tool mapping for '+id);
 
-ok(gathering.includes("require('../../assets/asterfall-logs-fish-v1.png')"),'Logs/fish atlas must be bundled');
+ok(gathering.includes("require('../../assets/asterfall-logs-fish-v1.webp')"),'Logs/fish atlas must be bundled');
 ok(crafted.includes("require('../../assets/crafted-items-v1/"),'Crafted items must use direct production PNGs');
 ok(arcane.includes("require('../../assets/arcane-materials-v1.png')"),'Arcane atlas must be bundled');
-ok(tools.includes("require('../../assets/tools/gathering-tools-v2.png')"),'Gathering tools must use v2 regenerated atlas');
+ok(tools.includes("require('../../assets/tools/gathering-tools-v2.webp')"),'Gathering tools must use v2 regenerated atlas');
 
 ok(resolver.includes('hasAsterfallGatheringArtwork(itemId)'),'Shared resolver must recognize logs/fish atlas');
 ok(resolver.includes('hasArcaneMaterialArtwork(itemId)'),'Shared resolver must recognize arcane atlas');

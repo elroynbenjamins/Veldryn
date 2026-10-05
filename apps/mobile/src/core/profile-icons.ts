@@ -2,6 +2,8 @@ import {CLASSES} from '../content/classes';
 import {LIVE_EVENT_CATALOG} from '../content/live-events';
 import type {GameState} from './types';
 
+type ProfileIconCatalogRow={id:string;name:string;group:string;source:string;monsterId?:string;bossId?:string};
+
 export const PROFILE_ICON_CATALOG = [
  {id:'starter:hooded-ranger',name:'Hooded Ranger',group:'Starter',source:'Available from the start.'},
  {id:'starter:armored-sentinel',name:'Armored Sentinel',group:'Starter',source:'Available from the start.'},
@@ -13,7 +15,7 @@ export const PROFILE_ICON_CATALOG = [
  {id:'creature:IRONWOOD_WOLF',name:'Ironwood Wolf',group:'Combat',source:'Reach 10 Ironwood Wolf mastery points.',monsterId:'IRONWOOD_WOLF'},
  {id:'creature:FALLEN_KNIGHT',name:'Fallen Knight',group:'Combat',source:'Defeat the Fallen Knight.',bossId:'FALLEN_KNIGHT'},
  {id:'event:spirit-lantern',name:'Spirit Lantern',group:'Harvestwake',source:'Claim the 8,000 reputation reward during Harvestwake.'},
-] as const;
+] as const satisfies readonly ProfileIconCatalogRow[];
 export interface ProfileIconEntry {id:string;name:string;group:string;source:string;unlocked:boolean;artworkReady:boolean;selected:boolean;}
 export function profileIconCollection(state:GameState):ProfileIconEntry[]{
  const selected=state.character?.profileIconId??`class:${state.character?.classId??'IRONWARDEN'}`;
@@ -22,10 +24,8 @@ export function profileIconCollection(state:GameState):ProfileIconEntry[]{
  const characters=[state.character,...(state.otherCharacters??[]).map(row=>row.character)];
  const portraits=PROFILE_ICON_CATALOG.map(row=>({...row,artworkReady:true,selected:selected===row.id,unlocked:
   row.group==='Starter'||owned.has(row.id)
-  ||('companionId' in row&&(state.account.unlockedCombatCompanionIds??[]).includes(row.companionId))
-  ||('petId' in row&&((state.account.unlockedCosmeticPetIds??[]).includes(row.petId)||characters.some(c=>c?.ownedPetIds?.includes(row.petId))))
-  ||('monsterId' in row&&characters.some(c=>(c?.monsterMasteryPoints?.[row.monsterId]??0)>=10))
-  ||('bossId' in row&&state.defeatedBossIds.includes(row.bossId))}));
+  ||(row.monsterId!==undefined&&characters.some(c=>(c?.monsterMasteryPoints?.[row.monsterId!]??0)>=10))
+  ||(row.bossId!==undefined&&state.defeatedBossIds.includes(row.bossId))}));
  const known=new Set<string>(portraits.map(row=>row.id));
  const rewards=LIVE_EVENT_CATALOG.flatMap(event=>[...CLASSES.flatMap(c=>event.milestones(c.id).map(row=>row.reward)),...event.shop.map(row=>row.reward),...event.communityMilestones.flatMap(row=>row.reward?[row.reward]:[]),...event.discoveries.map(row=>row.reward)]);
  const events=[...new Map(rewards.filter(row=>row.kind==='profile_icon'&&owned.has(row.id)&&!known.has(row.id)).map(row=>[row.id,row])).values()];

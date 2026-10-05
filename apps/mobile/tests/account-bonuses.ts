@@ -20,6 +20,7 @@ ok(overview.sources.some(row=>row.id==='faith:EMBER_VOW'&&row.scope==='character
 ok(overview.sources.some(row=>row.label==='Combat Focus Sigil'&&row.scope==='character'),'Owned permanent boost should appear as an active character source');
 ok(overview.temporary?.label==='Combat XP'&&overview.temporary.percent===10&&overview.temporary.remainingSeconds===3600,'Active Daily Supplies boost should appear with exact remaining qualifying time');
 ok(overview.sources.some(row=>row.scope==='temporary'&&row.label.includes('Daily Supplies')),'Temporary Daily Supplies source should be labeled separately from permanent modifiers');
+// Entitlement assertions compare against the existing effective baseline because account bonuses stack multiplicatively.
 const preEntitlementDropPercent=overview.modifiers.find(row=>row.label==='Drop chance')?.percent??0;
 const preEntitlementCraftingPercent=overview.modifiers.find(row=>row.label==='Crafting speed')?.percent??0;
 

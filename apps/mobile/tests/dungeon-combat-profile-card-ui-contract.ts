@@ -64,7 +64,7 @@ ok(stage.includes('setPaused(false);setShowLog(false);setCueIndex(0)'),'Replay e
 ok(!stage.includes('member:{minHeight:126')&&!stage.includes('avatarFrame:{height:44')&&!stage.includes('castWarning:{minHeight:34'),'Dungeon stage must not retain obsolete pre-profile-card combat styles');
 ok(!card.includes('No companion assist')&&!card.includes('noAssist:'),'Party cards must not spend vertical space on empty companion placeholders');
 ok(card.includes('card:{flex:1,minHeight:116')&&card.includes('combatInfo:{padding:10,paddingTop:0,gap:4')&&card.includes('layout&&{minHeight:layout.cardMinHeight}'),'Party combat cards must keep the modern compact density while honoring narrower-phone sizes');
-ok(card.includes('hollow-courtyard-v1.jpg')&&card.includes('surface-fade-dark.png')&&card.includes('surface-fade-light.png')&&card.includes('emblemRing'),'Restoring replay controls must preserve the courtyard artwork, theme fades and circular party portraits');
+ok(card.includes('hollow-courtyard-v1.jpg')&&card.includes('surface-fade-dark.webp')&&card.includes('surface-fade-light.webp')&&card.includes('emblemRing'),'Restoring replay controls must preserve the courtyard artwork, theme fades and circular party portraits');
 ok(stage.includes("{assists?<StateChip")&&!stage.includes("'NO ASSISTS'"),'Combat header must only show companion-assist summary when assists actually exist');
 ok(stage.includes('useWindowDimensions')&&stage.includes('dungeonCombatLayout(windowWidth)'),'Dungeon battlefield must select a tested layout from the current phone width');
 ok(stage.includes('padding:layout.arenaPadding')&&stage.includes('gap:layout.partyGap'),'Small-phone layout must reclaim arena padding and party-card gap');

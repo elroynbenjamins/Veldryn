@@ -20,7 +20,7 @@ const coverageFiles=[
  'src/theme/asterfall-ingredient-assets.ts',
  'src/theme/asterfall-ore-assets.ts',
  'src/theme/asterfall-gathering-assets.ts',
- 'src/theme/asterfall-crafted-assets.ts',
+ 'src/theme/crafted-item-assets.ts',
  'src/theme/arcane-material-assets.ts',
  'src/theme/regional-resource-assets.ts',
  'src/theme/core-material-assets.ts',

@@ -11,7 +11,7 @@ for(const id of missing){
   ok(monsters.includes("id:'"+id+"'"),'Expected later-region monster '+id);
   ok(assets.includes(id+':'),'Expected dedicated regional portrait mapping for '+id);
 }
-ok(assets.includes("require('../../assets/monsters/regional-monsters-v1.png')"),'Regional monster atlas must be bundled');
+ok(assets.includes("require('../../assets/monsters/regional-monsters-v1.webp')"),'Regional monster atlas must be bundled');
 ok(assets.includes('monsterPortraitSource'),'Monster portrait registry must expose a safe lookup');
 ok(assets.includes('regionalMonsterPortraitCell'),'Monster portrait registry must expose regional atlas cells');
 ok(frame.includes('const portrait=monsterPortraitSource(monster.id),regionalCell=regionalMonsterPortraitCell(monster.id)'),'Portrait frame must resolve standalone or regional portrait art');

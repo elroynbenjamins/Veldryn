@@ -49,6 +49,22 @@ function requiredEnv(name:string){
   return value;
 }
 
+function googlePlayRtdnAudience(){
+  const configured=Deno.env.get('GOOGLE_PLAY_RTDN_AUDIENCE')?.trim();
+  if(configured)return configured;
+  // Pub/Sub defaults its audience to the push endpoint. Derive that one exact
+  // value from trusted server configuration, never request headers or claims.
+  const base=requiredEnv('SUPABASE_URL');
+  let url:URL;
+  try{url=new URL(base)}catch{
+    throw new Error('Invalid server configuration: SUPABASE_URL must be an HTTPS origin');
+  }
+  if(url.protocol!=='https:'||url.username||url.password||url.pathname!=='/'||base.includes('?')||base.includes('#')){
+    throw new Error('Invalid server configuration: SUPABASE_URL must be an HTTPS origin');
+  }
+  return url.origin+'/functions/v1/play-billing-rtdn';
+}
+
 function base64Url(bytes:Uint8Array){
   let binary='';
   for(const byte of bytes)binary+=String.fromCharCode(byte);
@@ -107,7 +123,8 @@ export function warnGooglePlayConfiguration(functionName:'play-billing'|'play-bi
   const missing:string[]=[];
   if(!googlePlayBillingConfigured())missing.push('GOOGLE_PLAY_SERVICE_ACCOUNT_JSON');
   if(functionName==='play-billing-rtdn'){
-    for(const name of ['GOOGLE_PLAY_RTDN_AUDIENCE','GOOGLE_PLAY_RTDN_PUSH_SERVICE_ACCOUNT_EMAIL'])if(!Deno.env.get(name)?.trim())missing.push(name);
+    try{googlePlayRtdnAudience()}catch{missing.push('SUPABASE_URL');}
+    if(!Deno.env.get('GOOGLE_PLAY_RTDN_PUSH_SERVICE_ACCOUNT_EMAIL')?.trim())missing.push('GOOGLE_PLAY_RTDN_PUSH_SERVICE_ACCOUNT_EMAIL');
   }
   if(missing.length)console.warn('['+functionName+'] Missing or invalid configuration keys: '+missing.join(', '));
 }
@@ -340,7 +357,7 @@ async function googleJwks(){
 
 export async function verifyGooglePubSubOidc(req:Request){
   // An unconfigured webhook rejects before downloading keys or touching commerce data.
-  const expectedAudience=requiredEnv('GOOGLE_PLAY_RTDN_AUDIENCE');
+  const expectedAudience=googlePlayRtdnAudience();
   const expectedServiceAccount=requiredEnv('GOOGLE_PLAY_RTDN_PUSH_SERVICE_ACCOUNT_EMAIL');
   const authorization=req.headers.get('authorization')??'';
   const token=authorization.startsWith('Bearer ')?authorization.slice(7):'';

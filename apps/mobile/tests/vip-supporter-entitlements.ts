@@ -1,5 +1,6 @@
 import {createCharacter,newGame,offlineCapBreakdown} from '../src/core/game';
 import {accountEntitlementBenefits,entitlementStorageCapacity,withServerCommerceEntitlements} from '../src/core/account-entitlements';
+import {characterPermanentMultipliers} from '../src/core/permanent-boosts';
 import {activityQueueCapacity} from '../src/core/activity-queue';
 import {characterLoadoutSlotCount} from '../src/core/character-loadouts';
 import {equipmentCraftSlotBreakdown} from '../src/core/equipment-crafting-queue';
@@ -19,18 +20,24 @@ const stacked={...base,account:{...base.account,entitlements:{vip:true,vip_plus:
 
 let b=accountEntitlementBenefits(vip);
 ok(b.vip&&!b.vipPlus&&!b.supporter,'VIP entitlement should remain distinct');
-eq(b.inventorySlots,5,'VIP Inventory slots');eq(b.bankSlots,20,'VIP Bank slots');eq(b.loadoutSlots,1,'VIP loadout slots');
+eq(b.inventorySlots,10,'VIP Inventory slots');eq(b.bankSlots,20,'VIP Bank slots');eq(b.loadoutSlots,1,'VIP loadout slots');
 b=accountEntitlementBenefits(vipPlus);
-ok(!b.vip&&b.vipPlus,'VIP+ alone must not grant VIP');eq(b.afkHours,2,'VIP+ independent offline hours');eq(b.inventorySlots,5,'VIP+ independent Inventory slots');eq(b.bankSlots,30,'VIP+ independent Bank slots');eq(b.loadoutSlots,1,'VIP+ independent loadouts');eq(b.actionQueueSlots,1,'VIP+ Action Queue slot');eq(b.forgeSlots,1,'VIP+ Forge slot');
+ok(!b.vip&&b.vipPlus,'VIP+ alone must not grant VIP');eq(b.afkHours,2,'VIP+ independent offline hours');eq(b.inventorySlots,10,'VIP+ independent Inventory slots');eq(b.bankSlots,30,'VIP+ independent Bank slots');eq(b.loadoutSlots,1,'VIP+ independent loadouts');eq(b.actionQueueSlots,1,'VIP+ Action Queue slot');eq(b.forgeSlots,1,'VIP+ Forge slot');
 b=accountEntitlementBenefits(both);
-ok(b.vip&&b.vipPlus&&!b.supporter,'Both permanent tiers stay active independently');eq(b.afkHours,4,'Both tiers offline hours');eq(b.inventorySlots,10,'Both tiers Inventory slots');eq(b.bankSlots,50,'Both tiers Bank slots');eq(b.loadoutSlots,2,'Both tiers loadouts');
+ok(b.vip&&b.vipPlus&&!b.supporter,'Both permanent tiers stay active independently');eq(b.afkHours,4,'Both tiers offline hours');eq(b.inventorySlots,20,'Both tiers Inventory slots');eq(b.bankSlots,50,'Both tiers Bank slots');eq(b.loadoutSlots,2,'Both tiers loadouts');
 b=accountEntitlementBenefits(supporter);
 ok(b.supporter&&!b.vip&&!b.vipPlus,'Supporter should stack independently');eq(b.forgeSlots,1,'Supporter Forge slot');eq(b.inventorySlots,0,'Supporter must not grant temporary storage');
 b=accountEntitlementBenefits(plusSupporter);
 ok(!b.vip&&b.vipPlus&&b.supporter,'Supporter plus VIP+ must not imply VIP');eq(b.afkHours,4,'VIP+ and Supporter offline hours');eq(b.forgeSlots,2,'VIP+ and Supporter Forge slots add together');
 eq(accountEntitlementBenefits(stacked).afkHours,6,'All three entitlements grant six paid offline hours');
-eq(entitlementStorageCapacity(vipPlus,'inventory'),35,'VIP+ effective starter Inventory');eq(entitlementStorageCapacity(vipPlus,'bank'),150,'VIP+ effective starter Bank');
-eq(entitlementStorageCapacity(both,'inventory'),40,'Both tiers effective starter Inventory');eq(entitlementStorageCapacity(both,'bank'),170,'Both tiers effective starter Bank');
+let m=characterPermanentMultipliers(vip);
+eq(m.gatheringSpeedMultiplier,1.05,'VIP Gathering speed multiplier');eq(m.characterXpMultiplier,1.05,'VIP Combat XP multiplier');eq(m.dropChanceMultiplier,1,'VIP does not inherit VIP+ drops');eq(m.craftingSpeedMultiplier,1,'VIP does not inherit VIP+ crafting speed');
+m=characterPermanentMultipliers(vipPlus);
+eq(m.dropChanceMultiplier,1.05,'VIP+ drop chance multiplier');eq(m.craftingSpeedMultiplier,1.10,'VIP+ Crafting speed multiplier');eq(m.gatheringSpeedMultiplier,1,'VIP+ does not imply VIP Gathering speed');eq(m.characterXpMultiplier,1,'VIP+ does not imply VIP Combat XP');
+m=characterPermanentMultipliers(both);
+eq(m.gatheringSpeedMultiplier,1.05,'Stacked tiers keep VIP Gathering speed');eq(m.characterXpMultiplier,1.05,'Stacked tiers keep VIP Combat XP');eq(m.dropChanceMultiplier,1.05,'Stacked tiers keep VIP+ drops');eq(m.craftingSpeedMultiplier,1.10,'Stacked tiers keep VIP+ Crafting speed');
+eq(entitlementStorageCapacity(vipPlus,'inventory'),40,'VIP+ effective starter Inventory');eq(entitlementStorageCapacity(vipPlus,'bank'),150,'VIP+ effective starter Bank');
+eq(entitlementStorageCapacity(both,'inventory'),50,'Both tiers effective starter Inventory');eq(entitlementStorageCapacity(both,'bank'),170,'Both tiers effective starter Bank');
 eq(characterLoadoutSlotCount(vipPlus),4,'VIP+ independent loadout capacity');eq(characterLoadoutSlotCount(both),5,'Both tiers loadout capacity');eq(activityQueueCapacity(vipPlus),3,'VIP+ queue capacity');
 eq(offlineCapBreakdown(vipPlus).hours-offlineCapBreakdown(base).hours,2,'Offline runtime gives VIP+ only its own reserve grant');
 eq(offlineCapBreakdown(both).hours-offlineCapBreakdown(base).hours,4,'Offline runtime stacks both permanent tiers');
@@ -81,4 +88,4 @@ ok(!b.vip&&b.vipPlus&&!b.supporter,'Server VIP+ access must not synthesize a VIP
 
 ok(!COMMERCE_GUARDRAILS.paidPremiumCurrency&&!COMMERCE_GUARDRAILS.paidPvpPower&&!COMMERCE_GUARDRAILS.paidRankingStrength,'Commerce guardrails must keep paid currency/PvP power/ranking strength disabled');
 
-console.log('PASS: VIP, VIP+, Supporter QoL, Play-local pricing and name-style entitlement contracts');
+console.log('PASS: VIP, VIP+, Supporter benefits, Play-local pricing and name-style entitlement contracts');

@@ -15,6 +15,6 @@ for(const id of ids)ok(mapping.includes(id+':'),'Missing unified miscellaneous a
 ok(mapping.includes("data:image/png;base64,"),'Unified miscellaneous atlas must be an embedded runtime image source');
 ok(resolver.includes('hasMiscItemArtwork(itemId)'),'Shared resource resolver must recognize unified miscellaneous artwork');
 const miscIndex=artwork.indexOf('const misc=miscItemCell(itemId)');
-const runtimeIndex=artwork.indexOf('const runtime=runtimeItemCell(itemId)');
-ok(miscIndex>=0&&runtimeIndex>=0&&miscIndex<runtimeIndex,'Unified miscellaneous artwork must override older runtime fallback artwork');
-console.log('PASS: unified miscellaneous item visuals override the older runtime atlas');
+ok(miscIndex>=0,'Unified miscellaneous artwork must remain wired into ResourceArtwork');
+ok(!artwork.includes('runtimeItemCell(itemId)'),'Legacy runtime atlas fallback must stay removed');
+console.log('PASS: unified miscellaneous item visuals remain canonical with no legacy runtime atlas fallback');

@@ -1,0 +1,357 @@
+{
+  "strategy": "lossless WebP for runtime-referenced PNG families",
+  "referenced_png_files": 562,
+  "candidate_families": 562,
+  "converted_families": 561,
+  "converted_png_files": 857,
+  "source_reference_rewrites": 602,
+  "candidate_bytes_before": 345616666,
+  "candidate_bytes_after": 254821405,
+  "bytes_saved": 90795261,
+  "percent_saved": 26.27,
+  "skipped_unreadable_families": [],
+  "folders": {
+    "card-backgrounds": {
+      "before": 116668725,
+      "after": 94460770,
+      "files": 39,
+      "saved": 22207955
+    },
+    "guild-customization": {
+      "before": 26927776,
+      "after": 16843880,
+      "files": 18,
+      "saved": 10083896
+    },
+    "profile-icons-v1": {
+      "before": 36902635,
+      "after": 28005594,
+      "files": 24,
+      "saved": 8897041
+    },
+    "class-emblems-v3-recolor": {
+      "before": 8816569,
+      "after": 4996444,
+      "files": 36,
+      "saved": 3820125
+    },
+    "events": {
+      "before": 11515016,
+      "after": 8931256,
+      "files": 17,
+      "saved": 2583760
+    },
+    "equipment-t1-wayfinder": {
+      "before": 4554626,
+      "after": 2401576,
+      "files": 3,
+      "saved": 2153050
+    },
+    "equipment-t2-knifedancer": {
+      "before": 6418653,
+      "after": 4274032,
+      "files": 3,
+      "saved": 2144621
+    },
+    "equipment-t3-hexweaver": {
+      "before": 6136000,
+      "after": 4013286,
+      "files": 3,
+      "saved": 2122714
+    },
+    "companions-v2": {
+      "before": 9385788,
+      "after": 7354152,
+      "files": 24,
+      "saved": 2031636
+    },
+    "equipment-t2-hexweaver": {
+      "before": 5622451,
+      "after": 3749262,
+      "files": 3,
+      "saved": 1873189
+    },
+    "equipment-t1-knifedancer": {
+      "before": 5270240,
+      "after": 3480428,
+      "files": 3,
+      "saved": 1789812
+    },
+    "equipment-t2-stonecaller": {
+      "before": 6043668,
+      "after": 4296744,
+      "files": 3,
+      "saved": 1746924
+    },
+    "equipment-t3-wayfinder": {
+      "before": 5413193,
+      "after": 3688776,
+      "files": 3,
+      "saved": 1724417
+    },
+    "equipment-t2-dawnkeeper": {
+      "before": 6881013,
+      "after": 5201664,
+      "files": 3,
+      "saved": 1679349
+    },
+    "equipment-t2-ravager": {
+      "before": 5601323,
+      "after": 3955356,
+      "files": 3,
+      "saved": 1645967
+    },
+    "equipment-t1-bastion": {
+      "before": 3878359,
+      "after": 2272104,
+      "files": 3,
+      "saved": 1606255
+    },
+    "equipment-t2-wayfinder": {
+      "before": 4783074,
+      "after": 3191064,
+      "files": 3,
+      "saved": 1592010
+    },
+    "equipment-t2-dreadguard": {
+      "before": 4849359,
+      "after": 3313286,
+      "files": 3,
+      "saved": 1536073
+    },
+    "equipment-t1-dawnkeeper": {
+      "before": 5314442,
+      "after": 3785054,
+      "files": 3,
+      "saved": 1529388
+    },
+    "equipment-t3-ironwarden": {
+      "before": 4980031,
+      "after": 3479390,
+      "files": 3,
+      "saved": 1500641
+    },
+    "equipment-t1-stonecaller": {
+      "before": 4674908,
+      "after": 3210204,
+      "files": 3,
+      "saved": 1464704
+    },
+    "equipment-t2-ironwarden": {
+      "before": 4995935,
+      "after": 3600390,
+      "files": 3,
+      "saved": 1395545
+    },
+    "equipment-t1-ravager": {
+      "before": 4774499,
+      "after": 3398236,
+      "files": 3,
+      "saved": 1376263
+    },
+    "equipment-t2-bastion": {
+      "before": 4992562,
+      "after": 3643178,
+      "files": 3,
+      "saved": 1349384
+    },
+    "player-badges-v1": {
+      "before": 3748523,
+      "after": 2462174,
+      "files": 3,
+      "saved": 1286349
+    },
+    "ingredient-icons-v1": {
+      "before": 4946094,
+      "after": 3704816,
+      "files": 96,
+      "saved": 1241278
+    },
+    "equipment-t1-dreadguard": {
+      "before": 3946655,
+      "after": 2827678,
+      "files": 3,
+      "saved": 1118977
+    },
+    "coop-ui": {
+      "before": 4025019,
+      "after": 3030442,
+      "files": 29,
+      "saved": 994577
+    },
+    "equipment-t1-ironwarden": {
+      "before": 3586660,
+      "after": 2603800,
+      "files": 3,
+      "saved": 982860
+    },
+    "world": {
+      "before": 3002258,
+      "after": 2191338,
+      "files": 1,
+      "saved": 810920
+    },
+    "items": {
+      "before": 2842885,
+      "after": 2121308,
+      "files": 17,
+      "saved": 721577
+    },
+    "events-startup-v1": {
+      "before": 2024220,
+      "after": 1369128,
+      "files": 9,
+      "saved": 655092
+    },
+    "unrefined-gem.png": {
+      "before": 1799249,
+      "after": 1184982,
+      "files": 1,
+      "saved": 614267
+    },
+    "monsters": {
+      "before": 1725631,
+      "after": 1337980,
+      "files": 24,
+      "saved": 387651
+    },
+    "starter-weapons-v1.png": {
+      "before": 980153,
+      "after": 631964,
+      "files": 1,
+      "saved": 348189
+    },
+    "profile-backgrounds": {
+      "before": 1841279,
+      "after": 1550776,
+      "files": 12,
+      "saved": 290503
+    },
+    "class-emblems-v2": {
+      "before": 507484,
+      "after": 272138,
+      "files": 18,
+      "saved": 235346
+    },
+    "class-skill-icons-v1": {
+      "before": 597890,
+      "after": 386468,
+      "files": 14,
+      "saved": 211422
+    },
+    "gem-sprite-v2.png": {
+      "before": 907735,
+      "after": 741926,
+      "files": 1,
+      "saved": 165809
+    },
+    "master_roster": {
+      "before": 713942,
+      "after": 574474,
+      "files": 57,
+      "saved": 139468
+    },
+    "profile-borders": {
+      "before": 424897,
+      "after": 286762,
+      "files": 2,
+      "saved": 138135
+    },
+    "crafted-items-v1": {
+      "before": 441117,
+      "after": 327256,
+      "files": 37,
+      "saved": 113861
+    },
+    "ui-icons-v2": {
+      "before": 466676,
+      "after": 361122,
+      "files": 84,
+      "saved": 105554
+    },
+    "activity-icons-v1": {
+      "before": 463062,
+      "after": 377022,
+      "files": 44,
+      "saved": 86040
+    },
+    "creation-ui-v2": {
+      "before": 176427,
+      "after": 116374,
+      "files": 147,
+      "saved": 60053
+    },
+    "navigation-icons-v4": {
+      "before": 250740,
+      "after": 191506,
+      "files": 10,
+      "saved": 59234
+    },
+    "navigation-icons-v3": {
+      "before": 101941,
+      "after": 57602,
+      "files": 2,
+      "saved": 44339
+    },
+    "environment": {
+      "before": 240602,
+      "after": 200104,
+      "files": 13,
+      "saved": 40498
+    },
+    "regional-resources-v1.png": {
+      "before": 181792,
+      "after": 148730,
+      "files": 1,
+      "saved": 33062
+    },
+    "tools": {
+      "before": 77717,
+      "after": 61558,
+      "files": 1,
+      "saved": 16159
+    },
+    "brands": {
+      "before": 13974,
+      "after": 3512,
+      "files": 1,
+      "saved": 10462
+    },
+    "consumables-herb-v2.png": {
+      "before": 46561,
+      "after": 37514,
+      "files": 1,
+      "saved": 9047
+    },
+    "event_collectibles": {
+      "before": 51330,
+      "after": 43578,
+      "files": 3,
+      "saved": 7752
+    },
+    "consumables-potion-v2.png": {
+      "before": 36080,
+      "after": 29142,
+      "files": 1,
+      "saved": 6938
+    },
+    "dungeon-enemies-v1": {
+      "before": 35429,
+      "after": 31794,
+      "files": 6,
+      "saved": 3635
+    },
+    "asterfall-logs-fish-v1.png": {
+      "before": 8376,
+      "after": 7494,
+      "files": 1,
+      "saved": 882
+    },
+    "combat-scenes": {
+      "before": 738,
+      "after": 132,
+      "files": 2,
+      "saved": 606
+    }
+  }
+}

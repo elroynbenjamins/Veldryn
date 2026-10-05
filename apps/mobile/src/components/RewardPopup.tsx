@@ -62,7 +62,7 @@ export function RewardPopup({reward,activity,classId,welcomeBack=false,welcomeRe
   const followNext=()=>{if(!nextAction)return;onClose();nextAction.action();};
   return <Modal transparent statusBarTranslucent visible={reward!==null} animationType={reduceMotion?'none':'fade'} onRequestClose={onClose}>
     <View accessibilityViewIsModal onAccessibilityEscape={onClose} style={s.backdrop}>
-      <ImageBackground source={require('../../assets/world/asterfall-map-v1.png')} resizeMode="cover" imageStyle={s.mapImage} style={[s.world,width<360&&s.worldCompact,{paddingTop:Math.max(spacing.xl,insets.top+spacing.md),paddingBottom:Math.max(spacing.xl,insets.bottom+spacing.md)}]} accessibilityLabel={gt("Asterfall expedition rewards")}>
+      <ImageBackground source={require('../../assets/world/asterfall-map-v1.webp')} resizeMode="cover" imageStyle={s.mapImage} style={[s.world,width<360&&s.worldCompact,{paddingTop:Math.max(spacing.xl,insets.top+spacing.md),paddingBottom:Math.max(spacing.xl,insets.bottom+spacing.md)}]} accessibilityLabel={gt("Asterfall expedition rewards")}>
         <View style={s.worldShade}/><View style={s.grid}/>
         {reward&&<View style={[s.card,expandCard&&s.cardExpanded,{width:'100%',maxWidth:560,alignSelf:'center'}]}><ScrollView style={{flexShrink:1,flexGrow:0}} contentContainerStyle={s.cardContent} showsVerticalScrollIndicator={false} accessibilityLiveRegion="polite" showsHorizontalScrollIndicator={false}>
           <Text style={s.eyebrow}>{welcomeBack?gt("OFFLINE PROGRESS"):gt("REWARDS COLLECTED")}</Text><Text style={s.title}>{welcomeBack?gt("Welcome back"):reward.activityResults?gt("Activity summary"):(activityName(activity)==='Asterfall activity'?gt('Asterfall activity'):activityName(activity))}</Text>

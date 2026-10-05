@@ -10,8 +10,8 @@ export const GEM_SPRITE_V1_CELL=128;
  * progression materials. The atlas is embedded as data so Expo/Metro can use
  * it without adding a native asset pipeline dependency.
  */
-export const gemSpriteSourceV1=require('../../assets/gem-sprite-v2.png') as ImageSourcePropType;
-export const rawGemSpriteSourceV1=require('../../assets/unrefined-gem.png') as ImageSourcePropType;
+export const gemSpriteSourceV1=require('../../assets/gem-sprite-v2.webp') as ImageSourcePropType;
+export const rawGemSpriteSourceV1=require('../../assets/unrefined-gem.webp') as ImageSourcePropType;
 
 export function hasRawGemArtworkV1(itemId:string){return itemId.startsWith('raw_gem:');}
 

@@ -1,6 +1,6 @@
 import {Image,StyleSheet,View} from 'react-native';
 
-const STARTER_WEAPON_SHEET=require('../../assets/starter-weapons-v1.png');
+const STARTER_WEAPON_SHEET=require('../../assets/starter-weapons-v1.webp');
 const SHEET_SIZE=1274;
 const CELL_SIZE=SHEET_SIZE/3;
 const CELL_BY_ITEM_ID:Record<string,{column:number;row:number}>={

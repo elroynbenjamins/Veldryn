@@ -5,7 +5,7 @@
 export const REGIONAL_RESOURCE_SHEET_WIDTH=320;
 export const REGIONAL_RESOURCE_SHEET_HEIGHT=256;
 export const REGIONAL_RESOURCE_CELL=64;
-export const regionalResourceSheet=require('../../assets/regional-resources-v1.png');
+export const regionalResourceSheet=require('../../assets/regional-resources-v1.webp');
 
 export interface RegionalResourceCell{column:number;row:number;}
 export const regionalResourceCellById:Readonly<Record<string,RegionalResourceCell>>={

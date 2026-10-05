@@ -30,6 +30,10 @@
         "EXPO_PUBLIC_COOP_ROGUELITE_V1": "true",
         "EXPO_PUBLIC_COOP_API_URL": "https://nyjwigipamnvpdvpauuv.supabase.co/functions/v1/coop",
         "EXPO_PUBLIC_COOP_LIVE_READY_V1": "true"
+      },
+      "environment": "production",
+      "android": {
+        "image": "latest"
       }
     },
     "staging": {

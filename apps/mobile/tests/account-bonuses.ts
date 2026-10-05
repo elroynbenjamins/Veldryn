@@ -25,9 +25,13 @@ ok(overview.sources.some(row=>row.scope==='temporary'&&row.label.includes('Daily
 state={...state,account:{...state.account,entitlements:{vip_plus:true,supporter:true}}};
 overview=accountBonusOverview(state);
 ok(!overview.sources.some(row=>row.id==='entitlement:vip'),'VIP+ alone should not display an unowned VIP source');
-ok(overview.sources.some(row=>row.id==='entitlement:vip_plus'&&row.detail.includes('RGB names')),'VIP+ should expose advanced permanent QoL');
+ok(overview.sources.some(row=>row.id==='entitlement:vip_plus'&&row.detail.includes('+10 Inventory')&&row.detail.includes('+5% drops')&&row.detail.includes('+10% Crafting speed')),'VIP+ should expose its storage and progression benefits');
+ok(overview.modifiers.some(row=>row.label==='Drop chance'&&Math.abs(row.percent-5)<0.01),'VIP+ should contribute +5% effective drop chance');
+ok(overview.modifiers.some(row=>row.label==='Crafting speed'&&Math.abs(row.percent-10)<0.01),'VIP+ should contribute +10% effective Crafting speed');
 ok(overview.sources.some(row=>row.id==='entitlement:supporter'&&row.detail.includes('Forge')),'Supporter should expose active Forge/name-style QoL');
 state={...state,account:{...state.account,entitlements:{...state.account.entitlements,vip:true}}};
 overview=accountBonusOverview(state);
-ok(overview.sources.some(row=>row.id==='entitlement:vip'&&row.detail.includes('+20 Bank')),'Owned VIP should expose its separate permanent storage/loadout QoL');
+ok(overview.sources.some(row=>row.id==='entitlement:vip'&&row.detail.includes('+10 Inventory')&&row.detail.includes('+20 Bank')&&row.detail.includes('+5% Gathering speed')&&row.detail.includes('+5% Combat XP')),'Owned VIP should expose its separate storage and progression benefits');
+ok(overview.modifiers.some(row=>row.label==='Gathering speed'&&row.percent>=5),'VIP should contribute Gathering speed');
+ok(overview.modifiers.some(row=>row.label==='Combat XP'&&row.percent>=5),'VIP should contribute Combat XP');
 console.log(JSON.stringify({status:'PASS',combatPowerPct:combat?.percent,sourceCount:overview.sources.length,temporary:overview.temporary},null,2));

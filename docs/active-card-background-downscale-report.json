@@ -1,0 +1,389 @@
+{
+  "strategy": "85% linear downscale of active live card-background variants; lossless WebP retained",
+  "scale": 0.85,
+  "active_theme_count": 5,
+  "file_count": 15,
+  "before_bytes": 37366602,
+  "after_bytes": 28474246,
+  "saved_bytes": 8892356,
+  "saved_percent": 23.8,
+  "largest_after": [
+    {
+      "path": "apps/mobile/assets/card-backgrounds/forest_sanctum_wide_v2.webp",
+      "before_dimensions": [
+        1672,
+        941
+      ],
+      "after_dimensions": [
+        1421,
+        800
+      ],
+      "before_bytes": 2742464,
+      "after_bytes": 2080532,
+      "saved_bytes": 661932,
+      "saved_percent": 24.14
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/forest_sanctum_square.webp",
+      "before_dimensions": [
+        1254,
+        1254
+      ],
+      "after_dimensions": [
+        1066,
+        1066
+      ],
+      "before_bytes": 2665410,
+      "after_bytes": 2027196,
+      "saved_bytes": 638214,
+      "saved_percent": 23.94
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/forest_sanctum_portrait.webp",
+      "before_dimensions": [
+        1024,
+        1536
+      ],
+      "after_dimensions": [
+        870,
+        1306
+      ],
+      "before_bytes": 2603642,
+      "after_bytes": 1974368,
+      "saved_bytes": 629274,
+      "saved_percent": 24.17
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/kingdom_approach_wide_v2.webp",
+      "before_dimensions": [
+        1672,
+        941
+      ],
+      "after_dimensions": [
+        1421,
+        800
+      ],
+      "before_bytes": 2574570,
+      "after_bytes": 1968598,
+      "saved_bytes": 605972,
+      "saved_percent": 23.54
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/kingdom_approach_square_v2.webp",
+      "before_dimensions": [
+        1254,
+        1254
+      ],
+      "after_dimensions": [
+        1066,
+        1066
+      ],
+      "before_bytes": 2529668,
+      "after_bytes": 1925850,
+      "saved_bytes": 603818,
+      "saved_percent": 23.87
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/kingdom_approach_portrait.webp",
+      "before_dimensions": [
+        1024,
+        1536
+      ],
+      "after_dimensions": [
+        870,
+        1306
+      ],
+      "before_bytes": 2508968,
+      "after_bytes": 1908004,
+      "saved_bytes": 600964,
+      "saved_percent": 23.95
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/harvestwake_wide_v2.webp",
+      "before_dimensions": [
+        1672,
+        941
+      ],
+      "after_dimensions": [
+        1421,
+        800
+      ],
+      "before_bytes": 2483436,
+      "after_bytes": 1895522,
+      "saved_bytes": 587914,
+      "saved_percent": 23.67
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/guild_plaza_wide_v2.webp",
+      "before_dimensions": [
+        1672,
+        941
+      ],
+      "after_dimensions": [
+        1421,
+        800
+      ],
+      "before_bytes": 2466162,
+      "after_bytes": 1876436,
+      "saved_bytes": 589726,
+      "saved_percent": 23.91
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/grand_storehouse_square_v2.webp",
+      "before_dimensions": [
+        1254,
+        1254
+      ],
+      "after_dimensions": [
+        1066,
+        1066
+      ],
+      "before_bytes": 2435582,
+      "after_bytes": 1865032,
+      "saved_bytes": 570550,
+      "saved_percent": 23.43
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/harvestwake_portrait.webp",
+      "before_dimensions": [
+        1024,
+        1536
+      ],
+      "after_dimensions": [
+        870,
+        1306
+      ],
+      "before_bytes": 2427856,
+      "after_bytes": 1848642,
+      "saved_bytes": 579214,
+      "saved_percent": 23.86
+    }
+  ],
+  "files": [
+    {
+      "path": "apps/mobile/assets/card-backgrounds/forest_sanctum_portrait.webp",
+      "before_dimensions": [
+        1024,
+        1536
+      ],
+      "after_dimensions": [
+        870,
+        1306
+      ],
+      "before_bytes": 2603642,
+      "after_bytes": 1974368,
+      "saved_bytes": 629274,
+      "saved_percent": 24.17
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/forest_sanctum_square.webp",
+      "before_dimensions": [
+        1254,
+        1254
+      ],
+      "after_dimensions": [
+        1066,
+        1066
+      ],
+      "before_bytes": 2665410,
+      "after_bytes": 2027196,
+      "saved_bytes": 638214,
+      "saved_percent": 23.94
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/forest_sanctum_wide_v2.webp",
+      "before_dimensions": [
+        1672,
+        941
+      ],
+      "after_dimensions": [
+        1421,
+        800
+      ],
+      "before_bytes": 2742464,
+      "after_bytes": 2080532,
+      "saved_bytes": 661932,
+      "saved_percent": 24.14
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/grand_storehouse_portrait.webp",
+      "before_dimensions": [
+        1024,
+        1536
+      ],
+      "after_dimensions": [
+        870,
+        1306
+      ],
+      "before_bytes": 2381886,
+      "after_bytes": 1811172,
+      "saved_bytes": 570714,
+      "saved_percent": 23.96
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/grand_storehouse_square_v2.webp",
+      "before_dimensions": [
+        1254,
+        1254
+      ],
+      "after_dimensions": [
+        1066,
+        1066
+      ],
+      "before_bytes": 2435582,
+      "after_bytes": 1865032,
+      "saved_bytes": 570550,
+      "saved_percent": 23.43
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/grand_storehouse_wide_v2.webp",
+      "before_dimensions": [
+        1672,
+        941
+      ],
+      "after_dimensions": [
+        1421,
+        800
+      ],
+      "before_bytes": 2408142,
+      "after_bytes": 1838022,
+      "saved_bytes": 570120,
+      "saved_percent": 23.67
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/guild_plaza_portrait.webp",
+      "before_dimensions": [
+        1024,
+        1536
+      ],
+      "after_dimensions": [
+        870,
+        1306
+      ],
+      "before_bytes": 2407706,
+      "after_bytes": 1830612,
+      "saved_bytes": 577094,
+      "saved_percent": 23.97
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/guild_plaza_square.webp",
+      "before_dimensions": [
+        1254,
+        1254
+      ],
+      "after_dimensions": [
+        1066,
+        1066
+      ],
+      "before_bytes": 2340492,
+      "after_bytes": 1791630,
+      "saved_bytes": 548862,
+      "saved_percent": 23.45
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/guild_plaza_wide_v2.webp",
+      "before_dimensions": [
+        1672,
+        941
+      ],
+      "after_dimensions": [
+        1421,
+        800
+      ],
+      "before_bytes": 2466162,
+      "after_bytes": 1876436,
+      "saved_bytes": 589726,
+      "saved_percent": 23.91
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/harvestwake_portrait.webp",
+      "before_dimensions": [
+        1024,
+        1536
+      ],
+      "after_dimensions": [
+        870,
+        1306
+      ],
+      "before_bytes": 2427856,
+      "after_bytes": 1848642,
+      "saved_bytes": 579214,
+      "saved_percent": 23.86
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/harvestwake_square_v2.webp",
+      "before_dimensions": [
+        1254,
+        1254
+      ],
+      "after_dimensions": [
+        1066,
+        1066
+      ],
+      "before_bytes": 2390618,
+      "after_bytes": 1832630,
+      "saved_bytes": 557988,
+      "saved_percent": 23.34
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/harvestwake_wide_v2.webp",
+      "before_dimensions": [
+        1672,
+        941
+      ],
+      "after_dimensions": [
+        1421,
+        800
+      ],
+      "before_bytes": 2483436,
+      "after_bytes": 1895522,
+      "saved_bytes": 587914,
+      "saved_percent": 23.67
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/kingdom_approach_portrait.webp",
+      "before_dimensions": [
+        1024,
+        1536
+      ],
+      "after_dimensions": [
+        870,
+        1306
+      ],
+      "before_bytes": 2508968,
+      "after_bytes": 1908004,
+      "saved_bytes": 600964,
+      "saved_percent": 23.95
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/kingdom_approach_square_v2.webp",
+      "before_dimensions": [
+        1254,
+        1254
+      ],
+      "after_dimensions": [
+        1066,
+        1066
+      ],
+      "before_bytes": 2529668,
+      "after_bytes": 1925850,
+      "saved_bytes": 603818,
+      "saved_percent": 23.87
+    },
+    {
+      "path": "apps/mobile/assets/card-backgrounds/kingdom_approach_wide_v2.webp",
+      "before_dimensions": [
+        1672,
+        941
+      ],
+      "after_dimensions": [
+        1421,
+        800
+      ],
+      "before_bytes": 2574570,
+      "after_bytes": 1968598,
+      "saved_bytes": 605972,
+      "saved_percent": 23.54
+    }
+  ]
+}

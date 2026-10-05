@@ -88,4 +88,5 @@ ok(!b.vip&&b.vipPlus&&!b.supporter,'Server VIP+ access must not synthesize a VIP
 
 ok(!COMMERCE_GUARDRAILS.paidPremiumCurrency&&!COMMERCE_GUARDRAILS.paidPvpPower&&!COMMERCE_GUARDRAILS.paidRankingStrength,'Commerce guardrails must keep paid currency/PvP power/ranking strength disabled');
 
+// Release AAB entitlement regression coverage.
 console.log('PASS: VIP, VIP+, Supporter benefits, Play-local pricing and name-style entitlement contracts');

@@ -1,0 +1,88 @@
+name: One-time card background audit
+
+on:
+  push:
+    branches:
+      - audit/card-background-resolution
+
+permissions:
+  contents: write
+
+jobs:
+  audit:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: audit/card-background-resolution
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Pillow
+        run: python -m pip install --disable-pip-version-check pillow
+      - name: Audit card backgrounds
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+          import json, re
+
+          root=Path("apps/mobile/assets/card-backgrounds")
+          files=sorted(root.glob("*.webp"))
+          if len(files)!=39:
+              raise SystemExit(f"Expected 39 WebP card backgrounds, found {len(files)}")
+
+          rows=[]
+          totals={"wide":0,"square":0,"portrait":0,"other":0}
+          bytes_by_kind={k:0 for k in totals}
+          dims={}
+          for p in files:
+              name=p.name
+              kind="wide" if "_wide_" in name else "square" if "_square" in name else "portrait" if "_portrait" in name else "other"
+              with Image.open(p) as im:
+                  im.load()
+                  w,h=im.size
+                  mode=im.mode
+              size=p.stat().st_size
+              totals[kind]+=1
+              bytes_by_kind[kind]+=size
+              dims[f"{w}x{h}"]=dims.get(f"{w}x{h}",0)+1
+              rows.append({
+                  "path":str(p),"name":name,"kind":kind,
+                  "width":w,"height":h,"aspect":round(w/h,4),
+                  "mode":mode,"bytes":size
+              })
+
+          # Keep source evidence for known render surfaces in the report.
+          surfaces=[]
+          for p in Path("apps/mobile/src").rglob("*.tsx"):
+              text=p.read_text(encoding="utf-8",errors="ignore")
+              if "CardBackground" not in text:
+                  continue
+              snippets=[]
+              for i,line in enumerate(text.splitlines(),1):
+                  if any(token in line for token in ("CardBackground","maxWidth","minHeight","aspectRatio","height:","width:")):
+                      snippets.append({"line":i,"text":line.strip()[:300]})
+              surfaces.append({"path":str(p),"snippets":snippets[:100]})
+
+          report={
+              "file_count":len(rows),
+              "total_bytes":sum(r["bytes"] for r in rows),
+              "counts_by_kind":totals,
+              "bytes_by_kind":bytes_by_kind,
+              "dimension_counts":dict(sorted(dims.items())),
+              "largest_files":sorted(rows,key=lambda r:r["bytes"],reverse=True)[:15],
+              "files":rows,
+              "render_surface_source_evidence":surfaces
+          }
+          Path("docs/card-background-resolution-audit.json").write_text(json.dumps(report,indent=2)+"\n",encoding="utf-8")
+          print(json.dumps({k:report[k] for k in ("file_count","total_bytes","counts_by_kind","bytes_by_kind","dimension_counts")},indent=2))
+          PY
+      - name: Commit audit report
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/card-background-resolution-audit.json
+          git commit -m "docs: audit card background resolutions"
+          git push origin HEAD:audit/card-background-resolution

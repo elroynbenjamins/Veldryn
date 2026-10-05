@@ -45,6 +45,7 @@ ASSET_REF = re.compile(
 
 MIN_SAVING_BYTES = 256
 DENSITY_SUFFIX = re.compile(r"@\d+x$")
+SKIPPED_UNREADABLE: list[str] = []
 
 
 def referenced_pngs() -> tuple[set[Path], dict[Path, list[Path]]]:
@@ -120,6 +121,7 @@ def convert_family(family: tuple[Path, ...]) -> tuple[bool, int, int]:
         for _, tmp in outputs:
             tmp.unlink(missing_ok=True)
         names = ", ".join(str(p.relative_to(ROOT)) for p in family)
+        SKIPPED_UNREADABLE.append(names)
         print(f"WARNING: skipping unreadable PNG family: {names} ({exc})")
         return False, before, before
     except Exception:
@@ -216,6 +218,7 @@ def main() -> None:
         "candidate_bytes_after": after_total,
         "bytes_saved": before_total - after_total,
         "percent_saved": round((before_total - after_total) / before_total * 100, 2) if before_total else 0,
+        "skipped_unreadable_families": SKIPPED_UNREADABLE,
         "folders": {
             key: {
                 **value,

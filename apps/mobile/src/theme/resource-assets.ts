@@ -9,7 +9,6 @@ import {hasAsterfallOreArtwork} from './asterfall-ore-assets';
 import {hasAsterfallGatheringArtwork} from './asterfall-gathering-assets';
 import {hasArcaneMaterialArtwork} from './arcane-material-assets';
 import {hasRegionalResourceArtwork} from './regional-resource-assets';
-import {hasRuntimeItemArtwork} from './runtime-item-assets';
 
 /** Canonical gathering yields with production-ready transparent pixel artwork. */
 export const resourceIconSourceById:Readonly<Partial<Record<string,ImageSourcePropType>>>={
@@ -47,4 +46,4 @@ export const resourceIconSourceById:Readonly<Partial<Record<string,ImageSourcePr
 };
 
 export function resourceIconSource(itemId:string){return resourceIconSourceById[itemId];}
-export function hasResourceArtwork(itemId:string){return hasConsumableArtwork(itemId)||hasMiscItemArtwork(itemId)||hasAsterfallIngredientArtwork(itemId)||hasAsterfallOreArtwork(itemId)||hasAsterfallGatheringArtwork(itemId)||hasArcaneMaterialArtwork(itemId)||hasRuntimeItemArtwork(itemId)||hasRegionalResourceArtwork(itemId)||!!resourceIconSource(itemId);}
+export function hasResourceArtwork(itemId:string){return hasConsumableArtwork(itemId)||hasMiscItemArtwork(itemId)||hasAsterfallIngredientArtwork(itemId)||hasAsterfallOreArtwork(itemId)||hasAsterfallGatheringArtwork(itemId)||hasArcaneMaterialArtwork(itemId)||hasRegionalResourceArtwork(itemId)||!!resourceIconSource(itemId);}

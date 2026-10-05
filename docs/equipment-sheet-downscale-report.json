@@ -1,0 +1,1074 @@
+{
+  "strategy": "80% linear downscale per existing equipment atlas; original aspect ratio preserved; lossless WebP retained",
+  "filter": "Pillow LANCZOS",
+  "scale": 0.8,
+  "atlas_count": 60,
+  "source_dimension_counts": {
+    "1659x948": 1,
+    "1774x887": 47,
+    "1983x793": 12
+  },
+  "target_dimension_counts": {
+    "1327x758": 1,
+    "1419x710": 47,
+    "1586x634": 12
+  },
+  "before_bytes": 70385508,
+  "after_bytes": 47887960,
+  "saved_bytes": 22497548,
+  "saved_percent": 31.96,
+  "largest_after": [
+    {
+      "path": "apps/mobile/assets/equipment-t2-dawnkeeper/T2_023-beacon-vestments-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 1780726,
+      "after_bytes": 1197378,
+      "saved_bytes": 583348,
+      "saved_percent": 32.76
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t2-dawnkeeper/T2_024-sunlit-ward-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 1764348,
+      "after_bytes": 1185344,
+      "saved_bytes": 579004,
+      "saved_percent": 32.82
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t2-dawnkeeper/T2_022-morning-grace-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 1656590,
+      "after_bytes": 1116446,
+      "saved_bytes": 540144,
+      "saved_percent": 32.61
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t2-stonecaller/T2_025-earthsong-regalia-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 1478126,
+      "after_bytes": 998892,
+      "saved_bytes": 479234,
+      "saved_percent": 32.42
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t2-knifedancer/T2_021-viperroot-fang-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 1476692,
+      "after_bytes": 992696,
+      "saved_bytes": 483996,
+      "saved_percent": 32.78
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t2-stonecaller/T2_026-deeproot-aegis-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 1427418,
+      "after_bytes": 968422,
+      "saved_bytes": 458996,
+      "saved_percent": 32.16
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t2-stonecaller/T2_027-runeshaper-chorus-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 1391200,
+      "after_bytes": 949236,
+      "saved_bytes": 441964,
+      "saved_percent": 31.77
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t2-hexweaver/T2_016-briarhex-vestments-icon-sheet.webp",
+      "before_dimensions": [
+        1983,
+        793
+      ],
+      "after_dimensions": [
+        1586,
+        634
+      ],
+      "before_bytes": 1378264,
+      "after_bytes": 947832,
+      "saved_bytes": 430432,
+      "saved_percent": 31.23
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t2-knifedancer/T2_020-nightbloom-cut-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 1409192,
+      "after_bytes": 946062,
+      "saved_bytes": 463130,
+      "saved_percent": 32.86
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t3-hexweaver/T3_016-oathcipher-vestments-icon-sheet.webp",
+      "before_dimensions": [
+        1983,
+        793
+      ],
+      "after_dimensions": [
+        1586,
+        634
+      ],
+      "before_bytes": 1374520,
+      "after_bytes": 930012,
+      "saved_bytes": 444508,
+      "saved_percent": 32.34
+    }
+  ],
+  "files": [
+    {
+      "path": "apps/mobile/assets/equipment-t1-bastion/T1_004-first-citadel-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 862638,
+      "after_bytes": 599538,
+      "saved_bytes": 263100,
+      "saved_percent": 30.5
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t1-bastion/T1_005-sigil-aegis-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 671570,
+      "after_bytes": 455768,
+      "saved_bytes": 215802,
+      "saved_percent": 32.13
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t1-bastion/T1_006-last-gate-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 737896,
+      "after_bytes": 516218,
+      "saved_bytes": 221678,
+      "saved_percent": 30.04
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t1-dawnkeeper/T1_022-morning-grace-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 1233706,
+      "after_bytes": 833422,
+      "saved_bytes": 400284,
+      "saved_percent": 32.45
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t1-dawnkeeper/T1_023-beacon-vestments-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 1273800,
+      "after_bytes": 860426,
+      "saved_bytes": 413374,
+      "saved_percent": 32.45
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t1-dawnkeeper/T1_024-sunlit-ward-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 1277548,
+      "after_bytes": 864782,
+      "saved_bytes": 412766,
+      "saved_percent": 32.31
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t1-dreadguard/T1_007-blood-iron-pact-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 911788,
+      "after_bytes": 626986,
+      "saved_bytes": 284802,
+      "saved_percent": 31.24
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t1-dreadguard/T1_008-grave-vanguard-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 942658,
+      "after_bytes": 642702,
+      "saved_bytes": 299956,
+      "saved_percent": 31.82
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t1-dreadguard/T1_009-doom-bastion-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 973232,
+      "after_bytes": 659410,
+      "saved_bytes": 313822,
+      "saved_percent": 32.25
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t1-ironwarden/T1_001-oathbound-rampart-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 894162,
+      "after_bytes": 619598,
+      "saved_bytes": 274564,
+      "saved_percent": 30.71
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t1-ironwarden/T1_002-chainmarshal-plate-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 847678,
+      "after_bytes": 587786,
+      "saved_bytes": 259892,
+      "saved_percent": 30.66
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t1-ironwarden/T1_003-emberwatch-reprisal-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 861960,
+      "after_bytes": 600266,
+      "saved_bytes": 261694,
+      "saved_percent": 30.36
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t1-knifedancer/T1_019-briarstep-waltz-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 1083886,
+      "after_bytes": 738856,
+      "saved_bytes": 345030,
+      "saved_percent": 31.83
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t1-knifedancer/T1_020-red-moon-cut-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 1185672,
+      "after_bytes": 799322,
+      "saved_bytes": 386350,
+      "saved_percent": 32.58
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t1-knifedancer/T1_021-coil-fang-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 1210870,
+      "after_bytes": 823730,
+      "saved_bytes": 387140,
+      "saved_percent": 31.97
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t1-ravager/T1_013-goremaw-assault-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 1083718,
+      "after_bytes": 746394,
+      "saved_bytes": 337324,
+      "saved_percent": 31.13
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t1-ravager/T1_014-warhowl-frenzy-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 1146014,
+      "after_bytes": 789352,
+      "saved_bytes": 356662,
+      "saved_percent": 31.12
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t1-ravager/T1_015-sundering-colossus-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 1168504,
+      "after_bytes": 799838,
+      "saved_bytes": 368666,
+      "saved_percent": 31.55
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t1-stonecaller/T1_025-earthsong-regalia-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 1126074,
+      "after_bytes": 766058,
+      "saved_bytes": 360016,
+      "saved_percent": 31.97
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t1-stonecaller/T1_026-deeproot-aegis-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 1107230,
+      "after_bytes": 765408,
+      "saved_bytes": 341822,
+      "saved_percent": 30.87
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t1-stonecaller/T1_027-runeshaper-chorus-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 976900,
+      "after_bytes": 671788,
+      "saved_bytes": 305112,
+      "saved_percent": 31.23
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t1-wayfinder/T1_010-falcon-mark-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 872260,
+      "after_bytes": 595230,
+      "saved_bytes": 277030,
+      "saved_percent": 31.76
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t1-wayfinder/T1_011-greenstride-skirmisher-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 755998,
+      "after_bytes": 515800,
+      "saved_bytes": 240198,
+      "saved_percent": 31.77
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t1-wayfinder/T1_012-startracker-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 773318,
+      "after_bytes": 525016,
+      "saved_bytes": 248302,
+      "saved_percent": 32.11
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t2-bastion/T2_004-ironwood-citadel-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 1252532,
+      "after_bytes": 854230,
+      "saved_bytes": 398302,
+      "saved_percent": 31.8
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t2-bastion/T2_005-runegrove-aegis-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 1128166,
+      "after_bytes": 769796,
+      "saved_bytes": 358370,
+      "saved_percent": 31.77
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t2-bastion/T2_006-briargate-sentinel-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 1262480,
+      "after_bytes": 853914,
+      "saved_bytes": 408566,
+      "saved_percent": 32.36
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t2-dawnkeeper/T2_022-morning-grace-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 1656590,
+      "after_bytes": 1116446,
+      "saved_bytes": 540144,
+      "saved_percent": 32.61
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t2-dawnkeeper/T2_023-beacon-vestments-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 1780726,
+      "after_bytes": 1197378,
+      "saved_bytes": 583348,
+      "saved_percent": 32.76
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t2-dawnkeeper/T2_024-sunlit-ward-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 1764348,
+      "after_bytes": 1185344,
+      "saved_bytes": 579004,
+      "saved_percent": 32.82
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t2-dreadguard/T2_007-blackroot-covenant-icon-sheet.webp",
+      "before_dimensions": [
+        1659,
+        948
+      ],
+      "after_dimensions": [
+        1327,
+        758
+      ],
+      "before_bytes": 1186662,
+      "after_bytes": 807614,
+      "saved_bytes": 379048,
+      "saved_percent": 31.94
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t2-dreadguard/T2_008-gravebark-vanguard-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 1031842,
+      "after_bytes": 707240,
+      "saved_bytes": 324602,
+      "saved_percent": 31.46
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t2-dreadguard/T2_009-hollowthorn-bastion-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 1094782,
+      "after_bytes": 750758,
+      "saved_bytes": 344024,
+      "saved_percent": 31.42
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t2-hexweaver/T2_016-briarhex-vestments-icon-sheet.webp",
+      "before_dimensions": [
+        1983,
+        793
+      ],
+      "after_dimensions": [
+        1586,
+        634
+      ],
+      "before_bytes": 1378264,
+      "after_bytes": 947832,
+      "saved_bytes": 430432,
+      "saved_percent": 31.23
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t2-hexweaver/T2_017-moonspore-rite-icon-sheet.webp",
+      "before_dimensions": [
+        1983,
+        793
+      ],
+      "after_dimensions": [
+        1586,
+        634
+      ],
+      "before_bytes": 1193206,
+      "after_bytes": 808650,
+      "saved_bytes": 384556,
+      "saved_percent": 32.23
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t2-hexweaver/T2_018-hollowveil-weaver-icon-sheet.webp",
+      "before_dimensions": [
+        1983,
+        793
+      ],
+      "after_dimensions": [
+        1586,
+        634
+      ],
+      "before_bytes": 1177792,
+      "after_bytes": 799162,
+      "saved_bytes": 378630,
+      "saved_percent": 32.15
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t2-ironwarden/T2_001-ironbark-bulwark-icon-sheet.webp",
+      "before_dimensions": [
+        1983,
+        793
+      ],
+      "after_dimensions": [
+        1586,
+        634
+      ],
+      "before_bytes": 1181490,
+      "after_bytes": 804478,
+      "saved_bytes": 377012,
+      "saved_percent": 31.91
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t2-ironwarden/T2_002-oathroot-marshal-icon-sheet.webp",
+      "before_dimensions": [
+        1983,
+        793
+      ],
+      "after_dimensions": [
+        1586,
+        634
+      ],
+      "before_bytes": 1189440,
+      "after_bytes": 805268,
+      "saved_bytes": 384172,
+      "saved_percent": 32.3
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t2-ironwarden/T2_003-thornwatch-reprisal-icon-sheet.webp",
+      "before_dimensions": [
+        1983,
+        793
+      ],
+      "after_dimensions": [
+        1586,
+        634
+      ],
+      "before_bytes": 1229460,
+      "after_bytes": 838844,
+      "saved_bytes": 390616,
+      "saved_percent": 31.77
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t2-knifedancer/T2_019-thornstep-waltz-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 1388148,
+      "after_bytes": 929574,
+      "saved_bytes": 458574,
+      "saved_percent": 33.03
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t2-knifedancer/T2_020-nightbloom-cut-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 1409192,
+      "after_bytes": 946062,
+      "saved_bytes": 463130,
+      "saved_percent": 32.86
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t2-knifedancer/T2_021-viperroot-fang-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 1476692,
+      "after_bytes": 992696,
+      "saved_bytes": 483996,
+      "saved_percent": 32.78
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t2-ravager/T2_013-goremaw-assault-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 1294314,
+      "after_bytes": 883858,
+      "saved_bytes": 410456,
+      "saved_percent": 31.71
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t2-ravager/T2_014-warhowl-frenzy-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 1321550,
+      "after_bytes": 901550,
+      "saved_bytes": 420000,
+      "saved_percent": 31.78
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t2-ravager/T2_015-sundering-colossus-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 1339492,
+      "after_bytes": 912484,
+      "saved_bytes": 427008,
+      "saved_percent": 31.88
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t2-stonecaller/T2_025-earthsong-regalia-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 1478126,
+      "after_bytes": 998892,
+      "saved_bytes": 479234,
+      "saved_percent": 32.42
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t2-stonecaller/T2_026-deeproot-aegis-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 1427418,
+      "after_bytes": 968422,
+      "saved_bytes": 458996,
+      "saved_percent": 32.16
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t2-stonecaller/T2_027-runeshaper-chorus-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 1391200,
+      "after_bytes": 949236,
+      "saved_bytes": 441964,
+      "saved_percent": 31.77
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t2-wayfinder/T2_010-ironfeather-pursuit-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 1036120,
+      "after_bytes": 698530,
+      "saved_bytes": 337590,
+      "saved_percent": 32.58
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t2-wayfinder/T2_011-greenveil-stalker-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 1113742,
+      "after_bytes": 757046,
+      "saved_bytes": 356696,
+      "saved_percent": 32.03
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t2-wayfinder/T2_012-startracker-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 1041202,
+      "after_bytes": 708054,
+      "saved_bytes": 333148,
+      "saved_percent": 32.0
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t3-hexweaver/T3_016-oathcipher-vestments-icon-sheet.webp",
+      "before_dimensions": [
+        1983,
+        793
+      ],
+      "after_dimensions": [
+        1586,
+        634
+      ],
+      "before_bytes": 1374520,
+      "after_bytes": 930012,
+      "saved_bytes": 444508,
+      "saved_percent": 32.34
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t3-hexweaver/T3_017-lanternfall-rite-icon-sheet.webp",
+      "before_dimensions": [
+        1983,
+        793
+      ],
+      "after_dimensions": [
+        1586,
+        634
+      ],
+      "before_bytes": 1266278,
+      "after_bytes": 854996,
+      "saved_bytes": 411282,
+      "saved_percent": 32.48
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t3-hexweaver/T3_018-hollowveil-weaver-icon-sheet.webp",
+      "before_dimensions": [
+        1983,
+        793
+      ],
+      "after_dimensions": [
+        1586,
+        634
+      ],
+      "before_bytes": 1372488,
+      "after_bytes": 923928,
+      "saved_bytes": 448560,
+      "saved_percent": 32.68
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t3-ironwarden/T3_001-oathsteel-rampart-icon-sheet.webp",
+      "before_dimensions": [
+        1983,
+        793
+      ],
+      "after_dimensions": [
+        1586,
+        634
+      ],
+      "before_bytes": 1152856,
+      "after_bytes": 792336,
+      "saved_bytes": 360520,
+      "saved_percent": 31.27
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t3-ironwarden/T3_002-lantern-marshal-icon-sheet.webp",
+      "before_dimensions": [
+        1983,
+        793
+      ],
+      "after_dimensions": [
+        1586,
+        634
+      ],
+      "before_bytes": 1169846,
+      "after_bytes": 798114,
+      "saved_bytes": 371732,
+      "saved_percent": 31.78
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t3-ironwarden/T3_003-vaultbreaker-reprisal-icon-sheet.webp",
+      "before_dimensions": [
+        1983,
+        793
+      ],
+      "after_dimensions": [
+        1586,
+        634
+      ],
+      "before_bytes": 1156688,
+      "after_bytes": 795282,
+      "saved_bytes": 361406,
+      "saved_percent": 31.24
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t3-wayfinder/T3_010-oathfeather-pursuit-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 1135930,
+      "after_bytes": 766254,
+      "saved_bytes": 369676,
+      "saved_percent": 32.54
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t3-wayfinder/T3_011-lanternstalk-hunter-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 1273298,
+      "after_bytes": 863878,
+      "saved_bytes": 409420,
+      "saved_percent": 32.15
+    },
+    {
+      "path": "apps/mobile/assets/equipment-t3-wayfinder/T3_012-vaultstar-tracker-icon-sheet.webp",
+      "before_dimensions": [
+        1774,
+        887
+      ],
+      "after_dimensions": [
+        1419,
+        710
+      ],
+      "before_bytes": 1279548,
+      "after_bytes": 866108,
+      "saved_bytes": 413440,
+      "saved_percent": 32.31
+    }
+  ]
+}

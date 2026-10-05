@@ -20,14 +20,19 @@ ok(overview.sources.some(row=>row.id==='faith:EMBER_VOW'&&row.scope==='character
 ok(overview.sources.some(row=>row.label==='Combat Focus Sigil'&&row.scope==='character'),'Owned permanent boost should appear as an active character source');
 ok(overview.temporary?.label==='Combat XP'&&overview.temporary.percent===10&&overview.temporary.remainingSeconds===3600,'Active Daily Supplies boost should appear with exact remaining qualifying time');
 ok(overview.sources.some(row=>row.scope==='temporary'&&row.label.includes('Daily Supplies')),'Temporary Daily Supplies source should be labeled separately from permanent modifiers');
-
+const preEntitlementDropPercent=overview.modifiers.find(row=>row.label==='Drop chance')?.percent??0;
+const preEntitlementCraftingPercent=overview.modifiers.find(row=>row.label==='Crafting speed')?.percent??0;
 
 state={...state,account:{...state.account,entitlements:{vip_plus:true,supporter:true}}};
 overview=accountBonusOverview(state);
 ok(!overview.sources.some(row=>row.id==='entitlement:vip'),'VIP+ alone should not display an unowned VIP source');
 ok(overview.sources.some(row=>row.id==='entitlement:vip_plus'&&row.detail.includes('+10 Inventory')&&row.detail.includes('+5% drops')&&row.detail.includes('+10% Crafting speed')),'VIP+ should expose its storage and progression benefits');
-ok(overview.modifiers.some(row=>row.label==='Drop chance'&&Math.abs(row.percent-5)<0.01),'VIP+ should contribute +5% effective drop chance');
-ok(overview.modifiers.some(row=>row.label==='Crafting speed'&&Math.abs(row.percent-10)<0.01),'VIP+ should contribute +10% effective Crafting speed');
+const entitlementDrop=overview.modifiers.find(row=>row.label==='Drop chance');
+const entitlementCrafting=overview.modifiers.find(row=>row.label==='Crafting speed');
+const expectedDropPercent=((1+preEntitlementDropPercent/100)*1.05-1)*100;
+const expectedCraftingPercent=((1+preEntitlementCraftingPercent/100)*1.10-1)*100;
+ok(!!entitlementDrop&&Math.abs(entitlementDrop.percent-expectedDropPercent)<0.01,'VIP+ should compound the existing effective drop chance by x1.05');
+ok(!!entitlementCrafting&&Math.abs(entitlementCrafting.percent-expectedCraftingPercent)<0.01,'VIP+ should compound the existing effective Crafting speed by x1.10');
 ok(overview.sources.some(row=>row.id==='entitlement:supporter'&&row.detail.includes('Forge')),'Supporter should expose active Forge/name-style QoL');
 state={...state,account:{...state.account,entitlements:{...state.account.entitlements,vip:true}}};
 overview=accountBonusOverview(state);

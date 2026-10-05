@@ -1,0 +1,54 @@
+name: One-time stale PNG contract scan
+
+on:
+  push:
+    branches:
+      - fix/vipplus-account-bonus-regression
+
+permissions:
+  contents: write
+
+jobs:
+  scan:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/vipplus-account-bonus-regression
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Scan stale PNG test literals
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json,re
+          roots=[Path("apps/mobile/tests")]
+          hits=[]
+          pattern=re.compile(r"['\"]([^'\"\n]+\.png)['\"]")
+          all_files=list(Path(".").rglob("*"))
+          rels={str(p).replace("\\","/") for p in all_files if p.is_file()}
+          names={p.name for p in all_files if p.is_file()}
+          for root in roots:
+              for p in root.rglob("*.ts"):
+                  text=p.read_text(encoding="utf-8",errors="ignore")
+                  for lineno,line in enumerate(text.splitlines(),1):
+                      for m in pattern.finditer(line):
+                          literal=m.group(1)
+                          webp=literal[:-4]+".webp"
+                          png_name=Path(literal).name
+                          webp_name=Path(webp).name
+                          # Flag when no PNG with that basename remains but a WebP sibling basename exists.
+                          if png_name not in names and webp_name in names:
+                              hits.append({"path":str(p),"line":lineno,"png_literal":literal,"webp_candidate":webp,"source_line":line.strip()[:400]})
+          Path("docs/stale-png-test-contracts.json").write_text(json.dumps({"count":len(hits),"hits":hits},indent=2)+"\n",encoding="utf-8")
+          print(json.dumps({"count":len(hits),"hits":hits},indent=2))
+          PY
+      - name: Commit scan report
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/stale-png-test-contracts.json
+          git commit -m "docs: scan stale PNG test contracts"
+          git push origin HEAD:fix/vipplus-account-bonus-regression

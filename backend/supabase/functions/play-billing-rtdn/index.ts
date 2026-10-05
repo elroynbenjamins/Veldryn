@@ -16,6 +16,18 @@ import {
 
 warnGooglePlayConfiguration('play-billing-rtdn');
 
+// Exact, fixed messages only: never log token claims, configuration or errors.
+const AUTH_REJECTION_REASONS=new Map([
+  ['Missing Pub/Sub OIDC bearer token','missing_bearer'],
+  ['Invalid Pub/Sub OIDC algorithm','invalid_algorithm'],
+  ['Unknown Pub/Sub OIDC signing key','unknown_signing_key'],
+  ['Invalid Pub/Sub OIDC signature','invalid_signature'],
+  ['Invalid Pub/Sub OIDC issuer','invalid_issuer'],
+  ['Expired Pub/Sub OIDC token','invalid_time'],
+  ['Invalid Pub/Sub OIDC audience','audience_mismatch'],
+  ['Invalid Pub/Sub OIDC service account','service_account_mismatch'],
+]);
+
 type RtdnPayload={
   packageName?:string;
   testNotification?:{version?:string};
@@ -107,6 +119,7 @@ Deno.serve(async(req)=>{
     if(messageId&&await rtdnProcessed(admin,messageId))return new Response(null,{status:204});
     if(payload.testNotification||payload.pendingRefundReviewNotification){
       await markRtdnProcessed(admin,messageId);
+      if(payload.testNotification)console.log('[play-billing-rtdn] Test notification accepted');
       return new Response(null,{status:204});
     }
 
@@ -172,6 +185,8 @@ Deno.serve(async(req)=>{
     return new Response(null,{status:204});
   }catch(error){
     const message=error instanceof Error?error.message:'RTDN_FAILED';
+    const reason=AUTH_REJECTION_REASONS.get(message);
+    if(reason)console.warn('[play-billing-rtdn] Authentication rejected: '+reason);
     const authError=message.includes('Pub/Sub OIDC');
     const status=authError?401:error instanceof GooglePlayApiError&&error.status>=500?503:500;
     return new Response(message,{status});

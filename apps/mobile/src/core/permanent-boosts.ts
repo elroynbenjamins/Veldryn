@@ -2,6 +2,7 @@ import {BUYABLE_PERMANENT_BOOSTS,type PermanentBoostDefinition} from '../content
 import type {CollectibleTarget} from '../content/collectibles';
 import {GameState} from './types';
 import {selectedFaithBlessing} from './faith';
+import {accountEntitlementBenefits} from './account-entitlements';
 import {collectionBonusBreakdown} from './collectibles';
 
 export interface PermanentMultipliers {
@@ -156,6 +157,15 @@ export function characterPermanentMultipliers(state:GameState):PermanentMultipli
   for(const boostId of new Set(c.ownedBoostIds??[])){
     if(BUYABLE_PERMANENT_BOOSTS[boostId])result=merge(result,readMultipliers(boostId,BUYABLE_PERMANENT_BOOSTS));
   }
+
+  const entitlements=accountEntitlementBenefits(state);
+  result=merge(result,{
+    ...BASE,
+    gatheringSpeedMultiplier:entitlements.gatheringSpeedMultiplier,
+    characterXpMultiplier:entitlements.combatXpMultiplier,
+    dropChanceMultiplier:entitlements.dropChanceMultiplier,
+    craftingSpeedMultiplier:entitlements.craftingSpeedMultiplier,
+  });
 
   return result;
 }

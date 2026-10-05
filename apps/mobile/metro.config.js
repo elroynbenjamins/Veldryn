@@ -2,18 +2,15 @@ const path = require('node:path');
 const {getDefaultConfig} = require('expo/metro-config');
 
 const config = getDefaultConfig(__dirname);
-const backend = path.resolve(__dirname, '../../backend');
-// The companion runtime reuses shared combat/domain modules outside this app.
-// Watch only those sources and their dependencies, not generated build outputs.
+const backendSource = path.resolve(__dirname, '../../backend/src');
+
+// The mobile runtime reuses shared source modules from backend/src.
+// Keep only the source directory visible to Metro. backend/node_modules is
+// intentionally excluded from EAS builds and must not be registered as a
+// watch folder or resolver path.
 config.watchFolders = [...new Set([
   ...(config.watchFolders || []),
-  path.join(backend, 'src'),
-  path.join(backend, 'node_modules'),
-])];
-config.resolver.nodeModulesPaths = [...new Set([
-  ...(config.resolver.nodeModulesPaths || []),
-  path.join(__dirname, 'node_modules'),
-  path.join(backend, 'node_modules'),
+  backendSource,
 ])];
 
 module.exports = config;

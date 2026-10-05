@@ -20,5 +20,5 @@ for(const path of ['OnlineWorldChat','OnlinePartyChat','GuildChat','ChatDock','P
 for(const path of ['FriendsScreen','RankingsScreen'])ok(read(`src/screens/${path}.tsx`).includes('badges='),'badge projection reaches '+path);
 ok(read('src/components/ProfileEditor.tsx').includes('<PlayerBadgeSettings/>'),'profile exposes the visibility preference');
 ok(read('src/online/social.ts').includes("rpc('guild_identities_v2'"),'chat and social identities load server badges');
-for(const id of ['supporter','admin','moderator'])ok(read('src/components/PlayerBadges.tsx').includes(`player-badges-v1/${id}.png`),'generated asset wired for '+id);
+for(const id of ['supporter','admin','moderator'])ok(read('src/components/PlayerBadges.tsx').includes(`player-badges-v1/${id}.webp`),'generated asset wired for '+id);
 console.log('PASS: player badge validation, expiration, identity wiring and server authority contracts');

@@ -9,14 +9,9 @@ export const PROFILE_ICON_CATALOG = [
  {id:'starter:traveling-alchemist',name:'Traveling Alchemist',group:'Starter',source:'Available from the start.'},
  {id:'starter:dawn-priestess',name:'Dawn Priestess',group:'Starter',source:'Available from the start.'},
  {id:'starter:stonebound-explorer',name:'Stonebound Explorer',group:'Starter',source:'Available from the start.'},
- {id:'companion:UNIT_001',name:'Ironwood Hound',group:'Companion',source:'Unlock the Ironwood Hound companion.',companionId:'UNIT_001'},
- {id:'companion:UNIT_002',name:'Runebound Sentry',group:'Companion',source:'Unlock the Runebound Sentry companion.',companionId:'UNIT_002'},
- {id:'companion:UNIT_008',name:'Dawnwing',group:'Companion',source:'Unlock the Dawnwing companion.',companionId:'UNIT_008'},
  {id:'creature:MOSS_RAT',name:'Moss Rat',group:'Combat',source:'Reach 10 Moss Rat mastery points.',monsterId:'MOSS_RAT'},
  {id:'creature:IRONWOOD_WOLF',name:'Ironwood Wolf',group:'Combat',source:'Reach 10 Ironwood Wolf mastery points.',monsterId:'IRONWOOD_WOLF'},
  {id:'creature:FALLEN_KNIGHT',name:'Fallen Knight',group:'Combat',source:'Defeat the Fallen Knight.',bossId:'FALLEN_KNIGHT'},
- {id:'event:pumpkin-piglet',name:'Pumpkin Piglet',group:'Harvestwake',source:'Earn the Pumpkin Piglet pet during Harvestwake.',petId:'EVT_PET_011'},
- {id:'event:harvest-guardian',name:'Harvest Guardian',group:'Harvestwake',source:'Earn the Harvest Guardian companion during Harvestwake.',companionId:'EVT_UNIT_006'},
  {id:'event:spirit-lantern',name:'Spirit Lantern',group:'Harvestwake',source:'Claim the 8,000 reputation reward during Harvestwake.'},
 ] as const;
 export interface ProfileIconEntry {id:string;name:string;group:string;source:string;unlocked:boolean;artworkReady:boolean;selected:boolean;}

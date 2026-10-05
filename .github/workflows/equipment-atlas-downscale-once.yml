@@ -1,0 +1,125 @@
+name: One-time equipment atlas downscale
+
+on:
+  push:
+    branches:
+      - optimize/equipment-sheet-resolution
+
+permissions:
+  contents: write
+
+jobs:
+  downscale:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: optimize/equipment-sheet-resolution
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install image tooling
+        run: python -m pip install --disable-pip-version-check pillow
+
+      - name: Downscale equipment icon atlases
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+          import json
+
+          root = Path("apps/mobile/assets")
+          files = sorted(root.glob("equipment-*/*-icon-sheet.webp"))
+          if len(files) != 60:
+              raise SystemExit(f"Expected 60 equipment atlases, found {len(files)}")
+
+          target = (1420, 710)
+          expected_source = (1774, 887)
+          report_files = []
+          before_total = 0
+          after_total = 0
+
+          for path in files:
+              before_bytes = path.stat().st_size
+              before_total += before_bytes
+
+              with Image.open(path) as image:
+                  image.load()
+                  if image.size != expected_source:
+                      raise SystemExit(f"{path}: expected {expected_source}, found {image.size}")
+                  if image.mode not in ("RGB", "RGBA"):
+                      image = image.convert("RGBA")
+                  resized = image.resize(target, Image.Resampling.LANCZOS)
+
+                  tmp = path.with_suffix(".tmp.webp")
+                  save_args = dict(format="WEBP", lossless=True, quality=100, method=6)
+                  if image.info.get("icc_profile"):
+                      save_args["icc_profile"] = image.info["icc_profile"]
+                  resized.save(tmp, **save_args)
+
+              with Image.open(tmp) as check:
+                  check.load()
+                  if check.size != target:
+                      raise SystemExit(f"{path}: output dimension mismatch {check.size}")
+                  if check.mode not in ("RGB", "RGBA"):
+                      raise SystemExit(f"{path}: unexpected output mode {check.mode}")
+
+              tmp.replace(path)
+              after_bytes = path.stat().st_size
+              after_total += after_bytes
+              saved = before_bytes - after_bytes
+              report_files.append({
+                  "path": str(path),
+                  "before_dimensions": list(expected_source),
+                  "after_dimensions": list(target),
+                  "before_bytes": before_bytes,
+                  "after_bytes": after_bytes,
+                  "saved_bytes": saved,
+                  "saved_percent": round(saved / before_bytes * 100, 2),
+              })
+
+          if after_total >= before_total:
+              raise SystemExit("Downscale did not reduce total equipment atlas bytes")
+
+          report = {
+              "strategy": "80.05% linear downscale of 5x2 equipment atlases; lossless WebP retained",
+              "filter": "Pillow LANCZOS",
+              "source_dimensions": list(expected_source),
+              "target_dimensions": list(target),
+              "atlas_count": len(files),
+              "before_bytes": before_total,
+              "after_bytes": after_total,
+              "saved_bytes": before_total - after_total,
+              "saved_percent": round((before_total - after_total) / before_total * 100, 2),
+              "largest_after": sorted(report_files, key=lambda x: x["after_bytes"], reverse=True)[:10],
+              "files": report_files,
+          }
+          Path("docs/equipment-sheet-downscale-report.json").write_text(
+              json.dumps(report, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          print(json.dumps({k: report[k] for k in (
+              "atlas_count", "before_bytes", "after_bytes", "saved_bytes", "saved_percent"
+          )}, indent=2))
+          PY
+
+      - name: Verify source references and diff
+        shell: bash
+        run: |
+          test "$(find apps/mobile/assets -path '*/equipment-*/*-icon-sheet.webp' -type f | wc -l)" -eq 60
+          grep -q "const cellAspect=(1774/5)/(887/2);" apps/mobile/src/components/EquipmentArtwork.tsx
+          git diff --check
+
+      - name: Commit optimized atlases
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/mobile/assets/equipment-* docs/equipment-sheet-downscale-report.json
+          git commit -m "perf(mobile): reduce equipment atlas resolution"
+          git push origin HEAD:optimize/equipment-sheet-resolution

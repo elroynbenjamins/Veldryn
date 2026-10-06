@@ -1,0 +1,70 @@
+name: Upgrade Expo SDK 57 once
+
+on:
+  push:
+    branches:
+      - upgrade/expo-sdk57-api36-edge-to-edge
+    paths:
+      - '.github/workflows/upgrade-expo57-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  upgrade:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.9.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+
+      - name: Upgrade Expo and SDK-managed dependencies
+        working-directory: apps/mobile
+        run: |
+          pnpm add expo@^57.0.0
+          pnpm exec expo install --fix
+          pnpm add expo-iap@5.8.2
+          pnpm exec expo install expo-build-properties
+
+      - name: Configure SDK 57 Android and remove SDK 53 workaround
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const path='apps/mobile/app.json';
+          const config=JSON.parse(fs.readFileSync(path,'utf8'));
+          const expo=config.expo;
+          expo.plugins=(expo.plugins||[]).filter(plugin=>{
+            const name=Array.isArray(plugin)?plugin[0]:plugin;
+            return name!=='./plugins/with-kotlin-compile-stdlib-pin' && name!=='expo-build-properties';
+          });
+          if(!expo.plugins.some(plugin=>(Array.isArray(plugin)?plugin[0]:plugin)==='expo-iap')) expo.plugins.unshift('expo-iap');
+          expo.plugins.push(['expo-build-properties',{android:{kotlinVersion:'2.1.20'}}]);
+          expo.androidNavigationBar={...(expo.androidNavigationBar||{}),enforceContrast:true};
+          if(expo.android && 'edgeToEdgeEnabled' in expo.android) delete expo.android.edgeToEdgeEnabled;
+          fs.writeFileSync(path,JSON.stringify(config,null,2)+'\n');
+          NODE
+          rm -f apps/mobile/plugins/with-kotlin-compile-stdlib-pin.js
+
+      - name: Validate SDK 57 dependency alignment
+        working-directory: apps/mobile
+        run: |
+          pnpm exec expo-doctor
+          pnpm typecheck
+
+      - name: Commit generated upgrade
+        run: |
+          git rm .github/workflows/upgrade-expo57-once.yml
+          git add apps/mobile
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Upgrade mobile app to Expo SDK 57"
+          git push origin HEAD:upgrade/expo-sdk57-api36-edge-to-edge

@@ -1,6 +1,4 @@
 import type {GameState} from './types';
-import {companionTrialWeekKey} from '../../../../backend/src/server/companions/trial-season';
-
 /**
  * First story clear is uncapped and cinematic.
  * After that, up to three rematch victories per UTC week receive boss rewards.
@@ -37,7 +35,15 @@ export interface FallenKnightWeeklyState{
   bountyAwarded:boolean;
 }
 
-export function fallenKnightWeekKey(nowMs:number){return companionTrialWeekKey(nowMs);}
+function utcMondayWeekKey(nowMs:number){
+  const d=new Date(nowMs);
+  const day=(d.getUTCDay()+6)%7;
+  const monday=Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate()-day);
+  const md=new Date(monday);
+  return `${md.getUTCFullYear()}-${String(md.getUTCMonth()+1).padStart(2,'0')}-${String(md.getUTCDate()).padStart(2,'0')}`;
+}
+
+export function fallenKnightWeekKey(nowMs:number){return utcMondayWeekKey(nowMs);}
 
 export function fallenKnightWeeklyStatus(state:GameState,nowMs:number){
   const weekKey=fallenKnightWeekKey(nowMs),raw=state.account.fallenKnightWeekly;

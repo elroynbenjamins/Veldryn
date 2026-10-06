@@ -1,0 +1,44 @@
+name: Regenerate Expo 57 mobile lockfile
+
+on:
+  push:
+    branches:
+      - upgrade/expo-sdk-57
+    paths:
+      - '.github/workflows/regen-expo57-lock.yml'
+      - 'apps/mobile/package.json'
+
+permissions:
+  contents: write
+
+jobs:
+  lockfile:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: upgrade/expo-sdk-57
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - name: Regenerate lockfile for Expo 57
+        run: pnpm install --lockfile-only --no-frozen-lockfile
+      - name: Commit updated lockfile
+        run: |
+          if git diff --quiet -- pnpm-lock.yaml; then
+            echo "Lockfile already current."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add pnpm-lock.yaml
+          git commit -m "Lock Expo SDK 57 mobile dependencies"
+          git push origin HEAD:upgrade/expo-sdk-57

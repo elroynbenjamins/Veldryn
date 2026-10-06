@@ -1,0 +1,46 @@
+name: Refresh Expo 57 lockfile
+
+on:
+  push:
+    branches:
+      - fix/expo57-native-android-validation
+    paths:
+      - 'apps/mobile/package.json'
+      - '.github/workflows/refresh-expo57-lockfile.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  refresh-lockfile:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - name: Refresh pnpm lockfile
+        run: pnpm install --lockfile-only --no-frozen-lockfile
+      - name: Commit refreshed lockfile and remove helper workflow
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add pnpm-lock.yaml
+          git rm ../../.github/workflows/refresh-expo57-lockfile.yml
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "Refresh Expo 57 lockfile"
+          git push origin HEAD:${{ github.ref_name }}

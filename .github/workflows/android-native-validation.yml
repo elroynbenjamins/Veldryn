@@ -1,0 +1,50 @@
+name: Android native validation
+
+on:
+  pull_request:
+    paths:
+      - 'apps/mobile/app.json'
+      - 'apps/mobile/eas.json'
+      - 'apps/mobile/package.json'
+      - 'apps/mobile/pnpm-lock.yaml'
+      - 'apps/mobile/plugins/**'
+      - 'apps/mobile/modules/**'
+      - 'apps/mobile/src/online/google-signin.ts'
+      - 'apps/mobile/src/online/play-games.ts'
+      - '.github/workflows/android-native-validation.yml'
+  workflow_dispatch:
+
+jobs:
+  android-release-bundle:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    env:
+      EXPO_PUBLIC_GOOGLE_PLAY_GAMES_PROJECT_ID: '1011264688445'
+      EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: '1011264688445-389ovdnl0rk6bmk6scq8uooktt5jgb7m.apps.googleusercontent.com'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+      - uses: android-actions/setup-android@v3
+      - name: Install mobile dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Validate Expo SDK compatibility
+        run: npx -y expo-doctor
+      - name: Generate Android native project
+        run: npx expo prebuild --platform android --clean --no-install
+      - name: Build release AAB
+        working-directory: apps/mobile/android
+        run: ./gradlew :app:bundleRelease --stacktrace --no-daemon

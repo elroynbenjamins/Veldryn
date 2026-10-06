@@ -1,7 +1,7 @@
 import {accountText,accountError} from '../i18n/account';
 import {GameTextInput as TextInput} from './GameTextInput';
 import {useEffect,useMemo,useRef,useState} from 'react';
-import {Alert,AppState,Keyboard,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {Alert,AppState,Keyboard,Platform,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {GameButton} from './GameButton';
 import {GameModalHeader,GameModalSurface} from './GameModalSurface';
 import {Panel} from './Panel';
@@ -15,6 +15,8 @@ import {passwordRequirements} from '../core/auth-callback';
 import {accountLinkStep,pendingAccountEmail} from '../core/auth-account-link';
 import {equipmentTheme,spacing,touchTargetMin,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
+declare const process:{env:Record<string,string|undefined>};
+const playGamesConfigured=Platform.OS==='android'&&Boolean(process.env.EXPO_PUBLIC_GOOGLE_PLAY_GAMES_PROJECT_ID?.trim());
 type VerificationPrompt={email:string;kind:'signup'|'guest';accountId:string};
 function AuthModeChip({label,selected,disabled,onPress}:{label:string;selected:boolean;disabled:boolean;onPress:()=>void}){const C=useGameTheme(),equipmentColors=equipmentTheme(C);return <Pressable accessibilityRole="button" accessibilityState={{selected,disabled}} disabled={disabled} onPress={onPress} style={({pressed})=>[{minHeight:40,alignSelf:'center',paddingHorizontal:14,justifyContent:'center',borderWidth:1,borderColor:C.line,borderRadius:99,backgroundColor:C.bg},selected&&{borderColor:equipmentColors.selectedLine,backgroundColor:equipmentColors.selected},disabled&&{opacity:.45},pressed&&{opacity:.76}]}><Text style={[{fontSize:12,color:C.muted,fontWeight:'700'},selected&&{color:C.primaryButtonText}]}>{selected?'✓ ':''}{label}</Text></Pressable>}
 export function OnlineAccountPanel({state}:{state:GameState}){
@@ -86,6 +88,7 @@ export function OnlineAccountPanel({state}:{state:GameState}){
    {linkStep==='linked'&&<GameButton title={a("Change password")} tone="secondary" disabled={busy||auth.refreshing} onPress={()=>{if(running.current||!ownsView())return;setPassword('');setPasswordVisible(false);setNotice('');setChangingPassword(true);}}/>}
    {googleSignInConfigured&&!googleLinked&&<GameButton title={busy?a("Connecting…"):a("Link Google account")} tone="secondary" disabled={busy||auth.refreshing} onPress={()=>void run(async()=>{await signInOrLinkGoogle();success('Google account linked. Your characters and progress are kept.');})}/>}
    {googleLinked&&<Text style={s.googleLinked}>✓ {a("Google account linked")}</Text>}
+   {playGamesConfigured&&<><GameButton title={busy?a("Connecting…"):a("Connect Google Play Games")} tone="secondary" disabled={busy||auth.refreshing} onPress={()=>void run(async()=>{const {signInPlayGames}=await import('../online/play-games');const result=await signInPlayGames();if(!result.authenticated)throw new Error('Google Play Games sign-in was not completed.');success(result.displayName?`Google Play Games connected as ${result.displayName}.`:'Google Play Games connected.');})}/><Text style={s.googleHint}>{a("Play Games is separate from your VELDRYN account and is used for Google Play game services.")}</Text></>}
    <Text style={s.text}>{serverGameplayEnabled?a("Every successful gameplay action is saved online. Sign in on another device to continue."):a("Local save uploads do not grant online progression.")}</Text>
    <GameButton title={a("Sign out")} tone="secondary" disabled={busy} onPress={()=>{if(auth.session?.user.is_anonymous)Alert.alert(a("Sign out of guest account?"),a("Add an email first so you can recover this account."),[{text:a("Stay signed in")},{text:a("Sign out"),style:'destructive',onPress:()=>void run(signOut)}]);else void run(signOut);}}/>
   </>}

@@ -11,4 +11,4 @@ export function CardBackground({sources,shade=0}:{sources:CardBackgroundSources;
   {shade>0?<View style={[StyleSheet.absoluteFill,{backgroundColor:`rgba(5,12,20,${shade})`}]}/>:null}
  </View>;
 }
-const styles=StyleSheet.create({fill:{...StyleSheet.absoluteFillObject,width:'100%',height:'100%'}});
+const styles=StyleSheet.create({fill:{...StyleSheet.absoluteFill,width:'100%',height:'100%'}});

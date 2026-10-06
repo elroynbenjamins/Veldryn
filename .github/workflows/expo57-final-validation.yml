@@ -27,6 +27,8 @@ jobs:
           cache: pnpm
           cache-dependency-path: apps/mobile/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
+      - name: Install shared backend dependencies
+        run: pnpm --dir ../../backend install --frozen-lockfile
       - name: Expo Doctor
         run: pnpm dlx expo-doctor
       - name: Typecheck mobile with SDK 57 compiler

@@ -63,6 +63,13 @@ jobs:
           NODE
           rm -f apps/mobile/plugins/with-kotlin-compile-stdlib-pin.js
 
+      - name: Apply React Native 0.86 source migrations
+        run: |
+          grep -RIl --include='*.ts' --include='*.tsx' 'StyleSheet.absoluteFillObject' apps/mobile/App.tsx apps/mobile/src             | xargs -r sed -i 's/StyleSheet\.absoluteFillObject/StyleSheet.absoluteFill/g'
+          sed -i "s|@noble/hashes/hmac'|@noble/hashes/hmac.js'|" backend/src/server/combat/deterministic-rng.ts
+          sed -i "s|@noble/hashes/sha256'|@noble/hashes/sha256.js'|" backend/src/server/combat/deterministic-rng.ts
+          sed -i "s|@noble/hashes/utils'|@noble/hashes/utils.js'|" backend/src/server/combat/deterministic-rng.ts
+
       - name: Validate SDK 57 dependency alignment
         working-directory: apps/mobile
         run: |
@@ -72,7 +79,7 @@ jobs:
       - name: Commit generated upgrade
         run: |
           git rm .github/workflows/upgrade-expo57-once.yml
-          git add apps/mobile
+          git add apps/mobile backend/src/server/combat/deterministic-rng.ts
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "Upgrade mobile app to Expo SDK 57"

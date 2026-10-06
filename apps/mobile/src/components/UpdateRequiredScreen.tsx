@@ -1,4 +1,5 @@
-import {ActivityIndicator,SafeAreaView,StyleSheet,Text,View} from 'react-native';
+import {ActivityIndicator,StyleSheet,Text,View} from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import {GameButton} from './GameButton';
 import {C} from '../theme/theme';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
@@ -6,7 +7,7 @@ import {sharedText} from '../i18n/shared';
 
 export function UpdateRequiredScreen({title,message,currentVersion,minimumVersion,onUpdate,maintenance=false}:{title:string;message:string;currentVersion:string;minimumVersion?:string;onUpdate:()=>void;maintenance?:boolean}){
   const language=useGameLanguage();
-  return <SafeAreaView style={s.root}><View style={s.card}>
+  return <SafeAreaView edges={['top','bottom','left','right']} style={s.root}><View style={s.card}>
     <Text style={s.kicker}>{sharedText(language,maintenance?'SERVICE STATUS':'UPDATE REQUIRED')}</Text>
     <Text accessibilityRole="header" style={s.title}>{title}</Text>
     <Text style={s.message}>{message}</Text>

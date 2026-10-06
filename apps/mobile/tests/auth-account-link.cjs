@@ -11,7 +11,7 @@ const verified=()=>({...guest(),email:'aster@example.test',is_anonymous:false,em
 const token=user=>`header.${Buffer.from(JSON.stringify({is_anonymous:Boolean(user.is_anonymous),email:user.email||''})).toString('base64url')}.signature`;
 const sessionFor=user=>({access_token:token(user),refresh_token:'test-refresh',user:copy(user)});
 function fixture(initial=guest()){
- const f={server:copy(initial),session:sessionFor(initial),writes:[],refreshes:0,resends:0,signups:0,exchanges:0,readFailure:null,writeFailure:null,refreshFailure:null};
+ const f={server:copy(initial),session:sessionFor(initial),writes:[],refreshes:0,resends:0,signups:0,exchanges:0,googleLinks:0,readFailure:null,writeFailure:null,refreshFailure:null};
  const auth={
   getSession:async()=>({data:{session:f.session},error:null}),
   getUser:async()=>({data:{user:copy(f.server)},error:f.readFailure}),
@@ -27,9 +27,11 @@ function fixture(initial=guest()){
   resend:async()=>{f.resends++;return {error:null};},
   signUp:async()=>{f.signups++;throw Error('Unexpected account creation');},
   exchangeCodeForSession:async()=>{f.exchanges++;return {error:null};},
+  linkIdentity:async credentials=>{f.googleLinks++;assert.equal(credentials.provider,'google');assert.ok(credentials.token);f.server={...f.server,is_anonymous:false,email:'google@example.test',email_confirmed_at:'2026-10-06T08:00:00Z',identities:[{provider:'google'}]};f.session=sessionFor(f.server);return {data:{user:copy(f.server)},error:null};},
+  signInWithIdToken:async()=>{throw Error('Existing guest must link rather than replace its identity');},
  };
  const client={auth,from:()=>{throw Error('Account linking must not depend on a profile write');}};
- f.api=load('online/account.ts',{'expo-linking':{createURL:()=> 'veldryn://auth'},'./supabase':{supabase:client},'../core/auth-callback':callback,'../core/auth-account-link':link});
+ f.api=load('online/account.ts',{'expo-linking':{createURL:()=> 'veldryn://auth'},'./supabase':{supabase:client},'./google-signin':{requestNativeGoogleIdentity:async()=>({idToken:'google-id-token',email:'google@example.test',displayName:'Google Aster'})},'../core/auth-callback':callback,'../core/auth-account-link':link});
  return f;
 }
 function deferred(){let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no;});return {promise,resolve,reject};}
@@ -129,6 +131,13 @@ function deferred(){let resolve,reject;const promise=new Promise((yes,no)=>{reso
  assert.equal(callback.authCallbackCode('veldryn://auth?code=confirmed','veldryn://auth'),'confirmed');
  assert.throws(()=>callback.authCallbackCode('veldryn://auth#error_code=otp_expired&error_description=Use%20the%20latest%20email','veldryn://auth'),/latest email/);
  assert.throws(()=>callback.authCallbackCode('veldryn://auth?error=access_denied','veldryn://auth'),/could not be verified/);checks++;
+
+ const googleGuest=fixture();
+ const googleUser=await googleGuest.api.signInOrLinkGoogle();
+ assert.equal(googleGuest.googleLinks,1);assert.equal(googleUser.id,'guest-a');
+ assert.equal(googleUser.is_anonymous,false);assert.equal(googleUser.email,'google@example.test');
+ assert.equal(googleGuest.refreshes,1,'Google linking refreshes the same VELDRYN session');
+ assert.equal(googleGuest.session.user.id,'guest-a','Google linking preserves the guest UUID/progress owner');checks++;
 
  const codeLess=fixture();codeLess.server=verified();
  await codeLess.api.completeMagicLink('veldryn://auth');assert.equal(codeLess.exchanges,0);

@@ -38,7 +38,7 @@
     "@supabase/supabase-js": "^2.115.0",
     "expo": "~53.0.0",
     "expo-application": "~6.1.5",
-    "expo-iap": "5.6.3",
+    "expo-iap": "5.0.1",
     "expo-linking": "~7.1.7",
     "expo-secure-store": "~14.2.4",
     "expo-status-bar": "~2.2.3",

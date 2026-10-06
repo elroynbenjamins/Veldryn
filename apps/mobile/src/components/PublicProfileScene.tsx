@@ -53,7 +53,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  scene:{position:'relative',alignItems:'center',justifyContent:'flex-end',overflow:'hidden'},
  surface:{borderRadius:radii.lg,overflow:'hidden',backgroundColor:C.stage},
  framedSurface:{margin:8,borderRadius:4},
- shade:{...StyleSheet.absoluteFillObject,backgroundColor:C.dark?'rgba(3,4,5,.72)':'rgba(255,255,255,.68)'},
+ shade:{...StyleSheet.absoluteFill,backgroundColor:C.dark?'rgba(3,4,5,.72)':'rgba(255,255,255,.68)'},
  guildAnchor:{position:'absolute',left:22,bottom:20,maxWidth:'58%',zIndex:4},
  character:{position:'absolute',left:20,top:24,width:96,height:96,zIndex:2},
  pet:{position:'absolute',right:22,bottom:20,width:58,height:58,zIndex:3},

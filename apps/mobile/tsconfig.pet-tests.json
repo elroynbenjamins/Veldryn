@@ -7,7 +7,8 @@
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
-    "outDir": ".pet-test-build"
+    "outDir": ".pet-test-build",
+    "ignoreDeprecations": "6.0"
   },
   "include": [
     "src/content/core-pets.ts",

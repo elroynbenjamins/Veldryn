@@ -1,6 +1,7 @@
-import {ActivityIndicator,Image,Platform,SafeAreaView,StatusBar as NativeStatusBar,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
+import {ActivityIndicator,Image,Platform,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
 import type {ImageStyle} from 'react-native';
 import {StatusBar} from 'expo-status-bar';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import {t,type Language} from '../i18n';
 import {startupWordmark,type StartupScene} from '../theme/startup-art';
 
@@ -29,8 +30,8 @@ export function StartupScreen({scene,language}:{scene:StartupScene;language:Lang
 }
 const s=StyleSheet.create({
   root:{flex:1,backgroundColor:'#101521'},background:{width:'100%',height:'100%'},
-  shade:{...StyleSheet.absoluteFillObject,backgroundColor:'rgba(7,15,28,.12)'},
-  safe:{flex:1,justifyContent:'space-between',paddingTop:Platform.OS==='android'?NativeStatusBar.currentHeight??24:0},
+  shade:{...StyleSheet.absoluteFill,backgroundColor:'rgba(7,15,28,.12)'},
+  safe:{flex:1,justifyContent:'space-between'},
   brand:{alignItems:'center',paddingHorizontal:24},
   loading:{alignItems:'center',gap:12,paddingTop:20,paddingBottom:32,paddingHorizontal:24,backgroundColor:'rgba(7,15,28,.86)'},
   divider:{width:96,height:2,backgroundColor:'#CEA363',marginBottom:4},

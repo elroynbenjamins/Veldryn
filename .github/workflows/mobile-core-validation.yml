@@ -34,6 +34,8 @@ jobs:
           cache: pnpm
           cache-dependency-path: apps/mobile/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
+      - name: Validate Expo SDK compatibility
+        run: npx -y expo-doctor
       - name: Install backend dependencies used by reconciliation tests
         run: pnpm --dir ../../backend install --frozen-lockfile
       - name: Validate recent Supabase migration versions

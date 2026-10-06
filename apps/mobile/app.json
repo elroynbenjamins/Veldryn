@@ -25,7 +25,6 @@
     },
     "plugins": [
       "expo-iap",
-      "./plugins/with-kotlin-compile-stdlib-pin",
       "./plugins/with-veldryn-play-games"
     ]
   }

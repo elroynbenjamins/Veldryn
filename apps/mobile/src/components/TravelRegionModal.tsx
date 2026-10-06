@@ -61,7 +61,7 @@ export function TravelRegionModal({visible,state,zone,onClose,onTravel}:{visible
 function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);return StyleSheet.create({
   content:{gap:spacing.sm,paddingBottom:spacing.sm},
   hero:{height:184,overflow:'hidden',justifyContent:'flex-end',borderWidth:1,borderRadius:radii.lg,backgroundColor:C.panel},
-  heroFade:{...StyleSheet.absoluteFillObject,backgroundColor:C.dark?'rgba(4,10,18,.50)':'rgba(255,255,255,.54)'},
+  heroFade:{...StyleSheet.absoluteFill,backgroundColor:C.dark?'rgba(4,10,18,.50)':'rgba(255,255,255,.54)'},
   heroCopy:{gap:3,padding:spacing.md,paddingTop:58},
   level:{...typography.caption,color:equipmentColors.goldSoft,fontWeight:'900',letterSpacing:1},
   heroTitle:{...typography.hero,color:C.text,fontSize:27},

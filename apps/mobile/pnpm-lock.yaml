@@ -54,9 +54,6 @@ importers:
         specifier: 0.20.0
         version: 0.20.0(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
     devDependencies:
-      '@expo/config-plugins':
-        specifier: 10.1.2
-        version: 10.1.2
       react-test-renderer:
         specifier: 19.0.0
         version: 19.0.0(react@19.0.0)

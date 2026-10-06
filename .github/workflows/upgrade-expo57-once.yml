@@ -26,8 +26,6 @@ jobs:
           sparse-checkout: |
             apps/mobile
             backend/src
-            backend/package.json
-            backend/pnpm-lock.yaml
             .github/workflows/upgrade-expo57-once.yml
       - uses: pnpm/action-setup@v4
         with:
@@ -72,8 +70,8 @@ jobs:
           sed -i "s|@noble/hashes/sha256'|@noble/hashes/sha256.js'|" backend/src/server/combat/deterministic-rng.ts
           sed -i "s|@noble/hashes/utils'|@noble/hashes/utils.js'|" backend/src/server/combat/deterministic-rng.ts
 
-      - name: Install shared backend dependencies
-        run: pnpm --dir backend install --frozen-lockfile
+      - name: Link shared backend runtime dependencies
+        run: ln -s ../apps/mobile/node_modules backend/node_modules
 
       - name: Validate SDK 57 dependency alignment
         working-directory: apps/mobile

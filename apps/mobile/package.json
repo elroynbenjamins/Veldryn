@@ -46,7 +46,9 @@
     "react-dom": "19.0.0",
     "react-native": "0.79.6",
     "react-native-safe-area-context": "5.4.0",
-    "react-native-web": "0.20.0"
+    "react-native-web": "0.20.0",
+    "react-native-nitro-google-signin": "2.3.0",
+    "react-native-nitro-modules": "0.37.1"
   },
   "devDependencies": {
     "@types/react": "~19.0.10",

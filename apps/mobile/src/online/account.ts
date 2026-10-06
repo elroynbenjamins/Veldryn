@@ -45,7 +45,8 @@ export async function refreshCurrentAccountSession():Promise<Session|null>{
 
 function accountFailure(error:unknown):never{
  const code=error&&typeof error==='object'&&'code' in error?error.code:'';
- if(['email_exists','identity_already_exists','user_already_exists'].includes(String(code)))throw new Error('This email is already in use. Choose another email to secure this guest account.');
+ if(['identity_already_exists'].includes(String(code)))throw new Error('This Google account is already linked to another VELDRYN account. Sign out first, then use Continue with Google to open that account.');
+ if(['email_exists','user_already_exists'].includes(String(code)))throw new Error('This email is already in use. Choose another email to secure this guest account.');
  if(['over_email_send_rate_limit','over_request_rate_limit'].includes(String(code)))throw new Error('Please wait a minute before requesting another email.');
  throw error;
 }
@@ -105,6 +106,34 @@ export async function signInWithPassword(email:string,password:string){
   if(!supabase)throw new Error('Online services are not configured in this build.');
   const {error}=await supabase.auth.signInWithPassword({email:accountEmail(email),password});
   if(error)throw error;
+ });
+}
+
+/**
+ * Native Android Google sign-in. With no VELDRYN session this opens the Google
+ * account. With an existing guest/email session it links Google to that exact
+ * Supabase user, preserving the VELDRYN UUID and server-owned progress.
+ */
+export async function signInOrLinkGoogle(){
+ return mutateAccount(async()=>{
+  const client=supabase;if(!client)throw new Error('Online services are not configured in this build.');
+  const before=await currentSession();
+  const {requestNativeGoogleIdentity}=await import('./google-signin');
+  const identity=await requestNativeGoogleIdentity();
+  if(before){
+   const latest=await currentSession();
+   if(!latest||latest.user.id!==before.user.id)throw new Error('Your signed-in account changed. Reopen Account and try again.');
+   const alreadyLinked=latest.user.identities?.some(item=>item.provider==='google');
+   if(alreadyLinked)return latest.user;
+   const {data,error}=await client.auth.linkIdentity({provider:'google',token:identity.idToken});
+   if(error)accountFailure(error);
+   const refreshed=await client.auth.refreshSession();
+   if(refreshed.error)throw refreshed.error;
+   return refreshed.data.user??data.user;
+  }
+  const {data,error}=await client.auth.signInWithIdToken({provider:'google',token:identity.idToken});
+  if(error)accountFailure(error);
+  return data.user;
  });
 }
 

@@ -15,4 +15,4 @@ export function AccountWelcomeScreen({scene,children}:{scene:StartupScene;childr
   </KeyboardAvoidingView></SafeAreaView>
  </View>;
 }
-const s=StyleSheet.create({root:{flex:1,backgroundColor:'#101521'},shade:{...StyleSheet.absoluteFillObject,backgroundColor:'rgba(7,15,28,.46)'},safe:{flex:1,paddingTop:Platform.OS==='android'?NativeStatusBar.currentHeight??24:0},flex:{flex:1},content:{flexGrow:1,justifyContent:'center',padding:20,paddingVertical:32},column:{width:'100%',maxWidth:440,alignSelf:'center',gap:20},logo:{width:'85%',maxWidth:288,height:96,alignSelf:'center'}});
+const s=StyleSheet.create({root:{flex:1,backgroundColor:'#101521'},shade:{...StyleSheet.absoluteFill,backgroundColor:'rgba(7,15,28,.46)'},safe:{flex:1,paddingTop:Platform.OS==='android'?NativeStatusBar.currentHeight??24:0},flex:{flex:1},content:{flexGrow:1,justifyContent:'center',padding:20,paddingVertical:32},column:{width:'100%',maxWidth:440,alignSelf:'center',gap:20},logo:{width:'85%',maxWidth:288,height:96,alignSelf:'center'}});

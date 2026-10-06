@@ -1,0 +1,39 @@
+name: Expo 57 final validation
+
+on:
+  push:
+    branches:
+      - upgrade/expo57-api36-edge-to-edge-20261006
+    paths:
+      - '.github/workflows/expo57-final-validation.yml'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: upgrade/expo57-api36-edge-to-edge-20261006
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Expo Doctor
+        run: pnpm dlx expo-doctor
+      - name: Typecheck mobile with SDK 57 compiler
+        run: pnpm typecheck
+      - name: Validate Google Play billing
+        run: |
+          node ../../tools/test-play-billing.mjs
+          node ../../tools/test-play-billing-transport.mjs
+      - name: Run mobile core tests
+        run: pnpm test:core

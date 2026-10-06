@@ -1,0 +1,42 @@
+name: Expo 57 lockfile API refresh
+
+on:
+  push:
+    branches:
+      - upgrade/expo57-api36-edge-to-edge-20261006
+    paths:
+      - '.github/workflows/expo57-lockfile-api-refresh.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh-lockfile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Resolve mobile lockfile without repository checkout
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          BRANCH: upgrade/expo57-api36-edge-to-edge-20261006
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/veldryn-mobile
+          cd /tmp/veldryn-mobile
+          api="https://api.github.com/repos/$REPO/contents/apps/mobile/package.json?ref=$BRANCH"
+          curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "$api" |
+            jq -r '.content' | base64 -d > package.json
+          pnpm install --lockfile-only --no-frozen-lockfile
+
+          lock_api="https://api.github.com/repos/$REPO/contents/apps/mobile/pnpm-lock.yaml?ref=$BRANCH"
+          sha="$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "$lock_api" | jq -r '.sha')"
+          content="$(base64 -w 0 pnpm-lock.yaml)"
+          jq -n --arg message "chore: refresh Expo 57 mobile lockfile" --arg content "$content" --arg sha "$sha" --arg branch "$BRANCH"             '{message:$message,content:$content,sha:$sha,branch:$branch}' > /tmp/payload.json
+          curl -fsSL -X PUT             -H "Authorization: Bearer $GH_TOKEN"             -H "Accept: application/vnd.github+json"             -H "X-GitHub-Api-Version: 2022-11-28"             "https://api.github.com/repos/$REPO/contents/apps/mobile/pnpm-lock.yaml"             --data-binary @/tmp/payload.json

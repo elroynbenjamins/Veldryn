@@ -45,7 +45,7 @@ export function GuildFrameSwatch({frameId,size=64}:{frameId?:GuildFrameId|string
  return <View style={{width:size,height:size}}>{source?<Image accessible={false} source={source} resizeMode="contain" style={s.fullImage}/>:null}</View>;
 }
 const s=StyleSheet.create({
- fullImage:{...StyleSheet.absoluteFillObject,width:'100%',height:'100%'},
+ fullImage:{...StyleSheet.absoluteFill,width:'100%',height:'100%'},
  profile:{position:'relative',minWidth:0},surface:{position:'absolute',left:16,right:16,top:16,bottom:16},
  content:{padding:30},
 });

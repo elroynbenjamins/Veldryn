@@ -33,7 +33,7 @@
       },
       "environment": "production",
       "android": {
-        "image": "latest"
+        "image": "sdk-57"
       }
     },
     "staging": {

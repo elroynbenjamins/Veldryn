@@ -9,7 +9,8 @@
       "distribution": "internal",
       "env": {
         "EXPO_PUBLIC_GOOGLE_PLAY_GAMES_PROJECT_ID": "1011264688445"
-      }
+      },
+      "node": "22.16.0"
     },
     "preview": {
       "distribution": "internal",
@@ -22,7 +23,8 @@
         "EXPO_PUBLIC_COOP_API_URL": "https://nyjwigipamnvpdvpauuv.supabase.co/functions/v1/coop",
         "EXPO_PUBLIC_COOP_LIVE_READY_V1": "true",
         "EXPO_PUBLIC_GOOGLE_PLAY_GAMES_PROJECT_ID": "1011264688445"
-      }
+      },
+      "node": "22.16.0"
     },
     "production": {
       "autoIncrement": true,
@@ -39,7 +41,8 @@
       "environment": "production",
       "android": {
         "image": "latest"
-      }
+      },
+      "node": "22.16.0"
     },
     "staging": {
       "distribution": "internal",
@@ -55,7 +58,8 @@
         "EXPO_PUBLIC_COOP_API_URL": "https://iqfmmpvwanvvmxcftfxw.supabase.co/functions/v1/coop",
         "EXPO_PUBLIC_COOP_LIVE_READY_V1": "true",
         "EXPO_PUBLIC_GOOGLE_PLAY_GAMES_PROJECT_ID": "1011264688445"
-      }
+      },
+      "node": "22.16.0"
     }
   },
   "submit": {

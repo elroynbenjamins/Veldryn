@@ -35,8 +35,40 @@ jobs:
             jq -r '.content' | base64 -d > package.json
           pnpm install --lockfile-only --no-frozen-lockfile
 
-          lock_api="https://api.github.com/repos/$REPO/contents/apps/mobile/pnpm-lock.yaml?ref=$BRANCH"
-          sha="$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "$lock_api" | jq -r '.sha')"
-          content="$(base64 -w 0 pnpm-lock.yaml)"
-          jq -n --arg message "chore: refresh Expo 57 mobile lockfile" --arg content "$content" --arg sha "$sha" --arg branch "$BRANCH"             '{message:$message,content:$content,sha:$sha,branch:$branch}' > /tmp/payload.json
-          curl -fsSL -X PUT             -H "Authorization: Bearer $GH_TOKEN"             -H "Accept: application/vnd.github+json"             -H "X-GitHub-Api-Version: 2022-11-28"             "https://api.github.com/repos/$REPO/contents/apps/mobile/pnpm-lock.yaml"             --data-binary @/tmp/payload.json
+          python - <<'PY'
+          import base64, json, os, urllib.request
+
+          token=os.environ["GH_TOKEN"]
+          repo=os.environ["REPO"]
+          branch=os.environ["BRANCH"]
+          path="apps/mobile/pnpm-lock.yaml"
+          headers={
+              "Authorization": f"Bearer {token}",
+              "Accept": "application/vnd.github+json",
+              "X-GitHub-Api-Version": "2022-11-28",
+              "User-Agent": "veldryn-expo57-lock-refresh",
+          }
+
+          get_url=f"https://api.github.com/repos/{repo}/contents/{path}?ref={branch}"
+          with urllib.request.urlopen(urllib.request.Request(get_url, headers=headers)) as response:
+              sha=json.load(response)["sha"]
+
+          with open("pnpm-lock.yaml","rb") as fh:
+              content=base64.b64encode(fh.read()).decode("ascii")
+
+          payload=json.dumps({
+              "message":"chore: refresh Expo 57 mobile lockfile",
+              "content":content,
+              "sha":sha,
+              "branch":branch,
+          }).encode("utf-8")
+          put_url=f"https://api.github.com/repos/{repo}/contents/{path}"
+          request=urllib.request.Request(
+              put_url,
+              data=payload,
+              headers={**headers,"Content-Type":"application/json"},
+              method="PUT",
+          )
+          with urllib.request.urlopen(request) as response:
+              print(json.load(response)["commit"]["sha"])
+          PY

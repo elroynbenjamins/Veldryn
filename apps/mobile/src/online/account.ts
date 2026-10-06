@@ -3,7 +3,6 @@ import * as Linking from 'expo-linking';
 import {supabase} from './supabase';
 import {accountEmail,accountPassword,authCallbackCode} from '../core/auth-callback';
 import {beginGuestAccountLink,finishGuestAccountLink,pendingAccountEmail,reconcileAccountSession,verifiedAccountEmail,type GuestAccountAuth} from '../core/auth-account-link';
-import {requestNativeGoogleIdentity} from './google-signin';
 export const accountRedirect=()=>Linking.createURL('auth');
 
 // Supabase saves the session captured by updateUser when its network request
@@ -118,7 +117,9 @@ export async function signInWithPassword(email:string,password:string){
 export async function signInOrLinkGoogle(){
  return mutateAccount(async()=>{
   const client=supabase;if(!client)throw new Error('Online services are not configured in this build.');
-  const before=await currentSession(),identity=await requestNativeGoogleIdentity();
+  const before=await currentSession();
+  const {requestNativeGoogleIdentity}=await import('./google-signin');
+  const identity=await requestNativeGoogleIdentity();
   if(before){
    const latest=await currentSession();
    if(!latest||latest.user.id!==before.user.id)throw new Error('Your signed-in account changed. Reopen Account and try again.');

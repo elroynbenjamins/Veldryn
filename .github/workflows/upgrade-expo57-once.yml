@@ -57,7 +57,7 @@ jobs:
           });
           if(!expo.plugins.some(plugin=>(Array.isArray(plugin)?plugin[0]:plugin)==='expo-iap')) expo.plugins.unshift('expo-iap');
           expo.plugins.push(['expo-build-properties',{android:{kotlinVersion:'2.1.20'}}]);
-          expo.androidNavigationBar={...(expo.androidNavigationBar||{}),enforceContrast:true};
+          if('androidNavigationBar' in expo) delete expo.androidNavigationBar;
           if(expo.android && 'edgeToEdgeEnabled' in expo.android) delete expo.android.edgeToEdgeEnabled;
           fs.writeFileSync(path,JSON.stringify(config,null,2)+'\n');
           NODE

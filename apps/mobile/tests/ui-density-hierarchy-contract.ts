@@ -292,7 +292,10 @@ ok(appShell.includes('<SafeAreaProvider>'),'App root must provide safe-area metr
 ok(appShell.includes("import {SafeAreaProvider,SafeAreaView} from 'react-native-safe-area-context';"),'App shell must use cross-platform safe-area handling instead of React Native core SafeAreaView');
 ok(appShell.includes("edges={['top','left','right']}"),'Main app shell must leave the bottom inset to persistent navigation instead of double-padding it');
 ok(appShell.includes('buildQuickNavigationBadges')&&appShell.includes("row.kind!=='reward_ready'&&row.kind!=='weekly_order_complete'"),'Primary nav must avoid misleading Home/Contract claim dots while quick navigation routes those notices exactly');
-ok(packageJson.includes('"react-native-safe-area-context": "5.4.0"'),'Expo 53 safe-area dependency must remain pinned');
+ok(packageJson.includes('"react-native-safe-area-context": "~5.7.0"'),'Expo 57 safe-area dependency must stay on the SDK-compatible line');
+ok(!topBar.includes('StatusBar.currentHeight')&&!topBar.includes('NativeStatusBar'),'Edge-to-edge top bar must rely on the app-shell safe area instead of manually adding Android status-bar height');
+const startupScreen=read('src/components/StartupScreen.tsx');
+ok(startupScreen.includes("from 'react-native-safe-area-context'")&&!startupScreen.includes('StatusBar.currentHeight'),'Startup screen must use real safe-area insets under mandatory Android edge-to-edge');
 
 
 const collections=read('src/screens/CollectionsScreen.tsx');

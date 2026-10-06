@@ -1,4 +1,5 @@
 name: Expo 57 final validation
+# rerun after TypeScript 6 core config
 
 on:
   push:

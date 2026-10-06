@@ -24,7 +24,8 @@
       }
     },
     "plugins": [
-      "expo-iap"
+      "expo-iap",
+      "./plugins/with-veldryn-google-services"
     ]
   }
 }

@@ -6,7 +6,8 @@ import {GameButton} from './GameButton';
 import {GameModalHeader,GameModalSurface} from './GameModalSurface';
 import {Panel} from './Panel';
 import type {GameState} from '../core/types';
-import {createOnlineAccount,finishGuestAccount,requestPasswordRecovery,resendAccountConfirmation,resendGuestAccountConfirmation,sendMagicLink,signInAsGuest,signInWithPassword,signOut,updateAccountPassword,upgradeGuestAccount} from '../online/account';
+import {createOnlineAccount,finishGuestAccount,requestPasswordRecovery,resendAccountConfirmation,resendGuestAccountConfirmation,sendMagicLink,signInAsGuest,signInOrLinkGoogleAccount,signInWithPassword,signOut,updateAccountPassword,upgradeGuestAccount} from '../online/account';
+import {googleAccountSignInConfigured,playGamesConfigured,signInPlayGames} from '../online/google-services';
 import {onlineConfigured} from '../online/supabase';
 import {useAuthSession} from '../online/AuthSessionProvider';
 import {serverGameplayEnabled} from '../online/gameplay';
@@ -23,7 +24,7 @@ export function OnlineAccountPanel({state}:{state:GameState}){
 
  const auth=useAuthSession();const [email,setEmail]=useState(''),[password,setPassword]=useState(''),[username,setUsername]=useState(state.character?.name??''),[creating,setCreating]=useState(false),[showHelp,setShowHelp]=useState(false),[busy,setBusy]=useState(false),[notice,setNotice]=useState(''),[noticeTone,setNoticeTone]=useState<'error'|'success'|'info'>('error'),[editingLink,setEditingLink]=useState(false);
  const [passwordVisible,setPasswordVisible]=useState(false),[changingPassword,setChangingPassword]=useState(false),[verificationPrompt,setVerificationPrompt]=useState<VerificationPrompt|null>(null),[verificationFeedback,setVerificationFeedback]=useState<{message:string;error:boolean}|null>(null);
- const accountId=auth.session?.user.id??'',linkStep=auth.session?accountLinkStep(auth.session.user):null;
+ const accountId=auth.session?.user.id??'',linkStep=auth.session?accountLinkStep(auth.session.user):null,googleLinked=Boolean(auth.session?.user.identities?.some(identity=>identity.provider==='google'));
  const active=useRef(true),currentAccount=useRef(accountId),accountGeneration=useRef(0),running=useRef<object|null>(null),currentRecovery=useRef(auth.clearRecovery);
  if(currentAccount.current!==accountId){currentAccount.current=accountId;accountGeneration.current++;running.current=null;}
  currentRecovery.current=auth.clearRecovery;const generation=accountGeneration.current;
@@ -55,6 +56,7 @@ export function OnlineAccountPanel({state}:{state:GameState}){
    {creating&&<><Text style={s.label}>{a("Username")}</Text><TextInput accessibilityLabel={a("Username")} value={username} onChangeText={setUsername} maxLength={20} placeholder={a("Username")} placeholderTextColor={C.muted} style={s.input}/></>}
    {emailInput}{passwordInput}
    <GameButton title={busy?a("Connecting…"):creating?a("Create account"):a("Sign in")} disabled={busy} onPress={()=>void run(async()=>{if(creating){const result=await createOnlineAccount(email,password,username);if(!result.confirmed){success('Confirmation email sent. Check your inbox before signing in.');showVerification(email,'signup');}}else await signInWithPassword(email,password);})}/>
+   {googleAccountSignInConfigured&&<GameButton title={busy?a("Connecting…"):a("Continue with Google")} tone="secondary" disabled={busy} onPress={()=>void run(async()=>{await signInOrLinkGoogleAccount();})}/>}
    <AuthModeChip label={creating?a("Sign in instead"):a("Create a new account")} selected={creating} disabled={busy} onPress={()=>{setCreating(!creating);setNotice('');}}/>
    {!creating&&<><Text style={s.guestHint}>{a("Want to try the game first? A guest account can be secured with email later.")}</Text><GameButton title={a("Continue as guest")} tone="secondary" disabled={busy} onPress={()=>void run(async()=>{await signInAsGuest();success('Guest account ready. Create your character to enter Asterfall.');})}/></>}
    <Pressable accessibilityRole="button" accessibilityState={{expanded:showHelp}} onPress={()=>setShowHelp(value=>!value)} style={s.helpToggle}><Text style={s.helpText}>{showHelp?a("Hide sign-in help"):a("Need help signing in?")}</Text></Pressable>
@@ -64,6 +66,9 @@ export function OnlineAccountPanel({state}:{state:GameState}){
   </>:<>
    <Text style={[s.label,(linkStep==='linked'||linkStep==='set_password')&&{color:C.good}]}>{a(linkStep==='linked'?'Linked account':linkStep==='set_password'?'Email linked':linkStep==='verify_email'?'Waiting for email verification':'Guest account')}</Text>
    <Text style={s.text}>{a('Signed in as {identity}.',{identity:auth.session.user.email||a('guest')})}</Text>
+   {googleLinked&&<Text style={[s.text,{color:C.good}]}>{a("Google account linked.")}</Text>}
+   {!googleLinked&&googleAccountSignInConfigured&&(linkStep==='guest'||linkStep==='linked')&&<GameButton title={busy?a("Connecting…"):a("Link Google account")} tone="secondary" disabled={busy||auth.refreshing} onPress={()=>void run(async()=>{const result=await signInOrLinkGoogleAccount();if(result.mode==='linked'||result.mode==='already_linked')success('Google account linked. Your characters and progress are kept.');})}/>}
+   {playGamesConfigured&&<GameButton title={busy?a("Connecting…"):a("Connect Google Play Games")} tone="secondary" disabled={busy} onPress={()=>void run(async()=>{const result=await signInPlayGames();if(!result.authenticated)throw new Error('Google Play Games sign-in was not completed.');success('Google Play Games connected.');})}/>}
    {(linkStep==='guest'||(linkStep==='verify_email'&&editingLink))&&<>
     <Text style={s.text}>{a("Add an email first. After verification, choose a password. Your characters and progress stay with this account.")}</Text>
     <Text style={s.label}>{a("Username")}</Text><TextInput accessibilityLabel={a("Username")} value={username} onChangeText={setUsername} maxLength={20} placeholder={a("Username")} placeholderTextColor={C.muted} style={s.input}/>{emailInput}

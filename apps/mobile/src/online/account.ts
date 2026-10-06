@@ -1,6 +1,7 @@
 import type {Session,User} from '@supabase/supabase-js';
 import * as Linking from 'expo-linking';
 import {supabase} from './supabase';
+import {requestGoogleCredential} from './google-services';
 import {accountEmail,accountPassword,authCallbackCode} from '../core/auth-callback';
 import {beginGuestAccountLink,finishGuestAccountLink,pendingAccountEmail,reconcileAccountSession,verifiedAccountEmail,type GuestAccountAuth} from '../core/auth-account-link';
 export const accountRedirect=()=>Linking.createURL('auth');
@@ -49,6 +50,14 @@ function accountFailure(error:unknown):never{
  if(['over_email_send_rate_limit','over_request_rate_limit'].includes(String(code)))throw new Error('Please wait a minute before requesting another email.');
  throw error;
 }
+function googleAccountFailure(error:unknown):never{
+ const code=error&&typeof error==='object'&&'code' in error?String(error.code):'';
+ const message=error instanceof Error?error.message:String(error??'');
+ if(code==='identity_already_exists'||message.toLowerCase().includes('identity is already linked'))throw new Error('This Google account is already linked to another VELDRYN account.');
+ if(code==='manual_linking_disabled'||message.toLowerCase().includes('manual linking'))throw new Error('Google account linking is not enabled yet. Enable Manual Linking in Supabase Auth.');
+ throw error;
+}
+
 function guestAccountAuth(accountId:string):GuestAccountAuth<User>{
  const client=supabase;if(!client)throw new Error('Online services are not configured in this build.');
  const checkSession=async()=>{const session=await currentSession();if(!session||session.user.id!==accountId)throw new Error('Your signed-in account changed. Reopen Account and try again.');return session;};
@@ -97,6 +106,36 @@ export async function signInAsGuest(){
   const {data,error}=await supabase.auth.signInAnonymously();
   if(error)throw error;
   return data.user;
+ });
+}
+
+export type GoogleAccountResult={mode:'signed_in'|'linked'|'already_linked';user:User};
+
+/**
+ * Sign in with Google when no VELDRYN account is active. If a guest or linked
+ * account is already active, attach Google to that exact Supabase UUID instead
+ * of creating/switching accounts, so characters and progression stay put.
+ */
+export async function signInOrLinkGoogleAccount():Promise<GoogleAccountResult>{
+ return mutateAccount(async()=>{
+  const client=supabase;if(!client)throw new Error('Online services are not configured in this build.');
+  const existing=await currentSession();
+  if(existing?.user.identities?.some(identity=>identity.provider==='google'))return {mode:'already_linked',user:existing.user};
+  const credential=await requestGoogleCredential();
+  if(existing){
+   const {data,error}=await client.auth.linkIdentity({provider:'google',token:credential.idToken,nonce:credential.nonce});
+   if(error)googleAccountFailure(error);
+   if(!data.user||!data.session)throw new Error('Google account linking did not return an updated VELDRYN session.');
+   if(data.user.id!==existing.user.id){
+    await client.auth.signOut();
+    throw new Error('Google account linking changed the signed-in VELDRYN account. Sign in again before continuing.');
+   }
+   return {mode:'linked',user:data.user};
+  }
+  const {data,error}=await client.auth.signInWithIdToken({provider:'google',token:credential.idToken,nonce:credential.nonce});
+  if(error)googleAccountFailure(error);
+  if(!data.user||!data.session)throw new Error('Google sign-in did not return a VELDRYN account.');
+  return {mode:'signed_in',user:data.user};
  });
 }
 

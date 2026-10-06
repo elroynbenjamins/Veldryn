@@ -30,7 +30,7 @@ export function StartupScreen({scene,language}:{scene:StartupScene;language:Lang
 }
 const s=StyleSheet.create({
   root:{flex:1,backgroundColor:'#101521'},background:{width:'100%',height:'100%'},
-  shade:{...StyleSheet.absoluteFillObject,backgroundColor:'rgba(7,15,28,.12)'},
+  shade:{...StyleSheet.absoluteFill,backgroundColor:'rgba(7,15,28,.12)'},
   safe:{flex:1,justifyContent:'space-between'},
   brand:{alignItems:'center',paddingHorizontal:24},
   loading:{alignItems:'center',gap:12,paddingTop:20,paddingBottom:32,paddingHorizontal:24,backgroundColor:'rgba(7,15,28,.86)'},

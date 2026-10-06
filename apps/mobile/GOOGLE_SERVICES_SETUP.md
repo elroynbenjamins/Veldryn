@@ -45,7 +45,7 @@ Set the numeric Play Games project ID in the EAS/build environment:
 EXPO_PUBLIC_GOOGLE_PLAY_GAMES_PROJECT_ID=YOUR_PLAY_GAMES_PROJECT_ID
 ```
 
-When present, the Expo config plugin writes `com.google.android.gms.games.APP_ID` and the required Android string resource. PGS v2 can then perform its normal automatic platform authentication. The Account screen also exposes a manual Play Games connection action as a fallback.
+When present, the Expo config plugin writes `com.google.android.gms.games.APP_ID` and the required Android string resource. The local Expo module initializes `PlayGamesSdk` from the Android application lifecycle, after which PGS v2 performs its normal automatic platform authentication. The Account screen also exposes a manual Play Games connection action as a fallback.
 
 ## 4. Build and test
 

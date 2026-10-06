@@ -50,6 +50,13 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Validate Expo SDK compatibility
         run: npx -y expo-doctor
+      - name: Reject mobile runtime imports from backend
+        shell: bash
+        run: |
+          if grep -R -nE "from ['\"][^'\"]*backend/src|require\(['\"][^'\"]*backend/src" src App.tsx index.js; then
+            echo "Mobile runtime code must not import backend/src; EAS mobile builds do not guarantee backend source is present."
+            exit 1
+          fi
       - name: Generate Android native project
         run: npx expo prebuild --platform android --clean --no-install
       - name: Build release AAB

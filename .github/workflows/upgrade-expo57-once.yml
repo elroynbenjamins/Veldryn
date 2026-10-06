@@ -10,6 +10,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: veldryn-expo57-upgrade
+  cancel-in-progress: true
+
 jobs:
   upgrade:
     runs-on: ubuntu-latest
@@ -17,7 +21,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.ref_name }}
-          fetch-depth: 0
+          fetch-depth: 1
+          filter: blob:none
+          sparse-checkout: |
+            apps/mobile
+            backend/src
+            .github/workflows/upgrade-expo57-once.yml
       - uses: pnpm/action-setup@v4
         with:
           version: 11.9.0

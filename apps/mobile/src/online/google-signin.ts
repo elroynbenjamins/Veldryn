@@ -23,7 +23,6 @@ export async function requestNativeGoogleIdentity():Promise<NativeGoogleIdentity
  const google=await import('react-native-nitro-google-signin');
  google.GoogleOneTapSignIn.configure({
   webClientId,
-  scopes:['email','profile'],
   autoSelectOnSignIn:false,
  });
  await google.GoogleOneTapSignIn.checkPlayServices(true);

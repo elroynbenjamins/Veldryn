@@ -6,7 +6,10 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_GOOGLE_PLAY_GAMES_PROJECT_ID": "1011264688445"
+      }
     },
     "preview": {
       "distribution": "internal",
@@ -17,7 +20,8 @@
         "EXPO_PUBLIC_SERVER_GAMEPLAY": "true",
         "EXPO_PUBLIC_COOP_ROGUELITE_V1": "true",
         "EXPO_PUBLIC_COOP_API_URL": "https://nyjwigipamnvpdvpauuv.supabase.co/functions/v1/coop",
-        "EXPO_PUBLIC_COOP_LIVE_READY_V1": "true"
+        "EXPO_PUBLIC_COOP_LIVE_READY_V1": "true",
+        "EXPO_PUBLIC_GOOGLE_PLAY_GAMES_PROJECT_ID": "1011264688445"
       }
     },
     "production": {
@@ -29,7 +33,8 @@
         "EXPO_PUBLIC_SERVER_GAMEPLAY": "true",
         "EXPO_PUBLIC_COOP_ROGUELITE_V1": "true",
         "EXPO_PUBLIC_COOP_API_URL": "https://nyjwigipamnvpdvpauuv.supabase.co/functions/v1/coop",
-        "EXPO_PUBLIC_COOP_LIVE_READY_V1": "true"
+        "EXPO_PUBLIC_COOP_LIVE_READY_V1": "true",
+        "EXPO_PUBLIC_GOOGLE_PLAY_GAMES_PROJECT_ID": "1011264688445"
       },
       "environment": "production",
       "android": {
@@ -48,7 +53,8 @@
         "EXPO_PUBLIC_SERVER_GAMEPLAY": "true",
         "EXPO_PUBLIC_COOP_ROGUELITE_V1": "true",
         "EXPO_PUBLIC_COOP_API_URL": "https://iqfmmpvwanvvmxcftfxw.supabase.co/functions/v1/coop",
-        "EXPO_PUBLIC_COOP_LIVE_READY_V1": "true"
+        "EXPO_PUBLIC_COOP_LIVE_READY_V1": "true",
+        "EXPO_PUBLIC_GOOGLE_PLAY_GAMES_PROJECT_ID": "1011264688445"
       }
     }
   },

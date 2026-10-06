@@ -1,6 +1,6 @@
 import {ThemedNavigationIcon} from './ThemedNavigationIcon';
 import {useEffect,useMemo,useState} from 'react';
-import {Platform,Pressable,ScrollView,StatusBar as NativeStatusBar,StyleSheet,Text,View} from 'react-native';
+import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {effectiveStats} from '../core/game';
 import {formatGameNumber} from '../core/number-format';
 import {normalizeQuickNavDestinations,QUICK_NAV_DESTINATIONS,QuickNavDestination} from '../core/quick-navigation';
@@ -95,7 +95,7 @@ export function GameTopBar({state,nowMs,labelForDestination,onNavigate,onChangeD
 }
 
 function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);return StyleSheet.create({
-  shell:{paddingTop:Platform.OS==='android'?(NativeStatusBar.currentHeight??24)+6:6,minHeight:70,flexDirection:'row',alignItems:'center',gap:8,paddingHorizontal:10,paddingBottom:8,backgroundColor:C.navBg,borderBottomWidth:1,borderBottomColor:C.line},
+  shell:{paddingTop:6,minHeight:70,flexDirection:'row',alignItems:'center',gap:8,paddingHorizontal:10,paddingBottom:8,backgroundColor:C.navBg,borderBottomWidth:1,borderBottomColor:C.line},
   environmentButton:{width:54,height:44,position:'relative',overflow:'hidden',flexDirection:'row',alignItems:'center',justifyContent:'center',gap:2,borderWidth:1,backgroundColor:equipmentColors.panelRaised,borderRadius:8},environmentDivider:{width:1,height:22,backgroundColor:equipmentColors.line},seasonStrip:{position:'absolute',left:0,right:0,bottom:0,height:2},lockedDot:{position:'absolute',right:3,top:3,width:6,height:6,borderRadius:3,backgroundColor:equipmentColors.gold},
   hpBlock:{flex:1,minWidth:72,gap:4},hpHeading:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},hpLabel:{color:C.muted,fontSize:9,fontWeight:'900',letterSpacing:.8},hpTrack:{height:8,overflow:'hidden',backgroundColor:C.inputBg,borderRadius:2},hpFill:{height:'100%',backgroundColor:C.good},hpValue:{color:C.text,fontSize:10,fontWeight:'800',fontVariant:['tabular-nums']},
   goldBlock:{width:72,alignItems:'flex-end'},goldLabel:{color:C.muted,fontSize:9,fontWeight:'900',letterSpacing:1},goldValueRow:{width:'100%',flexDirection:'row',alignItems:'center',justifyContent:'flex-end',gap:5},onlineDot:{width:7,height:7,borderRadius:99,backgroundColor:C.good,shadowColor:C.good,shadowOpacity:.7,shadowRadius:3},goldValue:{flexShrink:1,color:equipmentColors.goldSoft,fontSize:13,fontWeight:'900',textAlign:'right',fontVariant:['tabular-nums']},

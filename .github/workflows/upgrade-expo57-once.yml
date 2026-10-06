@@ -66,7 +66,7 @@ jobs:
       - name: Validate SDK 57 dependency alignment
         working-directory: apps/mobile
         run: |
-          pnpm exec expo-doctor
+          pnpm dlx expo-doctor
           pnpm typecheck
 
       - name: Commit generated upgrade

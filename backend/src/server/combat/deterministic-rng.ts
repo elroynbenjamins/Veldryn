@@ -1,6 +1,6 @@
-import {hmac} from '@noble/hashes/hmac';
-import {sha256} from '@noble/hashes/sha256';
-import {bytesToHex} from '@noble/hashes/utils';
+import {hmac} from '@noble/hashes/hmac.js';
+import {sha256} from '@noble/hashes/sha256.js';
+import {bytesToHex} from '@noble/hashes/utils.js';
 
 // Node-compatible UTF-8 without requiring Buffer or TextEncoder on Hermes.
 function utf8(value:string):Uint8Array{

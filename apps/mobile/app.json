@@ -25,7 +25,15 @@
     },
     "plugins": [
       "expo-iap",
-      "./plugins/with-kotlin-compile-stdlib-pin"
+      "expo-secure-store",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "kotlinVersion": "2.1.20"
+          }
+        }
+      ]
     ]
   }
 }

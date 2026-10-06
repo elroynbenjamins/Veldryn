@@ -21,6 +21,7 @@ jobs:
       run:
         working-directory: apps/mobile
     env:
+      NODE_ENV: production
       EXPO_PUBLIC_GOOGLE_PLAY_GAMES_PROJECT_ID: '1011264688445'
       EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: '1011264688445-389ovdnl0rk6bmk6scq8uooktt5jgb7m.apps.googleusercontent.com'
     steps:

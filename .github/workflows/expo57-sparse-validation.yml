@@ -1,0 +1,36 @@
+name: Expo 57 sparse validation
+
+on:
+  push:
+    branches:
+      - validate/expo57-upgrade-20261006
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: validate/expo57-upgrade-20261006
+          sparse-checkout: |
+            /apps/mobile/
+            !/apps/mobile/assets/*
+            /apps/mobile/assets/app-icon-v1/
+          sparse-checkout-cone-mode: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Expo Doctor
+        run: pnpm dlx expo-doctor
+      - name: Typecheck mobile
+        run: pnpm typecheck

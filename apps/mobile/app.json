@@ -13,7 +13,8 @@
         "foregroundImage": "./assets/app-icon-v1/android-foreground-1024.png",
         "backgroundColor": "#101C2C",
         "monochromeImage": "./assets/app-icon-v1/android-monochrome-1024.png"
-      }
+      },
+      "edgeToEdgeEnabled": true
     },
     "ios": {
       "bundleIdentifier": "com.elroybenjamins.veldryn"
@@ -24,8 +25,7 @@
       }
     },
     "plugins": [
-      "expo-iap",
-      "./plugins/with-kotlin-compile-stdlib-pin"
+      "expo-iap"
     ]
   }
 }

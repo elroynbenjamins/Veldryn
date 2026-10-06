@@ -26,9 +26,6 @@
     "plugins": [
       "expo-iap",
       "./plugins/with-veldryn-play-games"
-    ],
-    "androidNavigationBar": {
-      "enforceContrast": true
-    }
+    ]
   }
 }

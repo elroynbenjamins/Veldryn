@@ -25,6 +25,8 @@ jobs:
       EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: '1011264688445-389ovdnl0rk6bmk6scq8uooktt5jgb7m.apps.googleusercontent.com'
     steps:
       - uses: actions/checkout@v5
+        with:
+          sparse-checkout: apps/mobile
       - uses: pnpm/action-setup@v4
         with:
           version: 10

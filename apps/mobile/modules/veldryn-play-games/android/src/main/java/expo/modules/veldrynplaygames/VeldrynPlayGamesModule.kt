@@ -55,12 +55,12 @@ class VeldrynPlayGamesModule : Module() {
   override fun definition() = ModuleDefinition {
     Name("VeldrynPlayGames")
 
-    AsyncFunction("getStatus") Coroutine {
-      playGamesResult(signIn = false)
+    AsyncFunction("getStatus") Coroutine { ->
+      return@Coroutine playGamesResult(signIn = false)
     }
 
-    AsyncFunction("signIn") Coroutine {
-      playGamesResult(signIn = true)
+    AsyncFunction("signIn") Coroutine { ->
+      return@Coroutine playGamesResult(signIn = true)
     }
   }
 }

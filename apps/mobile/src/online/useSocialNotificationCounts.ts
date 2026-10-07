@@ -38,20 +38,18 @@ export function useSocialNotificationCounts(){
     do{
     request.refreshAgain=false;
     try{
-      const requests=await friendRequests();
+      const [requests,invites,chat,mine]=await Promise.all([
+        friendRequests(),
+        socialInvitations().catch(()=>null),
+        socialChatAttention().catch(()=>null),
+        myGuild().catch(()=>null),
+      ]);
       const incoming=requests.filter(request=>request.direction==='incoming').length;
       let guildApplicationsCount=0,guildInvites=0,partyInvites=0;
       let chatAttention:{guildUnread:number;guildMentions:number;guildFirstUnreadMessageId?:string;partyUnread:number;partyMentions:number;partyFirstUnreadMessageId?:string}|null=null;
+      if(invites){guildInvites=invites.guild.length;partyInvites=invites.party.length;}
+      if(chat)chatAttention={guildUnread:Number(chat.guild?.unread??0),guildMentions:Number(chat.guild?.mentions??0),guildFirstUnreadMessageId:chat.guild?.firstUnreadMessageId??undefined,partyUnread:Number(chat.party?.unread??0),partyMentions:Number(chat.party?.mentions??0),partyFirstUnreadMessageId:chat.party?.firstUnreadMessageId??undefined};
       try{
-        const invites=await socialInvitations();
-        guildInvites=invites.guild.length;partyInvites=invites.party.length;
-      }catch{/* Invitation polling is best-effort during migration rollout. */}
-      try{
-        const chat=await socialChatAttention();
-        chatAttention={guildUnread:Number(chat.guild?.unread??0),guildMentions:Number(chat.guild?.mentions??0),guildFirstUnreadMessageId:chat.guild?.firstUnreadMessageId??undefined,partyUnread:Number(chat.party?.unread??0),partyMentions:Number(chat.party?.mentions??0),partyFirstUnreadMessageId:chat.party?.firstUnreadMessageId??undefined};
-      }catch{/* Chat attention is best-effort during migration rollout. */}
-      try{
-        const mine=await myGuild();
         if(mine&&(mine.role==='leader'||mine.role==='officer'))guildApplicationsCount=(await guildApplications(mine.guild_id)).length;
       }catch{/* Guild application attention must not suppress other social counts. */}
       if(inFlight.current!==request||activeAccount.current!==accountId)return;

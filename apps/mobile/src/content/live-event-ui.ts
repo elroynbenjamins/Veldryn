@@ -72,8 +72,9 @@ export function validateLiveEventCatalog(events:readonly LiveEventDef[]):string[
     const companions=milestones.filter(row=>row.reward.kind==='companion');
     if(milestonePets.length!==1)errors.push(`${event.id} must have exactly one activity-meter pet.`);
     if(shopPets.length!==1)errors.push(`${event.id} must have exactly one shop pet.`);
-    if(companions.length!==1)errors.push(`${event.id} must have exactly one milestone companion.`);
-    if(plan&&plan.meterPet.points<event.maxProgress*.35||plan&&plan.meterPet.points>event.maxProgress*.55)errors.push(`${event.id} activity-meter pet should land between 35% and 55% of max progress.`);
+    if(companions.length<1||companions.length>2)errors.push(`${event.id} must have one or two milestone companions.`);
+    if(plan&&plan.shopCompanions.length>1)errors.push(`${event.id} cannot have more than one shop companion.`);
+    if(plan&&plan.meterPet.points<event.maxProgress*.20||plan&&plan.meterPet.points>event.maxProgress*.55)errors.push(`${event.id} activity-meter pet should land between 20% and 55% of max progress.`);
     if(plan&&plan.finalCompanion.points!==event.maxProgress)errors.push(`${event.id} companion must be the final ${event.maxProgress}-point reward.`);
 
     duplicateIds(`${event.id} objectives`,event.objectives.map(row=>row.id));

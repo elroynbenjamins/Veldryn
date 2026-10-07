@@ -17,7 +17,8 @@ const raw:Array<[string,string,CompanionRole,CompanionRarity,string,number,numbe
  ['EVT_UNIT_005','Astral Wayfarer','damage','elite','EVENT_STARFALL_NIGHTS',205,25,15,2.2,'damage',1.08],
  ['EVT_UNIT_006','Harvest Guardian','tank','elite','EVENT_HARVESTWAKE',205,18,24,2.2,'mitigation',.06],
  ['EVT_UNIT_007','Veil Hound','damage','elite','EVENT_VEILBREAK',205,25,15,2.2,'damage',1.08],
- ['EVT_UNIT_008','Hollow Knightling','tank','prestige','EVENT_VEILBREAK',225,18,27,2.2,'mitigation',.06],
+ ['EVT_UNIT_008','Gravebell Gargoyle','tank','elite','EVENT_VEILBREAK',205,18,24,2.2,'mitigation',.07],
+ ['EVT_UNIT_011','Lanternwing','support','elite','EVENT_VEILBREAK',205,18,15,2.2,'utility',.05],
  ['EVT_UNIT_009','Frostbell Herald','support','elite','EVENT_FROSTFALL_FESTIVAL',205,18,15,2.2,'utility',.05],
  ['EVT_UNIT_010','Caravan Sentinel','support','elite','EVENT_MERCHANT_GUILD_FESTIVAL',205,18,15,2.2,'utility',.05],
 ];
@@ -41,7 +42,8 @@ const COMPANION_IDENTITY_PROFILES:Record<string,CompanionIdentityProfile>={
  EVT_UNIT_005:{activeName:'Starfall Mark',activeDamageMultiplier:1.06,activeCooldownMultiplier:.94,hasteBonus:.02,bond:{activeExecuteBonus:.04}},
  EVT_UNIT_006:{activeName:'Harvest Bulwark',mitigationMultiplier:1.10,defenseMultiplier:1.04,bond:{mitigationMultiplier:1.05,defenseMultiplier:1.02}},
  EVT_UNIT_007:{activeName:'Veil Rend',activeDamageMultiplier:1.06,activeExecuteBonus:.07,hasteBonus:.01,bond:{activeExecuteBonus:.03}},
- EVT_UNIT_008:{activeName:'Hollow Guard',mitigationMultiplier:1.14,defenseMultiplier:1.05,activeCooldownMultiplier:.96,bond:{defenseMultiplier:1.03}},
+ EVT_UNIT_008:{activeName:'Gravebell Ward',mitigationMultiplier:1.12,defenseMultiplier:1.04,activeCooldownMultiplier:.96,bond:{mitigationMultiplier:1.05,defenseMultiplier:1.02}},
+ EVT_UNIT_011:{activeName:'Lantern Grace',utilityMultiplier:1.06,activeHealMultiplier:1.08,activeCooldownMultiplier:.94,hasteBonus:.025,bond:{activeHealMultiplier:1.05,hasteBonus:.01}},
  EVT_UNIT_009:{activeName:'Frostbell Cycle',utilityMultiplier:1.08,activeHealMultiplier:1.08,activeCooldownMultiplier:.90,hasteBonus:.01,bond:{activeHealMultiplier:1.05}},
  EVT_UNIT_010:{activeName:'Caravan Formation',utilityMultiplier:1.05,activeHealMultiplier:1.05,defenseMultiplier:1.02,hasteBonus:.02,bond:{activeCooldownMultiplier:.96}},
 };
@@ -137,8 +139,12 @@ const CUSTOM_TECHNIQUE_SEEDS:Record<string,readonly TechniqueSeed[]>={
     {suffix:'SHADOW_CHASE',name:'Shadow Chase',description:'Stay on debuffed targets with faster attacks and actives.',effects:[{kind:'haste',value:.08},{kind:'cooldown',value:-.07}]},
   ],
   EVT_UNIT_008:[
-    {suffix:'LAST_STAND',name:'Last Stand',description:'Increase defensive scaling when the Knightling is pressured.',effects:[{kind:'defense',value:.11},{kind:'shield_strength',value:.06}]},
-    {suffix:'HOLLOW_MIRROR',name:'Hollow Mirror',description:'Reflect more damage through spectral barriers.',effects:[{kind:'reflect',value:.14},{kind:'shield_strength',value:-.03}]},
+    {suffix:'GRAVEBELL_WARD',name:'Gravebell Ward',description:'Reinforce the Gargoyle’s ward for prolonged frontline pressure.',effects:[{kind:'shield_strength',value:.15},{kind:'defense',value:.05}]},
+    {suffix:'TOLL_OF_STONE',name:'Toll of Stone',description:'Trade a little ward strength for faster defensive cycling.',effects:[{kind:'defense',value:.08},{kind:'cooldown',value:-.06}]},
+  ],
+  EVT_UNIT_011:[
+    {suffix:'WARDLIGHT',name:'Wardlight',description:'Strengthen Lanternwing’s restorative support pulse.',effects:[{kind:'heal_strength',value:.10},{kind:'haste',value:.04}]},
+    {suffix:'LAST_LANTERN',name:'Last Lantern',description:'Cycle support more quickly while retaining a smaller recovery boost.',effects:[{kind:'heal_strength',value:.05},{kind:'cooldown',value:-.10}]},
   ],
   EVT_UNIT_009:[
     {suffix:'GRAND_BELL',name:'Grand Bell',description:'Favor stronger restorative bell auras.',effects:[{kind:'heal_strength',value:.12}]},

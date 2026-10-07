@@ -63,7 +63,7 @@ export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueu
     return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
       <DetailBack onPress={onBackToHub}/>
       <View style={[s.region,{borderColor:region.accent}]}>
-        <View style={s.flex}><Text style={s.regionLabel}>{gt("CURRENT REGION GATHERING")}</Text><Text accessibilityRole="header" style={s.regionName}>{region.symbol} {region.name}</Text><Text style={s.sub}>{gt("All gathering activities available in this region are shown together.")}</Text></View>
+        <View style={s.flex}><Text style={s.regionLabel}>{gl("CURRENT REGION GATHERING")}</Text><Text accessibilityRole="header" style={s.regionName}>{region.symbol} {region.name}</Text><Text style={s.sub}>{gl("All gathering activities available in this region are shown together.")}</Text></View>
       </View>
       {gatheringSkillIds.map(skillId=>{
         const skill=state.skills.find(row=>row.skillId===skillId);
@@ -73,7 +73,7 @@ export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueu
           <GatheringActivityList state={state} skillId={skillId} skillLevel={skill.level} onGather={onGather} onNavigate={onNavigateCraftingSource} currentRegionOnly showInstruction={false}/>
         </View>;
       })}
-      {!gatheringSkillIds.length?<Text style={s.unavailable}>{gt("No gathering activities are available in this region yet.")}</Text>:null}
+      {!gatheringSkillIds.length?<Text style={s.unavailable}>{gl("No gathering activities are available in this region yet.")}</Text>:null}
     </ScrollView>;
   }
   if(mode==='crafting'&&initialSkill==='smithing')return <ScrollView contentContainerStyle={{padding:16,gap:14,paddingBottom:32,maxWidth:660,width:'100%',alignSelf:'center'}} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" showsHorizontalScrollIndicator={false}>

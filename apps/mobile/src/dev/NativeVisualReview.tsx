@@ -29,7 +29,7 @@ import {PrimaryNavigation} from '../components/PrimaryNavigation';
 import {GameTopBar} from '../components/GameTopBar';
 import {OnlineAccountPanel} from '../components/OnlineAccountPanel';
 import {AccountWelcomeScreen} from '../components/AccountWelcomeScreen';
-import {STARTUP_SCENES} from '../theme/startup-art';
+import {GENERAL_STARTUP_SCENE} from '../theme/startup-art';
 import {MONSTERS} from '../content/monsters';
 import {ITEMS} from '../content/items';
 import {RecruitmentCardView,PersistentPartySummary} from '../core/party-social';
@@ -64,7 +64,7 @@ export default function NativeVisualReview(){
  const noop=()=>{};
  return <SafeAreaProvider><SafeAreaView style={s.root}><View style={s.qa}><Text style={s.qaLabel}>NATIVE QA · MEMORY FIXTURES</Text><ScrollView horizontal contentContainerStyle={s.selector} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>{sections.map(name=><Pressable key={name} accessibilityRole="button" accessibilityLabel={'QA '+name} onPress={()=>{if(name==='EventsLive')setState(s=>setLocalEventEnabled(s,true,Date.now()));setSection(name)}} style={s.pick}><Text style={{color:section===name?C.accent:C.text}}>{name}</Text></Pressable>)}</ScrollView></View>
  <View style={s.flex}>
- {section==='Login'?<AccountWelcomeScreen scene={STARTUP_SCENES[0]}><OnlineAccountPanel state={newGame(now)}/></AccountWelcomeScreen>:<>
+ {section==='Login'?<AccountWelcomeScreen scene={GENERAL_STARTUP_SCENE}><OnlineAccountPanel state={newGame(now)}/></AccountWelcomeScreen>:<>
  <GameTopBar state={state} nowMs={now} labelForDestination={x=>x} onNavigate={noop} onChangeDestinations={noop} onOpenActivity={()=>setSection(state.activity?.kind==='combat'?'Combat':'Skills')}/>
  {section==='WorkingToward'&&<ProgressionPlannerScreen state={state} onChange={setState} onNavigateGoal={noop}/>} 
  {section==='Home'&&<HomeScreen state={state} preview={previewActivityReward(state,now)} nowMs={now} onClaim={()=>setState(s=>claimActivity(s,now).state)} onStop={()=>setState(stopActivity)} onQueueRemove={noop} onQueueMove={noop} onQueueClear={noop} onQueueStart={noop} onNavigate={noop} onOpenPlanner={noop} onOpenContracts={noop} onNavigateGoal={noop} onOpenCombat={()=>setSection('Combat')} onOpenSkill={()=>setSection('Skills')}/>} 

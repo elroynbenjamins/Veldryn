@@ -85,8 +85,11 @@ ok(veil,'Veilbreak definition should exist');
 equal(veil!.visualKey,'veilbreak','Veilbreak uses its dedicated visual theme');
 ok(veil!.milestones('IRONWARDEN').some(row=>row.reward.id==='EVT_PET_013'),'Veilbreak grants Gloomkin');
 ok(veil!.shop.some(row=>row.reward.id==='EVT_PET_014'),'Veilbreak prestige stock grants Lantern Mimic');
-ok(veil!.milestones('IRONWARDEN').some(row=>row.reward.id==='EVT_UNIT_007'),'Veilbreak grants Veil Hound');
-ok(!veil!.shop.some(row=>row.reward.id==='EVT_UNIT_008'),'Veilbreak keeps one companion reward');
+ok(veil!.milestones('IRONWARDEN').some(row=>row.reward.id==='EVT_UNIT_007'),'Veilbreak grants Veil Hound at the first companion milestone');
+ok(veil!.milestones('IRONWARDEN').some(row=>row.reward.id==='EVT_UNIT_008'),'Veilbreak grants Gravebell Gargoyle at 20,000 reputation');
+ok(veil!.shop.some(row=>row.reward.id==='EVT_UNIT_011'),'Veilbreak prestige stock grants Lanternwing');
+equal(veil!.milestones('IRONWARDEN').filter(row=>row.reward.kind==='companion').length,2,'Veilbreak has two milestone companions');
+equal(veil!.shop.filter(row=>row.reward.kind==='companion').length,1,'Veilbreak has one shop companion');
 
 const frost=AUTHORED_EVENT_CATALOG.find(event=>event.id==='EVT_ANNUAL_012_2026');
 ok(frost,'Frostfall definition should exist');

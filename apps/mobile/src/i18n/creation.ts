@@ -1,5 +1,5 @@
 import {SUPPORTED_LANGUAGES,type Language} from './languages';
-import {createTranslator} from './translator';
+import {createTranslator,interpolateTranslation,type TranslationParams} from './translator';
 
 // English source keys are limited to authored UI copy, never player-authored text.
 // Each row contains de, es, nl, it and fr, in SUPPORTED_LANGUAGES order after en.
@@ -192,7 +192,7 @@ export const creationCatalogs = Object.fromEntries(SUPPORTED_LANGUAGES.map((lang
 export const creationT = createTranslator(creationCatalogs);
 
 /** Only use with authored content fields; proper names and unknown content pass through. */
-export function creationText(language:Language,source:string):string{
+export function creationText(language:Language,source:string,params:TranslationParams={}):string{
   return Object.prototype.hasOwnProperty.call(creationTranslationRows,source)
-    ? creationT(language,source as CreationKey) : source;
+    ? creationT(language,source as CreationKey,params) : interpolateTranslation(source,params);
 }

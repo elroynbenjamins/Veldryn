@@ -1,12 +1,10 @@
-import {useMemo} from 'react';
 import {StyleSheet,View} from 'react-native';
 import {useGameTheme} from '../theme/ThemeContext';
-import type {ThemeColors} from '../theme/theme';
 
 export type StatIconKind='health'|'currentHealth'|'defense'|'attack'|'power'|'critChance'|'critDamage'|'accuracy'|'evasion'|'haste'|'armor'|'ward'|'tenacity'|'potency'|'penetration'|'readiness'|'slots';
 
 export function StatIcon({kind,size=22,muted=false}:{kind:StatIconKind;size?:number;muted?:boolean}){
- const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),color=muted?C.muted:C.accent;
+ const C=useGameTheme(),color=muted?C.muted:C.accent;
  const line=Math.max(1.5,size*.085),box={width:size,height:size};
  const stroke={borderColor:color};
  if(kind==='health')return <View accessible={false} style={[s.icon,box]}><View style={[s.heartLeft,{width:size*.42,height:size*.42,borderRadius:size*.21,backgroundColor:color,left:size*.12,top:size*.17}]}/><View style={[s.heartRight,{width:size*.42,height:size*.42,borderRadius:size*.21,backgroundColor:color,right:size*.12,top:size*.17}]}/><View style={[s.heartPoint,{width:size*.5,height:size*.5,backgroundColor:color,left:size*.25,top:size*.29,transform:[{rotate:'45deg'}]}]}/></View>;
@@ -21,7 +19,7 @@ export function StatIcon({kind,size=22,muted=false}:{kind:StatIconKind;size?:num
  return <View accessible={false} style={[s.icon,box]}><View style={[s.gridCell,stroke,{left:size*.12,top:size*.12,width:size*.31,height:size*.31,borderWidth:line}]}/><View style={[s.gridCell,stroke,{right:size*.12,top:size*.12,width:size*.31,height:size*.31,borderWidth:line}]}/><View style={[s.gridCell,stroke,{left:size*.12,bottom:size*.12,width:size*.31,height:size*.31,borderWidth:line}]}/><View style={[s.gridCell,stroke,{right:size*.12,bottom:size*.12,width:size*.31,height:size*.31,borderWidth:line}]}/></View>;
 }
 
-function makeStyles(C:ThemeColors){return StyleSheet.create({
+const s=StyleSheet.create({
  icon:{position:'relative'},
  heartLeft:{position:'absolute'},heartRight:{position:'absolute'},heartPoint:{position:'absolute'},
  plus:{position:'absolute',borderRadius:99},weapon:{position:'absolute',borderRadius:99},guard:{position:'absolute',borderRadius:99},
@@ -31,4 +29,4 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  chevron:{position:'absolute'},diamond:{position:'absolute'},
  arrowShaft:{position:'absolute',borderRadius:99},arrowHead:{position:'absolute'},
  gridCell:{position:'absolute',borderRadius:2},
-});}
+});

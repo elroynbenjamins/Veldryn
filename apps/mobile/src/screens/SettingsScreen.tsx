@@ -149,6 +149,7 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onRefreshComme
     <View>
       <Text selectable style={s.sub}>{appBuildText(language,'version',{version:APP_BUILD_INFO.version})}{APP_BUILD_INFO.buildNumber?` · ${appBuildText(language,'build',{build:APP_BUILD_INFO.buildNumber})}`:''}</Text>
       <Text selectable style={s.sub}>{appBuildText(language,'channel',{channel:APP_BUILD_INFO.releaseChannel})}</Text>
+      {APP_BUILD_INFO.sourceCommit?<Text selectable style={s.sub}>{appBuildText(language,'source',{source:APP_BUILD_INFO.sourceCommit})}</Text>:null}
     </View>
   </ScrollView><GuideTopicModal onOpen={onNavigateGuide?destination=>{setGuideId(undefined);onNavigateGuide(destination)}:undefined} language={language} definition={guideId?guideDefinition(guideId):undefined} visible={!!guideId} onClose={()=>setGuideId(undefined)}/></View>;
 }

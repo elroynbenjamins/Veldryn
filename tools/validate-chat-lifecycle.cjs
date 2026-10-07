@@ -969,9 +969,9 @@ async function notificationLifecycle() {
     assert.strictEqual(view.refresh,refreshAlpha,'same-account token renewal preserves notification refresh identity');
     assert.equal(friendReads,1,'same-account token renewal does not re-fetch notifications');
 
-    holdGuild=true;await h.tick(60000);
+    holdGuild=true;await h.tick(30000);
     assert.equal(friendReads,2);assert.equal(pending.length,1);
-    await h.tick(60000);
+    await h.tick(30000);
     assert.equal(friendReads,2,'scheduled poll cannot overlap an existing notification request');
     holdGuild=false;await act(async()=>{pending.shift().resolve(null);});
     assert.equal(friendReads,2,'scheduled polls do not queue redundant forced rereads');

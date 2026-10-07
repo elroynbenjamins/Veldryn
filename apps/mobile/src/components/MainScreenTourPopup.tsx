@@ -1,4 +1,4 @@
-import {creationT,creationText} from '../i18n/creation';
+import {creationText} from '../i18n/creation';
 import {useGameLanguage} from '../i18n/GameLanguageProvider';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import type {MainScreenTourStep} from '../core/main-screen-tour';
@@ -11,7 +11,7 @@ export function MainScreenTourPopup({step,index,total,onBack,onNext,onSkip}:{ste
  const last=index>=total-1;
  return <OnboardingModalShell onClose={onSkip} footer={<View style={s.actions}>
   <Pressable accessibilityRole="button" onPress={onSkip} style={({pressed})=>[s.secondary,{borderColor:C.line},pressed&&s.pressed]}><Text style={[s.secondaryText,{color:C.muted}]}>{creationText(language,'Skip tour')}</Text></Pressable>
-  {index>0?<Pressable accessibilityRole="button" onPress={onBack} style={({pressed})=>[s.secondary,{borderColor:C.line},pressed&&s.pressed]}><Text style={[s.secondaryText,{color:C.text}]}>{creationT(language,'Back')}</Text></Pressable>:null}
+  {index>0?<Pressable accessibilityRole="button" onPress={onBack} style={({pressed})=>[s.secondary,{borderColor:C.line},pressed&&s.pressed]}><Text style={[s.secondaryText,{color:C.text}]}>{creationText(language,'Back')}</Text></Pressable>:null}
   <Pressable accessibilityRole="button" onPress={onNext} style={({pressed})=>[s.primary,{backgroundColor:C.accent},pressed&&s.pressed]}><Text style={[s.primaryText,{color:C.bg}]}>{creationText(language,last?'Finish tour':'Next screen')}</Text></Pressable>
  </View>}>
   <Text style={[s.eyebrow,{color:C.accent}]}>{creationText(language,'MAIN SCREEN TOUR')} · {index+1}/{total}</Text>

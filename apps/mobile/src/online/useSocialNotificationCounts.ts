@@ -76,7 +76,7 @@ export function useSocialNotificationCounts(){
   useEffect(()=>{
     inFlight.current=null;countsAccount.current=accountId;setCounts(ZERO);void refresh(false);
     let previous=AppState.currentState;
-    const id=setInterval(()=>{if(AppState.currentState==='active')void refresh(false);},60000);
+    const id=setInterval(()=>{if(AppState.currentState==='active')void refresh(false);},30000);
     const sub=AppState.addEventListener('change',status=>{const resumed=previous!=='active'&&status==='active';previous=status;if(resumed)void refresh();});
     return()=>{inFlight.current=null;clearInterval(id);sub.remove();};
   },[accountId,refresh]);

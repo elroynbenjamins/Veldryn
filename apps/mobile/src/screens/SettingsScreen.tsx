@@ -38,7 +38,7 @@ type Props={
   onRedeemCode?:(code:string)=>Promise<string|void>|string|void;
   onOpenCoopUiGallery?:()=>void;
 };
-type SettingsSection='gameplay'|'appearance'|'accessibility'|'account'|'data'|'guide'|'developer';
+type SettingsSection='gameplay'|'appearance'|'accessibility'|'account'|'store'|'data'|'guide'|'developer';
 const DISCORD_INVITE_URL='https://discord.gg/Db83APvP5y';
 const PRIVACY_POLICY_URL='https://elroynbenjamins.github.io/veldryn/privacy/';
 const openExternal=(url:string)=>{void Linking.openURL(url)};
@@ -69,9 +69,9 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onRefreshComme
   const {width}=useWindowDimensions(),phone=width<768;
   const section=phone?selectedSection:selectedSection??'gameplay';
   const navigationStyles=useMemo(()=>makeNavigationStyles(theme),[theme]);
-  const sections:SettingsSection[]=['gameplay','appearance','accessibility','account','data','guide',...(__DEV__&&!online?['developer' as const]:[])];
-  const sectionLabel=(value:SettingsSection)=>value==='guide'?a('Help & Guide'):a(value.charAt(0).toUpperCase()+value.slice(1));
-  const sectionDescription=(value:SettingsSection)=>value==='gameplay'?a("Tune combat, number display, and auto-eat behavior."):value==='appearance'?a("Choose a complete UI theme. Gameplay colors keep the same meaning in every theme."):value==='accessibility'?a("Make text, motion, and language fit your play style."):value==='account'?a("Manage your connected account and profile preferences."):value==='data'?a("Export, import, or recover your local progress."):value==='guide'?a("Browse the interactive VELDRYN help guide."):a("Development tools and visual QA controls.");
+  const sections:SettingsSection[]=['gameplay','appearance','accessibility','account','store','data','guide',...(__DEV__&&!online?['developer' as const]:[])];
+  const sectionLabel=(value:SettingsSection)=>value==='guide'?a('Help & Guide'):value==='store'?a('Store'):a(value.charAt(0).toUpperCase()+value.slice(1));
+  const sectionDescription=(value:SettingsSection)=>value==='gameplay'?a("Tune combat, number display, and auto-eat behavior."):value==='appearance'?a("Choose a complete UI theme. Gameplay colors keep the same meaning in every theme."):value==='accessibility'?a("Make text, motion, and language fit your play style."):value==='account'?a("Manage your connected account and profile preferences."):value==='store'?a("Manage VIP, VIP+, Supporter and restore Google Play purchases."):value==='data'?a("Export, import, or recover your local progress."):value==='guide'?a("Browse the interactive VELDRYN help guide."):a("Development tools and visual QA controls.");
   const scrollRef=useRef<ScrollView>(null),scrollPositions=useRef<Record<string,number>>({}),restoredPage=useRef<string|undefined>(undefined);
   const pageKey=(phone?'phone:':'wide:')+(section??'index');
   const restoreScroll=()=>{if(restoredPage.current===pageKey)return;scrollRef.current?.scrollTo({y:scrollPositions.current[pageKey]??0,animated:false});restoredPage.current=pageKey;};
@@ -100,8 +100,8 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onRefreshComme
       <Text style={[s.sub,{color:theme.muted}]}>{a('Character: {name} · {save}',{name:state.character?.name??a('Not created yet'),save:a(online?'Online save':'Local save')})}</Text>
       <Text style={[s.muted,{color:theme.muted}]}>{online?a("Your progress is saved after every successful action."):a("Local progress is kept separately from online characters.")}</Text>
     </Panel>
-    <OnlineAccountPanel state={state}/>
-    <GooglePlayCommercePanel state={state} online={online} onChange={onChange} onRefreshCommerce={onRefreshCommerce}/><RedeemCodePanel language={language} onRedeemCode={onRedeemCode}/></>}
+    <OnlineAccountPanel state={state}/></>}
+    {section==='store'&&<><Panel><Text style={[s.title,{color:theme.text}]}>{a('Store')}</Text><Text style={[s.sub,{color:theme.muted}]}>{a('Manage account-wide purchases and restore Google Play entitlements.')}</Text></Panel><GooglePlayCommercePanel state={state} online={online} onChange={onChange} onRefreshCommerce={onRefreshCommerce}/><RedeemCodePanel language={language} onRedeemCode={onRedeemCode}/></>}
     {section==='gameplay'&&<><Panel>
       <Text style={[s.title,{color:theme.text}]}>{t(state.settings.language,'settings.gameplay')}</Text>
       <Text style={[s.sub,{color:theme.muted}]}>{a("Activities continue while closed up to your current AFK reserve.")}</Text>

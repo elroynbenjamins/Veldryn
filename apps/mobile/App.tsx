@@ -1,6 +1,6 @@
 import {SavedLoadoutsPanel} from './src/components/SavedLoadoutsPanel';
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
-import {ActivityIndicator,Alert,ScrollView,AppState,BackHandler,Image,PanResponder,Pressable,Share,StyleSheet,Text,TextInput,View} from 'react-native';
+import {ActivityIndicator,Alert,Animated,ScrollView,AppState,BackHandler,Image,PanResponder,Pressable,Share,StyleSheet,Text,TextInput,View} from 'react-native';
 import {StatusBar} from 'expo-status-bar';
 import {SafeAreaProvider,SafeAreaView} from 'react-native-safe-area-context';
 import {AccountWelcomeScreen} from './src/components/AccountWelcomeScreen';
@@ -199,6 +199,32 @@ function VeldrynApp(){
   const [pendingEventLiveId,setPendingEventLiveId]=useState<string|undefined>();
   const [eventStartPopup,setEventStartPopup]=useState<import('./src/core/types').LiveEventRuntime|null>(null);
   const announcedLiveEvents=useRef<Set<string>>(new Set());
+  const startupOpacity=useRef(new Animated.Value(1)).current;
+  const appEntranceOpacity=useRef(new Animated.Value(1)).current;
+  const appEntranceY=useRef(new Animated.Value(0)).current;
+  const [startupOverlayVisible,setStartupOverlayVisible]=useState(true);
+  const versionGateOwnsScreen=!!(versionGate?.maintenanceMode&&versionGate.policy)||!!(versionGate?.updateRequired&&versionGate.policy);
+  const startupBlocking=!versionGateChecked||(!versionGateOwnsScreen&&(serverGameplayEnabled
+    ?auth.loading||online.loading||(guestBooting&&!auth.session)||!!(auth.session&&!auth.recovering&&online.snapshot&&!ready)
+    :!ready));
+  useEffect(()=>{
+    startupOpacity.stopAnimation();appEntranceOpacity.stopAnimation();appEntranceY.stopAnimation();
+    if(startupBlocking){
+      startupOpacity.setValue(1);appEntranceOpacity.setValue(1);appEntranceY.setValue(0);setStartupOverlayVisible(true);return;
+    }
+    const reduced=state?.settings.reduceMotion===true;
+    setStartupOverlayVisible(true);
+    startupOpacity.setValue(1);appEntranceOpacity.setValue(reduced?1:.94);appEntranceY.setValue(reduced?0:4);
+    if(reduced){startupOpacity.setValue(0);setStartupOverlayVisible(false);return;}
+    const timer=setTimeout(()=>{
+      Animated.parallel([
+        Animated.timing(startupOpacity,{toValue:0,duration:420,useNativeDriver:true}),
+        Animated.timing(appEntranceOpacity,{toValue:1,duration:260,useNativeDriver:true}),
+        Animated.timing(appEntranceY,{toValue:0,duration:260,useNativeDriver:true}),
+      ]).start(({finished})=>{if(finished)setStartupOverlayVisible(false);});
+    },160);
+    return()=>{clearTimeout(timer);startupOpacity.stopAnimation();appEntranceOpacity.stopAnimation();appEntranceY.stopAnimation();};
+  },[startupBlocking,state?.settings.reduceMotion,startupOpacity,appEntranceOpacity,appEntranceY]);
   useEffect(()=>{let alive=true;
     const check=async()=>{try{const result=await Promise.race([fetchAppVersionGate(),new Promise<null>(resolve=>setTimeout(()=>resolve(null),2500))]);if(alive&&result)setVersionGate(result);}finally{if(alive)setVersionGateChecked(true);}};
     void check();
@@ -437,15 +463,15 @@ const next=normalizeProfileIcon(candidate);queuePreparationNotices(current,next)
     setTab('Skills');
   }
   const renderApp=()=>{
-  if(!versionGateChecked)return <StartupScreen scene={startupScene} language={recoveryLanguage}/>;
+  if(!versionGateChecked)return <View style={s.startupUnderlay}/>;
   if(versionGate?.maintenanceMode&&versionGate.policy)return <UpdateRequiredScreen maintenance title={appText(languageRef.current,"VELDRYN maintenance")} message={versionGate.policy.maintenanceMessage} currentVersion={versionGate.currentVersion} onUpdate={()=>{}}/>;
   if(versionGate?.updateRequired&&versionGate.policy)return <UpdateRequiredScreen title={versionGate.policy.title} message={versionGate.policy.message} currentVersion={versionGate.currentVersion} minimumVersion={versionGate.policy.minimumVersion} onUpdate={()=>void openStoreListing()}/>;
-  if(serverGameplayEnabled&&(auth.loading||online.loading||guestBooting&&!auth.session))return <StartupScreen scene={startupScene} language={recoveryLanguage}/>;
+  if(serverGameplayEnabled&&(auth.loading||online.loading||guestBooting&&!auth.session))return <View style={s.startupUnderlay}/>;
   if(serverGameplayEnabled&&(!auth.session||auth.recovering))return <AccountWelcomeScreen scene={startupScene}><OnlineAccountPanel state={state??newGame(Date.now())}/></AccountWelcomeScreen>;
   if(serverGameplayEnabled&&!online.snapshot)return <SafeAreaView style={s.center}><Text style={s.txt}>{online.error||appText(languageRef.current,'Connecting…')}</Text><GameButton title={appText(languageRef.current,"Retry connection")} onPress={()=>void online.refresh()}/><OnlineAccountPanel state={newGame(Date.now())}/></SafeAreaView>;
-  if(!ready)return <StartupScreen scene={startupScene} language={recoveryLanguage}/>;
+  if(!ready)return <View style={s.startupUnderlay}/>;
   if(loadError||!state)return <SafeAreaView style={s.safe}><StatusBar style="light"/><SaveRecoveryScreen language={recoveryLanguage} message={loadError||'No readable save state was returned.'} onRetry={()=>void loadGame()} onStartFresh={()=>showAlert('Delete unreadable local save?','This permanently removes the existing local data and starts a new game.',[{text:'Cancel'},{text:'Start fresh',style:'destructive',onPress:async()=>{await repo.reset();setState(newGame(Date.now()));setLoadError('');setCurrentTab('Home');setTabHistory([])}}])}/></SafeAreaView>;
-  if(!state.character){const theme=resolveTheme(state.settings.uiTheme);if(serverGameplayEnabled&&adminQa)return <GameThemeProvider themeId={state.settings.uiTheme}><SafeAreaView style={[s.safe,{backgroundColor:theme.bg}]}><StatusBar style={theme.dark?'light':'dark'}/><AdminQaScreen state={state} onApplyQa={applyOnlineAdminQa} onRefillQa={refillOnlineAdminQa} onClose={()=>{}} onOpenDungeon={()=>{}}/></SafeAreaView></GameThemeProvider>;return <GameThemeProvider themeId={state.settings.uiTheme}><SafeAreaView style={[s.safe,{backgroundColor:theme.bg}]}><StatusBar style={theme.dark?'light':'dark'}/><ClassSelectScreen language={state.settings.language} onLanguage={language=>commit({...state,settings:{...state.settings,language}})} onSignInExisting={serverGameplayEnabled&&auth.session?.user.is_anonymous?()=>{setGuestBooting(false);void signOut()}:undefined} onSelect={async(id,name,body)=>{if(serverGameplayEnabled){const result=await perform({type:'create',args:{classId:id,name,body}});if(result)setCreationWelcome({name,classId:id});return;}const next=createCharacter(state,id,name,body);await repo.save(next);setState(next);setCreationWelcome({name,classId:id})}}/></SafeAreaView></GameThemeProvider>;}
+  if(!state.character){const theme=resolveTheme(state.settings.uiTheme);if(serverGameplayEnabled&&adminQa)return <GameThemeProvider themeId={state.settings.uiTheme}><SafeAreaView style={[s.safe,{backgroundColor:theme.bg}]}><StatusBar style={theme.dark?'light':'dark'}/><AdminQaScreen state={state} onApplyQa={applyOnlineAdminQa} onRefillQa={refillOnlineAdminQa} onClose={()=>{}} onOpenDungeon={()=>{}}/></SafeAreaView></GameThemeProvider>;return <GameThemeProvider themeId={state.settings.uiTheme}><SafeAreaView style={[s.safe,{backgroundColor:theme.bg}]}><StatusBar style={theme.dark?'light':'dark'}/><ClassSelectScreen language={state.settings.language} themeId={state.settings.uiTheme} onTheme={uiTheme=>void commit({...state,settings:{...state.settings,uiTheme}})} onLanguage={language=>commit({...state,settings:{...state.settings,language}})} onSignInExisting={serverGameplayEnabled&&auth.session?.user.is_anonymous?()=>{setGuestBooting(false);void signOut()}:undefined} onSelect={async(id,name,body)=>{if(serverGameplayEnabled){const result=await perform({type:'create',args:{classId:id,name,body}});if(result)setCreationWelcome({name,classId:id});return;}const next=createCharacter(state,id,name,body);await repo.save(next);setState(next);setCreationWelcome({name,classId:id})}}/></SafeAreaView></GameThemeProvider>;}
   if(creatingRoster){const theme=resolveTheme(state.settings.uiTheme);return <GameThemeProvider themeId={state.settings.uiTheme}><SafeAreaView style={[s.safe,{backgroundColor:theme.bg}]}><StatusBar style={theme.dark?'light':'dark'}/><ClassSelectScreen language={state.settings.language} cancelLabel={t(state.settings.language,'roster.cancel')} onCancel={()=>setCreatingRoster(false)} onSelect={async(id,name,body)=>{if(serverGameplayEnabled){const result=await perform({type:'roster_create',args:{classId:id,name,body}});if(result)setCreatingRoster(false);return;}const result=executeGameCommand(state,{type:'roster_create',args:{classId:id,name,body}},Date.now());await commit(result.state);setCreatingRoster(false)}}/></SafeAreaView></GameThemeProvider>;}
   if(showAdminQa&&(adminQa||(__DEV__&&!serverGameplayEnabled)))return <SafeAreaView style={s.safe} {...backSwipe.panHandlers}><StatusBar style="light"/><AdminQaScreen state={state} onChange={!serverGameplayEnabled?commit:undefined} onApplyQa={serverGameplayEnabled&&adminQa?applyOnlineAdminQa:undefined} onRefillQa={serverGameplayEnabled&&adminQa?refillOnlineAdminQa:undefined} onClose={()=>setShowAdminQa(false)} onOpenDungeon={()=>{setShowAdminQa(false);setTab('Coop')}}/></SafeAreaView>;
   if(__DEV__&&showCoopUiGallery)return <SafeAreaView style={s.safe} {...backSwipe.panHandlers}><StatusBar style="light"/><CoopUiGalleryScreen language={state.settings.language} onClose={()=>setShowCoopUiGallery(false)}/></SafeAreaView>;
@@ -531,6 +557,12 @@ const next=normalizeProfileIcon(candidate);queuePreparationNotices(current,next)
   {storyBossBattle&&<StoryBossBattleModal state={state} battle={storyBossBattle.battle} message={storyBossBattle.message} onClose={()=>setStoryBossBattle(null)}/>}
   </SafeAreaView></GameThemeProvider>;
   };
-  return <GameLanguageProvider language={state?.settings.language??recoveryLanguage}>{renderApp()}</GameLanguageProvider>;
+  const renderedApp=renderApp();
+  return <GameLanguageProvider language={state?.settings.language??recoveryLanguage}><View style={s.appRoot}>
+    <Animated.View style={[s.appRoot,{opacity:appEntranceOpacity,transform:[{translateY:appEntranceY}]}]}>{renderedApp}</Animated.View>
+    {(startupOverlayVisible||startupBlocking)&&<Animated.View pointerEvents={startupBlocking?'auto':'none'} style={[s.startupOverlay,{opacity:startupBlocking?1:startupOpacity}]}>
+      <StartupScreen scene={startupScene} language={state?.settings.language??recoveryLanguage} themeId={state?.settings.uiTheme}/>
+    </Animated.View>}
+  </View></GameLanguageProvider>;
 }
-const s=StyleSheet.create({safe:{flex:1,backgroundColor:C.bg},offlineLoadingOverlay:{...StyleSheet.absoluteFill,zIndex:20,justifyContent:'center',padding:16,backgroundColor:'rgba(5,9,15,.86)'},masteryNotice:{paddingHorizontal:10,paddingVertical:4,backgroundColor:C.bg},center:{flex:1,backgroundColor:C.bg,alignItems:'center',justifyContent:'center',gap:10},txt:{color:C.text},body:{flex:1},backBar:{minHeight:48,flexDirection:'row',alignItems:'center',borderBottomWidth:1,borderColor:C.line,backgroundColor:C.panel,paddingHorizontal:8},backButton:{minWidth:80,minHeight:44,flexDirection:'row',alignItems:'center',gap:4,paddingHorizontal:6},backPressed:{opacity:.65},backText:{color:C.accent,fontSize:15,fontWeight:'800'},backTitle:{flex:1,color:C.text,fontSize:16,fontWeight:'900',textAlign:'center'},backSpacer:{width:80}});
+const s=StyleSheet.create({appRoot:{flex:1},startupOverlay:{...StyleSheet.absoluteFill,zIndex:100},startupUnderlay:{flex:1,backgroundColor:C.bg},safe:{flex:1,backgroundColor:C.bg},offlineLoadingOverlay:{...StyleSheet.absoluteFill,zIndex:20,justifyContent:'center',padding:16,backgroundColor:'rgba(5,9,15,.86)'},masteryNotice:{paddingHorizontal:10,paddingVertical:4,backgroundColor:C.bg},center:{flex:1,backgroundColor:C.bg,alignItems:'center',justifyContent:'center',gap:10},txt:{color:C.text},body:{flex:1},backBar:{minHeight:48,flexDirection:'row',alignItems:'center',borderBottomWidth:1,borderColor:C.line,backgroundColor:C.panel,paddingHorizontal:8},backButton:{minWidth:80,minHeight:44,flexDirection:'row',alignItems:'center',gap:4,paddingHorizontal:6},backPressed:{opacity:.65},backText:{color:C.accent,fontSize:15,fontWeight:'800'},backTitle:{flex:1,color:C.text,fontSize:16,fontWeight:'900',textAlign:'center'},backSpacer:{width:80}});

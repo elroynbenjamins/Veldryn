@@ -47,6 +47,8 @@ export function eventDailyFestivalBlessing(definition:Pick<LiveEventDef,'name'>,
 export interface EventRewardPlan{
   meterPet:EventMilestone;
   shopPet:EventShopOffer;
+  milestoneCompanions:EventMilestone[];
+  shopCompanions:EventShopOffer[];
   finalCompanion:EventMilestone;
 }
 
@@ -55,8 +57,10 @@ export function eventRewardPlan(definition:LiveEventDef,classId:ClassId):EventRe
   const milestones=definition.milestones(classId);
   const meterPet=milestones.find(entry=>entry.reward.kind==='pet');
   const shopPet=definition.shop.find(entry=>entry.reward.kind==='pet');
-  const finalCompanion=milestones.find(entry=>entry.reward.kind==='companion');
-  return meterPet&&shopPet&&finalCompanion?{meterPet,shopPet,finalCompanion}:undefined;
+  const milestoneCompanions=milestones.filter(entry=>entry.reward.kind==='companion');
+  const shopCompanions=definition.shop.filter(entry=>entry.reward.kind==='companion');
+  const finalCompanion=milestoneCompanions[milestoneCompanions.length-1];
+  return meterPet&&shopPet&&finalCompanion?{meterPet,shopPet,milestoneCompanions,shopCompanions,finalCompanion}:undefined;
 }
 
 /** First production-shaped event sourced from the annual event design workbook. */

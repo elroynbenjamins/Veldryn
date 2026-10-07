@@ -15,7 +15,10 @@ assert.ok(creation.includes('Choose a name in the next step.'),'class choice mus
 assert.ok(creation.includes('WHAT HAPPENS NEXT'));
 assert.ok(!creation.includes('Your first crafting goal:'));
 assert.ok(!creation.includes('Full equipment-set appearances become permanent skin unlocks later.'));
-assert.ok(creation.includes('showNameIdeas&&'),'name suggestions are optional, not a permanent strip');
+assert.ok(!creation.includes('showNameIdeas')&&!creation.includes('nameIdeas'),'identity uses a player-entered name without suggestion UI');
+assert.ok(creation.includes('INTERFACE THEME')&&creation.includes("(['obsidian','ember','ivory'] as const)"),'first-character Identity lets the player choose the interface theme');
+assert.ok(creation.includes('You can change this anytime in Settings.'),'theme choice explains that it is not permanent');
+assert.ok(app.includes('themeId={state.settings.uiTheme}')&&app.includes('onTheme={uiTheme=>void commit'),'first-character theme choice is wired to saved settings');
 assert.ok(creation.includes('onSubmitEditing={next}'));
 assert.ok(creation.includes('const error=characterNameError(name)'),'revalidate the final submission');
 assert.ok(creation.includes('Class profile icon · No armor or off-hand equipped'),'do not imply starting armor is granted');

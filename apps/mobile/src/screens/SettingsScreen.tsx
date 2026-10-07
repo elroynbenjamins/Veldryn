@@ -27,6 +27,7 @@ import type {GameGuideId,GameGuideDestination} from '../core/onboarding';
 type Props={
   initialSection?:SettingsSection;
   onNavigateGuide?:(destination:GameGuideDestination)=>void;
+  onStartMainScreenTour?:()=>void;
   online?:boolean;
   state:GameState;
   onLanguage:(language:GameState['settings']['language'])=>void;
@@ -59,7 +60,7 @@ function RedeemCodePanel({language,onRedeemCode}:{language:Language;onRedeemCode
  return <Panel><Text style={[s.title,{color:C.text}]}>{a('Redeem code')}</Text><Text style={[s.sub,{color:C.muted}]}>{a('Enter a promotional code from an official VELDRYN announcement or event.')}</Text><View style={s.redeemRow}><TextInput accessibilityLabel={a('Redeem code')} autoCapitalize="characters" autoCorrect={false} value={code} onChangeText={value=>{setCode(value.replace(/\s/g,''));setStatus('')}} placeholder={a('ENTER CODE')} placeholderTextColor={C.muted} style={[s.codeInput,{color:C.text,borderColor:C.line,backgroundColor:C.inputBg}]}/><GameButton compact title={busy?a('Checking…'):a('Redeem')} disabled={!code.trim()||busy} onPress={()=>void redeem()}/></View>{status?<Text accessibilityLiveRegion="polite" style={[s.redeemStatus,{color:onRedeemCode?C.info:C.muted}]}>{status}</Text>:null}</Panel>;
 }
 
-export function SettingsScreen({state,onLanguage,onReset,onChange,onRefreshCommerce,onExport,onImport,onRedeemCode,onOpenCoopUiGallery,initialSection,onNavigateGuide,online=false}:Props){
+export function SettingsScreen({state,onLanguage,onReset,onChange,onRefreshCommerce,onExport,onImport,onRedeemCode,onOpenCoopUiGallery,initialSection,onNavigateGuide,onStartMainScreenTour,online=false}:Props){
  const language=state.settings.language;
  const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params);
 
@@ -94,7 +95,7 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onRefreshComme
     {section&&<Text style={[s.sectionHint,{color:theme.info}]}>{sectionDescription(section)}</Text>}
 
     {section==='appearance'&&<><Panel><Text style={[s.title,{color:theme.text}]}>{a("Interface theme")}</Text><Text style={[s.sub,{color:theme.muted}]}>{a("Switch the full interface while keeping progression, danger, success, rarity and event colors semantically consistent.")}</Text><View style={s.themeList}>{(['obsidian','ember','ivory'] as const).map(id=><ThemeChoice language={language} key={id} id={id} selected={(state.settings.uiTheme??'obsidian')===id} onPress={()=>update({uiTheme:id})}/>)}</View></Panel><Panel><Text style={[s.title,{color:theme.text}]}>{a("Color roles")}</Text><Text style={[s.sub,{color:theme.muted}]}>{a("Accent colors mark actions and selection. Green means success, amber caution, red danger, and violet special or premium content.")}</Text></Panel></>}
-    {section==='guide'&&<GameGuidePanel state={state} onOpen={id=>{onChange(acknowledgeGameGuide(state,id,true));setGuideId(id)}}/>}
+    {section==='guide'&&<GameGuidePanel state={state} onStartTour={onStartMainScreenTour} onOpen={id=>{onChange(acknowledgeGameGuide(state,id,true));setGuideId(id)}}/>}
     {section==='account'&&<><Panel>
       <Text style={[s.title,{color:theme.text}]}>{t(state.settings.language,'settings.account')}</Text>
       <Text style={[s.sub,{color:theme.muted}]}>{a('Character: {name} · {save}',{name:state.character?.name??a('Not created yet'),save:a(online?'Online save':'Local save')})}</Text>

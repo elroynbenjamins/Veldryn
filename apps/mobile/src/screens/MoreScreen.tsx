@@ -11,12 +11,12 @@ import {GameState} from '../core/types';
 import {EARLY_FEATURE_DESTINATION_ORDER} from '../core/feature-unlocks';
 import type {QuickNavDestination} from '../core/quick-navigation';
 
-export type MoreDestination='Home'|'Social'|'Activity'|'Progression'|'DailySupplies'|'AccountBonuses'|'Quests'|'Companions'|'Skills'|'Events'|'Friends'|'Guild'|'Settings'|'Arena'|'Rankings'|'Collections'|'Profile'|'Achievements'|'MasteryHall';
+export type MoreDestination='Home'|'Social'|'Activity'|'Progression'|'DailySupplies'|'AccountBonuses'|'Quests'|'Companions'|'Skills'|'Events'|'Friends'|'Guild'|'Settings'|'Arena'|'Rankings'|'Collections'|'Profile'|'Achievements'|'MasteryHall'|'Store';
 
 const sections:Array<{label:string;items:MoreDestination[]}>= [
   {label:'PLAY & PROGRESSION',items:['Home','Progression','Quests','Companions','DailySupplies','Events','AccountBonuses']},
   {label:'SOCIAL & COMPETITION',items:['Social','Friends','Guild','Arena','Rankings']},
-  {label:'IDENTITY & ACCOUNT',items:['Activity','Profile','MasteryHall','Collections','Achievements','Settings']},
+  {label:'IDENTITY & ACCOUNT',items:['Activity','Profile','MasteryHall','Collections','Achievements','Store','Settings']},
 ];
 
 function iconForDestination(id:MoreDestination):QuickNavDestination{
@@ -24,7 +24,7 @@ function iconForDestination(id:MoreDestination):QuickNavDestination{
   if(id==='Progression')return 'World';
   if(id==='DailySupplies'||id==='Rankings')return 'Events';
   if(id==='Arena')return 'Party';
-  if(id==='Collections')return 'Inventory';
+  if(id==='Collections'||id==='Store')return 'Inventory';
   if(id==='Achievements')return 'Quests';
   if(id==='MasteryHall')return 'Skills';
   return id;
@@ -45,6 +45,7 @@ function itemMeta(language:GameState['settings']['language'],id:MoreDestination)
     case 'Events':return {title:a("Event hub"),description:a("Annual festival calendar and past event history")};
     case 'Friends':return {title:t(language,'more.friends'),description:t(language,'more.friendsDescription')};
     case 'Guild':return {title:t(language,'more.guild'),description:t(language,'more.guildDescription')};
+    case 'Store':return {title:a("Store"),description:a("VIP, VIP+, Supporter and purchase restore")};
     case 'Settings':return {title:t(language,'more.settings'),description:t(language,'more.settingsDescription')};
     case 'Arena':return {title:a("Arena"),description:a("Three-character squad mode · In Development")};
     case 'Rankings':return {title:a("Rankings"),description:a("Server-calculated prestige boards")};

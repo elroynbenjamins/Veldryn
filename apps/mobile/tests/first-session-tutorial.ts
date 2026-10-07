@@ -14,9 +14,8 @@ for(let i=0;i<questIds.length;i++)check(`${questIds[i]} complete means claim, no
 check('gathering follows first quest claim',()=>assert.equal(step(at(1))?.id,'first_skill'));
 check('running guided gathering explains skill XP collection',()=>{const s=at(1);s.activity={kind:'fishing',targetId:'MEADOW_PERCH_POOL'};assert.equal(step(s)?.id,'first_skill_collect')});
 check('processing is not a gathering tutorial objective',()=>{const s=at(1);s.activity={kind:'processing',targetId:'SMELT_COPPER_INGOT'};assert.equal(step(s)?.id,'first_skill')});
-check('level 6 gets a bridge before Ironwood Wolves',()=>assert.equal(step(at(2,6))?.id,'ironwood_prepare'));
-check('level 7 gets the wolf objective',()=>{assert.equal(step(at(2,7))?.id,'ironwood_hunt');assert.ok(step(at(2,7))?.hint.includes('Ironwood Forest'))});
-check('old acknowledged wolf guide does not suppress new prerequisite hint',()=>assert.equal(step(at(2,6),['ironwood_hunt'])?.id,'ironwood_prepare'));
+check('level 6 does not show a duplicate wolf preparation popup',()=>assert.equal(step(at(2,6)),undefined));
+check('level 7 gets the single wolf objective',()=>{assert.equal(step(at(2,7))?.id,'ironwood_hunt');assert.ok(step(at(2,7))?.hint.includes('Ironwood Forest'))});
 check('equipment goal counts the starter weapon',()=>{assert.equal(step(at(3))?.destination,'Inventory');assert.ok(step(at(3))?.body.includes('already counts as one'))});
 check('level 10 objective distinguishes character and skill levels',()=>{assert.equal(step(at(4))?.id,'level_ten');assert.ok(step(at(4))?.body.includes('not the total'));assert.ok(step(at(4))?.hint.includes('combat rewards'))});
 check('no extra Account tour after QST_005',()=>assert.equal(step(at(5,10)),undefined));
@@ -28,6 +27,10 @@ check('normalization deduplicates and removes unknown IDs',()=>assert.deepEqual(
 check('legacy completion stays readable without a new tour',()=>assert.deepEqual(normalize(['core_loop_complete']),['core_loop_complete']));
 check('every guidance ID is unique',()=>{const rows=firstSessionTutorialSteps();assert.equal(new Set(rows.map(r=>r.id)).size,rows.length)});
 check('navigation projection does not mutate the game',()=>{const s=at(2);const before=JSON.stringify(s);step(s);assert.equal(JSON.stringify(s),before)});
+import {MAIN_SCREEN_TOUR,mainScreenTourStep} from '../src/core/main-screen-tour';
+check('main screen tour covers the six primary learning stops',()=>assert.deepEqual(MAIN_SCREEN_TOUR.map(row=>row.destination),['Home','Character','Skills','World','Inventory','More']));
+check('main screen tour IDs are unique',()=>assert.equal(new Set(MAIN_SCREEN_TOUR.map(row=>row.id)).size,MAIN_SCREEN_TOUR.length));
+check('main screen tour lookup fails quiet outside the sequence',()=>{assert.equal(mainScreenTourStep(-1),undefined);assert.equal(mainScreenTourStep(MAIN_SCREEN_TOUR.length),undefined)});
 console.log(`PASS ${checks} first-session tutorial scenarios`);
 
 import {createTutorialPreferenceStore} from '../src/core/tutorial-preferences';

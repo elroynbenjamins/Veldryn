@@ -28,8 +28,10 @@ export function EquipmentArtwork({item,compact=false,framed=true,size:requestedS
   const frameStyle={width:size,height:size,borderColor:meta.color,borderWidth:framed?meta.borderWidth:0,backgroundColor:framed?meta.surface:'transparent'};
   if(hasStarterWeaponArtwork(item.id))return <View accessibilityLabel={tr('{name} equipment artwork',{name:item.name})} style={[s.frame,frameStyle]}><StarterWeaponArtwork itemId={item.id} size={size}/></View>;
   if(sheet&&slotIndex>=0){
-    const cellWidth=size*equipmentSheetCellAspect(sheet);
-    return <View accessibilityLabel={tr('{name} equipment artwork',{name:item.name})} style={[s.frame,frameStyle]}><View style={{width:cellWidth,height:size,overflow:'hidden'}}><Image source={sheet} resizeMode="stretch" style={{position:'absolute',width:cellWidth*5,height:size*2,left:-(slotIndex%5)*cellWidth,top:-Math.floor(slotIndex/5)*size}}/></View></View>;
+    const aspect=equipmentSheetCellAspect(sheet);
+    const cellWidth=aspect>=1?size:size*aspect;
+    const cellHeight=aspect>=1?size/aspect:size;
+    return <View accessibilityLabel={tr('{name} equipment artwork',{name:item.name})} style={[s.frame,frameStyle]}><View style={{width:cellWidth,height:cellHeight,overflow:'hidden'}}><Image source={sheet} resizeMode="stretch" style={{position:'absolute',width:cellWidth*5,height:cellHeight*2,left:-(slotIndex%5)*cellWidth,top:-Math.floor(slotIndex/5)*cellHeight}}/></View></View>;
   }
   return <View accessibilityLabel={tr('{name} equipment marker',{name:item.name})} style={[s.frame,frameStyle]}><Text style={[s.marker,{color:meta.color}]}>◇</Text></View>;
 }

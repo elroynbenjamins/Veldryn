@@ -6,8 +6,12 @@ import {chunkedAuthStorage} from '../core/auth-callback';
 
 declare const process:{env:Record<string,string|undefined>};
 
-const url=process.env.EXPO_PUBLIC_SUPABASE_URL;
-const key=process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+const PRODUCTION_SUPABASE_URL='https://nyjwigipamnvpdvpauuv.supabase.co';
+const PRODUCTION_SUPABASE_ANON_KEY='sb_publishable_EBP2NTN1cNnwDFFg3idkwg_DiNu5zRo';
+// EXPO_PUBLIC values are normally inlined by Metro. Release builds must not
+// silently fall back to the demo/offline social UI if EAS fails to inject them.
+const url=process.env.EXPO_PUBLIC_SUPABASE_URL??(!__DEV__?PRODUCTION_SUPABASE_URL:undefined);
+const key=process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY??(!__DEV__?PRODUCTION_SUPABASE_ANON_KEY:undefined);
 
 const secureStorage={
   getItem:(storageKey:string)=>SecureStore.getItemAsync(storageKey),

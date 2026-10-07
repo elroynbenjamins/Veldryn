@@ -28,7 +28,13 @@ ok(veil.account.unlockedCosmeticPetIds?.includes('EVT_PET_014'),'Veilbreak prest
 
 veil=applyEventDrops(veil,[{eventId:'EVT_ANNUAL_010_2026',currencyId:'VEIL_SHARD',name:'Veil Shards',quantity:6000}]);
 veil=claimEventReward(veil,'EVT_UNIT_007',now);
-ok(veil.account.unlockedCombatCompanionIds?.includes('EVT_UNIT_007'),'Veilbreak final milestone grants Veil Hound');
+ok(veil.account.unlockedCombatCompanionIds?.includes('EVT_UNIT_007'),'Veilbreak 10k milestone grants Veil Hound');
+veil=applyEventDrops(veil,[{eventId:'EVT_ANNUAL_010_2026',currencyId:'VEIL_SHARD',name:'Veil Shards',quantity:10000}]);
+veil=claimEventReward(veil,'EVT_UNIT_008',now);
+ok(veil.account.unlockedCombatCompanionIds?.includes('EVT_UNIT_008'),'Veilbreak 20k milestone grants Gravebell Gargoyle');
+veil={...veil,account:{...veil.account,eventPrestigeBalanceById:{...(veil.account.eventPrestigeBalanceById??{}),EVT_ANNUAL_010_2026:14}}};
+veil=purchaseEventOffer(veil,'lanternwing_companion',now);
+ok(veil.account.unlockedCombatCompanionIds?.includes('EVT_UNIT_011'),'Veilbreak prestige shop grants Lanternwing');
 
 let frost=withEvent('EVT_ANNUAL_012_2026');
 equal(eventLifecycle(frost,now)?.definition.name,'Frostfall Festival','Frostfall runtime resolves');

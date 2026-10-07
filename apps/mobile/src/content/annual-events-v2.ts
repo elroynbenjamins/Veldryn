@@ -20,7 +20,7 @@ export const VEILBREAK_EVENT:LiveEventDef={
   prestigeCurrencyName:'Lantern Embers',
   accent:'#f47a36',
   progressionName:'Veil Reputation',
-  maxProgress:10000,
+  maxProgress:20000,
   claimGraceDays:7,
   visualKey:'veilbreak',
   signature:{kind:'ritual',label:'SIGNATURE · BREACH WATCH',title:'Hold the veil together while hunting what slips through',description:'Veilbreak is the darkest annual event. Normal activities reinforce the ward effort, discoveries represent objects crossing the veil, and Gloam Breach is the season’s persistent expedition.',highlights:['Ward-focused seasonal projects','Gloam-touched discovery chase','Gloam Breach seasonal expedition']},
@@ -51,6 +51,7 @@ export const VEILBREAK_EVENT:LiveEventDef={
     {points:7000,reward:{kind:'guild_banner',id:'halloween_pumpkin_lantern',name:'Pumpkin Lantern Flag',rarity:'rare'}},
     {points:8500,reward:{kind:'guild_banner',id:'halloween_bat_moon',name:'Bat Moon Flag',rarity:'epic'}},
     {points:10000,reward:{kind:'companion',id:'EVT_UNIT_007',name:'Veil Hound',rarity:'epic'}},
+    {points:20000,reward:{kind:'companion',id:'EVT_UNIT_008',name:'Gravebell Gargoyle',rarity:'epic'}},
   ],
   objectives:[
     {id:'veil_hunt',name:'Veil Hunt',description:'Defeat 350 ordinary enemies while the veil is thin.',source:'combat',required:350,rewardCurrency:320,rewardPrestige:1},
@@ -68,6 +69,7 @@ export const VEILBREAK_EVENT:LiveEventDef={
     {id:'candlewarden_title',reward:{kind:'title',id:'title_candlewarden',name:'Candlewarden',rarity:'epic'},currency:'common',cost:1800,limit:1},
     {id:'night_patrol_title',reward:{kind:'title',id:'title_night_patrol',name:'Night Patrol',rarity:'rare'},currency:'common',cost:1200,limit:1},
     {id:'veil_lantern_mimic',reward:{kind:'pet',id:'EVT_PET_014',name:'Lantern Mimic',rarity:'epic'},currency:'prestige',cost:10,limit:1},
+    {id:'lanternwing_companion',reward:{kind:'companion',id:'EVT_UNIT_011',name:'Lanternwing',rarity:'epic'},currency:'prestige',cost:14,limit:1},
   ],
   choices:[
     {id:'lantern_patrols',name:'Lantern Patrols',description:'Walk the roads and hunt creatures drawn through the veil.',bonusLabel:'+20% Veil Shards from combat',dropMultipliers:{combat:1.2}},

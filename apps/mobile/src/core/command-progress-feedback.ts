@@ -8,8 +8,8 @@ export interface CommandProgressFeedback{
  masteryNotices:RewardProgressionMoment[];
 }
 
-/** Profile saves can settle earned activity before changing collection bonuses.
- * Keep that authoritative result, while leaving the appearance editor uninterrupted.
+/** Profile/settings saves can settle earned activity before changing presentation state.
+ * Keep that authoritative result, while leaving non-gameplay editing uninterrupted.
  * Actual cosmetic unlocks are detected separately from this reward presentation.
  */
 export function commandProgressFeedback(
@@ -17,7 +17,7 @@ export function commandProgressFeedback(
  before:GameState|null|undefined,
  result:Pick<GameCommandResult,'state'|'reward'>&{activity?:GameState['activity']},
 ):CommandProgressFeedback{
- if(command.type==='profile'||command.type==='profile_icon')return {collected:null,masteryNotices:[]};
+ if(command.type==='profile'||command.type==='profile_icon'||command.type==='settings')return {collected:null,masteryNotices:[]};
  if(!result.reward)return {collected:null,masteryNotices:masteryRankProgressionMoments(before,result.state)};
  const progressionMoments=rewardProgressionMoments(before,result.state);
  return {

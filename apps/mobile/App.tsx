@@ -268,7 +268,13 @@ function VeldrynApp(){
     }
   }catch{/* Event registry sync is best-effort; gameplay refresh remains authoritative. */}},[setTab]);
   useEffect(()=>{if(!onlineConfigured)return;void syncLiveEventRuntime();const id=setInterval(()=>void syncLiveEventRuntime(),30000);const sub=AppState.addEventListener('change',status=>{if(status==='active')void syncLiveEventRuntime();});return()=>{clearInterval(id);sub.remove();}},[syncLiveEventRuntime]);
-  useEffect(()=>{const id=setInterval(()=>setNow(Date.now()),1000);return()=>clearInterval(id)},[]);
+  useEffect(()=>{
+    const liveClock=tab==='Home'||tab==='Skills'||tab==='DailySupplies'||tab==='Companions'||tab==='Activity';
+    const tick=()=>{if(AppState.currentState==='active'||AppState.currentState===null)setNow(Date.now());};
+    tick();
+    const id=setInterval(tick,liveClock?1000:5000);
+    return()=>clearInterval(id);
+  },[tab]);
   useEffect(()=>{if(!preparationNotices.length||collected||forgeResults)return;const timer=setTimeout(()=>setPreparationNotices(current=>current.slice(1)),4500);return()=>clearTimeout(timer)},[preparationNotices,collected,forgeResults]);
   useEffect(()=>{if(!masteryNotices.length||preparationNotices.length||collected||forgeResults)return;const timer=setTimeout(()=>setMasteryNotices([]),4500);return()=>clearTimeout(timer)},[masteryNotices,preparationNotices.length,collected,forgeResults]);
   useEffect(()=>{if(tab!=='Skills'){setSelectedSkill(undefined);setGoalActionId(undefined);setGoalRecipeId(undefined)}},[tab]);

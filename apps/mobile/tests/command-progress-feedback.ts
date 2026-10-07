@@ -35,6 +35,12 @@ async function main(){
   equal(newlyUnlockedProfileRewards(before,result.state),[],'equipping an owned cosmetic must not count as earning it');
  }
  equal(JSON.stringify(before),original,'appearance handling must not mutate the previous committed state');
+
+ const settingsCommand:GameCommand={type:'settings',args:{settings:{...before.settings,reduceMotion:!before.settings.reduceMotion}}};
+ const settingsResult=executeGameCommand(before,settingsCommand,later);
+ equal(settingsResult.reward,claimed.reward,'settings save must preserve any earned activity settlement');
+ equal(commandProgressFeedback(settingsCommand,before,settingsResult),{collected:null,masteryNotices:[]},'settings and chat-preference saves must not open activity reward or rank popups');
+
  const claimFeedback=commandProgressFeedback({type:'claim'},before,claimed);
  ok(claimFeedback.collected&&claimFeedback.collected.reward===claimed.reward,'an explicit activity claim must still show its earned reward');
  equal(claimFeedback.collected.activity,before.activity,'an explicit claim must identify its settled activity');

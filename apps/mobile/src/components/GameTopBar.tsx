@@ -5,7 +5,7 @@ import {effectiveStats} from '../core/game';
 import {formatGameNumber} from '../core/number-format';
 import {normalizeQuickNavDestinations,QUICK_NAV_DESTINATIONS,QuickNavDestination} from '../core/quick-navigation';
 import type {GameState} from '../core/types';
-import {touchTargetPreferred,equipmentTheme,type ThemeColors} from '../theme/theme';
+import {equipmentTheme,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {environmentForActivity,environmentForZone} from '../core/world-weather';
 import {currentRegionId} from '../core/combat-region';

@@ -1,5 +1,6 @@
 import * as Application from 'expo-application';
 import appConfig from '../app.json';
+import {BUILD_SOURCE_BUILD_ID,BUILD_SOURCE_COMMIT} from './build-source.generated';
 
 declare const process:{env:Record<string,string|undefined>};
 
@@ -7,6 +8,8 @@ export type AppBuildInfo=Readonly<{
   version:string;
   buildNumber:string|null;
   releaseChannel:string;
+  sourceCommit:string|null;
+  easBuildId:string|null;
 }>;
 
 // Expo Go reports the host app's version. Only use native values for a Veldryn
@@ -18,4 +21,6 @@ export const APP_BUILD_INFO:AppBuildInfo=Object.freeze({
   version:(isVeldrynNative&&Application.nativeApplicationVersion?.trim())||appConfig.expo.version,
   buildNumber:(isVeldrynNative&&Application.nativeBuildVersion?.trim())||null,
   releaseChannel:process.env.EXPO_PUBLIC_RELEASE_CHANNEL?.trim()||'production',
+  sourceCommit:BUILD_SOURCE_COMMIT,
+  easBuildId:BUILD_SOURCE_BUILD_ID,
 });

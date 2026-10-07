@@ -770,14 +770,15 @@ export function withdrawFromBank(state:GameState,itemId:string,quantity:number):
   return {...state,bank:{...state.bank,stacks:removed},inventory:{...state.inventory,stacks:added.stacks}};
 }
 export type StorageLocation='inventory'|'bank';
-const STORAGE_UPGRADES:Record<StorageLocation,{capacity:number;cost:number}[]>={
-  inventory:[{capacity:40,cost:500},{capacity:50,cost:1500},{capacity:60,cost:4000},{capacity:75,cost:10000},{capacity:100,cost:25000}],
-  bank:[{capacity:160,cost:1000},{capacity:220,cost:3000},{capacity:300,cost:8000},{capacity:400,cost:20000},{capacity:500,cost:50000}],
+const STORAGE_UPGRADES:Record<StorageLocation,{capacity:number;cost:number;level:number}[]>={
+  inventory:[{capacity:40,cost:5000,level:10},{capacity:50,cost:15000,level:20},{capacity:60,cost:40000,level:35},{capacity:75,cost:100000,level:50},{capacity:100,cost:250000,level:70}],
+  bank:[{capacity:160,cost:10000,level:10},{capacity:220,cost:30000,level:20},{capacity:300,cost:80000,level:35},{capacity:400,cost:200000,level:50},{capacity:500,cost:500000,level:70}],
 };
 export function storageUpgradePreview(state:GameState,location:StorageLocation){const current=state[location].capacity;return STORAGE_UPGRADES[location].find(tier=>tier.capacity>current)??null}
 export function upgradeStorage(state:GameState,location:StorageLocation):GameState{
   if(!state.character)throw new Error('Create a character first');
   const next=storageUpgradePreview(state,location);if(!next)throw new Error(`${location==='bank'?'Bank':'Inventory'} capacity is already maxed`);
+  if(state.character.level<next.level)throw new Error(`Requires Level ${next.level}`);
   if(state.character.gold<next.cost)throw new Error(`Requires ${next.cost.toLocaleString()} gold`);
   return {...state,[location]:{...state[location],capacity:next.capacity},character:{...state.character,gold:state.character.gold-next.cost}};
 }

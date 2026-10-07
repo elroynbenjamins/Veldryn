@@ -6,12 +6,12 @@ s=depositToBank(s,'TRAVEL_RATION',5);
 if(s.bank.stacks.find(x=>x.itemId==='TRAVEL_RATION')?.quantity!==5) throw new Error('deposit failed');
 s=withdrawFromBank(s,'TRAVEL_RATION',2);
 if(s.bank.stacks.find(x=>x.itemId==='TRAVEL_RATION')?.quantity!==3) throw new Error('withdraw failed');
-s={...s,inventory:{...s.inventory,stacks:[...s.inventory.stacks,{itemId:'COPPER_ORE',quantity:20},{itemId:'GREENWOOD_LOG',quantity:15}]},character:{...s.character!,gold:5000}};
+s={...s,inventory:{...s.inventory,stacks:[...s.inventory.stacks,{itemId:'COPPER_ORE',quantity:20},{itemId:'GREENWOOD_LOG',quantity:15}]},character:{...s.character!,level:10,gold:5000}};
 s=depositAllMaterials(s);
 if(s.inventory.stacks.some(x=>x.itemId==='COPPER_ORE'||x.itemId==='GREENWOOD_LOG')||s.bank.stacks.find(x=>x.itemId==='COPPER_ORE')?.quantity!==20)throw new Error('quick material deposit failed');
 if(storageUpgradePreview(s,'inventory')?.capacity!==40||storageUpgradePreview(s,'bank')?.capacity!==160)throw new Error('starting storage upgrade tiers missing');
 const gold=s.character!.gold;s=upgradeStorage(s,'inventory');
-if(s.inventory.capacity!==40||s.character!.gold!==gold-500)throw new Error('inventory upgrade must charge once and persist capacity');
+if(s.inventory.capacity!==40||s.character!.gold!==gold-5000)throw new Error('inventory upgrade must charge once and persist capacity');
 
 const blockedDeposit={...s,bank:{stacks:[],capacity:0}};
 const blockedDepositBefore=JSON.stringify(blockedDeposit);

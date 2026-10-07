@@ -71380,8 +71380,8 @@ function withdrawFromBank(state, itemId, quantity4) {
   return { ...state, bank: { ...state.bank, stacks: removed }, inventory: { ...state.inventory, stacks: added.stacks } };
 }
 var STORAGE_UPGRADES = {
-  inventory: [{ capacity: 40, cost: 500 }, { capacity: 50, cost: 1500 }, { capacity: 60, cost: 4e3 }, { capacity: 75, cost: 1e4 }, { capacity: 100, cost: 25e3 }],
-  bank: [{ capacity: 160, cost: 1e3 }, { capacity: 220, cost: 3e3 }, { capacity: 300, cost: 8e3 }, { capacity: 400, cost: 2e4 }, { capacity: 500, cost: 5e4 }]
+  inventory: [{ capacity: 40, cost: 5e3, level: 10 }, { capacity: 50, cost: 15e3, level: 20 }, { capacity: 60, cost: 4e4, level: 35 }, { capacity: 75, cost: 1e5, level: 50 }, { capacity: 100, cost: 25e4, level: 70 }],
+  bank: [{ capacity: 160, cost: 1e4, level: 10 }, { capacity: 220, cost: 3e4, level: 20 }, { capacity: 300, cost: 8e4, level: 35 }, { capacity: 400, cost: 2e5, level: 50 }, { capacity: 500, cost: 5e5, level: 70 }]
 };
 function storageUpgradePreview(state, location) {
   const current = state[location].capacity;
@@ -71391,6 +71391,7 @@ function upgradeStorage(state, location) {
   if (!state.character) throw new Error("Create a character first");
   const next = storageUpgradePreview(state, location);
   if (!next) throw new Error(`${location === "bank" ? "Bank" : "Inventory"} capacity is already maxed`);
+  if (state.character.level < next.level) throw new Error(`Requires Level ${next.level}`);
   if (state.character.gold < next.cost) throw new Error(`Requires ${next.cost.toLocaleString()} gold`);
   return { ...state, [location]: { ...state[location], capacity: next.capacity }, character: { ...state.character, gold: state.character.gold - next.cost } };
 }
@@ -72192,7 +72193,7 @@ function planLoadoutStorage(input) {
 }
 
 // apps/mobile/src/core/character-loadouts.ts
-var CHARACTER_LOADOUT_SLOT_COUNT = 3;
+var CHARACTER_LOADOUT_SLOT_COUNT = 1;
 var MAX_CHARACTER_LOADOUT_SLOTS = 5;
 function characterLoadoutSlotCount(state) {
   return Math.min(MAX_CHARACTER_LOADOUT_SLOTS, CHARACTER_LOADOUT_SLOT_COUNT + accountEntitlementBenefits(state).loadoutSlots);

@@ -6,7 +6,8 @@ import {equipCombatCompanion,unequipCombatCompanion} from './combat-companions';
 import {planLoadoutStorage} from './loadout-storage';
 import {accountEntitlementBenefits,entitlementStorageCapacity} from './account-entitlements';
 
-export const CHARACTER_LOADOUT_SLOT_COUNT=3;
+export const CHARACTER_LOADOUT_SLOT_COUNT=1;
+// Preserve legacy saved slots; entitlements determine which additional slots are usable.
 export const MAX_CHARACTER_LOADOUT_SLOTS=5;
 export function characterLoadoutSlotCount(state:GameState){return Math.min(MAX_CHARACTER_LOADOUT_SLOTS,CHARACTER_LOADOUT_SLOT_COUNT+accountEntitlementBenefits(state).loadoutSlots);}
 const slots:GearSlot[]=['weapon','offhand','helmet','chest','legs','boots','gloves','cape','amulet','ring'];

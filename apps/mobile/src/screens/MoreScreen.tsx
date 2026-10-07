@@ -11,10 +11,9 @@ import {GameState} from '../core/types';
 import {EARLY_FEATURE_DESTINATION_ORDER} from '../core/feature-unlocks';
 import type {QuickNavDestination} from '../core/quick-navigation';
 
-export type MoreDestination='Home'|'Social'|'Activity'|'Progression'|'DailySupplies'|'AccountBonuses'|'Quests'|'Companions'|'Skills'|'Events'|'Friends'|'Guild'|'Settings'|'Arena'|'Rankings'|'Collections'|'Profile'|'Achievements'|'MasteryHall'|'Store';
-
+export type MoreDestination='Home'|'Social'|'Activity'|'Progression'|'DailySupplies'|'AccountBonuses'|'RewardsInbox'|'Quests'|'Companions'|'Skills'|'Events'|'Friends'|'Guild'|'Settings'|'Arena'|'Rankings'|'Collections'|'Profile'|'Achievements'|'MasteryHall'|'Store';
 const sections:Array<{label:string;items:MoreDestination[]}>= [
-  {label:'PLAY & PROGRESSION',items:['Home','Progression','Quests','Companions','DailySupplies','Events','AccountBonuses']},
+  {label:'PLAY & PROGRESSION',items:['Home','Progression','Quests','Companions','DailySupplies','RewardsInbox','Events','AccountBonuses']},
   {label:'SOCIAL & COMPETITION',items:['Social','Friends','Guild','Arena','Rankings']},
   {label:'IDENTITY & ACCOUNT',items:['Activity','Profile','MasteryHall','Collections','Achievements','Store','Settings']},
 ];
@@ -22,7 +21,7 @@ const sections:Array<{label:string;items:MoreDestination[]}>= [
 function iconForDestination(id:MoreDestination):QuickNavDestination{
   if(id==='Activity'||id==='Profile'||id==='AccountBonuses')return 'Character';
   if(id==='Progression')return 'World';
-  if(id==='DailySupplies'||id==='Rankings')return 'Events';
+  if(id==='DailySupplies'||id==='RewardsInbox'||id==='Rankings')return 'Events';
   if(id==='Arena')return 'Party';
   if(id==='Collections'||id==='Store')return 'Inventory';
   if(id==='Achievements')return 'Quests';
@@ -39,6 +38,7 @@ function itemMeta(language:GameState['settings']['language'],id:MoreDestination)
     case 'Progression':return {title:a("Working Toward"),description:a("Goals, sources and safe idle rules")};
     case 'DailySupplies':return {title:a("Daily Supplies"),description:a("28-claim track and +10% activity boosts")};
     case 'AccountBonuses':return {title:a("Account Bonuses"),description:a("Permanent and temporary modifiers")};
+    case 'RewardsInbox':return {title:a("Rewards Inbox"),description:a("Unclaimed party, guild, dungeon and event rewards")};
     case 'Quests':return {title:t(language,'more.quests'),description:t(language,'more.questsDescription')};
     case 'Companions':return {title:a("Companions"),description:a("Train, equip and master your roster")};
     case 'Skills':return {title:t(language,'more.skills'),description:t(language,'more.skillsDescription')};

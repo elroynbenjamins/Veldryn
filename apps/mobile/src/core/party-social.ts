@@ -1,3 +1,4 @@
+import type {PartyContractTierView} from './party-weekly-tiers';
 export type PartyRole = 'tank' | 'damage' | 'support';
 export type PartyActivityPreference = PartyFocus;
 export type PartyPlayStyle = 'casual' | 'balanced' | 'active' | 'competitive';
@@ -75,6 +76,7 @@ export interface PartyContractObjectiveView {
 }
 
 export interface PartyContractView {
+  tiers?: PartyContractTierView[];
   id: string;
   name: string;
   category?: PartyFocus;

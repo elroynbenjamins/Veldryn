@@ -14,7 +14,8 @@ import {AnnualEventCalendarPanel} from '../components/AnnualEventCalendarPanel';
 import {acceptEventContract,availableEventRepeatCaches,chooseEventProject,claimAllEventMilestones,claimEventCommunityMilestone,claimEventDailyGift,claimEventDiscovery,claimEventObjective,claimEventRepeatCache,claimEventReward,claimEventWeeklyObjective,consumeEventCandy,contributeEventCurrency,eventCandyStatus,eventCollectionJournal,eventCommunityMilestones,eventCommunityStage,eventContractBoard,eventContributionValue,eventCurrencyBalance,eventDailyFestivalBlessing,eventDailyGift,eventDiscoveryBoard,eventEffectiveDropRate,eventLifecycle,eventPrestigeReward,eventShopOffers,eventMilestones,eventOfferPurchaseCount,eventPrestigeBalance,eventProgress,eventProjectChoice,eventRewardClaimed,eventWeeklyBoard,purchaseEventOffer} from '../core/live-events';
 import type {GameState} from '../core/types';
 import {radii,spacing,typography,equipmentTheme,type ThemeColors} from '../theme/theme';
-import {useGameTheme} from '../theme/ThemeContext';
+import {GameThemeScope,useGameTheme} from '../theme/ThemeContext';
+import {eventTheme} from '../theme/event-palette';
 import {onlineConfigured} from '../online/supabase';
 import {fetchActiveEventRuntime} from '../online/live-events';
 import {eventRewardPlan,eventCandies,liveEventDef,type EventReward} from '../content/live-events';
@@ -48,16 +49,23 @@ function RewardArtwork({reward,rewardArt,color,size=58,onPress}:{reward:EventRew
   const image=rewardArt[reward.id]??(reward.kind==='profile_icon'?profileIconArtwork(reward.id):undefined);
   return <Pressable accessibilityRole={onPress?'button':undefined} accessibilityLabel={onPress?`Preview ${reward.name}`:undefined} accessible={!!onPress} disabled={!onPress} onPress={onPress} style={[sStatic.rewardArtwork,{width:size,height:size,borderColor:color}]}>{reward.kind==='title'?<View style={{padding:5,gap:5,alignItems:'center',justifyContent:'center'}}><Text style={{color,fontSize:size<80?12:10,fontWeight:'900',letterSpacing:1}}>{progressionText(language,'Title').toLocaleUpperCase(language)}</Text>{size>=80?<Text style={{color:C.text,fontSize:12,lineHeight:16,fontWeight:'700',textAlign:'center'}}>{reward.name}</Text>:null}</View>:image?<Image source={image} resizeMode={reward.kind==='background'?'cover':'contain'} style={{width:size-6,height:size-6,borderRadius:7}}/>:<EventArtFallback label={reward.name} accent={color} size={size-4}/>}</Pressable>;
 }
-export function EventScreen({state,onChange,onCommand,onOpenSeasonalExpedition}:{state:GameState;onChange:(next:GameState)=>void;onCommand?:(command:GameCommand)=>Promise<boolean>;onOpenSeasonalExpedition?:(liveEventId:string)=>void}){
+type EventScreenProps={state:GameState;onChange:(next:GameState)=>void;onCommand?:(command:GameCommand)=>Promise<boolean>;onOpenSeasonalExpedition?:(liveEventId:string)=>void};
+export function EventScreen(props:EventScreenProps){
+ const base=useGameTheme(),[now,setNow]=useState(Date.now());
+ useEffect(()=>{const timer=setInterval(()=>setNow(Date.now()),30_000);return()=>clearInterval(timer)},[]);
+ const definition=(EVENTS_RELEASED||__DEV__)?eventLifecycle(props.state,now)?.definition:undefined;
+ const colors=useMemo(()=>eventTheme(base,definition),[base,definition?.accent,definition?.visualKey]);
+ return <GameThemeScope colors={colors}><EventScreenContent {...props} now={now}/></GameThemeScope>;
+}
+function EventScreenContent({state,onChange,onCommand,onOpenSeasonalExpedition,now}:EventScreenProps&{now:number}){
   const contextLanguage=useGameLanguage(),language=state.settings.language??contextLanguage;
   const t=(key:ProgressionKey,params?:Record<string,string|number>)=>progressionT(language,key,params);
   const p=(text:string)=>progressionText(language,text);
 
   const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]),{width,fontScale}=useWindowDimensions(),stackEvent=width<360||fontScale>=1.25;
-  const [now,setNow]=useState(Date.now()),[notice,setNotice]=useState(''),[noticeTone,setNoticeTone]=useState<FeedbackTone>('success'),[section,setSection]=useState<Section>('Commons'),[journalSection,setJournalSection]=useState<JournalSection>('Discoveries'),[showEventDetails,setShowEventDetails]=useState(false),[showProjectDetails,setShowProjectDetails]=useState(false),[showEventArchive,setShowEventArchive]=useState(false),[showDropRates,setShowDropRates]=useState(false),[previewReward,setPreviewReward]=useState<{reward:EventReward;color:string}|null>(null);
+  const [notice,setNotice]=useState(''),[noticeTone,setNoticeTone]=useState<FeedbackTone>('success'),[section,setSection]=useState<Section>('Commons'),[journalSection,setJournalSection]=useState<JournalSection>('Milestones'),[showEventDetails,setShowEventDetails]=useState(false),[showProjectDetails,setShowProjectDetails]=useState(false),[showEventArchive,setShowEventArchive]=useState(false),[showDropRates,setShowDropRates]=useState(false),[previewReward,setPreviewReward]=useState<{reward:EventReward;color:string}|null>(null);
   const [showCandy,setShowCandy]=useState(false);
   const scrollRef=useRef<ScrollView>(null),sectionOffset=useRef(0),actionPending=useRef(false);
-  useEffect(()=>{const timer=setInterval(()=>setNow(Date.now()),30_000);return()=>clearInterval(timer)},[]);
   useEffect(()=>{if(!EVENTS_RELEASED||onCommand||!onlineConfigured||__DEV__)return;let mounted=true;void fetchActiveEventRuntime().then(runtime=>{if(mounted&&JSON.stringify(runtime)!==JSON.stringify(state.account.liveEvent))onChange({...state,account:{...state.account,liveEvent:runtime}})}).catch(()=>{if(mounted)setNotice(t("Could not refresh the event schedule. Your saved event state is still available."))});return()=>{mounted=false}},[]);
   const lifecycle=EVENTS_RELEASED||__DEV__?eventLifecycle(state,now):null;
   if(!lifecycle){const history=Object.keys(state.account.eventProgressById??{}).filter(eventId=>(state.account.eventProgressById?.[eventId]??0)>0).flatMap(eventId=>{const event=liveEventDef(eventId);return event?[event]:[]}).sort((a,b)=>b.id.localeCompare(a.id));return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}><View style={s.screenHeading}><UiIcon name="events" size={40}/><Text accessibilityRole="header" style={[s.heading,s.flex]}>{t("Event hub")}</Text></View><Text style={s.muted}>{t("No event is active")}</Text><AnnualEventCalendarPanel state={state}/><Text style={s.section}>{t("PAST FESTIVALS")}</Text>{history.length?history.slice(0,showEventArchive?history.length:6).map(event=><View key={event.id} style={s.card}><Text style={s.rewardName}>{event.name}{/_(\d{4})$/.exec(event.id)?.[1]?` · ${/_(\d{4})$/.exec(event.id)?.[1]}`:''}</Text><Text style={s.muted}>{t("Festival history is preserved here after you take part in a live season.")}</Text></View>):<Text style={s.muted}>{t("No festival history yet. The first completed event will be recorded here.")}</Text>}{history.length>6?<View style={s.archiveToggle}><GameButton compact title={showEventArchive?t("Show recent festivals"):t("Show older festivals · {count}",{count:history.length-6})} tone="secondary" onPress={()=>setShowEventArchive(value=>!value)}/></View>:null}</ScrollView>}

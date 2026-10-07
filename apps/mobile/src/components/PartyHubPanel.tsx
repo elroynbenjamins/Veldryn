@@ -21,6 +21,7 @@ import {
 } from '../core/party-social';
 import {RecruitmentFiltersPanel} from './RecruitmentFiltersPanel';
 import {partyMemberManagement} from '../core/social-management';
+import {PartyWeeklyLadder} from './PartyWeeklyLadder';
 
 export interface PartyHubPanelProps {
   accountId: string;
@@ -85,7 +86,7 @@ export function PartyHubPanel(props: PartyHubPanelProps) {
     {props.party && section==='party' && <View style={styles.panel}>
       <Text style={styles.sectionTitle}>{st("PARTY CONTRACTS")}</Text>
       <Text style={styles.muted}>{st("Shared weekly progress. Personal minimums prevent zero-contribution rewards.")}</Text>
-      {props.contracts.map(contract => <View key={contract.id}><ContractCard contract={contract} nowMs={props.nowMs} />{contract.rewards?.map(reward=><PixelButton key={reward.id} label={reward.claimed?st("Reward claimed"):`Claim ${reward.reward.gold} Gold`} onPress={!reward.claimed&&props.onClaimReward?()=>props.onClaimReward!(reward.id):undefined}/>)}</View>)}
+      {props.contracts.map(contract => <View key={contract.id}>{contract.tiers?.length?<PartyWeeklyLadder contract={contract} nowMs={props.nowMs} onClaimReward={props.onClaimReward}/>:<ContractCard contract={contract} nowMs={props.nowMs} />}{contract.tiers?.length?null:contract.rewards?.map(reward=><PixelButton key={reward.id} label={reward.claimed?st("Reward claimed"):`Claim ${reward.reward.gold} Gold`} onPress={!reward.claimed&&props.onClaimReward?()=>props.onClaimReward!(reward.id):undefined}/>)}</View>)}
       {!props.contracts.length && <Text style={styles.empty}>{st("No active Contract right now.")}</Text>}
     </View>}
 
@@ -141,7 +142,7 @@ function makeStyles(C:ThemeColors){const equipmentColors=equipmentTheme(C);retur
   buttonSecondary: { backgroundColor: C.panel2, borderColor: C.line }, buttonText: { color: C.text, fontWeight: '900', fontSize: 12, textTransform: 'uppercase' },
   pressed: { opacity: 0.76 }, disabled: { opacity: 0.4 },
   memberRow: { paddingVertical:8,minHeight:76,flexDirection:'row',alignItems:'center',gap:8,borderWidth:1,borderColor:C.line,borderRadius:10,paddingHorizontal:10,backgroundColor:C.panel },memberIdentity:{flex:1,minWidth:0,flexDirection:'row',alignItems:'center',gap:9},memberActions:{gap:4,width:48},memberPressed:{opacity:.72},
-  
+
   contractCard: { borderRadius:radii.md,borderWidth: 1, borderColor: C.line, backgroundColor: equipmentColors.panel, padding: 10, gap: 6 }, badge: { color: equipmentColors.selectedLine, fontWeight: '900', fontSize: 10 },
   progressTrack: { height: 8,borderRadius:4,overflow:'hidden', borderWidth: 1, borderColor: C.line, backgroundColor: C.bg }, progressFill: { height: '100%', backgroundColor: equipmentColors.selectedLine },
   good: { color: C.good, fontSize: 11, fontWeight: '700' }, warning: { color: C.warning, fontSize: 11, fontWeight: '700' }, objective: { color: C.text, fontSize: 11 },

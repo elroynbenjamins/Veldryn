@@ -1,6 +1,20 @@
 import type {LiveEventVisualKey} from '../content/live-event-visual-keys';
+import {EVENT_BACKGROUNDS} from '../theme/event-backgrounds';
 export interface LiveEventVisualBundle{heroBackground:number;showcaseBackground?:number;badgeIcon?:number;commonCurrencyIcon?:number;prestigeCurrencyIcon?:number;candyIcon?:number;discoveryArt:Readonly<Record<string,number>>;rewardArt:Readonly<Record<string,number>>}
 const EMPTY_ART:Readonly<Record<string,number>>=Object.freeze({});
+const VEILBREAK:LiveEventVisualBundle={
+ heroBackground:EVENT_BACKGROUNDS.veilbreak,
+ badgeIcon:require('../../assets/events/veilbreak/badge.png'),
+ commonCurrencyIcon:require('../../assets/events/veilbreak/currency_veil_shard.png'),
+ prestigeCurrencyIcon:require('../../assets/events/veilbreak/currency_lantern_ember.png'),
+ candyIcon:require('../../assets/events/veilbreak/candy_gloam.png'),
+ discoveryArt:{
+  gloam_cinder:require('../../assets/events/veilbreak/discovery_gloam_cinder.png'),
+  waxen_sigil:require('../../assets/events/veilbreak/discovery_waxen_sigil.png'),
+  breach_fragment:require('../../assets/events/veilbreak/discovery_breach_fragment.png'),
+ },
+ rewardArt:{},
+};
 const HARVESTWAKE:LiveEventVisualBundle={
  showcaseBackground:require('../../assets/events/harvestwake/showcase-guardian-v2.webp'),
  heroBackground:require('../../assets/events/harvestwake/landscape-v2.webp'),
@@ -32,8 +46,8 @@ const HARVESTWAKE:LiveEventVisualBundle={
  },
 };
 const GENERIC:LiveEventVisualBundle={heroBackground:require('../../assets/events/harvestwake/landscape-v2.webp'),discoveryArt:EMPTY_ART,rewardArt:EMPTY_ART};
-export function liveEventVisuals(visualKey?:LiveEventVisualKey){return visualKey==='harvestwake'?HARVESTWAKE:GENERIC;}
+export function liveEventVisuals(visualKey?:LiveEventVisualKey){return visualKey==='harvestwake'?HARVESTWAKE:visualKey==='veilbreak'?VEILBREAK:visualKey?{...GENERIC,heroBackground:EVENT_BACKGROUNDS[visualKey]}:GENERIC;}
 export function liveEventVisualCoverage(visualKey:LiveEventVisualKey,discoveryIds:readonly string[]=[]){
  const bundle=liveEventVisuals(visualKey);
- return {dedicatedBundle:visualKey==='harvestwake',badgeArt:!!bundle.badgeIcon,commonCurrencyArt:!!bundle.commonCurrencyIcon,prestigeCurrencyArt:!!bundle.prestigeCurrencyIcon,discoveryArtCount:discoveryIds.filter(id=>!!bundle.discoveryArt[id]).length,discoveryTotal:discoveryIds.length};
+ return {dedicatedBundle:visualKey==='harvestwake'||visualKey==='veilbreak',badgeArt:!!bundle.badgeIcon,commonCurrencyArt:!!bundle.commonCurrencyIcon,prestigeCurrencyArt:!!bundle.prestigeCurrencyIcon,discoveryArtCount:discoveryIds.filter(id=>!!bundle.discoveryArt[id]).length,discoveryTotal:discoveryIds.length};
 }

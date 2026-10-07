@@ -6,6 +6,8 @@ import {battleText} from './battle';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
+  'World':['World','Welt','Mundo','Wereld','Mondo','Monde'],
+  'Travel':['Travel','Reisen','Viajar','Reizen','Viaggia','Voyager'],
 '{count} enemies':['{count} enemies','{count} Gegner','{count} enemigos','{count} vijanden','{count} nemici','{count} ennemis'],
 'Training XP':['Training XP','Trainings-EP','EXP de entrenamiento','Training-XP','PE allenamento','EXP d’entraînement'],
 'Loot & encounter details':['Loot & encounter details','Beute & Begegnungsdetails','Botín y detalles del encuentro','Buit & ontmoetingsdetails','Bottino e dettagli incontro','Butin et détails du combat'],

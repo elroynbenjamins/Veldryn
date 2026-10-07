@@ -26,6 +26,9 @@ export const uiIcons={
   calendar:require('../../assets/navigation-icons-v4/calendar.webp'),
   chat:require('../../assets/ui-icons-v2/chat.webp'),
   close:require('../../assets/ui-icons-v2/close.webp'),
+  dungeon:require('../../assets/navigation-icons-v4/dungeon.webp'),
+  ward:require('../../assets/navigation-icons-v4/sanctuary.webp'),
+  rewards:require('../../assets/ui-icons-v2/events.webp'),
 } satisfies Record<string,ImageSourcePropType>;
 export const uiSmallIcons={
   character:require('../../assets/ui-icons-v2/small/character.webp'),
@@ -51,6 +54,9 @@ export const uiSmallIcons={
   calendar:require('../../assets/navigation-icons-v4/calendar.webp'),
   chat:require('../../assets/ui-icons-v2/small/chat.webp'),
   close:require('../../assets/ui-icons-v2/small/close.webp'),
+  dungeon:require('../../assets/navigation-icons-v4/dungeon.webp'),
+  ward:require('../../assets/navigation-icons-v4/sanctuary.webp'),
+  rewards:require('../../assets/ui-icons-v2/small/events.webp'),
 } satisfies Record<keyof typeof uiIcons,ImageSourcePropType>;
 export type UiIconName=keyof typeof uiIcons;
 export const navigationIcons:Record<QuickNavDestination,ImageSourcePropType>={

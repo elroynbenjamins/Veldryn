@@ -38,7 +38,7 @@ m=characterPermanentMultipliers(both);
 eq(m.gatheringSpeedMultiplier,1.05,'Stacked tiers keep VIP Gathering speed');eq(m.characterXpMultiplier,1.05,'Stacked tiers keep VIP Combat XP');eq(m.dropChanceMultiplier,1.05,'Stacked tiers keep VIP+ drops');eq(m.craftingSpeedMultiplier,1.10,'Stacked tiers keep VIP+ Crafting speed');
 eq(entitlementStorageCapacity(vipPlus,'inventory'),40,'VIP+ effective starter Inventory');eq(entitlementStorageCapacity(vipPlus,'bank'),150,'VIP+ effective starter Bank');
 eq(entitlementStorageCapacity(both,'inventory'),50,'Both tiers effective starter Inventory');eq(entitlementStorageCapacity(both,'bank'),170,'Both tiers effective starter Bank');
-eq(characterLoadoutSlotCount(vipPlus),4,'VIP+ independent loadout capacity');eq(characterLoadoutSlotCount(both),5,'Both tiers loadout capacity');eq(activityQueueCapacity(vipPlus),3,'VIP+ queue capacity');
+eq(characterLoadoutSlotCount(vipPlus),2,'VIP+ independent loadout capacity');eq(characterLoadoutSlotCount(both),3,'Both tiers loadout capacity');eq(activityQueueCapacity(vipPlus),3,'VIP+ queue capacity');
 eq(offlineCapBreakdown(vipPlus).hours-offlineCapBreakdown(base).hours,2,'Offline runtime gives VIP+ only its own reserve grant');
 eq(offlineCapBreakdown(both).hours-offlineCapBreakdown(base).hours,4,'Offline runtime stacks both permanent tiers');
 eq(equipmentCraftSlotBreakdown(stacked).capacity,7,'Fully stacked Forge capacity should reach seven');

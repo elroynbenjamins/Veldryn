@@ -1,6 +1,6 @@
 import {ThemedNavigationIcon} from './ThemedNavigationIcon';
 import {useEffect,useMemo,useState} from 'react';
-import {AppState,Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
+import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import {effectiveStats} from '../core/game';
 import {formatGameNumber} from '../core/number-format';
 import {normalizeQuickNavDestinations,QUICK_NAV_DESTINATIONS,QuickNavDestination} from '../core/quick-navigation';
@@ -41,18 +41,11 @@ export function GameTopBar({state,nowMs,labelForDestination,onNavigate,onChangeD
   const [customizing,setCustomizing]=useState(false);
   const [saving,setSaving]=useState(false);
   const [draft,setDraft]=useState<QuickNavDestination[]>(active);
-  const [displayNowMs,setDisplayNowMs]=useState(nowMs);
-  useEffect(()=>{setDisplayNowMs(nowMs)},[nowMs]);
-  useEffect(()=>{
-    const tick=()=>{if(AppState.currentState==='active'||AppState.currentState===null)setDisplayNowMs(Date.now());};
-    const id=setInterval(tick,state.activity?1000:10000);
-    return()=>clearInterval(id);
-  },[!!state.activity]);
   useEffect(()=>{if(!open)setDraft(active)},[open,state.settings.quickNavDestinations]);
   const maxHp=Math.max(1,effectiveStats(state).hp),currentHp=Math.max(0,Math.min(maxHp,state.character?.currentHp??0));
   const hpPercent=`${Math.round(currentHp/maxHp*100)}%` as `${number}%`;
   const activity=state.activity;
-  const environment=activity?environmentForActivity(activity):environmentForZone(currentRegionId(state),displayNowMs);
+  const environment=activity?environmentForActivity(activity):environmentForZone(currentRegionId(state),nowMs);
   const selected=new Set(draft);
   const canSave=draft.length===5&&!saving;
   const orderedChoices=useMemo(()=>[...draft,...QUICK_NAV_DESTINATIONS.filter(item=>!draft.includes(item))],[draft]);
@@ -80,8 +73,8 @@ export function GameTopBar({state,nowMs,labelForDestination,onNavigate,onChangeD
         <View style={styles.menuLine}/><View style={styles.menuLine}/><View style={styles.menuLine}/>{attentionTotal>0?<View style={styles.menuBadge}><Text style={styles.menuBadgeText}>{attentionTotal>9?'9+':attentionTotal}</Text></View>:null}
       </Pressable>
     </View>
-    <ActiveActivityBar state={state} nowMs={displayNowMs} onOpen={onOpenActivity}/>
-    <EnvironmentDetailsModal visible={environmentOpen} environment={environment} nowMs={displayNowMs} locked={!!activity} activityKind={activity?.kind} reduceMotion={state.settings.reduceMotion} onClose={()=>setEnvironmentOpen(false)}/>
+    <ActiveActivityBar state={state} nowMs={nowMs} onOpen={onOpenActivity}/>
+    <EnvironmentDetailsModal visible={environmentOpen} environment={environment} nowMs={nowMs} locked={!!activity} activityKind={activity?.kind} reduceMotion={state.settings.reduceMotion} onClose={()=>setEnvironmentOpen(false)}/>
     <GameModalSurface visible={open} reduceMotion={state.settings.reduceMotion} onClose={close} backdropLabel={tr("Close quick navigation")} surfaceStyle={styles.sheet}>
           <GameModalHeader eyebrow={tr("PLAYER SHORTCUTS")} title={customizing?tr("Choose five destinations"):tr("Quick navigation")} onClose={close} closeDisabled={saving}/>
           {customizing?<>

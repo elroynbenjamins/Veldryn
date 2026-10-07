@@ -5,6 +5,12 @@ function ok(value:boolean,message:string){if(!value)throw new Error(message)}
 const read=(path:string)=>fs.readFileSync(path,'utf8');
 
 const theme=read('src/theme/theme.ts');
+const startup=read('src/components/StartupScreen.tsx');
+const app=read('App.tsx');
+ok(startup.includes('resolveTheme')&&startup.includes('bridgeSurface')&&startup.includes('themeId?:UiThemeId'),'Startup loading art must bridge into the active interface theme');
+ok(app.includes('Animated.timing(startupOpacity')&&app.includes('duration:420')&&app.includes('setTimeout(()=>'),'Startup must cross-fade into the rendered app rather than hard-cutting');
+ok(app.includes('appEntranceOpacity')&&app.includes('appEntranceY'),'The destination shell must ease in underneath the loading art');
+ok(app.includes("state?.settings.reduceMotion===true"),'Startup transition must respect reduced motion');
 ok(theme.includes('accentSurface:string'),'Theme colors must expose a semantic accent surface');
 ok(theme.includes('special:string')&&theme.includes('specialSurface:string'),'Theme colors must expose a theme-safe special/discovery accent');
 for(const id of ['obsidian','ember','ivory']){

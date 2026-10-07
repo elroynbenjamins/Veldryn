@@ -6466,6 +6466,20 @@ export const socialTranslationRows = {
     "Mijn totaalniveau",
     "Il mio livello totale",
     "Mon niveau total"
+  ],
+  "Online chat unavailable": [
+    "Online-Chat nicht verfügbar",
+    "Chat en línea no disponible",
+    "Online chat niet beschikbaar",
+    "Chat online non disponibile",
+    "Chat en ligne indisponible"
+  ],
+  "This release is missing its online service configuration. Update or reinstall the production build rather than using temporary demo chat.": [
+    "In dieser Version fehlt die Konfiguration der Onlinedienste. Aktualisiere oder installiere die Produktionsversion neu, statt den temporären Demo-Chat zu verwenden.",
+    "A esta versión le falta la configuración de los servicios en línea. Actualiza o reinstala la versión de producción en lugar de usar el chat de demostración temporal.",
+    "In deze versie ontbreekt de configuratie van de online diensten. Werk de productieversie bij of installeer die opnieuw in plaats van de tijdelijke demo-chat te gebruiken.",
+    "In questa versione manca la configurazione dei servizi online. Aggiorna o reinstalla la versione di produzione invece di usare la chat demo temporanea.",
+    "La configuration des services en ligne manque dans cette version. Mettez à jour ou réinstallez la version de production plutôt que d’utiliser le chat de démonstration temporaire."
   ]
 } as const satisfies Record<string,readonly [string,string,string,string,string]>;
 export type SocialMessageKey=keyof typeof socialTranslationRows;

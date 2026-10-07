@@ -46,12 +46,11 @@ export function ProfileCustomizeScreen({state,onChange,onSaveNameStyle,onNavigat
    </Pressable>
   </View>
 
-  <View style={section==='Appearance'?s.sectionShown:s.sectionHidden} pointerEvents={section==='Appearance'?'auto':'none'}>
-   <ProfileEditor state={state} onChange={onChange} onSaveNameStyle={onSaveNameStyle} active={section==='Appearance'} showLoadouts={false} onNavigateSource={onNavigateSource} onDirtyChange={setAppearanceDirty} onPreviewStateChange={setAppearancePreview}/>
-  </View>
-  <View style={section==='Identity'?s.sectionShown:s.sectionHidden} pointerEvents={section==='Identity'?'auto':'none'}>
+  {section==='Appearance'?<View style={s.sectionShown}>
+   <ProfileEditor state={state} onChange={onChange} onSaveNameStyle={onSaveNameStyle} active showLoadouts={false} onNavigateSource={onNavigateSource} onDirtyChange={setAppearanceDirty} onPreviewStateChange={setAppearancePreview}/>
+  </View>:<View style={s.sectionShown}>
    <OnlineProfileExtensionPanel state={state} onDirtyChange={setIdentityDirty} onDraftChange={setIdentityDraft}/>
-  </View>
+  </View>}
  </ScrollView>
  <ProfileAudiencePreviewModal visible={previewOpen} state={appearancePreview??state} identityDraft={identityDraft} onClose={()=>setPreviewOpen(false)}/>
  </>;

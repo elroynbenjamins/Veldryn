@@ -16,7 +16,9 @@ const duration=(seconds:number)=>seconds>=3600?Math.round(seconds/3600*10)/10+'h
 
 export function EnchantingRefineryPanel({state,onCommand}:{state:GameState;onCommand:(command:GameCommand)=>Promise<void>}){
  const {gt,gl,language}=useGameplayText();
- const C=useGameTheme(),s=useMemo(()=>styles(C),[C]),rows=useMemo(()=>availableGemRefinementsV1(state).sort((a,b)=>b.recipe.grade-a.recipe.grade||a.recipe.name.localeCompare(b.recipe.name)),[state]),research=useMemo(()=>availableGemResearchV1(state),[state]);
+ const C=useGameTheme(),s=useMemo(()=>styles(C),[C]);
+ const rows=useMemo(()=>{try{return availableGemRefinementsV1(state).sort((a,b)=>b.recipe.grade-a.recipe.grade||a.recipe.name.localeCompare(b.recipe.name))}catch(error){console.warn('[EnchantingRefineryPanel] Refinement unavailable',error);return []}},[state]);
+ const research=useMemo(()=>{try{return availableGemResearchV1(state)}catch(error){console.warn('[EnchantingRefineryPanel] Research unavailable',error);return []}},[state]);
  const level=state.skills.find(row=>row.skillId==='enchanting')?.level??1;
  return <Panel>
   <View style={s.head}><View style={s.flex}><Text style={s.eyebrow}>{gt("ENCHANTING · GEM REFINERY")}</Text><Text style={s.title}>{gt("Refine unrefined gems")}</Text><Text style={s.copy}>{gt("Gem drops preserve their family and grade, but cannot be socketed until refined. Refinement uses Enchanting, Gold and regional reagents.")}</Text></View><Text style={s.level}>Lv {level}</Text></View>

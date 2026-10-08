@@ -24,7 +24,17 @@ export function CraftingRecipeBrowser({state,skillId,initialQuery='',preferredRe
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [query,setQuery]=useState(initialQuery),[readyOnly,setReadyOnly]=useState(false),[filterOpen,setFilterOpen]=useState(false),[limit,setLimit]=useState(12);
  const skill=state.skills.find(row=>row.skillId===skillId),skillLevel=skill?.level??1,characterLevel=state.character?.level??1;
- const all:Row[]=RECIPES.filter(recipe=>recipe.skillId===skillId&&!recipe.noviceSetId&&(!recipe.classId||recipe.classId===state.character?.classId)).sort((a,b)=>a.level-b.level||a.name.localeCompare(b.name)).map(recipe=>{const processing=isTimedProcessingRecipe(recipe.id),timedEquipment=Boolean(timedEquipmentRecipe(recipe.id)),base=skillId==='alchemy'?alchemyAvailability(state,recipe.id,1):processing?processingAvailability(state,recipe.id,1):timedEquipment?equipmentCraftAvailability(state,recipe.id):recipeAvailability(state,recipe.id);const status=skillId==='alchemy'&&state.activity?{...base,ready:false,reason:gt("Stop the current activity before brewing.")}:base;return {recipe,status};});
+ const all:Row[]=useMemo(()=>RECIPES.filter(recipe=>recipe.skillId===skillId&&!recipe.noviceSetId&&(!recipe.classId||recipe.classId===state.character?.classId)).sort((a,b)=>a.level-b.level||a.name.localeCompare(b.name)).map(recipe=>{
+  try {
+   const processing=isTimedProcessingRecipe(recipe.id),timedEquipment=Boolean(timedEquipmentRecipe(recipe.id));
+   const base=skillId==='alchemy'?alchemyAvailability(state,recipe.id,1):processing?processingAvailability(state,recipe.id,1):timedEquipment?equipmentCraftAvailability(state,recipe.id):recipeAvailability(state,recipe.id);
+   const status=skillId==='alchemy'&&state.activity?{...base,ready:false,reason:gt("Stop the current activity before brewing.")}:base;
+   return {recipe,status};
+  } catch(error) {
+   console.warn('[CraftingRecipeBrowser] Recipe unavailable:',recipe.id,error);
+   return {recipe,status:{ready:false,reason:gt("Recipe temporarily unavailable."),inputs:[]}};
+  }
+ }),[state,skillId,gt]);
  const q=query.trim().toLowerCase(),matching=all.filter(({recipe})=>(!category||(category==='tools'?itemDef(recipe.output.itemId).type==='tool':itemDef(recipe.output.itemId).type!=='tool'&&!recipe.v33SetId))&&(!q||(recipe.name+' '+itemDef(recipe.output.itemId).name).toLowerCase().includes(q)));
  const ready=matching.filter(row=>row.status.ready),locked=matching.filter(row=>!row.status.ready&&(row.recipe.level>skillLevel||(row.recipe.characterLevel??1)>characterLevel));
  const lockedIds=new Set(locked.map(row=>row.recipe.id)),needs=matching.filter(row=>!row.status.ready&&!lockedIds.has(row.recipe.id));

@@ -11,7 +11,7 @@ export interface OnlineTransport {read():Promise<OnlineSnapshot>;send(command:Pe
 export interface PendingStore {read():Promise<PendingGameCommand|null>;write(value:PendingGameCommand|null):Promise<void>}
 export class OnlineCommandError extends Error{constructor(message:string,readonly definitive=false){super(message);}}
 export class OnlineGameRepository implements GameRepository{
- snapshot:OnlineSnapshot|null=null;private running=false;
+ snapshot:OnlineSnapshot|null=null;private queue:Promise<unknown>=Promise.resolve();
  constructor(readonly accountId:string,private readonly transport:OnlineTransport,private readonly pending:PendingStore,private readonly key:()=>string){}
  private accept(value:OnlineSnapshot){
   if(value.accountId!==this.accountId)throw new Error('account_mismatch');
@@ -25,15 +25,23 @@ export class OnlineGameRepository implements GameRepository{
  async reset():Promise<void>{throw new Error('Online characters cannot be reset from a local save action.');}
  async hasPending(){return Boolean(await this.pending.read());}
  async execute(command?:GameCommand):Promise<ExecutedOnlineCommand>{
-  if(this.running)throw new Error('A gameplay action is already being saved.');this.running=true;
+  const next=this.queue.then(()=>this.executeQueued(command));
+  this.queue=next.then(()=>undefined,()=>undefined);
+  return next;
+ }
+ private async executeQueued(command?:GameCommand):Promise<ExecutedOnlineCommand>{
   try{
    let request=await this.pending.read();
-   if(request&&command)throw new Error('Retry the pending action before starting another one.');
+   if(request&&command){await this.sendPending(request);request=null;}
    if(!request){if(!command)throw new Error('No pending action.');if(!this.snapshot)await this.refresh();request={requestId:this.key(),expectedVersion:this.snapshot!.version,command};await this.pending.write(request);}
+   return await this.sendPending(request);
+  }catch(error){throw error;}
+ }
+ private async sendPending(request:PendingGameCommand):Promise<ExecutedOnlineCommand>{
    try{const result=await this.transport.send(request);if(result.accountId!==this.accountId)throw new Error('account_mismatch');await this.pending.write(null);
     const confirmed=this.snapshot&&result.version<this.snapshot.version?await this.refresh():this.accept(result);
     return {...confirmed,executedCommand:request.command};
    }catch(error){if(error instanceof OnlineCommandError&&error.definitive){await this.pending.write(null);await this.refresh();}throw error;}
-  }finally{this.running=false;}
+  }
  }
 }

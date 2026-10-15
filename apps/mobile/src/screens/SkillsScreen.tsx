@@ -75,7 +75,7 @@ export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueu
   }
   if(mode==='crafting'&&(initialSkill==='smithing'||initialSkill==='tailoring'))return <ScrollView contentContainerStyle={{padding:16,gap:14,paddingBottom:32,maxWidth:660,width:'100%',alignSelf:'center'}} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" showsHorizontalScrollIndicator={false}>
     <EquipmentCraftingHeader state={state} skillId={initialSkill} onBack={onBackToHub}/>
-    <SmithingCollection state={state} nowMs={now} skillId={initialSkill} initialQuery={initialRecipe?.name??''} preferredRecipeId={initialRecipeId} onCraft={onCraft} onProcessingStart={id=>onCommand({type:'processing_start',args:{id}})} onNavigate={onNavigateCraftingSource} onCraftPrerequisites={onCraftPrerequisites} queueProps={{state,onClaim:onClaimCraft,onClaimAll:onClaimAllCrafts,onCancel:onCancelCraft,onMoveWaiting:onMoveCraftWaiting,forgeResults,onDismissForgeResults}}/>
+    <SmithingCollection state={state} nowMs={now} skillId={initialSkill} initialQuery={initialRecipe?.name??''} preferredRecipeId={initialRecipeId} onCraft={onCraft} onProcessingStart={id=>onCommand({type:'processing_start',args:{id}})} onCraftPrerequisites={onCraftPrerequisites} queueProps={{state,onClaim:onClaimCraft,onClaimAll:onClaimAllCrafts,onCancel:onCancelCraft,onMoveWaiting:onMoveCraftWaiting,forgeResults,onDismissForgeResults}}/>
   </ScrollView>;
   if(!initialSkill)return <View style={{flex:1}}><View style={s.plannerBody}><ActivityQueuePlanner state={state} onCommand={onCommand}/></View><SkillHub state={state} onSelect={onSelectSkill??(()=>{})} onCombat={onOpenCombat}/></View>;
   if(initialSkill==='exploration')return <ScrollView contentContainerStyle={s.root} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}><DetailBack onPress={onBackToHub}/><SkillHero state={state} skillId="exploration" kind={gt("Discovery skill")}/><ExplorationPanel state={state} onCommand={onCommand}/></ScrollView>;
@@ -86,7 +86,6 @@ export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueu
 
 
 
-    {goalAction?<View style={s.goalTarget}><Text style={s.goalTargetLabel}>{gt("WORKING TOWARD TARGET")}</Text><Text style={s.goalTargetName}>{goalAction.name}</Text><Text style={s.sub}>{initialRecipe?gt("The recipe list is filtered to this target."):gt("The target activity is shown first in this skill.")}</Text></View>:null}
     {mode==='gathering'&&<View style={[s.region,{borderColor:region.accent}]}><View style={s.flex}><Text style={s.regionLabel}>{gt("CURRENT REGION")}</Text><Text style={s.regionName}>{region.symbol} {region.name}</Text><Text style={s.sub}>{gt("Only gathering nodes in this region are shown.")}</Text></View></View>}
     {mode==='gathering'&&initialSkill==='herbalism'?<HerbalismMethodPanel state={state} onCommand={onCommand}/>:null}
     {(mode==='faith'||initialSkill==='faith')&&<FaithPanel state={state} onCommand={onCommand}/>}
@@ -114,7 +113,7 @@ export function SkillsScreen({state,now=Date.now(),onGather,onQueueGather,onQueu
           return <View key={tool.id} style={s.toolRow}><GatheringToolArtwork itemId={tool.id} size={48}/><View style={s.flex}><Text style={s.toolName}>T{tool.tier} · {tool.name}</Text><Text style={s.toolEffect}>{gt('{percent}% faster · {skill} {level} · Level {character} · Smithing {smithing}',{percent:Math.round((1-tool.actionTimeMultiplier)*100),skill:gl(tool.skillId),level:tool.unlockLevel,character:tool.requiredCharacterLevel,smithing:tool.recipe.level})}</Text><Text style={s.toolRequirement}>{blueprintText}{banked?' · '+gt('in Bank'):carried&&skillReady&&characterReady?' · '+gt('Ready'):''}</Text></View><View style={s.toolButton}><GameButton title={title} disabled={disabled} selected={equipped} tone={equipped?'primary':'secondary'} onPress={action}/></View></View>;
         })}</Panel>}
         {mode==='gathering'&&<GatheringActivityList state={state} skillId={gatheringSkill} skillLevel={sk.level} preferredActionId={initialActionId} onGather={onGather} onNavigate={onNavigateCraftingSource}/>}
-        {mode==='crafting'&&<CraftingRecipeBrowser state={state} nowMs={now} skillId={sk.skillId as 'smithing'|'cooking'|'alchemy'|'tailoring'|'enchanting'} initialQuery={initialRecipe?.name??''} preferredRecipeId={initialRecipeId} onCraft={onCraft} onAlchemyStart={id=>onCommand({type:'alchemy_start',args:{id}})} onProcessingStart={id=>onCommand({type:'processing_start',args:{id}})} onNavigate={onNavigateCraftingSource} onCraftPrerequisites={onCraftPrerequisites}/>}
+        {mode==='crafting'&&<CraftingRecipeBrowser state={state} nowMs={now} skillId={sk.skillId as 'smithing'|'cooking'|'alchemy'|'tailoring'|'enchanting'} initialQuery={initialRecipe?.name??''} preferredRecipeId={initialRecipeId} onCraft={onCraft} onAlchemyStart={id=>onCommand({type:'alchemy_start',args:{id}})} onProcessingStart={id=>onCommand({type:'processing_start',args:{id}})} onCraftPrerequisites={onCraftPrerequisites}/>}
       </View>;
     })}
   </ScrollView>;

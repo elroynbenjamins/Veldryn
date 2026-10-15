@@ -7,12 +7,12 @@ import {regionalGatheringNodes} from '../core/regional-gathering';
 import {useGameplayText} from '../i18n/gameplay';
 import {useGameTheme} from '../theme/ThemeContext';
 import type {ThemeColors} from '../theme/theme';
-import type {WorkingTowardDestination} from '../core/working-toward';
+import type {SourceDestination} from '../core/source-navigation';
 import {ZoneSceneArtwork} from './ZoneSceneArtwork';
 import {ActivityArtwork} from './ActivityArtwork';
 import {GatheringActivityList} from './GatheringActivityList';
 
-export function RegionalGathering({state,preferredActionId,onGather,onNavigate,onManageSkill,onBack}:{state:GameState;preferredActionId?:string;onGather:(id:string)=>void;onNavigate?:(destination:WorkingTowardDestination)=>void;onManageSkill:(skill:GatheringSkillId)=>void;onBack?:()=>void}){
+export function RegionalGathering({state,preferredActionId,onGather,onNavigate,onManageSkill,onBack}:{state:GameState;preferredActionId?:string;onGather:(id:string)=>void;onNavigate?:(destination:SourceDestination)=>void;onManageSkill:(skill:GatheringSkillId)=>void;onBack?:()=>void}){
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),{gt,gl}=useGameplayText();
  const [showSkills,setShowSkills]=useState(false);
  const region=WORLD_ZONES.find(row=>row.id===currentRegionId(state))??WORLD_ZONES[0],nodes=regionalGatheringNodes(state),skills=[...new Set(nodes.map(row=>row.skillId))];

@@ -5,7 +5,7 @@ import {useGameTheme} from '../theme/ThemeContext';
 
 type Tone='primary'|'secondary'|'danger';
 type ButtonColors={backgroundColor:string;borderColor:string;textColor:string};
-type Props={title:string;onPress:()=>void|Promise<unknown>;disabled?:boolean;loading?:boolean;selected?:boolean;tone?:Tone;compact?:boolean;colors?:ButtonColors};
+type Props={title:string;onPress:()=>unknown;disabled?:boolean;loading?:boolean;selected?:boolean;tone?:Tone;compact?:boolean;colors?:ButtonColors};
 export function GameButton({title,onPress,disabled=false,loading=false,selected,tone='primary',compact=false,colors}:Props){
   const C=useGameTheme();
   const [focused,setFocused]=useState(false),[pending,setPending]=useState(false),inactive=disabled||loading||pending;

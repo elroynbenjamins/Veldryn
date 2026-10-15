@@ -65,7 +65,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
   const [query,setQuery]=useState(initial.query),[filter,setFilter]=useState<InventoryFilter>(initial.filter),[sort,setSort]=useState<InventorySort>(initial.sort),[sortOpen,setSortOpen]=useState(false);
   useEffect(()=>{Object.assign(memory,{location,query,filter,sort,scrollY:scrollY.current});},[memory,location,query,filter,sort]);
   useEffect(()=>{if(foodRequest<=memory.foodRequest)return;Object.assign(memory,openInventoryFood(memory,foodRequest));setLocation('inventory');setQuery('');setFilter('food');setSelectMode(false);setSelectedIds([]);setInspectId(null);setPreviewId(null);setSortOpen(false);scrollY.current=0;scrollRef.current?.scrollTo({y:0,animated:false});},[foodRequest,memory]);
-  const [quantity,setQuantity]=useState<number|'all'>(1);
+  const [quantity,setQuantity]=useState<1|10|'all'>(1);
   const [error,setError]=useState('');
   const [previewId,setPreviewId]=useState<string|null>(null);
   const [inspectId,setInspectId]=useState<string|null>(null);

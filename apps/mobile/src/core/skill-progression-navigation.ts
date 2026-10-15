@@ -8,7 +8,7 @@ import {recipeAvailability} from './playability';
 import {alchemyAvailability} from './alchemy';
 import {isTimedProcessingRecipe,processingAvailability} from './processing';
 import {equipmentCraftAvailability,timedEquipmentRecipe} from './equipment-crafting-queue';
-import {workingTowardDestinationAvailability,workingTowardItemSource,workingTowardItemSourceEntries,type WorkingTowardDestination,type WorkingTowardDestinationAvailability,type WorkingTowardItemSourceEntry} from './working-toward';
+import {sourceDestinationAvailability,sourceItemSource,sourceItemSourceEntries,type SourceDestination,type SourceDestinationAvailability,type SourceItemSourceEntry} from './source-navigation';
 import {acquisitionEstimateLabel,acquisitionProjectionForDestination} from './balance-projection';
 import {materialAcquisitionPlanForDestination,materialAcquisitionPlanSummary} from './material-acquisition-plan';
 
@@ -20,15 +20,15 @@ type RecipeSkillId=Extract<SkillId,'smithing'|'cooking'|'alchemy'|'tailoring'|'e
 export interface SkillProgressionNavigationAction{
  label:string;
  detail:string;
- destination:WorkingTowardDestination;
- availability:WorkingTowardDestinationAvailability;
+ destination:SourceDestination;
+ availability:SourceDestinationAvailability;
 }
 
-function action(destination:WorkingTowardDestination,label=destination.button,detail=destination.detail,state:GameState):SkillProgressionNavigationAction{
- return {label,detail,destination,availability:workingTowardDestinationAvailability(state,destination)};
+function action(destination:SourceDestination,label=destination.button,detail=destination.detail,state:GameState):SkillProgressionNavigationAction{
+ return {label,detail,destination,availability:sourceDestinationAvailability(state,destination)};
 }
 
-export function bestGatheringTrainingDestination(state:GameState,skillId:GatheringSkillId):WorkingTowardDestination|undefined{
+export function bestGatheringTrainingDestination(state:GameState,skillId:GatheringSkillId):SourceDestination|undefined{
  const level=levelFor(state,skillId),characterLevel=state.character?.level??1;
  const candidates=gatheringDefs.filter(row=>row.skillId===skillId&&row.unlockLevel<=level&&characterLevel>=(WORLD_ZONES.find(zone=>zone.id===row.zoneId)?.minLevel??1))
    .sort((a,b)=>b.unlockLevel-a.unlockLevel||Number(b.zoneId===state.currentRegionId)-Number(a.zoneId===state.currentRegionId));
@@ -44,7 +44,7 @@ export function gatheringProgressionAction(state:GameState,activity:GatherDef):S
   const destination=bestGatheringTrainingDestination(state,skillId)??{kind:'skills' as const,skillId,mode:'gathering' as const,button:`Train ${pretty(skillId)}`,detail:`Reach ${pretty(skillId)} level ${activity.unlockLevel} to unlock ${activity.name}.`};
   return action(destination,`Train to Lv ${activity.unlockLevel}`,destination.detail,state);
  }
- const destination:WorkingTowardDestination={kind:'skills',skillId,mode:'gathering',actionId:activity.id,regionId:activity.zoneId,button:`Work ${activity.name}`,detail:`${activity.name} is in ${zone?.name??activity.zoneId}.`};
+ const destination:SourceDestination={kind:'skills',skillId,mode:'gathering',actionId:activity.id,regionId:activity.zoneId,button:`Work ${activity.name}`,detail:`${activity.name} is in ${zone?.name??activity.zoneId}.`};
  return action(destination,activity.zoneId===state.currentRegionId?`Open ${activity.name}`:`Go to ${zone?.name??activity.zoneId}`,destination.detail,state);
 }
 
@@ -56,12 +56,12 @@ export function recipeTrainingReady(state:GameState,recipe:Recipe){
 }
 
 export function recipeProgressionAction(state:GameState,recipe:Recipe):SkillProgressionNavigationAction{
- const skillId=recipe.skillId as RecipeSkillId,level=levelFor(state,recipe.skillId),destination:WorkingTowardDestination={kind:'skills',skillId,mode:'crafting',recipeId:recipe.id,button:`Open ${recipe.name}`,detail:`Review ${recipe.name} requirements and progression.`};
+ const skillId=recipe.skillId as RecipeSkillId,level=levelFor(state,recipe.skillId),destination:SourceDestination={kind:'skills',skillId,mode:'crafting',recipeId:recipe.id,button:`Open ${recipe.name}`,detail:`Review ${recipe.name} requirements and progression.`};
  const locked=level<recipe.level,label=locked?`Preview Lv ${recipe.level} unlock`:recipeTrainingReady(state,recipe)?`Open ${recipe.name}`:`Resolve ${recipe.name}`;
  return action(destination,label,locked?`Requires ${pretty(recipe.skillId)} level ${recipe.level}. Preview the exact recipe and its training action.`:destination.detail,state);
 }
 
-export function bestRecipeTrainingDestination(state:GameState,skillId:RecipeSkillId):WorkingTowardDestination{
+export function bestRecipeTrainingDestination(state:GameState,skillId:RecipeSkillId):SourceDestination{
  const skillLevel=levelFor(state,skillId);
  const candidates=RECIPES.filter(row=>row.skillId===skillId&&!row.noviceSetId&&row.level<=skillLevel&&(!row.classId||row.classId===state.character?.classId))
    .sort((a,b)=>Number(recipeTrainingReady(state,b))-Number(recipeTrainingReady(state,a))||Number(!!b.repeatableTraining)-Number(!!a.repeatableTraining)||b.xp-a.xp||b.level-a.level);
@@ -70,7 +70,7 @@ export function bestRecipeTrainingDestination(state:GameState,skillId:RecipeSkil
  return {kind:'skills',skillId,mode:'crafting',button:`Train ${pretty(skillId)}`,detail:`Open ${pretty(skillId)} and review currently available recipes.`};
 }
 
-export function characterTrainingDestination(state:GameState):WorkingTowardDestination|undefined{
+export function characterTrainingDestination(state:GameState):SourceDestination|undefined{
  const region=WORLD_ZONES.find(row=>row.id===state.currentRegionId),level=state.character?.level??1;
  if(!region)return undefined;
  const monster=MONSTERS.filter(row=>row.zone===region.name&&(state.unlockedMonsterIds.includes(row.id)||level>=row.unlockLevel))
@@ -78,7 +78,7 @@ export function characterTrainingDestination(state:GameState):WorkingTowardDesti
  return monster?{kind:'combat',monsterId:monster.id,zoneName:monster.zone,regionId:region.id,button:'Train character',detail:`Continue combat in ${region.name} with ${monster.name}.`}:undefined;
 }
 
-export interface RecipeProgressionAlternateSource extends WorkingTowardItemSourceEntry{
+export interface RecipeProgressionAlternateSource extends SourceItemSourceEntry{
  estimatedSeconds?:number;
  estimateLabel?:string;
  chainLabel?:string;
@@ -91,8 +91,8 @@ export interface RecipeProgressionSource{
  owned:number;
  required:number;
  missing:number;
- destination:WorkingTowardDestination;
- availability:WorkingTowardDestinationAvailability;
+ destination:SourceDestination;
+ availability:SourceDestinationAvailability;
  sourceTypeLabel:string;
  estimatedSeconds?:number;
  estimateLabel?:string;
@@ -103,7 +103,7 @@ export interface RecipeProgressionSource{
  otherSources:RecipeProgressionAlternateSource[];
 }
 
-function sourceEstimate(state:GameState,itemId:string,quantity:number,source:WorkingTowardItemSourceEntry):RecipeProgressionAlternateSource{
+function sourceEstimate(state:GameState,itemId:string,quantity:number,source:SourceItemSourceEntry):RecipeProgressionAlternateSource{
  const projection=acquisitionProjectionForDestination(state,itemId,quantity,source.destination);
  if(projection)return {...source,estimatedSeconds:projection.etaSeconds,estimateLabel:acquisitionEstimateLabel(projection)};
  if(source.type==='crafting'){
@@ -114,8 +114,8 @@ function sourceEstimate(state:GameState,itemId:string,quantity:number,source:Wor
 }
 
 function materialSourcePresentation(state:GameState,itemId:string,quantity:number){
- const sources=workingTowardItemSourceEntries(state,itemId).map(source=>sourceEstimate(state,itemId,quantity,source)),primary=sources[0],destination=primary?.destination??workingTowardItemSource(state,itemId);
- return {destination,availability:primary?.availability??workingTowardDestinationAvailability(state,destination),sourceTypeLabel:primary?.typeLabel??'Inventory',estimatedSeconds:primary?.estimatedSeconds,estimateLabel:primary?.estimateLabel,otherSources:sources.slice(1)};
+ const sources=sourceItemSourceEntries(state,itemId).map(source=>sourceEstimate(state,itemId,quantity,source)),primary=sources[0],destination=primary?.destination??sourceItemSource(state,itemId);
+ return {destination,availability:primary?.availability??sourceDestinationAvailability(state,destination),sourceTypeLabel:primary?.typeLabel??'Inventory',estimatedSeconds:primary?.estimatedSeconds,estimateLabel:primary?.estimateLabel,otherSources:sources.slice(1)};
 }
 
 export function recipeProgressionSources(state:GameState,recipe:Recipe,inputs:ReadonlyArray<{itemId:string;quantity:number;inventory:number;bank:number}>):RecipeProgressionSource[]{

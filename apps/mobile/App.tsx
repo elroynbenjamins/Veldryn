@@ -216,15 +216,23 @@ function VeldrynApp(){
   const [releaseNotes,setReleaseNotes]=useState<ReleaseNote[]>([]);
   const [releaseSeen,setReleaseSeen]=useState(false);
   const [releaseSeenLoaded,setReleaseSeenLoaded]=useState(false);
+  const [optionalUpdateSeen,setOptionalUpdateSeen]=useState(false);
+  const [optionalUpdateSeenLoaded,setOptionalUpdateSeenLoaded]=useState(false);
   const [showWhatsNew,setShowWhatsNew]=useState(false);
   const releaseSeenKey='veldryn.release.seen.'+APP_BUILD_INFO.version;
+  const availableUpdateVersion=versionGate?.updateAvailable?versionGate.policy?.latestVersion:undefined;
+  const optionalUpdateSeenKey=availableUpdateVersion?'veldryn.optional-update.seen.'+availableUpdateVersion:undefined;
   const guestBootstrapRef=useRef(false);
-  const hasUnseenUpdate=!!versionGate?.updateAvailable||(releaseSeenLoaded&&!releaseSeen&&shouldAutoShowReleaseNotes(releaseNotes,APP_BUILD_INFO.version,false));
+  const hasUnseenUpdate=!!availableUpdateVersion&&!optionalUpdateSeen||(releaseSeenLoaded&&!releaseSeen&&shouldAutoShowReleaseNotes(releaseNotes,APP_BUILD_INFO.version,false));
   const closeWhatsNew=()=>{
     setShowWhatsNew(false);
     if(releaseNotes.some(note=>note.version===APP_BUILD_INFO.version)){
       setReleaseSeen(true);
       void AsyncStorage.setItem(releaseSeenKey,'1').catch(()=>{});
+    }
+    if(optionalUpdateSeenKey){
+      setOptionalUpdateSeen(true);
+      void AsyncStorage.setItem(optionalUpdateSeenKey,'1').catch(()=>{});
     }
   };
   const [showChatOverlay,setShowChatOverlay]=useState(false);
@@ -271,15 +279,22 @@ function VeldrynApp(){
   },[releaseSeenKey]);
   useEffect(()=>{
     let active=true;
+    if(!optionalUpdateSeenKey){setOptionalUpdateSeen(false);setOptionalUpdateSeenLoaded(true);return()=>{active=false};}
+    setOptionalUpdateSeenLoaded(false);
+    void AsyncStorage.getItem(optionalUpdateSeenKey).then(value=>{if(active)setOptionalUpdateSeen(value==='1')}).catch(()=>{}).finally(()=>{if(active)setOptionalUpdateSeenLoaded(true)});
+    return()=>{active=false};
+  },[optionalUpdateSeenKey]);
+  useEffect(()=>{
+    let active=true;
     const load=async()=>{const notes=await fetchReleaseNotes();if(active)setReleaseNotes(notes)};
     void load();
     const listener=AppState.addEventListener('change',status=>{if(status==='active')void load()});
     return()=>{active=false;listener.remove()};
   },[]);
   useEffect(()=>{
-    if(!releaseSeenLoaded||releaseSeen||showWhatsNew||!ready||!state?.character||!versionGateChecked||versionGate?.updateRequired||versionGate?.maintenanceMode||collected||creationWelcome)return;
-    if(shouldAutoShowReleaseNotes(releaseNotes,APP_BUILD_INFO.version,false))setShowWhatsNew(true);
-  },[releaseNotes,releaseSeenLoaded,releaseSeen,showWhatsNew,ready,state?.character?.id,versionGateChecked,versionGate?.updateRequired,versionGate?.maintenanceMode,collected,creationWelcome]);
+    if(!releaseSeenLoaded||!optionalUpdateSeenLoaded||showWhatsNew||!ready||!state?.character||!versionGateChecked||versionGate?.updateRequired||versionGate?.maintenanceMode||collected||creationWelcome)return;
+    if(shouldAutoShowReleaseNotes(releaseNotes,APP_BUILD_INFO.version,releaseSeen)||!!availableUpdateVersion&&!optionalUpdateSeen)setShowWhatsNew(true);
+  },[releaseNotes,releaseSeenLoaded,releaseSeen,optionalUpdateSeenLoaded,optionalUpdateSeen,availableUpdateVersion,showWhatsNew,ready,state?.character?.id,versionGateChecked,versionGate?.updateRequired,versionGate?.maintenanceMode,collected,creationWelcome]);
   useEffect(()=>{
     if(!serverGameplayEnabled||auth.loading||auth.recovering)return;
     if(auth.session){setGuestBooting(false);return;}
@@ -354,8 +369,9 @@ function VeldrynApp(){
   // Foregrounding still refreshes immediately so a returning player never waits for the next scheduled check.
   useEffect(()=>{if(!onlineConfigured)return;void syncLiveEventRuntime();const id=setInterval(()=>void syncLiveEventRuntime(),60_000);const sub=AppState.addEventListener('change',status=>{if(status==='active')void syncLiveEventRuntime();});return()=>{clearInterval(id);sub.remove();}},[syncLiveEventRuntime]);
   const needsLiveClock=!!state?.activity||!!state?.character?.classTraining;
+  const needsFastClock=needsLiveClock&&(tab==='Home'||tab==='Combat');
   // This is presentation-only. Server authority and reward settlement do not poll on this clock.
-  useEffect(()=>{setNow(Date.now());const id=setInterval(()=>setNow(Date.now()),needsLiveClock?2_000:60_000);return()=>clearInterval(id)},[needsLiveClock]);
+  useEffect(()=>{setNow(Date.now());const interval=needsFastClock?2_000:needsLiveClock?15_000:60_000;const id=setInterval(()=>setNow(Date.now()),interval);return()=>clearInterval(id)},[needsFastClock,needsLiveClock]);
   useEffect(()=>{if(!preparationNotices.length||collected||forgeResults)return;const timer=setTimeout(()=>setPreparationNotices(current=>current.slice(1)),4500);return()=>clearTimeout(timer)},[preparationNotices,collected,forgeResults]);
   useEffect(()=>{if(!masteryNotices.length||preparationNotices.length||collected||forgeResults)return;const timer=setTimeout(()=>setMasteryNotices([]),4500);return()=>clearTimeout(timer)},[masteryNotices,preparationNotices.length,collected,forgeResults]);
   useEffect(()=>{if(tab!=='Skills'){setSelectedSkill(undefined);setGoalActionId(undefined);setGoalRecipeId(undefined)}},[tab]);
@@ -567,7 +583,7 @@ const next=normalizeProfileIcon(candidate);queuePreparationNotices(current,next)
   };
   const activePrimary:PrimaryTab|undefined=tab==='Home'?undefined:tab==='Coop'||tab==='Combat'?'World':primaryTabs.includes(tab as PrimaryTab)?tab as PrimaryTab:'More';
   const secondary=!primaryTabs.includes(tab as PrimaryTab);
-  return <GameThemeProvider themeId={state.settings.uiTheme}><SafeAreaView edges={['top','left','right']} style={[s.safe,{backgroundColor:theme.bg}]}><StatusBar style={theme.dark?'light':'dark'}/><GameTopBar key={`${state.createdAtMs}:${state.character.id}`} state={state} nowMs={now} reward={preview} online={serverGameplayEnabled&&!online.error} attention={quickNavigationBadges} labelForDestination={destination=>tabLabel(state.settings.language,destination)} onNavigate={destination=>{if(destination==='Dungeon'){setTab('Coop');return;}if(destination==='Quests'){openQuestMode('story');return;}setTab(destination)}} onChangeDestinations={destinations=>commit({...state,settings:{...state.settings,quickNavDestinations:destinations}})} onOpenActivity={openActiveActivity} onRecoverCombat={recoverStoppedCombat} onFoodCommand={quickFoodCommand}/>{secondary&&tab!=='Coop'&&tab!=='Combat'&&<View style={[s.backBar,{backgroundColor:theme.panel,borderColor:theme.line}]}><Pressable accessibilityRole="button" accessibilityLabel={t(state.settings.language,'common.back')} onPress={goBack} hitSlop={8} style={({pressed})=>[s.backButton,pressed&&s.backPressed]}><ThemedIcon name="back" size={24}/><Text style={[s.backText,{color:theme.accent}]}>{t(state.settings.language,'common.back')}</Text></Pressable><Text numberOfLines={1} style={[s.backTitle,{color:theme.text}]}>{tabLabel(state.settings.language,tab)}</Text><View style={s.backSpacer}/></View>}{serverGameplayEnabled&&online.pending?<View style={{paddingHorizontal:12}}><GameButton title={appText(languageRef.current,"Retry pending action")} disabled={online.busy} onPress={()=>void perform()}/></View>:null}<View pointerEvents={serverGameplayEnabled&&online.busy?'none':'auto'} style={s.body} {...backSwipe.panHandlers}>
+  return <GameThemeProvider themeId={state.settings.uiTheme}><SafeAreaView edges={['top','left','right']} style={[s.safe,{backgroundColor:theme.bg}]}><StatusBar style={theme.dark?'light':'dark'}/><GameTopBar key={`${state.createdAtMs}:${state.character.id}`} state={state} nowMs={now} reward={preview} online={serverGameplayEnabled&&!online.error} attention={quickNavigationBadges} labelForDestination={destination=>tabLabel(state.settings.language,destination)} onNavigate={destination=>{if(destination==='Dungeon'){setTab('Coop');return;}if(destination==='Quests'){openQuestMode('story');return;}setTab(destination)}} onChangeDestinations={destinations=>commit({...state,settings:{...state.settings,quickNavDestinations:destinations}})} onOpenActivity={openActiveActivity} onRecoverCombat={recoverStoppedCombat} onFoodCommand={quickFoodCommand}/>{serverGameplayEnabled&&online.busy?<View pointerEvents="none" style={{position:'absolute',top:52,right:12,zIndex:30,flexDirection:'row',alignItems:'center',gap:6,paddingVertical:6,paddingHorizontal:10,borderWidth:1,borderColor:theme.info,borderRadius:12,backgroundColor:theme.panelRaised}}><ActivityIndicator color={theme.info} size="small"/><Text style={{color:theme.text,fontSize:11,fontWeight:'800'}}>{appText(state.settings.language,'Saving…')}</Text></View>:null}{secondary&&tab!=='Coop'&&tab!=='Combat'&&<View style={[s.backBar,{backgroundColor:theme.panel,borderColor:theme.line}]}><Pressable accessibilityRole="button" accessibilityLabel={t(state.settings.language,'common.back')} onPress={goBack} hitSlop={8} style={({pressed})=>[s.backButton,pressed&&s.backPressed]}><ThemedIcon name="back" size={24}/><Text style={[s.backText,{color:theme.accent}]}>{t(state.settings.language,'common.back')}</Text></Pressable><Text numberOfLines={1} style={[s.backTitle,{color:theme.text}]}>{tabLabel(state.settings.language,tab)}</Text><View style={s.backSpacer}/></View>}{serverGameplayEnabled&&online.pending?<View style={{paddingHorizontal:12}}><GameButton title={appText(languageRef.current,"Retry pending action")} disabled={online.busy} onPress={()=>void perform()}/></View>:null}<View pointerEvents={serverGameplayEnabled&&online.busy?'none':'auto'} style={s.body} {...backSwipe.panHandlers}>
     {tab==='Home'&&<HomeScreen onOpenGuide={()=>{setTab('Settings');setSettingsSection('guide')}} state={state} preview={preview} nowMs={now} onOpenContracts={()=>openQuestMode('contracts')} onNavigateGoal={openWorkingTowardDestination} onOpenCombat={()=>setTab('Combat')} onOpenSkill={skillId=>{setSelectedSkill(skillId);setSkillsMode(skillId==='faith'?'faith':['mining','woodcutting','fishing','herbalism','exploration'].includes(skillId)?'gathering':'crafting');setTab('Skills')}} onNavigate={destination=>{if(destination==='Skills')setSelectedSkill(undefined);if(destination==='Quests'){openQuestMode('story');return;}setTab(destination)}} onQueueRemove={index=>mutateActionQueue({type:'queue_remove',args:{index}})} onQueueMove={(index,direction)=>mutateActionQueue({type:'queue_move',args:{index,direction}})} onQueueClear={()=>mutateActionQueue({type:'queue_clear'})} onQueueStart={()=>mutateActionQueue({type:'queue_start'},true)} onClaim={()=>{if(serverGameplayEnabled){void perform({type:'claim'});return;}const result=claimActivity(state,Date.now());commit(result.state);presentCollected(result.reward,state.activity,state,result.state)}} onStop={()=>changeActivity()}/>}
     {tab==='Combat'&&<CombatScreen state={state} onCommand={runCompanionCommand} initialMonsterId={goalMonsterId} onChangeRegion={()=>setTab('World')} onStart={(id,tacticId,goalId)=>changeActivity({kind:'combat',id,...(tacticId?{tacticId}: {}),...(goalId?{goalId}: {})})} onQueue={(id,tacticId,goalId)=>queueActivity({kind:'combat',id,...(tacticId?{tacticId}:{}),...(goalId?{goalId}:{})})} onQueueRemove={index=>mutateActionQueue({type:'queue_remove',args:{index}})} onQueueMove={(index,direction)=>mutateActionQueue({type:'queue_move',args:{index,direction}})} onQueueClear={()=>mutateActionQueue({type:'queue_clear'})} onQueueStart={()=>mutateActionQueue({type:'queue_start'},true)} onBoss={()=>{const now=Date.now();if(serverGameplayEnabled){void perform({type:'boss'}).then(result=>{if(!result)return;if(result.storyBossBattle){setStoryBossBattle({battle:result.storyBossBattle,message:result.message??(result.won?'Victory':'Defeat')});return;}showAlert(result.won?'Victory':'Not ready',result.message)});return;}const settled=claimActivity(state,now);const result=challengeFallenKnight(settled.state,now);void commit(result.state);if(result.battle){setStoryBossBattle({battle:result.battle,message:result.message});return;}showAlert(ot(state.settings.language,result.won?'combat.victory':'combat.notReady'),result.message)}}/>}
     {tab==='World'&&<WorldScreen state={state} goalRegionId={goalRegionId} onTravel={regionId=>{if(serverGameplayEnabled){void perform({type:'travel',args:{id:regionId}}).then(result=>{if(result)continueGoalAfterTravel(regionId)});return;}try{const result=travelToRegion(state,regionId,Date.now());void commit(result.state);continueGoalAfterTravel(regionId)}catch(error){showAlert('Cannot travel',error instanceof Error?error.message:'Please try again.')}}} onOpenCombat={()=>setTab('Combat')} onOpenSkills={()=>{setSelectedSkill('regional-gathering');setSkillsMode('gathering');setTab('Skills')}} onCoop={coopOnlineConfigured||(__DEV__&&!serverGameplayEnabled)?()=>setTab('Coop'):undefined} dungeonContent={<CoopExpeditionScreen state={state} language={state.settings.language} entrySource={coopEntrySource} initialDungeonId={goalDungeonId} onInitialDungeonHandled={()=>setGoalDungeonId(undefined)} initialEventLiveId={pendingEventLiveId} onInitialEventHandled={()=>setPendingEventLiveId(undefined)} onRewardsChanged={serverGameplayEnabled?()=>online.refresh():undefined} onClose={()=>{}}/>} onOpenWeeklyOrder={openWeeklyOrder} onOpenContracts={order=>openQuestMode('contracts',order?.id)} onRegionalRewardsChanged={serverGameplayEnabled?()=>online.refresh():undefined}/>}

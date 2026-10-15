@@ -28,7 +28,7 @@ export function ChatEmotePicker({onPick,unlockedIds=[],trayIds=[],bodyPresentati
     {!editing?<View style={s.quickGrid}>{selected.map(id=><EmoteButton key={id} emote={byId.get(id)} id={id} disabled={usedCount>=CHAT_MAX_EMOTES_PER_MESSAGE} onPress={()=>{onPick(`:${id}:`);setOpen(false)}} selected={false}/>)}</View>:<>
       <View style={s.quickGrid}>{draft.map((id,index)=><EmoteButton key={id} emote={byId.get(id)} id={id} labelPrefix={st('Slot {slot}: ',{slot:index+1})} selected onPress={()=>toggle(id)}/>)}</View>
       <Text style={s.help}>{st("Tap selected emotes to remove them, then choose replacements below. Save becomes available when all 5 slots are filled.")}</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.catalog} showsVerticalScrollIndicator={false}>{available.map(emote=><EmoteButton key={emote.id} emote={emote} id={emote.id} selected={draft.includes(emote.id)} disabled={!draft.includes(emote.id)&&draft.length>=CHAT_EMOTE_TRAY_SIZE} onPress={()=>toggle(emote.id)}/>)}</ScrollView>
+      <ScrollView nestedScrollEnabled showsHorizontalScrollIndicator={false} showsVerticalScrollIndicator={true} style={s.catalogScroll} contentContainerStyle={s.catalog}>{available.map(emote=><EmoteButton key={emote.id} emote={emote} id={emote.id} selected={draft.includes(emote.id)} disabled={!draft.includes(emote.id)&&draft.length>=CHAT_EMOTE_TRAY_SIZE} onPress={()=>toggle(emote.id)}/>)}</ScrollView>
       <View style={[s.actions,stackControls&&s.actionsStack]}><View style={[s.action,stackControls&&s.actionStack]}><GameButton compact title={st("Reset")} tone="secondary" onPress={reset}/></View><View style={[s.action,stackControls&&s.actionStack]}><GameButton compact title={st("Save 5")} disabled={draft.length!==CHAT_EMOTE_TRAY_SIZE} onPress={()=>void save()}/></View></View>
     </>}
   </View>}
@@ -54,7 +54,7 @@ function makeStyles(C:ThemeColors){return StyleSheet.create({
  editButton:{minHeight:44,minWidth:62,alignItems:'center',justifyContent:'center',paddingHorizontal:8,borderWidth:1,borderColor:C.selectionLine,borderRadius:radii.md,backgroundColor:C.selection},editButtonStack:{width:'100%'},
  editText:{...typography.caption,color:C.info,fontWeight:'900'},
  quickGrid:{flexDirection:'row',flexWrap:'wrap',gap:5},
- catalog:{gap:spacing.xs,paddingVertical:4},
+ catalogScroll:{maxHeight:248,minHeight:142},catalog:{flexDirection:'row',flexWrap:'wrap',gap:spacing.xs,paddingVertical:6,alignContent:'flex-start'},
  item:{width:58,minHeight:58,alignItems:'center',justifyContent:'center',padding:3,borderWidth:1,borderColor:C.line,borderRadius:radii.sm,backgroundColor:C.panelRaised},
  itemSelected:{borderColor:C.selectionLine,backgroundColor:C.selection},
  art:{width:36,height:36},

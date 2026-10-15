@@ -17,7 +17,7 @@ import {ResourceArtwork} from './ResourceArtwork';
 import {hasResourceArtwork} from '../theme/resource-assets';
 import {GemArtwork} from './GemArtwork';
 import {hasGemArtworkV1,hasRawGemArtworkV1,rawGemSpriteSourceV1} from '../theme/gem-assets';
-import type {WorkingTowardDestination} from '../core/working-toward';
+import type {SourceDestination} from '../core/source-navigation';
 
 function InspectArt({state,itemId}:{state:GameState;itemId:string}){
  const {gl,language}=useGameplayText();
@@ -30,7 +30,7 @@ function InspectArt({state,itemId}:{state:GameState;itemId:string}){
   return <View style={[art.fallback,{borderColor:model.rarity.color,backgroundColor:model.rarity.surface}]}><Text style={[art.symbol,{color:model.rarity.color}]}>{model.rarity.symbol}</Text><Text style={[art.fallbackText,{color:C.muted}]}>{itemDetailContent(language,item.type,gl).toLocaleUpperCase(language)}</Text></View>;
 }
 
-export function ItemQuickInspect({state,itemId,onClose,onNavigate,actions}:{state:GameState;itemId:string|null;onClose:()=>void;onNavigate?:(destination:WorkingTowardDestination)=>void;actions?:ReactNode}){
+export function ItemQuickInspect({state,itemId,onClose,onNavigate,actions}:{state:GameState;itemId:string|null;onClose:()=>void;onNavigate?:(destination:SourceDestination)=>void;actions?:ReactNode}){
  const {gt,gl,language}=useGameplayText();
  const it=(key:keyof typeof itemDetailRows,params?:Record<string,string|number>)=>itemDetailText(language,key,params);
  const contentText=(value:string)=>itemDetailContent(language,value,gl);
@@ -80,7 +80,7 @@ export function ItemQuickInspect({state,itemId,onClose,onNavigate,actions}:{stat
 function Section({title,children}:{title:string;children:ReactNode}){const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);return <View style={s.section}><Text style={s.sectionTitle}>{title}</Text>{children}</View>}
 function Stat({label,value}:{label:string;value:number}){const {language}=useGameplayText();const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);return <View style={s.stat}><Text style={s.statLabel}>{itemDetailText(language,label)}</Text><Text style={s.statValue}>{value}</Text></View>}
 function DeltaStat({label,value,potential=false}:{label:string;value:number;potential?:boolean}){const {language}=useGameplayText();const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),tone=value>0?C.good:value<0?C.bad:C.muted;return <View style={[s.deltaStat,potential&&s.deltaPotential]}><Text style={s.statLabel}>{itemDetailText(language,label)}</Text><Text style={[s.deltaValue,{color:tone}]}>{value===0?'—':(value>0?'+':'')+value}</Text></View>}
-function SourceRow({source,primary=false,onNavigate}:{source:ReturnType<typeof itemInspectModel>['sources'][number];primary?:boolean;onNavigate?:(destination:WorkingTowardDestination)=>void}){
+function SourceRow({source,primary=false,onNavigate}:{source:ReturnType<typeof itemInspectModel>['sources'][number];primary?:boolean;onNavigate?:(destination:SourceDestination)=>void}){
  const {gt,gl,language}=useGameplayText();
  const it=(key:keyof typeof itemDetailRows,params?:Record<string,string|number>)=>itemDetailText(language,key,params);
  const contentText=(value:string)=>itemDetailContent(language,value,gl);

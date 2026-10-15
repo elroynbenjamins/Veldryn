@@ -19,6 +19,7 @@ eq(state.character?.activeIdleRuleIdV40,'one-hour','idle rule command activates 
 eq(state.character?.idleRulesV40?.[0].conditions[0].kind,'duration_seconds','idle rule remains stop-only duration condition');
 
 state=saveCharacterLoadout(state,0,'Boss');
+state={...state,account:{...state.account,entitlements:{vip:true}}};
 result=executeGameCommand(state,{type:'loadout_save',args:{index:1,name:'Gathering'}},4000,{accountId:'acct',eventId:'loadout-save'});
 state=result.state;
 eq(state.character?.savedLoadouts?.length,2,'server loadout save command persists another slot');
@@ -43,17 +44,17 @@ eq(result.state.account.weeklyOrders?.schemaVersion,41,'idle settlement still ad
 
 const vipPlusState={...state,account:{...state.account,entitlements:{vip_plus:true}}};
 const {characterLoadoutSlotCount}=require('../src/core/character-loadouts') as typeof import('../src/core/character-loadouts');
-eq(characterLoadoutSlotCount(state),3,'Base accounts keep three loadout slots');
-eq(characterLoadoutSlotCount({...state,account:{...state.account,entitlements:{vip:true}}}),4,'VIP adds one permanent loadout slot');
-eq(characterLoadoutSlotCount(vipPlusState),4,'VIP+ independently adds one permanent loadout slot');
-const fourth=saveCharacterLoadout(vipPlusState,3,'VIP+ Fourth');
-eq(fourth.character?.savedLoadouts?.some(row=>row.slotIndex===3),true,'VIP+ can save into fourth loadout slot');
-let fifthRejected=false;try{saveCharacterLoadout(vipPlusState,4,'Locked Fifth')}catch{fifthRejected=true}
-ok(fifthRejected,'VIP+ alone cannot use the fifth slot reserved for both permanent tiers');
+eq(characterLoadoutSlotCount({...state,account:{...state.account,entitlements:{}}}),1,'Base accounts keep one loadout slot');
+eq(characterLoadoutSlotCount({...state,account:{...state.account,entitlements:{vip:true}}}),2,'VIP adds one permanent loadout slot');
+eq(characterLoadoutSlotCount(vipPlusState),3,'VIP+ plus active VIP adds two loadout slots');
+const third=saveCharacterLoadout(vipPlusState,2,'VIP+ Third');
+eq(third.character?.savedLoadouts?.some(row=>row.slotIndex===2),true,'Both permanent tiers unlock the third loadout slot');
+let fourthRejected=false;try{saveCharacterLoadout(vipPlusState,3,'Locked Fourth')}catch{fourthRejected=true}
+ok(fourthRejected,'Fourth slot cannot be used without another entitlement');
 const both={...vipPlusState,account:{...vipPlusState.account,entitlements:{vip:true,vip_plus:true}}};
-eq(characterLoadoutSlotCount(both),5,'Both permanent tiers add two loadout slots');
-const fifth=saveCharacterLoadout(both,4,'Both Tiers Fifth');
-eq(fifth.character?.savedLoadouts?.some(row=>row.slotIndex===4),true,'Owning both tiers can save into fifth loadout slot');
+eq(characterLoadoutSlotCount(both),3,'Both permanent tiers add two loadout slots');
+const thirdWithBoth=saveCharacterLoadout(both,2,'Both Tiers Third');
+eq(thirdWithBoth.character?.savedLoadouts?.some(row=>row.slotIndex===2),true,'Owning both tiers can save into third loadout slot');
 const fs=require('fs') as {readFileSync:(path:string,encoding:string)=>string};
 const savedLoadoutUi=fs.readFileSync('src/components/SavedLoadoutsPanel.tsx','utf8');
 const profileEditorUi=fs.readFileSync('src/components/ProfileEditor.tsx','utf8');

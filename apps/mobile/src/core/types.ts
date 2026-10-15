@@ -89,7 +89,7 @@ export interface CraftedGearInstance{
 }
 export interface ItemStack { itemId:string; quantity:number; }
 export interface InventoryState { stacks:ItemStack[]; capacity:number; }
-export interface BankState { stacks:ItemStack[]; capacity:number; }
+export interface BankState { stacks:ItemStack[]; capacity:number; gold?:number; }
 export interface OverflowState { stacks:ItemStack[]; expiresAtMs:number|null; }
 export interface ActivityEnvironmentSnapshot{seasonId:SeasonId;weatherId:WeatherId;zoneId:string;capturedAtMs:number;}
 export interface ActiveActivity { queueManaged?:boolean; queueGoal?:ActivityQueueGoal; queueGoalCompletedAtMs?:number; skillAffinity?:import('./class-skill-affinities').SkillAffinitySnapshot; kind:ActivityKind; targetId:string; startedAtMs:number; lastClaimAtMs:number; combatTacticId?:CombatTacticId; huntGoal?:import('./hunt-goals').HuntGoalSnapshot; sessionKills?:number; sessionChampions?:number; environment?:ActivityEnvironmentSnapshot; herbalismMethodId?:import('../content/herbalism').HerbalismMethodId; classFocus?:TrainingFocus; classTrainingSnapshot?:{faithBlessingId?:string}; bonusSnapshot?:import('./permanent-boosts').PermanentMultipliers; progressFraction?:number; brew?:import('./alchemy-types').AlchemyBatchState; processing?:import('./processing').ProcessingBatchState; faithPractice?:import('./faith-types').FaithPracticeReservation; }

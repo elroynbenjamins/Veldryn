@@ -24,22 +24,28 @@ export function CraftingRecipeBrowser({state,skillId,initialQuery='',preferredRe
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [query,setQuery]=useState(initialQuery),[readyOnly,setReadyOnly]=useState(false),[filterOpen,setFilterOpen]=useState(false),[limit,setLimit]=useState(12);
  const skill=state.skills.find(row=>row.skillId===skillId),skillLevel=skill?.level??1,characterLevel=state.character?.level??1;
- const all:Row[]=useMemo(()=>RECIPES.filter(recipe=>recipe.skillId===skillId&&!recipe.noviceSetId&&(!recipe.classId||recipe.classId===state.character?.classId)).sort((a,b)=>a.level-b.level||a.name.localeCompare(b.name)).map(recipe=>{
-  try {
-   const processing=isTimedProcessingRecipe(recipe.id),timedEquipment=Boolean(timedEquipmentRecipe(recipe.id));
-   const status=skillId==='alchemy'?alchemyAvailability(state,recipe.id):processing?processingAvailability(state,recipe.id,undefined,true):timedEquipment?equipmentCraftAvailability(state,recipe.id):recipeAvailability(state,recipe.id);
-   return {recipe,status};
-  } catch(error) {
-   console.warn('[CraftingRecipeBrowser] Recipe unavailable:',recipe.id,error);
-   return {recipe,status:{ready:false,reason:gt("Recipe temporarily unavailable."),inputs:[]}};
-  }
- }),[state,skillId,gt]);
- const q=query.trim().toLowerCase(),matching=all.filter(({recipe})=>(!category||(category==='tools'?itemDef(recipe.output.itemId).type==='tool':itemDef(recipe.output.itemId).type!=='tool'&&!recipe.v33SetId))&&(!q||(recipe.name+' '+itemDef(recipe.output.itemId).name).toLowerCase().includes(q)));
+ // Keep recipe metadata separate from live availability: searching should not calculate every recipe.
+ const recipes=useMemo(()=>RECIPES.filter(recipe=>recipe.skillId===skillId&&!recipe.noviceSetId&&(!recipe.classId||recipe.classId===state.character?.classId)).sort((a,b)=>a.level-b.level||a.name.localeCompare(b.name)),[skillId,state.character?.classId]);
+ const q=query.trim().toLowerCase();
+ const filtered=useMemo(()=>recipes.filter(recipe=>{
+   try{const output=itemDef(recipe.output.itemId);return (!category||(category==='tools'?output.type==='tool':output.type!=='tool'&&!recipe.v33SetId))&&(!q||(recipe.name+' '+output.name).toLowerCase().includes(q));}
+   catch(error){console.warn('[CraftingRecipeBrowser] Invalid recipe output',recipe.id,error);return false;}
+ }),[recipes,category,q]);
+ const matching:Row[]=useMemo(()=>filtered.map(recipe=>{
+   try{
+    const processing=isTimedProcessingRecipe(recipe.id),timedEquipment=Boolean(timedEquipmentRecipe(recipe.id));
+    const status=skillId==='alchemy'?alchemyAvailability(state,recipe.id):processing?processingAvailability(state,recipe.id,undefined,true):timedEquipment?equipmentCraftAvailability(state,recipe.id):recipeAvailability(state,recipe.id);
+    return {recipe,status};
+   }catch(error){
+    console.warn('[CraftingRecipeBrowser] Recipe unavailable:',recipe.id,error);
+    return {recipe,status:{ready:false,reason:gt("Recipe temporarily unavailable."),inputs:[]}};
+   }
+ }),[filtered,state,skillId,gt]);
  const ready=matching.filter(row=>row.status.ready),locked=matching.filter(row=>!row.status.ready&&(row.recipe.level>skillLevel||(row.recipe.characterLevel??1)>characterLevel));
  const lockedIds=new Set(locked.map(row=>row.recipe.id)),needs=matching.filter(row=>!row.status.ready&&!lockedIds.has(row.recipe.id));
  const groups:{label:string;tone:'ready'|'needs'|'locked';rows:Row[]}[]=readyOnly?[{label:gt("READY NOW"),tone:'ready',rows:ready}]:[{label:gt("READY NOW"),tone:'ready',rows:ready},{label:gt("NEEDS REQUIREMENTS"),tone:'needs',rows:needs},{label:gt("LOCKED"),tone:'locked',rows:locked}].filter(group=>group.rows.length>0) as {label:string;tone:'ready'|'needs'|'locked';rows:Row[]}[];
  const perGroup=Math.max(4,Math.ceil(limit/Math.max(1,groups.length))),hasMore=groups.some(group=>group.rows.length>perGroup);
- const nextLevel=Math.min(...all.filter(row=>row.recipe.level>skillLevel).map(row=>row.recipe.level),Infinity),nextRows=Number.isFinite(nextLevel)?all.filter(row=>row.recipe.level===nextLevel):[];
+
  return <View style={s.root}>
   <View style={s.searchRow}><View style={s.flex}><SearchField accessibilityLabel={gt("Search recipes")} value={query} onChangeText={value=>{setQuery(value);setLimit(12);}} placeholder={gt("Search recipes…")}/></View><Pressable accessibilityRole="button" accessibilityState={{expanded:filterOpen}} onPress={()=>setFilterOpen(value=>!value)} style={({pressed})=>[s.filterToggle,filterOpen&&s.filterToggleActive,pressed&&s.pressed]}><Text style={s.filterToggleText}>{gt("Filters")}{readyOnly?' · 1':''}</Text></Pressable></View>
   {filterOpen?<View style={s.filterPanel}><Pressable accessibilityRole="button" accessibilityState={{selected:readyOnly}} onPress={()=>{setReadyOnly(value=>!value);setLimit(12);}} style={({pressed})=>[s.filterRow,readyOnly&&s.filterRowActive,pressed&&s.pressed]}><View style={s.flex}><Text style={s.filterTitle}>{gt("Craftable only")}</Text><Text style={s.filterHint}>{gt("Hide locked and missing-requirement recipes.")}</Text></View><Text style={[s.filterValue,readyOnly&&s.filterValueActive]}>{readyOnly?gt("ON"):gt("OFF")}</Text></Pressable></View>:null}

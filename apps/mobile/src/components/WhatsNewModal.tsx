@@ -23,7 +23,7 @@ export function WhatsNewModal({visible,currentVersion,notes,latestVersion,update
  return <GameModalSurface visible={visible} onClose={onClose} reduceMotion={reduceMotion} presentation="dialog">
   <GameModalHeader eyebrow="VELDRYN RELEASES" title="What's New" onClose={onClose}/>
   <Text style={s.current}>Installed version {currentVersion}</Text>
-  <ScrollView style={s.scroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
+  <ScrollView style={s.scroll} contentContainerStyle={s.content} showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
    {installedNotes.length?installedNotes.map(note=><View key={note.version} style={s.release}>
     <View style={s.head}><Text style={s.title}>{note.title}</Text><Text style={s.version}>v{note.version}</Text></View>
     {note.highlights.map((highlight,index)=><Text key={index} style={s.line}>• {highlight}</Text>)}

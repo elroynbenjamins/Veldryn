@@ -6,6 +6,10 @@ import {battleText} from './battle';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
+  'AFK reserve left':['AFK reserve left','AFK-Reserve verbleibend','Reserva AFK restante','Resterende AFK-reserve','Riserva AFK rimanente','Réserve AFK restante'],
+  'AFK storage full · collect to continue':['AFK storage full · collect to continue','AFK-Speicher voll · Belohnungen einsammeln','Réserve AFK llena · recoge para continuar','AFK-opslag vol · verzamel om door te gaan','Riserva AFK piena · riscuoti per continuare','Réserve AFK pleine · récupérez pour continuer'],
+  'Tap to see requirements and where to go next.':['Tap to see requirements and where to go next.','Tippen, um Voraussetzungen und nächste Schritte zu sehen.','Toca para ver los requisitos y los siguientes pasos.','Tik voor vereisten en je volgende stappen.','Tocca per vedere requisiti e prossimi passi.','Touchez pour voir les conditions et les prochaines étapes.'],
+  'Sell {count} · {gold}g':['Sell {count} · {gold}g','{count} verkaufen · {gold} Gold','Vender {count} · {gold} oro','Verkoop {count} · {gold} goud','Vendi {count} · {gold} oro','Vendre {count} · {gold} or'],
   'Recipe temporarily unavailable.':['Recipe temporarily unavailable.','Rezept vorübergehend nicht verfügbar.','Receta no disponible temporalmente.','Recept tijdelijk niet beschikbaar.','Ricetta temporaneamente non disponibile.','Recette temporairement indisponible.'],
   'Ready to brew':['Ready to brew','Bereit zum Brauen','Listo para elaborar','Klaar om te brouwen','Pronto per la preparazione','Prêt à préparer'],
   'Ready to process':['Ready to process','Bereit zur Verarbeitung','Listo para procesar','Klaar om te verwerken','Pronto per la lavorazione','Prêt à transformer'],

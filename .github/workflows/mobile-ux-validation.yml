@@ -25,7 +25,11 @@ jobs:
           cache: pnpm
           cache-dependency-path: apps/mobile/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
-      - name: Typecheck app and core
-        run: pnpm typecheck && pnpm typecheck:core
+      - name: Typecheck core
+        run: pnpm typecheck:core
       - name: Run mobile core tests
         run: pnpm test:core
+      - name: Install backend dependencies for app typecheck
+        run: pnpm --dir ../../backend install --frozen-lockfile
+      - name: Typecheck app
+        run: pnpm typecheck

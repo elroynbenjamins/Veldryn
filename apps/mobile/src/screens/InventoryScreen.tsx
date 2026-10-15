@@ -3,7 +3,7 @@ import {SearchField} from '../components/SearchField';
 import {newInventoryScreenState,openInventoryFood,type InventoryScreenState} from '../core/inventory-screen-state';
 import {liveHealthState} from '../core/live-health';
 import {useEffect,useMemo,useRef,useState} from 'react';
-import {Animated,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
+import {Animated,Pressable,ScrollView,StyleSheet,Text,TextInput,View,useWindowDimensions} from 'react-native';
 import {GameState,ItemStack} from '../core/types';
 import {ItemDef,itemDef} from '../content/items';
 import {InventoryFilter,InventorySort,inventoryFavoriteIds,inventoryNewItemIds,recoveryAmount,storageCapacityStatus,transferAmount,transferError,visibleStacks} from '../core/inventory-view';
@@ -51,7 +51,7 @@ function EquipmentSwapMoment({moment,reduceMotion,onDismiss}:{moment:EquipmentCh
     {moment.setChanges.map(change=><View key={change.type+':'+change.setId+':'+change.pieces} style={[s.setChange,{borderColor:change.type==='activated'?C.good:C.warning,backgroundColor:change.type==='activated'?C.goodSurface:C.warningSurface}]}><Text style={[s.setChangeTitle,{color:change.type==='activated'?C.good:C.warning}]}>{change.type==='activated'?gt("SET BONUS ACTIVATED"):gt("SET BONUS LOST")} · {gt("{count} pieces",{count:change.pieces})} · {change.setName}</Text><Text style={s.equipMomentMeta}>{gl(change.bonus)}</Text></View>)}
   </Animated.View>;
 }
-export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,onEat,onSell,onSalvage,onDeposit,onDepositMaterials,onUpgradeStorage,onWithdraw,onOverflow,onToggleFavorite,onAcknowledgeItem,onAcknowledgeAll,onBulkAction,onNavigateInspect}:{state:GameState;viewMemory?:InventoryScreenState;foodRequest?:number;onEquip:(id:string)=>void;onFood:(id:string)=>void;onEat:(id:string)=>void;onSell:(id:string)=>void;onSalvage:(id:string)=>void;onDeposit:(id:string,quantity:number)=>void;onDepositMaterials:()=>void;onUpgradeStorage:(location:StorageLocation)=>void;onWithdraw:(id:string,quantity:number)=>void;onOverflow:()=>void;onToggleFavorite:(id:string)=>void;onAcknowledgeItem:(id:string)=>void;onAcknowledgeAll:()=>void;onBulkAction:(kind:BulkAction,location:BulkStorageLocation,ids:string[])=>void;onNavigateInspect:(destination:WorkingTowardDestination)=>void}){
+export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,onEat,onSell,onSalvage,onDeposit,onDepositMaterials,onUpgradeStorage,onWithdraw,onBankSell,onBankGoldTransfer,onOverflow,onToggleFavorite,onAcknowledgeItem,onAcknowledgeAll,onBulkAction,onNavigateInspect}:{state:GameState;viewMemory?:InventoryScreenState;foodRequest?:number;onEquip:(id:string)=>void;onFood:(id:string)=>void;onEat:(id:string)=>void;onSell:(id:string)=>void;onSalvage:(id:string)=>void;onDeposit:(id:string,quantity:number)=>void;onDepositMaterials:()=>void;onUpgradeStorage:(location:StorageLocation)=>void;onWithdraw:(id:string,quantity:number)=>void;onBankSell:(id:string,quantity:number)=>void;onBankGoldTransfer:(direction:'deposit'|'withdraw',amount:number)=>void;onOverflow:()=>void;onToggleFavorite:(id:string)=>void;onAcknowledgeItem:(id:string)=>void;onAcknowledgeAll:()=>void;onBulkAction:(kind:BulkAction,location:BulkStorageLocation,ids:string[])=>void;onNavigateInspect:(destination:WorkingTowardDestination)=>void}){
  const {gt,gl,language}=useGameplayText();
   const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
   const healthState=liveHealthState(state,Date.now());
@@ -61,7 +61,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
   const memory=useRef(viewMemory??newInventoryScreenState()).current;
   const initial=useRef(foodRequest>memory.foodRequest?openInventoryFood(memory,foodRequest):{...memory}).current;
   const scrollRef=useRef<ScrollView>(null),scrollY=useRef(initial.scrollY),restored=useRef(false);
-  const [pending,setPending]=useState<Pending>(null),[location,setLocation]=useState<'inventory'|'bank'>(initial.location);
+  const [bankGoldAmount,setBankGoldAmount]=useState('');const [pending,setPending]=useState<Pending>(null),[location,setLocation]=useState<'inventory'|'bank'>(initial.location);
   const [query,setQuery]=useState(initial.query),[filter,setFilter]=useState<InventoryFilter>(initial.filter),[sort,setSort]=useState<InventorySort>(initial.sort),[sortOpen,setSortOpen]=useState(false);
   useEffect(()=>{Object.assign(memory,{location,query,filter,sort,scrollY:scrollY.current});},[memory,location,query,filter,sort]);
   useEffect(()=>{if(foodRequest<=memory.foodRequest)return;Object.assign(memory,openInventoryFood(memory,foodRequest));setLocation('inventory');setQuery('');setFilter('food');setSelectMode(false);setSelectedIds([]);setInspectId(null);setPreviewId(null);setSortOpen(false);scrollY.current=0;scrollRef.current?.scrollTo({y:0,animated:false});},[foodRequest,memory]);
@@ -125,6 +125,7 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
     {carried&&inspected.type==='food'?<GameButton compact title={recoveryAmount(healthState,inspected.id)===0?gt("Health full"):gt('Eat 1 · +{hp} HP',{hp:formatGameNumber(recoveryAmount(healthState,inspected.id),state.settings.numberMode,state.settings.language)})} disabled={recoveryAmount(healthState,inspected.id)===0} tone="secondary" onPress={()=>{run(()=>onEat(inspected.id));closeInspect()}}/>:null}
     <GameButton compact title={favoriteSet.has(inspected.id)?gt("Remove favorite"):gt("Favorite")} tone="secondary" onPress={()=>{run(()=>onToggleFavorite(inspected.id));closeInspect()}}/>
     {carried?<GameButton compact title={gt('Deposit {count}',{count:formatGameNumber(transferAmount(state.inventory.stacks.find(stack=>stack.itemId===inspected.id)?.quantity??0,quantity),state.settings.numberMode,state.settings.language)})} tone="secondary" onPress={()=>{const amount=transferAmount(state.inventory.stacks.find(stack=>stack.itemId===inspected.id)?.quantity??0,quantity);if(state.character?.equippedFoodId===inspected.id)setPending({kind:"deposit",item:inspected,quantity:amount});else runInventory({kind:"deposit",itemId:inspected.id,quantity:amount},()=>onDeposit(inspected.id,amount));closeInspect()}}/>:<GameButton compact title={gt('Withdraw {count}',{count:formatGameNumber(transferAmount(state.bank.stacks.find(stack=>stack.itemId===inspected.id)?.quantity??0,quantity),state.settings.numberMode,state.settings.language)})} tone="secondary" onPress={()=>{const amount=transferAmount(state.bank.stacks.find(stack=>stack.itemId===inspected.id)?.quantity??0,quantity);runInventory({kind:"withdraw",itemId:inspected.id,quantity:amount},()=>onWithdraw(inspected.id,amount));closeInspect()}}/>}
+    {!carried&&inspected.value>0&&!favoriteSet.has(inspected.id)?<GameButton compact title={gt('Sell {count} · {gold}g',{count:transferAmount(state.bank.stacks.find(stack=>stack.itemId===inspected.id)?.quantity??0,quantity),gold:inspected.value*transferAmount(state.bank.stacks.find(stack=>stack.itemId===inspected.id)?.quantity??0,quantity)})} tone="secondary" onPress={()=>{const amount=transferAmount(state.bank.stacks.find(stack=>stack.itemId===inspected.id)?.quantity??0,quantity);onBankSell(inspected.id,amount);closeInspect()}}/>:null}
     {carried&&inspected.value>0&&!favoriteSet.has(inspected.id)?<GameButton compact title={gt('Sell 1 · {gold}g',{gold:formatGameNumber(inspected.value,state.settings.numberMode,state.settings.language)})} tone="secondary" onPress={()=>{setPending({kind:"sell",item:inspected,quantity:1});closeInspect()}}/>:null}
     {carried&&inspected.salvage&&!favoriteSet.has(inspected.id)?<GameButton compact title={gt("Salvage 1")} tone="danger" onPress={()=>{setPending({kind:"salvage",item:inspected,quantity:1});closeInspect()}}/>:null}
   </View>:null;
@@ -132,6 +133,19 @@ export function InventoryScreen({state,viewMemory,foodRequest=0,onEquip,onFood,o
     <Text accessibilityRole="header" style={s.h}>{gt("Inventory")}</Text>
     <Text style={s.sub}>{gl("Everything for your next adventure.")}</Text>
     <View style={s.storageRow}>{(["inventory","bank"] as const).map(value=><StorageChip key={value} label={value==='inventory'?gt("Inventory"):gt("Bank")} selected={location===value} status={value==='inventory'?inventoryCapacity:bankCapacity} onPress={()=>changeLocation(value)}/>)}</View>
+    {location==='bank'&&<View style={{padding:12,borderRadius:12,borderWidth:1,borderColor:C.muted,marginVertical:8,gap:8}}>
+      <Text style={{color:C.text,fontWeight:'700'}}>Gold Storage</Text>
+      <Text style={{color:C.text}}>Carried: {formatGameNumber(state.character?.gold??0,state.settings.numberMode,state.settings.language)}g · Bank: {formatGameNumber(state.bank.gold??0,state.settings.numberMode,state.settings.language)}g</Text>
+      <TextInput accessibilityLabel="Gold transfer amount" keyboardType="number-pad" placeholder="Gold amount" placeholderTextColor={C.muted} value={bankGoldAmount} onChangeText={setBankGoldAmount} style={{borderWidth:1,borderColor:C.muted,borderRadius:8,color:C.text,padding:9}}/>
+      <View style={{flexDirection:'row',gap:8}}>
+        <GameButton compact title="Deposit Gold" tone="secondary" onPress={()=>{const amount=Number(bankGoldAmount);if(Number.isSafeInteger(amount)&&amount>0&&amount<=(state.character?.gold??0)){onBankGoldTransfer('deposit',amount);setBankGoldAmount('')}else setError('Enter a valid amount of carried Gold.')}}/>
+        <GameButton compact title="Withdraw Gold" tone="secondary" onPress={()=>{const amount=Number(bankGoldAmount);if(Number.isSafeInteger(amount)&&amount>0&&amount<=(state.bank.gold??0)){onBankGoldTransfer('withdraw',amount);setBankGoldAmount('')}else setError('Enter a valid amount of Bank Gold.')}}/>
+      </View>
+      <View style={{flexDirection:'row',gap:8}}>
+        <GameButton compact title="Max deposit" tone="secondary" onPress={()=>setBankGoldAmount(String(state.character?.gold??0))}/>
+        <GameButton compact title="Max withdrawal" tone="secondary" onPress={()=>setBankGoldAmount(String(state.bank.gold??0))}/>
+      </View>
+    </View>}
     {activeCapacity.level!=='ok'&&<Text accessibilityRole="alert" style={activeCapacity.level==='full'?s.capacityFull:s.warning}>{gt(activeCapacity.level==='full'?'{location} is full. Free a slot or upgrade storage before receiving another unique stack.':'{location} is {percent}% full · {free} slots remain.',{location:gt(location==='inventory'?'Inventory':'Bank'),percent:activeCapacity.percent,free:activeCapacity.free})}</Text>}
     {location==='bank'&&<Text style={s.sub}>{gt("Bank materials are available for crafting, but food must be withdrawn for combat.")}</Text>}
     <SearchField accessibilityLabel={gt("Search stored items")} placeholder={gt("Search items…")} placeholderTextColor={C.muted} value={query} onChangeText={setQuery}/>

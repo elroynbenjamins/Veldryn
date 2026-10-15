@@ -772,6 +772,32 @@ export function unequipItem(state:GameState,slot:GearSlot):GameState{if(!state.c
 export function sellItem(state:GameState,itemId:string,quantity=1):GameState{if(!state.character||quantity<=0)return state;if(itemId===HOLY_WATER_ID)throw new Error('Holy Water cannot be sold.');if(state.settings.favoriteItemIds?.includes(itemId))throw new Error('Favorite item is protected. Remove it from Favorites before selling.');const discovered=state,d=itemDef(itemId);if(d.knowledgeUnlockId)throw new Error('Blueprints cannot be sold. Learn the recipe by crafting its tool.');if(d.type==='gear'&&hasEnhancement(discovered,itemId))throw new Error('Enhanced equipment is protected. Extract its gems before disposal; upgraded ranks cannot be recovered.');return {...discovered,inventory:{...discovered.inventory,stacks:consume(discovered.inventory.stacks,itemId,quantity)},character:{...discovered.character!,gold:discovered.character!.gold+d.value*quantity}}}
 export function salvageItem(state:GameState,itemId:string):GameState{if(state.settings.favoriteItemIds?.includes(itemId))throw new Error('Favorite item is protected. Remove it from Favorites before salvaging.');const discovered=state,d=itemDef(itemId);if(d.type!=='gear'||!d.salvage)throw new Error('Cannot salvage');if(hasEnhancement(discovered,itemId))throw new Error('Enhanced equipment is protected. Extract its gems before disposal; upgraded ranks cannot be recovered.');return {...discovered,inventory:{...discovered.inventory,stacks:stackItems(consume(discovered.inventory.stacks,itemId,1),[d.salvage])}}}
 
+function validBankGoldAmount(amount:number):void{
+  if(!Number.isSafeInteger(amount)||amount<=0)throw new Error('Enter a valid positive Gold amount.');
+}
+export function depositGoldToBank(state:GameState,amount:number):GameState{
+  validBankGoldAmount(amount);
+  if(!state.character||state.character.gold<amount)throw new Error('Not enough carried Gold.');
+  return {...state,character:{...state.character,gold:state.character.gold-amount},bank:{...state.bank,gold:(state.bank.gold??0)+amount}};
+}
+export function withdrawGoldFromBank(state:GameState,amount:number):GameState{
+  validBankGoldAmount(amount);
+  if(!state.character||(state.bank.gold??0)<amount)throw new Error('Not enough Bank Gold.');
+  return {...state,character:{...state.character,gold:state.character.gold+amount},bank:{...state.bank,gold:(state.bank.gold??0)-amount}};
+}
+export function sellBankItem(state:GameState,itemId:string,quantity=1):GameState{
+  validBankGoldAmount(quantity);
+  if(!state.character)throw new Error('Character required.');
+  if(itemId===HOLY_WATER_ID)throw new Error('Holy Water cannot be sold.');
+  if(state.settings.favoriteItemIds?.includes(itemId))throw new Error('Favorite item is protected.');
+  const def=itemDef(itemId);
+  if(def.knowledgeUnlockId)throw new Error('Blueprints cannot be sold.');
+  if(def.type==='gear'&&hasEnhancement(state,itemId))throw new Error('Enhanced equipment is protected.');
+  const stacks=consume(state.bank.stacks,itemId,quantity);
+  const proceeds=def.value*quantity;
+  if(!Number.isSafeInteger(proceeds)||!Number.isSafeInteger((state.bank.gold??0)+proceeds))throw new Error('Gold amount exceeds supported limit.');
+  return {...state,bank:{...state.bank,stacks,gold:(state.bank.gold??0)+proceeds}};
+}
 export function depositToBank(state:GameState,itemId:string,quantity:number):GameState{
   if(quantity<=0)return state;
   const invQty=stackQty(state.inventory.stacks,itemId);if(invQty<quantity)throw new Error('Not enough items in inventory');

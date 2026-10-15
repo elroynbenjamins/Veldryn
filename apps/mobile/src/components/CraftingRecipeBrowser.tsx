@@ -18,7 +18,7 @@ type CraftingSkillId=Extract<SkillId,'smithing'|'cooking'|'alchemy'|'tailoring'|
 type RecipeStatus={ready:boolean;reason:string;inputs:Array<{itemId:string;quantity:number;inventory:number;bank:number}>};
 type Row={recipe:(typeof RECIPES)[number];status:RecipeStatus};
 
-export function CraftingRecipeBrowser({state,skillId,initialQuery='',preferredRecipeId,category,nowMs=Date.now(),onCraft,onAlchemyStart,onProcessingStart,onCraftPrerequisites}:{state:GameState;skillId:CraftingSkillId;initialQuery?:string;preferredRecipeId?:string;category?:'materials'|'tools';nowMs?:number;onCraft:(id:string)=>void;onAlchemyStart?:(id:string)=>Promise<void>|void;onProcessingStart?:(id:string)=>Promise<void>|void;onCraftPrerequisites?:(recipeId:string)=>void;onTrackPreparation?:(recipe:(typeof RECIPES)[number],batches:number,initialStepCount:number)=>Promise<void>|void}){
+export function CraftingRecipeBrowser({state,skillId,initialQuery='',preferredRecipeId,category,nowMs=Date.now(),onCraft,onAlchemyStart,onProcessingStart,onCraftPrerequisites}:{state:GameState;skillId:CraftingSkillId;initialQuery?:string;preferredRecipeId?:string;category?:'materials'|'tools';nowMs?:number;onCraft:(id:string)=>void;onAlchemyStart?:(id:string)=>Promise<void>|void;onProcessingStart?:(id:string)=>Promise<void>|void;onCraftPrerequisites?:(recipeId:string)=>void;}){
  const {gt,gl,language}=useGameplayText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [query,setQuery]=useState(initialQuery),[readyOnly,setReadyOnly]=useState(false),[filterOpen,setFilterOpen]=useState(false),[limit,setLimit]=useState(12);

@@ -7,7 +7,7 @@ import {itemDef} from '../content/items';
 import {recipeAvailability} from '../core/playability';
 import {alchemyAvailability} from '../core/alchemy';
 import {isTimedProcessingRecipe,processingAvailability} from '../core/processing';
-import {equipmentCraftAvailability,timedEquipmentRecipe} from '../core/equipment-crafting-queue';
+import {equipmentCraftAvailability,equipmentCraftQueueModel,timedEquipmentRecipe} from '../core/equipment-crafting-queue';
 import type {WorkingTowardDestination} from '../core/working-toward';
 import {RecipeCard} from './RecipeCard';
 import {SearchField} from './SearchField';
@@ -19,7 +19,7 @@ type CraftingSkillId=Extract<SkillId,'smithing'|'cooking'|'alchemy'|'tailoring'|
 type RecipeStatus={ready:boolean;reason:string;inputs:Array<{itemId:string;quantity:number;inventory:number;bank:number}>};
 type Row={recipe:(typeof RECIPES)[number];status:RecipeStatus};
 
-export function CraftingRecipeBrowser({state,skillId,initialQuery='',preferredRecipeId,category,onCraft,onAlchemyStart,onProcessingStart,onNavigate,onCraftPrerequisites,onTrackPreparation}:{state:GameState;skillId:CraftingSkillId;initialQuery?:string;preferredRecipeId?:string;category?:'materials'|'tools';onCraft:(id:string)=>void;onAlchemyStart?:(id:string)=>Promise<void>|void;onProcessingStart?:(id:string)=>Promise<void>|void;onNavigate?:(destination:WorkingTowardDestination)=>void;onCraftPrerequisites?:(recipeId:string)=>void;onTrackPreparation?:(recipe:(typeof RECIPES)[number],batches:number,initialStepCount:number)=>Promise<void>|void}){
+export function CraftingRecipeBrowser({state,skillId,initialQuery='',preferredRecipeId,category,nowMs=Date.now(),onCraft,onAlchemyStart,onProcessingStart,onNavigate,onCraftPrerequisites,onTrackPreparation}:{state:GameState;skillId:CraftingSkillId;initialQuery?:string;preferredRecipeId?:string;category?:'materials'|'tools';nowMs?:number;onCraft:(id:string)=>void;onAlchemyStart?:(id:string)=>Promise<void>|void;onProcessingStart?:(id:string)=>Promise<void>|void;onNavigate?:(destination:WorkingTowardDestination)=>void;onCraftPrerequisites?:(recipeId:string)=>void;onTrackPreparation?:(recipe:(typeof RECIPES)[number],batches:number,initialStepCount:number)=>Promise<void>|void}){
  const {gt,gl,language}=useGameplayText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const [query,setQuery]=useState(initialQuery),[readyOnly,setReadyOnly]=useState(false),[filterOpen,setFilterOpen]=useState(false),[limit,setLimit]=useState(12);
@@ -31,6 +31,7 @@ export function CraftingRecipeBrowser({state,skillId,initialQuery='',preferredRe
    try{const output=itemDef(recipe.output.itemId);return (!category||(category==='tools'?output.type==='tool':output.type!=='tool'&&!recipe.v33SetId))&&(!q||(recipe.name+' '+output.name).toLowerCase().includes(q));}
    catch(error){console.warn('[CraftingRecipeBrowser] Invalid recipe output',recipe.id,error);return false;}
  }),[recipes,category,q]);
+ const sharedQueue=useMemo(()=>filtered.some(recipe=>Boolean(timedEquipmentRecipe(recipe.id)))?equipmentCraftQueueModel(state,nowMs):undefined,[filtered,state,nowMs]);
  const matching:Row[]=useMemo(()=>filtered.map(recipe=>{
    try{
     const processing=isTimedProcessingRecipe(recipe.id),timedEquipment=Boolean(timedEquipmentRecipe(recipe.id));
@@ -49,7 +50,7 @@ export function CraftingRecipeBrowser({state,skillId,initialQuery='',preferredRe
  return <View style={s.root}>
   <View style={s.searchRow}><View style={s.flex}><SearchField accessibilityLabel={gt("Search recipes")} value={query} onChangeText={value=>{setQuery(value);setLimit(12);}} placeholder={gt("Search recipes…")}/></View><Pressable accessibilityRole="button" accessibilityState={{expanded:filterOpen}} onPress={()=>setFilterOpen(value=>!value)} style={({pressed})=>[s.filterToggle,filterOpen&&s.filterToggleActive,pressed&&s.pressed]}><Text style={s.filterToggleText}>{gt("Filters")}{readyOnly?' · 1':''}</Text></Pressable></View>
   {filterOpen?<View style={s.filterPanel}><Pressable accessibilityRole="button" accessibilityState={{selected:readyOnly}} onPress={()=>{setReadyOnly(value=>!value);setLimit(12);}} style={({pressed})=>[s.filterRow,readyOnly&&s.filterRowActive,pressed&&s.pressed]}><View style={s.flex}><Text style={s.filterTitle}>{gt("Craftable only")}</Text><Text style={s.filterHint}>{gt("Hide locked and missing-requirement recipes.")}</Text></View><Text style={[s.filterValue,readyOnly&&s.filterValueActive]}>{readyOnly?gt("ON"):gt("OFF")}</Text></Pressable></View>:null}
-  {groups.map(group=><View key={group.label} style={s.group}><View style={s.groupHead}><Text style={[s.groupLabel,group.tone==='ready'?s.ready:group.tone==='needs'?s.needs:s.locked]}>{group.label}</Text><Text style={s.groupCount}>{group.rows.length}</Text></View>{group.rows.slice(0,perGroup).map(({recipe,status})=><RecipeCard key={recipe.id} state={state} recipe={recipe} status={status} onCraft={onCraft} onNavigate={onNavigate} onCraftPrerequisites={onCraftPrerequisites} onTrackPreparation={onTrackPreparation} alchemy={skillId==='alchemy'} onAlchemyStart={onAlchemyStart} onProcessingStart={onProcessingStart} initialExpanded={recipe.id===preferredRecipeId}/>)}</View>)}
+  {groups.map(group=><View key={group.label} style={s.group}><View style={s.groupHead}><Text style={[s.groupLabel,group.tone==='ready'?s.ready:group.tone==='needs'?s.needs:s.locked]}>{group.label}</Text><Text style={s.groupCount}>{group.rows.length}</Text></View>{group.rows.slice(0,perGroup).map(({recipe,status})=><RecipeCard key={recipe.id} state={state} recipe={recipe} status={status} sharedQueue={sharedQueue} onCraft={onCraft} onNavigate={onNavigate} onCraftPrerequisites={onCraftPrerequisites} onTrackPreparation={onTrackPreparation} alchemy={skillId==='alchemy'} onAlchemyStart={onAlchemyStart} onProcessingStart={onProcessingStart} initialExpanded={recipe.id===preferredRecipeId}/>)}</View>)}
   {hasMore?<GameButton title={gt("Show more recipes")} tone="secondary" onPress={()=>setLimit(value=>value+12)}/>:null}
   {matching.length===0?<Text style={s.empty}>{query.trim()?gt("No recipes match your search."):readyOnly?gt("No recipes are ready. Open Filters to show locked and missing-requirement recipes."):gt("No recipes available.")}</Text>:null}
  </View>;

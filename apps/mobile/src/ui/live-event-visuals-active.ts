@@ -13,7 +13,11 @@ const VEILBREAK:LiveEventVisualBundle={
   waxen_sigil:require('../../assets/events/veilbreak/discovery_waxen_sigil.png'),
   breach_fragment:require('../../assets/events/veilbreak/discovery_breach_fragment.png'),
  },
- rewardArt:{},
+ rewardArt:{
+  EVT_PET_013:require('../../assets/event_collectibles/veilbreak/pets/EVT_PET_013_Gloomkin.png'),
+  EVT_PET_014:require('../../assets/event_collectibles/veilbreak/pets/EVT_PET_014_Lantern_Mimic.png'),
+  EVT_UNIT_007:require('../../assets/event_collectibles/veilbreak/companions/EVT_UNIT_007_Veil_Hound.png'),
+ },
 };
 const HARVESTWAKE:LiveEventVisualBundle={
  showcaseBackground:require('../../assets/events/harvestwake/showcase-guardian-v2.webp'),

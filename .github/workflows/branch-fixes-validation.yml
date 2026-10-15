@@ -1,0 +1,33 @@
+name: Gameplay fixes branch validation
+on:
+  push:
+    branches:
+      - codex/2026-10-15-gameplay-fixes
+  workflow_dispatch:
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/mobile/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Install backend dependencies for shared mobile types
+        run: pnpm --dir ../../backend install --frozen-lockfile
+      - name: Typecheck mobile app
+        run: pnpm typecheck
+      - name: Typecheck core
+        run: pnpm typecheck:core
+      - name: Run gameplay regression suite
+        run: pnpm test:core
+      - name: Validate online gameplay
+        run: pnpm test:online

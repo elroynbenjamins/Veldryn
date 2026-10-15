@@ -3,7 +3,7 @@ export const QUICK_NAV_DESTINATIONS=[
 ] as const;
 /** Account is retained as a legacy save value; new shortcut choices use More. */
 export type QuickNavDestination=typeof QUICK_NAV_DESTINATIONS[number]|'Account'|'Events';
-export const DEFAULT_QUICK_NAV_DESTINATIONS:QuickNavDestination[]=['Guild','Dungeon','Character','Quests','Empty'];
+export const DEFAULT_QUICK_NAV_DESTINATIONS:QuickNavDestination[]=['Quests','Dungeon','Companions','Guild','Settings'];
 const allowed=new Set<string>(QUICK_NAV_DESTINATIONS);
 export function normalizeQuickNavDestinations(value:unknown):QuickNavDestination[]{
  if(!Array.isArray(value))return [...DEFAULT_QUICK_NAV_DESTINATIONS];

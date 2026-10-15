@@ -2,7 +2,7 @@ import type {ProgressionGoal} from './progression-goals-v40';
 import type {IdleRuleSet,IdleStopCondition} from './idle-rules-v40';
 import type {WeeklyOrder,WeeklyOrdersState} from './weekly-orders-v41';
 import type {QueuedActivity,SkillId} from './types';
-import type {WorkingTowardDestination} from './working-toward';
+import type {SourceDestination} from './source-navigation';
 import {MONSTERS} from '../content/monsters';
 import {GATHERING,RECIPES} from '../content/skills';
 import {HERB_NODES} from '../content/herbalism';
@@ -34,7 +34,7 @@ function monsterIdForOrder(order:WeeklyOrder){
 }
 
 /** Exact player-facing destination for a Contract Board job. */
-export function weeklyOrderDestination(order:WeeklyOrder):WorkingTowardDestination{
+export function weeklyOrderDestination(order:WeeklyOrder):SourceDestination{
  if(order.kind==='hunt'){
   const monsterId=monsterIdForOrder(order)!,monster=MONSTERS.find(row=>row.id===monsterId),region=WORLD_ZONES.find(row=>row.id===order.regionId),boss=!!monster?.boss;
   return {kind:'combat',monsterId,zoneName:monster?.zone??region?.name??order.source.label,regionId:order.regionId,button:boss?'Open weekly boss':`Hunt ${monster?.name??order.source.label}`,detail:boss?'Defeat the Fallen Knight once this UTC week to complete the Oathglass Bounty. Up to three rewarded rematches are available; only the first is required for this Contract.':`Open ${monster?.name??order.source.label} in ${monster?.zone??region?.name??'its region'}.`};

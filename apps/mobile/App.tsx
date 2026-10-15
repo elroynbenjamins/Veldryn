@@ -3,6 +3,8 @@ import {GameAlertHost} from './src/components/GameAlertHost';
 import {gameAlert,gameAlerts} from './src/core/game-alerts';
 import {SavedLoadoutsPanel} from './src/components/SavedLoadoutsPanel';
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {WhatsNewPanel,WHATS_NEW_RELEASE_ID} from './src/components/WhatsNewPanel';
 import {ActivityIndicator,Animated,ScrollView,AppState,BackHandler,Image,PanResponder,Pressable,Share,StyleSheet,Text,TextInput,View} from 'react-native';
 import {StatusBar} from 'expo-status-bar';
 import {SafeAreaProvider,SafeAreaView} from 'react-native-safe-area-context';
@@ -178,6 +180,8 @@ function VeldrynApp(){
   const [inventoryFoodScope,setInventoryFoodScope]=useState('');
   const [now,setNow]=useState(Date.now());
   const [offlineSettling,setOfflineSettling]=useState(false);
+  const [showWhatsNew,setShowWhatsNew]=useState(false);
+  const whatsNewChecked=useRef(false);
   const [collected,setCollected]=useState<{reward:RewardBundle;activity:ActiveActivity|null;welcomeBack?:boolean;progressionMoments?:RewardProgressionMoment[]}|null>(null);
   const [customizationUnlocks,setCustomizationUnlocks]=useState<CustomizationUnlockEntry[]>([]);
   const [featureUnlockMoments,setFeatureUnlockMoments]=useState<EarlyFeatureUnlockMoment[]>([]);
@@ -290,6 +294,12 @@ function VeldrynApp(){
     onPanResponderRelease:(_event,gesture)=>{if(gesture.dx>=72&&gesture.vx>=0)goBack();},
     onPanResponderTerminate:()=>{},
   }),[goBack]);
+  useEffect(()=>{if(!ready||!state?.character||!versionGateChecked||versionGateOwnsScreen||startupOverlayVisible||collected||creationWelcome||whatsNewChecked.current)return;
+    whatsNewChecked.current=true;let alive=true;
+    void AsyncStorage.getItem('veldryn.whats-new.seen').then(seen=>{if(alive&&seen!==WHATS_NEW_RELEASE_ID)setShowWhatsNew(true)}).catch(error=>console.warn('[WhatsNew] Could not load release acknowledgement',error));
+    return()=>{alive=false};
+  },[ready,state?.character?.id,versionGateChecked,versionGateOwnsScreen,startupOverlayVisible,!!collected,!!creationWelcome]);
+  const closeWhatsNew=()=>{setShowWhatsNew(false);void AsyncStorage.setItem('veldryn.whats-new.seen',WHATS_NEW_RELEASE_ID).catch(error=>console.warn('[WhatsNew] Could not save release acknowledgement',error));};
   const loadGame=useCallback(async()=>{setReady(false);setLoadError('');try{setRecoveryLanguage(await repo.loadLanguage());const saved=await repo.load();const restored=retireGoalPlanner(normalizeProfileIcon(saved??newGame(Date.now())));const startup=saved?settleStartupActivity(restored,Date.now()):{state:restored,reward:null,activity:null};const next=startup.state;stateRef.current=next;setState(next);setRecoveryLanguage(next.settings.language);if(startup.reward)setCollected({reward:startup.reward,activity:startup.activity,welcomeBack:true,progressionMoments:rewardProgressionMoments(restored,next)});if(saved){try{await repo.save(next)}catch{showAlert('Save upgrade pending','Your progress loaded, but the upgraded save could not be written yet. Keep the app open and try another saved action.')}}}catch(error){stateRef.current=null;setState(null);setLoadError(error instanceof Error?error.message:'The local save could not be read.')}finally{setReady(true)}},[]);
   useEffect(()=>{if(!serverGameplayEnabled)void loadGame()},[loadGame]);
   useEffect(()=>{if(!serverGameplayEnabled)return;const snapshot=online.snapshot,next=snapshot?.state?retireGoalPlanner(snapshot.state):null,before=stateRef.current;queuePreparationNotices(before,next);if(!before&&next&&snapshot?.reward&&rewardHasProgress(snapshot.reward)){setCollected({reward:snapshot.reward,activity:snapshot.activity??null,welcomeBack:true,progressionMoments:[]});}stateRef.current=next;setState(next);setReady(!online.loading);setLoadError('');},[online.snapshot,online.loading]);
@@ -572,6 +582,7 @@ const next=normalizeProfileIcon(candidate);queuePreparationNotices(current,next)
     <PrimaryNavigation destinations={primaryTabs} active={activePrimary} labelFor={item=>tabLabel(state.settings.language,item)} onNavigate={setTab} badges={primaryBadges} guidedDestination={(mainScreenTour?.highlightPrimary??visibleTutorialStep?.highlightPrimary) as PrimaryTab|undefined}/>
   {creationWelcome&&<AsterfallWelcomeModal visible name={creationWelcome.name} classId={creationWelcome.classId} onContinue={()=>{const characterId=state.character?.id;if(characterId)void completeFirstSessionTutorialStep(characterId,'first_hunt').then(ids=>setTutorialCompleted(ids));setGoalMonsterId('MOSS_RAT');setCreationWelcome(null);setCurrentTab('Combat')}}/>}
   <RewardPopup reward={collected?.reward??null} activity={collected?.activity??null} classId={state.character?.classId} welcomeBack={!!collected?.welcomeBack} progressionMoments={collected?.progressionMoments??[]} reduceMotion={state.settings.reduceMotion} numberMode={state.settings.numberMode} onClose={()=>setCollected(null)} onInventory={()=>setTab('Inventory')} onCollections={()=>setTab('Collections')} onCompanions={()=>setTab('Companions')} onSkill={id=>{const skillId=id as SkillId;setSelectedSkill(skillId);setSkillsMode(id==='faith'?'faith':['mining','woodcutting','fishing','herbalism'].includes(id)?'gathering':'crafting');setTab('Skills')}}/>
+  <WhatsNewPanel visible={showWhatsNew&&!collected&&!creationWelcome&&mainScreenTourIndex===undefined} reduceMotion={state.settings.reduceMotion} onClose={closeWhatsNew}/>
   <FirstSessionTutorialPopup step={mainScreenTourIndex===undefined&&!creationWelcome&&!collected&&!customizationUnlocks.length&&!featureUnlockMoments.length?visibleTutorialStep:undefined} onLater={()=>{if(visibleTutorialStep)setTutorialDismissedId(visibleTutorialStep.id)}} onOpen={()=>{const step=visibleTutorialStep;if(!step||!state.character)return;if(step.id==='first_hunt')setGoalMonsterId('MOSS_RAT');void completeFirstSessionTutorialStep(state.character.id,step.id).then(ids=>setTutorialCompleted(ids));setTutorialDismissedId(undefined);if(step.destination==='Skills')setSelectedSkill(undefined);if(step.destination==='Quests'){openQuestMode('story');return;}setTab(step.destination)}}/>
   <MainScreenTourPopup step={mainScreenTour} index={mainScreenTourIndex??0} total={MAIN_SCREEN_TOUR.length} onSkip={()=>{setMainScreenTourIndex(undefined);setSettingsSection('guide');setTab('Settings')}} onBack={()=>{if(mainScreenTourIndex===undefined)return;const next=Math.max(0,mainScreenTourIndex-1);setMainScreenTourIndex(next);const target=mainScreenTourStep(next);if(target)setTab(target.destination)}} onNext={()=>{if(mainScreenTourIndex===undefined)return;const next=mainScreenTourIndex+1;if(next>=MAIN_SCREEN_TOUR.length){setMainScreenTourIndex(undefined);setSettingsSection('guide');setTab('Settings');return;}setMainScreenTourIndex(next);const target=mainScreenTourStep(next);if(target)setTab(target.destination)}}/>
   <FeatureUnlockPopup moment={mainScreenTourIndex===undefined&&!collected&&!customizationUnlocks.length?featureUnlockMoments[0]:undefined} reduceMotion={state.settings.reduceMotion} onLater={()=>setFeatureUnlockMoments(current=>current.slice(1))} onOpen={()=>{const moment=featureUnlockMoments[0];setFeatureUnlockMoments(current=>current.slice(1));if(moment)setTab(moment.destination);}}/>

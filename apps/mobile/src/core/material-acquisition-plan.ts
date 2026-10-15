@@ -7,11 +7,11 @@ import {isTimedProcessingRecipe} from './processing';
 import {professionMasteryMultipliers} from './profession-mastery-v40';
 import {characterPermanentMultipliers} from './permanent-boosts';
 import {
-  workingTowardDestinationAvailability,
-  workingTowardItemSourceEntries,
-  type WorkingTowardDestination,
-  type WorkingTowardDestinationAvailability,
-} from './working-toward';
+  sourceDestinationAvailability,
+  sourceItemSourceEntries,
+  type SourceDestination,
+  type SourceDestinationAvailability,
+} from './source-navigation';
 
 export interface MaterialAcquisitionLeaf{
   itemId:string;
@@ -19,8 +19,8 @@ export interface MaterialAcquisitionLeaf{
   quantity:number;
   sourceTypeLabel:string;
   sourceTitle:string;
-  destination:WorkingTowardDestination;
-  availability:WorkingTowardDestinationAvailability;
+  destination:SourceDestination;
+  availability:SourceDestinationAvailability;
   etaSeconds?:number;
 }
 
@@ -43,8 +43,8 @@ export interface MaterialAcquisitionPlan{
   remaining:number;
   sourceTypeLabel:string;
   sourceTitle:string;
-  destination?:WorkingTowardDestination;
-  availability?:WorkingTowardDestinationAvailability;
+  destination?:SourceDestination;
+  availability?:SourceDestinationAvailability;
   complete:boolean;
   etaSeconds?:number;
   knownEtaSeconds:number;
@@ -85,7 +85,7 @@ function addOwned(ledger:StockLedger,itemId:string,quantity:number){
   ledger.set(itemId,(ledger.get(itemId)??0)+quantity);
 }
 
-function recipeForDestination(itemId:string,destination:WorkingTowardDestination):Recipe|undefined{
+function recipeForDestination(itemId:string,destination:SourceDestination):Recipe|undefined{
   if(destination.kind!=='skills'||!destination.recipeId)return undefined;
   return RECIPES.find(recipe=>recipe.id===destination.recipeId&&recipe.output.itemId===itemId);
 }
@@ -136,7 +136,7 @@ function planInternal(
   state:GameState,
   itemId:string,
   requested:number,
-  preferredDestination:WorkingTowardDestination|undefined,
+  preferredDestination:SourceDestination|undefined,
   ledger:StockLedger,
   consumeStock:boolean,
   visitedRecipes:Set<string>,
@@ -144,7 +144,7 @@ function planInternal(
   const target=Math.max(0,requested),ownedUsed=consumeStock?consumeOwned(ledger,itemId,target):0,remaining=Math.max(0,target-ownedUsed);
   if(remaining<=0)return ownedPlan(itemId,target,ownedUsed);
 
-  const entries=workingTowardItemSourceEntries(state,itemId);
+  const entries=sourceItemSourceEntries(state,itemId);
   const entry=preferredDestination
     ?entries.find(row=>row.destination.kind===preferredDestination.kind&&(
       row.destination.kind==='skills'&&preferredDestination.kind==='skills'
@@ -159,7 +159,7 @@ function planInternal(
   const destination=preferredDestination??entry?.destination;
   if(!destination)return unknownPlan(itemId,target,ownedUsed,remaining,'No direct or craftable source is currently modeled.');
 
-  const availability=entry?.availability??workingTowardDestinationAvailability(state,destination);
+  const availability=entry?.availability??sourceDestinationAvailability(state,destination);
   const sourceTypeLabel=entry?.typeLabel??(destination.kind==='combat'?'Monster Drop':destination.kind==='dungeon'?'Dungeon':destination.kind==='skills'&&destination.recipeId?'Crafting':destination.kind==='skills'?'Gathering':'Source');
   const sourceTitle=entry?.title??destination.button;
   const recipe=recipeForDestination(itemId,destination);
@@ -237,13 +237,13 @@ export function materialAcquisitionPlanForDestination(
   state:GameState,
   itemId:string,
   quantity:number,
-  destination:WorkingTowardDestination,
+  destination:SourceDestination,
 ){
   return finalizeGold(state,planInternal(state,itemId,quantity,destination,stockLedger(state),false,new Set()));
 }
 
 export function materialAcquisitionPlan(state:GameState,itemId:string,quantity:number){
-  const source=workingTowardItemSourceEntries(state,itemId)[0];
+  const source=sourceItemSourceEntries(state,itemId)[0];
   if(!source)return finalizeGold(state,unknownPlan(itemId,quantity,0,quantity,'No modeled acquisition source is available.'));
   return materialAcquisitionPlanForDestination(state,itemId,quantity,source.destination);
 }
@@ -291,8 +291,8 @@ export interface RecipePreparationStep{
   stateLabel:string;
   label:string;
   detail:string;
-  destination?:WorkingTowardDestination;
-  availability?:WorkingTowardDestinationAvailability;
+  destination?:SourceDestination;
+  availability?:SourceDestinationAvailability;
   etaSeconds?:number;
 }
 export interface RecipePreparationBottleneck{
@@ -325,7 +325,7 @@ export interface RecipePreparationRoute{
   blockedReasons:string[];
 }
 
-function stepState(availability:WorkingTowardDestinationAvailability|undefined,after=false):{state:RecipePreparationStepState;stateLabel:string}{
+function stepState(availability:SourceDestinationAvailability|undefined,after=false):{state:RecipePreparationStepState;stateLabel:string}{
   if(!availability)return {state:'info',stateLabel:'INFO'};
   if(availability.status==='locked')return {state:'locked',stateLabel:'LOCKED'};
   if(availability.status==='info')return {state:'info',stateLabel:'INFO'};
@@ -399,7 +399,7 @@ function finalRecipeSeconds(state:GameState,recipe:Recipe,batches:number){
   return 0;
 }
 
-function recipeDestination(recipe:Recipe):WorkingTowardDestination{
+function recipeDestination(recipe:Recipe):SourceDestination{
   return {kind:'skills',skillId:recipe.skillId,mode:'crafting',recipeId:recipe.id,button:`Open ${recipe.name}`,detail:`Open ${recipe.name}.`};
 }
 
@@ -442,7 +442,7 @@ function reservedItemsFromPlans(plans:MaterialAcquisitionPlan[]):RecipePreparati
 export function recipePreparationRoute(state:GameState,recipe:Recipe,batches=1):RecipePreparationRoute{
   const count=Math.max(1,Math.floor(batches)),ledger=stockLedger(state),plans:MaterialAcquisitionPlan[]=[];
   if(recipe.requiresCraftedItemId&&!state.character?.craftedNoviceItemIds?.includes(recipe.requiresCraftedItemId)){
-    const prerequisiteSource=workingTowardItemSourceEntries(state,recipe.requiresCraftedItemId).find(source=>source.type==='crafting');
+    const prerequisiteSource=sourceItemSourceEntries(state,recipe.requiresCraftedItemId).find(source=>source.type==='crafting');
     plans.push(prerequisiteSource
       ?planInternal(state,recipe.requiresCraftedItemId,1,prerequisiteSource.destination,ledger,false,new Set())
       :unknownPlan(recipe.requiresCraftedItemId,1,0,1,`Craft ${itemDef(recipe.requiresCraftedItemId).name} first.`));
@@ -452,7 +452,7 @@ export function recipePreparationRoute(state:GameState,recipe:Recipe,batches=1):
   for(const input of recipe.inputs)plans.push(planInternal(state,input.itemId,input.quantity*count,undefined,ledger,true,new Set()));
 
   const preparationSteps=plans.flatMap((plan,index)=>planPreparationSteps(plan,`input:${index}`)),reservedItems=reservedItemsFromPlans(plans);
-  const destination=recipeDestination(recipe),availability=workingTowardDestinationAvailability(state,destination),finalSeconds=finalRecipeSeconds(state,recipe,count);
+  const destination=recipeDestination(recipe),availability=sourceDestinationAvailability(state,destination),finalSeconds=finalRecipeSeconds(state,recipe,count);
   const finalOutputName=itemDef(recipe.output.itemId).name,chainLabel=preparationChainLabel(plans,finalOutputName);
   const totalGold=recipe.gold*count+plans.reduce((sum,plan)=>sum+plan.totalGold,0),goldShortfall=Math.max(0,totalGold-(state.character?.gold??0));
   const finalUnlocked=availability.status!=='locked'&&availability.status!=='info',plansComplete=plans.every(plan=>plan.complete);

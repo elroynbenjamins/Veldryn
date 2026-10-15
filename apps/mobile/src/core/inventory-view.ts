@@ -39,7 +39,7 @@ export function visibleStacks(stacks:ItemStack[],query:string,filter:InventoryFi
     return newDifference||favoriteDifference||difference||first.name.localeCompare(second.name);
   });
 }
-export function transferAmount(quantity:number,choice:1|10|'all'){return Math.min(quantity,choice==='all'?quantity:choice)}
+export function transferAmount(quantity:number,choice:number|'all'){return Math.min(quantity,choice==='all'?quantity:Math.max(1,Math.floor(choice)))}
 export function transferError(state:GameState,id:string,quantity:number,from:'inventory'|'bank'){
   try{(from==='inventory'?depositToBank:withdrawFromBank)(state,id,quantity);return ''}
   catch(error){return error instanceof Error?error.message:'Cannot transfer'}

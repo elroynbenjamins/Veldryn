@@ -8,7 +8,7 @@ import {GameButton} from './GameButton';
 
 // Increment the release ID and update these notes only when shipping player-facing changes.
 // Mandatory/maintenance updates remain controlled by the existing server version gate.
-export const WHATS_NEW_RELEASE_ID='2026-10-ux-reliability';
+export const WHATS_NEW_RELEASE_ID=APP_BUILD_INFO.version+':2026-10-ux-reliability';
 export const WHATS_NEW_ITEMS=[
  'Crafting: faster recipe searches and safer handling of unavailable recipes.',
  'Actions: clearer progress feedback and protection against repeat taps.',

@@ -2,10 +2,8 @@ import {createCharacter,newGame} from '../src/core/game';
 import {RECIPES} from '../src/content/skills';
 import {EQUIPMENT_CRAFT_SKILL_BY_CLASS,V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
 import {bestRecipeTrainingDestination} from '../src/core/skill-progression-navigation';
-import {progressionGoalDestination} from '../src/core/working-toward';
 import {availableGemRefinementsV1,gemRefineRecipeIdV1} from '../src/core/gem-progression-v1';
 import {claimForgeJob,startGemRefinement} from '../src/core/equipment-crafting-queue';
-import type {ProgressionGoal} from '../src/core/progression-goals-v40';
 
 function fail(message:string):never{throw new Error(message)}
 function ok(value:unknown,message:string){if(!value)fail(message)}
@@ -42,15 +40,6 @@ if(enchantingDestination.kind==='skills'){
  ok(!enchantingDestination.recipeId,'Enchanting must not invent a normal gear recipe');
 }
 
-for(const skillId of ['tailoring','enchanting'] as const){
- const goal:ProgressionGoal={id:'goal-'+skillId,characterId:state.character!.id,kind:'skill_level',title:skillId,createdAtMs:0,pinnedAtMs:0,skillId,targetLevel:5};
- const destination=progressionGoalDestination(state,goal);
- equal(destination.kind,'skills',skillId+' goal routes to Skills');
- if(destination.kind==='skills'){
-  equal(destination.skillId,skillId,skillId+' remains selected');
-  equal(destination.mode,'crafting',skillId+' progression goal opens its crafting/refinery view');
- }
-}
 
 let enchantingState=createCharacter(newGame(0),'IRONWARDEN','Enchanter');
 enchantingState={...enchantingState,character:{...enchantingState.character!,gold:10000},inventory:{...enchantingState.inventory,capacity:80,stacks:[

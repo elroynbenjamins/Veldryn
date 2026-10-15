@@ -261,6 +261,9 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'eat':state=game.eatFood(state,a.id===undefined?undefined:text(a,'id'));break;
   case 'sell':state=game.sellItem(state,text(a,'id'),a.quantity===undefined?1:integer(a,'quantity'));break;
   case 'salvage':state=game.salvageItem(state,text(a,'id'));break;
+  case 'bank_sell':state=game.sellBankItem(state,text(a,'id'),integer(a,'quantity'));break;
+  case 'bank_gold_deposit':state=game.depositGoldToBank(state,integer(a,'amount'));break;
+  case 'bank_gold_withdraw':state=game.withdrawGoldFromBank(state,integer(a,'amount'));break;
   case 'deposit':state=game.depositToBank(state,text(a,'id'),integer(a,'quantity'));break;
   case 'withdraw':state=game.withdrawFromBank(state,text(a,'id'),integer(a,'quantity'));break;
   case 'deposit_materials':state=game.depositAllMaterials(state);break;

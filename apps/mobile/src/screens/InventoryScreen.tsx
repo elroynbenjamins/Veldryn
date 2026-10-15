@@ -1,7 +1,7 @@
 import {useGameplayText} from '../i18n/gameplay';
 import {SearchField} from '../components/SearchField';
 import {useEffect,useMemo,useRef,useState} from 'react';
-import {Animated,Pressable,ScrollView,StyleSheet,Text,View,useWindowDimensions} from 'react-native';
+import {ActivityIndicator,Animated,Pressable,ScrollView,StyleSheet,Text,TextInput,View,useWindowDimensions} from 'react-native';
 import {GameState,ItemStack} from '../core/types';
 import {ItemDef,itemDef} from '../content/items';
 import {InventoryFilter,InventorySort,inventoryFavoriteIds,inventoryNewItemIds,recoveryAmount,storageCapacityStatus,transferAmount,transferError,visibleStacks} from '../core/inventory-view';
@@ -34,7 +34,7 @@ type BulkAction='transfer'|'sell'|'salvage';
 type BulkPending={kind:BulkAction;ids:string[]}|null;
 const FILTER_OPTIONS:{id:InventoryFilter;label:string}[]=[{id:'all',label:'All'},{id:'new',label:'New'},{id:'favorites',label:'★ Favorites'},{id:'gear',label:'Gear'},{id:'material',label:'Materials'},{id:'gem',label:'Gems'},{id:'food',label:'Food'},{id:'potion',label:'Potions'},{id:'tool',label:'Tools'},{id:'quest',label:'Quest'}];
 const SORT_OPTIONS:{id:InventorySort;label:string}[]=[{id:'name',label:'Name'},{id:'new',label:'New first'},{id:'favorite',label:'Favorites first'},{id:'quantity',label:'Quantity ↓'},{id:'value',label:'Value ↓'}];
-const nextQuantity=(value:1|10|'all'):1|10|'all'=>value===1?10:value===10?'all':1;
+const nextQuantity=(value:1|10|100|'all'):1|10|100|'all'=>value===1?10:value===10?100:value===100?'all':1;
 const signed=(value:number)=>value>0?`+${value}`:String(value);
 function EquipmentSwapMoment({moment,reduceMotion,onDismiss}:{moment:EquipmentChangeFeedback;reduceMotion:boolean;onDismiss:()=>void}){
  const {gt,gl,language}=useGameplayText();
@@ -57,7 +57,7 @@ export function InventoryScreen({state,onEquip,onFood,onEat,onSell,onSalvage,onD
   const gridColumns=gridWidth>=720?6:gridWidth>=480?5:gridWidth<300?3:4,tileSize=Math.floor((gridWidth-(gridColumns-1)*10)/gridColumns),iconSize=Math.min(88,tileSize-14);
   const [pending,setPending]=useState<Pending>(null),[location,setLocation]=useState<'inventory'|'bank'>("inventory");
   const [query,setQuery]=useState(''),[filter,setFilter]=useState<InventoryFilter>("all"),[sort,setSort]=useState<InventorySort>("new"),[sortOpen,setSortOpen]=useState(false);
-  const [quantity,setQuantity]=useState<1|10|'all'>(1);
+  const [quantity,setQuantity]=useState<number|'all'>(1);
   const [error,setError]=useState('');
   const [previewId,setPreviewId]=useState<string|null>(null);
   const [inspectId,setInspectId]=useState<string|null>(null);
@@ -70,7 +70,7 @@ export function InventoryScreen({state,onEquip,onFood,onEat,onSell,onSalvage,onD
   useEffect(()=>{if(!inventoryIntent)return;const timer=setTimeout(()=>setInventoryIntent(null),12000);return()=>clearTimeout(timer)},[inventoryIntent]);
   useEffect(()=>{if(!inventoryFeedback)return;const timer=setTimeout(()=>setInventoryFeedback(null),4500);return()=>clearTimeout(timer)},[inventoryFeedback]);
   const run=(action:()=>void)=>{try{action();setError('')}catch(e){setError(e instanceof Error?e.message:gt("Action failed. Please try again."))}};
-  const runInventory=(request:InventoryFeedbackRequest,action:()=>void)=>{const intent=inventoryFeedbackIntent(state,request);try{action();setInventoryIntent(intent);setInventoryFeedback(null);setError('')}catch(e){setInventoryIntent(null);setError(e instanceof Error?e.message:gt("Action failed. Please try again."))}};
+  const runInventory=(request:InventoryFeedbackRequest,action:()=>void)=>{if(inventoryIntent)return;const intent=inventoryFeedbackIntent(state,request);try{action();setInventoryIntent(intent);setInventoryFeedback(null);setError('')}catch(e){setInventoryIntent(null);setError(e instanceof Error?e.message:gt("Action failed. Please try again."))}};
   const confirm=()=>{if(!pending)return;const request:InventoryFeedbackRequest=pending.kind==='deposit'?{kind:"deposit",itemId:pending.item.id,quantity:pending.quantity}:pending.kind==='sell'?{kind:"sell",itemId:pending.item.id,quantity:1}:{kind:"salvage",itemId:pending.item.id,quantity:1};runInventory(request,()=>pending.kind==='deposit'?onDeposit(pending.item.id,pending.quantity):pending.kind==='sell'?onSell(pending.item.id):onSalvage(pending.item.id));setPending(null)};
   const favorites=inventoryFavoriteIds(state),favoriteSet=new Set(favorites),newItemIds=inventoryNewItemIds(state),newItemSet=new Set(newItemIds),goalProtection=workingTowardInventoryProtectionMap(state);
   const effectiveInventoryCapacity=entitlementStorageCapacity(state,"inventory"),effectiveBankCapacity=entitlementStorageCapacity(state,"bank"),inventoryCapacity=storageCapacityStatus(state.inventory.stacks,effectiveInventoryCapacity),bankCapacity=storageCapacityStatus(state.bank.stacks,effectiveBankCapacity),activeCapacity=location==='inventory'?inventoryCapacity:bankCapacity;
@@ -129,7 +129,9 @@ export function InventoryScreen({state,onEquip,onFood,onEat,onSell,onSalvage,onD
     <SearchField accessibilityLabel={gt("Search stored items")} placeholder={gt("Search items…")} placeholderTextColor={C.muted} value={query} onChangeText={setQuery}/>
     {!selectMode&&<ScrollView horizontal showsHorizontalScrollIndicator={false} showsVerticalScrollIndicator={false} contentContainerStyle={s.quickFilters}>{FILTER_OPTIONS.filter(row=>['all','gear','material','gem','food'].includes(row.id)).map(row=><Pressable key={row.id} accessibilityRole="button" accessibilityLabel={gl(row.label)+' '+gl('category')} accessibilityState={{selected:filter===row.id}} onPress={()=>setFilter(row.id)} style={[s.quickFilter,filter===row.id&&s.utilityChipActive]}><Text style={s.utilityChipText}>{gl(row.label)}</Text></Pressable>)}</ScrollView>}
 
+    {!selectMode&&<View style={{flexDirection:'row',flexWrap:'wrap',alignItems:'center',gap:6,marginVertical:6}}><Text style={s.sub}>{gt('Quantity')}</Text>{([1,10,100,'all'] as const).map(value=><UtilityChip key={String(value)} label={value==='all'?gt('All'):String(value)} accessibilityLabel={value==='all'?gt('All'):String(value)} onPress={()=>setQuantity(value)}/>)}<TextInput accessibilityLabel={gt('Custom quantity')} keyboardType="number-pad" value={quantity==='all'?'':String(quantity)} placeholder={gt('Custom')} placeholderTextColor={C.muted} onChangeText={value=>{const n=Number(value.replace(/[^0-9]/g,''));setQuantity(Number.isSafeInteger(n)&&n>0?n:1)}} style={{minWidth:72,paddingHorizontal:10,paddingVertical:6,borderWidth:1,borderColor:C.line,borderRadius:8,color:C.text}}/></View>}
     {!!error&&<Text accessibilityRole="alert" style={s.errorText}>{gl(error)}</Text>}
+    {inventoryIntent&&<View style={{flexDirection:'row',alignItems:'center',gap:8}}><ActivityIndicator size="small" color={C.accent}/><Text style={s.sub}>{gt('Saving…')}</Text></View>}
     {inventoryFeedback&&<ActionFeedback message={gl(inventoryFeedback.message)} tone={inventoryFeedback.tone} reduceMotion={state.settings.reduceMotion} compact/>}
     {equipMoment&&<EquipmentSwapMoment moment={equipMoment} reduceMotion={state.settings.reduceMotion} onDismiss={()=>setEquipMoment(null)}/>}
     <View style={s.resultRow}>

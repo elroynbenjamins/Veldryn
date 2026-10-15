@@ -337,7 +337,7 @@ function VeldrynApp(){
     const feedback=commandProgressFeedback(result.executedCommand,before,result);
     if(feedback.collected)setCollected(feedback.collected);else if(feedback.masteryNotices.length)setMasteryNotices(feedback.masteryNotices);
     return result;
-  }catch(error){showAlert('Online action',error instanceof Error?error.message:'Please retry.');return null;}}
+  }catch(error){const message=error instanceof Error?error.message:'Please retry.';if(command&&['withdraw','deposit','sell','bulk_transfer','bulk_sell'].includes(command.type)&&/gameplay action is already being saved/i.test(message))return null;showAlert('Online action',message);return null;}}
   async function applyOnlineAdminQa(classId:ClassId){const result=await perform({type:'qa_prepare',args:{classId}});if(!result)throw new Error('Admin QA profile was not confirmed by the server.');}
   async function refillOnlineAdminQa(){const result=await perform({type:'qa_refill'});if(!result)throw new Error('Admin QA refill was not confirmed by the server.');}
   async function saveNameStyle(style:PlayerNameStylePreference){

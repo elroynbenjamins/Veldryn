@@ -13,7 +13,7 @@ import {professionMasteryMultipliers,professionMasteryRankProgress} from './prof
 import {professionMasteryActiveBonusText} from './profession-mastery-presentation';
 import {characterProgressWithinLevel,characterTotalXpAtLevel,progressWithinLevel,totalXpAtLevel} from './progression';
 import {dungeonMaterialSourcesForItem} from '../content/dungeon-material-sources';
-import type {WorkingTowardDestination} from './working-toward';
+import type {SourceDestination} from './source-navigation';
 
 export interface LevelPaceProjection{
   label:string;
@@ -162,7 +162,7 @@ export function dropExpectation(chance:number,min:number,max:number,killsPerHour
   return {chance:normalizedChance,oneIn,expectedQuantityPerHour:findsPerHour*meanQuantity,averageFindSeconds:findsPerHour>0?3600/findsPerHour:Number.POSITIVE_INFINITY};
 }
 
-export function acquisitionProjectionForDestination(state:GameState,itemId:string,quantity:number,destination:WorkingTowardDestination):AcquisitionProjection|undefined{
+export function acquisitionProjectionForDestination(state:GameState,itemId:string,quantity:number,destination:SourceDestination):AcquisitionProjection|undefined{
   const needed=Math.max(0,quantity);if(!needed)return undefined;
   if(destination.kind==='skills'&&destination.actionId){
     const activity=[...GATHERING,...HERB_NODES].find(row=>row.id===destination.actionId);

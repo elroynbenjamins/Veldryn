@@ -17,7 +17,6 @@ import {normalizeProcessingBatch} from './processing';
 import {normalizeCollectionPreferences} from './collection-preferences';
 import {normalizeCharacterLoadouts} from './character-loadouts';
 import {normalizeOnboardingGuideState} from './onboarding';
-import {normalizeProgressionGoals} from './progression-goals-v40';
 import {normalizeIdleRuleSets,validateActiveIdleRuleId} from './idle-rules-v40';
 import {normalizeGuildBackgroundId,normalizeGuildBannerId,normalizeGuildFrameId,normalizeGuildMotto,normalizeGuildNameplateId} from './guild-customization';
 import {normalizeOwnedPetIds,normalizeSelectedPetId} from './pet-collection';
@@ -109,7 +108,7 @@ export function normalizeSave(input:any):GameState{
     ,selectedCosmeticPetId:normalizeSelectedPetId(input.character.selectedCosmeticPetId,legacyCosmeticPets)
     ,profileIconId:typeof input.character.profileIconId==='string'?input.character.profileIconId:'class:'+input.character.classId
     ,savedLoadouts:normalizeCharacterLoadouts(input.character.savedLoadouts,input.character.classId)
-    ,progressionGoals:normalizeProgressionGoals(input.character.progressionGoals,String(input.character.id))
+    ,progressionGoals:[]
     ,idleRulesV40:normalizeIdleRuleSets(input.character.idleRulesV40,String(input.character.id))
     ,activeIdleRuleIdV40:validateActiveIdleRuleId(normalizeIdleRuleSets(input.character.idleRulesV40,String(input.character.id)),input.character.activeIdleRuleIdV40)
     ,activityQueue

@@ -116,7 +116,6 @@ import {companionAttentionSummary} from './src/core/companion-attention';
 import {earlyFeatureLockReason,earlyFeatureUnlocked,newlyUnlockedEarlyFeatures,type EarlyFeatureUnlockMoment} from './src/core/feature-unlocks';
 import type {SourceDestination} from './src/core/source-navigation';
 import {retireGoalPlanner} from './src/core/retired-goal-planner';
-import {recipePreparationTransitionNotices,type RecipePreparationTransitionNotice} from './src/core/recipe-preparation-tracking';
 import {dailySuppliesStatus} from './src/core/daily-supplies';
 import {contractBoardSummary} from './src/core/contract-board-summary';
 import {weeklyOrderDestination,weeklyOrderIdleRule,weeklyOrderIdleRuleId,weeklyOrderQueueActivity} from './src/core/weekly-order-integrations-v41';
@@ -188,7 +187,6 @@ function VeldrynApp(){
   const [forgeResults,setForgeResults]=useState<ForgeCraftResult[]|null>(null);
   const [storyBossBattle,setStoryBossBattle]=useState<{battle:FallenKnightBattleResult;message:string}|null>(null);
   const [masteryNotices,setMasteryNotices]=useState<RewardProgressionMoment[]>([]);
-  const [preparationNotices,setPreparationNotices]=useState<RecipePreparationTransitionNotice[]>([]);
   const [profileAttentionKeys,setProfileAttentionKeys]=useState<string[]>([]);
   const [profileCustomizeDirty,setProfileCustomizeDirty]=useState(false);
   const [profileDiscardAction,setProfileDiscardAction]=useState<(()=>void)|null>(null);
@@ -312,7 +310,7 @@ function VeldrynApp(){
   };
   const loadGame=useCallback(async()=>{setReady(false);setLoadError('');try{setRecoveryLanguage(await repo.loadLanguage());const saved=await repo.load();const restored=retireGoalPlanner(normalizeProfileIcon(saved??newGame(Date.now())));const startup=saved?settleStartupActivity(restored,Date.now()):{state:restored,reward:null,activity:null};const next=startup.state;stateRef.current=next;setState(next);setRecoveryLanguage(next.settings.language);if(startup.reward)setCollected({reward:startup.reward,activity:startup.activity,welcomeBack:true,progressionMoments:rewardProgressionMoments(restored,next)});if(saved){try{await repo.save(next)}catch{showAlert('Save upgrade pending','Your progress loaded, but the upgraded save could not be written yet. Keep the app open and try another saved action.')}}}catch(error){stateRef.current=null;setState(null);setLoadError(error instanceof Error?error.message:'The local save could not be read.')}finally{setReady(true)}},[]);
   useEffect(()=>{if(!serverGameplayEnabled)void loadGame()},[loadGame]);
-  useEffect(()=>{if(!serverGameplayEnabled)return;const snapshot=online.snapshot,next=snapshot?.state?retireGoalPlanner(snapshot.state):null,before=stateRef.current;queuePreparationNotices(before,next);if(!before&&next&&snapshot?.reward&&rewardHasProgress(snapshot.reward)){setCollected({reward:snapshot.reward,activity:snapshot.activity??null,welcomeBack:true,progressionMoments:[]});}stateRef.current=next;setState(next);setReady(!online.loading);setLoadError('');},[online.snapshot,online.loading]);
+  useEffect(()=>{if(!serverGameplayEnabled)return;const snapshot=online.snapshot,next=snapshot?.state?retireGoalPlanner(snapshot.state):null,before=stateRef.current;if(!before&&next&&snapshot?.reward&&rewardHasProgress(snapshot.reward)){setCollected({reward:snapshot.reward,activity:snapshot.activity??null,welcomeBack:true,progressionMoments:[]});}stateRef.current=next;setState(next);setReady(!online.loading);setLoadError('');},[online.snapshot,online.loading]);
   useEffect(()=>{
     const snapshot=online.snapshot;
     if(!auth.session?.user.id){onlineStartupSettlementAccountRef.current=undefined;return;}
@@ -344,16 +342,14 @@ function VeldrynApp(){
   const needsLiveClock=(!!state?.activity||!!state?.character?.classTraining)&&(['Home','Combat','Skills','World','Character','Quests'].includes(tab));
   // This is presentation-only. Server authority and reward settlement do not poll on this clock.
   useEffect(()=>{setNow(Date.now());const id=setInterval(()=>setNow(Date.now()),needsLiveClock?2_000:60_000);return()=>clearInterval(id)},[needsLiveClock]);
-  useEffect(()=>{if(!preparationNotices.length||collected||forgeResults)return;const timer=setTimeout(()=>setPreparationNotices(current=>current.slice(1)),4500);return()=>clearTimeout(timer)},[preparationNotices,collected,forgeResults]);
-  useEffect(()=>{if(!masteryNotices.length||preparationNotices.length||collected||forgeResults)return;const timer=setTimeout(()=>setMasteryNotices([]),4500);return()=>clearTimeout(timer)},[masteryNotices,preparationNotices.length,collected,forgeResults]);
+  useEffect(()=>{if(!masteryNotices.length||collected||forgeResults)return;const timer=setTimeout(()=>setMasteryNotices([]),4500);return()=>clearTimeout(timer)},[masteryNotices,collected,forgeResults]);
   useEffect(()=>{if(tab!=='Skills'){setSelectedSkill(undefined);setGoalActionId(undefined);setGoalRecipeId(undefined)}},[tab]);
   useEffect(()=>{if(tab!=='Combat')setGoalMonsterId(undefined)},[tab]);
   useEffect(()=>{const subscription=BackHandler.addEventListener('hardwareBackPress',goBack);return()=>subscription.remove()},[goBack]);
-  useEffect(()=>{const subscription=AppState.addEventListener('change',nextStatus=>{if(serverGameplayEnabled)return;const wasAway=appStateRef.current==='background'||appStateRef.current==='inactive';appStateRef.current=nextStatus;if(!wasAway||nextStatus!=='active'||settlingRef.current)return;const current=stateRef.current;if(!current?.character)return;settlingRef.current=true;setOfflineSettling(true);setTimeout(()=>{const settled=settleStartupActivity(current,Date.now());const changed=settled.state!==current;if(changed){stateRef.current=settled.state;setState(settled.state);void repo.save(settled.state).catch(()=>showAlert('Save pending','Your returned progress is safe in memory, but could not be saved yet.'));}if(settled.reward){queuePreparationNotices(current,settled.state);setCollected({reward:settled.reward,activity:settled.activity,welcomeBack:true,progressionMoments:rewardProgressionMoments(current,settled.state)});}setOfflineSettling(false);settlingRef.current=false},0)});return()=>subscription.remove()},[]);
+  useEffect(()=>{const subscription=AppState.addEventListener('change',nextStatus=>{if(serverGameplayEnabled)return;const wasAway=appStateRef.current==='background'||appStateRef.current==='inactive';appStateRef.current=nextStatus;if(!wasAway||nextStatus!=='active'||settlingRef.current)return;const current=stateRef.current;if(!current?.character)return;settlingRef.current=true;setOfflineSettling(true);setTimeout(()=>{const settled=settleStartupActivity(current,Date.now());const changed=settled.state!==current;if(changed){stateRef.current=settled.state;setState(settled.state);void repo.save(settled.state).catch(()=>showAlert('Save pending','Your returned progress is safe in memory, but could not be saved yet.'));}if(settled.reward){setCollected({reward:settled.reward,activity:settled.activity,welcomeBack:true,progressionMoments:rewardProgressionMoments(current,settled.state)});}setOfflineSettling(false);settlingRef.current=false},0)});return()=>subscription.remove()},[]);
   useEffect(()=>{const multiplier=state?.settings.textScale??1.5;for(const component of [Text,TextInput]){const scalable=component as typeof component&{defaultProps?:Record<string,unknown>};scalable.defaultProps={...(scalable.defaultProps??{}),allowFontScaling:true,maxFontSizeMultiplier:multiplier}}},[state?.settings.textScale]);
   const coopEntrySource=useMemo(()=>__DEV__&&!serverGameplayEnabled&&!coopOnlineConfigured?createCoopDungeonFixtureSource(state?.settings.language??recoveryLanguage,state?.character):realCoopEntrySource,[state?.settings.language,state?.character,recoveryLanguage]);
   function queueMasteryNotice(before:GameState|null|undefined,after:GameState|null|undefined){const moments=masteryRankProgressionMoments(before,after);if(moments.length)setMasteryNotices(moments);}
-  function queuePreparationNotices(before:GameState|null|undefined,after:GameState|null|undefined){const notices=recipePreparationTransitionNotices(before,after);if(!notices.length)return;setPreparationNotices(current=>{const seen=new Set(current.map(row=>row.goalId+':'+row.kind+':'+row.message)),next=[...current];for(const notice of notices){const key=notice.goalId+':'+notice.kind+':'+notice.message;if(!seen.has(key)){seen.add(key);next.push(notice);}}return next.slice(-6);});}
   function queueFeatureUnlockMoments(before:GameState|null|undefined,next:GameState|null|undefined){
     const moments=newlyUnlockedEarlyFeatures(before,next);if(!moments.length)return;
     setFeatureUnlockMoments(current=>{const seen=new Set(current.map(row=>row.id)),out=[...current];for(const moment of moments)if(!seen.has(moment.id)){seen.add(moment.id);out.push(moment);}return out;});
@@ -376,7 +372,7 @@ function VeldrynApp(){
   }
   async function perform(command?:GameCommand,presentRewards=true,welcomeBack=false){try{
     const before=stateRef.current,result=await online.execute(command);
-    queuePreparationNotices(before,result.state);stateRef.current=result.state;setState(result.state);queueCustomizationUnlocks(before,result.state);
+    stateRef.current=result.state;setState(result.state);queueCustomizationUnlocks(before,result.state);
     if(result.executedCommand.type==='quest')queueFeatureUnlockMoments(before,result.state);
     const feedback=commandProgressFeedback(result.executedCommand,before,result);
     if(presentRewards){if(feedback.collected)setCollected({...feedback.collected,welcomeBack});else if(feedback.masteryNotices.length)setMasteryNotices(feedback.masteryNotices);}
@@ -424,7 +420,7 @@ function VeldrynApp(){
         const settled=claimActivity(current,Date.now());candidate={...settled.state,character:{...settled.state.character!,...patch}};
       }
     }
-const next=normalizeProfileIcon(candidate);queuePreparationNotices(current,next);stateRef.current=next;setState(next);queueCustomizationUnlocks(current,next);queueFeatureUnlockMoments(current,next);try{await repo.save(next)}catch{showAlert('Local save failed','Progress is still in memory. Keep the app open and try another action to save again.')}}
+const next=normalizeProfileIcon(candidate);stateRef.current=next;setState(next);queueCustomizationUnlocks(current,next);queueFeatureUnlockMoments(current,next);try{await repo.save(next)}catch{showAlert('Local save failed','Progress is still in memory. Keep the app open and try another action to save again.')}}
   async function exportSave(){if(!state){showAlert('Export unavailable','No save is loaded.');return;}try{await Share.share({title:'VELDRYN save backup',message:createSaveBackup(state)})}catch(error){showAlert('Export failed',error instanceof Error?error.message:'The share sheet could not be opened.')}}
   async function importSave(raw:string){if(serverGameplayEnabled)throw new Error("Local backups cannot replace server-owned progress.");const next=normalizeProfileIcon(parseSaveBackup(raw));await repo.save(next);setState(next);setCurrentTab('Home');setTabHistory([]);showAlert('Save imported','The validated backup is now stored on this device.');}
   function presentCollected(reward:RewardBundle,activity:ActiveActivity|null,before?:GameState|null,after?:GameState|null){const progressionMoments=rewardProgressionMoments(before,after);if(rewardHasProgress(reward)||progressionMoments.length)setCollected({reward,activity,progressionMoments})}
@@ -482,11 +478,6 @@ const next=normalizeProfileIcon(candidate);queuePreparationNotices(current,next)
       setPendingGoalDestination(destination);setGoalRegionId(destination.regionId);setTab('World');return;
     }
     openGoalAtCurrentRegion(destination);
-  }
-  function openPreparationNotice(notice:RecipePreparationTransitionNotice){
-    setPreparationNotices(current=>current.slice(1));
-    if(notice.kind==='complete'||!notice.destination||notice.destination.kind==='info'){setTab('Skills');return;}
-    openSourceDestination(notice.destination);
   }
   function continueGoalAfterTravel(regionId:string){
     const destination=pendingGoalDestination;setPendingGoalDestination(undefined);setGoalRegionId(undefined);
@@ -590,7 +581,7 @@ const next=normalizeProfileIcon(candidate);queuePreparationNotices(current,next)
   </View>
   <EventStartPopup runtime={eventStartPopup} reduceMotion={state.settings.reduceMotion} onOpen={()=>{setEventStartPopup(null);setTab('Events')}} onClose={()=>setEventStartPopup(null)}/>
   <ChatOverlay state={state} visible={showChatOverlay} onOpen={()=>setShowChatOverlay(true)} onClose={()=>setShowChatOverlay(false)} onEmoteTrayChange={ids=>commit({...state,settings:{...state.settings,chatEmoteTrayIds:ids}})} guildUnread={notificationCounts.guildChatUnread} guildMentions={notificationCounts.guildChatMentions} guildFirstUnreadMessageId={notificationCounts.guildFirstUnreadMessageId} partyUnread={notificationCounts.partyChatUnread} partyMentions={notificationCounts.partyChatMentions} partyFirstUnreadMessageId={notificationCounts.partyFirstUnreadMessageId} onChatRead={()=>void refreshSocialNotifications()}/>
-  {!collected&&!forgeResults?.some(row=>row.qualityProc)&&preparationNotices.length?<View style={s.masteryNotice}><ActionFeedback message={preparationNotices[0].message} tone={preparationNotices[0].tone} reduceMotion={state.settings.reduceMotion} compact actionLabel={preparationNotices[0].actionLabel} onAction={()=>openPreparationNotice(preparationNotices[0])}/></View>:!collected&&!forgeResults?.some(row=>row.qualityProc)&&masteryNotices.length?<View style={s.masteryNotice}><ActionFeedback message={masteryRankNoticeMessage(masteryNotices)} tone={masteryNotices.some(moment=>moment.mastered)?'success':'info'} reduceMotion={state.settings.reduceMotion} compact/></View>:null}
+  {!collected&&!forgeResults?.some(row=>row.qualityProc)&&masteryNotices.length?<View style={s.masteryNotice}><ActionFeedback message={masteryRankNoticeMessage(masteryNotices)} tone={masteryNotices.some(moment=>moment.mastered)?'success':'info'} reduceMotion={state.settings.reduceMotion} compact/></View>:null}
     <PrimaryNavigation destinations={primaryTabs} active={activePrimary} labelFor={item=>tabLabel(state.settings.language,item)} onNavigate={setTab} badges={primaryBadges} guidedDestination={(mainScreenTour?.highlightPrimary??visibleTutorialStep?.highlightPrimary) as PrimaryTab|undefined}/>
   {creationWelcome&&<AsterfallWelcomeModal visible name={creationWelcome.name} classId={creationWelcome.classId} onContinue={()=>{const characterId=state.character?.id;if(characterId)void completeFirstSessionTutorialStep(characterId,'first_hunt').then(ids=>setTutorialCompleted(ids));setGoalMonsterId('MOSS_RAT');setCreationWelcome(null);setCurrentTab('Combat')}}/>}
   <RewardPopup reward={collected?.reward??null} activity={collected?.activity??null} classId={state.character?.classId} welcomeBack={!!collected?.welcomeBack} progressionMoments={collected?.progressionMoments??[]} reduceMotion={state.settings.reduceMotion} numberMode={state.settings.numberMode} onClose={()=>setCollected(null)} onInventory={()=>setTab('Inventory')} onCollections={()=>setTab('Collections')} onCompanions={()=>setTab('Companions')} onSkill={id=>{const skillId=id as SkillId;setSelectedSkill(skillId);setSkillsMode(id==='faith'?'faith':['mining','woodcutting','fishing','herbalism'].includes(id)?'gathering':'crafting');setTab('Skills')}}/>

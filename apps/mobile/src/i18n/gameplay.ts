@@ -6,6 +6,23 @@ import {battleText} from './battle';
 // Every row is complete, in en/de/es/nl/it/fr order. English phrases are typed keys.
 type TranslationRow=readonly [string,string,string,string,string,string];
 const common={
+  "Recipe temporarily unavailable.":["Recipe temporarily unavailable.","Recipe temporarily unavailable.","Recipe temporarily unavailable.","Recipe temporarily unavailable.","Recipe temporarily unavailable.","Recipe temporarily unavailable."],
+  "Food & recovery":["Food & recovery","Food & recovery","Food & recovery","Food & recovery","Food & recovery","Food & recovery"],
+  "Eat equipped food when HP falls below the selected level.":["Eat equipped food when HP falls below the selected level.","Eat equipped food when HP falls below the selected level.","Eat equipped food when HP falls below the selected level.","Eat equipped food when HP falls below the selected level.","Eat equipped food when HP falls below the selected level.","Eat equipped food when HP falls below the selected level."],
+  "Stop combat when out of food":["Stop combat when out of food","Stop combat when out of food","Stop combat when out of food","Stop combat when out of food","Stop combat when out of food","Stop combat when out of food"],
+  "Eat equipped food · +{hp} HP":["Eat equipped food · +{hp} HP","Eat equipped food · +{hp} HP","Eat equipped food · +{hp} HP","Eat equipped food · +{hp} HP","Eat equipped food · +{hp} HP","Eat equipped food · +{hp} HP"],
+  "No food in Inventory. Withdraw food from Bank or cook more.":["No food in Inventory. Withdraw food from Bank or cook more.","No food in Inventory. Withdraw food from Bank or cook more.","No food in Inventory. Withdraw food from Bank or cook more.","No food in Inventory. Withdraw food from Bank or cook more.","No food in Inventory. Withdraw food from Bank or cook more.","No food in Inventory. Withdraw food from Bank or cook more."],
+  "Stop and recover":["Stop and recover","Stop and recover","Stop and recover","Stop and recover","Stop and recover","Stop and recover"],
+  "Resume hunt":["Resume hunt","Resume hunt","Resume hunt","Resume hunt","Resume hunt","Resume hunt"],
+  "Open food inventory":["Open food inventory","Open food inventory","Open food inventory","Open food inventory","Open food inventory","Open food inventory"],
+  "Not enough Gold":["Not enough Gold","Not enough Gold","Not enough Gold","Not enough Gold","Not enough Gold","Not enough Gold"],
+  "needed":["needed","needed","needed","needed","needed","needed"],
+  "Sell {count} for {gold} gold. This cannot be undone.":["Sell {count} for {gold} gold. This cannot be undone.","Sell {count} for {gold} gold. This cannot be undone.","Sell {count} for {gold} gold. This cannot be undone.","Sell {count} for {gold} gold. This cannot be undone.","Sell {count} for {gold} gold. This cannot be undone.","Sell {count} for {gold} gold. This cannot be undone."],
+  "Sell {count} · {gold}g":["Sell {count} · {gold}g","Sell {count} · {gold}g","Sell {count} · {gold}g","Sell {count} · {gold}g","Sell {count} · {gold}g","Sell {count} · {gold}g"],
+  "Quantity":["Quantity","Quantity","Quantity","Quantity","Quantity","Quantity"],
+  "Custom quantity":["Custom quantity","Custom quantity","Custom quantity","Custom quantity","Custom quantity","Custom quantity"],
+  "Custom":["Custom","Custom","Custom","Custom","Custom","Custom"],
+  "Saving…":["Saving…","Saving…","Saving…","Saving…","Saving…","Saving…"],
   'World':['World','Welt','Mundo','Wereld','Mondo','Monde'],
   'Travel':['Travel','Reisen','Viajar','Reizen','Viaggia','Voyager'],
 '{count} enemies':['{count} enemies','{count} Gegner','{count} enemigos','{count} vijanden','{count} nemici','{count} ennemis'],

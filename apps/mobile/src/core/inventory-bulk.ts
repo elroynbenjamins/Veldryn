@@ -25,7 +25,7 @@ export function bulkSelectionSummary(state:GameState,itemIds:readonly string[],l
   }):[];
   const salvageable=location==='inventory'?stacks.filter(stack=>{
     const item=itemDef(stack.itemId);
-    return item.type==='gear'&&!!item.salvage&&!protectedFromDisposal(state,stack.itemId,goalProtectedIds);
+    return item.type==='gear'&&!!item.salvage&&!protectedFromDisposal(state,stack.itemId);
   }):[];
   return {
     selectedStackCount:stacks.length,

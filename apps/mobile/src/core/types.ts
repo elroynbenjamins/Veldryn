@@ -50,7 +50,8 @@ export interface CharacterState {
   /** Cosmetic choice only. Equipment changes stats and never changes this value. */
   profileIconId?:string;
   savedLoadouts?:CharacterLoadoutPreset[];
-  progressionGoals?:import('./progression-goals-v40').ProgressionGoal[];
+  /** Legacy save field only. Working Toward goals are cleared during save migration. */
+  progressionGoals?:unknown[];
   idleRulesV40?:import('./idle-rules-v40').IdleRuleSet[];
   activeIdleRuleIdV40?:string;
   /** Character-bound action queue. Combat recovery may hand off to safe gathering. */

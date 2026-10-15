@@ -14,7 +14,6 @@ import {createAccountCharacter,deleteAccountCharacter,switchAccountCharacter} fr
 import {CLASSES} from '../content/classes';
 import {applyCharacterLoadout,characterLoadoutSlotCount,deleteCharacterLoadout,saveCharacterLoadout} from './character-loadouts';
 import {setArenaSquadSlot} from './arena-squad';
-import {normalizeProgressionGoals} from './progression-goals-v40';
 import {normalizeIdleRuleSets,validateActiveIdleRuleId} from './idle-rules-v40';
 import {COMBAT_TACTIC_IDS} from './combat-tactics';
 import {HUNT_GOAL_IDS} from './hunt-goals';
@@ -28,7 +27,6 @@ import {craftEquipmentPrerequisites} from './equipment-crafting-prerequisites';
 import {buildAdminQaState,refillAdminQaResources} from '../dev/admin-qa-profile';
 import {isTimedProcessingRecipe} from './processing';
 import type {FallenKnightBattleResult} from './story-boss';
-import {reconcileWorkingTowardGeneratedRules} from './working-toward-execution';
 import {earlyFeatureUnlocked} from './feature-unlocks';
 import {upgradeCompanionHousing} from './companion-housing';
 
@@ -47,7 +45,7 @@ const fields:Record<string,readonly string[]>={
  equip:['id'],unequip:['slot'],food:['id'],eat:['id'],sell:['id','quantity'],salvage:['id'],
  bank_sell:['id','quantity'],bank_gold_deposit:['amount'],bank_gold_withdraw:['amount'],deposit:['id','quantity'],withdraw:['id','quantity'],deposit_materials:[],bulk_transfer:['location','ids'],bulk_sell:['ids'],bulk_salvage:['ids'],storage:['location'],overflow:[],
  equip_tool:['id'],equip_set:[],upgrade:['id'],socket:['id','gemId'],replace_socket:['id','gemId'],unsocket:['id','index'],gem_combine:['familyId','grade'],gem_refine:['familyId','grade'],gem_research:['familyId'],gem_dismantle:['gemId','quantity'],resonance_cache_claim:['familyId'],profile_icon:['id'],
- loadout_save:['index','name'],loadout_apply:['id'],loadout_delete:['id'],arena_slot:['index','characterId'],goals_set:['goals'],idle_rules_set:['rules','activeId'],daily_supplies_claim:['characterId'],daily_supplies_activate:['type'],
+ loadout_save:['index','name'],loadout_apply:['id'],loadout_delete:['id'],arena_slot:['index','characterId'],idle_rules_set:['rules','activeId'],daily_supplies_claim:['characterId'],daily_supplies_activate:['type'],
  quest:['id'],seasonal:['period','id'],settings:['settings'],profile:['profileIconId','profileTitle','profileBackgroundId','profileBorderId','selectedCosmeticPetId'],
  event_daily:[],event_cache:[],event_milestones:[],event_discovery:['id'],event_reward:['id'],event_accept:['id'],
  event_objective:['id'],event_weekly:['id'],event_project:['id'],event_contribute:['quantity'],event_community:['percent'],event_purchase:['id'],event_candy:['kind'],
@@ -126,7 +124,6 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
  state=refreshCompanions(state,now);
  if(command.type.startsWith('companion_')&&!earlyFeatureUnlocked(state,'companions'))throw new Error('companion_system_locked');
  if((command.type==='daily_supplies_claim'||command.type==='daily_supplies_activate')&&!earlyFeatureUnlocked(state,'dailySupplies'))throw new Error('daily_supplies_locked');
- if(command.type==='goals_set')throw new Error('goals_retired');
  if(command.type==='idle_rules_set'&&!earlyFeatureUnlocked(state,'contracts'))throw new Error('contract_board_locked');
  if(command.type==='seasonal'&&!earlyFeatureUnlocked(state,'contracts'))throw new Error('contract_board_locked');
  if(command.type.startsWith('event_')&&!earlyFeatureUnlocked(state,'events'))throw new Error('events_locked');
@@ -306,10 +303,6 @@ export function executeGameCommand(previous:GameState,value:unknown,now:number,o
   case 'loadout_save':state=saveCharacterLoadout(state,integer(a,'index',0,characterLoadoutSlotCount(state)-1),typeof a.name==='string'?a.name:undefined,now);break;
   case 'loadout_apply':state=applyCharacterLoadout(state,text(a,'id'));break;
   case 'loadout_delete':state=deleteCharacterLoadout(state,text(a,'id'));break;
-  case 'goals_set':{
-   if(!state.character)throw new Error('character_required');
-   state=reconcileWorkingTowardGeneratedRules({...state,character:{...state.character,progressionGoals:normalizeProgressionGoals(a.goals,state.character.id)}});break;
-  }
   case 'idle_rules_set':{
    if(!state.character)throw new Error('character_required');
    const rules=normalizeIdleRuleSets(a.rules,state.character.id),activeIdleRuleIdV40=validateActiveIdleRuleId(rules,a.activeId);

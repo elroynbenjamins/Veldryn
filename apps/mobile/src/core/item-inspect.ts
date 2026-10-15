@@ -5,7 +5,7 @@ import {MONSTERS} from '../content/monsters';
 import {WORLD_ZONES} from '../content/world-map';
 import {equipmentSetDef,equippedSetPieceCount} from '../content/equipment-sets';
 import {GameState,SkillId} from './types';
-import {workingTowardDestinationAvailability,workingTowardItemSourceEntries,type WorkingTowardDestination,type WorkingTowardDestinationAvailability} from './working-toward';
+import {sourceDestinationAvailability,sourceItemSourceEntries,type SourceDestination,type SourceDestinationAvailability} from './source-navigation';
 import {enhancedGearStats,gearEnhancement,gemEffectDescription,gemSocketCapacity,gemSocketKind,gemSocketState,gearStatsAtRank,MAX_UPGRADE_RANK,upgradeQuote} from './equipment-enhancement';
 import {effectiveStats} from './game';
 import {previewEquipment} from './equipment-preview';
@@ -15,8 +15,8 @@ import {acquisitionEstimateLabel,acquisitionProjectionForDestination} from './ba
 import {materialAcquisitionPlanForDestination,materialAcquisitionPlanSummary} from './material-acquisition-plan';
 
 export type ItemInspectSourceKind='gathering'|'crafting'|'combat'|'dungeon'|'starting';
-export interface ItemInspectSource{kind:ItemInspectSourceKind;typeLabel?:string;title:string;detail:string;navigation?:WorkingTowardDestination;availability?:WorkingTowardDestinationAvailability;estimatedSeconds?:number;estimateLabel?:string;chainLabel?:string;chainBlockedReason?:string;}
-export interface ItemRecipeUse{name:string;skill:string;level:number;quantity:number;navigation:WorkingTowardDestination;availability:WorkingTowardDestinationAvailability;}
+export interface ItemInspectSource{kind:ItemInspectSourceKind;typeLabel?:string;title:string;detail:string;navigation?:SourceDestination;availability?:SourceDestinationAvailability;estimatedSeconds?:number;estimateLabel?:string;chainLabel?:string;chainBlockedReason?:string;}
+export interface ItemRecipeUse{name:string;skill:string;level:number;quantity:number;navigation:SourceDestination;availability:SourceDestinationAvailability;}
 export interface ItemGearDecision{
  compatible:boolean;alreadyEquipped:boolean;replaces?:{itemId:string;name:string;rank:number};
  loadoutBefore:{attack:number;defense:number;hp:number;power:number};loadoutAfter:{attack:number;defense:number;hp:number;power:number};loadoutDelta:{attack:number;defense:number;hp:number;power:number};
@@ -48,7 +48,7 @@ export function itemInspectModel(state:GameState,itemId:string){
   }
   if(item.id.startsWith('START_')||item.id.startsWith('basic_'))sources.unshift({kind:'starting',title:'Starting equipment',detail:'Granted by a matching class loadout.'});
   if(item.type==='material'){
-    const materialSources=workingTowardItemSourceEntries(state,itemId).map(source=>{
+    const materialSources=sourceItemSourceEntries(state,itemId).map(source=>{
       const projection=acquisitionProjectionForDestination(state,itemId,1,source.destination);
       const plan=projection||source.type!=='crafting'?undefined:materialAcquisitionPlanForDestination(state,itemId,1,source.destination);
       const summary=plan?materialAcquisitionPlanSummary(plan):undefined;
@@ -71,7 +71,7 @@ export function itemInspectModel(state:GameState,itemId:string){
 
   const usedIn:Omit<ItemRecipeUse,'availability'>[]=RECIPES.flatMap(recipe=>recipe.inputs.filter(input=>input.itemId===itemId).map(input=>({
     name:recipe.name,skill:title(recipe.skillId),level:recipe.level,quantity:input.quantity,
-    navigation:{kind:'skills',skillId:recipe.skillId,mode:'crafting',recipeId:recipe.id,button:'Open recipe',detail:`Open ${recipe.name}.`} as WorkingTowardDestination,
+    navigation:{kind:'skills',skillId:recipe.skillId,mode:'crafting',recipeId:recipe.id,button:'Open recipe',detail:`Open ${recipe.name}.`} as SourceDestination,
   })));
 
   const inventoryQuantity=state.inventory.stacks.find(stack=>stack.itemId===itemId)?.quantity??0;
@@ -123,8 +123,8 @@ export function itemInspectModel(state:GameState,itemId:string){
   }
   if(item.salvage)effectLines.push(`Salvage: ${item.salvage.quantity}× ${itemDef(item.salvage.itemId).name}`);
 
-  const actionableSources=sources.map(source=>source.navigation?{...source,availability:workingTowardDestinationAvailability(state,source.navigation)}:source);
-  const actionableUses=usedIn.map(recipe=>({...recipe,availability:workingTowardDestinationAvailability(state,recipe.navigation)}));
+  const actionableSources=sources.map(source=>source.navigation?{...source,availability:sourceDestinationAvailability(state,source.navigation)}:source);
+  const actionableUses=usedIn.map(recipe=>({...recipe,availability:sourceDestinationAvailability(state,recipe.navigation)}));
   const craftedInstances=item.type==='gear'?craftedInstancesForItem(state,itemId):[];
   return {item,rarityId,rarity,inventoryQuantity,bankQuantity,totalQuantity:inventoryQuantity+bankQuantity,craftedCopies:craftedInstances.length,craftedRarities:[...new Set(craftedInstances.map(row=>row.rarity))],effectLines,stats,upgrade,sockets,gearDecision,sources:actionableSources,usedIn:actionableUses};
 }

@@ -68,10 +68,9 @@ export interface WeeklyOrderRolloverCleanup{
 }
 function cleanWeeklyOrderCharacter(character:NonNullable<GameState['character']>,activeOrderIds:Set<string>){
  let removedGoals=0,removedRules=0,removedConditions=0;
- const progressionGoals=(character.progressionGoals??[]).filter(goal=>{
-  const keep=goal.kind!=='weekly_order'||activeOrderIds.has(goal.orderId);
-  if(!keep)removedGoals++;return keep;
- });
+ // Legacy Working Toward goals are not part of weekly-order progression.
+ removedGoals=(character.progressionGoals??[]).length;
+ const progressionGoals:unknown[]=[];
  const idleRulesV40=(character.idleRulesV40??[]).flatMap(rule=>{
   const conditions=rule.conditions.filter(condition=>{
    const keep=condition.kind!=='weekly_order_progress'||!!condition.targetId&&activeOrderIds.has(condition.targetId);

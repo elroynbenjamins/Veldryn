@@ -12,11 +12,11 @@ import {ResourceArtwork} from './ResourceArtwork';
 import {type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 import {gatheringProgressionAction} from '../core/skill-progression-navigation';
-import type {WorkingTowardDestination} from '../core/working-toward';
+import type {SourceDestination} from '../core/source-navigation';
 import {gatheringBalanceProjection} from '../core/balance-projection';
 
 /** A normal gathering skill is deliberately one tap: select a resource and begin. */
-export function GatheringActivityList({state,skillId,skillLevel,preferredActionId,onGather,onNavigate,currentRegionOnly=false,showInstruction=true}:{state:GameState;skillId:GatheringSkillId;skillLevel:number;preferredActionId?:string;onGather:(id:string)=>void;onNavigate?:(destination:WorkingTowardDestination)=>void;currentRegionOnly?:boolean;showInstruction?:boolean}){
+export function GatheringActivityList({state,skillId,skillLevel,preferredActionId,onGather,onNavigate,currentRegionOnly=false,showInstruction=true}:{state:GameState;skillId:GatheringSkillId;skillLevel:number;preferredActionId?:string;onGather:(id:string)=>void;onNavigate?:(destination:SourceDestination)=>void;currentRegionOnly?:boolean;showInstruction?:boolean}){
  const {gt,gl,language}=useGameplayText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]);
  const regionId=currentRegionId(state),region=WORLD_ZONES.find(row=>row.id===regionId)??WORLD_ZONES[0];

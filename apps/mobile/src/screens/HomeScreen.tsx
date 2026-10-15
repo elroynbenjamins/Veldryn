@@ -24,7 +24,7 @@ import {SkillDashboard} from '../components/SkillDashboard';
 import {UiIcon} from '../components/UiIcon';
 import {NewUnlocksPanel} from '../components/NewUnlocksPanel';
 import {ActionQueuePanel} from '../components/ActionQueuePanel';
-import type {WorkingTowardDestination} from '../core/working-toward';
+import type {SourceDestination} from '../core/source-navigation';
 import {ContractBoardSummary} from '../components/ContractBoardSummary';
 import {weeklyOrderDestination} from '../core/weekly-order-integrations-v41';
 import {DailySuppliesSummary} from '../components/DailySuppliesSummary';
@@ -34,7 +34,7 @@ import {earlyFeatureUnlocked} from '../core/feature-unlocks';
 import {HomeAdventureHeader} from '../components/HomeAdventureHeader';
 import {processingRecipeDef} from '../core/processing';
 
-export function HomeScreen({state,preview,nowMs,onClaim,onStop,onQueueRemove,onQueueMove,onQueueClear,onQueueStart,onNavigate,onOpenCombat,onOpenSkill,onOpenContracts,onNavigateGoal,onOpenGuide}:{onOpenGuide?:()=>void;state:GameState;preview:RewardBundle;nowMs:number;onClaim:()=>void;onStop:()=>void;onQueueRemove:(index:number)=>void;onQueueMove:(index:number,direction:'up'|'down')=>void;onQueueClear:()=>void;onQueueStart:()=>void;onNavigate:(tab:DashboardDestination|'Events'|'DailySupplies'|'Companions',zoneId?:string)=>void;onOpenCombat:()=>void;onOpenSkill:(skillId:SkillId)=>void;onOpenContracts:()=>void;onNavigateGoal:(destination:WorkingTowardDestination)=>void}){
+export function HomeScreen({state,preview,nowMs,onClaim,onStop,onQueueRemove,onQueueMove,onQueueClear,onQueueStart,onNavigate,onOpenCombat,onOpenSkill,onOpenContracts,onNavigateGoal,onOpenGuide}:{onOpenGuide?:()=>void;state:GameState;preview:RewardBundle;nowMs:number;onClaim:()=>void;onStop:()=>void;onQueueRemove:(index:number)=>void;onQueueMove:(index:number,direction:'up'|'down')=>void;onQueueClear:()=>void;onQueueStart:()=>void;onNavigate:(tab:DashboardDestination|'Events'|'DailySupplies'|'Companions',zoneId?:string)=>void;onOpenCombat:()=>void;onOpenSkill:(skillId:SkillId)=>void;onOpenContracts:()=>void;onNavigateGoal:(destination:SourceDestination)=>void}){
  const language=state.settings.language;
  const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params);
 

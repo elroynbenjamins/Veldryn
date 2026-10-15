@@ -3,7 +3,7 @@ import {progressionT,progressionText,type ProgressionKey} from '../i18n/progress
 import {useMemo,useState} from 'react';
 import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {GameState,SkillId} from '../core/types';
-import type {WorkingTowardDestination} from '../core/working-toward';
+import type {SourceDestination} from '../core/source-navigation';
 import {
  professionMasteryDiscoveryFilters,
  professionMasteryDiscoveryRecords,
@@ -31,7 +31,7 @@ const STATUS_OPTIONS:{id:ProfessionMasteryDiscoveryStatus;label:string}[]=[
  {id:'mastered',label:'Mastered only'},
 ];
 
-export function MasteryDiscoveryPanel({state,onNavigate}:{state:GameState;onNavigate?:(destination:WorkingTowardDestination)=>void}){
+export function MasteryDiscoveryPanel({state,onNavigate}:{state:GameState;onNavigate?:(destination:SourceDestination)=>void}){
   const contextLanguage=useGameLanguage(),language=state.settings.language??contextLanguage;
   const t=(key:ProgressionKey,params?:Record<string,string|number>)=>progressionT(language,key,params);
   const p=(text:string)=>progressionText(language,text);

@@ -2,7 +2,7 @@ import {GATHERING,RECIPES,type Recipe} from '../content/skills';
 import {HERB_NODES} from '../content/herbalism';
 import type {GameState,SkillId} from './types';
 import {PROFESSION_MASTERY_BONUS_RANKS,masteryPointsForRank,professionMasteryRankProgress,professionMasteryView} from './profession-mastery-v40';
-import type {WorkingTowardDestination} from './working-toward';
+import type {SourceDestination} from './source-navigation';
 import {itemDef} from '../content/items';
 import {WORLD_ZONES} from '../content/world-map';
 import {gemCombineRecipeV1,gemRefineRecipeV1} from './gem-progression-v1';
@@ -24,7 +24,7 @@ const IDENTITIES:Partial<Record<SkillId,SkillIdentity>>={
 };
 export function skillIdentity(skillId:SkillId):SkillIdentity{return IDENTITIES[skillId]??{label:'SKILL',descriptor:'Long-term character progression',tone:'accent'}}
 
-export interface ProfessionMasteryActionDefinition{actionId:string;name:string;skillId:SkillId;kind:'gathering'|'crafting';yieldRelevant:boolean;speedRelevant:boolean;regionId?:string;regionLabel?:string;destination:WorkingTowardDestination}
+export interface ProfessionMasteryActionDefinition{actionId:string;name:string;skillId:SkillId;kind:'gathering'|'crafting';yieldRelevant:boolean;speedRelevant:boolean;regionId?:string;regionLabel?:string;destination:SourceDestination}
 function masteryRegionLabel(regionId:string){return WORLD_ZONES.find(row=>row.id===regionId)?.name??regionId}
 export function professionMasteryActionDefinition(actionId:string):ProfessionMasteryActionDefinition|undefined{
  const node=[...GATHERING,...HERB_NODES].find(row=>row.id===actionId);
@@ -44,7 +44,7 @@ export function professionMasteryRelevantBonusSteps(actionId:string){
 }
 
 export interface ProfessionMasteryActionView{
-id:string;name:string;skillId:SkillId;kind:'gathering'|'crafting';level:number;rank:number;points:number;maxRank:number;progress:number;pointsIntoRank:number;pointsForNextRank:number;mastered:boolean;xpBonusBps:number;yieldBonusBps:number;speedBonusBps:number;yieldRelevant:boolean;speedRelevant:boolean;nextBonus?:typeof PROFESSION_MASTERY_BONUS_RANKS[number];destination:WorkingTowardDestination;
+id:string;name:string;skillId:SkillId;kind:'gathering'|'crafting';level:number;rank:number;points:number;maxRank:number;progress:number;pointsIntoRank:number;pointsForNextRank:number;mastered:boolean;xpBonusBps:number;yieldBonusBps:number;speedBonusBps:number;yieldRelevant:boolean;speedRelevant:boolean;nextBonus?:typeof PROFESSION_MASTERY_BONUS_RANKS[number];destination:SourceDestination;
 }
 function relevantRecipe(state:GameState,recipe:Recipe){return !recipe.noviceSetId&&(!recipe.classId||recipe.classId===state.character?.classId)}
 function nextRelevantBonus(rank:number,yieldRelevant:boolean,speedRelevant:boolean){return PROFESSION_MASTERY_BONUS_RANKS.find(row=>row.rank>rank&&(row.kind==='xp'||row.kind==='yield'&&yieldRelevant||row.kind==='speed'&&speedRelevant))}

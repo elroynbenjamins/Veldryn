@@ -2,19 +2,19 @@ import {useGameplayText} from '../i18n/gameplay';
 import {useMemo} from 'react';
 import {Pressable,StyleSheet,Text,View} from 'react-native';
 import type {GameState,SkillId} from '../core/types';
-import type {WorkingTowardDestination} from '../core/working-toward';
+import type {SourceDestination} from '../core/source-navigation';
 import {skillMilestoneOverview,type SkillMilestone} from '../core/skill-milestones';
 import {Panel} from './Panel';
 import {spacing,typography,type ThemeColors} from '../theme/theme';
 import {useGameTheme} from '../theme/ThemeContext';
 
-function MilestoneRow({row,tone,onNavigate}:{row:SkillMilestone;tone:'latest'|'next';onNavigate?:(destination:WorkingTowardDestination)=>void}){
+function MilestoneRow({row,tone,onNavigate}:{row:SkillMilestone;tone:'latest'|'next';onNavigate?:(destination:SourceDestination)=>void}){
  const {gt,gl,language}=useGameplayText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),canOpen=!!row.destination&&!!onNavigate;
  const body=<><View style={s.rowTop}><Text style={[s.category,tone==='latest'?s.categoryLatest:s.categoryNext]}>{gl(row.category)}</Text><Text style={s.rowLevel}>LV {row.level}</Text></View><Text numberOfLines={1} style={s.name}>{row.title}</Text><Text numberOfLines={2} style={s.detail}>{gl(row.detail)}{canOpen?' · '+gt('Open ›'):''}</Text></>;
  return canOpen?<Pressable accessibilityRole="button" accessibilityLabel={gt('Open {name}',{name:row.title})} onPress={()=>{if(row.destination&&onNavigate)onNavigate(row.destination)}} style={({pressed})=>[s.row,pressed&&s.pressed]}>{body}</Pressable>:<View style={s.row}>{body}</View>;
 }
-export function SkillMilestoneStrip({state,skillId,onNavigate}:{state:GameState;skillId:SkillId;onNavigate?:(destination:WorkingTowardDestination)=>void}){
+export function SkillMilestoneStrip({state,skillId,onNavigate}:{state:GameState;skillId:SkillId;onNavigate?:(destination:SourceDestination)=>void}){
  const {gt,gl,language}=useGameplayText();
  const C=useGameTheme(),s=useMemo(()=>makeStyles(C),[C]),view=skillMilestoneOverview(state,skillId);
  if(!view.latest.length&&!view.next.length)return null;

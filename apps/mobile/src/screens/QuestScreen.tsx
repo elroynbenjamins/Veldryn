@@ -56,7 +56,7 @@ function ClaimMomentCard({moment,reduceMotion}:{moment:ClaimMoment;reduceMotion:
   </Animated.View>;
 }
 
-export function QuestScreen({state,mode,onModeChange,focusedWeeklyOrderId,onClaim,onClaimContract,onNavigate,onOpenWeeklyBoss,onOpenWeeklyOrder,onQueueWeeklyOrder,onStopWeeklyOrder}:{state:GameState;mode:QuestMode;onModeChange:(mode:QuestMode)=>void;focusedWeeklyOrderId?:string;onClaim:(id:string)=>void;onClaimContract:(period:SeasonalPeriod,id:string)=>void;onNavigate:(destination:QuestDestination)=>void;onOpenWeeklyBoss:()=>void;onOpenWeeklyOrder:(order:WeeklyOrder)=>void;onQueueWeeklyOrder:(order:WeeklyOrder)=>void;onStopWeeklyOrder:(order:WeeklyOrder)=>void}){
+export function QuestScreen({state,mode,onModeChange,focusedWeeklyOrderId,onClaim,onClaimContract,onNavigate,onOpenWeeklyBoss,onOpenWeeklyOrder,onQueueWeeklyOrder,onStopWeeklyOrder}:{state:GameState;mode:QuestMode;onModeChange:(mode:QuestMode)=>void;focusedWeeklyOrderId?:string;onClaim:(id:string)=>void|Promise<unknown>;onClaimContract:(period:SeasonalPeriod,id:string)=>void|Promise<unknown>;onNavigate:(destination:QuestDestination)=>void;onOpenWeeklyBoss:()=>void;onOpenWeeklyOrder:(order:WeeklyOrder)=>void;onQueueWeeklyOrder:(order:WeeklyOrder)=>void;onStopWeeklyOrder:(order:WeeklyOrder)=>void}){
   const contextLanguage=useGameLanguage(),language=state.settings.language??contextLanguage;
   const t=(key:ProgressionKey,params?:Record<string,string|number>)=>progressionT(language,key,params);
   const p=(text:string)=>progressionText(language,text);
@@ -64,7 +64,8 @@ export function QuestScreen({state,mode,onModeChange,focusedWeeklyOrderId,onClai
   const C=useGameTheme(),equipmentColors=equipmentTheme(C),s=useMemo(()=>makeStyles(C),[C]);
   const [filter,setFilter]=useState<JournalFilter>('current'),[query,setQuery]=useState(''),[challengePeriod,setChallengePeriod]=useState<'all'|'daily'|'weekly'|'monthly'>('all');
   const [expandedStories,setExpandedStories]=useState<Record<string,boolean>>({});
-  const [notice,setNotice]=useState(''),[error,setError]=useState(''),[claimMoment,setClaimMoment]=useState<ClaimMoment|null>(null);
+  const [notice,setNotice]=useState(''),[error,setError]=useState(''),[claimMoment,setClaimMoment]=useState<ClaimMoment|null>(null),[claimBusy,setClaimBusy]=useState(false);
+  const claimInFlight=useRef(false);
   const confirmed=useRef({characterId:state.character?.id,quests:state.quests.filter(q=>q.status==='claimed').map(q=>q.questId),contracts:state.account.seasonalContractClaimIds??[]});
   useEffect(()=>{
     const next={characterId:state.character?.id,quests:state.quests.filter(q=>q.status==='claimed').map(q=>q.questId),contracts:state.account.seasonalContractClaimIds??[]};
@@ -97,20 +98,24 @@ export function QuestScreen({state,mode,onModeChange,focusedWeeklyOrderId,onClai
   const nextChallenge=allChallenges.filter(row=>!challengeClaimedIds.has(row.id)&&row.progress<row.required).sort((a,b)=>(b.progress/Math.max(1,b.required))-(a.progress/Math.max(1,a.required))||a.required-b.required)[0];
   const modeTitle=mode==='story'?t("Asterfall Journal"):mode==='contracts'?t("Contract Board"):t("Class Challenges");
   const modeSubtitle=mode==='story'?t("Campaign chapters, story rewards and the next Asterfall objective."):mode==='contracts'?t("Weekly Hunt, Work, Regional and Threat jobs with exact progression routes."):t("Personal daily, weekly and monthly objectives tied to your class.");
-  function claim(id:string){
-    try{setClaimMoment(null);setNotice('');setError('');onClaim(id)}
-    catch(e){setError(progressionError(language,e,"Unable to claim this quest."));setNotice('')}
+  async function claim(id:string){
+    if(claimInFlight.current)return;
+    claimInFlight.current=true;setClaimBusy(true);setClaimMoment(null);setNotice('');setError('');
+    try{await onClaim(id)}catch(e){setError(progressionError(language,e,"Unable to claim this quest."));}
+    finally{claimInFlight.current=false;setClaimBusy(false);}
   }
-  function claimContract(period:SeasonalPeriod,id:string){
-    try{setClaimMoment(null);setNotice('');setError('');onClaimContract(period,id)}
-    catch(e){setError(progressionError(language,e,"Unable to claim this contract."));setNotice('')}
+  async function claimContract(period:SeasonalPeriod,id:string){
+    if(claimInFlight.current)return;
+    claimInFlight.current=true;setClaimBusy(true);setClaimMoment(null);setNotice('');setError('');
+    try{await onClaimContract(period,id)}catch(e){setError(progressionError(language,e,"Unable to claim this contract."));}
+    finally{claimInFlight.current=false;setClaimBusy(false);}
   }
   return <ScrollView contentContainerStyle={s.root} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false}>
     <View style={s.scenicHeader}><ZoneSceneArtwork regionId={mode==='contracts'?'KINGS_ROAD':mode==='challenges'?'IRONWOOD':currentAct.act===1?'GREENFIELDS':currentAct.act===2?'IRONWOOD':'KINGS_ROAD'}/><View style={s.scenicShade}/><View style={s.scenicCopy}><Text style={s.scenicEyebrow}>{t("QUESTS & OBJECTIVES")}</Text><Text accessibilityRole="header" style={s.scenicTitle}>{modeTitle}</Text><Text style={s.scenicSubtitle}>{modeSubtitle}</Text></View></View>
     <QuestModeSwitch mode={mode} onChange={onModeChange} storyMeta={ready?t("{count} ready",{count:ready}):t("{current}/{total} claimed",{current:claimed,total:QUESTS.length})} contractMeta={t("{current}/{total} complete",{current:boardComplete,total:contractBoard.orders.length})} challengeMeta={challengeReadyCount?t("{count} ready",{count:challengeReadyCount}):t("{current}/{total} claimed",{current:challengeClaimedCount,total:allChallenges.length})} storyAttention={ready} contractAttention={pendingBoardRewards.length} challengeAttention={challengeReadyCount}/>
     {claimMoment&&<ClaimMomentCard moment={claimMoment} reduceMotion={state.settings.reduceMotion}/>} {!!notice&&<ActionFeedback message={notice} compact reduceMotion={state.settings.reduceMotion}/>} {!!error&&<ActionFeedback message={error} tone="error" compact reduceMotion={state.settings.reduceMotion}/>}
     {mode==='story'?<>
-    {readyQuest?<Panel accentColor={C.good} accentSurface={C.goodSurface}><View style={s.modeHeroHead}><View style={s.flex}><Text style={[s.modeEyebrow,{color:C.good}]}>{t("REWARD READY")}</Text><Text style={s.title}>{readyQuest.name}</Text><Text style={s.sub}>{t("Objective complete — claim your reward")}</Text></View><StatusPill label={t("{count} ready",{count:ready})} tone="good"/></View><GameButton title={t("Claim chapter rewards")} onPress={()=>claim(readyQuest.id)}/></Panel>:null}
+    {readyQuest?<Panel accentColor={C.good} accentSurface={C.goodSurface}><View style={s.modeHeroHead}><View style={s.flex}><Text style={[s.modeEyebrow,{color:C.good}]}>{t("REWARD READY")}</Text><Text style={s.title}>{readyQuest.name}</Text><Text style={s.sub}>{t("Objective complete — claim your reward")}</Text></View><StatusPill label={t("{count} ready",{count:ready})} tone="good"/></View><GameButton title={t("Claim chapter rewards")} loading={claimBusy} onPress={()=>claim(readyQuest.id)}/></Panel>:null}
     <Panel><Text style={s.actEyebrow}>{t("ACT")} {roman(currentAct.act)} · {currentAct.name.toUpperCase()}</Text><Text style={s.title}>{claimed===QUESTS.length?t("Asterfall campaign complete"):currentAct.subtitle}</Text><StatBar reduceMotion={state.settings.reduceMotion} label={t("Chapters claimed")} current={claimed} max={QUESTS.length}/><Text style={s.sub}>{claimed===QUESTS.length?t("Every chapter reward has been claimed. You can revisit the story, hunts, crafting, and equipment upgrades."):t("Rewards ready: {count}. Claim each chapter to unlock the next story beat.",{count:ready})}</Text></Panel>
     <ScrollView accessibilityRole="tablist" horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[s.row,s.filterRail]} showsVerticalScrollIndicator={false}>{(['current','all','claimed','locked'] as const).map(value=><FilterChip key={value} label={`${value==='current'?t("Current"):value==='all'?t("All"):value==='claimed'?t("Completed"):t("Locked")} · ${journalCounts[value]}`} selected={filter===value} onPress={()=>setFilter(value)}/>)}</ScrollView>
     <SearchField accessibilityLabel={t("Search quests")} placeholder={t("Search story, locations or objectives…")} placeholderTextColor={C.muted} value={query} onChangeText={setQuery}/>

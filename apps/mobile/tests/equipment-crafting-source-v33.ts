@@ -5,7 +5,7 @@ import {itemDef} from '../src/content/items';
 import {createCharacter,craftRecipe,newGame} from '../src/core/game';
 import {equipmentCraftingPath} from '../src/core/equipment-crafting-path';
 import {itemInspectModel} from '../src/core/item-inspect';
-import {workingTowardItemSource} from '../src/core/working-toward';
+import {sourceItemSource} from '../src/core/source-navigation';
 import {MONSTERS} from '../src/content/monsters';
 import {HERB_NODES} from '../src/content/herbalism';
 import {combatBaselineProjection,dropExpectation,gatheringBalanceProjection} from '../src/core/balance-projection';
@@ -51,7 +51,7 @@ for(const recipe of V33_EQUIPMENT_RECIPES){
   ok(!!range&&recipe.seconds>=range[0]&&recipe.seconds<=range[1],recipe.id+' craft timer is outside the V33 tier pacing band');
   for(const input of recipe.inputs){
     const state=createCharacter(newGame(0),recipe.classId,'Source Check','male');
-    const source=workingTowardItemSource(state,input.itemId);
+    const source=sourceItemSource(state,input.itemId);
     ok(source.kind!=='inventory',recipe.id+' has an ingredient without a registered actionable source: '+input.itemId);
   }
 }

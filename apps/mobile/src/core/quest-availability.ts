@@ -1,7 +1,7 @@
 import type {GameState} from './types';
 import type {WeeklyOrder} from './weekly-orders-v41';
 import {weeklyOrderDestination} from './weekly-order-integrations-v41';
-import {workingTowardDestinationAvailability} from './working-toward';
+import {sourceDestinationAvailability} from './source-navigation';
 import {MONSTERS} from '../content/monsters';
 import {RECIPES} from '../content/skills';
 import {itemDef} from '../content/items';
@@ -11,7 +11,7 @@ export function weeklyOrderLockReason(state:GameState,order:WeeklyOrder):string|
  if(order.claimed||order.progress>=order.target)return undefined;
  if(!state.character)return 'Create a character first.';
  const destination=weeklyOrderDestination(order);
- const availability=workingTowardDestinationAvailability(state,destination);
+ const availability=sourceDestinationAvailability(state,destination);
  if(availability.status==='locked')return availability.detail;
  if(order.kind==='hunt'){
   const monster=MONSTERS.find(row=>row.id===order.targetId);

@@ -2,7 +2,7 @@ import {createCharacter,newGame} from '../src/core/game';
 import {weeklyOrderCandidatesFromCurrentContent} from '../src/core/launch-readiness-v47';
 import {applyTrustedLongTermProgression,reconcileWeeklyOrderRollover,weeklyOrderBoardForState} from '../src/core/long-term-progression-runtime';
 import {applyWeeklyOrderProgress,generateWeeklyOrders} from '../src/core/weekly-orders-v41';
-import {weeklyOrderDestination,weeklyOrderGoal,weeklyOrderIdleRule,weeklyOrderQueueActivity} from '../src/core/weekly-order-integrations-v41';
+import {weeklyOrderDestination,weeklyOrderIdleRule,weeklyOrderQueueActivity} from '../src/core/weekly-order-integrations-v41';
 import {contractBoardRegionFocus,contractBoardSummary} from '../src/core/contract-board-summary';
 import type {GameState} from '../src/core/types';
 
@@ -34,18 +34,16 @@ ok(huntDestination.kind==='combat'&&huntDestination.monsterId===huntOrder.target
 ok(workDestination.kind==='skills'&&(workDestination.actionId===workOrder.targetId||workDestination.recipeId===workOrder.targetId),'Work Order should deep-link to its exact activity or recipe');
 ok(regionalDestination.kind==='world'&&regionalDestination.regionId===generated.orders.find(row=>row.kind==='regional')!.regionId,'Regional Problem should deep-link to its exact region');
 const huntQueue=weeklyOrderQueueActivity(huntOrder);ok(huntQueue?.kind==='combat'&&huntQueue.targetId===huntOrder.targetId,'Hunt Order should be directly queueable');
-const pinnedGoal=weeklyOrderGoal(huntOrder,state.character!.id,now);ok(pinnedGoal.kind==='weekly_order'&&pinnedGoal.orderId===huntOrder.id&&pinnedGoal.targetProgress===huntOrder.target,'Contract Board pin should track the exact weekly job target');
 const stopRule=weeklyOrderIdleRule(huntOrder,state.character!.id);ok(stopRule.conditions.length===1&&stopRule.conditions[0].kind==='weekly_order_progress'&&stopRule.conditions[0].targetId===huntOrder.id&&stopRule.conditions[0].value===huntOrder.target,'Contract Board completion stop should use the exact weekly-order target');ok(stopRule.stopIfOutOfFood&&stopRule.stopIfRewardsWouldOverflow&&stopRule.finishCurrentCycle,'Contract completion stop must preserve safety and finish the current cycle');
 const generatedRegional=generated.orders.find(row=>row.kind==='regional');ok(!!generatedRegional?.brief&&generatedRegional.reward.label.includes('Relief Cache'),'Generated Regional Problem should preserve authored brief and regional reward identity');
 
-const staleOrder=generated.orders[0],staleGoal=weeklyOrderGoal(staleOrder,state.character!.id,now),generatedStop=weeklyOrderIdleRule(staleOrder,state.character!.id);
+const staleOrder=generated.orders[0],generatedStop=weeklyOrderIdleRule(staleOrder,state.character!.id);
 const mixedRule={id:'mixed-weekly-rule',characterId:state.character!.id,name:'Mixed safety rule',conditions:[{id:'old-week',kind:'weekly_order_progress' as const,targetId:staleOrder.id,value:staleOrder.target,enabled:true},{id:'duration',kind:'duration_seconds' as const,value:3600,enabled:true}],stopIfOutOfFood:true,stopIfRewardsWouldOverflow:true,finishCurrentCycle:true};
 const pendingReceipt={claimKey:'old-week-reward',rewardRef:'weekly_order_hunt_standard',label:'Old reward',weekKey:generated.weekKey,orderId:staleOrder.id};
-const rolloverInput={...state,character:{...state.character!,progressionGoals:[staleGoal],idleRulesV40:[generatedStop,mixedRule],activeIdleRuleIdV40:generatedStop.id},account:{...state.account,longTermAccountScopeId:accountId,weeklyOrders:structuredClone(generated),weeklyOrderPendingRewards:[pendingReceipt]}};
+const rolloverInput={...state,character:{...state.character!,idleRulesV40:[generatedStop,mixedRule],activeIdleRuleIdV40:generatedStop.id},account:{...state.account,longTermAccountScopeId:accountId,weeklyOrders:structuredClone(generated),weeklyOrderPendingRewards:[pendingReceipt]}};
 const rollover=reconcileWeeklyOrderRollover(rolloverInput,now+7*86400_000);
 ok(rollover.changed&&rollover.previousWeekKey===generated.weekKey&&rollover.weekKey!==generated.weekKey,'Monday rollover should replace the expired Contract Board');
-ok(rollover.removedGoals===1&&rollover.removedRules===1&&rollover.removedConditions===2,'Rollover should report stale weekly goal, generated rule and condition cleanup');
-ok(!(rollover.state.character?.progressionGoals??[]).some(goal=>goal.kind==='weekly_order'),'Expired Contract Board goals should be removed');
+ok(rollover.removedGoals===0&&rollover.removedRules===1&&rollover.removedConditions===2,'Rollover should report stale generated rule and condition cleanup');
 ok(!rollover.state.character?.idleRulesV40?.some(rule=>rule.id===generatedStop.id)&&!rollover.state.character?.activeIdleRuleIdV40,'Expired generated Contract stop rule should be removed and deactivated');
 const preservedMixed=rollover.state.character?.idleRulesV40?.find(rule=>rule.id===mixedRule.id);ok(preservedMixed?.conditions.length===1&&preservedMixed.conditions[0].kind==='duration_seconds','Custom Idle Rules should keep unrelated conditions when stale weekly conditions are stripped');
 ok(rollover.state.account.weeklyOrderPendingRewards?.[0]?.claimKey===pendingReceipt.claimKey,'Weekly rollover must preserve pending reward receipts from prior weeks');

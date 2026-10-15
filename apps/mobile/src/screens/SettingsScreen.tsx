@@ -9,6 +9,7 @@ import {DiscordButton} from '../components/DiscordButton';
 import {GameButton} from '../components/GameButton';
 import {SettingToggle} from '../components/SettingToggle';
 import {Panel} from '../components/Panel';
+import {WhatsNewContent} from '../components/WhatsNewPanel';
 import {DeveloperTools} from '../components/DeveloperTools';
 import {OnlineAccountPanel} from '../components/OnlineAccountPanel';
 import {GooglePlayCommercePanel} from '../components/GooglePlayCommercePanel';
@@ -29,6 +30,8 @@ type Props={
   onNavigateGuide?:(destination:GameGuideDestination)=>void;
   onStartMainScreenTour?:()=>void;
   online?:boolean;
+  latestVersion?:string;
+  onUpdateApp?:()=>void;
   state:GameState;
   onLanguage:(language:GameState['settings']['language'])=>void;
   onReset:()=>void;
@@ -39,7 +42,7 @@ type Props={
   onRedeemCode?:(code:string)=>Promise<string|void>|string|void;
   onOpenCoopUiGallery?:()=>void;
 };
-type SettingsSection='gameplay'|'appearance'|'accessibility'|'account'|'store'|'data'|'guide'|'developer';
+type SettingsSection='gameplay'|'appearance'|'accessibility'|'account'|'store'|'data'|'guide'|'updates'|'developer';
 const DISCORD_INVITE_URL='https://discord.gg/Db83APvP5y';
 const PRIVACY_POLICY_URL='https://elroynbenjamins.github.io/veldryn/privacy/';
 const openExternal=(url:string)=>{void Linking.openURL(url)};
@@ -60,7 +63,7 @@ function RedeemCodePanel({language,onRedeemCode}:{language:Language;onRedeemCode
  return <Panel><Text style={[s.title,{color:C.text}]}>{a('Redeem code')}</Text><Text style={[s.sub,{color:C.muted}]}>{a('Enter a promotional code from an official VELDRYN announcement or event.')}</Text><View style={s.redeemRow}><TextInput accessibilityLabel={a('Redeem code')} autoCapitalize="characters" autoCorrect={false} value={code} onChangeText={value=>{setCode(value.replace(/\s/g,''));setStatus('')}} placeholder={a('ENTER CODE')} placeholderTextColor={C.muted} style={[s.codeInput,{color:C.text,borderColor:C.line,backgroundColor:C.inputBg}]}/><GameButton compact title={busy?a('Checking…'):a('Redeem')} disabled={!code.trim()||busy} onPress={()=>void redeem()}/></View>{status?<Text accessibilityLiveRegion="polite" style={[s.redeemStatus,{color:onRedeemCode?C.info:C.muted}]}>{status}</Text>:null}</Panel>;
 }
 
-export function SettingsScreen({state,onLanguage,onReset,onChange,onRefreshCommerce,onExport,onImport,onRedeemCode,onOpenCoopUiGallery,initialSection,onNavigateGuide,onStartMainScreenTour,online=false}:Props){
+export function SettingsScreen({state,onLanguage,onReset,onChange,onRefreshCommerce,onExport,onImport,onRedeemCode,onOpenCoopUiGallery,initialSection,onNavigateGuide,onStartMainScreenTour,online=false,latestVersion,onUpdateApp}:Props){
  const language=state.settings.language;
  const a=(text:string,params?:Record<string,string|number>)=>accountText(language,text,params);
 
@@ -70,9 +73,9 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onRefreshComme
   const {width}=useWindowDimensions(),phone=width<768;
   const section=phone?selectedSection:selectedSection??'gameplay';
   const navigationStyles=useMemo(()=>makeNavigationStyles(theme),[theme]);
-  const sections:SettingsSection[]=['store','gameplay','appearance','accessibility','account','data','guide',...(__DEV__&&!online?['developer' as const]:[])];
-  const sectionLabel=(value:SettingsSection)=>value==='guide'?a('Help & Guide'):value==='store'?a('Store'):a(value.charAt(0).toUpperCase()+value.slice(1));
-  const sectionDescription=(value:SettingsSection)=>value==='gameplay'?a("Tune combat, number display, and auto-eat behavior."):value==='appearance'?a("Choose a complete UI theme. Gameplay colors keep the same meaning in every theme."):value==='accessibility'?a("Make text, motion, and language fit your play style."):value==='account'?a("Manage your connected account and profile preferences."):value==='store'?a("Manage VIP, VIP+, Supporter and restore Google Play purchases."):value==='data'?a("Export, import, or recover your local progress."):value==='guide'?a("Browse the interactive VELDRYN help guide."):a("Development tools and visual QA controls.");
+  const sections:SettingsSection[]=['store','gameplay','appearance','accessibility','account','data','guide','updates',...(__DEV__&&!online?['developer' as const]:[])];
+  const sectionLabel=(value:SettingsSection)=>value==='updates'?a("What's New"):value==='guide'?a('Help & Guide'):value==='store'?a('Store'):a(value.charAt(0).toUpperCase()+value.slice(1));
+  const sectionDescription=(value:SettingsSection)=>value==='gameplay'?a("Tune combat, number display, and auto-eat behavior."):value==='appearance'?a("Choose a complete UI theme. Gameplay colors keep the same meaning in every theme."):value==='accessibility'?a("Make text, motion, and language fit your play style."):value==='account'?a("Manage your connected account and profile preferences."):value==='store'?a("Manage VIP, VIP+, Supporter and restore Google Play purchases."):value==='data'?a("Export, import, or recover your local progress."):value==='guide'?a("Browse the interactive VELDRYN help guide."):value==='updates'?a('See changes included in your installed version.'):a("Development tools and visual QA controls.");
   const scrollRef=useRef<ScrollView>(null),scrollPositions=useRef<Record<string,number>>({}),restoredPage=useRef<string|undefined>(undefined);
   const pageKey=(phone?'phone:':'wide:')+(section??'index');
   const restoreScroll=()=>{if(restoredPage.current===pageKey)return;scrollRef.current?.scrollTo({y:scrollPositions.current[pageKey]??0,animated:false});restoredPage.current=pageKey;};
@@ -147,6 +150,7 @@ export function SettingsScreen({state,onLanguage,onReset,onChange,onRefreshComme
       <Text style={[s.sub,{color:theme.muted}]}>{online?a("Your account and gameplay progress are stored on VELDRYN servers. Your older local save stays on this device."):a("Offline progress remains on this device. Local progress cannot be uploaded as online rewards.")}</Text>
       {!online&&<GameButton title={a("Delete local save")} tone="danger" onPress={onReset}/>}
     </Panel></>}
+    {section==='updates'&&<Panel><Text style={[s.title,{color:theme.text}]}>{a("What's New")}</Text><WhatsNewContent latestVersion={latestVersion} onUpdate={onUpdateApp}/></Panel>}
     {section==='developer'&&__DEV__&&!online&&<DeveloperTools state={state} onChange={onChange} onOpenCoopUiGallery={onOpenCoopUiGallery}/>}
     <View style={s.footerLinks}><GameButton compact title={a("Privacy Policy")} tone="secondary" onPress={()=>openExternal(PRIVACY_POLICY_URL)}/></View>
     <View>

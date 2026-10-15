@@ -3,7 +3,7 @@ import {acknowledgeAllInventoryItems,acknowledgeInventoryItem,inventoryFavoriteI
 import {validateGameCommand,validateGameSettings} from '../src/core/game-commands';
 import {bulkSelectionSummary,bulkSellSelected,bulkTransferSelected} from '../src/core/inventory-bulk';
 import {itemInspectModel} from '../src/core/item-inspect';
-import {workingTowardDestinationAvailability} from '../src/core/working-toward';
+import {sourceDestinationAvailability} from '../src/core/source-navigation';
 import {normalizeSave} from '../src/core/save-normalization';
 import {V33_EQUIPMENT_RECIPES} from '../src/content/equipment-recipes-v33';
 import {itemDef} from '../src/content/items';
@@ -97,7 +97,7 @@ ok(oathstoneSource?.availability?.status==='locked'&&oathstoneSource.availabilit
 ok(copperUse?.availability.status==='ready'&&copperUse.availability.label==='AVAILABLE','Unlocked crafting use is labeled AVAILABLE');
 const gatedRecipe=V33_EQUIPMENT_RECIPES.find(row=>row.classId==='IRONWARDEN'&&row.characterLevel>20)!;
 const smithingReadyCharLocked={...state,character:{...state.character!,level:gatedRecipe.characterLevel-1},skills:state.skills.map(row=>row.skillId==='smithing'?{...row,level:100}:row)};
-const characterGate=workingTowardDestinationAvailability(smithingReadyCharLocked,{kind:'skills',skillId:'smithing',mode:'crafting',recipeId:gatedRecipe.id,button:'Open recipe',detail:'Open V33 recipe.'});
+const characterGate=sourceDestinationAvailability(smithingReadyCharLocked,{kind:'skills',skillId:'smithing',mode:'crafting',recipeId:gatedRecipe.id,button:'Open recipe',detail:'Open V33 recipe.'});
 ok(characterGate.status==='locked'&&characterGate.detail.includes('Level'),'V33 recipe availability reports Level blockers accurately');
 const ironwardenWeapon=V33_EQUIPMENT_RECIPES.find(row=>row.classId==='IRONWARDEN'&&row.v33EquipmentTier==='T1'&&itemDef(row.output.itemId).slot==='weapon')!;
 const gearReadyState={...state,character:{...state.character!,level:Math.max(state.character!.level,itemDef(ironwardenWeapon.output.itemId).requiredLevel??1)}};

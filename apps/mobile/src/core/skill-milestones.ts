@@ -7,7 +7,7 @@ import {CROSS_SKILL_DISCOVERIES_V45,crossSkillViews,newCrossSkillState} from './
 import {faithLevel} from './faith';
 import {progressWithinLevel} from './progression';
 import type {GameState,SkillId} from './types';
-import type {WorkingTowardDestination} from './working-toward';
+import type {SourceDestination} from './source-navigation';
 import {ENCHANTING_EXTRACTION_THRESHOLDS_V1,GEM_COMBINE_COSTS_V1,GEM_REFINE_COSTS_V1,GEM_RESEARCH_V1} from './gem-progression-v1';
 import {GEM_GRADE_LABEL_V1,type MobileGemGradeV1} from '../content/gems-v1';
 
@@ -19,7 +19,7 @@ export interface SkillMilestone{
  title:string;
  detail:string;
  category:string;
- destination?:WorkingTowardDestination;
+ destination?:SourceDestination;
 }
 export interface SkillMilestoneOverview{
  currentLevel:number;
@@ -44,7 +44,7 @@ function crossState(state:GameState){
  const accountId=state.account.crossSkillState?.accountId??state.account.journalState?.accountId??('account:'+state.createdAtMs);
  return state.account.crossSkillState??newCrossSkillState(accountId);
 }
-function milestoneDestination(skillId:SkillId,recipeId?:string):WorkingTowardDestination|undefined{
+function milestoneDestination(skillId:SkillId,recipeId?:string):SourceDestination|undefined{
  const mode=skillMode(skillId);if(!mode)return undefined;
  return {kind:'skills',skillId,mode,...(recipeId?{recipeId}:{}),button:'Open '+pretty(skillId),detail:'Open this skill milestone.'};
 }

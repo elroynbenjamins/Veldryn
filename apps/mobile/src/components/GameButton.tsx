@@ -5,17 +5,18 @@ import {useGameTheme} from '../theme/ThemeContext';
 
 type Tone='primary'|'secondary'|'danger';
 type ButtonColors={backgroundColor:string;borderColor:string;textColor:string};
-type Props={title:string;onPress:()=>void;disabled?:boolean;loading?:boolean;selected?:boolean;tone?:Tone;compact?:boolean;colors?:ButtonColors};
+type Props={title:string;onPress:()=>void|Promise<unknown>;disabled?:boolean;loading?:boolean;selected?:boolean;tone?:Tone;compact?:boolean;colors?:ButtonColors};
 export function GameButton({title,onPress,disabled=false,loading=false,selected,tone='primary',compact=false,colors}:Props){
   const C=useGameTheme();
-  const [focused,setFocused]=useState(false),inactive=disabled||loading;
+  const [focused,setFocused]=useState(false),[pending,setPending]=useState(false),inactive=disabled||loading||pending;
+  const handlePress=()=>{if(inactive)return;try{const result=onPress();if(result&&typeof (result as Promise<unknown>).then==='function'){setPending(true);void Promise.resolve(result).catch(error=>{console.warn('[GameButton] Action failed',error)}).finally(()=>setPending(false));}}catch(error){console.warn('[GameButton] Action failed',error);}};
   const toneStyle=colors??(tone==='primary'?{borderColor:C.primaryButtonBorder,backgroundColor:C.primaryButton}:tone==='danger'?{borderColor:C.dangerButtonBorder,backgroundColor:C.dangerButton}:{borderColor:C.secondaryButtonBorder,backgroundColor:C.secondaryButton});
   const labelColor=colors?.textColor??(tone==='primary'?C.primaryButtonText:tone==='danger'?C.dangerButtonText:C.secondaryButtonText);
   const selectedStyle=selected?{borderColor:C.selectionLine,backgroundColor:tone==='secondary'?C.selection:toneStyle.backgroundColor}:undefined;
-  return <Pressable accessibilityRole="button" accessibilityLabel={title} accessibilityState={{disabled:inactive,busy:loading,selected}}
-    disabled={inactive} onPress={onPress} onFocus={()=>setFocused(true)} onBlur={()=>setFocused(false)}
+  return <Pressable accessibilityRole="button" accessibilityLabel={title} accessibilityState={{disabled:inactive,busy:loading||pending,selected}}
+    disabled={inactive} onPress={handlePress} onFocus={()=>setFocused(true)} onBlur={()=>setFocused(false)}
     style={({pressed})=>[s.button,compact&&s.compact,toneStyle,selectedStyle,focused&&s.focused,pressed&&!inactive&&s.pressed,inactive&&s.disabled]}>
-    {loading&&<ActivityIndicator color={labelColor} size="small"/>}
+    {(loading||pending)&&<ActivityIndicator color={labelColor} size="small"/>}
     <Text textBreakStrategy="balanced" android_hyphenationFrequency="normal" style={[s.label,{color:labelColor}]}>{title}</Text>
   </Pressable>;
 }

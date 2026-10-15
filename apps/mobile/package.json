@@ -20,6 +20,7 @@
     "test:event-release-graph": "node ../../tools/validate-event-release-graph.mjs",
     "test:release-bundle": "expo export --platform android --output-dir .release-bundle-audit && node ../../tools/validate-mobile-export-budget.mjs .release-bundle-audit",
     "test:online": "tsc -p tsconfig.core.json --outDir .core-build && node .core-build/apps/mobile/tests/online-gameplay.js",
+    "test:online-staging-smoke": "node ../../tools/online-staging-smoke.mjs",
     "test:v16": "tsc -p tsconfig.core.json --outDir .core-build && node .core-build/apps/mobile/tests/party-social-v16.js",
     "typecheck:search-loadouts": "tsc -p tsconfig.search-loadouts.json --noEmit",
     "test:search-loadouts": "node -e \"require('fs').rmSync('.search-loadouts-build',{recursive:true,force:true})\" && tsc -p tsconfig.search-loadouts.json && node .search-loadouts-build/apps/mobile/tests/search-loadouts-v1.js",

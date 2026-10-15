@@ -3,7 +3,7 @@ import {progressionT,progressionText,type ProgressionKey} from '../i18n/progress
 import {useMemo} from 'react';
 import {Pressable,ScrollView,StyleSheet,Text,View} from 'react-native';
 import type {GameState,SkillId} from '../core/types';
-import type {WorkingTowardDestination} from '../core/working-toward';
+import type {SourceDestination} from '../core/source-navigation';
 import {JOURNAL_ACHIEVEMENTS_V42,JOURNAL_TITLES_V42} from '../core/adventurers-journal-v42';
 import {professionMasteryHallSummary,professionMasteryMasteredRecords,skillIdentity} from '../core/profession-mastery-presentation';
 import {formatGameNumber} from '../core/number-format';
@@ -15,7 +15,7 @@ import {equipmentTheme,radii,spacing,typography,type ThemeColors} from '../theme
 import {useGameTheme} from '../theme/ThemeContext';
 
 const tierLabel=(value:string)=>value.charAt(0).toUpperCase()+value.slice(1);
-export function MasteryHallScreen({state,onOpenSkill,onNavigate,onAchievements,onProfile}:{state:GameState;onOpenSkill?:(skillId:SkillId)=>void;onNavigate?:(destination:WorkingTowardDestination)=>void;onAchievements?:()=>void;onProfile?:()=>void}){
+export function MasteryHallScreen({state,onOpenSkill,onNavigate,onAchievements,onProfile}:{state:GameState;onOpenSkill?:(skillId:SkillId)=>void;onNavigate?:(destination:SourceDestination)=>void;onAchievements?:()=>void;onProfile?:()=>void}){
   const contextLanguage=useGameLanguage(),language=state.settings.language??contextLanguage;
   const t=(key:ProgressionKey,params?:Record<string,string|number>)=>progressionT(language,key,params);
   const p=(text:string)=>progressionText(language,text);

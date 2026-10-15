@@ -28,7 +28,7 @@ export function WhatsNewModal({visible,currentVersion,notes,latestVersion,update
     <View style={s.head}><Text style={s.title}>{note.title}</Text><Text style={s.version}>v{note.version}</Text></View>
     {note.highlights.map((highlight,index)=><Text key={index} style={s.line}>• {highlight}</Text>)}
    </View>):<Text style={s.muted}>Release notes will appear here when the next update is published.</Text>}
-   {upcomingNotes.length&&updateAvailable?<View style={s.release}><Text style={s.title}>Available in the latest update</Text>{upcomingNotes.map(note=><View key={note.version} style={s.upcoming}><Text style={s.version}>v{note.version} · {note.title}</Text>{note.highlights.slice(0,4).map((highlight,index)=><Text key={index} style={s.line}>• {highlight}</Text>)}</View>)}</View>:null}
+   {upcomingNotes.length>0&&updateAvailable?<View style={s.release}><Text style={s.title}>Available in the latest update</Text>{upcomingNotes.map(note=><View key={note.version} style={s.upcoming}><Text style={s.version}>v{note.version} · {note.title}</Text>{note.highlights.slice(0,4).map((highlight,index)=><Text key={index} style={s.line}>• {highlight}</Text>)}</View>)}</View>:null}
   </ScrollView>
   {updateAvailable?<View style={s.update}><Text style={s.updateTitle}>Update available{latestVersion?' · v'+latestVersion:''}</Text><Text style={s.muted}>A newer release is on Google Play. You can continue playing this version until the required minimum changes.</Text><GameButton title="Update on Google Play" onPress={onUpdate}/></View>:null}
   <GameButton title="Continue playing" tone="secondary" onPress={onClose}/>

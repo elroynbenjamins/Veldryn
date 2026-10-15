@@ -25,7 +25,7 @@ export function RewardsInboxScreen({state,online,onRefresh,onEventClaim,preview}
   else{
    let claimed=0,blocked=0,result,pages=0;do{result=await claimAllInboxRewards();claimed+=result.claimed;blocked=result.blocked;pages++;}while(result.claimed>0&&result.claimed+result.blocked>=40&&pages<10);
    for(const row of eventRows){await onEventClaim(row.reward.id);claimed++;}
-   setNotice(blocked?`${claimed} claimed. Items needing inventory space remain safe in your inbox.`:`${claimed} rewards claimed.`);
+   setNotice(blocked?`${claimed} claimed. Items needing inventory space remain safe in your inbox.`:`${claimed} rewards claimed.${pages>=10?' More rewards may be waiting; tap Claim all again.':''}`);
   }
   await onRefresh();await load();
  }catch(e){const message=e instanceof Error?e.message:'Could not claim. Your rewards remain safe.';await load();setError(message);}finally{running.current=false;setBusy(false);}};

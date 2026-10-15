@@ -294,12 +294,22 @@ function VeldrynApp(){
     onPanResponderRelease:(_event,gesture)=>{if(gesture.dx>=72&&gesture.vx>=0)goBack();},
     onPanResponderTerminate:()=>{},
   }),[goBack]);
+  const optionalUpdateVersion=versionGate?.updateAvailable?versionGate.policy?.latestVersion:undefined;
   useEffect(()=>{if(!ready||!state?.character||!versionGateChecked||versionGateOwnsScreen||startupOverlayVisible||collected||creationWelcome||whatsNewChecked.current)return;
     whatsNewChecked.current=true;let alive=true;
-    void AsyncStorage.getItem('veldryn.whats-new.seen').then(seen=>{if(alive&&seen!==WHATS_NEW_RELEASE_ID)setShowWhatsNew(true)}).catch(error=>console.warn('[WhatsNew] Could not load release acknowledgement',error));
+    void AsyncStorage.multiGet(['veldryn.whats-new.seen','veldryn.optional-update.seen']).then(entries=>{
+      if(!alive)return;
+      const seenRelease=entries[0]?.[1],seenUpdate=entries[1]?.[1];
+      if(seenRelease!==WHATS_NEW_RELEASE_ID||optionalUpdateVersion&&seenUpdate!==optionalUpdateVersion)setShowWhatsNew(true);
+    }).catch(error=>console.warn('[WhatsNew] Could not load release acknowledgement',error));
     return()=>{alive=false};
-  },[ready,state?.character?.id,versionGateChecked,versionGateOwnsScreen,startupOverlayVisible,!!collected,!!creationWelcome]);
-  const closeWhatsNew=()=>{setShowWhatsNew(false);void AsyncStorage.setItem('veldryn.whats-new.seen',WHATS_NEW_RELEASE_ID).catch(error=>console.warn('[WhatsNew] Could not save release acknowledgement',error));};
+  },[ready,state?.character?.id,versionGateChecked,versionGateOwnsScreen,startupOverlayVisible,!!collected,!!creationWelcome,optionalUpdateVersion]);
+  const closeWhatsNew=()=>{
+    setShowWhatsNew(false);
+    const seen:[[string,string],...[string,string][]]=[['veldryn.whats-new.seen',WHATS_NEW_RELEASE_ID]];
+    if(optionalUpdateVersion)seen.push(['veldryn.optional-update.seen',optionalUpdateVersion]);
+    void AsyncStorage.multiSet(seen).catch(error=>console.warn('[WhatsNew] Could not save release acknowledgement',error));
+  };
   const loadGame=useCallback(async()=>{setReady(false);setLoadError('');try{setRecoveryLanguage(await repo.loadLanguage());const saved=await repo.load();const restored=retireGoalPlanner(normalizeProfileIcon(saved??newGame(Date.now())));const startup=saved?settleStartupActivity(restored,Date.now()):{state:restored,reward:null,activity:null};const next=startup.state;stateRef.current=next;setState(next);setRecoveryLanguage(next.settings.language);if(startup.reward)setCollected({reward:startup.reward,activity:startup.activity,welcomeBack:true,progressionMoments:rewardProgressionMoments(restored,next)});if(saved){try{await repo.save(next)}catch{showAlert('Save upgrade pending','Your progress loaded, but the upgraded save could not be written yet. Keep the app open and try another saved action.')}}}catch(error){stateRef.current=null;setState(null);setLoadError(error instanceof Error?error.message:'The local save could not be read.')}finally{setReady(true)}},[]);
   useEffect(()=>{if(!serverGameplayEnabled)void loadGame()},[loadGame]);
   useEffect(()=>{if(!serverGameplayEnabled)return;const snapshot=online.snapshot,next=snapshot?.state?retireGoalPlanner(snapshot.state):null,before=stateRef.current;queuePreparationNotices(before,next);if(!before&&next&&snapshot?.reward&&rewardHasProgress(snapshot.reward)){setCollected({reward:snapshot.reward,activity:snapshot.activity??null,welcomeBack:true,progressionMoments:[]});}stateRef.current=next;setState(next);setReady(!online.loading);setLoadError('');},[online.snapshot,online.loading]);

@@ -79,3 +79,5 @@ apps/mobile/.release-*-audit*/
 # Local visual review captures.
 /restored-veilbreak-event.png
 /screenshot-*.png
+apps/mobile/.release-bundle-*/
+apps/mobile/.release-*-exit*.txt

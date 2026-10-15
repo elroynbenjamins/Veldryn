@@ -36,6 +36,6 @@ ok(inventory.includes('resolveInventoryActionFeedback(inventoryIntent,state)'),'
 ok(inventory.includes("kind:'bulk_transfer'")&&inventory.includes("kind:'bulk_sell'")&&inventory.includes("kind:'bulk_salvage'"),'bulk inventory actions must use the same feedback path');
 ok(inventory.includes('ActionFeedback message={gl(inventoryFeedback.message)}'),'routine inventory results should use compact shared action feedback');
 ok(inventory.includes('setTimeout(()=>setInventoryFeedback(null),4500)'),'routine inventory feedback must auto-clear instead of blocking management');
-ok(/setTimeout\(\(\)=>\{[^}]*setInventoryIntent\(null\)[^}]*\},12000\)/.test(inventory),'failed or abandoned pending result intents must expire safely');
+ok(inventory.includes('const timer=setTimeout(()=>setInventoryIntent(null),12000)')&&inventory.includes('return()=>clearTimeout(timer)'),'failed or abandoned pending result intents must expire safely');
 
 console.log('PASS routine inventory actions report committed results without extra blocking dialogs');

@@ -32,7 +32,9 @@ export class OnlineGameRepository implements GameRepository{
  private async executeQueued(command?:GameCommand):Promise<ExecutedOnlineCommand>{
   try{
    let request=await this.pending.read();
-   if(request&&command){await this.sendPending(request);request=null;}
+   // A caller may retry an uncertain request without supplying a new command.
+   // Never let a fresh action implicitly replace or race that durable receipt.
+   if(request&&command)throw new OnlineCommandError('pending_action');
    if(!request){if(!command)throw new Error('No pending action.');if(!this.snapshot)await this.refresh();request={requestId:this.key(),expectedVersion:this.snapshot!.version,command};await this.pending.write(request);}
    return await this.sendPending(request);
   }catch(error){throw error;}

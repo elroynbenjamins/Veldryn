@@ -11,8 +11,9 @@ const Context=createContext<SocialState>({...empty,accountId:'',characterId:null
 export function PartySocialProvider({children}:{children:React.ReactNode}){
  const {session}=useAuthSession(),accountId=session?.user.id??'';
  const [state,setState]=useState<Omit<SocialState,'refresh'>>({...empty,accountId:'',characterId:null,error:'',loading:true});
- const generation=useRef(0),activeAccount=useRef(accountId),inFlight=useRef<{accountId:string;promise:Promise<void>;refreshAgain:boolean}|null>(null);
+ const generation=useRef(0),activeAccount=useRef(accountId),inFlight=useRef<{accountId:string;promise:Promise<void>;refreshAgain:boolean}|null>(null),partyRef=useRef(state.party),idlePolls=useRef(0);
  activeAccount.current=accountId;
+ partyRef.current=state.party;
  const refresh=useCallback((force=true)=>{
   if(activeAccount.current!==accountId)return Promise.resolve();
   if(!supabase||!accountId){setState({...empty,accountId,characterId:null,error:!supabase?'Online services are not configured.':'',loading:false});return Promise.resolve();}
@@ -43,13 +44,13 @@ export function PartySocialProvider({children}:{children:React.ReactNode}){
   setState({...empty,accountId,characterId:null,error:'',loading:!!accountId});
   void refresh(false);
   let previous=AppState.currentState;
-  // Active parties need quick state changes; players outside one do not need the
-  // same polling cost. Mutations and foregrounding still refresh immediately.
-  const interval=state.party?PARTY_REFRESH_MS:IDLE_SOCIAL_REFRESH_MS;
-  const timer=setInterval(()=>{if(AppState.currentState==='active')void refresh(false);},interval);
+  // Keep one account-scoped lifecycle: changing party membership must not reset
+  // confirmed party state. Joined parties poll every 30 seconds; idle accounts
+  // only refresh once per four ticks (two minutes).
+  const timer=setInterval(()=>{if(AppState.currentState!=='active')return;if(partyRef.current){idlePolls.current=0;void refresh(false);}else if(++idlePolls.current>=IDLE_SOCIAL_REFRESH_MS/PARTY_REFRESH_MS){idlePolls.current=0;void refresh(false);}},PARTY_REFRESH_MS);
   const foreground=AppState.addEventListener('change',next=>{const resumed=previous!=='active'&&next==='active';previous=next;if(resumed)void refresh();});
   return()=>{generation.current++;inFlight.current=null;clearInterval(timer);foreground.remove();};
- },[accountId,refresh,state.party]);
+ },[accountId,refresh]);
  const visibleState=state.accountId===accountId?state:{...empty,accountId,characterId:null,error:'',loading:!!accountId};
  return <Context.Provider value={{...visibleState,refresh}}>{children}</Context.Provider>;
 }

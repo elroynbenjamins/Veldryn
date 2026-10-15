@@ -88,8 +88,11 @@ function recordCompanionCommandMetrics(state:GameState,type:string,before:Compan
 }
 export function validateGameSettings(value:unknown):GameState['settings']{
  if(!value||typeof value!=='object'||Array.isArray(value))throw new Error('invalid_settings');const row=value as Record<string,unknown>;
- const keys=Object.keys(game.newGame(0).settings);if(Object.keys(row).some(key=>!keys.includes(key)))throw new Error('invalid_settings');
- const defaults=game.newGame(0).settings,result={...defaults,...row} as GameState['settings'];
+ // Older saves can still submit the retired chat preference. Preserve strict
+ // rejection for unknown fields while silently removing this known legacy key.
+ const {retiredChatSetting:_retiredChatSetting,...settingsRow}=row;
+ const keys=Object.keys(game.newGame(0).settings);if(Object.keys(settingsRow).some(key=>!keys.includes(key)))throw new Error('invalid_settings');
+ const defaults=game.newGame(0).settings,result={...defaults,...settingsRow} as GameState['settings'];
  oneOf(result.language,SUPPORTED_LANGUAGES);oneOf(result.numberMode,['abbreviated','exact']);oneOf(result.uiTheme??'obsidian',['obsidian','ember','ivory']);
  if(![1,1.15,1.3,1.5].includes(result.textScale)||!Number.isFinite(result.autoEatThresholdPct)||result.autoEatThresholdPct<0||result.autoEatThresholdPct>100)throw new Error('invalid_settings');
  for(const key of ['reduceMotion','stopCombatWhenOutOfFood','autoJoinWorldChat'] as const)if(typeof result[key]!=='boolean')throw new Error('invalid_settings');

@@ -43,5 +43,4 @@ export class OnlineGameRepository implements GameRepository{
     return {...confirmed,executedCommand:request.command};
    }catch(error){if(error instanceof OnlineCommandError&&error.definitive){await this.pending.write(null);await this.refresh();}throw error;}
   }
- }
 }

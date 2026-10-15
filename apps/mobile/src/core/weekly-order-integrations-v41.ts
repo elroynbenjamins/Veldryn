@@ -1,4 +1,3 @@
-import type {ProgressionGoal} from './progression-goals-v40';
 import type {IdleRuleSet,IdleStopCondition} from './idle-rules-v40';
 import type {WeeklyOrder,WeeklyOrdersState} from './weekly-orders-v41';
 import type {QueuedActivity,SkillId} from './types';
@@ -8,9 +7,6 @@ import {GATHERING,RECIPES} from '../content/skills';
 import {HERB_NODES} from '../content/herbalism';
 import {WORLD_ZONES} from '../content/world-map';
 
-export function weeklyOrderGoal(order:WeeklyOrder,characterId:string,nowMs:number):ProgressionGoal{
- return {id:`goal:${order.id}`,characterId,kind:'weekly_order',title:order.title,createdAtMs:nowMs,pinnedAtMs:nowMs,orderId:order.id,targetProgress:order.target};
-}
 export function weeklyOrderIdleCondition(order:WeeklyOrder,id=`weekly:${order.id}`):IdleStopCondition{
  return {id,kind:'weekly_order_progress',targetId:order.id,value:order.target,enabled:true};
 }
